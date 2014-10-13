@@ -4,6 +4,8 @@ version 0.1 2014-10-11
 
 概述
 ------
+		nodeMcu 支持一键配置
+
 		nodeMcu 基于Lua 5.1.4，使用者需了解最简单的Lua语法。
 
 		nodeMcu 尽量采用事件驱动的编程模型。
