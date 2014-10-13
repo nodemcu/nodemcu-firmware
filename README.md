@@ -4,34 +4,34 @@ version 0.1 2014-10-11
 
 概述
 ------
-nodeMcu 基于Lua 5.1.4，使用者需了解最简单的Lua语法。
+		nodeMcu 基于Lua 5.1.4，使用者需了解最简单的Lua语法。
 
-nodeMcu 尽量采用事件驱动的编程模型。
+		nodeMcu 尽量采用事件驱动的编程模型。
 
-nodeMcu 内置 timer，pwm，i2c，net，gpio，wifi module。
+		nodeMcu 内置 timer，pwm，i2c，net，gpio，wifi module。
 
-nodeMcu对模块的引脚进行编号，gpio，i2c，pwm等模块需要使用引脚编号进行索引。
+		nodeMcu对模块的引脚进行编号，gpio，i2c，pwm等模块需要使用引脚编号进行索引。
 
 目前的编号对应表格：
 
-IO索引编号	ESP8266实际IO	IO索引编号	ESP8266实际IO
-0			GPIO12			8			GPIO0
-1			GPIO13			9			GPIO2
-2			GPIO14			10			GPIO4
-3			GPIO15			11			GPIO5
-4			GPIO3		
-5			GPIO1		
-6			GPIO9		
-7			GPIO10		
+		IO索引编号	ESP8266实际IO	IO索引编号	ESP8266实际IO
+		0			GPIO12			8			GPIO0
+		1			GPIO13			9			GPIO2
+		2			GPIO14			10			GPIO4
+		3			GPIO15			11			GPIO5
+		4			GPIO3		
+		5			GPIO1		
+		6			GPIO9		
+		7			GPIO10		
 
 串口波特率74880
 
 ###固件烧写地址：
 
-eagle.app.v6.flash.bin：0x00000
-eagle.app.v6.irom0text.bin：0x10000
-esp_init_data_default.bin：0x7c000
-blank.bin：0x7e000
+		eagle.app.v6.flash.bin：0x00000
+		eagle.app.v6.irom0text.bin：0x10000
+		esp_init_data_default.bin：0x7c000
+		blank.bin：0x7e000
 
 
 node module
@@ -63,10 +63,10 @@ node.stoplog()
 描述：结束log
 
 例子：录制log到init.lua文件，可以在系统启动之后自动调用该文件。
-node.format()
-node.startlog(“init.lua”, 1)
-print(“hello world”)
-node.stoplog()
+		node.format()
+		node.startlog(“init.lua”, 1)
+		print(“hello world”)
+		node.stoplog()
 
 此时，文件init.lua内部将含有内容，重启之后，系统执行print(“hello world”)
 
@@ -80,6 +80,7 @@ node.list()
 返回：一个包含 <文件名：文件大小> pair 的map
 
 wifi module
+-----------
 
 常量：wifi. STATION, wifi.SOFTAP, wifi.STATIONAP
 
@@ -101,6 +102,7 @@ wifi.stopconfig()
 描述：中断智能配置
 
 wifi.station module
+-----------------
 wifi.station.setconfig(ssid, password)
 描述：设置station模式下的ssid和password
 ssid：字符串形式，长度小于32
@@ -125,14 +127,16 @@ wifi.station.getmac()
 返回：字符串形式的mac，如“18-33-44-FE-55-BB”
 
 wifi.ap module
+---------------
 wifi.ap.setconfig(cfg)
 描述：设置station模式下的ssid和password
 cfg：设置需要的map
+
 例子：
-cfg={}
-cfg.ssid=”myssid”
-cfg.pwd=”mypwd”
-wifi.ap.setconfig(cfg)
+		cfg={}
+		cfg.ssid=”myssid”
+		cfg.pwd=”mypwd”
+		wifi.ap.setconfig(cfg)
 
 wifi.ap.getip()
 描述：ap模式下获取ip
@@ -143,6 +147,7 @@ wifi. ap.getmac()
 返回：字符串形式的mac，如“1A-33-44-FE-55-BB”
 
 gpio module
+-----------
 
 模块名：gpio
 常量：gpio.OUTPUT, gpio.INPUT, gpio.HIGH, gpio.LOW
@@ -163,13 +168,14 @@ pin：0~11，IO索引编号
 level：gpio.HIGH或者gpio.LOW
 
 例子：
-pin=1
-gpio.mode(pin, gpio.OUTPUT)
-gpio.write(pin, gpio.HIGH)
+		pin=1
+		gpio.mode(pin, gpio.OUTPUT)
+		gpio.write(pin, gpio.HIGH)
 
 将索引1的pin设置为GPIO模式，并设置为高电平。
 
 net module
+---------------
 常量：net.TCP, net.UDP
 
 net.createServer(type, secure)
@@ -191,8 +197,8 @@ port：端口号
 ip：可忽略，ip字符串
 
 例子：
-sv=net.createServer(net.TCP, false)
-sv:listen(80)
+		sv=net.createServer(net.TCP, false)
+		sv:listen(80)
 
 send( string, function(sent) )
 描述：向连接的客户端发送数据
@@ -205,9 +211,9 @@ function cb(net.server sv, [string])：回调函数。第一个参数为服务�
 若event为”receive”， 第二个参数为接收到数据，字符串形式。
 
 例子：
-sv=net.createServer(net.TCP, false)
-sv:listen(80)
-sv:on("receive", function(s,c) s:send("<h1> Hello, world.</h1>") print(c) end )
+		sv=net.createServer(net.TCP, false)
+		sv:listen(80)
+		sv:on("receive", function(s,c) s:send("Hello, world.") print(c) end )
 
 close()
 描述：关闭服务器
@@ -229,10 +235,10 @@ function cb(net.socket, [string])：回调函数。第一个参数为socket连�
 若event为”receive”， 第二个参数为接收到数据，字符串形式。
 
 例子：
-sk=net.createConnection(net.TCP, false)
-sk:on("receive", function(sck, c) print(c) end )
-sk:connect(80,"192.168.0.66") 
-sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+		sk=net.createConnection(net.TCP, false)
+		sk:on("receive", function(sck, c) print(c) end )
+		sk:connect(80,"192.168.0.66") 
+		sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 
 close()
 描述：关闭socket
