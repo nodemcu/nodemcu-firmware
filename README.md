@@ -93,18 +93,18 @@ node.list()
 wifi module
 -----------
 
-常量：wifi. STATION, wifi.SOFTAP, wifi.STATIONAP
+常量：wifi.STATION, wifi.SOFTAP, wifi.STATIONAP
 
 wifi.setmode(mode)
 
 		描述：设置wifi的工作模式
-		mode：取值：wifi. STATION, wifi.SOFTAP或wifi.STATIONAP
+		mode：取值：wifi.STATION, wifi.SOFTAP或wifi.STATIONAP
 		返回设置之后的当前mode
 
 wifi.getmode()
 
 		描述：获取wifi的工作模式
-		返回：wifi. STATION, wifi.SOFTAP或wifi.STATIONAP
+		返回：wifi.STATION, wifi.SOFTAP或wifi.STATIONAP
 
 wifi.startconfig( channel, function succeed_callback )
 
@@ -166,7 +166,7 @@ wifi.ap.getip()
 		描述：ap模式下获取ip
 		返回：字符串形式的ip，如"192.168.0.2"
 
-wifi. ap.getmac()
+wifi.ap.getmac()
 
 		描述：ap模式下获取mac
 		返回：字符串形式的mac，如"1A-33-44-FE-55-BB"
@@ -217,7 +217,7 @@ net.createConnection(type, secure)
 		描述：建立一个客户端
 		type：net.TCP或 net.UDP
 		secure：true 或者 false，表示是否为安全连接
-		返回：net. socket子模块
+		返回：net.socket子模块
 
 net.server module
 -------------
