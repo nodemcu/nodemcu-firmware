@@ -205,18 +205,16 @@ net module
 ---------------
 常量：net.TCP, net.UDP
 
-net.createServer(type, secure)
+net.createServer(type)
 
 		描述：建立一个服务器
 		type：net.TCP或 net.UDP
-		secure：true 或者 false，表示是否为安全连接
 		返回：net.server子模块
 
-net.createConnection(type, secure)
+net.createConnection(type)
 
 		描述：建立一个客户端
 		type：net.TCP或 net.UDP
-		secure：true 或者 false，表示是否为安全连接
 		返回：net.socket子模块
 
 net.server module
