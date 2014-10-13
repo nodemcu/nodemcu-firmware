@@ -73,11 +73,11 @@ node.stoplog()
 例子：录制log到init.lua文件，可以在系统启动之后自动调用该文件。
 
 		node.format()
-		node.startlog(“init.lua”, 1)
-		print(“hello world”)
+		node.startlog("init.lua", 1)
+		print("hello world")
 		node.stoplog()
 
-此时，文件init.lua内部将含有内容，重启之后，系统执行print(“hello world”)
+此时，文件init.lua内部将含有内容，重启之后，系统执行print("hello world")
 
 node.readlog( filename) 
 
@@ -140,12 +140,12 @@ wifi.station.autoconnect(auto)
 wifi.station.getip()
 
 		描述：station模式下获取ip
-		返回：字符串形式的ip，如“192.168.0.2”
+		返回：字符串形式的ip，如"192.168.0.2"
 
 wifi.station.getmac()
 
 		描述：station模式下获取mac
-		返回：字符串形式的mac，如“18-33-44-FE-55-BB”
+		返回：字符串形式的mac，如"18-33-44-FE-55-BB"
 
 wifi.ap module
 ---------------
@@ -157,19 +157,19 @@ wifi.ap.setconfig(cfg)
 例子：
 
 		cfg={}
-		cfg.ssid=”myssid”
-		cfg.pwd=”mypwd”
+		cfg.ssid="myssid"
+		cfg.pwd="mypwd"
 		wifi.ap.setconfig(cfg)
 
 wifi.ap.getip()
 
 		描述：ap模式下获取ip
-		返回：字符串形式的ip，如“192.168.0.2”
+		返回：字符串形式的ip，如"192.168.0.2"
 
 wifi. ap.getmac()
 
 		描述：ap模式下获取mac
-		返回：字符串形式的mac，如“1A-33-44-FE-55-BB”
+		返回：字符串形式的mac，如"1A-33-44-FE-55-BB"
 
 gpio module
 -----------
@@ -242,7 +242,7 @@ on(event, function cb())
 		描述：注册事件的回调函数
 		event：字符串，可为："connection"，"reconnection"，"disconnection"，"receive"，"sent"
 		function cb(net.server sv, [string])：回调函数。第一个参数为服务器本身。
-		若event为”receive”， 第二个参数为接收到数据，字符串形式。
+		若event为"receive"， 第二个参数为接收到数据，字符串形式。
 
 例子：
 
@@ -272,7 +272,7 @@ on(event, function cb())
 		描述：注册事件的回调函数
 		event：字符串，可为："connection"，"reconnection"，"disconnection"，"receive"，"sent"
 		function cb(net.socket, [string])：回调函数。第一个参数为socket连接本身。
-		若event为”receive”， 第二个参数为接收到数据，字符串形式。
+		若event为"receive"， 第二个参数为接收到数据，字符串形式。
 
 例子：
 
