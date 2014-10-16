@@ -285,3 +285,8 @@ close()
 
 		描述：关闭socket
 
+dns(domain, function cb(net.socket, ip) )
+
+		描述：获取domain的ip
+		domain：字符串
+		function cb(net.socket, ip)：回调函数。第一个参数为socket连接本身， 第二个为获取的ip, 字符串形式。
