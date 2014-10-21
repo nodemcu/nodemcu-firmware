@@ -7,7 +7,7 @@ flash 错误
 		注意：有些模块在烧写之后启动，串口输出 ERROR in flash_read: r=。。。
 		这是因为模块原来的flash内部没有擦除。
 		可使用blank.bin(4k)，重复烧入其实地址0x47000, 0x48000, 0x49000, 0x4a000扇区.
-		或者自行生成一个512k大小的blank.bin, 内容为全0xFF，从0x00000开始烧入flash。
+		或者自行生成一个512k大小的blank512k.bin, 内容为全0xFF，从0x00000开始烧入flash。
 		烧入之后可以正常运行。
 
 概述
@@ -44,6 +44,7 @@ flash 错误
 		esp_init_data_default.bin：0x7c000
 		blank.bin：0x7e000
 
+		第一次使用建议将blank512k.bin烧写在地址0x00000
 
 node module
 ------
