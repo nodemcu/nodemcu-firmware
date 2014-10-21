@@ -6,21 +6,22 @@ flash 错误
 ----
 		注意：有些模块在烧写之后启动，串口输出 ERROR in flash_read: r=。。。
 		这是因为模块原来的flash内部没有擦除。
-		可使用blank.bin(4k)，重复烧入其实地址0x47000, 0x48000, 0x49000, 0x4a000扇区.
-		或者自行生成一个512k大小的blank512k.bin, 内容为全0xFF，从0x00000开始烧入flash。
+		可使用blank.bin(4k)，
+		重复烧入其实地址0x47000, 0x48000, 0x49000, 0x4a000扇区.
+		或者生成一个512k大小的blank512k.bin, 内容为全0xFF，从0x00000开始烧入。
 		烧入之后可以正常运行。
 
 概述
 ------
-		nodeMcu 支持一键配置
+		支持一键配置
 
-		nodeMcu 基于Lua 5.1.4，使用者需了解最简单的Lua语法。
+		基于Lua 5.1.4，使用者需了解最简单的Lua语法。
 
-		nodeMcu 尽量采用事件驱动的编程模型。
+		采用事件驱动的编程模型。
 
-		nodeMcu 内置 timer，pwm，i2c，net，gpio，wifi module。
+		内置 timer，pwm，i2c，net，gpio，wifi module。
 
-		nodeMcu对模块的引脚进行编号，gpio，i2c，pwm等模块需要使用引脚编号进行索引。
+		对模块的引脚进行编号；gpio，i2c，pwm等模块需要使用引脚编号进行索引。
 
 ###目前的编号对应表格：
 
@@ -265,8 +266,9 @@ send( string, function(sent) )
 on(event, function cb())
 
 		描述：注册事件的回调函数
-		event：字符串，可为："connection"，"reconnection"，"disconnection"，"receive"，"sent"
-		function cb(net.socket, [string])：回调函数。第一个参数为socket连接本身。
+		event：字符串
+		可为："connection","reconnection","disconnection","receive","sent"
+		function cb(net.socket, [string])：回调函数。第一个参数为socket连接。
 		若event为"receive"， 第二个参数为接收到数据，字符串形式。
 
 例子：
@@ -274,7 +276,8 @@ on(event, function cb())
 		sk=net.createConnection(net.TCP, false)
 		sk:on("receive", function(sck, pl) print(pl) end )
 		sk:connect(80,"115.239.210.27") 
-		sk:send("GET / HTTP/1.1\r\nHost: 115.239.210.27\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+		sk:send("GET / HTTP/1.1\r\nHost: 115.239.210.27\r\n
+				Connection: keep-alive\r\nAccept: */*\r\n\r\n")
 
 close()
 
@@ -284,4 +287,5 @@ dns(domain, function cb(net.socket, ip) )
 
 		描述：获取domain的ip
 		domain：字符串
-		function cb(net.socket, ip)：回调函数。第一个参数为socket连接本身， 第二个为获取的ip, 字符串形式。
+		function cb(net.socket, ip)：回调函数。
+		第一个参数为socket连接本身， 第二个为获取的ip, 字符串形式。
