@@ -2,6 +2,13 @@ nodeMcu API说明
 =======
 version 0.1 2014-10-11
 
+串口输出 ERROR in flash_read: r=。。。
+----
+		注意：有些模块在烧写之后启动，串口输出 ERROR in flash_read: r=。。。
+		这是因为模块原来的flash内部没有擦除。可使用blank.bin(4k)，重复烧入其实地址0x47000, 0x48000, 0x49000, 0x4a000扇区
+		或者自行生成一个512k大小的blank.bin, 内容为全0xFF，从0x00000开始烧入flash。
+		烧入之后可以正常运行。
+
 概述
 ------
 		nodeMcu 支持一键配置
@@ -221,34 +228,20 @@ net.createConnection(type)
 
 net.server module
 -------------
-listen(port,[ip])
+listen(port,[ip],function(net.socket))
 
 		描述：监听某端口
 		port：端口号
 		ip：可忽略，ip字符串
+		function(net.socket): 回调函数，当有连接建立的时候，作为参数传给回调函数。
 
 例子：
 
 		sv=net.createServer(net.TCP, false)
-		sv:listen(80)
-
-send( string, function(sent) )
-
-		描述：向连接的客户端发送数据
-		string：需要发送的数据字符串
-
-on(event, function cb())
-
-		描述：注册事件的回调函数
-		event：字符串，可为："connection"，"reconnection"，"disconnection"，"receive"，"sent"
-		function cb(net.server sv, [string])：回调函数。第一个参数为服务器本身。
-		若event为"receive"， 第二个参数为接收到数据，字符串形式。
-
-例子：
-
-		sv=net.createServer(net.TCP, false)
-		sv:listen(80)
-		sv:on("receive", function(s,c) s:send("Hello, world.") print(c) end )
+		sv:listen(80,function(c) 
+			c:on("receive", function(sck, pl) print(pl) end)
+			c:send("hello world") 
+			end)
 
 close()
 
@@ -277,9 +270,9 @@ on(event, function cb())
 例子：
 
 		sk=net.createConnection(net.TCP, false)
-		sk:on("receive", function(sck, c) print(c) end )
-		sk:connect(80,"192.168.0.66") 
-		sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+		sk:on("receive", function(sck, pl) print(pl) end )
+		sk:connect(80,"115.239.210.27") 
+		sk:send("GET / HTTP/1.1\r\nHost: 115.239.210.27\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 
 close()
 
