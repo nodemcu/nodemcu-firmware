@@ -1,7 +1,7 @@
 nodeMcu API说明
 =======
 version 0.1 2014-10-11
-
+<h2 id="upupup"> up </h2>
 flash 错误
 ----
 		注意：有些模块在烧写之后启动，串口输出 ERROR in flash_read: r=。。。
@@ -104,6 +104,7 @@ node.list()
 
 wifi module
 -----------
+[up](#upupup)
 
 常量：wifi.STATION, wifi.SOFTAP, wifi.STATIONAP
 
