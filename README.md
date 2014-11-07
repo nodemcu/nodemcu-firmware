@@ -226,22 +226,22 @@ null
 ```
     //record log to init.lua. Call the file after system restart.
     log.format()
-    log.startlog(“init.lua”, 1)
+    log.start(“init.lua”, 1)
     print(“hello world”)
-    log.stoplog()
+    log.stop()
 ```
 
 ####See also
-**-**   [log.startlog()](#lg_startlog)<br />
-**-**   [log.stoplog()](#lg_stoplog)
+**-**   [log.start()](#lg_start)<br />
+**-**   [log.stop()](#lg_stop)
 
-<a id="lg_startlog"></a>
-## log.startlog()
+<a id="lg_start"></a>
+## log.start()
 ####Description
 start to log input
 
 ####Syntax
-log.startlog(filename, noparse)
+log.start(filename, noparse)
 
 ####Parameters
 
@@ -256,23 +256,23 @@ null
 ```
     //record log to init.lua. Call the file after system restart.
     log.format()
-    log.startlog(“init.lua”, 1)
+    log.start(“init.lua”, 1)
     print(“hello world”)
-    log.stoplog()
+    log.stop()
     //At this point, the content of init.lua is “print(“hello world”)”. When system restart, print(“hello world”) are excuted.
 ```
 
 ####See also
 **-**   [log.format()](#lg_format)<br />
-**-**   [log.stoplog()](#lg_stoplog)
+**-**   [log.stop()](#lg_stop)
 
-<a id="lg_stoplog"></a>
-## log.stoplog()
+<a id="lg_stop"></a>
+## log.stop()
 ####Description
 stop log.
 
 ####Syntax
-log.stoplog()
+log.stop()
 
 ####Parameters
 null
@@ -285,15 +285,15 @@ null
 ```
     //record log to init.lua. Call the file after system restart.
     log.format()
-    log.startlog(“init.lua”, 1)
+    log.start(“init.lua”, 1)
     print(“hello world”)
-    log.stoplog()
+    log.stop()
     //At this point, the content of init.lua is “print(“hello world”)”. When system restart, print(“hello world”) are excuted.
 ```
 
 ####See also
 **-**   [log.format()](#lg_format)<br />
-**-**   [log.startlog()](#lg_startlog)
+**-**   [log.start()](#lg_start)
 
 <a id="lg_open"></a>
 ## log.open()
