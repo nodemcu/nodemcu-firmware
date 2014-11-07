@@ -1,6 +1,6 @@
 # **nodeMcu API Instruction** #
 ###version 0.1 2014-10-11
-###change log：
+###change log: 
 
 2014-11-5<br />
 delete log operation api from node module<br />
@@ -70,10 +70,10 @@ module restart.
 node.restart()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+nil
 
 ####Example
    
@@ -100,7 +100,7 @@ node.dsleep(us)<br />
 us:sleep time in micro second
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -120,7 +120,7 @@ return chip identifier
 node.chipid()
 
 ####Parameters
-null
+nil
 
 ####Returns
 number:chip identifier
@@ -128,7 +128,7 @@ number:chip identifier
 ####Example
 
 ```
-    uint32 id = node.chipid();
+    id = node.chipid();
 ```
 
 ####See also
@@ -143,7 +143,7 @@ return the available RAM size in bytes
 node.heap()
 
 ####Parameters
-null
+nil
 
 ####Returns
 number:system heap size left in bytes
@@ -151,7 +151,7 @@ number:system heap size left in bytes
 ####Example
 
 ```
-    uint32 heap_size = node.heap();
+    heap_size = node.heap();
 ```
 
 ####See also
@@ -166,16 +166,16 @@ define button function.
 node.key(type, function())
 
 ####Parameters
-type: type is either string ”long” or ”short”. long: press the button for 3 seconds, short: press shortly(less than 3 seconds)<br />
-function(): user defined function for button. If null, cancling the user defined function, function are initialized to default.<br />
-Default function: long：change LED blinking rate,  short：reset chip
+type: type is either string "long" or "short". long: press the button for 3 seconds, short: press shortly(less than 3 seconds)<br />
+function(): user defined function for button. If nil, cancling the user defined function, function are initialized to default.<br />
+Default function: long: change LED blinking rate,  short: reset chip
 
 ####Returns
-null
+nil
 
 ####Example    
 ```
-    node.key(long, function(){print('hello world')})
+    node.key("long", function(){print('hello world')})
 ```
 
 ####See also
@@ -187,20 +187,20 @@ null
 setup the on/off time for led
 
 ####Syntax
-node.key(type, function())
+node.led(low, high)
 
 ####Parameters
 Low: LED off time, 0 for LED keeps on. Unit: milliseconds, time resolution: 80~100ms<br />
 High: LED off time. Unit: milliseconds, time resolution: 80~100ms
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //turn led on forever.
-    node.led(0,null);
+    node.led(0);
 ```
 
 ####See also
@@ -216,18 +216,18 @@ format flash for users.
 log.format()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //record log to init.lua. Call the file after system restart.
     log.format()
-    log.start(“init.lua”, 1)
-    print(“hello world”)
+    log.start("init.lua", 1)
+    print("hello world")
     log.stop()
 ```
 
@@ -249,17 +249,17 @@ filename: log file, directories are not supported<br />
 noparse: 1 for lua VM doesn’t parse input, 0 for lua VM parse input
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //record log to init.lua. Call the file after system restart.
     log.format()
-    log.start(“init.lua”, 1)
-    print(“hello world”)
+    log.start("init.lua", 1)
+    print("hello world")
     log.stop()
-    //At this point, the content of init.lua is “print(“hello world”)”. When system restart, print(“hello world”) are excuted.
+    //At this point, the content of init.lua is "print("hello world")". When system restart, print("hello world") are excuted.
 ```
 
 ####See also
@@ -275,20 +275,20 @@ stop log.
 log.stop()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //record log to init.lua. Call the file after system restart.
     log.format()
-    log.start(“init.lua”, 1)
-    print(“hello world”)
+    log.start("init.lua", 1)
+    print("hello world")
     log.stop()
-    //At this point, the content of init.lua is “print(“hello world”)”. When system restart, print(“hello world”) are excuted.
+    //At this point, the content of init.lua is "print("hello world")". When system restart, print("hello world") are excuted.
 ```
 
 ####See also
@@ -307,13 +307,13 @@ log.open(filename)
 filename: log file, directories are not supported
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //print the first line of 'init.lua'
-    log.open(“init.lua”)
+    log.open("init.lua")
     print(log.readline())
     log.close()
 ```
@@ -331,16 +331,16 @@ close the log file which opened before
 log.close()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //print the first line of 'init.lua'
-    log.open(“init.lua”)
+    log.open("init.lua")
     print(log.readline())
     log.close()
 ```
@@ -358,16 +358,16 @@ read log file which is opened before line by line.
 log.readline()
 
 ####Parameters
-null
+nil
 
 ####Returns
-log file content in string
+log file content in string, line by line
 
 ####Example
 
 ```
     //print the first line of 'init.lua'
-    log.open(“init.lua”)
+    log.open("init.lua")
     print(log.readline())
     log.close()
 ```
@@ -385,15 +385,18 @@ list all files.
 log.list()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+a lua table which contains the {file name: file size} pairs
 
 ####Example
 
 ```
-    log.list();
+    l = log.list();
+    for k,v in l do
+      print("name:"..k..", size:"..v)
+    end
 ```
 
 ####See also
@@ -406,7 +409,7 @@ wifi.STATION, wifi.SOFTAP, wifi.STATIONAP
 <a id="wf_setmode"></a>
 ## wifi.setmode(mode)
 ####Description
-set wifi working mode.
+set wifi operation mode.
 
 ####Syntax
 wifi.setmode(mode)
@@ -430,16 +433,16 @@ current mode after setup
 <a id="wf_getmode"></a>
 ## wifi.getmode(mode)
 ####Description
-get wifi working mode.
+get wifi operation mode.
 
 ####Syntax
 wifi.getmode()
 
 ####Parameters
-null
+nil
 
 ####Returns
-wifi working mode
+wifi operation mode
 
 ####Example
 
@@ -461,11 +464,11 @@ wifi.startsmart(channel, function succeed_callback())
 
 ####Parameters
 
-channel: 1~13，startup channel for searching, if null, default to 6.  20 seconds for each channel.<br />
+channel: 1~13，startup channel for searching, if nil, default to 6.  20 seconds for each channel.<br />
 succeed_callback: callback function for success configuration, which is called after getting the password and the connection to AP.
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -486,10 +489,10 @@ stop the configuring process.
 wifi.stopsmart()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -517,7 +520,7 @@ ssid: string which is less than 32 bytes.<br />
 password: string which is less than 64 bytes.
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -539,11 +542,11 @@ connect to AP in station mode.
 wifi.sta.connect()
 
 ####Parameters
-null
+nil
 
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -565,11 +568,11 @@ disconnect from AP in station mode.
 wifi.sta.disconnect()
 
 ####Parameters
-null
+nil
 
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -591,11 +594,11 @@ auto connect to AP in station mode.
 wifi.sta.autoconnect(auto)
 
 ####Parameters
-auto: 0 for disable auto connecting. 1 for enable auto connecting
+auto: 0 to disable auto connecting. 1 to enable auto connecting
 
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -618,7 +621,7 @@ get ip address in station mode.
 wifi.sta.getip()
 
 ####Parameters
-null
+nil
 
 
 ####Returns
@@ -632,7 +635,7 @@ ip address in string, for example:"192.168.0.111"
 ```
 
 ####See also
-**-**   [wifi.sta..getmac()](#ws_getmac)
+**-**   [wifi.sta.getmac()](#ws_getmac)
 
 
 <a id="ws_getmac"></a>
@@ -644,7 +647,7 @@ get mac address in station mode.
 wifi.sta.getmac()
 
 ####Parameters
-null
+nil
 
 
 ####Returns
@@ -672,7 +675,7 @@ set ssid and password in ap mode.
 wifi.ap.config(cfg)
 
 ####Parameters
-cfg: lua table for setup ap.
+cfg: lua table to setup ap.
 
 ####Example:
 
@@ -684,7 +687,7 @@ cfg: lua table for setup ap.
 ```
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -693,7 +696,7 @@ null
 ```
 
 ####See also
-**-**    []<>
+**-**    []()
 
 <a id="wa_getip"></a>
 ## wifi.ap.getip()
@@ -704,7 +707,7 @@ get ip in ap mode.
 wifi.ap.getip()
 
 ####Parameters
-null
+nil
 
 ####Returns
 ip address in string, for example:"192.168.0.111"
@@ -728,7 +731,7 @@ get mac address in ap mode.
 wifi.ap.getmac()
 
 ####Parameters
-null
+nil
 
 ####Returns
 mac address in string, for example:"1A-33-44-FE-55-BB"
@@ -756,7 +759,7 @@ tmr.dealy(us)
 us: delay time in micro second
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -778,7 +781,7 @@ return the current value of system counter: uint32, loopback, us.
 tmr.now()
 
 ####Parameters
-null
+nil
 
 ####Returns
 uint32: value of counter
@@ -804,17 +807,17 @@ tmr.alarm(interval, repeat, function do())
 
 ####Parameters
 Interval: alarm time, unit: millisecond<br />
-repeat: 0 for one time alarm, 1 for repeat<br />
+repeat: 0 - one time alarm, 1 - repeat<br />
 function do(): callback function for alarm timed out
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //print "hello world" every 1000ms
-    tmr.alarm(1000, 1, function() print(“hello world”) end )
+    tmr.alarm(1000, 1, function() print("hello world") end )
 ```
 
 ####See also
@@ -832,16 +835,16 @@ stop alarm.<br />
 tmr.stop()
 
 ####Parameters
-null.
+nil.
 
 ####Returns
-null
+nil
 
 ####Example
 
 ```
     //print "hello world" every 1000ms
-    tmr.alarm(1000, 1, function() print(“hello world”) end )
+    tmr.alarm(1000, 1, function() print("hello world") end )
 
     //something else
 
@@ -871,7 +874,7 @@ pin: 0~11，IO index<br />
 mode: gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -897,7 +900,7 @@ gpio.read(pin)
 pin: 0~11，IO index
 
 ####Returns
-number:0 for low, 1 for high
+number:0 - low, 1 - high
 
 ####Example
 
@@ -923,7 +926,7 @@ pin: 0~11，IO index<br />
 level: gpio.HIGH or gpio.LOW
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -949,11 +952,11 @@ gpio.trig(pin, type, function(level))
 
 ####Parameters
 pin: 0~11，IO index<br />
-type: ”up”, “down”, “both”, “low”, “high”, which represent rising edge, falling edge, both edge, low level, high level trig mode separately.<br />
+type: "up", "down", "both", "low", "high", which represent rising edge, falling edge, both edge, low level, high level trig mode separately.<br />
 function(level): callback function when triggered. The gpio level is the param. Use previous callback function if undefined here.
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -992,7 +995,7 @@ clock: 1~500，pwm frequency<br />
 duty: 0~100，pwm duty cycle in percentage
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1017,7 +1020,7 @@ pwm.close(pin)
 pin: 0~11，IO index
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1041,7 +1044,7 @@ pwm.start(pin)
 pin: 0~11，IO index
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1065,7 +1068,7 @@ pwm.stop(pin)
 pin: 0~11，IO index
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1092,7 +1095,7 @@ pin: 0~11，IO index.<br />
 clock: 1~500, pwm frequency.
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1141,7 +1144,7 @@ pin: 0~11，IO index<br />
 duty: 0~100，pwm duty cycle in percentage
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1165,7 +1168,7 @@ pwm.getduty(pin)
 pin: 0~11，IO index
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1262,7 +1265,7 @@ ip:ip address string, can be omitted<br />
 function(net.socket): callback function, pass to Caller function as param if a connection is created successfully
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1289,10 +1292,10 @@ close server.
 net.server.close()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1321,7 +1324,7 @@ port: port number<br />
 ip: ip address in string
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [net.socket:on()](#nk_on)
@@ -1340,7 +1343,7 @@ string: data in string which will be sent to remote<br />
 function(sent): callback function for sending string
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [net.socket:on()](#nk_on)
@@ -1357,10 +1360,10 @@ on(event, function cb())
 ####Parameters
 event: string, which can be: "connection"，"reconnection"，"disconnection"，"receive"，"sent"<br />
 function cb(net.socket, [string]): callback function. The first param is the socket.<br />
-If  event is”receive”， the second param is received data in string.
+If  event is"receive"， the second param is received data in string.
 
 ####Returns
-null
+nil
 
 ####Example
 
@@ -1384,10 +1387,10 @@ close socket.
 close()
 
 ####Parameters
-null
+nil
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [net.createServer()](#nt_createServer)
@@ -1406,7 +1409,7 @@ domain: domain name.<br />
 function (net.socket, ip): callback function. The first param is the socket, the second param is the ip address in string.
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [net.createServer()](#nt_createServer)
@@ -1431,7 +1434,7 @@ pinSCL: 0~11，IO index<br />
 speed:  i2c.SLOW
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [i2c.read()](#ic_read)
@@ -1449,7 +1452,7 @@ i2c.start(id)
 id = 0
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [i2c.read()](#ic_read)
@@ -1467,7 +1470,7 @@ i2c.stop(id)
 id = 0
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [i2c.read()](#ic_read)
@@ -1487,7 +1490,7 @@ device_addr: device address.<br />
 direction: i2c.TRANSMITTER for writing mode , i2c. RECEIVER for reading mode
 
 ####Returns
-null
+nil
 
 ####See also
 **-**   [i2c.read()](#ic_read)
@@ -1505,7 +1508,7 @@ id=0<br />
 data: data can be numbers, string or lua table.
 
 ####Returns
-null
+nil
 
 ####Example
 
