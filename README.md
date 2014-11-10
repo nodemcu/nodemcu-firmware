@@ -1,5 +1,5 @@
 # **nodeMcu API Instruction** #
-###version 0.1 2014-10-11
+###version 0.2 2014-11-10
 ###change log: 
 
 2014-11-10<br />
@@ -328,7 +328,7 @@ file content in string, line by line
 <a id="fl_writeline"></a>
 ## file.writeline()
 ####Description
-write new line to file with a '\n' at the end.
+write string to file and add a '\n' at the end.
 
 ####Syntax
 file.writeline(string)
@@ -337,7 +337,8 @@ file.writeline(string)
 string: content to be write to file
 
 ####Returns
-nil
+true: write ok.
+nil: there is error
 
 ####Example
 
@@ -365,6 +366,35 @@ file.write(string)
 string: content to be write to file.
 
 ####Returns
+true: write ok.
+nil: there is error
+
+####Example
+
+```
+    //open 'init.lua' in 'a+' mode
+    file.open("init.lua", "a+")
+    //write 'foo bar' to the end of the file
+    file.write('foo bar')
+    file.close()
+```
+
+####See also
+**-**   [file.open()](#fl_open)<br />
+**-**   [file.writeline()](#fl_writeline)
+
+<a id="fl_flush"></a>
+## file.flush()
+####Description
+flush to file.
+
+####Syntax
+file.flush()
+
+####Parameters
+nil
+
+####Returns
 nil
 
 ####Example
@@ -374,6 +404,7 @@ nil
     file.open("init.lua", "a+")
     //write 'foo bar' to the end of the file
     file.write('foo bar')
+    file.flush()
     file.close()
 ```
 
@@ -586,7 +617,7 @@ nil
 ```
 
 ####See also
-**-**   [wifi.sta..config()](#ws_config)<br />
+**-**   [wifi.sta.config()](#ws_config)<br />
 **-**   [wifi.sta.connect()](#ws_connect)
 
 
@@ -612,7 +643,7 @@ nil
 ```
 
 ####See also
-**-**   [wifi.sta..config()](#ws_config)<br />
+**-**   [wifi.sta.config()](#ws_config)<br />
 **-**   [wifi.sta.connect()](#ws_connect)<br />
 **-**   [wifi.sta.disconnect()](#ws_disconnect)
 
@@ -666,7 +697,7 @@ mac address in string, for example:"18-33-44-FE-55-BB"
 ```
 
 ####See also
-**-**   [wifi.sta..getip()](#ws_getip)
+**-**   [wifi.sta.getip()](#ws_getip)
 
 
 #wifi.ap module
@@ -724,7 +755,7 @@ ip address in string, for example:"192.168.0.111"
 ```
 
 ####See also
-**-**   [wifi.ap..getmac()](#wa_getmac)
+**-**   [wifi.ap.getmac()](#wa_getmac)
 
 
 <a id="wa_getmac"></a>
@@ -1005,7 +1036,7 @@ nil
 ####Example
 
 ```
-    //set pin index 0 as pwm output, frequency is 100Hz, duty cycle is 50-50..
+    //set pin index 0 as pwm output, frequency is 100Hz, duty cycle is 50-50.
     pwm.setup(0, 100, 50)
 ```
 
