@@ -2,6 +2,11 @@
 ###version 0.1 2014-10-11
 ###change log: 
 
+2014-11-10<br />
+change log module to file module<br />
+now file operation support multiple read/write<br />
+for now file module only allowed one file opened<br />
+
 2014-11-5<br />
 delete log operation api from node module<br />
 add log module<br />
@@ -206,14 +211,73 @@ nil
 ####See also
 **-**   []()
 
-#log module
-<a id="lg_format"></a>
-## log.format()
+#file module
+<a id="fl_remove"></a>
+## file.remove()
 ####Description
-format flash for users.
+remove file from user flash.
 
 ####Syntax
-log.format()
+file.remove(filename)
+
+####Parameters
+filename: file to be removed
+
+####Returns
+nil
+
+####Example
+
+```
+    //remove "foo.lua" from user flash.
+    file.remove("foo.lua")
+```
+
+####See also
+**-**   [file.open()](#fl_open)<br />
+**-**   [file.close()](#fl_close)
+
+<a id="fl_open"></a>
+## file.open()
+####Description
+open file.
+
+####Syntax
+file.open(filename, mode)
+
+####Parameters
+filename: file to be opened, directories are not supported<br />
+mode:<br />
+   "r": read mode (the default)<br />
+   "w": write mode<br />
+   "a": append mode<br />
+   "r+": update mode, all previous data is preserved<br />
+   "w+": update mode, all previous data is erased<br />
+   "a+": append update mode, previous data is preserved, writing is only allowed at the end of file
+
+####Returns
+nil
+
+####Example
+
+```
+    //open 'init.lua', print the first line.
+    file.open("init.lua", "r")
+    print(file.readline())
+    file.close()
+```
+
+####See also
+**-**   [file.close()](#fl_close)<br />
+**-**   [file.readline()](#fl_readline)
+
+<a id="fl_close"></a>
+## file.close()
+####Description
+close the file.
+
+####Syntax
+file.close()
 
 ####Parameters
 nil
@@ -224,165 +288,106 @@ nil
 ####Example
 
 ```
-    //record log to init.lua. Call the file after system restart.
-    log.format()
-    log.start("init.lua", 1)
-    print("hello world")
-    log.stop()
+    //open 'init.lua', print the first line.
+    file.open("init.lua", "r")
+    print(file.readline())
+    file.close()
 ```
 
 ####See also
-**-**   [log.start()](#lg_start)<br />
-**-**   [log.stop()](#lg_stop)
+**-**   [file.open()](#fl_open)<br />
+**-**   [file.readline()](#fl_readline)
 
-<a id="lg_start"></a>
-## log.start()
+<a id="fl_readline"></a>
+## file.readline()
 ####Description
-start to log input
+read one line of file which is opened before line by line.
 
 ####Syntax
-log.start(filename, noparse)
-
-####Parameters
-
-filename: log file, directories are not supported<br />
-noparse: 1 for lua VM doesn’t parse input, 0 for lua VM parse input
-
-####Returns
-nil
-
-####Example
-
-```
-    //record log to init.lua. Call the file after system restart.
-    log.format()
-    log.start("init.lua", 1)
-    print("hello world")
-    log.stop()
-    //At this point, the content of init.lua is "print("hello world")". When system restart, print("hello world") are excuted.
-```
-
-####See also
-**-**   [log.format()](#lg_format)<br />
-**-**   [log.stop()](#lg_stop)
-
-<a id="lg_stop"></a>
-## log.stop()
-####Description
-stop log.
-
-####Syntax
-log.stop()
+file.readline()
 
 ####Parameters
 nil
 
 ####Returns
-nil
-
-####Example
-
-```
-    //record log to init.lua. Call the file after system restart.
-    log.format()
-    log.start("init.lua", 1)
-    print("hello world")
-    log.stop()
-    //At this point, the content of init.lua is "print("hello world")". When system restart, print("hello world") are excuted.
-```
-
-####See also
-**-**   [log.format()](#lg_format)<br />
-**-**   [log.start()](#lg_start)
-
-<a id="lg_open"></a>
-## log.open()
-####Description
-open the log file
-
-####Syntax
-log.open(filename)
-
-####Parameters
-filename: log file, directories are not supported
-
-####Returns
-nil
-
-####Example
-
-```
-    //print the first line of 'init.lua'
-    log.open("init.lua")
-    print(log.readline())
-    log.close()
-```
-
-####See also
-**-**   [log.close()](#lg_close)<br />
-**-**   [log.readline()](#lg_readline)
-
-<a id="lg_close"></a>
-## log.close()
-####Description
-close the log file which opened before
-
-####Syntax
-log.close()
-
-####Parameters
-nil
-
-####Returns
-nil
+file content in string, line by line
 
 ####Example
 
 ```
     //print the first line of 'init.lua'
-    log.open("init.lua")
-    print(log.readline())
-    log.close()
+    file.open("init.lua", "r")
+    print(file.readline())
+    file.close()
 ```
 
 ####See also
-**-**   [log.open()](#lg_open)<br />
-**-**   [log.readline()](#lg_readline)
+**-**   [file.open()](#fl_open)<br />
+**-**   [file.close()](#fl_close)
 
-<a id="lg_readline"></a>
-## log.readline()
+<a id="fl_writeline"></a>
+## file.writeline()
 ####Description
-read log file which is opened before line by line.
+write new line to file with a '\n' at the end.
 
 ####Syntax
-log.readline()
+file.writeline(string)
 
 ####Parameters
-nil
+string: content to be write to file
 
 ####Returns
-log file content in string, line by line
+nil
 
 ####Example
 
 ```
-    //print the first line of 'init.lua'
-    log.open("init.lua")
-    print(log.readline())
-    log.close()
+    //open 'init.lua' in 'a+' mode
+    file.open("init.lua", "a+")
+    //write 'foo bar' to the end of the file
+    file.writeline('foo bar')
+    file.close()
 ```
 
 ####See also
-**-**   [log.open()](#lg_open)
-**-**   [log.close()](#lg_close)
+**-**   [file.open()](#fl_open)<br />
+**-**   [file.write()](#fl_write)
 
-<a id="lg_list"></a>
-## log.list()
+<a id="fl_write"></a>
+## file.write()
+####Description
+write string to file.
+
+####Syntax
+file.write(string)
+
+####Parameters
+string: content to be write to file.
+
+####Returns
+nil
+
+####Example
+
+```
+    //open 'init.lua' in 'a+' mode
+    file.open("init.lua", "a+")
+    //write 'foo bar' to the end of the file
+    file.write('foo bar')
+    file.close()
+```
+
+####See also
+**-**   [file.open()](#fl_open)<br />
+**-**   [file.writeline()](#fl_writeline)
+
+<a id="fl_list"></a>
+## file.list()
 ####Description
 list all files.
 
 ####Syntax
-log.list()
+file.list()
 
 ####Parameters
 nil
@@ -393,14 +398,14 @@ a lua table which contains the {file name: file size} pairs
 ####Example
 
 ```
-    l = log.list();
+    l = file.list();
     for k,v in l do
       print("name:"..k..", size:"..v)
     end
 ```
 
 ####See also
-**-**   [log.format()](#lg_format)
+**-**   [file.remove()](#fl_remove)
 
 #wifi module
 ##CONSTANT
