@@ -17,12 +17,12 @@ key is triged only when key is released<br />
 
 # Summary
 - Easy to access wireless router
-- Based on Lua 5.1.4，Developer are supposed to have experience in Lua Program language.
-- Try to use Event-Drive programming modal.
-- In-side  timer，pwm，i2c，net，gpio，wifi module.
-- Serial Port BaudRate:74880
-- Re-indexing the 8266 pin，use the index to program gpio，i2c，pwm.
-- Index vs Pin-number Table:
+- Based on Lua 5.1.4, Developers are supposed to have experience with Lua Program language.
+- Event-Drive programming modal.
+- Build-in file, timer, pwm, i2c, net, gpio, wifi module.
+- Serial Port BaudRate:9600
+- Re-mapped GPIO pin, use the index to program gpio, i2c, pwm.
+- GPIO Map Table:
 
 <table>
   <tr>
@@ -68,7 +68,7 @@ blank.bin: 0x7e000
 <a id="nm_restart"></a>
 ## node.restart()
 ####Description
-module restart.
+restart the chip.
 
 ####Syntax
 
@@ -93,16 +93,15 @@ nil
 ## node.dsleep()
 ####Description
 
-enter deep sleep mode for us micro seconds，restart when timed out<br />
-us: sleep time in micro second
+Enter deep sleep mode, wake up when timed out<br />
 
 ####Syntax
 
 node.dsleep(us)<br />
-**-Note:** This function can only be used in the condition of connecting esp8266 PIN32(rst) and PIN8(XPD_DCDC) together.
+**-Note:** This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC) are connected together.
 
 ####Parameters
-us:sleep time in micro second
+us: sleep time in micro second
 
 ####Returns
 nil
@@ -119,7 +118,7 @@ nil
 <a id="nm_chipid"></a>
 ## node.chipid()
 ####Description
-return chip identifier
+return chip ID
 
 ####Syntax
 node.chipid()
@@ -128,7 +127,7 @@ node.chipid()
 nil
 
 ####Returns
-number:chip identifier
+number:chip ID
 
 ####Example
 
@@ -142,7 +141,7 @@ number:chip identifier
 <a id="nm_heap"></a>
 ## node.heap()
 ####Description
-return the available RAM size in bytes
+return the remain HEAP size in bytes
 
 ####Syntax
 node.heap()
@@ -151,7 +150,7 @@ node.heap()
 nil
 
 ####Returns
-number:system heap size left in bytes
+number: system heap size left in bytes
 
 ####Example
 
@@ -171,8 +170,8 @@ define button function.
 node.key(type, function())
 
 ####Parameters
-type: type is either string "long" or "short". long: press the button for 3 seconds, short: press shortly(less than 3 seconds)<br />
-function(): user defined function for button. If nil, cancling the user defined function, function are initialized to default.<br />
+type: type is either string "long" or "short". long: press the key for 3 seconds, short: press shortly(less than 3 seconds)<br />
+function(): user defined function which is called when key is pressed. If nil, cancling the user defined function.<br />
 Default function: long: change LED blinking rate,  short: reset chip
 
 ####Returns
@@ -195,7 +194,7 @@ setup the on/off time for led
 node.led(low, high)
 
 ####Parameters
-Low: LED off time, 0 for LED keeps on. Unit: milliseconds, time resolution: 80~100ms<br />
+Low: LED off time, LED keeps on when low=0. Unit: milliseconds, time resolution: 80~100ms<br />
 High: LED off time. Unit: milliseconds, time resolution: 80~100ms
 
 ####Returns
@@ -204,7 +203,7 @@ nil
 ####Example
 
 ```
-    //turn led on forever.
+    -- turn led on forever.
     node.led(0);
 ```
 
@@ -215,13 +214,13 @@ nil
 <a id="fl_remove"></a>
 ## file.remove()
 ####Description
-remove file from user flash.
+remove file from file system.
 
 ####Syntax
 file.remove(filename)
 
 ####Parameters
-filename: file to be removed
+filename: file to remove
 
 ####Returns
 nil
@@ -229,7 +228,7 @@ nil
 ####Example
 
 ```
-    //remove "foo.lua" from user flash.
+    -- remove "foo.lua" from file system.
     file.remove("foo.lua")
 ```
 
@@ -261,7 +260,7 @@ nil
 ####Example
 
 ```
-    //open 'init.lua', print the first line.
+    -- open 'init.lua', print the first line.
     file.open("init.lua", "r")
     print(file.readline())
     file.close()
@@ -288,7 +287,7 @@ nil
 ####Example
 
 ```
-    //open 'init.lua', print the first line.
+    -- open 'init.lua', print the first line.
     file.open("init.lua", "r")
     print(file.readline())
     file.close()
@@ -301,7 +300,7 @@ nil
 <a id="fl_readline"></a>
 ## file.readline()
 ####Description
-read one line of file which is opened before line by line.
+read one line of file which is opened before.
 
 ####Syntax
 file.readline()
@@ -315,7 +314,7 @@ file content in string, line by line
 ####Example
 
 ```
-    //print the first line of 'init.lua'
+    -- print the first line of 'init.lua'
     file.open("init.lua", "r")
     print(file.readline())
     file.close()
@@ -343,9 +342,9 @@ nil: there is error
 ####Example
 
 ```
-    //open 'init.lua' in 'a+' mode
+    -- open 'init.lua' in 'a+' mode
     file.open("init.lua", "a+")
-    //write 'foo bar' to the end of the file
+    -- write 'foo bar' to the end of the file
     file.writeline('foo bar')
     file.close()
 ```
@@ -372,9 +371,9 @@ nil: there is error
 ####Example
 
 ```
-    //open 'init.lua' in 'a+' mode
+    -- open 'init.lua' in 'a+' mode
     file.open("init.lua", "a+")
-    //write 'foo bar' to the end of the file
+    -- write 'foo bar' to the end of the file
     file.write('foo bar')
     file.close()
 ```
@@ -400,9 +399,9 @@ nil
 ####Example
 
 ```
-    //open 'init.lua' in 'a+' mode
+    -- open 'init.lua' in 'a+' mode
     file.open("init.lua", "a+")
-    //write 'foo bar' to the end of the file
+    -- write 'foo bar' to the end of the file
     file.write('foo bar')
     file.flush()
     file.close()
@@ -445,13 +444,13 @@ wifi.STATION, wifi.SOFTAP, wifi.STATIONAP
 <a id="wf_setmode"></a>
 ## wifi.setmode(mode)
 ####Description
-set wifi operation mode.
+setup wifi operation mode.
 
 ####Syntax
 wifi.setmode(mode)
 
 ####Parameters
-mode: value should be: wifi. STATION, wifi.SOFTAP or wifi.STATIONAP
+mode: value should be: wifi.STATION, wifi.SOFTAP or wifi.STATIONAP
 
 ####Returns
 current mode after setup
@@ -493,15 +492,15 @@ wifi operation mode
 <a id="wf_startsmart"></a>
 ## wifi.startsmart()
 ####Description
-starts to auto configuration，if success set up ssid and pwd automatically .
+starts to auto configuration, if success set up ssid and pwd automatically .
 
 ####Syntax
 wifi.startsmart(channel, function succeed_callback())
 
 ####Parameters
 
-channel: 1~13，startup channel for searching, if nil, default to 6.  20 seconds for each channel.<br />
-succeed_callback: callback function for success configuration, which is called after getting the password and the connection to AP.
+channel: 1~13, startup channel for searching, if nil, default to 6.  20 seconds for each channel.<br />
+succeed_callback: callback function called after configuration, which is called when got password and connected to AP.
 
 ####Returns
 nil
@@ -666,7 +665,7 @@ ip address in string, for example:"192.168.0.111"
 ####Example
 
 ```
-    //print current ip
+    -- print current ip
     print(wifi.sta.getip())
 ```
 
@@ -692,7 +691,7 @@ mac address in string, for example:"18-33-44-FE-55-BB"
 ####Example
 
 ```
-    //print current mac address
+    -- print current mac address
     print(wifi.sta.getmac())
 ```
 
@@ -800,7 +799,7 @@ nil
 ####Example
 
 ```
-    //delay 100us
+    -- delay 100us
     tmr.delay(100)
 ```
 
@@ -811,7 +810,7 @@ nil
 <a id="tm_now"></a>
 ## tmr.now()
 ####Description
-return the current value of system counter: uint32, loopback, us.
+return the current value of system counter: uint32, us.
 
 ####Syntax
 tmr.now()
@@ -825,7 +824,7 @@ uint32: value of counter
 ####Example
 
 ```
-    //print current value of counter
+    -- print current value of counter
     print(tmr.now())
 ```
 
@@ -852,7 +851,7 @@ nil
 ####Example
 
 ```
-    //print "hello world" every 1000ms
+    -- print "hello world" every 1000ms
     tmr.alarm(1000, 1, function() print("hello world") end )
 ```
 
@@ -865,7 +864,7 @@ nil
 ####Description
 
 stop alarm.<br />
-**-Note:** only one alarm is allowed, the previous one would be replaced if tmr.alarm() again before tmr.stop().
+**-Note:** only one alarm is allowed, the previous one would be replaced if tmr.alarm() called again before tmr.stop().
 
 ####Syntax
 tmr.stop()
@@ -879,12 +878,12 @@ nil
 ####Example
 
 ```
-    //print "hello world" every 1000ms
+    -- print "hello world" every 1000ms
     tmr.alarm(1000, 1, function() print("hello world") end )
 
-    //something else
+    -- something else
 
-    //stop alarm
+    -- stop alarm
     tmr.stop()
 ```
 
@@ -906,7 +905,7 @@ initialize pin to GPIO mode, set the pin in/out mode.
 gpio.mode(pin, mode)
 
 ####Parameters
-pin: 0~11，IO index<br />
+pin: 0~11, IO index<br />
 mode: gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)
 
 ####Returns
@@ -915,7 +914,7 @@ nil
 ####Example
 
 ```
-    //set gpio 0 as output.
+    -- set gpio 0 as output.
     gpio.mode(0, gpio.OUTPUT)
 
 ```
@@ -933,7 +932,7 @@ read pin value.
 gpio.read(pin)
 
 ####Parameters
-pin: 0~11，IO index
+pin: 0~11, IO index
 
 ####Returns
 number:0 - low, 1 - high
@@ -941,7 +940,7 @@ number:0 - low, 1 - high
 ####Example
 
 ```
-    //read value of gpio 0.
+    -- read value of gpio 0.
     gpio.read(0)
 ```
 
@@ -958,7 +957,7 @@ set pin value.
 gpio.write(pin)
 
 ####Parameters
-pin: 0~11，IO index<br />
+pin: 0~11, IO index<br />
 level: gpio.HIGH or gpio.LOW
 
 ####Returns
@@ -967,7 +966,7 @@ nil
 ####Example
 
 ```
-    //set pin index 1 to GPIO mode, and set the pin to high.
+    -- set pin index 1 to GPIO mode, and set the pin to high.
     pin=1
     gpio.mode(pin, gpio.OUTPUT)
     gpio.write(pin, gpio.HIGH)
@@ -987,7 +986,7 @@ set the interrupt callback function for pin.
 gpio.trig(pin, type, function(level))
 
 ####Parameters
-pin: 0~11，IO index<br />
+pin: 0~11, IO index<br />
 type: "up", "down", "both", "low", "high", which represent rising edge, falling edge, both edge, low level, high level trig mode separately.<br />
 function(level): callback function when triggered. The gpio level is the param. Use previous callback function if undefined here.
 
@@ -997,7 +996,7 @@ nil
 ####Example
 
 ```
-    //use pin 0 as the input pulse width counter
+    -- use pin 0 as the input pulse width counter
     pulse0 = 0
     du = 0
     gpio.mode(0,gpio.INT)
@@ -1026,9 +1025,9 @@ set pin to PWM mode. Only 3 pins can be set to PWM mode at the most.
 pwm.setup(pin, clock, duty)
 
 ####Parameters
-pin: 0~11，IO index<br />
-clock: 1~500，pwm frequency<br />
-duty: 0~100，pwm duty cycle in percentage
+pin: 0~11, IO index<br />
+clock: 1~500, pwm frequency<br />
+duty: 0~100, pwm duty cycle in percentage
 
 ####Returns
 nil
@@ -1036,7 +1035,7 @@ nil
 ####Example
 
 ```
-    //set pin index 0 as pwm output, frequency is 100Hz, duty cycle is 50-50.
+    -- set pin index 0 as pwm output, frequency is 100Hz, duty cycle is 50-50.
     pwm.setup(0, 100, 50)
 ```
 
@@ -1053,7 +1052,7 @@ quit PWM mode for specified pin.
 pwm.close(pin)
 
 ####Parameters
-pin: 0~11，IO index
+pin: 0~11, IO index
 
 ####Returns
 nil
@@ -1077,7 +1076,7 @@ pwm starts, you can detect the waveform on the gpio.
 pwm.start(pin)
 
 ####Parameters
-pin: 0~11，IO index
+pin: 0~11, IO index
 
 ####Returns
 nil
@@ -1101,7 +1100,7 @@ pause the output of PWM waveform.
 pwm.stop(pin)
 
 ####Parameters
-pin: 0~11，IO index
+pin: 0~11, IO index
 
 ####Returns
 nil
@@ -1127,7 +1126,7 @@ set pwm frequency for pin.<br />
 pwm.setclock(pin, clock)
 
 ####Parameters
-pin: 0~11，IO index.<br />
+pin: 0~11, IO index.<br />
 clock: 1~500, pwm frequency.
 
 ####Returns
@@ -1152,7 +1151,7 @@ get pwm frequency of pin.
 pwm.getclock(pin)
 
 ####Parameters
-pin: 0~11，IO index.
+pin: 0~11, IO index.
 
 ####Returns
 number:pwm frequency of pin
@@ -1176,8 +1175,8 @@ set duty clycle for pin.
 pwm.setduty(pin, duty)
 
 ####Parameters
-pin: 0~11，IO index<br />
-duty: 0~100，pwm duty cycle in percentage
+pin: 0~11, IO index<br />
+duty: 0~100, pwm duty cycle in percentage
 
 ####Returns
 nil
@@ -1201,7 +1200,7 @@ get duty clycle for pin.
 pwm.getduty(pin)
 
 ####Parameters
-pin: 0~11，IO index
+pin: 0~11, IO index
 
 ####Returns
 nil
@@ -1209,9 +1208,9 @@ nil
 ####Example
 
 ```
-    //D0 is connected to green led
-    //D1 is connected to blue led
-    //D2 is connected to red led
+    -- D0 is connected to green led
+    -- D1 is connected to blue led
+    -- D2 is connected to red led
     pwm.setup(0,500,50)
     pwm.setup(1,500,50)
     pwm.setup(2,500,50)
@@ -1223,8 +1222,8 @@ nil
       pwm.setduty(1,b)
       pwm.setduty(2,r)
     end
-    led(50,0,0)	// set led to red
-    led(0,0,50)	//set led to blue.
+    led(50,0,0)	--  set led to red
+    led(0,0,50)	-- set led to blue.
 
 ```
 
@@ -1306,9 +1305,9 @@ nil
 ####Example
 
 ```
-    //create a server
+    -- create a server
     sv=net.createServer(net.TCP, false)
-    //server listen on 80, if data received, print data to console, and send "hello world" to remote.
+    -- server listen on 80, if data received, print data to console, and send "hello world" to remote.
     sv:listen(80,function(c)
     	c:on("receive", function(sck, pl) print(pl) end)
     	c:send("hello world")
@@ -1336,9 +1335,9 @@ nil
 ####Example
 
 ```
-    //create a server
+    -- create a server
     sv=net.createServer(net.TCP, false)
-    //close server
+    -- close server
     sv:close()
 ```
 
@@ -1394,9 +1393,9 @@ register callback function for event.
 on(event, function cb())
 
 ####Parameters
-event: string, which can be: "connection"，"reconnection"，"disconnection"，"receive"，"sent"<br />
+event: string, which can be: "connection", "reconnection", "disconnection", "receive", "sent"<br />
 function cb(net.socket, [string]): callback function. The first param is the socket.<br />
-If  event is"receive"， the second param is received data in string.
+If  event is"receive",  the second param is received data in string.
 
 ####Returns
 nil
@@ -1465,8 +1464,8 @@ i2c.setup(id, pinSDA, pinSCL, speed)
 
 ####Parameters
 id = 0<br />
-pinSDA: 0~11，IO index<br />
-pinSCL: 0~11，IO index<br />
+pinSDA: 0~11, IO index<br />
+pinSCL: 0~11, IO index<br />
 speed:  i2c.SLOW
 
 ####Returns
@@ -1578,10 +1577,10 @@ string:data received.
     sda=1
     scl=0
 
-    //initialize i2c, set pin1 as sda, set pin0 as scl
+    -- initialize i2c, set pin1 as sda, set pin0 as scl
     i2c.setup(id,sda,scl,i2c.SLOW)
 
-    //user defined function: read from reg_addr content of dev_addr
+    -- user defined function: read from reg_addr content of dev_addr
     function read_reg(dev_addr, reg_addr)
       i2c.start(id)
       i2c.address(id, dev_addr ,i2c.TRANSMITTER)
@@ -1594,7 +1593,7 @@ string:data received.
       return c
     end
 
-    //get content of register 0xAA of device 0x77
+    -- get content of register 0xAA of device 0x77
     reg = read_reg(0x77, 0xAA)
     pirnt(string.byte(reg))
 
