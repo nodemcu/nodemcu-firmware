@@ -2,6 +2,10 @@
 ###version 0.2 2014-11-10
 ###change log: 
 
+2014-11-11<br />
+add file.seek() api to file module<br />
+now max 6 pwm channel is supported<br />
+
 2014-11-10<br />
 change log module to file module<br />
 now file operation support multiple read/write<br />
@@ -404,6 +408,42 @@ nil
     -- write 'foo bar' to the end of the file
     file.write('foo bar')
     file.flush()
+    file.close()
+```
+
+####See also
+**-**   [file.open()](#fl_open)<br />
+**-**   [file.writeline()](#fl_writeline)
+
+<a id="fl_seek"></a>
+## file.seek()
+####Description
+Sets and gets the file position, measured from the beginning of the file, to the position given by offset plus a base specified by the string whence.
+
+####Syntax
+file.seek(whence, offset)
+
+####Parameters
+whence:<br />
+"set": base is position 0 (beginning of the file);<br />
+"cur": base is current position;(default value)<br />
+"end": base is end of file;<br />
+offset: default 0
+
+####Returns
+success: returns the final file position<br />
+fail: returns nil
+
+####Example
+
+```
+    -- open 'init.lua' in 'a+' mode
+    file.open("init.lua", "a+")
+    -- write 'foo bar' to the end of the file
+    file.write('foo bar')
+    file.flush()
+    file.seek("set")
+    print(file.readline())
     file.close()
 ```
 
