@@ -134,6 +134,6 @@ braudrate:9600
   node.restart()  -- this will restart the module.
 ```
 #Check this out
-Tencent QQ group: 309957875
-[nodemcu wiki](https://github.com/funshine/nodemcu-firmware/wiki/nodeMcu:-lua-based-interactive-firmware-for-mcu)
+Tencent QQ group: 309957875<br/>
+[nodemcu wiki](https://github.com/funshine/nodemcu-firmware/wiki/nodeMcu:-lua-based-interactive-firmware-for-mcu)<br/>
 [nodemcu.com](http://www.nodemcu.com)     comming soon~~~
