@@ -3,6 +3,9 @@
 <a id="change_log"></a>
 ###change log: 
 2014-11-18<br />
+bug fixed: net.socket:connect() has no effect.
+
+2014-11-18<br />
 bug fixed: as a tcp server, the connection can't closed with :close().<br />
 tcp server: inactive connection will closed by server in 30s (previously 180s).<br />
 add a test api node.input() to put lua chunk into lua interpretor, multi-line supported.<br />
