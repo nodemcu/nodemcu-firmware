@@ -95,7 +95,7 @@ nil
 
 ####Example
    
-```
+```lua
     node.restart();
 ```
 
@@ -121,7 +121,7 @@ nil
 
 ####Example
 
-```
+```lua
     node.dsleep(us);
 ```
 
@@ -144,7 +144,7 @@ number:chip ID
 
 ####Example
 
-```
+```lua
     id = node.chipid();
 ```
 
@@ -167,7 +167,7 @@ number: system heap size left in bytes
 
 ####Example
 
-```
+```lua
     heap_size = node.heap();
 ```
 
@@ -191,7 +191,7 @@ Default function: long: change LED blinking rate,  short: reset chip
 nil
 
 ####Example    
-```
+```lua
     node.key("long", function(){print('hello world')})
 ```
 
@@ -215,7 +215,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- turn led on forever.
     node.led(0);
 ```
@@ -240,7 +240,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- never use node.input() in console. no effect.
     sk:on("receive", function(conn, payload) node.input(payload) end)
 ```
@@ -265,13 +265,34 @@ nil
 
 ####Example
 
-```
+```lua
     function tonet(str)
       sk:send(str)
       -- print(str) WRONG!!! never ever print something in this function
       -- because this will cause a recursive function call!!!
     end
     node.ouput(tonet, 1)  -- serial also get the lua output.
+```
+
+```lua
+    -- a simple telnet server
+    s=net.createServer(net.TCP) 
+    s:listen(2323,function(c) 
+       con_std = c 
+       function s_output(str) 
+          if(con_std~=nil) 
+             then con_std:send(str) 
+          end 
+       end 
+       node.output(s_output, 0)   -- re-direct output to function s_ouput.
+       c:on("receive",function(c,l) 
+          node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
+       end) 
+       c:on("disconnection",function(c) 
+          con_std = nil 
+          node.output(nil)        -- un-regist the redirect output function, output goes to serial
+       end) 
+    end)
 ```
 
 ####See also
@@ -294,7 +315,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- remove "foo.lua" from file system.
     file.remove("foo.lua")
 ```
@@ -326,7 +347,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- open 'init.lua', print the first line.
     file.open("init.lua", "r")
     print(file.readline())
@@ -353,7 +374,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- open 'init.lua', print the first line.
     file.open("init.lua", "r")
     print(file.readline())
@@ -381,7 +402,7 @@ return nil when EOF.
 
 ####Example
 
-```
+```lua
     -- print the first line of 'init.lua'
     file.open("init.lua", "r")
     print(file.readline())
@@ -409,7 +430,7 @@ nil: there is error
 
 ####Example
 
-```
+```lua
     -- open 'init.lua' in 'a+' mode
     file.open("init.lua", "a+")
     -- write 'foo bar' to the end of the file
@@ -438,7 +459,7 @@ nil: there is error
 
 ####Example
 
-```
+```lua
     -- open 'init.lua' in 'a+' mode
     file.open("init.lua", "a+")
     -- write 'foo bar' to the end of the file
@@ -466,7 +487,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- open 'init.lua' in 'a+' mode
     file.open("init.lua", "a+")
     -- write 'foo bar' to the end of the file
@@ -500,7 +521,7 @@ fail: returns nil
 
 ####Example
 
-```
+```lua
     -- open 'init.lua' in 'a+' mode
     file.open("init.lua", "a+")
     -- write 'foo bar' to the end of the file
@@ -531,7 +552,7 @@ a lua table which contains the {file name: file size} pairs
 
 ####Example
 
-```
+```lua
     l = file.list();
     for k,v in l do
       print("name:"..k..", size:"..v)
@@ -561,7 +582,7 @@ current mode after setup
 
 ####Example
 
-```
+```lua
     wifi.setmode(wifi.STATION)
 ```
 
@@ -585,7 +606,7 @@ wifi operation mode
 
 ####Example
 
-```
+```lua
     print(wifi.getmode())
 ```
 
@@ -611,7 +632,7 @@ nil
 
 ####Example
 
-```
+```lua
     wifi.startsmart(6, cb())
 ```
 
@@ -635,7 +656,7 @@ nil
 
 ####Example
 
-```
+```lua
     wifi.stopsmart()
 ```
 
@@ -663,7 +684,7 @@ nil
 
 ####Example
 
-```
+```lua
     wifi.sta.config("myssid","mypassword")
 ```
 
@@ -689,7 +710,7 @@ nil
 
 ####Example
 
-```
+```lua
     wifi.sta.connect()
 ```
 
@@ -715,7 +736,7 @@ nil
 
 ####Example
 
-```
+```lua
     wifi.sta.disconnect()
 ```
 
@@ -741,7 +762,7 @@ nil
 
 ####Example
 
-```
+```lua
     wifi.sta.autoconnect()
 ```
 
@@ -768,7 +789,7 @@ ip address in string, for example:"192.168.0.111"
 
 ####Example
 
-```
+```lua
     -- print current ip
     print(wifi.sta.getip())
 ```
@@ -794,7 +815,7 @@ mac address in string, for example:"18-33-44-FE-55-BB"
 
 ####Example
 
-```
+```lua
     -- print current mac address
     print(wifi.sta.getmac())
 ```
@@ -818,7 +839,7 @@ cfg: lua table to setup ap.
 
 ####Example:
 
-```
+```lua
      cfg={}
      cfg.ssid="myssid"
      cfg.pwd="mypwd"
@@ -830,7 +851,7 @@ nil
 
 ####Example
 
-```
+```lua
     wifi.ap.config(ssid, 'password')
 ```
 
@@ -853,7 +874,7 @@ ip address in string, for example:"192.168.0.111"
 
 ####Example
 
-```
+```lua
     wifi.ap.getip()
 ```
 
@@ -877,7 +898,7 @@ mac address in string, for example:"1A-33-44-FE-55-BB"
 
 ####Example
 
-```
+```lua
     wifi.ap.getmac()
 ```
 
@@ -902,7 +923,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- delay 100us
     tmr.delay(100)
 ```
@@ -927,7 +948,7 @@ uint32: value of counter
 
 ####Example
 
-```
+```lua
     -- print current value of counter
     print(tmr.now())
 ```
@@ -954,7 +975,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- print "hello world" every 1000ms
     tmr.alarm(1000, 1, function() print("hello world") end )
 ```
@@ -981,7 +1002,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- print "hello world" every 1000ms
     tmr.alarm(1000, 1, function() print("hello world") end )
 
@@ -1017,7 +1038,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- set gpio 0 as output.
     gpio.mode(0, gpio.OUTPUT)
 
@@ -1043,7 +1064,7 @@ number:0 - low, 1 - high
 
 ####Example
 
-```
+```lua
     -- read value of gpio 0.
     gpio.read(0)
 ```
@@ -1069,7 +1090,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- set pin index 1 to GPIO mode, and set the pin to high.
     pin=1
     gpio.mode(pin, gpio.OUTPUT)
@@ -1099,7 +1120,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- use pin 0 as the input pulse width counter
     pulse0 = 0
     du = 0
@@ -1138,7 +1159,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- set pin index 0 as pwm output, frequency is 100Hz, duty cycle is 50-50.
     pwm.setup(0, 100, 50)
 ```
@@ -1163,7 +1184,7 @@ nil
 
 ####Example
 
-```
+```lua
     pwm.close(0)
 ```
 
@@ -1187,7 +1208,7 @@ nil
 
 ####Example
 
-```
+```lua
     pwm.start(0)
 ```
 
@@ -1211,7 +1232,7 @@ nil
 
 ####Example
 
-```
+```lua
     pwm.stop(0)
 ```
 
@@ -1238,7 +1259,7 @@ nil
 
 ####Example
 
-```
+```lua
     pwm.setclock(0, 100)
 ```
 
@@ -1262,7 +1283,7 @@ number:pwm frequency of pin
 
 ####Example
 
-```
+```lua
     print(pwm.getclock(0))
 ```
 
@@ -1287,7 +1308,7 @@ nil
 
 ####Example
 
-```
+```lua
     pwm.setduty(0, 50)
 ```
 
@@ -1311,7 +1332,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- D0 is connected to green led
     -- D1 is connected to blue led
     -- D2 is connected to red led
@@ -1356,7 +1377,7 @@ net.server sub module
 
 ####Example
 
-```
+```lua
     net.createServer(net.TCP, true)
 ```
 
@@ -1381,7 +1402,7 @@ net.server sub module
 
 ####Example
 
-```
+```lua
     net.createConnection(net.UDP, false)
 ```
 
@@ -1408,7 +1429,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- create a server
     sv=net.createServer(net.TCP, false)
     -- server listen on 80, if data received, print data to console, and send "hello world" to remote.
@@ -1438,7 +1459,7 @@ nil
 
 ####Example
 
-```
+```lua
     -- create a server
     sv=net.createServer(net.TCP, false)
     -- close server
@@ -1506,7 +1527,7 @@ nil
 
 ####Example
 
-```
+```lua
     sk=net.createConnection(net.TCP, false)
     sk:on("receive", function(sck, c) print(c) end )
     sk:connect(80,"192.168.0.66")
@@ -1651,7 +1672,7 @@ nil
 
 ####Example
 
-```
+```lua
     i2c.write(0, "hello", "world")
 ```
 
@@ -1676,7 +1697,7 @@ string:data received.
 
 ####Example
 
-```
+```lua
     id=0
     sda=1
     scl=0
