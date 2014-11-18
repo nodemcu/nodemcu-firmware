@@ -1014,10 +1014,77 @@ body .markdown-body
     page-break-after: avoid;
   }
 }
-</style><title>API</title></head><body><article class="markdown-body"><h1 id="nodemcu-api-instruction"><strong>nodeMcu API Instruction</strong></h1>
+</style><style>.codehilite pre .hll { background-color: #f8eec7 }
+.codehilite pre  { background: #ffffff; color: #333333 }
+.codehilite pre .c { color: #999988; font-style: italic } /* Comment */
+.codehilite pre .err { color: #a61717; background-color: #e3d2d2 } /* Error */
+.codehilite pre .k { font-weight: bold } /* Keyword */
+.codehilite pre .n { color: #333333 } /* Name */
+.codehilite pre .o { font-weight: bold } /* Operator */
+.codehilite pre .cm { color: #999988; font-style: italic } /* Comment.Multiline */
+.codehilite pre .cp { color: #999999; font-weight: bold } /* Comment.Preproc */
+.codehilite pre .c1 { color: #999988; font-style: italic } /* Comment.Single */
+.codehilite pre .cs { color: #999988; font-style: italic } /* Comment.Special */
+.codehilite pre .gd { color: #000000; background-color: #ffdddd } /* Generic.Deleted */
+.codehilite pre .ge { font-style: italic } /* Generic.Emph */
+.codehilite pre .gr { color: #aa0000 } /* Generic.Error */
+.codehilite pre .gh { color: #999999 } /* Generic.Heading */
+.codehilite pre .gi { color: #000000; background-color: #ddffdd } /* Generic.Inserted */
+.codehilite pre .go { color: #888888 } /* Generic.Output */
+.codehilite pre .gp { color: #555555 } /* Generic.Prompt */
+.codehilite pre .gs { font-weight: bold } /* Generic.Strong */
+.codehilite pre .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite pre .gt { color: #aa0000 } /* Generic.Traceback */
+.codehilite pre .kc { font-weight: bold } /* Keyword.Constant */
+.codehilite pre .kd { font-weight: bold } /* Keyword.Declaration */
+.codehilite pre .kn { font-weight: bold } /* Keyword.Namespace */
+.codehilite pre .kp { font-weight: bold } /* Keyword.Pseudo */
+.codehilite pre .kr { font-weight: bold } /* Keyword.Reserved */
+.codehilite pre .kt { font-weight: bold } /* Keyword.Type */
+.codehilite pre .m { color: #945277 } /* Literal.Number */
+.codehilite pre .s { color: #df5000 } /* Literal.String */
+.codehilite pre .na { color: #008080 } /* Name.Attribute */
+.codehilite pre .nb { color: #0086b3 } /* Name.Builtin */
+.codehilite pre .nc { color: #445588; font-weight: bold } /* Name.Class */
+.codehilite pre .no { color: #094e99 } /* Name.Constant */
+.codehilite pre .nd { color: #333333 } /* Name.Decorator */
+.codehilite pre .ni { color: #800080 } /* Name.Entity */
+.codehilite pre .ne { color: #990000; font-weight: bold } /* Name.Exception */
+.codehilite pre .nf { color: #945277; font-weight: bold } /* Name.Function */
+.codehilite pre .nl { color: #333333 } /* Name.Label */
+.codehilite pre .nn { color: #555555 } /* Name.Namespace */
+.codehilite pre .nx { color: #333333 } /* Name.Other */
+.codehilite pre .py { color: #333333 } /* Name.Property */
+.codehilite pre .nt { color: #000080 } /* Name.Tag */
+.codehilite pre .nv { color: #008080 } /* Name.Variable */
+.codehilite pre .ow { font-weight: bold } /* Operator.Word */
+.codehilite pre .w { color: #bbbbbb } /* Text.Whitespace */
+.codehilite pre .mb { color: #945277 } /* Literal.Number.Bin */
+.codehilite pre .mf { color: #945277 } /* Literal.Number.Float */
+.codehilite pre .mh { color: #945277 } /* Literal.Number.Hex */
+.codehilite pre .mi { color: #945277 } /* Literal.Number.Integer */
+.codehilite pre .mo { color: #945277 } /* Literal.Number.Oct */
+.codehilite pre .sb { color: #df5000 } /* Literal.String.Backtick */
+.codehilite pre .sc { color: #df5000 } /* Literal.String.Char */
+.codehilite pre .sd { color: #df5000 } /* Literal.String.Doc */
+.codehilite pre .s2 { color: #df5000 } /* Literal.String.Double */
+.codehilite pre .se { color: #df5000 } /* Literal.String.Escape */
+.codehilite pre .sh { color: #df5000 } /* Literal.String.Heredoc */
+.codehilite pre .si { color: #df5000 } /* Literal.String.Interpol */
+.codehilite pre .sx { color: #df5000 } /* Literal.String.Other */
+.codehilite pre .sr { color: #017936 } /* Literal.String.Regex */
+.codehilite pre .s1 { color: #df5000 } /* Literal.String.Single */
+.codehilite pre .ss { color: #8b467f } /* Literal.String.Symbol */
+.codehilite pre .bp { color: #999999 } /* Name.Builtin.Pseudo */
+.codehilite pre .vc { color: #008080 } /* Name.Variable.Class */
+.codehilite pre .vg { color: #008080 } /* Name.Variable.Global */
+.codehilite pre .vi { color: #008080 } /* Name.Variable.Instance */
+.codehilite pre .il { color: #945277 } /* Literal.Number.Integer.Long */</style><title>API</title></head><body><article class="markdown-body"><h1 id="nodemcu-api-instruction"><strong>nodeMcu API Instruction</strong></h1>
 <h3 id="version-092-build-2014-11-18"><a name="user-content-version-092-build-2014-11-18" href="#version-092-build-2014-11-18" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>version 0.9.2 build 2014-11-18</h3>
 <p><a id="change_log"></a></p>
 <h3 id="change-log"><a name="user-content-change-log" href="#change-log" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>change log:</h3>
+<p>2014-11-18<br /><br />
+bug fixed: net.socket:connect() has no effect.</p>
 <p>2014-11-18<br /><br />
 bug fixed: as a tcp server, the connection can&rsquo;t closed with :close().<br /><br />
 tcp server: inactive connection will closed by server in 30s (previously 180s).<br /><br />
@@ -1094,8 +1161,9 @@ key is triged only when key is released<br /></p>
 <h4 id="returns"><a name="user-content-returns" href="#returns" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example"><a name="user-content-example" href="#example" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    node.restart();
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">node</span><span class="o">.</span><span class="vg">restart</span><span class="p">();</span>
+</pre></div>
+
 
 <h4 id="see-also"><a name="user-content-see-also" href="#see-also" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1111,8 +1179,9 @@ key is triged only when key is released<br /></p>
 <h4 id="returns_1"><a name="user-content-returns_1" href="#returns_1" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_1"><a name="user-content-example_1" href="#example_1" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    node.dsleep(us);
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">node</span><span class="o">.</span><span class="vg">dsleep</span><span class="p">(</span><span class="vg">us</span><span class="p">);</span>
+</pre></div>
+
 
 <h4 id="see-also_1"><a name="user-content-see-also_1" href="#see-also_1" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1127,8 +1196,9 @@ key is triged only when key is released<br /></p>
 <h4 id="returns_2"><a name="user-content-returns_2" href="#returns_2" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>number:chip ID</p>
 <h4 id="example_2"><a name="user-content-example_2" href="#example_2" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    id = node.chipid();
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="vg">node</span><span class="o">.</span><span class="vg">chipid</span><span class="p">();</span>
+</pre></div>
+
 
 <h4 id="see-also_2"><a name="user-content-see-also_2" href="#see-also_2" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1143,8 +1213,9 @@ key is triged only when key is released<br /></p>
 <h4 id="returns_3"><a name="user-content-returns_3" href="#returns_3" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>number: system heap size left in bytes</p>
 <h4 id="example_3"><a name="user-content-example_3" href="#example_3" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    heap_size = node.heap();
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">heap_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="vg">node</span><span class="o">.</span><span class="vg">heap</span><span class="p">();</span>
+</pre></div>
+
 
 <h4 id="see-also_3"><a name="user-content-see-also_3" href="#see-also_3" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1161,8 +1232,9 @@ Default function: long: change LED blinking rate,  short: reset chip</p>
 <h4 id="returns_4"><a name="user-content-returns_4" href="#returns_4" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_4"><a name="user-content-example_4" href="#example_4" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    node.key(&quot;long&quot;, function(){print('hello world')})
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">node</span><span class="o">.</span><span class="vg">key</span><span class="p">(</span><span class="s2">&quot;long&quot;</span><span class="p">,</span><span class="w"> </span><span class="vg">function</span><span class="p">(){</span><span class="vg">print</span><span class="p">(</span><span class="c1">&#39;hello world&#39;)})</span>
+</pre></div>
+
 
 <h4 id="see-also_4"><a name="user-content-see-also_4" href="#see-also_4" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1178,9 +1250,10 @@ High: LED off time. Unit: milliseconds, time resolution: 80~100ms</p>
 <h4 id="returns_5"><a name="user-content-returns_5" href="#returns_5" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_5"><a name="user-content-example_5" href="#example_5" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- turn led on forever.
-    node.led(0);
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">turn</span><span class="w"> </span><span class="vg">led</span><span class="w"> </span><span class="vg">on</span><span class="w"> </span><span class="vg">forever</span><span class="o">.</span>
+<span class="w">    </span><span class="vg">node</span><span class="o">.</span><span class="vg">led</span><span class="p">(</span><span class="il">0</span><span class="p">);</span>
+</pre></div>
+
 
 <h4 id="see-also_5"><a name="user-content-see-also_5" href="#see-also_5" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1196,9 +1269,10 @@ same as pcall(loadstring(str)) but support multi seperated line.</p>
 <h4 id="returns_6"><a name="user-content-returns_6" href="#returns_6" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_6"><a name="user-content-example_6" href="#example_6" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- never use node.input() in console. no effect.
-    sk:on(&quot;receive&quot;, function(conn, payload) node.input(payload) end)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">never</span><span class="w"> </span><span class="vg">use</span><span class="w"> </span><span class="vg">node</span><span class="o">.</span><span class="vg">input</span><span class="p">()</span><span class="w"> </span><span class="vg">in</span><span class="w"> </span><span class="vg">console</span><span class="o">.</span><span class="w"> </span><span class="vg">no</span><span class="w"> </span><span class="vg">effect</span><span class="o">.</span>
+<span class="w">    </span><span class="nl">sk:</span><span class="vg">on</span><span class="p">(</span><span class="s2">&quot;receive&quot;</span><span class="p">,</span><span class="w"> </span><span class="vg">function</span><span class="p">(</span><span class="vg">conn</span><span class="p">,</span><span class="w"> </span><span class="vg">payload</span><span class="p">)</span><span class="w"> </span><span class="vg">node</span><span class="o">.</span><span class="vg">input</span><span class="p">(</span><span class="vg">payload</span><span class="p">)</span><span class="w"> </span><span class="vg">end</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_6"><a name="user-content-see-also_6" href="#see-also_6" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1214,13 +1288,14 @@ serial_debug: 1 output also show in serial. 0: no serial output.</p>
 <h4 id="returns_7"><a name="user-content-returns_7" href="#returns_7" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_7"><a name="user-content-example_7" href="#example_7" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    function tonet(str)
-      sk:send(str)
-      -- print(str) WRONG!!! never ever print something in this function
-      -- because this will cause a recursive function call!!!
-    end
-    node.ouput(tonet, 1)  -- serial also get the lua output.
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">function</span><span class="w"> </span><span class="vg">tonet</span><span class="p">(</span><span class="vg">str</span><span class="p">)</span>
+<span class="w">      </span><span class="nl">sk:</span><span class="vg">send</span><span class="p">(</span><span class="vg">str</span><span class="p">)</span>
+<span class="w">      </span><span class="o">--</span><span class="w"> </span><span class="vg">print</span><span class="p">(</span><span class="vg">str</span><span class="p">)</span><span class="w"> </span><span class="vg">WRONG!</span><span class="o">!!</span><span class="w"> </span><span class="vg">never</span><span class="w"> </span><span class="vg">ever</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="vg">something</span><span class="w"> </span><span class="vg">in</span><span class="w"> </span><span class="vg">this</span><span class="w"> </span><span class="vg">function</span>
+<span class="w">      </span><span class="o">--</span><span class="w"> </span><span class="vg">because</span><span class="w"> </span><span class="vg">this</span><span class="w"> </span><span class="vg">will</span><span class="w"> </span><span class="vg">cause</span><span class="w"> </span><span class="vg">a</span><span class="w"> </span><span class="vg">recursive</span><span class="w"> </span><span class="vg">function</span><span class="w"> </span><span class="vg">call!</span><span class="o">!!</span>
+<span class="w">    </span><span class="vg">end</span>
+<span class="w">    </span><span class="vg">node</span><span class="o">.</span><span class="vg">ouput</span><span class="p">(</span><span class="vg">tonet</span><span class="p">,</span><span class="w"> </span><span class="il">1</span><span class="p">)</span><span class="w">  </span><span class="o">--</span><span class="w"> </span><span class="vg">serial</span><span class="w"> </span><span class="vg">also</span><span class="w"> </span><span class="vg">get</span><span class="w"> </span><span class="vg">the</span><span class="w"> </span><span class="vg">lua</span><span class="w"> </span><span class="vg">output</span><span class="o">.</span>
+</pre></div>
+
 
 <h4 id="see-also_7"><a name="user-content-see-also_7" href="#see-also_7" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href=""></a></p>
@@ -1236,9 +1311,10 @@ serial_debug: 1 output also show in serial. 0: no serial output.</p>
 <h4 id="returns_8"><a name="user-content-returns_8" href="#returns_8" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_8"><a name="user-content-example_8" href="#example_8" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- remove &quot;foo.lua&quot; from file system.
-    file.remove(&quot;foo.lua&quot;)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">remove</span><span class="w"> </span><span class="s2">&quot;foo.lua&quot;</span><span class="w"> </span><span class="vg">from</span><span class="w"> </span><span class="vg">file</span><span class="w"> </span><span class="vg">system</span><span class="o">.</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">remove</span><span class="p">(</span><span class="s2">&quot;foo.lua&quot;</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_8"><a name="user-content-see-also_8" href="#see-also_8" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
@@ -1261,11 +1337,12 @@ mode:<br /><br />
 <h4 id="returns_9"><a name="user-content-returns_9" href="#returns_9" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_9"><a name="user-content-example_9" href="#example_9" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- open 'init.lua', print the first line.
-    file.open(&quot;init.lua&quot;, &quot;r&quot;)
-    print(file.readline())
-    file.close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">open</span><span class="w"> </span><span class="c1">&#39;init.lua&#39;, print the first line.</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">open</span><span class="p">(</span><span class="s2">&quot;init.lua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">file</span><span class="o">.</span><span class="vg">readline</span><span class="p">())</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_9"><a name="user-content-see-also_9" href="#see-also_9" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_close">file.close()</a><br /><br />
@@ -1281,11 +1358,12 @@ mode:<br /><br />
 <h4 id="returns_10"><a name="user-content-returns_10" href="#returns_10" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_10"><a name="user-content-example_10" href="#example_10" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- open 'init.lua', print the first line.
-    file.open(&quot;init.lua&quot;, &quot;r&quot;)
-    print(file.readline())
-    file.close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">open</span><span class="w"> </span><span class="c1">&#39;init.lua&#39;, print the first line.</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">open</span><span class="p">(</span><span class="s2">&quot;init.lua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">file</span><span class="o">.</span><span class="vg">readline</span><span class="p">())</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_10"><a name="user-content-see-also_10" href="#see-also_10" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
@@ -1302,11 +1380,12 @@ mode:<br /><br />
 <p>file content in string, line by line, include EOL(&lsquo;\n&rsquo;)<br /><br />
 return nil when EOF.</p>
 <h4 id="example_11"><a name="user-content-example_11" href="#example_11" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- print the first line of 'init.lua'
-    file.open(&quot;init.lua&quot;, &quot;r&quot;)
-    print(file.readline())
-    file.close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="vg">the</span><span class="w"> </span><span class="vg">first</span><span class="w"> </span><span class="vg">line</span><span class="w"> </span><span class="vg">of</span><span class="w"> </span><span class="c1">&#39;init.lua&#39;</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">open</span><span class="p">(</span><span class="s2">&quot;init.lua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">file</span><span class="o">.</span><span class="vg">readline</span><span class="p">())</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_11"><a name="user-content-see-also_11" href="#see-also_11" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
@@ -1323,12 +1402,13 @@ return nil when EOF.</p>
 <p>true: write ok.<br />
 nil: there is error</p>
 <h4 id="example_12"><a name="user-content-example_12" href="#example_12" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- open 'init.lua' in 'a+' mode
-    file.open(&quot;init.lua&quot;, &quot;a+&quot;)
-    -- write 'foo bar' to the end of the file
-    file.writeline('foo bar')
-    file.close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">open</span><span class="w"> </span><span class="c1">&#39;init.lua&#39; in &#39;a+&#39; mode</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">open</span><span class="p">(</span><span class="s2">&quot;init.lua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;a+&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">write</span><span class="w"> </span><span class="c1">&#39;foo bar&#39; to the end of the file</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">writeline</span><span class="p">(</span><span class="c1">&#39;foo bar&#39;)</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_12"><a name="user-content-see-also_12" href="#see-also_12" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
@@ -1345,12 +1425,13 @@ nil: there is error</p>
 <p>true: write ok.<br />
 nil: there is error</p>
 <h4 id="example_13"><a name="user-content-example_13" href="#example_13" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- open 'init.lua' in 'a+' mode
-    file.open(&quot;init.lua&quot;, &quot;a+&quot;)
-    -- write 'foo bar' to the end of the file
-    file.write('foo bar')
-    file.close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">open</span><span class="w"> </span><span class="c1">&#39;init.lua&#39; in &#39;a+&#39; mode</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">open</span><span class="p">(</span><span class="s2">&quot;init.lua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;a+&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">write</span><span class="w"> </span><span class="c1">&#39;foo bar&#39; to the end of the file</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">write</span><span class="p">(</span><span class="c1">&#39;foo bar&#39;)</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_13"><a name="user-content-see-also_13" href="#see-also_13" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
@@ -1366,13 +1447,14 @@ nil: there is error</p>
 <h4 id="returns_14"><a name="user-content-returns_14" href="#returns_14" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_14"><a name="user-content-example_14" href="#example_14" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- open 'init.lua' in 'a+' mode
-    file.open(&quot;init.lua&quot;, &quot;a+&quot;)
-    -- write 'foo bar' to the end of the file
-    file.write('foo bar')
-    file.flush()
-    file.close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">open</span><span class="w"> </span><span class="c1">&#39;init.lua&#39; in &#39;a+&#39; mode</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">open</span><span class="p">(</span><span class="s2">&quot;init.lua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;a+&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">write</span><span class="w"> </span><span class="c1">&#39;foo bar&#39; to the end of the file</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">write</span><span class="p">(</span><span class="c1">&#39;foo bar&#39;)</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">flush</span><span class="p">()</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_14"><a name="user-content-see-also_14" href="#see-also_14" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
@@ -1393,15 +1475,16 @@ offset: default 0</p>
 <p>success: returns the final file position<br /><br />
 fail: returns nil</p>
 <h4 id="example_15"><a name="user-content-example_15" href="#example_15" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- open 'init.lua' in 'a+' mode
-    file.open(&quot;init.lua&quot;, &quot;a+&quot;)
-    -- write 'foo bar' to the end of the file
-    file.write('foo bar')
-    file.flush()
-    file.seek(&quot;set&quot;)
-    print(file.readline())
-    file.close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">open</span><span class="w"> </span><span class="c1">&#39;init.lua&#39; in &#39;a+&#39; mode</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">open</span><span class="p">(</span><span class="s2">&quot;init.lua&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;a+&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">write</span><span class="w"> </span><span class="c1">&#39;foo bar&#39; to the end of the file</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">write</span><span class="p">(</span><span class="c1">&#39;foo bar&#39;)</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">flush</span><span class="p">()</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">seek</span><span class="p">(</span><span class="s2">&quot;set&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">file</span><span class="o">.</span><span class="vg">readline</span><span class="p">())</span>
+<span class="w">    </span><span class="vg">file</span><span class="o">.</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_15"><a name="user-content-see-also_15" href="#see-also_15" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
@@ -1417,11 +1500,12 @@ fail: returns nil</p>
 <h4 id="returns_16"><a name="user-content-returns_16" href="#returns_16" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>a lua table which contains the {file name: file size} pairs</p>
 <h4 id="example_16"><a name="user-content-example_16" href="#example_16" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    l = file.list();
-    for k,v in l do
-      print(&quot;name:&quot;..k..&quot;, size:&quot;..v)
-    end
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">l</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="vg">file</span><span class="o">.</span><span class="vg">list</span><span class="p">();</span>
+<span class="w">    </span><span class="vg">for</span><span class="w"> </span><span class="vg">k</span><span class="p">,</span><span class="vg">v</span><span class="w"> </span><span class="vg">in</span><span class="w"> </span><span class="vg">l</span><span class="w"> </span><span class="vg">do</span>
+<span class="w">      </span><span class="vg">print</span><span class="p">(</span><span class="s2">&quot;name:&quot;</span><span class="o">..</span><span class="vg">k</span><span class="o">..</span><span class="s2">&quot;, size:&quot;</span><span class="o">..</span><span class="vg">v</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">end</span>
+</pre></div>
+
 
 <h4 id="see-also_16"><a name="user-content-see-also_16" href="#see-also_16" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#fl_remove">file.remove()</a></p>
@@ -1439,8 +1523,9 @@ fail: returns nil</p>
 <h4 id="returns_17"><a name="user-content-returns_17" href="#returns_17" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>current mode after setup</p>
 <h4 id="example_17"><a name="user-content-example_17" href="#example_17" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.setmode(wifi.STATION)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">setmode</span><span class="p">(</span><span class="vg">wifi</span><span class="o">.</span><span class="vg">STATION</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_17"><a name="user-content-see-also_17" href="#see-also_17" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#wf_getmode">wifi.getmode()</a></p>
@@ -1455,8 +1540,9 @@ fail: returns nil</p>
 <h4 id="returns_18"><a name="user-content-returns_18" href="#returns_18" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>wifi operation mode</p>
 <h4 id="example_18"><a name="user-content-example_18" href="#example_18" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    print(wifi.getmode())
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">wifi</span><span class="o">.</span><span class="vg">getmode</span><span class="p">())</span>
+</pre></div>
+
 
 <h4 id="see-also_18"><a name="user-content-see-also_18" href="#see-also_18" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#wf_setmode">wifi.setmode()</a></p>
@@ -1472,8 +1558,9 @@ succeed_callback: callback function called after configuration, which is called 
 <h4 id="returns_19"><a name="user-content-returns_19" href="#returns_19" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_19"><a name="user-content-example_19" href="#example_19" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.startsmart(6, cb())
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">startsmart</span><span class="p">(</span><span class="il">6</span><span class="p">,</span><span class="w"> </span><span class="vg">cb</span><span class="p">())</span>
+</pre></div>
+
 
 <h4 id="see-also_19"><a name="user-content-see-also_19" href="#see-also_19" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#wf_stopsmart">wifi.stopsmart()</a></p>
@@ -1488,8 +1575,9 @@ succeed_callback: callback function called after configuration, which is called 
 <h4 id="returns_20"><a name="user-content-returns_20" href="#returns_20" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_20"><a name="user-content-example_20" href="#example_20" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.stopsmart()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">stopsmart</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_20"><a name="user-content-see-also_20" href="#see-also_20" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#wf_startsmart">wifi.startsmart()</a></p>
@@ -1506,8 +1594,9 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_21"><a name="user-content-returns_21" href="#returns_21" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_21"><a name="user-content-example_21" href="#example_21" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.sta.config(&quot;myssid&quot;,&quot;mypassword&quot;)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">sta</span><span class="o">.</span><span class="vg">config</span><span class="p">(</span><span class="s2">&quot;myssid&quot;</span><span class="p">,</span><span class="s2">&quot;mypassword&quot;</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_21"><a name="user-content-see-also_21" href="#see-also_21" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ws_connect">wifi.sta.connect()</a><br /><br />
@@ -1523,8 +1612,9 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_22"><a name="user-content-returns_22" href="#returns_22" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_22"><a name="user-content-example_22" href="#example_22" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.sta.connect()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">sta</span><span class="o">.</span><span class="vg">connect</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_22"><a name="user-content-see-also_22" href="#see-also_22" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ws_disconnect">wifi.sta.disconnect()</a><br /><br />
@@ -1540,8 +1630,9 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_23"><a name="user-content-returns_23" href="#returns_23" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_23"><a name="user-content-example_23" href="#example_23" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.sta.disconnect()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">sta</span><span class="o">.</span><span class="vg">disconnect</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_23"><a name="user-content-see-also_23" href="#see-also_23" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ws_config">wifi.sta.config()</a><br /><br />
@@ -1557,8 +1648,9 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_24"><a name="user-content-returns_24" href="#returns_24" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_24"><a name="user-content-example_24" href="#example_24" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.sta.autoconnect()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">sta</span><span class="o">.</span><span class="vg">autoconnect</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_24"><a name="user-content-see-also_24" href="#see-also_24" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ws_config">wifi.sta.config()</a><br /><br />
@@ -1575,9 +1667,10 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_25"><a name="user-content-returns_25" href="#returns_25" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>ip address in string, for example:&rdquo;192.168.0.111&rdquo;</p>
 <h4 id="example_25"><a name="user-content-example_25" href="#example_25" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- print current ip
-    print(wifi.sta.getip())
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="vg">current</span><span class="w"> </span><span class="vg">ip</span>
+<span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">wifi</span><span class="o">.</span><span class="vg">sta</span><span class="o">.</span><span class="vg">getip</span><span class="p">())</span>
+</pre></div>
+
 
 <h4 id="see-also_25"><a name="user-content-see-also_25" href="#see-also_25" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ws_getmac">wifi.sta.getmac()</a></p>
@@ -1592,9 +1685,10 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_26"><a name="user-content-returns_26" href="#returns_26" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>mac address in string, for example:&rdquo;18-33-44-FE-55-BB&rdquo;</p>
 <h4 id="example_26"><a name="user-content-example_26" href="#example_26" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- print current mac address
-    print(wifi.sta.getmac())
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="vg">current</span><span class="w"> </span><span class="vg">mac</span><span class="w"> </span><span class="vg">address</span>
+<span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">wifi</span><span class="o">.</span><span class="vg">sta</span><span class="o">.</span><span class="vg">getmac</span><span class="p">())</span>
+</pre></div>
+
 
 <h4 id="see-also_26"><a name="user-content-see-also_26" href="#see-also_26" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ws_getip">wifi.sta.getip()</a></p>
@@ -1608,17 +1702,19 @@ password: string which is less than 64 bytes.</p>
 <h4 id="parameters_27"><a name="user-content-parameters_27" href="#parameters_27" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Parameters</h4>
 <p>cfg: lua table to setup ap.</p>
 <h4 id="example_27"><a name="user-content-example_27" href="#example_27" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example:</h4>
-<pre><code>     cfg={}
-     cfg.ssid=&quot;myssid&quot;
-     cfg.pwd=&quot;mypwd&quot;
-     wifi.ap.setconfig(cfg)
-</code></pre>
+<div class="codehilite"><pre><span class="w">     </span><span class="vg">cfg</span><span class="o">=</span><span class="p">{}</span>
+<span class="w">     </span><span class="vg">cfg</span><span class="o">.</span><span class="vg">ssid</span><span class="o">=</span><span class="s2">&quot;myssid&quot;</span>
+<span class="w">     </span><span class="vg">cfg</span><span class="o">.</span><span class="vg">pwd</span><span class="o">=</span><span class="s2">&quot;mypwd&quot;</span>
+<span class="w">     </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">ap</span><span class="o">.</span><span class="vg">setconfig</span><span class="p">(</span><span class="vg">cfg</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="returns_27"><a name="user-content-returns_27" href="#returns_27" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_28"><a name="user-content-example_28" href="#example_28" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.ap.config(ssid, 'password')
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">ap</span><span class="o">.</span><span class="vg">config</span><span class="p">(</span><span class="vg">ssid</span><span class="p">,</span><span class="w"> </span><span class="c1">&#39;password&#39;)</span>
+</pre></div>
+
 
 <h4 id="see-also_27"><a name="user-content-see-also_27" href="#see-also_27" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>    <a href=""></a></p>
@@ -1633,8 +1729,9 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_28"><a name="user-content-returns_28" href="#returns_28" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>ip address in string, for example:&rdquo;192.168.0.111&rdquo;</p>
 <h4 id="example_29"><a name="user-content-example_29" href="#example_29" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.ap.getip()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">ap</span><span class="o">.</span><span class="vg">getip</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_28"><a name="user-content-see-also_28" href="#see-also_28" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#wa_getmac">wifi.ap.getmac()</a></p>
@@ -1649,8 +1746,9 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_29"><a name="user-content-returns_29" href="#returns_29" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>mac address in string, for example:&rdquo;1A-33-44-FE-55-BB&rdquo;</p>
 <h4 id="example_30"><a name="user-content-example_30" href="#example_30" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    wifi.ap.getmac()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">wifi</span><span class="o">.</span><span class="vg">ap</span><span class="o">.</span><span class="vg">getmac</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_29"><a name="user-content-see-also_29" href="#see-also_29" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#wa_getip">wifi.ap.getip()</a></p>
@@ -1666,9 +1764,10 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_30"><a name="user-content-returns_30" href="#returns_30" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_31"><a name="user-content-example_31" href="#example_31" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- delay 100us
-    tmr.delay(100)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">delay</span><span class="w"> </span><span class="il">100</span><span class="vg">us</span>
+<span class="w">    </span><span class="vg">tmr</span><span class="o">.</span><span class="vg">delay</span><span class="p">(</span><span class="il">100</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_30"><a name="user-content-see-also_30" href="#see-also_30" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#tm_now">tmr.now()</a></p>
@@ -1683,9 +1782,10 @@ password: string which is less than 64 bytes.</p>
 <h4 id="returns_31"><a name="user-content-returns_31" href="#returns_31" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>uint32: value of counter</p>
 <h4 id="example_32"><a name="user-content-example_32" href="#example_32" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- print current value of counter
-    print(tmr.now())
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="vg">current</span><span class="w"> </span><span class="vg">value</span><span class="w"> </span><span class="vg">of</span><span class="w"> </span><span class="vg">counter</span>
+<span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">tmr</span><span class="o">.</span><span class="vg">now</span><span class="p">())</span>
+</pre></div>
+
 
 <h4 id="see-also_31"><a name="user-content-see-also_31" href="#see-also_31" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#tm_delay">tmr.delay()</a></p>
@@ -1702,9 +1802,10 @@ function do(): callback function for alarm timed out</p>
 <h4 id="returns_32"><a name="user-content-returns_32" href="#returns_32" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_33"><a name="user-content-example_33" href="#example_33" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- print &quot;hello world&quot; every 1000ms
-    tmr.alarm(1000, 1, function() print(&quot;hello world&quot;) end )
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="s2">&quot;hello world&quot;</span><span class="w"> </span><span class="vg">every</span><span class="w"> </span><span class="il">1000</span><span class="vg">ms</span>
+<span class="w">    </span><span class="vg">tmr</span><span class="o">.</span><span class="vg">alarm</span><span class="p">(</span><span class="il">1000</span><span class="p">,</span><span class="w"> </span><span class="il">1</span><span class="p">,</span><span class="w"> </span><span class="vg">function</span><span class="p">()</span><span class="w"> </span><span class="vg">print</span><span class="p">(</span><span class="s2">&quot;hello world&quot;</span><span class="p">)</span><span class="w"> </span><span class="vg">end</span><span class="w"> </span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_32"><a name="user-content-see-also_32" href="#see-also_32" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#tm_now">tmr.now()</a></p>
@@ -1720,14 +1821,15 @@ function do(): callback function for alarm timed out</p>
 <h4 id="returns_33"><a name="user-content-returns_33" href="#returns_33" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_34"><a name="user-content-example_34" href="#example_34" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- print &quot;hello world&quot; every 1000ms
-    tmr.alarm(1000, 1, function() print(&quot;hello world&quot;) end )
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="s2">&quot;hello world&quot;</span><span class="w"> </span><span class="vg">every</span><span class="w"> </span><span class="il">1000</span><span class="vg">ms</span>
+<span class="w">    </span><span class="vg">tmr</span><span class="o">.</span><span class="vg">alarm</span><span class="p">(</span><span class="il">1000</span><span class="p">,</span><span class="w"> </span><span class="il">1</span><span class="p">,</span><span class="w"> </span><span class="vg">function</span><span class="p">()</span><span class="w"> </span><span class="vg">print</span><span class="p">(</span><span class="s2">&quot;hello world&quot;</span><span class="p">)</span><span class="w"> </span><span class="vg">end</span><span class="w"> </span><span class="p">)</span>
 
-    -- something else
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">something</span><span class="w"> </span><span class="vg">else</span>
 
-    -- stop alarm
-    tmr.stop()
-</code></pre>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">stop</span><span class="w"> </span><span class="vg">alarm</span>
+<span class="w">    </span><span class="vg">tmr</span><span class="o">.</span><span class="vg">stop</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_33"><a name="user-content-see-also_33" href="#see-also_33" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#tm_now">tmr.now()</a></p>
@@ -1746,10 +1848,10 @@ mode: gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)</p>
 <h4 id="returns_34"><a name="user-content-returns_34" href="#returns_34" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_35"><a name="user-content-example_35" href="#example_35" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- set gpio 0 as output.
-    gpio.mode(0, gpio.OUTPUT)
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">set</span><span class="w"> </span><span class="vg">gpio</span><span class="w"> </span><span class="il">0</span><span class="w"> </span><span class="vg">as</span><span class="w"> </span><span class="vg">output</span><span class="o">.</span>
+<span class="w">    </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">mode</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="vg">gpio</span><span class="o">.</span><span class="k">OUTPUT</span><span class="p">)</span>
+</pre></div>
 
-</code></pre>
 
 <h4 id="see-also_34"><a name="user-content-see-also_34" href="#see-also_34" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#io_read">gpio.read()</a></p>
@@ -1764,9 +1866,10 @@ mode: gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)</p>
 <h4 id="returns_35"><a name="user-content-returns_35" href="#returns_35" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>number:0 - low, 1 - high</p>
 <h4 id="example_36"><a name="user-content-example_36" href="#example_36" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- read value of gpio 0.
-    gpio.read(0)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">read</span><span class="w"> </span><span class="vg">value</span><span class="w"> </span><span class="vg">of</span><span class="w"> </span><span class="vg">gpio</span><span class="w"> </span><span class="il">0</span><span class="o">.</span>
+<span class="w">    </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">read</span><span class="p">(</span><span class="il">0</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_35"><a name="user-content-see-also_35" href="#see-also_35" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#io_mode">gpio.mode()</a></p>
@@ -1782,11 +1885,12 @@ level: gpio.HIGH or gpio.LOW</p>
 <h4 id="returns_36"><a name="user-content-returns_36" href="#returns_36" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_37"><a name="user-content-example_37" href="#example_37" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- set pin index 1 to GPIO mode, and set the pin to high.
-    pin=1
-    gpio.mode(pin, gpio.OUTPUT)
-    gpio.write(pin, gpio.HIGH)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">set</span><span class="w"> </span><span class="vg">pin</span><span class="w"> </span><span class="vg">index</span><span class="w"> </span><span class="il">1</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">GPIO</span><span class="w"> </span><span class="vg">mode</span><span class="p">,</span><span class="w"> </span><span class="vg">and</span><span class="w"> </span><span class="vg">set</span><span class="w"> </span><span class="vg">the</span><span class="w"> </span><span class="vg">pin</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">high</span><span class="o">.</span>
+<span class="w">    </span><span class="vg">pin</span><span class="o">=</span><span class="il">1</span>
+<span class="w">    </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">mode</span><span class="p">(</span><span class="vg">pin</span><span class="p">,</span><span class="w"> </span><span class="vg">gpio</span><span class="o">.</span><span class="k">OUTPUT</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">write</span><span class="p">(</span><span class="vg">pin</span><span class="p">,</span><span class="w"> </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">HIGH</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_36"><a name="user-content-see-also_36" href="#see-also_36" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#io_mode">gpio.mode()</a><br /><br />
@@ -1804,19 +1908,19 @@ function(level): callback function when triggered. The gpio level is the param. 
 <h4 id="returns_37"><a name="user-content-returns_37" href="#returns_37" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_38"><a name="user-content-example_38" href="#example_38" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- use pin 0 as the input pulse width counter
-    pulse0 = 0
-    du = 0
-    gpio.mode(0,gpio.INT)
-    function pin0cb(level)
-     du = tmr.now() – pulse0
-     print(du)
-     pulse0 = tmr.now()
-     if level == 1 then gpio.trig(0, &quot;down &quot;) else gpio.trig(0, &quot;up &quot;) end
-    end
-    gpio.trig(0, &quot;down &quot;,pin0cb)
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">use</span><span class="w"> </span><span class="vg">pin</span><span class="w"> </span><span class="il">0</span><span class="w"> </span><span class="vg">as</span><span class="w"> </span><span class="vg">the</span><span class="w"> </span><span class="vg">input</span><span class="w"> </span><span class="vg">pulse</span><span class="w"> </span><span class="vg">width</span><span class="w"> </span><span class="vg">counter</span>
+<span class="w">    </span><span class="vg">pulse0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="il">0</span>
+<span class="w">    </span><span class="vg">du</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="il">0</span>
+<span class="w">    </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">mode</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="vg">gpio</span><span class="o">.</span><span class="kr">INT</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">function</span><span class="w"> </span><span class="vg">pin0cb</span><span class="p">(</span><span class="vg">level</span><span class="p">)</span>
+<span class="w">     </span><span class="vg">du</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="vg">tmr</span><span class="o">.</span><span class="vg">now</span><span class="p">()</span><span class="w"> </span><span class="err">–</span><span class="w"> </span><span class="vg">pulse0</span>
+<span class="w">     </span><span class="vg">print</span><span class="p">(</span><span class="vg">du</span><span class="p">)</span>
+<span class="w">     </span><span class="vg">pulse0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="vg">tmr</span><span class="o">.</span><span class="vg">now</span><span class="p">()</span>
+<span class="w">     </span><span class="vg">if</span><span class="w"> </span><span class="vg">level</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="il">1</span><span class="w"> </span><span class="vg">then</span><span class="w"> </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">trig</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;down &quot;</span><span class="p">)</span><span class="w"> </span><span class="vg">else</span><span class="w"> </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">trig</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;up &quot;</span><span class="p">)</span><span class="w"> </span><span class="vg">end</span>
+<span class="w">    </span><span class="vg">end</span>
+<span class="w">    </span><span class="vg">gpio</span><span class="o">.</span><span class="vg">trig</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;down &quot;</span><span class="p">,</span><span class="vg">pin0cb</span><span class="p">)</span>
+</pre></div>
 
-</code></pre>
 
 <h4 id="see-also_37"><a name="user-content-see-also_37" href="#see-also_37" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#io_mode">gpio.mode()</a><br /><br />
@@ -1835,9 +1939,10 @@ duty: 0~100, pwm duty cycle in percentage</p>
 <h4 id="returns_38"><a name="user-content-returns_38" href="#returns_38" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_39"><a name="user-content-example_39" href="#example_39" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- set pin index 0 as pwm output, frequency is 100Hz, duty cycle is 50-50.
-    pwm.setup(0, 100, 50)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">set</span><span class="w"> </span><span class="vg">pin</span><span class="w"> </span><span class="vg">index</span><span class="w"> </span><span class="il">0</span><span class="w"> </span><span class="vg">as</span><span class="w"> </span><span class="vg">pwm</span><span class="w"> </span><span class="vg">output</span><span class="p">,</span><span class="w"> </span><span class="vg">frequency</span><span class="w"> </span><span class="vg">is</span><span class="w"> </span><span class="il">100</span><span class="vg">Hz</span><span class="p">,</span><span class="w"> </span><span class="vg">duty</span><span class="w"> </span><span class="vg">cycle</span><span class="w"> </span><span class="vg">is</span><span class="w"> </span><span class="il">50-50</span><span class="o">.</span>
+<span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setup</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="il">100</span><span class="p">,</span><span class="w"> </span><span class="il">50</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_38"><a name="user-content-see-also_38" href="#see-also_38" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_start">pwm.start()</a></p>
@@ -1852,8 +1957,9 @@ duty: 0~100, pwm duty cycle in percentage</p>
 <h4 id="returns_39"><a name="user-content-returns_39" href="#returns_39" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_40"><a name="user-content-example_40" href="#example_40" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    pwm.close(0)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">close</span><span class="p">(</span><span class="il">0</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_39"><a name="user-content-see-also_39" href="#see-also_39" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_start">pwm.start()</a></p>
@@ -1868,8 +1974,9 @@ duty: 0~100, pwm duty cycle in percentage</p>
 <h4 id="returns_40"><a name="user-content-returns_40" href="#returns_40" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_41"><a name="user-content-example_41" href="#example_41" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    pwm.start(0)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">start</span><span class="p">(</span><span class="il">0</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_40"><a name="user-content-see-also_40" href="#see-also_40" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_stop">pwm.stop()</a></p>
@@ -1884,8 +1991,9 @@ duty: 0~100, pwm duty cycle in percentage</p>
 <h4 id="returns_41"><a name="user-content-returns_41" href="#returns_41" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_42"><a name="user-content-example_42" href="#example_42" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    pwm.stop(0)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">stop</span><span class="p">(</span><span class="il">0</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_41"><a name="user-content-see-also_41" href="#see-also_41" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_start">pwm.start()</a></p>
@@ -1902,8 +2010,9 @@ clock: 1~500, pwm frequency.</p>
 <h4 id="returns_42"><a name="user-content-returns_42" href="#returns_42" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_43"><a name="user-content-example_43" href="#example_43" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    pwm.setclock(0, 100)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setclock</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="il">100</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_42"><a name="user-content-see-also_42" href="#see-also_42" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_getclock">pwm.getclock()</a></p>
@@ -1918,8 +2027,9 @@ clock: 1~500, pwm frequency.</p>
 <h4 id="returns_43"><a name="user-content-returns_43" href="#returns_43" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>number:pwm frequency of pin</p>
 <h4 id="example_44"><a name="user-content-example_44" href="#example_44" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    print(pwm.getclock(0))
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">print</span><span class="p">(</span><span class="vg">pwm</span><span class="o">.</span><span class="vg">getclock</span><span class="p">(</span><span class="il">0</span><span class="p">))</span>
+</pre></div>
+
 
 <h4 id="see-also_43"><a name="user-content-see-also_43" href="#see-also_43" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_setclock">pwm.setclock()</a></p>
@@ -1935,8 +2045,9 @@ duty: 0~100, pwm duty cycle in percentage</p>
 <h4 id="returns_44"><a name="user-content-returns_44" href="#returns_44" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_45"><a name="user-content-example_45" href="#example_45" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    pwm.setduty(0, 50)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setduty</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="il">50</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_44"><a name="user-content-see-also_44" href="#see-also_44" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_getduty">pwm.getduty()</a></p>
@@ -1951,24 +2062,24 @@ duty: 0~100, pwm duty cycle in percentage</p>
 <h4 id="returns_45"><a name="user-content-returns_45" href="#returns_45" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_46"><a name="user-content-example_46" href="#example_46" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- D0 is connected to green led
-    -- D1 is connected to blue led
-    -- D2 is connected to red led
-    pwm.setup(0,500,50)
-    pwm.setup(1,500,50)
-    pwm.setup(2,500,50)
-    pwm.start(0)
-    pwm.start(1)
-    pwm.start(2)
-    function led(r,g,b)
-      pwm.setduty(0,g)
-      pwm.setduty(1,b)
-      pwm.setduty(2,r)
-    end
-    led(50,0,0) --  set led to red
-    led(0,0,50) -- set led to blue.
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">D0</span><span class="w"> </span><span class="vg">is</span><span class="w"> </span><span class="vg">connected</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">green</span><span class="w"> </span><span class="vg">led</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">D1</span><span class="w"> </span><span class="vg">is</span><span class="w"> </span><span class="vg">connected</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">blue</span><span class="w"> </span><span class="vg">led</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">D2</span><span class="w"> </span><span class="vg">is</span><span class="w"> </span><span class="vg">connected</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">red</span><span class="w"> </span><span class="vg">led</span>
+<span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setup</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="il">500</span><span class="p">,</span><span class="il">50</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setup</span><span class="p">(</span><span class="il">1</span><span class="p">,</span><span class="il">500</span><span class="p">,</span><span class="il">50</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setup</span><span class="p">(</span><span class="il">2</span><span class="p">,</span><span class="il">500</span><span class="p">,</span><span class="il">50</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">start</span><span class="p">(</span><span class="il">0</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">start</span><span class="p">(</span><span class="il">1</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">start</span><span class="p">(</span><span class="il">2</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">function</span><span class="w"> </span><span class="vg">led</span><span class="p">(</span><span class="vg">r</span><span class="p">,</span><span class="vg">g</span><span class="p">,</span><span class="vg">b</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setduty</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="vg">g</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setduty</span><span class="p">(</span><span class="il">1</span><span class="p">,</span><span class="vg">b</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">pwm</span><span class="o">.</span><span class="vg">setduty</span><span class="p">(</span><span class="il">2</span><span class="p">,</span><span class="vg">r</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">end</span>
+<span class="w">    </span><span class="vg">led</span><span class="p">(</span><span class="il">50</span><span class="p">,</span><span class="il">0</span><span class="p">,</span><span class="il">0</span><span class="p">)</span><span class="w"> </span><span class="o">--</span><span class="w">  </span><span class="vg">set</span><span class="w"> </span><span class="vg">led</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">red</span>
+<span class="w">    </span><span class="vg">led</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="il">0</span><span class="p">,</span><span class="il">50</span><span class="p">)</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="vg">set</span><span class="w"> </span><span class="vg">led</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">blue</span><span class="o">.</span>
+</pre></div>
 
-</code></pre>
 
 <h4 id="see-also_45"><a name="user-content-see-also_45" href="#see-also_45" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#pw_setduty">pwm.setduty()</a></p>
@@ -1987,8 +2098,9 @@ secure: true or false, true for safe link, false for ordinary link</p>
 <h4 id="returns_46"><a name="user-content-returns_46" href="#returns_46" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>net.server sub module</p>
 <h4 id="example_47"><a name="user-content-example_47" href="#example_47" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    net.createServer(net.TCP, true)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">net</span><span class="o">.</span><span class="vg">createServer</span><span class="p">(</span><span class="vg">net</span><span class="o">.</span><span class="vg">TCP</span><span class="p">,</span><span class="w"> </span><span class="vg">true</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_46"><a name="user-content-see-also_46" href="#see-also_46" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#nt_createConnection">net.createConnection()</a></p>
@@ -2004,8 +2116,9 @@ secure: true or false, true for safe link, false for ordinary link</p>
 <h4 id="returns_47"><a name="user-content-returns_47" href="#returns_47" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>net.server sub module</p>
 <h4 id="example_48"><a name="user-content-example_48" href="#example_48" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    net.createConnection(net.UDP, false)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">net</span><span class="o">.</span><span class="vg">createConnection</span><span class="p">(</span><span class="vg">net</span><span class="o">.</span><span class="vg">UDP</span><span class="p">,</span><span class="w"> </span><span class="vg">false</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_47"><a name="user-content-see-also_47" href="#see-also_47" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
@@ -2023,14 +2136,15 @@ function(net.socket): callback function, pass to Caller function as param if a c
 <h4 id="returns_48"><a name="user-content-returns_48" href="#returns_48" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_49"><a name="user-content-example_49" href="#example_49" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- create a server
-    sv=net.createServer(net.TCP, false)
-    -- server listen on 80, if data received, print data to console, and send &quot;hello world&quot; to remote.
-    sv:listen(80,function(c)
-      c:on(&quot;receive&quot;, function(sck, pl) print(pl) end)
-      c:send(&quot;hello world&quot;)
-      end)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">create</span><span class="w"> </span><span class="vg">a</span><span class="w"> </span><span class="vg">server</span>
+<span class="w">    </span><span class="vg">sv</span><span class="o">=</span><span class="vg">net</span><span class="o">.</span><span class="vg">createServer</span><span class="p">(</span><span class="vg">net</span><span class="o">.</span><span class="vg">TCP</span><span class="p">,</span><span class="w"> </span><span class="vg">false</span><span class="p">)</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">server</span><span class="w"> </span><span class="vg">listen</span><span class="w"> </span><span class="vg">on</span><span class="w"> </span><span class="il">80</span><span class="p">,</span><span class="w"> </span><span class="vg">if</span><span class="w"> </span><span class="vg">data</span><span class="w"> </span><span class="vg">received</span><span class="p">,</span><span class="w"> </span><span class="vg">print</span><span class="w"> </span><span class="vg">data</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">console</span><span class="p">,</span><span class="w"> </span><span class="vg">and</span><span class="w"> </span><span class="vg">send</span><span class="w"> </span><span class="s2">&quot;hello world&quot;</span><span class="w"> </span><span class="vg">to</span><span class="w"> </span><span class="vg">remote</span><span class="o">.</span>
+<span class="w">    </span><span class="nl">sv:</span><span class="vg">listen</span><span class="p">(</span><span class="il">80</span><span class="p">,</span><span class="vg">function</span><span class="p">(</span><span class="vg">c</span><span class="p">)</span>
+<span class="w">      </span><span class="nl">c:</span><span class="vg">on</span><span class="p">(</span><span class="s2">&quot;receive&quot;</span><span class="p">,</span><span class="w"> </span><span class="vg">function</span><span class="p">(</span><span class="vg">sck</span><span class="p">,</span><span class="w"> </span><span class="vg">pl</span><span class="p">)</span><span class="w"> </span><span class="vg">print</span><span class="p">(</span><span class="vg">pl</span><span class="p">)</span><span class="w"> </span><span class="vg">end</span><span class="p">)</span>
+<span class="w">      </span><span class="nl">c:</span><span class="vg">send</span><span class="p">(</span><span class="s2">&quot;hello world&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">end</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_48"><a name="user-content-see-also_48" href="#see-also_48" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
@@ -2045,11 +2159,12 @@ function(net.socket): callback function, pass to Caller function as param if a c
 <h4 id="returns_49"><a name="user-content-returns_49" href="#returns_49" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_50"><a name="user-content-example_50" href="#example_50" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    -- create a server
-    sv=net.createServer(net.TCP, false)
-    -- close server
-    sv:close()
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">create</span><span class="w"> </span><span class="vg">a</span><span class="w"> </span><span class="vg">server</span>
+<span class="w">    </span><span class="vg">sv</span><span class="o">=</span><span class="vg">net</span><span class="o">.</span><span class="vg">createServer</span><span class="p">(</span><span class="vg">net</span><span class="o">.</span><span class="vg">TCP</span><span class="p">,</span><span class="w"> </span><span class="vg">false</span><span class="p">)</span>
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">close</span><span class="w"> </span><span class="vg">server</span>
+<span class="w">    </span><span class="nl">sv:</span><span class="vg">close</span><span class="p">()</span>
+</pre></div>
+
 
 <h4 id="see-also_49"><a name="user-content-see-also_49" href="#see-also_49" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
@@ -2093,11 +2208,12 @@ If  event is&rdquo;receive&rdquo;,  the second param is received data in string.
 <h4 id="returns_52"><a name="user-content-returns_52" href="#returns_52" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_51"><a name="user-content-example_51" href="#example_51" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    sk=net.createConnection(net.TCP, false)
-    sk:on(&quot;receive&quot;, function(sck, c) print(c) end )
-    sk:connect(80,&quot;192.168.0.66&quot;)
-    sk:send(&quot;GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n&quot;)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">sk</span><span class="o">=</span><span class="vg">net</span><span class="o">.</span><span class="vg">createConnection</span><span class="p">(</span><span class="vg">net</span><span class="o">.</span><span class="vg">TCP</span><span class="p">,</span><span class="w"> </span><span class="vg">false</span><span class="p">)</span>
+<span class="w">    </span><span class="nl">sk:</span><span class="vg">on</span><span class="p">(</span><span class="s2">&quot;receive&quot;</span><span class="p">,</span><span class="w"> </span><span class="vg">function</span><span class="p">(</span><span class="vg">sck</span><span class="p">,</span><span class="w"> </span><span class="vg">c</span><span class="p">)</span><span class="w"> </span><span class="vg">print</span><span class="p">(</span><span class="vg">c</span><span class="p">)</span><span class="w"> </span><span class="vg">end</span><span class="w"> </span><span class="p">)</span>
+<span class="w">    </span><span class="nl">sk:</span><span class="vg">connect</span><span class="p">(</span><span class="il">80</span><span class="p">,</span><span class="s2">&quot;192.168.0.66&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nl">sk:</span><span class="vg">send</span><span class="p">(</span><span class="s2">&quot;GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n&quot;</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_52"><a name="user-content-see-also_52" href="#see-also_52" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
@@ -2194,8 +2310,9 @@ data: data can be numbers, string or lua table.</p>
 <h4 id="returns_59"><a name="user-content-returns_59" href="#returns_59" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>nil</p>
 <h4 id="example_52"><a name="user-content-example_52" href="#example_52" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    i2c.write(0, &quot;hello&quot;, &quot;world&quot;)
-</code></pre>
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">write</span><span class="p">(</span><span class="il">0</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;hello&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;world&quot;</span><span class="p">)</span>
+</pre></div>
+
 
 <h4 id="see-also_59"><a name="user-content-see-also_59" href="#see-also_59" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ic_read">i2c.read()</a></p>
@@ -2211,31 +2328,31 @@ len: data length</p>
 <h4 id="returns_60"><a name="user-content-returns_60" href="#returns_60" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Returns</h4>
 <p>string:data received.</p>
 <h4 id="example_53"><a name="user-content-example_53" href="#example_53" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>Example</h4>
-<pre><code>    id=0
-    sda=1
-    scl=0
+<div class="codehilite"><pre><span class="w">    </span><span class="vg">id</span><span class="o">=</span><span class="il">0</span>
+<span class="w">    </span><span class="vg">sda</span><span class="o">=</span><span class="il">1</span>
+<span class="w">    </span><span class="vg">scl</span><span class="o">=</span><span class="il">0</span>
 
-    -- initialize i2c, set pin1 as sda, set pin0 as scl
-    i2c.setup(id,sda,scl,i2c.SLOW)
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">initialize</span><span class="w"> </span><span class="vg">i2c</span><span class="p">,</span><span class="w"> </span><span class="vg">set</span><span class="w"> </span><span class="vg">pin1</span><span class="w"> </span><span class="vg">as</span><span class="w"> </span><span class="vg">sda</span><span class="p">,</span><span class="w"> </span><span class="vg">set</span><span class="w"> </span><span class="vg">pin0</span><span class="w"> </span><span class="vg">as</span><span class="w"> </span><span class="vg">scl</span>
+<span class="w">    </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">setup</span><span class="p">(</span><span class="vg">id</span><span class="p">,</span><span class="vg">sda</span><span class="p">,</span><span class="vg">scl</span><span class="p">,</span><span class="vg">i2c</span><span class="o">.</span><span class="vg">SLOW</span><span class="p">)</span>
 
-    -- user defined function: read from reg_addr content of dev_addr
-    function read_reg(dev_addr, reg_addr)
-      i2c.start(id)
-      i2c.address(id, dev_addr ,i2c.TRANSMITTER)
-      i2c.write(id,reg_addr)
-      i2c.stop(id)
-      i2c.start(id)
-      i2c.address(id, dev_addr,i2c.RECEIVER)
-      c=i2c.read(id,1)
-      i2c.stop(id)
-      return c
-    end
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">user</span><span class="w"> </span><span class="vg">defined</span><span class="w"> </span><span class="nl">function:</span><span class="w"> </span><span class="vg">read</span><span class="w"> </span><span class="vg">from</span><span class="w"> </span><span class="vg">reg_addr</span><span class="w"> </span><span class="vg">content</span><span class="w"> </span><span class="vg">of</span><span class="w"> </span><span class="vg">dev_addr</span>
+<span class="w">    </span><span class="vg">function</span><span class="w"> </span><span class="vg">read_reg</span><span class="p">(</span><span class="vg">dev_addr</span><span class="p">,</span><span class="w"> </span><span class="vg">reg_addr</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">start</span><span class="p">(</span><span class="vg">id</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">address</span><span class="p">(</span><span class="vg">id</span><span class="p">,</span><span class="w"> </span><span class="vg">dev_addr</span><span class="w"> </span><span class="p">,</span><span class="vg">i2c</span><span class="o">.</span><span class="vg">TRANSMITTER</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">write</span><span class="p">(</span><span class="vg">id</span><span class="p">,</span><span class="vg">reg_addr</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">stop</span><span class="p">(</span><span class="vg">id</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">start</span><span class="p">(</span><span class="vg">id</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">address</span><span class="p">(</span><span class="vg">id</span><span class="p">,</span><span class="w"> </span><span class="vg">dev_addr</span><span class="p">,</span><span class="vg">i2c</span><span class="o">.</span><span class="vg">RECEIVER</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">c</span><span class="o">=</span><span class="vg">i2c</span><span class="o">.</span><span class="vg">read</span><span class="p">(</span><span class="vg">id</span><span class="p">,</span><span class="il">1</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">i2c</span><span class="o">.</span><span class="vg">stop</span><span class="p">(</span><span class="vg">id</span><span class="p">)</span>
+<span class="w">      </span><span class="vg">return</span><span class="w"> </span><span class="vg">c</span>
+<span class="w">    </span><span class="vg">end</span>
 
-    -- get content of register 0xAA of device 0x77
-    reg = read_reg(0x77, 0xAA)
-    pirnt(string.byte(reg))
+<span class="w">    </span><span class="o">--</span><span class="w"> </span><span class="vg">get</span><span class="w"> </span><span class="vg">content</span><span class="w"> </span><span class="vg">of</span><span class="w"> </span><span class="vg">register</span><span class="w"> </span><span class="il">0</span><span class="vg">xAA</span><span class="w"> </span><span class="vg">of</span><span class="w"> </span><span class="vg">device</span><span class="w"> </span><span class="il">0</span><span class="vg">x77</span>
+<span class="w">    </span><span class="vg">reg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="vg">read_reg</span><span class="p">(</span><span class="il">0</span><span class="vg">x77</span><span class="p">,</span><span class="w"> </span><span class="il">0</span><span class="vg">xAA</span><span class="p">)</span>
+<span class="w">    </span><span class="vg">pirnt</span><span class="p">(</span><span class="vg">string</span><span class="o">.</span><span class="vg">byte</span><span class="p">(</span><span class="vg">reg</span><span class="p">))</span>
+</pre></div>
 
-</code></pre>
 
 <h4 id="see-also_60"><a name="user-content-see-also_60" href="#see-also_60" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>See also</h4>
 <p><strong>-</strong>   <a href="#ic_write">i2c.write()</a></p></article></body></html>
