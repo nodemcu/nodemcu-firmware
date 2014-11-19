@@ -1,0 +1,2365 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body {
+  width: 45em;
+  border: 1px solid #ddd;
+  outline: 1300px solid #fff;
+  margin: 16px auto;
+}
+
+body .markdown-body
+{
+  padding: 30px;
+}
+
+@font-face {
+  font-family: fontawesome-mini;
+  src: url(data:font/woff;charset=utf-8;base64,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) format('woff');
+}
+
+@font-face {
+  font-family: octicons-anchor;
+  src: url(data:font/woff;charset=utf-8;base64,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) format('woff');
+}
+
+.markdown-body {
+  font-family: sans-serif;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  color: #333333;
+  overflow: hidden;
+  font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.markdown-body a {
+  background: transparent;
+}
+
+.markdown-body a:active,
+.markdown-body a:hover {
+  outline: 0;
+}
+
+.markdown-body b,
+.markdown-body strong {
+  font-weight: bold;
+}
+
+.markdown-body mark {
+  background: #ff0;
+  color: #000;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.markdown-body sub,
+.markdown-body sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+.markdown-body sup {
+  top: -0.5em;
+}
+.markdown-body sub {
+  bottom: -0.25em;
+}
+
+.markdown-body h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+
+.markdown-body img {
+  border: 0;
+}
+
+.markdown-body hr {
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  height: 0;
+}
+
+.markdown-body pre {
+  overflow: auto;
+}
+
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body pre,
+.markdown-body samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+.markdown-body input {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+
+.markdown-body html input[disabled] {
+  cursor: default;
+}
+
+.markdown-body input {
+  line-height: normal;
+}
+
+.markdown-body input[type="checkbox"] {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.markdown-body td,
+.markdown-body th {
+  padding: 0;
+}
+
+.markdown-body .codehilitetable {
+  border: 0;
+  border-spacing: 0;
+}
+
+.markdown-body .codehilitetable tr {
+  border: 0;
+}
+
+.markdown-body .codehilitetable pre,
+.markdown-body .codehilitetable div.codehilite {
+  margin: 0;
+}
+
+.markdown-body .linenos,
+.markdown-body .code,
+.markdown-body .codehilitetable td {
+  border: 0;
+  padding: 0;
+}
+
+.markdown-body td:not(.linenos) .linenodiv {
+  padding: 0 !important;
+}
+
+.markdown-body .code {
+  width: 100%;
+}
+
+.markdown-body .linenos div pre,
+.markdown-body .linenodiv pre,
+.markdown-body .linenodiv {
+  border: 0;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-bottom-left-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-bottomleft: 3px;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.markdown-body .code div pre,
+.markdown-body .code div {
+  border: 0;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  -webkit-border-top-right-radius: 3px;
+  -webkit-border-bottom-right-radius: 3px;
+  -moz-border-radius-topright: 3px;
+  -moz-border-radius-bottomright: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.markdown-body * {
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.markdown-body input {
+  font: 13px Helvetica, arial, freesans, clean, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.4;
+}
+
+.markdown-body a {
+  color: #4183c4;
+  text-decoration: none;
+}
+
+.markdown-body a:hover,
+.markdown-body a:focus,
+.markdown-body a:active {
+  text-decoration: underline;
+}
+
+.markdown-body hr {
+  height: 0;
+  margin: 15px 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.markdown-body hr:before,
+.markdown-body hr:after {
+  display: table;
+  content: " ";
+}
+
+.markdown-body hr:after {
+  clear: both;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  line-height: 1.1;
+}
+
+.markdown-body h1 {
+  font-size: 30px;
+}
+
+.markdown-body h2 {
+  font-size: 21px;
+}
+
+.markdown-body h3 {
+  font-size: 16px;
+}
+
+.markdown-body h4 {
+  font-size: 14px;
+}
+
+.markdown-body h5 {
+  font-size: 12px;
+}
+
+.markdown-body h6 {
+  font-size: 11px;
+}
+
+.markdown-body blockquote {
+  margin: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body ol ol,
+.markdown-body ul ol {
+  list-style-type: lower-roman;
+}
+
+.markdown-body ul ul ol,
+.markdown-body ul ol ol,
+.markdown-body ol ul ol,
+.markdown-body ol ol ol {
+  list-style-type: lower-alpha;
+}
+
+.markdown-body dd {
+  margin-left: 0;
+}
+
+.markdown-body code,
+.markdown-body pre,
+.markdown-body samp {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 12px;
+}
+
+.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body kbd {
+  background-color: #e7e7e7;
+  background-image: -moz-linear-gradient(#fefefe, #e7e7e7);
+  background-image: -webkit-linear-gradient(#fefefe, #e7e7e7);
+  background-image: linear-gradient(#fefefe, #e7e7e7);
+  background-repeat: repeat-x;
+  border-radius: 2px;
+  border: 1px solid #cfcfcf;
+  color: #000;
+  padding: 3px 5px;
+  line-height: 10px;
+  font: 11px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  display: inline-block;
+}
+
+.markdown-body>*:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-body .headeranchor-link {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  padding-right: 6px;
+  padding-left: 30px;
+  margin-left: -30px;
+}
+
+.markdown-body .headeranchor-link:focus {
+  outline: none;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  position: relative;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+.markdown-body h1 .headeranchor,
+.markdown-body h2 .headeranchor,
+.markdown-body h3 .headeranchor,
+.markdown-body h4 .headeranchor,
+.markdown-body h5 .headeranchor,
+.markdown-body h6 .headeranchor {
+  display: none;
+  color: #000;
+  vertical-align: middle;
+}
+
+.markdown-body h1:hover .headeranchor-link,
+.markdown-body h2:hover .headeranchor-link,
+.markdown-body h3:hover .headeranchor-link,
+.markdown-body h4:hover .headeranchor-link,
+.markdown-body h5:hover .headeranchor-link,
+.markdown-body h6:hover .headeranchor-link {
+  height: 1em;
+  padding-left: 8px;
+  margin-left: -30px;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.markdown-body h1:hover .headeranchor-link .headeranchor,
+.markdown-body h2:hover .headeranchor-link .headeranchor,
+.markdown-body h3:hover .headeranchor-link .headeranchor,
+.markdown-body h4:hover .headeranchor-link .headeranchor,
+.markdown-body h5:hover .headeranchor-link .headeranchor,
+.markdown-body h6:hover .headeranchor-link .headeranchor {
+  display: inline-block;
+}
+
+.markdown-body h1 {
+  padding-bottom: 0.3em;
+  font-size: 2.25em;
+  line-height: 1.2;
+  border-bottom: 1px solid #eee;
+}
+
+.markdown-body h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.75em;
+  line-height: 1.225;
+  border-bottom: 1px solid #eee;
+}
+
+.markdown-body h3 {
+  font-size: 1.5em;
+  line-height: 1.43;
+}
+
+.markdown-body h4 {
+  font-size: 1.25em;
+}
+
+.markdown-body h5 {
+  font-size: 1em;
+}
+
+.markdown-body h6 {
+  font-size: 1em;
+  color: #777;
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body dl,
+.markdown-body table,
+.markdown-body pre,
+.markdown-body .admonition {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.markdown-body hr {
+  height: 4px;
+  padding: 0;
+  margin: 16px 0;
+  background-color: #e7e7e7;
+  border: 0 none;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 2em;
+}
+
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ol,
+.markdown-body ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body li>p {
+  margin-top: 16px;
+}
+
+.markdown-body dl {
+  padding: 0;
+}
+
+.markdown-body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.markdown-body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+
+.markdown-body blockquote {
+  padding: 0 15px;
+  color: #777;
+  border-left: 4px solid #ddd;
+}
+
+.markdown-body blockquote>:first-child {
+  margin-top: 0;
+}
+
+.markdown-body blockquote>:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+
+.markdown-body table th {
+  font-weight: bold;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid #ddd;
+}
+
+.markdown-body table tr {
+  background-color: #fff;
+  border-top: 1px solid #ccc;
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background-color: #f8f8f8;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.markdown-body code,
+.markdown-body samp {
+  padding: 0;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(0,0,0,0.04);
+  border-radius: 3px;
+}
+
+.markdown-body code:before,
+.markdown-body code:after {
+  letter-spacing: -0.2em;
+  content: "\00a0";
+}
+
+.markdown-body pre>code {
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+
+.markdown-body .codehilite {
+  margin-bottom: 16px;
+}
+
+.markdown-body .codehilite pre,
+.markdown-body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f7f7f7;
+  border-radius: 3px;
+}
+
+.markdown-body .codehilite pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+
+.markdown-body pre {
+  word-wrap: normal;
+}
+
+.markdown-body pre code {
+  display: inline;
+  max-width: initial;
+  padding: 0;
+  margin: 0;
+  overflow: initial;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+
+.markdown-body pre code:before,
+.markdown-body pre code:after {
+  content: normal;
+}
+
+/* Admonition */
+.markdown-body .admonition {
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  position: relative;
+  border-radius: 3px;
+  border: 1px solid #e0e0e0;
+  border-left: 6px solid #333;
+  padding: 10px 10px 10px 30px;
+}
+
+.markdown-body .admonition table {
+  color: #333;
+}
+
+.markdown-body .admonition p {
+  padding: 0;
+}
+
+.markdown-body .admonition-title {
+  font-weight: bold;
+  margin: 0;
+}
+
+.markdown-body .admonition>.admonition-title {
+  color: #333;
+}
+
+.markdown-body .attention>.admonition-title {
+  color: #a6d796;
+}
+
+.markdown-body .caution>.admonition-title {
+  color: #d7a796;
+}
+
+.markdown-body .hint>.admonition-title {
+  color: #96c6d7;
+}
+
+.markdown-body .danger>.admonition-title {
+  color: #c25f77;
+}
+
+.markdown-body .question>.admonition-title {
+  color: #96a6d7;
+}
+
+.markdown-body .note>.admonition-title {
+  color: #d7c896;
+}
+
+.markdown-body .admonition:before,
+.markdown-body .attention:before,
+.markdown-body .caution:before,
+.markdown-body .hint:before,
+.markdown-body .danger:before,
+.markdown-body .question:before,
+.markdown-body .note:before {
+  font: normal normal 16px fontawesome-mini;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  line-height: 1.5;
+  color: #333;
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding-top: 10px;
+  padding-left: 10px;
+}
+
+.markdown-body .admonition:before {
+  content: "\f056\00a0";
+  color: 333;
+}
+
+.markdown-body .attention:before {
+  content: "\f058\00a0";
+  color: #a6d796;
+}
+
+.markdown-body .caution:before {
+  content: "\f06a\00a0";
+  color: #d7a796;
+}
+
+.markdown-body .hint:before {
+  content: "\f05a\00a0";
+  color: #96c6d7;
+}
+
+.markdown-body .danger:before {
+  content: "\f057\00a0";
+  color: #c25f77;
+}
+
+.markdown-body .question:before {
+  content: "\f059\00a0";
+  color: #96a6d7;
+}
+
+.markdown-body .note:before {
+  content: "\f040\00a0";
+  color: #d7c896;
+}
+
+.markdown-body .admonition::after {
+  content: normal;
+}
+
+.markdown-body .attention {
+  border-left: 6px solid #a6d796;
+}
+
+.markdown-body .caution {
+  border-left: 6px solid #d7a796;
+}
+
+.markdown-body .hint {
+  border-left: 6px solid #96c6d7;
+}
+
+.markdown-body .danger {
+  border-left: 6px solid #c25f77;
+}
+
+.markdown-body .question {
+  border-left: 6px solid #96a6d7;
+}
+
+.markdown-body .note {
+  border-left: 6px solid #d7c896;
+}
+
+.markdown-body .admonition>*:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body .admonition>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* progress bar*/
+.markdown-body .progress {
+  display: block;
+  width: 300px;
+  margin: 10px 0;
+  height: 24px;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  background-color: #ededed;
+  position: relative;
+  box-shadow: inset -1px 1px 3px rgba(0, 0, 0, .1);
+}
+
+.markdown-body .progress-label {
+  position: absolute;
+  text-align: center;
+  font-weight: bold;
+  width: 100%; margin: 0;
+  line-height: 24px;
+  color: #333;
+  text-shadow: 1px 1px 0 #fefefe, -1px -1px 0 #fefefe, -1px 1px 0 #fefefe, 1px -1px 0 #fefefe, 0 1px 0 #fefefe, 0 -1px 0 #fefefe, 1px 0 0 #fefefe, -1px 0 0 #fefefe, 1px 1px 2px #000;
+  -webkit-font-smoothing: antialiased !important;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.markdown-body .progress-bar {
+  height: 24px;
+  float: left;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  background-color: #96c6d7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), inset 0 -1px 0 rgba(0, 0, 0, .1);
+  background-size: 30px 30px;
+  background-image: -webkit-linear-gradient(
+    135deg, rgba(255, 255, 255, .4) 27%,
+    transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%,
+    transparent 77%, transparent
+  );
+  background-image: -moz-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+  background-image: -ms-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+  background-image: -o-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+}
+
+.markdown-body .progress-100plus .progress-bar {
+  background-color: #a6d796;
+}
+
+.markdown-body .progress-80plus .progress-bar {
+  background-color: #c6d796;
+}
+
+.markdown-body .progress-60plus .progress-bar {
+  background-color: #d7c896;
+}
+
+.markdown-body .progress-40plus .progress-bar {
+  background-color: #d7a796;
+}
+
+.markdown-body .progress-20plus .progress-bar {
+  background-color: #d796a6;
+}
+
+.markdown-body .progress-0plus .progress-bar {
+  background-color: #c25f77;
+}
+
+.markdown-body .candystripe-animate .progress-bar{
+  -webkit-animation: animate-stripes 3s linear infinite;
+  -moz-animation: animate-stripes 3s linear infinite;
+  animation: animate-stripes 3s linear infinite;
+}
+
+@-webkit-keyframes animate-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 60px 0;
+  }
+}
+
+@-moz-keyframes animate-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 60px 0;
+  }
+}
+
+@keyframes animate-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 60px 0;
+  }
+}
+
+.markdown-body .gloss .progress-bar {
+  box-shadow:
+    inset 0 4px 12px rgba(255, 255, 255, .7),
+    inset 0 -12px 0 rgba(0, 0, 0, .05);
+}
+
+/* Multimarkdown Critic Blocks */
+.markdown-body .critic_mark {
+  background: #ff0;
+}
+
+.markdown-body .critic_delete {
+  color: #c82829;
+  text-decoration: line-through;
+}
+
+.markdown-body .critic_insert {
+  color: #718c00 ;
+  text-decoration: underline;
+}
+
+.markdown-body .critic_comment {
+  color: #8e908c;
+  font-style: italic;
+}
+
+.markdown-body .headeranchor {
+  font: normal normal 16px octicons-anchor;
+  line-height: 1;
+  display: inline-block;
+  text-decoration: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.headeranchor:before {
+  content: '\f05c';
+}
+
+.markdown-body .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-body .task-list-item+.task-list-item {
+  margin-top: 3px;
+}
+
+.markdown-body .task-list-item input {
+  margin: 0 4px 0.25em -20px;
+  vertical-align: middle;
+}
+
+/* Media */
+@media only screen and (min-width: 480px) {
+  .markdown-body {
+    font-size:14px;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .markdown-body {
+    font-size:16px;
+  }
+}
+
+@media print {
+  .markdown-body * {
+    background: transparent !important;
+    color: black !important;
+    filter:none !important;
+    -ms-filter: none !important;
+  }
+
+  .markdown-body {
+    font-size:12pt;
+    max-width:100%;
+    outline:none;
+    border: 0;
+  }
+
+  .markdown-body a,
+  .markdown-body a:visited {
+    text-decoration: underline;
+  }
+
+  .markdown-body .headeranchor-link {
+    display: none;
+  }
+
+  .markdown-body a[href]:after {
+    content: " (" attr(href) ")";
+  }
+
+  .markdown-body abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+
+  .markdown-body .ir a:after,
+  .markdown-body a[href^="javascript:"]:after,
+  .markdown-body a[href^="#"]:after {
+    content: "";
+  }
+
+  .markdown-body pre {
+    white-space: pre;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .markdown-body pre,
+  .markdown-body blockquote {
+    border: 1px solid #999;
+    padding-right: 1em;
+    page-break-inside: avoid;
+  }
+
+  .markdown-body .progress,
+  .markdown-body .progress-bar {
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+  }
+
+  .markdown-body .progress {
+    border: 1px solid #ddd;
+  }
+
+  .markdown-body .progress-bar {
+    height: 22px;
+    border-right: 1px solid #ddd;
+  }
+
+  .markdown-body tr,
+  .markdown-body img {
+    page-break-inside: avoid;
+  }
+
+  .markdown-body img {
+    max-width: 100% !important;
+  }
+
+  .markdown-body p,
+  .markdown-body h2,
+  .markdown-body h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .markdown-body h2,
+  .markdown-body h3 {
+    page-break-after: avoid;
+  }
+}
+</style><style>.codehilite pre .hll { background-color: #f8eec7 }
+.codehilite pre  { background: #ffffff; color: #333333 }
+.codehilite pre .c { color: #999988; font-style: italic } /* Comment */
+.codehilite pre .err { color: #a61717; background-color: #e3d2d2 } /* Error */
+.codehilite pre .k { font-weight: bold } /* Keyword */
+.codehilite pre .n { color: #333333 } /* Name */
+.codehilite pre .o { font-weight: bold } /* Operator */
+.codehilite pre .cm { color: #999988; font-style: italic } /* Comment.Multiline */
+.codehilite pre .cp { color: #999999; font-weight: bold } /* Comment.Preproc */
+.codehilite pre .c1 { color: #999988; font-style: italic } /* Comment.Single */
+.codehilite pre .cs { color: #999988; font-style: italic } /* Comment.Special */
+.codehilite pre .gd { color: #000000; background-color: #ffdddd } /* Generic.Deleted */
+.codehilite pre .ge { font-style: italic } /* Generic.Emph */
+.codehilite pre .gr { color: #aa0000 } /* Generic.Error */
+.codehilite pre .gh { color: #999999 } /* Generic.Heading */
+.codehilite pre .gi { color: #000000; background-color: #ddffdd } /* Generic.Inserted */
+.codehilite pre .go { color: #888888 } /* Generic.Output */
+.codehilite pre .gp { color: #555555 } /* Generic.Prompt */
+.codehilite pre .gs { font-weight: bold } /* Generic.Strong */
+.codehilite pre .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite pre .gt { color: #aa0000 } /* Generic.Traceback */
+.codehilite pre .kc { font-weight: bold } /* Keyword.Constant */
+.codehilite pre .kd { font-weight: bold } /* Keyword.Declaration */
+.codehilite pre .kn { font-weight: bold } /* Keyword.Namespace */
+.codehilite pre .kp { font-weight: bold } /* Keyword.Pseudo */
+.codehilite pre .kr { font-weight: bold } /* Keyword.Reserved */
+.codehilite pre .kt { font-weight: bold } /* Keyword.Type */
+.codehilite pre .m { color: #945277 } /* Literal.Number */
+.codehilite pre .s { color: #df5000 } /* Literal.String */
+.codehilite pre .na { color: #008080 } /* Name.Attribute */
+.codehilite pre .nb { color: #0086b3 } /* Name.Builtin */
+.codehilite pre .nc { color: #445588; font-weight: bold } /* Name.Class */
+.codehilite pre .no { color: #094e99 } /* Name.Constant */
+.codehilite pre .nd { color: #333333 } /* Name.Decorator */
+.codehilite pre .ni { color: #800080 } /* Name.Entity */
+.codehilite pre .ne { color: #990000; font-weight: bold } /* Name.Exception */
+.codehilite pre .nf { color: #945277; font-weight: bold } /* Name.Function */
+.codehilite pre .nl { color: #333333 } /* Name.Label */
+.codehilite pre .nn { color: #555555 } /* Name.Namespace */
+.codehilite pre .nx { color: #333333 } /* Name.Other */
+.codehilite pre .py { color: #333333 } /* Name.Property */
+.codehilite pre .nt { color: #000080 } /* Name.Tag */
+.codehilite pre .nv { color: #008080 } /* Name.Variable */
+.codehilite pre .ow { font-weight: bold } /* Operator.Word */
+.codehilite pre .w { color: #bbbbbb } /* Text.Whitespace */
+.codehilite pre .mb { color: #945277 } /* Literal.Number.Bin */
+.codehilite pre .mf { color: #945277 } /* Literal.Number.Float */
+.codehilite pre .mh { color: #945277 } /* Literal.Number.Hex */
+.codehilite pre .mi { color: #945277 } /* Literal.Number.Integer */
+.codehilite pre .mo { color: #945277 } /* Literal.Number.Oct */
+.codehilite pre .sb { color: #df5000 } /* Literal.String.Backtick */
+.codehilite pre .sc { color: #df5000 } /* Literal.String.Char */
+.codehilite pre .sd { color: #df5000 } /* Literal.String.Doc */
+.codehilite pre .s2 { color: #df5000 } /* Literal.String.Double */
+.codehilite pre .se { color: #df5000 } /* Literal.String.Escape */
+.codehilite pre .sh { color: #df5000 } /* Literal.String.Heredoc */
+.codehilite pre .si { color: #df5000 } /* Literal.String.Interpol */
+.codehilite pre .sx { color: #df5000 } /* Literal.String.Other */
+.codehilite pre .sr { color: #017936 } /* Literal.String.Regex */
+.codehilite pre .s1 { color: #df5000 } /* Literal.String.Single */
+.codehilite pre .ss { color: #8b467f } /* Literal.String.Symbol */
+.codehilite pre .bp { color: #999999 } /* Name.Builtin.Pseudo */
+.codehilite pre .vc { color: #008080 } /* Name.Variable.Class */
+.codehilite pre .vg { color: #008080 } /* Name.Variable.Global */
+.codehilite pre .vi { color: #008080 } /* Name.Variable.Instance */
+.codehilite pre .il { color: #945277 } /* Literal.Number.Integer.Long */</style><title>nodemcu_api_cn</title></head><body><article class="markdown-body"><h1 id="nodemcu-api"><strong>nodeMcu API说明</strong></h1>
+<p><a href="https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_en">English Version</a></p>
+<h3 id="092-build-2014-11-18"><a name="user-content-092-build-2014-11-18" href="#092-build-2014-11-18" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>版本 0.9.2 build 2014-11-18</h3>
+<p><a id="change_log"></a></p>
+<h3 id="_1"><a name="user-content-_1" href="#_1" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>变更日志:</h3>
+<p>2014-11-18<br /><br />
+修正tcp服务器不能使用:close()函数关闭tcp连接的问题。<br /><br />
+tcp服务器: 服务器将关闭30s内未使用的闲置的连接。（修正前为180s）<br /><br />
+增加了函数node.input()用来向lua解释器输入lua代码段, 支持多行输入。<br /><br />
+增加了函数node.ouput(function)用来将串口输出重定向于回调函数。<br /><br />
+file.readline()函数返回值包含了EOL&rsquo;\n&rsquo;, 当读到EOF时，返回nil。</p>
+<p>2014-11-12<br /><br />
+全功能版本固件<br /></p>
+<p>2014-11-11<br /><br />
+文件模块中增加了file.seek()函数。<br /><br />
+最多支持6个PWM输出。<br /></p>
+<p>2014-11-10<br /><br />
+log模块更名为file模块<br /><br />
+文件操作支持多次读写。<br /><br />
+当前仅支持打开一个文件进行操作。<br /></p>
+<p>2014-11-5<br /><br />
+node模块中删除了log函数。<br /><br />
+增加了log模块。<br /><br />
+修改wifi模块的函数。<br /><br />
+修改了node.key长按与短按的默认回调函数。<br /><br />
+只有当按钮被松开后，key才会被触发。<br /></p>
+<h3 id="flash"><a name="user-content-flash" href="#flash" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>flash 错误</h3>
+<p>注意：有些模块在烧写之后启动，串口输出 ERROR in flash_read: r=。。。<br /><br />
+这是因为模块原来的flash内部没有擦除。<br /><br />
+可使用blank512k.bin，<br /><br />
+内容为全0xFF，从0x00000开始烧入。<br /><br />
+烧入之后可以正常运行。</p>
+<h1 id="_2"><a name="user-content-_2" href="#_2" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>概述</h1>
+<ul>
+<li>快速、自动连接无线路由器</li>
+<li>基于Lua 5.1.4，使用者需了解最简单的Lua语法</li>
+<li>采用事件驱动的编程模型</li>
+<li>内置file, timer, pwm, i2c, net, gpio, wifi模块</li>
+<li>串口波特率:9600-8N1</li>
+<li>对模块的引脚进行编号；gpio，i2c，pwm等模块需要使用引脚编号进行索引</li>
+<li>目前的编号对应表格:</li>
+</ul>
+<table>
+  <tr>
+    <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
+  </tr>
+  <tr>
+    <td>0</td><td>GPIO12</td><td>8</td><td>GPIO0</td>
+  </tr>
+  <tr>
+    <td>1</td><td>GPIO13</td><td>9</td><td>GPIO2</td>
+   </tr>
+   <tr>
+    <td>2</td><td>GPIO14</td><td>10</td><td>GPIO4</td>
+  </tr>
+  <tr>
+    <td>3</td><td>GPIO15</td><td>11</td><td>GPIO5</td>
+   </tr>
+   <tr>
+    <td>4</td><td>GPIO3</td><td></td><td></td>
+  </tr>
+  <tr>
+    <td>5</td><td>GPIO1</td><td></td><td></td>
+   </tr>
+   <tr>
+    <td>6</td><td>GPIO9</td><td></td><td></td>
+  </tr>
+  <tr>
+    <td>7</td><td>GPIO10</td<td></td><td></td>
+   </tr>
+</table>
+
+<h1 id="_3"><a name="user-content-_3" href="#_3" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>固件烧写</h1>
+<h3 id="_4"><a name="user-content-_4" href="#_4" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>地址</h3>
+<p>nodemcu_512k.bin: 0x00000<br /></p>
+<h1 id="node"><a name="user-content-node" href="#node" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node模块</h1>
+<p><a id="nm_restart"></a></p>
+<h2 id="noderestart"><a name="user-content-noderestart" href="#noderestart" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.restart()</h2>
+<h4 id="_5"><a name="user-content-_5" href="#_5" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>重新启动</p>
+<h4 id="_6"><a name="user-content-_6" href="#_6" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.restart()</p>
+<h4 id="_7"><a name="user-content-_7" href="#_7" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_8"><a name="user-content-_8" href="#_8" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_9"><a name="user-content-_9" href="#_9" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">node</span><span class="p">.</span><span class="n">restart</span><span class="p">();</span>
+</pre></div>
+
+
+<h4 id="_10"><a name="user-content-_10" href="#_10" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<p><a id="nm_dsleep"></a></p>
+<h2 id="nodedsleep"><a name="user-content-nodedsleep" href="#nodedsleep" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.dsleep()</h2>
+<h4 id="_11"><a name="user-content-_11" href="#_11" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>进入睡眠模式，计时时间之后唤醒<br /></p>
+<h4 id="_12"><a name="user-content-_12" href="#_12" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.dsleep(us)<br /><br />
+<strong>-注意:</strong> 如需使用此功能，需要将esp8266的PIN32(RST)和PIN8(XPD_DCDC)短接。</p>
+<h4 id="_13"><a name="user-content-_13" href="#_13" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>us: 睡眠时间，单位：us</p>
+<h4 id="_14"><a name="user-content-_14" href="#_14" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_15"><a name="user-content-_15" href="#_15" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">node</span><span class="p">.</span><span class="n">dsleep</span><span class="p">(</span><span class="n">us</span><span class="p">);</span>
+</pre></div>
+
+
+<h4 id="_16"><a name="user-content-_16" href="#_16" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<p><a id="nm_chipid"></a></p>
+<h2 id="nodechipid"><a name="user-content-nodechipid" href="#nodechipid" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.chipid()</h2>
+<h4 id="_17"><a name="user-content-_17" href="#_17" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>返回芯片ID</p>
+<h4 id="_18"><a name="user-content-_18" href="#_18" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.chipid()</p>
+<h4 id="_19"><a name="user-content-_19" href="#_19" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_20"><a name="user-content-_20" href="#_20" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>number:芯片ID</p>
+<h4 id="_21"><a name="user-content-_21" href="#_21" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">id</span> <span class="o">=</span> <span class="n">node</span><span class="p">.</span><span class="n">chipid</span><span class="p">();</span>
+</pre></div>
+
+
+<h4 id="_22"><a name="user-content-_22" href="#_22" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<p><a id="nm_heap"></a></p>
+<h2 id="nodeheap"><a name="user-content-nodeheap" href="#nodeheap" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.heap()</h2>
+<h4 id="_23"><a name="user-content-_23" href="#_23" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>返回当前系统剩余内存大小，单位：字节</p>
+<h4 id="_24"><a name="user-content-_24" href="#_24" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.heap()</p>
+<h4 id="_25"><a name="user-content-_25" href="#_25" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_26"><a name="user-content-_26" href="#_26" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>number: 系统剩余内存字节数</p>
+<h4 id="_27"><a name="user-content-_27" href="#_27" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">heap_size</span> <span class="o">=</span> <span class="n">node</span><span class="p">.</span><span class="n">heap</span><span class="p">();</span>
+</pre></div>
+
+
+<h4 id="_28"><a name="user-content-_28" href="#_28" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<p><a id="nm_key"></a></p>
+<h2 id="nodekey"><a name="user-content-nodekey" href="#nodekey" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.key()</h2>
+<h4 id="_29"><a name="user-content-_29" href="#_29" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>定义按键的功能函数, 按键与GPIO16相连。</p>
+<h4 id="_30"><a name="user-content-_30" href="#_30" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.key(type, function())</p>
+<h4 id="_31"><a name="user-content-_31" href="#_31" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>type: type取字符串&rdquo;long&rdquo;或者&rdquo;short&rdquo;. long:按下按键持续3s以上, short: 短按按键(时间短于3s)<br /><br />
+function(): 用户自定义的按键回调函数。 如果为nil, 则取消用户定义的回调函数。<br /><br />
+默认函数：long：改变LED闪烁频率，short：重新启动。</p>
+<h4 id="_32"><a name="user-content-_32" href="#_32" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_33"><a name="user-content-_33" href="#_33" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">node</span><span class="p">.</span><span class="n">key</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">long&quot;</span><span class="p">,</span> <span class="k">function</span><span class="p">(){</span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="s">hello world&#39;</span><span class="p">)})</span>
+</pre></div>
+
+
+<h4 id="_34"><a name="user-content-_34" href="#_34" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<p><a id="nm_led"></a></p>
+<h2 id="nodeled"><a name="user-content-nodeled" href="#nodeled" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.led()</h2>
+<h4 id="_35"><a name="user-content-_35" href="#_35" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置LED的亮/暗时间, LED连接到GPIO16, 与node.key()复用。</p>
+<h4 id="_36"><a name="user-content-_36" href="#_36" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.led(low, high)</p>
+<h4 id="_37"><a name="user-content-_37" href="#_37" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>Low: LED关闭时间，如设置为0，则LED处于常亮状态。单位：毫秒，时间分辨率：80~100ms<br /><br />
+High: LED打开时间，单位：毫秒，时间分辨率：80~100ms</p>
+<h4 id="_38"><a name="user-content-_38" href="#_38" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_39"><a name="user-content-_39" href="#_39" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- LED常亮.</span>
+    <span class="n">node</span><span class="p">.</span><span class="n">led</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</pre></div>
+
+
+<h4 id="_40"><a name="user-content-_40" href="#_40" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<p><a id="nm_input"></a></p>
+<h2 id="nodeinput"><a name="user-content-nodeinput" href="#nodeinput" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.input()</h2>
+<h4 id="_41"><a name="user-content-_41" href="#_41" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>接收字符串并将字符串传入lua解释器。<br /><br />
+功能同pcall(loadstring(str))，增加了支持多行输入的功能。</p>
+<h4 id="_42"><a name="user-content-_42" href="#_42" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.input(str)</p>
+<h4 id="_43"><a name="user-content-_43" href="#_43" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>str: Lua代码段</p>
+<h4 id="_44"><a name="user-content-_44" href="#_44" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_45"><a name="user-content-_45" href="#_45" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 注意：该函数不支持在命令行中使用。</span>
+    <span class="n">sk</span><span class="p">:</span><span class="n">on</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">receive&quot;</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span> <span class="n">node</span><span class="p">.</span><span class="n">input</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="k">end</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_46"><a name="user-content-_46" href="#_46" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<p><a id="nm_output"></a></p>
+<h2 id="nodeoutput"><a name="user-content-nodeoutput" href="#nodeoutput" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>node.output()</h2>
+<h4 id="_47"><a name="user-content-_47" href="#_47" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>将lua解释器输出重定向于回调函数。</p>
+<h4 id="_48"><a name="user-content-_48" href="#_48" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>node.output(function(str), serial_debug)</p>
+<h4 id="_49"><a name="user-content-_49" href="#_49" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>function(str): 接收lua解释器输出的str作为输入，可以将该输出通过socket发送。<br /><br />
+serial_debug: 1：将输出送至串口； 0：输出不送至串口</p>
+<h4 id="_50"><a name="user-content-_50" href="#_50" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_51"><a name="user-content-_51" href="#_51" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="k">function</span> <span class="nf">tonet</span><span class="p">(</span><span class="n">str</span><span class="p">)</span>
+      <span class="n">sk</span><span class="p">:</span><span class="n">send</span><span class="p">(</span><span class="n">str</span><span class="p">)</span>
+      <span class="c1">-- print(str) 错误!!! 千万不要在此函数中再使用print函数</span>
+      <span class="c1">-- 因为这样会导致函数的嵌套调用！！</span>
+    <span class="k">end</span>
+    <span class="n">node</span><span class="p">.</span><span class="n">ouput</span><span class="p">(</span><span class="n">tonet</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1">-- serial also get the lua output.</span>
+</pre></div>
+
+
+<h4 id="_52"><a name="user-content-_52" href="#_52" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href=""></a></p>
+<h1 id="file"><a name="user-content-file" href="#file" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file 模块</h1>
+<p><a id="fl_remove"></a></p>
+<h2 id="fileremove"><a name="user-content-fileremove" href="#fileremove" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.remove()</h2>
+<h4 id="_53"><a name="user-content-_53" href="#_53" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>删除文件。</p>
+<h4 id="_54"><a name="user-content-_54" href="#_54" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.remove(filename)</p>
+<h4 id="_55"><a name="user-content-_55" href="#_55" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>filename: 需要删除的文件。</p>
+<h4 id="_56"><a name="user-content-_56" href="#_56" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_57"><a name="user-content-_57" href="#_57" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 删除foo.lua文件</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">foo.lua&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_58"><a name="user-content-_58" href="#_58" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
+<strong>-</strong>   <a href="#fl_close">file.close()</a></p>
+<p><a id="fl_open"></a></p>
+<h2 id="fileopen"><a name="user-content-fileopen" href="#fileopen" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.open()</h2>
+<h4 id="_59"><a name="user-content-_59" href="#_59" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>打开文件。</p>
+<h4 id="_60"><a name="user-content-_60" href="#_60" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.open(filename, mode)</p>
+<h4 id="_61"><a name="user-content-_61" href="#_61" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>filename: 需要打开的文件，不支持文件夹。<br /><br />
+mode:<br /><br />
+   &ldquo;r&rdquo;: read mode (the default)<br /><br />
+   &ldquo;w&rdquo;: write mode<br /><br />
+   &ldquo;a&rdquo;: append mode<br /><br />
+   &ldquo;r+&rdquo;: update mode, 文件内的数据保留<br /><br />
+   &ldquo;w+&rdquo;: update mode, 文件内的数据清除<br /><br />
+   &ldquo;a+&rdquo;: append update mode, 文件内的数据保留，要写入的数据仅能增加在文件最后。</p>
+<h4 id="_62"><a name="user-content-_62" href="#_62" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_63"><a name="user-content-_63" href="#_63" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 打开&#39;init.lua&#39;，并打印文件的第一行。</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">init.lua&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">r&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">.</span><span class="n">readline</span><span class="p">())</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_64"><a name="user-content-_64" href="#_64" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_close">file.close()</a><br /><br />
+<strong>-</strong>   <a href="#fl_readline">file.readline()</a></p>
+<p><a id="fl_close"></a></p>
+<h2 id="fileclose"><a name="user-content-fileclose" href="#fileclose" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.close()</h2>
+<h4 id="_65"><a name="user-content-_65" href="#_65" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>关闭文件。</p>
+<h4 id="_66"><a name="user-content-_66" href="#_66" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.close()</p>
+<h4 id="_67"><a name="user-content-_67" href="#_67" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_68"><a name="user-content-_68" href="#_68" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_69"><a name="user-content-_69" href="#_69" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 打开&#39;init.lua&#39;，并打印文件的第一行，然后关闭文件。</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">init.lua&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">r&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">.</span><span class="n">readline</span><span class="p">())</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_70"><a name="user-content-_70" href="#_70" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
+<strong>-</strong>   <a href="#fl_readline">file.readline()</a></p>
+<p><a id="fl_readline"></a></p>
+<h2 id="filereadline"><a name="user-content-filereadline" href="#filereadline" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.readline()</h2>
+<h4 id="_71"><a name="user-content-_71" href="#_71" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>读取文件的一行。</p>
+<h4 id="_72"><a name="user-content-_72" href="#_72" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.readline()</p>
+<h4 id="_73"><a name="user-content-_73" href="#_73" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_74"><a name="user-content-_74" href="#_74" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>逐行返回文件内容。返回值末尾包含EOL(&lsquo;\n&rsquo;)<br /><br />
+如果读到EOF返回nil。</p>
+<h4 id="_75"><a name="user-content-_75" href="#_75" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 打开&#39;init.lua&#39;，读取并打印文件的第一行，然后关闭文件。</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">init.lua&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">r&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">.</span><span class="n">readline</span><span class="p">())</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_76"><a name="user-content-_76" href="#_76" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
+<strong>-</strong>   <a href="#fl_close">file.close()</a></p>
+<p><a id="fl_writeline"></a></p>
+<h2 id="filewriteline"><a name="user-content-filewriteline" href="#filewriteline" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.writeline()</h2>
+<h4 id="_77"><a name="user-content-_77" href="#_77" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>向文件写入一行，行末尾增加&rsquo;\n&rsquo;。</p>
+<h4 id="_78"><a name="user-content-_78" href="#_78" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.writeline(string)</p>
+<h4 id="_79"><a name="user-content-_79" href="#_79" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>string: 需要写入的字符串</p>
+<h4 id="_80"><a name="user-content-_80" href="#_80" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>true: 写入成功<br /><br />
+nil: 写入失败</p>
+<h4 id="_81"><a name="user-content-_81" href="#_81" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 以&#39;a+&#39;的模式打开&#39;init.lua&#39;</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">init.lua&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">a+&quot;</span><span class="p">)</span>
+    <span class="c1">-- 将&#39;foo bar&#39;写到文件的末尾</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">writeline</span><span class="p">(</span><span class="s1">&#39;</span><span class="s">foo bar&#39;</span><span class="p">)</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_82"><a name="user-content-_82" href="#_82" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
+<strong>-</strong>   <a href="#fl_write">file.write()</a></p>
+<p><a id="fl_write"></a></p>
+<h2 id="filewrite"><a name="user-content-filewrite" href="#filewrite" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.write()</h2>
+<h4 id="_83"><a name="user-content-_83" href="#_83" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>向文件写入字符串。</p>
+<h4 id="_84"><a name="user-content-_84" href="#_84" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.write(string)</p>
+<h4 id="_85"><a name="user-content-_85" href="#_85" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>string: 需要写入的字符串</p>
+<h4 id="_86"><a name="user-content-_86" href="#_86" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>true: 写入成功<br /><br />
+nil: 写入失败</p>
+<h4 id="_87"><a name="user-content-_87" href="#_87" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 以&#39;a+&#39;的模式打开&#39;init.lua&#39;</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">init.lua&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">a+&quot;</span><span class="p">)</span>
+    <span class="c1">-- 将&#39;foo bar&#39;写到文件的末尾</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">writeline</span><span class="p">(</span><span class="s1">&#39;</span><span class="s">foo bar&#39;</span><span class="p">)</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_88"><a name="user-content-_88" href="#_88" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
+<strong>-</strong>   <a href="#fl_writeline">file.writeline()</a></p>
+<p><a id="fl_flush"></a></p>
+<h2 id="fileflush"><a name="user-content-fileflush" href="#fileflush" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.flush()</h2>
+<h4 id="_89"><a name="user-content-_89" href="#_89" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>清空缓存写入文件。</p>
+<h4 id="_90"><a name="user-content-_90" href="#_90" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.flush()</p>
+<h4 id="_91"><a name="user-content-_91" href="#_91" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_92"><a name="user-content-_92" href="#_92" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_93"><a name="user-content-_93" href="#_93" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 以&#39;a+&#39;的模式打开&#39;init.lua&#39;</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">init.lua&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">a+&quot;</span><span class="p">)</span>
+    <span class="c1">-- 将&#39;foo bar&#39;写到文件的末尾</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="s">foo bar&#39;</span><span class="p">)</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_94"><a name="user-content-_94" href="#_94" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
+<strong>-</strong>   <a href="#fl_writeline">file.writeline()</a></p>
+<p><a id="fl_seek"></a></p>
+<h2 id="fileseek"><a name="user-content-fileseek" href="#fileseek" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.seek()</h2>
+<h4 id="_95"><a name="user-content-_95" href="#_95" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置或者读取文件的读写位置，位置等于whence加上offset的值。</p>
+<h4 id="_96"><a name="user-content-_96" href="#_96" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.seek(whence, offset)</p>
+<h4 id="_97"><a name="user-content-_97" href="#_97" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>whence:<br /><br />
+&ldquo;set&rdquo;: base is position 0 (beginning of the file);<br /><br />
+&ldquo;cur&rdquo;: base is current position;(default value)<br /><br />
+&ldquo;end&rdquo;: base is end of file;<br /><br />
+offset: default 0</p>
+<h4 id="_98"><a name="user-content-_98" href="#_98" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>成功: 返回当前的文件读写位置<br /><br />
+失败: 返回nil</p>
+<h4 id="_99"><a name="user-content-_99" href="#_99" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 以&#39;a+&#39;的模式打开&#39;init.lua&#39;</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">init.lua&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">a+&quot;</span><span class="p">)</span>
+    <span class="c1">-- 将&#39;foo bar&#39;写到文件的末尾</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="s">foo bar&#39;</span><span class="p">)</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">flush</span><span class="p">()</span>
+    <span class="c1">--将文件读写位置设置在文件开始</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">seek</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">set&quot;</span><span class="p">)</span>
+    <span class="c1">--读取并打印文件的第一行</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="p">.</span><span class="n">readline</span><span class="p">())</span>
+    <span class="n">file</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_100"><a name="user-content-_100" href="#_100" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_open">file.open()</a><br /><br />
+<strong>-</strong>   <a href="#fl_writeline">file.writeline()</a></p>
+<p><a id="fl_list"></a></p>
+<h2 id="filelist"><a name="user-content-filelist" href="#filelist" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>file.list()</h2>
+<h4 id="_101"><a name="user-content-_101" href="#_101" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>显示所有文件。</p>
+<h4 id="_102"><a name="user-content-_102" href="#_102" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>file.list()</p>
+<h4 id="_103"><a name="user-content-_103" href="#_103" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_104"><a name="user-content-_104" href="#_104" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>返回包含{文件名：文件大小}的lua table</p>
+<h4 id="_105"><a name="user-content-_105" href="#_105" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">l</span> <span class="o">=</span> <span class="n">file</span><span class="p">.</span><span class="n">list</span><span class="p">();</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="k">in</span> <span class="nb">pairs</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">do</span>
+      <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">name:&quot;</span><span class="o">..</span><span class="n">k</span><span class="o">..</span><span class="s2">&quot;</span><span class="s">, size:&quot;</span><span class="o">..</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">end</span>
+</pre></div>
+
+
+<h4 id="_106"><a name="user-content-_106" href="#_106" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#fl_remove">file.remove()</a></p>
+<h1 id="wifi"><a name="user-content-wifi" href="#wifi" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi模块</h1>
+<h2 id="_107"><a name="user-content-_107" href="#_107" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>常量</h2>
+<p>wifi.STATION, wifi.SOFTAP, wifi.STATIONAP</p>
+<p><a id="wf_setmode"></a></p>
+<h2 id="wifisetmodemode"><a name="user-content-wifisetmodemode" href="#wifisetmodemode" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.setmode(mode)</h2>
+<h4 id="_108"><a name="user-content-_108" href="#_108" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置wifi的工作模式。</p>
+<h4 id="_109"><a name="user-content-_109" href="#_109" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.setmode(mode)</p>
+<h4 id="_110"><a name="user-content-_110" href="#_110" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>mode: 取值为：wifi.STATION, wifi.SOFTAP or wifi.STATIONAP</p>
+<h4 id="_111"><a name="user-content-_111" href="#_111" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>返回设置之后的mode值</p>
+<h4 id="_112"><a name="user-content-_112" href="#_112" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">wifi</span><span class="p">.</span><span class="n">STATION</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_113"><a name="user-content-_113" href="#_113" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#wf_getmode">wifi.getmode()</a></p>
+<p><a id="wf_getmode"></a></p>
+<h2 id="wifigetmodemode"><a name="user-content-wifigetmodemode" href="#wifigetmodemode" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.getmode(mode)</h2>
+<h4 id="_114"><a name="user-content-_114" href="#_114" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>获取wifi的工作模式。</p>
+<h4 id="_115"><a name="user-content-_115" href="#_115" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.getmode()</p>
+<h4 id="_116"><a name="user-content-_116" href="#_116" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_117"><a name="user-content-_117" href="#_117" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>返回wifi的工作模式</p>
+<h4 id="_118"><a name="user-content-_118" href="#_118" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="nb">print</span><span class="p">(</span><span class="n">wifi</span><span class="p">.</span><span class="n">getmode</span><span class="p">())</span>
+</pre></div>
+
+
+<h4 id="_119"><a name="user-content-_119" href="#_119" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#wf_setmode">wifi.setmode()</a></p>
+<p><a id="wf_startsmart"></a></p>
+<h2 id="wifistartsmart"><a name="user-content-wifistartsmart" href="#wifistartsmart" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.startsmart()</h2>
+<h4 id="_120"><a name="user-content-_120" href="#_120" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>开始自动配置，如果配置成功自动设置ssid和密码。</p>
+<h4 id="_121"><a name="user-content-_121" href="#_121" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.startsmart(channel, function succeed_callback())</p>
+<h4 id="_122"><a name="user-content-_122" href="#_122" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>channel: 1~13, 启动寻找的初始频段，如果为nil默认值为6频段。每个频段搜寻20s。<br /><br />
+succeed_callback: 配置成功的回调函数，配置成功并连接至AP后调用此函数。</p>
+<h4 id="_123"><a name="user-content-_123" href="#_123" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_124"><a name="user-content-_124" href="#_124" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">startsmart</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">cb</span><span class="p">())</span>
+</pre></div>
+
+
+<h4 id="_125"><a name="user-content-_125" href="#_125" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#wf_stopsmart">wifi.stopsmart()</a></p>
+<p><a id="wf_stopsmart"></a></p>
+<h2 id="wifistopsmart"><a name="user-content-wifistopsmart" href="#wifistopsmart" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.stopsmart()</h2>
+<h4 id="_126"><a name="user-content-_126" href="#_126" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>停止配置。</p>
+<h4 id="_127"><a name="user-content-_127" href="#_127" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.stopsmart()</p>
+<h4 id="_128"><a name="user-content-_128" href="#_128" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_129"><a name="user-content-_129" href="#_129" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_130"><a name="user-content-_130" href="#_130" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">stopsmart</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_131"><a name="user-content-_131" href="#_131" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#wf_startsmart">wifi.startsmart()</a></p>
+<h1 id="wifista"><a name="user-content-wifista" href="#wifista" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.sta 子模块</h1>
+<p><a id="ws_config"></a></p>
+<h2 id="wifistaconfig"><a name="user-content-wifistaconfig" href="#wifistaconfig" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.sta.config()</h2>
+<h4 id="_132"><a name="user-content-_132" href="#_132" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置station模式下的ssid和password。</p>
+<h4 id="_133"><a name="user-content-_133" href="#_133" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.sta.config(ssid, password)</p>
+<h4 id="_134"><a name="user-content-_134" href="#_134" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>ssid: 字符串，长度小于32字节。<br /><br />
+password: 字符串，长度小于64字节。</p>
+<h4 id="_135"><a name="user-content-_135" href="#_135" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_136"><a name="user-content-_136" href="#_136" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">sta</span><span class="p">.</span><span class="n">config</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">myssid&quot;</span><span class="p">,</span><span class="s2">&quot;</span><span class="s">mypassword&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_137"><a name="user-content-_137" href="#_137" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ws_connect">wifi.sta.connect()</a><br /><br />
+<strong>-</strong>   <a href="#ws_disconnect">wifi.sta.disconnect()</a></p>
+<p><a id="ws_connect"></a></p>
+<h2 id="wifistaconnect"><a name="user-content-wifistaconnect" href="#wifistaconnect" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.sta.connect()</h2>
+<h4 id="_138"><a name="user-content-_138" href="#_138" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>station模式下连接AP。</p>
+<h4 id="_139"><a name="user-content-_139" href="#_139" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.sta.connect()</p>
+<h4 id="_140"><a name="user-content-_140" href="#_140" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_141"><a name="user-content-_141" href="#_141" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_142"><a name="user-content-_142" href="#_142" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">sta</span><span class="p">.</span><span class="n">connect</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_143"><a name="user-content-_143" href="#_143" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ws_disconnect">wifi.sta.disconnect()</a><br /><br />
+<strong>-</strong>   <a href="#ws_config">wifi.sta.config()</a></p>
+<p><a id="ws_disconnect"></a></p>
+<h2 id="wifistadisconnect"><a name="user-content-wifistadisconnect" href="#wifistadisconnect" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.sta.disconnect()</h2>
+<h4 id="_144"><a name="user-content-_144" href="#_144" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>station模式下与AP断开连接。</p>
+<h4 id="_145"><a name="user-content-_145" href="#_145" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.sta.disconnect()</p>
+<h4 id="_146"><a name="user-content-_146" href="#_146" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_147"><a name="user-content-_147" href="#_147" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_148"><a name="user-content-_148" href="#_148" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">sta</span><span class="p">.</span><span class="n">disconnect</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_149"><a name="user-content-_149" href="#_149" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ws_config">wifi.sta.config()</a><br /><br />
+<strong>-</strong>   <a href="#ws_connect">wifi.sta.connect()</a></p>
+<p><a id="ws_autoconnect"></a></p>
+<h2 id="wifistaautoconnect"><a name="user-content-wifistaautoconnect" href="#wifistaautoconnect" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.sta.autoconnect()</h2>
+<h4 id="_150"><a name="user-content-_150" href="#_150" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>station模式下自动连接。</p>
+<h4 id="_151"><a name="user-content-_151" href="#_151" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.sta.autoconnect(auto)</p>
+<h4 id="_152"><a name="user-content-_152" href="#_152" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>auto: 0：取消自动连接，1：使能自动连接。</p>
+<h4 id="_153"><a name="user-content-_153" href="#_153" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_154"><a name="user-content-_154" href="#_154" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">sta</span><span class="p">.</span><span class="n">autoconnect</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_155"><a name="user-content-_155" href="#_155" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ws_config">wifi.sta.config()</a><br /><br />
+<strong>-</strong>   <a href="#ws_connect">wifi.sta.connect()</a><br /><br />
+<strong>-</strong>   <a href="#ws_disconnect">wifi.sta.disconnect()</a></p>
+<p><a id="ws_getip"></a></p>
+<h2 id="wifistagetip"><a name="user-content-wifistagetip" href="#wifistagetip" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.sta.getip()</h2>
+<h4 id="_156"><a name="user-content-_156" href="#_156" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>station模式下获取ip</p>
+<h4 id="_157"><a name="user-content-_157" href="#_157" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.sta.getip()</p>
+<h4 id="_158"><a name="user-content-_158" href="#_158" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_159"><a name="user-content-_159" href="#_159" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>ip地址字符串，如:&rdquo;192.168.0.111&rdquo;</p>
+<h4 id="_160"><a name="user-content-_160" href="#_160" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- print current ip</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">wifi</span><span class="p">.</span><span class="n">sta</span><span class="p">.</span><span class="n">getip</span><span class="p">())</span>
+</pre></div>
+
+
+<h4 id="_161"><a name="user-content-_161" href="#_161" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ws_getmac">wifi.sta.getmac()</a></p>
+<p><a id="ws_getmac"></a></p>
+<h2 id="wifistagetmac"><a name="user-content-wifistagetmac" href="#wifistagetmac" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.sta.getmac()</h2>
+<h4 id="_162"><a name="user-content-_162" href="#_162" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>station模式下获取mac地址。</p>
+<h4 id="_163"><a name="user-content-_163" href="#_163" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.sta.getmac()</p>
+<h4 id="_164"><a name="user-content-_164" href="#_164" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_165"><a name="user-content-_165" href="#_165" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>mac地址字符串，如:&rdquo;18-33-44-FE-55-BB&rdquo;</p>
+<h4 id="_166"><a name="user-content-_166" href="#_166" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 打印当前的mac地址</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">wifi</span><span class="p">.</span><span class="n">sta</span><span class="p">.</span><span class="n">getmac</span><span class="p">())</span>
+</pre></div>
+
+
+<h4 id="_167"><a name="user-content-_167" href="#_167" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ws_getip">wifi.sta.getip()</a></p>
+<h1 id="wifiap"><a name="user-content-wifiap" href="#wifiap" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.ap 子模块</h1>
+<p><a id="wa_config"></a></p>
+<h2 id="wifiapconfig"><a name="user-content-wifiapconfig" href="#wifiapconfig" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.ap.config()</h2>
+<h4 id="_168"><a name="user-content-_168" href="#_168" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置ap模式下的ssid和password</p>
+<h4 id="_169"><a name="user-content-_169" href="#_169" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.ap.config(cfg)</p>
+<h4 id="_170"><a name="user-content-_170" href="#_170" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>cfg: 设置AP的lua table</p>
+<h4 id="_171"><a name="user-content-_171" href="#_171" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例:</h4>
+<div class="codehilite"><pre>     <span class="n">cfg</span><span class="o">=</span><span class="p">{}</span>
+     <span class="n">cfg</span><span class="p">.</span><span class="n">ssid</span><span class="o">=</span><span class="s2">&quot;</span><span class="s">myssid&quot;</span>
+     <span class="n">cfg</span><span class="p">.</span><span class="n">pwd</span><span class="o">=</span><span class="s2">&quot;</span><span class="s">mypwd&quot;</span>
+     <span class="n">wifi</span><span class="p">.</span><span class="n">ap</span><span class="p">.</span><span class="n">setconfig</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_172"><a name="user-content-_172" href="#_172" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_173"><a name="user-content-_173" href="#_173" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">ap</span><span class="p">.</span><span class="n">config</span><span class="p">(</span><span class="n">ssid</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">password&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_174"><a name="user-content-_174" href="#_174" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>    <a href=""></a></p>
+<p><a id="wa_getip"></a></p>
+<h2 id="wifiapgetip"><a name="user-content-wifiapgetip" href="#wifiapgetip" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.ap.getip()</h2>
+<h4 id="_175"><a name="user-content-_175" href="#_175" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>ap模式下获取ip</p>
+<h4 id="_176"><a name="user-content-_176" href="#_176" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.ap.getip()</p>
+<h4 id="_177"><a name="user-content-_177" href="#_177" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_178"><a name="user-content-_178" href="#_178" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>ip地址字符串，如:&rdquo;192.168.0.111&rdquo;</p>
+<h4 id="_179"><a name="user-content-_179" href="#_179" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">ap</span><span class="p">.</span><span class="n">getip</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_180"><a name="user-content-_180" href="#_180" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#wa_getmac">wifi.ap.getmac()</a></p>
+<p><a id="wa_getmac"></a></p>
+<h2 id="wifiapgetmac"><a name="user-content-wifiapgetmac" href="#wifiapgetmac" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>wifi.ap.getmac()</h2>
+<h4 id="_181"><a name="user-content-_181" href="#_181" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>ap模式下获取mac地址。</p>
+<h4 id="_182"><a name="user-content-_182" href="#_182" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>wifi.ap.getmac()</p>
+<h4 id="_183"><a name="user-content-_183" href="#_183" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_184"><a name="user-content-_184" href="#_184" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>mac地址字符串，如:&rdquo;1A-33-44-FE-55-BB&rdquo;</p>
+<h4 id="_185"><a name="user-content-_185" href="#_185" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">wifi</span><span class="p">.</span><span class="n">ap</span><span class="p">.</span><span class="n">getmac</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_186"><a name="user-content-_186" href="#_186" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#wa_getip">wifi.ap.getip()</a></p>
+<h1 id="timer"><a name="user-content-timer" href="#timer" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>timer 模块</h1>
+<p><a id="tm_delay"></a></p>
+<h2 id="tmrdelay"><a name="user-content-tmrdelay" href="#tmrdelay" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>tmr.delay()</h2>
+<h4 id="_187"><a name="user-content-_187" href="#_187" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>延迟us微秒。</p>
+<h4 id="_188"><a name="user-content-_188" href="#_188" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>tmr.dealy(us)</p>
+<h4 id="_189"><a name="user-content-_189" href="#_189" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>us: 延迟时间，单位：微秒</p>
+<h4 id="_190"><a name="user-content-_190" href="#_190" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_191"><a name="user-content-_191" href="#_191" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- delay 100us</span>
+    <span class="n">tmr</span><span class="p">.</span><span class="n">delay</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_192"><a name="user-content-_192" href="#_192" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#tm_now">tmr.now()</a></p>
+<p><a id="tm_now"></a></p>
+<h2 id="tmrnow"><a name="user-content-tmrnow" href="#tmrnow" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>tmr.now()</h2>
+<h4 id="_193"><a name="user-content-_193" href="#_193" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>返回系统计数器的当前值，uint32，单位：us。</p>
+<h4 id="_194"><a name="user-content-_194" href="#_194" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>tmr.now()</p>
+<h4 id="_195"><a name="user-content-_195" href="#_195" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_196"><a name="user-content-_196" href="#_196" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>uint32: value of counter</p>
+<h4 id="_197"><a name="user-content-_197" href="#_197" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 打印计数器的当前值。</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">tmr</span><span class="p">.</span><span class="n">now</span><span class="p">())</span>
+</pre></div>
+
+
+<h4 id="_198"><a name="user-content-_198" href="#_198" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#tm_delay">tmr.delay()</a></p>
+<p><a id="tm_alarm"></a></p>
+<h2 id="tmralarm"><a name="user-content-tmralarm" href="#tmralarm" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>tmr.alarm()</h2>
+<h4 id="_199"><a name="user-content-_199" href="#_199" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>闹钟函数。<br /><br />
+<strong>-注意:</strong> 只能允许存在一个闹钟，如果在调用tmr.stop()之前重复调用tmr.alarm()，以最后一次设置的为准，此前定义的闹钟都将失效。</p>
+<h4 id="_200"><a name="user-content-_200" href="#_200" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>tmr.alarm(interval, repeat, function do())</p>
+<h4 id="_201"><a name="user-content-_201" href="#_201" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>Interval: 定时时间，单位：毫秒。<br /><br />
+repeat: 0：一次性闹钟；1：重复闹钟。<br /><br />
+function do(): 定时器到时回调函数。</p>
+<h4 id="_202"><a name="user-content-_202" href="#_202" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_203"><a name="user-content-_203" href="#_203" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 每1000ms输出一个hello world</span>
+    <span class="n">tmr</span><span class="p">.</span><span class="n">alarm</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="k">function</span><span class="p">()</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">hello world&quot;</span><span class="p">)</span> <span class="k">end</span> <span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_204"><a name="user-content-_204" href="#_204" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#tm_now">tmr.now()</a></p>
+<p><a id="tm_stop"></a></p>
+<h2 id="tmrstop"><a name="user-content-tmrstop" href="#tmrstop" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>tmr.stop()</h2>
+<h4 id="_205"><a name="user-content-_205" href="#_205" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>停止闹钟功能。<br /></p>
+<h4 id="_206"><a name="user-content-_206" href="#_206" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>tmr.stop()</p>
+<h4 id="_207"><a name="user-content-_207" href="#_207" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil.</p>
+<h4 id="_208"><a name="user-content-_208" href="#_208" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_209"><a name="user-content-_209" href="#_209" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 每隔1000ms打印hello world</span>
+    <span class="n">tmr</span><span class="p">.</span><span class="n">alarm</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="k">function</span><span class="p">()</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">hello world&quot;</span><span class="p">)</span> <span class="k">end</span> <span class="p">)</span>
+
+    <span class="c1">-- 其它代码</span>
+
+    <span class="c1">-- 停止闹钟</span>
+    <span class="n">tmr</span><span class="p">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_210"><a name="user-content-_210" href="#_210" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#tm_now">tmr.now()</a></p>
+<h1 id="gpio"><a name="user-content-gpio" href="#gpio" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>GPIO 模块</h1>
+<h2 id="_211"><a name="user-content-_211" href="#_211" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>常量</h2>
+<p>gpio.OUTPUT, gpio.INPUT, gpio.INT, gpio.HIGH, gpio.LOW</p>
+<p><a id="io_mode"></a></p>
+<h2 id="gpiomode"><a name="user-content-gpiomode" href="#gpiomode" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>gpio.mode()</h2>
+<h4 id="_212"><a name="user-content-_212" href="#_212" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>将pin初始化为GPIO并设置输入输出模式。</p>
+<h4 id="_213"><a name="user-content-_213" href="#_213" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>gpio.mode(pin, mode)</p>
+<h4 id="_214"><a name="user-content-_214" href="#_214" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号<br /><br />
+mode: 取值为：gpio.OUTPUT or gpio.INPUT, or gpio.INT(中断模式)</p>
+<h4 id="_215"><a name="user-content-_215" href="#_215" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_216"><a name="user-content-_216" href="#_216" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 将GPIO0设置为输出模式</span>
+    <span class="n">gpio</span><span class="p">.</span><span class="n">mode</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">gpio</span><span class="p">.</span><span class="n">OUTPUT</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_217"><a name="user-content-_217" href="#_217" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#io_read">gpio.read()</a></p>
+<p><a id="io_read"></a></p>
+<h2 id="gpioread"><a name="user-content-gpioread" href="#gpioread" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>gpio.read()</h2>
+<h4 id="_218"><a name="user-content-_218" href="#_218" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>读取管脚电平高低。</p>
+<h4 id="_219"><a name="user-content-_219" href="#_219" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>gpio.read(pin)</p>
+<h4 id="_220"><a name="user-content-_220" href="#_220" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号</p>
+<h4 id="_221"><a name="user-content-_221" href="#_221" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>number:0：低电平, 1：高电平。</p>
+<h4 id="_222"><a name="user-content-_222" href="#_222" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 读取GPIO0的电平</span>
+    <span class="n">gpio</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_223"><a name="user-content-_223" href="#_223" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#io_mode">gpio.mode()</a></p>
+<p><a id="io_write"></a></p>
+<h2 id="gpiowrite"><a name="user-content-gpiowrite" href="#gpiowrite" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>gpio.write()</h2>
+<h4 id="_224"><a name="user-content-_224" href="#_224" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置管脚电平</p>
+<h4 id="_225"><a name="user-content-_225" href="#_225" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>gpio.write(pin)</p>
+<h4 id="_226"><a name="user-content-_226" href="#_226" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号<br /><br />
+level: gpio.HIGH or gpio.LOW</p>
+<h4 id="_227"><a name="user-content-_227" href="#_227" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_228"><a name="user-content-_228" href="#_228" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 设置GPIP1为输出模式，并将输出电平设置为高</span>
+    <span class="n">pin</span><span class="o">=</span><span class="mi">1</span>
+    <span class="n">gpio</span><span class="p">.</span><span class="n">mode</span><span class="p">(</span><span class="n">pin</span><span class="p">,</span> <span class="n">gpio</span><span class="p">.</span><span class="n">OUTPUT</span><span class="p">)</span>
+    <span class="n">gpio</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">pin</span><span class="p">,</span> <span class="n">gpio</span><span class="p">.</span><span class="n">HIGH</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_229"><a name="user-content-_229" href="#_229" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#io_mode">gpio.mode()</a><br /><br />
+<strong>-</strong>   <a href="#io_read">gpio.read()</a></p>
+<p><a id="io_trig"></a></p>
+<h2 id="gpiotrig"><a name="user-content-gpiotrig" href="#gpiotrig" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>gpio.trig()</h2>
+<h4 id="_230"><a name="user-content-_230" href="#_230" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置管脚中断模式的回调函数。</p>
+<h4 id="_231"><a name="user-content-_231" href="#_231" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>gpio.trig(pin, type, function(level))</p>
+<h4 id="_232"><a name="user-content-_232" href="#_232" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号<br /><br />
+type: 取值为&rdquo;up&rdquo;, &ldquo;down&rdquo;, &ldquo;both&rdquo;, &ldquo;low&rdquo;, &ldquo;high&rdquo;, 分别代表上升沿、下降沿、双边沿、低电平、高电平触发方式。<br /><br />
+function(level): 中断触发的回调函数，GPIO的电平作为输入参数。如果此处没有定义函数，则使用之前定义的回调函数。</p>
+<h4 id="_233"><a name="user-content-_233" href="#_233" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_234"><a name="user-content-_234" href="#_234" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 使用GPIO0检测输入脉冲宽度</span>
+    <span class="n">pulse0</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">du</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">gpio</span><span class="p">.</span><span class="n">mode</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">gpio</span><span class="p">.</span><span class="n">INT</span><span class="p">)</span>
+    <span class="k">function</span> <span class="nf">pin0cb</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+     <span class="n">du</span> <span class="o">=</span> <span class="n">tmr</span><span class="p">.</span><span class="n">now</span><span class="p">()</span> <span class="err">–</span> <span class="n">pulse0</span>
+     <span class="nb">print</span><span class="p">(</span><span class="n">du</span><span class="p">)</span>
+     <span class="n">pulse0</span> <span class="o">=</span> <span class="n">tmr</span><span class="p">.</span><span class="n">now</span><span class="p">()</span>
+     <span class="k">if</span> <span class="n">level</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">then</span> <span class="n">gpio</span><span class="p">.</span><span class="n">trig</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">down &quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">gpio</span><span class="p">.</span><span class="n">trig</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">up &quot;</span><span class="p">)</span> <span class="k">end</span>
+    <span class="k">end</span>
+    <span class="n">gpio</span><span class="p">.</span><span class="n">trig</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">down &quot;</span><span class="p">,</span><span class="n">pin0cb</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_235"><a name="user-content-_235" href="#_235" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#io_mode">gpio.mode()</a><br /><br />
+<strong>-</strong>   <a href="#io_write">gpio.write()</a></p>
+<h1 id="pwm"><a name="user-content-pwm" href="#pwm" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>PWM模块</h1>
+<p><a id="pw_setup"></a></p>
+<h2 id="pwmsetup"><a name="user-content-pwmsetup" href="#pwmsetup" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.setup()</h2>
+<h4 id="_236"><a name="user-content-_236" href="#_236" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置管脚为pwm模式，最多支持6个pwm。</p>
+<h4 id="_237"><a name="user-content-_237" href="#_237" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.setup(pin, clock, duty)</p>
+<h4 id="_238"><a name="user-content-_238" href="#_238" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号<br /><br />
+clock: 1~500, pwm频率<br /><br />
+duty: 0~100, pwm占空比，百分比表示。</p>
+<h4 id="_239"><a name="user-content-_239" href="#_239" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_240"><a name="user-content-_240" href="#_240" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 将管脚0设置为pwm输出模式，频率100Hz，占空比50-50</span>
+    <span class="n">pwm</span><span class="p">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_241"><a name="user-content-_241" href="#_241" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_start">pwm.start()</a></p>
+<p><a id="pw_close"></a></p>
+<h2 id="pwmclose"><a name="user-content-pwmclose" href="#pwmclose" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.close()</h2>
+<h4 id="_242"><a name="user-content-_242" href="#_242" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>退出pwm模式。</p>
+<h4 id="_243"><a name="user-content-_243" href="#_243" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.close(pin)</p>
+<h4 id="_244"><a name="user-content-_244" href="#_244" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号</p>
+<h4 id="_245"><a name="user-content-_245" href="#_245" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_246"><a name="user-content-_246" href="#_246" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">pwm</span><span class="p">.</span><span class="n">close</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_247"><a name="user-content-_247" href="#_247" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_start">pwm.start()</a></p>
+<p><a id="pw_start"></a></p>
+<h2 id="pwmstart"><a name="user-content-pwmstart" href="#pwmstart" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.start()</h2>
+<h4 id="_248"><a name="user-content-_248" href="#_248" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>pwm启动，可以在对应的GPIO检测到波形。</p>
+<h4 id="_249"><a name="user-content-_249" href="#_249" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.start(pin)</p>
+<h4 id="_250"><a name="user-content-_250" href="#_250" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号</p>
+<h4 id="_251"><a name="user-content-_251" href="#_251" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_252"><a name="user-content-_252" href="#_252" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">pwm</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_253"><a name="user-content-_253" href="#_253" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_stop">pwm.stop()</a></p>
+<p><a id="pw_stop"></a></p>
+<h2 id="pwmstop"><a name="user-content-pwmstop" href="#pwmstop" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.stop()</h2>
+<h4 id="_254"><a name="user-content-_254" href="#_254" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>暂停pwm输出波形。</p>
+<h4 id="_255"><a name="user-content-_255" href="#_255" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.stop(pin)</p>
+<h4 id="_256"><a name="user-content-_256" href="#_256" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号</p>
+<h4 id="_257"><a name="user-content-_257" href="#_257" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_258"><a name="user-content-_258" href="#_258" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">pwm</span><span class="p">.</span><span class="n">stop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_259"><a name="user-content-_259" href="#_259" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_start">pwm.start()</a></p>
+<p><a id="pw_setclock"></a></p>
+<h2 id="pwmsetclock"><a name="user-content-pwmsetclock" href="#pwmsetclock" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.setclock()</h2>
+<h4 id="_260"><a name="user-content-_260" href="#_260" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置pwm的频率<br /><br />
+<strong>-Note:</strong> 设置pwm频率将会同步改变其他pwm输出的频率，当前版本的所有pwm仅支持同一频率输出。</p>
+<h4 id="_261"><a name="user-content-_261" href="#_261" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.setclock(pin, clock)</p>
+<h4 id="_262"><a name="user-content-_262" href="#_262" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号<br /><br />
+clock: 1~500, pwm周期</p>
+<h4 id="_263"><a name="user-content-_263" href="#_263" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_264"><a name="user-content-_264" href="#_264" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">pwm</span><span class="p">.</span><span class="n">setclock</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_265"><a name="user-content-_265" href="#_265" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_getclock">pwm.getclock()</a></p>
+<p><a id="pw_getclock"></a></p>
+<h2 id="pwmgetclock"><a name="user-content-pwmgetclock" href="#pwmgetclock" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.getclock()</h2>
+<h4 id="_266"><a name="user-content-_266" href="#_266" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>获取pin的pwm工作频率</p>
+<h4 id="_267"><a name="user-content-_267" href="#_267" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.getclock(pin)</p>
+<h4 id="_268"><a name="user-content-_268" href="#_268" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号</p>
+<h4 id="_269"><a name="user-content-_269" href="#_269" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>number:pin的pwm工作频率</p>
+<h4 id="_270"><a name="user-content-_270" href="#_270" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="nb">print</span><span class="p">(</span><span class="n">pwm</span><span class="p">.</span><span class="n">getclock</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+</pre></div>
+
+
+<h4 id="_271"><a name="user-content-_271" href="#_271" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_setclock">pwm.setclock()</a></p>
+<p><a id="pw_setduty"></a></p>
+<h2 id="pwmsetduty"><a name="user-content-pwmsetduty" href="#pwmsetduty" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.setduty()</h2>
+<h4 id="_272"><a name="user-content-_272" href="#_272" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置pin的占空比。</p>
+<h4 id="_273"><a name="user-content-_273" href="#_273" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.setduty(pin, duty)</p>
+<h4 id="_274"><a name="user-content-_274" href="#_274" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号<br /><br />
+duty: 0~100, pwm的占空比，以百分数表示</p>
+<h4 id="_275"><a name="user-content-_275" href="#_275" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_276"><a name="user-content-_276" href="#_276" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">pwm</span><span class="p">.</span><span class="n">setduty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_277"><a name="user-content-_277" href="#_277" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_getduty">pwm.getduty()</a></p>
+<p><a id="pw_getduty"></a></p>
+<h2 id="pwmgetduty"><a name="user-content-pwmgetduty" href="#pwmgetduty" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>pwm.getduty()</h2>
+<h4 id="_278"><a name="user-content-_278" href="#_278" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>获取pin的pwm占空比。</p>
+<h4 id="_279"><a name="user-content-_279" href="#_279" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>pwm.getduty(pin)</p>
+<h4 id="_280"><a name="user-content-_280" href="#_280" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>pin: 0~11, IO编号</p>
+<h4 id="_281"><a name="user-content-_281" href="#_281" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_282"><a name="user-content-_282" href="#_282" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- D0 连接绿色led</span>
+    <span class="c1">-- D1 连接蓝色led</span>
+    <span class="c1">-- D2 连接红色led</span>
+    <span class="n">pwm</span><span class="p">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">500</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">pwm</span><span class="p">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">500</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">pwm</span><span class="p">.</span><span class="n">setup</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">500</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">pwm</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">pwm</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pwm</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">function</span> <span class="nf">led</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">g</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+      <span class="n">pwm</span><span class="p">.</span><span class="n">setduty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">g</span><span class="p">)</span>
+      <span class="n">pwm</span><span class="p">.</span><span class="n">setduty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">b</span><span class="p">)</span>
+      <span class="n">pwm</span><span class="p">.</span><span class="n">setduty</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+    <span class="k">end</span>
+    <span class="n">led</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="c1">--  led显示红色</span>
+    <span class="n">led</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span> <span class="c1">-- led显示蓝色</span>
+</pre></div>
+
+
+<h4 id="_283"><a name="user-content-_283" href="#_283" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#pw_setduty">pwm.setduty()</a></p>
+<h1 id="net"><a name="user-content-net" href="#net" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>net 模块</h1>
+<h2 id="_284"><a name="user-content-_284" href="#_284" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>常量</h2>
+<p>net.TCP, net.UDP</p>
+<p><a id="nt_createServer"></a></p>
+<h2 id="netcreateserver"><a name="user-content-netcreateserver" href="#netcreateserver" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>net.createServer()</h2>
+<h4 id="_285"><a name="user-content-_285" href="#_285" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>创建一个server。</p>
+<h4 id="_286"><a name="user-content-_286" href="#_286" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>net.createServer(type, secure)</p>
+<h4 id="_287"><a name="user-content-_287" href="#_287" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>type: 取值为：net.TCP 或者 net.UDP<br /><br />
+secure: 设置为true或者false, true代表安全连接，false代表普通连接。</p>
+<h4 id="_288"><a name="user-content-_288" href="#_288" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>net.server子模块</p>
+<h4 id="_289"><a name="user-content-_289" href="#_289" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">net</span><span class="p">.</span><span class="n">createServer</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="n">TCP</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_290"><a name="user-content-_290" href="#_290" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nt_createConnection">net.createConnection()</a></p>
+<p><a id="nt_createConnection"></a></p>
+<h2 id="netcreateconnection"><a name="user-content-netcreateconnection" href="#netcreateconnection" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>net.createConnection()</h2>
+<h4 id="_291"><a name="user-content-_291" href="#_291" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>创建一个client。</p>
+<h4 id="_292"><a name="user-content-_292" href="#_292" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>net.createConnection(type, secure)</p>
+<h4 id="_293"><a name="user-content-_293" href="#_293" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>type: 取值为：net.TCP 或者 net.UDP<br /><br />
+secure: 设置为true或者false, true代表安全连接，false代表普通连接。</p>
+<h4 id="_294"><a name="user-content-_294" href="#_294" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>net.server子模块</p>
+<h4 id="_295"><a name="user-content-_295" href="#_295" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">net</span><span class="p">.</span><span class="n">createConnection</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="n">UDP</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_296"><a name="user-content-_296" href="#_296" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
+<h1 id="netserver"><a name="user-content-netserver" href="#netserver" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>net.server 子模块</h1>
+<p><a id="ns_listen"></a></p>
+<h2 id="listen"><a name="user-content-listen" href="#listen" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>listen()</h2>
+<h4 id="_297"><a name="user-content-_297" href="#_297" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>侦听指定ip地址的端口。</p>
+<h4 id="_298"><a name="user-content-_298" href="#_298" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>net.server.listen(port,[ip],function(net.socket))</p>
+<h4 id="_299"><a name="user-content-_299" href="#_299" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>port: 端口号<br /><br />
+ip:ip地址字符串，可以省略<br /><br />
+function(net.socket): 连接创建成功的回调函数，可以作为参数传给调用函数。</p>
+<h4 id="_300"><a name="user-content-_300" href="#_300" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_301"><a name="user-content-_301" href="#_301" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 创建一个server</span>
+    <span class="n">sv</span><span class="o">=</span><span class="n">net</span><span class="p">.</span><span class="n">createServer</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="n">TCP</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="c1">-- server侦听端口80，如果收到数据将数据打印至控制台，并向远端发送‘hello world’</span>
+    <span class="n">sv</span><span class="p">:</span><span class="n">listen</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="k">function</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+      <span class="n">c</span><span class="p">:</span><span class="n">on</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">receive&quot;</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="n">sck</span><span class="p">,</span> <span class="n">pl</span><span class="p">)</span> <span class="nb">print</span><span class="p">(</span><span class="n">pl</span><span class="p">)</span> <span class="k">end</span><span class="p">)</span>
+      <span class="n">c</span><span class="p">:</span><span class="n">send</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">hello world&quot;</span><span class="p">)</span>
+      <span class="k">end</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_302"><a name="user-content-_302" href="#_302" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
+<p><a id="ns_close"></a></p>
+<h2 id="close"><a name="user-content-close" href="#close" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>close()</h2>
+<h4 id="_303"><a name="user-content-_303" href="#_303" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>关闭server</p>
+<h4 id="_304"><a name="user-content-_304" href="#_304" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>net.server.close()</p>
+<h4 id="_305"><a name="user-content-_305" href="#_305" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_306"><a name="user-content-_306" href="#_306" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_307"><a name="user-content-_307" href="#_307" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="c1">-- 创建server</span>
+    <span class="n">sv</span><span class="o">=</span><span class="n">net</span><span class="p">.</span><span class="n">createServer</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="n">TCP</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="c1">-- 关闭server</span>
+    <span class="n">sv</span><span class="p">:</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<h4 id="_308"><a name="user-content-_308" href="#_308" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
+<h1 id="netsocket"><a name="user-content-netsocket" href="#netsocket" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>net.socket 子模块</h1>
+<p><a id="nk_connect"></a></p>
+<h2 id="connect"><a name="user-content-connect" href="#connect" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>connect()</h2>
+<h4 id="_309"><a name="user-content-_309" href="#_309" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>连接至远端。</p>
+<h4 id="_310"><a name="user-content-_310" href="#_310" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>connect(port, ip)</p>
+<h4 id="_311"><a name="user-content-_311" href="#_311" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>port: 端口号<br /><br />
+ip: ip地址字符串</p>
+<h4 id="_312"><a name="user-content-_312" href="#_312" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_313"><a name="user-content-_313" href="#_313" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nk_on">net.socket:on()</a></p>
+<p><a id="nk_send"></a></p>
+<h2 id="send"><a name="user-content-send" href="#send" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>send()</h2>
+<h4 id="_314"><a name="user-content-_314" href="#_314" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>通过连接向远端发送数据。</p>
+<h4 id="_315"><a name="user-content-_315" href="#_315" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>send(string, function(sent))</p>
+<h4 id="_316"><a name="user-content-_316" href="#_316" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>string: 待发送的字符串<br /><br />
+function(sent): 发送字符串后的回调函数。</p>
+<h4 id="_317"><a name="user-content-_317" href="#_317" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_318"><a name="user-content-_318" href="#_318" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nk_on">net.socket:on()</a></p>
+<p><a id="nk_on"></a></p>
+<h2 id="on"><a name="user-content-on" href="#on" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>on()</h2>
+<h4 id="_319"><a name="user-content-_319" href="#_319" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>向事件注册回调函数。</p>
+<h4 id="_320"><a name="user-content-_320" href="#_320" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>on(event, function cb())</p>
+<h4 id="_321"><a name="user-content-_321" href="#_321" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>event: 字符串，取值为: &ldquo;connection&rdquo;, &ldquo;reconnection&rdquo;, &ldquo;disconnection&rdquo;, &ldquo;receive&rdquo;, &ldquo;sent&rdquo;<br /><br />
+function cb(net.socket, [string]): 回调函数。第一个参数是socket.<br /><br />
+如果事件是&rdquo;receive&rdquo;,  第二个参数则为接收到的字符串。</p>
+<h4 id="_322"><a name="user-content-_322" href="#_322" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_323"><a name="user-content-_323" href="#_323" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">sk</span><span class="o">=</span><span class="n">net</span><span class="p">.</span><span class="n">createConnection</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="n">TCP</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="n">sk</span><span class="p">:</span><span class="n">on</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">receive&quot;</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="n">sck</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="nb">print</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">end</span> <span class="p">)</span>
+    <span class="n">sk</span><span class="p">:</span><span class="n">connect</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="s2">&quot;</span><span class="s">192.168.0.66&quot;</span><span class="p">)</span>
+    <span class="n">sk</span><span class="p">:</span><span class="n">send</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">GET / HTTP/1.1</span><span class="se">\r\n</span><span class="s">Host: 192.168.0.66</span><span class="se">\r\n</span><span class="s">Connection: keep-alive</span><span class="se">\r\n</span><span class="s">Accept: */*</span><span class="se">\r\n\r\n</span><span class="s">&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_324"><a name="user-content-_324" href="#_324" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
+<p><a id="nk_close"></a></p>
+<h2 id="close_1"><a name="user-content-close_1" href="#close_1" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>close()</h2>
+<h4 id="_325"><a name="user-content-_325" href="#_325" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>关闭socket。</p>
+<h4 id="_326"><a name="user-content-_326" href="#_326" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>close()</p>
+<h4 id="_327"><a name="user-content-_327" href="#_327" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>nil</p>
+<h4 id="_328"><a name="user-content-_328" href="#_328" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_329"><a name="user-content-_329" href="#_329" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
+<p><a id="nk_dns"></a></p>
+<h2 id="dns"><a name="user-content-dns" href="#dns" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>dns()</h2>
+<h4 id="_330"><a name="user-content-_330" href="#_330" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>获取当前域的ip</p>
+<h4 id="_331"><a name="user-content-_331" href="#_331" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>dns(domain, function(net.socket, ip))</p>
+<h4 id="_332"><a name="user-content-_332" href="#_332" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>domain: 当前域的名称<br /><br />
+function (net.socket, ip): 回调函数。第一个参数是socket，第二个参数是当前域的ip字符串。</p>
+<h4 id="_333"><a name="user-content-_333" href="#_333" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_334"><a name="user-content-_334" href="#_334" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#nt_createServer">net.createServer()</a></p>
+<h1 id="i2c"><a name="user-content-i2c" href="#i2c" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>i2c模块</h1>
+<h2 id="_335"><a name="user-content-_335" href="#_335" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>常量</h2>
+<p>i2c.SLOW,  i2c.TRANSMITTER, i2c. RECEIVER.  FAST（400k）模式目前不支持。</p>
+<p><a id="ic_setup"></a></p>
+<h2 id="i2csetup"><a name="user-content-i2csetup" href="#i2csetup" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>i2c.setup()</h2>
+<h4 id="_336"><a name="user-content-_336" href="#_336" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>初始化i2c。</p>
+<h4 id="_337"><a name="user-content-_337" href="#_337" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>i2c.setup(id, pinSDA, pinSCL, speed)</p>
+<h4 id="_338"><a name="user-content-_338" href="#_338" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>id = 0<br /><br />
+pinSDA: 0~11, IO编号<br /><br />
+pinSCL: 0~11, IO编号<br /><br />
+speed:  i2c.SLOW</p>
+<h4 id="_339"><a name="user-content-_339" href="#_339" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_340"><a name="user-content-_340" href="#_340" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ic_read">i2c.read()</a></p>
+<p><a id="ic_start"></a></p>
+<h2 id="i2cstart"><a name="user-content-i2cstart" href="#i2cstart" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>i2c.start()</h2>
+<h4 id="_341"><a name="user-content-_341" href="#_341" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>启动i2c传输。</p>
+<h4 id="_342"><a name="user-content-_342" href="#_342" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>i2c.start(id)</p>
+<h4 id="_343"><a name="user-content-_343" href="#_343" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>id = 0</p>
+<h4 id="_344"><a name="user-content-_344" href="#_344" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_345"><a name="user-content-_345" href="#_345" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ic_read">i2c.read()</a></p>
+<p><a id="ic_stop"></a></p>
+<h2 id="i2cstop"><a name="user-content-i2cstop" href="#i2cstop" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>i2c.stop()</h2>
+<h4 id="_346"><a name="user-content-_346" href="#_346" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>停止i2c传输。</p>
+<h4 id="_347"><a name="user-content-_347" href="#_347" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>i2c.stop(id)</p>
+<h4 id="_348"><a name="user-content-_348" href="#_348" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>id = 0</p>
+<h4 id="_349"><a name="user-content-_349" href="#_349" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_350"><a name="user-content-_350" href="#_350" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ic_read">i2c.read()</a></p>
+<p><a id="ic_address"></a></p>
+<h2 id="i2caddress"><a name="user-content-i2caddress" href="#i2caddress" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>i2c.address()</h2>
+<h4 id="_351"><a name="user-content-_351" href="#_351" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>设置i2c地址以及读写模式。</p>
+<h4 id="_352"><a name="user-content-_352" href="#_352" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>i2c.address(id, device_addr, direction)</p>
+<h4 id="_353"><a name="user-content-_353" href="#_353" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>id=0<br /><br />
+device_addr: 设备地址。<br /><br />
+direction: i2c.TRANSMITTER：写模式；i2c. RECEIVER：读模式。</p>
+<h4 id="_354"><a name="user-content-_354" href="#_354" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_355"><a name="user-content-_355" href="#_355" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ic_read">i2c.read()</a></p>
+<p><a id="ic_write"></a></p>
+<h2 id="i2cwrite"><a name="user-content-i2cwrite" href="#i2cwrite" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>i2c.write()</h2>
+<h4 id="_356"><a name="user-content-_356" href="#_356" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>向i2c写数据。数据可以是多个数字, 字符串或者lua table。</p>
+<h4 id="_357"><a name="user-content-_357" href="#_357" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>i2c.write(id, data1, data2,&hellip;)</p>
+<h4 id="_358"><a name="user-content-_358" href="#_358" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>id=0<br /><br />
+data: 数据可以是多个数字, 字符串或者lua table。</p>
+<h4 id="_359"><a name="user-content-_359" href="#_359" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>nil</p>
+<h4 id="_360"><a name="user-content-_360" href="#_360" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">i2c</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">hello&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s">world&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<h4 id="_361"><a name="user-content-_361" href="#_361" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ic_read">i2c.read()</a></p>
+<p><a id="ic_read"></a></p>
+<h2 id="i2cread"><a name="user-content-i2cread" href="#i2cread" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>i2c.read()</h2>
+<h4 id="_362"><a name="user-content-_362" href="#_362" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>描述</h4>
+<p>读取len个字节的数据。</p>
+<h4 id="_363"><a name="user-content-_363" href="#_363" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>语法</h4>
+<p>i2c.read(id, len)</p>
+<h4 id="_364"><a name="user-content-_364" href="#_364" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参数</h4>
+<p>id=0<br /><br />
+len: 数据长度。</p>
+<h4 id="_365"><a name="user-content-_365" href="#_365" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>返回值</h4>
+<p>string:接收到的数据。</p>
+<h4 id="_366"><a name="user-content-_366" href="#_366" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>示例</h4>
+<div class="codehilite"><pre>    <span class="n">id</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">sda</span><span class="o">=</span><span class="mi">1</span>
+    <span class="n">scl</span><span class="o">=</span><span class="mi">0</span>
+
+    <span class="c1">-- 初始化i2c, 将pin1设置为sda, 将pin0设置为scl</span>
+    <span class="n">i2c</span><span class="p">.</span><span class="n">setup</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">sda</span><span class="p">,</span><span class="n">scl</span><span class="p">,</span><span class="n">i2c</span><span class="p">.</span><span class="n">SLOW</span><span class="p">)</span>
+
+    <span class="c1">-- 用户定义函数:读取地址dev_addr的寄存器reg_addr中的内容。</span>
+    <span class="k">function</span> <span class="nf">read_reg</span><span class="p">(</span><span class="n">dev_addr</span><span class="p">,</span> <span class="n">reg_addr</span><span class="p">)</span>
+      <span class="n">i2c</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+      <span class="n">i2c</span><span class="p">.</span><span class="n">address</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">dev_addr</span> <span class="p">,</span><span class="n">i2c</span><span class="p">.</span><span class="n">TRANSMITTER</span><span class="p">)</span>
+      <span class="n">i2c</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">reg_addr</span><span class="p">)</span>
+      <span class="n">i2c</span><span class="p">.</span><span class="n">stop</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+      <span class="n">i2c</span><span class="p">.</span><span class="n">start</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+      <span class="n">i2c</span><span class="p">.</span><span class="n">address</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">dev_addr</span><span class="p">,</span><span class="n">i2c</span><span class="p">.</span><span class="n">RECEIVER</span><span class="p">)</span>
+      <span class="n">c</span><span class="o">=</span><span class="n">i2c</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+      <span class="n">i2c</span><span class="p">.</span><span class="n">stop</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+      <span class="k">return</span> <span class="n">c</span>
+    <span class="k">end</span>
+
+    <span class="c1">-- 读取0x77的寄存器0xAA中的内容。</span>
+    <span class="n">reg</span> <span class="o">=</span> <span class="n">read_reg</span><span class="p">(</span><span class="mh">0x77</span><span class="p">,</span> <span class="mh">0xAA</span><span class="p">)</span>
+    <span class="n">pirnt</span><span class="p">(</span><span class="nb">string.byte</span><span class="p">(</span><span class="n">reg</span><span class="p">))</span>
+</pre></div>
+
+
+<h4 id="_367"><a name="user-content-_367" href="#_367" class="headeranchor-link" aria-hidden="true"><span class="headeranchor"></span></a>参见</h4>
+<p><strong>-</strong>   <a href="#ic_write">i2c.write()</a></p></article></body></html>
