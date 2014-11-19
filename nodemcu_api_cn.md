@@ -1,8 +1,12 @@
 # **nodeMcu API说明** #
 [English Version](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_en)
-###版本 0.9.2 build 2014-11-18
+###版本 0.9.2 build 2014-11-19
 <a id="change_log"></a>
 ###变更日志: 
+2014-11-19<br />
+增加adc模块，adc.read(0)读取adc的值。<br />
+wifi模块增加wifi.sta.getap() 函数，用于获取ap列表。
+
 2014-11-18<br />
 修正tcp服务器不能使用:close()函数关闭tcp连接的问题。<br />
 tcp服务器: 服务器将关闭30s内未使用的闲置的连接。（修正前为180s）<br />
@@ -807,6 +811,36 @@ mac地址字符串，如:"18-33-44-FE-55-BB"
 ####参见
 **-**   [wifi.sta.getip()](#ws_getip)
 
+<a id="ws_getap"></a>
+## wifi.sta.getap()
+####描述
+扫描并列出ap，结果以一个lua table为参数传递给回调函数。
+
+####语法
+wifi.sta.getap(function(table))
+
+####参数
+function(table): 当扫描结束时，调用此回调函数<br />
+    扫描结果是一个lua table，key为ap的ssid，value为其他信息，格式：authmode,rssi,bssid,channel
+
+
+####返回值
+nil
+
+####示例
+
+```lua
+    -- print ap list
+    function listap(t)
+      for k,v in pairs(t) do
+        print(k.." : "..v)
+      end
+    end
+    wifi.sta.getap(listap)
+```
+
+####参见
+**-**   [wifi.sta.getip()](#ws_getip)
 
 #wifi.ap 子模块
 
@@ -1708,3 +1742,24 @@ string:接收到的数据。
 
 ####参见
 **-**   [i2c.write()](#ic_write)
+
+#adc 模块
+##常量
+无
+
+<a id="adc_read"></a>
+## adc.read()
+####描述
+读取adc的值，esp8266只有一个10bit adc，id为0，最大值1024
+
+####语法
+adc.read(id)
+
+####参数
+id = 0<br />
+
+####返回值
+adc 值 10bit，最大1024.
+
+####参见
+**-**   []()

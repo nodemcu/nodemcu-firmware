@@ -1,8 +1,12 @@
 # **nodeMcu API Instruction** #
 [中文版本](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_cn)
-###version 0.9.2 build 2014-11-18
+###version 0.9.2 build 2014-11-19
 <a id="change_log"></a>
 ###change log: 
+2014-11-19<br />
+add adc module, use adc.read(0) to read adc value, no tests made.<br />
+add wifi.sta.getap() api to wifi.sta module, to get ap list.
+
 2014-11-18<br />
 bug fixed: net.socket:connect() has no effect.
 
@@ -824,6 +828,36 @@ mac address in string, for example:"18-33-44-FE-55-BB"
 ####See also
 **-**   [wifi.sta.getip()](#ws_getip)
 
+<a id="ws_getap"></a>
+## wifi.sta.getap()
+####Description
+scan and get ap list as a lua table into callback function.
+
+####Syntax
+wifi.sta.getap(function(table))
+
+####Parameters
+function(table): a callback function to receive ap table when scan is done<br />
+    this function receive a table, the key is the ssid, value is other info in format: authmode,rssi,bssid,channel
+
+
+####Returns
+nil
+
+####Example
+
+```lua
+    -- print ap list
+    function listap(t)
+      for k,v in pairs(t) do
+        print(k.." : "..v)
+      end
+    end
+    wifi.sta.getap(listap)
+```
+
+####See also
+**-**   [wifi.sta.getip()](#ws_getip)
 
 #wifi.ap module
 
@@ -1728,3 +1762,23 @@ string:data received.
 ####See also
 **-**   [i2c.write()](#ic_write)
 
+#adc module
+##CONSTANT
+none
+
+<a id="adc_read"></a>
+## adc.read()
+####Description
+read adc value of id, esp8266 has only one 10bit adc, id=0
+
+####Syntax
+adc.read(id)
+
+####Parameters
+id = 0<br />
+
+####Returns
+adc value
+
+####See also
+**-**   []()

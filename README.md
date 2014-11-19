@@ -1,6 +1,6 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-11-18
+version 0.9.2 build 2014-11-19
 # Change log
 [change log](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [变更日志](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
