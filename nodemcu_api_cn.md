@@ -1,8 +1,14 @@
 # **nodeMcu API说明** #
 [English Version](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_en)
-###版本 0.9.2 build 2014-11-19
+###版本 0.9.2 build 2014-11-20
 <a id="change_log"></a>
 ###变更日志: 
+2014-11-20<br />
+修正tmr.delay，支持2s以上的延时，但是长延时可能会引起beacon timer out，导致与AP之间重新连接。<br />
+增加tmr.wdclr()，用来重置看门狗计数器，用在长循环中，以防芯片因看门狗重启。<br />
+修正net模块UDP无法连接问题。<br />
+createServer(net.TCP, timeout)函数增加连接超时参数设置。
+
 2014-11-19<br />
 增加adc模块，adc.read(0)读取adc的值。<br />
 wifi模块增加wifi.sta.getap() 函数，用于获取ap列表。
@@ -1032,6 +1038,31 @@ nil
 ####参见
 **-**   [tmr.now()](#tm_now)
 
+<a id="tm_wdclr"></a>
+## tmr.wdclr()
+####描述
+清除看门狗计数器。<br />
+
+####语法
+tmr.wdclr()
+
+####参数
+nil.
+
+####返回值
+nil
+
+####示例
+
+```lua
+    for i=1,10000 do 
+      print(i)
+      tmr.wdclr()   -- 一个长时间的循环或者事务，需内部调用tmr.wdclr() 清楚看门狗计数器，防止重启。
+    end 
+```
+
+####参见
+**-**   [tmr.delay()](#tm_delay)
 
 #GPIO 模块
 ##常量
@@ -1382,11 +1413,11 @@ net.TCP, net.UDP
 创建一个server。
 
 ####语法
-net.createServer(type, secure)
+net.createServer(type, timeout)
 
 ####参数
 type: 取值为：net.TCP 或者 net.UDP<br />
-secure: 设置为true或者false, true代表安全连接，false代表普通连接。
+timeout: 1~28800, 当为tcp服务器时，客户端的超时时间设置。
 
 ####返回值
 net.server子模块
@@ -1394,7 +1425,7 @@ net.server子模块
 ####示例
 
 ```lua
-    net.createServer(net.TCP, true)
+    net.createServer(net.TCP, 30)
 ```
 
 ####参见
@@ -1411,7 +1442,7 @@ net.createConnection(type, secure)
 
 ####参数
 type: 取值为：net.TCP 或者 net.UDP<br />
-secure: 设置为true或者false, true代表安全连接，false代表普通连接。
+secure: 设置为1或者0, 1代表安全连接，0代表普通连接。
 
 ####返回值
 net.server子模块
@@ -1419,7 +1450,7 @@ net.server子模块
 ####示例
 
 ```lua
-    net.createConnection(net.UDP, false)
+    net.createConnection(net.UDP, 0)
 ```
 
 ####参见
@@ -1447,7 +1478,7 @@ nil
 
 ```lua
     -- 创建一个server
-    sv=net.createServer(net.TCP, false)
+    sv=net.createServer(net.TCP, 30)  -- 30s 超时
     -- server侦听端口80，如果收到数据将数据打印至控制台，并向远端发送‘hello world’
     sv:listen(80,function(c)
       c:on("receive", function(sck, pl) print(pl) end)
@@ -1477,7 +1508,7 @@ nil
 
 ```lua
     -- 创建server
-    sv=net.createServer(net.TCP, false)
+    sv=net.createServer(net.TCP, 5)
     -- 关闭server
     sv:close()
 ```
@@ -1544,7 +1575,7 @@ nil
 ####示例
 
 ```lua
-    sk=net.createConnection(net.TCP, false)
+    sk=net.createConnection(net.TCP, 0)
     sk:on("receive", function(sck, c) print(c) end )
     sk:connect(80,"192.168.0.66")
     sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
@@ -1750,7 +1781,7 @@ string:接收到的数据。
 <a id="adc_read"></a>
 ## adc.read()
 ####描述
-读取adc的值，esp8266只有一个10bit adc，id为0，最大值1024
+读取adc的值，esp8266只有一个10bit adc，id为0，引脚为TOUT，最大值1024
 
 ####语法
 adc.read(id)

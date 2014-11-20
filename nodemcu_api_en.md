@@ -1,8 +1,14 @@
 # **nodeMcu API Instruction** #
 [中文版本](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_cn)
-###version 0.9.2 build 2014-11-19
+###version 0.9.2 build 2014-11-20
 <a id="change_log"></a>
 ###change log: 
+2014-11-20<br />
+fix tmr.delay to support more than 2s delay, may cause bacon time out, lost connection to AP.<br />
+add tmr.wdclr to clear watchdog counter in chip, use in long time loop.<br />
+fix UDP part of net module.<br />
+add a timeout para to createServer(net.TCP, timeout).
+
 2014-11-19<br />
 add adc module, use adc.read(0) to read adc value, no tests made.<br />
 add wifi.sta.getap() api to wifi.sta module, to get ap list.
@@ -1051,6 +1057,32 @@ nil
 **-**   [tmr.now()](#tm_now)
 
 
+<a id="tm_wdclr"></a>
+## tmr.wdclr()
+####Description
+clear system watchdog counter.<br />
+
+####Syntax
+tmr.wdclr()
+
+####Parameters
+nil.
+
+####Returns
+nil
+
+####Example
+
+```lua
+    for i=1,10000 do 
+      print(i)
+      tmr.wdclr()   -- should call tmr.wdclr() in a long loop to avoid hardware reset caused by watchdog.
+    end 
+```
+
+####See also
+**-**   [tmr.delay()](#tm_delay)
+
 #GPIO module
 ##CONSTANT
 gpio.OUTPUT, gpio.INPUT, gpio.INT, gpio.HIGH, gpio.LOW
@@ -1401,11 +1433,11 @@ net.TCP, net.UDP
 create a server.
 
 ####Syntax
-net.createServer(type, secure)
+net.createServer(type, timeout)
 
 ####Parameters
 type: net.TCP or net.UDP<br />
-secure: true or false, true for safe link, false for ordinary link
+timeout: for a TCP server, timeout is 1~28800 seconds, for a inactive client to disconnected.
 
 ####Returns
 net.server sub module
@@ -1413,7 +1445,7 @@ net.server sub module
 ####Example
 
 ```lua
-    net.createServer(net.TCP, true)
+    net.createServer(net.TCP, 30) -- 30s timeout
 ```
 
 ####See also
@@ -1430,7 +1462,7 @@ net.createConnection(type, secure)
 
 ####Parameters
 type: net.TCP or net.UDP<br />
-secure: true or false, true for safe link, false for ordinary link
+secure: 1 or 0, 1 for ssl link, 0 for normal link
 
 ####Returns
 net.server sub module
@@ -1438,7 +1470,7 @@ net.server sub module
 ####Example
 
 ```lua
-    net.createConnection(net.UDP, false)
+    net.createConnection(net.UDP, 0)
 ```
 
 ####See also
@@ -1466,7 +1498,7 @@ nil
 
 ```lua
     -- create a server
-    sv=net.createServer(net.TCP, false)
+    sv=net.createServer(net.TCP, 30)    -- 30s time out for a inactive client
     -- server listen on 80, if data received, print data to console, and send "hello world" to remote.
     sv:listen(80,function(c)
       c:on("receive", function(sck, pl) print(pl) end)
@@ -1496,7 +1528,7 @@ nil
 
 ```lua
     -- create a server
-    sv=net.createServer(net.TCP, false)
+    sv=net.createServer(net.TCP, 30)
     -- close server
     sv:close()
 ```
@@ -1563,7 +1595,7 @@ nil
 ####Example
 
 ```lua
-    sk=net.createConnection(net.TCP, false)
+    sk=net.createConnection(net.TCP, 0)
     sk:on("receive", function(sck, c) print(c) end )
     sk:connect(80,"192.168.0.66")
     sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
@@ -1769,7 +1801,7 @@ none
 <a id="adc_read"></a>
 ## adc.read()
 ####Description
-read adc value of id, esp8266 has only one 10bit adc, id=0
+read adc value of id, esp8266 has only one 10bit adc, id=0, pin TOUT
 
 ####Syntax
 adc.read(id)

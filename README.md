@@ -1,6 +1,6 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-11-19
+version 0.9.2 build 2014-11-20
 # Change log
 [change log](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [变更日志](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
@@ -76,7 +76,7 @@ braudrate:9600
    
 ```lua
     -- A simple http client
-    conn=net.createConnection(net.TCP, false) 
+    conn=net.createConnection(net.TCP, 0) 
     conn:on("receive", function(conn, payload) print(c) end )
     conn:connect(80,"115.239.210.27")
     conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
