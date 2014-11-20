@@ -2,8 +2,8 @@
 ###A lua based firmware for wifi-soc esp8266
 version 0.9.2 build 2014-11-20
 # Change log
-[change log](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
-[变更日志](https://github.com/funshine/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
+[change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
+[变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
 # Summary
 - Easy to access wireless router
 - Based on Lua 5.1.4
@@ -159,5 +159,5 @@ braudrate:9600
 ```
 #Check this out
 Tencent QQ group: 309957875<br/>
-[nodemcu wiki](https://github.com/funshine/nodemcu-firmware/wiki/nodeMcu:-lua-based-interactive-firmware-for-mcu)<br/>
+[nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br/>
 [nodemcu.com](http://www.nodemcu.com)
