@@ -4,7 +4,8 @@ version 0.9.2 build 2014-11-29
 # Change log
 2014-11-29<br />
 fix tmr.delay not work when delayed time < 1s.<br />
-fix pwm module not work when freq<77.<br />
+fix pwm module not work when freq < 77.<br />
+
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
 # Summary
