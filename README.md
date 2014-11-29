@@ -2,9 +2,10 @@
 ###A lua based firmware for wifi-soc esp8266
 version 0.9.2 build 2014-11-29
 # Change log
-2014-11-29<br />
-fix tmr.delay not work when delayed time < 1s.<br />
-fix pwm module not work when freq < 77.<br />
+2014-11-30<br />
+modify the max freq of pwm module to 1000.<br />
+modify the max duty cycle of pwm module to 1023.<br />
+add uart module, uart.on("data") api to receive data from uart.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
@@ -12,7 +13,7 @@ fix pwm module not work when freq < 77.<br />
 - Easy to access wireless router
 - Based on Lua 5.1.4
 - Event-Drive programming preferred.
-- Build-in file, timer, pwm, i2c, net, gpio, wifi, and system api.
+- Build-in file, timer, pwm, i2c, net, gpio, wifi, adc, uart and system api.
 - GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
 - GPIO Map Table:
 
@@ -108,14 +109,14 @@ braudrate:9600
     pwm.setduty(1,g) 
     pwm.setduty(2,b) 
   end
-  pwm.setup(0,500,50) 
-  pwm.setup(1,500,50) 
-  pwm.setup(2,500,50)
+  pwm.setup(0,500,512) 
+  pwm.setup(1,500,512) 
+  pwm.setup(2,500,512)
   pwm.start(0) 
   pwm.start(1) 
   pwm.start(2)
-  led(50,0,0) -- red
-  led(0,0,50) -- blue
+  led(512,0,0) -- red
+  led(0,0,512) -- blue
 ```
 
 ####And blink it
@@ -124,7 +125,7 @@ braudrate:9600
   tmr.alarm(1000,1,function()
     if lighton==0 then 
       lighton=1 
-      led(50,50,50) 
+      led(512,512,512) 
     else 
       lighton=0 
       led(0,0,0) 
