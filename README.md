@@ -1,12 +1,9 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-12-02
+version 0.9.2 build 2014-12-04
 # Change log
-2014-12-02<br />
-fix the heap recover too slow issue, heap will recover in seconds, not minutes.<br />
-modify the return of file.open, return nil if file not exist, true if opend ok.<br />
-move startup version display before doing the init.lua.<br />
-modify wifi.ap.config(), remove the restart at the end of config.
+2014-12-04<br />
+fix memory leak issue when input and run from console.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
