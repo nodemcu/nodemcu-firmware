@@ -48,7 +48,8 @@ fix memory leak issue when input and run from console.
 
 #Flash the firmware
 nodemcu_512k.bin: 0x00000<br />
-for most esp8266 modules, just pull GPIO0 down and restart.
+for most esp8266 modules, just pull GPIO0 down and restart.<br />
+You can use the [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher) to burn the firmware.
 
 #Connect the hardware in serial
 braudrate:9600
