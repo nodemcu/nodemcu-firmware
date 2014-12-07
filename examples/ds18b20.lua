@@ -1,4 +1,10 @@
--- 18b20 Example
+--[[
+-- 18b20 one wire example for NODEMCU
+-- NODEMCU TEAM
+-- LICENCE: http://opensource.org/licenses/MIT
+-- Vowstar <vowstar@nodemcu.com>
+--]] 
+
 pin = 9
 ow.setup(pin)
 count = 0
@@ -37,7 +43,7 @@ else
              t = (data:byte(1) + data:byte(2) * 256) * 625
              t1 = t / 10000
              t2 = t % 10000
-             print("Temperature="..t1.."."..t2.."Centigrade")
+             print("Temperature= "..t1.."."..t2.." Centigrade")
           end                   
           tmr.wdclr()
         until false
