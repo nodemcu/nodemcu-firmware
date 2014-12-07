@@ -1,9 +1,11 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-12-04
+version 0.9.2 build 2014-12-07
 # Change log
-2014-12-04<br />
-fix memory leak issue when input and run from console.
+2014-12-07<br />
+add ow(1-wire module), from arduino, and use same api.<br />
+add an 18b20 1-wire example.<br />
+change net.socket.send() payload max len from 256 to 1460.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
@@ -11,7 +13,7 @@ fix memory leak issue when input and run from console.
 - Easy to access wireless router
 - Based on Lua 5.1.4
 - Event-Drive programming preferred.
-- Build-in file, timer, pwm, i2c, net, gpio, wifi, adc, uart and system api.
+- Build-in file, timer, pwm, i2c, 1-wire, net, gpio, wifi, adc, uart and system api.
 - GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
 - GPIO Map Table:
 
