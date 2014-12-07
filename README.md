@@ -5,7 +5,8 @@ version 0.9.2 build 2014-12-07
 2014-12-07<br />
 add ow(1-wire module), from arduino, and use same api.<br />
 add an 18b20 1-wire example.<br />
-change net.socket.send() payload max len from 256 to 1460.
+change net.socket.send() payload max len from 256 to 1460.<br />
+modify gpio.mode() api, add internal pullup/float para.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
