@@ -1,9 +1,9 @@
---[[
+--'
 -- 18b20 one wire example for NODEMCU
 -- NODEMCU TEAM
 -- LICENCE: http://opensource.org/licenses/MIT
 -- Vowstar <vowstar@nodemcu.com>
---]] 
+--' 
 
 pin = 9
 ow.setup(pin)
