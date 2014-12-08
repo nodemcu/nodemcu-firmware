@@ -102,6 +102,8 @@ function readNumber(addr, unit)
 				t = (data:byte(1) + data:byte(2) * 256) * 1125 + 320000 
 			elseif(unit == K) then
 				t = (data:byte(1) + data:byte(2) * 256) * 625 + 2731500
+			else
+				return nil
 			end            
             t1 = t / 10000
             t2 = t % 10000
