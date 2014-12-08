@@ -1,7 +1,10 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-12-07
+version 0.9.2 build 2014-12-08
 # Change log
+2014-12-08<br />
+add uart.setup(), uart.write() api.<br />
+
 2014-12-07<br />
 add ow(1-wire module), from arduino, and use same api.<br />
 add an 18b20 1-wire example.<br />
