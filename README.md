@@ -124,7 +124,7 @@ braudrate:9600
 ####And blink it
 ```lua
   lighton=0
-  tmr.alarm(1000,1,function()
+  tmr.alarm(1,1000,1,function()
     if lighton==0 then 
       lighton=1 
       led(512,512,512) 
