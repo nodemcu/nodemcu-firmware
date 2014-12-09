@@ -165,7 +165,7 @@ braudrate:9600
     end)
 ```
 
-####Use DS18B20 module extends your NODEMCU
+####Use DS18B20 module extends your esp8266
 ```lua
     -- read temperature with DS18B20
     t=require("ds18b20")
