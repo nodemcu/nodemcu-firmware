@@ -4,7 +4,8 @@ version 0.9.2 build 2014-12-11
 # Change log
 2014-12-11<br />
 fix uart.setup(), now setup can set pins in other mode back to uart mode. <br />
-add wifi.sta.status() api, to get connection status in station mode.
+add wifi.sta.status() api, to get connection status in station mode. <br />
+modify tmr.now() to return a uint31 rather than uint32. now-=0x80000000 if now>0x7fffffff.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
