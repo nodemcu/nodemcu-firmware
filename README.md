@@ -1,12 +1,10 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-12-09
+version 0.9.2 build 2014-12-11
 # Change log
-2014-12-09<br />
-increased the number of alarm in tmr module, now it has 7 alarm. <br />
-
-2014-12-08<br />
-add uart.setup(), uart.write() api.<br />
+2014-12-11<br />
+fix uart.setup(), now setup can set pins in other mode back to uart mode. <br />
+add wifi.sta.status() api, to get connection status in station mode.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
