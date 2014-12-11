@@ -1,7 +1,10 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-12-11
+version 0.9.2 build 2014-12-12
 # Change log
+2014-12-12<br />
+modify wifi.xx.getip() to return nil, if ip is 0.0.0.0. <br />
+
 2014-12-11<br />
 fix uart.setup(), now setup can set pins in other mode back to uart mode. <br />
 add wifi.sta.status() api, to get connection status in station mode. <br />
