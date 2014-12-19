@@ -1,14 +1,12 @@
 # **NodeMcu** #
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-12-12
+version 0.9.2 build 2014-12-19
 # Change log
-2014-12-12<br />
-modify wifi.xx.getip() to return nil, if ip is 0.0.0.0. <br />
+2014-12-19<br />
+**Important** Re-arrange GPIO MAP due to development kit.[New Gpio Map](#new_gpio_map)<br />
+Add bitwise operation module.<br />
+Modify net.socket:connect() api to accept domain name, auto DNS.
 
-2014-12-11<br />
-fix uart.setup(), now setup can set pins in other mode back to uart mode. <br />
-add wifi.sta.status() api, to get connection status in station mode. <br />
-modify tmr.now() to return a uint31 rather than uint32. now-=0x80000000 if now>0x7fffffff.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
@@ -20,6 +18,43 @@ modify tmr.now() to return a uint31 rather than uint32. now-=0x80000000 if now>0
 - GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
 - GPIO Map Table:
 
+##GPIO NEW TABLE ( Build 20141219 and later)
+
+<a id="new_gpio_map"></a>
+<table>
+  <tr>
+    <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
+  </tr>
+  <tr>
+    <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15</td>
+  </tr>
+  <tr>
+    <td>1</td><td>GPIO4</td><td>9</td><td>GPIO3</td>
+   </tr>
+   <tr>
+    <td>2</td><td>GPIO5</td><td>10</td><td>GPIO1</td>
+  </tr>
+  <tr>
+    <td>3</td><td>GPIO0</td><td>11</td><td>GPIO9</td>
+   </tr>
+   <tr>
+    <td>4</td><td>GPIO2</td><td>12</td><td>GPIO10</td>
+  </tr>
+  <tr>
+    <td>5</td><td>GPIO14</td><td></td><td></td>
+   </tr>
+   <tr>
+    <td>6</td><td>GPIO12</td><td></td><td></td>
+  </tr>
+  <tr>
+    <td>7</td><td>GPIO13</td<td></td><td></td>
+   </tr>
+</table>
+#### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
+
+##GPIO OLD TABLE (Before build 20141212)
+
+<a id="old_gpio_map"></a>
 <table>
   <tr>
     <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
@@ -109,16 +144,16 @@ braudrate:9600
 ####Do something shining
 ```lua
   function led(r,g,b) 
-    pwm.setduty(0,r) 
-    pwm.setduty(1,g) 
-    pwm.setduty(2,b) 
+    pwm.setduty(1,r) 
+    pwm.setduty(2,g) 
+    pwm.setduty(3,b) 
   end
-  pwm.setup(0,500,512) 
   pwm.setup(1,500,512) 
-  pwm.setup(2,500,512)
-  pwm.start(0) 
+  pwm.setup(2,500,512) 
+  pwm.setup(3,500,512)
   pwm.start(1) 
-  pwm.start(2)
+  pwm.start(2) 
+  pwm.start(3)
   led(512,0,0) -- red
   led(0,0,512) -- blue
 ```
@@ -196,3 +231,4 @@ braudrate:9600
 Tencent QQ group: 309957875<br/>
 [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br/>
 [nodemcu.com](http://www.nodemcu.com)
+[中文bbs](http://bbs.nodemcu.com)
