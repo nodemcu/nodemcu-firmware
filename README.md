@@ -5,7 +5,8 @@ version 0.9.2 build 2014-12-19
 2014-12-19<br />
 **Important** Re-arrange GPIO MAP due to development kit.[New Gpio Map](#new_gpio_map)<br />
 Add bitwise operation module.<br />
-Modify net.socket:connect() api to accept domain name, auto DNS.
+Modify net.socket:connect() api to accept domain name, auto DNS.<br />
+Add firmware for flash size 1Mbytes, 2Mbytes, 4Mbytes.
 
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
