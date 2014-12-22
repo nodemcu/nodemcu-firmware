@@ -1,0 +1,262 @@
+// Module for interfacing with file system
+
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+#include "platform.h"
+#include "auxmods.h"
+#include "lrotable.h"
+
+#include "c_types.h"
+#include "flash_fs.h"
+#include "c_string.h"
+
+static int file_fd = FS_OPEN_OK - 1;
+
+// Lua: open(filename, mode)
+static int ICACHE_FLASH_ATTR file_open( lua_State* L )
+{
+  size_t len;
+  if((FS_OPEN_OK - 1)!=file_fd){
+    fs_close(file_fd);
+    file_fd = FS_OPEN_OK - 1;
+  }
+
+  const char *fname = luaL_checklstring( L, 1, &len );
+  if( len > FS_NAME_MAX_LENGTH )
+    return luaL_error(L, "filename too long");
+  const char *mode = luaL_optstring(L, 2, "r");
+
+  file_fd = fs_open(fname, fs_mode2flag(mode));
+
+  if(file_fd < FS_OPEN_OK){
+    file_fd = FS_OPEN_OK - 1;
+    lua_pushnil(L);
+  } else {
+    lua_pushboolean(L, 1);
+  }
+  return 1; 
+}
+
+// Lua: close()
+static int ICACHE_FLASH_ATTR file_close( lua_State* L )
+{
+  if((FS_OPEN_OK - 1)!=file_fd){
+    fs_close(file_fd);
+    file_fd = FS_OPEN_OK - 1;
+  }
+  return 0;  
+}
+
+#if defined(BUILD_WOFS)
+// Lua: list()
+static int ICACHE_FLASH_ATTR file_list( lua_State* L )
+{
+  uint32_t start = 0;
+  size_t act_len = 0;
+  char fsname[ FS_NAME_MAX_LENGTH + 1 ];
+  lua_newtable( L );
+  while( FS_FILE_OK == wofs_next(&start, fsname, FS_NAME_MAX_LENGTH, &act_len) ){
+    lua_pushinteger(L, act_len);
+    lua_setfield( L, -2, fsname );
+  }
+  return 1;
+}
+
+// Lua: format()
+static int ICACHE_FLASH_ATTR file_format( lua_State* L )
+{
+  size_t len;
+  file_close(L);
+  if( !fs_format() )
+  {
+    NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
+    NODE_ERR( "It is advised to re-flash the nodeMcu image.\n" );
+  }
+  else{
+    NODE_ERR( "format done.\n" );
+  }
+  return 0; 
+}
+
+#elif defined(BUILD_SPIFFS)
+
+extern spiffs fs;
+
+// Lua: list()
+static int ICACHE_FLASH_ATTR file_list( lua_State* L )
+{
+  spiffs_DIR d;
+  struct spiffs_dirent e;
+  struct spiffs_dirent *pe = &e;
+
+  lua_newtable( L );
+  SPIFFS_opendir(&fs, "/", &d);
+  while ((pe = SPIFFS_readdir(&d, pe))) {
+    // NODE_ERR("  %s size:%i\n", pe->name, pe->size);
+    lua_pushinteger(L, pe->size);
+    lua_setfield( L, -2, pe->name );
+  }
+  SPIFFS_closedir(&d);
+  return 1;
+}
+
+static int ICACHE_FLASH_ATTR file_seek (lua_State *L) 
+{
+  static const int mode[] = {FS_SEEK_SET, FS_SEEK_CUR, FS_SEEK_END};
+  static const char *const modenames[] = {"set", "cur", "end", NULL};
+  if((FS_OPEN_OK - 1)==file_fd)
+    return luaL_error(L, "open a file first");
+  int op = luaL_checkoption(L, 1, "cur", modenames);
+  long offset = luaL_optlong(L, 2, 0);
+  op = fs_seek(file_fd, offset, mode[op]);
+  if (op)
+    lua_pushboolean(L, 1);  /* error */
+  else
+    lua_pushinteger(L, fs_tell(file_fd));
+  return 1;
+}
+
+// Lua: remove(filename)
+static int ICACHE_FLASH_ATTR file_remove( lua_State* L )
+{
+  size_t len;
+  const char *fname = luaL_checklstring( L, 1, &len );
+  if( len > FS_NAME_MAX_LENGTH )
+    return luaL_error(L, "filename too long");
+  file_close(L);
+  SPIFFS_remove(&fs, fname);
+  return 0;  
+}
+
+// Lua: flush()
+static int ICACHE_FLASH_ATTR file_flush( lua_State* L )
+{
+  if((FS_OPEN_OK - 1)==file_fd)
+    return luaL_error(L, "open a file first");
+  if(fs_flush(file_fd) == 0)
+    lua_pushboolean(L, 1);
+  else
+    lua_pushnil(L);
+  return 1;
+}
+#if 0
+// Lua: check()
+static int ICACHE_FLASH_ATTR file_check( lua_State* L )
+{
+  file_close(L);
+  lua_pushinteger(L, fs_check());
+  return 1;
+}
+#endif
+
+#endif
+
+// Lua: readline()
+static int ICACHE_FLASH_ATTR file_readline( lua_State* L )
+{
+  luaL_Buffer b;
+  if((FS_OPEN_OK - 1)==file_fd)
+    return luaL_error(L, "open a file first");
+
+  luaL_buffinit(L, &b);
+  char *p = luaL_prepbuffer(&b);
+  signed char c = EOF;
+  int i = 0;
+
+  do{
+    c = (signed char)fs_getc(file_fd);
+    if(c==EOF){
+      break;
+    }
+    p[i++] = c;
+  }while((c!=EOF) && (c!='\n') && (i<LUAL_BUFFERSIZE) );
+
+#if 0
+  if(i>0 && p[i-1] == '\n')
+    i--;    /* do not include `eol' */
+#endif
+    
+  if(i==0){
+    luaL_pushresult(&b);  /* close buffer */
+    return (lua_objlen(L, -1) > 0);  /* check whether read something */
+  }
+
+  luaL_addsize(&b, i);
+  luaL_pushresult(&b);  /* close buffer */
+  return 1;  /* read at least an `eol' */ 
+}
+
+// Lua: write("string")
+static int ICACHE_FLASH_ATTR file_write( lua_State* L )
+{
+  if((FS_OPEN_OK - 1)==file_fd)
+    return luaL_error(L, "open a file first");
+  size_t l, rl;
+  const char *s = luaL_checklstring(L, 1, &l);
+  rl = fs_write(file_fd, s, l);
+  if(rl==l)
+    lua_pushboolean(L, 1);
+  else
+    lua_pushnil(L);
+  return 1;
+}
+
+// Lua: writeline("string")
+static int ICACHE_FLASH_ATTR file_writeline( lua_State* L )
+{
+  if((FS_OPEN_OK - 1)==file_fd)
+    return luaL_error(L, "open a file first");
+  size_t l, rl;
+  const char *s = luaL_checklstring(L, 1, &l);
+  rl = fs_write(file_fd, s, l);
+  if(rl==l){
+    rl = fs_write(file_fd, "\n", 1);
+    if(rl==1)
+      lua_pushboolean(L, 1);
+    else
+      lua_pushnil(L);
+  }
+  else{
+    lua_pushnil(L);
+  }
+  return 1;
+}
+
+// Module function map
+#define MIN_OPT_LEVEL 2
+#include "lrodefs.h"
+const LUA_REG_TYPE file_map[] = 
+{
+  { LSTRKEY( "list" ), LFUNCVAL( file_list ) },
+  { LSTRKEY( "open" ), LFUNCVAL( file_open ) },
+  { LSTRKEY( "close" ), LFUNCVAL( file_close ) },
+  { LSTRKEY( "write" ), LFUNCVAL( file_write ) },
+  { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
+  { LSTRKEY( "readline" ), LFUNCVAL( file_readline ) },
+#if defined(BUILD_WOFS)
+  { LSTRKEY( "format" ), LFUNCVAL( file_format ) },
+#elif defined(BUILD_SPIFFS)
+  { LSTRKEY( "remove" ), LFUNCVAL( file_remove ) },
+  { LSTRKEY( "seek" ), LFUNCVAL( file_seek ) },
+  { LSTRKEY( "flush" ), LFUNCVAL( file_flush ) },
+  // { LSTRKEY( "check" ), LFUNCVAL( file_check ) },
+#endif
+  
+#if LUA_OPTIMIZE_MEMORY > 0
+
+#endif
+  { LNILKEY, LNILVAL }
+};
+
+LUALIB_API int ICACHE_FLASH_ATTR luaopen_file( lua_State *L )
+{
+#if LUA_OPTIMIZE_MEMORY > 0
+  return 0;
+#else // #if LUA_OPTIMIZE_MEMORY > 0
+  luaL_register( L, AUXLIB_NODE, file_map );
+  // Add constants
+
+  return 1;
+#endif // #if LUA_OPTIMIZE_MEMORY > 0  
+}

@@ -1,0 +1,71 @@
+#ifndef __USER_CONFIG_H__
+#define __USER_CONFIG_H__
+
+#define NODE_VERSION	"NodeMcu 0.9.4"
+#define BUILD_DATE	"build 20141222"
+#define FLASH_512K
+// #define FLASH_1M
+// #define FLASH_2M
+// #define FLASH_4M
+// #define DEVELOP_VERSION
+#define FULL_VERSION_FOR_USER
+
+#ifdef DEVELOP_VERSION
+#define NODE_DEBUG
+#endif	/* DEVELOP_VERSION */
+
+#define NODE_ERROR
+
+#ifdef NODE_DEBUG
+#define NODE_DBG c_printf
+#else
+#define NODE_DBG
+#endif	/* NODE_DEBUG */
+
+#ifdef NODE_ERROR
+#define NODE_ERR c_printf
+#else
+#define NODE_ERR
+#endif	/* NODE_ERROR */
+
+#define CLIENT_SSL_ENABLE
+#define GPIO_INTERRUPT_ENABLE
+
+// #define BUILD_WOFS		1
+#define BUILD_SPIFFS	1
+
+#define LUA_USE_MODULES
+#ifdef LUA_USE_MODULES
+#define LUA_USE_MODULES_NODE
+#define LUA_USE_MODULES_FILE
+#define LUA_USE_MODULES_GPIO
+#define LUA_USE_MODULES_WIFI
+#define LUA_USE_MODULES_NET
+#define LUA_USE_MODULES_PWM
+#define LUA_USE_MODULES_I2C
+#define LUA_USE_MODULES_TMR
+#define LUA_USE_MODULES_ADC
+#define LUA_USE_MODULES_UART
+#define LUA_USE_MODULES_OW
+#define LUA_USE_MODULES_BIT
+#endif /* LUA_USE_MODULES */
+
+#define LUA_NUMBER_INTEGRAL
+
+#define LUA_OPTRAM
+#ifdef LUA_OPTRAM
+#define LUA_OPTIMIZE_MEMORY			2
+#else
+#define LUA_OPTIMIZE_MEMORY         0
+#endif	/* LUA_OPTRAM */
+
+#define READLINE_INTERVAL	80
+#define KEY_SHORT_MS	200
+#define KEY_LONG_MS		3000
+#define KEY_SHORT_COUNT (KEY_SHORT_MS / READLINE_INTERVAL)
+#define KEY_LONG_COUNT (KEY_LONG_MS / READLINE_INTERVAL)
+
+#define LED_HIGH_COUNT_DEFAULT 10
+#define LED_LOW_COUNT_DEFAULT 0
+
+#endif	/* __USER_CONFIG_H__ */

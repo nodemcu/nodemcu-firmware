@@ -1,12 +1,26 @@
 # **NodeMcu** #
+version 0.9.4
 ###A lua based firmware for wifi-soc esp8266
-version 0.9.2 build 2014-12-19
+Build on [ESP8266 sdk 0.9.4](http://bbs.espressif.com/viewtopic.php?f=5&t=90)
+Lua core based on [eLua project](http://www.eluaproject.net/)
+File system based on [spiffs](https://github.com/pellepl/spiffs)
+Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)
+Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
+
+wiki: [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)
+home: [nodemcu.com](http://www.nodemcu.com)
+bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)
+Tencent QQ group QQ群: 309957875
+
 # Change log
+2014-12-22<br />
+update to sdk 0.9.4<br />
+opensource
+
 2014-12-19<br />
 **Important** Re-arrange GPIO MAP due to development kit.[New Gpio Map](#new_gpio_map)<br />
 Add bitwise operation module.<br />
-Modify net.socket:connect() api to accept domain name, auto DNS.<br />
-Add firmware for flash size 1Mbytes, 2Mbytes, 4Mbytes.
+Modify net.socket:connect() api to accept domain name, auto DNS.
 
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
@@ -86,6 +100,30 @@ Add firmware for flash size 1Mbytes, 2Mbytes, 4Mbytes.
    </tr>
 </table>
 
+#Build option
+####file ./app/include/user_config.h
+```c
+#define FLASH_512K
+// #define FLASH_1M
+// #define FLASH_2M
+// #define FLASH_4M
+...
+#define LUA_USE_MODULES
+#ifdef LUA_USE_MODULES
+#define LUA_USE_MODULES_NODE
+#define LUA_USE_MODULES_FILE
+#define LUA_USE_MODULES_GPIO
+#define LUA_USE_MODULES_WIFI
+#define LUA_USE_MODULES_NET
+#define LUA_USE_MODULES_PWM
+#define LUA_USE_MODULES_I2C
+#define LUA_USE_MODULES_TMR
+#define LUA_USE_MODULES_ADC
+#define LUA_USE_MODULES_UART
+#define LUA_USE_MODULES_OW
+//#define LUA_USE_MODULES_BIT
+#endif /* LUA_USE_MODULES */
+```
 
 #Flash the firmware
 nodemcu_512k.bin: 0x00000<br />
@@ -227,9 +265,3 @@ braudrate:9600
     t = nil
     package.loaded["ds18b20"]=nil   
 ```
-
-#Check this out
-Tencent QQ group: 309957875<br/>
-[nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br/>
-[nodemcu.com](http://www.nodemcu.com)
-[中文bbs](http://bbs.nodemcu.com)
