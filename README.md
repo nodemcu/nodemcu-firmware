@@ -15,7 +15,10 @@ Tencent QQ group QQ群: 309957875<br />
 # Change log
 2014-12-22<br />
 update to sdk 0.9.4<br />
-opensource
+opensource<br />
+folder "pre_build" contain pre-build bin firmware.<br />
+folder "lua_examples" contain some pure lua examples.<br />
+folder "lua_modules" contain some pure lua lib based on NodeMCU.<br />
 
 2014-12-19<br />
 **Important** Re-arrange GPIO MAP due to development kit.[New Gpio Map](#new_gpio_map)<br />
