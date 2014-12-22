@@ -1,16 +1,16 @@
 # **NodeMcu** #
 version 0.9.4
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 0.9.4](http://bbs.espressif.com/viewtopic.php?f=5&t=90)
-Lua core based on [eLua project](http://www.eluaproject.net/)
-File system based on [spiffs](https://github.com/pellepl/spiffs)
-Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)
-Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
+Build on [ESP8266 sdk 0.9.4](http://bbs.espressif.com/viewtopic.php?f=5&t=90)<br />
+Lua core based on [eLua project](http://www.eluaproject.net/)<br />
+File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
+Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
+Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
 
-wiki: [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)
-home: [nodemcu.com](http://www.nodemcu.com)
-bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)
-Tencent QQ group QQ群: 309957875
+wiki: [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
+home: [nodemcu.com](http://www.nodemcu.com)<br />
+bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
+Tencent QQ group QQ群: 309957875<br />
 
 # Change log
 2014-12-22<br />
