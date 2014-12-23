@@ -7,8 +7,8 @@
 // #define FLASH_1M
 // #define FLASH_2M
 // #define FLASH_4M
-#define DEVELOP_VERSION
-// #define FULL_VERSION_FOR_USER
+// #define DEVELOP_VERSION
+#define FULL_VERSION_FOR_USER
 
 #ifdef DEVELOP_VERSION
 #define NODE_DEBUG
