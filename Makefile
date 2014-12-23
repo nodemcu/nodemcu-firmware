@@ -4,12 +4,11 @@ ifndef PDIR
 
 endif
 
-AR = xt-ar
-CC = xt-xcc
-NM = xt-nm
-CPP = xt-cpp
-OBJCOPY = xt-objcopy
-#MAKE = xt-make
+AR = xtensa-lx106-elf-ar
+CC = xtensa-lx106-elf-gcc
+NM = xtensa-lx106-elf-nm
+CPP = xtensa-lx106-elf-cpp
+OBJCOPY = xtensa-lx106-elf-objcopy
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
