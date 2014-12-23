@@ -104,6 +104,7 @@ Modify net.socket:connect() api to accept domain name, auto DNS.
 </table>
 
 #Build option
+####*GNU toolchain is not tested*
 ####file ./app/include/user_config.h
 ```c
 #define FLASH_512K
