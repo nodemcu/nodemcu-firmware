@@ -152,7 +152,7 @@ INCLUDES += -I ./
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
-NODEMCU := ../bin/nodemcu.fw
+NODEMCU := ../bin/nodemcu_$(FLAVOR).bin
 $(NODEMCU): all
 	FLAVOR=$(FLAVOR) ./gen_misc.sh
 	../tools/gen_flashbin.py ../bin/eagle.app.v6.flash.bin ../bin/eagle.app.v6.irom0text.bin
