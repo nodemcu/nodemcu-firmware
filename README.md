@@ -274,5 +274,6 @@ braudrate:9600
     print(t.read(nil,t.C))
     -- Don't forget to release it after use
     t = nil
+	ds18b20 = nil
     package.loaded["ds18b20"]=nil   
 ```
