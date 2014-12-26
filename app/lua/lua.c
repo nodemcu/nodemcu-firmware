@@ -648,11 +648,6 @@ void ICACHE_FLASH_ATTR readline(lua_Load *load){
       else
         continue;
     }
-    /* other control character or not an acsii character */
-    else if (ch < 0x20 || ch >= 0x80)
-    {
-      continue;
-    }
     /* end of line */
     if (ch == '\r' || ch == '\n')
     {
@@ -675,7 +670,11 @@ void ICACHE_FLASH_ATTR readline(lua_Load *load){
         os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
       }
     }
-
+    /* other control character or not an acsii character */
+    if (ch < 0x20 || ch >= 0x80)
+    {
+      continue;
+    }
     /* echo */
     if(uart0_echo) uart_putc(ch);
     load->line[load->line_position] = ch;
