@@ -13,6 +13,9 @@ bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group QQ群: 309957875<br />
 
 # Change log
+2014-12-26<br />
+fix a bug when readline from uart.<br />
+
 2014-12-22<br />
 update to sdk 0.9.4<br />
 opensource<br />
