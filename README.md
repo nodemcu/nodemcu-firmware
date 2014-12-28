@@ -50,10 +50,10 @@ Modify net.socket:connect() api to accept domain name, auto DNS.
     <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15</td>
   </tr>
   <tr>
-    <td>1</td><td>GPIO4</td><td>9</td><td>GPIO3</td>
+    <td>1</td><td>GPIO5</td><td>9</td><td>GPIO3</td>
    </tr>
    <tr>
-    <td>2</td><td>GPIO5</td><td>10</td><td>GPIO1</td>
+    <td>2</td><td>GPIO4</td><td>10</td><td>GPIO1</td>
   </tr>
   <tr>
     <td>3</td><td>GPIO0</td><td>11</td><td>GPIO9</td>
