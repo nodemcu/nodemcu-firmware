@@ -15,7 +15,10 @@ Tencent QQ group QQ群: 309957875<br />
 # Change log
 2014-12-30<br />
 modify uart.on api, when run_input set to 0, uart.on now can read raw data from uart.<br />
-serial input now accept non-ascii chars
+serial input now accept non-ascii chars.<br />
+fix dev-kit gpio map.<br />
+add setip, setmac, sleeptype api to wifi module. <br />
+add tmr.time() api to get rtc time and calibration.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)

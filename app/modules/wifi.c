@@ -194,7 +194,7 @@ static int ICACHE_FLASH_ATTR wifi_getip( lua_State* L, uint8_t mode )
 
 static uint32_t parse_key(lua_State* L, const char * key){
   lua_getfield(L, 1, key);
-  if( lua_isstring(L, -1) )   // deal with the ssid string
+  if( lua_isstring(L, -1) )   // deal with the ip/netmask/gw string
   {
     const char *ip = luaL_checkstring( L, -1 );
     return ipaddr_addr(ip);
