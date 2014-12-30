@@ -616,15 +616,15 @@ void ICACHE_FLASH_ATTR readline(lua_Load *load){
         load->line[load->line_position] = 0;
         continue;
       }
-      /* EOF(ctrl+d) */
-      else if (ch == 0x04)
-      {
-        if (load->line_position == 0)
-          // No input which makes lua interpreter close 
-          donejob(load);
-        else
-          continue;
-      }
+      /* EOT(ctrl+d) */
+      // else if (ch == 0x04)
+      // {
+      //   if (load->line_position == 0)
+      //     // No input which makes lua interpreter close 
+      //     donejob(load);
+      //   else
+      //     continue;
+      // }
 
       /* end of line */
       if (ch == '\r' || ch == '\n')
@@ -648,10 +648,11 @@ void ICACHE_FLASH_ATTR readline(lua_Load *load){
       }
 
       /* other control character or not an acsii character */
-      if (ch < 0x20 || ch >= 0x80)
-      {
-        continue;
-      }
+      // if (ch < 0x20 || ch >= 0x80)
+      // {
+      //   continue;
+      // }
+      
       /* echo */
       if(uart0_echo) uart_putc(ch);
 
