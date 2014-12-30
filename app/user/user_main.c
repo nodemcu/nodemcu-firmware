@@ -48,6 +48,8 @@ extern void spiffs_mount();
 // extern void test_spiffs();
 // extern int test_romfs();
 
+// extern uint16_t flash_get_sec_num();
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -104,7 +106,7 @@ void user_init(void)
     // lua_main( 2, lua_argv );
     // char* lua_argv[] = { (char *)"lua", (char *)"-e", (char *)"pwm.setup(0,100,50) pwm.start(0) pwm.stop(0)", NULL };
     // lua_main( 3, lua_argv );
-    
+    // NODE_DBG("Flash sec num: 0x%x\n", flash_get_sec_num());
     task_init();
     system_os_post(USER_TASK_PRIO_0,SIG_LUA,'s');
 }
