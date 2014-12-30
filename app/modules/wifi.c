@@ -222,7 +222,7 @@ static int ICACHE_FLASH_ATTR wifi_setip( lua_State* L, uint8_t mode )
   ip = parse_key(L, "gateway");
   if(ip!=0) 
     pTempIp.gw.addr = ip;
-
+  wifi_station_dhcpc_stop();
   lua_pushboolean(L,wifi_set_ip_info(mode, &pTempIp));
   return 1;  
 }
