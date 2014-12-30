@@ -11,15 +11,14 @@ extern UartDevice UartDev;
 
 #define uart_putc uart0_putc
 
-char ICACHE_FLASH_ATTR uart_getc(void){
-    char c = 0;
+bool ICACHE_FLASH_ATTR uart_getc(char *c){
     RcvMsgBuff *pRxBuff = &(UartDev.rcv_buff);
     if(pRxBuff->pWritePos == pRxBuff->pReadPos){   // empty
-        return 0;
+        return false;
     }
     // ETS_UART_INTR_DISABLE();
     ETS_INTR_LOCK();
-    c = (char)*(pRxBuff->pReadPos);
+    *c = (char)*(pRxBuff->pReadPos);
     if (pRxBuff->pReadPos == (pRxBuff->pRcvMsgBuff + RX_BUFF_SIZE)) {
         pRxBuff->pReadPos = pRxBuff->pRcvMsgBuff ; 
     } else {
@@ -27,7 +26,7 @@ char ICACHE_FLASH_ATTR uart_getc(void){
     }
     // ETS_UART_INTR_ENABLE();
     ETS_INTR_UNLOCK();
-    return c;
+    return true;
 }
 
 #if 0
@@ -43,13 +42,13 @@ start:
     os_memset(buffer, 0, length);
     while (1)
     {
-        while ((ch = uart_getc()) != 0)
+        while (uart_getc(&ch))
         {
             /* handle CR key */
             if (ch == '\r')
             {
                 char next;
-                if ((next = uart_getc()) != 0)
+                if (uart_getc(&next))
                     ch = next;
             }
             /* backspace key */
