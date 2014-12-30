@@ -136,7 +136,7 @@ blank.bin: 0x7e000<br />
 
 
 #Connect the hardware in serial
-braudrate:9600
+baudrate:9600
 
 #Start play
 
