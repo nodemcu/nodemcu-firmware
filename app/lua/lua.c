@@ -678,6 +678,12 @@ void ICACHE_FLASH_ATTR readline(lua_Load *load){
 
     ch = 0;
   }
+  
+  if( (load->line_position > 0) && (!run_input) && (need_len==0) && (end_char<0) )
+  {
+    uart_on_data_cb(load->line, load->line_position);
+    load->line_position = 0;
+  }
   // if there is no input from user, repeat readline()
   os_timer_disarm(&readline_timer);
   os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);

@@ -28,7 +28,7 @@ bool ICACHE_FLASH_ATTR uart_on_data_cb(const char *buf, size_t len){
 
 uint16_t need_len = 0;
 int16_t end_char = -1;
-// Lua: uart.on("method", function, [run_input])
+// Lua: uart.on("method", [number/char], function, [run_input])
 static int ICACHE_FLASH_ATTR uart_on( lua_State* L )
 {
   size_t sl, el;

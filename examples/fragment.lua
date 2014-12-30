@@ -307,5 +307,6 @@ wifi.sta.setip({ip="192.168.18.119",netmask="255.255.255.0",gateway="192.168.18.
 uart.on("data","\r",function(input) if input=="quit\r" then uart.on("data") else print(input) end end, 0)
 uart.on("data","\n",function(input) if input=="quit\n" then uart.on("data") else print(input) end end, 0)
 uart.on("data", 5 ,function(input) if input=="quit\r" then uart.on("data") else print(input) end end, 0)
+uart.on("data", 0 ,function(input) if input=="q" then uart.on("data") else print(input) end end, 0)
 
 uart.on("data","\r",function(input) if input=="quit" then uart.on("data") else print(input) end end, 1)
