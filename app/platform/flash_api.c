@@ -12,7 +12,7 @@
 SPIFlashInfo *ICACHE_FLASH_ATTR
 flash_get_info(void)
 {
-    static SPIFlashInfo spi_flash_info;
+    static SPIFlashInfo spi_flash_info __attribute__((aligned(4)));
     static bool is_spi_flash_info_initialized = false;
     // Make the code more fast
     if (!is_spi_flash_info_initialized)
@@ -76,7 +76,7 @@ flash_set_size(uint8_t size)
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
     c_printf("\nSet size!!! %d\n", size);
-    uint8_t data[SPI_FLASH_SEC_SIZE];
+    uint8_t data[SPI_FLASH_SEC_SIZE] __attribute__((aligned(4)));
     SPIRead(0, data, sizeof(data));
     SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
     p_spi_flash_info->size = size;
@@ -195,7 +195,7 @@ flash_init_data_default(void)
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // It will init system data to default!
-    uint8_t flash_init_data[128] =
+    uint8_t flash_init_data[128] __attribute__((aligned(4))) =
     {
         0x05, 0x00, 0x04, 0x02, 0x05, 0x05, 0x05, 0x02, 0x05, 0x00, 0x04, 0x05, 0x05, 0x04, 0x05, 0x05,
         0x04, 0xFE, 0xFD, 0xFF, 0xF0, 0xF0, 0xF0, 0xE0, 0xE0, 0xE0, 0xE1, 0x0A, 0xFF, 0xFF, 0xF8, 0x00,
