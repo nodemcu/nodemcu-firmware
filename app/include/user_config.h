@@ -7,7 +7,7 @@
 #define NODE_VERSION_INTERNAL    0U
 
 #define NODE_VERSION	"NodeMcu 0.9.4"
-#define BUILD_DATE	"build 20141230"
+#define BUILD_DATE	"build " __DATE__
 // #define FLASH_512K
 // #define FLASH_1M
 // #define FLASH_2M
