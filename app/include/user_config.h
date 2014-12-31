@@ -1,6 +1,11 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
+#define NODE_VERSION_MAJOR		0U
+#define NODE_VERSION_MINOR		9U
+#define NODE_VERSION_REVISION	4U
+#define NODE_VERSION_INTERNAL    0U
+
 #define NODE_VERSION	"NodeMcu 0.9.4"
 #define BUILD_DATE	"build 20141230"
 // #define FLASH_512K
