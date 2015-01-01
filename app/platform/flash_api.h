@@ -1,7 +1,8 @@
 #ifndef __FLASH_API_H__
 #define __FLASH_API_H__
 #include "ets_sys.h"
-typedef struct __attribute__((packed))
+#include "user_config.h"
+typedef struct
 {
     uint8_t unknown0;
     uint8_t unknown1;
@@ -27,7 +28,7 @@ typedef struct __attribute__((packed))
         SIZE_16MBIT = 3,
         SIZE_32MBIT = 4,
     } size : 4;
-} SPIFlashInfo;
+} NODE_STORE_ATTR SPIFlashInfo;
 
 SPIFlashInfo *flash_get_info(void);
 uint8_t flash_get_size(void);
