@@ -301,3 +301,12 @@ sk:send("GET / HTTP/1.1\r\nHost: 115.239.210.27\r\nConnection: keep-alive\r\nAcc
 
 sk=net.createConnection(net.TCP, 1) sk:on("receive", function(sck, c) print(c) end ) 
 sk:on("connection", function(sck) sck:send("GET / HTTPS/1.1\r\nHost: www.google.com.hk\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n") end ) sk:connect(443,"173.194.72.199") 
+
+wifi.sta.setip({ip="192.168.18.119",netmask="255.255.255.0",gateway="192.168.18.1"})
+
+uart.on("data","\r",function(input) if input=="quit\r" then uart.on("data") else print(input) end end, 0)
+uart.on("data","\n",function(input) if input=="quit\n" then uart.on("data") else print(input) end end, 0)
+uart.on("data", 5 ,function(input) if input=="quit\r" then uart.on("data") else print(input) end end, 0)
+uart.on("data", 0 ,function(input) if input=="q" then uart.on("data") else print(input) end end, 0)
+
+uart.on("data","\r",function(input) if input=="quit" then uart.on("data") else print(input) end end, 1)

@@ -490,34 +490,6 @@ void ICACHE_FLASH_ATTR dojob(lua_Load *load){
   do{
     if(load->done == 1){
       l = c_strlen(b);
-#if 0
-      if(log_fd!=-1 && l>0)
-      {
-        if(l>=10 && (c_strstr(b,"log.stop()")) )
-        {
-          fs_close(log_fd);
-          log_fd = -1;
-          noparse = 0;
-          NODE_ERR( "log stopping.\n" );
-        }
-        if(log_fd!=-1){   // test again
-          rs = fs_write(log_fd, b, l);
-          if(rs!=l){
-            fs_close(log_fd);
-            log_fd = -1;
-          } else {
-            rs = fs_write(log_fd, "\r\n", 2);
-            if(rs!=2){
-              fs_close(log_fd);
-              log_fd = -1;
-            }
-          }
-        }
-        if(noparse){
-          break;
-        }
-      }
-#endif
       if (l > 0 && b[l-1] == '\n')  /* line ends with newline? */
         b[l-1] = '\0';  /* remove it */
       if (load->firstline && b[0] == '=')  /* first line starts with `=' ? */
@@ -613,86 +585,107 @@ void ICACHE_FLASH_ATTR update_key_led(){
 #endif
 extern bool uart_on_data_cb(const char *buf, size_t len);
 extern bool uart0_echo;
+extern bool run_input;
+extern uint16_t need_len;
+extern int16_t end_char;
 void ICACHE_FLASH_ATTR readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
   update_key_led();
   char ch;
-  while ((ch = uart_getc()) != 0)
+  while (uart_getc(&ch))
   {
-    /* handle CR key */
-    if (ch == '\r')
+    if(run_input)
     {
-      char next;
-      if ((next = uart_getc()) != 0)
-        ch = next;
-    }
-    /* backspace key */
-    else if (ch == 0x7f || ch == 0x08)
-    {
-      if (load->line_position > 0)
+      /* handle CR key */
+      if (ch == '\r')
       {
-        if(uart0_echo) uart_putc(0x08);
-        if(uart0_echo) uart_putc(' ');
-        if(uart0_echo) uart_putc(0x08);
-        load->line_position--;
+        char next;
+        if (uart_getc(&next))
+          ch = next;
       }
-      load->line[load->line_position] = 0;
-      continue;
-    }
-    /* EOF(ctrl+d) */
-    else if (ch == 0x04)
-    {
-      if (load->line_position == 0)
-        // No input which makes lua interpreter close 
-        donejob(load);
-      else
+      /* backspace key */
+      else if (ch == 0x7f || ch == 0x08)
+      {
+        if (load->line_position > 0)
+        {
+          if(uart0_echo) uart_putc(0x08);
+          if(uart0_echo) uart_putc(' ');
+          if(uart0_echo) uart_putc(0x08);
+          load->line_position--;
+        }
+        load->line[load->line_position] = 0;
         continue;
-    }
-    /* end of line */
-    if (ch == '\r' || ch == '\n')
-    {
-      load->line[load->line_position] = 0;
-      if(uart0_echo) uart_putc('\n');
-      if(uart_on_data_cb(load->line, load->line_position)){
+      }
+      /* EOT(ctrl+d) */
+      // else if (ch == 0x04)
+      // {
+      //   if (load->line_position == 0)
+      //     // No input which makes lua interpreter close 
+      //     donejob(load);
+      //   else
+      //     continue;
+      // }
+
+      /* end of line */
+      if (ch == '\r' || ch == '\n')
+      {
+        load->line[load->line_position] = 0;
+        if(uart0_echo) uart_putc('\n');
+        uart_on_data_cb(load->line, load->line_position);
+        if (load->line_position == 0)
+        {
+          /* Get a empty line, then go to get a new line */
+          c_puts(load->prmt);
+          os_timer_disarm(&readline_timer);
+          os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
+          os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
+        } else {
+          load->done = 1;
+          os_timer_disarm(&lua_timer);
+          os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
+          os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+        }
+      }
+
+      /* other control character or not an acsii character */
+      // if (ch < 0x20 || ch >= 0x80)
+      // {
+      //   continue;
+      // }
+      
+      /* echo */
+      if(uart0_echo) uart_putc(ch);
+
+          /* it's a large line, discard it */
+      if ( load->line_position + 1 >= load->len ){
         load->line_position = 0;
       }
-      if (load->line_position == 0)
-      {
-        /* Get a empty line, then go to get a new line */
-        c_puts(load->prmt);
-        os_timer_disarm(&readline_timer);
-        os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-        os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
-      } else {
-        load->done = 1;
-        os_timer_disarm(&lua_timer);
-        os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
-        os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
-      }
     }
-    /* other control character or not an acsii character */
-    if (ch < 0x20 || ch >= 0x80)
-    {
-      continue;
-    }
-    /* echo */
-    if(uart0_echo) uart_putc(ch);
+
     load->line[load->line_position] = ch;
-    ch = 0;
     load->line_position++;
 
-    /* it's a large line, discard it */
-    if (load->line_position >= load->len)
-      load->line_position = 0;
+    if(!run_input)
+    {
+      if( ((need_len!=0) && (load->line_position >= need_len)) || \
+        (load->line_position >= load->len) || \
+        ((end_char>=0) && ((unsigned char)ch==(unsigned char)end_char)) )
+      {
+        uart_on_data_cb(load->line, load->line_position);
+        load->line_position = 0;
+      }
+    }
+
+    ch = 0;
+  }
+  
+  if( (load->line_position > 0) && (!run_input) && (need_len==0) && (end_char<0) )
+  {
+    uart_on_data_cb(load->line, load->line_position);
+    load->line_position = 0;
   }
   // if there is no input from user, repeat readline()
   os_timer_disarm(&readline_timer);
   os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
   os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
-}
-
-void ICACHE_FLASH_ATTR dogc(void){
-  if(globalL){
-    lua_gc(globalL, LUA_GCCOLLECT, 0);
-  }
 }

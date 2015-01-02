@@ -13,21 +13,12 @@ bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group QQ群: 309957875<br />
 
 # Change log
-2014-12-26<br />
-fix a bug when readline from uart.<br />
-
-2014-12-22<br />
-update to sdk 0.9.4<br />
-opensource<br />
-folder "pre_build" contain pre-build bin firmware.<br />
-folder "lua_examples" contain some pure lua examples.<br />
-folder "lua_modules" contain some pure lua lib based on NodeMCU.<br />
-
-2014-12-19<br />
-**Important** Re-arrange GPIO MAP due to development kit.[New Gpio Map](#new_gpio_map)<br />
-Add bitwise operation module.<br />
-Modify net.socket:connect() api to accept domain name, auto DNS.
-
+2014-12-30<br />
+modify uart.on api, when run_input set to 0, uart.on now can read raw data from uart.<br />
+serial input now accept non-ascii chars.<br />
+fix dev-kit gpio map.<br />
+add setip, setmac, sleeptype api to wifi module. <br />
+add tmr.time() api to get rtc time and calibration.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
@@ -145,7 +136,7 @@ blank.bin: 0x7e000<br />
 
 
 #Connect the hardware in serial
-braudrate:9600
+baudrate:9600
 
 #Start play
 

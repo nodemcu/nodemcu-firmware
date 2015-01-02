@@ -2,11 +2,12 @@
 #define __USER_CONFIG_H__
 
 #define NODE_VERSION	"NodeMcu 0.9.4"
-#define BUILD_DATE	"build 20141226"
-#define FLASH_512K
+#define BUILD_DATE	"build 20141230"
+// #define FLASH_512K
 // #define FLASH_1M
 // #define FLASH_2M
 // #define FLASH_4M
+#define FLASH_AUTOSIZE
 // #define DEVELOP_VERSION
 #define FULL_VERSION_FOR_USER
 

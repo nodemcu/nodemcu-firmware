@@ -12,7 +12,7 @@
 
 static lua_State *gL = NULL;
 static int uart_receive_rf = LUA_NOREF;
-static bool run_input = true;
+bool run_input = true;
 bool ICACHE_FLASH_ATTR uart_on_data_cb(const char *buf, size_t len){
   if(!buf || len==0)
     return false;
@@ -26,21 +26,46 @@ bool ICACHE_FLASH_ATTR uart_on_data_cb(const char *buf, size_t len){
   return !run_input;
 }
 
-// Lua: uart.on("method", function, [run_input])
+uint16_t need_len = 0;
+int16_t end_char = -1;
+// Lua: uart.on("method", [number/char], function, [run_input])
 static int ICACHE_FLASH_ATTR uart_on( lua_State* L )
 {
-  size_t sl;
+  size_t sl, el;
   int32_t run = 1;
-  const char *method = luaL_checklstring( L, 1, &sl );
+  uint8_t stack = 1;
+  const char *method = luaL_checklstring( L, stack, &sl );
+  stack++;
   if (method == NULL)
     return luaL_error( L, "wrong arg type" );
 
-  // luaL_checkanyfunction(L, 2);
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION){
-    if ( lua_isnumber(L, 3) ){
-      run = lua_tointeger(L, 3);
+  if( lua_type( L, stack ) == LUA_TNUMBER )
+  {
+    need_len = ( uint16_t )luaL_checkinteger( L, stack );
+    stack++;
+    end_char = -1;
+    if( need_len > 255 ){
+      need_len = 255;
+      return luaL_error( L, "wrong arg range" );
     }
-    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
+  }
+  else if(lua_isstring(L, stack))
+  {
+    const char *end = luaL_checklstring( L, stack, &el );
+    stack++;
+    if(el!=1){
+      return luaL_error( L, "wrong arg range" );
+    }
+    end_char = (int16_t)end[0];
+    need_len = 0;
+  }
+
+  // luaL_checkanyfunction(L, stack);
+  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
+    if ( lua_isnumber(L, stack+1) ){
+      run = lua_tointeger(L, stack+1);
+    }
+    lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
   } else {
     lua_pushnil(L);
   }

@@ -154,6 +154,16 @@ static int ICACHE_FLASH_ATTR tmr_wdclr( lua_State* L )
   return 0;  
 }
 
+// Lua: time() , return rtc time in us
+static int ICACHE_FLASH_ATTR tmr_time( lua_State* L )
+{
+  unsigned t = 0xFFFFFFFF & system_get_rtc_time();
+  unsigned c = 0xFFFFFFFF & system_rtc_clock_cali_proc();
+  lua_pushinteger( L, t );
+  lua_pushinteger( L, c );
+  return 2; 
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -164,6 +174,7 @@ const LUA_REG_TYPE tmr_map[] =
   { LSTRKEY( "alarm" ), LFUNCVAL( tmr_alarm ) },
   { LSTRKEY( "stop" ), LFUNCVAL( tmr_stop ) },
   { LSTRKEY( "wdclr" ), LFUNCVAL( tmr_wdclr ) },
+  { LSTRKEY( "time" ), LFUNCVAL( tmr_time ) },
 #if LUA_OPTIMIZE_MEMORY > 0
 
 #endif
