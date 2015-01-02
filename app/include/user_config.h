@@ -35,7 +35,8 @@
 #define NODE_ERR
 #endif	/* NODE_ERROR */
 
-#define NODE_STORE_ATTR __attribute__((aligned(4),packed))
+#define NODE_STORE_TYPEDEF_ATTR __attribute__((aligned(4),packed))
+#define NODE_STORE_ATTR __attribute__((aligned(4)))
 
 #define CLIENT_SSL_ENABLE
 #define GPIO_INTERRUPT_ENABLE
