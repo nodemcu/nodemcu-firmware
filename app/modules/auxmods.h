@@ -67,6 +67,9 @@ LUALIB_API int ( luaopen_node )( lua_State *L );
 #define AUXLIB_FILE      "file"
 LUALIB_API int ( luaopen_file )( lua_State *L );
 
+#define AUXLIB_BMP      "bmp"
+LUALIB_API int ( luaopen_bmp )( lua_State *L );
+
 #define AUXLIB_OW      "ow"
 LUALIB_API int ( luaopen_ow )( lua_State *L );
 

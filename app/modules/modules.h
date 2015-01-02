@@ -85,6 +85,14 @@
 #define ROM_MODULES_UART
 #endif
 
+#if defined(LUA_USE_MODULES_BMP)
+#define MODULES_BMP       "bmp"
+#define ROM_MODULES_BMP   \
+_ROM(MODULES_BMP, luaopen_bmp, bmp_map)
+#else
+#define ROM_MODULES_BMP
+#endif
+
 #if defined(LUA_USE_MODULES_OW)
 #define MODULES_OW       "ow"
 #define ROM_MODULES_OW   \
