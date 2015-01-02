@@ -1,3 +1,5 @@
 .AppleDouble/
+pre_build/
+bin/
 .idea/
 CMakeLists.txt
