@@ -105,7 +105,6 @@ add tmr.time() api to get rtc time and calibration.
 </table>
 
 #Build option
-####*GNU toolchain is not tested*
 ####file ./app/include/user_config.h
 ```c
 // #define FLASH_512K
