@@ -6,6 +6,7 @@
 #include "user_config.h"
 #include "flash_api.h"
 #include "spi_flash.h"
+#include "c_stdio.h"
 
 static volatile const uint8_t flash_init_data[128] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =
 {
@@ -74,7 +75,7 @@ bool flash_set_size(uint8_t size)
     SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
     p_spi_flash_info->size = size;
     SPIEraseSector(0);
-    SPIWrite(data, 0, sizeof(data));
+    spi_flash_write(0, (uint32 *)data, sizeof(data));
     //p_spi_flash_info = flash_get_info();
     //p_spi_flash_info->size = size;
     return true;
@@ -193,7 +194,7 @@ bool flash_init_data_default(void)
     // It will init system data to default!
 
     SPIEraseSector((flash_get_sec_num() - 4));
-    SPIWrite((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32_t *)flash_init_data, 128);
+    spi_flash_write((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128);
     return true;
 }
 
