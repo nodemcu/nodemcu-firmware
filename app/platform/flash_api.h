@@ -41,6 +41,7 @@ bool flash_set_size_byte(uint32_t);
 uint16_t flash_get_sec_num(void);
 uint8_t flash_get_mode(void);
 uint32_t flash_get_speed(void);
+bool flash_init_data_written(void);
 bool flash_init_data_default(void);
 bool flash_init_data_blank(void);
 bool flash_self_destruct(void);

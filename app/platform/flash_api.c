@@ -171,6 +171,20 @@ uint32_t flash_get_speed(void)
     return speed;
 }
 
+bool flash_init_data_written(void)
+{
+    // FLASH SEC - 4
+    // Dangerous, here are dinosaur infested!!!!!
+    // Reboot required!!!
+    // It will init system data to default!
+    uint32_t data[2] ICACHE_STORE_ATTR;
+    SPIRead((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, data, sizeof(data));
+    if(data[0] == 0xFFFFFFFF && data[1] == 0xFFFFFFFF) {
+        return false;
+    }
+    return true;
+}
+
 bool flash_init_data_default(void)
 {
     // FLASH SEC - 4
