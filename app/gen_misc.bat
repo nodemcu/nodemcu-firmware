@@ -3,6 +3,8 @@ set BACKPATH=%PATH%
 set PATH=%BACKPATH%;%CD%\..\tools
 @echo on
 
+make
+
 del /F ..\bin\eagle.app.v6.flash.bin ..\bin\eagle.app.v6.irom0text.bin ..\bin\eagle.app.v6.dump ..\bin\eagle.app.v6.S
 
 cd .output\eagle\debug\image
