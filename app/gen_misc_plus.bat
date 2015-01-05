@@ -7,10 +7,17 @@ rm ..\bin\upgrade\%1.bin
 
 cd .output\eagle\debug\image\
 
-xt-objcopy --only-section .text -O binary eagle.app.v6.out eagle.app.v6.text.bin
-xt-objcopy --only-section .data -O binary eagle.app.v6.out eagle.app.v6.data.bin
-xt-objcopy --only-section .rodata -O binary eagle.app.v6.out eagle.app.v6.rodata.bin
-xt-objcopy --only-section .irom0.text -O binary eagle.app.v6.out eagle.app.v6.irom0text.bin
+if %XTENSA_CORE%==lx106 (
+	xt-objcopy --only-section .text -O binary eagle.app.v6.out eagle.app.v6.text.bin
+	xt-objcopy --only-section .data -O binary eagle.app.v6.out eagle.app.v6.data.bin
+	xt-objcopy --only-section .rodata -O binary eagle.app.v6.out eagle.app.v6.rodata.bin
+	xt-objcopy --only-section .irom0.text -O binary eagle.app.v6.out eagle.app.v6.irom0text.bin
+) else (
+	xtensa-lx106-elf-objcopy --only-section .text -O binary eagle.app.v6.out eagle.app.v6.text.bin
+	xtensa-lx106-elf-objcopy --only-section .data -O binary eagle.app.v6.out eagle.app.v6.data.bin
+	xtensa-lx106-elf-objcopy --only-section .rodata -O binary eagle.app.v6.out eagle.app.v6.rodata.bin
+	xtensa-lx106-elf-objcopy --only-section .irom0.text -O binary eagle.app.v6.out eagle.app.v6.irom0text.bin
+)
 
 gen_appbin.py eagle.app.v6.out v6
 
