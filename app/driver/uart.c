@@ -20,7 +20,8 @@
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
 
-LOCAL void uart0_rx_intr_handler(void *para);
+LOCAL void ICACHE_RAM_ATTR
+uart0_rx_intr_handler(void *para);
 
 /******************************************************************************
  * FunctionName : uart_config

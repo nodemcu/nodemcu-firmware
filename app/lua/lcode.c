@@ -27,12 +27,12 @@
 #define hasjumps(e)	((e)->t != (e)->f)
 
 
-static int ICACHE_FLASH_ATTR isnumeral(expdesc *e) {
+static int isnumeral(expdesc *e) {
   return (e->k == VKNUM && e->t == NO_JUMP && e->f == NO_JUMP);
 }
 
 
-void ICACHE_FLASH_ATTR luaK_nil (FuncState *fs, int from, int n) {
+void luaK_nil (FuncState *fs, int from, int n) {
   Instruction *previous;
   if (fs->pc > fs->lasttarget) {  /* no jumps to current position? */
     if (fs->pc == 0) {  /* function start? */
@@ -56,7 +56,7 @@ void ICACHE_FLASH_ATTR luaK_nil (FuncState *fs, int from, int n) {
 }
 
 
-int ICACHE_FLASH_ATTR luaK_jump (FuncState *fs) {
+int luaK_jump (FuncState *fs) {
   int jpc = fs->jpc;  /* save list of jumps to here */
   int j;
   fs->jpc = NO_JUMP;
@@ -66,18 +66,18 @@ int ICACHE_FLASH_ATTR luaK_jump (FuncState *fs) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_ret (FuncState *fs, int first, int nret) {
+void luaK_ret (FuncState *fs, int first, int nret) {
   luaK_codeABC(fs, OP_RETURN, first, nret+1, 0);
 }
 
 
-static int ICACHE_FLASH_ATTR condjump (FuncState *fs, OpCode op, int A, int B, int C) {
+static int condjump (FuncState *fs, OpCode op, int A, int B, int C) {
   luaK_codeABC(fs, op, A, B, C);
   return luaK_jump(fs);
 }
 
 
-static void ICACHE_FLASH_ATTR fixjump (FuncState *fs, int pc, int dest) {
+static void fixjump (FuncState *fs, int pc, int dest) {
   Instruction *jmp = &fs->f->code[pc];
   int offset = dest-(pc+1);
   lua_assert(dest != NO_JUMP);
@@ -91,13 +91,13 @@ static void ICACHE_FLASH_ATTR fixjump (FuncState *fs, int pc, int dest) {
 ** returns current `pc' and marks it as a jump target (to avoid wrong
 ** optimizations with consecutive instructions not in the same basic block).
 */
-int ICACHE_FLASH_ATTR luaK_getlabel (FuncState *fs) {
+int luaK_getlabel (FuncState *fs) {
   fs->lasttarget = fs->pc;
   return fs->pc;
 }
 
 
-static int ICACHE_FLASH_ATTR getjump (FuncState *fs, int pc) {
+static int getjump (FuncState *fs, int pc) {
   int offset = GETARG_sBx(fs->f->code[pc]);
   if (offset == NO_JUMP)  /* point to itself represents end of list */
     return NO_JUMP;  /* end of list */
@@ -106,7 +106,7 @@ static int ICACHE_FLASH_ATTR getjump (FuncState *fs, int pc) {
 }
 
 
-static Instruction *ICACHE_FLASH_ATTR getjumpcontrol (FuncState *fs, int pc) {
+static Instruction *getjumpcontrol (FuncState *fs, int pc) {
   Instruction *pi = &fs->f->code[pc];
   if (pc >= 1 && testTMode(GET_OPCODE(*(pi-1))))
     return pi-1;
@@ -119,7 +119,7 @@ static Instruction *ICACHE_FLASH_ATTR getjumpcontrol (FuncState *fs, int pc) {
 ** check whether list has any jump that do not produce a value
 ** (or produce an inverted value)
 */
-static int ICACHE_FLASH_ATTR need_value (FuncState *fs, int list) {
+static int need_value (FuncState *fs, int list) {
   for (; list != NO_JUMP; list = getjump(fs, list)) {
     Instruction i = *getjumpcontrol(fs, list);
     if (GET_OPCODE(i) != OP_TESTSET) return 1;
@@ -128,7 +128,7 @@ static int ICACHE_FLASH_ATTR need_value (FuncState *fs, int list) {
 }
 
 
-static int ICACHE_FLASH_ATTR patchtestreg (FuncState *fs, int node, int reg) {
+static int patchtestreg (FuncState *fs, int node, int reg) {
   Instruction *i = getjumpcontrol(fs, node);
   if (GET_OPCODE(*i) != OP_TESTSET)
     return 0;  /* cannot patch other instructions */
@@ -141,13 +141,13 @@ static int ICACHE_FLASH_ATTR patchtestreg (FuncState *fs, int node, int reg) {
 }
 
 
-static void ICACHE_FLASH_ATTR removevalues (FuncState *fs, int list) {
+static void removevalues (FuncState *fs, int list) {
   for (; list != NO_JUMP; list = getjump(fs, list))
       patchtestreg(fs, list, NO_REG);
 }
 
 
-static void ICACHE_FLASH_ATTR patchlistaux (FuncState *fs, int list, int vtarget, int reg,
+static void patchlistaux (FuncState *fs, int list, int vtarget, int reg,
                           int dtarget) {
   while (list != NO_JUMP) {
     int next = getjump(fs, list);
@@ -160,13 +160,13 @@ static void ICACHE_FLASH_ATTR patchlistaux (FuncState *fs, int list, int vtarget
 }
 
 
-static void ICACHE_FLASH_ATTR dischargejpc (FuncState *fs) {
+static void dischargejpc (FuncState *fs) {
   patchlistaux(fs, fs->jpc, fs->pc, NO_REG, fs->pc);
   fs->jpc = NO_JUMP;
 }
 
 
-void ICACHE_FLASH_ATTR luaK_patchlist (FuncState *fs, int list, int target) {
+void luaK_patchlist (FuncState *fs, int list, int target) {
   if (target == fs->pc)
     luaK_patchtohere(fs, list);
   else {
@@ -176,13 +176,13 @@ void ICACHE_FLASH_ATTR luaK_patchlist (FuncState *fs, int list, int target) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_patchtohere (FuncState *fs, int list) {
+void luaK_patchtohere (FuncState *fs, int list) {
   luaK_getlabel(fs);
   luaK_concat(fs, &fs->jpc, list);
 }
 
 
-void ICACHE_FLASH_ATTR luaK_concat (FuncState *fs, int *l1, int l2) {
+void luaK_concat (FuncState *fs, int *l1, int l2) {
   if (l2 == NO_JUMP) return;
   else if (*l1 == NO_JUMP)
     *l1 = l2;
@@ -196,7 +196,7 @@ void ICACHE_FLASH_ATTR luaK_concat (FuncState *fs, int *l1, int l2) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_checkstack (FuncState *fs, int n) {
+void luaK_checkstack (FuncState *fs, int n) {
   int newstack = fs->freereg + n;
   if (newstack > fs->f->maxstacksize) {
     if (newstack >= MAXSTACK)
@@ -206,13 +206,13 @@ void ICACHE_FLASH_ATTR luaK_checkstack (FuncState *fs, int n) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_reserveregs (FuncState *fs, int n) {
+void luaK_reserveregs (FuncState *fs, int n) {
   luaK_checkstack(fs, n);
   fs->freereg += n;
 }
 
 
-static void ICACHE_FLASH_ATTR freereg (FuncState *fs, int reg) {
+static void freereg (FuncState *fs, int reg) {
   if (!ISK(reg) && reg >= fs->nactvar) {
     fs->freereg--;
     lua_assert(reg == fs->freereg);
@@ -220,13 +220,13 @@ static void ICACHE_FLASH_ATTR freereg (FuncState *fs, int reg) {
 }
 
 
-static void ICACHE_FLASH_ATTR freeexp (FuncState *fs, expdesc *e) {
+static void freeexp (FuncState *fs, expdesc *e) {
   if (e->k == VNONRELOC)
     freereg(fs, e->u.s.info);
 }
 
 
-static int ICACHE_FLASH_ATTR addk (FuncState *fs, TValue *k, TValue *v) {
+static int addk (FuncState *fs, TValue *k, TValue *v) {
   lua_State *L = fs->L;
   TValue *idx = luaH_set(L, fs->h, k);
   Proto *f = fs->f;
@@ -247,28 +247,28 @@ static int ICACHE_FLASH_ATTR addk (FuncState *fs, TValue *k, TValue *v) {
 }
 
 
-int ICACHE_FLASH_ATTR luaK_stringK (FuncState *fs, TString *s) {
+int luaK_stringK (FuncState *fs, TString *s) {
   TValue o;
   setsvalue(fs->L, &o, s);
   return addk(fs, &o, &o);
 }
 
 
-int ICACHE_FLASH_ATTR luaK_numberK (FuncState *fs, lua_Number r) {
+int luaK_numberK (FuncState *fs, lua_Number r) {
   TValue o;
   setnvalue(&o, r);
   return addk(fs, &o, &o);
 }
 
 
-static int ICACHE_FLASH_ATTR boolK (FuncState *fs, int b) {
+static int boolK (FuncState *fs, int b) {
   TValue o;
   setbvalue(&o, b);
   return addk(fs, &o, &o);
 }
 
 
-static int ICACHE_FLASH_ATTR nilK (FuncState *fs) {
+static int nilK (FuncState *fs) {
   TValue k, v;
   setnilvalue(&v);
   /* cannot use nil as key; instead use table itself to represent nil */
@@ -277,7 +277,7 @@ static int ICACHE_FLASH_ATTR nilK (FuncState *fs) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_setreturns (FuncState *fs, expdesc *e, int nresults) {
+void luaK_setreturns (FuncState *fs, expdesc *e, int nresults) {
   if (e->k == VCALL) {  /* expression is an open function call? */
     SETARG_C(getcode(fs, e), nresults+1);
   }
@@ -289,7 +289,7 @@ void ICACHE_FLASH_ATTR luaK_setreturns (FuncState *fs, expdesc *e, int nresults)
 }
 
 
-void ICACHE_FLASH_ATTR luaK_setoneret (FuncState *fs, expdesc *e) {
+void luaK_setoneret (FuncState *fs, expdesc *e) {
   if (e->k == VCALL) {  /* expression is an open function call? */
     e->k = VNONRELOC;
     e->u.s.info = GETARG_A(getcode(fs, e));
@@ -301,7 +301,7 @@ void ICACHE_FLASH_ATTR luaK_setoneret (FuncState *fs, expdesc *e) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_dischargevars (FuncState *fs, expdesc *e) {
+void luaK_dischargevars (FuncState *fs, expdesc *e) {
   switch (e->k) {
     case VLOCAL: {
       e->k = VNONRELOC;
@@ -334,13 +334,13 @@ void ICACHE_FLASH_ATTR luaK_dischargevars (FuncState *fs, expdesc *e) {
 }
 
 
-static int ICACHE_FLASH_ATTR code_label (FuncState *fs, int A, int b, int jump) {
+static int code_label (FuncState *fs, int A, int b, int jump) {
   luaK_getlabel(fs);  /* those instructions may be jump targets */
   return luaK_codeABC(fs, OP_LOADBOOL, A, b, jump);
 }
 
 
-static void ICACHE_FLASH_ATTR discharge2reg (FuncState *fs, expdesc *e, int reg) {
+static void discharge2reg (FuncState *fs, expdesc *e, int reg) {
   luaK_dischargevars(fs, e);
   switch (e->k) {
     case VNIL: {
@@ -379,7 +379,7 @@ static void ICACHE_FLASH_ATTR discharge2reg (FuncState *fs, expdesc *e, int reg)
 }
 
 
-static void ICACHE_FLASH_ATTR discharge2anyreg (FuncState *fs, expdesc *e) {
+static void discharge2anyreg (FuncState *fs, expdesc *e) {
   if (e->k != VNONRELOC) {
     luaK_reserveregs(fs, 1);
     discharge2reg(fs, e, fs->freereg-1);
@@ -387,7 +387,7 @@ static void ICACHE_FLASH_ATTR discharge2anyreg (FuncState *fs, expdesc *e) {
 }
 
 
-static void ICACHE_FLASH_ATTR exp2reg (FuncState *fs, expdesc *e, int reg) {
+static void exp2reg (FuncState *fs, expdesc *e, int reg) {
   discharge2reg(fs, e, reg);
   if (e->k == VJMP)
     luaK_concat(fs, &e->t, e->u.s.info);  /* put this jump in `t' list */
@@ -411,7 +411,7 @@ static void ICACHE_FLASH_ATTR exp2reg (FuncState *fs, expdesc *e, int reg) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_exp2nextreg (FuncState *fs, expdesc *e) {
+void luaK_exp2nextreg (FuncState *fs, expdesc *e) {
   luaK_dischargevars(fs, e);
   freeexp(fs, e);
   luaK_reserveregs(fs, 1);
@@ -419,7 +419,7 @@ void ICACHE_FLASH_ATTR luaK_exp2nextreg (FuncState *fs, expdesc *e) {
 }
 
 
-int ICACHE_FLASH_ATTR luaK_exp2anyreg (FuncState *fs, expdesc *e) {
+int luaK_exp2anyreg (FuncState *fs, expdesc *e) {
   luaK_dischargevars(fs, e);
   if (e->k == VNONRELOC) {
     if (!hasjumps(e)) return e->u.s.info;  /* exp is already in a register */
@@ -433,7 +433,7 @@ int ICACHE_FLASH_ATTR luaK_exp2anyreg (FuncState *fs, expdesc *e) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_exp2val (FuncState *fs, expdesc *e) {
+void luaK_exp2val (FuncState *fs, expdesc *e) {
   if (hasjumps(e))
     luaK_exp2anyreg(fs, e);
   else
@@ -441,7 +441,7 @@ void ICACHE_FLASH_ATTR luaK_exp2val (FuncState *fs, expdesc *e) {
 }
 
 
-int ICACHE_FLASH_ATTR luaK_exp2RK (FuncState *fs, expdesc *e) {
+int luaK_exp2RK (FuncState *fs, expdesc *e) {
   luaK_exp2val(fs, e);
   switch (e->k) {
     case VKNUM:
@@ -469,7 +469,7 @@ int ICACHE_FLASH_ATTR luaK_exp2RK (FuncState *fs, expdesc *e) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
+void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
   switch (var->k) {
     case VLOCAL: {
       freeexp(fs, ex);
@@ -500,7 +500,7 @@ void ICACHE_FLASH_ATTR luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) 
 }
 
 
-void ICACHE_FLASH_ATTR luaK_self (FuncState *fs, expdesc *e, expdesc *key) {
+void luaK_self (FuncState *fs, expdesc *e, expdesc *key) {
   int func;
   luaK_exp2anyreg(fs, e);
   freeexp(fs, e);
@@ -513,7 +513,7 @@ void ICACHE_FLASH_ATTR luaK_self (FuncState *fs, expdesc *e, expdesc *key) {
 }
 
 
-static void ICACHE_FLASH_ATTR invertjump (FuncState *fs, expdesc *e) {
+static void invertjump (FuncState *fs, expdesc *e) {
   Instruction *pc = getjumpcontrol(fs, e->u.s.info);
   lua_assert(testTMode(GET_OPCODE(*pc)) && GET_OPCODE(*pc) != OP_TESTSET &&
                                            GET_OPCODE(*pc) != OP_TEST);
@@ -521,7 +521,7 @@ static void ICACHE_FLASH_ATTR invertjump (FuncState *fs, expdesc *e) {
 }
 
 
-static int ICACHE_FLASH_ATTR jumponcond (FuncState *fs, expdesc *e, int cond) {
+static int jumponcond (FuncState *fs, expdesc *e, int cond) {
   if (e->k == VRELOCABLE) {
     Instruction ie = getcode(fs, e);
     if (GET_OPCODE(ie) == OP_NOT) {
@@ -536,7 +536,7 @@ static int ICACHE_FLASH_ATTR jumponcond (FuncState *fs, expdesc *e, int cond) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_goiftrue (FuncState *fs, expdesc *e) {
+void luaK_goiftrue (FuncState *fs, expdesc *e) {
   int pc;  /* pc of last jump */
   luaK_dischargevars(fs, e);
   switch (e->k) {
@@ -560,7 +560,7 @@ void ICACHE_FLASH_ATTR luaK_goiftrue (FuncState *fs, expdesc *e) {
 }
 
 
-static void ICACHE_FLASH_ATTR luaK_goiffalse (FuncState *fs, expdesc *e) {
+static void luaK_goiffalse (FuncState *fs, expdesc *e) {
   int pc;  /* pc of last jump */
   luaK_dischargevars(fs, e);
   switch (e->k) {
@@ -583,7 +583,7 @@ static void ICACHE_FLASH_ATTR luaK_goiffalse (FuncState *fs, expdesc *e) {
 }
 
 
-static void ICACHE_FLASH_ATTR codenot (FuncState *fs, expdesc *e) {
+static void codenot (FuncState *fs, expdesc *e) {
   luaK_dischargevars(fs, e);
   switch (e->k) {
     case VNIL: case VFALSE: {
@@ -618,13 +618,13 @@ static void ICACHE_FLASH_ATTR codenot (FuncState *fs, expdesc *e) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_indexed (FuncState *fs, expdesc *t, expdesc *k) {
+void luaK_indexed (FuncState *fs, expdesc *t, expdesc *k) {
   t->u.s.aux = luaK_exp2RK(fs, k);
   t->k = VINDEXED;
 }
 
 
-static int ICACHE_FLASH_ATTR constfolding (OpCode op, expdesc *e1, expdesc *e2) {
+static int constfolding (OpCode op, expdesc *e1, expdesc *e2) {
   lua_Number v1, v2, r;
   if (!isnumeral(e1) || !isnumeral(e2)) return 0;
   v1 = e1->u.nval;
@@ -650,7 +650,7 @@ static int ICACHE_FLASH_ATTR constfolding (OpCode op, expdesc *e1, expdesc *e2) 
 }
 
 
-static void ICACHE_FLASH_ATTR codearith (FuncState *fs, OpCode op, expdesc *e1, expdesc *e2) {
+static void codearith (FuncState *fs, OpCode op, expdesc *e1, expdesc *e2) {
   if (constfolding(op, e1, e2))
     return;
   else {
@@ -670,7 +670,7 @@ static void ICACHE_FLASH_ATTR codearith (FuncState *fs, OpCode op, expdesc *e1, 
 }
 
 
-static void ICACHE_FLASH_ATTR codecomp (FuncState *fs, OpCode op, int cond, expdesc *e1,
+static void codecomp (FuncState *fs, OpCode op, int cond, expdesc *e1,
                                                           expdesc *e2) {
   int o1 = luaK_exp2RK(fs, e1);
   int o2 = luaK_exp2RK(fs, e2);
@@ -686,7 +686,7 @@ static void ICACHE_FLASH_ATTR codecomp (FuncState *fs, OpCode op, int cond, expd
 }
 
 
-void ICACHE_FLASH_ATTR luaK_prefix (FuncState *fs, UnOpr op, expdesc *e) {
+void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e) {
   expdesc e2;
   e2.t = e2.f = NO_JUMP; e2.k = VKNUM; e2.u.nval = 0;
   switch (op) {
@@ -707,7 +707,7 @@ void ICACHE_FLASH_ATTR luaK_prefix (FuncState *fs, UnOpr op, expdesc *e) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
+void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   switch (op) {
     case OPR_AND: {
       luaK_goiftrue(fs, v);
@@ -734,7 +734,7 @@ void ICACHE_FLASH_ATTR luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
 }
 
 
-void ICACHE_FLASH_ATTR luaK_posfix (FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2) {
+void luaK_posfix (FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2) {
   switch (op) {
     case OPR_AND: {
       lua_assert(e1->t == NO_JUMP);  /* list must be closed */
@@ -781,12 +781,12 @@ void ICACHE_FLASH_ATTR luaK_posfix (FuncState *fs, BinOpr op, expdesc *e1, expde
 }
 
 
-void ICACHE_FLASH_ATTR luaK_fixline (FuncState *fs, int line) {
+void luaK_fixline (FuncState *fs, int line) {
   fs->f->lineinfo[fs->pc - 1] = line;
 }
 
 
-static int ICACHE_FLASH_ATTR luaK_code (FuncState *fs, Instruction i, int line) {
+static int luaK_code (FuncState *fs, Instruction i, int line) {
   Proto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
@@ -801,7 +801,7 @@ static int ICACHE_FLASH_ATTR luaK_code (FuncState *fs, Instruction i, int line) 
 }
 
 
-int ICACHE_FLASH_ATTR luaK_codeABC (FuncState *fs, OpCode o, int a, int b, int c) {
+int luaK_codeABC (FuncState *fs, OpCode o, int a, int b, int c) {
   lua_assert(getOpMode(o) == iABC);
   lua_assert(getBMode(o) != OpArgN || b == 0);
   lua_assert(getCMode(o) != OpArgN || c == 0);
@@ -809,14 +809,14 @@ int ICACHE_FLASH_ATTR luaK_codeABC (FuncState *fs, OpCode o, int a, int b, int c
 }
 
 
-int ICACHE_FLASH_ATTR luaK_codeABx (FuncState *fs, OpCode o, int a, unsigned int bc) {
+int luaK_codeABx (FuncState *fs, OpCode o, int a, unsigned int bc) {
   lua_assert(getOpMode(o) == iABx || getOpMode(o) == iAsBx);
   lua_assert(getCMode(o) == OpArgN);
   return luaK_code(fs, CREATE_ABx(o, a, bc), fs->ls->lastline);
 }
 
 
-void ICACHE_FLASH_ATTR luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
+void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
   int c =  (nelems - 1)/LFIELDS_PER_FLUSH + 1;
   int b = (tostore == LUA_MULTRET) ? 0 : tostore;
   lua_assert(tostore != 0);

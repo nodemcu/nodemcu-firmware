@@ -32,7 +32,7 @@ static smart_succeed succeed = NULL;
 static void *smart_succeed_arg = NULL;
 
 void smart_end();
-int ICACHE_FLASH_ATTR smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
+int smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
   if(len == 0) 
     return 0;
   uint16_t dst_len = len/NIBBLE_PER_BYTE;
@@ -127,7 +127,7 @@ int ICACHE_FLASH_ATTR smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, u
   return res;
 }
 
-void ICACHE_FLASH_ATTR detect(uint8 *buf, uint16 len){
+void detect(uint8 *buf, uint16 len){
   uint16_t seq;
   int16_t seq_delta = 0;
   uint16_t byte_num = 0, bit_num = 0;
@@ -435,7 +435,7 @@ end:
   return;
 }
 
-void ICACHE_FLASH_ATTR reset_map(smart_addr_map **am, size_t num){
+void reset_map(smart_addr_map **am, size_t num){
   int i;
   for (i = 0; i < num; ++i)
   {
@@ -461,15 +461,15 @@ void ICACHE_FLASH_ATTR reset_map(smart_addr_map **am, size_t num){
   }
 }
 
-void ICACHE_FLASH_ATTR smart_enable(void){
+void smart_enable(void){
   wifi_promiscuous_enable(1); 
 }
 
-void ICACHE_FLASH_ATTR smart_disable(void){
+void smart_disable(void){
   wifi_promiscuous_enable(0); 
 }
 
-void ICACHE_FLASH_ATTR smart_end(){
+void smart_end(){
   int i;
   os_timer_disarm(&smart_timer);
   smart_disable();
@@ -532,7 +532,7 @@ void ICACHE_FLASH_ATTR smart_end(){
   // system_restart();   // restart to enable the mode
 }
 
-void ICACHE_FLASH_ATTR smart_next_channel(){
+void smart_next_channel(){
   smart_disable();
   switch(cur_channel){
     case 1:
@@ -586,7 +586,7 @@ void ICACHE_FLASH_ATTR smart_next_channel(){
   smart_enable();
 }
 
-void ICACHE_FLASH_ATTR smart_begin(int chnl, smart_succeed s, void *arg){
+void smart_begin(int chnl, smart_succeed s, void *arg){
   int i;
   alldone = 0;
   for (i = 0; i < ADDR_MAP_NUM; ++i)
@@ -674,7 +674,7 @@ void ICACHE_FLASH_ATTR smart_begin(int chnl, smart_succeed s, void *arg){
   smart_enable();
 }
 
-void ICACHE_FLASH_ATTR station_check_connect(bool smart){
+void station_check_connect(bool smart){
   mode = wifi_get_opmode();
   if( (STATION_MODE != mode) && (mode != STATIONAP_MODE) ){
     return;

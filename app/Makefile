@@ -41,13 +41,45 @@ endif # } PDIR
 APPDIR = .
 LDDIR = ../ld
 
-CCFLAGS += -Os
+ifeq ($(OS),Windows_NT)
+# WIN32
+# We are under windows. Assume using xcc.
+	CCFLAGS += -Os --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
+    ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+# ->AMD64
+    endif
+    ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+# ->IA32
+    endif
+else
+# We are under other system, may be Linux. Assume using gcc.
+# Can we use -fdata-sections?
+	CCFLAGS += -Os -ffunction-sections -fno-jump-tables
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+# LINUX
+    endif
+    ifeq ($(UNAME_S),Darwin)
+# OSX
+    endif
+    UNAME_P := $(shell uname -p)
+    ifeq ($(UNAME_P),x86_64)
+# ->AMD64
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+# ->IA32
+    endif
+    ifneq ($(filter arm%,$(UNAME_P)),)
+# ->ARM
+    endif
+endif
 
 TARGET_LDFLAGS =		\
 	-nostdlib		\
 	-Wl,-EL \
 	--longcalls \
 	--text-section-literals
+
 
 ifeq ($(FLAVOR),debug)
     TARGET_LDFLAGS += -g -O2

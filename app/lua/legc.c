@@ -4,7 +4,7 @@
 #include "lstate.h"
 #include "c_types.h"
 
-void ICACHE_FLASH_ATTR legc_set_mode(lua_State *L, int mode, unsigned limit) {
+void legc_set_mode(lua_State *L, int mode, unsigned limit) {
    global_State *g = G(L); 
    
    g->egcmode = mode;

@@ -5,7 +5,7 @@
 #include "c_string.h"
 #include "c_stdio.h"
 
-void ICACHE_FLASH_ATTR cmn_platform_init(void)
+void cmn_platform_init(void)
 {
 
 }
@@ -13,7 +13,7 @@ void ICACHE_FLASH_ATTR cmn_platform_init(void)
 // ****************************************************************************
 // GPIO functions
 
-int ICACHE_FLASH_ATTR platform_gpio_exists( unsigned pin )
+int platform_gpio_exists( unsigned pin )
 {
   return pin < NUM_GPIO;
 }
@@ -21,7 +21,7 @@ int ICACHE_FLASH_ATTR platform_gpio_exists( unsigned pin )
 // ****************************************************************************
 // CAN functions
 
-int ICACHE_FLASH_ATTR platform_can_exists( unsigned id )
+int platform_can_exists( unsigned id )
 {
   return id < NUM_CAN;
 }
@@ -30,7 +30,7 @@ int ICACHE_FLASH_ATTR platform_can_exists( unsigned id )
 // SPI functions
 
 
-int ICACHE_FLASH_ATTR platform_spi_exists( unsigned id )
+int platform_spi_exists( unsigned id )
 {
   return id < NUM_SPI;
 }
@@ -38,7 +38,7 @@ int ICACHE_FLASH_ATTR platform_spi_exists( unsigned id )
 // ****************************************************************************
 // PWM functions
 
-int ICACHE_FLASH_ATTR platform_pwm_exists( unsigned id )
+int platform_pwm_exists( unsigned id )
 {
   return ((id < NUM_PWM) && (id > 0));
 }
@@ -46,7 +46,7 @@ int ICACHE_FLASH_ATTR platform_pwm_exists( unsigned id )
 // ****************************************************************************
 // ADC functions
 
-int ICACHE_FLASH_ATTR platform_adc_exists( unsigned id )
+int platform_adc_exists( unsigned id )
 {
   return id < NUM_ADC;
 }
@@ -54,7 +54,7 @@ int ICACHE_FLASH_ATTR platform_adc_exists( unsigned id )
 // ****************************************************************************
 // UART functions
 
-int ICACHE_FLASH_ATTR platform_uart_exists( unsigned id )
+int platform_uart_exists( unsigned id )
 {
   return id < NUM_UART;
 }
@@ -62,7 +62,7 @@ int ICACHE_FLASH_ATTR platform_uart_exists( unsigned id )
 // ****************************************************************************
 // OneWire functions
 
-int ICACHE_FLASH_ATTR platform_ow_exists( unsigned id )
+int platform_ow_exists( unsigned id )
 {
   return ((id < NUM_OW) && (id > 0));
 }
@@ -70,13 +70,13 @@ int ICACHE_FLASH_ATTR platform_ow_exists( unsigned id )
 // ****************************************************************************
 // Timer functions
 
-int ICACHE_FLASH_ATTR platform_tmr_exists( unsigned id )
+int platform_tmr_exists( unsigned id )
 {
   return id < NUM_TMR;
 }
 
 // I2C support
-int ICACHE_FLASH_ATTR platform_i2c_exists( unsigned id )
+int platform_i2c_exists( unsigned id )
 {
 #ifndef NUM_I2C
   return 0;
@@ -99,7 +99,7 @@ extern char _flash_used_end[];
 
 // Helper function: find the flash sector in which an address resides
 // Return the sector number, as well as the start and end address of the sector
-static uint32_t ICACHE_FLASH_ATTR flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
+static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
 {
   address -= INTERNAL_FLASH_START_ADDRESS;
 #ifdef INTERNAL_FLASH_SECTOR_SIZE
@@ -127,12 +127,12 @@ static uint32_t ICACHE_FLASH_ATTR flashh_find_sector( uint32_t address, uint32_t
 #endif // #ifdef INTERNAL_FLASH_SECTOR_SIZE
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_flash_get_sector_of_address( uint32_t addr )
+uint32_t platform_flash_get_sector_of_address( uint32_t addr )
 {
   return flashh_find_sector( addr, NULL, NULL );
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_flash_get_num_sectors(void)
+uint32_t platform_flash_get_num_sectors(void)
 {
 #ifdef INTERNAL_FLASH_SECTOR_SIZE
   return INTERNAL_FLASH_SIZE / INTERNAL_FLASH_SECTOR_SIZE;
@@ -143,7 +143,7 @@ uint32_t ICACHE_FLASH_ATTR platform_flash_get_num_sectors(void)
 #endif // #ifdef INTERNAL_FLASH_SECTOR_SIZE
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_flash_get_first_free_block_address( uint32_t *psect )
+uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
 {
   // Round the total used flash size to the closest flash block address
   uint32_t start, end, sect;
@@ -162,7 +162,7 @@ uint32_t ICACHE_FLASH_ATTR platform_flash_get_first_free_block_address( uint32_t
   }
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_flash_write( const void *from, uint32_t toaddr, uint32_t size )
+uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size )
 {
 #ifndef INTERNAL_FLASH_WRITE_UNIT_SIZE
   return platform_s_flash_write( from, toaddr, size );
@@ -212,7 +212,7 @@ uint32_t ICACHE_FLASH_ATTR platform_flash_write( const void *from, uint32_t toad
 #endif // #ifndef INTERNAL_FLASH_WRITE_UNIT_SIZE
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_flash_read( void *to, uint32_t fromaddr, uint32_t size )
+uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 {
 #ifndef INTERNAL_FLASH_READ_UNIT_SIZE
   return platform_s_flash_read( to, fromaddr, size );

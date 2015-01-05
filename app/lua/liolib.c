@@ -38,7 +38,7 @@ static const int liolib_keys[] = {(int)&luaL_callmeta, (int)&luaL_typerror, (int
 
 static const char *const fnames[] = {"input", "output"};
 
-static int ICACHE_FLASH_ATTR pushresult (lua_State *L, int i, const char *filename) {
+static int pushresult (lua_State *L, int i, const char *filename) {
   int en = fs_error(0);  /* calls to Lua API may change this value */
   if (i) {
     lua_pushboolean(L, 1);
@@ -56,7 +56,7 @@ static int ICACHE_FLASH_ATTR pushresult (lua_State *L, int i, const char *filena
 }
 
 
-static void ICACHE_FLASH_ATTR fileerror (lua_State *L, int arg, const char *filename) {
+static void fileerror (lua_State *L, int arg, const char *filename) {
   lua_pushfstring(L, "%s: err(%d)", filename, fs_error(0));
   luaL_argerror(L, arg, lua_tostring(L, -1));
 }
@@ -65,7 +65,7 @@ static void ICACHE_FLASH_ATTR fileerror (lua_State *L, int arg, const char *file
 #define tofilep(L)	((int *)luaL_checkudata(L, 1, LUA_FILEHANDLE))
 
 
-static int ICACHE_FLASH_ATTR io_type (lua_State *L) {
+static int io_type (lua_State *L) {
   void *ud;
   luaL_checkany(L, 1);
   ud = lua_touserdata(L, 1);
@@ -80,7 +80,7 @@ static int ICACHE_FLASH_ATTR io_type (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR tofile (lua_State *L) {
+static int tofile (lua_State *L) {
   int *f = tofilep(L);
   if (*f < FS_OPEN_OK)
     luaL_error(L, "attempt to use a closed file");
@@ -94,7 +94,7 @@ static int ICACHE_FLASH_ATTR tofile (lua_State *L) {
 ** before opening the actual file; so, if there is a memory error, the
 ** file is not left opened.
 */
-static int *ICACHE_FLASH_ATTR newfile (lua_State *L) {
+static int *newfile (lua_State *L) {
   int *pf = (int *)lua_newuserdata(L, sizeof(int));
   *pf = FS_OPEN_OK - 1;  /* file handle is currently `closed' */
   luaL_getmetatable(L, LUA_FILEHANDLE);
@@ -107,7 +107,7 @@ static int *ICACHE_FLASH_ATTR newfile (lua_State *L) {
 /*
 ** function to (not) close the standard files stdin, stdout, and stderr
 */
-static int ICACHE_FLASH_ATTR io_noclose (lua_State *L) {
+static int io_noclose (lua_State *L) {
   lua_pushnil(L);
   lua_pushliteral(L, "cannot close standard file");
   return 2;
@@ -117,7 +117,7 @@ static int ICACHE_FLASH_ATTR io_noclose (lua_State *L) {
 /*
 ** function to close 'popen' files
 */
-static int ICACHE_FLASH_ATTR io_pclose (lua_State *L) {
+static int io_pclose (lua_State *L) {
   int *p = tofilep(L);
   int ok = lua_pclose(L, *p);
   *p = FS_OPEN_OK - 1;
@@ -128,7 +128,7 @@ static int ICACHE_FLASH_ATTR io_pclose (lua_State *L) {
 /*
 ** function to close regular files
 */
-static int ICACHE_FLASH_ATTR io_fclose (lua_State *L) {
+static int io_fclose (lua_State *L) {
   int *p = tofilep(L);
   int ok = (fs_close(*p) == 0);
   *p = FS_OPEN_OK - 1;
@@ -136,7 +136,7 @@ static int ICACHE_FLASH_ATTR io_fclose (lua_State *L) {
 }
 #endif
 
-static int ICACHE_FLASH_ATTR aux_close (lua_State *L) {
+static int aux_close (lua_State *L) {
 #if LUA_OPTIMIZE_MEMORY != 2
   lua_getfenv(L, 1);
   lua_getfield(L, -1, "__close");
@@ -156,7 +156,7 @@ static int ICACHE_FLASH_ATTR aux_close (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_close (lua_State *L) {
+static int io_close (lua_State *L) {
   if (lua_isnone(L, 1))
     LUA_IO_GETFIELD(IO_OUTPUT);
   tofile(L);  /* make sure argument is a file */
@@ -164,7 +164,7 @@ static int ICACHE_FLASH_ATTR io_close (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_gc (lua_State *L) {
+static int io_gc (lua_State *L) {
   int f = *tofilep(L);
   /* ignore closed files */
   if (f != FS_OPEN_OK - 1)
@@ -173,7 +173,7 @@ static int ICACHE_FLASH_ATTR io_gc (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_tostring (lua_State *L) {
+static int io_tostring (lua_State *L) {
   int f = *tofilep(L);
   if (f == FS_OPEN_OK - 1)
     lua_pushliteral(L, "file (closed)");
@@ -183,7 +183,7 @@ static int ICACHE_FLASH_ATTR io_tostring (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_open (lua_State *L) {
+static int io_open (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
   int *pf = newfile(L);
@@ -197,7 +197,7 @@ static int ICACHE_FLASH_ATTR io_open (lua_State *L) {
 ** correct __close for 'popen' files
 */
 #if 0
-static int ICACHE_FLASH_ATTR io_popen (lua_State *L) {
+static int io_popen (lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
   int *pf = newfile(L);
@@ -206,14 +206,14 @@ static int ICACHE_FLASH_ATTR io_popen (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_tmpfile (lua_State *L) {
+static int io_tmpfile (lua_State *L) {
   int *pf = newfile(L);
   *pf = tmpfile();
   return (*pf == FS_OPEN_OK - 1) ? pushresult(L, 0, NULL) : 1;
 }
 #endif
 
-static int ICACHE_FLASH_ATTR getiofile (lua_State *L, int findex) {
+static int getiofile (lua_State *L, int findex) {
   int *pf;
   LUA_IO_GETFIELD(findex);
   pf = (int *)lua_touserdata(L, -1);
@@ -225,7 +225,7 @@ static int ICACHE_FLASH_ATTR getiofile (lua_State *L, int findex) {
 }
 
 
-static int ICACHE_FLASH_ATTR g_iofile (lua_State *L, int f, const char *mode) {
+static int g_iofile (lua_State *L, int f, const char *mode) {
   if (!lua_isnoneornil(L, 1)) {
     const char *filename = lua_tostring(L, 1);
     if (filename) {
@@ -246,34 +246,34 @@ static int ICACHE_FLASH_ATTR g_iofile (lua_State *L, int f, const char *mode) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_input (lua_State *L) {
+static int io_input (lua_State *L) {
   return g_iofile(L, IO_INPUT, "r");
 }
 
 
-static int ICACHE_FLASH_ATTR io_output (lua_State *L) {
+static int io_output (lua_State *L) {
   return g_iofile(L, IO_OUTPUT, "w");
 }
 
 
-static int ICACHE_FLASH_ATTR io_readline (lua_State *L);
+static int io_readline (lua_State *L);
 
 
-static void ICACHE_FLASH_ATTR aux_lines (lua_State *L, int idx, int toclose) {
+static void aux_lines (lua_State *L, int idx, int toclose) {
   lua_pushvalue(L, idx);
   lua_pushboolean(L, toclose);  /* close/not close file when finished */
   lua_pushcclosure(L, io_readline, 2);
 }
 
 
-static int ICACHE_FLASH_ATTR f_lines (lua_State *L) {
+static int f_lines (lua_State *L) {
   tofile(L);  /* check that it's a valid file handle */
   aux_lines(L, 1, 0);
   return 1;
 }
 
 
-static int ICACHE_FLASH_ATTR io_lines (lua_State *L) {
+static int io_lines (lua_State *L) {
   if (lua_isnoneornil(L, 1)) {  /* no arguments? */
     /* will iterate over default input */
     LUA_IO_GETFIELD(IO_INPUT);
@@ -298,7 +298,7 @@ static int ICACHE_FLASH_ATTR io_lines (lua_State *L) {
 */
 
 #if 0
-static int ICACHE_FLASH_ATTR read_number (lua_State *L, int f) {
+static int read_number (lua_State *L, int f) {
   lua_Number d;
   if (fs_scanf(f, LUA_NUMBER_SCAN, &d) == 1) {
     lua_pushnumber(L, d);
@@ -311,7 +311,7 @@ static int ICACHE_FLASH_ATTR read_number (lua_State *L, int f) {
 }
 #endif
 
-static int ICACHE_FLASH_ATTR test_eof (lua_State *L, int f) {
+static int test_eof (lua_State *L, int f) {
   int c = fs_getc(f);
   fs_ungetc(c, f);
   lua_pushlstring(L, NULL, 0);
@@ -319,7 +319,7 @@ static int ICACHE_FLASH_ATTR test_eof (lua_State *L, int f) {
 }
 
 #if 0
-static int ICACHE_FLASH_ATTR read_line (lua_State *L, int f) {
+static int read_line (lua_State *L, int f) {
   luaL_Buffer b;
   luaL_buffinit(L, &b);
   for (;;) {
@@ -340,7 +340,7 @@ static int ICACHE_FLASH_ATTR read_line (lua_State *L, int f) {
   }
 }
 #else
-static int ICACHE_FLASH_ATTR read_line (lua_State *L, int f) {
+static int read_line (lua_State *L, int f) {
   luaL_Buffer b;
   luaL_buffinit(L, &b);
   char *p = luaL_prepbuffer(&b);
@@ -368,7 +368,7 @@ static int ICACHE_FLASH_ATTR read_line (lua_State *L, int f) {
 }
 #endif
 
-static int ICACHE_FLASH_ATTR read_chars (lua_State *L, int f, size_t n) {
+static int read_chars (lua_State *L, int f, size_t n) {
   size_t rlen;  /* how much to read */
   size_t nr;  /* number of chars actually read */
   luaL_Buffer b;
@@ -386,7 +386,7 @@ static int ICACHE_FLASH_ATTR read_chars (lua_State *L, int f, size_t n) {
 }
 
 
-static int ICACHE_FLASH_ATTR g_read (lua_State *L, int f, int first) {
+static int g_read (lua_State *L, int f, int first) {
   int nargs = lua_gettop(L) - 1;
   int success;
   int n;
@@ -435,17 +435,17 @@ static int ICACHE_FLASH_ATTR g_read (lua_State *L, int f, int first) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_read (lua_State *L) {
+static int io_read (lua_State *L) {
   return g_read(L, getiofile(L, IO_INPUT), 1);
 }
 
 
-static int ICACHE_FLASH_ATTR f_read (lua_State *L) {
+static int f_read (lua_State *L) {
   return g_read(L, tofile(L), 2);
 }
 
 
-static int ICACHE_FLASH_ATTR io_readline (lua_State *L) {
+static int io_readline (lua_State *L) {
   int *pf = (int *)lua_touserdata(L, lua_upvalueindex(1));
   int sucess;
   if (pf == NULL || *pf == FS_OPEN_OK - 1){  /* file is already closed? */
@@ -469,7 +469,7 @@ static int ICACHE_FLASH_ATTR io_readline (lua_State *L) {
 /* }====================================================== */
 
 
-static int ICACHE_FLASH_ATTR g_write (lua_State *L, int f, int arg) {
+static int g_write (lua_State *L, int f, int arg) {
   int nargs = lua_gettop(L) - 1;
   int status = 1;
   for (; nargs--; arg++) {
@@ -491,17 +491,17 @@ static int ICACHE_FLASH_ATTR g_write (lua_State *L, int f, int arg) {
 }
 
 
-static int ICACHE_FLASH_ATTR io_write (lua_State *L) {
+static int io_write (lua_State *L) {
   return g_write(L, getiofile(L, IO_OUTPUT), 1);
 }
 
 
-static int ICACHE_FLASH_ATTR f_write (lua_State *L) {
+static int f_write (lua_State *L) {
   return g_write(L, tofile(L), 2);
 }
 
 
-static int ICACHE_FLASH_ATTR f_seek (lua_State *L) {
+static int f_seek (lua_State *L) {
   static const int mode[] = {FS_SEEK_SET, FS_SEEK_CUR, FS_SEEK_END};
   static const char *const modenames[] = {"set", "cur", "end", NULL};
   int f = tofile(L);
@@ -517,7 +517,7 @@ static int ICACHE_FLASH_ATTR f_seek (lua_State *L) {
 }
 
 #if 0
-static int ICACHE_FLASH_ATTR f_setvbuf (lua_State *L) {
+static int f_setvbuf (lua_State *L) {
   static const int mode[] = {_IONBF, _IOFBF, _IOLBF};
   static const char *const modenames[] = {"no", "full", "line", NULL};
   int f = tofile(L);
@@ -529,12 +529,12 @@ static int ICACHE_FLASH_ATTR f_setvbuf (lua_State *L) {
 #endif
 
 
-static int ICACHE_FLASH_ATTR io_flush (lua_State *L) {
+static int io_flush (lua_State *L) {
   return pushresult(L, fs_flush(getiofile(L, IO_OUTPUT)) == 0, NULL);
 }
 
 
-static int ICACHE_FLASH_ATTR f_flush (lua_State *L) {
+static int f_flush (lua_State *L) {
   return pushresult(L, fs_flush(tofile(L)) == 0, NULL);
 }
 
@@ -560,7 +560,7 @@ const LUA_REG_TYPE iolib[] = {
 };
 
 #if LUA_OPTIMIZE_MEMORY == 2
-static int ICACHE_FLASH_ATTR luaL_index(lua_State *L)
+static int luaL_index(lua_State *L)
 {
   return luaR_findfunction(L, iolib_funcs);
 }
@@ -590,7 +590,7 @@ const LUA_REG_TYPE flib[] = {
   {LNILKEY, LNILVAL}
 };
 
-static void ICACHE_FLASH_ATTR createmeta (lua_State *L) {
+static void createmeta (lua_State *L) {
 #if LUA_OPTIMIZE_MEMORY == 0
   luaL_newmetatable(L, LUA_FILEHANDLE);  /* create metatable for file handles */
   lua_pushvalue(L, -1);  /* push metatable */
@@ -602,7 +602,7 @@ static void ICACHE_FLASH_ATTR createmeta (lua_State *L) {
 }
 
 
-static void ICACHE_FLASH_ATTR createstdfile (lua_State *L, int f, int k, const char *fname) {
+static void createstdfile (lua_State *L, int f, int k, const char *fname) {
   *newfile(L) = f;
 #if LUA_OPTIMIZE_MEMORY != 2
   if (k > 0) {
@@ -620,14 +620,14 @@ static void ICACHE_FLASH_ATTR createstdfile (lua_State *L, int f, int k, const c
 }
 
 #if LUA_OPTIMIZE_MEMORY != 2
-static void ICACHE_FLASH_ATTR newfenv (lua_State *L, lua_CFunction cls) {
+static void newfenv (lua_State *L, lua_CFunction cls) {
   lua_createtable(L, 0, 1);
   lua_pushcfunction(L, cls);
   lua_setfield(L, -2, "__close");
 }
 #endif
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_io (lua_State *L) {
+LUALIB_API int luaopen_io (lua_State *L) {
   createmeta(L);
 #if LUA_OPTIMIZE_MEMORY != 2
   /* create (private) environment (with fields IO_INPUT, IO_OUTPUT, __close) */

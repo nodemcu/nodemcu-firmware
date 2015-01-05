@@ -237,19 +237,19 @@ static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
 #define DLMSG	"dynamic libraries not enabled; check your Lua installation"
 
 
-static void ICACHE_FLASH_ATTR ll_unloadlib (void *lib) {
+static void ll_unloadlib (void *lib) {
   (void)lib;  /* to avoid warnings */
 }
 
 
-static void * ICACHE_FLASH_ATTR ll_load (lua_State *L, const char *path) {
+static void * ll_load (lua_State *L, const char *path) {
   (void)path;  /* to avoid warnings */
   lua_pushliteral(L, DLMSG);
   return NULL;
 }
 
 
-static lua_CFunction ICACHE_FLASH_ATTR ll_sym (lua_State *L, void *lib, const char *sym) {
+static lua_CFunction ll_sym (lua_State *L, void *lib, const char *sym) {
   (void)lib; (void)sym;  /* to avoid warnings */
   lua_pushliteral(L, DLMSG);
   return NULL;
@@ -260,7 +260,7 @@ static lua_CFunction ICACHE_FLASH_ATTR ll_sym (lua_State *L, void *lib, const ch
 
 
 
-static void ** ICACHE_FLASH_ATTR ll_register (lua_State *L, const char *path) {
+static void ** ll_register (lua_State *L, const char *path) {
   void **plib;
   lua_pushfstring(L, "%s%s", LIBPREFIX, path);
   lua_gettable(L, LUA_REGISTRYINDEX);  /* check library in registry? */
@@ -284,7 +284,7 @@ static void ** ICACHE_FLASH_ATTR ll_register (lua_State *L, const char *path) {
 ** __gc tag method: calls library's `ll_unloadlib' function with the lib
 ** handle
 */
-static int ICACHE_FLASH_ATTR gctm (lua_State *L) {
+static int gctm (lua_State *L) {
   void **lib = (void **)luaL_checkudata(L, 1, "_LOADLIB");
   if (*lib) ll_unloadlib(*lib);
   *lib = NULL;  /* mark library as closed */
@@ -292,7 +292,7 @@ static int ICACHE_FLASH_ATTR gctm (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR ll_loadfunc (lua_State *L, const char *path, const char *sym) {
+static int ll_loadfunc (lua_State *L, const char *path, const char *sym) {
   void **reg = ll_register(L, path);
   if (*reg == NULL) *reg = ll_load(L, path);
   if (*reg == NULL)
@@ -307,7 +307,7 @@ static int ICACHE_FLASH_ATTR ll_loadfunc (lua_State *L, const char *path, const 
 }
 
 
-static int ICACHE_FLASH_ATTR ll_loadlib (lua_State *L) {
+static int ll_loadlib (lua_State *L) {
   const char *path = luaL_checkstring(L, 1);
   const char *init = luaL_checkstring(L, 2);
   int stat = ll_loadfunc(L, path, init);
@@ -336,7 +336,7 @@ static int readable (const char *filename) {
   return 1;
 }
 #else
-static int ICACHE_FLASH_ATTR readable (const char *filename) {
+static int readable (const char *filename) {
   int f = fs_open(filename, FS_RDONLY);  /* try to open file */
   if (f < FS_OPEN_OK) return 0;  /* open failed */
   fs_close(f);
@@ -344,7 +344,7 @@ static int ICACHE_FLASH_ATTR readable (const char *filename) {
 }
 #endif
 
-static const char * ICACHE_FLASH_ATTR pushnexttemplate (lua_State *L, const char *path) {
+static const char * pushnexttemplate (lua_State *L, const char *path) {
   const char *l;
   while (*path == *LUA_PATHSEP) path++;  /* skip separators */
   if (*path == '\0') return NULL;  /* no more templates */
@@ -355,7 +355,7 @@ static const char * ICACHE_FLASH_ATTR pushnexttemplate (lua_State *L, const char
 }
 
 
-static const char * ICACHE_FLASH_ATTR findfile (lua_State *L, const char *name,
+static const char * findfile (lua_State *L, const char *name,
                                            const char *pname) {
   const char *path;
   name = luaL_gsub(L, name, ".", LUA_DIRSEP);
@@ -378,13 +378,13 @@ static const char * ICACHE_FLASH_ATTR findfile (lua_State *L, const char *name,
 }
 
 
-static void ICACHE_FLASH_ATTR loaderror (lua_State *L, const char *filename) {
+static void loaderror (lua_State *L, const char *filename) {
   luaL_error(L, "error loading module " LUA_QS " from file " LUA_QS ":\n\t%s",
                 lua_tostring(L, 1), filename, lua_tostring(L, -1));
 }
 
 
-static int ICACHE_FLASH_ATTR loader_Lua (lua_State *L) {
+static int loader_Lua (lua_State *L) {
   const char *filename;
   const char *name = luaL_checkstring(L, 1);
   filename = findfile(L, name, "path");
@@ -410,7 +410,7 @@ static const char *mkfuncname (lua_State *L, const char *modname) {
 }
 
 
-static int ICACHE_FLASH_ATTR loader_C (lua_State *L) {
+static int loader_C (lua_State *L) {
   const char *funcname;
   const char *name = luaL_checkstring(L, 1);
   const char *filename = findfile(L, name, "cpath");
@@ -422,7 +422,7 @@ static int ICACHE_FLASH_ATTR loader_C (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR loader_Croot (lua_State *L) {
+static int loader_Croot (lua_State *L) {
   const char *funcname;
   const char *filename;
   const char *name = luaL_checkstring(L, 1);
@@ -443,7 +443,7 @@ static int ICACHE_FLASH_ATTR loader_Croot (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR loader_preload (lua_State *L) {
+static int loader_preload (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   lua_getfield(L, LUA_ENVIRONINDEX, "preload");
   if (!lua_istable(L, -1))
@@ -459,7 +459,7 @@ static const int sentinel_ = 0;
 #define sentinel	((void *)&sentinel_)
 
 
-static int ICACHE_FLASH_ATTR ll_require (lua_State *L) {
+static int ll_require (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   int i;
   lua_settop(L, 1);  /* _LOADED table will be at index 2 */
@@ -521,7 +521,7 @@ static int ICACHE_FLASH_ATTR ll_require (lua_State *L) {
 */
   
 
-static void ICACHE_FLASH_ATTR setfenv (lua_State *L) {
+static void setfenv (lua_State *L) {
   lua_Debug ar;
   if (lua_getstack(L, 1, &ar) == 0 ||
       lua_getinfo(L, "f", &ar) == 0 ||  /* get calling function */
@@ -533,7 +533,7 @@ static void ICACHE_FLASH_ATTR setfenv (lua_State *L) {
 }
 
 
-static void ICACHE_FLASH_ATTR dooptions (lua_State *L, int n) {
+static void dooptions (lua_State *L, int n) {
   int i;
   for (i = 2; i <= n; i++) {
     lua_pushvalue(L, i);  /* get option (a function) */
@@ -543,7 +543,7 @@ static void ICACHE_FLASH_ATTR dooptions (lua_State *L, int n) {
 }
 
 
-static void ICACHE_FLASH_ATTR modinit (lua_State *L, const char *modname) {
+static void modinit (lua_State *L, const char *modname) {
   const char *dot;
   lua_pushvalue(L, -1);
   lua_setfield(L, -2, "_M");  /* module._M = module */
@@ -558,7 +558,7 @@ static void ICACHE_FLASH_ATTR modinit (lua_State *L, const char *modname) {
 }
 
 
-static int ICACHE_FLASH_ATTR ll_module (lua_State *L) {
+static int ll_module (lua_State *L) {
   const char *modname = luaL_checkstring(L, 1);
   if (luaR_findglobal(modname, c_strlen(modname)))
     return 0;
@@ -608,7 +608,7 @@ static int ll_seeall (lua_State *L) {
 /* auxiliary mark (for internal use) */
 #define AUXMARK		"\1"
 
-static void ICACHE_FLASH_ATTR setpath (lua_State *L, const char *fieldname, const char *envname,
+static void setpath (lua_State *L, const char *fieldname, const char *envname,
                                    const char *def) {
   const char *path = c_getenv(envname);
   if (path == NULL)  /* no environment variable? */
@@ -643,13 +643,15 @@ static const lua_CFunction loaders[] =
   {loader_preload, loader_Lua, loader_C, loader_Croot, NULL};
 
 #if LUA_OPTIMIZE_MEMORY > 0
-const luaR_entry lmt[] = {
+#define MIN_OPT_LEVEL 1
+#include "lrodefs.h"
+const LUA_REG_TYPE lmt[] = {
   {LRO_STRKEY("__gc"), LRO_FUNCVAL(gctm)},
   {LRO_NILKEY, LRO_NILVAL}
 };
 #endif
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_package (lua_State *L) {
+LUALIB_API int luaopen_package (lua_State *L) {
   int i;
   /* create new type _LOADLIB */
 #if LUA_OPTIMIZE_MEMORY == 0

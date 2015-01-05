@@ -11,7 +11,7 @@ extern UartDevice UartDev;
 
 #define uart_putc uart0_putc
 
-bool ICACHE_FLASH_ATTR uart_getc(char *c){
+bool uart_getc(char *c){
     RcvMsgBuff *pRxBuff = &(UartDev.rcv_buff);
     if(pRxBuff->pWritePos == pRxBuff->pReadPos){   // empty
         return false;
@@ -30,7 +30,7 @@ bool ICACHE_FLASH_ATTR uart_getc(char *c){
 }
 
 #if 0
-int ICACHE_FLASH_ATTR readline4lua(const char *prompt, char *buffer, int length){
+int readline4lua(const char *prompt, char *buffer, int length){
     char ch;
     int line_position;
 

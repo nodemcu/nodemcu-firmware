@@ -15,14 +15,14 @@
 #include "flash_api.h"
 
 // Lua: restart()
-static int ICACHE_FLASH_ATTR node_restart( lua_State* L )
+static int node_restart( lua_State* L )
 {
   system_restart();
   return 0;  
 }
 
 // Lua: dsleep( us )
-static int ICACHE_FLASH_ATTR node_deepsleep( lua_State* L )
+static int node_deepsleep( lua_State* L )
 {
   s32 us;
   us = luaL_checkinteger( L, 1 );
@@ -33,7 +33,7 @@ static int ICACHE_FLASH_ATTR node_deepsleep( lua_State* L )
 }
 
 // Lua: info()
-static int ICACHE_FLASH_ATTR node_info( lua_State* L )
+static int node_info( lua_State* L )
 {
   lua_pushinteger(L, NODE_VERSION_MAJOR);
   lua_pushinteger(L, NODE_VERSION_MINOR);
@@ -47,7 +47,7 @@ static int ICACHE_FLASH_ATTR node_info( lua_State* L )
 }
 
 // Lua: chipid()
-static int ICACHE_FLASH_ATTR node_chipid( lua_State* L )
+static int node_chipid( lua_State* L )
 {
   uint32_t id = system_get_chip_id();
   lua_pushinteger(L, id);
@@ -55,7 +55,7 @@ static int ICACHE_FLASH_ATTR node_chipid( lua_State* L )
 }
 
 // Lua: flashid()
-static int ICACHE_FLASH_ATTR node_flashid( lua_State* L )
+static int node_flashid( lua_State* L )
 {
   uint32_t id = spi_flash_get_id();
   lua_pushinteger( L, id );
@@ -63,7 +63,7 @@ static int ICACHE_FLASH_ATTR node_flashid( lua_State* L )
 }
 
 // Lua: flashsize()
-static int ICACHE_FLASH_ATTR node_flashsize( lua_State* L )
+static int node_flashsize( lua_State* L )
 {
   //uint32_t sz = 0;
   //if(lua_type(L, 1) == LUA_TNUMBER)
@@ -80,7 +80,7 @@ static int ICACHE_FLASH_ATTR node_flashsize( lua_State* L )
 }
 
 // Lua: heap()
-static int ICACHE_FLASH_ATTR node_heap( lua_State* L )
+static int node_heap( lua_State* L )
 {
   uint32_t sz = system_get_free_heap_size();
   lua_pushinteger(L, sz);
@@ -90,7 +90,7 @@ static int ICACHE_FLASH_ATTR node_heap( lua_State* L )
 extern int led_high_count;  // this is defined in lua.c
 extern int led_low_count;
 // Lua: led(low, high)
-static int ICACHE_FLASH_ATTR node_led( lua_State* L )
+static int node_led( lua_State* L )
 {
   int low, high;
   if ( lua_isnumber(L, 1) )
@@ -120,7 +120,7 @@ static int long_key_ref = LUA_NOREF;
 static int short_key_ref = LUA_NOREF;
 static lua_State *gL = NULL;
 
-void ICACHE_FLASH_ATTR default_long_press(void *arg){
+void default_long_press(void *arg){
   if(led_high_count == 12 && led_low_count == 12){
     led_low_count = led_high_count = 6;
   } else {
@@ -131,11 +131,11 @@ void ICACHE_FLASH_ATTR default_long_press(void *arg){
   // NODE_DBG("default_long_press is called. hc: %d, lc: %d\n", led_high_count, led_low_count);
 }
 
-void ICACHE_FLASH_ATTR default_short_press(void *arg){
+void default_short_press(void *arg){
   system_restart();
 }
 
-void ICACHE_FLASH_ATTR key_long_press(void *arg){
+void key_long_press(void *arg){
   NODE_DBG("key_long_press is called.\n");
   if(long_key_ref == LUA_NOREF){
     default_long_press(arg);
@@ -147,7 +147,7 @@ void ICACHE_FLASH_ATTR key_long_press(void *arg){
   lua_call(gL, 0, 0);
 }
 
-void ICACHE_FLASH_ATTR key_short_press(void *arg){
+void key_short_press(void *arg){
   NODE_DBG("key_short_press is called.\n");
   if(short_key_ref == LUA_NOREF){
     default_short_press(arg);
@@ -160,7 +160,7 @@ void ICACHE_FLASH_ATTR key_short_press(void *arg){
 }
 
 // Lua: key(type, function)
-static int ICACHE_FLASH_ATTR node_key( lua_State* L )
+static int node_key( lua_State* L )
 {
   int *ref = NULL;
   size_t sl;
@@ -196,7 +196,7 @@ extern lua_Load gLoad;
 extern os_timer_t lua_timer;
 extern void dojob(lua_Load *load);
 // Lua: input("string")
-static int ICACHE_FLASH_ATTR node_input( lua_State* L )
+static int node_input( lua_State* L )
 {
   size_t l=0;
   const char *s = luaL_checklstring(L, 1, &l);
@@ -221,7 +221,7 @@ static int ICACHE_FLASH_ATTR node_input( lua_State* L )
 
 static int output_redir_ref = LUA_NOREF;
 static int serial_debug = 1;
-void ICACHE_FLASH_ATTR output_redirect(const char *str){
+void output_redirect(const char *str){
   // if(c_strlen(str)>=TX_BUFF_SIZE){
   //   NODE_ERR("output too long.\n");
   //   return;
@@ -242,7 +242,7 @@ void ICACHE_FLASH_ATTR output_redirect(const char *str){
 }
 
 // Lua: output(function(c), debug)
-static int ICACHE_FLASH_ATTR node_output( lua_State* L )
+static int node_output( lua_State* L )
 {
   gL = L;
   // luaL_checkanyfunction(L, 1);
@@ -293,7 +293,7 @@ const LUA_REG_TYPE node_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_node( lua_State *L )
+LUALIB_API int luaopen_node( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

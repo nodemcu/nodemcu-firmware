@@ -28,7 +28,7 @@ static int romfs_num_fd;
 // Length of the 'file size' field for both ROMFS/WOFS
 #define ROMFS_SIZE_LEN        4
 
-static int ICACHE_FLASH_ATTR romfs_find_empty_fd(void)
+static int romfs_find_empty_fd(void)
 {
   int i;
   
@@ -40,7 +40,7 @@ static int ICACHE_FLASH_ATTR romfs_find_empty_fd(void)
   return -1;
 }
 
-static void ICACHE_FLASH_ATTR romfs_close_fd( int fd )
+static void romfs_close_fd( int fd )
 {
   if(fd<0 || fd>=TOTAL_MAX_FDS) 
     return;
@@ -49,7 +49,7 @@ static void ICACHE_FLASH_ATTR romfs_close_fd( int fd )
 }
 
 // Helper function: read a byte from the FS
-static uint8_t ICACHE_FLASH_ATTR romfsh_read8( uint32_t addr, const FSDATA *pfs )
+static uint8_t romfsh_read8( uint32_t addr, const FSDATA *pfs )
 {
   uint8_t temp;
   if( pfs->flags & ROMFS_FS_FLAG_DIRECT )
@@ -59,13 +59,13 @@ static uint8_t ICACHE_FLASH_ATTR romfsh_read8( uint32_t addr, const FSDATA *pfs 
 }
 
 // Helper function: return 1 if PFS reffers to a WOFS, 0 otherwise
-static int ICACHE_FLASH_ATTR romfsh_is_wofs( const FSDATA* pfs )
+static int romfsh_is_wofs( const FSDATA* pfs )
 {
   return ( pfs->flags & ROMFS_FS_FLAG_WO ) != 0;
 }
 
 // Find the next file, returning FS_FILE_OK or FS_FILE_NOT_FOUND if there no file left.
-static uint8_t ICACHE_FLASH_ATTR romfs_next_file( uint32_t *start, char* fname, size_t len, size_t *act_len, FSDATA *pfs )
+static uint8_t romfs_next_file( uint32_t *start, char* fname, size_t len, size_t *act_len, FSDATA *pfs )
 {
   uint32_t i, j, n;
   uint32_t fsize;
@@ -120,7 +120,7 @@ static uint8_t ICACHE_FLASH_ATTR romfs_next_file( uint32_t *start, char* fname, 
 
 // Open the given file, returning one of FS_FILE_NOT_FOUND, FS_FILE_ALREADY_OPENED
 // or FS_FILE_OK
-static uint8_t ICACHE_FLASH_ATTR romfs_open_file( const char* fname, FD* pfd, FSDATA *pfs, uint32_t *plast, uint32_t *pnameaddr )
+static uint8_t romfs_open_file( const char* fname, FD* pfd, FSDATA *pfs, uint32_t *plast, uint32_t *pnameaddr )
 {
   uint32_t i, j, n;
   char fsname[ MAX_FNAME_LENGTH + 1 ];
@@ -184,7 +184,7 @@ static uint8_t ICACHE_FLASH_ATTR romfs_open_file( const char* fname, FD* pfd, FS
   return FS_FILE_NOT_FOUND;
 }
 
-static int ICACHE_FLASH_ATTR romfs_open( const char *path, int flags, int mode, void *pdata )
+static int romfs_open( const char *path, int flags, int mode, void *pdata )
 {
   FD tempfs;
   int i;
@@ -295,7 +295,7 @@ static int ICACHE_FLASH_ATTR romfs_open( const char *path, int flags, int mode, 
   return i;
 }
 
-static int ICACHE_FLASH_ATTR romfs_close( int fd, void *pdata )
+static int romfs_close( int fd, void *pdata )
 {
   if(fd<0 || fd>=TOTAL_MAX_FDS) 
     return 0;
@@ -320,7 +320,7 @@ static int ICACHE_FLASH_ATTR romfs_close( int fd, void *pdata )
   return 0;
 }
 
-static _ssize_t ICACHE_FLASH_ATTR romfs_write( int fd, const void* ptr, size_t len, void *pdata )
+static _ssize_t romfs_write( int fd, const void* ptr, size_t len, void *pdata )
 {
   if(fd<0 || fd>=TOTAL_MAX_FDS) 
     return -1;
@@ -350,7 +350,7 @@ static _ssize_t ICACHE_FLASH_ATTR romfs_write( int fd, const void* ptr, size_t l
   return len;
 }
 
-static _ssize_t ICACHE_FLASH_ATTR romfs_read( int fd, void* ptr, size_t len, void *pdata )
+static _ssize_t romfs_read( int fd, void* ptr, size_t len, void *pdata )
 {
   if(fd<0 || fd>=TOTAL_MAX_FDS) 
     return -1;
@@ -374,7 +374,7 @@ static _ssize_t ICACHE_FLASH_ATTR romfs_read( int fd, void* ptr, size_t len, voi
 }
 
 // lseek
-static int ICACHE_FLASH_ATTR romfs_lseek( int fd, int off, int whence, void *pdata )
+static int romfs_lseek( int fd, int off, int whence, void *pdata )
 {
   if(fd<0 || fd>=TOTAL_MAX_FDS) 
     return -1;
@@ -409,7 +409,7 @@ static int ICACHE_FLASH_ATTR romfs_lseek( int fd, int off, int whence, void *pda
 // WOFS functions and instance descriptor for real hardware
 
 #if defined( BUILD_WOFS )
-static uint32_t ICACHE_FLASH_ATTR sim_wofs_write( const void *from, uint32_t toaddr, uint32_t size, const void *pdata )
+static uint32_t sim_wofs_write( const void *from, uint32_t toaddr, uint32_t size, const void *pdata )
 {
   const FSDATA *pfsdata = ( const FSDATA* )pdata;
   if(toaddr>=INTERNAL_FLASH_SIZE)
@@ -421,7 +421,7 @@ static uint32_t ICACHE_FLASH_ATTR sim_wofs_write( const void *from, uint32_t toa
   return platform_flash_write( from, toaddr, size );
 }
 
-static uint32_t ICACHE_FLASH_ATTR sim_wofs_read( void *to, uint32_t fromaddr, uint32_t size, const void *pdata )
+static uint32_t sim_wofs_read( void *to, uint32_t fromaddr, uint32_t size, const void *pdata )
 {
   const FSDATA *pfsdata = ( const FSDATA* )pdata;
   if(fromaddr>=INTERNAL_FLASH_SIZE)
@@ -445,7 +445,7 @@ static FSDATA wofs_fsdata =
 
 // WOFS formatting function
 // Returns 1 if OK, 0 for error
-int ICACHE_FLASH_ATTR wofs_format( void )
+int wofs_format( void )
 {
   uint32_t sect_first, sect_last;
   FD tempfd;
@@ -460,27 +460,27 @@ int ICACHE_FLASH_ATTR wofs_format( void )
   return 1;
 }
 
-int ICACHE_FLASH_ATTR wofs_open(const char *_name, int flags){
+int wofs_open(const char *_name, int flags){
   return romfs_open( _name, flags, 0, &wofs_fsdata );
 }
 
-int ICACHE_FLASH_ATTR wofs_close( int fd ){
+int wofs_close( int fd ){
   return romfs_close( fd, &wofs_fsdata );
 }
 
-size_t ICACHE_FLASH_ATTR wofs_write( int fd, const void* ptr, size_t len ){
+size_t wofs_write( int fd, const void* ptr, size_t len ){
   return romfs_write( fd, ptr, len, &wofs_fsdata );
 }
 
-size_t ICACHE_FLASH_ATTR wofs_read( int fd, void* ptr, size_t len){
+size_t wofs_read( int fd, void* ptr, size_t len){
   return romfs_read( fd, ptr, len, &wofs_fsdata );
 }
 
-int ICACHE_FLASH_ATTR wofs_lseek( int fd, int off, int whence ){
+int wofs_lseek( int fd, int off, int whence ){
   return romfs_lseek( fd, off, whence, &wofs_fsdata );
 }
 
-int ICACHE_FLASH_ATTR wofs_eof( int fd ){
+int wofs_eof( int fd ){
   if(fd<0 || fd>=TOTAL_MAX_FDS) 
     return -1;
   FD* pfd = fd_table + fd;
@@ -488,7 +488,7 @@ int ICACHE_FLASH_ATTR wofs_eof( int fd ){
   return pfd->offset == pfd->size;
 }
 
-int ICACHE_FLASH_ATTR wofs_getc( int fd ){
+int wofs_getc( int fd ){
   char c = EOF;
   if(!wofs_eof(fd)){
     romfs_read( fd, &c, 1, &wofs_fsdata );
@@ -497,19 +497,19 @@ int ICACHE_FLASH_ATTR wofs_getc( int fd ){
   return (int)c;
 }
 
-int ICACHE_FLASH_ATTR wofs_ungetc( int c, int fd ){
+int wofs_ungetc( int c, int fd ){
   return romfs_lseek( fd, -1, SEEK_CUR, &wofs_fsdata );
 }
 
 // Find the next file, returning FS_FILE_OK or FS_FILE_NOT_FOUND if there no file left.
-uint8_t ICACHE_FLASH_ATTR wofs_next( uint32_t *start, char* fname, size_t len, size_t *act_len ){
+uint8_t wofs_next( uint32_t *start, char* fname, size_t len, size_t *act_len ){
   return romfs_next_file( start, fname, len, act_len, &wofs_fsdata );
 }
 
 #endif // #ifdef BUILD_WOFS
 
 // Initialize both ROMFS and WOFS as needed
-int ICACHE_FLASH_ATTR romfs_init( void )
+int romfs_init( void )
 {
   unsigned i;
 
@@ -529,13 +529,13 @@ int ICACHE_FLASH_ATTR romfs_init( void )
 
 #else // #if defined( BUILD_ROMFS ) || defined( BUILD_WOFS )
 
-int ICACHE_FLASH_ATTR romfs_init( void )
+int romfs_init( void )
 {
 }
 
 #endif // #if defined( BUILD_ROMFS ) || defined( BUILD_WOFS )
 
-int ICACHE_FLASH_ATTR test_romfs()
+int test_romfs()
 {
   int fd;
   int i, size;

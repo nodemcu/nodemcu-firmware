@@ -10,7 +10,7 @@
 #include "c_types.h"
 
 // Lua: read(id) , return system adc
-static int ICACHE_FLASH_ATTR adc_sample( lua_State* L )
+static int adc_sample( lua_State* L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( adc, id );
@@ -31,7 +31,7 @@ const LUA_REG_TYPE adc_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_adc( lua_State *L )
+LUALIB_API int luaopen_adc( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

@@ -4,7 +4,7 @@
 // Erases a logical block and updates the erase counter.
 // If cache is enabled, all pages that might be cached in this block
 // is dropped.
-static s32_t ICACHE_FLASH_ATTR spiffs_gc_erase_block(
+static s32_t spiffs_gc_erase_block(
     spiffs *fs,
     spiffs_block_ix bix) {
   s32_t res;
@@ -47,7 +47,7 @@ static s32_t ICACHE_FLASH_ATTR spiffs_gc_erase_block(
 // Searches for blocks where all entries are deleted - if one is found,
 // the block is erased. Compared to the non-quick gc, the quick one ensures
 // that no updates are needed on existing objects on pages that are erased.
-s32_t ICACHE_FLASH_ATTR spiffs_gc_quick(
+s32_t spiffs_gc_quick(
     spiffs *fs) {
   s32_t res = SPIFFS_OK;
   u32_t blocks = fs->block_count;
@@ -111,7 +111,7 @@ s32_t ICACHE_FLASH_ATTR spiffs_gc_quick(
 
 // Checks if garbaga collecting is necessary. If so a candidate block is found,
 // cleansed and erased
-s32_t ICACHE_FLASH_ATTR spiffs_gc_check(
+s32_t spiffs_gc_check(
     spiffs *fs,
     u32_t len) {
   s32_t res;
@@ -179,7 +179,7 @@ s32_t ICACHE_FLASH_ATTR spiffs_gc_check(
 }
 
 // Updates page statistics for a block that is about to be erased
-s32_t ICACHE_FLASH_ATTR spiffs_gc_erase_page_stats(
+s32_t spiffs_gc_erase_page_stats(
     spiffs *fs,
     spiffs_block_ix bix) {
   s32_t res = SPIFFS_OK;
@@ -216,7 +216,7 @@ s32_t ICACHE_FLASH_ATTR spiffs_gc_erase_page_stats(
 }
 
 // Finds block candidates to erase
-s32_t ICACHE_FLASH_ATTR spiffs_gc_find_candidate(
+s32_t spiffs_gc_find_candidate(
     spiffs *fs,
     spiffs_block_ix **block_candidates,
     int *candidate_count) {
@@ -350,7 +350,7 @@ typedef struct {
 //   repeat loop until end of object lookup
 //   scan object lookup again for remaining object index pages, move to new page in other block
 //
-s32_t ICACHE_FLASH_ATTR spiffs_gc_clean(spiffs *fs, spiffs_block_ix bix) {
+s32_t spiffs_gc_clean(spiffs *fs, spiffs_block_ix bix) {
   s32_t res = SPIFFS_OK;
   u32_t entries_per_page = (SPIFFS_CFG_LOG_PAGE_SZ(fs) / sizeof(spiffs_obj_id));
   int cur_entry = 0;
