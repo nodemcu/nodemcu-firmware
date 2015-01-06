@@ -33,7 +33,7 @@
 static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name);
 
 
-static int ICACHE_FLASH_ATTR currentpc (lua_State *L, CallInfo *ci) {
+static int currentpc (lua_State *L, CallInfo *ci) {
   if (!isLua(ci)) return -1;  /* function is not a Lua function? */
   if (ci == L->ci)
     ci->savedpc = L->savedpc;
@@ -41,7 +41,7 @@ static int ICACHE_FLASH_ATTR currentpc (lua_State *L, CallInfo *ci) {
 }
 
 
-static int ICACHE_FLASH_ATTR currentline (lua_State *L, CallInfo *ci) {
+static int currentline (lua_State *L, CallInfo *ci) {
   int pc = currentpc(L, ci);
   if (pc < 0)
     return -1;  /* only active lua functions have current-line information */
@@ -53,7 +53,7 @@ static int ICACHE_FLASH_ATTR currentline (lua_State *L, CallInfo *ci) {
 /*
 ** this function can be called asynchronous (e.g. during a signal)
 */
-LUA_API int ICACHE_FLASH_ATTR lua_sethook (lua_State *L, lua_Hook func, int mask, int count) {
+LUA_API int lua_sethook (lua_State *L, lua_Hook func, int mask, int count) {
   if (func == NULL || mask == 0) {  /* turn off hooks? */
     mask = 0;
     func = NULL;
@@ -66,22 +66,22 @@ LUA_API int ICACHE_FLASH_ATTR lua_sethook (lua_State *L, lua_Hook func, int mask
 }
 
 
-LUA_API lua_Hook ICACHE_FLASH_ATTR lua_gethook (lua_State *L) {
+LUA_API lua_Hook lua_gethook (lua_State *L) {
   return L->hook;
 }
 
 
-LUA_API int ICACHE_FLASH_ATTR lua_gethookmask (lua_State *L) {
+LUA_API int lua_gethookmask (lua_State *L) {
   return L->hookmask;
 }
 
 
-LUA_API int ICACHE_FLASH_ATTR lua_gethookcount (lua_State *L) {
+LUA_API int lua_gethookcount (lua_State *L) {
   return L->basehookcount;
 }
 
 
-LUA_API int ICACHE_FLASH_ATTR lua_getstack (lua_State *L, int level, lua_Debug *ar) {
+LUA_API int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
   int status;
   CallInfo *ci;
   lua_lock(L);
@@ -104,12 +104,12 @@ LUA_API int ICACHE_FLASH_ATTR lua_getstack (lua_State *L, int level, lua_Debug *
 }
 
 
-static Proto *ICACHE_FLASH_ATTR getluaproto (CallInfo *ci) {
+static Proto *getluaproto (CallInfo *ci) {
   return (isLua(ci) ? ci_func(ci)->l.p : NULL);
 }
 
 
-static const char *ICACHE_FLASH_ATTR findlocal (lua_State *L, CallInfo *ci, int n) {
+static const char *findlocal (lua_State *L, CallInfo *ci, int n) {
   const char *name;
   Proto *fp = getluaproto(ci);
   if (fp && (name = luaF_getlocalname(fp, n, currentpc(L, ci))) != NULL)
@@ -124,7 +124,7 @@ static const char *ICACHE_FLASH_ATTR findlocal (lua_State *L, CallInfo *ci, int 
 }
 
 
-LUA_API const char *ICACHE_FLASH_ATTR lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
+LUA_API const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
   CallInfo *ci = L->base_ci + ar->i_ci;
   const char *name = findlocal(L, ci, n);
   lua_lock(L);
@@ -135,7 +135,7 @@ LUA_API const char *ICACHE_FLASH_ATTR lua_getlocal (lua_State *L, const lua_Debu
 }
 
 
-LUA_API const char *ICACHE_FLASH_ATTR lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
+LUA_API const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
   CallInfo *ci = L->base_ci + ar->i_ci;
   const char *name = findlocal(L, ci, n);
   lua_lock(L);
@@ -147,7 +147,7 @@ LUA_API const char *ICACHE_FLASH_ATTR lua_setlocal (lua_State *L, const lua_Debu
 }
 
 
-static void ICACHE_FLASH_ATTR funcinfo (lua_Debug *ar, Closure *cl, void *plight) {
+static void funcinfo (lua_Debug *ar, Closure *cl, void *plight) {
   if (plight || cl->c.isC) {
     ar->source = "=[C]";
     ar->linedefined = -1;
@@ -164,7 +164,7 @@ static void ICACHE_FLASH_ATTR funcinfo (lua_Debug *ar, Closure *cl, void *plight
 }
 
 
-static void ICACHE_FLASH_ATTR info_tailcall (lua_Debug *ar) {
+static void info_tailcall (lua_Debug *ar) {
   ar->name = ar->namewhat = "";
   ar->what = "tail";
   ar->lastlinedefined = ar->linedefined = ar->currentline = -1;
@@ -174,7 +174,7 @@ static void ICACHE_FLASH_ATTR info_tailcall (lua_Debug *ar) {
 }
 
 
-static void ICACHE_FLASH_ATTR collectvalidlines (lua_State *L, Closure *f) {
+static void collectvalidlines (lua_State *L, Closure *f) {
   if (f == NULL || f->c.isC) {
     setnilvalue(L->top);
   }
@@ -190,7 +190,7 @@ static void ICACHE_FLASH_ATTR collectvalidlines (lua_State *L, Closure *f) {
 }
 
 
-static int ICACHE_FLASH_ATTR auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
+static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
                     Closure *f, void *plight, CallInfo *ci) {
   int status = 1;
   if (plight == NULL && f == NULL) {
@@ -229,7 +229,7 @@ static int ICACHE_FLASH_ATTR auxgetinfo (lua_State *L, const char *what, lua_Deb
 }
 
 
-LUA_API int ICACHE_FLASH_ATTR lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
+LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   int status;
   Closure *f = NULL;
   CallInfo *ci = NULL;
@@ -284,7 +284,7 @@ LUA_API int ICACHE_FLASH_ATTR lua_getinfo (lua_State *L, const char *what, lua_D
 
 
 
-static int ICACHE_FLASH_ATTR precheck (const Proto *pt) {
+static int precheck (const Proto *pt) {
   check(pt->maxstacksize <= MAXSTACK);
   check(pt->numparams+(pt->is_vararg & VARARG_HASARG) <= pt->maxstacksize);
   check(!(pt->is_vararg & VARARG_NEEDSARG) ||
@@ -298,7 +298,7 @@ static int ICACHE_FLASH_ATTR precheck (const Proto *pt) {
 
 #define checkopenop(pt,pc)	luaG_checkopenop((pt)->code[(pc)+1])
 
-int ICACHE_FLASH_ATTR luaG_checkopenop (Instruction i) {
+int luaG_checkopenop (Instruction i) {
   switch (GET_OPCODE(i)) {
     case OP_CALL:
     case OP_TAILCALL:
@@ -312,7 +312,7 @@ int ICACHE_FLASH_ATTR luaG_checkopenop (Instruction i) {
 }
 
 
-static int ICACHE_FLASH_ATTR checkArgMode (const Proto *pt, int r, enum OpArgMask mode) {
+static int checkArgMode (const Proto *pt, int r, enum OpArgMask mode) {
   switch (mode) {
     case OpArgN: check(r == 0); break;
     case OpArgU: break;
@@ -325,7 +325,7 @@ static int ICACHE_FLASH_ATTR checkArgMode (const Proto *pt, int r, enum OpArgMas
 }
 
 
-static Instruction ICACHE_FLASH_ATTR symbexec (const Proto *pt, int lastpc, int reg) {
+static Instruction symbexec (const Proto *pt, int lastpc, int reg) {
   int pc;
   int last;  /* stores position of last instruction that changed `reg' */
   last = pt->sizecode-1;  /* points to final return (a `neutral' instruction) */
@@ -492,12 +492,12 @@ static Instruction ICACHE_FLASH_ATTR symbexec (const Proto *pt, int lastpc, int 
 /* }====================================================== */
 
 
-int ICACHE_FLASH_ATTR luaG_checkcode (const Proto *pt) {
+int luaG_checkcode (const Proto *pt) {
   return (symbexec(pt, pt->sizecode, NO_REG) != 0);
 }
 
 
-static const char *ICACHE_FLASH_ATTR kname (Proto *p, int c) {
+static const char *kname (Proto *p, int c) {
   if (ISK(c) && ttisstring(&p->k[INDEXK(c)]))
     return svalue(&p->k[INDEXK(c)]);
   else
@@ -505,7 +505,7 @@ static const char *ICACHE_FLASH_ATTR kname (Proto *p, int c) {
 }
 
 
-static const char *ICACHE_FLASH_ATTR getobjname (lua_State *L, CallInfo *ci, int stackpos,
+static const char *getobjname (lua_State *L, CallInfo *ci, int stackpos,
                                const char **name) {
   if (isLua(ci)) {  /* a Lua function? */
     Proto *p = ci_func(ci)->l.p;
@@ -552,7 +552,7 @@ static const char *ICACHE_FLASH_ATTR getobjname (lua_State *L, CallInfo *ci, int
 }
 
 
-static const char *ICACHE_FLASH_ATTR getfuncname (lua_State *L, CallInfo *ci, const char **name) {
+static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
   Instruction i;
   if ((isLua(ci) && ci->tailcalls > 0) || !isLua(ci - 1))
     return NULL;  /* calling function is not Lua (or is unknown) */
@@ -567,7 +567,7 @@ static const char *ICACHE_FLASH_ATTR getfuncname (lua_State *L, CallInfo *ci, co
 
 
 /* only ANSI way to check whether a pointer points to an array */
-static int ICACHE_FLASH_ATTR isinstack (CallInfo *ci, const TValue *o) {
+static int isinstack (CallInfo *ci, const TValue *o) {
   StkId p;
   for (p = ci->base; p < ci->top; p++)
     if (o == p) return 1;
@@ -575,7 +575,7 @@ static int ICACHE_FLASH_ATTR isinstack (CallInfo *ci, const TValue *o) {
 }
 
 
-void ICACHE_FLASH_ATTR luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
+void luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
   const char *name = NULL;
   const char *t = luaT_typenames[ttype(o)];
   const char *kind = (isinstack(L->ci, o)) ?
@@ -589,14 +589,14 @@ void ICACHE_FLASH_ATTR luaG_typeerror (lua_State *L, const TValue *o, const char
 }
 
 
-void ICACHE_FLASH_ATTR luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
+void luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
   if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
   lua_assert(!ttisstring(p1) && !ttisnumber(p1));
   luaG_typeerror(L, p1, "concatenate");
 }
 
 
-void ICACHE_FLASH_ATTR luaG_aritherror (lua_State *L, const TValue *p1, const TValue *p2) {
+void luaG_aritherror (lua_State *L, const TValue *p1, const TValue *p2) {
   TValue temp;
   if (luaV_tonumber(p1, &temp) == NULL)
     p2 = p1;  /* first operand is wrong */
@@ -604,7 +604,7 @@ void ICACHE_FLASH_ATTR luaG_aritherror (lua_State *L, const TValue *p1, const TV
 }
 
 
-int ICACHE_FLASH_ATTR luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2) {
+int luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2) {
   const char *t1 = luaT_typenames[ttype(p1)];
   const char *t2 = luaT_typenames[ttype(p2)];
   if (t1[2] == t2[2])
@@ -615,7 +615,7 @@ int ICACHE_FLASH_ATTR luaG_ordererror (lua_State *L, const TValue *p1, const TVa
 }
 
 
-static void ICACHE_FLASH_ATTR addinfo (lua_State *L, const char *msg) {
+static void addinfo (lua_State *L, const char *msg) {
   CallInfo *ci = L->ci;
   if (isLua(ci)) {  /* is Lua code? */
     char buff[LUA_IDSIZE];  /* add file:line information */
@@ -626,7 +626,7 @@ static void ICACHE_FLASH_ATTR addinfo (lua_State *L, const char *msg) {
 }
 
 
-void ICACHE_FLASH_ATTR luaG_errormsg (lua_State *L) {
+void luaG_errormsg (lua_State *L) {
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
     if (!ttisfunction(errfunc) && !ttislightfunction(errfunc)) luaD_throw(L, LUA_ERRERR);
@@ -639,7 +639,7 @@ void ICACHE_FLASH_ATTR luaG_errormsg (lua_State *L) {
 }
 
 
-void ICACHE_FLASH_ATTR luaG_runerror (lua_State *L, const char *fmt, ...) {
+void luaG_runerror (lua_State *L, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
   addinfo(L, luaO_pushvfstring(L, fmt, argp));

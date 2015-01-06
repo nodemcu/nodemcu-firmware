@@ -23,7 +23,7 @@
 
 
 
-static int ICACHE_FLASH_ATTR math_abs (lua_State *L) {
+static int math_abs (lua_State *L) {
 #ifdef LUA_NUMBER_INTEGRAL
   lua_Number x = luaL_checknumber(L, 1);
   if (x < 0) x = -x;	//fails for -2^31
@@ -36,72 +36,72 @@ static int ICACHE_FLASH_ATTR math_abs (lua_State *L) {
 
 #ifndef LUA_NUMBER_INTEGRAL
 
-static int ICACHE_FLASH_ATTR math_sin (lua_State *L) {
+static int math_sin (lua_State *L) {
   lua_pushnumber(L, sin(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_sinh (lua_State *L) {
+static int math_sinh (lua_State *L) {
   lua_pushnumber(L, sinh(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_cos (lua_State *L) {
+static int math_cos (lua_State *L) {
   lua_pushnumber(L, cos(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_cosh (lua_State *L) {
+static int math_cosh (lua_State *L) {
   lua_pushnumber(L, cosh(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_tan (lua_State *L) {
+static int math_tan (lua_State *L) {
   lua_pushnumber(L, tan(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_tanh (lua_State *L) {
+static int math_tanh (lua_State *L) {
   lua_pushnumber(L, tanh(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_asin (lua_State *L) {
+static int math_asin (lua_State *L) {
   lua_pushnumber(L, asin(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_acos (lua_State *L) {
+static int math_acos (lua_State *L) {
   lua_pushnumber(L, acos(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_atan (lua_State *L) {
+static int math_atan (lua_State *L) {
   lua_pushnumber(L, atan(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_atan2 (lua_State *L) {
+static int math_atan2 (lua_State *L) {
   lua_pushnumber(L, atan2(luaL_checknumber(L, 1), luaL_checknumber(L, 2)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_ceil (lua_State *L) {
+static int math_ceil (lua_State *L) {
   lua_pushnumber(L, ceil(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_floor (lua_State *L) {
+static int math_floor (lua_State *L) {
   lua_pushnumber(L, floor(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_fmod (lua_State *L) {
+static int math_fmod (lua_State *L) {
   lua_pushnumber(L, fmod(luaL_checknumber(L, 1), luaL_checknumber(L, 2)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_modf (lua_State *L) {
+static int math_modf (lua_State *L) {
   double ip;
   double fp = modf(luaL_checknumber(L, 1), &ip);
   lua_pushnumber(L, ip);
@@ -116,7 +116,7 @@ static int ICACHE_FLASH_ATTR math_modf (lua_State *L) {
 // works in both integer and floating point versions of Lua.
 // This identity function is used for them.
 
-static int ICACHE_FLASH_ATTR math_identity (lua_State *L) {
+static int math_identity (lua_State *L) {
   lua_pushnumber(L, luaL_checknumber(L, 1));
   return 1;
 }
@@ -125,7 +125,7 @@ static int ICACHE_FLASH_ATTR math_identity (lua_State *L) {
 
 #ifdef LUA_NUMBER_INTEGRAL
 // Integer square root for integer version
-static lua_Number ICACHE_FLASH_ATTR isqrt(lua_Number x)
+static lua_Number isqrt(lua_Number x)
 {
   lua_Number op, res, one;
 
@@ -147,7 +147,7 @@ static lua_Number ICACHE_FLASH_ATTR isqrt(lua_Number x)
 }
 #endif
 
-static int ICACHE_FLASH_ATTR math_sqrt (lua_State *L) {
+static int math_sqrt (lua_State *L) {
 #ifdef LUA_NUMBER_INTEGRAL
   lua_Number x = luaL_checknumber(L, 1);
   luaL_argcheck(L, 0<=x, 1, "negative");
@@ -162,7 +162,7 @@ static int ICACHE_FLASH_ATTR math_sqrt (lua_State *L) {
 # define pow(a,b) luai_ipow(a,b)
 #endif
 
-static int ICACHE_FLASH_ATTR math_pow (lua_State *L) {
+static int math_pow (lua_State *L) {
   lua_pushnumber(L, pow(luaL_checknumber(L, 1), luaL_checknumber(L, 2)));
   return 1;
 }
@@ -174,46 +174,46 @@ static int ICACHE_FLASH_ATTR math_pow (lua_State *L) {
 
 #ifndef LUA_NUMBER_INTEGRAL
 
-static int ICACHE_FLASH_ATTR math_log (lua_State *L) {
+static int math_log (lua_State *L) {
   lua_pushnumber(L, log(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_log10 (lua_State *L) {
+static int math_log10 (lua_State *L) {
   lua_pushnumber(L, log10(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_exp (lua_State *L) {
+static int math_exp (lua_State *L) {
   lua_pushnumber(L, exp(luaL_checknumber(L, 1)));
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_deg (lua_State *L) {
+static int math_deg (lua_State *L) {
   lua_pushnumber(L, luaL_checknumber(L, 1)/RADIANS_PER_DEGREE);
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_rad (lua_State *L) {
+static int math_rad (lua_State *L) {
   lua_pushnumber(L, luaL_checknumber(L, 1)*RADIANS_PER_DEGREE);
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR math_frexp (lua_State *L) {
+static int math_frexp (lua_State *L) {
   int e;
   lua_pushnumber(L, frexp(luaL_checknumber(L, 1), &e));
   lua_pushinteger(L, e);
   return 2;
 }
 
-static int ICACHE_FLASH_ATTR math_ldexp (lua_State *L) {
+static int math_ldexp (lua_State *L) {
   lua_pushnumber(L, ldexp(luaL_checknumber(L, 1), luaL_checkint(L, 2)));
   return 1;
 }
 
 #endif // #ifdef LUA_NUMBER_INTEGRAL
 
-static int ICACHE_FLASH_ATTR math_min (lua_State *L) {
+static int math_min (lua_State *L) {
   int n = lua_gettop(L);  /* number of arguments */
   lua_Number dmin = luaL_checknumber(L, 1);
   int i;
@@ -227,7 +227,7 @@ static int ICACHE_FLASH_ATTR math_min (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR math_max (lua_State *L) {
+static int math_max (lua_State *L) {
   int n = lua_gettop(L);  /* number of arguments */
   lua_Number dmax = luaL_checknumber(L, 1);
   int i;
@@ -243,7 +243,7 @@ static int ICACHE_FLASH_ATTR math_max (lua_State *L) {
 
 #ifdef LUA_NUMBER_INTEGRAL
 
-static int ICACHE_FLASH_ATTR math_random (lua_State *L) {
+static int math_random (lua_State *L) {
   lua_Number r = (lua_Number)(rand()%RAND_MAX);
 
   switch (lua_gettop(L)) {  /* check number of arguments */
@@ -271,7 +271,7 @@ static int ICACHE_FLASH_ATTR math_random (lua_State *L) {
 
 #else
 
-static int ICACHE_FLASH_ATTR math_random (lua_State *L) {
+static int math_random (lua_State *L) {
   /* the `%' avoids the (rare) case of r==1, and is needed also because on
      some systems (SunOS!) `rand()' may return a value larger than RAND_MAX */
   lua_Number r = (lua_Number)(rand()%RAND_MAX) / (lua_Number)RAND_MAX;
@@ -301,7 +301,7 @@ static int ICACHE_FLASH_ATTR math_random (lua_State *L) {
 #endif
 
 
-static int ICACHE_FLASH_ATTR math_randomseed (lua_State *L) {
+static int math_randomseed (lua_State *L) {
   srand(luaL_checkint(L, 1));
   return 0;
 }
@@ -371,7 +371,7 @@ const LUA_REG_TYPE math_map[] = {
 # include "c_limits.h"		/* for LONG_MAX */
 #endif
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_math (lua_State *L) {
+LUALIB_API int luaopen_math (lua_State *L) {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
 #else

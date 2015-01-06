@@ -38,7 +38,7 @@ typedef struct LG {
   
 
 
-static void ICACHE_FLASH_ATTR stack_init (lua_State *L1, lua_State *L) {
+static void stack_init (lua_State *L1, lua_State *L) {
   /* initialize CallInfo array */
   L1->base_ci = luaM_newvector(L, BASIC_CI_SIZE, CallInfo);
   L1->ci = L1->base_ci;
@@ -57,7 +57,7 @@ static void ICACHE_FLASH_ATTR stack_init (lua_State *L1, lua_State *L) {
 }
 
 
-static void ICACHE_FLASH_ATTR freestack (lua_State *L, lua_State *L1) {
+static void freestack (lua_State *L, lua_State *L1) {
   luaM_freearray(L, L1->base_ci, L1->size_ci, CallInfo);
   luaM_freearray(L, L1->stack, L1->stacksize, TValue);
 }
@@ -66,7 +66,7 @@ static void ICACHE_FLASH_ATTR freestack (lua_State *L, lua_State *L1) {
 /*
 ** open parts that may cause memory-allocation errors
 */
-static void ICACHE_FLASH_ATTR f_luaopen (lua_State *L, void *ud) {
+static void f_luaopen (lua_State *L, void *ud) {
   global_State *g = G(L);
   UNUSED(ud);
   stack_init(L, L);  /* init stack */
@@ -80,7 +80,7 @@ static void ICACHE_FLASH_ATTR f_luaopen (lua_State *L, void *ud) {
 }
 
 
-static void ICACHE_FLASH_ATTR preinit_state (lua_State *L, global_State *g) {
+static void preinit_state (lua_State *L, global_State *g) {
   G(L) = g;
   L->stack = NULL;
   L->stacksize = 0;
@@ -101,7 +101,7 @@ static void ICACHE_FLASH_ATTR preinit_state (lua_State *L, global_State *g) {
 }
 
 
-static void ICACHE_FLASH_ATTR close_state (lua_State *L) {
+static void close_state (lua_State *L) {
   global_State *g = G(L);
   luaF_close(L, L->stack);  /* close all upvalues for this thread */
   luaC_freeall(L);  /* collect all objects */
@@ -115,7 +115,7 @@ static void ICACHE_FLASH_ATTR close_state (lua_State *L) {
 }
 
 
-lua_State *ICACHE_FLASH_ATTR luaE_newthread (lua_State *L) {
+lua_State *luaE_newthread (lua_State *L) {
   lua_State *L1 = tostate(luaM_malloc(L, state_size(lua_State)));
   luaC_link(L, obj2gco(L1), LUA_TTHREAD);
   setthvalue(L, L->top, L1); /* put thread on stack */
@@ -133,7 +133,7 @@ lua_State *ICACHE_FLASH_ATTR luaE_newthread (lua_State *L) {
 }
 
 
-void ICACHE_FLASH_ATTR luaE_freethread (lua_State *L, lua_State *L1) {
+void luaE_freethread (lua_State *L, lua_State *L1) {
   luaF_close(L1, L1->stack);  /* close all upvalues for this thread */
   lua_assert(L1->openupval == NULL);
   luai_userstatefree(L1);
@@ -142,7 +142,7 @@ void ICACHE_FLASH_ATTR luaE_freethread (lua_State *L, lua_State *L1) {
 }
 
 
-LUA_API lua_State *ICACHE_FLASH_ATTR lua_newstate (lua_Alloc f, void *ud) {
+LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   int i;
   lua_State *L;
   global_State *g;
@@ -205,7 +205,7 @@ LUA_API lua_State *ICACHE_FLASH_ATTR lua_newstate (lua_Alloc f, void *ud) {
 }
 
 
-static void ICACHE_FLASH_ATTR callallgcTM (lua_State *L, void *ud) {
+static void callallgcTM (lua_State *L, void *ud) {
   UNUSED(ud);
   luaC_callGCTM(L);  /* call GC metamethods for all udata */
 }
@@ -214,15 +214,15 @@ static void ICACHE_FLASH_ATTR callallgcTM (lua_State *L, void *ud) {
 extern lua_State *luaL_newstate (void);
 static lua_State *lua_crtstate;
 
-lua_State *ICACHE_FLASH_ATTR lua_open(void) {
+lua_State *lua_open(void) {
   lua_crtstate = luaL_newstate(); 
   return lua_crtstate;
 }
 
-lua_State *ICACHE_FLASH_ATTR lua_getstate(void) {
+lua_State *lua_getstate(void) {
   return lua_crtstate;
 }
-LUA_API void ICACHE_FLASH_ATTR lua_close (lua_State *L) {
+LUA_API void lua_close (lua_State *L) {
 #ifndef LUA_CROSS_COMPILER  
   lua_sethook( L, NULL, 0, 0 );
   lua_crtstate = NULL;

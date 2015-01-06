@@ -6,87 +6,82 @@
 #include "user_config.h"
 #include "flash_api.h"
 #include "spi_flash.h"
+#include "c_stdio.h"
 
-SPIFlashInfo *ICACHE_FLASH_ATTR
-flash_get_info(void)
-{   
-    static SPIFlashInfo spi_flash_info NODE_STORE_ATTR;
-    static bool is_spi_flash_info_initialized = false;
-    // Make the code more fast
-    if (!is_spi_flash_info_initialized)
-    {
-        SPIRead(0, &spi_flash_info, sizeof(spi_flash_info));
-        is_spi_flash_info_initialized = true;
-    }
-	// return (SPIFlashInfo *)(0x40200000);
-    return &spi_flash_info;	
+static volatile const uint8_t flash_init_data[128] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =
+{
+    0x05, 0x00, 0x04, 0x02, 0x05, 0x05, 0x05, 0x02, 0x05, 0x00, 0x04, 0x05, 0x05, 0x04, 0x05, 0x05,
+    0x04, 0xFE, 0xFD, 0xFF, 0xF0, 0xF0, 0xF0, 0xE0, 0xE0, 0xE0, 0xE1, 0x0A, 0xFF, 0xFF, 0xF8, 0x00,
+    0xF8, 0xF8, 0x52, 0x4E, 0x4A, 0x44, 0x40, 0x38, 0x00, 0x00, 0x01, 0x01, 0x02, 0x03, 0x04, 0x05,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0xE1, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x93, 0x43, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+SPIFlashInfo flash_get_info(void)
+{
+    volatile SPIFlashInfo spi_flash_info ICACHE_STORE_ATTR;
+    spi_flash_info = *((SPIFlashInfo *)(FLASH_MAP_START_ADDRESS));
+    return spi_flash_info;
 }
 
-uint8_t ICACHE_FLASH_ATTR
-flash_get_size(void)
+uint8_t flash_get_size(void)
 {
-    SPIFlashInfo *p_spi_flash_info = flash_get_info();
-    return p_spi_flash_info->size;
+    return flash_get_info().size;
 }
 
-uint32_t ICACHE_FLASH_ATTR
-flash_get_size_byte(void)
+uint32_t flash_get_size_byte(void)
 {
-    static uint32_t flash_size = 0;
-    // Make the code more fast
-    if (flash_size == 0 )
+    uint32_t flash_size = 0;
+    switch (flash_get_info().size)
     {
-        SPIFlashInfo *p_spi_flash_info = flash_get_info();
-        switch (p_spi_flash_info->size)
-        {
-        case SIZE_2MBIT:
-            // 2Mbit, 256kByte
-            flash_size = 256 * 1024;
-            break;
-        case SIZE_4MBIT:
-            // 4Mbit, 512kByte
-            flash_size = 512 * 1024;
-            break;
-        case SIZE_8MBIT:
-            // 8Mbit, 1MByte
-            flash_size = 1 * 1024 * 1024;
-            break;
-        case SIZE_16MBIT:
-            // 16Mbit, 2MByte
-            flash_size = 2 * 1024 * 1024;
-            break;
-        case SIZE_32MBIT:
-            // 32Mbit, 4MByte
-            flash_size = 4 * 1024 * 1024;
-            break;
-        default:
-            // Unknown flash size, fall back mode.
-            flash_size = 512 * 1024;
-            break;
-        }
+    case SIZE_2MBIT:
+        // 2Mbit, 256kByte
+        flash_size = 256 * 1024;
+        break;
+    case SIZE_4MBIT:
+        // 4Mbit, 512kByte
+        flash_size = 512 * 1024;
+        break;
+    case SIZE_8MBIT:
+        // 8Mbit, 1MByte
+        flash_size = 1 * 1024 * 1024;
+        break;
+    case SIZE_16MBIT:
+        // 16Mbit, 2MByte
+        flash_size = 2 * 1024 * 1024;
+        break;
+    case SIZE_32MBIT:
+        // 32Mbit, 4MByte
+        flash_size = 4 * 1024 * 1024;
+        break;
+    default:
+        // Unknown flash size, fall back mode.
+        flash_size = 512 * 1024;
+        break;
     }
     return flash_size;
 }
 
-bool ICACHE_FLASH_ATTR
-flash_set_size(uint8_t size)
+bool flash_set_size(uint8_t size)
 {
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
-    uint8_t data[SPI_FLASH_SEC_SIZE] NODE_STORE_ATTR;
+    uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
     SPIRead(0, data, sizeof(data));
     SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
     p_spi_flash_info->size = size;
     SPIEraseSector(0);
-    SPIWrite(data, 0, sizeof(data));
+    spi_flash_write(0, (uint32 *)data, sizeof(data));
     //p_spi_flash_info = flash_get_info();
     //p_spi_flash_info->size = size;
     return true;
 }
 
-bool ICACHE_FLASH_ATTR
-flash_set_size_byte(uint32_t size)
+bool flash_set_size_byte(uint32_t size)
 {
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
@@ -128,23 +123,15 @@ flash_set_size_byte(uint32_t size)
     return result;
 }
 
-uint16_t ICACHE_FLASH_ATTR
-flash_get_sec_num(void)
+uint16_t flash_get_sec_num(void)
 {
-    static uint16_t result = 0;
-    // Make the code more fast
-    if (result == 0 )
-    {
-        result = flash_get_size_byte() / SPI_FLASH_SEC_SIZE;
-    }
-    return result;
+    return flash_get_size_byte() / SPI_FLASH_SEC_SIZE;
 }
 
-uint8_t ICACHE_FLASH_ATTR
-flash_get_mode(void)
+uint8_t flash_get_mode(void)
 {
-    SPIFlashInfo *p_spi_flash_info = flash_get_info();
-    switch (p_spi_flash_info->mode)
+    SPIFlashInfo spi_flash_info = flash_get_info();
+    switch (spi_flash_info.mode)
     {
     // Reserved for future use
     case MODE_QIO:
@@ -156,15 +143,14 @@ flash_get_mode(void)
     case MODE_DOUT:
         break;
     }
-    return p_spi_flash_info->mode;
+    return spi_flash_info.mode;
 }
 
-uint32_t ICACHE_FLASH_ATTR
-flash_get_speed(void)
+uint32_t flash_get_speed(void)
 {
     uint32_t speed = 0;
-    SPIFlashInfo *p_spi_flash_info = flash_get_info();
-    switch (p_spi_flash_info->speed)
+    SPIFlashInfo spi_flash_info = flash_get_info();
+    switch (spi_flash_info.speed)
     {
     case SPEED_40MHZ:
         // 40MHz
@@ -186,8 +172,21 @@ flash_get_speed(void)
     return speed;
 }
 
-bool ICACHE_FLASH_ATTR
-flash_init_data_default(void)
+bool flash_init_data_written(void)
+{
+    // FLASH SEC - 4
+    // Dangerous, here are dinosaur infested!!!!!
+    // Reboot required!!!
+    // It will init system data to default!
+    uint32_t data[2] ICACHE_STORE_ATTR;
+    SPIRead((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, data, sizeof(data));
+    if(data[0] == 0xFFFFFFFF && data[1] == 0xFFFFFFFF) {
+        return false;
+    }
+    return true;
+}
+
+bool flash_init_data_default(void)
 {
     // FLASH SEC - 4
     // Dangerous, here are dinosaur infested!!!!!
@@ -195,12 +194,11 @@ flash_init_data_default(void)
     // It will init system data to default!
 
     SPIEraseSector((flash_get_sec_num() - 4));
-    SPIWrite((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, 0x10000 - SPI_FLASH_SEC_SIZE + (0), 128);
+    spi_flash_write((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128);
     return true;
 }
 
-bool ICACHE_FLASH_ATTR
-flash_init_data_blank(void)
+bool flash_init_data_blank(void)
 {
     // FLASH SEC - 2
     // Dangerous, here are dinosaur infested!!!!!
@@ -211,8 +209,7 @@ flash_init_data_blank(void)
     return true;
 }
 
-bool ICACHE_FLASH_ATTR
-flash_self_destruct(void)
+bool flash_self_destruct(void)
 {
     // Erase your flash. Good bye!
     SPIEraseChip();

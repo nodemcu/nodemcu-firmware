@@ -28,7 +28,7 @@ const char *const luaT_typenames[] = {
 };
 
 
-void ICACHE_FLASH_ATTR luaT_init (lua_State *L) {
+void luaT_init (lua_State *L) {
   static const char *const luaT_eventname[] = {  /* ORDER TM */
     "__index", "__newindex",
     "__gc", "__mode", "__eq",
@@ -48,7 +48,7 @@ void ICACHE_FLASH_ATTR luaT_init (lua_State *L) {
 ** function to be used with macro "fasttm": optimized for absence of
 ** tag methods
 */
-const TValue *ICACHE_FLASH_ATTR luaT_gettm (Table *events, TMS event, TString *ename) {
+const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
   const TValue *tm = luaR_isrotable(events) ? luaH_getstr_ro(events, ename) : luaH_getstr(events, ename); 
   lua_assert(event <= TM_EQ);
   if (ttisnil(tm)) {  /* no tag method? */
@@ -60,7 +60,7 @@ const TValue *ICACHE_FLASH_ATTR luaT_gettm (Table *events, TMS event, TString *e
 }
 
 
-const TValue *ICACHE_FLASH_ATTR luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
+const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
   Table *mt;
   switch (ttype(o)) {
     case LUA_TTABLE:

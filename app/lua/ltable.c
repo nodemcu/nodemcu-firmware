@@ -81,7 +81,7 @@ static const Node dummynode_ = {
 /*
 ** hash for lua_Numbers
 */
-static Node *ICACHE_FLASH_ATTR hashnum (const Table *t, lua_Number n) {
+static Node *hashnum (const Table *t, lua_Number n) {
   unsigned int a[numints];
   int i;
   if (luai_numeq(n, 0))  /* avoid problems with -0 */
@@ -97,7 +97,7 @@ static Node *ICACHE_FLASH_ATTR hashnum (const Table *t, lua_Number n) {
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
 */
-static Node *ICACHE_FLASH_ATTR mainposition (const Table *t, const TValue *key) {
+static Node *mainposition (const Table *t, const TValue *key) {
   switch (ttype(key)) {
     case LUA_TNUMBER:
       return hashnum(t, nvalue(key));
@@ -119,7 +119,7 @@ static Node *ICACHE_FLASH_ATTR mainposition (const Table *t, const TValue *key) 
 ** returns the index for `key' if `key' is an appropriate key to live in
 ** the array part of the table, -1 otherwise.
 */
-static int ICACHE_FLASH_ATTR arrayindex (const TValue *key) {
+static int arrayindex (const TValue *key) {
   if (ttisnumber(key)) {
     lua_Number n = nvalue(key);
     int k;
@@ -136,7 +136,7 @@ static int ICACHE_FLASH_ATTR arrayindex (const TValue *key) {
 ** elements in the array part, then elements in the hash part. The
 ** beginning of a traversal is signalled by -1.
 */
-static int ICACHE_FLASH_ATTR findindex (lua_State *L, Table *t, StkId key) {
+static int findindex (lua_State *L, Table *t, StkId key) {
   int i;
   if (ttisnil(key)) return -1;  /* first iteration */
   i = arrayindex(key);
@@ -161,7 +161,7 @@ static int ICACHE_FLASH_ATTR findindex (lua_State *L, Table *t, StkId key) {
 }
 
 
-int ICACHE_FLASH_ATTR luaH_next (lua_State *L, Table *t, StkId key) {
+int luaH_next (lua_State *L, Table *t, StkId key) {
   int i = findindex(L, t, key);  /* find original element */
   for (i++; i < t->sizearray; i++) {  /* try first array part */
     if (!ttisnil(&t->array[i])) {  /* a non-nil value? */
@@ -181,7 +181,7 @@ int ICACHE_FLASH_ATTR luaH_next (lua_State *L, Table *t, StkId key) {
 }
 
 
-int ICACHE_FLASH_ATTR luaH_next_ro (lua_State *L, void *t, StkId key) {
+int luaH_next_ro (lua_State *L, void *t, StkId key) {
   luaR_next(L, t, key, key+1);
   return ttisnil(key) ? 0 : 1;
 }
@@ -194,7 +194,7 @@ int ICACHE_FLASH_ATTR luaH_next_ro (lua_State *L, void *t, StkId key) {
 */
 
 
-static int ICACHE_FLASH_ATTR computesizes (int nums[], int *narray) {
+static int computesizes (int nums[], int *narray) {
   int i;
   int twotoi;  /* 2^i */
   int a = 0;  /* number of elements smaller than 2^i */
@@ -216,7 +216,7 @@ static int ICACHE_FLASH_ATTR computesizes (int nums[], int *narray) {
 }
 
 
-static int ICACHE_FLASH_ATTR countint (const TValue *key, int *nums) {
+static int countint (const TValue *key, int *nums) {
   int k = arrayindex(key);
   if (0 < k && k <= MAXASIZE) {  /* is `key' an appropriate array index? */
     nums[ceillog2(k)]++;  /* count as such */
@@ -227,7 +227,7 @@ static int ICACHE_FLASH_ATTR countint (const TValue *key, int *nums) {
 }
 
 
-static int ICACHE_FLASH_ATTR numusearray (const Table *t, int *nums) {
+static int numusearray (const Table *t, int *nums) {
   int lg;
   int ttlg;  /* 2^lg */
   int ause = 0;  /* summation of `nums' */
@@ -252,7 +252,7 @@ static int ICACHE_FLASH_ATTR numusearray (const Table *t, int *nums) {
 }
 
 
-static int ICACHE_FLASH_ATTR numusehash (const Table *t, int *nums, int *pnasize) {
+static int numusehash (const Table *t, int *nums, int *pnasize) {
   int totaluse = 0;  /* total number of elements */
   int ause = 0;  /* summation of `nums' */
   int i = sizenode(t);
@@ -268,7 +268,7 @@ static int ICACHE_FLASH_ATTR numusehash (const Table *t, int *nums, int *pnasize
 }
 
 
-static void ICACHE_FLASH_ATTR setarrayvector (lua_State *L, Table *t, int size) {
+static void setarrayvector (lua_State *L, Table *t, int size) {
   int i;
   luaM_reallocvector(L, t->array, t->sizearray, size, TValue);
   for (i=t->sizearray; i<size; i++)
@@ -277,7 +277,7 @@ static void ICACHE_FLASH_ATTR setarrayvector (lua_State *L, Table *t, int size) 
 }
 
 
-static Node *ICACHE_FLASH_ATTR getfreepos (Table *t) {
+static Node *getfreepos (Table *t) {
   while (t->lastfree-- > t->node) {
     if (ttisnil(gkey(t->lastfree)))
       return t->lastfree;
@@ -286,7 +286,7 @@ static Node *ICACHE_FLASH_ATTR getfreepos (Table *t) {
 }
 
 
-static void ICACHE_FLASH_ATTR resizenodevector (lua_State *L, Table *t, int oldsize, int newsize) {
+static void resizenodevector (lua_State *L, Table *t, int oldsize, int newsize) {
   int lsize;
   if (newsize == 0) {  /* no elements to hash part? */
     t->node = cast(Node *, dummynode);  /* use common `dummynode' */
@@ -317,7 +317,7 @@ static void ICACHE_FLASH_ATTR resizenodevector (lua_State *L, Table *t, int olds
 }
 
 
-static Node *ICACHE_FLASH_ATTR find_prev_node(Node *mp, Node *next) {
+static Node *find_prev_node(Node *mp, Node *next) {
   Node *prev = mp;
   while (prev != NULL && gnext(prev) != next) prev = gnext(prev);
   return prev;
@@ -331,7 +331,7 @@ static Node *ICACHE_FLASH_ATTR find_prev_node(Node *mp, Node *next) {
 ** node to an empty place and put moving node in its main position; otherwise
 ** (colliding node is in its main position), moving node goes to an empty position. 
 */
-static int ICACHE_FLASH_ATTR move_node (lua_State *L, Table *t, Node *node) {
+static int move_node (lua_State *L, Table *t, Node *node) {
   Node *mp = mainposition(t, key2tval(node));
   /* if node is in it's main position, don't need to move node. */
   if (mp == node) return 1;
@@ -369,7 +369,7 @@ static int ICACHE_FLASH_ATTR move_node (lua_State *L, Table *t, Node *node) {
 }
 
 
-static int ICACHE_FLASH_ATTR move_number (lua_State *L, Table *t, Node *node) {
+static int move_number (lua_State *L, Table *t, Node *node) {
   int key;
   lua_Number n = nvalue(key2tval(node));
   lua_number2int(key, n);
@@ -386,7 +386,7 @@ static int ICACHE_FLASH_ATTR move_number (lua_State *L, Table *t, Node *node) {
 }
 
 
-static void ICACHE_FLASH_ATTR resize_hashpart (lua_State *L, Table *t, int nhsize) {
+static void resize_hashpart (lua_State *L, Table *t, int nhsize) {
   int i;
   int lsize=0;
   int oldhsize = (t->node != dummynode) ? twoto(t->lsizenode) : 0;
@@ -439,7 +439,7 @@ static void ICACHE_FLASH_ATTR resize_hashpart (lua_State *L, Table *t, int nhsiz
 }
 
 
-static void ICACHE_FLASH_ATTR resize (lua_State *L, Table *t, int nasize, int nhsize) {
+static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
   int i;
   int oldasize = t->sizearray;
   if (nasize > oldasize)  /* array part must grow? */
@@ -458,13 +458,13 @@ static void ICACHE_FLASH_ATTR resize (lua_State *L, Table *t, int nasize, int nh
 }
 
 
-void ICACHE_FLASH_ATTR luaH_resizearray (lua_State *L, Table *t, int nasize) {
+void luaH_resizearray (lua_State *L, Table *t, int nasize) {
   int nsize = (t->node == dummynode) ? 0 : sizenode(t);
   resize(L, t, nasize, nsize);
 }
 
 
-static void ICACHE_FLASH_ATTR rehash (lua_State *L, Table *t, const TValue *ek) {
+static void rehash (lua_State *L, Table *t, const TValue *ek) {
   int nasize, na;
   int nums[MAXBITS+1];  /* nums[i] = number of keys between 2^(i-1) and 2^i */
   int i;
@@ -489,7 +489,7 @@ static void ICACHE_FLASH_ATTR rehash (lua_State *L, Table *t, const TValue *ek) 
 */
 
 
-Table *ICACHE_FLASH_ATTR luaH_new (lua_State *L, int narray, int nhash) {
+Table *luaH_new (lua_State *L, int narray, int nhash) {
   Table *t = luaM_new(L, Table);
   luaC_link(L, obj2gco(t), LUA_TTABLE);
   sethvalue2s(L, L->top, t); /* put table on stack */
@@ -508,7 +508,7 @@ Table *ICACHE_FLASH_ATTR luaH_new (lua_State *L, int narray, int nhash) {
 }
 
 
-void ICACHE_FLASH_ATTR luaH_free (lua_State *L, Table *t) {
+void luaH_free (lua_State *L, Table *t) {
   if (t->node != dummynode)
     luaM_freearray(L, t->node, sizenode(t), Node);
   luaM_freearray(L, t->array, t->sizearray, TValue);
@@ -524,7 +524,7 @@ void ICACHE_FLASH_ATTR luaH_free (lua_State *L, Table *t) {
 ** put new key in its main position; otherwise (colliding node is in its main 
 ** position), new key goes to an empty position. 
 */
-static TValue *ICACHE_FLASH_ATTR newkey (lua_State *L, Table *t, const TValue *key) {
+static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
   Node *mp = mainposition(t, key);
   if (!ttisnil(gval(mp)) || mp == dummynode) {
     Node *othern;
@@ -560,7 +560,7 @@ static TValue *ICACHE_FLASH_ATTR newkey (lua_State *L, Table *t, const TValue *k
 /*
 ** search function for integers
 */
-const TValue *ICACHE_FLASH_ATTR luaH_getnum (Table *t, int key) {
+const TValue *luaH_getnum (Table *t, int key) {
   /* (1 <= key && key <= t->sizearray) */
   if (cast(unsigned int, key-1) < cast(unsigned int, t->sizearray))
     return &t->array[key-1];
@@ -577,7 +577,7 @@ const TValue *ICACHE_FLASH_ATTR luaH_getnum (Table *t, int key) {
 }
 
 /* same thing for rotables */
-const TValue *ICACHE_FLASH_ATTR luaH_getnum_ro (void *t, int key) {
+const TValue *luaH_getnum_ro (void *t, int key) {
   const TValue *res = luaR_findentry(t, NULL, key, NULL);
   return res ? res : luaO_nilobject;
 }
@@ -586,7 +586,7 @@ const TValue *ICACHE_FLASH_ATTR luaH_getnum_ro (void *t, int key) {
 /*
 ** search function for strings
 */
-const TValue *ICACHE_FLASH_ATTR luaH_getstr (Table *t, TString *key) {
+const TValue *luaH_getstr (Table *t, TString *key) {
   Node *n = hashstr(t, key);
   do {  /* check whether `key' is somewhere in the chain */
     if (ttisstring(gkey(n)) && rawtsvalue(gkey(n)) == key)
@@ -597,7 +597,7 @@ const TValue *ICACHE_FLASH_ATTR luaH_getstr (Table *t, TString *key) {
 }
 
 /* same thing for rotables */
-const TValue *ICACHE_FLASH_ATTR luaH_getstr_ro (void *t, TString *key) {
+const TValue *luaH_getstr_ro (void *t, TString *key) {
   char keyname[LUA_MAX_ROTABLE_NAME + 1];
   const TValue *res;  
   if (!t)
@@ -611,7 +611,7 @@ const TValue *ICACHE_FLASH_ATTR luaH_getstr_ro (void *t, TString *key) {
 /*
 ** main search function
 */
-const TValue *ICACHE_FLASH_ATTR luaH_get (Table *t, const TValue *key) {
+const TValue *luaH_get (Table *t, const TValue *key) {
   switch (ttype(key)) {
     case LUA_TNIL: return luaO_nilobject;
     case LUA_TSTRING: return luaH_getstr(t, rawtsvalue(key));
@@ -636,7 +636,7 @@ const TValue *ICACHE_FLASH_ATTR luaH_get (Table *t, const TValue *key) {
 }
 
 /* same thing for rotables */
-const TValue *ICACHE_FLASH_ATTR luaH_get_ro (void *t, const TValue *key) {
+const TValue *luaH_get_ro (void *t, const TValue *key) {
   switch (ttype(key)) {
     case LUA_TNIL: return luaO_nilobject;
     case LUA_TSTRING: return luaH_getstr_ro(t, rawtsvalue(key));
@@ -655,7 +655,7 @@ const TValue *ICACHE_FLASH_ATTR luaH_get_ro (void *t, const TValue *key) {
 }
 
 
-TValue *ICACHE_FLASH_ATTR luaH_set (lua_State *L, Table *t, const TValue *key) {
+TValue *luaH_set (lua_State *L, Table *t, const TValue *key) {
   const TValue *p = luaH_get(t, key);
   t->flags = 0;
   if (p != luaO_nilobject)
@@ -669,7 +669,7 @@ TValue *ICACHE_FLASH_ATTR luaH_set (lua_State *L, Table *t, const TValue *key) {
 }
 
 
-TValue *ICACHE_FLASH_ATTR luaH_setnum (lua_State *L, Table *t, int key) {
+TValue *luaH_setnum (lua_State *L, Table *t, int key) {
   const TValue *p = luaH_getnum(t, key);
   if (p != luaO_nilobject)
     return cast(TValue *, p);
@@ -681,7 +681,7 @@ TValue *ICACHE_FLASH_ATTR luaH_setnum (lua_State *L, Table *t, int key) {
 }
 
 
-TValue *ICACHE_FLASH_ATTR luaH_setstr (lua_State *L, Table *t, TString *key) {
+TValue *luaH_setstr (lua_State *L, Table *t, TString *key) {
   const TValue *p = luaH_getstr(t, key);
   if (p != luaO_nilobject)
     return cast(TValue *, p);
@@ -693,7 +693,7 @@ TValue *ICACHE_FLASH_ATTR luaH_setstr (lua_State *L, Table *t, TString *key) {
 }
 
 
-static int ICACHE_FLASH_ATTR unbound_search (Table *t, unsigned int j) {
+static int unbound_search (Table *t, unsigned int j) {
   unsigned int i = j;  /* i is zero or a present index */
   j++;
   /* find `i' and `j' such that i is present and j is not */
@@ -721,7 +721,7 @@ static int ICACHE_FLASH_ATTR unbound_search (Table *t, unsigned int j) {
 ** Try to find a boundary in table `t'. A `boundary' is an integer index
 ** such that t[i] is non-nil and t[i+1] is nil (and 0 if t[1] is nil).
 */
-int ICACHE_FLASH_ATTR luaH_getn (Table *t) {
+int luaH_getn (Table *t) {
   unsigned int j = t->sizearray;
   if (j > 0 && ttisnil(&t->array[j - 1])) {
     /* there is a boundary in the array part: (binary) search for it */
@@ -740,7 +740,7 @@ int ICACHE_FLASH_ATTR luaH_getn (Table *t) {
 }
 
 /* same thing for rotables */
-int ICACHE_FLASH_ATTR luaH_getn_ro (void *t) {
+int luaH_getn_ro (void *t) {
   int i = 1, len=0;
   
   while(luaR_findentry(t, NULL, i ++, NULL))
@@ -750,10 +750,10 @@ int ICACHE_FLASH_ATTR luaH_getn_ro (void *t) {
 
 #if defined(LUA_DEBUG)
 
-Node *ICACHE_FLASH_ATTR luaH_mainposition (const Table *t, const TValue *key) {
+Node *luaH_mainposition (const Table *t, const TValue *key) {
   return mainposition(t, key);
 }
 
-int ICACHE_FLASH_ATTR luaH_isdummy (Node *n) { return n == dummynode; }
+int luaH_isdummy (Node *n) { return n == dummynode; }
 
 #endif

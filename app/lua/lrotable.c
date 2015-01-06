@@ -16,7 +16,7 @@
 extern const luaR_table lua_rotable[];
 
 /* Find a global "read only table" in the constant lua_rotable array */
-void* ICACHE_FLASH_ATTR luaR_findglobal(const char *name, unsigned len) {
+void* luaR_findglobal(const char *name, unsigned len) {
   unsigned i;
 
   if (c_strlen(name) > LUA_MAX_ROTABLE_NAME)
@@ -29,7 +29,7 @@ void* ICACHE_FLASH_ATTR luaR_findglobal(const char *name, unsigned len) {
 }
 
 /* Find an entry in a rotable and return it */
-static const TValue* ICACHE_FLASH_ATTR luaR_auxfind(const luaR_entry *pentry, const char *strkey, luaR_numkey numkey, unsigned *ppos) {
+static const TValue* luaR_auxfind(const luaR_entry *pentry, const char *strkey, luaR_numkey numkey, unsigned *ppos) {
   const TValue *res = NULL;
   unsigned i = 0;
   
@@ -48,7 +48,7 @@ static const TValue* ICACHE_FLASH_ATTR luaR_auxfind(const luaR_entry *pentry, co
   return res;
 }
 
-int ICACHE_FLASH_ATTR luaR_findfunction(lua_State *L, const luaR_entry *ptable) {
+int luaR_findfunction(lua_State *L, const luaR_entry *ptable) {
   const TValue *res = NULL;
   const char *key = luaL_checkstring(L, 2);
     
@@ -64,12 +64,12 @@ int ICACHE_FLASH_ATTR luaR_findfunction(lua_State *L, const luaR_entry *ptable) 
 /* Find an entry in a rotable and return its type 
    If "strkey" is not NULL, the function will look for a string key,
    otherwise it will look for a number key */
-const TValue* ICACHE_FLASH_ATTR luaR_findentry(void *data, const char *strkey, luaR_numkey numkey, unsigned *ppos) {
+const TValue* luaR_findentry(void *data, const char *strkey, luaR_numkey numkey, unsigned *ppos) {
   return luaR_auxfind((const luaR_entry*)data, strkey, numkey, ppos);
 }
 
 /* Find the metatable of a given table */
-void* ICACHE_FLASH_ATTR luaR_getmeta(void *data) {
+void* luaR_getmeta(void *data) {
 #ifdef LUA_META_ROTABLES
   const TValue *res = luaR_auxfind((const luaR_entry*)data, "__metatable", 0, NULL);
   return res && ttisrotable(res) ? rvalue(res) : NULL;
@@ -78,7 +78,7 @@ void* ICACHE_FLASH_ATTR luaR_getmeta(void *data) {
 #endif
 }
 
-static void ICACHE_FLASH_ATTR luaR_next_helper(lua_State *L, const luaR_entry *pentries, int pos, TValue *key, TValue *val) {
+static void luaR_next_helper(lua_State *L, const luaR_entry *pentries, int pos, TValue *key, TValue *val) {
   setnilvalue(key);
   setnilvalue(val);
   if (pentries[pos].key.type != LUA_TNIL) {
@@ -91,7 +91,7 @@ static void ICACHE_FLASH_ATTR luaR_next_helper(lua_State *L, const luaR_entry *p
   }
 }
 /* next (used for iteration) */
-void ICACHE_FLASH_ATTR luaR_next(lua_State *L, void *data, TValue *key, TValue *val) {
+void luaR_next(lua_State *L, void *data, TValue *key, TValue *val) {
   const luaR_entry* pentries = (const luaR_entry*)data;
   char strkey[LUA_MAX_ROTABLE_NAME + 1], *pstrkey = NULL;
   luaR_numkey numkey = 0;
@@ -115,7 +115,7 @@ void ICACHE_FLASH_ATTR luaR_next(lua_State *L, void *data, TValue *key, TValue *
 }
 
 /* Convert a Lua string to a C string */
-void ICACHE_FLASH_ATTR luaR_getcstr(char *dest, const TString *src, size_t maxsize) {
+void luaR_getcstr(char *dest, const TString *src, size_t maxsize) {
   if (src->tsv.len+1 > maxsize)
     dest[0] = '\0';
   else {
@@ -129,7 +129,7 @@ void ICACHE_FLASH_ATTR luaR_getcstr(char *dest, const TString *src, size_t maxsi
 
 #include "compiler.h"
 
-int ICACHE_FLASH_ATTR luaR_isrotable(void *p) {
+int luaR_isrotable(void *p) {
   return RODATA_START_ADDRESS <= (char*)p && (char*)p <= RODATA_END_ADDRESS;
 }
 #endif

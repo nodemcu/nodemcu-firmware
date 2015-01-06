@@ -82,6 +82,12 @@ void user_init(void)
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
+    
+    if(!flash_init_data_written()){
+        NODE_ERR("Restore init data.\n");
+        flash_init_data_default();
+    }
+
 #if defined( BUILD_WOFS )
     romfs_init();
 

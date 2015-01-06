@@ -6,13 +6,13 @@ rm ../bin/upgrade/user$1.bin ../bin/upgrade/user$1.dump ../bin/upgrade/user$1.S
 
 cd .output/eagle/debug/image/
 
-xt-objdump -x -s eagle.app.v6.out > ../../../../../bin/upgrade/user$1.dump
-xt-objdump -S eagle.app.v6.out > ../../../../../bin/upgrade/user$1.S
+xtensa-lx106-elf-objdump -x -s eagle.app.v6.out > ../../../../../bin/upgrade/user$1.dump
+xtensa-lx106-elf-objdump -S eagle.app.v6.out > ../../../../../bin/upgrade/user$1.S
 
-xt-objcopy --only-section .text -O binary eagle.app.v6.out eagle.app.v6.text.bin
-xt-objcopy --only-section .data -O binary eagle.app.v6.out eagle.app.v6.data.bin
-xt-objcopy --only-section .rodata -O binary eagle.app.v6.out eagle.app.v6.rodata.bin
-xt-objcopy --only-section .irom0.text -O binary eagle.app.v6.out eagle.app.v6.irom0text.bin
+xtensa-lx106-elf-objcopy --only-section .text -O binary eagle.app.v6.out eagle.app.v6.text.bin
+xtensa-lx106-elf-objcopy --only-section .data -O binary eagle.app.v6.out eagle.app.v6.data.bin
+xtensa-lx106-elf-objcopy --only-section .rodata -O binary eagle.app.v6.out eagle.app.v6.rodata.bin
+xtensa-lx106-elf-objcopy --only-section .irom0.text -O binary eagle.app.v6.out eagle.app.v6.irom0text.bin
 
 ../../../../../tools/gen_appbin.py eagle.app.v6.out v6
 

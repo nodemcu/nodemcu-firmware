@@ -13,7 +13,7 @@
 static lua_State *gL = NULL;
 static int uart_receive_rf = LUA_NOREF;
 bool run_input = true;
-bool ICACHE_FLASH_ATTR uart_on_data_cb(const char *buf, size_t len){
+bool uart_on_data_cb(const char *buf, size_t len){
   if(!buf || len==0)
     return false;
   if(uart_receive_rf == LUA_NOREF)
@@ -29,7 +29,7 @@ bool ICACHE_FLASH_ATTR uart_on_data_cb(const char *buf, size_t len){
 uint16_t need_len = 0;
 int16_t end_char = -1;
 // Lua: uart.on("method", [number/char], function, [run_input])
-static int ICACHE_FLASH_ATTR uart_on( lua_State* L )
+static int uart_on( lua_State* L )
 {
   size_t sl, el;
   int32_t run = 1;
@@ -160,7 +160,7 @@ const LUA_REG_TYPE uart_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_uart( lua_State *L )
+LUALIB_API int luaopen_uart( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

@@ -32,7 +32,7 @@
 #define MAXTAGLOOP	100
 
 #if defined LUA_NUMBER_INTEGRAL
-LUA_NUMBER ICACHE_FLASH_ATTR luai_ipow(LUA_NUMBER a, LUA_NUMBER b) {
+LUA_NUMBER luai_ipow(LUA_NUMBER a, LUA_NUMBER b) {
   if (b < 0)
     return 0;
   else if (b == 0)
@@ -51,7 +51,7 @@ LUA_NUMBER ICACHE_FLASH_ATTR luai_ipow(LUA_NUMBER a, LUA_NUMBER b) {
 }
 #endif
 
-const TValue *ICACHE_FLASH_ATTR luaV_tonumber (const TValue *obj, TValue *n) {
+const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
   lua_Number num;
   if (ttisnumber(obj)) return obj;
   if (ttisstring(obj) && luaO_str2d(svalue(obj), &num)) {
@@ -63,7 +63,7 @@ const TValue *ICACHE_FLASH_ATTR luaV_tonumber (const TValue *obj, TValue *n) {
 }
 
 
-int ICACHE_FLASH_ATTR luaV_tostring (lua_State *L, StkId obj) {
+int luaV_tostring (lua_State *L, StkId obj) {
   if (!ttisnumber(obj))
     return 0;
   else {
@@ -77,7 +77,7 @@ int ICACHE_FLASH_ATTR luaV_tostring (lua_State *L, StkId obj) {
 }
 
 
-static void ICACHE_FLASH_ATTR traceexec (lua_State *L, const Instruction *pc) {
+static void traceexec (lua_State *L, const Instruction *pc) {
   lu_byte mask = L->hookmask;
   const Instruction *oldpc = L->savedpc;
   L->savedpc = pc;
@@ -97,7 +97,7 @@ static void ICACHE_FLASH_ATTR traceexec (lua_State *L, const Instruction *pc) {
 }
 
 
-static void ICACHE_FLASH_ATTR callTMres (lua_State *L, StkId res, const TValue *f,
+static void callTMres (lua_State *L, StkId res, const TValue *f,
                         const TValue *p1, const TValue *p2) {
   ptrdiff_t result = savestack(L, res);
   setobj2s(L, L->top, f);  /* push function */
@@ -113,7 +113,7 @@ static void ICACHE_FLASH_ATTR callTMres (lua_State *L, StkId res, const TValue *
 
 
 
-static void ICACHE_FLASH_ATTR callTM (lua_State *L, const TValue *f, const TValue *p1,
+static void callTM (lua_State *L, const TValue *f, const TValue *p1,
                     const TValue *p2, const TValue *p3) {
   setobj2s(L, L->top, f);  /* push function */
   setobj2s(L, L->top+1, p1);  /* 1st argument */
@@ -125,7 +125,7 @@ static void ICACHE_FLASH_ATTR callTM (lua_State *L, const TValue *f, const TValu
 }
 
 
-void ICACHE_FLASH_ATTR luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   int loop;
   TValue temp;
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
@@ -154,7 +154,7 @@ void ICACHE_FLASH_ATTR luaV_gettable (lua_State *L, const TValue *t, TValue *key
 }
 
 
-void ICACHE_FLASH_ATTR luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
+void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   int loop;
   TValue temp;
   setnilvalue(L->top);
@@ -195,7 +195,7 @@ void ICACHE_FLASH_ATTR luaV_settable (lua_State *L, const TValue *t, TValue *key
 }
 
 
-static int ICACHE_FLASH_ATTR call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
+static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
                        StkId res, TMS event) {
   const TValue *tm = luaT_gettmbyobj(L, p1, event);  /* try first operand */
   if (ttisnil(tm))
@@ -206,7 +206,7 @@ static int ICACHE_FLASH_ATTR call_binTM (lua_State *L, const TValue *p1, const T
 }
 
 
-static const TValue *ICACHE_FLASH_ATTR get_compTM (lua_State *L, Table *mt1, Table *mt2,
+static const TValue *get_compTM (lua_State *L, Table *mt1, Table *mt2,
                                   TMS event) {
   const TValue *tm1 = fasttm(L, mt1, event);
   const TValue *tm2;
@@ -220,7 +220,7 @@ static const TValue *ICACHE_FLASH_ATTR get_compTM (lua_State *L, Table *mt1, Tab
 }
 
 
-static int ICACHE_FLASH_ATTR call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
+static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
                          TMS event) {
   const TValue *tm1 = luaT_gettmbyobj(L, p1, event);
   const TValue *tm2;
@@ -233,7 +233,7 @@ static int ICACHE_FLASH_ATTR call_orderTM (lua_State *L, const TValue *p1, const
 }
 
 
-static int ICACHE_FLASH_ATTR l_strcmp (const TString *ls, const TString *rs) {
+static int l_strcmp (const TString *ls, const TString *rs) {
   const char *l = getstr(ls);
   size_t ll = ls->tsv.len;
   const char *r = getstr(rs);
@@ -255,7 +255,7 @@ static int ICACHE_FLASH_ATTR l_strcmp (const TString *ls, const TString *rs) {
 }
 
 
-int ICACHE_FLASH_ATTR luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
+int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
   int res;
   if (ttype(l) != ttype(r))
     return luaG_ordererror(L, l, r);
@@ -269,7 +269,7 @@ int ICACHE_FLASH_ATTR luaV_lessthan (lua_State *L, const TValue *l, const TValue
 }
 
 
-static int ICACHE_FLASH_ATTR lessequal (lua_State *L, const TValue *l, const TValue *r) {
+static int lessequal (lua_State *L, const TValue *l, const TValue *r) {
   int res;
   if (ttype(l) != ttype(r))
     return luaG_ordererror(L, l, r);
@@ -285,7 +285,7 @@ static int ICACHE_FLASH_ATTR lessequal (lua_State *L, const TValue *l, const TVa
 }
 
 
-int ICACHE_FLASH_ATTR luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
+int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
   const TValue *tm;
   lua_assert(ttype(t1) == ttype(t2));
   switch (ttype(t1)) {
@@ -315,7 +315,7 @@ int ICACHE_FLASH_ATTR luaV_equalval (lua_State *L, const TValue *t1, const TValu
 }
 
 
-void ICACHE_FLASH_ATTR luaV_concat (lua_State *L, int total, int last) {
+void luaV_concat (lua_State *L, int total, int last) {
   lu_mem max_sizet = MAX_SIZET;
   if (G(L)->memlimit < max_sizet) max_sizet = G(L)->memlimit;
   do {
@@ -359,7 +359,7 @@ void ICACHE_FLASH_ATTR luaV_concat (lua_State *L, int total, int last) {
 }
 
 
-static void ICACHE_FLASH_ATTR Arith (lua_State *L, StkId ra, const TValue *rb,
+static void Arith (lua_State *L, StkId ra, const TValue *rb,
                    const TValue *rc, TMS op) {
   TValue tempb, tempc;
   const TValue *b, *c;
@@ -424,7 +424,7 @@ static void ICACHE_FLASH_ATTR Arith (lua_State *L, StkId ra, const TValue *rb,
 
 
 
-void ICACHE_FLASH_ATTR luaV_execute (lua_State *L, int nexeccalls) {
+void luaV_execute (lua_State *L, int nexeccalls) {
   LClosure *cl;
   StkId base;
   TValue *k;

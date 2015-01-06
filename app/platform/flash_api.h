@@ -2,6 +2,8 @@
 #define __FLASH_API_H__
 #include "ets_sys.h"
 #include "user_config.h"
+#include "cpu_esp8266.h"
+#define FLASH_MAP_START_ADDRESS (INTERNAL_FLASH_START_ADDRESS)
 
 typedef struct
 {
@@ -29,9 +31,9 @@ typedef struct
         SIZE_16MBIT = 3,
         SIZE_32MBIT = 4,
     } size : 4;
-} NODE_STORE_TYPEDEF_ATTR SPIFlashInfo;
+} ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 
-SPIFlashInfo *flash_get_info(void);
+SPIFlashInfo flash_get_info(void);
 uint8_t flash_get_size(void);
 uint32_t flash_get_size_byte(void);
 bool flash_set_size(uint8_t);
@@ -39,6 +41,7 @@ bool flash_set_size_byte(uint32_t);
 uint16_t flash_get_sec_num(void);
 uint8_t flash_get_mode(void);
 uint32_t flash_get_speed(void);
+bool flash_init_data_written(void);
 bool flash_init_data_default(void);
 bool flash_init_data_blank(void);
 bool flash_self_destruct(void);
