@@ -1,7 +1,7 @@
 # **NodeMcu** #
-version 0.9.4
+version 0.9.5
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 0.9.4](http://bbs.espressif.com/viewtopic.php?f=5&t=90)<br />
+Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=7&t=104)<br />
 Lua core based on [eLua project](http://www.eluaproject.net/)<br />
 File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
 Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
@@ -13,6 +13,13 @@ bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group QQ群: 309957875<br />
 
 # Change log
+2015-01-06<br />
+update sdk to 0.9.5.<br />
+pre_build bin now compiled by gcc toolchain.<br />
+memory/heap usage optimized.<br />
+add support for multiple platform and toolchain include eclipse. <br />
+combine firmware for 512K, 1M, 2M, 4M flash to one. flash size auto-detected.
+
 2014-12-30<br />
 modify uart.on api, when run_input set to 0, uart.on now can read raw data from uart.<br />
 serial input now accept non-ascii chars.<br />
@@ -98,13 +105,13 @@ add tmr.time() api to get rtc time and calibration.
 </table>
 
 #Build option
-####*GNU toolchain is not tested*
 ####file ./app/include/user_config.h
 ```c
-#define FLASH_512K
+// #define FLASH_512K
 // #define FLASH_1M
 // #define FLASH_2M
 // #define FLASH_4M
+#define FLASH_AUTOSIZE
 ...
 #define LUA_USE_MODULES
 #ifdef LUA_USE_MODULES
@@ -119,12 +126,12 @@ add tmr.time() api to get rtc time and calibration.
 #define LUA_USE_MODULES_ADC
 #define LUA_USE_MODULES_UART
 #define LUA_USE_MODULES_OW
-//#define LUA_USE_MODULES_BIT
+#define LUA_USE_MODULES_BIT
 #endif /* LUA_USE_MODULES */
 ```
 
 #Flash the firmware
-nodemcu_512k.bin: 0x00000<br />
+nodemcu_latest.bin: 0x00000<br />
 for most esp8266 modules, just pull GPIO0 down and restart.<br />
 You can use the [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher) to burn the firmware.
 

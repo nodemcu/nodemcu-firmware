@@ -1,6 +1,8 @@
 /*
  * Adaptation of Sparkfun's BMP180 code form https://github.com/sparkfun/BMP180_Breakout
  */
+#include "c_stdlib.h"
+#include "lualib.h"
 #include "ets_sys.h"
 #include "os_type.h"
 #include "mem.h"
@@ -13,42 +15,53 @@
 #include <stdlib.h>
 
 #include "driver/bmpx80.h"
-#include <stdio.h>
+//#include <stdio.h>
 #include "c_types.h"
+#include "c_string.h"
 
-#include <math.h>
-#include "lualib.h"
+#include "c_math.h"
 #include "lauxlib.h"
 #include "auxmods.h"
 #include "lrotable.h"
-#include "driver/onewire.h"
 #include "platform.h"
 
-
-
-
 double _y0,_y1,x0,x1,x2,y2,p2,p1,p0,c5,c6,mc,md;
-int bmp_id =0;
+u8_t bmp_id =0;
 #define BMP_SDA 4
 #define BMP_SCL 5
-#define BMP_ADDR 0x77
+#define BMP280 1
 
-char BMPx80_begin()
-// Initialize library for subsequent pressure measurements
-{
-    double c3,c4,b1;
-    s16_t AC1,AC2,AC3,VB1,VB2,MB,MC,MD;
-    u16_t AC4,AC5,AC6;
+static int ICACHE_FLASH_ATTR
+        BMPx80_begin() {
+    platform_i2c_setup(bmp_id, BMP_SDA, BMP_SCL, PLATFORM_I2C_SPEED_SLOW);
+    return 1;
+}
 
-    platform_i2c_setup( bmp_id, BMP_SDA, BMP_SCL, PLATFORM_I2C_SPEED_SLOW );
+static double ICACHE_FLASH_ATTR bmp_pow(double a,double b) {
+    return pow(a,b);
+}
 
-    // The BMP180 includes factory calibration data stored on the device.
-    // Each device has different numbers, these must be retrieved and
-    // used in the calculations when taking pressure measurements.
-    
-    // Retrieve calibration data from device:
-    
-    if (BMPx80_readInt(0xAA,&AC1) &&
+
+static int ICACHE_FLASH_ATTR
+        BMPx80_calibrate() {
+
+
+//    #ifdef BMP280
+//        u8_t chipid;
+//        if (BMPx80_readByte(0xD0,&chipid)) {
+//            if (chipid == 0x58) {
+//                return 1;
+//            }
+//            return 0;
+//        }
+//    #else
+
+    double c3, c4, b1;
+    s16_t AC1, AC2, AC3, VB1, VB2, MB, MC, MD;
+    u16_t AC4, AC5, AC6;
+
+    if (
+        BMPx80_readInt(0xAA,&AC1) &&
         BMPx80_readInt(0xAC,&AC2) &&
         BMPx80_readInt(0xAE,&AC3) &&
         BMPx80_readUInt(0xB0,&AC4) &&
@@ -58,28 +71,28 @@ char BMPx80_begin()
         BMPx80_readInt(0xB8,&VB2) &&
         BMPx80_readInt(0xBA,&MB) &&
         BMPx80_readInt(0xBC,&MC) &&
-        BMPx80_readInt(0xBE,&MD))
-    {
-        
+        BMPx80_readInt(0xBE,&MD)
+    ){
+
         // All reads completed successfully!
         // Compute floating-point polynominals:
         
-        c3 = 160.0 * pow(2,-15) * AC3;
-        c4 = pow(10,-3) * pow(2,-15) * AC4;
-        b1 = pow(160,2) * pow(2,-30) * VB1;
-        c5 = (pow(2,-15) / 160) * AC5;
+        c3 = 160.0 * bmp_pow(2,-15) * AC3;
+        c4 = bmp_pow(10,-3) * bmp_pow(2,-15) * AC4;
+        b1 = bmp_pow(160,2) * bmp_pow(2,-30) * VB1;
+        c5 = (bmp_pow(2,-15) / 160) * AC5;
         c6 = AC6;
-        mc = (pow(2,11) / pow(160,2)) * MC;
+        mc = (bmp_pow(2,11) / bmp_pow(160,2)) * MC;
         md = MD / 160.0;
         x0 = AC1;
-        x1 = 160.0 * pow(2,-13) * AC2;
-        x2 = pow(160,2) * pow(2,-25) * VB2;
-        _y0 = c4 * pow(2,15);
+        x1 = 160.0 * bmp_pow(2,-13) * AC2;
+        x2 = bmp_pow(160,2) * bmp_pow(2,-25) * VB2;
+        _y0 = c4 * bmp_pow(2,15);
         _y1 = c4 * c3;
         y2 = c4 * b1;
         p0 = (3791.0 - 8.0) / 1600.0;
-        p1 = 1.0 - 7357.0 * pow(2,-20);
-        p2 = 3038.0 * 100.0 * pow(2,-36);
+        p1 = 1.0 - 7357.0 * bmp_pow(2,-20);
+        p2 = 3038.0 * 100.0 * bmp_pow(2,-36);
         
         // Success!
         return(1);
@@ -89,10 +102,33 @@ char BMPx80_begin()
         // Error reading calibration data; bad component or connection?
         return(0);
     }
+
+//    #endif
 }
 
 
-char BMPx80_readInt(char address, s16_t *value)
+static int ICACHE_FLASH_ATTR
+        BMPx80_readByte(char address, u8_t *value)
+// Read a signed integer (one bytes) from device
+// address: register to start reading (plus subsequent register)
+// value: external variable to store data (function modifies value)
+{
+
+    unsigned char data[2];
+
+    data[0] = address;
+    if (BMPx80_readBytes(data,1))
+    {
+        value[0] = ((u8_t)data[0]);
+        return(1);
+    }
+    return(0);
+}
+
+
+
+static int ICACHE_FLASH_ATTR
+        BMPx80_readInt(char address, s16_t *value)
 // Read a signed integer (two bytes) from device
 // address: register to start reading (plus subsequent register)
 // value: external variable to store data (function modifies value)
@@ -104,19 +140,17 @@ char BMPx80_readInt(char address, s16_t *value)
     if (BMPx80_readBytes(data,2))
     {
 
-        c_memset(value,data[0]);
-        c_memset(value+1,data[1]);
-
-//        (s_16t)value = (((s8_t)data[0]<<8)|(s8_t)data[1]);
+        value = (s16_t*)(data[0]<<8 | data[1]);
         //if (*value & 0x8000) *value |= 0xFFFF0000; // sign extend if negative
         return(1);
     }
-    value = 0;
     return(0);
 }
 
 
-char BMPx80_readUInt(char address, u16_t *value)
+
+static int ICACHE_FLASH_ATTR
+    BMPx80_readUInt(char address, u16_t *value)
 // Read an unsigned integer (two bytes) from device
 // address: register to start reading (plus subsequent register)
 // value: external variable to store data (function modifies value)
@@ -130,10 +164,7 @@ char BMPx80_readUInt(char address, u16_t *value)
 //        data[0] << 8
 //        data[1]
 
-        c_memset(value,data[0]);
-        c_memset(value+1,data[1]);
-
-//        ((u16_t)value) = (u16_t)( (u8_t)data[0]<<8 | (u8_t)data[1] );
+        value = (u16_t*)( data[0]<<8 | data[1] );
         return(1);
     }
     value = 0;
@@ -143,7 +174,8 @@ char BMPx80_readUInt(char address, u16_t *value)
 //BMP address is 0x77
 
 
-char BMPx80_readBytes(unsigned char *values, char length)
+static int ICACHE_FLASH_ATTR
+    BMPx80_readBytes(unsigned char *values, char length)
 // Read an array of bytes from device
 // values: external array to hold data. Put starting register in values[0].
 // length: number of bytes to read
@@ -157,7 +189,7 @@ char BMPx80_readBytes(unsigned char *values, char length)
         return 0;
     }
 
-    platform_i2c_send_stop( bmp_id );
+//    platform_i2c_send_stop( bmp_id );
     platform_i2c_send_start( bmp_id );
 
     platform_i2c_send_address( bmp_id, (u16) BMP_ADDR, PLATFORM_I2C_DIRECTION_RECEIVER);
@@ -171,7 +203,8 @@ char BMPx80_readBytes(unsigned char *values, char length)
 }
 
 
-char BMPx80_writeBytes(unsigned char *values, char length)
+static int ICACHE_FLASH_ATTR
+    BMPx80_writeBytes(unsigned char *values, char length)
 // Write an array of bytes to device
 // values: external array of data to write. Put starting register in values[0].
 // length: number of bytes to write
@@ -193,7 +226,8 @@ char BMPx80_writeBytes(unsigned char *values, char length)
 }
 
 
-char BMPx80_startTemperature(void)
+static int ICACHE_FLASH_ATTR
+    BMPx80_startTemperature(void)
 // Begin a temperature reading.
 // Will return delay in ms to wait, or 0 if I2C error
 {
@@ -209,7 +243,8 @@ char BMPx80_startTemperature(void)
 }
 
 
-char BMPx80_getTemperature(double *T)
+static int ICACHE_FLASH_ATTR
+    BMPx80_getTemperature(double *T)
 // Retrieve a previously-started temperature reading.
 // Requires begin() to be called once prior to retrieve calibration parameters.
 // Requires startTemperature() to have been called prior and sufficient time elapsed.
@@ -234,7 +269,8 @@ char BMPx80_getTemperature(double *T)
 }
 
 
-char BMPx80_startPressure(char oversampling)
+static int ICACHE_FLASH_ATTR
+    BMPx80_startPressure(char oversampling)
 // Begin a pressure reading.
 // Oversampling: 0 to 3, higher numbers are slower, higher-res outputs.
 // Will return delay in ms to wait, or 0 if I2C error.
@@ -274,7 +310,8 @@ char BMPx80_startPressure(char oversampling)
 }
 
 
-char BMPx80_getPressure(double *P, double *T)
+static int ICACHE_FLASH_ATTR
+    BMPx80_getPressure(double *P, double *T)
 // Retrieve a previously started pressure reading, calculate abolute pressure in mbars.
 // Requires begin() to be called once prior to retrieve calibration parameters.
 // Requires startPressure() to have been called prior and sufficient time elapsed.
@@ -304,50 +341,52 @@ char BMPx80_getPressure(double *P, double *T)
         //pu = (0x98 * 256.0) + 0x2F + (0xC0/256.0);
         
         s = T[0] - 25.0;
-        x = (x2 * pow(s,2)) + (x1 * s) + x0;
-        y = (y2 * pow(s,2)) + (_y1 * s) + _y0;
+        x = (x2 * bmp_pow(s,2)) + (x1 * s) + x0;
+        y = (y2 * bmp_pow(s,2)) + (_y1 * s) + _y0;
         z = (pu - x) / y;
-        P[0] = (p2 * pow(z,2)) + (p1 * z) + p0;
+        P[0] = (p2 * bmp_pow(z,2)) + (p1 * z) + p0;
         
     }
     return(result);
 }
 
 
-double BMPx80_sealevel(double P, double A)
+static double ICACHE_FLASH_ATTR
+    BMPx80_sealevel(double P, double A)
 // Given a pressure P (mb) taken at a specific altitude (meters),
 // return the equivalent pressure (mb) at sea level.
 // This produces pressure readings that can be used for weather measurements.
 {
-    return(P/pow(1-(A/44330.0),5.255));
+    return(P/bmp_pow(1-(A/44330.0),5.255));
 }
 
 
-double BMPx80_altitude(double P, double P0)
+static double ICACHE_FLASH_ATTR
+    BMPx80_altitude(double P, double P0)
 // Given a pressure measurement P (mb) and the pressure at a baseline P0 (mb),
 // return altitude (meters) above baseline.
 {
-    return(44330.0*(1-pow(P/P0,1/5.255)));
+    return(44330.0*(1-bmp_pow(P/P0,1/5.255)));
 }
 
 
 
 // Lua: bmp.setup( id )
 static int ICACHE_FLASH_ATTR bmp_setup( lua_State *L ) {
-    //unsigned id = luaL_checkinteger( L, 1 );
 
-    //if(id==0)
-    //return luaL_error( L, "no 1-wire for D0" );
-    //MOD_CHECK_ID( ow, id );
-
-    if ( BMPx80_begin()) {
+    if (BMPx80_begin() == 0) {
         return luaL_error( L, "Unable to init the BMPx80" );
     }
 
-    return 0;
+    if (BMPx80_calibrate() == 0){
+        return luaL_error( L, "Unable to read calibration data from the BMPx80" );
+    }
+
+    lua_pushinteger(L,_y0);
+    lua_pushinteger(L,_y1);
+
+    return 2;
 }
-
-
 
 // Lua: bmp.sample()
 static int ICACHE_FLASH_ATTR bmp_sample( lua_State *L ) {
@@ -361,6 +400,7 @@ static int ICACHE_FLASH_ATTR bmp_sample( lua_State *L ) {
     double T;
     if (BMPx80_getTemperature(&T)){
         lua_pushinteger(L,T);
+        return 1;
     } else {
         return luaL_error(L,"Unable to read temp");
     }

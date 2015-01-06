@@ -23,7 +23,7 @@
 static int gpio_cb_ref[GPIO_PIN_NUM];
 static lua_State* gL = NULL;
 
-void ICACHE_FLASH_ATTR lua_gpio_unref(unsigned pin){
+void lua_gpio_unref(unsigned pin){
   if(gpio_cb_ref[pin] != LUA_NOREF){
     if(gL!=NULL)
       luaL_unref(gL, LUA_REGISTRYINDEX, gpio_cb_ref[pin]);
@@ -31,7 +31,7 @@ void ICACHE_FLASH_ATTR lua_gpio_unref(unsigned pin){
   gpio_cb_ref[pin] = LUA_NOREF;
 }
 
-void ICACHE_FLASH_ATTR gpio_intr_callback( unsigned pin, unsigned level )
+void gpio_intr_callback( unsigned pin, unsigned level )
 {
   NODE_DBG("pin:%d, level:%d \n", pin, level);
   if(gpio_cb_ref[pin] == LUA_NOREF)
@@ -44,7 +44,7 @@ void ICACHE_FLASH_ATTR gpio_intr_callback( unsigned pin, unsigned level )
 }
 
 // Lua: trig( pin, type, function )
-static int ICACHE_FLASH_ATTR lgpio_trig( lua_State* L )
+static int lgpio_trig( lua_State* L )
 {
   unsigned type;
   unsigned pin;
@@ -87,7 +87,7 @@ static int ICACHE_FLASH_ATTR lgpio_trig( lua_State* L )
 #endif
 
 // Lua: mode( pin, mode, pullup )
-static int ICACHE_FLASH_ATTR lgpio_mode( lua_State* L )
+static int lgpio_mode( lua_State* L )
 {
   unsigned mode, pullup = FLOAT;
   unsigned pin;
@@ -119,7 +119,7 @@ static int ICACHE_FLASH_ATTR lgpio_mode( lua_State* L )
 }
 
 // Lua: read( pin )
-static int ICACHE_FLASH_ATTR lgpio_read( lua_State* L )
+static int lgpio_read( lua_State* L )
 {
   unsigned pin;
   
@@ -132,7 +132,7 @@ static int ICACHE_FLASH_ATTR lgpio_read( lua_State* L )
 }
 
 // Lua: write( pin, level )
-static int ICACHE_FLASH_ATTR lgpio_write( lua_State* L )
+static int lgpio_write( lua_State* L )
 {
   unsigned level;
   unsigned pin;
@@ -171,7 +171,7 @@ const LUA_REG_TYPE gpio_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_gpio( lua_State *L )
+LUALIB_API int luaopen_gpio( lua_State *L )
 {
 #ifdef GPIO_INTERRUPT_ENABLE
   int i;

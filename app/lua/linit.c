@@ -71,7 +71,7 @@ const luaR_table lua_rotable[] =
   {NULL, NULL}
 };
 
-LUALIB_API void ICACHE_FLASH_ATTR luaL_openlibs (lua_State *L) {
+LUALIB_API void luaL_openlibs (lua_State *L) {
   const luaL_Reg *lib = lualibs;
   for (; lib->func; lib++) {
     lua_pushcfunction(L, lib->func);

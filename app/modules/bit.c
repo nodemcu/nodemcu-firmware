@@ -34,13 +34,13 @@ typedef size_t lua_UInteger;
    */
   
 #define MONADIC(name, op)                                       \
-  static int ICACHE_FLASH_ATTR bit_ ## name(lua_State *L) {                       \
+  static int bit_ ## name(lua_State *L) {                       \
     lua_pushinteger(L, op TOBIT(L, 1));                         \
     return 1;                                                   \
   }
 
 #define VARIADIC(name, op)                      \
-  static int ICACHE_FLASH_ATTR bit_ ## name(lua_State *L) {       \
+  static int bit_ ## name(lua_State *L) {       \
     int n = lua_gettop(L), i;                   \
     lua_Integer w = TOBIT(L, 1);                \
     for (i = 2; i <= n; i++)                    \
@@ -50,14 +50,14 @@ typedef size_t lua_UInteger;
   }
 
 #define LOGICAL_SHIFT(name, op)                                         \
-  static int ICACHE_FLASH_ATTR bit_ ## name(lua_State *L) {                               \
+  static int bit_ ## name(lua_State *L) {                               \
     lua_pushinteger(L, (lua_UInteger)TOBIT(L, 1) op                     \
                           (unsigned)luaL_checknumber(L, 2));            \
     return 1;                                                           \
   }
 
 #define ARITHMETIC_SHIFT(name, op)                                      \
-  static int ICACHE_FLASH_ATTR bit_ ## name(lua_State *L) {                               \
+  static int bit_ ## name(lua_State *L) {                               \
     lua_pushinteger(L, (lua_Integer)TOBIT(L, 1) op                      \
                           (unsigned)luaL_checknumber(L, 2));            \
     return 1;                                                           \
@@ -72,14 +72,14 @@ LOGICAL_SHIFT(rshift,     >>)
 ARITHMETIC_SHIFT(arshift, >>)
 
 // Lua: res = bit( position )
-static int ICACHE_FLASH_ATTR bit_bit( lua_State* L )
+static int bit_bit( lua_State* L )
 {
   lua_pushinteger( L, ( lua_Integer )( 1 << luaL_checkinteger( L, 1 ) ) );
   return 1;
 }
 
 // Lua: res = isset( value, position )
-static int ICACHE_FLASH_ATTR bit_isset( lua_State* L )
+static int bit_isset( lua_State* L )
 {
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned pos = ( unsigned )luaL_checkinteger( L, 2 );
@@ -89,7 +89,7 @@ static int ICACHE_FLASH_ATTR bit_isset( lua_State* L )
 }
 
 // Lua: res = isclear( value, position )
-static int ICACHE_FLASH_ATTR bit_isclear( lua_State* L )
+static int bit_isclear( lua_State* L )
 {
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned pos = ( unsigned )luaL_checkinteger( L, 2 );
@@ -99,7 +99,7 @@ static int ICACHE_FLASH_ATTR bit_isclear( lua_State* L )
 }
 
 // Lua: res = set( value, pos1, pos2, ... )
-static int ICACHE_FLASH_ATTR bit_set( lua_State* L )
+static int bit_set( lua_State* L )
 { 
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned total = lua_gettop( L ), i;
@@ -111,7 +111,7 @@ static int ICACHE_FLASH_ATTR bit_set( lua_State* L )
 }
 
 // Lua: res = clear( value, pos1, pos2, ... )
-static int ICACHE_FLASH_ATTR bit_clear( lua_State* L )
+static int bit_clear( lua_State* L )
 {
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned total = lua_gettop( L ), i;
@@ -140,6 +140,6 @@ const LUA_REG_TYPE bit_map[] = {
   { LNILKEY, LNILVAL}
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_bit (lua_State *L) {
+LUALIB_API int luaopen_bit (lua_State *L) {
   LREGISTER( L, "bit", bit_map );
 }

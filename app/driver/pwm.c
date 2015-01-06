@@ -305,7 +305,7 @@ pwm_get_freq(uint8 channel)
  * Parameters   : NONE
  * Returns      : NONE
 *******************************************************************************/
-LOCAL void
+LOCAL void ICACHE_RAM_ATTR
 pwm_tim1_intr_handler(void)
 {
     uint8 local_toggle = pwm_toggle;                        // pwm_toggle may change outside

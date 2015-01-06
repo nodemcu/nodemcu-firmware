@@ -1,7 +1,6 @@
 #include "c_stdio.h"
 // #include "driver/uart.h"
 
-unsigned char __print_buf[BUFSIZ];
 int c_stdin = 999;
 int c_stdout = 1000;
 int c_stderr = 1001;

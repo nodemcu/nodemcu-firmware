@@ -35,14 +35,14 @@ int led_high_count = LED_HIGH_COUNT_DEFAULT;
 int led_low_count = LED_LOW_COUNT_DEFAULT;
 static int led_count = 0;
 #if 0
-static void ICACHE_FLASH_ATTR lstop (lua_State *L, lua_Debug *ar) {
+static void lstop (lua_State *L, lua_Debug *ar) {
   (void)ar;  /* unused arg. */
   lua_sethook(L, NULL, 0, 0);
   luaL_error(L, "interrupted!");
 }
 
 
-static void ICACHE_FLASH_ATTR laction (int i) {
+static void laction (int i) {
   // signal(i, SIG_DFL); 
   /* if another SIGINT happens before lstop,
                               terminate process (default action) */
@@ -50,7 +50,7 @@ static void ICACHE_FLASH_ATTR laction (int i) {
 }
 
 
-static void ICACHE_FLASH_ATTR print_usage (void) {
+static void print_usage (void) {
 #if defined(LUA_USE_STDIO)
   c_fprintf(c_stderr,
 #else
@@ -73,7 +73,7 @@ static void ICACHE_FLASH_ATTR print_usage (void) {
 }
 #endif
 
-static void ICACHE_FLASH_ATTR l_message (const char *pname, const char *msg) {
+static void l_message (const char *pname, const char *msg) {
 #if defined(LUA_USE_STDIO)
   if (pname) c_fprintf(c_stderr, "%s: ", pname);
   c_fprintf(c_stderr, "%s\n", msg);
@@ -85,7 +85,7 @@ static void ICACHE_FLASH_ATTR l_message (const char *pname, const char *msg) {
 }
 
 
-static int ICACHE_FLASH_ATTR report (lua_State *L, int status) {
+static int report (lua_State *L, int status) {
   if (status && !lua_isnil(L, -1)) {
     const char *msg = lua_tostring(L, -1);
     if (msg == NULL) msg = "(error object is not a string)";
@@ -96,7 +96,7 @@ static int ICACHE_FLASH_ATTR report (lua_State *L, int status) {
 }
 
 
-static int ICACHE_FLASH_ATTR traceback (lua_State *L) {
+static int traceback (lua_State *L) {
   if (!lua_isstring(L, 1))  /* 'message' not a string? */
     return 1;  /* keep it intact */
   lua_getfield(L, LUA_GLOBALSINDEX, "debug");
@@ -116,7 +116,7 @@ static int ICACHE_FLASH_ATTR traceback (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR docall (lua_State *L, int narg, int clear) {
+static int docall (lua_State *L, int narg, int clear) {
   int status;
   int base = lua_gettop(L) - narg;  /* function index */
   lua_pushcfunction(L, traceback);  /* push traceback function */
@@ -131,13 +131,13 @@ static int ICACHE_FLASH_ATTR docall (lua_State *L, int narg, int clear) {
 }
 
 
-static void ICACHE_FLASH_ATTR print_version (void) {
+static void print_version (void) {
   // l_message(NULL, LUA_RELEASE "  " LUA_COPYRIGHT);
   l_message(NULL, NODE_VERSION " " BUILD_DATE "  powered by " LUA_RELEASE);
 }
 
 
-static int ICACHE_FLASH_ATTR getargs (lua_State *L, char **argv, int n) {
+static int getargs (lua_State *L, char **argv, int n) {
   int narg;
   int i;
   int argc = 0;
@@ -155,30 +155,30 @@ static int ICACHE_FLASH_ATTR getargs (lua_State *L, char **argv, int n) {
 }
 
 #if 0
-static int ICACHE_FLASH_ATTR dofile (lua_State *L, const char *name) {
+static int dofile (lua_State *L, const char *name) {
   int status = luaL_loadfile(L, name) || docall(L, 0, 1);
   return report(L, status);
 }
 #else
-static int ICACHE_FLASH_ATTR dofsfile (lua_State *L, const char *name) {
+static int dofsfile (lua_State *L, const char *name) {
   int status = luaL_loadfsfile(L, name) || docall(L, 0, 1);
   return report(L, status);
 }
 #endif
 
-static int ICACHE_FLASH_ATTR dostring (lua_State *L, const char *s, const char *name) {
+static int dostring (lua_State *L, const char *s, const char *name) {
   int status = luaL_loadbuffer(L, s, c_strlen(s), name) || docall(L, 0, 1);
   return report(L, status);
 }
 
 
-static int ICACHE_FLASH_ATTR dolibrary (lua_State *L, const char *name) {
+static int dolibrary (lua_State *L, const char *name) {
   lua_getglobal(L, "require");
   lua_pushstring(L, name);
   return report(L, docall(L, 1, 1));
 }
 
-static const char *ICACHE_FLASH_ATTR get_prompt (lua_State *L, int firstline) {
+static const char *get_prompt (lua_State *L, int firstline) {
   const char *p;
   lua_getfield(L, LUA_GLOBALSINDEX, firstline ? "_PROMPT" : "_PROMPT2");
   p = lua_tostring(L, -1);
@@ -188,7 +188,7 @@ static const char *ICACHE_FLASH_ATTR get_prompt (lua_State *L, int firstline) {
 }
 
 
-static int ICACHE_FLASH_ATTR incomplete (lua_State *L, int status) {
+static int incomplete (lua_State *L, int status) {
   if (status == LUA_ERRSYNTAX) {
     size_t lmsg;
     const char *msg = lua_tolstring(L, -1, &lmsg);
@@ -202,7 +202,7 @@ static int ICACHE_FLASH_ATTR incomplete (lua_State *L, int status) {
 }
 
 #if 0
-static int ICACHE_FLASH_ATTR pushline (lua_State *L, int firstline) {
+static int pushline (lua_State *L, int firstline) {
   char buffer[LUA_MAXINPUT];
   char *b = buffer;
   size_t l;
@@ -221,7 +221,7 @@ static int ICACHE_FLASH_ATTR pushline (lua_State *L, int firstline) {
 }
 
 
-static int ICACHE_FLASH_ATTR loadline (lua_State *L) {
+static int loadline (lua_State *L) {
   int status;
   lua_settop(L, 0);
   if (!pushline(L, 1))
@@ -241,7 +241,7 @@ static int ICACHE_FLASH_ATTR loadline (lua_State *L) {
 }
 
 
-static void ICACHE_FLASH_ATTR dotty (lua_State *L) {
+static void dotty (lua_State *L) {
   int status;
   const char *oldprogname = progname;
   progname = NULL;
@@ -270,7 +270,7 @@ static void ICACHE_FLASH_ATTR dotty (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR handle_script (lua_State *L, char **argv, int n) {
+static int handle_script (lua_State *L, char **argv, int n) {
   int status;
   const char *fname;
   int narg = getargs(L, argv, n);  /* collect arguments */
@@ -292,7 +292,7 @@ static int ICACHE_FLASH_ATTR handle_script (lua_State *L, char **argv, int n) {
 #define notail(x)	{if ((x)[2] != '\0') return -1;}
 
 
-static int ICACHE_FLASH_ATTR collectargs (char **argv, int *pi, int *pv, int *pe) {
+static int collectargs (char **argv, int *pi, int *pv, int *pe) {
   int i;
   for (i = 1; argv[i] != NULL; i++) {
     if (argv[i][0] != '-')  /* not an option? */
@@ -326,7 +326,7 @@ static int ICACHE_FLASH_ATTR collectargs (char **argv, int *pi, int *pv, int *pe
 }
 
 
-static int ICACHE_FLASH_ATTR runargs (lua_State *L, char **argv, int n) {
+static int runargs (lua_State *L, char **argv, int n) {
   int i;
   for (i = 1; i < n; i++) {
     if (argv[i] == NULL) continue;
@@ -364,7 +364,7 @@ static int ICACHE_FLASH_ATTR runargs (lua_State *L, char **argv, int n) {
 }
 
 
-static int ICACHE_FLASH_ATTR handle_luainit (lua_State *L) {
+static int handle_luainit (lua_State *L) {
   const char *init = c_getenv(LUA_INIT);
   if (init == NULL) return 0;  /* status OK */
   else if (init[0] == '@')
@@ -385,7 +385,7 @@ struct Smain {
 };
 
 
-static int ICACHE_FLASH_ATTR pmain (lua_State *L) {
+static int pmain (lua_State *L) {
   struct Smain *s = (struct Smain *)lua_touserdata(L, 1);
   char **argv = s->argv;
   int script;
@@ -433,9 +433,9 @@ void readline(lua_Load *load);
 char line_buffer[LUA_MAXINPUT];
 
 #ifdef LUA_RPC
-int ICACHE_FLASH_ATTR main (int argc, char **argv) {
+int main (int argc, char **argv) {
 #else
-int ICACHE_FLASH_ATTR lua_main (int argc, char **argv) {
+int lua_main (int argc, char **argv) {
 #endif
   int status;
   struct Smain s;
@@ -469,7 +469,7 @@ int ICACHE_FLASH_ATTR lua_main (int argc, char **argv) {
   return (status || s.status) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-void ICACHE_FLASH_ATTR donejob(lua_Load *load){
+void donejob(lua_Load *load){
   lua_close(load->L);
 }
 
@@ -478,7 +478,7 @@ int log_fd = -1;
 int noparse = 0;
 #endif
 
-void ICACHE_FLASH_ATTR dojob(lua_Load *load){
+void dojob(lua_Load *load){
   size_t l, rs;
   int status;
   char *b = load->line;
@@ -545,7 +545,7 @@ extern void key_long_press(void *arg);
 extern void key_short_press(void *arg);
 static bool key_short_pressed = false;
 static bool key_long_pressed = false;
-void ICACHE_FLASH_ATTR update_key_led(){
+void update_key_led(){
   uint8_t temp = 1, level = 1;
   led_count++;
   if(led_count>led_low_count+led_high_count){
@@ -588,7 +588,7 @@ extern bool uart0_echo;
 extern bool run_input;
 extern uint16_t need_len;
 extern int16_t end_char;
-void ICACHE_FLASH_ATTR readline(lua_Load *load){
+void readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
   update_key_led();
   char ch;
@@ -645,6 +645,7 @@ void ICACHE_FLASH_ATTR readline(lua_Load *load){
           os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
           os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
         }
+        continue;
       }
 
       /* other control character or not an acsii character */

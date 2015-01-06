@@ -7,7 +7,7 @@
 #include "spiffs.h"
 #endif
 
-int ICACHE_FLASH_ATTR fs_mode2flag(const char *mode){
+int fs_mode2flag(const char *mode){
   if(c_strlen(mode)==1){
   	if(c_strcmp(mode,"w")==0)
   	  return FS_WRONLY|FS_CREAT|FS_TRUNC;

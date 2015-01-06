@@ -117,6 +117,7 @@ _ROM(MODULES_BMP, luaopen_bmp, bmp_map)
         ROM_MODULES_TMR     \
         ROM_MODULES_NODE    \
         ROM_MODULES_FILE    \
+        ROM_MODULES_BMP     \
         ROM_MODULES_NET     \
         ROM_MODULES_ADC     \
         ROM_MODULES_UART    \

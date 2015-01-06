@@ -1,5 +1,5 @@
 .AppleDouble/
 pre_build/
-bin/eagle*
+bin/eagle.*
 .idea/
 CMakeLists.txt

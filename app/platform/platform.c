@@ -11,7 +11,7 @@
 
 static void pwms_init();
 
-int ICACHE_FLASH_ATTR platform_init()
+int platform_init()
 {
   // Setup PWMs
   pwms_init();
@@ -23,7 +23,7 @@ int ICACHE_FLASH_ATTR platform_init()
 
 // ****************************************************************************
 // KEY_LED functions
-uint8_t ICACHE_FLASH_ATTR platform_key_led( uint8_t level){
+uint8_t platform_key_led( uint8_t level){
   uint8_t temp;
   gpio16_output_set(1);   // set to high first, for reading key low level
   gpio16_input_conf();
@@ -38,7 +38,7 @@ uint8_t ICACHE_FLASH_ATTR platform_key_led( uint8_t level){
 #ifdef GPIO_INTERRUPT_ENABLE
 extern void lua_gpio_unref(unsigned pin);
 #endif
-int ICACHE_FLASH_ATTR platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
+int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 {
   // NODE_DBG("Function platform_gpio_mode() is called. pin_mux:%d, func:%d\n",pin_mux[pin],pin_func[pin]);
   if (pin >= NUM_GPIO)
@@ -108,7 +108,7 @@ int ICACHE_FLASH_ATTR platform_gpio_mode( unsigned pin, unsigned mode, unsigned 
   return 1;
 }
 
-int ICACHE_FLASH_ATTR platform_gpio_write( unsigned pin, unsigned level )
+int platform_gpio_write( unsigned pin, unsigned level )
 {
   // NODE_DBG("Function platform_gpio_write() is called. pin:%d, level:%d\n",GPIO_ID_PIN(pin_num[pin]),level);
   if (pin >= NUM_GPIO)
@@ -122,7 +122,7 @@ int ICACHE_FLASH_ATTR platform_gpio_write( unsigned pin, unsigned level )
   GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
 }
 
-int ICACHE_FLASH_ATTR platform_gpio_read( unsigned pin )
+int platform_gpio_read( unsigned pin )
 {
   // NODE_DBG("Function platform_gpio_read() is called. pin:%d\n",GPIO_ID_PIN(pin_num[pin]));
   if (pin >= NUM_GPIO)
@@ -138,7 +138,7 @@ int ICACHE_FLASH_ATTR platform_gpio_read( unsigned pin )
 }
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static void ICACHE_FLASH_ATTR platform_gpio_intr_dispatcher( platform_gpio_intr_handler_fn_t cb){
+static void platform_gpio_intr_dispatcher( platform_gpio_intr_handler_fn_t cb){
   uint8 i, level;
   uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   for (i = 0; i < GPIO_PIN_NUM; i++) {
@@ -156,12 +156,12 @@ static void ICACHE_FLASH_ATTR platform_gpio_intr_dispatcher( platform_gpio_intr_
   }
 }
 
-void ICACHE_FLASH_ATTR platform_gpio_init( platform_gpio_intr_handler_fn_t cb )
+void platform_gpio_init( platform_gpio_intr_handler_fn_t cb )
 {
   ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, cb);
 }
 
-int ICACHE_FLASH_ATTR platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
+int platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
 {
   if (pin >= NUM_GPIO)
     return -1;
@@ -181,7 +181,7 @@ int ICACHE_FLASH_ATTR platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type 
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
-uint32_t ICACHE_FLASH_ATTR platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits )
+uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits )
 {
   switch( baud )
   {
@@ -262,7 +262,7 @@ void platform_uart_send( unsigned id, u8 data )
 
 static uint16_t pwms_duty[NUM_PWM] = {0};
 
-static void ICACHE_FLASH_ATTR pwms_init()
+static void pwms_init()
 {
   int i;
   for(i=0;i<NUM_PWM;i++){
@@ -276,7 +276,7 @@ static void ICACHE_FLASH_ATTR pwms_init()
 // NOTE: Can't find a function to query for the period set for the timer,
 // therefore using the struct.
 // This may require adjustment if driver libraries are updated.
-uint32_t ICACHE_FLASH_ATTR platform_pwm_get_clock( unsigned pin )
+uint32_t platform_pwm_get_clock( unsigned pin )
 {
   // NODE_DBG("Function platform_pwm_get_clock() is called.\n");
   if( pin >= NUM_PWM)
@@ -288,7 +288,7 @@ uint32_t ICACHE_FLASH_ATTR platform_pwm_get_clock( unsigned pin )
 }
 
 // Set the PWM clock
-uint32_t ICACHE_FLASH_ATTR platform_pwm_set_clock( unsigned pin, uint32_t clock )
+uint32_t platform_pwm_set_clock( unsigned pin, uint32_t clock )
 {
   // NODE_DBG("Function platform_pwm_set_clock() is called.\n");
   if( pin >= NUM_PWM)
@@ -301,7 +301,7 @@ uint32_t ICACHE_FLASH_ATTR platform_pwm_set_clock( unsigned pin, uint32_t clock 
   return (uint32_t)pwm_get_freq( pin );
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_pwm_get_duty( unsigned pin )
+uint32_t platform_pwm_get_duty( unsigned pin )
 {
   // NODE_DBG("Function platform_pwm_get_duty() is called.\n");
   if( pin < NUM_PWM){
@@ -314,7 +314,7 @@ uint32_t ICACHE_FLASH_ATTR platform_pwm_get_duty( unsigned pin )
 }
 
 // Set the PWM duty
-uint32_t ICACHE_FLASH_ATTR platform_pwm_set_duty( unsigned pin, uint32_t duty )
+uint32_t platform_pwm_set_duty( unsigned pin, uint32_t duty )
 {
   // NODE_DBG("Function platform_pwm_set_duty() is called.\n");
   if ( pin < NUM_PWM)
@@ -330,7 +330,7 @@ uint32_t ICACHE_FLASH_ATTR platform_pwm_set_duty( unsigned pin, uint32_t duty )
   return pwms_duty[pin];
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_pwm_setup( unsigned pin, uint32_t frequency, unsigned duty )
+uint32_t platform_pwm_setup( unsigned pin, uint32_t frequency, unsigned duty )
 {
   uint32_t clock;
   if ( pin < NUM_PWM)
@@ -350,7 +350,7 @@ uint32_t ICACHE_FLASH_ATTR platform_pwm_setup( unsigned pin, uint32_t frequency,
   return clock;
 }
 
-void ICACHE_FLASH_ATTR platform_pwm_close( unsigned pin )
+void platform_pwm_close( unsigned pin )
 {
   // NODE_DBG("Function platform_pwm_stop() is called.\n");
   if ( pin < NUM_PWM)
@@ -360,7 +360,7 @@ void ICACHE_FLASH_ATTR platform_pwm_close( unsigned pin )
   }
 }
 
-void ICACHE_FLASH_ATTR platform_pwm_start( unsigned pin )
+void platform_pwm_start( unsigned pin )
 {
   // NODE_DBG("Function platform_pwm_start() is called.\n");
   if ( pin < NUM_PWM)
@@ -372,7 +372,7 @@ void ICACHE_FLASH_ATTR platform_pwm_start( unsigned pin )
   }
 }
 
-void ICACHE_FLASH_ATTR platform_pwm_stop( unsigned pin )
+void platform_pwm_stop( unsigned pin )
 {
   // NODE_DBG("Function platform_pwm_stop() is called.\n");
   if ( pin < NUM_PWM)
@@ -387,7 +387,7 @@ void ICACHE_FLASH_ATTR platform_pwm_stop( unsigned pin )
 // *****************************************************************************
 // I2C platform interface
 
-uint32_t ICACHE_FLASH_ATTR platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed ){
+uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed ){
   if (sda >= NUM_GPIO || scl >= NUM_GPIO)
     return 0;
 
@@ -402,15 +402,15 @@ uint32_t ICACHE_FLASH_ATTR platform_i2c_setup( unsigned id, uint8_t sda, uint8_t
   return PLATFORM_I2C_SPEED_SLOW;
 }
 
-void ICACHE_FLASH_ATTR platform_i2c_send_start( unsigned id ){
+void platform_i2c_send_start( unsigned id ){
   i2c_master_start();
 }
 
-void ICACHE_FLASH_ATTR platform_i2c_send_stop( unsigned id ){
+void platform_i2c_send_stop( unsigned id ){
   i2c_master_stop();
 }
 
-int ICACHE_FLASH_ATTR platform_i2c_send_address( unsigned id, uint16_t address, int direction ){
+int platform_i2c_send_address( unsigned id, uint16_t address, int direction ){
   // Convert enum codes to R/w bit value.
   // If TX == 0 and RX == 1, this test will be removed by the compiler
   if ( ! ( PLATFORM_I2C_DIRECTION_TRANSMITTER == 0 &&
@@ -423,13 +423,13 @@ int ICACHE_FLASH_ATTR platform_i2c_send_address( unsigned id, uint16_t address, 
   return ! i2c_master_getAck();
 }
 
-int ICACHE_FLASH_ATTR platform_i2c_send_byte( unsigned id, uint8_t data ){
+int platform_i2c_send_byte( unsigned id, uint8_t data ){
   i2c_master_writeByte(data);
   // Low-level returns nack (0=acked); we return ack (1=acked).
   return ! i2c_master_getAck();
 }
 
-int ICACHE_FLASH_ATTR platform_i2c_recv_byte( unsigned id, int ack ){
+int platform_i2c_recv_byte( unsigned id, int ack ){
   uint8_t r = i2c_master_readByte();
   i2c_master_setAck( !ack );
   return r;
@@ -438,7 +438,7 @@ int ICACHE_FLASH_ATTR platform_i2c_recv_byte( unsigned id, int ack ){
 // ****************************************************************************
 // Flash access functions
 
-uint32_t ICACHE_FLASH_ATTR platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size )
+uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size )
 {
   toaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
@@ -462,7 +462,7 @@ uint32_t ICACHE_FLASH_ATTR platform_s_flash_write( const void *from, uint32_t to
   }
 }
 
-uint32_t ICACHE_FLASH_ATTR platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
+uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 {
   fromaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
@@ -476,7 +476,7 @@ uint32_t ICACHE_FLASH_ATTR platform_s_flash_read( void *to, uint32_t fromaddr, u
   }
 }
 
-int ICACHE_FLASH_ATTR platform_flash_erase_sector( uint32_t sector_id )
+int platform_flash_erase_sector( uint32_t sector_id )
 {
   WRITE_PERI_REG(0x60000914, 0x73);
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;

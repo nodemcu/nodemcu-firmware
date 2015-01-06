@@ -5,14 +5,13 @@ if [ $? == 0 ];then
 
 cd .output/eagle/debug/image
 
-#xt-objdump -x -s eagle.app.v6.out > ../../../../../bin/eagle.app.v6.dump
-#xt-objdump -S eagle.app.v6.out > ../../../../../bin/eagle.app.v6.S
-esptool -eo eagle.app.v6.out -bo eagle.app.v6.flash.bin -bs .text -bs .data -bs .rodata -bc -ec
+#esptool -eo eagle.app.v6.out -bo eagle.app.v6.flash.bin -bs .text -bs .data -bs .rodata -bc -ec
+xtensa-lx106-elf-objdump -x -s eagle.app.v6.out > ../../../../../bin/eagle.app.v6.dump
+xtensa-lx106-elf-objdump -S eagle.app.v6.out > ../../../../../bin/eagle.app.v6.S
 
-#xt-objcopy --only-section .text -O binary eagle.app.v6.out eagle.app.v6.text.bin
-#xt-objcopy --only-section .data -O binary eagle.app.v6.out eagle.app.v6.data.bin
-#xt-objcopy --only-section .rodata -O binary eagle.app.v6.out eagle.app.v6.rodata.bin
-#xt-objcopy --only-section .irom0.text -O binary eagle.app.v6.out eagle.app.v6.irom0text.bin
+xtensa-lx106-elf-objcopy --only-section .text -O binary eagle.app.v6.out eagle.app.v6.text.bin
+xtensa-lx106-elf-objcopy --only-section .data -O binary eagle.app.v6.out eagle.app.v6.data.bin
+xtensa-lx106-elf-objcopy --only-section .rodata -O binary eagle.app.v6.out eagle.app.v6.rodata.bin
 xtensa-lx106-elf-objcopy --only-section .irom0.text -O binary eagle.app.v6.out eagle.app.v6.irom0text.bin
 
 
