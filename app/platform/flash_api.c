@@ -225,3 +225,14 @@ bool flash_self_destruct(void)
     SPIEraseChip();
     return true;
 }
+
+uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index)
+{
+    if( (((uint32_t)aligned_array)%4) != 0 ){
+        NODE_DBG("aligned_array is not 4-byte aligned.\n");
+        return 0;
+    }
+    uint32_t v = ((uint32_t *)aligned_array)[ index/4 ];
+    uint8_t *p = (uint8_t *) (&v);
+    return p[ (index%4) ];
+}

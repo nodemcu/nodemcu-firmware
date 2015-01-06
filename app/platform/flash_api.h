@@ -67,5 +67,6 @@ bool flash_init_data_written(void);
 bool flash_init_data_default(void);
 bool flash_init_data_blank(void);
 bool flash_self_destruct(void);
+uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index);
 
 #endif // __FLASH_API_H__
