@@ -11,6 +11,8 @@
 #include "romfs.h"
 #include "c_string.h"
 #include "driver/uart.h"
+#include "spi_flash.h"
+#include "flash_api.h"
 
 // Lua: restart()
 static int ICACHE_FLASH_ATTR node_restart( lua_State* L )
@@ -30,11 +32,50 @@ static int ICACHE_FLASH_ATTR node_deepsleep( lua_State* L )
   return 0;  
 }
 
+// Lua: info()
+static int ICACHE_FLASH_ATTR node_info( lua_State* L )
+{
+  lua_pushinteger(L, NODE_VERSION_MAJOR);
+  lua_pushinteger(L, NODE_VERSION_MINOR);
+  lua_pushinteger(L, NODE_VERSION_REVISION);
+  lua_pushinteger(L, system_get_chip_id());   // chip id
+  lua_pushinteger(L, spi_flash_get_id());     // flash id
+  lua_pushinteger(L, flash_get_size_byte() / 1024);  // flash size in KB
+  lua_pushinteger(L, flash_get_mode());
+  lua_pushinteger(L, flash_get_speed());
+  return 8;  
+}
+
 // Lua: chipid()
 static int ICACHE_FLASH_ATTR node_chipid( lua_State* L )
 {
   uint32_t id = system_get_chip_id();
   lua_pushinteger(L, id);
+  return 1;  
+}
+
+// Lua: flashid()
+static int ICACHE_FLASH_ATTR node_flashid( lua_State* L )
+{
+  uint32_t id = spi_flash_get_id();
+  lua_pushinteger( L, id );
+  return 1;  
+}
+
+// Lua: flashsize()
+static int ICACHE_FLASH_ATTR node_flashsize( lua_State* L )
+{
+  //uint32_t sz = 0;
+  //if(lua_type(L, 1) == LUA_TNUMBER)
+  //{
+  //  sz = luaL_checkinteger(L, 1);
+  //  if(sz > 0)
+  //  {
+  //    flash_set_size_byte(sz);
+  //  }
+  //}
+  uint32_t sz = flash_get_size_byte();
+  lua_pushinteger( L, sz );
   return 1;  
 }
 
@@ -237,7 +278,10 @@ const LUA_REG_TYPE node_map[] =
 {
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
   { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
+  { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
   { LSTRKEY( "chipid" ), LFUNCVAL( node_chipid ) },
+  { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
+  { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
   { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
   { LSTRKEY( "key" ), LFUNCVAL( node_key ) },
   { LSTRKEY( "led" ), LFUNCVAL( node_led ) },

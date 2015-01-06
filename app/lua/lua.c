@@ -645,6 +645,7 @@ void ICACHE_FLASH_ATTR readline(lua_Load *load){
           os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
           os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
         }
+        continue;
       }
 
       /* other control character or not an acsii character */

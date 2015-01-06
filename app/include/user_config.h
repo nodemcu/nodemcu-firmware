@@ -1,8 +1,14 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
+#define NODE_VERSION_MAJOR		0U
+#define NODE_VERSION_MINOR		9U
+#define NODE_VERSION_REVISION	4U
+#define NODE_VERSION_INTERNAL   0U
+
 #define NODE_VERSION	"NodeMcu 0.9.4"
-#define BUILD_DATE	"build 20141230"
+#define BUILD_DATE	    "build 20150101"
+
 // #define FLASH_512K
 // #define FLASH_1M
 // #define FLASH_2M
@@ -28,6 +34,9 @@
 #else
 #define NODE_ERR
 #endif	/* NODE_ERROR */
+
+#define NODE_STORE_TYPEDEF_ATTR __attribute__((aligned(4),packed))
+#define NODE_STORE_ATTR __attribute__((aligned(4)))
 
 #define CLIENT_SSL_ENABLE
 #define GPIO_INTERRUPT_ENABLE
