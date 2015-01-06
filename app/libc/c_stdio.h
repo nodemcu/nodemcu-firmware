@@ -49,12 +49,13 @@ extern int c_stderr;
 
 extern void output_redirect(const char *str);
 #define c_puts output_redirect
-extern unsigned char __print_buf[BUFSIZ];
+
 // #define c_printf os_printf
 // int	c_printf(const char *c, ...);
 #define c_sprintf os_sprintf
 // #define c_vsprintf ets_vsprintf
 #define c_printf(...) do {					\
+	unsigned char __print_buf[BUFSIZ];		\
 	c_sprintf(__print_buf, __VA_ARGS__);	\
 	c_puts(__print_buf);					\
 } while(0)

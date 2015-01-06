@@ -13,7 +13,7 @@ bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group QQ群: 309957875<br />
 
 # Change log
-2015-01-05<br />
+2015-01-06<br />
 update sdk to 0.9.5.<br />
 pre_build bin now compiled by gcc toolchain.<br />
 memory/heap usage optimized.<br />
