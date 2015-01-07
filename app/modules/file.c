@@ -11,7 +11,7 @@
 #include "flash_fs.h"
 #include "c_string.h"
 
-static int file_fd = FS_OPEN_OK - 1;
+static volatile int file_fd = FS_OPEN_OK - 1;
 
 // Lua: open(filename, mode)
 static int file_open( lua_State* L )
@@ -48,6 +48,22 @@ static int file_close( lua_State* L )
   return 0;  
 }
 
+// Lua: format()
+static int file_format( lua_State* L )
+{
+  size_t len;
+  file_close(L);
+  if( !fs_format() )
+  {
+    NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
+    NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+  }
+  else{
+    NODE_ERR( "format done.\n" );
+  }
+  return 0; 
+}
+
 #if defined(BUILD_WOFS)
 // Lua: list()
 static int file_list( lua_State* L )
@@ -61,22 +77,6 @@ static int file_list( lua_State* L )
     lua_setfield( L, -2, fsname );
   }
   return 1;
-}
-
-// Lua: format()
-static int file_format( lua_State* L )
-{
-  size_t len;
-  file_close(L);
-  if( !fs_format() )
-  {
-    NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
-    NODE_ERR( "It is advised to re-flash the nodeMcu image.\n" );
-  }
-  else{
-    NODE_ERR( "format done.\n" );
-  }
-  return 0; 
 }
 
 #elif defined(BUILD_SPIFFS)
@@ -275,8 +275,8 @@ const LUA_REG_TYPE file_map[] =
   { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
   { LSTRKEY( "read" ), LFUNCVAL( file_read ) },
   { LSTRKEY( "readline" ), LFUNCVAL( file_readline ) },
-#if defined(BUILD_WOFS)
   { LSTRKEY( "format" ), LFUNCVAL( file_format ) },
+#if defined(BUILD_WOFS)
 #elif defined(BUILD_SPIFFS)
   { LSTRKEY( "remove" ), LFUNCVAL( file_remove ) },
   { LSTRKEY( "seek" ), LFUNCVAL( file_seek ) },

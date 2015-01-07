@@ -81,6 +81,7 @@ int myspiffs_format( void )
   while( sect_first <= sect_last )
     if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
       return 0;
+  spiffs_mount();
   return 1;
 }
 
@@ -107,10 +108,20 @@ size_t myspiffs_write( int fd, const void* ptr, size_t len ){
     return len;
   }
 #endif
-  return SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, len);
+  int res = SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, len);
+  if (res < 0) {
+    NODE_DBG("write errno %i\n", SPIFFS_errno(&fs));
+    return 0;
+  }
+  return res;
 }
 size_t myspiffs_read( int fd, void* ptr, size_t len){
-  return SPIFFS_read(&fs, (spiffs_file)fd, ptr, len);
+  int res = SPIFFS_read(&fs, (spiffs_file)fd, ptr, len);
+  if (res < 0) {
+    NODE_DBG("read errno %i\n", SPIFFS_errno(&fs));
+    return 0;
+  }
+  return res;
 }
 int myspiffs_lseek( int fd, int off, int whence ){
   return SPIFFS_lseek(&fs, (spiffs_file)fd, off, whence);
@@ -123,8 +134,13 @@ int myspiffs_tell( int fd ){
 }
 int myspiffs_getc( int fd ){
   char c = EOF;
+  int res;
   if(!myspiffs_eof(fd)){
-    SPIFFS_read(&fs, (spiffs_file)fd, &c, 1);
+    res = SPIFFS_read(&fs, (spiffs_file)fd, &c, 1);
+    if (res != 1) {
+      NODE_DBG("getc errno %i\n", SPIFFS_errno(&fs));
+      return (int)EOF;
+    }
   }
   return (int)c;
 }

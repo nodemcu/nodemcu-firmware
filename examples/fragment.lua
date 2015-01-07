@@ -310,3 +310,5 @@ uart.on("data", 5 ,function(input) if input=="quit\r" then uart.on("data") else 
 uart.on("data", 0 ,function(input) if input=="q" then uart.on("data") else print(input) end end, 0)
 
 uart.on("data","\r",function(input) if input=="quit" then uart.on("data") else print(input) end end, 1)
+
+for k, v in pairs(file.list()) do print('file:'..k..' len:'..v) end
