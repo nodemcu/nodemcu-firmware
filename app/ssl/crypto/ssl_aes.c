@@ -81,7 +81,7 @@
 /*
  * AES S-box
  */
-static const uint8_t aes_sbox[256] =
+static const uint8_t aes_sbox[256] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =
 {
 	0x63,0x7C,0x77,0x7B,0xF2,0x6B,0x6F,0xC5,
 	0x30,0x01,0x67,0x2B,0xFE,0xD7,0xAB,0x76,
@@ -120,7 +120,7 @@ static const uint8_t aes_sbox[256] =
 /*
  * AES is-box
  */
-static const uint8_t aes_isbox[256] = 
+static const uint8_t aes_isbox[256] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR = 
 {
     0x52,0x09,0x6a,0xd5,0x30,0x36,0xa5,0x38,
     0xbf,0x40,0xa3,0x9e,0x81,0xf3,0xd7,0xfb,
@@ -226,20 +226,28 @@ void ICACHE_FLASH_ATTR AES_set_key(AES_CTX *ctx, const uint8_t *key,
 
         if ((i % words) == 0)
         {
-            tmp2 =(uint32_t)aes_sbox[(tmp    )&0xff]<< 8;
-            tmp2|=(uint32_t)aes_sbox[(tmp>> 8)&0xff]<<16;
-            tmp2|=(uint32_t)aes_sbox[(tmp>>16)&0xff]<<24;
-            tmp2|=(uint32_t)aes_sbox[(tmp>>24)     ];
+            // tmp2 =(uint32_t)aes_sbox[(tmp    )&0xff]<< 8;
+            // tmp2|=(uint32_t)aes_sbox[(tmp>> 8)&0xff]<<16;
+            // tmp2|=(uint32_t)aes_sbox[(tmp>>16)&0xff]<<24;
+            // tmp2|=(uint32_t)aes_sbox[(tmp>>24)     ];
+            tmp2 =((uint32_t)byte_of_aligned_array(aes_sbox,(tmp    )&0xff))<< 8;
+            tmp2|=((uint32_t)byte_of_aligned_array(aes_sbox,(tmp>> 8)&0xff))<<16;
+            tmp2|=((uint32_t)byte_of_aligned_array(aes_sbox,(tmp>>16)&0xff))<<24;
+            tmp2|=((uint32_t)byte_of_aligned_array(aes_sbox,(tmp>>24)     ));
             tmp=tmp2^(((unsigned int)*ip)<<24);
             ip++;
         }
 
         if ((words == 8) && ((i % words) == 4))
         {
-            tmp2 =(uint32_t)aes_sbox[(tmp    )&0xff]    ;
-            tmp2|=(uint32_t)aes_sbox[(tmp>> 8)&0xff]<< 8;
-            tmp2|=(uint32_t)aes_sbox[(tmp>>16)&0xff]<<16;
-            tmp2|=(uint32_t)aes_sbox[(tmp>>24)     ]<<24;
+            // tmp2 =(uint32_t)aes_sbox[(tmp    )&0xff]    ;
+            // tmp2|=(uint32_t)aes_sbox[(tmp>> 8)&0xff]<< 8;
+            // tmp2|=(uint32_t)aes_sbox[(tmp>>16)&0xff]<<16;
+            // tmp2|=(uint32_t)aes_sbox[(tmp>>24)     ]<<24;
+            tmp2 =((uint32_t)byte_of_aligned_array(aes_sbox,(tmp    )&0xff))    ;
+            tmp2|=((uint32_t)byte_of_aligned_array(aes_sbox,(tmp>> 8)&0xff))<< 8;
+            tmp2|=((uint32_t)byte_of_aligned_array(aes_sbox,(tmp>>16)&0xff))<<16;
+            tmp2|=((uint32_t)byte_of_aligned_array(aes_sbox,(tmp>>24)     ))<<24;
             tmp=tmp2;
         }
 
@@ -375,10 +383,15 @@ static void ICACHE_FLASH_ATTR AES_encrypt(const AES_CTX *ctx, uint32_t *data)
         /* Perform ByteSub and ShiftRow operations together */
         for (row = 0; row < 4; row++)
         {
-            a0 = (uint32_t)aes_sbox[(data[row%4]>>24)&0xFF];
-            a1 = (uint32_t)aes_sbox[(data[(row+1)%4]>>16)&0xFF];
-            a2 = (uint32_t)aes_sbox[(data[(row+2)%4]>>8)&0xFF]; 
-            a3 = (uint32_t)aes_sbox[(data[(row+3)%4])&0xFF];
+            // a0 = (uint32_t)aes_sbox[(data[row%4]>>24)&0xFF];
+            // a1 = (uint32_t)aes_sbox[(data[(row+1)%4]>>16)&0xFF];
+            // a2 = (uint32_t)aes_sbox[(data[(row+2)%4]>>8)&0xFF]; 
+            // a3 = (uint32_t)aes_sbox[(data[(row+3)%4])&0xFF];
+
+            a0 = (uint32_t)(byte_of_aligned_array(aes_sbox,(data[row%4]>>24)&0xFF));
+            a1 = (uint32_t)(byte_of_aligned_array(aes_sbox,(data[(row+1)%4]>>16)&0xFF));
+            a2 = (uint32_t)(byte_of_aligned_array(aes_sbox,(data[(row+2)%4]>>8)&0xFF)); 
+            a3 = (uint32_t)(byte_of_aligned_array(aes_sbox,(data[(row+3)%4])&0xFF));
 
             /* Perform MixColumn iff not last round */
             if (curr_rnd < (rounds - 1))
@@ -423,10 +436,15 @@ static void ICACHE_FLASH_ATTR AES_decrypt(const AES_CTX *ctx, uint32_t *data)
         /* Perform ByteSub and ShiftRow operations together */
         for (row = 4; row > 0; row--)
         {
-            a0 = aes_isbox[(data[(row+3)%4]>>24)&0xFF];
-            a1 = aes_isbox[(data[(row+2)%4]>>16)&0xFF];
-            a2 = aes_isbox[(data[(row+1)%4]>>8)&0xFF];
-            a3 = aes_isbox[(data[row%4])&0xFF];
+            // a0 = aes_isbox[(data[(row+3)%4]>>24)&0xFF];
+            // a1 = aes_isbox[(data[(row+2)%4]>>16)&0xFF];
+            // a2 = aes_isbox[(data[(row+1)%4]>>8)&0xFF];
+            // a3 = aes_isbox[(data[row%4])&0xFF];
+
+            a0 = byte_of_aligned_array(aes_isbox,(data[(row+3)%4]>>24)&0xFF);
+            a1 = byte_of_aligned_array(aes_isbox,(data[(row+2)%4]>>16)&0xFF);
+            a2 = byte_of_aligned_array(aes_isbox,(data[(row+1)%4]>>8)&0xFF);
+            a3 = byte_of_aligned_array(aes_isbox,(data[row%4])&0xFF);
 
             /* Perform MixColumn iff not last round */
             if (curr_rnd<(rounds-1))

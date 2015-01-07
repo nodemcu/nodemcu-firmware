@@ -71,10 +71,10 @@ bool flash_set_size(uint8_t size)
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
     uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
-    SPIRead(0, data, sizeof(data));
+    spi_flash_read(0, (uint32 *)data, sizeof(data));
     SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
     p_spi_flash_info->size = size;
-    SPIEraseSector(0);
+    spi_flash_erase_sector(0);
     spi_flash_write(0, (uint32 *)data, sizeof(data));
     //p_spi_flash_info = flash_get_info();
     //p_spi_flash_info->size = size;
@@ -175,13 +175,13 @@ uint32_t flash_get_speed(void)
 bool flash_init_data_written(void)
 {
     // FLASH SEC - 4
-    // Dangerous, here are dinosaur infested!!!!!
-    // Reboot required!!!
-    // It will init system data to default!
     uint32_t data[2] ICACHE_STORE_ATTR;
-    SPIRead((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, data, sizeof(data));
-    if(data[0] == 0xFFFFFFFF && data[1] == 0xFFFFFFFF) {
-        return false;
+    if (SPI_FLASH_RESULT_OK == spi_flash_read((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
+    {
+        if (data[0] == 0xFFFFFFFF && data[1] == 0xFFFFFFFF)
+        {
+            return false;
+        }
     }
     return true;
 }
@@ -192,10 +192,15 @@ bool flash_init_data_default(void)
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // It will init system data to default!
-
-    SPIEraseSector((flash_get_sec_num() - 4));
-    spi_flash_write((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128);
-    return true;
+    bool result = false;
+    if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_get_sec_num() - 4)))
+    {
+        if (SPI_FLASH_RESULT_OK == spi_flash_write((flash_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128))
+        {
+            result = true;
+        }
+    }
+    return result;
 }
 
 bool flash_init_data_blank(void)
@@ -204,14 +209,30 @@ bool flash_init_data_blank(void)
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // It will init system config to blank!
-    SPIEraseSector((flash_get_sec_num() - 2));
-    SPIEraseSector((flash_get_sec_num() - 1));
-    return true;
+    bool result = false;
+    if ((SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_get_sec_num() - 2))) &&
+            (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_get_sec_num() - 1))))
+    {
+        result = true;
+    }
+
+    return result ;
 }
 
 bool flash_self_destruct(void)
 {
-    // Erase your flash. Good bye!
+    // Dangerous, Erase your flash. Good bye!
     SPIEraseChip();
     return true;
+}
+
+uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index)
+{
+    if( (((uint32_t)aligned_array)%4) != 0 ){
+        NODE_DBG("aligned_array is not 4-byte aligned.\n");
+        return 0;
+    }
+    uint32_t v = ((uint32_t *)aligned_array)[ index/4 ];
+    uint8_t *p = (uint8_t *) (&v);
+    return p[ (index%4) ];
 }

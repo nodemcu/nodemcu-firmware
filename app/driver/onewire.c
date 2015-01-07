@@ -469,7 +469,8 @@ uint8_t onewire_crc8(const uint8_t *addr, uint8_t len)
 	
 	while (len--) {
 		uint8_t inbyte = *addr++;
-		for (uint8_t i = 8; i; i--) {
+    uint8_t i;
+		for (i = 8; i; i--) {
 			uint8_t mix = (crc ^ inbyte) & 0x01;
 			crc >>= 1;
 			if (mix) crc ^= 0x8C;
