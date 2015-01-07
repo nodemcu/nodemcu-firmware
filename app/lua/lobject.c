@@ -22,7 +22,7 @@
 #include "lstring.h"
 #include "lvm.h"
 
-
+#include "flash_api.h"
 
 const TValue luaO_nilobject_ = {LUA_TVALUE_NIL};
 
@@ -52,7 +52,7 @@ int luaO_fb2int (int x) {
 
 
 int luaO_log2 (unsigned int x) {
-  static const lu_byte log_2[256] = {
+  static const lu_byte log_2[256] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR = {
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -64,7 +64,8 @@ int luaO_log2 (unsigned int x) {
   };
   int l = -1;
   while (x >= 256) { l += 8; x >>= 8; }
-  return l + log_2[x];
+  // return l + log_2[x];
+  return l + byte_of_aligned_array(log_2,x);
 
 }
 

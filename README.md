@@ -12,7 +12,26 @@ home: [nodemcu.com](http://www.nodemcu.com)<br />
 bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group QQ群: 309957875<br />
 
+# Summary
+- Easy to access wireless router
+- Based on Lua 5.1.4 (without *io, math, debug, os* module.)
+- Event-Drive programming preferred.
+- Build-in file, timer, pwm, i2c, 1-wire, net, gpio, wifi, adc, uart and system api.
+- GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
+
+# To Do List (pull requests are very welcomed)
+- fix wifi smart connect
+- add spi module
+- add mqtt module
+- add coap module
+
 # Change log
+2015-01-07<br />
+retrive more ram back.<br />
+add api file.format() to rebuild file system.<br />
+rename "NodeMcu" to "NodeMCU" in firmware.<br />
+add some check for file system op.
+
 2015-01-06<br />
 update sdk to 0.9.5.<br />
 pre_build bin now compiled by gcc toolchain.<br />
@@ -20,22 +39,8 @@ memory/heap usage optimized.<br />
 add support for multiple platform and toolchain include eclipse. <br />
 combine firmware for 512K, 1M, 2M, 4M flash to one. flash size auto-detected.
 
-2014-12-30<br />
-modify uart.on api, when run_input set to 0, uart.on now can read raw data from uart.<br />
-serial input now accept non-ascii chars.<br />
-fix dev-kit gpio map.<br />
-add setip, setmac, sleeptype api to wifi module. <br />
-add tmr.time() api to get rtc time and calibration.
-
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
-# Summary
-- Easy to access wireless router
-- Based on Lua 5.1.4
-- Event-Drive programming preferred.
-- Build-in file, timer, pwm, i2c, 1-wire, net, gpio, wifi, adc, uart and system api.
-- GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
-- GPIO Map Table:
 
 ##GPIO NEW TABLE ( Build 20141219 and later)
 
@@ -141,6 +146,7 @@ eagle.app.v6.irom0text.bin: 0x10000<br />
 esp_init_data_default.bin: 0x7c000<br />
 blank.bin: 0x7e000<br />
 
+*Better run file.format() after flash*
 
 #Connect the hardware in serial
 baudrate:9600
