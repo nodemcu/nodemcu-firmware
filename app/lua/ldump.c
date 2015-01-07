@@ -29,7 +29,7 @@ typedef struct {
 #define DumpMem(b,n,size,D)	DumpBlock(b,(n)*(size),D)
 #define DumpVar(x,D)	 	DumpMem(&x,1,sizeof(x),D)
 
-static void ICACHE_FLASH_ATTR DumpBlock(const void* b, size_t size, DumpState* D)
+static void DumpBlock(const void* b, size_t size, DumpState* D)
 {
  if (D->status==0)
  {
@@ -40,19 +40,19 @@ static void ICACHE_FLASH_ATTR DumpBlock(const void* b, size_t size, DumpState* D
  }
 }
 
-static void ICACHE_FLASH_ATTR DumpChar(int y, DumpState* D)
+static void DumpChar(int y, DumpState* D)
 {
  char x=(char)y;
  DumpVar(x,D);
 }
 
-static void ICACHE_FLASH_ATTR Align4(DumpState *D)
+static void Align4(DumpState *D)
 {
  while(D->wrote&3)
   DumpChar(0,D);
 }
 
-static void ICACHE_FLASH_ATTR MaybeByteSwap(char *number, size_t numbersize, DumpState *D)
+static void MaybeByteSwap(char *number, size_t numbersize, DumpState *D)
 {
  int x=1;
  int platform_little_endian = *(char*)&x;
@@ -68,7 +68,7 @@ static void ICACHE_FLASH_ATTR MaybeByteSwap(char *number, size_t numbersize, Dum
  }
 }
 
-static void ICACHE_FLASH_ATTR DumpIntWithSize(int x, int sizeof_int, DumpState* D)
+static void DumpIntWithSize(int x, int sizeof_int, DumpState* D)
 {
  /* dump signed integer */
  switch(sizeof_int) {
@@ -93,12 +93,12 @@ static void ICACHE_FLASH_ATTR DumpIntWithSize(int x, int sizeof_int, DumpState* 
  }
 }
 
-static void ICACHE_FLASH_ATTR DumpInt(int x, DumpState* D)
+static void DumpInt(int x, DumpState* D)
 {
  DumpIntWithSize(x,D->target.sizeof_int,D);
 }
 
-static void ICACHE_FLASH_ATTR DumpSize(uint32_t x, DumpState* D)
+static void DumpSize(uint32_t x, DumpState* D)
 {
  /* dump unsigned integer */
  switch(D->target.sizeof_strsize_t) {
@@ -123,7 +123,7 @@ static void ICACHE_FLASH_ATTR DumpSize(uint32_t x, DumpState* D)
  }
 }
 
-static void ICACHE_FLASH_ATTR DumpNumber(lua_Number x, DumpState* D)
+static void DumpNumber(lua_Number x, DumpState* D)
 {
 #if defined( LUA_NUMBER_INTEGRAL ) && !defined( LUA_CROSS_COMPILER )
   DumpIntWithSize(x,D->target.sizeof_lua_Number,D);
@@ -164,7 +164,7 @@ static void ICACHE_FLASH_ATTR DumpNumber(lua_Number x, DumpState* D)
 #endif // #if defined( LUA_NUMBER_INTEGRAL ) && !defined( LUA_CROSS_COMPILER )
 }
 
-static void ICACHE_FLASH_ATTR DumpCode(const Proto *f, DumpState* D)
+static void DumpCode(const Proto *f, DumpState* D)
 {
  DumpInt(f->sizecode,D);
  char buf[10];
@@ -178,7 +178,7 @@ static void ICACHE_FLASH_ATTR DumpCode(const Proto *f, DumpState* D)
  }
 }
 
-static void ICACHE_FLASH_ATTR DumpString(const TString* s, DumpState* D)
+static void DumpString(const TString* s, DumpState* D)
 {
  if (s==NULL || getstr(s)==NULL)
  {
@@ -195,7 +195,7 @@ static void ICACHE_FLASH_ATTR DumpString(const TString* s, DumpState* D)
 
 static void DumpFunction(const Proto* f, const TString* p, DumpState* D);
 
-static void ICACHE_FLASH_ATTR DumpConstants(const Proto* f, DumpState* D)
+static void DumpConstants(const Proto* f, DumpState* D)
 {
  int i,n=f->sizek;
  DumpInt(n,D);
@@ -226,7 +226,7 @@ static void ICACHE_FLASH_ATTR DumpConstants(const Proto* f, DumpState* D)
  for (i=0; i<n; i++) DumpFunction(f->p[i],f->source,D);
 }
 
-static void ICACHE_FLASH_ATTR DumpDebug(const Proto* f, DumpState* D)
+static void DumpDebug(const Proto* f, DumpState* D)
 {
  int i,n;
  n= (D->strip) ? 0 : f->sizelineinfo;
@@ -251,7 +251,7 @@ static void ICACHE_FLASH_ATTR DumpDebug(const Proto* f, DumpState* D)
  for (i=0; i<n; i++) DumpString(f->upvalues[i],D);
 }
 
-static void ICACHE_FLASH_ATTR DumpFunction(const Proto* f, const TString* p, DumpState* D)
+static void DumpFunction(const Proto* f, const TString* p, DumpState* D)
 {
  DumpString((f->source==p || D->strip) ? NULL : f->source,D);
  DumpInt(f->linedefined,D);
@@ -265,7 +265,7 @@ static void ICACHE_FLASH_ATTR DumpFunction(const Proto* f, const TString* p, Dum
  DumpDebug(f,D);
 }
 
-static void ICACHE_FLASH_ATTR DumpHeader(DumpState* D)
+static void DumpHeader(DumpState* D)
 {
  char buf[LUAC_HEADERSIZE];
  char *h=buf;
@@ -288,7 +288,7 @@ static void ICACHE_FLASH_ATTR DumpHeader(DumpState* D)
 /*
 ** dump Lua function as precompiled chunk with specified target
 */
-int ICACHE_FLASH_ATTR luaU_dump_crosscompile (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip, DumpTargetInfo target)
+int luaU_dump_crosscompile (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip, DumpTargetInfo target)
 {
  DumpState D;
  D.L=L;
@@ -306,7 +306,7 @@ int ICACHE_FLASH_ATTR luaU_dump_crosscompile (lua_State* L, const Proto* f, lua_
 /*
  ** dump Lua function as precompiled chunk with local machine as target
  */
-int ICACHE_FLASH_ATTR luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip)
+int luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip)
 {
  DumpTargetInfo target;
  int test=1;

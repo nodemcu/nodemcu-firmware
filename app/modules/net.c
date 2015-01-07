@@ -55,8 +55,7 @@ typedef struct lnet_userdata
 #endif
 }lnet_userdata;
 
-static void ICACHE_FLASH_ATTR
-net_server_disconnected(void *arg)    // for tcp server only
+static void net_server_disconnected(void *arg)    // for tcp server only
 {
   NODE_DBG("net_server_disconnected is called.\n");
   struct espconn *pesp_conn = arg;
@@ -99,8 +98,7 @@ net_server_disconnected(void *arg)    // for tcp server only
   lua_gc(gL, LUA_GCRESTART, 0);
 }
 
-static void ICACHE_FLASH_ATTR
-net_socket_disconnected(void *arg)    // tcp only
+static void net_socket_disconnected(void *arg)    // tcp only
 {
   NODE_DBG("net_socket_disconnected is called.\n");
   struct espconn *pesp_conn = arg;
@@ -130,22 +128,19 @@ net_socket_disconnected(void *arg)    // tcp only
   lua_gc(gL, LUA_GCRESTART, 0);
 }
 
-static void ICACHE_FLASH_ATTR
-net_server_reconnected(void *arg, sint8_t err)
+static void net_server_reconnected(void *arg, sint8_t err)
 {
   NODE_DBG("net_server_reconnected is called.\n");
   net_server_disconnected(arg);
 }
 
-static void ICACHE_FLASH_ATTR
-net_socket_reconnected(void *arg, sint8_t err)
+static void net_socket_reconnected(void *arg, sint8_t err)
 {
   NODE_DBG("net_socket_reconnected is called.\n");
   net_socket_disconnected(arg);
 }
 
-static void ICACHE_FLASH_ATTR
-net_socket_received(void *arg, char *pdata, unsigned short len)
+static void net_socket_received(void *arg, char *pdata, unsigned short len)
 {
   NODE_DBG("net_socket_received is called.\n");
   struct espconn *pesp_conn = arg;
@@ -169,8 +164,7 @@ net_socket_received(void *arg, char *pdata, unsigned short len)
   lua_call(gL, 2, 0);
 }
 
-static void ICACHE_FLASH_ATTR
-net_socket_sent(void *arg)
+static void net_socket_sent(void *arg)
 {
   // NODE_DBG("net_socket_sent is called.\n");
   struct espconn *pesp_conn = arg;
@@ -188,8 +182,7 @@ net_socket_sent(void *arg)
   lua_call(gL, 1, 0);
 }
 
-static void ICACHE_FLASH_ATTR
-net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
+static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
   NODE_DBG("net_dns_found is called.\n");
   struct espconn *pesp_conn = arg;
@@ -242,8 +235,7 @@ net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   }
 }
 
-static void ICACHE_FLASH_ATTR
-net_server_connected(void *arg) // for tcp only
+static void net_server_connected(void *arg) // for tcp only
 {
   NODE_DBG("net_server_connected is called.\n");
   struct espconn *pesp_conn = arg;
@@ -324,8 +316,7 @@ net_server_connected(void *arg) // for tcp only
   lua_call(gL, 1, 0);  // function(conn)
 }
 
-static void ICACHE_FLASH_ATTR
-net_socket_connected(void *arg)
+static void net_socket_connected(void *arg)
 {
   NODE_DBG("net_socket_connected is called.\n");
   struct espconn *pesp_conn = arg;
@@ -349,8 +340,7 @@ net_socket_connected(void *arg)
 }
 
 // Lua: s = net.create(type, secure/timeout, function(conn))
-static int ICACHE_FLASH_ATTR
-net_create( lua_State* L, const char* mt )
+static int net_create( lua_State* L, const char* mt )
 {
   NODE_DBG("net_create is called.\n");
   struct espconn *pesp_conn = NULL;
@@ -496,8 +486,7 @@ net_create( lua_State* L, const char* mt )
 // call close() first
 // server: disconnect server, unref everything
 // socket: unref everything
-static int ICACHE_FLASH_ATTR
-net_delete( lua_State* L, const char* mt )
+static int net_delete( lua_State* L, const char* mt )
 {
   NODE_DBG("net_delete is called.\n");
   bool isserver = false;
@@ -571,7 +560,7 @@ net_delete( lua_State* L, const char* mt )
   return 0;  
 }
 
-static void ICACHE_FLASH_ATTR socket_connect(struct espconn *pesp_conn)
+static void socket_connect(struct espconn *pesp_conn)
 {
   if(pesp_conn == NULL)
     return;
@@ -600,8 +589,7 @@ static void ICACHE_FLASH_ATTR socket_connect(struct espconn *pesp_conn)
 
 static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
 static dns_reconn_count = 0;
-static void ICACHE_FLASH_ATTR
-socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
+static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
   NODE_DBG("socket_dns_found is called.\n");
   struct espconn *pesp_conn = arg;
@@ -647,8 +635,7 @@ socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 
 // Lua: server:listen( port, ip, function(con) )
 // Lua: socket:connect( port, ip, function(con) )
-static int ICACHE_FLASH_ATTR
-net_start( lua_State* L, const char* mt )
+static int net_start( lua_State* L, const char* mt )
 {
   NODE_DBG("net_start is called.\n");
   struct espconn *pesp_conn = NULL;
@@ -819,8 +806,7 @@ net_start( lua_State* L, const char* mt )
 // Lua: server/socket:close()
 // server disconnect everything, unref everything
 // client disconnect and unref itself
-static int ICACHE_FLASH_ATTR
-net_close( lua_State* L, const char* mt )
+static int net_close( lua_State* L, const char* mt )
 {
   NODE_DBG("net_close is called.\n");
   bool isserver = false;
@@ -929,8 +915,7 @@ net_close( lua_State* L, const char* mt )
 }
 
 // Lua: socket/udpserver:on( "method", function(s) )
-static int ICACHE_FLASH_ATTR
-net_on( lua_State* L, const char* mt )
+static int net_on( lua_State* L, const char* mt )
 {
   NODE_DBG("net_on is called.\n");
   bool isserver = false;
@@ -994,8 +979,7 @@ net_on( lua_State* L, const char* mt )
 }
 
 // Lua: server/socket:send( string, function(sent) )
-static int ICACHE_FLASH_ATTR
-net_send( lua_State* L, const char* mt )
+static int net_send( lua_State* L, const char* mt )
 {
   // NODE_DBG("net_send is called.\n");
   bool isserver = false;
@@ -1061,8 +1045,7 @@ net_send( lua_State* L, const char* mt )
 }
 
 // Lua: socket:dns( string, function(socket, ip) )
-static int ICACHE_FLASH_ATTR
-net_dns( lua_State* L, const char* mt )
+static int net_dns( lua_State* L, const char* mt )
 {
   NODE_DBG("net_dns is called.\n");
   bool isserver = false;
@@ -1115,111 +1098,98 @@ net_dns( lua_State* L, const char* mt )
 
 
 // Lua: s = net.createServer(type, function(server))
-static int ICACHE_FLASH_ATTR net_createServer( lua_State* L )
+static int net_createServer( lua_State* L )
 {
   const char *mt = "net.server";
   return net_create(L, mt);
 }
 
 // Lua: server:delete()
-static int ICACHE_FLASH_ATTR
-net_server_delete( lua_State* L )
+static int net_server_delete( lua_State* L )
 {
   const char *mt = "net.server";
   return net_delete(L, mt);
 }
 
 // Lua: server:listen( port, ip )
-static int ICACHE_FLASH_ATTR
-net_server_listen( lua_State* L )
+static int net_server_listen( lua_State* L )
 {
   const char *mt = "net.server";
   return net_start(L, mt);
 }
 
 // Lua: server:close()
-static int ICACHE_FLASH_ATTR
-net_server_close( lua_State* L )
+static int net_server_close( lua_State* L )
 {
   const char *mt = "net.server";
   return net_close(L, mt);
 }
 
 // Lua: udpserver:on( "method", function(udpserver) )
-static int ICACHE_FLASH_ATTR
-net_udpserver_on( lua_State* L )
+static int net_udpserver_on( lua_State* L )
 {
   const char *mt = "net.server";
   return net_on(L, mt);
 }
 
 // Lua: udpserver:send(string, function() )
-static int ICACHE_FLASH_ATTR
-net_udpserver_send( lua_State* L )
+static int net_udpserver_send( lua_State* L )
 {
   const char *mt = "net.server";
   return net_send(L, mt);;
 }
 
 // Lua: s = net.createConnection(type, function(conn))
-static int ICACHE_FLASH_ATTR
-net_createConnection( lua_State* L )
+static int net_createConnection( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_create(L, mt);
 }
 
 // Lua: socket:delete()
-static int ICACHE_FLASH_ATTR
-net_socket_delete( lua_State* L )
+static int net_socket_delete( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_delete(L, mt);
 }
 
 // Lua: socket:connect( port, ip )
-static int ICACHE_FLASH_ATTR
-net_socket_connect( lua_State* L )
+static int net_socket_connect( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_start(L, mt);
 }
 
 // Lua: socket:close()
-static int ICACHE_FLASH_ATTR
-net_socket_close( lua_State* L )
+static int net_socket_close( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_close(L, mt);
 }
 
 // Lua: socket:on( "method", function(socket) )
-static int ICACHE_FLASH_ATTR
-net_socket_on( lua_State* L )
+static int net_socket_on( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_on(L, mt);
 }
 
 // Lua: socket:send( string, function() )
-static int ICACHE_FLASH_ATTR
-net_socket_send( lua_State* L )
+static int net_socket_send( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_send(L, mt);
 }
 
 // Lua: socket:dns( string, function(ip) )
-static int ICACHE_FLASH_ATTR
-net_socket_dns( lua_State* L )
+static int net_socket_dns( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_dns(L, mt);
 }
 
 #if 0
-static int ICACHE_FLASH_ATTR
-net_array_index( lua_State* L )
+static int net_array_index( lua_State* L )
 {
   char** parray = luaL_checkudata(L, 1, "net.array");
   int index = luaL_checkint(L, 2);
@@ -1227,8 +1197,7 @@ net_array_index( lua_State* L )
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR
-net_array_newindex( lua_State* L )
+static int net_array_newindex( lua_State* L )
 {
   char** parray = luaL_checkudata(L, 1, "net.array");
   int index = luaL_checkint(L, 2);
@@ -1238,8 +1207,7 @@ net_array_newindex( lua_State* L )
 }
 
 // expose an array to lua, by storing it in a userdata with the array metatable
-static int ICACHE_FLASH_ATTR
-expose_array(lua_State* L, char *array, unsigned short len) {
+static int expose_array(lua_State* L, char *array, unsigned short len) {
   char** parray = lua_newuserdata(L, len);
   *parray = array;
   luaL_getmetatable(L, "net.array");
@@ -1300,7 +1268,7 @@ const LUA_REG_TYPE net_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_net( lua_State *L )
+LUALIB_API int luaopen_net( lua_State *L )
 {
   int i;
   for(i=0;i<MAX_SOCKET;i++)

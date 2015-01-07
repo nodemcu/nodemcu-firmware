@@ -3,34 +3,34 @@
 
 #if 0
 #ifndef __math_68881
-double ICACHE_FLASH_ATTR atan(double x){
+double atan(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR cos(double x){
+double cos(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR sin(double x){
+double sin(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR tan(double x){
+double tan(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR tanh(double x){
+double tanh(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR frexp(double x, int *y){
+double frexp(double x, int *y){
 	return x;
 }
-double ICACHE_FLASH_ATTR modf(double x, double *y){
+double modf(double x, double *y){
 	return x;
 }
-double ICACHE_FLASH_ATTR ceil(double x){
+double ceil(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR fabs(double x){
+double fabs(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR floor(double x){
+double floor(double x){
 	return x;
 }
 #endif /* ! defined (__math_68881) */
@@ -39,40 +39,40 @@ double ICACHE_FLASH_ATTR floor(double x){
 
 #ifndef _REENT_ONLY
 #ifndef __math_68881
-double ICACHE_FLASH_ATTR acos(double x){
+double acos(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR asin(double x){
+double asin(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR atan2(double x, double y){
+double atan2(double x, double y){
 	return x;
 }
-double ICACHE_FLASH_ATTR cosh(double x){
+double cosh(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR sinh(double x){
+double sinh(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR exp(double x){
+double exp(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR ldexp(double x, int y){
+double ldexp(double x, int y){
 	return x;
 }
-double ICACHE_FLASH_ATTR log(double x){
+double log(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR log10(double x){
+double log10(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR pow(double x, double y){
+double pow(double x, double y){
 	return x;
 }
-double ICACHE_FLASH_ATTR sqrt(double x){
+double sqrt(double x){
 	return x;
 }
-double ICACHE_FLASH_ATTR fmod(double x, double y){
+double fmod(double x, double y){
 	return x;
 }
 #endif /* ! defined (__math_68881) */

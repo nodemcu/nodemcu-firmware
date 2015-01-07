@@ -15,7 +15,7 @@
 
 static int wifi_smart_succeed = LUA_NOREF;
 
-static void ICACHE_FLASH_ATTR wifi_smart_succeed_cb(void *arg){
+static void wifi_smart_succeed_cb(void *arg){
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
   if( !arg )
     return;
@@ -34,8 +34,7 @@ static lua_State* gL = NULL;
   * @param  status: scan over status
   * @retval None
   */
-static void ICACHE_FLASH_ATTR
-wifi_scan_done(void *arg, STATUS status)
+static void wifi_scan_done(void *arg, STATUS status)
 {
   uint8 ssid[33];
   char temp[128];
@@ -82,7 +81,7 @@ wifi_scan_done(void *arg, STATUS status)
 }
 
 // Lua: smart(channel, function succeed_cb)
-static int ICACHE_FLASH_ATTR wifi_start_smart( lua_State* L )
+static int wifi_start_smart( lua_State* L )
 {
   unsigned channel;
   int stack = 1;
@@ -114,7 +113,7 @@ static int ICACHE_FLASH_ATTR wifi_start_smart( lua_State* L )
 }
 
 // Lua: exit_smart(channel)
-static int ICACHE_FLASH_ATTR wifi_exit_smart( lua_State* L )
+static int wifi_exit_smart( lua_State* L )
 {
   smart_end();
   if(wifi_smart_succeed != LUA_NOREF)
@@ -124,7 +123,7 @@ static int ICACHE_FLASH_ATTR wifi_exit_smart( lua_State* L )
 }
 
 // Lua: realmode = setmode(mode)
-static int ICACHE_FLASH_ATTR wifi_setmode( lua_State* L )
+static int wifi_setmode( lua_State* L )
 {
   unsigned mode;
   
@@ -139,7 +138,7 @@ static int ICACHE_FLASH_ATTR wifi_setmode( lua_State* L )
 }
 
 // Lua: realmode = getmode()
-static int ICACHE_FLASH_ATTR wifi_getmode( lua_State* L )
+static int wifi_getmode( lua_State* L )
 {
   unsigned mode;
   mode = (unsigned)wifi_get_opmode();
@@ -149,7 +148,7 @@ static int ICACHE_FLASH_ATTR wifi_getmode( lua_State* L )
 
 
 // Lua: mac = wifi.xx.getmac()
-static int ICACHE_FLASH_ATTR wifi_getmac( lua_State* L, uint8_t mode )
+static int wifi_getmac( lua_State* L, uint8_t mode )
 {
   char temp[64];
   uint8_t mac[6];
@@ -159,33 +158,116 @@ static int ICACHE_FLASH_ATTR wifi_getmac( lua_State* L, uint8_t mode )
   return 1;  
 }
 
+// Lua: mac = wifi.xx.setmac()
+static int wifi_setmac( lua_State* L, uint8_t mode )
+{
+  unsigned len = 0;
+  const char *mac = luaL_checklstring( L, 1, &len );
+  if(len!=6)
+    return luaL_error( L, "wrong arg type" );
+
+  lua_pushboolean(L,wifi_set_macaddr(mode, (uint8 *)mac));
+  return 1;
+}
+
 // Lua: ip = wifi.xx.getip()
-static int ICACHE_FLASH_ATTR wifi_getip( lua_State* L, uint8_t mode )
+static int wifi_getip( lua_State* L, uint8_t mode )
 {
   struct ip_info pTempIp;
   char temp[64];
   wifi_get_ip_info(mode, &pTempIp);
   if(pTempIp.ip.addr==0){
     lua_pushnil(L);
+    return 1;  
   } else {
     c_sprintf(temp, "%d.%d.%d.%d", IP2STR(&pTempIp.ip) );
     lua_pushstring( L, temp );
+    // c_sprintf(temp, "%d.%d.%d.%d", IP2STR(&pTempIp.netmask) );
+    // lua_pushstring( L, temp );
+    // c_sprintf(temp, "%d.%d.%d.%d", IP2STR(&pTempIp.gw) );
+    // lua_pushstring( L, temp );
+    // return 3;
+    return 1;
   }
+}
+
+static uint32_t parse_key(lua_State* L, const char * key){
+  lua_getfield(L, 1, key);
+  if( lua_isstring(L, -1) )   // deal with the ip/netmask/gw string
+  {
+    const char *ip = luaL_checkstring( L, -1 );
+    return ipaddr_addr(ip);
+  }
+  lua_pop(L, 1);
+  return 0;
+}
+
+// Lua: ip = wifi.xx.setip()
+static int wifi_setip( lua_State* L, uint8_t mode )
+{
+  struct ip_info pTempIp;
+  wifi_get_ip_info(mode, &pTempIp);
+
+  if (!lua_istable(L, 1))
+    return luaL_error( L, "wrong arg type" );
+  uint32_t ip = parse_key(L, "ip");
+  if(ip!=0) 
+    pTempIp.ip.addr = ip;
+
+  ip = parse_key(L, "netmask");
+  if(ip!=0) 
+    pTempIp.netmask.addr = ip;
+
+  ip = parse_key(L, "gateway");
+  if(ip!=0) 
+    pTempIp.gw.addr = ip;
+  wifi_station_dhcpc_stop();
+  lua_pushboolean(L,wifi_set_ip_info(mode, &pTempIp));
+  return 1;  
+}
+
+// Lua: realtype = sleeptype(type)
+static int wifi_sleeptype( lua_State* L )
+{
+  unsigned type;
+  
+  if ( lua_isnumber(L, 1) ){
+    type = lua_tointeger(L, 1);
+    if ( type != NONE_SLEEP_T && type != LIGHT_SLEEP_T && type != MODEM_SLEEP_T )
+      return luaL_error( L, "wrong arg type" );
+    if(!wifi_set_sleep_type(type)){
+      lua_pushnil(L);
+      return 1;
+    }
+  }
+
+  type = wifi_get_sleep_type();
+  lua_pushinteger( L, type );
   return 1;  
 }
 
 // Lua: wifi.sta.getmac()
-static int ICACHE_FLASH_ATTR wifi_station_getmac( lua_State* L ){
+static int wifi_station_getmac( lua_State* L ){
   return wifi_getmac(L, STATION_IF);
 }
 
+// Lua: wifi.sta.setmac()
+static int wifi_station_setmac( lua_State* L ){
+  return wifi_setmac(L, STATION_IF);
+}
+
 // Lua: wifi.sta.getip()
-static int ICACHE_FLASH_ATTR wifi_station_getip( lua_State* L ){
+static int wifi_station_getip( lua_State* L ){
   return wifi_getip(L, STATION_IF);
 }
 
+// Lua: wifi.sta.setip()
+static int wifi_station_setip( lua_State* L ){
+  return wifi_setip(L, STATION_IF);
+}
+
 // Lua: wifi.sta.config(ssid, password)
-static int ICACHE_FLASH_ATTR wifi_station_config( lua_State* L )
+static int wifi_station_config( lua_State* L )
 {
   size_t sl, pl;
   struct station_config sta_conf;
@@ -218,21 +300,21 @@ static int ICACHE_FLASH_ATTR wifi_station_config( lua_State* L )
 }
 
 // Lua: wifi.sta.connect()
-static int ICACHE_FLASH_ATTR wifi_station_connect4lua( lua_State* L )
+static int wifi_station_connect4lua( lua_State* L )
 {
   wifi_station_connect();
   return 0;  
 }
 
 // Lua: wifi.sta.disconnect()
-static int ICACHE_FLASH_ATTR wifi_station_disconnect4lua( lua_State* L )
+static int wifi_station_disconnect4lua( lua_State* L )
 {
   wifi_station_disconnect();
   return 0;  
 }
 
 // Lua: wifi.sta.auto(true/false)
-static int ICACHE_FLASH_ATTR wifi_station_setauto( lua_State* L )
+static int wifi_station_setauto( lua_State* L )
 {
   unsigned a;
   
@@ -247,7 +329,7 @@ static int ICACHE_FLASH_ATTR wifi_station_setauto( lua_State* L )
   return 0;  
 }
 
-static int ICACHE_FLASH_ATTR wifi_station_listap( lua_State* L )
+static int wifi_station_listap( lua_State* L )
 {
   if(wifi_get_opmode() == SOFTAP_MODE)
   {
@@ -269,7 +351,7 @@ static int ICACHE_FLASH_ATTR wifi_station_listap( lua_State* L )
 }
 
 // Lua: wifi.sta.status()
-static int ICACHE_FLASH_ATTR wifi_station_status( lua_State* L )
+static int wifi_station_status( lua_State* L )
 {
   uint8_t status = wifi_station_get_connect_status();
   lua_pushinteger( L, status );
@@ -277,17 +359,27 @@ static int ICACHE_FLASH_ATTR wifi_station_status( lua_State* L )
 }
 
 // Lua: wifi.ap.getmac()
-static int ICACHE_FLASH_ATTR wifi_ap_getmac( lua_State* L ){
+static int wifi_ap_getmac( lua_State* L ){
   return wifi_getmac(L, SOFTAP_IF);
 }
 
+// Lua: wifi.ap.setmac()
+static int wifi_ap_setmac( lua_State* L ){
+  return wifi_setmac(L, SOFTAP_IF);
+}
+
 // Lua: wifi.ap.getip()
-static int ICACHE_FLASH_ATTR wifi_ap_getip( lua_State* L ){
+static int wifi_ap_getip( lua_State* L ){
   return wifi_getip(L, SOFTAP_IF);
 }
 
+// Lua: wifi.ap.setip()
+static int wifi_ap_setip( lua_State* L ){
+  return wifi_setip(L, SOFTAP_IF);
+}
+
 // Lua: wifi.ap.config(table)
-static int ICACHE_FLASH_ATTR wifi_ap_config( lua_State* L )
+static int wifi_ap_config( lua_State* L )
 {
   struct softap_config config;
   size_t len;
@@ -352,7 +444,9 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LSTRKEY( "disconnect" ), LFUNCVAL ( wifi_station_disconnect4lua ) },
   { LSTRKEY( "autoconnect" ), LFUNCVAL ( wifi_station_setauto ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_station_getip ) },
+  { LSTRKEY( "setip" ), LFUNCVAL ( wifi_station_setip ) },
   { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_station_getmac ) },
+  { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_station_setmac ) },
   { LSTRKEY( "getap" ), LFUNCVAL ( wifi_station_listap ) },
   { LSTRKEY( "status" ), LFUNCVAL ( wifi_station_status ) },
   { LNILKEY, LNILVAL }
@@ -362,7 +456,9 @@ static const LUA_REG_TYPE wifi_ap_map[] =
 {
   { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_config ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_ap_getip ) },
+  { LSTRKEY( "setip" ), LFUNCVAL ( wifi_ap_setip ) },
   { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_ap_getmac ) },
+  { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_ap_setmac ) },
   { LNILKEY, LNILVAL }
 };
 
@@ -372,6 +468,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "getmode" ), LFUNCVAL( wifi_getmode ) },
   { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ), LFUNCVAL( wifi_exit_smart ) },
+  { LSTRKEY( "sleeptype" ), LFUNCVAL( wifi_sleeptype ) },
 #if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "sta" ), LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ), LROVAL( wifi_ap_map ) },
@@ -380,6 +477,10 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "STATION" ), LNUMVAL( STATION_MODE ) },
   { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
+
+  { LSTRKEY( "NONE_SLEEP" ), LNUMVAL( NONE_SLEEP_T ) },
+  { LSTRKEY( "LIGHT_SLEEP" ), LNUMVAL( LIGHT_SLEEP_T ) },
+  { LSTRKEY( "MODEM_SLEEP" ), LNUMVAL( MODEM_SLEEP_T ) },
 
   // { LSTRKEY( "STA_IDLE" ), LNUMVAL( STATION_IDLE ) },
   // { LSTRKEY( "STA_CONNECTING" ), LNUMVAL( STATION_CONNECTING ) },
@@ -393,7 +494,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_wifi( lua_State *L )
+LUALIB_API int luaopen_wifi( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
@@ -409,6 +510,10 @@ LUALIB_API int ICACHE_FLASH_ATTR luaopen_wifi( lua_State *L )
   MOD_REG_NUMBER( L, "STATION", STATION_MODE );
   MOD_REG_NUMBER( L, "SOFTAP", SOFTAP_MODE );  
   MOD_REG_NUMBER( L, "STATIONAP", STATIONAP_MODE );  
+
+  MOD_REG_NUMBER( L, "NONE_SLEEP", NONE_SLEEP_T );
+  MOD_REG_NUMBER( L, "LIGHT_SLEEP", LIGHT_SLEEP_T );  
+  MOD_REG_NUMBER( L, "MODEM_SLEEP", MODEM_SLEEP_T );  
 
   // MOD_REG_NUMBER( L, "STA_IDLE", STATION_IDLE );
   // MOD_REG_NUMBER( L, "STA_CONNECTING", STATION_CONNECTING );  

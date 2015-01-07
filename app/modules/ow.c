@@ -8,7 +8,7 @@
 #include "driver/onewire.h"
 
 // Lua: ow.setup( id )
-static int ICACHE_FLASH_ATTR ow_setup( lua_State *L )
+static int ow_setup( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   
@@ -22,7 +22,7 @@ static int ICACHE_FLASH_ATTR ow_setup( lua_State *L )
 }
 
 // Lua: r = ow.reset( id )
-static int ICACHE_FLASH_ATTR ow_reset( lua_State *L )
+static int ow_reset( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -31,7 +31,7 @@ static int ICACHE_FLASH_ATTR ow_reset( lua_State *L )
 }
 
 // Lua: ow.skip( id )
-static int ICACHE_FLASH_ATTR ow_skip( lua_State *L )
+static int ow_skip( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -40,7 +40,7 @@ static int ICACHE_FLASH_ATTR ow_skip( lua_State *L )
 }
 
 // Lua: ow.select( id, buf[8])
-static int ICACHE_FLASH_ATTR ow_select( lua_State *L )
+static int ow_select( lua_State *L )
 {
   uint8_t rom[8];
   size_t datalen;
@@ -79,7 +79,7 @@ static int ICACHE_FLASH_ATTR ow_select( lua_State *L )
 }
 
 // Lua: ow.write( id, v, power)
-static int ICACHE_FLASH_ATTR ow_write( lua_State *L )
+static int ow_write( lua_State *L )
 {
   int power = 0;
   unsigned id = luaL_checkinteger( L, 1 );
@@ -99,7 +99,7 @@ static int ICACHE_FLASH_ATTR ow_write( lua_State *L )
 }
 
 // Lua: ow.write_bytes( id, buf, power)
-static int ICACHE_FLASH_ATTR ow_write_bytes( lua_State *L )
+static int ow_write_bytes( lua_State *L )
 {
   int power = 0;
   size_t datalen;
@@ -119,7 +119,7 @@ static int ICACHE_FLASH_ATTR ow_write_bytes( lua_State *L )
 }
 
 // Lua: r = ow.read( id )
-static int ICACHE_FLASH_ATTR ow_read( lua_State *L )
+static int ow_read( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -128,7 +128,7 @@ static int ICACHE_FLASH_ATTR ow_read( lua_State *L )
 }
 
 // Lua: r = ow.read_bytes( id, size )
-static int ICACHE_FLASH_ATTR ow_read_bytes( lua_State *L )
+static int ow_read_bytes( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -148,7 +148,7 @@ static int ICACHE_FLASH_ATTR ow_read_bytes( lua_State *L )
 }
 
 // Lua: ow.depower( id )
-static int ICACHE_FLASH_ATTR ow_depower( lua_State *L )
+static int ow_depower( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -159,7 +159,7 @@ static int ICACHE_FLASH_ATTR ow_depower( lua_State *L )
 #if ONEWIRE_SEARCH
 // Clear the search state so that if will start from the beginning again.
 // Lua: ow.reset_search( id )
-static int ICACHE_FLASH_ATTR ow_reset_search( lua_State *L )
+static int ow_reset_search( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -171,7 +171,7 @@ static int ICACHE_FLASH_ATTR ow_reset_search( lua_State *L )
 // Setup the search to find the device type 'family_code' on the next call
 // to search(*newAddr) if it is present.
 // Lua: ow.target_search( id, family_code)
-static int ICACHE_FLASH_ATTR ow_target_search( lua_State *L )
+static int ow_target_search( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -193,7 +193,7 @@ static int ICACHE_FLASH_ATTR ow_target_search( lua_State *L )
 // the same devices in the same order.
 
 // Lua: r = ow.search( id )
-static int ICACHE_FLASH_ATTR ow_search( lua_State *L )
+static int ow_search( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( ow, id );
@@ -217,7 +217,7 @@ static int ICACHE_FLASH_ATTR ow_search( lua_State *L )
 #if ONEWIRE_CRC
 // uint8_t onewire_crc8(const uint8_t *addr, uint8_t len);
 // Lua: r = ow.crc8( buf )
-static int ICACHE_FLASH_ATTR ow_crc8( lua_State *L )
+static int ow_crc8( lua_State *L )
 {
   size_t datalen;
   const uint8_t *pdata = luaL_checklstring( L, 1, &datalen );
@@ -230,7 +230,7 @@ static int ICACHE_FLASH_ATTR ow_crc8( lua_State *L )
 #if ONEWIRE_CRC16
 // bool onewire_check_crc16(const uint8_t* input, uint16_t len, const uint8_t* inverted_crc, uint16_t crc);
 // Lua: b = ow.check_crc16( buf, inverted_crc0, inverted_crc1, crc )
-static int ICACHE_FLASH_ATTR ow_check_crc16( lua_State *L )
+static int ow_check_crc16( lua_State *L )
 {
   size_t datalen;
   uint8_t inverted_crc[2];
@@ -262,7 +262,7 @@ static int ICACHE_FLASH_ATTR ow_check_crc16( lua_State *L )
 
 // uint16_t onewire_crc16(const uint8_t* input, uint16_t len, uint16_t crc);
 // Lua: r = ow.crc16( buf, crc )
-static int ICACHE_FLASH_ATTR ow_crc16( lua_State *L )
+static int ow_crc16( lua_State *L )
 {
   size_t datalen;
   const uint8_t *pdata = luaL_checklstring( L, 1, &datalen );
@@ -313,7 +313,7 @@ const LUA_REG_TYPE ow_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_ow( lua_State *L )
+LUALIB_API int luaopen_ow( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

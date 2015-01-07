@@ -10,7 +10,7 @@
 #include "c_types.h"
 
 // Lua: realfrequency = setup( id, frequency, duty )
-static int ICACHE_FLASH_ATTR lpwm_setup( lua_State* L )
+static int lpwm_setup( lua_State* L )
 {
   s32 freq;	  // signed, to error check for negative values
   unsigned duty;
@@ -35,7 +35,7 @@ static int ICACHE_FLASH_ATTR lpwm_setup( lua_State* L )
 }
 
 // Lua: close( id )
-static int ICACHE_FLASH_ATTR lpwm_close( lua_State* L )
+static int lpwm_close( lua_State* L )
 {
   unsigned id;
   
@@ -46,7 +46,7 @@ static int ICACHE_FLASH_ATTR lpwm_close( lua_State* L )
 }
 
 // Lua: start( id )
-static int ICACHE_FLASH_ATTR lpwm_start( lua_State* L )
+static int lpwm_start( lua_State* L )
 {
   unsigned id;
   id = luaL_checkinteger( L, 1 );
@@ -56,7 +56,7 @@ static int ICACHE_FLASH_ATTR lpwm_start( lua_State* L )
 }
 
 // Lua: stop( id )
-static int ICACHE_FLASH_ATTR lpwm_stop( lua_State* L )
+static int lpwm_stop( lua_State* L )
 {
   unsigned id;
   
@@ -67,7 +67,7 @@ static int ICACHE_FLASH_ATTR lpwm_stop( lua_State* L )
 }
 
 // Lua: realclock = setclock( id, clock )
-static int ICACHE_FLASH_ATTR lpwm_setclock( lua_State* L )
+static int lpwm_setclock( lua_State* L )
 {
   unsigned id;
   s32 clk;	// signed to error-check for negative values
@@ -83,7 +83,7 @@ static int ICACHE_FLASH_ATTR lpwm_setclock( lua_State* L )
 }
 
 // Lua: clock = getclock( id )
-static int ICACHE_FLASH_ATTR lpwm_getclock( lua_State* L )
+static int lpwm_getclock( lua_State* L )
 {
   unsigned id;
   u32 clk;
@@ -96,7 +96,7 @@ static int ICACHE_FLASH_ATTR lpwm_getclock( lua_State* L )
 }
 
 // Lua: realduty = setduty( id, duty )
-static int ICACHE_FLASH_ATTR lpwm_setduty( lua_State* L )
+static int lpwm_setduty( lua_State* L )
 {
   unsigned id;
   s32 duty;  // signed to error-check for negative values
@@ -112,7 +112,7 @@ static int ICACHE_FLASH_ATTR lpwm_setduty( lua_State* L )
 }
 
 // Lua: duty = getduty( id )
-static int ICACHE_FLASH_ATTR lpwm_getduty( lua_State* L )
+static int lpwm_getduty( lua_State* L )
 {
   unsigned id;
   u32 duty;
@@ -143,7 +143,7 @@ const LUA_REG_TYPE pwm_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_pwm( lua_State *L )
+LUALIB_API int luaopen_pwm( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

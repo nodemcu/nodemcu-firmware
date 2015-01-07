@@ -20,7 +20,7 @@
 #define LUAS_READONLY_STRING      1
 #define LUAS_REGULAR_STRING       0
 
-void ICACHE_FLASH_ATTR luaS_resize (lua_State *L, int newsize) {
+void luaS_resize (lua_State *L, int newsize) {
   stringtable *tb;
   int i;
   tb = &G(L)->strt;
@@ -51,7 +51,7 @@ void ICACHE_FLASH_ATTR luaS_resize (lua_State *L, int newsize) {
   unset_resizing_strings_gc(L);
 }
 
-static TString *ICACHE_FLASH_ATTR newlstr (lua_State *L, const char *str, size_t l,
+static TString *newlstr (lua_State *L, const char *str, size_t l,
                                        unsigned int h, int readonly) {
   TString *ts;
   stringtable *tb;
@@ -80,7 +80,7 @@ static TString *ICACHE_FLASH_ATTR newlstr (lua_State *L, const char *str, size_t
 }
 
 
-static TString *ICACHE_FLASH_ATTR luaS_newlstr_helper (lua_State *L, const char *str, size_t l, int readonly) {
+static TString *luaS_newlstr_helper (lua_State *L, const char *str, size_t l, int readonly) {
   GCObject *o;
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
@@ -100,7 +100,7 @@ static TString *ICACHE_FLASH_ATTR luaS_newlstr_helper (lua_State *L, const char 
   return newlstr(L, str, l, h, readonly);  /* not found */
 }
 
-static int ICACHE_FLASH_ATTR lua_is_ptr_in_ro_area(const char *p) {
+static int lua_is_ptr_in_ro_area(const char *p) {
 #ifdef LUA_CROSS_COMPILER
   return 0;
 #else
@@ -111,7 +111,7 @@ static int ICACHE_FLASH_ATTR lua_is_ptr_in_ro_area(const char *p) {
 #endif
 }
 
-TString *ICACHE_FLASH_ATTR luaS_newlstr (lua_State *L, const char *str, size_t l) {
+TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   // If the pointer is in a read-only memory and the string is at least 4 chars in length,
   // create it as a read-only string instead
   if(lua_is_ptr_in_ro_area(str) && l+1 > sizeof(char**) && l == c_strlen(str))
@@ -121,7 +121,7 @@ TString *ICACHE_FLASH_ATTR luaS_newlstr (lua_State *L, const char *str, size_t l
 }
 
 
-LUAI_FUNC TString *ICACHE_FLASH_ATTR luaS_newrolstr (lua_State *L, const char *str, size_t l) {
+LUAI_FUNC TString *luaS_newrolstr (lua_State *L, const char *str, size_t l) {
   if(l+1 > sizeof(char**) && l == c_strlen(str))
     return luaS_newlstr_helper(L, str, l, LUAS_READONLY_STRING);
   else // no point in creating a RO string, as it would actually be larger
@@ -129,7 +129,7 @@ LUAI_FUNC TString *ICACHE_FLASH_ATTR luaS_newrolstr (lua_State *L, const char *s
 }
 
 
-Udata *ICACHE_FLASH_ATTR luaS_newudata (lua_State *L, size_t s, Table *e) {
+Udata *luaS_newudata (lua_State *L, size_t s, Table *e) {
   Udata *u;
   if (s > MAX_SIZET - sizeof(Udata))
     luaM_toobig(L);

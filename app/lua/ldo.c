@@ -48,7 +48,7 @@ struct lua_longjmp {
 };
 
 
-void ICACHE_FLASH_ATTR luaD_seterrorobj (lua_State *L, int errcode, StkId oldtop) {
+void luaD_seterrorobj (lua_State *L, int errcode, StkId oldtop) {
   switch (errcode) {
     case LUA_ERRMEM: {
       ptrdiff_t oldtopr = savestack(L, oldtop);
@@ -70,7 +70,7 @@ void ICACHE_FLASH_ATTR luaD_seterrorobj (lua_State *L, int errcode, StkId oldtop
 }
 
 
-static void ICACHE_FLASH_ATTR restore_stack_limit (lua_State *L) {
+static void restore_stack_limit (lua_State *L) {
   lua_assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK - 1);
   if (L->size_ci > LUAI_MAXCALLS) {  /* there was an overflow? */
     int inuse = cast_int(L->ci - L->base_ci);
@@ -80,7 +80,7 @@ static void ICACHE_FLASH_ATTR restore_stack_limit (lua_State *L) {
 }
 
 
-static void ICACHE_FLASH_ATTR resetstack (lua_State *L, int status) {
+static void resetstack (lua_State *L, int status) {
   L->ci = L->base_ci;
   L->base = L->ci->base;
   luaF_close(L, L->base);  /* close eventual pending closures */
@@ -93,7 +93,7 @@ static void ICACHE_FLASH_ATTR resetstack (lua_State *L, int status) {
 }
 
 
-void ICACHE_FLASH_ATTR luaD_throw (lua_State *L, int errcode) {
+void luaD_throw (lua_State *L, int errcode) {
   unfixedstack(L); /* make sure the fixedstack & block_gc flags get reset. */
   unset_block_gc(L);
   if (L->errorJmp) {
@@ -112,7 +112,7 @@ void ICACHE_FLASH_ATTR luaD_throw (lua_State *L, int errcode) {
 }
 
 
-int ICACHE_FLASH_ATTR luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
+int luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
   struct lua_longjmp lj;
   lj.status = 0;
   lj.previous = L->errorJmp;  /* chain new error handler */
@@ -127,7 +127,7 @@ int ICACHE_FLASH_ATTR luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 /* }====================================================== */
 
 
-static void ICACHE_FLASH_ATTR correctstack (lua_State *L, TValue *oldstack) {
+static void correctstack (lua_State *L, TValue *oldstack) {
   CallInfo *ci;
   GCObject *up;
   L->top = (L->top - oldstack) + L->stack;
@@ -142,7 +142,7 @@ static void ICACHE_FLASH_ATTR correctstack (lua_State *L, TValue *oldstack) {
 }
 
 
-void ICACHE_FLASH_ATTR luaD_reallocstack (lua_State *L, int newsize) {
+void luaD_reallocstack (lua_State *L, int newsize) {
   TValue *oldstack = L->stack;
   int realsize = newsize + 1 + EXTRA_STACK;
   lua_assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK - 1);
@@ -153,7 +153,7 @@ void ICACHE_FLASH_ATTR luaD_reallocstack (lua_State *L, int newsize) {
 }
 
 
-void ICACHE_FLASH_ATTR luaD_reallocCI (lua_State *L, int newsize) {
+void luaD_reallocCI (lua_State *L, int newsize) {
   CallInfo *oldci = L->base_ci;
   luaM_reallocvector(L, L->base_ci, L->size_ci, newsize, CallInfo);
   L->size_ci = newsize;
@@ -162,7 +162,7 @@ void ICACHE_FLASH_ATTR luaD_reallocCI (lua_State *L, int newsize) {
 }
 
 
-void ICACHE_FLASH_ATTR luaD_growstack (lua_State *L, int n) {
+void luaD_growstack (lua_State *L, int n) {
   if (n <= L->stacksize)  /* double size is enough? */
     luaD_reallocstack(L, 2*L->stacksize);
   else
@@ -170,7 +170,7 @@ void ICACHE_FLASH_ATTR luaD_growstack (lua_State *L, int n) {
 }
 
 
-static CallInfo *ICACHE_FLASH_ATTR growCI (lua_State *L) {
+static CallInfo *growCI (lua_State *L) {
   if (L->size_ci > LUAI_MAXCALLS)  /* overflow while handling overflow? */
     luaD_throw(L, LUA_ERRERR);
   else {
@@ -182,7 +182,7 @@ static CallInfo *ICACHE_FLASH_ATTR growCI (lua_State *L) {
 }
 
 
-void ICACHE_FLASH_ATTR luaD_callhook (lua_State *L, int event, int line) {
+void luaD_callhook (lua_State *L, int event, int line) {
   lua_Hook hook = L->hook;
   if (hook && L->allowhook) {
     ptrdiff_t top = savestack(L, L->top);
@@ -209,7 +209,7 @@ void ICACHE_FLASH_ATTR luaD_callhook (lua_State *L, int event, int line) {
 }
 
 
-static StkId ICACHE_FLASH_ATTR adjust_varargs (lua_State *L, Proto *p, int actual) {
+static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   int i;
   int nfixargs = p->numparams;
 #if defined(LUA_COMPAT_VARARG)
@@ -253,7 +253,7 @@ static StkId ICACHE_FLASH_ATTR adjust_varargs (lua_State *L, Proto *p, int actua
 }
 
 
-static StkId ICACHE_FLASH_ATTR tryfuncTM (lua_State *L, StkId func) {
+static StkId tryfuncTM (lua_State *L, StkId func) {
   const TValue *tm = luaT_gettmbyobj(L, func, TM_CALL);
   StkId p;
   ptrdiff_t funcr = savestack(L, func);
@@ -274,7 +274,7 @@ static StkId ICACHE_FLASH_ATTR tryfuncTM (lua_State *L, StkId func) {
    (condhardstacktests(luaD_reallocCI(L, L->size_ci)), ++L->ci))
 
 
-int ICACHE_FLASH_ATTR luaD_precall (lua_State *L, StkId func, int nresults) {
+int luaD_precall (lua_State *L, StkId func, int nresults) {
   ptrdiff_t funcr;
   LClosure *cl = NULL;
   if (!ttisfunction(func) && !ttislightfunction(func)) /* `func' is not a function? */
@@ -345,7 +345,7 @@ int ICACHE_FLASH_ATTR luaD_precall (lua_State *L, StkId func, int nresults) {
 }
 
 
-static StkId ICACHE_FLASH_ATTR callrethooks (lua_State *L, StkId firstResult) {
+static StkId callrethooks (lua_State *L, StkId firstResult) {
   ptrdiff_t fr = savestack(L, firstResult);  /* next call may change stack */
   luaD_callhook(L, LUA_HOOKRET, -1);
   if (f_isLua(L->ci)) {  /* Lua function? */
@@ -356,7 +356,7 @@ static StkId ICACHE_FLASH_ATTR callrethooks (lua_State *L, StkId firstResult) {
 }
 
 
-int ICACHE_FLASH_ATTR luaD_poscall (lua_State *L, StkId firstResult) {
+int luaD_poscall (lua_State *L, StkId firstResult) {
   StkId res;
   int wanted, i;
   CallInfo *ci;
@@ -383,7 +383,7 @@ int ICACHE_FLASH_ATTR luaD_poscall (lua_State *L, StkId firstResult) {
 ** When returns, all the results are on the stack, starting at the original
 ** function position.
 */ 
-void ICACHE_FLASH_ATTR luaD_call (lua_State *L, StkId func, int nResults) {
+void luaD_call (lua_State *L, StkId func, int nResults) {
   if (++L->nCcalls >= LUAI_MAXCCALLS) {
     if (L->nCcalls == LUAI_MAXCCALLS)
       luaG_runerror(L, "C stack overflow");
@@ -397,7 +397,7 @@ void ICACHE_FLASH_ATTR luaD_call (lua_State *L, StkId func, int nResults) {
 }
 
 
-static void ICACHE_FLASH_ATTR resume (lua_State *L, void *ud) {
+static void resume (lua_State *L, void *ud) {
   StkId firstArg = cast(StkId, ud);
   CallInfo *ci = L->ci;
   if (L->status == 0) {  /* start coroutine? */
@@ -422,7 +422,7 @@ static void ICACHE_FLASH_ATTR resume (lua_State *L, void *ud) {
 }
 
 
-static int ICACHE_FLASH_ATTR resume_error (lua_State *L, const char *msg) {
+static int resume_error (lua_State *L, const char *msg) {
   L->top = L->ci->base;
   setsvalue2s(L, L->top, luaS_new(L, msg));
   incr_top(L);
@@ -431,7 +431,7 @@ static int ICACHE_FLASH_ATTR resume_error (lua_State *L, const char *msg) {
 }
 
 
-LUA_API int ICACHE_FLASH_ATTR lua_resume (lua_State *L, int nargs) {
+LUA_API int lua_resume (lua_State *L, int nargs) {
   int status;
   lua_lock(L);
   if (L->status != LUA_YIELD && (L->status != 0 || L->ci != L->base_ci))
@@ -457,7 +457,7 @@ LUA_API int ICACHE_FLASH_ATTR lua_resume (lua_State *L, int nargs) {
 }
 
 
-LUA_API int ICACHE_FLASH_ATTR lua_yield (lua_State *L, int nresults) {
+LUA_API int lua_yield (lua_State *L, int nresults) {
   luai_userstateyield(L, nresults);
   lua_lock(L);
   if (L->nCcalls > L->baseCcalls)
@@ -469,7 +469,7 @@ LUA_API int ICACHE_FLASH_ATTR lua_yield (lua_State *L, int nresults) {
 }
 
 
-int ICACHE_FLASH_ATTR luaD_pcall (lua_State *L, Pfunc func, void *u,
+int luaD_pcall (lua_State *L, Pfunc func, void *u,
                 ptrdiff_t old_top, ptrdiff_t ef) {
   int status;
   unsigned short oldnCcalls = L->nCcalls;
@@ -504,7 +504,7 @@ struct SParser {  /* data to `f_parser' */
   const char *name;
 };
 
-static void ICACHE_FLASH_ATTR f_parser (lua_State *L, void *ud) {
+static void f_parser (lua_State *L, void *ud) {
   int i;
   Proto *tf;
   Closure *cl;
@@ -524,7 +524,7 @@ static void ICACHE_FLASH_ATTR f_parser (lua_State *L, void *ud) {
 }
 
 
-int ICACHE_FLASH_ATTR luaD_protectedparser (lua_State *L, ZIO *z, const char *name) {
+int luaD_protectedparser (lua_State *L, ZIO *z, const char *name) {
   struct SParser p;
   int status;
   p.z = z; p.name = name;

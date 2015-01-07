@@ -1,7 +1,7 @@
 # **NodeMcu** #
-version 0.9.4
+version 0.9.5
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 0.9.4](http://bbs.espressif.com/viewtopic.php?f=5&t=90)<br />
+Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=7&t=104)<br />
 Lua core based on [eLua project](http://www.eluaproject.net/)<br />
 File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
 Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
@@ -13,18 +13,19 @@ bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group QQ群: 309957875<br />
 
 # Change log
-2014-12-22<br />
-update to sdk 0.9.4<br />
-opensource<br />
-folder "pre_build" contain pre-build bin firmware.<br />
-folder "lua_examples" contain some pure lua examples.<br />
-folder "lua_modules" contain some pure lua lib based on NodeMCU.<br />
+2015-01-06<br />
+update sdk to 0.9.5.<br />
+pre_build bin now compiled by gcc toolchain.<br />
+memory/heap usage optimized.<br />
+add support for multiple platform and toolchain include eclipse. <br />
+combine firmware for 512K, 1M, 2M, 4M flash to one. flash size auto-detected.
 
-2014-12-19<br />
-**Important** Re-arrange GPIO MAP due to development kit.[New Gpio Map](#new_gpio_map)<br />
-Add bitwise operation module.<br />
-Modify net.socket:connect() api to accept domain name, auto DNS.
-
+2014-12-30<br />
+modify uart.on api, when run_input set to 0, uart.on now can read raw data from uart.<br />
+serial input now accept non-ascii chars.<br />
+fix dev-kit gpio map.<br />
+add setip, setmac, sleeptype api to wifi module. <br />
+add tmr.time() api to get rtc time and calibration.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
@@ -47,10 +48,10 @@ Modify net.socket:connect() api to accept domain name, auto DNS.
     <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15</td>
   </tr>
   <tr>
-    <td>1</td><td>GPIO4</td><td>9</td><td>GPIO3</td>
+    <td>1</td><td>GPIO5</td><td>9</td><td>GPIO3</td>
    </tr>
    <tr>
-    <td>2</td><td>GPIO5</td><td>10</td><td>GPIO1</td>
+    <td>2</td><td>GPIO4</td><td>10</td><td>GPIO1</td>
   </tr>
   <tr>
     <td>3</td><td>GPIO0</td><td>11</td><td>GPIO9</td>
@@ -106,10 +107,11 @@ Modify net.socket:connect() api to accept domain name, auto DNS.
 #Build option
 ####file ./app/include/user_config.h
 ```c
-#define FLASH_512K
+// #define FLASH_512K
 // #define FLASH_1M
 // #define FLASH_2M
 // #define FLASH_4M
+#define FLASH_AUTOSIZE
 ...
 #define LUA_USE_MODULES
 #ifdef LUA_USE_MODULES
@@ -124,12 +126,12 @@ Modify net.socket:connect() api to accept domain name, auto DNS.
 #define LUA_USE_MODULES_ADC
 #define LUA_USE_MODULES_UART
 #define LUA_USE_MODULES_OW
-//#define LUA_USE_MODULES_BIT
+#define LUA_USE_MODULES_BIT
 #endif /* LUA_USE_MODULES */
 ```
 
 #Flash the firmware
-nodemcu_512k.bin: 0x00000<br />
+nodemcu_latest.bin: 0x00000<br />
 for most esp8266 modules, just pull GPIO0 down and restart.<br />
 You can use the [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher) to burn the firmware.
 
@@ -141,7 +143,7 @@ blank.bin: 0x7e000<br />
 
 
 #Connect the hardware in serial
-braudrate:9600
+baudrate:9600
 
 #Start play
 
@@ -273,5 +275,6 @@ braudrate:9600
     print(t.read(nil,t.C))
     -- Don't forget to release it after use
     t = nil
+	ds18b20 = nil
     package.loaded["ds18b20"]=nil   
 ```

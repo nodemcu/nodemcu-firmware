@@ -20,7 +20,7 @@
 #define aux_getn(L,n)	(luaL_checktype(L, n, LUA_TTABLE), luaL_getn(L, n))
 
 
-static int ICACHE_FLASH_ATTR foreachi (lua_State *L) {
+static int foreachi (lua_State *L) {
   int i;
   int n = aux_getn(L, 1);
   luaL_checkanyfunction(L, 2);
@@ -37,7 +37,7 @@ static int ICACHE_FLASH_ATTR foreachi (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR foreach (lua_State *L) {
+static int foreach (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkanyfunction(L, 2);
   lua_pushnil(L);  /* first key */
@@ -54,7 +54,7 @@ static int ICACHE_FLASH_ATTR foreach (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR maxn (lua_State *L) {
+static int maxn (lua_State *L) {
   lua_Number max = 0;
   luaL_checktype(L, 1, LUA_TTABLE);
   lua_pushnil(L);  /* first key */
@@ -70,13 +70,13 @@ static int ICACHE_FLASH_ATTR maxn (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR getn (lua_State *L) {
+static int getn (lua_State *L) {
   lua_pushinteger(L, aux_getn(L, 1));
   return 1;
 }
 
 
-static int ICACHE_FLASH_ATTR setn (lua_State *L) {
+static int setn (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
 #ifndef luaL_setn
   luaL_setn(L, 1, luaL_checkint(L, 2));
@@ -88,7 +88,7 @@ static int ICACHE_FLASH_ATTR setn (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR tinsert (lua_State *L) {
+static int tinsert (lua_State *L) {
   int e = aux_getn(L, 1) + 1;  /* first empty element */
   int pos;  /* where to insert new element */
   switch (lua_gettop(L)) {
@@ -116,7 +116,7 @@ static int ICACHE_FLASH_ATTR tinsert (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR tremove (lua_State *L) {
+static int tremove (lua_State *L) {
   int e = aux_getn(L, 1);
   int pos = luaL_optint(L, 2, e);
   if (!(1 <= pos && pos <= e))  /* position is outside bounds? */
@@ -133,7 +133,7 @@ static int ICACHE_FLASH_ATTR tremove (lua_State *L) {
 }
 
 
-static void ICACHE_FLASH_ATTR addfield (lua_State *L, luaL_Buffer *b, int i) {
+static void addfield (lua_State *L, luaL_Buffer *b, int i) {
   lua_rawgeti(L, 1, i);
   if (!lua_isstring(L, -1))
     luaL_error(L, "invalid value (%s) at index %d in table for "
@@ -142,7 +142,7 @@ static void ICACHE_FLASH_ATTR addfield (lua_State *L, luaL_Buffer *b, int i) {
 }
 
 
-static int ICACHE_FLASH_ATTR tconcat (lua_State *L) {
+static int tconcat (lua_State *L) {
   luaL_Buffer b;
   size_t lsep;
   int i, last;
@@ -171,12 +171,12 @@ static int ICACHE_FLASH_ATTR tconcat (lua_State *L) {
 */
 
 
-static void ICACHE_FLASH_ATTR set2 (lua_State *L, int i, int j) {
+static void set2 (lua_State *L, int i, int j) {
   lua_rawseti(L, 1, i);
   lua_rawseti(L, 1, j);
 }
 
-static int ICACHE_FLASH_ATTR sort_comp (lua_State *L, int a, int b) {
+static int sort_comp (lua_State *L, int a, int b) {
   if (!lua_isnil(L, 2)) {  /* function? */
     int res;
     lua_pushvalue(L, 2);
@@ -191,7 +191,7 @@ static int ICACHE_FLASH_ATTR sort_comp (lua_State *L, int a, int b) {
     return lua_lessthan(L, a, b);
 }
 
-static void ICACHE_FLASH_ATTR auxsort (lua_State *L, int l, int u) {
+static void auxsort (lua_State *L, int l, int u) {
   while (l < u) {  /* for tail recursion */
     int i, j;
     /* sort elements a[l], a[(l+u)/2] and a[u] */
@@ -254,7 +254,7 @@ static void ICACHE_FLASH_ATTR auxsort (lua_State *L, int l, int u) {
   }  /* repeat the routine for the larger one */
 }
 
-static int ICACHE_FLASH_ATTR sort (lua_State *L) {
+static int sort (lua_State *L) {
   int n = aux_getn(L, 1);
   luaL_checkstack(L, 40, "");  /* assume array is smaller than 2^40 */
   if (!lua_isnoneornil(L, 2))  /* is there a 2nd argument? */
@@ -282,6 +282,6 @@ const LUA_REG_TYPE tab_funcs[] = {
   {LNILKEY, LNILVAL}
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_table (lua_State *L) {
+LUALIB_API int luaopen_table (lua_State *L) {
   LREGISTER(L, LUA_TABLIBNAME, tab_funcs);
 }
