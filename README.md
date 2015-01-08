@@ -26,18 +26,17 @@ Tencent QQ group QQ群: 309957875<br />
 - add coap module
 
 # Change log
+2015-01-08<br />
+fix net.socket:send() issue when multi sends are called. <br />
+*NOTE*: if data length is bigger than 1460, send next packet AFTER "sent" callback is called.<br />
+fix file.read() api, take 0xFF as a regular byte, not EOF.<br />
+pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemcu_latest.bin instead.
+
 2015-01-07<br />
 retrive more ram back.<br />
 add api file.format() to rebuild file system.<br />
 rename "NodeMcu" to "NodeMCU" in firmware.<br />
 add some check for file system op.
-
-2015-01-06<br />
-update sdk to 0.9.5.<br />
-pre_build bin now compiled by gcc toolchain.<br />
-memory/heap usage optimized.<br />
-add support for multiple platform and toolchain include eclipse. <br />
-combine firmware for 512K, 1M, 2M, 4M flash to one. flash size auto-detected.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
