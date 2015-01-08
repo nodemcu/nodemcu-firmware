@@ -272,7 +272,8 @@ espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length)
     value = espconn_find_connection(espconn, &pnode);
     switch (espconn ->type) {
         case ESPCONN_TCP:
-            if (value && (pnode->pcommon.write_len == pnode->pcommon.write_total)){
+            // if (value && (pnode->pcommon.write_len == pnode->pcommon.write_total)){
+        	if (value && (pnode->pcommon.cntr == 0)){
            		espconn_tcp_sent(pnode, psent, length);
             }else
             	return ESPCONN_ARG;

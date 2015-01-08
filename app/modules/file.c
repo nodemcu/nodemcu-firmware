@@ -159,23 +159,23 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
     n = LUAL_BUFFERSIZE;
   if(end_char < 0 || end_char >255)
     end_char = EOF;
-  signed char ec = (signed char)end_char;
-
+  int ec = (int)end_char;
+  
   luaL_Buffer b;
   if((FS_OPEN_OK - 1)==file_fd)
     return luaL_error(L, "open a file first");
 
   luaL_buffinit(L, &b);
   char *p = luaL_prepbuffer(&b);
-  signed char c = EOF;
+  int c = EOF;
   int i = 0;
 
   do{
-    c = (signed char)fs_getc(file_fd);
+    c = fs_getc(file_fd);
     if(c==EOF){
       break;
     }
-    p[i++] = c;
+    p[i++] = (char)(0xFF & c);
   }while((c!=EOF) && (c!=ec) && (i<n) );
 
 #if 0
