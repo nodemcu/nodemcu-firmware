@@ -70,8 +70,8 @@ SECTIONS
   {
     _irom0_text_start = ABSOLUTE(.);
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
-	*(.literal.* .text.*)
-	*(.rodata.text)
+    *(.literal.* .text.*)
+    *(.rodata2.text)
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr
@@ -85,7 +85,7 @@ SECTIONS
     *(.init)
     /* *(.literal .text .literal.* .text.* .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*) */
     *(.literal .text .iram0.text .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
-	*(.fini.literal)
+    *(.fini.literal)
     *(.fini)
     *(.gnu.version)
     _text_end = ABSOLUTE(.);
