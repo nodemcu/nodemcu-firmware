@@ -191,6 +191,49 @@ static int wifi_getip( lua_State* L, uint8_t mode )
   }
 }
 
+// Lua: broadcast = wifi.xx.getbroadcast()
+static int wifi_getbroadcast( lua_State* L, uint8_t mode )
+{
+  struct ip_info pTempIp;
+  char temp[64];
+  wifi_get_ip_info(mode, &pTempIp);
+  if(pTempIp.ip.addr==0){
+    lua_pushnil(L);
+    return 1;  
+  } else {
+
+    struct ip_addr broadcast_address;
+
+    uint32 subnet_mask32 = pTempIp.netmask.addr & pTempIp.ip.addr;
+    uint32 broadcast_address32 = ~pTempIp.netmask.addr | subnet_mask32;
+    broadcast_address.addr = broadcast_address32;
+
+    c_sprintf(temp, "%d.%d.%d.%d", IP2STR(&broadcast_address) );
+    lua_pushstring( L, temp );
+
+    return 1;
+  }
+}
+
+
+// Lua: netmask = wifi.xx.getnetmask()
+static int wifi_getnetmask( lua_State* L, uint8_t mode )
+{
+  struct ip_info pTempIp;
+  char temp[64];
+  wifi_get_ip_info(mode, &pTempIp);
+  if(pTempIp.ip.addr==0){
+    lua_pushnil(L);
+    return 1;  
+  } else {
+    c_sprintf(temp, "%d.%d.%d.%d", IP2STR(&pTempIp.netmask) );
+    lua_pushstring( L, temp );
+    return 1;
+  }
+}
+
+
+
 static uint32_t parse_key(lua_State* L, const char * key){
   lua_getfield(L, 1, key);
   if( lua_isstring(L, -1) )   // deal with the ip/netmask/gw string
@@ -265,6 +308,17 @@ static int wifi_station_getip( lua_State* L ){
 static int wifi_station_setip( lua_State* L ){
   return wifi_setip(L, STATION_IF);
 }
+
+// Lua: wifi.sta.getnetmask()
+static int wifi_station_getnetmask( lua_State* L ){
+  return wifi_getnetmask(L, STATION_IF);
+}
+
+// Lua: wifi.sta.getbroadcast()
+static int wifi_station_getbroadcast( lua_State* L ){
+  return wifi_getbroadcast(L, STATION_IF);
+}
+
 
 // Lua: wifi.sta.config(ssid, password)
 static int wifi_station_config( lua_State* L )
@@ -378,6 +432,16 @@ static int wifi_ap_setip( lua_State* L ){
   return wifi_setip(L, SOFTAP_IF);
 }
 
+// Lua: wifi.ap.getnetmask()
+static int wifi_ap_getnetmask( lua_State* L ){
+  return wifi_getnetmask(L, SOFTAP_IF);
+}
+
+// Lua: wifi.ap.getbroadcast()
+static int wifi_ap_getbroadcast( lua_State* L ){
+  return wifi_getbroadcast(L, SOFTAP_IF);
+}
+
 // Lua: wifi.ap.config(table)
 static int wifi_ap_config( lua_State* L )
 {
@@ -445,6 +509,8 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LSTRKEY( "autoconnect" ), LFUNCVAL ( wifi_station_setauto ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_station_getip ) },
   { LSTRKEY( "setip" ), LFUNCVAL ( wifi_station_setip ) },
+  { LSTRKEY( "getnetmask" ), LFUNCVAL ( wifi_station_getnetmask ) },
+  { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_station_getbroadcast) },
   { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_station_getmac ) },
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_station_setmac ) },
   { LSTRKEY( "getap" ), LFUNCVAL ( wifi_station_listap ) },
@@ -457,6 +523,8 @@ static const LUA_REG_TYPE wifi_ap_map[] =
   { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_config ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_ap_getip ) },
   { LSTRKEY( "setip" ), LFUNCVAL ( wifi_ap_setip ) },
+  { LSTRKEY( "getnetmask" ), LFUNCVAL ( wifi_ap_getnetmask ) },
+  { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_ap_getbroadcast) },
   { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_ap_getmac ) },
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_ap_setmac ) },
   { LNILKEY, LNILVAL }
