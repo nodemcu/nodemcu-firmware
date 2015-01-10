@@ -136,7 +136,7 @@ endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(OBJCOPY) -O binary $< $@
+	../tools/esptool.py elf2image $< -o $(BINODIR)/
 
 #############################################################
 # Rules base
