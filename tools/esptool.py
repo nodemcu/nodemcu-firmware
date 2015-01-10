@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 #
 # ESP8266 ROM Bootloader Utility
 # https://github.com/themadinventor/esptool
@@ -270,9 +270,12 @@ class ELFFile:
             return
         self.symbols = {}
         try:
-            proc = subprocess.Popen(["xtensa-lx106-elf-nm", self.name], stdout=subprocess.PIPE)
+            tool_nm = "xtensa-lx106-elf-nm"
+            if os.getenv('XTENSA_CORE')=='lx106':
+                tool_nm = "xt-nm"
+            proc = subprocess.Popen([tool_nm, self.name], stdout=subprocess.PIPE)
         except OSError:
-            print "Error calling xtensa-lx106-elf-nm, do you have Xtensa toolchain in PATH?"
+            print "Error calling "+tool_nm+", do you have Xtensa toolchain in PATH?"
             sys.exit(1)
         for l in proc.stdout:
             fields = l.strip().split()
@@ -283,7 +286,10 @@ class ELFFile:
         return self.symbols[sym]
 
     def load_section(self, section):
-        subprocess.check_call(["xtensa-lx106-elf-objcopy", "--only-section", section, "-Obinary", self.name, ".tmp.section"])
+        tool_objcopy = "xtensa-lx106-elf-objcopy"
+        if os.getenv('XTENSA_CORE')=='lx106':
+            tool_objcopy = "xt-objcopy"
+        subprocess.check_call([tool_objcopy, "--only-section", section, "-Obinary", self.name, ".tmp.section"])
         f = open(".tmp.section", "rb")
         data = f.read()
         f.close()
