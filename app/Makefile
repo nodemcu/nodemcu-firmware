@@ -161,8 +161,12 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
 	../tools/esptool.py elf2image $< -o $(BINODIR)/
 
+ifndef $(PORT)
+    PORT = /dev/ttyUSB0
+endif
+
 flash:
-	../tools/esptool.py write_flash 0x00000 $(BINODIR)/0x00000.bin 0x10000 $(BINODIR)/0x10000.bin
+	../tools/esptool.py -p $(PORT) write_flash 0x00000 $(BINODIR)/0x00000.bin 0x10000 $(BINODIR)/0x10000.bin
 
 .PHONY: FORCE
 FORCE:
