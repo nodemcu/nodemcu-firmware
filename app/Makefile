@@ -159,8 +159,10 @@ sinclude $(PDIR)Makefile
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(OBJCOPY) -O binary $< $@
+	../tools/esptool.py elf2image $< -o $(BINODIR)/
+
+flash:
+	../tools/esptool.py write_flash 0x00000 $(BINODIR)/0x00000.bin 0x10000 $(BINODIR)/0x10000.bin
 
 .PHONY: FORCE
 FORCE:
-
