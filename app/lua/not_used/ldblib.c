@@ -20,13 +20,13 @@
 
 
 
-static int ICACHE_FLASH_ATTR db_getregistry (lua_State *L) {
+static int db_getregistry (lua_State *L) {
   lua_pushvalue(L, LUA_REGISTRYINDEX);
   return 1;
 }
 
 
-static int ICACHE_FLASH_ATTR db_getmetatable (lua_State *L) {
+static int db_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
     lua_pushnil(L);  /* no metatable */
@@ -35,7 +35,7 @@ static int ICACHE_FLASH_ATTR db_getmetatable (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR db_setmetatable (lua_State *L) {
+static int db_setmetatable (lua_State *L) {
   int t = lua_type(L, 2);
   luaL_argcheck(L, t == LUA_TNIL || t == LUA_TTABLE, 2,
                     "nil or table expected");
@@ -45,14 +45,14 @@ static int ICACHE_FLASH_ATTR db_setmetatable (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR db_getfenv (lua_State *L) {
+static int db_getfenv (lua_State *L) {
   luaL_checkany(L, 1);
   lua_getfenv(L, 1);
   return 1;
 }
 
 
-static int ICACHE_FLASH_ATTR db_setfenv (lua_State *L) {
+static int db_setfenv (lua_State *L) {
   luaL_checktype(L, 2, LUA_TTABLE);
   lua_settop(L, 2);
   if (lua_setfenv(L, 1) == 0)
@@ -62,19 +62,19 @@ static int ICACHE_FLASH_ATTR db_setfenv (lua_State *L) {
 }
 
 
-static void ICACHE_FLASH_ATTR settabss (lua_State *L, const char *i, const char *v) {
+static void settabss (lua_State *L, const char *i, const char *v) {
   lua_pushstring(L, v);
   lua_setfield(L, -2, i);
 }
 
 
-static void ICACHE_FLASH_ATTR settabsi (lua_State *L, const char *i, int v) {
+static void settabsi (lua_State *L, const char *i, int v) {
   lua_pushinteger(L, v);
   lua_setfield(L, -2, i);
 }
 
 
-static lua_State *ICACHE_FLASH_ATTR getthread (lua_State *L, int *arg) {
+static lua_State *getthread (lua_State *L, int *arg) {
   if (lua_isthread(L, 1)) {
     *arg = 1;
     return lua_tothread(L, 1);
@@ -86,7 +86,7 @@ static lua_State *ICACHE_FLASH_ATTR getthread (lua_State *L, int *arg) {
 }
 
 
-static void ICACHE_FLASH_ATTR treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
+static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
   if (L == L1) {
     lua_pushvalue(L, -2);
     lua_remove(L, -3);
@@ -97,7 +97,7 @@ static void ICACHE_FLASH_ATTR treatstackoption (lua_State *L, lua_State *L1, con
 }
 
 
-static int ICACHE_FLASH_ATTR db_getinfo (lua_State *L) {
+static int db_getinfo (lua_State *L) {
   lua_Debug ar;
   int arg;
   lua_State *L1 = getthread(L, &arg);
@@ -142,7 +142,7 @@ static int ICACHE_FLASH_ATTR db_getinfo (lua_State *L) {
 }
     
 
-static int ICACHE_FLASH_ATTR db_getlocal (lua_State *L) {
+static int db_getlocal (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
   lua_Debug ar;
@@ -163,7 +163,7 @@ static int ICACHE_FLASH_ATTR db_getlocal (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR db_setlocal (lua_State *L) {
+static int db_setlocal (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
   lua_Debug ar;
@@ -177,7 +177,7 @@ static int ICACHE_FLASH_ATTR db_setlocal (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR auxupvalue (lua_State *L, int get) {
+static int auxupvalue (lua_State *L, int get) {
   const char *name;
   int n = luaL_checkint(L, 2);
   luaL_checktype(L, 1, LUA_TFUNCTION);
@@ -190,12 +190,12 @@ static int ICACHE_FLASH_ATTR auxupvalue (lua_State *L, int get) {
 }
 
 
-static int ICACHE_FLASH_ATTR db_getupvalue (lua_State *L) {
+static int db_getupvalue (lua_State *L) {
   return auxupvalue(L, 1);
 }
 
 
-static int ICACHE_FLASH_ATTR db_setupvalue (lua_State *L) {
+static int db_setupvalue (lua_State *L) {
   luaL_checkany(L, 3);
   return auxupvalue(L, 0);
 }
@@ -205,7 +205,7 @@ static int ICACHE_FLASH_ATTR db_setupvalue (lua_State *L) {
 static const char KEY_HOOK = 'h';
 
 
-static void ICACHE_FLASH_ATTR hookf (lua_State *L, lua_Debug *ar) {
+static void hookf (lua_State *L, lua_Debug *ar) {
   static const char *const hooknames[] =
     {"call", "return", "line", "count", "tail return"};
   lua_pushlightuserdata(L, (void *)&KEY_HOOK);
@@ -223,7 +223,7 @@ static void ICACHE_FLASH_ATTR hookf (lua_State *L, lua_Debug *ar) {
 }
 
 
-static int ICACHE_FLASH_ATTR makemask (const char *smask, int count) {
+static int makemask (const char *smask, int count) {
   int mask = 0;
   if (c_strchr(smask, 'c')) mask |= LUA_MASKCALL;
   if (c_strchr(smask, 'r')) mask |= LUA_MASKRET;
@@ -233,7 +233,7 @@ static int ICACHE_FLASH_ATTR makemask (const char *smask, int count) {
 }
 
 
-static char *ICACHE_FLASH_ATTR unmakemask (int mask, char *smask) {
+static char *unmakemask (int mask, char *smask) {
   int i = 0;
   if (mask & LUA_MASKCALL) smask[i++] = 'c';
   if (mask & LUA_MASKRET) smask[i++] = 'r';
@@ -243,7 +243,7 @@ static char *ICACHE_FLASH_ATTR unmakemask (int mask, char *smask) {
 }
 
 
-static void ICACHE_FLASH_ATTR gethooktable (lua_State *L) {
+static void gethooktable (lua_State *L) {
   lua_pushlightuserdata(L, (void *)&KEY_HOOK);
   lua_rawget(L, LUA_REGISTRYINDEX);
   if (!lua_istable(L, -1)) {
@@ -256,7 +256,7 @@ static void ICACHE_FLASH_ATTR gethooktable (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR db_sethook (lua_State *L) {
+static int db_sethook (lua_State *L) {
   int arg, mask, count;
   lua_Hook func;
   lua_State *L1 = getthread(L, &arg);
@@ -280,7 +280,7 @@ static int ICACHE_FLASH_ATTR db_sethook (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR db_gethook (lua_State *L) {
+static int db_gethook (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
   char buff[5];
@@ -300,7 +300,7 @@ static int ICACHE_FLASH_ATTR db_gethook (lua_State *L) {
 }
 
 
-static int ICACHE_FLASH_ATTR db_debug (lua_State *L) {
+static int db_debug (lua_State *L) {
   for (;;) {
     char buffer[LUA_MAXINPUT];
 #if defined(LUA_USE_STDIO)
@@ -329,7 +329,7 @@ static int ICACHE_FLASH_ATTR db_debug (lua_State *L) {
 #define LEVELS1	12	/* size of the first part of the stack */
 #define LEVELS2	10	/* size of the second part of the stack */
 
-static int ICACHE_FLASH_ATTR db_errorfb (lua_State *L) {
+static int db_errorfb (lua_State *L) {
   int level;
   int firstpart = 1;  /* still before eventual `...' */
   int arg;
@@ -401,6 +401,6 @@ const LUA_REG_TYPE dblib[] = {
   {LNILKEY, LNILVAL}
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_debug (lua_State *L) {
+LUALIB_API int luaopen_debug (lua_State *L) {
   LREGISTER(L, LUA_DBLIBNAME, dblib);
 }

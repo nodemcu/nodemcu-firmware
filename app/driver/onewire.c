@@ -72,7 +72,7 @@ static uint8_t LastFamilyDiscrepancy[NUM_OW];
 static uint8_t LastDeviceFlag[NUM_OW];
 #endif
 
-void ICACHE_FLASH_ATTR onewire_init(uint8_t pin)
+void onewire_init(uint8_t pin)
 {
 	// pinMode(pin, INPUT);
   platform_gpio_mode(pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);
@@ -88,7 +88,7 @@ void ICACHE_FLASH_ATTR onewire_init(uint8_t pin)
 //
 // Returns 1 if a device asserted a presence pulse, 0 otherwise.
 //
-uint8_t ICACHE_FLASH_ATTR onewire_reset(uint8_t pin)
+uint8_t onewire_reset(uint8_t pin)
 {
 	uint8_t r;
 	uint8_t retries = 125;
@@ -120,7 +120,7 @@ uint8_t ICACHE_FLASH_ATTR onewire_reset(uint8_t pin)
 // Write a bit. Port and bit is used to cut lookup time and provide
 // more certain timing.
 //
-static void ICACHE_FLASH_ATTR onewire_write_bit(uint8_t pin, uint8_t v)
+static void onewire_write_bit(uint8_t pin, uint8_t v)
 {
 	if (v & 1) {
 		noInterrupts();
@@ -145,7 +145,7 @@ static void ICACHE_FLASH_ATTR onewire_write_bit(uint8_t pin, uint8_t v)
 // Read a bit. Port and bit is used to cut lookup time and provide
 // more certain timing.
 //
-static uint8_t ICACHE_FLASH_ATTR onewire_read_bit(uint8_t pin)
+static uint8_t onewire_read_bit(uint8_t pin)
 {
 	uint8_t r;
 
@@ -168,7 +168,7 @@ static uint8_t ICACHE_FLASH_ATTR onewire_read_bit(uint8_t pin)
 // go tri-state at the end of the write to avoid heating in a short or
 // other mishap.
 //
-void ICACHE_FLASH_ATTR onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
+void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
   uint8_t bitMask;
 
   for (bitMask = 0x01; bitMask; bitMask <<= 1) {
@@ -182,7 +182,7 @@ void ICACHE_FLASH_ATTR onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 
   }
 }
 
-void ICACHE_FLASH_ATTR onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
+void onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
   uint16_t i;
   for (i = 0 ; i < count ; i++)
     onewire_write(pin, buf[i], 0);
@@ -197,7 +197,7 @@ void ICACHE_FLASH_ATTR onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint
 //
 // Read a byte
 //
-uint8_t ICACHE_FLASH_ATTR onewire_read(uint8_t pin) {
+uint8_t onewire_read(uint8_t pin) {
   uint8_t bitMask;
   uint8_t r = 0;
 
@@ -207,7 +207,7 @@ uint8_t ICACHE_FLASH_ATTR onewire_read(uint8_t pin) {
   return r;
 }
 
-void ICACHE_FLASH_ATTR onewire_read_bytes(uint8_t pin, uint8_t *buf, uint16_t count) {
+void onewire_read_bytes(uint8_t pin, uint8_t *buf, uint16_t count) {
   uint16_t i;
   for (i = 0 ; i < count ; i++)
     buf[i] = onewire_read(pin);
@@ -216,7 +216,7 @@ void ICACHE_FLASH_ATTR onewire_read_bytes(uint8_t pin, uint8_t *buf, uint16_t co
 //
 // Do a ROM select
 //
-void ICACHE_FLASH_ATTR onewire_select(uint8_t pin, const uint8_t rom[8])
+void onewire_select(uint8_t pin, const uint8_t rom[8])
 {
     uint8_t i;
 
@@ -228,12 +228,12 @@ void ICACHE_FLASH_ATTR onewire_select(uint8_t pin, const uint8_t rom[8])
 //
 // Do a ROM skip
 //
-void ICACHE_FLASH_ATTR onewire_skip(uint8_t pin)
+void onewire_skip(uint8_t pin)
 {
     onewire_write(pin, 0xCC, 0);           // Skip ROM
 }
 
-void ICACHE_FLASH_ATTR onewire_depower(uint8_t pin)
+void onewire_depower(uint8_t pin)
 {
 	noInterrupts();
 	DIRECT_MODE_INPUT(pin);
@@ -246,7 +246,7 @@ void ICACHE_FLASH_ATTR onewire_depower(uint8_t pin)
 // You need to use this function to start a search again from the beginning.
 // You do not need to do it for the first search, though you could.
 //
-void ICACHE_FLASH_ATTR onewire_reset_search(uint8_t pin)
+void onewire_reset_search(uint8_t pin)
 {
   // reset the search state
   LastDiscrepancy[pin] = 0;
@@ -262,7 +262,7 @@ void ICACHE_FLASH_ATTR onewire_reset_search(uint8_t pin)
 // Setup the search to find the device type 'family_code' on the next call
 // to search(*newAddr) if it is present.
 //
-void ICACHE_FLASH_ATTR onewire_target_search(uint8_t pin, uint8_t family_code)
+void onewire_target_search(uint8_t pin, uint8_t family_code)
 {
    // set the search state to find SearchFamily type devices
    ROM_NO[pin][0] = family_code;
@@ -290,7 +290,7 @@ void ICACHE_FLASH_ATTR onewire_target_search(uint8_t pin, uint8_t family_code)
 // Return TRUE  : device found, ROM number in ROM_NO buffer
 //        FALSE : device not found, end of search
 //
-uint8_t ICACHE_FLASH_ATTR onewire_search(uint8_t pin, uint8_t *newAddr)
+uint8_t onewire_search(uint8_t pin, uint8_t *newAddr)
 {
    uint8_t id_bit_number;
    uint8_t last_zero, rom_byte_number, search_result;
@@ -449,7 +449,7 @@ static const uint8_t dscrc_table[] = {
 // compared to all those delayMicrosecond() calls.  But I got
 // confused, so I use this table from the examples.)
 //
-uint8_t ICACHE_FLASH_ATTR onewire_crc8(const uint8_t *addr, uint8_t len)
+uint8_t onewire_crc8(const uint8_t *addr, uint8_t len)
 {
 	uint8_t crc = 0;
 
@@ -463,13 +463,14 @@ uint8_t ICACHE_FLASH_ATTR onewire_crc8(const uint8_t *addr, uint8_t len)
 // Compute a Dallas Semiconductor 8 bit CRC directly.
 // this is much slower, but much smaller, than the lookup table.
 //
-uint8_t ICACHE_FLASH_ATTR onewire_crc8(const uint8_t *addr, uint8_t len)
+uint8_t onewire_crc8(const uint8_t *addr, uint8_t len)
 {
 	uint8_t crc = 0;
 	
 	while (len--) {
 		uint8_t inbyte = *addr++;
-		for (uint8_t i = 8; i; i--) {
+    uint8_t i;
+		for (i = 8; i; i--) {
 			uint8_t mix = (crc ^ inbyte) & 0x01;
 			crc >>= 1;
 			if (mix) crc ^= 0x8C;
@@ -501,7 +502,7 @@ uint8_t ICACHE_FLASH_ATTR onewire_crc8(const uint8_t *addr, uint8_t len)
 //                       *not* at a 16-bit integer.
 // @param crc - The crc starting value (optional)
 // @return True, iff the CRC matches.
-bool ICACHE_FLASH_ATTR onewire_check_crc16(const uint8_t* input, uint16_t len, const uint8_t* inverted_crc, uint16_t crc)
+bool onewire_check_crc16(const uint8_t* input, uint16_t len, const uint8_t* inverted_crc, uint16_t crc)
 {
     crc = ~onewire_crc16(input, len, crc);
     return (crc & 0xFF) == inverted_crc[0] && (crc >> 8) == inverted_crc[1];
@@ -519,7 +520,7 @@ bool ICACHE_FLASH_ATTR onewire_check_crc16(const uint8_t* input, uint16_t len, c
 // @param len - How many bytes to use.
 // @param crc - The crc starting value (optional)
 // @return The CRC16, as defined by Dallas Semiconductor.
-uint16_t ICACHE_FLASH_ATTR onewire_crc16(const uint8_t* input, uint16_t len, uint16_t crc)
+uint16_t onewire_crc16(const uint8_t* input, uint16_t len, uint16_t crc)
 {
     static const uint8_t oddparity[16] =
         { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };

@@ -18,7 +18,7 @@
 #include "lzio.h"
 
 
-int ICACHE_FLASH_ATTR luaZ_fill (ZIO *z) {
+int luaZ_fill (ZIO *z) {
   size_t size;
   lua_State *L = z->L;
   const char *buff;
@@ -32,7 +32,7 @@ int ICACHE_FLASH_ATTR luaZ_fill (ZIO *z) {
 }
 
 
-int ICACHE_FLASH_ATTR luaZ_lookahead (ZIO *z) {
+int luaZ_lookahead (ZIO *z) {
   if (z->n == 0) {
     if (luaZ_fill(z) == EOZ)
       return EOZ;
@@ -45,7 +45,7 @@ int ICACHE_FLASH_ATTR luaZ_lookahead (ZIO *z) {
 }
 
 
-void ICACHE_FLASH_ATTR luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
+void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
   z->L = L;
   z->reader = reader;
   z->data = data;
@@ -55,7 +55,7 @@ void ICACHE_FLASH_ATTR luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void 
 
 
 /* --------------------------------------------------------------- read --- */
-size_t ICACHE_FLASH_ATTR luaZ_read (ZIO *z, void *b, size_t n) {
+size_t luaZ_read (ZIO *z, void *b, size_t n) {
   while (n) {
     size_t m;
     if (luaZ_lookahead(z) == EOZ)
@@ -74,7 +74,7 @@ size_t ICACHE_FLASH_ATTR luaZ_read (ZIO *z, void *b, size_t n) {
 }
 
 /* ------------------------------------------------------------------------ */
-char *ICACHE_FLASH_ATTR luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n) {
+char *luaZ_openspace (lua_State *L, Mbuffer *buff, size_t n) {
   if (n > buff->buffsize) {
     if (n < LUA_MINBUFFER) n = LUA_MINBUFFER;
     luaZ_resizebuffer(L, buff, n);

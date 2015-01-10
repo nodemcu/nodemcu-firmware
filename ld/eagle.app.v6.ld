@@ -66,6 +66,41 @@ SECTIONS
     _dport0_data_end = ABSOLUTE(.);
   } >dport0_0_seg :dport0_0_phdr
 
+  .irom0.text : ALIGN(4)
+  {
+    _irom0_text_start = ABSOLUTE(.);
+    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
+    *(.literal.* .text.*)
+    *(.rodata2.text)
+    _irom0_text_end = ABSOLUTE(.);
+    _flash_used_end = ABSOLUTE(.);
+  } >irom0_0_seg :irom0_0_phdr
+  
+  .text : ALIGN(4)
+  {
+    _stext = .;
+    _text_start = ABSOLUTE(.);
+    *(.entry.text)
+    *(.init.literal)
+    *(.init)
+    /* *(.literal .text .literal.* .text.* .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*) */
+    *(.literal .text .iram0.text .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
+    *(.fini.literal)
+    *(.fini)
+    *(.gnu.version)
+    _text_end = ABSOLUTE(.);
+    _etext = .;
+  } >iram1_0_seg :iram1_0_phdr
+
+  .lit4 : ALIGN(4)
+  {
+    _lit4_start = ABSOLUTE(.);
+    *(*.lit4)
+    *(.lit4.*)
+    *(.gnu.linkonce.lit4.*)
+    _lit4_end = ABSOLUTE(.);
+  } >iram1_0_seg :iram1_0_phdr
+
   .data : ALIGN(4)
   {
     _data_start = ABSOLUTE(.);
@@ -145,40 +180,6 @@ SECTIONS
   } >dram0_0_seg :dram0_0_bss_phdr
 /* __stack = 0x3ffc8000; */
 
-  .text : ALIGN(4)
-  {
-    _stext = .;
-    _text_start = ABSOLUTE(.);
-    *(.entry.text)
-    *(.init.literal)
-    *(.init)
-    *(.literal .text .literal.* .text.* .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
-    *(.fini.literal)
-    *(.fini)
-    *(.gnu.version)
-    _text_end = ABSOLUTE(.);
-    _etext = .;
-  } >iram1_0_seg :iram1_0_phdr
-
-  .lit4 : ALIGN(4)
-  {
-    _lit4_start = ABSOLUTE(.);
-    *(*.lit4)
-    *(.lit4.*)
-    *(.gnu.linkonce.lit4.*)
-    _lit4_end = ABSOLUTE(.);
-  } >iram1_0_seg :iram1_0_phdr
-
-  .irom0.text : ALIGN(4)
-  {
-    _crypt_fixed_start = ABSOLUTE(.);
-    *(.crypt_fixed)
-    _crypt_fixed_end = ABSOLUTE(.);
-    _irom0_text_start = ABSOLUTE(.);
-    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
-    _irom0_text_end = ABSOLUTE(.);
-    _flash_used_end = ABSOLUTE(.);
-  } >irom0_0_seg :irom0_0_phdr
 }
 
 /* get ROM code address */

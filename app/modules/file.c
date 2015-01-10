@@ -11,10 +11,10 @@
 #include "flash_fs.h"
 #include "c_string.h"
 
-static int file_fd = FS_OPEN_OK - 1;
+static volatile int file_fd = FS_OPEN_OK - 1;
 
 // Lua: open(filename, mode)
-static int ICACHE_FLASH_ATTR file_open( lua_State* L )
+static int file_open( lua_State* L )
 {
   size_t len;
   if((FS_OPEN_OK - 1)!=file_fd){
@@ -39,7 +39,7 @@ static int ICACHE_FLASH_ATTR file_open( lua_State* L )
 }
 
 // Lua: close()
-static int ICACHE_FLASH_ATTR file_close( lua_State* L )
+static int file_close( lua_State* L )
 {
   if((FS_OPEN_OK - 1)!=file_fd){
     fs_close(file_fd);
@@ -48,9 +48,25 @@ static int ICACHE_FLASH_ATTR file_close( lua_State* L )
   return 0;  
 }
 
+// Lua: format()
+static int file_format( lua_State* L )
+{
+  size_t len;
+  file_close(L);
+  if( !fs_format() )
+  {
+    NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
+    NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+  }
+  else{
+    NODE_ERR( "format done.\n" );
+  }
+  return 0; 
+}
+
 #if defined(BUILD_WOFS)
 // Lua: list()
-static int ICACHE_FLASH_ATTR file_list( lua_State* L )
+static int file_list( lua_State* L )
 {
   uint32_t start = 0;
   size_t act_len = 0;
@@ -63,28 +79,12 @@ static int ICACHE_FLASH_ATTR file_list( lua_State* L )
   return 1;
 }
 
-// Lua: format()
-static int ICACHE_FLASH_ATTR file_format( lua_State* L )
-{
-  size_t len;
-  file_close(L);
-  if( !fs_format() )
-  {
-    NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
-    NODE_ERR( "It is advised to re-flash the nodeMcu image.\n" );
-  }
-  else{
-    NODE_ERR( "format done.\n" );
-  }
-  return 0; 
-}
-
 #elif defined(BUILD_SPIFFS)
 
 extern spiffs fs;
 
 // Lua: list()
-static int ICACHE_FLASH_ATTR file_list( lua_State* L )
+static int file_list( lua_State* L )
 {
   spiffs_DIR d;
   struct spiffs_dirent e;
@@ -101,7 +101,7 @@ static int ICACHE_FLASH_ATTR file_list( lua_State* L )
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR file_seek (lua_State *L) 
+static int file_seek (lua_State *L) 
 {
   static const int mode[] = {FS_SEEK_SET, FS_SEEK_CUR, FS_SEEK_END};
   static const char *const modenames[] = {"set", "cur", "end", NULL};
@@ -118,7 +118,7 @@ static int ICACHE_FLASH_ATTR file_seek (lua_State *L)
 }
 
 // Lua: remove(filename)
-static int ICACHE_FLASH_ATTR file_remove( lua_State* L )
+static int file_remove( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
@@ -130,7 +130,7 @@ static int ICACHE_FLASH_ATTR file_remove( lua_State* L )
 }
 
 // Lua: flush()
-static int ICACHE_FLASH_ATTR file_flush( lua_State* L )
+static int file_flush( lua_State* L )
 {
   if((FS_OPEN_OK - 1)==file_fd)
     return luaL_error(L, "open a file first");
@@ -142,7 +142,7 @@ static int ICACHE_FLASH_ATTR file_flush( lua_State* L )
 }
 #if 0
 // Lua: check()
-static int ICACHE_FLASH_ATTR file_check( lua_State* L )
+static int file_check( lua_State* L )
 {
   file_close(L);
   lua_pushinteger(L, fs_check());
@@ -153,29 +153,29 @@ static int ICACHE_FLASH_ATTR file_check( lua_State* L )
 #endif
 
 // g_read()
-static int ICACHE_FLASH_ATTR file_g_read( lua_State* L, int n, int16_t end_char )
+static int file_g_read( lua_State* L, int n, int16_t end_char )
 {
   if(n< 0 || n>LUAL_BUFFERSIZE) 
     n = LUAL_BUFFERSIZE;
   if(end_char < 0 || end_char >255)
     end_char = EOF;
-  signed char ec = (signed char)end_char;
-
+  int ec = (int)end_char;
+  
   luaL_Buffer b;
   if((FS_OPEN_OK - 1)==file_fd)
     return luaL_error(L, "open a file first");
 
   luaL_buffinit(L, &b);
   char *p = luaL_prepbuffer(&b);
-  signed char c = EOF;
+  int c = EOF;
   int i = 0;
 
   do{
-    c = (signed char)fs_getc(file_fd);
+    c = fs_getc(file_fd);
     if(c==EOF){
       break;
     }
-    p[i++] = c;
+    p[i++] = (char)(0xFF & c);
   }while((c!=EOF) && (c!=ec) && (i<n) );
 
 #if 0
@@ -197,7 +197,7 @@ static int ICACHE_FLASH_ATTR file_g_read( lua_State* L, int n, int16_t end_char 
 // file.read() will read all byte in file
 // file.read(10) will read 10 byte from file, or EOF is reached.
 // file.read('q') will read until 'q' or EOF is reached. 
-static int ICACHE_FLASH_ATTR file_read( lua_State* L )
+static int file_read( lua_State* L )
 {
   unsigned need_len = LUAL_BUFFERSIZE;
   int16_t end_char = EOF;
@@ -222,13 +222,13 @@ static int ICACHE_FLASH_ATTR file_read( lua_State* L )
 }
 
 // Lua: readline()
-static int ICACHE_FLASH_ATTR file_readline( lua_State* L )
+static int file_readline( lua_State* L )
 {
   return file_g_read(L, LUAL_BUFFERSIZE, '\n');
 }
 
 // Lua: write("string")
-static int ICACHE_FLASH_ATTR file_write( lua_State* L )
+static int file_write( lua_State* L )
 {
   if((FS_OPEN_OK - 1)==file_fd)
     return luaL_error(L, "open a file first");
@@ -243,7 +243,7 @@ static int ICACHE_FLASH_ATTR file_write( lua_State* L )
 }
 
 // Lua: writeline("string")
-static int ICACHE_FLASH_ATTR file_writeline( lua_State* L )
+static int file_writeline( lua_State* L )
 {
   if((FS_OPEN_OK - 1)==file_fd)
     return luaL_error(L, "open a file first");
@@ -275,8 +275,8 @@ const LUA_REG_TYPE file_map[] =
   { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
   { LSTRKEY( "read" ), LFUNCVAL( file_read ) },
   { LSTRKEY( "readline" ), LFUNCVAL( file_readline ) },
-#if defined(BUILD_WOFS)
   { LSTRKEY( "format" ), LFUNCVAL( file_format ) },
+#if defined(BUILD_WOFS)
 #elif defined(BUILD_SPIFFS)
   { LSTRKEY( "remove" ), LFUNCVAL( file_remove ) },
   { LSTRKEY( "seek" ), LFUNCVAL( file_seek ) },
@@ -290,7 +290,7 @@ const LUA_REG_TYPE file_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_file( lua_State *L )
+LUALIB_API int luaopen_file( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

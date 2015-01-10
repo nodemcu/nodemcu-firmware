@@ -10,17 +10,17 @@ static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[32*4];
 static u8_t spiffs_cache[(LOG_PAGE_SIZE+32)*4];
 
-static s32_t ICACHE_FLASH_ATTR my_spiffs_read(u32_t addr, u32_t size, u8_t *dst) {
+static s32_t my_spiffs_read(u32_t addr, u32_t size, u8_t *dst) {
   platform_flash_read(dst, addr, size);
   return SPIFFS_OK;
 }
 
-static s32_t ICACHE_FLASH_ATTR my_spiffs_write(u32_t addr, u32_t size, u8_t *src) {
+static s32_t my_spiffs_write(u32_t addr, u32_t size, u8_t *src) {
   platform_flash_write(src, addr, size);
   return SPIFFS_OK;
 }
 
-static s32_t ICACHE_FLASH_ATTR my_spiffs_erase(u32_t addr, u32_t size) {
+static s32_t my_spiffs_erase(u32_t addr, u32_t size) {
   u32_t sect_first = platform_flash_get_sector_of_address(addr);
   u32_t sect_last = sect_first;
   while( sect_first <= sect_last )
@@ -42,7 +42,7 @@ The small 4KB sectors allow for greater flexibility in applications th
 
 ********************/
 
-void ICACHE_FLASH_ATTR spiffs_mount() {
+void spiffs_mount() {
   spiffs_config cfg;
   cfg.phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
   cfg.phys_size = INTERNAL_FLASH_SIZE - ( ( u32_t )cfg.phys_addr - INTERNAL_FLASH_START_ADDRESS );
@@ -69,7 +69,7 @@ void ICACHE_FLASH_ATTR spiffs_mount() {
 
 // FS formatting function
 // Returns 1 if OK, 0 for error
-int ICACHE_FLASH_ATTR myspiffs_format( void )
+int myspiffs_format( void )
 {
   SPIFFS_unmount(&fs);
   u32_t sect_first, sect_last;
@@ -81,10 +81,11 @@ int ICACHE_FLASH_ATTR myspiffs_format( void )
   while( sect_first <= sect_last )
     if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
       return 0;
+  spiffs_mount();
   return 1;
 }
 
-int ICACHE_FLASH_ATTR myspiffs_check( void )
+int myspiffs_check( void )
 {
   // ets_wdt_disable();
   // int res = (int)SPIFFS_check(&fs);
@@ -92,56 +93,73 @@ int ICACHE_FLASH_ATTR myspiffs_check( void )
   // return res;
 }
 
-int ICACHE_FLASH_ATTR myspiffs_open(const char *name, int flags){
+int myspiffs_open(const char *name, int flags){
   return (int)SPIFFS_open(&fs, name, (spiffs_flags)flags, 0);
 }
 
-int ICACHE_FLASH_ATTR myspiffs_close( int fd ){
+int myspiffs_close( int fd ){
   SPIFFS_close(&fs, (spiffs_file)fd);
   return 0;
 }
-size_t ICACHE_FLASH_ATTR myspiffs_write( int fd, const void* ptr, size_t len ){
+size_t myspiffs_write( int fd, const void* ptr, size_t len ){
 #if 0
   if(fd==c_stdout || fd==c_stderr){
     uart0_tx_buffer((u8_t*)ptr, len);
     return len;
   }
 #endif
-  return SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, len);
+  int res = SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, len);
+  if (res < 0) {
+    NODE_DBG("write errno %i\n", SPIFFS_errno(&fs));
+    return 0;
+  }
+  return res;
 }
-size_t ICACHE_FLASH_ATTR myspiffs_read( int fd, void* ptr, size_t len){
-  return SPIFFS_read(&fs, (spiffs_file)fd, ptr, len);
+size_t myspiffs_read( int fd, void* ptr, size_t len){
+  int res = SPIFFS_read(&fs, (spiffs_file)fd, ptr, len);
+  if (res < 0) {
+    NODE_DBG("read errno %i\n", SPIFFS_errno(&fs));
+    return 0;
+  }
+  return res;
 }
-int ICACHE_FLASH_ATTR myspiffs_lseek( int fd, int off, int whence ){
+int myspiffs_lseek( int fd, int off, int whence ){
   return SPIFFS_lseek(&fs, (spiffs_file)fd, off, whence);
 }
-int ICACHE_FLASH_ATTR myspiffs_eof( int fd ){
+int myspiffs_eof( int fd ){
   return SPIFFS_eof(&fs, (spiffs_file)fd);
 }
-int ICACHE_FLASH_ATTR myspiffs_tell( int fd ){
+int myspiffs_tell( int fd ){
   return SPIFFS_tell(&fs, (spiffs_file)fd);
 }
-int ICACHE_FLASH_ATTR myspiffs_getc( int fd ){
-  char c = EOF;
+int myspiffs_getc( int fd ){
+  unsigned char c = 0xFF;
+  int res;
   if(!myspiffs_eof(fd)){
-    SPIFFS_read(&fs, (spiffs_file)fd, &c, 1);
+    res = SPIFFS_read(&fs, (spiffs_file)fd, &c, 1);
+    if (res != 1) {
+      NODE_DBG("getc errno %i\n", SPIFFS_errno(&fs));
+      return (int)EOF;
+    } else {
+      return (int)c;
+    }
   }
-  return (int)c;
+  return (int)EOF;
 }
-int ICACHE_FLASH_ATTR myspiffs_ungetc( int c, int fd ){
+int myspiffs_ungetc( int c, int fd ){
   return SPIFFS_lseek(&fs, (spiffs_file)fd, -1, SEEK_CUR);
 }
-int ICACHE_FLASH_ATTR myspiffs_flush( int fd ){
+int myspiffs_flush( int fd ){
   return SPIFFS_fflush(&fs, (spiffs_file)fd);
 }
-int ICACHE_FLASH_ATTR myspiffs_error( int fd ){
+int myspiffs_error( int fd ){
   return SPIFFS_errno(&fs);
 }
-void ICACHE_FLASH_ATTR myspiffs_clearerr( int fd ){
+void myspiffs_clearerr( int fd ){
   fs.errno = SPIFFS_OK;
 }
 #if 0
-void ICACHE_FLASH_ATTR test_spiffs() {
+void test_spiffs() {
   char buf[12];
 
   // Surely, I've mounted spiffs before entering here

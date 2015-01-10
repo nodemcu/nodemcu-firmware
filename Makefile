@@ -4,12 +4,66 @@ ifndef PDIR
 
 endif
 
-AR = xt-ar
-CC = xt-xcc
-NM = xt-nm
-CPP = xt-cpp
-OBJCOPY = xt-objcopy
-#MAKE = xt-make
+#############################################################
+# Select compile
+#
+ifeq ($(OS),Windows_NT)
+# WIN32
+# We are under windows.
+	ifeq ($(XTENSA_CORE),lx106)
+		# It is xcc
+		AR = xt-ar
+		CC = xt-xcc
+		NM = xt-nm
+		CPP = xt-cpp
+		OBJCOPY = xt-objcopy
+		#MAKE = xt-make
+		CCFLAGS += -Os --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
+	else 
+		# It is gcc, may be cygwin
+		# Can we use -fdata-sections?
+		CCFLAGS += -Os -ffunction-sections -fno-jump-tables
+		AR = xtensa-lx106-elf-ar
+		CC = xtensa-lx106-elf-gcc
+		NM = xtensa-lx106-elf-nm
+		CPP = xtensa-lx106-elf-cpp
+		OBJCOPY = xtensa-lx106-elf-objcopy
+	endif
+    ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+# ->AMD64
+    endif
+    ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+# ->IA32
+    endif
+else
+# We are under other system, may be Linux. Assume using gcc.
+	# Can we use -fdata-sections?
+	CCFLAGS += -Os -ffunction-sections -fno-jump-tables
+	AR = xtensa-lx106-elf-ar
+	CC = xtensa-lx106-elf-gcc
+	NM = xtensa-lx106-elf-nm
+	CPP = xtensa-lx106-elf-cpp
+	OBJCOPY = xtensa-lx106-elf-objcopy
+
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+# LINUX
+    endif
+    ifeq ($(UNAME_S),Darwin)
+# OSX
+    endif
+    UNAME_P := $(shell uname -p)
+    ifeq ($(UNAME_P),x86_64)
+# ->AMD64
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+# ->IA32
+    endif
+    ifneq ($(filter arm%,$(UNAME_P)),)
+# ->ARM
+    endif
+endif
+#############################################################
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)

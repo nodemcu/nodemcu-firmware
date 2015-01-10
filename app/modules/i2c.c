@@ -8,7 +8,7 @@
 #include "lrotable.h"
 
 // Lua: speed = i2c.setup( id, sda, scl, speed )
-static int ICACHE_FLASH_ATTR i2c_setup( lua_State *L )
+static int i2c_setup( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   unsigned sda = luaL_checkinteger( L, 2 );
@@ -29,7 +29,7 @@ static int ICACHE_FLASH_ATTR i2c_setup( lua_State *L )
 }
 
 // Lua: i2c.start( id )
-static int ICACHE_FLASH_ATTR i2c_start( lua_State *L )
+static int i2c_start( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
 
@@ -39,7 +39,7 @@ static int ICACHE_FLASH_ATTR i2c_start( lua_State *L )
 }
 
 // Lua: i2c.stop( id )
-static int ICACHE_FLASH_ATTR i2c_stop( lua_State *L )
+static int i2c_stop( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
 
@@ -49,7 +49,7 @@ static int ICACHE_FLASH_ATTR i2c_stop( lua_State *L )
 }
 
 // Lua: status = i2c.address( id, address, direction )
-static int ICACHE_FLASH_ATTR i2c_address( lua_State *L )
+static int i2c_address( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   int address = luaL_checkinteger( L, 2 );
@@ -64,7 +64,7 @@ static int ICACHE_FLASH_ATTR i2c_address( lua_State *L )
 
 // Lua: wrote = i2c.write( id, data1, [data2], ..., [datan] )
 // data can be either a string, a table or an 8-bit number
-static int ICACHE_FLASH_ATTR i2c_write( lua_State *L )
+static int i2c_write( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   const char *pdata;
@@ -122,7 +122,7 @@ static int ICACHE_FLASH_ATTR i2c_write( lua_State *L )
 }
 
 // Lua: read = i2c.read( id, size )
-static int ICACHE_FLASH_ATTR i2c_read( lua_State *L )
+static int i2c_read( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   u32 size = ( u32 )luaL_checkinteger( L, 2 ), i;
@@ -162,7 +162,7 @@ const LUA_REG_TYPE i2c_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_i2c( lua_State *L )
+LUALIB_API int luaopen_i2c( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

@@ -82,6 +82,15 @@ void user_init(void)
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
+    
+    if( !flash_init_data_written() ){
+        NODE_ERR("Restore init data.\n");
+		// Flash init data at FLASHSIZE - 0x04000 Byte.
+        flash_init_data_default();
+		// Flash blank data at FLASHSIZE - 0x02000 Byte.
+        flash_init_data_blank(); 
+    }
+
 #if defined( BUILD_WOFS )
     romfs_init();
 
