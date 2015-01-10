@@ -29,6 +29,7 @@ ifeq ($(OS),Windows_NT)
 		CPP = xtensa-lx106-elf-cpp
 		OBJCOPY = xtensa-lx106-elf-objcopy
 	endif
+	FIRMWAREDIR = ..\\bin\\
 	ESPPORT = com1
     ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
 # ->AMD64
@@ -46,6 +47,7 @@ else
 	NM = xtensa-lx106-elf-nm
 	CPP = xtensa-lx106-elf-cpp
 	OBJCOPY = xtensa-lx106-elf-objcopy
+	FIRMWAREDIR = ../bin/
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
 # LINUX
@@ -65,8 +67,8 @@ else
     endif
 endif
 #############################################################
-ESPTOOL = python ../tools/esptool.py
-FIRMWAREDIR = ../bin/
+ESPTOOL = ../tools/esptool.py
+
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
