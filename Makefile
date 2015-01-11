@@ -141,7 +141,7 @@ endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)/
+	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
 
 #############################################################
 # Rules base
@@ -162,7 +162,7 @@ flash:
 ifndef PDIR
 	$(MAKE) -C ./app flash
 else
-	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)/0x00000.bin 0x10000 $(FIRMWAREDIR)/0x10000.bin
+	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
 .subdirs:
