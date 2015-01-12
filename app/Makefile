@@ -168,7 +168,7 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	../tools/esptool.py elf2image $< -o $(FIRMWAREDIR)
 
 flash:
-	../tools/esptool.py -p $(PORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	../tools/esptool.py -p $(PORT) write_flash 0x00000 ../bin/0x00000.bin 0x10000 ../bin/0x10000.bin
 
 .PHONY: FORCE
 FORCE:
