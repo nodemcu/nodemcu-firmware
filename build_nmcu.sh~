@@ -21,8 +21,8 @@ OUTPUTBIN=$(pwd)$CWD
 
 FILE_00000="./firmware/0x00000.bin"
 FILE_10000="./firmware/0x10000.bin"
-FILE_7C000="./../../../esp-open-sdk/esp_iot_sdk_v0.9.5/bin/esp_init_data_default.bin"
-FILE_7E000="./../../../esp-open-sdk/esp_iot_sdk_v0.9.5/bin/blank.bin"
+FILE_7C000="./../esp-open-sdk/esp_iot_sdk_v0.9.5/bin/esp_init_data_default.bin"
+FILE_7E000="./../esp-open-sdk/esp_iot_sdk_v0.9.5/bin/blank.bin"
 
 FILE_00000_SIZE=$(stat -c%s $FILE_00000)
 FILE_10000_SIZE=$(stat -c%s $FILE_10000)

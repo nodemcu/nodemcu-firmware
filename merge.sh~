@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd nodemcu-firmware
+git fetch upstream
+git merge upstream/master
+
