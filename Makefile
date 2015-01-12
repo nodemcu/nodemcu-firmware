@@ -29,6 +29,7 @@ ifeq ($(OS),Windows_NT)
 		CPP = xtensa-lx106-elf-cpp
 		OBJCOPY = xtensa-lx106-elf-objcopy
 	endif
+	FIRMWAREDIR = ..\\bin\\
     ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
 # ->AMD64
     endif
@@ -44,7 +45,7 @@ else
 	NM = xtensa-lx106-elf-nm
 	CPP = xtensa-lx106-elf-cpp
 	OBJCOPY = xtensa-lx106-elf-objcopy
-
+	FIRMWAREDIR = ../bin/
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
 # LINUX
@@ -136,7 +137,7 @@ endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(OBJCOPY) -O binary $< $@
+	../tools/esptool.py elf2image $< -o $(FIRMWAREDIR)
 
 #############################################################
 # Rules base

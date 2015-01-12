@@ -280,6 +280,7 @@ tmr.alarm(6,2000,1,function() print("alarm 6") end)
 tmr.stop(6)
 
 for k,v in pairs(_G.package.loaded) do print(k) end
+for k,v in pairs(_G) do print(k) end
 for k,v in pairs(d) do print("n:"..k..", s:"..v) end
 
 a="pin=9"

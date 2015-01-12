@@ -7,7 +7,7 @@
 #define NODE_VERSION_INTERNAL   0U
 
 #define NODE_VERSION	"NodeMCU 0.9.5"
-#define BUILD_DATE	    "build 20150107"
+#define BUILD_DATE	    "build 20150108"
 
 // #define FLASH_512K
 // #define FLASH_1M
@@ -38,7 +38,7 @@
 #define ICACHE_STORE_TYPEDEF_ATTR __attribute__((aligned(4),packed))
 #define ICACHE_STORE_ATTR __attribute__((aligned(4)))
 #define ICACHE_RAM_ATTR __attribute__((section(".iram0.text")))
-#define ICACHE_RODATA_ATTR __attribute__((section(".rodata.text")))
+#define ICACHE_RODATA_ATTR __attribute__((section(".rodata2.text")))
 
 #define CLIENT_SSL_ENABLE
 #define GPIO_INTERRUPT_ENABLE
