@@ -18,9 +18,9 @@ void spi_lcd_mode_init(uint8 spi_no);
 void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit);
 
 //spi master init funtion
-void spi_master_init(uint8 spi_no);
+void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock);
 //use spi send 8bit data
-void spi_mast_byte_write(uint8 spi_no,uint8 data);
+void spi_mast_byte_write(uint8 spi_no,uint8 *data);
 
 //transmit data to esp8266 slave buffer,which needs 16bit transmission ,
 //first byte is master command 0x04, second byte is master data

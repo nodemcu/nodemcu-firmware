@@ -435,6 +435,20 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
   return r;
 }
 
+// *****************************************************************************
+// SPI platform interface
+uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock)
+{
+  spi_master_init(id, cpol, cpha, databits, clock);
+  return 1;
+}
+
+spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data )
+{
+  spi_mast_byte_write(id, &data);
+  return data;
+}
+
 // ****************************************************************************
 // Flash access functions
 

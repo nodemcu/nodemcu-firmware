@@ -84,13 +84,23 @@ int platform_can_recv( unsigned id, uint32_t *canid, uint8_t *idtype, uint8_t *l
 // SPI enable/disable
 #define PLATFORM_SPI_ENABLE                   1
 #define PLATFORM_SPI_DISABLE                  0
+// SPI clock phase
+#define PLATFORM_SPI_CPHA_LOW                 0
+#define PLATFORM_SPI_CPHA_HIGH                1
+// SPI clock polarity
+#define PLATFORM_SPI_CPOL_LOW                 0
+#define PLATFORM_SPI_CPOL_HIGH                1
+// SPI databits
+#define PLATFORM_SPI_DATABITS_8               8
+#define PLATFORM_SPI_DATABITS_16              16
+
 
 // Data types
 typedef uint32_t spi_data_type;
 
 // The platform SPI functions
 int platform_spi_exists( unsigned id );
-uint32_t platform_spi_setup( unsigned id, int mode, uint32_t clock, unsigned cpol, unsigned cpha, unsigned databits );
+uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock);
 spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data );
 void platform_spi_select( unsigned id, int is_select );
 
