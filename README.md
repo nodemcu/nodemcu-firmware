@@ -155,11 +155,13 @@ baudrate:9600
 ####Connect to your ap
 
 ```lua
-    print(wifi.sta.getip())
-    --0.0.0.0
+    ip = wifi.sta.getip()
+    print(ip)
+    --nil
     wifi.setmode(wifi.STATION)
     wifi.sta.config("SSID","password")
-    print(wifi.sta.getip())
+    ip = wifi.sta.getip()
+    print(ip)
     --192.168.18.110
 ```
 
