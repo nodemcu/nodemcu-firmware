@@ -13,7 +13,7 @@
 #include "c_types.h"
 #include "mem.h"
 #include "espconn.h"
-
+#include "mqtt_msg.h"
 #ifdef CLIENT_SSL_ENABLE
 unsigned char *default_certificate;
 unsigned int default_certificate_len = 0;
@@ -40,6 +40,48 @@ static uint16_t tcp_server_timeover = 30;
 static struct espconn *pTcpServer = NULL;
 static struct espconn *pUdpServer = NULL;
 
+#define MQTT_BUF_SIZE	1024
+#define MQTT_DEFAULT_KEEPALIVE 60
+#define MQTT_MAX_CLIENT_LEN		64
+#define MQTT_MAX_USER_LEN			64
+#define MQTT_MAX_PASS_LEN			64
+
+typedef enum {
+	MQTT_INIT,
+	MQTT_CONNECT_SEND,
+	MQTT_CONNECT_SENDING,
+	MQTT_DATA
+} tConnState;
+
+typedef struct mqtt_event_data_t
+{
+  uint8_t type;
+  const char* topic;
+  const char* data;
+  uint16_t topic_length;
+  uint16_t data_length;
+  uint16_t data_offset;
+} mqtt_event_data_t;
+
+typedef struct mqtt_state_t
+{
+  uint16_t port;
+  int auto_reconnect;
+  mqtt_connect_info_t* connect_info;
+  uint8_t* in_buffer;
+  uint8_t* out_buffer;
+  int in_buffer_length;
+  int out_buffer_length;
+  uint16_t message_length;
+  uint16_t message_length_read;
+  mqtt_message_t* outbound_message;
+  mqtt_connection_t mqtt_connection;
+
+  uint16_t pending_msg_id;
+  int pending_msg_type;
+  int pending_publish_qos;
+} mqtt_state_t;
+
 typedef struct lnet_userdata
 {
   struct espconn *pesp_conn;
@@ -53,6 +95,13 @@ typedef struct lnet_userdata
 #ifdef CLIENT_SSL_ENABLE
   uint8_t secure;
 #endif
+  int cb_subscribe_ref;
+  mqtt_state_t  mqtt_state;
+  mqtt_connect_info_t connect_info;
+  bool is_mqtt;
+  uint32_t keep_alive_tick;
+  ETSTimer mqttTimer;
+  tConnState connState;
 }lnet_userdata;
 
 static void net_server_disconnected(void *arg)    // for tcp server only
@@ -139,16 +188,197 @@ static void net_socket_reconnected(void *arg, sint8_t err)
   NODE_DBG("net_socket_reconnected is called.\n");
   net_socket_disconnected(arg);
 }
+LOCAL void ICACHE_FLASH_ATTR
+deliver_publish(lnet_userdata * nud, uint8_t* message, int length)
+{
+	const char comma[] = ",";
+	mqtt_event_data_t event_data;
+
+	event_data.topic_length = length;
+	event_data.topic = mqtt_get_publish_topic(message, &event_data.topic_length);
+
+	event_data.data_length = length;
+	event_data.data = mqtt_get_publish_data(message, &event_data.data_length);
+
+	if(nud->cb_receive_ref == LUA_NOREF)
+		return;
+	if(nud->self_ref == LUA_NOREF)
+		return;
+	lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_receive_ref);
+	lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
+	// expose_array(gL, pdata, len);
+	// *(pdata+len) = 0;
+	// NODE_DBG(pdata);
+	// NODE_DBG("\n");
+	lua_pushlstring(gL, event_data.topic, event_data.topic_length);
+	if(event_data.data_length > 0){
+		lua_pushlstring(gL, event_data.data, event_data.data_length);
+		lua_call(gL, 3, 0);
+	} else {
+		lua_call(gL, 2, 0);
+	}
+}
 
 static void net_socket_received(void *arg, char *pdata, unsigned short len)
 {
   NODE_DBG("net_socket_received is called.\n");
+  uint8_t msg_type;
+	uint8_t msg_qos;
+
+	uint16_t msg_id;
   struct espconn *pesp_conn = arg;
   if(pesp_conn == NULL)
     return;
   lnet_userdata *nud = (lnet_userdata *)pesp_conn->reverse;
   if(nud == NULL)
     return;
+  if(nud->is_mqtt){
+  	c_memcpy(nud->mqtt_state.in_buffer, pdata, len);
+  	nud->mqtt_state.outbound_message = NULL;
+  	switch(nud->connState){
+		case MQTT_CONNECT_SENDING:
+			if(mqtt_get_type(nud->mqtt_state.in_buffer) != MQTT_MSG_TYPE_CONNACK){
+				NODE_DBG("MQTT: Invalid packet\r\n");
+				nud->connState = MQTT_INIT;
+				if(nud->secure){
+					espconn_secure_disconnect(pesp_conn);
+				}
+				else {
+					espconn_disconnect(pesp_conn);
+				}
+
+			} else {
+				nud->connState = MQTT_DATA;
+				NODE_DBG("MQTT: Connected\r\n");
+				if(nud->cb_connect_ref == LUA_NOREF)
+					return;
+				if(nud->self_ref == LUA_NOREF)
+					return;
+				lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_connect_ref);
+				lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
+				lua_call(gL, 1, 0);
+				return;
+			}
+			break;
+
+		case MQTT_DATA:
+			nud->mqtt_state.message_length_read = len;
+			nud->mqtt_state.message_length = mqtt_get_total_length(nud->mqtt_state.in_buffer, nud->mqtt_state.message_length_read);
+			msg_type = mqtt_get_type(nud->mqtt_state.in_buffer);
+			msg_qos = mqtt_get_qos(nud->mqtt_state.in_buffer);
+			msg_id = mqtt_get_id(nud->mqtt_state.in_buffer, nud->mqtt_state.in_buffer_length);
+
+			NODE_DBG("MQTT_DATA: type: %d, qos: %d, msg_id: %d, pending_id: %d\r\n",
+					msg_type,
+					msg_qos,
+					msg_id,
+					nud->mqtt_state.pending_msg_id);
+			switch(msg_type)
+			{
+			  case MQTT_MSG_TYPE_SUBACK:
+				if(nud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_SUBSCRIBE && nud->mqtt_state.pending_msg_id == msg_id)
+					NODE_DBG("MQTT: Subscribe successful\r\n");
+					if (nud->cb_subscribe_ref == LUA_NOREF)
+						break;
+					if (nud->self_ref == LUA_NOREF)
+						break;
+					lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_subscribe_ref);
+					lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);
+					lua_call(gL, 1, 0);
+				break;
+			  case MQTT_MSG_TYPE_UNSUBACK:
+				if(nud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_UNSUBSCRIBE && nud->mqtt_state.pending_msg_id == msg_id)
+					NODE_DBG("MQTT: UnSubscribe successful\r\n");
+				break;
+			  case MQTT_MSG_TYPE_PUBLISH:
+				if(msg_qos == 1)
+					nud->mqtt_state.outbound_message = mqtt_msg_puback(&nud->mqtt_state.mqtt_connection, msg_id);
+				else if(msg_qos == 2)
+					nud->mqtt_state.outbound_message = mqtt_msg_pubrec(&nud->mqtt_state.mqtt_connection, msg_id);
+
+				deliver_publish(nud, nud->mqtt_state.in_buffer, nud->mqtt_state.message_length_read);
+				break;
+			  case MQTT_MSG_TYPE_PUBACK:
+				if(nud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_PUBLISH && nud->mqtt_state.pending_msg_id == msg_id){
+					NODE_DBG("MQTT: Publish with QoS = 1 successful\r\n");
+					 if(nud->cb_send_ref == LUA_NOREF)
+					    break;
+					  if(nud->self_ref == LUA_NOREF)
+					    break;
+					  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_send_ref);
+					  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
+					  lua_call(gL, 1, 0);
+				}
+
+				break;
+			  case MQTT_MSG_TYPE_PUBREC:
+			  	nud->mqtt_state.outbound_message = mqtt_msg_pubrel(&nud->mqtt_state.mqtt_connection, msg_id);
+			  	NODE_DBG("MQTT: Public  with QoS = 2 successful\r\n");
+				break;
+			  case MQTT_MSG_TYPE_PUBREL:
+			  	nud->mqtt_state.outbound_message = mqtt_msg_pubcomp(&nud->mqtt_state.mqtt_connection, msg_id);
+				break;
+			  case MQTT_MSG_TYPE_PUBCOMP:
+				if(nud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_PUBLISH && nud->mqtt_state.pending_msg_id == msg_id){
+					NODE_DBG("MQTT: Public  with QoS = 2 successful\r\n");
+					if(nud->cb_send_ref == LUA_NOREF)
+						break;
+					if(nud->self_ref == LUA_NOREF)
+						break;
+					lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_send_ref);
+					lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
+					lua_call(gL, 1, 0);
+				}
+				break;
+			  case MQTT_MSG_TYPE_PINGREQ:
+			  	nud->mqtt_state.outbound_message = mqtt_msg_pingresp(&nud->mqtt_state.mqtt_connection);
+				break;
+			  case MQTT_MSG_TYPE_PINGRESP:
+				// Ignore
+				break;
+			}
+			// NOTE: this is done down here and not in the switch case above
+			// because the PSOCK_READBUF_LEN() won't work inside a switch
+			// statement due to the way protothreads resume.
+			if(msg_type == MQTT_MSG_TYPE_PUBLISH)
+			{
+			  uint16_t len;
+
+			  // adjust message_length and message_length_read so that
+			  // they only account for the publish data and not the rest of the
+			  // message, this is done so that the offset passed with the
+			  // continuation event is the offset within the publish data and
+			  // not the offset within the message as a whole.
+			  len = nud->mqtt_state.message_length_read;
+			  mqtt_get_publish_data(nud->mqtt_state.in_buffer, &len);
+			  len = nud->mqtt_state.message_length_read - len;
+			  nud->mqtt_state.message_length -= len;
+			  nud->mqtt_state.message_length_read -= len;
+
+			  if(nud->mqtt_state.message_length_read < nud->mqtt_state.message_length)
+			  {
+				  //client->connState = MQTT_PUBLISH_RECV;
+			  	/* TODO: implement when message length too long */
+			  }
+
+			}
+			break;
+
+		}
+
+		if(nud->mqtt_state.outbound_message != NULL){
+		#ifdef CLIENT_SSL_ENABLE
+			if(nud->secure)
+				espconn_secure_sent(pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+			else
+		#endif
+				espconn_sent(pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+			nud->mqtt_state.outbound_message = NULL;
+		}
+
+  	return;
+  } /* if(nud->is_mqtt)*/
+
   if(nud->cb_receive_ref == LUA_NOREF)
     return;
   if(nud->self_ref == LUA_NOREF)
@@ -166,17 +396,24 @@ static void net_socket_received(void *arg, char *pdata, unsigned short len)
 
 static void net_socket_sent(void *arg)
 {
-  // NODE_DBG("net_socket_sent is called.\n");
+  NODE_DBG("net_socket_sent is called.\n");
   struct espconn *pesp_conn = arg;
   if(pesp_conn == NULL)
     return;
   lnet_userdata *nud = (lnet_userdata *)pesp_conn->reverse;
+  if(nud->is_mqtt){
+
+		if(nud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_PINGREQ || nud->mqtt_state.pending_publish_qos > 0)
+			return;
+	}
   if(nud == NULL)
     return;
   if(nud->cb_send_ref == LUA_NOREF)
     return;
   if(nud->self_ref == LUA_NOREF)
     return;
+
+
   lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_send_ref);
   lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
   lua_call(gL, 1, 0);
@@ -330,6 +567,23 @@ static void net_socket_connected(void *arg)
   espconn_regist_sentcb(pesp_conn, net_socket_sent);
   espconn_regist_disconcb(pesp_conn, net_socket_disconnected);
 
+  if(nud->is_mqtt) {
+
+		mqtt_msg_init(&nud->mqtt_state.mqtt_connection, nud->mqtt_state.out_buffer, nud->mqtt_state.out_buffer_length);
+		nud->mqtt_state.outbound_message = mqtt_msg_connect(&nud->mqtt_state.mqtt_connection, nud->mqtt_state.connect_info);
+		nud->mqtt_state.pending_publish_qos = 3;
+		NODE_DBG("Send MQTT connection infomation, data len: %d, d[0]=%d \r\n", nud->mqtt_state.outbound_message->length,  nud->mqtt_state.outbound_message->data[0]);
+		if(nud->secure){
+			espconn_secure_sent(pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+		}
+		else
+		{
+			espconn_sent(pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+		}
+		nud->connState = MQTT_CONNECT_SENDING;
+
+		return;
+  }
   if(nud->cb_connect_ref == LUA_NOREF)
     return;
   if(nud->self_ref == LUA_NOREF)
@@ -351,7 +605,7 @@ static int net_create( lua_State* L, const char* mt )
 #endif
   uint8_t stack = 1;
   bool isserver = false;
-  
+
   if (mt!=NULL && c_strcmp(mt, "net.server")==0)
     isserver = true;
   else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
@@ -405,7 +659,9 @@ static int net_create( lua_State* L, const char* mt )
   nud->cb_receive_ref = LUA_NOREF;
   nud->cb_send_ref = LUA_NOREF;
   nud->cb_dns_found_ref = LUA_NOREF;
+  nud->cb_subscribe_ref = LUA_NOREF;
   nud->pesp_conn = NULL;
+  nud->is_mqtt = false;
 #ifdef CLIENT_SSL_ENABLE
   nud->secure = secure;
 #endif
@@ -478,9 +734,155 @@ static int net_create( lua_State* L, const char* mt )
     lua_call(L, 1, 0);
   }
 
-  return 1; 
+  return 1;
 }
 
+void mqtt_timer(void *arg)
+{
+	lnet_userdata *nud = (lnet_userdata*) arg;
+
+
+	if(nud->connState == MQTT_DATA){
+		nud->keep_alive_tick ++;
+		if(nud->keep_alive_tick > nud->mqtt_state.connect_info->keepalive){
+			nud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PINGREQ;
+			NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
+			nud->mqtt_state.outbound_message = mqtt_msg_pingreq(&nud->mqtt_state.mqtt_connection);
+#ifdef CLIENT_SSL_ENABLE
+	  if(nud->secure)
+	    espconn_secure_sent(nud->pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+	  else
+	#endif
+	    espconn_sent(nud->pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+	  nud->keep_alive_tick = 0;
+
+		}
+
+	}
+}
+
+
+static int net_initMqttClient( lua_State* L, const char* mt )
+{
+  NODE_DBG("net_initMqttClient is called.\n");
+  struct espconn *pesp_conn = NULL;
+  lnet_userdata *nud;
+  uint8_t stack = 1;
+  const char *clientId, *username, *password;
+  size_t il;
+
+
+  nud = (lnet_userdata *)luaL_checkudata(L, stack, mt);
+  luaL_argcheck(L, nud, stack, "Server/Socket expected");
+  stack++;
+  c_memset(&nud->mqtt_state, 0, sizeof(mqtt_state_t));
+  c_memset(&nud->connect_info, 0, sizeof(mqtt_connect_info_t));
+
+  if( lua_isstring(L,stack) )   // deal with the domain string
+	{
+		clientId = luaL_checklstring( L, stack, &il );
+
+
+
+		if(clientId == NULL){
+			return luaL_error( L, "ClientId must have" );
+		}
+		nud->connect_info.client_id = (uint8_t *)c_zalloc(il+1);
+		c_memcpy(nud->connect_info.client_id, clientId, il);
+		nud->connect_info.client_id[il] = 0;
+		stack++;
+
+
+		nud->mqtt_state.in_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
+		nud->mqtt_state.out_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
+		nud->mqtt_state.in_buffer_length = MQTT_BUF_SIZE;
+		nud->mqtt_state.out_buffer_length = MQTT_BUF_SIZE;
+
+
+		nud->is_mqtt = true;
+		nud->connState = MQTT_INIT;
+		nud->connect_info.clean_session = 1;
+		nud->connect_info.will_qos = 0;
+		nud->connect_info.will_retain = 0;
+		nud->keep_alive_tick = 0;
+
+		nud->mqtt_state.connect_info = &nud->connect_info;
+
+		nud->connect_info.keepalive = luaL_checkinteger( L, stack);
+		os_timer_disarm(&nud->mqttTimer);
+		os_timer_setfn(&nud->mqttTimer, (os_timer_func_t *)mqtt_timer, nud);
+		os_timer_arm(&nud->mqttTimer, 1000, 1);
+
+		if(nud->connect_info.keepalive == 0){
+			nud->connect_info.keepalive = MQTT_DEFAULT_KEEPALIVE;
+			return 0;
+		}
+
+
+		stack++;
+		username = luaL_checklstring( L, stack, &il );
+		if(username == NULL)
+			return 0;
+		nud->connect_info.username = (uint8_t *)c_zalloc(il + 1);
+		c_memcpy(nud->connect_info.username, username, il);
+		nud->connect_info.username[il] = 0;
+		stack++;
+		password = luaL_checklstring( L, stack, &il );
+		if(password == NULL)
+			return 0;
+		nud->connect_info.password = (uint8_t *)c_zalloc(il + 1);
+		c_memcpy(nud->connect_info.password, password, il);
+		nud->connect_info.password[il] = 0;
+
+		NODE_DBG("MQTT: Init info: %s, %s, %s\r\n", nud->connect_info.client_id, nud->connect_info.username, nud->connect_info.password);
+
+	}
+  return 0;
+
+}
+
+static int net_mqttSubscribe( lua_State* L, const char* mt )
+{
+	NODE_DBG("net_mqttSubscribe is called.\n");
+	uint8_t stack = 1, qos;
+	const char *topic;
+	size_t il;
+
+	lnet_userdata *nud;
+
+
+	nud = (lnet_userdata *)luaL_checkudata(L, stack, mt);
+	luaL_argcheck(L, nud, stack, "Server/Socket expected");
+
+	stack++;
+	topic = luaL_checklstring( L, stack, &il );
+
+	if(topic == NULL)
+		return luaL_error( L, "need topic name" );
+	stack++;
+	qos = luaL_checkinteger( L, stack);
+
+	nud->mqtt_state.outbound_message =  mqtt_msg_subscribe(&nud->mqtt_state.mqtt_connection,
+																													topic, 0,
+																													&nud->mqtt_state.pending_msg_id);
+	nud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_SUBSCRIBE;
+	nud->mqtt_state.pending_publish_qos = 3;
+	stack ++;
+	if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
+		lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
+		if(nud->cb_subscribe_ref != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_subscribe_ref);
+		nud->cb_subscribe_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+	}
+	#ifdef CLIENT_SSL_ENABLE
+	  if(nud->secure)
+	    espconn_secure_sent(nud->pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+	  else
+	#endif
+	    espconn_sent(nud->pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+  return 0;
+
+}
 // static int net_close( lua_State* L, const char* mt );
 // Lua: net.delete( socket/server )
 // call close() first
@@ -525,7 +927,16 @@ static int net_delete( lua_State* L, const char* mt )
     }
     nud->pesp_conn = NULL;    // for socket, it will free this when disconnected
   }
-
+  if(nud->is_mqtt){
+  	if(nud->connect_info.client_id)
+  		c_free(nud->connect_info.client_id);
+  	if(nud->connect_info.username)
+			c_free(nud->connect_info.username);
+  	if(nud->connect_info.password)
+			c_free(nud->connect_info.password);
+  	c_free(nud->mqtt_state.in_buffer);
+  	c_free(nud->mqtt_state.out_buffer);
+  }
   // free (unref) callback ref
   if(LUA_NOREF!=nud->cb_connect_ref){
     luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_connect_ref);
@@ -551,13 +962,19 @@ static int net_delete( lua_State* L, const char* mt )
     luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);
     nud->cb_dns_found_ref = LUA_NOREF;
   }
+  if(LUA_NOREF!=nud->cb_subscribe_ref){
+      luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_subscribe_ref);
+      nud->cb_subscribe_ref = LUA_NOREF;
+    }
+
   lua_gc(gL, LUA_GCSTOP, 0);
   if(LUA_NOREF!=nud->self_ref){
     luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
     nud->self_ref = LUA_NOREF;
   }
+  os_timer_disarm(&nud->mqttTimer);
   lua_gc(gL, LUA_GCRESTART, 0);
-  return 0;  
+  return 0;
 }
 
 static void socket_connect(struct espconn *pesp_conn)
@@ -646,7 +1063,7 @@ static int net_start( lua_State* L, const char* mt )
   ip_addr_t ipaddr;
   const char *domain;
   uint8_t stack = 1;
-  
+
   if (mt!=NULL && c_strcmp(mt, "net.server")==0)
     isserver = true;
   else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
@@ -728,8 +1145,8 @@ static int net_start( lua_State* L, const char* mt )
         if(tcpserver_cb_connect_ref != LUA_NOREF)
           luaL_unref(L, LUA_REGISTRYINDEX, tcpserver_cb_connect_ref);
         tcpserver_cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-      } 
-      else 
+      }
+      else
       {
         if(nud->cb_connect_ref != LUA_NOREF)
           luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_connect_ref);
@@ -800,7 +1217,7 @@ static int net_start( lua_State* L, const char* mt )
       socket_connect(pesp_conn);
     }
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: server/socket:close()
@@ -830,6 +1247,7 @@ static int net_close( lua_State* L, const char* mt )
     NODE_DBG("wrong metatable for net_close.\n");
     return 0;
   }
+
 
   if(isserver && nud->pesp_conn->type == ESPCONN_TCP && tcpserver_cb_connect_ref != LUA_NOREF){
     luaL_unref(L, LUA_REGISTRYINDEX, tcpserver_cb_connect_ref);
@@ -911,7 +1329,7 @@ static int net_close( lua_State* L, const char* mt )
   }
 #endif
 
-  return 0;  
+  return 0;
 }
 
 // Lua: socket/udpserver:on( "method", function(s) )
@@ -921,7 +1339,7 @@ static int net_on( lua_State* L, const char* mt )
   bool isserver = false;
   lnet_userdata *nud;
   size_t sl;
-  
+
   nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
   if(nud==NULL){
@@ -970,12 +1388,16 @@ static int net_on( lua_State* L, const char* mt )
     if(nud->cb_dns_found_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);
     nud->cb_dns_found_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  } else if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 9 && c_strcmp(method, "subscribe") == 0){
+    if(nud->cb_subscribe_ref != LUA_NOREF)
+      luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_subscribe_ref);
+    nud->cb_subscribe_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else{
   	lua_pop(L, 1);
     return luaL_error( L, "method not supported" );
   }
 
-  return 0;  
+  return 0;
 }
 
 // Lua: server/socket:send( string, function(sent) )
@@ -986,9 +1408,9 @@ static int net_send( lua_State* L, const char* mt )
   struct espconn *pesp_conn = NULL;
   lnet_userdata *nud;
   size_t l;
-  
-  nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
-  luaL_argcheck(L, nud, 1, "Server/Socket expected");
+  uint8_t stack = 1;
+  nud = (lnet_userdata *)luaL_checkudata(L, stack, mt);
+  luaL_argcheck(L, nud, stack, "Server/Socket expected");
   if(nud==NULL){
   	NODE_DBG("userdata is nil.\n");
   	return 0;
@@ -1023,17 +1445,46 @@ static int net_send( lua_State* L, const char* mt )
   NODE_DBG("%d",pesp_conn->proto.tcp->remote_port);
   NODE_DBG(" sending data.\n");
 #endif
-
-  const char *payload = luaL_checklstring( L, 2, &l );
+  const char *topic;
+  if(nud->is_mqtt){
+  	stack ++;
+  	topic = luaL_checklstring( L, stack, &l );
+  }
+  stack ++;
+  const char *payload = luaL_checklstring( L, stack, &l );
   if (l>1460 || payload == NULL)
     return luaL_error( L, "need <1460 payload" );
 
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION){
-    lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
+  if(nud->is_mqtt){
+
+		stack ++;
+		uint8_t qos = luaL_checkinteger( L, stack);
+		stack ++;
+		uint8_t retain = luaL_checkinteger( L, stack);
+		nud->mqtt_state.pending_publish_qos = qos;
+		nud->mqtt_state.outbound_message = mqtt_msg_publish(&nud->mqtt_state.mqtt_connection,
+											 topic, payload, l,
+											 qos, retain,
+											 &nud->mqtt_state.pending_msg_id);
+		nud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PUBLISH;
+
+  stack ++;
+
+  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
+    lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     if(nud->cb_send_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_send_ref);
     nud->cb_send_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
+#ifdef CLIENT_SSL_ENABLE
+  if(nud->secure)
+    espconn_secure_sent(pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+  else
+#endif
+    espconn_sent(pesp_conn, nud->mqtt_state.outbound_message->data, nud->mqtt_state.outbound_message->length);
+  	nud->mqtt_state.outbound_message = NULL;
+  	return 0;
+	}
 #ifdef CLIENT_SSL_ENABLE
   if(nud->secure)
     espconn_secure_sent(pesp_conn, (unsigned char *)payload, l);
@@ -1041,7 +1492,7 @@ static int net_send( lua_State* L, const char* mt )
 #endif
     espconn_sent(pesp_conn, (unsigned char *)payload, l);
 
-  return 0;  
+  return 0;
 }
 
 // Lua: socket:dns( string, function(socket, ip) )
@@ -1052,7 +1503,7 @@ static int net_dns( lua_State* L, const char* mt )
   struct espconn *pesp_conn = NULL;
   lnet_userdata *nud;
   size_t l;
-  
+
   nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
   if(nud==NULL){
@@ -1093,7 +1544,7 @@ static int net_dns( lua_State* L, const char* mt )
   host_ip.addr = 0;
   espconn_gethostbyname(pesp_conn, domain, &host_ip, net_dns_found);
 
-  return 0;  
+  return 0;
 }
 
 
@@ -1144,6 +1595,19 @@ static int net_createConnection( lua_State* L )
 {
   const char *mt = "net.socket";
   return net_create(L, mt);
+}
+// Lua: socket:mqtt(clientid, keepalive, user, pass)
+static int net_socket_mqtt( lua_State* L )
+{
+	const char *mt = "net.socket";
+	return net_initMqttClient(L, mt);
+}
+
+// Lua: socket:subscribe(topic, qos, function(conn))
+static int net_socket_subscribe( lua_State* L )
+{
+	const char *mt = "net.socket";
+	return net_mqttSubscribe(L, mt);
 }
 
 // Lua: socket:delete()
@@ -1240,6 +1704,8 @@ static const LUA_REG_TYPE net_socket_map[] =
   { LSTRKEY( "on" ), LFUNCVAL ( net_socket_on ) },
   { LSTRKEY( "send" ), LFUNCVAL ( net_socket_send ) },
   { LSTRKEY( "dns" ), LFUNCVAL ( net_socket_dns ) },
+  { LSTRKEY( "mqtt" ), LFUNCVAL ( net_socket_mqtt ) },
+	{ LSTRKEY( "subscribe" ), LFUNCVAL ( net_socket_subscribe ) },
   // { LSTRKEY( "delete" ), LFUNCVAL ( net_socket_delete ) },
   { LSTRKEY( "__gc" ), LFUNCVAL ( net_socket_delete ) },
 #if LUA_OPTIMIZE_MEMORY > 0
@@ -1247,6 +1713,8 @@ static const LUA_REG_TYPE net_socket_map[] =
 #endif
   { LNILKEY, LNILVAL }
 };
+
+
 #if 0
 static const LUA_REG_TYPE net_array_map[] =
 {
@@ -1255,7 +1723,7 @@ static const LUA_REG_TYPE net_array_map[] =
   { LNILKEY, LNILVAL }
 };
 #endif
-const LUA_REG_TYPE net_map[] = 
+const LUA_REG_TYPE net_map[] =
 {
   { LSTRKEY( "createServer" ), LFUNCVAL ( net_createServer ) },
   { LSTRKEY( "createConnection" ), LFUNCVAL ( net_createConnection ) },
@@ -1279,6 +1747,7 @@ LUALIB_API int luaopen_net( lua_State *L )
 #if LUA_OPTIMIZE_MEMORY > 0
   luaL_rometatable(L, "net.server", (void *)net_server_map);  // create metatable for net.server
   luaL_rometatable(L, "net.socket", (void *)net_socket_map);  // create metatable for net.socket
+
   #if 0
   luaL_rometatable(L, "net.array", (void *)net_array_map);  // create metatable for net.array
   #endif
@@ -1291,10 +1760,10 @@ LUALIB_API int luaopen_net( lua_State *L )
   lua_pushvalue( L, -1 );
   lua_setmetatable( L, -2 );
 
-  // Module constants  
+  // Module constants
   MOD_REG_NUMBER( L, "TCP", TCP );
   MOD_REG_NUMBER( L, "UDP", UDP );
-  
+
   n = lua_gettop(L);
 
   // create metatable
