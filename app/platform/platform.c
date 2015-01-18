@@ -129,11 +129,11 @@ int platform_gpio_read( unsigned pin )
     return -1;
 
   if(pin == 0){
-    gpio16_input_conf();
+    // gpio16_input_conf();
     return 0x1 & gpio16_input_get();
   }
 
-  GPIO_DIS_OUTPUT(pin_num[pin]);
+  // GPIO_DIS_OUTPUT(pin_num[pin]);
   return 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin]));
 }
 
