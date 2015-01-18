@@ -26,17 +26,18 @@ Tencent QQ group QQ群: 309957875<br />
 - add coap module
 
 # Change log
+2015-01-18<br />
+merge mqtt module to [new branch mqtt](https://github.com/nodemcu/nodemcu-firmware/tree/mqtt) from [https://github.com/tuanpmt/esp_mqtt](https://github.com/tuanpmt/esp_mqtt).<br />
+merge spi module from iabdalkader:spi. <br />
+fix #110,set local port to random in client mode.<br />
+modify gpio.read to NOT set pin to input mode automatic.<br />
+add PATH env with C:\MinGW\bin;C:\MinGW\msys\1.0\bin;C:\Python27 in eclipse project. resolve #103.
+
 2015-01-08<br />
 fix net.socket:send() issue when multi sends are called. <br />
 *NOTE*: if data length is bigger than 1460, send next packet AFTER "sent" callback is called.<br />
 fix file.read() api, take 0xFF as a regular byte, not EOF.<br />
 pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemcu_latest.bin instead.
-
-2015-01-07<br />
-retrive more ram back.<br />
-add api file.format() to rebuild file system.<br />
-rename "NodeMcu" to "NodeMCU" in firmware.<br />
-add some check for file system op.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
 [更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
@@ -155,11 +156,13 @@ baudrate:9600
 ####Connect to your ap
 
 ```lua
-    print(wifi.sta.getip())
-    --0.0.0.0
+    ip = wifi.sta.getip()
+    print(ip)
+    --nil
     wifi.setmode(wifi.STATION)
     wifi.sta.config("SSID","password")
-    print(wifi.sta.getip())
+    ip = wifi.sta.getip()
+    print(ip)
     --192.168.18.110
 ```
 

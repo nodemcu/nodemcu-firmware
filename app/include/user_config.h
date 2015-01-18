@@ -7,7 +7,7 @@
 #define NODE_VERSION_INTERNAL   0U
 
 #define NODE_VERSION	"NodeMCU 0.9.5"
-#define BUILD_DATE	    "build 20150108"
+#define BUILD_DATE	    "build 20150118"
 
 // #define FLASH_512K
 // #define FLASH_1M
@@ -55,6 +55,7 @@
 #define LUA_USE_MODULES_NET
 #define LUA_USE_MODULES_PWM
 #define LUA_USE_MODULES_I2C
+#define LUA_USE_MODULES_SPI
 #define LUA_USE_MODULES_TMR
 #define LUA_USE_MODULES_ADC
 #define LUA_USE_MODULES_UART
