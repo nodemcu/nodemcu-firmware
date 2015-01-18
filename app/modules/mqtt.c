@@ -328,10 +328,6 @@ static void mqtt_socket_connected(void *arg)
   espconn_regist_sentcb(pesp_conn, mqtt_socket_sent);
   espconn_regist_disconcb(pesp_conn, mqtt_socket_disconnected);
 
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-  lua_pushfstring(gL, "NodeMCU_%x", system_get_chip_id());
-  mqtt_socket_client(gL);
-
   // call mqtt_connect() to start a mqtt connect stage.
   mqtt_msg_init(&mud->mqtt_state.mqtt_connection, mud->mqtt_state.out_buffer, mud->mqtt_state.out_buffer_length);
   mud->mqtt_state.outbound_message = mqtt_msg_connect(&mud->mqtt_state.mqtt_connection, mud->mqtt_state.connect_info);
@@ -348,74 +344,38 @@ static void mqtt_socket_connected(void *arg)
   return;
 }
 
-static void socket_connect(struct espconn *pesp_conn)
+void mqtt_socket_timer(void *arg)
 {
-  if(pesp_conn == NULL)
-    return;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
-  if(mud == NULL)
-    return;
+  lmqtt_userdata *mud = (lmqtt_userdata*) arg;
 
-  if(mud->secure){
-    espconn_secure_connect(pesp_conn);
-  }
-  else
-  {
-    espconn_connect(pesp_conn);
-  }
-  
-  NODE_DBG("socket_connect is called.\n");
-}
+  if(mud->connState == MQTT_DATA){
+    mud->keep_alive_tick ++;
+    if(mud->keep_alive_tick > mud->mqtt_state.connect_info->keepalive){
+      mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PINGREQ;
+      NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
+      mud->mqtt_state.outbound_message = mqtt_msg_pingreq(&mud->mqtt_state.mqtt_connection);
 
-static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
-static dns_reconn_count = 0;
-static ip_addr_t host_ip; // for dns
-static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
-{
-  NODE_DBG("socket_dns_found is called.\n");
-  struct espconn *pesp_conn = arg;
-  if(pesp_conn == NULL){
-    NODE_DBG("pesp_conn null.\n");
-    return;
-  }
-
-  if(ipaddr == NULL)
-  {
-    dns_reconn_count++;
-    if( dns_reconn_count >= 5 ){
-      NODE_ERR( "DNS Fail!\n" );
-      // Note: should delete the pesp_conn or unref self_ref here.
-      mqtt_socket_disconnected(arg);   // although not connected, but fire disconnect callback to release every thing.
-      return;
+      if(mud->secure)
+        espconn_secure_sent(mud->pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
+      else
+        espconn_sent(mud->pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
+      mud->keep_alive_tick = 0;
     }
-    NODE_ERR( "DNS retry %d!\n", dns_reconn_count );
-    host_ip.addr = 0;
-    espconn_gethostbyname(pesp_conn, name, &host_ip, socket_dns_found);
-    return;
-  }
-
-  // ipaddr->addr is a uint32_t ip
-  if(ipaddr->addr != 0)
-  {
-    dns_reconn_count = 0;
-    c_memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
-    NODE_DBG("TCP ip is set: ");
-    NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
-    NODE_DBG("\n");
-    socket_connect(pesp_conn);
   }
 }
 
-// Lua: client mqtt.connect( host, port, secure, function(client) )
-static int mqtt_socket_connect( lua_State* L )
+// Lua: mqtt.Client(clientid, keepalive, user, pass)
+static int mqtt_socket_client( lua_State* L )
 {
-  NODE_DBG("mqtt_socket_connect is called.\n");
+  NODE_DBG("mqtt_socket_client is called.\n");
   struct espconn *pesp_conn = NULL;
-  lmqtt_userdata *mud = NULL;
-  unsigned port = 1883;
-  size_t il;
-  ip_addr_t ipaddr;
-  const char *domain;
+  lmqtt_userdata *mud;
+  char tempid[20] = {0};
+  c_sprintf(tempid, "%s%x", "NodeMCU_", system_get_chip_id() );
+  NODE_DBG(tempid);
+  NODE_DBG("\n");
+  size_t il = c_strlen(tempid);
+  const char *clientId = tempid, *username = NULL, *password = NULL;
   int stack = 1;
   unsigned secure = 0;
   int top = lua_gettop(L);
@@ -459,105 +419,69 @@ static int mqtt_socket_connect( lua_State* L )
   pesp_conn->type = ESPCONN_TCP;
   pesp_conn->state = ESPCONN_NONE;
 
-  if( (stack<=top) && lua_isstring(L,stack) )   // deal with the domain string
+  if( lua_isstring(L,stack) )   // deal with the clientid string
   {
-    domain = luaL_checklstring( L, stack, &il );
+    clientId = luaL_checklstring( L, stack, &il );
     stack++;
-    if (domain == NULL)
-    {
-      domain = "127.0.0.1";
-    }
-    ipaddr.addr = ipaddr_addr(domain);
-    c_memcpy(pesp_conn->proto.tcp->remote_ip, &ipaddr.addr, 4);
-    NODE_DBG("TCP ip is set: ");
-    NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
-    NODE_DBG("\n");
   }
 
-  if ( (stack<=top) && lua_isnumber(L, stack) )
-  {
-    port = lua_tointeger(L, stack);
-    stack++;
-    NODE_DBG("TCP port is set: %d.\n", port);
-  }
-  pesp_conn->proto.tcp->remote_port = port;
-  pesp_conn->proto.tcp->local_port = espconn_port();
+  // TODO: check the zalloc result.
+  mud->connect_info.client_id = (uint8_t *)c_zalloc(il+1);
+  c_memcpy(mud->connect_info.client_id, clientId, il);
+  mud->connect_info.client_id[il] = 0;
 
-  if ( (stack<=top) && lua_isnumber(L, stack) )
-  {
-    secure = lua_tointeger(L, stack);
-    stack++;
-    if ( secure != 0 && secure != 1 ){
-      secure = 0; // default to 0
-    }
-  } else {
-    secure = 0; // default to 0
-  }
-  mud->secure = secure; // save
+  mud->mqtt_state.in_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
+  mud->mqtt_state.out_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
+  mud->mqtt_state.in_buffer_length = MQTT_BUF_SIZE;
+  mud->mqtt_state.out_buffer_length = MQTT_BUF_SIZE;
+
+  mud->connState = MQTT_INIT;
+  mud->connect_info.clean_session = 1;
+  mud->connect_info.will_qos = 0;
+  mud->connect_info.will_retain = 0;
+  mud->keep_alive_tick = 0;
+  mud->connect_info.keepalive = 0;
+  mud->mqtt_state.connect_info = &mud->connect_info;
 
   gL = L;   // global L for mqtt module.
 
-  // call back function when a connection is obtained, tcp only
-  if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
-    lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(mud->cb_connect_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
-    mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  if(lua_isnumber( L, stack ))
+  {   
+    mud->connect_info.keepalive = luaL_checkinteger( L, stack);
     stack++;
   }
+  os_timer_disarm(&mud->mqttTimer);
+  os_timer_setfn(&mud->mqttTimer, (os_timer_func_t *)mqtt_socket_timer, mud);
+  os_timer_arm(&mud->mqttTimer, 1000, 1);
 
-  lua_pushvalue(L, top + 1);  // copy userdata to the top of stack
-  if(mud->self_ref != LUA_NOREF)
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
-  mud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-
-  espconn_regist_connectcb(pesp_conn, mqtt_socket_connected);
-  espconn_regist_reconcb(pesp_conn, mqtt_socket_reconnected);
-
-  if((ipaddr.addr == IPADDR_NONE) && (c_memcmp(domain,"255.255.255.255",16) != 0))
-  {
-    host_ip.addr = 0;
-    dns_reconn_count = 0;
-    if(ESPCONN_OK == espconn_gethostbyname(pesp_conn, domain, &host_ip, socket_dns_found)){
-      socket_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
-    }
+  if(mud->connect_info.keepalive == 0){
+    mud->connect_info.keepalive = MQTT_DEFAULT_KEEPALIVE;
+    return 1;
   }
-  else
-  {
-    socket_connect(pesp_conn);
+
+  if(lua_isstring( L, stack )){
+    username = luaL_checklstring( L, stack, &il );
+    stack++;
   }
+  if(username == NULL)
+    return 1;
+  mud->connect_info.username = (uint8_t *)c_zalloc(il + 1);
+  c_memcpy(mud->connect_info.username, username, il);
+  mud->connect_info.username[il] = 0;
+    
+  if(lua_isstring( L, stack )){
+    password = luaL_checklstring( L, stack, &il );
+    stack++;
+  }
+  if(password == NULL)
+    return 1;
+  mud->connect_info.password = (uint8_t *)c_zalloc(il + 1);
+  c_memcpy(mud->connect_info.password, password, il);
+  mud->connect_info.password[il] = 0;
+  
+  NODE_DBG("MQTT: Init info: %s, %s, %s\r\n", mud->connect_info.client_id, mud->connect_info.username, mud->connect_info.password);
 
   return 1;
-}
-
-// Lua: mqtt:close()
-// client disconnect and unref itself
-static int mqtt_socket_close( lua_State* L )
-{
-  NODE_DBG("mqtt_socket_close is called.\n");
-  int i = 0;
-  lmqtt_userdata *mud = NULL;
-
-  mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
-  luaL_argcheck(L, mud, 1, "mqtt.socket expected");
-  if(mud == NULL)
-    return 0;
-
-  if(mud->pesp_conn == NULL)
-    return 0;
-
-  // call mqtt_disconnect()
-
-  if(mud->secure){
-    if(mud->pesp_conn->proto.tcp->remote_port || mud->pesp_conn->proto.tcp->local_port)
-      espconn_secure_disconnect(mud->pesp_conn);
-  }
-  else
-  {
-    if(mud->pesp_conn->proto.tcp->remote_port || mud->pesp_conn->proto.tcp->local_port)
-      espconn_disconnect(mud->pesp_conn);
-  }
-  return 0;  
 }
 
 // Lua: mqtt.delete( socket )
@@ -626,24 +550,183 @@ static int mqtt_delete( lua_State* L )
   return 0;  
 }
 
-void mqtt_socket_timer(void *arg)
+static void socket_connect(struct espconn *pesp_conn)
 {
-  lmqtt_userdata *mud = (lmqtt_userdata*) arg;
+  if(pesp_conn == NULL)
+    return;
+  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
+  if(mud == NULL)
+    return;
 
-  if(mud->connState == MQTT_DATA){
-    mud->keep_alive_tick ++;
-    if(mud->keep_alive_tick > mud->mqtt_state.connect_info->keepalive){
-      mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PINGREQ;
-      NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
-      mud->mqtt_state.outbound_message = mqtt_msg_pingreq(&mud->mqtt_state.mqtt_connection);
+  if(mud->secure){
+    espconn_secure_connect(pesp_conn);
+  }
+  else
+  {
+    espconn_connect(pesp_conn);
+  }
+  
+  NODE_DBG("socket_connect is called.\n");
+}
 
-      if(mud->secure)
-        espconn_secure_sent(mud->pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
-      else
-        espconn_sent(mud->pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
-      mud->keep_alive_tick = 0;
+static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
+static dns_reconn_count = 0;
+static ip_addr_t host_ip; // for dns
+static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
+{
+  NODE_DBG("socket_dns_found is called.\n");
+  struct espconn *pesp_conn = arg;
+  if(pesp_conn == NULL){
+    NODE_DBG("pesp_conn null.\n");
+    return;
+  }
+
+  if(ipaddr == NULL)
+  {
+    dns_reconn_count++;
+    if( dns_reconn_count >= 5 ){
+      NODE_ERR( "DNS Fail!\n" );
+      // Note: should delete the pesp_conn or unref self_ref here.
+      mqtt_socket_disconnected(arg);   // although not connected, but fire disconnect callback to release every thing.
+      return;
+    }
+    NODE_ERR( "DNS retry %d!\n", dns_reconn_count );
+    host_ip.addr = 0;
+    espconn_gethostbyname(pesp_conn, name, &host_ip, socket_dns_found);
+    return;
+  }
+
+  // ipaddr->addr is a uint32_t ip
+  if(ipaddr->addr != 0)
+  {
+    dns_reconn_count = 0;
+    c_memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
+    NODE_DBG("TCP ip is set: ");
+    NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
+    NODE_DBG("\n");
+    socket_connect(pesp_conn);
+  }
+}
+
+// Lua: mqtt:connect( host, port, secure, function(client) )
+static int mqtt_socket_connect( lua_State* L )
+{
+  NODE_DBG("mqtt_socket_connect is called.\n");
+  lmqtt_userdata *mud = NULL;
+  unsigned port = 1883;
+  size_t il;
+  ip_addr_t ipaddr;
+  const char *domain;
+  int stack = 1;
+  unsigned secure = 0;
+  int top = lua_gettop(L);
+
+  mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
+  luaL_argcheck(L, mud, stack, "mqtt.socket expected");
+  stack++;
+  if(mud == NULL)
+    return 0;
+  if(mud->pesp_conn == NULL)
+    return 0;
+  struct espconn *pesp_conn = mud->pesp_conn;
+
+  if( (stack<=top) && lua_isstring(L,stack) )   // deal with the domain string
+  {
+    domain = luaL_checklstring( L, stack, &il );
+    stack++;
+    if (domain == NULL)
+    {
+      domain = "127.0.0.1";
+    }
+    ipaddr.addr = ipaddr_addr(domain);
+    c_memcpy(pesp_conn->proto.tcp->remote_ip, &ipaddr.addr, 4);
+    NODE_DBG("TCP ip is set: ");
+    NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
+    NODE_DBG("\n");
+  }
+
+  if ( (stack<=top) && lua_isnumber(L, stack) )
+  {
+    port = lua_tointeger(L, stack);
+    stack++;
+    NODE_DBG("TCP port is set: %d.\n", port);
+  }
+  pesp_conn->proto.tcp->remote_port = port;
+  pesp_conn->proto.tcp->local_port = espconn_port();
+
+  if ( (stack<=top) && lua_isnumber(L, stack) )
+  {
+    secure = lua_tointeger(L, stack);
+    stack++;
+    if ( secure != 0 && secure != 1 ){
+      secure = 0; // default to 0
+    }
+  } else {
+    secure = 0; // default to 0
+  }
+  mud->secure = secure; // save
+
+  // call back function when a connection is obtained, tcp only
+  if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
+    lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
+    if(mud->cb_connect_ref != LUA_NOREF)
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+    mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    stack++;
+  }
+
+  lua_pushvalue(L, 1);  // copy userdata to the top of stack
+  if(mud->self_ref != LUA_NOREF)
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+  mud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  espconn_regist_connectcb(pesp_conn, mqtt_socket_connected);
+  espconn_regist_reconcb(pesp_conn, mqtt_socket_reconnected);
+
+  if((ipaddr.addr == IPADDR_NONE) && (c_memcmp(domain,"255.255.255.255",16) != 0))
+  {
+    host_ip.addr = 0;
+    dns_reconn_count = 0;
+    if(ESPCONN_OK == espconn_gethostbyname(pesp_conn, domain, &host_ip, socket_dns_found)){
+      socket_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
     }
   }
+  else
+  {
+    socket_connect(pesp_conn);
+  }
+
+  return 0;
+}
+
+// Lua: mqtt:close()
+// client disconnect and unref itself
+static int mqtt_socket_close( lua_State* L )
+{
+  NODE_DBG("mqtt_socket_close is called.\n");
+  int i = 0;
+  lmqtt_userdata *mud = NULL;
+
+  mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
+  luaL_argcheck(L, mud, 1, "mqtt.socket expected");
+  if(mud == NULL)
+    return 0;
+
+  if(mud->pesp_conn == NULL)
+    return 0;
+
+  // call mqtt_disconnect()
+
+  if(mud->secure){
+    if(mud->pesp_conn->proto.tcp->remote_port || mud->pesp_conn->proto.tcp->local_port)
+      espconn_secure_disconnect(mud->pesp_conn);
+  }
+  else
+  {
+    if(mud->pesp_conn->proto.tcp->remote_port || mud->pesp_conn->proto.tcp->local_port)
+      espconn_disconnect(mud->pesp_conn);
+  }
+  return 0;  
 }
 
 // Lua: mqtt:on( "method", function() )
@@ -684,99 +767,6 @@ static int mqtt_socket_on( lua_State* L )
     return luaL_error( L, "method not supported" );
   }
 
-  return 0;
-}
-
-// Lua: mqtt:Client(clientid, keepalive, user, pass)
-static int mqtt_socket_client( lua_State* L )
-{
-  NODE_DBG("mqtt_socket_client is called.\n");
-  struct espconn *pesp_conn = NULL;
-  lmqtt_userdata *mud;
-  uint8_t stack = 1;
-  const char *clientId = NULL, *username = NULL, *password = NULL;
-  size_t il;
-
-  mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
-  luaL_argcheck(L, mud, stack, "mqtt.socket expected");
-  stack++;
-
-  if(mud->connect_info.client_id)
-    c_free(mud->connect_info.client_id);
-  if(mud->connect_info.username)
-    c_free(mud->connect_info.username);
-  if(mud->connect_info.password)
-    c_free(mud->connect_info.password);
-  if(mud->mqtt_state.in_buffer)
-    c_free(mud->mqtt_state.in_buffer);
-  if(mud->mqtt_state.out_buffer)
-    c_free(mud->mqtt_state.out_buffer);
-
-  c_memset(&mud->mqtt_state, 0, sizeof(mqtt_state_t));
-  c_memset(&mud->connect_info, 0, sizeof(mqtt_connect_info_t));
-
-  if( lua_isstring(L,stack) )   // deal with the clientid string
-  {
-    clientId = luaL_checklstring( L, stack, &il );
-    stack++;
-    if(clientId == NULL){
-      return luaL_error( L, "ClientId must have" );
-    }
-
-    mud->connect_info.client_id = (uint8_t *)c_zalloc(il+1);
-    c_memcpy(mud->connect_info.client_id, clientId, il);
-    mud->connect_info.client_id[il] = 0;
-
-    mud->mqtt_state.in_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
-    mud->mqtt_state.out_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
-    mud->mqtt_state.in_buffer_length = MQTT_BUF_SIZE;
-    mud->mqtt_state.out_buffer_length = MQTT_BUF_SIZE;
-
-    mud->connState = MQTT_INIT;
-    mud->connect_info.clean_session = 1;
-    mud->connect_info.will_qos = 0;
-    mud->connect_info.will_retain = 0;
-    mud->keep_alive_tick = 0;
-    mud->connect_info.keepalive = 0;
-    mud->mqtt_state.connect_info = &mud->connect_info;
-
-    if(lua_isnumber( L, stack ))
-    {   
-      mud->connect_info.keepalive = luaL_checkinteger( L, stack);
-      stack++;
-    }
-    os_timer_disarm(&mud->mqttTimer);
-    os_timer_setfn(&mud->mqttTimer, (os_timer_func_t *)mqtt_socket_timer, mud);
-    os_timer_arm(&mud->mqttTimer, 1000, 1);
-
-    if(mud->connect_info.keepalive == 0){
-      mud->connect_info.keepalive = MQTT_DEFAULT_KEEPALIVE;
-      return 0;
-    }
-
-    if(lua_isstring( L, stack )){
-      username = luaL_checklstring( L, stack, &il );
-      stack++;
-    }
-    if(username == NULL)
-      return 0;
-    mud->connect_info.username = (uint8_t *)c_zalloc(il + 1);
-    c_memcpy(mud->connect_info.username, username, il);
-    mud->connect_info.username[il] = 0;
-    
-    if(lua_isstring( L, stack )){
-      password = luaL_checklstring( L, stack, &il );
-      stack++;
-    }
-    if(password == NULL)
-      return 0;
-    mud->connect_info.password = (uint8_t *)c_zalloc(il + 1);
-    c_memcpy(mud->connect_info.password, password, il);
-    mud->connect_info.password[il] = 0;
-
-    NODE_DBG("MQTT: Init info: %s, %s, %s\r\n", mud->connect_info.client_id, mud->connect_info.username, mud->connect_info.password);
-
-  }
   return 0;
 }
 
@@ -893,8 +883,8 @@ static int mqtt_socket_publish( lua_State* L )
 
 static const LUA_REG_TYPE mqtt_socket_map[] =
 {
+  { LSTRKEY( "connect" ), LFUNCVAL ( mqtt_socket_connect ) },
   { LSTRKEY( "close" ), LFUNCVAL ( mqtt_socket_close ) },
-  { LSTRKEY( "Client" ), LFUNCVAL ( mqtt_socket_client ) },
   { LSTRKEY( "publish" ), LFUNCVAL ( mqtt_socket_publish ) },
   { LSTRKEY( "subscribe" ), LFUNCVAL ( mqtt_socket_subscribe ) },
   { LSTRKEY( "on" ), LFUNCVAL ( mqtt_socket_on ) },
@@ -907,7 +897,7 @@ static const LUA_REG_TYPE mqtt_socket_map[] =
 
 const LUA_REG_TYPE mqtt_map[] = 
 {
-  { LSTRKEY( "connect" ), LFUNCVAL ( mqtt_socket_connect ) },
+  { LSTRKEY( "Client" ), LFUNCVAL ( mqtt_socket_client ) },
 #if LUA_OPTIMIZE_MEMORY > 0
 
   { LSTRKEY( "__metatable" ), LROVAL( mqtt_map ) },

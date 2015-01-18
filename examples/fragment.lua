@@ -313,3 +313,9 @@ uart.on("data", 0 ,function(input) if input=="q" then uart.on("data") else print
 uart.on("data","\r",function(input) if input=="quit" then uart.on("data") else print(input) end end, 1)
 
 for k, v in pairs(file.list()) do print('file:'..k..' len:'..v) end
+
+m=mqtt.Client()
+m:connect("192.168.18.101",1883)
+m:subscribe("/topic",0,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic","hello",0,0)
