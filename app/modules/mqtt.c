@@ -313,6 +313,7 @@ static void mqtt_socket_sent(void *arg)
     return;
 }
 
+static int mqtt_socket_client( lua_State* L );
 static void mqtt_socket_connected(void *arg)
 {
   NODE_DBG("mqtt_socket_connected is called.\n");
@@ -326,6 +327,10 @@ static void mqtt_socket_connected(void *arg)
   espconn_regist_recvcb(pesp_conn, mqtt_socket_received);
   espconn_regist_sentcb(pesp_conn, mqtt_socket_sent);
   espconn_regist_disconcb(pesp_conn, mqtt_socket_disconnected);
+
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
+  lua_pushfstring(gL, "NodeMCU_%x", system_get_chip_id());
+  mqtt_socket_client(gL);
 
   // call mqtt_connect() to start a mqtt connect stage.
   mqtt_msg_init(&mud->mqtt_state.mqtt_connection, mud->mqtt_state.out_buffer, mud->mqtt_state.out_buffer_length);
@@ -428,6 +433,12 @@ static int mqtt_socket_connect( lua_State* L )
   mud->pesp_conn = NULL;
   mud->secure = 0;
 
+  mud->keep_alive_tick = 0;
+  mud->connState = MQTT_INIT;
+  c_memset(&mud->mqttTimer, 0, sizeof(ETSTimer));
+  c_memset(&mud->mqtt_state, 0, sizeof(mqtt_state_t));
+  c_memset(&mud->connect_info, 0, sizeof(mqtt_connect_info_t));
+
   // set its metatable
   luaL_getmetatable(L, "mqtt.socket");
   lua_setmetatable(L, -2);
@@ -436,14 +447,16 @@ static int mqtt_socket_connect( lua_State* L )
   if(!pesp_conn)
     return luaL_error(L, "not enough memory");
 
-  // reverse is for the callback function
-  pesp_conn->reverse = mud;
+  pesp_conn->proto.udp = NULL;
   pesp_conn->proto.tcp = (esp_tcp *)c_zalloc(sizeof(esp_tcp));
   if(!pesp_conn->proto.tcp){
     c_free(pesp_conn);
     pesp_conn = mud->pesp_conn = NULL;
     return luaL_error(L, "not enough memory");
   }
+  // reverse is for the callback function
+  pesp_conn->reverse = mud;
+  pesp_conn->type = ESPCONN_TCP;
   pesp_conn->state = ESPCONN_NONE;
 
   if( (stack<=top) && lua_isstring(L,stack) )   // deal with the domain string
@@ -465,8 +478,10 @@ static int mqtt_socket_connect( lua_State* L )
   {
     port = lua_tointeger(L, stack);
     stack++;
+    NODE_DBG("TCP port is set: %d.\n", port);
   }
   pesp_conn->proto.tcp->remote_port = port;
+  pesp_conn->proto.tcp->local_port = espconn_port();
 
   if ( (stack<=top) && lua_isnumber(L, stack) )
   {
@@ -679,12 +694,23 @@ static int mqtt_socket_client( lua_State* L )
   struct espconn *pesp_conn = NULL;
   lmqtt_userdata *mud;
   uint8_t stack = 1;
-  const char *clientId, *username, *password;
+  const char *clientId = NULL, *username = NULL, *password = NULL;
   size_t il;
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
   luaL_argcheck(L, mud, stack, "mqtt.socket expected");
   stack++;
+
+  if(mud->connect_info.client_id)
+    c_free(mud->connect_info.client_id);
+  if(mud->connect_info.username)
+    c_free(mud->connect_info.username);
+  if(mud->connect_info.password)
+    c_free(mud->connect_info.password);
+  if(mud->mqtt_state.in_buffer)
+    c_free(mud->mqtt_state.in_buffer);
+  if(mud->mqtt_state.out_buffer)
+    c_free(mud->mqtt_state.out_buffer);
 
   c_memset(&mud->mqtt_state, 0, sizeof(mqtt_state_t));
   c_memset(&mud->connect_info, 0, sizeof(mqtt_connect_info_t));
@@ -711,10 +737,14 @@ static int mqtt_socket_client( lua_State* L )
     mud->connect_info.will_qos = 0;
     mud->connect_info.will_retain = 0;
     mud->keep_alive_tick = 0;
+    mud->connect_info.keepalive = 0;
     mud->mqtt_state.connect_info = &mud->connect_info;
 
-    mud->connect_info.keepalive = luaL_checkinteger( L, stack);
-    stack++;
+    if(lua_isnumber( L, stack ))
+    {   
+      mud->connect_info.keepalive = luaL_checkinteger( L, stack);
+      stack++;
+    }
     os_timer_disarm(&mud->mqttTimer);
     os_timer_setfn(&mud->mqttTimer, (os_timer_func_t *)mqtt_socket_timer, mud);
     os_timer_arm(&mud->mqttTimer, 1000, 1);
@@ -724,16 +754,20 @@ static int mqtt_socket_client( lua_State* L )
       return 0;
     }
 
-    username = luaL_checklstring( L, stack, &il );
-    stack++;
+    if(lua_isstring( L, stack )){
+      username = luaL_checklstring( L, stack, &il );
+      stack++;
+    }
     if(username == NULL)
       return 0;
     mud->connect_info.username = (uint8_t *)c_zalloc(il + 1);
     c_memcpy(mud->connect_info.username, username, il);
     mud->connect_info.username[il] = 0;
     
-    password = luaL_checklstring( L, stack, &il );
-    stack++;
+    if(lua_isstring( L, stack )){
+      password = luaL_checklstring( L, stack, &il );
+      stack++;
+    }
     if(password == NULL)
       return 0;
     mud->connect_info.password = (uint8_t *)c_zalloc(il + 1);
