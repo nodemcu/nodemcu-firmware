@@ -45,6 +45,14 @@
 #define ROM_MODULES_I2C
 #endif
 
+#if defined(LUA_USE_MODULES_SPI)
+#define MODULES_SPI       "spi"
+#define ROM_MODULES_SPI   \
+    _ROM(MODULES_SPI, luaopen_spi, spi_map)
+#else
+#define ROM_MODULES_SPI
+#endif
+
 #if defined(LUA_USE_MODULES_TMR)
 #define MODULES_TMR       "tmr"
 #define ROM_MODULES_TMR   \
@@ -106,6 +114,7 @@
         ROM_MODULES_PWM		\
         ROM_MODULES_WIFI	\
         ROM_MODULES_I2C     \
+        ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \
         ROM_MODULES_NODE    \
         ROM_MODULES_FILE    \
