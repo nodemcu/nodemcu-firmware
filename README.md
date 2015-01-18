@@ -28,12 +28,6 @@ Tencent QQ group QQ群: 309957875<br />
 # Change log
 2015-01-17<br />
 add support MQTT from: [https://github.com/tuanpmt/esp_mqtt](https://github.com/tuanpmt/esp_mqtt)<br />
-2015-01-06<br />
-update sdk to 0.9.5.<br />
-pre_build bin now compiled by gcc toolchain.<br />
-memory/heap usage optimized.<br />
-add support for multiple platform and toolchain include eclipse. <br />
-combine firmware for 512K, 1M, 2M, 4M flash to one. flash size auto-detected.
 
 2015-01-08<br />
 fix net.socket:send() issue when multi sends are called. <br />
@@ -192,6 +186,37 @@ baudrate:9600
     conn:connect(80,"115.239.210.27")
     conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
         .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
+```
+
+####Connect to MQTT Broker
+
+```lua
+
+mqtt = net.createConnection(net.TCP, 0)
+-- for secure: mqtt = net.createConnection(net.TCP, 1)
+
+-- init mqtt client with keepalive timer 30sec
+mqtt:mqtt("clientid", 30, "user", "password")
+
+-- on publish message receive event
+mqtt:on("receive", function(conn, topic, data) 
+  print(topic .. ":" ) 
+  if data ~= nil then
+    print(data)
+  end
+end)
+
+-- on connection event (all event inherit from net module)
+mqtt:on("sent", function(con) print("sent") end)
+mqtt:on("connection", function(con) print("connected") end)
+mqtt:on("disconnection", function(con) print("disconnected") end)
+mqtt:on("reconnection", function(con) print("reconnect") end)
+mqtt:connect(1883,"192.168.11.118", function(conn) print("connected") end)
+-- subscribe topic with qos = 0
+mqtt:subscribe("/topic",0, function(conn) print("subscribe success") end)
+-- publish a message
+mqtt:send("/topic","hello",0,0, function(conn) print("sent") end)
+
 ```
 
 ####Or a simple http server
