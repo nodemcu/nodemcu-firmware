@@ -6,9 +6,8 @@
 ------------------------------------------------------------------------------
 require("http").createServer(80, function(req, res)
   -- analyse method and url
-  print("+R", req.method, req.url)
+  print("+R", req.method, req.url, node.heap())
   -- setup handler of headers, if any
---[[
   req.onheader = function(self, name, value)
     -- print("+H", name, value)
     -- E.g. look for "content-type" header,
@@ -34,8 +33,7 @@ require("http").createServer(80, function(req, res)
       res:finish()
     end
   end
-]]
   -- or just do something not waiting till body (if any) comes
   --res:finish("Hello, world!")
-  res:finish("Salut, monde!")
+  --res:finish("Salut, monde!")
 end)
