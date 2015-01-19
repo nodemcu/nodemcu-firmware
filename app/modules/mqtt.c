@@ -525,6 +525,14 @@ static int mqtt_delete( lua_State* L )
     mud->pesp_conn = NULL;    // for socket, it will free this when disconnected
   }
 
+  if(mud->connect_info.will_topic){
+  	c_free(mud->connect_info.client_id);
+  }
+
+  if(mud->connect_info.will_message){
+    	c_free(mud->connect_info.will_message);
+    }
+
   if(mud->connect_info.client_id)
     c_free(mud->connect_info.client_id);
   if(mud->connect_info.username)
@@ -622,6 +630,65 @@ static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     NODE_DBG("\n");
     socket_connect(pesp_conn);
   }
+}
+
+// Lua: mqtt:connect( host, port, secure, function(client) )
+static int mqtt_socket_lwt( lua_State* L )
+{
+	uint8_t stack = 1;
+	size_t topicSize, il;
+  NODE_DBG("mqtt_socket_lwt.\n");
+  lmqtt_userdata *mud = NULL;
+  const char *lwtTopic, *lwtMsg;
+  uint8_t lwtQoS, lwtRetain;
+
+  mud = (lmqtt_userdata *)luaL_checkudata( L, stack, "mqtt.socket" );
+  luaL_argcheck( L, mud, stack, "mqtt.socket expected" );
+
+  if(mud == NULL)
+    return 0;
+
+  stack++;
+  lwtTopic = luaL_checklstring( L, stack, &topicSize );
+	if (lwtTopic == NULL)
+	{
+		return luaL_error( L, "need lwt topic");
+	}
+
+	stack++;
+	lwtMsg = luaL_checklstring( L, stack, &il );
+	if (lwtMsg == NULL)
+	{
+		return luaL_error( L, "need lwt topic");
+	}
+
+	mud->connect_info.will_topic = (uint8_t*) c_zalloc( topicSize + 1 );
+	if(!mud->connect_info.will_topic){
+		return luaL_error( L, "not enough memory");
+	}
+	c_memcpy(mud->connect_info.will_topic, lwtTopic, topicSize);
+	mud->connect_info.will_topic[topicSize] = 0;
+
+	mud->connect_info.will_message = (uint8_t*) c_zalloc( il + 1 );
+	if(!mud->connect_info.will_message){
+		return luaL_error( L, "not enough memory");
+	}
+	c_memcpy(mud->connect_info.will_message, lwtMsg, il);
+	mud->connect_info.will_message[il] = 0;
+
+
+	stack++;
+	mud->connect_info.will_qos = luaL_checkinteger( L, stack );
+
+	stack++;
+	mud->connect_info.will_retain = luaL_checkinteger( L, stack );
+
+	NODE_DBG("mqtt_socket_lwt: topic: %s, message: %s, qos: %d, retain: %d\n",
+			mud->connect_info.will_topic,
+			mud->connect_info.will_message,
+			mud->connect_info.will_qos,
+			mud->connect_info.will_retain);
+  return 0;
 }
 
 // Lua: mqtt:connect( host, port, secure, function(client) )
@@ -931,6 +998,7 @@ static int mqtt_socket_publish( lua_State* L )
 
 static const LUA_REG_TYPE mqtt_socket_map[] =
 {
+	{ LSTRKEY( "lwt" ), LFUNCVAL ( mqtt_socket_lwt ) },
   { LSTRKEY( "connect" ), LFUNCVAL ( mqtt_socket_connect ) },
   { LSTRKEY( "close" ), LFUNCVAL ( mqtt_socket_close ) },
   { LSTRKEY( "publish" ), LFUNCVAL ( mqtt_socket_publish ) },

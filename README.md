@@ -194,6 +194,11 @@ baudrate:9600
 -- init mqtt client with keepalive timer 120sec
 m = mqtt.Client("clientid", 120, "user", "password")
 
+-- setup Last Will and Testament (optional)
+-- Broker will publish a message with qos = 0, retain = 0, data = "offline" 
+-- to topic "/lwt" if client don't send keepalive packet
+m:lwt("/lwt", "offline", 0, 0)
+
 m:on("connect", function(con) print ("connected") end)
 m:on("offline", function(con) print ("offline") end)
 
