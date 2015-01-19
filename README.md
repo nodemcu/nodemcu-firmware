@@ -9,8 +9,8 @@ Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flas
 
 wiki: [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 home: [nodemcu.com](http://www.nodemcu.com)<br />
-bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
-Tencent QQ group QQ群: 309957875<br />
+bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
+Tencent QQ group QQ: 309957875<br />
 
 # Summary
 - Easy to access wireless router
@@ -42,7 +42,7 @@ rename "NodeMcu" to "NodeMCU" in firmware.<br />
 add some check for file system op.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
-[更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
+[change_log cn](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
 
 ##GPIO NEW TABLE ( Build 20141219 and later)
 
@@ -191,31 +191,28 @@ baudrate:9600
 ####Connect to MQTT Broker
 
 ```lua
+-- init mqtt client with keepalive timer 120sec
+m = mqtt.Client("clientid", 120, "user", "password")
 
-mqtt = net.createConnection(net.TCP, 0)
--- for secure: mqtt = net.createConnection(net.TCP, 1)
-
--- init mqtt client with keepalive timer 30sec
-mqtt:mqtt("clientid", 30, "user", "password")
+m:on("connect", function(con) print ("connected") end)
+m:on("offline", function(con) print ("offline") end)
 
 -- on publish message receive event
-mqtt:on("receive", function(conn, topic, data) 
+m:on("receive", function(conn, topic, data) 
   print(topic .. ":" ) 
   if data ~= nil then
     print(data)
   end
 end)
 
--- on connection event (all event inherit from net module)
-mqtt:on("sent", function(con) print("sent") end)
-mqtt:on("connection", function(con) print("connected") end)
-mqtt:on("disconnection", function(con) print("disconnected") end)
-mqtt:on("reconnection", function(con) print("reconnect") end)
-mqtt:connect(1883,"192.168.11.118", function(conn) print("connected") end)
+-- for secure: m:connect("192.168.11.118", 1880, 1)
+m:connect("192.168.11.118", 1880, 0, function(conn) print("connected") end)
+
 -- subscribe topic with qos = 0
 mqtt:subscribe("/topic",0, function(conn) print("subscribe success") end)
--- publish a message
-mqtt:send("/topic","hello",0,0, function(conn) print("sent") end)
+
+-- publish a message with data = hello, QoS = 0, retain = 0
+mqtt:publish("/topic","hello",0,0, function(conn) print("sent") end)
 
 ```
 

@@ -253,7 +253,9 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
       {
         if(i + 2 >= length)
           return 0;
-        i += 2;
+        //i += 2;
+      } else {
+    	  return 0;
       }
 
       return (buffer[i] << 8) | buffer[i + 1];
@@ -264,6 +266,7 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
     case MQTT_MSG_TYPE_PUBCOMP:
     case MQTT_MSG_TYPE_SUBACK:
     case MQTT_MSG_TYPE_UNSUBACK:
+    case MQTT_MSG_TYPE_SUBSCRIBE:
     {
       // This requires the remaining length to be encoded in 1 byte,
       // which it should be.
@@ -272,6 +275,7 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
       else
         return 0;
     }
+
     default:
       return 0;
   }
