@@ -23,7 +23,7 @@ static lua_State *gL = NULL;
 #define MQTT_MAX_CLIENT_LEN   64
 #define MQTT_MAX_USER_LEN     64
 #define MQTT_MAX_PASS_LEN     64
-#define MQTT_SEND_TIMOUT			5
+#define MQTT_SEND_TIMEOUT			5
 
 typedef enum {
   MQTT_INIT,
@@ -364,7 +364,7 @@ void mqtt_socket_timer(void *arg)
     mud->keep_alive_tick ++;
     if(mud->keep_alive_tick > mud->mqtt_state.connect_info->keepalive){
       mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PINGREQ;
-      mud->send_timeout = MQTT_SEND_TIMOUT;
+      mud->send_timeout = MQTT_SEND_TIMEOUT;
       NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
       mud->mqtt_state.outbound_message = mqtt_msg_pingreq(&mud->mqtt_state.mqtt_connection);
 
@@ -838,7 +838,7 @@ static int mqtt_socket_subscribe( lua_State* L )
   mud->mqtt_state.outbound_message =  mqtt_msg_subscribe(&mud->mqtt_state.mqtt_connection,
                                                           topic, qos,
                                                           &mud->mqtt_state.pending_msg_id);
-  mud->send_timeout = MQTT_SEND_TIMOUT;
+  mud->send_timeout = MQTT_SEND_TIMEOUT;
   mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_SUBSCRIBE;
   mud->mqtt_state.pending_publish_qos = mqtt_get_qos(mud->mqtt_state.outbound_message->data);
 
@@ -909,7 +909,7 @@ static int mqtt_socket_publish( lua_State* L )
                        &mud->mqtt_state.pending_msg_id);
   mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PUBLISH;
   mud->mqtt_state.pending_publish_qos = qos;
-  mud->send_timeout = MQTT_SEND_TIMOUT;
+  mud->send_timeout = MQTT_SEND_TIMEOUT;
   if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     if(mud->cb_puback_ref != LUA_NOREF)
