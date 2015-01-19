@@ -209,10 +209,13 @@ end)
 m:connect("192.168.11.118", 1880, 0, function(conn) print("connected") end)
 
 -- subscribe topic with qos = 0
-mqtt:subscribe("/topic",0, function(conn) print("subscribe success") end)
+m:subscribe("/topic",0, function(conn) print("subscribe success") end)
 
 -- publish a message with data = hello, QoS = 0, retain = 0
-mqtt:publish("/topic","hello",0,0, function(conn) print("sent") end)
+m:publish("/topic","hello",0,0, function(conn) print("sent") end)
+
+m:close();
+-- you can call m:connect again
 
 ```
 
