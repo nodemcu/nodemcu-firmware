@@ -203,7 +203,7 @@ m:on("connect", function(con) print ("connected") end)
 m:on("offline", function(con) print ("offline") end)
 
 -- on publish message receive event
-m:on("receive", function(conn, topic, data) 
+m:on("message", function(conn, topic, data) 
   print(topic .. ":" ) 
   if data ~= nil then
     print(data)
