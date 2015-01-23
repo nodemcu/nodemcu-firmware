@@ -9,8 +9,8 @@ Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flas
 
 wiki: [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 home: [nodemcu.com](http://www.nodemcu.com)<br />
-bbs: [中文论坛Chinese bbs](http://bbs.nodemcu.com)<br />
-Tencent QQ group QQ群: 309957875<br />
+bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
+Tencent QQ group: 309957875<br />
 
 # Summary
 - Easy to access wireless router
@@ -26,6 +26,10 @@ Tencent QQ group QQ群: 309957875<br />
 - add coap module
 
 # Change log
+2015-01-23<br />
+merge mqtt branch to master.<br />
+build pre_build bin.
+
 2015-01-18<br />
 merge mqtt module to [new branch mqtt](https://github.com/nodemcu/nodemcu-firmware/tree/mqtt) from [https://github.com/tuanpmt/esp_mqtt](https://github.com/tuanpmt/esp_mqtt).<br />
 merge spi module from iabdalkader:spi. <br />
@@ -40,7 +44,7 @@ fix file.read() api, take 0xFF as a regular byte, not EOF.<br />
 pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemcu_latest.bin instead.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
-[更多变更日志](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
+[more change_log cn](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
 
 ##GPIO NEW TABLE ( Build 20141219 and later)
 
@@ -184,6 +188,42 @@ baudrate:9600
     conn:connect(80,"115.239.210.27")
     conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
         .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
+```
+
+####Connect to MQTT Broker
+
+```lua
+-- init mqtt client with keepalive timer 120sec
+m = mqtt.Client("clientid", 120, "user", "password")
+
+-- setup Last Will and Testament (optional)
+-- Broker will publish a message with qos = 0, retain = 0, data = "offline" 
+-- to topic "/lwt" if client don't send keepalive packet
+m:lwt("/lwt", "offline", 0, 0)
+
+m:on("connect", function(con) print ("connected") end)
+m:on("offline", function(con) print ("offline") end)
+
+-- on publish message receive event
+m:on("message", function(conn, topic, data) 
+  print(topic .. ":" ) 
+  if data ~= nil then
+    print(data)
+  end
+end)
+
+-- for secure: m:connect("192.168.11.118", 1880, 1)
+m:connect("192.168.11.118", 1880, 0, function(conn) print("connected") end)
+
+-- subscribe topic with qos = 0
+m:subscribe("/topic",0, function(conn) print("subscribe success") end)
+
+-- publish a message with data = hello, QoS = 0, retain = 0
+m:publish("/topic","hello",0,0, function(conn) print("sent") end)
+
+m:close();
+-- you can call m:connect again
+
 ```
 
 ####Or a simple http server
