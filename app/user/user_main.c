@@ -50,30 +50,8 @@ extern void spiffs_mount();
 
 // extern uint16_t flash_get_sec_num();
 
-/******************************************************************************
- * FunctionName : user_init
- * Description  : entry of user application, init user function here
- * Parameters   : none
- * Returns      : none
-*******************************************************************************/
-void user_init(void)
+void nodemcu_init(void)
 {
-    // NODE_DBG("SDK version:%s\n", system_get_sdk_version());
-    // system_print_meminfo();
-    // os_printf("Heap size::%d.\n",system_get_free_heap_size());
-    // os_delay_us(50*1000);   // delay 50ms before init uart
-
-#ifdef DEVELOP_VERSION
-    uart_init(BIT_RATE_74880, BIT_RATE_74880);
-#else
-    uart_init(BIT_RATE_9600, BIT_RATE_9600);
-#endif
-    // uart_init(BIT_RATE_115200, BIT_RATE_115200);
-    
-    #ifndef NODE_DEBUG
-    system_set_os_print(0);
-    #endif
-    
     NODE_ERR("\n");
     // Initialize platform first for lua modules.   
     if( platform_init() != PLATFORM_OK )
@@ -85,9 +63,9 @@ void user_init(void)
     
     if( !flash_init_data_written() ){
         NODE_ERR("Restore init data.\n");
-		// Flash init data at FLASHSIZE - 0x04000 Byte.
+        // Flash init data at FLASHSIZE - 0x04000 Byte.
         flash_init_data_default();
-		// Flash blank data at FLASHSIZE - 0x02000 Byte.
+        // Flash blank data at FLASHSIZE - 0x02000 Byte.
         flash_init_data_blank(); 
     }
 
@@ -118,4 +96,31 @@ void user_init(void)
     // NODE_DBG("Flash sec num: 0x%x\n", flash_get_sec_num());
     task_init();
     system_os_post(USER_TASK_PRIO_0,SIG_LUA,'s');
+}
+
+/******************************************************************************
+ * FunctionName : user_init
+ * Description  : entry of user application, init user function here
+ * Parameters   : none
+ * Returns      : none
+*******************************************************************************/
+void user_init(void)
+{
+    // NODE_DBG("SDK version:%s\n", system_get_sdk_version());
+    // system_print_meminfo();
+    // os_printf("Heap size::%d.\n",system_get_free_heap_size());
+    // os_delay_us(50*1000);   // delay 50ms before init uart
+
+#ifdef DEVELOP_VERSION
+    uart_init(BIT_RATE_74880, BIT_RATE_74880);
+#else
+    uart_init(BIT_RATE_9600, BIT_RATE_9600);
+#endif
+    // uart_init(BIT_RATE_115200, BIT_RATE_115200);
+    
+    #ifndef NODE_DEBUG
+    system_set_os_print(0);
+    #endif
+    
+    system_init_done_cb(nodemcu_init);
 }
