@@ -349,11 +349,6 @@ pwm_init(uint16 freq, uint16 *duty)
 {
     uint8 i;
 
-    ETS_FRC_TIMER1_INTR_ATTACH(pwm_tim1_intr_handler, NULL);
-    TM1_EDGE_INT_ENABLE();
-    ETS_FRC1_INTR_ENABLE();
-
-    RTC_CLR_REG_MASK(FRC1_INT_ADDRESS, FRC1_INT_CLR_MASK);
     RTC_REG_WRITE(FRC1_CTRL_ADDRESS,  //FRC2_AUTO_RELOAD|
                   DIVDED_BY_16
                   | FRC1_ENABLE_TIMER
@@ -377,6 +372,10 @@ pwm_init(uint16 freq, uint16 *duty)
     // pwm_set_freq_duty(freq, duty);
 
     pwm_start();
+    
+    ETS_FRC_TIMER1_INTR_ATTACH(pwm_tim1_intr_handler, NULL);
+    TM1_EDGE_INT_ENABLE();
+    ETS_FRC1_INTR_ENABLE();
 }
 
 bool ICACHE_FLASH_ATTR

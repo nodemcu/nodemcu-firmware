@@ -42,13 +42,13 @@ endif # } PDIR
 APPDIR = .
 LDDIR = ../ld
 
+CCFLAGS += -Os
 
 TARGET_LDFLAGS =		\
 	-nostdlib		\
 	-Wl,-EL \
 	--longcalls \
 	--text-section-literals
-
 
 ifeq ($(FLAVOR),debug)
     TARGET_LDFLAGS += -g -O2
@@ -101,6 +101,7 @@ LINKFLAGS_eagle.app.v6 = \
 	-lwpa	\
 	-lmain	\
 	-ljson	\
+	-lsmartconfig	\
 	$(DEP_LIBS_eagle.app.v6)					\
 	-Wl,--end-group
 

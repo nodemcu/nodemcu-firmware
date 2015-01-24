@@ -20,27 +20,27 @@ const char *c_getenv(const char *__string){
 }
 
 // make sure there is enough memory before real malloc, otherwise malloc will panic and reset
-void *c_malloc(size_t __size){
-	if(__size>system_get_free_heap_size()){
-		NODE_ERR("malloc: not enough memory\n");
-		return NULL;
-	}
-	return (void *)os_malloc(__size);
-}
+// void *c_malloc(size_t __size){
+// 	if(__size>system_get_free_heap_size()){
+// 		NODE_ERR("malloc: not enough memory\n");
+// 		return NULL;
+// 	}
+// 	return (void *)os_malloc(__size);
+// }
 
-void *c_zalloc(size_t __size){
-	if(__size>system_get_free_heap_size()){
-		NODE_ERR("zalloc: not enough memory\n");
-		return NULL;
-	}
-	return (void *)os_zalloc(__size);
-}
+// void *c_zalloc(size_t __size){
+// 	if(__size>system_get_free_heap_size()){
+// 		NODE_ERR("zalloc: not enough memory\n");
+// 		return NULL;
+// 	}
+// 	return (void *)os_zalloc(__size);
+// }
 
-void c_free(void *p){
-	// NODE_ERR("free1: %d\n", system_get_free_heap_size());
-	os_free(p);
-	// NODE_ERR("-free1: %d\n", system_get_free_heap_size());
-}
+// void c_free(void *p){
+// 	// NODE_ERR("free1: %d\n", system_get_free_heap_size());
+// 	os_free(p);
+// 	// NODE_ERR("-free1: %d\n", system_get_free_heap_size());
+// }
 
 
 // int	c_rand(void){
