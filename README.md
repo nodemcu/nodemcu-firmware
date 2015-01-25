@@ -8,6 +8,7 @@ Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/node
 Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
 
 wiki: [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
+api: [nodemcu api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)<br />
 home: [nodemcu.com](http://www.nodemcu.com)<br />
 bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group: 309957875<br />
@@ -49,8 +50,7 @@ fix net.socket:send() issue when multi sends are called. <br />
 fix file.read() api, take 0xFF as a regular byte, not EOF.<br />
 pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemcu_latest.bin instead.
 
-[more change log](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en#change_log)<br />
-[more change_log cn](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_cn#change_log)
+[more change log](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 
 ##GPIO NEW TABLE ( Build 20141219 and later)
 
