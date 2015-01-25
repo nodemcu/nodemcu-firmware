@@ -36,7 +36,7 @@
 
 #define c_abs	abs
 #define c_atoi	atoi
-// #define c_strtod	strtod
+//#define c_strtod	strtod
 #define c_strtol	strtol
 #define c_strtoul	strtoul
 
@@ -55,7 +55,7 @@ void c_free(void *);
 // void c_srand(unsigned int __seed);
 
 // int	c_atoi(const char *__nptr);
-// double	c_strtod(const char *__n, char **__end_PTR);
+double	c_strtod(const char *__n, char **__end_PTR);
 // // long	c_strtol(const char *__n, char **__end_PTR, int __base);
 // unsigned long c_strtoul(const char *__n, char **__end_PTR, int __base);
 // // long long c_strtoll(const char *__n, char **__end_PTR, int __base);

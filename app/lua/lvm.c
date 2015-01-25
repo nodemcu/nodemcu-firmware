@@ -8,6 +8,7 @@
 #include "c_stdio.h"
 #include "c_stdlib.h"
 #include "c_string.h"
+#include "c_math.h"
 
 #define lvm_c
 #define LUA_CORE
