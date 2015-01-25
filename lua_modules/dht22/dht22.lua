@@ -13,23 +13,22 @@ _G[moduleName] = M
 
 local humidity
 local temperature
-local checksum
-local checksumTest
 
 function M.read(pin)
+  local checksum
+  local checksumTest
   humidity = 0
   temperature = 0
   checksum = 0
 
   -- Use Markus Gritsch trick to speed up read/write on GPIO
-  gpio_read = gpio.read
-  gpio_write = gpio.write
+  local gpio_read = gpio.read
   
-  bitStream = {}
+  local bitStream = {}
   for j = 1, 40, 1 do
     bitStream[j] = 0
   end
-  bitlength = 0
+  local bitlength = 0
 
   -- Step 1:  send out start signal to DHT22
   gpio.mode(pin, gpio.OUTPUT)
@@ -43,13 +42,13 @@ function M.read(pin)
   -- Step 2:  DHT22 send response signal 
   -- bus will always let up eventually, don't bother with timeout
   while (gpio_read(pin) == 0 ) do end
-  c=0
-  while (gpio_read(pin) == 1 and c < 100) do c = c + 1 end
+  local c=0
+  while (gpio_read(pin) == 1 and c < 500) do c = c + 1 end
   -- bus will always let up eventually, don't bother with timeout
   while (gpio_read(pin) == 0 ) do end
   c=0
-  while (gpio_read(pin) == 1 and c < 100) do c = c + 1 end
-
+  while (gpio_read(pin) == 1 and c < 500) do c = c + 1 end
+  
   -- Step 3: DHT22 send data
   for j = 1, 40, 1 do
     while (gpio_read(pin) == 1 and bitlength < 10 ) do
@@ -63,17 +62,17 @@ function M.read(pin)
 
   --DHT data acquired, process.
   for i = 1, 16, 1 do
-    if (bitStream[i + 0] > 2) then
+    if (bitStream[i] > 4) then
       humidity = humidity + 2 ^ (16 - i)
     end
   end
   for i = 1, 16, 1 do
-    if (bitStream[i + 16] > 2) then
+    if (bitStream[i + 16] > 4) then
       temperature = temperature + 2 ^ (16 - i)
     end
   end
   for i = 1, 8, 1 do
-    if (bitStream[i + 32] > 2) then
+    if (bitStream[i + 32] > 4) then
       checksum = checksum + 2 ^ (8 - i)
     end
   end
