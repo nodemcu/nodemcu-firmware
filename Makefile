@@ -30,7 +30,11 @@ ifeq ($(OS),Windows_NT)
 		OBJCOPY = xtensa-lx106-elf-objcopy
 	endif
 	FIRMWAREDIR = ..\\bin\\
-	ESPPORT = com1
+	ifndef COMPORT
+		ESPPORT = com1
+	else
+		ESPPORT = $(COMPORT)
+	endif
     ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
 # ->AMD64
     endif
@@ -40,7 +44,11 @@ ifeq ($(OS),Windows_NT)
 else
 # We are under other system, may be Linux. Assume using gcc.
 	# Can we use -fdata-sections?
-	ESPPORT = /dev/ttyUSB0
+	ifndef COMPORT
+		ESPPORT = /dev/ttyUSB0
+	else
+		ESPPORT = $(COMPORT)
+	endif
 	CCFLAGS += -Os -ffunction-sections -fno-jump-tables
 	AR = xtensa-lx106-elf-ar
 	CC = xtensa-lx106-elf-gcc
