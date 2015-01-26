@@ -44,5 +44,14 @@
 #define os_sprintf  ets_sprintf
 #define os_update_cpu_frequency ets_update_cpu_frequency
 
+#ifdef USE_OPTIMIZE_PRINTF
+#define os_printf(fmt, ...) do {	\
+	static const char flash_str[] ICACHE_RODATA_ATTR = fmt;	\
+	os_printf_plus(flash_str, ##__VA_ARGS__);	\
+	} while(0)
+#else
+#define os_printf	os_printf_plus
+#endif
+
 #endif
 

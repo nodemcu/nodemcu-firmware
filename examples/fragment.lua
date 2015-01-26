@@ -313,3 +313,27 @@ uart.on("data", 0 ,function(input) if input=="q" then uart.on("data") else print
 uart.on("data","\r",function(input) if input=="quit" then uart.on("data") else print(input) end end, 1)
 
 for k, v in pairs(file.list()) do print('file:'..k..' len:'..v) end
+
+m=mqtt.Client()
+m:connect("192.168.18.101",1883)
+m:subscribe("/topic",0,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic","hello",0,0)
+
+uart.setup(0,9600,8,0,1,0)
+sv=net.createServer(net.TCP, 60)
+global_c = nil
+sv:listen(9999, function(c)
+	if global_c~=nil then
+		global_c:close()
+	end
+	global_c=c
+	c:on("receive",function(sck,pl)	uart.write(0,pl) end)
+end)
+
+uart.on("data",4, function(data)
+	if global_c~=nil then
+		global_c:send(data)
+	end
+end, 0)
+

@@ -812,10 +812,6 @@ espconn_tcp_accept(void *arg, struct tcp_pcb *pcb, err_t err)
     remot_info *pinfo = NULL;
     LWIP_UNUSED_ARG(err);
 
-    if(4096>system_get_free_heap_size()){
-    	return ERR_MEM;
-    }
-
     paccept = (espconn_msg *)os_zalloc(sizeof(espconn_msg));
     tcp_arg(pcb, paccept);
 	tcp_err(pcb, esponn_server_err);
