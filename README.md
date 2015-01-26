@@ -172,6 +172,20 @@ baudrate:9600
         .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
 ```
 
+####Or a simple http server
+   
+```lua
+    -- A simple http server
+    srv=net.createServer(net.TCP) 
+    srv:listen(80,function(conn) 
+      conn:on("receive",function(conn,payload) 
+        print(payload) 
+        conn:send("<h1> Hello, NodeMcu.</h1>")
+      end) 
+      conn:on("sent",function(conn) conn:close() end)
+    end)
+```
+
 ####Connect to MQTT Broker
 
 ```lua
@@ -208,18 +222,18 @@ m:close();
 
 ```
 
-####Or a simple http server
-   
+#### UDP client and server
 ```lua
-    -- A simple http server
-    srv=net.createServer(net.TCP) 
-    srv:listen(80,function(conn) 
-      conn:on("receive",function(conn,payload) 
-        print(payload) 
-        conn:send("<h1> Hello, NodeMcu.</h1>")
-      end) 
-      conn:on("sent",function(conn) conn:close() end)
-    end)
+-- a udp server
+s=net.createServer(net.UDP) 
+s:on("receive",function(s,c) print(c) end)
+s:listen(5683)
+
+-- a udp client
+cu=net.createConnection(net.UDP) 
+cu:on("receive",function(cu,c) print(c) end) 
+cu:connect(5683,"192.168.18.101") 
+cu:send("hello")
 ```
 
 ####Do something shining
