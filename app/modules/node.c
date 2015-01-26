@@ -53,6 +53,13 @@ static int node_chipid( lua_State* L )
   lua_pushinteger(L, id);
   return 1;  
 }
+// Lua: readvdd33()
+static int node_readvdd33( lua_State* L )
+{
+  uint32_t vdd33 = readvdd33();
+  lua_pushinteger(L, vdd33);
+  return 1;
+}
 
 // Lua: flashid()
 static int node_flashid( lua_State* L )
@@ -287,6 +294,7 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "led" ), LFUNCVAL( node_led ) },
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
+  { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
 #if LUA_OPTIMIZE_MEMORY > 0
 
 #endif
