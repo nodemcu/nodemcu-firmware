@@ -68,6 +68,7 @@
 #endif /* LUA_USE_MODULES */
 
 // #define LUA_NUMBER_INTEGRAL
+#define PRINTF_LONG_SUPPORT
 
 #define LUA_OPTRAM
 #ifdef LUA_OPTRAM
