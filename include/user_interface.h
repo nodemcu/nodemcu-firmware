@@ -189,7 +189,7 @@ struct softap_config {
     AUTH_MODE authmode;	// Note: Don't support AUTH_WEP in softAP mode.
     uint8 ssid_hidden;	// Note: default 0
     uint8 max_connection;	// Note: default 4, max 4
-    uint8 beacon_interval;	// Note: support 100 ~ 60000 ms, default 100
+    uint16 beacon_interval;	// Note: support 100 ~ 60000 ms, default 100
 };
 
 bool wifi_softap_get_config(struct softap_config *config);
