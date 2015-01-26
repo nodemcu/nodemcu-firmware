@@ -273,7 +273,11 @@ static int d2a(double num, char *bf)
     fpart = absnum - (double)ipart;
 
     // convert integer part to string
+#ifdef  PRINTF_LONG_SUPPORT
+    len += li2a(ipart, bf);
+#else
     len += i2a(ipart, bf);
+#endif
 
 #ifndef EPSILON
 #define EPSILON ((double)(0.00000001))
@@ -299,14 +303,17 @@ static int d2a(double num, char *bf)
         {
             fpart = fpart * 10;
         }
+#ifdef  PRINTF_LONG_SUPPORT
+        len += li2a((int)fpart, bf);
+#else
         len += i2a((int)fpart, bf);
+#endif
     }
 #undef EPSILON
     if (num < 0)
     {
         len ++;
     }
-
     return len;
 }
 
