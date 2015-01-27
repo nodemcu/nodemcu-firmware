@@ -407,7 +407,18 @@ void c_format(void *putp, putcf putf, char *fmt, va_list va)
                 putchw(putp, putf, w, lz, bf);
                 break;
             }
-            case 'd' :
+            case 'o' :
+            {
+#ifdef  PRINTF_LONG_SUPPORT
+                if (lng)
+                    uli2a(va_arg(va, unsigned long int), 8, 0, bf);
+                else
+#endif
+                    ui2a(va_arg(va, unsigned int), 8, 0, bf);
+                putchw(putp, putf, w, lz, bf);
+                break;
+            }
+            case 'd' : case 'i':
             {
 #ifdef  PRINTF_LONG_SUPPORT
                 if (lng)
@@ -427,7 +438,8 @@ void c_format(void *putp, putcf putf, char *fmt, va_list va)
                     ui2a(va_arg(va, unsigned int), 16, (ch == 'X'), bf);
                 putchw(putp, putf, w, lz, bf);
                 break;
-            case 'g' :
+            case 'e':  case 'E': case 'f':
+            case 'g': case 'G':
             {
                 d2a(va_arg(va, double), bf);
                 putchw(putp, putf, w, lz, bf);
