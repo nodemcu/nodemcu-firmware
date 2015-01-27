@@ -33,6 +33,9 @@ support floating point LUA.<br />
 use macro LUA_NUMBER_INTEGRAL in user_config.h control this feature.<br />
 LUA_NUMBER_INTEGRAL to disable floating point support,<br />
 // LUA_NUMBER_INTEGRAL to enable floating point support.<br />
+fix tmr.time(). #132<br />
+fix filesystem length. #113<br />
+fix ssl reboots. #134<br />
 build pre_build bin.
 
 2015-01-26<br />
