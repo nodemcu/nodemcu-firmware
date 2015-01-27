@@ -31,6 +31,8 @@ Tencent QQ group: 309957875<br />
 2015-01-27<br />
 Support floating point LUA.<br />
 Use macro LUA_NUMBER_INTEGRAL in user_config.h control this feature.<br />
+LUA_NUMBER_INTEGRAL to disable floating point support,<br />
+// LUA_NUMBER_INTEGRAL to enable floating point support.<br />
 build pre_build bin.
 
 2015-01-26<br />
@@ -121,6 +123,8 @@ pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemc
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
 #endif /* LUA_USE_MODULES */
+...
+// LUA_NUMBER_INTEGRAL
 ```
 
 #Flash the firmware
