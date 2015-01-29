@@ -26,7 +26,6 @@ SUBDIRS=    \
 	driver	\
 	lwip	\
 	json	\
-	ssl	\
 	upgrade	\
 	platform	\
 	libc 	\
@@ -73,7 +72,6 @@ COMPONENTS_eagle.app.v6 = \
 	driver/libdriver.a	\
 	lwip/liblwip.a	\
 	json/libjson.a	\
-	ssl/libssl.a	\
 	upgrade/libupgrade.a	\
 	platform/libplatform.a	\
 	libc/liblibc.a 	\
@@ -102,6 +100,7 @@ LINKFLAGS_eagle.app.v6 = \
 	-lmain	\
 	-ljson	\
 	-lsmartconfig	\
+	-lssl	\
 	$(DEP_LIBS_eagle.app.v6)					\
 	-Wl,--end-group
 

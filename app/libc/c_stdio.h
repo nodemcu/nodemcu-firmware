@@ -56,7 +56,13 @@ extern void output_redirect(const char *str);
 
 // #define c_printf os_printf
 // int	c_printf(const char *c, ...);
+#if defined( LUA_NUMBER_INTEGRAL )
 #define c_sprintf os_sprintf
+#else
+#include "c_stdarg.h"
+void c_sprintf(char* s,char *fmt, ...);
+#endif
+
 // #define c_vsprintf ets_vsprintf
 #define c_printf(...) do {					\
 	unsigned char __print_buf[BUFSIZ];		\

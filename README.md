@@ -28,6 +28,22 @@ Tencent QQ group: 309957875<br />
 - cross compiler
 
 # Change log
+2015-01-27<br />
+support floating point LUA.<br />
+use macro LUA_NUMBER_INTEGRAL in user_config.h control this feature.<br />
+LUA_NUMBER_INTEGRAL to disable floating point support,<br />
+// LUA_NUMBER_INTEGRAL to enable floating point support.<br />
+fix tmr.time(). #132<br />
+fix filesystem length. #113<br />
+fix ssl reboots. #134<br />
+build pre_build bin.
+
+2015-01-26<br />
+applied sdk095_patch1 to sdk 0.9.5.<br />
+added LUA examples and modules [by dvv](https://github.com/dvv). <br />
+added node.readvdd33() API [by alonewolfx2](https://github.com/alonewolfx2).<br />
+build pre_build bin.
+
 2015-01-24<br />
 migrate to sdk 0.9.5 release.<br />
 tmr.time() now return second(not precise yet). <br />
@@ -110,6 +126,8 @@ pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemc
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
 #endif /* LUA_USE_MODULES */
+...
+// LUA_NUMBER_INTEGRAL
 ```
 
 #Flash the firmware
@@ -161,6 +179,20 @@ baudrate:9600
         .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
 ```
 
+####Or a simple http server
+   
+```lua
+    -- A simple http server
+    srv=net.createServer(net.TCP) 
+    srv:listen(80,function(conn) 
+      conn:on("receive",function(conn,payload) 
+        print(payload) 
+        conn:send("<h1> Hello, NodeMcu.</h1>")
+      end) 
+      conn:on("sent",function(conn) conn:close() end)
+    end)
+```
+
 ####Connect to MQTT Broker
 
 ```lua
@@ -197,18 +229,18 @@ m:close();
 
 ```
 
-####Or a simple http server
-   
+#### UDP client and server
 ```lua
-    -- A simple http server
-    srv=net.createServer(net.TCP) 
-    srv:listen(80,function(conn) 
-      conn:on("receive",function(conn,payload) 
-        print(payload) 
-        conn:send("<h1> Hello, NodeMcu.</h1>")
-      end) 
-      conn:on("sent",function(conn) conn:close() end)
-    end)
+-- a udp server
+s=net.createServer(net.UDP) 
+s:on("receive",function(s,c) print(c) end)
+s:listen(5683)
+
+-- a udp client
+cu=net.createConnection(net.UDP) 
+cu:on("receive",function(cu,c) print(c) end) 
+cu:connect(5683,"192.168.18.101") 
+cu:send("hello")
 ```
 
 ####Do something shining

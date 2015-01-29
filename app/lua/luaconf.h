@@ -601,7 +601,8 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #else
 #define LUA_NUMBER_SCAN		"%lf"
-#define LUA_NUMBER_FMT		"%.14g"
+//#define LUA_NUMBER_FMT		"%.14g"
+#define LUA_NUMBER_FMT		"%g"
 #endif // #if defined LUA_NUMBER_INTEGRAL
 #define lua_number2str(s,n)	c_sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	32 /* 16 digits, sign, point, and \0 */

@@ -1,6 +1,10 @@
 #ifndef  _C_MATH_H_
 #define  _C_MATH_H_
 #include <math.h>
+
+double floor(double);
+double pow(double, double);
+
 #if 0
 #ifndef HUGE_VAL
   #define HUGE_VAL (1.0e99)

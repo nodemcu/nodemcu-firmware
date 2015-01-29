@@ -7,7 +7,7 @@
 #define NODE_VERSION_INTERNAL   0U
 
 #define NODE_VERSION	"NodeMCU 0.9.5"
-#define BUILD_DATE	    "build 20150124"
+#define BUILD_DATE	    "build 20150127"
 
 // #define FLASH_512K
 // #define FLASH_1M
@@ -67,7 +67,10 @@
 #define LUA_USE_MODULES_MQTT
 #endif /* LUA_USE_MODULES */
 
-#define LUA_NUMBER_INTEGRAL
+// #define LUA_NUMBER_INTEGRAL
+#ifndef LUA_NUMBER_INTEGRAL
+#define PRINTF_LONG_SUPPORT
+#endif
 
 #define LUA_OPTRAM
 #ifdef LUA_OPTRAM
