@@ -40,6 +40,7 @@ INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
 INCLUDES += -I ../libc
 INCLUDES += -I ../mqtt
+INCLUDES += -I ../u8g
 INCLUDES += -I ../lua
 INCLUDES += -I ../platform
 INCLUDES += -I ../wofs
