@@ -11,7 +11,8 @@
 #include "romfs.h"
 #include "c_string.h"
 #include "driver/uart.h"
-#include "spi_flash.h"
+//#include "spi_flash.h"
+#include "user_interface.h"
 #include "flash_api.h"
 
 // Lua: restart()
@@ -21,30 +22,47 @@ static int node_restart( lua_State* L )
   return 0;  
 }
 
-// Lua: dsleep( us )
+// Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
-  s32 us;
-  us = luaL_checkinteger( L, 1 );
- // if ( us <= 0 )
- if ( us < 0 )
-    return luaL_error( L, "wrong arg range" );
-  system_deep_sleep( us );
+  s32 us, option;
+  //us = luaL_checkinteger( L, 1 );
+  // Set deleep option, skip if nil
+  if ( lua_isnumber(L, 2) )
+  {
+    option = lua_tointeger(L, 2);
+    if ( option < 0 || option > 4)
+      return luaL_error( L, "wrong arg range" );
+    else
+      deep_sleep_set_option( option );
+  }
+  // Set deleep time, skip if nil
+  if ( lua_isnumber(L, 1) )
+  {
+    us = lua_tointeger(L, 1);
+    // if ( us <= 0 )
+    if ( us < 0 )
+      return luaL_error( L, "wrong arg range" );
+    else
+      system_deep_sleep( us );
+  }
   return 0;  
 }
 
 // Lua: dsleep_set_options
-static int node_deepsleep_setoption( lua_State* L )
-{
-  s32 option;
-  option = luaL_checkinteger( L, 1 );
-  if ( option < 0 || option > 4)
-    return luaL_error( L, "wrong arg range" );
-  else
-	  deep_sleep_set_option( option );
-  return 0;
-}
+// Combined to dsleep( us, option )
+// static int node_deepsleep_setoption( lua_State* L )
+// {
+//   s32 option;
+//   option = luaL_checkinteger( L, 1 );
+//   if ( option < 0 || option > 4)
+//     return luaL_error( L, "wrong arg range" );
+//   else
+//    deep_sleep_set_option( option );
+//   return 0;
+// }
 // Lua: info()
+
 static int node_info( lua_State* L )
 {
   lua_pushinteger(L, NODE_VERSION_MAJOR);
@@ -307,7 +325,8 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
   { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
-  { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
+// Combined to dsleep(us, option)  
+// { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0
 
 #endif
