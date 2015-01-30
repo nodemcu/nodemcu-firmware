@@ -147,14 +147,26 @@ static int tmr_wdclr( lua_State* L )
   return 0;  
 }
 
-// Lua: time() , return rtc time in us
+static os_timer_t rtc_timer_updator;
+static uint64_t cur_count = 0;
+static uint64_t rtc_us = 0;
+void rtc_timer_update_cb(void *arg){
+  uint64_t t = (uint64_t)system_get_rtc_time();
+  uint64_t delta = (t>=cur_count)?(t - cur_count):(0x100000000 + t - cur_count);
+  // NODE_ERR("%x\n",t);
+  cur_count = t;
+  unsigned c = system_rtc_clock_cali_proc();
+  uint64_t itg = c >> 12;
+  uint64_t dec = c & 0xFFF;
+  rtc_us += (delta*itg + ((delta*dec)>>12));
+  // TODO: store rtc_us to rtc memory.
+}
+// Lua: time() , return rtc time in second
 static int tmr_time( lua_State* L )
 {
-  unsigned t = 0xFFFFFFFF & system_get_rtc_time();
-  unsigned c = 0xFFFFFFFF & system_rtc_clock_cali_proc();
-  lua_pushinteger( L, t );
-  lua_pushinteger( L, c );
-  return 2; 
+  uint64_t local = rtc_us;
+  lua_pushinteger( L, ((uint32_t)(local/1000000)) & 0x7FFFFFFF );
+  return 1; 
 }
 
 // Module function map
@@ -181,6 +193,10 @@ LUALIB_API int luaopen_tmr( lua_State *L )
     os_timer_disarm(&(alarm_timer[i]));
     os_timer_setfn(&(alarm_timer[i]), (os_timer_func_t *)(alarm_timer_cb[i]), L);
   }
+
+  os_timer_disarm(&rtc_timer_updator);
+  os_timer_setfn(&rtc_timer_updator, (os_timer_func_t *)(rtc_timer_update_cb), NULL);
+  os_timer_arm(&rtc_timer_updator, 500, 1); 
 
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;

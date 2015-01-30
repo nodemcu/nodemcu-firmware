@@ -129,11 +129,11 @@ int platform_gpio_read( unsigned pin )
     return -1;
 
   if(pin == 0){
-    gpio16_input_conf();
+    // gpio16_input_conf();
     return 0x1 & gpio16_input_get();
   }
 
-  GPIO_DIS_OUTPUT(pin_num[pin]);
+  // GPIO_DIS_OUTPUT(pin_num[pin]);
   return 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin]));
 }
 
@@ -433,6 +433,20 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
   uint8_t r = i2c_master_readByte();
   i2c_master_setAck( !ack );
   return r;
+}
+
+// *****************************************************************************
+// SPI platform interface
+uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock)
+{
+  spi_master_init(id, cpol, cpha, databits, clock);
+  return 1;
+}
+
+spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data )
+{
+  spi_mast_byte_write(id, &data);
+  return data;
 }
 
 // ****************************************************************************

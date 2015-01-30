@@ -39,6 +39,11 @@
 #define SPI_MISO_DELAY_NUM_S 18
 #define SPI_MISO_DELAY_MODE 0x00000003
 #define SPI_MISO_DELAY_MODE_S 16
+#define SPI_CK_OUT_HIGH_MODE 0x0000000F
+#define SPI_CK_OUT_HIGH_MODE_S 12
+#define SPI_CK_OUT_LOW_MODE 0x0000000F
+#define SPI_CK_OUT_LOW_MODE_S 8
+
 #define SPI_CLOCK(i)                          (REG_SPI_BASE(i)  + 0x18)
 #define SPI_CLK_EQU_SYSCLK (BIT(31))
 #define SPI_CLKDIV_PRE 0x00001FFF
@@ -73,6 +78,7 @@
 #define SPI_CS_SETUP (BIT(5))
 #define SPI_CS_HOLD (BIT(4))
 #define SPI_FLASH_MODE (BIT(2))
+#define SPI_DOUTDIN (BIT(0))
 
 #define SPI_USER1(i)                          (REG_SPI_BASE(i) + 0x20)
 #define SPI_USR_ADDR_BITLEN 0x0000003F

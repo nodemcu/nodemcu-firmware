@@ -12,6 +12,7 @@
 #include "c_types.h"
 #include "user_interface.h"
 #include "smart.h"
+#include "smartconfig.h"
 
 static int wifi_smart_succeed = LUA_NOREF;
 
@@ -19,6 +20,13 @@ static void wifi_smart_succeed_cb(void *arg){
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
   if( !arg )
     return;
+#if 0
+  struct station_config *sta_conf = arg;
+  wifi_station_set_config(sta_conf);
+  wifi_station_disconnect();
+  wifi_station_connect();
+  smartconfig_stop();
+#endif
   if(wifi_smart_succeed == LUA_NOREF)
     return;
   lua_State* L = (lua_State *)arg;
@@ -81,6 +89,7 @@ static void wifi_scan_done(void *arg, STATUS status)
 }
 
 // Lua: smart(channel, function succeed_cb)
+// Lua: smart(type, function succeed_cb)
 static int wifi_start_smart( lua_State* L )
 {
   unsigned channel;
@@ -109,13 +118,15 @@ static int wifi_start_smart( lua_State* L )
   }else{
     smart_begin(channel, (smart_succeed )wifi_smart_succeed_cb, L);
   }
+  // smartconfig_start(0, wifi_smart_succeed_cb);
   return 0;  
 }
 
-// Lua: exit_smart(channel)
+// Lua: exit_smart()
 static int wifi_exit_smart( lua_State* L )
 {
   smart_end();
+  // smartconfig_stop();
   if(wifi_smart_succeed != LUA_NOREF)
     luaL_unref(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
   wifi_smart_succeed = LUA_NOREF;

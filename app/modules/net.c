@@ -672,16 +672,20 @@ static int net_start( lua_State* L, const char* mt )
   {
     if(isserver)
       pesp_conn->proto.tcp->local_port = port;
-    else
+    else{
       pesp_conn->proto.tcp->remote_port = port;
+      pesp_conn->proto.tcp->local_port = espconn_port();
+    }
     NODE_DBG("TCP port is set: %d.\n", port);
   }
   else if (pesp_conn->type == ESPCONN_UDP)
   {
     if(isserver)
       pesp_conn->proto.udp->local_port = port;
-    else
+    else{
       pesp_conn->proto.udp->remote_port = port;
+      pesp_conn->proto.udp->local_port = espconn_port();
+    }
     NODE_DBG("UDP port is set: %d.\n", port);
   }
 

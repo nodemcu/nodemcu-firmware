@@ -5,6 +5,7 @@
 */
 
 #include "c_string.h"
+#include "c_types.h"
 
 #define lundump_c
 #define LUA_CORE
@@ -141,13 +142,11 @@ static lua_Number LoadNumber(LoadState* S)
     LoadVar(S,y);
     x = (lua_Number)y;
    } break;
-#if 0
    case 8: {
     int64_t y;
     LoadVar(S,y);
     x = (lua_Number)y;
    } break;
-#endif
    default: lua_assert(0);
   }
  }

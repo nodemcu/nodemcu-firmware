@@ -37,12 +37,28 @@
 #define ROM_MODULES_NET
 #endif
 
+#if defined(LUA_USE_MODULES_MQTT)
+#define MODULES_MQTT       "mqtt"
+#define ROM_MODULES_MQTT   \
+    _ROM(MODULES_MQTT, luaopen_mqtt, mqtt_map)
+#else
+#define ROM_MODULES_MQTT
+#endif
+
 #if defined(LUA_USE_MODULES_I2C)
 #define MODULES_I2C       "i2c"
 #define ROM_MODULES_I2C   \
     _ROM(MODULES_I2C, luaopen_i2c, i2c_map)
 #else
 #define ROM_MODULES_I2C
+#endif
+
+#if defined(LUA_USE_MODULES_SPI)
+#define MODULES_SPI       "spi"
+#define ROM_MODULES_SPI   \
+    _ROM(MODULES_SPI, luaopen_spi, spi_map)
+#else
+#define ROM_MODULES_SPI
 #endif
 
 #if defined(LUA_USE_MODULES_TMR)
@@ -105,7 +121,9 @@
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
         ROM_MODULES_WIFI	\
+		ROM_MODULES_MQTT    \
         ROM_MODULES_I2C     \
+        ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \
         ROM_MODULES_NODE    \
         ROM_MODULES_FILE    \

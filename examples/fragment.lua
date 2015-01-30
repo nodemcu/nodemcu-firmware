@@ -25,15 +25,19 @@ ss=net.createServer(net.TCP) ss:listen(80,function(c) end)
 
 s=net.createServer(net.TCP) s:listen(80,function(c) c:on("receive",function(s,c) print(c) end) end)
 
-s=net.createServer(net.UDP) s:listen(5683,function(c) c:on("receive",function(s,c) print(c) end) end)
+s=net.createServer(net.UDP) 
+s:on("receive",function(s,c) print(c) end)
+s:listen(5683)
+
+su=net.createConnection(net.UDP) 
+su:on("receive",function(su,c) print(c) end) 
+su:connect(5683,"192.168.18.101") 
+su:send("hello")
 
 mm=node.list()
 for k, v in pairs(mm) do print('file:'..k..' len:'..v) end
 for k,v in pairs(d) do print("n:"..k..", s:"..v) end
-su=net.createConnection(net.UDP) 
-su:on("receive",function(su,c) print(c) end) 
-su:connect(5683,"192.168.0.66") 
-su:send("/v1/id")
+
 
 gpio.mode(0,gpio.INT) gpio.trig(0,"down",function(l) print("level="..l) end)
 
@@ -56,8 +60,6 @@ su:send([[{"type":"connect","from":"nodemcu","to":"JYP","password":"123456"}]])
 su:send("hello world")
 
 s=net.createServer(net.TCP) s:listen(8008,function(c) c:on("receive",function(s,c) print(c) pcall(loadstring(c)) end) end)
-
-s=net.createServer(net.UDP) s:listen(8888,function(c) c:on("receive",function(s,c) print(c) pcall(loadstring(c)) end) end)
 
 s=net.createServer(net.TCP) s:listen(8008,function(c) con_std = c function s_output(str) if(con_std~=nil) then con_std:send(str) end end 
 	node.output(s_output, 0) c:on("receive",function(c,l) node.input(l) end) c:on("disconnection",function(c) con_std = nil node.output(nil) end) end)
@@ -313,3 +315,27 @@ uart.on("data", 0 ,function(input) if input=="q" then uart.on("data") else print
 uart.on("data","\r",function(input) if input=="quit" then uart.on("data") else print(input) end end, 1)
 
 for k, v in pairs(file.list()) do print('file:'..k..' len:'..v) end
+
+m=mqtt.Client()
+m:connect("192.168.18.101",1883)
+m:subscribe("/topic",0,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic","hello",0,0)
+
+uart.setup(0,9600,8,0,1,0)
+sv=net.createServer(net.TCP, 60)
+global_c = nil
+sv:listen(9999, function(c)
+	if global_c~=nil then
+		global_c:close()
+	end
+	global_c=c
+	c:on("receive",function(sck,pl)	uart.write(0,pl) end)
+end)
+
+uart.on("data",4, function(data)
+	if global_c~=nil then
+		global_c:send(data)
+	end
+end, 0)
+

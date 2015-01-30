@@ -222,7 +222,7 @@ upgrade_connect_cb(void *arg)
     espconn_regist_sentcb(pespconn, upgrade_datasent);
 
     if (pbuf != NULL) {
-        UPGRADE_DBG(pbuf);
+        UPGRADE_DBG("%s\n", pbuf);
 #ifdef UPGRADE_SSL_ENABLE
         espconn_secure_sent(pespconn, pbuf, os_strlen(pbuf));
 #else

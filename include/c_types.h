@@ -16,6 +16,7 @@ typedef unsigned long       uint32_t;
 typedef signed long         sint32_t;
 typedef signed long         int32_t;
 typedef signed long long    sint64_t;
+typedef signed long long    int64_t;
 typedef unsigned long long  uint64_t;
 typedef unsigned long long  u_int64_t;
 typedef float               real32_t;
@@ -78,6 +79,7 @@ typedef enum {
 
 #ifdef ICACHE_FLASH
 #define ICACHE_FLASH_ATTR __attribute__((section(".irom0.text")))
+#define ICACHE_RODATA_ATTR __attribute__((section(".irom.text")))
 #else
 #define ICACHE_FLASH_ATTR
 #endif /* ICACHE_FLASH */

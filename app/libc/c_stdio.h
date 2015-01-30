@@ -47,12 +47,22 @@ extern int c_stderr;
 #define	SEEK_END	2	/* set file offset to EOF plus offset */
 #endif
 
+#define c_malloc os_malloc
+#define c_zalloc os_zalloc
+#define c_free os_free
+
 extern void output_redirect(const char *str);
 #define c_puts output_redirect
 
 // #define c_printf os_printf
 // int	c_printf(const char *c, ...);
+#if defined( LUA_NUMBER_INTEGRAL )
 #define c_sprintf os_sprintf
+#else
+#include "c_stdarg.h"
+void c_sprintf(char* s,char *fmt, ...);
+#endif
+
 // #define c_vsprintf ets_vsprintf
 #define c_printf(...) do {					\
 	unsigned char __print_buf[BUFSIZ];		\
