@@ -126,7 +126,7 @@ function read(addr, unit)
   if((t1 == nil ) or (t2 ==nil)) then
     return nil
   else
-    return t1.."."..t2
+    return t1.."."..string.format("%04u", t2)
   end
 end
 
