@@ -28,18 +28,22 @@ const static u8g_fntpgm_uint8_t *font_array[] =
 };
 
 
+static lu8g_userdata_t *get_lud( lua_State *L )
+{
+    lu8g_userdata_t *lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
+    luaL_argcheck(L, lud, 1, "u8g.display expected");
+    return lud;
+}
+
+
 // Lua: u8g.setFont( self, font )
 static int lu8g_setFont( lua_State *L )
 {
     lu8g_userdata_t *lud;
-    uint8_t stack = 1;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
-    luaL_argcheck(L, lud, stack, "u8g.display expected");
-    stack++;
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
+    uint8_t stack = 2;
 
     unsigned fontnr = luaL_checkinteger( L, stack );
     stack++;
@@ -54,10 +58,7 @@ static int lu8g_setFontRefHeightExtendedText( lua_State *L )
 {
     lu8g_userdata_t *lud;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
-    luaL_argcheck(L, lud, 1, "u8g.display expected");
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
 
     u8g_SetFontRefHeightExtendedText( &(lud->u8g) );
@@ -70,10 +71,7 @@ static int lu8g_setDefaultForegroundColor( lua_State *L )
 {
     lu8g_userdata_t *lud;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
-    luaL_argcheck(L, lud, 1, "u8g.display expected");
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
 
     u8g_SetDefaultForegroundColor( &(lud->u8g) );
@@ -86,10 +84,7 @@ static int lu8g_setFontPosTop( lua_State *L )
 {
     lu8g_userdata_t *lud;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
-    luaL_argcheck(L, lud, 1, "u8g.display expected");
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
 
     u8g_SetFontPosTop( &(lud->u8g) );
@@ -97,18 +92,13 @@ static int lu8g_setFontPosTop( lua_State *L )
     return 0;
 }
 
-// Lua: pix_len = u8g.drawStr( self, x, y, string )
-static int lu8g_drawStr( lua_State *L )
+static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
 {
     lu8g_userdata_t *lud;
-    uint8_t stack = 1;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
-    luaL_argcheck(L, lud, stack, "u8g.display expected");
-    stack++;
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
+    uint8_t stack = 2;
 
     u8g_uint_t x = luaL_checkinteger( L, stack );
     stack++;
@@ -121,23 +111,124 @@ static int lu8g_drawStr( lua_State *L )
     if (s == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_DrawStr( &(lud->u8g), x, y, s ) );
+    switch (rot)
+    {
+    case 1:
+        lua_pushinteger( L, u8g_DrawStr90( &(lud->u8g), x, y, s ) );
+        break;
+    case 2:
+        lua_pushinteger( L, u8g_DrawStr180( &(lud->u8g), x, y, s ) );
+        break;
+    case 3:
+        lua_pushinteger( L, u8g_DrawStr270( &(lud->u8g), x, y, s ) );
+        break;
+    default:
+        lua_pushinteger( L, u8g_DrawStr( &(lud->u8g), x, y, s ) );
+        break;
+    }
 
     return 1;
+}
+
+
+// Lua: pix_len = u8g.drawStr( self, x, y, string )
+static int lu8g_drawStr( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    return lu8g_generic_drawStr( L, 0 );
+}
+
+// Lua: pix_len = u8g.drawStr90( self, x, y, string )
+static int lu8g_drawStr90( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    return lu8g_generic_drawStr( L, 1 );
+}
+
+// Lua: pix_len = u8g.drawStr180( self, x, y, string )
+static int lu8g_drawStr180( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    return lu8g_generic_drawStr( L, 2 );
+}
+
+// Lua: pix_len = u8g.drawStr270( self, x, y, string )
+static int lu8g_drawStr270( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    return lu8g_generic_drawStr( L, 3 );
+}
+
+// Lua: u8g.drawLine( self, x1, y1, x2, y2 )
+static int lu8g_drawLine( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+    uint8_t stack = 2;
+
+    u8g_uint_t x1 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y1 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t x2 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y2 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_DrawLine( &(lud->u8g), x1, y1, x2, y2 );
+
+    return 0;
+}
+
+// Lua: u8g.drawTriangle( self, x0, y0, x1, y1, x2, y2 )
+static int lu8g_drawTriangle( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+    uint8_t stack = 2;
+
+    u8g_uint_t x0 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y0 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t x1 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y1 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t x2 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y2 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_DrawTriangle( &(lud->u8g), x0, y0, x1, y1, x2, y2 );
+
+    return 0;
 }
 
 // Lua: u8g.drawBox( self, x, y, width, height )
 static int lu8g_drawBox( lua_State *L )
 {
     lu8g_userdata_t *lud;
-    uint8_t stack = 1;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
-    luaL_argcheck(L, lud, stack, "u8g.display expected");
-    stack++;
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
+    uint8_t stack = 2;
 
     u8g_uint_t x = luaL_checkinteger( L, stack );
     stack++;
@@ -156,18 +247,43 @@ static int lu8g_drawBox( lua_State *L )
     return 0;
 }
 
+// Lua: u8g.drawRBox( self, x, y, width, height, radius )
+static int lu8g_drawRBox( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+    uint8_t stack = 2;
+
+    u8g_uint_t x = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t w = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t h = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t r = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_DrawRBox( &(lud->u8g), x, y, w, h, r );
+
+    return 0;
+}
+
 // Lua: u8g.drawFrame( self, x, y, width, height )
 static int lu8g_drawFrame( lua_State *L )
 {
     lu8g_userdata_t *lud;
-    uint8_t stack = 1;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
-    luaL_argcheck(L, lud, stack, "u8g.display expected");
-    stack++;
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
+    uint8_t stack = 2;
 
     u8g_uint_t x = luaL_checkinteger( L, stack );
     stack++;
@@ -186,18 +302,46 @@ static int lu8g_drawFrame( lua_State *L )
     return 0;
 }
 
+// Lua: u8g.drawRFrame( self, x, y, width, height, radius )
+static int lu8g_drawRFrame( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+    uint8_t stack = 2;
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_uint_t x = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t w = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t h = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t r = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_DrawRFrame( &(lud->u8g), x, y, w, h, r );
+
+    return 0;
+}
+
 // Lua: u8g.drawDisc( self, x0, y0, rad, opt = U8G_DRAW_ALL )
 static int lu8g_drawDisc( lua_State *L )
 {
     lu8g_userdata_t *lud;
-    uint8_t stack = 1;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
-    luaL_argcheck(L, lud, stack, "u8g.display expected");
-    stack++;
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
+    uint8_t stack = 2;
 
     u8g_uint_t x0 = luaL_checkinteger( L, stack );
     stack++;
@@ -220,14 +364,10 @@ static int lu8g_drawDisc( lua_State *L )
 static int lu8g_drawCircle( lua_State *L )
 {
     lu8g_userdata_t *lud;
-    uint8_t stack = 1;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
-    luaL_argcheck(L, lud, stack, "u8g.display expected");
-    stack++;
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
+    uint8_t stack = 2;
 
     u8g_uint_t x0 = luaL_checkinteger( L, stack );
     stack++;
@@ -251,10 +391,7 @@ static int lu8g_firstPage( lua_State *L )
 {
     lu8g_userdata_t *lud;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
-    luaL_argcheck(L, lud, 1, "u8g.display expected");
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
 
     u8g_FirstPage( &(lud->u8g) );
@@ -267,10 +404,7 @@ static int lu8g_nextPage( lua_State *L )
 {
     lu8g_userdata_t *lud;
 
-    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
-    luaL_argcheck(L, lud, 1, "u8g.display expected");
-
-    if (lud == NULL)
+    if ((lud = get_lud( L )) == NULL)
         return 0;
 
     lua_pushboolean( L, u8g_NextPage( &(lud->u8g) ) );
@@ -449,8 +583,15 @@ static const LUA_REG_TYPE lu8g_display_map[] =
     { LSTRKEY( "setDefaultForegroundColor" ),  LFUNCVAL( lu8g_setDefaultForegroundColor ) },
     { LSTRKEY( "setFontPosTop" ),  LFUNCVAL( lu8g_setFontPosTop ) },
     { LSTRKEY( "drawStr" ),  LFUNCVAL( lu8g_drawStr ) },
+    { LSTRKEY( "drawStr90" ),  LFUNCVAL( lu8g_drawStr90 ) },
+    { LSTRKEY( "drawStr180" ),  LFUNCVAL( lu8g_drawStr180 ) },
+    { LSTRKEY( "drawStr270" ),  LFUNCVAL( lu8g_drawStr270 ) },
     { LSTRKEY( "drawBox" ),  LFUNCVAL( lu8g_drawBox ) },
+    { LSTRKEY( "drawLine" ),  LFUNCVAL( lu8g_drawLine ) },
+    { LSTRKEY( "drawTriangle" ),  LFUNCVAL( lu8g_drawTriangle ) },
+    { LSTRKEY( "drawRBox" ),  LFUNCVAL( lu8g_drawRBox ) },
     { LSTRKEY( "drawFrame" ),  LFUNCVAL( lu8g_drawFrame ) },
+    { LSTRKEY( "drawRFrame" ),  LFUNCVAL( lu8g_drawRFrame ) },
     { LSTRKEY( "drawDisc" ),  LFUNCVAL( lu8g_drawDisc ) },
     { LSTRKEY( "drawCircle" ),  LFUNCVAL( lu8g_drawCircle ) },
     { LSTRKEY( "firstPage" ),  LFUNCVAL( lu8g_firstPage ) },
