@@ -472,7 +472,8 @@ static int mqtt_socket_client( lua_State* L )
     stack++;
   }
   if(username == NULL)
-    return 1;
+	  il = 0;
+  NODE_DBG("lengh username: %d\r\n", il);
   mud->connect_info.username = (uint8_t *)c_zalloc(il + 1);
   if(!mud->connect_info.username){
 		return luaL_error(L, "not enough memory");
@@ -486,7 +487,9 @@ static int mqtt_socket_client( lua_State* L )
     stack++;
   }
   if(password == NULL)
-    return 1;
+  	  il = 0;
+  NODE_DBG("lengh password: %d\r\n", il);
+
   mud->connect_info.password = (uint8_t *)c_zalloc(il + 1);
   if(!mud->connect_info.password){
 		return luaL_error(L, "not enough memory");
@@ -659,7 +662,7 @@ static int mqtt_socket_lwt( lua_State* L )
 	lwtMsg = luaL_checklstring( L, stack, &il );
 	if (lwtMsg == NULL)
 	{
-		return luaL_error( L, "need lwt topic");
+		return luaL_error( L, "need lwt message");
 	}
 
 	mud->connect_info.will_topic = (uint8_t*) c_zalloc( topicSize + 1 );
