@@ -5,10 +5,11 @@
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 --
 -- Example:
--- for k, v in pairs(require("ds18b20").read(4)) do print(k, v) end
+-- require("ds18b20").read(4, function(r) for k, v in pairs(r) do print(k, v) end end)
 ------------------------------------------------------------------------------
 local M
 do
+  local bit = bit
   local format_addr = function(a)
     return ("%02x-%02x%02x%02x%02x%02x%02x"):format(
         a:byte(1),
@@ -16,7 +17,7 @@ do
         a:byte(4), a:byte(3), a:byte(2)
       )
   end
-  local read = function(pin, delay)
+  local read = function(pin, cb, delay)
     local ow = require("ow")
     -- get list of relevant devices
     local d = { }
@@ -37,25 +38,32 @@ do
     ow.skip(pin)
     ow.write(pin, 0x44, 1)
     -- wait a bit
-    tmr.delay(delay or 100000)
+    tmr.alarm(0, delay or 100, 0, function()
     -- iterate over devices
-    local r = { }
-    for i = 1, #d do
-      tmr.wdclr()
-      -- read rom command
-      ow.reset(pin)
-      ow.select(pin, d[i])
-      ow.write(pin, 0xBE, 1)
-      -- read data
-      local x = ow.read_bytes(pin, 9)
-      if ow.crc8(x) == 0 then
-        local t = (x:byte(1) + x:byte(2) * 256) * 625
-        -- NB: temperature in Celcius * 10^4
-        r[format_addr(d[i])] = t
-        d[i] = nil
+      local r = { }
+      for i = 1, #d do
+        tmr.wdclr()
+        -- read rom command
+        ow.reset(pin)
+        ow.select(pin, d[i])
+        ow.write(pin, 0xBE, 1)
+        -- read data
+        local x = ow.read_bytes(pin, 9)
+        if ow.crc8(x) == 0 then
+          local t = (x:byte(1) + x:byte(2) * 256)
+          -- negatives?
+          if bit.isset(t, 15) then t = 1 - bit.bxor(t, 0xffff) end
+          -- NB: temperature in Celsius * 10^4
+          t = t * 625
+          -- NB: due 850000 means bad pullup. ignore
+          if t ~= 850000 then
+            r[format_addr(d[i])] = t
+          end
+          d[i] = nil
+        end
       end
-    end
-    return r
+      cb(r)
+    end)
   end
   -- expose
   M = {
