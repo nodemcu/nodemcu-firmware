@@ -48,9 +48,9 @@
 #if defined(LUA_USE_MODULES_U8G)
 #define MODULES_U8G       "u8g"
 #define ROM_MODULES_U8G   \
-    _ROM(MODULES_U8G, luaopen_u8g, u8g_map)
+    _ROM(MODULES_U8G, luaopen_u8g, lu8g_map)
 #else
-#define ROM_MODULES_MQTT
+#define ROM_MODULES_U8G
 #endif
 
 #if defined(LUA_USE_MODULES_I2C)

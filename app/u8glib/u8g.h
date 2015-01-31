@@ -51,7 +51,7 @@ typedef signed char int8_t;
 typedef unsigned short uint16_t;
 typedef signed short int16_t;
 #else
-#include <stdint.h>
+#include <c_types.h>
 #endif
 
 #if defined(__AVR__)
@@ -641,6 +641,7 @@ uint8_t u8g_com_arduino_fast_parallel_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_va
 uint8_t u8g_com_arduino_port_d_wr_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);       /* u8g_com_arduino_port_d_wr.c */
 uint8_t u8g_com_arduino_no_en_parallel_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);	/* u8g_com_arduino_no_en_parallel.c */		
 uint8_t u8g_com_arduino_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);		/* u8g_com_arduino_ssd_i2c.c */
+uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);		/* u8g.c */
 uint8_t u8g_com_arduino_uc_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);
 uint8_t u8g_com_arduino_t6963_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);			/* u8g_com_arduino_t6963.c */
 
@@ -793,6 +794,11 @@ defined(__18CXX) || defined(__PIC32MX)
 #if defined(U8G_RASPBERRY_PI)
 #define U8G_COM_SSD_I2C u8g_com_raspberrypi_ssd_i2c_fn
 #endif
+#endif
+
+#ifndef U8G_COM_SSD_I2C
+// ESP8266
+#define U8G_COM_SSD_I2C u8g_com_esp8266_ssd_i2c_fn
 #endif
 
 #ifndef U8G_COM_SSD_I2C
