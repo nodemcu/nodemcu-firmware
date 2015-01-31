@@ -90,7 +90,6 @@ extern "C" {
 #  define U8G_PURE
 #  define U8G_NOCOMMON
 #  define U8G_SECTION(name)
-#  define U8G_FONT_SECTION(name)
 #endif
 
 #ifndef U8G_FONT_SECTION

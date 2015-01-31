@@ -19,22 +19,264 @@ typedef struct lu8g_userdata
 } lu8g_userdata_t;
 
 
+// Font look-up array
+#define LU8G_FONT_6X10 0
 
-
-// Lua: u8g.setup( self, id )
-static int lu8g_setup( lua_State *L )
+const static u8g_fntpgm_uint8_t *font_array[] =
 {
-  unsigned id = luaL_checkinteger( L, 2 );
+    u8g_font_6x10
+};
 
-  //MOD_CHECK_ID( u8g, id );
 
-  if (id == 0)
-    return luaL_error( L, "ID 0 not supported!" );
+// Lua: u8g.setFont( self, font )
+static int lu8g_setFont( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+    uint8_t stack = 1;
 
-  return 0;
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
+    luaL_argcheck(L, lud, stack, "u8g.display expected");
+    stack++;
+
+    if (lud == NULL)
+        return 0;
+
+    unsigned fontnr = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_SetFont( &(lud->u8g), font_array[fontnr] );
+
+    return 0;
 }
 
+// Lua: u8g.setFontRefHeightExtendedText( self )
+static int lu8g_setFontRefHeightExtendedText( lua_State *L )
+{
+    lu8g_userdata_t *lud;
 
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
+    luaL_argcheck(L, lud, 1, "u8g.display expected");
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_SetFontRefHeightExtendedText( &(lud->u8g) );
+
+    return 0;
+}
+
+// Lua: u8g.setDefaultForegroundColor( self )
+static int lu8g_setDefaultForegroundColor( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
+    luaL_argcheck(L, lud, 1, "u8g.display expected");
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_SetDefaultForegroundColor( &(lud->u8g) );
+
+    return 0;
+}
+
+// Lua: u8g.setFontPosTop( self )
+static int lu8g_setFontPosTop( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
+    luaL_argcheck(L, lud, 1, "u8g.display expected");
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_SetFontPosTop( &(lud->u8g) );
+
+    return 0;
+}
+
+// Lua: pix_len = u8g.drawStr( self, x, y, string )
+static int lu8g_drawStr( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+    uint8_t stack = 1;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
+    luaL_argcheck(L, lud, stack, "u8g.display expected");
+    stack++;
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_uint_t x = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y = luaL_checkinteger( L, stack );
+    stack++;
+
+    const char *s = luaL_checkstring( L, stack );
+    stack++;
+    if (s == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_DrawStr( &(lud->u8g), x, y, s ) );
+
+    return 1;
+}
+
+// Lua: u8g.drawBox( self, x, y, width, height )
+static int lu8g_drawBox( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+    uint8_t stack = 1;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
+    luaL_argcheck(L, lud, stack, "u8g.display expected");
+    stack++;
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_uint_t x = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t w = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t h = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_DrawBox( &(lud->u8g), x, y, w, h );
+
+    return 0;
+}
+
+// Lua: u8g.drawFrame( self, x, y, width, height )
+static int lu8g_drawFrame( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+    uint8_t stack = 1;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
+    luaL_argcheck(L, lud, stack, "u8g.display expected");
+    stack++;
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_uint_t x = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t w = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t h = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_DrawFrame( &(lud->u8g), x, y, w, h );
+
+    return 0;
+}
+
+// Lua: u8g.drawDisc( self, x0, y0, rad, opt = U8G_DRAW_ALL )
+static int lu8g_drawDisc( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+    uint8_t stack = 1;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
+    luaL_argcheck(L, lud, stack, "u8g.display expected");
+    stack++;
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_uint_t x0 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y0 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t rad = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t opt = luaL_optinteger( L, stack, U8G_DRAW_ALL );
+    stack++;
+
+    u8g_DrawDisc( &(lud->u8g), x0, y0, rad, opt );
+
+    return 0;
+}
+
+// Lua: u8g.drawCircle( self, x0, y0, rad, opt = U8G_DRAW_ALL )
+static int lu8g_drawCircle( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+    uint8_t stack = 1;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, stack, "u8g.display");
+    luaL_argcheck(L, lud, stack, "u8g.display expected");
+    stack++;
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_uint_t x0 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t y0 = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t rad = luaL_checkinteger( L, stack );
+    stack++;
+
+    u8g_uint_t opt = luaL_optinteger( L, stack, U8G_DRAW_ALL );
+    stack++;
+
+    u8g_DrawCircle( &(lud->u8g), x0, y0, rad, opt );
+
+    return 0;
+}
+
+// Lua: u8g.firstPage( self )
+static int lu8g_firstPage( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
+    luaL_argcheck(L, lud, 1, "u8g.display expected");
+
+    if (lud == NULL)
+        return 0;
+
+    u8g_FirstPage( &(lud->u8g) );
+
+    return 0;
+}
+
+// Lua: bool = u8g.nextPage( self )
+static int lu8g_nextPage( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
+    luaL_argcheck(L, lud, 1, "u8g.display expected");
+
+    if (lud == NULL)
+        return 0;
+
+    lua_pushboolean( L, u8g_NextPage( &(lud->u8g) ) );
+
+    return 1;
+}
 
 // ------------------------------------------------------------
 // comm functions
@@ -68,7 +310,8 @@ static uint8_t u8g_com_esp8266_ssd_start_sequence(u8g_t *u8g)
     if ( u8g->pin_list[U8G_PI_A0_STATE] == 0 )
     {
         // ignore return value -> tolerate missing ACK
-        platform_i2c_send_byte( ESP_I2C_ID, I2C_CMD_MODE );
+        if ( platform_i2c_send_byte( ESP_I2C_ID, I2C_CMD_MODE ) == 0 )
+            ; //return 0;
     }
     else
     {
@@ -116,8 +359,9 @@ uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, voi
         //u8g->pin_list[U8G_PI_SET_A0] = 1;
         if ( u8g_com_esp8266_ssd_start_sequence(u8g) == 0 )
             return platform_i2c_stop( ESP_I2C_ID ), 0;
+        // ignore return value -> tolerate missing ACK
         if ( platform_i2c_send_byte( ESP_I2C_ID, arg_val) == 0 )
-            return platform_i2c_send_stop( ESP_I2C_ID ), 0;
+            ; //return platform_i2c_send_stop( ESP_I2C_ID ), 0;
         // platform_i2c_send_stop( ESP_I2C_ID );
         break;
     
@@ -200,7 +444,17 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 
 static const LUA_REG_TYPE lu8g_display_map[] =
 {
-    { LSTRKEY( "setup" ),  LFUNCVAL( lu8g_setup ) },
+    { LSTRKEY( "setFont" ),  LFUNCVAL( lu8g_setFont ) },
+    { LSTRKEY( "setFontRefHeightExtendedText" ),  LFUNCVAL( lu8g_setFontRefHeightExtendedText ) },
+    { LSTRKEY( "setDefaultForegroundColor" ),  LFUNCVAL( lu8g_setDefaultForegroundColor ) },
+    { LSTRKEY( "setFontPosTop" ),  LFUNCVAL( lu8g_setFontPosTop ) },
+    { LSTRKEY( "drawStr" ),  LFUNCVAL( lu8g_drawStr ) },
+    { LSTRKEY( "drawBox" ),  LFUNCVAL( lu8g_drawBox ) },
+    { LSTRKEY( "drawFrame" ),  LFUNCVAL( lu8g_drawFrame ) },
+    { LSTRKEY( "drawDisc" ),  LFUNCVAL( lu8g_drawDisc ) },
+    { LSTRKEY( "drawCircle" ),  LFUNCVAL( lu8g_drawCircle ) },
+    { LSTRKEY( "firstPage" ),  LFUNCVAL( lu8g_firstPage ) },
+    { LSTRKEY( "nextPage" ),  LFUNCVAL( lu8g_nextPage ) },
 #if LUA_OPTIMIZE_MEMORY > 0
     { LSTRKEY( "__index" ), LROVAL ( lu8g_display_map ) },
 #endif
@@ -211,6 +465,7 @@ const LUA_REG_TYPE lu8g_map[] =
 {
     { LSTRKEY( "ssd1306_128x64_i2c" ), LFUNCVAL ( lu8g_ssd1306_128x64_i2c ) },
 #if LUA_OPTIMIZE_MEMORY > 0
+    { LSTRKEY( "font_6x10" ), LNUMVAL( LU8G_FONT_6X10 ) },
     { LSTRKEY( "__metatable" ), LROVAL( lu8g_map ) },
 #endif
     { LNILKEY, LNILVAL }
@@ -230,7 +485,8 @@ LUALIB_API int ICACHE_FLASH_ATTR luaopen_u8g( lua_State *L )
     lua_setmetatable( L, -2 );
 
     // Module constants  
-    // MOD_REG_NUMBER( L, "TCP", TCP );
+    // Register fonts
+    MOD_REG_NUMBER( L, "font_6x10", LU8G_FONT_6X10 ); 
 
     // create metatable
     luaL_newmetatable(L, "u8g.display");
@@ -240,7 +496,7 @@ LUALIB_API int ICACHE_FLASH_ATTR luaopen_u8g( lua_State *L )
     lua_rawset(L,-3);
     // Setup the methods inside metatable
     luaL_register( L, NULL, u8g_display_map );
-  
+
     return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }
