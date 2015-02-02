@@ -22,7 +22,7 @@ ifeq ($(OS),Windows_NT)
 	else 
 		# It is gcc, may be cygwin
 		# Can we use -fdata-sections?
-		CCFLAGS += -Os -ffunction-sections -fno-jump-tables
+		CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
 		AR = xtensa-lx106-elf-ar
 		CC = xtensa-lx106-elf-gcc
 		NM = xtensa-lx106-elf-nm
@@ -49,7 +49,7 @@ else
 	else
 		ESPPORT = $(COMPORT)
 	endif
-	CCFLAGS += -Os -ffunction-sections -fno-jump-tables
+	CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = xtensa-lx106-elf-gcc
 	NM = xtensa-lx106-elf-nm
