@@ -28,11 +28,21 @@ const static u8g_fntpgm_uint8_t *font_array[] =
 };
 
 
+// helper function: retrieve and check userdata argument
 static lu8g_userdata_t *get_lud( lua_State *L )
 {
     lu8g_userdata_t *lud = (lu8g_userdata_t *)luaL_checkudata(L, 1, "u8g.display");
     luaL_argcheck(L, lud, 1, "u8g.display expected");
     return lud;
+}
+
+// helper function: retrieve given number of integer arguments
+static void lu8g_get_int_args( lua_State *L, uint8_t stack, uint8_t num, u8g_uint_t *args)
+{
+    while (num-- > 0)
+    {
+        *args++ = luaL_checkinteger( L, stack++ );
+    }
 }
 
 
@@ -98,32 +108,27 @@ static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[2];
+    lu8g_get_int_args( L, 2, 2, args );
 
-    u8g_uint_t y = luaL_checkinteger( L, stack );
-    stack++;
-
-    const char *s = luaL_checkstring( L, stack );
-    stack++;
+    const char *s = luaL_checkstring( L, (1+2) + 1 );
     if (s == NULL)
         return 0;
 
     switch (rot)
     {
     case 1:
-        lua_pushinteger( L, u8g_DrawStr90( &(lud->u8g), x, y, s ) );
+        lua_pushinteger( L, u8g_DrawStr90( &(lud->u8g), args[0], args[1], s ) );
         break;
     case 2:
-        lua_pushinteger( L, u8g_DrawStr180( &(lud->u8g), x, y, s ) );
+        lua_pushinteger( L, u8g_DrawStr180( &(lud->u8g), args[0], args[1], s ) );
         break;
     case 3:
-        lua_pushinteger( L, u8g_DrawStr270( &(lud->u8g), x, y, s ) );
+        lua_pushinteger( L, u8g_DrawStr270( &(lud->u8g), args[0], args[1], s ) );
         break;
     default:
-        lua_pushinteger( L, u8g_DrawStr( &(lud->u8g), x, y, s ) );
+        lua_pushinteger( L, u8g_DrawStr( &(lud->u8g), args[0], args[1], s ) );
         break;
     }
 
@@ -170,21 +175,11 @@ static int lu8g_drawLine( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x1 = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[4];
+    lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_uint_t y1 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t x2 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t y2 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_DrawLine( &(lud->u8g), x1, y1, x2, y2 );
+    u8g_DrawLine( &(lud->u8g), args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -196,27 +191,11 @@ static int lu8g_drawTriangle( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x0 = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[6];
+    lu8g_get_int_args( L, 2, 6, args );
 
-    u8g_uint_t y0 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t x1 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t y1 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t x2 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t y2 = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_DrawTriangle( &(lud->u8g), x0, y0, x1, y1, x2, y2 );
+    u8g_DrawTriangle( &(lud->u8g), args[0], args[1], args[2], args[3], args[4], args[5] );
 
     return 0;
 }
@@ -228,21 +207,11 @@ static int lu8g_drawBox( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[4];
+    lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_uint_t y = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t w = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t h = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_DrawBox( &(lud->u8g), x, y, w, h );
+    u8g_DrawBox( &(lud->u8g), args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -254,24 +223,11 @@ static int lu8g_drawRBox( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[5];
+    lu8g_get_int_args( L, 2, 5, args );
 
-    u8g_uint_t y = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t w = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t h = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t r = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_DrawRBox( &(lud->u8g), x, y, w, h, r );
+    u8g_DrawRBox( &(lud->u8g), args[0], args[1], args[2], args[3], args[4] );
 
     return 0;
 }
@@ -283,21 +239,11 @@ static int lu8g_drawFrame( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[4];
+    lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_uint_t y = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t w = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t h = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_DrawFrame( &(lud->u8g), x, y, w, h );
+    u8g_DrawFrame( &(lud->u8g), args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -309,27 +255,11 @@ static int lu8g_drawRFrame( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    if (lud == NULL)
-        return 0;
+    u8g_uint_t args[5];
+    lu8g_get_int_args( L, 2, 5, args );
 
-    u8g_uint_t x = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t y = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t w = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t h = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t r = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_DrawRFrame( &(lud->u8g), x, y, w, h, r );
+    u8g_DrawRFrame( &(lud->u8g), args[0], args[1], args[2], args[3], args[4] );
 
     return 0;
 }
@@ -341,21 +271,13 @@ static int lu8g_drawDisc( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x0 = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[3];
+    lu8g_get_int_args( L, 2, 3, args );
 
-    u8g_uint_t y0 = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t opt = luaL_optinteger( L, (1+3) + 1, U8G_DRAW_ALL );
 
-    u8g_uint_t rad = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t opt = luaL_optinteger( L, stack, U8G_DRAW_ALL );
-    stack++;
-
-    u8g_DrawDisc( &(lud->u8g), x0, y0, rad, opt );
+    u8g_DrawDisc( &(lud->u8g), args[0], args[1], args[2], opt );
 
     return 0;
 }
@@ -367,21 +289,13 @@ static int lu8g_drawCircle( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    u8g_uint_t x0 = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t args[3];
+    lu8g_get_int_args( L, 2, 3, args );
 
-    u8g_uint_t y0 = luaL_checkinteger( L, stack );
-    stack++;
+    u8g_uint_t opt = luaL_optinteger( L, (1+3) + 1, U8G_DRAW_ALL );
 
-    u8g_uint_t rad = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_uint_t opt = luaL_optinteger( L, stack, U8G_DRAW_ALL );
-    stack++;
-
-    u8g_DrawCircle( &(lud->u8g), x0, y0, rad, opt );
+    u8g_DrawCircle( &(lud->u8g), args[0], args[1], args[2], opt );
 
     return 0;
 }
