@@ -185,6 +185,9 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
 {
   switch( baud )
   {
+    case BIT_RATE_1200:
+    case BIT_RATE_2400:
+    case BIT_RATE_4800:
     case BIT_RATE_9600:
     case BIT_RATE_19200:
     case BIT_RATE_38400:
