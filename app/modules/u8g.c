@@ -20,12 +20,28 @@ typedef struct lu8g_userdata
 
 
 // Font look-up array
-#define LU8G_FONT_6X10 0
-
-const static u8g_fntpgm_uint8_t *font_array[] =
+static const u8g_fntpgm_uint8_t *font_array[] =
 {
-    u8g_font_6x10
+#undef U8G_FONT_TABLE_ENTRY
+#define U8G_FONT_TABLE_ENTRY(font) u8g_ ## font ,
+    U8G_FONT_TABLE
+    NULL
 };
+
+
+// function to read 4-byte aligned from program memory AKA irom0
+u8g_pgm_uint8_t u8g_pgm_read(const u8g_pgm_uint8_t *adr)
+{
+    uint32_t iadr = (uint32_t)adr;
+    // set up pointer to 4-byte aligned memory location
+    uint32_t *ptr = (uint32_t *)(iadr & ~0x3);
+
+    // read 4-byte aligned
+    uint32_t pgm_data = *ptr;
+
+    // return the correct byte within the retrieved 32bit word
+    return pgm_data >> ((iadr % 4) * 8);
+}
 
 
 // helper function: retrieve and check userdata argument
@@ -53,12 +69,10 @@ static int lu8g_setFont( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-    uint8_t stack = 2;
 
-    unsigned fontnr = luaL_checkinteger( L, stack );
-    stack++;
-
-    u8g_SetFont( &(lud->u8g), font_array[fontnr] );
+    lua_Integer fontnr = luaL_checkinteger( L, 2 );
+    if ((fontnr >= 0) && (fontnr < (sizeof( font_array ) / sizeof( u8g_fntpgm_uint8_t ))))
+        u8g_SetFont( &(lud->u8g), font_array[fontnr] );
 
     return 0;
 }
@@ -520,7 +534,13 @@ const LUA_REG_TYPE lu8g_map[] =
 {
     { LSTRKEY( "ssd1306_128x64_i2c" ), LFUNCVAL ( lu8g_ssd1306_128x64_i2c ) },
 #if LUA_OPTIMIZE_MEMORY > 0
-    { LSTRKEY( "font_6x10" ), LNUMVAL( LU8G_FONT_6X10 ) },
+    //{ LSTRKEY( "font_6x10" ), LNUMVAL( LU8G_FONT_6X10 ) },
+
+    // Register fonts
+#undef U8G_FONT_TABLE_ENTRY
+#define U8G_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LNUMVAL( __COUNTER__ ) },
+    U8G_FONT_TABLE
+
     { LSTRKEY( "__metatable" ), LROVAL( lu8g_map ) },
 #endif
     { LNILKEY, LNILVAL }
@@ -540,8 +560,11 @@ LUALIB_API int ICACHE_FLASH_ATTR luaopen_u8g( lua_State *L )
     lua_setmetatable( L, -2 );
 
     // Module constants  
+
     // Register fonts
-    MOD_REG_NUMBER( L, "font_6x10", LU8G_FONT_6X10 ); 
+#undef U8G_FONT_TABLE_ENTRY
+#define U8G_FONT_TABLE_ENTRY(font) MOD_REG_NUMBER( L, #font, __COUNTER__ );
+    U8G_FONT_TABLE
 
     // create metatable
     luaL_newmetatable(L, "u8g.display");

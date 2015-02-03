@@ -93,7 +93,7 @@ extern "C" {
 #endif
 
 #ifndef U8G_FONT_SECTION
-#  define U8G_FONT_SECTION(name)
+#  define U8G_FONT_SECTION(name) U8G_SECTION(".font_data." name)
 #endif
 
 
@@ -114,7 +114,8 @@ typedef uint8_t u8g_fntpgm_uint8_t;
 #define PROGMEM
 typedef uint8_t u8g_pgm_uint8_t;
 typedef uint8_t u8g_fntpgm_uint8_t;
-#define u8g_pgm_read(adr) (*(const u8g_pgm_uint8_t *)(adr)) 
+//#define u8g_pgm_read(adr) (*(const u8g_pgm_uint8_t *)(adr)) 
+u8g_pgm_uint8_t u8g_pgm_read(const u8g_pgm_uint8_t *adr);
 #define U8G_PSTR(s) ((u8g_pgm_uint8_t *)(s))
 
 #endif
