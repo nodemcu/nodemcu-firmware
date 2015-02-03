@@ -33,8 +33,8 @@ typedef enum {
 } UartExistParity;
 
 typedef enum {
-    BIT_RATE_9600     = 1200,
-    BIT_RATE_9600     = 2400,
+    BIT_RATE_1200     = 1200,
+    BIT_RATE_2400     = 2400,
     BIT_RATE_4800     = 4800,  
     BIT_RATE_9600     = 9600,
     BIT_RATE_19200   = 19200,
