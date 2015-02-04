@@ -1094,6 +1094,7 @@ struct _u8g_t
   
   u8g_box_t current_page;		/* current box of the visible page */
 
+  uint8_t i2c_addr;
 };
 
 #define u8g_GetFontAscent(u8g) ((u8g)->font_ref_ascent)

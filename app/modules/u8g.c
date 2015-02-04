@@ -12,11 +12,7 @@
 
 #include "u8g.h"
 
-typedef struct lu8g_userdata
-{
-    uint8_t i2c_addr;
-    u8g_t u8g;
-} lu8g_userdata_t;
+typedef u8g_t lu8g_userdata_t;
 
 
 // Font look-up array
@@ -72,7 +68,7 @@ static int lu8g_setFont( lua_State *L )
 
     lua_Integer fontnr = luaL_checkinteger( L, 2 );
     if ((fontnr >= 0) && (fontnr < (sizeof( font_array ) / sizeof( u8g_fntpgm_uint8_t ))))
-        u8g_SetFont( &(lud->u8g), font_array[fontnr] );
+        u8g_SetFont( lud, font_array[fontnr] );
 
     return 0;
 }
@@ -85,7 +81,7 @@ static int lu8g_setFontRefHeightExtendedText( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontRefHeightExtendedText( &(lud->u8g) );
+    u8g_SetFontRefHeightExtendedText( lud );
 
     return 0;
 }
@@ -98,7 +94,7 @@ static int lu8g_setDefaultForegroundColor( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetDefaultForegroundColor( &(lud->u8g) );
+    u8g_SetDefaultForegroundColor( lud );
 
     return 0;
 }
@@ -111,7 +107,7 @@ static int lu8g_setFontPosTop( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontPosTop( &(lud->u8g) );
+    u8g_SetFontPosTop( lud );
 
     return 0;
 }
@@ -133,16 +129,16 @@ static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
     switch (rot)
     {
     case 1:
-        lua_pushinteger( L, u8g_DrawStr90( &(lud->u8g), args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr90( lud, args[0], args[1], s ) );
         break;
     case 2:
-        lua_pushinteger( L, u8g_DrawStr180( &(lud->u8g), args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr180( lud, args[0], args[1], s ) );
         break;
     case 3:
-        lua_pushinteger( L, u8g_DrawStr270( &(lud->u8g), args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr270( lud, args[0], args[1], s ) );
         break;
     default:
-        lua_pushinteger( L, u8g_DrawStr( &(lud->u8g), args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr( lud, args[0], args[1], s ) );
         break;
     }
 
@@ -193,7 +189,7 @@ static int lu8g_drawLine( lua_State *L )
     u8g_uint_t args[4];
     lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_DrawLine( &(lud->u8g), args[0], args[1], args[2], args[3] );
+    u8g_DrawLine( lud, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -209,7 +205,7 @@ static int lu8g_drawTriangle( lua_State *L )
     u8g_uint_t args[6];
     lu8g_get_int_args( L, 2, 6, args );
 
-    u8g_DrawTriangle( &(lud->u8g), args[0], args[1], args[2], args[3], args[4], args[5] );
+    u8g_DrawTriangle( lud, args[0], args[1], args[2], args[3], args[4], args[5] );
 
     return 0;
 }
@@ -225,7 +221,7 @@ static int lu8g_drawBox( lua_State *L )
     u8g_uint_t args[4];
     lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_DrawBox( &(lud->u8g), args[0], args[1], args[2], args[3] );
+    u8g_DrawBox( lud, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -241,7 +237,7 @@ static int lu8g_drawRBox( lua_State *L )
     u8g_uint_t args[5];
     lu8g_get_int_args( L, 2, 5, args );
 
-    u8g_DrawRBox( &(lud->u8g), args[0], args[1], args[2], args[3], args[4] );
+    u8g_DrawRBox( lud, args[0], args[1], args[2], args[3], args[4] );
 
     return 0;
 }
@@ -257,7 +253,7 @@ static int lu8g_drawFrame( lua_State *L )
     u8g_uint_t args[4];
     lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_DrawFrame( &(lud->u8g), args[0], args[1], args[2], args[3] );
+    u8g_DrawFrame( lud, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -273,7 +269,7 @@ static int lu8g_drawRFrame( lua_State *L )
     u8g_uint_t args[5];
     lu8g_get_int_args( L, 2, 5, args );
 
-    u8g_DrawRFrame( &(lud->u8g), args[0], args[1], args[2], args[3], args[4] );
+    u8g_DrawRFrame( lud, args[0], args[1], args[2], args[3], args[4] );
 
     return 0;
 }
@@ -291,7 +287,7 @@ static int lu8g_drawDisc( lua_State *L )
 
     u8g_uint_t opt = luaL_optinteger( L, (1+3) + 1, U8G_DRAW_ALL );
 
-    u8g_DrawDisc( &(lud->u8g), args[0], args[1], args[2], opt );
+    u8g_DrawDisc( lud, args[0], args[1], args[2], opt );
 
     return 0;
 }
@@ -309,7 +305,7 @@ static int lu8g_drawCircle( lua_State *L )
 
     u8g_uint_t opt = luaL_optinteger( L, (1+3) + 1, U8G_DRAW_ALL );
 
-    u8g_DrawCircle( &(lud->u8g), args[0], args[1], args[2], opt );
+    u8g_DrawCircle( lud, args[0], args[1], args[2], opt );
 
     return 0;
 }
@@ -322,7 +318,7 @@ static int lu8g_firstPage( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_FirstPage( &(lud->u8g) );
+    u8g_FirstPage( lud );
 
     return 0;
 }
@@ -335,7 +331,7 @@ static int lu8g_nextPage( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushboolean( L, u8g_NextPage( &(lud->u8g) ) );
+    lua_pushboolean( L, u8g_NextPage( lud ) );
 
     return 1;
 }
@@ -367,7 +363,7 @@ static uint8_t u8g_com_esp8266_ssd_start_sequence(u8g_t *u8g)
         return 1;
 
     /* setup bus, might be a repeated start */
-    if ( do_i2c_start( ESP_I2C_ID, I2C_SLA ) == 0 )
+    if ( do_i2c_start( ESP_I2C_ID, u8g->i2c_addr ) == 0 )
         return 0;
     if ( u8g->pin_list[U8G_PI_A0_STATE] == 0 )
     {
@@ -485,11 +481,11 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
     if (addr == 0)
         return luaL_error( L, "i2c address required" );
 
-    lu8g_userdata_t *userdata = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
+    lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
 
-    userdata->i2c_addr = (uint8_t)addr;
+    lud->i2c_addr = (uint8_t)addr;
 
-    u8g_InitI2C( &(userdata->u8g), &u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
+    u8g_InitI2C( lud, &u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
 
 
     // set its metatable
