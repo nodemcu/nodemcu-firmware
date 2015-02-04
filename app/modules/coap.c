@@ -53,15 +53,13 @@ static void coap_received(void *arg, char *pdata, unsigned short len)
   c_memset(buf, 0, sizeof(buf));
 }
 
-static void ICACHE_FLASH_ATTR
-coap_sent(void *arg)
+static void coap_sent(void *arg)
 {
   NODE_DBG("coap_sent is called.\n");
 }
 
 // Lua: s = coap.create(function(conn))
-static int ICACHE_FLASH_ATTR
-coap_create( lua_State* L, const char* mt )
+static int coap_create( lua_State* L, const char* mt )
 {
   struct espconn *pesp_conn = NULL;
   lcoap_userdata *cud;
@@ -106,8 +104,7 @@ coap_create( lua_State* L, const char* mt )
 }
 
 // Lua: server:delete()
-static int ICACHE_FLASH_ATTR
-coap_delete( lua_State* L, const char* mt )
+static int coap_delete( lua_State* L, const char* mt )
 {
   struct espconn *pesp_conn = NULL;
   lcoap_userdata *cud;
@@ -141,8 +138,7 @@ coap_delete( lua_State* L, const char* mt )
 }
 
 // Lua: server:listen( port, ip )
-static int ICACHE_FLASH_ATTR
-coap_start( lua_State* L, const char* mt )
+static int coap_start( lua_State* L, const char* mt )
 {
   struct espconn *pesp_conn = NULL;
   lcoap_userdata *cud;
@@ -191,8 +187,7 @@ coap_start( lua_State* L, const char* mt )
 }
 
 // Lua: server:close()
-static int ICACHE_FLASH_ATTR
-coap_close( lua_State* L, const char* mt )
+static int coap_close( lua_State* L, const char* mt )
 {
   struct espconn *pesp_conn = NULL;
   lcoap_userdata *cud;
@@ -220,15 +215,13 @@ coap_close( lua_State* L, const char* mt )
 }
 
 // Lua: server/client:on( "method", function(s) )
-static int ICACHE_FLASH_ATTR
-coap_on( lua_State* L, const char* mt )
+static int coap_on( lua_State* L, const char* mt )
 {
   NODE_DBG("coap_on is called.\n");
   return 0;  
 }
 
-static void ICACHE_FLASH_ATTR
-coap_response_handler(void *arg, char *pdata, unsigned short len)
+static void coap_response_handler(void *arg, char *pdata, unsigned short len)
 {
   NODE_DBG("coap_response_handler is called.\n");
   struct espconn *pesp_conn = arg;
@@ -318,8 +311,7 @@ end:
 }
 
 // Lua: client:request( [CON], uri, [payload] )
-static int ICACHE_FLASH_ATTR
-coap_request( lua_State* L, coap_method_t m )
+static int coap_request( lua_State* L, coap_method_t m )
 {
   struct espconn *pesp_conn = NULL;
   lcoap_userdata *cud;
@@ -441,8 +433,7 @@ extern coap_luser_entry *variable_entry;
 extern coap_luser_entry *function_entry;
 extern void build_well_known_rsp(void);
 // Lua: coap:var/func( string )
-static int ICACHE_FLASH_ATTR
-coap_regist( lua_State* L, const char* mt, int isvar )
+static int coap_regist( lua_State* L, const char* mt, int isvar )
 {
   size_t l;
   const char *name = luaL_checklstring( L, 2, &l );
@@ -482,100 +473,88 @@ coap_regist( lua_State* L, const char* mt, int isvar )
 }
 
 // Lua: s = coap.createServer(function(conn))
-static int ICACHE_FLASH_ATTR coap_createServer( lua_State* L )
+static int coap_createServer( lua_State* L )
 {
   const char *mt = "coap_server";
   return coap_create(L, mt);
 }
 
 // Lua: server:delete()
-static int ICACHE_FLASH_ATTR
-coap_server_delete( lua_State* L )
+static int coap_server_delete( lua_State* L )
 {
   const char *mt = "coap_server";
   return coap_delete(L, mt);
 }
 
 // Lua: server:listen( port, ip, function(err) )
-static int ICACHE_FLASH_ATTR
-coap_server_listen( lua_State* L )
+static int coap_server_listen( lua_State* L )
 {
   const char *mt = "coap_server";
   return coap_start(L, mt);
 }
 
 // Lua: server:close()
-static int ICACHE_FLASH_ATTR
-coap_server_close( lua_State* L )
+static int coap_server_close( lua_State* L )
 {
   const char *mt = "coap_server";
   return coap_close(L, mt);
 }
 
 // Lua: server:on( "method", function(server) )
-static int ICACHE_FLASH_ATTR
-coap_server_on( lua_State* L )
+static int coap_server_on( lua_State* L )
 {
   const char *mt = "coap_server";
   return coap_on(L, mt);
 }
 
 // Lua: server:var( "name" )
-static int ICACHE_FLASH_ATTR
-coap_server_var( lua_State* L )
+static int coap_server_var( lua_State* L )
 {
   const char *mt = "coap_server";
   return coap_regist(L, mt, 1);
 }
 
 // Lua: server:func( "name" )
-static int ICACHE_FLASH_ATTR
-coap_server_func( lua_State* L )
+static int coap_server_func( lua_State* L )
 {
   const char *mt = "coap_server";
   return coap_regist(L, mt, 0);
 }
 
 // Lua: s = coap.createClient(function(conn))
-static int ICACHE_FLASH_ATTR 
-coap_createClient( lua_State* L )
+static int coap_createClient( lua_State* L )
 {
   const char *mt = "coap_client";
   return coap_create(L, mt);
 }
 
 // Lua: client:gcdelete()
-static int ICACHE_FLASH_ATTR
-coap_client_gcdelete( lua_State* L )
+static int coap_client_gcdelete( lua_State* L )
 {
   const char *mt = "coap_client";
   return coap_delete(L, mt);
 }
 
 // client:get( string, function(sent) )
-static int ICACHE_FLASH_ATTR
-coap_client_get( lua_State* L )
+static int coap_client_get( lua_State* L )
 {
   return coap_request(L, COAP_METHOD_GET);
 }
 
 // client:post( string, function(sent) )
-static int ICACHE_FLASH_ATTR
-coap_client_post( lua_State* L )
+static int coap_client_post( lua_State* L )
 {
   return coap_request(L, COAP_METHOD_POST);
 }
 
 // client:put( string, function(sent) )
-static int ICACHE_FLASH_ATTR
-coap_client_put( lua_State* L )
+static int coap_client_put( lua_State* L )
 {
   return coap_request(L, COAP_METHOD_PUT);
 }
 
 // client:delete( string, function(sent) )
-static int ICACHE_FLASH_ATTR
-coap_client_delete( lua_State* L )
+static int coap_client_delete( lua_State* L )
 {
   return coap_request(L, COAP_METHOD_DELETE);
 }
@@ -622,7 +601,7 @@ const LUA_REG_TYPE coap_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_coap( lua_State *L )
+LUALIB_API int luaopen_coap( lua_State *L )
 {
   endpoint_setup();
 #if LUA_OPTIMIZE_MEMORY > 0
