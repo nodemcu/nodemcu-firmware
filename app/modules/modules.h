@@ -37,6 +37,14 @@
 #define ROM_MODULES_NET
 #endif
 
+#if defined(LUA_USE_MODULES_COAP)
+#define MODULES_COAP       "coap"
+#define ROM_MODULES_COAP   \
+    _ROM(MODULES_COAP, luaopen_coap, coap_map)
+#else
+#define ROM_MODULES_COAP
+#endif
+
 #if defined(LUA_USE_MODULES_MQTT)
 #define MODULES_MQTT       "mqtt"
 #define ROM_MODULES_MQTT   \
@@ -121,7 +129,8 @@
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
         ROM_MODULES_WIFI	\
-		ROM_MODULES_MQTT    \
+        ROM_MODULES_COAP	\
+        ROM_MODULES_MQTT    \
         ROM_MODULES_I2C     \
         ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \

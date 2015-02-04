@@ -30,6 +30,7 @@ SUBDIRS=    \
 	platform	\
 	libc 	\
 	lua 	\
+	coap	\
 	mqtt	\
 	smart 	\
 	wofs 	\
@@ -76,6 +77,7 @@ COMPONENTS_eagle.app.v6 = \
 	platform/libplatform.a	\
 	libc/liblibc.a 	\
 	lua/liblua.a 	\
+	coap/coap.a 	\
 	mqtt/mqtt.a 	\
 	smart/smart.a 	\
 	wofs/wofs.a 	\

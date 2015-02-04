@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = libmodules.a
+GEN_LIBS = coap.a
 endif
 
 #############################################################
@@ -39,13 +39,7 @@ endif
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
 INCLUDES += -I ../libc
-INCLUDES += -I ../coap
-INCLUDES += -I ../mqtt
 INCLUDES += -I ../lua
-INCLUDES += -I ../platform
-INCLUDES += -I ../wofs
-INCLUDES += -I ../spiffs
-INCLUDES += -I ../smart
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
