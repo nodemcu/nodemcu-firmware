@@ -3,6 +3,13 @@
 #include "platform.h"
 #include "auxmods.h"
 #include "lrotable.h"
+/**
+ * All this code is mostly from http://www.esp8266.com/viewtopic.php?f=21&t=1143&sid=a620a377672cfe9f666d672398415fcb
+ * from user Markus Gritsch.
+ * I just put this code into its own module and pushed into a forked repo,
+ * to easily create a pull request. Thanks to Markus Gritsch for the code.
+ *
+ */
 
 // ----------------------------------------------------------------------------
 // -- This WS2812 code must be compiled with -O2 to get the timing right.
@@ -23,11 +30,11 @@ static void ICACHE_FLASH_ATTR send_ws_1(uint8_t gpio)
   i = 6; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 1 << gpio);
 }
 
-// Lua: ws2812(pin, "string")
+// Lua: ws2812.write(pin, "string")
 // Byte triples in the string are interpreted as G R B values.
-// gpio.ws2812(4, string.char(0, 255, 0)) uses GPIO2 and sets the first LED red.
-// gpio.ws2812(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
-// gpio.ws2812(4, string.char(255, 0, 0, 255, 255, 255)) first LED green, second LED white.
+// ws2812.write(4, string.char(0, 255, 0)) uses GPIO2 and sets the first LED red.
+// ws2812.write(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
+// ws2812.write(4, string.char(255, 0, 0, 255, 255, 255)) first LED green, second LED white.
 static int ICACHE_FLASH_ATTR lgpio_ws2812(lua_State* L)
 {
   const uint8_t pin = luaL_checkinteger(L, 1);
