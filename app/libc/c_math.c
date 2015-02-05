@@ -1,5 +1,6 @@
 #include "c_math.h"
 #include "c_types.h"
+#include "user_config.h"
 
 double floor(double x)
 {
@@ -10,7 +11,7 @@ double floor(double x)
 #define MINEXP -2047        /* (MIN_EXP * 16) - 1           */
 #define HUGE MAXFLOAT
 
-double a1[] =
+double a1[] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =
 {
     1.0,
     0.95760328069857365,
@@ -30,7 +31,7 @@ double a1[] =
     0.52213689121370692,
     0.50000000000000000
 };
-double a2[] =
+double a2[] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =
 {
     0.24114209503420288E-17,
     0.92291566937243079E-18,
