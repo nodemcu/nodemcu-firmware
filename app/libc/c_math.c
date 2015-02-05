@@ -6,8 +6,6 @@ double floor(double x)
     return (double) (x < 0.f ? (((int) x) - 1) : ((int) x));
 }
 
-double pow(double x, double y)
-{
 #define MAXEXP 2031     /* (MAX_EXP * 16) - 1           */
 #define MINEXP -2047        /* (MIN_EXP * 16) - 1           */
 #define HUGE MAXFLOAT
@@ -54,7 +52,8 @@ double pow(double x, double y)
     double q6 = 0.154002904409897646e-3;
     double q7 = 0.149288526805956082e-4;
     double k = 0.442695040888963407;
-
+double pow(double x, double y)
+{
     double frexp(), g, ldexp(), r, u1, u2, v, w, w1, w2, y1, y2, z;
     int iw1, m, p;
 
