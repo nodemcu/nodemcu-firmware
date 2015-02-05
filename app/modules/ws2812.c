@@ -61,9 +61,9 @@ const LUA_REG_TYPE ws2812_map[] =
 		{ LNILKEY, LNILVAL}
 };
 
-LUALIB_API int ws2812( lua_State *L )
+LUALIB_API int luaopen_ws2812( lua_State *L )
 {
-	// Make sure that the GPIO system is initialized
+	// TODO: Make sure that the GPIO system is initialized
 	LREGISTER( L, "ws2812", ws2812_map );
 	return 1;
 }
