@@ -77,15 +77,17 @@ function M.read(pin)
     end
   end
 
-  checksumTest=((humidity / 256) + (humidity % 256) + (temperature / 256) + (temperature % 256)) % 256
+  checksumTest = (bit.band(humidity, 0xFF) + bit.rshift(humidity, 8) + bit.band(temperature, 0xFF) + bit.rshift(temperature, 8))
+  checksumTest = bit.band(checksumTest, 0xFF)
 
   if temperature > 0x8000 then
     -- convert to negative format
     temperature = -(temperature - 0x8000)
   end
 
-  if checksum ~= checksumTest then
-    humidity = -1
+  -- conditions compatible con float point and integer
+  if (checksumTest - checksum >= 1) or (checksum - checksumTest >= 1) then
+    humidity = nil
   end
 end
 

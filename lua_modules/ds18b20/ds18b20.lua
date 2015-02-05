@@ -105,11 +105,10 @@ function readNumber(addr, unit)
         else
           return nil
         end
-        t1 = t / 10000
-        t2 = t % 10000
+        t = t / 10000
         -- print("Temperature="..t1.."."..t2.." Centigrade")
         -- result = t1.."."..t2
-        return t1, t2
+        return t
       end
       tmr.wdclr()
     else
@@ -122,11 +121,11 @@ function readNumber(addr, unit)
 end
 
 function read(addr, unit)
-  t1, t2 = readNumber(addr, unit)
-  if((t1 == nil ) or (t2 ==nil)) then
+  t = readNumber(addr, unit)
+  if (t == nil) then
     return nil
   else
-    return t1.."."..t2
+    return t
   end
 end
 

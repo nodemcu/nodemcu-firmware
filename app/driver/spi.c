@@ -134,7 +134,7 @@ void spi_mast_byte_write(uint8 spi_no, uint8 *data)
 
     while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
 
-    WRITE_PERI_REG(SPI_W0(HSPI), *data);
+    WRITE_PERI_REG(SPI_W0(spi_no), *data);
 
     SET_PERI_REG_MASK(SPI_CMD(spi_no), SPI_USR);
     while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
