@@ -73,8 +73,8 @@ SECTIONS
     *(.literal.* .text.*)
     *(.rodata2.text)
 
-    /* put font data into irom0 */
-    *(.font_data.*)
+    /* put font and progmem data into irom0 */
+    *(.u8g_progmem.*)
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);

@@ -93,7 +93,7 @@ extern "C" {
 #endif
 
 #ifndef U8G_FONT_SECTION
-#  define U8G_FONT_SECTION(name) U8G_SECTION(".font_data." name)
+#  define U8G_FONT_SECTION(name) U8G_SECTION(".u8g_progmem." name)
 #endif
 
 
@@ -111,7 +111,7 @@ typedef uint8_t u8g_fntpgm_uint8_t;
 #else
 
 #define U8G_PROGMEM
-#define PROGMEM
+#define PROGMEM U8G_SECTION(".u8g_progmem.data")
 typedef uint8_t u8g_pgm_uint8_t;
 typedef uint8_t u8g_fntpgm_uint8_t;
 //#define u8g_pgm_read(adr) (*(const u8g_pgm_uint8_t *)(adr)) 
@@ -153,6 +153,7 @@ typedef struct _u8g_dev_arg_bbx_t u8g_dev_arg_bbx_t;
 typedef struct _u8g_box_t u8g_box_t;
 typedef struct _u8g_dev_arg_irgb_t u8g_dev_arg_irgb_t;
 
+typedef struct _pg_struct pg_struct;
 
 /*===============================================================*/
 /* generic */
@@ -1054,49 +1055,6 @@ typedef void (*u8g_state_cb)(uint8_t msg);
 #define U8G_FONT_HEIGHT_MODE_XTEXT 1
 #define U8G_FONT_HEIGHT_MODE_ALL 2
 
-struct _u8g_t
-{
-  u8g_uint_t width;
-  u8g_uint_t height;
-  
-  
-  u8g_dev_t *dev;               /* first device in the device chain */
-  const u8g_pgm_uint8_t *font;             /* regular font for all text procedures */
-  const u8g_pgm_uint8_t *cursor_font;  /* special font for cursor procedures */
-  uint8_t cursor_fg_color, cursor_bg_color;
-  uint8_t cursor_encoding;
-  uint8_t mode;                         /* display mode, one of U8G_MODE_xxx */
-  u8g_uint_t cursor_x;
-  u8g_uint_t cursor_y;
-  u8g_draw_cursor_fn cursor_fn;
-  
-  int8_t glyph_dx;
-  int8_t glyph_x;
-  int8_t glyph_y;
-  uint8_t glyph_width;
-  uint8_t glyph_height;
-  
-  u8g_font_calc_vref_fnptr font_calc_vref;
-  uint8_t font_height_mode;
-  int8_t font_ref_ascent;
-  int8_t font_ref_descent;
-  uint8_t font_line_spacing_factor;     /* line_spacing = factor * (ascent - descent) / 64 */
-  uint8_t line_spacing;
-  
-  u8g_dev_arg_pixel_t arg_pixel;
-  /* uint8_t color_index; */
-
-#ifdef U8G_WITH_PINLIST
-  uint8_t pin_list[U8G_PIN_LIST_LEN];
-#endif
-  
-  u8g_state_cb state_cb;
-  
-  u8g_box_t current_page;		/* current box of the visible page */
-
-  uint8_t i2c_addr;
-};
-
 #define u8g_GetFontAscent(u8g) ((u8g)->font_ref_ascent)
 #define u8g_GetFontDescent(u8g) ((u8g)->font_ref_descent)
 #define u8g_GetFontLineSpacing(u8g) ((u8g)->line_spacing)
@@ -1354,8 +1312,6 @@ struct pg_point_struct
   pg_word_t y;
 };
 
-typedef struct _pg_struct pg_struct;	/* forward declaration */
-
 struct pg_edge_struct
 {
   pg_word_t x_direction;	/* 1, if x2 is greater than x1, -1 otherwise */
@@ -1395,7 +1351,7 @@ struct _pg_struct
 void pg_ClearPolygonXY(pg_struct *pg);
 void pg_AddPolygonXY(pg_struct *pg, u8g_t *u8g, int16_t x, int16_t y);
 void pg_DrawPolygon(pg_struct *pg, u8g_t *u8g);
-void u8g_ClearPolygonXY(void);
+void u8g_ClearPolygonXY(u8g_t *u8g);
 void u8g_AddPolygonXY(u8g_t *u8g, int16_t x, int16_t y);
 void u8g_DrawPolygon(u8g_t *u8g);
 void u8g_DrawTriangle(u8g_t *u8g, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2);
@@ -1469,6 +1425,57 @@ void u8g_10MicroDelay(void);
 void chess_Init(u8g_t *u8g, uint8_t empty_body_color);
 void chess_Draw(void);
 void chess_Step(uint8_t keycode);
+
+
+
+struct _u8g_t
+{
+  u8g_uint_t width;
+  u8g_uint_t height;
+  
+  
+  u8g_dev_t *dev;               /* first device in the device chain */
+  const u8g_pgm_uint8_t *font;             /* regular font for all text procedures */
+  const u8g_pgm_uint8_t *cursor_font;  /* special font for cursor procedures */
+  uint8_t cursor_fg_color, cursor_bg_color;
+  uint8_t cursor_encoding;
+  uint8_t mode;                         /* display mode, one of U8G_MODE_xxx */
+  u8g_uint_t cursor_x;
+  u8g_uint_t cursor_y;
+  u8g_draw_cursor_fn cursor_fn;
+  
+  int8_t glyph_dx;
+  int8_t glyph_x;
+  int8_t glyph_y;
+  uint8_t glyph_width;
+  uint8_t glyph_height;
+  
+  u8g_font_calc_vref_fnptr font_calc_vref;
+  uint8_t font_height_mode;
+  int8_t font_ref_ascent;
+  int8_t font_ref_descent;
+  uint8_t font_line_spacing_factor;     /* line_spacing = factor * (ascent - descent) / 64 */
+  uint8_t line_spacing;
+  
+  u8g_dev_arg_pixel_t arg_pixel;
+  /* uint8_t color_index; */
+
+#ifdef U8G_WITH_PINLIST
+  uint8_t pin_list[U8G_PIN_LIST_LEN];
+#endif
+  
+  u8g_state_cb state_cb;
+  
+  u8g_box_t current_page;		/* current box of the visible page */
+
+  uint8_t i2c_addr;
+
+  /* global variables from u8g_polygon.c */
+  pg_struct pg;
+};
+
+
+
 
 /*===============================================================*/
 /* font definitions */

@@ -339,7 +339,6 @@ static int lu8g_nextPage( lua_State *L )
 // ------------------------------------------------------------
 // comm functions
 //
-#define I2C_SLA         0x3c
 #define I2C_CMD_MODE    0x000
 #define I2C_DATA_MODE   0x040
 
@@ -530,7 +529,6 @@ const LUA_REG_TYPE lu8g_map[] =
 {
     { LSTRKEY( "ssd1306_128x64_i2c" ), LFUNCVAL ( lu8g_ssd1306_128x64_i2c ) },
 #if LUA_OPTIMIZE_MEMORY > 0
-    //{ LSTRKEY( "font_6x10" ), LNUMVAL( LU8G_FONT_6X10 ) },
 
     // Register fonts
 #undef U8G_FONT_TABLE_ENTRY
