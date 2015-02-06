@@ -9,11 +9,11 @@
 #define NODE_VERSION	"NodeMCU 0.9.5"
 #define BUILD_DATE	    "build 20150127"
 
-// #define FLASH_512K
+#define FLASH_512K
 // #define FLASH_1M
 // #define FLASH_2M
 // #define FLASH_4M
-#define FLASH_AUTOSIZE
+//#define FLASH_AUTOSIZE
 // #define DEVELOP_VERSION
 #define FULL_VERSION_FOR_USER
 
