@@ -48,7 +48,7 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
                 if (0 == c_memcmp(h->name, opt[count-1].buf.p, opt[count-1].buf.len))
                 {
                     NODE_DBG("/v1/v/");
-                    NODE_DBG(h->name);
+                    NODE_DBG((char *)h->name);
                     NODE_DBG(" match.\n");
                     if(h->L == NULL)
                         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
@@ -103,7 +103,7 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
                 if (0 == c_memcmp(h->name, opt[count-1].buf.p, opt[count-1].buf.len))
                 {
                     NODE_DBG("/v1/f/");
-                    NODE_DBG(h->name);
+                    NODE_DBG((char *)h->name);
                     NODE_DBG(" match.\n");
 
                     if(h->L == NULL)
@@ -128,7 +128,7 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
                                         luaL_error( h->L, "return string:<MAX_PAYLOAD_SIZE" );
                                         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                                     }
-                                    NODE_DBG(ret);
+                                    NODE_DBG((char *)ret);
                                     NODE_DBG("\n");
                                     return coap_make_response(scratch, outpkt, ret, len, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
                                 } 

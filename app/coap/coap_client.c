@@ -51,12 +51,12 @@ void coap_client_response_handler(char *data, unsigned short len, unsigned short
     {
       /* There is no block option set, just read the data and we are done. */
       NODE_DBG("%d.%02d\t", (pkt.hdr.code >> 5), pkt.hdr.code & 0x1F);
-      NODE_DBG(pkt.payload.p);
+      NODE_DBG((char *)(pkt.payload.p));
     }
     else if (COAP_RESPONSE_CLASS(pkt.hdr.code) >= 4)
     {
       NODE_DBG("%d.%02d\t", (pkt.hdr.code >> 5), pkt.hdr.code & 0x1F);
-      NODE_DBG(pkt.payload.p);
+      NODE_DBG((char *)(pkt.payload.p));
     }
   }
 
