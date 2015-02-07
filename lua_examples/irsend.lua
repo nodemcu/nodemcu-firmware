@@ -5,7 +5,7 @@
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 --
 -- Example:
--- require("irsend").nec(4, 0x00ff00ff)
+-- dofile("irsend.lua").nec(4, 0x00ff00ff)
 ------------------------------------------------------------------------------
 local M
 do
