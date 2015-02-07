@@ -665,6 +665,10 @@ static int net_start( lua_State* L, const char* mt )
   	return 0;
   }
 
+  if(nud->pesp_conn == NULL){
+    NODE_DBG("nud->pesp_conn is NULL.\n");
+    return 0;
+  }
   pesp_conn = nud->pesp_conn;
   port = luaL_checkinteger( L, stack );
   stack++;
@@ -1074,6 +1078,10 @@ static int net_dns( lua_State* L, const char* mt )
     return 0;
   }
 
+  if(nud->pesp_conn == NULL){
+    NODE_DBG("nud->pesp_conn is NULL.\n");
+    return 0;
+  }
   pesp_conn = nud->pesp_conn;
 
   if(!isserver || pesp_conn->type == ESPCONN_UDP){    // self_ref is only needed by socket userdata, or udp server
