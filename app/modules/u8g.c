@@ -362,6 +362,110 @@ static int lu8g_nextPage( lua_State *L )
     return 1;
 }
 
+// Lua: u8g.sleepOn( self )
+static int lu8g_sleepOn( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SleepOn( lud );
+
+    return 0;
+}
+
+// Lua: u8g.sleepOff( self )
+static int lu8g_sleepOff( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SleepOff( lud );
+
+    return 0;
+}
+
+// Lua: u8g.setRot90( self )
+static int lu8g_setRot90( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetRot90( lud );
+
+    return 0;
+}
+
+// Lua: u8g.setRot180( self )
+static int lu8g_setRot180( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetRot180( lud );
+
+    return 0;
+}
+
+// Lua: u8g.setRot270( self )
+static int lu8g_setRot270( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetRot270( lud );
+
+    return 0;
+}
+
+// Lua: u8g.undoRotation( self )
+static int lu8g_undoRotation( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_UndoRotation( lud );
+
+    return 0;
+}
+
+// Lua: width = u8g.getWidth( self )
+static int lu8g_getWidth( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetWidth( lud ) );
+
+    return 1;
+}
+
+// Lua: height = u8g.getHeight( self )
+static int lu8g_getHeight( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetHeight( lud ) );
+
+    return 1;
+}
+
 // ------------------------------------------------------------
 // comm functions
 //
@@ -547,6 +651,14 @@ static const LUA_REG_TYPE lu8g_display_map[] =
     { LSTRKEY( "undoScale" ),  LFUNCVAL( lu8g_undoScale ) },
     { LSTRKEY( "firstPage" ),  LFUNCVAL( lu8g_firstPage ) },
     { LSTRKEY( "nextPage" ),  LFUNCVAL( lu8g_nextPage ) },
+    { LSTRKEY( "sleepOn" ),  LFUNCVAL( lu8g_sleepOn ) },
+    { LSTRKEY( "sleepOff" ),  LFUNCVAL( lu8g_sleepOff ) },
+    { LSTRKEY( "setRot90" ),  LFUNCVAL( lu8g_setRot90 ) },
+    { LSTRKEY( "setRot180" ),  LFUNCVAL( lu8g_setRot180 ) },
+    { LSTRKEY( "setRot270" ),  LFUNCVAL( lu8g_setRot270 ) },
+    { LSTRKEY( "undoRotation" ),  LFUNCVAL( lu8g_undoRotation ) },
+    { LSTRKEY( "getWidth" ),  LFUNCVAL( lu8g_getWidth ) },
+    { LSTRKEY( "getHeight" ),  LFUNCVAL( lu8g_getHeight ) },
 #if LUA_OPTIMIZE_MEMORY > 0
     { LSTRKEY( "__index" ), LROVAL ( lu8g_display_map ) },
 #endif
