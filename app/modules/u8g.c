@@ -73,6 +73,19 @@ static int lu8g_setFont( lua_State *L )
     return 0;
 }
 
+// Lua: u8g.setFontRefHeightAll( self )
+static int lu8g_setFontRefHeightAll( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetFontRefHeightAll( lud );
+
+    return 0;
+}
+
 // Lua: u8g.setFontRefHeightExtendedText( self )
 static int lu8g_setFontRefHeightExtendedText( lua_State *L )
 {
@@ -82,6 +95,32 @@ static int lu8g_setFontRefHeightExtendedText( lua_State *L )
         return 0;
 
     u8g_SetFontRefHeightExtendedText( lud );
+
+    return 0;
+}
+
+// Lua: u8g.setFontRefHeightText( self )
+static int lu8g_setFontRefHeightText( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetFontRefHeightText( lud );
+
+    return 0;
+}
+
+// Lua: u8g.setDefaultBackgroundColor( self )
+static int lu8g_setDefaultBackgroundColor( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetDefaultBackgroundColor( lud );
 
     return 0;
 }
@@ -99,6 +138,45 @@ static int lu8g_setDefaultForegroundColor( lua_State *L )
     return 0;
 }
 
+// Lua: u8g.setFontPosBaseline( self )
+static int lu8g_setFontPosBaseline( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetFontPosBaseline( lud );
+
+    return 0;
+}
+
+// Lua: u8g.setFontPosBottom( self )
+static int lu8g_setFontPosBottom( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetFontPosBottom( lud );
+
+    return 0;
+}
+
+// Lua: u8g.setFontPosCenter( self )
+static int lu8g_setFontPosCenter( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetFontPosCenter( lud );
+
+    return 0;
+}
+
 // Lua: u8g.setFontPosTop( self )
 static int lu8g_setFontPosTop( lua_State *L )
 {
@@ -110,6 +188,84 @@ static int lu8g_setFontPosTop( lua_State *L )
     u8g_SetFontPosTop( lud );
 
     return 0;
+}
+
+// Lua: int = u8g.getFontAscent( self )
+static int lu8g_getFontAscent( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetFontAscent( lud ) );
+
+    return 1;
+}
+
+// Lua: int = u8g.getFontDescent( self )
+static int lu8g_getFontDescent( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetFontDescent( lud ) );
+
+    return 1;
+}
+
+// Lua: int = u8g.getFontLineSpacing( self )
+static int lu8g_getFontLineSpacing( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetFontLineSpacing( lud ) );
+
+    return 1;
+}
+
+// Lua: int = u8g.getMode( self )
+static int lu8g_getMode( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetMode( lud ) );
+
+    return 1;
+}
+
+// Lua: u8g.setColorIndex( self, color )
+static int lu8g_setColorIndex( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetColorIndex( lud, luaL_checkinteger( L, 2 ) );
+
+    return 0;
+}
+
+// Lua: int = u8g.getColorIndex( self )
+static int lu8g_getColorIndex( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetColorIndex( lud ) );
+
+    return 1;
 }
 
 static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
@@ -306,6 +462,90 @@ static int lu8g_drawCircle( lua_State *L )
     u8g_uint_t opt = luaL_optinteger( L, (1+3) + 1, U8G_DRAW_ALL );
 
     u8g_DrawCircle( lud, args[0], args[1], args[2], opt );
+
+    return 0;
+}
+
+// Lua: u8g.drawEllipse( self, x0, y0, rx, ry, opt = U8G_DRAW_ALL )
+static int lu8g_drawEllipse( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t args[4];
+    lu8g_get_int_args( L, 2, 4, args );
+
+    u8g_uint_t opt = luaL_optinteger( L, (1+4) + 1, U8G_DRAW_ALL );
+
+    u8g_DrawEllipse( lud, args[0], args[1], args[2], args[3], opt );
+
+    return 0;
+}
+
+// Lua: u8g.drawFilledEllipse( self, x0, y0, rx, ry, opt = U8G_DRAW_ALL )
+static int lu8g_drawFilledEllipse( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t args[4];
+    lu8g_get_int_args( L, 2, 4, args );
+
+    u8g_uint_t opt = luaL_optinteger( L, (1+4) + 1, U8G_DRAW_ALL );
+
+    u8g_DrawFilledEllipse( lud, args[0], args[1], args[2], args[3], opt );
+
+    return 0;
+}
+
+// Lua: u8g.drawPixel( self, x, y )
+static int lu8g_drawPixel( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t args[2];
+    lu8g_get_int_args( L, 2, 2, args );
+
+    u8g_DrawPixel( lud, args[0], args[1] );
+
+    return 0;
+}
+
+// Lua: u8g.drawHLine( self, x, y, width )
+static int lu8g_drawHLine( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t args[3];
+    lu8g_get_int_args( L, 2, 3, args );
+
+    u8g_DrawHLine( lud, args[0], args[1], args[2] );
+
+    return 0;
+}
+
+// Lua: u8g.drawVLine( self, x, y, width )
+static int lu8g_drawVLine( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t args[3];
+    lu8g_get_int_args( L, 2, 3, args );
+
+    u8g_DrawVLine( lud, args[0], args[1], args[2] );
 
     return 0;
 }
@@ -632,9 +872,21 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 static const LUA_REG_TYPE lu8g_display_map[] =
 {
     { LSTRKEY( "setFont" ),  LFUNCVAL( lu8g_setFont ) },
+    { LSTRKEY( "setFontRefHeightAll" ),  LFUNCVAL( lu8g_setFontRefHeightAll ) },
     { LSTRKEY( "setFontRefHeightExtendedText" ),  LFUNCVAL( lu8g_setFontRefHeightExtendedText ) },
+    { LSTRKEY( "setFontRefHeightText" ),  LFUNCVAL( lu8g_setFontRefHeightText ) },
+    { LSTRKEY( "setDefaultBackgroundColor" ),  LFUNCVAL( lu8g_setDefaultBackgroundColor ) },
     { LSTRKEY( "setDefaultForegroundColor" ),  LFUNCVAL( lu8g_setDefaultForegroundColor ) },
+    { LSTRKEY( "setFontPosBaseline" ),  LFUNCVAL( lu8g_setFontPosBaseline ) },
+    { LSTRKEY( "setFontPosBottom" ),  LFUNCVAL( lu8g_setFontPosBottom ) },
+    { LSTRKEY( "setFontPosCenter" ),  LFUNCVAL( lu8g_setFontPosCenter ) },
     { LSTRKEY( "setFontPosTop" ),  LFUNCVAL( lu8g_setFontPosTop ) },
+    { LSTRKEY( "getFontAscent" ),  LFUNCVAL( lu8g_getFontAscent ) },
+    { LSTRKEY( "getFontDescent" ),  LFUNCVAL( lu8g_getFontDescent ) },
+    { LSTRKEY( "getFontLineSpacing" ),  LFUNCVAL( lu8g_getFontLineSpacing ) },
+    { LSTRKEY( "getMode" ),  LFUNCVAL( lu8g_getMode ) },
+    { LSTRKEY( "setColorIndex" ),  LFUNCVAL( lu8g_setColorIndex ) },
+    { LSTRKEY( "getColorIndex" ),  LFUNCVAL( lu8g_getColorIndex ) },
     { LSTRKEY( "drawStr" ),  LFUNCVAL( lu8g_drawStr ) },
     { LSTRKEY( "drawStr90" ),  LFUNCVAL( lu8g_drawStr90 ) },
     { LSTRKEY( "drawStr180" ),  LFUNCVAL( lu8g_drawStr180 ) },
@@ -647,6 +899,11 @@ static const LUA_REG_TYPE lu8g_display_map[] =
     { LSTRKEY( "drawRFrame" ),  LFUNCVAL( lu8g_drawRFrame ) },
     { LSTRKEY( "drawDisc" ),  LFUNCVAL( lu8g_drawDisc ) },
     { LSTRKEY( "drawCircle" ),  LFUNCVAL( lu8g_drawCircle ) },
+    { LSTRKEY( "drawEllipse" ),  LFUNCVAL( lu8g_drawEllipse ) },
+    { LSTRKEY( "drawFilledEllipse" ),  LFUNCVAL( lu8g_drawFilledEllipse ) },
+    { LSTRKEY( "drawPixel" ),  LFUNCVAL( lu8g_drawPixel ) },
+    { LSTRKEY( "drawHLine" ),  LFUNCVAL( lu8g_drawHLine ) },
+    { LSTRKEY( "drawVLine" ),  LFUNCVAL( lu8g_drawVLine ) },
     { LSTRKEY( "setScale2x2" ),  LFUNCVAL( lu8g_setScale2x2 ) },
     { LSTRKEY( "undoScale" ),  LFUNCVAL( lu8g_undoScale ) },
     { LSTRKEY( "firstPage" ),  LFUNCVAL( lu8g_firstPage ) },
@@ -675,6 +932,17 @@ const LUA_REG_TYPE lu8g_map[] =
 #define U8G_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LNUMVAL( __COUNTER__ ) },
     U8G_FONT_TABLE
 
+    // Options for circle/ ellipse drwing
+    { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( U8G_DRAW_UPPER_RIGHT ) },
+    { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( U8G_DRAW_UPPER_LEFT ) },
+    { LSTRKEY( "DRAW_LOWER_RIGHT" ), LNUMVAL( U8G_DRAW_LOWER_RIGHT ) },
+    { LSTRKEY( "DRAW_LOWER_LEFT" ),  LNUMVAL( U8G_DRAW_LOWER_LEFT ) },
+    { LSTRKEY( "DRAW_ALL" ),         LNUMVAL( U8G_DRAW_ALL ) },
+
+    // Display modes
+    { LSTRKEY( "MODE_BW" ),       LNUMVAL( U8G_MODE_BW ) },
+    { LSTRKEY( "MODE_GRAY2BIT" ), LNUMVAL( U8G_MODE_GRAY2BIT ) },
+
     { LSTRKEY( "__metatable" ), LROVAL( lu8g_map ) },
 #endif
     { LNILKEY, LNILVAL }
@@ -699,6 +967,16 @@ LUALIB_API int ICACHE_FLASH_ATTR luaopen_u8g( lua_State *L )
 #undef U8G_FONT_TABLE_ENTRY
 #define U8G_FONT_TABLE_ENTRY(font) MOD_REG_NUMBER( L, #font, __COUNTER__ );
     U8G_FONT_TABLE
+
+    // Options for circle/ ellipse drawing
+    MOD_REG_NUMBER( L, "DRAW_UPPER_RIGHT", U8G_DRAW_UPPER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_UPPER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_UPPER_RIGHT );
+
+    // Display modes
+    MOD_REG_NUMBER( L, "MODE_BW",       U8G_MODE_BW );
+    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_BW );
 
     // create metatable
     luaL_newmetatable(L, "u8g.display");
