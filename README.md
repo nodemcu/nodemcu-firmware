@@ -375,7 +375,7 @@ They'll be available as `u8g.<font_name>` in Lua.
   - [ ] drawBitmap()
   - [ ] drawXBM()
 - [ ] General functions
-  - [ ] begin()
+  - [x] begin()
   - [ ] print()
   - [ ] setContrast()
   - [ ] setPrintPos()

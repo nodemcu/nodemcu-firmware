@@ -58,6 +58,19 @@ static void lu8g_get_int_args( lua_State *L, uint8_t stack, uint8_t num, u8g_uin
 }
 
 
+// Lua: u8g.begin( self )
+static int lu8g_begin( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_Begin( lud );
+
+    return 0;
+}
+
 // Lua: u8g.setFont( self, font )
 static int lu8g_setFont( lua_State *L )
 {
@@ -871,6 +884,7 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 
 static const LUA_REG_TYPE lu8g_display_map[] =
 {
+    { LSTRKEY( "begin" ),  LFUNCVAL( lu8g_begin ) },
     { LSTRKEY( "setFont" ),  LFUNCVAL( lu8g_setFont ) },
     { LSTRKEY( "setFontRefHeightAll" ),  LFUNCVAL( lu8g_setFontRefHeightAll ) },
     { LSTRKEY( "setFontRefHeightExtendedText" ),  LFUNCVAL( lu8g_setFontRefHeightExtendedText ) },
