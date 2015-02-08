@@ -5,8 +5,8 @@
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 --
 -- Example:
--- print("DHT11", require("dht22").read(4))
--- print("DHT22", require("dht22").read(4, true))
+-- print("DHT11", dofile("dht22.lua").read(4))
+-- print("DHT22", dofile("dht22.lua").read(4, true))
 -- NB: the very first read sometimes fails
 ------------------------------------------------------------------------------
 local M
