@@ -50,8 +50,10 @@ typedef unsigned char uint8_t;
 typedef signed char int8_t;
 typedef unsigned short uint16_t;
 typedef signed short int16_t;
+#elif defined(__XTENSA__)
+#  include <c_types.h>
 #else
-#include <c_types.h>
+#  include <stdint.h>
 #endif
 
 #if defined(__AVR__)
@@ -85,15 +87,19 @@ extern "C" {
 #  if defined(__AVR__)
 #    define U8G_FONT_SECTION(name) U8G_SECTION(".progmem." name)
 #  endif
+#  if defined(__XTENSA__)
+#    define U8G_FONT_SECTION(name) U8G_SECTION(".u8g_progmem." name)
+#  endif
 #else
 #  define U8G_NOINLINE
 #  define U8G_PURE
 #  define U8G_NOCOMMON
 #  define U8G_SECTION(name)
+#  define U8G_FONT_SECTION(name)
 #endif
 
 #ifndef U8G_FONT_SECTION
-#  define U8G_FONT_SECTION(name) U8G_SECTION(".u8g_progmem." name)
+#  define U8G_FONT_SECTION(name)
 #endif
 
 
@@ -108,15 +114,21 @@ typedef uint8_t u8g_fntpgm_uint8_t;
 #define u8g_pgm_read(adr) pgm_read_byte_near(adr)
 #define U8G_PSTR(s) ((u8g_pgm_uint8_t *)PSTR(s))
 
-#else
+#elif defined(__XTENSA__)
+#  define U8G_PROGMEM
+#  define PROGMEM U8G_SECTION(".u8g_progmem.data")
+   typedef uint8_t u8g_pgm_uint8_t;
+   typedef uint8_t u8g_fntpgm_uint8_t;
+   u8g_pgm_uint8_t u8g_pgm_read(const u8g_pgm_uint8_t *adr);
+#  define U8G_PSTR(s) ((u8g_pgm_uint8_t *)(s))
 
-#define U8G_PROGMEM
-#define PROGMEM U8G_SECTION(".u8g_progmem.data")
-typedef uint8_t u8g_pgm_uint8_t;
-typedef uint8_t u8g_fntpgm_uint8_t;
-//#define u8g_pgm_read(adr) (*(const u8g_pgm_uint8_t *)(adr)) 
-u8g_pgm_uint8_t u8g_pgm_read(const u8g_pgm_uint8_t *adr);
-#define U8G_PSTR(s) ((u8g_pgm_uint8_t *)(s))
+#else
+#  define U8G_PROGMEM
+#  define PROGMEM
+   typedef uint8_t u8g_pgm_uint8_t;
+   typedef uint8_t u8g_fntpgm_uint8_t;
+#  define u8g_pgm_read(adr) (*(const u8g_pgm_uint8_t *)(adr)) 
+#  define U8G_PSTR(s) ((u8g_pgm_uint8_t *)(s))
 
 #endif
   
@@ -153,7 +165,6 @@ typedef struct _u8g_dev_arg_bbx_t u8g_dev_arg_bbx_t;
 typedef struct _u8g_box_t u8g_box_t;
 typedef struct _u8g_dev_arg_irgb_t u8g_dev_arg_irgb_t;
 
-typedef struct _pg_struct pg_struct;
 
 /*===============================================================*/
 /* generic */
@@ -798,8 +809,10 @@ defined(__18CXX) || defined(__PIC32MX)
 #endif
 
 #ifndef U8G_COM_SSD_I2C
+#if defined(__XTENSA__)
 // ESP8266
 #define U8G_COM_SSD_I2C u8g_com_esp8266_ssd_i2c_fn
+#endif
 #endif
 
 #ifndef U8G_COM_SSD_I2C
@@ -1311,6 +1324,8 @@ struct pg_point_struct
   pg_word_t x;
   pg_word_t y;
 };
+
+typedef struct _pg_struct pg_struct;	/* forward declaration */
 
 struct pg_edge_struct
 {
