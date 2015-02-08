@@ -335,6 +335,8 @@ cu:send("hello")
 u8glib is a graphics library with support for many different displays.
 The integration in nodemcu is developed for SSD1306 based display attached via the I2C port. Further display types and SPI connectivity will be added in the future.
 
+U8glib v1.17
+
 #####I2C connection
 Hook up SDA and SCL to any free GPIOs. Eg. [lua_examples/graphics_test.lua](https://github.com/devsaurus/nodemcu-firmware/blob/dev/lua_examples/graphics_test.lua) expects SDA=5 (GPIO14) and SCL=6 (GPIO12). They are used to set up nodemcu's I2C driver before accessing the display:
 ```lua
@@ -350,7 +352,7 @@ sla = 0x3c
 disp = u8g.ssd1306_128x64_i2c(sla)
 ```
 This object provides all of u8glib's methods to control the display.
-Again, refer to [lua_examples/graphics_test.lua](https://github.com/devsaurus/nodemcu-firmware/blob/dev/lua_examples/graphics_test.lua) to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://code.google.com/p/u8glib/) for technical details.
+Again, refer to [lua_examples/graphics_test.lua](https://github.com/devsaurus/nodemcu-firmware/blob/dev/lua_examples/u8g_graphics_test.lua) to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://code.google.com/p/u8glib/) for technical details.
 
 #####Fonts
 u8glib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in [app/include/user_config.h](https://github.com/devsaurus/nodemcu-firmware/blob/dev/app/include/user_config.h) and recompile. Simply add the desired fonts to the font table:
@@ -360,3 +362,22 @@ u8glib comes with a wide range of fonts for small displays. Since they need to b
     U8G_FONT_TABLE_ENTRY(font_chikita)
 ```
 They'll be available as `u8g.<font_name>` in Lua.
+
+#####Unimplemented functions
+- [ ] Cursor handling
+  - [ ] disableCursor()
+  - [ ] enableCursor()
+  - [ ] setCursorColor()
+  - [ ] setCursorFont()
+  - [ ] setCursorPos()
+  - [ ] setCursorStyle()
+- [ ] Bitmaps
+  - [ ] drawBitmap()
+  - [ ] drawXBM()
+- [ ] General functions
+  - [ ] begin()
+  - [ ] print()
+  - [ ] setContrast()
+  - [ ] setPrintPos()
+  - [ ] setHardwareBackup()
+  - [ ] setRGB()
