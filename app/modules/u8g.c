@@ -310,6 +310,32 @@ static int lu8g_drawCircle( lua_State *L )
     return 0;
 }
 
+// Lua: u8g.setScale2x2( self )
+static int lu8g_setScale2x2( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetScale2x2( lud );
+
+    return 0;
+}
+
+// Lua: u8g.undoScale( self )
+static int lu8g_undoScale( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_UndoScale( lud );
+
+    return 0;
+}
+
 // Lua: u8g.firstPage( self )
 static int lu8g_firstPage( lua_State *L )
 {
@@ -517,6 +543,8 @@ static const LUA_REG_TYPE lu8g_display_map[] =
     { LSTRKEY( "drawRFrame" ),  LFUNCVAL( lu8g_drawRFrame ) },
     { LSTRKEY( "drawDisc" ),  LFUNCVAL( lu8g_drawDisc ) },
     { LSTRKEY( "drawCircle" ),  LFUNCVAL( lu8g_drawCircle ) },
+    { LSTRKEY( "setScale2x2" ),  LFUNCVAL( lu8g_setScale2x2 ) },
+    { LSTRKEY( "undoScale" ),  LFUNCVAL( lu8g_undoScale ) },
     { LSTRKEY( "firstPage" ),  LFUNCVAL( lu8g_firstPage ) },
     { LSTRKEY( "nextPage" ),  LFUNCVAL( lu8g_nextPage ) },
 #if LUA_OPTIMIZE_MEMORY > 0

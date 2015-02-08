@@ -87,6 +87,13 @@ function ascii_2()
      end
 end
 
+function extra_page(a)
+     disp:drawStr(0, 12, "setScale2x2")
+     disp:setScale2x2()
+     disp:drawStr(0, 6+a, "setScale2x2")
+     disp:undoScale()
+end
+
 
 -- the draw() routine
 function draw(draw_state)
@@ -110,6 +117,8 @@ function draw(draw_state)
           ascii_1()
      elseif (component == 7) then
           ascii_2()
+     elseif (component == 8) then
+          extra_page(bit.band(draw_state, 7))
      end
 end
 
@@ -120,7 +129,7 @@ function graphics_test()
 
      -- cycle through all components
      local draw_state
-     for draw_state = 0, 7 + 7*8, 1 do
+     for draw_state = 0, 7 + 8*8, 1 do
           disp:firstPage()
           repeat
                draw(draw_state)
