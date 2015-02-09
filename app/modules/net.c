@@ -1193,6 +1193,54 @@ static int net_socket_send( lua_State* L )
   return net_send(L, mt);
 }
 
+static int net_socket_hold( lua_State* L )
+{
+  const char *mt = "net.socket";
+  struct espconn *pesp_conn = NULL;
+  lnet_userdata *nud;
+  size_t l;
+
+  nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
+  luaL_argcheck(L, nud, 1, "Server/Socket expected");
+  if(nud==NULL){
+    NODE_DBG("userdata is nil.\n");
+    return 0;
+  }
+
+  if(nud->pesp_conn == NULL){
+    NODE_DBG("nud->pesp_conn is NULL.\n");
+    return 0;
+  }
+  pesp_conn = nud->pesp_conn;
+  espconn_recv_hold(pesp_conn);
+
+  return 0;
+}
+
+static int net_socket_unhold( lua_State* L )
+{
+  const char *mt = "net.socket";
+  struct espconn *pesp_conn = NULL;
+  lnet_userdata *nud;
+  size_t l;
+
+  nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
+  luaL_argcheck(L, nud, 1, "Server/Socket expected");
+  if(nud==NULL){
+    NODE_DBG("userdata is nil.\n");
+    return 0;
+  }
+
+  if(nud->pesp_conn == NULL){
+    NODE_DBG("nud->pesp_conn is NULL.\n");
+    return 0;
+  }
+  pesp_conn = nud->pesp_conn;
+  espconn_recv_unhold(pesp_conn);
+
+  return 0;
+}
+
 // Lua: socket:dns( string, function(ip) )
 static int net_socket_dns( lua_State* L )
 {
@@ -1251,6 +1299,8 @@ static const LUA_REG_TYPE net_socket_map[] =
   { LSTRKEY( "close" ), LFUNCVAL ( net_socket_close ) },
   { LSTRKEY( "on" ), LFUNCVAL ( net_socket_on ) },
   { LSTRKEY( "send" ), LFUNCVAL ( net_socket_send ) },
+  { LSTRKEY( "hold" ), LFUNCVAL ( net_socket_hold ) },
+  { LSTRKEY( "unhold" ), LFUNCVAL ( net_socket_unhold ) },
   { LSTRKEY( "dns" ), LFUNCVAL ( net_socket_dns ) },
   // { LSTRKEY( "delete" ), LFUNCVAL ( net_socket_delete ) },
   { LSTRKEY( "__gc" ), LFUNCVAL ( net_socket_delete ) },
