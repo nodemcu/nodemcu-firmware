@@ -125,6 +125,7 @@ pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemc
 #define LUA_USE_MODULES_UART
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
+#define LUA_USE_MODULES_WS2812
 #endif /* LUA_USE_MODULES */
 ...
 // LUA_NUMBER_INTEGRAL
@@ -381,3 +382,14 @@ They'll be available as `u8g.<font_name>` in Lua.
   - [ ] setPrintPos()
   - [ ] setHardwareBackup()
   - [ ] setRGB()
+
+
+####Control a WS2812 based light strip
+```lua
+	-- set the color of one LED on GPIO 2 to red
+	ws2812.write(4, string.char(0, 255, 0)) 
+	-- set the color of 10 LEDs on GPIO 0 to blue
+	ws2812.write(3, string.char(0, 0, 255):rep(10))
+	-- first LED green, second LED white
+	ws2812.write(4, string.char(255, 0, 0, 255, 255, 255))
+```
