@@ -5,7 +5,7 @@
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 --
 -- Example:
--- require("ds18b20").read(4, function(r) for k, v in pairs(r) do print(k, v) end end)
+-- dofile("ds18b20.lua").read(4, function(r) for k, v in pairs(r) do print(k, v) end end)
 ------------------------------------------------------------------------------
 local M
 do

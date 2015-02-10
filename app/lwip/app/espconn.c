@@ -718,3 +718,32 @@ espconn_gethostbyname(struct espconn *pespconn, const char *hostname, ip_addr_t 
     return dns_gethostbyname(hostname, addr, found, pespconn);
 }
 
+sint8 espconn_recv_hold(struct espconn *pespconn) {
+  espconn_msg *pnode = NULL;
+
+  if (pespconn == NULL) {
+    return ESPCONN_ARG;
+  }
+  pespconn->state = ESPCONN_WRITE;
+  if (!espconn_find_connection(pespconn, &pnode)) {
+      return ESPCONN_ARG;
+  }
+
+  espconn_tcp_hold(pnode);
+  return ESPCONN_OK;
+}
+
+sint8 espconn_recv_unhold(struct espconn *pespconn) {
+  espconn_msg *pnode = NULL;
+
+  if (pespconn == NULL) {
+    return ESPCONN_ARG;
+  }
+  pespconn->state = ESPCONN_WRITE;
+  if (!espconn_find_connection(pespconn, &pnode)) {
+      return ESPCONN_ARG;
+  }
+
+  espconn_tcp_unhold(pnode);
+  return ESPCONN_OK;
+}

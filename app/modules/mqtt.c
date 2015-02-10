@@ -725,8 +725,15 @@ static int mqtt_socket_connect( lua_State* L )
   if(mud == NULL)
     return 0;
 
-  if(mud->pesp_conn)
-    	c_free(mud->pesp_conn);
+  if(mud->pesp_conn){   //TODO: should I free tcp struct directly or ask user to call close()???
+    mud->pesp_conn->reverse = NULL;
+    if(mud->pesp_conn->proto.tcp)
+      c_free(mud->pesp_conn->proto.tcp);
+    mud->pesp_conn->proto.tcp = NULL;
+    c_free(mud->pesp_conn);
+    mud->pesp_conn = NULL;
+  }
+
   struct espconn *pesp_conn = NULL;
 	pesp_conn = mud->pesp_conn = (struct espconn *)c_zalloc(sizeof(struct espconn));
 	if(!pesp_conn)

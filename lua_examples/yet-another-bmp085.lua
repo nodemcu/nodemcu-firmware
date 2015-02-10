@@ -6,7 +6,7 @@
 -- Heavily based on work of Christee <Christee@nodemcu.com>
 --
 -- Example:
--- require("bmp085").read(sda, scl)
+-- dofile("bmp085.lua").read(sda, scl)
 ------------------------------------------------------------------------------
 local M
 do
@@ -59,20 +59,13 @@ do
       MD  = r16(0xBE)
     end
     -- get raw P
-    local p
-    -- NB: optimize for oss = 0
     if not oss then oss = 0 end
-    if oss == 0 then
-      oss = 0
-      w8(0xF4, 0x34)
-      tmr.delay(5000)
-      p = r8(0xF6) * 256 + r8(0xF7)
-    else
-      w8(0xF4, 0x34 + 64 * oss)
-      tmr.delay(30000)
-      p = r8(0xF6) * 65536 + r8(0xF7) * 256 + r8(0xF8)
-      p = p / 2^(8 - oss)
-    end
+    if oss <= 0 then oss = 0 end
+    if oss > 3 then oss = 3 end
+    w8(0xF4, 0x34 + 64 * oss)
+    tmr.delay((4 + 3 ^ oss) * 1000)
+    local p = r8(0xF6) * 65536 + r8(0xF7) * 256 + r8(0xF8)
+    p = p / 2 ^ (8 - oss)
     -- get T
     w8(0xF4, 0x2E)
     tmr.delay(5000)
@@ -86,14 +79,14 @@ do
     local X1 = B2 * (B6 * B6 / 4096) / 2048
     local X2 = AC2 * B6 / 2048
     local X3 = X1 + X2
-    local B3 = ((AC1 * 4 + X3) * 2^oss + 2) / 4
+    local B3 = ((AC1 * 4 + X3) * 2 ^ oss + 2) / 4
     X1 = AC3 * B6 / 8192
     X2 = (B1 * (B6 * B6 / 4096)) / 65536
     X3 = (X1 + X2 + 2) / 4
     local B4 = AC4 * (X3 + 32768) / 32768
-    local B7 = (p - B3) * (50000 / 2^oss)
+    local B7 = (p - B3) * (50000 / 2 ^ oss)
     p = B7 / B4 * 2
-    X1 = (p / 256)^2
+    X1 = (p / 256) ^ 2
     X1 = (X1 * 3038) / 65536
     X2 = (-7357 * p) / 65536
     p = p + (X1 + X2 + 3791) / 16
