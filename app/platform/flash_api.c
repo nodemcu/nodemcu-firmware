@@ -56,6 +56,12 @@ uint32_t flash_get_size_byte(void)
     case SIZE_32MBIT:
         // 32Mbit, 4MByte
         flash_size = 4 * 1024 * 1024;
+    case SIZE_64MBIT:
+        // 64Mbit, 8MByte
+        flash_size = 8 * 1024 * 1024;
+    case SIZE_128MBIT:
+        // 128Mbit, 16MByte
+        flash_size = 16 * 1024 * 1024;
         break;
     default:
         // Unknown flash size, fall back mode.
