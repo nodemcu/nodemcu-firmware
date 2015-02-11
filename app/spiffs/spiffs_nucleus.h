@@ -126,7 +126,7 @@
 
 #define SPIFFS_OBJ_ID_IX_FLAG           (1<<(8*sizeof(spiffs_obj_id)-1))
 
-#define SPIFFS_UNDEFINED_LEN            (-1)
+#define SPIFFS_UNDEFINED_LEN            (u32_t)(-1)
 
 #define SPIFFS_OBJ_ID_DELETED           ((spiffs_obj_id)0)
 #define SPIFFS_OBJ_ID_FREE              ((spiffs_obj_id)-1)
@@ -487,7 +487,8 @@ s32_t spiffs_obj_lu_scan(
 
 s32_t spiffs_obj_lu_find_free_obj_id(
     spiffs *fs,
-    spiffs_obj_id *obj_id);
+    spiffs_obj_id *obj_id,
+    u8_t *conflicting_name);
 
 s32_t spiffs_obj_lu_find_free(
     spiffs *fs,

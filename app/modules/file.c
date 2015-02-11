@@ -125,7 +125,7 @@ static int file_remove( lua_State* L )
   if( len > FS_NAME_MAX_LENGTH )
     return luaL_error(L, "filename too long");
   file_close(L);
-  SPIFFS_remove(&fs, fname);
+  SPIFFS_remove(&fs, (char *)fname);
   return 0;  
 }
 
@@ -149,6 +149,31 @@ static int file_check( lua_State* L )
   return 1;
 }
 #endif
+
+// Lua: rename("oldname", "newname")
+static int file_rename( lua_State* L )
+{
+  size_t len;
+  if((FS_OPEN_OK - 1)!=file_fd){
+    fs_close(file_fd);
+    file_fd = FS_OPEN_OK - 1;
+  }
+
+  const char *oldname = luaL_checklstring( L, 1, &len );
+  if( len > FS_NAME_MAX_LENGTH )
+    return luaL_error(L, "filename too long");
+
+  const char *newname = luaL_checklstring( L, 2, &len );
+  if( len > FS_NAME_MAX_LENGTH )
+    return luaL_error(L, "filename too long");
+
+  if(SPIFFS_OK==myspiffs_rename( oldname, newname )){
+    lua_pushboolean(L, 1);
+  } else {
+    lua_pushboolean(L, 0);
+  }
+  return 1;
+}
 
 #endif
 
@@ -282,6 +307,7 @@ const LUA_REG_TYPE file_map[] =
   { LSTRKEY( "seek" ), LFUNCVAL( file_seek ) },
   { LSTRKEY( "flush" ), LFUNCVAL( file_flush ) },
   // { LSTRKEY( "check" ), LFUNCVAL( file_check ) },
+  { LSTRKEY( "rename" ), LFUNCVAL( file_rename ) },
 #endif
   
 #if LUA_OPTIMIZE_MEMORY > 0

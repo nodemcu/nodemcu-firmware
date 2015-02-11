@@ -156,6 +156,8 @@ static s32_t spiffs_delete_obj_lazy(spiffs *fs, spiffs_obj_id obj_id) {
 // validates the given look up entry
 static s32_t spiffs_lookup_check_validate(spiffs *fs, spiffs_obj_id lu_obj_id, spiffs_page_header *p_hdr,
     spiffs_page_ix cur_pix, spiffs_block_ix cur_block, int cur_entry, int *reload_lu) {
+  (void)cur_block;
+  (void)cur_entry;
   u8_t delete_page = 0;
   s32_t res = SPIFFS_OK;
   spiffs_page_ix objix_pix;
@@ -327,7 +329,7 @@ static s32_t spiffs_lookup_check_validate(spiffs *fs, spiffs_obj_id lu_obj_id, s
     } else if (((lu_obj_id & SPIFFS_OBJ_ID_IX_FLAG) && (p_hdr->flags & SPIFFS_PH_FLAG_INDEX)) ||
         ((lu_obj_id & SPIFFS_OBJ_ID_IX_FLAG) == 0 && (p_hdr->flags & SPIFFS_PH_FLAG_INDEX) == 0)) {
       SPIFFS_CHECK_DBG("LU: %04x lu/page index marking differ\n", cur_pix);
-      spiffs_page_ix data_pix, objix_pix;
+      spiffs_page_ix data_pix, objix_pix_d;
       // see if other data page exists for given obj id and span index
       res = spiffs_obj_lu_find_id_and_span(fs, lu_obj_id & ~SPIFFS_OBJ_ID_IX_FLAG, p_hdr->span_ix, cur_pix, &data_pix);
       if (res == SPIFFS_ERR_NOT_FOUND) {
@@ -336,20 +338,20 @@ static s32_t spiffs_lookup_check_validate(spiffs *fs, spiffs_obj_id lu_obj_id, s
       }
       SPIFFS_CHECK_RES(res);
       // see if other object index exists for given obj id and span index
-      res = spiffs_obj_lu_find_id_and_span(fs, lu_obj_id | SPIFFS_OBJ_ID_IX_FLAG, p_hdr->span_ix, cur_pix, &objix_pix);
+      res = spiffs_obj_lu_find_id_and_span(fs, lu_obj_id | SPIFFS_OBJ_ID_IX_FLAG, p_hdr->span_ix, cur_pix, &objix_pix_d);
       if (res == SPIFFS_ERR_NOT_FOUND) {
         res = SPIFFS_OK;
-        objix_pix = 0;
+        objix_pix_d = 0;
       }
       SPIFFS_CHECK_RES(res);
 
       delete_page = 1;
       // if other data page exists and object index exists, just delete page
-      if (data_pix && objix_pix) {
+      if (data_pix && objix_pix_d) {
         SPIFFS_CHECK_DBG("LU: FIXUP: other index and data page exists, simply remove\n");
       } else
       // if only data page exists, make this page index
-      if (data_pix && objix_pix == 0) {
+      if (data_pix && objix_pix_d == 0) {
         SPIFFS_CHECK_DBG("LU: FIXUP: other data page exists, make this index\n");
         if (fs->check_cb_f) fs->check_cb_f(SPIFFS_CHECK_LOOKUP, SPIFFS_CHECK_FIX_INDEX, lu_obj_id, p_hdr->span_ix);
         spiffs_page_header new_ph;
@@ -365,7 +367,7 @@ static s32_t spiffs_lookup_check_validate(spiffs *fs, spiffs_obj_id lu_obj_id, s
         SPIFFS_CHECK_RES(res);
       } else
       // if only index exists, make data page
-      if (data_pix == 0 && objix_pix) {
+      if (data_pix == 0 && objix_pix_d) {
         SPIFFS_CHECK_DBG("LU: FIXUP: other index page exists, make this data\n");
         if (fs->check_cb_f) fs->check_cb_f(SPIFFS_CHECK_LOOKUP, SPIFFS_CHECK_FIX_LOOKUP, lu_obj_id, p_hdr->span_ix);
         spiffs_page_header new_ph;
@@ -426,6 +428,8 @@ static s32_t spiffs_lookup_check_validate(spiffs *fs, spiffs_obj_id lu_obj_id, s
 
 static s32_t spiffs_lookup_check_v(spiffs *fs, spiffs_obj_id obj_id, spiffs_block_ix cur_block, int cur_entry,
     u32_t user_data, void *user_p) {
+  (void)user_data;
+  (void)user_p;
   s32_t res = SPIFFS_OK;
   spiffs_page_header p_hdr;
   spiffs_page_ix cur_pix = SPIFFS_OBJ_LOOKUP_ENTRY_TO_PIX(fs, cur_block, cur_entry);
@@ -453,6 +457,7 @@ static s32_t spiffs_lookup_check_v(spiffs *fs, spiffs_obj_id obj_id, spiffs_bloc
 // Scans all object look up. For each entry, corresponding page header is checked for validity.
 // If an object index header page is found, this is also checked
 s32_t spiffs_lookup_consistency_check(spiffs *fs, u8_t check_all_objects) {
+  (void)check_all_objects;
   s32_t res = SPIFFS_OK;
 
   if (fs->check_cb_f) fs->check_cb_f(SPIFFS_CHECK_LOOKUP, SPIFFS_CHECK_PROGRESS, 0, 0);
@@ -689,8 +694,8 @@ static s32_t spiffs_page_consistency_check_i(spiffs *fs) {
       spiffs_page_ix objix_pix;
       spiffs_page_ix rpix;
 
-      int byte_ix;
-      int bit_ix;
+      u32_t byte_ix;
+      u8_t bit_ix;
       for (byte_ix = 0; !restart && byte_ix < SPIFFS_CFG_LOG_PAGE_SZ(fs); byte_ix++) {
         for (bit_ix = 0; !restart && bit_ix < 8/bits; bit_ix ++) {
           u8_t bitmask = (fs->work[byte_ix] >> (bit_ix * bits)) & 0x7;
@@ -838,7 +843,7 @@ s32_t spiffs_page_consistency_check(spiffs *fs) {
 // searches for given object id in temporary object id index,
 // returns the index or -1
 static int spiffs_object_index_search(spiffs *fs, spiffs_obj_id obj_id) {
-  int i;
+  u32_t i;
   spiffs_obj_id *obj_table = (spiffs_obj_id *)fs->work;
   obj_id &= ~SPIFFS_OBJ_ID_IX_FLAG;
   for (i = 0; i < SPIFFS_CFG_LOG_PAGE_SZ(fs) / sizeof(spiffs_obj_id); i++) {
@@ -849,8 +854,9 @@ static int spiffs_object_index_search(spiffs *fs, spiffs_obj_id obj_id) {
   return -1;
 }
 
-s32_t spiffs_object_index_consistency_check_v(spiffs *fs, spiffs_obj_id obj_id, spiffs_block_ix cur_block,
+static s32_t spiffs_object_index_consistency_check_v(spiffs *fs, spiffs_obj_id obj_id, spiffs_block_ix cur_block,
     int cur_entry, u32_t user_data, void *user_p) {
+  (void)user_data;
   s32_t res_c = SPIFFS_VIS_COUNTINUE;
   s32_t res = SPIFFS_OK;
   u32_t *log_ix = (u32_t *)user_p;
