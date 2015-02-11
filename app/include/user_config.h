@@ -13,6 +13,8 @@
 // #define FLASH_1M
 // #define FLASH_2M
 // #define FLASH_4M
+// #define FLASH_8M
+// #define FLASH_16M
 #define FLASH_AUTOSIZE
 // #define DEVELOP_VERSION
 #define FULL_VERSION_FOR_USER
