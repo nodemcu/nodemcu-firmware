@@ -124,6 +124,7 @@ s32_t spiffs_phys_rd(
     u32_t addr,
     u32_t len,
     u8_t *dst) {
+  (void)fh;
   s32_t res = SPIFFS_OK;
   spiffs_cache *cache = spiffs_get_cache(fs);
   spiffs_cache_page *cp =  spiffs_cache_page_get(fs, SPIFFS_PADDR_TO_PAGE(fs, addr));
@@ -172,6 +173,7 @@ s32_t spiffs_phys_wr(
     u32_t addr,
     u32_t len,
     u8_t *src) {
+  (void)fh;
   spiffs_page_ix pix = SPIFFS_PADDR_TO_PAGE(fs, addr);
   spiffs_cache *cache = spiffs_get_cache(fs);
   spiffs_cache_page *cp =  spiffs_cache_page_get(fs, pix);
@@ -249,7 +251,7 @@ spiffs_cache_page *spiffs_cache_page_allocate_by_fd(spiffs *fs, spiffs_fd *fd) {
 // unrefers all fds that this cache page refers to and releases the cache page
 void spiffs_cache_fd_release(spiffs *fs, spiffs_cache_page *cp) {
   if (cp == 0) return;
-  int i;
+  u32_t i;
   spiffs_fd *fds = (spiffs_fd *)fs->fd_space;
   for (i = 0; i < fs->fd_count; i++) {
     spiffs_fd *cur_fd = &fds[i];
@@ -282,7 +284,7 @@ void spiffs_cache_init(spiffs *fs) {
   spiffs_cache cache;
   c_memset(&cache, 0, sizeof(spiffs_cache));
   cache.cpage_count = cache_entries;
-  cache.cpages = (u8_t *)(fs->cache) + sizeof(spiffs_cache);
+  cache.cpages = (u8_t *)((u8_t *)fs->cache + sizeof(spiffs_cache));
 
   cache.cpage_use_map = 0xffffffff;
   cache.cpage_use_mask = cache_mask;

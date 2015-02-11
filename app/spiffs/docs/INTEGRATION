@@ -40,7 +40,7 @@ Also, toss up some of the needed buffers:
   
   static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
   static u8_t spiffs_fds[32*4];
-  static u8_t spiffs_cache[(LOG_PAGE_SIZE+32)*4];
+  static u8_t spiffs_cache_buf[(LOG_PAGE_SIZE+32)*4];
   
 Now, write the my_spiffs_mount function:
 
@@ -50,7 +50,7 @@ Now, write the my_spiffs_mount function:
     cfg.phys_addr = 0; // start spiffs at start of spi flash
     cfg.phys_erase_block = 65536; // according to datasheet
     cfg.log_block_size = 65536; // let us not complicate things
-    cfg.log_block_size = LOG_PAGE_SIZE; // as we said
+    cfg.log_page_size = LOG_PAGE_SIZE; // as we said
     
     cfg.hal_read_f = my_spi_read;
     cfg.hal_write_f = my_spi_write;
@@ -61,8 +61,8 @@ Now, write the my_spiffs_mount function:
       spiffs_work_buf,
       spiffs_fds,
       sizeof(spiffs_fds),
-      spiffs_cache,
-      sizeof(spiffs_cache),
+      spiffs_cache_buf,
+      sizeof(spiffs_cache_buf),
       0);
     printf("mount res: %i\n", res);
   }
@@ -125,6 +125,29 @@ Compile, run, cross fingers hard, and you'll get the output:
   --> Hello world <-- 
   
 Got errors? Check spiffs.h for error definitions to get a clue what went voodoo.
+
+
+* THINGS TO CHECK
+
+When you alter the spiffs_config values, make sure you also check the typedefs
+in spiffs_config.h:
+
+ - spiffs_block_ix
+ - spiffs_page_ix
+ - spiffs_obj_id
+ - spiffs_span_ix
+
+The sizes of these typedefs must not underflow, else spiffs might end up in
+eternal loops. Each typedef is commented what check for.
+
+Also, if you alter the code or just want to verify your configuration, you can
+run
+
+ > make test
+
+in the spiffs folder. This will run all testcases using the configuration in
+default/spiffs_config.h and test/params_test.h. The tests are written for linux
+but should run under cygwin also.
 
 
 * INTEGRATING SPIFFS
