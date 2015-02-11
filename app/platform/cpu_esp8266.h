@@ -25,6 +25,10 @@
 #define FLASH_SEC_NUM 	0x200
 #elif defined(FLASH_4M)
 #define FLASH_SEC_NUM 	0x400
+#elif defined(FLASH_8M)
+#define FLASH_SEC_NUM 	0x800
+#elif defined(FLASH_16M)
+#define FLASH_SEC_NUM 	0x1000
 #elif defined(FLASH_AUTOSIZE)
 #define FLASH_SEC_NUM 	(flash_get_sec_num())
 #else
