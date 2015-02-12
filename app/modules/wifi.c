@@ -256,8 +256,19 @@ static int wifi_setip( lua_State* L, uint8_t mode )
   ip = parse_key(L, "gateway");
   if(ip!=0) 
     pTempIp.gw.addr = ip;
-  wifi_station_dhcpc_stop();
-  lua_pushboolean(L,wifi_set_ip_info(mode, &pTempIp));
+  
+  if(STATION_IF == mode)
+  {
+    wifi_station_dhcpc_stop();
+    lua_pushboolean(L,wifi_set_ip_info(mode, &pTempIp));
+  }
+  else
+  {
+    wifi_softap_dhcps_stop();
+    lua_pushboolean(L,wifi_set_ip_info(mode, &pTempIp));
+    wifi_softap_dhcps_start();
+  }
+
   return 1;  
 }
 
