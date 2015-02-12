@@ -281,7 +281,9 @@ typedef long long quad_t;
 typedef unsigned long long u_quad_t;
 typedef double rtype;
 
-#define __P(x) x
+#ifndef __P
+#define __P(args) args
+#endif
 
 static char * _getbase __P((char *, int *));
 static int _atob __P((unsigned long long *, char *p, int));
