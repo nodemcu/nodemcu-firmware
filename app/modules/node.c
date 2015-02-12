@@ -124,6 +124,9 @@ static int node_heap( lua_State* L )
   return 1;  
 }
 
+static lua_State *gL = NULL;
+
+#ifdef DEVKIT_VERSION_0_9
 extern int led_high_count;  // this is defined in lua.c
 extern int led_low_count;
 // Lua: led(low, high)
@@ -155,7 +158,6 @@ static int node_led( lua_State* L )
 
 static int long_key_ref = LUA_NOREF;
 static int short_key_ref = LUA_NOREF;
-static lua_State *gL = NULL;
 
 void default_long_press(void *arg){
   if(led_high_count == 12 && led_low_count == 12){
@@ -228,6 +230,7 @@ static int node_key( lua_State* L )
 
   return 0;  
 }
+#endif
 
 extern lua_Load gLoad;
 extern os_timer_t lua_timer;
@@ -320,8 +323,10 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
   { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
   { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
+#ifdef DEVKIT_VERSION_0_9
   { LSTRKEY( "key" ), LFUNCVAL( node_key ) },
   { LSTRKEY( "led" ), LFUNCVAL( node_led ) },
+#endif
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
   { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
