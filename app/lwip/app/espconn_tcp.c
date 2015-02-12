@@ -948,3 +948,19 @@ sint8 ICACHE_FLASH_ATTR espconn_tcp_delete(struct espconn *pdeletecon)
 			return ESPCONN_ARG;
 	}
 }
+
+void espconn_tcp_hold(void *arg) {
+    espconn_msg *ptcp_sent = arg;
+    struct tcp_pcb *pcb = NULL;
+    pcb = ptcp_sent->pcommon.pcb;
+
+    pcb->hold = 1;
+}
+
+void espconn_tcp_unhold(void *arg) {
+    espconn_msg *ptcp_sent = arg;
+    struct tcp_pcb *pcb = NULL;
+    pcb = ptcp_sent->pcommon.pcb;
+
+    pcb->hold = 0;
+}
