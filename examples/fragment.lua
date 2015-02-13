@@ -339,3 +339,11 @@ uart.on("data",4, function(data)
 	end
 end, 0)
 
+file.open("hello.lua","w+")
+file.writeline([[print("hello nodemcu")]])
+file.writeline([[print(node.heap())]])
+file.close()
+
+node.compile("hello.lua")
+dofile("hello.lua")
+dofile("hello.lc")

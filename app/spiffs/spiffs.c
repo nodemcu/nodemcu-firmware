@@ -98,7 +98,7 @@ int myspiffs_check( void )
 }
 
 int myspiffs_open(const char *name, int flags){
-  return (int)SPIFFS_open(&fs, name, (spiffs_flags)flags, 0);
+  return (int)SPIFFS_open(&fs, (char *)name, (spiffs_flags)flags, 0);
 }
 
 int myspiffs_close( int fd ){
@@ -161,6 +161,12 @@ int myspiffs_error( int fd ){
 }
 void myspiffs_clearerr( int fd ){
   fs.errno = SPIFFS_OK;
+}
+int myspiffs_rename( const char *old, const char *newname ){
+  return SPIFFS_rename(&fs, (char *)old, (char *)newname);
+}
+size_t myspiffs_size( int fd ){
+  return SPIFFS_size(&fs, (spiffs_file)fd);
 }
 #if 0
 void test_spiffs() {

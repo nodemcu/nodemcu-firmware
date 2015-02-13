@@ -52,6 +52,8 @@ typedef struct
         SIZE_8MBIT = 2,
         SIZE_16MBIT = 3,
         SIZE_32MBIT = 4,
+        SIZE_64MBIT = 5,
+        SIZE_128MBIT = 6,
     } size : 4;
 } ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 

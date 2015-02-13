@@ -30,10 +30,13 @@ lua_Load gLoad;
 
 static const char *progname = LUA_PROGNAME;
 
+#ifdef DEVKIT_VERSION_0_9
 static int key_press_count = 0;
 int led_high_count = LED_HIGH_COUNT_DEFAULT;
 int led_low_count = LED_LOW_COUNT_DEFAULT;
 static int led_count = 0;
+#endif
+
 #if 0
 static void lstop (lua_State *L, lua_Debug *ar) {
   (void)ar;  /* unused arg. */
@@ -541,6 +544,7 @@ void dojob(lua_Load *load){
   // NODE_DBG("dojob() is called with firstline.\n");
 }
 
+#ifdef DEVKIT_VERSION_0_9
 extern void key_long_press(void *arg);
 extern void key_short_press(void *arg);
 static bool key_short_pressed = false;
@@ -579,6 +583,7 @@ void update_key_led(){
     }
   }
 }
+#endif
 
 #ifndef uart_putc
 #define uart_putc uart0_putc
@@ -590,7 +595,9 @@ extern uint16_t need_len;
 extern int16_t end_char;
 void readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
+#ifdef DEVKIT_VERSION_0_9
   update_key_led();
+#endif
   char ch;
   while (uart_getc(&ch))
   {
