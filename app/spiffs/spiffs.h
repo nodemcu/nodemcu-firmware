@@ -423,6 +423,7 @@ s32_t SPIFFS_check(spiffs *fs);
  */
 s32_t SPIFFS_eof(spiffs *fs, spiffs_file fh);
 s32_t SPIFFS_tell(spiffs *fs, spiffs_file fh);
+s32_t SPIFFS_size(spiffs *fs, spiffs_file fh);
 
 #if SPIFFS_TEST_VISUALISATION
 /**

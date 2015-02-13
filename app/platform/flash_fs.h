@@ -69,6 +69,7 @@
 #define fs_format myspiffs_format
 #define fs_check myspiffs_check
 #define fs_rename myspiffs_rename
+#define fs_size myspiffs_size
 
 #define FS_NAME_MAX_LENGTH SPIFFS_OBJ_NAME_LEN
 

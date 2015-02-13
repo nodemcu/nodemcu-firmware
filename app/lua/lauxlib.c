@@ -652,7 +652,8 @@ LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
 typedef struct LoadFSF {
   int extraline;
   int f;
-  char buff[LUAL_BUFFERSIZE];
+  char *buff;
+  int len;
 } LoadFSF;
 
 
@@ -665,7 +666,7 @@ static const char *getFSF (lua_State *L, void *ud, size_t *size) {
     return "\n";
   }
   if (fs_eof(lf->f)) return NULL;
-  *size = fs_read(lf->f, lf->buff, sizeof(lf->buff));
+  *size = fs_read(lf->f, lf->buff, (lf->len));
   return (*size > 0) ? lf->buff : NULL;
 }
 
@@ -684,6 +685,9 @@ LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
   int c;
   int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
   lf.extraline = 0;
+  // lf.len = LUAL_BUFFERSIZE;
+  lf.len = 0;
+  lf.buff = NULL;
   if (filename == NULL) {
     return luaL_error(L, "filename is NULL");
   }
@@ -692,6 +696,10 @@ LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
     lf.f = fs_open(filename, FS_RDONLY);
     if (lf.f < FS_OPEN_OK) return errfsfile(L, "open", fnameindex);
   }
+  lf.len = fs_size(lf.f) + 32;
+  lf.buff = c_zalloc(lf.len);
+  if(!lf.buff) return LUA_ERRMEM;
+
   c = fs_getc(lf.f);
   if (c == '#') {  /* Unix exec. file? */
     lf.extraline = 1;
@@ -701,7 +709,13 @@ LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
   if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
     fs_close(lf.f);
     lf.f = fs_open(filename, FS_RDONLY);  /* reopen in binary mode */
-    if (lf.f < FS_OPEN_OK) return errfsfile(L, "reopen", fnameindex);
+    if (lf.f < FS_OPEN_OK){
+      if(lf.buff)
+        c_free(lf.buff);
+      lf.buff = NULL;
+      lf.len = 0;
+      return errfsfile(L, "reopen", fnameindex);
+    }
     /* skip eventual `#!...' */
    while ((c = fs_getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) ;
     lf.extraline = 0;
@@ -711,6 +725,9 @@ LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
 
   if (filename) fs_close(lf.f);  /* close file (even in case of errors) */
   lua_remove(L, fnameindex);
+  if(lf.buff)
+    c_free(lf.buff);
+  lf.buff = NULL;
   return status;
 }
 
