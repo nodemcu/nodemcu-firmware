@@ -169,6 +169,31 @@ static int tmr_time( lua_State* L )
   return 1; 
 }
 
+// Lua: mem_write(content, start_address)
+static bool tmr_mem_write( lua_State* L)
+{
+  size_t len;
+  const char *content  = luaL_checklstring( L, 1, &len );
+  uint8_t address = (uint8_t)luaL_checkinteger( L, 2);
+  uint8_t size    = (uint8_t)luaL_checkinteger( L, 3);
+  if (size > len) {
+  	return luaL_error( L, "wrong size" );
+  }
+  
+  return system_rtc_mem_write(address, &content, size);
+}
+
+// Lua: mem_read(start_address, bytes), return the read data from the RTC inner memory 
+static void* tmr_mem_read( lua_State* L)
+{
+  uint8_t address = (uint8_t)luaL_checkinteger( L, 1);
+  uint8_t len     = (uint8_t)luaL_checkinteger( L, 2);
+  void *des_addr;
+  system_rtc_mem_read(address, &des_addr, len);
+  
+  return des_addr;
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -180,6 +205,8 @@ const LUA_REG_TYPE tmr_map[] =
   { LSTRKEY( "stop" ), LFUNCVAL( tmr_stop ) },
   { LSTRKEY( "wdclr" ), LFUNCVAL( tmr_wdclr ) },
   { LSTRKEY( "time" ), LFUNCVAL( tmr_time ) },
+  { LSTRKEY( "mem_write"), LFUNCVAL( tmr_mem_write ) },
+  { LSTRKEY( "mem_read"), LFUNCVAL( tmr_mem_read ) },
 #if LUA_OPTIMIZE_MEMORY > 0
 
 #endif
