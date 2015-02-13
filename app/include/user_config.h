@@ -7,7 +7,7 @@
 #define NODE_VERSION_INTERNAL   0U
 
 #define NODE_VERSION	"NodeMCU 0.9.5"
-#define BUILD_DATE	    "build 20150213"
+#define BUILD_DATE	    "build 20150214"
 
 // #define DEVKIT_VERSION_0_9 1 	// define this only if you use NodeMCU devkit v0.9
 
