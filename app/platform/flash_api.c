@@ -24,6 +24,7 @@ SPIFlashInfo flash_get_info(void)
 {
     volatile SPIFlashInfo spi_flash_info ICACHE_STORE_ATTR;
     spi_flash_info = *((SPIFlashInfo *)(FLASH_MAP_START_ADDRESS));
+    // spi_flash_read(0, (uint32 *)(& spi_flash_info), sizeof(spi_flash_info));
     return spi_flash_info;
 }
 
@@ -232,13 +233,14 @@ bool flash_self_destruct(void)
     return true;
 }
 
-uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index)
+uint8_t byte_of_aligned_array(const uint8_t *aligned_array, uint32_t index)
 {
-    if( (((uint32_t)aligned_array)%4) != 0 ){
+    if ( (((uint32_t)aligned_array) % 4) != 0 )
+    {
         NODE_DBG("aligned_array is not 4-byte aligned.\n");
         return 0;
     }
-    uint32_t v = ((uint32_t *)aligned_array)[ index/4 ];
+    uint32_t v = ((uint32_t *)aligned_array)[ index / 4 ];
     uint8_t *p = (uint8_t *) (&v);
-    return p[ (index%4) ];
+    return p[ (index % 4) ];
 }
