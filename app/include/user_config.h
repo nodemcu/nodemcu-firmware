@@ -78,6 +78,11 @@
 
 
 // #define LUA_NUMBER_INTEGRAL
+#define LUA_EGC
+#ifdef LUA_EGC
+#define EGC_INITIAL_MODE      2 
+#define EGC_INITIAL_MEMLIMIT  2000
+#endif
 
 #define LUA_OPTRAM
 #ifdef LUA_OPTRAM
