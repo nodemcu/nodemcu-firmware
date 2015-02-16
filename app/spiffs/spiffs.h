@@ -466,5 +466,6 @@ int myspiffs_error( int fd );
 void myspiffs_clearerr( int fd );
 int myspiffs_check( void );
 int myspiffs_rename( const char *old, const char *newname );
+size_t myspiffs_size( int fd );
 
 #endif /* SPIFFS_H_ */
