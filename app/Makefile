@@ -24,6 +24,7 @@ SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS=    \
 	user	\
 	driver	\
+	lwip	\
 	json	\
 	upgrade	\
 	platform	\
@@ -69,6 +70,7 @@ endif
 COMPONENTS_eagle.app.v6 = \
 	user/libuser.a	\
 	driver/libdriver.a	\
+	lwip/liblwip.a	\
 	json/libjson.a	\
 	upgrade/libupgrade.a	\
 	platform/libplatform.a	\
@@ -99,7 +101,6 @@ LINKFLAGS_eagle.app.v6 = \
 	-ljson	\
 	-lsmartconfig	\
 	-lssl	\
-	-llwip	\
 	$(DEP_LIBS_eagle.app.v6)					\
 	-Wl,--end-group
 
