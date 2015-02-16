@@ -95,7 +95,8 @@ static int node_chipid( lua_State* L )
 // Lua: readvdd33()
 static int node_readvdd33( lua_State* L )
 {
-  uint32_t vdd33 = system_get_vdd33();
+  // uint32_t vdd33 = system_get_vdd33();
+  uint32_t vdd33 = readvdd33();
   lua_pushinteger(L, vdd33);
   return 1;
 }
