@@ -184,14 +184,15 @@ static bool tmr_mem_write( lua_State* L)
 }
 
 // Lua: mem_read(start_address, bytes), return the read data from the RTC inner memory 
-static void* tmr_mem_read( lua_State* L)
+static bool tmr_mem_read( lua_State* L)
 {
   uint8_t address = (uint8_t)luaL_checkinteger( L, 1);
   uint8_t len     = (uint8_t)luaL_checkinteger( L, 2);
   void *des_addr;
-  system_rtc_mem_read(address, &des_addr, len);
-  
-  return des_addr;
+  bool ret = system_rtc_mem_read(address, &des_addr, len);
+  lua_pushlightuserdata(L, des_addr); 
+ 
+  return ret;
 }
 
 // Module function map
