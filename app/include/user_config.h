@@ -67,6 +67,7 @@
 #define LUA_USE_MODULES_UART
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
+#define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_MQTT
 // #define LUA_USE_MODULES_WS2812	// TODO: put this device specific module to device driver section.
 #endif /* LUA_USE_MODULES */
@@ -97,5 +98,14 @@
 #define LED_HIGH_COUNT_DEFAULT 10
 #define LED_LOW_COUNT_DEFAULT 0
 #endif
+
+
+// Configure U8glib fonts
+// add a U8G_FONT_TABLE_ENTRY for each font you want to compile into the image
+#define U8G_FONT_TABLE_ENTRY(font)
+#define U8G_FONT_TABLE \
+    U8G_FONT_TABLE_ENTRY(font_6x10)  \
+    U8G_FONT_TABLE_ENTRY(font_chikita)
+#undef U8G_FONT_TABLE_ENTRY
 
 #endif	/* __USER_CONFIG_H__ */
