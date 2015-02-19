@@ -8,11 +8,21 @@
 #include "lrotable.h"
 
 //#include "c_string.h"
-//#include "c_stdlib.h"
+#include "c_stdlib.h"
 
 #include "u8g.h"
 
-typedef u8g_t lu8g_userdata_t;
+struct _lu8g_userdata_t
+{
+    u8g_t     u8g;
+    u8g_pb_t  pb;
+    u8g_dev_t dev;
+};
+
+typedef struct _lu8g_userdata_t lu8g_userdata_t;
+
+// shorthand macro for the u8g structure inside the userdata
+#define LU8G (&(lud->u8g))
 
 
 // Font look-up array
@@ -79,7 +89,7 @@ static int lu8g_begin( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_Begin( lud );
+    u8g_Begin( LU8G );
 
     return 0;
 }
@@ -94,7 +104,7 @@ static int lu8g_setFont( lua_State *L )
 
     lua_Integer fontnr = luaL_checkinteger( L, 2 );
     if ((fontnr >= 0) && (fontnr < (sizeof( font_array ) / sizeof( u8g_fntpgm_uint8_t ))))
-        u8g_SetFont( lud, font_array[fontnr] );
+        u8g_SetFont( LU8G, font_array[fontnr] );
 
     return 0;
 }
@@ -107,7 +117,7 @@ static int lu8g_setFontRefHeightAll( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontRefHeightAll( lud );
+    u8g_SetFontRefHeightAll( LU8G );
 
     return 0;
 }
@@ -120,7 +130,7 @@ static int lu8g_setFontRefHeightExtendedText( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontRefHeightExtendedText( lud );
+    u8g_SetFontRefHeightExtendedText( LU8G );
 
     return 0;
 }
@@ -133,7 +143,7 @@ static int lu8g_setFontRefHeightText( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontRefHeightText( lud );
+    u8g_SetFontRefHeightText( LU8G );
 
     return 0;
 }
@@ -146,7 +156,7 @@ static int lu8g_setDefaultBackgroundColor( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetDefaultBackgroundColor( lud );
+    u8g_SetDefaultBackgroundColor( LU8G );
 
     return 0;
 }
@@ -159,7 +169,7 @@ static int lu8g_setDefaultForegroundColor( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetDefaultForegroundColor( lud );
+    u8g_SetDefaultForegroundColor( LU8G );
 
     return 0;
 }
@@ -172,7 +182,7 @@ static int lu8g_setFontPosBaseline( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontPosBaseline( lud );
+    u8g_SetFontPosBaseline( LU8G );
 
     return 0;
 }
@@ -185,7 +195,7 @@ static int lu8g_setFontPosBottom( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontPosBottom( lud );
+    u8g_SetFontPosBottom( LU8G );
 
     return 0;
 }
@@ -198,7 +208,7 @@ static int lu8g_setFontPosCenter( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontPosCenter( lud );
+    u8g_SetFontPosCenter( LU8G );
 
     return 0;
 }
@@ -211,7 +221,7 @@ static int lu8g_setFontPosTop( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetFontPosTop( lud );
+    u8g_SetFontPosTop( LU8G );
 
     return 0;
 }
@@ -224,7 +234,7 @@ static int lu8g_getFontAscent( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_GetFontAscent( lud ) );
+    lua_pushinteger( L, u8g_GetFontAscent( LU8G ) );
 
     return 1;
 }
@@ -237,7 +247,7 @@ static int lu8g_getFontDescent( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_GetFontDescent( lud ) );
+    lua_pushinteger( L, u8g_GetFontDescent( LU8G ) );
 
     return 1;
 }
@@ -250,7 +260,7 @@ static int lu8g_getFontLineSpacing( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_GetFontLineSpacing( lud ) );
+    lua_pushinteger( L, u8g_GetFontLineSpacing( LU8G ) );
 
     return 1;
 }
@@ -263,7 +273,7 @@ static int lu8g_getMode( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_GetMode( lud ) );
+    lua_pushinteger( L, u8g_GetMode( LU8G ) );
 
     return 1;
 }
@@ -276,7 +286,7 @@ static int lu8g_setColorIndex( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetColorIndex( lud, luaL_checkinteger( L, 2 ) );
+    u8g_SetColorIndex( LU8G, luaL_checkinteger( L, 2 ) );
 
     return 0;
 }
@@ -289,7 +299,7 @@ static int lu8g_getColorIndex( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_GetColorIndex( lud ) );
+    lua_pushinteger( L, u8g_GetColorIndex( LU8G ) );
 
     return 1;
 }
@@ -311,16 +321,16 @@ static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
     switch (rot)
     {
     case 1:
-        lua_pushinteger( L, u8g_DrawStr90( lud, args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr90( LU8G, args[0], args[1], s ) );
         break;
     case 2:
-        lua_pushinteger( L, u8g_DrawStr180( lud, args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr180( LU8G, args[0], args[1], s ) );
         break;
     case 3:
-        lua_pushinteger( L, u8g_DrawStr270( lud, args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr270( LU8G, args[0], args[1], s ) );
         break;
     default:
-        lua_pushinteger( L, u8g_DrawStr( lud, args[0], args[1], s ) );
+        lua_pushinteger( L, u8g_DrawStr( LU8G, args[0], args[1], s ) );
         break;
     }
 
@@ -371,7 +381,7 @@ static int lu8g_drawLine( lua_State *L )
     u8g_uint_t args[4];
     lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_DrawLine( lud, args[0], args[1], args[2], args[3] );
+    u8g_DrawLine( LU8G, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -387,7 +397,7 @@ static int lu8g_drawTriangle( lua_State *L )
     u8g_uint_t args[6];
     lu8g_get_int_args( L, 2, 6, args );
 
-    u8g_DrawTriangle( lud, args[0], args[1], args[2], args[3], args[4], args[5] );
+    u8g_DrawTriangle( LU8G, args[0], args[1], args[2], args[3], args[4], args[5] );
 
     return 0;
 }
@@ -403,7 +413,7 @@ static int lu8g_drawBox( lua_State *L )
     u8g_uint_t args[4];
     lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_DrawBox( lud, args[0], args[1], args[2], args[3] );
+    u8g_DrawBox( LU8G, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -419,7 +429,7 @@ static int lu8g_drawRBox( lua_State *L )
     u8g_uint_t args[5];
     lu8g_get_int_args( L, 2, 5, args );
 
-    u8g_DrawRBox( lud, args[0], args[1], args[2], args[3], args[4] );
+    u8g_DrawRBox( LU8G, args[0], args[1], args[2], args[3], args[4] );
 
     return 0;
 }
@@ -435,7 +445,7 @@ static int lu8g_drawFrame( lua_State *L )
     u8g_uint_t args[4];
     lu8g_get_int_args( L, 2, 4, args );
 
-    u8g_DrawFrame( lud, args[0], args[1], args[2], args[3] );
+    u8g_DrawFrame( LU8G, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -451,7 +461,7 @@ static int lu8g_drawRFrame( lua_State *L )
     u8g_uint_t args[5];
     lu8g_get_int_args( L, 2, 5, args );
 
-    u8g_DrawRFrame( lud, args[0], args[1], args[2], args[3], args[4] );
+    u8g_DrawRFrame( LU8G, args[0], args[1], args[2], args[3], args[4] );
 
     return 0;
 }
@@ -469,7 +479,7 @@ static int lu8g_drawDisc( lua_State *L )
 
     u8g_uint_t opt = luaL_optinteger( L, (1+3) + 1, U8G_DRAW_ALL );
 
-    u8g_DrawDisc( lud, args[0], args[1], args[2], opt );
+    u8g_DrawDisc( LU8G, args[0], args[1], args[2], opt );
 
     return 0;
 }
@@ -487,7 +497,7 @@ static int lu8g_drawCircle( lua_State *L )
 
     u8g_uint_t opt = luaL_optinteger( L, (1+3) + 1, U8G_DRAW_ALL );
 
-    u8g_DrawCircle( lud, args[0], args[1], args[2], opt );
+    u8g_DrawCircle( LU8G, args[0], args[1], args[2], opt );
 
     return 0;
 }
@@ -505,7 +515,7 @@ static int lu8g_drawEllipse( lua_State *L )
 
     u8g_uint_t opt = luaL_optinteger( L, (1+4) + 1, U8G_DRAW_ALL );
 
-    u8g_DrawEllipse( lud, args[0], args[1], args[2], args[3], opt );
+    u8g_DrawEllipse( LU8G, args[0], args[1], args[2], args[3], opt );
 
     return 0;
 }
@@ -523,7 +533,7 @@ static int lu8g_drawFilledEllipse( lua_State *L )
 
     u8g_uint_t opt = luaL_optinteger( L, (1+4) + 1, U8G_DRAW_ALL );
 
-    u8g_DrawFilledEllipse( lud, args[0], args[1], args[2], args[3], opt );
+    u8g_DrawFilledEllipse( LU8G, args[0], args[1], args[2], args[3], opt );
 
     return 0;
 }
@@ -539,7 +549,7 @@ static int lu8g_drawPixel( lua_State *L )
     u8g_uint_t args[2];
     lu8g_get_int_args( L, 2, 2, args );
 
-    u8g_DrawPixel( lud, args[0], args[1] );
+    u8g_DrawPixel( LU8G, args[0], args[1] );
 
     return 0;
 }
@@ -555,7 +565,7 @@ static int lu8g_drawHLine( lua_State *L )
     u8g_uint_t args[3];
     lu8g_get_int_args( L, 2, 3, args );
 
-    u8g_DrawHLine( lud, args[0], args[1], args[2] );
+    u8g_DrawHLine( LU8G, args[0], args[1], args[2] );
 
     return 0;
 }
@@ -571,7 +581,7 @@ static int lu8g_drawVLine( lua_State *L )
     u8g_uint_t args[3];
     lu8g_get_int_args( L, 2, 3, args );
 
-    u8g_DrawVLine( lud, args[0], args[1], args[2] );
+    u8g_DrawVLine( LU8G, args[0], args[1], args[2] );
 
     return 0;
 }
@@ -591,7 +601,7 @@ static int lu8g_drawXBM( lua_State *L )
     if (xbm_data == NULL)
         return 0;
 
-    u8g_DrawXBM( lud, args[0], args[1], args[2], args[3], (const uint8_t *)xbm_data );
+    u8g_DrawXBM( LU8G, args[0], args[1], args[2], args[3], (const uint8_t *)xbm_data );
 
     return 0;
 }
@@ -611,7 +621,7 @@ static int lu8g_drawBitmap( lua_State *L )
     if (bm_data == NULL)
         return 0;
 
-    u8g_DrawBitmap( lud, args[0], args[1], args[2], args[3], (const uint8_t *)bm_data );
+    u8g_DrawBitmap( LU8G, args[0], args[1], args[2], args[3], (const uint8_t *)bm_data );
 
     return 0;
 }
@@ -624,7 +634,7 @@ static int lu8g_setScale2x2( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetScale2x2( lud );
+    u8g_SetScale2x2( LU8G );
 
     return 0;
 }
@@ -637,7 +647,7 @@ static int lu8g_undoScale( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_UndoScale( lud );
+    u8g_UndoScale( LU8G );
 
     return 0;
 }
@@ -650,7 +660,7 @@ static int lu8g_firstPage( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_FirstPage( lud );
+    u8g_FirstPage( LU8G );
 
     return 0;
 }
@@ -663,7 +673,7 @@ static int lu8g_nextPage( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushboolean( L, u8g_NextPage( lud ) );
+    lua_pushboolean( L, u8g_NextPage( LU8G ) );
 
     return 1;
 }
@@ -676,7 +686,7 @@ static int lu8g_sleepOn( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SleepOn( lud );
+    u8g_SleepOn( LU8G );
 
     return 0;
 }
@@ -689,7 +699,7 @@ static int lu8g_sleepOff( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SleepOff( lud );
+    u8g_SleepOff( LU8G );
 
     return 0;
 }
@@ -702,7 +712,7 @@ static int lu8g_setRot90( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetRot90( lud );
+    u8g_SetRot90( LU8G );
 
     return 0;
 }
@@ -715,7 +725,7 @@ static int lu8g_setRot180( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetRot180( lud );
+    u8g_SetRot180( LU8G );
 
     return 0;
 }
@@ -728,7 +738,7 @@ static int lu8g_setRot270( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_SetRot270( lud );
+    u8g_SetRot270( LU8G );
 
     return 0;
 }
@@ -741,7 +751,7 @@ static int lu8g_undoRotation( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    u8g_UndoRotation( lud );
+    u8g_UndoRotation( LU8G );
 
     return 0;
 }
@@ -754,7 +764,7 @@ static int lu8g_getWidth( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_GetWidth( lud ) );
+    lua_pushinteger( L, u8g_GetWidth( LU8G ) );
 
     return 1;
 }
@@ -767,7 +777,7 @@ static int lu8g_getHeight( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_pushinteger( L, u8g_GetHeight( lud ) );
+    lua_pushinteger( L, u8g_GetHeight( LU8G ) );
 
     return 1;
 }
@@ -906,9 +916,26 @@ uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, voi
 
 
 
+// device destructor
+static int lu8g_close_display( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    // free up allocated page buffer
+    if (lud->pb.buf != NULL)
+        c_free( lud->pb.buf );
+
+    return 0;
+}
+
+
 // device constructors
 
-// Lua: speed = u8g.ssd1306_128x64_i2c( i2c_addr )
+uint8_t u8g_dev_ssd1306_128x64_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg);
+// Lua: object = u8g.ssd1306_128x64_i2c( i2c_addr )
 static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 {
     unsigned addr = luaL_checkinteger( L, 1 );
@@ -918,9 +945,32 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 
     lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
 
-    lud->i2c_addr = (uint8_t)addr;
+    lud->u8g.i2c_addr = (uint8_t)addr;
 
-    u8g_InitI2C( lud, &u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
+    // We don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_i2c here
+    // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
+    //         *before* the display is constructed (especially the page buffers)
+    //         this consumes heap even when the device is not used at all
+#if 1
+    // build device entry
+    lud->dev.dev_fn  = u8g_dev_ssd1306_128x64_fn;
+    lud->dev.dev_mem = &(lud->pb);
+    lud->dev.com_fn  = u8g_com_esp8266_ssd_i2c_fn;
+    // then allocate and populate page buffer
+    lud->pb.width = 128;  // WIDTH in u8g_dev_ssd1306_128x64.c
+    if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
+        return luaL_error( L, "out of memory" );
+
+    lud->pb.p.page_height  = 8;  // PAGE_HEIGHT in u8g_dev_ssd1306_128x64.c
+    lud->pb.p.total_height = 64; // HEIGHT in u8g_dev_ssd1306_128x64.c
+    lud->pb.p.page_y0 = 0;
+    lud->pb.p.page_y1 = 0;
+    lud->pb.p.page    = 0;
+
+    u8g_InitI2C( LU8G, &(lud->dev), U8G_I2C_OPT_NONE);
+#else
+    u8g_InitI2C( LU8G, u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
+#endif
 
 
     // set its metatable
@@ -985,6 +1035,7 @@ static const LUA_REG_TYPE lu8g_display_map[] =
     { LSTRKEY( "undoRotation" ),  LFUNCVAL( lu8g_undoRotation ) },
     { LSTRKEY( "getWidth" ),  LFUNCVAL( lu8g_getWidth ) },
     { LSTRKEY( "getHeight" ),  LFUNCVAL( lu8g_getHeight ) },
+    { LSTRKEY( "__gc" ),  LFUNCVAL( lu8g_close_display ) },
 #if LUA_OPTIMIZE_MEMORY > 0
     { LSTRKEY( "__index" ), LROVAL ( lu8g_display_map ) },
 #endif
