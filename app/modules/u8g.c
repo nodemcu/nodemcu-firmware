@@ -596,6 +596,26 @@ static int lu8g_drawXBM( lua_State *L )
     return 0;
 }
 
+// Lua: u8g.drawBitmap( self, x, y, count, height, data )
+static int lu8g_drawBitmap( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t args[4];
+    lu8g_get_int_args( L, 2, 4, args );
+
+    const char *bm_data = luaL_checkstring( L, (1+4) + 1 );
+    if (bm_data == NULL)
+        return 0;
+
+    u8g_DrawBitmap( lud, args[0], args[1], args[2], args[3], (const uint8_t *)bm_data );
+
+    return 0;
+}
+
 // Lua: u8g.setScale2x2( self )
 static int lu8g_setScale2x2( lua_State *L )
 {
@@ -951,6 +971,7 @@ static const LUA_REG_TYPE lu8g_display_map[] =
     { LSTRKEY( "drawPixel" ),  LFUNCVAL( lu8g_drawPixel ) },
     { LSTRKEY( "drawHLine" ),  LFUNCVAL( lu8g_drawHLine ) },
     { LSTRKEY( "drawVLine" ),  LFUNCVAL( lu8g_drawVLine ) },
+    { LSTRKEY( "drawBitmap" ),  LFUNCVAL( lu8g_drawBitmap ) },
     { LSTRKEY( "drawXBM" ),  LFUNCVAL( lu8g_drawXBM ) },
     { LSTRKEY( "setScale2x2" ),  LFUNCVAL( lu8g_setScale2x2 ) },
     { LSTRKEY( "undoScale" ),  LFUNCVAL( lu8g_undoScale ) },

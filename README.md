@@ -368,9 +368,9 @@ They'll be available as `u8g.<font_name>` in Lua.
   - [ ] setCursorFont()
   - [ ] setCursorPos()
   - [ ] setCursorStyle()
-- [ ] Bitmaps
-  - [ ] drawBitmap()
-  - [ ] drawXBM()
+- [x] Bitmaps
+  - [x] drawBitmap()
+  - [x] drawXBM()
 - [ ] General functions
   - [x] begin()
   - [ ] print()

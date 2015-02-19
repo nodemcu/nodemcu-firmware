@@ -15,11 +15,11 @@ function xbm_picture()
      disp:drawXBM( 0, 20, 38, 24, xbm_data )
 end
 
-function bitmap_picture()
+function bitmap_picture(state)
      disp:setFont(u8g.font_6x10)
      disp:drawStr( 0, 10, "Bitmap picture")
 
-     --disp:drawXBM( 0, 20, 38, 24, bitmap_data )
+     disp:drawBitmap( 0 + (state * 10), 20 + (state * 4), 1, 8, bm_data )
 end
 
 -- the draw() routine
@@ -42,12 +42,17 @@ function bitmap_test()
      xbm_data = file.read()
      file.close()
 
+     -- read Bitmap picture
+     file.open("u8g_rook.bm", "r")
+     bm_data = file.read()
+     file.close()
+
      print("--- Starting Bitmap Test ---")
      dir = 0
      next_rotation = 0
 
      local draw_state
-     for draw_state = 1, 7 + 0*8, 1 do
+     for draw_state = 1, 7 + 1*8, 1 do
           disp:firstPage()
           repeat
                draw(draw_state)
