@@ -1045,7 +1045,7 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 
     u8g_InitI2C( LU8G, &(lud->dev), U8G_I2C_OPT_NONE);
 #else
-    u8g_InitI2C( LU8G, u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
+    u8g_InitI2C( LU8G, &u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
 #endif
 
 
