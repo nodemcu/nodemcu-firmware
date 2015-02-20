@@ -826,6 +826,83 @@ static uint8_t u8g_com_esp8266_ssd_start_sequence(u8g_t *u8g)
 }
 
 
+static void lu8g_digital_write( u8g_t *u8g, uint8_t pin_index, uint8_t value )
+{
+    uint8_t pin;
+
+    pin = u8g->pin_list[pin_index];
+    if ( pin != U8G_PIN_NONE )
+        platform_gpio_write( pin, value );
+}
+
+uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
+{
+    switch(msg)
+    {
+    case U8G_COM_MSG_STOP:
+        break;
+    
+    case U8G_COM_MSG_INIT:
+        // we assume that the SPI interface was already initialized
+        // just care for the /CS and D/C pins
+        lu8g_digital_write( u8g, U8G_PI_CS, PLATFORM_GPIO_HIGH );
+        platform_gpio_mode( u8g->pin_list[U8G_PI_CS], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+        platform_gpio_mode( u8g->pin_list[U8G_PI_A0], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+        break;
+    
+    case U8G_COM_MSG_ADDRESS:                     /* define cmd (arg_val = 0) or data mode (arg_val = 1) */
+        lu8g_digital_write( u8g, U8G_PI_A0, arg_val == 0 ? PLATFORM_GPIO_LOW : PLATFORM_GPIO_HIGH );
+        break;
+
+    case U8G_COM_MSG_CHIP_SELECT:
+        if (arg_val == 0)
+        {
+            /* disable */
+            lu8g_digital_write( u8g, U8G_PI_CS, PLATFORM_GPIO_HIGH );
+        }
+        else
+        {
+            /* enable */
+            //u8g_com_arduino_digital_write(u8g, U8G_PI_SCK, LOW);
+            lu8g_digital_write( u8g, U8G_PI_CS, PLATFORM_GPIO_LOW );
+        }
+        break;
+      
+    case U8G_COM_MSG_RESET:
+        if ( u8g->pin_list[U8G_PI_RESET] != U8G_PIN_NONE )
+            lu8g_digital_write( u8g, U8G_PI_RESET, arg_val == 0 ? PLATFORM_GPIO_LOW : PLATFORM_GPIO_HIGH );
+        break;
+    
+    case U8G_COM_MSG_WRITE_BYTE:
+        platform_spi_send_recv( 1, arg_val );
+        break;
+    
+    case U8G_COM_MSG_WRITE_SEQ:
+        {
+            register uint8_t *ptr = arg_ptr;
+            while( arg_val > 0 )
+            {
+                platform_spi_send_recv( 1, *ptr++ );
+                arg_val--;
+            }
+        }
+        break;
+    case U8G_COM_MSG_WRITE_SEQ_P:
+        {
+            register uint8_t *ptr = arg_ptr;
+            while( arg_val > 0 )
+            {
+                platform_spi_send_recv( 1, u8g_pgm_read(ptr) );
+                ptr++;
+                arg_val--;
+            }
+        }
+        break;
+    }
+    return 1;
+}
+
+
 uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 {
     switch(msg)
@@ -915,7 +992,6 @@ uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, voi
 
 
 
-
 // device destructor
 static int lu8g_close_display( lua_State *L )
 {
@@ -955,7 +1031,7 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
     // build device entry
     lud->dev.dev_fn  = u8g_dev_ssd1306_128x64_fn;
     lud->dev.dev_mem = &(lud->pb);
-    lud->dev.com_fn  = u8g_com_esp8266_ssd_i2c_fn;
+    lud->dev.com_fn  = U8G_COM_SSD_I2C;
     // then allocate and populate page buffer
     lud->pb.width = 128;  // WIDTH in u8g_dev_ssd1306_128x64.c
     if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
