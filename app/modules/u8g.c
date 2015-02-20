@@ -1029,20 +1029,20 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
     //         this consumes heap even when the device is not used at all
 #if 1
     // build device entry
-    lud->dev.dev_fn  = u8g_dev_ssd1306_128x64_fn;
-    lud->dev.dev_mem = &(lud->pb);
-    lud->dev.com_fn  = U8G_COM_SSD_I2C;
-    // then allocate and populate page buffer
-    lud->pb.width = 128;  // WIDTH in u8g_dev_ssd1306_128x64.c
+    lud->dev = (u8g_dev_t){ u8g_dev_ssd1306_128x64_fn, &(lud->pb), U8G_COM_SSD_I2C };
+
+    // populate and allocate page buffer
+    // constants taken from u8g_dev_ssd1306_128x64.c:
+    //               PAGE_HEIGHT
+    //                | Height
+    //                |  |              WIDTH
+    //                |  |               |
+    lud->pb = (u8g_pb_t){ { 8, 64, 0, 0, 0 }, 128, NULL };
+    //
     if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
         return luaL_error( L, "out of memory" );
 
-    lud->pb.p.page_height  = 8;  // PAGE_HEIGHT in u8g_dev_ssd1306_128x64.c
-    lud->pb.p.total_height = 64; // HEIGHT in u8g_dev_ssd1306_128x64.c
-    lud->pb.p.page_y0 = 0;
-    lud->pb.p.page_y1 = 0;
-    lud->pb.p.page    = 0;
-
+    // and finally init device using specific interface init function
     u8g_InitI2C( LU8G, &(lud->dev), U8G_I2C_OPT_NONE);
 #else
     u8g_InitI2C( LU8G, &u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
