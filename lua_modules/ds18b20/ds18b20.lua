@@ -99,7 +99,7 @@ function readNumber(addr, unit)
       if (crc == data:byte(9)) then
         t = (data:byte(1) + data:byte(2) * 256)
         if (t > 32767) then
-          t = -(65536 - t)
+          t = t - 65536
         end
         if(unit == nil or unit == C) then
           t = t * 625
