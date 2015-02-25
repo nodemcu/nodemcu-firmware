@@ -108,7 +108,7 @@
 #define LUA_CDIR	LUA_ROOT "lib/lua/5.1/"
 
 #ifndef LUA_RPC
-#define LUA_PATH_DEFAULT  "?.lua;?.lc"
+#define LUA_PATH_DEFAULT  "?.lc;?.lua"
 #define LUA_CPATH_DEFAULT ""
 #else // #ifndef LUA_RPC
 #define LUA_PATH_DEFAULT  \
@@ -542,7 +542,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 /*
 @@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
 */
-#define LUAL_BUFFERSIZE		BUFSIZ
+#define LUAL_BUFFERSIZE		(BUFSIZ*4)
 
 /* }================================================================== */
 
@@ -601,8 +601,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #else
 #define LUA_NUMBER_SCAN		"%lf"
-//#define LUA_NUMBER_FMT		"%.14g"
-#define LUA_NUMBER_FMT		"%g"
+#define LUA_NUMBER_FMT		"%.14g"
 #endif // #if defined LUA_NUMBER_INTEGRAL
 #define lua_number2str(s,n)	c_sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	32 /* 16 digits, sign, point, and \0 */

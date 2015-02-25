@@ -1137,7 +1137,7 @@ tcp_receive(struct tcp_pcb *pcb)
 
   /* If the incoming segment contains data, we must process it
      further. */
-  if (tcplen > 0) {
+  if ((tcplen > 0) && (!pcb->hold)) {
     /* This code basically does three things:
 
     +) If the incoming segment contains data that is the next

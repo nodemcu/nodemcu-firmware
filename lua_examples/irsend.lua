@@ -5,7 +5,7 @@
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 --
 -- Example:
--- require("irsend").nec(4, 0x00ff00ff)
+-- dofile("irsend.lua").nec(4, 0x00ff00ff)
 ------------------------------------------------------------------------------
 local M
 do
@@ -57,7 +57,7 @@ do
     pulse(pin, NEC_HDR_MARK)
     waitus(NEC_HDR_SPACE)
     -- sequence, lsb first
-    for i = 0, 31 do
+    for i = 31, 0, -1 do
       pulse(pin, NEC_BIT_MARK)
       waitus(isset(code, i) and NEC_ONE_SPACE or NEC_ZERO_SPACE)
     end

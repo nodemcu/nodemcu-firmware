@@ -1,8 +1,16 @@
 // Module for interfacing with system
 
-//#include "lua.h"
-#include "lualib.h"
+#include "lua.h"
 #include "lauxlib.h"
+
+#include "ldo.h"
+#include "lfunc.h"
+#include "lmem.h"
+#include "lobject.h"
+#include "lopcodes.h"
+#include "lstring.h"
+#include "lundump.h"
+
 #include "platform.h"
 #include "auxmods.h"
 #include "lrotable.h"
@@ -14,6 +22,7 @@
 //#include "spi_flash.h"
 #include "user_interface.h"
 #include "flash_api.h"
+#include "flash_fs.h"
 
 // Lua: restart()
 static int node_restart( lua_State* L )
@@ -124,6 +133,9 @@ static int node_heap( lua_State* L )
   return 1;  
 }
 
+static lua_State *gL = NULL;
+
+#ifdef DEVKIT_VERSION_0_9
 extern int led_high_count;  // this is defined in lua.c
 extern int led_low_count;
 // Lua: led(low, high)
@@ -155,7 +167,6 @@ static int node_led( lua_State* L )
 
 static int long_key_ref = LUA_NOREF;
 static int short_key_ref = LUA_NOREF;
-static lua_State *gL = NULL;
 
 void default_long_press(void *arg){
   if(led_high_count == 12 && led_low_count == 12){
@@ -228,6 +239,7 @@ static int node_key( lua_State* L )
 
   return 0;  
 }
+#endif
 
 extern lua_Load gLoad;
 extern os_timer_t lua_timer;
@@ -308,6 +320,73 @@ static int node_output( lua_State* L )
   return 0; 
 }
 
+static int writer(lua_State* L, const void* p, size_t size, void* u)
+{
+  UNUSED(L);
+  int file_fd = *( (int *)u );
+  if((FS_OPEN_OK - 1)==file_fd)
+    return 1;
+  NODE_DBG("get fd:%d,size:%d\n",file_fd,size);
+  
+  if(size!=0 && (size!=fs_write(file_fd, (const char *)p, size)) )
+    return 1;
+  NODE_DBG("write fd:%d,size:%d\n",file_fd,size);
+  return 0;
+}
+
+#define toproto(L,i) (clvalue(L->top+(i))->l.p)
+// Lua: compile(filename) -- compile lua file into lua bytecode, and save to .lc
+static int node_compile( lua_State* L )
+{
+  Proto* f;
+  int file_fd = FS_OPEN_OK - 1;
+  size_t len;
+  const char *fname = luaL_checklstring( L, 1, &len );
+  if( len > FS_NAME_MAX_LENGTH )
+    return luaL_error(L, "filename too long");
+
+  char output[FS_NAME_MAX_LENGTH];
+  c_strcpy(output, fname);
+  // check here that filename end with ".lua".
+  if(len<4 || (c_strcmp( output+len-4,".lua")!=0) )
+    return luaL_error(L, "not a .lua file");
+
+  output[c_strlen(output)-2] = 'c';
+  output[c_strlen(output)-1] = '\0';
+  NODE_DBG(output);
+  NODE_DBG("\n");
+  if (luaL_loadfsfile(L,fname)!=0){
+    return luaL_error(L, lua_tostring(L,-1));
+  }
+
+  f = toproto(L,-1);
+
+  int stripping = 1;      /* strip debug information? */
+
+  file_fd = fs_open(output, fs_mode2flag("w+"));
+  if(file_fd < FS_OPEN_OK)
+  {
+    return luaL_error(L, "cannot open/write to file");
+  }
+
+  lua_lock(L);
+  int result=luaU_dump(L,f,writer,&file_fd,stripping);
+  lua_unlock(L);
+
+  fs_flush(file_fd);
+  fs_close(file_fd);
+  file_fd = FS_OPEN_OK - 1;
+
+  if (result==LUA_ERR_CC_INTOVERFLOW){
+    return luaL_error(L, "value too big or small for target integer type");
+  }
+  if (result==LUA_ERR_CC_NOTINTEGER){
+    return luaL_error(L, "target lua_Number is integral but fractional value found");
+  }
+
+  return 0;
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -320,11 +399,14 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
   { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
   { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
+#ifdef DEVKIT_VERSION_0_9
   { LSTRKEY( "key" ), LFUNCVAL( node_key ) },
   { LSTRKEY( "led" ), LFUNCVAL( node_led ) },
+#endif
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
   { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
+  { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
 // Combined to dsleep(us, option)  
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0

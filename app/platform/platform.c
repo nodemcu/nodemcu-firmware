@@ -185,6 +185,8 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
 {
   switch( baud )
   {
+    case BIT_RATE_300:
+    case BIT_RATE_600:
     case BIT_RATE_1200:
     case BIT_RATE_2400:
     case BIT_RATE_4800:
@@ -195,8 +197,11 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
     case BIT_RATE_74880:
     case BIT_RATE_115200:
     case BIT_RATE_230400:
+    case BIT_RATE_256000:
     case BIT_RATE_460800:
     case BIT_RATE_921600:
+    case BIT_RATE_1843200:
+    case BIT_RATE_3686400:
       UartDev.baut_rate = baud;
       break;
     default:

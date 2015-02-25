@@ -1259,6 +1259,7 @@ tcp_alloc(u8_t prio)
 #endif /* LWIP_TCP_KEEPALIVE */
 
     pcb->keep_cnt_sent = 0;									//���ķ��ʹ���
+    pcb->hold = 0;
   }
   return pcb;
 }

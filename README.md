@@ -28,6 +28,22 @@ Tencent QQ group: 309957875<br />
 - cross compiler
 
 # Change log
+2015-02-13<br />
+add node.compile() api to compile lua text file into lua bytecode file.<br />
+this will reduce memory usage noticeably when require modules into NodeMCU.<br />
+raise internal LUA_BUFFERSIZE from 1024 to 4096.<br />
+lua require("mod") will load "mod.lc" file first if exist.<br />
+build latest pre_build bin.
+
+2015-02-12<br />
+fix float print.<br />
+update spiffs, add file.rename api to file module.<br />
+fix some file system bug. need more tests.<br />
+add support to 8Mbyte, 16Mbyte flash.<br />
+remove node.led() and node.key() api.<br />
+some update to lua_modules and examples.<br />
+build latest pre_build bin.
+
 2015-01-27<br />
 support floating point LUA.<br />
 use macro LUA_NUMBER_INTEGRAL in user_config.h control this feature.<br />
@@ -44,27 +60,6 @@ added LUA examples and modules [by dvv](https://github.com/dvv). <br />
 added node.readvdd33() API [by alonewolfx2](https://github.com/alonewolfx2).<br />
 build pre_build bin.
 
-2015-01-24<br />
-migrate to sdk 0.9.5 release.<br />
-tmr.time() now return second(not precise yet). <br />
-build pre_build bin.
-
-2015-01-23<br />
-merge mqtt branch to master.<br />
-build pre_build bin.
-
-2015-01-18<br />
-merge mqtt module to [new branch mqtt](https://github.com/nodemcu/nodemcu-firmware/tree/mqtt) from [https://github.com/tuanpmt/esp_mqtt](https://github.com/tuanpmt/esp_mqtt).<br />
-merge spi module from iabdalkader:spi. <br />
-fix #110,set local port to random in client mode.<br />
-modify gpio.read to NOT set pin to input mode automatic.<br />
-add PATH env with C:\MinGW\bin;C:\MinGW\msys\1.0\bin;C:\Python27 in eclipse project. resolve #103.
-
-2015-01-08<br />
-fix net.socket:send() issue when multi sends are called. <br />
-*NOTE*: if data length is bigger than 1460, send next packet AFTER "sent" callback is called.<br />
-fix file.read() api, take 0xFF as a regular byte, not EOF.<br />
-pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemcu_latest.bin instead.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 
@@ -125,6 +120,7 @@ pre_build/latest/nodemcu_512k_latest.bin is removed. use pre_build/latest/nodemc
 #define LUA_USE_MODULES_UART
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
+#define LUA_USE_MODULES_WS2812
 #endif /* LUA_USE_MODULES */
 ...
 // LUA_NUMBER_INTEGRAL
@@ -308,6 +304,7 @@ cu:send("hello")
 ####Use DS18B20 module extends your esp8266
 ```lua
     -- read temperature with DS18B20
+    node.compile("ds18b20.lua")   --  run this only once to compile and save to "ds18b20.lc"
     t=require("ds18b20")
     t.setup(9)
     addrs=t.addrs()
@@ -329,4 +326,14 @@ cu:send("hello")
     t = nil
 	ds18b20 = nil
     package.loaded["ds18b20"]=nil   
+```
+
+####Control a WS2812 based light strip
+```lua
+	-- set the color of one LED on GPIO 2 to red
+	ws2812.write(4, string.char(0, 255, 0)) 
+	-- set the color of 10 LEDs on GPIO 0 to blue
+	ws2812.write(3, string.char(0, 0, 255):rep(10))
+	-- first LED green, second LED white
+	ws2812.write(4, string.char(255, 0, 0, 255, 255, 255))
 ```
