@@ -1002,7 +1002,10 @@ static int lu8g_close_display( lua_State *L )
 
     // free up allocated page buffer
     if (lud->pb.buf != NULL)
+    {
         c_free( lud->pb.buf );
+        lud->pb.buf = NULL;
+    }
 
     return 0;
 }
@@ -1033,10 +1036,10 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 
     // populate and allocate page buffer
     // constants taken from u8g_dev_ssd1306_128x64.c:
-    //               PAGE_HEIGHT
-    //                | Height
-    //                |  |              WIDTH
-    //                |  |               |
+    //                     PAGE_HEIGHT
+    //                      | Height
+    //                      |  |              WIDTH
+    //                      |  |               |
     lud->pb = (u8g_pb_t){ { 8, 64, 0, 0, 0 }, 128, NULL };
     //
     if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
