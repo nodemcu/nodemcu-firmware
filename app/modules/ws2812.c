@@ -36,14 +36,18 @@ static void ICACHE_FLASH_ATTR send_ws_1(uint8_t gpio) {
 }
 
 // Lua: ws2812.write(pin, "string")
-// Byte triples in the string are interpreted as G R B values.
-// ws2812.write(4, string.char(0, 255, 0)) uses GPIO2 and sets the first LED red.
+// Byte triples in the string are interpreted as R G B values
+// and sent to the hardware as G R B.
+// ws2812.write(4, string.char(255, 0, 0)) uses GPIO2 and sets the first LED red.
 // ws2812.write(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
-// ws2812.write(4, string.char(255, 0, 0, 255, 255, 255)) first LED green, second LED white.
+// ws2812.write(4, string.char(0, 255, 0, 255, 255, 255)) first LED green, second LED white.
 static int ICACHE_FLASH_ATTR ws2812_write(lua_State* L) {
   const uint8_t pin = luaL_checkinteger(L, 1);
   size_t length;
   const char *buffer = luaL_checklstring(L, 2, &length);
+
+  //ignore incomplete Byte triples at the end of buffer
+  length -= length % 3;
 
   platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
   platform_gpio_write(pin, 0);
@@ -51,13 +55,16 @@ static int ICACHE_FLASH_ATTR ws2812_write(lua_State* L) {
 
   os_intr_lock();
   const char * const end = buffer + length;
-  while (buffer != end) {
+
+  size_t i = 1;
+  while (buffer + i <= end) {
+
     uint8_t mask = 0x80;
     while (mask) {
-      (*buffer & mask) ? send_ws_1(pin_num[pin]) : send_ws_0(pin_num[pin]);
+      (buffer[i] & mask) ? send_ws_1(pin_num[pin]) : send_ws_0(pin_num[pin]);
       mask >>= 1;
     }
-    ++buffer;
+    i += ((i % 3) == 1) ? -1 : 2;
   }
   os_intr_unlock();
 
