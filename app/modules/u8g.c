@@ -26,13 +26,13 @@ typedef struct _lu8g_userdata_t lu8g_userdata_t;
 
 
 // Font look-up array
-static const u8g_fntpgm_uint8_t *font_array[] =
-{
-#undef U8G_FONT_TABLE_ENTRY
-#define U8G_FONT_TABLE_ENTRY(font) u8g_ ## font ,
-    U8G_FONT_TABLE
-    NULL
-};
+//static const u8g_fntpgm_uint8_t *font_array[] =
+//{
+//#undef U8G_FONT_TABLE_ENTRY
+//#define U8G_FONT_TABLE_ENTRY(font) u8g_ ## font ,
+//    U8G_FONT_TABLE
+//    NULL
+//};
 
 
 static uint32_t *u8g_pgm_cached_iadr = NULL;
@@ -102,9 +102,9 @@ static int lu8g_setFont( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    lua_Integer fontnr = luaL_checkinteger( L, 2 );
-    if ((fontnr >= 0) && (fontnr < (sizeof( font_array ) / sizeof( u8g_fntpgm_uint8_t ))))
-        u8g_SetFont( LU8G, font_array[fontnr] );
+    u8g_fntpgm_uint8_t *font = (u8g_fntpgm_uint8_t *)lua_touserdata( L, 2 );
+    if (font != NULL)
+        u8g_SetFont( LU8G, font );
 
     return 0;
 }
@@ -1128,7 +1128,7 @@ const LUA_REG_TYPE lu8g_map[] =
 
     // Register fonts
 #undef U8G_FONT_TABLE_ENTRY
-#define U8G_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LNUMVAL( __COUNTER__ ) },
+#define U8G_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LUDATA( (void *)(u8g_ ## font) ) },
     U8G_FONT_TABLE
 
     // Options for circle/ ellipse drwing
@@ -1164,7 +1164,7 @@ LUALIB_API int luaopen_u8g( lua_State *L )
 
     // Register fonts
 #undef U8G_FONT_TABLE_ENTRY
-#define U8G_FONT_TABLE_ENTRY(font) MOD_REG_NUMBER( L, #font, __COUNTER__ );
+#define U8G_FONT_TABLE_ENTRY(font) MOD_REG_LUDATA( L, #font, (void *)(u8g_ ## font) );
     U8G_FONT_TABLE
 
     // Options for circle/ ellipse drawing
