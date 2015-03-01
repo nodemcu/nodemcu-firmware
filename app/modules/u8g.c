@@ -35,28 +35,15 @@ typedef struct _lu8g_userdata_t lu8g_userdata_t;
 //};
 
 
-static uint32_t *u8g_pgm_cached_iadr = NULL;
-static uint32_t u8g_pgm_cached_data;
-
 // function to read 4-byte aligned from program memory AKA irom0
 u8g_pgm_uint8_t ICACHE_FLASH_ATTR u8g_pgm_read(const u8g_pgm_uint8_t *adr)
 {
     uint32_t iadr = (uint32_t)adr;
     // set up pointer to 4-byte aligned memory location
     uint32_t *ptr = (uint32_t *)(iadr & ~0x3);
-    uint32_t pgm_data;
 
-    if (ptr == u8g_pgm_cached_iadr)
-    {
-        pgm_data = u8g_pgm_cached_data;
-    }
-    else
-    {
-        // read 4-byte aligned
-        pgm_data = *ptr;
-        u8g_pgm_cached_iadr = ptr;
-        u8g_pgm_cached_data = pgm_data;
-    }
+    // read 4-byte aligned
+    uint32_t pgm_data = *ptr;
 
     // return the correct byte within the retrieved 32bit word
     return pgm_data >> ((iadr % 4) * 8);
