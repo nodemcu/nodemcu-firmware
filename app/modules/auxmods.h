@@ -64,6 +64,9 @@ LUALIB_API int ( luaopen_wifi )( lua_State *L );
 #define AUXLIB_MQTT      "mqtt"
 LUALIB_API int ( luaopen_mqtt )( lua_State *L );
 
+#define AUXLIB_U8G      "u8g"
+LUALIB_API int ( luaopen_u8g )( lua_State *L );
+
 #define AUXLIB_NODE      "node"
 LUALIB_API int ( luaopen_node )( lua_State *L );
 

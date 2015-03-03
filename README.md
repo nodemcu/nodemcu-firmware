@@ -92,7 +92,7 @@ build pre_build bin.
     <td>6</td><td>GPIO12</td><td></td><td></td>
   </tr>
   <tr>
-    <td>7</td><td>GPIO13</td<td></td><td></td>
+    <td>7</td><td>GPIO13</td><td></td><td></td>
    </tr>
 </table>
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
@@ -327,6 +327,58 @@ cu:send("hello")
 	ds18b20 = nil
     package.loaded["ds18b20"]=nil   
 ```
+
+####Operate a display via I2c with u8glib
+u8glib is a graphics library with support for many different displays.
+The integration in nodemcu is developed for SSD1306 based display attached via the I2C port. Further display types and SPI connectivity will be added in the future.
+
+U8glib v1.17
+
+#####I2C connection
+Hook up SDA and SCL to any free GPIOs. Eg. [lua_examples/graphics_test.lua](https://github.com/devsaurus/nodemcu-firmware/blob/dev/lua_examples/graphics_test.lua) expects SDA=5 (GPIO14) and SCL=6 (GPIO12). They are used to set up nodemcu's I2C driver before accessing the display:
+```lua
+sda = 5
+scl = 6
+i2c.setup(0, sda, scl, i2c.SLOW)
+```
+
+#####Library usage
+The Lua bindings for this library closely follow u8glib's object oriented C++ API. Based on the u8g class, you create an object for your display type:
+```lua
+sla = 0x3c
+disp = u8g.ssd1306_128x64_i2c(sla)
+```
+This object provides all of u8glib's methods to control the display.
+Again, refer to [lua_examples/graphics_test.lua](https://github.com/devsaurus/nodemcu-firmware/blob/dev/lua_examples/u8g_graphics_test.lua) to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://code.google.com/p/u8glib/) for technical details.
+
+#####Fonts
+u8glib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in [app/include/user_config.h](https://github.com/devsaurus/nodemcu-firmware/blob/dev/app/include/user_config.h) and recompile. Simply add the desired fonts to the font table:
+```c
+#define U8G_FONT_TABLE \
+    U8G_FONT_TABLE_ENTRY(font_6x10)  \
+    U8G_FONT_TABLE_ENTRY(font_chikita)
+```
+They'll be available as `u8g.<font_name>` in Lua.
+
+#####Unimplemented functions
+- [ ] Cursor handling
+  - [ ] disableCursor()
+  - [ ] enableCursor()
+  - [ ] setCursorColor()
+  - [ ] setCursorFont()
+  - [ ] setCursorPos()
+  - [ ] setCursorStyle()
+- [ ] Bitmaps
+  - [ ] drawBitmap()
+  - [ ] drawXBM()
+- [ ] General functions
+  - [x] begin()
+  - [ ] print()
+  - [ ] setContrast()
+  - [ ] setPrintPos()
+  - [ ] setHardwareBackup()
+  - [ ] setRGB()
+
 
 ####Control a WS2812 based light strip
 ```lua

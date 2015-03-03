@@ -45,6 +45,14 @@
 #define ROM_MODULES_MQTT
 #endif
 
+#if defined(LUA_USE_MODULES_U8G)
+#define MODULES_U8G       "u8g"
+#define ROM_MODULES_U8G   \
+    _ROM(MODULES_U8G, luaopen_u8g, lu8g_map)
+#else
+#define ROM_MODULES_U8G
+#endif
+
 #if defined(LUA_USE_MODULES_I2C)
 #define MODULES_I2C       "i2c"
 #define ROM_MODULES_I2C   \
@@ -130,7 +138,8 @@
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
         ROM_MODULES_WIFI	\
-		ROM_MODULES_MQTT    \
+        ROM_MODULES_MQTT    \
+        ROM_MODULES_U8G    \
         ROM_MODULES_I2C     \
         ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \
