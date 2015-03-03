@@ -92,7 +92,7 @@ build pre_build bin.
     <td>6</td><td>GPIO12</td><td></td><td></td>
   </tr>
   <tr>
-    <td>7</td><td>GPIO13</td<td></td><td></td>
+    <td>7</td><td>GPIO13</td><td></td><td></td>
    </tr>
 </table>
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
