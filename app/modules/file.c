@@ -111,7 +111,7 @@ static int file_seek (lua_State *L)
   long offset = luaL_optlong(L, 2, 0);
   op = fs_seek(file_fd, offset, mode[op]);
   if (op)
-    lua_pushboolean(L, 1);  /* error */
+    lua_pushnil(L);  /* error */
   else
     lua_pushinteger(L, fs_tell(file_fd));
   return 1;
