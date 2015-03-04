@@ -69,7 +69,7 @@
 #define LUA_USE_MODULES_BIT
 #define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_MQTT
-// #define LUA_USE_MODULES_WS2812	// TODO: put this device specific module to device driver section.
+#define LUA_USE_MODULES_WS2812	// TODO: put this device specific module to device driver section.
 #endif /* LUA_USE_MODULES */
 
 // TODO: put device specific module to device driver section.

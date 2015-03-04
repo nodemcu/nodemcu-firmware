@@ -92,7 +92,7 @@ build pre_build bin.
     <td>6</td><td>GPIO12</td><td></td><td></td>
   </tr>
   <tr>
-    <td>7</td><td>GPIO13</td<td></td><td></td>
+    <td>7</td><td>GPIO13</td><td></td><td></td>
    </tr>
 </table>
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
@@ -156,7 +156,7 @@ baudrate:9600
 ```
 
 ####Manipulate hardware like a arduino
-   
+
 ```lua
     pin = 1
     gpio.mode(pin,gpio.OUTPUT)
@@ -165,10 +165,10 @@ baudrate:9600
 ```
 
 ####Write network application in nodejs style
-   
+
 ```lua
     -- A simple http client
-    conn=net.createConnection(net.TCP, 0) 
+    conn=net.createConnection(net.TCP, 0)
     conn:on("receive", function(conn, payload) print(payload) end )
     conn:connect(80,"115.239.210.27")
     conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
@@ -176,15 +176,15 @@ baudrate:9600
 ```
 
 ####Or a simple http server
-   
+
 ```lua
     -- A simple http server
-    srv=net.createServer(net.TCP) 
-    srv:listen(80,function(conn) 
-      conn:on("receive",function(conn,payload) 
-        print(payload) 
+    srv=net.createServer(net.TCP)
+    srv:listen(80,function(conn)
+      conn:on("receive",function(conn,payload)
+        print(payload)
         conn:send("<h1> Hello, NodeMcu.</h1>")
-      end) 
+      end)
       conn:on("sent",function(conn) conn:close() end)
     end)
 ```
@@ -196,7 +196,7 @@ baudrate:9600
 m = mqtt.Client("clientid", 120, "user", "password")
 
 -- setup Last Will and Testament (optional)
--- Broker will publish a message with qos = 0, retain = 0, data = "offline" 
+-- Broker will publish a message with qos = 0, retain = 0, data = "offline"
 -- to topic "/lwt" if client don't send keepalive packet
 m:lwt("/lwt", "offline", 0, 0)
 
@@ -204,8 +204,8 @@ m:on("connect", function(con) print ("connected") end)
 m:on("offline", function(con) print ("offline") end)
 
 -- on publish message receive event
-m:on("message", function(conn, topic, data) 
-  print(topic .. ":" ) 
+m:on("message", function(conn, topic, data)
+  print(topic .. ":" )
   if data ~= nil then
     print(data)
   end
@@ -229,29 +229,29 @@ m:close();
 #### UDP client and server
 ```lua
 -- a udp server
-s=net.createServer(net.UDP) 
+s=net.createServer(net.UDP)
 s:on("receive",function(s,c) print(c) end)
 s:listen(5683)
 
 -- a udp client
-cu=net.createConnection(net.UDP) 
-cu:on("receive",function(cu,c) print(c) end) 
-cu:connect(5683,"192.168.18.101") 
+cu=net.createConnection(net.UDP)
+cu:on("receive",function(cu,c) print(c) end)
+cu:connect(5683,"192.168.18.101")
 cu:send("hello")
 ```
 
 ####Do something shining
 ```lua
-  function led(r,g,b) 
-    pwm.setduty(1,r) 
-    pwm.setduty(2,g) 
-    pwm.setduty(3,b) 
+  function led(r,g,b)
+    pwm.setduty(1,r)
+    pwm.setduty(2,g)
+    pwm.setduty(3,b)
   end
-  pwm.setup(1,500,512) 
-  pwm.setup(2,500,512) 
+  pwm.setup(1,500,512)
+  pwm.setup(2,500,512)
   pwm.setup(3,500,512)
-  pwm.start(1) 
-  pwm.start(2) 
+  pwm.start(1)
+  pwm.start(2)
   pwm.start(3)
   led(512,0,0) -- red
   led(0,0,512) -- blue
@@ -261,13 +261,13 @@ cu:send("hello")
 ```lua
   lighton=0
   tmr.alarm(1,1000,1,function()
-    if lighton==0 then 
-      lighton=1 
-      led(512,512,512) 
-    else 
-      lighton=0 
-      led(0,0,0) 
-    end 
+    if lighton==0 then
+      lighton=1
+      led(512,512,512)
+    else
+      lighton=0
+      led(0,0,0)
+    end
   end)
 ```
 
@@ -283,20 +283,20 @@ cu:send("hello")
 ####With below code, you can telnet to your esp8266 now
 ```lua
     -- a simple telnet server
-    s=net.createServer(net.TCP,180) 
-    s:listen(2323,function(c) 
-       function s_output(str) 
-          if(c~=nil) 
-             then c:send(str) 
-          end 
-       end 
+    s=net.createServer(net.TCP,180)
+    s:listen(2323,function(c)
+       function s_output(str)
+          if(c~=nil)
+             then c:send(str)
+          end
+       end
        node.output(s_output, 0)   -- re-direct output to function s_ouput.
-       c:on("receive",function(c,l) 
+       c:on("receive",function(c,l)
           node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
-       end) 
-       c:on("disconnection",function(c) 
+       end)
+       c:on("disconnection",function(c)
           node.output(nil)        -- un-regist the redirect output function, output goes to serial
-       end) 
+       end)
        print("Welcome to NodeMcu world.")
     end)
 ```
@@ -325,7 +325,7 @@ cu:send("hello")
     -- Don't forget to release it after use
     t = nil
 	ds18b20 = nil
-    package.loaded["ds18b20"]=nil   
+    package.loaded["ds18b20"]=nil
 ```
 
 ####Operate a display via I2c with u8glib
@@ -382,10 +382,10 @@ They'll be available as `u8g.<font_name>` in Lua.
 
 ####Control a WS2812 based light strip
 ```lua
-	-- set the color of one LED on GPIO 2 to red
-	ws2812.write(4, string.char(0, 255, 0)) 
-	-- set the color of 10 LEDs on GPIO 0 to blue
-	ws2812.write(3, string.char(0, 0, 255):rep(10))
+	-- set the color of one LED on GPIO2 to red
+	ws2812.writergb(4, string.char(255, 0, 0))
+	-- set the color of 10 LEDs on GPIO0 to blue
+	ws2812.writergb(3, string.char(0, 0, 255):rep(10))
 	-- first LED green, second LED white
-	ws2812.write(4, string.char(255, 0, 0, 255, 255, 255))
+	ws2812.writergb(4, string.char(0, 255, 0, 255, 255, 255))
 ```
