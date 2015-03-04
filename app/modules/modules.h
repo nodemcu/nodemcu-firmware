@@ -139,6 +139,7 @@
         ROM_MODULES_PWM     \
         ROM_MODULES_WIFI    \
         ROM_MODULES_MQTT    \
+        ROM_MODULES_U8G     \
         ROM_MODULES_I2C     \
         ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \
