@@ -10,13 +10,12 @@ script:
 - cd bin/
 - file_name="nodemcu-firmware_v${TRAVIS_TAG}.${TRAVIS_BUILD_NUMBER}.bin"
 - srec_cat -output ${file_name} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
-#deploy:
-#  provider: releases
-#  api_key: "${GITHUB_OAUTH}"
-#  file: "$TRAVIS_BUILD_DIR/bin/${file_name}"
-#  skip_cleanup: true
-#  on:
-#    tags: true
-#env:
-#  global:
-#  - secure: OVFK1zFj8VFVITWIGR2UlinVoTFNjlcQZeFt4xpn+B0wLz1mAWnR//F49qLkAcZt2ca8ogbQwEyDenFfkcSKOkUpvivyDatkHEt4WAhdXeg2y3zdHjX7NntscQBpTUmwjhV/0OA0qV9sNLK5r1t45oDh2NVcpfEQTJP5oYKfe6I=
+deploy:
+  provider: releases
+  api_key:
+    secure: Swecz5lWvsuSbchSbVQ1rmCPN9nQIN5p/HlZNIEdEgAgnoLcJxRV4P8poVTB37jiA8Pck+8x2nWXpg74Rqik0i3KlPNvDfg5o4rIazWLNs4bc1Tbcpt44XAzFKKLYnDnWQUGcqjk7BcAXuNAF2X/fPBCVhFbHVg3Z7cDb32RsNw=
+  file: "$TRAVIS_BUILD_DIR/bin/${file_name}"
+  skip_cleanup: true
+  on:
+    tags: true
+    repo: nodemcu/nodemcu-firmware
