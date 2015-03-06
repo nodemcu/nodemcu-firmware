@@ -798,6 +798,25 @@ s32_t SPIFFS_tell(spiffs *fs, spiffs_file fh) {
   return res;
 }
 
+s32_t SPIFFS_size(spiffs *fs, spiffs_file fh) {
+  SPIFFS_API_CHECK_MOUNT(fs);
+  SPIFFS_LOCK(fs);
+
+  spiffs_fd *fd;
+  s32_t res;
+  res = spiffs_fd_get(fs, fh, &fd);
+  SPIFFS_API_CHECK_RES(fs, res);
+
+#if SPIFFS_CACHE_WR
+  spiffs_fflush_cache(fs, fh);
+#endif
+
+  res = fd->size;
+
+  SPIFFS_UNLOCK(fs);
+  return res;
+}
+
 #if SPIFFS_TEST_VISUALISATION
 s32_t SPIFFS_vis(spiffs *fs) {
   s32_t res = SPIFFS_OK;

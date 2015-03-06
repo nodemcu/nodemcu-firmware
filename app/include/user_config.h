@@ -3,11 +3,11 @@
 
 #define NODE_VERSION_MAJOR		0U
 #define NODE_VERSION_MINOR		9U
-#define NODE_VERSION_REVISION	5U
+#define NODE_VERSION_REVISION	6U
 #define NODE_VERSION_INTERNAL   0U
 
-#define NODE_VERSION	"NodeMCU 0.9.5"
-#define BUILD_DATE	    "build 20150213"
+#define NODE_VERSION	"NodeMCU 0.9.6"
+#define BUILD_DATE	    "build 20150216"
 
 // #define DEVKIT_VERSION_0_9 1 	// define this only if you use NodeMCU devkit v0.9
 
@@ -76,8 +76,6 @@
 #define LUA_USE_DEVICE_WS2812
 #endif /* LUA_USE_DEVICE_DRIVER */
 
-
-// #define LUA_NUMBER_INTEGRAL
 
 #define LUA_OPTRAM
 #ifdef LUA_OPTRAM

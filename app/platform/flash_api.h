@@ -3,6 +3,7 @@
 #include "ets_sys.h"
 #include "user_config.h"
 #include "cpu_esp8266.h"
+
 #define FLASH_MAP_START_ADDRESS (INTERNAL_FLASH_START_ADDRESS)
 
 /******************************************************************************
@@ -29,8 +30,8 @@
 
 typedef struct
 {
-    uint8_t unknown0;
-    uint8_t unknown1;
+    uint8_t e9;
+    uint8_t segments;
     enum
     {
         MODE_QIO = 0,

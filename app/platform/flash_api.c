@@ -24,6 +24,7 @@ SPIFlashInfo flash_get_info(void)
 {
     volatile SPIFlashInfo spi_flash_info ICACHE_STORE_ATTR;
     spi_flash_info = *((SPIFlashInfo *)(FLASH_MAP_START_ADDRESS));
+    // spi_flash_read(0, (uint32 *)(& spi_flash_info), sizeof(spi_flash_info));
     return spi_flash_info;
 }
 
@@ -56,9 +57,11 @@ uint32_t flash_get_size_byte(void)
     case SIZE_32MBIT:
         // 32Mbit, 4MByte
         flash_size = 4 * 1024 * 1024;
+        break;
     case SIZE_64MBIT:
         // 64Mbit, 8MByte
         flash_size = 8 * 1024 * 1024;
+        break;
     case SIZE_128MBIT:
         // 128Mbit, 16MByte
         flash_size = 16 * 1024 * 1024;
@@ -131,7 +134,15 @@ bool flash_set_size_byte(uint32_t size)
 
 uint16_t flash_get_sec_num(void)
 {
-    return flash_get_size_byte() / SPI_FLASH_SEC_SIZE;
+    //static uint16_t sec_num = 0;
+    // return flash_get_size_byte() / (SPI_FLASH_SEC_SIZE);
+    // c_printf("\nflash_get_size_byte()=%d\n", ( flash_get_size_byte() / (SPI_FLASH_SEC_SIZE) ));
+    // if( sec_num == 0 )
+    //{
+    //    sec_num = 4 * 1024 * 1024 / (SPI_FLASH_SEC_SIZE);
+    //}
+    //return sec_num;
+    return ( flash_get_size_byte() / (SPI_FLASH_SEC_SIZE) );
 }
 
 uint8_t flash_get_mode(void)
@@ -232,13 +243,14 @@ bool flash_self_destruct(void)
     return true;
 }
 
-uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index)
+uint8_t byte_of_aligned_array(const uint8_t *aligned_array, uint32_t index)
 {
-    if( (((uint32_t)aligned_array)%4) != 0 ){
+    if ( (((uint32_t)aligned_array) % 4) != 0 )
+    {
         NODE_DBG("aligned_array is not 4-byte aligned.\n");
         return 0;
     }
-    uint32_t v = ((uint32_t *)aligned_array)[ index/4 ];
+    uint32_t v = ((uint32_t *)aligned_array)[ index / 4 ];
     uint8_t *p = (uint8_t *) (&v);
-    return p[ (index%4) ];
+    return p[ (index % 4) ];
 }

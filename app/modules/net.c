@@ -1241,6 +1241,31 @@ static int net_socket_unhold( lua_State* L )
   return 0;
 }
 
+// Lua: ip,port = sk:getpeer()
+static int net_socket_getpeer( lua_State* L )
+{
+  lnet_userdata *nud;
+  const char *mt = "net.socket";
+  nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
+  luaL_argcheck(L, nud, 1, "Server/Socket expected");
+
+  if(nud!=NULL && nud->pesp_conn!=NULL ){
+      char temp[20] = {0};
+      c_sprintf(temp, IPSTR, IP2STR( &(nud->pesp_conn->proto.tcp->remote_ip) ) );
+      if ( nud->pesp_conn->proto.tcp->remote_port != 0 ) {
+        lua_pushstring( L, temp );
+        lua_pushinteger( L, nud->pesp_conn->proto.tcp->remote_port );
+      } else {
+        lua_pushnil( L );
+        lua_pushnil( L );
+      }
+  } else {
+      lua_pushnil( L );
+      lua_pushnil( L );
+  }
+  return 2;
+}
+
 // Lua: socket:dns( string, function(ip) )
 static int net_socket_dns( lua_State* L )
 {
@@ -1302,6 +1327,7 @@ static const LUA_REG_TYPE net_socket_map[] =
   { LSTRKEY( "hold" ), LFUNCVAL ( net_socket_hold ) },
   { LSTRKEY( "unhold" ), LFUNCVAL ( net_socket_unhold ) },
   { LSTRKEY( "dns" ), LFUNCVAL ( net_socket_dns ) },
+  { LSTRKEY( "getpeer" ), LFUNCVAL ( net_socket_getpeer ) },
   // { LSTRKEY( "delete" ), LFUNCVAL ( net_socket_delete ) },
   { LSTRKEY( "__gc" ), LFUNCVAL ( net_socket_delete ) },
 #if LUA_OPTIMIZE_MEMORY > 0

@@ -89,6 +89,7 @@ bool system_rtc_mem_write(uint8 des_addr, const void *src_addr, uint16 save_size
 void system_uart_swap(void);
 
 uint16 system_adc_read(void);
+uint16 system_get_vdd33(void);
 
 const char *system_get_sdk_version(void);
 

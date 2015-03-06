@@ -27,8 +27,8 @@ Tencent QQ group: 309957875<br />
 - fix wifi smart connect
 - add spi module (done)
 - add mqtt module (done)
-- add coap module
-- cross compiler
+- add coap module (in coap branch)
+- cross compiler (done)
 
 # Change log
 2015-02-13<br />
