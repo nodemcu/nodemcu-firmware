@@ -1,4 +1,4 @@
-# **NodeMcu** #
+# **NodeMCU** #
 version 0.9.5
 
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
@@ -10,24 +10,26 @@ File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
 Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
 Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
 
-wiki: [nodemcu wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
-api: [nodemcu api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)<br />
+wiki: [NodeMCU wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
+api: [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)<br />
 home: [nodemcu.com](http://www.nodemcu.com)<br />
 bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
+docs: [NodeMCU docs](http://www.nodemcu.com/docs/)
 Tencent QQ group: 309957875<br />
 
 # Summary
 - Easy to access wireless router
-- Based on Lua 5.1.4 (without *io, math, debug, os* module.)
+- Based on Lua 5.1.4 (without *debug, os* module.)
 - Event-Drive programming preferred.
-- Build-in file, timer, pwm, i2c, spi, 1-wire, net, mqtt, gpio, wifi, adc, uart and system api.
+- Build-in file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
 - GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
 
 # To Do List (pull requests are very welcomed)
+- loadable c module
 - fix wifi smart connect
 - add spi module (done)
 - add mqtt module (done)
-- add coap module (in coap branch)
+- add coap module (done)
 - cross compiler (done)
 
 # Change log
@@ -101,15 +103,19 @@ build pre_build bin.
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
 
 #Build option
-####file ./app/include/user_config.h
+####file ./app/include/user_modules.h
 ```c
-// #define FLASH_512K
-// #define FLASH_1M
-// #define FLASH_2M
-// #define FLASH_4M
-#define FLASH_AUTOSIZE
-...
+#define LUA_USE_BUILTIN_STRING    // for string.xxx()
+#define LUA_USE_BUILTIN_TABLE   // for table.xxx()
+#define LUA_USE_BUILTIN_COROUTINE // for coroutine.xxx()
+#define LUA_USE_BUILTIN_MATH    // for math.xxx(), partially work
+// #define LUA_USE_BUILTIN_IO       // for io.xxx(), partially work
+
+// #define LUA_USE_BUILTIN_OS     // for os.xxx(), not work
+// #define LUA_USE_BUILTIN_DEBUG    // for debug.xxx(), not work
+
 #define LUA_USE_MODULES
+
 #ifdef LUA_USE_MODULES
 #define LUA_USE_MODULES_NODE
 #define LUA_USE_MODULES_FILE
@@ -118,15 +124,17 @@ build pre_build bin.
 #define LUA_USE_MODULES_NET
 #define LUA_USE_MODULES_PWM
 #define LUA_USE_MODULES_I2C
+#define LUA_USE_MODULES_SPI
 #define LUA_USE_MODULES_TMR
 #define LUA_USE_MODULES_ADC
 #define LUA_USE_MODULES_UART
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
+#define LUA_USE_MODULES_MQTT
+// #define LUA_USE_MODULES_COAP     // need about 4k more ram for now
+#define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_WS2812
 #endif /* LUA_USE_MODULES */
-...
-// LUA_NUMBER_INTEGRAL
 ```
 
 #Flash the firmware
