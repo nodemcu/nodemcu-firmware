@@ -15,6 +15,8 @@
 #include "lrotable.h"
 #include "luaconf.h"
 
+#include "user_modules.h"
+
 #if defined(LUA_USE_MODULES)
 #include "modules.h"
 #endif
