@@ -106,7 +106,8 @@ LINKFLAGS_eagle.app.v6 = \
 	-lsmartconfig	\
 	-lssl	\
 	$(DEP_LIBS_eagle.app.v6)					\
-	-Wl,--end-group
+	-Wl,--end-group			\
+	-lm
 
 DEPENDS_eagle.app.v6 = \
                 $(LD_FILE) \
