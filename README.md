@@ -159,7 +159,7 @@ baudrate:9600
 ```
 
 ####Manipulate hardware like a arduino
-   
+
 ```lua
     pin = 1
     gpio.mode(pin,gpio.OUTPUT)
@@ -168,10 +168,10 @@ baudrate:9600
 ```
 
 ####Write network application in nodejs style
-   
+
 ```lua
     -- A simple http client
-    conn=net.createConnection(net.TCP, 0) 
+    conn=net.createConnection(net.TCP, 0)
     conn:on("receive", function(conn, payload) print(payload) end )
     conn:connect(80,"115.239.210.27")
     conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
@@ -179,15 +179,15 @@ baudrate:9600
 ```
 
 ####Or a simple http server
-   
+
 ```lua
     -- A simple http server
-    srv=net.createServer(net.TCP) 
-    srv:listen(80,function(conn) 
-      conn:on("receive",function(conn,payload) 
-        print(payload) 
+    srv=net.createServer(net.TCP)
+    srv:listen(80,function(conn)
+      conn:on("receive",function(conn,payload)
+        print(payload)
         conn:send("<h1> Hello, NodeMcu.</h1>")
-      end) 
+      end)
       conn:on("sent",function(conn) conn:close() end)
     end)
 ```
@@ -199,7 +199,7 @@ baudrate:9600
 m = mqtt.Client("clientid", 120, "user", "password")
 
 -- setup Last Will and Testament (optional)
--- Broker will publish a message with qos = 0, retain = 0, data = "offline" 
+-- Broker will publish a message with qos = 0, retain = 0, data = "offline"
 -- to topic "/lwt" if client don't send keepalive packet
 m:lwt("/lwt", "offline", 0, 0)
 
@@ -207,8 +207,8 @@ m:on("connect", function(con) print ("connected") end)
 m:on("offline", function(con) print ("offline") end)
 
 -- on publish message receive event
-m:on("message", function(conn, topic, data) 
-  print(topic .. ":" ) 
+m:on("message", function(conn, topic, data)
+  print(topic .. ":" )
   if data ~= nil then
     print(data)
   end
@@ -232,29 +232,29 @@ m:close();
 #### UDP client and server
 ```lua
 -- a udp server
-s=net.createServer(net.UDP) 
+s=net.createServer(net.UDP)
 s:on("receive",function(s,c) print(c) end)
 s:listen(5683)
 
 -- a udp client
-cu=net.createConnection(net.UDP) 
-cu:on("receive",function(cu,c) print(c) end) 
-cu:connect(5683,"192.168.18.101") 
+cu=net.createConnection(net.UDP)
+cu:on("receive",function(cu,c) print(c) end)
+cu:connect(5683,"192.168.18.101")
 cu:send("hello")
 ```
 
 ####Do something shining
 ```lua
-  function led(r,g,b) 
-    pwm.setduty(1,r) 
-    pwm.setduty(2,g) 
-    pwm.setduty(3,b) 
+  function led(r,g,b)
+    pwm.setduty(1,r)
+    pwm.setduty(2,g)
+    pwm.setduty(3,b)
   end
-  pwm.setup(1,500,512) 
-  pwm.setup(2,500,512) 
+  pwm.setup(1,500,512)
+  pwm.setup(2,500,512)
   pwm.setup(3,500,512)
-  pwm.start(1) 
-  pwm.start(2) 
+  pwm.start(1)
+  pwm.start(2)
   pwm.start(3)
   led(512,0,0) -- red
   led(0,0,512) -- blue
@@ -264,13 +264,13 @@ cu:send("hello")
 ```lua
   lighton=0
   tmr.alarm(1,1000,1,function()
-    if lighton==0 then 
-      lighton=1 
-      led(512,512,512) 
-    else 
-      lighton=0 
-      led(0,0,0) 
-    end 
+    if lighton==0 then
+      lighton=1
+      led(512,512,512)
+    else
+      lighton=0
+      led(0,0,0)
+    end
   end)
 ```
 
@@ -286,20 +286,20 @@ cu:send("hello")
 ####With below code, you can telnet to your esp8266 now
 ```lua
     -- a simple telnet server
-    s=net.createServer(net.TCP,180) 
-    s:listen(2323,function(c) 
-       function s_output(str) 
-          if(c~=nil) 
-             then c:send(str) 
-          end 
-       end 
+    s=net.createServer(net.TCP,180)
+    s:listen(2323,function(c)
+       function s_output(str)
+          if(c~=nil)
+             then c:send(str)
+          end
+       end
        node.output(s_output, 0)   -- re-direct output to function s_ouput.
-       c:on("receive",function(c,l) 
+       c:on("receive",function(c,l)
           node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
-       end) 
-       c:on("disconnection",function(c) 
+       end)
+       c:on("disconnection",function(c)
           node.output(nil)        -- un-regist the redirect output function, output goes to serial
-       end) 
+       end)
        print("Welcome to NodeMcu world.")
     end)
 ```
@@ -328,15 +328,67 @@ cu:send("hello")
     -- Don't forget to release it after use
     t = nil
 	ds18b20 = nil
-    package.loaded["ds18b20"]=nil   
+    package.loaded["ds18b20"]=nil
 ```
+
+####Operate a display via I2c with u8glib
+u8glib is a graphics library with support for many different displays.
+The integration in nodemcu is developed for SSD1306 based display attached via the I2C port. Further display types and SPI connectivity will be added in the future.
+
+U8glib v1.17
+
+#####I2C connection
+Hook up SDA and SCL to any free GPIOs. Eg. [lua_examples/graphics_test.lua](https://github.com/devsaurus/nodemcu-firmware/blob/dev/lua_examples/graphics_test.lua) expects SDA=5 (GPIO14) and SCL=6 (GPIO12). They are used to set up nodemcu's I2C driver before accessing the display:
+```lua
+sda = 5
+scl = 6
+i2c.setup(0, sda, scl, i2c.SLOW)
+```
+
+#####Library usage
+The Lua bindings for this library closely follow u8glib's object oriented C++ API. Based on the u8g class, you create an object for your display type:
+```lua
+sla = 0x3c
+disp = u8g.ssd1306_128x64_i2c(sla)
+```
+This object provides all of u8glib's methods to control the display.
+Again, refer to [lua_examples/graphics_test.lua](https://github.com/devsaurus/nodemcu-firmware/blob/dev/lua_examples/u8g_graphics_test.lua) to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://code.google.com/p/u8glib/) for technical details.
+
+#####Fonts
+u8glib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in [app/include/user_config.h](https://github.com/devsaurus/nodemcu-firmware/blob/dev/app/include/user_config.h) and recompile. Simply add the desired fonts to the font table:
+```c
+#define U8G_FONT_TABLE \
+    U8G_FONT_TABLE_ENTRY(font_6x10)  \
+    U8G_FONT_TABLE_ENTRY(font_chikita)
+```
+They'll be available as `u8g.<font_name>` in Lua.
+
+#####Unimplemented functions
+- [ ] Cursor handling
+  - [ ] disableCursor()
+  - [ ] enableCursor()
+  - [ ] setCursorColor()
+  - [ ] setCursorFont()
+  - [ ] setCursorPos()
+  - [ ] setCursorStyle()
+- [ ] Bitmaps
+  - [ ] drawBitmap()
+  - [ ] drawXBM()
+- [ ] General functions
+  - [x] begin()
+  - [ ] print()
+  - [ ] setContrast()
+  - [ ] setPrintPos()
+  - [ ] setHardwareBackup()
+  - [ ] setRGB()
+
 
 ####Control a WS2812 based light strip
 ```lua
-	-- set the color of one LED on GPIO 2 to red
-	ws2812.write(4, string.char(0, 255, 0)) 
-	-- set the color of 10 LEDs on GPIO 0 to blue
-	ws2812.write(3, string.char(0, 0, 255):rep(10))
+	-- set the color of one LED on GPIO2 to red
+	ws2812.writergb(4, string.char(255, 0, 0))
+	-- set the color of 10 LEDs on GPIO0 to blue
+	ws2812.writergb(3, string.char(0, 0, 255):rep(10))
 	-- first LED green, second LED white
-	ws2812.write(4, string.char(255, 0, 0, 255, 255, 255))
+	ws2812.writergb(4, string.char(0, 255, 0, 255, 255, 255))
 ```
