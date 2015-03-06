@@ -1,6 +1,15 @@
 #ifndef __USER_MODULES_H__
 #define __USER_MODULES_H__
 
+#define LUA_USE_BUILTIN_STRING		// for string.xxx()
+#define LUA_USE_BUILTIN_TABLE		// for table.xxx()
+#define LUA_USE_BUILTIN_COROUTINE	// for coroutine.xxx()
+#define LUA_USE_BUILTIN_MATH		// for math.xxx(), partially work
+// #define LUA_USE_BUILTIN_IO 			// for io.xxx(), partially work
+
+// #define LUA_USE_BUILTIN_OS			// for os.xxx(), not work
+// #define LUA_USE_BUILTIN_DEBUG		// for debug.xxx(), not work
+
 #define LUA_USE_MODULES
 
 #ifdef LUA_USE_MODULES
@@ -17,8 +26,9 @@
 #define LUA_USE_MODULES_UART
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
-#define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_MQTT
+// #define LUA_USE_MODULES_COAP			// need about 4k more ram for now
+#define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_WS2812
 #endif /* LUA_USE_MODULES */
 
