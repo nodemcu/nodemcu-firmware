@@ -14,7 +14,7 @@ wiki: [NodeMCU wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 api: [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)<br />
 home: [nodemcu.com](http://www.nodemcu.com)<br />
 bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
-docs: [NodeMCU docs](http://www.nodemcu.com/docs/)
+docs: [NodeMCU docs](http://www.nodemcu.com/docs/)<br />
 Tencent QQ group: 309957875<br />
 
 # Summary
