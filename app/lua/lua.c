@@ -10,6 +10,7 @@
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "flash_fs.h"
+#include "user_version.h"
 
 #define lua_c
 
