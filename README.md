@@ -1,5 +1,8 @@
 # **NodeMcu** #
 version 0.9.5
+
+[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
+
 ###A lua based firmware for wifi-soc esp8266
 Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
 Lua core based on [eLua project](http://www.eluaproject.net/)<br />
@@ -92,7 +95,7 @@ build pre_build bin.
     <td>6</td><td>GPIO12</td><td></td><td></td>
   </tr>
   <tr>
-    <td>7</td><td>GPIO13</td<td></td><td></td>
+    <td>7</td><td>GPIO13</td><td></td><td></td>
    </tr>
 </table>
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
