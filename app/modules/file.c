@@ -41,7 +41,7 @@ static int file_close( lua_State* L )
 static int file_open( lua_State* L )
 {
   size_t len;
-  file_close();
+  file_close(L);
 
   const char *fname = luaL_checklstring( L, 1, &len );
   if( len > FS_NAME_MAX_LENGTH )
