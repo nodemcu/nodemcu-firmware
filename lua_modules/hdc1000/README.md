@@ -10,15 +10,11 @@ First, require it:
 
 Then, initialize it:
 
-<<<<<<< HEAD
 `HDC1000.init(sda, scl, drdyn)`
 
 If you don't want to use the DRDYn pin, set it to false: a 20ms delay will be automatically set after each read request.
 
 `HDC1000.init(sda, scl, false)`
-=======
-`HDC1000.init(sda, scl)`
->>>>>>> origin/master
 
 Configure it:
 
