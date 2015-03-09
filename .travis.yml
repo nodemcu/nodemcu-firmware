@@ -8,7 +8,7 @@ install:
 script:
 - make all
 - cd bin/
-- file_name="nodemcu-firmware_v${TRAVIS_TAG}.${TRAVIS_BUILD_NUMBER}.bin"
+- file_name="nodemcu_${TRAVIS_TAG}.bin"
 - srec_cat -output ${file_name} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
 deploy:
   provider: releases

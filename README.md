@@ -24,6 +24,9 @@ Tencent QQ group: 309957875<br />
 - Build-in file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
 - GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
 
+# Downloads
+[releases](https://github.com/nodemcu/nodemcu-firmware/releases)
+
 # To Do List (pull requests are very welcomed)
 - loadable c module
 - fix wifi smart connect
@@ -33,6 +36,13 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-03-10<br />
+update to the recent spiffs.<br />
+add file.fsinfo() api, usage: remain, used, total = file.fsinfo().<br />
+add Travis CI. please download the latest firmware from [releases](https://github.com/nodemcu/nodemcu-firmware/releases).<br />
+add math lib, partial api work.<br />
+u8g module, ws2812 module default enabled in dev-branch build.
+
 2015-02-13<br />
 add node.compile() api to compile lua text file into lua bytecode file.<br />
 this will reduce memory usage noticeably when require modules into NodeMCU.<br />

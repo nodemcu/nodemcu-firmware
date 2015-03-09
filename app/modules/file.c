@@ -175,6 +175,22 @@ static int file_rename( lua_State* L )
   return 1;
 }
 
+// Lua: fsinfo()
+static int file_fsinfo( lua_State* L )
+{
+  uint32_t total, used;
+  SPIFFS_info(&fs, &total, &used);
+  NODE_DBG("total: %d, used:%d\n", total, used);
+  if(total>0x7FFFFFFF || used>0x7FFFFFFF || used > total)
+  {
+    return luaL_error(L, "file system error");;
+  }
+  lua_pushinteger(L, total-used);
+  lua_pushinteger(L, used);
+  lua_pushinteger(L, total);
+  return 3;
+}
+
 #endif
 
 // g_read()
@@ -308,6 +324,7 @@ const LUA_REG_TYPE file_map[] =
   { LSTRKEY( "flush" ), LFUNCVAL( file_flush ) },
   // { LSTRKEY( "check" ), LFUNCVAL( file_check ) },
   { LSTRKEY( "rename" ), LFUNCVAL( file_rename ) },
+  { LSTRKEY( "fsinfo" ), LFUNCVAL( file_fsinfo ) },
 #endif
   
 #if LUA_OPTIMIZE_MEMORY > 0

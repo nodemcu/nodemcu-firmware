@@ -363,3 +363,10 @@ cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
 cc = coap.Client()
 cc:get(coap.CON, "coap://192.168.18.100:5683/.well-known/core")
 cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
+
+
+file.open("test1.txt", "a+") for i = 1, 100*1000 do file.write("x") end file.close() print("Done.")
+for n,s in pairs(file.list()) do print(n.." size: "..s) end 
+file.remove("test1.txt")
+for n,s in pairs(file.list()) do print(n.." size: "..s) end
+file.open("test2.txt", "a+") for i = 1, 1*1000 do file.write("x") end file.close() print("Done.")
