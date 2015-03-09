@@ -1,7 +1,7 @@
 # **NodeMCU** #
 version 0.9.5
 
-[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
+[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases)
 
 ###A lua based firmware for wifi-soc esp8266
 Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
@@ -23,9 +23,6 @@ Tencent QQ group: 309957875<br />
 - Event-Drive programming preferred.
 - Build-in file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
 - GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
-
-# Downloads
-[releases](https://github.com/nodemcu/nodemcu-firmware/releases)
 
 # To Do List (pull requests are very welcomed)
 - loadable c module
