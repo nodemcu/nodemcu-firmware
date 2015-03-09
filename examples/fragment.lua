@@ -347,3 +347,19 @@ file.close()
 node.compile("hello.lua")
 dofile("hello.lua")
 dofile("hello.lc")
+
+-- use copper addon for firefox
+cs=coap.Server()
+cs:listen(5683)
+
+myvar=1
+cs:var("myvar") -- get coap://192.168.18.103:5683/v1/v/myvar will return the value of myvar: 1
+
+function myfun()
+	print("myfun called")
+end
+cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
+
+cc = coap.Client()
+cc:get(coap.CON, "coap://192.168.18.100:5683/.well-known/core")
+cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")

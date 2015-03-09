@@ -15,6 +15,8 @@
 #include "lrotable.h"
 #include "luaconf.h"
 
+#include "user_modules.h"
+
 #if defined(LUA_USE_MODULES)
 #include "modules.h"
 #endif
@@ -28,12 +30,26 @@ LUA_MODULES_ROM
 static const luaL_Reg lualibs[] = {
   {"", luaopen_base},
   {LUA_LOADLIBNAME, luaopen_package},
-  // {LUA_IOLIBNAME, luaopen_io},
-  {LUA_STRLIBNAME, luaopen_string},    
+#if defined(LUA_USE_BUILTIN_IO)
+  {LUA_IOLIBNAME, luaopen_io},
+#endif
+
+#if defined(LUA_USE_BUILTIN_STRING)
+  {LUA_STRLIBNAME, luaopen_string},
+#endif
+
 #if LUA_OPTIMIZE_MEMORY == 0
-  // {LUA_MATHLIBNAME, luaopen_math},
+  #if defined(LUA_USE_BUILTIN_MATH)
+  {LUA_MATHLIBNAME, luaopen_math},
+  #endif
+
+  #if defined(LUA_USE_BUILTIN_TABLE)
   {LUA_TABLIBNAME, luaopen_table},  
-  // {LUA_DBLIBNAME, luaopen_debug},  
+  #endif
+
+  #if defined(LUA_USE_BUILTIN_DEBUG)
+  {LUA_DBLIBNAME, luaopen_debug},
+  #endif 
 #endif
 #if defined(LUA_MODULES_ROM)
 #undef _ROM
@@ -43,12 +59,30 @@ static const luaL_Reg lualibs[] = {
   {NULL, NULL}
 };
 
+#if defined(LUA_USE_BUILTIN_STRING)
 extern const luaR_entry strlib[];
+#endif
+
+#if defined(LUA_USE_BUILTIN_OS)
 extern const luaR_entry syslib[];
+#endif
+
+#if defined(LUA_USE_BUILTIN_TABLE)
 extern const luaR_entry tab_funcs[];
-// extern const luaR_entry dblib[];
+#endif
+
+#if defined(LUA_USE_BUILTIN_DEBUG)
+extern const luaR_entry dblib[];
+#endif
+
+#if defined(LUA_USE_BUILTIN_COROUTINE)
 extern const luaR_entry co_funcs[];
-// extern const luaR_entry math_map[];
+#endif
+
+#if defined(LUA_USE_BUILTIN_MATH)
+extern const luaR_entry math_map[];
+#endif
+
 #if defined(LUA_MODULES_ROM) && LUA_OPTIMIZE_MEMORY == 2
 #undef _ROM
 #define _ROM( name, openf, table ) extern const luaR_entry table[];
@@ -57,11 +91,30 @@ LUA_MODULES_ROM
 const luaR_table lua_rotable[] = 
 {
 #if LUA_OPTIMIZE_MEMORY > 0
+  #if defined(LUA_USE_BUILTIN_STRING)
   {LUA_STRLIBNAME, strlib},
+  #endif
+
+  #if defined(LUA_USE_BUILTIN_TABLE)
   {LUA_TABLIBNAME, tab_funcs},
-  // {LUA_DBLIBNAME, dblib},
+  #endif
+
+  #if defined(LUA_USE_BUILTIN_DEBUG)
+  {LUA_DBLIBNAME, dblib},
+  #endif
+
+  #if defined(LUA_USE_BUILTIN_COROUTINE)
   {LUA_COLIBNAME, co_funcs},
-  // {LUA_MATHLIBNAME, math_map},
+  #endif
+
+  #if defined(LUA_USE_BUILTIN_MATH)
+  {LUA_MATHLIBNAME, math_map},
+  #endif
+
+  #if defined(LUA_USE_BUILTIN_OS)
+  {LUA_OSLIBNAME, syslib},
+  #endif
+
 #if defined(LUA_MODULES_ROM) && LUA_OPTIMIZE_MEMORY == 2
 #undef _ROM
 #define _ROM( name, openf, table ) { name, table },
