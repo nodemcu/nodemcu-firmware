@@ -129,6 +129,11 @@ s32_t spiffs_gc_check(
     return SPIFFS_OK;
   }
 
+  u32_t needed_pages = (len + SPIFFS_DATA_PAGE_SIZE(fs) - 1) / SPIFFS_DATA_PAGE_SIZE(fs);
+  if (fs->free_blocks <= 2 && (s32_t)needed_pages > free_pages) {
+    return SPIFFS_ERR_FULL;
+  }
+
   //printf("gcing started  %i dirty, blocks %i free, want %i bytes\n", fs->stats_p_allocated + fs->stats_p_deleted, fs->free_blocks, len);
 
   do {

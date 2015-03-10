@@ -38,7 +38,7 @@ typedef uint8_t u8_t;
 #endif
 // Set spiffs debug output call for caching.
 #ifndef SPIFFS_CACHE_DGB
-#define SPIFFS_CACHE_DBG(...) //printf("CA: " __VA_ARGS__)
+#define SPIFFS_CACHE_DBG(...) //printf(__VA_ARGS__)
 #endif
 // Set spiffs debug output call for system consistency checks.
 #ifndef SPIFFS_CHECK_DGB

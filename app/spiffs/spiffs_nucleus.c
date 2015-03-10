@@ -614,7 +614,7 @@ s32_t spiffs_object_create(
   spiffs_page_object_ix_header oix_hdr;
   int entry;
 
-  res = spiffs_gc_check(fs, 0);
+  res = spiffs_gc_check(fs, SPIFFS_DATA_PAGE_SIZE(fs));
   SPIFFS_CHECK_RES(res);
 
   obj_id |= SPIFFS_OBJ_ID_IX_FLAG;
@@ -811,7 +811,17 @@ s32_t spiffs_object_append(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
   s32_t res = SPIFFS_OK;
   u32_t written = 0;
 
+  SPIFFS_DBG("append: %i bytes @ offs %i of size %i\n", len, offset, fd->size);
+
+  if (offset > fd->size) {
+    SPIFFS_DBG("append: offset reversed to size\n");
+    offset = fd->size;
+  }
+
   res = spiffs_gc_check(fs, len + SPIFFS_DATA_PAGE_SIZE(fs)); // add an extra page of data worth for meta
+  if (res != SPIFFS_OK) {
+    SPIFFS_DBG("append: gc check fail %i\n", res);
+  }
   SPIFFS_CHECK_RES(res);
 
   spiffs_page_object_ix_header *objix_hdr = (spiffs_page_object_ix_header *)fs->work;
@@ -1042,7 +1052,7 @@ s32_t spiffs_object_modify(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
   s32_t res = SPIFFS_OK;
   u32_t written = 0;
 
-  res = spiffs_gc_check(fs, len);
+  res = spiffs_gc_check(fs, len + SPIFFS_DATA_PAGE_SIZE(fs));
   SPIFFS_CHECK_RES(res);
 
   spiffs_page_object_ix_header *objix_hdr = (spiffs_page_object_ix_header *)fs->work;
@@ -1308,7 +1318,7 @@ s32_t spiffs_object_truncate(
   s32_t res = SPIFFS_OK;
   spiffs *fs = fd->fs;
 
-  res = spiffs_gc_check(fs, 0);
+  res = spiffs_gc_check(fs, remove ? 0 : SPIFFS_DATA_PAGE_SIZE(fs));
   SPIFFS_CHECK_RES(res);
 
   spiffs_page_ix objix_pix = fd->objix_hdr_pix;
@@ -1391,12 +1401,18 @@ s32_t spiffs_object_truncate(
     if (cur_size - SPIFFS_DATA_PAGE_SIZE(fs) >= new_size) {
       // delete full data page
       res = spiffs_page_data_check(fs, fd, data_pix, data_spix);
-      if (res != SPIFFS_ERR_DELETED && res != SPIFFS_OK) break;
+      if (res != SPIFFS_ERR_DELETED && res != SPIFFS_OK && res != SPIFFS_ERR_INDEX_REF_FREE) {
+        SPIFFS_DBG("truncate: err validating data pix %i\n", res);
+        break;
+      }
 
       if (res == SPIFFS_OK) {
         res = spiffs_page_delete(fs, data_pix);
-        if (res != SPIFFS_OK) break;
-      } else if (res == SPIFFS_ERR_DELETED) {
+        if (res != SPIFFS_OK) {
+          SPIFFS_DBG("truncate: err deleting data pix %i\n", res);
+          break;
+        }
+      } else if (res == SPIFFS_ERR_DELETED || res == SPIFFS_ERR_INDEX_REF_FREE) {
         res = SPIFFS_OK;
       }
 

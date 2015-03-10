@@ -330,7 +330,7 @@ s32_t SPIFFS_write(spiffs *fs, spiffs_file fh, void *buf, u32_t len) {
             offset + len > fd->cache_page->offset + SPIFFS_CFG_LOG_PAGE_SZ(fs)) // writing beyond cache page
         {
           // boundary violation, write back cache first and allocate new
-          SPIFFS_CACHE_DBG("CACHE_WR_DUMP: dumping cache page %i for fd %i:&04x, boundary viol, offs:%i size:%i\n",
+          SPIFFS_CACHE_DBG("CACHE_WR_DUMP: dumping cache page %i for fd %i:%04x, boundary viol, offs:%i size:%i\n",
               fd->cache_page->ix, fd->file_nbr, fd->obj_id, fd->cache_page->offset, fd->cache_page->size);
           res = spiffs_hydro_write(fs, fd,
               spiffs_get_cache_page(fs, spiffs_get_cache(fs), fd->cache_page->ix),
@@ -382,6 +382,7 @@ s32_t SPIFFS_write(spiffs *fs, spiffs_file fh, void *buf, u32_t len) {
             spiffs_get_cache_page(fs, spiffs_get_cache(fs), fd->cache_page->ix),
             fd->cache_page->offset, fd->cache_page->size);
         spiffs_cache_fd_release(fs, fd->cache_page);
+        SPIFFS_API_CHECK_RES(fs, res);
         res = spiffs_hydro_write(fs, fd, buf, offset, len);
         SPIFFS_API_CHECK_RES(fs, res);
       }
