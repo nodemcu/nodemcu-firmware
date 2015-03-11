@@ -1046,6 +1046,51 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
     return 1;
 }
 
+// Lua: object = u8g.ssd1306_128x64_spi( cs, dc )
+static int lu8g_ssd1306_128x64_spi( lua_State *L )
+{
+    unsigned cs = luaL_checkinteger( L, 1 );
+    if (cs == 0)
+        return luaL_error( L, "CS pin required" );
+    unsigned dc = luaL_checkinteger( L, 2 );
+    if (dc == 0)
+        return luaL_error( L, "D/C pin required" );
+
+    lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
+
+    // We don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_i2c here
+    // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
+    //         *before* the display is constructed (especially the page buffers)
+    //         this consumes heap even when the device is not used at all
+#if 1
+    // build device entry
+    lud->dev = (u8g_dev_t){ u8g_dev_ssd1306_128x64_fn, &(lud->pb), U8G_COM_HW_SPI };
+
+    // populate and allocate page buffer
+    // constants taken from u8g_dev_ssd1306_128x64.c:
+    //                     PAGE_HEIGHT
+    //                      | Height
+    //                      |  |              WIDTH
+    //                      |  |               |
+    lud->pb = (u8g_pb_t){ { 8, 64, 0, 0, 0 }, 128, NULL };
+    //
+    if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
+        return luaL_error( L, "out of memory" );
+
+    // and finally init device using specific interface init function
+    u8g_InitHWSPI( LU8G, &(lud->dev), cs, dc, U8G_PIN_NONE );
+#else
+    u8g_InitHWSPI( LU8G, &u8g_dev_ssd1306_128x64_spi, cs, dc, U8G_PIN_NONE );
+#endif
+
+
+    // set its metatable
+    luaL_getmetatable(L, "u8g.display");
+    lua_setmetatable(L, -2);
+
+    return 1;
+}
+
 
 // Module function map
 #define MIN_OPT_LEVEL 2
@@ -1111,6 +1156,7 @@ static const LUA_REG_TYPE lu8g_display_map[] =
 const LUA_REG_TYPE lu8g_map[] = 
 {
     { LSTRKEY( "ssd1306_128x64_i2c" ), LFUNCVAL ( lu8g_ssd1306_128x64_i2c ) },
+    { LSTRKEY( "ssd1306_128x64_spi" ), LFUNCVAL ( lu8g_ssd1306_128x64_spi ) },
 #if LUA_OPTIMIZE_MEMORY > 0
 
     // Register fonts

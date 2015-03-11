@@ -1,12 +1,27 @@
 
 -- setup I2c and connect display
 function init_i2c_display()
-     sda = 5
-     scl = 6
+     -- SDA and SCL can be assigned freely to available GPIOs
+     sda = 5 -- GPIO14
+     scl = 6 -- GPIO12
      sla = 0x3c
      i2c.setup(0, sda, scl, i2c.SLOW)
      disp = u8g.ssd1306_128x64_i2c(sla)
 end
+
+-- setup SPI and connect display
+function init_spi_display()
+     -- Hardware SPI CLK  = GPIO14
+     -- Hardware SPI MOSI = GPIO13
+     -- Hardware SPI MISO = GPIO12 (not used)
+     -- CS and D/C can be assigned freely to available GPIOs
+     cs = 8 -- GPIO15, pull-down 10k to GND
+     dc = 4 -- GPIO2
+
+     spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
+     disp = u8g.ssd1306_128x64_spi(cs, dc)
+end
+
 
 function xbm_picture()
      disp:setFont(u8g.font_6x10)
@@ -34,9 +49,7 @@ function draw(draw_state)
 end
 
 
-function bitmap_test()
-     init_i2c_display()
-
+function bitmap_test(delay)
      -- read XBM picture
      file.open("u8glib_logo.xbm", "r")
      xbm_data = file.read()
@@ -58,10 +71,13 @@ function bitmap_test()
                draw(draw_state)
           until disp:nextPage() == false
 
+          tmr.delay(delay)
           tmr.wdclr()
      end
 
      print("--- Bitmap Test done ---")
 end
 
-bitmap_test()
+--init_i2c_display()
+init_spi_display()
+bitmap_test(50000)
