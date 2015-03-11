@@ -3,6 +3,7 @@
 #include "ets_sys.h"
 #include "user_config.h"
 #include "cpu_esp8266.h"
+
 #define FLASH_MAP_START_ADDRESS (INTERNAL_FLASH_START_ADDRESS)
 
 /******************************************************************************

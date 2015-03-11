@@ -347,3 +347,34 @@ file.close()
 node.compile("hello.lua")
 dofile("hello.lua")
 dofile("hello.lc")
+
+-- use copper addon for firefox
+cs=coap.Server()
+cs:listen(5683)
+
+myvar=1
+cs:var("myvar") -- get coap://192.168.18.103:5683/v1/v/myvar will return the value of myvar: 1
+
+function myfun()
+	print("myfun called")
+end
+cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
+
+cc = coap.Client()
+cc:get(coap.CON, "coap://192.168.18.100:5683/.well-known/core")
+cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
+
+
+file.open("test1.txt", "a+") for i = 1, 100*1000 do file.write("x") end file.close() print("Done.")
+for n,s in pairs(file.list()) do print(n.." size: "..s) end 
+file.remove("test1.txt")
+for n,s in pairs(file.list()) do print(n.." size: "..s) end
+file.open("test2.txt", "a+") for i = 1, 1*1000 do file.write("x") end file.close() print("Done.")
+
+
+function TestDNSLeak()
+     c=net.createConnection(net.TCP, 0)
+     c:connect(80, "bad-name.tlddfdf")
+     tmr.alarm(1, 3000, 0, function() print("hack socket close, MEM: "..node.heap()) c:close() end) -- socket timeout hack
+     print("MEM: "..node.heap())
+end

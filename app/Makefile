@@ -30,7 +30,9 @@ SUBDIRS=    \
 	platform	\
 	libc 	\
 	lua 	\
+	coap	\
 	mqtt	\
+	u8glib  \
 	smart 	\
 	wofs 	\
 	modules	\
@@ -76,7 +78,9 @@ COMPONENTS_eagle.app.v6 = \
 	platform/libplatform.a	\
 	libc/liblibc.a 	\
 	lua/liblua.a 	\
+	coap/coap.a 	\
 	mqtt/mqtt.a 	\
+	u8glib/u8glib.a \
 	smart/smart.a 	\
 	wofs/wofs.a 	\
 	spiffs/spiffs.a 	\
@@ -84,6 +88,8 @@ COMPONENTS_eagle.app.v6 = \
 
 LINKFLAGS_eagle.app.v6 = \
 	-L../lib        \
+	-Wl,--gc-sections \
+	-Xlinker -Map=mapfile \
 	-nostdlib	\
     -T$(LD_FILE)   \
 	-Wl,--no-check-sections	\
@@ -102,7 +108,8 @@ LINKFLAGS_eagle.app.v6 = \
 	-lsmartconfig	\
 	-lssl	\
 	$(DEP_LIBS_eagle.app.v6)					\
-	-Wl,--end-group
+	-Wl,--end-group			\
+	-lm
 
 DEPENDS_eagle.app.v6 = \
                 $(LD_FILE) \

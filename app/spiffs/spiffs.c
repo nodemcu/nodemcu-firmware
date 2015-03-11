@@ -160,10 +160,13 @@ int myspiffs_error( int fd ){
   return SPIFFS_errno(&fs);
 }
 void myspiffs_clearerr( int fd ){
-  fs.errno = SPIFFS_OK;
+  SPIFFS_clearerr(&fs);
 }
 int myspiffs_rename( const char *old, const char *newname ){
   return SPIFFS_rename(&fs, (char *)old, (char *)newname);
+}
+size_t myspiffs_size( int fd ){
+  return SPIFFS_size(&fs, (spiffs_file)fd);
 }
 #if 0
 void test_spiffs() {

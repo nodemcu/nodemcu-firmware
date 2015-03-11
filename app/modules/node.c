@@ -23,6 +23,7 @@
 #include "user_interface.h"
 #include "flash_api.h"
 #include "flash_fs.h"
+#include "user_version.h"
 
 // Lua: restart()
 static int node_restart( lua_State* L )
