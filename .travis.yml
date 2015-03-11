@@ -16,7 +16,6 @@ script:
 - cd bin/
 - file_name_integer="nodemcu_integer_${TRAVIS_TAG}.bin"
 - srec_cat -output ${file_name_integer} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
-- ls
 deploy:
   provider: releases
   api_key:

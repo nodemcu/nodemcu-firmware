@@ -370,3 +370,11 @@ for n,s in pairs(file.list()) do print(n.." size: "..s) end
 file.remove("test1.txt")
 for n,s in pairs(file.list()) do print(n.." size: "..s) end
 file.open("test2.txt", "a+") for i = 1, 1*1000 do file.write("x") end file.close() print("Done.")
+
+
+function TestDNSLeak()
+     c=net.createConnection(net.TCP, 0)
+     c:connect(80, "bad-name.tlddfdf")
+     tmr.alarm(1, 3000, 0, function() print("hack socket close, MEM: "..node.heap()) c:close() end) -- socket timeout hack
+     print("MEM: "..node.heap())
+end

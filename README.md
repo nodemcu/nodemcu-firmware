@@ -33,6 +33,12 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-03-11<br />
+fix bugs of spiffs.<br />
+build both float and integer version [latest releases](https://github.com/nodemcu/nodemcu-firmware/releases/latest).<br />
+fix tmr.time().<br />
+fix memory leak when DNS fail.
+
 2015-03-10<br />
 update to the recent spiffs.<br />
 add file.fsinfo() api, usage: remain, used, total = file.fsinfo().<br />
