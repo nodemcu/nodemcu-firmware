@@ -148,24 +148,30 @@ static int tmr_wdclr( lua_State* L )
 }
 
 static os_timer_t rtc_timer_updator;
-static uint64_t cur_count = 0;
-static uint64_t rtc_us = 0;
+static uint32_t cur_count = 0;
+static uint32_t rtc_10ms = 0;
 void rtc_timer_update_cb(void *arg){
-  uint64_t t = (uint64_t)system_get_rtc_time();
-  uint64_t delta = (t>=cur_count)?(t - cur_count):(0x100000000 + t - cur_count);
+  uint32_t t = (uint32_t)system_get_rtc_time();
+  uint32_t delta = 0;
+  if(t>=cur_count){
+    delta = t-cur_count;
+  }else{
+    delta = 0xFFFFFFF - cur_count + t + 1;
+  }
+  // uint64_t delta = (t>=cur_count)?(t - cur_count):(0x100000000 + t - cur_count);
   // NODE_ERR("%x\n",t);
   cur_count = t;
-  unsigned c = system_rtc_clock_cali_proc();
-  uint64_t itg = c >> 12;
-  uint64_t dec = c & 0xFFF;
-  rtc_us += (delta*itg + ((delta*dec)>>12));
-  // TODO: store rtc_us to rtc memory.
+  uint32_t c = system_rtc_clock_cali_proc();
+  uint32_t itg = c >> 12;  // ~=5
+  uint32_t dec = c & 0xFFF; // ~=2ff
+  rtc_10ms += (delta*itg + ((delta*dec)>>12)) / 10000;
+  // TODO: store rtc_10ms to rtc memory.
 }
 // Lua: time() , return rtc time in second
 static int tmr_time( lua_State* L )
 {
-  uint64_t local = rtc_us;
-  lua_pushinteger( L, ((uint32_t)(local/1000000)) & 0x7FFFFFFF );
+  uint32_t local = rtc_10ms;
+  lua_pushinteger( L, ((uint32_t)(local/100)) & 0x7FFFFFFF );
   return 1; 
 }
 
