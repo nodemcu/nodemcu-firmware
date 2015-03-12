@@ -3,86 +3,69 @@
 -- @description Reads email via IMAP
 
 -- this could be your email (and it is in most cases even in you have a "username")
-local IMAP_USERNAME = "myemail@xxx.rr.com" 
-local IMAP_PASSWORD = "mypassword"
+require("imap")
 
-local IMAP_SERVER = "mail.twc.com"
+local IMAP_USERNAME = "myemail@domain.com" 
+local IMAP_PASSWORD = "myemailpassword"
+
+local IMAP_SERVER = "imap.domain.com"
 local IMAP_PORT = "143"
 local IMAP_TAG = "t1"
 
 local SSID = "ssid"
-local SSID_PASSWORD = "password"
+local SSID_PASSWORD = "ssidpassword"
+
+
+local count = 0
 
 wifi.setmode(wifi.STATION)
 wifi.sta.config(SSID,SSID_PASSWORD)
 wifi.sta.autoconnect(1)
 
+local imap_socket = net.createConnection(net.TCP,0)
 
-function print_logout(sck,logout_reply)
-    print("=========== LOGOUT REPLY ==========\r\n")
-    print(logout_reply)
+
+function setup(sck)
+    imap.config(IMAP_USERNAME,
+            IMAP_PASSWORD,
+            IMAP_TAG,
+            sck)
+
+    imap.login(imap_socket)
 end
 
-function logout(sck)
-    print("Logging out...\r\n")
-    sck:on("receive",print_logout)
-    sck:send(IMAP_TAG .. " LOGOUT\r\n")
+imap_socket:on("connection",setup)
+imap_socket:connect(IMAP_PORT,IMAP_SERVER)
+
+function do_next()
+
+    if(imap.receive_complete() == true) then
+    print("receive complete")
+
+        if (count == 0) then
+            print("Examine:\r\n")
+            imap.examine(imap_socket,"INBOX")
+            count = count + 1
+        elseif (count == 1) then
+            imap.fetch_header(imap_socket,1,"SUBJECT")
+            count = count + 1
+        elseif (count == 2) then
+            imap.fetch_header(imap_socket,1,"FROM")
+            count = count + 1
+        elseif (count == 3) then
+            imap.fetch_body_plain_text(imap_socket,1)
+            count = count + 1
+        elseif (count == 4) then
+            imap.logout(imap_socket)
+            count = count + 1
+        else 
+            print("The body is: ".. imap.get_body())
+            tmr.stop(0)
+            imap_socket:close()
+            collectgarbage()
+        end
+    end
+
 end
 
-function print_body(sck,email_body)
-    print("========== EMAIL BODY =========== \r\n")
-    print(email_body)
-    print("\r\n")
-    logout(sck)
-end
-
-function fetch_body(sck)
-    print("\r\nFetching first mail body...\r\n")
-    sck:on("receive",print_body)
-    sck:send(IMAP_TAG .. " FETCH 1 BODY[TEXT]\r\n")
-end
-
-
-function print_header(sck, email_header)
-    print("============== EMAIL HEADERS ==========\r\n")
-    print(email_header) -- prints the email headers
-    print("\r\n")
-    fetch_body(sck)
-end
-
-function fetch_header(sck)
-    print("\r\nFetching first mail headers...\r\n")
-    sck:on("receive",print_header)
-    sck:send(IMAP_TAG .. " FETCH 1 BODY[HEADER]\r\n")
-end
-
-function print_login(sck,login_reply)
-    print("========== LOGIN REPLY ==========\r\n")
-    print(login_reply)
-    select(sck,"INBOX")
-    
-end
-
-function print_select(sck,response)
-    print(response)
-    fetch_header(sck)
-end
-
-function select(sck,mailbox)
-    print("Selecting inbox...\r\n")
-    sck:on("receive",print_select)
-    sck:send(IMAP_TAG .. " SELECT "..mailbox.."\r\n")
-end
-
-
-
-function login(sck)
-    print("Logging in...\r\n")
-    sck:on("receive", print_login)
-    sck:send(IMAP_TAG .. " LOGIN " .. IMAP_USERNAME .. " ".. IMAP_PASSWORD.."\r\n")
-end
-
-
-local socket = net.createConnection(net.TCP,0)
-socket:on("connection",login)
-socket:connect(IMAP_PORT,IMAP_SERVER)
+tmr.alarm(0,1000,1, do_next)
