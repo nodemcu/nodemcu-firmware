@@ -200,10 +200,15 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     return;
   }
 
+  if(nud->self_ref == LUA_NOREF){
+    NODE_DBG("self_ref null.\n");
+    return;
+  }
+
   if(ipaddr == NULL)
   {
     NODE_ERR( "DNS Fail!\n" );
-    return;
+    goto end;
   }
 
   // ipaddr->addr is a uint32_t ip
@@ -214,16 +219,12 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
   }
 
-  if(nud->self_ref == LUA_NOREF){
-    NODE_DBG("self_ref null.\n");
-    return;
-  }
-
   lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);    // the callback function
   lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(conn) to callback func in lua
   lua_pushstring(gL, ip_str);   // the ip para
   lua_call(gL, 2, 0);
 
+end:
   if((pesp_conn->type == ESPCONN_TCP && pesp_conn->proto.tcp->remote_port == 0)
     || (pesp_conn->type == ESPCONN_UDP && pesp_conn->proto.udp->remote_port == 0) ){
     lua_gc(gL, LUA_GCSTOP, 0);
@@ -597,12 +598,22 @@ static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     NODE_DBG("pesp_conn null.\n");
     return;
   }
-
+  lnet_userdata *nud = (lnet_userdata *)pesp_conn->reverse;
+  if(nud == NULL)
+    return;
+  if(gL == NULL)
+    return;
   if(ipaddr == NULL)
   {
     dns_reconn_count++;
     if( dns_reconn_count >= 5 ){
       NODE_ERR( "DNS Fail!\n" );
+      lua_gc(gL, LUA_GCSTOP, 0);
+      if(nud->self_ref != LUA_NOREF){
+        luaL_unref(gL, LUA_REGISTRYINDEX, nud->self_ref);
+        nud->self_ref = LUA_NOREF; // unref this, and the net.socket userdata will delete it self
+      }
+      lua_gc(gL, LUA_GCRESTART, 0);
       return;
     }
     NODE_ERR( "DNS retry %d!\n", dns_reconn_count );

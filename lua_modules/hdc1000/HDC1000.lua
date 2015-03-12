@@ -25,6 +25,7 @@ _G[modname] = M
 local id = 0
 local i2c = i2c
 local delay = 20000
+local _drdyn_pin
 
 local HDC1000_ADDR = 0x40
 
@@ -69,7 +70,8 @@ function M.batteryDead()
 end
 
 -- initalize i2c
-function M.init(sda, scl)
+function M.init(sda, scl, drdyn_pin)
+	_drdyn_pin = drdyn_pin
 	i2c.setup(id, sda, scl, i2c.SLOW)
 end
 
@@ -84,14 +86,22 @@ end
 -- outputs temperature in Celsius degrees
 function M.getHumi()
 	setReadRegister(HDC1000_HUMI)
-	tmr.delay(delay)
+	if(_drdyn_pin ~= false) then
+		gpio.mode(_drdyn_pin, gpio.INPUT)
+		while(gpio.read(_drdyn_pin)==1) do
+	end
+	else tmr.delay(delay) end
 	return(read16()/65535.0*100)
 end
 
 -- outputs humidity in %RH
 function M.getTemp()
 	setReadRegister(HDC1000_TEMP)
-	tmr.delay(delay)
+	if(_drdyn_pin ~= false) then
+		gpio.mode(_drdyn_pin, gpio.INPUT)
+		while(gpio.read(_drdyn_pin)==1) do
+	end
+	else tmr.delay(delay) end
 	return(read16()/65535.0*165-40)
 end
 

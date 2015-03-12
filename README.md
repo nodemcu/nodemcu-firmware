@@ -1,7 +1,7 @@
 # **NodeMCU** #
 version 0.9.5
 
-[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
+[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases/latest)
 
 ###A lua based firmware for wifi-soc esp8266
 Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
@@ -33,6 +33,19 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-03-11<br />
+fix bugs of spiffs.<br />
+build both float and integer version [latest releases](https://github.com/nodemcu/nodemcu-firmware/releases/latest).<br />
+fix tmr.time().<br />
+fix memory leak when DNS fail.
+
+2015-03-10<br />
+update to the recent spiffs.<br />
+add file.fsinfo() api, usage: remain, used, total = file.fsinfo().<br />
+add Travis CI. please download the latest firmware from [releases](https://github.com/nodemcu/nodemcu-firmware/releases).<br />
+add math lib, partial api work.<br />
+u8g module, ws2812 module default enabled in dev-branch build.
+
 2015-02-13<br />
 add node.compile() api to compile lua text file into lua bytecode file.<br />
 this will reduce memory usage noticeably when require modules into NodeMCU.<br />

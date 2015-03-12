@@ -119,14 +119,19 @@ s32_t spiffs_gc_check(
     spiffs *fs,
     u32_t len) {
   s32_t res;
-  u32_t free_pages =
-      (SPIFFS_PAGES_PER_BLOCK(fs) - SPIFFS_OBJ_LOOKUP_PAGES(fs)) * fs->block_count
+  s32_t free_pages =
+      (SPIFFS_PAGES_PER_BLOCK(fs) - SPIFFS_OBJ_LOOKUP_PAGES(fs)) * (fs->block_count-2)
       - fs->stats_p_allocated - fs->stats_p_deleted;
   int tries = 0;
 
   if (fs->free_blocks > 3 &&
-      len < free_pages * SPIFFS_DATA_PAGE_SIZE(fs)) {
+      (s32_t)len < free_pages * (s32_t)SPIFFS_DATA_PAGE_SIZE(fs)) {
     return SPIFFS_OK;
+  }
+
+  u32_t needed_pages = (len + SPIFFS_DATA_PAGE_SIZE(fs) - 1) / SPIFFS_DATA_PAGE_SIZE(fs);
+  if (fs->free_blocks <= 2 && (s32_t)needed_pages > free_pages) {
+    return SPIFFS_ERR_FULL;
   }
 
   //printf("gcing started  %i dirty, blocks %i free, want %i bytes\n", fs->stats_p_allocated + fs->stats_p_deleted, fs->free_blocks, len);
@@ -168,16 +173,22 @@ s32_t spiffs_gc_check(
     SPIFFS_CHECK_RES(res);
 
     free_pages =
-          (SPIFFS_PAGES_PER_BLOCK(fs) - SPIFFS_OBJ_LOOKUP_PAGES(fs)) * fs->block_count
+          (SPIFFS_PAGES_PER_BLOCK(fs) - SPIFFS_OBJ_LOOKUP_PAGES(fs)) * (fs->block_count - 2)
           - fs->stats_p_allocated - fs->stats_p_deleted;
 
   } while (++tries < SPIFFS_GC_MAX_RUNS && (fs->free_blocks <= 2 ||
-      len > free_pages*SPIFFS_DATA_PAGE_SIZE(fs)));
-  SPIFFS_GC_DBG("gc_check: finished\n");
+      (s32_t)len > free_pages*(s32_t)SPIFFS_DATA_PAGE_SIZE(fs)));
 
-  //printf("gcing finished %i dirty, blocks %i free, %i pages free, %i tries, res %i\n",
-  //    fs->stats_p_allocated + fs->stats_p_deleted,
-  //    fs->free_blocks, free_pages, tries, res);
+  free_pages =
+        (SPIFFS_PAGES_PER_BLOCK(fs) - SPIFFS_OBJ_LOOKUP_PAGES(fs)) * (fs->block_count - 2)
+        - fs->stats_p_allocated - fs->stats_p_deleted;
+  if ((s32_t)len > free_pages*(s32_t)SPIFFS_DATA_PAGE_SIZE(fs)) {
+    res = SPIFFS_ERR_FULL;
+  }
+
+  SPIFFS_GC_DBG("gc_check: finished, %i dirty, blocks %i free, %i pages free, %i tries, res %i\n",
+      fs->stats_p_allocated + fs->stats_p_deleted,
+      fs->free_blocks, free_pages, tries, res);
 
   return res;
 }
