@@ -1,0 +1,14 @@
+#ifndef __U8G_CONFIG_H__
+#define __U8G_CONFIG_H__
+
+
+
+// Configure U8glib fonts
+// add a U8G_FONT_TABLE_ENTRY for each font you want to compile into the image
+#define U8G_FONT_TABLE_ENTRY(font)
+#define U8G_FONT_TABLE \
+    U8G_FONT_TABLE_ENTRY(font_6x10)  \
+    U8G_FONT_TABLE_ENTRY(font_chikita)
+#undef U8G_FONT_TABLE_ENTRY
+
+#endif	/* __U8G_CONFIG_H__ */

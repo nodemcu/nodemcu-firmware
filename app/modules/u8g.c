@@ -1,6 +1,5 @@
 // Module for U8glib
 
-//#include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -11,6 +10,8 @@
 #include "c_stdlib.h"
 
 #include "u8g.h"
+
+#include "u8g_config.h"
 
 struct _lu8g_userdata_t
 {
@@ -23,16 +24,6 @@ typedef struct _lu8g_userdata_t lu8g_userdata_t;
 
 // shorthand macro for the u8g structure inside the userdata
 #define LU8G (&(lud->u8g))
-
-
-// Font look-up array
-//static const u8g_fntpgm_uint8_t *font_array[] =
-//{
-//#undef U8G_FONT_TABLE_ENTRY
-//#define U8G_FONT_TABLE_ENTRY(font) u8g_ ## font ,
-//    U8G_FONT_TABLE
-//    NULL
-//};
 
 
 // function to read 4-byte aligned from program memory AKA irom0
