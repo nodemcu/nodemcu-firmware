@@ -1004,7 +1004,7 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
 
     lud->u8g.i2c_addr = (uint8_t)addr;
 
-    // We don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_i2c here
+    // Don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_i2c here
     // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
     //         *before* the display is constructed (especially the page buffers)
     //         this consumes heap even when the device is not used at all
@@ -1049,7 +1049,7 @@ static int lu8g_ssd1306_128x64_spi( lua_State *L )
 
     lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
 
-    // We don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_i2c here
+    // Don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_spi here
     // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
     //         *before* the display is constructed (especially the page buffers)
     //         this consumes heap even when the device is not used at all
@@ -1072,6 +1072,55 @@ static int lu8g_ssd1306_128x64_spi( lua_State *L )
     u8g_InitHWSPI( LU8G, &(lud->dev), cs, dc, U8G_PIN_NONE );
 #else
     u8g_InitHWSPI( LU8G, &u8g_dev_ssd1306_128x64_spi, cs, dc, U8G_PIN_NONE );
+#endif
+
+
+    // set its metatable
+    luaL_getmetatable(L, "u8g.display");
+    lua_setmetatable(L, -2);
+
+    return 1;
+}
+
+uint8_t u8g_dev_pcd8544_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg);
+// Lua: object = u8g.pcd8544_84x48( sce, dc, res )
+static int lu8g_pcd8544_84x48( lua_State *L )
+{
+    unsigned sce = luaL_checkinteger( L, 1 );
+    if (sce == 0)
+        return luaL_error( L, "SCE pin required" );
+    unsigned dc = luaL_checkinteger( L, 2 );
+    if (dc == 0)
+        return luaL_error( L, "D/C pin required" );
+    unsigned res = luaL_checkinteger( L, 3 );
+    if (res == 0)
+        return luaL_error( L, "RES pin required" );
+
+    lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
+
+    // Don't use the pre-defined device structure for u8g_dev_pcd8544_84x48_hw_spi here
+    // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
+    //         *before* the display is constructed (especially the page buffers)
+    //         this consumes heap even when the device is not used at all
+#if 1
+    // build device entry
+    lud->dev = (u8g_dev_t){ u8g_dev_pcd8544_fn, &(lud->pb), U8G_COM_HW_SPI };
+
+    // populate and allocate page buffer
+    // constants taken from u8g_dev_pcd8544_84x48.c:
+    //                     PAGE_HEIGHT
+    //                      | Height
+    //                      |  |             WIDTH
+    //                      |  |              |
+    lud->pb = (u8g_pb_t){ { 8, 48, 0, 0, 0 }, 84, NULL };
+    //
+    if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
+        return luaL_error( L, "out of memory" );
+
+    // and finally init device using specific interface init function
+    u8g_InitHWSPI( LU8G, &(lud->dev), sce, dc, res );
+#else
+    u8g_InitHWSPI( LU8G, &u8g_dev_pcd8544_84x48_hw_spi, sce, dc, res );
 #endif
 
 
@@ -1146,8 +1195,16 @@ static const LUA_REG_TYPE lu8g_display_map[] =
 
 const LUA_REG_TYPE lu8g_map[] = 
 {
+#ifdef U8G_SSD1306_128x64_I2C
     { LSTRKEY( "ssd1306_128x64_i2c" ), LFUNCVAL ( lu8g_ssd1306_128x64_i2c ) },
+#endif
+#ifdef U8G_SSD1306_128x64_I2C
     { LSTRKEY( "ssd1306_128x64_spi" ), LFUNCVAL ( lu8g_ssd1306_128x64_spi ) },
+#endif
+#ifdef U8G_PCD8544_84x48
+    { LSTRKEY( "pcd8544_84x48" ), LFUNCVAL ( lu8g_pcd8544_84x48 ) },
+#endif
+
 #if LUA_OPTIMIZE_MEMORY > 0
 
     // Register fonts
