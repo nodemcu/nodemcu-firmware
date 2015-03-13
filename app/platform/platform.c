@@ -205,7 +205,7 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
       UartDev.baut_rate = baud;
       break;
     default:
-      UartDev.baut_rate = BIT_RATE_9600;
+      UartDev.baut_rate = BIT_RATE_115200;
       break;
   }
 

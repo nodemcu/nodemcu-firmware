@@ -114,9 +114,8 @@ void user_init(void)
 #ifdef DEVELOP_VERSION
     uart_init(BIT_RATE_74880, BIT_RATE_74880);
 #else
-    uart_init(BIT_RATE_9600, BIT_RATE_9600);
+    uart_init(BIT_RATE_115200, BIT_RATE_115200);
 #endif
-    // uart_init(BIT_RATE_115200, BIT_RATE_115200);
     
     #ifndef NODE_DEBUG
     system_set_os_print(0);
