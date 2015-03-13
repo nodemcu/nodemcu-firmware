@@ -121,28 +121,14 @@ static int lgpio_mode( lua_State* L )
 // Lua: read( pin )
 static int lgpio_read( lua_State* L )
 {
-  unsigned pin;
-  
-  pin = luaL_checkinteger( L, 1 );
-  MOD_CHECK_ID( gpio, pin );
-
-  unsigned level = platform_gpio_read( pin );
-  lua_pushinteger( L, level );
+  lua_pushinteger( L, platform_gpio_read( luaL_checkinteger( L, 1 ) ) );
   return 1; 
 }
 
 // Lua: write( pin, level )
 static int lgpio_write( lua_State* L )
 {
-  unsigned level;
-  unsigned pin;
-  
-  pin = luaL_checkinteger( L, 1 );
-  MOD_CHECK_ID( gpio, pin );
-  level = luaL_checkinteger( L, 2 );
-  if ( level!=HIGH && level!=LOW )
-    return luaL_error( L, "wrong arg type" );
-  platform_gpio_write(pin, level);
+  platform_gpio_write(luaL_checkinteger( L, 1 ), luaL_checkinteger( L, 2 ) & 0x1);
   return 0;  
 }
 

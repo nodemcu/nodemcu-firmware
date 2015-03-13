@@ -387,6 +387,22 @@ static int node_compile( lua_State* L )
   return 0;
 }
 
+// Lua: node.setcpufreq(int) -- change CPU frequency to 80 or 160 MHz, returns current frequency
+static int node_set_cpu_freq( lua_State* L )
+{
+  uint32_t new_freq = luaL_checkinteger( L, 1 );
+  if(new_freq == 160){
+    REG_SET_BIT(0x3ff00014, BIT(0));
+    os_update_cpu_frequency(160);
+  }else{
+    REG_CLR_BIT(0x3ff00014, BIT(0));
+    os_update_cpu_frequency(80);
+  }
+  new_freq = ets_get_cpu_frequency();
+  lua_pushinteger(L, new_freq);
+  return 1;
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -407,8 +423,7 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
   { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
   { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
-// Combined to dsleep(us, option)  
-// { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
+  { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_set_cpu_freq ) },
 #if LUA_OPTIMIZE_MEMORY > 0
 
 #endif
