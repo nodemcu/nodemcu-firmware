@@ -1037,7 +1037,7 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
     return 1;
 }
 
-// Lua: object = u8g.ssd1306_128x64_spi( cs, dc )
+// Lua: object = u8g.ssd1306_128x64_spi( cs, dc, [res] )
 static int lu8g_ssd1306_128x64_spi( lua_State *L )
 {
     unsigned cs = luaL_checkinteger( L, 1 );
@@ -1046,6 +1046,7 @@ static int lu8g_ssd1306_128x64_spi( lua_State *L )
     unsigned dc = luaL_checkinteger( L, 2 );
     if (dc == 0)
         return luaL_error( L, "D/C pin required" );
+    unsigned res = luaL_optinteger( L, 3, U8G_PIN_NONE );
 
     lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
 
@@ -1069,9 +1070,9 @@ static int lu8g_ssd1306_128x64_spi( lua_State *L )
         return luaL_error( L, "out of memory" );
 
     // and finally init device using specific interface init function
-    u8g_InitHWSPI( LU8G, &(lud->dev), cs, dc, U8G_PIN_NONE );
+    u8g_InitHWSPI( LU8G, &(lud->dev), cs, dc, res );
 #else
-    u8g_InitHWSPI( LU8G, &u8g_dev_ssd1306_128x64_spi, cs, dc, U8G_PIN_NONE );
+    u8g_InitHWSPI( LU8G, &u8g_dev_ssd1306_128x64_spi, cs, dc, res );
 #endif
 
 
