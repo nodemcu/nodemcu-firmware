@@ -1,31 +1,42 @@
 require("base64")
 
+-- The email and password from the account you want to send emails from
 local MY_EMAIL = "esp8266@domain.com"
 local EMAIL_PASSWORD = "123456"
 
+-- The SMTP server and port of your email provider.
+-- If you don't know it google [my email provider] SMTP settings
 local SMTP_SERVER = "smtp.server.com"
 local SMTP_PORT = "587"
 
+-- The account you want to send email to
 local mail_to = "to_email@domain.com"
 
+-- Your access point's SSID and password
 local SSID = "ssid"
 local SSID_PASSWORD = "password"
 
+-- configure ESP as a station
 wifi.setmode(wifi.STATION)
 wifi.sta.config(SSID,SSID_PASSWORD)
 wifi.sta.autoconnect(1)
 
+-- These are global variables. Don't change their values
+-- they will be changed in the functions below
 local email_subject = ""
 local email_body = ""
-local receive_processed = false
 local count = 0
 
+-- create a socket to the SMTP server
 local smtp_socket = net.createConnection(net.TCP,0)
 
+-- The display() function will be used to print the SMTP server's response
 function display(sck,response)
      print(response)
 end
 
+-- The do_next() function is used to send the SMTP commands to the SMTP server in the required sequence.
+-- I was going to use socket callbacks but the code would not run callbacks after the first 3.
 function do_next()
             if(count == 0)then
                 count = count+1
@@ -67,10 +78,18 @@ function do_next()
             end
 end
 
+-- The connectted() function is executed when the SMTP socket is connected to the SMTP server.
+-- This function will create a timer to call the do_next function which will send the SMTP commands
+-- in sequence, one by one, every 5000 seconds. 
+-- You can change the time to be smaller if that works for you, I used 5000ms just because.
 function connected(sck)
     tmr.alarm(0,5000,1,do_next)
 end
 
+-- @name send_email
+-- @description Will initiated a socket connection to the SMTP server and trigger the connected() function
+-- @param subject The email's subject
+-- @param body The email's body
 function send_email(subject,body)
      email_subject = subject
      email_body = body
@@ -79,6 +98,7 @@ function send_email(subject,body)
      smtp_socket:connect(SMTP_PORT,SMTP_SERVER)
 end
 
+-- Send an email
 send_email(
      "ESP8266",
 [[Hi,

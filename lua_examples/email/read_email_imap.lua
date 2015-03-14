@@ -2,7 +2,7 @@
 -- @author Miguel (AllAboutEE.com)
 -- @description This example will read the first email in your inbox using IMAP and 
 -- display it through serial. The email server must provided unecrypted access. The code
--- was tested with an AOL and Time Waraner cable email ccounts (GMail and other services who do
+-- was tested with an AOL and Time Warner cable email accounts (GMail and other services who do
 -- not support no SSL access will not work).
 
 require("imap")
