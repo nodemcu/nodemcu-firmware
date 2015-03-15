@@ -25,11 +25,11 @@
 #define FLASH_SAFEMODE_ENTER() \
 do { \
     extern SpiFlashChip * flashchip; \
-    flashchip->chip_size = FLASH_SIZE_256KBYTE
+    flashchip->chip_size = FLASH_SIZE_16MBYTE
 
 
 #define FLASH_SAFEMODE_LEAVE() \
-    flashchip->chip_size = FLASH_SIZE_16MBYTE; \
+    flashchip->chip_size = flash_rom_get_size_byte(); \
 } while(0)
 
 /******************************************************************************

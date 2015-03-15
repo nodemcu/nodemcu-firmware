@@ -22,19 +22,23 @@ static volatile const uint8_t flash_init_data[128] ICACHE_STORE_ATTR ICACHE_RODA
 
 uint32_t flash_detect_size_byte(void)
 {
+#define FLASH_BUFFER_SIZE_DETECT 32
     uint32_t dummy_size = FLASH_SIZE_256KBYTE;
-    uint8_t data_orig[64] ICACHE_STORE_ATTR = {0};
-    uint8_t data_new[64] ICACHE_STORE_ATTR = {0};
-    if (SPI_FLASH_RESULT_OK == flash_safe_read(0, (uint32 *)data_orig, 64))
+    uint8_t data_orig[FLASH_BUFFER_SIZE_DETECT] ICACHE_STORE_ATTR = {0};
+    uint8_t data_new[FLASH_BUFFER_SIZE_DETECT] ICACHE_STORE_ATTR = {0};
+    if (SPI_FLASH_RESULT_OK == flash_safe_read(0, (uint32 *)data_orig, FLASH_BUFFER_SIZE_DETECT))
     {
         dummy_size = FLASH_SIZE_256KBYTE;
         while ((dummy_size < FLASH_SIZE_16MBYTE) &&
-                (SPI_FLASH_RESULT_OK == flash_safe_read(dummy_size, (uint32 *)data_new, 64)))
+                (SPI_FLASH_RESULT_OK == flash_safe_read(dummy_size, (uint32 *)data_new, FLASH_BUFFER_SIZE_DETECT)) &&
+                (0 != os_memcmp(data_orig, data_new, FLASH_BUFFER_SIZE_DETECT))
+              )
         {
             dummy_size *= 2;
         }
     };
     return dummy_size;
+#undef FLASH_BUFFER_SIZE_DETECT
 }
 
 uint32_t flash_safe_get_size_byte(void)
@@ -83,8 +87,11 @@ SPIFlashInfo flash_rom_getinfo(void)
 {
     volatile SPIFlashInfo spi_flash_info ICACHE_STORE_ATTR;
     // Don't use it before cache read disabled
+    // FLASH_DISABLE_CACHE();
     // spi_flash_info = *((SPIFlashInfo *)(FLASH_ADDRESS_START_MAP));
-    flash_safe_read(0, (uint32 *)(& spi_flash_info), sizeof(spi_flash_info));
+    // FLASH_ENABLE_CACHE();
+    // Needn't safe mode.
+    spi_flash_read(0, (uint32 *)(& spi_flash_info), sizeof(spi_flash_info));
     return spi_flash_info;
 }
 
@@ -95,41 +102,44 @@ uint8_t flash_rom_get_size_type(void)
 
 uint32_t flash_rom_get_size_byte(void)
 {
-    uint32_t flash_size = 0;
-    switch (flash_rom_getinfo().size)
+    static uint32_t flash_size = 0;
+    if (flash_size == 0)
     {
-    case SIZE_2MBIT:
-        // 2Mbit, 256kByte
-        flash_size = 256 * 1024;
-        break;
-    case SIZE_4MBIT:
-        // 4Mbit, 512kByte
-        flash_size = 512 * 1024;
-        break;
-    case SIZE_8MBIT:
-        // 8Mbit, 1MByte
-        flash_size = 1 * 1024 * 1024;
-        break;
-    case SIZE_16MBIT:
-        // 16Mbit, 2MByte
-        flash_size = 2 * 1024 * 1024;
-        break;
-    case SIZE_32MBIT:
-        // 32Mbit, 4MByte
-        flash_size = 4 * 1024 * 1024;
-        break;
-    case SIZE_64MBIT:
-        // 64Mbit, 8MByte
-        flash_size = 8 * 1024 * 1024;
-        break;
-    case SIZE_128MBIT:
-        // 128Mbit, 16MByte
-        flash_size = 16 * 1024 * 1024;
-        break;
-    default:
-        // Unknown flash size, fall back mode.
-        flash_size = 512 * 1024;
-        break;
+        switch (flash_rom_getinfo().size)
+        {
+        case SIZE_2MBIT:
+            // 2Mbit, 256kByte
+            flash_size = 256 * 1024;
+            break;
+        case SIZE_4MBIT:
+            // 4Mbit, 512kByte
+            flash_size = 512 * 1024;
+            break;
+        case SIZE_8MBIT:
+            // 8Mbit, 1MByte
+            flash_size = 1 * 1024 * 1024;
+            break;
+        case SIZE_16MBIT:
+            // 16Mbit, 2MByte
+            flash_size = 2 * 1024 * 1024;
+            break;
+        case SIZE_32MBIT:
+            // 32Mbit, 4MByte
+            flash_size = 4 * 1024 * 1024;
+            break;
+        case SIZE_64MBIT:
+            // 64Mbit, 8MByte
+            flash_size = 8 * 1024 * 1024;
+            break;
+        case SIZE_128MBIT:
+            // 128Mbit, 16MByte
+            flash_size = 16 * 1024 * 1024;
+            break;
+        default:
+            // Unknown flash size, fall back mode.
+            flash_size = 512 * 1024;
+            break;
+        }
     }
     return flash_size;
 }
@@ -139,14 +149,27 @@ bool flash_rom_set_size_type(uint8_t size)
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
+#if defined(FLASH_SAFE_API)
     uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
     flash_safe_read(0, (uint32 *)data, sizeof(data));
     SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
     p_spi_flash_info->size = size;
     flash_safe_erase_sector(0);
     flash_safe_write(0, (uint32 *)data, sizeof(data));
+    // TODO: CHECKSUM Firmware
     //p_spi_flash_info = flash_rom_getinfo();
     //p_spi_flash_info->size = size;
+#else
+    uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
+    spi_flash_read(0, (uint32 *)data, sizeof(data));
+    SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
+    p_spi_flash_info->size = size;
+    spi_flash_erase_sector(0);
+    spi_flash_write(0, (uint32 *)data, sizeof(data));
+    // TODO: CHECKSUM Firmware
+    //p_spi_flash_info = flash_rom_getinfo();
+    //p_spi_flash_info->size = size;
+#endif // defined(FLASH_SAFE_API)
     return true;
 }
 
@@ -253,7 +276,11 @@ bool flash_init_data_written(void)
 {
     // FLASH SEC - 4
     uint32_t data[2] ICACHE_STORE_ATTR;
+#if defined(FLASH_SAFE_API)
     if (SPI_FLASH_RESULT_OK == flash_safe_read((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
+#else
+    if (SPI_FLASH_RESULT_OK == spi_flash_read((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
+#endif // defined(FLASH_SAFE_API)
     {
         if (data[0] == 0xFFFFFFFF && data[1] == 0xFFFFFFFF)
         {
@@ -270,13 +297,23 @@ bool flash_init_data_default(void)
     // Reboot required!!!
     // It will init system data to default!
     bool result = false;
-    if (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_rom_get_sec_num() - 4)))
+#if defined(FLASH_SAFE_API)
+    if (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 4)))
     {
-        if (SPI_FLASH_RESULT_OK == flash_safe_write((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128))
+        if (SPI_FLASH_RESULT_OK == flash_safe_write((flash_safe_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128))
         {
             result = true;
         }
     }
+#else
+    if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 4)))
+    {
+        if (SPI_FLASH_RESULT_OK == spi_flash_write((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128))
+        {
+            result = true;
+        }
+    }
+#endif // defined(FLASH_SAFE_API)
     return result;
 }
 
@@ -287,8 +324,13 @@ bool flash_init_data_blank(void)
     // Reboot required!!!
     // It will init system config to blank!
     bool result = false;
+#if defined(FLASH_SAFE_API)
     if ((SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_rom_get_sec_num() - 2))) &&
             (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_rom_get_sec_num() - 1))))
+#else
+    if ((SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 2))) &&
+            (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 1))))
+#endif // defined(FLASH_SAFE_API)
     {
         result = true;
     }
