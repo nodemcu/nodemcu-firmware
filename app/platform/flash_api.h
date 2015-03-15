@@ -57,8 +57,8 @@ do { \
 
 typedef struct
 {
-    uint8_t unknown0;
-    uint8_t unknown1;
+    uint8_t e9;
+    uint8_t segments;
     enum
     {
         MODE_QIO = 0,
