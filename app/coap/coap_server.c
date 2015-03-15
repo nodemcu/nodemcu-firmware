@@ -3,14 +3,10 @@
 
 #include "coap.h"
 
-size_t coap_server_respond(char *data, unsigned short len, unsigned short size)
+size_t coap_server_respond(char *req, unsigned short reqlen, char *rsp, unsigned short rsplen)
 {
   NODE_DBG("coap_server_respond is called.\n");
-  if(len>size){
-    NODE_DBG("len:%d, size:%d\n",len,size);
-    return 0;
-  }
-  size_t rsplen = size;
+  size_t rlen = rsplen;
   coap_packet_t pkt;
   uint8_t scratch_raw[4];
   coap_rw_buffer_t scratch_buf = {scratch_raw, sizeof(scratch_raw)};
@@ -18,11 +14,11 @@ size_t coap_server_respond(char *data, unsigned short len, unsigned short size)
 
 #ifdef COAP_DEBUG
   NODE_DBG("Received: ");
-  coap_dump(data, len, true);
+  coap_dump(req, reqlen, true);
   NODE_DBG("\n");
 #endif
 
-  if (0 != (rc = coap_parse(&pkt, data, len))){
+  if (0 != (rc = coap_parse(&pkt, req, reqlen))){
     NODE_DBG("Bad packet rc=%d\n", rc);
     return 0;
   }
@@ -33,7 +29,7 @@ size_t coap_server_respond(char *data, unsigned short len, unsigned short size)
     coap_dumpPacket(&pkt);
 #endif
     coap_handle_req(&scratch_buf, &pkt, &rsppkt);
-    if (0 != (rc = coap_build(data, &rsplen, &rsppkt))){
+    if (0 != (rc = coap_build(rsp, &rlen, &rsppkt))){
       NODE_DBG("coap_build failed rc=%d\n", rc);
       return 0;
     }
@@ -41,13 +37,13 @@ size_t coap_server_respond(char *data, unsigned short len, unsigned short size)
     {
 #ifdef COAP_DEBUG
       NODE_DBG("Responding: ");
-      coap_dump(data, rsplen, true);
+      coap_dump(rsp, rlen, true);
       NODE_DBG("\n");
 #endif
 #ifdef COAP_DEBUG
       coap_dumpPacket(&rsppkt);
 #endif
     }
-    return rsplen;
+    return rlen;
   }
 }

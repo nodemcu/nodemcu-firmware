@@ -8,8 +8,8 @@
 
 #include "os_type.h"
 
-static char rsp[MAX_PAYLOAD_SIZE] = "";
-const uint16_t rsplen = MAX_PAYLOAD_SIZE;
+static char rsp[512] = "";
+const uint16_t rsplen = 512;
 void build_well_known_rsp(void);
 
 void endpoint_setup(void)
@@ -29,6 +29,7 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
 {
     const coap_option_t *opt;
     uint8_t count;
+    int n;
     if (NULL != (opt = coap_findOptions(inpkt, COAP_OPTION_URI_PATH, &count)))
     {
         if ((count != ep->path->count ) && (count != ep->path->count + 1)) // +1 for /f/[function], /v/[variable]
@@ -54,14 +55,15 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
                         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                     if(c_strlen(h->name))
                     {
+                        n = lua_gettop(h->L);
                         lua_getglobal(h->L, h->name);
                         if (!lua_isnumber(h->L, -1)) {
                             NODE_DBG ("should be a number.\n");
-                            lua_pop(h->L, 1);
+                            lua_settop(h->L, n);
                             return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                         } else {
                             const char *res = lua_tostring(h->L,-1);
-                            lua_pop(h->L, 1);
+                            lua_settop(h->L, n);
                             return coap_make_response(scratch, outpkt, (const uint8_t *)res, c_strlen(res), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
                         }
                     }
@@ -84,6 +86,7 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
 {
     const coap_option_t *opt;
     uint8_t count;
+    int n;
     if (NULL != (opt = coap_findOptions(inpkt, COAP_OPTION_URI_PATH, &count)))
     {
         if ((count != ep->path->count ) && (count != ep->path->count + 1)) // +1 for /f/[function], /v/[variable]
@@ -111,10 +114,11 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
 
                     if(c_strlen(h->name))
                     {
+                        n = lua_gettop(h->L);
                         lua_getglobal(h->L, h->name);
                         if (lua_type(h->L, -1) != LUA_TFUNCTION) {
                             NODE_DBG ("should be a function\n");
-                            lua_pop(h->L, 1);
+                            lua_settop(h->L, n);
                             return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                         } else {
                             lua_pushlstring(h->L, inpkt->payload.p, inpkt->payload.len);     // make sure payload.p is filled with '\0' after payload.len, or use lua_pushlstring
@@ -125,14 +129,17 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
                                     size_t len = 0;
                                     const char *ret = luaL_checklstring( h->L, -1, &len );
                                     if(len > MAX_PAYLOAD_SIZE){
+                                        lua_settop(h->L, n);
                                         luaL_error( h->L, "return string:<MAX_PAYLOAD_SIZE" );
                                         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                                     }
                                     NODE_DBG((char *)ret);
                                     NODE_DBG("\n");
+                                    lua_settop(h->L, n);
                                     return coap_make_response(scratch, outpkt, ret, len, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
                                 } 
                             } else {
+                                lua_settop(h->L, n);
                                 return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
                             }
                         }
