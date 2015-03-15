@@ -80,9 +80,9 @@ static int node_info( lua_State* L )
   lua_pushinteger(L, NODE_VERSION_REVISION);
   lua_pushinteger(L, system_get_chip_id());   // chip id
   lua_pushinteger(L, spi_flash_get_id());     // flash id
-  lua_pushinteger(L, flash_get_size_byte() / 1024);  // flash size in KB
-  lua_pushinteger(L, flash_get_mode());
-  lua_pushinteger(L, flash_get_speed());
+  lua_pushinteger(L, flash_detect_size_byte() / 1024);  // flash size in KB
+  lua_pushinteger(L, flash_rom_get_mode());
+  lua_pushinteger(L, flash_rom_get_speed());
   return 8;  
 }
 
@@ -121,7 +121,7 @@ static int node_flashsize( lua_State* L )
   //    flash_set_size_byte(sz);
   //  }
   //}
-  uint32_t sz = flash_get_size_byte();
+  uint32_t sz = flash_detect_size_byte();
   lua_pushinteger( L, sz );
   return 1;  
 }
