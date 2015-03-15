@@ -30,7 +30,11 @@
 #elif defined(FLASH_16M)
 #define FLASH_SEC_NUM 	0x1000
 #elif defined(FLASH_AUTOSIZE)
-#define FLASH_SEC_NUM 	(flash_get_sec_num())
+#if defined(FLASH_SAFE_API)
+#define FLASH_SEC_NUM 	(flash_safe_get_sec_num())
+#else
+#define FLASH_SEC_NUM 	(flash_rom_get_sec_num())
+#endif // defined(FLASH_SAFE_API)
 #else
 #define FLASH_SEC_NUM 	0x80
 #endif
@@ -54,8 +58,14 @@
 // SpiFlashOpResult spi_flash_erase_sector(uint16 sec);
 // SpiFlashOpResult spi_flash_write(uint32 des_addr, uint32 *src_addr, uint32 size);
 // SpiFlashOpResult spi_flash_read(uint32 src_addr, uint32 *des_addr, uint32 size);
+#if defined(FLASH_SAFE_API)
+#define flash_write flash_safe_write
+#define flash_erase flash_safe_erase_sector
+#define flash_read flash_safe_read
+#else
 #define flash_write spi_flash_write
 #define flash_erase spi_flash_erase_sector
 #define flash_read spi_flash_read
+#endif // defined(FLASH_SAFE_API)
 
 #endif // #ifndef __CPU_ESP8266_H__
