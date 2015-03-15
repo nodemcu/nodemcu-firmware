@@ -227,6 +227,8 @@ static void coap_response_handler(void *arg, char *pdata, unsigned short len)
   struct espconn *pesp_conn = arg;
 
   coap_packet_t pkt;
+  pkt.content.p = NULL;
+  pkt.content.len = 0;
   // static uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
   uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
   c_memset(buf, 0, sizeof(buf)); // wipe prev data
@@ -421,7 +423,6 @@ static int coap_request( lua_State* L, coap_method_t m )
 
 extern coap_luser_entry *variable_entry;
 extern coap_luser_entry *function_entry;
-extern void build_well_known_rsp(void);
 // Lua: coap:var/func( string )
 static int coap_regist( lua_State* L, const char* mt, int isvar )
 {
@@ -455,8 +456,6 @@ static int coap_regist( lua_State* L, const char* mt, int isvar )
 
   h->L = L;
   h->name = name;
-
-  build_well_known_rsp(); // rebuild .well-known
 
   NODE_DBG("coap_regist is called.\n");
   return 0;  

@@ -1,5 +1,6 @@
 #include "c_stdio.h"
 #include "c_string.h"
+#include "c_stdlib.h"
 #include "coap.h"
 
 #include "lua.h"
@@ -8,20 +9,24 @@
 
 #include "os_type.h"
 
-static char rsp[512] = "";
-const uint16_t rsplen = 512;
-void build_well_known_rsp(void);
+void build_well_known_rsp(char *rsp, uint16_t rsplen);
 
 void endpoint_setup(void)
 {
     coap_setup();
-    build_well_known_rsp();
 }
 
 static const coap_endpoint_path_t path_well_known_core = {2, {".well-known", "core"}};
 static int handle_get_well_known_core(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt, uint8_t id_hi, uint8_t id_lo)
 {
-    return coap_make_response(scratch, outpkt, (const uint8_t *)rsp, c_strlen(rsp), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_APPLICATION_LINKFORMAT);
+    outpkt->content.p = (uint8_t *)c_zalloc(MAX_PAYLOAD_SIZE);      // this should be free-ed when outpkt is built in coap_server_respond()
+    if(outpkt->content.p == NULL){
+        NODE_DBG("not enough memory\n");
+        return COAP_ERR_BUFFER_TOO_SMALL;
+    }
+    outpkt->content.len = MAX_PAYLOAD_SIZE;
+    build_well_known_rsp(outpkt->content.p, outpkt->content.len);
+    return coap_make_response(scratch, outpkt, (const uint8_t *)outpkt->content.p, c_strlen(outpkt->content.p), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_APPLICATION_LINKFORMAT);
 }
 
 static const coap_endpoint_path_t path_variable = {2, {"v1", "v"}};
@@ -211,13 +216,13 @@ const coap_endpoint_t endpoints[] =
     {(coap_method_t)0, NULL, NULL, NULL, NULL}
 };
 
-void build_well_known_rsp(void)
+void build_well_known_rsp(char *rsp, uint16_t rsplen)
 {
     const coap_endpoint_t *ep = endpoints;
     int i;
     uint16_t len = rsplen;
 
-    c_memset(rsp, 0, sizeof(rsp));
+    c_memset(rsp, 0, len);
 
     len--; // Null-terminated string
 

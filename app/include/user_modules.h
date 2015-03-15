@@ -27,7 +27,7 @@
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
 #define LUA_USE_MODULES_MQTT
-// #define LUA_USE_MODULES_COAP			// need about 1k more ram for now
+#define LUA_USE_MODULES_COAP
 #define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_WS2812
 #endif /* LUA_USE_MODULES */
