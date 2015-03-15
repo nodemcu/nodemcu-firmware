@@ -149,27 +149,21 @@ bool flash_rom_set_size_type(uint8_t size)
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
-#if defined(FLASH_SAFE_API)
+    NODE_DBG("\nBEGIN SET FLASH HEADER\n");
     uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
-    flash_safe_read(0, (uint32 *)data, sizeof(data));
-    SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
-    p_spi_flash_info->size = size;
-    flash_safe_erase_sector(0);
-    flash_safe_write(0, (uint32 *)data, sizeof(data));
-    // TODO: CHECKSUM Firmware
-    //p_spi_flash_info = flash_rom_getinfo();
-    //p_spi_flash_info->size = size;
-#else
-    uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
-    spi_flash_read(0, (uint32 *)data, sizeof(data));
-    SPIFlashInfo *p_spi_flash_info = (SPIFlashInfo *)(data);
-    p_spi_flash_info->size = size;
-    spi_flash_erase_sector(0);
-    spi_flash_write(0, (uint32 *)data, sizeof(data));
-    // TODO: CHECKSUM Firmware
-    //p_spi_flash_info = flash_rom_getinfo();
-    //p_spi_flash_info->size = size;
-#endif // defined(FLASH_SAFE_API)
+    if (SPI_FLASH_RESULT_OK == spi_flash_read(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
+    {
+        ((SPIFlashInfo *)(&data[0]))->size = size;
+        if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector(0 * SPI_FLASH_SEC_SIZE))
+        {
+            NODE_DBG("\nERASE SUCCESS\n");
+        }
+        if (SPI_FLASH_RESULT_OK == spi_flash_write(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
+        {
+            NODE_DBG("\nWRITE SUCCESS, %u\n", size);
+        }
+    }
+    NODE_DBG("\nEND SET FLASH HEADER\n");
     return true;
 }
 
@@ -205,6 +199,16 @@ bool flash_rom_set_size_byte(uint32_t size)
     case 4 * 1024 * 1024:
         // 32Mbit, 4MByte
         flash_size = SIZE_32MBIT;
+        flash_rom_set_size_type(flash_size);
+        break;
+    case 8 * 1024 * 1024:
+        // 64Mbit, 8MByte
+        flash_size = SIZE_64MBIT;
+        flash_rom_set_size_type(flash_size);
+        break;
+    case 16 * 1024 * 1024:
+        // 128Mbit, 16MByte
+        flash_size = SIZE_128MBIT;
         flash_rom_set_size_type(flash_size);
         break;
     default:
@@ -270,6 +274,46 @@ uint32_t flash_rom_get_speed(void)
         break;
     }
     return speed;
+}
+
+bool flash_rom_set_speed(uint32_t speed)
+{
+    // Dangerous, here are dinosaur infested!!!!!
+    // Reboot required!!!
+    // If you don't know what you're doing, your nodemcu may turn into stone ...
+    NODE_DBG("\nBEGIN SET FLASH HEADER\n");
+    uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
+    uint8_t speed_type = SPEED_40MHZ;
+    if (speed < 26700000)
+    {
+        speed_type = SPEED_20MHZ;
+    }
+    else if (speed < 40000000)
+    {
+        speed_type = SPEED_26MHZ;
+    }
+    else if (speed < 80000000)
+    {
+        speed_type = SPEED_40MHZ;
+    }
+    else if (speed >= 80000000)
+    {
+        speed_type = SPEED_80MHZ;
+    }
+    if (SPI_FLASH_RESULT_OK == spi_flash_read(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
+    {
+        ((SPIFlashInfo *)(&data[0]))->speed = speed_type;
+        if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector(0 * SPI_FLASH_SEC_SIZE))
+        {
+            NODE_DBG("\nERASE SUCCESS\n");
+        }
+        if (SPI_FLASH_RESULT_OK == spi_flash_write(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
+        {
+            NODE_DBG("\nWRITE SUCCESS, %u\n", speed_type);
+        }
+    }
+    NODE_DBG("\nEND SET FLASH HEADER\n");
+    return true;
 }
 
 bool flash_init_data_written(void)
@@ -356,3 +400,28 @@ uint8_t byte_of_aligned_array(const uint8_t *aligned_array, uint32_t index)
     uint8_t *p = (uint8_t *) (&v);
     return p[ (index % 4) ];
 }
+
+// uint8_t flash_rom_get_checksum(void)
+// {
+//     // SPIFlashInfo spi_flash_info ICACHE_STORE_ATTR = flash_rom_getinfo();
+//     // uint32_t address = sizeof(spi_flash_info) + spi_flash_info.segment_size;
+//     // uint32_t address_aligned_4bytes = (address + 3) & 0xFFFFFFFC;
+//     // uint8_t buffer[64] = {0};
+//     // spi_flash_read(address, (uint32 *) buffer, 64);
+//     // uint8_t i = 0;
+//     // c_printf("\nBEGIN DUMP\n");
+//     // for (i = 0; i < 64; i++)
+//     // {
+//     //     c_printf("%02x," , buffer[i]);
+//     // }
+//     // i = (address + 0x10) & 0x10 - 1;
+//     // c_printf("\nSIZE:%d CHECK SUM:%02x\n", spi_flash_info.segment_size, buffer[i]);
+//     // c_printf("\nEND DUMP\n");
+//     // return buffer[0];
+//     return 0;
+// }
+
+// uint8_t flash_rom_calc_checksum(void)
+// {
+//     return 0;
+// }

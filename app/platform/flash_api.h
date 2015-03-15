@@ -16,10 +16,10 @@
 
 #define FLASH_SIZE_256KBYTE (FLASH_SIZE_2MBIT  / 8)
 #define FLASH_SIZE_512KBYTE (FLASH_SIZE_4MBIT  / 8)
-#define FLASH_SIZE_1MBYTE   (FLASH_SIZE_8MBIT  / 8) 
+#define FLASH_SIZE_1MBYTE   (FLASH_SIZE_8MBIT  / 8)
 #define FLASH_SIZE_2MBYTE   (FLASH_SIZE_16MBIT / 8)
 #define FLASH_SIZE_4MBYTE   (FLASH_SIZE_32MBIT / 8)
-#define FLASH_SIZE_8MBYTE   (FLASH_SIZE_64MBIT / 8) 
+#define FLASH_SIZE_8MBYTE   (FLASH_SIZE_64MBIT / 8)
 #define FLASH_SIZE_16MBYTE  (FLASH_SIZE_128MBIT/ 8)
 
 #define FLASH_SAFEMODE_ENTER() \
@@ -57,8 +57,8 @@ do { \
 
 typedef struct
 {
-    uint8_t magic_e9;
-    uint8_t segments;
+    uint8_t header_magic;
+    uint8_t segment_count;
     enum
     {
         MODE_QIO = 0,
@@ -83,6 +83,9 @@ typedef struct
         SIZE_64MBIT = 5,
         SIZE_128MBIT = 6,
     } size : 4;
+    uint32_t entry_point;
+    uint32_t memory_offset;
+    uint32_t segment_size; 
 } ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 
 uint32_t flash_detect_size_byte(void);
@@ -104,5 +107,7 @@ bool flash_init_data_default(void);
 bool flash_init_data_blank(void);
 bool flash_self_destruct(void);
 uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index);
+// uint8_t flash_rom_get_checksum(void);
+// uint8_t flash_rom_calc_checksum(void);
 
 #endif // __FLASH_API_H__
