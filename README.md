@@ -16,6 +16,9 @@ home: [nodemcu.com](http://www.nodemcu.com)<br />
 bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
 Tencent QQ group: 309957875<br />
 
+# Attention
+If you want to use esptool.py or make, please `sudo pip install future` first.
+
 # Summary
 - Easy to access wireless router
 - Based on Lua 5.1.4 (without *io, math, debug, os* module.)
