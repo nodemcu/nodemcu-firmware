@@ -3,6 +3,7 @@
 -- NODEMCU TEAM
 -- LICENCE: http://opensource.org/licenses/MIT
 -- Vowstar <vowstar@nodemcu.com>
+-- 2015/02/14 sza2 <sza2trash@gmail.com> Fix for negative values
 --------------------------------------------------------------------------------
 
 -- Set module name as parameter of require
@@ -96,12 +97,16 @@ function readNumber(addr, unit)
       crc = ow.crc8(string.sub(data,1,8))
       -- print("CRC="..crc)
       if (crc == data:byte(9)) then
+        t = (data:byte(1) + data:byte(2) * 256)
+        if (t > 32767) then
+          t = t - 65536
+        end
         if(unit == nil or unit == C) then
-          t = (data:byte(1) + data:byte(2) * 256) * 625
+          t = t * 625
         elseif(unit == F) then
-          t = (data:byte(1) + data:byte(2) * 256) * 1125 + 320000
+          t = t * 1125 + 320000
         elseif(unit == K) then
-          t = (data:byte(1) + data:byte(2) * 256) * 625 + 2731500
+          t = t * 625 + 2731500
         else
           return nil
         end

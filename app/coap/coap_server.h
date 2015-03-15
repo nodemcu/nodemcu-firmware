@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-size_t coap_server_respond(char *data, unsigned short len, unsigned short size);
+size_t coap_server_respond(char *req, unsigned short reqlen, char *rsp, unsigned short rsplen);
 
 #ifdef __cplusplus
 }

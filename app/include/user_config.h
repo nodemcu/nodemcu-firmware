@@ -10,6 +10,7 @@
 // #define FLASH_8M
 // #define FLASH_16M
 #define FLASH_AUTOSIZE
+#define FLASH_SAFE_API
 // #define DEVELOP_VERSION
 #define FULL_VERSION_FOR_USER
 
