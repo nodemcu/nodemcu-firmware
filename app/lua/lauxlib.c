@@ -659,13 +659,19 @@ typedef struct LoadFSF {
 static const char *getFSF (lua_State *L, void *ud, size_t *size) {
   LoadFSF *lf = (LoadFSF *)ud;
   (void)L;
+
+  if (L == NULL && size == NULL) // Direct mode check
+    return NULL;
+
   if (lf->extraline) {
     lf->extraline = 0;
     *size = 1;
     return "\n";
   }
+
   if (fs_eof(lf->f)) return NULL;
   *size = fs_read(lf->f, lf->buff, sizeof(lf->buff));
+
   return (*size > 0) ? lf->buff : NULL;
 }
 
