@@ -375,12 +375,12 @@ i2c.setup(0, sda, scl, i2c.SLOW)
 The HSPI module is used, so certain pins are fixed:
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13
-* HPSI MISO = GPIO12 (not used)
+* HSPI MISO = GPIO12 (not used)
 
 All other pins can be assigned to any available GPIO:
 * CS
 * D/C
-* RES (optional)
+* RES (optional for some displays)
 
 Also refer to the initialization sequence eg in `lua_examples/u8glib/graphics_test.lua`:
 ```lua
@@ -407,7 +407,7 @@ This object provides all of u8glib's methods to control the display.
 Again, refer to `lua_examples/u8glib/graphics_test.lua` to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://code.google.com/p/u8glib/) for technical details.
 
 #####Fonts
-u8glib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in `app/include/user_config.h` and recompile. Simply add the desired fonts to the font table:
+u8glib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in `app/include/u8g_config.h` and recompile. Simply add the desired fonts to the font table:
 ```c
 #define U8G_FONT_TABLE \
     U8G_FONT_TABLE_ENTRY(font_6x10)  \
