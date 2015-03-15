@@ -57,7 +57,7 @@ do { \
 
 typedef struct
 {
-    uint8_t e9;
+    uint8_t magic_e9;
     uint8_t segments;
     enum
     {
