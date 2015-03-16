@@ -37,20 +37,20 @@ static void coap_received(void *arg, char *pdata, unsigned short len)
   struct espconn *pesp_conn = arg;
   lcoap_userdata *cud = (lcoap_userdata *)pesp_conn->reverse;
 
-  static uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
+  // static uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
+  uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
   c_memset(buf, 0, sizeof(buf)); // wipe prev data
 
   if (len > MAX_MESSAGE_SIZE) {
     NODE_DBG("Request Entity Too Large.\n"); // NOTE: should response 4.13 to client...
     return;
-  } else {
-    c_memcpy(buf, pdata, len);
   }
+  // c_memcpy(buf, pdata, len);
 
-  size_t rsplen = coap_server_respond(buf, len, MAX_MESSAGE_SIZE+1);
+  size_t rsplen = coap_server_respond(pdata, len, buf, MAX_MESSAGE_SIZE+1);
   espconn_sent(pesp_conn, (unsigned char *)buf, rsplen);
 
-  c_memset(buf, 0, sizeof(buf));
+  // c_memset(buf, 0, sizeof(buf));
 }
 
 static void coap_sent(void *arg)
@@ -227,26 +227,19 @@ static void coap_response_handler(void *arg, char *pdata, unsigned short len)
   struct espconn *pesp_conn = arg;
 
   coap_packet_t pkt;
-  static uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
+  pkt.content.p = NULL;
+  pkt.content.len = 0;
+  // static uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
+  uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
   c_memset(buf, 0, sizeof(buf)); // wipe prev data
-  static int n = 0;
 
   int rc;
-  if ((len == 1460) && (1460 <= MAX_MESSAGE_SIZE)){
-    c_memcpy(buf, pdata, len); // max length is 1460, another part of data is coming in next callback
-    n = len;
+  if( len > MAX_MESSAGE_SIZE )
+  {
+    NODE_DBG("Request Entity Too Large.\n"); // NOTE: should response 4.13 to client...
     return;
-  } else {
-    if( len > MAX_MESSAGE_SIZE )
-    {
-      NODE_DBG("Request Entity Too Large.\n"); // NOTE: should response 4.13 to client...
-      c_memset(buf, 0, sizeof(buf)); // wipe prev data
-      n = 0;
-      return;
-    }
-    c_memcpy(buf + n, pdata, len);
-    len += n; // more than 1460
   }
+  c_memcpy(buf, pdata, len);
 
   if (0 != (rc = coap_parse(&pkt, buf, len))){
     NODE_DBG("Bad packet rc=%d\n", rc);
@@ -306,8 +299,7 @@ end:
     if(pesp_conn->proto.udp->remote_port || pesp_conn->proto.udp->local_port)
       espconn_delete(pesp_conn);
   }
-  c_memset(buf, 0, sizeof(buf));
-  n = 0;
+  // c_memset(buf, 0, sizeof(buf));
 }
 
 // Lua: client:request( [CON], uri, [payload] )
@@ -431,7 +423,6 @@ static int coap_request( lua_State* L, coap_method_t m )
 
 extern coap_luser_entry *variable_entry;
 extern coap_luser_entry *function_entry;
-extern void build_well_known_rsp(void);
 // Lua: coap:var/func( string )
 static int coap_regist( lua_State* L, const char* mt, int isvar )
 {
@@ -465,8 +456,6 @@ static int coap_regist( lua_State* L, const char* mt, int isvar )
 
   h->L = L;
   h->name = name;
-
-  build_well_known_rsp(); // rebuild .well-known
 
   NODE_DBG("coap_regist is called.\n");
   return 0;  

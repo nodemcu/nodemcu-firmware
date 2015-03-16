@@ -63,7 +63,7 @@ int c_stderr = 1001;
 #define ENDIAN_LITTLE 1234
 #define ENDIAN_BIG  4321
 #define ENDIAN_PDP  3412
-#define ENDIAN ENDIAN_BIG
+#define ENDIAN ENDIAN_LITTLE
 
 /* $Id: strichr.c,v 1.1.1.1 2006/08/23 17:03:06 pefo Exp $ */
 

@@ -11,6 +11,8 @@ void coap_client_response_handler(char *data, unsigned short len, unsigned short
 {
   NODE_DBG("coap_client_response_handler is called.\n");
   coap_packet_t pkt;
+  pkt.content.p = NULL;
+  pkt.content.len = 0;
   int rc;
 
   if (0 != (rc = coap_parse(&pkt, data, len))){

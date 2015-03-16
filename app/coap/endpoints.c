@@ -1,5 +1,6 @@
 #include "c_stdio.h"
 #include "c_string.h"
+#include "c_stdlib.h"
 #include "coap.h"
 
 #include "lua.h"
@@ -8,20 +9,24 @@
 
 #include "os_type.h"
 
-static char rsp[MAX_PAYLOAD_SIZE] = "";
-const uint16_t rsplen = MAX_PAYLOAD_SIZE;
-void build_well_known_rsp(void);
+void build_well_known_rsp(char *rsp, uint16_t rsplen);
 
 void endpoint_setup(void)
 {
     coap_setup();
-    build_well_known_rsp();
 }
 
 static const coap_endpoint_path_t path_well_known_core = {2, {".well-known", "core"}};
 static int handle_get_well_known_core(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt, uint8_t id_hi, uint8_t id_lo)
 {
-    return coap_make_response(scratch, outpkt, (const uint8_t *)rsp, c_strlen(rsp), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_APPLICATION_LINKFORMAT);
+    outpkt->content.p = (uint8_t *)c_zalloc(MAX_PAYLOAD_SIZE);      // this should be free-ed when outpkt is built in coap_server_respond()
+    if(outpkt->content.p == NULL){
+        NODE_DBG("not enough memory\n");
+        return COAP_ERR_BUFFER_TOO_SMALL;
+    }
+    outpkt->content.len = MAX_PAYLOAD_SIZE;
+    build_well_known_rsp(outpkt->content.p, outpkt->content.len);
+    return coap_make_response(scratch, outpkt, (const uint8_t *)outpkt->content.p, c_strlen(outpkt->content.p), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_APPLICATION_LINKFORMAT);
 }
 
 static const coap_endpoint_path_t path_variable = {2, {"v1", "v"}};
@@ -29,6 +34,7 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
 {
     const coap_option_t *opt;
     uint8_t count;
+    int n;
     if (NULL != (opt = coap_findOptions(inpkt, COAP_OPTION_URI_PATH, &count)))
     {
         if ((count != ep->path->count ) && (count != ep->path->count + 1)) // +1 for /f/[function], /v/[variable]
@@ -54,14 +60,15 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
                         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                     if(c_strlen(h->name))
                     {
+                        n = lua_gettop(h->L);
                         lua_getglobal(h->L, h->name);
                         if (!lua_isnumber(h->L, -1)) {
                             NODE_DBG ("should be a number.\n");
-                            lua_pop(h->L, 1);
+                            lua_settop(h->L, n);
                             return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                         } else {
                             const char *res = lua_tostring(h->L,-1);
-                            lua_pop(h->L, 1);
+                            lua_settop(h->L, n);
                             return coap_make_response(scratch, outpkt, (const uint8_t *)res, c_strlen(res), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
                         }
                     }
@@ -84,6 +91,7 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
 {
     const coap_option_t *opt;
     uint8_t count;
+    int n;
     if (NULL != (opt = coap_findOptions(inpkt, COAP_OPTION_URI_PATH, &count)))
     {
         if ((count != ep->path->count ) && (count != ep->path->count + 1)) // +1 for /f/[function], /v/[variable]
@@ -111,10 +119,11 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
 
                     if(c_strlen(h->name))
                     {
+                        n = lua_gettop(h->L);
                         lua_getglobal(h->L, h->name);
                         if (lua_type(h->L, -1) != LUA_TFUNCTION) {
                             NODE_DBG ("should be a function\n");
-                            lua_pop(h->L, 1);
+                            lua_settop(h->L, n);
                             return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                         } else {
                             lua_pushlstring(h->L, inpkt->payload.p, inpkt->payload.len);     // make sure payload.p is filled with '\0' after payload.len, or use lua_pushlstring
@@ -125,14 +134,17 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
                                     size_t len = 0;
                                     const char *ret = luaL_checklstring( h->L, -1, &len );
                                     if(len > MAX_PAYLOAD_SIZE){
+                                        lua_settop(h->L, n);
                                         luaL_error( h->L, "return string:<MAX_PAYLOAD_SIZE" );
                                         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                                     }
                                     NODE_DBG((char *)ret);
                                     NODE_DBG("\n");
+                                    lua_settop(h->L, n);
                                     return coap_make_response(scratch, outpkt, ret, len, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
                                 } 
                             } else {
+                                lua_settop(h->L, n);
                                 return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
                             }
                         }
@@ -204,13 +216,13 @@ const coap_endpoint_t endpoints[] =
     {(coap_method_t)0, NULL, NULL, NULL, NULL}
 };
 
-void build_well_known_rsp(void)
+void build_well_known_rsp(char *rsp, uint16_t rsplen)
 {
     const coap_endpoint_t *ep = endpoints;
     int i;
     uint16_t len = rsplen;
 
-    c_memset(rsp, 0, sizeof(rsp));
+    c_memset(rsp, 0, len);
 
     len--; // Null-terminated string
 
