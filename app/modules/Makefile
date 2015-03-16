@@ -47,6 +47,7 @@ INCLUDES += -I ../platform
 INCLUDES += -I ../wofs
 INCLUDES += -I ../spiffs
 INCLUDES += -I ../smart
+INCLUDES += -I ../cjson
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
