@@ -1,3 +1,13 @@
+---
+-- @description a basic SMTP email example. You must use an account which can provide unencrypted authenticated access.
+-- This example was tested with an AOL and Time Warner email accounts. GMail does not offer unecrypted authenticated access.
+-- To obtain your email's SMTP server and port simply Google it e.g. [my email domain] SMTP settings
+-- For example for timewarner you'll get to this page http://www.timewarnercable.com/en/support/faqs/faqs-internet/e-mailacco/incoming-outgoing-server-addresses.html
+-- To Learn more about SMTP email visit:
+-- SMTP Commands Reference - http://www.samlogic.net/articles/smtp-commands-reference.htm
+-- See "SMTP transport example" in this page http://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol
+-- @author Miguel
+
 require("base64")
 
 -- The email and password from the account you want to send emails from
