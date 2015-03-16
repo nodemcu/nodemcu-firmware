@@ -36,7 +36,7 @@
  *       difficult to know object/array sizes ahead of time.
  */
 
-#include <assert.h>
+// #include <assert.h>
 #include "c_string.h"
 #include "c_math.h"
 #include "c_limits.h"
@@ -44,7 +44,14 @@
 #include "lauxlib.h"
 
 #include "strbuf.h"
+#ifdef LUA_NUMBER_INTEGRAL
 #include "fpconv.h"
+#else
+#define FPCONV_G_FMT_BUFSIZE   32
+#define fpconv_strtod c_strtod
+#define fpconv_init() ((void)0)
+#define fpconv_g_fmt fpconv_g_fmt
+#endif
 
 #ifndef CJSON_MODNAME
 #define CJSON_MODNAME   "cjson"
@@ -964,7 +971,7 @@ static void json_next_string_token(json_parse_t *json, json_token_t *token)
     char ch;
 
     /* Caller must ensure a string is next */
-    assert(*json->ptr == '"');
+    if(!(*json->ptr == '"')) return;
 
     /* Skip " */
     json->ptr++;
@@ -1058,10 +1065,21 @@ static int json_is_invalid_number(json_parse_t *json)
         return 0;                           /* Ordinary number */
     }
 
+    char tmp[4];    // conv to lower. because c_strncasecmp == c_strcmp
+    int i;
+    for (i = 0; i < 3; ++i)
+    {
+        if(p[i]!=0) 
+            tmp[i] = tolower(p[i]);
+        else
+            tmp[i] = 0;
+    }
+    tmp[3] = 0;
+
     /* Reject inf/nan */
-    if (!strncasecmp(p, "inf", 3))
+    if (!c_strncasecmp(tmp, "inf", 3))
         return 1;
-    if (!strncasecmp(p, "nan", 3))
+    if (!c_strncasecmp(tmp, "nan", 3))
         return 1;
 
     /* Pass all other numbers which may still be invalid, but
@@ -1137,17 +1155,17 @@ static void json_next_token(json_parse_t *json, json_token_t *token)
         }
         json_next_number_token(json, token);
         return;
-    } else if (!strncmp(json->ptr, "true", 4)) {
+    } else if (!c_strncmp(json->ptr, "true", 4)) {
         token->type = T_BOOLEAN;
         token->value.boolean = 1;
         json->ptr += 4;
         return;
-    } else if (!strncmp(json->ptr, "false", 5)) {
+    } else if (!c_strncmp(json->ptr, "false", 5)) {
         token->type = T_BOOLEAN;
         token->value.boolean = 0;
         json->ptr += 5;
         return;
-    } else if (!strncmp(json->ptr, "null", 4)) {
+    } else if (!c_strncmp(json->ptr, "null", 4)) {
         token->type = T_NULL;
         json->ptr += 4;
         return;
