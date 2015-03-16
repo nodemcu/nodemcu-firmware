@@ -1,4 +1,5 @@
 ---
+-- Working Example: https://www.youtube.com/watch?v=CcRbFIJ8aeU
 -- @description a basic SMTP email example. You must use an account which can provide unencrypted authenticated access.
 -- This example was tested with an AOL and Time Warner email accounts. GMail does not offer unecrypted authenticated access.
 -- To obtain your email's SMTP server and port simply Google it e.g. [my email domain] SMTP settings
@@ -37,8 +38,8 @@ local email_subject = ""
 local email_body = ""
 local count = 0
 
--- create a socket to the SMTP server
-local smtp_socket = net.createConnection(net.TCP,0)
+
+local smtp_socket = nil -- will be used as socket to email server
 
 -- The display() function will be used to print the SMTP server's response
 function display(sck,response)
@@ -101,8 +102,10 @@ end
 -- @param subject The email's subject
 -- @param body The email's body
 function send_email(subject,body)
+     count = 0
      email_subject = subject
      email_body = body
+     smtp_socket = net.createConnection(net.TCP,0)
      smtp_socket:on("connection",connected)
      smtp_socket:on("receive",display)
      smtp_socket:connect(SMTP_PORT,SMTP_SERVER)

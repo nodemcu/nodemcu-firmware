@@ -1,4 +1,5 @@
 ---
+-- Working Example: https://www.youtube.com/watch?v=PDxTR_KJLhc
 -- IMPORTANT: run node.compile("imap.lua") after uploading this script 
 -- to create a compiled module. Then run file.remove("imap.lua")
 -- @name imap

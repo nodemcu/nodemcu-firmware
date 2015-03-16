@@ -1,4 +1,5 @@
 ---
+-- Working Example: https://www.youtube.com/watch?v=PDxTR_KJLhc
 -- @author Miguel (AllAboutEE.com)
 -- @description This example will read the first email in your inbox using IMAP and 
 -- display it through serial. The email server must provided unecrypted access. The code
@@ -16,7 +17,7 @@ local IMAP_SERVER = "imap.service.com"
 local IMAP_PORT = "143"
 
 local IMAP_TAG = "t1" -- You do not need to change this
-local IMAP_DEBUG = false -- change to true if you would like to see the entire conversation between
+local IMAP_DEBUG = true -- change to true if you would like to see the entire conversation between
                          -- the ESP8266 and IMAP server
 
 local SSID = "ssid"
@@ -93,7 +94,7 @@ function do_next()
 
             -- create patterns to strip away IMAP protocl text from actual message
             pattern1 = "(\*.+\}\r\n)" -- to remove "* n command (BODY[n] {n}"
-            pattern2 = "(\r\n.+)" -- to remove ") t1 OK command completed"
+            pattern2 = "(%)\r\n.+)" -- to remove ") t1 OK command completed"
 
             from = string.gsub(from,pattern1,"")
             from = string.gsub(from,pattern2,"")
