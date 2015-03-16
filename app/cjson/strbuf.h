@@ -50,15 +50,15 @@ typedef struct {
 
 /* Initialise */
 extern strbuf_t *strbuf_new(int len);
-extern void strbuf_init(strbuf_t *s, int len);
-extern void strbuf_set_increment(strbuf_t *s, int increment);
+extern int strbuf_init(strbuf_t *s, int len);
+extern int strbuf_set_increment(strbuf_t *s, int increment);
 
 /* Release */
 extern void strbuf_free(strbuf_t *s);
 extern char *strbuf_free_to_string(strbuf_t *s, int *len);
 
 /* Management */
-extern void strbuf_resize(strbuf_t *s, int len);
+extern int strbuf_resize(strbuf_t *s, int len);
 static int strbuf_empty_length(strbuf_t *s);
 static int strbuf_length(strbuf_t *s);
 static char *strbuf_string(strbuf_t *s, int *len);
@@ -127,13 +127,13 @@ static inline void strbuf_append_char_unsafe(strbuf_t *s, const char c)
 static inline void strbuf_append_mem(strbuf_t *s, const char *c, int len)
 {
     strbuf_ensure_empty_length(s, len);
-    memcpy(s->buf + s->length, c, len);
+    c_memcpy(s->buf + s->length, c, len);
     s->length += len;
 }
 
 static inline void strbuf_append_mem_unsafe(strbuf_t *s, const char *c, int len)
 {
-    memcpy(s->buf + s->length, c, len);
+    c_memcpy(s->buf + s->length, c, len);
     s->length += len;
 }
 

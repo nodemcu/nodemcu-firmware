@@ -41,7 +41,7 @@
 //     exit(-1);
 // }
 
-void strbuf_init(strbuf_t *s, int len)
+int strbuf_init(strbuf_t *s, int len)
 {
     int size;
 
@@ -61,10 +61,11 @@ void strbuf_init(strbuf_t *s, int len)
     s->buf = c_malloc(size);
     if (!s->buf){
         NODE_ERR("not enough memory\n");
-        return;
+        return -1;
     }
 
     strbuf_ensure_null(s);
+	return 0;
 }
 
 strbuf_t *strbuf_new(int len)
@@ -74,7 +75,7 @@ strbuf_t *strbuf_new(int len)
     s = c_malloc(sizeof(strbuf_t));
     if (!s){
         NODE_ERR("not enough memory\n");
-        return;
+        return NULL;
     }
 
     strbuf_init(s, len);
@@ -85,16 +86,17 @@ strbuf_t *strbuf_new(int len)
     return s;
 }
 
-void strbuf_set_increment(strbuf_t *s, int increment)
+int strbuf_set_increment(strbuf_t *s, int increment)
 {
     /* Increment > 0:  Linear buffer growth rate
      * Increment < -1: Exponential buffer growth rate */
     if (increment == 0 || increment == -1){
         NODE_ERR("BUG: Invalid string increment");
-        return;
+        return -1;
     }
 
     s->increment = increment;
+	return 0;
 }
 
 static inline void debug_stats(strbuf_t *s)
@@ -169,7 +171,7 @@ static int calculate_new_size(strbuf_t *s, int len)
 
 /* Ensure strbuf can handle a string length bytes long (ignoring NULL
  * optional termination). */
-void strbuf_resize(strbuf_t *s, int len)
+int strbuf_resize(strbuf_t *s, int len)
 {
     int newsize;
 
@@ -180,13 +182,14 @@ void strbuf_resize(strbuf_t *s, int len)
                 (long)s, s->size, newsize);
     }
 
-    s->size = newsize;
-    s->buf = (char *)c_realloc(s->buf, s->size);
+    s->buf = (char *)c_realloc(s->buf, newsize);
     if (!s->buf){
         NODE_ERR("not enough memory");
-        return;
+        return -1;
     }
+	s->size = newsize;
     s->reallocs++;
+	return 0;
 }
 
 void strbuf_append_string(strbuf_t *s, const char *str)

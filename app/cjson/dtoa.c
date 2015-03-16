@@ -184,7 +184,7 @@
  *	a decimal expansion to decide close cases. This logic is only
  *	used for input more than STRTOD_DIGLIM digits long (default 40).
  */
-
+#if 0
 #include "dtoa_config.h"
 
 #ifndef Long
@@ -4355,4 +4355,5 @@ dtoa
 	}
 #ifdef __cplusplus
 }
+#endif
 #endif

@@ -21,7 +21,7 @@
  * it suffices to declare buf
  *	char buf[32];
  */
-
+#if 0
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -109,3 +109,4 @@ fpconv_g_fmt(char *b, double x, int precision)
 #endif
 	return b - b0;
 	}
+#endif

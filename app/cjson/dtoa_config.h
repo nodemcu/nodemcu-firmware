@@ -1,6 +1,6 @@
 #ifndef _DTOA_CONFIG_H
 #define _DTOA_CONFIG_H
-
+#if 0
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -67,7 +67,7 @@ static pthread_mutex_t private_dtoa_lock[2] = {
 } while (0)
 
 #endif  /* MULTIPLE_THREADS */
-
+#endif
 #endif  /* _DTOA_CONFIG_H */
 
 /* vi:ai et sw=4 ts=4:

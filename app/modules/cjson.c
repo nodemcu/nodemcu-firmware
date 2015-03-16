@@ -42,6 +42,7 @@
 #include "c_limits.h"
 #include "lua.h"
 #include "lauxlib.h"
+#include "flash_api.h"
 
 #include "strbuf.h"
 #ifdef LUA_NUMBER_INTEGRAL
@@ -50,7 +51,6 @@
 #define FPCONV_G_FMT_BUFSIZE   32
 #define fpconv_strtod c_strtod
 #define fpconv_init() ((void)0)
-#define fpconv_g_fmt fpconv_g_fmt
 #endif
 
 #ifndef CJSON_MODNAME
@@ -73,7 +73,7 @@
 #define DEFAULT_DECODE_MAX_DEPTH 1000
 #define DEFAULT_ENCODE_INVALID_NUMBERS 0
 #define DEFAULT_DECODE_INVALID_NUMBERS 1
-#define DEFAULT_ENCODE_KEEP_BUFFER 1
+#define DEFAULT_ENCODE_KEEP_BUFFER 0
 #define DEFAULT_ENCODE_NUMBER_PRECISION 14
 
 #ifdef DISABLE_INVALID_NUMBERS
@@ -97,7 +97,7 @@ typedef enum {
     T_ERROR,
     T_UNKNOWN
 } json_token_type_t;
-
+#if 0
 static const char *json_token_type_name[] = {
     "T_OBJ_BEGIN",
     "T_OBJ_END",
@@ -115,10 +115,27 @@ static const char *json_token_type_name[] = {
     "T_UNKNOWN",
     NULL
 };
+#endif
+static const char json_token_type_name[14][16] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR = {
+    {'T','_','O','B','J','_','B','E','G','I','N',0},
+    {'T','_','O','B','J','_','E','N','D',0},
+    {'T','_','A','R','R','_','B','E','G','I','N',0},
+    {'T','_','A','R','R','_','E','N','D',0},
+    {'T','_','S','T','R','I','N','G',0},
+    {'T','_','N','U','M','B','E','R',0},
+    {'T','_','B','O','O','L','E','A','N',0},
+    {'T','_','N','U','L','L',0},
+    {'T','_','C','O','L','O','N',0},
+    {'T','_','C','O','M','M','A',0},
+    {'T','_','E','N','D',0},
+    {'T','_','W','H','I','T','E','S','P','A','C','E',0},
+    {'T','_','E','R','R','O','R',0},
+    {'T','_','U','N','K','N','O','W','N',0}
+};
 
 typedef struct {
-    json_token_type_t ch2token[256];
-    char escape2char[256];  /* Decoding */
+    // json_token_type_t ch2token[256];    // 256*4 = 1024 byte
+    // char escape2char[256];  /* Decoding */
 
     /* encode_buf is only allocated and used when
      * encode_keep_buffer is set */
@@ -155,6 +172,7 @@ typedef struct {
     int string_len;
 } json_token_t;
 
+#if 0
 static const char *char2escape[256] = {
     "\\u0000", "\\u0001", "\\u0002", "\\u0003",
     "\\u0004", "\\u0005", "\\u0006", "\\u0007",
@@ -193,6 +211,99 @@ static const char *char2escape[256] = {
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 };
+#endif
+
+/* ===== HELPER FUNCTION ===== */
+static const char escape_array[36][8] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR = {
+    {'\\','u','0','0','0','0','\0','\0'},
+    {'\\','u','0','0','0','1','\0','\0'},
+    {'\\','u','0','0','0','2','\0','\0'},
+    {'\\','u','0','0','0','3','\0','\0'},
+    {'\\','u','0','0','0','4','\0','\0'},
+    {'\\','u','0','0','0','5','\0','\0'},
+    {'\\','u','0','0','0','6','\0','\0'},
+    {'\\','u','0','0','0','7','\0','\0'},
+    {'\\','b','\0','\0','\0','\0','\0','\0'},
+    {'\\','t','\0','\0','\0','\0','\0','\0'},
+    {'\\','n','\0','\0','\0','\0','\0','\0'},
+    {'\\','u','0','0','0','b','\0','\0'},
+    {'\\','f','\0','\0','\0','\0','\0','\0'},
+    {'\\','r','\0','\0','\0','\0','\0','\0'},
+    {'\\','u','0','0','0','e','\0','\0'},
+    {'\\','u','0','0','0','f','\0','\0'},
+    {'\\','u','0','0','1','0','\0','\0'},
+    {'\\','u','0','0','1','1','\0','\0'},
+    {'\\','u','0','0','1','2','\0','\0'},
+    {'\\','u','0','0','1','3','\0','\0'},
+    {'\\','u','0','0','1','4','\0','\0'},
+    {'\\','u','0','0','1','5','\0','\0'},
+    {'\\','u','0','0','1','6','\0','\0'},
+    {'\\','u','0','0','1','7','\0','\0'},
+    {'\\','u','0','0','1','8','\0','\0'},
+    {'\\','u','0','0','1','9','\0','\0'},
+    {'\\','u','0','0','1','a','\0','\0'},
+    {'\\','u','0','0','1','b','\0','\0'},
+    {'\\','u','0','0','1','c','\0','\0'},
+    {'\\','u','0','0','1','d','\0','\0'},
+    {'\\','u','0','0','1','e','\0','\0'},
+    {'\\','u','0','0','1','f','\0','\0'},
+    {'\\','\"','\0','\0','\0','\0','\0','\0'},
+    {'\\','/','\0','\0','\0','\0','\0','\0'},
+    {'\\','\\','\0','\0','\0','\0','\0','\0'},
+    {'\\','u','0','0','7','f','\0','\0'}
+};
+
+static const char *char2escape(unsigned char c){
+    if(c<32) return escape_array[c];
+
+    switch(c){
+        case 34: return escape_array[32];
+        case 47: return escape_array[33];
+        case 92: return escape_array[34];
+        case 127: return escape_array[35];
+        default:
+        return NULL;
+    }
+}
+
+static json_token_type_t ch2token(unsigned char c){
+    switch(c){
+        case '{': return T_OBJ_BEGIN;
+        case '}': return T_OBJ_END;
+        case '[': return T_ARR_BEGIN;
+        case ']': return T_ARR_END;
+        case ',': return T_COMMA;
+        case ':': return T_COLON;
+        case '\0': return T_END;
+        case ' ': return T_WHITESPACE;
+        case '\t': return T_WHITESPACE;
+        case '\n': return T_WHITESPACE;
+        case '\r': return T_WHITESPACE;
+
+        /* Update characters that require further processing */
+        case 'f': case 'i': case 'I': case 'n': case 'N': case 't': case '"': case '+': case '-':
+        case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+        return T_UNKNOWN;
+        default:
+        return T_ERROR;
+    }
+}
+
+static char escape2char(unsigned char c){
+    switch(c){
+        case '"': return '"';
+        case '\\': return '\\';
+        case '/': return '/';
+        case 'b': return '\b';
+        case 't': return '\t';
+        case 'n': return '\n';
+        case 'f': return '\f';
+        case 'r': return '\r';
+        case 'u': return 'u';
+        default:
+        return 0;
+    }
+}
 
 /* ===== CONFIGURATION ===== */
 #if 0
@@ -319,8 +430,10 @@ static int json_cfg_encode_keep_buffer(lua_State *l)
 
     /* Init / free the buffer if the setting has changed */
     if (old_value ^ cfg->encode_keep_buffer) {
-        if (cfg->encode_keep_buffer)
-            strbuf_init(&cfg->encode_buf, 0);
+        if (cfg->encode_keep_buffer){
+            if(-1==strbuf_init(&cfg->encode_buf, 0))
+                return luaL_error(l, "not enough memory");
+        }
         else
             strbuf_free(&cfg->encode_buf);
     }
@@ -456,9 +569,7 @@ static json_config_t *json_fetch_config(lua_State *l)
     return &_cfg;
 }
 
-static void cfg_init(json_config_t *cfg){
-    int i;
-
+static int cfg_init(json_config_t *cfg){
     cfg->encode_sparse_convert = DEFAULT_SPARSE_CONVERT;
     cfg->encode_sparse_ratio = DEFAULT_SPARSE_RATIO;
     cfg->encode_sparse_safe = DEFAULT_SPARSE_SAFE;
@@ -470,53 +581,13 @@ static void cfg_init(json_config_t *cfg){
     cfg->encode_number_precision = DEFAULT_ENCODE_NUMBER_PRECISION;
 
 #if DEFAULT_ENCODE_KEEP_BUFFER > 0
-    strbuf_init(&cfg->encode_buf, 0);
+    if(-1==strbuf_init(&cfg->encode_buf, 0)){
+        NODE_ERR("not enough memory\n");
+        return -1;
+    }
 #endif
 
-    /* Decoding init */
-
-    /* Tag all characters as an error */
-    for (i = 0; i < 256; i++)
-        cfg->ch2token[i] = T_ERROR;
-
-    /* Set tokens that require no further processing */
-    cfg->ch2token['{'] = T_OBJ_BEGIN;
-    cfg->ch2token['}'] = T_OBJ_END;
-    cfg->ch2token['['] = T_ARR_BEGIN;
-    cfg->ch2token[']'] = T_ARR_END;
-    cfg->ch2token[','] = T_COMMA;
-    cfg->ch2token[':'] = T_COLON;
-    cfg->ch2token['\0'] = T_END;
-    cfg->ch2token[' '] = T_WHITESPACE;
-    cfg->ch2token['\t'] = T_WHITESPACE;
-    cfg->ch2token['\n'] = T_WHITESPACE;
-    cfg->ch2token['\r'] = T_WHITESPACE;
-
-    /* Update characters that require further processing */
-    cfg->ch2token['f'] = T_UNKNOWN;     /* false? */
-    cfg->ch2token['i'] = T_UNKNOWN;     /* inf, ininity? */
-    cfg->ch2token['I'] = T_UNKNOWN;
-    cfg->ch2token['n'] = T_UNKNOWN;     /* null, nan? */
-    cfg->ch2token['N'] = T_UNKNOWN;
-    cfg->ch2token['t'] = T_UNKNOWN;     /* true? */
-    cfg->ch2token['"'] = T_UNKNOWN;     /* string? */
-    cfg->ch2token['+'] = T_UNKNOWN;     /* number? */
-    cfg->ch2token['-'] = T_UNKNOWN;
-    for (i = 0; i < 10; i++)
-        cfg->ch2token['0' + i] = T_UNKNOWN;
-
-    /* Lookup table for parsing escape characters */
-    for (i = 0; i < 256; i++)
-        cfg->escape2char[i] = 0;          /* String error */
-    cfg->escape2char['"'] = '"';
-    cfg->escape2char['\\'] = '\\';
-    cfg->escape2char['/'] = '/';
-    cfg->escape2char['b'] = '\b';
-    cfg->escape2char['t'] = '\t';
-    cfg->escape2char['n'] = '\n';
-    cfg->escape2char['f'] = '\f';
-    cfg->escape2char['r'] = '\r';
-    cfg->escape2char['u'] = 'u';          /* Unicode parsing required */
+    return 0;
 }
 /* ===== ENCODING ===== */
 
@@ -552,9 +623,18 @@ static void json_append_string(lua_State *l, strbuf_t *json, int lindex)
 
     strbuf_append_char_unsafe(json, '\"');
     for (i = 0; i < len; i++) {
-        escstr = char2escape[(unsigned char)str[i]];
-        if (escstr)
+        escstr = char2escape((unsigned char)str[i]);
+        if (escstr){
+            int i;
+            char temp[8];  // for now, 8-bytes is enough.
+            for (i=0; i < 8; ++i)
+            {
+                temp[i] = byte_of_aligned_array(escstr, i);
+                if(temp[i]==0) break;
+            }
+            escstr = temp;
             strbuf_append_string(json, escstr);
+        }
         else
             strbuf_append_char_unsafe(json, str[i]);
     }
@@ -694,7 +774,12 @@ static void json_append_number(lua_State *l, json_config_t *cfg,
     }
 
     strbuf_ensure_empty_length(json, FPCONV_G_FMT_BUFSIZE);
+#ifdef LUA_NUMBER_INTEGRAL
     len = fpconv_g_fmt(strbuf_empty_ptr(json), num, cfg->encode_number_precision);
+#else
+    c_sprintf(strbuf_empty_ptr(json), "%.14g", num);
+    len = c_strlen(strbuf_empty_ptr(json));
+#endif
     strbuf_extend_length(json, len);
 }
 
@@ -796,7 +881,8 @@ static int json_encode(lua_State *l)
     if (!cfg->encode_keep_buffer) {
         /* Use private buffer */
         encode_buf = &local_encode_buf;
-        strbuf_init(encode_buf, 0);
+        if(-1==strbuf_init(encode_buf, 0))
+            return luaL_error(l, "not enough memory");
     } else {
         /* Reuse existing buffer */
         encode_buf = &cfg->encode_buf;
@@ -967,7 +1053,7 @@ static void json_set_token_error(json_token_t *token, json_parse_t *json,
 
 static void json_next_string_token(json_parse_t *json, json_token_t *token)
 {
-    char *escape2char = json->cfg->escape2char;
+    // char *escape2char = json->cfg->escape2char;
     char ch;
 
     /* Caller must ensure a string is next */
@@ -995,7 +1081,7 @@ static void json_next_string_token(json_parse_t *json, json_token_t *token)
             ch = *(json->ptr + 1);
 
             /* Translate escape code and append to tmp string */
-            ch = escape2char[(unsigned char)ch];
+            ch = escape2char((unsigned char)ch);
             if (ch == 'u') {
                 if (json_append_unicode_escape(json) == 0)
                     continue;
@@ -1107,13 +1193,13 @@ static void json_next_number_token(json_parse_t *json, json_token_t *token)
  */
 static void json_next_token(json_parse_t *json, json_token_t *token)
 {
-    const json_token_type_t *ch2token = json->cfg->ch2token;
+    // const json_token_type_t *ch2token = json->cfg->ch2token;
     int ch;
 
     /* Eat whitespace. */
     while (1) {
         ch = (unsigned char)*(json->ptr);
-        token->type = ch2token[ch];
+        token->type = ch2token(ch);
         if (token->type != T_WHITESPACE)
             break;
         json->ptr++;
@@ -1194,13 +1280,23 @@ static void json_throw_parse_error(lua_State *l, json_parse_t *json,
                                    const char *exp, json_token_t *token)
 {
     const char *found;
+    char temp[16];  // for now, 16-bytes is enough.
 
     strbuf_free(json->tmp);
 
     if (token->type == T_ERROR)
         found = token->value.string;
     else
+    {
         found = json_token_type_name[token->type];
+        int i;
+        for (i=0; i < 16; ++i)
+        {
+            temp[i] = byte_of_aligned_array(found, i);
+            if(temp[i]==0) break;
+        }
+        found = temp;
+    }
 
     /* Note: token->index is 0 based, display starting from 1 */
     luaL_error(l, "Expected %s but found %s at character %d",
@@ -1369,6 +1465,9 @@ static int json_decode(lua_State *l)
      * This means we no longer need to do length checks since the decoded
      * string must be smaller than the entire json string */
     json.tmp = strbuf_new(json_len);
+    if(json.tmp == NULL){
+        return luaL_error(l, "not enought memory");
+    }
 
     json_next_token(&json, &token);
     json_process_value(l, &json, &token);
@@ -1434,6 +1533,7 @@ static int json_protect_conversion(lua_State *l)
     return luaL_error(l, "Memory allocation error in CJSON protected call");
 }
 #endif
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -1459,7 +1559,9 @@ LUALIB_API int luaopen_cjson( lua_State *L )
 {
   /* Initialise number conversions */
   fpconv_init();
-  cfg_init(&_cfg);
+  if(-1==cfg_init(&_cfg)){
+    return luaL_error(L, "BUG: Unable to init config for cjson");;
+  }
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
 #else // #if LUA_OPTIMIZE_MEMORY > 0
