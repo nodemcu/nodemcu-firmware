@@ -7,6 +7,7 @@ version 0.9.5
 ###A lua based firmware for wifi-soc esp8266
 Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
 Lua core based on [eLua project](http://www.eluaproject.net/)<br />
+cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)<br />
 File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
 Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
 Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
@@ -34,6 +35,10 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-03-17<br />
+add cjson module, only cjson.encode() and cjson.decode() is implemented.<br />
+read doc [here](https://github.com/nodemcu/nodemcu-firmware/blob/json/app/cjson/manual.txt)
+
 2015-03-15<br />
 bugs fixed: #239, #273.<br />
 reduce coap module memory usage, add coap module to default built.
