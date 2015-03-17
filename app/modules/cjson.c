@@ -1558,7 +1558,7 @@ const LUA_REG_TYPE cjson_map[] =
 LUALIB_API int luaopen_cjson( lua_State *L )
 {
   /* Initialise number conversions */
-  fpconv_init();
+  // fpconv_init();         // not needed for a specific cpu.
   if(-1==cfg_init(&_cfg)){
     return luaL_error(L, "BUG: Unable to init config for cjson");;
   }
