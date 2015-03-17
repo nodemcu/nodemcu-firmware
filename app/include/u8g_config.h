@@ -14,7 +14,8 @@
 // Enable display drivers
 #define U8G_SSD1306_128x64_I2C
 #define U8G_SSD1306_128x64_SPI
-#define U8G_PCD8544_84x48
+// untested
+#undef U8G_PCD8544_84x48
 
 
 #endif	/* __U8G_CONFIG_H__ */
