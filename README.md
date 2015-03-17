@@ -1,7 +1,8 @@
 # **NodeMCU** #
 version 0.9.5
 
-[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
+[![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases/latest)
 
 ###A lua based firmware for wifi-soc esp8266
 Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
@@ -33,6 +34,23 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-03-15<br />
+bugs fixed: #239, #273.<br />
+reduce coap module memory usage, add coap module to default built.
+
+2015-03-11<br />
+fix bugs of spiffs.<br />
+build both float and integer version [latest releases](https://github.com/nodemcu/nodemcu-firmware/releases/latest).<br />
+fix tmr.time().<br />
+fix memory leak when DNS fail.
+
+2015-03-10<br />
+update to the recent spiffs.<br />
+add file.fsinfo() api, usage: remain, used, total = file.fsinfo().<br />
+add Travis CI. please download the latest firmware from [releases](https://github.com/nodemcu/nodemcu-firmware/releases).<br />
+add math lib, partial api work.<br />
+u8g module, ws2812 module default enabled in dev-branch build.
+
 2015-02-13<br />
 add node.compile() api to compile lua text file into lua bytecode file.<br />
 this will reduce memory usage noticeably when require modules into NodeMCU.<br />
@@ -399,4 +417,26 @@ They'll be available as `u8g.<font_name>` in Lua.
 	ws2812.writergb(3, string.char(0, 0, 255):rep(10))
 	-- first LED green, second LED white
 	ws2812.writergb(4, string.char(0, 255, 0, 255, 255, 255))
+```
+
+####coap client and server
+```lua
+-- use copper addon for firefox
+cs=coap.Server()
+cs:listen(5683)
+
+myvar=1
+cs:var("myvar") -- get coap://192.168.18.103:5683/v1/v/myvar will return the value of myvar: 1
+
+-- function should tack one string, return one string.
+function myfun(payload)
+  print("myfun called")
+  respond = "hello"
+  return respond
+end
+cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
+
+cc = coap.Client()
+cc:get(coap.CON, "coap://192.168.18.100:5683/.well-known/core")
+cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
 ```

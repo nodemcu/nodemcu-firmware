@@ -76,7 +76,7 @@ int coap_parseToken(coap_buffer_t *tokbuf, const coap_header_t *hdr, const uint8
     else
     if (hdr->tkl <= 8)
     {
-        if (4 + hdr->tkl > buflen)
+        if (4U + hdr->tkl > buflen)
             return COAP_ERR_TOKEN_TOO_SHORT;   // tok bigger than packet
         tokbuf->p = buf+4;  // past header
         tokbuf->len = hdr->tkl;
@@ -93,7 +93,7 @@ int coap_buildToken(const coap_buffer_t *tokbuf, const coap_header_t *hdr, uint8
 {
     // inject token
     uint8_t *p;
-    if (buflen < 4 + hdr->tkl)
+    if (buflen < (4U + hdr->tkl))
         return COAP_ERR_BUFFER_TOO_SMALL;
     p = buf + 4;
     if ((hdr->tkl > 0) && (hdr->tkl != tokbuf->len))
@@ -102,7 +102,7 @@ int coap_buildToken(const coap_buffer_t *tokbuf, const coap_header_t *hdr, uint8
     if (hdr->tkl > 0)
         c_memcpy(p, tokbuf->p, hdr->tkl);
 
-    // http://tools.ietf.org/html/draft-ietf-core-coap-18#section-3.1
+    // http://tools.ietf.org/html/rfc7252#section-3.1
     // inject options
     return hdr->tkl;
 }
@@ -111,8 +111,8 @@ int coap_buildToken(const coap_buffer_t *tokbuf, const coap_header_t *hdr, uint8
 int coap_parseOption(coap_option_t *option, uint16_t *running_delta, const uint8_t **buf, size_t buflen)
 {
     const uint8_t *p = *buf;
-    uint16_t len, delta;
     uint8_t headlen = 1;
+    uint16_t len, delta;
 
     if (buflen < headlen) // too small
         return COAP_ERR_OPTION_TOO_SHORT_FOR_HEADER;
@@ -179,14 +179,14 @@ int coap_parseOption(coap_option_t *option, uint16_t *running_delta, const uint8
     return 0;
 }
 
-// http://tools.ietf.org/html/draft-ietf-core-coap-18#section-3.1
+// http://tools.ietf.org/html/rfc7252#section-3.1
 int coap_parseOptionsAndPayload(coap_option_t *options, uint8_t *numOptions, coap_buffer_t *payload, const coap_header_t *hdr, const uint8_t *buf, size_t buflen)
 {
     size_t optionIndex = 0;
+    uint16_t delta = 0;
     const uint8_t *p = buf + 4 + hdr->tkl;
     const uint8_t *end = buf + buflen;
     int rc;
-    uint16_t delta = 0;
     if (p > end)
         return COAP_ERR_OPTION_OVERRUNS_PACKET;   // out of bounds
 
@@ -215,7 +215,7 @@ int coap_parseOptionsAndPayload(coap_option_t *options, uint8_t *numOptions, coa
     return 0;
 }
 
-int coap_buildOptionHeader(unsigned short optDelta, size_t length, uint8_t *buf, size_t buflen)
+int coap_buildOptionHeader(uint32_t optDelta, size_t length, uint8_t *buf, size_t buflen)
 {
     int n = 0;
     uint8_t *p = buf;
@@ -298,7 +298,7 @@ int coap_parse(coap_packet_t *pkt, const uint8_t *buf, size_t buflen)
 }
 
 // options are always stored consecutively, so can return a block with same option num
-const coap_option_t * coap_findOptions(const coap_packet_t *pkt, uint8_t num, uint8_t *count)
+const coap_option_t *coap_findOptions(const coap_packet_t *pkt, uint8_t num, uint8_t *count)
 {
     // FIXME, options is always sorted, can find faster than this
     size_t i;
@@ -352,7 +352,7 @@ int coap_build(uint8_t *buf, size_t *buflen, const coap_packet_t *pkt)
         uint16_t optDelta = 0;
         int rc = 0;
 
-        if (p-buf > *buflen)
+        if (((size_t)(p-buf)) > *buflen)
              return COAP_ERR_BUFFER_TOO_SMALL;
         optDelta = pkt->opts[i].num - running_delta;
 
@@ -381,17 +381,17 @@ int coap_build(uint8_t *buf, size_t *buflen, const coap_packet_t *pkt)
     return 0;
 }
 
-void coap_option_nibble(uint16_t value, uint8_t *nibble)
+void coap_option_nibble(uint32_t value, uint8_t *nibble)
 {
     if (value<13)
     {
         *nibble = (0xFF & value);
     }
     else
-    if (((uint32_t)value)<=0xFF+13)
+    if (value<=0xFF+13)
     {
         *nibble = 13;
-    } else if (((uint32_t)value) -269 <=0xFFFF)
+    } else if (value<=0xFFFF+269)
     {
         *nibble = 14;
     }
@@ -405,7 +405,7 @@ int coap_make_response(coap_rw_buffer_t *scratch, coap_packet_t *pkt, const uint
     pkt->hdr.code = rspcode;
     pkt->hdr.id[0] = msgid_hi;
     pkt->hdr.id[1] = msgid_lo;
-    pkt->numopts = 0;
+    pkt->numopts = 1;
 
     // need token in response
     if (tok) {
@@ -442,7 +442,7 @@ unsigned int coap_encode_var_bytes(unsigned char *buf, unsigned int val) {
   return n;
 }
 
-static uint8_t _token_data[4]={'n','o','d','e'};
+static uint8_t _token_data[4] = {'n','o','d','e'};
 coap_buffer_t the_token = { _token_data, 4 };
 static unsigned short message_id;
 

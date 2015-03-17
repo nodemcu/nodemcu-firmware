@@ -24,6 +24,8 @@ coap_pdu_t * coap_new_pdu(void) {
     c_free(pdu);
     return NULL;
   }
+  pdu->pkt->content.p = NULL;
+  pdu->pkt->content.len = 0;
 
   pdu->msg.p = (uint8_t *)c_zalloc(MAX_REQUEST_SIZE+1); // +1 for string '\0'
   if(!pdu->msg.p){
