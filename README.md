@@ -23,8 +23,9 @@ Tencent QQ group: 309957875<br />
 - Easy to access wireless router
 - Based on Lua 5.1.4 (without *debug, os* module.)
 - Event-Drive programming preferred.
-- Build-in file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
+- Build-in json, file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
 - GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
+- Both Integer(less memory usage) and Float version firmware provided.
 
 # To Do List (pull requests are very welcomed)
 - loadable c module
@@ -35,9 +36,13 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-03-18<br />
+update u8glib.<br />
+merge everything to master.
+
 2015-03-17<br />
 add cjson module, only cjson.encode() and cjson.decode() is implemented.<br />
-read doc [here](https://github.com/nodemcu/nodemcu-firmware/blob/json/app/cjson/manual.txt)
+read doc [here](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/cjson/manual.txt)
 
 2015-03-15<br />
 bugs fixed: #239, #273.<br />
@@ -62,32 +67,6 @@ this will reduce memory usage noticeably when require modules into NodeMCU.<br /
 raise internal LUA_BUFFERSIZE from 1024 to 4096.<br />
 lua require("mod") will load "mod.lc" file first if exist.<br />
 build latest pre_build bin.
-
-2015-02-12<br />
-fix float print.<br />
-update spiffs, add file.rename api to file module.<br />
-fix some file system bug. need more tests.<br />
-add support to 8Mbyte, 16Mbyte flash.<br />
-remove node.led() and node.key() api.<br />
-some update to lua_modules and examples.<br />
-build latest pre_build bin.
-
-2015-01-27<br />
-support floating point LUA.<br />
-use macro LUA_NUMBER_INTEGRAL in user_config.h control this feature.<br />
-LUA_NUMBER_INTEGRAL to disable floating point support,<br />
-// LUA_NUMBER_INTEGRAL to enable floating point support.<br />
-fix tmr.time(). #132<br />
-fix filesystem length. #113<br />
-fix ssl reboots. #134<br />
-build pre_build bin.
-
-2015-01-26<br />
-applied sdk095_patch1 to sdk 0.9.5.<br />
-added LUA examples and modules [by dvv](https://github.com/dvv). <br />
-added node.readvdd33() API [by alonewolfx2](https://github.com/alonewolfx2).<br />
-build pre_build bin.
-
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 
@@ -154,9 +133,10 @@ build pre_build bin.
 #define LUA_USE_MODULES_OW
 #define LUA_USE_MODULES_BIT
 #define LUA_USE_MODULES_MQTT
-// #define LUA_USE_MODULES_COAP     // need about 4k more ram for now
+// #define LUA_USE_MODULES_COAP
 #define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_WS2812
+#define LUA_USE_MODULES_CJSON
 #endif /* LUA_USE_MODULES */
 ```
 
@@ -469,4 +449,18 @@ cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
 cc = coap.Client()
 cc:get(coap.CON, "coap://192.168.18.100:5683/.well-known/core")
 cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
+```
+
+####cjson
+
+```lua
+-- Translate Lua value to/from JSON
+-- text = cjson.encode(value)
+-- value = cjson.decode(text)
+json_text = '[ true, { "foo": "bar" } ]'
+value = cjson.decode(json_text)
+-- Returns: { true, { foo = "bar" } }
+value = { true, { foo = "bar" } }
+json_text = cjson.encode(value)
+-- Returns: '[true,{"foo":"bar"}]'
 ```
