@@ -4,7 +4,7 @@
 #define LUA_USE_BUILTIN_STRING		// for string.xxx()
 #define LUA_USE_BUILTIN_TABLE		// for table.xxx()
 #define LUA_USE_BUILTIN_COROUTINE	// for coroutine.xxx()
-#define LUA_USE_BUILTIN_MATH		// for math.xxx(), partially work
+// #define LUA_USE_BUILTIN_MATH		// for math.xxx(), partially work
 // #define LUA_USE_BUILTIN_IO 			// for io.xxx(), partially work
 
 // #define LUA_USE_BUILTIN_OS			// for os.xxx(), not work
@@ -30,6 +30,7 @@
 #define LUA_USE_MODULES_COAP
 #define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_WS2812
+#define LUA_USE_MODULES_CJSON
 #endif /* LUA_USE_MODULES */
 
 #endif	/* __USER_MODULES_H__ */
