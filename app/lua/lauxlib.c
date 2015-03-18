@@ -698,6 +698,8 @@ LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
     lf.f = fs_open(filename, FS_RDONLY);
     if (lf.f < FS_OPEN_OK) return errfsfile(L, "open", fnameindex);
   }
+  // if(fs_size(lf.f)>LUAL_BUFFERSIZE)
+  //   return luaL_error(L, "file is too big");
   c = fs_getc(lf.f);
   if (c == '#') {  /* Unix exec. file? */
     lf.extraline = 1;

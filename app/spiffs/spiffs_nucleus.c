@@ -614,7 +614,7 @@ s32_t spiffs_object_create(
   spiffs_page_object_ix_header oix_hdr;
   int entry;
 
-  res = spiffs_gc_check(fs, 0);
+  res = spiffs_gc_check(fs, SPIFFS_DATA_PAGE_SIZE(fs));
   SPIFFS_CHECK_RES(res);
 
   obj_id |= SPIFFS_OBJ_ID_IX_FLAG;
@@ -811,7 +811,17 @@ s32_t spiffs_object_append(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
   s32_t res = SPIFFS_OK;
   u32_t written = 0;
 
-  res = spiffs_gc_check(fs, len);
+  SPIFFS_DBG("append: %i bytes @ offs %i of size %i\n", len, offset, fd->size);
+
+  if (offset > fd->size) {
+    SPIFFS_DBG("append: offset reversed to size\n");
+    offset = fd->size;
+  }
+
+  res = spiffs_gc_check(fs, len + SPIFFS_DATA_PAGE_SIZE(fs)); // add an extra page of data worth for meta
+  if (res != SPIFFS_OK) {
+    SPIFFS_DBG("append: gc check fail %i\n", res);
+  }
   SPIFFS_CHECK_RES(res);
 
   spiffs_page_object_ix_header *objix_hdr = (spiffs_page_object_ix_header *)fs->work;
@@ -912,7 +922,7 @@ s32_t spiffs_object_append(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
             res = spiffs_obj_lu_find_id_and_span(fs, fd->obj_id | SPIFFS_OBJ_ID_IX_FLAG, cur_objix_spix, 0, &pix);
             SPIFFS_CHECK_RES(res);
           }
-          SPIFFS_DBG("append: %04x found object index at page %04x\n", fd->obj_id, pix);
+          SPIFFS_DBG("append: %04x found object index at page %04x [fd size %i]\n", fd->obj_id, pix, fd->size);
           res = _spiffs_rd(fs, SPIFFS_OP_T_OBJ_IX | SPIFFS_OP_C_READ,
               fd->file_nbr, SPIFFS_PAGE_TO_PADDR(fs, pix), SPIFFS_CFG_LOG_PAGE_SZ(fs), fs->work);
           SPIFFS_CHECK_RES(res);
@@ -1003,8 +1013,8 @@ s32_t spiffs_object_append(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
     // update size in object header index page
     res2 = spiffs_object_update_index_hdr(fs, fd, fd->obj_id,
         fd->objix_hdr_pix, 0, 0, offset+written, &new_objix_hdr_page);
-    SPIFFS_DBG("append: %04x store new size II %i in objix_hdr, %04x:%04x, written %i\n", fd->obj_id
-        , offset+written, new_objix_hdr_page, 0, written);
+    SPIFFS_DBG("append: %04x store new size II %i in objix_hdr, %04x:%04x, written %i, res %i\n", fd->obj_id
+        , offset+written, new_objix_hdr_page, 0, written, res2);
     SPIFFS_CHECK_RES(res2);
   } else {
     // wrote within object index header page
@@ -1042,7 +1052,7 @@ s32_t spiffs_object_modify(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
   s32_t res = SPIFFS_OK;
   u32_t written = 0;
 
-  res = spiffs_gc_check(fs, len);
+  res = spiffs_gc_check(fs, len + SPIFFS_DATA_PAGE_SIZE(fs));
   SPIFFS_CHECK_RES(res);
 
   spiffs_page_object_ix_header *objix_hdr = (spiffs_page_object_ix_header *)fs->work;
@@ -1308,7 +1318,7 @@ s32_t spiffs_object_truncate(
   s32_t res = SPIFFS_OK;
   spiffs *fs = fd->fs;
 
-  res = spiffs_gc_check(fs, 0);
+  res = spiffs_gc_check(fs, remove ? 0 : SPIFFS_DATA_PAGE_SIZE(fs));
   SPIFFS_CHECK_RES(res);
 
   spiffs_page_ix objix_pix = fd->objix_hdr_pix;
@@ -1386,13 +1396,26 @@ s32_t spiffs_object_truncate(
       ((spiffs_page_ix*)((u8_t *)objix + sizeof(spiffs_page_object_ix)))[SPIFFS_OBJ_IX_ENTRY(fs, data_spix)] = SPIFFS_OBJ_ID_FREE;
     }
 
+    SPIFFS_DBG("truncate: got data pix %04x\n", data_pix);
+
     if (cur_size - SPIFFS_DATA_PAGE_SIZE(fs) >= new_size) {
       // delete full data page
       res = spiffs_page_data_check(fs, fd, data_pix, data_spix);
-      if (res != SPIFFS_OK) break;
+      if (res != SPIFFS_ERR_DELETED && res != SPIFFS_OK && res != SPIFFS_ERR_INDEX_REF_FREE) {
+        SPIFFS_DBG("truncate: err validating data pix %i\n", res);
+        break;
+      }
 
-      res = spiffs_page_delete(fs, data_pix);
-      if (res != SPIFFS_OK) break;
+      if (res == SPIFFS_OK) {
+        res = spiffs_page_delete(fs, data_pix);
+        if (res != SPIFFS_OK) {
+          SPIFFS_DBG("truncate: err deleting data pix %i\n", res);
+          break;
+        }
+      } else if (res == SPIFFS_ERR_DELETED || res == SPIFFS_ERR_INDEX_REF_FREE) {
+        res = SPIFFS_OK;
+      }
+
       // update current size
       if (cur_size % SPIFFS_DATA_PAGE_SIZE(fs) == 0) {
         cur_size -= SPIFFS_DATA_PAGE_SIZE(fs);

@@ -9,6 +9,10 @@
 
 #ifndef SPIFFS_H_
 #define SPIFFS_H_
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "c_stdio.h"
 #include "spiffs_config.h"
 
@@ -181,7 +185,7 @@ typedef struct {
   u32_t fd_count;
 
   // last error
-  s32_t errno;
+  s32_t err_code;
 
   // current number of free blocks
   u32_t free_blocks;
@@ -375,15 +379,21 @@ void SPIFFS_close(spiffs *fs, spiffs_file fh);
  * Renames a file
  * @param fs            the file system struct
  * @param old           path of file to rename
- * @param new           new path of file
+ * @param newPath       new path of file
  */
-s32_t SPIFFS_rename(spiffs *fs, char *old, char *new);
+s32_t SPIFFS_rename(spiffs *fs, char *old, char *newPath);
 
 /**
  * Returns last error of last file operation.
  * @param fs            the file system struct
  */
 s32_t SPIFFS_errno(spiffs *fs);
+
+/**
+ * Clears last error.
+ * @param fs            the file system struct
+ */
+void SPIFFS_clearerr(spiffs *fs);
 
 /**
  * Opens a directory stream corresponding to the given name.
@@ -416,6 +426,21 @@ struct spiffs_dirent *SPIFFS_readdir(spiffs_DIR *d, struct spiffs_dirent *e);
  */
 s32_t SPIFFS_check(spiffs *fs);
 
+
+/**
+ * Returns number of total bytes available and number of used bytes.
+ * This is an estimation, and depends on if there a many files with little
+ * data or few files with much data.
+ * NB: If used number of bytes exceeds total bytes, a SPIFFS_check should
+ * run. This indicates a power loss in midst of things. In worst case
+ * (repeated powerlosses in mending or gc) you might have to delete some files.
+ *
+ * @param fs            the file system struct
+ * @param total         total number of bytes in filesystem
+ * @param used          used number of bytes in filesystem
+ */
+s32_t SPIFFS_info(spiffs *fs, u32_t *total, u32_t *used);
+
 /**
  * Check if EOF reached.
  * @param fs            the file system struct
@@ -423,6 +448,7 @@ s32_t SPIFFS_check(spiffs *fs);
  */
 s32_t SPIFFS_eof(spiffs *fs, spiffs_file fh);
 s32_t SPIFFS_tell(spiffs *fs, spiffs_file fh);
+s32_t SPIFFS_size(spiffs *fs, spiffs_file fh);
 
 #if SPIFFS_TEST_VISUALISATION
 /**
@@ -465,5 +491,10 @@ int myspiffs_error( int fd );
 void myspiffs_clearerr( int fd );
 int myspiffs_check( void );
 int myspiffs_rename( const char *old, const char *newname );
+size_t myspiffs_size( int fd );
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* SPIFFS_H_ */

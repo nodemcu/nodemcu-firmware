@@ -21,6 +21,7 @@
 #define LNUMKEY                     LRO_NUMKEY
 #define LNILKEY                     LRO_NILKEY
 #define LFUNCVAL                    LRO_FUNCVAL
+#define LUDATA                      LRO_LUDATA
 #define LNUMVAL                     LRO_NUMVAL
 #define LROVAL                      LRO_ROVAL
 #define LNILVAL                     LRO_NILVAL
