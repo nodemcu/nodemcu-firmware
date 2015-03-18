@@ -98,5 +98,9 @@ LUALIB_API int ( luaopen_ow )( lua_State *L );
   lua_pushnumber( L, val );\
   lua_setfield( L, -2, name )
     
+#define MOD_REG_LUDATA( L, name, val )\
+  lua_pushlightuserdata( L, val );\
+  lua_setfield( L, -2, name )
+    
 #endif
 
