@@ -542,7 +542,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 /*
 @@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
 */
-#define LUAL_BUFFERSIZE		(BUFSIZ*4)
+#define LUAL_BUFFERSIZE		((BUFSIZ)*4)
 
 /* }================================================================== */
 

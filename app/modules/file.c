@@ -111,7 +111,7 @@ static int file_seek (lua_State *L)
   long offset = luaL_optlong(L, 2, 0);
   op = fs_seek(file_fd, offset, mode[op]);
   if (op)
-    lua_pushboolean(L, 1);  /* error */
+    lua_pushnil(L);  /* error */
   else
     lua_pushinteger(L, fs_tell(file_fd));
   return 1;
@@ -173,6 +173,22 @@ static int file_rename( lua_State* L )
     lua_pushboolean(L, 0);
   }
   return 1;
+}
+
+// Lua: fsinfo()
+static int file_fsinfo( lua_State* L )
+{
+  uint32_t total, used;
+  SPIFFS_info(&fs, &total, &used);
+  NODE_DBG("total: %d, used:%d\n", total, used);
+  if(total>0x7FFFFFFF || used>0x7FFFFFFF || used > total)
+  {
+    return luaL_error(L, "file system error");;
+  }
+  lua_pushinteger(L, total-used);
+  lua_pushinteger(L, used);
+  lua_pushinteger(L, total);
+  return 3;
 }
 
 #endif
@@ -308,6 +324,7 @@ const LUA_REG_TYPE file_map[] =
   { LSTRKEY( "flush" ), LFUNCVAL( file_flush ) },
   // { LSTRKEY( "check" ), LFUNCVAL( file_check ) },
   { LSTRKEY( "rename" ), LFUNCVAL( file_rename ) },
+  { LSTRKEY( "fsinfo" ), LFUNCVAL( file_fsinfo ) },
 #endif
   
 #if LUA_OPTIMIZE_MEMORY > 0
@@ -321,7 +338,7 @@ LUALIB_API int luaopen_file( lua_State *L )
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
 #else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_NODE, file_map );
+  luaL_register( L, AUXLIB_FILE, file_map );
   // Add constants
 
   return 1;

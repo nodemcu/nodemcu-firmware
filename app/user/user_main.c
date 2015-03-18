@@ -60,7 +60,19 @@ void nodemcu_init(void)
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
-    
+
+#if defined(FLASH_SAFE_API)
+    if( flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
+        NODE_ERR("Self adjust flash size.\n");
+        // Fit hardware real flash size.
+        flash_rom_set_size_byte(flash_safe_get_size_byte());
+        // Flash init data at FLASHSIZE - 0x04000 Byte.
+        flash_init_data_default();
+        // Flash blank data at FLASHSIZE - 0x02000 Byte.
+        flash_init_data_blank();        
+    }
+#endif // defined(FLASH_SAFE_API)
+
     if( !flash_init_data_written() ){
         NODE_ERR("Restore init data.\n");
         // Flash init data at FLASHSIZE - 0x04000 Byte.
