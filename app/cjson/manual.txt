@@ -1,0 +1,168 @@
+= Lua CJSON 2.1devel Manual =
+Mark Pulford <mark@kyne.com.au>
+:revdate: 1st March 2012
+
+Overview
+--------
+
+The Lua CJSON module provides JSON support for Lua.
+
+*Features*::
+- Fast, standards compliant encoding/parsing routines
+- Full support for JSON with UTF-8, including decoding surrogate pairs
+- Optional run-time support for common exceptions to the JSON
+  specification (infinity, NaN,..)
+- No dependencies on other libraries
+
+*Caveats*::
+- UTF-16 and UTF-32 are not supported
+
+Lua CJSON is covered by the MIT license. Review the file +LICENSE+ for
+details.
+
+API (Functions)
+---------------
+
+Synopsis
+~~~~~~~~
+
+[source,lua]
+------------
+
+-- Translate Lua value to/from JSON
+text = cjson.encode(value)
+value = cjson.decode(text)
+
+
+Module Instantiation
+~~~~~~~~~~~~~~~~~~~~
+
+decode
+~~~~~~
+
+[source,lua]
+------------
+value = cjson.decode(json_text)
+------------
+
++cjson.decode+ will deserialise any UTF-8 JSON string into a Lua value
+or table.
+
+UTF-16 and UTF-32 JSON strings are not supported.
+
++cjson.decode+ requires that any NULL (ASCII 0) and double quote (ASCII
+34) characters are escaped within strings. All escape codes will be
+decoded and other bytes will be passed transparently. UTF-8 characters
+are not validated during decoding and should be checked elsewhere if
+required.
+
+JSON +null+ will be converted to a NULL +lightuserdata+ value. This can
+be compared with +cjson.null+ for convenience.
+
+By default, numbers incompatible with the JSON specification (infinity,
+NaN, hexadecimal) can be decoded. This default can be changed with
+<<decode_invalid_numbers,+cjson.decode_invalid_numbers+>>.
+
+.Example: Decoding
+[source,lua]
+json_text = '[ true, { "foo": "bar" } ]'
+value = cjson.decode(json_text)
+-- Returns: { true, { foo = "bar" } }
+
+[CAUTION]
+Care must be taken after decoding JSON objects with numeric keys. Each
+numeric key will be stored as a Lua +string+. Any subsequent code
+assuming type +number+ may break.
+
+
+[[encode]]
+encode
+~~~~~~
+
+[source,lua]
+------------
+json_text = cjson.encode(value)
+------------
+
++cjson.encode+ will serialise a Lua value into a string containing the
+JSON representation.
+
++cjson.encode+ supports the following types:
+
+- +boolean+
+- +lightuserdata+ (NULL value only)
+- +nil+
+- +number+
+- +string+
+- +table+
+
+The remaining Lua types will generate an error:
+
+- +function+
+- +lightuserdata+ (non-NULL values)
+- +thread+
+- +userdata+
+
+By default, numbers are encoded with 14 significant digits. Refer to
+<<encode_number_precision,+cjson.encode_number_precision+>> for details.
+
+Lua CJSON will escape the following characters within each UTF-8 string:
+
+- Control characters (ASCII 0 - 31)
+- Double quote (ASCII 34)
+- Forward slash (ASCII 47)
+- Blackslash (ASCII 92)
+- Delete (ASCII 127)
+
+All other bytes are passed transparently.
+
+[CAUTION]
+=========
+Lua CJSON will successfully encode/decode binary strings, but this is
+technically not supported by JSON and may not be compatible with other
+JSON libraries. To ensure the output is valid JSON, applications should
+ensure all Lua strings passed to +cjson.encode+ are UTF-8.
+
+Base64 is commonly used to encode binary data as the most efficient
+encoding under UTF-8 can only reduce the encoded size by a further
+&#126;8%. Lua Base64 routines can be found in the
+http://w3.impa.br/%7Ediego/software/luasocket/[LuaSocket] and
+http://www.tecgraf.puc-rio.br/%7Elhf/ftp/lua/#lbase64[lbase64] packages.
+=========
+
+Lua CJSON uses a heuristic to determine whether to encode a Lua table as
+a JSON array or an object. A Lua table with only positive integer keys
+of type +number+ will be encoded as a JSON array. All other tables will
+be encoded as a JSON object.
+
+Lua CJSON does not use metamethods when serialising tables.
+
+- +rawget+ is used to iterate over Lua arrays
+- +next+ is used to iterate over Lua objects
+
+Lua arrays with missing entries (_sparse arrays_) may optionally be
+encoded in several different ways. Refer to
+<<encode_sparse_array,+cjson.encode_sparse_array+>> for details.
+
+JSON object keys are always strings. Hence +cjson.encode+ only supports
+table keys which are type +number+ or +string+. All other types will
+generate an error.
+
+[NOTE]
+Standards compliant JSON must be encapsulated in either an object (+{}+)
+or an array (+[]+). If strictly standards compliant JSON is desired, a
+table must be passed to +cjson.encode+.
+
+By default, encoding the following Lua values will generate errors:
+
+- Numbers incompatible with the JSON specification (infinity, NaN)
+- Tables nested more than 1000 levels deep
+- Excessively sparse Lua arrays
+
+.Example: Encoding
+[source,lua]
+value = { true, { foo = "bar" } }
+json_text = cjson.encode(value)
+-- Returns: '[true,{"foo":"bar"}]'
+
+// vi:ft=asciidoc tw=72:

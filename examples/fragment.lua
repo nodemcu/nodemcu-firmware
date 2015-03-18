@@ -1,7 +1,7 @@
 pwm.setup(0,500,50) pwm.setup(1,500,50) pwm.setup(2,500,50)
 pwm.start(0) pwm.start(1) pwm.start(2)
 function led(r,g,b) pwm.setduty(0,g) pwm.setduty(1,b) pwm.setduty(2,r) end
-wifi.station.autoconnect(1)
+wifi.sta.autoconnect(1)
 a=0
 tmr.alarm( 1000,1,function() if a==0 then a=1 led(50,50,50) else a=0 led(0,0,0) end end)
 
