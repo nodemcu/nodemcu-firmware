@@ -916,7 +916,7 @@ uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, voi
     case U8G_COM_MSG_WRITE_BYTE:
         //u8g->pin_list[U8G_PI_SET_A0] = 1;
         if ( u8g_com_esp8266_ssd_start_sequence(u8g) == 0 )
-            return platform_i2c_stop( ESP_I2C_ID ), 0;
+            return platform_i2c_send_stop( ESP_I2C_ID ), 0;
         // ignore return value -> tolerate missing ACK
         if ( platform_i2c_send_byte( ESP_I2C_ID, arg_val) == 0 )
             ; //return platform_i2c_send_stop( ESP_I2C_ID ), 0;
