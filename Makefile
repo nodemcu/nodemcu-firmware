@@ -105,7 +105,7 @@ OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
 CCFLAGS += 			\
 	-g			\
-	-O2			\
+	-Os			\
 	-Wpointer-arith		\
 	-Wundef			\
 	-Werror			\
