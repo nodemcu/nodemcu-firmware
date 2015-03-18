@@ -35,6 +35,7 @@
 
 #include "fpconv.h"
 
+#if 0
 /* Lua CJSON assumes the locale is the same for all threads within a
  * process and doesn't change after initialisation.
  *
@@ -203,6 +204,6 @@ void fpconv_init()
 {
     fpconv_update_locale();
 }
-
+#endif
 /* vi:ai et sw=4 ts=4:
  */

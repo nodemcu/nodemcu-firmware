@@ -772,7 +772,7 @@ static void json_append_number(lua_State *l, json_config_t *cfg,
 
     strbuf_ensure_empty_length(json, FPCONV_G_FMT_BUFSIZE);
     // len = fpconv_g_fmt(strbuf_empty_ptr(json), num, cfg->encode_number_precision);
-    c_sprintf(strbuf_empty_ptr(json), LUA_NUMBER_FMT, num);
+    c_sprintf(strbuf_empty_ptr(json), LUA_NUMBER_FMT, (LUA_NUMBER)num);
     len = c_strlen(strbuf_empty_ptr(json));
 
     strbuf_extend_length(json, len);
