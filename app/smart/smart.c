@@ -127,11 +127,19 @@ int smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
   return res;
 }
 
-void detect(uint8 *buf, uint16 len){
+void detect(uint8 *arg, uint16 len){
   uint16_t seq;
   int16_t seq_delta = 0;
   uint16_t byte_num = 0, bit_num = 0;
   int16_t c = 0;
+  uint8 *buf = NULL;
+  if( len == 12 ){
+    return;
+  } else if (len >= 64){
+    buf = arg + sizeof(struct RxControl);
+  } else {
+    return;
+  }
   if( ( (buf[0]) & TYPE_SUBTYPE_MASK) != TYPE_SUBTYPE_QOS_DATA){
     return;
   }
