@@ -25,6 +25,9 @@
 #include "flash_fs.h"
 #include "user_version.h"
 
+#define CPU80MHZ 80
+#define CPU160MHZ 160
+
 // Lua: restart()
 static int node_restart( lua_State* L )
 {
@@ -392,6 +395,24 @@ static int node_compile( lua_State* L )
   return 0;
 }
 
+// Lua: setcpufreq(mhz)
+// mhz is either CPU80MHZ od CPU160MHZ
+static int node_setcpufreq(lua_State* L)
+{
+  // http://www.esp8266.com/viewtopic.php?f=21&t=1369
+  uint32_t new_freq = luaL_checkinteger(L, 1);
+  if (new_freq == CPU160MHZ){
+    REG_SET_BIT(0x3ff00014, BIT(0));
+    os_update_cpu_frequency(CPU160MHZ);
+  } else {
+    REG_CLR_BIT(0x3ff00014,  BIT(0));
+    os_update_cpu_frequency(CPU80MHZ);
+  }
+  new_freq = ets_get_cpu_frequency();
+  lua_pushinteger(L, new_freq);
+  return 1;
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -412,6 +433,9 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
   { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
   { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
+  { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
+  { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
+  { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0
@@ -429,5 +453,5 @@ LUALIB_API int luaopen_node( lua_State *L )
   // Add constants
 
   return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
+#endif // #if LUA_OPTIMIZE_MEMORY > 0
 }

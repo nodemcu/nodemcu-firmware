@@ -36,7 +36,8 @@ SUBDIRS=    \
 	smart 	\
 	wofs 	\
 	modules	\
-	spiffs
+	spiffs	\
+	cjson
 
 endif # } PDIR
 
@@ -84,6 +85,7 @@ COMPONENTS_eagle.app.v6 = \
 	smart/smart.a 	\
 	wofs/wofs.a 	\
 	spiffs/spiffs.a 	\
+	cjson/libcjson.a 	\
 	modules/libmodules.a
 
 LINKFLAGS_eagle.app.v6 = \

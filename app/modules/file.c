@@ -338,7 +338,7 @@ LUALIB_API int luaopen_file( lua_State *L )
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
 #else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_NODE, file_map );
+  luaL_register( L, AUXLIB_FILE, file_map );
   // Add constants
 
   return 1;

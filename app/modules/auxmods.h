@@ -79,6 +79,9 @@ LUALIB_API int ( luaopen_file )( lua_State *L );
 #define AUXLIB_OW      "ow"
 LUALIB_API int ( luaopen_ow )( lua_State *L );
 
+#define AUXLIB_CJSON      "cjson"
+LUALIB_API int ( luaopen_ow )( lua_State *L );
+
 // Helper macros
 #define MOD_CHECK_ID( mod, id )\
   if( !platform_ ## mod ## _exists( id ) )\
@@ -96,6 +99,10 @@ LUALIB_API int ( luaopen_ow )( lua_State *L );
 
 #define MOD_REG_NUMBER( L, name, val )\
   lua_pushnumber( L, val );\
+  lua_setfield( L, -2, name )
+    
+#define MOD_REG_LUDATA( L, name, val )\
+  lua_pushlightuserdata( L, val );\
   lua_setfield( L, -2, name )
     
 #endif

@@ -141,6 +141,13 @@
 #define ROM_MODULES_WS2812
 #endif
 
+#if defined(LUA_USE_MODULES_CJSON)
+#define MODULES_CJSON "cjson"
+#define ROM_MODULES_CJSON \
+    _ROM(MODULES_CJSON, luaopen_cjson, cjson_map)
+#else
+#define ROM_MODULES_CJSON
+#endif
 
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
@@ -159,7 +166,8 @@
         ROM_MODULES_UART    \
         ROM_MODULES_OW      \
         ROM_MODULES_BIT     \
-        ROM_MODULES_WS2812
+        ROM_MODULES_WS2812  \
+        ROM_MODULES_CJSON
 
 #endif
 

@@ -30,6 +30,7 @@
 #define LUA_USE_MODULES_COAP
 #define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_WS2812
+#define LUA_USE_MODULES_CJSON
 #endif /* LUA_USE_MODULES */
 
 #endif	/* __USER_MODULES_H__ */
