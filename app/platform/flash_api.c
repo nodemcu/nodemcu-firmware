@@ -369,8 +369,8 @@ bool flash_init_data_blank(void)
     // It will init system config to blank!
     bool result = false;
 #if defined(FLASH_SAFE_API)
-    if ((SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_rom_get_sec_num() - 2))) &&
-            (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_rom_get_sec_num() - 1))))
+    if ((SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 2))) &&
+            (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 1))))
 #else
     if ((SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 2))) &&
             (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 1))))
