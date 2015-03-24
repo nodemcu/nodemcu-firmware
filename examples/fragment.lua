@@ -381,3 +381,18 @@ function TestDNSLeak()
      tmr.alarm(1, 3000, 0, function() print("hack socket close, MEM: "..node.heap()) c:close() end) -- socket timeout hack
      print("MEM: "..node.heap())
 end
+
+v="abc%0D%0Adef"
+print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end))
+
+function ex(x) string.find("abc%0Ddef","bc") return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex)
+
+function ex(x) string.char(35) return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
+
+function ex(x) string.lower('Ab') return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
+
+v="abc%0D%0Adef"
+pcall(function() print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end)) end)
