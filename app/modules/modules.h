@@ -37,12 +37,28 @@
 #define ROM_MODULES_NET
 #endif
 
+#if defined(LUA_USE_MODULES_COAP)
+#define MODULES_COAP       "coap"
+#define ROM_MODULES_COAP   \
+    _ROM(MODULES_COAP, luaopen_coap, coap_map)
+#else
+#define ROM_MODULES_COAP
+#endif
+
 #if defined(LUA_USE_MODULES_MQTT)
 #define MODULES_MQTT       "mqtt"
 #define ROM_MODULES_MQTT   \
     _ROM(MODULES_MQTT, luaopen_mqtt, mqtt_map)
 #else
 #define ROM_MODULES_MQTT
+#endif
+
+#if defined(LUA_USE_MODULES_U8G)
+#define MODULES_U8G       "u8g"
+#define ROM_MODULES_U8G   \
+    _ROM(MODULES_U8G, luaopen_u8g, lu8g_map)
+#else
+#define ROM_MODULES_U8G
 #endif
 
 #if defined(LUA_USE_MODULES_I2C)
@@ -120,17 +136,26 @@
 #if defined(LUA_USE_MODULES_WS2812)
 #define MODULES_WS2812 "ws2812"
 #define ROM_MODULES_WS2812 \
-		_ROM(MODULES_WS2812, luaopen_ws2812, ws2812_map)
+    _ROM(MODULES_WS2812, luaopen_ws2812, ws2812_map)
 #else
 #define ROM_MODULES_WS2812
 #endif
 
+#if defined(LUA_USE_MODULES_CJSON)
+#define MODULES_CJSON "cjson"
+#define ROM_MODULES_CJSON \
+    _ROM(MODULES_CJSON, luaopen_cjson, cjson_map)
+#else
+#define ROM_MODULES_CJSON
+#endif
 
-#define LUA_MODULES_ROM      \
+#define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
         ROM_MODULES_WIFI	\
-		ROM_MODULES_MQTT    \
+        ROM_MODULES_COAP	\
+        ROM_MODULES_MQTT    \
+        ROM_MODULES_U8G     \
         ROM_MODULES_I2C     \
         ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \
@@ -140,8 +165,9 @@
         ROM_MODULES_ADC     \
         ROM_MODULES_UART    \
         ROM_MODULES_OW      \
-        ROM_MODULES_BIT		\
-		ROM_MODULES_WS2812
+        ROM_MODULES_BIT     \
+        ROM_MODULES_WS2812  \
+        ROM_MODULES_CJSON
 
 #endif
 

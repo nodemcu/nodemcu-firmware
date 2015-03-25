@@ -1,0 +1,29 @@
+language: cpp
+before_install:
+- sudo apt-get install -y python-serial srecord
+install:
+- wget https://github.com/GeorgeHahn/nodemcu-firmware/raw/travis/tools/esp-open-sdk.tar.gz -O tools/esp-open-sdk.tar.gz
+- tar -zxvf tools/esp-open-sdk.tar.gz
+- export PATH=$PATH:$PWD/esp-open-sdk/sdk:$PWD/esp-open-sdk/xtensa-lx106-elf/bin
+script:
+- make all
+- cd bin/
+- file_name_float="nodemcu_float_${TRAVIS_TAG}.bin"
+- srec_cat -output ${file_name_float} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
+- cd ../
+- make clean
+- make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL"
+- cd bin/
+- file_name_integer="nodemcu_integer_${TRAVIS_TAG}.bin"
+- srec_cat -output ${file_name_integer} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
+deploy:
+  provider: releases
+  api_key:
+    secure: Swecz5lWvsuSbchSbVQ1rmCPN9nQIN5p/HlZNIEdEgAgnoLcJxRV4P8poVTB37jiA8Pck+8x2nWXpg74Rqik0i3KlPNvDfg5o4rIazWLNs4bc1Tbcpt44XAzFKKLYnDnWQUGcqjk7BcAXuNAF2X/fPBCVhFbHVg3Z7cDb32RsNw=
+  file:
+    - "$TRAVIS_BUILD_DIR/bin/${file_name_float}"
+    - "$TRAVIS_BUILD_DIR/bin/${file_name_integer}"
+  skip_cleanup: true
+  on:
+    tags: true
+    repo: nodemcu/nodemcu-firmware

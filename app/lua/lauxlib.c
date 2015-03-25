@@ -659,13 +659,19 @@ typedef struct LoadFSF {
 static const char *getFSF (lua_State *L, void *ud, size_t *size) {
   LoadFSF *lf = (LoadFSF *)ud;
   (void)L;
+
+  if (L == NULL && size == NULL) // Direct mode check
+    return NULL;
+
   if (lf->extraline) {
     lf->extraline = 0;
     *size = 1;
     return "\n";
   }
+
   if (fs_eof(lf->f)) return NULL;
   *size = fs_read(lf->f, lf->buff, sizeof(lf->buff));
+
   return (*size > 0) ? lf->buff : NULL;
 }
 
@@ -692,6 +698,8 @@ LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
     lf.f = fs_open(filename, FS_RDONLY);
     if (lf.f < FS_OPEN_OK) return errfsfile(L, "open", fnameindex);
   }
+  // if(fs_size(lf.f)>LUAL_BUFFERSIZE)
+  //   return luaL_error(L, "file is too big");
   c = fs_getc(lf.f);
   if (c == '#') {  /* Unix exec. file? */
     lf.extraline = 1;

@@ -1102,7 +1102,7 @@ const LUA_REG_TYPE mqtt_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int ICACHE_FLASH_ATTR luaopen_mqtt( lua_State *L )
+LUALIB_API int luaopen_mqtt( lua_State *L )
 {
 #if LUA_OPTIMIZE_MEMORY > 0
   luaL_rometatable(L, "mqtt.socket", (void *)mqtt_socket_map);  // create metatable for mqtt.socket

@@ -1,7 +1,7 @@
 pwm.setup(0,500,50) pwm.setup(1,500,50) pwm.setup(2,500,50)
 pwm.start(0) pwm.start(1) pwm.start(2)
 function led(r,g,b) pwm.setduty(0,g) pwm.setduty(1,b) pwm.setduty(2,r) end
-wifi.station.autoconnect(1)
+wifi.sta.autoconnect(1)
 a=0
 tmr.alarm( 1000,1,function() if a==0 then a=1 led(50,50,50) else a=0 led(0,0,0) end end)
 
@@ -347,3 +347,37 @@ file.close()
 node.compile("hello.lua")
 dofile("hello.lua")
 dofile("hello.lc")
+
+-- use copper addon for firefox
+cs=coap.Server()
+cs:listen(5683)
+
+myvar=1
+cs:var("myvar") -- get coap://192.168.18.103:5683/v1/v/myvar will return the value of myvar: 1
+
+-- function should tack one string, return one string.
+function myfun(payload)
+	print("myfun called")
+	respond = "hello"
+	return respond
+end
+cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
+
+cc = coap.Client()
+cc:get(coap.CON, "coap://192.168.18.100:5683/.well-known/core")
+cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
+
+
+file.open("test1.txt", "a+") for i = 1, 100*1000 do file.write("x") end file.close() print("Done.")
+for n,s in pairs(file.list()) do print(n.." size: "..s) end 
+file.remove("test1.txt")
+for n,s in pairs(file.list()) do print(n.." size: "..s) end
+file.open("test2.txt", "a+") for i = 1, 1*1000 do file.write("x") end file.close() print("Done.")
+
+
+function TestDNSLeak()
+     c=net.createConnection(net.TCP, 0)
+     c:connect(80, "bad-name.tlddfdf")
+     tmr.alarm(1, 3000, 0, function() print("hack socket close, MEM: "..node.heap()) c:close() end) -- socket timeout hack
+     print("MEM: "..node.heap())
+end
