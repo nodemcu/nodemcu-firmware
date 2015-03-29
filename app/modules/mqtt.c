@@ -15,6 +15,7 @@
 #include "espconn.h"
 
 #include "mqtt_msg.h"
+#include "msg_queue.h"
 
 static lua_State *gL = NULL;
 
@@ -27,7 +28,7 @@ static lua_State *gL = NULL;
 
 typedef enum {
   MQTT_INIT,
-  MQTT_CONNECT_SEND,
+  MQTT_CONNECT_SENT,
   MQTT_CONNECT_SENDING,
   MQTT_DATA
 } tConnState;
@@ -55,10 +56,7 @@ typedef struct mqtt_state_t
   uint16_t message_length_read;
   mqtt_message_t* outbound_message;
   mqtt_connection_t mqtt_connection;
-
-  uint16_t pending_msg_id;
-  int pending_msg_type;
-  int pending_publish_qos;
+  msg_queue_t* pending_msg_q;
 } mqtt_state_t;
 
 typedef struct lmqtt_userdata
@@ -75,7 +73,7 @@ typedef struct lmqtt_userdata
   uint32_t keep_alive_tick;
   uint32_t send_timeout;
   uint8_t secure;
-  uint8_t connected;
+  bool connected;     // indicate socket connected, not mqtt prot connected.
   ETSTimer mqttTimer;
   tConnState connState;
 }lmqtt_userdata;
@@ -89,27 +87,35 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
   lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
   if(mud == NULL)
     return;
-  if(mud->cb_disconnect_ref != LUA_NOREF && mud->self_ref != LUA_NOREF)
-  {
-    lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
-    lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-    lua_call(gL, 1, 0);
+
+  if(mud->connected){
+    mud->connected = false;
+    if(mud->pesp_conn && mud->pesp_conn->proto.tcp)
+      c_free(mud->pesp_conn->proto.tcp);
+    mud->pesp_conn->proto.tcp = NULL;
+    if(mud->pesp_conn)
+      c_free(mud->pesp_conn);
+    mud->pesp_conn = NULL;  // espconn is already disconnected
+    lua_gc(gL, LUA_GCSTOP, 0);
+    if(mud->self_ref != LUA_NOREF){   // TODO: should we unref the client and delete it?
+      luaL_unref(gL, LUA_REGISTRYINDEX, mud->self_ref);
+      mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
+    }
+    lua_gc(gL, LUA_GCRESTART, 0);
   }
-  mud->connected = 0;
+
+  mud->connected = false;
   os_timer_disarm(&mud->mqttTimer);
 
-  if(pesp_conn->proto.tcp)
-    c_free(pesp_conn->proto.tcp);
-  pesp_conn->proto.tcp = NULL;
-  if(mud->pesp_conn)
-    c_free(mud->pesp_conn);
-  mud->pesp_conn = NULL;  // espconn is already disconnected
-  lua_gc(gL, LUA_GCSTOP, 0);
-  if(mud->self_ref != LUA_NOREF){
-    luaL_unref(gL, LUA_REGISTRYINDEX, mud->self_ref);
-    mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
+  if(mud->cb_disconnect_ref != LUA_NOREF)
+  {
+    lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+    if( mud->self_ref != LUA_NOREF)
+      lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
+    else
+      lua_pushnil(gL);
+    lua_call(gL, 1, 0);
   }
-  lua_gc(gL, LUA_GCRESTART, 0);
 }
 
 static void mqtt_socket_reconnected(void *arg, sint8_t err)
@@ -135,10 +141,7 @@ static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, int length)
     return;
   lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->cb_message_ref);
   lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-  // expose_array(gL, pdata, len);
-  // *(pdata+len) = 0;
-  // NODE_DBG(pdata);
-  // NODE_DBG("\n");
+
   lua_pushlstring(gL, event_data.topic, event_data.topic_length);
   if(event_data.data_length > 0){
     lua_pushlstring(gL, event_data.data, event_data.data_length);
@@ -155,6 +158,7 @@ static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
   uint8_t msg_type;
   uint8_t msg_qos;
   uint16_t msg_id;
+  msg_queue_t *node = NULL;
 
   struct espconn *pesp_conn = arg;
   if(pesp_conn == NULL)
@@ -171,6 +175,7 @@ READPACKET:
   mud->mqtt_state.outbound_message = NULL;
   switch(mud->connState){
     case MQTT_CONNECT_SENDING:
+    case MQTT_CONNECT_SENT:
       if(mqtt_get_type(mud->mqtt_state.in_buffer) != MQTT_MSG_TYPE_CONNACK){
         NODE_DBG("MQTT: Invalid packet\r\n");
         mud->connState = MQTT_INIT;
@@ -201,39 +206,54 @@ READPACKET:
       msg_qos = mqtt_get_qos(mud->mqtt_state.in_buffer);
       msg_id = mqtt_get_id(mud->mqtt_state.in_buffer, mud->mqtt_state.in_buffer_length);
 
+      msg_queue_t *pending_msg = mud->mqtt_state.pending_msg_q;
+
       NODE_DBG("MQTT_DATA: type: %d, qos: %d, msg_id: %d, pending_id: %d\r\n",
             msg_type,
             msg_qos,
             msg_id,
-            mud->mqtt_state.pending_msg_id);
+            (pending_msg)?pending_msg->msg_id:0);
       switch(msg_type)
       {
         case MQTT_MSG_TYPE_SUBACK:
-          if(mud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_SUBSCRIBE && mud->mqtt_state.pending_msg_id == msg_id)
+          if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_SUBSCRIBE && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: Subscribe successful\r\n");
-          if (mud->cb_suback_ref == LUA_NOREF)
-            break;
-          if (mud->self_ref == LUA_NOREF)
-            break;
-          lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->cb_suback_ref);
-          lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->self_ref);
-          lua_call(gL, 1, 0);
+            msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
+            if (mud->cb_suback_ref == LUA_NOREF)
+              break;
+            if (mud->self_ref == LUA_NOREF)
+              break;
+            lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->cb_suback_ref);
+            lua_rawgeti(gL, LUA_REGISTRYINDEX, mud->self_ref);
+            lua_call(gL, 1, 0);
+          }
           break;
         case MQTT_MSG_TYPE_UNSUBACK:
-          if(mud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_UNSUBSCRIBE && mud->mqtt_state.pending_msg_id == msg_id)
+          if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_UNSUBSCRIBE && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: UnSubscribe successful\r\n");
+            msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
+          }
           break;
         case MQTT_MSG_TYPE_PUBLISH:
-          if(msg_qos == 1)
+          if(msg_qos == 1){
             mud->mqtt_state.outbound_message = mqtt_msg_puback(&mud->mqtt_state.mqtt_connection, msg_id);
-          else if(msg_qos == 2)
+            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), mud->mqtt_state.outbound_message, 
+                      msg_id, MQTT_MSG_TYPE_PUBACK, (int)msg_qos );
+          }
+          else if(msg_qos == 2){
             mud->mqtt_state.outbound_message = mqtt_msg_pubrec(&mud->mqtt_state.mqtt_connection, msg_id);
-
+            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), mud->mqtt_state.outbound_message, 
+                      msg_id, MQTT_MSG_TYPE_PUBREC, (int)msg_qos );
+          }
+          if(msg_qos == 1 || msg_qos == 2){
+            NODE_DBG("MQTT: Queue response QoS: %d\r\n", msg_qos);
+          }
           deliver_publish(mud, mud->mqtt_state.in_buffer, mud->mqtt_state.message_length_read);
           break;
         case MQTT_MSG_TYPE_PUBACK:
-          if(mud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_PUBLISH && mud->mqtt_state.pending_msg_id == msg_id){
+          if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_PUBLISH && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: Publish with QoS = 1 successful\r\n");
+            msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
             if(mud->cb_puback_ref == LUA_NOREF)
               break;
             if(mud->self_ref == LUA_NOREF)
@@ -246,15 +266,20 @@ READPACKET:
           break;
         case MQTT_MSG_TYPE_PUBREC:
             mud->mqtt_state.outbound_message = mqtt_msg_pubrel(&mud->mqtt_state.mqtt_connection, msg_id);
+            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), mud->mqtt_state.outbound_message, 
+                      msg_id, MQTT_MSG_TYPE_PUBREL, (int)msg_qos );
             NODE_DBG("MQTT: Response PUBREL\r\n");
           break;
         case MQTT_MSG_TYPE_PUBREL:
             mud->mqtt_state.outbound_message = mqtt_msg_pubcomp(&mud->mqtt_state.mqtt_connection, msg_id);
+            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), mud->mqtt_state.outbound_message, 
+                      msg_id, MQTT_MSG_TYPE_PUBCOMP, (int)msg_qos );
             NODE_DBG("MQTT: Response PUBCOMP\r\n");
           break;
         case MQTT_MSG_TYPE_PUBCOMP:
-          if(mud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_PUBLISH && mud->mqtt_state.pending_msg_id == msg_id){
+          if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_PUBLISH && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: Publish  with QoS = 2 successful\r\n");
+            msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
             if(mud->cb_puback_ref == LUA_NOREF)
               break;
             if(mud->self_ref == LUA_NOREF)
@@ -266,9 +291,13 @@ READPACKET:
           break;
         case MQTT_MSG_TYPE_PINGREQ:
             mud->mqtt_state.outbound_message = mqtt_msg_pingresp(&mud->mqtt_state.mqtt_connection);
+            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), mud->mqtt_state.outbound_message, 
+                      msg_id, MQTT_MSG_TYPE_PINGRESP, (int)msg_qos );
+            NODE_DBG("MQTT: Response PINGRESP\r\n");
           break;
         case MQTT_MSG_TYPE_PINGRESP:
           // Ignore
+          NODE_DBG("MQTT: PINGRESP received\r\n");
           break;
       }
       // NOTE: this is done down here and not in the switch case above
@@ -291,13 +320,17 @@ READPACKET:
       break;
   }
 
-  if(mud->mqtt_state.outbound_message != NULL){
-    if(mud->secure)
-      espconn_secure_sent(pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
+  if(node && (mud->mqtt_state.pending_msg_q->next == NULL) && mud->send_timeout == 0){
+    mud->send_timeout = MQTT_SEND_TIMEOUT;
+    NODE_DBG("Sent: %d\n", node->msg.length);
+    if( mud->secure )
+      espconn_secure_sent( pesp_conn, node->msg.data, node->msg.length );
     else
-      espconn_sent(pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
+      espconn_sent( pesp_conn, node->msg.data, node->msg.length );
+    mud->keep_alive_tick = 0;
     mud->mqtt_state.outbound_message = NULL;
   }
+
   return;
 }
 
@@ -311,10 +344,18 @@ static void mqtt_socket_sent(void *arg)
   if(mud == NULL)
     return;
   if(!mud->connected)
-  	return;
+    return;
+  if(mud->connState == MQTT_CONNECT_SENDING){
+    mud->connState = MQTT_CONNECT_SENT;
+  }
+
   // call mqtt_sent()
   mud->send_timeout = 0;
-  if(mud->mqtt_state.pending_msg_type == MQTT_MSG_TYPE_PUBLISH && mud->mqtt_state.pending_publish_qos == 0) {
+
+  // qos = 0, publish and forgot.
+  msg_queue_t *node = mud->mqtt_state.pending_msg_q;
+  if(node && node->msg_type == MQTT_MSG_TYPE_PUBLISH && node->publish_qos == 0) {
+    msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
   	if(mud->cb_puback_ref == LUA_NOREF)
 			return;
 		if(mud->self_ref == LUA_NOREF)
@@ -360,14 +401,48 @@ void mqtt_socket_timer(void *arg)
 {
   lmqtt_userdata *mud = (lmqtt_userdata*) arg;
 
+  if(mud == NULL)
+    return;
+  if(mud->send_timeout > 0){
+  	mud->send_timeout --;
+  }
+
+  if(mud->pesp_conn == NULL){
+    NODE_DBG("mud->pesp_conn is NULL.\n");
+    return;
+  }
+
+  if(mud->send_timeout == 0){   // switch to next queued event.
+    if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT time out.
+      mud->connState = MQTT_INIT;
+      if(mud->secure){
+        espconn_secure_disconnect(mud->pesp_conn);
+      }
+      else {
+        espconn_disconnect(mud->pesp_conn);
+      }
+      mud->keep_alive_tick = 0; // not need count anymore
+    } else if(mud->connState == MQTT_DATA){
+      msg_queue_t *pending_msg = mud->mqtt_state.pending_msg_q;
+      if(pending_msg){
+        mud->send_timeout = MQTT_SEND_TIMEOUT;
+        if(mud->secure)
+          espconn_secure_sent(mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length);
+        else
+          espconn_sent(mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length);
+        mud->keep_alive_tick = 0;
+        NODE_DBG("id: %d - qos: %d, length: %d\n", pending_msg->msg_id, pending_msg->publish_qos, pending_msg->msg.length);
+      }
+      // no queued event.
+    }
+  }
+
   if(mud->connState == MQTT_DATA){
     mud->keep_alive_tick ++;
     if(mud->keep_alive_tick > mud->mqtt_state.connect_info->keepalive){
-      mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PINGREQ;
       mud->send_timeout = MQTT_SEND_TIMEOUT;
       NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
       mud->mqtt_state.outbound_message = mqtt_msg_pingreq(&mud->mqtt_state.mqtt_connection);
-
       if(mud->secure)
         espconn_secure_sent(mud->pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
       else
@@ -375,8 +450,6 @@ void mqtt_socket_timer(void *arg)
       mud->keep_alive_tick = 0;
     }
   }
-  if(mud->send_timeout > 0)
-  	mud->send_timeout --;
 }
 
 // Lua: mqtt.Client(clientid, keepalive, user, pass)
@@ -389,8 +462,11 @@ static int mqtt_socket_client( lua_State* L )
   c_sprintf(tempid, "%s%x", "NodeMCU_", system_get_chip_id() );
   NODE_DBG(tempid);
   NODE_DBG("\n");
-  size_t il = c_strlen(tempid);
+  
   const char *clientId = tempid, *username = NULL, *password = NULL;
+  size_t idl = c_strlen(tempid);
+  size_t unl = 0, pwl = 0;
+  int keepalive = 0;
   int stack = 1;
   unsigned secure = 0;
   int top = lua_gettop(L);
@@ -419,86 +495,88 @@ static int mqtt_socket_client( lua_State* L )
   luaL_getmetatable(L, "mqtt.socket");
   lua_setmetatable(L, -2);
 
+  gL = L;   // global L for mqtt module.
+
   if( lua_isstring(L,stack) )   // deal with the clientid string
   {
-    clientId = luaL_checklstring( L, stack, &il );
+    clientId = luaL_checklstring( L, stack, &idl );
     stack++;
   }
-
-  // TODO: check the zalloc result.
-  mud->connect_info.client_id = (uint8_t *)c_zalloc(il+1);
-  if(!mud->connect_info.client_id){
-  	return luaL_error(L, "not enough memory");
-  }
-  c_memcpy(mud->connect_info.client_id, clientId, il);
-  mud->connect_info.client_id[il] = 0;
-
-  mud->mqtt_state.in_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
-  if(!mud->mqtt_state.in_buffer){
-		return luaL_error(L, "not enough memory");
-	}
-
-  mud->mqtt_state.out_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
-  if(!mud->mqtt_state.out_buffer){
-		return luaL_error(L, "not enough memory");
-	}
-
-  mud->mqtt_state.in_buffer_length = MQTT_BUF_SIZE;
-  mud->mqtt_state.out_buffer_length = MQTT_BUF_SIZE;
-
-  mud->connState = MQTT_INIT;
-  mud->connect_info.clean_session = 1;
-  mud->connect_info.will_qos = 0;
-  mud->connect_info.will_retain = 0;
-  mud->keep_alive_tick = 0;
-  mud->connect_info.keepalive = 0;
-  mud->mqtt_state.connect_info = &mud->connect_info;
-
-  gL = L;   // global L for mqtt module.
 
   if(lua_isnumber( L, stack ))
   {   
-    mud->connect_info.keepalive = luaL_checkinteger( L, stack);
+    keepalive = luaL_checkinteger( L, stack);
     stack++;
   }
 
-  if(mud->connect_info.keepalive == 0){
-    mud->connect_info.keepalive = MQTT_DEFAULT_KEEPALIVE;
-    return 1;
+  if(keepalive == 0){
+    keepalive = MQTT_DEFAULT_KEEPALIVE;
   }
 
   if(lua_isstring( L, stack )){
-    username = luaL_checklstring( L, stack, &il );
+    username = luaL_checklstring( L, stack, &unl );
     stack++;
   }
   if(username == NULL)
-	  il = 0;
-  NODE_DBG("lengh username: %d\r\n", il);
-  mud->connect_info.username = (uint8_t *)c_zalloc(il + 1);
-  if(!mud->connect_info.username){
-		return luaL_error(L, "not enough memory");
-	}
+    unl = 0;
+  NODE_DBG("lengh username: %d\r\n", unl);
 
-  c_memcpy(mud->connect_info.username, username, il);
-  mud->connect_info.username[il] = 0;
-    
   if(lua_isstring( L, stack )){
-    password = luaL_checklstring( L, stack, &il );
+    password = luaL_checklstring( L, stack, &pwl );
     stack++;
   }
   if(password == NULL)
-  	  il = 0;
-  NODE_DBG("lengh password: %d\r\n", il);
+    pwl = 0;
+  NODE_DBG("lengh password: %d\r\n", pwl);
 
-  mud->connect_info.password = (uint8_t *)c_zalloc(il + 1);
-  if(!mud->connect_info.password){
-		return luaL_error(L, "not enough memory");
-	}
+  // TODO: check the zalloc result.
+  mud->connect_info.client_id = (uint8_t *)c_zalloc(idl+1);
+  mud->connect_info.username = (uint8_t *)c_zalloc(unl + 1);
+  mud->connect_info.password = (uint8_t *)c_zalloc(pwl + 1);
+  mud->mqtt_state.in_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
+  mud->mqtt_state.out_buffer = (uint8_t *)c_zalloc(MQTT_BUF_SIZE);
+  if(!mud->connect_info.client_id || !mud->connect_info.username || !mud->connect_info.password || !mud->mqtt_state.in_buffer || !mud->mqtt_state.out_buffer){
+    if(mud->connect_info.client_id) {
+      c_free(mud->connect_info.client_id);
+      mud->connect_info.client_id = NULL;
+    }
+    if(mud->connect_info.username) {
+      c_free(mud->connect_info.username);
+      mud->connect_info.username = NULL;
+    }
+    if(mud->connect_info.password) {
+      c_free(mud->connect_info.password);
+      mud->connect_info.password = NULL;
+    }
+    if(mud->mqtt_state.in_buffer) {
+      c_free(mud->mqtt_state.in_buffer);
+      mud->mqtt_state.in_buffer = NULL;
+    }
+    if(mud->mqtt_state.out_buffer) {
+      c_free(mud->mqtt_state.out_buffer);
+      mud->mqtt_state.out_buffer = NULL;
+    }
+  	return luaL_error(L, "not enough memory");
+  }
 
-  c_memcpy(mud->connect_info.password, password, il);
-  mud->connect_info.password[il] = 0;
+  c_memcpy(mud->connect_info.client_id, clientId, idl);
+  mud->connect_info.client_id[idl] = 0;
+  c_memcpy(mud->connect_info.username, username, unl);
+  mud->connect_info.username[unl] = 0;
+  c_memcpy(mud->connect_info.password, password, pwl);
+  mud->connect_info.password[pwl] = 0;
   
   NODE_DBG("MQTT: Init info: %s, %s, %s\r\n", mud->connect_info.client_id, mud->connect_info.username, mud->connect_info.password);
+
+  mud->connect_info.clean_session = 1;
+  mud->connect_info.will_qos = 0;
+  mud->connect_info.will_retain = 0;
+  mud->connect_info.keepalive = keepalive;
+
+  mud->mqtt_state.in_buffer_length = MQTT_BUF_SIZE;
+  mud->mqtt_state.out_buffer_length = MQTT_BUF_SIZE;
+  mud->mqtt_state.pending_msg_q = NULL;
+  mud->mqtt_state.connect_info = &mud->connect_info;
 
   return 1;
 }
@@ -518,7 +596,9 @@ static int mqtt_delete( lua_State* L )
   }
 
   os_timer_disarm(&mud->mqttTimer);
-  mud->connected = 0;
+  mud->connected = false;
+
+  // ---- alloc-ed in mqtt_socket_connect()
   if(mud->pesp_conn){     // for client connected to tcp server, this should set NULL in disconnect cb
     mud->pesp_conn->reverse = NULL;
     if(mud->pesp_conn->proto.tcp)
@@ -528,16 +608,19 @@ static int mqtt_delete( lua_State* L )
     mud->pesp_conn = NULL;    // for socket, it will free this when disconnected
   }
 
+  // ---- alloc-ed in mqtt_socket_lwt()
   if(mud->connect_info.will_topic){
   	c_free(mud->connect_info.will_topic);
   	mud->connect_info.will_topic = NULL;
   }
 
   if(mud->connect_info.will_message){
-    	c_free(mud->connect_info.will_message);
-    	mud->connect_info.will_message = NULL;
-    }
+    c_free(mud->connect_info.will_message);
+    mud->connect_info.will_message = NULL;
+  }
+  // ----
 
+  //--------- alloc-ed in mqtt_socket_client()
   if(mud->connect_info.client_id){
     c_free(mud->connect_info.client_id);
     mud->connect_info.client_id = NULL;
@@ -558,6 +641,7 @@ static int mqtt_delete( lua_State* L )
     c_free(mud->mqtt_state.out_buffer);
     mud->mqtt_state.out_buffer = NULL;
   }
+  // -------
 
   // free (unref) callback ref
   if(LUA_NOREF!=mud->cb_connect_ref){
@@ -647,11 +731,11 @@ static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   }
 }
 
-// Lua: mqtt:connect( host, port, secure, function(client) )
+// Lua: mqtt:lwt( topic, message, qos, retain, function(client) )
 static int mqtt_socket_lwt( lua_State* L )
 {
 	uint8_t stack = 1;
-	size_t topicSize, il;
+	size_t topicSize, msgSize;
   NODE_DBG("mqtt_socket_lwt.\n");
   lmqtt_userdata *mud = NULL;
   const char *lwtTopic, *lwtMsg;
@@ -671,32 +755,40 @@ static int mqtt_socket_lwt( lua_State* L )
 	}
 
 	stack++;
-	lwtMsg = luaL_checklstring( L, stack, &il );
+	lwtMsg = luaL_checklstring( L, stack, &msgSize );
 	if (lwtMsg == NULL)
 	{
 		return luaL_error( L, "need lwt message");
 	}
 
 	mud->connect_info.will_topic = (uint8_t*) c_zalloc( topicSize + 1 );
-	if(!mud->connect_info.will_topic){
+  mud->connect_info.will_message = (uint8_t*) c_zalloc( msgSize + 1 );
+	if(!mud->connect_info.will_topic || !mud->connect_info.will_message){
+    if(mud->connect_info.will_topic){
+      c_free(mud->connect_info.will_topic);
+      mud->connect_info.will_topic = NULL;
+    }
+    if(mud->connect_info.will_message){
+      c_free(mud->connect_info.will_message);
+      mud->connect_info.will_message = NULL;
+    }
 		return luaL_error( L, "not enough memory");
 	}
 	c_memcpy(mud->connect_info.will_topic, lwtTopic, topicSize);
 	mud->connect_info.will_topic[topicSize] = 0;
+	c_memcpy(mud->connect_info.will_message, lwtMsg, msgSize);
+	mud->connect_info.will_message[msgSize] = 0;
 
-	mud->connect_info.will_message = (uint8_t*) c_zalloc( il + 1 );
-	if(!mud->connect_info.will_message){
-		return luaL_error( L, "not enough memory");
-	}
-	c_memcpy(mud->connect_info.will_message, lwtMsg, il);
-	mud->connect_info.will_message[il] = 0;
-
-
-	stack++;
-	mud->connect_info.will_qos = luaL_checkinteger( L, stack );
-
-	stack++;
-	mud->connect_info.will_retain = luaL_checkinteger( L, stack );
+	if ( lua_isnumber(L, stack) )
+  {
+    mud->connect_info.will_qos = lua_tointeger(L, stack);
+    stack++;
+  }
+  if ( lua_isnumber(L, stack) )
+  {
+    mud->connect_info.will_retain = lua_tointeger(L, stack);
+    stack++;
+  }
 
 	NODE_DBG("mqtt_socket_lwt: topic: %s, message: %s, qos: %d, retain: %d\n",
 			mud->connect_info.will_topic,
@@ -750,7 +842,7 @@ static int mqtt_socket_connect( lua_State* L )
 	pesp_conn->reverse = mud;
 	pesp_conn->type = ESPCONN_TCP;
 	pesp_conn->state = ESPCONN_NONE;
-  mud->connected = 0;
+  mud->connected = false;
 
   if( (stack<=top) && lua_isstring(L,stack) )   // deal with the domain string
   {
@@ -822,7 +914,6 @@ static int mqtt_socket_connect( lua_State* L )
   os_timer_disarm(&mud->mqttTimer);
 	os_timer_setfn(&mud->mqttTimer, (os_timer_func_t *)mqtt_socket_timer, mud);
 	os_timer_arm(&mud->mqttTimer, 1000, 1);
-
   return 0;
 }
 
@@ -897,16 +988,12 @@ static int mqtt_socket_on( lua_State* L )
   return 0;
 }
 
-// Lua: mqtt:subscribe(topic, qos, function())
+// Lua: bool = mqtt:subscribe(topic, qos, function())
 static int mqtt_socket_subscribe( lua_State* L ) {
 	NODE_DBG("mqtt_socket_subscribe is called.\n");
-	typedef struct SUB_STORAGE {
-		uint32_t length;
-		uint8_t *data;
-		struct SUB_STORAGE *next;
-	} SUB_STORAGE;
 
 	uint8_t stack = 1, qos = 0;
+  uint16_t msg_id = 0;
 	const char *topic;
 	size_t il;
 	lmqtt_userdata *mud;
@@ -915,97 +1002,92 @@ static int mqtt_socket_subscribe( lua_State* L ) {
 	luaL_argcheck( L, mud, stack, "mqtt.socket expected" );
 	stack++;
 
-	if( mud->send_timeout != 0 )
-		return luaL_error( L, "sending in process" );
-
-	if( !mud->connected )
-		return luaL_error( L, "not connected" );
+	if(!mud->connected){
+		luaL_error( L, "not connected" );
+    lua_pushboolean(L, 0);
+    return 1;
+  }
 
 	if( lua_istable( L, stack ) ) {
 		NODE_DBG("subscribe table\n");
 		lua_pushnil( L ); /* first key */
-		SUB_STORAGE *first, *last, *curr;
-		first = (SUB_STORAGE*) c_zalloc(sizeof(SUB_STORAGE));
-		if( first == NULL )
-			return luaL_error( L, "not enough memory" );
-		first->length = 0;
-		last = first;
-		first->next = NULL;
-		while( lua_next( L, stack ) != 0 ) {
-			curr = (SUB_STORAGE*) c_zalloc(sizeof(SUB_STORAGE));
 
-			if( curr == NULL )
-				return luaL_error( L, "not enough memory" );
+    uint8_t temp_buffer[MQTT_BUF_SIZE];
+    uint32_t temp_pos = 0;
+
+		while( lua_next( L, stack ) != 0 ) {
 			topic = luaL_checkstring( L, -2 );
 			qos = luaL_checkinteger( L, -1 );
 
-			mud->mqtt_state.outbound_message = mqtt_msg_subscribe( &mud->mqtt_state.mqtt_connection, topic, qos, &mud->mqtt_state.pending_msg_id );
+			mud->mqtt_state.outbound_message = mqtt_msg_subscribe( &mud->mqtt_state.mqtt_connection, topic, qos, &msg_id );
 			NODE_DBG("topic: %s - qos: %d, length: %d\n", topic, qos, mud->mqtt_state.outbound_message->length);
-			curr->data = (uint8_t*) c_zalloc(mud->mqtt_state.outbound_message->length);
-			if( curr->data == NULL )
-				return luaL_error( L, "not enough memory" );
-			c_memcpy( curr->data, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length );
 
-			curr->length = mud->mqtt_state.outbound_message->length;
-			curr->next = NULL;
-			last->next = curr;
-			last = curr;
+      if (temp_pos + mud->mqtt_state.outbound_message->length > MQTT_BUF_SIZE){
+        lua_pop(L, 1);
+        break;  // too long message for the outbuffer.
+      }
+      c_memcpy( temp_buffer + temp_pos, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length );
+      temp_pos += mud->mqtt_state.outbound_message->length;
+
 			lua_pop( L, 1 );
 		}
 
-		curr = first;
-		uint32_t ptr = 0;
-		while( curr != NULL ) {
-			if( curr->length == 0 ) {
-				curr = curr->next;
-				continue;
-			}
-			if( ptr + curr->length < mud->mqtt_state.out_buffer_length ) {
-				c_memcpy( mud->mqtt_state.out_buffer + ptr, curr->data, curr->length );
-				ptr += curr->length;
-			}
-			c_free(curr->data);
-			c_free(curr);
-			curr = curr->next;
-		}
-		c_free(first);
-		if( ptr == 0 ) {
-			return luaL_error( L, "invalid data" );
-		}
+    if (temp_pos == 0){
+      luaL_error( L, "invalid data" );
+      lua_pushboolean(L, 0);
+      return 1;
+    }
+
+    c_memcpy( mud->mqtt_state.out_buffer, temp_buffer, temp_pos );
 		mud->mqtt_state.outbound_message->data = mud->mqtt_state.out_buffer;
-		mud->mqtt_state.outbound_message->length = ptr;
+		mud->mqtt_state.outbound_message->length = temp_pos;
 		stack++;
 	} else {
 		NODE_DBG("subscribe string\n");
 		topic = luaL_checklstring( L, stack, &il );
 		stack++;
-		if( topic == NULL )
-			return luaL_error( L, "need topic name" );
+		if( topic == NULL ){
+			luaL_error( L, "need topic name" );
+      lua_pushboolean(L, 0);
+      return 1;
+    }
 		qos = luaL_checkinteger( L, stack );
-		mud->mqtt_state.outbound_message = mqtt_msg_subscribe( &mud->mqtt_state.mqtt_connection, topic, qos, &mud->mqtt_state.pending_msg_id );
+		mud->mqtt_state.outbound_message = mqtt_msg_subscribe( &mud->mqtt_state.mqtt_connection, topic, qos, &msg_id );
 		stack++;
 	}
 
-	mud->send_timeout = MQTT_SEND_TIMEOUT;
-	mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_SUBSCRIBE;
-	mud->mqtt_state.pending_publish_qos = mqtt_get_qos( mud->mqtt_state.outbound_message->data );
+  if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
+    lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
+    if( mud->cb_suback_ref != LUA_NOREF )
+      luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
+    mud->cb_suback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+  }
 
-	if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {
-		lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
-		if( mud->cb_suback_ref != LUA_NOREF )
-			luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
-		mud->cb_suback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
-	}
-	NODE_DBG("Sent: %d\n", mud->mqtt_state.outbound_message->length);
-	if( mud->secure )
-		espconn_secure_sent( mud->pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length );
-	else
-		espconn_sent( mud->pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length );
+  msg_queue_t *node = msg_enqueue( &(mud->mqtt_state.pending_msg_q), mud->mqtt_state.outbound_message, 
+                            msg_id, MQTT_MSG_TYPE_SUBSCRIBE, (int)mqtt_get_qos(mud->mqtt_state.outbound_message->data) );
 
-	return 0;
+  NODE_DBG("topic: %s - id: %d - qos: %d, length: %d\n", topic, node->msg_id, node->publish_qos, node->msg.length);
+
+  if(node && (mud->mqtt_state.pending_msg_q->next == NULL) && mud->send_timeout == 0){
+  	mud->send_timeout = MQTT_SEND_TIMEOUT;
+  	NODE_DBG("Sent: %d\n", node->msg.length);
+  	if( mud->secure )
+  		espconn_secure_sent( mud->pesp_conn, node->msg.data, node->msg.length );
+  	else
+  		espconn_sent( mud->pesp_conn, node->msg.data, node->msg.length );
+    mud->keep_alive_tick = 0;
+  }
+
+  if(!node){
+    lua_pushboolean(L, 0);
+  } else {
+    lua_pushboolean(L, 1);  // enqueued succeed.
+  }
+  mud->mqtt_state.outbound_message = NULL;
+	return 1;
 }
 
-// Lua: mqtt:publish( topic, payload, qos, retain, function() )
+// Lua: bool = mqtt:publish( topic, payload, qos, retain, function() )
 static int mqtt_socket_publish( lua_State* L )
 {
   // NODE_DBG("mqtt_publish is called.\n");
@@ -1013,35 +1095,31 @@ static int mqtt_socket_publish( lua_State* L )
   lmqtt_userdata *mud;
   size_t l;
   uint8_t stack = 1;
+  uint16_t msg_id = 0;
   mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
   luaL_argcheck(L, mud, stack, "mqtt.socket expected");
   stack++;
   if(mud==NULL){
     NODE_DBG("userdata is nil.\n");
-    return 0;
+    lua_pushboolean(L, 0);
+    return 1;
   }
 
   if(mud->pesp_conn == NULL){
     NODE_DBG("mud->pesp_conn is NULL.\n");
-    return 0;
+    lua_pushboolean(L, 0);
+    return 1;
   }
-  if(mud->send_timeout != 0)
-  	return luaL_error( L, "sending in process" );
+
   pesp_conn = mud->pesp_conn;
 
-#if 0
-  char temp[20] = {0};
-  c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
-  NODE_DBG("remote ");
-  NODE_DBG(temp);
-  NODE_DBG(":");
-  NODE_DBG("%d",pesp_conn->proto.tcp->remote_port);
-  NODE_DBG(" sending data.\n");
-#endif
   const char *topic = luaL_checklstring( L, stack, &l );
   stack ++;
-  if (topic == NULL)
-    return luaL_error( L, "need topic" );
+  if (topic == NULL){
+    luaL_error( L, "need topic" );
+    lua_pushboolean(L, 0);
+    return 1;
+  }
 
   const char *payload = luaL_checklstring( L, stack, &l );
   stack ++;
@@ -1050,14 +1128,11 @@ static int mqtt_socket_publish( lua_State* L )
   uint8_t retain = luaL_checkinteger( L, stack);
   stack ++;
 
-
   mud->mqtt_state.outbound_message = mqtt_msg_publish(&mud->mqtt_state.mqtt_connection,
                        topic, payload, l,
                        qos, retain,
-                       &mud->mqtt_state.pending_msg_id);
-  mud->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PUBLISH;
-  mud->mqtt_state.pending_publish_qos = qos;
-  mud->send_timeout = MQTT_SEND_TIMEOUT;
+                       &msg_id);
+
   if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     if(mud->cb_puback_ref != LUA_NOREF)
@@ -1065,12 +1140,26 @@ static int mqtt_socket_publish( lua_State* L )
     mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
-  if(mud->secure)
-    espconn_secure_sent(pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
-  else
-    espconn_sent(pesp_conn, mud->mqtt_state.outbound_message->data, mud->mqtt_state.outbound_message->length);
+  msg_queue_t *node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), mud->mqtt_state.outbound_message, 
+                      msg_id, MQTT_MSG_TYPE_PUBLISH, (int)qos );
+
+  if(node && (mud->mqtt_state.pending_msg_q->next == NULL) && mud->send_timeout == 0){
+    mud->send_timeout = MQTT_SEND_TIMEOUT;
+    NODE_DBG("Sent: %d\n", node->msg.length);
+    if( mud->secure )
+      espconn_secure_sent( mud->pesp_conn, node->msg.data, node->msg.length );
+    else
+      espconn_sent( mud->pesp_conn, node->msg.data, node->msg.length );
+    mud->keep_alive_tick = 0;
+  }
+
+  if(!node){
+    lua_pushboolean(L, 0);
+  } else {
+    lua_pushboolean(L, 1);  // enqueued succeed.
+  }
   mud->mqtt_state.outbound_message = NULL;
-  return 0;
+  return 1;
 }
 
 // Module function map

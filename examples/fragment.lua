@@ -396,3 +396,33 @@ string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
 
 v="abc%0D%0Adef"
 pcall(function() print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end)) end)
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+topic={}
+topic["/topic1"]=0
+topic["/topic2"]=0
+m:subscribe(topic,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic1","hello",0,0)
+m:publish("/topic3","hello",0,0) m:publish("/topic4","hello",0,0)
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+m:subscribe("/topic1",0,function(m) print("sub done") end)
+m:subscribe("/topic2",0,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic1","hello",0,0)
+m:publish("/topic3","hello",0,0) m:publish("/topic4","hello",0,0)
+m:publish("/topic1","hello1",0,0) m:publish("/topic2","hello2",0,0)
+m:publish("/topic1","hello",1,0)
+m:subscribe("/topic3",2,function(m) print("sub done") end)
+m:publish("/topic3","hello3",2,0)
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883, function(con) print("connected hello") end)
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection") end )
+m:connect("192.168.18.88",1883)
+m:on("offline",function(m) print("disconnection") end )
