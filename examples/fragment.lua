@@ -397,6 +397,8 @@ string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
 v="abc%0D%0Adef"
 pcall(function() print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end)) end)
 
+mosca -v | bunyan
+
 m=mqtt.Client()
 m:connect("192.168.18.88",1883)
 topic={}
@@ -426,3 +428,25 @@ m=mqtt.Client()
 m:on("connect",function(m) print("connection") end )
 m:connect("192.168.18.88",1883)
 m:on("offline",function(m) print("disconnection") end )
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection "..node.heap()) end )
+m:on("offline", function(conn)
+	if conn == nil then print("conn is nil") end
+    print("Reconnect to broker...")
+    print(node.heap())
+    conn:connect("192.168.18.88",1883,0,1)
+end)
+m:connect("192.168.18.88",1883,0,1)
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection "..node.heap()) end )
+m:on("offline", function(conn)
+	if conn == nil then print("conn is nil") end
+    print("Reconnect to broker...")
+    print(node.heap())
+    conn:connect("192.168.18.88",1883)
+end)
+m:connect("192.168.18.88",1883)
+
+m:close()
