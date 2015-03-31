@@ -418,7 +418,7 @@ m:publish("/topic1","hello",0,0)
 m:publish("/topic3","hello",0,0) m:publish("/topic4","hello",0,0)
 m:publish("/topic1","hello1",0,0) m:publish("/topic2","hello2",0,0)
 m:publish("/topic1","hello",1,0)
-m:subscribe("/topic3",2,function(m) print("sub done") end)
+m:subscribe("/topic3",0,function(m) print("sub done") end)
 m:publish("/topic3","hello3",2,0)
 
 m=mqtt.Client()
@@ -450,3 +450,13 @@ end)
 m:connect("192.168.18.88",1883)
 
 m:close()
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:subscribe("/topic1",0,function(m) print("sub done") end)
+m:publish("/topic1","hello3",2,0) m:publish("/topic1","hello2",2,0)
+m:publish("/topic1","hello3",0,0) m:publish("/topic1","hello2",2,0)
+
+m:subscribe("/topic2",2,function(m) print("sub done") end)
+m:publish("/topic2","hello3",0,0) m:publish("/topic2","hello2",2,0)
