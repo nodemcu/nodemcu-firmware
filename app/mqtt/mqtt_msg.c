@@ -29,7 +29,7 @@
 *
 */
 
-#include <string.h>
+#include "c_string.h"
 #include "mqtt_msg.h"
 
 #define MQTT_MAX_FIXED_HEADER_SIZE 3
@@ -61,7 +61,7 @@ static int append_string(mqtt_connection_t* connection, const char* string, int 
 
   connection->buffer[connection->message.length++] = len >> 8;
   connection->buffer[connection->message.length++] = len & 0xff;
-  memcpy(connection->buffer + connection->message.length, string, len);
+  c_memcpy(connection->buffer + connection->message.length, string, len);
   connection->message.length += len;
 
   return len + 2;
@@ -121,7 +121,7 @@ static mqtt_message_t* fini_message(mqtt_connection_t* connection, int type, int
 
 void mqtt_msg_init(mqtt_connection_t* connection, uint8_t* buffer, uint16_t buffer_length)
 {
-  memset(connection, 0, sizeof(connection));
+  c_memset(connection, 0, sizeof(connection));
   connection->buffer = buffer;
   connection->buffer_length = buffer_length;
 }
@@ -294,7 +294,7 @@ mqtt_message_t* mqtt_msg_connect(mqtt_connection_t* connection, mqtt_connect_inf
 
   variable_header->lengthMsb = 0;
   variable_header->lengthLsb = 4;
-  memcpy(variable_header->magic, "MQTT", 4);
+  c_memcpy(variable_header->magic, "MQTT", 4);
   variable_header->version = 4;
   variable_header->flags = 0;
   variable_header->keepaliveMsb = info->keepalive >> 8;
@@ -305,7 +305,7 @@ mqtt_message_t* mqtt_msg_connect(mqtt_connection_t* connection, mqtt_connect_inf
 
   if(info->client_id != NULL && info->client_id[0] != '\0')
   {
-    if(append_string(connection, info->client_id, strlen(info->client_id)) < 0)
+    if(append_string(connection, info->client_id, c_strlen(info->client_id)) < 0)
       return fail_message(connection);
   }
   else
@@ -313,10 +313,10 @@ mqtt_message_t* mqtt_msg_connect(mqtt_connection_t* connection, mqtt_connect_inf
 
   if(info->will_topic != NULL && info->will_topic[0] != '\0')
   {
-    if(append_string(connection, info->will_topic, strlen(info->will_topic)) < 0)
+    if(append_string(connection, info->will_topic, c_strlen(info->will_topic)) < 0)
       return fail_message(connection);
 
-    if(append_string(connection, info->will_message, strlen(info->will_message)) < 0)
+    if(append_string(connection, info->will_message, c_strlen(info->will_message)) < 0)
       return fail_message(connection);
 
     variable_header->flags |= MQTT_CONNECT_FLAG_WILL;
@@ -327,7 +327,7 @@ mqtt_message_t* mqtt_msg_connect(mqtt_connection_t* connection, mqtt_connect_inf
 
   if(info->username != NULL && info->username[0] != '\0')
   {
-    if(append_string(connection, info->username, strlen(info->username)) < 0)
+    if(append_string(connection, info->username, c_strlen(info->username)) < 0)
       return fail_message(connection);
 
     variable_header->flags |= MQTT_CONNECT_FLAG_USERNAME;
@@ -335,7 +335,7 @@ mqtt_message_t* mqtt_msg_connect(mqtt_connection_t* connection, mqtt_connect_inf
 
   if(info->password != NULL && info->password[0] != '\0')
   {
-    if(append_string(connection, info->password, strlen(info->password)) < 0)
+    if(append_string(connection, info->password, c_strlen(info->password)) < 0)
       return fail_message(connection);
 
     variable_header->flags |= MQTT_CONNECT_FLAG_PASSWORD;
@@ -351,7 +351,7 @@ mqtt_message_t* mqtt_msg_publish(mqtt_connection_t* connection, const char* topi
   if(topic == NULL || topic[0] == '\0')
     return fail_message(connection);
 
-  if(append_string(connection, topic, strlen(topic)) < 0)
+  if(append_string(connection, topic, c_strlen(topic)) < 0)
     return fail_message(connection);
 
   if(qos > 0)
@@ -364,7 +364,7 @@ mqtt_message_t* mqtt_msg_publish(mqtt_connection_t* connection, const char* topi
 
   if(connection->message.length + data_length > connection->buffer_length)
     return fail_message(connection);
-  memcpy(connection->buffer + connection->message.length, data, data_length);
+  c_memcpy(connection->buffer + connection->message.length, data, data_length);
   connection->message.length += data_length;
 
   return fini_message(connection, MQTT_MSG_TYPE_PUBLISH, 0, qos, retain);
@@ -412,7 +412,7 @@ mqtt_message_t* mqtt_msg_subscribe(mqtt_connection_t* connection, const char* to
   if((*message_id = append_message_id(connection, 0)) == 0)
     return fail_message(connection);
 
-  if(append_string(connection, topic, strlen(topic)) < 0)
+  if(append_string(connection, topic, c_strlen(topic)) < 0)
     return fail_message(connection);
 
   if(connection->message.length + 1 > connection->buffer_length)
@@ -432,7 +432,7 @@ mqtt_message_t* mqtt_msg_unsubscribe(mqtt_connection_t* connection, const char* 
   if((*message_id = append_message_id(connection, 0)) == 0)
     return fail_message(connection);
 
-  if(append_string(connection, topic, strlen(topic)) < 0)
+  if(append_string(connection, topic, c_strlen(topic)) < 0)
     return fail_message(connection);
 
   return fini_message(connection, MQTT_MSG_TYPE_SUBSCRIBE, 0, 1, 0);

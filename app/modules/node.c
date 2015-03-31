@@ -100,13 +100,15 @@ static int node_chipid( lua_State* L )
   lua_pushinteger(L, id);
   return 1;
 }
+
+// deprecated, moved to adc module
 // Lua: readvdd33()
-static int node_readvdd33( lua_State* L )
-{
-  uint32_t vdd33 = readvdd33();
-  lua_pushinteger(L, vdd33);
-  return 1;
-}
+// static int node_readvdd33( lua_State* L )
+// {
+//   uint32_t vdd33 = readvdd33();
+//   lua_pushinteger(L, vdd33);
+//   return 1;
+// }
 
 // Lua: flashid()
 static int node_flashid( lua_State* L )
@@ -430,7 +432,8 @@ const LUA_REG_TYPE node_map[] =
 #endif
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
-  { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
+// Moved to adc module, use adc.readvdd33()  
+// { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
   { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
   { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },

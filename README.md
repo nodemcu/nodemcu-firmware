@@ -225,8 +225,10 @@ m:on("message", function(conn, topic, data)
   end
 end)
 
--- for secure: m:connect("192.168.11.118", 1880, 1)
-m:connect("192.168.11.118", 1880, 0, function(conn) print("connected") end)
+-- m:connect( host, port, secure, auto_reconnect, function(client) )
+-- for secure: m:connect("192.168.11.118", 1880, 1, 0)
+-- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
+m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
 
 -- subscribe topic with qos = 0
 m:subscribe("/topic",0, function(conn) print("subscribe success") end)
@@ -235,7 +237,7 @@ m:subscribe("/topic",0, function(conn) print("subscribe success") end)
 -- publish a message with data = hello, QoS = 0, retain = 0
 m:publish("/topic","hello",0,0, function(conn) print("sent") end)
 
-m:close();
+m:close();  -- if auto-reconnect = 1, will reconnect.
 -- you can call m:connect again
 
 ```
