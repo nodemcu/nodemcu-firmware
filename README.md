@@ -243,7 +243,7 @@ m:subscribe("/topic",0, function(conn) print("subscribe success") end)
 -- publish a message with data = hello, QoS = 0, retain = 0
 m:publish("/topic","hello",0,0, function(conn) print("sent") end)
 
-m:close();  -- if auto-reconnect = 1, will reconnect.
+m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
 -- you can call m:connect again
 
 ```
