@@ -381,3 +381,94 @@ function TestDNSLeak()
      tmr.alarm(1, 3000, 0, function() print("hack socket close, MEM: "..node.heap()) c:close() end) -- socket timeout hack
      print("MEM: "..node.heap())
 end
+
+v="abc%0D%0Adef"
+print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end))
+
+function ex(x) string.find("abc%0Ddef","bc") return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex)
+
+function ex(x) string.char(35) return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
+
+function ex(x) string.lower('Ab') return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
+
+v="abc%0D%0Adef"
+pcall(function() print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end)) end)
+
+mosca -v | bunyan
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+topic={}
+topic["/topic1"]=0
+topic["/topic2"]=0
+m:subscribe(topic,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic1","hello",0,0)
+m:publish("/topic3","hello",0,0) m:publish("/topic4","hello",0,0)
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+m:subscribe("/topic1",0,function(m) print("sub done") end)
+m:subscribe("/topic2",0,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic1","hello",0,0)
+m:publish("/topic3","hello",0,0) m:publish("/topic4","hello",0,0)
+m:publish("/topic1","hello1",0,0) m:publish("/topic2","hello2",0,0)
+m:publish("/topic1","hello",1,0)
+m:subscribe("/topic3",0,function(m) print("sub done") end)
+m:publish("/topic3","hello3",2,0)
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883, function(con) print("connected hello") end)
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection") end )
+m:connect("192.168.18.88",1883)
+m:on("offline",function(m) print("disconnection") end )
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection "..node.heap()) end )
+m:on("offline", function(conn)
+	if conn == nil then print("conn is nil") end
+    print("Reconnect to broker...")
+    print(node.heap())
+    conn:connect("192.168.18.88",1883,0,1)
+end)
+m:connect("192.168.18.88",1883,0,1)
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection "..node.heap()) end )
+m:on("offline", function(conn)
+	if conn == nil then print("conn is nil") end
+    print("Reconnect to broker...")
+    print(node.heap())
+    conn:connect("192.168.18.88",1883)
+end)
+m:connect("192.168.18.88",1883)
+
+m:close()
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:subscribe("/topic1",0,function(m) print("sub done") end)
+m:publish("/topic1","hello3",2,0) m:publish("/topic1","hello2",2,0)
+m:publish("/topic1","hello3",0,0) m:publish("/topic1","hello2",2,0)
+
+m:subscribe("/topic2",2,function(m) print("sub done") end)
+m:publish("/topic2","hello3",0,0) m:publish("/topic2","hello2",2,0)
+
+m=mqtt.Client()
+m:on("connect",function(m) 
+	print("connection "..node.heap()) 
+	m:subscribe("/topic1",0,function(m) print("sub done") end)
+	m:publish("/topic1","hello3",0,0) m:publish("/topic1","hello2",2,0)
+	end )
+m:on("offline", function(conn)
+    print("disconnect to broker...")
+    print(node.heap())
+end)
+m:connect("192.168.18.88",1883,0,1)

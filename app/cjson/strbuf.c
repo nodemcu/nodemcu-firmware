@@ -46,7 +46,7 @@ int strbuf_init(strbuf_t *s, int len)
     s->reallocs = 0;
     s->debug = 0;
 
-    s->buf = c_malloc(size);
+    s->buf = (char *)c_malloc(size);
     if (!s->buf){
         NODE_ERR("not enough memory\n");
         return -1;
@@ -60,7 +60,7 @@ strbuf_t *strbuf_new(int len)
 {
     strbuf_t *s;
 
-    s = c_malloc(sizeof(strbuf_t));
+    s = (strbuf_t *)c_malloc(sizeof(strbuf_t));
     if (!s){
         NODE_ERR("not enough memory\n");
         return NULL;

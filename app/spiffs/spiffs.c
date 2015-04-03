@@ -42,7 +42,7 @@ The small 4KB sectors allow for greater flexibility in applications th
 
 ********************/
 
-void spiffs_mount() {
+void myspiffs_mount() {
   spiffs_config cfg;
   cfg.phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
   cfg.phys_addr += 0x3000;
@@ -69,6 +69,10 @@ void spiffs_mount() {
   NODE_DBG("mount res: %i\n", res);
 }
 
+void myspiffs_unmount() {
+  SPIFFS_unmount(&fs);
+}
+
 // FS formatting function
 // Returns 1 if OK, 0 for error
 int myspiffs_format( void )
@@ -85,7 +89,7 @@ int myspiffs_format( void )
   while( sect_first <= sect_last )
     if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
       return 0;
-  spiffs_mount();
+  myspiffs_mount();
   return 1;
 }
 

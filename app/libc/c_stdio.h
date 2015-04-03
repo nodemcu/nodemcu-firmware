@@ -47,9 +47,9 @@ extern int c_stderr;
 #define	SEEK_END	2	/* set file offset to EOF plus offset */
 #endif
 
-#define c_malloc os_malloc
-#define c_zalloc os_zalloc
-#define c_free os_free
+// #define c_malloc os_malloc
+// #define c_zalloc os_zalloc
+// #define c_free os_free
 
 extern void output_redirect(const char *str);
 #define c_puts output_redirect
