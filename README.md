@@ -36,6 +36,12 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-03-31<br />
+polish mqtt module, add queue for mqtt module.<br />
+add reconnect option to mqtt.connect api, :connect( host, port, secure, auto_reconnect, function(client) )<br />
+move node.readvdd33 to adc.readvdd33.<br />
+tools/esptool.py supported NodeMCU devkit automatic flash.
+
 2015-03-18<br />
 update u8glib.<br />
 merge everything to master.
@@ -237,7 +243,7 @@ m:subscribe("/topic",0, function(conn) print("subscribe success") end)
 -- publish a message with data = hello, QoS = 0, retain = 0
 m:publish("/topic","hello",0,0, function(conn) print("sent") end)
 
-m:close();  -- if auto-reconnect = 1, will reconnect.
+m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
 -- you can call m:connect again
 
 ```

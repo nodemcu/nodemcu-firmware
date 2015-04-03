@@ -58,3 +58,25 @@ msg_queue_t * msg_dequeue(msg_queue_t **head){
   node->next = NULL;
   return node;
 }
+
+msg_queue_t * msg_peek(msg_queue_t **head){
+  if(!head || !*head){
+    return NULL;
+  }
+  return *head;  // fetch head.
+}
+
+int msg_size(msg_queue_t **head){
+  if(!head || !*head){
+    return 0;
+  }
+  int i = 1;
+  msg_queue_t *tail = *head;
+  if(tail){
+    while(tail->next!=NULL){
+      tail = tail->next;
+      i++;
+    }
+  }
+  return i;
+}
