@@ -70,14 +70,13 @@ local function read(pin)
   end
 end
 ---------------------------Convert the bitStream into Number through DHT11 Ways--------------------------
-function M.read11(pin)
+local function bit2DHT11()
 --As for DHT11 40Bit is consisit of 5Bytes
 --First byte->Humidity Data's Int part
 --Sencond byte->Humidity Data's Float Part(Which should be empty)
 --Third byte->Temp Data;s Intpart
 --Forth byte->Temp Data's Float Part(Which should be empty)
 --Fifth byte->SUM Byte, Humi+Temp
-  read(pin)
  local checksum = 0
  local checksumTest
   --DHT data acquired, process.
@@ -104,14 +103,13 @@ function M.read11(pin)
   
 end
 ---------------------------Convert the bitStream into Number through DHT22 Ways--------------------------
-function M.read22( pin )
+local function bit2DHT22()
 --As for DHT22 40Bit is consisit of 5Bytes
 --First byte->Humidity Data's High Bit
 --Sencond byte->Humidity Data's Low Bit(And if over 0x8000, use complement)
 --Third byte->Temp Data's High Bit
 --Forth byte->Temp Data's Low Bit
 --Fifth byte->SUM Byte
-  read(pin)
   local checksum = 0
   local checksumTest
    --DHT data acquired, process.
@@ -146,6 +144,36 @@ function M.read22( pin )
 end
 
 ---------------------------Check out the data--------------------------
+----Auto Select the DHT11/DHT22 By check the byte[1] && byte[3]AND ---
+---------------Which is empty when using DHT11-------------------------
+function M.read(pin)
+
+  read(pin)
+
+  local byte_1 = 0
+  local byte_2 = 0
+
+  for i = 1, 8, 1 do -- Byte[1]
+    if (bitStream[i+8] > 3) then
+      byte_1 = byte_1 + 2 ^ (8 - i)
+    end
+  end
+
+    for i = 1, 8, 1 do -- Byte[1]
+    if (bitStream[i+24] > 3) then
+      byte_2 = byte_2 + 2 ^ (8 - i)
+    end
+  end
+
+  if byte_1==0 and byte_2 == 0 then
+    bit2DHT11()
+  else
+    bit2DHT22()
+  end
+
+end
+
+
 function M.getTemperature()
   return temperature
 end
