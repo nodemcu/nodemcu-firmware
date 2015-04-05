@@ -3,6 +3,8 @@
 #include "platform.h"
 #include "auxmods.h"
 #include "lrotable.h"
+#include "c_stdlib.h"
+#include "c_string.h"
 /**
  * All this code is mostly from http://www.esp8266.com/viewtopic.php?f=21&t=1143&sid=a620a377672cfe9f666d672398415fcb
  * from user Markus Gritsch.
@@ -35,7 +37,10 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
 {
   const uint8_t pin = luaL_checkinteger(L, 1);
   size_t length;
-  char *buffer = (char *)luaL_checklstring(L, 2, &length); // Cast away the constness.
+  const char *rgb = luaL_checklstring(L, 2, &length);
+  // dont modify lua-internal lstring - make a copy instead
+  char *buffer = (char *)c_malloc(length);
+  c_memcpy(buffer, rgb, length);
 
   // Initialize the output pin:
   platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
@@ -59,16 +64,16 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
 
   // Send the buffer:
   os_intr_lock();
-  const char * const end = buffer + length;
-  while (buffer != end) {
+  for (i = 0; i < length; i++) {
     uint8_t mask = 0x80;
     while (mask) {
-      (*buffer & mask) ? send_ws_1(pin_num[pin]) : send_ws_0(pin_num[pin]);
+      (buffer[i] & mask) ? send_ws_1(pin_num[pin]) : send_ws_0(pin_num[pin]);
       mask >>= 1;
     }
-    ++buffer;
   }
   os_intr_unlock();
+
+  c_free(buffer);
 
   return 0;
 }
