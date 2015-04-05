@@ -1,90 +1,185 @@
-# DHTxx module
+-- ***************************************************************************
+-- DHTxx(11,21,22) module for ESP8266 with nodeMCU
+--
+-- Written by Javier Yanez mod by Martin
+-- but based on a script of Pigs Fly from ESP8266.com forum
+--
+-- MIT license, http://opensource.org/licenses/MIT
+-- ***************************************************************************
 
-This module is compatible with DHT11, DHT21 and DHT22.  
-And is able to auto-select wheather you are using DHT11 or DHT2x
+--Support list：
+--DHT11 Tested ->read11
+--DHT21 Not Tested->read22
+--DHT22 Tested->read22
 
-No need to use a resistor to connect the pin data of DHT22 to ESP8266.
+--==========================Module Part======================
+local moduleName = ...
+local M = {}
+_G[moduleName] = M
+--==========================Local the UMI and TEMP===========
+local humidity
+local temperature
+--==========================Local the bitStream==============
+local bitStream = {}
 
-##Integer Verison[When using DHT11, Float version is useless...]
-### Example  
-```lua
-PIN = 4 --  data pin, GPIO2
+---------------------------Read bitStream from DHTXX--------------------------
+local function read(pin)
 
-DHT= require("dht_lib")
+  local bitlength = 0
+  humidity = 0
+  temperature = 0
 
-DHT.read(PIN)
-
-t = DHT.getTemperature()
-h = DHT.getHumidity()
-
-if h == nil then
-  print("Error reading from DHTxx")
-else
-  -- temperature in degrees Celsius  and Farenheit
-
-  print("Temperature: "..((t-(t % 10)) / 10).."."..(t % 10).." deg C")
-
-  print("Temperature: "..(9 * t / 50 + 32).."."..(9 * t / 5 % 10).." deg F")
+  -- Use Markus Gritsch trick to speed up read/write on GPIO
+  local gpio_read = gpio.read
   
-  -- humidity
+  
+  for j = 1, 40, 1 do
+    bitStream[j] = 0
+  end
 
-  print("Humidity: "..((h - (h % 10)) / 10).."."..(h % 10).."%")
+  
+
+  -- Step 1:  send out start signal to DHT22
+  gpio.mode(pin, gpio.OUTPUT)
+  gpio.write(pin, gpio.HIGH)
+  tmr.delay(100)
+  gpio.write(pin, gpio.LOW)
+  tmr.delay(20000)
+  gpio.write(pin, gpio.HIGH)
+  gpio.mode(pin, gpio.INPUT)
+
+  -- Step 2:  Receive bitStream from DHT11/22
+  -- bus will always let up eventually, don't bother with timeout
+  while (gpio_read(pin) == 0 ) do end
+  local c=0
+  while (gpio_read(pin) == 1 and c < 500) do c = c + 1 end
+  -- bus will always let up eventually, don't bother with timeout
+  while (gpio_read(pin) == 0 ) do end
+  c=0
+  while (gpio_read(pin) == 1 and c < 500) do c = c + 1 end
+  
+  -- Step 3: DHT22 send data
+  for j = 1, 40, 1 do
+    while (gpio_read(pin) == 1 and bitlength < 10 ) do
+      bitlength = bitlength + 1
+    end
+    bitStream[j] = bitlength
+    bitlength = 0
+    -- bus will always let up eventually, don't bother with timeout
+    while (gpio_read(pin) == 0) do end
+  end
+end
+---------------------------Convert the bitStream into Number through DHT11 Ways--------------------------
+local function bit2DHT11()
+--As for DHT11 40Bit is consisit of 5Bytes
+--First byte->Humidity Data's Int part
+--Sencond byte->Humidity Data's Float Part(Which should be empty)
+--Third byte->Temp Data;s Intpart
+--Forth byte->Temp Data's Float Part(Which should be empty)
+--Fifth byte->SUM Byte, Humi+Temp
+ local checksum = 0
+ local checksumTest
+  --DHT data acquired, process.
+  for i = 1, 8, 1 do -- Byte[0]
+    if (bitStream[i] > 3) then
+      humidity = humidity + 2 ^ (8 - i)
+    end
+  end
+  for i = 1, 8, 1 do -- Byte[2]
+    if (bitStream[i + 16] > 3) then
+      temperature = temperature + 2 ^ (8 - i)
+    end
+  end
+  for i = 1, 8, 1 do --Byte[4]
+    if (bitStream[i + 32] > 3) then
+      checksum = checksum + 2 ^ (8 - i)
+    end
+  end
+
+  if(checksum ~= humidity+temperature) then
+    humidity = nil
+    temperature = nil
+  end
+  
+end
+---------------------------Convert the bitStream into Number through DHT22 Ways--------------------------
+local function bit2DHT22()
+--As for DHT22 40Bit is consisit of 5Bytes
+--First byte->Humidity Data's High Bit
+--Sencond byte->Humidity Data's Low Bit(And if over 0x8000, use complement)
+--Third byte->Temp Data's High Bit
+--Forth byte->Temp Data's Low Bit
+--Fifth byte->SUM Byte
+  local checksum = 0
+  local checksumTest
+   --DHT data acquired, process.
+  for i = 1, 16, 1 do
+    if (bitStream[i] > 3) then
+      humidity = humidity + 2 ^ (16 - i)
+    end
+  end
+  for i = 1, 16, 1 do
+    if (bitStream[i + 16] > 3) then
+      temperature = temperature + 2 ^ (16 - i)
+    end
+  end
+  for i = 1, 8, 1 do
+    if (bitStream[i + 32] > 3) then
+      checksum = checksum + 2 ^ (8 - i)
+    end
+  end
+
+  checksumTest = (bit.band(humidity, 0xFF) + bit.rshift(humidity, 8) + bit.band(temperature, 0xFF) + bit.rshift(temperature, 8))
+  checksumTest = bit.band(checksumTest, 0xFF)
+
+  if temperature > 0x8000 then
+    -- convert to negative format
+    temperature = -(temperature - 0x8000)
+  end
+
+  -- conditions compatible con float point and integer
+  if (checksumTest - checksum >= 1) or (checksum - checksumTest >= 1) then
+    humidity = nil
+  end
 end
 
--- release module
-DHT = nil
-package.loaded["dht_lib"]=nil
-```
-##Float Verison
-###Example
-```lua
-PIN = 4 --  data pin, GPIO2
+---------------------------Check out the data--------------------------
+----Auto Select the DHT11/DHT22 By check the byte[1] && byte[3]AND ---
+---------------Which is empty when using DHT11-------------------------
+function M.read(pin)
 
-DHT= require("dht_lib")
+  read(pin)
 
-DHT.read(PIN)
+  local byte_1 = 0
+  local byte_2 = 0
 
-t = DHT.getTemperature()
-h = DHT.getHumidity()
+  for i = 1, 8, 1 do -- Byte[1]
+    if (bitStream[i+8] > 3) then
+      byte_1 = byte_1 + 2 ^ (8 - i)
+    end
+  end
 
-if h == nil then
-  print("Error reading from DHT11/22")
-else
-  -- temperature in degrees Celsius  and Farenheit
-  -- floating point and integer version:
+    for i = 1, 8, 1 do -- Byte[1]
+    if (bitStream[i+24] > 3) then
+      byte_2 = byte_2 + 2 ^ (8 - i)
+    end
+  end
 
-  print("Temperature: "..(t/10).." deg C")
-  print("Temperature: "..(9 * t / 50 + 32).." deg F")
-  
-  -- humidity
-  print("Humidity: "..(h/10).."%")
+  if byte_1==0 and byte_2 == 0 then
+    bit2DHT11()
+  else
+    bit2DHT22()
+  end
+
 end
 
--- release module
-DHT = nil
-package.loaded["dht_lib"]=nil
-```
-## Functions
 
-###read
-read(pin)
-Read humidity and temperature from DHTxx(11,21,22...).
-**Parameters:**
+function M.getTemperature()
+  return temperature
+end
 
-* pin - ESP8266 pin connect to data pin
+function M.getHumidity()
+  return humidity
+end
 
-### getHumidity
-getHumidity()  
-Returns the humidity of the last reading.
-
-**Returns:**  
-* last humidity reading in per thousand
-
-### getTemperature
-getTemperature()  
-Returns the temperature of the last reading.
-
-**Returns:**  
-* last temperature reading in(dht22) 0.1ºC (dht11)1ºC
-* 
-
+return M
