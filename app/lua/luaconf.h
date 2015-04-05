@@ -541,8 +541,12 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 
 /*
 @@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
+** Attention: This value should probably not be set higher than 1K.
+** The size has direct impact on the C stack size needed be auxlib functions.
+** For example: If set to 4K a call to string.gsub will need more than 
+** 5k C stack space.
 */
-#define LUAL_BUFFERSIZE		((BUFSIZ)*4)
+#define LUAL_BUFFERSIZE		BUFSIZ
 
 /* }================================================================== */
 
