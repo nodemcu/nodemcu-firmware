@@ -515,3 +515,7 @@ end)
 m:on("message",dispatch )
 m:connect("m11.cloudmqtt.com",11214,0,1)
 -- Lua: mqtt:connect( host, port, secure, auto_reconnect, function(client) )
+
+tmr.alarm(0,10000,1,function() local pl = "time: "..tmr.time() 
+	m:publish("/topic1",pl,0,0)
+	end)
