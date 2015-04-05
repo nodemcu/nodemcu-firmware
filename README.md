@@ -1,5 +1,5 @@
 # **NodeMCU** #
-version 0.9.5
+version 0.9.6
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases/latest)
@@ -36,6 +36,39 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-04-06<br />
+bump version to 0.9.6. not follow sdk version any more.<br />
+fix mqtt module bugs. please see examples [mqtt](https://github.com/nodemcu/nodemcu-firmware/tree/master/lua_examples/mqtt).<br />
+fix dht lib.<br />
+update spiffs to V0.3.0.<br />
+enhancement for wifi.ap submodule.<br />
+wifi.sta.config (wifi_station_config):
+- range checking password length (8~64)
+
+wifi.ap.config (wifi_ap_config):
+- range checking ssid length (1~32)
+- range checking pwd length (8~64)
+- new params:
+  - auth: wifi.OPEN, wifi.WPA_PSK, wifi.WPA2_PSK, wifi.WPA_WPA2_PSK
+    - default WITH pwd: wifi.WPA_WPA2_PSK
+    - default WITHOUT pwd: wifi.OPEN
+  - channel: 1~13 (default: 6)
+  - hidden: 0/1 (default: 0)
+  - max: 1~4 (default: 4)
+  - beacon: 100~60000ms (default: 100)
+
+wifi.ap.getclient (wifi_ap_listclient):
+- returns table(mac,ip) of all connected clients
+
+wifi.ap.dhcp:
+- new submodule
+- config (wifi_ap_dhcp_config), returns start/end ips
+  - params:
+    - start (e.g., "192.168.1.100")
+  - end ip calculated from wifi.ap.config.max
+- start (wifi_ap_dhcp_start), returns boolean
+- stop (wifi_ap_dhcp_stop), returns boolean
+
 2015-03-31<br />
 polish mqtt module, add queue for mqtt module.<br />
 add reconnect option to mqtt.connect api, :connect( host, port, secure, auto_reconnect, function(client) )<br />
@@ -209,44 +242,8 @@ baudrate:9600
     end)
 ```
 
-####Connect to MQTT Broker
-
-```lua
--- init mqtt client with keepalive timer 120sec
-m = mqtt.Client("clientid", 120, "user", "password")
-
--- setup Last Will and Testament (optional)
--- Broker will publish a message with qos = 0, retain = 0, data = "offline"
--- to topic "/lwt" if client don't send keepalive packet
-m:lwt("/lwt", "offline", 0, 0)
-
-m:on("connect", function(con) print ("connected") end)
-m:on("offline", function(con) print ("offline") end)
-
--- on publish message receive event
-m:on("message", function(conn, topic, data)
-  print(topic .. ":" )
-  if data ~= nil then
-    print(data)
-  end
-end)
-
--- m:connect( host, port, secure, auto_reconnect, function(client) )
--- for secure: m:connect("192.168.11.118", 1880, 1, 0)
--- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
-m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
-
--- subscribe topic with qos = 0
-m:subscribe("/topic",0, function(conn) print("subscribe success") end)
--- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
--- m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
--- publish a message with data = hello, QoS = 0, retain = 0
-m:publish("/topic","hello",0,0, function(conn) print("sent") end)
-
-m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
--- you can call m:connect again
-
-```
+#### MQTT examples
+please see [mqtt examples](https://github.com/nodemcu/nodemcu-firmware/tree/master/lua_examples/mqtt)
 
 #### UDP client and server
 ```lua

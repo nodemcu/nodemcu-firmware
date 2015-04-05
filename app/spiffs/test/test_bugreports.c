@@ -157,4 +157,19 @@ TEST(nodemcu_full_fs_2) {
 
 } TEST_END(nodemcu_full_fs_2)
 
+TEST(magic_test) {
+  // one obj lu page, not full
+  fs_reset_specific(0, 4096*16, 4096, 4096*1, 128);
+  TEST_CHECK(SPIFFS_CHECK_MAGIC_POSSIBLE(FS));
+  // one obj lu page, full
+  fs_reset_specific(0, 4096*16, 4096, 4096*2, 128);
+  TEST_CHECK(!SPIFFS_CHECK_MAGIC_POSSIBLE(FS));
+  // two obj lu pages, not full
+  fs_reset_specific(0, 4096*16, 4096, 4096*4, 128);
+  TEST_CHECK(SPIFFS_CHECK_MAGIC_POSSIBLE(FS));
+
+  return TEST_RES_OK;
+
+} TEST_END(magic_test)
+
 SUITE_END(bug_tests)

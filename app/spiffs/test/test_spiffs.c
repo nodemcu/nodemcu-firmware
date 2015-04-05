@@ -318,6 +318,7 @@ void fs_reset_specific(u32_t phys_addr, u32_t phys_size,
     u32_t log_block_size, u32_t log_page_size) {
   memset(area, 0xcc, sizeof(area));
   memset(&area[phys_addr], 0xff, phys_size);
+  memset(&__fs, 0, sizeof(__fs));
 
   spiffs_config c;
   c.hal_erase_f = _erase;
@@ -332,7 +333,20 @@ void fs_reset_specific(u32_t phys_addr, u32_t phys_size,
   memset(erases,0,sizeof(erases));
   memset(_cache,0,sizeof(_cache));
 
-  SPIFFS_mount(&__fs, &c, _work, _fds, sizeof(_fds), _cache, sizeof(_cache), spiffs_check_cb_f);
+  s32_t res = SPIFFS_mount(&__fs, &c, _work, _fds, sizeof(_fds), _cache, sizeof(_cache), spiffs_check_cb_f);
+#if SPIFFS_USE_MAGIC
+  if (res == SPIFFS_OK) {
+    SPIFFS_unmount(&__fs);
+  }
+  res = SPIFFS_format(&__fs);
+  if (res != SPIFFS_OK) {
+    printf("format failed, %i\n", SPIFFS_errno(&__fs));
+  }
+  res = SPIFFS_mount(&__fs, &c, _work, _fds, sizeof(_fds), _cache, sizeof(_cache), spiffs_check_cb_f);
+  if (res != SPIFFS_OK) {
+    printf("mount failed, %i\n", SPIFFS_errno(&__fs));
+  }
+#endif
 
   clear_flash_ops_log();
   log_flash_ops = 1;
@@ -574,6 +588,8 @@ void _teardown() {
   printf("  cache hits      : %i (sum %i)\n", (FS)->cache_hits, chits_tot);
   printf("  cache misses    : %i (sum %i)\n", (FS)->cache_misses, cmiss_tot);
   printf("  cache utiliz    : %f\n", ((float)chits_tot/(float)(chits_tot + cmiss_tot)));
+  chits_tot = 0;
+  cmiss_tot = 0;
 #endif
 #endif
   dump_flash_access_stats();

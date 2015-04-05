@@ -8,30 +8,10 @@ static s32_t spiffs_gc_erase_block(
     spiffs *fs,
     spiffs_block_ix bix) {
   s32_t res;
-  u32_t addr = SPIFFS_BLOCK_TO_PADDR(fs, bix);
-  s32_t size = SPIFFS_CFG_LOG_BLOCK_SZ(fs);
 
   SPIFFS_GC_DBG("gc: erase block %i\n", bix);
-
-  // here we ignore res, just try erasing the block
-  while (size > 0) {
-    SPIFFS_GC_DBG("gc: erase %08x:%08x\n", addr,  SPIFFS_CFG_PHYS_ERASE_SZ(fs));
-    (void)fs->cfg.hal_erase_f(addr, SPIFFS_CFG_PHYS_ERASE_SZ(fs));
-    addr += SPIFFS_CFG_PHYS_ERASE_SZ(fs);
-    size -= SPIFFS_CFG_PHYS_ERASE_SZ(fs);
-  }
-  fs->free_blocks++;
-
-  // register erase count for this block
-  res = _spiffs_wr(fs, SPIFFS_OP_C_WRTHRU | SPIFFS_OP_T_OBJ_LU2, 0,
-      SPIFFS_ERASE_COUNT_PADDR(fs, bix),
-      sizeof(spiffs_obj_id), (u8_t *)&fs->max_erase_count);
+  res = spiffs_erase_block(fs, bix);
   SPIFFS_CHECK_RES(res);
-
-  fs->max_erase_count++;
-  if (fs->max_erase_count == SPIFFS_OBJ_ID_IX_FLAG) {
-    fs->max_erase_count = 0;
-  }
 
 #if SPIFFS_CACHE
   {

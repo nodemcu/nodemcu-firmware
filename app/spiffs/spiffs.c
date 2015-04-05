@@ -78,17 +78,21 @@ void myspiffs_unmount() {
 int myspiffs_format( void )
 {
   SPIFFS_unmount(&fs);
-  u32_t sect_first, sect_last;
-  sect_first = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
-  sect_first += 0x3000;
-  sect_first &= 0xFFFFC000;  // align to 4 sector.
-  sect_first = platform_flash_get_sector_of_address(sect_first);
-  sect_last = INTERNAL_FLASH_SIZE + INTERNAL_FLASH_START_ADDRESS - 4;
-  sect_last = platform_flash_get_sector_of_address(sect_last);
-  NODE_DBG("sect_first: %x, sect_last: %x\n", sect_first, sect_last);
-  while( sect_first <= sect_last )
-    if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
-      return 0;
+  // u32_t sect_first, sect_last;
+  // sect_first = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
+  // sect_first += 0x3000;
+  // sect_first &= 0xFFFFC000;  // align to 4 sector.
+  // sect_first = platform_flash_get_sector_of_address(sect_first);
+  // sect_last = INTERNAL_FLASH_SIZE + INTERNAL_FLASH_START_ADDRESS - 4;
+  // sect_last = platform_flash_get_sector_of_address(sect_last);
+  // NODE_DBG("sect_first: %x, sect_last: %x\n", sect_first, sect_last);
+  // while( sect_first <= sect_last )
+  //   if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
+  //     return 0;
+  int32_t res = SPIFFS_format(&fs);
+  if (res != SPIFFS_OK) {
+    return 0;
+  }
   myspiffs_mount();
   return 1;
 }
