@@ -14,7 +14,7 @@ sk:connect(80,"115.239.210.27")
 sk:send("GET / HTTP/1.1\r\nHost: 115.239.210.27\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 
 sk:connect(80,"192.168.0.66") 
-sk:send("GET / HTTP/1.1\r\nHost: 1192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 
 i2c.setup(0,1,0,i2c.SLOW)
 function read_bmp(addr) i2c.start(0) i2c.address(0,119,i2c.RECEIVER) c=i2c.read(0,1) i2c.stop(0) print(string.byte(c)) end 
