@@ -8,10 +8,15 @@
 -- ***************************************************************************
 
 --Support list：
---DHT11 Tested ->read11
---DHT21 Not Tested->read22
---DHT22 Tested->read22
 
+--DHT11 Tested 
+--DHT21 Not Test yet
+--DHT22(AM2302) Tested
+--AM2320 Not Test yet
+
+--Output format-> Real temperature times 10(or DHT22 will miss it float part in Int Version)
+--For example, the data read form DHT2x is 24.3 degree C, and the output will be 243
+---------------the data read form DHT1x is 27 degree C, and the output will be 270
 --==========================Module Part======================
 local moduleName = ...
 local M = {}
@@ -99,7 +104,12 @@ local function bit2DHT11()
   if(checksum ~= humidity+temperature) then
     humidity = nil
     temperature = nil
+  else
+    humidity = humidity *10 -- In order to universe the DHT22
+    temperature = temperature *10 
   end
+
+
   
 end
 ---------------------------Convert the bitStream into Number through DHT22 Ways--------------------------
@@ -144,7 +154,7 @@ local function bit2DHT22()
 end
 
 ---------------------------Check out the data--------------------------
-----Auto Select the DHT11/DHT22 By check the byte[1] && byte[3]AND ---
+----Auto Select the DHT11/DHT22 by checking the byte[1]==0 && byte[3]==0 ---
 ---------------Which is empty when using DHT11-------------------------
 function M.read(pin)
 
@@ -172,7 +182,7 @@ function M.read(pin)
   end
 
 end
-
+--------------API for geting the data out------------------
 
 function M.getTemperature()
   return temperature
@@ -181,5 +191,5 @@ end
 function M.getHumidity()
   return humidity
 end
-
+-------------Return Index------------------------------------
 return M
