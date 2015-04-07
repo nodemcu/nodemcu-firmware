@@ -71,16 +71,8 @@ static int tmr_delay( lua_State* L )
   us = luaL_checkinteger( L, 1 );
   if ( us <= 0 )
     return luaL_error( L, "wrong arg range" );
-  unsigned sec = (unsigned)us / 1000000;
-  unsigned remain = (unsigned)us % 1000000;
-  int i = 0;
-  for(i=0;i<sec;i++){
-    os_delay_us( 1000000 );
-    WRITE_PERI_REG(0x60000914, 0x73);
-  }
-  if(remain>0)
-    os_delay_us( remain );
-  return 0;  
+      os_delay_us( us );
+    return 0;  
 }
 
 // Lua: now() , return system timer in us
