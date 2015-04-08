@@ -72,6 +72,9 @@ static int tmr_delay( lua_State* L )
   if ( us <= 0 )
     return luaL_error( L, "wrong arg range" );
       os_delay_us( us );
+      // Adding watchdog clear to avoid reboot. 
+      // May be it is good to add a simple check for delay value > 500 to clear it every 500 us.
+      WRITE_PERI_REG(0x60000914, 0x73);
     return 0;  
 }
 
