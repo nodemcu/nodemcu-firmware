@@ -65,21 +65,54 @@ typedef void (*alarm_timer_callback)(void *arg);
 static alarm_timer_callback alarm_timer_cb[NUM_TMR] = {alarm_timer_cb0,alarm_timer_cb1,alarm_timer_cb2,alarm_timer_cb3,alarm_timer_cb4,alarm_timer_cb5,alarm_timer_cb6};
 
 // Lua: delay( us )
-static int tmr_delay( lua_State* L )
+static int tmr_delay_us( lua_State* L )
 {
   s32 us;
   us = luaL_checkinteger( L, 1 );
   if ( us <= 0 )
     return luaL_error( L, "wrong arg range" );
-  unsigned sec = (unsigned)us / 1000000;
-  unsigned remain = (unsigned)us % 1000000;
+
+     os_delay_us( us );
+     WRITE_PERI_REG(0x60000914, 0x73); //Watchdog clear to aviod system reboot
+
+  return 0;  
+}
+
+// Lua: delay( ms )
+static int tmr_delay_ms( lua_State* L )
+{
+  s32 ms;
+  ms = luaL_checkinteger( L, 1 );
+  if ( ms <= 0 )
+    return luaL_error( L, "wrong arg range" );
+    
   int i = 0;
-  for(i=0;i<sec;i++){
-    os_delay_us( 1000000 );
-    WRITE_PERI_REG(0x60000914, 0x73);
-  }
-  if(remain>0)
-    os_delay_us( remain );
+  for(i=0;i<1000;i++) // 1ms == 1000us. Simple stupid and should work.
+                      //May be later this will need some calibration or refactoring.
+    {
+     os_delay_us( ms );
+     WRITE_PERI_REG(0x60000914, 0x73); //Watchdog clear to aviod system reboot
+    }
+
+  return 0;  
+}
+
+// Lua: delay( s )
+static int tmr_delay_s( lua_State* L )
+{
+  s32 ms;
+  ms = luaL_checkinteger( L, 1 );
+  if ( ms <= 0 )
+    return luaL_error( L, "wrong arg range" );
+
+    int i = 0;
+     for(i=0;i<1000000;i++) // 1s == 1000000us. Simple stupid and should work.
+                            //May be later this will need some calibration or refactoring.
+       {
+         os_delay_us( ms );
+         WRITE_PERI_REG(0x60000914, 0x73); //Watchdog clear to aviod system reboot
+        }
+
   return 0;  
 }
 
@@ -180,7 +213,9 @@ static int tmr_time( lua_State* L )
 #include "lrodefs.h"
 const LUA_REG_TYPE tmr_map[] = 
 {
-  { LSTRKEY( "delay" ), LFUNCVAL( tmr_delay ) },
+  { LSTRKEY( "delay.us" ), LFUNCVAL( tmr_delay_us ) },
+  { LSTRKEY( "delay.ms" ), LFUNCVAL( tmr_delay_ms ) },
+  { LSTRKEY( "delay.s" ), LFUNCVAL( tmr_delay_s ) },
   { LSTRKEY( "now" ), LFUNCVAL( tmr_now ) },
   { LSTRKEY( "alarm" ), LFUNCVAL( tmr_alarm ) },
   { LSTRKEY( "stop" ), LFUNCVAL( tmr_stop ) },
