@@ -87,10 +87,9 @@ static int tmr_delay_ms( lua_State* L )
     return luaL_error( L, "wrong arg range" );
     
   int i = 0;
-  for(i=0;i<1000;i++) // 1ms == 1000us. Simple stupid and should work.
-                      //May be later this will need some calibration or refactoring.
+  for(i=0;i<ms;i++) //May be later this will need some calibration or refactoring.
     {
-     os_delay_us( ms );
+     os_delay_us( 1000 );
      WRITE_PERI_REG(0x60000914, 0x73); //Watchdog clear to aviod system reboot
     }
 
@@ -100,16 +99,16 @@ static int tmr_delay_ms( lua_State* L )
 // Lua: delay( s )
 static int tmr_delay_s( lua_State* L )
 {
-  s32 ms;
-  ms = luaL_checkinteger( L, 1 );
-  if ( ms <= 0 )
+  s32 s;
+  s = luaL_checkinteger( L, 1 );
+  if ( s <= 0 )
     return luaL_error( L, "wrong arg range" );
 
     int i = 0;
-     for(i=0;i<1000000;i++) // 1s == 1000000us. Simple stupid and should work.
-                            //May be later this will need some calibration or refactoring.
+    s = s * 1000
+     for(i=0;i<s;i++) // May be later this will need some calibration or refactoring.
        {
-         os_delay_us( ms );
+         os_delay_us( 1000 );
          WRITE_PERI_REG(0x60000914, 0x73); //Watchdog clear to aviod system reboot
         }
 
