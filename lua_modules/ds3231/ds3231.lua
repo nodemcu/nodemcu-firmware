@@ -16,11 +16,11 @@ local id = 0
 local dev_addr = 0x68
 
 local function decToBcd(val)
-  return((val/10*16) + (val%10))
+  return((((val/10) - ((val/10)%1)) *16) + (val%10))
 end
 
 local function bcdToDec(val)
-  return((val/16*10) + (val%16))
+  return((((val/16) - ((val/16)%1)) *10) + (val%16))
 end
 
 -- initialize i2c
