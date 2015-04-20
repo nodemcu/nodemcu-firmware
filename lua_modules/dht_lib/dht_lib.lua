@@ -15,8 +15,6 @@
 --AM2320 Not Test yet
 
 --Output format-> Real temperature times 10(or DHT22 will miss it float part in Int Version)
---For example, the data read form DHT2x is 24.3 degree C, and the output will be 243
----------------the data read form DHT1x is 27 degree C, and the output will be 270
 --==========================Module Part======================
 local moduleName = ...
 local M = {}
@@ -42,8 +40,6 @@ local function read(pin)
     bitStream[j] = 0
   end
 
-  
-
   -- Step 1:  send out start signal to DHT22
   gpio.mode(pin, gpio.OUTPUT)
   gpio.write(pin, gpio.HIGH)
@@ -62,7 +58,7 @@ local function read(pin)
   while (gpio_read(pin) == 0 ) do end
   c=0
   while (gpio_read(pin) == 1 and c < 500) do c = c + 1 end
-  
+
   -- Step 3: DHT22 send data
   for j = 1, 40, 1 do
     while (gpio_read(pin) == 1 and bitlength < 10 ) do
@@ -74,70 +70,78 @@ local function read(pin)
     while (gpio_read(pin) == 0) do end
   end
 end
----------------------------Convert the bitStream into Number through DHT11 Ways--------------------------
-local function bit2DHT11()
---As for DHT11 40Bit is consisit of 5Bytes
---First byte->Humidity Data's Int part
---Sencond byte->Humidity Data's Float Part(Which should be empty)
---Third byte->Temp Data;s Intpart
---Forth byte->Temp Data's Float Part(Which should be empty)
---Fifth byte->SUM Byte, Humi+Temp
- local checksum = 0
- local checksumTest
-  --DHT data acquired, process.
+
+---------------------------Check out the data--------------------------
+----Auto Select the DHT11/DHT22 By check the byte[1] && byte[3] -------
+---------------Which is empty when using DHT11-------------------------
+function M.read(pin)
+  read(pin)
+
+  local byte_0 = 0
+  local byte_1 = 0
+  local byte_2 = 0
+  local byte_3 = 0
+  local byte_4 = 0
+
   for i = 1, 8, 1 do -- Byte[0]
     if (bitStream[i] > 3) then
-      humidity = humidity + 2 ^ (8 - i)
+      byte_0 = byte_0 + 2 ^ (8 - i)
     end
   end
+
+  for i = 1, 8, 1 do -- Byte[1]
+    if (bitStream[i+8] > 3) then
+      byte_1 = byte_1 + 2 ^ (8 - i)
+    end
+  end
+
   for i = 1, 8, 1 do -- Byte[2]
-    if (bitStream[i + 16] > 3) then
-      temperature = temperature + 2 ^ (8 - i)
-    end
-  end
-  for i = 1, 8, 1 do --Byte[4]
-    if (bitStream[i + 32] > 3) then
-      checksum = checksum + 2 ^ (8 - i)
+    if (bitStream[i+16] > 3) then
+      byte_2 = byte_2 + 2 ^ (8 - i)
     end
   end
 
-  if(checksum ~= humidity+temperature) then
-    humidity = nil
-    temperature = nil
-  else
-    humidity = humidity *10 -- In order to universe the DHT22
-    temperature = temperature *10 
+  for i = 1, 8, 1 do -- Byte[3]
+    if (bitStream[i+24] > 3) then
+      byte_2 = byte_2 + 2 ^ (8 - i)
+    end
+  end
+
+  for i = 1, 8, 1 do -- Byte[4]
+    if (bitStream[i+32] > 3) then
+      byte_4 = byte_4 + 2 ^ (8 - i)
+    end
   end
 
 
-  
-end
----------------------------Convert the bitStream into Number through DHT22 Ways--------------------------
-local function bit2DHT22()
---As for DHT22 40Bit is consisit of 5Bytes
---First byte->Humidity Data's High Bit
---Sencond byte->Humidity Data's Low Bit(And if over 0x8000, use complement)
---Third byte->Temp Data's High Bit
---Forth byte->Temp Data's Low Bit
---Fifth byte->SUM Byte
-  local checksum = 0
-  local checksumTest
-   --DHT data acquired, process.
-  for i = 1, 16, 1 do
-    if (bitStream[i] > 3) then
-      humidity = humidity + 2 ^ (16 - i)
+  if byte_1==0 and byte_3 == 0 then
+  ---------------------------Convert the bitStream into Number through DHT11's Way--------------------------
+  --As for DHT11 40Bit is consisit of 5Bytes
+  --First byte->Humidity Data's Int part
+  --Sencond byte->Humidity Data's Float Part(Which should be empty)
+  --Third byte->Temp Data;s Intpart
+  --Forth byte->Temp Data's Float Part(Which should be empty)
+  --Fifth byte->SUM Byte, Humi+Temp
+
+    if(byte_4 ~= byte_0+byte_2) then
+     humidity = nil
+     temperature = nil
+    else
+     humidity = byte_0 *10 -- In order to universe with the DHT22
+     temperature = byte_2 *10 
     end
-  end
-  for i = 1, 16, 1 do
-    if (bitStream[i + 16] > 3) then
-      temperature = temperature + 2 ^ (16 - i)
-    end
-  end
-  for i = 1, 8, 1 do
-    if (bitStream[i + 32] > 3) then
-      checksum = checksum + 2 ^ (8 - i)
-    end
-  end
+
+  else ---------------------------Convert the bitStream into Number through DHT22's Way--------------------------
+  --As for DHT22 40Bit is consisit of 5Bytes
+  --First byte->Humidity Data's High Bit
+  --Sencond byte->Humidity Data's Low Bit(And if over 0x8000, use complement)
+  --Third byte->Temp Data's High Bit
+  --Forth byte->Temp Data's Low Bit
+  --Fifth byte->SUM Byte
+
+  humidity = byte_0 * 256 + byte_1
+  temperature = byte_2 * 256 + byte_3
+  checksum = byte_4
 
   checksumTest = (bit.band(humidity, 0xFF) + bit.rshift(humidity, 8) + bit.band(temperature, 0xFF) + bit.rshift(temperature, 8))
   checksumTest = bit.band(checksumTest, 0xFF)
@@ -151,35 +155,14 @@ local function bit2DHT22()
   if (checksumTest - checksum >= 1) or (checksum - checksumTest >= 1) then
     humidity = nil
   end
-end
 
----------------------------Check out the data--------------------------
-----Auto Select the DHT11/DHT22 by checking the byte[1]==0 && byte[3]==0 ---
----------------Which is empty when using DHT11-------------------------
-function M.read(pin)
-
-  read(pin)
-
-  local byte_1 = 0
-  local byte_2 = 0
-
-  for i = 1, 8, 1 do -- Byte[1]
-    if (bitStream[i+8] > 3) then
-      byte_1 = byte_1 + 2 ^ (8 - i)
-    end
   end
 
-    for i = 1, 8, 1 do -- Byte[1]
-    if (bitStream[i+24] > 3) then
-      byte_2 = byte_2 + 2 ^ (8 - i)
-    end
-  end
-
-  if byte_1==0 and byte_2 == 0 then
-    bit2DHT11()
-  else
-    bit2DHT22()
-  end
+   byte_0 = nil
+   byte_1 = nil
+   byte_2 = nil
+   byte_3 = nil
+   byte_4 = nil
 
 end
 --------------API for geting the data out------------------
