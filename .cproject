@@ -26,6 +26,13 @@
 								</outputEntries>
 							</builder>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.972920545" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
+								<option id="gnu.c.compiler.option.include.paths.804339265" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/home/anonymous/esp-open-sdk/sdk/include"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nodemcu-firmware/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nodemcu-firmware/app/lua}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nodemcu-firmware/app/modules}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nodemcu-firmware/app/include}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1985687892" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.36308842" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
