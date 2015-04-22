@@ -1,17 +1,12 @@
 
 -- ***************************************************************************
--- Yeelink Updata Libiary
+-- Yeelink Updata Libiary Version 0.1.2
 --
 -- Written by Martin
 -- but based on a script of zhouxu_o from bbs.nodemcu.com
 --
 -- MIT license, http://opensource.org/licenses/MIT
 -- ***************************************************************************
-
-if wifi.sta.getip() == nil then
-	print("Please Connect WIFI First")
-	return nil
-end
 --==========================Module Part======================
 
 local moduleName = ...
@@ -30,7 +25,23 @@ local debug = true --<<<<<<<<<<<<< Don't forget to "false" it before using
 local sk=net.createConnection(net.TCP, 0)
 
 local datapoint = 0
+
+
 --====DNS the yeelink ip advance(in order to save RAM)=====
+
+if wifi.sta.getip() == nil then
+    print("Please Connect WIFI First")
+    tmr.alarm(1,1000,1,function ()
+        if wifi.sta.getip() ~= nil then
+            tmr.stop(1)
+            sk:dns("api.yeelink.net",function(conn,ip) 
+            dns=ip
+            print("DNS YEELINK OK... IP: "..dns)
+            end)
+        end
+    end)
+end
+
 sk:dns("api.yeelink.net",function(conn,ip) 
 
 dns=ip
@@ -50,13 +61,31 @@ function M.init(_device, _sensor, _apikey)
     sensor = tostring(_sensor)
     apikey = _apikey
     if dns == "0.0.0.0" then
+    tmr.alarm(2,5000,1,function ()
+    if dns == "0.0.0.0" then
+        print("Waiting for DNS...")
+    end
+        end)
         return false
+    else
+        return dns
+    end
+end
+--========Check the DNS Status===========
+--if DNS success, return the address(string)
+--if DNS fail(or processing), return nil
+-- 
+-- 
+--========================================
+function  M.getDNS()
+
+    if dns == "0.0.0.0" then
+        return nil
     else
         return dns
     end
 
 end
-
 
 --=====Update to Yeelink Sever(At least 10s per sencods))=====
 --  datapoint->number
