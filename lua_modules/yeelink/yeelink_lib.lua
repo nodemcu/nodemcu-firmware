@@ -1,6 +1,6 @@
 
 -- ***************************************************************************
--- Yeelink Updata Libiary Version 0.1.2
+-- Yeelink Updata Libiary Version 0.1.2 r1
 --
 -- Written by Martin
 -- but based on a script of zhouxu_o from bbs.nodemcu.com
