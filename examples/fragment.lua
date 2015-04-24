@@ -14,7 +14,7 @@ sk:connect(80,"115.239.210.27")
 sk:send("GET / HTTP/1.1\r\nHost: 115.239.210.27\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 
 sk:connect(80,"192.168.0.66") 
-sk:send("GET / HTTP/1.1\r\nHost: 1192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 
 i2c.setup(0,1,0,i2c.SLOW)
 function read_bmp(addr) i2c.start(0) i2c.address(0,119,i2c.RECEIVER) c=i2c.read(0,1) i2c.stop(0) print(string.byte(c)) end 
@@ -381,3 +381,141 @@ function TestDNSLeak()
      tmr.alarm(1, 3000, 0, function() print("hack socket close, MEM: "..node.heap()) c:close() end) -- socket timeout hack
      print("MEM: "..node.heap())
 end
+
+v="abc%0D%0Adef"
+print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end))
+
+function ex(x) string.find("abc%0Ddef","bc") return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex)
+
+function ex(x) string.char(35) return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
+
+function ex(x) string.lower('Ab') return 's' end
+string.gsub("abc%0Ddef", "%%(%x%x)", ex) print("hello")
+
+v="abc%0D%0Adef"
+pcall(function() print(string.gsub(v, "%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end)) end)
+
+mosca -v | bunyan
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+topic={}
+topic["/topic1"]=0
+topic["/topic2"]=0
+m:subscribe(topic,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic1","hello",0,0)
+m:publish("/topic3","hello",0,0) m:publish("/topic4","hello",0,0)
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+m:subscribe("/topic1",0,function(m) print("sub done") end)
+m:subscribe("/topic2",0,function(m) print("sub done") end)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:publish("/topic1","hello",0,0)
+m:publish("/topic3","hello",0,0) m:publish("/topic4","hello",0,0)
+m:publish("/topic1","hello1",0,0) m:publish("/topic2","hello2",0,0)
+m:publish("/topic1","hello",1,0)
+m:subscribe("/topic3",0,function(m) print("sub done") end)
+m:publish("/topic3","hello3",2,0)
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883, function(con) print("connected hello") end)
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection") end )
+m:connect("192.168.18.88",1883)
+m:on("offline",function(m) print("disconnection") end )
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection "..node.heap()) end )
+m:on("offline", function(conn)
+	if conn == nil then print("conn is nil") end
+    print("Reconnect to broker...")
+    print(node.heap())
+    conn:connect("192.168.18.88",1883,0,1)
+end)
+m:connect("192.168.18.88",1883,0,1)
+
+m=mqtt.Client()
+m:on("connect",function(m) print("connection "..node.heap()) end )
+m:on("offline", function(conn)
+	if conn == nil then print("conn is nil") end
+    print("Reconnect to broker...")
+    print(node.heap())
+    conn:connect("192.168.18.88",1883)
+end)
+m:connect("192.168.18.88",1883)
+
+m:close()
+
+m=mqtt.Client()
+m:connect("192.168.18.88",1883)
+m:on("message",function(m,t,pl) print(t..":") if pl~=nil then print(pl) end end )
+m:subscribe("/topic1",0,function(m) print("sub done") end)
+m:publish("/topic1","hello3",2,0) m:publish("/topic1","hello2",2,0)
+m:publish("/topic1","hello3",0,0) m:publish("/topic1","hello2",2,0)
+
+m:subscribe("/topic2",2,function(m) print("sub done") end)
+m:publish("/topic2","hello3",0,0) m:publish("/topic2","hello2",2,0)
+
+m=mqtt.Client()
+m:on("connect",function(m) 
+	print("connection "..node.heap()) 
+	m:subscribe("/topic1",0,function(m) print("sub done") end)
+	m:publish("/topic1","hello3",0,0) m:publish("/topic1","hello2",2,0)
+	end )
+m:on("offline", function(conn)
+    print("disconnect to broker...")
+    print(node.heap())
+end)
+m:connect("192.168.18.88",1883,0,1)
+
+-- serout( pin, firstLevel, delay_table, [repeatNum] )
+gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+gpio.serout(1,1,{30,30,60,60,30,30})	-- serial one byte, b10110010
+gpio.serout(1,1,{30,70},8)	-- serial 30% pwm 10k, lasts 8 cycles
+gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
+gpio.serout(1,1,{0,0},8)	-- serial 50% pwm as fast as possible, lasts 8 cycles
+
+gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+gpio.serout(1,0,{20,10,10,20,10,10,10,100})	-- sim uart one byte 0x5A at about 100kbps
+
+gpio.serout(1,1,{8,18},8)	-- serial 30% pwm 38k, lasts 8 cycles
+
+-- Lua: mqtt.Client(clientid, keepalive, user, pass)
+-- test with cloudmqtt.com
+m_dis={}
+function dispatch(m,t,pl)
+	if pl~=nil and m_dis[t] then
+		m_dis[t](pl)
+	end
+end
+function topic1func(pl)
+	print("get1: "..pl)
+end
+function topic2func(pl)
+	print("get2: "..pl)
+end
+m_dis["/topic1"]=topic1func
+m_dis["/topic2"]=topic2func
+m=mqtt.Client("nodemcu1",60,"test","test123")
+m:on("connect",function(m) 
+	print("connection "..node.heap()) 
+	m:subscribe("/topic1",0,function(m) print("sub done") end)
+	m:subscribe("/topic2",0,function(m) print("sub done") end)
+	m:publish("/topic1","hello",0,0) m:publish("/topic2","world",0,0)
+	end )
+m:on("offline", function(conn)
+    print("disconnect to broker...")
+    print(node.heap())
+end)
+m:on("message",dispatch )
+m:connect("m11.cloudmqtt.com",11214,0,1)
+-- Lua: mqtt:connect( host, port, secure, auto_reconnect, function(client) )
+
+tmr.alarm(0,10000,1,function() local pl = "time: "..tmr.time() 
+	m:publish("/topic1",pl,0,0)
+	end)

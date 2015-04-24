@@ -41,7 +41,7 @@ class ESPROM:
 
     # Maximum block sized for RAM and Flash writes, respectively.
     ESP_RAM_BLOCK   = 0x1800
-    ESP_FLASH_BLOCK = 0x100
+    ESP_FLASH_BLOCK = 0x400
 
     # Default baudrate. The ROM auto-bauds, so we can use more or less whatever we want.
     ESP_ROM_BAUD    = 115200
@@ -55,6 +55,12 @@ class ESPROM:
     # OTP ROM addresses
     ESP_OTP_MAC0    = 0x3ff00050
     ESP_OTP_MAC1    = 0x3ff00054
+
+    # Sflash stub: an assembly routine to read from spi flash and send to host
+    SFLASH_STUB     = "\x80\x3c\x00\x40\x1c\x4b\x00\x40\x21\x11\x00\x40\x00\x80" \
+            "\xfe\x3f\xc1\xfb\xff\xd1\xf8\xff\x2d\x0d\x31\xfd\xff\x41\xf7\xff\x4a" \
+            "\xdd\x51\xf9\xff\xc0\x05\x00\x21\xf9\xff\x31\xf3\xff\x41\xf5\xff\xc0" \
+            "\x04\x00\x0b\xcc\x56\xec\xfd\x06\xff\xff\x00\x00"
 
     def __init__(self, port = 0, baud = ESP_ROM_BAUD):
         self._port = serial.Serial(port, baud)
@@ -78,15 +84,7 @@ class ESPROM:
 
     """ Write bytes to the serial port while performing SLIP escaping """
     def write(self, packet):
-        buf = '\xc0'
-        for b in packet:
-            if b == '\xc0':
-                buf += '\xdb\xdc'
-            elif b == '\xdb':
-                buf += '\xdb\xdd'
-            else:
-                buf += b
-        buf += '\xc0'
+        buf = '\xc0'+(packet.replace('\xdb','\xdb\xdd').replace('\xc0','\xdb\xdc'))+'\xc0'
         self._port.write(buf)
 
     """ Calculate checksum of a blob, as it is defined by the ROM """
@@ -132,11 +130,25 @@ class ESPROM:
 
         # RTS = CH_PD (i.e reset)
         # DTR = GPIO0
+        # self._port.setRTS(True)
+        # self._port.setDTR(True)
+        # self._port.setRTS(False)
+        # time.sleep(0.1)
+        # self._port.setDTR(False)
+
+        # NodeMCU devkit
         self._port.setRTS(True)
         self._port.setDTR(True)
-        self._port.setRTS(False)
         time.sleep(0.1)
+        self._port.setRTS(False)
         self._port.setDTR(False)
+        time.sleep(0.1)
+        self._port.setRTS(True)
+        time.sleep(0.1)
+        self._port.setDTR(True)
+        self._port.setRTS(False)
+        time.sleep(0.3)
+        self._port.setDTR(True)
 
         self._port.timeout = 0.5
         for i in xrange(10):
@@ -209,16 +221,78 @@ class ESPROM:
         self.flash_begin(0, 0)
         self.flash_finish(reboot)
 
+    """ Read MAC from OTP ROM """
+    def read_mac(self):
+        mac0 = esp.read_reg(esp.ESP_OTP_MAC0)
+        mac1 = esp.read_reg(esp.ESP_OTP_MAC1)
+        if ((mac1 >> 16) & 0xff) == 0:
+            oui = (0x18, 0xfe, 0x34)
+        elif ((mac1 >> 16) & 0xff) == 1:
+            oui = (0xac, 0xd0, 0x74)
+        else:
+            raise Exception("Unknown OUI")
+        return oui + ((mac1 >> 8) & 0xff, mac1 & 0xff, (mac0 >> 24) & 0xff)
+
+    """ Read SPI flash manufacturer and device id """
+    def flash_id(self):
+        self.flash_begin(0, 0)
+        self.write_reg(0x60000240, 0x0, 0xffffffff)
+        self.write_reg(0x60000200, 0x10000000, 0xffffffff)
+        flash_id = esp.read_reg(0x60000240)
+        self.flash_finish(False)
+        return flash_id
+
+    """ Read SPI flash """
+    def flash_read(self, offset, size, count = 1):
+        # Create a custom stub
+        stub = struct.pack('<III', offset, size, count) + self.SFLASH_STUB
+
+        # Trick ROM to initialize SFlash
+        self.flash_begin(0, 0)
+
+        # Download stub
+        self.mem_begin(len(stub), 1, len(stub), 0x40100000)
+        self.mem_block(stub, 0)
+        self.mem_finish(0x4010001c)
+
+        # Fetch the data
+        data = ''
+        for _ in xrange(count):
+            if self._port.read(1) != '\xc0':
+                raise Exception('Invalid head of packet (sflash read)')
+
+            data += self.read(size)
+
+            if self._port.read(1) != chr(0xc0):
+                raise Exception('Invalid end of packet (sflash read)')
+
+        return data
+
+    """ Perform a chip erase of SPI flash """
+    def flash_erase(self):
+        # Trick ROM to initialize SFlash
+        self.flash_begin(0, 0)
+
+        # This is hacky: we don't have a custom stub, instead we trick
+        # the bootloader to jump to the SPIEraseChip() routine and then halt/crash
+        # when it tries to boot an unconfigured system.
+        self.mem_begin(0,0,0,0x40100000)
+        self.mem_finish(0x40004984)
+
+        # Yup - there's no good way to detect if we succeeded.
+        # It it on the other hand unlikely to fail.
 
 class ESPFirmwareImage:
     
     def __init__(self, filename = None):
         self.segments = []
         self.entrypoint = 0
+        self.flash_mode = 0
+        self.flash_size_freq = 0
 
         if filename is not None:
             f = file(filename, 'rb')
-            (magic, segments, _, _, self.entrypoint) = struct.unpack('<BBBBI', f.read(8))
+            (magic, segments, self.flash_mode, self.flash_size_freq, self.entrypoint) = struct.unpack('<BBBBI', f.read(8))
             
             # some sanity check
             if magic != ESPROM.ESP_IMAGE_MAGIC or segments > 16:
@@ -246,7 +320,8 @@ class ESPFirmwareImage:
 
     def save(self, filename):
         f = file(filename, 'wb')
-        f.write(struct.pack('<BBBBI', ESPROM.ESP_IMAGE_MAGIC, len(self.segments), 0, 0, self.entrypoint))
+        f.write(struct.pack('<BBBBI', ESPROM.ESP_IMAGE_MAGIC, len(self.segments),
+            self.flash_mode, self.flash_size_freq, self.entrypoint))
 
         checksum = ESPROM.ESP_CHECKSUM_MAGIC
         for (offset, size, data) in self.segments:
@@ -346,6 +421,12 @@ if __name__ == '__main__':
             'write_flash',
             help = 'Write a binary blob to flash')
     parser_write_flash.add_argument('addr_filename', nargs = '+', help = 'Address and binary file to write there, separated by space')
+    parser_write_flash.add_argument('--flash_freq', '-ff', help = 'SPI Flash frequency',
+            choices = ['40m', '26m', '20m', '80m'], default = '40m')
+    parser_write_flash.add_argument('--flash_mode', '-fm', help = 'SPI Flash mode',
+            choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
+    parser_write_flash.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
+            choices = ['4m', '2m', '8m', '16m', '32m'], default = '4m')
 
     parser_run = subparsers.add_parser(
             'run',
@@ -369,10 +450,31 @@ if __name__ == '__main__':
             help = 'Create an application image from ELF file')
     parser_elf2image.add_argument('input', help = 'Input ELF file')
     parser_elf2image.add_argument('--output', '-o', help = 'Output filename prefix', type = str)
+    parser_elf2image.add_argument('--flash_freq', '-ff', help = 'SPI Flash frequency',
+            choices = ['40m', '26m', '20m', '80m'], default = '40m')
+    parser_elf2image.add_argument('--flash_mode', '-fm', help = 'SPI Flash mode',
+            choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
+    parser_elf2image.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
+            choices = ['4m', '2m', '8m', '16m', '32m'], default = '4m')
 
     parser_read_mac = subparsers.add_parser(
             'read_mac',
             help = 'Read MAC address from OTP ROM')
+
+    parser_flash_id = subparsers.add_parser(
+            'flash_id',
+            help = 'Read SPI flash manufacturer and device ID')
+
+    parser_read_flash = subparsers.add_parser(
+            'read_flash',
+            help = 'Read SPI flash content')
+    parser_read_flash.add_argument('address', help = 'Start address', type = arg_auto_int)
+    parser_read_flash.add_argument('size', help = 'Size of region to dump', type = arg_auto_int)
+    parser_read_flash.add_argument('filename', help = 'Name of binary dump')
+
+    parser_erase_flash = subparsers.add_parser(
+            'erase_flash',
+            help = 'Perform Chip Erase on SPI flash')
 
     args = parser.parse_args()
 
@@ -421,6 +523,12 @@ if __name__ == '__main__':
 
     elif args.operation == 'write_flash':
         assert len(args.addr_filename) % 2 == 0
+
+        flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
+        flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40}[args.flash_size]
+        flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
+        flash_info = struct.pack('BB', flash_mode, flash_size_freq)
+
         while args.addr_filename:
             address = int(args.addr_filename[0], 0)
             filename = args.addr_filename[1]
@@ -434,7 +542,11 @@ if __name__ == '__main__':
                 print '\rWriting at 0x%08x... (%d %%)' % (address + seq*esp.ESP_FLASH_BLOCK, 100*(seq+1)/blocks),
                 sys.stdout.flush()
                 block = image[0:esp.ESP_FLASH_BLOCK]
-                block = block + '\xe0' * (esp.ESP_FLASH_BLOCK-len(block))
+                # Fix sflash config data
+                if address == 0 and seq == 0 and block[0] == '\xe9':
+                    block = block[0:2] + flash_info + block[4:]
+                # Pad the last block
+                block = block + '\xff' * (esp.ESP_FLASH_BLOCK-len(block))
                 esp.flash_block(block, seq)
                 image = image[esp.ESP_FLASH_BLOCK:]
                 seq += 1
@@ -478,6 +590,11 @@ if __name__ == '__main__':
         for section, start in ((".text", "_text_start"), (".data", "_data_start"), (".rodata", "_rodata_start")):
             data = e.load_section(section)
             image.add_segment(e.get_symbol_addr(start), data)
+
+        image.flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
+        image.flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40}[args.flash_size]
+        image.flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
+
         image.save(args.output + "0x00000.bin")
         data = e.load_section(".irom0.text")
         off = e.get_symbol_addr("_irom0_text_start") - 0x40200000
@@ -487,6 +604,17 @@ if __name__ == '__main__':
         f.close()
 
     elif args.operation == 'read_mac':
-        mac0 = esp.read_reg(esp.ESP_OTP_MAC0)
-        mac1 = esp.read_reg(esp.ESP_OTP_MAC1)
-        print 'MAC: 18:fe:34:%02x:%02x:%02x' % ((mac1 >> 8) & 0xff, mac1 & 0xff, (mac0 >> 24) & 0xff)
+        mac = esp.read_mac()
+        print 'MAC: %s' % ':'.join(map(lambda x: '%02x'%x, mac))
+
+    elif args.operation == 'flash_id':
+        flash_id = esp.flash_id()
+        print 'Manufacturer: %02x' % (flash_id & 0xff)
+        print 'Device: %02x%02x' % ((flash_id >> 8) & 0xff, (flash_id >> 16) & 0xff)
+
+    elif args.operation == 'read_flash':
+        print 'Please wait...'
+        file(args.filename, 'wb').write(esp.flash_read(args.address, 1024, int(math.ceil(args.size / 1024.)))[:args.size])
+
+    elif args.operation == 'erase_flash':
+        esp.flash_erase()
