@@ -91,17 +91,6 @@ function ascii_1()
      end
 end
 
-function ascii_2()
-     local x, y, s
-     disp:drawStr(0, 0, "ASCII page 2")
-     for y = 0, 5, 1 do
-          for x = 0, 15, 1 do
-               s = y*16 + x + 160
-               disp:drawStr(x*7, y*10+10, string.char(s))
-          end
-     end
-end
-
 function extra_page(a)
      disp:drawStr(0, 12, "setScale2x2")
      disp:setScale2x2()
@@ -131,8 +120,6 @@ function draw(draw_state)
      elseif (component == 6) then
           ascii_1()
      elseif (component == 7) then
-          ascii_2()
-     elseif (component == 8) then
           extra_page(bit.band(draw_state, 7))
      end
 end
