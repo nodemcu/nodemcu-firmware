@@ -157,6 +157,29 @@ static int wifi_getmode( lua_State* L )
   return 1;  
 }
 
+// Lua: wifi.setphymode(mode)
+static int wifi_setphymode( lua_State* L )
+{
+  unsigned mode;
+
+  mode = luaL_checkinteger( L, 1 );
+
+  if ( mode != PHY_MODE_11B && mode != PHY_MODE_11G && mode != PHY_MODE_11N )
+    return luaL_error( L, "wrong arg type" );
+  wifi_set_phy_mode( (uint8_t)mode);
+  mode = (unsigned)wifi_get_phy_mode();
+  lua_pushinteger( L, mode );
+  return 1;
+}
+
+// Lua: wifi.getphymode()
+static int wifi_getphymode( lua_State* L )
+{
+  unsigned mode;
+  mode = (unsigned)wifi_get_phy_mode();
+  lua_pushinteger( L, mode );
+  return 1;
+}
 
 // Lua: mac = wifi.xx.getmac()
 static int wifi_getmac( lua_State* L, uint8_t mode )
@@ -524,6 +547,8 @@ const LUA_REG_TYPE wifi_map[] =
 {
   { LSTRKEY( "setmode" ), LFUNCVAL( wifi_setmode ) },
   { LSTRKEY( "getmode" ), LFUNCVAL( wifi_getmode ) },
+  { LSTRKEY( "setphymode" ), LFUNCVAL( wifi_setphymode ) },
+  { LSTRKEY( "getphymode" ), LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ), LFUNCVAL( wifi_exit_smart ) },
   { LSTRKEY( "sleeptype" ), LFUNCVAL( wifi_sleeptype ) },
