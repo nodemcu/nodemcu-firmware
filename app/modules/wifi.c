@@ -172,7 +172,7 @@ static int wifi_setphymode( lua_State* L )
   return 1;
 }
 
-// Lua: realmode = getmode()
+// Lua: wifi.getphymode()
 static int wifi_getphymode( lua_State* L )
 {
   unsigned mode;
