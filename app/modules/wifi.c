@@ -149,6 +149,7 @@ static int wifi_setmode( lua_State* L )
 }
 
 // Lua: realmode = getmode()
+
 static int wifi_getmode( lua_State* L )
 {
   unsigned mode;
@@ -157,7 +158,22 @@ static int wifi_getmode( lua_State* L )
   return 1;  
 }
 
-// Lua: wifi.setphymode(mode)
+/**
+  * wifi.setphymode()
+  * Description:
+  * 	Set wifi physical mode（802.11 b/g/n）
+  * 	Note： SoftAP only supports 802.11 b/g.
+  * Syntax:
+  * 	wifi.setphymode(mode)
+  * Parameters:
+  * 	mode:
+  * 		wifi.PHYMODE_B
+  *	 		wifi.PHYMODE_G
+  * 		wifi.PHYMODE_N
+  * Returns:
+  * 	Current physical mode after setup
+  */
+
 static int wifi_setphymode( lua_State* L )
 {
   unsigned mode;
@@ -172,7 +188,18 @@ static int wifi_setphymode( lua_State* L )
   return 1;
 }
 
-// Lua: wifi.getphymode()
+/**
+  * wifi.getphymode()
+  * Description:
+  * 	Get wifi physical mode（802.11 b/g/n）
+  * Syntax:
+  * 	wifi.getphymode()
+  * Parameters:
+  * 	nil
+  * Returns:
+  * 	Current physical mode.
+  *
+  */
 static int wifi_getphymode( lua_State* L )
 {
   unsigned mode;
@@ -560,6 +587,10 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "STATION" ), LNUMVAL( STATION_MODE ) },
   { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
+
+  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_B ) },
+  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_G ) },
+  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_N ) },
 
   { LSTRKEY( "NONE_SLEEP" ), LNUMVAL( NONE_SLEEP_T ) },
   { LSTRKEY( "LIGHT_SLEEP" ), LNUMVAL( LIGHT_SLEEP_T ) },
