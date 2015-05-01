@@ -2,9 +2,9 @@
 -- setup I2c and connect display
 function init_i2c_display()
      -- SDA and SCL can be assigned freely to available GPIOs
-     sda = 5 -- GPIO14
-     scl = 6 -- GPIO12
-     sla = 0x3c
+     local sda = 5 -- GPIO14
+     local scl = 6 -- GPIO12
+     local sla = 0x3c
      i2c.setup(0, sda, scl, i2c.SLOW)
      disp = u8g.ssd1306_128x64_i2c(sla)
 end
@@ -15,9 +15,9 @@ function init_spi_display()
      -- Hardware SPI MOSI = GPIO13
      -- Hardware SPI MISO = GPIO12 (not used)
      -- CS, D/C, and RES can be assigned freely to available GPIOs
-     cs  = 8 -- GPIO15, pull-down 10k to GND
-     dc  = 4 -- GPIO2
-     res = 0 -- GPIO16
+     local cs  = 8 -- GPIO15, pull-down 10k to GND
+     local dc  = 4 -- GPIO2
+     local res = 0 -- GPIO16
 
      spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
      disp = u8g.ssd1306_128x64_spi(cs, dc, res)
@@ -91,17 +91,6 @@ function ascii_1()
      end
 end
 
-function ascii_2()
-     local x, y, s
-     disp:drawStr(0, 0, "ASCII page 2")
-     for y = 0, 5, 1 do
-          for x = 0, 15, 1 do
-               s = y*16 + x + 160
-               disp:drawStr(x*7, y*10+10, string.char(s))
-          end
-     end
-end
-
 function extra_page(a)
      disp:drawStr(0, 12, "setScale2x2")
      disp:setScale2x2()
@@ -131,8 +120,6 @@ function draw(draw_state)
      elseif (component == 6) then
           ascii_1()
      elseif (component == 7) then
-          ascii_2()
-     elseif (component == 8) then
           extra_page(bit.band(draw_state, 7))
      end
 end

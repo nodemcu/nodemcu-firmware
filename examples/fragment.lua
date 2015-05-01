@@ -472,3 +472,50 @@ m:on("offline", function(conn)
     print(node.heap())
 end)
 m:connect("192.168.18.88",1883,0,1)
+
+-- serout( pin, firstLevel, delay_table, [repeatNum] )
+gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+gpio.serout(1,1,{30,30,60,60,30,30})	-- serial one byte, b10110010
+gpio.serout(1,1,{30,70},8)	-- serial 30% pwm 10k, lasts 8 cycles
+gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
+gpio.serout(1,1,{0,0},8)	-- serial 50% pwm as fast as possible, lasts 8 cycles
+
+gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+gpio.serout(1,0,{20,10,10,20,10,10,10,100})	-- sim uart one byte 0x5A at about 100kbps
+
+gpio.serout(1,1,{8,18},8)	-- serial 30% pwm 38k, lasts 8 cycles
+
+-- Lua: mqtt.Client(clientid, keepalive, user, pass)
+-- test with cloudmqtt.com
+m_dis={}
+function dispatch(m,t,pl)
+	if pl~=nil and m_dis[t] then
+		m_dis[t](pl)
+	end
+end
+function topic1func(pl)
+	print("get1: "..pl)
+end
+function topic2func(pl)
+	print("get2: "..pl)
+end
+m_dis["/topic1"]=topic1func
+m_dis["/topic2"]=topic2func
+m=mqtt.Client("nodemcu1",60,"test","test123")
+m:on("connect",function(m) 
+	print("connection "..node.heap()) 
+	m:subscribe("/topic1",0,function(m) print("sub done") end)
+	m:subscribe("/topic2",0,function(m) print("sub done") end)
+	m:publish("/topic1","hello",0,0) m:publish("/topic2","world",0,0)
+	end )
+m:on("offline", function(conn)
+    print("disconnect to broker...")
+    print(node.heap())
+end)
+m:on("message",dispatch )
+m:connect("m11.cloudmqtt.com",11214,0,1)
+-- Lua: mqtt:connect( host, port, secure, auto_reconnect, function(client) )
+
+tmr.alarm(0,10000,1,function() local pl = "time: "..tmr.time() 
+	m:publish("/topic1",pl,0,0)
+	end)
