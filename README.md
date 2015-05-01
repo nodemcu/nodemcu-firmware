@@ -410,7 +410,8 @@ u8glib comes with a wide range of fonts for small displays. Since they need to b
 They'll be available as `u8g.<font_name>` in Lua.
 
 #####Bitmaps
-Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This off-loads all data handling from the u8g module to generic methods for binary files. See `lua_examples/u8glib/u8g_bitmaps.lua`. Binary files can be uploaded with [nodemcu-uploader.py](https://github.com/kmpm/nodemcu-uploader).
+Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This off-loads all data handling from the u8g module to generic methods for binary files. See `lua_examples/u8glib/u8g_bitmaps.lua`.
+In contrast to the source code based inclusion of XBMs into u8glib, it's required to provide precompiled binary files. This can be performed online with [Online-Utility's Image Converter](http://www.online-utility.org/image_converter.jsp): Convert from XBM to MONO format and upload the binary result with [nodemcu-uploader.py](https://github.com/kmpm/nodemcu-uploader).
 
 #####Unimplemented functions
 - [ ] Cursor handling
