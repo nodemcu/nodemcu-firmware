@@ -86,6 +86,11 @@ static void wifi_scan_done(void *arg, STATUS status)
     lua_pushnil(gL);
   }
   lua_call(gL, 1, 0);
+  if(wifi_scan_succeed != LUA_NOREF)
+  {
+    luaL_unref(gL, LUA_REGISTRYINDEX, wifi_scan_succeed);
+    wifi_scan_succeed = LUA_NOREF;
+  }
 }
 
 // Lua: smart(channel, function succeed_cb)
