@@ -367,36 +367,142 @@ static int wifi_station_getbroadcast( lua_State* L ){
   return wifi_getbroadcast(L, STATION_IF);
 }
 
-// Lua: wifi.sta.config(ssid, password)
+/**
+  * wifi.sta.getconfig()
+  * Description:
+  * 	Get current Station configuration.
+  * 	Note:  if bssid_set==1 STATION is configured to connect to specified BSSID
+  * 		   if bssid_set==0 specified BSSID address is irrelevant.
+  * Syntax:
+  * 	ssid, pwd, bssid_set, bssid=wifi.sta.getconfig()
+  * Parameters:
+  * 	none
+  * Returns:
+  * 	SSID, Password, BSSID_set, BSSID
+  */
+static int wifi_station_getconfig( lua_State* L )
+{
+	struct station_config sta_conf;
+	char bssid[17];
+	wifi_station_get_config(&sta_conf);
+	if(sta_conf.ssid==0)
+	{
+		lua_pushnil(L);
+	    return 1;
+	}
+	else
+	{
+	    lua_pushstring( L, sta_conf.ssid );
+	    lua_pushstring( L, sta_conf.password );
+	    lua_pushinteger( L, sta_conf.bssid_set);
+	    c_sprintf(bssid, MACSTR, MAC2STR(sta_conf.bssid));
+	    lua_pushstring( L, bssid);
+	    return 4;
+	}
+}
+
+/**
+  * wifi.sta.config()
+  * Description:
+  * 	Set current Station configuration.
+  * 	Note: If there are multiple APs with the same ssid, you can connect to a specific one by entering it's MAC address into the "bssid" field.
+  * Syntax:
+  * 	wifi.sta.getconfig(ssid, password) --Set STATION configuration, Auto-connect by default, Connects to any BSSID
+  * 	wifi.sta.getconfig(ssid, password, Auto_connect) --Set STATION configuration, Auto-connect(0 or 1), Connects to any BSSID
+  * 	wifi.sta.getconfig(ssid, password, bssid) --Set STATION configuration, Auto-connect by default, Connects to specific BSSID
+  * 	wifi.sta.getconfig(ssid, password, Auto_connect, bssid) --Set STATION configuration, Auto-connect(0 or 1), Connects to specific BSSID
+  * Parameters:
+  * 	ssid: string which is less than 32 bytes.
+  * 	Password: string which is less than 64 bytes.
+  * 	Auto_connect: 0 (disable Auto-connect) or 1 (to enable Auto-connect).
+  * 	bssid: MAC address of Access Point you would like to connect to.
+  * Returns:
+  * 	Nothing.
+  */
 static int wifi_station_config( lua_State* L )
 {
-  size_t sl, pl;
+  size_t sl, pl, ml;
   struct station_config sta_conf;
-  int i;
+  int auto_connect=0;
   const char *ssid = luaL_checklstring( L, 1, &sl );
   if (sl>32 || ssid == NULL)
     return luaL_error( L, "ssid:<32" );
   const char *password = luaL_checklstring( L, 2, &pl );
-  if (pl>64 || password == NULL)
-    return luaL_error( L, "pwd:<64" );
+  if (pl<8 || pl>64 || password == NULL)
+    return luaL_error( L, "pwd:8~64" );
+
+  if(lua_isnumber(L, 3))
+  {
+    auto_connect=luaL_checkinteger( L, 3 );;
+    if ( auto_connect != 0 && auto_connect != 1)
+    	return luaL_error( L, "wrong arg type" );
+  }
+  else if (lua_isstring(L, 3)&& !(lua_isnumber(L, 3)))
+  {
+	  const char *mactemp=luaL_checklstring( L, 3, &ml );
+	  lua_pushstring(L, mactemp);
+	  lua_insert(L, 4);
+	  auto_connect=1;
+
+  }
+  else
+  {
+    if(lua_isnil(L, 3))
+	   	return luaL_error( L, "wrong arg type" );
+	auto_connect=1;
+  }
+
+  if(lua_isnumber(L, 4))
+  {
+    sta_conf.bssid_set = 0;
+	c_memset(sta_conf.bssid, 0, 6);
+  }
+  else
+  {
+    if (lua_isstring(L, 4))
+	{
+	  const char *macaddr = luaL_checklstring( L, 4, &ml );
+	  if (ml!=17)
+	    return luaL_error( L, "MAC:FF:FF:FF:FF:FF:FF" );
+	  c_memset(sta_conf.bssid, 0, 6);
+	  os_str2macaddr(sta_conf.bssid, macaddr);
+	  sta_conf.bssid_set = 1;
+	}
+	else
+	{
+	  sta_conf.bssid_set = 0;
+	  c_memset(sta_conf.bssid, 0, 6);
+	}
+  }
 
   c_memset(sta_conf.ssid, 0, 32);
   c_memset(sta_conf.password, 0, 64);
-  c_memset(sta_conf.bssid, 0, 6);
   c_memcpy(sta_conf.ssid, ssid, sl);
   c_memcpy(sta_conf.password, password, pl);
-  sta_conf.bssid_set = 0;
 
   NODE_DBG(sta_conf.ssid);
   NODE_DBG(" %d\n", sl);
   NODE_DBG(sta_conf.password);
   NODE_DBG(" %d\n", pl);
+  NODE_DBG(" %d\n", sta_conf.bssid_set);
+  NODE_DBG( MACSTR, MAC2STR(sta_conf.bssid));
+  NODE_DBG("\n");
+
 
   wifi_station_set_config(&sta_conf);
-  wifi_station_set_auto_connect(true);
   wifi_station_disconnect();
-  wifi_station_connect();
-  // station_check_connect(0);
+
+  if(auto_connect==0)
+  {
+    wifi_station_set_auto_connect(false);
+
+  }
+  else
+  {
+    wifi_station_set_auto_connect(true);
+    wifi_station_connect();
+  }
+//  station_check_connect(0);
   return 0;  
 }
 
@@ -545,6 +651,7 @@ static int wifi_ap_config( lua_State* L )
 #include "lrodefs.h"
 static const LUA_REG_TYPE wifi_station_map[] =
 {
+  { LSTRKEY( "getconfig" ), LFUNCVAL ( wifi_station_getconfig ) },
   { LSTRKEY( "config" ), LFUNCVAL ( wifi_station_config ) },
   { LSTRKEY( "connect" ), LFUNCVAL ( wifi_station_connect4lua ) },
   { LSTRKEY( "disconnect" ), LFUNCVAL ( wifi_station_disconnect4lua ) },
