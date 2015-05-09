@@ -44,20 +44,33 @@ static lua_State* gL = NULL;
   */
 static void wifi_scan_done(void *arg, STATUS status)
 {
+  size_t sl;
   uint8 ssid[33];
   char temp[128];
+  int rssi;
   if(wifi_scan_succeed == LUA_NOREF)
     return;
   if(arg == NULL)
     return;
-  
+
+  lua_getglobal(gL, "C_WIFI_STATION_SCAN_CB_ID"); //Retrieves global declared by function that called wifi_scan_done
+  const char *CB_STRING=luaL_checkstring(gL, -1);
+  lua_pushnil(gL);
+  lua_setglobal(gL, "C_WIFI_STATION_SCAN_CB_ID"); //sets global to nil
+  lua_pop(gL, -1); //pops retrieved global from stack since it is no longer needed
+
   lua_rawgeti(gL, LUA_REGISTRYINDEX, wifi_scan_succeed);
 
   if (status == OK)
   {
     struct bss_info *bss_link = (struct bss_info *)arg;
     bss_link = bss_link->next.stqe_next;//ignore first
-    lua_newtable( gL );
+    if (os_strcmp(CB_STRING, "listap")==0) //belongs to wifi_station_listap
+    {
+      lua_newtable( gL );
+    }
+    if(bss_link == NULL && os_strcmp(CB_STRING, "getrssi")==0)//belongs to wifi_station_getrssi
+      lua_pushnil(gL);
 
     while (bss_link != NULL)
     {
@@ -70,14 +83,22 @@ static void wifi_scan_done(void *arg, STATUS status)
       {
         c_memcpy(ssid, bss_link->ssid, 32);
       }
+      if (os_strcmp(CB_STRING, "listap")==0) //belongs to wifi_station_listap
+      {
+
       c_sprintf(temp,"%d,%d,"MACSTR",%d", bss_link->authmode, bss_link->rssi,
                  MAC2STR(bss_link->bssid),bss_link->channel);
 
       lua_pushstring(gL, temp);
       lua_setfield( gL, -2, ssid );
+      NODE_DBG(temp);
+      }
 
-      // NODE_DBG(temp);
+      if (os_strcmp(CB_STRING, "getrssi")==0) //belongs to wifi_station_getrssi
+      {
 
+	    lua_pushinteger(gL, bss_link->rssi);
+      }
       bss_link = bss_link->next.stqe_next;
     }
   }
@@ -154,7 +175,6 @@ static int wifi_setmode( lua_State* L )
 }
 
 // Lua: realmode = getmode()
-
 static int wifi_getmode( lua_State* L )
 {
   unsigned mode;
@@ -405,6 +425,119 @@ static int wifi_station_config( lua_State* L )
   return 0;  
 }
 
+/**
+  * wifi.sta.getrssi()
+  * Description:
+  *			Gets RSSI of current configured AP.
+  *			Note: If bssid_set==1 in STATION configuration, Configured BSSID will be used to get RSSI of specific Access Point.
+  *
+  * Syntax:
+  *		wifi.sta.getrssi(function(value))
+  *		wifi.sta.getrssi(function(value), "MAC_Address")
+  * Parameters:
+  * 	function(value): a callback function to receive AP RSSI value when scan is done
+  *			this function receive a value.
+  *		 MAC_Address: if multiple APs with the same ssid are present, an alternate MAC address can be specified to get the corresponding AP's RSSI.
+  *
+  * Returns:
+  * 	nil
+  *
+  *	Example:
+  	  --Get RSSI of currently configured AP
+  	  wifi.sta.getrssi(function(I) RSSI=I end)
+  	  print(RSSI)
+  	  RSSI=nil
+
+  	  --Get RSSI of currently configured AP
+  	  wifi.sta.getrssi(function(I) RSSI=I end, "FF:FF:FF:FF:FF:FF")
+  	  print(RSSI)
+  	  RSSI=nil
+  *
+  */
+static int wifi_station_getrssi( lua_State* L )
+{
+	if (wifi_get_opmode()!=1)
+		return luaL_error(L, "%s\n", "Can't get RSSI in SOFTAP mode");
+//	if (wifi_station_get_connect_status()!=5)
+//		return luaL_error(L, "%s\n", "Can't get RSSI when disconnected from AP");
+	gL = L;
+	struct station_config sta_conf;
+	wifi_station_get_config(&sta_conf);
+	uint8_t channel=wifi_get_channel(); // get current wifi channel to speed up AP scan
+
+	struct scan_config config; //get current STATION configuration
+	int8_t len;
+	char ssid[32];
+	c_strcpy(ssid, sta_conf.ssid);
+	len=c_strlen(sta_conf.ssid);
+	if(len == -1)
+	{
+		return; //ssid length error
+	}
+	if(len == 0)
+	{
+		return luaL_error(L, "%s\n", "STATION not configured");
+	}
+	else
+	{
+		config.ssid = ssid;
+	}
+
+	if(sta_conf.bssid_set==1) // check if STATION is configured to connect to a specific AP's BSSID
+	{
+		if(lua_isstring(L, 2)) //check if user specified an alternate BSSID to check
+		{
+			char mac[6];
+			unsigned len = 0;
+			const char *macaddr = luaL_checklstring( L, 2, &len );
+			if(len!=17)
+				return luaL_error( L, "wrong arg type" );
+			os_str2macaddr(mac, macaddr);
+			config.bssid = mac;
+//			c_memcpy(config.bssid, mac, 6);
+		}
+		else //user did NOT specify an alternate BSSID to check
+		{
+			config.bssid = sta_conf.bssid;
+		}
+	}
+	else //STATION is NOT configured to connnect to a specific
+	{
+		config.bssid = NULL;
+	}
+
+	config.channel=channel;
+	config.show_hidden=1;
+	NODE_DBG("scan_conf.ssid:\t\t%s\n", config.ssid);
+	NODE_DBG("scan_conf.channel:\t\t%d\n", config.channel);
+	NODE_DBG("scan_conf.show_hidden:\t\t%d\n", config.show_hidden);
+	NODE_DBG(MACSTR, MAC2STR(config.bssid));
+	NODE_DBG("\n");
+
+	lua_pushstring(L, "getrssi");
+	lua_setglobal(L, "C_WIFI_STATION_SCAN_CB_ID"); //this global tells wifi_scan_done who called it
+
+	if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+	{
+		lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
+		if(wifi_scan_succeed != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
+		wifi_scan_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
+		if(wifi_station_scan(&config, wifi_scan_done))
+		{
+		}
+		else
+		{
+		}
+	}
+	else
+	{
+		if(wifi_scan_succeed != LUA_NOREF)
+			luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
+	    wifi_scan_succeed = LUA_NOREF;
+	}
+}
+
 // Lua: wifi.sta.connect()
 static int wifi_station_connect4lua( lua_State* L )
 {
@@ -443,13 +576,20 @@ static int wifi_station_listap( lua_State* L )
   }
   gL = L;
   // luaL_checkanyfunction(L, 1);
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION){
+
+  lua_pushstring(L, "listap");
+  lua_setglobal(L, "C_WIFI_STATION_SCAN_CB_ID"); //this global tells wifi_scan_done who called it
+
+  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  {
     lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
     if(wifi_scan_succeed != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
     wifi_station_scan(NULL,wifi_scan_done);
-  } else {
+  }
+  else
+  {
     if(wifi_scan_succeed != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = LUA_NOREF;
@@ -556,6 +696,7 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LSTRKEY( "autoconnect" ), LFUNCVAL ( wifi_station_setauto ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_station_getip ) },
   { LSTRKEY( "setip" ), LFUNCVAL ( wifi_station_setip ) },
+  { LSTRKEY( "getrssi" ), LFUNCVAL ( wifi_station_getrssi ) },
   { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_station_getbroadcast) },
   { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_station_getmac ) },
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_station_setmac ) },
