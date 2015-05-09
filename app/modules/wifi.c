@@ -418,6 +418,26 @@ static int wifi_station_getconfig( lua_State* L )
   * 	bssid: MAC address of Access Point you would like to connect to.
   * Returns:
   * 	Nothing.
+  *
+  *	Example:
+  	  	--Connect to Access Point automatically when in range
+  	  	wifi.sta.getconfig("myssid", "password")
+
+  	  	--Connect to Access Point, User decides when to connect/disconnect to/from AP
+  	  	wifi.sta.getconfig("myssid", "mypassword", 0)
+  	  	wifi.sta.connect()
+  	  	--do some wifi stuff
+  	  	wifi.sta.disconnect()
+
+  	  	--Connect to specific Access Point automatically when in range
+  	  	wifi.sta.getconfig("myssid", "mypassword", "12:34:56:78:90:12")
+
+  	  	--Connect to specific Access Point, User decides when to connect/disconnect to/from AP
+  	  	wifi.sta.getconfig("myssid", "mypassword", 0)
+  	  	wifi.sta.connect()
+  	  	--do some wifi stuff
+  	  	wifi.sta.disconnect()
+  *
   */
 static int wifi_station_config( lua_State* L )
 {
