@@ -483,27 +483,23 @@ static int wifi_station_getrssi( lua_State* L )
 		config.ssid = ssid;
 	}
 
-	if(sta_conf.bssid_set==1) // check if STATION is configured to connect to a specific AP's BSSID
+	if(lua_isstring(L, 2)) //check if user specified an alternate BSSID to check
 	{
-		if(lua_isstring(L, 2)) //check if user specified an alternate BSSID to check
-		{
-			char mac[6];
-			unsigned len = 0;
-			const char *macaddr = luaL_checklstring( L, 2, &len );
-			if(len!=17)
-				return luaL_error( L, "wrong arg type" );
-			os_str2macaddr(mac, macaddr);
-			config.bssid = mac;
-//			c_memcpy(config.bssid, mac, 6);
-		}
-		else //user did NOT specify an alternate BSSID to check
-		{
-			config.bssid = sta_conf.bssid;
-		}
+	  char mac[6];
+	  unsigned len = 0;
+	  const char *macaddr = luaL_checklstring( L, 2, &len );
+	  if(len!=17)
+	  return luaL_error( L, "wrong arg type" );
+	  os_str2macaddr(mac, macaddr);
+	  config.bssid = mac;
+	}
+	else if (sta_conf.bssid_set==1) // check if STATION is configured to connect to a specific AP's BSSID
+	{
+	   config.bssid = sta_conf.bssid;
 	}
 	else //STATION is NOT configured to connect to a specific AP
 	{
-		config.bssid = NULL;
+	  config.bssid = NULL;
 	}
 
 	config.channel=channel;
