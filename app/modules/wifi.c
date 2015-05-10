@@ -432,13 +432,13 @@ static int wifi_station_config( lua_State* L )
   *			Note: If bssid_set==1 in STATION configuration, Configured BSSID will be used to get RSSI of specific Access Point.
   *
   * Syntax:
-  *		wifi.sta.getrssi(channel, "MAC_Address", function(value))
+  *		wifi.sta.getrssi(channel, "BSSID", function(value))
   * Parameters:
   * 	Channel:wifi channel the AP is on
   * 		NOTE: If nil is specified and station IS NOT connected to AP, channel will default to 0  (will take longer to get RSSI)
   * 			  If nil is specified and station IS connected to AP, channel will be set to the current wifi channel
   *
-  *		MAC_Address: if multiple APs with the same ssid are present, an alternate MAC address can be specified to get the corresponding AP's RSSI.
+  *		BSSID: If multiple APs with the same ssid are present, an alternate MAC address can be specified to get the corresponding AP's RSSI.
   *			If this field is nil and station IS configured to connect to specific AP, Configured BSSID is used
   *			IF station IS NOT configured to connect to specific AP, this field should be set to nil
   *			NOTE: if BSSID of alternate AP is on a different channel than the currently connected AP, the channel MUST be specified or RSSI will not be retrieved
@@ -449,15 +449,37 @@ static int wifi_station_config( lua_State* L )
   * 	nil
   *
   *	Example:
-  	  --Get RSSI of currently configured AP
-  	  wifi.sta.getrssi(function(I) RSSI=I end)
-  	  print(RSSI)
-  	  RSSI=nil
+  	  --Assume that there is 1 AP configured like this: "myssid 4,-15,FF:FF:FF:FF:FF:FF,11"
+  	  	--and the station is configured with the command "wifi.sta.config("myssid", "mypassword")"
+  	  	  --Get RSSI of currently configured AP(while connected)
+  	  	  wifi.sta.getrssi(nil, nil, function(I) RSSI=I end) --since station is connected channel need not be entered
+  	  	  print(RSSI) --returns -15
+  	  	  RSSI=nil
 
-  	  --Get RSSI of currently configured AP
-  	  wifi.sta.getrssi(function(I) RSSI=I end, "FF:FF:FF:FF:FF:FF")
-  	  print(RSSI)
-  	  RSSI=nil
+  	  	  --Get RSSI of currently configured AP(while disconnected)
+  	  	  --if channel is nil function will take significantly longer to get RSSI
+  	  	  wifi.sta.getrssi(11, nil, function(I) RSSI=I end) --changing channel to 11(channel of AP) solves this problem
+  	  	  print(RSSI)  --returns -15
+  	  	  RSSI=nil
+
+  	  --Assume that there is 3 APs configured like this: "myssid 4,-15,AA:AA:AA:AA:AA:AA,1", "myssid 4,-43,BB:BB:BB:BB:BB:BB,1", "myssid 4,-38,CC:CC:CC:CC:CC:CC,6"
+  	  	--and the station is configured with the command "wifi.sta.config("myssid", "mypassword", "AA:AA:AA:AA:AA:AA")"
+
+  	  	  --Get RSSI of currently configured AP(while connected)
+  	  	  wifi.sta.getrssi(nil, nil, function(I) RSSI=I end) --Since station is configured to connect to specific AP("AA:AA:AA:AA:AA:AA"), leaving BSSID set to nil will return configured AP's RSSI
+  	  	  print(RSSI) --returns -15
+  	  	  RSSI=nil
+
+    	  --Get RSSI of AP with same SSID on the same channel
+    	  wifi.sta.getrssi(nil, "BB:BB:BB:BB:BB:BB", function(I) RSSI=I end)  --since "BB:BB:BB:BB:BB:BB" is on same channel, channel can remain nil
+  	      print(RSSI) --returns -43
+  	      RSSI=nil
+
+  	      --Get RSSI of AP with same SSID on a different channel
+    	  wifi.sta.getrssi(6, "CC:CC:CC:CC:CC:CC", function(I) RSSI=I end)  --since AP "CC:CC:CC:CC:CC:CC" is on channel 6, channel must be set to 6
+  	      print(RSSI) --returns -38
+  	      RSSI=nil
+
   *
   */
 static int wifi_station_getrssi( lua_State* L )
