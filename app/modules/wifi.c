@@ -501,7 +501,7 @@ static int wifi_station_getrssi( lua_State* L )
 			config.bssid = sta_conf.bssid;
 		}
 	}
-	else //STATION is NOT configured to connnect to a specific
+	else //STATION is NOT configured to connect to a specific AP
 	{
 		config.bssid = NULL;
 	}
