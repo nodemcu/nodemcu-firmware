@@ -432,12 +432,18 @@ static int wifi_station_config( lua_State* L )
   *			Note: If bssid_set==1 in STATION configuration, Configured BSSID will be used to get RSSI of specific Access Point.
   *
   * Syntax:
-  *		wifi.sta.getrssi(function(value))
-  *		wifi.sta.getrssi(function(value), "MAC_Address")
+  *		wifi.sta.getrssi(channel, "MAC_Address", function(value))
   * Parameters:
-  * 	function(value): a callback function to receive AP RSSI value when scan is done
-  *			this function receive a value.
-  *		 MAC_Address: if multiple APs with the same ssid are present, an alternate MAC address can be specified to get the corresponding AP's RSSI.
+  * 	Channel:wifi channel the AP is on
+  * 		NOTE: If nil is specified and station IS NOT connected to AP, channel will default to 0  (will take longer to get RSSI)
+  * 			  If nil is specified and station IS connected to AP, channel will be set to the current wifi channel
+  *
+  *		MAC_Address: if multiple APs with the same ssid are present, an alternate MAC address can be specified to get the corresponding AP's RSSI.
+  *			If this field is nil and station IS configured to connect to specific AP, Configured BSSID is used
+  *			IF station IS NOT configured to connect to specific AP, this field should be set to nil
+  *			NOTE: if BSSID of alternate AP is on a different channel than the currently connected AP, the channel MUST be specified or RSSI will not be retrieved
+  *
+  * 	function(value): a callback function to receive AP RSSI value when scan is done.
   *
   * Returns:
   * 	nil
@@ -463,7 +469,8 @@ static int wifi_station_getrssi( lua_State* L )
 	gL = L;
 	struct station_config sta_conf;
 	wifi_station_get_config(&sta_conf);
-	uint8_t channel=wifi_get_channel(); // get current wifi channel to speed up AP scan
+	uint8_t channel; // get current wifi channel to speed up AP scan
+	uint8_t status = wifi_station_get_connect_status();
 
 	struct scan_config config; //get current STATION configuration
 	int8_t len;
@@ -483,6 +490,24 @@ static int wifi_station_getrssi( lua_State* L )
 		config.ssid = ssid;
 	}
 
+	if(lua_isnumber(L, 1))
+	{
+	  channel=luaL_checkinteger( L, 1 );;
+	  if (!(channel>=0 && channel <= 13))
+	    return luaL_error( L, "channel:0 or 1-13" );
+	}
+	else if (lua_isnil(L, 1))
+	{
+		if (status==5)
+		{
+		  channel=wifi_get_channel();
+		}
+		else
+			channel=0;
+
+	}
+	else
+		return luaL_error( L, "wrong arg type" );
 	if(lua_isstring(L, 2)) //check if user specified an alternate BSSID to check
 	{
 	  char mac[6];
@@ -492,14 +517,20 @@ static int wifi_station_getrssi( lua_State* L )
 	  return luaL_error( L, "wrong arg type" );
 	  os_str2macaddr(mac, macaddr);
 	  config.bssid = mac;
+	  NODE_DBG(MACSTR, MAC2STR(config.bssid));
+	  NODE_DBG("\n");
 	}
 	else if (sta_conf.bssid_set==1) // check if STATION is configured to connect to a specific AP's BSSID
 	{
 	   config.bssid = sta_conf.bssid;
+	   NODE_DBG(MACSTR, MAC2STR(config.bssid));
+	   NODE_DBG("\n");
 	}
 	else //STATION is NOT configured to connect to a specific AP
 	{
 	  config.bssid = NULL;
+	  NODE_DBG("config.bssid = NULL");
+	  NODE_DBG("\n");
 	}
 
 	config.channel=channel;
@@ -507,15 +538,13 @@ static int wifi_station_getrssi( lua_State* L )
 	NODE_DBG("scan_conf.ssid:\t\t%s\n", config.ssid);
 	NODE_DBG("scan_conf.channel:\t\t%d\n", config.channel);
 	NODE_DBG("scan_conf.show_hidden:\t\t%d\n", config.show_hidden);
-	NODE_DBG(MACSTR, MAC2STR(config.bssid));
-	NODE_DBG("\n");
 
 	lua_pushstring(L, "getrssi");
 	lua_setglobal(L, "C_WIFI_STATION_SCAN_CB_ID"); //this global tells wifi_scan_done who called it
 
-	if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+	if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION)
 	{
-		lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
+		lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 		if(wifi_scan_succeed != LUA_NOREF)
 			luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
 		wifi_scan_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
