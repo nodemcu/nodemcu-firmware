@@ -436,6 +436,37 @@ static int wifi_station_setauto( lua_State* L )
   return 0;  
 }
 
+/**
+  * wifi.sta.listap()
+  * Description:
+  * 	scan and get ap list as a lua table into callback function.
+  * Syntax:
+  * 	wifi.sta.getap(function(table))
+  * 	wifi.sta.getap(cfg, function(table))
+  * Parameters:
+  * 	cfg: table that contains scan configuration
+  * 	function(table): a callback function to receive ap table when scan is done
+			this function receive a table, the key is the ssid,
+			value is other info in format: authmode,rssi,bssid,channel
+  * Returns:
+  * 	nil
+  *
+  * Example:
+  	  --original function left intact to preserve backward compatibility
+  	  wifi.sta.getap(function(T) for k,v in pairs(T) do print(k..":"..v) end end)
+
+  	  --if no scan configuration is desired cfg can be set to nil or previous example can be used
+  	  wifi.sta.getap(nil, function(T) for k,v in pairs(T) do print(k..":"..v) end end)
+
+  	  --scan configuration
+  	  scan_cfg={}
+	  scan_cfg.ssid="myssid"  			 --if set to nil, ssid is not filtered
+	  scan_cfg.bssid="AA:AA:AA:AA:AA:AA" --if set to nil, MAC address is not filtered
+	  scan_cfg.channel=0  				 --if set to nil, channel will default to 0(scans all channels), if set scan will be faster
+	  scan_cfg.show_hidden=1			 --if set to nil, show_hidden will default to 0
+  	  wifi.sta.getap(scan_cfg, function(T) for k,v in pairs(T) do print(k..":"..v) end end)
+
+  */
 static int wifi_station_listap( lua_State* L )
 {
   if(wifi_get_opmode() == SOFTAP_MODE)
