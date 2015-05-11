@@ -443,14 +443,122 @@ static int wifi_station_listap( lua_State* L )
     return luaL_error( L, "Can't list ap in SOFTAP mode" );
   }
   gL = L;
-  // luaL_checkanyfunction(L, 1);
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION){
-    lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
+  struct scan_config scan_cfg;
+
+  if (lua_type(L, 1)==LUA_TTABLE)
+  {
+	  char ssid[32];
+	  char bssid[6];
+	  uint8 channel=0;
+	  uint8 show_hidden=0;
+	  size_t len;
+
+	  lua_getfield(L, 1, "ssid");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isstring(L, -1) )   // deal with the ssid string
+	    {
+	      const char *ssidstr = luaL_checklstring( L, -1, &len );
+	      if(len>32)
+	        return luaL_error( L, "ssid:<32" );
+	      c_memset(ssid, 0, 32);
+	      c_memcpy(ssid, ssidstr, len);
+	      scan_cfg.ssid=ssid;
+	      NODE_DBG(scan_cfg.ssid);
+	      NODE_DBG("\n");
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.ssid=NULL;
+
+	  lua_getfield(L, 1, "bssid");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isstring(L, -1) )   // deal with the ssid string
+	    {
+	      const char *macaddr = luaL_checklstring( L, -1, &len );
+	      if(len!=17)
+	        return luaL_error( L, "bssid: FF:FF:FF:FF:FF:FF" );
+	      c_memset(bssid, 0, 6);
+	      os_str2macaddr(bssid, macaddr);
+	      scan_cfg.bssid=bssid;
+	      NODE_DBG(MACSTR, MAC2STR(scan_cfg.bssid));
+	      NODE_DBG("\n");
+
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.bssid=NULL;
+
+
+	  lua_getfield(L, 1, "channel");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isnumber(L, -1) )   // deal with the ssid string
+	    {
+	      channel = luaL_checknumber( L, -1);
+	      if(!(channel>=0 && channel<=13))
+	        return luaL_error( L, "channel: 0 or 1-13" );
+	      scan_cfg.channel=channel;
+	      NODE_DBG("%d\n", scan_cfg.channel);
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.channel=0;
+
+	  lua_getfield(L, 1, "show_hidden");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isnumber(L, -1) )   // deal with the ssid string
+	    {
+	      show_hidden = luaL_checknumber( L, -1);
+	      if(show_hidden!=0||show_hidden!=1)
+	        return luaL_error( L, "show_hidden: 0 or 1" );
+	      scan_cfg.show_hidden=show_hidden;
+	      c_printf("%d\n", scan_cfg.show_hidden);
+
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.show_hidden=0;
+
+  }
+  else  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  {
+	  lua_pushnil(L);
+	  lua_insert(L, 1);
+  }
+
+  else if(lua_isnil(L, 1))
+  {
+  }
+  else
+  {
+	  return luaL_error( L, "wrong arg type" );
+  }
+
+
+  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+  {
+    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
     if(wifi_scan_succeed != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
-    wifi_station_scan(NULL,wifi_scan_done);
-  } else {
+    if (lua_type(L, 1)==LUA_TTABLE)
+    {
+    	wifi_station_scan(&scan_cfg,wifi_scan_done);
+    }
+    else
+    {
+    	wifi_station_scan(NULL,wifi_scan_done);
+    }
+  }
+  else
+  {
     if(wifi_scan_succeed != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = LUA_NOREF;
