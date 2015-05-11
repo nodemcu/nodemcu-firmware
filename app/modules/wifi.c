@@ -490,13 +490,14 @@ static int wifi_station_getrssi( lua_State* L )
 //		return luaL_error(L, "%s\n", "Can't get RSSI when disconnected from AP");
 	gL = L;
 	struct station_config sta_conf;
-	wifi_station_get_config(&sta_conf);
-	uint8_t channel; // get current wifi channel to speed up AP scan
+	wifi_station_get_config(&sta_conf); //get current STATION configuration
+	uint8_t channel;
 	uint8_t status = wifi_station_get_connect_status();
 
-	struct scan_config config; //get current STATION configuration
+	struct scan_config config;
 	int8_t len;
 	char ssid[32];
+
 	c_strcpy(ssid, sta_conf.ssid);
 	len=c_strlen(sta_conf.ssid);
 	if(len == -1)
@@ -512,24 +513,25 @@ static int wifi_station_getrssi( lua_State* L )
 		config.ssid = ssid;
 	}
 
-	if(lua_isnumber(L, 1))
+	if(lua_isnumber(L, 1)) //did user specify a channel?
 	{
-	  channel=luaL_checkinteger( L, 1 );;
+	  channel=luaL_checkinteger( L, 1 ); //get user specified channel
 	  if (!(channel>=0 && channel <= 13))
 	    return luaL_error( L, "channel:0 or 1-13" );
 	}
-	else if (lua_isnil(L, 1))
+	else if (lua_isnil(L, 1)) //if user specified nil then...
 	{
-		if (status==5)
+		if (status==5) // if currently connected to AP then...
 		{
-		  channel=wifi_get_channel();
+		  channel=wifi_get_channel(); // get current wifi channel to speed up AP scan
 		}
-		else
-			channel=0;
+		else // if not connected to AP then...
+			channel=0; //set channel to 0, scans all channels
 
 	}
-	else
+	else //if user did not specify a number or nil then...
 		return luaL_error( L, "wrong arg type" );
+
 	if(lua_isstring(L, 2)) //check if user specified an alternate BSSID to check
 	{
 	  char mac[6];
