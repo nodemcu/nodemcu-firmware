@@ -459,9 +459,8 @@ static int wifi_station_config( lua_State* L )
   }
   else if (lua_isstring(L, 3)&& !(lua_isnumber(L, 3)))
   {
-	  const char *mactemp=luaL_checklstring( L, 3, &ml );
-	  lua_pushstring(L, mactemp);
-	  lua_insert(L, 4);
+	  lua_pushnil(L);
+	  lua_insert(L, 3);
 	  auto_connect=1;
 
   }
