@@ -548,7 +548,7 @@ static int wifi_station_listap( lua_State* L )
 	      if(show_hidden!=0 && show_hidden!=1)
 	        return luaL_error( L, "show_hidden: 0 or 1" );
 	      scan_cfg.show_hidden=show_hidden;
-	      c_printf("%d\n", scan_cfg.show_hidden);
+	      NODE_DBG("%d\n", scan_cfg.show_hidden);
 
 	    }
 	    else
