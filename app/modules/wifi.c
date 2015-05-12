@@ -383,8 +383,8 @@ static int wifi_station_config( lua_State* L )
   if (sl>32 || ssid == NULL)
     return luaL_error( L, "ssid:<32" );
   const char *password = luaL_checklstring( L, 2, &pl );
-  if (pl<8 || pl>64 || password == NULL)
-    return luaL_error( L, "pwd:8~64" );
+  if (pl>64 || password == NULL)
+    return luaL_error( L, "pwd:<64" );
 
   c_memset(sta_conf.ssid, 0, 32);
   c_memset(sta_conf.password, 0, 64);
