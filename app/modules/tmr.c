@@ -17,13 +17,13 @@ void alarm_timer_common(lua_State* L, unsigned id){
   if(alarm_timer_cb_ref[id] == LUA_NOREF)
     return;
   lua_rawgeti(L, LUA_REGISTRYINDEX, alarm_timer_cb_ref[id]);
-  lua_call(L, 0, 0);
   if(alarm_timer_repeat[id]==0)
   {
 	  if(alarm_timer_cb_ref[id] != LUA_NOREF)
 		  luaL_unref(L, LUA_REGISTRYINDEX, alarm_timer_cb_ref[id]);
 
   }
+  lua_call(L, 0, 0);
 }
 
 void alarm_timer_cb0(void *arg){
