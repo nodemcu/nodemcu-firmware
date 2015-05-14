@@ -71,11 +71,11 @@ static void wifi_scan_done(void *arg, STATUS status)
       {
         c_memcpy(ssid, bss_link->ssid, 32);
       }
-      c_sprintf(temp,"%d,%d,"MACSTR",%d", bss_link->authmode, bss_link->rssi,
-                 MAC2STR(bss_link->bssid),bss_link->channel);
+      c_sprintf(temp,"%s,%d,%d,%d", ssid, bss_link->rssi, bss_link->authmode, bss_link->channel);
 
       lua_pushstring(gL, temp);
-      lua_setfield( gL, -2, ssid );
+      c_sprintf(temp,MACSTR, MAC2STR(bss_link->bssid));
+      lua_setfield( gL, -2,  temp);
 
       // NODE_DBG(temp);
 
