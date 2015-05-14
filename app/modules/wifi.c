@@ -219,7 +219,7 @@ static int wifi_getmac( lua_State* L, uint8_t mode )
   char temp[64];
   uint8_t mac[6];
   wifi_get_macaddr(mode, mac);
-  c_sprintf(temp, "%02X-%02X-%02X-%02X-%02X-%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5] );
+  c_sprintf(temp, MACSTR, MAC2STR(mac));
   lua_pushstring( L, temp );
   return 1;  
 }
@@ -227,11 +227,13 @@ static int wifi_getmac( lua_State* L, uint8_t mode )
 // Lua: mac = wifi.xx.setmac()
 static int wifi_setmac( lua_State* L, uint8_t mode )
 {
+  uint8_t mac[6];
   unsigned len = 0;
-  const char *mac = luaL_checklstring( L, 1, &len );
-  if(len!=6)
-    return luaL_error( L, "wrong arg type" );
+  const char *macaddr = luaL_checklstring( L, 1, &len );
+  if(len!=17)
+	  return luaL_error( L, "wrong arg type" );
 
+  os_str2macaddr(mac, macaddr);
   lua_pushboolean(L,wifi_set_macaddr(mode, (uint8 *)mac));
   return 1;
 }
