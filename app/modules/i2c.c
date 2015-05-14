@@ -56,7 +56,7 @@ static int i2c_address( lua_State *L )
   int direction = luaL_checkinteger( L, 3 );
 
   MOD_CHECK_ID( i2c, id );
-  if ( address < 0 || address > 127 )
+  if ( address < 0 || address > 255 )
     return luaL_error( L, "wrong arg range" );
   lua_pushboolean( L, platform_i2c_send_address( id, (u16)address, direction ) );
   return 1;
