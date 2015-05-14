@@ -8,6 +8,7 @@
 #include "lrotable.h"
 
 #include "c_string.h"
+#include "c_stdlib.h"
 
 #include "c_types.h"
 #include "user_interface.h"
@@ -562,6 +563,37 @@ static int wifi_station_setauto( lua_State* L )
   return 0;  
 }
 
+/**
+  * wifi.sta.listap()
+  * Description:
+  * 	scan and get ap list as a lua table into callback function.
+  * Syntax:
+  * 	wifi.sta.getap(function(table))
+  * 	wifi.sta.getap(cfg, function(table))
+  * Parameters:
+  * 	cfg: table that contains scan configuration
+  * 	function(table): a callback function to receive ap table when scan is done
+			this function receive a table, the key is the ssid,
+			value is other info in format: authmode,rssi,bssid,channel
+  * Returns:
+  * 	nil
+  *
+  * Example:
+  	  --original function left intact to preserve backward compatibility
+  	  wifi.sta.getap(function(T) for k,v in pairs(T) do print(k..":"..v) end end)
+
+  	  --if no scan configuration is desired cfg can be set to nil or previous example can be used
+  	  wifi.sta.getap(nil, function(T) for k,v in pairs(T) do print(k..":"..v) end end)
+
+  	  --scan configuration
+  	  scan_cfg={}
+	  scan_cfg.ssid="myssid"  			 --if set to nil, ssid is not filtered
+	  scan_cfg.bssid="AA:AA:AA:AA:AA:AA" --if set to nil, MAC address is not filtered
+	  scan_cfg.channel=0  				 --if set to nil, channel will default to 0(scans all channels), if set scan will be faster
+	  scan_cfg.show_hidden=1			 --if set to nil, show_hidden will default to 0
+  	  wifi.sta.getap(scan_cfg, function(T) for k,v in pairs(T) do print(k..":"..v) end end)
+
+  */
 static int wifi_station_listap( lua_State* L )
 {
   if(wifi_get_opmode() == SOFTAP_MODE)
@@ -569,14 +601,122 @@ static int wifi_station_listap( lua_State* L )
     return luaL_error( L, "Can't list ap in SOFTAP mode" );
   }
   gL = L;
-  // luaL_checkanyfunction(L, 1);
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION){
-    lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
+  struct scan_config scan_cfg;
+
+  if (lua_type(L, 1)==LUA_TTABLE)
+  {
+	  char ssid[32];
+	  char bssid[6];
+	  uint8 channel=0;
+	  uint8 show_hidden=0;
+	  size_t len;
+
+	  lua_getfield(L, 1, "ssid");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isstring(L, -1) )   // deal with the ssid string
+	    {
+	      const char *ssidstr = luaL_checklstring( L, -1, &len );
+	      if(len>32)
+	        return luaL_error( L, "ssid:<32" );
+	      c_memset(ssid, 0, 32);
+	      c_memcpy(ssid, ssidstr, len);
+	      scan_cfg.ssid=ssid;
+	      NODE_DBG(scan_cfg.ssid);
+	      NODE_DBG("\n");
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.ssid=NULL;
+
+	  lua_getfield(L, 1, "bssid");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isstring(L, -1) )   // deal with the ssid string
+	    {
+	      const char *macaddr = luaL_checklstring( L, -1, &len );
+	      if(len!=17)
+	        return luaL_error( L, "bssid: FF:FF:FF:FF:FF:FF" );
+	      c_memset(bssid, 0, 6);
+	      os_str2macaddr(bssid, macaddr);
+	      scan_cfg.bssid=bssid;
+	      NODE_DBG(MACSTR, MAC2STR(scan_cfg.bssid));
+	      NODE_DBG("\n");
+
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.bssid=NULL;
+
+
+	  lua_getfield(L, 1, "channel");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isnumber(L, -1) )   // deal with the ssid string
+	    {
+	      channel = luaL_checknumber( L, -1);
+	      if(!(channel>=0 && channel<=13))
+	        return luaL_error( L, "channel: 0 or 1-13" );
+	      scan_cfg.channel=channel;
+	      NODE_DBG("%d\n", scan_cfg.channel);
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.channel=0;
+
+	  lua_getfield(L, 1, "show_hidden");
+	  if (!lua_isnil(L, -1)){  /* found? */
+	    if( lua_isnumber(L, -1) )   // deal with the ssid string
+	    {
+	      show_hidden = luaL_checknumber( L, -1);
+	      if(show_hidden!=0 && show_hidden!=1)
+	        return luaL_error( L, "show_hidden: 0 or 1" );
+	      scan_cfg.show_hidden=show_hidden;
+	      NODE_DBG("%d\n", scan_cfg.show_hidden);
+
+	    }
+	    else
+	      return luaL_error( L, "wrong arg type" );
+	  }
+	  else
+		  scan_cfg.show_hidden=0;
+
+  }
+  else  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  {
+	  lua_pushnil(L);
+	  lua_insert(L, 1);
+  }
+
+  else if(lua_isnil(L, 1))
+  {
+  }
+  else
+  {
+	  return luaL_error( L, "wrong arg type" );
+  }
+
+
+  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+  {
+    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
     if(wifi_scan_succeed != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
-    wifi_station_scan(NULL,wifi_scan_done);
-  } else {
+    if (lua_type(L, 1)==LUA_TTABLE)
+    {
+    	wifi_station_scan(&scan_cfg,wifi_scan_done);
+    }
+    else
+    {
+    	wifi_station_scan(NULL,wifi_scan_done);
+    }
+  }
+  else
+  {
     if(wifi_scan_succeed != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = LUA_NOREF;
@@ -619,44 +759,46 @@ static int wifi_ap_getbroadcast( lua_State* L ){
 // Lua: wifi.ap.config(table)
 static int wifi_ap_config( lua_State* L )
 {
-  struct softap_config config;
-  size_t len;
-  wifi_softap_get_config(&config);
   if (!lua_istable(L, 1))
     return luaL_error( L, "wrong arg type" );
+
+  struct softap_config config;
+  wifi_softap_get_config(&config);
+
+  size_t len;
 
   lua_getfield(L, 1, "ssid");
   if (!lua_isnil(L, -1)){  /* found? */
     if( lua_isstring(L, -1) )   // deal with the ssid string
     {
       const char *ssid = luaL_checklstring( L, -1, &len );
-      if(len>32)
-        return luaL_error( L, "ssid:<32" );
+      if(len<1 || len>32 || ssid == NULL)
+        return luaL_error( L, "ssid:1~32" );
       c_memset(config.ssid, 0, 32);
       c_memcpy(config.ssid, ssid, len);
-      config.ssid_len = len;
-      config.ssid_hidden = 0;
       NODE_DBG(config.ssid);
       NODE_DBG("\n");
+      config.ssid_len = len;
+      config.ssid_hidden = 0;
     } 
     else
       return luaL_error( L, "wrong arg type" );
   }
   else
-    return luaL_error( L, "wrong arg type" );
+    return luaL_error( L, "ssid required" );
 
   lua_getfield(L, 1, "pwd");
   if (!lua_isnil(L, -1)){  /* found? */
     if( lua_isstring(L, -1) )   // deal with the password string
     {
       const char *pwd = luaL_checklstring( L, -1, &len );
-      if(len>64)
-        return luaL_error( L, "pwd:<64" );
+      if(len<8 || len>64 || pwd == NULL)
+        return luaL_error( L, "pwd:8~64" );
       c_memset(config.password, 0, 64);
       c_memcpy(config.password, pwd, len);
-      config.authmode = AUTH_WPA_WPA2_PSK;
       NODE_DBG(config.password);
       NODE_DBG("\n");
+      config.authmode = AUTH_WPA_WPA2_PSK;
     }
     else
       return luaL_error( L, "wrong arg type" );
@@ -665,11 +807,162 @@ static int wifi_ap_config( lua_State* L )
     config.authmode = AUTH_OPEN;
   }
 
-  config.max_connection = 4;
+  lua_getfield(L, 1, "auth");
+  if (!lua_isnil(L, -1))
+  {
+    config.authmode = (uint8_t)luaL_checkinteger(L, -1);
+    NODE_DBG(config.authmode);
+    NODE_DBG("\n");
+  }
+  else
+  {
+    // keep whatever value resulted from "pwd" logic above
+  }
+
+  lua_getfield(L, 1, "channel");
+  if (!lua_isnil(L, -1))
+  {
+    unsigned channel = luaL_checkinteger(L, -1);
+    if (channel < 1 || channel > 13)
+      return luaL_error( L, "channel:1~13" );
+
+    config.channel = (uint8_t)channel;
+    NODE_DBG(config.channel);
+    NODE_DBG("\n");
+  }
+  else
+  {
+    config.channel = 6;
+  }
+
+  lua_getfield(L, 1, "hidden");
+  if (!lua_isnil(L, -1))
+  {
+    config.ssid_hidden = (uint8_t)luaL_checkinteger(L, -1);
+    NODE_DBG(config.ssid_hidden);
+    NODE_DBG("\n");
+  }
+  else
+  {
+    config.ssid_hidden = 0;
+  }
+
+  lua_getfield(L, 1, "max");
+  if (!lua_isnil(L, -1))
+  {
+    unsigned max = luaL_checkinteger(L, -1);
+    if (max < 1 || max > 4)
+      return luaL_error( L, "max:1~4" );
+
+    config.max_connection = (uint8_t)max;
+    NODE_DBG(config.max_connection);
+    NODE_DBG("\n");
+  }
+  else
+  {
+    config.max_connection = 4;
+  }
+
+  lua_getfield(L, 1, "beacon");
+  if (!lua_isnil(L, -1))
+  {
+    unsigned beacon = luaL_checkinteger(L, -1);
+    if (beacon < 100 || beacon > 60000)
+      return luaL_error( L, "beacon:100~60000" );
+
+    config.beacon_interval = (uint16_t)beacon;
+    NODE_DBG(config.beacon_interval);
+    NODE_DBG("\n");
+  }
+  else
+  {
+    config.beacon_interval = 100;
+  }
 
   wifi_softap_set_config(&config);
   // system_restart();
-  return 0;  
+  return 0;
+}
+
+// Lua: table = wifi.ap.getclient()
+static int wifi_ap_listclient( lua_State* L )
+{
+  if (wifi_get_opmode() == STATION_MODE)
+  {
+    return luaL_error( L, "Can't list client in STATION_MODE mode" );
+  }
+
+  char temp[64];
+
+  lua_newtable(L);
+
+  struct station_info * station = wifi_softap_get_station_info();
+  struct station_info * next_station;
+  while (station != NULL)
+  {
+    c_sprintf(temp, IPSTR, IP2STR(&station->ip));
+    lua_pushstring(L, temp);
+
+    c_sprintf(temp, MACSTR, MAC2STR(station->bssid));
+    lua_setfield(L, -2, temp);
+
+    next_station = STAILQ_NEXT(station, next);
+    c_free(station);
+    station = next_station;
+  }
+
+  return 1;
+}
+
+// Lua: ip = wifi.ap.dhcp.config()
+static int wifi_ap_dhcp_config( lua_State* L )
+{
+  if (!lua_istable(L, 1))
+    return luaL_error( L, "wrong arg type" );
+
+  struct dhcps_lease lease;
+  uint32_t ip;
+
+  ip = parse_key(L, "start");
+  if (ip == 0)
+    return luaL_error( L, "wrong arg type" );
+
+  lease.start_ip = ip;
+  NODE_DBG(IPSTR, IP2STR(&lease.start_ip));
+  NODE_DBG("\n");
+
+  // use configured max_connection to determine end
+  struct softap_config config;
+  wifi_softap_get_config(&config);
+  lease.end_ip = lease.start_ip;
+  ip4_addr4(&lease.end_ip) += config.max_connection - 1;
+
+  char temp[64];
+  c_sprintf(temp, IPSTR, IP2STR(&lease.start_ip));
+  lua_pushstring(L, temp);
+  c_sprintf(temp, IPSTR, IP2STR(&lease.end_ip));
+  lua_pushstring(L, temp);
+
+  // note: DHCP max range = 101 from start_ip to end_ip
+  wifi_softap_dhcps_stop();
+  wifi_softap_set_dhcps_lease(&lease);
+  wifi_softap_dhcps_start();
+
+  return 2;
+}
+
+// Lua: wifi.ap.dhcp.start()
+static int wifi_ap_dhcp_start( lua_State* L )
+{
+  lua_pushboolean(L, wifi_softap_dhcps_start());
+  return 1;
+}
+
+// Lua: wifi.ap.dhcp.stop()
+static int wifi_ap_dhcp_stop( lua_State* L )
+{
+  lua_pushboolean(L, wifi_softap_dhcps_stop());
+  return 1;
 }
 
 // Module function map
@@ -692,6 +985,14 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LNILKEY, LNILVAL }
 };
 
+static const LUA_REG_TYPE wifi_ap_dhcp_map[] =
+{
+  { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_dhcp_config ) },
+  { LSTRKEY( "start" ), LFUNCVAL( wifi_ap_dhcp_start ) },
+  { LSTRKEY( "stop" ), LFUNCVAL( wifi_ap_dhcp_stop ) },
+  { LNILKEY, LNILVAL }
+};
+
 static const LUA_REG_TYPE wifi_ap_map[] =
 {
   { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_config ) },
@@ -700,6 +1001,12 @@ static const LUA_REG_TYPE wifi_ap_map[] =
   { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_ap_getbroadcast) },
   { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_ap_getmac ) },
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_ap_setmac ) },
+  { LSTRKEY( "getclient" ), LFUNCVAL ( wifi_ap_listclient ) },
+#if LUA_OPTIMIZE_MEMORY > 0
+  { LSTRKEY( "dhcp" ), LROVAL( wifi_ap_dhcp_map ) },
+
+//  { LSTRKEY( "__metatable" ), LROVAL( wifi_ap_map ) },
+#endif
   { LNILKEY, LNILVAL }
 };
 
@@ -728,6 +1035,12 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "NONE_SLEEP" ), LNUMVAL( NONE_SLEEP_T ) },
   { LSTRKEY( "LIGHT_SLEEP" ), LNUMVAL( LIGHT_SLEEP_T ) },
   { LSTRKEY( "MODEM_SLEEP" ), LNUMVAL( MODEM_SLEEP_T ) },
+
+  { LSTRKEY( "OPEN" ), LNUMVAL( AUTH_OPEN ) },
+  // { LSTRKEY( "WEP" ), LNUMVAL( AUTH_WEP ) },
+  { LSTRKEY( "WPA_PSK" ), LNUMVAL( AUTH_WPA_PSK ) },
+  { LSTRKEY( "WPA2_PSK" ), LNUMVAL( AUTH_WPA2_PSK ) },
+  { LSTRKEY( "WPA_WPA2_PSK" ), LNUMVAL( AUTH_WPA_WPA2_PSK ) },
 
   // { LSTRKEY( "STA_IDLE" ), LNUMVAL( STATION_IDLE ) },
   // { LSTRKEY( "STA_CONNECTING" ), LNUMVAL( STATION_CONNECTING ) },
@@ -762,6 +1075,12 @@ LUALIB_API int luaopen_wifi( lua_State *L )
   MOD_REG_NUMBER( L, "LIGHT_SLEEP", LIGHT_SLEEP_T );  
   MOD_REG_NUMBER( L, "MODEM_SLEEP", MODEM_SLEEP_T );  
 
+  MOD_REG_NUMBER( L, "OPEN", AUTH_OPEN );
+  // MOD_REG_NUMBER( L, "WEP", AUTH_WEP );
+  MOD_REG_NUMBER( L, "WPA_PSK", AUTH_WPA_PSK );
+  MOD_REG_NUMBER( L, "WPA2_PSK", AUTH_WPA2_PSK );
+  MOD_REG_NUMBER( L, "WPA_WPA2_PSK", AUTH_WPA_WPA2_PSK );
+
   // MOD_REG_NUMBER( L, "STA_IDLE", STATION_IDLE );
   // MOD_REG_NUMBER( L, "STA_CONNECTING", STATION_CONNECTING );  
   // MOD_REG_NUMBER( L, "STA_WRONGPWD", STATION_WRONG_PASSWORD );  
@@ -777,6 +1096,11 @@ LUALIB_API int luaopen_wifi( lua_State *L )
   lua_newtable( L );
   luaL_register( L, NULL, wifi_ap_map );
   lua_setfield( L, -2, "ap" );
+
+  // Setup the new table (dhcp) inside ap
+  lua_newtable( L );
+  luaL_register( L, NULL, wifi_ap_dhcp_map );
+  lua_setfield( L, -1, "dhcp" );
 
   return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0  
