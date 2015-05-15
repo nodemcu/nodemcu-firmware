@@ -53,11 +53,11 @@ TARGET_LDFLAGS =		\
 	--text-section-literals
 
 ifeq ($(FLAVOR),debug)
-    TARGET_LDFLAGS += -g -O2
+    TARGET_LDFLAGS += -g -Os
 endif
 
 ifeq ($(FLAVOR),release)
-    TARGET_LDFLAGS += -g -O0
+    TARGET_LDFLAGS += -Os
 endif
 
 LD_FILE = $(LDDIR)/eagle.app.v6.ld
