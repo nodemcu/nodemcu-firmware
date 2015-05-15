@@ -760,6 +760,39 @@ static int lu8g_getHeight( lua_State *L )
     return 1;
 }
 
+// Lua: width = u8g.getStrWidth( self, string )
+static int lu8g_getStrWidth( lua_State *L )
+{
+   lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    const char *s = luaL_checkstring( L, 2 );
+    if (s == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetStrWidth( LU8G, s ) );
+
+    return 1;
+}
+
+// Lua: u8g.setFontLineSpacingFactor( self, factor )
+static int lu8g_setFontLineSpacingFactor( lua_State *L )
+{
+   lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t factor = luaL_checkinteger( L, 2 );
+
+    u8g_SetFontLineSpacingFactor( LU8G, factor );
+
+    return 0;
+}
+
+
 // ------------------------------------------------------------
 // comm functions
 //
@@ -1166,12 +1199,14 @@ static const LUA_REG_TYPE lu8g_display_map[] =
     { LSTRKEY( "getFontLineSpacing" ),  LFUNCVAL( lu8g_getFontLineSpacing ) },
     { LSTRKEY( "getHeight" ),  LFUNCVAL( lu8g_getHeight ) },
     { LSTRKEY( "getMode" ),  LFUNCVAL( lu8g_getMode ) },
+    { LSTRKEY( "getStrWidth" ), LFUNCVAL( lu8g_getStrWidth ) },
     { LSTRKEY( "getWidth" ),  LFUNCVAL( lu8g_getWidth ) },
     { LSTRKEY( "nextPage" ),  LFUNCVAL( lu8g_nextPage ) },
     { LSTRKEY( "setColorIndex" ),  LFUNCVAL( lu8g_setColorIndex ) },
     { LSTRKEY( "setDefaultBackgroundColor" ),  LFUNCVAL( lu8g_setDefaultBackgroundColor ) },
     { LSTRKEY( "setDefaultForegroundColor" ),  LFUNCVAL( lu8g_setDefaultForegroundColor ) },
     { LSTRKEY( "setFont" ),  LFUNCVAL( lu8g_setFont ) },
+    { LSTRKEY( "setFontLineSpacingFactor" ),  LFUNCVAL( lu8g_setFontLineSpacingFactor ) },
     { LSTRKEY( "setFontPosBaseline" ),  LFUNCVAL( lu8g_setFontPosBaseline ) },
     { LSTRKEY( "setFontPosBottom" ),  LFUNCVAL( lu8g_setFontPosBottom ) },
     { LSTRKEY( "setFontPosCenter" ),  LFUNCVAL( lu8g_setFontPosCenter ) },
