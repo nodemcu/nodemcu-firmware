@@ -477,6 +477,8 @@ u32_t SPIFFS_buffer_bytes_for_cache(spiffs *fs, u32_t num_pages);
 #if SPIFFS_CACHE
 #endif
 
+void myspiffs_mount();
+void myspiffs_unmount();
 int myspiffs_open(const char *name, int flags);
 int myspiffs_close( int fd );
 size_t myspiffs_write( int fd, const void* ptr, size_t len );

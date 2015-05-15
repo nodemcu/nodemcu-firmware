@@ -167,8 +167,8 @@ static int wifi_getmode( lua_State* L )
 /**
   * wifi.setphymode()
   * Description:
-  * 	Set wifi physical modeï¼ˆ802.11 b/g/nï¼‰
-  * 	Noteï¼š SoftAP only supports 802.11 b/g.
+  * 	Set wifi physical mode£¨802.11 b/g/n£©
+  * 	Note£º SoftAP only supports 802.11 b/g.
   * Syntax:
   * 	wifi.setphymode(mode)
   * Parameters:
@@ -197,7 +197,7 @@ static int wifi_setphymode( lua_State* L )
 /**
   * wifi.getphymode()
   * Description:
-  * 	Get wifi physical modeï¼ˆ802.11 b/g/nï¼‰
+  * 	Get wifi physical mode£¨802.11 b/g/n£©
   * Syntax:
   * 	wifi.getphymode()
   * Parameters:
@@ -456,8 +456,8 @@ static int wifi_station_config( lua_State* L )
   if (sl>32 || ssid == NULL)
     return luaL_error( L, "ssid:<32" );
   const char *password = luaL_checklstring( L, 2, &pl );
-  if (pl<8 || pl>64 || password == NULL)
-    return luaL_error( L, "pwd:8~64" );
+  if (pl!=0 && (pl<8 || pl>64) || password == NULL)
+    return luaL_error( L, "pwd:0,8~64" );
 
   if(lua_isnumber(L, 3))
   {

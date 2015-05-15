@@ -71,6 +71,9 @@
 #define fs_rename myspiffs_rename
 #define fs_size myspiffs_size
 
+#define fs_mount myspiffs_mount
+#define fs_unmount myspiffs_unmount
+
 #define FS_NAME_MAX_LENGTH SPIFFS_OBJ_NAME_LEN
 
 #endif

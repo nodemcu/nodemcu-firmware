@@ -321,7 +321,7 @@ bool flash_init_data_written(void)
     // FLASH SEC - 4
     uint32_t data[2] ICACHE_STORE_ATTR;
 #if defined(FLASH_SAFE_API)
-    if (SPI_FLASH_RESULT_OK == flash_safe_read((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
+    if (SPI_FLASH_RESULT_OK == flash_safe_read((flash_safe_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
 #else
     if (SPI_FLASH_RESULT_OK == spi_flash_read((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
 #endif // defined(FLASH_SAFE_API)
@@ -369,8 +369,8 @@ bool flash_init_data_blank(void)
     // It will init system config to blank!
     bool result = false;
 #if defined(FLASH_SAFE_API)
-    if ((SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_rom_get_sec_num() - 2))) &&
-            (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_rom_get_sec_num() - 1))))
+    if ((SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 2))) &&
+            (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 1))))
 #else
     if ((SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 2))) &&
             (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 1))))
@@ -396,9 +396,23 @@ uint8_t byte_of_aligned_array(const uint8_t *aligned_array, uint32_t index)
         NODE_DBG("aligned_array is not 4-byte aligned.\n");
         return 0;
     }
-    uint32_t v = ((uint32_t *)aligned_array)[ index / 4 ];
+    volatile uint32_t v = ((uint32_t *)aligned_array)[ index / 4 ];
     uint8_t *p = (uint8_t *) (&v);
     return p[ (index % 4) ];
+}
+
+uint16_t word_of_aligned_array(const uint16_t *aligned_array, uint32_t index)
+{
+    if ( (((uint32_t)aligned_array) % 4) != 0 )
+    {
+        NODE_DBG("aligned_array is not 4-byte aligned.\n");
+        return 0;
+    }
+    volatile uint32_t v = ((uint32_t *)aligned_array)[ index / 2 ];
+    uint16_t *p = (uint16_t *) (&v);
+    return (index % 2 == 0) ? p[ 0 ] : p[ 1 ];
+    // return p[ (index % 2) ]; // -- why error???
+    // (byte_of_aligned_array((uint8_t *)aligned_array, index * 2 + 1) << 8) | byte_of_aligned_array((uint8_t *)aligned_array, index * 2);
 }
 
 // uint8_t flash_rom_get_checksum(void)
