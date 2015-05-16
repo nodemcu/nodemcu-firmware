@@ -427,8 +427,6 @@ In contrast to the source code based inclusion of XBMs into u8glib, it's require
   - [ ] setHardwareBackup()
   - [ ] setRGB()
   - [ ] setDefaultMidColor()
-- [x] getStrWidth()
-- [x] setFontLineSpacingFactor()
 
 
 ####Control a WS2812 based light strip
