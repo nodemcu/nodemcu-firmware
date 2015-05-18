@@ -167,8 +167,8 @@ static int wifi_getmode( lua_State* L )
 /**
   * wifi.setphymode()
   * Description:
-  * 	Set wifi physical mode£¨802.11 b/g/n£©
-  * 	Note£º SoftAP only supports 802.11 b/g.
+  * 	Set wifi physical modeï¿½ï¿½802.11 b/g/nï¿½ï¿½
+  * 	Noteï¿½ï¿½ SoftAP only supports 802.11 b/g.
   * Syntax:
   * 	wifi.setphymode(mode)
   * Parameters:
@@ -197,7 +197,7 @@ static int wifi_setphymode( lua_State* L )
 /**
   * wifi.getphymode()
   * Description:
-  * 	Get wifi physical mode£¨802.11 b/g/n£©
+  * 	Get wifi physical modeï¿½ï¿½802.11 b/g/nï¿½ï¿½
   * Syntax:
   * 	wifi.getphymode()
   * Parameters:
@@ -312,7 +312,7 @@ static int wifi_setip( lua_State* L, uint8_t mode )
     pTempIp.netmask.addr = ip;
 
   ip = parse_key(L, "gateway");
-  if(ip!=0) 
+  if(mode==SOFTAP_IF || ip!=0)
     pTempIp.gw.addr = ip;
   
   if(STATION_IF == mode)
