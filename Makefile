@@ -103,9 +103,15 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
+#
+# Note: 
+# https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+# If you add global optimize options like "-O2" here 
+# they will override "-Os" defined above.
+# "-Os" should be used to reduce code size
+#
 CCFLAGS += 			\
 	-g			\
-	-O2			\
 	-Wpointer-arith		\
 	-Wundef			\
 	-Werror			\
