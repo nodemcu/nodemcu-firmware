@@ -84,7 +84,7 @@ static void wifi_scan_done(void *arg, STATUS status)
   }
   else
   {
-    lua_pushnil(gL);
+    lua_newtable( gL );
   }
   lua_call(gL, 1, 0);
   if(wifi_scan_succeed != LUA_NOREF)
