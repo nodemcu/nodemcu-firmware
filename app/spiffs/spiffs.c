@@ -79,6 +79,7 @@ void myspiffs_unmount() {
 // Returns 1 if OK, 0 for error
 int myspiffs_format( void )
 {
+#if 0
   SPIFFS_unmount(&fs);
   if(0 == SPIFFS_format(&fs))
   {
@@ -88,7 +89,7 @@ int myspiffs_format( void )
   {
     return 0;
   }
-#if 0 
+#else 
   u32_t sect_first, sect_last;
   sect_first = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
   sect_first += 0x3000;
