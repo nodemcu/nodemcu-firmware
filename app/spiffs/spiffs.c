@@ -1,6 +1,8 @@
 #include "c_stdio.h"
 #include "platform.h"
 #include "spiffs.h"
+#undef NODE_DBG
+#define NODE_DBG c_printf
   
 spiffs fs;
 
@@ -78,6 +80,15 @@ void myspiffs_unmount() {
 int myspiffs_format( void )
 {
   SPIFFS_unmount(&fs);
+  if(0 == SPIFFS_format(&fs))
+  {
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+#if 0 
   u32_t sect_first, sect_last;
   sect_first = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
   sect_first += 0x3000;
@@ -90,7 +101,9 @@ int myspiffs_format( void )
     if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
       return 0;
   myspiffs_mount();
+
   return 1;
+#endif
 }
 
 int myspiffs_check( void )
@@ -116,7 +129,7 @@ size_t myspiffs_write( int fd, const void* ptr, size_t len ){
     return len;
   }
 #endif
-  int res = SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, len);
+  int res = SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, (size_t)len);
   if (res < 0) {
     NODE_DBG("write errno %i\n", SPIFFS_errno(&fs));
     return 0;
@@ -124,7 +137,7 @@ size_t myspiffs_write( int fd, const void* ptr, size_t len ){
   return res;
 }
 size_t myspiffs_read( int fd, void* ptr, size_t len){
-  int res = SPIFFS_read(&fs, (spiffs_file)fd, ptr, len);
+  int res = SPIFFS_read(&fs, (spiffs_file)fd, ptr, (size_t)len);
   if (res < 0) {
     NODE_DBG("read errno %i\n", SPIFFS_errno(&fs));
     return 0;

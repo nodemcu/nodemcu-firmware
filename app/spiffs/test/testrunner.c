@@ -28,6 +28,8 @@ static struct {
   test_res *stopped;
   test_res *stopped_last;
   FILE *spec;
+  char incl_filter[256];
+  char excl_filter[256];
 } test_main;
 
 void test_init(void (*on_stop)(test *t)) {
@@ -41,7 +43,7 @@ static char check_spec(char *name) {
     size_t sz;
     ssize_t read;
     while ((read = getline(&line, &sz, test_main.spec)) != -1) {
-      if (strncmp(line, name, strlen(name)) == 0) {
+      if (strncmp(line, name, strlen(line)-1) == 0) {
         free(line);
         return 1;
       }
@@ -53,9 +55,21 @@ static char check_spec(char *name) {
   }
 }
 
+static char check_incl_filter(char *name) {
+  if (strlen(test_main.incl_filter)== 0) return 1;
+  return strstr(name, test_main.incl_filter) == 0 ? 0 : 1;
+}
+
+static char check_excl_filter(char *name) {
+  if (strlen(test_main.excl_filter)== 0) return 1;
+  return strstr(name, test_main.excl_filter) == 0 ? 1 : 0;
+}
+
 void add_test(test_f f, char *name, void (*setup)(test *t), void (*teardown)(test *t)) {
   if (f == 0) return;
   if (!check_spec(name)) return;
+  if (!check_incl_filter(name)) return;
+  if (!check_excl_filter(name)) return;
   DBGT("adding test %s\n", name);
   test *t = malloc(sizeof(test));
   memset(t, 0, sizeof(test));
@@ -94,16 +108,36 @@ static void dump_res(test_res **head) {
   }
 }
 
-void run_tests(int argc, char **args) {
+int run_tests(int argc, char **args) {
   memset(&test_main, 0, sizeof(test_main));
-  if (argc > 1) {
-    printf("running tests from %s\n", args[1]);
-    FILE *fd = fopen(args[1], "r");
-    if (fd == NULL) {
-      printf("%s not found\n", args[1]);
-      exit(EXIT_FAILURE);
+  int arg;
+  int incl_filter = 0;
+  int excl_filter = 0;
+  for (arg = 1; arg < argc; arg++) {
+    if (strlen(args[arg]) == 0) continue;
+    if (0 == strcmp("-f", args[arg])) {
+      incl_filter = 1;
+      continue;
     }
-    test_main.spec = fd;
+    if (0 == strcmp("-e", args[arg])) {
+      excl_filter = 1;
+      continue;
+    }
+    if (incl_filter) {
+      strcpy(test_main.incl_filter, args[arg]);
+      incl_filter = 0;
+    } else if (excl_filter) {
+      strcpy(test_main.excl_filter, args[arg]);
+      excl_filter = 0;
+    } else {
+      printf("running tests from %s\n", args[arg]);
+      FILE *fd = fopen(args[1], "r");
+      if (fd == NULL) {
+        printf("%s not found\n", args[arg]);
+        return -2;
+      }
+      test_main.spec = fd;
+    }
   }
 
   DBGT("adding suites...\n");
@@ -115,7 +149,7 @@ void run_tests(int argc, char **args) {
 
   if (test_main.test_count == 0) {
     printf("No tests to run\n");
-    return;
+    return 0;
   }
 
   int fd_success = open("_tests_ok", O_APPEND | O_TRUNC | O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
@@ -133,6 +167,7 @@ void run_tests(int argc, char **args) {
     DBGT("TEST %i/%i : running test %s\n", i, test_main.test_count, cur_t->name);
     i++;
     int res = cur_t->f(cur_t);
+    cur_t->test_result = res;
     cur_t->teardown(cur_t);
     int fd = res == TEST_RES_OK ? fd_success : fd_bad;
     write(fd, cur_t->name, strlen(cur_t->name));
@@ -169,7 +204,9 @@ void run_tests(int argc, char **args) {
   dump_res(&test_main.stopped);
   if (ok < test_main.test_count) {
     printf("\nFAILED\n");
+    return -1;
   } else {
     printf("\nALL TESTS OK\n");
+    return 0;
   }
 }

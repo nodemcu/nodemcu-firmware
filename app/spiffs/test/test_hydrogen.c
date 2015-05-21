@@ -592,7 +592,6 @@ TEST(simultaneous_write_append) {
 }
 TEST_END(simultaneous_write_append)
 
-
 TEST(file_uniqueness)
 {
   int res;
