@@ -13,11 +13,8 @@
 #define LUA_USE_MODULES
 
 #ifdef LUA_USE_MODULES
-/*
 #define LUA_USE_MODULES_NODE
-*/
 #define LUA_USE_MODULES_FILE
-/*
 #define LUA_USE_MODULES_GPIO
 #define LUA_USE_MODULES_WIFI
 #define LUA_USE_MODULES_NET
@@ -34,7 +31,6 @@
 #define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_WS2812
 #define LUA_USE_MODULES_CJSON
-*/
 #endif /* LUA_USE_MODULES */
 
 #endif	/* __USER_MODULES_H__ */
