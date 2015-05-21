@@ -1,12 +1,10 @@
 #include "c_stdio.h"
 #include "platform.h"
 #include "spiffs.h"
-#undef NODE_DBG
-#define NODE_DBG c_printf
   
 spiffs fs;
 
-#define LOG_PAGE_SIZE       256
+#define LOG_PAGE_SIZE       (256*2)
   
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[32*4];
@@ -51,9 +49,9 @@ void myspiffs_mount() {
   cfg.phys_addr &= 0xFFFFC000;  // align to 4 sector.
   cfg.phys_size = INTERNAL_FLASH_SIZE - ( ( u32_t )cfg.phys_addr - INTERNAL_FLASH_START_ADDRESS );
   cfg.phys_erase_block = INTERNAL_FLASH_SECTOR_SIZE; // according to datasheet
-  cfg.log_block_size = INTERNAL_FLASH_SECTOR_SIZE; // let us not complicate things
+  cfg.log_block_size = INTERNAL_FLASH_SECTOR_SIZE * 16; // let us not complicate things
   cfg.log_page_size = LOG_PAGE_SIZE; // as we said
-  NODE_DBG("fs.start:%x,max:%x\n",cfg.phys_addr,cfg.phys_size);
+  SPIFFS_DBG("fs.start:%x,max:%x\n",cfg.phys_addr,cfg.phys_size);
 
   cfg.hal_read_f = my_spiffs_read;
   cfg.hal_write_f = my_spiffs_write;
@@ -68,7 +66,7 @@ void myspiffs_mount() {
     sizeof(spiffs_cache),
     // myspiffs_check_callback);
     0);
-  NODE_DBG("mount res: %i\n", res);
+  SPIFFS_DBG("mount res: %i\n", res);
 }
 
 void myspiffs_unmount() {
@@ -79,10 +77,13 @@ void myspiffs_unmount() {
 // Returns 1 if OK, 0 for error
 int myspiffs_format( void )
 {
-#if 0
-  SPIFFS_unmount(&fs);
+#if 1
+  myspiffs_unmount();
+  myspiffs_mount();
+  myspiffs_unmount();
   if(0 == SPIFFS_format(&fs))
   {
+    myspiffs_mount();
     return 1;
   }
   else
@@ -97,7 +98,7 @@ int myspiffs_format( void )
   sect_first = platform_flash_get_sector_of_address(sect_first);
   sect_last = INTERNAL_FLASH_SIZE + INTERNAL_FLASH_START_ADDRESS - 4;
   sect_last = platform_flash_get_sector_of_address(sect_last);
-  NODE_DBG("sect_first: %x, sect_last: %x\n", sect_first, sect_last);
+  SPIFFS_DBG("sect_first: %x, sect_last: %x\n", sect_first, sect_last);
   while( sect_first <= sect_last )
     if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
       return 0;
@@ -116,7 +117,11 @@ int myspiffs_check( void )
 }
 
 int myspiffs_open(const char *name, int flags){
-  return (int)SPIFFS_open(&fs, (char *)name, (spiffs_flags)flags, 0);
+  int res = SPIFFS_open(&fs, (char *)name, (spiffs_flags)flags, 0);
+  if (res < 0) {
+    SPIFFS_DBG("open errno %i\n", SPIFFS_errno(&fs));
+  }
+  return res;
 }
 
 int myspiffs_close( int fd ){
@@ -130,17 +135,17 @@ size_t myspiffs_write( int fd, const void* ptr, size_t len ){
     return len;
   }
 #endif
-  int res = SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, (size_t)len);
+  int res = SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, len);
   if (res < 0) {
-    NODE_DBG("write errno %i\n", SPIFFS_errno(&fs));
+    SPIFFS_DBG("write errno %i\n", SPIFFS_errno(&fs));
     return 0;
   }
   return res;
 }
 size_t myspiffs_read( int fd, void* ptr, size_t len){
-  int res = SPIFFS_read(&fs, (spiffs_file)fd, ptr, (size_t)len);
+  int res = SPIFFS_read(&fs, (spiffs_file)fd, ptr, len);
   if (res < 0) {
-    NODE_DBG("read errno %i\n", SPIFFS_errno(&fs));
+    SPIFFS_DBG("read errno %i\n", SPIFFS_errno(&fs));
     return 0;
   }
   return res;
@@ -160,7 +165,7 @@ int myspiffs_getc( int fd ){
   if(!myspiffs_eof(fd)){
     res = SPIFFS_read(&fs, (spiffs_file)fd, &c, 1);
     if (res != 1) {
-      NODE_DBG("getc errno %i\n", SPIFFS_errno(&fs));
+      SPIFFS_DBG("getc errno %i\n", SPIFFS_errno(&fs));
       return (int)EOF;
     } else {
       return (int)c;
@@ -193,13 +198,13 @@ void test_spiffs() {
   // Surely, I've mounted spiffs before entering here
   
   spiffs_file fd = SPIFFS_open(&fs, "my_file", SPIFFS_CREAT | SPIFFS_TRUNC | SPIFFS_RDWR, 0);
-  if (SPIFFS_write(&fs, fd, (u8_t *)"Hello world", 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));
+  if (SPIFFS_write(&fs, fd, (u8_t *)"Hello world", 12) < 0) SPIFFS_DBG("errno %i\n", SPIFFS_errno(&fs));
   SPIFFS_close(&fs, fd); 
 
   fd = SPIFFS_open(&fs, "my_file", SPIFFS_RDWR, 0);
-  if (SPIFFS_read(&fs, fd, (u8_t *)buf, 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));
+  if (SPIFFS_read(&fs, fd, (u8_t *)buf, 12) < 0) SPIFFS_DBG("errno %i\n", SPIFFS_errno(&fs));
   SPIFFS_close(&fs, fd);
 
-  NODE_DBG("--> %s <--\n", buf);
+  SPIFFS_DBG("--> %s <--\n", buf);
 }
 #endif
