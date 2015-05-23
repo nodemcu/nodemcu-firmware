@@ -24,11 +24,23 @@ static int adc_sample( lua_State* L )
 static int adc_readvdd33( lua_State* L )
 {
   uint32_t vdd33 = 0;
-  
-  os_intr_lock();
-  vdd33 = readvdd33();
-  os_intr_unlock();
 
+  if(STATION_MODE == wifi_get_opmode())
+  {
+    // Bug fix
+	  if (wifi_station_get_connect_status()!=0)
+	  {
+        return luaL_error( L, "Can't read vdd33 while station is connected" );
+	  }
+	  else
+	  {
+		  vdd33 = readvdd33();
+	  }
+  }
+  else
+  {
+    vdd33 = readvdd33();
+  }
   lua_pushinteger(L, vdd33);
   return 1;
 }
