@@ -163,12 +163,33 @@ static int wifi_getmode( lua_State* L )
   lua_pushinteger( L, mode );
   return 1;  
 }
+/**
+  * wifi.getchannel()
+  * Description:
+  * 	Get current wifi Channel
+  *
+  * Syntax:
+  * 	wifi.getchannel()
+  * Parameters:
+  * 	nil
+  *
+  * Returns:
+  * 	Current wifi channel
+  */
+
+static int wifi_getchannel( lua_State* L )
+{
+  unsigned channel;
+  channel = (unsigned)wifi_get_channel();
+  lua_pushinteger( L, channel );
+  return 1;
+}
 
 /**
   * wifi.setphymode()
   * Description:
-  * 	Set wifi physical mode��802.11 b/g/n��
-  * 	Note�� SoftAP only supports 802.11 b/g.
+  * 	Set wifi physical mode（802.11 b/g/n）
+  * 	Note： SoftAP only supports 802.11 b/g.
   * Syntax:
   * 	wifi.setphymode(mode)
   * Parameters:
@@ -197,7 +218,7 @@ static int wifi_setphymode( lua_State* L )
 /**
   * wifi.getphymode()
   * Description:
-  * 	Get wifi physical mode��802.11 b/g/n��
+  * 	Get wifi physical mode（802.11 b/g/n）
   * Syntax:
   * 	wifi.getphymode()
   * Parameters:
@@ -1014,6 +1035,7 @@ const LUA_REG_TYPE wifi_map[] =
 {
   { LSTRKEY( "setmode" ), LFUNCVAL( wifi_setmode ) },
   { LSTRKEY( "getmode" ), LFUNCVAL( wifi_getmode ) },
+  { LSTRKEY( "getchannel" ), LFUNCVAL( wifi_getchannel ) },
   { LSTRKEY( "setphymode" ), LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ), LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
