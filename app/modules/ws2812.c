@@ -28,11 +28,17 @@ static void ICACHE_FLASH_ATTR send_ws_1(uint8_t gpio) {
   i = 6; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 1 << gpio);
 }
 
-// Lua: ws2812.write(pin, "string")
+// Lua: ws2812.writergb(pin, "string")
 // Byte triples in the string are interpreted as R G B values and sent to the hardware as G R B.
-// ws2812.write(4, string.char(255, 0, 0)) uses GPIO2 and sets the first LED red.
-// ws2812.write(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
-// ws2812.write(4, string.char(0, 255, 0, 255, 255, 255)) first LED green, second LED white.
+// WARNING: this function scrambles the input buffer :
+//    a = string.char(255,0,128)
+//    ws212.writergb(3,a)
+//    =a.byte() 
+//    (0,255,128)
+
+// ws2812.writergb(4, string.char(255, 0, 0)) uses GPIO2 and sets the first LED red.
+// ws2812.writergb(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
+// ws2812.writergb(4, string.char(0, 255, 0, 255, 255, 255)) first LED green, second LED white.
 static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
 {
   const uint8_t pin = luaL_checkinteger(L, 1);
@@ -78,11 +84,43 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
   return 0;
 }
 
+// Lua: ws2812.write(pin, "string")
+// Byte triples in the string are interpreted as G R B values.
+// This function does not corrupt your buffer.
+//
+// ws2812.write(4, string.char(0, 255, 0)) uses GPIO2 and sets the first LED red.
+// ws2812.write(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
+// ws2812.write(4, string.char(255, 0, 0, 255, 255, 255)) first LED green, second LED white.
+static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
+  const uint8_t pin = luaL_checkinteger(L, 1);
+  size_t length;
+  const char *buffer = luaL_checklstring(L, 2, &length);
+
+  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
+  platform_gpio_write(pin, 0);
+  os_delay_us(10);
+
+  os_intr_lock();
+  const char * const end = buffer + length;
+  while (buffer != end) {
+    uint8_t mask = 0x80;
+    while (mask) {
+      (*buffer & mask) ? send_ws_1(pin_num[pin]) : send_ws_0(pin_num[pin]);
+      mask >>= 1;
+    }
+    ++buffer;
+  }
+  os_intr_unlock();
+
+  return 0;
+}
+
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
 const LUA_REG_TYPE ws2812_map[] =
 {
   { LSTRKEY( "writergb" ), LFUNCVAL( ws2812_writergb )},
+  { LSTRKEY( "write" ), LFUNCVAL( ws2812_writegrb )},
   { LNILKEY, LNILVAL}
 };
 
