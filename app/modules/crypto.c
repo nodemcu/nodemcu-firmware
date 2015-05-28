@@ -112,8 +112,8 @@ static int crypto_mask( lua_State* L )
 const LUA_REG_TYPE crypto_map[] =
 {
   { LSTRKEY( "sha1" ), LFUNCVAL( crypto_sha1 ) },
-  { LSTRKEY( "base64Encode" ), LFUNCVAL( crypto_base64_encode ) },
-  { LSTRKEY( "hexEncode" ), LFUNCVAL( crypto_hex_encode ) },
+  { LSTRKEY( "toBase64" ), LFUNCVAL( crypto_base64_encode ) },
+  { LSTRKEY( "toHex" ), LFUNCVAL( crypto_hex_encode ) },
   { LSTRKEY( "mask" ), LFUNCVAL( crypto_mask ) },
 
 #if LUA_OPTIMIZE_MEMORY > 0
