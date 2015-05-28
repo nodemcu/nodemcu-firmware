@@ -39,12 +39,13 @@ static int crypto_sha1( lua_State* L )
 
 static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 /**
-  * encoded = crypto.base64_encode(raw)
+  * encoded = crypto.base64Encode(raw)
   *
   * Encodes raw binary string as base64 string.
   */
 static int crypto_base64_encode( lua_State* L )
 {
+  // TODO: figure out signature of base64_encode in rom and use that instead.
   int len;
   const char* msg = luaL_checklstring(L, 1, &len);
   int blen = (len + 2) / 3 * 4;
@@ -64,6 +65,47 @@ static int crypto_base64_encode( lua_State* L )
   return 1;
 }
 
+static const char* byteshex = "0123456789abcdef";
+/**
+  * encoded = crypto.hexEncode(raw)
+  *
+  *	Encodes raw binary string as hex string.
+  */
+static int crypto_hex_encode( lua_State* L)
+{
+  int len;
+  const char* msg = luaL_checklstring(L, 1, &len);
+  char* out = (char*)c_malloc(len * 2);
+  int i, j = 0;
+  for (i = 0; i < len; i++) {
+    out[j++] = byteshex[msg[i] >> 4];
+    out[j++] = byteshex[msg[i] & 0xf];
+  }
+  lua_pushlstring(L, out, len*2);
+  c_free(out);
+  return 1;
+}
+
+/**
+  * masked = crypto.mask(message, mask)
+  *
+  * Apply a mask (repeated if shorter than message) as XOR to each byte.
+  */
+static int crypto_mask( lua_State* L )
+{
+  int len, mask_len;
+  const char* msg = luaL_checklstring(L, 1, &len);
+  const char* mask = luaL_checklstring(L, 2, &mask_len);
+  int i;
+  char* copy = (char*)c_malloc(len);
+  for (i = 0; i < len; i++) {
+    copy[i] = msg[i] ^ mask[i % 4];
+  }
+  lua_pushlstring(L, copy, len);
+  c_free(copy);
+  return 1;
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -71,6 +113,9 @@ const LUA_REG_TYPE crypto_map[] =
 {
   { LSTRKEY( "sha1" ), LFUNCVAL( crypto_sha1 ) },
   { LSTRKEY( "base64Encode" ), LFUNCVAL( crypto_base64_encode ) },
+  { LSTRKEY( "hexEncode" ), LFUNCVAL( crypto_hex_encode ) },
+  { LSTRKEY( "mask" ), LFUNCVAL( crypto_mask ) },
+
 #if LUA_OPTIMIZE_MEMORY > 0
 
 #endif
