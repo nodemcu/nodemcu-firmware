@@ -6,11 +6,12 @@
 #include "platform.h"
 #include "auxmods.h"
 #include "lrotable.h"
-
 #include "c_types.h"
 #include "c_stdlib.h"
 
 #include "user_interface.h"
+
+#include "rom.h"
 
 /**
   * hash = crypto.sha1(input)
@@ -20,22 +21,21 @@
   */
 static int crypto_sha1( lua_State* L )
 {
-  // We only need a data buffer large enough to match SHA1_CTX in the rom.
-  // I *think* this is a 92-byte netbsd struct.
-  uint8_t ctx[100];
+  SHA1_CTX ctx;
   uint8_t digest[20];
   // Read the string from lua (with length)
   int len;
   const char* msg = luaL_checklstring(L, 1, &len);
   // Use the SHA* functions in the rom
-  SHA1Init(ctx);
-  SHA1Update(ctx, msg, len);
-  SHA1Final(digest, ctx);
+  SHA1Init(&ctx);
+  SHA1Update(&ctx, msg, len);
+  SHA1Final(digest, &ctx);
 
   // Push the result as a lua string
   lua_pushlstring(L, digest, 20);
   return 1;
 }
+
 
 static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 /**
@@ -45,7 +45,6 @@ static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
   */
 static int crypto_base64_encode( lua_State* L )
 {
-  // TODO: figure out signature of base64_encode in rom and use that instead.
   int len;
   const char* msg = luaL_checklstring(L, 1, &len);
   int blen = (len + 2) / 3 * 4;
