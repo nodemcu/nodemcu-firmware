@@ -36,6 +36,7 @@ SUBDIRS=    \
 	smart 	\
 	wofs 	\
 	modules	\
+	ssl \
 	spiffs	\
 	cjson
 
@@ -84,6 +85,7 @@ COMPONENTS_eagle.app.v6 = \
 	u8glib/u8glib.a \
 	smart/smart.a 	\
 	wofs/wofs.a 	\
+	ssl/libssl.a  \
 	spiffs/spiffs.a 	\
 	cjson/libcjson.a 	\
 	modules/libmodules.a
@@ -108,7 +110,6 @@ LINKFLAGS_eagle.app.v6 = \
 	-lmain	\
 	-ljson	\
 	-lsmartconfig	\
-	-lssl	\
 	$(DEP_LIBS_eagle.app.v6)					\
 	-Wl,--end-group			\
 	-lm
