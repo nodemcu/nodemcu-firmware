@@ -12,7 +12,7 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-#include "eagle_soc.h"
+
 #include "c_stdio.h"
 #include "spiffs_config.h"
 
@@ -53,7 +53,6 @@ extern "C" {
 
 #define SPIFFS_ERR_TEST                 -10100
 
-#define SPIFFS_WDT_CLEAR(no_arg) WRITE_PERI_REG(0x60000914, 0x73)
 
 // spiffs file descriptor index type. must be signed
 typedef s16_t spiffs_file;

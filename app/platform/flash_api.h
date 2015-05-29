@@ -1,8 +1,8 @@
 #ifndef __FLASH_API_H__
 #define __FLASH_API_H__
+#include "ets_sys.h"
 #include "user_config.h"
-#include "user_interface.h"
-#include "spi_flash.h"
+#include "cpu_esp8266.h"
 
 #define FLASH_ADDRESS_START_MAP (INTERNAL_FLASH_START_ADDRESS)
 
@@ -21,8 +21,6 @@
 #define FLASH_SIZE_4MBYTE   (FLASH_SIZE_32MBIT / 8)
 #define FLASH_SIZE_8MBYTE   (FLASH_SIZE_64MBIT / 8)
 #define FLASH_SIZE_16MBYTE  (FLASH_SIZE_128MBIT/ 8)
-
-#define FLASH_DEBUG
 
 #define FLASH_SAFEMODE_ENTER() \
 do { \
@@ -87,7 +85,7 @@ typedef struct
     } size : 4;
     uint32_t entry_point;
     uint32_t memory_offset;
-    uint32_t segment_size;
+    uint32_t segment_size; 
 } ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 
 uint32_t flash_detect_size_byte(void);

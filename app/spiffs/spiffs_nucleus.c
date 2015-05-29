@@ -155,7 +155,6 @@ s32_t spiffs_obj_lu_find_entry_visitor(
   // check each block
   while (res == SPIFFS_OK && entry_count > 0) {
     int obj_lookup_page = cur_entry / entries_per_page;
-    SPIFFS_WDT_CLEAR();
     // check each object lookup page
     while (res == SPIFFS_OK && obj_lookup_page < (int)SPIFFS_OBJ_LOOKUP_PAGES(fs)) {
       int entry_offset = obj_lookup_page * entries_per_page;
@@ -166,7 +165,6 @@ s32_t spiffs_obj_lu_find_entry_visitor(
           cur_entry - entry_offset < entries_per_page && // for non-last obj lookup pages
           cur_entry < (int)SPIFFS_OBJ_LOOKUP_MAX_ENTRIES(fs)) // for last obj lookup page
       {
-        SPIFFS_WDT_CLEAR();
         if ((flags & SPIFFS_VIS_CHECK_ID) == 0 || obj_lu_buf[cur_entry-entry_offset] == obj_id) {
           if (block_ix) *block_ix = cur_block;
           if (lu_entry) *lu_entry = cur_entry;
@@ -303,7 +301,6 @@ s32_t spiffs_obj_lu_scan(
   spiffs_obj_id erase_count_min = SPIFFS_OBJ_ID_FREE;
   spiffs_obj_id erase_count_max = 0;
   while (bix < fs->block_count) {
-    SPIFFS_WDT_CLEAR();
 #if SPIFFS_USE_MAGIC
     spiffs_obj_id magic;
     res = _spiffs_rd(fs,
@@ -805,7 +802,6 @@ void spiffs_cb_object_event(
   u32_t i;
   spiffs_fd *fds = (spiffs_fd *)fs->fd_space;
   for (i = 0; i < fs->fd_count; i++) {
-    SPIFFS_WDT_CLEAR();
     spiffs_fd *cur_fd = &fds[i];
     if (cur_fd->file_nbr == 0 || (cur_fd->obj_id & ~SPIFFS_OBJ_ID_IX_FLAG) != obj_id) continue;
     if (spix == 0) {
@@ -922,9 +918,9 @@ s32_t spiffs_object_append(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
 
   // write all data
   while (res == SPIFFS_OK && written < len) {
-    SPIFFS_WDT_CLEAR();
     // calculate object index page span index
     cur_objix_spix = SPIFFS_OBJ_IX_ENTRY_SPAN_IX(fs, data_spix);
+
     // handle storing and loading of object indices
     if (cur_objix_spix != prev_objix_spix) {
       // new object index page
@@ -1154,7 +1150,6 @@ s32_t spiffs_object_modify(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
 
   // write all data
   while (res == SPIFFS_OK && written < len) {
-    SPIFFS_WDT_CLEAR();
     // calculate object index page span index
     cur_objix_spix = SPIFFS_OBJ_IX_ENTRY_SPAN_IX(fs, data_spix);
 
@@ -1632,7 +1627,6 @@ s32_t spiffs_object_read(
   spiffs_page_object_ix *objix = (spiffs_page_object_ix *)fs->work;
 
   while (cur_offset < offset + len) {
-    SPIFFS_WDT_CLEAR();
     cur_objix_spix = SPIFFS_OBJ_IX_ENTRY_SPAN_IX(fs, data_spix);
     if (prev_objix_spix != cur_objix_spix) {
       // load current object index (header) page
@@ -1781,7 +1775,6 @@ s32_t spiffs_obj_lu_find_free_obj_id(spiffs *fs, spiffs_obj_id *obj_id, u8_t *co
   state.compaction = 0;
   state.conflicting_name = conflicting_name;
   while (res == SPIFFS_OK && free_obj_id == SPIFFS_OBJ_ID_FREE) {
-    SPIFFS_WDT_CLEAR();
     if (state.max_obj_id - state.min_obj_id <= (spiffs_obj_id)SPIFFS_CFG_LOG_PAGE_SZ(fs)*8) {
       // possible to represent in bitmap
       u32_t i, j;
@@ -1794,7 +1787,6 @@ s32_t spiffs_obj_lu_find_free_obj_id(spiffs *fs, spiffs_obj_id *obj_id, u8_t *co
       SPIFFS_CHECK_RES(res);
       // traverse bitmask until found free obj_id
       for (i = 0; i < SPIFFS_CFG_LOG_PAGE_SZ(fs); i++) {
-        SPIFFS_WDT_CLEAR();
         u8_t mask = fs->work[i];
         if (mask == 0xff) {
           continue;
@@ -1816,7 +1808,6 @@ s32_t spiffs_obj_lu_find_free_obj_id(spiffs *fs, spiffs_obj_id *obj_id, u8_t *co
         u8_t min_count = 0xff;
 
         for (i = 0; i < SPIFFS_CFG_LOG_PAGE_SZ(fs)/sizeof(u8_t); i++) {
-          SPIFFS_WDT_CLEAR();
           if (map[i] < min_count) {
             min_count = map[i];
             min_i = i;
@@ -1869,7 +1860,6 @@ s32_t spiffs_fd_find_new(spiffs *fs, spiffs_fd **fd) {
   u32_t i;
   spiffs_fd *fds = (spiffs_fd *)fs->fd_space;
   for (i = 0; i < fs->fd_count; i++) {
-    SPIFFS_WDT_CLEAR();
     spiffs_fd *cur_fd = &fds[i];
     if (cur_fd->file_nbr == 0) {
       cur_fd->file_nbr = i+1;
