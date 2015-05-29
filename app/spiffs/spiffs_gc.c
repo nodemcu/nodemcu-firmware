@@ -8,10 +8,30 @@ static s32_t spiffs_gc_erase_block(
     spiffs *fs,
     spiffs_block_ix bix) {
   s32_t res;
+  u32_t addr = SPIFFS_BLOCK_TO_PADDR(fs, bix);
+  s32_t size = SPIFFS_CFG_LOG_BLOCK_SZ(fs);
 
   SPIFFS_GC_DBG("gc: erase block %i\n", bix);
-  res = spiffs_erase_block(fs, bix);
+
+  // here we ignore res, just try erasing the block
+  while (size > 0) {
+    SPIFFS_GC_DBG("gc: erase %08x:%08x\n", addr,  SPIFFS_CFG_PHYS_ERASE_SZ(fs));
+    (void)fs->cfg.hal_erase_f(addr, SPIFFS_CFG_PHYS_ERASE_SZ(fs));
+    addr += SPIFFS_CFG_PHYS_ERASE_SZ(fs);
+    size -= SPIFFS_CFG_PHYS_ERASE_SZ(fs);
+  }
+  fs->free_blocks++;
+
+  // register erase count for this block
+  res = _spiffs_wr(fs, SPIFFS_OP_C_WRTHRU | SPIFFS_OP_T_OBJ_LU2, 0,
+      SPIFFS_ERASE_COUNT_PADDR(fs, bix),
+      sizeof(spiffs_obj_id), (u8_t *)&fs->max_erase_count);
   SPIFFS_CHECK_RES(res);
+
+  fs->max_erase_count++;
+  if (fs->max_erase_count == SPIFFS_OBJ_ID_IX_FLAG) {
+    fs->max_erase_count = 0;
+  }
 
 #if SPIFFS_CACHE
   {
@@ -110,14 +130,11 @@ s32_t spiffs_gc_check(
   }
 
   u32_t needed_pages = (len + SPIFFS_DATA_PAGE_SIZE(fs) - 1) / SPIFFS_DATA_PAGE_SIZE(fs);
-//  if (fs->free_blocks <= 2 && (s32_t)needed_pages > free_pages) {
-//    SPIFFS_GC_DBG("gc: full freeblk:%i needed:%i free:%i dele:%i\n", fs->free_blocks, needed_pages, free_pages, fs->stats_p_deleted);
-//    return SPIFFS_ERR_FULL;
-//  }
-  if ((s32_t)needed_pages > (s32_t)(free_pages + fs->stats_p_deleted)) {
-    SPIFFS_GC_DBG("gc_check: full freeblk:%i needed:%i free:%i dele:%i\n", fs->free_blocks, needed_pages, free_pages, fs->stats_p_deleted);
+  if (fs->free_blocks <= 2 && (s32_t)needed_pages > free_pages) {
     return SPIFFS_ERR_FULL;
   }
+
+  //printf("gcing started  %i dirty, blocks %i free, want %i bytes\n", fs->stats_p_allocated + fs->stats_p_deleted, fs->free_blocks, len);
 
   do {
     SPIFFS_GC_DBG("\ngc_check #%i: run gc free_blocks:%i pfree:%i pallo:%i pdele:%i [%i] len:%i of %i\n",
@@ -128,13 +145,11 @@ s32_t spiffs_gc_check(
     spiffs_block_ix *cands;
     int count;
     spiffs_block_ix cand;
-    s32_t prev_free_pages = free_pages;
-    // if the fs is crammed, ignore block age when selecting candidate - kind of a bad state
-    res = spiffs_gc_find_candidate(fs, &cands, &count, free_pages <= 0);
+    res = spiffs_gc_find_candidate(fs, &cands, &count);
     SPIFFS_CHECK_RES(res);
     if (count == 0) {
       SPIFFS_GC_DBG("gc_check: no candidates, return\n");
-      return (s32_t)needed_pages < free_pages ? SPIFFS_OK : SPIFFS_ERR_FULL;
+      return res;
     }
 #if SPIFFS_GC_STATS
     fs->stats_gc_runs++;
@@ -160,12 +175,6 @@ s32_t spiffs_gc_check(
     free_pages =
           (SPIFFS_PAGES_PER_BLOCK(fs) - SPIFFS_OBJ_LOOKUP_PAGES(fs)) * (fs->block_count - 2)
           - fs->stats_p_allocated - fs->stats_p_deleted;
-
-    if (prev_free_pages <= 0 && prev_free_pages == free_pages) {
-      // abort early to reduce wear, at least tried once
-      SPIFFS_GC_DBG("gc_check: early abort, no result on gc when fs crammed\n");
-      break;
-    }
 
   } while (++tries < SPIFFS_GC_MAX_RUNS && (fs->free_blocks <= 2 ||
       (s32_t)len > free_pages*(s32_t)SPIFFS_DATA_PAGE_SIZE(fs)));
@@ -225,8 +234,7 @@ s32_t spiffs_gc_erase_page_stats(
 s32_t spiffs_gc_find_candidate(
     spiffs *fs,
     spiffs_block_ix **block_candidates,
-    int *candidate_count,
-    char fs_crammed) {
+    int *candidate_count) {
   s32_t res = SPIFFS_OK;
   u32_t blocks = fs->block_count;
   spiffs_block_ix cur_block = 0;
@@ -299,7 +307,7 @@ s32_t spiffs_gc_find_candidate(
       s32_t score =
           deleted_pages_in_block * SPIFFS_GC_HEUR_W_DELET +
           used_pages_in_block * SPIFFS_GC_HEUR_W_USED +
-          erase_age * (fs_crammed ? 0 : SPIFFS_GC_HEUR_W_ERASE_AGE);
+          erase_age * SPIFFS_GC_HEUR_W_ERASE_AGE;
       int cand_ix = 0;
       SPIFFS_GC_DBG("gc_check: bix:%i del:%i use:%i score:%i\n", cur_block, deleted_pages_in_block, used_pages_in_block, score);
       while (cand_ix < max_candidates) {

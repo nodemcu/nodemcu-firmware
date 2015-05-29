@@ -30,19 +30,19 @@ typedef uint8_t u8_t;
 
 // Set generic spiffs debug output call.
 #ifndef SPIFFS_DGB
-#define SPIFFS_DBG(...) //c_printf(__VA_ARGS__)
+#define SPIFFS_DBG(...) //printf(__VA_ARGS__)
 #endif
 // Set spiffs debug output call for garbage collecting.
 #ifndef SPIFFS_GC_DGB
-#define SPIFFS_GC_DBG(...) //c_printf(__VA_ARGS__)
+#define SPIFFS_GC_DBG(...) //printf(__VA_ARGS__)
 #endif
 // Set spiffs debug output call for caching.
 #ifndef SPIFFS_CACHE_DGB
-#define SPIFFS_CACHE_DBG(...) //c_printf(__VA_ARGS__)
+#define SPIFFS_CACHE_DBG(...) //printf(__VA_ARGS__)
 #endif
 // Set spiffs debug output call for system consistency checks.
 #ifndef SPIFFS_CHECK_DGB
-#define SPIFFS_CHECK_DBG(...) //c_printf(__VA_ARGS__)
+#define SPIFFS_CHECK_DBG(...) //printf(__VA_ARGS__)
 #endif
 
 // Enable/disable API functions to determine exact number of bytes
@@ -119,22 +119,14 @@ typedef uint8_t u8_t;
 #define SPIFFS_COPY_BUFFER_STACK        (64)
 #endif
 
-// Enable this to have an identifiable spiffs filesystem. This will look for
-// a magic in all sectors to determine if this is a valid spiffs system or
-// not on mount point. If not, SPIFFS_format must be called prior to mounting
-// again.
-#ifndef SPIFFS_USE_MAGIC
-#define SPIFFS_USE_MAGIC                (1)
-#endif
-
 // SPIFFS_LOCK and SPIFFS_UNLOCK protects spiffs from reentrancy on api level
 // These should be defined on a multithreaded system
 
-// define this to enter a mutex if you're running on a multithreaded system
+// define this to entering a mutex if you're running on a multithreaded system
 #ifndef SPIFFS_LOCK
 #define SPIFFS_LOCK(fs)
 #endif
-// define this to exit a mutex if you're running on a multithreaded system
+// define this to exiting a mutex if you're running on a multithreaded system
 #ifndef SPIFFS_UNLOCK
 #define SPIFFS_UNLOCK(fs)
 #endif
@@ -167,12 +159,7 @@ typedef uint8_t u8_t;
 #endif
 #endif
 
-// Enable this if your target needs aligned data for index tables
-#ifndef SPIFFS_ALIGNED_OBJECT_INDEX_TABLES
-#define SPIFFS_ALIGNED_OBJECT_INDEX_TABLES       1
-#endif
-
-// Set SPIFFS_TEST_VISUALISATION to non-zero to enable SPIFFS_vis function
+// Set SPFIFS_TEST_VISUALISATION to non-zero to enable SPIFFS_vis function
 // in the api. This function will visualize all filesystem using given printf
 // function.
 #ifndef SPIFFS_TEST_VISUALISATION

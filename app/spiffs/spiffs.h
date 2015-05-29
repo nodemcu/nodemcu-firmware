@@ -12,7 +12,7 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-#include "eagle_soc.h"
+
 #include "c_stdio.h"
 #include "spiffs_config.h"
 
@@ -41,19 +41,11 @@ extern "C" {
 #define SPIFFS_ERR_NOT_WRITABLE         -10021
 #define SPIFFS_ERR_NOT_READABLE         -10022
 #define SPIFFS_ERR_CONFLICTING_NAME     -10023
-#define SPIFFS_ERR_NOT_CONFIGURED       -10024
-
-#define SPIFFS_ERR_NOT_A_FS             -10025
-#define SPIFFS_ERR_MOUNTED              -10026
-#define SPIFFS_ERR_ERASE_FAIL           -10027
-#define SPIFFS_ERR_MAGIC_NOT_POSSIBLE   -10028
-
 
 #define SPIFFS_ERR_INTERNAL             -10050
 
 #define SPIFFS_ERR_TEST                 -10100
 
-#define SPIFFS_WDT_CLEAR(no_arg) WRITE_PERI_REG(0x60000914, 0x73)
 
 // spiffs file descriptor index type. must be signed
 typedef s16_t spiffs_file;
@@ -223,11 +215,6 @@ typedef struct {
 
   // check callback function
   spiffs_check_callback check_cb_f;
-
-  // mounted flag
-  u8_t mounted;
-  // config magic
-  u32_t config_magic;
 } spiffs;
 
 /* spiffs file status struct */
@@ -255,10 +242,7 @@ typedef struct {
 // functions
 
 /**
- * Initializes the file system dynamic parameters and mounts the filesystem.
- * If SPIFFS_USE_MAGIC is enabled the mounting may fail with SPIFFS_ERR_NOT_A_FS
- * if the flash does not contain a recognizable file system.
- * In this case, SPIFFS_format must be called prior to remounting.
+ * Initializes the file system dynamic parameters and mounts the filesystem
  * @param fs            the file system struct
  * @param config        the physical and logical configuration of the file system
  * @param work          a memory work buffer comprising 2*config->log_page_size
@@ -456,24 +440,6 @@ s32_t SPIFFS_check(spiffs *fs);
  * @param used          used number of bytes in filesystem
  */
 s32_t SPIFFS_info(spiffs *fs, u32_t *total, u32_t *used);
-
-/**
- * Formats the entire file system. All data will be lost.
- * The filesystem must not be mounted when calling this.
- *
- * NB: formatting is awkward. Due to backwards compatibility, SPIFFS_mount
- * MUST be called prior to formatting in order to configure the filesystem.
- * If SPIFFS_mount succeeds, SPIFFS_unmount must be called before calling
- * SPIFFS_format.
- * If SPIFFS_mount fails, SPIFFS_format can be called directly without calling
- * SPIFFS_unmount first.
- */
-s32_t SPIFFS_format(spiffs *fs);
-
-/**
- * Returns nonzero if spiffs is mounted, or zero if unmounted.
- */
-u8_t SPIFFS_mounted(spiffs *fs);
 
 /**
  * Check if EOF reached.

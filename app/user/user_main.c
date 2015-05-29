@@ -61,15 +61,13 @@ void nodemcu_init(void)
 
 #if defined(FLASH_SAFE_API)
     if( flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
-        NODE_ERR("File system initialization ...\n");
-        NODE_ERR("This will take a minute, don't power off.\n");
+        NODE_ERR("Self adjust flash size.\n");
         // Fit hardware real flash size.
         flash_rom_set_size_byte(flash_safe_get_size_byte());
         // Flash init data at FLASHSIZE - 0x04000 Byte.
         flash_init_data_default();
         // Flash blank data at FLASHSIZE - 0x02000 Byte.
         flash_init_data_blank();
-
         if( !fs_format() )
         {
             NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
@@ -78,8 +76,7 @@ void nodemcu_init(void)
         else{
             NODE_ERR( "format done.\n" );
         }
-        // Unmount filesystem because mounted by format.
-        fs_unmount();   
+        fs_unmount();   // mounted by format.
     }
 #endif // defined(FLASH_SAFE_API)
 
@@ -105,22 +102,6 @@ void nodemcu_init(void)
     // test_romfs();
 #elif defined ( BUILD_SPIFFS )
     fs_mount();
-    if(SPIFFS_mounted == 0)
-    {        
-        NODE_ERR("File system broken, formating ...\n");
-        NODE_ERR("This will take a minute, don't power off.\n");
-        if( !fs_format() )
-        {
-            NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
-            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
-        }
-        else{
-            NODE_ERR( "format done.\n" );
-        }
-        // Ensure filesystem mounted.
-        fs_unmount();
-        fs_mount();
-    }
     // test_spiffs();
 #endif
     // endpoint_setup();

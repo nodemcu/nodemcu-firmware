@@ -4,8 +4,8 @@
  * 2014-12-31
 *******************************************************************************/
 #include "user_config.h"
-#include "osapi.h"
 #include "flash_api.h"
+#include "spi_flash.h"
 #include "c_stdio.h"
 
 static volatile const uint8_t flash_init_data[128] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =
@@ -103,40 +103,43 @@ uint8_t flash_rom_get_size_type(void)
 uint32_t flash_rom_get_size_byte(void)
 {
     static uint32_t flash_size = 0;
-    switch (flash_rom_getinfo().size)
+    if (flash_size == 0)
     {
-    case SIZE_2MBIT:
-        // 2Mbit, 256kByte
-        flash_size = 256 * 1024;
-        break;
-    case SIZE_4MBIT:
-        // 4Mbit, 512kByte
-        flash_size = 512 * 1024;
-        break;
-    case SIZE_8MBIT:
-        // 8Mbit, 1MByte
-        flash_size = 1 * 1024 * 1024;
-        break;
-    case SIZE_16MBIT:
-        // 16Mbit, 2MByte
-        flash_size = 2 * 1024 * 1024;
-        break;
-    case SIZE_32MBIT:
-        // 32Mbit, 4MByte
-        flash_size = 4 * 1024 * 1024;
-        break;
-    case SIZE_64MBIT:
-        // 64Mbit, 8MByte
-        flash_size = 8 * 1024 * 1024;
-        break;
-    case SIZE_128MBIT:
-        // 128Mbit, 16MByte
-        flash_size = 16 * 1024 * 1024;
-        break;
-    default:
-        // Unknown flash size, fall back mode.
-        flash_size = 512 * 1024;
-        break;
+        switch (flash_rom_getinfo().size)
+        {
+        case SIZE_2MBIT:
+            // 2Mbit, 256kByte
+            flash_size = 256 * 1024;
+            break;
+        case SIZE_4MBIT:
+            // 4Mbit, 512kByte
+            flash_size = 512 * 1024;
+            break;
+        case SIZE_8MBIT:
+            // 8Mbit, 1MByte
+            flash_size = 1 * 1024 * 1024;
+            break;
+        case SIZE_16MBIT:
+            // 16Mbit, 2MByte
+            flash_size = 2 * 1024 * 1024;
+            break;
+        case SIZE_32MBIT:
+            // 32Mbit, 4MByte
+            flash_size = 4 * 1024 * 1024;
+            break;
+        case SIZE_64MBIT:
+            // 64Mbit, 8MByte
+            flash_size = 8 * 1024 * 1024;
+            break;
+        case SIZE_128MBIT:
+            // 128Mbit, 16MByte
+            flash_size = 16 * 1024 * 1024;
+            break;
+        default:
+            // Unknown flash size, fall back mode.
+            flash_size = 512 * 1024;
+            break;
+        }
     }
     return flash_size;
 }
@@ -146,21 +149,21 @@ bool flash_rom_set_size_type(uint8_t size)
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
-    FLASH_DEBUG("\nBEGIN SET FLASH HEADER\n");
+    NODE_DBG("\nBEGIN SET FLASH HEADER\n");
     uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
     if (SPI_FLASH_RESULT_OK == spi_flash_read(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
     {
         ((SPIFlashInfo *)(&data[0]))->size = size;
         if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector(0 * SPI_FLASH_SEC_SIZE))
         {
-            FLASH_DEBUG("\nERASE SUCCESS\n");
+            NODE_DBG("\nERASE SUCCESS\n");
         }
         if (SPI_FLASH_RESULT_OK == spi_flash_write(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
         {
-            FLASH_DEBUG("\nWRITE SUCCESS, %u\n", size);
+            NODE_DBG("\nWRITE SUCCESS, %u\n", size);
         }
     }
-    FLASH_DEBUG("\nEND SET FLASH HEADER\n");
+    NODE_DBG("\nEND SET FLASH HEADER\n");
     return true;
 }
 
@@ -278,7 +281,7 @@ bool flash_rom_set_speed(uint32_t speed)
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
-    FLASH_DEBUG("\nBEGIN SET FLASH HEADER\n");
+    NODE_DBG("\nBEGIN SET FLASH HEADER\n");
     uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
     uint8_t speed_type = SPEED_40MHZ;
     if (speed < 26700000)
@@ -302,14 +305,14 @@ bool flash_rom_set_speed(uint32_t speed)
         ((SPIFlashInfo *)(&data[0]))->speed = speed_type;
         if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector(0 * SPI_FLASH_SEC_SIZE))
         {
-            FLASH_DEBUG("\nERASE SUCCESS\n");
+            NODE_DBG("\nERASE SUCCESS\n");
         }
         if (SPI_FLASH_RESULT_OK == spi_flash_write(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
         {
-            FLASH_DEBUG("\nWRITE SUCCESS, %u\n", speed_type);
+            NODE_DBG("\nWRITE SUCCESS, %u\n", speed_type);
         }
     }
-    FLASH_DEBUG("\nEND SET FLASH HEADER\n");
+    NODE_DBG("\nEND SET FLASH HEADER\n");
     return true;
 }
 
@@ -390,7 +393,7 @@ uint8_t byte_of_aligned_array(const uint8_t *aligned_array, uint32_t index)
 {
     if ( (((uint32_t)aligned_array) % 4) != 0 )
     {
-        FLASH_DEBUG("aligned_array is not 4-byte aligned.\n");
+        NODE_DBG("aligned_array is not 4-byte aligned.\n");
         return 0;
     }
     volatile uint32_t v = ((uint32_t *)aligned_array)[ index / 4 ];
@@ -402,7 +405,7 @@ uint16_t word_of_aligned_array(const uint16_t *aligned_array, uint32_t index)
 {
     if ( (((uint32_t)aligned_array) % 4) != 0 )
     {
-        FLASH_DEBUG("aligned_array is not 4-byte aligned.\n");
+        NODE_DBG("aligned_array is not 4-byte aligned.\n");
         return 0;
     }
     volatile uint32_t v = ((uint32_t *)aligned_array)[ index / 2 ];
