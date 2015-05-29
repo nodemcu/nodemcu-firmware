@@ -82,6 +82,9 @@ LUALIB_API int ( luaopen_ow )( lua_State *L );
 #define AUXLIB_CJSON      "cjson"
 LUALIB_API int ( luaopen_ow )( lua_State *L );
 
+#define AUXLIB_CRYPTO     "crypto"
+LUALIB_API int ( luaopen_crypto )( lua_State *L );
+
 // Helper macros
 #define MOD_CHECK_ID( mod, id )\
   if( !platform_ ## mod ## _exists( id ) )\
