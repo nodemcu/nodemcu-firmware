@@ -599,9 +599,14 @@ static int wifi_station_setauto( lua_State* L )
   * 	scan and get ap list as a lua table into callback function.
   * Syntax:
   * 	wifi.sta.getap(function(table))
+  * 	wifi.sta.getap(format, function(table))
   * 	wifi.sta.getap(cfg, function(table))
+  * 	wifi.sta.getap(cfg, format, function(table))
   * Parameters:
   * 	cfg: table that contains scan configuration
+  * 	Format:Select output table format.
+  * 		0 for the old format (SSID : Authmode, RSSI, BSSID, Channel) (Default)
+  * 		1 for the new format (BSSID : SSID, RSSI, Authmode, Channel)
   * 	function(table): a callback function to receive ap table when scan is done
 			this function receive a table, the key is the ssid,
 			value is other info in format: authmode,rssi,bssid,channel
