@@ -16,6 +16,7 @@
 #include "smartconfig.h"
 
 static int wifi_smart_succeed = LUA_NOREF;
+static uint8 getap_output_format=0;
 
 static void wifi_smart_succeed_cb(void *arg){
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
@@ -71,13 +72,21 @@ static void wifi_scan_done(void *arg, STATUS status)
       {
         c_memcpy(ssid, bss_link->ssid, 32);
       }
-      c_sprintf(temp,"%s,%d,%d,%d", ssid, bss_link->rssi, bss_link->authmode, bss_link->channel);
-
-      lua_pushstring(gL, temp);
-      c_sprintf(temp,MACSTR, MAC2STR(bss_link->bssid));
-      lua_setfield( gL, -2,  temp);
-
-      // NODE_DBG(temp);
+      if(getap_output_format==1) //use new format(BSSID : SSID, RSSI, Authmode, Channel)
+      {
+    	c_sprintf(temp,"%s,%d,%d,%d", ssid, bss_link->rssi, bss_link->authmode, bss_link->channel);
+    	lua_pushstring(gL, temp);
+        NODE_DBG(MACSTR" : %s\n",MAC2STR(bss_link->bssid) , temp);
+    	c_sprintf(temp,MACSTR, MAC2STR(bss_link->bssid));
+    	lua_setfield( gL, -2,  temp);
+      }
+      else//use old format(SSID : Authmode, RSSI, BSSID, Channel)
+      {
+  	    c_sprintf(temp,"%d,%d,"MACSTR",%d", bss_link->authmode, bss_link->rssi, MAC2STR(bss_link->bssid),bss_link->channel);
+        lua_pushstring(gL, temp);
+        lua_setfield( gL, -2, ssid );
+        NODE_DBG("%s : %s\n", ssid, temp);
+      }
 
       bss_link = bss_link->next.stqe_next;
     }
@@ -623,6 +632,7 @@ static int wifi_station_listap( lua_State* L )
   }
   gL = L;
   struct scan_config scan_cfg;
+  getap_output_format=0;
 
   if (lua_type(L, 1)==LUA_TTABLE)
   {
@@ -704,16 +714,32 @@ static int wifi_station_listap( lua_State* L )
 	  }
 	  else
 		  scan_cfg.show_hidden=0;
-
+	  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+	  {
+		  lua_pushnil(L);
+		  lua_insert(L, 2);
+	  }
+	  lua_pop(L, -4);
+  }
+  else  if (lua_type(L, 1) == LUA_TNUMBER)
+  {
+	  lua_pushnil(L);
+	  lua_insert(L, 1);
   }
   else  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
   {
 	  lua_pushnil(L);
 	  lua_insert(L, 1);
+	  lua_pushnil(L);
+	  lua_insert(L, 1);
   }
-
   else if(lua_isnil(L, 1))
   {
+	  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+	  {
+		  lua_pushnil(L);
+		  lua_insert(L, 2);
+	  }
   }
   else
   {
@@ -721,9 +747,16 @@ static int wifi_station_listap( lua_State* L )
   }
 
 
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+  if (lua_type(L, 2) == LUA_TNUMBER) //this section changes the output format
+    {
+	  getap_output_format=luaL_checkinteger( L, 2 );
+	  if ( getap_output_format != 0 && getap_output_format != 1)
+		  return luaL_error( L, "wrong arg type" );
+    }
+  NODE_DBG("Use alternate output format: %d\n", getap_output_format);
+  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION)
   {
-    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     if(wifi_scan_succeed != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -832,8 +865,7 @@ static int wifi_ap_config( lua_State* L )
   if (!lua_isnil(L, -1))
   {
     config.authmode = (uint8_t)luaL_checkinteger(L, -1);
-    NODE_DBG(config.authmode);
-    NODE_DBG("\n");
+    NODE_DBG("%d\n", config.authmode);
   }
   else
   {
@@ -848,8 +880,7 @@ static int wifi_ap_config( lua_State* L )
       return luaL_error( L, "channel:1~13" );
 
     config.channel = (uint8_t)channel;
-    NODE_DBG(config.channel);
-    NODE_DBG("\n");
+    NODE_DBG("%d\n", config.channel);
   }
   else
   {
@@ -860,7 +891,7 @@ static int wifi_ap_config( lua_State* L )
   if (!lua_isnil(L, -1))
   {
     config.ssid_hidden = (uint8_t)luaL_checkinteger(L, -1);
-    NODE_DBG(config.ssid_hidden);
+    NODE_DBG("%d\n", config.ssid_hidden);
     NODE_DBG("\n");
   }
   else
@@ -876,8 +907,7 @@ static int wifi_ap_config( lua_State* L )
       return luaL_error( L, "max:1~4" );
 
     config.max_connection = (uint8_t)max;
-    NODE_DBG(config.max_connection);
-    NODE_DBG("\n");
+    NODE_DBG("%d\n", config.max_connection);
   }
   else
   {
@@ -892,8 +922,7 @@ static int wifi_ap_config( lua_State* L )
       return luaL_error( L, "beacon:100~60000" );
 
     config.beacon_interval = (uint16_t)beacon;
-    NODE_DBG(config.beacon_interval);
-    NODE_DBG("\n");
+    NODE_DBG("%d\n", config.beacon_interval);
   }
   else
   {
