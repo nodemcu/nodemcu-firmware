@@ -37,7 +37,8 @@ SUBDIRS=    \
 	wofs 	\
 	modules	\
 	spiffs	\
-	cjson
+	cjson  \
+	crypto \
 
 endif # } PDIR
 
@@ -86,6 +87,7 @@ COMPONENTS_eagle.app.v6 = \
 	wofs/wofs.a 	\
 	spiffs/spiffs.a 	\
 	cjson/libcjson.a 	\
+	crypto/libcrypto.a \
 	modules/libmodules.a
 
 LINKFLAGS_eagle.app.v6 = \
