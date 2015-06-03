@@ -28,6 +28,7 @@
  *
  */
 #include "digests.h"
+#include "user_config.h"
 #include "lwip/mem.h"
 #include "lwip/arch.h"
 #include "ssl/ssl_crypto.h"
@@ -53,7 +54,7 @@ static const digest_mech_info_t hash_mechs[] =
    MECH(MD2,  MD2_SIZE,  16)
   ,MECH(MD5,  MD5_SIZE,  64)
   ,MECH(SHA1, SHA1_SIZE, 64)
-#ifndef WITHOUT_SHA2
+#ifdef SHA2_ENABLE
   ,MECH(SHA256, SHA256_DIGEST_LENGTH, SHA256_BLOCK_LENGTH)
   ,MECH(SHA384, SHA384_DIGEST_LENGTH, SHA384_BLOCK_LENGTH)
   ,MECH(SHA512, SHA512_DIGEST_LENGTH, SHA512_BLOCK_LENGTH)

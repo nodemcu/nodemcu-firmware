@@ -32,8 +32,9 @@
  *
  */
 
-#ifndef WITHOUT_SHA2
+#include "user_config.h"
 
+#ifdef SHA2_ENABLE
 #include "sha2.h"
 #include <string.h>	/* memcpy()/memset() or bcopy()/bzero() */
 #define assert(x) do {} while (0)
@@ -909,4 +910,4 @@ void ICACHE_FLASH_ATTR SHA384_Final(sha2_byte digest[], SHA384_CTX* context) {
 	MEMSET_BZERO(context, sizeof(SHA384_CTX));
 }
 
-#endif // WITHOUT_SHA2
+#endif // SHA2_ENABLE
