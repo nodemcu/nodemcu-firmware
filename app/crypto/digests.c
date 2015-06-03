@@ -82,7 +82,7 @@ static const char hex[] = "0123456789abcdef";
 // note: supports in-place encoding
 void crypto_encode_asciihex (const char *bin, size_t binlen, char *outbuf)
 {
-  size_t aidx = binlen * 2;
+  size_t aidx = binlen * 2 -1;
   int i;
   for (i = binlen -1; i >= 0; --i)
   {
