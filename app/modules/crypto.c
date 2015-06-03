@@ -8,6 +8,7 @@
 #include "lrotable.h"
 #include "c_types.h"
 #include "c_stdlib.h"
+#include "../crypto/digests.h"
 
 #include "user_interface.h"
 
@@ -39,7 +40,7 @@ static int crypto_sha1( lua_State* L )
 
 static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 /**
-  * encoded = crypto.base64Encode(raw)
+  * encoded = crypto.toBase64(raw)
   *
   * Encodes raw binary string as base64 string.
   */
@@ -66,7 +67,7 @@ static int crypto_base64_encode( lua_State* L )
 
 static const char* byteshex = "0123456789abcdef";
 /**
-  * encoded = crypto.hexEncode(raw)
+  * encoded = crypto.toHex(raw)
   *
   *	Encodes raw binary string as hex string.
   */
@@ -105,6 +106,53 @@ static int crypto_mask( lua_State* L )
   return 1;
 }
 
+
+static inline int bad_mech (lua_State *L) { return luaL_error (L, "unknown hash mech"); }
+static inline int bad_mem  (lua_State *L) { return luaL_error (L, "insufficient memory"); }
+
+
+/* rawdigest = crypto.hash("MD5", str)
+ * strdigest = crypto.toHex(rawdigest)
+ */
+static int crypto_lhash (lua_State *L)
+{
+  const digest_mech_info_t *mi = crypto_digest_mech (luaL_checkstring (L, 1));
+  if (!mi)
+    return bad_mech (L);
+  size_t len = 0;
+  const char *data = luaL_checklstring (L, 2, &len);
+
+  uint8_t digest[mi->digest_size];
+  if (crypto_hash (mi, data, len, digest) != 0)
+    return bad_mem (L);
+
+  lua_pushlstring (L, digest, sizeof (digest));
+  return 1;
+}
+
+
+/* rawsignature = crypto.hmac("SHA1", str, key)
+ * strsignature = crypto.toHex(rawsignature)
+ */
+static int crypto_lhmac (lua_State *L)
+{
+  const digest_mech_info_t *mi = crypto_digest_mech (luaL_checkstring (L, 1));
+  if (!mi)
+    return bad_mech (L);
+  size_t len = 0;
+  const char *data = luaL_checklstring (L, 2, &len);
+  size_t klen = 0;
+  const char *key = luaL_checklstring (L, 3, &klen);
+
+  uint8_t digest[mi->digest_size];
+  if (crypto_hmac (mi, data, len, key, klen, digest) != 0)
+    return bad_mem (L);
+
+  lua_pushlstring (L, digest, sizeof (digest));
+  return 1;
+}
+
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -114,6 +162,8 @@ const LUA_REG_TYPE crypto_map[] =
   { LSTRKEY( "toBase64" ), LFUNCVAL( crypto_base64_encode ) },
   { LSTRKEY( "toHex" ), LFUNCVAL( crypto_hex_encode ) },
   { LSTRKEY( "mask" ), LFUNCVAL( crypto_mask ) },
+  { LSTRKEY( "hash"   ), LFUNCVAL( crypto_lhash ) },
+  { LSTRKEY( "hmac"   ), LFUNCVAL( crypto_lhmac ) },
 
 #if LUA_OPTIMIZE_MEMORY > 0
 
