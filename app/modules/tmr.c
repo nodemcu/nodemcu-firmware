@@ -71,6 +71,12 @@ static int tmr_delay( lua_State* L )
   us = luaL_checkinteger( L, 1 );
   if ( us <= 0 )
     return luaL_error( L, "wrong arg range" );
+  if(us<1000000)
+  {
+    os_delay_us( us );
+    WRITE_PERI_REG(0x60000914, 0x73);
+    return 0;
+  }  
   unsigned sec = (unsigned)us / 1000000;
   unsigned remain = (unsigned)us % 1000000;
   int i = 0;
