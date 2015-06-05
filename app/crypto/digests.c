@@ -55,7 +55,7 @@ typedef char ensure_int_and_size_t_same[(sizeof(int)==sizeof(size_t)) ? 0 : -1];
     ds, \
     bs }
 
-static const digest_mech_info_t hash_mechs[] =
+static const digest_mech_info_t hash_mechs[] ICACHE_RODATA_ATTR =
 {
 #ifdef MD2_ENABLE
    MECH(MD2, _ , MD2_SIZE,  16),
@@ -71,7 +71,7 @@ static const digest_mech_info_t hash_mechs[] =
 
 #undef MECH
 
-const digest_mech_info_t *crypto_digest_mech (const char *mech)
+const digest_mech_info_t *ICACHE_FLASH_ATTR crypto_digest_mech (const char *mech)
 {
   if (!mech)
     return 0;
@@ -86,28 +86,22 @@ const digest_mech_info_t *crypto_digest_mech (const char *mech)
   return 0;
 }
 
-static const char hex[] = "0123456789abcdef";
+const char crypto_hexbytes[] = "0123456789abcdef";
+
 // note: supports in-place encoding
-void crypto_encode_asciihex (const char *bin, size_t binlen, char *outbuf)
+void ICACHE_FLASH_ATTR crypto_encode_asciihex (const char *bin, size_t binlen, char *outbuf)
 {
   size_t aidx = binlen * 2 -1;
   int i;
   for (i = binlen -1; i >= 0; --i)
   {
-    outbuf[aidx--] = hex[bin[i] & 0xf];
-    outbuf[aidx--] = hex[bin[i] >>  4];
+    outbuf[aidx--] = crypto_hexbytes[bin[i] & 0xf];
+    outbuf[aidx--] = crypto_hexbytes[bin[i] >>  4];
   }
 }
 
 
-size_t crypto_digest_size (const char *mech)
-{
-  const digest_mech_info_t *mi = crypto_digest_mech (mech);
-  return mi ? mi->digest_size : 0;
-}
-
-
-int crypto_hash (const digest_mech_info_t *mi,
+int ICACHE_FLASH_ATTR crypto_hash (const digest_mech_info_t *mi,
   const char *data, size_t data_len,
   uint8_t *digest)
 {
@@ -127,7 +121,7 @@ int crypto_hash (const digest_mech_info_t *mi,
 }
 
 
-int crypto_hmac (const digest_mech_info_t *mi,
+int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
    const char *data, size_t data_len,
    const char *key, size_t key_len,
    uint8_t *digest)
