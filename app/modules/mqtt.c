@@ -374,7 +374,7 @@ READPACKET:
         if(mud->mqtt_state.message_length < mud->mqtt_state.message_length_read)
 				{
 					length -= mud->mqtt_state.message_length;
-					pdata += mud->mqtt_state.message_length;
+					in_buffer += mud->mqtt_state.message_length;
 
 					NODE_DBG("Get another published message\r\n");
 					goto READPACKET;
