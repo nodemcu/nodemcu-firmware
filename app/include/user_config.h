@@ -41,6 +41,8 @@
 
 #define CLIENT_SSL_ENABLE
 #define GPIO_INTERRUPT_ENABLE
+//#define MD2_ENABLE
+#define SHA2_ENABLE
 
 // #define BUILD_WOFS		1
 #define BUILD_SPIFFS	1
