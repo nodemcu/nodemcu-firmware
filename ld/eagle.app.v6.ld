@@ -71,7 +71,6 @@ SECTIONS
     _irom0_text_start = ABSOLUTE(.);
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
-    *(.rodata2.text)
 
     /* put font and progmem data into irom0 */
     *(.u8g_progmem.*)

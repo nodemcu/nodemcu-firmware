@@ -336,7 +336,7 @@ const LUA_REG_TYPE math_map[] = {
   {LSTRKEY("floor"), LFUNCVAL(math_floor)},
   // {LSTRKEY("fmod"),  LFUNCVAL(math_fmod)},
 #if LUA_OPTIMIZE_MEMORY > 0 && defined(LUA_COMPAT_MOD)
-  {LSTRKEY("mod"),   LFUNCVAL(math_fmod)}, 
+  // {LSTRKEY("mod"),   LFUNCVAL(math_fmod)}, 
 #endif
   // {LSTRKEY("frexp"), LFUNCVAL(math_frexp)},
   // {LSTRKEY("ldexp"), LFUNCVAL(math_ldexp)},
