@@ -157,6 +157,14 @@
 #define ROM_MODULES_CRYPTO
 #endif
 
+#if defined(LUA_USE_MODULES_RC)
+#define MODULES_RC "rc"
+#define ROM_MODULES_RC \
+_ROM(MODULES_RC, luaopen_rc, rc_map)
+#else
+#define ROM_MODULES_RC
+#endif
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -176,7 +184,7 @@
         ROM_MODULES_BIT     \
         ROM_MODULES_WS2812  \
         ROM_MODULES_CJSON  \
-        ROM_MODULES_CRYPTO
+        ROM_MODULES_CRYPTO \
+        ROM_MODULES_RC
 
 #endif
-
