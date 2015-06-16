@@ -65,7 +65,6 @@ static int crypto_base64_encode( lua_State* L )
   return 1;
 }
 
-static const char* byteshex = "0123456789abcdef";
 /**
   * encoded = crypto.toHex(raw)
   *
@@ -78,8 +77,8 @@ static int crypto_hex_encode( lua_State* L)
   char* out = (char*)c_malloc(len * 2);
   int i, j = 0;
   for (i = 0; i < len; i++) {
-    out[j++] = byteshex[msg[i] >> 4];
-    out[j++] = byteshex[msg[i] & 0xf];
+    out[j++] = crypto_hexbytes[msg[i] >> 4];
+    out[j++] = crypto_hexbytes[msg[i] & 0xf];
   }
   lua_pushlstring(L, out, len*2);
   c_free(out);

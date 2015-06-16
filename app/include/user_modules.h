@@ -32,6 +32,8 @@
 #define LUA_USE_MODULES_WS2812
 #define LUA_USE_MODULES_CJSON
 #define LUA_USE_MODULES_CRYPTO
+#define LUA_USE_MODULES_RC
+
 #endif /* LUA_USE_MODULES */
 
 #endif	/* __USER_MODULES_H__ */

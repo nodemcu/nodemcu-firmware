@@ -24,13 +24,14 @@ typedef void (*finalize_ctx_fn)(uint8_t *digest, void *ctx);
  */
 typedef struct
 {
+  /* Note: All entries are 32bit to enable placement using ICACHE_RODATA_ATTR.*/
   const char *    name;
   create_ctx_fn   create;
   update_ctx_fn   update;
   finalize_ctx_fn finalize;
-  uint16_t        ctx_size;
-  uint16_t        digest_size;
-  uint16_t        block_size;
+  uint32_t        ctx_size;
+  uint32_t        digest_size;
+  uint32_t        block_size;
 } digest_mech_info_t;
 
 
@@ -77,5 +78,8 @@ int crypto_hmac (const digest_mech_info_t *mi, const char *data, size_t data_len
  */
 void crypto_encode_asciihex (const char *bin, size_t bin_len, char *outbuf);
 
+
+/** Text string "0123456789abcdef" */
+const char crypto_hexbytes[17];
 
 #endif
