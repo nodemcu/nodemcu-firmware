@@ -11,11 +11,18 @@
 
 static os_timer_t alarm_timer[NUM_TMR];
 static int alarm_timer_cb_ref[NUM_TMR] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
+static bool alarm_timer_repeat[NUM_TMR]= {0,0,0,0,0,0,0};
 
 void alarm_timer_common(lua_State* L, unsigned id){
   if(alarm_timer_cb_ref[id] == LUA_NOREF)
     return;
   lua_rawgeti(L, LUA_REGISTRYINDEX, alarm_timer_cb_ref[id]);
+  if(alarm_timer_repeat[id]==0)
+  {
+	  if(alarm_timer_cb_ref[id] != LUA_NOREF)
+		  luaL_unref(L, LUA_REGISTRYINDEX, alarm_timer_cb_ref[id]);
+
+  }
   lua_call(L, 0, 0);
 }
 
@@ -118,6 +125,7 @@ static int tmr_alarm( lua_State* L )
     stack++;
     if ( repeat != 1 && repeat != 0 )
       return luaL_error( L, "wrong arg type" );
+    alarm_timer_repeat[id]=repeat;
   }
 
   // luaL_checkanyfunction(L, stack);
@@ -141,6 +149,9 @@ static int tmr_stop( lua_State* L )
   MOD_CHECK_ID( tmr, id );
 
   os_timer_disarm(&(alarm_timer[id]));
+  if(alarm_timer_cb_ref[id] != LUA_NOREF)
+    luaL_unref(L, LUA_REGISTRYINDEX, alarm_timer_cb_ref[id]);
+
   return 0;  
 }
 

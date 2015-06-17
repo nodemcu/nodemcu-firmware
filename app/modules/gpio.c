@@ -146,6 +146,82 @@ static int lgpio_write( lua_State* L )
   return 0;  
 }
 
+#define DELAY_TABLE_MAX_LEN 256
+#define noInterrupts os_intr_lock
+#define interrupts os_intr_unlock
+#define delayMicroseconds os_delay_us
+#define DIRECT_WRITE(pin, level)    (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level))
+// Lua: serout( pin, firstLevel, delay_table, [repeatNum] )
+// -- serout( pin, firstLevel, delay_table, [repeatNum] )
+// gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+// gpio.serout(1,1,{30,30,60,60,30,30})  -- serial one byte, b10110010
+// gpio.serout(1,1,{30,70},8)  -- serial 30% pwm 10k, lasts 8 cycles
+// gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
+// gpio.serout(1,1,{0,0},8)  -- serial 50% pwm as fast as possible, lasts 8 cycles
+// gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+// gpio.serout(1,0,{20,10,10,20,10,10,10,100}) -- sim uart one byte 0x5A at about 100kbps
+// gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
+static int lgpio_serout( lua_State* L )
+{
+  unsigned level;
+  unsigned pin;
+  unsigned table_len = 0;
+  unsigned repeat = 0;
+  int delay_table[DELAY_TABLE_MAX_LEN];
+  
+  pin = luaL_checkinteger( L, 1 );
+  MOD_CHECK_ID( gpio, pin );
+  level = luaL_checkinteger( L, 2 );
+  if ( level!=HIGH && level!=LOW )
+    return luaL_error( L, "wrong arg type" );
+  if( lua_istable( L, 3 ) )
+  {
+    table_len = lua_objlen( L, 3 );
+    if (table_len <= 0 || table_len>DELAY_TABLE_MAX_LEN)
+      return luaL_error( L, "wrong arg range" );
+    int i;
+    for( i = 0; i < table_len; i ++ )
+    {
+      lua_rawgeti( L, 3, i + 1 );
+      delay_table[i] = ( int )luaL_checkinteger( L, -1 );
+      lua_pop( L, 1 );
+      if( delay_table[i] < 0 || delay_table[i] > 1000000 )    // can not delay more than 1000000 us
+        return luaL_error( L, "delay must < 1000000 us" );
+    }
+  } else {
+    return luaL_error( L, "wrong arg range" );
+  } 
+
+  if(lua_isnumber(L, 4))
+    repeat = lua_tointeger( L, 4 );
+  if( repeat < 0 || repeat > DELAY_TABLE_MAX_LEN )
+    return luaL_error( L, "delay must < 256" );
+
+  if(repeat==0)
+    repeat = 1;
+  int j;
+  bool skip_loop = true;
+  do
+  {
+    if(skip_loop){    // skip the first loop.
+      skip_loop = false;
+      continue;
+    }
+    for(j=0;j<table_len;j++){
+      noInterrupts();
+      // platform_gpio_write(pin, level);
+      DIRECT_WRITE(pin, level);
+      interrupts();
+      delayMicroseconds(delay_table[j]);
+      level=!level;
+    }
+    repeat--;
+  } while (repeat>0); 
+
+  return 0;  
+}
+#undef DELAY_TABLE_MAX_LEN
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -154,6 +230,7 @@ const LUA_REG_TYPE gpio_map[] =
   { LSTRKEY( "mode" ), LFUNCVAL( lgpio_mode ) },
   { LSTRKEY( "read" ), LFUNCVAL( lgpio_read ) },
   { LSTRKEY( "write" ), LFUNCVAL( lgpio_write ) },
+  { LSTRKEY( "serout" ), LFUNCVAL( lgpio_serout ) },
 #ifdef GPIO_INTERRUPT_ENABLE
   { LSTRKEY( "trig" ), LFUNCVAL( lgpio_trig ) },
 #endif

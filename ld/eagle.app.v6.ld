@@ -5,7 +5,7 @@ MEMORY
   dport0_0_seg :                      	org = 0x3FF00000, len = 0x10
   dram0_0_seg :                       	org = 0x3FFE8000, len = 0x14000
   iram1_0_seg :                       	org = 0x40100000, len = 0x8000
-  irom0_0_seg :                       	org = 0x40210000, len = 0x5A000
+  irom0_0_seg :                       	org = 0x40210000, len = 0x60000
 }
 
 PHDRS
@@ -71,7 +71,6 @@ SECTIONS
     _irom0_text_start = ABSOLUTE(.);
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
-    *(.rodata2.text)
 
     /* put font and progmem data into irom0 */
     *(.u8g_progmem.*)
