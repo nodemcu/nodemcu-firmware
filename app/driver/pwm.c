@@ -365,7 +365,7 @@ pwm_init(uint16 freq, uint16 *duty)
     for (i = 0; i < PWM_CHANNEL; i++) {
         // pwm_gpio |= (1 << pwm_out_io_num[i]);
         pwm_gpio = 0;
-        pwm.duty[0] = 0;
+        pwm.duty[i] = 0;
     }
 
     pwm_set_freq(500, 0);

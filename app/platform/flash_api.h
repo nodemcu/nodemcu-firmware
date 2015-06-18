@@ -107,6 +107,7 @@ bool flash_init_data_default(void);
 bool flash_init_data_blank(void);
 bool flash_self_destruct(void);
 uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index);
+uint16_t word_of_aligned_array(const uint16_t *aligned_array, uint32_t index);
 // uint8_t flash_rom_get_checksum(void);
 // uint8_t flash_rom_calc_checksum(void);
 

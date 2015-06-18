@@ -760,6 +760,39 @@ static int lu8g_getHeight( lua_State *L )
     return 1;
 }
 
+// Lua: width = u8g.getStrWidth( self, string )
+static int lu8g_getStrWidth( lua_State *L )
+{
+   lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    const char *s = luaL_checkstring( L, 2 );
+    if (s == NULL)
+        return 0;
+
+    lua_pushinteger( L, u8g_GetStrWidth( LU8G, s ) );
+
+    return 1;
+}
+
+// Lua: u8g.setFontLineSpacingFactor( self, factor )
+static int lu8g_setFontLineSpacingFactor( lua_State *L )
+{
+   lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_uint_t factor = luaL_checkinteger( L, 2 );
+
+    u8g_SetFontLineSpacingFactor( LU8G, factor );
+
+    return 0;
+}
+
+
 // ------------------------------------------------------------
 // comm functions
 //
@@ -1140,53 +1173,55 @@ static int lu8g_pcd8544_84x48( lua_State *L )
 static const LUA_REG_TYPE lu8g_display_map[] =
 {
     { LSTRKEY( "begin" ),  LFUNCVAL( lu8g_begin ) },
-    { LSTRKEY( "setFont" ),  LFUNCVAL( lu8g_setFont ) },
-    { LSTRKEY( "setFontRefHeightAll" ),  LFUNCVAL( lu8g_setFontRefHeightAll ) },
-    { LSTRKEY( "setFontRefHeightExtendedText" ),  LFUNCVAL( lu8g_setFontRefHeightExtendedText ) },
-    { LSTRKEY( "setFontRefHeightText" ),  LFUNCVAL( lu8g_setFontRefHeightText ) },
-    { LSTRKEY( "setDefaultBackgroundColor" ),  LFUNCVAL( lu8g_setDefaultBackgroundColor ) },
-    { LSTRKEY( "setDefaultForegroundColor" ),  LFUNCVAL( lu8g_setDefaultForegroundColor ) },
-    { LSTRKEY( "setFontPosBaseline" ),  LFUNCVAL( lu8g_setFontPosBaseline ) },
-    { LSTRKEY( "setFontPosBottom" ),  LFUNCVAL( lu8g_setFontPosBottom ) },
-    { LSTRKEY( "setFontPosCenter" ),  LFUNCVAL( lu8g_setFontPosCenter ) },
-    { LSTRKEY( "setFontPosTop" ),  LFUNCVAL( lu8g_setFontPosTop ) },
-    { LSTRKEY( "getFontAscent" ),  LFUNCVAL( lu8g_getFontAscent ) },
-    { LSTRKEY( "getFontDescent" ),  LFUNCVAL( lu8g_getFontDescent ) },
-    { LSTRKEY( "getFontLineSpacing" ),  LFUNCVAL( lu8g_getFontLineSpacing ) },
-    { LSTRKEY( "getMode" ),  LFUNCVAL( lu8g_getMode ) },
-    { LSTRKEY( "setColorIndex" ),  LFUNCVAL( lu8g_setColorIndex ) },
-    { LSTRKEY( "getColorIndex" ),  LFUNCVAL( lu8g_getColorIndex ) },
+    { LSTRKEY( "drawBitmap" ),  LFUNCVAL( lu8g_drawBitmap ) },
+    { LSTRKEY( "drawBox" ),  LFUNCVAL( lu8g_drawBox ) },
+    { LSTRKEY( "drawCircle" ),  LFUNCVAL( lu8g_drawCircle ) },
+    { LSTRKEY( "drawDisc" ),  LFUNCVAL( lu8g_drawDisc ) },
+    { LSTRKEY( "drawEllipse" ),  LFUNCVAL( lu8g_drawEllipse ) },
+    { LSTRKEY( "drawFilledEllipse" ),  LFUNCVAL( lu8g_drawFilledEllipse ) },
+    { LSTRKEY( "drawFrame" ),  LFUNCVAL( lu8g_drawFrame ) },
+    { LSTRKEY( "drawHLine" ),  LFUNCVAL( lu8g_drawHLine ) },
+    { LSTRKEY( "drawLine" ),  LFUNCVAL( lu8g_drawLine ) },
+    { LSTRKEY( "drawPixel" ),  LFUNCVAL( lu8g_drawPixel ) },
+    { LSTRKEY( "drawRBox" ),  LFUNCVAL( lu8g_drawRBox ) },
+    { LSTRKEY( "drawRFrame" ),  LFUNCVAL( lu8g_drawRFrame ) },
     { LSTRKEY( "drawStr" ),  LFUNCVAL( lu8g_drawStr ) },
     { LSTRKEY( "drawStr90" ),  LFUNCVAL( lu8g_drawStr90 ) },
     { LSTRKEY( "drawStr180" ),  LFUNCVAL( lu8g_drawStr180 ) },
     { LSTRKEY( "drawStr270" ),  LFUNCVAL( lu8g_drawStr270 ) },
-    { LSTRKEY( "drawBox" ),  LFUNCVAL( lu8g_drawBox ) },
-    { LSTRKEY( "drawLine" ),  LFUNCVAL( lu8g_drawLine ) },
     { LSTRKEY( "drawTriangle" ),  LFUNCVAL( lu8g_drawTriangle ) },
-    { LSTRKEY( "drawRBox" ),  LFUNCVAL( lu8g_drawRBox ) },
-    { LSTRKEY( "drawFrame" ),  LFUNCVAL( lu8g_drawFrame ) },
-    { LSTRKEY( "drawRFrame" ),  LFUNCVAL( lu8g_drawRFrame ) },
-    { LSTRKEY( "drawDisc" ),  LFUNCVAL( lu8g_drawDisc ) },
-    { LSTRKEY( "drawCircle" ),  LFUNCVAL( lu8g_drawCircle ) },
-    { LSTRKEY( "drawEllipse" ),  LFUNCVAL( lu8g_drawEllipse ) },
-    { LSTRKEY( "drawFilledEllipse" ),  LFUNCVAL( lu8g_drawFilledEllipse ) },
-    { LSTRKEY( "drawPixel" ),  LFUNCVAL( lu8g_drawPixel ) },
-    { LSTRKEY( "drawHLine" ),  LFUNCVAL( lu8g_drawHLine ) },
     { LSTRKEY( "drawVLine" ),  LFUNCVAL( lu8g_drawVLine ) },
-    { LSTRKEY( "drawBitmap" ),  LFUNCVAL( lu8g_drawBitmap ) },
     { LSTRKEY( "drawXBM" ),  LFUNCVAL( lu8g_drawXBM ) },
-    { LSTRKEY( "setScale2x2" ),  LFUNCVAL( lu8g_setScale2x2 ) },
-    { LSTRKEY( "undoScale" ),  LFUNCVAL( lu8g_undoScale ) },
     { LSTRKEY( "firstPage" ),  LFUNCVAL( lu8g_firstPage ) },
+    { LSTRKEY( "getColorIndex" ),  LFUNCVAL( lu8g_getColorIndex ) },
+    { LSTRKEY( "getFontAscent" ),  LFUNCVAL( lu8g_getFontAscent ) },
+    { LSTRKEY( "getFontDescent" ),  LFUNCVAL( lu8g_getFontDescent ) },
+    { LSTRKEY( "getFontLineSpacing" ),  LFUNCVAL( lu8g_getFontLineSpacing ) },
+    { LSTRKEY( "getHeight" ),  LFUNCVAL( lu8g_getHeight ) },
+    { LSTRKEY( "getMode" ),  LFUNCVAL( lu8g_getMode ) },
+    { LSTRKEY( "getStrWidth" ), LFUNCVAL( lu8g_getStrWidth ) },
+    { LSTRKEY( "getWidth" ),  LFUNCVAL( lu8g_getWidth ) },
     { LSTRKEY( "nextPage" ),  LFUNCVAL( lu8g_nextPage ) },
-    { LSTRKEY( "sleepOn" ),  LFUNCVAL( lu8g_sleepOn ) },
-    { LSTRKEY( "sleepOff" ),  LFUNCVAL( lu8g_sleepOff ) },
+    { LSTRKEY( "setColorIndex" ),  LFUNCVAL( lu8g_setColorIndex ) },
+    { LSTRKEY( "setDefaultBackgroundColor" ),  LFUNCVAL( lu8g_setDefaultBackgroundColor ) },
+    { LSTRKEY( "setDefaultForegroundColor" ),  LFUNCVAL( lu8g_setDefaultForegroundColor ) },
+    { LSTRKEY( "setFont" ),  LFUNCVAL( lu8g_setFont ) },
+    { LSTRKEY( "setFontLineSpacingFactor" ),  LFUNCVAL( lu8g_setFontLineSpacingFactor ) },
+    { LSTRKEY( "setFontPosBaseline" ),  LFUNCVAL( lu8g_setFontPosBaseline ) },
+    { LSTRKEY( "setFontPosBottom" ),  LFUNCVAL( lu8g_setFontPosBottom ) },
+    { LSTRKEY( "setFontPosCenter" ),  LFUNCVAL( lu8g_setFontPosCenter ) },
+    { LSTRKEY( "setFontPosTop" ),  LFUNCVAL( lu8g_setFontPosTop ) },
+    { LSTRKEY( "setFontRefHeightAll" ),  LFUNCVAL( lu8g_setFontRefHeightAll ) },
+    { LSTRKEY( "setFontRefHeightExtendedText" ),  LFUNCVAL( lu8g_setFontRefHeightExtendedText ) },
+    { LSTRKEY( "setFontRefHeightText" ),  LFUNCVAL( lu8g_setFontRefHeightText ) },
     { LSTRKEY( "setRot90" ),  LFUNCVAL( lu8g_setRot90 ) },
     { LSTRKEY( "setRot180" ),  LFUNCVAL( lu8g_setRot180 ) },
     { LSTRKEY( "setRot270" ),  LFUNCVAL( lu8g_setRot270 ) },
+    { LSTRKEY( "setScale2x2" ),  LFUNCVAL( lu8g_setScale2x2 ) },
+    { LSTRKEY( "sleepOff" ),  LFUNCVAL( lu8g_sleepOff ) },
+    { LSTRKEY( "sleepOn" ),  LFUNCVAL( lu8g_sleepOn ) },
     { LSTRKEY( "undoRotation" ),  LFUNCVAL( lu8g_undoRotation ) },
-    { LSTRKEY( "getWidth" ),  LFUNCVAL( lu8g_getWidth ) },
-    { LSTRKEY( "getHeight" ),  LFUNCVAL( lu8g_getHeight ) },
+    { LSTRKEY( "undoScale" ),  LFUNCVAL( lu8g_undoScale ) },
     { LSTRKEY( "__gc" ),  LFUNCVAL( lu8g_close_display ) },
 #if LUA_OPTIMIZE_MEMORY > 0
     { LSTRKEY( "__index" ), LROVAL ( lu8g_display_map ) },
