@@ -52,10 +52,13 @@
 int dht_read11(uint8_t pin);
 int dht_read(uint8_t pin);
 
-inline int dht_read21(uint8_t pin) { return dht_read(pin); };
-inline int dht_read22(uint8_t pin) { return dht_read(pin); };
-inline int dht_read33(uint8_t pin) { return dht_read(pin); };
-inline int dht_read44(uint8_t pin) { return dht_read(pin); };
+inline int dht_read21(uint8_t pin);
+inline int dht_read22(uint8_t pin);
+inline int dht_read33(uint8_t pin);
+inline int dht_read44(uint8_t pin);
+
+double dht_getHumidity(void);
+double dht_getTemperature(void);
 
 #endif
 //

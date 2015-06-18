@@ -27,6 +27,7 @@
 // Released to the public domain
 //
 
+#include "user_interface.h"
 #include "platform.h"
 #include "dht.h"
 
@@ -50,6 +51,20 @@ static int dht_readSensor(uint8_t pin, uint8_t wakeupDelay);
 //
 // PUBLIC
 //
+
+// return values:
+// Humidity
+double dht_getHumidity(void)
+{
+    return dht_humidity;
+}
+
+// return values:
+// Temperature
+double dht_getTemperature(void)
+{
+    return dht_temperature;
+}
 
 // return values:
 // DHTLIB_OK
@@ -111,6 +126,42 @@ int dht_read(uint8_t pin)
     return DHTLIB_OK;
 }
 
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+inline int dht_read21(uint8_t pin)
+{
+    return dht_read(pin);
+}
+
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+inline int dht_read22(uint8_t pin)
+{
+    return dht_read(pin);
+}
+
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+inline int dht_read33(uint8_t pin)
+{
+    return dht_read(pin);
+}
+
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+inline int dht_read44(uint8_t pin)
+{
+    return dht_read(pin);
+}
+
 /////////////////////////////////////////////////////
 //
 // PRIVATE
@@ -138,6 +189,7 @@ int dht_readSensor(uint8_t pin, uint8_t wakeupDelay)
 
     // REQUEST SAMPLE
     // pinMode(pin, OUTPUT);
+    platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_PULLUP);
     DIRECT_MODE_OUTPUT(pin);
     // digitalWrite(pin, LOW); // T-be
     DIRECT_WRITE_LOW(pin);
