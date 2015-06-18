@@ -7,7 +7,7 @@
 
 #include "lua.h"
 
-#define AUXLIB_GPIO      "gpio"
+#define AUXLIB_GPIO     "gpio"
 LUALIB_API int ( luaopen_gpio )( lua_State *L );
 
 #define AUXLIB_SPI      "spi"
@@ -46,41 +46,50 @@ LUALIB_API int ( luaopen_cpu )( lua_State* L );
 #define AUXLIB_ADC      "adc"
 LUALIB_API int ( luaopen_adc )( lua_State *L );
 
-#define AUXLIB_RPC   "rpc"
+#define AUXLIB_RPC      "rpc"
 LUALIB_API int ( luaopen_rpc )( lua_State *L );
 
 #define AUXLIB_BITARRAY "bitarray"
 LUALIB_API int ( luaopen_bitarray )( lua_State *L );
 
-#define AUXLIB_ELUA "elua"
+#define AUXLIB_ELUA     "elua"
 LUALIB_API int ( luaopen_elua )( lua_State *L );
 
-#define AUXLIB_I2C  "i2c"
+#define AUXLIB_I2C      "i2c"
 LUALIB_API int ( luaopen_i2c )( lua_State *L );
 
-#define AUXLIB_WIFI      "wifi"
+#define AUXLIB_WIFI     "wifi"
 LUALIB_API int ( luaopen_wifi )( lua_State *L );
 
-#define AUXLIB_COAP      "coap"
+#define AUXLIB_COAP     "coap"
 LUALIB_API int ( luaopen_coap )( lua_State *L );
 
-#define AUXLIB_MQTT      "mqtt"
+#define AUXLIB_MQTT     "mqtt"
 LUALIB_API int ( luaopen_mqtt )( lua_State *L );
 
 #define AUXLIB_U8G      "u8g"
 LUALIB_API int ( luaopen_u8g )( lua_State *L );
 
-#define AUXLIB_NODE      "node"
+#define AUXLIB_NODE     "node"
 LUALIB_API int ( luaopen_node )( lua_State *L );
 
-#define AUXLIB_FILE      "file"
+#define AUXLIB_FILE     "file"
 LUALIB_API int ( luaopen_file )( lua_State *L );
 
-#define AUXLIB_OW      "ow"
+#define AUXLIB_OW       "ow"
 LUALIB_API int ( luaopen_ow )( lua_State *L );
 
-#define AUXLIB_CJSON      "cjson"
+#define AUXLIB_CJSON    "cjson"
 LUALIB_API int ( luaopen_cjson )( lua_State *L );
+
+#define AUXLIB_CRYPTO   "crypto"
+LUALIB_API int ( luaopen_crypto )( lua_State *L );
+
+#define AUXLIB_RC       "rc"
+LUALIB_API int ( luaopen_rc )( lua_State *L );
+
+#define AUXLIB_DHT      "dht"
+LUALIB_API int ( luaopen_dht )( lua_State *L );
 
 // Helper macros
 #define MOD_CHECK_ID( mod, id )\
