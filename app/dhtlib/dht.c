@@ -188,37 +188,25 @@ int dht_read(uint8_t pin)
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-inline int dht_read21(uint8_t pin)
-{
-    return dht_read(pin);
-}
+int dht_read21(uint8_t pin)  __attribute__((alias("dht_read")));
 
 // return values:
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-inline int dht_read22(uint8_t pin)
-{
-    return dht_read(pin);
-}
+int dht_read22(uint8_t pin)  __attribute__((alias("dht_read")));
 
 // return values:
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-inline int dht_read33(uint8_t pin)
-{
-    return dht_read(pin);
-}
+int dht_read33(uint8_t pin)  __attribute__((alias("dht_read")));
 
 // return values:
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-inline int dht_read44(uint8_t pin)
-{
-    return dht_read(pin);
-}
+int dht_read44(uint8_t pin)  __attribute__((alias("dht_read")));
 
 /////////////////////////////////////////////////////
 //
