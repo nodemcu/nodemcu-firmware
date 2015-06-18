@@ -110,8 +110,8 @@ int dht_read(uint8_t pin)
     }
 
     // CONVERT AND STORE
-    dht_humidity = COMBINE_HIGH_AND_LOW_BYTE(dht_bits[0], dht_bits[1]) * 0.1;
-    dht_temperature = COMBINE_HIGH_AND_LOW_BYTE(dht_bits[2] & 0x7F, dht_bits[3]) * 0.1;
+    dht_humidity = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bits[0], dht_bits[1]) * 0.1;
+    dht_temperature = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bits[2] & 0x7F, dht_bits[3]) * 0.1;
     if (dht_bits[2] & 0x80)  // negative dht_temperature
     {
         dht_temperature = -dht_temperature;
