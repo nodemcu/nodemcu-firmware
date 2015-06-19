@@ -16,13 +16,13 @@
 // -- This WS2812 code must be compiled with -O2 to get the timing right.  Read this:
 // -- http://wp.josh.com/2014/05/13/ws2812-neopixels-are-not-so-finicky-once-you-get-to-know-them/
 // -- The ICACHE_FLASH_ATTR is there to trick the compiler and get the very first pulse width correct.
-static void ICACHE_FLASH_ATTR send_ws_0(uint8_t gpio) {
+static void ICACHE_FLASH_ATTR __attribute__((optimize("O2"))) send_ws_0(uint8_t gpio){
   uint8_t i;
   i = 4; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, 1 << gpio);
   i = 9; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 1 << gpio);
 }
 
-static void ICACHE_FLASH_ATTR send_ws_1(uint8_t gpio) {
+static void ICACHE_FLASH_ATTR __attribute__((optimize("O2"))) send_ws_1(uint8_t gpio){
   uint8_t i;
   i = 8; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, 1 << gpio);
   i = 6; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 1 << gpio);

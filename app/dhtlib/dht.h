@@ -28,6 +28,9 @@
 
 #define DHTLIB_DHT11_WAKEUP     18
 #define DHTLIB_DHT_WAKEUP       1
+#define DHTLIB_DHT_UNI_WAKEUP   18
+
+#define DHT_DEBUG
 
 // max timeout is 100 usec.
 // For a 16 Mhz proc 100 usec is 1600 clock cycles
@@ -49,13 +52,14 @@
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
+int dht_read_universal(uint8_t pin);
 int dht_read11(uint8_t pin);
 int dht_read(uint8_t pin);
 
-inline int dht_read21(uint8_t pin);
-inline int dht_read22(uint8_t pin);
-inline int dht_read33(uint8_t pin);
-inline int dht_read44(uint8_t pin);
+int dht_read21(uint8_t pin);
+int dht_read22(uint8_t pin);
+int dht_read33(uint8_t pin);
+int dht_read44(uint8_t pin);
 
 double dht_getHumidity(void);
 double dht_getTemperature(void);
