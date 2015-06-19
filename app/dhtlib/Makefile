@@ -42,6 +42,7 @@ INCLUDES += -I ./
 INCLUDES += -I ./include
 INCLUDES += -I ../include
 INCLUDES += -I ../../include
+INCLUDES += -I ../libc
 INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
