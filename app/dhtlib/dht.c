@@ -252,6 +252,8 @@ int dht_readSensor(uint8_t pin, uint8_t wakeupDelay)
     DIRECT_WRITE_LOW(pin);
     // delay(wakeupDelay);
     for (i = 0; i < wakeupDelay; i++) os_delay_us(1000);
+    // Disable interrupts
+    os_intr_lock();
     // digitalWrite(pin, HIGH);   // T-go
     DIRECT_WRITE_HIGH(pin);
     os_delay_us(40);
@@ -303,6 +305,8 @@ int dht_readSensor(uint8_t pin, uint8_t wakeupDelay)
             idx++;
         }
     }
+    // Enable interrupts
+    os_intr_unlock();
     // pinMode(pin, OUTPUT);
     DIRECT_MODE_OUTPUT(pin);
     // digitalWrite(pin, HIGH);
