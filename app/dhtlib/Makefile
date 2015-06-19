@@ -12,8 +12,9 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = libmodules.a
+GEN_LIBS = libdhtlib.a
 endif
+
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -38,17 +39,11 @@ endif
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
+INCLUDES += -I ./include
+INCLUDES += -I ../include
+INCLUDES += -I ../../include
 INCLUDES += -I ../libc
-INCLUDES += -I ../coap
-INCLUDES += -I ../mqtt
-INCLUDES += -I ../u8glib
-INCLUDES += -I ../lua
 INCLUDES += -I ../platform
-INCLUDES += -I ../wofs
-INCLUDES += -I ../spiffs
-INCLUDES += -I ../smart
-INCLUDES += -I ../cjson
-INCLUDES += -I ../dhtlib
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
