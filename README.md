@@ -165,6 +165,13 @@ Or, if you build your own bin from source code.<br />
 #Connect the hardware in serial
 baudrate:9600
 
+#Write Lua script to filesystem
+####Esplorer
+Victor Brutskiy's [Esplorer](https://github.com/4refr0nt/ESPlorer) support most platforms such as Linux, Windows, Mac OS, etc. This software is opensource and can write lua/lc files to filesystem.
+
+####NodeMCU Studio
+[NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and support Windows. This software is opensource and can write lua files to filesystem.
+
 #Start play
 
 ####Connect to your ap
