@@ -16,6 +16,7 @@
 
 #include "flash_fs.h"
 #include "user_interface.h"
+#include "user_exceptions.h"
 
 #include "ets_sys.h"
 #include "driver/uart.h"
@@ -125,6 +126,9 @@ void nodemcu_init(void)
 *******************************************************************************/
 void user_init(void)
 {
+    _xtos_set_exception_handler (
+      EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
+
     // NODE_DBG("SDK version:%s\n", system_get_sdk_version());
     // system_print_meminfo();
     // os_printf("Heap size::%d.\n",system_get_free_heap_size());
