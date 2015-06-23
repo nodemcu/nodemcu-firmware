@@ -85,6 +85,7 @@ typedef enum {
 #endif /* ICACHE_FLASH */
 
 #define TEXT_SECTION_ATTR __attribute__((section(".text")))
+#define RAM_CONST_ATTR __attribute__((section(".text")))
 
 #ifndef __cplusplus
 typedef unsigned char   bool;

@@ -95,3 +95,18 @@ die:
   ef->a_reg[regno] = val;  /* carry out the load */
   ef->epc += 3;            /* resume at following instruction */
 }
+
+
+/**
+ * The SDK's user_main function installs a debugging handler regardless
+ * of whether there's a proper handler installed for EXCCAUSE_LOAD_STORE_ERROR,
+ * which of course breaks everything if we allow that to go through. As such,
+ * we use the linker to wrap that call and stop the SDK from shooting itself in
+ * its proverbial foot.
+ */
+exception_handler_fn
+__wrap__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn)
+{
+  if (cause != EXCCAUSE_LOAD_STORE_ERROR)
+    __real__xtos_set_exception_handler (cause, fn);
+}

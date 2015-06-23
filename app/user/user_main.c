@@ -26,6 +26,21 @@
 #define TASK_QUEUE_LEN 4
 os_event_t *taskQueue;
 
+
+/* Note: the trampoline *must* be explicitly put into the .text segment, since
+ * by the time it is invoked the irom has not yet been mapped. This naturally
+ * also goes for anything the trampoline itself calls.
+ */
+void user_start_trampoline (void) TEXT_SECTION_ATTR;
+void user_start_trampoline (void)
+{
+   __real__xtos_set_exception_handler (
+     EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
+
+  call_user_start ();
+}
+
+
 void task_lua(os_event_t *e){
     char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
     NODE_DBG("Task task_lua started.\n");
@@ -126,9 +141,6 @@ void nodemcu_init(void)
 *******************************************************************************/
 void user_init(void)
 {
-    _xtos_set_exception_handler (
-      EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
-
     // NODE_DBG("SDK version:%s\n", system_get_sdk_version());
     // system_print_meminfo();
     // os_printf("Heap size::%d.\n",system_get_free_heap_size());
