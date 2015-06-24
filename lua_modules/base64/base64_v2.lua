@@ -4,7 +4,8 @@ local tab = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 base64 = {
 	enc = function(data)
 		local l,out = 0,''
-		local d = data..string.rep('\0',(3-data:len()%3)%3)
+		local m = (3-data:len()%3)%3
+		local d = data..string.rep('\0',m)
 		for i=1,d:len() do
 			l = bit.lshift(l,8)
 			l = l+d:byte(i,i)
@@ -16,7 +17,7 @@ base64 = {
 				end
 			end
 		end
-		return out..({'','==','='})[data:len()%3+1]
+		return out:sub(1,-1-m)..string.rep('=',m)
 	end,
 	dec = function(data)
 		local a,b = data:gsub('=','A')
