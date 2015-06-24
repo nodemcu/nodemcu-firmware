@@ -19,7 +19,7 @@ PHDRS
 
 
 /*  Default entry point:  */
-ENTRY(call_user_start)
+ENTRY(user_start_trampoline)
 PROVIDE(_memmap_vecbase_reset = 0x40000000);
 /* Various memory-map dependent cache attribute settings: */
 _memmap_cacheattr_wb_base = 0x00000110;
@@ -75,6 +75,10 @@ SECTIONS
     /* put font and progmem data into irom0 */
     *(.u8g_progmem.*)
 
+    /* Trade some performance for lots of ram. At the time of writing the
+     * available Lua heap went from 18248 to 34704. */
+    *(.rodata*)
+
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr
@@ -124,10 +128,7 @@ SECTIONS
   .rodata : ALIGN(4)
   {
     _rodata_start = ABSOLUTE(.);
-    *(.rodata)
-    *(.rodata.*)
     *(.gnu.linkonce.r.*)
-    *(.rodata1)
     __XT_EXCEPTION_TABLE__ = ABSOLUTE(.);
     *(.xt_except_table)
     *(.gcc_except_table)
