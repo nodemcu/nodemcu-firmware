@@ -9,7 +9,7 @@ base64 = {
 			l = bit.lshift(l,8)
 			l = l+d:byte(i,i)
 			if i%3==0 then
-				while l > 0 do
+				for j=1,4 do
 					local a = bit.rshift(l,18)+1
 					out = out..tab:sub(a,a)
 					l = bit.band(bit.lshift(l,6),0xFFFFFF)
