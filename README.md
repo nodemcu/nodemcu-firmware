@@ -145,6 +145,11 @@ build latest pre_build bin.
 #define LUA_USE_MODULES_CJSON
 #endif /* LUA_USE_MODULES */
 ```
+#Online firmware custom build
+
+For many application, some modules are not used, remove them can free many memory.<br />
+
+Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can get your own firmware.<br />
 
 #Flash the firmware
 nodemcu_latest.bin: 0x00000<br />
@@ -159,6 +164,13 @@ Or, if you build your own bin from source code.<br />
 
 #Connect the hardware in serial
 baudrate:9600
+
+#Write Lua script to filesystem
+####Esplorer
+Victor Brutskiy's [Esplorer](https://github.com/4refr0nt/ESPlorer) support most platforms such as Linux, Windows, Mac OS, etc. This software is opensource and can write lua/lc files to filesystem.
+
+####NodeMCU Studio
+[NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and support Windows. This software is opensource and can write lua files to filesystem.
 
 #Start play
 
