@@ -47,7 +47,7 @@ static void lstop (lua_State *L, lua_Debug *ar) {
 
 
 static void laction (int i) {
-  // signal(i, SIG_DFL); 
+  // signal(i, SIG_DFL);
   /* if another SIGINT happens before lstop,
                               terminate process (default action) */
   lua_sethook(globalL, lstop, LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1);
@@ -262,7 +262,7 @@ static void dotty (lua_State *L) {
     }
   }
   lua_settop(L, 0);  /* clear stack */
-  
+
 #if defined(LUA_USE_STDIO)
   c_fputs("\n", c_stdout);
   c_fflush(c_stdout);
@@ -280,14 +280,14 @@ static int handle_script (lua_State *L, char **argv, int n) {
   int narg = getargs(L, argv, n);  /* collect arguments */
   lua_setglobal(L, "arg");
   fname = argv[n];
-  if (c_strcmp(fname, "-") == 0 && c_strcmp(argv[n-1], "--") != 0) 
+  if (c_strcmp(fname, "-") == 0 && c_strcmp(argv[n-1], "--") != 0)
     fname = NULL;  /* stdin */
   status = luaL_loadfile(L, fname);
   lua_insert(L, -(narg+1));
   if (status == 0)
     status = docall(L, narg, 0);
   else
-    lua_pop(L, narg);      
+    lua_pop(L, narg);
   return report(L, status);
 }
 #endif
@@ -490,8 +490,8 @@ void dojob(lua_Load *load){
 
   const char *oldprogname = progname;
   progname = NULL;
-  
-  do{
+
+  // do{
     if(load->done == 1){
       l = c_strlen(b);
       if (l > 0 && b[l-1] == '\n')  /* line ends with newline? */
@@ -531,7 +531,7 @@ void dojob(lua_Load *load){
         load->prmt = get_prompt(L, 0);
       }
     }
-  }while(0);
+  // }while(0);
 
   progname = oldprogname;
 
@@ -594,107 +594,225 @@ extern bool uart0_echo;
 extern bool run_input;
 extern uint16_t need_len;
 extern int16_t end_char;
+// void readline(lua_Load *load){
+//   // NODE_DBG("readline() is called.\n");
+// #ifdef DEVKIT_VERSION_0_9
+//   update_key_led();
+// #endif
+//   char ch;
+//   while (uart_getc(&ch))
+//   {
+//     if(run_input)
+//     {
+//       /* handle CR key */
+//       if (ch == '\r')
+//       {
+//         char next;
+//         if (uart_getc(&next))
+//           ch = next;
+//       }
+//       /* backspace key */
+//       else if (ch == 0x7f || ch == 0x08)
+//       {
+//         if (load->line_position > 0)
+//         {
+//           if(uart0_echo) uart_putc(0x08);
+//           if(uart0_echo) uart_putc(' ');
+//           if(uart0_echo) uart_putc(0x08);
+//           load->line_position--;
+//         }
+//         load->line[load->line_position] = 0;
+//         continue;
+//       }
+//       /* EOT(ctrl+d) */
+//       // else if (ch == 0x04)
+//       // {
+//       //   if (load->line_position == 0)
+//       //     // No input which makes lua interpreter close
+//       //     donejob(load);
+//       //   else
+//       //     continue;
+//       // }
+//
+//       /* end of line */
+//       if (ch == '\r' || ch == '\n')
+//       {
+//         load->line[load->line_position] = 0;
+//         if(uart0_echo) uart_putc('\n');
+//         uart_on_data_cb(load->line, load->line_position);
+//         if (load->line_position == 0)
+//         {
+//           /* Get a empty line, then go to get a new line */
+//           c_puts(load->prmt);
+//           os_timer_disarm(&readline_timer);
+//           os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
+//           os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
+//         } else {
+//           load->done = 1;
+//           os_timer_disarm(&lua_timer);
+//           os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
+//           os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+//         }
+//         continue;
+//       }
+//
+//       /* other control character or not an acsii character */
+//       // if (ch < 0x20 || ch >= 0x80)
+//       // {
+//       //   continue;
+//       // }
+//
+//       /* echo */
+//       if(uart0_echo) uart_putc(ch);
+//
+//           /* it's a large line, discard it */
+//       if ( load->line_position + 1 >= load->len ){
+//         load->line_position = 0;
+//       }
+//     }
+//
+//     load->line[load->line_position] = ch;
+//     load->line_position++;
+//
+//     if(!run_input)
+//     {
+//       if( ((need_len!=0) && (load->line_position >= need_len)) || \
+//         (load->line_position >= load->len) || \
+//         ((end_char>=0) && ((unsigned char)ch==(unsigned char)end_char)) )
+//       {
+//         uart_on_data_cb(load->line, load->line_position);
+//         load->line_position = 0;
+//       }
+//     }
+//
+//     ch = 0;
+//   }
+//
+//   if( (load->line_position > 0) && (!run_input) && (need_len==0) && (end_char<0) )
+//   {
+//     uart_on_data_cb(load->line, load->line_position);
+//     load->line_position = 0;
+//   }
+//   // if there is no input from user, repeat readline()
+//   os_timer_disarm(&readline_timer);
+//   os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
+//   os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
+// }
+
+char UART_buf[UART_BUFF_SIZE];
+int UART_pos = 0;
 void readline(lua_Load *load){
-  // NODE_DBG("readline() is called.\n");
+    // NODE_DBG("readline() is called.\n");
 #ifdef DEVKIT_VERSION_0_9
-  update_key_led();
+    update_key_led();
 #endif
-  char ch;
-  while (uart_getc(&ch))
-  {
-    if(run_input)
+    char ch;
+    while (uart_getc(&ch))
     {
-      /* handle CR key */
-      if (ch == '\r')
-      {
-        char next;
-        if (uart_getc(&next))
-          ch = next;
-      }
-      /* backspace key */
-      else if (ch == 0x7f || ch == 0x08)
-      {
-        if (load->line_position > 0)
+        if(run_input)
         {
-          if(uart0_echo) uart_putc(0x08);
-          if(uart0_echo) uart_putc(' ');
-          if(uart0_echo) uart_putc(0x08);
-          load->line_position--;
+            /* handle CR key */
+            if (ch == '\r')
+            {
+                char next;
+                if (uart_getc(&next))
+                    ch = next;
+            }
+            /* backspace key */
+            else if (ch == 0x7f || ch == 0x08)
+            {
+                if (load->line_position > 0)
+                {
+                    if(uart0_echo)
+                    {
+                        uart_putc(0x08);
+                        uart_putc(' ');
+                        uart_putc(0x08);
+                    }
+                    load->line_position--;
+                }
+                load->line[load->line_position] = 0;
+                continue;
+            }
+            /* EOT(ctrl+d) */
+            // else if (ch == 0x04)
+            // {
+            //   if (load->line_position == 0)
+            //     // No input which makes lua interpreter close
+            //     donejob(load);
+            //   else
+            //     continue;
+            // }
+
+            /* end of line */
+            if (ch == '\r' || ch == '\n')
+            {
+                load->line[load->line_position] = 0;
+                if(uart0_echo) uart_putc('\n');
+                uart_on_data_cb(load->line, load->line_position);
+                if (load->line_position == 0)
+                {
+                    /* Get a empty line, then go to get a new line */
+                    c_puts(load->prmt);
+                    os_timer_disarm(&readline_timer);
+                    os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
+                    os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
+                } else {
+                    load->done = 1;
+                    os_timer_disarm(&lua_timer);
+                    os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
+                    os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+                }
+                continue;
+            }
+
+            /* other control character or not an acsii character */
+            // if (ch < 0x20 || ch >= 0x80)
+            // {
+            //   continue;
+            // }
+
+            /* echo */
+            if(uart0_echo) uart_putc(ch);
+
+            /* it's a large line, discard it */
+            if ( load->line_position + 1 >= load->len ){
+                load->line_position = 0;
+            }
+
+            load->line[load->line_position] = ch;
+            load->line_position++;
+        }else{
+
+            UART_buf[UART_pos] = ch;
+            UART_pos++;
+
+            // if ( UART_pos + 1 >= RX_BUFF_SIZE ){
+            //     uart_on_data_cb(UART_buf, UART_pos);
+            //     UART_pos = 0;
+            //     break;
+            // }
+
+            if( ((need_len!=0) && (UART_pos >= need_len)) || \
+            ( UART_pos + 1 >= UART_BUFF_SIZE ) || \
+            ((end_char>=0) && ((unsigned char)ch==(unsigned char)end_char)) )
+            {
+                uart_on_data_cb(UART_buf, UART_pos);
+                // uart_on_data_cb(load->line, load->line_position);
+                UART_pos = 0;
+            }
         }
-        load->line[load->line_position] = 0;
-        continue;
-      }
-      /* EOT(ctrl+d) */
-      // else if (ch == 0x04)
-      // {
-      //   if (load->line_position == 0)
-      //     // No input which makes lua interpreter close 
-      //     donejob(load);
-      //   else
-      //     continue;
-      // }
 
-      /* end of line */
-      if (ch == '\r' || ch == '\n')
-      {
-        load->line[load->line_position] = 0;
-        if(uart0_echo) uart_putc('\n');
-        uart_on_data_cb(load->line, load->line_position);
-        if (load->line_position == 0)
-        {
-          /* Get a empty line, then go to get a new line */
-          c_puts(load->prmt);
-          os_timer_disarm(&readline_timer);
-          os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-          os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
-        } else {
-          load->done = 1;
-          os_timer_disarm(&lua_timer);
-          os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
-          os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
-        }
-        continue;
-      }
-
-      /* other control character or not an acsii character */
-      // if (ch < 0x20 || ch >= 0x80)
-      // {
-      //   continue;
-      // }
-      
-      /* echo */
-      if(uart0_echo) uart_putc(ch);
-
-          /* it's a large line, discard it */
-      if ( load->line_position + 1 >= load->len ){
-        load->line_position = 0;
-      }
+        ch = 0;
     }
 
-    load->line[load->line_position] = ch;
-    load->line_position++;
-
-    if(!run_input)
+    if( (UART_pos > 0) && (!run_input) && (need_len==0) && (end_char<0) )
     {
-      if( ((need_len!=0) && (load->line_position >= need_len)) || \
-        (load->line_position >= load->len) || \
-        ((end_char>=0) && ((unsigned char)ch==(unsigned char)end_char)) )
-      {
-        uart_on_data_cb(load->line, load->line_position);
-        load->line_position = 0;
-      }
+        uart_on_data_cb(UART_buf, UART_pos);
+        UART_pos = 0;
     }
-
-    ch = 0;
-  }
-  
-  if( (load->line_position > 0) && (!run_input) && (need_len==0) && (end_char<0) )
-  {
-    uart_on_data_cb(load->line, load->line_position);
-    load->line_position = 0;
-  }
-  // if there is no input from user, repeat readline()
-  os_timer_disarm(&readline_timer);
-  os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-  os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
+    // if there is no input from user, repeat readline()
+    os_timer_disarm(&readline_timer);
+    os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
+    os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
 }
