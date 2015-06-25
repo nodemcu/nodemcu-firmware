@@ -9,13 +9,14 @@
 #define RTC_TARGET_ADDR 0x04
 #define RTC_COUNTER_ADDR 0x1c
 
+#define EARLY_ENTRY_ATTR __attribute__((section(".text")))
 
-static inline uint32_t rtc_mem_read(uint32_t addr)
+static inline uint32_t EARLY_ENTRY_ATTR rtc_mem_read(uint32_t addr)
 {
   return ((uint32_t*)RTC_USER_MEM_BASE)[addr];
 }
 
-static inline void rtc_mem_write(uint32_t addr, uint32_t val)
+static inline void EARLY_ENTRY_ATTR rtc_mem_write(uint32_t addr, uint32_t val)
 {
   ((uint32_t*)RTC_USER_MEM_BASE)[addr]=val;
 }

@@ -38,6 +38,15 @@ extern unsigned char * base64_decode(const unsigned char *src, size_t len, size_
 
 extern void mem_init(void * start_addr);
 
+// Interrupt Service Routine functions
+typedef void (*ets_isr_fn) (void *arg, uint32_t sp);
+extern int ets_isr_attach (unsigned int interrupt, ets_isr_fn, void *arg);
+extern void ets_isr_mask (unsigned intr);
+extern void ets_isr_unmask (unsigned intr);
+
+// Cycle-counter
+extern unsigned int xthal_get_ccount (void);
+extern int xthal_set_ccompare (unsigned int timer_number, unsigned int compare_value);
 
 // 2, 3 = reset (module dependent?), 4 = wdt
 int rtc_get_reset_reason (void);

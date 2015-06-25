@@ -189,6 +189,14 @@
 #define ROM_MODULES_RTCMEM
 #endif
 
+#if defined(LUA_USE_MODULES_RTCTIME)
+#define MODULES_RTCTIME      "rtctime"
+#define ROM_MODULES_RTCTIME  \
+    _ROM(MODULES_RTCTIME, luaopen_rtctime, rtctime_map)
+#else
+#define ROM_MODULES_RTCTIME
+#endif
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -213,5 +221,6 @@
         ROM_MODULES_RC      \
         ROM_MODULES_DHT     \
         ROM_MODULES_RTCMEM  \
+        ROM_MODULES_RTCTIME \
 
 #endif

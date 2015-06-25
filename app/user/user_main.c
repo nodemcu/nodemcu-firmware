@@ -17,10 +17,15 @@
 #include "flash_fs.h"
 #include "user_interface.h"
 #include "user_exceptions.h"
+#include "user_modules.h"
 
 #include "ets_sys.h"
 #include "driver/uart.h"
 #include "mem.h"
+
+#ifdef LUA_USE_MODULES_RTCTIME
+#include "rtc/rtctime.h"
+#endif
 
 #define SIG_LUA 0
 #define TASK_QUEUE_LEN 4
@@ -37,6 +42,13 @@ void user_start_trampoline (void)
    __real__xtos_set_exception_handler (
      EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
 
+#ifdef LUA_USE_MODULES_RTCTIME
+  rtc_time_register_bootup ();
+
+  // Note: Keep this as close to call_user_start() as possible, since it
+  // is where the cpu clock actually gets bumped to 80MHz.
+  rtc_time_switch_clocks ();
+#endif
   call_user_start ();
 }
 
