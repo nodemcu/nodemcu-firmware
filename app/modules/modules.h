@@ -181,6 +181,14 @@
 #define ROM_MODULES_DHT
 #endif
 
+#if defined(LUA_USE_MODULES_RTCMEM)
+#define MODULES_RTCMEM      "rtcmem"
+#define ROM_MODULES_RTCMEM  \
+    _ROM(MODULES_RTCMEM, luaopen_rtcmem, rtcmem_map)
+#else
+#define ROM_MODULES_RTCMEM
+#endif
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -203,6 +211,7 @@
         ROM_MODULES_CJSON   \
         ROM_MODULES_CRYPTO  \
         ROM_MODULES_RC      \
-        ROM_MODULES_DHT
+        ROM_MODULES_DHT     \
+        ROM_MODULES_RTCMEM  \
 
 #endif
