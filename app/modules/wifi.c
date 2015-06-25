@@ -815,6 +815,20 @@ static int wifi_ap_getbroadcast( lua_State* L ){
   return wifi_getbroadcast(L, SOFTAP_IF);
 }
 
+// Lua: wifi.ap.getconfig()
+static int wifi_ap_getconfig( lua_State* L )
+{
+	struct softap_config config;
+	wifi_softap_get_config(&config);
+	lua_pushstring( L, config.ssid );
+	if(config.authmode = AUTH_OPEN)
+		lua_pushnil(L);
+	else
+		lua_pushstring( L, config.password );
+	return 2;
+}
+
+
 // Lua: wifi.ap.config(table)
 static int wifi_ap_config( lua_State* L )
 {
@@ -1051,6 +1065,7 @@ static const LUA_REG_TYPE wifi_ap_dhcp_map[] =
 static const LUA_REG_TYPE wifi_ap_map[] =
 {
   { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_config ) },
+  { LSTRKEY( "getconfig" ), LFUNCVAL( wifi_ap_getconfig ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_ap_getip ) },
   { LSTRKEY( "setip" ), LFUNCVAL ( wifi_ap_setip ) },
   { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_ap_getbroadcast) },

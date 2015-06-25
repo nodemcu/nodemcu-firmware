@@ -75,7 +75,6 @@ int platform_tmr_exists( unsigned id )
   return id < NUM_TMR;
 }
 
-// ****************************************************************************
 // I2C support
 int platform_i2c_exists( unsigned id )
 {
