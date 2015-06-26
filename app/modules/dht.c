@@ -58,7 +58,7 @@ static bool DHTRead(int pin, signed short *temp, signed short *hum, DHT_TYPE typ
 	int i = 0;
 	int j = 0;
 	int checksum = 0;
-	unsigned char data[100];
+	unsigned char data[5];
 	data[0] = data[1] = data[2] = data[3] = data[4] = 0;
 	uint8_t platform_pin = GPIO_ID_PIN(pin_num[pin]);
 
@@ -101,10 +101,10 @@ static bool DHTRead(int pin, signed short *temp, signed short *hum, DHT_TYPE typ
 				break;
 		}
 		laststate = GPIO_INPUT_GET(platform_pin);
-		if (counter == 1000 || j >= sizeof(data) * 8)
+		if (counter == 1000)
 			break;
 		// store data after 3 reads
-		if ((i>3) && (i%2 == 0)) {
+		if ((i>3) && (i%2 == 0) && j < sizeof(data) * 8) {
 			// shove each bit into the storage bytes
 			data[j/8] <<= 1;
 			if (counter > DHT_BREAKTIME)
