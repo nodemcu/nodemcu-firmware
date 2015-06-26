@@ -197,6 +197,14 @@
 #define ROM_MODULES_RTCTIME
 #endif
 
+#if defined(LUA_USE_MODULES_RTCFIFO)
+#define MODULES_RTCFIFO      "rtcfifo"
+#define ROM_MODULES_RTCFIFO  \
+    _ROM(MODULES_RTCFIFO, luaopen_rtcfifo, rtcfifo_map)
+#else
+#define ROM_MODULES_RTCFIFO
+#endif
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -222,5 +230,6 @@
         ROM_MODULES_DHT     \
         ROM_MODULES_RTCMEM  \
         ROM_MODULES_RTCTIME \
+        ROM_MODULES_RTCFIFO \
 
 #endif

@@ -1,4 +1,4 @@
-// Module for RTC user memory access
+// Module for RTC time keeping
 
 #include "lauxlib.h"
 #include "rtc/rtctime.h"
