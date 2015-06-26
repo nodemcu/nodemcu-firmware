@@ -26,21 +26,6 @@ typedef struct _lu8g_userdata_t lu8g_userdata_t;
 #define LU8G (&(lud->u8g))
 
 
-// function to read 4-byte aligned from program memory AKA irom0
-u8g_pgm_uint8_t ICACHE_FLASH_ATTR u8g_pgm_read(const u8g_pgm_uint8_t *adr)
-{
-    uint32_t iadr = (uint32_t)adr;
-    // set up pointer to 4-byte aligned memory location
-    uint32_t *ptr = (uint32_t *)(iadr & ~0x3);
-
-    // read 4-byte aligned
-    uint32_t pgm_data = *ptr;
-
-    // return the correct byte within the retrieved 32bit word
-    return pgm_data >> ((iadr % 4) * 8);
-}
-
-
 // helper function: retrieve and check userdata argument
 static lu8g_userdata_t *get_lud( lua_State *L )
 {
@@ -889,22 +874,12 @@ uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void
         break;
     
     case U8G_COM_MSG_WRITE_SEQ:
-        {
-            register uint8_t *ptr = arg_ptr;
-            while( arg_val > 0 )
-            {
-                platform_spi_send_recv( 1, *ptr++ );
-                arg_val--;
-            }
-        }
-        break;
     case U8G_COM_MSG_WRITE_SEQ_P:
         {
             register uint8_t *ptr = arg_ptr;
             while( arg_val > 0 )
             {
-                platform_spi_send_recv( 1, u8g_pgm_read(ptr) );
-                ptr++;
+                platform_spi_send_recv( 1, *ptr++ );
                 arg_val--;
             }
         }
@@ -957,6 +932,7 @@ uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, voi
         break;
     
     case U8G_COM_MSG_WRITE_SEQ:
+    case U8G_COM_MSG_WRITE_SEQ_P:
         //u8g->pin_list[U8G_PI_SET_A0] = 1;
         if ( u8g_com_esp8266_ssd_start_sequence(u8g) == 0 )
             return platform_i2c_send_stop( ESP_I2C_ID ), 0;
@@ -973,24 +949,6 @@ uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, voi
         // platform_i2c_send_stop( ESP_I2C_ID );
         break;
 
-    case U8G_COM_MSG_WRITE_SEQ_P:
-        //u8g->pin_list[U8G_PI_SET_A0] = 1;
-        if ( u8g_com_esp8266_ssd_start_sequence(u8g) == 0 )
-            return platform_i2c_send_stop( ESP_I2C_ID ), 0;
-        {
-            register uint8_t *ptr = arg_ptr;
-            while( arg_val > 0 )
-            {
-                // ignore return value -> tolerate missing ACK
-                if ( platform_i2c_send_byte( ESP_I2C_ID, u8g_pgm_read(ptr) ) == 0 )
-                    ; //return 0;
-                ptr++;
-                arg_val--;
-            }
-        }
-        // platform_i2c_send_stop( ESP_I2C_ID );
-        break;
-      
     case U8G_COM_MSG_ADDRESS:                     /* define cmd (arg_val = 0) or data mode (arg_val = 1) */
         u8g->pin_list[U8G_PI_A0_STATE] = arg_val;
         u8g->pin_list[U8G_PI_SET_A0] = 1;		/* force a0 to set again */

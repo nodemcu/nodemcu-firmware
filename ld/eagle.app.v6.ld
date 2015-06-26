@@ -72,9 +72,6 @@ SECTIONS
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
 
-    /* put font and progmem data into irom0 */
-    *(.u8g_progmem.*)
-
     /* Trade some performance for lots of ram. At the time of writing the
      * available Lua heap went from 18248 to 34704. */
     *(.rodata*)
