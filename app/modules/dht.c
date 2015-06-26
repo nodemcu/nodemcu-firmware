@@ -1,4 +1,30 @@
 // Module for DHT11/21/22 temp/humidity modules
+// Updated for nodemcu/lua by Pat Wood
+// https://github.com/patrickhwood/nodemcu-firmware
+
+/** 
+Originally from: http://harizanov.com/2014/11/esp8266-powered-web-server-led-control-dht22-temperaturehumidity-sensor-reading/
+Adapted from: https://github.com/adafruit/Adafruit_Python_DHT/blob/master/source/Raspberry_Pi/pi_dht_read.c
+LICENSE:
+//#include "c_stdlib.h"
+// Copyright (c) 2014 Adafruit Industries
+// Author: Tony DiCola
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+*/
 
 #include "platform.h"
 #include "auxmods.h"
@@ -10,8 +36,6 @@ typedef enum {
 	DHT21 = 21,
 	DHT22 = 22,
 } DHT_TYPE;
-
-static short int temp = -10000, hum = -10000;
 
 #define DHT_MAXTIMINGS	10000
 #define DHT_BREAKTIME	20
@@ -27,7 +51,7 @@ static short int temp = -10000, hum = -10000;
 
 #define sleepms(x) os_delay_us(x*1000);
 
-static bool DHTRead(int pin, DHT_TYPE type)
+static bool DHTRead(int pin, signed short *temp, signed short *hum, DHT_TYPE type)
 {
 	int counter = 0;
 	int laststate = 1;
@@ -61,7 +85,6 @@ static bool DHTRead(int pin, DHT_TYPE type)
 	if(i == DHT_MAXCOUNT)
 	{
 		DHT_DEBUG("DHT: Failed to get reading from GPIO%d, dying\r\n", pin);
-		temp = hum = -10000;
 	    return false;
 	}
 
@@ -98,28 +121,26 @@ static bool DHTRead(int pin, DHT_TYPE type)
 			// checksum is valid
 			switch (type) {
 			case DHT11:
-				hum = data[0];
-				temp = data[2];
+				*hum = data[0];
+				*temp = data[2];
 				break;
 			case DHT21:
 			case DHT22:
-				hum = (data[0] << 8) + data[1];
-				temp = (data[2] << 8) + data[3];
+				*hum = (data[0] << 8) + data[1];
+				*temp = (data[2] << 8) + data[3];
 				break;
 			}
 			DHT_DEBUG("DHT: Temperature =  %d *C, Humidity = %d %% (GPIO%d)\n",
-		          (int) (temp), (int) (hum), pin);
+		          (int) (*temp), (int) (*hum), pin);
 		}
 		else {
 			DHT_DEBUG("DHT: Checksum was incorrect after %d bits. Expected %d but got %d (GPIO%d)\r\n",
 		                j, data[4], checksum, pin);
-			temp = hum = -10000;
 		    return false;
 		}
 	}
 	else {
 	    DHT_DEBUG("DHT: Got too few bits: %d should be at least 40 (GPIO%d)\r\n", j, pin);
-		temp = hum = -10000;
 	    return false;
 	}
 	return true;
@@ -128,8 +149,10 @@ static bool DHTRead(int pin, DHT_TYPE type)
 // Lua: dht.read11(gpio_pin)
 static int dht_read11(lua_State *L)
 {
+  signed short temp = -10000, hum = -10000;
   unsigned pin = luaL_checkinteger(L, 1);
-  if (DHTRead(pin, DHT11)) {
+
+  if (DHTRead(pin, &temp, &hum, DHT11)) {
     lua_pushinteger(L, temp);
     lua_pushinteger(L, hum);
     return 2;
@@ -141,31 +164,15 @@ static int dht_read11(lua_State *L)
 // Lua: dht.read22(gpio_pin)
 static int dht_read22(lua_State *L)
 {
+  signed short temp = -10000, hum = -10000;
   unsigned pin = luaL_checkinteger(L, 1);
-  if (DHTRead(pin, DHT22)) {
+
+  if (DHTRead(pin, &temp, &hum, DHT22)) {
     lua_pushinteger(L, temp);
     lua_pushinteger(L, hum);
     return 2;
   }
   lua_pushnil(L);
-  return 1;
-}
-
-static int dht_getTemperature(lua_State *L)
-{
-  if (temp == -10000)
-    lua_pushnil(L);
-  else
-    lua_pushinteger(L, temp);
-  return 1;
-}
-
-static int dht_getHumidity(lua_State *L)
-{
-  if (hum == -10000)
-    lua_pushnil(L);
-  else
-    lua_pushinteger(L, hum);
   return 1;
 }
 
@@ -176,8 +183,6 @@ const LUA_REG_TYPE dht_map[] =
 {
   { LSTRKEY("read11"), LFUNCVAL(dht_read11) },
   { LSTRKEY("read22"), LFUNCVAL(dht_read22) },
-  { LSTRKEY("getTemperature"), LFUNCVAL(dht_getTemperature) },
-  { LSTRKEY("getHumidity"), LFUNCVAL(dht_getHumidity) },
 
 #if LUA_OPTIMIZE_MEMORY > 0
 
