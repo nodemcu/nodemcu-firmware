@@ -157,6 +157,14 @@
 #define ROM_MODULES_CRYPTO
 #endif
 
+#if defined(LUA_USE_MODULES_DHT)
+#define MODULES_DHT       "dht"
+#define ROM_MODULES_DHT   \
+    _ROM(MODULES_DHT, luaopen_dht, dht_map)
+#else
+#define ROM_MODULES_DHT
+#endif
+
 #if defined(LUA_USE_MODULES_RC)
 #define MODULES_RC "rc"
 #define ROM_MODULES_RC \
@@ -185,6 +193,7 @@ _ROM(MODULES_RC, luaopen_rc, rc_map)
         ROM_MODULES_WS2812  \
         ROM_MODULES_CJSON  \
         ROM_MODULES_CRYPTO \
+        ROM_MODULES_DHT \
         ROM_MODULES_RC
 
 #endif

@@ -82,6 +82,9 @@ LUALIB_API int ( luaopen_ow )( lua_State *L );
 #define AUXLIB_CJSON      "cjson"
 LUALIB_API int ( luaopen_cjson )( lua_State *L );
 
+#define AUXLIB_DHT22      "dht"
+LUALIB_API int ( luaopen_dht )( lua_State *L );
+
 // Helper macros
 #define MOD_CHECK_ID( mod, id )\
   if( !platform_ ## mod ## _exists( id ) )\
