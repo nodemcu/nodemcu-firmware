@@ -16,6 +16,7 @@
 
 #include "flash_fs.h"
 #include "user_interface.h"
+#include "user_exceptions.h"
 
 #include "ets_sys.h"
 #include "driver/uart.h"
@@ -24,6 +25,21 @@
 #define SIG_LUA 0
 #define TASK_QUEUE_LEN 4
 os_event_t *taskQueue;
+
+
+/* Note: the trampoline *must* be explicitly put into the .text segment, since
+ * by the time it is invoked the irom has not yet been mapped. This naturally
+ * also goes for anything the trampoline itself calls.
+ */
+void user_start_trampoline (void) TEXT_SECTION_ATTR;
+void user_start_trampoline (void)
+{
+   __real__xtos_set_exception_handler (
+     EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
+
+  call_user_start ();
+}
+
 
 void task_lua(os_event_t *e){
     char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
