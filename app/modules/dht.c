@@ -71,7 +71,7 @@ static bool DHTRead(int pin, DHT_TYPE type)
 	if(i == DHT_MAXCOUNT)
 	{
 		DHT_DEBUG("DHT: Failed to get reading from GPIO%d, dying\r\n", pin);
-		temp = hum = -1;
+		temp = hum = -10000;
 	    return false;
 	}
 
@@ -123,13 +123,13 @@ static bool DHTRead(int pin, DHT_TYPE type)
 		else {
 			DHT_DEBUG("DHT: Checksum was incorrect after %d bits. Expected %d but got %d (GPIO%d)\r\n",
 		                j, data[4], checksum, pin);
-			temp = hum = -1;
+			temp = hum = -10000;
 		    return false;
 		}
 	}
 	else {
 	    DHT_DEBUG("DHT: Got too few bits: %d should be at least 40 (GPIO%d)\r\n", j, pin);
-		temp = hum = -1;
+		temp = hum = -10000;
 	    return false;
 	}
 	return true;
@@ -139,10 +139,12 @@ static bool DHTRead(int pin, DHT_TYPE type)
 static int dht_read11(lua_State *L)
 {
   unsigned pin = luaL_checkinteger(L, 1);
-  if (DHTRead(pin, DHT11))
-    lua_pushinteger(L, 1);
-  else
-    lua_pushinteger(L, 0);
+  if (DHTRead(pin, DHT11)) {
+    lua_pushinteger(L, temp);
+    lua_pushinteger(L, hum);
+    return 2;
+  }
+  lua_pushnil(L);
   return 1;
 }
 
@@ -150,10 +152,12 @@ static int dht_read11(lua_State *L)
 static int dht_read22(lua_State *L)
 {
   unsigned pin = luaL_checkinteger(L, 1);
-  if (DHTRead(pin, DHT22))
-    lua_pushinteger(L, 1);
-  else
-    lua_pushinteger(L, 0);
+  if (DHTRead(pin, DHT22)) {
+    lua_pushinteger(L, temp);
+    lua_pushinteger(L, hum);
+    return 2;
+  }
+  lua_pushnil(L);
   return 1;
 }
 
