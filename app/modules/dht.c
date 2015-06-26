@@ -1,19 +1,9 @@
 // Module for DHT11/21/22 temp/humidity modules
 
-//#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
 #include "platform.h"
 #include "auxmods.h"
-#include "lrotable.h"
-#include "c_types.h"
-#include "c_stdlib.h"
 #include "osapi.h"
 #include "gpio.h"
-
-#include "user_interface.h"
-
-#include "rom.h"
 
 typedef enum {
 	DHT11 = 11,
@@ -88,7 +78,7 @@ static bool DHTRead(int pin, DHT_TYPE type)
 				break;
 		}
 		laststate = GPIO_INPUT_GET(platform_pin);
-		if (counter == 1000)
+		if (counter == 1000 || j >= sizeof(data) * 8)
 			break;
 		// store data after 3 reads
 		if ((i>3) && (i%2 == 0)) {
