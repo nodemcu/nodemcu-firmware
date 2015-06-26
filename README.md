@@ -36,43 +36,31 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-06-25<br />
+move constants to ROM. Frees up 16k+ of RAM.<br />
+add dhtlib for DHT11/21/22/33/44, port from Arduino.<br />
+add 433MHz transmission.<br />
+add crypto library.<br />
+re-add ws2812.write().<br />
+add wifi.getchannel.<br />
+changed wifi_setip() to allow setting SoftAP gateway to 0.0.0.0.<br />
+added net.dns.setdnsserver and net.dns.getdnsserver.<br />
+add support for lm92 temperature sensor.<br />
+implement getStrWidth() and setFontLineSpacingFactor().<br />
+add -Os flag to release and debug builds.<br />
+changed output format of table that is output by wifi_scan_done.<br />
+added ability to set scan configuration to wifi.sta.getap.<br />
+added function wifi.sta.getconfig().<br />
+allow connecting to unsecured WiFi networks.<br />
+add setphymode and getphymode to wifi module.<br />
+add multicastJoin and multicastLeave to net module.<br />
+add Yeelink Modules.<br />
+
 2015-03-31<br />
 polish mqtt module, add queue for mqtt module.<br />
 add reconnect option to mqtt.connect api, :connect( host, port, secure, auto_reconnect, function(client) )<br />
 move node.readvdd33 to adc.readvdd33.<br />
 tools/esptool.py supported NodeMCU devkit automatic flash.
-
-2015-03-18<br />
-update u8glib.<br />
-merge everything to master.
-
-2015-03-17<br />
-add cjson module, only cjson.encode() and cjson.decode() is implemented.<br />
-read doc [here](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/cjson/manual.txt)
-
-2015-03-15<br />
-bugs fixed: #239, #273.<br />
-reduce coap module memory usage, add coap module to default built.
-
-2015-03-11<br />
-fix bugs of spiffs.<br />
-build both float and integer version [latest releases](https://github.com/nodemcu/nodemcu-firmware/releases/latest).<br />
-fix tmr.time().<br />
-fix memory leak when DNS fail.
-
-2015-03-10<br />
-update to the recent spiffs.<br />
-add file.fsinfo() api, usage: remain, used, total = file.fsinfo().<br />
-add Travis CI. please download the latest firmware from [releases](https://github.com/nodemcu/nodemcu-firmware/releases).<br />
-add math lib, partial api work.<br />
-u8g module, ws2812 module default enabled in dev-branch build.
-
-2015-02-13<br />
-add node.compile() api to compile lua text file into lua bytecode file.<br />
-this will reduce memory usage noticeably when require modules into NodeMCU.<br />
-raise internal LUA_BUFFERSIZE from 1024 to 4096.<br />
-lua require("mod") will load "mod.lc" file first if exist.<br />
-build latest pre_build bin.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 
