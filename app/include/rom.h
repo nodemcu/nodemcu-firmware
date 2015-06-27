@@ -39,6 +39,9 @@ extern unsigned char * base64_decode(const unsigned char *src, size_t len, size_
 extern void mem_init(void * start_addr);
 
 
+// 2, 3 = reset (module dependent?), 4 = wdt
+int rtc_get_reset_reason (void);
+
 // Hardware exception handling
 struct exception_frame
 {
