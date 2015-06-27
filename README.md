@@ -36,6 +36,15 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
+2015-06-27<br />
+fixed ap/station-ap cannot connect to the device.<br />
+added wifi.ap.getconfig().<br />
+fixed net.dns.getdnsserver().<br />
+added new base64 lua example.<br />
+added node.bootreason() to inspect boot cause.<br />
+optimization of u8g.<br />
+
+# Change log
 2015-06-25<br />
 move constants to ROM. Frees up 16k+ of RAM.<br />
 add dhtlib for DHT11/21/22/33/44, port from Arduino.<br />
