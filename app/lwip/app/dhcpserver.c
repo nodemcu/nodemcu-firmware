@@ -13,7 +13,7 @@
 #include "user_interface.h"
 
 ////////////////////////////////////////////////////////////////////////////////////
-static const uint8_t xid[4] = {0xad, 0xde, 0x12, 0x23};
+static uint8_t xid[4] = {0xad, 0xde, 0x12, 0x23};
 static u8_t old_xid[4] = {0};
 static const uint8_t magic_cookie[4] = {99, 130, 83, 99};
 static struct udp_pcb *pcb_dhcps = NULL;
