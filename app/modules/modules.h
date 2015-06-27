@@ -169,7 +169,6 @@ _ROM(MODULES_RC, luaopen_rc, rc_map)
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
         ROM_MODULES_WIFI	\
-        ROM_MODULES_COAP	\
         ROM_MODULES_MQTT    \
         ROM_MODULES_U8G     \
         ROM_MODULES_I2C     \
@@ -186,5 +185,7 @@ _ROM(MODULES_RC, luaopen_rc, rc_map)
         ROM_MODULES_CJSON  \
         ROM_MODULES_CRYPTO \
         ROM_MODULES_RC
+
+        //        ROM_MODULES_COAP	\
 
 #endif
