@@ -17,7 +17,7 @@ tmr.alarm() -- not changed
 tmr.stop()  -- changed, see below. use tmr.unregister for old functionality
 
 tmr.register(id, interval, mode, function)
-	bind function with timer and set the intercal in ms
+	bind function with timer and set the interval in ms
 	the mode can be:
 		tmr.ALARM_SINGLE for a single run alarm
 		tmr.ALARM_SEMI for a multiple single run alarm
@@ -25,7 +25,7 @@ tmr.register(id, interval, mode, function)
 	tmr.register does NOT start the timer
 	tmr.alarm is a tmr.register & tmr.start macro
 tmr.unregister(id)
-	stop alarm, unbind function and cleans up memory
+	stop alarm, unbind function and clean up memory
 	not needed for ALARM_SINGLE, as it unregisters itself
 tmr.start(id)
 	ret: bool
@@ -35,10 +35,17 @@ tmr.stop(id)
 	stops a alarm, returns true on success
 	this call dose not free any memory, to do so use tmr.unregister
 	stopped alarms can be started with start
+tmr.interval(id, interval)
+	set alarm interval, running alarm will be restarted
 tmr.state(id)
 	ret: (bool, int) or nil
 	returns alarm status (true=started/false=stopped) and mode
 	nil if timer is unregistered
+tmr.softwd(int)
+	set a negative value to stop the timer
+	any other value starts the timer, when the
+	countdown reaches zero, the device restarts
+	the timer units are seconds
 */
 
 #define MIN_OPT_LEVEL 2
@@ -59,7 +66,7 @@ tmr.state(id)
 
 //well, the following are my assumptions
 //why, oh why is there no good documentation
-//chinese companyes should learn from Atmel
+//chinese companies should learn from Atmel
 extern void ets_timer_arm_new(os_timer_t* t, uint32_t milliseconds, uint32_t repeat_flag, uint32_t isMstimer);
 extern void ets_timer_disarm(os_timer_t* t);
 extern void ets_timer_setfn(os_timer_t* t, os_timer_func_t *f, void *arg);
@@ -211,6 +218,24 @@ static int tmr_unregister(lua_State* L){
 	return 0;
 }
 
+// Lua: tmr.interval( id, interval )
+static int tmr_interval(lua_State* L){
+	uint8_t id = luaL_checkinteger(L, 1);
+	MOD_CHECK_ID(tmr,id);
+	timer_t tmr = &alarm_timers[id];
+	sint32_t interval = luaL_checkinteger(L, 2);
+	if(interval <= 0)
+		return luaL_error(L, "wrong arg range");
+	if(tmr->mode != TIMER_MODE_OFF){	
+		tmr->interval = interval;
+		if(!(tmr->mode&TIMER_IDLE_FLAG)){
+			ets_timer_disarm(&tmr->os);
+			ets_timer_arm_new(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO, 1);
+		}
+	}
+	return 0;
+}
+
 // Lua: tmr.state( id )
 static int tmr_state(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
@@ -297,6 +322,7 @@ const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "stop" ), LFUNCVAL ( tmr_stop ) },
 	{ LSTRKEY( "unregister" ), LFUNCVAL ( tmr_unregister ) },
 	{ LSTRKEY( "state" ), LFUNCVAL ( tmr_state ) },
+	{ LSTRKEY( "interval" ), LFUNCVAL ( tmr_interval) }, 
 #if LUA_OPTIMIZE_MEMORY > 0
 	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
 	{ LSTRKEY( "ALARM_SEMI" ), LNUMVAL( TIMER_MODE_SEMI ) },
