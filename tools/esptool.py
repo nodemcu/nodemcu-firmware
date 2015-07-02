@@ -262,6 +262,15 @@ class ESPROM:
 
         return data
 
+    """ Abuse the loader protocol to force flash to be left in write mode """
+    def flash_unlock_dio(self):
+        # Enable flash write mode
+        self.flash_begin(0, 0)
+        # Reset the chip rather than call flash_finish(), which would have
+        # write protected the chip again (why oh why does it do that?!)
+        self.mem_begin(0,0,0,0x40100000)
+        self.mem_finish(0x40000080)
+
     """ Perform a chip erase of SPI flash """
     def flash_erase(self):
         # Trick ROM to initialize SFlash
@@ -560,7 +569,10 @@ if __name__ == '__main__':
                 seq += 1
             print
         print '\nLeaving...'
-        esp.flash_finish(False)
+        if args.flash_mode == 'dio':
+            esp.flash_unlock_dio()
+        else:
+            esp.flash_finish(False)
 
     elif args.operation == 'run':
         esp.run()
