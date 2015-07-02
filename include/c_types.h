@@ -16,7 +16,6 @@ typedef unsigned long       uint32_t;
 typedef signed long         sint32_t;
 typedef signed long         int32_t;
 typedef signed long long    sint64_t;
-typedef signed long long    int64_t;
 typedef unsigned long long  uint64_t;
 typedef unsigned long long  u_int64_t;
 typedef float               real32_t;
@@ -45,12 +44,7 @@ typedef double              real64;
 
 #define __le16      u16
 
-//typedef unsigned int        size_t;
-#if !defined(__size_t)
-  #define __size_t 1
-  typedef unsigned int size_t;   /* others (e.g. <stdio.h>) also define */
-   /* the unsigned integral type of the result of the sizeof operator. */
-#endif
+typedef unsigned int        size_t;
 
 #define __packed        __attribute__((packed))
 
@@ -82,10 +76,8 @@ typedef enum {
 #define ICACHE_RODATA_ATTR __attribute__((section(".irom.text")))
 #else
 #define ICACHE_FLASH_ATTR
+#define ICACHE_RODATA_ATTR
 #endif /* ICACHE_FLASH */
-
-#define TEXT_SECTION_ATTR __attribute__((section(".text")))
-#define RAM_CONST_ATTR __attribute__((section(".text")))
 
 #ifndef __cplusplus
 typedef unsigned char   bool;
