@@ -184,9 +184,9 @@
 #define PERIPHS_IO_MUX_FUNC             0x13
 #define PERIPHS_IO_MUX_FUNC_S           4
 #define PERIPHS_IO_MUX_PULLUP           BIT7
-#define PERIPHS_IO_MUX_PULLUP2          BIT6
+#define PERIPHS_IO_MUX_PULLDWN          BIT6
 #define PERIPHS_IO_MUX_SLEEP_PULLUP     BIT3
-#define PERIPHS_IO_MUX_SLEEP_PULLUP2    BIT2
+#define PERIPHS_IO_MUX_SLEEP_PULLDWN    BIT2
 #define PERIPHS_IO_MUX_SLEEP_OE         BIT1
 #define PERIPHS_IO_MUX_OE               BIT0
 
@@ -203,6 +203,7 @@
 #define FUNC_GPIO15                     3
 #define FUNC_U0RTS                      4
 #define PERIPHS_IO_MUX_U0RXD_U          (PERIPHS_IO_MUX + 0x14)
+#define FUNC_U0RXD                      0
 #define FUNC_GPIO3                      3
 #define PERIPHS_IO_MUX_U0TXD_U          (PERIPHS_IO_MUX + 0x18)
 #define FUNC_U0TXD                      0
@@ -243,7 +244,8 @@
 
 #define PIN_PULLUP_DIS(PIN_NAME)                 CLEAR_PERI_REG_MASK(PIN_NAME, PERIPHS_IO_MUX_PULLUP)
 #define PIN_PULLUP_EN(PIN_NAME)                  SET_PERI_REG_MASK(PIN_NAME, PERIPHS_IO_MUX_PULLUP)
-
+#define PIN_PULLDWN_DIS(PIN_NAME)             CLEAR_PERI_REG_MASK(PIN_NAME, PERIPHS_IO_MUX_PULLDWN)
+#define PIN_PULLDWN_EN(PIN_NAME)              SET_PERI_REG_MASK(PIN_NAME, PERIPHS_IO_MUX_PULLDWN)
 #define PIN_FUNC_SELECT(PIN_NAME, FUNC)  do { \
     WRITE_PERI_REG(PIN_NAME,   \
                                 READ_PERI_REG(PIN_NAME) \
