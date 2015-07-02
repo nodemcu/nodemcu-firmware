@@ -995,20 +995,20 @@ static int wifi_ap_dhcp_config( lua_State* L )
   if (ip == 0)
     return luaL_error( L, "wrong arg type" );
 
-  lease.start_ip = ip;
-  NODE_DBG(IPSTR, IP2STR(&lease.start_ip));
+  lease.start_ip.addr = ip;
+  NODE_DBG(IPSTR, IP2STR(&lease.start_ip.addr));
   NODE_DBG("\n");
 
   // use configured max_connection to determine end
   struct softap_config config;
   wifi_softap_get_config(&config);
-  lease.end_ip = lease.start_ip;
-  ip4_addr4(&lease.end_ip) += config.max_connection - 1;
+  lease.end_ip.addr = lease.start_ip.addr;
+  ip4_addr4(&lease.end_ip.addr) += config.max_connection - 1;
 
   char temp[64];
-  c_sprintf(temp, IPSTR, IP2STR(&lease.start_ip));
+  c_sprintf(temp, IPSTR, IP2STR(&lease.start_ip.addr));
   lua_pushstring(L, temp);
-  c_sprintf(temp, IPSTR, IP2STR(&lease.end_ip));
+  c_sprintf(temp, IPSTR, IP2STR(&lease.end_ip.addr));
   lua_pushstring(L, temp);
 
   // note: DHCP max range = 101 from start_ip to end_ip
@@ -1098,9 +1098,9 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
 
-  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_B ) },
-  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_G ) },
-  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_N ) },
+  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_11B ) },
+  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_11G ) },
+  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_11N ) },
 
   { LSTRKEY( "NONE_SLEEP" ), LNUMVAL( NONE_SLEEP_T ) },
   { LSTRKEY( "LIGHT_SLEEP" ), LNUMVAL( LIGHT_SLEEP_T ) },
