@@ -13,6 +13,7 @@
 #include "c_types.h"
 #include "mem.h"
 #include "espconn.h"
+#include "lwip/dns.h" 
 
 #ifdef CLIENT_SSL_ENABLE
 unsigned char *default_certificate;
@@ -224,7 +225,9 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 */
 
   // "enhanced"
+
   lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);    // the callback function
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(conn) to callback func in lua
 
   if(ipaddr == NULL)
   {
@@ -242,7 +245,7 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   }
   // "enhanced" end
 
-  lua_call(gL, 1, 0);
+  lua_call(gL, 2, 0);
 
 end:
   if((pesp_conn->type == ESPCONN_TCP && pesp_conn->proto.tcp->remote_port == 0)
@@ -1445,14 +1448,16 @@ static int net_getdnsserver( lua_State* L )
   if (numdns >= DNS_MAX_SERVERS)
     return luaL_error( L, "server index out of range [0-%d]", DNS_MAX_SERVERS - 1);
 
-  ip_addr_t ipaddr;
-  dns_getserver(numdns,&ipaddr);
+  // ip_addr_t ipaddr;
+  // dns_getserver(numdns,&ipaddr);
+  // Bug fix by @md5crypt https://github.com/nodemcu/nodemcu-firmware/pull/500
+  ip_addr_t ipaddr = dns_getserver(numdns);
 
   if ( ip_addr_isany(&ipaddr) ) {
     lua_pushnil( L );
   } else {
     char temp[20] = {0};
-    c_sprintf(temp, IPSTR, IP2STR( &ipaddr ) );
+    c_sprintf(temp, IPSTR, IP2STR( &ipaddr.addr ) );
     lua_pushstring( L, temp );
   }
 
