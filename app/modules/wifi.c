@@ -41,12 +41,11 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
   lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
   lua_call(L, 0, 0);
 
-#else
+#elif defined( NODE_SMART_V021 )
 
   if( !arg )
     return;
 
-#if defined( NODE_SMART_V021 )
   struct station_config *sta_conf = arg;
   wifi_station_set_config(sta_conf);
   wifi_station_disconnect();
@@ -64,6 +63,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
     wifi_smart_succeed = LUA_NOREF;
   }
   smartconfig_stop();
+
 #else // NODE_SMART_V032
 
   struct station_config *sta_conf = NULL;
@@ -72,16 +72,16 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
 
   switch (status) {
   case SC_STATUS_WAIT:
-    c_printf("SC_STATUS_WAIT");
+    // c_printf("SC_STATUS_WAIT\n");
     break;
   case SC_STATUS_FIND_CHANNEL:
-    c_printf("SC_STATUS_FIND_CHANNEL");
+    // c_printf("SC_STATUS_FIND_CHANNEL\n");
     break;
   case SC_STATUS_GETTING_SSID_PSWD:
-    c_printf("SC_STATUS_GETTING_SSID_PSWD");
+    // c_printf("SC_STATUS_GETTING_SSID_PSWD\n");
     break;
   case SC_STATUS_LINK:
-    c_printf("SC_STATUS_LINK");
+    // c_printf("SC_STATUS_LINK\n");
     sta_conf = arg;
     if (sta_conf != NULL)
     {
@@ -95,7 +95,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
     }
     break;
   case SC_STATUS_LINK_OVER:
-    c_printf("SC_STATUS_LINK_OVER");
+    // c_printf("SC_STATUS_LINK_OVER\n");
     if(wifi_smart_succeed != LUA_NOREF)
     {
       lua_rawgeti(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
@@ -131,8 +131,6 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
     smartconfig_stop();
     break;
   }
-
-#endif // defined( NODE_SMART_V021 )
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 }
