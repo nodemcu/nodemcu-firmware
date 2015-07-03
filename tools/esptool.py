@@ -128,38 +128,32 @@ class ESPROM:
     def connect(self):
         print 'Connecting...'
 
-        # RTS = CH_PD (i.e reset)
-        # DTR = GPIO0
-        # self._port.setRTS(True)
-        # self._port.setDTR(True)
-        # self._port.setRTS(False)
-        # time.sleep(0.1)
-        # self._port.setDTR(False)
+        for _ in xrange(4):
+            # issue reset-to-bootloader:
+            # RTS = either CH_PD or nRESET (both active low = chip in reset)
+            # DTR = GPIO0 (active low = boot to flasher)
+            self._port.setDTR(False)
+            self._port.setRTS(True)
+            time.sleep(0.05)
+            self._port.setDTR(True)
+            self._port.setRTS(False)
+            time.sleep(0.05)
+            self._port.setDTR(False)
 
-        # NodeMCU devkit
-        self._port.setRTS(True)
-        self._port.setDTR(True)
-        time.sleep(0.1)
-        self._port.setRTS(False)
-        self._port.setDTR(False)
-        time.sleep(0.1)
-        self._port.setRTS(True)
-        time.sleep(0.1)
-        self._port.setDTR(True)
-        self._port.setRTS(False)
-        time.sleep(0.3)
-        self._port.setDTR(True)
-
-        self._port.timeout = 0.5
-        for i in xrange(10):
-            try:
-                self._port.flushInput()
-                self._port.flushOutput()
-                self.sync()
-                self._port.timeout = 5
-                return
-            except:
-                time.sleep(0.1)
+            self._port.timeout = 0.3 # worst-case latency timer should be 255ms (probably <20ms)
+            for _ in xrange(4):
+                try:
+                    self._port.flushInput()
+                    self._port.flushOutput()
+                    self.sync()
+                    self._port.timeout = 5
+                    return
+                except:
+                    time.sleep(0.05)
+            # this is a workaround for the CH340 serial driver on current versions of Linux,
+            # which seems to sometimes set the serial port up with wrong parameters
+            self._port.close()
+            self._port.open()
         raise Exception('Failed to connect')
 
     """ Read memory address in target """
@@ -267,6 +261,15 @@ class ESPROM:
                 raise Exception('Invalid end of packet (sflash read)')
 
         return data
+
+    """ Abuse the loader protocol to force flash to be left in write mode """
+    def flash_unlock_dio(self):
+        # Enable flash write mode
+        self.flash_begin(0, 0)
+        # Reset the chip rather than call flash_finish(), which would have
+        # write protected the chip again (why oh why does it do that?!)
+        self.mem_begin(0,0,0,0x40100000)
+        self.mem_finish(0x40000080)
 
     """ Perform a chip erase of SPI flash """
     def flash_erase(self):
@@ -566,7 +569,10 @@ if __name__ == '__main__':
                 seq += 1
             print
         print '\nLeaving...'
-        esp.flash_finish(False)
+        if args.flash_mode == 'dio':
+            esp.flash_unlock_dio()
+        else:
+            esp.flash_finish(False)
 
     elif args.operation == 'run':
         esp.run()

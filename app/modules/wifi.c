@@ -17,23 +17,48 @@
 
 static int wifi_smart_succeed = LUA_NOREF;
 static uint8 getap_output_format=0;
-
+#if defined( NODE_SMART_OLDSTYLE )
+#else
+static lua_State* smart_L = NULL;
+#endif
 static void wifi_smart_succeed_cb(void *arg){
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
+
+#if defined( NODE_SMART_OLDSTYLE )
+
   if( !arg )
     return;
-#if 0
+  if(wifi_smart_succeed == LUA_NOREF)
+    return;
+
+  lua_State* L = (lua_State *)arg;
+  lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+  lua_call(L, 0, 0);
+
+#else
+
+  if( !arg )
+    return;
+
   struct station_config *sta_conf = arg;
   wifi_station_set_config(sta_conf);
   wifi_station_disconnect();
   wifi_station_connect();
+
+  if(wifi_smart_succeed != LUA_NOREF)
+  {
+    lua_rawgeti(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+
+    lua_pushstring(smart_L, sta_conf->ssid); 
+    lua_pushstring(smart_L, sta_conf->password); 
+    lua_call(smart_L, 2, 0);
+
+    luaL_unref(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+    wifi_smart_succeed = LUA_NOREF;
+  }
   smartconfig_stop();
-#endif
-  if(wifi_smart_succeed == LUA_NOREF)
-    return;
-  lua_State* L = (lua_State *)arg;
-  lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
-  lua_call(L, 0, 0);
+
+#endif // defined( NODE_SMART_OLDSTYLE )
 }
 
 static int wifi_scan_succeed = LUA_NOREF;
@@ -107,6 +132,9 @@ static void wifi_scan_done(void *arg, STATUS status)
 // Lua: smart(type, function succeed_cb)
 static int wifi_start_smart( lua_State* L )
 {
+
+#if defined( NODE_SMART_OLDSTYLE )
+
   unsigned channel;
   int stack = 1;
   
@@ -133,15 +161,49 @@ static int wifi_start_smart( lua_State* L )
   }else{
     smart_begin(channel, (smart_succeed )wifi_smart_succeed_cb, L);
   }
-  // smartconfig_start(0, wifi_smart_succeed_cb);
+
+#else
+
+  if(wifi_get_opmode() != STATION_MODE)
+  {
+    return luaL_error( L, "Smart link only in STATION mode" );
+  }
+  uint8_t smart_type = 0;
+  int stack = 1;
+  smart_L = L;
+  if ( lua_isnumber(L, stack) )
+  {
+    smart_type = lua_tointeger(L, stack);
+    stack++;
+  }
+
+  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)
+  {
+    lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
+    if(wifi_smart_succeed != LUA_NOREF)
+      luaL_unref(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+    wifi_smart_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+
+  if ( smart_type > 1 )
+    return luaL_error( L, "wrong arg range" );
+
+  smartconfig_start(smart_type, wifi_smart_succeed_cb);
+
+#endif // defined( NODE_SMART_OLDSTYLE )
+
   return 0;  
 }
 
 // Lua: exit_smart()
 static int wifi_exit_smart( lua_State* L )
 {
+#if defined( NODE_SMART_OLDSTYLE )
   smart_end();
-  // smartconfig_stop();
+#else
+  smartconfig_stop();
+#endif // defined( NODE_SMART_OLDSTYLE )
+
   if(wifi_smart_succeed != LUA_NOREF)
     luaL_unref(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
   wifi_smart_succeed = LUA_NOREF;
