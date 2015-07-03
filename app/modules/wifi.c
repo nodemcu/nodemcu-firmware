@@ -21,7 +21,13 @@ static uint8 getap_output_format=0;
 #else
 static lua_State* smart_L = NULL;
 #endif
-static void wifi_smart_succeed_cb(void *arg){
+
+#if defined( NODE_SMART_OLDSTYLE )
+static void wifi_smart_succeed_cb(void *arg)
+#else
+static void wifi_smart_succeed_cb(sc_status status, void *arg)
+#endif
+{
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
 
 #if defined( NODE_SMART_OLDSTYLE )
@@ -40,6 +46,7 @@ static void wifi_smart_succeed_cb(void *arg){
   if( !arg )
     return;
 
+#if defined( NODE_SMART_V021 )
   struct station_config *sta_conf = arg;
   wifi_station_set_config(sta_conf);
   wifi_station_disconnect();
@@ -57,6 +64,75 @@ static void wifi_smart_succeed_cb(void *arg){
     wifi_smart_succeed = LUA_NOREF;
   }
   smartconfig_stop();
+#else // NODE_SMART_V032
+
+  struct station_config *sta_conf = NULL;
+  char * ssid = NULL;
+  char * password = NULL;
+
+  switch (status) {
+  case SC_STATUS_WAIT:
+    c_printf("SC_STATUS_WAIT");
+    break;
+  case SC_STATUS_FIND_CHANNEL:
+    c_printf("SC_STATUS_FIND_CHANNEL");
+    break;
+  case SC_STATUS_GETTING_SSID_PSWD:
+    c_printf("SC_STATUS_GETTING_SSID_PSWD");
+    break;
+  case SC_STATUS_LINK:
+    c_printf("SC_STATUS_LINK");
+    sta_conf = arg;
+    if (sta_conf != NULL)
+    {
+      wifi_station_set_config(sta_conf);
+      wifi_station_disconnect();
+      wifi_station_connect();
+      ssid = (char *) os_zalloc(os_strlen(sta_conf->ssid) + 1);
+      password = (char *) os_zalloc(os_strlen(sta_conf->password) + 1);
+      os_memcpy(ssid, (uint8*)sta_conf->ssid, os_strlen(sta_conf->ssid));
+      os_memcpy(password, (uint8*)sta_conf->password, os_strlen(sta_conf->password));
+    }
+    break;
+  case SC_STATUS_LINK_OVER:
+    c_printf("SC_STATUS_LINK_OVER");
+    if(wifi_smart_succeed != LUA_NOREF)
+    {
+      lua_rawgeti(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+      lua_pushstring(smart_L, sta_conf->ssid); 
+      lua_pushstring(smart_L, sta_conf->password); 
+
+      if (arg != NULL) 
+      {
+        uint8 phone_ip[4] = {0};
+        uint8 phone_ip_buffer[16]={'\0'};
+        os_memcpy(phone_ip, (uint8*)arg, 4);
+        os_sprintf(phone_ip_buffer, "%d.%d.%d.%d",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
+        lua_pushstring(smart_L, phone_ip_buffer);
+      }
+      else
+      {
+        lua_pushnil(smart_L);
+      }
+      lua_call(smart_L, 3, 0);
+      luaL_unref(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+      wifi_smart_succeed = LUA_NOREF;
+    }
+    if(ssid != NULL)
+    {
+      os_free(ssid);
+      ssid = NULL;
+    }
+    if(password != NULL)
+    {
+      os_free(password);
+      password = NULL;
+    }
+    smartconfig_stop();
+    break;
+  }
+
+#endif // defined( NODE_SMART_V021 )
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 }
