@@ -55,7 +55,7 @@
 // (9/10) are meaningless when (3) is zero
 //
 
-#define RTC_FIFO_BASE          8
+#define RTC_FIFO_BASE          10
 #define RTC_FIFO_MAGIC         0x44695553
 
 // RTCFIFO storage
@@ -84,6 +84,10 @@
 #define RTC_DEFAULT_FIFO_END  128
 #define RTC_DEFAULT_TAGCOUNT    5
 #define RTC_DEFAULT_FIFO_LOC (RTC_DEFAULT_FIFO_START + (RTC_DEFAULT_FIFO_END<<8) + (RTC_DEFAULT_TAGCOUNT<<16))
+
+#ifndef RTCTIME_SLEEP_ALIGNED
+# define RTCTIME_SLEEP_ALIGNED rtc_time_deep_sleep_until_aligned
+#endif
 
 typedef struct
 {
@@ -340,7 +344,8 @@ static int32_t rtc_fifo_delta_t(uint32_t t, uint32_t ref_t)
 
 static uint32_t rtc_fifo_construct_entry(uint32_t val, uint32_t tagindex, uint32_t decimals, uint32_t deltat)
 {
-  return val+(deltat<<16)+(decimals<<25)+(tagindex<<28);
+  return (val & 0xffff) + ((deltat & 0x1ff) <<16) +
+         ((decimals & 0x7)<<25) + ((tagindex & 0xf)<<28);
 }
 
 static inline void rtc_fifo_store_sample(const sample_t* s)
@@ -467,10 +472,10 @@ static inline void rtc_fifo_unset_magic(void)
   rtc_mem_write(RTC_FIFO_MAGIC_POS,0);
 }
 
-static inline void rtc_fifo_deep_sleep_until_sample(uint32_t min_sleep_us, uint32_t mhz)
+static inline void rtc_fifo_deep_sleep_until_sample(uint32_t min_sleep_us)
 {
   uint32_t align=rtc_mem_read(RTC_ALIGNMENT_POS);
-  rtc_time_deep_sleep_until_aligned(align,min_sleep_us,mhz);
+  RTCTIME_SLEEP_ALIGNED(align,min_sleep_us);
 }
 
 static inline void rtc_fifo_prepare(uint32_t samples_per_boot, uint32_t us_per_sample, uint32_t tagcount)

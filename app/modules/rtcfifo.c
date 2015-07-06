@@ -2,6 +2,8 @@
 
 #include "lauxlib.h"
 #include "user_modules.h"
+#include "rtc/rtctime.h"
+#define RTCTIME_SLEEP_ALIGNED rtctime_deep_sleep_until_aligned_us
 #include "rtc/rtcfifo.h"
 
 // rtcfifo.prepare ([{sensor_count=n, interval_us=m, storage_begin=x, storage_end=y}])
@@ -67,12 +69,8 @@ static int rtcfifo_put (lua_State *L)
 
   sample_t s;
   s.timestamp = luaL_checknumber (L, 1);
-  double val = luaL_checknumber (L, 2);
+  s.value = luaL_checknumber (L, 2);
   s.decimals = luaL_checknumber (L, 3);
-  uint32_t i = s.decimals;
-  while (i--)
-    val *= 10;
-  s.value = val;
   size_t len;
   const char *str = luaL_checklstring (L, 4, &len);
   union {
@@ -90,11 +88,7 @@ static int rtcfifo_put (lua_State *L)
 static int extract_sample (lua_State *L, const sample_t *s)
 {
   lua_pushnumber (L, s->timestamp);
-  double val = s->value;
-  int i;
-  for (i = 0; i < s->decimals; ++i)
-    val /= 10;
-  lua_pushnumber (L, val);
+  lua_pushnumber (L, s->value);
   lua_pushnumber (L, s->decimals);
   union {
     uint32_t u;
@@ -164,7 +158,7 @@ static int rtcfifo_dsleep_until_sample (lua_State *L)
   check_fifo_magic (L);
 
   uint32_t min_us = luaL_checknumber (L, 1);
-  rtc_fifo_deep_sleep_until_sample (min_us, CPU_DEFAULT_MHZ); // no return
+  rtc_fifo_deep_sleep_until_sample (min_us); // no return
   return 0;
 }
 #endif

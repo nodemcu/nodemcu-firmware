@@ -36,18 +36,15 @@ os_event_t *taskQueue;
  * by the time it is invoked the irom has not yet been mapped. This naturally
  * also goes for anything the trampoline itself calls.
  */
-void user_start_trampoline (void) TEXT_SECTION_ATTR;
-void user_start_trampoline (void)
+void TEXT_SECTION_ATTR user_start_trampoline (void)
 {
    __real__xtos_set_exception_handler (
      EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
 
 #ifdef LUA_USE_MODULES_RTCTIME
-  rtc_time_register_bootup ();
-
   // Note: Keep this as close to call_user_start() as possible, since it
   // is where the cpu clock actually gets bumped to 80MHz.
-  rtc_time_switch_clocks ();
+  rtctime_early_startup ();
 #endif
   call_user_start ();
 }
@@ -153,6 +150,9 @@ void nodemcu_init(void)
 *******************************************************************************/
 void user_init(void)
 {
+#ifdef LUA_USE_MODULES_RTCTIME
+    rtctime_late_startup ();
+#endif
     // NODE_DBG("SDK version:%s\n", system_get_sdk_version());
     // system_print_meminfo();
     // os_printf("Heap size::%d.\n",system_get_free_heap_size());

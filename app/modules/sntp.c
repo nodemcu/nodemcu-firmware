@@ -131,7 +131,7 @@ static void sntp_dosend (lua_State *L)
   req.mode = 3; // client
 #ifdef LUA_USE_MODULES_RTCTIME
   struct rtc_timeval tv;
-  rtc_time_gettimeofday (&tv, CPU_DEFAULT_MHZ);
+  rtctime_gettimeofday (&tv);
   req.xmit.sec = htonl (tv.tv_sec);
   req.xmit.frac = htonl (tv.tv_usec);
 #else
@@ -221,7 +221,7 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 #ifdef LUA_USE_MODULES_RTCTIME
   struct rtc_timeval tv;
 
-  rtc_time_gettimeofday (&tv, CPU_DEFAULT_MHZ);
+  rtctime_gettimeofday (&tv);
   ntp_timestamp_t dest;
   dest.sec = tv.tv_sec;
   dest.frac = (MICROSECONDS * tv.tv_usec) / UINT32_MAXI;
@@ -248,8 +248,7 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
   tv.tv_sec = dest.sec - NTP_TO_UNIX_EPOCH;
   tv.tv_usec = (MICROSECONDS * dest.frac) / UINT32_MAXI;
-  rtc_time_set_wake_magic ();
-  rtc_time_settimeofday (&tv);
+  rtctime_settimeofday (&tv);
 
   if (have_cb)
   {

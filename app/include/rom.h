@@ -1,5 +1,8 @@
 // Headers to the various functions in the rom (as we discover them)
 
+#ifndef _ROM_H_
+#define _ROM_H_
+
 // SHA1 is assumed to match the netbsd sha1.h headers
 #define SHA1_DIGEST_LENGTH		20
 #define SHA1_DIGEST_STRING_LENGTH	41
@@ -103,3 +106,4 @@ typedef void (*exception_handler_fn) (struct exception_frame *ef, uint32_t cause
  */
 exception_handler_fn _xtos_set_exception_handler (uint32_t cause, exception_handler_fn handler);
 
+#endif
