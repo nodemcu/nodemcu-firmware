@@ -421,6 +421,15 @@ static int node_bootreason (lua_State *L)
   return 1;
 }
 
+// Lua: restore()
+static int node_restore (lua_State *L)
+{
+  flash_init_data_default();
+  flash_init_data_blank();
+  system_restore();
+  return 0;
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -446,6 +455,7 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
+  { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0
