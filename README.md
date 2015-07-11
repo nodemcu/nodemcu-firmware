@@ -440,12 +440,18 @@ In contrast to the source code based inclusion of XBMs into u8glib, it's require
 
 ####Control a WS2812 based light strip
 ```lua
+  
 	-- set the color of one LED on GPIO2 to red
-	ws2812.writergb(4, string.char(255, 0, 0))
-	-- set the color of 10 LEDs on GPIO0 to blue
-	ws2812.writergb(3, string.char(0, 0, 255):rep(10))
-	-- first LED green, second LED white
-	ws2812.writergb(4, string.char(0, 255, 0, 255, 255, 255))
+	ws2812.write(4, string.char(255, 0, 0))
+  -- set the brightness to 50%
+  ws2812.set_brightness(0.5)
+	-- set the color of 10 LEDs on GPIO0 to blue with half brightness
+	ws2812.write(3, string.char(0, 0, 255):rep(10))
+  --returns the current brightness
+  print(ws2812.brightness())
+  0.5
+	-- first LED green, second LED white at half brightness
+	ws2812.write(4, string.char(0, 255, 0, 255, 255, 255))
 ```
 
 ####coap client and server
