@@ -236,7 +236,7 @@ static int wifi_start_smart( lua_State* L )
     smart_begin(channel, (smart_succeed )wifi_smart_succeed_cb, L);
   }
 
-#else
+#elif defined( NODE_SMART_V032 )
 
   if(wifi_get_opmode() != STATION_MODE)
   {
@@ -263,6 +263,34 @@ static int wifi_start_smart( lua_State* L )
     return luaL_error( L, "wrong arg range" );
 
   smartconfig_start(smart_type, wifi_smart_succeed_cb);
+
+#else
+
+  if(wifi_get_opmode() != STATION_MODE)
+  {
+    return luaL_error( L, "Smart link only in STATION mode" );
+  }
+  uint8_t smart_type = 0;
+  int stack = 1;
+  smart_L = L;
+  if ( lua_isnumber(L, stack) )
+  {
+    smart_type = lua_tointeger(L, stack);
+    stack++;
+  }
+
+  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)
+  {
+    lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
+    if(wifi_smart_succeed != LUA_NOREF)
+      luaL_unref(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+    wifi_smart_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+
+  if ( smart_type > 1 )
+    return luaL_error( L, "wrong arg range" );
+
+  smartconfig_start(wifi_smart_succeed_cb);
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 
