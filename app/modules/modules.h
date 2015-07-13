@@ -181,6 +181,38 @@
 #define ROM_MODULES_DHT
 #endif
 
+#if defined(LUA_USE_MODULES_RTCMEM)
+#define MODULES_RTCMEM      "rtcmem"
+#define ROM_MODULES_RTCMEM  \
+    _ROM(MODULES_RTCMEM, luaopen_rtcmem, rtcmem_map)
+#else
+#define ROM_MODULES_RTCMEM
+#endif
+
+#if defined(LUA_USE_MODULES_RTCTIME)
+#define MODULES_RTCTIME      "rtctime"
+#define ROM_MODULES_RTCTIME  \
+    _ROM(MODULES_RTCTIME, luaopen_rtctime, rtctime_map)
+#else
+#define ROM_MODULES_RTCTIME
+#endif
+
+#if defined(LUA_USE_MODULES_RTCFIFO)
+#define MODULES_RTCFIFO      "rtcfifo"
+#define ROM_MODULES_RTCFIFO  \
+    _ROM(MODULES_RTCFIFO, luaopen_rtcfifo, rtcfifo_map)
+#else
+#define ROM_MODULES_RTCFIFO
+#endif
+
+#if defined(LUA_USE_MODULES_SNTP)
+#define MODULES_SNTP      "sntp"
+#define ROM_MODULES_SNTP  \
+    _ROM(MODULES_SNTP, luaopen_sntp, sntp_map)
+#else
+#define ROM_MODULES_SNTP
+#endif
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -203,6 +235,10 @@
         ROM_MODULES_CJSON   \
         ROM_MODULES_CRYPTO  \
         ROM_MODULES_RC      \
-        ROM_MODULES_DHT
+        ROM_MODULES_DHT     \
+        ROM_MODULES_RTCMEM  \
+        ROM_MODULES_RTCTIME \
+        ROM_MODULES_RTCFIFO \
+        ROM_MODULES_SNTP    \
 
 #endif
