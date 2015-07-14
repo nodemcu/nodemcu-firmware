@@ -82,16 +82,16 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
 
   switch (status) {
   case SC_STATUS_WAIT:
-    c_printf("SC_STATUS_WAIT\n");
+    NODE_DBG("SC_STATUS_WAIT\n");
     break;
   case SC_STATUS_FIND_CHANNEL:
-    c_printf("SC_STATUS_FIND_CHANNEL\n");
+    NODE_DBG("SC_STATUS_FIND_CHANNEL\n");
     break;
   case SC_STATUS_GETTING_SSID_PSWD:
-    c_printf("SC_STATUS_GETTING_SSID_PSWD\n");
+    NODE_DBG("SC_STATUS_GETTING_SSID_PSWD\n");
     break;
   case SC_STATUS_LINK:
-    c_printf("SC_STATUS_LINK\n");
+    NODE_DBG("SC_STATUS_LINK\n");
     sta_conf = arg;
     if (sta_conf != NULL)
     {
@@ -105,7 +105,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
     }
     break;
   case SC_STATUS_LINK_OVER:
-    c_printf("SC_STATUS_LINK_OVER\n");
+    NODE_DBG("SC_STATUS_LINK_OVER\n");
     if(wifi_smart_succeed != LUA_NOREF)
     {
       lua_rawgeti(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
@@ -118,7 +118,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
         uint8 phone_ip_buffer[16]={'\0'};
         os_memcpy(phone_ip, (uint8*)arg, 4);
         os_sprintf(phone_ip_buffer, "%d.%d.%d.%d",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
-        NODE_DBG(phone_ip_buffer);
+        NODE_DBG("%s\n", phone_ip_buffer);
         lua_pushstring(smart_L, phone_ip_buffer);
       }
       else
