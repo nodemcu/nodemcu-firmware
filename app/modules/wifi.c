@@ -64,27 +64,27 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
   }
   smartconfig_stop();
 
-#else // NODE_SMART_V032
+#else // NODE_SMART_V034
 
   if( !arg )
     return;
 
   struct station_config *sta_conf = NULL;
-  char * ssid = NULL;
-  char * password = NULL;
+  static char * ssid = NULL;
+  static char * password = NULL;
 
   switch (status) {
   case SC_STATUS_WAIT:
-    // c_printf("SC_STATUS_WAIT\n");
+    c_printf("SC_STATUS_WAIT\n");
     break;
   case SC_STATUS_FIND_CHANNEL:
-    // c_printf("SC_STATUS_FIND_CHANNEL\n");
+    c_printf("SC_STATUS_FIND_CHANNEL\n");
     break;
   case SC_STATUS_GETTING_SSID_PSWD:
-    // c_printf("SC_STATUS_GETTING_SSID_PSWD\n");
+    c_printf("SC_STATUS_GETTING_SSID_PSWD\n");
     break;
   case SC_STATUS_LINK:
-    // c_printf("SC_STATUS_LINK\n");
+    c_printf("SC_STATUS_LINK\n");
     sta_conf = arg;
     if (sta_conf != NULL)
     {
@@ -93,17 +93,17 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
       wifi_station_connect();
       ssid = (char *) os_zalloc(os_strlen(sta_conf->ssid) + 1);
       password = (char *) os_zalloc(os_strlen(sta_conf->password) + 1);
-      os_memcpy(ssid, (uint8*)sta_conf->ssid, os_strlen(sta_conf->ssid));
-      os_memcpy(password, (uint8*)sta_conf->password, os_strlen(sta_conf->password));
+      os_strncpy(ssid, (uint8*)sta_conf->ssid, os_strlen(sta_conf->ssid));
+      os_strncpy(password, (uint8*)sta_conf->password, os_strlen(sta_conf->password));
     }
     break;
   case SC_STATUS_LINK_OVER:
-    // c_printf("SC_STATUS_LINK_OVER\n");
+    c_printf("SC_STATUS_LINK_OVER\n");
     if(wifi_smart_succeed != LUA_NOREF)
     {
       lua_rawgeti(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
-      lua_pushstring(smart_L, sta_conf->ssid); 
-      lua_pushstring(smart_L, sta_conf->password); 
+      lua_pushstring(smart_L, ssid); 
+      lua_pushstring(smart_L, password); 
 
       if (arg != NULL) 
       {
@@ -111,6 +111,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
         uint8 phone_ip_buffer[16]={'\0'};
         os_memcpy(phone_ip, (uint8*)arg, 4);
         os_sprintf(phone_ip_buffer, "%d.%d.%d.%d",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
+        NODE_DBG(phone_ip_buffer);
         lua_pushstring(smart_L, phone_ip_buffer);
       }
       else
@@ -239,35 +240,7 @@ static int wifi_start_smart( lua_State* L )
     smart_begin(channel, (smart_succeed )wifi_smart_succeed_cb, L);
   }
 
-#elif defined( NODE_SMART_V032 )
-
-  if(wifi_get_opmode() != STATION_MODE)
-  {
-    return luaL_error( L, "Smart link only in STATION mode" );
-  }
-  uint8_t smart_type = 0;
-  int stack = 1;
-  smart_L = L;
-  if ( lua_isnumber(L, stack) )
-  {
-    smart_type = lua_tointeger(L, stack);
-    stack++;
-  }
-
-  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)
-  {
-    lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(wifi_smart_succeed != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
-    wifi_smart_succeed = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  if ( smart_type > 1 )
-    return luaL_error( L, "wrong arg range" );
-
-  smartconfig_start(smart_type, wifi_smart_succeed_cb);
-
-#else
+#else // defined( NODE_SMART_V034 )
 
   if(wifi_get_opmode() != STATION_MODE)
   {
@@ -305,7 +278,7 @@ static int wifi_exit_smart( lua_State* L )
 {
 #if defined( NODE_SMART_OLDSTYLE )
   smart_end();
-#else
+#else // defined( NODE_SMART_V034 )
   smartconfig_stop();
 #endif // defined( NODE_SMART_OLDSTYLE )
 
