@@ -66,6 +66,9 @@ static void wifi_smart_succeed_cb(sc_status status, void *arg)
 
 #else // NODE_SMART_V032
 
+  if( !arg )
+    return;
+
   struct station_config *sta_conf = NULL;
   char * ssid = NULL;
   char * password = NULL;

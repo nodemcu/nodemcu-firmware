@@ -47,7 +47,7 @@
 // #define BUILD_WOFS		1
 #define BUILD_SPIFFS	1
 
-#define LUA_NUMBER_INTEGRAL
+// #define LUA_NUMBER_INTEGRAL
 
 #define LUA_OPTRAM
 #ifdef LUA_OPTRAM
