@@ -17,6 +17,7 @@
 
 static int wifi_smart_succeed = LUA_NOREF;
 static uint8 getap_output_format=0;
+
 //variables for wifi event monitor
 static sint32_t wifi_status_cb_ref[6] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
 static volatile os_timer_t wifi_sta_status_timer;
@@ -858,8 +859,53 @@ static int wifi_station_status( lua_State* L )
   return 1; 
 }
 
+/**
+  * wifi.sta.eventMonStop()
+  * Description:
+  * 	Stop wifi station event monitor
+  * Syntax:
+  * 	wifi.sta.eventMonStop()
+  * 	wifi.sta.eventMonStop("unreg all")
+  * Parameters:
+  * 	"unreg all": unregister all previously registered functions
+  * Returns:
+  * 	Nothing.
+  *
+  *	Example:
+  	  	  --stop wifi event monitor
+  	  	  wifi.sta.eventMonStop()
+
+  	  	  --stop wifi event monitor and unregister all callbacks
+  	  	  wifi.sta.eventMonStop("unreg all")
+  */
+static void wifi_station_event_mon_stop(lua_State* L)
+{
+  os_timer_disarm(&wifi_sta_status_timer);
+  if(lua_isstring(L,1))
+  {
+
+    if (c_strcmp(luaL_checkstring(L, 1), "unreg all")==0)
+    {
+	  int i;
+	  for (i=0;i<6;i++)
+  	  {
+  	    if(wifi_status_cb_ref[i] != LUA_NOREF)
+	    {
+		  luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[i]);
+		  wifi_status_cb_ref[i] = LUA_NOREF;
+	    }
+	  }
+    }
+  }
+}
+
 static void wifi_status_cb(int arg)
 {
+  if (wifi_get_opmode()==2)
+  {
+	  os_timer_disarm(&wifi_sta_status_timer);
+	  return;
+  }
   int wifi_status=wifi_station_get_connect_status();
   if (wifi_status!=prev_wifi_status)
   {
@@ -882,12 +928,12 @@ static void wifi_status_cb(int arg)
   * Parameters:
   * 	wifi_status: wifi status you would like to set callback for
   * 		Valid wifi states:
-   				wifi.STA_IDLE
-  				wifi.STA_CONNECTING
-  				wifi.STA_WRONGPWD
-				wifi.STA_APNOTFOUND
-  				wifi.STA_FAIL
-  				wifi.STA_GOTIP
+  * 			wifi.STA_IDLE
+  *				wifi.STA_CONNECTING
+  *				wifi.STA_WRONGPWD
+  *				wifi.STA_APNOTFOUND
+  *  			wifi.STA_FAIL
+  *  			wifi.STA_GOTIP
   * 	function: function to perform
   * 	"unreg": unregister previously registered function
   * Returns:
@@ -976,46 +1022,6 @@ static int wifi_station_event_mon_start(lua_State* L)
   os_timer_setfn(&wifi_sta_status_timer, (os_timer_func_t *)wifi_status_cb, NULL);
   os_timer_arm(&wifi_sta_status_timer, ms, 1);
   return 0;
-}
-
-/**
-  * wifi.sta.eventMonStart()
-  * Description:
-  * 	Stop wifi station event monitor
-  * Syntax:
-  * 	wifi.sta.eventMonStop()
-  * 	wifi.sta.eventMonStop("unreg all")
-  * Parameters:
-  * 	"unreg all": unregister all previously registered functions
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
-  	  	  --stop wifi event monitor
-  	  	  wifi.sta.eventMonStop()
-
-  	  	  --stop wifi event monitor and unregister all callbacks
-  	  	  wifi.sta.eventMonStop("unreg all")
-  */
-static void wifi_station_event_mon_stop(lua_State* L)
-{
-  os_timer_disarm(&wifi_sta_status_timer);
-  if(lua_isstring(L,1))
-  {
-
-    if (c_strcmp(luaL_checkstring(L, 1), "unreg all")==0)
-    {
-	  int i;
-	  for (i=0;i<6;i++)
-  	  {
-  	    if(wifi_status_cb_ref[i] != LUA_NOREF)
-	    {
-		  luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[i]);
-		  wifi_status_cb_ref[i] = LUA_NOREF;
-	    }
-	  }
-    }
-  }
 }
 
 // Lua: wifi.ap.getmac()
