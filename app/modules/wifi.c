@@ -911,8 +911,9 @@ static void wifi_status_cb(int arg)
   {
  	if(wifi_status_cb_ref[wifi_status]!=LUA_NOREF)
  	{
-	  lua_rawgeti(gL, LUA_REGISTRYINDEX, wifi_status_cb_ref[wifi_status]);
-	  lua_call(gL, 0, 0);
+ 	  lua_rawgeti(gL, LUA_REGISTRYINDEX, wifi_status_cb_ref[wifi_status]);
+	  lua_pushnumber(gL, prev_wifi_status);
+	  lua_call(gL, 1, 0);
  	}
   }
   prev_wifi_status=wifi_status;
