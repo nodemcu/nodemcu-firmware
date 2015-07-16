@@ -999,7 +999,7 @@ static int lu8g_ssd1306_128x64_i2c( lua_State *L )
     // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
     //         *before* the display is constructed (especially the page buffers)
     //         this consumes heap even when the device is not used at all
-#if 1
+#if 0
     // build device entry
     lud->dev = (u8g_dev_t){ u8g_dev_ssd1306_128x64_fn, &(lud->pb), U8G_COM_SSD_I2C };
 
@@ -1045,7 +1045,7 @@ static int lu8g_ssd1306_128x64_spi( lua_State *L )
     // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
     //         *before* the display is constructed (especially the page buffers)
     //         this consumes heap even when the device is not used at all
-#if 1
+#if 0
     // build device entry
     lud->dev = (u8g_dev_t){ u8g_dev_ssd1306_128x64_fn, &(lud->pb), U8G_COM_HW_SPI };
 
@@ -1063,7 +1063,7 @@ static int lu8g_ssd1306_128x64_spi( lua_State *L )
     // and finally init device using specific interface init function
     u8g_InitHWSPI( LU8G, &(lud->dev), cs, dc, res );
 #else
-    u8g_InitHWSPI( LU8G, &u8g_dev_ssd1306_128x64_spi, cs, dc, res );
+    u8g_InitHWSPI( LU8G, &u8g_dev_ssd1306_128x64_hw_spi, cs, dc, res );
 #endif
 
 
@@ -1094,7 +1094,7 @@ static int lu8g_pcd8544_84x48( lua_State *L )
     // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
     //         *before* the display is constructed (especially the page buffers)
     //         this consumes heap even when the device is not used at all
-#if 1
+#if 0
     // build device entry
     lud->dev = (u8g_dev_t){ u8g_dev_pcd8544_fn, &(lud->pb), U8G_COM_HW_SPI };
 

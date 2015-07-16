@@ -306,26 +306,26 @@ void pg_DrawPolygon(pg_struct *pg, u8g_t *u8g)
   pg_exec(pg, u8g);
 }
 
-//pg_struct u8g_pg;
+pg_struct u8g_pg;
 
-void u8g_ClearPolygonXY(u8g_t *u8g)
+void u8g_ClearPolygonXY(void)
 {
-    pg_ClearPolygonXY(&(u8g->pg));
+  pg_ClearPolygonXY(&u8g_pg);
 }
 
 void u8g_AddPolygonXY(u8g_t *u8g, int16_t x, int16_t y)
 {
-    pg_AddPolygonXY(&(u8g->pg), u8g, x, y);
+  pg_AddPolygonXY(&u8g_pg, u8g, x, y);
 }
 
 void u8g_DrawPolygon(u8g_t *u8g)
 {
-    pg_DrawPolygon(&(u8g->pg), u8g);
+  pg_DrawPolygon(&u8g_pg, u8g);
 }
 
 void u8g_DrawTriangle(u8g_t *u8g, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)
 {
-  u8g_ClearPolygonXY(u8g);
+  u8g_ClearPolygonXY();
   u8g_AddPolygonXY(u8g, x0, y0);
   u8g_AddPolygonXY(u8g, x1, y1);
   u8g_AddPolygonXY(u8g, x2, y2);

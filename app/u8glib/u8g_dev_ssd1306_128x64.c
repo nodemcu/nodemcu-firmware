@@ -409,3 +409,4 @@ u8g_pb_t u8g_dev_sh1106_128x64_2x_pb = { {16, HEIGHT, 0, 0, 0},  WIDTH, u8g_dev_
 u8g_dev_t u8g_dev_sh1106_128x64_2x_sw_spi = { u8g_dev_sh1106_128x64_2x_fn, &u8g_dev_sh1106_128x64_2x_pb, U8G_COM_SW_SPI };
 u8g_dev_t u8g_dev_sh1106_128x64_2x_hw_spi = { u8g_dev_sh1106_128x64_2x_fn, &u8g_dev_sh1106_128x64_2x_pb, U8G_COM_HW_SPI };
 u8g_dev_t u8g_dev_sh1106_128x64_2x_i2c = { u8g_dev_sh1106_128x64_2x_fn, &u8g_dev_sh1106_128x64_2x_pb, U8G_COM_SSD_I2C };
+
