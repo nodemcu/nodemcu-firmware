@@ -110,7 +110,7 @@ static int file_seek (lua_State *L)
   int op = luaL_checkoption(L, 1, "cur", modenames);
   long offset = luaL_optlong(L, 2, 0);
   op = fs_seek(file_fd, offset, mode[op]);
-  if (op)
+  if (op < 0)
     lua_pushnil(L);  /* error */
   else
     lua_pushinteger(L, fs_tell(file_fd));
