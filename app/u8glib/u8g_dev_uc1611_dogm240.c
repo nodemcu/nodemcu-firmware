@@ -66,7 +66,7 @@ static const uint8_t u8g_dev_uc1611_dogm240_init_seq[] PROGMEM = {
 
 static void setPage(u8g_t *u8g, u8g_dev_t *dev, unsigned char page)
 {
-  u8g_WriteByte(u8g, dev, 0x70);
+  u8g_WriteByte(u8g, dev, 0x70 + (page>>4)); 
   u8g_WriteByte(u8g, dev, 0x60 + (page&0x0F));
 }
 
@@ -103,7 +103,8 @@ uint8_t u8g_dev_uc1611_dogm240_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void 
       u8g_SetChipSelect(u8g, dev, 0);
       u8g_SetAddress(u8g, dev, 0);          /* instruction mode */
       u8g_WriteByte(u8g, dev, 0x81);
-      u8g_WriteByte(u8g, dev, (*(uint8_t *)arg) >> 2);	/* set contrast from, keep gain at 0 */
+      /* 11 Jul 2015: bugfix, github issue 339 */
+      u8g_WriteByte(u8g, dev, (*(uint8_t *)arg) );	/* set contrast from, keep gain at 0 */
       u8g_SetChipSelect(u8g, dev, 1);
       return 1;
   }
@@ -113,4 +114,5 @@ uint8_t u8g_dev_uc1611_dogm240_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void 
 U8G_PB_DEV(u8g_dev_uc1611_dogm240_i2c , WIDTH, HEIGHT, PAGE_HEIGHT, u8g_dev_uc1611_dogm240_fn, U8G_COM_UC_I2C);
 U8G_PB_DEV(u8g_dev_uc1611_dogm240_sw_spi , WIDTH, HEIGHT, PAGE_HEIGHT, u8g_dev_uc1611_dogm240_fn, U8G_COM_SW_SPI);
 U8G_PB_DEV(u8g_dev_uc1611_dogm240_hw_spi , WIDTH, HEIGHT, PAGE_HEIGHT, u8g_dev_uc1611_dogm240_fn, U8G_COM_HW_SPI);
+U8G_PB_DEV(u8g_dev_uc1611_dogm240_8bit , WIDTH, HEIGHT, PAGE_HEIGHT, u8g_dev_uc1611_dogm240_fn, U8G_COM_FAST_PARALLEL);
 
