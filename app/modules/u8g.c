@@ -986,9 +986,9 @@ static int lu8g_close_display( lua_State *L )
 //
 // I2C based devices will use this function template to implement the Lua binding.
 #undef U8G_DISPLAY_TABLE_ENTRY
-#define U8G_DISPLAY_TABLE_ENTRY(device, display)         \
+#define U8G_DISPLAY_TABLE_ENTRY(device, display, lua_api_name)          \
     uint8_t u8g_dev_ ## display ## _fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg); \
-    static int lu8g_ ## device( lua_State *L )                          \
+    static int lu8g_ ## lua_api_name( lua_State *L )                    \
     {                                                                   \
         unsigned addr = luaL_checkinteger( L, 1 );                      \
                                                                         \
@@ -1015,9 +1015,9 @@ U8G_DISPLAY_TABLE_I2C
 //
 // SPI based devices will use this function template to implement the Lua binding.
 #undef U8G_DISPLAY_TABLE_ENTRY
-#define U8G_DISPLAY_TABLE_ENTRY(device, display)                        \
+#define U8G_DISPLAY_TABLE_ENTRY(device, display, lua_api_name)          \
     uint8_t u8g_dev_ ## display ## _fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg); \
-    static int lu8g_ ## device( lua_State *L )                          \
+    static int lu8g_ ## lua_api_name( lua_State *L )                    \
     {                                                                   \
         unsigned cs = luaL_checkinteger( L, 1 );                        \
         if (cs == 0)                                                    \
@@ -1110,7 +1110,7 @@ static const LUA_REG_TYPE lu8g_display_map[] =
 const LUA_REG_TYPE lu8g_map[] = 
 {
 #undef U8G_DISPLAY_TABLE_ENTRY
-#define U8G_DISPLAY_TABLE_ENTRY(device, display) { LSTRKEY( #device ), LFUNCVAL ( lu8g_ ##device ) },
+#define U8G_DISPLAY_TABLE_ENTRY(device, display, lua_api_name) { LSTRKEY( #lua_api_name ), LFUNCVAL ( lu8g_ ##lua_api_name ) },
     U8G_DISPLAY_TABLE_I2C
     U8G_DISPLAY_TABLE_SPI
 
