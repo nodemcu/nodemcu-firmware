@@ -30,7 +30,7 @@ function init_spi_display()
      local res = 0 -- GPIO16
 
      spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
-     disp = u8g.ssd1306_128x64_spi(cs, dc, res)
+     disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 end
 
 

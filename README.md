@@ -403,7 +403,7 @@ SSD1306 via SPI:
 cs  = 8 -- GPIO15, pull-down 10k to GND
 dc  = 4 -- GPIO2
 res = 0 -- GPIO16, RES is optional YMMV
-disp = u8g.ssd1306_128x64_spi(cs, dc, res)
+disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 ```
 
 This object provides all of u8glib's methods to control the display.
