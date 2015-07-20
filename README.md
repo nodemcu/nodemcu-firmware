@@ -363,7 +363,7 @@ cu:send("hello")
 u8glib is a graphics library with support for many different displays.
 The integration in nodemcu is developed for SSD1306 based display attached via the I2C port. Further display types and SPI connectivity will be added in the future.
 
-U8glib v1.17
+U8glib v1.18.1
 
 #####I2C connection
 Hook up SDA and SCL to any free GPIOs. Eg. `lua_examples/u8glib/graphics_test.lua` expects SDA=5 (GPIO14) and SCL=6 (GPIO12). They are used to set up nodemcu's I2C driver before accessing the display:
@@ -407,7 +407,7 @@ disp = u8g.ssd1306_128x64_spi(cs, dc, res)
 ```
 
 This object provides all of u8glib's methods to control the display.
-Again, refer to `lua_examples/u8glib/graphics_test.lua` to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://code.google.com/p/u8glib/) for technical details.
+Again, refer to `lua_examples/u8glib/graphics_test.lua` to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://github.com/olikraus/u8glib) for technical details.
 
 #####Fonts
 u8glib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in `app/include/u8g_config.h` and recompile. Simply add the desired fonts to the font table:
