@@ -16,6 +16,8 @@
 
 #define USE_OPTIMIZE_PRINTF
 
+#define UART_BUFF_SIZE 1024
+
 #ifdef DEVELOP_VERSION
 #define NODE_DEBUG
 #define COAP_DEBUG

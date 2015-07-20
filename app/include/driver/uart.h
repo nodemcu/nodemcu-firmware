@@ -5,7 +5,7 @@
 #include "eagle_soc.h"
 #include "c_types.h"
 
-#define RX_BUFF_SIZE    0x100
+#define RX_BUFF_SIZE    0x800 // 2048
 #define TX_BUFF_SIZE    100
 
 typedef enum {
@@ -107,4 +107,3 @@ void uart0_tx_buffer(uint8 *buf, uint16 len);
 void uart_setup(uint8 uart_no);
 STATUS uart_tx_one_char(uint8 uart, uint8 TxChar);
 #endif
-
