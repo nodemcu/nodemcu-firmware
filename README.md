@@ -1,11 +1,12 @@
 # **NodeMCU** #
-version 0.9.5
+version 1.2.0
+Under developing, Only integer firmware works.
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases/latest)
 
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
+Build on [ESP8266 sdk 1.2.0](http://bbs.espressif.com/viewtopic.php?f=5&t=680)<br />
 Lua core based on [eLua project](http://www.eluaproject.net/)<br />
 cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)<br />
 File system based on [spiffs](https://github.com/pellepl/spiffs)<br />

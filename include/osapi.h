@@ -53,5 +53,8 @@
 #define os_printf	os_printf_plus
 #endif
 
+unsigned long os_random(void);
+int os_get_random(unsigned char *buf, size_t len);
+
 #endif
 

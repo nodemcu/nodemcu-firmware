@@ -24,7 +24,6 @@ SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS= 					\
 	user 					\
 	driver 					\
-	lwip 					\
 	json 					\
 	upgrade 				\
 	platform 				\
@@ -75,7 +74,6 @@ endif
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
 	driver/libdriver.a 			\
-	lwip/liblwip.a 				\
 	json/libjson.a 				\
 	upgrade/libupgrade.a 			\
 	platform/libplatform.a 			\
@@ -108,6 +106,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-lphy 					\
 	-lpp 					\
 	-lnet80211 				\
+	-llwip 					\
 	-lwpa 					\
 	-lmain 					\
 	-ljson 					\
@@ -136,10 +135,7 @@ DEPENDS_eagle.app.v6 = 				\
 #	-DTXRX_RXBUF_DEBUG
 #	-DWLAN_CONFIG_CCX
 CONFIGURATION_DEFINES =	-D__ets__ 		\
-			-DICACHE_FLASH 		\
-			-DLWIP_OPEN_SRC 	\
-			-DPBUF_RSV_FOR_WLAN 	\
-			-DEBUF_LWIP
+			-DICACHE_FLASH
 
 DEFINES += 					\
 	$(UNIVERSAL_TARGET_DEFINES) 		\

@@ -1,5 +1,8 @@
 // Headers to the various functions in the rom (as we discover them)
 
+#ifndef _ROM_H_
+#define _ROM_H_
+
 // SHA1 is assumed to match the netbsd sha1.h headers
 #define SHA1_DIGEST_LENGTH		20
 #define SHA1_DIGEST_STRING_LENGTH	41
@@ -38,6 +41,15 @@ extern unsigned char * base64_decode(const unsigned char *src, size_t len, size_
 
 extern void mem_init(void * start_addr);
 
+// Interrupt Service Routine functions
+typedef void (*ets_isr_fn) (void *arg, uint32_t sp);
+extern int ets_isr_attach (unsigned int interrupt, ets_isr_fn, void *arg);
+extern void ets_isr_mask (unsigned intr);
+extern void ets_isr_unmask (unsigned intr);
+
+// Cycle-counter
+extern unsigned int xthal_get_ccount (void);
+extern int xthal_set_ccompare (unsigned int timer_number, unsigned int compare_value);
 
 // 2, 3 = reset (module dependent?), 4 = wdt
 int rtc_get_reset_reason (void);
@@ -94,3 +106,4 @@ typedef void (*exception_handler_fn) (struct exception_frame *ef, uint32_t cause
  */
 exception_handler_fn _xtos_set_exception_handler (uint32_t cause, exception_handler_fn handler);
 
+#endif

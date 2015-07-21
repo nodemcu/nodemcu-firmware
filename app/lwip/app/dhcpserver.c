@@ -611,8 +611,8 @@ static sint16_t ICACHE_FLASH_ATTR parse_msg(struct dhcps_msg *m, u16_t len)
 						node_insert_to_list(&plist,pnode);
 
 						POOL_CHECK:
-						if ((client_address_plus.addr > dhcps_lease.end_ip) || (ip_addr_isany(&client_address))){
-							client_address_plus.addr = dhcps_lease.start_ip;
+						if ((client_address_plus.addr > dhcps_lease.end_ip.addr) || (ip_addr_isany(&client_address))){
+							client_address_plus.addr = dhcps_lease.start_ip.addr;
 							goto POOL_START;
 						}
 
@@ -752,12 +752,12 @@ static void ICACHE_FLASH_ATTR wifi_softap_init_dhcps_lease(uint32 ip)
 			local_ip ++;
 
 		os_bzero(&dhcps_lease, sizeof(dhcps_lease));
-		dhcps_lease.start_ip = softap_ip | local_ip;
-		dhcps_lease.end_ip = softap_ip | (local_ip + DHCPS_MAX_LEASE);
+		dhcps_lease.start_ip.addr = softap_ip | local_ip;
+		dhcps_lease.end_ip.addr = softap_ip | (local_ip + DHCPS_MAX_LEASE);
 	}
-	dhcps_lease.start_ip = htonl(dhcps_lease.start_ip);
-	dhcps_lease.end_ip= htonl(dhcps_lease.end_ip);
-//	os_printf("start_ip = 0x%x, end_ip = 0x%x\n",dhcps_lease.start_ip, dhcps_lease.end_ip);
+	dhcps_lease.start_ip.addr = htonl(dhcps_lease.start_ip.addr);
+	dhcps_lease.end_ip.addr= htonl(dhcps_lease.end_ip.addr);
+//	os_printf("start_ip = 0x%x, end_ip = 0x%x\n",dhcps_lease.start_ip.addr, dhcps_lease.end_ip.addr);
 }
 ///////////////////////////////////////////////////////////////////////////////////
 void ICACHE_FLASH_ATTR dhcps_start(struct ip_info *info)
@@ -772,7 +772,7 @@ void ICACHE_FLASH_ATTR dhcps_start(struct ip_info *info)
 
 	server_address = info->ip;
 	wifi_softap_init_dhcps_lease(server_address.addr);
-	client_address_plus.addr = dhcps_lease.start_ip;
+	client_address_plus.addr = dhcps_lease.start_ip.addr;
 
 	udp_bind(pcb_dhcps, IP_ADDR_ANY, DHCPS_SERVER_PORT);
 	udp_recv(pcb_dhcps, handle_dhcp, NULL);
@@ -810,26 +810,26 @@ bool ICACHE_FLASH_ATTR wifi_softap_set_dhcps_lease(struct dhcps_lease *please)
 	os_bzero(&info, sizeof(struct ip_info));
 	wifi_get_ip_info(SOFTAP_IF, &info);
 	softap_ip = htonl(info.ip.addr);
-	please->start_ip = htonl(please->start_ip);
-	please->end_ip = htonl(please->end_ip);
+	please->start_ip.addr = htonl(please->start_ip.addr);
+	please->end_ip.addr = htonl(please->end_ip.addr);
 
 	/*config ip information can't contain local ip*/
-	if ((please->start_ip <= softap_ip) && (softap_ip <= please->end_ip))
+	if ((please->start_ip.addr <= softap_ip) && (softap_ip <= please->end_ip.addr))
 		return false;
 
 	/*config ip information must be in the same segment as the local ip*/
 	softap_ip >>= 8;
-	if ((please->start_ip >> 8 != softap_ip)
-			|| (please->end_ip >> 8 != softap_ip)) {
+	if ((please->start_ip.addr >> 8 != softap_ip)
+			|| (please->end_ip.addr >> 8 != softap_ip)) {
 		return false;
 	}
 
-	if (please->end_ip - please->start_ip > DHCPS_MAX_LEASE)
+	if (please->end_ip.addr - please->start_ip.addr > DHCPS_MAX_LEASE)
 		return false;
 
 	os_bzero(&dhcps_lease, sizeof(dhcps_lease));
-	dhcps_lease.start_ip = please->start_ip;
-	dhcps_lease.end_ip = please->end_ip;
+	dhcps_lease.start_ip.addr = please->start_ip.addr;
+	dhcps_lease.end_ip.addr = please->end_ip.addr;
 	dhcps_lease_flag = false;
 	return true;
 }

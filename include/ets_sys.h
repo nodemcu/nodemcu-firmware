@@ -51,6 +51,9 @@ typedef struct _ETSTIMER_ {
 #define ETS_FRC_TIMER1_INTR_ATTACH(func, arg) \
     ets_isr_attach(ETS_FRC_TIMER1_INUM, (func), (void *)(arg))
 
+#define ETS_FRC_TIMER1_NMI_INTR_ATTACH(func) \
+	NmiTimSetFunc(func)
+
 #define ETS_GPIO_INTR_ATTACH(func, arg) \
     ets_isr_attach(ETS_GPIO_INUM, (func), (void *)(arg))
 

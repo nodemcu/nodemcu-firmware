@@ -5,27 +5,55 @@
 #include "lrotable.h"
 #include "c_stdlib.h"
 #include "c_string.h"
-/**
- * All this code is mostly from http://www.esp8266.com/viewtopic.php?f=21&t=1143&sid=a620a377672cfe9f666d672398415fcb
- * from user Markus Gritsch.
- * I just put this code into its own module and pushed into a forked repo,
- * to easily create a pull request. Thanks to Markus Gritsch for the code.
- */
+#include "user_interface.h"
 
-// ----------------------------------------------------------------------------
-// -- This WS2812 code must be compiled with -O2 to get the timing right.  Read this:
-// -- http://wp.josh.com/2014/05/13/ws2812-neopixels-are-not-so-finicky-once-you-get-to-know-them/
-// -- The ICACHE_FLASH_ATTR is there to trick the compiler and get the very first pulse width correct.
-static void ICACHE_FLASH_ATTR __attribute__((optimize("O2"))) send_ws_0(uint8_t gpio){
-  uint8_t i;
-  i = 4; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, 1 << gpio);
-  i = 9; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 1 << gpio);
+static inline uint32_t _getCycleCount(void) {
+  uint32_t cycles;
+  __asm__ __volatile__("rsr %0,ccount":"=a" (cycles));
+  return cycles;
 }
 
-static void ICACHE_FLASH_ATTR __attribute__((optimize("O2"))) send_ws_1(uint8_t gpio){
-  uint8_t i;
-  i = 8; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, 1 << gpio);
-  i = 6; while (i--) GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 1 << gpio);
+// This algorithm reads the cpu clock cycles to calculate the correct
+// pulse widths. It works in both 80 and 160 MHz mode.
+// The values for t0h, t1h, ttot have been tweaked and it doesn't get faster than this.
+// The datasheet is confusing and one might think that a shorter pulse time can be achieved.
+// The period has to be at least 1.25us, even if the datasheet says:
+//   T0H: 0.35 (+- 0.15) + T0L: 0.8 (+- 0.15), which is 0.85<->1.45 us.
+//   T1H: 0.70 (+- 0.15) + T1L: 0.6 (+- 0.15), which is 1.00<->1.60 us.
+// Anything lower than 1.25us will glitch in the long run.
+static void ICACHE_RAM_ATTR ws2812_write(uint8_t pin, uint8_t *pixels, uint32_t length) {
+  uint8_t *p, *end, pixel, mask;
+  uint32_t t, t0h, t1h, ttot, c, start_time, pin_mask;
+
+  pin_mask = 1 << pin;
+  p =  pixels;
+  end =  p + length;
+  pixel = *p++;
+  mask = 0x80;
+  start_time = 0;
+  t0h  = (1000 * system_get_cpu_freq()) / 3333;  // 0.30us (spec=0.35 +- 0.15)
+  t1h  = (1000 * system_get_cpu_freq()) / 1666;  // 0.60us (spec=0.70 +- 0.15)
+  ttot = (1000 * system_get_cpu_freq()) /  800;  // 1.25us (MUST be >= 1.25)
+
+  while (true) {
+    if (pixel & mask) {
+        t = t1h;
+    } else {
+        t = t0h;
+    }
+    while (((c = _getCycleCount()) - start_time) < ttot); // Wait for the previous bit to finish
+    GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, pin_mask);      // Set pin high
+    start_time = c;                                       // Save the start time
+    while (((c = _getCycleCount()) - start_time) < t);    // Wait for high time to finish
+    GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, pin_mask);      // Set pin low
+    if (!(mask >>= 1)) {                                  // Next bit/byte
+      if (p >= end) {
+        break;
+      }
+      pixel= *p++;
+      mask = 0x80;
+    }
+  }
 }
 
 // Lua: ws2812.writergb(pin, "string")
@@ -33,7 +61,7 @@ static void ICACHE_FLASH_ATTR __attribute__((optimize("O2"))) send_ws_1(uint8_t 
 // WARNING: this function scrambles the input buffer :
 //    a = string.char(255,0,128)
 //    ws212.writergb(3,a)
-//    =a.byte() 
+//    =a.byte()
 //    (0,255,128)
 
 // ws2812.writergb(4, string.char(255, 0, 0)) uses GPIO2 and sets the first LED red.
@@ -44,13 +72,10 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
   const uint8_t pin = luaL_checkinteger(L, 1);
   size_t length;
   const char *rgb = luaL_checklstring(L, 2, &length);
+
   // dont modify lua-internal lstring - make a copy instead
   char *buffer = (char *)c_malloc(length);
   c_memcpy(buffer, rgb, length);
-
-  // Initialize the output pin:
-  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  platform_gpio_write(pin, 0);
 
   // Ignore incomplete Byte triples at the end of buffer:
   length -= length % 3;
@@ -64,19 +89,13 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
     buffer[i + 1] = r;
   }
 
-  // Do not remove these:
-  os_delay_us(1);
-  os_delay_us(1);
+  // Initialize the output pin and wait a bit
+  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
+  platform_gpio_write(pin, 0);
 
-  // Send the buffer:
+  // Send the buffer
   os_intr_lock();
-  for (i = 0; i < length; i++) {
-    uint8_t mask = 0x80;
-    while (mask) {
-      (buffer[i] & mask) ? send_ws_1(pin_num[pin]) : send_ws_0(pin_num[pin]);
-      mask >>= 1;
-    }
-  }
+  ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
   os_intr_unlock();
 
   c_free(buffer);
@@ -96,20 +115,13 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   size_t length;
   const char *buffer = luaL_checklstring(L, 2, &length);
 
+  // Initialize the output pin
   platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
   platform_gpio_write(pin, 0);
-  os_delay_us(10);
 
+  // Send the buffer
   os_intr_lock();
-  const char * const end = buffer + length;
-  while (buffer != end) {
-    uint8_t mask = 0x80;
-    while (mask) {
-      (*buffer & mask) ? send_ws_1(pin_num[pin]) : send_ws_0(pin_num[pin]);
-      mask >>= 1;
-    }
-    ++buffer;
-  }
+  ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
   os_intr_unlock();
 
   return 0;

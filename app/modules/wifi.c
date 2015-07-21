@@ -17,11 +17,24 @@
 
 static int wifi_smart_succeed = LUA_NOREF;
 static uint8 getap_output_format=0;
+
+//variables for wifi event monitor
+static sint32_t wifi_status_cb_ref[6] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
+static volatile os_timer_t wifi_sta_status_timer;
+static uint8 prev_wifi_status=0;
+
+
 #if defined( NODE_SMART_OLDSTYLE )
 #else
 static lua_State* smart_L = NULL;
 #endif
-static void wifi_smart_succeed_cb(void *arg){
+
+#if defined( NODE_SMART_OLDSTYLE )
+static void wifi_smart_succeed_cb(void *arg)
+#else
+static void wifi_smart_succeed_cb(sc_status status, void *arg)
+#endif
+{
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
 
 #if defined( NODE_SMART_OLDSTYLE )
@@ -35,7 +48,7 @@ static void wifi_smart_succeed_cb(void *arg){
   lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
   lua_call(L, 0, 0);
 
-#else
+#elif defined( NODE_SMART_V021 )
 
   if( !arg )
     return;
@@ -57,6 +70,78 @@ static void wifi_smart_succeed_cb(void *arg){
     wifi_smart_succeed = LUA_NOREF;
   }
   smartconfig_stop();
+
+#else // NODE_SMART_V034
+
+  if( !arg )
+    return;
+
+  struct station_config *sta_conf = NULL;
+  static char * ssid = NULL;
+  static char * password = NULL;
+
+  switch (status) {
+  case SC_STATUS_WAIT:
+    NODE_DBG("SC_STATUS_WAIT\n");
+    break;
+  case SC_STATUS_FIND_CHANNEL:
+    NODE_DBG("SC_STATUS_FIND_CHANNEL\n");
+    break;
+  case SC_STATUS_GETTING_SSID_PSWD:
+    NODE_DBG("SC_STATUS_GETTING_SSID_PSWD\n");
+    break;
+  case SC_STATUS_LINK:
+    NODE_DBG("SC_STATUS_LINK\n");
+    sta_conf = arg;
+    if (sta_conf != NULL)
+    {
+      wifi_station_set_config(sta_conf);
+      wifi_station_disconnect();
+      wifi_station_connect();
+      ssid = (char *) os_zalloc(os_strlen(sta_conf->ssid) + 1);
+      password = (char *) os_zalloc(os_strlen(sta_conf->password) + 1);
+      os_strncpy(ssid, (uint8*)sta_conf->ssid, os_strlen(sta_conf->ssid));
+      os_strncpy(password, (uint8*)sta_conf->password, os_strlen(sta_conf->password));
+    }
+    break;
+  case SC_STATUS_LINK_OVER:
+    NODE_DBG("SC_STATUS_LINK_OVER\n");
+    if(wifi_smart_succeed != LUA_NOREF)
+    {
+      lua_rawgeti(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+      lua_pushstring(smart_L, ssid); 
+      lua_pushstring(smart_L, password); 
+
+      if (arg != NULL) 
+      {
+        uint8 phone_ip[4] = {0};
+        uint8 phone_ip_buffer[16]={'\0'};
+        os_memcpy(phone_ip, (uint8*)arg, 4);
+        os_sprintf(phone_ip_buffer, "%d.%d.%d.%d",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
+        NODE_DBG("%s\n", phone_ip_buffer);
+        lua_pushstring(smart_L, phone_ip_buffer);
+      }
+      else
+      {
+        lua_pushnil(smart_L);
+      }
+      lua_call(smart_L, 3, 0);
+      luaL_unref(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
+      wifi_smart_succeed = LUA_NOREF;
+    }
+    if(ssid != NULL)
+    {
+      os_free(ssid);
+      ssid = NULL;
+    }
+    if(password != NULL)
+    {
+      os_free(password);
+      password = NULL;
+    }
+    smartconfig_stop();
+    break;
+  }
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 }
@@ -162,7 +247,7 @@ static int wifi_start_smart( lua_State* L )
     smart_begin(channel, (smart_succeed )wifi_smart_succeed_cb, L);
   }
 
-#else
+#else // defined( NODE_SMART_V034 )
 
   if(wifi_get_opmode() != STATION_MODE)
   {
@@ -188,7 +273,7 @@ static int wifi_start_smart( lua_State* L )
   if ( smart_type > 1 )
     return luaL_error( L, "wrong arg range" );
 
-  smartconfig_start(smart_type, wifi_smart_succeed_cb);
+  smartconfig_start(wifi_smart_succeed_cb);
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 
@@ -200,7 +285,7 @@ static int wifi_exit_smart( lua_State* L )
 {
 #if defined( NODE_SMART_OLDSTYLE )
   smart_end();
-#else
+#else // defined( NODE_SMART_V034 )
   smartconfig_stop();
 #endif // defined( NODE_SMART_OLDSTYLE )
 
@@ -852,6 +937,171 @@ static int wifi_station_status( lua_State* L )
   return 1; 
 }
 
+/**
+  * wifi.sta.eventMonStop()
+  * Description:
+  * 	Stop wifi station event monitor
+  * Syntax:
+  * 	wifi.sta.eventMonStop()
+  * 	wifi.sta.eventMonStop("unreg all")
+  * Parameters:
+  * 	"unreg all": unregister all previously registered functions
+  * Returns:
+  * 	Nothing.
+  *
+  *	Example:
+  	  	  --stop wifi event monitor
+  	  	  wifi.sta.eventMonStop()
+
+  	  	  --stop wifi event monitor and unregister all callbacks
+  	  	  wifi.sta.eventMonStop("unreg all")
+  */
+static void wifi_station_event_mon_stop(lua_State* L)
+{
+  os_timer_disarm(&wifi_sta_status_timer);
+  if(lua_isstring(L,1))
+  {
+
+    if (c_strcmp(luaL_checkstring(L, 1), "unreg all")==0)
+    {
+	  int i;
+	  for (i=0;i<6;i++)
+  	  {
+  	    if(wifi_status_cb_ref[i] != LUA_NOREF)
+	    {
+		  luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[i]);
+		  wifi_status_cb_ref[i] = LUA_NOREF;
+	    }
+	  }
+    }
+  }
+}
+
+static void wifi_status_cb(int arg)
+{
+  if (wifi_get_opmode()==2)
+  {
+	  os_timer_disarm(&wifi_sta_status_timer);
+	  return;
+  }
+  int wifi_status=wifi_station_get_connect_status();
+  if (wifi_status!=prev_wifi_status)
+  {
+ 	if(wifi_status_cb_ref[wifi_status]!=LUA_NOREF)
+ 	{
+	  lua_rawgeti(gL, LUA_REGISTRYINDEX, wifi_status_cb_ref[wifi_status]);
+	  lua_call(gL, 0, 0);
+ 	}
+  }
+  prev_wifi_status=wifi_status;
+}
+
+/**
+  * wifi.sta.eventMonReg()
+  * Description:
+  * 	Register callback for wifi station status event
+  * Syntax:
+  * 	wifi.sta.eventMonReg(wifi_status, function)
+  * 	wifi.sta.eventMonReg(wifi.status, "unreg") //unregister callback
+  * Parameters:
+  * 	wifi_status: wifi status you would like to set callback for
+  * 		Valid wifi states:
+  * 			wifi.STA_IDLE
+  *				wifi.STA_CONNECTING
+  *				wifi.STA_WRONGPWD
+  *				wifi.STA_APNOTFOUND
+  *  			wifi.STA_FAIL
+  *  			wifi.STA_GOTIP
+  * 	function: function to perform
+  * 	"unreg": unregister previously registered function
+  * Returns:
+  * 	Nothing.
+  *
+  *	Example:
+  	  	--register callback
+  	  	wifi.sta.eventMonReg(0, function() print("STATION_IDLE") end)
+		wifi.sta.eventMonReg(1, function() print("STATION_CONNECTING") end)
+		wifi.sta.eventMonReg(2, function() print("STATION_WRONG_PASSWORD") end)
+		wifi.sta.eventMonReg(3, function() print("STATION_NO_AP_FOUND") end)
+		wifi.sta.eventMonReg(4, function() print("STATION_CONNECT_FAIL") end)
+		wifi.sta.eventMonReg(5, function() print("STATION_GOT_IP") end)
+
+		--unregister callback
+		wifi.sta.eventMonReg(0, "unreg")
+  */
+static int wifi_station_event_mon_reg(lua_State* L)
+{
+  gL=L;
+  uint8 id=luaL_checknumber(L, 1);
+  if (!(id >= 0 && id <=5))
+  {
+	return luaL_error( L, "valid wifi status:0-5" );
+  }
+
+  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+  {
+    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
+    if(wifi_status_cb_ref[id] != LUA_NOREF)
+    {
+      luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[id]);
+    }
+    wifi_status_cb_ref[id] = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+  else if (c_strcmp(luaL_checkstring(L, 2), "unreg")==0)
+  {
+    if(wifi_status_cb_ref[id] != LUA_NOREF)
+    {
+      luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[id]);
+      wifi_status_cb_ref[id] = LUA_NOREF;
+    }
+  }
+  return 0;
+}
+
+
+/**
+  * wifi.sta.eventMonStart()
+  * Description:
+  * 	Start wifi station event monitor
+  * Syntax:
+  * 	wifi.sta.eventMonStart()
+  * 	wifi.sta.eventMonStart(mS)
+  * Parameters:
+  * 	mS:interval between checks in milliseconds. defaults to 150 mS if not provided
+  * Returns:
+  * 	Nothing.
+  *
+  *	Example:
+ 		--start wifi event monitor with default interval
+ 		wifi.sta.eventMonStart()
+
+ 		--start wifi event monitor with 100 mS interval
+ 		wifi.sta.eventMonStart(100)
+  */
+static int wifi_station_event_mon_start(lua_State* L)
+{
+  if(wifi_get_opmode() == SOFTAP_MODE)
+  {
+	return luaL_error( L, "Can't monitor station in SOFTAP mode" );
+  }
+  if (wifi_status_cb_ref[0]==LUA_NOREF && wifi_status_cb_ref[1]==LUA_NOREF &&
+		  wifi_status_cb_ref[2]==LUA_NOREF && wifi_status_cb_ref[3]==LUA_NOREF &&
+		  wifi_status_cb_ref[4]==LUA_NOREF && wifi_status_cb_ref[5]==LUA_NOREF )
+  {
+		return luaL_error( L, "No callbacks defined" );
+  }
+  uint32 ms=150;
+  if(lua_isnumber(L, 1))
+  {
+    ms=luaL_checknumber(L, 1);
+  }
+
+  os_timer_disarm(&wifi_sta_status_timer);
+  os_timer_setfn(&wifi_sta_status_timer, (os_timer_func_t *)wifi_status_cb, NULL);
+  os_timer_arm(&wifi_sta_status_timer, ms, 1);
+  return 0;
+}
+
 // Lua: wifi.ap.getmac()
 static int wifi_ap_getmac( lua_State* L ){
   return wifi_getmac(L, SOFTAP_IF);
@@ -1057,20 +1307,20 @@ static int wifi_ap_dhcp_config( lua_State* L )
   if (ip == 0)
     return luaL_error( L, "wrong arg type" );
 
-  lease.start_ip = ip;
-  NODE_DBG(IPSTR, IP2STR(&lease.start_ip));
+  lease.start_ip.addr = ip;
+  NODE_DBG(IPSTR, IP2STR(&lease.start_ip.addr));
   NODE_DBG("\n");
 
   // use configured max_connection to determine end
   struct softap_config config;
   wifi_softap_get_config(&config);
-  lease.end_ip = lease.start_ip;
-  ip4_addr4(&lease.end_ip) += config.max_connection - 1;
+  lease.end_ip.addr = lease.start_ip.addr;
+  ip4_addr4(&lease.end_ip.addr) += config.max_connection - 1;
 
   char temp[64];
-  c_sprintf(temp, IPSTR, IP2STR(&lease.start_ip));
+  c_sprintf(temp, IPSTR, IP2STR(&lease.start_ip.addr));
   lua_pushstring(L, temp);
-  c_sprintf(temp, IPSTR, IP2STR(&lease.end_ip));
+  c_sprintf(temp, IPSTR, IP2STR(&lease.end_ip.addr));
   lua_pushstring(L, temp);
 
   // note: DHCP max range = 101 from start_ip to end_ip
@@ -1105,7 +1355,6 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LSTRKEY( "connect" ), LFUNCVAL ( wifi_station_connect4lua ) },
   { LSTRKEY( "disconnect" ), LFUNCVAL ( wifi_station_disconnect4lua ) },
   { LSTRKEY( "autoconnect" ), LFUNCVAL ( wifi_station_setauto ) },
-  { LSTRKEY( "getconfig" ), LFUNCVAL( wifi_ap_getconfig ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_station_getip ) },
   { LSTRKEY( "setip" ), LFUNCVAL ( wifi_station_setip ) },
   { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_station_getbroadcast) },
@@ -1113,6 +1362,9 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_station_setmac ) },
   { LSTRKEY( "getap" ), LFUNCVAL ( wifi_station_listap ) },
   { LSTRKEY( "status" ), LFUNCVAL ( wifi_station_status ) },
+  { LSTRKEY( "eventMonReg" ), LFUNCVAL ( wifi_station_event_mon_reg ) },
+  { LSTRKEY( "eventMonStart" ), LFUNCVAL ( wifi_station_event_mon_start ) },
+  { LSTRKEY( "eventMonStop" ), LFUNCVAL ( wifi_station_event_mon_stop ) },
   { LNILKEY, LNILVAL }
 };
 
@@ -1133,6 +1385,7 @@ static const LUA_REG_TYPE wifi_ap_map[] =
   { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_ap_getmac ) },
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_ap_setmac ) },
   { LSTRKEY( "getclient" ), LFUNCVAL ( wifi_ap_listclient ) },
+  { LSTRKEY( "getconfig" ), LFUNCVAL( wifi_ap_getconfig ) },
 #if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "dhcp" ), LROVAL( wifi_ap_dhcp_map ) },
 
@@ -1160,9 +1413,9 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
 
-  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_B ) },
-  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_G ) },
-  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_N ) },
+  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_11B ) },
+  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_11G ) },
+  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_11N ) },
 
   { LSTRKEY( "NONE_SLEEP" ), LNUMVAL( NONE_SLEEP_T ) },
   { LSTRKEY( "LIGHT_SLEEP" ), LNUMVAL( LIGHT_SLEEP_T ) },
@@ -1174,12 +1427,12 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "WPA2_PSK" ), LNUMVAL( AUTH_WPA2_PSK ) },
   { LSTRKEY( "WPA_WPA2_PSK" ), LNUMVAL( AUTH_WPA_WPA2_PSK ) },
 
-  // { LSTRKEY( "STA_IDLE" ), LNUMVAL( STATION_IDLE ) },
-  // { LSTRKEY( "STA_CONNECTING" ), LNUMVAL( STATION_CONNECTING ) },
-  // { LSTRKEY( "STA_WRONGPWD" ), LNUMVAL( STATION_WRONG_PASSWORD ) },
-  // { LSTRKEY( "STA_APNOTFOUND" ), LNUMVAL( STATION_NO_AP_FOUND ) },
-  // { LSTRKEY( "STA_FAIL" ), LNUMVAL( STATION_CONNECT_FAIL ) },
-  // { LSTRKEY( "STA_GOTIP" ), LNUMVAL( STATION_GOT_IP ) },
+   { LSTRKEY( "STA_IDLE" ), LNUMVAL( STATION_IDLE ) },
+   { LSTRKEY( "STA_CONNECTING" ), LNUMVAL( STATION_CONNECTING ) },
+   { LSTRKEY( "STA_WRONGPWD" ), LNUMVAL( STATION_WRONG_PASSWORD ) },
+   { LSTRKEY( "STA_APNOTFOUND" ), LNUMVAL( STATION_NO_AP_FOUND ) },
+   { LSTRKEY( "STA_FAIL" ), LNUMVAL( STATION_CONNECT_FAIL ) },
+   { LSTRKEY( "STA_GOTIP" ), LNUMVAL( STATION_GOT_IP ) },
 
   { LSTRKEY( "__metatable" ), LROVAL( wifi_map ) },
 #endif
