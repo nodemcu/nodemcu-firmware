@@ -1119,7 +1119,7 @@ const LUA_REG_TYPE lu8g_map[] =
 #define U8G_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LUDATA( (void *)(u8g_ ## font) ) },
     U8G_FONT_TABLE
 
-    // Options for circle/ ellipse drwing
+    // Options for circle/ ellipse drawing
     { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( U8G_DRAW_UPPER_RIGHT ) },
     { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( U8G_DRAW_UPPER_LEFT ) },
     { LSTRKEY( "DRAW_LOWER_RIGHT" ), LNUMVAL( U8G_DRAW_LOWER_RIGHT ) },
