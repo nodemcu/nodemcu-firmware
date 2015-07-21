@@ -1,6 +1,10 @@
+sudo: false
 language: cpp
-before_install:
-- sudo apt-get install -y python-serial srecord
+addons:
+  apt:
+    packages:
+    - python-serial
+    - srecord
 install:
 - tar -zxvf tools/esp-open-sdk.tar.gz
 - export PATH=$PATH:$PWD/esp-open-sdk/xtensa-lx106-elf/bin
