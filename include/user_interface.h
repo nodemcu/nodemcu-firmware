@@ -89,6 +89,7 @@ bool system_rtc_mem_write(uint8 des_addr, const void *src_addr, uint16 save_size
 void system_uart_swap(void);
 
 uint16 system_adc_read(void);
+uint16 system_get_vdd33(void);
 
 const char *system_get_sdk_version(void);
 
@@ -96,6 +97,7 @@ const char *system_get_sdk_version(void);
 #define STATION_MODE    0x01
 #define SOFTAP_MODE     0x02
 #define STATIONAP_MODE  0x03
+
 
 typedef enum _auth_mode {
     AUTH_OPEN           = 0,
@@ -239,6 +241,10 @@ void wifi_promiscuous_enable(uint8 promiscuous);
 typedef void (* wifi_promiscuous_cb_t)(uint8 *buf, uint16 len);
 
 void wifi_set_promiscuous_rx_cb(wifi_promiscuous_cb_t cb);
+
+#define PHY_MODE_B      0x01
+#define PHY_MODE_G      0x02
+#define PHY_MODE_N      0x03
 
 enum phy_mode {
 	PHY_MODE_11B	= 1,

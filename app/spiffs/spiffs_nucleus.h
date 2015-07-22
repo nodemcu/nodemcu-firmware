@@ -395,13 +395,11 @@ typedef struct __attribute(( packed )) {
   // common page header
   spiffs_page_header p_hdr;
   // alignment
-  u8_t _align[4 - (sizeof(spiffs_page_header)&3)==0 ? 4 : (sizeof(spiffs_page_header)&3)];
+  u8_t _align[4 - ((sizeof(spiffs_page_header)+sizeof(spiffs_obj_type)+SPIFFS_OBJ_NAME_LEN)&3)==0 ? 4 : ((sizeof(spiffs_page_header)+sizeof(spiffs_obj_type)+SPIFFS_OBJ_NAME_LEN)&3)];
   // size of object
   u32_t size;
   // type of object
   spiffs_obj_type type;
-  // alignment2
-  u8_t _align2[4 - (sizeof(spiffs_obj_type)&3)==0 ? 4 : (sizeof(spiffs_obj_type)&3)];
   // name of object
   u8_t name[SPIFFS_OBJ_NAME_LEN];
 } spiffs_page_object_ix_header;
