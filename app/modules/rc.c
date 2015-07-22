@@ -9,13 +9,13 @@
 #define defProtocol 1
 #define defRepeat   10
 #define defBits     24
-void transmit(int pin, int pulseLen, int nHighPulses, int nLowPulses) {
+static void ICACHE_FLASH_ATTR transmit(int pin, int pulseLen, int nHighPulses, int nLowPulses) {
   platform_gpio_write(pin, 1);
   os_delay_us(pulseLen*nHighPulses);
   platform_gpio_write(pin, 0);
   os_delay_us(pulseLen*nLowPulses);
 }
-//rc.send(0,267715,24,185,1)    --GPIO, code, bits, pulselen, protocol
+//rc.send(4,267715,24,185,1,10)    --GPIO, code, bits, pulselen, protocol, repeat
 static int ICACHE_FLASH_ATTR rc_send(lua_State* L) {
   const uint8_t pin = luaL_checkinteger(L, 1);
   platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);

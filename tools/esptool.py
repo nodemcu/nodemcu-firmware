@@ -128,38 +128,32 @@ class ESPROM:
     def connect(self):
         print 'Connecting...'
 
-        # RTS = CH_PD (i.e reset)
-        # DTR = GPIO0
-        # self._port.setRTS(True)
-        # self._port.setDTR(True)
-        # self._port.setRTS(False)
-        # time.sleep(0.1)
-        # self._port.setDTR(False)
+        for _ in xrange(4):
+            # issue reset-to-bootloader:
+            # RTS = either CH_PD or nRESET (both active low = chip in reset)
+            # DTR = GPIO0 (active low = boot to flasher)
+            self._port.setDTR(False)
+            self._port.setRTS(True)
+            time.sleep(0.05)
+            self._port.setDTR(True)
+            self._port.setRTS(False)
+            time.sleep(0.05)
+            self._port.setDTR(False)
 
-        # NodeMCU devkit
-        self._port.setRTS(True)
-        self._port.setDTR(True)
-        time.sleep(0.1)
-        self._port.setRTS(False)
-        self._port.setDTR(False)
-        time.sleep(0.1)
-        self._port.setRTS(True)
-        time.sleep(0.1)
-        self._port.setDTR(True)
-        self._port.setRTS(False)
-        time.sleep(0.3)
-        self._port.setDTR(True)
-
-        self._port.timeout = 0.5
-        for i in xrange(10):
-            try:
-                self._port.flushInput()
-                self._port.flushOutput()
-                self.sync()
-                self._port.timeout = 5
-                return
-            except:
-                time.sleep(0.1)
+            self._port.timeout = 0.3 # worst-case latency timer should be 255ms (probably <20ms)
+            for _ in xrange(4):
+                try:
+                    self._port.flushInput()
+                    self._port.flushOutput()
+                    self.sync()
+                    self._port.timeout = 5
+                    return
+                except:
+                    time.sleep(0.05)
+            # this is a workaround for the CH340 serial driver on current versions of Linux,
+            # which seems to sometimes set the serial port up with wrong parameters
+            self._port.close()
+            self._port.open()
         raise Exception('Failed to connect')
 
     """ Read memory address in target """
@@ -268,6 +262,15 @@ class ESPROM:
 
         return data
 
+    """ Abuse the loader protocol to force flash to be left in write mode """
+    def flash_unlock_dio(self):
+        # Enable flash write mode
+        self.flash_begin(0, 0)
+        # Reset the chip rather than call flash_finish(), which would have
+        # write protected the chip again (why oh why does it do that?!)
+        self.mem_begin(0,0,0,0x40100000)
+        self.mem_finish(0x40000080)
+
     """ Perform a chip erase of SPI flash """
     def flash_erase(self):
         # Trick ROM to initialize SFlash
@@ -359,6 +362,20 @@ class ELFFile:
     def get_symbol_addr(self, sym):
         self._fetch_symbols()
         return self.symbols[sym]
+
+    def get_entry_point(self):
+        tool_readelf = "xtensa-lx106-elf-readelf"
+        if os.getenv('XTENSA_CORE')=='lx106':
+            tool_objcopy = "xt-readelf"
+        try:
+            proc = subprocess.Popen([tool_readelf, "-h", self.name], stdout=subprocess.PIPE)
+        except OSError:
+            print "Error calling "+tool_nm+", do you have Xtensa toolchain in PATH?"
+            sys.exit(1)
+        for l in proc.stdout:
+            fields = l.strip().split()
+            if fields[0] == "Entry":
+                return int(fields[3], 0);
 
     def load_section(self, section):
         tool_objcopy = "xtensa-lx106-elf-objcopy"
@@ -552,7 +569,10 @@ if __name__ == '__main__':
                 seq += 1
             print
         print '\nLeaving...'
-        esp.flash_finish(False)
+        if args.flash_mode == 'dio':
+            esp.flash_unlock_dio()
+        else:
+            esp.flash_finish(False)
 
     elif args.operation == 'run':
         esp.run()
@@ -586,7 +606,7 @@ if __name__ == '__main__':
             args.output = args.input + '-'
         e = ELFFile(args.input)
         image = ESPFirmwareImage()
-        image.entrypoint = e.get_symbol_addr("call_user_start")
+        image.entrypoint = e.get_entry_point()
         for section, start in ((".text", "_text_start"), (".data", "_data_start"), (".rodata", "_rodata_start")):
             data = e.load_section(section)
             image.add_segment(e.get_symbol_addr(start), data)
