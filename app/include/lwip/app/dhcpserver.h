@@ -51,6 +51,11 @@ typedef struct _list_node{
 #define DHCPS_SERVER_PORT  67
 #define DHCPS_CLIENT_PORT  68
 
+/*
+ * Advertise DNS capability in DHCP OFFER
+ */
+#define USE_DNS 0
+
 #define DHCPDISCOVER  1
 #define DHCPOFFER     2
 #define DHCPREQUEST   3
