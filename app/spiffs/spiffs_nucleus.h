@@ -405,7 +405,7 @@ typedef struct {
 // page header, part of each page except object lookup pages
 // NB: this is always aligned when the data page is an object index,
 // as in this case struct spiffs_page_object_ix is used
-typedef struct __attribute(( packed )) {
+typedef struct __attribute(( packed, aligned(4) )) {
   // object id
   spiffs_obj_id obj_id;
   // object span index
