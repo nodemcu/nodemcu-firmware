@@ -151,7 +151,7 @@ static int calculate_new_size(strbuf_t *s, int len)
             newsize *= -s->increment;
     } else {
         /* Linear sizing */
-        newsize = ((newsize + s->increment - 1) / s->increment) * s->increment;
+        newsize = (((reqsize -1) / s->increment) + 1) * s->increment;
     }
 
     return newsize;
