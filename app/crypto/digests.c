@@ -140,7 +140,7 @@ int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
     mi->update (ctx, key, key_len);
     mi->finalize (digest, ctx);
     key = digest;
-    key_len = mi->block_size;
+    key_len = mi->digest_size;
   }
 
   const size_t bs = mi->block_size;
