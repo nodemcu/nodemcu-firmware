@@ -485,8 +485,10 @@ cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
 ```
 
 ####cjson
-
 ```lua
+-- Note that when cjson deal with large content, it may fails a memory allocation, and leaks a bit of memory.
+-- so it's better to detect that and schedule a restart. 
+--
 -- Translate Lua value to/from JSON
 -- text = cjson.encode(value)
 -- value = cjson.decode(text)
