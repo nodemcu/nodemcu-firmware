@@ -108,7 +108,7 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
 
         ipadd.addr = *( (uint32_t *) &server_address);
 
-#ifdef USE_CLASS_B_NET
+#if USE_CLASS_B_NET
         *optptr++ = DHCP_OPTION_SUBNET_MASK;
         *optptr++ = 4;  //length
         *optptr++ = 255;
@@ -154,7 +154,11 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
         *optptr++ = ip4_addr4( &ipadd);
 #endif
 
+<<<<<<< HEAD
 #ifdef USE_CLASS_B_NET
+=======
+#if USE_CLASS_B_NET
+>>>>>>> 8f05556ab903e6db4977095d508204103beba95a
         *optptr++ = DHCP_OPTION_BROADCAST_ADDRESS;
         *optptr++ = 4;
         *optptr++ = ip4_addr1( &ipadd);
@@ -172,7 +176,11 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
 
         *optptr++ = DHCP_OPTION_INTERFACE_MTU;
         *optptr++ = 2;
+<<<<<<< HEAD
 #ifdef USE_CLASS_B_NET
+=======
+#if USE_CLASS_B_NET
+>>>>>>> 8f05556ab903e6db4977095d508204103beba95a
         *optptr++ = 0x05;
         *optptr++ = 0xdc;
 #else
