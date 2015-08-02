@@ -45,6 +45,7 @@
 #include "flash_api.h"
 
 #include "strbuf.h"
+#include "cjson_mem.h"
 
 #define FPCONV_G_FMT_BUFSIZE   32
 #define fpconv_strtod c_strtod
@@ -1461,7 +1462,7 @@ static int json_decode(lua_State *l)
      * string must be smaller than the entire json string */
     json.tmp = strbuf_new(json_len);
     if(json.tmp == NULL){
-        return luaL_error(l, "not enought memory");
+        return luaL_error(l, "not enough memory");
     }
 
     json_next_token(&json, &token);
@@ -1552,6 +1553,8 @@ const LUA_REG_TYPE cjson_map[] =
 
 LUALIB_API int luaopen_cjson( lua_State *L )
 {
+  cjson_mem_setlua (L);
+
   /* Initialise number conversions */
   // fpconv_init();         // not needed for a specific cpu.
   if(-1==cfg_init(&_cfg)){

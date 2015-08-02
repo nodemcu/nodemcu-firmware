@@ -68,4 +68,6 @@
 #define LED_LOW_COUNT_DEFAULT 0
 #endif
 
+#define STRBUF_DEFAULT_INCREMENT 32
+
 #endif	/* __USER_CONFIG_H__ */
