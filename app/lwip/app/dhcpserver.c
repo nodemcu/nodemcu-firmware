@@ -145,7 +145,7 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
         *optptr++ = ip4_addr3( &ipadd);
         *optptr++ = ip4_addr4( &ipadd);
 
-#ifdef USE_DNS
+#if USE_DNS
         *optptr++ = DHCP_OPTION_DNS_SERVER;
         *optptr++ = 4;
         *optptr++ = ip4_addr1( &ipadd);
@@ -154,7 +154,7 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
         *optptr++ = ip4_addr4( &ipadd);
 #endif
 
-#ifdef CLASS_B_NET
+#ifdef USE_CLASS_B_NET
         *optptr++ = DHCP_OPTION_BROADCAST_ADDRESS;
         *optptr++ = 4;
         *optptr++ = ip4_addr1( &ipadd);
@@ -172,7 +172,7 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
 
         *optptr++ = DHCP_OPTION_INTERFACE_MTU;
         *optptr++ = 2;
-#ifdef CLASS_B_NET
+#ifdef USE_CLASS_B_NET
         *optptr++ = 0x05;
         *optptr++ = 0xdc;
 #else
