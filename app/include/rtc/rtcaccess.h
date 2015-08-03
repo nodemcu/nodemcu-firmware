@@ -54,4 +54,17 @@ static inline uint32_t rtc_reg_read(uint32_t addr)
   rtc_memw();
   return *((volatile uint32_t*)addr);
 }
+
+static inline void rtc_reg_write_and_loop(uint32_t addr, uint32_t val)
+{
+  addr+=RTC_MMIO_BASE;
+  rtc_memw();
+  asm("j 1f\n"
+      ".align 32\n"
+      "1:\n"
+      "s32i.n %1,%0,0\n"
+      "2:\n"
+      "j 2b\n"::"r"(addr),"r"(val):);
+}
+
 #endif
