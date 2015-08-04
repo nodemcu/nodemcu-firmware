@@ -471,7 +471,8 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   SpiFlashOpResult r;
   const uint32_t blkmask = INTERNAL_FLASH_WRITE_UNIT_SIZE - 1;
   uint32_t *apbuf = NULL;
-  if( ((uint32_t)from) & blkmask ){
+  uint32_t fromaddr = (uint32_t)from;
+  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_START_ADDRESS)) {
     apbuf = (uint32_t *)c_malloc(size);
     if(!apbuf)
       return 0;
