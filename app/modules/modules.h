@@ -61,6 +61,14 @@
 #define ROM_MODULES_U8G
 #endif
 
+#if defined(LUA_USE_MODULES_UCG)
+#define MODULES_UCG         "ucg"
+#define ROM_MODULES_UCG     \
+    _ROM(MODULES_UCG, luaopen_ucg, lucg_map)
+#else
+#define ROM_MODULES_UCG
+#endif
+
 #if defined(LUA_USE_MODULES_I2C)
 #define MODULES_I2C         "i2c"
 #define ROM_MODULES_I2C     \
