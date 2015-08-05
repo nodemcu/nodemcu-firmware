@@ -415,7 +415,7 @@ typedef struct __attribute(( packed )) {
 } spiffs_page_header;
 
 // object index header page header
-typedef struct __attribute(( packed, aligned(4) ))
+typedef struct __attribute(( packed ))
 {
   // common page header
   spiffs_page_header p_hdr;
@@ -428,7 +428,7 @@ typedef struct __attribute(( packed, aligned(4) ))
 } spiffs_page_object_ix_header;
 
 // object index page header
-typedef struct __attribute(( packed, aligned(4) )) {
+typedef struct __attribute(( packed )) {
  spiffs_page_header p_hdr;
 } spiffs_page_object_ix;
 
