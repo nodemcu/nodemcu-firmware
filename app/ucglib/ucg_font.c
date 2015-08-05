@@ -325,7 +325,7 @@ size_t ucg_font_GetSize(const void *font_arg)
 }
 
 /*========================================================================*/
-/* u8g interface, font access */
+/* ucg interface, font access */
 
 uint8_t ucg_GetFontBBXWidth(ucg_t *ucg)
 {
@@ -339,8 +339,8 @@ uint8_t ucg_GetFontBBXHeight(ucg_t *ucg)
   return ucg->font_info.max_char_height;		/* new font info structure */
 }
 
-int8_t u8g_GetFontBBXOffX(ucg_t *ucg) UCG_NOINLINE;
-int8_t u8g_GetFontBBXOffX(ucg_t *ucg)
+int8_t ucg_GetFontBBXOffX(ucg_t *ucg) UCG_NOINLINE;
+int8_t ucg_GetFontBBXOffX(ucg_t *ucg)
 {
   // OBSOLETE return ucg_font_GetBBXOffX(ucg->font);
   return ucg->font_info.x_offset;		/* new font info structure */
