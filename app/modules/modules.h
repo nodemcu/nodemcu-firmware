@@ -213,6 +213,15 @@
 #define ROM_MODULES_SNTP
 #endif
 
+#if defined(LUA_USE_MODULES_BMP085)
+#define MODULES_BMP085      "bmp085"
+#define ROM_MODULES_BMP085  \
+    _ROM(MODULES_BMP085, luaopen_bmp085, bmp085_map)
+#else
+#define ROM_MODULES_BMP085
+#endif
+
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -240,5 +249,6 @@
         ROM_MODULES_RTCTIME \
         ROM_MODULES_RTCFIFO \
         ROM_MODULES_SNTP    \
+        ROM_MODULES_BMP085  \
 
 #endif
