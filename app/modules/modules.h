@@ -244,6 +244,7 @@
         ROM_MODULES_COAP	\
         ROM_MODULES_MQTT    \
         ROM_MODULES_U8G     \
+        ROM_MODULES_UCG     \
         ROM_MODULES_I2C     \
         ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \

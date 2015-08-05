@@ -81,7 +81,11 @@
 #ifndef _UCG_H
 #define _UCG_H
 
-#include <stdint.h>
+#if defined(__XTENSA__)
+#  include <c_types.h>
+#else
+#  include <stdint.h>
+#endif
 #include <stddef.h>
 
 
@@ -90,7 +94,7 @@ extern "C"
 {
 #endif
 
-#if defined(ARDUINO)
+#if defined(ARDUINO) || defined(__XTENSA__)
 #ifndef USE_PIN_LIST
 #define USE_PIN_LIST
 #endif
@@ -104,6 +108,8 @@ extern "C"
 #    define UCG_FONT_SECTION(name)
 #  elif defined(__AVR__)
 #    define UCG_FONT_SECTION(name) UCG_SECTION(".progmem." name)
+#  elif defined(__XTENSA__)
+#    define UCG_FONT_SECTION(name)
 #  else
 #    define UCG_FONT_SECTION(name)
 #  endif
@@ -121,6 +127,13 @@ typedef uint8_t PROGMEM ucg_pgm_uint8_t;
 typedef uint8_t ucg_fntpgm_uint8_t;
 #define ucg_pgm_read(adr) pgm_read_byte_near(adr)
 #define UCG_PSTR(s) ((ucg_pgm_uint8_t *)PSTR(s))
+#elif defined(__XTENSA__)
+#define UCG_PROGMEM
+#define PROGMEM
+typedef uint8_t ucg_pgm_uint8_t;
+typedef uint8_t ucg_fntpgm_uint8_t;
+#define ucg_pgm_read(adr) (*(const ucg_pgm_uint8_t *)(adr)) 
+#define UCG_PSTR(s) ((ucg_pgm_uint8_t *)(s))
 #else
 #define UCG_PROGMEM
 #define PROGMEM
