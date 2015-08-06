@@ -6,7 +6,6 @@
 #include "auxmods.h"
 #include "lrotable.h"
 
-//#include "c_string.h"
 #include "c_stdlib.h"
 
 #include "u8g.h"
@@ -15,9 +14,7 @@
 
 struct _lu8g_userdata_t
 {
-    u8g_t     u8g;
-    u8g_pb_t  pb;
-    u8g_dev_t dev;
+    u8g_t u8g;
 };
 
 typedef struct _lu8g_userdata_t lu8g_userdata_t;
@@ -968,13 +965,6 @@ static int lu8g_close_display( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-
-    // free up allocated page buffer
-    if (lud->pb.buf != NULL)
-    {
-        c_free( lud->pb.buf );
-        lud->pb.buf = NULL;
-    }
 
     return 0;
 }
