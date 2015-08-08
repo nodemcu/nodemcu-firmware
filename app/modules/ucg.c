@@ -12,7 +12,30 @@
 
 //#include "u8g_config.h"
 
-typedef struct ucg_t lucg_userdata_t;
+struct _lucg_userdata_t
+{
+    ucg_t ucg;
+
+    ucg_dev_fnptr dev_cb;
+    ucg_dev_fnptr ext_cb;  
+
+    // For Print() function
+    ucg_int_t tx, ty;
+    uint8_t tdir;
+};
+
+typedef struct _lucg_userdata_t lucg_userdata_t;
+
+
+#define delayMicroseconds os_delay_us
+
+static int16_t ucg_com_esp8266_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uint8_t *data);
+
+
+
+
+// shorthand macro for the ucg structure inside the userdata
+#define LUCG (&(lud->ucg))
 
 
 // helper function: retrieve and check userdata argument
@@ -24,12 +47,229 @@ static lucg_userdata_t *get_lud( lua_State *L )
 }
 
 // helper function: retrieve given number of integer arguments
-static void lucg_get_int_args( lua_State *L, uint8_t stack, uint8_t num, ucg_int_t *args)
+static void lucg_get_int_args( lua_State *L, uint8_t stack, uint8_t num, uint8_t *args)
 {
     while (num-- > 0)
     {
         *args++ = luaL_checkinteger( L, stack++ );
     }
+}
+
+// Lua: ucg.begin( self, fontmode )
+static int lucg_begin( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_Init( LUCG, lud->dev_cb, lud->ext_cb, ucg_com_esp8266_hw_spi );
+
+    ucg_int_t fontmode = luaL_checkinteger( L, 2 );
+
+    ucg_SetFontMode( LUCG, fontmode );
+
+    return 0;
+}
+
+// Lua: ucg.clearScreen( self )
+static int lucg_clearScreen( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+    ucg_ClearScreen( LUCG );
+
+    return 0;
+}
+
+// Lua: ucg.setColor( self, [idx], r, g, b )
+static int lucg_setColor( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    uint8_t args[3];
+    lucg_get_int_args( L, 2, 3, args );
+
+    int16_t opt = luaL_optint( L, (1+3) + 1, -1 );
+
+    if (opt < 0)
+        ucg_SetColor( LUCG, 0, args[0], args[1], args[2] );
+    else
+        ucg_SetColor( LUCG, args[0], args[1], args[2], opt );
+
+    return 0;
+}
+
+// Lua: ucg.setFont( self, font )
+static int lucg_setFont( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_fntpgm_uint8_t *font = (ucg_fntpgm_uint8_t *)lua_touserdata( L, 2 );
+    if (font != NULL)
+        ucg_SetFont( LUCG, font );
+
+    return 0;
+}
+
+// Lua: ucg.print( self, str )
+static int lucg_print( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    const char *s = luaL_checkstring( L, 2 );
+    if (s == NULL)
+        return 0;
+
+    while (*s)
+    {
+        ucg_int_t delta;
+        delta = ucg_DrawGlyph(LUCG, lud->tx, lud->ty, lud->tdir, *(s++));
+        switch(lud->tdir)
+        {
+        case 0: lud->tx += delta; break;
+        case 1: lud->ty += delta; break;
+        case 2: lud->tx -= delta; break;
+        default: case 3: lud->ty -= delta; break;
+        }
+    }
+
+    return 0;
+}
+
+// Lua: ucg.setPrintPos( self, x, y )
+static int lucg_setPrintPos( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    uint8_t args[2];
+    lucg_get_int_args( L, 2, 2, args );
+
+    lud->tx = args[0];
+    lud->ty = args[1];
+
+    return 0;
+}
+
+
+
+static int16_t ucg_com_esp8266_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uint8_t *data)
+{
+  switch(msg)
+  {
+    case UCG_COM_MSG_POWER_UP:
+        /* "data" is a pointer to ucg_com_info_t structure with the following information: */
+        /*	((ucg_com_info_t *)data)->serial_clk_speed value in nanoseconds */
+        /*	((ucg_com_info_t *)data)->parallel_clk_speed value in nanoseconds */
+      
+        /* setup pins */
+    
+        // we assume that the SPI interface was already initialized
+        // just care for the /CS and D/C pins
+        //platform_gpio_write( ucg->pin_list[0], value );
+
+        if ( ucg->pin_list[UCG_PIN_RST] != UCG_PIN_VAL_NONE )
+            platform_gpio_mode( ucg->pin_list[UCG_PIN_RST], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+        platform_gpio_mode( ucg->pin_list[UCG_PIN_CD], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+      
+        if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
+            platform_gpio_mode( ucg->pin_list[UCG_PIN_CS], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+      
+        break;
+
+    case UCG_COM_MSG_POWER_DOWN:
+        break;
+
+    case UCG_COM_MSG_DELAY:
+        delayMicroseconds(arg);
+        break;
+
+    case UCG_COM_MSG_CHANGE_RESET_LINE:
+        if ( ucg->pin_list[UCG_PIN_RST] != UCG_PIN_VAL_NONE )
+            platform_gpio_write( ucg->pin_list[UCG_PIN_RST], arg );
+        break;
+
+    case UCG_COM_MSG_CHANGE_CS_LINE:
+        if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
+            platform_gpio_write( ucg->pin_list[UCG_PIN_CS], arg );
+        break;
+
+    case UCG_COM_MSG_CHANGE_CD_LINE:
+        platform_gpio_write( ucg->pin_list[UCG_PIN_CD], arg );
+        break;
+
+    case UCG_COM_MSG_SEND_BYTE:
+        platform_spi_send_recv( 1, arg );
+        break;
+
+    case UCG_COM_MSG_REPEAT_1_BYTE:
+        while( arg > 0 ) {
+            platform_spi_send_recv( 1, data[0] );
+            arg--;
+        }
+        break;
+
+    case UCG_COM_MSG_REPEAT_2_BYTES:
+        while( arg > 0 ) {
+            platform_spi_send_recv( 1, data[0] );
+            platform_spi_send_recv( 1, data[1] );
+            arg--;
+        }
+        break;
+
+    case UCG_COM_MSG_REPEAT_3_BYTES:
+        while( arg > 0 ) {
+            platform_spi_send_recv( 1, data[0] );
+            platform_spi_send_recv( 1, data[1] );
+            platform_spi_send_recv( 1, data[2] );
+            arg--;
+        }
+        break;
+
+    case UCG_COM_MSG_SEND_STR:
+        while( arg > 0 ) {
+            platform_spi_send_recv( 1, *data++ );
+            arg--;
+        }
+        break;
+
+    case UCG_COM_MSG_SEND_CD_DATA_SEQUENCE:
+        while(arg > 0)
+        {
+            if ( *data != 0 )
+            {
+                /* set the data line directly, ignore the setting from UCG_CFG_CD */
+                if ( *data == 1 )
+                {
+                    platform_gpio_write( ucg->pin_list[UCG_PIN_CD], 0 );
+                }
+                else
+                {
+                    platform_gpio_write( ucg->pin_list[UCG_PIN_CD], 1 );
+                }
+            }
+            data++;
+            platform_spi_send_recv( 1, *data );
+            data++;
+            arg--;
+        }
+        break;
+  }
+  return 1;
 }
 
 
@@ -46,6 +286,46 @@ static int lucg_close_display( lua_State *L )
 }
 
 
+static int lucg_ili9341_18x240x320_hw_spi( lua_State *L )
+{
+    unsigned cs = luaL_checkinteger( L, 1 );
+    if (cs == 0)
+        return luaL_error( L, "CS pin required" );
+    unsigned dc = luaL_checkinteger( L, 2 );
+    if (dc == 0)
+        return luaL_error( L, "D/C pin required" );
+    unsigned res = luaL_optinteger( L, 3, UCG_PIN_VAL_NONE );
+
+    lucg_userdata_t *lud = (lucg_userdata_t *) lua_newuserdata( L, sizeof( lucg_userdata_t ) );
+
+    // do a dummy init so that something usefull is part of the ucg structure
+    ucg_Init( LUCG, ucg_dev_default_cb, ucg_ext_none, (ucg_com_fnptr)0 );
+
+    // reset cursor position
+    lud->tx   = 0;
+    lud->ty   = 0;
+    lud->tdir = 0;  // default direction
+
+    uint8_t i;
+    for( i = 0; i < UCG_PIN_COUNT; i++ )
+        lud->ucg.pin_list[i] = UCG_PIN_VAL_NONE;
+
+
+    lud->dev_cb = ucg_dev_ili9341_18x240x320;
+    lud->ext_cb = ucg_ext_ili9341_18;
+    lud->ucg.pin_list[UCG_PIN_RST] = res;
+    lud->ucg.pin_list[UCG_PIN_CD]  = dc;
+    lud->ucg.pin_list[UCG_PIN_CS]  = cs;
+
+
+    /* set its metatable */
+    luaL_getmetatable(L, "ucg.display");
+    lua_setmetatable(L, -2);
+
+    return 1;
+}
+
+
 
 // Module function map
 #define MIN_OPT_LEVEL 2
@@ -53,58 +333,13 @@ static int lucg_close_display( lua_State *L )
 
 static const LUA_REG_TYPE lucg_display_map[] =
 {
-#if 0
-    { LSTRKEY( "begin" ),  LFUNCVAL( lu8g_begin ) },
-    { LSTRKEY( "drawBitmap" ),  LFUNCVAL( lu8g_drawBitmap ) },
-    { LSTRKEY( "drawBox" ),  LFUNCVAL( lu8g_drawBox ) },
-    { LSTRKEY( "drawCircle" ),  LFUNCVAL( lu8g_drawCircle ) },
-    { LSTRKEY( "drawDisc" ),  LFUNCVAL( lu8g_drawDisc ) },
-    { LSTRKEY( "drawEllipse" ),  LFUNCVAL( lu8g_drawEllipse ) },
-    { LSTRKEY( "drawFilledEllipse" ),  LFUNCVAL( lu8g_drawFilledEllipse ) },
-    { LSTRKEY( "drawFrame" ),  LFUNCVAL( lu8g_drawFrame ) },
-    { LSTRKEY( "drawHLine" ),  LFUNCVAL( lu8g_drawHLine ) },
-    { LSTRKEY( "drawLine" ),  LFUNCVAL( lu8g_drawLine ) },
-    { LSTRKEY( "drawPixel" ),  LFUNCVAL( lu8g_drawPixel ) },
-    { LSTRKEY( "drawRBox" ),  LFUNCVAL( lu8g_drawRBox ) },
-    { LSTRKEY( "drawRFrame" ),  LFUNCVAL( lu8g_drawRFrame ) },
-    { LSTRKEY( "drawStr" ),  LFUNCVAL( lu8g_drawStr ) },
-    { LSTRKEY( "drawStr90" ),  LFUNCVAL( lu8g_drawStr90 ) },
-    { LSTRKEY( "drawStr180" ),  LFUNCVAL( lu8g_drawStr180 ) },
-    { LSTRKEY( "drawStr270" ),  LFUNCVAL( lu8g_drawStr270 ) },
-    { LSTRKEY( "drawTriangle" ),  LFUNCVAL( lu8g_drawTriangle ) },
-    { LSTRKEY( "drawVLine" ),  LFUNCVAL( lu8g_drawVLine ) },
-    { LSTRKEY( "drawXBM" ),  LFUNCVAL( lu8g_drawXBM ) },
-    { LSTRKEY( "firstPage" ),  LFUNCVAL( lu8g_firstPage ) },
-    { LSTRKEY( "getColorIndex" ),  LFUNCVAL( lu8g_getColorIndex ) },
-    { LSTRKEY( "getFontAscent" ),  LFUNCVAL( lu8g_getFontAscent ) },
-    { LSTRKEY( "getFontDescent" ),  LFUNCVAL( lu8g_getFontDescent ) },
-    { LSTRKEY( "getFontLineSpacing" ),  LFUNCVAL( lu8g_getFontLineSpacing ) },
-    { LSTRKEY( "getHeight" ),  LFUNCVAL( lu8g_getHeight ) },
-    { LSTRKEY( "getMode" ),  LFUNCVAL( lu8g_getMode ) },
-    { LSTRKEY( "getStrWidth" ), LFUNCVAL( lu8g_getStrWidth ) },
-    { LSTRKEY( "getWidth" ),  LFUNCVAL( lu8g_getWidth ) },
-    { LSTRKEY( "nextPage" ),  LFUNCVAL( lu8g_nextPage ) },
-    { LSTRKEY( "setColorIndex" ),  LFUNCVAL( lu8g_setColorIndex ) },
-    { LSTRKEY( "setDefaultBackgroundColor" ),  LFUNCVAL( lu8g_setDefaultBackgroundColor ) },
-    { LSTRKEY( "setDefaultForegroundColor" ),  LFUNCVAL( lu8g_setDefaultForegroundColor ) },
-    { LSTRKEY( "setFont" ),  LFUNCVAL( lu8g_setFont ) },
-    { LSTRKEY( "setFontLineSpacingFactor" ),  LFUNCVAL( lu8g_setFontLineSpacingFactor ) },
-    { LSTRKEY( "setFontPosBaseline" ),  LFUNCVAL( lu8g_setFontPosBaseline ) },
-    { LSTRKEY( "setFontPosBottom" ),  LFUNCVAL( lu8g_setFontPosBottom ) },
-    { LSTRKEY( "setFontPosCenter" ),  LFUNCVAL( lu8g_setFontPosCenter ) },
-    { LSTRKEY( "setFontPosTop" ),  LFUNCVAL( lu8g_setFontPosTop ) },
-    { LSTRKEY( "setFontRefHeightAll" ),  LFUNCVAL( lu8g_setFontRefHeightAll ) },
-    { LSTRKEY( "setFontRefHeightExtendedText" ),  LFUNCVAL( lu8g_setFontRefHeightExtendedText ) },
-    { LSTRKEY( "setFontRefHeightText" ),  LFUNCVAL( lu8g_setFontRefHeightText ) },
-    { LSTRKEY( "setRot90" ),  LFUNCVAL( lu8g_setRot90 ) },
-    { LSTRKEY( "setRot180" ),  LFUNCVAL( lu8g_setRot180 ) },
-    { LSTRKEY( "setRot270" ),  LFUNCVAL( lu8g_setRot270 ) },
-    { LSTRKEY( "setScale2x2" ),  LFUNCVAL( lu8g_setScale2x2 ) },
-    { LSTRKEY( "sleepOff" ),  LFUNCVAL( lu8g_sleepOff ) },
-    { LSTRKEY( "sleepOn" ),  LFUNCVAL( lu8g_sleepOn ) },
-    { LSTRKEY( "undoRotation" ),  LFUNCVAL( lu8g_undoRotation ) },
-    { LSTRKEY( "undoScale" ),  LFUNCVAL( lu8g_undoScale ) },
-#endif
+    { LSTRKEY( "begin" ),       LFUNCVAL( lucg_begin ) },
+    { LSTRKEY( "clearScreen" ), LFUNCVAL( lucg_clearScreen ) },
+    { LSTRKEY( "setColor" ),    LFUNCVAL( lucg_setColor ) },
+    { LSTRKEY( "setFont" ),     LFUNCVAL( lucg_setFont ) },
+    { LSTRKEY( "print" ),       LFUNCVAL( lucg_print ) },
+    { LSTRKEY( "setPrintPos" ), LFUNCVAL( lucg_setPrintPos ) },
+
     { LSTRKEY( "__gc" ),  LFUNCVAL( lucg_close_display ) },
 #if LUA_OPTIMIZE_MEMORY > 0
     { LSTRKEY( "__index" ), LROVAL ( lucg_display_map ) },
@@ -114,34 +349,16 @@ static const LUA_REG_TYPE lucg_display_map[] =
 
 const LUA_REG_TYPE lucg_map[] = 
 {
-#if 0
-#undef U8G_DISPLAY_TABLE_ENTRY
-#define U8G_DISPLAY_TABLE_ENTRY(device) { LSTRKEY( #device ), LFUNCVAL ( lu8g_ ##device ) },
-    U8G_DISPLAY_TABLE_I2C
-    U8G_DISPLAY_TABLE_SPI
-#endif
+    { LSTRKEY( "ili9341_18x240x320_hw_spi" ), LFUNCVAL( lucg_ili9341_18x240x320_hw_spi ) },
 
 #if LUA_OPTIMIZE_MEMORY > 0
 
     // Register fonts
-#if 0
-#undef U8G_FONT_TABLE_ENTRY
-#define U8G_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LUDATA( (void *)(u8g_ ## font) ) },
-    U8G_FONT_TABLE
-#endif
+    { LSTRKEY( "font_ncenR12_tr" ), LUDATA( (void *)(ucg_font_ncenR12_tr) ) },
 
-#if 0
-    // Options for circle/ ellipse drawing
-    { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( U8G_DRAW_UPPER_RIGHT ) },
-    { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( U8G_DRAW_UPPER_LEFT ) },
-    { LSTRKEY( "DRAW_LOWER_RIGHT" ), LNUMVAL( U8G_DRAW_LOWER_RIGHT ) },
-    { LSTRKEY( "DRAW_LOWER_LEFT" ),  LNUMVAL( U8G_DRAW_LOWER_LEFT ) },
-    { LSTRKEY( "DRAW_ALL" ),         LNUMVAL( U8G_DRAW_ALL ) },
-
-    // Display modes
-    { LSTRKEY( "MODE_BW" ),       LNUMVAL( U8G_MODE_BW ) },
-    { LSTRKEY( "MODE_GRAY2BIT" ), LNUMVAL( U8G_MODE_GRAY2BIT ) },
-#endif
+    // Font modes
+    { LSTRKEY( "FONT_MODE_TRANSPARENT" ), LNUMVAL( UCG_FONT_MODE_TRANSPARENT ) },
+    { LSTRKEY( "FONT_MODE_SOLID" ),       LNUMVAL( UCG_FONT_MODE_SOLID ) },
 
     { LSTRKEY( "__metatable" ), LROVAL( lucg_map ) },
 #endif
@@ -164,23 +381,11 @@ LUALIB_API int luaopen_ucg( lua_State *L )
     // Module constants  
 
     // Register fonts
-#if 0
-#undef U8G_FONT_TABLE_ENTRY
-#define U8G_FONT_TABLE_ENTRY(font) MOD_REG_LUDATA( L, #font, (void *)(u8g_ ## font) );
-    U8G_FONT_TABLE
-#endif
+    MOD_REG_LUDATA( L, "font_ncenR12_tr", (void *)(ucg_font_ncenR12_tr) );
 
-#if 0
-    // Options for circle/ ellipse drawing
-    MOD_REG_NUMBER( L, "DRAW_UPPER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_UPPER_RIGHT );
-
-    // Display modes
-    MOD_REG_NUMBER( L, "MODE_BW",       U8G_MODE_BW );
-    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_BW );
-#endif
+    // Font modes
+    MOD_REG_NUMBER( L, "FONT_MODE_TRANSPARENT", UCG_FONT_MODE_TRANSPARENT );
+    MOD_REG_NUMBER( L, "FONT_MODE_SOLID",       UCG_FONT_MODE_SOLID );
 
     // create metatable
     luaL_newmetatable(L, "ucg.display");
@@ -189,7 +394,7 @@ LUALIB_API int luaopen_ucg( lua_State *L )
     lua_pushvalue(L,-2);
     lua_rawset(L,-3);
     // Setup the methods inside metatable
-    luaL_register( L, NULL, ucg_display_map );
+    luaL_register( L, NULL, lucg_display_map );
 
     return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0  
