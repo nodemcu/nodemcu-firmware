@@ -47,7 +47,7 @@ static lucg_userdata_t *get_lud( lua_State *L )
 }
 
 // helper function: retrieve given number of integer arguments
-static void lucg_get_int_args( lua_State *L, uint8_t stack, uint8_t num, uint8_t *args)
+static void lucg_get_int_args( lua_State *L, uint8_t stack, uint8_t num, ucg_int_t *args)
 {
     while (num-- > 0)
     {
@@ -79,7 +79,198 @@ static int lucg_clearScreen( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
+
     ucg_ClearScreen( LUCG );
+
+    return 0;
+}
+
+// Lua: ucg.draw90Line( self, x, y, len, dir, col_idx )
+static int lucg_draw90Line( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[5];
+    lucg_get_int_args( L, 2, 5, args );
+
+    ucg_Draw90Line( LUCG, args[0], args[1], args[2], args[3], args[4] );
+
+    return 0;
+}
+
+// Lua: ucg.drawBox( self, x, y, w, h )
+static int lucg_drawBox( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_DrawBox( LUCG, args[0], args[1], args[2], args[3] );
+
+    return 0;
+}
+
+// Lua: ucg.drawGradientBox( self, x, y, w, h )
+static int lucg_drawGradientBox( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_DrawGradientBox( LUCG, args[0], args[1], args[2], args[3] );
+
+    return 0;
+}
+
+// Lua: ucg.drawHLine( self, x, y, len )
+static int lucg_drawHLine( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[3];
+    lucg_get_int_args( L, 2, 3, args );
+
+    ucg_DrawHLine( LUCG, args[0], args[1], args[2] );
+
+    return 0;
+}
+
+// Lua: ucg.drawLine( self, x1, y1, x2, y2 )
+static int lucg_drawLine( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_DrawLine( LUCG, args[0], args[1], args[2], args[3] );
+
+    return 0;
+}
+
+// Lua: ucg.drawPixel( self, x, y )
+static int lucg_drawPixel( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[2];
+    lucg_get_int_args( L, 2, 2, args );
+
+    ucg_DrawPixel( LUCG, args[0], args[1] );
+
+    return 0;
+}
+
+// Lua: ucg.drawString( self, x, y, dir, str )
+static int lucg_drawString( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[3];
+    lucg_get_int_args( L, 2, 3, args );
+
+    const char *s = luaL_checkstring( L, 2 );
+    if (s == NULL)
+        return 0;
+
+    ucg_DrawString( LUCG, args[0], args[1], args[2], s );
+
+    return 0;
+}
+
+// Lua: ucg.drawTriangle( self, x0, y0, x1, y1, x2, y2 )
+static int lucg_drawTriangle( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[6];
+    lucg_get_int_args( L, 2, 6, args );
+
+    ucg_DrawTriangle( LUCG, args[0], args[1], args[2], args[3], args[4], args[5] );
+
+    return 0;
+}
+
+// Lua: ucg.drawVLine( self, x, y, len )
+static int lucg_drawVLine( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[3];
+    lucg_get_int_args( L, 2, 3, args );
+
+    ucg_DrawVLine( LUCG, args[0], args[1], args[2] );
+
+    return 0;
+}
+
+// Lua: ucg.getHeight( self )
+static int lucg_getHeight( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, ucg_GetHeight( LUCG ) );
+
+    return 1;
+}
+
+// Lua: ucg.getWidth( self )
+static int lucg_getWidth( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lua_pushinteger( L, ucg_GetWidth( LUCG ) );
+
+    return 1;
+}
+
+// Lua: ucg.setClipRange( self, x, y, w, h )
+static int lucg_setClipRange( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_SetClipRange( LUCG, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -92,10 +283,10 @@ static int lucg_setColor( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    uint8_t args[3];
+    ucg_int_t args[3];
     lucg_get_int_args( L, 2, 3, args );
 
-    int16_t opt = luaL_optint( L, (1+3) + 1, -1 );
+    ucg_int_t opt = luaL_optint( L, (1+3) + 1, -1 );
 
     if (opt < 0)
         ucg_SetColor( LUCG, 0, args[0], args[1], args[2] );
@@ -116,6 +307,8 @@ static int lucg_setFont( lua_State *L )
     ucg_fntpgm_uint8_t *font = (ucg_fntpgm_uint8_t *)lua_touserdata( L, 2 );
     if (font != NULL)
         ucg_SetFont( LUCG, font );
+    else
+        luaL_argerror(L, 2, "font data expected");
 
     return 0;
 }
@@ -148,6 +341,21 @@ static int lucg_print( lua_State *L )
     return 0;
 }
 
+// Lua: ucg.setFontMode( self, fontmode )
+static int lucg_setFontMode( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t fontmode = luaL_checkinteger( L, 2 );
+
+    ucg_SetFontMode( LUCG, fontmode );
+
+    return 0;
+}
+
 // Lua: ucg.setPrintPos( self, x, y )
 static int lucg_setPrintPos( lua_State *L )
 {
@@ -156,11 +364,76 @@ static int lucg_setPrintPos( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    uint8_t args[2];
+    ucg_int_t args[2];
     lucg_get_int_args( L, 2, 2, args );
 
     lud->tx = args[0];
     lud->ty = args[1];
+
+    return 0;
+}
+
+// Lua: ucg.setPrintDir( self, dir )
+static int lucg_setPrintDir( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    lud->tdir = luaL_checkinteger( L, 2 );
+
+    return 0;
+}
+
+// Lua: ucg.setRotate90( self )
+static int lucg_setRotate90( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_SetRotate90( LUCG );
+
+    return 0;
+}
+
+// Lua: ucg.setRotate180( self )
+static int lucg_setRotate180( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_SetRotate180( LUCG );
+
+    return 0;
+}
+
+// Lua: ucg.setRotate270( self )
+static int lucg_setRotate270( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_SetRotate270( LUCG );
+
+    return 0;
+}
+
+// Lua: ucg.undoRotate( self )
+static int lucg_undoRotate( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_UndoRotate( LUCG );
 
     return 0;
 }
@@ -333,12 +606,30 @@ static int lucg_ili9341_18x240x320_hw_spi( lua_State *L )
 
 static const LUA_REG_TYPE lucg_display_map[] =
 {
-    { LSTRKEY( "begin" ),       LFUNCVAL( lucg_begin ) },
-    { LSTRKEY( "clearScreen" ), LFUNCVAL( lucg_clearScreen ) },
-    { LSTRKEY( "setColor" ),    LFUNCVAL( lucg_setColor ) },
-    { LSTRKEY( "setFont" ),     LFUNCVAL( lucg_setFont ) },
-    { LSTRKEY( "print" ),       LFUNCVAL( lucg_print ) },
-    { LSTRKEY( "setPrintPos" ), LFUNCVAL( lucg_setPrintPos ) },
+    { LSTRKEY( "begin" ),           LFUNCVAL( lucg_begin ) },
+    { LSTRKEY( "clearScreen" ),     LFUNCVAL( lucg_clearScreen ) },
+    { LSTRKEY( "draw90Line" ),      LFUNCVAL( lucg_draw90Line ) },
+    { LSTRKEY( "drawBox" ),         LFUNCVAL( lucg_drawBox ) },
+    { LSTRKEY( "drawGradientBox" ), LFUNCVAL( lucg_drawGradientBox ) },
+    { LSTRKEY( "drawHLine" ),       LFUNCVAL( lucg_drawHLine ) },
+    { LSTRKEY( "drawLine" ),        LFUNCVAL( lucg_drawLine ) },
+    { LSTRKEY( "drawPixel" ),       LFUNCVAL( lucg_drawPixel ) },
+    { LSTRKEY( "drawString" ),      LFUNCVAL( lucg_drawString ) },
+    { LSTRKEY( "drawTriangle" ),    LFUNCVAL( lucg_drawTriangle ) },
+    { LSTRKEY( "drawVLine" ),       LFUNCVAL( lucg_drawVLine ) },
+    { LSTRKEY( "getHeight" ),       LFUNCVAL( lucg_getHeight ) },
+    { LSTRKEY( "getWidth" ),        LFUNCVAL( lucg_getWidth ) },
+    { LSTRKEY( "print" ),           LFUNCVAL( lucg_print ) },
+    { LSTRKEY( "setClipRange" ),    LFUNCVAL( lucg_setClipRange ) },
+    { LSTRKEY( "setColor" ),        LFUNCVAL( lucg_setColor ) },
+    { LSTRKEY( "setFont" ),         LFUNCVAL( lucg_setFont ) },
+    { LSTRKEY( "setFontMode" ),     LFUNCVAL( lucg_setFontMode ) },
+    { LSTRKEY( "setPrintDir" ),     LFUNCVAL( lucg_setPrintDir ) },
+    { LSTRKEY( "setPrintPos" ),     LFUNCVAL( lucg_setPrintPos ) },
+    { LSTRKEY( "setRotate90" ),     LFUNCVAL( lucg_setRotate90 ) },
+    { LSTRKEY( "setRotate180" ),    LFUNCVAL( lucg_setRotate180 ) },
+    { LSTRKEY( "setRotate270" ),    LFUNCVAL( lucg_setRotate270 ) },
+    { LSTRKEY( "undoRotate" ),      LFUNCVAL( lucg_undoRotate ) },
 
     { LSTRKEY( "__gc" ),  LFUNCVAL( lucg_close_display ) },
 #if LUA_OPTIMIZE_MEMORY > 0
@@ -354,7 +645,11 @@ const LUA_REG_TYPE lucg_map[] =
 #if LUA_OPTIMIZE_MEMORY > 0
 
     // Register fonts
+    { LSTRKEY( "font_helvB08_hr" ), LUDATA( (void *)(ucg_font_helvB08_hr) ) },
+    { LSTRKEY( "font_helvB10_hr" ), LUDATA( (void *)(ucg_font_helvB10_hr) ) },
+    { LSTRKEY( "font_helvB12_hr" ), LUDATA( (void *)(ucg_font_helvB12_hr) ) },
     { LSTRKEY( "font_ncenR12_tr" ), LUDATA( (void *)(ucg_font_ncenR12_tr) ) },
+    { LSTRKEY( "font_ncenR14_hr" ), LUDATA( (void *)(ucg_font_ncenR14_hr) ) },
 
     // Font modes
     { LSTRKEY( "FONT_MODE_TRANSPARENT" ), LNUMVAL( UCG_FONT_MODE_TRANSPARENT ) },
@@ -381,7 +676,11 @@ LUALIB_API int luaopen_ucg( lua_State *L )
     // Module constants  
 
     // Register fonts
+    MOD_REG_LUDATA( L, "font_helvB08_hr", (void *)(ucg_font_helvB08_hr) );
+    MOD_REG_LUDATA( L, "font_helvB10_hr", (void *)(ucg_font_helvB10_hr) );
+    MOD_REG_LUDATA( L, "font_helvB12_hr", (void *)(ucg_font_helvB12_hr) );
     MOD_REG_LUDATA( L, "font_ncenR12_tr", (void *)(ucg_font_ncenR12_tr) );
+    MOD_REG_LUDATA( L, "font_ncenR14_hr", (void *)(ucg_font_ncenR14_hr) );
 
     // Font modes
     MOD_REG_NUMBER( L, "FONT_MODE_TRANSPARENT", UCG_FONT_MODE_TRANSPARENT );
