@@ -117,6 +117,38 @@ static int lucg_drawBox( lua_State *L )
     return 0;
 }
 
+// Lua: ucg.drawCircle( self, x0, y0, rad, option )
+static int lucg_drawCircle( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_DrawCircle( LUCG, args[0], args[1], args[2], args[3] );
+
+    return 0;
+}
+
+// Lua: ucg.drawDisc( self, x0, y0, rad, option )
+static int lucg_drawDisc( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_DrawDisc( LUCG, args[0], args[1], args[2], args[3] );
+
+    return 0;
+}
+
 // Lua: ucg.drawFrame( self, x, y, w, h )
 static int lucg_drawFrame( lua_State *L )
 {
@@ -145,6 +177,42 @@ static int lucg_drawGradientBox( lua_State *L )
     lucg_get_int_args( L, 2, 4, args );
 
     ucg_DrawGradientBox( LUCG, args[0], args[1], args[2], args[3] );
+
+    return 0;
+}
+
+// Lua: width = ucg.drawGlyph( self, x, y, dir, encoding )
+static int lucg_drawGlyph( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[3];
+    lucg_get_int_args( L, 2, 3, args );
+
+    const char *c = luaL_checkstring( L, (1+3) + 1 );
+    if (c == NULL)
+        return 0;
+
+    lua_pushinteger( L, ucg_DrawGlyph( LUCG, args[0], args[1], args[2], *c ) );
+
+    return 1;
+}
+
+// Lua: ucg.drawGradientLine( self, x, y, len, dir )
+static int lucg_drawGradientLine( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_DrawGradientLine( LUCG, args[0], args[1], args[2], args[3] );
 
     return 0;
 }
@@ -197,7 +265,7 @@ static int lucg_drawPixel( lua_State *L )
     return 0;
 }
 
-// Lua: ucg.drawString( self, x, y, dir, str )
+// Lua: width = ucg.drawString( self, x, y, dir, str )
 static int lucg_drawString( lua_State *L )
 {
     lucg_userdata_t *lud;
@@ -208,13 +276,13 @@ static int lucg_drawString( lua_State *L )
     ucg_int_t args[3];
     lucg_get_int_args( L, 2, 3, args );
 
-    const char *s = luaL_checkstring( L, 2 );
+    const char *s = luaL_checkstring( L, (1+3) + 1 );
     if (s == NULL)
         return 0;
 
-    ucg_DrawString( LUCG, args[0], args[1], args[2], s );
+    lua_pushinteger( L, ucg_DrawString( LUCG, args[0], args[1], args[2], s ) );
 
-    return 0;
+    return 1;
 }
 
 // Lua: ucg.drawTriangle( self, x0, y0, x1, y1, x2, y2 )
@@ -249,7 +317,7 @@ static int lucg_drawVLine( lua_State *L )
     return 0;
 }
 
-// Lua: ucg.getHeight( self )
+// Lua: height = ucg.getHeight( self )
 static int lucg_getHeight( lua_State *L )
 {
     lucg_userdata_t *lud;
@@ -262,7 +330,7 @@ static int lucg_getHeight( lua_State *L )
     return 1;
 }
 
-// Lua: ucg.getWidth( self )
+// Lua: width = ucg.getWidth( self )
 static int lucg_getWidth( lua_State *L )
 {
     lucg_userdata_t *lud;
@@ -454,6 +522,19 @@ static int lucg_setRotate270( lua_State *L )
     return 0;
 }
 
+// Lua: ucg.setScale2x2( self )
+static int lucg_setScale2x2( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_SetScale2x2( LUCG );
+
+    return 0;
+}
+
 // Lua: ucg.undoRotate( self )
 static int lucg_undoRotate( lua_State *L )
 {
@@ -463,6 +544,19 @@ static int lucg_undoRotate( lua_State *L )
         return 0;
 
     ucg_UndoRotate( LUCG );
+
+    return 0;
+}
+
+// Lua: ucg.undoScale( self )
+static int lucg_undoScale( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_UndoScale( LUCG );
 
     return 0;
 }
@@ -635,32 +729,39 @@ static int lucg_ili9341_18x240x320_hw_spi( lua_State *L )
 
 static const LUA_REG_TYPE lucg_display_map[] =
 {
-    { LSTRKEY( "begin" ),           LFUNCVAL( lucg_begin ) },
-    { LSTRKEY( "clearScreen" ),     LFUNCVAL( lucg_clearScreen ) },
-    { LSTRKEY( "draw90Line" ),      LFUNCVAL( lucg_draw90Line ) },
-    { LSTRKEY( "drawBox" ),         LFUNCVAL( lucg_drawBox ) },
-    { LSTRKEY( "drawFrame" ),       LFUNCVAL( lucg_drawFrame ) },
-    { LSTRKEY( "drawGradientBox" ), LFUNCVAL( lucg_drawGradientBox ) },
-    { LSTRKEY( "drawHLine" ),       LFUNCVAL( lucg_drawHLine ) },
-    { LSTRKEY( "drawLine" ),        LFUNCVAL( lucg_drawLine ) },
-    { LSTRKEY( "drawPixel" ),       LFUNCVAL( lucg_drawPixel ) },
-    { LSTRKEY( "drawString" ),      LFUNCVAL( lucg_drawString ) },
-    { LSTRKEY( "drawTriangle" ),    LFUNCVAL( lucg_drawTriangle ) },
-    { LSTRKEY( "drawVLine" ),       LFUNCVAL( lucg_drawVLine ) },
-    { LSTRKEY( "getHeight" ),       LFUNCVAL( lucg_getHeight ) },
-    { LSTRKEY( "getWidth" ),        LFUNCVAL( lucg_getWidth ) },
-    { LSTRKEY( "print" ),           LFUNCVAL( lucg_print ) },
-    { LSTRKEY( "setClipRange" ),    LFUNCVAL( lucg_setClipRange ) },
-    { LSTRKEY( "setColor" ),        LFUNCVAL( lucg_setColor ) },
-    { LSTRKEY( "setFont" ),         LFUNCVAL( lucg_setFont ) },
-    { LSTRKEY( "setFontMode" ),     LFUNCVAL( lucg_setFontMode ) },
-    { LSTRKEY( "setMaxClipRange" ), LFUNCVAL( lucg_setMaxClipRange ) },
-    { LSTRKEY( "setPrintDir" ),     LFUNCVAL( lucg_setPrintDir ) },
-    { LSTRKEY( "setPrintPos" ),     LFUNCVAL( lucg_setPrintPos ) },
-    { LSTRKEY( "setRotate90" ),     LFUNCVAL( lucg_setRotate90 ) },
-    { LSTRKEY( "setRotate180" ),    LFUNCVAL( lucg_setRotate180 ) },
-    { LSTRKEY( "setRotate270" ),    LFUNCVAL( lucg_setRotate270 ) },
-    { LSTRKEY( "undoRotate" ),      LFUNCVAL( lucg_undoRotate ) },
+    { LSTRKEY( "begin" ),            LFUNCVAL( lucg_begin ) },
+    { LSTRKEY( "clearScreen" ),      LFUNCVAL( lucg_clearScreen ) },
+    { LSTRKEY( "draw90Line" ),       LFUNCVAL( lucg_draw90Line ) },
+    { LSTRKEY( "drawBox" ),          LFUNCVAL( lucg_drawBox ) },
+    { LSTRKEY( "drawCircle" ),       LFUNCVAL( lucg_drawCircle ) },
+    { LSTRKEY( "drawDisc" ),         LFUNCVAL( lucg_drawDisc ) },
+    { LSTRKEY( "drawFrame" ),        LFUNCVAL( lucg_drawFrame ) },
+    { LSTRKEY( "drawGlyph" ),        LFUNCVAL( lucg_drawGlyph ) },
+    { LSTRKEY( "drawGradientBox" ),  LFUNCVAL( lucg_drawGradientBox ) },
+    { LSTRKEY( "drawGradientLine" ), LFUNCVAL( lucg_drawGradientLine ) },
+    { LSTRKEY( "drawHLine" ),        LFUNCVAL( lucg_drawHLine ) },
+    { LSTRKEY( "drawLine" ),         LFUNCVAL( lucg_drawLine ) },
+    { LSTRKEY( "drawPixel" ),        LFUNCVAL( lucg_drawPixel ) },
+    { LSTRKEY( "drawString" ),       LFUNCVAL( lucg_drawString ) },
+    { LSTRKEY( "drawTriangle" ),     LFUNCVAL( lucg_drawTriangle ) },
+    { LSTRKEY( "drawVLine" ),        LFUNCVAL( lucg_drawVLine ) },
+    { LSTRKEY( "getHeight" ),        LFUNCVAL( lucg_getHeight ) },
+    { LSTRKEY( "getWidth" ),         LFUNCVAL( lucg_getWidth ) },
+    { LSTRKEY( "print" ),            LFUNCVAL( lucg_print ) },
+    { LSTRKEY( "setClipRange" ),     LFUNCVAL( lucg_setClipRange ) },
+    { LSTRKEY( "setColor" ),         LFUNCVAL( lucg_setColor ) },
+    { LSTRKEY( "setFont" ),          LFUNCVAL( lucg_setFont ) },
+    { LSTRKEY( "setFontMode" ),      LFUNCVAL( lucg_setFontMode ) },
+    { LSTRKEY( "setMaxClipRange" ),  LFUNCVAL( lucg_setMaxClipRange ) },
+    { LSTRKEY( "setPrintDir" ),      LFUNCVAL( lucg_setPrintDir ) },
+    { LSTRKEY( "setPrintPos" ),      LFUNCVAL( lucg_setPrintPos ) },
+    { LSTRKEY( "setRotate90" ),      LFUNCVAL( lucg_setRotate90 ) },
+    { LSTRKEY( "setRotate180" ),     LFUNCVAL( lucg_setRotate180 ) },
+    { LSTRKEY( "setRotate270" ),     LFUNCVAL( lucg_setRotate270 ) },
+    { LSTRKEY( "setScale2x2" ),      LFUNCVAL( lucg_setScale2x2 ) },
+    { LSTRKEY( "undoClipRange" ),    LFUNCVAL( lucg_setMaxClipRange ) },
+    { LSTRKEY( "undoRotate" ),       LFUNCVAL( lucg_undoRotate ) },
+    { LSTRKEY( "undoScale" ),        LFUNCVAL( lucg_undoScale ) },
 
     { LSTRKEY( "__gc" ),  LFUNCVAL( lucg_close_display ) },
 #if LUA_OPTIMIZE_MEMORY > 0
@@ -676,16 +777,25 @@ const LUA_REG_TYPE lucg_map[] =
 #if LUA_OPTIMIZE_MEMORY > 0
 
     // Register fonts
+    { LSTRKEY( "font_7x13B_tr" ),   LUDATA( (void *)(ucg_font_7x13B_tr) ) },
     { LSTRKEY( "font_helvB08_hr" ), LUDATA( (void *)(ucg_font_helvB08_hr) ) },
     { LSTRKEY( "font_helvB10_hr" ), LUDATA( (void *)(ucg_font_helvB10_hr) ) },
     { LSTRKEY( "font_helvB12_hr" ), LUDATA( (void *)(ucg_font_helvB12_hr) ) },
     { LSTRKEY( "font_helvB18_hr" ), LUDATA( (void *)(ucg_font_helvB18_hr) ) },
+    { LSTRKEY( "font_ncenB24_tr" ), LUDATA( (void *)(ucg_font_ncenB24_tr) ) },
     { LSTRKEY( "font_ncenR12_tr" ), LUDATA( (void *)(ucg_font_ncenR12_tr) ) },
     { LSTRKEY( "font_ncenR14_hr" ), LUDATA( (void *)(ucg_font_ncenR14_hr) ) },
 
     // Font modes
     { LSTRKEY( "FONT_MODE_TRANSPARENT" ), LNUMVAL( UCG_FONT_MODE_TRANSPARENT ) },
     { LSTRKEY( "FONT_MODE_SOLID" ),       LNUMVAL( UCG_FONT_MODE_SOLID ) },
+
+    // Options for circle/ disc drawing
+    { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( UCG_DRAW_UPPER_RIGHT ) },
+    { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( UCG_DRAW_UPPER_LEFT ) },
+    { LSTRKEY( "DRAW_LOWER_RIGHT" ), LNUMVAL( UCG_DRAW_LOWER_RIGHT ) },
+    { LSTRKEY( "DRAW_LOWER_LEFT" ),  LNUMVAL( UCG_DRAW_LOWER_LEFT ) },
+    { LSTRKEY( "DRAW_ALL" ),         LNUMVAL( UCG_DRAW_ALL ) },
 
     { LSTRKEY( "__metatable" ), LROVAL( lucg_map ) },
 #endif
@@ -708,16 +818,25 @@ LUALIB_API int luaopen_ucg( lua_State *L )
     // Module constants  
 
     // Register fonts
+    MOD_REG_LUDATA( L, "font_7x13B_tr",   (void *)(ucg_font_7x13B_tr) );
     MOD_REG_LUDATA( L, "font_helvB08_hr", (void *)(ucg_font_helvB08_hr) );
     MOD_REG_LUDATA( L, "font_helvB10_hr", (void *)(ucg_font_helvB10_hr) );
     MOD_REG_LUDATA( L, "font_helvB12_hr", (void *)(ucg_font_helvB12_hr) );
     MOD_REG_LUDATA( L, "font_helvB18_hr", (void *)(ucg_font_helvB18_hr) );
+    MOD_REG_LUDATA( L, "font_ncenB24_tr", (void *)(ucg_font_ncenB24_tr) );
     MOD_REG_LUDATA( L, "font_ncenR12_tr", (void *)(ucg_font_ncenR12_tr) );
     MOD_REG_LUDATA( L, "font_ncenR14_hr", (void *)(ucg_font_ncenR14_hr) );
 
     // Font modes
     MOD_REG_NUMBER( L, "FONT_MODE_TRANSPARENT", UCG_FONT_MODE_TRANSPARENT );
     MOD_REG_NUMBER( L, "FONT_MODE_SOLID",       UCG_FONT_MODE_SOLID );
+
+    // Options for circle/ disc drawing
+    MOD_REG_NUMBER( L, "DRAW_UPPER_RIGHT", UCG_DRAW_UPPER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  UCG_DRAW_UPPER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", UCG_DRAW_LOWER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  UCG_DRAW_LOWER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_ALL",         UCG_DRAW_ALL );
 
     // create metatable
     luaL_newmetatable(L, "ucg.display");
