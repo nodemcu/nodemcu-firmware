@@ -10,7 +10,7 @@
 
 #include "ucg.h"
 
-//#include "u8g_config.h"
+#include "ucg_config.h"
 
 struct _lucg_userdata_t
 {
@@ -825,44 +825,53 @@ static int lucg_close_display( lua_State *L )
 }
 
 
-static int lucg_ili9341_18x240x320_hw_spi( lua_State *L )
-{
-    unsigned cs = luaL_checkinteger( L, 1 );
-    if (cs == 0)
-        return luaL_error( L, "CS pin required" );
-    unsigned dc = luaL_checkinteger( L, 2 );
-    if (dc == 0)
-        return luaL_error( L, "D/C pin required" );
-    unsigned res = luaL_optinteger( L, 3, UCG_PIN_VAL_NONE );
-
-    lucg_userdata_t *lud = (lucg_userdata_t *) lua_newuserdata( L, sizeof( lucg_userdata_t ) );
-
-    // do a dummy init so that something usefull is part of the ucg structure
-    ucg_Init( LUCG, ucg_dev_default_cb, ucg_ext_none, (ucg_com_fnptr)0 );
-
-    // reset cursor position
-    lud->tx   = 0;
-    lud->ty   = 0;
-    lud->tdir = 0;  // default direction
-
-    uint8_t i;
-    for( i = 0; i < UCG_PIN_COUNT; i++ )
-        lud->ucg.pin_list[i] = UCG_PIN_VAL_NONE;
-
-
-    lud->dev_cb = ucg_dev_ili9341_18x240x320;
-    lud->ext_cb = ucg_ext_ili9341_18;
-    lud->ucg.pin_list[UCG_PIN_RST] = res;
-    lud->ucg.pin_list[UCG_PIN_CD]  = dc;
-    lud->ucg.pin_list[UCG_PIN_CS]  = cs;
-
-
-    /* set its metatable */
-    luaL_getmetatable(L, "ucg.display");
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
+// ***************************************************************************
+// Device constructors
+//
+//
+#undef UCG_DISPLAY_TABLE_ENTRY
+#define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension)       \
+    static int lucg_ ## binding( lua_State *L )                   \
+    {                                                             \
+        unsigned cs = luaL_checkinteger( L, 1 );                  \
+        if (cs == 0)                                              \
+            return luaL_error( L, "CS pin required" );            \
+        unsigned dc = luaL_checkinteger( L, 2 );                  \
+        if (dc == 0)                                              \
+            return luaL_error( L, "D/C pin required" );           \
+        unsigned res = luaL_optinteger( L, 3, UCG_PIN_VAL_NONE ); \
+                                                                        \
+        lucg_userdata_t *lud = (lucg_userdata_t *) lua_newuserdata( L, sizeof( lucg_userdata_t ) ); \
+                                                                        \
+        /* do a dummy init so that something usefull is part of the ucg structure */ \
+        ucg_Init( LUCG, ucg_dev_default_cb, ucg_ext_none, (ucg_com_fnptr)0 ); \
+                                                                        \
+        /* reset cursor position */                                     \
+        lud->tx   = 0;                                                  \
+        lud->ty   = 0;                                                  \
+        lud->tdir = 0;  /* default direction */                         \
+                                                                        \
+        uint8_t i;                                                      \
+        for( i = 0; i < UCG_PIN_COUNT; i++ )                            \
+            lud->ucg.pin_list[i] = UCG_PIN_VAL_NONE;                    \
+                                                                        \
+        lud->dev_cb = device;                                           \
+        lud->ext_cb = extension;                                        \
+        lud->ucg.pin_list[UCG_PIN_RST] = res;                           \
+        lud->ucg.pin_list[UCG_PIN_CD]  = dc;                            \
+        lud->ucg.pin_list[UCG_PIN_CS]  = cs;                            \
+                                                                        \
+        /* set its metatable */                                         \
+        luaL_getmetatable(L, "ucg.display");                            \
+        lua_setmetatable(L, -2);                                        \
+                                                                        \
+        return 1;                                                       \
+    }
+//
+// Unroll the display table and insert binding functions.
+UCG_DISPLAY_TABLE
+//
+// ***************************************************************************
 
 
 
@@ -925,19 +934,16 @@ static const LUA_REG_TYPE lucg_display_map[] =
 
 const LUA_REG_TYPE lucg_map[] = 
 {
-    { LSTRKEY( "ili9341_18x240x320_hw_spi" ), LFUNCVAL( lucg_ili9341_18x240x320_hw_spi ) },
+#undef UCG_DISPLAY_TABLE_ENTRY
+#define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) { LSTRKEY( #binding ), LFUNCVAL ( lucg_ ##binding ) },
+    UCG_DISPLAY_TABLE
 
 #if LUA_OPTIMIZE_MEMORY > 0
 
     // Register fonts
-    { LSTRKEY( "font_7x13B_tr" ),   LUDATA( (void *)(ucg_font_7x13B_tr) ) },
-    { LSTRKEY( "font_helvB08_hr" ), LUDATA( (void *)(ucg_font_helvB08_hr) ) },
-    { LSTRKEY( "font_helvB10_hr" ), LUDATA( (void *)(ucg_font_helvB10_hr) ) },
-    { LSTRKEY( "font_helvB12_hr" ), LUDATA( (void *)(ucg_font_helvB12_hr) ) },
-    { LSTRKEY( "font_helvB18_hr" ), LUDATA( (void *)(ucg_font_helvB18_hr) ) },
-    { LSTRKEY( "font_ncenB24_tr" ), LUDATA( (void *)(ucg_font_ncenB24_tr) ) },
-    { LSTRKEY( "font_ncenR12_tr" ), LUDATA( (void *)(ucg_font_ncenR12_tr) ) },
-    { LSTRKEY( "font_ncenR14_hr" ), LUDATA( (void *)(ucg_font_ncenR14_hr) ) },
+#undef UCG_FONT_TABLE_ENTRY
+#define UCG_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LUDATA( (void *)(ucg_ ## font) ) },
+    UCG_FONT_TABLE
 
     // Font modes
     { LSTRKEY( "FONT_MODE_TRANSPARENT" ), LNUMVAL( UCG_FONT_MODE_TRANSPARENT ) },
@@ -971,14 +977,9 @@ LUALIB_API int luaopen_ucg( lua_State *L )
     // Module constants  
 
     // Register fonts
-    MOD_REG_LUDATA( L, "font_7x13B_tr",   (void *)(ucg_font_7x13B_tr) );
-    MOD_REG_LUDATA( L, "font_helvB08_hr", (void *)(ucg_font_helvB08_hr) );
-    MOD_REG_LUDATA( L, "font_helvB10_hr", (void *)(ucg_font_helvB10_hr) );
-    MOD_REG_LUDATA( L, "font_helvB12_hr", (void *)(ucg_font_helvB12_hr) );
-    MOD_REG_LUDATA( L, "font_helvB18_hr", (void *)(ucg_font_helvB18_hr) );
-    MOD_REG_LUDATA( L, "font_ncenB24_tr", (void *)(ucg_font_ncenB24_tr) );
-    MOD_REG_LUDATA( L, "font_ncenR12_tr", (void *)(ucg_font_ncenR12_tr) );
-    MOD_REG_LUDATA( L, "font_ncenR14_hr", (void *)(ucg_font_ncenR14_hr) );
+#undef UCG_FONT_TABLE_ENTRY
+#define UCG_FONT_TABLE_ENTRY(font) MOD_REG_LUDATA( L, #font, (void *)(ucg_ ## font) );
+    UCG_FONT_TABLE
 
     // Font modes
     MOD_REG_NUMBER( L, "FONT_MODE_TRANSPARENT", UCG_FONT_MODE_TRANSPARENT );
