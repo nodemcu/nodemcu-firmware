@@ -117,6 +117,22 @@ static int lucg_drawBox( lua_State *L )
     return 0;
 }
 
+// Lua: ucg.drawFrame( self, x, y, w, h )
+static int lucg_drawFrame( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_int_t args[4];
+    lucg_get_int_args( L, 2, 4, args );
+
+    ucg_DrawFrame( LUCG, args[0], args[1], args[2], args[3] );
+
+    return 0;
+}
+
 // Lua: ucg.drawGradientBox( self, x, y, w, h )
 static int lucg_drawGradientBox( lua_State *L )
 {
@@ -352,6 +368,19 @@ static int lucg_setFontMode( lua_State *L )
     ucg_int_t fontmode = luaL_checkinteger( L, 2 );
 
     ucg_SetFontMode( LUCG, fontmode );
+
+    return 0;
+}
+
+// Lua: ucg.setMaxClipRange( self )
+static int lucg_setMaxClipRange( lua_State *L )
+{
+    lucg_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    ucg_SetMaxClipRange( LUCG );
 
     return 0;
 }
@@ -610,6 +639,7 @@ static const LUA_REG_TYPE lucg_display_map[] =
     { LSTRKEY( "clearScreen" ),     LFUNCVAL( lucg_clearScreen ) },
     { LSTRKEY( "draw90Line" ),      LFUNCVAL( lucg_draw90Line ) },
     { LSTRKEY( "drawBox" ),         LFUNCVAL( lucg_drawBox ) },
+    { LSTRKEY( "drawFrame" ),       LFUNCVAL( lucg_drawFrame ) },
     { LSTRKEY( "drawGradientBox" ), LFUNCVAL( lucg_drawGradientBox ) },
     { LSTRKEY( "drawHLine" ),       LFUNCVAL( lucg_drawHLine ) },
     { LSTRKEY( "drawLine" ),        LFUNCVAL( lucg_drawLine ) },
@@ -624,6 +654,7 @@ static const LUA_REG_TYPE lucg_display_map[] =
     { LSTRKEY( "setColor" ),        LFUNCVAL( lucg_setColor ) },
     { LSTRKEY( "setFont" ),         LFUNCVAL( lucg_setFont ) },
     { LSTRKEY( "setFontMode" ),     LFUNCVAL( lucg_setFontMode ) },
+    { LSTRKEY( "setMaxClipRange" ), LFUNCVAL( lucg_setMaxClipRange ) },
     { LSTRKEY( "setPrintDir" ),     LFUNCVAL( lucg_setPrintDir ) },
     { LSTRKEY( "setPrintPos" ),     LFUNCVAL( lucg_setPrintPos ) },
     { LSTRKEY( "setRotate90" ),     LFUNCVAL( lucg_setRotate90 ) },
@@ -648,6 +679,7 @@ const LUA_REG_TYPE lucg_map[] =
     { LSTRKEY( "font_helvB08_hr" ), LUDATA( (void *)(ucg_font_helvB08_hr) ) },
     { LSTRKEY( "font_helvB10_hr" ), LUDATA( (void *)(ucg_font_helvB10_hr) ) },
     { LSTRKEY( "font_helvB12_hr" ), LUDATA( (void *)(ucg_font_helvB12_hr) ) },
+    { LSTRKEY( "font_helvB18_hr" ), LUDATA( (void *)(ucg_font_helvB18_hr) ) },
     { LSTRKEY( "font_ncenR12_tr" ), LUDATA( (void *)(ucg_font_ncenR12_tr) ) },
     { LSTRKEY( "font_ncenR14_hr" ), LUDATA( (void *)(ucg_font_ncenR14_hr) ) },
 
@@ -679,6 +711,7 @@ LUALIB_API int luaopen_ucg( lua_State *L )
     MOD_REG_LUDATA( L, "font_helvB08_hr", (void *)(ucg_font_helvB08_hr) );
     MOD_REG_LUDATA( L, "font_helvB10_hr", (void *)(ucg_font_helvB10_hr) );
     MOD_REG_LUDATA( L, "font_helvB12_hr", (void *)(ucg_font_helvB12_hr) );
+    MOD_REG_LUDATA( L, "font_helvB18_hr", (void *)(ucg_font_helvB18_hr) );
     MOD_REG_LUDATA( L, "font_ncenR12_tr", (void *)(ucg_font_ncenR12_tr) );
     MOD_REG_LUDATA( L, "font_ncenR14_hr", (void *)(ucg_font_ncenR14_hr) );
 
