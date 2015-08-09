@@ -269,12 +269,12 @@ static void pg_exec(pg_struct *pg, ucg_t *ucg)
 /*===========================================*/
 /* API procedures */
 
-void pg_ClearPolygonXY(pg_struct *pg)
+void ucg_pg_ClearPolygonXY(pg_struct *pg)
 {
   pg->cnt = 0;
 }
 
-void pg_AddPolygonXY(pg_struct *pg, ucg_t *ucg, int16_t x, int16_t y)
+void ucg_pg_AddPolygonXY(pg_struct *pg, ucg_t *ucg, int16_t x, int16_t y)
 {
   if ( pg->cnt < PG_MAX_POINTS )
   {
@@ -284,7 +284,7 @@ void pg_AddPolygonXY(pg_struct *pg, ucg_t *ucg, int16_t x, int16_t y)
   }
 }
 
-void pg_DrawPolygon(pg_struct *pg, ucg_t *ucg)
+void ucg_pg_DrawPolygon(pg_struct *pg, ucg_t *ucg)
 {
   if ( pg_prepare(pg) == 0 )
     return;
@@ -295,17 +295,17 @@ pg_struct ucg_pg;
 
 void ucg_ClearPolygonXY(void)
 {
-  pg_ClearPolygonXY(&ucg_pg);
+  ucg_pg_ClearPolygonXY(&ucg_pg);
 }
 
 void ucg_AddPolygonXY(ucg_t *ucg, int16_t x, int16_t y)
 {
-  pg_AddPolygonXY(&ucg_pg, ucg, x, y);
+  ucg_pg_AddPolygonXY(&ucg_pg, ucg, x, y);
 }
 
 void ucg_DrawPolygon(ucg_t *ucg)
 {
-  pg_DrawPolygon(&ucg_pg, ucg);
+  ucg_pg_DrawPolygon(&ucg_pg, ucg);
 }
 
 void ucg_DrawTriangle(ucg_t *ucg, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)
