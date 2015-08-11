@@ -65,6 +65,8 @@ static int lu8g_setFont( lua_State *L )
     u8g_fntpgm_uint8_t *font = (u8g_fntpgm_uint8_t *)lua_touserdata( L, 2 );
     if (font != NULL)
         u8g_SetFont( LU8G, font );
+    else
+        luaL_argerror(L, 2, "font data expected");
 
     return 0;
 }
@@ -301,32 +303,24 @@ static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
 // Lua: pix_len = u8g.drawStr( self, x, y, string )
 static int lu8g_drawStr( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 0 );
 }
 
 // Lua: pix_len = u8g.drawStr90( self, x, y, string )
 static int lu8g_drawStr90( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 1 );
 }
 
 // Lua: pix_len = u8g.drawStr180( self, x, y, string )
 static int lu8g_drawStr180( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 2 );
 }
 
 // Lua: pix_len = u8g.drawStr270( self, x, y, string )
 static int lu8g_drawStr270( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 3 );
 }
 
@@ -1147,13 +1141,14 @@ LUALIB_API int luaopen_u8g( lua_State *L )
 
     // Options for circle/ ellipse drawing
     MOD_REG_NUMBER( L, "DRAW_UPPER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_UPPER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_LOWER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_LOWER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_ALL",         U8G_DRAW_ALL );
 
     // Display modes
     MOD_REG_NUMBER( L, "MODE_BW",       U8G_MODE_BW );
-    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_BW );
+    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_GRAY2BIT );
 
     // create metatable
     luaL_newmetatable(L, "u8g.display");
