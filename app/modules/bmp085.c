@@ -79,7 +79,7 @@ static int ICACHE_FLASH_ATTR bmp085_init(lua_State* L) {
     return 1;
 }
 
-static int16_t ICACHE_FLASH_ATTR bmp085_temperature(void) {
+static uint32_t bmp085_temperature_raw_b5(void) {
     int16_t t, X1, X2;
 
     platform_i2c_send_start(bmp085_i2c_id);
@@ -94,8 +94,12 @@ static int16_t ICACHE_FLASH_ATTR bmp085_temperature(void) {
     t = r16(bmp085_i2c_id, 0xF6);
     X1 = ((t - bmp085_data.AC6) * bmp085_data.AC5) >> 15;
     X2 = (bmp085_data.MC << 11)/ (X1 + bmp085_data.MD);
-    t = (X2 + X1 + 8) >> 4;
-    return t;
+
+    return X1 + X2;
+}
+
+static int16_t ICACHE_FLASH_ATTR bmp085_temperature(void) {
+    return (bmp085_temperature_raw_b5() + 8) >> 4;
 }
 
 static int ICACHE_FLASH_ATTR bmp085_lua_temperature(lua_State* L) {
@@ -148,7 +152,7 @@ static int ICACHE_FLASH_ATTR bmp085_lua_pressure_raw(lua_State* L) {
 
 static int ICACHE_FLASH_ATTR bmp085_lua_pressure(lua_State* L) {
     uint8_t oss = 0;
-    int32_t p, t;
+    int32_t p;
     int32_t X1, X2, X3, B3, B4, B5, B6, B7;
 
     if (lua_isnumber(L, 1)) {
@@ -159,9 +163,8 @@ static int ICACHE_FLASH_ATTR bmp085_lua_pressure(lua_State* L) {
     }
  
     p = bmp085_pressure_raw(oss);
-    t = bmp085_temperature();
+    B5 = bmp085_temperature_raw_b5();
 
-    B5 = (t <<  4) - 8;
     B6 = B5 - 4000;
     X1 = ((int32_t)bmp085_data.B2 * ((B6 * B6) >> 12)) >> 11;
     X2 = ((int32_t)bmp085_data.AC2 * B6) >> 11;
