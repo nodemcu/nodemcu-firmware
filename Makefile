@@ -76,6 +76,7 @@ else
 endif
 #############################################################
 ESPTOOL ?= ../tools/esptool.py
+MKESPIMAGE ?= ../tools/mkespimage.py
 
 
 CSRCS ?= $(wildcard *.c)
@@ -155,7 +156,7 @@ endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
+	$(MKESPIMAGE) elf2image $< -o $(FIRMWAREDIR)
 
 #############################################################
 # Rules base
