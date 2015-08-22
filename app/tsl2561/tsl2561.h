@@ -1,13 +1,13 @@
 /**************************************************************************/
 /*! 
     @file     tsl2561.h
-    @author   K. Townsend (microBuilder.eu)
+    @author   K. Townsend (microBuilder.eu) / Adapted for nodeMCU by Michael Lucas (Aeprox @github)
 
     @section LICENSE
 
     Software License Agreement (BSD License)
 
-    Copyright (c) 2010, microBuilder SARL
+    Copyright (c) 2010, microBuilder SARL/ Adapted for nodeMCU by Michael Lucas (Aeprox @github)
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@
 #define TSL2561_PACKAGE_CS                  // Lux calculations differ slightly for CS package
 // #define TSL2561_PACKAGE_T_FN_CL
 
-#define TSL2561_ADDRESS           (0x72)    // 0111001 shifted left 1 bit = 0x72 (ADDR = GND or floating)
+#define TSL2561_ADDRESS           (0x39)    // or 0x29, or 0x49
 #define TSL2561_READBIT           (0x01)
 
 #define TSL2561_COMMAND_BIT       (0x80)    // Must be 1

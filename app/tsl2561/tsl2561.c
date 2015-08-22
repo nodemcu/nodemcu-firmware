@@ -1,7 +1,7 @@
 /**************************************************************************/
 /*! 
     @file     tsl2561.c
-    @author   K. Townsend (microBuilder.eu)
+    @author   K. Townsend (microBuilder.eu)/ Adapted for nodeMCU by Michael Lucas (Aeprox @github)
 	
     @brief    Drivers for the TAOS TSL2561 I2C digital luminosity sensor
 
@@ -21,7 +21,7 @@
     uint32_t lux;
 
     // Initialise luminosity sensor
-    tsl2561Init();
+    tsl2561Init(sda_pin, scl_pin);
 
     // Optional ... default setting is 400ms with no gain
     // Set timing to 101ms with no gain
@@ -100,19 +100,21 @@ tsl2561Error_t tsl2561Read16(uint8_t reg, uint16_t *value)
   platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
   platform_i2c_send_byte(tsl2561_i2c_id, reg);
   platform_i2c_send_stop(tsl2561_i2c_id);
+
+  platform_i2c_send_start(tsl2561_i2c_id);
+  platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
+  uint8_t ch_low = platform_i2c_recv_byte(tsl2561_i2c_id, 0);
+  platform_i2c_send_stop(tsl2561_i2c_id);
+
+  platform_i2c_send_start(tsl2561_i2c_id);
+  platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+  platform_i2c_send_byte(tsl2561_i2c_id, reg+1);
+  platform_i2c_send_stop(tsl2561_i2c_id);
+
   platform_i2c_send_start(tsl2561_i2c_id);
   platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
   uint8_t ch_high = platform_i2c_recv_byte(tsl2561_i2c_id, 0);
   platform_i2c_send_stop(tsl2561_i2c_id);
-
-  platform_i2c_send_start(tsl2561_i2c_id);
-    platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
-    platform_i2c_send_byte(tsl2561_i2c_id, reg);
-    platform_i2c_send_stop(tsl2561_i2c_id);
-    platform_i2c_send_start(tsl2561_i2c_id);
-    platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
-    uint8_t ch_low = platform_i2c_recv_byte(tsl2561_i2c_id, 0);
-    platform_i2c_send_stop(tsl2561_i2c_id);
 
   // Shift values to create properly formed integer (low byte first)
   *value = (ch_low | (ch_high << 8));
@@ -181,7 +183,7 @@ tsl2561Error_t tsl2561SetTiming(tsl2561IntegrationTime_t integration, tsl2561Gai
   error = tsl2561Enable();
   if (error) return error;  
 
-  // Turn the device off to save power
+  // set timing and gain on device
   error = tsl2561Write8(TSL2561_COMMAND_BIT | TSL2561_REGISTER_TIMING, integration | gain);  
   if (error) return error;  
 
