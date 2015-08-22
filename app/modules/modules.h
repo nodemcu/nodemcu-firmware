@@ -222,7 +222,7 @@
 #endif
 
 #if defined(LUA_USE_MODULES_TSL2561)
-#define MODULES_TSL2561      "TSL2561"
+#define MODULES_TSL2561      "tsl2561"
 #define ROM_MODULES_TSL2561  \
     _ROM(MODULES_TSL2561, luaopen_tsl2561, tsl2561_map)
 #else
