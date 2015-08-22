@@ -65,6 +65,7 @@
 */
 /**************************************************************************/
 #include "tsl2561.h"
+
 static const uint32_t tsl2561_i2c_id = 0;
 static bool _tsl2561Initialised = 0;
 static tsl2561IntegrationTime_t _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_402MS;
@@ -212,13 +213,13 @@ tsl2561Error_t tsl2561GetLuminosity (uint16_t *broadband, uint16_t *ir)
   switch (_tsl2561IntegrationTime)
   {
     case TSL2561_INTEGRATIONTIME_13MS:
-      systickDelay(14);
+      os_delay_us(14000);//systickDelay(14);
       break;
     case TSL2561_INTEGRATIONTIME_101MS:
-      systickDelay(102);
+      os_delay_us(102000);//systickDelay(102);
       break;
     default:
-      systickDelay(400);
+      os_delay_us(400000);//systickDelay(400);
       break;
   }
 
