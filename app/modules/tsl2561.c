@@ -56,7 +56,7 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_getchannels(lua_State* L) {
 	lua_pushnumber( L, ch1 );
 	lua_pushnumber( L, error );
 
-	return 1;
+	return 3;
 }
 
 #define MIN_OPT_LEVEL 2
