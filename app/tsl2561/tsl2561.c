@@ -223,7 +223,7 @@ tsl2561Error_t tsl2561GetLuminosity (uint16_t *broadband, uint16_t *ir)
       os_delay_us(102000);//systickDelay(102);
       break;
     default:
-      os_delay_us(400000);//systickDelay(400);
+      os_delay_us(404000);//systickDelay(404);
       break;
   }
 
