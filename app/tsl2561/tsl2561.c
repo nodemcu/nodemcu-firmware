@@ -65,6 +65,8 @@
 */
 /**************************************************************************/
 #include "tsl2561.h"
+#include "platform.h"
+#include "user_interface.h"
 
 static const uint32_t tsl2561_i2c_id = 0;
 static bool _tsl2561Initialised = 0;
@@ -125,7 +127,7 @@ tsl2561Error_t tsl2561Read16(uint8_t reg, uint16_t *value)
 /**************************************************************************/
 tsl2561Error_t tsl2561Enable(void)
 {
-  if (!_tsl2561Initialised) tsl2561Init();
+  if (!_tsl2561Initialised) return TSL2561_ERROR_NOINIT;
 
   // Enable the device by setting the control bit to 0x03
   return tsl2561Write8(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL, TSL2561_CONTROL_POWERON);
@@ -138,7 +140,7 @@ tsl2561Error_t tsl2561Enable(void)
 /**************************************************************************/
 tsl2561Error_t tsl2561Disable(void)
 {
-  if (!_tsl2561Initialised) tsl2561Init();
+  if (!_tsl2561Initialised) return TSL2561_ERROR_NOINIT;
 
   // Turn the device off to save power
   return tsl2561Write8(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL, TSL2561_CONTROL_POWEROFF);
@@ -171,7 +173,7 @@ tsl2561Error_t tsl2561Init(uint8_t sda, uint8_t scl)
 /**************************************************************************/
 tsl2561Error_t tsl2561SetTiming(tsl2561IntegrationTime_t integration, tsl2561Gain_t gain)
 {
-  if (!_tsl2561Initialised) tsl2561Init();
+  if (!_tsl2561Initialised) return TSL2561_ERROR_NOINIT;
 
   tsl2561Error_t error = TSL2561_ERROR_OK;
 
@@ -201,7 +203,7 @@ tsl2561Error_t tsl2561SetTiming(tsl2561IntegrationTime_t integration, tsl2561Gai
 /**************************************************************************/
 tsl2561Error_t tsl2561GetLuminosity (uint16_t *broadband, uint16_t *ir)
 {
-  if (!_tsl2561Initialised) tsl2561Init();
+  if (!_tsl2561Initialised) return TSL2561_ERROR_NOINIT;
 
   tsl2561Error_t error = TSL2561_ERROR_OK;
 

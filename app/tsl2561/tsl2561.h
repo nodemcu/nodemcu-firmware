@@ -33,6 +33,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /**************************************************************************/
+#include "c_types.h"
 
 #ifndef _TSL2561_H_
 #define _TSL2561_H_
@@ -146,6 +147,7 @@ typedef enum
   TSL2561_ERROR_OK = 0,               // Everything executed normally
   TSL2561_ERROR_I2CINIT,              // Unable to initialise I2C
   TSL2561_ERROR_I2CBUSY,              // I2C already in use
+  TSL2561_ERROR_NOINIT,				  // call init first
   TSL2561_ERROR_LAST
 }
 tsl2561Error_t;
