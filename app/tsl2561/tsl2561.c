@@ -71,7 +71,7 @@
 static const uint32_t tsl2561_i2c_id = 0;
 static bool _tsl2561Initialised = 0;
 static tsl2561IntegrationTime_t _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_402MS;
-static tsl2561Gain_t _tsl2561Gain = TSL2561_GAIN_0X;
+static tsl2561Gain_t _tsl2561Gain = TSL2561_GAIN_1X;
 
 
 /**************************************************************************/
