@@ -13,8 +13,9 @@
 
 static uint16_t ch0;
 static uint16_t ch1;
-/*
- * Lua: 	error = tsl2561.init(sdapin, sclpin)
+
+/* Initialises the device on pins sdapin and sclpin
+ * Lua: 	status = tsl2561.init(sdapin, sclpin)
  */
 static int ICACHE_FLASH_ATTR tsl2561_init(lua_State* L) {
 	uint32_t sda;
@@ -35,8 +36,8 @@ static int ICACHE_FLASH_ATTR tsl2561_init(lua_State* L) {
 	lua_pushnumber(L, error);
 	return 1;
 }
-/*
- * Lua: 	error = tsl2561.settiming(integration, gain)
+/* Sets the integration time and gain settings of the device
+ * Lua: 	status = tsl2561.settiming(integration, gain)
  */
 static int ICACHE_FLASH_ATTR tsl2561_lua_settiming(lua_State* L) {
 	// check variables
@@ -55,8 +56,8 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_settiming(lua_State* L) {
 	lua_pushnumber(L, tsl2561SetTiming(integration, gain));
 	return 1;
 }
-/*
- * Lua: 	lux, error = tsl2561.getlux()
+/* Reads sensor values from device and return calculated lux
+ * Lua: 	lux, status = tsl2561.getlux()
  */
 static int ICACHE_FLASH_ATTR tsl2561_lua_calclux(lua_State* L) {
 	uint8_t error = tsl2561GetLuminosity(&ch0, &ch1);
@@ -69,8 +70,8 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_calclux(lua_State* L) {
 	}
 	return 2;
 }
-/*
- * Lua: 	tsl2561.getrawchannels()
+/* Reads sensor values from device and returns them
+ * Lua: 	ch0, ch1, status = tsl2561.getrawchannels()
  */
 static int ICACHE_FLASH_ATTR tsl2561_lua_getchannels(lua_State* L) {
 	uint8_t error = tsl2561GetLuminosity(&ch0, &ch1);

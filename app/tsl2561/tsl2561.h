@@ -41,7 +41,7 @@
 #define TSL2561_PACKAGE_CS                  // Lux calculations differ slightly for CS package
 // #define TSL2561_PACKAGE_T_FN_CL
 
-#define TSL2561_ADDRESS           (0x39)    // or 0x29, or 0x49
+#define TSL2561_ADDRESS           (0x39)    //  GND=>0x29, float=>0x39 or VDD=>0x49
 #define TSL2561_READBIT           (0x01)
 
 #define TSL2561_COMMAND_BIT       (0x80)    // Must be 1
