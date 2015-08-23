@@ -72,6 +72,8 @@ static const uint32_t tsl2561_i2c_id = 0;
 static bool _tsl2561Initialised = 0;
 static tsl2561IntegrationTime_t _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_402MS;
 static tsl2561Gain_t _tsl2561Gain = TSL2561_GAIN_1X;
+static tsl2561Address_t tsl2561Address = TSL2561_ADDRESS_FLOAT;
+static tsl2561Package_t tsl2561Package = TSL2561_PACKAGE_T_FN_CL;
 
 /**************************************************************************/
 /*! 
@@ -80,7 +82,7 @@ static tsl2561Gain_t _tsl2561Gain = TSL2561_GAIN_1X;
 /**************************************************************************/
 tsl2561Error_t tsl2561Write8(uint8_t reg, uint8_t value) {
 	platform_i2c_send_start(tsl2561_i2c_id);
-	platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+	platform_i2c_send_address(tsl2561_i2c_id, tsl2561Address, PLATFORM_I2C_DIRECTION_TRANSMITTER);
 	platform_i2c_send_byte(tsl2561_i2c_id, reg);
 	platform_i2c_send_byte(tsl2561_i2c_id, value);
 	platform_i2c_send_stop(tsl2561_i2c_id);
@@ -94,22 +96,22 @@ tsl2561Error_t tsl2561Write8(uint8_t reg, uint8_t value) {
 /**************************************************************************/
 tsl2561Error_t tsl2561Read16(uint8_t reg, uint16_t *value) {
 	platform_i2c_send_start(tsl2561_i2c_id);
-	platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+	platform_i2c_send_address(tsl2561_i2c_id, tsl2561Address, PLATFORM_I2C_DIRECTION_TRANSMITTER);
 	platform_i2c_send_byte(tsl2561_i2c_id, reg);
 	platform_i2c_send_stop(tsl2561_i2c_id);
 
 	platform_i2c_send_start(tsl2561_i2c_id);
-	platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
+	platform_i2c_send_address(tsl2561_i2c_id, tsl2561Address, PLATFORM_I2C_DIRECTION_RECEIVER);
 	uint8_t ch_low = platform_i2c_recv_byte(tsl2561_i2c_id, 0);
 	platform_i2c_send_stop(tsl2561_i2c_id);
 
 	platform_i2c_send_start(tsl2561_i2c_id);
-	platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+	platform_i2c_send_address(tsl2561_i2c_id, tsl2561Address, PLATFORM_I2C_DIRECTION_TRANSMITTER);
 	platform_i2c_send_byte(tsl2561_i2c_id, reg + 1);
 	platform_i2c_send_stop(tsl2561_i2c_id);
 
 	platform_i2c_send_start(tsl2561_i2c_id);
-	platform_i2c_send_address(tsl2561_i2c_id, TSL2561_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
+	platform_i2c_send_address(tsl2561_i2c_id, tsl2561Address, PLATFORM_I2C_DIRECTION_RECEIVER);
 	uint8_t ch_high = platform_i2c_recv_byte(tsl2561_i2c_id, 0);
 	platform_i2c_send_stop(tsl2561_i2c_id);
 
@@ -145,6 +147,15 @@ tsl2561Error_t tsl2561Disable(void) {
 	// Turn the device off to save power
 	return tsl2561Write8(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL,
 	TSL2561_CONTROL_POWEROFF);
+}
+
+void tsl2561SetAddress(uint8_t address){
+	tsl2561Address = address;
+	return;
+}
+void tsl2561SetPackage(uint8_t package){
+	tsl2561Package = package;
+	return;
 }
 
 /**************************************************************************/
@@ -289,50 +300,51 @@ uint32_t tsl2561CalculateLux(uint16_t ch0, uint16_t ch1) {
 
 	unsigned int b, m;
 
-#ifdef TSL2561_PACKAGE_CS
-	if ((ratio >= 0) && (ratio <= TSL2561_LUX_K1C)) {
-		b = TSL2561_LUX_B1C;
-		m = TSL2561_LUX_M1C;
-	} else if (ratio <= TSL2561_LUX_K2C) {
-		b = TSL2561_LUX_B2C;
-		m = TSL2561_LUX_M2C;
-	} else if (ratio <= TSL2561_LUX_K3C) {
-		b = TSL2561_LUX_B3C;
-		m = TSL2561_LUX_M3C;
-	} else if (ratio <= TSL2561_LUX_K4C) {
-		b = TSL2561_LUX_B4C;
-		m = TSL2561_LUX_M4C;
-	} else if (ratio <= TSL2561_LUX_K5C) {
-		b = TSL2561_LUX_B5C;
-		m = TSL2561_LUX_M5C;
-	} else if (ratio <= TSL2561_LUX_K6C) {
-		b = TSL2561_LUX_B6C;
-		m = TSL2561_LUX_M6C;
-	} else if (ratio <= TSL2561_LUX_K7C) {
-		b = TSL2561_LUX_B7C;
-		m = TSL2561_LUX_M7C;
-	} else if (ratio > TSL2561_LUX_K8C) {
-		b = TSL2561_LUX_B8C;
-		m = TSL2561_LUX_M8C;
+	if (tsl2561Package == TSL2561_PACKAGE_CS){
+		if ((ratio >= 0) && (ratio <= TSL2561_LUX_K1C)) {
+			b = TSL2561_LUX_B1C;
+			m = TSL2561_LUX_M1C;
+		} else if (ratio <= TSL2561_LUX_K2C) {
+			b = TSL2561_LUX_B2C;
+			m = TSL2561_LUX_M2C;
+		} else if (ratio <= TSL2561_LUX_K3C) {
+			b = TSL2561_LUX_B3C;
+			m = TSL2561_LUX_M3C;
+		} else if (ratio <= TSL2561_LUX_K4C) {
+			b = TSL2561_LUX_B4C;
+			m = TSL2561_LUX_M4C;
+		} else if (ratio <= TSL2561_LUX_K5C) {
+			b = TSL2561_LUX_B5C;
+			m = TSL2561_LUX_M5C;
+		} else if (ratio <= TSL2561_LUX_K6C) {
+			b = TSL2561_LUX_B6C;
+			m = TSL2561_LUX_M6C;
+		} else if (ratio <= TSL2561_LUX_K7C) {
+			b = TSL2561_LUX_B7C;
+			m = TSL2561_LUX_M7C;
+		} else if (ratio > TSL2561_LUX_K8C) {
+			b = TSL2561_LUX_B8C;
+			m = TSL2561_LUX_M8C;
+		}
 	}
-#else
-	if ((ratio >= 0) && (ratio <= TSL2561_LUX_K1T))
-	{	b=TSL2561_LUX_B1T; m=TSL2561_LUX_M1T;}
-	else if (ratio <= TSL2561_LUX_K2T)
-	{	b=TSL2561_LUX_B2T; m=TSL2561_LUX_M2T;}
-	else if (ratio <= TSL2561_LUX_K3T)
-	{	b=TSL2561_LUX_B3T; m=TSL2561_LUX_M3T;}
-	else if (ratio <= TSL2561_LUX_K4T)
-	{	b=TSL2561_LUX_B4T; m=TSL2561_LUX_M4T;}
-	else if (ratio <= TSL2561_LUX_K5T)
-	{	b=TSL2561_LUX_B5T; m=TSL2561_LUX_M5T;}
-	else if (ratio <= TSL2561_LUX_K6T)
-	{	b=TSL2561_LUX_B6T; m=TSL2561_LUX_M6T;}
-	else if (ratio <= TSL2561_LUX_K7T)
-	{	b=TSL2561_LUX_B7T; m=TSL2561_LUX_M7T;}
-	else if (ratio > TSL2561_LUX_K8T)
-	{	b=TSL2561_LUX_B8T; m=TSL2561_LUX_M8T;}
-#endif
+	else{
+		if ((ratio >= 0) && (ratio <= TSL2561_LUX_K1T))
+		{	b=TSL2561_LUX_B1T; m=TSL2561_LUX_M1T;}
+		else if (ratio <= TSL2561_LUX_K2T)
+		{	b=TSL2561_LUX_B2T; m=TSL2561_LUX_M2T;}
+		else if (ratio <= TSL2561_LUX_K3T)
+		{	b=TSL2561_LUX_B3T; m=TSL2561_LUX_M3T;}
+		else if (ratio <= TSL2561_LUX_K4T)
+		{	b=TSL2561_LUX_B4T; m=TSL2561_LUX_M4T;}
+		else if (ratio <= TSL2561_LUX_K5T)
+		{	b=TSL2561_LUX_B5T; m=TSL2561_LUX_M5T;}
+		else if (ratio <= TSL2561_LUX_K6T)
+		{	b=TSL2561_LUX_B6T; m=TSL2561_LUX_M6T;}
+		else if (ratio <= TSL2561_LUX_K7T)
+		{	b=TSL2561_LUX_B7T; m=TSL2561_LUX_M7T;}
+		else if (ratio > TSL2561_LUX_K8T)
+		{	b=TSL2561_LUX_B8T; m=TSL2561_LUX_M8T;}
+	}
 
 	unsigned long temp;
 	temp = ((channel0 * b) - (channel1 * m));

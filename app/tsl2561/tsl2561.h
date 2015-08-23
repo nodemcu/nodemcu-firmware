@@ -38,10 +38,6 @@
 #ifndef _TSL2561_H_
 #define _TSL2561_H_
 
-#define TSL2561_PACKAGE_CS                  // Lux calculations differ slightly for CS package
-// #define TSL2561_PACKAGE_T_FN_CL
-
-#define TSL2561_ADDRESS           (0x39)    //  GND=>0x29, float=>0x39 or VDD=>0x49
 #define TSL2561_READBIT           (0x01)
 
 #define TSL2561_COMMAND_BIT       (0x80)    // Must be 1
@@ -152,11 +148,29 @@ typedef enum
 }
 tsl2561Error_t;
 
+//  GND=>0x29, float=>0x39 or VDD=>0x49
+typedef enum
+{
+	TSL2561_ADDRESS_GND = 0x29,
+	TSL2561_ADDRESS_FLOAT = 0x39,
+	TSL2561_ADDRESS_VDD = 0x49,
+
+}
+tsl2561Address_t;
+
+// Lux calculations differ slightly for CS package
+typedef enum
+{
+	TSL2561_PACKAGE_CS  = 0,
+	TSL2561_PACKAGE_T_FN_CL
+}tsl2561Package_t;
+
 tsl2561Error_t tsl2561Init(uint8_t sda, uint8_t scl);
 tsl2561Error_t tsl2561SetTiming(tsl2561IntegrationTime_t integration, tsl2561Gain_t gain);
 tsl2561Error_t tsl2561GetLuminosity (uint16_t *broadband, uint16_t *ir);
 uint32_t tsl2561CalculateLux(uint16_t ch0, uint16_t ch1);
-
+void tsl2561SetAddress(uint8_t address);
+void tsl2561SetPackage(uint8_t package);
 #endif
 
 

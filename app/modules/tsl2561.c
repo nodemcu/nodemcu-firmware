@@ -15,12 +15,12 @@ static uint16_t ch0;
 static uint16_t ch1;
 
 /* Initialises the device on pins sdapin and sclpin
- * Lua: 	status = tsl2561.init(sdapin, sclpin)
+ * Lua: 	status = tsl2561.init(sdapin, sclpin, address(optional), package(optional))
  */
 static int ICACHE_FLASH_ATTR tsl2561_init(lua_State* L) {
 	uint32_t sda;
 	uint32_t scl;
-
+	// check parameters
 	if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
 		return luaL_error(L, "wrong arg range");
 	}
@@ -31,8 +31,28 @@ static int ICACHE_FLASH_ATTR tsl2561_init(lua_State* L) {
 	if (scl == 0 || sda == 0) {
 		return luaL_error(L, "no i2c for D0");
 	}
-
+	// init I2C
 	uint8_t error = tsl2561Init(sda, scl);
+
+	// Parse optional parameters
+	if (lua_isnumber(L, 3)) {
+		uint8_t address = luaL_checkinteger(L, 3);
+		if (!((address == TSL2561_ADDRESS_GND) || (address == TSL2561_ADDRESS_FLOAT) || (address == TSL2561_ADDRESS_VDD))) {
+			return luaL_error(L, "Invalid argument: address");
+		}
+		else{
+			tsl2561SetAddress(address);
+		}
+	}
+	if (lua_isnumber(L, 4)) {
+		uint8_t package = luaL_checkinteger(L, 4);
+		if (!((package == TSL2561_PACKAGE_T_FN_CL) || (package == TSL2561_PACKAGE_CS))) {
+			return luaL_error(L, "Invalid argument: package");
+		}
+		else{
+			tsl2561SetPackage(package);
+		}
+	}
 	lua_pushnumber(L, error);
 	return 1;
 }
@@ -46,11 +66,11 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_settiming(lua_State* L) {
 	}
 	uint8_t integration = luaL_checkinteger(L, 1);
 	if (!((integration == TSL2561_INTEGRATIONTIME_13MS) || (integration == TSL2561_INTEGRATIONTIME_101MS) || (integration == TSL2561_INTEGRATIONTIME_402MS))) {
-		return luaL_error(L, "wrong range for arg integration");
+		return luaL_error(L, "Invalid argument: integration");
 	}
 	uint8_t gain = luaL_checkinteger(L, 2);
 	if (!((gain == TSL2561_GAIN_16X) || (gain == TSL2561_GAIN_1X))) {
-		return luaL_error(L, "wrong range for arg gain");
+		return luaL_error(L, "Invalid argument: gain");
 	}
 
 	lua_pushnumber(L, tsl2561SetTiming(integration, gain));
@@ -102,6 +122,13 @@ const LUA_REG_TYPE tsl2561_map[] =
 	{	LSTRKEY( "INTEGRATIONTIME_402MS" ), LNUMVAL( TSL2561_INTEGRATIONTIME_402MS )},
 	{	LSTRKEY( "GAIN_1X" ), LNUMVAL( TSL2561_GAIN_1X )},
 	{	LSTRKEY( "GAIN_16X" ), LNUMVAL( TSL2561_GAIN_16X )},
+
+	{	LSTRKEY( "PACKAGE_CS" ), LNUMVAL( TSL2561_PACKAGE_CS )},
+	{	LSTRKEY( "PACKAGE_T_FN_CL" ), LNUMVAL( TSL2561_PACKAGE_T_FN_CL )},
+
+	{	LSTRKEY( "ADDRESS_GND" ), LNUMVAL( TSL2561_ADDRESS_GND )},
+	{	LSTRKEY( "ADDRESS_FLOAT" ), LNUMVAL( TSL2561_ADDRESS_FLOAT )},
+	{	LSTRKEY( "ADDRESS_VDD" ), LNUMVAL( TSL2561_ADDRESS_VDD )},
 
 	{	LNILKEY, LNILVAL}
 };
