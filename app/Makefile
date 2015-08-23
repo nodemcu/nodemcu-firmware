@@ -93,7 +93,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a		\
 	modules/libmodules.a		
-	
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-L../lib 				\
