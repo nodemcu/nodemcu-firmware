@@ -19,7 +19,7 @@ ifeq ($(OS),Windows_NT)
 		OBJCOPY = xt-objcopy
 		#MAKE = xt-make
 		CCFLAGS += -Os --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
-	else 
+	else
 		# It is gcc, may be cygwin
 		# Can we use -fdata-sections?
 		CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
@@ -30,11 +30,6 @@ ifeq ($(OS),Windows_NT)
 		OBJCOPY = xtensa-lx106-elf-objcopy
 	endif
 	FIRMWAREDIR = ..\\bin\\
-	ifndef COMPORT
-		ESPPORT = com1
-	else
-		ESPPORT = $(COMPORT)
-	endif
     ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
 # ->AMD64
     endif
@@ -44,11 +39,6 @@ ifeq ($(OS),Windows_NT)
 else
 # We are under other system, may be Linux. Assume using gcc.
 	# Can we use -fdata-sections?
-	ifndef COMPORT
-		ESPPORT = /dev/ttyUSB0
-	else
-		ESPPORT = $(COMPORT)
-	endif
 	CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = xtensa-lx106-elf-gcc
@@ -75,7 +65,6 @@ else
     endif
 endif
 #############################################################
-ESPTOOL ?= ../tools/esptool.py
 MKESPIMAGE ?= ../tools/mkespimage.py
 
 
@@ -105,9 +94,9 @@ BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
 #
-# Note: 
+# Note:
 # https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
-# If you add global optimize options like "-O2" here 
+# If you add global optimize options like "-O2" here
 # they will override "-Os" defined above.
 # "-Os" should be used to reduce code size
 #
@@ -121,7 +110,7 @@ CCFLAGS += 			\
 	-nostdlib       \
 	-mlongcalls	\
 	-mtext-section-literals
-#	-Wall			
+#	-Wall
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)
@@ -151,7 +140,7 @@ DEP_LIBS_$(1) = $$(foreach lib,$$(filter %.a,$$(COMPONENTS_$(1))),$$(dir $$(lib)
 DEP_OBJS_$(1) = $$(foreach obj,$$(filter %.o,$$(COMPONENTS_$(1))),$$(dir $$(obj))$$(OBJODIR)/$$(notdir $$(obj)))
 $$(IMAGEODIR)/$(1).out: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_$(1))
 	@mkdir -p $$(IMAGEODIR)
-	$$(CC) $$(LDFLAGS) $$(if $$(LINKFLAGS_$(1)),$$(LINKFLAGS_$(1)),$$(LINKFLAGS_DEFAULT) $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1))) -o $$@ 
+	$$(CC) $$(LDFLAGS) $$(if $$(LINKFLAGS_$(1)),$$(LINKFLAGS_$(1)),$$(LINKFLAGS_DEFAULT) $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1))) -o $$@
 endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
@@ -172,13 +161,6 @@ clean:
 clobber: $(SPECIAL_CLOBBER)
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clobber;)
 	$(RM) -r $(ODIR)
-
-flash: 
-ifndef PDIR
-	$(MAKE) -C ./app flash
-else
-	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
-endif
 
 .subdirs:
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
