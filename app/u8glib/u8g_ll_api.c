@@ -425,6 +425,16 @@ void u8g_Draw4TPixel(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, uint8_t dir, uint8_
   u8g_Draw4TPixelLL(u8g, u8g->dev, x, y, dir, pixel);
 }
 
+void u8g_Draw8ColorPixel(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, uint8_t colpixel)
+{
+  u8g_dev_arg_pixel_t *arg = &(u8g->arg_pixel);
+  arg->x = x;
+  arg->y = y;
+  arg->dir = 0;
+  arg->pixel = 0x80;
+  arg->color = colpixel;
+  u8g_call_dev_fn(u8g, u8g->dev, U8G_DEV_MSG_SET_8PIXEL, arg);
+}
 
 /* u8g_IsBBXIntersection() has been moved to u8g_clip.c */
 #ifdef OBSOLETE_CODE
@@ -522,9 +532,8 @@ uint8_t u8g_GetDefaultForegroundColor(u8g_t *u8g)
     return 255;     /* white */
   else if ( u8g_GetMode(u8g) == U8G_MODE_GRAY2BIT )
     return 3;         /* max intensity */
-  else /* if ( u8g.getMode() == U8G_MODE_BW ) */
-    return 1;         /* pixel on */
-  return 1;
+  /* if ( u8g.getMode() == U8G_MODE_BW ) */
+  return 1;         /* pixel on */
 }
 
 void u8g_SetDefaultForegroundColor(u8g_t *u8g)
@@ -556,11 +565,10 @@ uint8_t u8g_GetDefaultMidColor(u8g_t *u8g)
   mode = u8g_GetMode(u8g);
   if ( mode == U8G_MODE_R3G3B2 ) 
     return 0x06d;     /* gray: 01101101 */
-  else if ( u8g_GetMode(u8g) == U8G_MODE_GRAY2BIT )
+  else if ( mode == U8G_MODE_GRAY2BIT )
     return 1;         /* low mid intensity */
-  else /* if ( u8g.getMode() == U8G_MODE_BW ) */
-    return 1;         /* pixel on */
-  return 1;   /* default */
+  /* if ( u8g.getMode() == U8G_MODE_BW ) */
+  return 1;         /* pixel on */
 }
 
 void u8g_SetDefaultMidColor(u8g_t *u8g)

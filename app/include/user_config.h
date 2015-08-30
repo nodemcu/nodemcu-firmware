@@ -47,6 +47,8 @@
 // #define BUILD_WOFS		1
 #define BUILD_SPIFFS	1
 
+#define SPIFFS_CACHE 1
+
 // #define LUA_NUMBER_INTEGRAL
 
 #define LUA_OPTRAM
@@ -67,5 +69,7 @@
 #define LED_HIGH_COUNT_DEFAULT 10
 #define LED_LOW_COUNT_DEFAULT 0
 #endif
+
+#define STRBUF_DEFAULT_INCREMENT 32
 
 #endif	/* __USER_CONFIG_H__ */

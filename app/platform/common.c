@@ -220,7 +220,7 @@ uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 #else // #ifindef INTERNAL_FLASH_READ_UNIT_SIZE
   uint32_t temp, rest, ssize = size;
   unsigned i;
-  char tmpdata[ INTERNAL_FLASH_READ_UNIT_SIZE ];
+  char tmpdata[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
   uint8_t *pto = ( uint8_t* )to;
   const uint32_t blksize = INTERNAL_FLASH_READ_UNIT_SIZE;
   const uint32_t blkmask = INTERNAL_FLASH_READ_UNIT_SIZE - 1;

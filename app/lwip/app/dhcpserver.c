@@ -112,58 +112,58 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
         *optptr++ = DHCP_OPTION_SUBNET_MASK;
         *optptr++ = 4;  //length
         *optptr++ = 255;
-        *optptr++ = 240;	
+        *optptr++ = 240;
         *optptr++ = 0;
         *optptr++ = 0;
 #else
         *optptr++ = DHCP_OPTION_SUBNET_MASK;
-        *optptr++ = 4;  
+        *optptr++ = 4;
         *optptr++ = 255;
-        *optptr++ = 255;	
+        *optptr++ = 255;
         *optptr++ = 255;
         *optptr++ = 0;
 #endif
 
         *optptr++ = DHCP_OPTION_LEASE_TIME;
-        *optptr++ = 4;  
+        *optptr++ = 4;
         *optptr++ = 0x00;
         *optptr++ = 0x01;
         *optptr++ = 0x51;
-        *optptr++ = 0x80; 	
+        *optptr++ = 0x80;
 
         *optptr++ = DHCP_OPTION_SERVER_ID;
-        *optptr++ = 4;  
+        *optptr++ = 4;
         *optptr++ = ip4_addr1( &ipadd);
         *optptr++ = ip4_addr2( &ipadd);
         *optptr++ = ip4_addr3( &ipadd);
         *optptr++ = ip4_addr4( &ipadd);
 
-	    *optptr++ = DHCP_OPTION_ROUTER;
-	    *optptr++ = 4;  
-	    *optptr++ = ip4_addr1( &ipadd);
-	    *optptr++ = ip4_addr2( &ipadd);
-	    *optptr++ = ip4_addr3( &ipadd);
-	    *optptr++ = ip4_addr4( &ipadd);
+        *optptr++ = DHCP_OPTION_ROUTER;
+        *optptr++ = 4;
+        *optptr++ = ip4_addr1( &ipadd);
+        *optptr++ = ip4_addr2( &ipadd);
+        *optptr++ = ip4_addr3( &ipadd);
+        *optptr++ = ip4_addr4( &ipadd);
 
-#ifdef USE_DNS
-	    *optptr++ = DHCP_OPTION_DNS_SERVER;
-	    *optptr++ = 4;
-	    *optptr++ = ip4_addr1( &ipadd);
-		*optptr++ = ip4_addr2( &ipadd);
-		*optptr++ = ip4_addr3( &ipadd);
-		*optptr++ = ip4_addr4( &ipadd);
+#if USE_DNS
+        *optptr++ = DHCP_OPTION_DNS_SERVER;
+        *optptr++ = 4;
+        *optptr++ = ip4_addr1( &ipadd);
+        *optptr++ = ip4_addr2( &ipadd);
+        *optptr++ = ip4_addr3( &ipadd);
+        *optptr++ = ip4_addr4( &ipadd);
 #endif
 
-#ifdef CLASS_B_NET
+#ifdef USE_CLASS_B_NET
         *optptr++ = DHCP_OPTION_BROADCAST_ADDRESS;
-        *optptr++ = 4;  
+        *optptr++ = 4;
         *optptr++ = ip4_addr1( &ipadd);
         *optptr++ = 255;
         *optptr++ = 255;
         *optptr++ = 255;
 #else
         *optptr++ = DHCP_OPTION_BROADCAST_ADDRESS;
-        *optptr++ = 4;  
+        *optptr++ = 4;
         *optptr++ = ip4_addr1( &ipadd);
         *optptr++ = ip4_addr2( &ipadd);
         *optptr++ = ip4_addr3( &ipadd);
@@ -171,28 +171,28 @@ static uint8_t* ICACHE_FLASH_ATTR add_offer_options(uint8_t *optptr)
 #endif
 
         *optptr++ = DHCP_OPTION_INTERFACE_MTU;
-        *optptr++ = 2;  
-#ifdef CLASS_B_NET
-        *optptr++ = 0x05;	
+        *optptr++ = 2;
+#ifdef USE_CLASS_B_NET
+        *optptr++ = 0x05;
         *optptr++ = 0xdc;
 #else
-        *optptr++ = 0x02;	
+        *optptr++ = 0x02;
         *optptr++ = 0x40;
 #endif
 
         *optptr++ = DHCP_OPTION_PERFORM_ROUTER_DISCOVERY;
-        *optptr++ = 1;  
-        *optptr++ = 0x00; 
+        *optptr++ = 1;
+        *optptr++ = 0x00;
 
-        *optptr++ = 43;	
-        *optptr++ = 6;	
+        *optptr++ = 43;
+        *optptr++ = 6;
 
-        *optptr++ = 0x01;	
-        *optptr++ = 4;  
+        *optptr++ = 0x01;
+        *optptr++ = 4;
         *optptr++ = 0x00;
         *optptr++ = 0x00;
         *optptr++ = 0x00;
-        *optptr++ = 0x02; 	
+        *optptr++ = 0x02;
 
         return optptr;
 }

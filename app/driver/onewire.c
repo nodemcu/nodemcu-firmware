@@ -64,6 +64,9 @@ sample code bearing this copyright.
 #define interrupts os_intr_unlock
 #define delayMicroseconds os_delay_us
 
+// 1 for keeping the parasitic power on H
+#define owDefaultPower 1
+
 #if ONEWIRE_SEARCH
 // global search state
 static unsigned char ROM_NO[NUM_OW][8];
@@ -185,7 +188,7 @@ void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
 void onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
   uint16_t i;
   for (i = 0 ; i < count ; i++)
-    onewire_write(pin, buf[i], 0);
+    onewire_write(pin, buf[i], owDefaultPower);
   if (!power) {
     noInterrupts();
     DIRECT_MODE_INPUT(pin);
@@ -220,9 +223,9 @@ void onewire_select(uint8_t pin, const uint8_t rom[8])
 {
     uint8_t i;
 
-    onewire_write(pin, 0x55, 0);           // Choose ROM
+    onewire_write(pin, 0x55, owDefaultPower);           // Choose ROM
 
-    for (i = 0; i < 8; i++) onewire_write(pin, rom[i], 0);
+    for (i = 0; i < 8; i++) onewire_write(pin, rom[i], owDefaultPower);
 }
 
 //
@@ -230,7 +233,7 @@ void onewire_select(uint8_t pin, const uint8_t rom[8])
 //
 void onewire_skip(uint8_t pin)
 {
-    onewire_write(pin, 0xCC, 0);           // Skip ROM
+    onewire_write(pin, 0xCC, owDefaultPower);           // Skip ROM
 }
 
 void onewire_depower(uint8_t pin)
@@ -319,7 +322,7 @@ uint8_t onewire_search(uint8_t pin, uint8_t *newAddr)
       }
 
       // issue the search command
-      onewire_write(pin, 0xF0, 0);
+      onewire_write(pin, 0xF0, owDefaultPower);
 
       // loop to do the search
       do

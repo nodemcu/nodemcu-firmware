@@ -195,7 +195,7 @@ s32_t spiffs_phys_wr(
     cache->last_access++;
     cp->last_access = cache->last_access;
 
-    if (cp->flags && SPIFFS_CACHE_FLAG_WRTHRU) {
+    if (cp->flags & SPIFFS_CACHE_FLAG_WRTHRU) {
       // page is being updated, no write-cache, just pass thru
       return fs->cfg.hal_write_f(addr, len, src);
     } else {
