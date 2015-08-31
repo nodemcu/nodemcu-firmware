@@ -6,7 +6,6 @@
 #include "auxmods.h"
 #include "lrotable.h"
 
-//#include "c_string.h"
 #include "c_stdlib.h"
 
 #include "u8g.h"
@@ -15,9 +14,7 @@
 
 struct _lu8g_userdata_t
 {
-    u8g_t     u8g;
-    u8g_pb_t  pb;
-    u8g_dev_t dev;
+    u8g_t u8g;
 };
 
 typedef struct _lu8g_userdata_t lu8g_userdata_t;
@@ -68,6 +65,8 @@ static int lu8g_setFont( lua_State *L )
     u8g_fntpgm_uint8_t *font = (u8g_fntpgm_uint8_t *)lua_touserdata( L, 2 );
     if (font != NULL)
         u8g_SetFont( LU8G, font );
+    else
+        luaL_argerror(L, 2, "font data expected");
 
     return 0;
 }
@@ -304,32 +303,24 @@ static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
 // Lua: pix_len = u8g.drawStr( self, x, y, string )
 static int lu8g_drawStr( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 0 );
 }
 
 // Lua: pix_len = u8g.drawStr90( self, x, y, string )
 static int lu8g_drawStr90( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 1 );
 }
 
 // Lua: pix_len = u8g.drawStr180( self, x, y, string )
 static int lu8g_drawStr180( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 2 );
 }
 
 // Lua: pix_len = u8g.drawStr270( self, x, y, string )
 static int lu8g_drawStr270( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 3 );
 }
 
@@ -969,159 +960,70 @@ static int lu8g_close_display( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    // free up allocated page buffer
-    if (lud->pb.buf != NULL)
-    {
-        c_free( lud->pb.buf );
-        lud->pb.buf = NULL;
-    }
-
     return 0;
 }
 
 
-// device constructors
-
-uint8_t u8g_dev_ssd1306_128x64_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg);
-// Lua: object = u8g.ssd1306_128x64_i2c( i2c_addr )
-static int lu8g_ssd1306_128x64_i2c( lua_State *L )
-{
-    unsigned addr = luaL_checkinteger( L, 1 );
-
-    if (addr == 0)
-        return luaL_error( L, "i2c address required" );
-
-    lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
-
-    lud->u8g.i2c_addr = (uint8_t)addr;
-
-    // Don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_i2c here
-    // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
-    //         *before* the display is constructed (especially the page buffers)
-    //         this consumes heap even when the device is not used at all
-#if 1
-    // build device entry
-    lud->dev = (u8g_dev_t){ u8g_dev_ssd1306_128x64_fn, &(lud->pb), U8G_COM_SSD_I2C };
-
-    // populate and allocate page buffer
-    // constants taken from u8g_dev_ssd1306_128x64.c:
-    //                     PAGE_HEIGHT
-    //                      | Height
-    //                      |  |              WIDTH
-    //                      |  |               |
-    lud->pb = (u8g_pb_t){ { 8, 64, 0, 0, 0 }, 128, NULL };
-    //
-    if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
-        return luaL_error( L, "out of memory" );
-
-    // and finally init device using specific interface init function
-    u8g_InitI2C( LU8G, &(lud->dev), U8G_I2C_OPT_NONE);
-#else
-    u8g_InitI2C( LU8G, &u8g_dev_ssd1306_128x64_i2c, U8G_I2C_OPT_NONE);
-#endif
-
-
-    // set its metatable
-    luaL_getmetatable(L, "u8g.display");
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
-
-// Lua: object = u8g.ssd1306_128x64_spi( cs, dc, [res] )
-static int lu8g_ssd1306_128x64_spi( lua_State *L )
-{
-    unsigned cs = luaL_checkinteger( L, 1 );
-    if (cs == 0)
-        return luaL_error( L, "CS pin required" );
-    unsigned dc = luaL_checkinteger( L, 2 );
-    if (dc == 0)
-        return luaL_error( L, "D/C pin required" );
-    unsigned res = luaL_optinteger( L, 3, U8G_PIN_NONE );
-
-    lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
-
-    // Don't use the pre-defined device structure for u8g_dev_ssd1306_128x64_spi here
-    // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
-    //         *before* the display is constructed (especially the page buffers)
-    //         this consumes heap even when the device is not used at all
-#if 1
-    // build device entry
-    lud->dev = (u8g_dev_t){ u8g_dev_ssd1306_128x64_fn, &(lud->pb), U8G_COM_HW_SPI };
-
-    // populate and allocate page buffer
-    // constants taken from u8g_dev_ssd1306_128x64.c:
-    //                     PAGE_HEIGHT
-    //                      | Height
-    //                      |  |              WIDTH
-    //                      |  |               |
-    lud->pb = (u8g_pb_t){ { 8, 64, 0, 0, 0 }, 128, NULL };
-    //
-    if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
-        return luaL_error( L, "out of memory" );
-
-    // and finally init device using specific interface init function
-    u8g_InitHWSPI( LU8G, &(lud->dev), cs, dc, res );
-#else
-    u8g_InitHWSPI( LU8G, &u8g_dev_ssd1306_128x64_spi, cs, dc, res );
-#endif
-
-
-    // set its metatable
-    luaL_getmetatable(L, "u8g.display");
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
-
-uint8_t u8g_dev_pcd8544_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg);
-// Lua: object = u8g.pcd8544_84x48( sce, dc, res )
-static int lu8g_pcd8544_84x48( lua_State *L )
-{
-    unsigned sce = luaL_checkinteger( L, 1 );
-    if (sce == 0)
-        return luaL_error( L, "SCE pin required" );
-    unsigned dc = luaL_checkinteger( L, 2 );
-    if (dc == 0)
-        return luaL_error( L, "D/C pin required" );
-    unsigned res = luaL_checkinteger( L, 3 );
-    if (res == 0)
-        return luaL_error( L, "RES pin required" );
-
-    lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
-
-    // Don't use the pre-defined device structure for u8g_dev_pcd8544_84x48_hw_spi here
-    // Reason: linking the pre-defined structures allocates RAM for the device/comm structure
-    //         *before* the display is constructed (especially the page buffers)
-    //         this consumes heap even when the device is not used at all
-#if 1
-    // build device entry
-    lud->dev = (u8g_dev_t){ u8g_dev_pcd8544_fn, &(lud->pb), U8G_COM_HW_SPI };
-
-    // populate and allocate page buffer
-    // constants taken from u8g_dev_pcd8544_84x48.c:
-    //                     PAGE_HEIGHT
-    //                      | Height
-    //                      |  |             WIDTH
-    //                      |  |              |
-    lud->pb = (u8g_pb_t){ { 8, 48, 0, 0, 0 }, 84, NULL };
-    //
-    if ((lud->pb.buf = (void *)c_zalloc(lud->pb.width)) == NULL)
-        return luaL_error( L, "out of memory" );
-
-    // and finally init device using specific interface init function
-    u8g_InitHWSPI( LU8G, &(lud->dev), sce, dc, res );
-#else
-    u8g_InitHWSPI( LU8G, &u8g_dev_pcd8544_84x48_hw_spi, sce, dc, res );
-#endif
-
-
-    // set its metatable
-    luaL_getmetatable(L, "u8g.display");
-    lua_setmetatable(L, -2);
-
-    return 1;
-}
+// ***************************************************************************
+// Device constructors
+//
+//
+// I2C based devices will use this function template to implement the Lua binding.
+#undef U8G_DISPLAY_TABLE_ENTRY
+#define U8G_DISPLAY_TABLE_ENTRY(device)                                 \
+    static int lu8g_ ## device( lua_State *L )                          \
+    {                                                                   \
+        unsigned addr = luaL_checkinteger( L, 1 );                      \
+                                                                        \
+        if (addr == 0)                                                  \
+            return luaL_error( L, "i2c address required" );             \
+                                                                        \
+        lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) ); \
+                                                                        \
+        lud->u8g.i2c_addr = (uint8_t)addr;                              \
+                                                                        \
+        u8g_InitI2C( LU8G, &u8g_dev_ ## device, U8G_I2C_OPT_NONE);      \
+                                                                        \
+        /* set its metatable */                                         \
+        luaL_getmetatable(L, "u8g.display");                            \
+        lua_setmetatable(L, -2);                                        \
+                                                                        \
+        return 1;                                                       \
+    } 
+//
+// Unroll the display table and insert binding functions for I2C based displays.
+U8G_DISPLAY_TABLE_I2C
+//
+//
+//
+// SPI based devices will use this function template to implement the Lua binding.
+#undef U8G_DISPLAY_TABLE_ENTRY
+#define U8G_DISPLAY_TABLE_ENTRY(device)                                 \
+    static int lu8g_ ## device( lua_State *L )                          \
+    {                                                                   \
+        unsigned cs = luaL_checkinteger( L, 1 );                        \
+        if (cs == 0)                                                    \
+            return luaL_error( L, "CS pin required" );                  \
+        unsigned dc = luaL_checkinteger( L, 2 );                        \
+        if (dc == 0)                                                    \
+            return luaL_error( L, "D/C pin required" );                 \
+        unsigned res = luaL_optinteger( L, 3, U8G_PIN_NONE );           \
+                                                                        \
+        lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) ); \
+                                                                        \
+        u8g_InitHWSPI( LU8G, &u8g_dev_ ## device, cs, dc, res );        \
+                                                                        \
+        /* set its metatable */                                         \
+        luaL_getmetatable(L, "u8g.display");                            \
+        lua_setmetatable(L, -2);                                        \
+                                                                        \
+        return 1;                                                       \
+    }
+//
+// Unroll the display table and insert binding functions for SPI based displays.
+U8G_DISPLAY_TABLE_SPI
+//
+// ***************************************************************************
 
 
 // Module function map
@@ -1189,15 +1091,10 @@ static const LUA_REG_TYPE lu8g_display_map[] =
 
 const LUA_REG_TYPE lu8g_map[] = 
 {
-#ifdef U8G_SSD1306_128x64_I2C
-    { LSTRKEY( "ssd1306_128x64_i2c" ), LFUNCVAL ( lu8g_ssd1306_128x64_i2c ) },
-#endif
-#ifdef U8G_SSD1306_128x64_I2C
-    { LSTRKEY( "ssd1306_128x64_spi" ), LFUNCVAL ( lu8g_ssd1306_128x64_spi ) },
-#endif
-#ifdef U8G_PCD8544_84x48
-    { LSTRKEY( "pcd8544_84x48" ), LFUNCVAL ( lu8g_pcd8544_84x48 ) },
-#endif
+#undef U8G_DISPLAY_TABLE_ENTRY
+#define U8G_DISPLAY_TABLE_ENTRY(device) { LSTRKEY( #device ), LFUNCVAL ( lu8g_ ##device ) },
+    U8G_DISPLAY_TABLE_I2C
+    U8G_DISPLAY_TABLE_SPI
 
 #if LUA_OPTIMIZE_MEMORY > 0
 
@@ -1206,7 +1103,7 @@ const LUA_REG_TYPE lu8g_map[] =
 #define U8G_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LUDATA( (void *)(u8g_ ## font) ) },
     U8G_FONT_TABLE
 
-    // Options for circle/ ellipse drwing
+    // Options for circle/ ellipse drawing
     { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( U8G_DRAW_UPPER_RIGHT ) },
     { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( U8G_DRAW_UPPER_LEFT ) },
     { LSTRKEY( "DRAW_LOWER_RIGHT" ), LNUMVAL( U8G_DRAW_LOWER_RIGHT ) },
@@ -1244,13 +1141,14 @@ LUALIB_API int luaopen_u8g( lua_State *L )
 
     // Options for circle/ ellipse drawing
     MOD_REG_NUMBER( L, "DRAW_UPPER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_UPPER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_LOWER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_LOWER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_ALL",         U8G_DRAW_ALL );
 
     // Display modes
     MOD_REG_NUMBER( L, "MODE_BW",       U8G_MODE_BW );
-    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_BW );
+    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_GRAY2BIT );
 
     // create metatable
     luaL_newmetatable(L, "u8g.display");

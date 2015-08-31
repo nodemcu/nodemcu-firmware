@@ -81,7 +81,6 @@ uint8_t u8g_dev_vs_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 	  return 0;
 	return u8g_call_dev_fn(u8g_vs_list[u8g_vs_current].u8g, u8g_vs_list[u8g_vs_current].u8g->dev, U8G_DEV_MSG_PAGE_FIRST, arg);	
       }
-      return 0;
     case U8G_DEV_MSG_GET_WIDTH:
       *((u8g_uint_t *)arg) = u8g_vs_width;
       break;

@@ -110,7 +110,7 @@ static int file_seek (lua_State *L)
   int op = luaL_checkoption(L, 1, "cur", modenames);
   long offset = luaL_optlong(L, 2, 0);
   op = fs_seek(file_fd, offset, mode[op]);
-  if (op)
+  if (op < 0)
     lua_pushnil(L);  /* error */
   else
     lua_pushinteger(L, fs_tell(file_fd));
@@ -196,11 +196,10 @@ static int file_fsinfo( lua_State* L )
 // g_read()
 static int file_g_read( lua_State* L, int n, int16_t end_char )
 {
-  if(n< 0 || n>LUAL_BUFFERSIZE) 
+  if(n <= 0 || n > LUAL_BUFFERSIZE)
     n = LUAL_BUFFERSIZE;
   if(end_char < 0 || end_char >255)
     end_char = EOF;
-  int ec = (int)end_char;
   
   luaL_Buffer b;
   if((FS_OPEN_OK - 1)==file_fd)
@@ -208,27 +207,22 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
 
   luaL_buffinit(L, &b);
   char *p = luaL_prepbuffer(&b);
-  int c = EOF;
-  int i = 0;
+  int i;
 
-  do{
-    c = fs_getc(file_fd);
-    if(c==EOF){
+  n = fs_read(file_fd, p, n);
+  for (i = 0; i < n; ++i)
+    if (p[i] == end_char)
+    {
+      ++i;
       break;
     }
-    p[i++] = (char)(0xFF & c);
-  }while((c!=EOF) && (c!=ec) && (i<n) );
 
-#if 0
-  if(i>0 && p[i-1] == '\n')
-    i--;    /* do not include `eol' */
-#endif
-    
   if(i==0){
     luaL_pushresult(&b);  /* close buffer */
     return (lua_objlen(L, -1) > 0);  /* check whether read something */
   }
 
+  fs_seek(file_fd, -(n - i), SEEK_CUR);
   luaL_addsize(&b, i);
   luaL_pushresult(&b);  /* close buffer */
   return 1;  /* read at least an `eol' */ 

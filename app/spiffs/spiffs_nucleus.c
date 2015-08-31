@@ -142,9 +142,13 @@ s32_t spiffs_obj_lu_find_entry_visitor(
     cur_block++;
     cur_block_addr = cur_block * SPIFFS_CFG_LOG_BLOCK_SZ(fs);
     if (cur_block >= fs->block_count) {
-      // block wrap
-      cur_block = 0;
-      cur_block_addr = 0;
+      if (flags & SPIFFS_VIS_NO_WRAP) {
+        return SPIFFS_VIS_END;
+      } else {
+        // block wrap
+        cur_block = 0;
+        cur_block_addr = 0;
+      }
     }
   }
 
@@ -213,6 +217,45 @@ s32_t spiffs_obj_lu_find_entry_visitor(
   return SPIFFS_VIS_END;
 }
 
+s32_t spiffs_erase_block(
+    spiffs *fs,
+    spiffs_block_ix bix) {
+  s32_t res;
+  u32_t addr = SPIFFS_BLOCK_TO_PADDR(fs, bix);
+  s32_t size = SPIFFS_CFG_LOG_BLOCK_SZ(fs);
+
+  // here we ignore res, just try erasing the block
+  while (size > 0) {
+    SPIFFS_DBG("erase %08x:%08x\n", addr,  SPIFFS_CFG_PHYS_ERASE_SZ(fs));
+    (void)fs->cfg.hal_erase_f(addr, SPIFFS_CFG_PHYS_ERASE_SZ(fs));
+    addr += SPIFFS_CFG_PHYS_ERASE_SZ(fs);
+    size -= SPIFFS_CFG_PHYS_ERASE_SZ(fs);
+  }
+  fs->free_blocks++;
+
+  // register erase count for this block
+  res = _spiffs_wr(fs, SPIFFS_OP_C_WRTHRU | SPIFFS_OP_T_OBJ_LU2, 0,
+      SPIFFS_ERASE_COUNT_PADDR(fs, bix),
+      sizeof(spiffs_obj_id), (u8_t *)&fs->max_erase_count);
+  SPIFFS_CHECK_RES(res);
+
+#if SPIFFS_USE_MAGIC
+  // finally, write magic
+  spiffs_obj_id magic = SPIFFS_MAGIC(fs);
+  res = _spiffs_wr(fs, SPIFFS_OP_C_WRTHRU | SPIFFS_OP_T_OBJ_LU2, 0,
+      SPIFFS_MAGIC_PADDR(fs, bix),
+      sizeof(spiffs_obj_id), (u8_t *)&magic);
+  SPIFFS_CHECK_RES(res);
+#endif
+
+  fs->max_erase_count++;
+  if (fs->max_erase_count == SPIFFS_OBJ_ID_IX_FLAG) {
+    fs->max_erase_count = 0;
+  }
+
+  return res;
+}
+
 
 static s32_t spiffs_obj_lu_scan_v(
     spiffs *fs,
@@ -238,40 +281,44 @@ static s32_t spiffs_obj_lu_scan_v(
   return SPIFFS_VIS_COUNTINUE;
 }
 
+
 // Scans thru all obj lu and counts free, deleted and used pages
 // Find the maximum block erase count
+// Checks magic if enabled
 s32_t spiffs_obj_lu_scan(
     spiffs *fs) {
   s32_t res;
   spiffs_block_ix bix;
   int entry;
+#if SPIFFS_USE_MAGIC
+  spiffs_block_ix unerased_bix = (spiffs_block_ix)-1;
+#endif
 
-  fs->free_blocks = 0;
-  fs->stats_p_allocated = 0;
-  fs->stats_p_deleted = 0;
-
-  res = spiffs_obj_lu_find_entry_visitor(fs,
-      0,
-      0,
-      0,
-      0,
-      spiffs_obj_lu_scan_v,
-      0,
-      0,
-      &bix,
-      &entry);
-
-  if (res == SPIFFS_VIS_END) {
-    res = SPIFFS_OK;
-  }
-
-  SPIFFS_CHECK_RES(res);
-
+  // find out erase count
+  // if enabled, check magic
   bix = 0;
   spiffs_obj_id erase_count_final;
   spiffs_obj_id erase_count_min = SPIFFS_OBJ_ID_FREE;
   spiffs_obj_id erase_count_max = 0;
   while (bix < fs->block_count) {
+#if SPIFFS_USE_MAGIC
+    spiffs_obj_id magic;
+    res = _spiffs_rd(fs,
+        SPIFFS_OP_T_OBJ_LU2 | SPIFFS_OP_C_READ,
+        0, SPIFFS_MAGIC_PADDR(fs, bix) ,
+        sizeof(spiffs_obj_id), (u8_t *)&magic);
+
+    SPIFFS_CHECK_RES(res);
+    if (magic != SPIFFS_MAGIC(fs)) {
+      if (unerased_bix == (spiffs_block_ix)-1) {
+        // allow one unerased block as it might be powered down during an erase
+        unerased_bix = bix;
+      } else {
+        // more than one unerased block, bail out
+        SPIFFS_CHECK_RES(SPIFFS_ERR_NOT_A_FS);
+      }
+    }
+#endif
     spiffs_obj_id erase_count;
     res = _spiffs_rd(fs,
         SPIFFS_OP_T_OBJ_LU2 | SPIFFS_OP_C_READ,
@@ -297,6 +344,38 @@ s32_t spiffs_obj_lu_scan(
 
   fs->max_erase_count = erase_count_final;
 
+#if SPIFFS_USE_MAGIC
+  if (unerased_bix != (spiffs_block_ix)-1) {
+    // found one unerased block, remedy
+    SPIFFS_DBG("mount: erase block %i\n", bix);
+    res = spiffs_erase_block(fs, unerased_bix);
+    SPIFFS_CHECK_RES(res);
+  }
+#endif
+
+  // count blocks
+
+  fs->free_blocks = 0;
+  fs->stats_p_allocated = 0;
+  fs->stats_p_deleted = 0;
+
+  res = spiffs_obj_lu_find_entry_visitor(fs,
+      0,
+      0,
+      0,
+      0,
+      spiffs_obj_lu_scan_v,
+      0,
+      0,
+      &bix,
+      &entry);
+
+  if (res == SPIFFS_VIS_END) {
+    res = SPIFFS_OK;
+  }
+
+  SPIFFS_CHECK_RES(res);
+
   return res;
 }
 
@@ -310,7 +389,10 @@ s32_t spiffs_obj_lu_find_free(
     int *lu_entry) {
   s32_t res;
   if (!fs->cleaning && fs->free_blocks < 2) {
-    res = spiffs_gc_quick(fs);
+    res = spiffs_gc_quick(fs, 0);
+    if (res == SPIFFS_ERR_NO_DELETED_BLOCKS) {
+      res = SPIFFS_OK;
+    }
     SPIFFS_CHECK_RES(res);
     if (fs->free_blocks < 2) {
       return SPIFFS_ERR_FULL;

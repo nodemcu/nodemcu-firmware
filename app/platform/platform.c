@@ -460,13 +460,19 @@ spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data )
 // ****************************************************************************
 // Flash access functions
 
+/*
+ * Assumptions:
+ * > toaddr is INTERNAL_FLASH_WRITE_UNIT_SIZE aligned
+ * > size is a multiple of INTERNAL_FLASH_WRITE_UNIT_SIZE
+ */
 uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size )
 {
   toaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
   const uint32_t blkmask = INTERNAL_FLASH_WRITE_UNIT_SIZE - 1;
   uint32_t *apbuf = NULL;
-  if( ((uint32_t)from) & blkmask ){
+  uint32_t fromaddr = (uint32_t)from;
+  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_START_ADDRESS)) {
     apbuf = (uint32_t *)c_malloc(size);
     if(!apbuf)
       return 0;
@@ -484,12 +490,37 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   }
 }
 
+/*
+ * Assumptions:
+ * > fromaddr is INTERNAL_FLASH_READ_UNIT_SIZE aligned
+ * > size is a multiple of INTERNAL_FLASH_READ_UNIT_SIZE
+ */
 uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 {
+  if (size==0)
+    return 0;
+
   fromaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
   WRITE_PERI_REG(0x60000914, 0x73);
-  r = flash_read(fromaddr, (uint32 *)to, size);
+
+  const uint32_t blkmask = (INTERNAL_FLASH_READ_UNIT_SIZE - 1);
+  if( ((uint32_t)to) & blkmask )
+  {
+    uint32_t size2=size-INTERNAL_FLASH_READ_UNIT_SIZE;
+    uint32* to2=(uint32*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
+    r = flash_read(fromaddr, to2, size2);
+    if(SPI_FLASH_RESULT_OK == r)
+    {
+      os_memmove(to,to2,size2);
+      char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
+      r=flash_read(fromaddr+size2,(uint32*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
+      os_memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
+    }
+  }
+  else
+    r = flash_read(fromaddr, (uint32 *)to, size);
+
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{

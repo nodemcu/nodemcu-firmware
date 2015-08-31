@@ -53,7 +53,7 @@ typedef signed short int16_t;
 #elif defined(__XTENSA__)
 #  include <c_types.h>
 #else
-#  include <stdint.h>
+#include <stdint.h>
 #endif
 
 #if defined(__AVR__)
@@ -63,7 +63,7 @@ typedef signed short int16_t;
 /* 
   use the com interface directly on any systems which are not AVR or ARDUINO 
 */
-#if defined(__AVR__) || defined(ARDUINO)
+#if defined(__AVR__) || defined(ARDUINO) || defined(__MSP430__)
 #define U8G_WITH_PINLIST
 #endif
 #define U8G_WITH_PINLIST
@@ -97,6 +97,19 @@ extern "C" {
 #  define U8G_SECTION(name)
 #  define U8G_FONT_SECTION(name)
 #endif
+
+#ifdef __MSP430__
+/*
+  Specifying a section will cause the MSP-GCC to put even const data to RAM
+  at least for the fonts. But as the fonts are consts we don't need to specify
+  it manually - the MSP-GCC seems to be smart enough to put it into the
+  flash memory.
+*/
+# undef U8G_SECTION
+# define U8G_SECTION(name)
+#endif
+
+/*===============================================================*/
 
 #ifndef U8G_FONT_SECTION
 #  define U8G_FONT_SECTION(name)
@@ -267,11 +280,13 @@ extern u8g_dev_t u8g_dev_st7565_dogm128_2x_parallel;
 extern u8g_dev_t u8g_dev_uc1611_dogm240_i2c;
 extern u8g_dev_t u8g_dev_uc1611_dogm240_hw_spi;
 extern u8g_dev_t u8g_dev_uc1611_dogm240_sw_spi;
+extern u8g_dev_t u8g_dev_uc1611_dogm240_8bit;
 
 /* EA DOGXL 240 */
 extern u8g_dev_t u8g_dev_uc1611_dogxl240_i2c;
 extern u8g_dev_t u8g_dev_uc1611_dogxl240_hw_spi;
 extern u8g_dev_t u8g_dev_uc1611_dogxl240_sw_spi;
+extern u8g_dev_t u8g_dev_uc1611_dogxl240_8bit;
 
 /* Display: Topway LM6059 128x64 (Adafruit) */
 extern u8g_dev_t u8g_dev_st7565_lm6059_sw_spi;
@@ -464,6 +479,15 @@ extern u8g_dev_t u8g_dev_ssd1306_128x32_2x_sw_spi;
 extern u8g_dev_t u8g_dev_ssd1306_128x32_2x_hw_spi;
 extern u8g_dev_t u8g_dev_ssd1306_128x32_2x_i2c;
 
+/* OLED 64x48 Display with SSD1306 Controller */
+extern u8g_dev_t u8g_dev_ssd1306_64x48_sw_spi;
+extern u8g_dev_t u8g_dev_ssd1306_64x48_hw_spi;
+extern u8g_dev_t u8g_dev_ssd1306_64x48_i2c;
+
+extern u8g_dev_t u8g_dev_ssd1306_64x48_2x_sw_spi;
+extern u8g_dev_t u8g_dev_ssd1306_64x48_2x_hw_spi;
+extern u8g_dev_t u8g_dev_ssd1306_64x48_2x_i2c;
+
 /* OLED 60x32 Display with LD7032 Controller */
 extern u8g_dev_t u8g_dev_ld7032_60x32_sw_spi;
 extern u8g_dev_t u8g_dev_ld7032_60x32_hw_spi;
@@ -505,6 +529,11 @@ extern u8g_dev_t u8g_dev_ssd1351_128x128gh_hicolor_sw_spi;
 extern u8g_dev_t u8g_dev_ssd1351_128x128gh_hicolor_hw_spi;
 extern u8g_dev_t u8g_dev_ssd1351_128x128gh_4x_hicolor_sw_spi;
 extern u8g_dev_t u8g_dev_ssd1351_128x128gh_4x_hicolor_hw_spi;
+
+
+/* SSD1353 OLED Palmtronics */
+extern u8g_dev_t u8g_dev_ssd1353_160x128_332_hw_spi;
+extern u8g_dev_t u8g_dev_ssd1353_160x128_hicolor_hw_spi;
 
 /* HT1632 */
 extern u8g_dev_t u8g_dev_ht1632_24x16;
@@ -639,7 +668,12 @@ struct _u8g_dev_arg_irgb_t
 
 
 /* com driver */
+
 uint8_t u8g_com_null_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);               /* u8g_com_null.c */
+
+uint8_t u8g_com_std_sw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);	/* requires U8G_WITH_PINLIST */
+
+
 uint8_t u8g_com_arduino_std_sw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);        /* u8g_com_arduino_std_sw_spi.c */
 uint8_t u8g_com_arduino_hw_usart_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);      /* u8g_com_atmega_hw_usart_spi.c */
 uint8_t u8g_com_arduino_sw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);        /* u8g_com_arduino_sw_spi.c */
@@ -665,6 +699,8 @@ uint8_t u8g_com_atmega_st7920_sw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val
 uint8_t u8g_com_atmega_st7920_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);
 uint8_t u8g_com_atmega_parallel_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);    /* u8g_com_atmega_parallel.c */
 
+uint8_t u8g_com_msp430_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);      /* u8g_com_msp430_hw_spi.c */
+
 uint8_t u8g_com_raspberrypi_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);                /* u8g_com_rasperrypi_hw_spi.c */
 uint8_t u8g_com_raspberrypi_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr);		/* u8g_com_raspberrypi_ssd_i2c.c */
 
@@ -683,6 +719,12 @@ uint8_t u8g_com_raspberrypi_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val,
 defined(__18CXX) || defined(__PIC32MX)  
 
 */
+
+/* ==== HW SPI, msp430  ====*/
+#if defined(__MSP430__)
+#define U8G_COM_HW_SPI u8g_com_msp430_hw_spi_fn
+#define U8G_COM_ST7920_HW_SPI u8g_com_null_fn
+#endif
 
 /* ==== HW SPI, Raspberry PI ====*/
 #if defined(U8G_RASPBERRY_PI)
@@ -758,6 +800,13 @@ defined(__18CXX) || defined(__PIC32MX)
 
 #ifndef U8G_COM_SW_SPI
 /* ==== SW SPI, not Arduino ====*/
+
+/* ==== SW SPI, msp430  ====*/
+#if defined(__MSP430__)
+#define U8G_COM_SW_SPI u8g_com_std_sw_spi_fn
+#define U8G_COM_ST7920_SW_SPI u8g_com_null_fn
+#endif
+
 #if defined(__AVR__)
 #define U8G_COM_SW_SPI u8g_com_atmega_sw_spi_fn
 #define U8G_COM_ST7920_SW_SPI u8g_com_atmega_st7920_sw_spi_fn
@@ -1073,6 +1122,49 @@ typedef void (*u8g_state_cb)(uint8_t msg);
 #define U8G_FONT_HEIGHT_MODE_XTEXT 1
 #define U8G_FONT_HEIGHT_MODE_ALL 2
 
+struct _u8g_t
+{
+  u8g_uint_t width;
+  u8g_uint_t height;
+  
+  
+  u8g_dev_t *dev;               /* first device in the device chain */
+  const u8g_pgm_uint8_t *font;             /* regular font for all text procedures */
+  const u8g_pgm_uint8_t *cursor_font;  /* special font for cursor procedures */
+  uint8_t cursor_fg_color, cursor_bg_color;
+  uint8_t cursor_encoding;
+  uint8_t mode;                         /* display mode, one of U8G_MODE_xxx */
+  u8g_uint_t cursor_x;
+  u8g_uint_t cursor_y;
+  u8g_draw_cursor_fn cursor_fn;
+  
+  int8_t glyph_dx;
+  int8_t glyph_x;
+  int8_t glyph_y;
+  uint8_t glyph_width;
+  uint8_t glyph_height;
+  
+  u8g_font_calc_vref_fnptr font_calc_vref;
+  uint8_t font_height_mode;
+  int8_t font_ref_ascent;
+  int8_t font_ref_descent;
+  uint8_t font_line_spacing_factor;     /* line_spacing = factor * (ascent - descent) / 64 */
+  uint8_t line_spacing;
+  
+  u8g_dev_arg_pixel_t arg_pixel;
+  /* uint8_t color_index; */
+
+#ifdef U8G_WITH_PINLIST
+  uint8_t pin_list[U8G_PIN_LIST_LEN];
+#endif
+  
+  u8g_state_cb state_cb;
+  
+  u8g_box_t current_page;		/* current box of the visible page */
+
+  uint8_t i2c_addr;
+};
+
 #define u8g_GetFontAscent(u8g) ((u8g)->font_ref_ascent)
 #define u8g_GetFontDescent(u8g) ((u8g)->font_ref_descent)
 #define u8g_GetFontLineSpacing(u8g) ((u8g)->line_spacing)
@@ -1094,6 +1186,8 @@ void u8g_UpdateDimension(u8g_t *u8g);
 uint8_t u8g_Begin(u8g_t *u8g);				/* reset device, put it into default state and call u8g_UpdateDimension() */
 uint8_t u8g_Init(u8g_t *u8g, u8g_dev_t *dev);   /* only usefull if the device only as hardcoded ports */
 uint8_t u8g_InitComFn(u8g_t *u8g, u8g_dev_t *dev, u8g_com_fnptr com_fn);	/* Init procedure for anything which is not Arduino or AVR (e.g. ARM, but not Due, which is Arduino) */
+
+#if defined(U8G_WITH_PINLIST)
 uint8_t u8g_InitSPI(u8g_t *u8g, u8g_dev_t *dev, uint8_t sck, uint8_t mosi, uint8_t cs, uint8_t a0, uint8_t reset);
 uint8_t u8g_InitHWSPI(u8g_t *u8g, u8g_dev_t *dev, uint8_t cs, uint8_t a0, uint8_t reset);
 uint8_t u8g_InitI2C(u8g_t *u8g, u8g_dev_t *dev, uint8_t options);	/* use U8G_I2C_OPT_NONE as options */
@@ -1102,6 +1196,8 @@ uint8_t u8g_Init8Bit(u8g_t *u8g, u8g_dev_t *dev, uint8_t d0, uint8_t d1, uint8_t
   uint8_t en, uint8_t cs1, uint8_t cs2, uint8_t di, uint8_t rw, uint8_t reset);
 uint8_t u8g_InitRW8Bit(u8g_t *u8g, u8g_dev_t *dev, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, 
   uint8_t cs, uint8_t a0, uint8_t wr, uint8_t rd, uint8_t reset);
+#endif
+
 void u8g_FirstPage(u8g_t *u8g);
 uint8_t u8g_NextPage(u8g_t *u8g);
 uint8_t u8g_SetContrast(u8g_t *u8g, uint8_t contrast);
@@ -1110,6 +1206,7 @@ void u8g_SleepOff(u8g_t *u8g);
 void u8g_DrawPixel(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y);
 void u8g_Draw8Pixel(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, uint8_t dir, uint8_t pixel);
 void u8g_Draw4TPixel(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, uint8_t dir, uint8_t pixel);
+void u8g_Draw8ColorPixel(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, uint8_t colpixel);
 
 uint8_t u8g_Stop(u8g_t *u8g);
 void u8g_SetColorEntry(u8g_t *u8g, uint8_t idx, uint8_t r, uint8_t g, uint8_t b);
@@ -1371,7 +1468,7 @@ struct _pg_struct
 void pg_ClearPolygonXY(pg_struct *pg);
 void pg_AddPolygonXY(pg_struct *pg, u8g_t *u8g, int16_t x, int16_t y);
 void pg_DrawPolygon(pg_struct *pg, u8g_t *u8g);
-void u8g_ClearPolygonXY(u8g_t *u8g);
+void u8g_ClearPolygonXY(void);
 void u8g_AddPolygonXY(u8g_t *u8g, int16_t x, int16_t y);
 void u8g_DrawPolygon(u8g_t *u8g);
 void u8g_DrawTriangle(u8g_t *u8g, int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2);
@@ -1445,57 +1542,6 @@ void u8g_10MicroDelay(void);
 void chess_Init(u8g_t *u8g, uint8_t empty_body_color);
 void chess_Draw(void);
 void chess_Step(uint8_t keycode);
-
-
-
-struct _u8g_t
-{
-  u8g_uint_t width;
-  u8g_uint_t height;
-  
-  
-  u8g_dev_t *dev;               /* first device in the device chain */
-  const u8g_pgm_uint8_t *font;             /* regular font for all text procedures */
-  const u8g_pgm_uint8_t *cursor_font;  /* special font for cursor procedures */
-  uint8_t cursor_fg_color, cursor_bg_color;
-  uint8_t cursor_encoding;
-  uint8_t mode;                         /* display mode, one of U8G_MODE_xxx */
-  u8g_uint_t cursor_x;
-  u8g_uint_t cursor_y;
-  u8g_draw_cursor_fn cursor_fn;
-  
-  int8_t glyph_dx;
-  int8_t glyph_x;
-  int8_t glyph_y;
-  uint8_t glyph_width;
-  uint8_t glyph_height;
-  
-  u8g_font_calc_vref_fnptr font_calc_vref;
-  uint8_t font_height_mode;
-  int8_t font_ref_ascent;
-  int8_t font_ref_descent;
-  uint8_t font_line_spacing_factor;     /* line_spacing = factor * (ascent - descent) / 64 */
-  uint8_t line_spacing;
-  
-  u8g_dev_arg_pixel_t arg_pixel;
-  /* uint8_t color_index; */
-
-#ifdef U8G_WITH_PINLIST
-  uint8_t pin_list[U8G_PIN_LIST_LEN];
-#endif
-  
-  u8g_state_cb state_cb;
-  
-  u8g_box_t current_page;		/* current box of the visible page */
-
-  uint8_t i2c_addr;
-
-  /* global variables from u8g_polygon.c */
-  pg_struct pg;
-};
-
-
-
 
 /*===============================================================*/
 /* font definitions */

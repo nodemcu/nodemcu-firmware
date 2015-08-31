@@ -28,6 +28,7 @@
 #include "c_string.h"
 
 #include "strbuf.h"
+#include "cjson_mem.h"
 
 int strbuf_init(strbuf_t *s, int len)
 {
@@ -46,7 +47,7 @@ int strbuf_init(strbuf_t *s, int len)
     s->reallocs = 0;
     s->debug = 0;
 
-    s->buf = (char *)c_malloc(size);
+    s->buf = (char *)cjson_mem_malloc(size);
     if (!s->buf){
         NODE_ERR("not enough memory\n");
         return -1;
@@ -60,7 +61,7 @@ strbuf_t *strbuf_new(int len)
 {
     strbuf_t *s;
 
-    s = (strbuf_t *)c_malloc(sizeof(strbuf_t));
+    s = (strbuf_t *)cjson_mem_malloc(sizeof(strbuf_t));
     if (!s){
         NODE_ERR("not enough memory\n");
         return NULL;
@@ -150,7 +151,7 @@ static int calculate_new_size(strbuf_t *s, int len)
             newsize *= -s->increment;
     } else {
         /* Linear sizing */
-        newsize = ((newsize + s->increment - 1) / s->increment) * s->increment;
+        newsize = (((reqsize -1) / s->increment) + 1) * s->increment;
     }
 
     return newsize;
@@ -170,7 +171,7 @@ int strbuf_resize(strbuf_t *s, int len)
                 (long)s, s->size, newsize);
     }
 
-    s->buf = (char *)c_realloc(s->buf, newsize);
+    s->buf = (char *)cjson_mem_realloc(s->buf, newsize);
     if (!s->buf){
         NODE_ERR("not enough memory");
         return -1;

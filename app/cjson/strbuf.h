@@ -24,6 +24,7 @@
 
 #include "c_stdlib.h"
 #include "c_stdarg.h"
+#include "user_config.h"
 
 /* Size: Total bytes allocated to *buf
  * Length: String length, excluding optional NULL terminator.

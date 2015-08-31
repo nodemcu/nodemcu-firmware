@@ -902,12 +902,16 @@ u8g_uint_t u8g_DrawStr90P(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, const u8g_pgm_
 {
   u8g_uint_t t = 0;
   int8_t d;
+  uint8_t c;
   
   x -= u8g->font_calc_vref(u8g);
 
-  while( *s != '\0' )
+  for(;;)
   {
-    d = u8g_DrawGlyph90(u8g, x, y, u8g_pgm_read(s));
+    c = u8g_pgm_read(s);
+    if ( c == '\0' )
+      break;
+    d = u8g_DrawGlyph90(u8g, x, y, c);
     y += d;
     t += d;
     s++;
@@ -919,12 +923,16 @@ u8g_uint_t u8g_DrawStr180P(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, const u8g_pgm
 {
   u8g_uint_t t = 0;
   int8_t d;
+  uint8_t c;
 
   y -= u8g->font_calc_vref(u8g);
   
-  while( *s != '\0' )
+  for(;;)
   {
-    d = u8g_DrawGlyph180(u8g, x, y, u8g_pgm_read(s));
+    c = u8g_pgm_read(s);
+    if ( c == '\0' )
+      break;
+    d = u8g_DrawGlyph180(u8g, x, y, c);
     x -= d;
     t += d;
     s++;
@@ -936,12 +944,16 @@ u8g_uint_t u8g_DrawStr270P(u8g_t *u8g, u8g_uint_t x, u8g_uint_t y, const u8g_pgm
 {
   u8g_uint_t t = 0;
   int8_t d;
+  uint8_t c;
 
   x += u8g->font_calc_vref(u8g);
 
-  while( *s != '\0' )
+  for(;;)
   {
-    d = u8g_DrawGlyph270(u8g, x, y, u8g_pgm_read(s));
+    c = u8g_pgm_read(s);
+    if ( c == '\0' )
+      break;
+    d = u8g_DrawGlyph270(u8g, x, y, c);
     y -= d;
     t += d;
     s++;

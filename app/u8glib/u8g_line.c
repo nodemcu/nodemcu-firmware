@@ -1,6 +1,6 @@
 /*
 
-  u8g_line.h
+  u8g_line.c
   
   Universal 8bit Graphics Library
   
@@ -65,6 +65,15 @@ void u8g_DrawLine(u8g_t *u8g, u8g_uint_t x1, u8g_uint_t y1, u8g_uint_t x2, u8g_u
   err = dx >> 1;
   if ( y2 > y1 ) ystep = 1; else ystep = -1;
   y = y1;
+
+#ifndef  U8G_16BIT
+  if ( x2 == 255 )
+    x2--;
+#else
+  if ( x2 == 0xffff )
+    x2--;
+#endif
+
   for( x = x1; x <= x2; x++ )
   {
     if ( swapxy == 0 ) 
