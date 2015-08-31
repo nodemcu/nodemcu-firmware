@@ -1055,7 +1055,7 @@ static int wifi_ap_getconfig( lua_State* L )
   struct softap_config config;
   wifi_softap_get_config(&config);
   lua_pushstring( L, config.ssid );
-  if(config.authmode = AUTH_OPEN)
+  if(config.authmode == AUTH_OPEN)
     lua_pushnil(L);
   else
     lua_pushstring( L, config.password );
