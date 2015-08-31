@@ -25,6 +25,7 @@ static int db_getregistry (lua_State *L) {
   return 1;
 }
 
+#ifdef LUA_USE_BUILTIN_DEBUG_MINIMAL
 
 static int db_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
@@ -73,7 +74,7 @@ static void settabsi (lua_State *L, const char *i, int v) {
   lua_setfield(L, -2, i);
 }
 
-
+#endif
 static lua_State *getthread (lua_State *L, int *arg) {
   if (lua_isthread(L, 1)) {
     *arg = 1;
@@ -84,7 +85,7 @@ static lua_State *getthread (lua_State *L, int *arg) {
     return L;
   }
 }
-
+#ifdef LUA_USE_BUILTIN_DEBUG_MINIMAL
 
 static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
   if (L == L1) {
@@ -324,7 +325,7 @@ static int db_debug (lua_State *L) {
     lua_settop(L, 0);  /* remove eventual returns */
   }
 }
-
+#endif
 
 #define LEVELS1	12	/* size of the first part of the stack */
 #define LEVELS2	10	/* size of the second part of the stack */
@@ -384,12 +385,15 @@ static int db_errorfb (lua_State *L) {
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
 const LUA_REG_TYPE dblib[] = {
+#ifdef LUA_USE_BUILTIN_DEBUG_MINIMAL
   {LSTRKEY("debug"), LFUNCVAL(db_debug)},
   {LSTRKEY("getfenv"), LFUNCVAL(db_getfenv)},
   {LSTRKEY("gethook"), LFUNCVAL(db_gethook)},
   {LSTRKEY("getinfo"), LFUNCVAL(db_getinfo)},
   {LSTRKEY("getlocal"), LFUNCVAL(db_getlocal)},
+#endif
   {LSTRKEY("getregistry"), LFUNCVAL(db_getregistry)},
+#ifdef LUA_USE_BUILTIN_DEBUG_MINIMAL
   {LSTRKEY("getmetatable"), LFUNCVAL(db_getmetatable)},
   {LSTRKEY("getupvalue"), LFUNCVAL(db_getupvalue)},
   {LSTRKEY("setfenv"), LFUNCVAL(db_setfenv)},
@@ -397,6 +401,7 @@ const LUA_REG_TYPE dblib[] = {
   {LSTRKEY("setlocal"), LFUNCVAL(db_setlocal)},
   {LSTRKEY("setmetatable"), LFUNCVAL(db_setmetatable)},
   {LSTRKEY("setupvalue"), LFUNCVAL(db_setupvalue)},
+#endif
   {LSTRKEY("traceback"), LFUNCVAL(db_errorfb)},
   {LNILKEY, LNILVAL}
 };
