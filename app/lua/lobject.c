@@ -4,16 +4,15 @@
 ** See Copyright Notice in lua.h
 */
 
-#include "c_ctype.h"
-#include "c_stdarg.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
 
 #define lobject_c
 #define LUA_CORE
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
+#include C_HEADER_STDIO
+#include C_HEADER_STRING
+#include C_HEADER_STDLIB
 
 #include "ldo.h"
 #include "lmem.h"
@@ -21,9 +20,9 @@
 #include "lstate.h"
 #include "lstring.h"
 #include "lvm.h"
-
+#ifndef LUA_CROSS_COMPILER
 #include "flash_api.h"
-
+#endif
 const TValue luaO_nilobject_ = {LUA_TVALUE_NIL};
 
 
@@ -64,9 +63,11 @@ int luaO_log2 (unsigned int x) {
   };
   int l = -1;
   while (x >= 256) { l += 8; x >>= 8; }
-  // return l + log_2[x];
+#ifdef LUA_CROSS_COMPILER
+  return l + log_2[x];
+#else
   return l + byte_of_aligned_array(log_2,x);
-
+#endif
 }
 
 

@@ -4,8 +4,11 @@
 ** See Copyright Notice in lua.h
 */
 
-#include "c_ctype.h"
-#include "c_stdio.h"
+#define LUAC_CROSS_FILE
+
+#include "luac_cross.h"
+#include C_HEADER_CTYPE
+#include C_HEADER_STDIO
 
 #define luac_c
 #define LUA_CORE
