@@ -7,7 +7,11 @@
 #ifndef lundump_h
 #define lundump_h
 
+#ifdef LUA_CROSS_COMPILER
+#include <stdint.h>
+#else
 #include "c_stdint.h"
+#endif
 
 #include "lobject.h"
 #include "lzio.h"

@@ -7,6 +7,7 @@
 
 #define linit_c
 #define LUA_LIB
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
 

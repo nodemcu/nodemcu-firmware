@@ -4,10 +4,13 @@
 ** See Copyright Notice in lua.h
 */
 
-#include "c_errno.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#define LUAC_CROSS_FILE
+
+#include "luac_cross.h"
+#include C_HEADER_ERRNO
+#include C_HEADER_STDIO
+#include C_HEADER_STDLIB
+#include C_HEADER_STRING
 
 #define luac_c
 #define LUA_CORE
