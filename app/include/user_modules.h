@@ -11,6 +11,7 @@
 // #define LUA_USE_BUILTIN_DEBUG
 #define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
 
+#ifndef LUA_CROSS_COMPILER
 #define LUA_USE_MODULES
 
 #ifdef LUA_USE_MODULES
@@ -38,5 +39,6 @@
 #define LUA_USE_MODULES_DHT
 
 #endif /* LUA_USE_MODULES */
+#endif
 
 #endif	/* __USER_MODULES_H__ */

@@ -8,10 +8,18 @@
 
 #ifndef lua_h
 #define lua_h
-
+#ifdef LUAC_CROSS_FILE
+#include "luac_cross.h"
+#endif
+#ifdef LUA_CROSS_COMPILER
+#include <stdarg.h>
+#include <stddef.h>
+#include <ctype.h>
+#else
 #include "c_stdarg.h"
 #include "c_stddef.h"
 #include "c_types.h"
+#endif
 
 #include "luaconf.h"
 
