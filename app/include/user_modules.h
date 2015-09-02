@@ -28,6 +28,7 @@
 #define LUA_USE_MODULES_BIT
 #define LUA_USE_MODULES_MQTT
 #define LUA_USE_MODULES_COAP
+//#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
 #define LUA_USE_MODULES_U8G
 // #define LUA_USE_MODULES_WS2801
 #define LUA_USE_MODULES_WS2812
