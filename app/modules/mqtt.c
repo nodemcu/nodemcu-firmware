@@ -565,6 +565,7 @@ static int mqtt_socket_client( lua_State* L )
   int keepalive = 0;
   int stack = 1;
   unsigned secure = 0;
+  int clean_session = 1;
   int top = lua_gettop(L);
 
   // create a object
@@ -626,6 +627,16 @@ static int mqtt_socket_client( lua_State* L )
   if(password == NULL)
     pwl = 0;
   NODE_DBG("lengh password: %d\r\n", pwl);
+  
+  if(lua_isnumber( L, stack ))
+  {   
+    clean_session = luaL_checkinteger( L, stack);
+    stack++;
+  }
+
+  if(clean_session > 1){
+    clean_session = 1;
+  }
 
   // TODO: check the zalloc result.
   mud->connect_info.client_id = (uint8_t *)c_zalloc(idl+1);
@@ -656,7 +667,7 @@ static int mqtt_socket_client( lua_State* L )
   
   NODE_DBG("MQTT: Init info: %s, %s, %s\r\n", mud->connect_info.client_id, mud->connect_info.username, mud->connect_info.password);
 
-  mud->connect_info.clean_session = 1;
+  mud->connect_info.clean_session = clean_session;
   mud->connect_info.will_qos = 0;
   mud->connect_info.will_retain = 0;
   mud->connect_info.keepalive = keepalive;
