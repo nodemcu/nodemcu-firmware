@@ -81,13 +81,13 @@ tools/esptool.py supported NodeMCU devkit automatic flash.
     <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
   </tr>
   <tr>
-    <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15</td>
+    <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15 (SPI CS)</td>
   </tr>
   <tr>
-    <td>1</td><td>GPIO5</td><td>9</td><td>GPIO3</td>
+    <td>1</td><td>GPIO5</td><td>9</td><td>GPIO3 (UART RX)</td>
    </tr>
    <tr>
-    <td>2</td><td>GPIO4</td><td>10</td><td>GPIO1</td>
+    <td>2</td><td>GPIO4</td><td>10</td><td>GPIO1 (UART TX)</td>
   </tr>
   <tr>
     <td>3</td><td>GPIO0</td><td>11</td><td>GPIO9</td>
@@ -96,13 +96,13 @@ tools/esptool.py supported NodeMCU devkit automatic flash.
     <td>4</td><td>GPIO2</td><td>12</td><td>GPIO10</td>
   </tr>
   <tr>
-    <td>5</td><td>GPIO14</td><td></td><td></td>
+    <td>5</td><td>GPIO14 (SPI CLK)</td><td></td><td></td>
    </tr>
    <tr>
-    <td>6</td><td>GPIO12</td><td></td><td></td>
+    <td>6</td><td>GPIO12 (SPI MISO)</td><td></td><td></td>
   </tr>
   <tr>
-    <td>7</td><td>GPIO13</td><td></td><td></td>
+    <td>7</td><td>GPIO13 (SPI MOSI)</td><td></td><td></td>
    </tr>
 </table>
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
