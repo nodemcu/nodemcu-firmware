@@ -35,17 +35,17 @@
  * |ip - 32 bits|
  *
  *        DNS Header Part                         |  FLAGS | | Q COUNT |  | A CNT  |  |AUTH CNT|  | ADD CNT| */
-static const char RAM_CONST_ATTR dns_header[] = { 0x80, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
+static const char ROM_CONST_ATTR dns_header[] = { 0x80, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
 /*        DNS Query Part                          | Q TYPE |  | Q CLASS| */
-static const char RAM_CONST_ATTR dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
+static const char ROM_CONST_ATTR dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
 /*        DNS Answer Part                         |LBL OFFS|  |  TYPE  |  |  CLASS |  |         TTL        |  | RD LEN | */
                                                   0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x04 };
 
-static const char RAM_CONST_ATTR http_html_filename[] = "index.html";
-static const char RAM_CONST_ATTR http_header_200[] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-static const char RAM_CONST_ATTR http_header_404[] = "HTTP/1.1 404 Not Found\r\n";
+static const char ROM_CONST_ATTR http_html_filename[] = "index.html";
+static const char ROM_CONST_ATTR http_header_200[] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+static const char ROM_CONST_ATTR http_header_404[] = "HTTP/1.1 404 Not Found\r\n";
 
-static const char RAM_CONST_ATTR http_html_backup[] = "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=380'><title>Connect gadget to you WiFi</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:0;right:0;bottom:0;left:0;width:320px;height:274px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{width:100px;background:#27AE60;font-weight:700;color:#fff;border:0 none;border-radius:3px;cursor:pointer;padding:10px 5px;margin:10px 5px}#msform .action-button:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}</style><body><div><form><fieldset><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi</h3><input autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'> <input type=password name=wifi_password placeholder='Password'1> <input type=submit name=save class='submit action-button' value='Save'></fieldset></form></div>";
+static const char ROM_CONST_ATTR http_html_backup[] = "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=380'><title>Connect gadget to you WiFi</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:0;right:0;bottom:0;left:0;width:320px;height:274px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{width:100px;background:#27AE60;font-weight:700;color:#fff;border:0 none;border-radius:3px;cursor:pointer;padding:10px 5px;margin:10px 5px}#msform .action-button:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}</style><body><div><form><fieldset><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi</h3><input autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'> <input type=password name=wifi_password placeholder='Password'1> <input type=submit name=save class='submit action-button' value='Save'></fieldset></form></div>";
 
 static struct espconn *espconn_dns_udp;
 static struct espconn *espconn_http_tcp;
@@ -56,15 +56,15 @@ typedef struct http_payload_t {
 static http_payload_t http_payload;
 static os_timer_t check_station_timer;
 
-static int ICACHE_FLASH_ATTR enduser_setup_start(lua_State* L);
-static int ICACHE_FLASH_ATTR enduser_setup_stop(lua_State* L);
-static void ICACHE_FLASH_ATTR enduser_setup_station_start(void);
-static void ICACHE_FLASH_ATTR enduser_setup_ap_start(void);
-static void ICACHE_FLASH_ATTR enduser_setup_ap_stop(void);
-static void ICACHE_RAM_ATTR enduser_setup_check_station(void);
+static int enduser_setup_start(lua_State* L);
+static int enduser_setup_stop(lua_State* L);
+static void enduser_setup_station_start(void);
+static void enduser_setup_ap_start(void);
+static void enduser_setup_ap_stop(void);
+static void enduser_setup_check_station(void);
 
 
-static void ICACHE_RAM_ATTR enduser_setup_check_station_start(void)
+static void enduser_setup_check_station_start(void)
 {
   PRINT_FUNC("enduser_setup_check_station_start\n");
 
@@ -73,7 +73,7 @@ static void ICACHE_RAM_ATTR enduser_setup_check_station_start(void)
 }
 
 
-static void ICACHE_RAM_ATTR enduser_setup_check_station_stop(void)
+static void enduser_setup_check_station_stop(void)
 {
   PRINT_FUNC("enduser_setup_check_station_stop\n");
 
@@ -86,7 +86,7 @@ static void ICACHE_RAM_ATTR enduser_setup_check_station_stop(void)
  *
  * Check that we've successfully entered station mode.
  */
-static void ICACHE_RAM_ATTR enduser_setup_check_station(void)
+static void enduser_setup_check_station(void)
 {
   struct ip_info ip;
   c_memset(&ip, 0, sizeof(struct ip_info));
@@ -121,7 +121,7 @@ static void ICACHE_RAM_ATTR enduser_setup_check_station(void)
  *
  * @return -1 iff no occurance of char was found.
  */
-static int ICACHE_RAM_ATTR enduser_setup_srch_str(const char *str, const char *srch_str)
+static int enduser_setup_srch_str(const char *str, const char *srch_str)
 {
   int srch_str_len = c_strlen(srch_str);
   int first_hit = INT_MAX;
@@ -145,7 +145,7 @@ static int ICACHE_RAM_ATTR enduser_setup_srch_str(const char *str, const char *s
 }
 
 
-static void ICACHE_FLASH_ATTR enduser_setup_http_free(void)
+static void enduser_setup_http_free(void)
 {
   http_payload.len = 0;
   c_free(http_payload.data);
@@ -170,7 +170,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_http_free(void)
  *           1 iff backup html was loaded
  *           2 iff out of memory
  */
-static int ICACHE_FLASH_ATTR enduser_setup_http_load_payload(void)
+static int enduser_setup_http_load_payload(void)
 {
   PRINT_FUNC("enduser_setup_http_load_payload\n");
 
@@ -221,7 +221,7 @@ static int ICACHE_FLASH_ATTR enduser_setup_http_load_payload(void)
  *
  * Parse escaped and form encoded data of request.
  */
-static void ICACHE_RAM_ATTR enduser_setup_http_urldecode(char *dst, const char *src, int src_len)
+static void enduser_setup_http_urldecode(char *dst, const char *src, int src_len)
 {
   char a, b;
   int i;
@@ -276,7 +276,7 @@ static void ICACHE_RAM_ATTR enduser_setup_http_urldecode(char *dst, const char *
  *           return 1 iff credentials aren't found
  *           return 2 iff an error occured
  */
-static int ICACHE_RAM_ATTR enduser_setup_http_handle_credentials(char *data, unsigned short data_len)
+static int enduser_setup_http_handle_credentials(char *data, unsigned short data_len)
 {
   PRINT_FUNC("enduser_setup_http_handle_credentials\n");
 
@@ -347,7 +347,7 @@ static int ICACHE_RAM_ATTR enduser_setup_http_handle_credentials(char *data, uns
  * 
  * @return - return 0 iff html was served successfully
  */
-static int ICACHE_RAM_ATTR enduser_setup_http_serve_header(struct espconn *http_client, char *header, uint32_t header_len)
+static int enduser_setup_http_serve_header(struct espconn *http_client, char *header, uint32_t header_len)
 {
   PRINT_FUNC("enduser_setup_http_serve_404\n");
   
@@ -377,7 +377,7 @@ static int ICACHE_RAM_ATTR enduser_setup_http_serve_header(struct espconn *http_
  * 
  * @return - return 0 iff html was served successfully
  */
-static int ICACHE_RAM_ATTR enduser_setup_http_serve_html(struct espconn *http_client)
+static int enduser_setup_http_serve_html(struct espconn *http_client)
 {
   PRINT_FUNC("enduser_setup_http_serve_html\n");
   
@@ -412,14 +412,14 @@ static int ICACHE_RAM_ATTR enduser_setup_http_serve_html(struct espconn *http_cl
  *
  * End TCP connection and free up resources.
  */
-static void ICACHE_RAM_ATTR enduser_setup_http_disconnect(struct espconn *espconn)
+static void enduser_setup_http_disconnect(struct espconn *espconn)
 {
   PRINT_FUNC("enduser_setup_http_disconnect\n");
 //TODO: Construct and maintain os task queue(?) to be able to issue system_os_task with espconn_disconnect.
 }
 
 
-static void ICACHE_RAM_ATTR enduser_setup_http_recvcb(void *arg, char *data, unsigned short data_len)
+static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data_len)
 {
   PRINT_FUNC("enduser_setup_http_recvcb\n");
   struct espconn *http_client = (struct espconn *) arg;
@@ -468,7 +468,7 @@ static void ICACHE_RAM_ATTR enduser_setup_http_recvcb(void *arg, char *data, uns
 }
 
 
-static void ICACHE_RAM_ATTR enduser_setup_http_connectcb(void *arg)
+static void enduser_setup_http_connectcb(void *arg)
 {
   PRINT_FUNC("enduser_setup_http_connectcb\n");
 
@@ -484,7 +484,7 @@ static void ICACHE_RAM_ATTR enduser_setup_http_connectcb(void *arg)
 }
 
 
-static void ICACHE_FLASH_ATTR enduser_setup_http_start(void)
+static void enduser_setup_http_start(void)
 {
   PRINT_FUNC("enduser_setup_http_start\n");
 
@@ -572,7 +572,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_http_start(void)
 }
 
 
-static void ICACHE_FLASH_ATTR enduser_setup_http_stop(void)
+static void enduser_setup_http_stop(void)
 {
   PRINT_FUNC("enduser_setup_http_stop\n");
 
@@ -595,7 +595,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_http_stop(void)
   enduser_setup_http_free();
 }
 
-static void ICACHE_FLASH_ATTR enduser_setup_ap_stop(void)
+static void enduser_setup_ap_stop(void)
 {
   PRINT_FUNC("enduser_setup_station_stop\n");
 
@@ -603,7 +603,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_ap_stop(void)
 }
 
 
-static void ICACHE_FLASH_ATTR enduser_setup_ap_start(void)
+static void enduser_setup_ap_start(void)
 {
   PRINT_FUNC("enduser_setup_ap_start\n");
 
@@ -621,7 +621,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_ap_start(void)
 }
 
 
-static void ICACHE_RAM_ATTR enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned short recv_len)
+static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned short recv_len)
 {
   PRINT_FUNC("enduser_setup_dns_recv_callback received query for %s\n", &(recv_data[12]));
 
@@ -684,7 +684,7 @@ static void ICACHE_RAM_ATTR enduser_setup_dns_recv_callback(void *arg, char *rec
 }
 
 
-static void ICACHE_FLASH_ATTR enduser_setup_dns_free(void)
+static void enduser_setup_dns_free(void)
 {
   PRINT_FUNC("enduser_setup_dns_free\n");
 
@@ -700,7 +700,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_dns_free(void)
 }
 
 
-static void ICACHE_FLASH_ATTR enduser_setup_dns_start(void)
+static void enduser_setup_dns_start(void)
 {
   PRINT_FUNC("enduser_setup_dns_started\n");
 
@@ -762,7 +762,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_dns_start(void)
 }
 
 
-static void ICACHE_FLASH_ATTR enduser_setup_dns_stop(void)
+static void enduser_setup_dns_stop(void)
 {
   PRINT_FUNC("enduser_setup_dns_stop\n");
 
@@ -786,7 +786,7 @@ static void ICACHE_FLASH_ATTR enduser_setup_dns_stop(void)
 }
 
 
-static int ICACHE_FLASH_ATTR enduser_setup_start(lua_State* L)
+static int enduser_setup_start(lua_State* L)
 {
   c_printf("\n");
   c_printf("-------------------\n");
@@ -802,7 +802,7 @@ static int ICACHE_FLASH_ATTR enduser_setup_start(lua_State* L)
 }
 
 
-static int ICACHE_FLASH_ATTR enduser_setup_stop(lua_State* L)
+static int enduser_setup_stop(lua_State* L)
 {
   c_printf("\n");
   c_printf("------------------\n");
