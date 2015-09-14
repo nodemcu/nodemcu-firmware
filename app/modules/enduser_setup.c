@@ -18,12 +18,6 @@
 #define PRINT_FUNC
 #endif
 
-#define PRINT_DEBUG_ENABLE 0
-#if PRINT_DEBUG_ENABLE
-#define PRINT_DEBUG c_printf
-#else
-#define PRINT_DEBUG
-#endif
 
 /**
  * DNS Response Packet:
@@ -109,7 +103,7 @@ static void enduser_setup_check_station(void)
   wifi_station_get_config(&cnf);
 
   uint8_t *ip_byte = (uint8_t *) &(ip.ip);
-  c_printf("Connected to \"%s\" as %u.%u.%u.%u\n", cnf.ssid, IP2STR(&ip));
+  NODE_DEBUG("Connected to \"%s\" as %u.%u.%u.%u\n", cnf.ssid, IP2STR(&ip));
   enduser_setup_stop(NULL);
 }
 
@@ -181,7 +175,7 @@ static int enduser_setup_http_load_payload(void)
   
   if (f == 0 || err == -1 || err2 == -1)
   {
-    c_printf("enduser_setup_http_load_payload unable to load file \"%s\", loading backup HTML.\n", http_html_filename);
+    NODE_DEBUG("enduser_setup_http_load_payload unable to load file \"%s\", loading backup HTML.\n", http_html_filename);
 
     int payload_len = sizeof(http_header_200) + sizeof(http_html_backup);
     http_payload.len = payload_len;
@@ -307,36 +301,36 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   int err = wifi_set_opmode(STATION_MODE | wifi_get_opmode());
   if (err == FALSE)
   {
-    c_printf("enduser_setup_station_start failed. wifi_set_opmode failed.\n");
+    NODE_DEBUG("enduser_setup_station_start failed. wifi_set_opmode failed.\n");
     wifi_set_opmode(~STATION_MODE & wifi_get_opmode());
     return 2;
   }
   err = wifi_station_set_config(&cnf);
   if (err == FALSE)
   {
-    c_printf("enduser_setup_station_start failed. wifi_station_set_config failed.\n");
+    NODE_DEBUG("enduser_setup_station_start failed. wifi_station_set_config failed.\n");
     wifi_set_opmode(~STATION_MODE & wifi_get_opmode());
     return 2;
   }
   err = wifi_station_disconnect();
   if (err == FALSE)
   {
-    c_printf("enduser_setup_station_start failed. wifi_station_disconnect failed.\n");
+    NODE_DEBUG("enduser_setup_station_start failed. wifi_station_disconnect failed.\n");
   }
   err = wifi_station_connect();
   if (err == FALSE)
   {
-    c_printf("enduser_setup_station_start failed. wifi_station_connect failed.\n");
+    NODE_DEBUG("enduser_setup_station_start failed. wifi_station_connect failed.\n");
   }
 
-  c_printf("\n");  
-  c_printf("WiFi Credentials Stored\n");
-  c_printf("-----------------------\n");
-  c_printf("name: \"%s\"\n", cnf.ssid);
-  c_printf("pass: \"%s\"\n", cnf.password);
-  c_printf("bssid_set: %u\n", cnf.bssid_set);
-  c_printf("bssid: \"%s\"\n", cnf.bssid);
-  c_printf("-----------------------\n\n");
+  NODE_DEBUG("\n");  
+  NODE_DEBUG("WiFi Credentials Stored\n");
+  NODE_DEBUG("-----------------------\n");
+  NODE_DEBUG("name: \"%s\"\n", cnf.ssid);
+  NODE_DEBUG("pass: \"%s\"\n", cnf.password);
+  NODE_DEBUG("bssid_set: %u\n", cnf.bssid_set);
+  NODE_DEBUG("bssid: \"%s\"\n", cnf.bssid);
+  NODE_DEBUG("-----------------------\n\n");
 
   return 0;
 }
@@ -354,17 +348,17 @@ static int enduser_setup_http_serve_header(struct espconn *http_client, char *he
   int8_t err = espconn_sent(http_client, header, header_len);
   if (err == ESPCONN_MEM)
   {
-    c_printf("enduser_setup_http_serve_header failed. espconn_send out of memory\n");
+    NODE_DEBUG("enduser_setup_http_serve_header failed. espconn_send out of memory\n");
     return 1;
   }
   else if (err == ESPCONN_ARG)
   {
-    c_printf("enduser_setup_http_serve_header failed. espconn_send can't find network transmission\n");
+    NODE_DEBUG("enduser_setup_http_serve_header failed. espconn_send can't find network transmission\n");
     return 1;
   }
   else if (err != 0)
   {
-    c_printf("enduser_setup_http_serve_header failed. espconn_send failed\n");
+    NODE_DEBUG("enduser_setup_http_serve_header failed. espconn_send failed\n");
     return 1;  
   }
   
@@ -389,17 +383,17 @@ static int enduser_setup_http_serve_html(struct espconn *http_client)
   int8_t err = espconn_sent(http_client, http_payload.data, http_payload.len);
   if (err == ESPCONN_MEM)
   {
-    c_printf("enduser_setup_http_serve_html failed. espconn_send out of memory\n");
+    NODE_DEBUG("enduser_setup_http_serve_html failed. espconn_send out of memory\n");
     return 1;
   }
   else if (err == ESPCONN_ARG)
   {
-    c_printf("enduser_setup_http_serve_html failed. espconn_send can't find network transmission\n");
+    NODE_DEBUG("enduser_setup_http_serve_html failed. espconn_send can't find network transmission\n");
     return 1;
   }
   else if (err != 0)
   {
-    c_printf("enduser_setup_http_serve_html failed. espconn_send failed\n");
+    NODE_DEBUG("enduser_setup_http_serve_html failed. espconn_send failed\n");
     return 1;  
   }
   
@@ -440,13 +434,13 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
   }
   else if (retval == 2)
   {
-    c_printf("enduser_setup_http_recvcb failed. Failed to handle wifi credentials.\n");
+    NODE_DEBUG("enduser_setup_http_recvcb failed. Failed to handle wifi credentials.\n");
     return;
   }
   
   if (retval != 1)
   {
-    c_printf("enduser_setup_http_recvcb failed. Unknown error code #%u.\n", retval);
+    NODE_DEBUG("enduser_setup_http_recvcb failed. Unknown error code #%u.\n", retval);
     return;
   }
   
@@ -462,7 +456,7 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
   retval = enduser_setup_http_serve_html(http_client);
   if (retval != 0)
   {
-    c_printf("enduser_setup_http_recvcb failed. Unable to send HTML.\n");
+    NODE_DEBUG("enduser_setup_http_recvcb failed. Unable to send HTML.\n");
     enduser_setup_http_disconnect(http_client);
   }
 }
@@ -479,7 +473,7 @@ static void enduser_setup_http_connectcb(void *arg)
   
   if (err != 0)
   {
-    c_printf("enduser_setup_http_connectcb failed. Callback registration failed.\n");
+    NODE_DEBUG("enduser_setup_http_connectcb failed. Callback registration failed.\n");
   }
 }
 
@@ -490,20 +484,20 @@ static void enduser_setup_http_start(void)
 
   if (espconn_http_tcp != NULL)
   {
-    c_printf("enduser_setup_http_start failed. Appears to already be started (espconn_http_tcp != NULL).\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Appears to already be started (espconn_http_tcp != NULL).\n");
     return;
   }
   espconn_http_tcp = (struct espconn *) c_malloc(sizeof(struct espconn));
   if (espconn_http_tcp == NULL)
   {
-    c_printf("enduser_setup_http_start failed. Memory allocation failed (espconn_http_tcp == NULL).\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Memory allocation failed (espconn_http_tcp == NULL).\n");
     return;
   }
 
   esp_tcp *esp_tcp_data = (esp_tcp *) c_malloc(sizeof(esp_tcp));
   if (esp_tcp_data == NULL)
   {
-    c_printf("enduser_setup_http_start failed. Memory allocation failed (esp_udp == NULL).\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Memory allocation failed (esp_udp == NULL).\n");
     enduser_setup_http_free();
     return;
   }
@@ -519,7 +513,7 @@ static void enduser_setup_http_start(void)
   err = espconn_regist_connectcb(espconn_http_tcp, enduser_setup_http_connectcb);
   if (err != 0)
   {
-    c_printf("enduser_setup_http_start failed. Couldn't add receive callback, ERRROR #%u.\n", err);
+    NODE_DEBUG("enduser_setup_http_start failed. Couldn't add receive callback, ERRROR #%u.\n", err);
     enduser_setup_http_free();
     return;
   }
@@ -527,25 +521,25 @@ static void enduser_setup_http_start(void)
   err = espconn_accept(espconn_http_tcp);
   if (err == ESPCONN_ISCONN)
   {
-    c_printf("enduser_setup_http_start failed. Couldn't create connection, already listening for that connection.\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Couldn't create connection, already listening for that connection.\n");
     enduser_setup_http_free();
     return;
   }
   else if (err == ESPCONN_MEM)
   {
-    c_printf("enduser_setup_http_start failed. Couldn't create connection, out of memory.\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Couldn't create connection, out of memory.\n");
     enduser_setup_http_free();
     return;
   }
   else if (err == ESPCONN_ARG)
   {
-    c_printf("enduser_setup_http_start failed. Can't find connection from espconn argument\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Can't find connection from espconn argument\n");
     enduser_setup_http_free();
     return;  
   }
   else if (err != 0)
   {
-    c_printf("enduser_setup_http_start failed. ERRROR #%u\n", err);
+    NODE_DEBUG("enduser_setup_http_start failed. ERRROR #%u\n", err);
     enduser_setup_http_free();
     return;  
   }
@@ -553,7 +547,7 @@ static void enduser_setup_http_start(void)
   err = espconn_regist_time(espconn_http_tcp, 2, 0);
   if (err == ESPCONN_ARG)
   {
-    c_printf("enduser_setup_http_start failed. Unable to set TCP timeout.\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Unable to set TCP timeout.\n");
     enduser_setup_http_free();
     return;  
   }
@@ -565,7 +559,7 @@ static void enduser_setup_http_start(void)
   }
   else if (err == 2)
   {
-    c_printf("enduser_setup_http_start failed. Unable to allocate memory for HTTP payload.\n");
+    NODE_DEBUG("enduser_setup_http_start failed. Unable to allocate memory for HTTP payload.\n");
     enduser_setup_http_free();
     return;  
   }
@@ -578,18 +572,18 @@ static void enduser_setup_http_stop(void)
 
   if (espconn_http_tcp == NULL)
   {
-    c_printf("enduser_setup_http_stop failed. enduser_setup not enabled (espconn_dns_udp == NULL).\n");
+    NODE_DEBUG("enduser_setup_http_stop failed. enduser_setup not enabled (espconn_dns_udp == NULL).\n");
     return;
   }
 
   int8_t err = espconn_delete(espconn_http_tcp);
   if (err == ESPCONN_ARG)
   {
-    c_printf("enduser_setup_http_stop failed. espconn_delete returned ESPCONN_ARG. Can't find network transmission described.\n");
+    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ESPCONN_ARG. Can't find network transmission described.\n");
   }
   else if (err != 0)
   {
-    c_printf("enduser_setup_http_stop failed. espconn_delete returned ERROR #%u.\n", err);
+    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ERROR #%u.\n", err);
   }
 
   enduser_setup_http_free();
@@ -631,13 +625,13 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   uint8_t if_mode = wifi_get_opmode();
   if ((if_mode & SOFTAP_MODE) == 0)
   {
-    c_printf("enduser_setup_dns_recv_callback failed. Interface mode %d not supported.\n", if_mode);
+    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Interface mode %d not supported.\n", if_mode);
     return;
   }
   uint8_t if_index = (if_mode == STATION_MODE? STATION_IF : SOFTAP_IF);
   if (wifi_get_ip_info(if_index , &ip_info) == false)
   {
-    c_printf("enduser_setup_dns_recv_callback failed. Unable to get interface IP.\n");
+    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Unable to get interface IP.\n");
     return;
   }
 
@@ -648,7 +642,7 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   char *dns_reply = (char *) c_malloc(dns_reply_len);
   if (dns_reply == NULL)
   {
-    c_printf("enduser_setup_dns_recv_callback failed. Failed to allocate memory.\n");
+    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Failed to allocate memory.\n");
     return;
   }
 
@@ -668,17 +662,17 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   c_free(dns_reply);
   if (err == ESPCONN_MEM)
   {
-    c_printf("enduser_setup_dns_recv_callback failed. Failed to allocate memory for send.\n");
+    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Failed to allocate memory for send.\n");
     return;
   }
   else if (err == ESPCONN_ARG)
   {
-    c_printf("enduser_setup_dns_recv_callback failed. Can't execute transmission.\n");
+    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Can't execute transmission.\n");
     return;  
   }
   else if (err != 0)
   {
-    c_printf("enduser_setup_dns_recv_callback failed. espconn_send failed\n");
+    NODE_DEBUG("enduser_setup_dns_recv_callback failed. espconn_send failed\n");
     return;
   }
 }
@@ -706,20 +700,20 @@ static void enduser_setup_dns_start(void)
 
   if (espconn_dns_udp != NULL)
   {
-    c_printf("enduser_setup_dns_start failed. Appears to already be started (espconn_dns_udp != NULL).\n");
+    NODE_DEBUG("enduser_setup_dns_start failed. Appears to already be started (espconn_dns_udp != NULL).\n");
     return;
   }
   espconn_dns_udp = (struct espconn *) c_malloc(sizeof(struct espconn));
   if (espconn_dns_udp == NULL)
   {
-    c_printf("enduser_setup_dns_start failed. Memory allocation failed (espconn_dns_udp == NULL).\n");
+    NODE_DEBUG("enduser_setup_dns_start failed. Memory allocation failed (espconn_dns_udp == NULL).\n");
     return;
   }
 
   esp_udp *esp_udp_data = (esp_udp *) c_malloc(sizeof(esp_udp));
   if (esp_udp_data == NULL)
   {
-    c_printf("enduser_setup_dns_start failed. Memory allocation failed (esp_udp == NULL).\n");
+    NODE_DEBUG("enduser_setup_dns_start failed. Memory allocation failed (esp_udp == NULL).\n");
     enduser_setup_dns_free();
     return;
   }
@@ -735,7 +729,7 @@ static void enduser_setup_dns_start(void)
   err = espconn_regist_recvcb(espconn_dns_udp, enduser_setup_dns_recv_callback);
   if (err != 0)
   {
-    c_printf("enduser_setup_dns_start failed. Couldn't add receive callback, ERRROR #%d.\n", err);
+    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't add receive callback, ERRROR #%d.\n", err);
     enduser_setup_dns_free();
     return;
   }
@@ -743,19 +737,19 @@ static void enduser_setup_dns_start(void)
   err = espconn_create(espconn_dns_udp);
   if (err == ESPCONN_ISCONN)
   {
-    c_printf("enduser_setup_dns_start failed. Couldn't create connection, already listening for that connection.\n");
+    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't create connection, already listening for that connection.\n");
     enduser_setup_dns_free();
     return;
   }
   else if (err == ESPCONN_MEM)
   {
-    c_printf("enduser_setup_dns_start failed. Couldn't create connection, out of memory.\n");
+    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't create connection, out of memory.\n");
     enduser_setup_dns_free();
     return;
   }
   else if (err != 0)
   {
-    c_printf("enduser_setup_dns_start failed. Couldn't create connection, ERROR #%d.\n", err);
+    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't create connection, ERROR #%d.\n", err);
     enduser_setup_dns_free();
     return;  
   }
@@ -768,18 +762,18 @@ static void enduser_setup_dns_stop(void)
 
   if (espconn_dns_udp == NULL)
   {
-    c_printf("enduser_setup_dns_stop failed. Hijacker not enabled (espconn_dns_udp == NULL).\n");
+    NODE_DEBUG("enduser_setup_dns_stop failed. Hijacker not enabled (espconn_dns_udp == NULL).\n");
     return;
   }
 
   int8_t err = espconn_delete(espconn_dns_udp);
   if (err == ESPCONN_ARG)
   {
-    c_printf("enduser_setup_http_stop failed. espconn_delete returned ESPCONN_ARG. Can't find network transmission described.\n");
+    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ESPCONN_ARG. Can't find network transmission described.\n");
   }
   else if (err != 0)
   {
-    c_printf("enduser_setup_http_stop failed. espconn_delete returned ERROR #%u.\n", err);
+    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ERROR #%u.\n", err);
   }
 
   enduser_setup_dns_free();
@@ -788,11 +782,6 @@ static void enduser_setup_dns_stop(void)
 
 static int enduser_setup_start(lua_State* L)
 {
-  c_printf("\n");
-  c_printf("-------------------\n");
-  c_printf("enduser_setup_start\n");
-  c_printf("-------------------\n\n");
-
   enduser_setup_check_station_start();
   enduser_setup_ap_start();
   enduser_setup_dns_start();
@@ -804,11 +793,6 @@ static int enduser_setup_start(lua_State* L)
 
 static int enduser_setup_stop(lua_State* L)
 {
-  c_printf("\n");
-  c_printf("------------------\n");
-  c_printf("enduser_setup_stop\n");
-  c_printf("------------------\n\n");
-
   enduser_setup_check_station_stop();
   enduser_setup_ap_stop();
   enduser_setup_dns_stop();
