@@ -548,7 +548,7 @@ void mqtt_socket_timer(void *arg)
   NODE_DBG("leave mqtt_socket_timer.\n");
 }
 
-// Lua: mqtt.Client(clientid, keepalive, user, pass)
+// Lua: mqtt.Client(clientid, keepalive, user, pass, clean_session)
 static int mqtt_socket_client( lua_State* L )
 {
   NODE_DBG("enter mqtt_socket_client.\n");
