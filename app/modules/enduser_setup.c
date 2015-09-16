@@ -28,18 +28,17 @@
  * |dns_body|
  * |ip - 32 bits|
  *
- *        DNS Header Part                         |  FLAGS | | Q COUNT |  | A CNT  |  |AUTH CNT|  | ADD CNT| */
-static const char ROM_CONST_ATTR dns_header[] = { 0x80, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
-/*        DNS Query Part                          | Q TYPE |  | Q CLASS| */
-static const char ROM_CONST_ATTR dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
-/*        DNS Answer Part                         |LBL OFFS|  |  TYPE  |  |  CLASS |  |         TTL        |  | RD LEN | */
-                                                  0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x04 };
+ *        DNS Header Part          |  FLAGS | | Q COUNT |  | A CNT  |  |AUTH CNT|  | ADD CNT| */
+static const char dns_header[] = { 0x80, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
+/*        DNS Query Part           | Q TYPE |  | Q CLASS| */
+static const char dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
+/*        DNS Answer Part          |LBL OFFS|  |  TYPE  |  |  CLASS |  |         TTL        |  | RD LEN | */
+                                   0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x04 };
 
-static const char ROM_CONST_ATTR http_html_filename[] = "index.html";
-static const char ROM_CONST_ATTR http_header_200[] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
-static const char ROM_CONST_ATTR http_header_404[] = "HTTP/1.1 404 Not Found\r\n";
-
-static const char ROM_CONST_ATTR http_html_backup[] = "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=380'><title>Connect gadget to you WiFi</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:0;right:0;bottom:0;left:0;width:320px;height:274px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{width:100px;background:#27AE60;font-weight:700;color:#fff;border:0 none;border-radius:3px;cursor:pointer;padding:10px 5px;margin:10px 5px}#msform .action-button:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}</style><body><div><form><fieldset><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi</h3><input autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'> <input type=password name=wifi_password placeholder='Password'1> <input type=submit name=save class='submit action-button' value='Save'></fieldset></form></div>";
+static const char http_html_filename[] = "index.html";
+static const char http_header_200[] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+static const char http_header_404[] = "HTTP/1.1 404 Not Found\r\n";
+static const char http_html_backup[] = "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=380'><title>Connect gadget to you WiFi</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:0;right:0;bottom:0;left:0;width:320px;height:274px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{width:100px;background:#27AE60;font-weight:700;color:#fff;border:0 none;border-radius:3px;cursor:pointer;padding:10px 5px;margin:10px 5px}#msform .action-button:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}</style><body><div><form><fieldset><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi</h3><input autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'> <input type=password name=wifi_password placeholder='Password'1> <input type=submit name=save class='submit action-button' value='Save'></fieldset></form></div>";
 
 static struct espconn *espconn_dns_udp;
 static struct espconn *espconn_http_tcp;
@@ -93,12 +92,12 @@ static void enduser_setup_check_station(void)
   {
     has_ip |= ((char *) &ip)[i];
   }
-  
+
   if (has_ip == 0)
   {
     return;
   }
-  
+
   struct station_config cnf;
   wifi_station_get_config(&cnf);
 
@@ -368,18 +367,18 @@ static int enduser_setup_http_serve_header(struct espconn *http_client, char *he
 
 /**
  * Serve HTML
- * 
+ *
  * @return - return 0 iff html was served successfully
  */
 static int enduser_setup_http_serve_html(struct espconn *http_client)
 {
   PRINT_FUNC("enduser_setup_http_serve_html\n");
-  
+
   if (http_payload.data == NULL)
   {
     enduser_setup_http_load_payload();
   }
-  
+
   int8_t err = espconn_sent(http_client, http_payload.data, http_payload.len);
   if (err == ESPCONN_MEM)
   {
@@ -394,9 +393,9 @@ static int enduser_setup_http_serve_html(struct espconn *http_client)
   else if (err != 0)
   {
     NODE_DEBUG("enduser_setup_http_serve_html failed. espconn_send failed\n");
-    return 1;  
+    return 1;
   }
-  
+
   return 0;
 }
 
@@ -424,7 +423,7 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
     enduser_setup_http_disconnect(http_client);
     return;
   }
-  
+
   int retval = enduser_setup_http_handle_credentials(data, data_len);
   if (retval == 0)
   {
@@ -437,13 +436,13 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
     NODE_DEBUG("enduser_setup_http_recvcb failed. Failed to handle wifi credentials.\n");
     return;
   }
-  
+
   if (retval != 1)
   {
     NODE_DEBUG("enduser_setup_http_recvcb failed. Unknown error code #%u.\n", retval);
     return;
   }
-  
+
   /* Reject requests that probably aren't relevant to free up resources. */
   if (c_strncmp(data, "GET / ", 6) != 0)
   {
@@ -452,7 +451,7 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
     enduser_setup_http_disconnect(http_client);
     return;
   }
- 
+
   retval = enduser_setup_http_serve_html(http_client);
   if (retval != 0)
   {
@@ -470,7 +469,7 @@ static void enduser_setup_http_connectcb(void *arg)
 
   int8_t err = 0;
   err |= espconn_regist_recvcb(callback_espconn, enduser_setup_http_recvcb);
-  
+
   if (err != 0)
   {
     NODE_DEBUG("enduser_setup_http_connectcb failed. Callback registration failed.\n");
@@ -535,21 +534,21 @@ static void enduser_setup_http_start(void)
   {
     NODE_DEBUG("enduser_setup_http_start failed. Can't find connection from espconn argument\n");
     enduser_setup_http_free();
-    return;  
+    return;
   }
   else if (err != 0)
   {
     NODE_DEBUG("enduser_setup_http_start failed. ERRROR #%u\n", err);
     enduser_setup_http_free();
-    return;  
+    return;
   }
-  
+
   err = espconn_regist_time(espconn_http_tcp, 2, 0);
   if (err == ESPCONN_ARG)
   {
     NODE_DEBUG("enduser_setup_http_start failed. Unable to set TCP timeout.\n");
     enduser_setup_http_free();
-    return;  
+    return;
   }
 
   err = enduser_setup_http_load_payload();
@@ -561,7 +560,7 @@ static void enduser_setup_http_start(void)
   {
     NODE_DEBUG("enduser_setup_http_start failed. Unable to allocate memory for HTTP payload.\n");
     enduser_setup_http_free();
-    return;  
+    return;
   }
 }
 
@@ -751,7 +750,7 @@ static void enduser_setup_dns_start(void)
   {
     NODE_DEBUG("enduser_setup_dns_start failed. Couldn't create connection, ERROR #%d.\n", err);
     enduser_setup_dns_free();
-    return;  
+    return;
   }
 }
 
@@ -786,7 +785,7 @@ static int enduser_setup_start(lua_State* L)
   enduser_setup_ap_start();
   enduser_setup_dns_start();
   enduser_setup_http_start();
-  
+
   return 0;
 }
 

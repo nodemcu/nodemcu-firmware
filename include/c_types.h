@@ -86,7 +86,6 @@ typedef enum {
 
 #define TEXT_SECTION_ATTR __attribute__((section(".text")))
 #define RAM_CONST_ATTR __attribute__((section(".rodata")))
-#define ROM_CONST_ATTR __attribute__((section("irom0.rodata")))
 
 #ifndef __cplusplus
 typedef unsigned char   bool;
