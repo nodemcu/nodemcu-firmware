@@ -39,6 +39,7 @@
 #define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension)
 #define UCG_DISPLAY_TABLE \
     UCG_DISPLAY_TABLE_ENTRY(ili9341_18x240x320_hw_spi, ucg_dev_ili9341_18x240x320, ucg_ext_ili9341_18) \
+    UCG_DISPLAY_TABLE_ENTRY(st7735_18x128x160_hw_spi, ucg_dev_st7735_18x128x160, ucg_ext_st7735_18) \
 
 #undef UCG_DISPLAY_TABLE_ENTRY
 //

@@ -9,7 +9,11 @@ function init_spi_display()
     local res = 0 -- GPIO16
 
     spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
-    disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
+
+    -- initialize the matching driver for your display
+    -- see app/include/ucg_config.h
+    --disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
+    disp = ucg.st7735_18x128x160_hw_spi(cs, dc, res)
 end
 
 
