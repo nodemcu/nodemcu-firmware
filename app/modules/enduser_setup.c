@@ -1,3 +1,37 @@
+/*
+ * Copyright 2015 Robert Foss. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * - Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the
+ *   distribution.
+ * - Neither the name of the copyright holders nor the names of
+ *   its contributors may be used to endorse or promote products derived
+ *   from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
+ * THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * @author Robert Foss <dev@robertfoss.se>
+ */
+
+
 #include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -11,12 +45,14 @@
 
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 
-#define PRINT_FUNC_ENABLE 0
-#if PRINT_FUNC_ENABLE
-#define PRINT_FUNC c_printf
-#else
-#define PRINT_FUNC
-#endif
+#define ENDUSER_SETUP_ERR_FATAL        (1 << 0)
+#define ENDUSER_SETUP_ERR_NONFATAL     (1 << 1)
+#define ENDUSER_SETUP_ERR_NO_RETURN    (1 << 2)
+
+#define ENDUSER_SETUP_ERR_OUT_OF_MEMORY          1
+#define ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND   2
+#define ENDUSER_SETUP_ERR_UNKOWN_ERROR           3
+#define ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN    4
 
 
 /**
@@ -40,37 +76,101 @@ static const char http_header_200[] = "HTTP/1.1 200 OK\r\nContent-Type: text/htm
 static const char http_header_404[] = "HTTP/1.1 404 Not Found\r\n";
 static const char http_html_backup[] = "<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content='width=380'><title>Connect gadget to you WiFi</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:0;right:0;bottom:0;left:0;width:320px;height:274px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{width:100px;background:#27AE60;font-weight:700;color:#fff;border:0 none;border-radius:3px;cursor:pointer;padding:10px 5px;margin:10px 5px}#msform .action-button:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}</style><body><div><form><fieldset><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi</h3><input autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'> <input type=password name=wifi_password placeholder='Password'1> <input type=submit name=save class='submit action-button' value='Save'></fieldset></form></div>";
 
-static struct espconn *espconn_dns_udp;
-static struct espconn *espconn_http_tcp;
-typedef struct http_payload_t {
-  char *data;
-  uint32_t len;
-} http_payload_t;
-static http_payload_t http_payload;
-static os_timer_t check_station_timer;
+
+typedef struct
+{
+  lua_State *lua_L;
+  struct espconn *espconn_dns_udp;
+  struct espconn *espconn_http_tcp;
+  char *http_payload_data;
+  uint32_t http_payload_len;
+  os_timer_t check_station_timer;
+  int lua_connected_cb_ref;
+  int lua_err_cb_ref;
+  int lua_dbg_cb_ref;
+} enduser_setup_state_t;
+
+static enduser_setup_state_t *state;
 
 static int enduser_setup_start(lua_State* L);
 static int enduser_setup_stop(lua_State* L);
 static void enduser_setup_station_start(void);
+static void enduser_setup_station_start(void);
 static void enduser_setup_ap_start(void);
 static void enduser_setup_ap_stop(void);
 static void enduser_setup_check_station(void);
+static void enduser_setup_debug(lua_State *L, const char *str);
+
+
+#define ENDUSER_SETUP_DEBUG_ENABLE 0
+#if ENDUSER_SETUP_DEBUG_ENABLE
+#define ENDUSER_SETUP_DEBUG(l, str) enduser_setup_debug(l, str)
+#else
+#define ENDUSER_SETUP_DEBUG(l, str)
+#endif
+
+
+static void enduser_setup_debug(lua_State *L, const char *str)
+{
+  if(state != NULL && L != NULL && state->lua_dbg_cb_ref != LUA_NOREF)
+  {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_dbg_cb_ref);
+    lua_pushstring(L, str);
+    lua_call(L, 1, 0);
+  }
+}
+
+
+#define ENDUSER_SETUP_ERROR(str, err, err_severity) if (err_severity & ENDUSER_SETUP_ERR_FATAL) enduser_setup_stop(state->lua_L);\
+                                                    enduser_setup_error(state->lua_L, str, err);\
+                                                    if (!(err_severity & ENDUSER_SETUP_ERR_NO_RETURN)) return err
+
+#define ENDUSER_SETUP_ERROR_VOID(str, err, err_severity) if (err_severity & ENDUSER_SETUP_ERR_FATAL) enduser_setup_stop(state->lua_L);\
+                                                         enduser_setup_error(state->lua_L, str, err);\
+                                                         if (!(err_severity & ENDUSER_SETUP_ERR_NO_RETURN)) return
+
+
+static void enduser_setup_error(lua_State *L, const char *str, int err)
+{
+  ENDUSER_SETUP_DEBUG(L, "enduser_setup_error");
+
+  if (state != NULL && L != NULL && state->lua_err_cb_ref != LUA_NOREF)
+  {
+    lua_rawgeti (L, LUA_REGISTRYINDEX, state->lua_err_cb_ref);
+    lua_pushnumber(L, err);
+    lua_pushstring(L, str);
+    lua_call (L, 2, 0);
+  }
+}
+
+
+static void enduser_setup_connected_callback(lua_State *L)
+{
+  ENDUSER_SETUP_DEBUG(L, "enduser_setup_connected_callback");
+
+  if(state != NULL && L != NULL && state->lua_connected_cb_ref != LUA_NOREF)
+  {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_connected_cb_ref);
+    lua_call(L, 0, 0);
+  }
+}
 
 
 static void enduser_setup_check_station_start(void)
 {
-  PRINT_FUNC("enduser_setup_check_station_start\n");
 
-  os_timer_setfn(&check_station_timer, enduser_setup_check_station, NULL);
-  os_timer_arm(&check_station_timer, 1*1000, TRUE);
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_check_station_start");
+
+  os_timer_setfn(&(state->check_station_timer), enduser_setup_check_station, NULL);
+  os_timer_arm(&(state->check_station_timer), 1*1000, TRUE);
 }
 
 
 static void enduser_setup_check_station_stop(void)
 {
-  PRINT_FUNC("enduser_setup_check_station_stop\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_check_station_stop");
 
-  os_timer_disarm(&check_station_timer);
+  os_timer_disarm(&(state->check_station_timer));
 }
 
 
@@ -101,8 +201,7 @@ static void enduser_setup_check_station(void)
   struct station_config cnf;
   wifi_station_get_config(&cnf);
 
-  uint8_t *ip_byte = (uint8_t *) &(ip.ip);
-  NODE_DEBUG("Connected to \"%s\" as %u.%u.%u.%u\n", cnf.ssid, IP2STR(&ip));
+  enduser_setup_connected_callback(state->lua_L);
   enduser_setup_stop(NULL);
 }
 
@@ -138,24 +237,6 @@ static int enduser_setup_srch_str(const char *str, const char *srch_str)
 }
 
 
-static void enduser_setup_http_free(void)
-{
-  http_payload.len = 0;
-  c_free(http_payload.data);
-  http_payload.data = NULL;
-  
-  if (espconn_http_tcp != NULL)
-  {
-    if (espconn_http_tcp->proto.tcp != NULL)
-    {
-      c_free(espconn_http_tcp->proto.tcp);
-    }
-    c_free(espconn_http_tcp);
-    espconn_http_tcp = NULL;
-  }
-}
-
-
 /**
  * Load HTTP Payload
  *
@@ -165,46 +246,46 @@ static void enduser_setup_http_free(void)
  */
 static int enduser_setup_http_load_payload(void)
 {
-  PRINT_FUNC("enduser_setup_http_load_payload\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_load_payload");
 
   int f = fs_open(http_html_filename, fs_mode2flag("r"));
   int err = fs_seek(f, 0, FS_SEEK_END);
   int file_len = (int) fs_tell(f);
   int err2 = fs_seek(f, 0, FS_SEEK_SET);
-  
+
   if (f == 0 || err == -1 || err2 == -1)
   {
-    NODE_DEBUG("enduser_setup_http_load_payload unable to load file \"%s\", loading backup HTML.\n", http_html_filename);
+    ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_load_payload unable to load file index.html, loading backup HTML.");
 
     int payload_len = sizeof(http_header_200) + sizeof(http_html_backup);
-    http_payload.len = payload_len;
-    http_payload.data = (char *) c_malloc(payload_len);
-    if (http_payload.data == NULL)
+    state->http_payload_len = payload_len;
+    state->http_payload_data = (char *) c_malloc(payload_len);
+    if (state->http_payload_data == NULL)
     {
       return 2;
     }
-    
+
     int offset = 0;
-    c_memcpy(&(http_payload.data[offset]), &(http_header_200), sizeof(http_header_200));
+    c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), sizeof(http_header_200));
     offset += sizeof(http_header_200);
-    c_memcpy(&(http_payload.data[offset]), &(http_html_backup), sizeof(http_html_backup));
+    c_memcpy(&(state->http_payload_data[offset]), &(http_html_backup), sizeof(http_html_backup));
 
     return 1;
   }
-  
+
   int payload_len = sizeof(http_header_200) + file_len;
-  http_payload.len = payload_len;
-  http_payload.data = (char *) c_malloc(payload_len);
-  if (http_payload.data == NULL)
+  state->http_payload_len = payload_len;
+  state->http_payload_data = (char *) c_malloc(payload_len);
+  if (state->http_payload_data == NULL)
   {
     return 2;
   }
-  
+
   int offset = 0;
-  c_memcpy(&(http_payload.data[offset]), &(http_header_200), sizeof(http_header_200));
+  c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), sizeof(http_header_200));
   offset += sizeof(http_header_200);
-  fs_read(f, &(http_payload.data[offset]), file_len);
-  
+  fs_read(f, &(state->http_payload_data[offset]), file_len);
+
   return 0;
 }
 
@@ -271,7 +352,7 @@ static void enduser_setup_http_urldecode(char *dst, const char *src, int src_len
  */
 static int enduser_setup_http_handle_credentials(char *data, unsigned short data_len)
 {
-  PRINT_FUNC("enduser_setup_http_handle_credentials\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_handle_credentials");
 
   char *name_str = (char *) ((uint32_t)strstr(&(data[5]), "?wifi_ssid=") + (uint32_t)strstr(&(data[5]), "&wifi_ssid="));
   char *pwd_str = (char *) ((uint32_t)strstr(&(data[5]), "?wifi_password=") + (uint32_t)strstr(&(data[5]), "&wifi_password="));
@@ -291,7 +372,7 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   {
     return 1;
   }
-  
+
   struct station_config cnf;
   c_memset(&cnf, 0, sizeof(struct station_config));
   enduser_setup_http_urldecode(cnf.ssid, name_str_start, name_str_len);
@@ -300,36 +381,33 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   int err = wifi_set_opmode(STATION_MODE | wifi_get_opmode());
   if (err == FALSE)
   {
-    NODE_DEBUG("enduser_setup_station_start failed. wifi_set_opmode failed.\n");
     wifi_set_opmode(~STATION_MODE & wifi_get_opmode());
-    return 2;
+    ENDUSER_SETUP_ERROR("enduser_setup_station_start failed. wifi_set_opmode failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
   err = wifi_station_set_config(&cnf);
   if (err == FALSE)
   {
-    NODE_DEBUG("enduser_setup_station_start failed. wifi_station_set_config failed.\n");
     wifi_set_opmode(~STATION_MODE & wifi_get_opmode());
-    return 2;
+    ENDUSER_SETUP_ERROR("enduser_setup_station_start failed. wifi_station_set_config failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
   err = wifi_station_disconnect();
   if (err == FALSE)
   {
-    NODE_DEBUG("enduser_setup_station_start failed. wifi_station_disconnect failed.\n");
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_station_start failed. wifi_station_disconnect failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
   err = wifi_station_connect();
   if (err == FALSE)
   {
-    NODE_DEBUG("enduser_setup_station_start failed. wifi_station_connect failed.\n");
+    ENDUSER_SETUP_ERROR("enduser_setup_station_start failed. wifi_station_connect failed.\n", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  NODE_DEBUG("\n");  
-  NODE_DEBUG("WiFi Credentials Stored\n");
-  NODE_DEBUG("-----------------------\n");
-  NODE_DEBUG("name: \"%s\"\n", cnf.ssid);
-  NODE_DEBUG("pass: \"%s\"\n", cnf.password);
-  NODE_DEBUG("bssid_set: %u\n", cnf.bssid_set);
-  NODE_DEBUG("bssid: \"%s\"\n", cnf.bssid);
-  NODE_DEBUG("-----------------------\n\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "WiFi Credentials Stored");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "-----------------------");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "name: ");
+  ENDUSER_SETUP_DEBUG(state->lua_L, cnf.ssid);
+  ENDUSER_SETUP_DEBUG(state->lua_L, "pass: ");
+  ENDUSER_SETUP_DEBUG(state->lua_L, cnf.password);
+  ENDUSER_SETUP_DEBUG(state->lua_L, "-----------------------");
 
   return 0;
 }
@@ -337,30 +415,27 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 
 /**
  * Serve HTML
- * 
+ *
  * @return - return 0 iff html was served successfully
  */
 static int enduser_setup_http_serve_header(struct espconn *http_client, char *header, uint32_t header_len)
 {
-  PRINT_FUNC("enduser_setup_http_serve_404\n");
-  
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_serve_404");
+
   int8_t err = espconn_sent(http_client, header, header_len);
   if (err == ESPCONN_MEM)
   {
-    NODE_DEBUG("enduser_setup_http_serve_header failed. espconn_send out of memory\n");
-    return 1;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_serve_header failed. espconn_send out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
   }
   else if (err == ESPCONN_ARG)
   {
-    NODE_DEBUG("enduser_setup_http_serve_header failed. espconn_send can't find network transmission\n");
-    return 1;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_serve_header failed. espconn_send can't find network transmission", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_NONFATAL);
   }
   else if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_http_serve_header failed. espconn_send failed\n");
-    return 1;  
+    ENDUSER_SETUP_ERROR("enduser_setup_http_serve_header failed. espconn_send failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
-  
+
   return 0;
 }
 
@@ -372,28 +447,25 @@ static int enduser_setup_http_serve_header(struct espconn *http_client, char *he
  */
 static int enduser_setup_http_serve_html(struct espconn *http_client)
 {
-  PRINT_FUNC("enduser_setup_http_serve_html\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_serve_html");
 
-  if (http_payload.data == NULL)
+  if (state->http_payload_data == NULL)
   {
     enduser_setup_http_load_payload();
   }
 
-  int8_t err = espconn_sent(http_client, http_payload.data, http_payload.len);
+  int8_t err = espconn_sent(http_client, state->http_payload_data, state->http_payload_len);
   if (err == ESPCONN_MEM)
   {
-    NODE_DEBUG("enduser_setup_http_serve_html failed. espconn_send out of memory\n");
-    return 1;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_serve_html failed. espconn_send out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
   }
   else if (err == ESPCONN_ARG)
   {
-    NODE_DEBUG("enduser_setup_http_serve_html failed. espconn_send can't find network transmission\n");
-    return 1;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_serve_html failed. espconn_send can't find network transmission", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_NONFATAL);
   }
   else if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_http_serve_html failed. espconn_send failed\n");
-    return 1;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_serve_html failed. espconn_send failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
   return 0;
@@ -407,14 +479,14 @@ static int enduser_setup_http_serve_html(struct espconn *http_client)
  */
 static void enduser_setup_http_disconnect(struct espconn *espconn)
 {
-  PRINT_FUNC("enduser_setup_http_disconnect\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_disconnect");
 //TODO: Construct and maintain os task queue(?) to be able to issue system_os_task with espconn_disconnect.
 }
 
 
 static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data_len)
 {
-  PRINT_FUNC("enduser_setup_http_recvcb\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_recvcb");
   struct espconn *http_client = (struct espconn *) arg;
 
   if (c_strncmp(data, "GET ", 4) != 0)
@@ -433,20 +505,18 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
   }
   else if (retval == 2)
   {
-    NODE_DEBUG("enduser_setup_http_recvcb failed. Failed to handle wifi credentials.\n");
-    return;
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
   if (retval != 1)
   {
-    NODE_DEBUG("enduser_setup_http_recvcb failed. Unknown error code #%u.\n", retval);
-    return;
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Unknown error code.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
   /* Reject requests that probably aren't relevant to free up resources. */
   if (c_strncmp(data, "GET / ", 6) != 0)
   {
-    PRINT_DEBUG("enduser_setup_http_recvcb received too specific request.\n");
+    ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_recvcb received too specific request.");
     enduser_setup_http_serve_header(http_client, (char *) http_header_404, sizeof(http_header_404));
     enduser_setup_http_disconnect(http_client);
     return;
@@ -455,16 +525,15 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
   retval = enduser_setup_http_serve_html(http_client);
   if (retval != 0)
   {
-    NODE_DEBUG("enduser_setup_http_recvcb failed. Unable to send HTML.\n");
     enduser_setup_http_disconnect(http_client);
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 }
 
 
 static void enduser_setup_http_connectcb(void *arg)
 {
-  PRINT_FUNC("enduser_setup_http_connectcb\n");
-
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_connectcb");
   struct espconn *callback_espconn = (struct espconn *) arg;
 
   int8_t err = 0;
@@ -472,125 +541,90 @@ static void enduser_setup_http_connectcb(void *arg)
 
   if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_http_connectcb failed. Callback registration failed.\n");
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_connectcb failed. Callback registration failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 }
 
 
-static void enduser_setup_http_start(void)
+static int enduser_setup_http_start(void)
 {
-  PRINT_FUNC("enduser_setup_http_start\n");
-
-  if (espconn_http_tcp != NULL)
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_start");
+  state->espconn_http_tcp = (struct espconn *) c_malloc(sizeof(struct espconn));
+  if (state->espconn_http_tcp == NULL)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Appears to already be started (espconn_http_tcp != NULL).\n");
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Memory allocation failed (espconn_http_tcp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
-  espconn_http_tcp = (struct espconn *) c_malloc(sizeof(struct espconn));
-  if (espconn_http_tcp == NULL)
-  {
-    NODE_DEBUG("enduser_setup_http_start failed. Memory allocation failed (espconn_http_tcp == NULL).\n");
-    return;
-  }
-
   esp_tcp *esp_tcp_data = (esp_tcp *) c_malloc(sizeof(esp_tcp));
   if (esp_tcp_data == NULL)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Memory allocation failed (esp_udp == NULL).\n");
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Memory allocation failed (esp_udp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  c_memset(espconn_http_tcp, 0, sizeof(struct espconn));
+  c_memset(state->espconn_http_tcp, 0, sizeof(struct espconn));
   c_memset(esp_tcp_data, 0, sizeof(esp_tcp));
-  espconn_http_tcp->proto.tcp = esp_tcp_data;
-  espconn_http_tcp->type = ESPCONN_TCP;
-  espconn_http_tcp->state = ESPCONN_NONE;
+  state->espconn_http_tcp->proto.tcp = esp_tcp_data;
+  state->espconn_http_tcp->type = ESPCONN_TCP;
+  state->espconn_http_tcp->state = ESPCONN_NONE;
   esp_tcp_data->local_port = 80;
 
   int8_t err;
-  err = espconn_regist_connectcb(espconn_http_tcp, enduser_setup_http_connectcb);
+  err = espconn_regist_connectcb(state->espconn_http_tcp, enduser_setup_http_connectcb);
   if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Couldn't add receive callback, ERRROR #%u.\n", err);
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Couldn't add receive callback.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  err = espconn_accept(espconn_http_tcp);
+  err = espconn_accept(state->espconn_http_tcp);
   if (err == ESPCONN_ISCONN)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Couldn't create connection, already listening for that connection.\n");
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Couldn't create connection, already listening for that connection.", ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN, ENDUSER_SETUP_ERR_FATAL);
   }
   else if (err == ESPCONN_MEM)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Couldn't create connection, out of memory.\n");
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Couldn't create connection, out of memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
   else if (err == ESPCONN_ARG)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Can't find connection from espconn argument\n");
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Can't find connection from espconn argument", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_FATAL);
   }
   else if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. ERRROR #%u\n", err);
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Unknown error", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  err = espconn_regist_time(espconn_http_tcp, 2, 0);
+  err = espconn_regist_time(state->espconn_http_tcp, 2, 0);
   if (err == ESPCONN_ARG)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Unable to set TCP timeout.\n");
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Unable to set TCP timeout.", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_NONFATAL | ENDUSER_SETUP_ERR_NO_RETURN);
   }
 
   err = enduser_setup_http_load_payload();
   if (err == 1)
   {
-    PRINT_DEBUG("enduser_setup_http_start info. Loaded backup HTML.\n");
+    ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_start info. Loaded backup HTML.");
   }
   else if (err == 2)
   {
-    NODE_DEBUG("enduser_setup_http_start failed. Unable to allocate memory for HTTP payload.\n");
-    enduser_setup_http_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_http_start failed. Unable to allocate memory for HTTP payload.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
+
+  return 0;
 }
 
 
 static void enduser_setup_http_stop(void)
 {
-  PRINT_FUNC("enduser_setup_http_stop\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_stop");
 
-  if (espconn_http_tcp == NULL)
+  if (state != NULL && state->espconn_http_tcp != NULL)
   {
-    NODE_DEBUG("enduser_setup_http_stop failed. enduser_setup not enabled (espconn_dns_udp == NULL).\n");
-    return;
+    espconn_delete(state->espconn_http_tcp);
   }
-
-  int8_t err = espconn_delete(espconn_http_tcp);
-  if (err == ESPCONN_ARG)
-  {
-    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ESPCONN_ARG. Can't find network transmission described.\n");
-  }
-  else if (err != 0)
-  {
-    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ERROR #%u.\n", err);
-  }
-
-  enduser_setup_http_free();
 }
 
 static void enduser_setup_ap_stop(void)
 {
-  PRINT_FUNC("enduser_setup_station_stop\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_station_stop");
 
   wifi_set_opmode(~SOFTAP_MODE & wifi_get_opmode());
 }
@@ -598,7 +632,7 @@ static void enduser_setup_ap_stop(void)
 
 static void enduser_setup_ap_start(void)
 {
-  PRINT_FUNC("enduser_setup_ap_start\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_ap_start");
 
   struct softap_config cnf;
   char ssid[] = "SetupGadget";
@@ -616,33 +650,32 @@ static void enduser_setup_ap_start(void)
 
 static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned short recv_len)
 {
-  PRINT_FUNC("enduser_setup_dns_recv_callback received query for %s\n", &(recv_data[12]));
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_dns_recv_callback.");
 
   struct espconn *callback_espconn = arg;
   struct ip_info ip_info;
 
-  uint8_t if_mode = wifi_get_opmode();
-  if ((if_mode & SOFTAP_MODE) == 0)
-  {
-    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Interface mode %d not supported.\n", if_mode);
-    return;
-  }
-  uint8_t if_index = (if_mode == STATION_MODE? STATION_IF : SOFTAP_IF);
-  if (wifi_get_ip_info(if_index , &ip_info) == false)
-  {
-    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Unable to get interface IP.\n");
-    return;
-  }
-
   uint32_t qname_len = c_strlen(&(recv_data[12])) + 1; // \0=1byte
   uint32_t dns_reply_static_len = (uint32_t) sizeof(dns_header) + (uint32_t) sizeof(dns_body) + 2 + 4; // dns_id=2bytes, ip=4bytes
   uint32_t dns_reply_len = dns_reply_static_len + qname_len;
-  
+
+  uint8_t if_mode = wifi_get_opmode();
+  if ((if_mode & SOFTAP_MODE) == 0)
+  {
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_dns_recv_callback failed. Interface mode not supported.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
+  }
+
+  uint8_t if_index = (if_mode == STATION_MODE? STATION_IF : SOFTAP_IF);
+  if (wifi_get_ip_info(if_index , &ip_info) == false)
+  {
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_dns_recv_callback failed. Unable to get interface IP.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
+  }
+
+
   char *dns_reply = (char *) c_malloc(dns_reply_len);
   if (dns_reply == NULL)
   {
-    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Failed to allocate memory.\n");
-    return;
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_dns_recv_callback failed. Failed to allocate memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
   uint32_t insert_byte = 0;
@@ -655,136 +688,201 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   c_memcpy(&(dns_reply[insert_byte]), dns_body, sizeof(dns_body));
   insert_byte += (uint32_t) sizeof(dns_body);
   c_memcpy(&(dns_reply[insert_byte]), &(ip_info.ip), 4);
-  
+
   int8_t err;
   err = espconn_sent(callback_espconn, dns_reply, dns_reply_len);
   c_free(dns_reply);
   if (err == ESPCONN_MEM)
   {
-    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Failed to allocate memory for send.\n");
-    return;
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_dns_recv_callback failed. Failed to allocate memory for send.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
   else if (err == ESPCONN_ARG)
   {
-    NODE_DEBUG("enduser_setup_dns_recv_callback failed. Can't execute transmission.\n");
-    return;  
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_dns_recv_callback failed. Can't execute transmission.", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_FATAL);
   }
   else if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_dns_recv_callback failed. espconn_send failed\n");
-    return;
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_dns_recv_callback failed. espconn_send failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
 }
 
 
-static void enduser_setup_dns_free(void)
+static void enduser_setup_free(void)
 {
-  PRINT_FUNC("enduser_setup_dns_free\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_free");
 
-  if (espconn_dns_udp != NULL)
+  if (state == NULL)
   {
-    if (espconn_dns_udp->proto.udp != NULL)
+    return;
+  }
+
+  if (state->espconn_dns_udp != NULL)
+  {
+    if (state->espconn_dns_udp->proto.udp != NULL)
     {
-      c_free(espconn_dns_udp->proto.udp);
+      c_free(state->espconn_dns_udp->proto.udp);
     }
-    c_free(espconn_dns_udp);
-    espconn_dns_udp = NULL;
+    c_free(state->espconn_dns_udp);
   }
+
+  if (state->espconn_http_tcp != NULL)
+  {
+    if (state->espconn_http_tcp->proto.tcp != NULL)
+    {
+      c_free(state->espconn_http_tcp->proto.tcp);
+    }
+    c_free(state->espconn_http_tcp);
+  }
+  c_free(state->http_payload_data);
+  c_free(state);
+  state = NULL;
 }
 
 
-static void enduser_setup_dns_start(void)
+static int enduser_setup_dns_start(void)
 {
-  PRINT_FUNC("enduser_setup_dns_started\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_dns_start");
 
-  if (espconn_dns_udp != NULL)
+  if (state->espconn_dns_udp != NULL)
   {
-    NODE_DEBUG("enduser_setup_dns_start failed. Appears to already be started (espconn_dns_udp != NULL).\n");
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_dns_start failed. Appears to already be started (espconn_dns_udp != NULL).", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
-  espconn_dns_udp = (struct espconn *) c_malloc(sizeof(struct espconn));
-  if (espconn_dns_udp == NULL)
+  state->espconn_dns_udp = (struct espconn *) c_malloc(sizeof(struct espconn));
+  if (state->espconn_dns_udp == NULL)
   {
-    NODE_DEBUG("enduser_setup_dns_start failed. Memory allocation failed (espconn_dns_udp == NULL).\n");
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_dns_start failed. Memory allocation failed (espconn_dns_udp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
 
   esp_udp *esp_udp_data = (esp_udp *) c_malloc(sizeof(esp_udp));
   if (esp_udp_data == NULL)
   {
-    NODE_DEBUG("enduser_setup_dns_start failed. Memory allocation failed (esp_udp == NULL).\n");
-    enduser_setup_dns_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_dns_start failed. Memory allocation failed (esp_udp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  c_memset(espconn_dns_udp, 0, sizeof(struct espconn));
+  c_memset(state->espconn_dns_udp, 0, sizeof(struct espconn));
   c_memset(esp_udp_data, 0, sizeof(esp_udp));
-  espconn_dns_udp->proto.udp = esp_udp_data;
-  espconn_dns_udp->type = ESPCONN_UDP;
-  espconn_dns_udp->state = ESPCONN_NONE;
+  state->espconn_dns_udp->proto.udp = esp_udp_data;
+  state->espconn_dns_udp->type = ESPCONN_UDP;
+  state->espconn_dns_udp->state = ESPCONN_NONE;
   esp_udp_data->local_port = 53;
 
   int8_t err;
-  err = espconn_regist_recvcb(espconn_dns_udp, enduser_setup_dns_recv_callback);
+  err = espconn_regist_recvcb(state->espconn_dns_udp, enduser_setup_dns_recv_callback);
   if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't add receive callback, ERRROR #%d.\n", err);
-    enduser_setup_dns_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_dns_start failed. Couldn't add receive callback, unknown error.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  err = espconn_create(espconn_dns_udp);
+  err = espconn_create(state->espconn_dns_udp);
   if (err == ESPCONN_ISCONN)
   {
-    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't create connection, already listening for that connection.\n");
-    enduser_setup_dns_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_dns_start failed. Couldn't create connection, already listening for that connection.", ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN, ENDUSER_SETUP_ERR_FATAL);
   }
   else if (err == ESPCONN_MEM)
   {
-    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't create connection, out of memory.\n");
-    enduser_setup_dns_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_dns_start failed. Couldn't create connection, out of memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
   else if (err != 0)
   {
-    NODE_DEBUG("enduser_setup_dns_start failed. Couldn't create connection, ERROR #%d.\n", err);
-    enduser_setup_dns_free();
-    return;
+    ENDUSER_SETUP_ERROR("enduser_setup_dns_start failed. Couldn't create connection, unknown error.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
   }
+
+  return 0;
 }
 
 
 static void enduser_setup_dns_stop(void)
 {
-  PRINT_FUNC("enduser_setup_dns_stop\n");
+  ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_dns_stop");
 
-  if (espconn_dns_udp == NULL)
+  if (state->espconn_dns_udp != NULL)
   {
-    NODE_DEBUG("enduser_setup_dns_stop failed. Hijacker not enabled (espconn_dns_udp == NULL).\n");
-    return;
+    espconn_delete(state->espconn_dns_udp);
   }
-
-  int8_t err = espconn_delete(espconn_dns_udp);
-  if (err == ESPCONN_ARG)
-  {
-    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ESPCONN_ARG. Can't find network transmission described.\n");
-  }
-  else if (err != 0)
-  {
-    NODE_DEBUG("enduser_setup_http_stop failed. espconn_delete returned ERROR #%u.\n", err);
-  }
-
-  enduser_setup_dns_free();
 }
 
 
-static int enduser_setup_start(lua_State* L)
+static int enduser_setup_init(lua_State *L)
 {
+  ENDUSER_SETUP_DEBUG(L, "enduser_setup_init");
+
+  if (state != NULL)
+  {
+    enduser_setup_error(L, "enduser_setup_init failed. Appears to already be started.", ENDUSER_SETUP_ERR_UNKOWN_ERROR);
+    return ENDUSER_SETUP_ERR_UNKOWN_ERROR;
+  }
+
+  state = (enduser_setup_state_t *) os_malloc(sizeof(enduser_setup_state_t));
+  if (state == NULL)
+  {
+    enduser_setup_error(L, "enduser_setup_init failed. Unable to allocate memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY);
+    return ENDUSER_SETUP_ERR_OUT_OF_MEMORY;
+  }
+  c_memset(state, 0, sizeof(enduser_setup_state_t));
+
+  state->lua_L = L;
+  state->lua_connected_cb_ref = LUA_NOREF;
+  state->lua_err_cb_ref = LUA_NOREF;
+  state->lua_dbg_cb_ref = LUA_NOREF;
+
+  if (!lua_isnoneornil(L, 1))
+  {
+    lua_pushvalue(L, 1);
+    state->lua_connected_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+  else
+  {
+    state->lua_connected_cb_ref = LUA_NOREF;
+  }
+
+  if (!lua_isnoneornil(L, 2))
+  {
+    lua_pushvalue (L, 2);
+    state->lua_err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+  else
+  {
+    state->lua_err_cb_ref = LUA_NOREF;
+  }
+
+  if (!lua_isnoneornil(L, 3))
+  {
+    lua_pushvalue (L, 3);
+    state->lua_dbg_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+  else
+  {
+    state->lua_dbg_cb_ref = LUA_NOREF;
+  }
+
+  return 0;
+}
+
+
+static int enduser_setup_start(lua_State *L)
+{
+  ENDUSER_SETUP_DEBUG(L, "enduser_setup_start");
+
+  if(enduser_setup_init(L))
+  {
+    enduser_setup_stop(L);
+    return 0;
+  }
+
   enduser_setup_check_station_start();
   enduser_setup_ap_start();
-  enduser_setup_dns_start();
-  enduser_setup_http_start();
+
+  if(enduser_setup_dns_start())
+  {
+    enduser_setup_stop(L);
+    return 0;
+  }
+
+  if(enduser_setup_http_start())
+  {
+    enduser_setup_stop(L);
+    return 0;
+  }
 
   return 0;
 }
@@ -796,6 +894,7 @@ static int enduser_setup_stop(lua_State* L)
   enduser_setup_ap_stop();
   enduser_setup_dns_stop();
   enduser_setup_http_stop();
+  enduser_setup_free();
 
   return 0;
 }
