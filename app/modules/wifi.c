@@ -937,6 +937,23 @@ static int wifi_station_status( lua_State* L )
   return 1; 
 }
 
+// Lua: wifi.sta.getrssi()
+static int wifi_station_getrssi( lua_State* L )
+{
+  sint8 RSSI;
+  RSSI = wifi_station_get_rssi();
+  if (RSSI==31)
+  {
+	  lua_pushnil( L );
+	  return 1;
+  }
+  else
+  {
+	lua_pushinteger( L, RSSI );
+	return 1;
+  }
+}
+
 /**
   * wifi.sta.eventMonStop()
   * Description:
@@ -1362,6 +1379,7 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_station_setmac ) },
   { LSTRKEY( "getap" ), LFUNCVAL ( wifi_station_listap ) },
   { LSTRKEY( "status" ), LFUNCVAL ( wifi_station_status ) },
+  { LSTRKEY( "getrssi" ), LFUNCVAL ( wifi_station_getrssi ) },
   { LSTRKEY( "eventMonReg" ), LFUNCVAL ( wifi_station_event_mon_reg ) },
   { LSTRKEY( "eventMonStart" ), LFUNCVAL ( wifi_station_event_mon_start ) },
   { LSTRKEY( "eventMonStop" ), LFUNCVAL ( wifi_station_event_mon_stop ) },
