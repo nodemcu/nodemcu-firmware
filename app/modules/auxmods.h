@@ -91,6 +91,9 @@ LUALIB_API int ( luaopen_rc )( lua_State *L );
 #define AUXLIB_DHT      "dht"
 LUALIB_API int ( luaopen_dht )( lua_State *L );
 
+#define AUXLIB_TWEETNACL      "tweetnacl"
+LUALIB_API int ( luaopen_tweetnacl )( lua_State *L );
+
 // Helper macros
 #define MOD_CHECK_ID( mod, id )\
   if( !platform_ ## mod ## _exists( id ) )\

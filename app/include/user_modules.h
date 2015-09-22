@@ -37,7 +37,7 @@
 #define LUA_USE_MODULES_CRYPTO
 #define LUA_USE_MODULES_RC
 #define LUA_USE_MODULES_DHT
-
+#define LUA_USE_MODULES_TWEETNACL
 #endif /* LUA_USE_MODULES */
 #endif
 
