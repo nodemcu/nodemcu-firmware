@@ -37,6 +37,8 @@
 #define LUA_USE_MODULES_CRYPTO
 #define LUA_USE_MODULES_RC
 #define LUA_USE_MODULES_DHT
+// Disabled by default. Uncomment to enable.
+//#define LUA_USE_MODULES_TWEETNACL
 
 #endif /* LUA_USE_MODULES */
 #endif
