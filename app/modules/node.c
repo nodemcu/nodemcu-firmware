@@ -24,6 +24,8 @@
 #include "flash_api.h"
 #include "flash_fs.h"
 #include "user_version.h"
+#include "user_config.h"
+#include "user_modules.h"
 
 #define CPU80MHZ 80
 #define CPU160MHZ 160
@@ -91,6 +93,116 @@ static int node_info( lua_State* L )
   lua_pushinteger(L, flash_rom_get_mode());
   lua_pushinteger(L, flash_rom_get_speed());
   return 8;
+}
+
+// Lua: verbose_info()
+static int node_verbose_info( lua_State* L) {
+  const char *info = NODE_VERSION 
+                    " " BUILD_DATE "\n"
+#ifdef LUA_NUMBER_INTEGRAL
+                   "number integral enabled "
+#else
+                   "number integral disabled " 
+#endif
+
+#ifdef LUA_OPTRAM
+                   "optimize memory enabled "
+#else 
+                   "otiimize memory disabled " 
+#endif
+
+                    "\nbuiltins: "  
+#ifdef LUA_USE_BUILTIN_STRING
+                    "string " 
+#endif
+#ifdef LUA_USE_BUILTIN_TABLE
+                    "table "
+#endif
+#ifdef LUA_USE_BUILTIN_COROUTINE
+                    "coroutine "
+#endif
+#ifdef LUA_USE_BUILTIN_MATH
+                    "math "
+#endif
+#ifdef LUA_USE_BUILTIN_IO
+                    "io "
+#endif
+#ifdef LUA_USE_BUILTIN_OS
+                    "os "
+#endif
+#ifdef LUA_USE_BUILTIN_DEBUG
+                    "debug "
+#endif
+
+#ifdef LUA_USE_MODULES
+                    "\nmodules: "
+#ifdef LUA_USE_MODULES_NODE
+                    "node "
+#endif
+#ifdef LUA_USE_MODULES_FILE
+                    "file "
+#endif
+#ifdef LUA_USE_MODULES_GPIO
+                    "gpio "
+#endif
+#ifdef LUA_USE_MODULES_WIFI
+                    "wifi "
+#endif
+#ifdef LUA_USE_MODULES_NET
+                    "net "
+#endif
+#ifdef LUA_USE_MODULES_PWM
+                    "pwm "
+#endif
+#ifdef LUA_USE_MODULES_I2C
+                    "i2c "
+#endif
+#ifdef LUA_USE_MODULES_SPI
+                    "spi "
+#endif
+#ifdef LUA_USE_MODULES_TMR
+                    "tmr "
+#endif
+#ifdef LUA_USE_MODULES_ADC
+                    "adc "
+#endif
+#ifdef LUA_USE_MODULES_UART
+                    "uart "
+#endif
+#ifdef LUA_USE_MODULES_OW
+                    "ow "
+#endif
+#ifdef LUA_USE_MODULES_BIT
+                    "bit "
+#endif
+#ifdef LUA_USE_MODULES_MQTT
+                    "mqtt "
+#endif
+#ifdef LUA_USE_MODULES_COAP
+                    "coap "
+#endif
+#ifdef LUA_USE_MODULES_U8G
+                    "u8g "
+#endif
+#ifdef LUA_USE_MODULES_WS2801
+                    "ws2801 "
+#endif
+#ifdef LUA_USE_MODULES_WS2812
+                    "ws2812 "
+#endif
+#ifdef LUA_USE_MODULES_CJSON
+                    "cjson "
+#endif
+#ifdef LUA_USE_MODULES_RC
+                    "rc "
+#endif
+#ifdef LUA_USE_MODULES_DHT
+                    "dht "
+#endif
+#endif
+                    "";
+  lua_pushstring(L, info);
+  return 1;
 }
 
 // Lua: chipid()
@@ -462,6 +574,7 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
+  { LSTRKEY( "verbose_info" ), LFUNCVAL( node_verbose_info) },
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0
