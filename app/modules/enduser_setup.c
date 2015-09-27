@@ -43,6 +43,8 @@
 #include "espconn.h"
 #include "flash_fs.h"
 
+#define ENDUSER_SETUP_AP_SSID "SetupGadget"
+
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 
 #define ENDUSER_SETUP_ERR_FATAL        (1 << 0)
@@ -635,9 +637,23 @@ static void enduser_setup_ap_start(void)
   ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_ap_start");
 
   struct softap_config cnf;
-  char ssid[] = "SetupGadget";
-  c_memcpy(&(cnf.ssid), ssid, c_strlen(ssid));
-  cnf.ssid_len = c_strlen(ssid);
+  c_memset(&(cnf), 0, sizeof(struct softap_config));
+
+  char ssid[] = ENDUSER_SETUP_AP_SSID;
+  int ssid_name_len = c_strlen(ENDUSER_SETUP_AP_SSID);
+  c_memcpy(&(cnf.ssid), ssid, ssid_name_len);
+
+  uint8_t mac[6];
+  wifi_get_macaddr(SOFTAP_IF, mac);
+  cnf.ssid[ssid_name_len] = '_';
+  cnf.ssid[ssid_name_len + 1] = (char) (65 +  (0x0F & mac[3]));
+  cnf.ssid[ssid_name_len + 2] = (char) (65 + ((0xF0 & mac[3]) >> 4));
+  cnf.ssid[ssid_name_len + 3] = (char) (65 +  (0x0F & mac[4]));
+  cnf.ssid[ssid_name_len + 4] = (char) (65 + ((0xF0 & mac[4]) >> 4));
+  cnf.ssid[ssid_name_len + 5] = (char) (65 +  (0x0F & mac[5]));
+  cnf.ssid[ssid_name_len + 6] = (char) (65 + ((0xF0 & mac[5]) >> 4));
+
+  cnf.ssid_len = c_strlen(ssid) + 7;
   cnf.channel = 1;
   cnf.authmode = AUTH_OPEN;
   cnf.ssid_hidden = 0;
