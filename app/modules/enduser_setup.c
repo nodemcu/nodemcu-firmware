@@ -43,7 +43,6 @@
 #include "espconn.h"
 #include "flash_fs.h"
 
-#define ENDUSER_SETUP_AP_SSID "SetupGadget"
 
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 
