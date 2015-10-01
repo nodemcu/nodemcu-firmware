@@ -410,10 +410,10 @@ static int node_setcpufreq(lua_State* L)
   uint32_t new_freq = luaL_checkinteger(L, 1);
   if (new_freq == CPU160MHZ){
     REG_SET_BIT(0x3ff00014, BIT(0));
-    os_update_cpu_frequency(CPU160MHZ);
+    ets_update_cpu_frequency(CPU160MHZ);
   } else {
     REG_CLR_BIT(0x3ff00014,  BIT(0));
-    os_update_cpu_frequency(CPU80MHZ);
+    ets_update_cpu_frequency(CPU80MHZ);
   }
   new_freq = ets_get_cpu_frequency();
   lua_pushinteger(L, new_freq);

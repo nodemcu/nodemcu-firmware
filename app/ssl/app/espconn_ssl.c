@@ -440,7 +440,7 @@ espconn_ssl_crecv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
                     pssl->quiet = true;
                     os_printf("client handshake ok!\n");
                     REG_CLR_BIT(0x3ff00014, BIT(0));
-                    os_update_cpu_frequency(80);
+                    ets_update_cpu_frequency(80);
                     precv->pespconn->state = ESPCONN_CONNECT;
                     precv->pcommon.pcb = pcb;
                     pbuf_free(p);
@@ -613,7 +613,7 @@ espconn_ssl_connect(void *arg, struct tcp_pcb *tpcb, err_t err)
     }
 
     REG_SET_BIT(0x3ff00014, BIT(0));
-    os_update_cpu_frequency(160);
+    ets_update_cpu_frequency(160);
     os_printf("client handshake start.\n");
     pssl->quiet = false;
     pssl->ssl_ctx = ssl_ctx_new(options, SSL_DEFAULT_CLNT_SESS);
@@ -794,7 +794,7 @@ espconn_ssl_ssent(void *arg, struct tcp_pcb *pcb, u16_t len)
            pssl->quiet = true;
            os_printf("server handshake ok!\n");
            REG_CLR_BIT(0x3ff00014, BIT(0));
-           os_update_cpu_frequency(80);
+           ets_update_cpu_frequency(80);
            psent->pespconn->state = ESPCONN_CONNECT;
 
            if (psent->pespconn->proto.tcp->connect_callback != NULL) {
@@ -1043,7 +1043,7 @@ espconn_ssl_accept(void *arg, struct tcp_pcb *pcb, err_t err)
     }
 
     REG_SET_BIT(0x3ff00014, BIT(0));
-    os_update_cpu_frequency(160);
+    ets_update_cpu_frequency(160);
     os_printf("server handshake start.\n");
     pssl->quiet = false;
     pssl->ssl_ctx = ssl_ctx_new(SSL_DISPLAY_CERTS, SSL_DEFAULT_SVR_SESS);
