@@ -94,9 +94,9 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
   platform_gpio_write(pin, 0);
 
   // Send the buffer
-  os_intr_lock();
+  ets_intr_lock();
   ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  os_intr_unlock();
+  ets_intr_unlock();
 
   c_free(buffer);
 
@@ -120,9 +120,9 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   platform_gpio_write(pin, 0);
 
   // Send the buffer
-  os_intr_lock();
+  ets_intr_lock();
   ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  os_intr_unlock();
+  ets_intr_unlock();
 
   return 0;
 }

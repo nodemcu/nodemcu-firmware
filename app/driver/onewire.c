@@ -60,8 +60,8 @@ sample code bearing this copyright.
 #include "platform.h"
 #include "osapi.h"
 
-#define noInterrupts os_intr_lock
-#define interrupts os_intr_unlock
+#define noInterrupts ets_intr_lock
+#define interrupts ets_intr_unlock
 #define delayMicroseconds os_delay_us
 
 // 1 for keeping the parasitic power on H
