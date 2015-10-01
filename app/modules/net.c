@@ -12,6 +12,7 @@
 
 #include "c_types.h"
 #include "mem.h"
+#include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "lwip/dns.h" 
 
