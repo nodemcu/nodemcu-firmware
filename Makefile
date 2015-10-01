@@ -1,5 +1,6 @@
 #  copyright (c) 2010 Espressif System
 #
+.NOTPARALLEL:
 ifndef PDIR
 
 endif
