@@ -355,15 +355,15 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 {
   ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_handle_credentials");
 
-  char *name_str = (char *) ((uint32_t)strstr(&(data[5]), "?wifi_ssid=") + (uint32_t)strstr(&(data[5]), "&wifi_ssid="));
-  char *pwd_str = (char *) ((uint32_t)strstr(&(data[5]), "?wifi_password=") + (uint32_t)strstr(&(data[5]), "&wifi_password="));
+  char *name_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_ssid="));
+  char *pwd_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_password="));
   if (name_str == NULL || pwd_str == NULL)
   {
     return 1;
   }
 
-  int name_field_len = sizeof("?wifi_ssid=") - 1;
-  int pwd_field_len = sizeof("?wifi_password=") - 1;
+  int name_field_len = sizeof("wifi_ssid=") - 1;
+  int pwd_field_len = sizeof("wifi_password=") - 1;
   char *name_str_start = name_str + name_field_len;
   char *pwd_str_start = pwd_str + pwd_field_len;
 
@@ -489,45 +489,50 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
 {
   ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_recvcb");
   struct espconn *http_client = (struct espconn *) arg;
+  int retval;
 
-  if (c_strncmp(data, "GET ", 4) != 0)
+  if (c_strncmp(data, "POST ", 5) == 0)
+  {
+    retval = enduser_setup_http_handle_credentials(data, data_len);
+    if (retval == 0)
+    {
+      enduser_setup_http_serve_header(http_client, (char *) http_header_200, sizeof(http_header_200));
+      enduser_setup_http_disconnect(http_client);
+      return;
+    }
+    else if (retval == 2)
+    {
+      ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    }
+
+    if (retval != 1)
+    {
+      ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Unknown error code.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    }
+  }
+  else if (c_strncmp(data, "GET ", 4) == 0)
+  {
+    /* Reject requests that probably aren't relevant to free up resources. */
+    if (c_strncmp(data, "GET / ", 6) != 0)
+    {
+      ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_recvcb received too specific request.");
+      enduser_setup_http_serve_header(http_client, (char *) http_header_404, sizeof(http_header_404));
+      enduser_setup_http_disconnect(http_client);
+      return;
+    }
+
+    retval = enduser_setup_http_serve_html(http_client);
+    if (retval != 0)
+    {
+      enduser_setup_http_disconnect(http_client);
+      ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    }
+  }
+  else
   {
     enduser_setup_http_serve_header(http_client, (char *) http_header_404, sizeof(http_header_404));
     enduser_setup_http_disconnect(http_client);
     return;
-  }
-
-  int retval = enduser_setup_http_handle_credentials(data, data_len);
-  if (retval == 0)
-  {
-    enduser_setup_http_serve_header(http_client, (char *) http_header_200, sizeof(http_header_200));
-    enduser_setup_http_disconnect(http_client);
-    return;
-  }
-  else if (retval == 2)
-  {
-    ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
-  }
-
-  if (retval != 1)
-  {
-    ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Unknown error code.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
-  }
-
-  /* Reject requests that probably aren't relevant to free up resources. */
-  if (c_strncmp(data, "GET / ", 6) != 0)
-  {
-    ENDUSER_SETUP_DEBUG(state->lua_L, "enduser_setup_http_recvcb received too specific request.");
-    enduser_setup_http_serve_header(http_client, (char *) http_header_404, sizeof(http_header_404));
-    enduser_setup_http_disconnect(http_client);
-    return;
-  }
-
-  retval = enduser_setup_http_serve_html(http_client);
-  if (retval != 0)
-  {
-    enduser_setup_http_disconnect(http_client);
-    ENDUSER_SETUP_ERROR_VOID("enduser_setup_http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 }
 
