@@ -27,7 +27,6 @@ uint8_t platform_key_led( uint8_t level);
 // GPIO subsection
 #define PLATFORM_GPIO_FLOAT 0
 #define PLATFORM_GPIO_PULLUP 1
-#define PLATFORM_GPIO_PULLDOWN 2
 
 #define PLATFORM_GPIO_INT 2
 #define PLATFORM_GPIO_OUTPUT 1
