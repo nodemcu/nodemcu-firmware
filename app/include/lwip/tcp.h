@@ -277,8 +277,6 @@ struct tcp_pcb {
 
   /* KEEPALIVE counter */
   u8_t keep_cnt_sent;
-
-  u8_t hold;
 };
 
 struct tcp_pcb_listen {  

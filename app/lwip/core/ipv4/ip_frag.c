@@ -284,7 +284,7 @@ ip_reass_enqueue_new_datagram(struct ip_hdr *fraghdr, int clen)
       return NULL;
     }
   }
-  memset(ipr, 0, sizeof(struct ip_reassdata));
+  os_memset(ipr, 0, sizeof(struct ip_reassdata));
   ipr->timer = IP_REASS_MAXAGE;
 
   /* enqueue the new structure to the front of the list */

@@ -3,7 +3,7 @@
 
 #include "c_types.h"
 
-/*------------------------±äÁ¿¶¨Òå------------------------*/
+/*------------------------ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½------------------------*/
 
 #define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 #ifndef IOT_SIP_MODE
@@ -52,7 +52,7 @@ typedef struct A_BLOCK_LINK
 	size_t xBlockSize;						//The size of the free block. 
 } xBlockLink;
 
-static const unsigned short heapSTRUCT_SIZE	= ( sizeof( xBlockLink ) + portBYTE_ALIGNMENT - ( sizeof( xBlockLink ) % portBYTE_ALIGNMENT ) );
+static const size_t heapSTRUCT_SIZE	ICACHE_RODATA_ATTR = ( sizeof( xBlockLink ) + portBYTE_ALIGNMENT - ( sizeof( xBlockLink ) % portBYTE_ALIGNMENT ) );
 
 //static const size_t xTotalHeapSize = ( ( size_t ) configADJUSTED_HEAP_SIZE ) & ( ( size_t ) ~portBYTE_ALIGNMENT_MASK );
 
@@ -61,7 +61,7 @@ static xBlockLink xStart, *pxEnd = NULL;
 //static size_t xFreeBytesRemaining = ( ( size_t ) configADJUSTED_HEAP_SIZE ) & ( ( size_t ) ~portBYTE_ALIGNMENT_MASK );
 
 
-/*------------------------º¯ÊýÉùÃ÷-----------------------------------*/
+/*------------------------ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-----------------------------------*/
 
 static void prvInsertBlockIntoFreeList( xBlockLink *pxBlockToInsert ) ;//ICACHE_FLASH_ATTR;
 

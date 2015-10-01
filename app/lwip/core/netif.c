@@ -149,6 +149,7 @@ netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
 #if LWIP_DHCP
   /* netif not under DHCP control by default */
   netif->dhcp = NULL;
+  netif->dhcps_pcb = NULL;
 #endif /* LWIP_DHCP */
 #if LWIP_AUTOIP
   /* netif not under AutoIP control by default */

@@ -17,6 +17,10 @@
 #define UART0   0
 #define UART1   1
 
+#ifndef FUNC_U0RXD
+#define FUNC_U0RXD 0
+#endif
+
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
 

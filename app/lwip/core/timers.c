@@ -389,9 +389,9 @@ sys_check_timeouts(void)
   if (next_timeout) {
     /* this cares for wraparounds */
 	if (timer2_ms_flag == 0) {
-		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((CPU_CLK_FREQ>>4)/1000);
+		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((APB_CLK_FREQ>>4)/1000);
 	} else {
-		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((CPU_CLK_FREQ>>8)/1000);
+		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((APB_CLK_FREQ>>8)/1000);
 	}
     do
     {

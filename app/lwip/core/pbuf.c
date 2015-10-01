@@ -80,7 +80,7 @@
 #include <string.h>
 
 #ifdef EBUF_LWIP
-#include "pp/esf_buf.h"
+#define EP_OFFSET 36
 #else
 #define EP_OFFSET 0
 #endif /* ESF_LWIP */
@@ -329,6 +329,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
     p->len = p->tot_len = length;
     p->next = NULL;
     p->type = type;
+    p->eb = NULL;
 
     LWIP_ASSERT("pbuf_alloc: pbuf->payload properly aligned",
            ((mem_ptr_t)p->payload % MEM_ALIGNMENT) == 0);
@@ -363,6 +364,7 @@ pbuf_alloc(pbuf_layer layer, u16_t length, pbuf_type type)
   /* set flags */
   p->flags = 0;
   LWIP_DEBUGF(PBUF_DEBUG | LWIP_DBG_TRACE, ("pbuf_alloc(length=%"U16_F") == %p\n", length, (void *)p));
+
   return p;
 }
 
@@ -1204,7 +1206,7 @@ pbuf_strstr(struct pbuf* p, const char* substr)
   if ((substr == NULL) || (substr[0] == 0) || (p->tot_len == 0xFFFF)) {
     return 0xFFFF;
   }
-  substr_len = strlen(substr);
+  substr_len = os_strlen(substr);
   if (substr_len >= 0xFFFF) {
     return 0xFFFF;
   }

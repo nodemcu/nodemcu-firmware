@@ -281,8 +281,8 @@ void sys_arch_unprotect(sys_prot_t pval)ICACHE_FLASH_ATTR;
 #else
 
 #define SYS_ARCH_DECL_PROTECT(lev)
-#define SYS_ARCH_PROTECT(lev) lev = os_intr_lock()	//fix by ives at 2014.3.24
-#define SYS_ARCH_UNPROTECT(lev) lev = os_intr_unlock()
+#define SYS_ARCH_PROTECT(lev) lev = ets_intr_lock()	//fix by ives at 2014.3.24
+#define SYS_ARCH_UNPROTECT(lev) lev = ets_intr_unlock()
 
 #endif /* SYS_LIGHTWEIGHT_PROT */
 
