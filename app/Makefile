@@ -97,7 +97,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	modules/libmodules.a		
 
 LINKFLAGS_eagle.app.v6 = 			\
-	-L../lib 				\
 	-Wl,--gc-sections 			\
 	-Xlinker -Map=mapfile 			\
 	-nostdlib 				\
