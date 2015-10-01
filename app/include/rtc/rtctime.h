@@ -39,6 +39,7 @@
  */
 
 #include <c_types.h>
+#include "sections.h"
 
 #ifndef _RTCTIME_INTERNAL_H_
 struct rtc_timeval
