@@ -100,7 +100,7 @@ typedef uint32_t spi_data_type;
 
 // The platform SPI functions
 int platform_spi_exists( unsigned id );
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock);
+uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock_div);
 spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data );
 void platform_spi_select( unsigned id, int is_select );
 

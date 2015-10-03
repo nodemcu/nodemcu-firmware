@@ -7,7 +7,7 @@
 #include "auxmods.h"
 #include "lrotable.h"
 
-// Lua: = spi.setup( id, mode, cpol, cpha, databits, clock )
+// Lua: = spi.setup( id, mode, cpol, cpha, databits, clock_div )
 static int spi_setup( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
@@ -15,7 +15,7 @@ static int spi_setup( lua_State *L )
   unsigned cpol = luaL_checkinteger( L, 3 );
   unsigned cpha = luaL_checkinteger( L, 4 );
   unsigned databits = luaL_checkinteger( L, 5 );
-  uint32_t clock = luaL_checkinteger( L, 6 );
+  uint32_t clock_div = luaL_checkinteger( L, 6 );
 
   MOD_CHECK_ID( spi, id );
 
@@ -35,7 +35,11 @@ static int spi_setup( lua_State *L )
     return luaL_error( L, "wrong arg type" );
   }
 
-  u32 res = platform_spi_setup(id, mode, cpol, cpha, databits, clock);
+  if (clock_div < 4) {
+    return luaL_error( L, "invalid clock divider" );
+  }
+
+  u32 res = platform_spi_setup(id, mode, cpol, cpha, databits, clock_div);
   lua_pushinteger( L, res );
   return 1;
 }

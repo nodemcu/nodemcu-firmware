@@ -18,7 +18,7 @@ void spi_lcd_mode_init(uint8 spi_no);
 void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit);
 
 //spi master init funtion
-void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock);
+void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock_div);
 //use spi send 8bit data
 void spi_mast_byte_write(uint8 spi_no,uint8 *data);
 
