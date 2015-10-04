@@ -112,10 +112,13 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databi
 	// SPI clock = CPU clock / clock_div
 	// the divider needs to be a multiple of 2 to get a proper waveform shape
 	if ((clock_div & 0x01) != 0) {
-		// bump the divider to the nextN*2
+		// bump the divider to the next N*2
 		clock_div += 0x02;
 	}
 	clock_div >>= 1;
+	// clip to maximum possible CLKDIV_PRE
+	clock_div = clock_div > SPI_CLKDIV_PRE ? SPI_CLKDIV_PRE : clock_div - 1;
+
 	WRITE_PERI_REG(SPI_CLOCK(spi_no), 
 					((clock_div&SPI_CLKDIV_PRE)<<SPI_CLKDIV_PRE_S)|
 					((1&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
