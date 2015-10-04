@@ -74,8 +74,7 @@ static uint8_t LastDeviceFlag[NUM_OW];
 
 void onewire_init(uint8_t pin)
 {
-	// pinMode(pin, INPUT);
-  platform_gpio_mode(pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);
+	platform_gpio_mode(pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);
 #if ONEWIRE_SEARCH
 	onewire_reset_search(pin);
 #endif
@@ -176,8 +175,7 @@ void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
   }
   if ( !power) {
   	noInterrupts();
-  	DIRECT_MODE_INPUT(pin);
-  	DIRECT_WRITE_LOW(pin);
+	platform_gpio_mode(pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_FLOAT);
   	interrupts();
   }
 }
@@ -185,11 +183,10 @@ void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
 void onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
   uint16_t i;
   for (i = 0 ; i < count ; i++)
-    onewire_write(pin, buf[i], 0);
+    onewire_write(pin, buf[i], 1);
   if (!power) {
     noInterrupts();
-    DIRECT_MODE_INPUT(pin);
-    DIRECT_WRITE_LOW(pin);
+	platform_gpio_mode(pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_FLOAT);
     interrupts();
   }
 }
@@ -220,9 +217,9 @@ void onewire_select(uint8_t pin, const uint8_t rom[8])
 {
     uint8_t i;
 
-    onewire_write(pin, 0x55, 0);           // Choose ROM
+    onewire_write(pin, 0x55, 1);           // Choose ROM
 
-    for (i = 0; i < 8; i++) onewire_write(pin, rom[i], 0);
+    for (i = 0; i < 8; i++) onewire_write(pin, rom[i], 1);
 }
 
 //
@@ -230,13 +227,13 @@ void onewire_select(uint8_t pin, const uint8_t rom[8])
 //
 void onewire_skip(uint8_t pin)
 {
-    onewire_write(pin, 0xCC, 0);           // Skip ROM
+    onewire_write(pin, 0xCC, 1);           // Skip ROM
 }
 
 void onewire_depower(uint8_t pin)
 {
 	noInterrupts();
-	DIRECT_MODE_INPUT(pin);
+	platform_gpio_mode(pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_FLOAT);
 	interrupts();
 }
 
@@ -319,7 +316,7 @@ uint8_t onewire_search(uint8_t pin, uint8_t *newAddr)
       }
 
       // issue the search command
-      onewire_write(pin, 0xF0, 0);
+      onewire_write(pin, 0xF0, 1);
 
       // loop to do the search
       do
