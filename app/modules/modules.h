@@ -157,6 +157,14 @@
 #define ROM_MODULES_WS2812
 #endif
 
+#if defined(LUA_USE_MODULES_ENDUSER_SETUP)
+#define MODULES_ENDUSER_SETUP      "enduser_setup"
+#define ROM_MODULES_ENDUSER_SETUP  \
+    _ROM(MODULES_ENDUSER_SETUP, luaopen_enduser_setup, enduser_setup_map)
+#else
+#define ROM_MODULES_ENDUSER_SETUP
+#endif
+
 #if defined(LUA_USE_MODULES_CJSON)
 #define MODULES_CJSON       "cjson"
 #define ROM_MODULES_CJSON   \
@@ -255,6 +263,7 @@
         ROM_MODULES_UART    \
         ROM_MODULES_OW      \
         ROM_MODULES_BIT     \
+        ROM_MODULES_ENDUSER_SETUP \
         ROM_MODULES_WS2801  \
         ROM_MODULES_WS2812  \
         ROM_MODULES_CJSON   \
