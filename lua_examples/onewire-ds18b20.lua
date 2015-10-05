@@ -41,6 +41,11 @@ else
           print("CRC="..crc)
           if (crc == data:byte(9)) then
              t = (data:byte(1) + data:byte(2) * 256) * 625
+             if (addr:byte(1) == 0x28) then
+                t = t * 625  -- DS18B20, 4 fractional bits
+             else
+                t = t * 5000 -- DS18S20, 1 fractional bit
+             end
              t1 = t / 10000
              t2 = t % 10000
              print("Temperature= "..t1.."."..t2.." Centigrade")
