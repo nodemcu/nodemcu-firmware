@@ -104,7 +104,7 @@ die:
  * we use the linker to wrap that call and stop the SDK from shooting itself in
  * its proverbial foot.
  */
-exception_handler_fn
+exception_handler_fn TEXT_SECTION_ATTR
 __wrap__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn)
 {
   if (cause != EXCCAUSE_LOAD_STORE_ERROR)

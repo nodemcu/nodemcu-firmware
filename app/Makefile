@@ -98,9 +98,10 @@ COMPONENTS_eagle.app.v6 = 			\
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
-	-Xlinker -Map=mapfile 			\
+	-Wl,-Map=mapfile 			\
 	-nostdlib 				\
     -T$(LD_FILE) 				\
+	-Wl,@../ld/defsym.rom	\
 	-Wl,--no-check-sections 		\
 	-Wl,--wrap=_xtos_set_exception_handler \
 	-Wl,-static 				\

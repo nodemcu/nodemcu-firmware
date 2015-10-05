@@ -2,10 +2,10 @@
 /* Linker Script for ld -N */
 MEMORY
 {
-  dport0_0_seg :                      	org = 0x3FF00000, len = 0x10
-  dram0_0_seg :                       	org = 0x3FFE8000, len = 0x14000
-  iram1_0_seg :                       	org = 0x40100000, len = 0x8000
-  irom0_0_seg :                       	org = 0x40210000, len = 0x80000
+  dport0_0_seg :                        org = 0x3FF00000, len = 0x10
+  dram0_0_seg :                         org = 0x3FFE8000, len = 0x14000
+  iram1_0_seg :                         org = 0x40100000, len = 0x8000
+  irom0_0_seg :                         org = 0x40210000, len = 0x80000
 }
 
 PHDRS
@@ -20,6 +20,11 @@ PHDRS
 
 /*  Default entry point:  */
 ENTRY(user_start_trampoline)
+EXTERN(_DebugExceptionVector)
+EXTERN(_DoubleExceptionVector)
+EXTERN(_KernelExceptionVector)
+EXTERN(_NMIExceptionVector)
+EXTERN(_UserExceptionVector)
 PROVIDE(_memmap_vecbase_reset = 0x40000000);
 /* Various memory-map dependent cache attribute settings: */
 _memmap_cacheattr_wb_base = 0x00000110;
@@ -71,39 +76,11 @@ SECTIONS
     _irom0_text_start = ABSOLUTE(.);
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
-
-    /* Trade some performance for lots of ram. At the time of writing the
-     * available Lua heap went from 18248 to 34704. */
     *(.rodata*)
-
+    *(.sdk.version)
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr
-  
-  .text : ALIGN(4)
-  {
-    _stext = .;
-    _text_start = ABSOLUTE(.);
-    *(.entry.text)
-    *(.init.literal)
-    *(.init)
-    /* *(.literal .text .literal.* .text.* .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*) */
-    *(.literal .text .iram0.text .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
-    *(.fini.literal)
-    *(.fini)
-    *(.gnu.version)
-    _text_end = ABSOLUTE(.);
-    _etext = .;
-  } >iram1_0_seg :iram1_0_phdr
-
-  .lit4 : ALIGN(4)
-  {
-    _lit4_start = ABSOLUTE(.);
-    *(*.lit4)
-    *(.lit4.*)
-    *(.gnu.linkonce.lit4.*)
-    _lit4_end = ABSOLUTE(.);
-  } >iram1_0_seg :iram1_0_phdr
 
   .data : ALIGN(4)
   {
@@ -180,6 +157,54 @@ SECTIONS
 /*    _stack_sentry = ALIGN(0x8); */
   } >dram0_0_seg :dram0_0_bss_phdr
 /* __stack = 0x3ffc8000; */
+
+  .text : ALIGN(4)
+  {
+    _stext = .;
+    _text_start = ABSOLUTE(.);
+    *(.UserEnter.text)
+    . = ALIGN(16);
+    *(.DebugExceptionVector.text)
+    . = ALIGN(16);
+    *(.NMIExceptionVector.text)
+    . = ALIGN(16);
+    *(.KernelExceptionVector.text)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    . = ALIGN(16);
+    *(.UserExceptionVector.text)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    . = ALIGN(16);
+    *(.DoubleExceptionVector.text)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    . = ALIGN (16);
+    *(.entry.text)
+    *(.init.literal)
+    *(.init)
+    *(.literal .text .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
+    *(.fini.literal)
+    *(.fini)
+    *(.gnu.version)
+    _text_end = ABSOLUTE(.);
+    _etext = .;
+  } >iram1_0_seg :iram1_0_phdr
+
+  .lit4 : ALIGN(4)
+  {
+    _lit4_start = ABSOLUTE(.);
+    *(*.lit4)
+    *(.lit4.*)
+    *(.gnu.linkonce.lit4.*)
+    _lit4_end = ABSOLUTE(.);
+  } >iram1_0_seg :iram1_0_phdr
 
 }
 
