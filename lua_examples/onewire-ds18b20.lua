@@ -40,7 +40,13 @@ else
           crc = ow.crc8(string.sub(data,1,8))
           print("CRC="..crc)
           if (crc == data:byte(9)) then
-             t = (data:byte(1) + data:byte(2) * 256) * 625
+             t = (data:byte(1) + data:byte(2) * 256)
+
+             -- handle negative temperatures
+             if (t > 0x7fff) then
+                t = t - 0x10000
+             end
+
              if (addr:byte(1) == 0x28) then
                 t = t * 625  -- DS18B20, 4 fractional bits
              else
