@@ -64,7 +64,7 @@ void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
  * Description  : SPI master initial function for common byte units transmission
  * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
 *******************************************************************************/
-void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock)
+void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock_div)
 {
 	uint32 regvalue; 
 
@@ -109,12 +109,21 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databi
 	//clear Daul or Quad lines transmission mode
 	CLEAR_PERI_REG_MASK(SPI_CTRL(spi_no), SPI_QIO_MODE|SPI_DIO_MODE|SPI_DOUT_MODE|SPI_QOUT_MODE);
 
-	// SPI clock=CPU clock/8
+	// SPI clock = CPU clock / clock_div
+	// the divider needs to be a multiple of 2 to get a proper waveform shape
+	if ((clock_div & 0x01) != 0) {
+		// bump the divider to the next N*2
+		clock_div += 0x02;
+	}
+	clock_div >>= 1;
+	// clip to maximum possible CLKDIV_PRE
+	clock_div = clock_div > SPI_CLKDIV_PRE ? SPI_CLKDIV_PRE : clock_div - 1;
+
 	WRITE_PERI_REG(SPI_CLOCK(spi_no), 
-					((1&SPI_CLKDIV_PRE)<<SPI_CLKDIV_PRE_S)|
-					((3&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
-					((1&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
-					((3&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
+					((clock_div&SPI_CLKDIV_PRE)<<SPI_CLKDIV_PRE_S)|
+					((1&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
+					((0&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
+					((1&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
 
 	//set 8bit output buffer length, the buffer is the low 8bit of register"SPI_FLASH_C0"
 	WRITE_PERI_REG(SPI_USER1(spi_no), 

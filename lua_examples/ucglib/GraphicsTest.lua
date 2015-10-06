@@ -8,7 +8,7 @@ function init_spi_display()
     local dc  = 4 -- GPIO2
     local res = 0 -- GPIO16
 
-    spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
+    spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 8)
 
     -- initialize the matching driver for your display
     -- see app/include/ucg_config.h

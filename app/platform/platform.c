@@ -445,9 +445,9 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 
 // *****************************************************************************
 // SPI platform interface
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock)
+uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock_div)
 {
-  spi_master_init(id, cpol, cpha, databits, clock);
+  spi_master_init(id, cpol, cpha, databits, clock_div);
   return 1;
 }
 
