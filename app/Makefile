@@ -64,15 +64,7 @@ ifeq ($(FLAVOR),release)
     TARGET_LDFLAGS += -Os
 endif
 
-LD_FILE = $(LDDIR)/eagle.app.v6.ld
-
-ifeq ($(APP), 1)
-	LD_FILE = $(LDDIR)/eagle.app.v6.app1.ld
-endif
-
-ifeq ($(APP), 2)
-	LD_FILE = $(LDDIR)/eagle.app.v6.app2.ld
-endif
+LD_FILE = $(LDDIR)/nodemcu.ld
 
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
@@ -123,7 +115,6 @@ LINKFLAGS_eagle.app.v6 = 			\
 
 DEPENDS_eagle.app.v6 = 				\
                 $(LD_FILE) 			\
-                $(LDDIR)/eagle.rom.addr.v6.ld
 
 #############################################################
 # Configuration i.e. compile options etc.

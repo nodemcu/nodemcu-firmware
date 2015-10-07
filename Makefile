@@ -11,7 +11,7 @@ SDK_VER:=1.4.0
 TOP_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
 SDK_DIR:=$(TOP_DIR)sdk/esp_iot_sdk_v$(SDK_VER)
 CCFLAGS:= -I$(TOP_DIR)sdk-overrides/include -I$(SDK_DIR)/include
-LDFLAGS:= -L$(SDK_DIR)/lib $(LDFLAGS)
+LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
 #############################################################
 # Select compile
