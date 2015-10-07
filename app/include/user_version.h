@@ -7,6 +7,10 @@
 #define NODE_VERSION_INTERNAL   0U
 
 #define NODE_VERSION	"NodeMCU 1.4.0"
-#define BUILD_DATE	    "build 20151006"
+#ifndef BUILD_DATE
+#define BUILD_DATE	  "20151006"
+#endif
+
+extern char SDK_VERSION[];
 
 #endif	/* __USER_VERSION_H__ */

@@ -3,15 +3,16 @@ before_install:
 - sudo apt-get install -y python-serial srecord
 install:
 - tar -zxvf tools/esp-open-sdk.tar.gz
-- export PATH=$PATH:$PWD/esp-open-sdk/sdk:$PWD/esp-open-sdk/xtensa-lx106-elf/bin
+- export PATH=$PATH:$PWD/esp-open-sdk/xtensa-lx106-elf/bin
 script:
-- make all
+- export BUILD_DATE=$(date +%Y%m%d)
+- make EXTRA_CCFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" all
 - cd bin/
 - file_name_float="nodemcu_float_${TRAVIS_TAG}.bin"
 - srec_cat -output ${file_name_float} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
 - cd ../
 - make clean
-- make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL"
+- make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'"
 - cd bin/
 - file_name_integer="nodemcu_integer_${TRAVIS_TAG}.bin"
 - srec_cat -output ${file_name_integer} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000

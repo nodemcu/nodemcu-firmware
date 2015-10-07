@@ -135,9 +135,13 @@ static int docall (lua_State *L, int narg, int clear) {
 }
 
 
-static void print_version (void) {
-  // l_message(NULL, LUA_RELEASE "  " LUA_COPYRIGHT);
-  l_message(NULL, "\n" NODE_VERSION " " BUILD_DATE "  powered by " LUA_RELEASE);
+static void print_version (lua_State *L) {
+  lua_pushliteral (L, "\n" NODE_VERSION " build " BUILD_DATE " powered by " LUA_RELEASE " on SDK ");
+  lua_pushstring (L, SDK_VERSION);
+  lua_concat (L, 2);
+  const char *msg = lua_tostring (L, -1);
+  l_message (NULL, msg);
+  lua_pop (L, 1);
 }
 
 
@@ -399,7 +403,7 @@ static int pmain (lua_State *L) {
   lua_gc(L, LUA_GCSTOP, 0);  /* stop collector during initialization */
   luaL_openlibs(L);  /* open libraries */
   lua_gc(L, LUA_GCRESTART, 0);
-  print_version();
+  print_version(L);
   s->status = handle_luainit(L);
 #if 0
   if (s->status != 0) return 0;
