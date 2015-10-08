@@ -145,8 +145,58 @@ static int node_heap( lua_State* L )
 static lua_State *gL = NULL;
 
 #ifdef DEVKIT_VERSION_0_9
-extern int led_high_count;  // this is defined in lua.c
-extern int led_low_count;
+static int led_high_count = LED_HIGH_COUNT_DEFAULT;
+static int led_low_count = LED_LOW_COUNT_DEFAULT;
+static int led_count = 0;
+static int key_press_count = 0;
+static bool key_short_pressed = false;
+static bool key_long_pressed = false;
+static os_timer_t keyled_timer;
+
+static void update_key_led (void *p)
+{
+  (void)p;
+  uint8_t temp = 1, level = 1;
+  led_count++;
+  if(led_count>led_low_count+led_high_count){
+    led_count = 0;    // reset led_count, the level still high
+  } else if(led_count>led_low_count && led_count <=led_high_count+led_low_count){
+    level = 1;    // output high level
+  } else if(led_count<=led_low_count){
+    level = 0;    // output low level
+  }
+  temp = platform_key_led(level);
+  if(temp == 0){      // key is pressed
+    key_press_count++;
+    if(key_press_count>=KEY_LONG_COUNT){
+      // key_long_press(NULL);
+      key_long_pressed = true;
+      key_short_pressed = false;
+      // key_press_count = 0;
+    } else if(key_press_count>=KEY_SHORT_COUNT){    // < KEY_LONG_COUNT
+      // key_short_press(NULL);
+      key_short_pressed = true;
+    }
+  }else{  // key is released
+    key_press_count = 0;
+    if(key_long_pressed){
+      key_long_press(NULL);
+      key_long_pressed = false;
+    }
+    if(key_short_pressed){
+      key_short_press(NULL);
+      key_short_pressed = false;
+    }
+  }
+}
+
+static void prime_keyled_timer (void)
+{
+  os_timer_disarm (&keyled_timer);
+  os_timer_setfn (&keyled_timer, update_key_led, 0);
+  os_timer_arm (&keyled_timer, KEYLED_INTERVAL, 1);
+}
+
 // Lua: led(low, high)
 static int node_led( lua_State* L )
 {
@@ -171,6 +221,7 @@ static int node_led( lua_State* L )
   }
   led_high_count = (uint32_t)high / READLINE_INTERVAL;
   led_low_count = (uint32_t)low / READLINE_INTERVAL;
+  prime_keyled_timer();
   return 0;
 }
 
@@ -246,13 +297,12 @@ static int node_key( lua_State* L )
     *ref = LUA_NOREF;
   }
 
+  prime_keyled_timer();
   return 0;
 }
 #endif
 
 extern lua_Load gLoad;
-extern os_timer_t lua_timer;
-extern void dojob(lua_Load *load);
 // Lua: input("string")
 static int node_input( lua_State* L )
 {
@@ -269,9 +319,7 @@ static int node_input( lua_State* L )
       NODE_DBG("Get command:\n");
       NODE_DBG(load->line); // buggy here
       NODE_DBG("\nResult(if any):\n");
-      os_timer_disarm(&lua_timer);
-      os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
-      os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+      system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
     }
   }
   return 0;

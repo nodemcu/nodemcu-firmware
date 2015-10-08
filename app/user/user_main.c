@@ -60,7 +60,10 @@ void task_lua(os_event_t *e){
             lua_main( 2, lua_argv );
             break;
         case SIG_UARTINPUT:
-            lua_handle_input ();
+            lua_handle_input (false);
+            break;
+        case LUA_PROCESS_LINE_SIG:
+            lua_handle_input (true);
             break;
         default:
             break;
@@ -143,7 +146,7 @@ void nodemcu_init(void)
     // lua_main( 3, lua_argv );
     // NODE_DBG("Flash sec num: 0x%x\n", flash_get_sec_num());
     task_init();
-    system_os_post(USER_TASK_PRIO_0,SIG_LUA,'s');
+    system_os_post(LUA_TASK_PRIO,SIG_LUA,'s');
 }
 
 /******************************************************************************
@@ -173,6 +176,6 @@ void user_init(void)
     #ifndef NODE_DEBUG
     system_set_os_print(0);
     #endif
-    
+
     system_init_done_cb(nodemcu_init);
 }
