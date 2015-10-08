@@ -78,6 +78,33 @@ SECTIONS
     *(.literal.* .text.*)
     *(.rodata*)
     *(.sdk.version)
+
+    /* These are *only* pulled in by Lua, and therefore safe to put in flash */
+    */libc.a:lib_a-isalnum.o(.text* .literal*)
+    */libc.a:lib_a-isalpha.o(.text* .literal*)
+    */libc.a:lib_a-iscntrl.o(.text* .literal*)
+    */libc.a:lib_a-isspace.o(.text* .literal*)
+    */libc.a:lib_a-islower.o(.text* .literal*)
+    */libc.a:lib_a-isupper.o(.text* .literal*)
+    */libc.a:lib_a-ispunct.o(.text* .literal*)
+    */libc.a:lib_a-isxdigit.o(.text* .literal*)
+    */libc.a:lib_a-locale.o(.text* .literal*)
+    */libc.a:lib_a-tolower.o(.text* .literal*)
+    */libc.a:lib_a-toupper.o(.text* .literal*)
+    */libc.a:lib_a-strcasecmp.o(.text* .literal*)
+    */libc.a:lib_a-strcoll.o(.text* .literal*)
+    */libc.a:lib_a-strchr.o(.text* .literal*)
+    */libc.a:lib_a-strrchr.o(.text* .literal*)
+    */libc.a:lib_a-strcat.o(.text* .literal*)
+    */libc.a:lib_a-strncat.o(.text* .literal*)
+    */libc.a:lib_a-strcspn.o(.text* .literal*)
+    */libc.a:lib_a-strtol.o(.text* .literal*)
+    */libc.a:lib_a-strtoul.o(.text* .literal*)
+    */libc.a:lib_a-strpbrk.o(.text* .literal*)
+    */libc.a:lib_a-memchr.o(.text* .literal*)
+    */libc.a:lib_a-setjmp.o(.text* .literal*)
+    /* end Lua C lib functions */
+
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr

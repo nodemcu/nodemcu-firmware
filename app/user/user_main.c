@@ -28,6 +28,7 @@
 #endif
 
 #define SIG_LUA 0
+#define SIG_UARTINPUT 1
 #define TASK_QUEUE_LEN 4
 os_event_t *taskQueue;
 
@@ -57,6 +58,9 @@ void task_lua(os_event_t *e){
         case SIG_LUA:
             NODE_DBG("SIG_LUA received.\n");
             lua_main( 2, lua_argv );
+            break;
+        case SIG_UARTINPUT:
+            lua_handle_input ();
             break;
         default:
             break;
@@ -158,12 +162,13 @@ void user_init(void)
     // os_printf("Heap size::%d.\n",system_get_free_heap_size());
     // os_delay_us(50*1000);   // delay 50ms before init uart
 
+    UartBautRate br =
 #ifdef DEVELOP_VERSION
-    uart_init(BIT_RATE_74880, BIT_RATE_74880);
+      BIT_RATE_74880;
 #else
-    uart_init(BIT_RATE_9600, BIT_RATE_9600);
+      BIT_RATE_9600;
 #endif
-    // uart_init(BIT_RATE_115200, BIT_RATE_115200);
+    uart_init (br, br, USER_TASK_PRIO_0, SIG_UARTINPUT);
     
     #ifndef NODE_DEBUG
     system_set_os_print(0);

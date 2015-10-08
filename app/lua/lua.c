@@ -23,7 +23,6 @@
 #include "os_type.h"
 
 os_timer_t lua_timer;
-LOCAL os_timer_t readline_timer;
 
 lua_State *globalL = NULL;
 
@@ -477,14 +476,14 @@ int lua_main (int argc, char **argv) {
   return (status || s.status) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+void lua_handle_input (void)
+{
+  readline (&gLoad);
+}
+
 void donejob(lua_Load *load){
   lua_close(load->L);
 }
-
-#if 0
-int log_fd = -1;
-int noparse = 0;
-#endif
 
 void dojob(lua_Load *load){
   size_t l, rs;
@@ -542,9 +541,6 @@ void dojob(lua_Load *load){
   load->done = 0;
   load->line_position = 0;
   c_memset(load->line, 0, load->len);
-  os_timer_disarm(&readline_timer);
-  os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-  os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
   c_puts(load->prmt);
   // NODE_DBG("dojob() is called with firstline.\n");
 }
@@ -648,9 +644,6 @@ void readline(lua_Load *load){
         {
           /* Get a empty line, then go to get a new line */
           c_puts(load->prmt);
-          os_timer_disarm(&readline_timer);
-          os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-          os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
         } else {
           load->done = 1;
           os_timer_disarm(&lua_timer);
@@ -697,8 +690,4 @@ void readline(lua_Load *load){
     uart_on_data_cb(load->line, load->line_position);
     load->line_position = 0;
   }
-  // if there is no input from user, repeat readline()
-  os_timer_disarm(&readline_timer);
-  os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-  os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
 }
