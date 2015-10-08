@@ -57,7 +57,7 @@ static int spi_send( lua_State *L )
 
   MOD_CHECK_ID( spi, id );
   if( lua_gettop( L ) < 2 )
-    return luaL_error( L, "wrong arg type" );
+    return luaL_error( L, "too few args" );
 
   for( argn = 2; argn <= lua_gettop( L ); argn ++ )
   {
@@ -68,7 +68,7 @@ static int spi_send( lua_State *L )
       numdata = ( int )luaL_checkinteger( L, argn );
       if( numdata < 0 || numdata > 255 )
         return luaL_error( L, "wrong arg range" );
-      platform_spi_send_recv( id, numdata );
+      platform_spi_transaction( id, 8, numdata, 0, 0, 0, 0, 0 );
       wrote ++;
     }
     else if( lua_istable( L, argn ) )
@@ -81,7 +81,7 @@ static int spi_send( lua_State *L )
         lua_pop( L, 1 );
         if( numdata < 0 || numdata > 255 )
           return luaL_error( L, "wrong arg range" );
-        platform_spi_send_recv( id, numdata );
+        platform_spi_transaction( id, 8, numdata, 0, 0, 0, 0, 0 );
       }
       wrote += i;
       if( i < datalen )
@@ -91,7 +91,7 @@ static int spi_send( lua_State *L )
     {
       pdata = luaL_checklstring( L, argn, &datalen );
       for( i = 0; i < datalen; i ++ )
-        platform_spi_send_recv( id, pdata[ i ] );
+          platform_spi_transaction( id, 8, pdata[ i ], 0, 0, 0, 0, 0 );
       wrote += i;
       if( i < datalen )
         break;
@@ -126,14 +126,89 @@ static int spi_recv( lua_State *L )
   return 1;
 }
 
+// Lua: spi.set_mosi( id, offset, bitlen, data1, [data2], ..., [datan] )
+static int spi_set_mosi( lua_State *L )
+{
+  unsigned id       = luaL_checkinteger( L, 1 );
+  unsigned offset   = luaL_checkinteger( L, 2 );
+  unsigned bitlen   = luaL_checkinteger( L, 3 );
+  unsigned argn;
+
+  MOD_CHECK_ID( spi, id );
+
+  if (offset < 0 || offset > 511) {
+    return luaL_error( L, "offset out of range" );
+  }
+  if (bitlen < 1 || bitlen > 32) {
+    return luaL_error( L, "bitlen out of range" );
+  }
+
+  if (lua_gettop( L ) < 4) {
+    return luaL_error( L, "too few args" );
+  }
+
+  for (argn = 4; argn <= lua_gettop( L ); argn++, offset += bitlen )
+  {
+    u32 data = luaL_checkinteger(L, argn );
+
+    if (offset + bitlen > 512)
+      return luaL_error( L, "data range exceeded > 512 bits" );
+
+    if (platform_spi_set_mosi( id, offset, bitlen, data ) != PLATFORM_OK)
+      return luaL_error( L, "failed" );
+  }
+
+  return 0;
+}
+
+// Lua: spi.transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data, mosi_bitlen, dummy_bitlen, miso_bitlen )
+static int spi_transaction( lua_State *L )
+{
+  unsigned id           = luaL_checkinteger( L, 1 );
+  unsigned cmd_bitlen   = luaL_checkinteger( L, 2 );
+  u32      cmd_data     = luaL_checkinteger( L, 3 );
+  unsigned addr_bitlen  = luaL_checkinteger( L, 4 );
+  u32      addr_data    = luaL_checkinteger( L, 5 );
+  unsigned mosi_bitlen  = luaL_checkinteger( L, 6 );
+  unsigned dummy_bitlen = luaL_checkinteger( L, 7 );
+  unsigned miso_bitlen  = luaL_checkinteger( L, 8 );
+
+  MOD_CHECK_ID( spi, id );
+
+  if (cmd_bitlen < 0 || cmd_bitlen > 16) {
+    return luaL_error( L, "cmd_bitlen out of range" );
+  }
+  if (addr_bitlen < 0 || addr_bitlen > 32) {
+    return luaL_error( L, "addr_bitlen out of range" );
+  }
+  if (mosi_bitlen < 0 || mosi_bitlen > 512) {
+    return luaL_error( L, "mosi_bitlen out of range" );
+  }
+  if (dummy_bitlen < 0 || dummy_bitlen > 256) {
+    return luaL_error( L, "dummy_bitlen out of range" );
+  }
+  if (miso_bitlen < 0 || miso_bitlen > 511) {
+    return luaL_error( L, "miso_bitlen out of range" );
+  }
+
+  if (platform_spi_transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data,
+                                mosi_bitlen, dummy_bitlen, miso_bitlen) != PLATFORM_OK)
+    return luaL_error( L, "failed" );
+
+  return 0;
+}
+
+
 // Module function map
 #define MIN_OPT_LEVEL   2
 #include "lrodefs.h"
 const LUA_REG_TYPE spi_map[] = 
 {
-  { LSTRKEY( "setup" ),  LFUNCVAL( spi_setup ) },
-  { LSTRKEY( "send" ),   LFUNCVAL( spi_send ) },
-  { LSTRKEY( "recv" ),   LFUNCVAL( spi_recv ) },
+  { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
+  { LSTRKEY( "send" ),        LFUNCVAL( spi_send ) },
+  { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
+  { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
+  { LSTRKEY( "transaction" ), LFUNCVAL( spi_transaction ) },
 #if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "MASTER" ),    LNUMVAL( PLATFORM_SPI_MASTER ) },
   { LSTRKEY( "SLAVE" ),     LNUMVAL( PLATFORM_SPI_SLAVE) },
