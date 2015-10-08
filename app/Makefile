@@ -24,7 +24,6 @@ SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS= 					\
 	user 					\
 	driver 					\
-	lwip 					\
 	json 					\
 	upgrade 				\
 	platform 				\
@@ -42,6 +41,8 @@ SUBDIRS= 					\
 	crypto 					\
 	dhtlib					\
 	tsl2561
+
+	#lwip 					\
 
 endif # } PDIR
 
@@ -69,7 +70,6 @@ LD_FILE = $(LDDIR)/nodemcu.ld
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
 	driver/libdriver.a 			\
-	lwip/liblwip.a 				\
 	json/libjson.a 				\
 	upgrade/libupgrade.a 			\
 	platform/libplatform.a 			\
@@ -85,17 +85,19 @@ COMPONENTS_eagle.app.v6 = 			\
 	cjson/libcjson.a 			\
 	crypto/libcrypto.a 			\
 	dhtlib/libdhtlib.a 			\
-	tsl2561/tsl2561lib.a		\
+	tsl2561/tsl2561lib.a			\
 	modules/libmodules.a		
+
+	#lwip/liblwip.a 				\
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
 	-Wl,-Map=mapfile 			\
 	-nostdlib 				\
-    -T$(LD_FILE) 				\
-	-Wl,@../ld/defsym.rom	\
+	-T$(LD_FILE) 				\
+	-Wl,@../ld/defsym.rom			\
 	-Wl,--no-check-sections 		\
-	-Wl,--wrap=_xtos_set_exception_handler \
+	-Wl,--wrap=_xtos_set_exception_handler	\
 	-Wl,-static 				\
 	-Wl,--start-group 			\
 	-lc 					\
@@ -109,12 +111,14 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-ljson 					\
 	-lsmartconfig 				\
 	-lssl 					\
+	-llwip					\
 	$(DEP_LIBS_eagle.app.v6) 		\
 	-Wl,--end-group 			\
 	-lm
 
 DEPENDS_eagle.app.v6 = 				\
                 $(LD_FILE) 			\
+		Makefile
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -131,10 +135,11 @@ DEPENDS_eagle.app.v6 = 				\
 #	-DTXRX_RXBUF_DEBUG
 #	-DWLAN_CONFIG_CCX
 CONFIGURATION_DEFINES =	-D__ets__ 		\
-			-DICACHE_FLASH 		\
-			-DLWIP_OPEN_SRC 	\
-			-DPBUF_RSV_FOR_WLAN 	\
-			-DEBUF_LWIP
+
+#			-DICACHE_FLASH 		\
+#			-DLWIP_OPEN_SRC 	\
+#			-DPBUF_RSV_FOR_WLAN 	\
+#			-DEBUF_LWIP
 
 DEFINES += 					\
 	$(UNIVERSAL_TARGET_DEFINES) 		\
