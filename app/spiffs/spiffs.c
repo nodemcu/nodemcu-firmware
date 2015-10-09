@@ -46,7 +46,11 @@ The small 4KB sectors allow for greater flexibility in applications th
 
 void myspiffs_mount() {
   spiffs_config cfg;
+#ifdef SPIFFS_FIXED_LOCATION
+  cfg.phys_addr = SPIFFS_FIXED_LOCATION;
+#else
   cfg.phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
+#endif
   cfg.phys_addr += 0x3000;
   cfg.phys_addr &= 0xFFFFC000;  // align to 4 sector.
   cfg.phys_size = INTERNAL_FLASH_SIZE - ( ( u32_t )cfg.phys_addr - INTERNAL_FLASH_START_ADDRESS );
@@ -85,7 +89,11 @@ int myspiffs_format( void )
 {
   SPIFFS_unmount(&fs);
   u32_t sect_first, sect_last;
+#ifdef SPIFFS_FIXED_LOCATION
+  sect_first = SPIFFS_FIXED_LOCATION;
+#else
   sect_first = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
+#endif
   sect_first += 0x3000;
   sect_first &= 0xFFFFC000;  // align to 4 sector.
   sect_first = platform_flash_get_sector_of_address(sect_first);
