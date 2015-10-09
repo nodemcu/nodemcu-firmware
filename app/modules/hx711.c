@@ -9,7 +9,7 @@
 static uint8_t data_pin;
 static uint8_t clk_pin;
 
-/*Lua: init(clk_pin,data_pin)*/
+/*Lua: hx711.init(clk_pin,data_pin)*/
 static int hx711_init(lua_State* L) {
   clk_pin = luaL_checkinteger(L,1);
   data_pin = luaL_checkinteger(L,2);
@@ -36,8 +36,9 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
   //wait for data ready.  or time out.
   //TODO: set pin inturrupt and come back to it.  This may take up to 1/10 sec
   //        or maybe just make an async version too and have both available.
+	WRITE_PERI_REG(0x60000914, 0x73); //clear WDT... this may take a while.
   for (i = 0; i<HX711_MAX_WAIT && platform_gpio_read(data_pin)==1;i++){
-    asm ("nop"); //don't optimize away this loop.
+    asm ("nop");
   }
   
   //Handle timeout error
@@ -69,7 +70,6 @@ const LUA_REG_TYPE hx711_map[] =
 {
   { LSTRKEY( "init" ), LFUNCVAL( hx711_init )},
   { LSTRKEY( "read" ), LFUNCVAL( hx711_read )},
-  //{ LSTRKEY( "write" ), LFUNCVAL( ws2812_writegrb )},
   { LNILKEY, LNILVAL}
 };
 
