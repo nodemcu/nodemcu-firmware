@@ -437,9 +437,9 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 
 // *****************************************************************************
 // SPI platform interface
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock_div)
+uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
-  spi_master_init(id, cpol, cpha, databits, clock_div);
+  spi_master_init(id, cpol, cpha, clock_div);
   return 1;
 }
 
@@ -457,6 +457,14 @@ int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_
   spi_mast_set_mosi( id, offset, bitlen, data );
 
   return PLATFORM_OK;
+}
+
+spi_data_type platform_spi_get_miso( uint8_t id, uint8_t offset, uint8_t bitlen )
+{
+  if (offset + bitlen > 512)
+    return 0;
+
+  return spi_mast_get_miso( id, offset, bitlen );
 }
 
 int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,

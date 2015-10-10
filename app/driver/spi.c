@@ -64,7 +64,7 @@ void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
  * Description  : SPI master initial function for common byte units transmission
  * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
 *******************************************************************************/
-void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock_div)
+void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
 	uint32 regvalue; 
 
@@ -107,7 +107,7 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databi
 	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_FLASH_MODE|SPI_USR_MISO|
 			    SPI_USR_ADDR|SPI_USR_COMMAND|SPI_USR_DUMMY);
 
-	//clear Daul or Quad lines transmission mode
+	//clear Dual or Quad lines transmission mode
 	CLEAR_PERI_REG_MASK(SPI_CTRL(spi_no), SPI_QIO_MODE|SPI_DIO_MODE|SPI_DOUT_MODE|SPI_QOUT_MODE);
 
 	// SPI clock = CPU clock / clock_div
@@ -206,6 +206,57 @@ void spi_mast_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data)
         wn_bitlen = bitlen;
         wn_data   = data;
     } while (bitlen > 0);
+}
+
+/******************************************************************************
+ * FunctionName : spi_mast_get_miso
+ * Description  : Retrieve data from MISO buffer.
+ *                The data is regarded as a sequence of bits with length 'bitlen'.
+ *                It will be read starting left-aligned from position 'offset'.
+ * Parameters   :   uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint8 offset - offset into MISO buffer (number of bits)
+ *                  uint8 bitlen - requested number of bits in data
+*******************************************************************************/
+uint32 spi_mast_get_miso(uint8 spi_no, uint8 offset, uint8 bitlen)
+{
+    uint8  wn, wn_offset, wn_bitlen;
+    uint32 wn_data = 0;
+
+    if (spi_no > 1)
+        return 0; // handle invalid input number
+
+    // determine which SPI_Wn register is addressed
+    wn = offset >> 5;
+    if (wn > 15)
+        return 0; // out of range
+    wn_offset = offset & 0x1f;
+
+    if (bitlen > (32 - wn_offset))
+    {
+        // splitting required
+        wn_bitlen = 32 - wn_offset;
+    }
+    else
+    {
+        wn_bitlen = bitlen;
+    }
+
+    do
+    {
+        wn_data |= (READ_PERI_REG(REG_SPI_BASE(spi_no) +0x40 + wn*4) >> (32 - (wn_offset + wn_bitlen))) & (BIT(wn_bitlen) - 1);
+
+        // prepare reading of dangling data part
+        wn_data <<= bitlen - wn_bitlen;
+        wn += 1;
+        wn_offset = 0;
+        if (wn <= 15)
+            bitlen -= wn_bitlen;
+        else
+            bitlen = 0; // force abort
+        wn_bitlen = bitlen;
+    } while (bitlen > 0);
+
+    return wn_data;
 }
 
 /******************************************************************************
