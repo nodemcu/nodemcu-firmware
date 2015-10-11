@@ -8,7 +8,7 @@ function init_spi_display()
    local dc  = 4 -- GPIO2
    local res = 0 -- GPIO16
 
-   spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8)
+   spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
    disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
 end
 

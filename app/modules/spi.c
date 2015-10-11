@@ -7,14 +7,17 @@
 #include "auxmods.h"
 #include "lrotable.h"
 
-// Lua: = spi.setup( id, mode, cpol, cpha, clock_div )
+static u8 spi_databits[NUM_SPI] = {0, 0};
+
+// Lua: = spi.setup( id, mode, cpol, cpha, databits, clock_div )
 static int spi_setup( lua_State *L )
 {
   int id        = luaL_checkinteger( L, 1 );
   int mode      = luaL_checkinteger( L, 2 );
   int cpol      = luaL_checkinteger( L, 3 );
   int cpha      = luaL_checkinteger( L, 4 );
-  u32 clock_div = luaL_checkinteger( L, 5 );
+  int databits  = luaL_checkinteger( L, 5 );
+  u32 clock_div = luaL_checkinteger( L, 6 );
 
   MOD_CHECK_ID( spi, id );
 
@@ -30,66 +33,103 @@ static int spi_setup( lua_State *L )
     return luaL_error( L, "wrong arg type" );
   }
 
+  if (databits < 0 || databits > 32) {
+    return luaL_error( L, "out of range" );
+  }
+
   if (clock_div < 4) {
     return luaL_error( L, "invalid clock divider" );
   }
+
+  spi_databits[id] = databits;
 
   u32 res = platform_spi_setup(id, mode, cpol, cpha, clock_div);
   lua_pushinteger( L, res );
   return 1;
 }
 
-// Lua: wrote = spi.send( id, bitlen, data1, [data2], ..., [datan] )
+// Lua: wrote = spi.send( id, data1, [data2], ..., [datan] )
 // data can be either a string, a table or an 8-bit number
 static int spi_send( lua_State *L )
 {
-  int id     = luaL_checkinteger( L, 1 );
-  int bitlen = luaL_checkinteger( L, 2 );
-  size_t i;
-  u32 numdata;
+  unsigned id = luaL_checkinteger( L, 1 );
+  const char *pdata;
+  size_t datalen, i;
+  int numdata;
   u32 wrote = 0;
-  int argn;
+  unsigned argn;
 
   MOD_CHECK_ID( spi, id );
-  if( lua_gettop( L ) < 3 ) {
-    return luaL_error( L, "too few args" );
-  }
+  if( lua_gettop( L ) < 2 )
+    return luaL_error( L, "wrong arg type" );
 
-  for( argn = 3; argn <= lua_gettop( L ); argn ++ )
+  for( argn = 2; argn <= lua_gettop( L ); argn ++ )
   {
-    numdata = ( u32 )luaL_checkinteger( L, argn );
-    if (PLATFORM_OK != platform_spi_send( id, bitlen, numdata )) {
-      return luaL_error( L, "failed" );
+    // lua_isnumber() would silently convert a string of digits to an integer
+    // whereas here strings are handled separately.
+    if( lua_type( L, argn ) == LUA_TNUMBER )
+    {
+      numdata = ( int )luaL_checkinteger( L, argn );
+      if( numdata < 0 )
+        return luaL_error( L, "wrong arg range" );
+      platform_spi_send( id, spi_databits[id], numdata );
+      wrote ++;
     }
-    wrote ++;
+    else if( lua_istable( L, argn ) )
+    {
+      datalen = lua_objlen( L, argn );
+      for( i = 0; i < datalen; i ++ )
+      {
+        lua_rawgeti( L, argn, i + 1 );
+        numdata = ( int )luaL_checkinteger( L, -1 );
+        lua_pop( L, 1 );
+        if( numdata < 0 )
+          return luaL_error( L, "wrong arg range" );
+        platform_spi_send( id, spi_databits[id], numdata );
+      }
+      wrote += i;
+      if( i < datalen )
+        break;
+    }
+    else
+    {
+      pdata = luaL_checklstring( L, argn, &datalen );
+      for( i = 0; i < datalen; i ++ )
+        platform_spi_send( id, spi_databits[id], pdata[ i ] );
+      wrote += i;
+      if( i < datalen )
+        break;
+    }
   }
 
   lua_pushinteger( L, wrote );
   return 1;
 }
 
-// Lua: read = spi.recv( id, bitlen, num )
+// Lua: read = spi.recv( id, size )
 static int spi_recv( lua_State *L )
 {
-  int id     = luaL_checkinteger( L, 1 );
-  int bitlen = luaL_checkinteger( L, 2 );
-  int num    = luaL_checkinteger( L, 3 ), i;
+  int id   = luaL_checkinteger( L, 1 );
+  int size = luaL_checkinteger( L, 2 ), i;
+
+  luaL_Buffer b;
 
   MOD_CHECK_ID( spi, id );
-  if (bitlen < 1 || bitlen > 32) {
-    return luaL_error( L, "bitlen out of range" );
+  if (size == 0) {
+    return 0;
   }
-  if (num < 0) num = 0;
 
-  for (i=0; i<num; i++)
+  luaL_buffinit( L, &b );
+  for (i=0; i<size; i++)
   {
-    if (PLATFORM_OK != platform_spi_transaction( id, 0, 0, 0, 0, 0, 0, bitlen )) {
+    if (PLATFORM_OK != platform_spi_transaction( id, 0, 0, 0, 0, 0, 0, spi_databits[id] )) {
       return luaL_error( L, "failed" );
     }
-    lua_pushinteger( L, platform_spi_get_miso( id, 0, bitlen ) );
+    luaL_addchar( &b, ( char )platform_spi_get_miso( id, 0, spi_databits[id] ) );
   }
 
-  return num;
+  luaL_pushresult( &b );
+  return 1;
 }
 
 // Lua: spi.set_mosi( id, offset, bitlen, data1, [data2], ..., [datan] )
