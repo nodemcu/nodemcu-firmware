@@ -89,9 +89,6 @@ int platform_can_recv( unsigned id, uint32_t *canid, uint8_t *idtype, uint8_t *l
 // SPI clock polarity
 #define PLATFORM_SPI_CPOL_LOW                 0
 #define PLATFORM_SPI_CPOL_HIGH                1
-// SPI databits
-#define PLATFORM_SPI_DATABITS_8               8
-#define PLATFORM_SPI_DATABITS_16              16
 
 
 // Data types
