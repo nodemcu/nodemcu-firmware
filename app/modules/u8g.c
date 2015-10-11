@@ -861,7 +861,7 @@ uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void
         break;
     
     case U8G_COM_MSG_WRITE_BYTE:
-        platform_spi_send_recv( 1, arg_val );
+        platform_spi_send( 1, 8, arg_val );
         break;
     
     case U8G_COM_MSG_WRITE_SEQ:
@@ -870,7 +870,7 @@ uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void
             register uint8_t *ptr = arg_ptr;
             while( arg_val > 0 )
             {
-                platform_spi_send_recv( 1, *ptr++ );
+                platform_spi_send( 1, 8, *ptr++ );
                 arg_val--;
             }
         }

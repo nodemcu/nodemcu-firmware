@@ -58,7 +58,7 @@ static int spi_send( lua_State *L )
   for( argn = 3; argn <= lua_gettop( L ); argn ++ )
   {
     numdata = ( u32 )luaL_checkinteger( L, argn );
-    if (PLATFORM_OK != platform_spi_transaction( id, 0, 0, bitlen, numdata, 0, 0, 0 )) {
+    if (PLATFORM_OK != platform_spi_send( id, bitlen, numdata )) {
       return luaL_error( L, "failed" );
     }
     wrote ++;

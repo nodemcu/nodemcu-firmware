@@ -96,8 +96,8 @@ typedef uint32_t spi_data_type;
 
 // The platform SPI functions
 int platform_spi_exists( unsigned id );
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div);
-spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data );
+uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div);
+int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data );
 void platform_spi_select( unsigned id, int is_select );
 
 int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data );

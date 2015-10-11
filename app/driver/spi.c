@@ -133,26 +133,6 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 }
 
 /******************************************************************************
- * FunctionName : spi_mast_byte_write
- * Description  : SPI master 1 byte transmission function
- * Parameters   : 	uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
- *				uint8 data- transmitted data
-*******************************************************************************/
-void spi_mast_byte_write(uint8 spi_no, uint8 *data)
-{
-    if(spi_no>1) 		return; //handle invalid input number
-
-    while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
-
-    WRITE_PERI_REG(SPI_W0(spi_no), *data);
-
-    SET_PERI_REG_MASK(SPI_CMD(spi_no), SPI_USR);
-    while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
-
-    *data = (uint8)(READ_PERI_REG(SPI_W0(spi_no))&0xff);
-}  
-
-/******************************************************************************
  * FunctionName : spi_mast_set_mosi
  * Description  : Enter provided data into MOSI buffer.
  *                The data is regarded as a sequence of bits with length 'bitlen'.

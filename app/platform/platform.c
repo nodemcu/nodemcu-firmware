@@ -437,16 +437,20 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 
 // *****************************************************************************
 // SPI platform interface
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div)
+uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
   spi_master_init(id, cpol, cpha, clock_div);
   return 1;
 }
 
-spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data )
+int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data )
 {
-  spi_mast_byte_write(id, &data);
-  return data;
+  if (bitlen > 32)
+    return PLATFORM_ERR;
+
+  spi_mast_transaction( id, 0, 0, bitlen, data, 0, 0, 0 );
+
+  return PLATFORM_OK;
 }
 
 int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data )
