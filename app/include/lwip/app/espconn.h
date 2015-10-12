@@ -30,6 +30,7 @@ typedef void (* espconn_reconnect_callback)(void *arg, sint8 err);
 #define ESPCONN_CONN       -11   /* Not connected.           */
 
 #define ESPCONN_ARG        -12   /* Illegal argument.        */
+#define ESPCONN_IF		   -14	 /* Low_level error			 */
 #define ESPCONN_ISCONN     -15   /* Already connected.       */
 
 #define ESPCONN_HANDSHAKE  -28   /* ssl handshake failed	 */
@@ -168,7 +169,7 @@ typedef struct _espconn_msg{
 	struct espconn *pespconn;
 	comon_pkt pcommon;
 	uint8 count_opt;
-	sint16_t hs_status;	//the status of the handshake
+	int16_t hs_status;	//the status of the handshake
 	void *preverse;
 	void *pssl;
 	struct _espconn_msg *pnext;

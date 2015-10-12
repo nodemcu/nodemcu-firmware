@@ -49,6 +49,11 @@
 #include "osapi.h"
 #include "os_type.h"
 #include "user_interface.h"
+
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /** DNS server IP address */
 #ifndef DNS_MULTICAST_ADDRESS
 #define DNS_MULTICAST_ADDRESS        ipaddr_addr("224.0.0.251") /* resolver1.opendns.com */
@@ -971,11 +976,21 @@ mdns_get_servername(void) {
 
 void ICACHE_FLASH_ATTR
 mdns_server_unregister(void) {
+	struct ip_addr ap_host_addr;
+	struct ip_info ipconfig;
 	if(register_flag == 1){
 		if (igmp_leavegroup(&host_addr, &multicast_addr) != ERR_OK) {
-			os_printf("udp_leave_multigrup failed!\n");
+			os_printf("sta udp_leave_multigrup failed!\n");
 			return;
 		};
+		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x02) {
+		   wifi_get_ip_info(SOFTAP_IF, &ipconfig);
+		   ap_host_addr.addr = ipconfig.ip.addr;
+		   if (igmp_leavegroup(&ap_host_addr, &multicast_addr) != ERR_OK) {
+				os_printf("ap udp_join_multigrup failed!\n");
+				return;
+			};
+		}
 		register_flag = 0;
 	}
 }
@@ -1013,6 +1028,8 @@ void ICACHE_FLASH_ATTR
 mdns_init(struct mdns_info *info) {
 	/* initialize default DNS server address */
 	multicast_addr.addr = DNS_MULTICAST_ADDRESS;
+	struct ip_addr ap_host_addr;
+	struct ip_info ipconfig;
 	if (info->ipAddr == 0) {
 		os_printf("mdns ip error!\n ");
 		return;
@@ -1040,10 +1057,20 @@ mdns_init(struct mdns_info *info) {
 
 	if (mdns_pcb != NULL) {
 		/* join to the multicast address 224.0.0.251 */
-		if (igmp_joingroup(&host_addr, &multicast_addr) != ERR_OK) {
-			os_printf("udp_join_multigrup failed!\n");
-			return;
-		};
+		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x01) {
+			if (igmp_joingroup(&host_addr, &multicast_addr) != ERR_OK) {
+				os_printf("sta udp_join_multigrup failed!\n");
+				return;
+			};
+		}
+		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x02) {
+		   wifi_get_ip_info(SOFTAP_IF, &ipconfig);
+		   ap_host_addr.addr = ipconfig.ip.addr;
+		   if (igmp_joingroup(&ap_host_addr, &multicast_addr) != ERR_OK) {
+				os_printf("ap udp_join_multigrup failed!\n");
+				return;
+			};
+		}
 		register_flag = 1;
 		/* join to any IP address at the port 5353 */
 		if (udp_bind(mdns_pcb, IP_ADDR_ANY, DNS_MDNS_PORT) != ERR_OK) {

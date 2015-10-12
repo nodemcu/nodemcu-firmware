@@ -275,6 +275,7 @@ struct station_info {
 };
 
 struct dhcps_lease {
+	bool enable;
 	struct ip_addr start_ip;
 	struct ip_addr end_ip;
 };

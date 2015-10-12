@@ -45,6 +45,19 @@ extern sint8 espconn_udp_server(struct espconn *espconn);
 
 extern err_t espconn_udp_sent(void *arg, uint8 *psent, uint16 length);
 
+/******************************************************************************
+ * FunctionName : espconn_udp_sendto
+ * Description  : sent data for UDP
+ * Parameters   : void *arg -- UDP to send
+ * 				  uint8* psent -- Data to send
+ *                uint16 length -- Length of data to send
+ * Returns      : return espconn error code.
+ * - ESPCONN_OK. Successful. No error occured.
+ * - ESPCONN_MEM. Out of memory.
+ * - ESPCONN_RTE. Could not find route to destination address.
+ * - More errors could be returned by lower protocol layers.
+*******************************************************************************/
+extern err_t espconn_udp_sendto(void *arg, uint8 *psent, uint16 length);
 
 #endif /* __ESPCONN_UDP_H__ */
 

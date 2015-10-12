@@ -83,6 +83,10 @@
 
 #include <string.h>
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /** DNS server IP address */
 #ifndef DNS_SERVER_ADDRESS
 #define DNS_SERVER_ADDRESS(ipaddr)        (ip4_addr_set_u32(ipaddr, 0xDEDE43D0)) /* resolver1.opendns.com(208.67.222.222) */

@@ -55,6 +55,10 @@
 
 #include <string.h>
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 #if TCP_DEBUG
 const char tcp_state_str_rodata[][12] ICACHE_RODATA_ATTR = {
   "CLOSED",      

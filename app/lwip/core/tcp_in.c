@@ -56,6 +56,10 @@
 #include "lwip/snmp.h"
 #include "arch/perf.h"
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /* These variables are global to all functions involved in the input
    processing of TCP segments. They are set by the tcp_input()
    function. */
@@ -436,6 +440,16 @@ aborted:
       pbuf_free(inseg.p);//�ͷ�buffer
       inseg.p = NULL;
     }
+
+    /*add processing queue segments that arrive out of order by LiuHan*/
+#if TCP_QUEUE_OOSEQ
+    extern char RxNodeNum(void);
+    if (RxNodeNum() < 2){
+    	extern void pbuf_free_ooseq_new(void* arg);
+//    	os_printf("reclaim some memory from queued\n");
+    	pbuf_free_ooseq_new(NULL);
+    }
+#endif
   } else {
 
     /* If no matching PCB was found, send a TCP RST (reset) to the

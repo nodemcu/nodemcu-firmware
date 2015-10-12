@@ -79,6 +79,10 @@
 
 #include <string.h>
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 #ifdef EBUF_LWIP
 #define EP_OFFSET 36
 #else
@@ -89,6 +93,45 @@
 /* Since the pool is created in memp, PBUF_POOL_BUFSIZE will be automatically
    aligned there. Therefore, PBUF_POOL_BUFSIZE_ALIGNED can be used here. */
 #define PBUF_POOL_BUFSIZE_ALIGNED LWIP_MEM_ALIGN_SIZE(PBUF_POOL_BUFSIZE)
+
+/**
+ * Attempt to reclaim some memory from queued out-of-sequence TCP segments
+ * if we run out of pool pbufs. It's better to give priority to new packets
+ * if we're running out.
+ */
+#if TCP_QUEUE_OOSEQ
+void ICACHE_FLASH_ATTR
+pbuf_free_ooseq_new(void* arg)
+{
+  struct tcp_pcb* pcb;
+  struct tcp_seg *head = NULL;
+  struct tcp_seg *seg1 = NULL;
+  struct tcp_seg *seg2 = NULL;
+  for (pcb = tcp_active_pcbs; NULL != pcb; pcb = pcb->next) {
+	  head = pcb->ooseq;
+	  seg1 = head;
+	  if (head != NULL) {
+		  if (seg1->next == NULL){
+			  head = head->next;
+			  tcp_seg_free(seg1);
+			  pcb->ooseq = head;
+		  } else {
+			  while (seg1 != NULL){
+				  seg2 = seg1;
+				  seg2 = seg2->next;
+				  if (seg2 ->next == NULL){
+					  seg1->next = seg2->next;
+					  tcp_seg_free(seg2);
+					  break;
+				  }
+				  seg1 = seg1->next;
+			  }
+			  pcb->ooseq = head;
+		  }
+	  }
+  }
+}
+#endif
 
 #if !LWIP_TCP || !TCP_QUEUE_OOSEQ || NO_SYS
 #define PBUF_POOL_IS_EMPTY()

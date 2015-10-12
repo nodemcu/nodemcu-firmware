@@ -24,6 +24,10 @@
 #include "lwip/mem.h"
 #include "lwip/app/espconn_tcp.h"
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 extern espconn_msg *plink_active;
 extern espconn_msg *pserver_list;
 extern struct espconn_packet pktinfo[2];
@@ -71,7 +75,7 @@ espconn_kill_oldest(void)
 	inactivity = 0;
 	inactive = NULL;
 	for (pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next) {
-		if (pcb->state == FIN_WAIT_2){
+		if (pcb->state == FIN_WAIT_1 || pcb->state == FIN_WAIT_2){
 			if ((u32_t) (tcp_ticks - pcb->tmr) >= inactivity) {
 				inactivity = tcp_ticks - pcb->tmr;
 				inactive = pcb;
@@ -121,7 +125,7 @@ void ICACHE_FLASH_ATTR espconn_kill_oldest_pcb(void)
 					break;
 			}
 
-			if (cpcb->state == FIN_WAIT_2 || cpcb->state == LAST_ACK){
+			if (cpcb->state == FIN_WAIT_1 || cpcb->state == FIN_WAIT_2 || cpcb->state == LAST_ACK){
 				num_tcp_fin++;
 				if (num_tcp_fin == MEMP_NUM_TCP_PCB)
 					break;
@@ -131,6 +135,8 @@ void ICACHE_FLASH_ATTR espconn_kill_oldest_pcb(void)
 		if (num_tcp_fin == MEMP_NUM_TCP_PCB){
 			num_tcp_fin = 0;
 			espconn_kill_oldest();
+		} else if (cpcb == NULL){
+			num_tcp_fin = 0;
 		}
 	}
 }
@@ -901,7 +907,18 @@ espconn_tcp_client(struct espconn *espconn)
     	pclient->pespconn = espconn;
     	pclient->pespconn->state = ESPCONN_WAIT;
     	pclient->pcommon.pcb = pcb;
-        tcp_bind(pcb, IP_ADDR_ANY, pclient->pespconn->proto.tcp->local_port);
+    	tcp_bind(pcb, IP_ADDR_ANY, pclient->pespconn->proto.tcp->local_port);
+#if 0
+    	pclient->pcommon.err = tcp_bind(pcb, IP_ADDR_ANY, pclient->pespconn->proto.tcp->local_port);
+    	if (pclient->pcommon.err != ERR_OK){
+    		/*remove the node from the client's active connection list*/
+    		espconn_list_delete(&plink_active, pclient);
+    		memp_free(MEMP_TCP_PCB, pcb);
+    		os_free(pclient);
+    		pclient = NULL;
+    		return ERR_USE;
+    	}
+#endif
         /*Establish the connection*/
         pclient->pcommon.err = tcp_connect(pcb, &ipaddr,
         		pclient->pespconn->proto.tcp->remote_port, espconn_client_connect);

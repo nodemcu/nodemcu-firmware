@@ -35,6 +35,10 @@
 #if LWIP_TCP
 #include "lwip/tcp.h"
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /*
  * This implements a netio server.
  *  The client sends a command word (4 bytes) then a data length word (4 bytes).
@@ -321,7 +325,7 @@ netio_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 
   LWIP_UNUSED_ARG(err);
 
-  ns = mem_malloc(sizeof(struct netio_state));
+  ns = (struct netio_state *)mem_malloc(sizeof(struct netio_state));
 
   if(ns == NULL){
     return ERR_MEM;
@@ -335,7 +339,7 @@ netio_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 #if NETIO_USE_STATIC_BUF == 1
   ns->buf_ptr = netio_buf;
 #else
-  ns->buf_ptr = mem_malloc(NETIO_BUF_SIZE);
+  ns->buf_ptr = (u8_t *)mem_malloc(NETIO_BUF_SIZE);
 
   if(ns->buf_ptr == NULL){
     mem_free(ns);

@@ -659,6 +659,13 @@
 #define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
 #endif
 
+/**
+ * DHCP_MAXRTX: Maximum number of retries of current request.
+ */
+#ifndef DHCP_MAXRTX
+#define DHCP_MAXRTX						(*(volatile uint32*)0x600011E0)
+#endif
+
 /*
    ------------------------------------
    ---------- AUTOIP options ----------
@@ -934,7 +941,7 @@
  * Define to 0 if your device is low on memory.
  */
 #ifndef TCP_QUEUE_OOSEQ
-#define TCP_QUEUE_OOSEQ                 0
+#define TCP_QUEUE_OOSEQ                 1
 #endif
 
 #if 1

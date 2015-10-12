@@ -52,8 +52,13 @@
 #include "lwip/inet_chksum.h"
 #include "lwip/stats.h"
 #include "lwip/snmp.h"
+#include "netif/etharp.h"
 
 #include <string.h>
+
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
 
 /* Define some copy-macros for checksum-on-copy so that the code looks
    nicer by preventing too many ifdef's. */
@@ -226,16 +231,7 @@ tcp_pbuf_prealloc(pbuf_layer layer, u16_t length, u16_t max_length,
   LWIP_UNUSED_ARG(apiflags);
   LWIP_UNUSED_ARG(first_seg);
   /* always create MSS-sized pbufs */
-#ifdef ESP_MESH_SUPPORT
-  if (espconn_mesh_is_on()) {
-	  if (alloc > TCP_MSS)
-	    alloc = TCP_MSS;
-  } else {
-	  alloc = TCP_MSS;
-  }
-#else
   alloc = TCP_MSS;
-#endif
 #else /* LWIP_NETIF_TX_SINGLE_PBUF */
   if (length < max_length) {
     /* Should we allocate an oversized pbuf, or just the minimum
@@ -1451,6 +1447,7 @@ tcp_zero_window_probe(struct tcp_pcb *pcb)
   struct pbuf *p;
   struct tcp_hdr *tcphdr;
   struct tcp_seg *seg;
+  u16_t  offset = 0;
   u16_t len;
   u8_t is_fin;
 
@@ -1469,6 +1466,11 @@ tcp_zero_window_probe(struct tcp_pcb *pcb)
 
   if(seg == NULL) {
     seg = pcb->unsent;
+  } else {
+	  struct ip_hdr *iphdr = NULL;
+	  iphdr = (struct ip_hdr *)((char*)seg->p->payload + SIZEOF_ETH_HDR);
+	  offset = IPH_HL(iphdr)*4;
+	  offset += SIZEOF_ETH_HDR;
   }
   if(seg == NULL) {
     return;
@@ -1492,7 +1494,12 @@ tcp_zero_window_probe(struct tcp_pcb *pcb)
     /* Data segment, copy in one byte from the head of the unacked queue */
     struct tcp_hdr *thdr = (struct tcp_hdr *)seg->p->payload;
     char *d = ((char *)p->payload + TCP_HLEN);
-    pbuf_copy_partial(seg->p, d, 1, TCPH_HDRLEN(thdr) * 4);
+    if (pcb->unacked == NULL)
+    	pbuf_copy_partial(seg->p, d, 1, TCPH_HDRLEN(thdr) * 4);
+    else {
+    	thdr = (struct tcp_hdr *)((char*)seg->p->payload + offset);
+    	pbuf_copy_partial(seg->p, d, 1, TCPH_HDRLEN(thdr) * 4 + offset);
+    }
   }
 
 #if CHECKSUM_GEN_TCP

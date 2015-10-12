@@ -63,6 +63,10 @@
 #include "lwip/inet.h"
 #endif /* PING_USE_SOCKETS */
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /* ping variables */
 static u16_t ping_seq_num = 0;
 static u32_t ping_time;

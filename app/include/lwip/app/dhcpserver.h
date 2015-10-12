@@ -24,6 +24,7 @@ typedef struct dhcps_msg {
 
 #ifndef LWIP_OPEN_SRC
 struct dhcps_lease {
+	bool enable;
 	struct ip_addr start_ip;
 	struct ip_addr end_ip;
 };
@@ -46,7 +47,8 @@ typedef struct _list_node{
 	struct _list_node *pnext;
 }list_node;
 
-#define DHCPS_LEASE_TIMER 0x05A0
+extern uint32 dhcps_lease_time;
+#define DHCPS_LEASE_TIMER  dhcps_lease_time  //0x05A0
 #define DHCPS_MAX_LEASE 0x64
 #define BOOTP_BROADCAST 0x8000
 
@@ -89,6 +91,7 @@ typedef struct _list_node{
 #define DHCPS_STATE_ACK 3
 #define DHCPS_STATE_NAK 4
 #define DHCPS_STATE_IDLE 5
+#define DHCPS_STATE_RELEASE 6
 
 #define   dhcps_router_enabled(offer)	((offer & OFFER_ROUTER) != 0)
 

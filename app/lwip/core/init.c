@@ -261,7 +261,7 @@ lwip_init(void)
 {
   MEMP_NUM_TCP_PCB = 5;
   TCP_WND = (4 * TCP_MSS);
-  TCP_MAXRTX = 3;
+  TCP_MAXRTX = 12;
   TCP_SYNMAXRTX = 6;
 
   /* Sanity check user-configurable values */

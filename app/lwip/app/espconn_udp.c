@@ -22,9 +22,17 @@
 
 #include "lwip/app/espconn_udp.h"
 
-//#include "net80211/ieee80211_var.h"
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 extern espconn_msg *plink_active;
 extern uint8 default_interface;
+
+enum send_opt{
+	ESPCONN_SENDTO,
+	ESPCONN_SEND
+};
 static void ICACHE_FLASH_ATTR espconn_data_sentcb(struct espconn *pespconn)
 {
     if (pespconn == NULL) {
@@ -36,7 +44,7 @@ static void ICACHE_FLASH_ATTR espconn_data_sentcb(struct espconn *pespconn)
     }
 }
 
-static void ICACHE_FLASH_ATTR espconn_data_sent(void *arg)
+static void ICACHE_FLASH_ATTR espconn_data_sent(void *arg, enum send_opt opt)
 {
     espconn_msg *psent = arg;
 
@@ -49,7 +57,11 @@ static void ICACHE_FLASH_ATTR espconn_data_sent(void *arg)
 //        sys_timeout(10, espconn_data_sentcb, psent->pespconn);
         espconn_data_sentcb(psent->pespconn);
     } else {
-        espconn_udp_sent(arg, psent->pcommon.ptrbuf, psent->pcommon.cntr);
+    	if (opt == ESPCONN_SEND){
+    		espconn_udp_sent(arg, psent->pcommon.ptrbuf, psent->pcommon.cntr);
+    	} else {
+    		espconn_udp_sendto(arg, psent->pcommon.ptrbuf, psent->pcommon.cntr);
+    	}
     }
 }
 
@@ -82,8 +94,8 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
         return ESPCONN_ARG;
     }
 
-    if (TCP_MSS < length) {
-        datalen = TCP_MSS;
+    if (1470 < length) {
+        datalen = 1470;
     } else {
         datalen = length;
     }
@@ -145,8 +157,112 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
         pbuf_free(p);
         pudp_sent->pcommon.ptrbuf = psent + datalen;
         pudp_sent->pcommon.cntr = length - datalen;
-        espconn_data_sent(pudp_sent);
+        espconn_data_sent(pudp_sent, ESPCONN_SEND);
+        if (err > 0)
+        	return ESPCONN_IF;
         return err;
+    } else {
+    	pbuf_free(p);
+    	return ESPCONN_RTE;
+    }
+}
+
+/******************************************************************************
+ * FunctionName : espconn_udp_sendto
+ * Description  : sent data for UDP
+ * Parameters   : void *arg -- UDP to send
+ * 				  uint8* psent -- Data to send
+ *                uint16 length -- Length of data to send
+ * Returns      : return espconn error code.
+ * - ESPCONN_OK. Successful. No error occured.
+ * - ESPCONN_MEM. Out of memory.
+ * - ESPCONN_RTE. Could not find route to destination address.
+ * - More errors could be returned by lower protocol layers.
+*******************************************************************************/
+err_t ICACHE_FLASH_ATTR
+espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
+{
+    espconn_msg *pudp_sent = arg;
+    struct udp_pcb *upcb = pudp_sent->pcommon.pcb;
+    struct espconn *pespconn = pudp_sent->pespconn;
+    struct pbuf *p, *q ,*p_temp;
+    struct ip_addr dst_ip;
+    u16_t dst_port;
+    u8_t *data = NULL;
+    u16_t cnt = 0;
+    u16_t datalen = 0;
+    u16_t i = 0;
+    err_t err;
+    LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("espconn_udp_sent %d %d %p\n", __LINE__, length, upcb));
+
+    if (pudp_sent == NULL || upcb == NULL || psent == NULL || length == 0) {
+        return ESPCONN_ARG;
+    }
+
+    if (1470 < length) {
+        datalen = 1470;
+    } else {
+        datalen = length;
+    }
+
+    p = pbuf_alloc(PBUF_TRANSPORT, datalen, PBUF_RAM);
+    LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("espconn_udp_sent %d %p\n", __LINE__, p));
+
+    if (p != NULL) {
+        q = p;
+
+        while (q != NULL) {
+            data = (u8_t *)q->payload;
+            LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("espconn_udp_sent %d %p\n", __LINE__, data));
+
+            for (i = 0; i < q->len; i++) {
+                data[i] = ((u8_t *) psent)[cnt++];
+            }
+
+            q = q->next;
+        }
+    } else {
+        return ESPCONN_MEM;
+    }
+
+    dst_port = pespconn->proto.udp->remote_port;
+    IP4_ADDR(&dst_ip, pespconn->proto.udp->remote_ip[0],
+			pespconn->proto.udp->remote_ip[1], pespconn->proto.udp->remote_ip[2],
+			pespconn->proto.udp->remote_ip[3]);
+    LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("espconn_udp_sent %d %x %d\n", __LINE__, upcb->remote_ip, upcb->remote_port));
+
+    struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
+	struct netif *ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
+
+    if(wifi_get_opmode() == ESPCONN_AP_STA && default_interface == ESPCONN_AP_STA && sta_netif != NULL && ap_netif != NULL)
+	{
+		if(netif_is_up(sta_netif) && netif_is_up(ap_netif) && \
+			ip_addr_isbroadcast(&upcb->remote_ip, sta_netif) && \
+			ip_addr_isbroadcast(&upcb->remote_ip, ap_netif)) {
+
+		  p_temp = pbuf_alloc(PBUF_TRANSPORT, datalen, PBUF_RAM);
+		  if (pbuf_copy (p_temp,p) != ERR_OK) {
+			  LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("espconn_udp_sendto: copying to new pbuf failed\n"));
+			  return ESPCONN_ARG;
+		  }
+		  netif_set_default(sta_netif);
+		  err = udp_sendto(upcb, p_temp, &dst_ip, dst_port);
+		  pbuf_free(p_temp);
+		  netif_set_default(ap_netif);
+		}
+	}
+    err = udp_sendto(upcb, p, &dst_ip, dst_port);
+
+    if (p->ref != 0) {
+    	pbuf_free(p);
+    	pudp_sent->pcommon.ptrbuf = psent + datalen;
+		pudp_sent->pcommon.cntr = length - datalen;
+		if (err == ERR_OK)
+			espconn_data_sent(pudp_sent, ESPCONN_SENDTO);
+
+		if (err > 0)
+			return ESPCONN_IF;
+		return err;
     } else {
     	pbuf_free(p);
     	return ESPCONN_RTE;
@@ -175,15 +291,10 @@ espconn_udp_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("espconn_udp_server_recv %d %p\n", __LINE__, upcb));
 
-    upcb->remote_port = port;
-    upcb->remote_ip = *addr;
-
-    precv->pcommon.remote_ip[0] = ip4_addr1_16(&upcb->remote_ip);
-    precv->pcommon.remote_ip[1] = ip4_addr2_16(&upcb->remote_ip);
-    precv->pcommon.remote_ip[2] = ip4_addr3_16(&upcb->remote_ip);
-    precv->pcommon.remote_ip[3] = ip4_addr4_16(&upcb->remote_ip);
-    os_memcpy(precv->pespconn->proto.udp->remote_ip, precv->pcommon.remote_ip, 4);
-    precv->pespconn->proto.udp->remote_port = port;
+    precv->pcommon.remote_ip[0] = ip4_addr1_16(addr);
+    precv->pcommon.remote_ip[1] = ip4_addr2_16(addr);
+    precv->pcommon.remote_ip[2] = ip4_addr3_16(addr);
+    precv->pcommon.remote_ip[3] = ip4_addr4_16(addr);
     precv->pcommon.remote_port = port;
     precv->pcommon.pcb = upcb;
 
@@ -196,31 +307,13 @@ espconn_udp_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 	} else {
 		wifi_get_ip_info(0, &ipconfig);
 	}
-//	upcb->local_ip = ipconfig.ip;
+
 	precv->pespconn->proto.udp->local_ip[0] = ip4_addr1_16(&ipconfig.ip);
 	precv->pespconn->proto.udp->local_ip[1] = ip4_addr2_16(&ipconfig.ip);
 	precv->pespconn->proto.udp->local_ip[2] = ip4_addr3_16(&ipconfig.ip);
 	precv->pespconn->proto.udp->local_ip[3] = ip4_addr4_16(&ipconfig.ip);
 
     if (p != NULL) {
-//        q = p;
-
-//        while (q != NULL) {
-//            pdata = (u8_t *)os_zalloc(q ->len + 1);
-//            length = pbuf_copy_partial(q, pdata, q ->len, 0);
-//
-//            LWIP_DEBUGF(ESPCONN_UDP_DEBUG, ("espconn_udp_server_recv %d %x\n", __LINE__, length));
-//            precv->pcommon.pcb = upcb;
-//
-//            if (length != 0) {
-//                if (precv->pespconn->recv_callback != NULL) {
-//                    precv->pespconn->recv_callback(precv->pespconn, pdata, length);
-//                }
-//            }
-//
-//            q = q->next;
-//            os_free(pdata);
-//        }
     	pdata = (u8_t *)os_zalloc(p ->tot_len + 1);
     	length = pbuf_copy_partial(p, pdata, p ->tot_len, 0);
     	precv->pcommon.pcb = upcb;
