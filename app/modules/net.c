@@ -1077,6 +1077,16 @@ static int net_send( lua_State* L, const char* mt )
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_send_ref);
     nud->cb_send_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
+  // SDK 1.4.0 changed behaviour, for UDP server need to look up remote ip/port
+  if (isserver && pesp_conn->type == ESPCONN_UDP)
+  {
+    remot_info *pr = 0;
+    if (espconn_get_connection_info (pesp_conn, &pr, 0) != ESPCONN_OK)
+      return luaL_error (L, "remote ip/port unavailable");
+    pesp_conn->proto.udp->remote_port = pr->remote_port;
+    os_memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
+    // The remot_info apparently should *not* be os_free()d, fyi
+  }
 #ifdef CLIENT_SSL_ENABLE
   if(nud->secure)
     espconn_secure_sent(pesp_conn, (unsigned char *)payload, l);
