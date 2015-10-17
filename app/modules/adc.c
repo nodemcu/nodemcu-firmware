@@ -34,12 +34,12 @@ static int adc_readvdd33( lua_State* L )
 	  }
 	  else
 	  {
-		  vdd33 = readvdd33();
+		  vdd33 = system_get_vdd33();
 	  }
   }
   else
   {
-    vdd33 = readvdd33();
+    vdd33 = system_get_vdd33();
   }
   lua_pushinteger(L, vdd33);
   return 1;
