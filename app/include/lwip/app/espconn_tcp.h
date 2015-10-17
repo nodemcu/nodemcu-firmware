@@ -10,6 +10,18 @@
 #define ESPCONN_TCP_TIMER 40
 #endif
 
+#define  espconn_keepalive_enable(pcb)   ((pcb)->so_options |= SOF_KEEPALIVE)
+#define  espconn_keepalive_disable(pcb)   ((pcb)->so_options &= ~SOF_KEEPALIVE)
+
+/******************************************************************************
+ * FunctionName : espconn_kill_oldest_pcb
+ * Description  : A oldest incoming connection has been killed.
+ * Parameters   : none
+ * Returns      : none
+*******************************************************************************/
+
+extern void espconn_kill_oldest_pcb(void);
+
 /******************************************************************************
  * FunctionName : espconn_tcp_disconnect
  * Description  : A new incoming connection has been disconnected.

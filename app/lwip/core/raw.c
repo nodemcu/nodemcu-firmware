@@ -52,6 +52,10 @@
 
 #include <string.h>
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /** The list of RAW PCBs */
 static struct raw_pcb *raw_pcbs;
 
@@ -342,7 +346,7 @@ raw_new(u8_t proto)
   /* could allocate RAW PCB? */
   if (pcb != NULL) {
     /* initialize PCB to all zeroes */
-    memset(pcb, 0, sizeof(struct raw_pcb));
+    os_memset(pcb, 0, sizeof(struct raw_pcb));
     pcb->protocol = proto;
     pcb->ttl = RAW_TTL;
     pcb->next = raw_pcbs;

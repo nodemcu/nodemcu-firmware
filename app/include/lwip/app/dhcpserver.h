@@ -1,6 +1,8 @@
 #ifndef __DHCPS_H__
 #define __DHCPS_H__
 
+#define USE_DNS
+
 typedef struct dhcps_state{
         sint16_t state;
 } dhcps_state;
@@ -22,8 +24,15 @@ typedef struct dhcps_msg {
 
 #ifndef LWIP_OPEN_SRC
 struct dhcps_lease {
-	uint32 start_ip;
-	uint32 end_ip;
+	bool enable;
+	struct ip_addr start_ip;
+	struct ip_addr end_ip;
+};
+
+enum dhcps_offer_option{
+	OFFER_START = 0x00,
+	OFFER_ROUTER = 0x01,
+	OFFER_END
 };
 #endif
 
@@ -38,7 +47,8 @@ typedef struct _list_node{
 	struct _list_node *pnext;
 }list_node;
 
-#define DHCPS_LEASE_TIMER 0x05A0
+extern uint32 dhcps_lease_time;
+#define DHCPS_LEASE_TIMER  dhcps_lease_time  //0x05A0
 #define DHCPS_MAX_LEASE 0x64
 #define BOOTP_BROADCAST 0x8000
 
@@ -50,11 +60,6 @@ typedef struct _list_node{
 
 #define DHCPS_SERVER_PORT  67
 #define DHCPS_CLIENT_PORT  68
-
-/*
- * Advertise DNS capability in DHCP OFFER
- */
-#define USE_DNS 0
 
 #define DHCPDISCOVER  1
 #define DHCPOFFER     2
@@ -79,13 +84,16 @@ typedef struct _list_node{
 
 //#define USE_CLASS_B_NET 1
 #define DHCPS_DEBUG          0
-
+#define MAX_STATION_NUM      8
 
 #define DHCPS_STATE_OFFER 1
 #define DHCPS_STATE_DECLINE 2
 #define DHCPS_STATE_ACK 3
 #define DHCPS_STATE_NAK 4
 #define DHCPS_STATE_IDLE 5
+#define DHCPS_STATE_RELEASE 6
+
+#define   dhcps_router_enabled(offer)	((offer & OFFER_ROUTER) != 0)
 
 void dhcps_start(struct ip_info *info);
 void dhcps_stop(void);

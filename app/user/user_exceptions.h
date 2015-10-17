@@ -1,4 +1,4 @@
-#include "c_types.h"
+#include "sections.h"
 #include "rom.h"
 #include <xtensa/corebits.h>
 

@@ -67,6 +67,7 @@
 #include "tsl2561.h"
 #include "platform.h"
 #include "user_interface.h"
+#include "osapi.h"
 
 static const uint32_t tsl2561_i2c_id = 0;
 static bool _tsl2561Initialised = 0;

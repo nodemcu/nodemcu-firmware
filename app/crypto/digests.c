@@ -30,7 +30,8 @@
 #include "digests.h"
 #include "user_config.h"
 #include "rom.h"
-#include "lwip/mem.h"
+#include "osapi.h"
+#include "mem.h"
 #include <string.h>
 #include <c_errno.h>
 
@@ -108,7 +109,7 @@ int ICACHE_FLASH_ATTR crypto_hash (const digest_mech_info_t *mi,
   if (!mi)
     return EINVAL;
 
-  void *ctx = os_malloc (mi->ctx_size);
+  void *ctx = (void *)os_malloc (mi->ctx_size);
   if (!ctx)
     return ENOMEM;
 
@@ -129,7 +130,7 @@ int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
   if (!mi)
     return EINVAL;
 
-  void *ctx = os_malloc (mi->ctx_size);
+  void *ctx = (void *)os_malloc (mi->ctx_size);
   if (!ctx)
     return ENOMEM;
 

@@ -64,7 +64,7 @@ static int lgpio_trig( lua_State* L )
   }else if(sl == 4 && c_strcmp(str, "down") == 0){
     type = GPIO_PIN_INTR_NEGEDGE;
   }else if(sl == 4 && c_strcmp(str, "both") == 0){
-    type = GPIO_PIN_INTR_ANYEGDE;
+    type = GPIO_PIN_INTR_ANYEDGE;
   }else if(sl == 3 && c_strcmp(str, "low") == 0){
     type = GPIO_PIN_INTR_LOLEVEL;
   }else if(sl == 4 && c_strcmp(str, "high") == 0){
@@ -147,8 +147,8 @@ static int lgpio_write( lua_State* L )
 }
 
 #define DELAY_TABLE_MAX_LEN 256
-#define noInterrupts os_intr_lock
-#define interrupts os_intr_unlock
+#define noInterrupts ets_intr_lock
+#define interrupts ets_intr_unlock
 #define delayMicroseconds os_delay_us
 #define DIRECT_WRITE(pin, level)    (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level))
 // Lua: serout( pin, firstLevel, delay_table, [repeatNum] )

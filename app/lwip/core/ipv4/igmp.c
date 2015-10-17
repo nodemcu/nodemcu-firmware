@@ -95,6 +95,10 @@ Steve Reynolds
 
 #include "string.h"
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /* 
  * IGMP constants
  */

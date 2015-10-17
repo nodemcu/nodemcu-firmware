@@ -55,20 +55,13 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 
   switch(pull){
     case PLATFORM_GPIO_PULLUP:
-      PIN_PULLDWN_DIS(pin_mux[pin]);
       PIN_PULLUP_EN(pin_mux[pin]);
-      break;
-    case PLATFORM_GPIO_PULLDOWN:
-      PIN_PULLUP_DIS(pin_mux[pin]);
-      PIN_PULLDWN_EN(pin_mux[pin]);
       break;
     case PLATFORM_GPIO_FLOAT:
       PIN_PULLUP_DIS(pin_mux[pin]);
-      PIN_PULLDWN_DIS(pin_mux[pin]);
       break;
     default:
       PIN_PULLUP_DIS(pin_mux[pin]);
-      PIN_PULLDWN_DIS(pin_mux[pin]);
       break;
   }
 
@@ -197,7 +190,6 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
     case BIT_RATE_74880:
     case BIT_RATE_115200:
     case BIT_RATE_230400:
-    case BIT_RATE_256000:
     case BIT_RATE_460800:
     case BIT_RATE_921600:
     case BIT_RATE_1843200:

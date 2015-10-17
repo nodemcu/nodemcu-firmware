@@ -22,21 +22,11 @@
 
 #include "os_type.h"
 
-os_timer_t lua_timer;
-LOCAL os_timer_t readline_timer;
-
 lua_State *globalL = NULL;
 
 lua_Load gLoad;
 
 static const char *progname = LUA_PROGNAME;
-
-#ifdef DEVKIT_VERSION_0_9
-static int key_press_count = 0;
-int led_high_count = LED_HIGH_COUNT_DEFAULT;
-int led_low_count = LED_LOW_COUNT_DEFAULT;
-static int led_count = 0;
-#endif
 
 #if 0
 static void lstop (lua_State *L, lua_Debug *ar) {
@@ -135,9 +125,13 @@ static int docall (lua_State *L, int narg, int clear) {
 }
 
 
-static void print_version (void) {
-  // l_message(NULL, LUA_RELEASE "  " LUA_COPYRIGHT);
-  l_message(NULL, "\n" NODE_VERSION " " BUILD_DATE "  powered by " LUA_RELEASE);
+static void print_version (lua_State *L) {
+  lua_pushliteral (L, "\n" NODE_VERSION " build " BUILD_DATE " powered by " LUA_RELEASE " on SDK ");
+  lua_pushstring (L, SDK_VERSION);
+  lua_concat (L, 2);
+  const char *msg = lua_tostring (L, -1);
+  l_message (NULL, msg);
+  lua_pop (L, 1);
 }
 
 
@@ -399,7 +393,7 @@ static int pmain (lua_State *L) {
   lua_gc(L, LUA_GCSTOP, 0);  /* stop collector during initialization */
   luaL_openlibs(L);  /* open libraries */
   lua_gc(L, LUA_GCRESTART, 0);
-  print_version();
+  print_version(L);
   s->status = handle_luainit(L);
 #if 0
   if (s->status != 0) return 0;
@@ -432,8 +426,8 @@ static int pmain (lua_State *L) {
   return 0;
 }
 
-void dojob(lua_Load *load);
-void readline(lua_Load *load);
+static void dojob(lua_Load *load);
+static bool readline(lua_Load *load);
 char line_buffer[LUA_MAXINPUT];
 
 #ifdef LUA_RPC
@@ -461,10 +455,7 @@ int lua_main (int argc, char **argv) {
   gLoad.line_position = 0;
   gLoad.prmt = get_prompt(L, 1);
 
-  // dojob(&gLoad);
-  os_timer_disarm(&lua_timer);
-  os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, &gLoad);
-  os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+  dojob(&gLoad);
 
   NODE_DBG("Heap size::%d.\n",system_get_free_heap_size());
   legc_set_mode( L, EGC_ALWAYS, 4096 );
@@ -473,16 +464,17 @@ int lua_main (int argc, char **argv) {
   return (status || s.status) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+void lua_handle_input (bool force)
+{
+  if (force || readline (&gLoad))
+    dojob (&gLoad);
+}
+
 void donejob(lua_Load *load){
   lua_close(load->L);
 }
 
-#if 0
-int log_fd = -1;
-int noparse = 0;
-#endif
-
-void dojob(lua_Load *load){
+static void dojob(lua_Load *load){
   size_t l, rs;
   int status;
   char *b = load->line;
@@ -538,53 +530,8 @@ void dojob(lua_Load *load){
   load->done = 0;
   load->line_position = 0;
   c_memset(load->line, 0, load->len);
-  os_timer_disarm(&readline_timer);
-  os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-  os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
   c_puts(load->prmt);
-  // NODE_DBG("dojob() is called with firstline.\n");
 }
-
-#ifdef DEVKIT_VERSION_0_9
-extern void key_long_press(void *arg);
-extern void key_short_press(void *arg);
-static bool key_short_pressed = false;
-static bool key_long_pressed = false;
-void update_key_led(){
-  uint8_t temp = 1, level = 1;
-  led_count++;
-  if(led_count>led_low_count+led_high_count){
-    led_count = 0;    // reset led_count, the level still high
-  } else if(led_count>led_low_count && led_count <=led_high_count+led_low_count){
-    level = 1;    // output high level
-  } else if(led_count<=led_low_count){
-    level = 0;    // output low level
-  }
-  temp = platform_key_led(level);
-  if(temp == 0){      // key is pressed
-    key_press_count++;
-    if(key_press_count>=KEY_LONG_COUNT){
-      // key_long_press(NULL);
-      key_long_pressed = true;
-      key_short_pressed = false;
-      // key_press_count = 0;
-    } else if(key_press_count>=KEY_SHORT_COUNT){    // < KEY_LONG_COUNT
-      // key_short_press(NULL);
-      key_short_pressed = true;
-    }
-  }else{  // key is released
-    key_press_count = 0;
-    if(key_long_pressed){
-      key_long_press(NULL);
-      key_long_pressed = false;
-    }
-    if(key_short_pressed){
-      key_short_press(NULL);
-      key_short_pressed = false;
-    }
-  }
-}
-#endif
 
 #ifndef uart_putc
 #define uart_putc uart0_putc
@@ -594,11 +541,9 @@ extern bool uart0_echo;
 extern bool run_input;
 extern uint16_t need_len;
 extern int16_t end_char;
-void readline(lua_Load *load){
+static bool readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
-#ifdef DEVKIT_VERSION_0_9
-  update_key_led();
-#endif
+  bool need_dojob = false;
   char ch;
   while (uart_getc(&ch))
   {
@@ -644,14 +589,9 @@ void readline(lua_Load *load){
         {
           /* Get a empty line, then go to get a new line */
           c_puts(load->prmt);
-          os_timer_disarm(&readline_timer);
-          os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-          os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
         } else {
           load->done = 1;
-          os_timer_disarm(&lua_timer);
-          os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
-          os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+          need_dojob = true;
         }
         continue;
       }
@@ -693,8 +633,6 @@ void readline(lua_Load *load){
     uart_on_data_cb(load->line, load->line_position);
     load->line_position = 0;
   }
-  // if there is no input from user, repeat readline()
-  os_timer_disarm(&readline_timer);
-  os_timer_setfn(&readline_timer, (os_timer_func_t *)readline, load);
-  os_timer_arm(&readline_timer, READLINE_INTERVAL, 0);   // no repeat
+
+  return need_dojob;
 }

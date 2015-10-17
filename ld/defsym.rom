@@ -1,0 +1,10 @@
+--defsym=strcmp=ets_strcmp
+--defsym=strcpy=ets_strcpy
+--defsym=strlen=ets_strlen
+--defsym=strncmp=ets_strncmp
+--defsym=strncpy=ets_strncpy
+--defsym=strstr=ets_strstr
+--defsym=memcmp=ets_memcmp
+--defsym=memcpy=ets_memcpy
+--defsym=memmove=ets_memmove
+--defsym=memset=ets_memset

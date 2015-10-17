@@ -3,6 +3,8 @@
 #ifndef _ROM_H_
 #define _ROM_H_
 
+#include "c_types.h"
+
 // SHA1 is assumed to match the netbsd sha1.h headers
 #define SHA1_DIGEST_LENGTH		20
 #define SHA1_DIGEST_STRING_LENGTH	41
