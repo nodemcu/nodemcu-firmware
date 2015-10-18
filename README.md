@@ -405,7 +405,7 @@ All other pins can be assigned to any available GPIO:
 
 Also refer to the initialization sequence eg in [u8g_graphics_test.lua](lua_examples/u8glib/u8g_graphics_test.lua):
 ```lua
-spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8)
+spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 ```
 
 
@@ -488,7 +488,7 @@ All other pins can be assigned to any available GPIO:
 
 Also refer to the initialization sequence eg in [GraphicsTest.lua](lua_examples/ucglib/GraphicsRest.lua):
 ```lua
-spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8)
+spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 ```
 
 #####Library usage
