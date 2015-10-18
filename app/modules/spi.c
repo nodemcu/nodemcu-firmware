@@ -38,7 +38,8 @@ static int spi_setup( lua_State *L )
   }
 
   if (clock_div < 4) {
-    return luaL_error( L, "invalid clock divider" );
+    // defaulting to 8
+    clock_div = 8;
   }
 
   spi_databits[id] = databits;
@@ -260,6 +261,7 @@ const LUA_REG_TYPE spi_map[] =
   { LSTRKEY( "CPHA_HIGH" ), LNUMVAL( PLATFORM_SPI_CPHA_HIGH) },
   { LSTRKEY( "CPOL_LOW" ),  LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
   { LSTRKEY( "CPOL_HIGH" ), LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
+  { LSTRKEY( "DATABITS_8" ), LNUMVAL( 8 ) },
 #endif // #if LUA_OPTIMIZE_MEMORY > 0
   { LNILKEY, LNILVAL }
 };
@@ -278,8 +280,8 @@ LUALIB_API int luaopen_spi( lua_State *L )
   MOD_REG_NUMBER( L, "CPHA_HIGH", PLATFORM_SPI_CPHA_HIGH);
   MOD_REG_NUMBER( L, "CPOL_LOW" , PLATFORM_SPI_CPOL_LOW);
   MOD_REG_NUMBER( L, "CPOL_HIGH", PLATFORM_SPI_CPOL_HIGH);
+  MOD_REG_NUMBER( L, "DATABITS_8", 8 );
 
   return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0
 }
-
