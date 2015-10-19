@@ -71,8 +71,6 @@ static int spi_send( lua_State *L )
     if( lua_type( L, argn ) == LUA_TNUMBER )
     {
       numdata = ( int )luaL_checkinteger( L, argn );
-      if( numdata < 0 )
-        return luaL_error( L, "wrong arg range" );
       platform_spi_send( id, spi_databits[id], numdata );
       wrote ++;
     }
@@ -84,8 +82,6 @@ static int spi_send( lua_State *L )
         lua_rawgeti( L, argn, i + 1 );
         numdata = ( int )luaL_checkinteger( L, -1 );
         lua_pop( L, 1 );
-        if( numdata < 0 )
-          return luaL_error( L, "wrong arg range" );
         platform_spi_send( id, spi_databits[id], numdata );
       }
       wrote += i;
