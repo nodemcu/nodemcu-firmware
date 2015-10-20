@@ -1256,7 +1256,7 @@ static int mqtt_socket_lwt( lua_State* L )
   {
     return luaL_error( L, "need lwt message");
   }
-
+  stack++;
   if(mud->connect_info.will_topic){    // free the previous one if there is any
     c_free(mud->connect_info.will_topic);
     mud->connect_info.will_topic = NULL;
