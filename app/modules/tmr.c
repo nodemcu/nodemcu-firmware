@@ -62,7 +62,7 @@ tmr.softwd(int)
 #define TIMER_MODE_SINGLE 0
 #define TIMER_MODE_SEMI 2
 #define TIMER_MODE_AUTO 1
-#define TIMER_IDLE_FLAG (1<<7) 
+#define TIMER_IDLE_FLAG (1<<7)
 
 //well, the following are my assumptions
 //why, oh why is there no good documentation
@@ -121,20 +121,20 @@ static int tmr_delay( lua_State* L ){
 	while(us >= 1000000){
 		us -= 1000000;
 		os_delay_us(1000000);
-		WRITE_PERI_REG(0x60000914, 0x73);
+		system_soft_wdt_feed();
 	}
 	if(us>0){
 		os_delay_us(us);
-		WRITE_PERI_REG(0x60000914, 0x73);
+		system_soft_wdt_feed();
 	}
-	return 0; 
+	return 0;
 }
 
 // Lua: tmr.now() , return system timer in us
 static int tmr_now(lua_State* L){
 	uint32_t now = 0x7FFFFFFF & system_get_time();
 	lua_pushinteger(L, now);
-	return 1; 
+	return 1;
 }
 
 // Lua: tmr.register( id, interval, mode, function )
@@ -161,9 +161,9 @@ static int tmr_register(lua_State* L){
 	tmr->lua_ref = ref;
 	tmr->mode = mode|TIMER_IDLE_FLAG;
 	tmr->interval = interval;
-	tmr->L = L; 
+	tmr->L = L;
 	ets_timer_setfn(&tmr->os, alarm_timer_common, (void*)id);
-	return 0;  
+	return 0;
 }
 
 // Lua: tmr.start( id )
@@ -201,7 +201,7 @@ static int tmr_stop(lua_State* L){
 	}else{
 		lua_pushboolean(L, 0);
 	}
-	return 1;  
+	return 1;
 }
 
 // Lua: tmr.unregister( id )
@@ -214,7 +214,7 @@ static int tmr_unregister(lua_State* L){
 	if(tmr->lua_ref != LUA_NOREF)
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 	tmr->lua_ref = LUA_NOREF;
-	tmr->mode = TIMER_MODE_OFF; 
+	tmr->mode = TIMER_MODE_OFF;
 	return 0;
 }
 
@@ -226,7 +226,7 @@ static int tmr_interval(lua_State* L){
 	sint32_t interval = luaL_checkinteger(L, 2);
 	if(interval <= 0)
 		return luaL_error(L, "wrong arg range");
-	if(tmr->mode != TIMER_MODE_OFF){	
+	if(tmr->mode != TIMER_MODE_OFF){
 		tmr->interval = interval;
 		if(!(tmr->mode&TIMER_IDLE_FLAG)){
 			ets_timer_disarm(&tmr->os);
@@ -256,9 +256,9 @@ why they are here*/
 // extern void update_key_led();
 // Lua: tmr.wdclr()
 static int tmr_wdclr( lua_State* L ){
-	WRITE_PERI_REG(0x60000914, 0x73);
+	system_soft_wdt_feed();
 	// update_key_led();
-	return 0;  
+	return 0;
 }
 
 //system_rtc_clock_cali_proc() returns
@@ -299,13 +299,13 @@ void rtc_callback(void *arg){
 static int tmr_time( lua_State* L ){
 	rtc_timer_update();
 	lua_pushinteger(L, rtc2sec(rtc_time.block));
-	return 1; 
+	return 1;
 }
 
 // Lua: tmr.softwd( value )
 static int tmr_softwd( lua_State* L ){
 	soft_watchdog = luaL_checkinteger(L, 1);
-	return 0; 
+	return 0;
 }
 
 // Module function map
@@ -322,7 +322,7 @@ const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "stop" ), LFUNCVAL ( tmr_stop ) },
 	{ LSTRKEY( "unregister" ), LFUNCVAL ( tmr_unregister ) },
 	{ LSTRKEY( "state" ), LFUNCVAL ( tmr_state ) },
-	{ LSTRKEY( "interval" ), LFUNCVAL ( tmr_interval) }, 
+	{ LSTRKEY( "interval" ), LFUNCVAL ( tmr_interval) },
 #if LUA_OPTIMIZE_MEMORY > 0
 	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
 	{ LSTRKEY( "ALARM_SEMI" ), LNUMVAL( TIMER_MODE_SEMI ) },
@@ -332,7 +332,7 @@ const LUA_REG_TYPE tmr_map[] = {
 };
 
 LUALIB_API int luaopen_tmr( lua_State *L ){
-	int i;	
+	int i;
 	for(i=0; i<NUM_TMR; i++){
 		alarm_timers[i].lua_ref = LUA_NOREF;
 		alarm_timers[i].mode = TIMER_MODE_OFF;
@@ -355,4 +355,3 @@ LUALIB_API int luaopen_tmr( lua_State *L ){
 	return 1;
 #endif
 }
-
