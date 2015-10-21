@@ -437,16 +437,54 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 
 // *****************************************************************************
 // SPI platform interface
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock_div)
+uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
-  spi_master_init(id, cpol, cpha, databits, clock_div);
+  spi_master_init(id, cpol, cpha, clock_div);
   return 1;
 }
 
-spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data )
+int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data )
 {
-  spi_mast_byte_write(id, &data);
-  return data;
+  if (bitlen > 32)
+    return PLATFORM_ERR;
+
+  spi_mast_transaction( id, 0, 0, bitlen, data, 0, 0, 0 );
+
+  return PLATFORM_OK;
+}
+
+int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data )
+{
+  if (offset + bitlen > 512)
+    return PLATFORM_ERR;
+
+  spi_mast_set_mosi( id, offset, bitlen, data );
+
+  return PLATFORM_OK;
+}
+
+spi_data_type platform_spi_get_miso( uint8_t id, uint8_t offset, uint8_t bitlen )
+{
+  if (offset + bitlen > 512)
+    return 0;
+
+  return spi_mast_get_miso( id, offset, bitlen );
+}
+
+int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,
+                               uint8_t addr_bitlen, spi_data_type addr_data,
+                               uint8_t mosi_bitlen, uint8_t dummy_bitlen, uint8_t miso_bitlen )
+{
+  if ((cmd_bitlen   >  16) ||
+      (addr_bitlen  >  32) ||
+      (mosi_bitlen  > 512) ||
+      (dummy_bitlen > 256) ||
+      (miso_bitlen  > 512))
+    return PLATFORM_ERR;
+
+  spi_mast_transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data, mosi_bitlen, dummy_bitlen, miso_bitlen );
+
+  return PLATFORM_OK;
 }
 
 // ****************************************************************************

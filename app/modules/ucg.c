@@ -752,36 +752,36 @@ static int16_t ucg_com_esp8266_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uin
         break;
 
     case UCG_COM_MSG_SEND_BYTE:
-        platform_spi_send_recv( 1, arg );
+        platform_spi_send( 1, 8, arg );
         break;
 
     case UCG_COM_MSG_REPEAT_1_BYTE:
         while( arg > 0 ) {
-            platform_spi_send_recv( 1, data[0] );
+            platform_spi_send( 1, 8, data[0] );
             arg--;
         }
         break;
 
     case UCG_COM_MSG_REPEAT_2_BYTES:
         while( arg > 0 ) {
-            platform_spi_send_recv( 1, data[0] );
-            platform_spi_send_recv( 1, data[1] );
+            platform_spi_send( 1, 8, data[0] );
+            platform_spi_send( 1, 8, data[1] );
             arg--;
         }
         break;
 
     case UCG_COM_MSG_REPEAT_3_BYTES:
         while( arg > 0 ) {
-            platform_spi_send_recv( 1, data[0] );
-            platform_spi_send_recv( 1, data[1] );
-            platform_spi_send_recv( 1, data[2] );
+            platform_spi_send( 1, 8, data[0] );
+            platform_spi_send( 1, 8, data[1] );
+            platform_spi_send( 1, 8, data[2] );
             arg--;
         }
         break;
 
     case UCG_COM_MSG_SEND_STR:
         while( arg > 0 ) {
-            platform_spi_send_recv( 1, *data++ );
+            platform_spi_send( 1, 8, *data++ );
             arg--;
         }
         break;
@@ -802,7 +802,7 @@ static int16_t ucg_com_esp8266_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uin
                 }
             }
             data++;
-            platform_spi_send_recv( 1, *data );
+            platform_spi_send( 1, 8, *data );
             data++;
             arg--;
         }
