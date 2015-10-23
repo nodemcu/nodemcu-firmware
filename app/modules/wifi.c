@@ -458,46 +458,47 @@ static int wifi_sleeptype( lua_State* L )
 
 // lua: wifi.installstatusled(pin)
 static int wifi_statusledinstall( lua_State* L ){
-	unsigned pin = luaL_checkinteger( L, 1 );
-
-	uint32 muxname;
-	uint8 pinfunc;
-	switch (pin){
-	case 0:
-		muxname = PERIPHS_IO_MUX_GPIO0_U;
-		pinfunc = FUNC_GPIO0;
-		break;
-	case 4:
-		muxname = PERIPHS_IO_MUX_GPIO4_U;
-		pinfunc = FUNC_GPIO4;
-		break;
-	case 5:
-		muxname = PERIPHS_IO_MUX_GPIO5_U;
-		pinfunc = FUNC_GPIO5;
-		break;
-	case 12:
-		muxname = PERIPHS_IO_MUX_MTDI_U;
-		pinfunc = FUNC_GPIO12;
-		break;
-	case 13:
-		muxname = PERIPHS_IO_MUX_MTCK_U;
-		pinfunc = FUNC_GPIO13;
-		break;
-	case 14:
-		muxname = PERIPHS_IO_MUX_MTMS_U;
-		pinfunc = FUNC_GPIO14;
-		break;
-
-	default:
-		return luaL_error (L, "only supports GPIO pins 0,4,5 and 12-14");
+	if (lua_isnil(L, 1)) {
+		wifi_status_led_uninstall();
+		return 0;
 	}
-	wifi_status_led_install(pin,muxname,pinfunc );
-	return 0;
-}
-//lua wifi.uninstallstatusled()
-static int wifi_statusleduninstall( lua_State* L ){
-	wifi_status_led_uninstall();
-	return 0;
+	else{
+		unsigned pin = luaL_checkinteger( L, 1 );
+
+		uint32 muxname;
+		uint8 pinfunc;
+		switch (pin){
+		case 0:
+			muxname = PERIPHS_IO_MUX_GPIO0_U;
+			pinfunc = FUNC_GPIO0;
+			break;
+		case 4:
+			muxname = PERIPHS_IO_MUX_GPIO4_U;
+			pinfunc = FUNC_GPIO4;
+			break;
+		case 5:
+			muxname = PERIPHS_IO_MUX_GPIO5_U;
+			pinfunc = FUNC_GPIO5;
+			break;
+		case 12:
+			muxname = PERIPHS_IO_MUX_MTDI_U;
+			pinfunc = FUNC_GPIO12;
+			break;
+		case 13:
+			muxname = PERIPHS_IO_MUX_MTCK_U;
+			pinfunc = FUNC_GPIO13;
+			break;
+		case 14:
+			muxname = PERIPHS_IO_MUX_MTMS_U;
+			pinfunc = FUNC_GPIO14;
+			break;
+
+		default:
+			return luaL_error (L, "only supports GPIO pins 0,4,5 and 12-14");
+		}
+		wifi_status_led_install(pin,muxname,pinfunc );
+		return 0;
+	}
 }
 
 // Lua: wifi.sta.getmac()
@@ -1377,8 +1378,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ), LFUNCVAL( wifi_exit_smart ) },
   { LSTRKEY( "sleeptype" ), LFUNCVAL( wifi_sleeptype ) },
-  { LSTRKEY( "installstatusled" ), LFUNCVAL( wifi_statusledinstall ) },
-  { LSTRKEY( "uninstallstatusled" ), LFUNCVAL( wifi_statusleduninstall ) },
+  { LSTRKEY( "setstatusled" ), LFUNCVAL( wifi_statusledinstall ) },
 #if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "sta" ), LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ), LROVAL( wifi_ap_map ) },
