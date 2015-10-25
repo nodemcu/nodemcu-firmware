@@ -9,15 +9,16 @@
 
 static u8 spi_databits[NUM_SPI] = {0, 0};
 
-// Lua: = spi.setup( id, mode, cpol, cpha, databits, clock_div )
+// Lua: = spi.setup( id, mode, cpol, cpha, databits, clock_div, [full_duplex] )
 static int spi_setup( lua_State *L )
 {
-  int id        = luaL_checkinteger( L, 1 );
-  int mode      = luaL_checkinteger( L, 2 );
-  int cpol      = luaL_checkinteger( L, 3 );
-  int cpha      = luaL_checkinteger( L, 4 );
-  int databits  = luaL_checkinteger( L, 5 );
-  u32 clock_div = luaL_checkinteger( L, 6 );
+  int id          = luaL_checkinteger( L, 1 );
+  int mode        = luaL_checkinteger( L, 2 );
+  int cpol        = luaL_checkinteger( L, 3 );
+  int cpha        = luaL_checkinteger( L, 4 );
+  int databits    = luaL_checkinteger( L, 5 );
+  u32 clock_div   = luaL_checkinteger( L, 6 );
+  int full_duplex = luaL_optinteger( L, 7, 1 );
 
   MOD_CHECK_ID( spi, id );
 
@@ -42,65 +43,134 @@ static int spi_setup( lua_State *L )
     clock_div = 8;
   }
 
+  if (full_duplex != 0 && full_duplex != 1) {
+    return luaL_error( L, "out of range" );
+  }
+
   spi_databits[id] = databits;
 
-  u32 res = platform_spi_setup(id, mode, cpol, cpha, clock_div);
+  u32 res = platform_spi_setup(id, mode, cpol, cpha, clock_div, full_duplex);
   lua_pushinteger( L, res );
   return 1;
 }
 
-// Lua: wrote = spi.send( id, data1, [data2], ..., [datan] )
-// data can be either a string, a table or an 8-bit number
-static int spi_send( lua_State *L )
+static int spi_generic_send_recv( lua_State *L, u8 recv )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   const char *pdata;
   size_t datalen, i;
-  int numdata;
+  u32 numdata;
   u32 wrote = 0;
-  unsigned argn;
+  int pushed = 1;
+  unsigned argn, tos;
 
   MOD_CHECK_ID( spi, id );
-  if( lua_gettop( L ) < 2 )
+  if( (tos = lua_gettop( L )) < 2 )
     return luaL_error( L, "wrong arg type" );
 
-  for( argn = 2; argn <= lua_gettop( L ); argn ++ )
+  // prepare first returned item 'wrote' - value is yet unknown
+  // position on stack is tos+1
+  lua_pushinteger( L, 0 );
+
+  for( argn = 2; argn <= tos; argn ++ )
   {
+    // *** Send integer value and return received data as integer ***
     // lua_isnumber() would silently convert a string of digits to an integer
     // whereas here strings are handled separately.
     if( lua_type( L, argn ) == LUA_TNUMBER )
     {
-      numdata = ( int )luaL_checkinteger( L, argn );
-      platform_spi_send( id, spi_databits[id], numdata );
+      numdata = luaL_checkinteger( L, argn );
+      if (recv > 0)
+      {
+        lua_pushinteger( L, platform_spi_send_recv( id, spi_databits[id], numdata ) );
+        pushed ++;
+      }
+      else
+      {
+        platform_spi_send( id, spi_databits[id], numdata );
+      }
       wrote ++;
     }
+
+    // *** Send table elements and return received data items as a table ***
     else if( lua_istable( L, argn ) )
     {
       datalen = lua_objlen( L, argn );
+
+      if (recv > 0 && datalen > 0) {
+        // create a table for the received data
+        lua_createtable( L, datalen, 0 );
+        pushed ++;
+      }
+
       for( i = 0; i < datalen; i ++ )
       {
         lua_rawgeti( L, argn, i + 1 );
-        numdata = ( int )luaL_checkinteger( L, -1 );
+        numdata = luaL_checkinteger( L, -1 );
         lua_pop( L, 1 );
-        platform_spi_send( id, spi_databits[id], numdata );
+        if (recv > 0) {
+          lua_pushinteger( L, platform_spi_send_recv( id, spi_databits[id], numdata ) );
+          lua_rawseti( L, -1, i + 1 );
+        }
+        else
+        {
+          platform_spi_send( id, spi_databits[id], numdata );
+        }
       }
       wrote += i;
       if( i < datalen )
         break;
     }
+
+    // *** Send characters of a string and return received data items as string ***
     else
     {
+      luaL_Buffer b;
+
       pdata = luaL_checklstring( L, argn, &datalen );
+      if (recv > 0) {
+        luaL_buffinit( L, &b );
+      }
+
       for( i = 0; i < datalen; i ++ )
-        platform_spi_send( id, spi_databits[id], pdata[ i ] );
+      {
+        if (recv > 0)
+        {
+          luaL_addchar( &b, (char)platform_spi_send_recv( id, spi_databits[id], pdata[ i ] ) );
+        }
+        else
+        {
+          platform_spi_send( id, spi_databits[id], pdata[ i ] );
+        }
+      }
+      if (recv > 0 && datalen > 0) {
+        luaL_pushresult( &b );
+        pushed ++;
+      }
       wrote += i;
       if( i < datalen )
         break;
     }
   }
 
+  // update item 'wrote' on stack
   lua_pushinteger( L, wrote );
-  return 1;
+  lua_replace( L, tos+1 );
+  return pushed;
+}
+
+// Lua: wrote  = spi.send( id, data1, [data2], ..., [datan] )
+// data can be either a string, a table or an 8-bit number
+static int spi_send( lua_State *L )
+{
+  return spi_generic_send_recv( L, 0 );
+}
+
+// Lua: wrote, [data1], ..., [datan]  = spi.send_recv( id, data1, [data2], ..., [datan] )
+// data can be either a string, a table or an 8-bit number
+static int spi_send_recv( lua_State *L )
+{
+  return spi_generic_send_recv( L, 1 );
 }
 
 // Lua: read = spi.recv( id, size )
@@ -246,6 +316,7 @@ const LUA_REG_TYPE spi_map[] =
 {
   { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
   { LSTRKEY( "send" ),        LFUNCVAL( spi_send ) },
+  { LSTRKEY( "send_recv" ),   LFUNCVAL( spi_send_recv ) },
   { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
   { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
   { LSTRKEY( "get_miso" ),    LFUNCVAL( spi_get_miso ) },
@@ -258,6 +329,8 @@ const LUA_REG_TYPE spi_map[] =
   { LSTRKEY( "CPOL_LOW" ),  LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
   { LSTRKEY( "CPOL_HIGH" ), LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
   { LSTRKEY( "DATABITS_8" ), LNUMVAL( 8 ) },
+  { LSTRKEY( "HALFDUPLEX" ), LNUMVAL( 0 ) },
+  { LSTRKEY( "FULLDUPLEX" ), LNUMVAL( 1 ) },
 #endif // #if LUA_OPTIMIZE_MEMORY > 0
   { LNILKEY, LNILVAL }
 };
@@ -277,6 +350,8 @@ LUALIB_API int luaopen_spi( lua_State *L )
   MOD_REG_NUMBER( L, "CPOL_LOW" , PLATFORM_SPI_CPOL_LOW);
   MOD_REG_NUMBER( L, "CPOL_HIGH", PLATFORM_SPI_CPOL_HIGH);
   MOD_REG_NUMBER( L, "DATABITS_8", 8 );
+  MOD_REG_NUMBER( L, "HALFDUPLEX", 0 );
+  MOD_REG_NUMBER( L, "FULLDUPLEX", 1 );
 
   return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0

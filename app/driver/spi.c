@@ -64,7 +64,7 @@ void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
  * Description  : SPI master initial function for common byte units transmission
  * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
 *******************************************************************************/
-void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_div)
+void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_div, uint8 full_duplex)
 {
 	uint32 regvalue; 
 
@@ -85,8 +85,7 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 2);//configure io to spi mode	
 	}
 
-	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_DOUTDIN|SPI_USR_MOSI|
-			  SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER);
+	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER);
 
 	//set clock polarity
 	// TODO: This doesn't work
@@ -105,7 +104,7 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 	}
 
 	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_FLASH_MODE|SPI_USR_MISO|
-			    SPI_USR_ADDR|SPI_USR_COMMAND|SPI_USR_DUMMY);
+			    SPI_USR_ADDR|SPI_USR_COMMAND|SPI_USR_DUMMY|SPI_DOUTDIN);
 
 	//clear Dual or Quad lines transmission mode
 	CLEAR_PERI_REG_MASK(SPI_CTRL(spi_no), SPI_QIO_MODE|SPI_DIO_MODE|SPI_DOUT_MODE|SPI_QOUT_MODE);
@@ -126,10 +125,10 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 					((0&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
 					((1&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
 
-	//set 8bit output buffer length, the buffer is the low 8bit of register"SPI_FLASH_C0"
-	WRITE_PERI_REG(SPI_USER1(spi_no), 
-					((7&SPI_USR_MOSI_BITLEN)<<SPI_USR_MOSI_BITLEN_S)|
-					((7&SPI_USR_MISO_BITLEN)<<SPI_USR_MISO_BITLEN_S));
+        if (full_duplex > 0)
+        {
+            SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_DOUTDIN);
+        }
 }
 
 /******************************************************************************
@@ -186,6 +185,8 @@ void spi_mast_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data)
         wn_bitlen = bitlen;
         wn_data   = data;
     } while (bitlen > 0);
+
+    return;
 }
 
 /******************************************************************************
@@ -204,6 +205,8 @@ uint32 spi_mast_get_miso(uint8 spi_no, uint8 offset, uint8 bitlen)
 
     if (spi_no > 1)
         return 0; // handle invalid input number
+
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
 
     // determine which SPI_Wn register is addressed
     wn = offset >> 5;
