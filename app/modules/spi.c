@@ -173,11 +173,12 @@ static int spi_send_recv( lua_State *L )
   return spi_generic_send_recv( L, 1 );
 }
 
-// Lua: read = spi.recv( id, size )
+// Lua: read = spi.recv( id, size, [default data] )
 static int spi_recv( lua_State *L )
 {
   int id   = luaL_checkinteger( L, 1 );
   int size = luaL_checkinteger( L, 2 ), i;
+  int def  = luaL_optinteger( L, 3, 0xffffffff );
 
   luaL_Buffer b;
 
@@ -189,10 +190,7 @@ static int spi_recv( lua_State *L )
   luaL_buffinit( L, &b );
   for (i=0; i<size; i++)
   {
-    if (PLATFORM_OK != platform_spi_transaction( id, 0, 0, 0, 0, 0, 0, spi_databits[id] )) {
-      return luaL_error( L, "failed" );
-    }
-    luaL_addchar( &b, ( char )platform_spi_get_miso( id, 0, spi_databits[id] ) );
+    luaL_addchar( &b, ( char )platform_spi_send_recv( id, spi_databits[id], def ) );
   }
 
   luaL_pushresult( &b );
