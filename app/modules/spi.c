@@ -110,7 +110,7 @@ static int spi_generic_send_recv( lua_State *L, u8 recv )
         lua_pop( L, 1 );
         if (recv > 0) {
           lua_pushinteger( L, platform_spi_send_recv( id, spi_databits[id], numdata ) );
-          lua_rawseti( L, -1, i + 1 );
+          lua_rawseti( L, -2, i + 1 );
         }
         else
         {
