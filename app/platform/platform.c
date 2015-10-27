@@ -508,7 +508,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
       return 0;
     c_memcpy(apbuf, from, size);
   }
-  WRITE_PERI_REG(0x60000914, 0x73);
+  system_soft_wdt_feed ();
   r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
   if(apbuf)
     c_free(apbuf);
@@ -532,7 +532,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 
   fromaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
-  WRITE_PERI_REG(0x60000914, 0x73);
+  system_soft_wdt_feed ();
 
   const uint32_t blkmask = (INTERNAL_FLASH_READ_UNIT_SIZE - 1);
   if( ((uint32_t)to) & blkmask )
@@ -561,6 +561,6 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 
 int platform_flash_erase_sector( uint32_t sector_id )
 {
-  WRITE_PERI_REG(0x60000914, 0x73);
+  system_soft_wdt_feed ();
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
