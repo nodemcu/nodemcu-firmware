@@ -7,9 +7,13 @@
 #include "auxmods.h"
 #include "lrotable.h"
 
-static u8 spi_databits[NUM_SPI] = {0, 0};
+#define SPI_HALFDUPLEX 0
+#define SPI_FULLDUPLEX 1
 
-// Lua: = spi.setup( id, mode, cpol, cpha, databits, clock_div, [full_duplex] )
+static u8 spi_databits[NUM_SPI] = {0, 0};
+static u8 spi_duplex[NUM_SPI] = {SPI_HALFDUPLEX, SPI_HALFDUPLEX};
+
+// Lua: = spi.setup( id, mode, cpol, cpha, databits, clock_div, [duplex_mode] )
 static int spi_setup( lua_State *L )
 {
   int id          = luaL_checkinteger( L, 1 );
@@ -18,7 +22,7 @@ static int spi_setup( lua_State *L )
   int cpha        = luaL_checkinteger( L, 4 );
   int databits    = luaL_checkinteger( L, 5 );
   u32 clock_div   = luaL_checkinteger( L, 6 );
-  int full_duplex = luaL_optinteger( L, 7, 1 );
+  int duplex_mode = luaL_optinteger( L, 7, SPI_HALFDUPLEX );
 
   MOD_CHECK_ID( spi, id );
 
@@ -43,18 +47,28 @@ static int spi_setup( lua_State *L )
     clock_div = 8;
   }
 
-  if (full_duplex != 0 && full_duplex != 1) {
+  if (duplex_mode == SPI_HALFDUPLEX || duplex_mode == SPI_FULLDUPLEX)
+  {
+    spi_duplex[id] = duplex_mode;
+  }
+  else
+  {
     return luaL_error( L, "out of range" );
   }
 
   spi_databits[id] = databits;
 
-  u32 res = platform_spi_setup(id, mode, cpol, cpha, clock_div, full_duplex);
+  u32 res = platform_spi_setup(id, mode, cpol, cpha, clock_div);
   lua_pushinteger( L, res );
   return 1;
 }
 
-static int spi_generic_send_recv( lua_State *L, u8 recv )
+// Half-duplex mode:
+// Lua: wrote  = spi.send( id, data1, [data2], ..., [datan] )
+// Full-duplex mode:
+// Lua: wrote, [data1], ..., [datan]  = spi.send_recv( id, data1, [data2], ..., [datan] )
+// data can be either a string, a table or an 8-bit number
+static int spi_send_recv( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   const char *pdata;
@@ -63,6 +77,7 @@ static int spi_generic_send_recv( lua_State *L, u8 recv )
   u32 wrote = 0;
   int pushed = 1;
   unsigned argn, tos;
+  u8 recv = spi_duplex[id] == SPI_FULLDUPLEX ? 1 : 0;
 
   MOD_CHECK_ID( spi, id );
   if( (tos = lua_gettop( L )) < 2 )
@@ -157,20 +172,6 @@ static int spi_generic_send_recv( lua_State *L, u8 recv )
   lua_pushinteger( L, wrote );
   lua_replace( L, tos+1 );
   return pushed;
-}
-
-// Lua: wrote  = spi.send( id, data1, [data2], ..., [datan] )
-// data can be either a string, a table or an 8-bit number
-static int spi_send( lua_State *L )
-{
-  return spi_generic_send_recv( L, 0 );
-}
-
-// Lua: wrote, [data1], ..., [datan]  = spi.send_recv( id, data1, [data2], ..., [datan] )
-// data can be either a string, a table or an 8-bit number
-static int spi_send_recv( lua_State *L )
-{
-  return spi_generic_send_recv( L, 1 );
 }
 
 // Lua: read = spi.recv( id, size, [default data] )
@@ -294,7 +295,7 @@ static int spi_transaction( lua_State *L )
     return luaL_error( L, "dummy_bitlen out of range" );
   }
 
-  if (miso_bitlen < 0 || miso_bitlen > 511) {
+  if (miso_bitlen < -512 || miso_bitlen > 511) {
     return luaL_error( L, "miso_bitlen out of range" );
   }
 
@@ -313,8 +314,7 @@ static int spi_transaction( lua_State *L )
 const LUA_REG_TYPE spi_map[] = 
 {
   { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
-  { LSTRKEY( "send" ),        LFUNCVAL( spi_send ) },
-  { LSTRKEY( "send_recv" ),   LFUNCVAL( spi_send_recv ) },
+  { LSTRKEY( "send" ),        LFUNCVAL( spi_send_recv ) },
   { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
   { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
   { LSTRKEY( "get_miso" ),    LFUNCVAL( spi_get_miso ) },
@@ -327,8 +327,8 @@ const LUA_REG_TYPE spi_map[] =
   { LSTRKEY( "CPOL_LOW" ),  LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
   { LSTRKEY( "CPOL_HIGH" ), LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
   { LSTRKEY( "DATABITS_8" ), LNUMVAL( 8 ) },
-  { LSTRKEY( "HALFDUPLEX" ), LNUMVAL( 0 ) },
-  { LSTRKEY( "FULLDUPLEX" ), LNUMVAL( 1 ) },
+  { LSTRKEY( "HALFDUPLEX" ), LNUMVAL( SPI_HALFDUPLEX ) },
+  { LSTRKEY( "FULLDUPLEX" ), LNUMVAL( SPI_FULLDUPLEX ) },
 #endif // #if LUA_OPTIMIZE_MEMORY > 0
   { LNILKEY, LNILVAL }
 };
@@ -348,8 +348,8 @@ LUALIB_API int luaopen_spi( lua_State *L )
   MOD_REG_NUMBER( L, "CPOL_LOW" , PLATFORM_SPI_CPOL_LOW);
   MOD_REG_NUMBER( L, "CPOL_HIGH", PLATFORM_SPI_CPOL_HIGH);
   MOD_REG_NUMBER( L, "DATABITS_8", 8 );
-  MOD_REG_NUMBER( L, "HALFDUPLEX", 0 );
-  MOD_REG_NUMBER( L, "FULLDUPLEX", 1 );
+  MOD_REG_NUMBER( L, "HALFDUPLEX", SPI_HALFDUPLEX );
+  MOD_REG_NUMBER( L, "FULLDUPLEX", SPI_FULLDUPLEX );
 
   return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0
