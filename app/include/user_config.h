@@ -16,10 +16,17 @@
 
 #define USE_OPTIMIZE_PRINTF
 
+
+
 #ifdef DEVELOP_VERSION
 #define NODE_DEBUG
 #define COAP_DEBUG
-#endif	/* DEVELOP_VERSION */
+#define BIT_RATE_DEFAULT BIT_RATE_74880
+#else
+#undef BIT_RATE_DEFAULT
+#define BIT_RATE_DEFAULT BIT_RATE_9600
+#endif /* DEVELOP_VERSION */
+
 
 #define NODE_ERROR
 

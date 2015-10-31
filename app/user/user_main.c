@@ -165,17 +165,8 @@ void user_init(void)
     // os_printf("Heap size::%d.\n",system_get_free_heap_size());
     // os_delay_us(50*1000);   // delay 50ms before init uart
 
-    UartBautRate br =
+    UartBautRate br = BIT_RATE_DEFAULT;
 
-#ifdef DEVELOP_VERSION
-      BIT_RATE_74880;
-#else
-# ifndef BIT_RATE_DEF
- 	  BIT_RATE_9600;
-# else
-      BIT_RATE_DEF;
-# endif
-#endif
     uart_init (br, br, USER_TASK_PRIO_0, SIG_UARTINPUT);
 
     #ifndef NODE_DEBUG
