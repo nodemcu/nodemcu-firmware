@@ -578,8 +578,8 @@ json_text = cjson.encode(value)
 Note: currently only chanel A with gain 128 is supported.
 The HX711 is an inexpensive 24bit ADC with programmable 128x, 64x, and 32x gain.  
 ```lua
-	-- Initialize the hx711 with clk and data pin assignments
+	-- Initialize the hx711 with clk on pin 5 and data on pin 6
 	hx711.init(5,6)
 	-- Read ch A with 128 gain.
-	raw_data = hx711.read()
+	raw_data = hx711.read(0)
 ```
