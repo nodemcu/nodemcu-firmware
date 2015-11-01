@@ -149,6 +149,14 @@
 #define ROM_MODULES_WS2812
 #endif
 
+#if defined(LUA_USE_MODULES_TM1829)
+#define MODULES_TM1829      "tm1829"
+#define ROM_MODULES_TM1829  \
+    _ROM(MODULES_TM1829, luaopen_tm1829, tm1829_map)
+#else
+#define ROM_MODULES_TM1829
+#endif
+
 #if defined(LUA_USE_MODULES_CJSON)
 #define MODULES_CJSON       "cjson"
 #define ROM_MODULES_CJSON   \
@@ -200,6 +208,7 @@
         ROM_MODULES_BIT     \
         ROM_MODULES_WS2801  \
         ROM_MODULES_WS2812  \
+        ROM_MODULES_TM1829  \
         ROM_MODULES_CJSON   \
         ROM_MODULES_CRYPTO  \
         ROM_MODULES_RC      \
