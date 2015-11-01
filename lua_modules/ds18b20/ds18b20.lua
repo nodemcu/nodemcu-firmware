@@ -101,12 +101,19 @@ function readNumber(addr, unit)
         if (t > 32767) then
           t = t - 65536
         end
-        if(unit == nil or unit == C) then
-          t = t * 625
-        elseif(unit == F) then
-          t = t * 1125 + 320000
-        elseif(unit == K) then
-          t = t * 625 + 2731500
+
+		if (addr:byte(1) == 0x28) then
+		  t = t * 625  -- DS18B20, 4 fractional bits
+		else
+		  t = t * 5000 -- DS18S20, 1 fractional bit
+		end
+
+        if(unit == nil or unit == 'C') then
+          -- do nothing
+        elseif(unit == 'F') then
+          t = t * 1.8 + 320000
+        elseif(unit == 'K') then
+          t = t + 2731500
         else
           return nil
         end
