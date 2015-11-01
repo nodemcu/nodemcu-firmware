@@ -245,6 +245,14 @@
 #define ROM_MODULES_TSL2561
 #endif
 
+#if defined(LUA_USE_MODULES_HX711)
+#define MODULES_HX711      "hx711"
+#define ROM_MODULES_HX711  \
+    _ROM(MODULES_HX711, luaopen_hx711, hx711_map)
+#else
+#define ROM_MODULES_HX711
+#endif
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -275,6 +283,7 @@
         ROM_MODULES_RTCFIFO \
         ROM_MODULES_SNTP    \
         ROM_MODULES_BMP085  \
-        ROM_MODULES_TSL2561
+        ROM_MODULES_TSL2561 \
+        ROM_MODULES_HX711  
 
 #endif
