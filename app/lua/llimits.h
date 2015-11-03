@@ -9,11 +9,8 @@
 
 
 //#include "c_limits.h"
-//#include "c_stddef.h"
-
 
 #include "lua.h"
-
 
 typedef LUAI_UINT32 lu_int32;
 

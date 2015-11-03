@@ -406,9 +406,10 @@ uint8_t onewire_search(uint8_t pin, uint8_t *newAddr)
       LastDeviceFlag[pin] = FALSE;
       LastFamilyDiscrepancy[pin] = 0;
       search_result = FALSE;
-   }
-   int i;
-   for (i = 0; i < 8; i++) newAddr[i] = ROM_NO[pin][i];
+   } else {
+	  int i;
+      for (i = 0; i < 8; i++) newAddr[i] = ROM_NO[pin][i];
+   }   
    return search_result;
   }
 

@@ -4,17 +4,15 @@
 ** See Copyright Notice in lua.h
 */
 
-
-//#include "c_assert.h"
-#include "c_math.h"
-#include "c_stdarg.h"
-#include "c_string.h"
-
 #define lapi_c
 #define LUA_CORE
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
 
+//#include C_HEADER_ASSERT
+#include C_HEADER_MATH
+#include C_HEADER_STRING
 #include "lapi.h"
 #include "ldebug.h"
 #include "ldo.h"

@@ -4,13 +4,12 @@
 ** See Copyright Notice in lua.h
 */
 
-#include "c_stddef.h"
-#include "c_string.h"
-
 #define ldump_c
 #define LUA_CORE
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
+#include C_HEADER_STRING
 
 #include "lobject.h"
 #include "lstate.h"

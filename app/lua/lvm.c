@@ -5,15 +5,14 @@
 */
 
 
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
-#include "c_math.h"
-
 #define lvm_c
 #define LUA_CORE
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
+#include C_HEADER_STDIO
+#include C_HEADER_STRING
+#include C_HEADER_MATH
 
 #include "ldebug.h"
 #include "ldo.h"
