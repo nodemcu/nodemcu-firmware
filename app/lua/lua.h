@@ -390,7 +390,9 @@ typedef struct __lua_load{
 
 int lua_main( int argc, char **argv );
 
+#ifndef LUA_CROSS_COMPILER
 void lua_handle_input (bool force);
+#endif
 
 /******************************************************************************
 * Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.

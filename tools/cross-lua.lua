@@ -3,11 +3,20 @@ local b = require "tools.build"
 local builder = b.new_builder( ".build/cross-lua" )
 local utils = b.utils
 local sf = string.format
+ 
+if not (_VERSION == "Lua 5.1" and pcall(require,"lfs")) then
+  print  [[
+
+cross_lua.lua must be run within Lua 5.1 and it requires the Lua Filesystem to be installed. 
+On most *nix distrubitions youwill find a packages lua-5.1 and lua-filesystem, or 
+alternalively you can install lua-rocks and use the Rocks package manager to install lfs.
+]]
+  os.exit(1)
+end
 builder:init( args )
 builder:set_build_mode( builder.BUILD_DIR_LINEARIZED )
- 
 local output = 'luac.cross'
-local cdefs = '-DLUA_CROSS_COMPILER -O2'
+local cdefs = '-DLUA_CROSS_COMPILER'
 
 -- Lua source files and include path
 local lua_files = [[
@@ -17,6 +26,7 @@ local lua_files = [[
     ltm.c  lundump.c lvm.c lzio.c 
     luac_cross/luac.c luac_cross/loslib.c luac_cross/print.c
     ../modules/linit.c
+    ../libc/c_stdlib.c
   ]]
 lua_files = lua_files:gsub( "\n" , "" )
 local lua_full_files = utils.prepend_path( lua_files, "app/lua" )

@@ -55,7 +55,7 @@
 #define c_strpbrk strpbrk
 #define c_strrchr strrchr
 #define c_strstr strstr
-#define c_strtod strtod
+double	c_strtod(const char *__n, char **__end_PTR);
 #define c_strtoul strtoul
 #define c_ungetc ungetc
 
