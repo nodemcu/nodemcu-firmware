@@ -20,7 +20,7 @@ static uint8 getap_output_format=0;
 
 //wifi.sleep variables
 #define FPM_SLEEP_MAX_TIME 0xFFFFFFF
-bool FLAG_wifi_force_sleep_enabled=0;
+static bool FLAG_wifi_force_sleep_enabled=0;
 
 
 //variables for wifi event monitor
