@@ -36,7 +36,7 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
   //wait for data ready.  or time out.
   //TODO: set pin inturrupt and come back to it.  This may take up to 1/10 sec
   //        or maybe just make an async version too and have both available.
-	WRITE_PERI_REG(0x60000914, 0x73); //clear WDT... this may take a while.
+	system_soft_wdt_feed(); //clear WDT... this may take a while.
   for (i = 0; i<HX711_MAX_WAIT && platform_gpio_read(data_pin)==1;i++){
     asm ("nop");
   }
