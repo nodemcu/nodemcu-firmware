@@ -1383,7 +1383,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "sta" ), LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ), LROVAL( wifi_ap_map ) },
 
-  // { LSTRKEY( "NULLMODE" ), LNUMVAL( NULL_MODE ) },
+  { LSTRKEY( "NULLMODE" ), LNUMVAL( NULL_MODE ) },
   { LSTRKEY( "STATION" ), LNUMVAL( STATION_MODE ) },
   { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
