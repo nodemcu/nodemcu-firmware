@@ -6,16 +6,14 @@
 
 
 
-#include "c_ctype.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
-
 #define lbaselib_c
 #define LUA_LIB
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
-
+#include C_HEADER_STDIO
+#include C_HEADER_STRING
+#include C_HEADER_STDLIB
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lrotable.h"
@@ -295,7 +293,7 @@ static int luaB_loadstring (lua_State *L) {
 
 static int luaB_loadfile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
-#if 0
+#ifdef LUA_CROSS_COMPILER
   return load_aux(L, luaL_loadfile(L, fname));
 #else
   return load_aux(L, luaL_loadfsfile(L, fname));
@@ -342,7 +340,7 @@ static int luaB_load (lua_State *L) {
 static int luaB_dofile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   int n = lua_gettop(L);
-#if 0
+#ifdef LUA_CROSS_COMPILER
   if (luaL_loadfile(L, fname) != 0) lua_error(L);
 #else
   if (luaL_loadfsfile(L, fname) != 0) lua_error(L);

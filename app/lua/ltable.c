@@ -18,13 +18,13 @@
 ** Hence even when the load factor reaches 100%, performance remains good.
 */
 
-#include "c_math.h"
-#include "c_string.h"
-
 #define ltable_c
 #define LUA_CORE
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
+#include C_HEADER_MATH
+#include C_HEADER_STRING
 
 #include "ldebug.h"
 #include "ldo.h"

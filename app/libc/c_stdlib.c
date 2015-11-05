@@ -1,9 +1,20 @@
+//#include "user_interface.h"
+#include "user_config.h"
+
+#ifdef LUA_CROSS_COMPILER
+
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+#define ICACHE_RODATA_ATTR
+#define TRUE  1
+#define FALSE 0
+
+#else
+
 #include "c_stdlib.h"
-#include "c_stdio.h"
 #include "c_types.h"
 #include "c_string.h"
-#include "user_interface.h"
-#include "user_config.h"
 
 // const char *lua_init_value = "print(\"Hello world\")";
 const char *lua_init_value = "@init.lua";
@@ -21,7 +32,6 @@ const char *c_getenv(const char *__string)
     }
     return NULL;
 }
-
 // make sure there is enough memory before real malloc, otherwise malloc will panic and reset
 // void *c_malloc(size_t __size){
 //  if(__size>system_get_free_heap_size()){
@@ -43,7 +53,8 @@ const char *c_getenv(const char *__string)
 //  // NODE_ERR("free1: %d\n", system_get_free_heap_size());
 //  os_free(p);
 //  // NODE_ERR("-free1: %d\n", system_get_free_heap_size());
-// }
+// }c_stdlib.s
+
 
 
 // int  c_rand(void){
@@ -55,9 +66,8 @@ const char *c_getenv(const char *__string)
 // }
 #include <_ansi.h>
 //#include <reent.h>
-#include <string.h>
 //#include "mprec.h"
-
+#endif
 double powersOf10[] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =   /* Table giving binary powers of 10.  Entry */
 {
     10.,            /* is 10^2^i.  Used to convert decimal */
