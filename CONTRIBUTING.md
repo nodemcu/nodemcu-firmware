@@ -11,12 +11,8 @@ The following is a set of guidelines for contributing to NodeMCU on GitHub. Thes
 [Development environment setup](#development-environment-setup)
 
 [Working with Git and GitHub](#working-with-git-and-github)
-  * [Submitting Issues](#submitting-issues)
-  * [Your First Code Contribution](#your-first-code-contribution)
-  * [Pull Requests](#pull-requests)
-
-[Styleguides](#styleguides)
   * [General flow](#general-flow)
+  * [Keeping your fork in sync](#keeping-your-fork-in-sync)
   * [Commit messages](#commit-messages)
 
 ## Development environment setup
