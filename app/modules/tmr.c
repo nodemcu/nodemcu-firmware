@@ -76,6 +76,7 @@ extern uint32_t platform_tmr_exists(uint32_t t);
 extern uint32_t system_rtc_clock_cali_proc();
 extern uint32_t system_get_rtc_time();
 extern void system_restart();
+extern void system_soft_wdt_feed();
 
 //in fact lua_State is constant, it's pointless to pass it around
 //but hey, whatever, I'll just pass it, still we waste 28B here
