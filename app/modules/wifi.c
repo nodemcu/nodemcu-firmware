@@ -18,6 +18,11 @@
 static int wifi_smart_succeed = LUA_NOREF;
 static uint8 getap_output_format=0;
 
+//wifi.sleep variables
+#define FPM_SLEEP_MAX_TIME 0xFFFFFFF
+static bool FLAG_wifi_force_sleep_enabled=0;
+
+
 //variables for wifi event monitor
 static sint32_t wifi_status_cb_ref[6] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
 static volatile os_timer_t wifi_sta_status_timer;
@@ -316,6 +321,47 @@ static int wifi_getphymode( lua_State* L )
   unsigned mode;
   mode = (unsigned)wifi_get_phy_mode();
   lua_pushinteger( L, mode );
+  return 1;
+}
+
+//wifi.sleep()
+static int wifi_sleep(lua_State* L)
+{
+  uint8 desired_sleep_state=2;
+  if(lua_isnumber(L, 1))
+  {
+	  if(luaL_checknumber(L, 1)==0)
+	  {
+		  desired_sleep_state=FALSE;
+	  }
+	  else if(luaL_checknumber(L, 1)==1)
+	  {
+		  desired_sleep_state=TRUE;
+	  }
+  }
+  if (!FLAG_wifi_force_sleep_enabled && desired_sleep_state==1)
+  {
+	FLAG_wifi_force_sleep_enabled=TRUE;
+	uint8 wifi_current_opmode=wifi_get_opmode();
+	if (wifi_current_opmode==1||wifi_current_opmode==3)
+	{
+	  wifi_station_disconnect();
+	}
+	// set WiFi mode to null mode
+	wifi_set_opmode(NULL_MODE);
+	// set force sleep type
+	wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
+	wifi_fpm_open();
+	wifi_fpm_do_sleep(FPM_SLEEP_MAX_TIME);
+  }
+  else if(FLAG_wifi_force_sleep_enabled && desired_sleep_state==0)
+  {
+	FLAG_wifi_force_sleep_enabled=FALSE;
+	// wake up to use WiFi again
+	wifi_fpm_do_wakeup();
+	wifi_fpm_close();
+  }
+  lua_pushnumber(L, FLAG_wifi_force_sleep_enabled);
   return 1;
 }
 
@@ -1329,6 +1375,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "getchannel" ), LFUNCVAL( wifi_getchannel ) },
   { LSTRKEY( "setphymode" ), LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ), LFUNCVAL( wifi_getphymode ) },
+  { LSTRKEY( "sleep" ), LFUNCVAL( wifi_sleep ) },
   { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ), LFUNCVAL( wifi_exit_smart ) },
   { LSTRKEY( "sleeptype" ), LFUNCVAL( wifi_sleeptype ) },
@@ -1336,7 +1383,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "sta" ), LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ), LROVAL( wifi_ap_map ) },
 
-  // { LSTRKEY( "NULLMODE" ), LNUMVAL( NULL_MODE ) },
+  { LSTRKEY( "NULLMODE" ), LNUMVAL( NULL_MODE ) },
   { LSTRKEY( "STATION" ), LNUMVAL( STATION_MODE ) },
   { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
