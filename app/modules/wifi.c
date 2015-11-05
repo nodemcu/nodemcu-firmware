@@ -1105,7 +1105,6 @@ static const LUA_REG_TYPE wifi_station_map[] =
   { LSTRKEY( "connect" ), LFUNCVAL ( wifi_station_connect4lua ) },
   { LSTRKEY( "disconnect" ), LFUNCVAL ( wifi_station_disconnect4lua ) },
   { LSTRKEY( "autoconnect" ), LFUNCVAL ( wifi_station_setauto ) },
-  { LSTRKEY( "getconfig" ), LFUNCVAL( wifi_ap_getconfig ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_station_getip ) },
   { LSTRKEY( "setip" ), LFUNCVAL ( wifi_station_setip ) },
   { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_station_getbroadcast) },
@@ -1126,6 +1125,7 @@ static const LUA_REG_TYPE wifi_ap_dhcp_map[] =
 
 static const LUA_REG_TYPE wifi_ap_map[] =
 {
+  { LSTRKEY( "getconfig" ), LFUNCVAL( wifi_ap_getconfig ) },
   { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_config ) },
   { LSTRKEY( "getip" ), LFUNCVAL ( wifi_ap_getip ) },
   { LSTRKEY( "setip" ), LFUNCVAL ( wifi_ap_setip ) },
