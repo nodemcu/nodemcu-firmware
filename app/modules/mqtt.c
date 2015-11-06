@@ -66,7 +66,7 @@ typedef struct lmqtt_userdata
   int cb_puback_ref;
   mqtt_state_t  mqtt_state;
   mqtt_connect_info_t connect_info;
-  uint32_t keep_alive_tick;
+  uint16_t keep_alive_tick;
   uint32_t event_timeout;
 #ifdef CLIENT_SSL_ENABLE
   uint8_t secure;
@@ -406,7 +406,6 @@ READPACKET:
       espconn_sent( pesp_conn, node->msg.data, node->msg.length );
     }
   }
-  mud->keep_alive_tick = 0;
   NODE_DBG("receive, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
   NODE_DBG("leave mqtt_socket_received.\n");
   return;
@@ -584,6 +583,7 @@ void mqtt_socket_timer(void *arg)
       }
     }
   }
+  NODE_DBG("keep_alive_tick: %d\n", mud->keep_alive_tick);
   NODE_DBG("leave mqtt_socket_timer.\n");
 }
 
