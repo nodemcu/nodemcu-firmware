@@ -357,7 +357,7 @@ static int wifi_sleep(lua_State* L)
 	{
 	  FLAG_wifi_force_sleep_enabled = TRUE;
 	}
-	else if (wifi_fpm_do_sleep_return_value != 0)
+	else
 	{
 		wifi_fpm_close();
 		FLAG_wifi_force_sleep_enabled = FALSE;
