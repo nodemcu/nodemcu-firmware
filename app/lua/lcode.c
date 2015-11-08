@@ -781,8 +781,91 @@ void luaK_posfix (FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2) {
 }
 
 
+#ifdef LUA_OPTIMIZE_DEBUG
+
+/*
+ * Attempted to write to last (null terminator) byte of lineinfo, so need
+ * to grow the lineinfo vector and extend the fill bytes
+ */
+static unsigned char *growLineInfo(FuncState *fs) {
+  int i, oldsize = fs->packedlineinfoSize;
+  Proto *f = fs->f;
+  unsigned char *p, *r;
+
+  lua_assert(f->packedlineinfo==NULL || f->packedlineinfo[oldsize-1] == 0);
+
+  /* using the macro results in a redundant if test, but what the hell */
+  luaM_growvector(fs->L, f->packedlineinfo, fs->packedlineinfoSize, fs->packedlineinfoSize,
+                  unsigned char, MAX_INT, "code size overflow");
+  r = p = f->packedlineinfo + oldsize;
+  if (oldsize) *--r = INFO_FILL_BYTE;
+  i = fs->packedlineinfoSize - oldsize - 1;
+  while (i--) *p++ = INFO_FILL_BYTE;
+  *p = 0;
+  return r;
+}
+
+static void generateInfoDeltaLine(FuncState *fs, int line) {
+  /* Handle first time through when lineinfo points is NULL */
+  unsigned char *p = fs->f->packedlineinfo ? lineInfoTop(fs) + 1 : growLineInfo(fs);
+#define addDLbyte(v) if (*p==0) p = growLineInfo(fs); *p++ = (v);
+  int delta = line - fs->lastline - 1;
+  if (delta) {
+    if (delta<0) {
+      delta = -delta - 1;
+      addDLbyte((INFO_DELTA_MASK|INFO_SIGN_MASK) | (delta & INFO_DELTA_6BITS));
+    } else {
+      delta = delta - 1;
+      addDLbyte(INFO_DELTA_MASK | (delta & INFO_DELTA_6BITS));
+    }
+    delta >>= 6;
+    while (delta) {
+      addDLbyte(INFO_DELTA_MASK | (delta & INFO_DELTA_7BITS));
+      delta >>= 7;
+    }
+  }
+  addDLbyte(1);
+  fs->lastline = line;
+  fs->lastlineOffset = p - fs->f->packedlineinfo - 1;
+#undef addDLbyte
+}
+#endif
+
 void luaK_fixline (FuncState *fs, int line) {
-  fs->f->lineinfo[fs->pc - 1] = line;
+#ifdef LUA_OPTIMIZE_DEBUG
+  /* The fixup line can be the same as existing one and in this case there's nothing to do */
+  if (line != fs->lastline) {
+    /* first remove the current line reference */
+    unsigned char *p = lineInfoTop(fs);
+    lua_assert(*p < 127);
+    if (*p >1) {
+      (*p)--;    /* this is simply decrementing the last count a multi-PC line */
+    } else {
+      /* it's a bit more complicated if it's the 1st instruction on the line */
+      int delta = 0;
+      unsigned char code;
+      /* this logic handles <i/c> [1snnnnnnn [1nnnnnnn]*]? <i/c=1> */
+      *p-- = INFO_FILL_BYTE;
+      /* work backwards over the coded delta computing the delta */
+      while ((code=*p) & INFO_DELTA_MASK) {
+        *p-- = INFO_FILL_BYTE;
+        if (*p & INFO_DELTA_MASK) {
+          delta = delta + ((code & INFO_DELTA_7BITS)<<7);
+        } else {
+          delta += (code & INFO_DELTA_6BITS) + 1;
+          if (code & INFO_SIGN_MASK) delta = -delta;
+        }
+      }
+      /* and reposition the FuncState lastline pointers at the previous instruction count */
+      fs->lastline-= delta + 1;
+      fs->lastlineOffset = p - fs->f->packedlineinfo;
+    }
+    /* Then add the new line reference */
+    generateInfoDeltaLine(fs, line);
+  }
+#else
+   fs->f->lineinfo[fs->pc - 1] = line;
+#endif
 }
 
 
@@ -794,9 +877,25 @@ static int luaK_code (FuncState *fs, Instruction i, int line) {
                   MAX_INT, "code size overflow");
   f->code[fs->pc] = i;
   /* save corresponding line information */
+#ifdef LUA_OPTIMIZE_DEBUG
+  /* note that frst time fs->lastline==0 through, so the else branch is taken */
+  if (fs->pc == fs->lineinfoLastPC+1) {
+    if (line == fs->lastline && f->packedlineinfo[fs->lastlineOffset] < INFO_MAX_LINECNT) {
+      f->packedlineinfo[fs->lastlineOffset]++;
+    } else {
+      generateInfoDeltaLine(fs, line);
+    }
+  } else {
+    /* The last instruction is occasionally overwritten as part of branch optimisation*/
+    lua_assert(fs->pc == fs->lineinfoLastPC);  /* panic if its anything other than this !! */
+    luaK_fixline(fs,line);
+  }
+  fs->lineinfoLastPC = fs->pc;
+#else
   luaM_growvector(fs->L, f->lineinfo, fs->pc, f->sizelineinfo, int,
                   MAX_INT, "code size overflow");
   f->lineinfo[fs->pc] = line;
+#endif
   return fs->pc++;
 }
 
