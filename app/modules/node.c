@@ -152,6 +152,47 @@ static int key_press_count = 0;
 static bool key_short_pressed = false;
 static bool key_long_pressed = false;
 static os_timer_t keyled_timer;
+static int long_key_ref = LUA_NOREF;
+static int short_key_ref = LUA_NOREF;
+
+static void default_long_press(void *arg) {
+  if (led_high_count == 12 && led_low_count == 12) {
+    led_low_count = led_high_count = 6;
+  } else {
+    led_low_count = led_high_count = 12;
+  }
+  // led_high_count = 1000 / READLINE_INTERVAL;
+  // led_low_count = 1000 / READLINE_INTERVAL;
+  // NODE_DBG("default_long_press is called. hc: %d, lc: %d\n", led_high_count, led_low_count);
+}
+
+static void default_short_press(void *arg) {
+  system_restart();
+}
+
+static void key_long_press(void *arg) {
+  NODE_DBG("key_long_press is called.\n");
+  if (long_key_ref == LUA_NOREF) {
+    default_long_press(arg);
+    return;
+  }
+  if (!gL)
+    return;
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, long_key_ref);
+  lua_call(gL, 0, 0);
+}
+
+static void key_short_press(void *arg) {
+  NODE_DBG("key_short_press is called.\n");
+  if (short_key_ref == LUA_NOREF) {
+    default_short_press(arg);
+    return;
+  }
+  if (!gL)
+    return;
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, short_key_ref);
+  lua_call(gL, 0, 0);
+}
 
 static void update_key_led (void *p)
 {
@@ -223,48 +264,6 @@ static int node_led( lua_State* L )
   led_low_count = (uint32_t)low / READLINE_INTERVAL;
   prime_keyled_timer();
   return 0;
-}
-
-static int long_key_ref = LUA_NOREF;
-static int short_key_ref = LUA_NOREF;
-
-void default_long_press(void *arg) {
-  if (led_high_count == 12 && led_low_count == 12) {
-    led_low_count = led_high_count = 6;
-  } else {
-    led_low_count = led_high_count = 12;
-  }
-  // led_high_count = 1000 / READLINE_INTERVAL;
-  // led_low_count = 1000 / READLINE_INTERVAL;
-  // NODE_DBG("default_long_press is called. hc: %d, lc: %d\n", led_high_count, led_low_count);
-}
-
-void default_short_press(void *arg) {
-  system_restart();
-}
-
-void key_long_press(void *arg) {
-  NODE_DBG("key_long_press is called.\n");
-  if (long_key_ref == LUA_NOREF) {
-    default_long_press(arg);
-    return;
-  }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, long_key_ref);
-  lua_call(gL, 0, 0);
-}
-
-void key_short_press(void *arg) {
-  NODE_DBG("key_short_press is called.\n");
-  if (short_key_ref == LUA_NOREF) {
-    default_short_press(arg);
-    return;
-  }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, short_key_ref);
-  lua_call(gL, 0, 0);
 }
 
 // Lua: key(type, function)

@@ -62,6 +62,7 @@
 #define LUA_OPTIMIZE_MEMORY         0
 #endif	/* LUA_OPTRAM */
 
+#define READLINE_INTERVAL 80
 #define LUA_TASK_PRIO USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG 2
 
