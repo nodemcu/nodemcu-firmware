@@ -3,10 +3,13 @@
 #include "lua.h"
 #include "lauxlib.h"
 
+#include "ldebug.h"
 #include "ldo.h"
 #include "lfunc.h"
 #include "lmem.h"
 #include "lobject.h"
+#include "lstate.h"
+
 #include "lopcodes.h"
 #include "lstring.h"
 #include "lundump.h"
@@ -483,6 +486,69 @@ static int node_restore (lua_State *L)
   return 0;
 }
 
+#ifdef LUA_OPTIMIZE_DEBUG
+/* node.stripdebug([level[, function]]). 
+ * level:    1 don't discard debug
+ *           2 discard Local and Upvalue debug info
+ *           3 discard Local, Upvalue and lineno debug info.
+ * function: Function to be stripped as per setfenv except 0 not permitted.
+ * If no arguments then the current default setting is returned.
+ * If function is omitted, this is the default setting for future compiles
+ * The function returns an estimated integer count of the bytes stripped.
+ */
+static int node_stripdebug (lua_State *L) {
+  int level;
+
+  if (L->top == L->base) {
+    lua_pushlightuserdata(L, &luaG_stripdebug );
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    if (lua_isnil(L, -1)) {
+      lua_pop(L, 1);
+      lua_pushinteger(L, LUA_OPTIMIZE_DEBUG);
+    }
+    return 1;
+  }
+
+  level = luaL_checkint(L, 1);
+  if ((level <= 0) || (level > 3)) luaL_argerror(L, 1, "must in range 1-3");
+
+  if (L->top == L->base + 1) {
+    /* Store the default level in the registry if no function parameter */
+    lua_pushlightuserdata(L, &luaG_stripdebug);
+    lua_pushinteger(L, level);
+    lua_settable(L, LUA_REGISTRYINDEX);
+    lua_settop(L,0);
+    return 0;
+  }
+
+  if (level == 1) {
+    lua_settop(L,0);
+    lua_pushinteger(L, 0);
+    return 1;
+  }
+
+  if (!lua_isfunction(L, 2)) {
+    int scope = luaL_checkint(L, 2);
+    if (scope > 0) {
+      /* if the function parameter is a +ve integer then climb to find function */
+      lua_Debug ar;
+      lua_pop(L, 1); /* pop level as getinfo will replace it by the function */
+      if (lua_getstack(L, scope, &ar)) {
+        lua_getinfo(L, "f", &ar);
+      }
+    }
+  }
+
+  if(!lua_isfunction(L, 2) || lua_iscfunction(L, -1)) luaL_argerror(L, 2, "must be a Lua Function");
+  // lua_lock(L);
+  Proto *f = clvalue(L->base + 1)->l.p;
+  // lua_unlock(L);
+  lua_settop(L,0);
+  lua_pushinteger(L, luaG_stripdebug(L, f, level, 1));
+  return 1;
+}
+#endif
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -501,7 +567,7 @@ const LUA_REG_TYPE node_map[] =
 #endif
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
-// Moved to adc module, use adc.readvdd33()  
+// Moved to adc module, use adc.readvdd33()
 // { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
   { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
@@ -509,6 +575,10 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
+#ifdef LUA_OPTIMIZE_DEBUG
+  { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
+#endif
+
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0
