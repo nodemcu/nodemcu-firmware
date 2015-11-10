@@ -635,7 +635,7 @@ tcp_new_port(void)
 #define TCP_LOCAL_PORT_RANGE_START 4096
 #define TCP_LOCAL_PORT_RANGE_END   0x7fff
 #endif
-  static u16_t port = TCP_LOCAL_PORT_RANGE_START;
+  static u16_t port __attribute__((section(".port"))) = TCP_LOCAL_PORT_RANGE_START;
   
  again:
   if (++port >= TCP_LOCAL_PORT_RANGE_END) {
