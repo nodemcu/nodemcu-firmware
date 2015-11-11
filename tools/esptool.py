@@ -441,7 +441,7 @@ if __name__ == '__main__':
     parser_write_flash.add_argument('--flash_freq', '-ff', help = 'SPI Flash frequency',
             choices = ['40m', '26m', '20m', '80m'], default = '40m')
     parser_write_flash.add_argument('--flash_mode', '-fm', help = 'SPI Flash mode',
-            choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
+            choices = ['qio', 'qout', 'dio', 'dout'], default = 'dio')
     parser_write_flash.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
             choices = ['4m', '2m', '8m', '16m', '32m'], default = '4m')
 
