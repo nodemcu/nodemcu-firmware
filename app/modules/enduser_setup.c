@@ -709,6 +709,15 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   insert_byte += (uint32_t) sizeof(dns_body);
   c_memcpy(&(dns_reply[insert_byte]), &(ip_info.ip), 4);
 
+  // SDK 1.4.0 changed behaviour, for UDP server need to look up remote ip/port
+  remot_info *pr = 0;
+  if (espconn_get_connection_info(callback_espconn, &pr, 0) != ESPCONN_OK)
+  {
+    ENDUSER_SETUP_ERROR_VOID("enduser_setup_dns_recv_callback failed. Unable to get IP of UDP sender.", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_FATAL);
+  }
+  callback_espconn->proto.udp->remote_port = pr->remote_port;
+  os_memmove(callback_espconn->proto.udp->remote_ip, pr->remote_ip, 4);
+
   int8_t err;
   err = espconn_sent(callback_espconn, dns_reply, dns_reply_len);
   c_free(dns_reply);
