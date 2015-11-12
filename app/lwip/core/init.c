@@ -99,18 +99,18 @@
 //#if (LWIP_TCP && (MEMP_NUM_TCP_PCB<=0))
 //  #error "If you want to use TCP, you have to define MEMP_NUM_TCP_PCB>=1 in your lwipopts.h"
 //#endif
-#if (LWIP_TCP && (TCP_WND > 0xffff))
-  #error "If you want to use TCP, TCP_WND must fit in an u16_t, so, you have to reduce it in your lwipopts.h"
-#endif
+//#if (LWIP_TCP && (TCP_WND > 0xffff))
+//  #error "If you want to use TCP, TCP_WND must fit in an u16_t, so, you have to reduce it in your lwipopts.h"
+//#endif
 #if (LWIP_TCP && (TCP_SND_QUEUELEN > 0xffff))
   #error "If you want to use TCP, TCP_SND_QUEUELEN must fit in an u16_t, so, you have to reduce it in your lwipopts.h"
 #endif
 #if (LWIP_TCP && (TCP_SND_QUEUELEN < 2))
   #error "TCP_SND_QUEUELEN must be at least 2 for no-copy TCP writes to work"
 #endif
-#if (LWIP_TCP && ((TCP_MAXRTX > 12) || (TCP_SYNMAXRTX > 12)))
-  #error "If you want to use TCP, TCP_MAXRTX and TCP_SYNMAXRTX must less or equal to 12 (due to tcp_backoff table), so, you have to reduce them in your lwipopts.h"
-#endif
+//#if (LWIP_TCP && ((TCP_MAXRTX > 12) || (TCP_SYNMAXRTX > 12)))
+//  #error "If you want to use TCP, TCP_MAXRTX and TCP_SYNMAXRTX must less or equal to 12 (due to tcp_backoff table), so, you have to reduce them in your lwipopts.h"
+//#endif
 #if (LWIP_TCP && TCP_LISTEN_BACKLOG && (TCP_DEFAULT_LISTEN_BACKLOG < 0) || (TCP_DEFAULT_LISTEN_BACKLOG > 0xff))
   #error "If you want to use TCP backlog, TCP_DEFAULT_LISTEN_BACKLOG must fit into an u8_t"
 #endif
@@ -259,6 +259,11 @@ lwip_sanity_check(void)
 void
 lwip_init(void)
 {
+  MEMP_NUM_TCP_PCB = 5;
+  TCP_WND = (4 * TCP_MSS);
+  TCP_MAXRTX = 12;
+  TCP_SYNMAXRTX = 6;
+
   /* Sanity check user-configurable values */
   lwip_sanity_check();
 
@@ -294,7 +299,6 @@ lwip_init(void)
  
 #endif /* LWIP_UDP */
 #if LWIP_TCP
-  MEMP_NUM_TCP_PCB = 5;
   tcp_init();
   
 #endif /* LWIP_TCP */

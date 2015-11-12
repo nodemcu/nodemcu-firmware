@@ -57,6 +57,9 @@
 #include "lwip/igmp.h"
 #include "lwip/dns.h"
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
 
 /** The one and only timeout list */
 static struct sys_timeo *next_timeout = NULL;
@@ -245,6 +248,7 @@ void sys_timeouts_init(void)
   sys_timeout(ARP_TMR_INTERVAL, arp_timer, NULL);
 #endif /* LWIP_ARP */
 #if LWIP_DHCP
+  DHCP_MAXRTX = 0;
   sys_timeout(DHCP_COARSE_TIMER_MSECS, dhcp_timer_coarse, NULL);
   sys_timeout(DHCP_FINE_TIMER_MSECS, dhcp_timer_fine, NULL);
 #endif /* LWIP_DHCP */
@@ -259,8 +263,8 @@ void sys_timeouts_init(void)
 #endif /* LWIP_DNS */
 
 #if LWIP_TCP
-  //sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
-  sys_timeout(TCP_TMR_INTERVAL, tcp_timer_coarse, NULL);
+  sys_timeout(TCP_TMR_INTERVAL, tcpip_tcp_timer, NULL);
+//  sys_timeout(TCP_TMR_INTERVAL, tcp_timer_coarse, NULL);
 #endif
 
 #if NO_SYS
@@ -389,9 +393,9 @@ sys_check_timeouts(void)
   if (next_timeout) {
     /* this cares for wraparounds */
 	if (timer2_ms_flag == 0) {
-		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((CPU_CLK_FREQ>>4)/1000);
+		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((APB_CLK_FREQ>>4)/1000);
 	} else {
-		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((CPU_CLK_FREQ>>8)/1000);
+		diff = LWIP_U32_DIFF(now, timeouts_last_time)/((APB_CLK_FREQ>>8)/1000);
 	}
     do
     {

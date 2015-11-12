@@ -64,6 +64,10 @@
 
 #include <string.h>
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /* The list of UDP PCBs */
 /* exported in udp.h (was static) */
 struct udp_pcb *udp_pcbs;
@@ -146,6 +150,15 @@ udp_input(struct pbuf *p, struct netif *inp)
         if ((ip_addr_isany(&inp->dhcp->pcb->remote_ip) ||
            ip_addr_cmp(&(inp->dhcp->pcb->remote_ip), &current_iphdr_src))) {
           pcb = inp->dhcp->pcb;
+        }
+      }
+    } else if (dest == DHCP_SERVER_PORT) {
+      if (src == DHCP_CLIENT_PORT) {
+        if ( inp->dhcps_pcb != NULL ) {
+          if ((ip_addr_isany(&inp->dhcps_pcb->local_ip) ||
+              ip_addr_cmp(&(inp->dhcps_pcb->local_ip), &current_iphdr_dest))) {
+            pcb = inp->dhcps_pcb;
+          }
         }
       }
     }
@@ -935,7 +948,7 @@ udp_new(void)
      * which means checksum is generated over the whole datagram per default
      * (recommended as default by RFC 3828). */
     /* initialize PCB to all zeroes */
-    memset(pcb, 0, sizeof(struct udp_pcb));
+    os_memset(pcb, 0, sizeof(struct udp_pcb));
     pcb->ttl = UDP_TTL;
   }
   return pcb;

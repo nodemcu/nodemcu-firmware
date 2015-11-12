@@ -8,7 +8,9 @@ spiffs fs;
   
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[32*4];
-static u8_t spiffs_cache[(LOG_PAGE_SIZE+32)*4];
+#if SPIFFS_CACHE
+static u8_t spiffs_cache[(LOG_PAGE_SIZE+32)*2];
+#endif
 
 static s32_t my_spiffs_read(u32_t addr, u32_t size, u8_t *dst) {
   platform_flash_read(dst, addr, size);
@@ -44,7 +46,11 @@ The small 4KB sectors allow for greater flexibility in applications th
 
 void myspiffs_mount() {
   spiffs_config cfg;
+#ifdef SPIFFS_FIXED_LOCATION
+  cfg.phys_addr = SPIFFS_FIXED_LOCATION;
+#else
   cfg.phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
+#endif
   cfg.phys_addr += 0x3000;
   cfg.phys_addr &= 0xFFFFC000;  // align to 4 sector.
   cfg.phys_size = INTERNAL_FLASH_SIZE - ( ( u32_t )cfg.phys_addr - INTERNAL_FLASH_START_ADDRESS );
@@ -62,8 +68,12 @@ void myspiffs_mount() {
     spiffs_work_buf,
     spiffs_fds,
     sizeof(spiffs_fds),
+#if SPIFFS_CACHE
     spiffs_cache,
     sizeof(spiffs_cache),
+#else
+    0, 0,
+#endif
     // myspiffs_check_callback);
     0);
   NODE_DBG("mount res: %i\n", res);
@@ -79,7 +89,11 @@ int myspiffs_format( void )
 {
   SPIFFS_unmount(&fs);
   u32_t sect_first, sect_last;
+#ifdef SPIFFS_FIXED_LOCATION
+  sect_first = SPIFFS_FIXED_LOCATION;
+#else
   sect_first = ( u32_t )platform_flash_get_first_free_block_address( NULL ); 
+#endif
   sect_first += 0x3000;
   sect_first &= 0xFFFFC000;  // align to 4 sector.
   sect_first = platform_flash_get_sector_of_address(sect_first);

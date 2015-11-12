@@ -64,7 +64,7 @@ void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
  * Description  : SPI master initial function for common byte units transmission
  * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
 *******************************************************************************/
-void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock)
+void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
 	uint32 regvalue; 
 
@@ -85,62 +85,225 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databi
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 2);//configure io to spi mode	
 	}
 
-	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_DOUTDIN|SPI_USR_MOSI);
+	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER|SPI_DOUTDIN);
 
-    //set clock polarity
-    // TODO: This doesn't work
-    //if (cpol == 1) {
-    //    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_HIGH_MODE<<SPI_CK_OUT_HIGH_MODE_S));
-    //} else {
-    //    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_LOW_MODE<<SPI_CK_OUT_LOW_MODE_S));
-    //}
-    //os_printf("SPI_CTRL2 is %08x\n",READ_PERI_REG(SPI_CTRL2(spi_no)));
+	//set clock polarity
+	// TODO: This doesn't work
+	//if (cpol == 1) {
+	//    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_HIGH_MODE<<SPI_CK_OUT_HIGH_MODE_S));
+	//} else {
+	//    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_LOW_MODE<<SPI_CK_OUT_LOW_MODE_S));
+	//}
+	//os_printf("SPI_CTRL2 is %08x\n",READ_PERI_REG(SPI_CTRL2(spi_no)));
 
-    //set clock phase
-    if (cpha == 1) {
-    	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE|SPI_CK_I_EDGE);
-    } else {
-    	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE|SPI_CK_I_EDGE);
-    }
+	//set clock phase
+	if (cpha == 1) {
+		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE|SPI_CK_I_EDGE);
+	} else {
+    		CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE|SPI_CK_I_EDGE);
+	}
 
-    CLEAR_PERI_REG_MASK(SPI_USER(HSPI), SPI_FLASH_MODE|SPI_WR_BYTE_ORDER|SPI_USR_MISO|
-                        SPI_RD_BYTE_ORDER|SPI_USR_ADDR|SPI_USR_COMMAND|SPI_USR_DUMMY);
+	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_FLASH_MODE|SPI_USR_MISO|SPI_USR_ADDR|SPI_USR_COMMAND|SPI_USR_DUMMY);
 
-	//clear Daul or Quad lines transmission mode
+	//clear Dual or Quad lines transmission mode
 	CLEAR_PERI_REG_MASK(SPI_CTRL(spi_no), SPI_QIO_MODE|SPI_DIO_MODE|SPI_DOUT_MODE|SPI_QOUT_MODE);
 
-	// SPI clock=CPU clock/8
-	WRITE_PERI_REG(SPI_CLOCK(spi_no), 
-					((1&SPI_CLKDIV_PRE)<<SPI_CLKDIV_PRE_S)|
-					((3&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
-					((1&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
-					((3&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
+	// SPI clock = CPU clock / clock_div
+	// the divider needs to be a multiple of 2 to get a proper waveform shape
+	if ((clock_div & 0x01) != 0) {
+		// bump the divider to the next N*2
+		clock_div += 0x02;
+	}
+	clock_div >>= 1;
+	// clip to maximum possible CLKDIV_PRE
+	clock_div = clock_div > SPI_CLKDIV_PRE ? SPI_CLKDIV_PRE : clock_div - 1;
 
-	//set 8bit output buffer length, the buffer is the low 8bit of register"SPI_FLASH_C0"
-	WRITE_PERI_REG(SPI_USER1(spi_no), 
-					((7&SPI_USR_MOSI_BITLEN)<<SPI_USR_MOSI_BITLEN_S)|
-					((7&SPI_USR_MISO_BITLEN)<<SPI_USR_MISO_BITLEN_S));
+	WRITE_PERI_REG(SPI_CLOCK(spi_no), 
+					((clock_div&SPI_CLKDIV_PRE)<<SPI_CLKDIV_PRE_S)|
+					((1&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
+					((0&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
+					((1&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
 }
 
 /******************************************************************************
- * FunctionName : spi_mast_byte_write
- * Description  : SPI master 1 byte transmission function
- * Parameters   : 	uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
- *				uint8 data- transmitted data
+ * FunctionName : spi_mast_set_mosi
+ * Description  : Enter provided data into MOSI buffer.
+ *                The data is regarded as a sequence of bits with length 'bitlen'.
+ *                It will be written left-aligned starting from position 'offset'.
+ * Parameters   :   uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint8 offset - offset into MOSI buffer (number of bits)
+ *                  uint8 bitlen - valid number of bits in data
+ *                  uint32 data  - data to be written into buffer
 *******************************************************************************/
-void spi_mast_byte_write(uint8 spi_no, uint8 *data)
+void spi_mast_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data)
 {
-    if(spi_no>1) 		return; //handle invalid input number
+    uint8  wn, wn_offset, wn_bitlen;
+    uint32 wn_data;
 
-    while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
+    if (spi_no > 1)
+        return; // handle invalid input number
+    if (bitlen > 32)
+        return; // handle invalid input number
 
-    WRITE_PERI_REG(SPI_W0(spi_no), *data);
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
 
+    // determine which SPI_Wn register is addressed
+    wn = offset >> 5;
+    if (wn > 15)
+        return; // out of range
+    wn_offset = offset & 0x1f;
+    if (32 - wn_offset < bitlen)
+    {
+        // splitting required
+        wn_bitlen = 32 - wn_offset;
+        wn_data   = data >> (bitlen - wn_bitlen);
+    }
+    else
+    {
+        wn_bitlen = bitlen;
+        wn_data   = data;
+    }
+
+    do
+    {
+        // write payload data to SPI_Wn
+        SET_PERI_REG_BITS(REG_SPI_BASE(spi_no) +0x40 + wn*4, BIT(wn_bitlen) - 1, wn_data, 32 - (wn_offset + wn_bitlen));
+
+        // prepare writing of dangling data part
+        wn += 1;
+        wn_offset = 0;
+        if (wn <= 15)
+            bitlen -= wn_bitlen;
+        else
+            bitlen = 0; // force abort
+        wn_bitlen = bitlen;
+        wn_data   = data;
+    } while (bitlen > 0);
+
+    return;
+}
+
+/******************************************************************************
+ * FunctionName : spi_mast_get_miso
+ * Description  : Retrieve data from MISO buffer.
+ *                The data is regarded as a sequence of bits with length 'bitlen'.
+ *                It will be read starting left-aligned from position 'offset'.
+ * Parameters   :   uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint8 offset - offset into MISO buffer (number of bits)
+ *                  uint8 bitlen - requested number of bits in data
+*******************************************************************************/
+uint32 spi_mast_get_miso(uint8 spi_no, uint8 offset, uint8 bitlen)
+{
+    uint8  wn, wn_offset, wn_bitlen;
+    uint32 wn_data = 0;
+
+    if (spi_no > 1)
+        return 0; // handle invalid input number
+
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
+
+    // determine which SPI_Wn register is addressed
+    wn = offset >> 5;
+    if (wn > 15)
+        return 0; // out of range
+    wn_offset = offset & 0x1f;
+
+    if (bitlen > (32 - wn_offset))
+    {
+        // splitting required
+        wn_bitlen = 32 - wn_offset;
+    }
+    else
+    {
+        wn_bitlen = bitlen;
+    }
+
+    do
+    {
+        wn_data |= (READ_PERI_REG(REG_SPI_BASE(spi_no) +0x40 + wn*4) >> (32 - (wn_offset + wn_bitlen))) & (BIT(wn_bitlen) - 1);
+
+        // prepare reading of dangling data part
+        wn_data <<= bitlen - wn_bitlen;
+        wn += 1;
+        wn_offset = 0;
+        if (wn <= 15)
+            bitlen -= wn_bitlen;
+        else
+            bitlen = 0; // force abort
+        wn_bitlen = bitlen;
+    } while (bitlen > 0);
+
+    return wn_data;
+}
+
+/******************************************************************************
+ * FunctionName : spi_mast_transaction
+ * Description  : Start a transaction and wait for completion.
+ * Parameters   :   uint8  spi_no       - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint8  cmd_bitlen   - Valid number of bits in cmd_data.
+ *                  uint16 cmd_data     - Command data.
+ *                  uint8  addr_bitlen  - Valid number of bits in addr_data.
+ *                  uint32 addr_data    - Address data.
+ *                  uint16 mosi_bitlen  - Valid number of bits in MOSI buffer.
+ *                  uint8  dummy_bitlen - Number of dummy cycles.
+ *                  sint16 miso_bitlen  - number of bits to be captured in MISO buffer.
+ *                                        negative value activates full-duplex mode.
+*******************************************************************************/
+void spi_mast_transaction(uint8 spi_no, uint8 cmd_bitlen, uint16 cmd_data, uint8 addr_bitlen, uint32 addr_data,
+                          uint16 mosi_bitlen, uint8 dummy_bitlen, sint16 miso_bitlen)
+{
+    if (spi_no > 1)
+        return; // handle invalid input number
+
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
+
+    // default disable COMMAND, ADDR, MOSI, DUMMY, MISO, and DOUTDIN (aka full-duplex)
+    CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_COMMAND|SPI_USR_ADDR|SPI_USR_MOSI|SPI_USR_DUMMY|SPI_USR_MISO|SPI_DOUTDIN);
+    // default set bit lengths
+    WRITE_PERI_REG(SPI_USER1(spi_no),
+                   ((addr_bitlen - 1)  & SPI_USR_ADDR_BITLEN)    << SPI_USR_ADDR_BITLEN_S    |
+                   ((mosi_bitlen - 1)  & SPI_USR_MOSI_BITLEN)    << SPI_USR_MOSI_BITLEN_S    |
+                   ((dummy_bitlen - 1) & SPI_USR_DUMMY_CYCLELEN) << SPI_USR_DUMMY_CYCLELEN_S |
+                   ((miso_bitlen - 1)  & SPI_USR_MISO_BITLEN)    << SPI_USR_MISO_BITLEN_S);
+
+    // handle the transaction components
+    if (cmd_bitlen > 0)
+    {
+        uint16 cmd = cmd_data << (16 - cmd_bitlen); // align to MSB
+        cmd = (cmd >> 8) | (cmd << 8);              // swap byte order
+        WRITE_PERI_REG(SPI_USER2(spi_no),
+                       ((cmd_bitlen - 1 & SPI_USR_COMMAND_BITLEN) << SPI_USR_COMMAND_BITLEN_S) |
+                       (cmd & SPI_USR_COMMAND_VALUE));
+        SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_COMMAND);
+    }
+    if (addr_bitlen > 0)
+    {
+        WRITE_PERI_REG(SPI_ADDR(spi_no), addr_data << (32 - addr_bitlen));
+        SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_ADDR);
+    }
+    if (mosi_bitlen > 0)
+    {
+        SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MOSI);
+    }
+    if (dummy_bitlen > 0)
+    {
+        SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_DUMMY);
+    }
+    if (miso_bitlen > 0)
+    {
+        SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_MISO);
+    }
+    else if (miso_bitlen < 0)
+    {
+        SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_DOUTDIN);
+    }
+
+    // start transaction
     SET_PERI_REG_MASK(SPI_CMD(spi_no), SPI_USR);
-    while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
 
-    *data = (uint8)(READ_PERI_REG(SPI_W0(spi_no))&0xff);
-}  
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
+}
+
 
 /******************************************************************************
  * FunctionName : spi_byte_write_espslave

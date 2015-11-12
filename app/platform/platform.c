@@ -55,20 +55,13 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 
   switch(pull){
     case PLATFORM_GPIO_PULLUP:
-      PIN_PULLDWN_DIS(pin_mux[pin]);
       PIN_PULLUP_EN(pin_mux[pin]);
-      break;
-    case PLATFORM_GPIO_PULLDOWN:
-      PIN_PULLUP_DIS(pin_mux[pin]);
-      PIN_PULLDWN_EN(pin_mux[pin]);
       break;
     case PLATFORM_GPIO_FLOAT:
       PIN_PULLUP_DIS(pin_mux[pin]);
-      PIN_PULLDWN_DIS(pin_mux[pin]);
       break;
     default:
       PIN_PULLUP_DIS(pin_mux[pin]);
-      PIN_PULLDWN_DIS(pin_mux[pin]);
       break;
   }
 
@@ -197,7 +190,6 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
     case BIT_RATE_74880:
     case BIT_RATE_115200:
     case BIT_RATE_230400:
-    case BIT_RATE_256000:
     case BIT_RATE_460800:
     case BIT_RATE_921600:
     case BIT_RATE_1843200:
@@ -445,34 +437,87 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 
 // *****************************************************************************
 // SPI platform interface
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock)
+uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
-  spi_master_init(id, cpol, cpha, databits, clock);
+  spi_master_init( id, cpol, cpha, clock_div );
   return 1;
 }
 
-spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data )
+int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data )
 {
-  spi_mast_byte_write(id, &data);
-  return data;
+  if (bitlen > 32)
+    return PLATFORM_ERR;
+
+  spi_mast_transaction( id, 0, 0, bitlen, data, 0, 0, 0 );
+  return PLATFORM_OK;
+}
+
+spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type data )
+{
+  if (bitlen > 32)
+    return 0;
+
+  spi_mast_set_mosi( id, 0, bitlen, data );
+  spi_mast_transaction( id, 0, 0, 0, 0, bitlen, 0, -1 );
+  return spi_mast_get_miso( id, 0, bitlen );
+}
+
+int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data )
+{
+  if (offset + bitlen > 512)
+    return PLATFORM_ERR;
+
+  spi_mast_set_mosi( id, offset, bitlen, data );
+
+  return PLATFORM_OK;
+}
+
+spi_data_type platform_spi_get_miso( uint8_t id, uint8_t offset, uint8_t bitlen )
+{
+  if (offset + bitlen > 512)
+    return 0;
+
+  return spi_mast_get_miso( id, offset, bitlen );
+}
+
+int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,
+                              uint8_t addr_bitlen, spi_data_type addr_data,
+                              uint16_t mosi_bitlen, uint8_t dummy_bitlen, int16_t miso_bitlen )
+{
+  if ((cmd_bitlen   >  16) ||
+      (addr_bitlen  >  32) ||
+      (mosi_bitlen  > 512) ||
+      (dummy_bitlen > 256) ||
+      (miso_bitlen  > 512))
+    return PLATFORM_ERR;
+
+  spi_mast_transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data, mosi_bitlen, dummy_bitlen, miso_bitlen );
+
+  return PLATFORM_OK;
 }
 
 // ****************************************************************************
 // Flash access functions
 
+/*
+ * Assumptions:
+ * > toaddr is INTERNAL_FLASH_WRITE_UNIT_SIZE aligned
+ * > size is a multiple of INTERNAL_FLASH_WRITE_UNIT_SIZE
+ */
 uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size )
 {
   toaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
   const uint32_t blkmask = INTERNAL_FLASH_WRITE_UNIT_SIZE - 1;
   uint32_t *apbuf = NULL;
-  if( ((uint32_t)from) & blkmask ){
+  uint32_t fromaddr = (uint32_t)from;
+  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_START_ADDRESS)) {
     apbuf = (uint32_t *)c_malloc(size);
     if(!apbuf)
       return 0;
     c_memcpy(apbuf, from, size);
   }
-  WRITE_PERI_REG(0x60000914, 0x73);
+  system_soft_wdt_feed ();
   r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
   if(apbuf)
     c_free(apbuf);
@@ -484,12 +529,37 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   }
 }
 
+/*
+ * Assumptions:
+ * > fromaddr is INTERNAL_FLASH_READ_UNIT_SIZE aligned
+ * > size is a multiple of INTERNAL_FLASH_READ_UNIT_SIZE
+ */
 uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 {
+  if (size==0)
+    return 0;
+
   fromaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
-  WRITE_PERI_REG(0x60000914, 0x73);
-  r = flash_read(fromaddr, (uint32 *)to, size);
+  system_soft_wdt_feed ();
+
+  const uint32_t blkmask = (INTERNAL_FLASH_READ_UNIT_SIZE - 1);
+  if( ((uint32_t)to) & blkmask )
+  {
+    uint32_t size2=size-INTERNAL_FLASH_READ_UNIT_SIZE;
+    uint32* to2=(uint32*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
+    r = flash_read(fromaddr, to2, size2);
+    if(SPI_FLASH_RESULT_OK == r)
+    {
+      os_memmove(to,to2,size2);
+      char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
+      r=flash_read(fromaddr+size2,(uint32*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
+      os_memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
+    }
+  }
+  else
+    r = flash_read(fromaddr, (uint32 *)to, size);
+
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
@@ -500,6 +570,6 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 
 int platform_flash_erase_sector( uint32_t sector_id )
 {
-  WRITE_PERI_REG(0x60000914, 0x73);
+  system_soft_wdt_feed ();
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
 }

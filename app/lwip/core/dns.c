@@ -83,9 +83,13 @@
 
 #include <string.h>
 
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
 /** DNS server IP address */
 #ifndef DNS_SERVER_ADDRESS
-#define DNS_SERVER_ADDRESS(ipaddr)        (ip4_addr_set_u32(ipaddr, ipaddr_addr("208.67.222.222"))) /* resolver1.opendns.com */
+#define DNS_SERVER_ADDRESS(ipaddr)        (ip4_addr_set_u32(ipaddr, 0xDEDE43D0)) /* resolver1.opendns.com(208.67.222.222) */
 #endif
 
 /** DNS server port address */
@@ -221,9 +225,9 @@ static u8_t                   dns_seqno;
 static struct dns_table_entry dns_table[DNS_TABLE_SIZE];
 static ip_addr_t              dns_servers[DNS_MAX_SERVERS];
 /** Contiguous buffer for processing responses */
-static u8_t                   dns_payload_buffer[LWIP_MEM_ALIGN_BUFFER(DNS_MSG_SIZE)];
+//static u8_t                   dns_payload_buffer[LWIP_MEM_ALIGN_BUFFER(DNS_MSG_SIZE)];
 static u8_t*                  dns_payload;
-
+static u8_t					  dns_random;
 /**
  * Initialize the resolver: set up the UDP pcb and configure the default server
  * (DNS_SERVER_ADDRESS).
@@ -233,7 +237,7 @@ dns_init()
 {
   ip_addr_t dnsserver;
 
-  dns_payload = (u8_t *)LWIP_MEM_ALIGN(dns_payload_buffer);
+//  dns_payload = (u8_t *)LWIP_MEM_ALIGN(dns_payload_buffer);
   
   /* initialize default DNS server address */
   DNS_SERVER_ADDRESS(&dnsserver);
@@ -299,7 +303,7 @@ dns_getserver(u8_t numdns)
  * The DNS resolver client timer - handle retries and timeouts and should
  * be called every DNS_TMR_INTERVAL milliseconds (every second by default).
  */
-void
+void ICACHE_FLASH_ATTR
 dns_tmr(void)
 {
   if (dns_pcb != NULL) {
@@ -321,7 +325,7 @@ dns_init_local()
   for (i = 0; i < sizeof(local_hostlist_init) / sizeof(struct local_hostlist_entry); i++) {
     struct local_hostlist_entry *init_entry = &local_hostlist_init[i];
     LWIP_ASSERT("invalid host name (NULL)", init_entry->name != NULL);
-    namelen = strlen(init_entry->name);
+    namelen = os_strlen(init_entry->name);
     LWIP_ASSERT("namelen <= DNS_LOCAL_HOSTLIST_MAX_NAMELEN", namelen <= DNS_LOCAL_HOSTLIST_MAX_NAMELEN);
     entry = (struct local_hostlist_entry *)memp_malloc(MEMP_LOCALHOSTLIST);
     LWIP_ASSERT("mem-error in dns_init_local", entry != NULL);
@@ -416,7 +420,7 @@ dns_local_addhost(const char *hostname, const ip_addr_t *addr)
   struct local_hostlist_entry *entry;
   size_t namelen;
   LWIP_ASSERT("invalid host name (NULL)", hostname != NULL);
-  namelen = strlen(hostname);
+  namelen = os_strlen(hostname);
   LWIP_ASSERT("namelen <= DNS_LOCAL_HOSTLIST_MAX_NAMELEN", namelen <= DNS_LOCAL_HOSTLIST_MAX_NAMELEN);
   entry = (struct local_hostlist_entry *)memp_malloc(MEMP_LOCALHOSTLIST);
   if (entry == NULL) {
@@ -566,7 +570,7 @@ dns_send(u8_t numdns, const char* name, u8_t id)
   char *query, *nptr;
   const char *pHostname;
   u8_t n;
-
+  dns_random = os_random()%250;
   LWIP_DEBUGF(DNS_DEBUG, ("dns_send: dns_servers[%"U16_F"] \"%s\": request\n",
               (u16_t)(numdns), name));
   LWIP_ASSERT("dns server out of array", numdns < DNS_MAX_SERVERS);
@@ -579,8 +583,8 @@ dns_send(u8_t numdns, const char* name, u8_t id)
     LWIP_ASSERT("pbuf must be in one piece", p->next == NULL);
     /* fill dns header */
     hdr = (struct dns_hdr*)p->payload;
-    memset(hdr, 0, SIZEOF_DNS_HDR);
-    hdr->id = htons(id);
+    os_memset(hdr, 0, SIZEOF_DNS_HDR);
+    hdr->id = htons(id + dns_random);
     hdr->flags1 = DNS_FLAG1_RD;
     hdr->numquestions = PP_HTONS(1);
     query = (char*)hdr + SIZEOF_DNS_HDR;
@@ -739,6 +743,9 @@ dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t 
   struct dns_table_entry *pEntry;
   u16_t nquestions, nanswers;
 
+  u8_t* dns_payload_buffer = (u8_t* )os_zalloc(LWIP_MEM_ALIGN_BUFFER(DNS_MSG_SIZE));
+  dns_payload = (u8_t *)LWIP_MEM_ALIGN(dns_payload_buffer);
+
   LWIP_UNUSED_ARG(arg);
   LWIP_UNUSED_ARG(pcb);
   LWIP_UNUSED_ARG(addr);
@@ -763,6 +770,7 @@ dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t 
     /* The ID in the DNS header should be our entry into the name table. */
     hdr = (struct dns_hdr*)dns_payload;
     i = htons(hdr->id);
+    i = i - dns_random;
     if (i < DNS_TABLE_SIZE) {
       pEntry = &dns_table[i];
       if(pEntry->state == DNS_STATE_ASKING) {
@@ -845,6 +853,7 @@ responseerr:
 memerr:
   /* free pbuf */
   pbuf_free(p);
+  os_free(dns_payload_buffer);
   return;
 }
 
@@ -902,7 +911,7 @@ dns_enqueue(const char *name, dns_found_callback found, void *callback_arg)
   pEntry->seqno = dns_seqno++;
   pEntry->found = found;
   pEntry->arg   = callback_arg;
-  namelen = LWIP_MIN(strlen(name), DNS_MAX_NAME_LENGTH-1);
+  namelen = LWIP_MIN(os_strlen(name), DNS_MAX_NAME_LENGTH-1);
   MEMCPY(pEntry->name, name, namelen);
   pEntry->name[namelen] = 0;
 
@@ -941,7 +950,7 @@ dns_gethostbyname(const char *hostname, ip_addr_t *addr, dns_found_callback foun
    * or invalid hostname or invalid hostname length */
   if ((dns_pcb == NULL) || (addr == NULL) ||
       (!hostname) || (!hostname[0]) ||
-      (strlen(hostname) >= DNS_MAX_NAME_LENGTH)) {
+      (os_strlen(hostname) >= DNS_MAX_NAME_LENGTH)) {
     return ERR_ARG;
   }
 

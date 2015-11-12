@@ -13,9 +13,18 @@
 #include "osapi.h"
 #include "driver/uart.h"
 #include "user_config.h"
+#include "user_interface.h"
 
 #define UART0   0
 #define UART1   1
+
+#ifndef FUNC_U0RXD
+#define FUNC_U0RXD 0
+#endif
+
+// For event signalling
+static uint8 task = USER_TASK_PRIO_MAX;
+static os_signal_t sig;
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
@@ -183,6 +192,7 @@ uart0_rx_intr_handler(void *para)
      */
     RcvMsgBuff *pRxBuff = (RcvMsgBuff *)para;
     uint8 RcvChar;
+    bool got_input = false;
 
     if (UART_RXFIFO_FULL_INT_ST != (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_FULL_INT_ST)) {
         return;
@@ -216,7 +226,12 @@ uart0_rx_intr_handler(void *para)
                 pRxBuff->pReadPos++;
             }
         }
+
+        got_input = true;
     }
+
+    if (got_input && task != USER_TASK_PRIO_MAX)
+      system_os_post (task, sig, UART0);
 }
 
 /******************************************************************************
@@ -224,11 +239,16 @@ uart0_rx_intr_handler(void *para)
  * Description  : user interface for init uart
  * Parameters   : UartBautRate uart0_br - uart0 bautrate
  *                UartBautRate uart1_br - uart1 bautrate
+ *                uint8        task_prio - task priority to signal on input
+ *                os_signal_t  sig_input - signal to post
  * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
+uart_init(UartBautRate uart0_br, UartBautRate uart1_br, uint8 task_prio, os_signal_t sig_input)
 {
+    task = task_prio;
+    sig = sig_input;
+
     // rom use 74880 baut_rate, here reinitialize
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);

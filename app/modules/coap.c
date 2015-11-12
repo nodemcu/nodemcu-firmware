@@ -12,6 +12,7 @@
 
 #include "c_types.h"
 #include "mem.h"
+#include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "driver/uart.h"
 
@@ -48,6 +49,15 @@ static void coap_received(void *arg, char *pdata, unsigned short len)
   // c_memcpy(buf, pdata, len);
 
   size_t rsplen = coap_server_respond(pdata, len, buf, MAX_MESSAGE_SIZE+1);
+
+  // SDK 1.4.0 changed behaviour, for UDP server need to look up remote ip/port
+  remot_info *pr = 0;
+  if (espconn_get_connection_info (pesp_conn, &pr, 0) != ESPCONN_OK)
+    return;
+  pesp_conn->proto.udp->remote_port = pr->remote_port;
+  os_memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
+  // The remot_info apparently should *not* be os_free()d, fyi
+
   espconn_sent(pesp_conn, (unsigned char *)buf, rsplen);
 
   // c_memset(buf, 0, sizeof(buf));

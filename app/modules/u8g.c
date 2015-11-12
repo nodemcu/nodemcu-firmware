@@ -6,7 +6,6 @@
 #include "auxmods.h"
 #include "lrotable.h"
 
-//#include "c_string.h"
 #include "c_stdlib.h"
 
 #include "u8g.h"
@@ -15,9 +14,7 @@
 
 struct _lu8g_userdata_t
 {
-    u8g_t     u8g;
-    u8g_pb_t  pb;
-    u8g_dev_t dev;
+    u8g_t u8g;
 };
 
 typedef struct _lu8g_userdata_t lu8g_userdata_t;
@@ -68,6 +65,8 @@ static int lu8g_setFont( lua_State *L )
     u8g_fntpgm_uint8_t *font = (u8g_fntpgm_uint8_t *)lua_touserdata( L, 2 );
     if (font != NULL)
         u8g_SetFont( LU8G, font );
+    else
+        luaL_argerror(L, 2, "font data expected");
 
     return 0;
 }
@@ -304,32 +303,24 @@ static int lu8g_generic_drawStr( lua_State *L, uint8_t rot )
 // Lua: pix_len = u8g.drawStr( self, x, y, string )
 static int lu8g_drawStr( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 0 );
 }
 
 // Lua: pix_len = u8g.drawStr90( self, x, y, string )
 static int lu8g_drawStr90( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 1 );
 }
 
 // Lua: pix_len = u8g.drawStr180( self, x, y, string )
 static int lu8g_drawStr180( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 2 );
 }
 
 // Lua: pix_len = u8g.drawStr270( self, x, y, string )
 static int lu8g_drawStr270( lua_State *L )
 {
-    lu8g_userdata_t *lud;
-
     return lu8g_generic_drawStr( L, 3 );
 }
 
@@ -870,7 +861,7 @@ uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void
         break;
     
     case U8G_COM_MSG_WRITE_BYTE:
-        platform_spi_send_recv( 1, arg_val );
+        platform_spi_send( 1, 8, arg_val );
         break;
     
     case U8G_COM_MSG_WRITE_SEQ:
@@ -879,7 +870,7 @@ uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void
             register uint8_t *ptr = arg_ptr;
             while( arg_val > 0 )
             {
-                platform_spi_send_recv( 1, *ptr++ );
+                platform_spi_send( 1, 8, *ptr++ );
                 arg_val--;
             }
         }
@@ -968,13 +959,6 @@ static int lu8g_close_display( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
-
-    // free up allocated page buffer
-    if (lud->pb.buf != NULL)
-    {
-        c_free( lud->pb.buf );
-        lud->pb.buf = NULL;
-    }
 
     return 0;
 }
@@ -1157,13 +1141,14 @@ LUALIB_API int luaopen_u8g( lua_State *L )
 
     // Options for circle/ ellipse drawing
     MOD_REG_NUMBER( L, "DRAW_UPPER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_UPPER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  U8G_DRAW_UPPER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", U8G_DRAW_LOWER_RIGHT );
+    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  U8G_DRAW_LOWER_LEFT );
+    MOD_REG_NUMBER( L, "DRAW_ALL",         U8G_DRAW_ALL );
 
     // Display modes
     MOD_REG_NUMBER( L, "MODE_BW",       U8G_MODE_BW );
-    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_BW );
+    MOD_REG_NUMBER( L, "MODE_GRAY2BIT", U8G_MODE_GRAY2BIT );
 
     // create metatable
     luaL_newmetatable(L, "u8g.display");

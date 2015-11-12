@@ -18,9 +18,14 @@ void spi_lcd_mode_init(uint8 spi_no);
 void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit);
 
 //spi master init funtion
-void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock);
-//use spi send 8bit data
-void spi_mast_byte_write(uint8 spi_no,uint8 *data);
+void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_div);
+// fill MOSI buffer
+void spi_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data);
+// retrieve data from MISO buffer
+uint32 spi_get_miso(uint8 spi_no, uint8 offset, uint8 bitlen);
+// initiate SPI transaction
+void spi_mast_transaction(uint8 spi_no, uint8 cmd_bitlen, uint16 cmd_data, uint8 addr_bitlen, uint32 addr_data,
+                          uint16 mosi_bitlen, uint8 dummy_bitlen, sint16 miso_bitlen);
 
 //transmit data to esp8266 slave buffer,which needs 16bit transmission ,
 //first byte is master command 0x04, second byte is master data

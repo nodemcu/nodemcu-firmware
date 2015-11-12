@@ -126,7 +126,7 @@ static struct memp *memp_tab[MEMP_MAX];
 #if !MEM_USE_POOLS && !MEMP_MEM_MALLOC
 static
 #endif
-const u16_t memp_sizes[MEMP_MAX] = { //LWIP_MEM_ALIGN_SIZE
+const u32_t memp_sizes[MEMP_MAX] ICACHE_RODATA_ATTR = { //LWIP_MEM_ALIGN_SIZE
 #define LWIP_MEMPOOL(name,num,size,desc,attr)  LWIP_MEM_ALIGN_SIZE(size),
 #include "lwip/memp_std.h"
 };
@@ -320,11 +320,11 @@ memp_overflow_init(void)
     for (j = 0; j < memp_num[i]; ++j) {
 #if MEMP_SANITY_REGION_BEFORE_ALIGNED > 0
       m = (u8_t*)p + MEMP_SIZE - MEMP_SANITY_REGION_BEFORE_ALIGNED;
-      memset(m, 0xcd, MEMP_SANITY_REGION_BEFORE_ALIGNED);
+      os_memset(m, 0xcd, MEMP_SANITY_REGION_BEFORE_ALIGNED);
 #endif
 #if MEMP_SANITY_REGION_AFTER_ALIGNED > 0
       m = (u8_t*)p + MEMP_SIZE + memp_sizes[i];
-      memset(m, 0xcd, MEMP_SANITY_REGION_AFTER_ALIGNED);
+      os_memset(m, 0xcd, MEMP_SANITY_REGION_AFTER_ALIGNED);
 #endif
       p = (struct memp*)((u8_t*)p + MEMP_SIZE + memp_sizes[i] + MEMP_SANITY_REGION_AFTER_ALIGNED);
     }

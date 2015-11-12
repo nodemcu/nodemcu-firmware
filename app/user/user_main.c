@@ -28,6 +28,7 @@
 #endif
 
 #define SIG_LUA 0
+#define SIG_UARTINPUT 1
 #define TASK_QUEUE_LEN 4
 os_event_t *taskQueue;
 
@@ -50,6 +51,21 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
 }
 
 
+/* To avoid accidentally losing the fix for the TCP port randomization
+ * during an LWIP upgrade, we've implemented most it outside the LWIP
+ * source itself. This enables us to test for the presence of the fix
+ * /at link time/ and error out if it's been lost.
+ * The fix itself consists of putting the function-static 'port' variable
+ * into its own section, and get the linker to provide an alias for it.
+ * From there we can then manually randomize it at boot.
+ */
+static inline void tcp_random_port_init (void)
+{
+  extern uint16_t _tcp_new_port_port; // provided by the linker script
+  _tcp_new_port_port += xthal_get_ccount () % 4096;
+}
+
+
 void task_lua(os_event_t *e){
     char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
     NODE_DBG("Task task_lua started.\n");
@@ -57,6 +73,12 @@ void task_lua(os_event_t *e){
         case SIG_LUA:
             NODE_DBG("SIG_LUA received.\n");
             lua_main( 2, lua_argv );
+            break;
+        case SIG_UARTINPUT:
+            lua_handle_input (false);
+            break;
+        case LUA_PROCESS_LINE_SIG:
+            lua_handle_input (true);
             break;
         default:
             break;
@@ -76,7 +98,7 @@ void task_init(void){
 void nodemcu_init(void)
 {
     NODE_ERR("\n");
-    // Initialize platform first for lua modules.   
+    // Initialize platform first for lua modules.
     if( platform_init() != PLATFORM_OK )
     {
         // This should never happen
@@ -110,7 +132,7 @@ void nodemcu_init(void)
         // Flash init data at FLASHSIZE - 0x04000 Byte.
         flash_init_data_default();
         // Flash blank data at FLASHSIZE - 0x02000 Byte.
-        flash_init_data_blank(); 
+        flash_init_data_blank();
     }
 
 #if defined( BUILD_WOFS )
@@ -138,8 +160,11 @@ void nodemcu_init(void)
     // char* lua_argv[] = { (char *)"lua", (char *)"-e", (char *)"pwm.setup(0,100,50) pwm.start(0) pwm.stop(0)", NULL };
     // lua_main( 3, lua_argv );
     // NODE_DBG("Flash sec num: 0x%x\n", flash_get_sec_num());
+
+    tcp_random_port_init ();
+
     task_init();
-    system_os_post(USER_TASK_PRIO_0,SIG_LUA,'s');
+    system_os_post(LUA_TASK_PRIO,SIG_LUA,'s');
 }
 
 /******************************************************************************
@@ -158,16 +183,13 @@ void user_init(void)
     // os_printf("Heap size::%d.\n",system_get_free_heap_size());
     // os_delay_us(50*1000);   // delay 50ms before init uart
 
-#ifdef DEVELOP_VERSION
-    uart_init(BIT_RATE_74880, BIT_RATE_74880);
-#else
-    uart_init(BIT_RATE_9600, BIT_RATE_9600);
-#endif
-    // uart_init(BIT_RATE_115200, BIT_RATE_115200);
-    
+    UartBautRate br = BIT_RATE_DEFAULT;
+
+    uart_init (br, br, USER_TASK_PRIO_0, SIG_UARTINPUT);
+
     #ifndef NODE_DEBUG
     system_set_os_print(0);
     #endif
-    
+
     system_init_done_cb(nodemcu_init);
 }

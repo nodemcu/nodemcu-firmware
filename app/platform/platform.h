@@ -27,7 +27,6 @@ uint8_t platform_key_led( uint8_t level);
 // GPIO subsection
 #define PLATFORM_GPIO_FLOAT 0
 #define PLATFORM_GPIO_PULLUP 1
-#define PLATFORM_GPIO_PULLDOWN 2
 
 #define PLATFORM_GPIO_INT 2
 #define PLATFORM_GPIO_OUTPUT 1
@@ -90,9 +89,6 @@ int platform_can_recv( unsigned id, uint32_t *canid, uint8_t *idtype, uint8_t *l
 // SPI clock polarity
 #define PLATFORM_SPI_CPOL_LOW                 0
 #define PLATFORM_SPI_CPOL_HIGH                1
-// SPI databits
-#define PLATFORM_SPI_DATABITS_8               8
-#define PLATFORM_SPI_DATABITS_16              16
 
 
 // Data types
@@ -100,9 +96,17 @@ typedef uint32_t spi_data_type;
 
 // The platform SPI functions
 int platform_spi_exists( unsigned id );
-uint32_t platform_spi_setup( unsigned id, int mode, unsigned cpol, unsigned cpha, unsigned databits, uint32_t clock);
-spi_data_type platform_spi_send_recv( unsigned id, spi_data_type data );
+uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div);
+int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data );
+spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type data );
 void platform_spi_select( unsigned id, int is_select );
+
+int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data );
+spi_data_type platform_spi_get_miso( uint8_t id, uint8_t offset, uint8_t bitlen );
+int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,
+                              uint8_t addr_bitlen, spi_data_type addr_data,
+                              uint16_t mosi_bitlen, uint8_t dummy_bitlen, int16_t miso_bitlen );
+
 
 // *****************************************************************************
 // UART subsection

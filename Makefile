@@ -1,8 +1,17 @@
 #  copyright (c) 2010 Espressif System
 #
+.NOTPARALLEL:
 ifndef PDIR
 
 endif
+
+# SDK version NodeMCU is locked to
+SDK_VER:=1.4.0
+# Ensure we search "our" SDK before the tool-chain's SDK (if any)
+TOP_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
+SDK_DIR:=$(TOP_DIR)sdk/esp_iot_sdk_v$(SDK_VER)
+CCFLAGS:= -I$(TOP_DIR)sdk-overrides/include -I$(SDK_DIR)/include
+LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
 #############################################################
 # Select compile

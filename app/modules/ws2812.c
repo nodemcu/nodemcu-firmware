@@ -31,8 +31,8 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t pin, uint8_t *pixels, uint32_t 
   pixel = *p++;
   mask = 0x80;
   start_time = 0;
-  t0h  = (1000 * system_get_cpu_freq()) / 3333;  // 0.30us (spec=0.35 +- 0.15)
-  t1h  = (1000 * system_get_cpu_freq()) / 1666;  // 0.60us (spec=0.70 +- 0.15)
+  t0h  = (1000 * system_get_cpu_freq()) / 3022;  // 0.35us (spec=0.35 +- 0.15)
+  t1h  = (1000 * system_get_cpu_freq()) / 1477;  // 0.70us (spec=0.70 +- 0.15)
   ttot = (1000 * system_get_cpu_freq()) /  800;  // 1.25us (MUST be >= 1.25)
 
   while (true) {
@@ -94,9 +94,9 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
   platform_gpio_write(pin, 0);
 
   // Send the buffer
-  os_intr_lock();
+  ets_intr_lock();
   ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  os_intr_unlock();
+  ets_intr_unlock();
 
   c_free(buffer);
 
@@ -120,9 +120,9 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   platform_gpio_write(pin, 0);
 
   // Send the buffer
-  os_intr_lock();
+  ets_intr_lock();
   ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  os_intr_unlock();
+  ets_intr_unlock();
 
   return 0;
 }

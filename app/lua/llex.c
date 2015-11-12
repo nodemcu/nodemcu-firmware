@@ -5,14 +5,14 @@
 */
 
 
-#include "c_ctype.h"
-#include "c_locale.h"
-#include "c_string.h"
-
 #define llex_c
 #define LUA_CORE
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
+#include C_HEADER_CTYPE
+#include C_HEADER_LOCALE
+#include C_HEADER_STRING
 
 #include "ldo.h"
 #include "llex.h"

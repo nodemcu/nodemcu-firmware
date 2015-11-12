@@ -81,13 +81,13 @@ tools/esptool.py supported NodeMCU devkit automatic flash.
     <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
   </tr>
   <tr>
-    <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15</td>
+    <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15 (SPI CS)</td>
   </tr>
   <tr>
-    <td>1</td><td>GPIO5</td><td>9</td><td>GPIO3</td>
+    <td>1</td><td>GPIO5</td><td>9</td><td>GPIO3 (UART RX)</td>
    </tr>
    <tr>
-    <td>2</td><td>GPIO4</td><td>10</td><td>GPIO1</td>
+    <td>2</td><td>GPIO4</td><td>10</td><td>GPIO1 (UART TX)</td>
   </tr>
   <tr>
     <td>3</td><td>GPIO0</td><td>11</td><td>GPIO9</td>
@@ -96,13 +96,13 @@ tools/esptool.py supported NodeMCU devkit automatic flash.
     <td>4</td><td>GPIO2</td><td>12</td><td>GPIO10</td>
   </tr>
   <tr>
-    <td>5</td><td>GPIO14</td><td></td><td></td>
+    <td>5</td><td>GPIO14 (SPI CLK)</td><td></td><td></td>
    </tr>
    <tr>
-    <td>6</td><td>GPIO12</td><td></td><td></td>
+    <td>6</td><td>GPIO12 (SPI MISO)</td><td></td><td></td>
   </tr>
   <tr>
-    <td>7</td><td>GPIO13</td><td></td><td></td>
+    <td>7</td><td>GPIO13 (SPI MOSI)</td><td></td><td></td>
    </tr>
 </table>
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
@@ -360,8 +360,27 @@ cu:send("hello")
 ```
 
 ####Operate a display with u8glib
-u8glib is a graphics library with support for many different displays.
-The integration in nodemcu is developed for SSD1306 based display attached via the I2C port. Further display types and SPI connectivity will be added in the future.
+u8glib is a graphics library with support for many different displays. The nodemcu firmware supports a subset of these.
+Both I2C and SPI:
+* sh1106_128x64
+* ssd1306 - 128x64 and 64x48 variants
+* ssd1309_128x64
+* ssd1327_96x96_gr
+* uc1611 - dogm240 and dogxl240 variants
+
+SPI only:
+* ld7032_60x32
+* pcd8544_84x48
+* pcf8812_96x65
+* ssd1322_nhd31oled - bw and gr variants
+* ssd1325_nhd27oled - bw and gr variants
+* ssd1351_128x128 - gh and hicolor variants
+* st7565_64128n - variants 64128n, dogm128/132, lm6059/lm6063, c12832/c12864
+* uc1601_c128032
+* uc1608 - 240x128 and 240x64 variants
+* uc1610_dogxl160 - bw and gr variants
+* uc1611 - dogm240 and dogxl240 variants
+* uc1701 - dogs102 and mini12864 variants
 
 U8glib v1.18.1
 
@@ -386,7 +405,7 @@ All other pins can be assigned to any available GPIO:
 
 Also refer to the initialization sequence eg in [u8g_graphics_test.lua](lua_examples/u8glib/u8g_graphics_test.lua):
 ```lua
-spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
+spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 ```
 
 
@@ -451,6 +470,61 @@ In contrast to the source code based inclusion of XBMs into u8glib, it's require
   - [ ] setRGB()
   - [ ] setDefaultMidColor()
 
+####Operate a display with ucglib
+Ucglib is a graphics library with support for color TFT displays.
+
+Ucglib v1.3.3
+
+#####SPI connection
+The HSPI module is used, so certain pins are fixed:
+* HSPI CLK  = GPIO14
+* HSPI MOSI = GPIO13
+* HSPI MISO = GPIO12 (not used)
+
+All other pins can be assigned to any available GPIO:
+* CS
+* D/C
+* RES (optional for some displays)
+
+Also refer to the initialization sequence eg in [GraphicsTest.lua](lua_examples/ucglib/GraphicsRest.lua):
+```lua
+spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
+```
+
+#####Library usage
+The Lua bindings for this library closely follow ucglib's object oriented C++ API. Based on the ucg class, you create an object for your display type.
+
+ILI9341 via SPI:
+```lua
+cs  = 8 -- GPIO15, pull-down 10k to GND
+dc  = 4 -- GPIO2
+res = 0 -- GPIO16, RES is optional YMMV
+disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
+```
+
+This object provides all of ucglib's methods to control the display.
+Again, refer to [GraphicsTest.lua](lua_examples/ucglib/GraphicsTest.lua) to get an impression how this is achieved with Lua code. Visit the [ucglib homepage](https://github.com/olikraus/ucglib) for technical details.
+
+#####Displays
+To get access to the display constructors, add the desired entries to the display table in [app/include/ucg_config.h](app/include/ucg_config.h):
+```c
+#define UCG_DISPLAY_TABLE                          \
+    UCG_DISPLAY_TABLE_ENTRY(ili9341_18x240x320_hw_spi, ucg_dev_ili9341_18x240x320, ucg_ext_ili9341_18) \
+    UCG_DISPLAY_TABLE_ENTRY(st7735_18x128x160_hw_spi, ucg_dev_st7735_18x128x160, ucg_ext_st7735_18) \
+```
+
+#####Fonts
+ucglib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in [app/include/ucg_config.h](app/include/ucg_config.h) and recompile. Simply add the desired fonts to the font table:
+```c
+#define UCG_FONT_TABLE                              \
+    UCG_FONT_TABLE_ENTRY(font_7x13B_tr)             \
+    UCG_FONT_TABLE_ENTRY(font_helvB12_hr)           \
+    UCG_FONT_TABLE_ENTRY(font_helvB18_hr)           \
+    UCG_FONT_TABLE_ENTRY(font_ncenR12_tr)           \
+    UCG_FONT_TABLE_ENTRY(font_ncenR14_hr)
+```
+They'll be available as `ucg.<font_name>` in Lua.
+
 
 ####Control a WS2812 based light strip
 ```lua
@@ -498,4 +572,14 @@ value = cjson.decode(json_text)
 value = { true, { foo = "bar" } }
 json_text = cjson.encode(value)
 -- Returns: '[true,{"foo":"bar"}]'
+```
+
+####Read an HX711 load cell ADC.
+Note: currently only chanel A with gain 128 is supported.
+The HX711 is an inexpensive 24bit ADC with programmable 128x, 64x, and 32x gain.  
+```lua
+	-- Initialize the hx711 with clk on pin 5 and data on pin 6
+	hx711.init(5,6)
+	-- Read ch A with 128 gain.
+	raw_data = hx711.read(0)
 ```

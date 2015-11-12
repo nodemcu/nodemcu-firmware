@@ -18,6 +18,11 @@
 static int wifi_smart_succeed = LUA_NOREF;
 static uint8 getap_output_format=0;
 
+//wifi.sleep variables
+#define FPM_SLEEP_MAX_TIME 0xFFFFFFF
+static bool FLAG_wifi_force_sleep_enabled=0;
+
+
 //variables for wifi event monitor
 static sint32_t wifi_status_cb_ref[6] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
 static volatile os_timer_t wifi_sta_status_timer;
@@ -28,12 +33,18 @@ static uint8 prev_wifi_status=0;
 #else
 static lua_State* smart_L = NULL;
 #endif
-static void wifi_smart_succeed_cb(void *arg){
+static void wifi_smart_succeed_cb(sc_status status, void *pdata){
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
+
+  if (status == SC_STATUS_LINK_OVER)
+  {
+    smartconfig_stop();
+    return;
+  }
 
 #if defined( NODE_SMART_OLDSTYLE )
 
-  if( !arg )
+  if (status != SC_STATUS_LINK || !pdata)
     return;
   if(wifi_smart_succeed == LUA_NOREF)
     return;
@@ -44,10 +55,10 @@ static void wifi_smart_succeed_cb(void *arg){
 
 #else
 
-  if( !arg )
+  if (status != SC_STATUS_LINK || !pdata)
     return;
 
-  struct station_config *sta_conf = arg;
+  struct station_config *sta_conf = pdata;
   wifi_station_set_config(sta_conf);
   wifi_station_disconnect();
   wifi_station_connect();
@@ -63,7 +74,6 @@ static void wifi_smart_succeed_cb(void *arg){
     luaL_unref(smart_L, LUA_REGISTRYINDEX, wifi_smart_succeed);
     wifi_smart_succeed = LUA_NOREF;
   }
-  smartconfig_stop();
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 }
@@ -195,7 +205,8 @@ static int wifi_start_smart( lua_State* L )
   if ( smart_type > 1 )
     return luaL_error( L, "wrong arg range" );
 
-  smartconfig_start(smart_type, wifi_smart_succeed_cb);
+  smartconfig_set_type(smart_type);
+  smartconfig_start(wifi_smart_succeed_cb);
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 
@@ -313,6 +324,67 @@ static int wifi_getphymode( lua_State* L )
   return 1;
 }
 
+//wifi.sleep()
+static int wifi_sleep(lua_State* L)
+{
+  uint8 desired_sleep_state = 2;
+  sint8 wifi_fpm_do_sleep_return_value = 1;
+  if(lua_isnumber(L, 1))
+  {
+	  if(luaL_checknumber(L, 1) == 0)
+	  {
+		  desired_sleep_state = 0;
+	  }
+	  else if(luaL_checknumber(L, 1) == 1)
+	  {
+		  desired_sleep_state = 1;
+	  }
+  }
+  if (!FLAG_wifi_force_sleep_enabled && desired_sleep_state == 1 )
+  {
+	uint8 wifi_current_opmode = wifi_get_opmode();
+	if (wifi_current_opmode == 1 || wifi_current_opmode == 3 )
+	{
+	  wifi_station_disconnect();
+	}
+	// set WiFi mode to null mode
+	wifi_set_opmode(NULL_MODE);
+	// set force sleep type
+	wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
+	wifi_fpm_open();
+	wifi_fpm_do_sleep_return_value = wifi_fpm_do_sleep(FPM_SLEEP_MAX_TIME);
+	if (wifi_fpm_do_sleep_return_value == 0)
+	{
+	  FLAG_wifi_force_sleep_enabled = TRUE;
+	}
+	else
+	{
+		wifi_fpm_close();
+		FLAG_wifi_force_sleep_enabled = FALSE;
+	}
+
+  }
+  else if(FLAG_wifi_force_sleep_enabled && desired_sleep_state == 0)
+  {
+	FLAG_wifi_force_sleep_enabled = FALSE;
+	// wake up to use WiFi again
+	wifi_fpm_do_wakeup();
+	wifi_fpm_close();
+  }
+
+  if (desired_sleep_state == 1 && FLAG_wifi_force_sleep_enabled == FALSE)
+  {
+	  lua_pushnil(L);
+	  lua_pushnumber(L, wifi_fpm_do_sleep_return_value);
+  }
+  else
+  {
+	  lua_pushnumber(L, FLAG_wifi_force_sleep_enabled);
+	  lua_pushnil(L);
+  }
+  return 2;
+}
+
 // Lua: mac = wifi.xx.getmac()
 static int wifi_getmac( lua_State* L, uint8_t mode )
 {
@@ -333,7 +405,7 @@ static int wifi_setmac( lua_State* L, uint8_t mode )
   if(len!=17)
 	  return luaL_error( L, "wrong arg type" );
 
-  os_str2macaddr(mac, macaddr);
+  ets_str2macaddr(mac, macaddr);
   lua_pushboolean(L,wifi_set_macaddr(mode, (uint8 *)mac));
   return 1;
 }
@@ -591,7 +663,7 @@ static int wifi_station_config( lua_State* L )
 	  if (ml!=17)
 	    return luaL_error( L, "MAC:FF:FF:FF:FF:FF:FF" );
 	  c_memset(sta_conf.bssid, 0, 6);
-	  os_str2macaddr(sta_conf.bssid, macaddr);
+	  ets_str2macaddr(sta_conf.bssid, macaddr);
 	  sta_conf.bssid_set = 1;
 	}
 	else
@@ -743,7 +815,7 @@ static int wifi_station_listap( lua_State* L )
 	      if(len!=17)
 	        return luaL_error( L, "bssid: FF:FF:FF:FF:FF:FF" );
 	      c_memset(bssid, 0, 6);
-	      os_str2macaddr(bssid, macaddr);
+	      ets_str2macaddr(bssid, macaddr);
 	      scan_cfg.bssid=bssid;
 	      NODE_DBG(MACSTR, MAC2STR(scan_cfg.bssid));
 	      NODE_DBG("\n");
@@ -1055,7 +1127,7 @@ static int wifi_ap_getconfig( lua_State* L )
   struct softap_config config;
   wifi_softap_get_config(&config);
   lua_pushstring( L, config.ssid );
-  if(config.authmode = AUTH_OPEN)
+  if(config.authmode == AUTH_OPEN)
     lua_pushnil(L);
   else
     lua_pushstring( L, config.password );
@@ -1229,7 +1301,7 @@ static int wifi_ap_dhcp_config( lua_State* L )
   if (ip == 0)
     return luaL_error( L, "wrong arg type" );
 
-  lease.start_ip = ip;
+  lease.start_ip.addr = ip;
   NODE_DBG(IPSTR, IP2STR(&lease.start_ip));
   NODE_DBG("\n");
 
@@ -1323,6 +1395,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "getchannel" ), LFUNCVAL( wifi_getchannel ) },
   { LSTRKEY( "setphymode" ), LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ), LFUNCVAL( wifi_getphymode ) },
+  { LSTRKEY( "sleep" ), LFUNCVAL( wifi_sleep ) },
   { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ), LFUNCVAL( wifi_exit_smart ) },
   { LSTRKEY( "sleeptype" ), LFUNCVAL( wifi_sleeptype ) },
@@ -1330,14 +1403,14 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "sta" ), LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ), LROVAL( wifi_ap_map ) },
 
-  // { LSTRKEY( "NULLMODE" ), LNUMVAL( NULL_MODE ) },
+  { LSTRKEY( "NULLMODE" ), LNUMVAL( NULL_MODE ) },
   { LSTRKEY( "STATION" ), LNUMVAL( STATION_MODE ) },
   { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
 
-  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_B ) },
-  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_G ) },
-  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_N ) },
+  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_11B ) },
+  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_11G ) },
+  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_11N ) },
 
   { LSTRKEY( "NONE_SLEEP" ), LNUMVAL( NONE_SLEEP_T ) },
   { LSTRKEY( "LIGHT_SLEEP" ), LNUMVAL( LIGHT_SLEEP_T ) },

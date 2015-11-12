@@ -61,6 +61,14 @@
 #define ROM_MODULES_U8G
 #endif
 
+#if defined(LUA_USE_MODULES_UCG)
+#define MODULES_UCG         "ucg"
+#define ROM_MODULES_UCG     \
+    _ROM(MODULES_UCG, luaopen_ucg, lucg_map)
+#else
+#define ROM_MODULES_UCG
+#endif
+
 #if defined(LUA_USE_MODULES_I2C)
 #define MODULES_I2C         "i2c"
 #define ROM_MODULES_I2C     \
@@ -149,6 +157,14 @@
 #define ROM_MODULES_WS2812
 #endif
 
+#if defined(LUA_USE_MODULES_ENDUSER_SETUP)
+#define MODULES_ENDUSER_SETUP      "enduser_setup"
+#define ROM_MODULES_ENDUSER_SETUP  \
+    _ROM(MODULES_ENDUSER_SETUP, luaopen_enduser_setup, enduser_setup_map)
+#else
+#define ROM_MODULES_ENDUSER_SETUP
+#endif
+
 #if defined(LUA_USE_MODULES_CJSON)
 #define MODULES_CJSON       "cjson"
 #define ROM_MODULES_CJSON   \
@@ -213,6 +229,30 @@
 #define ROM_MODULES_SNTP
 #endif
 
+#if defined(LUA_USE_MODULES_BMP085)
+#define MODULES_BMP085      "bmp085"
+#define ROM_MODULES_BMP085  \
+    _ROM(MODULES_BMP085, luaopen_bmp085, bmp085_map)
+#else
+#define ROM_MODULES_BMP085
+#endif
+
+#if defined(LUA_USE_MODULES_TSL2561)
+#define MODULES_TSL2561      "tsl2561"
+#define ROM_MODULES_TSL2561  \
+    _ROM(MODULES_TSL2561, luaopen_tsl2561, tsl2561_map)
+#else
+#define ROM_MODULES_TSL2561
+#endif
+
+#if defined(LUA_USE_MODULES_HX711)
+#define MODULES_HX711      "hx711"
+#define ROM_MODULES_HX711  \
+    _ROM(MODULES_HX711, luaopen_hx711, hx711_map)
+#else
+#define ROM_MODULES_HX711
+#endif
+
 #define LUA_MODULES_ROM     \
         ROM_MODULES_GPIO    \
         ROM_MODULES_PWM		\
@@ -220,6 +260,7 @@
         ROM_MODULES_COAP	\
         ROM_MODULES_MQTT    \
         ROM_MODULES_U8G     \
+        ROM_MODULES_UCG     \
         ROM_MODULES_I2C     \
         ROM_MODULES_SPI     \
         ROM_MODULES_TMR     \
@@ -230,6 +271,7 @@
         ROM_MODULES_UART    \
         ROM_MODULES_OW      \
         ROM_MODULES_BIT     \
+        ROM_MODULES_ENDUSER_SETUP \
         ROM_MODULES_WS2801  \
         ROM_MODULES_WS2812  \
         ROM_MODULES_CJSON   \
@@ -240,5 +282,8 @@
         ROM_MODULES_RTCTIME \
         ROM_MODULES_RTCFIFO \
         ROM_MODULES_SNTP    \
+        ROM_MODULES_BMP085  \
+        ROM_MODULES_TSL2561 \
+        ROM_MODULES_HX711  
 
 #endif

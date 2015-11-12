@@ -133,7 +133,13 @@ ip_route(ip_addr_t *dest)
         /* return netif on which to forward IP packet */
         return netif;
       }
-      if (!ip_addr_isbroadcast(dest, netif) && netif != netif_default) {
+    }
+  }
+  /* iterate through netifs */
+  for(netif = netif_list; netif != NULL; netif = netif->next) {
+    /* network mask matches? */
+    if (netif_is_up(netif)) {
+      if (!ip_addr_isbroadcast(dest, netif) && netif == (struct netif *)eagle_lwip_getif(0)) {
         return netif;
       }
     }
@@ -669,7 +675,7 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
       MEMCPY(p->payload, ip_options, optlen);
       if (optlen < optlen_aligned) {
         /* zero the remaining bytes */
-        memset(((char*)p->payload) + optlen, 0, optlen_aligned - optlen);
+        os_memset(((char*)p->payload) + optlen, 0, optlen_aligned - optlen);
       }
 #if CHECKSUM_GEN_IP_INLINE
       for (i = 0; i < optlen_aligned/2; i++) {

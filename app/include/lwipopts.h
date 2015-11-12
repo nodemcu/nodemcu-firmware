@@ -659,6 +659,13 @@
 #define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
 #endif
 
+/**
+ * DHCP_MAXRTX: Maximum number of retries of current request.
+ */
+#ifndef DHCP_MAXRTX
+#define DHCP_MAXRTX						(*(volatile uint32*)0x600011E0)
+#endif
+
 /*
    ------------------------------------
    ---------- AUTOIP options ----------
@@ -771,7 +778,18 @@
 #ifndef LWIP_IGMP
 #define LWIP_IGMP                       1
 #endif
-
+/*
+   ----------------------------------
+   ---------- MDNS options ----------
+   ----------------------------------
+*/
+/**
+ * LWIP_MDNS==1: Turn on MDNS module.
+ */
+#ifndef LWIP_MDNS
+#define LWIP_MDNS                      1
+#endif
+/*
 /*
    ----------------------------------
    ---------- DNS options -----------
@@ -887,21 +905,21 @@
  * (2 * TCP_MSS) for things to work well
  */
 #ifndef TCP_WND
-#define TCP_WND                         (4 * TCP_MSS)
+#define TCP_WND                         (*(volatile uint32*)0x600011F0)
 #endif 
 
 /**
  * TCP_MAXRTX: Maximum number of retransmissions of data segments.
  */
 #ifndef TCP_MAXRTX
-#define TCP_MAXRTX                      3
+#define TCP_MAXRTX                      (*(volatile uint32*)0x600011E8)
 #endif
 
 /**
  * TCP_SYNMAXRTX: Maximum number of retransmissions of SYN segments.
  */
 #ifndef TCP_SYNMAXRTX
-#define TCP_SYNMAXRTX                   3
+#define TCP_SYNMAXRTX                   (*(volatile uint32*)0x600011E4)
 #endif
 
 /**
@@ -923,9 +941,10 @@
  * Define to 0 if your device is low on memory.
  */
 #ifndef TCP_QUEUE_OOSEQ
-#define TCP_QUEUE_OOSEQ                 0
+#define TCP_QUEUE_OOSEQ                 1
 #endif
 
+#if 1
 /**
  * TCP_MSS: TCP Maximum segment size. (default is 536, a conservative default,
  * you might want to increase this.)
@@ -935,6 +954,7 @@
  */
 #ifndef TCP_MSS
 #define TCP_MSS                         1460
+#endif
 #endif
 
 /**
@@ -1081,7 +1101,7 @@
  * field.
  */
 #ifndef LWIP_NETIF_HOSTNAME
-#define LWIP_NETIF_HOSTNAME             0
+#define LWIP_NETIF_HOSTNAME             1
 #endif
 
 /**
@@ -2043,10 +2063,6 @@
  */
 #ifndef DNS_DEBUG
 #define DNS_DEBUG                       LWIP_DBG_OFF
-#endif
-
-#ifndef TCP_MSL
-#define TCP_MSL 2000UL /* The maximum segment lifetime in milliseconds */
 #endif
 
 #endif /* __LWIP_OPT_H__ */

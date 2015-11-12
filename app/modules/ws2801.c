@@ -115,11 +115,11 @@ static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
 
     os_delay_us(10);
 
-    os_intr_lock();
+    ets_intr_lock();
 
     ws2801_strip(buffer, length);
 
-    os_intr_unlock();
+    ets_intr_unlock();
 
     return 0;
 }

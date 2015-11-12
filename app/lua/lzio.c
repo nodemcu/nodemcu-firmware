@@ -5,12 +5,12 @@
 */
 
 
-#include "c_string.h"
-
 #define lzio_c
 #define LUA_CORE
+#define LUAC_CROSS_FILE
 
 #include "lua.h"
+#include C_HEADER_STRING
 
 #include "llimits.h"
 #include "lmem.h"

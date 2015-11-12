@@ -8,6 +8,8 @@
 #include "lualib.h"
 
 #include "os_type.h"
+#include "user_interface.h"
+#include "user_config.h"
 
 void build_well_known_rsp(char *rsp, uint16_t rsplen);
 
@@ -164,8 +166,6 @@ end:
 }
 
 extern lua_Load gLoad;
-extern os_timer_t lua_timer;
-extern void dojob(lua_Load *load);
 static const coap_endpoint_path_t path_command = {2, {"v1", "c"}};
 static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt, uint8_t id_hi, uint8_t id_lo)
 {
@@ -184,9 +184,7 @@ static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
             NODE_DBG("Get command:\n");
             NODE_DBG(load->line); // buggy here
             NODE_DBG("\nResult(if any):\n");
-            os_timer_disarm(&lua_timer);
-            os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
-            os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+            system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
         }
         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
     }

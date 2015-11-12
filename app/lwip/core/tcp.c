@@ -55,7 +55,12 @@
 
 #include <string.h>
 
-const char * const tcp_state_str[] = {
+#ifdef MEMLEAK_DEBUG
+static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
+#endif
+
+#if TCP_DEBUG
+const char tcp_state_str_rodata[][12] ICACHE_RODATA_ATTR = {
   "CLOSED",      
   "LISTEN",      
   "SYN_SENT",    
@@ -69,12 +74,15 @@ const char * const tcp_state_str[] = {
   "TIME_WAIT"   
 };
 
+char tcp_state_str[12];
+#endif
+
 /* Incremented every coarse grained timer shot (typically every 500 ms). */
 u32_t tcp_ticks;
-const u8_t tcp_backoff[13] =
+const u8_t tcp_backoff[13] ICACHE_RODATA_ATTR =
     { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7};
  /* Times per slowtmr hits */
-const u8_t tcp_persist_backoff[7] = { 3, 6, 12, 24, 48, 96, 120 };
+const u8_t tcp_persist_backoff[7] ICACHE_RODATA_ATTR = { 3, 6, 12, 24, 48, 96, 120 };
 
 /* The TCP PCB lists. */
 
@@ -91,7 +99,7 @@ struct tcp_pcb *tcp_tw_pcbs;
 #define NUM_TCP_PCB_LISTS               4
 #define NUM_TCP_PCB_LISTS_NO_TIME_WAIT  3
 /** An array with all (non-temporary) PCB lists, mainly used for smaller code size */
-struct tcp_pcb ** const tcp_pcb_lists[] = {&tcp_listen_pcbs.pcbs, &tcp_bound_pcbs,
+struct tcp_pcb ** const tcp_pcb_lists[] ICACHE_RODATA_ATTR = {&tcp_listen_pcbs.pcbs, &tcp_bound_pcbs,
   &tcp_active_pcbs, &tcp_tw_pcbs};
 
 /** Only used for temporary storage. */
@@ -627,7 +635,7 @@ tcp_new_port(void)
 #define TCP_LOCAL_PORT_RANGE_START 4096
 #define TCP_LOCAL_PORT_RANGE_END   0x7fff
 #endif
-  static u16_t port = TCP_LOCAL_PORT_RANGE_START;
+  static u16_t port __attribute__((section(".port"))) = TCP_LOCAL_PORT_RANGE_START;
   
  again:
   if (++port >= TCP_LOCAL_PORT_RANGE_END) {
@@ -798,7 +806,7 @@ tcp_slowtmr(void)
         /* If snd_wnd is zero, use persist timer to send 1 byte probes
          * instead of using the standard retransmission mechanism. */
         pcb->persist_cnt++;
-        if (pcb->persist_cnt >= tcp_persist_backoff[pcb->persist_backoff-1]) {
+        if (pcb->persist_cnt >= system_get_data_of_array_8(tcp_persist_backoff, pcb->persist_backoff-1)) {
           pcb->persist_cnt = 0;
           if (pcb->persist_backoff < sizeof(tcp_persist_backoff)) {
             pcb->persist_backoff++;
@@ -819,7 +827,7 @@ tcp_slowtmr(void)
           /* Double retransmission time-out unless we are trying to
            * connect to somebody (i.e., we are in SYN_SENT). */
           if (pcb->state != SYN_SENT) {
-            pcb->rto = ((pcb->sa >> 3) + pcb->sv) << tcp_backoff[pcb->nrtx];
+            pcb->rto = ((pcb->sa >> 3) + pcb->sv) << system_get_data_of_array_8(tcp_backoff, pcb->nrtx);
 //			if (pcb->rto >= TCP_MAXRTO)
 //            	pcb->rto >>= 1;
           }
@@ -1221,7 +1229,7 @@ tcp_alloc(u8_t prio)
     }
   }
   if (pcb != NULL) {
-    memset(pcb, 0, sizeof(struct tcp_pcb));						//��0
+    os_memset(pcb, 0, sizeof(struct tcp_pcb));						//��0
     pcb->prio = prio;											//�������ȼ�
     pcb->snd_buf = TCP_SND_BUF;							//��ʹ�õķ��ͻ������С
     pcb->snd_queuelen = 0;									//��������ռ�õ�pbuf����
@@ -1259,7 +1267,6 @@ tcp_alloc(u8_t prio)
 #endif /* LWIP_TCP_KEEPALIVE */
 
     pcb->keep_cnt_sent = 0;									//���ķ��ʹ���
-    pcb->hold = 0;
   }
   return pcb;
 }
@@ -1482,7 +1489,11 @@ tcp_next_iss(void)
 {
   static u32_t iss = 6510;
   
-  iss += tcp_ticks;       /* XXX */
+  again:
+    iss += tcp_ticks;       /* XXX */
+    if (iss == 0)
+  	   goto again;
+
   return iss;
 }
 
@@ -1511,11 +1522,15 @@ tcp_eff_send_mss(u16_t sendmss, ip_addr_t *addr)
 }
 #endif /* TCP_CALCULATE_EFF_SEND_MSS */
 
+#if TCP_DEBUG
 const char*
 tcp_debug_state_str(enum tcp_state s)
 {
-  return tcp_state_str[s];
+  system_get_string_from_flash(tcp_state_str_rodata[s], tcp_state_str, 12);
+
+  return tcp_state_str;
 }
+#endif
 
 #if TCP_DEBUG || TCP_INPUT_DEBUG || TCP_OUTPUT_DEBUG
 /**

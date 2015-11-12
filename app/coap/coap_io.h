@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include "c_types.h"
+#include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "pdu.h"
 #include "hash.h"

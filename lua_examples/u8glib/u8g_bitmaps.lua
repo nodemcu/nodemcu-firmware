@@ -30,7 +30,7 @@ function init_spi_display()
      local dc  = 4 -- GPIO2
      local res = 0 -- GPIO16
 
-     spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, spi.DATABITS_8, 0)
+     spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
      disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 end
 
@@ -61,35 +61,46 @@ function draw(draw_state)
 end
 
 
-function bitmap_test(delay)
-     -- read XBM picture
-     file.open("u8glib_logo.xbm", "r")
-     xbm_data = file.read()
-     file.close()
+function bitmap_test()
+    dir = 0
+    next_rotation = 0
 
-     -- read Bitmap picture
-     file.open("u8g_rook.bm", "r")
-     bm_data = file.read()
-     file.close()
+    disp:firstPage()
+    repeat
+        draw(draw_state)
+    until disp:nextPage() == false
 
-     print("--- Starting Bitmap Test ---")
-     dir = 0
-     next_rotation = 0
+    if (draw_state <= 7 + 1*8) then
+        draw_state = draw_state + 1
+    else
+        print("--- Restarting Bitmap Test ---")
+        draw_state = 1
+    end
 
-     local draw_state
-     for draw_state = 1, 7 + 1*8, 1 do
-          disp:firstPage()
-          repeat
-               draw(draw_state)
-          until disp:nextPage() == false
+    print("Heap: " .. node.heap())
+    -- retrigger timer to give room for system housekeeping
+    tmr.start(0)
 
-          tmr.delay(delay)
-          tmr.wdclr()
-     end
-
-     print("--- Bitmap Test done ---")
 end
 
---init_i2c_display()
-init_spi_display()
-bitmap_test(50000)
+draw_state = 1
+
+init_i2c_display()
+--init_spi_display()
+
+-- read XBM picture
+file.open("u8glib_logo.xbm", "r")
+xbm_data = file.read()
+file.close()
+
+-- read Bitmap picture
+file.open("u8g_rook.bm", "r")
+bm_data = file.read()
+file.close()
+
+
+-- set up timer 0 with short interval, will be retriggered in graphics_test()
+tmr.register(0, 100, tmr.ALARM_SEMI, function() bitmap_test() end)
+
+print("--- Starting Bitmap Test ---")
+tmr.start(0)

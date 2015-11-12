@@ -41,8 +41,8 @@
 #include "lwip/netif.h"
 
 /* used by IP_ADDR_ANY and IP_ADDR_BROADCAST in ip_addr.h */
-const ip_addr_t ip_addr_any = { IPADDR_ANY };
-const ip_addr_t ip_addr_broadcast = { IPADDR_BROADCAST };
+const ip_addr_t ip_addr_any ICACHE_RODATA_ATTR = { IPADDR_ANY };
+const ip_addr_t ip_addr_broadcast ICACHE_RODATA_ATTR = { IPADDR_BROADCAST };
 
 /**
  * Determine if an address is a broadcast address on a network interface 
@@ -154,6 +154,9 @@ ipaddr_aton(const char *cp, ip_addr_t *addr)
   u32_t val;
   u8_t base;
   char c;
+  char ch;
+  unsigned long cutoff;
+  int cutlim;
   u32_t parts[4];
   u32_t *pp = parts;
 
@@ -176,12 +179,26 @@ ipaddr_aton(const char *cp, ip_addr_t *addr)
       } else
         base = 8;
     }
+
+    cutoff =(unsigned long)0xffffffff / (unsigned long)base;
+    cutlim =(unsigned long)0xffffffff % (unsigned long)base;
+
     for (;;) {
       if (isdigit(c)) {
+    	ch = (int)(c - '0');
+
+    	if (val > cutoff || (val == cutoff && ch > cutlim))
+    		return (0);
+
         val = (val * base) + (int)(c - '0');
         c = *++cp;
       } else if (base == 16 && isxdigit(c)) {
-        val = (val << 4) | (int)(c + 10 - (islower(c) ? 'a' : 'A'));
+    	ch = (int)(c + 10 - (islower(c) ? 'a' : 'A'));
+
+    	if (val > cutoff || (val == cutoff && ch > cutlim))
+    		return (0);
+
+    	val = (val << 4) | (int)(c + 10 - (islower(c) ? 'a' : 'A'));
         c = *++cp;
       } else
         break;
@@ -220,21 +237,21 @@ ipaddr_aton(const char *cp, ip_addr_t *addr)
     break;
 
   case 2:             /* a.b -- 8.24 bits */
-    if (val > 0xffffffUL) {
+    if ((val > 0xffffffUL) || (parts[0] > 0xff)) {
       return (0);
     }
     val |= parts[0] << 24;
     break;
 
   case 3:             /* a.b.c -- 8.8.16 bits */
-    if (val > 0xffff) {
+    if ((val > 0xffff) || (parts[0] > 0xff) || (parts[1] > 0xff)) {
       return (0);
     }
     val |= (parts[0] << 24) | (parts[1] << 16);
     break;
 
   case 4:             /* a.b.c.d -- 8.8.8.8 bits */
-    if (val > 0xff) {
+    if ((val > 0xff) || (parts[0] > 0xff) || (parts[1] > 0xff) || (parts[2] > 0xff)) {
       return (0);
     }
     val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);

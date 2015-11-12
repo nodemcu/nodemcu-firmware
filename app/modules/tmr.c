@@ -76,6 +76,7 @@ extern uint32_t platform_tmr_exists(uint32_t t);
 extern uint32_t system_rtc_clock_cali_proc();
 extern uint32_t system_get_rtc_time();
 extern void system_restart();
+extern void system_soft_wdt_feed();
 
 //in fact lua_State is constant, it's pointless to pass it around
 //but hey, whatever, I'll just pass it, still we waste 28B here
@@ -121,11 +122,11 @@ static int tmr_delay( lua_State* L ){
 	while(us >= 1000000){
 		us -= 1000000;
 		os_delay_us(1000000);
-		WRITE_PERI_REG(0x60000914, 0x73);
+		system_soft_wdt_feed ();
 	}
 	if(us>0){
 		os_delay_us(us);
-		WRITE_PERI_REG(0x60000914, 0x73);
+		system_soft_wdt_feed ();
 	}
 	return 0; 
 }
@@ -256,7 +257,7 @@ why they are here*/
 // extern void update_key_led();
 // Lua: tmr.wdclr()
 static int tmr_wdclr( lua_State* L ){
-	WRITE_PERI_REG(0x60000914, 0x73);
+	system_soft_wdt_feed ();
 	// update_key_led();
 	return 0;  
 }

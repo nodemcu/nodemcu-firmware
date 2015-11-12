@@ -3,10 +3,13 @@
 #include "lua.h"
 #include "lauxlib.h"
 
+#include "ldebug.h"
 #include "ldo.h"
 #include "lfunc.h"
 #include "lmem.h"
 #include "lobject.h"
+#include "lstate.h"
+
 #include "lopcodes.h"
 #include "lstring.h"
 #include "lundump.h"
@@ -145,8 +148,99 @@ static int node_heap( lua_State* L )
 static lua_State *gL = NULL;
 
 #ifdef DEVKIT_VERSION_0_9
-extern int led_high_count;  // this is defined in lua.c
-extern int led_low_count;
+static int led_high_count = LED_HIGH_COUNT_DEFAULT;
+static int led_low_count = LED_LOW_COUNT_DEFAULT;
+static int led_count = 0;
+static int key_press_count = 0;
+static bool key_short_pressed = false;
+static bool key_long_pressed = false;
+static os_timer_t keyled_timer;
+static int long_key_ref = LUA_NOREF;
+static int short_key_ref = LUA_NOREF;
+
+static void default_long_press(void *arg) {
+  if (led_high_count == 12 && led_low_count == 12) {
+    led_low_count = led_high_count = 6;
+  } else {
+    led_low_count = led_high_count = 12;
+  }
+  // led_high_count = 1000 / READLINE_INTERVAL;
+  // led_low_count = 1000 / READLINE_INTERVAL;
+  // NODE_DBG("default_long_press is called. hc: %d, lc: %d\n", led_high_count, led_low_count);
+}
+
+static void default_short_press(void *arg) {
+  system_restart();
+}
+
+static void key_long_press(void *arg) {
+  NODE_DBG("key_long_press is called.\n");
+  if (long_key_ref == LUA_NOREF) {
+    default_long_press(arg);
+    return;
+  }
+  if (!gL)
+    return;
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, long_key_ref);
+  lua_call(gL, 0, 0);
+}
+
+static void key_short_press(void *arg) {
+  NODE_DBG("key_short_press is called.\n");
+  if (short_key_ref == LUA_NOREF) {
+    default_short_press(arg);
+    return;
+  }
+  if (!gL)
+    return;
+  lua_rawgeti(gL, LUA_REGISTRYINDEX, short_key_ref);
+  lua_call(gL, 0, 0);
+}
+
+static void update_key_led (void *p)
+{
+  (void)p;
+  uint8_t temp = 1, level = 1;
+  led_count++;
+  if(led_count>led_low_count+led_high_count){
+    led_count = 0;    // reset led_count, the level still high
+  } else if(led_count>led_low_count && led_count <=led_high_count+led_low_count){
+    level = 1;    // output high level
+  } else if(led_count<=led_low_count){
+    level = 0;    // output low level
+  }
+  temp = platform_key_led(level);
+  if(temp == 0){      // key is pressed
+    key_press_count++;
+    if(key_press_count>=KEY_LONG_COUNT){
+      // key_long_press(NULL);
+      key_long_pressed = true;
+      key_short_pressed = false;
+      // key_press_count = 0;
+    } else if(key_press_count>=KEY_SHORT_COUNT){    // < KEY_LONG_COUNT
+      // key_short_press(NULL);
+      key_short_pressed = true;
+    }
+  }else{  // key is released
+    key_press_count = 0;
+    if(key_long_pressed){
+      key_long_press(NULL);
+      key_long_pressed = false;
+    }
+    if(key_short_pressed){
+      key_short_press(NULL);
+      key_short_pressed = false;
+    }
+  }
+}
+
+static void prime_keyled_timer (void)
+{
+  os_timer_disarm (&keyled_timer);
+  os_timer_setfn (&keyled_timer, update_key_led, 0);
+  os_timer_arm (&keyled_timer, KEYLED_INTERVAL, 1);
+}
+
 // Lua: led(low, high)
 static int node_led( lua_State* L )
 {
@@ -171,49 +265,8 @@ static int node_led( lua_State* L )
   }
   led_high_count = (uint32_t)high / READLINE_INTERVAL;
   led_low_count = (uint32_t)low / READLINE_INTERVAL;
+  prime_keyled_timer();
   return 0;
-}
-
-static int long_key_ref = LUA_NOREF;
-static int short_key_ref = LUA_NOREF;
-
-void default_long_press(void *arg) {
-  if (led_high_count == 12 && led_low_count == 12) {
-    led_low_count = led_high_count = 6;
-  } else {
-    led_low_count = led_high_count = 12;
-  }
-  // led_high_count = 1000 / READLINE_INTERVAL;
-  // led_low_count = 1000 / READLINE_INTERVAL;
-  // NODE_DBG("default_long_press is called. hc: %d, lc: %d\n", led_high_count, led_low_count);
-}
-
-void default_short_press(void *arg) {
-  system_restart();
-}
-
-void key_long_press(void *arg) {
-  NODE_DBG("key_long_press is called.\n");
-  if (long_key_ref == LUA_NOREF) {
-    default_long_press(arg);
-    return;
-  }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, long_key_ref);
-  lua_call(gL, 0, 0);
-}
-
-void key_short_press(void *arg) {
-  NODE_DBG("key_short_press is called.\n");
-  if (short_key_ref == LUA_NOREF) {
-    default_short_press(arg);
-    return;
-  }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, short_key_ref);
-  lua_call(gL, 0, 0);
 }
 
 // Lua: key(type, function)
@@ -246,13 +299,12 @@ static int node_key( lua_State* L )
     *ref = LUA_NOREF;
   }
 
+  prime_keyled_timer();
   return 0;
 }
 #endif
 
 extern lua_Load gLoad;
-extern os_timer_t lua_timer;
-extern void dojob(lua_Load *load);
 // Lua: input("string")
 static int node_input( lua_State* L )
 {
@@ -269,9 +321,7 @@ static int node_input( lua_State* L )
       NODE_DBG("Get command:\n");
       NODE_DBG(load->line); // buggy here
       NODE_DBG("\nResult(if any):\n");
-      os_timer_disarm(&lua_timer);
-      os_timer_setfn(&lua_timer, (os_timer_func_t *)dojob, load);
-      os_timer_arm(&lua_timer, READLINE_INTERVAL, 0);   // no repeat
+      system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
     }
   }
   return 0;
@@ -382,7 +432,10 @@ static int node_compile( lua_State* L )
   int result = luaU_dump(L, f, writer, &file_fd, stripping);
   lua_unlock(L);
 
-  fs_flush(file_fd);
+  if (fs_flush(file_fd) < 0) {   // result codes aren't propagated by flash_fs.h
+    // overwrite Lua error, like writer() does in case of a file io error
+    result = 1;
+  }
   fs_close(file_fd);
   file_fd = FS_OPEN_OK - 1;
 
@@ -391,6 +444,9 @@ static int node_compile( lua_State* L )
   }
   if (result == LUA_ERR_CC_NOTINTEGER) {
     return luaL_error(L, "target lua_Number is integral but fractional value found");
+  }
+  if (result == 1) {    // result status generated by writer() or fs_flush() fail
+    return luaL_error(L, "writing to file failed");
   }
 
   return 0;
@@ -404,10 +460,10 @@ static int node_setcpufreq(lua_State* L)
   uint32_t new_freq = luaL_checkinteger(L, 1);
   if (new_freq == CPU160MHZ){
     REG_SET_BIT(0x3ff00014, BIT(0));
-    os_update_cpu_frequency(CPU160MHZ);
+    ets_update_cpu_frequency(CPU160MHZ);
   } else {
     REG_CLR_BIT(0x3ff00014,  BIT(0));
-    os_update_cpu_frequency(CPU80MHZ);
+    ets_update_cpu_frequency(CPU80MHZ);
   }
   new_freq = ets_get_cpu_frequency();
   lua_pushinteger(L, new_freq);
@@ -430,6 +486,69 @@ static int node_restore (lua_State *L)
   return 0;
 }
 
+#ifdef LUA_OPTIMIZE_DEBUG
+/* node.stripdebug([level[, function]]). 
+ * level:    1 don't discard debug
+ *           2 discard Local and Upvalue debug info
+ *           3 discard Local, Upvalue and lineno debug info.
+ * function: Function to be stripped as per setfenv except 0 not permitted.
+ * If no arguments then the current default setting is returned.
+ * If function is omitted, this is the default setting for future compiles
+ * The function returns an estimated integer count of the bytes stripped.
+ */
+static int node_stripdebug (lua_State *L) {
+  int level;
+
+  if (L->top == L->base) {
+    lua_pushlightuserdata(L, &luaG_stripdebug );
+    lua_gettable(L, LUA_REGISTRYINDEX);
+    if (lua_isnil(L, -1)) {
+      lua_pop(L, 1);
+      lua_pushinteger(L, LUA_OPTIMIZE_DEBUG);
+    }
+    return 1;
+  }
+
+  level = luaL_checkint(L, 1);
+  if ((level <= 0) || (level > 3)) luaL_argerror(L, 1, "must in range 1-3");
+
+  if (L->top == L->base + 1) {
+    /* Store the default level in the registry if no function parameter */
+    lua_pushlightuserdata(L, &luaG_stripdebug);
+    lua_pushinteger(L, level);
+    lua_settable(L, LUA_REGISTRYINDEX);
+    lua_settop(L,0);
+    return 0;
+  }
+
+  if (level == 1) {
+    lua_settop(L,0);
+    lua_pushinteger(L, 0);
+    return 1;
+  }
+
+  if (!lua_isfunction(L, 2)) {
+    int scope = luaL_checkint(L, 2);
+    if (scope > 0) {
+      /* if the function parameter is a +ve integer then climb to find function */
+      lua_Debug ar;
+      lua_pop(L, 1); /* pop level as getinfo will replace it by the function */
+      if (lua_getstack(L, scope, &ar)) {
+        lua_getinfo(L, "f", &ar);
+      }
+    }
+  }
+
+  if(!lua_isfunction(L, 2) || lua_iscfunction(L, -1)) luaL_argerror(L, 2, "must be a Lua Function");
+  // lua_lock(L);
+  Proto *f = clvalue(L->base + 1)->l.p;
+  // lua_unlock(L);
+  lua_settop(L,0);
+  lua_pushinteger(L, luaG_stripdebug(L, f, level, 1));
+  return 1;
+}
+#endif
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -448,7 +567,7 @@ const LUA_REG_TYPE node_map[] =
 #endif
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
-// Moved to adc module, use adc.readvdd33()  
+// Moved to adc module, use adc.readvdd33()
 // { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
   { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
@@ -456,6 +575,10 @@ const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
+#ifdef LUA_OPTIMIZE_DEBUG
+  { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
+#endif
+
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0
