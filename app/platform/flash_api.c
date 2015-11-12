@@ -8,7 +8,17 @@
 #include "spi_flash.h"
 #include "c_stdio.h"
 
-static volatile const uint8_t flash_init_data[128] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =
+#if defined(ESP_INIT_DATA_ENABLE_READVDD33)
+# define INIT_107 0xff
+#elif defined(ESP_INIT_DATA_ENABLE_READADC)
+# define INIT_107 0x00
+#elif defined(ESP_INIT_DATA_FIXED_VDD33_VALUE)
+# define INIT_107 ESP_INIT_DATA_FIXED_VDD33_VALUE
+#else
+# define INIT_107 0xff
+#endif
+
+static const uint8_t flash_init_data[128] =
 {
     0x05, 0x00, 0x04, 0x02, 0x05, 0x05, 0x05, 0x02, 0x05, 0x00, 0x04, 0x05, 0x05, 0x04, 0x05, 0x05,
     0x04, 0xFE, 0xFD, 0xFF, 0xF0, 0xF0, 0xF0, 0xE0, 0xE0, 0xE0, 0xE1, 0x0A, 0xFF, 0xFF, 0xF8, 0x00,
@@ -16,7 +26,7 @@ static volatile const uint8_t flash_init_data[128] ICACHE_STORE_ATTR ICACHE_RODA
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0xE1, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x93, 0x43, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, INIT_107, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
@@ -316,26 +326,13 @@ bool flash_rom_set_speed(uint32_t speed)
     return true;
 }
 
-bool flash_init_data_written(void)
-{
-    // FLASH SEC - 4
-    uint32_t data[2] ICACHE_STORE_ATTR;
-#if defined(FLASH_SAFE_API)
-    if (SPI_FLASH_RESULT_OK == flash_safe_read((flash_safe_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
-#else
-    if (SPI_FLASH_RESULT_OK == spi_flash_read((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)data, sizeof(data)))
-#endif // defined(FLASH_SAFE_API)
-    {
-        if (data[0] == 0xFFFFFFFF && data[1] == 0xFFFFFFFF)
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 bool flash_init_data_default(void)
 {
+    /* Can't copy directly from flash (which is where the default data lives)
+     * due to it being unmapped during the write, so bounce via ram buffer. */
+    uint8_t init_data[128];
+    os_memcpy (init_data, flash_init_data, 128);
+
     // FLASH SEC - 4
     // Dangerous, here are dinosaur infested!!!!!
     // Reboot required!!!
@@ -344,7 +341,7 @@ bool flash_init_data_default(void)
 #if defined(FLASH_SAFE_API)
     if (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 4)))
     {
-        if (SPI_FLASH_RESULT_OK == flash_safe_write((flash_safe_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128))
+        if (SPI_FLASH_RESULT_OK == flash_safe_write((flash_safe_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)init_data, 128))
         {
             result = true;
         }
@@ -352,7 +349,7 @@ bool flash_init_data_default(void)
 #else
     if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 4)))
     {
-        if (SPI_FLASH_RESULT_OK == spi_flash_write((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)flash_init_data, 128))
+        if (SPI_FLASH_RESULT_OK == spi_flash_write((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)init_data, 128))
         {
             result = true;
         }
