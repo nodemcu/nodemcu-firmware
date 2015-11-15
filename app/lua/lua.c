@@ -555,6 +555,8 @@ static bool readline(lua_Load *load){
         char next;
         if (uart_getc(&next))
           ch = next;
+        else
+          continue; // bail out
       }
       /* backspace key */
       else if (ch == 0x7f || ch == 0x08)
