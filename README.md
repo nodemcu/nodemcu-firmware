@@ -47,7 +47,7 @@ Because Lua is a high level language and several modules are built into the firm
     print(ip)
     --nil
     wifi.setmode(wifi.STATION)
-    wifi.sta.config("SSID","password")
+    wifi.sta.config("SSID", "password")
     ip = wifi.sta.getip()
     print(ip)
     --192.168.18.110
@@ -57,8 +57,8 @@ Because Lua is a high level language and several modules are built into the firm
 
 ```lua
     pin = 1
-    gpio.mode(pin,gpio.OUTPUT)
-    gpio.write(pin,gpio.HIGH)
+    gpio.mode(pin, gpio.OUTPUT)
+    gpio.write(pin, gpio.HIGH)
     print(gpio.read(pin))
 ```
 
@@ -67,10 +67,10 @@ Because Lua is a high level language and several modules are built into the firm
 ```lua
     -- A simple http client
     conn=net.createConnection(net.TCP, 0)
-    conn:on("receive", function(conn, payload) print(payload) end )
-    conn:connect(80,"115.239.210.27")
+    conn:on("receive", function(conn, payload) print(payload) end)
+    conn:connect(80, "115.239.210.27")
     conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
-        .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
+        .. "Connection: keep-alive\r\nAccept: */*\r\n\r\n")
 ```
 
 ## Or a simple HTTP server
@@ -78,12 +78,12 @@ Because Lua is a high level language and several modules are built into the firm
 ```lua
     -- A simple http server
     srv=net.createServer(net.TCP)
-    srv:listen(80,function(conn)
-      conn:on("receive",function(conn,payload)
+    srv:listen(80, function(conn)
+      conn:on("receive", function(conn,payload)
         print(payload)
-        conn:send("<h1> Hello, NodeMcu.</h1>")
+        conn:send("<h1> Hello, NodeMCU.</h1>")
       end)
-      conn:on("sent",function(conn) conn:close() end)
+      conn:on("sent", function(conn) conn:close() end)
     end)
 ```
 
@@ -95,33 +95,33 @@ m = mqtt.Client("clientid", 120, "user", "password")
 
 -- setup Last Will and Testament (optional)
 -- Broker will publish a message with qos = 0, retain = 0, data = "offline"
--- to topic "/lwt" if client don't send keepalive packet
+-- to topic "/lwt" if client doesn't send keepalive packet
 m:lwt("/lwt", "offline", 0, 0)
 
-m:on("connect", function(con) print ("connected") end)
-m:on("offline", function(con) print ("offline") end)
+m:on("connect", function(con) print("connected") end)
+m:on("offline", function(con) print("offline") end)
 
 -- on publish message receive event
 m:on("message", function(conn, topic, data)
-  print(topic .. ":" )
+  print(topic .. ":")
   if data ~= nil then
     print(data)
   end
 end)
 
--- m:connect( host, port, secure, auto_reconnect, function(client) )
+-- m:connect(host, port, secure, auto_reconnect, function(client) end)
 -- for secure: m:connect("192.168.11.118", 1880, 1, 0)
 -- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
 m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
 
--- subscribe topic with qos = 0
-m:subscribe("/topic",0, function(conn) print("subscribe success") end)
--- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
+-- subscribe to topic with qos = 0
+m:subscribe("/topic", 0, function(conn) print("subscribe success") end)
+-- or subscribe multiple topics (topic/0, qos = 0; topic/1, qos = 1; topic2, qos = 2)
 -- m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
 -- publish a message with data = hello, QoS = 0, retain = 0
-m:publish("/topic","hello",0,0, function(conn) print("sent") end)
+m:publish("/topic", "hello", 0, 0, function(conn) print("sent") end)
 
-m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
+m:close();  -- if auto-reconnect == 1, it will disable auto-reconnect and then disconnect from host.
 -- you can call m:connect again
 
 ```
@@ -131,45 +131,45 @@ m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disc
 ```lua
 -- a udp server
 s=net.createServer(net.UDP)
-s:on("receive",function(s,c) print(c) end)
+s:on("receive", function(s, c) print(c) end)
 s:listen(5683)
 
 -- a udp client
 cu=net.createConnection(net.UDP)
-cu:on("receive",function(cu,c) print(c) end)
-cu:connect(5683,"192.168.18.101")
+cu:on("receive", function(cu, c) print(c) end)
+cu:connect(5683, "192.168.18.101")
 cu:send("hello")
 ```
 
 ## Do something shiny with an RGB LED
 
 ```lua
-  function led(r,g,b)
-    pwm.setduty(1,r)
-    pwm.setduty(2,g)
-    pwm.setduty(3,b)
+  function led(r, g, b)
+    pwm.setduty(1, r)
+    pwm.setduty(2, g)
+    pwm.setduty(3, b)
   end
-  pwm.setup(1,500,512)
-  pwm.setup(2,500,512)
-  pwm.setup(3,500,512)
+  pwm.setup(1, 500, 512)
+  pwm.setup(2, 500, 512)
+  pwm.setup(3, 500, 512)
   pwm.start(1)
   pwm.start(2)
   pwm.start(3)
-  led(512,0,0) -- red
-  led(0,0,512) -- blue
+  led(512, 0, 0) -- red
+  led(0, 0, 512) -- blue
 ```
 
 ## And blink it
 
 ```lua
   lighton=0
-  tmr.alarm(1,1000,1,function()
+  tmr.alarm(1, 1000, 1, function()
     if lighton==0 then
       lighton=1
-      led(512,512,512)
+      led(512, 512, 512)
     else
       lighton=0
-      led(0,0,0)
+      led(0, 0, 0)
     end
   end)
 ```
@@ -177,8 +177,8 @@ cu:send("hello")
 ## If you want to run something when the system boots
 
 ```lua
-  --init.lua will be excuted
-  file.open("init.lua","w")
+  --init.lua will be executed
+  file.open("init.lua", "w")
   file.writeline([[print("Hello, do this at the beginning.")]])
   file.close()
   node.restart()  -- this will restart the module.
@@ -188,21 +188,21 @@ cu:send("hello")
 
 ```lua
     -- a simple telnet server
-    s=net.createServer(net.TCP,180)
-    s:listen(2323,function(c)
+    s=net.createServer(net.TCP, 180)
+    s:listen(2323, function(c)
        function s_output(str)
           if(c~=nil)
              then c:send(str)
           end
        end
        node.output(s_output, 0)   -- re-direct output to function s_ouput.
-       c:on("receive",function(c,l)
-          node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
+       c:on("receive", function(c, l)
+          node.input(l)           -- works like pcall(loadstring(l)) but support multiples separate lines
        end)
-       c:on("disconnection",function(c)
-          node.output(nil)        -- un-regist the redirect output function, output goes to serial
+       c:on("disconnection", function(c)
+          node.output(nil)        -- un-register the redirect output function, output goes to serial
        end)
-       print("Welcome to NodeMcu world.")
+       print("Welcome to NodeMCU world.")
     end)
 ```
 
