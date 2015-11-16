@@ -11,22 +11,22 @@ File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
 Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
 Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
 
-wiki: [NodeMCU wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
+Developer Wiki: (https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 api: [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)<br />
 home: [nodemcu.com](http://www.nodemcu.com)<br />
-bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
+bbs: [Chinese BBS](http://bbs.nodemcu.com)<br />
 docs: [NodeMCU docs](http://www.nodemcu.com/docs/)<br />
 Tencent QQ group: 309957875<br />
 
 # Summary
 - Easy to access wireless router
 - Based on Lua 5.1.4 (without *debug, os* module.)
-- Event-Drive programming preferred.
-- Build-in json, file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
-- GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
-- Both Integer(less memory usage) and Float version firmware provided.
+- Event-driven programming preferred
+- Built-in modules: json, file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
+- GPIO pins re-mapped: use the index to access gpio, i2c, pwm.
+- Both Integer (less memory usage) and Float version firmware provided.
 
-# To Do List (pull requests are very welcomed)
+# To Do List (pull requests are very welcome)
 - loadable c module
 - fix wifi smart connect
 - add spi module (done)
