@@ -242,7 +242,7 @@ See BUILD OPTIONS below, to configure the firmware before building.
 
 ### Build instructions:
 
-Assuming NodeMCU firmware is checked-out to /opt/nodemcu-firmware:
+Assuming NodeMCU firmware is checked-out to `/opt/nodemcu-firmware`:
 
 ```sh
 git clone --recursive https://github.com/pfalcon/esp-open-sdk.git /opt/esp-open-sdk
@@ -259,7 +259,7 @@ Disable modules you won't be using, to reduce firmware size on flash and
 free more RAM. The ESP8266 is quite limited in available RAM, and running
 out can cause a system panic.
 
-## Edit app/include/user_modules.h
+## Edit `app/include/user_modules.h`
 
 Comment-out the #define statement for unused modules. Example:
 
@@ -340,12 +340,15 @@ Otherwise, if you built your own firmware from source code:
   - bin/0x00000.bin to 0x00000
   - bin/0x10000.bin to 0x10000
 
-Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash.
+Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash (depending on flash size and type).
 
 If upgrading from `spiffs` version 0.3.2 to 0.3.3 or later, or after flashing any new firmware, you should run `file.format()` to re-format your flash filesystem.
 
-#Connect the hardware in serial
-baudrate:9600
+# Connecting to your NodeMCU device
+
+NodeMCU serial interface uses 9600 baud at boot time. To increase the speed after booting, issue `uart.setup(0, 115200, 8, 0, 1, 1 )` (ESPlorer will do this automatically when changing the speed in the dropdown list).
+
+If the device panics and resets, errors will be written to the serial interface at 115200 bps.
 
 #Write Lua script to filesystem
 ####Esplorer
