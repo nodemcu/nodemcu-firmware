@@ -34,44 +34,6 @@ Tencent QQ group: 309957875<br />
 - add coap module (done)
 - cross compiler (done)
 
-# Change log
-2015-06-27<br />
-fixed ap/station-ap cannot connect to the device.<br />
-added wifi.ap.getconfig().<br />
-fixed net.dns.getdnsserver().<br />
-added new base64 lua example.<br />
-added node.bootreason() to inspect boot cause.<br />
-optimization of u8g.<br />
-
-# Change log
-2015-06-25<br />
-move constants to ROM. Frees up 16k+ of RAM.<br />
-add dhtlib for DHT11/21/22/33/44, port from Arduino.<br />
-add 433MHz transmission.<br />
-add crypto library.<br />
-re-add ws2812.write().<br />
-add wifi.getchannel.<br />
-changed wifi_setip() to allow setting SoftAP gateway to 0.0.0.0.<br />
-added net.dns.setdnsserver and net.dns.getdnsserver.<br />
-add support for lm92 temperature sensor.<br />
-implement getStrWidth() and setFontLineSpacingFactor().<br />
-add -Os flag to release and debug builds.<br />
-changed output format of table that is output by wifi_scan_done.<br />
-added ability to set scan configuration to wifi.sta.getap.<br />
-added function wifi.sta.getconfig().<br />
-allow connecting to unsecured WiFi networks.<br />
-add setphymode and getphymode to wifi module.<br />
-add multicastJoin and multicastLeave to net module.<br />
-add Yeelink Modules.<br />
-
-2015-03-31<br />
-polish mqtt module, add queue for mqtt module.<br />
-add reconnect option to mqtt.connect api, :connect( host, port, secure, auto_reconnect, function(client) )<br />
-move node.readvdd33 to adc.readvdd33.<br />
-tools/esptool.py supported NodeMCU devkit automatic flash.
-
-[more change log](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
-
 ##GPIO NEW TABLE ( Build 20141219 and later)
 
 <a id="new_gpio_map"></a>
