@@ -204,6 +204,99 @@ cu:send("hello")
     end)
 ```
 
+# Building the firmware
+
+There are several options for building the NodeMCU firmware.
+
+## Online firmware custom build
+
+Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can choose only the modules you need, and download the firmware once built.<br />
+
+NodeMCU custom builds can build from the master branch (0.9.6; deprecated) and dev
+branch (1.4.0).
+
+## Docker containerised build
+
+See https://hub.docker.com/r/asmaps/nodemcu-builder/
+
+This docker image includes the build toolchain and SDK. You just run the docker
+image with your checked-out NodeMCU firmware repository (this one). The docker
+image can also flash the firmware to your device.
+
+You will need to see BUILD OPTIONS below, to configure the firmware before building.
+
+## Build it yourself
+
+See BUILD OPTIONS below, to configure the firmware before building.
+
+### Minimum requirements:
+
+  - unrar
+  - GNU autoconf, automake, libtool
+  - GNU gcc, g++, make
+  - GNU flex, bison, gawk, sed
+  - python, python-serial, libexpat-dev
+  - srecord
+  - The esp-open-sdk from https://github.com/pfalcon/esp-open-sdk.git
+
+### Build instructions:
+
+Assuming NodeMCU firmware is checked-out to /opt/nodemcu-firmware:
+
+```sh
+git clone --recursive https://github.com/pfalcon/esp-open-sdk.git /opt/esp-open-sdk
+cd /opt/esp-open-sdk
+make STANDALONE=y
+PATH=/opt/esp-open-sdk/xtensa-lx106-elf/bin:$PATH
+cd /opt/nodemcu-firmware
+make
+```
+
+# BUILD OPTIONS
+
+Disable modules you won't be using, to reduce firmware size on flash and
+free more RAM. The ESP8266 is quite limited in available RAM, and running
+out can cause a system panic.
+
+## Edit app/include/user_modules.h
+
+Comment-out the #define statement for unused modules.
+
+```c
+#define LUA_USE_BUILTIN_STRING    // for string.xxx()
+#define LUA_USE_BUILTIN_TABLE   // for table.xxx()
+#define LUA_USE_BUILTIN_COROUTINE // for coroutine.xxx()
+#define LUA_USE_BUILTIN_MATH    // for math.xxx(), partially work
+// #define LUA_USE_BUILTIN_IO       // for io.xxx(), partially work
+
+// #define LUA_USE_BUILTIN_OS     // for os.xxx(), not work
+// #define LUA_USE_BUILTIN_DEBUG    // for debug.xxx(), not work
+
+#define LUA_USE_MODULES
+
+#ifdef LUA_USE_MODULES
+#define LUA_USE_MODULES_NODE
+#define LUA_USE_MODULES_FILE
+#define LUA_USE_MODULES_GPIO
+#define LUA_USE_MODULES_WIFI
+#define LUA_USE_MODULES_NET
+#define LUA_USE_MODULES_PWM
+#define LUA_USE_MODULES_I2C
+#define LUA_USE_MODULES_SPI
+#define LUA_USE_MODULES_TMR
+#define LUA_USE_MODULES_ADC
+#define LUA_USE_MODULES_UART
+#define LUA_USE_MODULES_OW
+#define LUA_USE_MODULES_BIT
+#define LUA_USE_MODULES_MQTT
+// #define LUA_USE_MODULES_COAP
+#define LUA_USE_MODULES_U8G
+#define LUA_USE_MODULES_WS2812
+#define LUA_USE_MODULES_CJSON
+#endif /* LUA_USE_MODULES */
+```
+
+
 # GPIO NEW TABLE (Build 20141219 and later)
 
 <a id="new_gpio_map"></a>
@@ -238,46 +331,6 @@ cu:send("hello")
 </table>
 #### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
 
-#Build option
-####file ./app/include/user_modules.h
-```c
-#define LUA_USE_BUILTIN_STRING    // for string.xxx()
-#define LUA_USE_BUILTIN_TABLE   // for table.xxx()
-#define LUA_USE_BUILTIN_COROUTINE // for coroutine.xxx()
-#define LUA_USE_BUILTIN_MATH    // for math.xxx(), partially work
-// #define LUA_USE_BUILTIN_IO       // for io.xxx(), partially work
-
-// #define LUA_USE_BUILTIN_OS     // for os.xxx(), not work
-// #define LUA_USE_BUILTIN_DEBUG    // for debug.xxx(), not work
-
-#define LUA_USE_MODULES
-
-#ifdef LUA_USE_MODULES
-#define LUA_USE_MODULES_NODE
-#define LUA_USE_MODULES_FILE
-#define LUA_USE_MODULES_GPIO
-#define LUA_USE_MODULES_WIFI
-#define LUA_USE_MODULES_NET
-#define LUA_USE_MODULES_PWM
-#define LUA_USE_MODULES_I2C
-#define LUA_USE_MODULES_SPI
-#define LUA_USE_MODULES_TMR
-#define LUA_USE_MODULES_ADC
-#define LUA_USE_MODULES_UART
-#define LUA_USE_MODULES_OW
-#define LUA_USE_MODULES_BIT
-#define LUA_USE_MODULES_MQTT
-// #define LUA_USE_MODULES_COAP
-#define LUA_USE_MODULES_U8G
-#define LUA_USE_MODULES_WS2812
-#define LUA_USE_MODULES_CJSON
-#endif /* LUA_USE_MODULES */
-```
-#Online firmware custom build
-
-For many application, some modules are not used, remove them can free many memory.<br />
-
-Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can get your own firmware.<br />
 
 #Flash the firmware
 nodemcu_latest.bin: 0x00000<br />
@@ -300,6 +353,7 @@ Victor Brutskiy's [Esplorer](https://github.com/4refr0nt/ESPlorer) support most 
 ####NodeMCU Studio
 [NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and support Windows. This software is opensource and can write lua files to filesystem.
 
+# OPTIONAL MODULES
 
 ####Use DS18B20 module extends your esp8266
 ```lua
