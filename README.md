@@ -19,14 +19,16 @@ docs: [NodeMCU docs](http://www.nodemcu.com/docs/)<br />
 Tencent QQ group: 309957875<br />
 
 # Summary
-- Easy to access wireless router
+
+- Easy to program wireless node and/or Access Point
 - Based on Lua 5.1.4 (without *debug, os* module.)
-- Event-driven programming preferred
-- Built-in modules: json, file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
+- Event-driven programming model preferred
+- Built-in modules: node, json, file, timer, pwm, i2c, spi, onewire, net, mqtt, coap, gpio, wifi, adc, uart, bit, u8g, ucg, ws2801, ws2812, crypto, dht, rtc, sntp, bmp085, tls2561, hx711 and system api.
 - GPIO pins re-mapped: use the index to access gpio, i2c, pwm.
 - Both Integer (less memory usage) and Float version firmware provided.
 
 # To Do List (pull requests are very welcome)
+
 - loadable c module
 - fix wifi smart connect
 - add spi module (done)
