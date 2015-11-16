@@ -238,7 +238,7 @@ See BUILD OPTIONS below, to configure the firmware before building.
   - GNU flex, bison, gawk, sed
   - python, python-serial, libexpat-dev
   - srecord
-  - The esp-open-sdk from https://github.com/pfalcon/esp-open-sdk.git
+  - The esp-open-sdk from https://github.com/pfalcon/esp-open-sdk
 
 ### Build instructions:
 
@@ -309,16 +309,40 @@ Identify your firmware builds by editing `app/include/user_version.h`
 #endif
 ```
 
-#Flash the firmware
-nodemcu_latest.bin: 0x00000<br />
-for most esp8266 modules, just pull GPIO0 down and restart.<br />
+# Flash the firmware
+
+## Flash tools for Windows
+
 You can use the [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher) to burn the firmware.
 
-Or, if you build your own bin from source code.<br />
-0x00000.bin: 0x00000<br />
-0x10000.bin: 0x10000<br />
+## Flash tools for Linux
 
-*Better run file.format() after flash*
+Esptool is a python utility which can read and write the flash in an ESP8266 device. See https://github.com/themadinventor/esptool
+
+## Preparing the hardware for firmware upgrade
+
+To enable ESP8266 firmware flashing, the GPIO0 pin must be pulled low before
+the device is reset. Conversely, for a normal boot, GPIO0 must be pulled high
+or floating.
+
+If you have a [NodeMCU Development Kit](http://www.nodemcu.com/index_en.html) then
+you don't need to do anything, as the USB connection can pull GPIO0
+low by asserting DTR, and reset your board by asserting RTS.
+
+If you have an ESP-01 or other device without inbuilt USB, you will need to
+enable flashing yourself by pulling GPIO0 low or pressing a "flash" switch.
+
+## Files to burn to the flash
+
+If you got your firmware from [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) then you can flash that file directly to address 0x00000.
+
+Otherwise, if you built your own firmware from source code:
+  - bin/0x00000.bin to 0x00000
+  - bin/0x10000.bin to 0x10000
+
+Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash.
+
+If upgrading from `spiffs` version 0.3.2 to 0.3.3 or later, or after flashing any new firmware, you should run `file.format()` to re-format your flash filesystem.
 
 #Connect the hardware in serial
 baudrate:9600
