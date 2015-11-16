@@ -1,5 +1,5 @@
 --'
--- 18b20 one wire example for NODEMCU
+-- ds18b20 one wire example for NODEMCU (Integer firmware only)
 -- NODEMCU TEAM
 -- LICENCE: http://opensource.org/licenses/MIT
 -- Vowstar <vowstar@nodemcu.com>
@@ -40,10 +40,30 @@ else
           crc = ow.crc8(string.sub(data,1,8))
           print("CRC="..crc)
           if (crc == data:byte(9)) then
-             t = (data:byte(1) + data:byte(2) * 256) * 625
-             t1 = t / 10000
-             t2 = t % 10000
-             print("Temperature= "..t1.."."..t2.." Centigrade")
+             t = (data:byte(1) + data:byte(2) * 256)
+
+             -- handle negative temperatures
+             if (t > 0x7fff) then
+                t = t - 0x10000
+             end
+
+             if (addr:byte(1) == 0x28) then
+                t = t * 625  -- DS18B20, 4 fractional bits
+             else
+                t = t * 5000 -- DS18S20, 1 fractional bit
+             end
+
+             local sign = ""
+             if (t < 0) then
+                 sign = "-"
+                 t = -1 * t
+             end
+
+             -- Separate integral and decimal portions, for integer firmware only
+             local t1 = string.format("%d", t / 10000)
+             local t2 = string.format("%04u", t % 10000)
+             local temp = sign .. t1 .. "." .. t2
+             print("Temperature= " .. temp .. " Celsius")
           end                   
           tmr.wdclr()
         until false
