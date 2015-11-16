@@ -34,7 +34,177 @@ Tencent QQ group: 309957875<br />
 - add coap module (done)
 - cross compiler (done)
 
-##GPIO NEW TABLE ( Build 20141219 and later)
+# Programming Examples
+
+Because Lua is a high level language and several modules are built into the firmware, you can very easily program your ESP8266. Here are some examples!
+
+## Connect to your AP
+
+```lua
+    ip = wifi.sta.getip()
+    print(ip)
+    --nil
+    wifi.setmode(wifi.STATION)
+    wifi.sta.config("SSID","password")
+    ip = wifi.sta.getip()
+    print(ip)
+    --192.168.18.110
+```
+
+## Manipulate hardware like an Arduino
+
+```lua
+    pin = 1
+    gpio.mode(pin,gpio.OUTPUT)
+    gpio.write(pin,gpio.HIGH)
+    print(gpio.read(pin))
+```
+
+## Write a network application in Node.js style
+
+```lua
+    -- A simple http client
+    conn=net.createConnection(net.TCP, 0)
+    conn:on("receive", function(conn, payload) print(payload) end )
+    conn:connect(80,"115.239.210.27")
+    conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
+        .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
+```
+
+## Or a simple HTTP server
+
+```lua
+    -- A simple http server
+    srv=net.createServer(net.TCP)
+    srv:listen(80,function(conn)
+      conn:on("receive",function(conn,payload)
+        print(payload)
+        conn:send("<h1> Hello, NodeMcu.</h1>")
+      end)
+      conn:on("sent",function(conn) conn:close() end)
+    end)
+```
+
+## Connect to MQTT broker
+
+```lua
+-- init mqtt client with keepalive timer 120sec
+m = mqtt.Client("clientid", 120, "user", "password")
+
+-- setup Last Will and Testament (optional)
+-- Broker will publish a message with qos = 0, retain = 0, data = "offline"
+-- to topic "/lwt" if client don't send keepalive packet
+m:lwt("/lwt", "offline", 0, 0)
+
+m:on("connect", function(con) print ("connected") end)
+m:on("offline", function(con) print ("offline") end)
+
+-- on publish message receive event
+m:on("message", function(conn, topic, data)
+  print(topic .. ":" )
+  if data ~= nil then
+    print(data)
+  end
+end)
+
+-- m:connect( host, port, secure, auto_reconnect, function(client) )
+-- for secure: m:connect("192.168.11.118", 1880, 1, 0)
+-- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
+m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
+
+-- subscribe topic with qos = 0
+m:subscribe("/topic",0, function(conn) print("subscribe success") end)
+-- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
+-- m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
+-- publish a message with data = hello, QoS = 0, retain = 0
+m:publish("/topic","hello",0,0, function(conn) print("sent") end)
+
+m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
+-- you can call m:connect again
+
+```
+
+## UDP client and server
+
+```lua
+-- a udp server
+s=net.createServer(net.UDP)
+s:on("receive",function(s,c) print(c) end)
+s:listen(5683)
+
+-- a udp client
+cu=net.createConnection(net.UDP)
+cu:on("receive",function(cu,c) print(c) end)
+cu:connect(5683,"192.168.18.101")
+cu:send("hello")
+```
+
+## Do something shiny with an RGB LED
+
+```lua
+  function led(r,g,b)
+    pwm.setduty(1,r)
+    pwm.setduty(2,g)
+    pwm.setduty(3,b)
+  end
+  pwm.setup(1,500,512)
+  pwm.setup(2,500,512)
+  pwm.setup(3,500,512)
+  pwm.start(1)
+  pwm.start(2)
+  pwm.start(3)
+  led(512,0,0) -- red
+  led(0,0,512) -- blue
+```
+
+## And blink it
+
+```lua
+  lighton=0
+  tmr.alarm(1,1000,1,function()
+    if lighton==0 then
+      lighton=1
+      led(512,512,512)
+    else
+      lighton=0
+      led(0,0,0)
+    end
+  end)
+```
+
+## If you want to run something when the system boots
+
+```lua
+  --init.lua will be excuted
+  file.open("init.lua","w")
+  file.writeline([[print("Hello, do this at the beginning.")]])
+  file.close()
+  node.restart()  -- this will restart the module.
+```
+
+## Add a simple telnet server to the Lua interpreter
+
+```lua
+    -- a simple telnet server
+    s=net.createServer(net.TCP,180)
+    s:listen(2323,function(c)
+       function s_output(str)
+          if(c~=nil)
+             then c:send(str)
+          end
+       end
+       node.output(s_output, 0)   -- re-direct output to function s_ouput.
+       c:on("receive",function(c,l)
+          node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
+       end)
+       c:on("disconnection",function(c)
+          node.output(nil)        -- un-regist the redirect output function, output goes to serial
+       end)
+       print("Welcome to NodeMcu world.")
+    end)
+```
+
+# GPIO NEW TABLE (Build 20141219 and later)
 
 <a id="new_gpio_map"></a>
 <table>
@@ -130,168 +300,6 @@ Victor Brutskiy's [Esplorer](https://github.com/4refr0nt/ESPlorer) support most 
 ####NodeMCU Studio
 [NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and support Windows. This software is opensource and can write lua files to filesystem.
 
-#Start play
-
-####Connect to your ap
-
-```lua
-    ip = wifi.sta.getip()
-    print(ip)
-    --nil
-    wifi.setmode(wifi.STATION)
-    wifi.sta.config("SSID","password")
-    ip = wifi.sta.getip()
-    print(ip)
-    --192.168.18.110
-```
-
-####Manipulate hardware like a arduino
-
-```lua
-    pin = 1
-    gpio.mode(pin,gpio.OUTPUT)
-    gpio.write(pin,gpio.HIGH)
-    print(gpio.read(pin))
-```
-
-####Write network application in nodejs style
-
-```lua
-    -- A simple http client
-    conn=net.createConnection(net.TCP, 0)
-    conn:on("receive", function(conn, payload) print(payload) end )
-    conn:connect(80,"115.239.210.27")
-    conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
-        .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
-```
-
-####Or a simple http server
-
-```lua
-    -- A simple http server
-    srv=net.createServer(net.TCP)
-    srv:listen(80,function(conn)
-      conn:on("receive",function(conn,payload)
-        print(payload)
-        conn:send("<h1> Hello, NodeMcu.</h1>")
-      end)
-      conn:on("sent",function(conn) conn:close() end)
-    end)
-```
-
-####Connect to MQTT Broker
-
-```lua
--- init mqtt client with keepalive timer 120sec
-m = mqtt.Client("clientid", 120, "user", "password")
-
--- setup Last Will and Testament (optional)
--- Broker will publish a message with qos = 0, retain = 0, data = "offline"
--- to topic "/lwt" if client don't send keepalive packet
-m:lwt("/lwt", "offline", 0, 0)
-
-m:on("connect", function(con) print ("connected") end)
-m:on("offline", function(con) print ("offline") end)
-
--- on publish message receive event
-m:on("message", function(conn, topic, data)
-  print(topic .. ":" )
-  if data ~= nil then
-    print(data)
-  end
-end)
-
--- m:connect( host, port, secure, auto_reconnect, function(client) )
--- for secure: m:connect("192.168.11.118", 1880, 1, 0)
--- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
-m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
-
--- subscribe topic with qos = 0
-m:subscribe("/topic",0, function(conn) print("subscribe success") end)
--- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
--- m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
--- publish a message with data = hello, QoS = 0, retain = 0
-m:publish("/topic","hello",0,0, function(conn) print("sent") end)
-
-m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
--- you can call m:connect again
-
-```
-
-#### UDP client and server
-```lua
--- a udp server
-s=net.createServer(net.UDP)
-s:on("receive",function(s,c) print(c) end)
-s:listen(5683)
-
--- a udp client
-cu=net.createConnection(net.UDP)
-cu:on("receive",function(cu,c) print(c) end)
-cu:connect(5683,"192.168.18.101")
-cu:send("hello")
-```
-
-####Do something shining
-```lua
-  function led(r,g,b)
-    pwm.setduty(1,r)
-    pwm.setduty(2,g)
-    pwm.setduty(3,b)
-  end
-  pwm.setup(1,500,512)
-  pwm.setup(2,500,512)
-  pwm.setup(3,500,512)
-  pwm.start(1)
-  pwm.start(2)
-  pwm.start(3)
-  led(512,0,0) -- red
-  led(0,0,512) -- blue
-```
-
-####And blink it
-```lua
-  lighton=0
-  tmr.alarm(1,1000,1,function()
-    if lighton==0 then
-      lighton=1
-      led(512,512,512)
-    else
-      lighton=0
-      led(0,0,0)
-    end
-  end)
-```
-
-####If you want to run something when system started
-```lua
-  --init.lua will be excuted
-  file.open("init.lua","w")
-  file.writeline([[print("Hello, do this at the beginning.")]])
-  file.close()
-  node.restart()  -- this will restart the module.
-```
-
-####With below code, you can telnet to your esp8266 now
-```lua
-    -- a simple telnet server
-    s=net.createServer(net.TCP,180)
-    s:listen(2323,function(c)
-       function s_output(str)
-          if(c~=nil)
-             then c:send(str)
-          end
-       end
-       node.output(s_output, 0)   -- re-direct output to function s_ouput.
-       c:on("receive",function(c,l)
-          node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
-       end)
-       c:on("disconnection",function(c)
-          node.output(nil)        -- un-regist the redirect output function, output goes to serial
-       end)
-       print("Welcome to NodeMcu world.")
-    end)
-```
 
 ####Use DS18B20 module extends your esp8266
 ```lua
