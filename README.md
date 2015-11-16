@@ -316,6 +316,15 @@ Identify your firmware builds by editing `app/include/user_version.h`
 #endif
 ```
 
+## Setting the boot time serial interface rate
+
+The initial baud rate at boot time is 9600 bps, but you can change this by
+editing `app/include/user_config.h` and change BIT_RATE_DEFAULT, e.g.:
+
+```c
+#define BIT_RATE_DEFAULT BIT_RATE_115200
+```
+
 # Flash the firmware
 
 ## Flash tools for Windows
