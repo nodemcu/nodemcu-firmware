@@ -260,20 +260,9 @@ out can cause a system panic.
 
 ## Edit app/include/user_modules.h
 
-Comment-out the #define statement for unused modules.
+Comment-out the #define statement for unused modules. Example:
 
 ```c
-#define LUA_USE_BUILTIN_STRING    // for string.xxx()
-#define LUA_USE_BUILTIN_TABLE   // for table.xxx()
-#define LUA_USE_BUILTIN_COROUTINE // for coroutine.xxx()
-#define LUA_USE_BUILTIN_MATH    // for math.xxx(), partially work
-// #define LUA_USE_BUILTIN_IO       // for io.xxx(), partially work
-
-// #define LUA_USE_BUILTIN_OS     // for os.xxx(), not work
-// #define LUA_USE_BUILTIN_DEBUG    // for debug.xxx(), not work
-
-#define LUA_USE_MODULES
-
 #ifdef LUA_USE_MODULES
 #define LUA_USE_MODULES_NODE
 #define LUA_USE_MODULES_FILE
@@ -290,11 +279,35 @@ Comment-out the #define statement for unused modules.
 #define LUA_USE_MODULES_BIT
 #define LUA_USE_MODULES_MQTT
 // #define LUA_USE_MODULES_COAP
-#define LUA_USE_MODULES_U8G
-#define LUA_USE_MODULES_WS2812
-#define LUA_USE_MODULES_CJSON
+// #define LUA_USE_MODULES_U8G
+// #define LUA_USE_MODULES_WS2801
+// #define LUA_USE_MODULES_WS2812
+// #define LUA_USE_MODULES_CJSON
+#define LUA_USE_MODULES_CRYPTO
+#define LUA_USE_MODULES_RC
+#define LUA_USE_MODULES_DHT
+#define LUA_USE_MODULES_RTCMEM
+#define LUA_USE_MODULES_RTCTIME
+#define LUA_USE_MODULES_RTCFIFO
+#define LUA_USE_MODULES_SNTP
+// #define LUA_USE_MODULES_BMP085
+#define LUA_USE_MODULES_TSL2561
+// #define LUA_USE_MODULES_HX711
+
 #endif /* LUA_USE_MODULES */
 ```
+
+## Tagging your build
+
+Identify your firmware builds by editing `app/include/user_version.h`
+
+```c
+#define NODE_VERSION    "NodeMCU 1.4.0+myname"
+#ifndef BUILD_DATE
+#define BUILD_DATE        "YYYYMMDD"
+#endif
+```
+
 
 
 # GPIO NEW TABLE (Build 20141219 and later)
