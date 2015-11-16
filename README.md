@@ -9,18 +9,6 @@
   - cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)
   - File system based on [spiffs](https://github.com/pellepl/spiffs)
   - Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)
-  - Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
-
-### Resources
-
-| Resource | Location |
-| -------------- | -------------- |
-| Developer Wiki | https://github.com/nodemcu/nodemcu-firmware/wiki |
-| api | [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en) |
-| home | [nodemcu.com](http://www.nodemcu.com) |
-| bbs | [Chinese BBS](http://bbs.nodemcu.com) |
-| docs | [NodeMCU docs](http://www.nodemcu.com/docs/) |
-| Tencent QQ group | 309957875 |
 
 # Summary
 
@@ -29,6 +17,21 @@
 - Event-driven programming model preferred
 - Built-in modules: node, json, file, timer, pwm, i2c, spi, onewire, net, mqtt, coap, gpio, wifi, adc, uart, bit, u8g, ucg, ws2801, ws2812, crypto, dht, rtc, sntp, bmp085, tls2561, hx711 and system api.
 - Both Integer (less memory usage) and Float version firmware provided.
+
+## Useful links
+
+| Resource | Location |
+| -------------- | -------------- |
+| Developer Wiki       | https://github.com/nodemcu/nodemcu-firmware/wiki |
+| API docs             | [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en) |
+| Home                 | [nodemcu.com](http://www.nodemcu.com) |
+| BBS                  | [Chinese BBS](http://bbs.nodemcu.com) |
+| Docs                 | [NodeMCU docs](http://www.nodemcu.com/docs/) |
+| Tencent QQ group     | 309957875 |
+| Windows flash tool   | [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher) |
+| Linux flash tool     | [Esptool](https://github.com/themadinventor/esptool) |
+| ESPlorer GUI         | https://github.com/4refr0nt/ESPlorer |
+| NodeMCU Studio GUI   | https://github.com/nodemcu/nodemcu-studio-csharp |
 
 # To Do List (pull requests are very welcome)
 
