@@ -362,9 +362,9 @@ If upgrading from `spiffs` version 0.3.2 to 0.3.3 or later, or after flashing an
 
 # Connecting to your NodeMCU device
 
-NodeMCU serial interface uses 9600 baud at boot time. To increase the speed after booting, issue `uart.setup(0, 115200, 8, 0, 1, 1 )` (ESPlorer will do this automatically when changing the speed in the dropdown list).
+NodeMCU serial interface uses 9600 baud at boot time. To increase the speed after booting, issue `uart.setup(0,115200,8,0,1,1)` (ESPlorer will do this automatically when changing the speed in the dropdown list).
 
-If the device panics and resets, errors will be written to the serial interface at 115200 bps.
+If the device panics and resets at any time, errors will be written to the serial interface at 115200 bps.
 
 # User Interface tools
 
