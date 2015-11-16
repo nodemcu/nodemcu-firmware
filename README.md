@@ -366,12 +366,21 @@ NodeMCU serial interface uses 9600 baud at boot time. To increase the speed afte
 
 If the device panics and resets, errors will be written to the serial interface at 115200 bps.
 
-#Write Lua script to filesystem
-####Esplorer
-Victor Brutskiy's [Esplorer](https://github.com/4refr0nt/ESPlorer) support most platforms such as Linux, Windows, Mac OS, etc. This software is opensource and can write lua/lc files to filesystem.
+# User Interface tools
 
-####NodeMCU Studio
-[NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and support Windows. This software is opensource and can write lua files to filesystem.
+## Esplorer
+
+Victor Brutskiy's [ESPlorer](https://github.com/4refr0nt/ESPlorer) is written in Java, is open source and runs on most platforms such as Linux, Windows, Mac OS, etc.
+
+#### Features
+
+  - Edit Lua scripts and run on the ESP8266 and save to its flash
+  - Serial console log
+  - Also supports original AT firmware (reading and setting WiFi modes, etc)
+
+## NodeMCU Studio
+
+[NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and supports Windows. This software is open source and can write lua files to filesystem.
 
 # OPTIONAL MODULES
 
