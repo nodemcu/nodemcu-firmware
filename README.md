@@ -4,19 +4,23 @@
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
 
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 1.4.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1124)<br />
-Lua core based on [eLua project](http://www.eluaproject.net/)<br />
-cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)<br />
-File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
-Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
-Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
+  - Build on [ESP8266 sdk 1.4.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1124)
+  - Lua core based on [eLua project](http://www.eluaproject.net/)
+  - cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)
+  - File system based on [spiffs](https://github.com/pellepl/spiffs)
+  - Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)
+  - Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
 
-Developer Wiki: (https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
-api: [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)<br />
-home: [nodemcu.com](http://www.nodemcu.com)<br />
-bbs: [Chinese BBS](http://bbs.nodemcu.com)<br />
-docs: [NodeMCU docs](http://www.nodemcu.com/docs/)<br />
-Tencent QQ group: 309957875<br />
+### Resources
+
+| Resource | Location |
+| -------------- | -------------- |
+| Developer Wiki | https://github.com/nodemcu/nodemcu-firmware/wiki |
+| api | [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en) |
+| home | [nodemcu.com](http://www.nodemcu.com) |
+| bbs | [Chinese BBS](http://bbs.nodemcu.com) |
+| docs | [NodeMCU docs](http://www.nodemcu.com/docs/) |
+| Tencent QQ group | 309957875 |
 
 # Summary
 
@@ -211,7 +215,7 @@ There are several options for building the NodeMCU firmware.
 
 ## Online firmware custom build
 
-Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can choose only the modules you need, and download the firmware once built.<br />
+Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can choose only the modules you need, and download the firmware once built.
 
 NodeMCU custom builds can build from the master branch (0.9.6; deprecated) and dev
 branch (1.4.0).
