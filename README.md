@@ -545,6 +545,9 @@ cs:listen(5683)
 myvar=1
 cs:var("myvar") -- get coap://192.168.18.103:5683/v1/v/myvar will return the value of myvar: 1
 
+all='[1,2,3]'
+cs:var("all", coap.JSON) -- sets content type to json
+
 -- function should tack one string, return one string.
 function myfun(payload)
   print("myfun called")

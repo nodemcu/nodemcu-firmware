@@ -64,14 +64,14 @@ static int handle_get_variable(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
                     {
                         n = lua_gettop(h->L);
                         lua_getglobal(h->L, h->name);
-                        if (!lua_isnumber(h->L, -1)) {
-                            NODE_DBG ("should be a number.\n");
+                        if (!lua_isnumber(h->L, -1) && !lua_isstring(h->L, -1)) {
+                            NODE_DBG ("should be a number or string.\n");
                             lua_settop(h->L, n);
                             return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
                         } else {
                             const char *res = lua_tostring(h->L,-1);
                             lua_settop(h->L, n);
-                            return coap_make_response(scratch, outpkt, (const uint8_t *)res, c_strlen(res), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
+                            return coap_make_response(scratch, outpkt, (const uint8_t *)res, c_strlen(res), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, h->content_type);
                         }
                     }
                 } else {
@@ -198,10 +198,10 @@ static int handle_get_id(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, c
     return coap_make_response(scratch, outpkt, (const uint8_t *)(&id), sizeof(uint32_t), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
 }
 
-coap_luser_entry var_head = {NULL,NULL,NULL};
+coap_luser_entry var_head = {NULL,NULL,NULL,0};
 coap_luser_entry *variable_entry = &var_head;
 
-coap_luser_entry func_head = {NULL,NULL,NULL};
+coap_luser_entry func_head = {NULL,NULL,NULL,0};
 coap_luser_entry *function_entry = &func_head;
 
 const coap_endpoint_t endpoints[] =
