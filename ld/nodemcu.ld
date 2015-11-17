@@ -115,6 +115,7 @@ SECTIONS
     *(.data)
 
     /* Hook for randomizing TCP start numbers */
+    . = ALIGN(2);
     _tcp_new_port_port = ABSOLUTE(.);
     */liblwip.a:tcp.o(.port)
     /* Verify that the LWIP source has been patched as needed, or fail with
