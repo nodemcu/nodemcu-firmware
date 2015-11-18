@@ -238,7 +238,7 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     // ipaddr->addr is a uint32_t ip
     char ip_str[20];
     c_memset(ip_str, 0, sizeof(ip_str));
-    if(host_ip.addr == 0 && ipaddr->addr != 0)
+    if(ipaddr->addr != 0)
     {
       c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
     }
