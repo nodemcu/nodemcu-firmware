@@ -103,7 +103,7 @@ function M.read(pin)
 
   for i = 1, 8, 1 do -- Byte[3]
     if (bitStream[i+24] > 3) then
-      byte_2 = byte_2 + 2 ^ (8 - i)
+      byte_3 = byte_2 + 2 ^ (8 - i)
     end
   end
 
