@@ -1,3 +1,6 @@
+// Module for HX711 load cell amplifier
+// https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide
+
 #include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -32,7 +35,7 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
 
   //wakeup hx711
   platform_gpio_write(clk_pin,0);
-  
+
   //wait for data ready.  or time out.
   //TODO: set pin inturrupt and come back to it.  This may take up to 1/10 sec
   //        or maybe just make an async version too and have both available.
@@ -40,7 +43,7 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
   for (i = 0; i<HX711_MAX_WAIT && platform_gpio_read(data_pin)==1;i++){
     asm ("nop");
   }
-  
+
   //Handle timeout error
   if (i>=HX711_MAX_WAIT) {
     return luaL_error( L, "ADC timeout!", ( unsigned )0 );
@@ -54,14 +57,14 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
       data = i==0 ? -1 : data|1; //signextend the first bit
     }
   }
-  //add 25th clock pulse to prevent protocol error (probably not needed 
+  //add 25th clock pulse to prevent protocol error (probably not needed
   // since we'll go to sleep immediately after and reset on wakeup.)
   platform_gpio_write(clk_pin,1);
   platform_gpio_write(clk_pin,0);
   //sleep
   platform_gpio_write(clk_pin,1);
   lua_pushinteger( L, data );
-  return 1; 
+  return 1;
 }
 
 #define MIN_OPT_LEVEL 2
