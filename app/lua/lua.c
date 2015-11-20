@@ -549,12 +549,10 @@ static bool readline(lua_Load *load){
   {
     if(run_input)
     {
-      /* handle CR key */
+      /* skip CR key */
       if (ch == '\r')
       {
-        char next;
-        if (uart_getc(&next))
-          ch = next;
+        continue;
       }
       /* backspace key */
       else if (ch == 0x7f || ch == 0x08)
@@ -580,7 +578,7 @@ static bool readline(lua_Load *load){
       // }
 
       /* end of line */
-      if (ch == '\r' || ch == '\n')
+      if (ch == '\n')
       {
         load->line[load->line_position] = 0;
         if(uart0_echo) uart_putc('\n');
