@@ -126,9 +126,7 @@ DEPENDS_eagle.app.v6 = 				\
 #   for a subtree within the makefile rooted therein
 #
 
-BUILD_DATE=$(shell git log --pretty=format:%h -n 1)
-UNIVERSAL_TARGET_DEFINES = 			\
-	-DBUILD_DATE='"$(BUILD_DATE)"'
+#UNIVERSAL_TARGET_DEFINES = 			\
 
 # Other potential configuration flags include:
 #	-DTXRX_TXBUF_DEBUG
