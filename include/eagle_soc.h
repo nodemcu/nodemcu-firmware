@@ -197,6 +197,7 @@
 #define FUNC_GPIO12                     3
 #define PERIPHS_IO_MUX_MTCK_U           (PERIPHS_IO_MUX + 0x08)
 #define FUNC_GPIO13                     3
+#define FUNC_U0CTS                      4
 #define PERIPHS_IO_MUX_MTMS_U           (PERIPHS_IO_MUX + 0x0C)
 #define FUNC_GPIO14                     3
 #define PERIPHS_IO_MUX_MTDO_U           (PERIPHS_IO_MUX + 0x10)

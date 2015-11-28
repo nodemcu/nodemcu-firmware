@@ -125,4 +125,17 @@
 
 #define UART_DATE( i )                          (REG_UART_BASE( i ) + 0x78)
 #define UART_ID( i )                            (REG_UART_BASE( i ) + 0x7C)
+
+#define ESP8266_DREG(addr) *((volatile uint32_t *)(0x3FF00000+(addr)))
+
+//IO SWAP Register
+#define IOSWAP    ESP8266_DREG(0x28)
+#define IOSWAPU   0 //Swaps UART
+#define IOSWAPS   1 //Swaps SPI
+#define IOSWAPU0  2 //Swaps UART 0 pins (u0rxd <-> u0cts), (u0txd <-> u0rts)
+#define IOSWAPU1  3 //Swaps UART 1 pins (u1rxd <-> u1cts), (u1txd <-> u1rts)
+#define IOSWAPHS  5 //Sets HSPI with higher prio
+#define IOSWAP2HS 6 //Sets Two SPI Masters on HSPI
+#define IOSWAP2CS 7 //Sets Two SPI Masters on CSPI
+
 #endif // UART_REGISTER_H_INCLUDED
