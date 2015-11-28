@@ -21,6 +21,10 @@
 #ifndef FUNC_U0RXD
 #define FUNC_U0RXD 0
 #endif
+#ifndef FUNC_U0CTS
+#define FUNC_U0CTS                      4
+#endif
+
 
 // For event signalling
 static uint8 task = USER_TASK_PRIO_MAX;
@@ -74,6 +78,39 @@ uart_config(uint8 uart_no)
     //enable rx_interrupt
     SET_PERI_REG_MASK(UART_INT_ENA(uart_no), UART_RXFIFO_FULL_INT_ENA);
 }
+
+
+
+/******************************************************************************
+ * FunctionName : uart0_alt
+ * Description  : Internal used function
+ *                UART0 pins changed to 13,15 if 'on' is set, else set to normal pins
+ * Parameters   : on - 1 = use alternate pins, 0 = use normal pins
+ * Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+uart0_alt(uint8 on)
+{
+    if (on)
+    {
+        PIN_PULLUP_DIS(PERIPHS_IO_MUX_MTDO_U);
+        PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, FUNC_U0RTS);
+        PIN_PULLUP_EN(PERIPHS_IO_MUX_MTCK_U);
+        PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, FUNC_U0CTS);
+        // now make RTS/CTS behave as TX/RX
+        IOSWAP |= (1 << IOSWAPU0);
+    }
+    else
+    {
+        PIN_PULLUP_DIS(PERIPHS_IO_MUX_U0TXD_U);
+        PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD);
+        PIN_PULLUP_EN(PERIPHS_IO_MUX_U0RXD_U);
+        PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_U0RXD);
+        // now make RX/TX behave as TX/RX
+        IOSWAP &= ~(1 << IOSWAPU0);
+    }
+}
+
 
 /******************************************************************************
  * FunctionName : uart_tx_one_char
