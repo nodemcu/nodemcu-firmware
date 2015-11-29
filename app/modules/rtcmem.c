@@ -54,7 +54,7 @@ LUALIB_API int luaopen_rtcmem (lua_State *L)
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
 #else
-  luaL_register (L, AUXLIB_RTCMEM, rtcmem_map);
+  luaL_register (L, "rtcmem", rtcmem_map);
   return 1;
 #endif
 }

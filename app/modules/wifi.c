@@ -950,7 +950,7 @@ static int wifi_station_status( lua_State* L )
   	  	  --stop wifi event monitor and unregister all callbacks
   	  	  wifi.sta.eventMonStop("unreg all")
   */
-static void wifi_station_event_mon_stop(lua_State* L)
+static int wifi_station_event_mon_stop(lua_State* L)
 {
   os_timer_disarm(&wifi_sta_status_timer);
   if(lua_isstring(L,1))

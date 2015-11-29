@@ -1157,7 +1157,7 @@ LUALIB_API int luaopen_u8g( lua_State *L )
     lua_pushvalue(L,-2);
     lua_rawset(L,-3);
     // Setup the methods inside metatable
-    luaL_register( L, NULL, u8g_display_map );
+    luaL_register( L, NULL, lu8g_display_map );
 
     return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0  

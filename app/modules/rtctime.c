@@ -131,7 +131,7 @@ LUALIB_API int luaopen_rtctime (lua_State *L)
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
 #else
-  luaL_register (L, AUXLIB_RTCTIME, rtctime_map);
+  luaL_register (L, "rtctime", rtctime_map);
   return 1;
 #endif
 }
