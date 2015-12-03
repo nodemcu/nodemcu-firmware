@@ -327,31 +327,36 @@ void luaV_concat (lua_State *L, int total, int last) {
         top = L->base + last + 1;
         luaG_concaterror(L, top-2, top-1);
       }
-    } else if (tsvalue(top-1)->len == 0)  /* second op is empty? */
-      (void)tostring(L, top - 2);  /* result is first op (as string) */
-    else {
-      /* at least two string values; get as many as possible */
-      size_t tl = tsvalue(top-1)->len;
-      char *buffer;
-      int i;
-      fixedstack(L);
-      /* collect total length */
-      for (n = 1; n < total && tostring(L, top-n-1); n++) {
-        size_t l = tsvalue(top-n-1)->len;
-        if (l >= max_sizet - tl) luaG_runerror(L, "string length overflow");
-        tl += l;
+    } else {
+      // Note that L->base might have changed as a result of tostring
+      top = L->base + last + 1;
+      if (tsvalue(top-1)->len == 0)  /* second op is empty? */
+	(void)tostring(L, top - 2);  /* result is first op (as string) */
+      else {
+	/* at least two string values; get as many as possible */
+	size_t tl = tsvalue(top-1)->len;
+	char *buffer;
+	int i;
+	fixedstack(L);
+	/* collect total length */
+	for (n = 1; n < total && tostring(L, top-n-1); n++) {
+          top = L->base + last + 1;
+	  size_t l = tsvalue(top-n-1)->len;
+	  if (l >= max_sizet - tl) luaG_runerror(L, "string length overflow");
+	  tl += l;
+	}
+	G(L)->buff.n = tl;
+	buffer = luaZ_openspace(L, &G(L)->buff, tl);
+	tl = 0;
+	for (i=n; i>0; i--) {  /* concat all strings */
+	  size_t l = tsvalue(top-i)->len;
+	  c_memcpy(buffer+tl, svalue(top-i), l);
+	  tl += l;
+	}
+	setsvalue2s(L, top-n, luaS_newlstr(L, buffer, tl));
+	luaZ_resetbuffer(&G(L)->buff);
+	unfixedstack(L);
       }
-      G(L)->buff.n = tl;
-      buffer = luaZ_openspace(L, &G(L)->buff, tl);
-      tl = 0;
-      for (i=n; i>0; i--) {  /* concat all strings */
-        size_t l = tsvalue(top-i)->len;
-        c_memcpy(buffer+tl, svalue(top-i), l);
-        tl += l;
-      }
-      setsvalue2s(L, top-n, luaS_newlstr(L, buffer, tl));
-      luaZ_resetbuffer(&G(L)->buff);
-      unfixedstack(L);
     }
     total -= n-1;  /* got `n' strings to create 1 new */
     last -= n-1;
