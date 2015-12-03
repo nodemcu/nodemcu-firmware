@@ -53,7 +53,7 @@
 #define INTERNAL_FLASH_READ_UNIT_SIZE	4
 
 #define INTERNAL_FLASH_SIZE             ( (SYS_PARAM_SEC_START) * INTERNAL_FLASH_SECTOR_SIZE )
-#define INTERNAL_FLASH_START_ADDRESS    0x40200000
+#define INTERNAL_FLASH_MAPPED_ADDRESS    0x40200000
 
 // SpiFlashOpResult spi_flash_erase_sector(uint16 sec);
 // SpiFlashOpResult spi_flash_write(uint32 des_addr, uint32 *src_addr, uint32 size);

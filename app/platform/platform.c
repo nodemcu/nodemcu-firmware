@@ -514,12 +514,11 @@ int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_
  */
 uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size )
 {
-  toaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
   const uint32_t blkmask = INTERNAL_FLASH_WRITE_UNIT_SIZE - 1;
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
-  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_START_ADDRESS)) {
+  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_MAPPED_ADDRESS)) {
     apbuf = (uint32_t *)c_malloc(size);
     if(!apbuf)
       return 0;
@@ -532,7 +531,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_write: r=%d at %08X\n", ( int )r, ( unsigned )toaddr+INTERNAL_FLASH_START_ADDRESS );
+    NODE_ERR( "ERROR in flash_write: r=%d at %08X\n", ( int )r, ( unsigned )toaddr);
     return 0;
   }
 }
@@ -547,7 +546,6 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if (size==0)
     return 0;
 
-  fromaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
   system_soft_wdt_feed ();
 
@@ -571,7 +569,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr+INTERNAL_FLASH_START_ADDRESS );
+    NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr);
     return 0;
   }
 }
