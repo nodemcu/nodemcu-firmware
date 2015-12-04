@@ -1,0 +1,5 @@
+site_name: NodeMCU Documentation
+site_description: Description of the NodeMCU documentation
+theme: readthedocs
+pages:
+- ['index.md', 'Index']
