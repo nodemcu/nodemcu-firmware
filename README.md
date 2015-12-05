@@ -1,15 +1,15 @@
 # **NodeMCU** #
-version 0.9.5
+version 1.4.0
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases/latest)
 
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
+Build on [ESP8266 NONOS SDK](http://bbs.espressif.com/viewforum.php?f=46)<br />
 Lua core based on [eLua project](http://www.eluaproject.net/)<br />
 cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)<br />
 File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
-Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
+Open source development kit for NodeMCU [nodemcu-devkit-v0.9](https://github.com/nodemcu/nodemcu-devkit) [nodemcu-devkit-v1.0](https://github.com/nodemcu/nodemcu-devkit-v1.0)<br />
 Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
 
 wiki: [NodeMCU wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
@@ -29,7 +29,7 @@ Tencent QQ group: 309957875<br />
 
 # To Do List (pull requests are very welcomed)
 - loadable c module
-- fix wifi smart connect
+- fix wifi smart connect (done)
 - add spi module (done)
 - add mqtt module (done)
 - add coap module (done)
@@ -585,4 +585,32 @@ The HX711 is an inexpensive 24bit ADC with programmable 128x, 64x, and 32x gain.
 	hx711.init(5,6)
 	-- Read ch A with 128 gain.
 	raw_data = hx711.read(0)
+```
+
+####Universal DHT Sensor support
+Support DHT11, DHT21, DHT22, DHT33, DHT44, etc. 
+Use all-in-one function to read DHT sensor.
+```lua
+
+pin = 5
+status,temp,humi,temp_decimial,humi_decimial = dht.readxx(pin)
+if( status == dht.OK ) then
+  -- Integer firmware using this example
+  print(     
+    string.format(
+      "DHT Temperature:%d.%03d;Humidity:%d.%03d\r\n",
+      math.floor(temp),
+      temp_decimial,
+      math.floor(humi),
+      humi_decimial
+    )
+  )
+  -- Float firmware using this example
+  print("DHT Temperature:"..temp..";".."Humidity:"..humi)
+elseif( status == dht.ERROR_CHECKSUM ) then
+  print( "DHT Checksum error." );
+elseif( status == dht.ERROR_TIMEOUT ) then
+  print( "DHT Time out." );
+end
+
 ```
