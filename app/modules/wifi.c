@@ -327,23 +327,23 @@ static int wifi_getphymode( lua_State* L )
 //wifi.sleep()
 static int wifi_sleep(lua_State* L)
 {
-  uint8 desired_sleep_state=2;
+  uint8 desired_sleep_state = 2;
+  sint8 wifi_fpm_do_sleep_return_value = 1;
   if(lua_isnumber(L, 1))
   {
-	  if(luaL_checknumber(L, 1)==0)
+	  if(luaL_checknumber(L, 1) == 0)
 	  {
-		  desired_sleep_state=FALSE;
+		  desired_sleep_state = 0;
 	  }
-	  else if(luaL_checknumber(L, 1)==1)
+	  else if(luaL_checknumber(L, 1) == 1)
 	  {
-		  desired_sleep_state=TRUE;
+		  desired_sleep_state = 1;
 	  }
   }
-  if (!FLAG_wifi_force_sleep_enabled && desired_sleep_state==1)
+  if (!FLAG_wifi_force_sleep_enabled && desired_sleep_state == 1 )
   {
-	FLAG_wifi_force_sleep_enabled=TRUE;
-	uint8 wifi_current_opmode=wifi_get_opmode();
-	if (wifi_current_opmode==1||wifi_current_opmode==3)
+	uint8 wifi_current_opmode = wifi_get_opmode();
+	if (wifi_current_opmode == 1 || wifi_current_opmode == 3 )
 	{
 	  wifi_station_disconnect();
 	}
@@ -352,17 +352,37 @@ static int wifi_sleep(lua_State* L)
 	// set force sleep type
 	wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
 	wifi_fpm_open();
-	wifi_fpm_do_sleep(FPM_SLEEP_MAX_TIME);
+	wifi_fpm_do_sleep_return_value = wifi_fpm_do_sleep(FPM_SLEEP_MAX_TIME);
+	if (wifi_fpm_do_sleep_return_value == 0)
+	{
+	  FLAG_wifi_force_sleep_enabled = TRUE;
+	}
+	else
+	{
+		wifi_fpm_close();
+		FLAG_wifi_force_sleep_enabled = FALSE;
+	}
+
   }
-  else if(FLAG_wifi_force_sleep_enabled && desired_sleep_state==0)
+  else if(FLAG_wifi_force_sleep_enabled && desired_sleep_state == 0)
   {
-	FLAG_wifi_force_sleep_enabled=FALSE;
+	FLAG_wifi_force_sleep_enabled = FALSE;
 	// wake up to use WiFi again
 	wifi_fpm_do_wakeup();
 	wifi_fpm_close();
   }
-  lua_pushnumber(L, FLAG_wifi_force_sleep_enabled);
-  return 1;
+
+  if (desired_sleep_state == 1 && FLAG_wifi_force_sleep_enabled == FALSE)
+  {
+	  lua_pushnil(L);
+	  lua_pushnumber(L, wifi_fpm_do_sleep_return_value);
+  }
+  else
+  {
+	  lua_pushnumber(L, FLAG_wifi_force_sleep_enabled);
+	  lua_pushnil(L);
+  }
+  return 2;
 }
 
 // Lua: mac = wifi.xx.getmac()

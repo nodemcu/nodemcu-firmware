@@ -39,6 +39,7 @@
 #include "lwip/udp.h"
 #include "c_stdlib.h"
 #include "user_modules.h"
+#include "lwip/dns.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
@@ -145,6 +146,22 @@ static void sntp_dosend (lua_State *L)
   pbuf_free (p);
   if (ret != ERR_OK)
     handle_error (L);
+}
+
+
+static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
+{
+  lua_State *L = arg;
+  if (ipaddr == NULL)
+  {
+    NODE_ERR("DNS Fail!\n");
+    handle_error(L);
+  }
+  else
+  {
+    server = *ipaddr;
+    sntp_dosend(L);
+  }
 }
 
 
@@ -306,13 +323,6 @@ static int sntp_sync (lua_State *L)
 
   udp_recv (state->pcb, on_recv, L);
 
-  // use last server, unless new one specified
-  if (!lua_isnoneornil (L, 1))
-  {
-    if (!ipaddr_aton (luaL_checkstring (L, 1), &server))
-      sync_err ("bad IP address");
-  }
-
   if (!lua_isnoneornil (L, 2))
   {
     lua_pushvalue (L, 2);
@@ -334,6 +344,21 @@ static int sntp_sync (lua_State *L)
   os_timer_arm (&state->timer, 1000, 1);
 
   state->attempts = 0;
+
+  // use last server, unless new one specified
+  if (!lua_isnoneornil (L, 1))
+  {
+    size_t l;
+    const char *hostname = luaL_checklstring(L, 1, &l);
+    if (l>128 || hostname == NULL)
+      sync_err("need <128 hostname");
+    err_t err = dns_gethostbyname(hostname, &server, sntp_dns_found, &L);
+    if (err == ERR_INPROGRESS)
+      return 0;  // Callback function sntp_dns_found will handle sntp_dosend for us
+    else if (err == ERR_ARG)
+      sync_err("bad hostname");
+  }
+
   sntp_dosend (L);
   return 0;
 

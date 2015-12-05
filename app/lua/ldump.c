@@ -72,18 +72,18 @@ static void DumpIntWithSize(int x, int sizeof_int, DumpState* D)
  /* dump signed integer */
  switch(sizeof_int) {
   case 1: {
-   if (x>0x7F || x<(-0x80)) D->status=LUA_ERR_CC_INTOVERFLOW; 
+   if (x>0x7F || x<(-0x80)) D->status=LUA_ERR_CC_INTOVERFLOW;
    DumpChar(x,D);
   } break;
   case 2: {
-   if (x>0x7FFF || x<(-0x8000)) D->status=LUA_ERR_CC_INTOVERFLOW; 
+   if (x>0x7FFF || x<(-0x8000)) D->status=LUA_ERR_CC_INTOVERFLOW;
    int16_t y=(int16_t)x;
    MaybeByteSwap((char*)&y,2,D);
    DumpVar(y,D);
   } break;
   case 4: {
    /* Need to reduce bounds by 1 to avoid messing 32-bit compilers up */
-   if (x>0x7FFFFFFE || x<(-0x7FFFFFFF)) D->status=LUA_ERR_CC_INTOVERFLOW; 
+   if (x>0x7FFFFFFE || x<(-0x7FFFFFFF)) D->status=LUA_ERR_CC_INTOVERFLOW;
    int32_t y=(int32_t)x;
    MaybeByteSwap((char*)&y,4,D);
    DumpVar(y,D);
@@ -102,7 +102,7 @@ static void DumpSize(uint32_t x, DumpState* D)
  /* dump unsigned integer */
  switch(D->target.sizeof_strsize_t) {
   case 1: {
-   if (x>0xFF) D->status=LUA_ERR_CC_INTOVERFLOW; 
+   if (x>0xFF) D->status=LUA_ERR_CC_INTOVERFLOW;
    DumpChar(x,D);
   } break;
   case 2: {
@@ -144,8 +144,8 @@ static void DumpNumber(lua_Number x, DumpState* D)
    } break;
    case 8: {
     double y=x;
-    // ARM FPA mode: keep endianness, but swap high and low parts of the 
-    // memory representation. This is the default compilation mode for ARM 
+    // ARM FPA mode: keep endianness, but swap high and low parts of the
+    // memory representation. This is the default compilation mode for ARM
     // targets with non-EABI gcc
     if(D->target.is_arm_fpa)
     {
@@ -153,7 +153,7 @@ static void DumpNumber(lua_Number x, DumpState* D)
       c_memcpy(temp,pnum,4);
       c_memcpy(pnum,pnum+4,4);
       c_memcpy(pnum+4,temp,4);
-    }    
+    }
     MaybeByteSwap((char*)&y,8,D);
     DumpVar(y,D);
    } break;
@@ -228,6 +228,16 @@ static void DumpConstants(const Proto* f, DumpState* D)
 static void DumpDebug(const Proto* f, DumpState* D)
 {
  int i,n;
+
+#ifdef LUA_OPTIMIZE_DEBUG
+ n = (D->strip || f->packedlineinfo == NULL) ? 0: c_strlen(cast(char *,f->packedlineinfo))+1;
+ DumpInt(n,D);
+ Align4(D);
+ if (n)
+ {
+  DumpBlock(f->packedlineinfo, n, D);
+ }
+#else
  n= (D->strip) ? 0 : f->sizelineinfo;
  DumpInt(n,D);
  Align4(D);
@@ -235,7 +245,8 @@ static void DumpDebug(const Proto* f, DumpState* D)
  {
   DumpInt(f->lineinfo[i],D);
  }
- 
+ #endif
+
  n= (D->strip) ? 0 : f->sizelocvars;
  DumpInt(n,D);
  for (i=0; i<n; i++)
@@ -268,7 +279,7 @@ static void DumpHeader(DumpState* D)
 {
  char buf[LUAC_HEADERSIZE];
  char *h=buf;
- 
+
  /* This code must be kept in sync wiht luaU_header */
  c_memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
  h+=sizeof(LUA_SIGNATURE)-1;
@@ -280,7 +291,7 @@ static void DumpHeader(DumpState* D)
  *h++=(char)sizeof(Instruction);
  *h++=(char)D->target.sizeof_lua_Number;
  *h++=(char)D->target.lua_Number_integral;
- 
+
  DumpBlock(buf,LUAC_HEADERSIZE,D);
 }
 

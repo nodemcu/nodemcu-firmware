@@ -251,6 +251,14 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   return baud;
 }
 
+// if set=1, then alternate serial output pins are used. (15=rx, 13=tx)
+void platform_uart_alt( int set )
+{
+    uart0_alt( set );
+    return;
+}
+
+
 // Send: version with and without mux
 void platform_uart_send( unsigned id, u8 data ) 
 {

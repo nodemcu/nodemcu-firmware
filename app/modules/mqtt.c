@@ -1034,7 +1034,16 @@ static int mqtt_socket_close( lua_State* L )
   if(mud->pesp_conn == NULL)
     return 0;
 
-  // call mqtt_disconnect()
+  // Send disconnect message
+  mqtt_message_t* temp_msg = mqtt_msg_disconnect(&mud->mqtt_state.mqtt_connection);
+  NODE_DBG("Send MQTT disconnect infomation, data len: %d, d[0]=%d \r\n", temp_msg->length,  temp_msg->data[0]);
+#ifdef CLIENT_SSL_ENABLE
+  if(mud->secure)
+    espconn_secure_sent(mud->pesp_conn, temp_msg->data, temp_msg->length);
+  else
+#endif
+    espconn_sent(mud->pesp_conn, temp_msg->data, temp_msg->length);
+
   mud->mqtt_state.auto_reconnect = 0;   // stop auto reconnect.
 
 #ifdef CLIENT_SSL_ENABLE

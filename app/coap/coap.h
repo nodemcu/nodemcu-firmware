@@ -116,6 +116,10 @@ typedef enum
     COAP_CONTENTTYPE_NONE = -1, // bodge to allow us not to send option block
     COAP_CONTENTTYPE_TEXT_PLAIN = 0,
     COAP_CONTENTTYPE_APPLICATION_LINKFORMAT = 40,
+    COAP_CONTENTTYPE_APPLICATION_XML = 41,
+    COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM = 42,
+    COAP_CONTENTTYPE_APPLICATION_EXI = 47,
+    COAP_CONTENTTYPE_APPLICATION_JSON = 50,
 } coap_content_type_t;
 
 ///////////////////////
@@ -156,6 +160,7 @@ struct coap_luser_entry{
     // char name[MAX_SEGMENTS_SIZE+1];         // +1 for string '\0'
     const char *name;
     coap_luser_entry *next;
+    int content_type;
 };
 
 struct coap_endpoint_t{

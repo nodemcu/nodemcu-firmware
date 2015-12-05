@@ -215,7 +215,7 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   // ipaddr->addr is a uint32_t ip
   char ip_str[20];
   c_memset(ip_str, 0, sizeof(ip_str));
-  if(host_ip.addr == 0 && ipaddr->addr != 0)
+  if(ipaddr->addr != 0)
   {
     c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
   }
@@ -238,7 +238,7 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     // ipaddr->addr is a uint32_t ip
     char ip_str[20];
     c_memset(ip_str, 0, sizeof(ip_str));
-    if(host_ip.addr == 0 && ipaddr->addr != 0)
+    if(ipaddr->addr != 0)
     {
       c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
     }
@@ -1148,7 +1148,9 @@ static int net_dns( lua_State* L, const char* mt )
   }
 
   host_ip.addr = 0;
-  espconn_gethostbyname(pesp_conn, domain, &host_ip, net_dns_found);
+  if(ESPCONN_OK == espconn_gethostbyname(pesp_conn, domain, &host_ip, net_dns_found))
+    net_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
+
 
   return 0;  
 }
@@ -1213,7 +1215,9 @@ static int net_dns_static( lua_State* L )
   }
 
   host_ip.addr = 0;
-  espconn_gethostbyname(pesp_conn, domain, &host_ip, net_dns_found);
+  if(ESPCONN_OK == espconn_gethostbyname(pesp_conn, domain, &host_ip, net_dns_found))
+    net_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
+
 
   return 0;
 }

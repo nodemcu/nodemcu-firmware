@@ -541,6 +541,7 @@ extern bool uart0_echo;
 extern bool run_input;
 extern uint16_t need_len;
 extern int16_t end_char;
+static char last_nl_char = '\0';
 static bool readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
   bool need_dojob = false;
@@ -549,13 +550,18 @@ static bool readline(lua_Load *load){
   {
     if(run_input)
     {
-      /* handle CR key */
-      if (ch == '\r')
+      char tmp_last_nl_char = last_nl_char;
+      // reset marker, will be finally set below when newline is processed
+      last_nl_char = '\0';
+
+      /* handle CR & LF characters
+         filters second char of LF&CR (\n\r) or CR&LF (\r\n) sequences */
+      if ((ch == '\r' && tmp_last_nl_char == '\n') || // \n\r sequence -> skip \r
+          (ch == '\n' && tmp_last_nl_char == '\r'))   // \r\n sequence -> skip \n
       {
-        char next;
-        if (uart_getc(&next))
-          ch = next;
+        continue;
       }
+
       /* backspace key */
       else if (ch == 0x7f || ch == 0x08)
       {
@@ -582,6 +588,8 @@ static bool readline(lua_Load *load){
       /* end of line */
       if (ch == '\r' || ch == '\n')
       {
+        last_nl_char = ch;
+
         load->line[load->line_position] = 0;
         if(uart0_echo) uart_putc('\n');
         uart_on_data_cb(load->line, load->line_position);

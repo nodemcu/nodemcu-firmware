@@ -2,15 +2,14 @@
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
-We're really glad you're reading this, because we need volunteer developers to help this project come to fruition.
-
 The following is a set of guidelines for contributing to NodeMCU on GitHub. These are just guidelines, not rules, use your best judgment and feel free to propose changes to this document in a pull request.
 
-#### Table Of Contents
+It is appreciated but optional if you raise an issue _before_ you start changing NodeMCU, discussing the proposed change; emphasising that the you are proposing to develop the patch yourself, and outling the strategy for implementation. This type of discussion is what we should be doing on the issues list and it is better to do this before or in parallel to developing the patch rather than having "you should have done it this way" type of feedback on the PR itself.
 
-[Development environment setup](#development-environment-setup)
+### Table Of Contents
 
-[Working with Git and GitHub](#working-with-git-and-github)
+* [Development environment setup](#development-environment-setup)
+* [Working with Git and GitHub](#working-with-git-and-github)
   * [General flow](#general-flow)
   * [Keeping your fork in sync](#keeping-your-fork-in-sync)
   * [Commit messages](#commit-messages)
@@ -34,7 +33,7 @@ Avoid intermediate merge commits. [Rebase](https://www.atlassian.com/git/tutoria
 1. `git checkout <branch-name>`
 1. Make changes to the code base and commit them using e.g. `git commit -a -m 'Look ma, I did it'`
 1. When you're done:
- 1. [Squash your commits](http://stackoverflow.com/q/5189560/131929) into one. There are several ways of doing this.
+ 1. [Squash your commits](http://stackoverflow.com/a/5201642/131929) into one. There are several ways of doing this.
  1. Bring your fork up-to-date with the NodeMCU upstream repo ([see below](#keeping-your-fork-in-sync)). Then rebase your branch on `dev` running `git rebase dev`.
 1. `git push`
 1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/) (PR) on GitHub. 

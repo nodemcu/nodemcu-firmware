@@ -49,6 +49,15 @@ static void coap_received(void *arg, char *pdata, unsigned short len)
   // c_memcpy(buf, pdata, len);
 
   size_t rsplen = coap_server_respond(pdata, len, buf, MAX_MESSAGE_SIZE+1);
+
+  // SDK 1.4.0 changed behaviour, for UDP server need to look up remote ip/port
+  remot_info *pr = 0;
+  if (espconn_get_connection_info (pesp_conn, &pr, 0) != ESPCONN_OK)
+    return;
+  pesp_conn->proto.udp->remote_port = pr->remote_port;
+  os_memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
+  // The remot_info apparently should *not* be os_free()d, fyi
+
   espconn_sent(pesp_conn, (unsigned char *)buf, rsplen);
 
   // c_memset(buf, 0, sizeof(buf));
@@ -429,6 +438,7 @@ static int coap_regist( lua_State* L, const char* mt, int isvar )
 {
   size_t l;
   const char *name = luaL_checklstring( L, 2, &l );
+  int content_type = luaL_optint(L, 3, COAP_CONTENTTYPE_TEXT_PLAIN);
   if (name == NULL)
     return luaL_error( L, "name must be set." );
 
@@ -457,6 +467,7 @@ static int coap_regist( lua_State* L, const char* mt, int isvar )
 
   h->L = L;
   h->name = name;
+  h->content_type = content_type;
 
   NODE_DBG("coap_regist is called.\n");
   return 0;  
@@ -585,6 +596,12 @@ const LUA_REG_TYPE coap_map[] =
 #if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "CON" ), LNUMVAL( COAP_TYPE_CON ) },
   { LSTRKEY( "NON" ), LNUMVAL( COAP_TYPE_NONCON ) },
+  { LSTRKEY( "TEXT_PLAIN"), LNUMVAL( COAP_CONTENTTYPE_TEXT_PLAIN ) },
+  { LSTRKEY( "LINKFORMAT"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_LINKFORMAT ) },
+  { LSTRKEY( "XML"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_XML ) },
+  { LSTRKEY( "OCTET_STREAM"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM ) },
+  { LSTRKEY( "EXI"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_EXI ) },
+  { LSTRKEY( "JSON"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_JSON) },
 
   { LSTRKEY( "__metatable" ), LROVAL( coap_map ) },
 #endif
@@ -609,6 +626,12 @@ LUALIB_API int luaopen_coap( lua_State *L )
   // Module constants  
   MOD_REG_NUMBER( L, "CON", COAP_TYPE_CON );
   MOD_REG_NUMBER( L, "NON", COAP_TYPE_NONCON );
+  MOD_REG_NUMBER( L, "TEXT_PLAIN", COAP_CONTENTTYPE_TEXT_PLAIN );
+  MOD_REG_NUMBER( L, "LINKFORMAT", COAP_CONTENTTYPE_APPLICATION_LINKFORMAT );
+  MOD_REG_NUMBER( L, "XML", COAP_CONTENTTYPE_APPLICATION_XML);
+  MOD_REG_NUMBER( L, "OCTET_STREAM", COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM);
+  MOD_REG_NUMBER( L, "EXI", COAP_CONTENTTYPE_APPLICATION_EXI);
+  MOD_REG_NUMBER( L, "JSON", COAP_CONTENTTYPE_APPLICATION_JSON);
 
   n = lua_gettop(L);
 
