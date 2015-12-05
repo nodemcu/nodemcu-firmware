@@ -1,33 +1,40 @@
-# **NodeMCU** #
-version 0.9.5
+# **NodeMCU 1.4.0** #
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases/latest)
+[![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
 
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
-Lua core based on [eLua project](http://www.eluaproject.net/)<br />
-cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)<br />
-File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
-Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
-Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
-
-wiki: [NodeMCU wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
-api: [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en)<br />
-home: [nodemcu.com](http://www.nodemcu.com)<br />
-bbs: [Chinese bbs](http://bbs.nodemcu.com)<br />
-docs: [NodeMCU docs](http://www.nodemcu.com/docs/)<br />
-Tencent QQ group: 309957875<br />
+  - Build on [ESP8266 sdk 1.4.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1124)
+  - Lua core based on [eLua project](http://www.eluaproject.net/)
+  - cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)
+  - File system based on [spiffs](https://github.com/pellepl/spiffs)
+  - Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)
 
 # Summary
-- Easy to access wireless router
-- Based on Lua 5.1.4 (without *debug, os* module.)
-- Event-Drive programming preferred.
-- Build-in json, file, timer, pwm, i2c, spi, 1-wire, net, mqtt, coap, gpio, wifi, adc, uart and system api.
-- GPIO pin re-mapped, use the index to access gpio, i2c, pwm.
-- Both Integer(less memory usage) and Float version firmware provided.
 
-# To Do List (pull requests are very welcomed)
+- Easy to program wireless node and/or Access Point
+- Based on Lua 5.1.4 (without *debug, os* module.)
+- Event-driven programming model preferred
+- Built-in modules: node, json, file, timer, pwm, i2c, spi, onewire, net, mqtt, coap, gpio, wifi, adc, uart, bit, u8g, ucg, ws2801, ws2812, crypto, dht, rtc, sntp, bmp085, tls2561, hx711 and system api.
+- Both Integer (less memory usage) and Float version firmware provided.
+
+## Useful links
+
+| Resource | Location |
+| -------------- | -------------- |
+| Developer Wiki       | https://github.com/nodemcu/nodemcu-firmware/wiki |
+| API docs             | [NodeMCU api](https://github.com/nodemcu/nodemcu-firmware/wiki/nodemcu_api_en) |
+| Home                 | [nodemcu.com](http://www.nodemcu.com) |
+| BBS                  | [Chinese BBS](http://bbs.nodemcu.com) |
+| Docs                 | [NodeMCU docs](http://www.nodemcu.com/docs/) |
+| Tencent QQ group     | 309957875 |
+| Windows flash tool   | [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher) |
+| Linux flash tool     | [Esptool](https://github.com/themadinventor/esptool) |
+| ESPlorer GUI         | https://github.com/4refr0nt/ESPlorer |
+| NodeMCU Studio GUI   | https://github.com/nodemcu/nodemcu-studio-csharp |
+
+# To Do List (pull requests are very welcome)
+
 - loadable c module
 - fix wifi smart connect
 - add spi module (done)
@@ -35,92 +42,235 @@ Tencent QQ group: 309957875<br />
 - add coap module (done)
 - cross compiler (done)
 
-# Change log
-2015-06-27<br />
-fixed ap/station-ap cannot connect to the device.<br />
-added wifi.ap.getconfig().<br />
-fixed net.dns.getdnsserver().<br />
-added new base64 lua example.<br />
-added node.bootreason() to inspect boot cause.<br />
-optimization of u8g.<br />
+# Programming Examples
 
-# Change log
-2015-06-25<br />
-move constants to ROM. Frees up 16k+ of RAM.<br />
-add dhtlib for DHT11/21/22/33/44, port from Arduino.<br />
-add 433MHz transmission.<br />
-add crypto library.<br />
-re-add ws2812.write().<br />
-add wifi.getchannel.<br />
-changed wifi_setip() to allow setting SoftAP gateway to 0.0.0.0.<br />
-added net.dns.setdnsserver and net.dns.getdnsserver.<br />
-add support for lm92 temperature sensor.<br />
-implement getStrWidth() and setFontLineSpacingFactor().<br />
-add -Os flag to release and debug builds.<br />
-changed output format of table that is output by wifi_scan_done.<br />
-added ability to set scan configuration to wifi.sta.getap.<br />
-added function wifi.sta.getconfig().<br />
-allow connecting to unsecured WiFi networks.<br />
-add setphymode and getphymode to wifi module.<br />
-add multicastJoin and multicastLeave to net module.<br />
-add Yeelink Modules.<br />
+Because Lua is a high level language and several modules are built into the firmware, you can very easily program your ESP8266. Here are some examples!
 
-2015-03-31<br />
-polish mqtt module, add queue for mqtt module.<br />
-add reconnect option to mqtt.connect api, :connect( host, port, secure, auto_reconnect, function(client) )<br />
-move node.readvdd33 to adc.readvdd33.<br />
-tools/esptool.py supported NodeMCU devkit automatic flash.
+## Connect to your AP
 
-[more change log](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
+```lua
+    ip = wifi.sta.getip()
+    print(ip)
+    --nil
+    wifi.setmode(wifi.STATION)
+    wifi.sta.config("SSID", "password")
+    ip = wifi.sta.getip()
+    print(ip)
+    --192.168.18.110
+```
 
-##GPIO NEW TABLE ( Build 20141219 and later)
+## Manipulate hardware like an Arduino
 
-<a id="new_gpio_map"></a>
-<table>
-  <tr>
-    <th scope="col">IO index</th><th scope="col">ESP8266 pin</th><th scope="col">IO index</th><th scope="col">ESP8266 pin</th>
-  </tr>
-  <tr>
-    <td>0 [*]</td><td>GPIO16</td><td>8</td><td>GPIO15 (SPI CS)</td>
-  </tr>
-  <tr>
-    <td>1</td><td>GPIO5</td><td>9</td><td>GPIO3 (UART RX)</td>
-   </tr>
-   <tr>
-    <td>2</td><td>GPIO4</td><td>10</td><td>GPIO1 (UART TX)</td>
-  </tr>
-  <tr>
-    <td>3</td><td>GPIO0</td><td>11</td><td>GPIO9</td>
-   </tr>
-   <tr>
-    <td>4</td><td>GPIO2</td><td>12</td><td>GPIO10</td>
-  </tr>
-  <tr>
-    <td>5</td><td>GPIO14 (SPI CLK)</td><td></td><td></td>
-   </tr>
-   <tr>
-    <td>6</td><td>GPIO12 (SPI MISO)</td><td></td><td></td>
-  </tr>
-  <tr>
-    <td>7</td><td>GPIO13 (SPI MOSI)</td><td></td><td></td>
-   </tr>
-</table>
-#### [*] D0(GPIO16) can only be used as gpio read/write. no interrupt supported. no pwm/i2c/ow supported.
+```lua
+    pin = 1
+    gpio.mode(pin, gpio.OUTPUT)
+    gpio.write(pin, gpio.HIGH)
+    print(gpio.read(pin))
+```
 
-#Build option
-####file ./app/include/user_modules.h
+## Write a network application in Node.js style
+
+```lua
+    -- A simple http client
+    conn=net.createConnection(net.TCP, 0)
+    conn:on("receive", function(conn, payload) print(payload) end)
+    conn:connect(80, "115.239.210.27")
+    conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
+        .. "Connection: keep-alive\r\nAccept: */*\r\n\r\n")
+```
+
+## Or a simple HTTP server
+
+```lua
+    -- A simple http server
+    srv=net.createServer(net.TCP)
+    srv:listen(80, function(conn)
+      conn:on("receive", function(conn,payload)
+        print(payload)
+        conn:send("<h1> Hello, NodeMCU.</h1>")
+      end)
+      conn:on("sent", function(conn) conn:close() end)
+    end)
+```
+
+## Connect to MQTT broker
+
+```lua
+-- init mqtt client with keepalive timer 120sec
+m = mqtt.Client("clientid", 120, "user", "password")
+
+-- setup Last Will and Testament (optional)
+-- Broker will publish a message with qos = 0, retain = 0, data = "offline"
+-- to topic "/lwt" if client doesn't send keepalive packet
+m:lwt("/lwt", "offline", 0, 0)
+
+m:on("connect", function(con) print("connected") end)
+m:on("offline", function(con) print("offline") end)
+
+-- on publish message receive event
+m:on("message", function(conn, topic, data)
+  print(topic .. ":")
+  if data ~= nil then
+    print(data)
+  end
+end)
+
+-- m:connect(host, port, secure, auto_reconnect, function(client) end)
+-- for secure: m:connect("192.168.11.118", 1880, 1, 0)
+-- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
+m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
+
+-- subscribe to topic with qos = 0
+m:subscribe("/topic", 0, function(conn) print("subscribe success") end)
+-- or subscribe multiple topics (topic/0, qos = 0; topic/1, qos = 1; topic2, qos = 2)
+-- m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
+-- publish a message with data = hello, QoS = 0, retain = 0
+m:publish("/topic", "hello", 0, 0, function(conn) print("sent") end)
+
+m:close();  -- if auto-reconnect == 1, it will disable auto-reconnect and then disconnect from host.
+-- you can call m:connect again
+
+```
+
+## UDP client and server
+
+```lua
+-- a udp server
+s=net.createServer(net.UDP)
+s:on("receive", function(s, c) print(c) end)
+s:listen(5683)
+
+-- a udp client
+cu=net.createConnection(net.UDP)
+cu:on("receive", function(cu, c) print(c) end)
+cu:connect(5683, "192.168.18.101")
+cu:send("hello")
+```
+
+## Do something shiny with an RGB LED
+
+```lua
+  function led(r, g, b)
+    pwm.setduty(1, r)
+    pwm.setduty(2, g)
+    pwm.setduty(3, b)
+  end
+  pwm.setup(1, 500, 512)
+  pwm.setup(2, 500, 512)
+  pwm.setup(3, 500, 512)
+  pwm.start(1)
+  pwm.start(2)
+  pwm.start(3)
+  led(512, 0, 0) -- red
+  led(0, 0, 512) -- blue
+```
+
+## And blink it
+
+```lua
+  lighton=0
+  tmr.alarm(1, 1000, 1, function()
+    if lighton==0 then
+      lighton=1
+      led(512, 512, 512)
+    else
+      lighton=0
+      led(0, 0, 0)
+    end
+  end)
+```
+
+## If you want to run something when the system boots
+
+```lua
+  --init.lua will be executed
+  file.open("init.lua", "w")
+  file.writeline([[print("Hello, do this at the beginning.")]])
+  file.close()
+  node.restart()  -- this will restart the module.
+```
+
+## Add a simple telnet server to the Lua interpreter
+
+```lua
+    -- a simple telnet server
+    s=net.createServer(net.TCP, 180)
+    s:listen(2323, function(c)
+       function s_output(str)
+          if(c~=nil)
+             then c:send(str)
+          end
+       end
+       node.output(s_output, 0)   -- re-direct output to function s_ouput.
+       c:on("receive", function(c, l)
+          node.input(l)           -- works like pcall(loadstring(l)) but support multiples separate lines
+       end)
+       c:on("disconnection", function(c)
+          node.output(nil)        -- un-register the redirect output function, output goes to serial
+       end)
+       print("Welcome to NodeMCU world.")
+    end)
+```
+
+# Building the firmware
+
+There are several options for building the NodeMCU firmware.
+
+## Online firmware custom build
+
+Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can choose only the modules you need, and download the firmware once built.
+
+NodeMCU custom builds can build from the master branch (0.9.6; deprecated) and dev
+branch (1.4.0).
+
+## Docker containerised build
+
+See https://hub.docker.com/r/asmaps/nodemcu-builder/
+
+This docker image includes the build toolchain and SDK. You just run the docker
+image with your checked-out NodeMCU firmware repository (this one). The docker
+image can also flash the firmware to your device.
+
+You will need to see BUILD OPTIONS below, to configure the firmware before building.
+
+## Build it yourself
+
+See BUILD OPTIONS below, to configure the firmware before building.
+
+### Minimum requirements:
+
+  - unrar
+  - GNU autoconf, automake, libtool
+  - GNU gcc, g++, make
+  - GNU flex, bison, gawk, sed
+  - python, python-serial, libexpat-dev
+  - srecord
+  - The esp-open-sdk from https://github.com/pfalcon/esp-open-sdk
+
+### Build instructions:
+
+Assuming NodeMCU firmware is checked-out to `/opt/nodemcu-firmware`:
+
+```sh
+git clone --recursive https://github.com/pfalcon/esp-open-sdk.git /opt/esp-open-sdk
+cd /opt/esp-open-sdk
+make STANDALONE=y
+PATH=/opt/esp-open-sdk/xtensa-lx106-elf/bin:$PATH
+cd /opt/nodemcu-firmware
+make
+```
+
+# BUILD OPTIONS
+
+Disable modules you won't be using, to reduce firmware size on flash and
+free more RAM. The ESP8266 is quite limited in available RAM, and running
+out can cause a system panic.
+
+## Edit `app/include/user_modules.h`
+
+Comment-out the #define statement for unused modules. Example:
+
 ```c
-#define LUA_USE_BUILTIN_STRING    // for string.xxx()
-#define LUA_USE_BUILTIN_TABLE   // for table.xxx()
-#define LUA_USE_BUILTIN_COROUTINE // for coroutine.xxx()
-#define LUA_USE_BUILTIN_MATH    // for math.xxx(), partially work
-// #define LUA_USE_BUILTIN_IO       // for io.xxx(), partially work
-
-// #define LUA_USE_BUILTIN_OS     // for os.xxx(), not work
-// #define LUA_USE_BUILTIN_DEBUG    // for debug.xxx(), not work
-
-#define LUA_USE_MODULES
-
 #ifdef LUA_USE_MODULES
 #define LUA_USE_MODULES_NODE
 #define LUA_USE_MODULES_FILE
@@ -137,200 +287,102 @@ tools/esptool.py supported NodeMCU devkit automatic flash.
 #define LUA_USE_MODULES_BIT
 #define LUA_USE_MODULES_MQTT
 // #define LUA_USE_MODULES_COAP
-#define LUA_USE_MODULES_U8G
-#define LUA_USE_MODULES_WS2812
-#define LUA_USE_MODULES_CJSON
+// #define LUA_USE_MODULES_U8G
+// #define LUA_USE_MODULES_WS2801
+// #define LUA_USE_MODULES_WS2812
+// #define LUA_USE_MODULES_CJSON
+#define LUA_USE_MODULES_CRYPTO
+#define LUA_USE_MODULES_RC
+#define LUA_USE_MODULES_DHT
+#define LUA_USE_MODULES_RTCMEM
+#define LUA_USE_MODULES_RTCTIME
+#define LUA_USE_MODULES_RTCFIFO
+#define LUA_USE_MODULES_SNTP
+// #define LUA_USE_MODULES_BMP085
+#define LUA_USE_MODULES_TSL2561
+// #define LUA_USE_MODULES_HX711
+
 #endif /* LUA_USE_MODULES */
 ```
-#Online firmware custom build
 
-For many application, some modules are not used, remove them can free many memory.<br />
+## Tagging your build
 
-Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can get your own firmware.<br />
+Identify your firmware builds by editing `app/include/user_version.h`
 
-#Flash the firmware
-nodemcu_latest.bin: 0x00000<br />
-for most esp8266 modules, just pull GPIO0 down and restart.<br />
+```c
+#define NODE_VERSION    "NodeMCU 1.4.0+myname"
+#ifndef BUILD_DATE
+#define BUILD_DATE        "YYYYMMDD"
+#endif
+```
+
+## Setting the boot time serial interface rate
+
+The initial baud rate at boot time is 9600 bps, but you can change this by
+editing `app/include/user_config.h` and change BIT_RATE_DEFAULT, e.g.:
+
+```c
+#define BIT_RATE_DEFAULT BIT_RATE_115200
+```
+
+# Flash the firmware
+
+## Flash tools for Windows
+
 You can use the [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher) to burn the firmware.
 
-Or, if you build your own bin from source code.<br />
-0x00000.bin: 0x00000<br />
-0x10000.bin: 0x10000<br />
+## Flash tools for Linux
 
-*Better run file.format() after flash*
+Esptool is a python utility which can read and write the flash in an ESP8266 device. See https://github.com/themadinventor/esptool
 
-#Connect the hardware in serial
-baudrate:9600
+## Preparing the hardware for firmware upgrade
 
-#Write Lua script to filesystem
-####Esplorer
-Victor Brutskiy's [Esplorer](https://github.com/4refr0nt/ESPlorer) support most platforms such as Linux, Windows, Mac OS, etc. This software is opensource and can write lua/lc files to filesystem.
+To enable ESP8266 firmware flashing, the GPIO0 pin must be pulled low before
+the device is reset. Conversely, for a normal boot, GPIO0 must be pulled high
+or floating.
 
-####NodeMCU Studio
-[NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and support Windows. This software is opensource and can write lua files to filesystem.
+If you have a [NodeMCU Development Kit](http://www.nodemcu.com/index_en.html) then
+you don't need to do anything, as the USB connection can pull GPIO0
+low by asserting DTR, and reset your board by asserting RTS.
 
-#Start play
+If you have an ESP-01 or other device without inbuilt USB, you will need to
+enable flashing yourself by pulling GPIO0 low or pressing a "flash" switch.
 
-####Connect to your ap
+## Files to burn to the flash
 
-```lua
-    ip = wifi.sta.getip()
-    print(ip)
-    --nil
-    wifi.setmode(wifi.STATION)
-    wifi.sta.config("SSID","password")
-    ip = wifi.sta.getip()
-    print(ip)
-    --192.168.18.110
-```
+If you got your firmware from [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) then you can flash that file directly to address 0x00000.
 
-####Manipulate hardware like a arduino
+Otherwise, if you built your own firmware from source code:
+  - bin/0x00000.bin to 0x00000
+  - bin/0x10000.bin to 0x10000
 
-```lua
-    pin = 1
-    gpio.mode(pin,gpio.OUTPUT)
-    gpio.write(pin,gpio.HIGH)
-    print(gpio.read(pin))
-```
+Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash (depending on flash size and type).
 
-####Write network application in nodejs style
+If upgrading from `spiffs` version 0.3.2 to 0.3.3 or later, or after flashing any new firmware, you should run `file.format()` to re-format your flash filesystem.
 
-```lua
-    -- A simple http client
-    conn=net.createConnection(net.TCP, 0)
-    conn:on("receive", function(conn, payload) print(payload) end )
-    conn:connect(80,"115.239.210.27")
-    conn:send("GET / HTTP/1.1\r\nHost: www.baidu.com\r\n"
-        .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
-```
+# Connecting to your NodeMCU device
 
-####Or a simple http server
+NodeMCU serial interface uses 9600 baud at boot time. To increase the speed after booting, issue `uart.setup(0,115200,8,0,1,1)` (ESPlorer will do this automatically when changing the speed in the dropdown list).
 
-```lua
-    -- A simple http server
-    srv=net.createServer(net.TCP)
-    srv:listen(80,function(conn)
-      conn:on("receive",function(conn,payload)
-        print(payload)
-        conn:send("<h1> Hello, NodeMcu.</h1>")
-      end)
-      conn:on("sent",function(conn) conn:close() end)
-    end)
-```
+If the device panics and resets at any time, errors will be written to the serial interface at 115200 bps.
 
-####Connect to MQTT Broker
+# User Interface tools
 
-```lua
--- init mqtt client with keepalive timer 120sec
-m = mqtt.Client("clientid", 120, "user", "password")
+## Esplorer
 
--- setup Last Will and Testament (optional)
--- Broker will publish a message with qos = 0, retain = 0, data = "offline"
--- to topic "/lwt" if client don't send keepalive packet
-m:lwt("/lwt", "offline", 0, 0)
+Victor Brutskiy's [ESPlorer](https://github.com/4refr0nt/ESPlorer) is written in Java, is open source and runs on most platforms such as Linux, Windows, Mac OS, etc.
 
-m:on("connect", function(con) print ("connected") end)
-m:on("offline", function(con) print ("offline") end)
+#### Features
 
--- on publish message receive event
-m:on("message", function(conn, topic, data)
-  print(topic .. ":" )
-  if data ~= nil then
-    print(data)
-  end
-end)
+  - Edit Lua scripts and run on the ESP8266 and save to its flash
+  - Serial console log
+  - Also supports original AT firmware (reading and setting WiFi modes, etc)
 
--- m:connect( host, port, secure, auto_reconnect, function(client) )
--- for secure: m:connect("192.168.11.118", 1880, 1, 0)
--- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
-m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
+## NodeMCU Studio
 
--- subscribe topic with qos = 0
-m:subscribe("/topic",0, function(conn) print("subscribe success") end)
--- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
--- m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
--- publish a message with data = hello, QoS = 0, retain = 0
-m:publish("/topic","hello",0,0, function(conn) print("sent") end)
+[NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and supports Windows. This software is open source and can write lua files to filesystem.
 
-m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
--- you can call m:connect again
-
-```
-
-#### UDP client and server
-```lua
--- a udp server
-s=net.createServer(net.UDP)
-s:on("receive",function(s,c) print(c) end)
-s:listen(5683)
-
--- a udp client
-cu=net.createConnection(net.UDP)
-cu:on("receive",function(cu,c) print(c) end)
-cu:connect(5683,"192.168.18.101")
-cu:send("hello")
-```
-
-####Do something shining
-```lua
-  function led(r,g,b)
-    pwm.setduty(1,r)
-    pwm.setduty(2,g)
-    pwm.setduty(3,b)
-  end
-  pwm.setup(1,500,512)
-  pwm.setup(2,500,512)
-  pwm.setup(3,500,512)
-  pwm.start(1)
-  pwm.start(2)
-  pwm.start(3)
-  led(512,0,0) -- red
-  led(0,0,512) -- blue
-```
-
-####And blink it
-```lua
-  lighton=0
-  tmr.alarm(1,1000,1,function()
-    if lighton==0 then
-      lighton=1
-      led(512,512,512)
-    else
-      lighton=0
-      led(0,0,0)
-    end
-  end)
-```
-
-####If you want to run something when system started
-```lua
-  --init.lua will be excuted
-  file.open("init.lua","w")
-  file.writeline([[print("Hello, do this at the beginning.")]])
-  file.close()
-  node.restart()  -- this will restart the module.
-```
-
-####With below code, you can telnet to your esp8266 now
-```lua
-    -- a simple telnet server
-    s=net.createServer(net.TCP,180)
-    s:listen(2323,function(c)
-       function s_output(str)
-          if(c~=nil)
-             then c:send(str)
-          end
-       end
-       node.output(s_output, 0)   -- re-direct output to function s_ouput.
-       c:on("receive",function(c,l)
-          node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
-       end)
-       c:on("disconnection",function(c)
-          node.output(nil)        -- un-regist the redirect output function, output goes to serial
-       end)
-       print("Welcome to NodeMcu world.")
-    end)
-```
+# OPTIONAL MODULES
 
 ####Use DS18B20 module extends your esp8266
 ```lua
