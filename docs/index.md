@@ -1,6 +1,6 @@
-# Welcome to MkDocs
+# Welcome to NodeMCU
 
-For full documentation visit [mkdocs.org](http://mkdocs.org).
+NodeMCU is a Lua based firmware for the ESP8266 WiFi SOC from Espressif.
 
 ## Commands
 
