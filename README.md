@@ -1,15 +1,15 @@
 # **NodeMCU** #
-version 0.9.5
+version 1.4.0
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)  [![Download](https://img.shields.io/badge/download-~400k-orange.svg)](https://github.com/nodemcu/nodemcu-firmware/releases/latest)
 
 ###A lua based firmware for wifi-soc esp8266
-Build on [ESP8266 sdk 0.9.5](http://bbs.espressif.com/viewtopic.php?f=5&t=154)<br />
+Build on [ESP8266 NONOS SDK](http://bbs.espressif.com/viewforum.php?f=46)<br />
 Lua core based on [eLua project](http://www.eluaproject.net/)<br />
 cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)<br />
 File system based on [spiffs](https://github.com/pellepl/spiffs)<br />
-Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)<br />
+Open source development kit for NodeMCU [nodemcu-devkit-v0.9](https://github.com/nodemcu/nodemcu-devkit) [nodemcu-devkit-v1.0](https://github.com/nodemcu/nodemcu-devkit-v1.0)<br />
 Flash tool for NodeMCU [nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)<br />
 
 wiki: [NodeMCU wiki](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
@@ -29,7 +29,7 @@ Tencent QQ group: 309957875<br />
 
 # To Do List (pull requests are very welcomed)
 - loadable c module
-- fix wifi smart connect
+- fix wifi smart connect (done)
 - add spi module (done)
 - add mqtt module (done)
 - add coap module (done)
