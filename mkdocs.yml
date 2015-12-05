@@ -1,5 +1,12 @@
 site_name: NodeMCU Documentation
 site_description: Description of the NodeMCU documentation
 theme: readthedocs
+repo_url: https://github.com/nodemcu/nodemcu-firmware/
+markdown_extensions:
+- toc:
+    permalink: True
 pages:
-- ['index.md', 'Index']
+- Home: 'index.md'
+- 'build.md'
+- Modules:
+    - 'node': 'modules/node.md'
