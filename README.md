@@ -638,3 +638,31 @@ The HX711 is an inexpensive 24bit ADC with programmable 128x, 64x, and 32x gain.
 	-- Read ch A with 128 gain.
 	raw_data = hx711.read(0)
 ```
+
+####Universal DHT Sensor support
+Support DHT11, DHT21, DHT22, DHT33, DHT44, etc. 
+Use all-in-one function to read DHT sensor.
+```lua
+
+pin = 5
+status,temp,humi,temp_decimial,humi_decimial = dht.readxx(pin)
+if( status == dht.OK ) then
+  -- Integer firmware using this example
+  print(     
+    string.format(
+      "DHT Temperature:%d.%03d;Humidity:%d.%03d\r\n",
+      math.floor(temp),
+      temp_decimial,
+      math.floor(humi),
+      humi_decimial
+    )
+  )
+  -- Float firmware using this example
+  print("DHT Temperature:"..temp..";".."Humidity:"..humi)
+elseif( status == dht.ERROR_CHECKSUM ) then
+  print( "DHT Checksum error." );
+elseif( status == dht.ERROR_TIMEOUT ) then
+  print( "DHT Time out." );
+end
+
+```
