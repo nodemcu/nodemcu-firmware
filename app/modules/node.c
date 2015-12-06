@@ -570,8 +570,6 @@ const LUA_REG_TYPE node_map[] =
 // Moved to adc module, use adc.readvdd33()
 // { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
   { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
-  { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
-  { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
@@ -582,7 +580,8 @@ const LUA_REG_TYPE node_map[] =
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0
-
+  { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
+  { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
 #endif
   { LNILKEY, LNILVAL }
 };
@@ -594,6 +593,8 @@ LUALIB_API int luaopen_node( lua_State *L )
 #else // #if LUA_OPTIMIZE_MEMORY > 0
   luaL_register( L, AUXLIB_NODE, node_map );
   // Add constants
+  MOD_REG_NUMBER(L, "CPU80MHZ", CPU80MHZ);
+  MOD_REG_NUMBER(L, "CPU160MHZ", CPU160MHZ);
 
   return 1;
 #endif // #if LUA_OPTIMIZE_MEMORY > 0

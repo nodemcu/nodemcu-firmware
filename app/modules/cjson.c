@@ -42,6 +42,7 @@
 #include "c_limits.h"
 #include "lua.h"
 #include "lauxlib.h"
+#include "auxmods.h"
 #include "flash_api.h"
 
 #include "strbuf.h"
@@ -1566,8 +1567,8 @@ LUALIB_API int luaopen_cjson( lua_State *L )
   luaL_register( L, AUXLIB_CJSON, cjson_map );
   // Add constants
   /* Set cjson.null */
-  lua_pushlightuserdata(l, NULL);
-  lua_setfield(l, -2, "null");
+  lua_pushlightuserdata(L, NULL);
+  lua_setfield(L, -2, "null");
 
   /* Return cjson table */
   return 1;

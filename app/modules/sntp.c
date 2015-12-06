@@ -388,7 +388,7 @@ LUALIB_API int luaopen_sntp (lua_State *L)
 #if LUA_OPTIMIZE_MEMORY > 0
   return 0;
 #else
-  luaL_register (L, AUXLIB_SNTP, sntp_map);
+  luaL_register (L, "sntp", sntp_map);
   return 1;
 #endif
 }
