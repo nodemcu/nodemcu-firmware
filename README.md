@@ -211,8 +211,7 @@ There are several options for building the NodeMCU firmware.
 
 Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can choose only the modules you need, and download the firmware once built.
 
-NodeMCU custom builds can build from the master branch (0.9.6; deprecated) and dev
-branch (1.4.0).
+NodeMCU custom builds can build from the master branch and dev branch (with the latest fixes).
 
 ## Docker containerised build
 
@@ -316,6 +315,16 @@ editing `app/include/user_config.h` and change BIT_RATE_DEFAULT, e.g.:
 #define BIT_RATE_DEFAULT BIT_RATE_115200
 ```
 
+## Debugging
+
+To enable runtime debug messages to serial console, edit `app/include/user_config.h`
+
+```c
+#define DEVELOP_VERSION
+```
+
+`DEVELOP_VERSION` changes the startup baud rate to 74880.
+
 # Flash the firmware
 
 ## Flash tools for Windows
@@ -349,7 +358,8 @@ Otherwise, if you built your own firmware from source code:
 
 Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash (depending on flash size and type).
 
-If upgrading from `spiffs` version 0.3.2 to 0.3.3 or later, or after flashing any new firmware, you should run `file.format()` to re-format your flash filesystem.
+If upgrading from `spiffs` version 0.3.2 to 0.3.3 or later, or after flashing any new firmware (particularly one with a much different size), you may need to run `file.format()` to re-format your flash filesystem.
+You will know if you need to do this because your flash files disappeared, or they exist but seem empty, or data cannot be written to new files.
 
 # Connecting to your NodeMCU device
 
@@ -607,7 +617,7 @@ cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
 ####cjson
 ```lua
 -- Note that when cjson deal with large content, it may fails a memory allocation, and leaks a bit of memory.
--- so it's better to detect that and schedule a restart. 
+-- so it's better to detect that and schedule a restart.
 --
 -- Translate Lua value to/from JSON
 -- text = cjson.encode(value)
@@ -622,7 +632,7 @@ json_text = cjson.encode(value)
 
 ####Read an HX711 load cell ADC.
 Note: currently only chanel A with gain 128 is supported.
-The HX711 is an inexpensive 24bit ADC with programmable 128x, 64x, and 32x gain.  
+The HX711 is an inexpensive 24bit ADC with programmable 128x, 64x, and 32x gain.
 ```lua
 	-- Initialize the hx711 with clk on pin 5 and data on pin 6
 	hx711.init(5,6)
@@ -631,7 +641,7 @@ The HX711 is an inexpensive 24bit ADC with programmable 128x, 64x, and 32x gain.
 ```
 
 ####Universal DHT Sensor support
-Support DHT11, DHT21, DHT22, DHT33, DHT44, etc. 
+Support DHT11, DHT21, DHT22, DHT33, DHT44, etc.
 Use all-in-one function to read DHT sensor.
 ```lua
 
@@ -639,7 +649,7 @@ pin = 5
 status,temp,humi,temp_decimial,humi_decimial = dht.readxx(pin)
 if( status == dht.OK ) then
   -- Integer firmware using this example
-  print(     
+  print(
     string.format(
       "DHT Temperature:%d.%03d;Humidity:%d.%03d\r\n",
       math.floor(temp),
