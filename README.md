@@ -4,11 +4,11 @@
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
 
 ###A lua based firmware for wifi-soc esp8266
-  - Build on [ESP8266 sdk 1.4.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1124)
+  - Build on [ESP8266 NONOS SDK 1.4.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1124)
   - Lua core based on [eLua project](http://www.eluaproject.net/)
   - cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)
   - File system based on [spiffs](https://github.com/pellepl/spiffs)
-  - Open source development kit for NodeMCU [nodemcu-devkit](https://github.com/nodemcu/nodemcu-devkit)
+  - Open source development kit for NodeMCU [nodemcu-devkit-v0.9](https://github.com/nodemcu/nodemcu-devkit) [nodemcu-devkit-v1.0](https://github.com/nodemcu/nodemcu-devkit-v1.0)
 
 # Summary
 
@@ -32,15 +32,6 @@
 | Linux flash tool     | [Esptool](https://github.com/themadinventor/esptool) |
 | ESPlorer GUI         | https://github.com/4refr0nt/ESPlorer |
 | NodeMCU Studio GUI   | https://github.com/nodemcu/nodemcu-studio-csharp |
-
-# To Do List (pull requests are very welcome)
-
-- loadable c module
-- fix wifi smart connect
-- add spi module (done)
-- add mqtt module (done)
-- add coap module (done)
-- cross compiler (done)
 
 # Programming Examples
 
