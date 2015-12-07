@@ -579,3 +579,14 @@ int platform_flash_erase_sector( uint32_t sector_id )
   system_soft_wdt_feed ();
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
+
+uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
+{
+  uint32_t cache_ctrl = READ_PERI_REG(CACHE_FLASH_CTRL_REG);
+  if (!(cache_ctrl & CACHE_FLASH_ACTIVE))
+    return -1;
+  bool b0 = (cache_ctrl & CACHE_FLASH_MAPPED0) ? 1 : 0;
+  bool b1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 1 : 0;
+  uint32_t meg = (b1 << 1) | b0;
+  return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg * 0x100000;
+}

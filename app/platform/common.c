@@ -149,7 +149,7 @@ uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
   uint32_t start, end, sect;
   NODE_DBG("_flash_used_end:%08x\n", (uint32_t)_flash_used_end);
   if(_flash_used_end>0){ // find the used sector
-    sect = flashh_find_sector( ( uint32_t )_flash_used_end - INTERNAL_FLASH_MAPPED_ADDRESS - 1, NULL, &end );
+    sect = flashh_find_sector( platform_flash_mapped2phys ( (uint32_t)_flash_used_end - 1), NULL, &end );
     if( psect )
       *psect = sect + 1;    
     return end + 1;

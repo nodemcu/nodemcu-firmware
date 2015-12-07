@@ -68,4 +68,9 @@
 #define flash_read spi_flash_read
 #endif // defined(FLASH_SAFE_API)
 
+#define CACHE_FLASH_CTRL_REG         0x3ff0000c
+#define CACHE_FLASH_ACTIVE           0x00000100
+#define CACHE_FLASH_MAPPED0          0x02000000
+#define CACHE_FLASH_MAPPED1          0x00010000
+
 #endif // #ifndef __CPU_ESP8266_H__
