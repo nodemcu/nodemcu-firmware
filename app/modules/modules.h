@@ -141,6 +141,14 @@
 #define ROM_MODULES_BIT
 #endif
 
+#if defined(LUA_USE_MODULES_APA102)
+#define MODULES_APA102      "apa102"
+#define ROM_MODULES_APA102  \
+    _ROM(MODULES_APA102, luaopen_apa102, apa102_map)
+#else
+#define ROM_MODULES_APA102
+#endif
+
 #if defined(LUA_USE_MODULES_WS2801)
 #define MODULES_WS2801      "ws2801"
 #define ROM_MODULES_WS2801  \
@@ -284,6 +292,7 @@
         ROM_MODULES_SNTP    \
         ROM_MODULES_BMP085  \
         ROM_MODULES_TSL2561 \
-        ROM_MODULES_HX711  
+        ROM_MODULES_HX711   \
+        ROM_MODULES_APA102
 
 #endif
