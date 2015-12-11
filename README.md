@@ -87,8 +87,8 @@ Because Lua is a high level language and several modules are built into the firm
 ## Connect to MQTT broker
 
 ```lua
--- init mqtt client with keepalive timer 120sec
-m = mqtt.Client("clientid", 120, "user", "password")
+-- init mqtt client with keepalive timer 120sec and clean session set to false
+m = mqtt.Client("clientid", 120, "user", "password", 0)
 
 -- setup Last Will and Testament (optional)
 -- Broker will publish a message with qos = 0, retain = 0, data = "offline"
