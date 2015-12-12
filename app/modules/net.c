@@ -1,11 +1,9 @@
 // Module for network
 
-//#include "lua.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 #include "c_string.h"
 #include "c_stdlib.h"
@@ -1508,8 +1506,6 @@ static int expose_array(lua_State* L, char *array, unsigned short len) {
 #endif
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 static const LUA_REG_TYPE net_server_map[] =
 {
   { LSTRKEY( "listen" ), LFUNCVAL ( net_server_listen ) },
@@ -1518,9 +1514,7 @@ static const LUA_REG_TYPE net_server_map[] =
   { LSTRKEY( "send" ), LFUNCVAL ( net_udpserver_send ) },
   // { LSTRKEY( "delete" ), LFUNCVAL ( net_server_delete ) },
   { LSTRKEY( "__gc" ), LFUNCVAL ( net_server_delete ) },
-#if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "__index" ), LROVAL ( net_server_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
@@ -1536,9 +1530,7 @@ static const LUA_REG_TYPE net_socket_map[] =
   { LSTRKEY( "getpeer" ), LFUNCVAL ( net_socket_getpeer ) },
   // { LSTRKEY( "delete" ), LFUNCVAL ( net_socket_delete ) },
   { LSTRKEY( "__gc" ), LFUNCVAL ( net_socket_delete ) },
-#if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "__index" ), LROVAL ( net_socket_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 #if 0
@@ -1564,13 +1556,11 @@ const LUA_REG_TYPE net_map[] =
   { LSTRKEY( "createConnection" ), LFUNCVAL ( net_createConnection ) },
   { LSTRKEY( "multicastJoin"), LFUNCVAL( net_multicastJoin ) },
   { LSTRKEY( "multicastLeave"), LFUNCVAL( net_multicastLeave ) },
-#if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "dns" ), LROVAL( net_dns_map ) },
   { LSTRKEY( "TCP" ), LNUMVAL( TCP ) },
   { LSTRKEY( "UDP" ), LNUMVAL( UDP ) },
 
   { LSTRKEY( "__metatable" ), LROVAL( net_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
@@ -1582,58 +1572,10 @@ LUALIB_API int luaopen_net( lua_State *L )
     socket[i] = LUA_NOREF;
   }
 
-#if LUA_OPTIMIZE_MEMORY > 0
   luaL_rometatable(L, "net.server", (void *)net_server_map);  // create metatable for net.server
   luaL_rometatable(L, "net.socket", (void *)net_socket_map);  // create metatable for net.socket
   #if 0
   luaL_rometatable(L, "net.array", (void *)net_array_map);  // create metatable for net.array
   #endif
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  int n;
-  luaL_register( L, AUXLIB_NET, net_map );
-
-  // Set it as its own metatable
-  lua_pushvalue( L, -1 );
-  lua_setmetatable( L, -2 );
-
-  // Module constants  
-  MOD_REG_NUMBER( L, "TCP", TCP );
-  MOD_REG_NUMBER( L, "UDP", UDP );
-  
-  n = lua_gettop(L);
-
-  // create metatable
-  luaL_newmetatable(L, "net.server");
-  // metatable.__index = metatable
-  lua_pushliteral(L, "__index");
-  lua_pushvalue(L,-2);
-  lua_rawset(L,-3);
-  // Setup the methods inside metatable
-  luaL_register( L, NULL, net_server_map );
-
-  lua_settop(L, n);
-  // create metatable
-  luaL_newmetatable(L, "net.socket");
-  // metatable.__index = metatable
-  lua_pushliteral(L, "__index");
-  lua_pushvalue(L,-2);
-  lua_rawset(L,-3);
-  // Setup the methods inside metatable
-  luaL_register( L, NULL, net_socket_map );
-#if 0
-  lua_settop(L, n);
-  // create metatable
-  luaL_newmetatable(L, "net.array");
-  // Setup the methods inside metatable
-  luaL_register( L, NULL, net_array_map );
-#endif
-
-  lua_settop(L, n);
-  lua_newtable( L );
-  luaL_register( L, NULL, net_dns_map );
-  lua_setfield( L, -2, "dns" );
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }

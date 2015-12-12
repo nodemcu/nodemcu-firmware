@@ -1,10 +1,8 @@
 // Module for interfacing with the OneWire interface
 
-//#include "lua.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 #include "driver/onewire.h"
 
 // Lua: ow.setup( id )
@@ -282,8 +280,6 @@ static int ow_crc16( lua_State *L )
 #endif
 
 // Module function map
-#define MIN_OPT_LEVEL   2
-#include "lrodefs.h"
 const LUA_REG_TYPE ow_map[] = 
 {
   { LSTRKEY( "setup" ),  LFUNCVAL( ow_setup ) },
@@ -307,21 +303,10 @@ const LUA_REG_TYPE ow_map[] =
   { LSTRKEY( "crc16" ), LFUNCVAL( ow_crc16 ) },
 #endif
 #endif
-#if LUA_OPTIMIZE_MEMORY > 0
-
-#endif
   { LNILKEY, LNILVAL }
 };
 
 LUALIB_API int luaopen_ow( lua_State *L )
 {
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_OW, ow_map );
-  
-  // Add the constants
-  
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
 }

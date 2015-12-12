@@ -1,11 +1,9 @@
 // Module for interfacing with serial
 
-//#include "lua.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 #include "c_types.h"
 #include "c_string.h"
@@ -158,29 +156,16 @@ static int uart_write( lua_State* L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE uart_map[] = 
 {
   { LSTRKEY( "setup" ),  LFUNCVAL( uart_setup ) },
   { LSTRKEY( "write" ), LFUNCVAL( uart_write ) },
   { LSTRKEY( "on" ), LFUNCVAL( uart_on ) },
   { LSTRKEY( "alt" ), LFUNCVAL( uart_alt ) },
-
-#if LUA_OPTIMIZE_MEMORY > 0
-
-#endif
   { LNILKEY, LNILVAL }
 };
 
 LUALIB_API int luaopen_uart( lua_State *L )
 {
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_UART, uart_map );
-  // Add constants
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }

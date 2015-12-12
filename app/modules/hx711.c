@@ -1,11 +1,10 @@
 // Module for HX711 load cell amplifier
 // https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide
 
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
@@ -67,8 +66,6 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
   return 1;
 }
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE hx711_map[] =
 {
   { LSTRKEY( "init" ), LFUNCVAL( hx711_init )},
@@ -77,8 +74,6 @@ const LUA_REG_TYPE hx711_map[] =
 };
 
 LUALIB_API int luaopen_hx711(lua_State *L) {
-  // TODO: the below todo was inherited from the ws2812 code but is still valid.
   // TODO: Make sure that the GPIO system is initialized
-  LREGISTER(L, "hx711", hx711_map);
-  return 1;
+  return 0;
 }

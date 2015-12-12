@@ -1,11 +1,8 @@
 // Module for interfacing with file system
 
-#include "lua.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 #include "c_types.h"
 #include "flash_fs.h"
@@ -299,8 +296,6 @@ static int file_writeline( lua_State* L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE file_map[] = 
 {
   { LSTRKEY( "list" ), LFUNCVAL( file_list ) },
@@ -320,21 +315,10 @@ const LUA_REG_TYPE file_map[] =
   { LSTRKEY( "rename" ), LFUNCVAL( file_rename ) },
   { LSTRKEY( "fsinfo" ), LFUNCVAL( file_fsinfo ) },
 #endif
-  
-#if LUA_OPTIMIZE_MEMORY > 0
-
-#endif
   { LNILKEY, LNILVAL }
 };
 
 LUALIB_API int luaopen_file( lua_State *L )
 {
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_FILE, file_map );
-  // Add constants
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }

@@ -1,11 +1,9 @@
 // Module for interfacing with PWM
 
-//#include "lua.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 #include "c_types.h"
 
@@ -125,8 +123,6 @@ static int lpwm_getduty( lua_State* L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE pwm_map[] = 
 {
   { LSTRKEY( "setup" ), LFUNCVAL( lpwm_setup ) },
@@ -137,18 +133,10 @@ const LUA_REG_TYPE pwm_map[] =
   { LSTRKEY( "getclock" ), LFUNCVAL( lpwm_getclock ) },
   { LSTRKEY( "setduty" ), LFUNCVAL( lpwm_setduty ) },
   { LSTRKEY( "getduty" ), LFUNCVAL( lpwm_getduty ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-
-#endif
   { LNILKEY, LNILVAL }
 };
 
 LUALIB_API int luaopen_pwm( lua_State *L )
 {
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_PWM, pwm_map );
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }

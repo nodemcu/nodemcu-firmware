@@ -4,11 +4,9 @@
  *  Created on: Aug 21, 2015
  *  Author: Michael Lucas (Aeprox @github)
  */
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 #include "../tsl2561/tsl2561.h"
 
 static uint16_t ch0;
@@ -102,8 +100,6 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_getchannels(lua_State* L) {
 	return 3;
 }
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE tsl2561_map[] =
 {
 	{	LSTRKEY( "settiming" ), LFUNCVAL( tsl2561_lua_settiming)},
@@ -134,6 +130,5 @@ const LUA_REG_TYPE tsl2561_map[] =
 };
 
 LUALIB_API int luaopen_tsl2561(lua_State *L) {
-	LREGISTER(L, "tsl2561", tsl2561_map);
-	return 1;
+	return 0;
 }

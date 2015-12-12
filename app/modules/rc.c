@@ -1,8 +1,6 @@
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 //#include "driver/easygpio.h"
 //static Ping_Data pingA;
 #define defPulseLen 185
@@ -80,8 +78,7 @@ static int ICACHE_FLASH_ATTR rc_send(lua_State* L) {
 
   return 1;
 }
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
+
 const LUA_REG_TYPE rc_map[] =
 {
   { LSTRKEY( "send" ), LFUNCVAL( rc_send )},
@@ -91,6 +88,5 @@ const LUA_REG_TYPE rc_map[] =
 //LUALIB_API int luaopen_ultra(lua_State *L) {
 LUALIB_API int luaopen_rc(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
-  LREGISTER(L, "rc", rc_map);
-  return 1;
+  return 0;
 }

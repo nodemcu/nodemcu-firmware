@@ -7,11 +7,8 @@
 
 #include "c_limits.h"
 
-//#include "lua.h"
 #include "lauxlib.h"
-#include "auxmods.h"
-// #include "type.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 /* FIXME: Assume size_t is an unsigned lua_Integer */
 typedef size_t lua_UInteger;
@@ -122,8 +119,6 @@ static int bit_clear( lua_State* L )
   return 1; 
 }
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE bit_map[] = {
   { LSTRKEY( "bnot" ),    LFUNCVAL( bit_bnot ) },
   { LSTRKEY( "band" ),    LFUNCVAL( bit_band ) },
@@ -141,5 +136,5 @@ const LUA_REG_TYPE bit_map[] = {
 };
 
 LUALIB_API int luaopen_bit (lua_State *L) {
-  LREGISTER( L, "bit", bit_map );
+  return 0;
 }

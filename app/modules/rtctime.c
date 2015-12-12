@@ -1,6 +1,7 @@
 // Module for RTC time keeping
 
 #include "lauxlib.h"
+#include "lrodefs.h"
 
 #include "rtc/rtctime_internal.h"
 #include "rtc/rtctime.h"
@@ -115,8 +116,6 @@ static int rtctime_dsleep_aligned (lua_State *L)
 
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE rtctime_map[] =
 {
   { LSTRKEY("set"), LFUNCVAL(rtctime_set) },
@@ -128,10 +127,5 @@ const LUA_REG_TYPE rtctime_map[] =
 
 LUALIB_API int luaopen_rtctime (lua_State *L)
 {
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else
-  luaL_register (L, AUXLIB_RTCTIME, rtctime_map);
-  return 1;
-#endif
 }

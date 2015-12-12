@@ -266,6 +266,7 @@ static int sort (lua_State *L) {
 /* }====================================================== */
 
 
+#undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
 const LUA_REG_TYPE tab_funcs[] = {

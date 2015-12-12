@@ -1,11 +1,9 @@
 // Module for mqtt
 
-//#include "lua.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 #include "c_string.h"
 #include "c_stdlib.h"
@@ -1392,9 +1390,6 @@ static int mqtt_socket_lwt( lua_State* L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-
 static const LUA_REG_TYPE mqtt_socket_map[] =
 {
   { LSTRKEY( "connect" ), LFUNCVAL ( mqtt_socket_connect ) },
@@ -1404,47 +1399,19 @@ static const LUA_REG_TYPE mqtt_socket_map[] =
   { LSTRKEY( "lwt" ), LFUNCVAL ( mqtt_socket_lwt ) },
   { LSTRKEY( "on" ), LFUNCVAL ( mqtt_socket_on ) },
   { LSTRKEY( "__gc" ), LFUNCVAL ( mqtt_delete ) },
-#if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "__index" ), LROVAL ( mqtt_socket_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
 const LUA_REG_TYPE mqtt_map[] =
 {
   { LSTRKEY( "Client" ), LFUNCVAL ( mqtt_socket_client ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-
   { LSTRKEY( "__metatable" ), LROVAL( mqtt_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
 LUALIB_API int luaopen_mqtt( lua_State *L )
 {
-#if LUA_OPTIMIZE_MEMORY > 0
   luaL_rometatable(L, "mqtt.socket", (void *)mqtt_socket_map);  // create metatable for mqtt.socket
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  int n;
-  luaL_register( L, AUXLIB_MQTT, mqtt_map );
-
-  // Set it as its own metatable
-  lua_pushvalue( L, -1 );
-  lua_setmetatable( L, -2 );
-
-  // Module constants
-  // MOD_REG_NUMBER( L, "TCP", TCP );
-
-  // create metatable
-  luaL_newmetatable(L, "mqtt.socket");
-  // metatable.__index = metatable
-  lua_pushliteral(L, "__index");
-  lua_pushvalue(L,-2);
-  lua_rawset(L,-3);
-  // Setup the methods inside metatable
-  luaL_register( L, NULL, mqtt_socket_map );
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
 }

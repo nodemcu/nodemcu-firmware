@@ -32,11 +32,9 @@
  */
 
 
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
@@ -929,8 +927,6 @@ static int enduser_setup_stop(lua_State* L)
 }
 
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE enduser_setup_map[] =
 {
   { LSTRKEY( "start" ), LFUNCVAL( enduser_setup_start )},
@@ -939,7 +935,6 @@ const LUA_REG_TYPE enduser_setup_map[] =
 };
 
 LUALIB_API int luaopen_enduser_setup(lua_State *L) {
-  LREGISTER(L, "enduser_setup", enduser_setup_map);
-  return 1;
+  return 0;
 }
 

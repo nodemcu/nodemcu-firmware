@@ -1,8 +1,6 @@
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
@@ -127,8 +125,6 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   return 0;
 }
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE ws2812_map[] =
 {
   { LSTRKEY( "writergb" ), LFUNCVAL( ws2812_writergb )},
@@ -138,6 +134,5 @@ const LUA_REG_TYPE ws2812_map[] =
 
 LUALIB_API int luaopen_ws2812(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
-  LREGISTER(L, "ws2812", ws2812_map);
-  return 1;
+  return 0;
 }

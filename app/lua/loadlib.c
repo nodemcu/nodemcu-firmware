@@ -646,6 +646,7 @@ static const lua_CFunction loaders[] =
   {loader_preload, loader_Lua, loader_C, loader_Croot, NULL};
 
 #if LUA_OPTIMIZE_MEMORY > 0
+#undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
 const LUA_REG_TYPE lmt[] = {

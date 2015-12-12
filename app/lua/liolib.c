@@ -538,6 +538,7 @@ static int f_flush (lua_State *L) {
   return pushresult(L, fs_flush(tofile(L)) == 0, NULL);
 }
 
+#undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
 #if LUA_OPTIMIZE_MEMORY == 2

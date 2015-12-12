@@ -1,11 +1,8 @@
 // Module for interfacing with WIFI
 
-//#include "lua.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 #include "c_string.h"
 #include "c_stdlib.h"
@@ -1340,8 +1337,6 @@ static int wifi_ap_dhcp_stop( lua_State* L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 static const LUA_REG_TYPE wifi_station_map[] =
 {
   { LSTRKEY( "getconfig" ), LFUNCVAL ( wifi_station_getconfig ) },
@@ -1380,11 +1375,9 @@ static const LUA_REG_TYPE wifi_ap_map[] =
   { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_ap_setmac ) },
   { LSTRKEY( "getclient" ), LFUNCVAL ( wifi_ap_listclient ) },
   { LSTRKEY( "getconfig" ), LFUNCVAL( wifi_ap_getconfig ) },
-#if LUA_OPTIMIZE_MEMORY > 0
   { LSTRKEY( "dhcp" ), LROVAL( wifi_ap_dhcp_map ) },
 
 //  { LSTRKEY( "__metatable" ), LROVAL( wifi_ap_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
@@ -1399,7 +1392,7 @@ const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ), LFUNCVAL( wifi_exit_smart ) },
   { LSTRKEY( "sleeptype" ), LFUNCVAL( wifi_sleeptype ) },
-#if LUA_OPTIMIZE_MEMORY > 0
+
   { LSTRKEY( "sta" ), LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ), LROVAL( wifi_ap_map ) },
 
@@ -1430,58 +1423,10 @@ const LUA_REG_TYPE wifi_map[] =
    { LSTRKEY( "STA_GOTIP" ), LNUMVAL( STATION_GOT_IP ) },
 
   { LSTRKEY( "__metatable" ), LROVAL( wifi_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
 LUALIB_API int luaopen_wifi( lua_State *L )
 {
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_WIFI, wifi_map );
-
-  // Set it as its own metatable
-  lua_pushvalue( L, -1 );
-  lua_setmetatable( L, -2 );
-
-  // Module constants  
-  // MOD_REG_NUMBER( L, "NULLMODE", NULL_MODE );
-  MOD_REG_NUMBER( L, "STATION", STATION_MODE );
-  MOD_REG_NUMBER( L, "SOFTAP", SOFTAP_MODE );  
-  MOD_REG_NUMBER( L, "STATIONAP", STATIONAP_MODE );  
-
-  MOD_REG_NUMBER( L, "NONE_SLEEP", NONE_SLEEP_T );
-  MOD_REG_NUMBER( L, "LIGHT_SLEEP", LIGHT_SLEEP_T );  
-  MOD_REG_NUMBER( L, "MODEM_SLEEP", MODEM_SLEEP_T );  
-
-  MOD_REG_NUMBER( L, "OPEN", AUTH_OPEN );
-  // MOD_REG_NUMBER( L, "WEP", AUTH_WEP );
-  MOD_REG_NUMBER( L, "WPA_PSK", AUTH_WPA_PSK );
-  MOD_REG_NUMBER( L, "WPA2_PSK", AUTH_WPA2_PSK );
-  MOD_REG_NUMBER( L, "WPA_WPA2_PSK", AUTH_WPA_WPA2_PSK );
-
-  // MOD_REG_NUMBER( L, "STA_IDLE", STATION_IDLE );
-  // MOD_REG_NUMBER( L, "STA_CONNECTING", STATION_CONNECTING );  
-  // MOD_REG_NUMBER( L, "STA_WRONGPWD", STATION_WRONG_PASSWORD );  
-  // MOD_REG_NUMBER( L, "STA_APNOTFOUND", STATION_NO_AP_FOUND );
-  // MOD_REG_NUMBER( L, "STA_FAIL", STATION_CONNECT_FAIL );  
-  // MOD_REG_NUMBER( L, "STA_GOTIP", STATION_GOT_IP );  
-
-  // Setup the new tables (station and ap) inside wifi
-  lua_newtable( L );
-  luaL_register( L, NULL, wifi_station_map );
-  lua_setfield( L, -2, "sta" );
-
-  lua_newtable( L );
-  luaL_register( L, NULL, wifi_ap_map );
-  lua_setfield( L, -2, "ap" );
-
-  // Setup the new table (dhcp) inside ap
-  lua_newtable( L );
-  luaL_register( L, NULL, wifi_ap_dhcp_map );
-  lua_setfield( L, -1, "dhcp" );
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }

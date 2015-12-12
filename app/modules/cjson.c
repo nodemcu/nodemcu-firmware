@@ -40,8 +40,8 @@
 #include "c_string.h"
 #include "c_math.h"
 #include "c_limits.h"
-#include "lua.h"
 #include "lauxlib.h"
+#include "lrodefs.h"
 #include "flash_api.h"
 
 #include "strbuf.h"
@@ -1531,8 +1531,6 @@ static int json_protect_conversion(lua_State *l)
 #endif
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE cjson_map[] = 
 {
   { LSTRKEY( "encode" ), LFUNCVAL( json_encode ) },
@@ -1545,9 +1543,6 @@ const LUA_REG_TYPE cjson_map[] =
   // { LSTRKEY( "encode_invalid_numbers" ), LFUNCVAL( json_cfg_encode_invalid_numbers ) },
   // { LSTRKEY( "decode_invalid_numbers" ), LFUNCVAL( json_cfg_decode_invalid_numbers ) },
   // { LSTRKEY( "new" ), LFUNCVAL( lua_cjson_new ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-
-#endif
   { LNILKEY, LNILVAL }
 };
 
@@ -1560,18 +1555,7 @@ LUALIB_API int luaopen_cjson( lua_State *L )
   if(-1==cfg_init(&_cfg)){
     return luaL_error(L, "BUG: Unable to init config for cjson");;
   }
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_CJSON, cjson_map );
-  // Add constants
-  /* Set cjson.null */
-  lua_pushlightuserdata(l, NULL);
-  lua_setfield(l, -2, "null");
-
-  /* Return cjson table */
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }
 
 #if 0

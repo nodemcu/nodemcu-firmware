@@ -1,8 +1,6 @@
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 
@@ -185,8 +183,6 @@ static int ICACHE_FLASH_ATTR bmp085_lua_pressure(lua_State* L) {
     return 1;
 }
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE bmp085_map[] =
 {
     { LSTRKEY( "temperature" ), LFUNCVAL( bmp085_lua_temperature )},
@@ -197,7 +193,6 @@ const LUA_REG_TYPE bmp085_map[] =
 };
 
 LUALIB_API int luaopen_bmp085(lua_State *L) {
-    LREGISTER(L, "bmp085", bmp085_map);
-    return 1;
+    return 0;
 }
 

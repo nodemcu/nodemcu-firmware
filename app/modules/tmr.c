@@ -48,13 +48,9 @@ tmr.softwd(int)
 	the timer units are seconds
 */
 
-#define MIN_OPT_LEVEL 2
-
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "auxmods.h"
-#include "lrotable.h"
 #include "lrodefs.h"
 #include "c_types.h"
 
@@ -324,11 +320,9 @@ const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "unregister" ), LFUNCVAL ( tmr_unregister ) },
 	{ LSTRKEY( "state" ), LFUNCVAL ( tmr_state ) },
 	{ LSTRKEY( "interval" ), LFUNCVAL ( tmr_interval) }, 
-#if LUA_OPTIMIZE_MEMORY > 0
 	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
 	{ LSTRKEY( "ALARM_SEMI" ), LNUMVAL( TIMER_MODE_SEMI ) },
 	{ LSTRKEY( "ALARM_AUTO" ), LNUMVAL( TIMER_MODE_AUTO ) },
-#endif
 	{ LNILKEY, LNILVAL }
 };
 
@@ -344,16 +338,6 @@ LUALIB_API int luaopen_tmr( lua_State *L ){
 	ets_timer_setfn(&rtc_timer, rtc_callback, NULL);
 	ets_timer_arm_new(&rtc_timer, 1000, 1, 1);
 
-#if LUA_OPTIMIZE_MEMORY > 0
 	return 0;
-#else
-	luaL_register( L, AUXLIB_TMR, tmr_map );
-	lua_pushvalue( L, -1 );
-	lua_setmetatable( L, -2 );
-	MOD_REG_NUMBER( L, "ALARM_SINGLE", TIMER_MODE_SINGLE );
-	MOD_REG_NUMBER( L, "ALARM_SEMI", TIMER_MODE_SEMI );
-	MOD_REG_NUMBER( L, "ALARM_AUTO", TIMER_MODE_AUTO );
-	return 1;
-#endif
 }
 
