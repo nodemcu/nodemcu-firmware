@@ -2,11 +2,15 @@ site_name: NodeMCU Documentation
 site_description: Description of the NodeMCU documentation
 theme: readthedocs
 repo_url: https://github.com/nodemcu/nodemcu-firmware/
+strict: true
 markdown_extensions:
 - toc:
     permalink: True
 pages:
 - Home: 'index.md'
-- 'build.md'
+- Building the firmware: 'build.md'
+- Flashing the firmware: 'flash.md'
+- FAQ: 'faq.md'
+- Support: 'support.md'
 - Modules:
     - 'node': 'modules/node.md'
