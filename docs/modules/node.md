@@ -1,6 +1,6 @@
 # node Module
 ## node.restart()
-####Description
+
 Restarts the chip.
 
 ####Syntax
@@ -19,7 +19,7 @@ node.restart();
 ```
 ___
 ## node.dsleep()
-####Description
+
 Enter deep sleep mode, wake up when timed out.
 
 ####Syntax
