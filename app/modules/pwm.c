@@ -2,7 +2,6 @@
 
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
 #include "lrodefs.h"
 
 #include "c_types.h"
@@ -123,20 +122,22 @@ static int lpwm_getduty( lua_State* L )
 }
 
 // Module function map
-const LUA_REG_TYPE pwm_map[] = 
-{
-  { LSTRKEY( "setup" ), LFUNCVAL( lpwm_setup ) },
-  { LSTRKEY( "close" ), LFUNCVAL( lpwm_close ) },
-  { LSTRKEY( "start" ), LFUNCVAL( lpwm_start ) },
-  { LSTRKEY( "stop" ), LFUNCVAL( lpwm_stop ) },
+const LUA_REG_TYPE pwm_map[] = {
+  { LSTRKEY( "setup" ),    LFUNCVAL( lpwm_setup ) },
+  { LSTRKEY( "close" ),    LFUNCVAL( lpwm_close ) },
+  { LSTRKEY( "start" ),    LFUNCVAL( lpwm_start ) },
+  { LSTRKEY( "stop" ),     LFUNCVAL( lpwm_stop ) },
   { LSTRKEY( "setclock" ), LFUNCVAL( lpwm_setclock ) },
   { LSTRKEY( "getclock" ), LFUNCVAL( lpwm_getclock ) },
-  { LSTRKEY( "setduty" ), LFUNCVAL( lpwm_setduty ) },
-  { LSTRKEY( "getduty" ), LFUNCVAL( lpwm_getduty ) },
+  { LSTRKEY( "setduty" ),  LFUNCVAL( lpwm_setduty ) },
+  { LSTRKEY( "getduty" ),  LFUNCVAL( lpwm_getduty ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_pwm( lua_State *L )
-{
+LUALIB_API int luaopen_pwm( lua_State *L ) {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

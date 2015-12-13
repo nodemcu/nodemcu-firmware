@@ -2,7 +2,6 @@
 
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
 #include "lrodefs.h"
 
 #include "c_string.h"
@@ -1506,66 +1505,59 @@ static int expose_array(lua_State* L, char *array, unsigned short len) {
 #endif
 
 // Module function map
-static const LUA_REG_TYPE net_server_map[] =
-{
-  { LSTRKEY( "listen" ), LFUNCVAL ( net_server_listen ) },
-  { LSTRKEY( "close" ), LFUNCVAL ( net_server_close ) },
-  { LSTRKEY( "on" ), LFUNCVAL ( net_udpserver_on ) },
-  { LSTRKEY( "send" ), LFUNCVAL ( net_udpserver_send ) },
-  // { LSTRKEY( "delete" ), LFUNCVAL ( net_server_delete ) },
-  { LSTRKEY( "__gc" ), LFUNCVAL ( net_server_delete ) },
-  { LSTRKEY( "__index" ), LROVAL ( net_server_map ) },
+static const LUA_REG_TYPE net_server_map[] = {
+  { LSTRKEY( "listen" ),  LFUNCVAL( net_server_listen ) },
+  { LSTRKEY( "close" ),   LFUNCVAL( net_server_close ) },
+  { LSTRKEY( "on" ),      LFUNCVAL( net_udpserver_on ) },
+  { LSTRKEY( "send" ),    LFUNCVAL( net_udpserver_send ) },
+//{ LSTRKEY( "delete" ),  LFUNCVAL( net_server_delete ) },
+  { LSTRKEY( "__gc" ),    LFUNCVAL( net_server_delete ) },
+  { LSTRKEY( "__index" ), LROVAL( net_server_map ) },
   { LNILKEY, LNILVAL }
 };
 
-static const LUA_REG_TYPE net_socket_map[] =
-{
+static const LUA_REG_TYPE net_socket_map[] = {
   { LSTRKEY( "connect" ), LFUNCVAL( net_socket_connect ) },
-  { LSTRKEY( "close" ), LFUNCVAL ( net_socket_close ) },
-  { LSTRKEY( "on" ), LFUNCVAL ( net_socket_on ) },
-  { LSTRKEY( "send" ), LFUNCVAL ( net_socket_send ) },
-  { LSTRKEY( "hold" ), LFUNCVAL ( net_socket_hold ) },
-  { LSTRKEY( "unhold" ), LFUNCVAL ( net_socket_unhold ) },
-  { LSTRKEY( "dns" ), LFUNCVAL ( net_socket_dns ) },
-  { LSTRKEY( "getpeer" ), LFUNCVAL ( net_socket_getpeer ) },
-  // { LSTRKEY( "delete" ), LFUNCVAL ( net_socket_delete ) },
-  { LSTRKEY( "__gc" ), LFUNCVAL ( net_socket_delete ) },
-  { LSTRKEY( "__index" ), LROVAL ( net_socket_map ) },
+  { LSTRKEY( "close" ),   LFUNCVAL( net_socket_close ) },
+  { LSTRKEY( "on" ),      LFUNCVAL( net_socket_on ) },
+  { LSTRKEY( "send" ),    LFUNCVAL( net_socket_send ) },
+  { LSTRKEY( "hold" ),    LFUNCVAL( net_socket_hold ) },
+  { LSTRKEY( "unhold" ),  LFUNCVAL( net_socket_unhold ) },
+  { LSTRKEY( "dns" ),     LFUNCVAL( net_socket_dns ) },
+  { LSTRKEY( "getpeer" ), LFUNCVAL( net_socket_getpeer ) },
+//{ LSTRKEY( "delete" ),  LFUNCVAL( net_socket_delete ) },
+  { LSTRKEY( "__gc" ),    LFUNCVAL( net_socket_delete ) },
+  { LSTRKEY( "__index" ), LROVAL( net_socket_map ) },
   { LNILKEY, LNILVAL }
 };
 #if 0
-static const LUA_REG_TYPE net_array_map[] =
-{
-  { LSTRKEY( "__index" ), LFUNCVAL( net_array_index ) },
+static const LUA_REG_TYPE net_array_map[] = {
+  { LSTRKEY( "__index" ),    LFUNCVAL( net_array_index ) },
   { LSTRKEY( "__newindex" ), LFUNCVAL( net_array_newindex ) },
   { LNILKEY, LNILVAL }
 };
 #endif
 
-static const LUA_REG_TYPE net_dns_map[] =
-{
-  { LSTRKEY( "setdnsserver" ), LFUNCVAL ( net_setdnsserver ) },  
-  { LSTRKEY( "getdnsserver" ), LFUNCVAL ( net_getdnsserver ) }, 
-  { LSTRKEY( "resolve" ), LFUNCVAL ( net_dns_static ) },  
+static const LUA_REG_TYPE net_dns_map[] = {
+  { LSTRKEY( "setdnsserver" ), LFUNCVAL( net_setdnsserver ) },  
+  { LSTRKEY( "getdnsserver" ), LFUNCVAL( net_getdnsserver ) }, 
+  { LSTRKEY( "resolve" ),      LFUNCVAL( net_dns_static ) },  
   { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE net_map[] = 
-{
-  { LSTRKEY( "createServer" ), LFUNCVAL ( net_createServer ) },
-  { LSTRKEY( "createConnection" ), LFUNCVAL ( net_createConnection ) },
-  { LSTRKEY( "multicastJoin"), LFUNCVAL( net_multicastJoin ) },
-  { LSTRKEY( "multicastLeave"), LFUNCVAL( net_multicastLeave ) },
-  { LSTRKEY( "dns" ), LROVAL( net_dns_map ) },
-  { LSTRKEY( "TCP" ), LNUMVAL( TCP ) },
-  { LSTRKEY( "UDP" ), LNUMVAL( UDP ) },
-
-  { LSTRKEY( "__metatable" ), LROVAL( net_map ) },
+const LUA_REG_TYPE net_map[] = {
+  { LSTRKEY( "createServer" ),     LFUNCVAL( net_createServer ) },
+  { LSTRKEY( "createConnection" ), LFUNCVAL( net_createConnection ) },
+  { LSTRKEY( "multicastJoin"),     LFUNCVAL( net_multicastJoin ) },
+  { LSTRKEY( "multicastLeave"),    LFUNCVAL( net_multicastLeave ) },
+  { LSTRKEY( "dns" ),              LROVAL( net_dns_map ) },
+  { LSTRKEY( "TCP" ),              LNUMVAL( TCP ) },
+  { LSTRKEY( "UDP" ),              LNUMVAL( UDP ) },
+  { LSTRKEY( "__metatable" ),      LROVAL( net_map ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_net( lua_State *L )
-{
+LUALIB_API int luaopen_net( lua_State *L ) {
   int i;
   for(i=0;i<MAX_SOCKET;i++)
   {
@@ -1575,7 +1567,12 @@ LUALIB_API int luaopen_net( lua_State *L )
   luaL_rometatable(L, "net.server", (void *)net_server_map);  // create metatable for net.server
   luaL_rometatable(L, "net.socket", (void *)net_socket_map);  // create metatable for net.socket
   #if 0
-  luaL_rometatable(L, "net.array", (void *)net_array_map);  // create metatable for net.array
+  luaL_rometatable(L, "net.array", (void *)net_array_map);    // create metatable for net.array
   #endif
+
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

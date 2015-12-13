@@ -1,7 +1,6 @@
 // Module for interfacing with GPIO
 
 #include "lauxlib.h"
-#include "auxmods.h"
 #include "platform.h"
 #include "lrodefs.h"
 
@@ -221,27 +220,25 @@ static int lgpio_serout( lua_State* L )
 #undef DELAY_TABLE_MAX_LEN
 
 // Module function map
-const LUA_REG_TYPE gpio_map[] = 
-{
-  { LSTRKEY( "mode" ), LFUNCVAL( lgpio_mode ) },
-  { LSTRKEY( "read" ), LFUNCVAL( lgpio_read ) },
-  { LSTRKEY( "write" ), LFUNCVAL( lgpio_write ) },
+const LUA_REG_TYPE gpio_map[] = {
+  { LSTRKEY( "mode" ),   LFUNCVAL( lgpio_mode ) },
+  { LSTRKEY( "read" ),   LFUNCVAL( lgpio_read ) },
+  { LSTRKEY( "write" ),  LFUNCVAL( lgpio_write ) },
   { LSTRKEY( "serout" ), LFUNCVAL( lgpio_serout ) },
 #ifdef GPIO_INTERRUPT_ENABLE
-  { LSTRKEY( "trig" ), LFUNCVAL( lgpio_trig ) },
-  { LSTRKEY( "INT" ), LNUMVAL( INTERRUPT ) },
+  { LSTRKEY( "trig" ),   LFUNCVAL( lgpio_trig ) },
+  { LSTRKEY( "INT" ),    LNUMVAL( INTERRUPT ) },
 #endif
   { LSTRKEY( "OUTPUT" ), LNUMVAL( OUTPUT ) },
-  { LSTRKEY( "INPUT" ), LNUMVAL( INPUT ) },
-  { LSTRKEY( "HIGH" ), LNUMVAL( HIGH ) },
-  { LSTRKEY( "LOW" ), LNUMVAL( LOW ) },
-  { LSTRKEY( "FLOAT" ), LNUMVAL( FLOAT ) },
+  { LSTRKEY( "INPUT" ),  LNUMVAL( INPUT ) },
+  { LSTRKEY( "HIGH" ),   LNUMVAL( HIGH ) },
+  { LSTRKEY( "LOW" ),    LNUMVAL( LOW ) },
+  { LSTRKEY( "FLOAT" ),  LNUMVAL( FLOAT ) },
   { LSTRKEY( "PULLUP" ), LNUMVAL( PULLUP ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_gpio( lua_State *L )
-{
+LUALIB_API int luaopen_gpio( lua_State *L ) {
 #ifdef GPIO_INTERRUPT_ENABLE
   int i;
   for(i=0;i<GPIO_PIN_NUM;i++){
@@ -249,5 +246,10 @@ LUALIB_API int luaopen_gpio( lua_State *L )
   }
   platform_gpio_init(gpio_intr_callback);
 #endif
+
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

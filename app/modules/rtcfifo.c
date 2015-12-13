@@ -165,8 +165,7 @@ static int rtcfifo_dsleep_until_sample (lua_State *L)
 #endif
 
 // Module function map
-const LUA_REG_TYPE rtcfifo_map[] =
-{
+const LUA_REG_TYPE rtcfifo_map[] = {
   { LSTRKEY("prepare"),             LFUNCVAL(rtcfifo_prepare) },
   { LSTRKEY("ready"),               LFUNCVAL(rtcfifo_ready) },
   { LSTRKEY("put"),                 LFUNCVAL(rtcfifo_put) },
@@ -182,5 +181,9 @@ const LUA_REG_TYPE rtcfifo_map[] =
 
 LUALIB_API int luaopen_rtcfifo (lua_State *L)
 {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

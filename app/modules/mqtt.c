@@ -2,7 +2,6 @@
 
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
 #include "lrodefs.h"
 
 #include "c_string.h"
@@ -1390,22 +1389,20 @@ static int mqtt_socket_lwt( lua_State* L )
 }
 
 // Module function map
-static const LUA_REG_TYPE mqtt_socket_map[] =
-{
-  { LSTRKEY( "connect" ), LFUNCVAL ( mqtt_socket_connect ) },
-  { LSTRKEY( "close" ), LFUNCVAL ( mqtt_socket_close ) },
-  { LSTRKEY( "publish" ), LFUNCVAL ( mqtt_socket_publish ) },
-  { LSTRKEY( "subscribe" ), LFUNCVAL ( mqtt_socket_subscribe ) },
-  { LSTRKEY( "lwt" ), LFUNCVAL ( mqtt_socket_lwt ) },
-  { LSTRKEY( "on" ), LFUNCVAL ( mqtt_socket_on ) },
-  { LSTRKEY( "__gc" ), LFUNCVAL ( mqtt_delete ) },
-  { LSTRKEY( "__index" ), LROVAL ( mqtt_socket_map ) },
+static const LUA_REG_TYPE mqtt_socket_map[] = {
+  { LSTRKEY( "connect" ),   LFUNCVAL( mqtt_socket_connect ) },
+  { LSTRKEY( "close" ),     LFUNCVAL( mqtt_socket_close ) },
+  { LSTRKEY( "publish" ),   LFUNCVAL( mqtt_socket_publish ) },
+  { LSTRKEY( "subscribe" ), LFUNCVAL( mqtt_socket_subscribe ) },
+  { LSTRKEY( "lwt" ),       LFUNCVAL( mqtt_socket_lwt ) },
+  { LSTRKEY( "on" ),        LFUNCVAL( mqtt_socket_on ) },
+  { LSTRKEY( "__gc" ),      LFUNCVAL( mqtt_delete ) },
+  { LSTRKEY( "__index" ),   LROVAL( mqtt_socket_map ) },
   { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE mqtt_map[] =
-{
-  { LSTRKEY( "Client" ), LFUNCVAL ( mqtt_socket_client ) },
+const LUA_REG_TYPE mqtt_map[] = {
+  { LSTRKEY( "Client" ),      LFUNCVAL( mqtt_socket_client ) },
   { LSTRKEY( "__metatable" ), LROVAL( mqtt_map ) },
   { LNILKEY, LNILVAL }
 };
@@ -1413,5 +1410,9 @@ const LUA_REG_TYPE mqtt_map[] =
 LUALIB_API int luaopen_mqtt( lua_State *L )
 {
   luaL_rometatable(L, "mqtt.socket", (void *)mqtt_socket_map);  // create metatable for mqtt.socket
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

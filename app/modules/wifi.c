@@ -1337,96 +1337,95 @@ static int wifi_ap_dhcp_stop( lua_State* L )
 }
 
 // Module function map
-static const LUA_REG_TYPE wifi_station_map[] =
-{
-  { LSTRKEY( "getconfig" ), LFUNCVAL ( wifi_station_getconfig ) },
-  { LSTRKEY( "config" ), LFUNCVAL ( wifi_station_config ) },
-  { LSTRKEY( "connect" ), LFUNCVAL ( wifi_station_connect4lua ) },
-  { LSTRKEY( "disconnect" ), LFUNCVAL ( wifi_station_disconnect4lua ) },
-  { LSTRKEY( "autoconnect" ), LFUNCVAL ( wifi_station_setauto ) },
-  { LSTRKEY( "getip" ), LFUNCVAL ( wifi_station_getip ) },
-  { LSTRKEY( "setip" ), LFUNCVAL ( wifi_station_setip ) },
-  { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_station_getbroadcast) },
-  { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_station_getmac ) },
-  { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_station_setmac ) },
-  { LSTRKEY( "getap" ), LFUNCVAL ( wifi_station_listap ) },
-  { LSTRKEY( "status" ), LFUNCVAL ( wifi_station_status ) },
-  { LSTRKEY( "eventMonReg" ), LFUNCVAL ( wifi_station_event_mon_reg ) },
-  { LSTRKEY( "eventMonStart" ), LFUNCVAL ( wifi_station_event_mon_start ) },
-  { LSTRKEY( "eventMonStop" ), LFUNCVAL ( wifi_station_event_mon_stop ) },
+static const LUA_REG_TYPE wifi_station_map[] = {
+  { LSTRKEY( "getconfig" ),     LFUNCVAL( wifi_station_getconfig ) },
+  { LSTRKEY( "config" ),        LFUNCVAL( wifi_station_config ) },
+  { LSTRKEY( "connect" ),       LFUNCVAL( wifi_station_connect4lua ) },
+  { LSTRKEY( "disconnect" ),    LFUNCVAL( wifi_station_disconnect4lua ) },
+  { LSTRKEY( "autoconnect" ),   LFUNCVAL( wifi_station_setauto ) },
+  { LSTRKEY( "getip" ),         LFUNCVAL( wifi_station_getip ) },
+  { LSTRKEY( "setip" ),         LFUNCVAL( wifi_station_setip ) },
+  { LSTRKEY( "getbroadcast" ),  LFUNCVAL( wifi_station_getbroadcast) },
+  { LSTRKEY( "getmac" ),        LFUNCVAL( wifi_station_getmac ) },
+  { LSTRKEY( "setmac" ),        LFUNCVAL( wifi_station_setmac ) },
+  { LSTRKEY( "getap" ),         LFUNCVAL( wifi_station_listap ) },
+  { LSTRKEY( "status" ),        LFUNCVAL( wifi_station_status ) },
+  { LSTRKEY( "eventMonReg" ),   LFUNCVAL( wifi_station_event_mon_reg ) },
+  { LSTRKEY( "eventMonStart" ), LFUNCVAL( wifi_station_event_mon_start ) },
+  { LSTRKEY( "eventMonStop" ),  LFUNCVAL( wifi_station_event_mon_stop ) },
   { LNILKEY, LNILVAL }
 };
 
-static const LUA_REG_TYPE wifi_ap_dhcp_map[] =
-{
-  { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_dhcp_config ) },
-  { LSTRKEY( "start" ), LFUNCVAL( wifi_ap_dhcp_start ) },
-  { LSTRKEY( "stop" ), LFUNCVAL( wifi_ap_dhcp_stop ) },
+static const LUA_REG_TYPE wifi_ap_dhcp_map[] = {
+  { LSTRKEY( "config" ),  LFUNCVAL( wifi_ap_dhcp_config ) },
+  { LSTRKEY( "start" ),   LFUNCVAL( wifi_ap_dhcp_start ) },
+  { LSTRKEY( "stop" ),    LFUNCVAL( wifi_ap_dhcp_stop ) },
   { LNILKEY, LNILVAL }
 };
 
-static const LUA_REG_TYPE wifi_ap_map[] =
-{
-  { LSTRKEY( "config" ), LFUNCVAL( wifi_ap_config ) },
-  { LSTRKEY( "getip" ), LFUNCVAL ( wifi_ap_getip ) },
-  { LSTRKEY( "setip" ), LFUNCVAL ( wifi_ap_setip ) },
-  { LSTRKEY( "getbroadcast" ), LFUNCVAL ( wifi_ap_getbroadcast) },
-  { LSTRKEY( "getmac" ), LFUNCVAL ( wifi_ap_getmac ) },
-  { LSTRKEY( "setmac" ), LFUNCVAL ( wifi_ap_setmac ) },
-  { LSTRKEY( "getclient" ), LFUNCVAL ( wifi_ap_listclient ) },
-  { LSTRKEY( "getconfig" ), LFUNCVAL( wifi_ap_getconfig ) },
-  { LSTRKEY( "dhcp" ), LROVAL( wifi_ap_dhcp_map ) },
-
-//  { LSTRKEY( "__metatable" ), LROVAL( wifi_ap_map ) },
+static const LUA_REG_TYPE wifi_ap_map[] = {
+  { LSTRKEY( "config" ),       LFUNCVAL( wifi_ap_config ) },
+  { LSTRKEY( "getip" ),        LFUNCVAL( wifi_ap_getip ) },
+  { LSTRKEY( "setip" ),        LFUNCVAL( wifi_ap_setip ) },
+  { LSTRKEY( "getbroadcast" ), LFUNCVAL( wifi_ap_getbroadcast) },
+  { LSTRKEY( "getmac" ),       LFUNCVAL( wifi_ap_getmac ) },
+  { LSTRKEY( "setmac" ),       LFUNCVAL( wifi_ap_setmac ) },
+  { LSTRKEY( "getclient" ),    LFUNCVAL( wifi_ap_listclient ) },
+  { LSTRKEY( "getconfig" ),    LFUNCVAL( wifi_ap_getconfig ) },
+  { LSTRKEY( "dhcp" ),         LROVAL( wifi_ap_dhcp_map ) },
+//{ LSTRKEY( "__metatable" ),  LROVAL( wifi_ap_map ) },
   { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE wifi_map[] = 
-{
-  { LSTRKEY( "setmode" ), LFUNCVAL( wifi_setmode ) },
-  { LSTRKEY( "getmode" ), LFUNCVAL( wifi_getmode ) },
-  { LSTRKEY( "getchannel" ), LFUNCVAL( wifi_getchannel ) },
-  { LSTRKEY( "setphymode" ), LFUNCVAL( wifi_setphymode ) },
-  { LSTRKEY( "getphymode" ), LFUNCVAL( wifi_getphymode ) },
-  { LSTRKEY( "sleep" ), LFUNCVAL( wifi_sleep ) },
-  { LSTRKEY( "startsmart" ), LFUNCVAL( wifi_start_smart ) },
-  { LSTRKEY( "stopsmart" ), LFUNCVAL( wifi_exit_smart ) },
-  { LSTRKEY( "sleeptype" ), LFUNCVAL( wifi_sleeptype ) },
+const LUA_REG_TYPE wifi_map[] =  {
+  { LSTRKEY( "setmode" ),        LFUNCVAL( wifi_setmode ) },
+  { LSTRKEY( "getmode" ),        LFUNCVAL( wifi_getmode ) },
+  { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
+  { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
+  { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
+  { LSTRKEY( "sleep" ),          LFUNCVAL( wifi_sleep ) },
+  { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
+  { LSTRKEY( "stopsmart" ),      LFUNCVAL( wifi_exit_smart ) },
+  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_sleeptype ) },
 
-  { LSTRKEY( "sta" ), LROVAL( wifi_station_map ) },
-  { LSTRKEY( "ap" ), LROVAL( wifi_ap_map ) },
+  { LSTRKEY( "sta" ),            LROVAL( wifi_station_map ) },
+  { LSTRKEY( "ap" ),             LROVAL( wifi_ap_map ) },
 
-  { LSTRKEY( "NULLMODE" ), LNUMVAL( NULL_MODE ) },
-  { LSTRKEY( "STATION" ), LNUMVAL( STATION_MODE ) },
-  { LSTRKEY( "SOFTAP" ), LNUMVAL( SOFTAP_MODE ) },
-  { LSTRKEY( "STATIONAP" ), LNUMVAL( STATIONAP_MODE ) },
+  { LSTRKEY( "NULLMODE" ),       LNUMVAL( NULL_MODE ) },
+  { LSTRKEY( "STATION" ),        LNUMVAL( STATION_MODE ) },
+  { LSTRKEY( "SOFTAP" ),         LNUMVAL( SOFTAP_MODE ) },
+  { LSTRKEY( "STATIONAP" ),      LNUMVAL( STATIONAP_MODE ) },
 
-  { LSTRKEY( "PHYMODE_B" ), LNUMVAL( PHY_MODE_11B ) },
-  { LSTRKEY( "PHYMODE_G" ), LNUMVAL( PHY_MODE_11G ) },
-  { LSTRKEY( "PHYMODE_N" ), LNUMVAL( PHY_MODE_11N ) },
+  { LSTRKEY( "PHYMODE_B" ),      LNUMVAL( PHY_MODE_11B ) },
+  { LSTRKEY( "PHYMODE_G" ),      LNUMVAL( PHY_MODE_11G ) },
+  { LSTRKEY( "PHYMODE_N" ),      LNUMVAL( PHY_MODE_11N ) },
 
-  { LSTRKEY( "NONE_SLEEP" ), LNUMVAL( NONE_SLEEP_T ) },
-  { LSTRKEY( "LIGHT_SLEEP" ), LNUMVAL( LIGHT_SLEEP_T ) },
-  { LSTRKEY( "MODEM_SLEEP" ), LNUMVAL( MODEM_SLEEP_T ) },
+  { LSTRKEY( "NONE_SLEEP" ),     LNUMVAL( NONE_SLEEP_T ) },
+  { LSTRKEY( "LIGHT_SLEEP" ),    LNUMVAL( LIGHT_SLEEP_T ) },
+  { LSTRKEY( "MODEM_SLEEP" ),    LNUMVAL( MODEM_SLEEP_T ) },
 
-  { LSTRKEY( "OPEN" ), LNUMVAL( AUTH_OPEN ) },
-  // { LSTRKEY( "WEP" ), LNUMVAL( AUTH_WEP ) },
-  { LSTRKEY( "WPA_PSK" ), LNUMVAL( AUTH_WPA_PSK ) },
-  { LSTRKEY( "WPA2_PSK" ), LNUMVAL( AUTH_WPA2_PSK ) },
-  { LSTRKEY( "WPA_WPA2_PSK" ), LNUMVAL( AUTH_WPA_WPA2_PSK ) },
+  { LSTRKEY( "OPEN" ),           LNUMVAL( AUTH_OPEN ) },
+//{ LSTRKEY( "WEP" ),            LNUMVAL( AUTH_WEP ) },
+  { LSTRKEY( "WPA_PSK" ),        LNUMVAL( AUTH_WPA_PSK ) },
+  { LSTRKEY( "WPA2_PSK" ),       LNUMVAL( AUTH_WPA2_PSK ) },
+  { LSTRKEY( "WPA_WPA2_PSK" ),   LNUMVAL( AUTH_WPA_WPA2_PSK ) },
 
-   { LSTRKEY( "STA_IDLE" ), LNUMVAL( STATION_IDLE ) },
-   { LSTRKEY( "STA_CONNECTING" ), LNUMVAL( STATION_CONNECTING ) },
-   { LSTRKEY( "STA_WRONGPWD" ), LNUMVAL( STATION_WRONG_PASSWORD ) },
-   { LSTRKEY( "STA_APNOTFOUND" ), LNUMVAL( STATION_NO_AP_FOUND ) },
-   { LSTRKEY( "STA_FAIL" ), LNUMVAL( STATION_CONNECT_FAIL ) },
-   { LSTRKEY( "STA_GOTIP" ), LNUMVAL( STATION_GOT_IP ) },
+  { LSTRKEY( "STA_IDLE" ),       LNUMVAL( STATION_IDLE ) },
+  { LSTRKEY( "STA_CONNECTING" ), LNUMVAL( STATION_CONNECTING ) },
+  { LSTRKEY( "STA_WRONGPWD" ),   LNUMVAL( STATION_WRONG_PASSWORD ) },
+  { LSTRKEY( "STA_APNOTFOUND" ), LNUMVAL( STATION_NO_AP_FOUND ) },
+  { LSTRKEY( "STA_FAIL" ),       LNUMVAL( STATION_CONNECT_FAIL ) },
+  { LSTRKEY( "STA_GOTIP" ),      LNUMVAL( STATION_GOT_IP ) },
 
-  { LSTRKEY( "__metatable" ), LROVAL( wifi_map ) },
+  { LSTRKEY( "__metatable" ),    LROVAL( wifi_map ) },
   { LNILKEY, LNILVAL }
 };
 
 LUALIB_API int luaopen_wifi( lua_State *L )
 {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

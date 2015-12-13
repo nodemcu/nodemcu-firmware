@@ -150,18 +150,20 @@ static int crypto_lhmac (lua_State *L)
 
 
 // Module function map
-const LUA_REG_TYPE crypto_map[] =
-{
-  { LSTRKEY( "sha1" ), LFUNCVAL( crypto_sha1 ) },
+const LUA_REG_TYPE crypto_map[] = {
+  { LSTRKEY( "sha1" ),     LFUNCVAL( crypto_sha1 ) },
   { LSTRKEY( "toBase64" ), LFUNCVAL( crypto_base64_encode ) },
-  { LSTRKEY( "toHex" ), LFUNCVAL( crypto_hex_encode ) },
-  { LSTRKEY( "mask" ), LFUNCVAL( crypto_mask ) },
-  { LSTRKEY( "hash"   ), LFUNCVAL( crypto_lhash ) },
-  { LSTRKEY( "hmac"   ), LFUNCVAL( crypto_lhmac ) },
+  { LSTRKEY( "toHex" ),    LFUNCVAL( crypto_hex_encode ) },
+  { LSTRKEY( "mask" ),     LFUNCVAL( crypto_mask ) },
+  { LSTRKEY( "hash"   ),   LFUNCVAL( crypto_lhash ) },
+  { LSTRKEY( "hmac"   ),   LFUNCVAL( crypto_lhmac ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_crypto( lua_State *L )
-{
+LUALIB_API int luaopen_crypto( lua_State *L ) {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

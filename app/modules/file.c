@@ -296,29 +296,30 @@ static int file_writeline( lua_State* L )
 }
 
 // Module function map
-const LUA_REG_TYPE file_map[] = 
-{
-  { LSTRKEY( "list" ), LFUNCVAL( file_list ) },
-  { LSTRKEY( "open" ), LFUNCVAL( file_open ) },
-  { LSTRKEY( "close" ), LFUNCVAL( file_close ) },
-  { LSTRKEY( "write" ), LFUNCVAL( file_write ) },
+const LUA_REG_TYPE file_map[] = {
+  { LSTRKEY( "list" ),      LFUNCVAL( file_list ) },
+  { LSTRKEY( "open" ),      LFUNCVAL( file_open ) },
+  { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
+  { LSTRKEY( "write" ),     LFUNCVAL( file_write ) },
   { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
-  { LSTRKEY( "read" ), LFUNCVAL( file_read ) },
-  { LSTRKEY( "readline" ), LFUNCVAL( file_readline ) },
-  { LSTRKEY( "format" ), LFUNCVAL( file_format ) },
-#if defined(BUILD_WOFS)
-#elif defined(BUILD_SPIFFS)
-  { LSTRKEY( "remove" ), LFUNCVAL( file_remove ) },
-  { LSTRKEY( "seek" ), LFUNCVAL( file_seek ) },
-  { LSTRKEY( "flush" ), LFUNCVAL( file_flush ) },
-  // { LSTRKEY( "check" ), LFUNCVAL( file_check ) },
-  { LSTRKEY( "rename" ), LFUNCVAL( file_rename ) },
-  { LSTRKEY( "fsinfo" ), LFUNCVAL( file_fsinfo ) },
+  { LSTRKEY( "read" ),      LFUNCVAL( file_read ) },
+  { LSTRKEY( "readline" ),  LFUNCVAL( file_readline ) },
+  { LSTRKEY( "format" ),    LFUNCVAL( file_format ) },
+#if defined(BUILD_SPIFFS) && !defined(BUILD_WOFS)
+  { LSTRKEY( "remove" ),    LFUNCVAL( file_remove ) },
+  { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
+  { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
+//{ LSTRKEY( "check" ),     LFUNCVAL( file_check ) },
+  { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
+  { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
 #endif
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_file( lua_State *L )
-{
+LUALIB_API int luaopen_file( lua_State *L ) {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

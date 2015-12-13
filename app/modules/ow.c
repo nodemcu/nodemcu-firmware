@@ -1,8 +1,8 @@
 // Module for interfacing with the OneWire interface
 
 #include "lauxlib.h"
-#include "auxmods.h"
 #include "lrodefs.h"
+#include "platform.h"
 #include "driver/onewire.h"
 
 // Lua: ow.setup( id )
@@ -280,33 +280,35 @@ static int ow_crc16( lua_State *L )
 #endif
 
 // Module function map
-const LUA_REG_TYPE ow_map[] = 
-{
-  { LSTRKEY( "setup" ),  LFUNCVAL( ow_setup ) },
-  { LSTRKEY( "reset" ), LFUNCVAL( ow_reset ) },
-  { LSTRKEY( "skip" ), LFUNCVAL( ow_skip ) },
-  { LSTRKEY( "select" ), LFUNCVAL( ow_select ) },
-  { LSTRKEY( "write" ), LFUNCVAL( ow_write ) },
-  { LSTRKEY( "write_bytes" ), LFUNCVAL( ow_write_bytes ) },
-  { LSTRKEY( "read" ), LFUNCVAL( ow_read ) },
-  { LSTRKEY( "read_bytes" ), LFUNCVAL( ow_read_bytes ) },
-  { LSTRKEY( "depower" ), LFUNCVAL( ow_depower ) },
+const LUA_REG_TYPE ow_map[] = {
+  { LSTRKEY( "setup" ),         LFUNCVAL( ow_setup ) },
+  { LSTRKEY( "reset" ),         LFUNCVAL( ow_reset ) },
+  { LSTRKEY( "skip" ),          LFUNCVAL( ow_skip ) },
+  { LSTRKEY( "select" ),        LFUNCVAL( ow_select ) },
+  { LSTRKEY( "write" ),         LFUNCVAL( ow_write ) },
+  { LSTRKEY( "write_bytes" ),   LFUNCVAL( ow_write_bytes ) },
+  { LSTRKEY( "read" ),          LFUNCVAL( ow_read ) },
+  { LSTRKEY( "read_bytes" ),    LFUNCVAL( ow_read_bytes ) },
+  { LSTRKEY( "depower" ),       LFUNCVAL( ow_depower ) },
 #if ONEWIRE_SEARCH
-  { LSTRKEY( "reset_search" ), LFUNCVAL( ow_reset_search ) },
+  { LSTRKEY( "reset_search" ),  LFUNCVAL( ow_reset_search ) },
   { LSTRKEY( "target_search" ), LFUNCVAL( ow_target_search ) },
-  { LSTRKEY( "search" ), LFUNCVAL( ow_search ) },
+  { LSTRKEY( "search" ),        LFUNCVAL( ow_search ) },
 #endif
 #if ONEWIRE_CRC
-  { LSTRKEY( "crc8" ), LFUNCVAL( ow_crc8 ) },
+  { LSTRKEY( "crc8" ),          LFUNCVAL( ow_crc8 ) },
 #if ONEWIRE_CRC16
-  { LSTRKEY( "check_crc16" ), LFUNCVAL( ow_check_crc16 ) },
-  { LSTRKEY( "crc16" ), LFUNCVAL( ow_crc16 ) },
+  { LSTRKEY( "check_crc16" ),   LFUNCVAL( ow_check_crc16 ) },
+  { LSTRKEY( "crc16" ),         LFUNCVAL( ow_crc16 ) },
 #endif
 #endif
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_ow( lua_State *L )
-{
+LUALIB_API int luaopen_ow( lua_State *L ) {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

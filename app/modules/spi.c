@@ -2,7 +2,6 @@
 
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
 #include "lrodefs.h"
 
 #define SPI_HALFDUPLEX 0
@@ -307,27 +306,29 @@ static int spi_transaction( lua_State *L )
 
 
 // Module function map
-const LUA_REG_TYPE spi_map[] = 
-{
+const LUA_REG_TYPE spi_map[] = {
   { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
   { LSTRKEY( "send" ),        LFUNCVAL( spi_send_recv ) },
   { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
   { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
   { LSTRKEY( "get_miso" ),    LFUNCVAL( spi_get_miso ) },
   { LSTRKEY( "transaction" ), LFUNCVAL( spi_transaction ) },
-  { LSTRKEY( "MASTER" ),    LNUMVAL( PLATFORM_SPI_MASTER ) },
-  { LSTRKEY( "SLAVE" ),     LNUMVAL( PLATFORM_SPI_SLAVE) },
-  { LSTRKEY( "CPHA_LOW" ),  LNUMVAL( PLATFORM_SPI_CPHA_LOW) },
-  { LSTRKEY( "CPHA_HIGH" ), LNUMVAL( PLATFORM_SPI_CPHA_HIGH) },
-  { LSTRKEY( "CPOL_LOW" ),  LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
-  { LSTRKEY( "CPOL_HIGH" ), LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
-  { LSTRKEY( "DATABITS_8" ), LNUMVAL( 8 ) },
-  { LSTRKEY( "HALFDUPLEX" ), LNUMVAL( SPI_HALFDUPLEX ) },
-  { LSTRKEY( "FULLDUPLEX" ), LNUMVAL( SPI_FULLDUPLEX ) },
+  { LSTRKEY( "MASTER" ),      LNUMVAL( PLATFORM_SPI_MASTER ) },
+  { LSTRKEY( "SLAVE" ),       LNUMVAL( PLATFORM_SPI_SLAVE) },
+  { LSTRKEY( "CPHA_LOW" ),    LNUMVAL( PLATFORM_SPI_CPHA_LOW) },
+  { LSTRKEY( "CPHA_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPHA_HIGH) },
+  { LSTRKEY( "CPOL_LOW" ),    LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
+  { LSTRKEY( "CPOL_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
+  { LSTRKEY( "DATABITS_8" ),  LNUMVAL( 8 ) },
+  { LSTRKEY( "HALFDUPLEX" ),  LNUMVAL( SPI_HALFDUPLEX ) },
+  { LSTRKEY( "FULLDUPLEX" ),  LNUMVAL( SPI_FULLDUPLEX ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_spi( lua_State *L )
-{
+LUALIB_API int luaopen_spi( lua_State *L ) {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

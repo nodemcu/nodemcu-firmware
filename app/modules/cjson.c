@@ -1528,37 +1528,7 @@ static int json_protect_conversion(lua_State *l)
      * errors are memory related */
     return luaL_error(l, "Memory allocation error in CJSON protected call");
 }
-#endif
 
-// Module function map
-const LUA_REG_TYPE cjson_map[] = 
-{
-  { LSTRKEY( "encode" ), LFUNCVAL( json_encode ) },
-  { LSTRKEY( "decode" ), LFUNCVAL( json_decode ) },
-  // { LSTRKEY( "encode_sparse_array" ), LFUNCVAL( json_cfg_encode_sparse_array ) },
-  // { LSTRKEY( "encode_max_depth" ), LFUNCVAL( json_cfg_encode_max_depth ) },
-  // { LSTRKEY( "decode_max_depth" ), LFUNCVAL( json_cfg_decode_max_depth ) },
-  // { LSTRKEY( "encode_number_precision" ), LFUNCVAL( json_cfg_encode_number_precision ) },
-  // { LSTRKEY( "encode_keep_buffer" ), LFUNCVAL( json_cfg_encode_keep_buffer ) },
-  // { LSTRKEY( "encode_invalid_numbers" ), LFUNCVAL( json_cfg_encode_invalid_numbers ) },
-  // { LSTRKEY( "decode_invalid_numbers" ), LFUNCVAL( json_cfg_decode_invalid_numbers ) },
-  // { LSTRKEY( "new" ), LFUNCVAL( lua_cjson_new ) },
-  { LNILKEY, LNILVAL }
-};
-
-LUALIB_API int luaopen_cjson( lua_State *L )
-{
-  cjson_mem_setlua (L);
-
-  /* Initialise number conversions */
-  // fpconv_init();         // not needed for a specific cpu.
-  if(-1==cfg_init(&_cfg)){
-    return luaL_error(L, "BUG: Unable to init config for cjson");;
-  }
-  return 0;
-}
-
-#if 0
 /* Return cjson module table */
 static int lua_cjson_new(lua_State *l)
 {
@@ -1628,5 +1598,36 @@ int luaopen_cjson_safe(lua_State *l)
     return 1;
 }
 #endif
+
+// Module function map
+const LUA_REG_TYPE cjson_map[] = {
+  { LSTRKEY( "encode" ),                  LFUNCVAL( json_encode ) },
+  { LSTRKEY( "decode" ),                  LFUNCVAL( json_decode ) },
+//{ LSTRKEY( "encode_sparse_array" ),     LFUNCVAL( json_cfg_encode_sparse_array ) },
+//{ LSTRKEY( "encode_max_depth" ),        LFUNCVAL( json_cfg_encode_max_depth ) },
+//{ LSTRKEY( "decode_max_depth" ),        LFUNCVAL( json_cfg_decode_max_depth ) },
+//{ LSTRKEY( "encode_number_precision" ), LFUNCVAL( json_cfg_encode_number_precision ) },
+//{ LSTRKEY( "encode_keep_buffer" ),      LFUNCVAL( json_cfg_encode_keep_buffer ) },
+//{ LSTRKEY( "encode_invalid_numbers" ),  LFUNCVAL( json_cfg_encode_invalid_numbers ) },
+//{ LSTRKEY( "decode_invalid_numbers" ),  LFUNCVAL( json_cfg_decode_invalid_numbers ) },
+//{ LSTRKEY( "new" ),                     LFUNCVAL( lua_cjson_new ) },
+  { LNILKEY, LNILVAL }
+};
+
+LUALIB_API int luaopen_cjson( lua_State *L )
+{
+  cjson_mem_setlua (L);
+
+  /* Initialise number conversions */
+  // fpconv_init();         // not needed for a specific cpu.
+  if(-1==cfg_init(&_cfg)){
+    return luaL_error(L, "BUG: Unable to init config for cjson");;
+  }
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
+  return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
+}
 /* vi:ai et sw=4 ts=4:
  */

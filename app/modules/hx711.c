@@ -3,7 +3,6 @@
 
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
 #include "lrodefs.h"
 #include "c_stdlib.h"
 #include "c_string.h"
@@ -66,8 +65,8 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
   return 1;
 }
 
-const LUA_REG_TYPE hx711_map[] =
-{
+// Module function map
+const LUA_REG_TYPE hx711_map[] = {
   { LSTRKEY( "init" ), LFUNCVAL( hx711_init )},
   { LSTRKEY( "read" ), LFUNCVAL( hx711_read )},
   { LNILKEY, LNILVAL}
@@ -75,5 +74,9 @@ const LUA_REG_TYPE hx711_map[] =
 
 LUALIB_API int luaopen_hx711(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

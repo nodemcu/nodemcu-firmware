@@ -376,13 +376,15 @@ error:
 
 
 // Module function map
-const LUA_REG_TYPE sntp_map[] =
-{
+const LUA_REG_TYPE sntp_map[] = {
   { LSTRKEY("sync"),  LFUNCVAL(sntp_sync)  },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_sntp (lua_State *L)
-{
+LUALIB_API int luaopen_sntp (lua_State *L) {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

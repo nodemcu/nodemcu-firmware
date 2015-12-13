@@ -79,8 +79,8 @@ static int ICACHE_FLASH_ATTR rc_send(lua_State* L) {
   return 1;
 }
 
-const LUA_REG_TYPE rc_map[] =
-{
+// Module function map
+const LUA_REG_TYPE rc_map[] = {
   { LSTRKEY( "send" ), LFUNCVAL( rc_send )},
   { LNILKEY, LNILVAL}
 };
@@ -88,5 +88,9 @@ const LUA_REG_TYPE rc_map[] =
 //LUALIB_API int luaopen_ultra(lua_State *L) {
 LUALIB_API int luaopen_rc(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }

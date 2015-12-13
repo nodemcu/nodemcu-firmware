@@ -183,16 +183,18 @@ static int ICACHE_FLASH_ATTR bmp085_lua_pressure(lua_State* L) {
     return 1;
 }
 
-const LUA_REG_TYPE bmp085_map[] =
-{
-    { LSTRKEY( "temperature" ), LFUNCVAL( bmp085_lua_temperature )},
-    { LSTRKEY( "pressure" ), LFUNCVAL( bmp085_lua_pressure )},
+const LUA_REG_TYPE bmp085_map[] = {
+    { LSTRKEY( "temperature" ),  LFUNCVAL( bmp085_lua_temperature )},
+    { LSTRKEY( "pressure" ),     LFUNCVAL( bmp085_lua_pressure )},
     { LSTRKEY( "pressure_raw" ), LFUNCVAL( bmp085_lua_pressure_raw )},
-    { LSTRKEY( "init" ), LFUNCVAL( bmp085_init )},
+    { LSTRKEY( "init" ),         LFUNCVAL( bmp085_init )},
     { LNILKEY, LNILVAL}
 };
 
 LUALIB_API int luaopen_bmp085(lua_State *L) {
-    return 0;
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
+  return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }
-

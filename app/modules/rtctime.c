@@ -116,16 +116,18 @@ static int rtctime_dsleep_aligned (lua_State *L)
 
 
 // Module function map
-const LUA_REG_TYPE rtctime_map[] =
-{
-  { LSTRKEY("set"), LFUNCVAL(rtctime_set) },
-  { LSTRKEY("get"), LFUNCVAL(rtctime_get) },
-  { LSTRKEY("dsleep"),  LFUNCVAL(rtctime_dsleep)  },
+const LUA_REG_TYPE rtctime_map[] = {
+  { LSTRKEY("set"),            LFUNCVAL(rtctime_set) },
+  { LSTRKEY("get"),            LFUNCVAL(rtctime_get) },
+  { LSTRKEY("dsleep"),         LFUNCVAL(rtctime_dsleep)  },
   { LSTRKEY("dsleep_aligned"), LFUNCVAL(rtctime_dsleep_aligned) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_rtctime (lua_State *L)
-{
+LUALIB_API int luaopen_rtctime (lua_State *L) {
+#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
+#else
+#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
+#endif
 }
