@@ -165,6 +165,14 @@
 #define ROM_MODULES_ENDUSER_SETUP
 #endif
 
+#if defined(LUA_USE_MODULES_APA102)
+#define MODULES_APA102      "apa102"
+#define ROM_MODULES_APA102  \
+    _ROM(MODULES_APA102, luaopen_apa102, apa102_map)
+#else
+#define ROM_MODULES_APA102
+#endif
+
 #if defined(LUA_USE_MODULES_CJSON)
 #define MODULES_CJSON       "cjson"
 #define ROM_MODULES_CJSON   \
@@ -274,6 +282,7 @@
         ROM_MODULES_ENDUSER_SETUP \
         ROM_MODULES_WS2801  \
         ROM_MODULES_WS2812  \
+        ROM_MODULES_APA102  \
         ROM_MODULES_CJSON   \
         ROM_MODULES_CRYPTO  \
         ROM_MODULES_RC      \

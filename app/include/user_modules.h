@@ -46,6 +46,7 @@
 #define LUA_USE_MODULES_WIFI
 //#define LUA_USE_MODULES_WS2801
 #define LUA_USE_MODULES_WS2812
+#define LUA_USE_MODULES_APA102
 
 #endif /* LUA_USE_MODULES */
 #endif
