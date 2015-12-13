@@ -1,17 +1,12 @@
-# Welcome to NodeMCU
+# NodeMCU Documentation
 
-NodeMCU is a Lua based firmware for the ESP8266 WiFi SOC from Espressif.
+NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/). This is a companion project to the popular [NodeMCU dev kits](https://github.com/nodemcu/nodemcu-devkit-v1.0), ready-made open source development boards with ESP8266-12E chips.
 
-## Commands
+The firmware is based on the Espressif SDK v1.4 and uses a file system based on [spiffs](https://github.com/pellepl/spiffs).
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs help` - Print this help message.
+## Getting started
+- [Build the firmeware](build) with the modules you need.
+- [Flash the firmware](flash) to the chip.
+- Load your code into the firmware.
 
-## Project layout
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.

@@ -1,22 +1,23 @@
-##node.restart()
+# node Module
+## node.restart()
 ####Description
-restart the chip.
+Restarts the chip.
 
 ####Syntax
-node.restart()
+`node.restart()`
 
 ####Parameters
- - `nil`
+`nil`
 
 ####Returns
- - `nil`
+`nil`
 
 ####Example
    
 ```lua
-    node.restart();
+node.restart();
 ```
-
+___
 ## node.dsleep()
 ####Description
 Enter deep sleep mode, wake up when timed out.
@@ -39,17 +40,18 @@ More details as follows:<br />
  - `option`: number(Integer) or nil. If option = nil, it will use last alive setting as default option.
 
 ####Returns
-- `nil`
+`nil`
 
 ####Example
 
 ```lua
-    --do nothing
-    node.dsleep()
-    --sleep μs
-    node.dsleep(1000000)
-    --set sleep option, then sleep μs
-    node.dsleep(1000000, 4)
-    --set sleep option only
-    node.dsleep(nil,4)
+--do nothing
+node.dsleep()
+--sleep μs
+node.dsleep(1000000)
+--set sleep option, then sleep μs
+node.dsleep(1000000, 4)
+--set sleep option only
+node.dsleep(nil,4)
 ```
+___
