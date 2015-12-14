@@ -25,4 +25,4 @@ done
 rm out/*png out/*xbm
 ```
 
-It read all the png in the current folder and put resulting mono to ./out/
+Convert all the png in the current folder and put resulting .mono to ./out
