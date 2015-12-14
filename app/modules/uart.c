@@ -156,10 +156,16 @@ static int uart_write( lua_State* L )
 
 // Module function map
 static const LUA_REG_TYPE uart_map[] =  {
-  { LSTRKEY( "setup" ),  LFUNCVAL( uart_setup ) },
-  { LSTRKEY( "write" ),  LFUNCVAL( uart_write ) },
-  { LSTRKEY( "on" ),     LFUNCVAL( uart_on ) },
-  { LSTRKEY( "alt" ),    LFUNCVAL( uart_alt ) },
+  { LSTRKEY( "setup" ), LFUNCVAL( uart_setup ) },
+  { LSTRKEY( "write" ), LFUNCVAL( uart_write ) },
+  { LSTRKEY( "on" ),    LFUNCVAL( uart_on ) },
+  { LSTRKEY( "alt" ),   LFUNCVAL( uart_alt ) },
+  { LSTRKEY( "STOPBITS_1" ),   LNUMVAL( PLATFORM_UART_STOPBITS_1 ) },
+  { LSTRKEY( "STOPBITS_1_5" ), LNUMVAL( PLATFORM_UART_STOPBITS_1_5 ) },
+  { LSTRKEY( "STOPBITS_2" ),   LNUMVAL( PLATFORM_UART_STOPBITS_2 ) },
+  { LSTRKEY( "PARITY_NONE" ),  LNUMVAL( PLATFORM_UART_PARITY_NONE ) },
+  { LSTRKEY( "PARITY_EVEN" ),  LNUMVAL( PLATFORM_UART_PARITY_EVEN ) },
+  { LSTRKEY( "PARITY_ODD" ),   LNUMVAL( PLATFORM_UART_PARITY_ODD ) },
   { LNILKEY, LNILVAL }
 };
 
