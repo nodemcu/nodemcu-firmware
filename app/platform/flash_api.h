@@ -4,8 +4,6 @@
 #include "user_config.h"
 #include "cpu_esp8266.h"
 
-#define FLASH_ADDRESS_START_MAP (INTERNAL_FLASH_START_ADDRESS)
-
 #define FLASH_SIZE_2MBIT    (2   * 1024 * 1024)
 #define FLASH_SIZE_4MBIT    (4   * 1024 * 1024)
 #define FLASH_SIZE_8MBIT    (8   * 1024 * 1024)

@@ -102,15 +102,14 @@ extern char _flash_used_end[];
 // Return the sector number, as well as the start and end address of the sector
 static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
 {
-  address -= INTERNAL_FLASH_START_ADDRESS;
 #ifdef INTERNAL_FLASH_SECTOR_SIZE
   // All the sectors in the flash have the same size, so just align the address
   uint32_t sect_id = address / INTERNAL_FLASH_SECTOR_SIZE;
 
   if( pstart )
-    *pstart = sect_id * INTERNAL_FLASH_SECTOR_SIZE + INTERNAL_FLASH_START_ADDRESS;
+    *pstart = sect_id * INTERNAL_FLASH_SECTOR_SIZE ;
   if( pend )
-    *pend = ( sect_id + 1 ) * INTERNAL_FLASH_SECTOR_SIZE + INTERNAL_FLASH_START_ADDRESS - 1;
+    *pend = ( sect_id + 1 ) * INTERNAL_FLASH_SECTOR_SIZE - 1;
   return sect_id;
 #else // #ifdef INTERNAL_FLASH_SECTOR_SIZE
   // The flash has blocks of different size
@@ -121,9 +120,9 @@ static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t
   while( ( total <= address ) && ( i < sizeof( flash_sect_size ) / sizeof( uint32_t ) ) )
     total += flash_sect_size[ i ++ ];
   if( pstart )
-    *pstart = ( total - flash_sect_size[ i - 1 ] ) + INTERNAL_FLASH_START_ADDRESS;
+    *pstart = ( total - flash_sect_size[ i - 1 ] );
   if( pend )
-    *pend = total + INTERNAL_FLASH_START_ADDRESS - 1;
+    *pend = total - 1;
   return i - 1;
 #endif // #ifdef INTERNAL_FLASH_SECTOR_SIZE
 }
@@ -150,13 +149,12 @@ uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
   uint32_t start, end, sect;
   NODE_DBG("_flash_used_end:%08x\n", (uint32_t)_flash_used_end);
   if(_flash_used_end>0){ // find the used sector
-    // sect = flashh_find_sector( ( uint32_t )flash_used_size + INTERNAL_FLASH_START_ADDRESS - 1, NULL, &end );
-    sect = flashh_find_sector( ( uint32_t )_flash_used_end - 1, NULL, &end );
+    sect = flashh_find_sector( platform_flash_mapped2phys ( (uint32_t)_flash_used_end - 1), NULL, &end );
     if( psect )
       *psect = sect + 1;    
     return end + 1;
   }else{
-    sect = flashh_find_sector( INTERNAL_FLASH_START_ADDRESS, &start, NULL ); // find the first free sector
+    sect = flashh_find_sector( 0, &start, NULL ); // find the first free sector
     if( psect )
       *psect = sect;   
     return start;
