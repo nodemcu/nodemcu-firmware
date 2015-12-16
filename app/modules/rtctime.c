@@ -1,7 +1,7 @@
 // Module for RTC time keeping
 
+#include "module.h"
 #include "lauxlib.h"
-#include "lrodefs.h"
 
 #include "rtc/rtctime_internal.h"
 #include "rtc/rtctime.h"
@@ -116,7 +116,7 @@ static int rtctime_dsleep_aligned (lua_State *L)
 
 
 // Module function map
-const LUA_REG_TYPE rtctime_map[] = {
+static const LUA_REG_TYPE rtctime_map[] = {
   { LSTRKEY("set"),            LFUNCVAL(rtctime_set) },
   { LSTRKEY("get"),            LFUNCVAL(rtctime_get) },
   { LSTRKEY("dsleep"),         LFUNCVAL(rtctime_dsleep)  },
@@ -124,10 +124,4 @@ const LUA_REG_TYPE rtctime_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_rtctime (lua_State *L) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(RTCTIME, "rtctime", rtctime_map, NULL);

@@ -1,8 +1,8 @@
 // Module for interfacing with adc
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_types.h"
 #include "user_interface.h"
@@ -25,16 +25,10 @@ static int adc_readvdd33( lua_State* L )
 }
 
 // Module function map
-const LUA_REG_TYPE adc_map[] = {
+static const LUA_REG_TYPE adc_map[] = {
   { LSTRKEY( "read" ),      LFUNCVAL( adc_sample ) },
   { LSTRKEY( "readvdd33" ), LFUNCVAL( adc_readvdd33) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_adc( lua_State *L ) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-# error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(ADC, "adc", adc_map, NULL);

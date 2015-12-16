@@ -1,8 +1,8 @@
 // Module for interfacing with serial
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_types.h"
 #include "c_string.h"
@@ -155,7 +155,7 @@ static int uart_write( lua_State* L )
 }
 
 // Module function map
-const LUA_REG_TYPE uart_map[] =  {
+static const LUA_REG_TYPE uart_map[] =  {
   { LSTRKEY( "setup" ),  LFUNCVAL( uart_setup ) },
   { LSTRKEY( "write" ),  LFUNCVAL( uart_write ) },
   { LSTRKEY( "on" ),     LFUNCVAL( uart_on ) },
@@ -163,10 +163,4 @@ const LUA_REG_TYPE uart_map[] =  {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_uart( lua_State *L ) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(UART, "uart", uart_map, NULL);

@@ -1,5 +1,6 @@
 // Module for interfacing with system
 
+#include "module.h"
 #include "lauxlib.h"
 
 #include "ldebug.h"
@@ -547,7 +548,7 @@ static int node_stripdebug (lua_State *L) {
 #endif
 
 // Module function map
-const LUA_REG_TYPE node_map[] =
+static const LUA_REG_TYPE node_map[] =
 {
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
   { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
@@ -579,7 +580,4 @@ const LUA_REG_TYPE node_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_node( lua_State *L )
-{
-  return 0;
-}
+NODEMCU_MODULE(NODE, "node", node_map, NULL);

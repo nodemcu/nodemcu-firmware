@@ -1,8 +1,8 @@
 // Module for coapwork
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_string.h"
 #include "c_stdlib.h"
@@ -578,7 +578,7 @@ static const LUA_REG_TYPE coap_client_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE coap_map[] = 
+static const LUA_REG_TYPE coap_map[] = 
 {
   { LSTRKEY( "Server" ),      LFUNCVAL( coap_createServer ) },
   { LSTRKEY( "Client" ),      LFUNCVAL( coap_createClient ) },
@@ -594,14 +594,12 @@ const LUA_REG_TYPE coap_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_coap( lua_State *L )
+int luaopen_coap( lua_State *L )
 {
   endpoint_setup();
   luaL_rometatable(L, "coap_server", (void *)coap_server_map);  // create metatable for coap_server 
   luaL_rometatable(L, "coap_client", (void *)coap_client_map);  // create metatable for coap_client  
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
 }
+
+NODEMCU_MODULE(COAP, "coap", coap_map, luaopen_coap);

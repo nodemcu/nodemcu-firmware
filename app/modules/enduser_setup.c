@@ -31,10 +31,9 @@
  * @author Robert Foss <dev@robertfoss.se>
  */
 
-
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
@@ -927,17 +926,10 @@ static int enduser_setup_stop(lua_State* L)
 }
 
 
-const LUA_REG_TYPE enduser_setup_map[] = {
+static const LUA_REG_TYPE enduser_setup_map[] = {
   { LSTRKEY( "start" ), LFUNCVAL( enduser_setup_start )},
   { LSTRKEY( "stop" ),  LFUNCVAL( enduser_setup_stop  )},
   { LNILKEY, LNILVAL}
 };
 
-LUALIB_API int luaopen_enduser_setup(lua_State *L) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
-
+NODEMCU_MODULE(ENDUSER_SETUP, "enduser_setup", enduser_setup_map, NULL);

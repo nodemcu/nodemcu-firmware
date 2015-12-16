@@ -1,7 +1,7 @@
 // Module for interfacing with the DHTxx sensors (xx = 11-21-22-33-44).
 
+#include "module.h"
 #include "lauxlib.h"
-#include "lrodefs.h"
 #include "platform.h"
 #include "cpu_esp8266.h"
 #include "dht.h"
@@ -99,7 +99,7 @@ static int dht_lapi_readxx( lua_State *L )
 // }
 
 // Module function map
-const LUA_REG_TYPE dht_map[] = {
+static const LUA_REG_TYPE dht_map[] = {
   { LSTRKEY( "read" ),           LFUNCVAL( dht_lapi_read ) },
   { LSTRKEY( "read11" ),         LFUNCVAL( dht_lapi_read11 ) },
   { LSTRKEY( "readxx" ),         LFUNCVAL( dht_lapi_readxx ) },
@@ -109,10 +109,4 @@ const LUA_REG_TYPE dht_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_dht( lua_State *L ) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(DHT, "dht", dht_map, NULL);

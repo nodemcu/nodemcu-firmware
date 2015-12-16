@@ -1,8 +1,8 @@
 // Module for interfacing with the SPI interface
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #define SPI_HALFDUPLEX 0
 #define SPI_FULLDUPLEX 1
@@ -306,7 +306,7 @@ static int spi_transaction( lua_State *L )
 
 
 // Module function map
-const LUA_REG_TYPE spi_map[] = {
+static const LUA_REG_TYPE spi_map[] = {
   { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
   { LSTRKEY( "send" ),        LFUNCVAL( spi_send_recv ) },
   { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
@@ -325,10 +325,4 @@ const LUA_REG_TYPE spi_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_spi( lua_State *L ) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(SPI, "spi", spi_map, NULL);

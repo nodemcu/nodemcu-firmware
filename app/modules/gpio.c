@@ -1,8 +1,8 @@
 // Module for interfacing with GPIO
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_types.h"
 #include "c_string.h"
@@ -220,7 +220,7 @@ static int lgpio_serout( lua_State* L )
 #undef DELAY_TABLE_MAX_LEN
 
 // Module function map
-const LUA_REG_TYPE gpio_map[] = {
+static const LUA_REG_TYPE gpio_map[] = {
   { LSTRKEY( "mode" ),   LFUNCVAL( lgpio_mode ) },
   { LSTRKEY( "read" ),   LFUNCVAL( lgpio_read ) },
   { LSTRKEY( "write" ),  LFUNCVAL( lgpio_write ) },
@@ -238,7 +238,7 @@ const LUA_REG_TYPE gpio_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_gpio( lua_State *L ) {
+int luaopen_gpio( lua_State *L ) {
 #ifdef GPIO_INTERRUPT_ENABLE
   int i;
   for(i=0;i<GPIO_PIN_NUM;i++){
@@ -246,10 +246,7 @@ LUALIB_API int luaopen_gpio( lua_State *L ) {
   }
   platform_gpio_init(gpio_intr_callback);
 #endif
-
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
 }
+
+NODEMCU_MODULE(GPIO, "gpio", gpio_map, luaopen_gpio);

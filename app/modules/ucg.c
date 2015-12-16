@@ -1,8 +1,8 @@
 // Module for Ucglib
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_stdlib.h"
 
@@ -925,7 +925,7 @@ static const LUA_REG_TYPE lucg_display_map[] =
     { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE lucg_map[] = 
+static const LUA_REG_TYPE lucg_map[] = 
 {
 #undef UCG_DISPLAY_TABLE_ENTRY
 #define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) { LSTRKEY( #binding ), LFUNCVAL ( lucg_ ##binding ) },
@@ -951,8 +951,10 @@ const LUA_REG_TYPE lucg_map[] =
     { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_ucg( lua_State *L )
+int luaopen_ucg( lua_State *L )
 {
     luaL_rometatable(L, "ucg.display", (void *)lucg_display_map);  // create metatable
     return 0;
 }
+
+NODEMCU_MODULE(UCG, "ucg", lucg_map, luaopen_ucg);

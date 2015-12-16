@@ -48,9 +48,9 @@ tmr.softwd(int)
 	the timer units are seconds
 */
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 #include "c_types.h"
 
 #define TIMER_MODE_OFF 3
@@ -306,7 +306,7 @@ static int tmr_softwd( lua_State* L ){
 
 // Module function map
 
-const LUA_REG_TYPE tmr_map[] = {
+static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
 	{ LSTRKEY( "now" ),          LFUNCVAL( tmr_now ) },
 	{ LSTRKEY( "wdclr" ),        LFUNCVAL( tmr_wdclr ) },
@@ -325,7 +325,7 @@ const LUA_REG_TYPE tmr_map[] = {
 	{ LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_tmr( lua_State *L ){
+int luaopen_tmr( lua_State *L ){
 	int i;	
 	for(i=0; i<NUM_TMR; i++){
 		alarm_timers[i].lua_ref = LUA_NOREF;
@@ -336,10 +336,7 @@ LUALIB_API int luaopen_tmr( lua_State *L ){
 	ets_timer_disarm(&rtc_timer);
 	ets_timer_setfn(&rtc_timer, rtc_callback, NULL);
 	ets_timer_arm_new(&rtc_timer, 1000, 1, 1);
-
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
 }
+
+NODEMCU_MODULE(TMR, "tmr", tmr_map, luaopen_tmr);

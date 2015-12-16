@@ -1,8 +1,8 @@
 // Module for interfacing with the I2C interface
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 // Lua: speed = i2c.setup( id, sda, scl, speed )
 static int i2c_setup( lua_State *L )
@@ -140,7 +140,7 @@ static int i2c_read( lua_State *L )
 }
 
 // Module function map
-const LUA_REG_TYPE i2c_map[] = {
+static const LUA_REG_TYPE i2c_map[] = {
   { LSTRKEY( "setup" ),       LFUNCVAL( i2c_setup ) },
   { LSTRKEY( "start" ),       LFUNCVAL( i2c_start ) },
   { LSTRKEY( "stop" ),        LFUNCVAL( i2c_stop ) },
@@ -154,11 +154,4 @@ const LUA_REG_TYPE i2c_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_i2c( lua_State *L ) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
-
+NODEMCU_MODULE(I2C, "i2c", i2c_map, NULL);

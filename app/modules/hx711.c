@@ -1,9 +1,9 @@
 // Module for HX711 load cell amplifier
 // https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
@@ -66,17 +66,15 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
 }
 
 // Module function map
-const LUA_REG_TYPE hx711_map[] = {
+static const LUA_REG_TYPE hx711_map[] = {
   { LSTRKEY( "init" ), LFUNCVAL( hx711_init )},
   { LSTRKEY( "read" ), LFUNCVAL( hx711_read )},
   { LNILKEY, LNILVAL}
 };
 
-LUALIB_API int luaopen_hx711(lua_State *L) {
+int luaopen_hx711(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
 }
+
+NODEMCU_MODULE(HX711, "hx711", hx711_map, luaopen_hx711);

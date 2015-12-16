@@ -1,8 +1,8 @@
 // Module for network
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_string.h"
 #include "c_stdlib.h"
@@ -1545,7 +1545,7 @@ static const LUA_REG_TYPE net_dns_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE net_map[] = {
+static const LUA_REG_TYPE net_map[] = {
   { LSTRKEY( "createServer" ),     LFUNCVAL( net_createServer ) },
   { LSTRKEY( "createConnection" ), LFUNCVAL( net_createConnection ) },
   { LSTRKEY( "multicastJoin"),     LFUNCVAL( net_multicastJoin ) },
@@ -1557,7 +1557,7 @@ const LUA_REG_TYPE net_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_net( lua_State *L ) {
+int luaopen_net( lua_State *L ) {
   int i;
   for(i=0;i<MAX_SOCKET;i++)
   {
@@ -1570,9 +1570,7 @@ LUALIB_API int luaopen_net( lua_State *L ) {
   luaL_rometatable(L, "net.array", (void *)net_array_map);    // create metatable for net.array
   #endif
 
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
 }
+
+NODEMCU_MODULE(NET, "net", net_map, luaopen_net);

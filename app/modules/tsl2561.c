@@ -4,9 +4,9 @@
  *  Created on: Aug 21, 2015
  *  Author: Michael Lucas (Aeprox @github)
  */
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 #include "../tsl2561/tsl2561.h"
 
 static uint16_t ch0;
@@ -101,7 +101,7 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_getchannels(lua_State* L) {
 }
 
 // Module function map
-const LUA_REG_TYPE tsl2561_map[] = {
+static const LUA_REG_TYPE tsl2561_map[] = {
 	{	LSTRKEY( "settiming" ),             LFUNCVAL( tsl2561_lua_settiming)},
 	{	LSTRKEY( "getlux" ),                LFUNCVAL( tsl2561_lua_calclux )},
 	{	LSTRKEY( "getrawchannels" ),        LFUNCVAL( tsl2561_lua_getchannels )},
@@ -124,10 +124,4 @@ const LUA_REG_TYPE tsl2561_map[] = {
 	{	LNILKEY, LNILVAL}
 };
 
-LUALIB_API int luaopen_tsl2561(lua_State *L) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(TSL2561, "tsl2561", tsl2561_map, NULL);

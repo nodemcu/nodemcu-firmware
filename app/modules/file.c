@@ -1,8 +1,8 @@
 // Module for interfacing with file system
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_types.h"
 #include "flash_fs.h"
@@ -296,7 +296,7 @@ static int file_writeline( lua_State* L )
 }
 
 // Module function map
-const LUA_REG_TYPE file_map[] = {
+static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "list" ),      LFUNCVAL( file_list ) },
   { LSTRKEY( "open" ),      LFUNCVAL( file_open ) },
   { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
@@ -316,10 +316,4 @@ const LUA_REG_TYPE file_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_file( lua_State *L ) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(FILE, "file", file_map, NULL);

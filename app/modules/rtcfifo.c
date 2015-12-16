@@ -1,7 +1,7 @@
 // Module for RTC sample FIFO storage
 
+#include "module.h"
 #include "lauxlib.h"
-#include "lrodefs.h"
 #include "user_modules.h"
 #include "rtc/rtctime.h"
 #define RTCTIME_SLEEP_ALIGNED rtctime_deep_sleep_until_aligned_us
@@ -165,7 +165,7 @@ static int rtcfifo_dsleep_until_sample (lua_State *L)
 #endif
 
 // Module function map
-const LUA_REG_TYPE rtcfifo_map[] = {
+static const LUA_REG_TYPE rtcfifo_map[] = {
   { LSTRKEY("prepare"),             LFUNCVAL(rtcfifo_prepare) },
   { LSTRKEY("ready"),               LFUNCVAL(rtcfifo_ready) },
   { LSTRKEY("put"),                 LFUNCVAL(rtcfifo_put) },
@@ -179,11 +179,4 @@ const LUA_REG_TYPE rtcfifo_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_rtcfifo (lua_State *L)
-{
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(RTCFIFO, "rtcfifo", rtcfifo_map, NULL);

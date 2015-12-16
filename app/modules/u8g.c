@@ -1,8 +1,8 @@
 // Module for U8glib
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_stdlib.h"
 
@@ -1084,7 +1084,7 @@ static const LUA_REG_TYPE lu8g_display_map[] = {
 #undef U8G_DISPLAY_TABLE_ENTRY
 #undef U8G_FONT_TABLE_ENTRY
 
-const LUA_REG_TYPE lu8g_map[] = {
+static const LUA_REG_TYPE lu8g_map[] = {
 #define U8G_DISPLAY_TABLE_ENTRY(device) \
   { LSTRKEY( #device ),            LFUNCVAL ( lu8g_ ##device ) },
   U8G_DISPLAY_TABLE_I2C
@@ -1106,11 +1106,9 @@ const LUA_REG_TYPE lu8g_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_u8g( lua_State *L ) {
+int luaopen_u8g( lua_State *L ) {
   luaL_rometatable(L, "u8g.display", (void *)lu8g_display_map);  // create metatable
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
   return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
 }
+
+NODEMCU_MODULE(U8G, "u8g", lu8g_map, luaopen_u8g);

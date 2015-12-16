@@ -5,10 +5,10 @@
 // Modified by BogdanM for eLua
 
 
+#include "module.h"
 #include "c_limits.h"
 
 #include "lauxlib.h"
-#include "lrodefs.h"
 
 /* FIXME: Assume size_t is an unsigned lua_Integer */
 typedef size_t lua_UInteger;
@@ -119,7 +119,7 @@ static int bit_clear( lua_State* L )
   return 1; 
 }
 
-const LUA_REG_TYPE bit_map[] = {
+static const LUA_REG_TYPE bit_map[] = {
   { LSTRKEY( "bnot" ),    LFUNCVAL( bit_bnot ) },
   { LSTRKEY( "band" ),    LFUNCVAL( bit_band ) },
   { LSTRKEY( "bor" ),     LFUNCVAL( bit_bor ) },
@@ -135,10 +135,4 @@ const LUA_REG_TYPE bit_map[] = {
   { LNILKEY, LNILVAL}
 };
 
-LUALIB_API int luaopen_bit (lua_State *L) {
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-# error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(BIT, "bit", bit_map, NULL);

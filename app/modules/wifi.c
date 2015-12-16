@@ -1,8 +1,8 @@
 // Module for interfacing with WIFI
 
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "lrodefs.h"
 
 #include "c_string.h"
 #include "c_stdlib.h"
@@ -1377,7 +1377,7 @@ static const LUA_REG_TYPE wifi_ap_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE wifi_map[] =  {
+static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setmode" ),        LFUNCVAL( wifi_setmode ) },
   { LSTRKEY( "getmode" ),        LFUNCVAL( wifi_getmode ) },
   { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
@@ -1421,11 +1421,4 @@ const LUA_REG_TYPE wifi_map[] =  {
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_wifi( lua_State *L )
-{
-#if MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2
-  return 0;
-#else
-#  error "NodeMCU modules must be build with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)" 
-#endif
-}
+NODEMCU_MODULE(WIFI, "wifi", wifi_map, NULL);
