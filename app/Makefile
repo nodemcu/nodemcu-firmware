@@ -86,8 +86,10 @@ COMPONENTS_eagle.app.v6 = 			\
 	crypto/libcrypto.a 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
-	modules/libmodules.a		
+	modules/libmodules.a			\
 
+# Special consideration for modules to support NODEMCU_MODULE handling
+MODULES_LIB = $(filter %modules.a, $(DEP_LIBS_eagle.app.v6))
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
@@ -98,6 +100,9 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--no-check-sections 		\
 	-Wl,--wrap=_xtos_set_exception_handler	\
 	-Wl,-static 				\
+	-Wl,--whole-archive 			\
+	$(MODULES_LIB)				\
+	-Wl,--no-whole-archive			\
 	-Wl,--start-group 			\
 	-lc 					\
 	-lgcc 					\
