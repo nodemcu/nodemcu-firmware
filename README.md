@@ -209,17 +209,15 @@ There are several options for building the NodeMCU firmware.
 
 ## Online firmware custom build
 
-Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can choose only the modules you need, and download the firmware once built.
+Please try Marcel's [NodeMCU custom build](http://nodemcu-build.com) cloud service and you can choose only the modules you need, and download the firmware once built.
 
-NodeMCU custom builds can build from the master branch and dev branch (with the latest fixes).
+NodeMCU custom builds can build from all active branches (with the latest fixes).
 
 ## Docker containerised build
 
-See https://hub.docker.com/r/asmaps/nodemcu-builder/
+See [https://hub.docker.com/r/marcelstoer/nodemcu-build/](https://hub.docker.com/r/marcelstoer/nodemcu-build/)
 
-This docker image includes the build toolchain and SDK. You just run the docker
-image with your checked-out NodeMCU firmware repository (this one). The docker
-image can also flash the firmware to your device.
+This Docker image includes the build toolchain and SDK. You just run the Docker image with your checked-out NodeMCU firmware repository (this one).
 
 You will need to see BUILD OPTIONS below, to configure the firmware before building.
 
