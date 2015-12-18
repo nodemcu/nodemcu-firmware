@@ -88,8 +88,11 @@ COMPONENTS_eagle.app.v6 = 			\
 	tsl2561/tsl2561lib.a			\
 	modules/libmodules.a			\
 
-# Special consideration for modules to support NODEMCU_MODULE handling
-MODULES_LIB = $(filter %modules.a, $(DEP_LIBS_eagle.app.v6))
+# Inspect the modules library and work out which modules need to be linked.
+# For each enabled module, a symbol name of the form XYZ_module_selected is
+# returned. At link time those names are declared undefined, so those (and
+# only those) modules are pulled in.
+SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
@@ -100,9 +103,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--no-check-sections 		\
 	-Wl,--wrap=_xtos_set_exception_handler	\
 	-Wl,-static 				\
-	-Wl,--whole-archive 			\
-	$(MODULES_LIB)				\
-	-Wl,--no-whole-archive			\
+	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
 	-Wl,--start-group 			\
 	-lc 					\
 	-lgcc 					\

@@ -83,10 +83,10 @@ SECTIONS
     . = ALIGN(4);
     lua_libs = ABSOLUTE(.);
     /* Allow either empty define or defined-to-1 to include the module */
-    KEEP(*(.lua_libs .lua_libs1))
+    KEEP(*(.lua_libs))
     LONG(0) LONG(0) /* Null-terminate the array */
     lua_rotable = ABSOLUTE(.);
-    KEEP(*(.lua_rotable .lua_rotable1))
+    KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
 
     /* These are *only* pulled in by Lua, and therefore safe to put in flash */

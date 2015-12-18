@@ -34,37 +34,37 @@
  * a foo function in your module.
  */
 
-#define MODULE_STRIFY__(x) #x
-#define MODULE_STRIFY_(x) MODULE_STRIFY__(x)
 #define MODULE_EXPAND_(x) x
 #define MODULE_PASTE_(x,y) x##y
+#define MODULE_EXPAND_PASTE_(x,y) MODULE_PASTE_(x,y)
 
-/* Given an uppercase name XYZ, look at the corresponding LUA_USE_MODULES_XYZ
- * and append that to the section name prefix (e.g. "lua_libs"). For an
- * included module, this will yield either ".lua_libs" (for an empty #define)
- * or ".lua_libs1" (if #defined to 1). The linker script will then
- * pick up all items in those sections and construct an array for us.
- * A non-included module ZZZ ends up in a section named
- * ".lua_libsLUA_USE_MODULES_ZZZ" which gets discarded by the linker (together
- * with the associated module code).
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(s)))
+
+/* For the ROM table, we name the variable according to ( | denotes concat):
+ *   cfgname | _module_selected | LUA_USE_MODULES_##cfgname
+ * where the LUA_USE_MODULES_XYZ macro is first expanded to yield either
+ * an empty string (or 1) if the module has been enabled, or the literal
+ * LUA_USE_MOUDLE_XYZ in the case it hasn't. Thus, the name of the variable
+ * ends up looking either like XYZ_module_enabled, or if not enabled,
+ * XYZ_module_enabledLUA_USE_MODULES_XYZ.  This forms the basis for
+ * letting the build system detect automatically (via nm) which modules need
+ * to be linked in.
  */
-#define PICK_SECTION_(pfx, name) \
-   pfx MODULE_STRIFY_(MODULE_EXPAND_(LUA_USE_MODULES_ ## name))
-
 #define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
-  static const __attribute__((used,unused,section(PICK_SECTION_(".lua_libs",cfgname)))) \
+  const LOCK_IN_SECTION(".lua_libs") \
     luaL_Reg MODULE_PASTE_(lua_lib_,cfgname) = { luaname, initfunc }; \
-  static const __attribute__((used,unused,section(PICK_SECTION_(".lua_rotable",cfgname)))) \
-    luaR_table MODULE_PASTE_(lua_rotable_,cfgname) = { luaname, map }
+  const LOCK_IN_SECTION(".lua_rotable") \
+    luaR_table MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
+    = { luaname, map }
 
 
 /* System module registration support, not using LUA_USE_MODULES_XYZ. */
 #define BUILTIN_LIB_INIT(name, luaname, initfunc) \
-  static const __attribute__((used,unused,section(".lua_libs"))) \
+  const LOCK_IN_SECTION(".lua_libs") \
     luaL_Reg MODULE_PASTE_(lua_lib_,name) = { luaname, initfunc }
 
 #define BUILTIN_LIB(name, luaname, map) \
-  static const __attribute__((used,unused,section(".lua_rotable"))) \
+  const LOCK_IN_SECTION(".lua_rotable") \
     luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map }
 
 #if !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
