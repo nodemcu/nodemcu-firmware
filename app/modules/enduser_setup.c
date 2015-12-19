@@ -31,12 +31,9 @@
  * @author Robert Foss <dev@robertfoss.se>
  */
 
-
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
@@ -929,17 +926,10 @@ static int enduser_setup_stop(lua_State* L)
 }
 
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE enduser_setup_map[] =
-{
+static const LUA_REG_TYPE enduser_setup_map[] = {
   { LSTRKEY( "start" ), LFUNCVAL( enduser_setup_start )},
   { LSTRKEY( "stop" ),  LFUNCVAL( enduser_setup_stop  )},
   { LNILKEY, LNILVAL}
 };
 
-LUALIB_API int luaopen_enduser_setup(lua_State *L) {
-  LREGISTER(L, "enduser_setup", enduser_setup_map);
-  return 1;
-}
-
+NODEMCU_MODULE(ENDUSER_SETUP, "enduser_setup", enduser_setup_map, NULL);

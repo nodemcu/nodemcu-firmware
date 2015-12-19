@@ -1,5 +1,6 @@
 // Module for RTC user memory access
 
+#include "module.h"
 #include "lauxlib.h"
 #include "rtc/rtcaccess.h"
 
@@ -40,21 +41,10 @@ static int rtcmem_write32 (lua_State *L)
 
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE rtcmem_map[] =
-{
+static const LUA_REG_TYPE rtcmem_map[] = {
   { LSTRKEY("read32"),  LFUNCVAL(rtcmem_read32)  },
   { LSTRKEY("write32"), LFUNCVAL(rtcmem_write32) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_rtcmem (lua_State *L)
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else
-  luaL_register (L, AUXLIB_RTCMEM, rtcmem_map);
-  return 1;
-#endif
-}
+NODEMCU_MODULE(RTCMEM, "rtcmem", rtcmem_map, NULL);
