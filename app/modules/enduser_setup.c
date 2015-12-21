@@ -640,6 +640,10 @@ static void enduser_setup_ap_start(void)
   struct softap_config cnf;
   c_memset(&(cnf), 0, sizeof(struct softap_config));
 
+#ifndef ENDUSER_SETUP_AP_SSID
+  #define ENDUSER_SETUP_AP_SSID "SetupGadget"
+#endif
+
   char ssid[] = ENDUSER_SETUP_AP_SSID;
   int ssid_name_len = c_strlen(ENDUSER_SETUP_AP_SSID);
   c_memcpy(&(cnf.ssid), ssid, ssid_name_len);
