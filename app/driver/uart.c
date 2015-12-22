@@ -60,10 +60,10 @@ uart_config(uint8 uart_no)
 
     uart_div_modify(uart_no, UART_CLK_FREQ / (UartDev.baut_rate));
 
-    WRITE_PERI_REG(UART_CONF0(uart_no),    UartDev.exist_parity
-                   | UartDev.parity
-                   | (UartDev.stop_bits << UART_STOP_BIT_NUM_S)
-                   | (UartDev.data_bits << UART_BIT_NUM_S));
+    WRITE_PERI_REG(UART_CONF0(uart_no), ((UartDev.exist_parity & UART_PARITY_EN_M)  <<  UART_PARITY_EN_S) //SET BIT AND PARITY MODE
+                   | ((UartDev.parity & UART_PARITY_M)  <<UART_PARITY_S )
+                   | ((UartDev.stop_bits & UART_STOP_BIT_NUM) << UART_STOP_BIT_NUM_S)
+                   | ((UartDev.data_bits & UART_BIT_NUM) << UART_BIT_NUM_S));
 
 
     //clear rx and tx fifo,not ready

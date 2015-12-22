@@ -17,20 +17,20 @@ typedef enum {
 } UartBitsNum4Char;
 
 typedef enum {
-    ONE_STOP_BIT             = 0,
-    ONE_HALF_STOP_BIT        = BIT2,
-    TWO_STOP_BIT             = BIT2
+    ONE_STOP_BIT             = 0x1,
+    ONE_HALF_STOP_BIT        = 0x2,
+    TWO_STOP_BIT             = 0x3
 } UartStopBitsNum;
 
 typedef enum {
-    NONE_BITS = 0,
-    ODD_BITS   = 0,
-    EVEN_BITS = BIT4
+    NONE_BITS = 0x2,
+    ODD_BITS   = 1,
+    EVEN_BITS = 0
 } UartParityMode;
 
 typedef enum {
     STICK_PARITY_DIS   = 0,
-    STICK_PARITY_EN    = BIT3 | BIT5
+    STICK_PARITY_EN    = 1
 } UartExistParity;
 
 typedef enum {

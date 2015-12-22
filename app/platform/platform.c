@@ -222,8 +222,8 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
 
   switch (stopbits)
   {
-    case PLATFORM_UART_STOPBITS_1:
-      UartDev.stop_bits = ONE_STOP_BIT;
+    case PLATFORM_UART_STOPBITS_1_5:
+      UartDev.stop_bits = ONE_HALF_STOP_BIT;
       break;
     case PLATFORM_UART_STOPBITS_2:
       UartDev.stop_bits = TWO_STOP_BIT;
@@ -237,12 +237,15 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   {
     case PLATFORM_UART_PARITY_EVEN:
       UartDev.parity = EVEN_BITS;
+      UartDev.exist_parity = STICK_PARITY_EN;
       break;
     case PLATFORM_UART_PARITY_ODD:
       UartDev.parity = ODD_BITS;
+      UartDev.exist_parity = STICK_PARITY_EN;
       break;
     default:
       UartDev.parity = NONE_BITS;
+      UartDev.exist_parity = STICK_PARITY_DIS;
       break;
   }
 
