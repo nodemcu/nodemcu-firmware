@@ -11,6 +11,14 @@ markdown_extensions:
 - toc:
     permalink: True
 
+#requird du to https://github.com/rtfd/readthedocs.org/issues/1313
+extra_css:
+- css/extra.css
+extra_js:
+- js/extra.js
+
+site_favicon: img/favicon.png
+
 pages:
 - Overview: 'index.md'
 - English:
