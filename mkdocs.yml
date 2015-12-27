@@ -12,9 +12,10 @@ markdown_extensions:
     permalink: True
 
 #requird du to https://github.com/rtfd/readthedocs.org/issues/1313
+#see http://mkdocs.readthedocs.org/en/latest/user-guide/styling-your-docs/#customising-a-theme
 extra_css:
 - css/extra.css
-extra_js:
+extra_javascript:
 - js/extra.js
 
 site_favicon: img/favicon.png
