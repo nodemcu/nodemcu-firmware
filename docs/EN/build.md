@@ -1,6 +1,6 @@
 There are essentially three ways to build your NodeMCU firmware: cloud build service, Docker image, dedicated Linux environment (possibly VM).
 
-## Cloud build serivce
+## Cloud build service
 NodeMCU "application developers" just need a ready-made firmware. There's a [cloud build service](http://nodemcu-build.com/) with a nice UI and configuration options for them.
 
 ## Docker image

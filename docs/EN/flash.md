@@ -24,6 +24,3 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 Source: [https://github.com/nodemcu/nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
 
 Supported platforms: Windows
-
-## ...
-more

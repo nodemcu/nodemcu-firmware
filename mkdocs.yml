@@ -12,10 +12,14 @@ markdown_extensions:
     permalink: True
 
 pages:
-- Home: 'index.md'
-- Building the firmware: 'build.md'
-- Flashing the firmware: 'flash.md'
-- FAQ: 'faq.md'
-- Support: 'support.md'
-- Modules:
-    - 'node': 'modules/node.md'
+- Overview: 'index.md'
+- English:
+    - Home: 'EN/index.md'
+    - Building the firmware: 'EN/build.md'
+    - Flashing the firmware: 'EN/flash.md'
+    - FAQ: 'EN/faq.md'
+    - Support: 'EN/support.md'
+    - Modules:
+        - 'node': 'EN/modules/node.md'
+- Deutsch:
+    - Home: 'DE/index.md'
