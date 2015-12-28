@@ -1,10 +1,8 @@
 // Module for interfacing with the OneWire interface
 
-//#include "lua.h"
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "platform.h"
 #include "driver/onewire.h"
 
 // Lua: ow.setup( id )
@@ -282,46 +280,29 @@ static int ow_crc16( lua_State *L )
 #endif
 
 // Module function map
-#define MIN_OPT_LEVEL   2
-#include "lrodefs.h"
-const LUA_REG_TYPE ow_map[] = 
-{
-  { LSTRKEY( "setup" ),  LFUNCVAL( ow_setup ) },
-  { LSTRKEY( "reset" ), LFUNCVAL( ow_reset ) },
-  { LSTRKEY( "skip" ), LFUNCVAL( ow_skip ) },
-  { LSTRKEY( "select" ), LFUNCVAL( ow_select ) },
-  { LSTRKEY( "write" ), LFUNCVAL( ow_write ) },
-  { LSTRKEY( "write_bytes" ), LFUNCVAL( ow_write_bytes ) },
-  { LSTRKEY( "read" ), LFUNCVAL( ow_read ) },
-  { LSTRKEY( "read_bytes" ), LFUNCVAL( ow_read_bytes ) },
-  { LSTRKEY( "depower" ), LFUNCVAL( ow_depower ) },
+static const LUA_REG_TYPE ow_map[] = {
+  { LSTRKEY( "setup" ),         LFUNCVAL( ow_setup ) },
+  { LSTRKEY( "reset" ),         LFUNCVAL( ow_reset ) },
+  { LSTRKEY( "skip" ),          LFUNCVAL( ow_skip ) },
+  { LSTRKEY( "select" ),        LFUNCVAL( ow_select ) },
+  { LSTRKEY( "write" ),         LFUNCVAL( ow_write ) },
+  { LSTRKEY( "write_bytes" ),   LFUNCVAL( ow_write_bytes ) },
+  { LSTRKEY( "read" ),          LFUNCVAL( ow_read ) },
+  { LSTRKEY( "read_bytes" ),    LFUNCVAL( ow_read_bytes ) },
+  { LSTRKEY( "depower" ),       LFUNCVAL( ow_depower ) },
 #if ONEWIRE_SEARCH
-  { LSTRKEY( "reset_search" ), LFUNCVAL( ow_reset_search ) },
+  { LSTRKEY( "reset_search" ),  LFUNCVAL( ow_reset_search ) },
   { LSTRKEY( "target_search" ), LFUNCVAL( ow_target_search ) },
-  { LSTRKEY( "search" ), LFUNCVAL( ow_search ) },
+  { LSTRKEY( "search" ),        LFUNCVAL( ow_search ) },
 #endif
 #if ONEWIRE_CRC
-  { LSTRKEY( "crc8" ), LFUNCVAL( ow_crc8 ) },
+  { LSTRKEY( "crc8" ),          LFUNCVAL( ow_crc8 ) },
 #if ONEWIRE_CRC16
-  { LSTRKEY( "check_crc16" ), LFUNCVAL( ow_check_crc16 ) },
-  { LSTRKEY( "crc16" ), LFUNCVAL( ow_crc16 ) },
+  { LSTRKEY( "check_crc16" ),   LFUNCVAL( ow_check_crc16 ) },
+  { LSTRKEY( "crc16" ),         LFUNCVAL( ow_crc16 ) },
 #endif
-#endif
-#if LUA_OPTIMIZE_MEMORY > 0
-
 #endif
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_ow( lua_State *L )
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_OW, ow_map );
-  
-  // Add the constants
-  
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
-}
+NODEMCU_MODULE(OW, "ow", ow_map, NULL);

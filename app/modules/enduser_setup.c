@@ -31,12 +31,9 @@
  * @author Robert Foss <dev@robertfoss.se>
  */
 
-
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
@@ -643,6 +640,10 @@ static void enduser_setup_ap_start(void)
   struct softap_config cnf;
   c_memset(&(cnf), 0, sizeof(struct softap_config));
 
+#ifndef ENDUSER_SETUP_AP_SSID
+  #define ENDUSER_SETUP_AP_SSID "SetupGadget"
+#endif
+
   char ssid[] = ENDUSER_SETUP_AP_SSID;
   int ssid_name_len = c_strlen(ENDUSER_SETUP_AP_SSID);
   c_memcpy(&(cnf.ssid), ssid, ssid_name_len);
@@ -929,17 +930,10 @@ static int enduser_setup_stop(lua_State* L)
 }
 
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE enduser_setup_map[] =
-{
+static const LUA_REG_TYPE enduser_setup_map[] = {
   { LSTRKEY( "start" ), LFUNCVAL( enduser_setup_start )},
   { LSTRKEY( "stop" ),  LFUNCVAL( enduser_setup_stop  )},
   { LNILKEY, LNILVAL}
 };
 
-LUALIB_API int luaopen_enduser_setup(lua_State *L) {
-  LREGISTER(L, "enduser_setup", enduser_setup_map);
-  return 1;
-}
-
+NODEMCU_MODULE(ENDUSER_SETUP, "enduser_setup", enduser_setup_map, NULL);

@@ -4,11 +4,9 @@
  *  Created on: Aug 21, 2015
  *  Author: Michael Lucas (Aeprox @github)
  */
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 #include "../tsl2561/tsl2561.h"
 
 static uint16_t ch0;
@@ -102,38 +100,28 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_getchannels(lua_State* L) {
 	return 3;
 }
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE tsl2561_map[] =
-{
-	{	LSTRKEY( "settiming" ), LFUNCVAL( tsl2561_lua_settiming)},
-	{	LSTRKEY( "getlux" ), LFUNCVAL( tsl2561_lua_calclux )},
-	{	LSTRKEY( "getrawchannels" ), LFUNCVAL( tsl2561_lua_getchannels )},
-	{	LSTRKEY( "init" ), LFUNCVAL( tsl2561_init )},
-
-	{	LSTRKEY( "TSL2561_OK" ), LNUMVAL( TSL2561_ERROR_OK )},
+// Module function map
+static const LUA_REG_TYPE tsl2561_map[] = {
+	{	LSTRKEY( "settiming" ),             LFUNCVAL( tsl2561_lua_settiming)},
+	{	LSTRKEY( "getlux" ),                LFUNCVAL( tsl2561_lua_calclux )},
+	{	LSTRKEY( "getrawchannels" ),        LFUNCVAL( tsl2561_lua_getchannels )},
+	{	LSTRKEY( "init" ),                  LFUNCVAL( tsl2561_init )},
+	{	LSTRKEY( "TSL2561_OK" ),            LNUMVAL( TSL2561_ERROR_OK )},
 	{	LSTRKEY( "TSL2561_ERROR_I2CINIT" ), LNUMVAL( TSL2561_ERROR_I2CINIT )},
 	{	LSTRKEY( "TSL2561_ERROR_I2CBUSY" ), LNUMVAL( TSL2561_ERROR_I2CBUSY )},
-	{	LSTRKEY( "TSL2561_ERROR_NOINIT" ), LNUMVAL( TSL2561_ERROR_NOINIT )},
-	{	LSTRKEY( "TSL2561_ERROR_LAST" ), LNUMVAL( TSL2561_ERROR_LAST )},
-
-	{	LSTRKEY( "INTEGRATIONTIME_13MS" ), LNUMVAL( TSL2561_INTEGRATIONTIME_13MS )},
+	{	LSTRKEY( "TSL2561_ERROR_NOINIT" ),  LNUMVAL( TSL2561_ERROR_NOINIT )},
+	{	LSTRKEY( "TSL2561_ERROR_LAST" ),    LNUMVAL( TSL2561_ERROR_LAST )},
+	{	LSTRKEY( "INTEGRATIONTIME_13MS" ),  LNUMVAL( TSL2561_INTEGRATIONTIME_13MS )},
 	{	LSTRKEY( "INTEGRATIONTIME_101MS" ), LNUMVAL( TSL2561_INTEGRATIONTIME_101MS )},
 	{	LSTRKEY( "INTEGRATIONTIME_402MS" ), LNUMVAL( TSL2561_INTEGRATIONTIME_402MS )},
-	{	LSTRKEY( "GAIN_1X" ), LNUMVAL( TSL2561_GAIN_1X )},
-	{	LSTRKEY( "GAIN_16X" ), LNUMVAL( TSL2561_GAIN_16X )},
-
-	{	LSTRKEY( "PACKAGE_CS" ), LNUMVAL( TSL2561_PACKAGE_CS )},
-	{	LSTRKEY( "PACKAGE_T_FN_CL" ), LNUMVAL( TSL2561_PACKAGE_T_FN_CL )},
-
-	{	LSTRKEY( "ADDRESS_GND" ), LNUMVAL( TSL2561_ADDRESS_GND )},
-	{	LSTRKEY( "ADDRESS_FLOAT" ), LNUMVAL( TSL2561_ADDRESS_FLOAT )},
-	{	LSTRKEY( "ADDRESS_VDD" ), LNUMVAL( TSL2561_ADDRESS_VDD )},
-
+	{	LSTRKEY( "GAIN_1X" ),               LNUMVAL( TSL2561_GAIN_1X )},
+	{	LSTRKEY( "GAIN_16X" ),              LNUMVAL( TSL2561_GAIN_16X )},
+	{	LSTRKEY( "PACKAGE_CS" ),            LNUMVAL( TSL2561_PACKAGE_CS )},
+	{	LSTRKEY( "PACKAGE_T_FN_CL" ),       LNUMVAL( TSL2561_PACKAGE_T_FN_CL )},
+	{	LSTRKEY( "ADDRESS_GND" ),           LNUMVAL( TSL2561_ADDRESS_GND )},
+	{	LSTRKEY( "ADDRESS_FLOAT" ),         LNUMVAL( TSL2561_ADDRESS_FLOAT )},
+	{	LSTRKEY( "ADDRESS_VDD" ),           LNUMVAL( TSL2561_ADDRESS_VDD )},
 	{	LNILKEY, LNILVAL}
 };
 
-LUALIB_API int luaopen_tsl2561(lua_State *L) {
-	LREGISTER(L, "tsl2561", tsl2561_map);
-	return 1;
-}
+NODEMCU_MODULE(TSL2561, "tsl2561", tsl2561_map, NULL);

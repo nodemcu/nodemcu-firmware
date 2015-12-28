@@ -53,7 +53,7 @@
 #define INTERNAL_FLASH_READ_UNIT_SIZE	4
 
 #define INTERNAL_FLASH_SIZE             ( (SYS_PARAM_SEC_START) * INTERNAL_FLASH_SECTOR_SIZE )
-#define INTERNAL_FLASH_START_ADDRESS    0x40200000
+#define INTERNAL_FLASH_MAPPED_ADDRESS    0x40200000
 
 // SpiFlashOpResult spi_flash_erase_sector(uint16 sec);
 // SpiFlashOpResult spi_flash_write(uint32 des_addr, uint32 *src_addr, uint32 size);
@@ -67,5 +67,10 @@
 #define flash_erase spi_flash_erase_sector
 #define flash_read spi_flash_read
 #endif // defined(FLASH_SAFE_API)
+
+#define CACHE_FLASH_CTRL_REG         0x3ff0000c
+#define CACHE_FLASH_ACTIVE           0x00000100
+#define CACHE_FLASH_MAPPED0          0x02000000
+#define CACHE_FLASH_MAPPED1          0x00010000
 
 #endif // #ifndef __CPU_ESP8266_H__

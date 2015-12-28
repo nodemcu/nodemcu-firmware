@@ -1,11 +1,8 @@
 // Module for coapwork
 
-//#include "lua.h"
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 
 #include "c_string.h"
 #include "c_stdlib.h"
@@ -561,99 +558,48 @@ static int coap_client_delete( lua_State* L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-static const LUA_REG_TYPE coap_server_map[] =
-{
-  { LSTRKEY( "listen" ), LFUNCVAL ( coap_server_listen ) },
-  { LSTRKEY( "close" ), LFUNCVAL ( coap_server_close ) },
-  { LSTRKEY( "var" ), LFUNCVAL ( coap_server_var ) },
-  { LSTRKEY( "func" ), LFUNCVAL ( coap_server_func ) },
-  { LSTRKEY( "__gc" ), LFUNCVAL ( coap_server_delete ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-  { LSTRKEY( "__index" ), LROVAL ( coap_server_map ) },
-#endif
+static const LUA_REG_TYPE coap_server_map[] = {
+  { LSTRKEY( "listen" ),  LFUNCVAL( coap_server_listen ) },
+  { LSTRKEY( "close" ),   LFUNCVAL( coap_server_close ) },
+  { LSTRKEY( "var" ),     LFUNCVAL( coap_server_var ) },
+  { LSTRKEY( "func" ),    LFUNCVAL( coap_server_func ) },
+  { LSTRKEY( "__gc" ),    LFUNCVAL( coap_server_delete ) },
+  { LSTRKEY( "__index" ), LROVAL( coap_server_map ) },
   { LNILKEY, LNILVAL }
 };
 
-static const LUA_REG_TYPE coap_client_map[] =
-{
-  { LSTRKEY( "get" ), LFUNCVAL ( coap_client_get ) },
-  { LSTRKEY( "post" ), LFUNCVAL ( coap_client_post ) },
-  { LSTRKEY( "put" ), LFUNCVAL ( coap_client_put ) },
-  { LSTRKEY( "delete" ), LFUNCVAL ( coap_client_delete ) },
-  { LSTRKEY( "__gc" ), LFUNCVAL ( coap_client_gcdelete ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-  { LSTRKEY( "__index" ), LROVAL ( coap_client_map ) },
-#endif
+static const LUA_REG_TYPE coap_client_map[] = {
+  { LSTRKEY( "get" ),     LFUNCVAL( coap_client_get ) },
+  { LSTRKEY( "post" ),    LFUNCVAL( coap_client_post ) },
+  { LSTRKEY( "put" ),     LFUNCVAL( coap_client_put ) },
+  { LSTRKEY( "delete" ),  LFUNCVAL( coap_client_delete ) },
+  { LSTRKEY( "__gc" ),    LFUNCVAL( coap_client_gcdelete ) },
+  { LSTRKEY( "__index" ), LROVAL( coap_client_map ) },
   { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE coap_map[] = 
+static const LUA_REG_TYPE coap_map[] = 
 {
-  { LSTRKEY( "Server" ), LFUNCVAL ( coap_createServer ) },
-  { LSTRKEY( "Client" ), LFUNCVAL ( coap_createClient ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-  { LSTRKEY( "CON" ), LNUMVAL( COAP_TYPE_CON ) },
-  { LSTRKEY( "NON" ), LNUMVAL( COAP_TYPE_NONCON ) },
-  { LSTRKEY( "TEXT_PLAIN"), LNUMVAL( COAP_CONTENTTYPE_TEXT_PLAIN ) },
-  { LSTRKEY( "LINKFORMAT"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_LINKFORMAT ) },
-  { LSTRKEY( "XML"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_XML ) },
+  { LSTRKEY( "Server" ),      LFUNCVAL( coap_createServer ) },
+  { LSTRKEY( "Client" ),      LFUNCVAL( coap_createClient ) },
+  { LSTRKEY( "CON" ),         LNUMVAL( COAP_TYPE_CON ) },
+  { LSTRKEY( "NON" ),         LNUMVAL( COAP_TYPE_NONCON ) },
+  { LSTRKEY( "TEXT_PLAIN"),   LNUMVAL( COAP_CONTENTTYPE_TEXT_PLAIN ) },
+  { LSTRKEY( "LINKFORMAT"),   LNUMVAL( COAP_CONTENTTYPE_APPLICATION_LINKFORMAT ) },
+  { LSTRKEY( "XML"),          LNUMVAL( COAP_CONTENTTYPE_APPLICATION_XML ) },
   { LSTRKEY( "OCTET_STREAM"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM ) },
-  { LSTRKEY( "EXI"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_EXI ) },
-  { LSTRKEY( "JSON"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_JSON) },
-
+  { LSTRKEY( "EXI"),          LNUMVAL( COAP_CONTENTTYPE_APPLICATION_EXI ) },
+  { LSTRKEY( "JSON"),         LNUMVAL( COAP_CONTENTTYPE_APPLICATION_JSON) },
   { LSTRKEY( "__metatable" ), LROVAL( coap_map ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_coap( lua_State *L )
+int luaopen_coap( lua_State *L )
 {
   endpoint_setup();
-#if LUA_OPTIMIZE_MEMORY > 0
   luaL_rometatable(L, "coap_server", (void *)coap_server_map);  // create metatable for coap_server 
   luaL_rometatable(L, "coap_client", (void *)coap_client_map);  // create metatable for coap_client  
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  int n;
-  luaL_register( L, AUXLIB_COAP, coap_map );
-
-  // Set it as its own metatable
-  lua_pushvalue( L, -1 );
-  lua_setmetatable( L, -2 );
-
-  // Module constants  
-  MOD_REG_NUMBER( L, "CON", COAP_TYPE_CON );
-  MOD_REG_NUMBER( L, "NON", COAP_TYPE_NONCON );
-  MOD_REG_NUMBER( L, "TEXT_PLAIN", COAP_CONTENTTYPE_TEXT_PLAIN );
-  MOD_REG_NUMBER( L, "LINKFORMAT", COAP_CONTENTTYPE_APPLICATION_LINKFORMAT );
-  MOD_REG_NUMBER( L, "XML", COAP_CONTENTTYPE_APPLICATION_XML);
-  MOD_REG_NUMBER( L, "OCTET_STREAM", COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM);
-  MOD_REG_NUMBER( L, "EXI", COAP_CONTENTTYPE_APPLICATION_EXI);
-  MOD_REG_NUMBER( L, "JSON", COAP_CONTENTTYPE_APPLICATION_JSON);
-
-  n = lua_gettop(L);
-
-  // create metatable
-  luaL_newmetatable(L, "coap_server");
-  // metatable.__index = metatable
-  lua_pushliteral(L, "__index");
-  lua_pushvalue(L,-2);
-  lua_rawset(L,-3);
-  // Setup the methods inside metatable
-  luaL_register( L, NULL, coap_server_map );
-
-  lua_settop(L, n);
-  // create metatable
-  luaL_newmetatable(L, "coap_client");
-  // metatable.__index = metatable
-  lua_pushliteral(L, "__index");
-  lua_pushvalue(L,-2);
-  lua_rawset(L,-3);
-  // Setup the methods inside metatable
-  luaL_register( L, NULL, coap_client_map );
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }
+
+NODEMCU_MODULE(COAP, "coap", coap_map, luaopen_coap);

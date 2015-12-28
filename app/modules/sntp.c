@@ -33,6 +33,7 @@
 
 // Module for Simple Network Time Protocol (SNTP)
 
+#include "module.h"
 #include "lauxlib.h"
 #include "os_type.h"
 #include "osapi.h"
@@ -375,20 +376,9 @@ error:
 
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE sntp_map[] =
-{
+static const LUA_REG_TYPE sntp_map[] = {
   { LSTRKEY("sync"),  LFUNCVAL(sntp_sync)  },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_sntp (lua_State *L)
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else
-  luaL_register (L, AUXLIB_SNTP, sntp_map);
-  return 1;
-#endif
-}
+NODEMCU_MODULE(SNTP, "sntp", sntp_map, NULL);

@@ -221,6 +221,7 @@ static int os_exit (lua_State *L) {
   c_exit(luaL_optint(L, 1, EXIT_SUCCESS));
 }
 
+#undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
 const LUA_REG_TYPE syslib[] = {

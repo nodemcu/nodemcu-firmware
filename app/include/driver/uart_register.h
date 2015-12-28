@@ -78,26 +78,36 @@
 #define UART_RXFIFO_CNT 0x000000FF
 #define UART_RXFIFO_CNT_S 0
 
-#define UART_CONF0( i )                         (REG_UART_BASE( i ) + 0x20)
-#define UART_TXFIFO_RST (BIT(18))
-#define UART_RXFIFO_RST (BIT(17))
-#define UART_IRDA_EN (BIT(16))
-#define UART_TX_FLOW_EN (BIT(15))
-#define UART_LOOPBACK (BIT(14))
-#define UART_IRDA_RX_INV (BIT(13))
-#define UART_IRDA_TX_INV (BIT(12))
-#define UART_IRDA_WCTL (BIT(11))
-#define UART_IRDA_TX_EN (BIT(10))
-#define UART_IRDA_DPLX (BIT(9))
-#define UART_TXD_BRK (BIT(8))
-#define UART_SW_DTR (BIT(7))
-#define UART_SW_RTS (BIT(6))
-#define UART_STOP_BIT_NUM 0x00000003
-#define UART_STOP_BIT_NUM_S 4
-#define UART_BIT_NUM 0x00000003
-#define UART_BIT_NUM_S 2
-#define UART_PARITY_EN (BIT(1))
-#define UART_PARITY (BIT(0))
+#define UART_CONF0( i )                 (REG_UART_BASE( i ) + 0x20)
+#define UART_DTR_INV                        (BIT(24))
+#define UART_RTS_INV                        (BIT(23))
+#define UART_TXD_INV                        (BIT(22))
+#define UART_DSR_INV                        (BIT(21))
+#define UART_CTS_INV                        (BIT(20))
+#define UART_RXD_INV                        (BIT(19))
+#define UART_TXFIFO_RST                     (BIT(18))
+#define UART_RXFIFO_RST                     (BIT(17))
+#define UART_IRDA_EN                        (BIT(16))
+#define UART_TX_FLOW_EN                     (BIT(15))
+#define UART_LOOPBACK                       (BIT(14))
+#define UART_IRDA_RX_INV                    (BIT(13))
+#define UART_IRDA_TX_INV                    (BIT(12))
+#define UART_IRDA_WCTL                      (BIT(11))
+#define UART_IRDA_TX_EN                     (BIT(10))
+#define UART_IRDA_DPLX                      (BIT(9))
+#define UART_TXD_BRK                        (BIT(8))
+#define UART_SW_DTR                         (BIT(7))
+#define UART_SW_RTS                         (BIT(6))
+#define UART_STOP_BIT_NUM                   0x00000003
+#define UART_STOP_BIT_NUM_S                 4
+#define UART_BIT_NUM                        0x00000003
+#define UART_BIT_NUM_S                      2
+#define UART_PARITY_EN                      (BIT(1))
+#define UART_PARITY_EN_M                0x00000001
+#define UART_PARITY_EN_S                 1
+#define UART_PARITY                         (BIT(0))
+#define UART_PARITY_M                       0x00000001
+#define UART_PARITY_S                        0
 
 #define UART_CONF1( i )                         (REG_UART_BASE( i ) + 0x24)
 #define UART_RX_TOUT_EN (BIT(31))

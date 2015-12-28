@@ -1,12 +1,8 @@
 // Module for interfacing with PWM
 
-//#include "lua.h"
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
-
 #include "c_types.h"
 
 // Lua: realfrequency = setup( id, frequency, duty )
@@ -125,30 +121,16 @@ static int lpwm_getduty( lua_State* L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE pwm_map[] = 
-{
-  { LSTRKEY( "setup" ), LFUNCVAL( lpwm_setup ) },
-  { LSTRKEY( "close" ), LFUNCVAL( lpwm_close ) },
-  { LSTRKEY( "start" ), LFUNCVAL( lpwm_start ) },
-  { LSTRKEY( "stop" ), LFUNCVAL( lpwm_stop ) },
+static const LUA_REG_TYPE pwm_map[] = {
+  { LSTRKEY( "setup" ),    LFUNCVAL( lpwm_setup ) },
+  { LSTRKEY( "close" ),    LFUNCVAL( lpwm_close ) },
+  { LSTRKEY( "start" ),    LFUNCVAL( lpwm_start ) },
+  { LSTRKEY( "stop" ),     LFUNCVAL( lpwm_stop ) },
   { LSTRKEY( "setclock" ), LFUNCVAL( lpwm_setclock ) },
   { LSTRKEY( "getclock" ), LFUNCVAL( lpwm_getclock ) },
-  { LSTRKEY( "setduty" ), LFUNCVAL( lpwm_setduty ) },
-  { LSTRKEY( "getduty" ), LFUNCVAL( lpwm_getduty ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-
-#endif
+  { LSTRKEY( "setduty" ),  LFUNCVAL( lpwm_setduty ) },
+  { LSTRKEY( "getduty" ),  LFUNCVAL( lpwm_getduty ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_pwm( lua_State *L )
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_PWM, pwm_map );
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
-}
+NODEMCU_MODULE(PWM, "pwm", pwm_map, NULL);

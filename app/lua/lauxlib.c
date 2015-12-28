@@ -816,6 +816,7 @@ static int panic (lua_State *L) {
   luai_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
                    lua_tostring(L, -1));
 #endif
+  while (1) {}
   return 0;
 }
 
