@@ -72,7 +72,7 @@ var nodemcu = nodemcu || {};
     });
 
     // Pass in the target node, as well as the observer options
-    observer.observe(flyOutWrapper, observerConfig);
+    observer.observe(flyOutWrapper[0], observerConfig);
   }
   function createLanguageLinkFor(languageCode, isCurrentlySelected) {
     var strong;
