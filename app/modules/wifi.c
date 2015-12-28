@@ -12,6 +12,8 @@
 #include "user_interface.h"
 #include "smart.h"
 #include "smartconfig.h"
+#include "user_config.h"
+#include "wifi_common.h"
 
 static int wifi_smart_succeed = LUA_NOREF;
 static uint8 getap_output_format=0;
@@ -19,13 +21,6 @@ static uint8 getap_output_format=0;
 //wifi.sleep variables
 #define FPM_SLEEP_MAX_TIME 0xFFFFFFF
 static bool FLAG_wifi_force_sleep_enabled=0;
-
-
-//variables for wifi event monitor
-static sint32_t wifi_status_cb_ref[6] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
-static os_timer_t wifi_sta_status_timer;
-static uint8 prev_wifi_status=0;
-
 
 #if defined( NODE_SMART_OLDSTYLE )
 #else
@@ -77,7 +72,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 }
 
 static int wifi_scan_succeed = LUA_NOREF;
-static lua_State* gL = NULL;
+lua_State* gL = NULL;
 /**
   * @brief  Wifi ap scan over callback to display.
   * @param  arg: contain the aps information
@@ -87,7 +82,7 @@ static lua_State* gL = NULL;
 static void wifi_scan_done(void *arg, STATUS status)
 {
   uint8 ssid[33];
-  char temp[128];
+  char temp[18];
   if(wifi_scan_succeed == LUA_NOREF)
     return;
   if(arg == NULL)
@@ -113,18 +108,16 @@ static void wifi_scan_done(void *arg, STATUS status)
       }
       if(getap_output_format==1) //use new format(BSSID : SSID, RSSI, Authmode, Channel)
       {
-    	c_sprintf(temp,"%s,%d,%d,%d", ssid, bss_link->rssi, bss_link->authmode, bss_link->channel);
-    	lua_pushstring(gL, temp);
-        NODE_DBG(MACSTR" : %s\n",MAC2STR(bss_link->bssid) , temp);
     	c_sprintf(temp,MACSTR, MAC2STR(bss_link->bssid));
-    	lua_setfield( gL, -2,  temp);
+    	lua_table_add_string(gL, temp, "%s,%d,%d,%d",
+    			ssid, bss_link->rssi, bss_link->authmode, bss_link->channel);
+        NODE_DBG(MACSTR" : %s\n",MAC2STR(bss_link->bssid) , temp);//00 00 00 00 00 00
       }
       else//use old format(SSID : Authmode, RSSI, BSSID, Channel)
       {
-  	    c_sprintf(temp,"%d,%d,"MACSTR",%d", bss_link->authmode, bss_link->rssi, MAC2STR(bss_link->bssid),bss_link->channel);
-        lua_pushstring(gL, temp);
-        lua_setfield( gL, -2, ssid );
-        NODE_DBG("%s : %s\n", ssid, temp);
+  	  lua_table_add_string(gL, ssid, "%d,%d,"MACSTR",%d",
+  			  bss_link->authmode, bss_link->rssi, MAC2STR(bss_link->bssid),bss_link->channel);
+  	    NODE_DBG("%s : %s\n", ssid, temp);
       }
 
       bss_link = bss_link->next.stqe_next;
@@ -232,7 +225,7 @@ static int wifi_setmode( lua_State* L )
   
   mode = luaL_checkinteger( L, 1 );
 
-  if ( mode != STATION_MODE && mode != SOFTAP_MODE && mode != STATIONAP_MODE )
+  if ( mode != STATION_MODE && mode != SOFTAP_MODE && mode != STATIONAP_MODE && mode != NULL_MODE )
     return luaL_error( L, "wrong arg type" );
   wifi_set_opmode( (uint8_t)mode);
   mode = (unsigned)wifi_get_opmode();
@@ -684,8 +677,8 @@ static int wifi_station_config( lua_State* L )
   NODE_DBG("\n");
 
 
-  wifi_station_set_config(&sta_conf);
   wifi_station_disconnect();
+  wifi_station_set_config(&sta_conf);
 
   if(auto_connect==0)
   {
@@ -773,7 +766,6 @@ static int wifi_station_listap( lua_State* L )
   {
     return luaL_error( L, "Can't list ap in SOFTAP mode" );
   }
-  gL = L;
   struct scan_config scan_cfg;
   getap_output_format=0;
 
@@ -983,171 +975,6 @@ static int wifi_station_status( lua_State* L )
   return 1; 
 }
 
-/**
-  * wifi.sta.eventMonStop()
-  * Description:
-  * 	Stop wifi station event monitor
-  * Syntax:
-  * 	wifi.sta.eventMonStop()
-  * 	wifi.sta.eventMonStop("unreg all")
-  * Parameters:
-  * 	"unreg all": unregister all previously registered functions
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
-  	  	  --stop wifi event monitor
-  	  	  wifi.sta.eventMonStop()
-
-  	  	  --stop wifi event monitor and unregister all callbacks
-  	  	  wifi.sta.eventMonStop("unreg all")
-  */
-static void wifi_station_event_mon_stop(lua_State* L)
-{
-  os_timer_disarm(&wifi_sta_status_timer);
-  if(lua_isstring(L,1))
-  {
-
-    if (c_strcmp(luaL_checkstring(L, 1), "unreg all")==0)
-    {
-	  int i;
-	  for (i=0;i<6;i++)
-  	  {
-  	    if(wifi_status_cb_ref[i] != LUA_NOREF)
-	    {
-		  luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[i]);
-		  wifi_status_cb_ref[i] = LUA_NOREF;
-	    }
-	  }
-    }
-  }
-}
-
-static void wifi_status_cb(int arg)
-{
-  if (wifi_get_opmode()==2)
-  {
-	  os_timer_disarm(&wifi_sta_status_timer);
-	  return;
-  }
-  int wifi_status=wifi_station_get_connect_status();
-  if (wifi_status!=prev_wifi_status)
-  {
- 	if(wifi_status_cb_ref[wifi_status]!=LUA_NOREF)
- 	{
-	  lua_rawgeti(gL, LUA_REGISTRYINDEX, wifi_status_cb_ref[wifi_status]);
-	  lua_call(gL, 0, 0);
- 	}
-  }
-  prev_wifi_status=wifi_status;
-}
-
-/**
-  * wifi.sta.eventMonReg()
-  * Description:
-  * 	Register callback for wifi station status event
-  * Syntax:
-  * 	wifi.sta.eventMonReg(wifi_status, function)
-  * 	wifi.sta.eventMonReg(wifi.status, "unreg") //unregister callback
-  * Parameters:
-  * 	wifi_status: wifi status you would like to set callback for
-  * 		Valid wifi states:
-  * 			wifi.STA_IDLE
-  *				wifi.STA_CONNECTING
-  *				wifi.STA_WRONGPWD
-  *				wifi.STA_APNOTFOUND
-  *  			wifi.STA_FAIL
-  *  			wifi.STA_GOTIP
-  * 	function: function to perform
-  * 	"unreg": unregister previously registered function
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
-  	  	--register callback
-  	  	wifi.sta.eventMonReg(0, function() print("STATION_IDLE") end)
-		wifi.sta.eventMonReg(1, function() print("STATION_CONNECTING") end)
-		wifi.sta.eventMonReg(2, function() print("STATION_WRONG_PASSWORD") end)
-		wifi.sta.eventMonReg(3, function() print("STATION_NO_AP_FOUND") end)
-		wifi.sta.eventMonReg(4, function() print("STATION_CONNECT_FAIL") end)
-		wifi.sta.eventMonReg(5, function() print("STATION_GOT_IP") end)
-
-		--unregister callback
-		wifi.sta.eventMonReg(0, "unreg")
-  */
-static int wifi_station_event_mon_reg(lua_State* L)
-{
-  gL=L;
-  uint8 id=luaL_checknumber(L, 1);
-  if (!(id >= 0 && id <=5))
-  {
-	return luaL_error( L, "valid wifi status:0-5" );
-  }
-
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
-  {
-    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
-    if(wifi_status_cb_ref[id] != LUA_NOREF)
-    {
-      luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[id]);
-    }
-    wifi_status_cb_ref[id] = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-  else if (c_strcmp(luaL_checkstring(L, 2), "unreg")==0)
-  {
-    if(wifi_status_cb_ref[id] != LUA_NOREF)
-    {
-      luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[id]);
-      wifi_status_cb_ref[id] = LUA_NOREF;
-    }
-  }
-  return 0;
-}
-
-
-/**
-  * wifi.sta.eventMonStart()
-  * Description:
-  * 	Start wifi station event monitor
-  * Syntax:
-  * 	wifi.sta.eventMonStart()
-  * 	wifi.sta.eventMonStart(mS)
-  * Parameters:
-  * 	mS:interval between checks in milliseconds. defaults to 150 mS if not provided
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
- 		--start wifi event monitor with default interval
- 		wifi.sta.eventMonStart()
-
- 		--start wifi event monitor with 100 mS interval
- 		wifi.sta.eventMonStart(100)
-  */
-static int wifi_station_event_mon_start(lua_State* L)
-{
-  if(wifi_get_opmode() == SOFTAP_MODE)
-  {
-	return luaL_error( L, "Can't monitor station in SOFTAP mode" );
-  }
-  if (wifi_status_cb_ref[0]==LUA_NOREF && wifi_status_cb_ref[1]==LUA_NOREF &&
-		  wifi_status_cb_ref[2]==LUA_NOREF && wifi_status_cb_ref[3]==LUA_NOREF &&
-		  wifi_status_cb_ref[4]==LUA_NOREF && wifi_status_cb_ref[5]==LUA_NOREF )
-  {
-		return luaL_error( L, "No callbacks defined" );
-  }
-  uint32 ms=150;
-  if(lua_isnumber(L, 1))
-  {
-    ms=luaL_checknumber(L, 1);
-  }
-
-  os_timer_disarm(&wifi_sta_status_timer);
-  os_timer_setfn(&wifi_sta_status_timer, (os_timer_func_t *)wifi_status_cb, NULL);
-  os_timer_arm(&wifi_sta_status_timer, ms, 1);
-  return 0;
-}
-
 // Lua: wifi.ap.getmac()
 static int wifi_ap_getmac( lua_State* L ){
   return wifi_getmac(L, SOFTAP_IF);
@@ -1326,12 +1153,8 @@ static int wifi_ap_listclient( lua_State* L )
   struct station_info * next_station;
   while (station != NULL)
   {
-    c_sprintf(temp, IPSTR, IP2STR(&station->ip));
-    lua_pushstring(L, temp);
-
     c_sprintf(temp, MACSTR, MAC2STR(station->bssid));
-    lua_setfield(L, -2, temp);
-
+    lua_table_add_string(L, temp, IPSTR, IP2STR(&station->ip));
     next_station = STAILQ_NEXT(station, next);
     c_free(station);
     station = next_station;
@@ -1407,9 +1230,11 @@ static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "sethostname" ),   LFUNCVAL( wifi_sta_sethostname_lua ) },
   { LSTRKEY( "gethostname" ),   LFUNCVAL( wifi_sta_gethostname ) },
   { LSTRKEY( "status" ),        LFUNCVAL( wifi_station_status ) },
-  { LSTRKEY( "eventMonReg" ),   LFUNCVAL( wifi_station_event_mon_reg ) },
-  { LSTRKEY( "eventMonStart" ), LFUNCVAL( wifi_station_event_mon_start ) },
-  { LSTRKEY( "eventMonStop" ),  LFUNCVAL( wifi_station_event_mon_stop ) },
+#if defined(USE_WIFI_STATION_STATUS_MONITOR) && defined(LUA_USE_MODULES_WIFI_EVENTMON)
+  { LSTRKEY( "eventMonReg" ),   LFUNCVAL( wifi_station_event_mon_reg ) }, //declared in wifi_eventmon.c
+  { LSTRKEY( "eventMonStart" ), LFUNCVAL( wifi_station_event_mon_start ) }, //declared in wifi_eventmon.c
+  { LSTRKEY( "eventMonStop" ),  LFUNCVAL( wifi_station_event_mon_stop ) }, //declared in wifi_eventmon.c
+#endif
   { LNILKEY, LNILVAL }
 };
 
@@ -1447,7 +1272,9 @@ static const LUA_REG_TYPE wifi_map[] =  {
 
   { LSTRKEY( "sta" ),            LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ),             LROVAL( wifi_ap_map ) },
-
+#if defined(USE_WIFI_SDK_EVENT_MONITOR) && defined(LUA_USE_MODULES_WIFI_EVENTMON)
+  { LSTRKEY( "eventmon" ),       LROVAL( wifi_eventmon_map ) }, //declared in wifi_eventmon.c
+#endif
   { LSTRKEY( "NULLMODE" ),       LNUMVAL( NULL_MODE ) },
   { LSTRKEY( "STATION" ),        LNUMVAL( STATION_MODE ) },
   { LSTRKEY( "SOFTAP" ),         LNUMVAL( SOFTAP_MODE ) },
@@ -1511,6 +1338,7 @@ int luaopen_wifi( lua_State *L )
     wifi_sta_sethostname((const char*)temp, strlen(temp));
   }
 #endif
+gL=lua_getstate();
 return 0;
 }
 
