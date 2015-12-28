@@ -4,7 +4,7 @@ NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP826
 
 The firmware is based on the Espressif SDK v1.4 and uses a file system based on [spiffs](https://github.com/pellepl/spiffs).
 
-[English](EN/index.md)
+[English](en/index.md)
 
-[Deutsch](DE/index.md)
+[Deutsch](de/index.md)
 
