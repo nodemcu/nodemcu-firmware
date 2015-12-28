@@ -74,7 +74,8 @@ var nodemcu = nodemcu || {};
     var selectedLanguageCode, path = window.location.pathname;
     if (window.location.origin.indexOf('readthedocs') > -1) {
       // path is like /en/<branch>/<lang>/build/ -> extract 'lang'
-      selectedLanguageCode = path.split('/')[2];
+      // split[0] is an '' because the path starts with the separator
+      selectedLanguageCode = path.split('/')[3];
     } else {
       // path is like /<lang>/build/ -> extract 'lang'
       selectedLanguageCode = path.substr(1, 2);
