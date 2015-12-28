@@ -8,11 +8,6 @@ var nodemcu = nodemcu || {};
   $(document).ready(function () {
     hideNavigationForAllButSelectedLanguage();
     addLanguageSelectorToRtdFlyOutMenu();
-    document.addEventListener("DOMSubtreeModified", function(e) {
-      // Notify of change!
-      debugger;
-      console.warn("change!", e);
-    }, false);
   });
 
   function hideNavigationForAllButSelectedLanguage() {
@@ -42,21 +37,42 @@ var nodemcu = nodemcu || {};
    *     <dd><a href="http://nodemcu.readthedocs.org/en/<branch>/en/">en</a></dd>
    *   </strong>
    * </dl>
+   *
+   * UGLY. That menu is added by RTD with an AJAX call after page load. Hence, we need to react to
+   * the subsequent DOM manipulation using a DOM4 MutationObserver.
    */
   function addLanguageSelectorToRtdFlyOutMenu() {
-    var flyOutWrapper = $('.rst-other-versions .injected');
-    // only works on RTD
-    if (flyOutWrapper.length > 0) {
-      var selectedLanguageCode = determineSelectedLanguageCode();
-      var dl = document.createElement('dl');
-      var dt = document.createElement('dt');
-      dl.appendChild(dt);
-      dt.appendChild(document.createTextNode('Languages'));
-      for (var languageCode in languageCodeToNameMap) {
-        dl.appendChild(createLanguageLinkFor(languageCode, selectedLanguageCode === languageCode));
-      }
-      flyOutWrapper.prepend(dl);
-    }
+    var observer, observerConfig = {childList: true};
+    var flyOutWrapper = $('.rst-other-versions');
+
+    // Create an observer instance
+    observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+          debugger;
+        var newNodes = mutation.addedNodes; // DOM NodeList
+        if (newNodes !== null) { // If there are new nodes added
+          var $nodes = $(newNodes); // jQuery set
+          $nodes.each(function () {
+            var $node = $(this);
+
+          });
+          var selectedLanguageCode = determineSelectedLanguageCode();
+          var dl = document.createElement('dl');
+          var dt = document.createElement('dt');
+          dl.appendChild(dt);
+          dt.appendChild(document.createTextNode('Languages'));
+          for (var languageCode in languageCodeToNameMap) {
+            dl.appendChild(createLanguageLinkFor(languageCode, selectedLanguageCode === languageCode));
+          }
+          flyOutWrapper.prepend(dl);
+          // Later, you can stop observing
+          observer.disconnect();
+        }
+      });
+    });
+
+    // Pass in the target node, as well as the observer options
+    observer.observe(flyOutWrapper, config);
   }
   function createLanguageLinkFor(languageCode, isCurrentlySelected) {
     var strong;
