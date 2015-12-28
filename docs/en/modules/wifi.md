@@ -9,6 +9,7 @@ The NodeMCU WiFi control is spread across several tables:
 - [`wifi.sta`](#wifista-module) for station mode functions
 - [`wifi.ap`](#wifiap-module) for wireless access point (WAP or simply AP) functions
 - [`wifi.ap.dhcp`](#wifiapdhcp-module) for DHCP server control
+- [`wifi.eventmon`](#wifieventmon-module) for wifi event monitor
 
 ## wifi.getchannel()
 
@@ -368,6 +369,9 @@ wifi.sta.eventMonReg(wifi.STA_IDLE)
 #### See also
 - [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
 - [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
+- [`wifi.eventmon.register()`](#wifieventmonregister)
+- [`wifi.eventmon.unregister()`](#wifieventmonunregister)
+
 
 ## wifi.sta.eventMonStart()
 
@@ -377,7 +381,7 @@ Starts WiFi station event monitor.
 `wifi.sta.eventMonStart([ms])`
 
 ### Parameters
-`ms` interval between checks in milliseconds, defaults to 150ms if not provided
+- `ms` interval between checks in milliseconds, defaults to 150ms if not provided.
 
 ####  Returns
 `nil`
@@ -394,6 +398,8 @@ wifi.sta.eventMonStart(100)
 #### See also
 - [`wifi.sta.eventMonReg()`](#wifistaeventmonreg)
 - [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
+- [`wifi.eventmon.register()`](#wifieventmonregister)
+- [`wifi.eventmon.unregister()`](#wifieventmonunregister)
 
 ## wifi.sta.eventMonStop()
 
@@ -420,6 +426,8 @@ wifi.sta.eventMonStop(1)
 #### See also
 - [`wifi.sta.eventMonReg()`](#wifistaeventmonreg)
 - [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
+- [`wifi.eventmon.register()`](#wifieventmonregister)
+- [`wifi.eventmon.unregister()`](#wifieventmonunregister)
 
 ## wifi.sta.getap()
 
@@ -629,6 +637,27 @@ MAC address as string e.g. "18-33-44-FE-55-BB"
 #### See also
 [`wifi.sta.getip()`](#wifistagetip)
 
+
+## wifi.sta.getrssi()
+
+Get RSSI(Received Signal Strength Indicator) of the Access Point which ESP8266 station connected to.
+
+#### Syntax
+`wifi.sta.getrssi()`
+
+#### Parameters
+none
+
+#### Returns
+- If station is connected to an access point, `rssi` is returned.
+- If station is not connected to an access point, `nil` is returned.  
+
+#### Example
+```lua
+RSSI=wifi.sta.getrssi()
+print("RSSI is", RSSI)
+```
+
 ## wifi.sta.sethostname()
 
 Sets station hostname.
@@ -640,7 +669,7 @@ Sets station hostname.
 `hostname` must only contain letters, numbers and hyphens('-') and be 32 characters or less with first and last character being alphanumeric
 
 #### Returns
-true if hostname was successfully set, false otherwise
+`nil`
 
 #### Example
 ```lua
@@ -724,7 +753,7 @@ Sets SSID and password in AP mode. Be sure to make the password at least 8 chara
 `wifi.ap.config(cfg)`
 
 #### Parameters
-- `ssdi` SSID chars 1-32
+- `ssid` SSID chars 1-32
 - `pwd` password chars 8-64
 - `auth` authentication  one of AUTH\_OPEN, AUTH\_WPA\_PSK, AUTH\_WPA2\_PSK, AUTH\_WPA\_WPA2\_PSK, default = AUTH\_OPEN
 - `channel` channel number 1-14 default = 6
@@ -742,6 +771,43 @@ Sets SSID and password in AP mode. Be sure to make the password at least 8 chara
  cfg.pwd="mypassword"
  wifi.ap.config(cfg)
 ```
+
+## wifi.ap.deauth()
+
+Deauths (forcibly removes) a client from the ESP access point by sending a corresponding IEEE802.11 management packet (first) and removing the client from it's data structures (afterwards). 
+
+The IEEE802.11 reason code used is 2 for "Previous authentication no longer valid"(AUTH_EXPIRE).
+
+#### Syntax
+`wifi.ap.deauth([MAC])`
+
+#### Parameters
+- `MAC` address of station to be deauthed.
+	- Note: if this field is left blank, all currently connected stations will get deauthed.
+
+#### Returns
+Returns true unless called while the ESP is in the STATION opmode
+
+#### Example
+```lua
+allowed_mac_list={"18:fe:34:00:00:00", "18:fe:34:00:00:01"}
+
+wifi.eventmon.register(wifi.eventmon.AP_STACONNECTED, function(T) 
+  print("\n\tAP - STATION CONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
+  if(allowed_mac_list~=nil) then
+    for _, v in pairs(allowed_mac_list) do 
+      if(v == T.MAC) then return end 
+    end
+  end
+  wifi.ap.deauth(T.MAC)
+  print("\tStation DeAuthed!")
+end)
+
+```
+
+#### See also
+[`wifi.eventmon.register()`](#wifieventmonregister)  
+[`wifi.eventmon.reason()`](#wifieventmonreason)
 
 ## wifi.ap.getbroadcast()
 
@@ -939,3 +1005,173 @@ none
 
 #### Returns
 boolean indicating success
+
+# wifi.eventmon Module
+Note: The functions `wifi.sta.eventMon___()` and `wifi.eventmon.___()` are completely seperate and can be used independently of one another.
+
+## wifi.eventmon.register()
+
+Register/unregister callbacks for WiFi event monitor.
+
+#### Syntax
+wifi.eventmon.register(Event[, function(T)])
+
+#### Parameters
+Event: WiFi event you would like to set a callback for.  
+
+- Valid WiFi events:  
+ 	- wifi.eventmon.STA_CONNECTED  
+	- wifi.eventmon.STA_DISCONNECTED  
+	- wifi.eventmon.STA_AUTHMODE_CHANGE  
+	- wifi.eventmon.STA_GOT_IP  
+	- wifi.eventmon.STA_DHCP_TIMEOUT  
+	- wifi.eventmon.AP_STACONNECTED  
+	- wifi.eventmon.AP_STADISCONNECTED  
+	- wifi.eventmon.AP_PROBEREQRECVED  
+
+#### Returns
+Function:  
+`nil`
+
+Callback:  
+T: Table returned by event.  
+
+- `wifi.eventmon.STA_CONNECTED` Station is connected to access point.  
+	- `SSID`: SSID of access point.  
+	- `BSSID`: BSSID of access point.  
+	- `channel`: The channel the access point is on.  
+- `wifi.eventmon.STA_DISCONNECT`: Station was disconnected from access point.  
+	- `SSID`: SSID of access point.  
+	- `BSSID`: BSSID of access point.  
+	- `REASON`: See [wifi.eventmon.reason](#wifieventmonreason) below.  
+- `wifi.eventmon.STA_AUTHMODE_CHANGE`: Access point has changed authorization mode.    
+	- `old_auth_mode`: Old wifi authorization mode.  
+	- `new_auth_mode`: New wifi authorization mode.  
+- `wifi.eventmon.STA_GOT_IP`: Station got an IP address.  
+	- `IP`: The IP address assigned to the station.  
+	- `netmask`: Subnet mask.  
+	- `gateway`: The IP address of the access point the station is connected to.  
+- `wifi.eventmon.STA_DHCP_TIMEOUT`: Station DHCP request has timed out.  
+	- Blank table is returned.  
+- `wifi.eventmon.AP_STACONNECTED`: A new client has connected to the access point.  
+	- `MAC`: MAC address of client that has connected.  
+	- `AID`: SDK provides no details concerning this return value.  
+- `wifi.eventmon.AP_STADISCONNECTED`: A client has disconnected from the access point.  
+	- `MAC`: MAC address of client that has disconnected.  
+	- `AID`: SDK provides no details concerning this return value.  
+- `wifi.eventmon.AP_PROBEREQRECVED`: A probe request was received.  
+	- `MAC`: MAC address of the client that is probing the access point.  
+	- `RSSI`: Received Signal Strength Indicator of client.  
+
+#### Example
+
+```lua
+ wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(T) 
+ print("\n\tSTA - CONNECTED".."\n\tSSID: "..T.SSID.."\n\tBSSID: "..
+ T.BSSID.."\n\tChannel: "..T.channel)
+ end)
+ 
+ wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, function(T) 
+ print("\n\tSTA - DISCONNECTED".."\n\tSSID: "..T.SSID.."\n\tBSSID: "..
+ T.BSSID.."\n\treason: "..T.reason)
+ end)
+
+ wifi.eventmon.register(wifi.eventmon.STA_AUTHMODE_CHANGE, Function(T) 
+ print("\n\tSTA - AUTHMODE CHANGE".."\n\told_auth_mode: "..
+ T.old_auth_mode.."\n\tnew_auth_mode: "..T.new_auth_mode) 
+ end)
+
+ wifi.eventmon.register(wifi.eventmon.stasgottipa_got_ip, function(T) 
+ print("\n\tSTA - GOT IP".."\n\tStation IP: "..T.IP.."\n\tSubnet mask: "..
+ T.netmask.."\n\tGateway IP: "..T.gateway)
+ end)
+
+ wifi.eventmon.register(wifi.eventmon.STA_DHCP_TIMEOUT, function() 
+ print("\n\tSTA - DHCP TIMEOUT")
+ end)
+
+ wifi.eventmon.register(wifi.eventmon.AP_STACONNECTED, function(T) 
+ print("\n\tAP - STATION CONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
+ end)
+
+ wifi.eventmon.register(wifi.eventmon.AP_STADISCONNECTED, function(T) 
+ print("\n\tAP - STATION DISCONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
+ end)
+
+ wifi.eventmon.register(wifi.eventmon.AP_PROBEREQRECVED, function(T) 
+ print("\n\tAP - STATION DISCONNECTED".."\n\tMAC: ".. T.MAC.."\n\tRSSI: "..T.RSSI)
+ end)
+```
+#### See also
+- [`wifi.eventmon.unregister()`](#wifieventmonunregister)
+- [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
+- [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
+- [`wifi.sta.eventMonReg()`](#wifistaeventmonreg)
+
+## wifi.eventmon.unregister()
+
+Unregister callbacks for WiFi event monitor.
+
+#### Syntax
+wifi.eventmon.unregister(Event)
+
+#### Parameters
+Event: WiFi event you would like to set a callback for.  
+
+- Valid WiFi events:
+	- wifi.eventmon.STA_CONNECTED  
+	- wifi.eventmon.STA_DISCONNECTED  
+	- wifi.eventmon.STA_AUTHMODE_CHANGE  
+	- wifi.eventmon.STA_GOT_IP  
+	- wifi.eventmon.STA_DHCP_TIMEOUT  
+	- wifi.eventmon.AP_STACONNECTED  
+	- wifi.eventmon.AP_STADISCONNECTED  
+	- wifi.eventmon.AP_PROBEREQRECVED  
+
+#### Returns
+`nil`
+
+#### Example
+
+```lua
+ wifi.eventmon.unregister(wifi.eventmon.STA_CONNECTED)
+```
+#### See also
+- [`wifi.eventmon.register()`](#wifieventmonregister)
+- [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
+- [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
+
+## wifi.eventmon.reason
+
+Table containing disconnect reasons.
+
+|  Disconnect reason  |  value  |
+|:--------------------|:-------:|
+|wifi.eventmon.reason.UNSPECIFIED   |  1  |
+|wifi.eventmon.reason.AUTH_EXPIRE   |  2  |				
+|wifi.eventmon.reason.AUTH_LEAVE    |  3  |
+|wifi.eventmon.reason.ASSOC_EXPIRE  |  4  |
+|wifi.eventmon.reason.ASSOC_TOOMANY |  5  |
+|wifi.eventmon.reason.NOT_AUTHED    |  6  |
+|wifi.eventmon.reason.NOT_ASSOCED   |  7  |
+|wifi.eventmon.reason.ASSOC_LEAVE   |  8  |
+|wifi.eventmon.reason.ASSOC_NOT_AUTHED     |  9  |
+|wifi.eventmon.reason.DISASSOC_PWRCAP_BAD  |  10  |
+|wifi.eventmon.reason.DISASSOC_SUPCHAN_BAD |  11  |
+|wifi.eventmon.reason.IE_INVALID    |  13  |
+|wifi.eventmon.reason.MIC_FAILURE   |  14  |
+|wifi.eventmon.reason.4WAY_HANDSHAKE_TIMEOUT   |  15  |
+|wifi.eventmon.reason.GROUP_KEY_UPDATE_TIMEOUT |  16  |
+|wifi.eventmon.reason.IE_IN_4WAY_DIFFERS       |  17  |
+|wifi.eventmon.reason.GROUP_CIPHER_INVALID     |  18  |
+|wifi.eventmon.reason.PAIRWISE_CIPHER_INVALID  |  19  |
+|wifi.eventmon.reason.AKMP_INVALID          |  20  |
+|wifi.eventmon.reason.UNSUPP_RSN_IE_VERSION |  21  |
+|wifi.eventmon.reason.INVALID_RSN_IE_CAP    |  22  |
+|wifi.eventmon.reason.802_1X_AUTH_FAILED    |  23  |
+|wifi.eventmon.reason.CIPHER_SUITE_REJECTED |  24  |
+|wifi.eventmon.reason.BEACON_TIMEOUT    |  200  |
+|wifi.eventmon.reason.NO_AP_FOUND       |  201  |
+|wifi.eventmon.reason.AUTH_FAIL         |  202  |
+|wifi.eventmon.reason.ASSOC_FAIL        |  203  |
+|wifi.eventmon.reason.HANDSHAKE_TIMEOUT |  204  |
