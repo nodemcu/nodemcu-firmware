@@ -8,6 +8,11 @@ var nodemcu = nodemcu || {};
   $(document).ready(function () {
     hideNavigationForAllButSelectedLanguage();
     addLanguageSelectorToRtdFlyOutMenu();
+    document.addEventListener("DOMSubtreeModified", function(e) {
+      // Notify of change!
+      debugger;
+      console.warn("change!", e);
+    }, false);
   });
 
   function hideNavigationForAllButSelectedLanguage() {
@@ -55,10 +60,11 @@ var nodemcu = nodemcu || {};
   }
   function createLanguageLinkFor(languageCode, isCurrentlySelected) {
     var strong;
+    // split[0] is an '' because the path starts with the separator
     var pathSegments = window.location.pathname.split('/');
     var dd = document.createElement("dd");
-    var href = document.createElement("href");
-    href.setAttribute('a', '/' + pathSegments[0] + '/' + pathSegments[1] + '/' + languageCode);
+    var href = document.createElement("a");
+    href.setAttribute('href', '/' + pathSegments[1] + '/' + pathSegments[2] + '/' + languageCode);
     href.appendChild(document.createTextNode(languageCode));
     dd.appendChild(href);
     if (isCurrentlySelected) {
