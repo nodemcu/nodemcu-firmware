@@ -402,7 +402,7 @@ static int lucg_getHeight( lua_State *L )
     return 1;
 }
 
-// Lua: width = ucg.getStrWidth( self )
+// Lua: width = ucg.getStrWidth( self, string )
 static int lucg_getStrWidth( lua_State *L )
 {
     lucg_userdata_t *lud;
@@ -410,7 +410,7 @@ static int lucg_getStrWidth( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    const char *s = luaL_checkstring( L, (1+3) + 1 );
+    const char *s = luaL_checkstring( L, 2 );
     if (s == NULL)
         return 0;
 
