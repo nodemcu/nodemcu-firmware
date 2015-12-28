@@ -42,37 +42,24 @@ var nodemcu = nodemcu || {};
    * the subsequent DOM manipulation using a DOM4 MutationObserver.
    */
   function addLanguageSelectorToRtdFlyOutMenu() {
-    var observer, observerConfig = {childList: true};
-    var flyOutWrapper = $('.rst-other-versions');
-
-    // Create an observer instance
-    observer = new MutationObserver(function (mutations) {
-      mutations.forEach(function (mutation) {
-          debugger;
-        var newNodes = mutation.addedNodes; // DOM NodeList
-        if (newNodes !== null) { // If there are new nodes added
-          var $nodes = $(newNodes); // jQuery set
-          $nodes.each(function () {
-            var $node = $(this);
-
-          });
-          var selectedLanguageCode = determineSelectedLanguageCode();
-          var dl = document.createElement('dl');
-          var dt = document.createElement('dt');
-          dl.appendChild(dt);
-          dt.appendChild(document.createTextNode('Languages'));
-          for (var languageCode in languageCodeToNameMap) {
-            dl.appendChild(createLanguageLinkFor(languageCode, selectedLanguageCode === languageCode));
-          }
-          flyOutWrapper.prepend(dl);
-          // Later, you can stop observing
-          observer.disconnect();
-        }
-      });
+    var observer = new MutationObserver(function (mutations) {
+      // since mutation on the target node was triggered we can safely assume the inject RTD div has now been added
+      var injectedDiv = $('.rst-other-versions .injected');
+      var selectedLanguageCode = determineSelectedLanguageCode();
+      var dl = document.createElement('dl');
+      var dt = document.createElement('dt');
+      dl.appendChild(dt);
+      dt.appendChild(document.createTextNode('Languages'));
+      for (var languageCode in languageCodeToNameMap) {
+        dl.appendChild(createLanguageLinkFor(languageCode, selectedLanguageCode === languageCode));
+      }
+      injectedDiv.prepend(dl);
+      // no need for that observer anymore
+      observer.disconnect();
     });
 
-    // Pass in the target node, as well as the observer options
-    observer.observe(flyOutWrapper[0], observerConfig);
+    // observed target node is the fly-out wrapper, the only event we care about is when children are modified
+    observer.observe($('.rst-other-versions')[0], {childList: true});
   }
   function createLanguageLinkFor(languageCode, isCurrentlySelected) {
     var strong;
