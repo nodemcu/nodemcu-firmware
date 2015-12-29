@@ -41,7 +41,8 @@ SUBDIRS= 					\
 	cjson 					\
 	crypto 					\
 	dhtlib					\
-	tsl2561
+	tsl2561					\
+	http
 
 endif # } PDIR
 
