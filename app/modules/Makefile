@@ -50,6 +50,7 @@ INCLUDES += -I ../spiffs
 INCLUDES += -I ../smart
 INCLUDES += -I ../cjson
 INCLUDES += -I ../dhtlib
+INCLUDES += -I ../http
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
