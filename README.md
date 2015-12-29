@@ -289,6 +289,7 @@ Comment-out the #define statement for unused modules. Example:
 // #define LUA_USE_MODULES_BMP085
 #define LUA_USE_MODULES_TSL2561
 // #define LUA_USE_MODULES_HX711
+#define LUA_USE_MODULES_HTTP
 
 #endif /* LUA_USE_MODULES */
 ```
@@ -626,6 +627,45 @@ value = cjson.decode(json_text)
 value = { true, { foo = "bar" } }
 json_text = cjson.encode(value)
 -- Returns: '[true,{"foo":"bar"}]'
+```
+
+####HTTP client
+```lua
+-- Support HTTP and HTTPS, For example
+-- HTTP POST Example
+http.post("http://testpost.somewhere:8080/somewhereyoupost/","","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- HTTPS GET Example
+http.get("https://www.vowstar.com/nodemcu/","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- You will get
+-- > 200 
+-- hello nodemcu
+-- HTTPS DELETE Example
+http.delete("https://10.0.0.2:443","","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- HTTPS PUT Example
+http.put("https://testput.somewhere/somewhereyouput.php","","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- HTTP RAW Request Example, use more HTTP/HTTPS request method
+http.request("http://www.apple.com:80/library/test/success.html","GET","","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+
 ```
 
 ####Read an HX711 load cell ADC.
