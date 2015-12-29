@@ -216,6 +216,7 @@ static const LUA_REG_TYPE http_map[] = {
   { LSTRKEY( "post" ),            LFUNCVAL( http_lapi_post ) },
   { LSTRKEY( "put" ),             LFUNCVAL( http_lapi_put ) },
   { LSTRKEY( "delete" ),          LFUNCVAL( http_lapi_delete ) },
+  { LSTRKEY( "get" ),             LFUNCVAL( http_lapi_get ) },
   { LNILKEY, LNILVAL }
 };
 
