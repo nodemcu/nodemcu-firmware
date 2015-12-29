@@ -295,6 +295,12 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 		os_sprintf( post_headers, "Content-Length: %d\r\n", strlen( req->post_data ) );
 	}
 
+	if(req->headers == NULL) /* Avoid NULL pointer, it may cause exception */
+	{
+		req->headers = (char *)os_malloc(sizeof(char));
+		req->headers[0] = "\0";
+	}
+
 	char buf[69 + strlen( req->method ) + strlen( req->path ) + strlen( req->hostname ) +
 		 strlen( req->headers ) + strlen( post_headers )];
 	int len = os_sprintf( buf,
@@ -311,7 +317,8 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 		espconn_secure_send( conn, (uint8_t *) buf, len );
 	else
 		espconn_send( conn, (uint8_t *) buf, len );
-	os_free( req->headers );
+	if(req->headers != NULL)
+		os_free( req->headers );
 	req->headers = NULL;
 	HTTPCLIENT_DEBUG( "Sending request header\n" );
 }
