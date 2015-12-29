@@ -632,13 +632,15 @@ json_text = cjson.encode(value)
 ####HTTP client
 ```lua
 -- Support HTTP and HTTPS, For example
--- HTTP POST Example
-http.post("http://testpost.somewhere:8080/somewhereyoupost/","","",
+-- HTTP POST Example with JSON header and body
+http.post("http://testpost.somewhere:8080/somewhereyoupost/",
+            "Content-Type: application/json\r\n",
+            "{"hello":"world"}",
             function(code, data) 
                 print(code) 
                 print(data) 
             end)
--- HTTPS GET Example
+-- HTTPS GET Example with NULL header
 http.get("https://www.vowstar.com/nodemcu/","",
             function(code, data) 
                 print(code) 
@@ -647,13 +649,13 @@ http.get("https://www.vowstar.com/nodemcu/","",
 -- You will get
 -- > 200 
 -- hello nodemcu
--- HTTPS DELETE Example
+-- HTTPS DELETE Example with NULL header and body
 http.delete("https://10.0.0.2:443","","",
             function(code, data) 
                 print(code) 
                 print(data) 
             end)
--- HTTPS PUT Example
+-- HTTPS PUT Example with NULL header and body
 http.put("https://testput.somewhere/somewhereyouput.php","","",
             function(code, data) 
                 print(code) 
