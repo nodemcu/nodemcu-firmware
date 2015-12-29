@@ -39,7 +39,7 @@ static int http_lapi_request( lua_State *L )
   const char * headers = luaL_checklstring(L, 1, &length);
   const char * body    = luaL_checklstring(L, 1, &length);
 
-  http_request(url, method, headers, body, NULL);
+  http_request(url, method, headers, body, http_callback);
 
   lua_pushnumber( L, 0 );
   return 1;
