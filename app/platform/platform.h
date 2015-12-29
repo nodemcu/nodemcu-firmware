@@ -119,19 +119,19 @@ int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_
 // Parity
 enum
 {
-  PLATFORM_UART_PARITY_EVEN,
-  PLATFORM_UART_PARITY_ODD,
-  PLATFORM_UART_PARITY_NONE,
-  PLATFORM_UART_PARITY_MARK,
-  PLATFORM_UART_PARITY_SPACE
+  PLATFORM_UART_PARITY_NONE  = 0,
+  PLATFORM_UART_PARITY_EVEN  = 1,
+  PLATFORM_UART_PARITY_ODD   = 2,
+  PLATFORM_UART_PARITY_MARK  = 3,
+  PLATFORM_UART_PARITY_SPACE = 4
 };
 
 // Stop bits
 enum
 {
-  PLATFORM_UART_STOPBITS_1,
-  PLATFORM_UART_STOPBITS_1_5,
-  PLATFORM_UART_STOPBITS_2
+  PLATFORM_UART_STOPBITS_1   = 1,
+  PLATFORM_UART_STOPBITS_2   = 2,
+  PLATFORM_UART_STOPBITS_1_5 = 3
 };
 
 // Flow control types (this is a bit mask, one can specify PLATFORM_UART_FLOW_RTS | PLATFORM_UART_FLOW_CTS )
@@ -237,10 +237,36 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size );
 uint32_t platform_flash_get_num_sectors(void);
 int platform_flash_erase_sector( uint32_t sector_id );
 
+/**
+ * Translated a mapped address to a physical flash address, based on the
+ * current flash cache mapping.
+ * @param mapped_addr Address to translate (>= INTERNAL_FLASH_MAPPED_ADDRESS)
+ * @return the corresponding physical flash address, or -1 if flash cache is
+ *  not currently active.
+ * @see Cache_Read_Enable.
+ */
+uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
+
 // *****************************************************************************
 // Allocator support
 
 void* platform_get_first_free_ram( unsigned id );
 void* platform_get_last_free_ram( unsigned id );
+
+// *****************************************************************************
+// Helper macros
+#define MOD_CHECK_ID( mod, id )\
+  if( !platform_ ## mod ## _exists( id ) )\
+    return luaL_error( L, #mod" %d does not exist", ( unsigned )id )
+
+#define MOD_CHECK_TIMER( id )\
+  if( id == PLATFORM_TIMER_SYS_ID && !platform_timer_sys_available() )\
+    return luaL_error( L, "the system timer is not available on this platform" );\
+  if( !platform_timer_exists( id ) )\
+    return luaL_error( L, "timer %d does not exist", ( unsigned )id )\
+
+#define MOD_CHECK_RES_ID( mod, id, resmod, resid )\
+  if( !platform_ ## mod ## _check_ ## resmod ## _id( id, resid ) )\
+    return luaL_error( L, #resmod" %d not valid with " #mod " %d", ( unsigned )resid, ( unsigned )id )
 
 #endif

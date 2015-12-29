@@ -1,6 +1,6 @@
 // Module for interfacing with system
 
-#include "lua.h"
+#include "module.h"
 #include "lauxlib.h"
 
 #include "ldebug.h"
@@ -15,14 +15,12 @@
 #include "lundump.h"
 
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 #include "c_types.h"
 #include "romfs.h"
 #include "c_string.h"
 #include "driver/uart.h"
-//#include "spi_flash.h"
 #include "user_interface.h"
 #include "flash_api.h"
 #include "flash_fs.h"
@@ -550,9 +548,7 @@ static int node_stripdebug (lua_State *L) {
 #endif
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE node_map[] =
+static const LUA_REG_TYPE node_map[] =
 {
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
   { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
@@ -581,20 +577,7 @@ const LUA_REG_TYPE node_map[] =
 
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
-#if LUA_OPTIMIZE_MEMORY > 0
-
-#endif
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_node( lua_State *L )
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_NODE, node_map );
-  // Add constants
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
-}
+NODEMCU_MODULE(NODE, "node", node_map, NULL);

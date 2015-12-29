@@ -1,5 +1,6 @@
 // Module for RTC sample FIFO storage
 
+#include "module.h"
 #include "lauxlib.h"
 #include "user_modules.h"
 #include "rtc/rtctime.h"
@@ -164,10 +165,7 @@ static int rtcfifo_dsleep_until_sample (lua_State *L)
 #endif
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE rtcfifo_map[] =
-{
+static const LUA_REG_TYPE rtcfifo_map[] = {
   { LSTRKEY("prepare"),             LFUNCVAL(rtcfifo_prepare) },
   { LSTRKEY("ready"),               LFUNCVAL(rtcfifo_ready) },
   { LSTRKEY("put"),                 LFUNCVAL(rtcfifo_put) },
@@ -181,12 +179,4 @@ const LUA_REG_TYPE rtcfifo_map[] =
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_rtcfifo (lua_State *L)
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else
-  luaL_register (L, AUXLIB_RTCFIFO, rtcfifo_map);
-  return 1;
-#endif
-}
+NODEMCU_MODULE(RTCFIFO, "rtcfifo", rtcfifo_map, NULL);

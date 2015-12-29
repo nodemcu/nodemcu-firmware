@@ -1,10 +1,8 @@
 // Module for Ucglib
 
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 
 #include "c_stdlib.h"
 
@@ -404,7 +402,7 @@ static int lucg_getHeight( lua_State *L )
     return 1;
 }
 
-// Lua: width = ucg.getStrWidth( self )
+// Lua: width = ucg.getStrWidth( self, string )
 static int lucg_getStrWidth( lua_State *L )
 {
     lucg_userdata_t *lud;
@@ -412,7 +410,7 @@ static int lucg_getStrWidth( lua_State *L )
     if ((lud = get_lud( L )) == NULL)
         return 0;
 
-    const char *s = luaL_checkstring( L, (1+3) + 1 );
+    const char *s = luaL_checkstring( L, 2 );
     if (s == NULL)
         return 0;
 
@@ -876,9 +874,6 @@ UCG_DISPLAY_TABLE
 
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-
 static const LUA_REG_TYPE lucg_display_map[] =
 {
     { LSTRKEY( "begin" ),              LFUNCVAL( lucg_begin ) },
@@ -926,19 +921,15 @@ static const LUA_REG_TYPE lucg_display_map[] =
     { LSTRKEY( "undoScale" ),          LFUNCVAL( lucg_undoScale ) },
 
     { LSTRKEY( "__gc" ),  LFUNCVAL( lucg_close_display ) },
-#if LUA_OPTIMIZE_MEMORY > 0
     { LSTRKEY( "__index" ), LROVAL ( lucg_display_map ) },
-#endif
     { LNILKEY, LNILVAL }
 };
 
-const LUA_REG_TYPE lucg_map[] = 
+static const LUA_REG_TYPE lucg_map[] = 
 {
 #undef UCG_DISPLAY_TABLE_ENTRY
 #define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) { LSTRKEY( #binding ), LFUNCVAL ( lucg_ ##binding ) },
     UCG_DISPLAY_TABLE
-
-#if LUA_OPTIMIZE_MEMORY > 0
 
     // Register fonts
 #undef UCG_FONT_TABLE_ENTRY
@@ -957,50 +948,13 @@ const LUA_REG_TYPE lucg_map[] =
     { LSTRKEY( "DRAW_ALL" ),         LNUMVAL( UCG_DRAW_ALL ) },
 
     { LSTRKEY( "__metatable" ), LROVAL( lucg_map ) },
-#endif
     { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_ucg( lua_State *L )
+int luaopen_ucg( lua_State *L )
 {
-#if LUA_OPTIMIZE_MEMORY > 0
     luaL_rometatable(L, "ucg.display", (void *)lucg_display_map);  // create metatable
     return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-    int n;
-    luaL_register( L, AUXLIB_UCG, lucg_map );
-
-    // Set it as its own metatable
-    lua_pushvalue( L, -1 );
-    lua_setmetatable( L, -2 );
-
-    // Module constants  
-
-    // Register fonts
-#undef UCG_FONT_TABLE_ENTRY
-#define UCG_FONT_TABLE_ENTRY(font) MOD_REG_LUDATA( L, #font, (void *)(ucg_ ## font) );
-    UCG_FONT_TABLE
-
-    // Font modes
-    MOD_REG_NUMBER( L, "FONT_MODE_TRANSPARENT", UCG_FONT_MODE_TRANSPARENT );
-    MOD_REG_NUMBER( L, "FONT_MODE_SOLID",       UCG_FONT_MODE_SOLID );
-
-    // Options for circle/ disc drawing
-    MOD_REG_NUMBER( L, "DRAW_UPPER_RIGHT", UCG_DRAW_UPPER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_UPPER_LEFT",  UCG_DRAW_UPPER_LEFT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_RIGHT", UCG_DRAW_LOWER_RIGHT );
-    MOD_REG_NUMBER( L, "DRAW_LOWER_LEFT",  UCG_DRAW_LOWER_LEFT );
-    MOD_REG_NUMBER( L, "DRAW_ALL",         UCG_DRAW_ALL );
-
-    // create metatable
-    luaL_newmetatable(L, "ucg.display");
-    // metatable.__index = metatable
-    lua_pushliteral(L, "__index");
-    lua_pushvalue(L,-2);
-    lua_rawset(L,-3);
-    // Setup the methods inside metatable
-    luaL_register( L, NULL, lucg_display_map );
-
-    return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }
+
+NODEMCU_MODULE(UCG, "ucg", lucg_map, luaopen_ucg);

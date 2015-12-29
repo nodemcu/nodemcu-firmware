@@ -1,11 +1,8 @@
 // Module for interfacing with the I2C interface
 
-//#include "lua.h"
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 
 // Lua: speed = i2c.setup( id, sda, scl, speed )
 static int i2c_setup( lua_State *L )
@@ -143,39 +140,18 @@ static int i2c_read( lua_State *L )
 }
 
 // Module function map
-#define MIN_OPT_LEVEL   2
-#include "lrodefs.h"
-const LUA_REG_TYPE i2c_map[] = 
-{
-  { LSTRKEY( "setup" ),  LFUNCVAL( i2c_setup ) },
-  { LSTRKEY( "start" ), LFUNCVAL( i2c_start ) },
-  { LSTRKEY( "stop" ), LFUNCVAL( i2c_stop ) },
-  { LSTRKEY( "address" ), LFUNCVAL( i2c_address ) },
-  { LSTRKEY( "write" ), LFUNCVAL( i2c_write ) },
-  { LSTRKEY( "read" ), LFUNCVAL( i2c_read ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-  // { LSTRKEY( "FAST" ), LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
-  { LSTRKEY( "SLOW" ), LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
+static const LUA_REG_TYPE i2c_map[] = {
+  { LSTRKEY( "setup" ),       LFUNCVAL( i2c_setup ) },
+  { LSTRKEY( "start" ),       LFUNCVAL( i2c_start ) },
+  { LSTRKEY( "stop" ),        LFUNCVAL( i2c_stop ) },
+  { LSTRKEY( "address" ),     LFUNCVAL( i2c_address ) },
+  { LSTRKEY( "write" ),       LFUNCVAL( i2c_write ) },
+  { LSTRKEY( "read" ),        LFUNCVAL( i2c_read ) },
+ //{ LSTRKEY( "FAST" ),       LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
+  { LSTRKEY( "SLOW" ),        LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
   { LSTRKEY( "TRANSMITTER" ), LNUMVAL( PLATFORM_I2C_DIRECTION_TRANSMITTER ) },
-  { LSTRKEY( "RECEIVER" ), LNUMVAL( PLATFORM_I2C_DIRECTION_RECEIVER ) },
-#endif
+  { LSTRKEY( "RECEIVER" ),    LNUMVAL( PLATFORM_I2C_DIRECTION_RECEIVER ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_i2c( lua_State *L )
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_I2C, i2c_map );
-  
-  // Add the stop bits and parity constants (for i2c.setup)
-  // MOD_REG_NUMBER( L, "FAST", PLATFORM_I2C_SPEED_FAST );
-  MOD_REG_NUMBER( L, "SLOW", PLATFORM_I2C_SPEED_SLOW ); 
-  MOD_REG_NUMBER( L, "TRANSMITTER", PLATFORM_I2C_DIRECTION_TRANSMITTER );
-  MOD_REG_NUMBER( L, "RECEIVER", PLATFORM_I2C_DIRECTION_RECEIVER );
-  
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
-}
-
+NODEMCU_MODULE(I2C, "i2c", i2c_map, NULL);

@@ -96,11 +96,6 @@ SpiFlashOpResult flash_safe_erase_sector(uint16 sec)
 SPIFlashInfo flash_rom_getinfo(void)
 {
     volatile SPIFlashInfo spi_flash_info ICACHE_STORE_ATTR;
-    // Don't use it before cache read disabled
-    // FLASH_DISABLE_CACHE();
-    // spi_flash_info = *((SPIFlashInfo *)(FLASH_ADDRESS_START_MAP));
-    // FLASH_ENABLE_CACHE();
-    // Needn't safe mode.
     spi_flash_read(0, (uint32 *)(& spi_flash_info), sizeof(spi_flash_info));
     return spi_flash_info;
 }

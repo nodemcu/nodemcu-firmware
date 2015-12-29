@@ -521,7 +521,7 @@ int romfs_init( void )
 #if defined( BUILD_WOFS ) 
   // Get the start address and size of WOFS and register it
   wofs_fsdata.pbase = ( uint8_t* )platform_flash_get_first_free_block_address( NULL );
-  wofs_fsdata.max_size = INTERNAL_FLASH_SIZE - ( ( uint32_t )wofs_fsdata.pbase - INTERNAL_FLASH_START_ADDRESS );
+  wofs_fsdata.max_size = INTERNAL_FLASH_SIZE - ( ( uint32_t )wofs_fsdata.pbase );
   NODE_DBG("wofs.pbase:%x,max:%x\n",wofs_fsdata.pbase,wofs_fsdata.max_size);
 #endif // ifdef BUILD_WOFS
   return 0;

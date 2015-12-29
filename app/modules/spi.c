@@ -1,11 +1,8 @@
 // Module for interfacing with the SPI interface
 
-//#include "lua.h"
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 
 #define SPI_HALFDUPLEX 0
 #define SPI_FULLDUPLEX 1
@@ -32,6 +29,10 @@ static int spi_setup( lua_State *L )
 
   if (cpol != PLATFORM_SPI_CPOL_LOW && cpol != PLATFORM_SPI_CPOL_HIGH) {
     return luaL_error( L, "wrong arg type" );
+  }
+  // CPOL_HIGH is not implemented, see app/driver/spi.c spi_master_init()
+  if (cpol == PLATFORM_SPI_CPOL_HIGH) {
+    return luaL_error( L, "cpol=high is not implemented" );
   }
 
   if (cpha != PLATFORM_SPI_CPHA_LOW && cpha != PLATFORM_SPI_CPHA_HIGH) {
@@ -309,48 +310,23 @@ static int spi_transaction( lua_State *L )
 
 
 // Module function map
-#define MIN_OPT_LEVEL   2
-#include "lrodefs.h"
-const LUA_REG_TYPE spi_map[] = 
-{
+static const LUA_REG_TYPE spi_map[] = {
   { LSTRKEY( "setup" ),       LFUNCVAL( spi_setup ) },
   { LSTRKEY( "send" ),        LFUNCVAL( spi_send_recv ) },
   { LSTRKEY( "recv" ),        LFUNCVAL( spi_recv ) },
   { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
   { LSTRKEY( "get_miso" ),    LFUNCVAL( spi_get_miso ) },
   { LSTRKEY( "transaction" ), LFUNCVAL( spi_transaction ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-  { LSTRKEY( "MASTER" ),    LNUMVAL( PLATFORM_SPI_MASTER ) },
-  { LSTRKEY( "SLAVE" ),     LNUMVAL( PLATFORM_SPI_SLAVE) },
-  { LSTRKEY( "CPHA_LOW" ),  LNUMVAL( PLATFORM_SPI_CPHA_LOW) },
-  { LSTRKEY( "CPHA_HIGH" ), LNUMVAL( PLATFORM_SPI_CPHA_HIGH) },
-  { LSTRKEY( "CPOL_LOW" ),  LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
-  { LSTRKEY( "CPOL_HIGH" ), LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
-  { LSTRKEY( "DATABITS_8" ), LNUMVAL( 8 ) },
-  { LSTRKEY( "HALFDUPLEX" ), LNUMVAL( SPI_HALFDUPLEX ) },
-  { LSTRKEY( "FULLDUPLEX" ), LNUMVAL( SPI_FULLDUPLEX ) },
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
+  { LSTRKEY( "MASTER" ),      LNUMVAL( PLATFORM_SPI_MASTER ) },
+  { LSTRKEY( "SLAVE" ),       LNUMVAL( PLATFORM_SPI_SLAVE) },
+  { LSTRKEY( "CPHA_LOW" ),    LNUMVAL( PLATFORM_SPI_CPHA_LOW) },
+  { LSTRKEY( "CPHA_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPHA_HIGH) },
+  { LSTRKEY( "CPOL_LOW" ),    LNUMVAL( PLATFORM_SPI_CPOL_LOW) },
+  { LSTRKEY( "CPOL_HIGH" ),   LNUMVAL( PLATFORM_SPI_CPOL_HIGH) },
+  { LSTRKEY( "DATABITS_8" ),  LNUMVAL( 8 ) },
+  { LSTRKEY( "HALFDUPLEX" ),  LNUMVAL( SPI_HALFDUPLEX ) },
+  { LSTRKEY( "FULLDUPLEX" ),  LNUMVAL( SPI_FULLDUPLEX ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_spi( lua_State *L )
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_SPI, spi_map );
-  
-  // Add constants
-  MOD_REG_NUMBER( L, "MASTER",  PLATFORM_SPI_MASTER);
-  MOD_REG_NUMBER( L, "SLAVE",   PLATFORM_SPI_SLAVE);
-  MOD_REG_NUMBER( L, "CPHA_LOW" , PLATFORM_SPI_CPHA_LOW);
-  MOD_REG_NUMBER( L, "CPHA_HIGH", PLATFORM_SPI_CPHA_HIGH);
-  MOD_REG_NUMBER( L, "CPOL_LOW" , PLATFORM_SPI_CPOL_LOW);
-  MOD_REG_NUMBER( L, "CPOL_HIGH", PLATFORM_SPI_CPOL_HIGH);
-  MOD_REG_NUMBER( L, "DATABITS_8", 8 );
-  MOD_REG_NUMBER( L, "HALFDUPLEX", SPI_HALFDUPLEX );
-  MOD_REG_NUMBER( L, "FULLDUPLEX", SPI_FULLDUPLEX );
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
-}
+NODEMCU_MODULE(SPI, "spi", spi_map, NULL);

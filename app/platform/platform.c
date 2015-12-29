@@ -222,8 +222,8 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
 
   switch (stopbits)
   {
-    case PLATFORM_UART_STOPBITS_1:
-      UartDev.stop_bits = ONE_STOP_BIT;
+    case PLATFORM_UART_STOPBITS_1_5:
+      UartDev.stop_bits = ONE_HALF_STOP_BIT;
       break;
     case PLATFORM_UART_STOPBITS_2:
       UartDev.stop_bits = TWO_STOP_BIT;
@@ -237,12 +237,15 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   {
     case PLATFORM_UART_PARITY_EVEN:
       UartDev.parity = EVEN_BITS;
+      UartDev.exist_parity = STICK_PARITY_EN;
       break;
     case PLATFORM_UART_PARITY_ODD:
       UartDev.parity = ODD_BITS;
+      UartDev.exist_parity = STICK_PARITY_EN;
       break;
     default:
       UartDev.parity = NONE_BITS;
+      UartDev.exist_parity = STICK_PARITY_DIS;
       break;
   }
 
@@ -514,12 +517,11 @@ int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_
  */
 uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size )
 {
-  toaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
   const uint32_t blkmask = INTERNAL_FLASH_WRITE_UNIT_SIZE - 1;
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
-  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_START_ADDRESS)) {
+  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_MAPPED_ADDRESS)) {
     apbuf = (uint32_t *)c_malloc(size);
     if(!apbuf)
       return 0;
@@ -532,7 +534,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_write: r=%d at %08X\n", ( int )r, ( unsigned )toaddr+INTERNAL_FLASH_START_ADDRESS );
+    NODE_ERR( "ERROR in flash_write: r=%d at %08X\n", ( int )r, ( unsigned )toaddr);
     return 0;
   }
 }
@@ -547,7 +549,6 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if (size==0)
     return 0;
 
-  fromaddr -= INTERNAL_FLASH_START_ADDRESS;
   SpiFlashOpResult r;
   system_soft_wdt_feed ();
 
@@ -571,7 +572,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr+INTERNAL_FLASH_START_ADDRESS );
+    NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr);
     return 0;
   }
 }
@@ -580,4 +581,15 @@ int platform_flash_erase_sector( uint32_t sector_id )
 {
   system_soft_wdt_feed ();
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
+}
+
+uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
+{
+  uint32_t cache_ctrl = READ_PERI_REG(CACHE_FLASH_CTRL_REG);
+  if (!(cache_ctrl & CACHE_FLASH_ACTIVE))
+    return -1;
+  bool b0 = (cache_ctrl & CACHE_FLASH_MAPPED0) ? 1 : 0;
+  bool b1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 1 : 0;
+  uint32_t meg = (b1 << 1) | b0;
+  return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg * 0x100000;
 }

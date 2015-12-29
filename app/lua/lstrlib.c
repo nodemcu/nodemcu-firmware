@@ -825,6 +825,7 @@ static int str_format (lua_State *L) {
   return 1;
 }
 
+#undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
 const LUA_REG_TYPE strlib[] = {

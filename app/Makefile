@@ -86,8 +86,13 @@ COMPONENTS_eagle.app.v6 = 			\
 	crypto/libcrypto.a 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
-	modules/libmodules.a		
+	modules/libmodules.a			\
 
+# Inspect the modules library and work out which modules need to be linked.
+# For each enabled module, a symbol name of the form XYZ_module_selected is
+# returned. At link time those names are declared undefined, so those (and
+# only those) modules are pulled in.
+SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
@@ -98,6 +103,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--no-check-sections 		\
 	-Wl,--wrap=_xtos_set_exception_handler	\
 	-Wl,-static 				\
+	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
 	-Wl,--start-group 			\
 	-lc 					\
 	-lgcc 					\
@@ -134,9 +140,11 @@ DEPENDS_eagle.app.v6 = 				\
 #	-DWLAN_CONFIG_CCX
 CONFIGURATION_DEFINES =	-D__ets__ 		\
 			-DICACHE_FLASH 		\
+			-DLUA_OPTIMIZE_MEMORY=2	\
+			-DMIN_OPT_LEVEL=2	\
 			-DLWIP_OPEN_SRC 	\
 			-DPBUF_RSV_FOR_WLAN 	\
-			-DEBUF_LWIP
+			-DEBUF_LWIP		\
 
 DEFINES += 					\
 	$(UNIVERSAL_TARGET_DEFINES) 		\

@@ -1,9 +1,8 @@
 // Module for interfacing with the DHTxx sensors (xx = 11-21-22-33-44).
 
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
-#include "auxmods.h"
-#include "lrotable.h"
+#include "platform.h"
 #include "cpu_esp8266.h"
 #include "dht.h"
 
@@ -100,30 +99,14 @@ static int dht_lapi_readxx( lua_State *L )
 // }
 
 // Module function map
-#define MIN_OPT_LEVEL   2
-#include "lrodefs.h"
-const LUA_REG_TYPE dht_map[] =
-{
-  { LSTRKEY( "read" ),  LFUNCVAL( dht_lapi_read ) },
-  { LSTRKEY( "read11" ), LFUNCVAL( dht_lapi_read11 ) },
-  { LSTRKEY( "readxx" ),  LFUNCVAL( dht_lapi_readxx ) },
-#if LUA_OPTIMIZE_MEMORY > 0
-  { LSTRKEY( "OK" ), LNUMVAL( DHTLIB_OK ) },
+static const LUA_REG_TYPE dht_map[] = {
+  { LSTRKEY( "read" ),           LFUNCVAL( dht_lapi_read ) },
+  { LSTRKEY( "read11" ),         LFUNCVAL( dht_lapi_read11 ) },
+  { LSTRKEY( "readxx" ),         LFUNCVAL( dht_lapi_readxx ) },
+  { LSTRKEY( "OK" ),             LNUMVAL( DHTLIB_OK ) },
   { LSTRKEY( "ERROR_CHECKSUM" ), LNUMVAL( DHTLIB_ERROR_CHECKSUM ) },
-  { LSTRKEY( "ERROR_TIMEOUT" ), LNUMVAL( DHTLIB_ERROR_TIMEOUT ) },
-#endif
+  { LSTRKEY( "ERROR_TIMEOUT" ),  LNUMVAL( DHTLIB_ERROR_TIMEOUT ) },
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_dht( lua_State *L )
-{
-#if LUA_OPTIMIZE_MEMORY > 0
-  return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_DHT, dht_map );
-
-  // Add the constants
-
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0
-}
+NODEMCU_MODULE(DHT, "dht", dht_map, NULL);

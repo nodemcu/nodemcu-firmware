@@ -1,11 +1,8 @@
 // Module for interfacing with GPIO
 
-//#include "lua.h"
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
 
 #include "c_types.h"
 #include "c_string.h"
@@ -223,33 +220,25 @@ static int lgpio_serout( lua_State* L )
 #undef DELAY_TABLE_MAX_LEN
 
 // Module function map
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE gpio_map[] = 
-{
-  { LSTRKEY( "mode" ), LFUNCVAL( lgpio_mode ) },
-  { LSTRKEY( "read" ), LFUNCVAL( lgpio_read ) },
-  { LSTRKEY( "write" ), LFUNCVAL( lgpio_write ) },
+static const LUA_REG_TYPE gpio_map[] = {
+  { LSTRKEY( "mode" ),   LFUNCVAL( lgpio_mode ) },
+  { LSTRKEY( "read" ),   LFUNCVAL( lgpio_read ) },
+  { LSTRKEY( "write" ),  LFUNCVAL( lgpio_write ) },
   { LSTRKEY( "serout" ), LFUNCVAL( lgpio_serout ) },
 #ifdef GPIO_INTERRUPT_ENABLE
-  { LSTRKEY( "trig" ), LFUNCVAL( lgpio_trig ) },
-#endif
-#if LUA_OPTIMIZE_MEMORY > 0
-#ifdef GPIO_INTERRUPT_ENABLE
-  { LSTRKEY( "INT" ), LNUMVAL( INTERRUPT ) },
+  { LSTRKEY( "trig" ),   LFUNCVAL( lgpio_trig ) },
+  { LSTRKEY( "INT" ),    LNUMVAL( INTERRUPT ) },
 #endif
   { LSTRKEY( "OUTPUT" ), LNUMVAL( OUTPUT ) },
-  { LSTRKEY( "INPUT" ), LNUMVAL( INPUT ) },
-  { LSTRKEY( "HIGH" ), LNUMVAL( HIGH ) },
-  { LSTRKEY( "LOW" ), LNUMVAL( LOW ) },
-  { LSTRKEY( "FLOAT" ), LNUMVAL( FLOAT ) },
+  { LSTRKEY( "INPUT" ),  LNUMVAL( INPUT ) },
+  { LSTRKEY( "HIGH" ),   LNUMVAL( HIGH ) },
+  { LSTRKEY( "LOW" ),    LNUMVAL( LOW ) },
+  { LSTRKEY( "FLOAT" ),  LNUMVAL( FLOAT ) },
   { LSTRKEY( "PULLUP" ), LNUMVAL( PULLUP ) },
-#endif
   { LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_gpio( lua_State *L )
-{
+int luaopen_gpio( lua_State *L ) {
 #ifdef GPIO_INTERRUPT_ENABLE
   int i;
   for(i=0;i<GPIO_PIN_NUM;i++){
@@ -257,21 +246,7 @@ LUALIB_API int luaopen_gpio( lua_State *L )
   }
   platform_gpio_init(gpio_intr_callback);
 #endif
-
-#if LUA_OPTIMIZE_MEMORY > 0
   return 0;
-#else // #if LUA_OPTIMIZE_MEMORY > 0
-  luaL_register( L, AUXLIB_GPIO, gpio_map );
-  // Add constants
-#ifdef GPIO_INTERRUPT_ENABLE
-  MOD_REG_NUMBER( L, "INT", INTERRUPT );
-#endif
-  MOD_REG_NUMBER( L, "OUTPUT", OUTPUT );
-  MOD_REG_NUMBER( L, "INPUT", INPUT );
-  MOD_REG_NUMBER( L, "HIGH", HIGH );
-  MOD_REG_NUMBER( L, "LOW", LOW );
-  MOD_REG_NUMBER( L, "FLOAT", FLOAT );
-  MOD_REG_NUMBER( L, "PULLUP", PULLUP );
-  return 1;
-#endif // #if LUA_OPTIMIZE_MEMORY > 0  
 }
+
+NODEMCU_MODULE(GPIO, "gpio", gpio_map, luaopen_gpio);

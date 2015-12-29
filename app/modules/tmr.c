@@ -48,14 +48,9 @@ tmr.softwd(int)
 	the timer units are seconds
 */
 
-#define MIN_OPT_LEVEL 2
-
-#include "lualib.h"
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "auxmods.h"
-#include "lrotable.h"
-#include "lrodefs.h"
 #include "c_types.h"
 
 #define TIMER_MODE_OFF 3
@@ -311,28 +306,26 @@ static int tmr_softwd( lua_State* L ){
 
 // Module function map
 
-const LUA_REG_TYPE tmr_map[] = {
-	{ LSTRKEY( "delay" ), LFUNCVAL( tmr_delay ) },
-	{ LSTRKEY( "now" ), LFUNCVAL( tmr_now ) },
-	{ LSTRKEY( "wdclr" ), LFUNCVAL( tmr_wdclr ) },
-	{ LSTRKEY( "softwd" ), LFUNCVAL( tmr_softwd ) },
-	{ LSTRKEY( "time" ), LFUNCVAL( tmr_time ) },
-	{ LSTRKEY( "register" ), LFUNCVAL ( tmr_register ) },
-	{ LSTRKEY( "alarm" ), LFUNCVAL( tmr_alarm ) },
-	{ LSTRKEY( "start" ), LFUNCVAL ( tmr_start ) },
-	{ LSTRKEY( "stop" ), LFUNCVAL ( tmr_stop ) },
-	{ LSTRKEY( "unregister" ), LFUNCVAL ( tmr_unregister ) },
-	{ LSTRKEY( "state" ), LFUNCVAL ( tmr_state ) },
-	{ LSTRKEY( "interval" ), LFUNCVAL ( tmr_interval) }, 
-#if LUA_OPTIMIZE_MEMORY > 0
+static const LUA_REG_TYPE tmr_map[] = {
+	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
+	{ LSTRKEY( "now" ),          LFUNCVAL( tmr_now ) },
+	{ LSTRKEY( "wdclr" ),        LFUNCVAL( tmr_wdclr ) },
+	{ LSTRKEY( "softwd" ),       LFUNCVAL( tmr_softwd ) },
+	{ LSTRKEY( "time" ),         LFUNCVAL( tmr_time ) },
+	{ LSTRKEY( "register" ),     LFUNCVAL( tmr_register ) },
+	{ LSTRKEY( "alarm" ),        LFUNCVAL( tmr_alarm ) },
+	{ LSTRKEY( "start" ),        LFUNCVAL( tmr_start ) },
+	{ LSTRKEY( "stop" ),         LFUNCVAL( tmr_stop ) },
+	{ LSTRKEY( "unregister" ),   LFUNCVAL( tmr_unregister ) },
+	{ LSTRKEY( "state" ),        LFUNCVAL( tmr_state ) },
+	{ LSTRKEY( "interval" ),     LFUNCVAL( tmr_interval) }, 
 	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
-	{ LSTRKEY( "ALARM_SEMI" ), LNUMVAL( TIMER_MODE_SEMI ) },
-	{ LSTRKEY( "ALARM_AUTO" ), LNUMVAL( TIMER_MODE_AUTO ) },
-#endif
+	{ LSTRKEY( "ALARM_SEMI" ),   LNUMVAL( TIMER_MODE_SEMI ) },
+	{ LSTRKEY( "ALARM_AUTO" ),   LNUMVAL( TIMER_MODE_AUTO ) },
 	{ LNILKEY, LNILVAL }
 };
 
-LUALIB_API int luaopen_tmr( lua_State *L ){
+int luaopen_tmr( lua_State *L ){
 	int i;	
 	for(i=0; i<NUM_TMR; i++){
 		alarm_timers[i].lua_ref = LUA_NOREF;
@@ -343,17 +336,7 @@ LUALIB_API int luaopen_tmr( lua_State *L ){
 	ets_timer_disarm(&rtc_timer);
 	ets_timer_setfn(&rtc_timer, rtc_callback, NULL);
 	ets_timer_arm_new(&rtc_timer, 1000, 1, 1);
-
-#if LUA_OPTIMIZE_MEMORY > 0
-	return 0;
-#else
-	luaL_register( L, AUXLIB_TMR, tmr_map );
-	lua_pushvalue( L, -1 );
-	lua_setmetatable( L, -2 );
-	MOD_REG_NUMBER( L, "ALARM_SINGLE", TIMER_MODE_SINGLE );
-	MOD_REG_NUMBER( L, "ALARM_SEMI", TIMER_MODE_SEMI );
-	MOD_REG_NUMBER( L, "ALARM_AUTO", TIMER_MODE_AUTO );
-	return 1;
-#endif
+  return 0;
 }
 
+NODEMCU_MODULE(TMR, "tmr", tmr_map, luaopen_tmr);
