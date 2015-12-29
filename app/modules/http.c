@@ -145,6 +145,41 @@ static int http_lapi_put( lua_State *L )
   return 0;
 }
 
+// Lua: http.delete( url, header, body, function(status, reponse) end )
+static int http_lapi_delete( lua_State *L )
+{
+  int length;
+  http_client_L        = L;
+  const char * url     = luaL_checklstring(L, 1, &length);
+  const char * headers = NULL;
+  const char * body    = NULL;
+
+  // Check parameter
+  if ((url == NULL))
+  {
+    return luaL_error( L, "wrong arg type" );
+  }
+
+  if (lua_isstring(L, 2))
+  {
+    headers = luaL_checklstring(L, 2, &length);
+  }
+  if (lua_isstring(L, 3))
+  {
+    body = luaL_checklstring(L, 3, &length);
+  }
+
+  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
+  lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
+    if (http_callback_registry != LUA_NOREF)
+      luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
+    http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+
+  http_delete(url, headers, body, http_callback);
+  return 0;
+}
+
 // Module function map
 static const LUA_REG_TYPE http_map[] = {
   { LSTRKEY( "request" ),         LFUNCVAL( http_lapi_request ) },
