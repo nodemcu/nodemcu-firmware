@@ -183,6 +183,9 @@ static int http_lapi_delete( lua_State *L )
 // Module function map
 static const LUA_REG_TYPE http_map[] = {
   { LSTRKEY( "request" ),         LFUNCVAL( http_lapi_request ) },
+  { LSTRKEY( "post" ),            LFUNCVAL( http_lapi_post ) },
+  { LSTRKEY( "put" ),             LFUNCVAL( http_lapi_put ) },
+  { LSTRKEY( "delete" ),          LFUNCVAL( http_lapi_delete ) },
   { LNILKEY, LNILVAL }
 };
 
