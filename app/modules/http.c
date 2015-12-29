@@ -85,7 +85,7 @@ static int http_lapi_post( lua_State *L )
   const char * body    = NULL;
 
   // Check parameter
-  if ((url == NULL) || (method == NULL))
+  if ((url == NULL))
   {
     return luaL_error( L, "wrong arg type" );
   }
