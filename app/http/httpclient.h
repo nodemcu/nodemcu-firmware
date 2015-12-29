@@ -32,7 +32,7 @@
 /*
  * Size of http responses that will cause an error.
  */
-#define BUFFER_SIZE_MAX            (0x2000)
+#define BUFFER_SIZE_MAX            (1024)
 
 /*
  * Timeout of http request.
