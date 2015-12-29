@@ -6,7 +6,7 @@
 #include "cpu_esp8266.h"
 #include "httpclient.h"
 
-static int http_callback_handle  = LUA_NOREF;
+static int http_callback_registry  = LUA_NOREF;
 static lua_State * http_client_L = NULL;
 
 static void http_callback( char * response, int http_status, char * full_response )
@@ -17,32 +17,38 @@ static void http_callback( char * response, int http_status, char * full_respons
     os_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
     os_printf( "response=%s<EOF>\n", response );
   }
-  if (http_callback_handle != LUA_NOREF)
+  if (http_callback_registry != LUA_NOREF)
   {
-    lua_rawgeti(http_client_L, LUA_REGISTRYINDEX, http_callback_handle);
+    lua_rawgeti(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
 
     lua_pushnumber(http_client_L, http_status);
     lua_pushstring(http_client_L, response);
-    lua_call(http_client_L, 2, 0);
+    lua_call(http_client_L, 2, 0); // With 2 arguments and 0 result
 
-    luaL_unref(http_client_L, LUA_REGISTRYINDEX, http_callback_handle);
-    http_callback_handle = LUA_NOREF;
+    luaL_unref(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
+    http_callback_registry = LUA_NOREF;
   }
 }
 
-// Lua: result = http.request( method, header, body, callback )
+// Lua: result = http.request( method, header, body, function(status, reponse) )
 static int http_lapi_request( lua_State *L )
 {
   int length;
+  http_client_L        = L;
   const char * url     = luaL_checklstring(L, 1, &length);
-  const char * method  = luaL_checklstring(L, 1, &length);
-  const char * headers = luaL_checklstring(L, 1, &length);
-  const char * body    = luaL_checklstring(L, 1, &length);
+  const char * method  = luaL_checklstring(L, 2, &length);
+  const char * headers = luaL_checklstring(L, 3, &length);
+  const char * body    = luaL_checklstring(L, 4, &length);
+
+  if (lua_type(L, 5) == LUA_TFUNCTION || lua_type(L, 5) == LUA_TLIGHTFUNCTION){
+    lua_pushvalue(L, 5);  // copy argument (func) to the top of stack
+    if(http_callback_registry != LUA_NOREF)
+      luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
+    http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
 
   http_request(url, method, headers, body, http_callback);
-
-  lua_pushnumber( L, 0 );
-  return 1;
+  return 0;
 }
 
 // Module function map
