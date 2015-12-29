@@ -298,7 +298,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 	if(req->headers == NULL) /* Avoid NULL pointer, it may cause exception */
 	{
 		req->headers = (char *)os_malloc(sizeof(char));
-		req->headers[0] = "\0";
+		req->headers[0] = '\0';
 	}
 
 	char buf[69 + strlen( req->method ) + strlen( req->path ) + strlen( req->hostname ) +
