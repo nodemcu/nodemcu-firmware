@@ -6,7 +6,19 @@
 #include "cpu_esp8266.h"
 #include "httpclient.h"
 
-// Lua: result = dht.request( method, header, body, callback )
+static int http_callback_handle = LUA_NOREF;
+
+static void http_callback( char * response, int http_status, char * full_response )
+{
+  os_printf( "http_status=%d\n", http_status );
+  if ( http_status != HTTP_STATUS_GENERIC_ERROR )
+  {
+    os_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
+    os_printf( "response=%s<EOF>\n", response );
+  }
+}
+
+// Lua: result = http.request( method, header, body, callback )
 static int http_lapi_request( lua_State *L )
 {
   lua_pushnumber( L, 0 );
