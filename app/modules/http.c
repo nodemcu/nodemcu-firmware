@@ -11,12 +11,14 @@ static lua_State * http_client_L = NULL;
 
 static void http_callback( char * response, int http_status, char * full_response )
 {
+#if defined(HTTPCLIENT_DEBUG_ON)
   c_printf( "http_status=%d\n", http_status );
   if ( http_status != HTTP_STATUS_GENERIC_ERROR )
   {
     c_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
     c_printf( "response=%s<EOF>\n", response );
   }
+#endif
   if (http_callback_registry != LUA_NOREF)
   {
     lua_rawgeti(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
