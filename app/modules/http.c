@@ -1,5 +1,8 @@
-// Module for interfacing with the DHTxx sensors (xx = 11-21-22-33-44).
-
+/******************************************************************************
+ * HTTP module for NodeMCU
+ * vowstar@gmail.com
+ * 2015-12-29
+*******************************************************************************/
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"

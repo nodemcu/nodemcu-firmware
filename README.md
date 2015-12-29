@@ -633,7 +633,7 @@ json_text = cjson.encode(value)
 ```lua
 -- Support HTTP and HTTPS, For example
 -- HTTP POST Example with JSON header and body
-http.post("http://www.vowstar.com/nodemcu/",
+http.post("http://somewhere.acceptjson.com/",
            "Content-Type: application/json\r\n", 
            "{\"hello\":\"world\"}", 
             function(code, data) 
