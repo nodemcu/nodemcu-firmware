@@ -32,6 +32,7 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "legc.h"
+#include "rtc/rtcaccess.h"
 
 #define FREELIST_REF	0	/* free list of references */
 
@@ -43,6 +44,8 @@
 // Parameters for luaI_openlib
 #define LUA_USECCLOSURES          0
 #define LUA_USELIGHTFUNCTIONS     1
+
+static unsigned char panic_str_offset;
 
 /*
 ** {======================================================
@@ -806,16 +809,45 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   return nptr;
 }
 
+LUALIB_API char *luaL_panicstr(int offset, char *buff, size_t bufflen) {
+  if (offset >= 0 && offset < RTC_USER_MEM_NUM_DWORDS - 1) {
+    panic_str_offset = offset + RTC_SYSTEM_MEM_NUM_DWORDS; // Reserved for system use
+  }
+
+  if (panic_str_offset && rtc_mem_read(panic_str_offset - RTC_SYSTEM_MEM_NUM_DWORDS) == 0x31415926) {
+    size_t avail = (RTC_SYSTEM_MEM_NUM_DWORDS + RTC_USER_MEM_NUM_DWORDS - panic_str_offset - 1) * 4;
+    if (avail > bufflen) {
+      avail = bufflen;
+    }
+    system_rtc_mem_read(panic_str_offset + 1, buff, avail);
+    buff[bufflen - 1] = 0;   // Ensure null terminated
+  
+    if (buff[0]) {
+      return buff;
+    } 
+  }
+  return NULL;
+}
 
 static int panic (lua_State *L) {
   (void)L;  /* to avoid warnings */
+  const char *msg = lua_tostring(L, -1);
 #if defined(LUA_USE_STDIO)
   c_fprintf(c_stderr, "PANIC: unprotected error in call to Lua API (%s)\n",
-                   lua_tostring(L, -1));
+                   msg);
 #else
   luai_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
-                   lua_tostring(L, -1));
+                   msg);
 #endif
+  if (panic_str_offset != 0) {
+    size_t len = c_strlen(msg) + 1;
+    size_t avail = (RTC_SYSTEM_MEM_NUM_DWORDS + RTC_USER_MEM_NUM_DWORDS - panic_str_offset - 1) * 4;
+    if (len > avail) {
+      len = avail;
+    }
+    system_rtc_mem_write(panic_str_offset + 1, msg, len);
+    rtc_mem_write(panic_str_offset - RTC_SYSTEM_MEM_NUM_DWORDS, 0x31415926);
+  }
   while (1) {}
   return 0;
 }
