@@ -11,7 +11,7 @@ markdown_extensions:
 - toc:
     permalink: True
 
-#requird du to https://github.com/rtfd/readthedocs.org/issues/1313
+#requird due to https://github.com/rtfd/readthedocs.org/issues/1313
 #see http://mkdocs.readthedocs.org/en/latest/user-guide/styling-your-docs/#customising-a-theme
 extra_css:
 - css/extra.css
