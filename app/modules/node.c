@@ -25,6 +25,7 @@
 #include "flash_api.h"
 #include "flash_fs.h"
 #include "user_version.h"
+#include "rtc/rtcaccess.h"
 
 #define CPU80MHZ 80
 #define CPU160MHZ 160
@@ -450,6 +451,26 @@ static int node_compile( lua_State* L )
   return 0;
 }
 
+// Lua: panicstr(rtcmemoffset)
+// Sets the offset (0 .. 126) to use to save the panic str.
+// Returns the previous panic string
+static int node_panicstr(lua_State* L)
+{
+  int offset;
+
+  if (lua_isnoneornil(L, 1)) {
+    offset = -1;
+  } else {
+    offset = luaL_checkinteger(L, 1);
+    if (offset < 0 || offset >= RTC_USER_MEM_NUM_DWORDS - 1) {
+      luaL_argerror(L, 1, "Offset must be between 0 and 126");
+    }
+  }
+  char buff[256];
+  lua_pushstring(L, luaL_panicstr(offset, buff, sizeof(buff)));
+  return 1;
+}
+
 // Lua: setcpufreq(mhz)
 // mhz is either CPU80MHZ od CPU160MHZ
 static int node_setcpufreq(lua_State* L)
@@ -571,6 +592,7 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
+  { LSTRKEY( "panicstr" ), LFUNCVAL( node_panicstr) },
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
 #endif
