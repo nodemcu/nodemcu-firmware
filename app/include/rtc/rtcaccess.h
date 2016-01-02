@@ -6,7 +6,6 @@
 #define RTC_MMIO_BASE 0x60000700
 #define RTC_USER_MEM_BASE 0x60001200
 #define RTC_USER_MEM_NUM_DWORDS 128
-#define RTC_SYSTEM_MEM_NUM_DWORDS 64
 #define RTC_TARGET_ADDR 0x04
 #define RTC_COUNTER_ADDR 0x1c
 
@@ -18,6 +17,19 @@ static inline uint32_t rtc_mem_read(uint32_t addr)
 static inline void rtc_mem_write(uint32_t addr, uint32_t val)
 {
   ((uint32_t*)RTC_USER_MEM_BASE)[addr]=val;
+}
+
+static inline unsigned char rtc_mem_read_byte(uint32_t addr) 
+{
+  return 0xff & (rtc_mem_read(addr >> 2) >> ((addr & 3) << 3));
+}
+
+static inline unsigned char rtc_mem_write_byte(uint32_t addr, unsigned char val) 
+{
+  uint32_t word = rtc_mem_read(addr >> 2);
+  int shift = (addr & 3) << 3;
+  word = (word & ~(0xff << shift)) | (val << shift); 
+  rtc_mem_write(addr >> 2, word);
 }
 
 static inline uint64_t rtc_make64(uint32_t high, uint32_t low)
