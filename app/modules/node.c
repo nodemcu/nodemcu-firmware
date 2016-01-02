@@ -39,7 +39,8 @@ static int node_restart( lua_State* L )
 // Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
-  s32 us, option;
+  uint32 us;
+  uint8 option;
   //us = luaL_checkinteger( L, 1 );
   // Set deleep option, skip if nil
   if ( lua_isnumber(L, 2) )
@@ -53,7 +54,7 @@ static int node_deepsleep( lua_State* L )
   // Set deleep time, skip if nil
   if ( lua_isnumber(L, 1) )
   {
-    us = lua_tointeger(L, 1);
+    us = luaL_checknumber(L, 1);
     // if ( us <= 0 )
     if ( us < 0 )
       return luaL_error( L, "wrong arg range" );
