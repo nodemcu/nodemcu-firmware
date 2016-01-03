@@ -920,7 +920,6 @@ static int wifi_station_listap( lua_State* L )
   }
 }
 
-
 // Lua: wifi.sta.gethostname()
 static int wifi_sta_gethostname( lua_State* L )
 {
@@ -931,28 +930,25 @@ static int wifi_sta_gethostname( lua_State* L )
 
 static uint8 wifi_sta_sethostname(const char *hostname, size_t len)
 {
-  const char* charset="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-";
-  size_t span = strspn(hostname, charset);
-  if(hostname[span] == '\0' && hostname[span - 1] != '-' && hostname[0] != '-' && (len >= 1 && len <= 32))
+  uint8 status;
+  if(hostname[0]!='-' && hostname[len-1]!='-' && (len >= 1 && len <= 32))
   {
-	NODE_DBG("\n\tstring is: \"%s\"\n\tlength is: %d\n", hostname, len );
-	if(wifi_station_set_hostname((char*)hostname))
+    uint8 i=0;
+	while(hostname[i])
 	{
-	  NODE_DBG("\n\twifi_sta_sethostname returned: true\n");
-	  return 1; //pass
-	}
-	else
-	{
-	  NODE_DBG("\n\twifi_sta_sethostname returned: false\n");
-	  return 0; //fail
-	}
+      if(!(isalnum(hostname[i])||hostname[i]=='-'))
+      {
+	    return 2;
+      }
+      i++;
+    }
+    status=wifi_station_set_hostname((char*)hostname);
   }
   else
   {
-    NODE_DBG("\n\tInvalid hostname!\n");
-    return 2; //Invalid hostname
-	}
-
+    return 2;
+  }
+  return status;
 }
 
 // Lua: wifi.sta.sethostname()
@@ -961,7 +957,7 @@ static int wifi_sta_sethostname_lua( lua_State* L )
   size_t len;
   const char *hostname = luaL_checklstring(L, 1, &len);
   uint8 retval = wifi_sta_sethostname(hostname, len);
-  NODE_DBG("\n\twifi_sta_sethostname returned: %d\n", retval);
+  NODE_DBG("\n\tstring is: \"%s\"\n\tlength is: %u\t wifi_sta_sethostname returned: %u\n", hostname, len, retval);
   if(retval==0)
   {
 	lua_pushboolean(L, 0);
