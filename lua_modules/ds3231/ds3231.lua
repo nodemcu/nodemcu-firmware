@@ -50,8 +50,8 @@ function M.init(d, l)
   else
     print("[ERROR] i2c config failed!") return nil
   end
-    print("[LOG] DS3231 init done")
-    i2c.setup(id, sda, scl, i2c.SLOW)
+  print("[LOG] DS3231 init done")
+  i2c.setup(id, sda, scl, i2c.SLOW)
 end
 
 --get time from DS3231
@@ -107,6 +107,10 @@ end
 
 -- Reset alarmId flag to let alarm to be triggered again
 function M.reloadAlarms ()
+  if bit == nil or bit.band == nil or bit.bor == nil then
+    print("[ERROR] Module bit is required to use alarm function")
+    return nil
+  end
   i2c.start(id)
   i2c.address(id, dev_addr, i2c.TRANSMITTER)
   i2c.write(id, 0x0F)
@@ -127,6 +131,10 @@ end
 
 -- Enable alarmId bit. Let it to be triggered
 function M.enableAlarm (almId)
+  if bit == nil or bit.band == nil or bit.bor == nil then
+    print("[ERROR] Module bit is required to use alarm function")
+    return nil
+  end
   if almId ~= 1 and almId ~= 2 then print('[ERROR] Wrong alarm id (1 or 2): '..almId) return end
   i2c.start(id)
   i2c.address(id, dev_addr, i2c.TRANSMITTER)
@@ -149,6 +157,10 @@ function M.enableAlarm (almId)
 end
 -- If almID equals 1 or 2 disable that alarm, otherwise disables both.
 function M.disableAlarm (almId)
+  if bit == nil or bit.band == nil or bit.bor == nil then
+    print("[ERROR] Module bit is required to use alarm function")
+    return nil
+  end
   i2c.start(id)
   i2c.address(id, dev_addr, i2c.TRANSMITTER)
   i2c.write(id, 0x0E)
@@ -174,6 +186,10 @@ end
 -- almId can be 1 or 2;
 -- almType should be taken from constants
 function M.setAlarm (almId, almType, second, minute, hour, date)
+  if bit == nil or bit.band == nil or bit.bor == nil then
+    print("[ERROR] Module bit is required to use alarm function")
+    return nil
+  end
   if almId ~= 1 and almId ~= 2 then print('[ERROR] Wrong alarm id (1 or 2): '..almId) return end
   M.enableAlarm(almId)
   second = decToBcd(second)
@@ -225,6 +241,10 @@ end
 
 -- Resetting RTC Stop Flag
 function M.resetStopFlag ()
+  if bit == nil or bit.band == nil or bit.bor == nil then
+    print("[ERROR] Module bit is required to reset stop flag")
+    return nil
+  end
   i2c.start(id)
   i2c.address(id, dev_addr, i2c.TRANSMITTER)
   i2c.write(id, 0x0F)
