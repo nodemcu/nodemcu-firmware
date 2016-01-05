@@ -30,5 +30,6 @@ pages:
     - Support: 'en/support.md'
     - Modules:
         - 'node': 'en/modules/node.md'
+        - 'file': 'en/modules/file.md'
 - Deutsch:
     - Home: 'de/index.md'
