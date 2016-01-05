@@ -1,0 +1,14 @@
+blockquote {
+  padding: 0 15px;
+  color: #777;
+  border-left: 4px solid #ddd;
+}
+
+.rst-content blockquote {
+  margin: 0;
+}
+
+/*shifts the nested subnav label to the left to align it with the regular nav item labels*/
+ul.subnav ul.subnav span {
+  padding-left: 1.3em;
+}
