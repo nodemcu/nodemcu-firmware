@@ -30,6 +30,7 @@ pages:
     - Support: 'en/support.md'
     - Modules:
         - 'adc': 'en/modules/adc.md'
+        - 'crypto': 'en/modules/crypto.md'
         - 'node': 'en/modules/node.md'
         - 'file': 'en/modules/file.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
