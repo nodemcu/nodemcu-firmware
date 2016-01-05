@@ -48,6 +48,9 @@ ___
 
 Enter deep sleep mode, wake up when timed out.
 
+The maximum sleep time is 4294967295us, ~71 minutes. This is an SDK limitation.
+Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
+
 ####Syntax
 `node.dsleep(us, option)`
 
