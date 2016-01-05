@@ -29,6 +29,7 @@ pages:
     - FAQ: 'en/faq.md'
     - Support: 'en/support.md'
     - Modules:
+        - 'adc': 'en/modules/adc.md'
         - 'node': 'en/modules/node.md'
         - 'file': 'en/modules/file.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
