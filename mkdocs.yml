@@ -32,5 +32,6 @@ pages:
         - 'node': 'en/modules/node.md'
         - 'file': 'en/modules/file.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
+        - 'rtctime': 'en/modules/rtctime.md'
 - Deutsch:
     - Home: 'de/index.md'
