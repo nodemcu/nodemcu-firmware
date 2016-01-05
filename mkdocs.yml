@@ -33,6 +33,7 @@ pages:
         - 'file': 'en/modules/file.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
+        - 'rtcfifo': 'en/modules/rtcfifo.md'
         - 'sntp': 'en/modules/sntp.md'
 - Deutsch:
     - Home: 'de/index.md'
