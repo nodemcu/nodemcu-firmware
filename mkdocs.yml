@@ -31,5 +31,6 @@ pages:
     - Modules:
         - 'node': 'en/modules/node.md'
         - 'file': 'en/modules/file.md'
+        - 'rtcmem': 'en/modules/rtcmem.md'
 - Deutsch:
     - Home: 'de/index.md'
