@@ -94,6 +94,8 @@ Establish a callback function to run on interrupt for a pin.
 
 There is currently no support for unregistering the callback.
 
+This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile time.
+
 ####Syntax
 `gpio.trig(pin, type [, function(level)])`
 
@@ -124,4 +126,33 @@ gpio.trig(pin, "down", pin1cb)
 ```
 ####See also
   - `gpio.mode()`
+___
+## gpio.serout()
+
+Serialize output based on a sequence of delay-times. After each delay, the pin is toggled.
+
+####Syntax
+`gpio.serout(pin, start_level, delay_times [, repeat_num])`
+
+####Parameters
+  - `pin`: pin to use, IO index
+  - `start_level`: level to start on, either `gpio.HIGH` or `gpio.LOW`
+  - `delay_times`: an array of delay times between each toggle of the gpio pin.
+  - `repeat_num`: an optional number of times to run through the sequence.
+
+Note that this function blocks, and as such any use of it must adhere to the SDK guidelines of time spent blocking the stack (10-100ms). Failure to do so may lead to WiFi issues or outright crashes/reboots.
+
+####Returns
+`nil`
+
+####Example
+```lua
+gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+gpio.serout(1,1,{30,30,60,60,30,30})  -- serial one byte, b10110010
+gpio.serout(1,1,{30,70},8)  -- serial 30% pwm 10k, lasts 8 cycles
+gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
+gpio.serout(1,1,{0,0},8)  -- serial 50% pwm as fast as possible, lasts 8 cycles
+gpio.serout(1,0,{20,10,10,20,10,10,10,100}) -- sim uart one byte 0x5A at about 100kbps
+gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
+```
 ___
