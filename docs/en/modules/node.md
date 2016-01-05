@@ -1,6 +1,30 @@
 # node Module
 The node module provides access to system-level features such as sleep, restart and various info and IDs.
 
+## node.bootreason()
+
+Returns the boot reason code.
+
+This is the raw code, not the new "reset info" code which was introduced in recent SDKs. Values are:
+  - 1: power-on
+  - 2: reset (software?)
+  - 3: hardware reset via reset pin
+  - 4: WDT reset (watchdog timeout)
+
+####Syntax
+`node.bootreason()`
+
+####Parameters
+`nil`
+
+####Returns
+number:the boot reason code
+
+####Example
+```lua
+rsn = node.bootreason()
+```
+___
 ## node.restart()
 
 Restarts the chip.
@@ -334,4 +358,36 @@ This also uses the SDK function `system_restore()`, which doesn't document preci
     node.restore()
     node.restart() -- ensure the restored settings take effect
 ```
+___
+## node.stripdebug()
+
+Controls the amount of debug information kept during `node.compile()`, and
+allows removal of debug information from already compiled Lua code.
+
+Only recommended for advanced users, the NodeMCU defaults are fine for almost all use cases.
+
+####Syntax
+`node.stripdebug([level[, function]])``
+
+####Parameters
+  - `level`:
+    - 1: don't discard debug info
+    - 2: discard Local and Upvalue debug info
+    - 3: discard Local, Upvalue and line-number debug info
+  - function: a compiled function to be stripped per setfenv except 0 is not permitted.
+
+If no arguments are given then the current default setting is returned. If function is omitted, this is the default setting for future compiles. The function argument uses the same rules as for `setfenv()`.
+
+
+#### Returns
+If invoked without arguments, returns the current level settings. Otherwise, `nil` is returned.
+
+####Example
+```lua
+node.stripdebug(3)
+node.compile('bigstuff.lua')
+```
+
+####See also
+  - `node.compile()`
 ___
