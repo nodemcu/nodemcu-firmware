@@ -40,6 +40,7 @@ pages:
         - 'rtctime': 'en/modules/rtctime.md'
         - 'rtcfifo': 'en/modules/rtcfifo.md'
         - 'sntp': 'en/modules/sntp.md'
+        - 'tmr': 'en/modules/tmr.md'
         - 'uart': 'en/modules/uart.md'
 - Deutsch:
     - Home: 'de/index.md'
