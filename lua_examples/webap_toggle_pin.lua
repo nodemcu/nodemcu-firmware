@@ -27,6 +27,5 @@ srv:listen(80,function(conn)
         buf = buf.."<option".._on..">ON</opton><option".._off..">OFF</option></select></form>";
         client:send(buf);
         client:close();
-        collectgarbage();
     end)
 end)
