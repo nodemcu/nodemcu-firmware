@@ -43,6 +43,7 @@ rtcfifo.prepare({storage_begin=21, storage_end=128}) -- Use RTC slots 19 and up 
 ```
 ####See also
   - `rtcfifo.ready()`
+
 ___
 ## rtcfifo.ready()
 
@@ -64,6 +65,7 @@ end
 ```
 ####See also
   - `rtcfifo.prepare()`
+
 ___
 ## rtcfifo.put()
 
@@ -156,4 +158,5 @@ rtcfifo.dsleep_until_sample(0) -- deep sleep until it's time to take the next sa
 ```
 ####See also
   - `rtctime.dsleep_aligned()`
+
 ___

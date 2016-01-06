@@ -34,6 +34,7 @@ val1, val2 = rtcmem.read32(42, 2) -- Read the values in slots 42 and 43
 ```
 ####See also
   - `rtcmem.write32()`
+
 ___
 ## rtcmem.write32()
 
@@ -59,4 +60,5 @@ rtcmem.write32(42, 2, 5, 7) -- Store the values 2, 5 and 7 into slots 42, 43 and
 ```
 ####See also
   - `rtcmem.read32()`
+
 ___

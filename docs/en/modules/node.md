@@ -189,6 +189,7 @@ This function is only available if the firmware was compiled with DEVKIT_VERSION
 ```
 ####See also
   - `node.led()`
+
 ___
 ## node.led() --deprecated
 
@@ -215,6 +216,7 @@ This function is only available if the firmware was compiled with DEVKIT_VERSION
 
 ####See also
   - `node.key()`
+
 ___
 ## node.input()
 
@@ -241,6 +243,7 @@ Submit a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, but
 
 ####See also
   - `node.output()`
+
 ___
 ## node.output()
 
@@ -291,10 +294,12 @@ Redirects the Lua interpreter output to a callback function. Optionally also pri
 ```
 ####See also
   - `node.input()`
+
 ___
 ## node.readvdd33() --deprecated, moved to adc.readvdd33()
 ####See also
   - `adc.readvdd33()`
+
 ___
 ## node.compile()
 
@@ -393,4 +398,5 @@ node.compile('bigstuff.lua')
 
 ####See also
   - `node.compile()`
+
 ___

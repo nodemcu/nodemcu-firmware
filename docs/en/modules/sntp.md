@@ -40,4 +40,5 @@ sntp.sync('192.168.0.1',
 ```
 ####See also
   - `rtctime.set()`
+
 ___

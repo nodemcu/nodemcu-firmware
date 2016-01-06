@@ -41,6 +41,7 @@ gpio.mode(0, gpio.OUTPUT)
 ####See also
   - `gpio.read()`
   - `gpio.write()`
+
 ___
 ## gpio.read()
 
@@ -62,6 +63,7 @@ gpio.read(0)
 ```
 ####See also
   - `gpio.mode()`
+
 ___
 ## gpio.write ()
 
@@ -87,6 +89,7 @@ gpio.write(pin, gpio.HIGH)
 ####See also
   - `gpio.mode()`
   - `gpio.read()`
+
 ___
 ## gpio.trig()
 
@@ -126,6 +129,7 @@ gpio.trig(pin, "down", pin1cb)
 ```
 ####See also
   - `gpio.mode()`
+
 ___
 ## gpio.serout()
 
