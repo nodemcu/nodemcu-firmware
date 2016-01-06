@@ -31,6 +31,7 @@ pages:
     - Modules:
         - 'adc': 'en/modules/adc.md'
         - 'bit': 'en/modules/bit.md'
+        - 'cjson': 'en/modules/cjson.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'gpio': 'en/modules/gpio.md'
         - 'node': 'en/modules/node.md'
