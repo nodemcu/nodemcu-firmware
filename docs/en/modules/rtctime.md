@@ -44,6 +44,7 @@ rtctime.set(1436430589, 0) -- Set time to 2015 July 9, 18:29:49
 ```
 ####See also
   - `sntp.sync()`
+
 ___
 ## rtctime.get()
 
@@ -66,6 +67,7 @@ sec, usec = rtctime.get()
 ```
 ####See also
   - `rtctime.set()`
+
 ___
 ## rtctime.dsleep()
 

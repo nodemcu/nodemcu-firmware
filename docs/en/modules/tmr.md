@@ -40,6 +40,7 @@ tmr.start(0)
 ```
 ####See also
   - `tmr.alarm()`
+
 ___
 ## tmr.unregister()
 
@@ -62,6 +63,7 @@ tmr.unregister(0)
 ```
 ####See also
   - `tmr.register()`
+
 ___
 ## tmr.start()
 
@@ -85,6 +87,7 @@ if not tmr.start(0) then print("uh oh") end
   - `tmr.register()`
   - `tmr.stop()`
   - `tmr.unregister()`
+
 ___
 ## tmr.stop()
 
@@ -107,6 +110,7 @@ if not tmr.stop(2) then print("timer 2 not stopped, not registered?") end
   - `tmr.register()`
   - `tmr.stop()`
   - `tmr.unregister()`
+
 ___
 ## tmr.interval()
 
@@ -173,6 +177,7 @@ if not tmr.alarm(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end) t
   - `tmr.register()`
   - `tmr.start()`
   - `tmr.unregister()`
+
 ___
 ## tmr.now()
 

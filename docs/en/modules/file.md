@@ -49,6 +49,7 @@ Format the file system. Completely erases any existing file system and writes a 
 
 ####See also
   - `file.remove()`
+
 ___
 ## file.list()
 
@@ -147,6 +148,7 @@ When done with the file, it must be closed using `file.close()`.
 ####See also
   - `file.close()`
   - `file.readline()`
+
 ___
 ## file.close()
 
@@ -171,6 +173,7 @@ Closes the open file, if any.
 ```
 ####See also
   - `file.open()`
+
 ___
 ## file.readline()
 
@@ -197,6 +200,7 @@ File content in string, line by line, include EOL('\n'). Return `nil` when EOF.
   - `file.open()`
   - `file.close()`
   - `file.read()`
+
 ___
 ## file.writeline()
 
@@ -224,6 +228,7 @@ Write a string to the open file and append '\n' at the end.
 ####See also
   - `file.open()`
   - `file.readline()`
+
 ___
 ## file.read()
 
@@ -256,6 +261,7 @@ File content in string, or nil when EOF.
 ####See also
   - `file.open()`
   - `file.readline()`
+
 ___
 ## file.write()
 
@@ -283,6 +289,7 @@ Write a string to the open file.
 ####See also
   - `file.open()`
   - `file.writeline()`
+
 ___
 ## file.flush()
 
@@ -310,6 +317,7 @@ Flushes any pending writes to the file system, ensuring no data is lost on a res
 ```
 ####See also
   - `file.close()`
+
 ___
 ## file.seek()
 Sets and gets the file position, measured from the beginning of the file, to the position given by offset plus a base specified by the string whence.
@@ -339,4 +347,5 @@ The resulting file position, or `nil` on error.
 ```
 ####See also
   - `file.open()`
+
 ___

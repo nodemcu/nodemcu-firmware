@@ -7,10 +7,10 @@ Returns the boot reason code.
 
 This is the raw code, not the new "reset info" code which was introduced in recent SDKs. Values are:
 
-  - 1: power-on
-  - 2: reset (software?)
-  - 3: hardware reset via reset pin
-  - 4: WDT reset (watchdog timeout)
+  - 1, power-on
+  - 2, reset (software?)
+  - 3, hardware reset via reset pin
+  - 4, WDT reset (watchdog timeout)
 
 ####Parameters
 none
@@ -190,10 +190,12 @@ This function is only available if the firmware was compiled with DEVKIT_VERSION
 ```lua
 node.key("long", function() print('hello world') end)
 ```
+####See also
+[`node.led()`](#nodeled-deprecated)
 
 ## node.led() --deprecated
 
-Sets the on/off time for the LED (on the old devkit 0.9), with the LED connected to GPIO16, multiplexed with `node.key()`.
+Sets the on/off time for the LED (on the old devkit 0.9), with the LED connected to GPIO16, multiplexed with [`node.key()`](#nodekey-deprecated).
 
 This function is only available if the firmware was compiled with DEVKIT_VERSION_0_9 defined.
 
@@ -209,6 +211,8 @@ This function is only available if the firmware was compiled with DEVKIT_VERSION
 -- turn led on forever.
 node.led(0)
 ```
+####See also
+[`node.key()`](#nodekey-deprecated)
 
 ## node.output()
 
