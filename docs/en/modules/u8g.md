@@ -97,7 +97,7 @@ They'll become available as `u8g.<font_name>` in Lua.
 Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This off-loads all data handling from the u8g module to generic methods for binary files. See [u8g_bitmaps.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_bitmaps.lua).
 In contrast to the source code based inclusion of XBMs into u8glib, it's required to provide precompiled binary files. This can be performed online with [Online-Utility's Image Converter](http://www.online-utility.org/image_converter.jsp): Convert from XBM to MONO format and upload the binary result with [nodemcu-uploader.py](https://github.com/kmpm/nodemcu-uploader).
 
-## I2C Display Driver
+## I2C Display Drivers
 Initialize a display via I2C.
 
 - `u8g.sh1106_128x64_i2c()`
@@ -129,7 +129,7 @@ disp = u8g.ssd1306_128x64_i2c(sla)
 ```
 
 ####See also
-- [SPI Display Drivers](#spi_display_drivers)
+- [SPI Display Drivers](#spi-display-drivers)
 
 ___
 
@@ -193,7 +193,7 @@ disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 ```
 
 #### See also
-- [I2C Display Drivers](#i2c_display_drivers)
+- [I2C Display Drivers](#i2c-display-drivers)
 
 ___
 
@@ -229,7 +229,7 @@ Parts of the bitmap may be outside the display boundaries. The bitmap is specifi
 
 #### See also
 - [u8glib drawBitmap()](https://github.com/olikraus/u8glib/wiki/userreference#drawbitmap)
-- [u8g.disp:drawXBM()](#u8g_disp_drawxbm)
+- [u8g.disp:drawXBM()](#u8gdispdrawxbm)
 
 ___
 
@@ -291,7 +291,7 @@ Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This
 
 #### See also
 - [u8glib drawXBM()](https://github.com/olikraus/u8glib/wiki/userreference#drawxbm)
-- [u8g.disp:drawBitmap()](#u8g_disp_drawbitmap)
+- [u8g.disp:drawBitmap()](#u8gdispdrawbitmap)
 
 ___
 
@@ -346,6 +346,7 @@ disp:setFont(u8g.font_6x10)
 
 #### See also
 - [u8glib setFont()](https://github.com/olikraus/u8glib/wiki/userreference#setfont)
+
 ___
 
 ## [u8g.disp:setFontLineSpacingFactor()](https://github.com/olikraus/u8glib/wiki/userreference#setfontlinespacingfactor)
