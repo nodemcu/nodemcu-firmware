@@ -1,4 +1,4 @@
-# cjson Module
+# CJSON Module
 
 The JSON support module. Allows encoding and decoding to/from JSON.
 
@@ -12,12 +12,12 @@ Encode a Lua table to a JSON string.
 `cjson.encode(table)`
 
 ####Parameters
-  - `table`: data to encode
+`table` data to encode
 
 While it also is possible to encode plain strings and numbers rather than a table, it is not particularly useful to do so.
 
 ####Returns
-string:in json format
+JSON string
 
 ####Example
 ```lua
@@ -28,7 +28,7 @@ else
   print("failed to encode!")
 end
 ```
-___
+
 ## cjson.decode()
 
 Decode a JSON string to a Lua table.
@@ -37,14 +37,13 @@ Decode a JSON string to a Lua table.
 `cjson.decode(str)`
 
 ####Parameters
-  - `str`: The JSON string to decode
+`str` JSON string to decode
 
 ####Returns
-table:Lua representation of the JSON data
+Lua table representation of the JSON data
 
 ####Example
 ```lua
 t = cjson.decode('{"key":"value"}')
 for k,v in pairs(t) do print(k,v) end
 ```
-___
