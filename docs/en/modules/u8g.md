@@ -26,7 +26,7 @@ SPI only:
 
 This integration is based on [v1.18.1](https://github.com/olikraus/U8glib_Arduino/releases/tag/1.18.1).
 
-## Description
+## Overview
 ### I2C Connection
 Hook up SDA and SCL to any free GPIOs. Eg. [u8g_graphics_test.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_graphics_test.lua) expects SDA=5 (GPIO14) and SCL=6 (GPIO12). They are used to set up nodemcu's I2C driver before accessing the display:
 ```lua
@@ -112,7 +112,7 @@ Initialize a display via I2C.
 `u8g.ssd1306_128x64_i2c(address)`
 
 ####Parameters
-- `address`: I2C slave address of display
+- `address`: I2C slave address of display.
 
 ####Returns
 u8g display object.
@@ -215,11 +215,11 @@ Parts of the bitmap may be outside the display boundaries. The bitmap is specifi
 `disp:drawBitmap(x, y, cnt, h, bitmap)`
 
 #### Parameters
-- `x`: X-position (left position of the bitmap)
-- `y`: Y-position (upper position of the bitmap)
-- `cnt`: Number of bytes of the bitmap in horizontal direction. The width of the bitmap is cnt*8
-- `h`: Height of the bitmap
-- `bitmap`: Bitmap data supplied as string
+- `x`: X-position (left position of the bitmap).
+- `y`: Y-position (upper position of the bitmap).
+- `cnt`: Number of bytes of the bitmap in horizontal direction. The width of the bitmap is cnt*8.
+- `h`: Height of the bitmap.
+- `bitmap`: Bitmap data supplied as string.
 
 #### Returns
 `nil`
@@ -277,11 +277,11 @@ Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This
 `disp:drawXBM(x, y, w, h, bitmap)`
 
 #### Parameters
-- `x`: X-position (left position of the bitmap)
-- `y`: Y-position (upper position of the bitmap)
-- `w`: Width of the bitmap
-- `h`: Height of the bitmap
-- `bitmap`: XBM data supplied as string
+- `x`: X-position (left position of the bitmap).
+- `y`: Y-position (upper position of the bitmap).
+- `w`: Width of the bitmap.
+- `h`: Height of the bitmap.
+- `bitmap`: XBM data supplied as string.
 
 #### Returns
 `nil`
@@ -334,7 +334,7 @@ They'll be available as `u8g.<font_name>` in Lua.
 `disp:setFont(font)`
 
 #### Parameters
-- `font`: Constant to indentify pre-compiled font
+- `font`: Constant to indentify pre-compiled font.
 
 #### Returns
 `nil`

@@ -43,5 +43,6 @@ pages:
         - 'tmr': 'en/modules/tmr.md'
         - 'u8g': 'en/modules/u8g.md'
         - 'uart': 'en/modules/uart.md'
+        - 'ucg': 'en/modules/ucg.md'
 - Deutsch:
     - Home: 'de/index.md'
