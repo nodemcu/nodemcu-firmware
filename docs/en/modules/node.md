@@ -12,43 +12,42 @@ This is the raw code, not the new "reset info" code which was introduced in rece
   - 3, hardware reset via reset pin
   - 4, WDT reset (watchdog timeout)
 
-####Parameters
+#### Syntax
+`node.bootreason()`
+
+#### Parameters
 none
 
-####Returns
+#### Returns
 the boot reason code (number)
-
-####Example
-```lua
-rsn = node.bootreason()
-```
 
 ## node.chipid()
 
 Returns the ESP chip ID.
 
-####Parameters
+#### Syntax
+`node.chipid()`
+
+#### Parameters
 none
 
-####Returns
+#### Returns
 chip ID (number)
-
-####Example
-```lua
-id = node.chipid();
-```
 
 ## node.compile()
 
 Compiles a Lua text file into Lua bytecode, and saves it as .lc file.
 
-####Parameters
+#### Syntax
+`node.compile("file.lua")`
+
+#### Parameters
 `filename` name of Lua text file
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 file.open("hello.lua","w+")
 file.writeline([[print("hello nodemcu")]])
@@ -71,7 +70,10 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 
     This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
 
-####Parameters
+#### Syntax
+`node.dsleep(us, option)`
+
+#### Parameters
  - `us` number (integer) or `nil`, sleep time in micro second. If `us == 0`, it will sleep forever. If `us == nil`, will not set sleep time.
 
  - `option` number (integer) or `nil`. If `nil`, it will use last alive setting as default option.
@@ -82,10 +84,10 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 	- 2, no RF_CAL after deep-sleep wake up, there will only be small current
 	- 4, disable RF after deep-sleep wake up, just like modem sleep, there will be the smallest current
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 --do nothing
 node.dsleep()
@@ -101,40 +103,39 @@ node.dsleep(nil,4)
 
 Returns the flash chip ID.
 
-####Parameters
+#### Syntax
+`node.flashid()`
+
+#### Parameters
 none
 
-####Returns
+#### Returns
 flash ID (number)
-
-####Example
-```lua
-flashid = node.flashid();
-```
 
 ## node.heap()
 
 Returns the current available heap size in bytes. Note that due to fragmentation, actual allocations of this size may not be possible.
 
-####Parameters
+#### Syntax
+`node.heap()`
+
+#### Parameters
 none
 
-####Returns
+#### Returns
 system heap size left in bytes (number)
-
-####Example
-```lua
-heap_size = node.heap();
-```
 
 ## node.info()
 
 Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed.
 
-####Parameters
+#### Syntax
+`node.info()`
+
+#### Parameters
 none
 
-####Returns
+#### Returns
  - `majorVer` (number)
  - `minorVer` (number)
  - `devVer` (number)
@@ -144,7 +145,7 @@ none
  - `flashmode` (number)
  - `flashspeed` (number)
 
-####Example
+#### Example
 ```lua
 majorVer, minorVer, devVer, chipid, flashid, flashsize, flashmode, flashspeed = node.info()
 print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
@@ -158,19 +159,21 @@ Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, bu
 
     This function only has an effect when invoked from a callback. Using it directly on the console **does not work**.
 
+#### Syntax
+`node.input(str)`
 
-####Parameters
+#### Parameters
 `str` Lua chunk
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 sk:on("receive", function(conn, payload) node.input(payload) end)
 ```
 
-####See also
+#### See also
 [`node.output()`](#nodeoutput)
 
 ## node.key() --deprecated
@@ -179,18 +182,21 @@ Defines action to take on button press (on the old devkit 0.9), button connected
 
 This function is only available if the firmware was compiled with DEVKIT_VERSION_0_9 defined.
 
-####Parameters
+#### Syntax
+`node.key(type, function())`
+
+#### Parameters
   - `type`: type is either string "long" or "short". long: press the key for 3 seconds, short: press shortly(less than 3 seconds)
   - `function`: user defined function which is called when key is pressed. If nil, remove the user defined function. Default function: long: change LED blinking rate,  short: reset chip
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 node.key("long", function() print('hello world') end)
 ```
-####See also
+#### See also
 [`node.led()`](#nodeled-deprecated)
 
 ## node.led() --deprecated
@@ -199,19 +205,23 @@ Sets the on/off time for the LED (on the old devkit 0.9), with the LED connected
 
 This function is only available if the firmware was compiled with DEVKIT_VERSION_0_9 defined.
 
-####Parameters
-  - `low` LED off time, LED keeps on when low=0. Unit: milliseconds, time resolution: 80~100ms<br />
+#### Syntax
+`node.led(low, high)`
+
+#### Parameters
+  - `low` LED off time, LED keeps on when low=0. Unit: milliseconds, time resolution: 80~100ms
   - `high` LED on time. Unit: milliseconds, time resolution: 80~100ms
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 -- turn led on forever.
 node.led(0)
 ```
-####See also
+
+#### See also
 [`node.key()`](#nodekey-deprecated)
 
 ## node.output()
@@ -222,14 +232,17 @@ Redirects the Lua interpreter output to a callback function. Optionally also pri
 
     Do **not** attempt to `print()` or otherwise induce the Lua interpreter to produce output from within the callback function. Doing so results in infinite recursion, and leads to a watchdog-triggered restart.
 
-####Parameters
+#### Syntax
+`node.output(function(str), serial_debug)`
+
+#### Parameters
   - `output_fn(str)` a function accept every output as str, and can send the output to a socket (or maybe a file).
   - `serial_debug` 1 output also show in serial. 0: no serial output.
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 function tonet(str)
   sk:send(str)
@@ -257,7 +270,7 @@ s:listen(2323,function(c)
    end)
 end)
 ```
-####See also
+#### See also
 [`node.input()`](#nodeinput)
 
 ## node.readvdd33() --deprecated
@@ -267,16 +280,14 @@ Moved to [`adc.readvdd33()`](adc/#adcreadvdd33).
 
 Restarts the chip.
 
-####Parameters
+#### Syntax
+`node.restart()`
+
+#### Parameters
 none
 
-####Returns
+#### Returns
 `nil`
-
-####Example
-```lua
-node.restart();
-```
 
 ## node.restore()
 
@@ -284,13 +295,16 @@ Restores system configuration to defaults. Erases all stored WiFi settings, and 
 
 This also uses the SDK function `system_restore()`, which doesn't document precisely what it erases/restores.
 
-####Parameters
+#### Syntax
+`node.restore()`
+
+#### Parameters
 none
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 node.restore()
 node.restart() -- ensure the restored settings take effect
@@ -300,41 +314,47 @@ node.restart() -- ensure the restored settings take effect
 
 Change the working CPU Frequency.
 
-####Parameters
+#### Syntax
+`node.setcpufreq(speed)`
+
+#### Parameters
 `speed` constant 'node.CPU80MHZ' or 'node.CPU160MHZ'
 
-####Returns
+#### Returns
 target CPU frequency (number)
 
-####Example
+#### Example
 ```lua
 node.setcpufreq(node.CPU80MHZ)
 ```
 
 ## node.stripdebug()
 
-Controls the amount of debug information kept during `node.compile()`, and allows removal of debug information from already compiled Lua code.
+Controls the amount of debug information kept during [`node.compile()`](#nodecompile), and allows removal of debug information from already compiled Lua code.
 
 Only recommended for advanced users, the NodeMCU defaults are fine for almost all use cases.
 
-####Parameters
-  - `level`
-    - 1: don't discard debug info
-    - 2: discard Local and Upvalue debug info
-    - 3: discard Local, Upvalue and line-number debug info
-  - `function` a compiled function to be stripped per setfenv except 0 is not permitted.
+####Syntax
+`node.stripdebug([level[, function]])`
+
+#### Parameters
+- `level`
+	- 1, don't discard debug info
+	- 2, discard Local and Upvalue debug info
+	- 3, discard Local, Upvalue and line-number debug info
+- `function` a compiled function to be stripped per setfenv except 0 is not permitted.
 
 If no arguments are given then the current default setting is returned. If function is omitted, this is the default setting for future compiles. The function argument uses the same rules as for `setfenv()`.
 
-#### Returns
+####  Returns
 If invoked without arguments, returns the current level settings. Otherwise, `nil` is returned.
 
-####Example
+#### Example
 ```lua
 node.stripdebug(3)
 node.compile('bigstuff.lua')
 ```
 
-####See also
+#### See also
 [`node.compile()`](#nodecompile)
 

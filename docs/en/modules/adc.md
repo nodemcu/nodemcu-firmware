@@ -9,8 +9,11 @@ The default setting in the NodeMCU firmware can be controlled via user_config.h 
 
 Samples the ADC.
 
+####Syntax
+`adc.read(channel)`
+
 ####Parameters
-`channel` always zero on the ESP8266
+`channel` always 0 on the ESP8266
 
 ####Returns
 the sampled value (number)
@@ -24,6 +27,9 @@ val = adc.read(0)
 
 Reads the system voltage.
 
+####Syntax
+`adc.readvdd33()`
+
 ####Parameters
 none
 
@@ -31,8 +37,3 @@ none
 system voltage in millivolts (number)
 
 If the ESP8266 has been configured to use the ADC for sampling the external pin, this function will always return 65535. This is a hardware and/or SDK limitation.
-
-####Example
-```lua
-mv = adc.readvdd33()
-```
