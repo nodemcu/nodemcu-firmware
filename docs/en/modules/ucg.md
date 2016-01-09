@@ -83,12 +83,12 @@ Initialize a display via Hardware SPI.
 `ucg.st7735_18x128x160_hw_spi(cs, dc, res)`
 
 #### Parameters
-- `cs`: GPIO pin for /CS.
-- `dc`: GPIO pin for DC.
-- `res`: GPIO pin for /RES (optional).
+- `cs`: GPIO pin for /CS
+- `dc`: GPIO pin for DC
+- `res`: GPIO pin for /RES (optional)
 
 #### Returns
-ucg display object.
+ucg display object
 
 #### Example
 ```lua
@@ -189,7 +189,7 @@ disp:setFont(ucg.font_7x13B_tr)
 ```
 
 #### See also
-- [ucglib setFont()](https://github.com/olikraus/ucglib/wiki/reference#setfont)
+[ucglib setFont()](https://github.com/olikraus/ucglib/wiki/reference#setfont)
 
 ## [ucg.disp:setFontMode()](https://github.com/olikraus/ucglib/wiki/reference#setfontmode)
 

@@ -112,10 +112,10 @@ Initialize a display via I2C.
 `u8g.ssd1306_128x64_i2c(address)`
 
 ####Parameters
-- `address`: I2C slave address of display.
+- `address`: I2C slave address of display
 
 ####Returns
-u8g display object.
+u8g display object
 
 ####Example
 
@@ -129,9 +129,7 @@ disp = u8g.ssd1306_128x64_i2c(sla)
 ```
 
 ####See also
-- [SPI Display Drivers](#spi-display-drivers)
-
-___
+[SPI Display Drivers](#spi-display-drivers)
 
 ## SPI Display Drivers
 Initialize a display via Hardware SPI.
@@ -180,7 +178,7 @@ Initialize a display via Hardware SPI.
 - `res`: GPIO pin for /RES (optional)
 
 #### Returns
-u8g display object.
+u8g display object
 
 #### Example
 ```lua
@@ -193,7 +191,7 @@ disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 ```
 
 #### See also
-- [I2C Display Drivers](#i2c-display-drivers)
+[I2C Display Drivers](#i2c-display-drivers)
 
 ___
 
@@ -215,23 +213,19 @@ Parts of the bitmap may be outside the display boundaries. The bitmap is specifi
 `disp:drawBitmap(x, y, cnt, h, bitmap)`
 
 #### Parameters
-- `x`: X-position (left position of the bitmap).
-- `y`: Y-position (upper position of the bitmap).
+- `x`: X-position (left position of the bitmap)
+- `y`: Y-position (upper position of the bitmap)
 - `cnt`: Number of bytes of the bitmap in horizontal direction. The width of the bitmap is cnt*8.
-- `h`: Height of the bitmap.
-- `bitmap`: Bitmap data supplied as string.
+- `h`: Height of the bitmap
+- `bitmap`: Bitmap data supplied as string
 
 #### Returns
 `nil`
 
-#### Example
-`lua_examples/u8glib/u8g_bitmaps.lua`
-
 #### See also
 - [u8glib drawBitmap()](https://github.com/olikraus/u8glib/wiki/userreference#drawbitmap)
+- [lua_examples/u8glib/u8g_bitmaps.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_bitmaps.lua)
 - [u8g.disp:drawXBM()](#u8gdispdrawxbm)
-
-___
 
 ## [u8g.disp:drawBox()](https://github.com/olikraus/u8glib/wiki/userreference#drawbox)
 
@@ -277,23 +271,19 @@ Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This
 `disp:drawXBM(x, y, w, h, bitmap)`
 
 #### Parameters
-- `x`: X-position (left position of the bitmap).
-- `y`: Y-position (upper position of the bitmap).
-- `w`: Width of the bitmap.
-- `h`: Height of the bitmap.
-- `bitmap`: XBM data supplied as string.
+- `x`: X-position (left position of the bitmap)
+- `y`: Y-position (upper position of the bitmap)
+- `w`: Width of the bitmap
+- `h`: Height of the bitmap
+- `bitmap`: XBM data supplied as string
 
 #### Returns
 `nil`
 
-#### Example
-`lua_examples/u8glib/u8g_bitmaps.lua`
-
 #### See also
 - [u8glib drawXBM()](https://github.com/olikraus/u8glib/wiki/userreference#drawxbm)
+- [lua_examples/u8glib/u8g_bitmaps.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_bitmaps.lua)
 - [u8g.disp:drawBitmap()](#u8gdispdrawbitmap)
-
-___
 
 ## [u8g.disp:firstPage()](https://github.com/olikraus/u8glib/wiki/userreference#firstpage)
 ## [u8g.disp:getColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#getcolorindex)
@@ -334,7 +324,7 @@ They'll be available as `u8g.<font_name>` in Lua.
 `disp:setFont(font)`
 
 #### Parameters
-- `font`: Constant to indentify pre-compiled font.
+- `font`: Constant to indentify pre-compiled font
 
 #### Returns
 `nil`
@@ -346,8 +336,6 @@ disp:setFont(u8g.font_6x10)
 
 #### See also
 - [u8glib setFont()](https://github.com/olikraus/u8glib/wiki/userreference#setfont)
-
-___
 
 ## [u8g.disp:setFontLineSpacingFactor()](https://github.com/olikraus/u8glib/wiki/userreference#setfontlinespacingfactor)
 
