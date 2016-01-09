@@ -6,7 +6,7 @@ Please note that nested tables can require a lot of memory to encode. To catch o
 
 ## cjson.encode()
 
-Encode a Lua table to a JSON string.
+Encode a Lua table to a JSON string. For details see the [documentation of the original Lua library](http://kyne.com.au/~mark/software/lua-cjson-manual.html#encode).
 
 ####Syntax
 `cjson.encode(table)`
@@ -31,7 +31,7 @@ end
 
 ## cjson.decode()
 
-Decode a JSON string to a Lua table.
+Decode a JSON string to a Lua table. For details see the [documentation of the original Lua library](http://kyne.com.au/~mark/software/lua-cjson-manual.html#_decode).
 
 ####Syntax
 `cjson.decode(str)`
