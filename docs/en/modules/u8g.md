@@ -35,7 +35,7 @@ scl = 6
 i2c.setup(0, sda, scl, i2c.SLOW)
 ```
 ### SPI connection
-The HSPI module is used, so certain pins are fixed:
+The HSPI module is used ([more information](http://d.av.id.au/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
 
 - HSPI CLK = GPIO14
 - HSPI MOSI = GPIO13
