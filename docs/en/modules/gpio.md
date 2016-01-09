@@ -1,10 +1,10 @@
-# gpio Module
+# GPIO Module
 
-This module provides access to the GPIO (General Purpose I/O) subsystem.
+This module provides access to the [GPIO](https://en.wikipedia.org/wiki/General-purpose_input/output) (General Purpose Input/Output) subsystem.
 
-All access is based on the I/O index number on the NodeMCU dev kits, not the internal gpio pin. For example, the D0 pin on the dev kit is mapped to the internal GPIO pin 16.
+All access is based on the I/O index number on the NodeMCU dev kits, not the internal GPIO pin. For example, the D0 pin on the dev kit is mapped to the internal GPIO pin 16.
 
-If not using a NodeMCU dev kit, please refer to the below GPIO pin maps for the index<->gpio mapping.
+If not using a NodeMCU dev kit, please refer to the below GPIO pin maps for the index↔gpio mapping.
 
 | IO index | ESP8266 pin | IO index | ESP8266 pin |
 |---------:|:------------|---------:|:------------|
@@ -23,74 +23,75 @@ If not using a NodeMCU dev kit, please refer to the below GPIO pin maps for the 
 
 Initialize pin to GPIO mode, set the pin in/out direction, and optional internal pullup.
 
-####Syntax
+#### Syntax
 `gpio.mode(pin, mode [, pullup])`
 
-####Parameters
-  - `pin`: pin to configure, IO index
-  - `mode`: one of gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)
-  - `pullup`: gpio.PULLUP or gpio.FLOAT; The default is gpio.FLOAT.
+#### Parameters
+- `pin` pin to configure, IO index
+- `mode` one of gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)
+- `pullup` gpio.PULLUP or gpio.FLOAT; default is gpio.FLOAT
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
 gpio.mode(0, gpio.OUTPUT)
 ```
-####See also
-  - `gpio.read()`
-  - `gpio.write()`
+#### See also
+- [`gpio.read()`](#gpioread)
+- [`gpio.write()`](#gpiowrite)
 
-___
 ## gpio.read()
 
 Read digital GPIO pin value.
 
-####Syntax
+#### Syntax
 `gpio.read(pin)`
 
-####Parameters
-  - `pin`: pin to read, IO index
+#### Parameters
+`pin` pin to read, IO index
 
-####Returns
-number:0 - low, 1 - high
+#### Returns
+a number, 0 = low, 1 = high
 
-####Example
+#### Example
 ```lua
 -- read value of gpio 0.
 gpio.read(0)
 ```
-####See also
-  - `gpio.mode()`
+#### See also
+[`gpio.mode()`](#gpiomode)
 
-___
-## gpio.write ()
+## gpio.serout()
 
-Set digital GPIO pin value.
+Serialize output based on a sequence of delay-times. After each delay, the pin is toggled.
 
-####Syntax
-`gpio.write(pin, level)`
+#### Syntax
+`gpio.serout(pin, start_level, delay_times [, repeat_num])`
 
-####Parameters
-  - `pin`: pin to write, IO index
-  - `level`: `gpio.HIGH` or `gpio.LOW`
+#### Parameters
+- `pin`  pin to use, IO index
+- `start_level` level to start on, either `gpio.HIGH` or `gpio.LOW`
+- `delay_times` an array of delay times between each toggle of the gpio pin.
+- `repeat_num` an optional number of times to run through the sequence.
 
-####Returns
+Note that this function blocks, and as such any use of it must adhere to the SDK guidelines of time spent blocking the stack (10-100ms). Failure to do so may lead to WiFi issues or outright crashes/reboots.
+
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
--- set pin index 1 to GPIO mode, and set the pin to high.
-pin=1
-gpio.mode(pin, gpio.OUTPUT)
-gpio.write(pin, gpio.HIGH)
+gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
+gpio.serout(1,1,{30,30,60,60,30,30})  -- serial one byte, b10110010
+gpio.serout(1,1,{30,70},8)  -- serial 30% pwm 10k, lasts 8 cycles
+gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
+gpio.serout(1,1,{0,0},8)  -- serial 50% pwm as fast as possible, lasts 8 cycles
+gpio.serout(1,0,{20,10,10,20,10,10,10,100}) -- sim uart one byte 0x5A at about 100kbps
+gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
 ```
-####See also
-  - `gpio.mode()`
-  - `gpio.read()`
 
-___
 ## gpio.trig()
 
 Establish a callback function to run on interrupt for a pin.
@@ -99,18 +100,18 @@ There is currently no support for unregistering the callback.
 
 This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile time.
 
-####Syntax
+#### Syntax
 `gpio.trig(pin, type [, function(level)])`
 
-####Parameters
-  - `pin`: **1~12**, IO index, pin D0 does not support interrupt.
-  - `type`: "up", "down", "both", "low", "high", which represent rising edge, falling edge, both edge, low level, high level trig mode correspondingly.
-  - `function(level)`: callback function when triggered. The gpio level is the param. Use previous callback function if undefined here.
+#### Parameters
+- `pin` **1~12**, IO index, pin D0 does not support interrupt.
+- `type` "up", "down", "both", "low", "high", which represent rising edge, falling edge, both edge, low level, high level trig mode correspondingly.
+- `function(level)` callback function when triggered. The gpio level is the param. Use previous callback function if undefined here.
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 
 ```lua
 -- use pin 1 as the input pulse width counter
@@ -127,36 +128,30 @@ end
 gpio.trig(pin, "down", pin1cb)
 
 ```
-####See also
-  - `gpio.mode()`
+#### See also
+[`gpio.mode()`](#gpiomode)
 
-___
-## gpio.serout()
+## gpio.write ()
 
-Serialize output based on a sequence of delay-times. After each delay, the pin is toggled.
+Set digital GPIO pin value.
 
-####Syntax
-`gpio.serout(pin, start_level, delay_times [, repeat_num])`
+#### Syntax
+`gpio.write(pin, level)`
 
-####Parameters
-  - `pin`: pin to use, IO index
-  - `start_level`: level to start on, either `gpio.HIGH` or `gpio.LOW`
-  - `delay_times`: an array of delay times between each toggle of the gpio pin.
-  - `repeat_num`: an optional number of times to run through the sequence.
+#### Parameters
+- `pin` pin to write, IO index
+- `level` `gpio.HIGH` or `gpio.LOW`
 
-Note that this function blocks, and as such any use of it must adhere to the SDK guidelines of time spent blocking the stack (10-100ms). Failure to do so may lead to WiFi issues or outright crashes/reboots.
-
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 ```lua
-gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
-gpio.serout(1,1,{30,30,60,60,30,30})  -- serial one byte, b10110010
-gpio.serout(1,1,{30,70},8)  -- serial 30% pwm 10k, lasts 8 cycles
-gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
-gpio.serout(1,1,{0,0},8)  -- serial 50% pwm as fast as possible, lasts 8 cycles
-gpio.serout(1,0,{20,10,10,20,10,10,10,100}) -- sim uart one byte 0x5A at about 100kbps
-gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
+-- set pin index 1 to GPIO mode, and set the pin to high.
+pin=1
+gpio.mode(pin, gpio.OUTPUT)
+gpio.write(pin, gpio.HIGH)
 ```
-___
+#### See also
+- [`gpio.mode()`](#gpiomode)
+- [`gpio.read()`](#gpioread)
