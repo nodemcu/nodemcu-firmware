@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
 
 ###A lua based firmware for wifi-soc esp8266
-  - Build on [ESP8266 NONOS SDK 1.5.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1124)
+  - Build on [ESP8266 NONOS SDK 1.5.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1442)
   - Lua core based on [eLua project](http://www.eluaproject.net/)
   - cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)
   - File system based on [spiffs](https://github.com/pellepl/spiffs)
@@ -348,7 +348,7 @@ enable flashing yourself by pulling GPIO0 low or pressing a "flash" switch.
 
 ## Files to burn to the flash
 
-If you got your firmware from [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) then you can flash that file directly to address 0x00000.
+If you got your firmware from [NodeMCU custom builds](http://nodemcu-build.com) then you can flash that file directly to address 0x00000.
 
 Otherwise, if you built your own firmware from source code:
   - bin/0x00000.bin to 0x00000
@@ -367,7 +367,7 @@ If the device panics and resets at any time, errors will be written to the seria
 
 # User Interface tools
 
-## Esplorer
+## ESPlorer
 
 Victor Brutskiy's [ESPlorer](https://github.com/4refr0nt/ESPlorer) is written in Java, is open source and runs on most platforms such as Linux, Windows, Mac OS, etc.
 
@@ -444,7 +444,7 @@ i2c.setup(0, sda, scl, i2c.SLOW)
 ```
 
 #####SPI connection
-The HSPI module is used, so certain pins are fixed:
+The HSPI module is used ([more information](http://d.av.id.au/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13
 * HSPI MISO = GPIO12 (not used)
@@ -527,7 +527,7 @@ Ucglib is a graphics library with support for color TFT displays.
 Ucglib v1.3.3
 
 #####SPI connection
-The HSPI module is used, so certain pins are fixed:
+The HSPI module is used ([more information](http://d.av.id.au/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13
 * HSPI MISO = GPIO12 (not used)
