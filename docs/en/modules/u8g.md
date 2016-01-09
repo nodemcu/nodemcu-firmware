@@ -112,13 +112,12 @@ Initialize a display via I2C.
 `u8g.ssd1306_128x64_i2c(address)`
 
 ####Parameters
-- `address`: I2C slave address of display
+`address` I2C slave address of display
 
 ####Returns
 u8g display object
 
 ####Example
-
 ```lua
 sda = 5
 scl = 6
@@ -170,12 +169,12 @@ Initialize a display via Hardware SPI.
 - `u8g.uc1701_mini12864_hw_spi()`
 
 #### Syntax
-`u8g.ssd1306_128x64_spi(cs, dc, res)`
+`u8g.ssd1306_128x64_spi(cs, dc, [res])`
 
 #### Parameters
-- `cs`: GPIO pin for /CS
-- `dc`: GPIO pin for DC
-- `res`: GPIO pin for /RES (optional)
+- `cs` GPIO pin for /CS
+- `dc` GPIO pin for DC
+- `res` GPIO pin for /RES (optional)
 
 #### Returns
 u8g display object
@@ -213,11 +212,11 @@ Parts of the bitmap may be outside the display boundaries. The bitmap is specifi
 `disp:drawBitmap(x, y, cnt, h, bitmap)`
 
 #### Parameters
-- `x`: X-position (left position of the bitmap)
-- `y`: Y-position (upper position of the bitmap)
-- `cnt`: Number of bytes of the bitmap in horizontal direction. The width of the bitmap is cnt*8.
-- `h`: Height of the bitmap
-- `bitmap`: Bitmap data supplied as string
+- `x` X-position (left position of the bitmap)
+- `y` Y-position (upper position of the bitmap)
+- `cnt` number of bytes of the bitmap in horizontal direction. The width of the bitmap is cnt*8.
+- `h` height of the bitmap
+- `bitmap` bitmap data supplied as string
 
 #### Returns
 `nil`
@@ -271,11 +270,11 @@ Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This
 `disp:drawXBM(x, y, w, h, bitmap)`
 
 #### Parameters
-- `x`: X-position (left position of the bitmap)
-- `y`: Y-position (upper position of the bitmap)
-- `w`: Width of the bitmap
-- `h`: Height of the bitmap
-- `bitmap`: XBM data supplied as string
+- `x` X-position (left position of the bitmap)
+- `y` Y-position (upper position of the bitmap)
+- `w` width of the bitmap
+- `h` height of the bitmap
+- `bitmap` XBM data supplied as string
 
 #### Returns
 `nil`
@@ -324,7 +323,7 @@ They'll be available as `u8g.<font_name>` in Lua.
 `disp:setFont(font)`
 
 #### Parameters
-- `font`: Constant to indentify pre-compiled font
+`font` Constant to indentify pre-compiled font
 
 #### Returns
 `nil`
@@ -371,15 +370,15 @@ disp:setFont(u8g.font_6x10)
 
 ## Unimplemented Functions
 - Cursor handling
-  - disableCursor()
-  - enableCursor()
-  - setCursorColor()
-  - setCursorFont()
-  - setCursorPos()
-  - setCursorStyle()
+	- disableCursor()
+	- enableCursor()
+	- setCursorColor()
+	- setCursorFont()
+	- setCursorPos()
+	- setCursorStyle()
 - General functions
-  - setContrast()
-  - setPrintPos()
-  - setHardwareBackup()
-  - setRGB()
-  - setDefaultMidColor()
+	- setContrast()
+	- setPrintPos()
+	- setHardwareBackup()
+	- setRGB()
+	- setDefaultMidColor()

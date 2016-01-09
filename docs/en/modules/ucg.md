@@ -47,7 +47,7 @@ This object provides all of ucglib's methods to control the display.
 Again, refer to [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/ucglib/GraphicsTest.lua) to get an impression how this is achieved with Lua code. Visit the [ucglib homepage](https://github.com/olikraus/ucglib) for technical details.
 
 ### Displays
-o get access to the display constructors, add the desired entries to the display table in [app/include/ucg_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/ucg_config.h):
+To get access to the display constructors, add the desired entries to the display table in [app/include/ucg_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/ucg_config.h):
 ```c
 #define UCG_DISPLAY_TABLE                          \
     UCG_DISPLAY_TABLE_ENTRY(ili9341_18x240x320_hw_spi, ucg_dev_ili9341_18x240x320, ucg_ext_ili9341_18) \
@@ -80,12 +80,12 @@ Initialize a display via Hardware SPI.
 - `st7735_18x128x160_hw_spi()`
 
 #### Syntax
-`ucg.st7735_18x128x160_hw_spi(cs, dc, res)`
+`ucg.st7735_18x128x160_hw_spi(cs, dc, [res])`
 
 #### Parameters
-- `cs`: GPIO pin for /CS
-- `dc`: GPIO pin for DC
-- `res`: GPIO pin for /RES (optional)
+- `cs` GPIO pin for /CS
+- `dc` GPIO pin for DC
+- `res` GPIO pin for /RES (optional)
 
 #### Returns
 ucg display object
@@ -178,7 +178,7 @@ They'll be available as `ucg.<font_name>` in Lua.
 `disp:setFont(font)`
 
 #### Parameters
-- `font`: Constant to identify pre-compiled font.
+`font` constant to identify pre-compiled font
 
 #### Returns
 `nil`
