@@ -140,10 +140,11 @@ static int tmr_register(lua_State* L){
 	sint32_t interval = luaL_checkinteger(L, 2);
 	uint8_t mode = luaL_checkinteger(L, 3);
 	//validate arguments
-	uint8_t args_valid = interval <= 0
+    const int32_t MAX_TIMEOUT = 0xC49BA5; // assuming system_timer_reinit() has *not* been called
+	uint8_t args_invalid = (interval <= 0 || interval > MAX_TIMEOUT)
 		|| (mode != TIMER_MODE_SINGLE && mode != TIMER_MODE_SEMI && mode != TIMER_MODE_AUTO)
 		|| (lua_type(L, 4) != LUA_TFUNCTION && lua_type(L, 4) != LUA_TLIGHTFUNCTION);
-	if(args_valid)
+	if(args_invalid)
 		return luaL_error(L, "wrong arg range");
 	//get the lua function reference
 	lua_pushvalue(L, 4);
