@@ -22,7 +22,7 @@ To free up the resources with this timer when done using it, call `tmr.unregiste
 
 ####Parameters
   - `id`: The timer id (0-6).
-  - `interval_ms`: timer interval in milliseconds.
+  - `interval_ms`: timer interval in milliseconds. Maximum value is 12884901. In SDKs <= 1.5.0 values >6871948 result in incorrect behaviour.
   - `mode`: timer mode:
     - `tmr.ALARM_SINGLE`: a one-shot alarm (and no need to call `tmr.unregister()`)
     - `tmr.ALARM_SEMI`: manually repeating alarm (call `tmr.start()` to restart)
