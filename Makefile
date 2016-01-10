@@ -4,6 +4,8 @@
 
 # SDK version NodeMCU is locked to
 SDK_VER:=1.5.0
+SDK_FILE_VER:=1.5.0_15_11_27
+SDK_FILE_ID:=989
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
@@ -171,13 +173,25 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 all:	sdk_extracted .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
 .PHONY: sdk_extracted
-sdk_extracted: $(TOP_DIR)/sdk/.extracted
+sdk_extracted: $(TOP_DIR)/sdk/.extracted $(TOP_DIR)/sdk/.binpatched
 
-$(TOP_DIR)/sdk/.extracted:
+$(TOP_DIR)/sdk/.binpatched: $(TOP_DIR)/cache/libmain_ESP8266_NONOS_SDK_V1.5.0.zip | $(TOP_DIR)/sdk/.extracted
+	cd $(SDK_DIR)/lib && rm -f libmain.a && unzip $<
+	touch $@
+
+$(TOP_DIR)/cache/libmain_ESP8266_NONOS_SDK_V1.5.0.zip:
+	mkdir -p "$(dir $@)"
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused --continue https://github.com/jmattsson/nodemcu-firmware/releases/download/tmr-libmain-binpatch150/$(notdir $@) -O $@
+
+$(TOP_DIR)/sdk/.extracted: $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
 	(cd "$(dir $@)" && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_VER)*.zip esp_iot_sdk_v$(SDK_VER)/lib/* esp_iot_sdk_v$(SDK_VER)/ld/eagle.rom.addr.v6.ld esp_iot_sdk_v$(SDK_VER)/include/* )
 	rm -f $(SDK_DIR)/lib/liblwip.a
 	touch $@
+
+$(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip:
+	mkdir -p "$(dir $@)"
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused --continue http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
