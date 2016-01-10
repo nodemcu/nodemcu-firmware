@@ -5,73 +5,207 @@ The file system is a flat file system, with no notion of directories/folders.
 
 Only one file can be open at any given time.
 
-## file.fsinfo()
+## file.close()
 
-Return size information for the file system, in bytes.
+Closes the open file, if any.
 
-####Syntax
-`file.fsinfo()`
+#### Syntax
+`file.close()`
 
-####Parameters
+#### Parameters
+none
+
+#### Returns
 `nil`
 
-####Returns
-- `remaining` (number)
-- `used`      (number)
-- `total`     (number)
-
-####Example
-
+#### Example
 ```lua
-  -- get file system info
-  remaining, used, total=file.fsinfo()
-  print("\nFile system info:\nTotal : "..total.." Bytes\nUsed : "..used.." Bytes\nRemain: "..remaining.." Bytes\n")
-            ```
+-- open 'init.lua', print the first line.
+file.open("init.lua", "r")
+print(file.readline())
+file.close()
 ```
-___
+#### See also
+[`file.open()`](#fileopen)
+
+## file.flush()
+
+Flushes any pending writes to the file system, ensuring no data is lost on a restart. Closing the open file using [`file.close()`](#fileclose) performs an implicit flush as well.
+
+#### Syntax
+`file.flush()`
+
+#### Parameters
+none
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+-- open 'init.lua' in 'a+' mode
+file.open("init.lua", "a+")
+-- write 'foo bar' to the end of the file
+file.write('foo bar')
+file.flush()
+-- write 'baz' too
+file.write('baz')
+file.close()
+```
+#### See also
+[`file.close()`](#fileclose)
+
 ## file.format()
 
 Format the file system. Completely erases any existing file system and writes a new one. Depending on the size of the flash chip in the ESP, this may take several seconds.
 
-####Syntax
+#### Syntax
 `file.format()`
 
-####Parameters
+#### Parameters
+none
+
+#### Returns
 `nil`
 
-####Returns
-`nil`
+#### See also
+[`file.remove()`](#fileremove)
 
-####Example
+## file.fsinfo()
+
+Return size information for the file system, in bytes.
+
+#### Syntax
+`file.fsinfo()`
+
+#### Parameters
+none
+
+#### Returns
+- `remaining` (number)
+- `used`      (number)
+- `total`     (number)
+
+#### Example
+
 ```lua
-    file.format()
+-- get file system info
+remaining, used, total=file.fsinfo()
+print("\nFile system info:\nTotal : "..total.." Bytes\nUsed : "..used.." Bytes\nRemain: "..remaining.." Bytes\n")
 ```
 
-####See also
-  - `file.remove()`
-
-___
 ## file.list()
 
 Lists all files in the file system.
 
-####Syntax
+#### Syntax
 `file.list()`
 
-####Parameters
-`nil`
+#### Parameters
+none
 
-####Returns
+#### Returns
 a lua table which contains the {file name: file size} pairs
 
-####Example
+#### Example
 ```lua
-    l = file.list();
-    for k,v in pairs(l) do
-      print("name:"..k..", size:"..v)
-    end
+l = file.list();
+for k,v in pairs(l) do
+  print("name:"..k..", size:"..v)
+end
 ```
-___
+
+## file.open()
+
+Opens a file for access, potentially creating it (for write modes).
+
+When done with the file, it must be closed using `file.close()`.
+
+#### Syntax
+`file.open(filename, mode)`
+
+#### Parameters
+- `filename` file to be opened, directories are not supported
+- `mode`:
+    - "r": read mode (the default)
+    - "w": write mode
+    - "a": append mode
+    - "r+": update mode, all previous data is preserved
+    - "w+": update mode, all previous data is erased
+    - "a+": append update mode, previous data is preserved, writing is only allowed at the end of file
+
+#### Returns
+`nil` if file not opened, or not exists (read modes).  `true` if file opened ok.
+
+#### Example
+```lua
+-- open 'init.lua', print the first line.
+file.open("init.lua", "r")
+print(file.readline())
+file.close()
+```
+#### See also
+- [`file.close()`](#fileclose)
+- [`file.readline()`](#filereadline)
+
+## file.read()
+
+Read content from the open file.
+
+#### Syntax
+`file.read([n_or_str])`
+
+#### Parameters
+- `n_or_str`:
+	- if nothing passed in, read all byte in file
+	- if pass a number n, then read n bytes from file, or EOF is reached
+	- if pass a string "str", then read until 'str' or EOF is reached
+
+#### Returns
+fdile content in string, or nil when EOF
+
+#### Example
+```lua
+-- print the first line of 'init.lua'
+file.open("init.lua", "r")
+print(file.read('\n'))
+file.close()
+
+-- print the first 5 byte of 'init.lua'
+file.open("init.lua", "r")
+print(file.read(5))
+file.close()
+```
+
+#### See also
+- [`file.open()`](#fileopen)
+- [`file.readline()`](#filereadline)
+
+## file.readline()
+
+Read the next line from the open file.
+
+#### Syntax
+`file.readline()`
+
+#### Parameters
+none
+
+#### Returns
+File content in string, line by line, include EOL('\n'). Return `nil` when EOF.
+
+#### Example
+```lua
+-- print the first line of 'init.lua'
+file.open("init.lua", "r")
+print(file.readline())
+file.close()
+```
+#### See also
+- [`file.open()`](#fileopen)
+- [`file.close()`](#fileclose)
+- [`file.read()`](#filereade)
+
 ## file.remove()
 
 Remove a file from the file system. The file must not be currently open.
@@ -79,273 +213,119 @@ Remove a file from the file system. The file must not be currently open.
 ###Syntax
 `file.remove(filename)`
 
-####Parameters
-  - `filename`: file to remove
+#### Parameters
+`filename` file to remove
 
-####Returns
+#### Returns
 `nil`
 
-####Example
+#### Example
 
 ```lua
-    -- remove "foo.lua" from file system.
-    file.remove("foo.lua")
+-- remove "foo.lua" from file system.
+file.remove("foo.lua")
 ```
-####See also
-  - `file.open()`
-___
+#### See also
+[`file.open()`](#fileopen)
+
 ## file.rename()
 
 Renames a file. If a file is currently open, it will be closed first.
 
-####Syntax
+#### Syntax
 `file.rename(oldname, newname)`
 
-####Parameters
-  - `oldname`: old file name
-  - `newname`: new file name
+#### Parameters
+- `oldname` old file name
+- `newname` new file name
 
-####Returns
+#### Returns
 `true` on success, `false` on error.
 
-####Example
+#### Example
 
 ```lua
-    -- rename file 'temp.lua' to 'init.lua'.
-    file.rename("temp.lua","init.lua")
+-- rename file 'temp.lua' to 'init.lua'.
+file.rename("temp.lua","init.lua")
 ```
-___
-## file.open()
 
-Opens a file for access, potentially creating it (for write modes).
+## file.seek()
+Sets and gets the file position, measured from the beginning of the file, to the position given by offset plus a base specified by the string whence.
 
-When done with the file, it must be closed using `file.close()`.
+#### Syntax
+`file.seek([whence [, offset]])`
 
-####Syntax
-`file.open(filename, mode)`
+#### Parameters
+- `whence`
+	- "set": base is position 0 (beginning of the file)
+	- "cur": base is current position (default value)
+	- "end": base is end of file
+- `offset` default 0
 
-####Parameters
-  - `filename`: file to be opened, directories are not supported
-  - `mode`:
-    - "r": read mode (the default)<br />
-    - "w": write mode<br />
-    - "a": append mode<br />
-    - "r+": update mode, all previous data is preserved<br />
-    - "w+": update mode, all previous data is erased<br />
-    - "a+": append update mode, previous data is preserved, writing is only allowed at the end of file
+If no parameters are given, the function simply returns the current file offset.
 
-####Returns
-  - `nil` if file not opened, or not exists (read modes).  true` if file opened ok.
+#### Returns
+the resulting file position, or `nil` on error
 
-####Example
-
+#### Example
 ```lua
-    -- open 'init.lua', print the first line.
-    file.open("init.lua", "r")
-    print(file.readline())
-    file.close()
+file.open("init.lua", "r")
+-- skip the first 5 bytes of the file
+file.seek("set", 5)
+print(file.readline())
+file.close()
 ```
-####See also
-  - `file.close()`
-  - `file.readline()`
+#### See also
+[`file.open()`](#fileopen)
 
-___
-## file.close()
-
-Closes the open file, if any.
-
-####Syntax
-`file.close()`
-
-####Parameters
-`nil`
-
-####Returns
-`nil`
-
-####Example
-
-```lua
-    -- open 'init.lua', print the first line.
-    file.open("init.lua", "r")
-    print(file.readline())
-    file.close()
-```
-####See also
-  - `file.open()`
-
-___
-## file.readline()
-
-Read the next line from the open file.
-
-####Syntax
-`file.readline()`
-
-####Parameters
-`nil`
-
-####Returns
-File content in string, line by line, include EOL('\n'). Return `nil` when EOF.
-
-####Example
-
-```lua
-    -- print the first line of 'init.lua'
-    file.open("init.lua", "r")
-    print(file.readline())
-    file.close()
-```
-####See also
-  - `file.open()`
-  - `file.close()`
-  - `file.read()`
-
-___
-## file.writeline()
-
-Write a string to the open file and append '\n' at the end.
-
-####Syntax
-`file.writeline(string)`
-
-####Parameters
-  - `string`: content to be write to file
-
-####Returns
-`true` if write ok, `nil` on error.
-
-####Example
-
-```lua
-    -- open 'init.lua' in 'a+' mode
-    file.open("init.lua", "a+")
-    -- write 'foo bar' to the end of the file
-    file.writeline('foo bar')
-    file.close()
-```
-
-####See also
-  - `file.open()`
-  - `file.readline()`
-
-___
-## file.read()
-
-Read content from the open file.
-####Syntax
-`file.read([n_or_str])`
-
-####Parameters
-  - `n_or_str`:
-    - if nothing passed in, read all byte in file.
-    - if pass a number n, then read n bytes from file, or EOF is reached.
-    - if pass a string "str", then read until 'str' or EOF is reached.
-
-####Returns
-File content in string, or nil when EOF.
-
-####Example
-```lua
-    -- print the first line of 'init.lua'
-    file.open("init.lua", "r")
-    print(file.read('\n'))
-    file.close()
-
-    -- print the first 5 byte of 'init.lua'
-    file.open("init.lua", "r")
-    print(file.read(5))
-    file.close()
-```
-
-####See also
-  - `file.open()`
-  - `file.readline()`
-
-___
 ## file.write()
 
 Write a string to the open file.
 
-####Syntax
+#### Syntax
 `file.write(string)`
 
-####Parameters
-`string`: content to be write to file.
+#### Parameters
+`string` content to be write to file
 
-####Returns
-`true` if the write is ok, `nil` on error.
+#### Returns
+`true` if the write is ok, `nil` on error
 
-####Example
-
+#### Example
 ```lua
-    -- open 'init.lua' in 'a+' mode
-    file.open("init.lua", "a+")
-    -- write 'foo bar' to the end of the file
-    file.write('foo bar')
-    file.close()
+-- open 'init.lua' in 'a+' mode
+file.open("init.lua", "a+")
+-- write 'foo bar' to the end of the file
+file.write('foo bar')
+file.close()
 ```
 
-####See also
-  - `file.open()`
-  - `file.writeline()`
+#### See also
+- [`file.open()`](#fileopen)
+- [`file.writeline()`](#filewriteline)
 
-___
-## file.flush()
+## file.writeline()
 
-Flushes any pending writes to the file system, ensuring no data is lost on a restart. Closing the open file using `file.close()` performs an implicit flush as well.
+Write a string to the open file and append '\n' at the end.
 
-####Syntax
-`file.flush()`
+#### Syntax
+`file.writeline(string)`
 
-####Parameters
-`nil`
+#### Parameters
+`string` content to be write to file
 
-####Returns
-`nil`
+#### Returns
+`true` if write ok, `nil` on error
 
-####Example
+#### Example
 ```lua
-    -- open 'init.lua' in 'a+' mode
-    file.open("init.lua", "a+")
-    -- write 'foo bar' to the end of the file
-    file.write('foo bar')
-    file.flush()
-    -- write 'baz' too
-    file.write('baz')
-    file.close()
+-- open 'init.lua' in 'a+' mode
+file.open("init.lua", "a+")
+-- write 'foo bar' to the end of the file
+file.writeline('foo bar')
+file.close()
 ```
-####See also
-  - `file.close()`
 
-___
-## file.seek()
-Sets and gets the file position, measured from the beginning of the file, to the position given by offset plus a base specified by the string whence.
-
-####Syntax
-`file.seek([whence [, offset]])`
-
-####Parameters
-  - `whence`:
-    - "set": base is position 0 (beginning of the file)
-    - "cur": base is current position (default value)
-    - "end": base is end of file
-  - offset: default 0
-
-If no parameters are given, the function simply returns the current file offset.
-
-####Returns
-The resulting file position, or `nil` on error.
-
-####Example
-```lua
-    file.open("init.lua", "r")
-    -- skip the first 5 bytes of the file
-    file.seek("set", 5)
-    print(file.readline())
-    file.close()
-```
-####See also
-  - `file.open()`
-
-___
+#### See also
+- [`file.open()`](#fileopen)
+- [`file.readline()`](#filereadline)
