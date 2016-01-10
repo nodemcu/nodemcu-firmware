@@ -36,6 +36,7 @@ pages:
         - 'gpio': 'en/modules/gpio.md'
         - 'node': 'en/modules/node.md'
         - 'file': 'en/modules/file.md'
+        - 'i2c' : 'en/modules/i2c.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
         - 'rtcfifo': 'en/modules/rtcfifo.md'
