@@ -37,6 +37,7 @@ pages:
         - 'node': 'en/modules/node.md'
         - 'file': 'en/modules/file.md'
         - 'i2c' : 'en/modules/i2c.md'
+        - 'pwm' : 'en/modules/pwm.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
         - 'rtcfifo': 'en/modules/rtcfifo.md'
