@@ -1,6 +1,20 @@
 # UART Module
 The [UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver/transmitter) (Universal asynchronous receiver/transmitter) module allows configuration of and communication over the UART serial port.
 
+## uart.alt()
+Change UART pin assignment.
+
+#### Syntax
+`uart.alt(on)`
+
+#### Parameters
+`on`:
+- `0` use standard pins
+- `1` use alternate pins GPIO13 and GPIO15
+
+#### Returns
+`nil`
+
 ## uart.on()
 
 Sets the callback function to handle UART events.
