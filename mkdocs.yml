@@ -38,7 +38,7 @@ pages:
         - 'gpio': 'en/modules/gpio.md'
         - 'hx711' : 'en/modules/hx711.md'
         - 'i2c' : 'en/modules/i2c.md'
-#        - 'net': 'en/modules/net.md'
+        - 'net': 'en/modules/net.md'
         - 'node': 'en/modules/node.md'
         - 'mqtt': 'en/modules/mqtt.md'
         - 'pwm' : 'en/modules/pwm.md'
