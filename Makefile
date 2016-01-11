@@ -6,6 +6,7 @@
 SDK_VER:=1.5.0
 SDK_FILE_VER:=1.5.0_15_11_27
 SDK_FILE_ID:=989
+SDK_FILE_SIZE:=2184553
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
@@ -180,8 +181,13 @@ $(TOP_DIR)/sdk/.binpatched: $(TOP_DIR)/cache/libmain_ESP8266_NONOS_SDK_V1.5.0.zi
 	touch $@
 
 $(TOP_DIR)/cache/libmain_ESP8266_NONOS_SDK_V1.5.0.zip:
+ifeq ($(SDK_VER),1.5.0)
 	mkdir -p "$(dir $@)"
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused --continue https://github.com/jmattsson/nodemcu-firmware/releases/download/tmr-libmain-binpatch150/$(notdir $@) -O $@
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/nodemcu-firmware/releases/download/tmr-libmain-binpatch150/$(notdir $@) -O $@ || { rm -f "$@"; exit 1; }
+	[ `ls -l "$@" | awk '{print $$5}'` -eq 58400 ] || { rm -f "$@"; exit 1; }
+else
+	@echo "ERROR: Attempting to use replacement libmain.a for SDK 1.5.0 with SDK $(SDK_VER) - don't do that!"; false
+endif
 
 $(TOP_DIR)/sdk/.extracted: $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
@@ -191,7 +197,8 @@ $(TOP_DIR)/sdk/.extracted: $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 
 $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused --continue http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@ || { rm -f "$@"; exit 1; }
+	[ `ls -l "$@" | awk '{print $5}'` -eq $(SDK_FILE_SIZE) ] || { rm -f "$@"; exit 1; }
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
