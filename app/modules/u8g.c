@@ -820,6 +820,28 @@ static void lu8g_digital_write( u8g_t *u8g, uint8_t pin_index, uint8_t value )
         platform_gpio_write( pin, value );
 }
 
+void u8g_Delay(uint16_t msec)
+{
+    const uint16_t chunk = 50;
+
+    while (msec > chunk)
+    {
+        os_delay_us( chunk*1000 );
+        msec -= chunk;
+    }
+    if (msec > 0)
+        os_delay_us( msec*1000 );
+}
+void u8g_MicroDelay(void)
+{
+    os_delay_us( 1 );
+}
+void u8g_10MicroDelay(void)
+{
+    os_delay_us( 10 );
+}
+
+
 uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 {
     switch(msg)
