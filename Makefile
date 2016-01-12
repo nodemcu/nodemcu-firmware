@@ -3,7 +3,7 @@
 .NOTPARALLEL:
 
 # SDK version NodeMCU is locked to
-SDK_VER:=1.5.0
+SDK_VER:=1.5.1
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
@@ -171,9 +171,9 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 all:	sdk_extracted .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
 .PHONY: sdk_extracted
-sdk_extracted: $(TOP_DIR)/sdk/.extracted
+sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_VER)
 
-$(TOP_DIR)/sdk/.extracted:
+$(TOP_DIR)/sdk/.extracted-$(SDK_VER):
 	mkdir -p "$(dir $@)"
 	(cd "$(dir $@)" && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_VER)*.zip esp_iot_sdk_v$(SDK_VER)/lib/* esp_iot_sdk_v$(SDK_VER)/ld/eagle.rom.addr.v6.ld esp_iot_sdk_v$(SDK_VER)/include/* )
 	rm -f $(SDK_DIR)/lib/liblwip.a

@@ -6,7 +6,7 @@
 #define NODE_VERSION_REVISION	0U
 #define NODE_VERSION_INTERNAL   0U
 
-#define NODE_VERSION	"NodeMCU 1.5.0"
+#define NODE_VERSION	"NodeMCU 1.5.1"
 #ifndef BUILD_DATE
 #define BUILD_DATE	  "unspecified"
 #endif
