@@ -307,6 +307,13 @@ static int file_writeline( lua_State* L )
   return 1;
 }
 
+static int file_fscfg (lua_State *L)
+{
+  lua_pushinteger (L, fs.cfg.phys_addr);
+  lua_pushinteger (L, fs.cfg.phys_size);
+  return 2;
+}
+
 // Module function map
 static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "list" ),      LFUNCVAL( file_list ) },
@@ -323,6 +330,7 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
   { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
+  { LSTRKEY( "fscfg" ),    LFUNCVAL( file_fscfg ) },
   { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
 #endif
   { LNILKEY, LNILVAL }
