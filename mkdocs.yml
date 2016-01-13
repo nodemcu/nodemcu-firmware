@@ -52,6 +52,7 @@ pages:
         - 'u8g': 'en/modules/u8g.md'
         - 'uart': 'en/modules/uart.md'
         - 'ucg': 'en/modules/ucg.md'
+        - 'wifi': 'en/modules/wifi.md'
         - 'ws2801': 'en/modules/ws2801.md'
         - 'ws2812': 'en/modules/ws2812.md'
 - Deutsch:
