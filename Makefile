@@ -6,7 +6,7 @@
 SDK_VER:=1.5.1
 SDK_FILE_VER:=$(SDK_VER)_16_01_08
 SDK_FILE_ID:=1046
-SDK_FILE_SIZE:=2185752
+SDK_FILE_SHA1:=374f689a5f9e47690d7b4cd2fc1a1094f3fd5a4f
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
@@ -179,14 +179,14 @@ sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_VER)
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
-	(cd "$(dir $@)" && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_VER)*.zip esp_iot_sdk_v$(SDK_VER)/lib/* esp_iot_sdk_v$(SDK_VER)/ld/eagle.rom.addr.v6.ld esp_iot_sdk_v$(SDK_VER)/include/* )
+	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_VER)*.zip esp_iot_sdk_v$(SDK_VER)/lib/* esp_iot_sdk_v$(SDK_VER)/ld/eagle.rom.addr.v6.ld esp_iot_sdk_v$(SDK_VER)/include/* )
 	rm -f $(SDK_DIR)/lib/liblwip.a
 	touch $@
 
 $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
 	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@ || { rm -f "$@"; exit 1; }
-	[ `wc -c < "$@"` -eq $(SDK_FILE_SIZE) ] || { rm -f "$@"; exit 1; }
+	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
