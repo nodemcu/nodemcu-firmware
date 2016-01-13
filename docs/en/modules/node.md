@@ -3,14 +3,28 @@ The node module provides access to system-level features such as sleep, restart 
 
 ## node.bootreason()
 
-Returns the boot reason code.
+Returns the boot reason and extended reset info.
 
-This is the raw code, not the new "reset info" code which was introduced in recent SDKs. Values are:
+The first value returned is the raw code, not the new "reset info" code which was introduced in recent SDKs. Values are:
 
   - 1, power-on
   - 2, reset (software?)
   - 3, hardware reset via reset pin
   - 4, WDT reset (watchdog timeout)
+
+The second^ value returned is the extended reset cause. Values are:
+
+  - 0, power-on
+  - 1, hardware watchdog reset
+  - 2, exception reset
+  - 3, software watchdog reset
+  - 4, software restart
+  - 5, wake from deep sleep
+  - 6, external reset
+
+In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
+
+^) Extended reset cause support added 12 Jan 2016. The raw code was kept for backwards compatibility, even though the extended reset info supercedes it.
 
 #### Syntax
 `node.bootreason()`
@@ -19,7 +33,13 @@ This is the raw code, not the new "reset info" code which was introduced in rece
 none
 
 #### Returns
-the boot reason code (number)
+`rawcode, reason [, epc1, epc2, epc3, excvaddr, depc ]`
+
+#### Example
+```lua
+_, reset_reason = node.bootreason()
+if reset_reason == 0 then print("Power UP!") end
+```
 
 ## node.chipid()
 
