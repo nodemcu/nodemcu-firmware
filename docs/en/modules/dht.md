@@ -64,7 +64,7 @@ Read DHT11 humidity temperature combo sensor.
 
 !!! note "Note:"
 
-If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
+    If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
 
 #### See also
 [dht.read()](#dhtread)
@@ -87,7 +87,7 @@ Read all kinds of DHT sensors, except DHT11.
 
 !!! note "Note:"
 
-If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
+    If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
 
 #### See also
 [dht.read()](#dhtread)
