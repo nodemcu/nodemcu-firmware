@@ -33,6 +33,7 @@ pages:
         - 'bit': 'en/modules/bit.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'crypto': 'en/modules/crypto.md'
+        - 'dht': 'en/modules/dht.md'
         - 'enduser setup': 'en/modules/enduser-setup.md'
         - 'file': 'en/modules/file.md'
         - 'gpio': 'en/modules/gpio.md'
