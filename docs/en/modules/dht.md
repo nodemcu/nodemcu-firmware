@@ -21,7 +21,7 @@ Read all kinds of DHT sensors, including DHT11, 21, 22, 33, 44 humidity temperat
 
 !!! note "Note:"
 
-If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
+    If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
 
 #### Example
 ```lua
