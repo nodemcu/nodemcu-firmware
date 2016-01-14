@@ -1,7 +1,7 @@
 # WiFi Module
 The NodeMCU WiFi control is spread across several tables:
 
-- `wifi`, for overall WiFi configuration
+- `wifi` for overall WiFi configuration
 - [`wifi.sta`](#wifista-module) for station mode functions
 - [`wifi.ap`](#wifiap-module) for wireless access point (WAP or simply AP) functions
 - [`wifi.ap.dhcp`](#wifiapdhcp-module) for DHCP server control
