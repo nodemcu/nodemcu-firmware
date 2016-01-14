@@ -1,10 +1,10 @@
-# **NodeMCU 1.5.0** #
+# **NodeMCU 1.5.1** #
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
 
 ###A lua based firmware for wifi-soc esp8266
-  - Build on [ESP8266 NONOS SDK 1.5.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1442)
+  - Build on [ESP8266 NONOS SDK 1.5.1](http://bbs.espressif.com/viewtopic.php?f=46&p=5315)
   - Lua core based on [eLua project](http://www.eluaproject.net/)
   - cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)
   - File system based on [spiffs](https://github.com/pellepl/spiffs)
@@ -298,7 +298,7 @@ Comment-out the #define statement for unused modules. Example:
 Identify your firmware builds by editing `app/include/user_version.h`
 
 ```c
-#define NODE_VERSION    "NodeMCU 1.5.0+myname"
+#define NODE_VERSION    "NodeMCU 1.5.1+myname"
 #ifndef BUILD_DATE
 #define BUILD_DATE        "YYYYMMDD"
 #endif
