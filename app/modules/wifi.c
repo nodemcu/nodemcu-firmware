@@ -97,7 +97,6 @@ static void wifi_scan_done(void *arg, STATUS status)
   if (status == OK)
   {
     struct bss_info *bss_link = (struct bss_info *)arg;
-    bss_link = bss_link->next.stqe_next;//ignore first
     lua_newtable( gL );
 
     while (bss_link != NULL)
