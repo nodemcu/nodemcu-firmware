@@ -477,12 +477,13 @@ static int node_bootreason (lua_State *L)
   lua_pushnumber (L, ri->reason);
   if (ri->reason == REASON_EXCEPTION_RST)
   {
+    lua_pushnumber (L, ri->exccause);
     lua_pushnumber (L, ri->epc1);
     lua_pushnumber (L, ri->epc2);
     lua_pushnumber (L, ri->epc3);
     lua_pushnumber (L, ri->excvaddr);
     lua_pushnumber (L, ri->depc);
-    return 7;
+    return 8;
   }
   else
     return 2;
