@@ -78,12 +78,12 @@ typedef struct
         SIZE_8MBIT = 2,
         SIZE_16MBIT = 3,
         SIZE_32MBIT = 4,
-        SIZE_64MBIT = 5,
-        SIZE_128MBIT = 6,
+        SIZE_16MBIT_8M_8M = 5,
+        SIZE_32MBIT_8M_8M = 6,
     } size : 4;
     uint32_t entry_point;
     uint32_t memory_offset;
-    uint32_t segment_size; 
+    uint32_t segment_size;
 } ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 
 uint32_t flash_detect_size_byte(void);
