@@ -31,6 +31,7 @@ pages:
     - Modules:
         - 'adc': 'en/modules/adc.md'
         - 'bit': 'en/modules/bit.md'
+        - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'dht': 'en/modules/dht.md'
