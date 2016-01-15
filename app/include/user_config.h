@@ -76,6 +76,17 @@
 
 #define ENDUSER_SETUP_AP_SSID "SetupGadget"
 
+/*
+ * A valid hostname only contains alphanumeric and hyphen(-) characters, with no hyphens at first or last char
+ * if WIFI_STA_HOSTNAME not defined: hostname will default to NODE-xxxxxx (xxxxxx being last 3 octets of MAC address)
+ * if WIFI_STA_HOSTNAME defined: hostname must only contain alphanumeric characters
+ * if WIFI_STA_HOSTNAME_APPEND_MAC not defined: Hostname MUST be 32 chars or less
+ * if WIFI_STA_HOSTNAME_APPEND_MAC defined: Hostname MUST be 26 chars or less, since last 3 octets of MAC address will be appended
+ * if defined hostname is invalid: hostname will default to NODE-xxxxxx (xxxxxx being last 3 octets of MAC address)
+*/
+//#define WIFI_STA_HOSTNAME "NodeMCU"
+//#define WIFI_STA_HOSTNAME_APPEND_MAC
+
 #define STRBUF_DEFAULT_INCREMENT 32
 
 #endif	/* __USER_CONFIG_H__ */
