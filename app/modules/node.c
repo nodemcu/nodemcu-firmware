@@ -469,24 +469,19 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
-// Lua: code = bootreason()
+// Lua: code, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ] = bootreason()
 static int node_bootreason (lua_State *L)
 {
-  struct rst_info *ri = system_get_rst_info ();
-  lua_pushnumber (L, rtc_get_reset_reason ());
-  lua_pushnumber (L, ri->reason);
-  if (ri->reason == REASON_EXCEPTION_RST)
-  {
-    lua_pushnumber (L, ri->exccause);
-    lua_pushnumber (L, ri->epc1);
-    lua_pushnumber (L, ri->epc2);
-    lua_pushnumber (L, ri->epc3);
-    lua_pushnumber (L, ri->excvaddr);
-    lua_pushnumber (L, ri->depc);
-    return 8;
-  }
-  else
-    return 2;
+  const struct rst_info *ri = system_get_rst_info ();
+  uint32_t arr[8] = {
+    rtc_get_reset_reason(),
+    ri->reason,
+    ri->exccause, ri->epc1, ri->epc2, ri->epc3, ri->excvaddr, ri->depc
+  };
+  int i, n = ((ri->reason != REASON_EXCEPTION_RST) ? 2 : 8);
+  for (i = 0; i < n; ++i)
+    lua_pushinteger (L, arr[i]);
+  return n;
 }
 
 // Lua: restore()
