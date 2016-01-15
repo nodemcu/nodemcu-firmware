@@ -275,7 +275,7 @@ wifi.sta.disconnect()
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
 
 ## wifi.sta.connect()
-#### Description
+
 Connects to AP in station mode.
 
 #### Syntax
@@ -558,6 +558,24 @@ ssid, password, bssid_set, bssid=nil, nil, nil, nil
 - [`wifi.sta.connect()`](#wifistaconnect)
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
 
+## wifi.sta.gethostname()
+
+Gets current station hostname.
+
+#### Syntax
+`wifi.sta.gethostname()`
+
+#### Parameters
+none
+
+#### Returns
+currently configured hostname
+
+#### Example
+```lua
+print("Current hostname is: \""..wifi.sta.gethostname().."\"")
+```
+
 ## wifi.sta.getip()
 
 Gets IP address, netmask, and gateway address in station mode.
@@ -602,6 +620,28 @@ MAC address as string e.g. "18-33-44-FE-55-BB"
 
 #### See also
 [`wifi.sta.getip()`](#wifistagetip)
+
+## wifi.sta.sethostname()
+
+Sets station hostname.
+
+#### Syntax
+`wifi.sta.sethostname(hostname)`
+
+#### Parameters
+`hostname` must only contain letters, numbers and hyphens('-') and be 32 characters or less with first and last character being alphanumeric
+
+#### Returns
+true if hostname was successfully set, false otherwise
+
+#### Example
+```lua
+if (wifi.sta.sethostname("NodeMCU") == true) then
+	print("hostname was successfully changed")
+else
+	print("hostname was not changed")
+end
+```
 
 ## wifi.sta.setip()
 Sets IP address, netmask, gateway address in station mode.
