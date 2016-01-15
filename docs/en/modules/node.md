@@ -12,7 +12,7 @@ The first value returned is the raw code, not the new "reset info" code which wa
   - 3, hardware reset via reset pin
   - 4, WDT reset (watchdog timeout)
 
-The second^ value returned is the extended reset cause. Values are:
+The second value returned is the extended reset cause. Values are:
 
   - 0, power-on
   - 1, hardware watchdog reset
@@ -22,9 +22,9 @@ The second^ value returned is the extended reset cause. Values are:
   - 5, wake from deep sleep
   - 6, external reset
 
-In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
+In general, the extended reset cause supercedes the raw code. The raw code is kept for backwards compatibility only. For new applications it is highly recommended to use the extended reset cause instead.
 
-^) Extended reset cause support added 12 Jan 2016. The raw code was kept for backwards compatibility, even though the extended reset info supercedes it.
+In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, EXCCAUSE, EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
 
 #### Syntax
 `node.bootreason()`
@@ -33,7 +33,7 @@ In case of extended reset cause 3 (exception reset), additional values are retur
 none
 
 #### Returns
-`rawcode, reason [, epc1, epc2, epc3, excvaddr, depc ]`
+`rawcode, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ]`
 
 #### Example
 ```lua
