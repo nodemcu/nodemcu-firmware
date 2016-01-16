@@ -195,6 +195,8 @@ disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 ___
 
 ## Constants
+Constants for various functions.
+
 `u8g.DRAW_UPPER_RIGHT`, `u8g.DRAW_UPPER_LEFT`, `u8g.DRAW_LOWER_RIGHT`, `u8g.DRAW_LOWER_LEFT`, `u8g.DRAW_ALL`,
 `u8g.MODE_BW`, `u8g.MODE_GRAY2BIT`
 
@@ -202,7 +204,8 @@ ___
 
 # u8g.disp Sub-Module
 
-## [u8g.disp:begin()](https://github.com/olikraus/u8glib/wiki/userreference#begin)
+## u8g.disp:begin()
+See [u8glib begin()](https://github.com/olikraus/u8glib/wiki/userreference#begin).
 
 ## u8g.disp:drawBitmap()
 Draw a bitmap at the specified x/y position (upper left corner of the bitmap).
@@ -226,39 +229,56 @@ Parts of the bitmap may be outside the display boundaries. The bitmap is specifi
 - [lua_examples/u8glib/u8g_bitmaps.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_bitmaps.lua)
 - [u8g.disp:drawXBM()](#u8gdispdrawxbm)
 
-## [u8g.disp:drawBox()](https://github.com/olikraus/u8glib/wiki/userreference#drawbox)
+## u8g.disp:drawBox()
+See [u8glib drawBox()](https://github.com/olikraus/u8glib/wiki/userreference#drawbox).
 
-## [u8g.disp:drawCircle()](https://github.com/olikraus/u8glib/wiki/userreference#drawcircle)
+## u8g.disp:drawCircle()
+See [u8glib drawCircle()](https://github.com/olikraus/u8glib/wiki/userreference#drawcircle).
 
-## [u8g.disp:drawDisc()](https://github.com/olikraus/u8glib/wiki/userreference#drawdisc)
+## u8g.disp:drawDisc()
+See [u8glib drawDisc()](https://github.com/olikraus/u8glib/wiki/userreference#drawdisc).
 
-## [u8g.disp:drawEllipse()](https://github.com/olikraus/u8glib/wiki/userreference#drawellipse)
+## u8g.disp:drawEllipse()
+See [u8glib drawEllipse()](https://github.com/olikraus/u8glib/wiki/userreference#drawellipse).
 
-## [u8g.disp:drawFilledEllipse()](https://github.com/olikraus/u8glib/wiki/userreference#drawfilledellipse)
+## u8g.disp:drawFilledEllipse()
+See [u8glib drawFilledEllipse](https://github.com/olikraus/u8glib/wiki/userreference#drawfilledellipse).
 
-## [u8g.disp:drawFrame()](https://github.com/olikraus/u8glib/wiki/userreference#drawframe)
+## u8g.disp:drawFrame()
+See [u8glib drawFrame()](https://github.com/olikraus/u8glib/wiki/userreference#drawframe).
 
-## [u8g.disp:drawHLine()](https://github.com/olikraus/u8glib/wiki/userreference#drawhline)
+## u8g.disp:drawHLine()
+See [u8glib drawHLine()](https://github.com/olikraus/u8glib/wiki/userreference#drawhline).
 
-## [u8g.disp:drawLine()](https://github.com/olikraus/u8glib/wiki/userreference#drawline)
+## u8g.disp:drawLine()
+See [u8glib drawLine()](https://github.com/olikraus/u8glib/wiki/userreference#drawline).
 
-## [u8g.disp:drawPixel()](https://github.com/olikraus/u8glib/wiki/userreference#drawpixel)
+## u8g.disp:drawPixel()
+See [u8glib drawPixel()](https://github.com/olikraus/u8glib/wiki/userreference#drawpixel).
 
-## [u8g.disp:drawRBox()](https://github.com/olikraus/u8glib/wiki/userreference#drawrbox)
+## u8g.disp:drawRBox()
+See [u8glib drawRBox()](https://github.com/olikraus/u8glib/wiki/userreference#drawrbox).
 
-## [u8g.disp:drawRFrame()](https://github.com/olikraus/u8glib/wiki/userreference#drawrframe)
+## u8g.disp:drawRFrame()
+See [u8glib drawRFrame()](https://github.com/olikraus/u8glib/wiki/userreference#drawrframe).
 
-## [u8g.disp:drawStr()](https://github.com/olikraus/u8glib/wiki/userreference#drawstr)
+## u8g.disp:drawStr()
+See [u8glib drawStr()](https://github.com/olikraus/u8glib/wiki/userreference#drawstr).
 
-## [u8g.disp:drawStr90()](https://github.com/olikraus/u8glib/wiki/userreference#drawstr90)
+## u8g.disp:drawStr90()
+See [u8glib drawStr90](https://github.com/olikraus/u8glib/wiki/userreference#drawstr90).
 
-## [u8g.disp:drawStr180()](https://github.com/olikraus/u8glib/wiki/userreference#drawstr180)
+## u8g.disp:drawStr180()
+See [u8glib drawStr180()](https://github.com/olikraus/u8glib/wiki/userreference#drawstr180).
 
-## [u8g.disp:drawStr270()](https://github.com/olikraus/u8glib/wiki/userreference#drawstr270)
+## u8g.disp:drawStr270()
+See [u8glib drawStr270()](https://github.com/olikraus/u8glib/wiki/userreference#drawstr270).
 
-## [u8g.disp:drawTriangle()](https://github.com/olikraus/u8glib/wiki/userreference#drawtriangle)
+## u8g.disp:drawTriangle()
+See [u8glib drawTriangle()](https://github.com/olikraus/u8glib/wiki/userreference#drawtriangle).
 
-## [u8g.disp:drawVLine()](https://github.com/olikraus/u8glib/wiki/userreference#drawvline)
+## u8g.disp:drawVLine()
+See [u8glib drawVLine()](https://github.com/olikraus/u8glib/wiki/userreference#drawvline).
 
 ## u8g.disp:drawXBM()
 Draw a XBM Bitmap. Position (x,y) is the upper left corner of the bitmap.
@@ -284,30 +304,44 @@ Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This
 - [lua_examples/u8glib/u8g_bitmaps.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_bitmaps.lua)
 - [u8g.disp:drawBitmap()](#u8gdispdrawbitmap)
 
-## [u8g.disp:firstPage()](https://github.com/olikraus/u8glib/wiki/userreference#firstpage)
-## [u8g.disp:getColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#getcolorindex)
+## u8g.disp:firstPage()
+See [u8glib firstPage()](https://github.com/olikraus/u8glib/wiki/userreference#firstpage).
 
-## [u8g.disp:getFontAscent()](https://github.com/olikraus/u8glib/wiki/userreference#getfontascent)
+## u8g.disp:getColorIndex()
+See [u8glib getColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#getcolorindex).
 
-## [u8g.disp:getFontDescent()](https://github.com/olikraus/u8glib/wiki/userreference#getfontdescent)
+## u8g.disp:getFontAscent()
+See [u8glib getFontAscent()](https://github.com/olikraus/u8glib/wiki/userreference#getfontascent).
 
-## [u8g.disp:getFontLineSpacing()](https://github.com/olikraus/u8glib/wiki/userreference#getfontlinespacing)
+## u8g.disp:getFontDescent()
+See [u8glib getFontDescent()](https://github.com/olikraus/u8glib/wiki/userreference#getfontdescent).
 
-## [u8g.disp:getHeight()](https://github.com/olikraus/u8glib/wiki/userreference#getheight)
+## u8g.disp:getFontLineSpacing()
+See [u8glib getFontLineSpacing()](https://github.com/olikraus/u8glib/wiki/userreference#getfontlinespacing).
 
-## [u8g.disp:getMode()](https://github.com/olikraus/u8glib/wiki/userreference#getmode)
+## u8g.disp:getHeight()
+See [u8glib getHeight()](https://github.com/olikraus/u8glib/wiki/userreference#getheight).
 
-## [u8g.disp:getWidth()](https://github.com/olikraus/u8glib/wiki/userreference#getwidth)
+## u8g.disp:getMode()
+See [u8glib getMode()](https://github.com/olikraus/u8glib/wiki/userreference#getmode).
 
-## [u8g.disp:getStrWidth()](https://github.com/olikraus/u8glib/wiki/userreference#getstrwidth)
+## u8g.disp:getWidth()
+See [u8glib getWidth()](https://github.com/olikraus/u8glib/wiki/userreference#getwidth).
 
-## [u8g.disp:nextPage()](https://github.com/olikraus/u8glib/wiki/userreference#nextpage)
+## u8g.disp:getStrWidth()
+See [u8glib getStrWidth](https://github.com/olikraus/u8glib/wiki/userreference#getstrwidth).
 
-## [u8g.disp:setColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#setcolortndex)
+## u8g.disp:nextPage()
+See [u8glib nextPage()(https://github.com/olikraus/u8glib/wiki/userreference#nextpage).
 
-## [u8g.disp:setDefaultBackgroundColor()](https://github.com/olikraus/u8glib/wiki/userreference#setdefaultbackgroundcolor)
+## u8g.disp:setColorIndex()
+See [u8glib setColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#setcolortndex).
 
-## [u8g.disp:setDefaultForegroundColor()](https://github.com/olikraus/u8glib/wiki/userreference#setdefaultforegroundcolor)
+## u8g.disp:setDefaultBackgroundColor()
+See [u8glib setDefaultBackgroundColor()](https://github.com/olikraus/u8glib/wiki/userreference#setdefaultbackgroundcolor).
+
+## u8g.disp:setDefaultForegroundColor()
+See [u8glib setDefaultForegroundColor()](https://github.com/olikraus/u8glib/wiki/userreference#setdefaultforegroundcolor).
 
 ## u8g.disp:setFont()
 u8glib comes with a wide range of fonts for small displays.
@@ -336,37 +370,53 @@ disp:setFont(u8g.font_6x10)
 #### See also
 - [u8glib setFont()](https://github.com/olikraus/u8glib/wiki/userreference#setfont)
 
-## [u8g.disp:setFontLineSpacingFactor()](https://github.com/olikraus/u8glib/wiki/userreference#setfontlinespacingfactor)
+## u8g.disp:setFontLineSpacingFactor()
+See [u8glib setFontLineSpacingFactor()](https://github.com/olikraus/u8glib/wiki/userreference#setfontlinespacingfactor).
 
-## [u8g.disp:setFontPosBaseline()](https://github.com/olikraus/u8glib/wiki/userreference#setfontposbaseline)
+## u8g.disp:setFontPosBaseline()
+See [u8glib setFontPosBaseline()](https://github.com/olikraus/u8glib/wiki/userreference#setfontposbaseline).
 
-## [u8g.disp:setFontPosBottom()](https://github.com/olikraus/u8glib/wiki/userreference#setfontposbottom)
+## u8g.disp:setFontPosBottom()
+See [u8glib setFontPosBottom()](https://github.com/olikraus/u8glib/wiki/userreference#setfontposbottom).
 
-## [u8g.disp:setFontPosCenter()](https://github.com/olikraus/u8glib/wiki/userreference#setfontposcenter)
+## u8g.disp:setFontPosCenter()
+See [u8glib setFontPosCenter()](https://github.com/olikraus/u8glib/wiki/userreference#setfontposcenter).
 
-## [u8g.disp:setFontPosTop()](https://github.com/olikraus/u8glib/wiki/userreference#setfontpostop)
+## u8g.disp:setFontPosTop()
+See [u8glib setFontPosTop()](https://github.com/olikraus/u8glib/wiki/userreference#setfontpostop).
 
-## [u8g.disp:setFontRefHeightAll()](https://github.com/olikraus/u8glib/wiki/userreference#setfontrefheightall)
+## u8g.disp:setFontRefHeightAll()
+See [u8glib setFontRefHeightAll()](https://github.com/olikraus/u8glib/wiki/userreference#setfontrefheightall).
 
-## [u8g.disp:setFontRefHeightExtendedText()](https://github.com/olikraus/u8glib/wiki/userreference#setfontrefheightextendedtext)
+## u8g.disp:setFontRefHeightExtendedText()
+See [u8glib setFontRefHeightExtendedText()](https://github.com/olikraus/u8glib/wiki/userreference#setfontrefheightextendedtext).
 
-## [u8g.disp:setFontRefHeightText()](https://github.com/olikraus/u8glib/wiki/userreference#setfontrefheighttext)
+## u8g.disp:setFontRefHeightText()
+See [u8glib setFontRefHeightText()](https://github.com/olikraus/u8glib/wiki/userreference#setfontrefheighttext).
 
-## [u8g.disp:setRot90()](https://github.com/olikraus/u8glib/wiki/userreference#setrot90)
+## u8g.disp:setRot90()
+See [u8glib setRot90()](https://github.com/olikraus/u8glib/wiki/userreference#setrot90).
 
-## [u8g.disp:setRot180()](https://github.com/olikraus/u8glib/wiki/userreference#setrot180)
+## u8g.disp:setRot180()
+See [u8glib setRot180()](https://github.com/olikraus/u8glib/wiki/userreference#setrot180).
 
-## [u8g.disp:setRot270()](https://github.com/olikraus/u8glib/wiki/userreference#setrot270)
+## u8g.disp:setRot270()
+See [u8glib setRot270()](https://github.com/olikraus/u8glib/wiki/userreference#setrot270).
 
-## [u8g.disp:setScale2x2()](https://github.com/olikraus/u8glib/wiki/userreference#setscale2x2)
+## u8g.disp:setScale2x2()
+See [u8glib setScale2x2()](https://github.com/olikraus/u8glib/wiki/userreference#setscale2x2).
 
-## [u8g.disp:sleepOn()](https://github.com/olikraus/u8glib/wiki/userreference#sleepon)
+## u8g.disp:sleepOn()
+See [u8glib sleepOn()](https://github.com/olikraus/u8glib/wiki/userreference#sleepon).
 
-## [u8g.disp:sleepOff()](https://github.com/olikraus/u8glib/wiki/userreference#sleepoff)
+## u8g.disp:sleepOff()
+See [u8glib sleepOff()](https://github.com/olikraus/u8glib/wiki/userreference#sleepoff).
 
-## [u8g.disp:undoRotation()](https://github.com/olikraus/u8glib/wiki/userreference#undorotation)
+## u8g.disp:undoRotation()
+See [u8glib undoRotation()](https://github.com/olikraus/u8glib/wiki/userreference#undorotation).
 
-## [u8g.disp:undoScale()](https://github.com/olikraus/u8glib/wiki/userreference#undoscale)
+## u8g.disp:undoScale()
+See [u8glib undoScale()](https://github.com/olikraus/u8glib/wiki/userreference#undoscale).
 
 ## Unimplemented Functions
 - Cursor handling

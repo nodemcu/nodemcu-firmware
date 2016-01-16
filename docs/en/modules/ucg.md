@@ -108,59 +108,86 @@ disp = ucg.st7735_18x128x160_hw_spi(cs, dc, res)
 
 # ucg.disp Sub-Module
 
-## [ucg.disp:begin()](https://github.com/olikraus/ucglib/wiki/reference#begin)
+## ucg.disp:begin()
+See [ucglib begin()](https://github.com/olikraus/ucglib/wiki/reference#begin).
 
-## [ucg.disp:clearScreen()](https://github.com/olikraus/ucglib/wiki/reference#clearscreen)
+## ucg.disp:clearScreen()
+See [ucglib clearScreen()](https://github.com/olikraus/ucglib/wiki/reference#clearscreen).
 
-## [ucg.disp:draw90Line()](https://github.com/olikraus/ucglib/wiki/reference#draw90line)
+## ucg.disp:draw90Line()
+See [ucglib draw90Line()](https://github.com/olikraus/ucglib/wiki/reference#draw90line).
 
-## [ucg.disp:drawBox()](https://github.com/olikraus/ucglib/wiki/reference#drawbox)
+## ucg.disp:drawBox()
+See [ucglib drawBox()](https://github.com/olikraus/ucglib/wiki/reference#drawbox).
 
-## [ucg.disp:drawCircle()](https://github.com/olikraus/ucglib/wiki/reference#drawcircle)
+## ucg.disp:drawCircle()
+See [ucglib drawCircle()](https://github.com/olikraus/ucglib/wiki/reference#drawcircle).
 
-## [ucg.disp:drawDisc()](https://github.com/olikraus/ucglib/wiki/reference#drawdisc)
+## ucg.disp:drawDisc()
+See [ucglib drawDisc()](https://github.com/olikraus/ucglib/wiki/reference#drawdisc).
 
-## [ucg.disp:drawFrame()](https://github.com/olikraus/ucglib/wiki/reference#drawframe)
+## ucg.disp:drawFrame()
+See [ucglib drawFrame()](https://github.com/olikraus/ucglib/wiki/reference#drawframe).
 
-## [ucg.disp:drawGlyph()](https://github.com/olikraus/ucglib/wiki/reference#drawglyph)
+## ucg.disp:drawGlyph()
+See [ucglib drawGlyph()](https://github.com/olikraus/ucglib/wiki/reference#drawglyph).
 
-## [ucg.disp:drawGradientBox()](https://github.com/olikraus/ucglib/wiki/reference#drawgradientbox)
+## ucg.disp:drawGradientBox()
+See [ucglib drawGradientBox()](https://github.com/olikraus/ucglib/wiki/reference#drawgradientbox).
 
-## [ucg.disp:drawGradientLine()](https://github.com/olikraus/ucglib/wiki/reference#drawgradientline)
+## ucg.disp:drawGradientLine()
+See [ucglib drawGradientLine()](https://github.com/olikraus/ucglib/wiki/reference#drawgradientline).
 
-## [ucg.disp:drawHLine()](https://github.com/olikraus/ucglib/wiki/reference#drawhline)
+## ucg.disp:drawHLine()
+See [ucglib drawHLine()](https://github.com/olikraus/ucglib/wiki/reference#drawhline).
 
-## [ucg.disp:drawLine()](https://github.com/olikraus/ucglib/wiki/reference#drawline)
+## ucg.disp:drawLine()
+See [ucglib drawLine()](https://github.com/olikraus/ucglib/wiki/reference#drawline).
 
-## [ucg.disp:drawPixel()](https://github.com/olikraus/ucglib/wiki/reference#drawpixel)
+## ucg.disp:drawPixel()
+See [ucglib drawPixel()](https://github.com/olikraus/ucglib/wiki/reference#drawpixel).
 
-## [ucg.disp:drawRBox()](https://github.com/olikraus/ucglib/wiki/reference#drawrbox)
+## ucg.disp:drawRBox()
+See [ucglib drawRBox()](https://github.com/olikraus/ucglib/wiki/reference#drawrbox).
 
-## [ucg.disp:drawRFrame()](https://github.com/olikraus/ucglib/wiki/reference#drawrframe)
+## ucg.disp:drawRFrame()
+See [ucglib drawRFrame()](https://github.com/olikraus/ucglib/wiki/reference#drawrframe).
 
-## [ucg.disp:drawString()](https://github.com/olikraus/ucglib/wiki/reference#drawstring)
+## ucg.disp:drawString()
+See [ucglib drawString()](https://github.com/olikraus/ucglib/wiki/reference#drawstring).
 
-## [ucg.disp:drawTetragon()](https://github.com/olikraus/ucglib/wiki/reference#drawtetragon)
+## ucg.disp:drawTetragon()
+See [ucglib drawTetragon()](https://github.com/olikraus/ucglib/wiki/reference#drawtetragon).
 
-## [ucg.disp:drawTriangle()](https://github.com/olikraus/ucglib/wiki/reference#drawrtiangle)
+## ucg.disp:drawTriangle()
+See [ucglib drawTriangle()](https://github.com/olikraus/ucglib/wiki/reference#drawrtiangle).
 
-## [ucg.disp:drawVLine()](https://github.com/olikraus/ucglib/wiki/reference#drawvline)
+## ucg.disp:drawVLine()
+See [ucglib drawVline()](https://github.com/olikraus/ucglib/wiki/reference#drawvline).
 
-## [ucg.disp:getFontAscent()](https://github.com/olikraus/ucglib/wiki/reference#getfontascent)
+## ucg.disp:getFontAscent()
+See [ucglib getFontAscent()](https://github.com/olikraus/ucglib/wiki/reference#getfontascent).
 
-## [ucg.disp:getFontDescent()](https://github.com/olikraus/ucglib/wiki/reference#getfontdescent)
+## ucg.disp:getFontDescent()
+See [ucglib getFontDescent()](https://github.com/olikraus/ucglib/wiki/reference#getfontdescent).
 
-## [ucg.disp:getHeight()](https://github.com/olikraus/ucglib/wiki/reference#getheight)
+## ucg.disp:getHeight()
+See [ucglib getHeight()](https://github.com/olikraus/ucglib/wiki/reference#getheight).
 
-## [ucg.disp:getStrWidth()](https://github.com/olikraus/ucglib/wiki/reference#getstrwidth)
+## ucg.disp:getStrWidth()
+See [ucglib getStrWidth()](https://github.com/olikraus/ucglib/wiki/reference#getstrwidth).
 
-## [ucg.disp:getWidth()](https://github.com/olikraus/ucglib/wiki/reference#getwidth)
+## ucg.disp:getWidth()
+See [ucglib getWidth()](https://github.com/olikraus/ucglib/wiki/reference#getwidth).
 
-## [ucg.disp:print()](https://github.com/olikraus/ucglib/wiki/reference#print)
+## ucg.disp:print()
+See [ucglib print()](https://github.com/olikraus/ucglib/wiki/reference#print).
 
-## [ucg.disp:setClipRange()](https://github.com/olikraus/ucglib/wiki/reference#setcliprange)
+## ucg.disp:setClipRange()
+See [ucglib setClipRange()](https://github.com/olikraus/ucglib/wiki/reference#setcliprange).
 
-## [ucg.disp:setColor()](https://github.com/olikraus/ucglib/wiki/reference#setcolor)
+## ucg.disp:setColor()
+See [ucglib setColor()](https://github.com/olikraus/ucglib/wiki/reference#setcolor).
 
 ## ucg.disp:setFont()
 ucglib comes with a wide range of fonts for small displays. Since they need to be compiled into the firmware image, you'd need to include them in [app/include/ucg_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/ucg_config.h) and recompile. Simply add the desired fonts to the font table:
@@ -191,32 +218,47 @@ disp:setFont(ucg.font_7x13B_tr)
 #### See also
 [ucglib setFont()](https://github.com/olikraus/ucglib/wiki/reference#setfont)
 
-## [ucg.disp:setFontMode()](https://github.com/olikraus/ucglib/wiki/reference#setfontmode)
+## ucg.disp:setFontMode()
+See [ucglib setFontMode()](https://github.com/olikraus/ucglib/wiki/reference#setfontmode).
 
-## [ucg.disp:setFontPosBaseline()](https://github.com/olikraus/ucglib/wiki/reference#setfontposbaseline)
+## ucg.disp:setFontPosBaseline()
+See [ucglib setFontPosBaseline()](https://github.com/olikraus/ucglib/wiki/reference#setfontposbaseline).
 
-## [ucg.disp:setFontPosBottom()](https://github.com/olikraus/ucglib/wiki/reference#setfontposbottom)
+## ucg.disp:setFontPosBottom()
+See [ucglib setFontPosBottom()](https://github.com/olikraus/ucglib/wiki/reference#setfontposbottom).
 
-## [ucg.disp:setFontPosCenter()](https://github.com/olikraus/ucglib/wiki/reference#setfontposcenter)
+## ucg.disp:setFontPosCenter()
+See [ucglib setFontPosCenter()](https://github.com/olikraus/ucglib/wiki/reference#setfontposcenter).
 
-## [ucg.disp:setFontPosTop()](https://github.com/olikraus/ucglib/wiki/reference#setfontpostop)
+## ucg.disp:setFontPosTop()
+See [ucglib setFontPosTop()](https://github.com/olikraus/ucglib/wiki/reference#setfontpostop).
 
-## [ucg.disp:setMaxClipRange()](https://github.com/olikraus/ucglib/wiki/reference#setmaxcliprange)
+## ucg.disp:setMaxClipRange()
+See [ucglib setMaxClipRange()](https://github.com/olikraus/ucglib/wiki/reference#setmaxcliprange).
 
-## [ucg.disp:setPrintDir()](https://github.com/olikraus/ucglib/wiki/reference#setprintdir)
+## ucg.disp:setPrintDir()
+See [ucglib setPrintDir()](https://github.com/olikraus/ucglib/wiki/reference#setprintdir).
 
-## [ucg.disp:setPrintPos()](https://github.com/olikraus/ucglib/wiki/reference#setprintpos)
+## ucg.disp:setPrintPos()
+See [ucglib setPrintPos()](https://github.com/olikraus/ucglib/wiki/reference#setprintpos).
 
-## [ucg.disp:setRotate90()](https://github.com/olikraus/ucglib/wiki/reference#setrotate90)
+## ucg.disp:setRotate90()
+See [ucglib setRotate90()](https://github.com/olikraus/ucglib/wiki/reference#setrotate90).
 
-## [ucg.disp:setRotate180()](https://github.com/olikraus/ucglib/wiki/reference#setrotate180)
+## ucg.disp:setRotate180()
+See [ucglib setRotate180()](https://github.com/olikraus/ucglib/wiki/reference#setrotate180).
 
-## [ucg.disp:setRotate270()](https://github.com/olikraus/ucglib/wiki/reference#setrotate270)
+## ucg.disp:setRotate270()
+See [ucglib setRotate270()](https://github.com/olikraus/ucglib/wiki/reference#setrotate270).
 
-## [ucg.disp:setScale2x2()](https://github.com/olikraus/ucglib/wiki/reference#setscale2x2)
+## ucg.disp:setScale2x2()
+See [ucglib setScale2x2()](https://github.com/olikraus/ucglib/wiki/reference#setscale2x2).
 
-## [ucg.disp:undoClipRange()](https://github.com/olikraus/ucglib/wiki/reference#undocliprange)
+## ucg.disp:undoClipRange()
+See [ucglib undoClipRange()](https://github.com/olikraus/ucglib/wiki/reference#undocliprange).
 
-## [ucg.disp:undoRotate()](https://github.com/olikraus/ucglib/wiki/reference#undorotate)
+## ucg.disp:undoRotate()
+See [ucglib undoRotate()](https://github.com/olikraus/ucglib/wiki/reference#undorotate).
 
-## [ucg.disp:undoScale()](https://github.com/olikraus/ucglib/wiki/reference#undoscale)
+## ucg.disp:undoScale()
+See [ucglib undoScale()](https://github.com/olikraus/ucglib/wiki/reference#undoscale).
