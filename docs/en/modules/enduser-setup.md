@@ -1,7 +1,7 @@
 # enduser setup Module
 This module provides a simple way of configuring ESP8266 chips without using a serial interface or pre-programming WiFi credentials onto the chip.
 
-![](https://github.com/robertfoss/esp8266_nodemcu_wifi_setup/blob/images/screenshot.png?raw=true)
+![enduser setup config dialog](../../img/enduser-setup.jpg "enduser setup config dialog")
 
 After running [`enduser_setup.start()`](#enduser_setupstart) a portal like the above can be accessed through a wireless network called SetupGadget_XXXXXX. The portal is used to submit the credentials for the WiFi of the enduser.
 After an IP address has been successfully obtained this module will stop as if [`enduser_setup.stop()`](#enduser_setupstop) had been called.

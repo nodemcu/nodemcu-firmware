@@ -2,7 +2,7 @@
 
 **# # # Work in Progress # # #**
 
-*I have started a thread on the ESP8266 forum, [Discussions on my NodeMCU Lua unofficial FAQ](http://www.esp8266.com/viewtopic.php?f=24&t=3311&p=18770).  Please use this to discuss any issues that you have with this FAQ; any areas where you feel that the explanation is unclear or needs further expansion; or any or Qs that you feel need answering and would help others if they were included here.  Thank-you.  [Terry Ellison](https://github.com/TerryE)*
+*This was started by [Terry Ellison](https://github.com/TerryE) as an unofficial FAQ in mid 2015. It never became officially official and it is in need of an overhaul, see [#937](https://github.com/nodemcu/nodemcu-firmware/issues/937). Yet, it is still very valuable and is, therefore, included here.*
  
 ## What is this FAQ for?
 
