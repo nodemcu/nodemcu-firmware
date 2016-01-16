@@ -1,7 +1,7 @@
 # u8g Module
 U8glib is a graphics library developed at [olikraus/u8glib](https://github.com/olikraus/u8glib) with support for many different displays. The NodeMCU firmware supports a subset of these.
 
-I2C and SPI mode:
+I²C and SPI mode:
 
 - sh1106_128x64
 - ssd1306 - 128x64 and 64x48 variants
@@ -27,8 +27,8 @@ SPI only:
 This integration is based on [v1.18.1](https://github.com/olikraus/U8glib_Arduino/releases/tag/1.18.1).
 
 ## Overview
-### I2C Connection
-Hook up SDA and SCL to any free GPIOs. Eg. [u8g_graphics_test.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_graphics_test.lua) expects SDA=5 (GPIO14) and SCL=6 (GPIO12). They are used to set up nodemcu's I2C driver before accessing the display:
+### I²C Connection
+Hook up SDA and SCL to any free GPIOs. Eg. [u8g_graphics_test.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_graphics_test.lua) expects SDA=5 (GPIO14) and SCL=6 (GPIO12). They are used to set up nodemcu's I²C driver before accessing the display:
 ```lua
 sda = 5
 scl = 6
@@ -55,7 +55,7 @@ spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 ### Library Usage
 The Lua bindings for this library closely follow u8glib's object oriented C++ API. Based on the u8g class, you create an object for your display type.
 
-SSD1306 via I2C:
+SSD1306 via I²C:
 ```lua
 sla = 0x3c
 disp = u8g.ssd1306_128x64_i2c(sla)
@@ -72,7 +72,7 @@ disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 This object provides all of u8glib's methods to control the display. Again, refer to [u8g_graphics_test.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_graphics_test.lua) to get an impression how this is achieved with Lua code. Visit the [u8glib homepage](https://github.com/olikraus/u8glib) for technical details.
 
 ### Displays
-I2C and HW SPI based displays with support in u8glib can be enabled. To get access to the respective constructors, add the desired entries to the I2C or SPI display tables in [app/include/u8g_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/u8g_config.h):
+I²C and HW SPI based displays with support in u8glib can be enabled. To get access to the respective constructors, add the desired entries to the I²C or SPI display tables in [app/include/u8g_config.h](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/include/u8g_config.h):
 ```c
 #define U8G_DISPLAY_TABLE_I2C                   \
     U8G_DISPLAY_TABLE_ENTRY(ssd1306_128x64_i2c) \
@@ -97,8 +97,8 @@ They'll become available as `u8g.<font_name>` in Lua.
 Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This off-loads all data handling from the u8g module to generic methods for binary files. See [u8g_bitmaps.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/u8glib/u8g_bitmaps.lua).
 In contrast to the source code based inclusion of XBMs into u8glib, it's required to provide precompiled binary files. This can be performed online with [Online-Utility's Image Converter](http://www.online-utility.org/image_converter.jsp): Convert from XBM to MONO format and upload the binary result with [nodemcu-uploader.py](https://github.com/kmpm/nodemcu-uploader).
 
-## I2C Display Drivers
-Initialize a display via I2C.
+## I²C Display Drivers
+Initialize a display via I²C.
 
 - `u8g.sh1106_128x64_i2c()`
 - `u8g.ssd1306_128x64_i2c()`
@@ -112,7 +112,7 @@ Initialize a display via I2C.
 `u8g.ssd1306_128x64_i2c(address)`
 
 ####Parameters
-`address` I2C slave address of display
+`address` I²C slave address of display
 
 ####Returns
 u8g display object
@@ -190,7 +190,7 @@ disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 ```
 
 #### See also
-[I2C Display Drivers](#i2c-display-drivers)
+[I²C Display Drivers](#i2c-display-drivers)
 
 ___
 
