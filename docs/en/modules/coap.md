@@ -5,10 +5,11 @@ The basic endpoint server part is based on [microcoap](https://github.com/1248/m
 This Module implement both Client and Server side. GET/PUT/POST/DELETE is partially supported by Client. Server can regist Lua function and varibles. No Observe or Discover supported right now.
 
 ## Caution
-CoAP Module is only in the very ealy stage and no complete right now.
+CoAP Module is only in the very early stage and not complete right now.
 
 ## Constants
 `coap.CON`, `coap.NON` is the request type.
+
 `coap.TEXT_PLAIN`, `coap.LINKFORMAT`, `coap.XML`, `coap.OCTET_STREAM`, `coap.EXI`, `coap.JSON` is the content type.
 
 ## coap.Client()
@@ -81,7 +82,7 @@ Issue a GET request to the server.
 #### Parameters
 - `type` coap.CON, coap.NON, default to CON. when type is CON, and request failed, the request will retry another 4 times before giving up.
 - `uri` the uri such as coap://192.168.18.103:5683/v1/v/myvar, only IP is supported.
-- `payload` optinal, the payload will be put in the payload section of the request.
+- `payload` optional, the payload will be put in the payload section of the request.
 
 #### Returns
 `nil`
@@ -96,7 +97,7 @@ Issue a PUT request to the server.
 #### Parameters
 - `type` coap.CON, coap.NON, default to CON. when type is CON, and request failed, the request will retry another 4 times before giving up.
 - `uri` the uri such as coap://192.168.18.103:5683/v1/v/myvar, only IP is supported.
-- `payload` optinal, the payload will be put in the payload section of the request.
+- `payload` optional, the payload will be put in the payload section of the request.
 
 #### Returns
 `nil`
@@ -111,7 +112,7 @@ Issue a POST request to the server.
 #### Parameters
 - `type` coap.CON, coap.NON, default to CON. when type is CON, and request failed, the request will retry another 4 times before giving up.
 - `uri` the uri such as coap://192.168.18.103:5683/v1/v/myvar, only IP is supported.
-- `payload` optinal, the payload will be put in the payload section of the request.
+- `payload` optional, the payload will be put in the payload section of the request.
 
 #### Returns
 `nil`
@@ -126,7 +127,7 @@ Issue a DELETE request to the server.
 #### Parameters
 - `type` coap.CON, coap.NON, default to CON. when type is CON, and request failed, the request will retry another 4 times before giving up.
 - `uri` the uri such as coap://192.168.18.103:5683/v1/v/myvar, only IP is supported.
-- `payload` optinal, the payload will be put in the payload section of the request.
+- `payload` optional, the payload will be put in the payload section of the request.
 
 #### Returns
 `nil`
@@ -144,7 +145,7 @@ Start the CoAP server on the given port.
 
 #### Parameters
 - `port` server port (number).
-- `ip` optinal.
+- `ip` optional.
 
 #### Returns
 `nil`
@@ -171,7 +172,7 @@ Regist a Lua variable as an endpoint in the server. the varible value then can b
 
 #### Parameters
 - `name` the Lua variable's name.
-- `content_type` optinal, default to coap.TEXT_PLAIN, see [Content Negotiation](http://tools.ietf.org/html/rfc7252#section-5.5.4)
+- `content_type` optional, default to coap.TEXT_PLAIN, see [Content Negotiation](http://tools.ietf.org/html/rfc7252#section-5.5.4)
 
 #### Returns
 `nil`
@@ -203,7 +204,7 @@ When the client issue
 
 #### Parameters
 - `name` the Lua function's name.
-- `content_type` optinal, default to coap.TEXT_PLAIN, see [Content Negotiation](http://tools.ietf.org/html/rfc7252#section-5.5.4)
+- `content_type` optional, default to coap.TEXT_PLAIN, see [Content Negotiation](http://tools.ietf.org/html/rfc7252#section-5.5.4)
 
 #### Returns
 `nil`
