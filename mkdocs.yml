@@ -33,6 +33,7 @@ pages:
         - 'bit': 'en/modules/bit.md'
         - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
+        - 'coap': 'en/modules/coap.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'dht': 'en/modules/dht.md'
         - 'enduser setup': 'en/modules/enduser-setup.md'
