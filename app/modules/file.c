@@ -175,7 +175,7 @@ static int file_rename( lua_State* L )
 // Lua: fsinfo()
 static int file_fsinfo( lua_State* L )
 {
-  uint32_t total, used;
+  u32_t total, used;
   SPIFFS_info(&fs, &total, &used);
   NODE_DBG("total: %d, used:%d\n", total, used);
   if(total>0x7FFFFFFF || used>0x7FFFFFFF || used > total)

@@ -39,7 +39,8 @@ static int node_restart( lua_State* L )
 // Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
-  s32 us, option;
+  uint32 us;
+  uint8 option;
   //us = luaL_checkinteger( L, 1 );
   // Set deleep option, skip if nil
   if ( lua_isnumber(L, 2) )
@@ -53,7 +54,7 @@ static int node_deepsleep( lua_State* L )
   // Set deleep time, skip if nil
   if ( lua_isnumber(L, 1) )
   {
-    us = lua_tointeger(L, 1);
+    us = luaL_checknumber(L, 1);
     // if ( us <= 0 )
     if ( us < 0 )
       return luaL_error( L, "wrong arg range" );
@@ -468,11 +469,19 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
-// Lua: code = bootreason()
+// Lua: code, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ] = bootreason()
 static int node_bootreason (lua_State *L)
 {
-  lua_pushnumber (L, rtc_get_reset_reason ());
-  return 1;
+  const struct rst_info *ri = system_get_rst_info ();
+  uint32_t arr[8] = {
+    rtc_get_reset_reason(),
+    ri->reason,
+    ri->exccause, ri->epc1, ri->epc2, ri->epc3, ri->excvaddr, ri->depc
+  };
+  int i, n = ((ri->reason != REASON_EXCEPTION_RST) ? 2 : 8);
+  for (i = 0; i < n; ++i)
+    lua_pushinteger (L, arr[i]);
+  return n;
 }
 
 // Lua: restore()

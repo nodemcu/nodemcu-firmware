@@ -1,10 +1,10 @@
-# **NodeMCU 1.4.0** #
+# **NodeMCU 1.5.1** #
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
 
 ###A lua based firmware for wifi-soc esp8266
-  - Build on [ESP8266 NONOS SDK 1.4.0](http://bbs.espressif.com/viewtopic.php?f=46&t=1124)
+  - Build on [ESP8266 NONOS SDK 1.5.1](http://bbs.espressif.com/viewtopic.php?f=46&p=5315)
   - Lua core based on [eLua project](http://www.eluaproject.net/)
   - cjson based on [lua-cjson](https://github.com/mpx/lua-cjson)
   - File system based on [spiffs](https://github.com/pellepl/spiffs)
@@ -289,6 +289,7 @@ Comment-out the #define statement for unused modules. Example:
 // #define LUA_USE_MODULES_BMP085
 #define LUA_USE_MODULES_TSL2561
 // #define LUA_USE_MODULES_HX711
+#define LUA_USE_MODULES_HTTP
 
 #endif /* LUA_USE_MODULES */
 ```
@@ -298,7 +299,7 @@ Comment-out the #define statement for unused modules. Example:
 Identify your firmware builds by editing `app/include/user_version.h`
 
 ```c
-#define NODE_VERSION    "NodeMCU 1.4.0+myname"
+#define NODE_VERSION    "NodeMCU 1.5.1+myname"
 #ifndef BUILD_DATE
 #define BUILD_DATE        "YYYYMMDD"
 #endif
@@ -348,7 +349,7 @@ enable flashing yourself by pulling GPIO0 low or pressing a "flash" switch.
 
 ## Files to burn to the flash
 
-If you got your firmware from [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) then you can flash that file directly to address 0x00000.
+If you got your firmware from [NodeMCU custom builds](http://nodemcu-build.com) then you can flash that file directly to address 0x00000.
 
 Otherwise, if you built your own firmware from source code:
   - bin/0x00000.bin to 0x00000
@@ -367,7 +368,7 @@ If the device panics and resets at any time, errors will be written to the seria
 
 # User Interface tools
 
-## Esplorer
+## ESPlorer
 
 Victor Brutskiy's [ESPlorer](https://github.com/4refr0nt/ESPlorer) is written in Java, is open source and runs on most platforms such as Linux, Windows, Mac OS, etc.
 
@@ -444,7 +445,7 @@ i2c.setup(0, sda, scl, i2c.SLOW)
 ```
 
 #####SPI connection
-The HSPI module is used, so certain pins are fixed:
+The HSPI module is used ([more information](http://d.av.id.au/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13
 * HSPI MISO = GPIO12 (not used)
@@ -527,7 +528,7 @@ Ucglib is a graphics library with support for color TFT displays.
 Ucglib v1.3.3
 
 #####SPI connection
-The HSPI module is used, so certain pins are fixed:
+The HSPI module is used ([more information](http://d.av.id.au/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13
 * HSPI MISO = GPIO12 (not used)
@@ -626,6 +627,47 @@ value = cjson.decode(json_text)
 value = { true, { foo = "bar" } }
 json_text = cjson.encode(value)
 -- Returns: '[true,{"foo":"bar"}]'
+```
+
+####HTTP client
+```lua
+-- Support HTTP and HTTPS, For example
+-- HTTP POST Example with JSON header and body
+http.post("http://somewhere.acceptjson.com/",
+           "Content-Type: application/json\r\n", 
+           "{\"hello\":\"world\"}", 
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- HTTPS GET Example with NULL header
+http.get("https://www.vowstar.com/nodemcu/","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- You will get
+-- > 200 
+-- hello nodemcu
+-- HTTPS DELETE Example with NULL header and body
+http.delete("https://10.0.0.2:443","","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- HTTPS PUT Example with NULL header and body
+http.put("https://testput.somewhere/somewhereyouput.php","","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+-- HTTP RAW Request Example, use more HTTP/HTTPS request method
+http.request("http://www.apple.com:80/library/test/success.html","GET","","",
+            function(code, data) 
+                print(code) 
+                print(data) 
+            end)
+
 ```
 
 ####Read an HX711 load cell ADC.

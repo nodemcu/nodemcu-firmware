@@ -123,16 +123,6 @@ SECTIONS
   {
     _data_start = ABSOLUTE(.);
     *(.data)
-
-    /* Hook for randomizing TCP start numbers */
-    . = ALIGN(2);
-    _tcp_new_port_port = ABSOLUTE(.);
-    */liblwip.a:tcp.o(.port)
-    /* Verify that the LWIP source has been patched as needed, or fail with
-     * a divide by zero error (../ld/nodemcu.ld:xxx / by zero) */
-    _tcp_new_port_port_size = ABSOLUTE(.) - _tcp_new_port_port;
-    _ensure_tcp_port_randomization_fix_presence = 1 / _tcp_new_port_port_size;
-
     *(.data.*)
     *(.gnu.linkonce.d.*)
     *(.data1)

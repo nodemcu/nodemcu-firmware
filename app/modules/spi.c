@@ -30,10 +30,6 @@ static int spi_setup( lua_State *L )
   if (cpol != PLATFORM_SPI_CPOL_LOW && cpol != PLATFORM_SPI_CPOL_HIGH) {
     return luaL_error( L, "wrong arg type" );
   }
-  // CPOL_HIGH is not implemented, see app/driver/spi.c spi_master_init()
-  if (cpol == PLATFORM_SPI_CPOL_HIGH) {
-    return luaL_error( L, "cpol=high is not implemented" );
-  }
 
   if (cpha != PLATFORM_SPI_CPHA_LOW && cpha != PLATFORM_SPI_CPHA_HIGH) {
     return luaL_error( L, "wrong arg type" );

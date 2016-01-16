@@ -87,14 +87,12 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 
 	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER|SPI_DOUTDIN);
 
-	//set clock polarity
-	// TODO: This doesn't work
-	//if (cpol == 1) {
-	//    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_HIGH_MODE<<SPI_CK_OUT_HIGH_MODE_S));
-	//} else {
-	//    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_LOW_MODE<<SPI_CK_OUT_LOW_MODE_S));
-	//}
-	//os_printf("SPI_CTRL2 is %08x\n",READ_PERI_REG(SPI_CTRL2(spi_no)));
+	//set clock polarity (Reference: http://bbs.espressif.com/viewtopic.php?f=49&t=1570)
+	if (cpol == 1) {
+		SET_PERI_REG_MASK(SPI_PIN(spi_no), SPI_IDLE_EDGE);
+	} else {
+		CLEAR_PERI_REG_MASK(SPI_PIN(spi_no), SPI_IDLE_EDGE);
+	}
 
 	//set clock phase
 	if (cpha == 1) {
