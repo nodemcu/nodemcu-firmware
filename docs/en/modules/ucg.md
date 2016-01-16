@@ -101,6 +101,8 @@ disp = ucg.st7735_18x128x160_hw_spi(cs, dc, res)
 ```
 
 ## Constants
+Constants for various functions.
+
 `ucg.FONT_MODE_TRANSPARENT`, `ucg.FONT_MODE_SOLID`, `ucg.DRAW_UPPER_RIGHT`,
 `ucg.DRAW_UPPER_LEFT`, `ucg.DRAW_LOWER_RIGHT`, `ucg.DRAW_LOWER_LEFT`, `ucg.DRAW_ALL`
 
