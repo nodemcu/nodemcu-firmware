@@ -13,6 +13,9 @@ ul.subnav ul.subnav span {
   padding-left: 1.3em;
 }
 
+body {
+  font-size: 100%;
+}
 p {
   line-height: 20px;
   margin-bottom: 16px;
@@ -29,6 +32,9 @@ h3, h4, h5, h6 {
 code {
   font-size: 85%;
   margin-right: 3px;
+}
+table.docutils td code {
+  font-size: 100%;
 }
 .wy-plain-list-disc, .rst-content .section ul, .rst-content .toctree-wrapper ul, article ul {
   line-height: 20px;
