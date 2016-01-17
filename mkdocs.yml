@@ -46,7 +46,7 @@ pages:
         - 'mqtt': 'en/modules/mqtt.md'
         - 'net': 'en/modules/net.md'
         - 'node': 'en/modules/node.md'
-        - 'ow': 'en/modules/ow.md'
+        - 'ow (1-Wire)': 'en/modules/ow.md'
         - 'pwm' : 'en/modules/pwm.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
