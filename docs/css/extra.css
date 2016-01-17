@@ -1,0 +1,42 @@
+blockquote {
+  padding: 0 15px;
+  color: #777;
+  border-left: 4px solid #ddd;
+}
+
+.rst-content blockquote {
+  margin: 0;
+}
+
+/*shifts the nested subnav label to the left to align it with the regular nav item labels*/
+ul.subnav ul.subnav span {
+  padding-left: 1.3em;
+}
+
+body {
+  font-size: 100%;
+}
+p {
+  line-height: 20px;
+  margin-bottom: 16px;
+}
+h1, h2 {
+  border-bottom: 1px solid #eee;
+  line-height: 1.2;
+  margin-top: 1.2em;
+  margin-bottom: 16px;
+}
+h3, h4, h5, h6 {
+  margin: 1em 0 0.7em 0;
+}
+code {
+  font-size: 85%;
+  margin-right: 3px;
+}
+table.docutils td code {
+  font-size: 100%;
+}
+.wy-plain-list-disc, .rst-content .section ul, .rst-content .toctree-wrapper ul, article ul {
+  line-height: 20px;
+  margin-bottom: 16px;
+}

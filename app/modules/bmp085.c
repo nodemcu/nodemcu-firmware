@@ -74,7 +74,7 @@ static int ICACHE_FLASH_ATTR bmp085_init(lua_State* L) {
     bmp085_data.MC  = r16(bmp085_i2c_id, 0xBC);
     bmp085_data.MD  = r16(bmp085_i2c_id, 0xBE);
 
-    return 1;
+    return 0;
 }
 
 static uint32_t bmp085_temperature_raw_b5(void) {
@@ -128,7 +128,7 @@ static int32_t ICACHE_FLASH_ATTR bmp085_pressure_raw(int oss) {
     p3 = r8u(bmp085_i2c_id, 0xF8);
     p = (p1 << 16) | (p2 << 8) | p3;
     p = p >> (8 - oss);
- 
+
     return p;
 }
 
@@ -159,7 +159,7 @@ static int ICACHE_FLASH_ATTR bmp085_lua_pressure(lua_State* L) {
             oss = 3;
         }
     }
- 
+
     p = bmp085_pressure_raw(oss);
     B5 = bmp085_temperature_raw_b5();
 

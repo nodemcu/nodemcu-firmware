@@ -301,7 +301,7 @@ espconn_udp_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 	if (wifi_get_opmode() != 1) {
 		wifi_get_ip_info(1, &ipconfig);
 
-		if (!ip_addr_netcmp((struct ip_addr *)precv->pespconn->proto.udp->remote_ip, &ipconfig.ip, &ipconfig.netmask)) {
+		if (!ip_addr_netcmp(addr, &ipconfig.ip, &ipconfig.netmask)) {
 			wifi_get_ip_info(0, &ipconfig);
 		}
 	} else {
