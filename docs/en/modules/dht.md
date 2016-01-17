@@ -31,9 +31,9 @@ if status == dht.OK then
     -- Integer firmware using this example
     print(string.format("DHT Temperature:%d.%03d;Humidity:%d.%03d\r\n",
           math.floor(temp),
-          temp_deci,
+          temp_dec,
           math.floor(humi),
-          humi_deci
+          humi_dec
     ))
 
     -- Float firmware using this example
