@@ -84,6 +84,19 @@ Read multi bytes.
 #### Returns
 `string` bytes read from slave device
 
+## ow.reset()
+Perform a 1-Wire reset cycle.
+
+#### Syntax
+`ow.reset(pin)`
+
+#### Parameters
+`pin` 1~12, IO index
+
+#### Returns
+  - `1` if a device responds with a presence pulse.
+  - `0` if there is no device or the bus is shorted or otherwise held low for more than 250 µS.
+
 ## ow.reset_search()
 Clear the search state so that it will start from the beginning again.
 
@@ -192,19 +205,6 @@ Set a pin in onewire mode.
 
 #### Returns
 `nil`
-
-## ow.reset()
-Perform a 1-Wire reset cycle.
-
-#### Syntax
-`ow.reset(pin)`
-
-#### Parameters
-`pin` 1~12, IO index
-
-#### Returns
-  - `1` if a device responds with a presence pulse.
-  - `0` if there is no device or the bus is shorted or otherwise held low for more than 250 µS.
 
 ## ow.skip()
 Issue a 1-Wire rom skip command, to address all on bus.
