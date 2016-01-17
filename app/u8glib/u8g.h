@@ -1163,6 +1163,7 @@ struct _u8g_t
   u8g_box_t current_page;		/* current box of the visible page */
 
   uint8_t i2c_addr;
+  uint8_t use_delay;
 };
 
 #define u8g_GetFontAscent(u8g) ((u8g)->font_ref_ascent)
@@ -1523,7 +1524,7 @@ const char *u8g_u16toa(uint16_t v, uint8_t d);
 /* u8g_delay.c */
 
 /* delay by the specified number of milliseconds */
-void u8g_Delay(uint16_t val);
+void u8g_Delay(u8g_t *u8g, uint16_t val);
 
 /* delay by one microsecond */
 void u8g_MicroDelay(void);

@@ -820,9 +820,12 @@ static void lu8g_digital_write( u8g_t *u8g, uint8_t pin_index, uint8_t value )
         platform_gpio_write( pin, value );
 }
 
-void u8g_Delay(uint16_t msec)
+void u8g_Delay(u8g_t *u8g, uint16_t msec)
 {
     const uint16_t chunk = 50;
+
+    if (u8g->use_delay == 0)
+        return;
 
     while (msec > chunk)
     {
@@ -994,6 +997,7 @@ static int lu8g_close_display( lua_State *L )
     static int lu8g_ ## device( lua_State *L )                          \
     {                                                                   \
         unsigned addr = luaL_checkinteger( L, 1 );                      \
+        unsigned del  = luaL_optinteger( L, 2, 0 );                     \
                                                                         \
         if (addr == 0)                                                  \
             return luaL_error( L, "i2c address required" );             \
@@ -1001,6 +1005,7 @@ static int lu8g_close_display( lua_State *L )
         lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) ); \
                                                                         \
         lud->u8g.i2c_addr = (uint8_t)addr;                              \
+        lud->u8g.use_delay = del > 0 ? 1 : 0;                           \
                                                                         \
         u8g_InitI2C( LU8G, &u8g_dev_ ## device, U8G_I2C_OPT_NONE);      \
                                                                         \
@@ -1028,8 +1033,11 @@ U8G_DISPLAY_TABLE_I2C
         if (dc == 0)                                                    \
             return luaL_error( L, "D/C pin required" );                 \
         unsigned res = luaL_optinteger( L, 3, U8G_PIN_NONE );           \
+        unsigned del = luaL_optinteger( L, 4, 0 );                      \
                                                                         \
         lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) ); \
+                                                                        \
+        lud->u8g.use_delay = del > 0 ? 1 : 0;                           \
                                                                         \
         u8g_InitHWSPI( LU8G, &u8g_dev_ ## device, cs, dc, res );        \
                                                                         \
