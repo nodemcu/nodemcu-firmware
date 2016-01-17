@@ -125,7 +125,7 @@ Look for the next device.
 [ow.target_search()](#owtargetsearch)
 
 ## ow.select()
-Issue a 1-Wire rom select command, make sure you do the `ow.reset(pin)` first.
+Issue a 1-Wire rom select command. Make sure you do the `ow.reset(pin)` first.
 
 #### Syntax
 `ow.select(pin, rom)`
@@ -219,7 +219,7 @@ Issue a 1-Wire rom skip command, to address all on bus.
 `nil`
 
 ## ow.target_search()
-Set up the search to find the device type `family_code` on the next call to `ow.search()` if it is present.
+Set up the search to find the device type `family_code`. The search itself has to be initiated with a subsequent call to `ow.search()`.
 
 #### Syntax
 `ow.target_search(pin, family_code)`
