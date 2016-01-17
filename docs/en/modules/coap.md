@@ -78,7 +78,7 @@ cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
 Issues a GET request to the server.
 
 #### Syntax
-`coap.client:get(type, uri, [payload])`
+`coap.client:get(type, uri[, payload])`
 
 #### Parameters
 - `type` `coap.CON`, `coap.NON`, defaults to CON. If the type is CON and request fails, the library retries four more times before giving up.
@@ -93,7 +93,7 @@ Issues a GET request to the server.
 Issues a PUT request to the server.
 
 #### Syntax
-`coap.client:put(type, uri, [payload])`
+`coap.client:put(type, uri[, payload])`
 
 #### Parameters
 - `type` `coap.CON`, `coap.NON`, defaults to CON. If the type is CON and request fails, the library retries four more times before giving up.
@@ -108,7 +108,7 @@ Issues a PUT request to the server.
 Issues a POST request to the server.
 
 #### Syntax
-`coap.client:post(type, uri, [payload])`
+`coap.client:post(type, uri[, payload])`
 
 #### Parameters
 - `type` coap.CON, coap.NON, defaults to CON. when type is CON, and request failed, the request will retry another 4 times before giving up.
@@ -123,7 +123,7 @@ Issues a POST request to the server.
 Issues a DELETE request to the server.
 
 #### Syntax
-`coap.client:delete(type, uri, [payload])`
+`coap.client:delete(type, uri[, payload])`
 
 #### Parameters
 - `type` `coap.CON`, `coap.NON`, defaults to CON. If the type is CON and request fails, the library retries four more times before giving up.
@@ -140,7 +140,7 @@ Issues a DELETE request to the server.
 Starts the CoAP server on the given port.
 
 #### Syntax
-`coap.server:listen(port, [ip])`
+`coap.server:listen(port[, ip])`
 
 #### Parameters
 - `port` server port (number)
@@ -167,7 +167,7 @@ none
 Registers a Lua variable as an endpoint in the server. the variable value then can be retrieved by a client via GET method, represented as an [URI](http://tools.ietf.org/html/rfc7252#section-6) to the client. The endpoint path for varialble is '/v1/v/'.
 
 #### Syntax
-`coap.server:var(name, [content_type])`
+`coap.server:var(name[, content_type])`
 
 #### Parameters
 - `name` the Lua variable's name
@@ -198,7 +198,7 @@ When the client issues a POST request to this URI, the payload will be passed to
 The function registered SHOULD accept ONLY ONE string type parameter, and return ONE string value or return nothing.
 
 #### Syntax
-`coap.server:func(name, [content_type])`
+`coap.server:func(name[, content_type])`
 
 #### Parameters
 - `name` the Lua function's name

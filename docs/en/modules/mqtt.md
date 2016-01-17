@@ -7,7 +7,7 @@ The client adheres to version 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/
 Creates a MQTT client.
 
 #### Syntax
-`mqtt.Client(clientid, keepalive, username, password, [cleansession])`
+`mqtt.Client(clientid, keepalive, username, password[, cleansession])`
 
 #### Parameters
 - `clientid` client ID
@@ -110,11 +110,11 @@ Setup [Last Will and Testament](http://www.hivemq.com/blog/mqtt-essentials-part-
 Registers a callback function for an event.
 
 #### Syntax
-`mqtt:on(event, function(client, [topic], [message]))`
+`mqtt:on(event, function(client[, topic[, message]]))`
 
 #### Parameters
 - `event` can be "connect", "message" or "offline"
-- `function(client, [topic], [message])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
+- `function(client[, topic[, message]])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
 
 #### Returns
 `nil`

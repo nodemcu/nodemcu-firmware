@@ -169,7 +169,7 @@ Initialize a display via Hardware SPI.
 - `u8g.uc1701_mini12864_hw_spi()`
 
 #### Syntax
-`u8g.ssd1306_128x64_spi(cs, dc, [res])`
+`u8g.ssd1306_128x64_spi(cs, dc[, res])`
 
 #### Parameters
 - `cs` GPIO pin for /CS

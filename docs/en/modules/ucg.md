@@ -80,7 +80,7 @@ Initialize a display via Hardware SPI.
 - `st7735_18x128x160_hw_spi()`
 
 #### Syntax
-`ucg.st7735_18x128x160_hw_spi(cs, dc, [res])`
+`ucg.st7735_18x128x160_hw_spi(cs, dc[, res])`
 
 #### Parameters
 - `cs` GPIO pin for /CS

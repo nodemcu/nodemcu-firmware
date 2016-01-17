@@ -173,7 +173,7 @@ Register callback functions for specific events.
 
 #### Parameters
 - `event` string, which can be "connection", "reconnection", "disconnection", "receive" or "sent"
-- `function(net.socket, [string])` callback function. The first parameter is the socket. If event is "receive", the second parameter is the received data as string.
+- `function(net.socket[, string])` callback function. The first parameter is the socket. If event is "receive", the second parameter is the received data as string.
 
 #### Returns
 `nil`

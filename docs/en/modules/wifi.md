@@ -225,7 +225,7 @@ wifi.sta.autoconnect(1)
 Sets the WiFi station configuration.
 
 #### Syntax
-`wifi.sta.config(ssid, password, [auto], [bssid])`
+`wifi.sta.config(ssid, password[, auto[, bssid]])`
 
 #### Parameters
 
