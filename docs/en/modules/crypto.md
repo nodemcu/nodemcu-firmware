@@ -2,6 +2,65 @@
 
 The crypto modules provides various functions for working with cryptographic algorithms.
 
+## crypto.encrypt()
+
+Encrypts Lua strings.
+
+#### Syntax
+`crypto.encrypt(algo, key, plain [, iv])`
+
+#### Parameters
+  - `algo` the name of the encryption algorithm to use, one of
+    - `"AES-ECB"` for 128-bit AES in ECB mode
+    - `"AES-CBC"` for 128-bit AES in CBC mode
+  - `key` the encryption key as a string; for AES encryption this *MUST* be 16 bytes long
+  - `plain` the string to encrypt; it will be automatically zero-padded to a 16-byte boundary if necessary
+  - `iv` the initilization vector, if using AES-CBC; defaults to all-zero if not given
+
+#### Returns
+The encrypted data as a binary string. For AES this is always a multiple of 16 bytes in length.
+
+#### Example
+```lua
+print(crypto.toHex(crypto.encrypt("AES-ECB", "1234567890abcdef", "Hi, I'm secret!")))
+```
+
+#### See also
+  - [`crypto.decrypt()`](#cryptodecrypt)
+
+
+## crypto.decrypt()
+
+Decrypts previously encrypted data.
+
+#### Syntax
+`crypto.decrypt(algo, key, cipher [, iv])`
+
+#### Parameters
+  - `algo` the name of the encryption algorithm to use, one of
+    - `"AES-ECB"` for 128-bit AES in ECB mode
+    - `"AES-CBC"` for 128-bit AES in CBC mode
+  - `key` the encryption key as a string; for AES encryption this *MUST* be 16 bytes long
+  - `cipher` the cipher text to decrypt (as obtained from `crypto.encrypt()`)
+  - `iv` the initilization vector, if using AES-CBC; defaults to all-zero if not given
+
+#### Returns
+The decrypted string.
+
+Note that the decrypted string may contain extra zero-bytes of padding at the end. One way of stripping such padding is to use `:match("(.-)%z*$")` on the decrypted string. Additional care needs to be taken if working on binary data, in which case the real length likely needs to be encoded with the data, and at which point `:sub(1, n)` can be used to strip the padding.
+
+#### Example
+```lua
+key = "1234567890abcdef"
+cipher = crypto.encrypt("AES-ECB", key, "Hi, I'm secret!")
+print(crypto.toHex(cipher))
+print(crypto.decrypt("AES-ECB", key, cipher))
+```
+
+#### See also
+  - [`crypto.encrypt()`](#cryptoencrypt)
+
+
 ## crypto.hash()
 
 Compute a cryptographic hash of a Lua string.

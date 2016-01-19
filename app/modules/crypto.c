@@ -6,6 +6,7 @@
 #include "c_types.h"
 #include "c_stdlib.h"
 #include "../crypto/digests.h"
+#include "../crypto/mech.h"
 
 #include "user_interface.h"
 
@@ -149,6 +150,69 @@ static int crypto_lhmac (lua_State *L)
 }
 
 
+
+static const crypto_mech_t *get_mech (lua_State *L, int idx)
+{
+  const char *name = luaL_checkstring (L, idx);
+
+  const crypto_mech_t *mech = crypto_encryption_mech (name);
+  if (mech)
+    return mech;
+
+  luaL_error (L, "unknown cipher: %s", name);
+  __builtin_unreachable ();
+}
+
+static int crypto_encdec (lua_State *L, bool enc)
+{
+  const crypto_mech_t *mech = get_mech (L, 1);
+  size_t klen;
+  const char *key = luaL_checklstring (L, 2, &klen);
+  size_t dlen;
+  const char *data = luaL_checklstring (L, 3, &dlen);
+
+  size_t ivlen;
+  const char *iv = luaL_optlstring (L, 4, "", &ivlen);
+
+  size_t bs = mech->block_size;
+  size_t outlen = ((dlen + bs -1) / bs) * bs;
+  char *buf = (char *)os_zalloc (outlen);
+  if (!buf)
+    return luaL_error (L, "crypto init failed");
+
+  crypto_op_t op =
+  {
+    key, klen,
+    iv, ivlen,
+    data, dlen,
+    buf, outlen,
+    enc ? OP_ENCRYPT : OP_DECRYPT
+  };
+  if (!mech->run (&op))
+  {
+    os_free (buf);
+    return luaL_error (L, "crypto op failed");
+  }
+  else
+  {
+    lua_pushlstring (L, buf, outlen);
+    // note: if lua_pushlstring runs out of memory, we leak buf :(
+    os_free (buf);
+    return 1;
+  }
+}
+
+static int lcrypto_encrypt (lua_State *L)
+{
+  return crypto_encdec (L, true);
+}
+
+static int lcrypto_decrypt (lua_State *L)
+{
+  return crypto_encdec (L, false);
+}
+
+
 // Module function map
 static const LUA_REG_TYPE crypto_map[] = {
   { LSTRKEY( "sha1" ),     LFUNCVAL( crypto_sha1 ) },
@@ -157,6 +221,8 @@ static const LUA_REG_TYPE crypto_map[] = {
   { LSTRKEY( "mask" ),     LFUNCVAL( crypto_mask ) },
   { LSTRKEY( "hash"   ),   LFUNCVAL( crypto_lhash ) },
   { LSTRKEY( "hmac"   ),   LFUNCVAL( crypto_lhmac ) },
+  { LSTRKEY( "encrypt" ),  LFUNCVAL( lcrypto_encrypt ) },
+  { LSTRKEY( "decrypt" ),  LFUNCVAL( lcrypto_decrypt ) },
   { LNILKEY, LNILVAL }
 };
 
