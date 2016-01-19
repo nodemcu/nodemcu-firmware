@@ -20,7 +20,7 @@ Note that it is not possible to execute concurrent HTTP requests using this modu
 
 ## http.delete()
 
-Executes a HTTP delete request.
+Executes a HTTP DELETE request.
 
 #### Syntax
 `http.delete(url, headers, body, callback)`
@@ -40,7 +40,7 @@ http.delete('https://connor.example.com/john',
   "",
   "",
   function(code, data)
-    if (code < 0)
+    if (code < 0) then
       print("HTTP request failed")
     else
       print(code, data)
@@ -66,7 +66,7 @@ Executes a HTTP GET request.
 #### Example
 ```lua
 http.get("https://www.vowstar.com/nodemcu/", nil, function(code, data)
-    if (code < 0)
+    if (code < 0) then
       print("HTTP request failed")
     else
       print(code, data)
@@ -96,7 +96,7 @@ http.post('http://json.example.com/something',
   'Content-Type: application/json\r\n',
   '{"hello":"world"}',
   function(code, data)
-    if (code < 0)
+    if (code < 0) then
       print("HTTP request failed")
     else
       print(code, data)
@@ -126,7 +126,7 @@ http.put('http://db.example.com/items.php?key=deckard',
   'Content-Type: text/plain\r\n',
   'Hello!\nStay a while, and listen...\n',
   function(code, data)
-    if (code < 0)
+    if (code < 0) then
       print("HTTP request failed")
     else
       print(code, data)
@@ -155,11 +155,10 @@ Execute a custom HTTP request for any HTTP method.
 ```lua
 http.request("https://www.example.com", "HEAD", "", "", function(code, data)
   function(code, data)
-    if (code < 0)
+    if (code < 0) then
       print("HTTP request failed")
     else
       print(code, data)
     end
   end)
 ```
-
