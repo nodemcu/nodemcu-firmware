@@ -15,6 +15,8 @@
 #include "mqtt_msg.h"
 #include "msg_queue.h"
 
+#include "user_interface.h"
+
 #define MQTT_BUF_SIZE 1024
 #define MQTT_DEFAULT_KEEPALIVE 60
 #define MQTT_MAX_CLIENT_LEN   64
@@ -831,7 +833,7 @@ static void socket_connect(struct espconn *pesp_conn)
 }
 
 static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
-static dns_reconn_count = 0;
+static int dns_reconn_count = 0;
 static ip_addr_t host_ip; // for dns
 static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {

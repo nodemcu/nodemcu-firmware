@@ -6,6 +6,7 @@
 
 #include "c_string.h"
 #include "c_stdlib.h"
+#include "ctype.h"
 
 #include "c_types.h"
 #include "user_interface.h"
@@ -22,7 +23,7 @@ static bool FLAG_wifi_force_sleep_enabled=0;
 
 //variables for wifi event monitor
 static sint32_t wifi_status_cb_ref[6] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
-static volatile os_timer_t wifi_sta_status_timer;
+static os_timer_t wifi_sta_status_timer;
 static uint8 prev_wifi_status=0;
 
 

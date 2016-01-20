@@ -15,6 +15,8 @@ ifndef PDIR
 GEN_LIBS = libmodules.a
 endif
 
+EXTRA_CCFLAGS+=-std=gnu11
+
 #############################################################
 # Configuration i.e. compile options etc.
 # Target specific stuff (defines etc.) goes in here!

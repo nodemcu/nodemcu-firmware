@@ -610,7 +610,7 @@ static void socket_connect(struct espconn *pesp_conn)
 }
 
 static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
-static dns_reconn_count = 0;
+static int dns_reconn_count = 0;
 static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
   NODE_DBG("socket_dns_found is called.\n");
