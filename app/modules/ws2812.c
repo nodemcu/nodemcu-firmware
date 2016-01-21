@@ -23,6 +23,16 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t pin, uint8_t *pixels, uint32_t 
   uint8_t *p, *end, pixel, mask;
   uint32_t t, t0h, t1h, ttot, c, start_time, pin_mask;
 
+  // Initialize the output pin and wait a bit
+  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
+  platform_gpio_write(pin, 0);
+
+  // from now on, use translated pin number.
+  pin = pin_num[pin];
+
+  // Send the buffer
+  ets_intr_lock();
+
   pin_mask = 1 << pin;
   p =  pixels;
   end =  p + length;
@@ -52,6 +62,7 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t pin, uint8_t *pixels, uint32_t 
       mask = 0x80;
     }
   }
+  ets_intr_unlock();
 }
 
 // Lua: ws2812.writergb(pin, "string")
@@ -87,14 +98,7 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
     buffer[i + 1] = r;
   }
 
-  // Initialize the output pin and wait a bit
-  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  platform_gpio_write(pin, 0);
-
-  // Send the buffer
-  ets_intr_lock();
-  ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  ets_intr_unlock();
+  ws2812_write(pin, (uint8_t*) buffer, length);
 
   c_free(buffer);
 
@@ -113,22 +117,79 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   size_t length;
   const char *buffer = luaL_checklstring(L, 2, &length);
 
-  // Initialize the output pin
-  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  platform_gpio_write(pin, 0);
-
-  // Send the buffer
-  ets_intr_lock();
-  ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  ets_intr_unlock();
+  ws2812_write(pin, (uint8_t*) buffer, length);
 
   return 0;
 }
+
+// Lua: ws2812.write_table_rgb(pin, table)
+// Each element of table is table with r,g,b elements at indexes 1,2,3
+// Table is not modified.
+// Returns number of leds written.
+//
+// ws2812.write(4, {{255,0,0}, {0,255,0}}) uses GPIO2 and sets the first LED red, second LED green.
+
+// Map that convert rgb to grb. At this moment mostly useless,
+// used to make it easier for person who decides to add grb tables.
+// I assume compiler is able to optimize it out.
+const static int map_rgb[3] = {2,1,3};
+
+static int ICACHE_FLASH_ATTR ws2812_write_table_rgb(lua_State* L) {
+
+    // Stack: 1 pin 2 leds
+    lua_settop(L, 2);
+
+    const uint8_t pin = luaL_checkinteger(L, 1);
+
+    luaL_checktype(L, 2, LUA_TTABLE);
+    size_t length = lua_objlen(L, 2);
+
+    uint8_t * buffer = (uint8_t *)c_malloc(3 * length);
+    uint8_t * b = buffer;
+
+    int i;
+
+    for(i = 1; i <= length; i++) {
+        lua_rawgeti(L, 2, i);
+        luaL_checktype(L, -1, LUA_TTABLE);
+        // Stack: -1 led 1 pin 2 leds
+
+        // The following could be done in a single loop.
+        // All this is basically just to save three lua_pop calls
+        // so there's probably not much point to it.
+        // but you know, inner loop and stuff... 8)
+
+        int c;
+        for(c = 0; c < 3 ; c++) {
+            // led sinks down in the stack as we get individual components
+            // thus we must recompute index every time
+            lua_rawgeti(L, -1 - c, map_rgb[c]);
+        }
+
+        // Stack now:
+        // -4 led -3 green, -2 red, -1 blue 1 pin 2 leds
+
+        for(c = -3; c <= -1; c++) {
+            *(b++) = (uint8_t)luaL_checkinteger(L, c);
+        }
+        lua_pop(L, 4);
+    }
+
+    ws2812_write(pin, buffer, 3*length);
+
+    c_free(buffer);
+    lua_pushnumber(L, length);
+    return 1;
+}
+
+#define MIN_OPT_LEVEL 2
+#include "lrodefs.h"
 
 static const LUA_REG_TYPE ws2812_map[] =
 {
   { LSTRKEY( "writergb" ), LFUNCVAL( ws2812_writergb )},
   { LSTRKEY( "write" ), LFUNCVAL( ws2812_writegrb )},
+  { LSTRKEY( "write_table_rgb" ), LFUNCVAL(ws2812_write_table_rgb)},
   { LNILKEY, LNILVAL}
 };
 
