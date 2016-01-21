@@ -52,6 +52,7 @@ tmr.softwd(int)
 #include "lauxlib.h"
 #include "platform.h"
 #include "c_types.h"
+#include "user_interface.h"
 
 #define TIMER_MODE_OFF 3
 #define TIMER_MODE_SINGLE 0

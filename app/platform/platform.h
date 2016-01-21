@@ -260,6 +260,7 @@ void* platform_get_last_free_ram( unsigned id );
 
 int platform_ow_exists( unsigned id );
 int platform_gpio_exists( unsigned id );
+int platform_tmr_exists( unsigned id );
 
 // *****************************************************************************
 // Helper macros
