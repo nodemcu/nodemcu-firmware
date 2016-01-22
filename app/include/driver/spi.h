@@ -2,7 +2,7 @@
 #define SPI_APP_H
 
 #include "spi_register.h"
-#include "ets_sys.h"
+#include "rom.h"
 #include "osapi.h"
 #include "uart.h"
 #include "os_type.h"

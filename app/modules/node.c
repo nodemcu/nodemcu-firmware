@@ -25,6 +25,7 @@
 #include "flash_api.h"
 #include "flash_fs.h"
 #include "user_version.h"
+#include "rom.h"
 
 #define CPU80MHZ 80
 #define CPU160MHZ 160
@@ -49,7 +50,7 @@ static int node_deepsleep( lua_State* L )
     if ( option < 0 || option > 4)
       return luaL_error( L, "wrong arg range" );
     else
-      deep_sleep_set_option( option );
+      system_deep_sleep_set_option( option );
   }
   // Set deleep time, skip if nil
   if ( lua_isnumber(L, 1) )

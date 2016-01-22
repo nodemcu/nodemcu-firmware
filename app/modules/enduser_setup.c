@@ -36,10 +36,10 @@
 #include "platform.h"
 #include "c_stdlib.h"
 #include "c_string.h"
+#include "ctype.h"
 #include "user_interface.h"
 #include "espconn.h"
 #include "flash_fs.h"
-
 
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 
@@ -96,7 +96,7 @@ static void enduser_setup_station_start(void);
 static void enduser_setup_station_start(void);
 static void enduser_setup_ap_start(void);
 static void enduser_setup_ap_stop(void);
-static void enduser_setup_check_station(void);
+static void enduser_setup_check_station(void *p);
 static void enduser_setup_debug(lua_State *L, const char *str);
 
 
@@ -177,8 +177,9 @@ static void enduser_setup_check_station_stop(void)
  *
  * Check that we've successfully entered station mode.
  */
-static void enduser_setup_check_station(void)
+static void enduser_setup_check_station(void *p)
 {
+  (void)p;
   struct ip_info ip;
   c_memset(&ip, 0, sizeof(struct ip_info));
 
@@ -391,7 +392,7 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   err = wifi_station_disconnect();
   if (err == FALSE)
   {
-    ENDUSER_SETUP_ERROR_VOID("enduser_setup_station_start failed. wifi_station_disconnect failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    ENDUSER_SETUP_ERROR("enduser_setup_station_start failed. wifi_station_disconnect failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
   err = wifi_station_connect();
   if (err == FALSE)

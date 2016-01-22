@@ -149,6 +149,7 @@ int platform_uart_recv( unsigned id, unsigned timer_id, timer_data_type timeout 
 int platform_s_uart_recv( unsigned id, timer_data_type timeout );
 int platform_uart_set_flow_control( unsigned id, int type );
 int platform_s_uart_set_flow_control( unsigned id, int type );
+void platform_uart_alt( int set );
 
 // *****************************************************************************
 // PWM subsection
@@ -252,6 +253,14 @@ uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
 
 void* platform_get_first_free_ram( unsigned id );
 void* platform_get_last_free_ram( unsigned id );
+
+
+// *****************************************************************************
+// Other glue
+
+int platform_ow_exists( unsigned id );
+int platform_gpio_exists( unsigned id );
+int platform_tmr_exists( unsigned id );
 
 // *****************************************************************************
 // Helper macros
