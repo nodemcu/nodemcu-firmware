@@ -376,13 +376,6 @@ bool flash_init_data_blank(void)
     return result ;
 }
 
-bool flash_self_destruct(void)
-{
-    // Dangerous, Erase your flash. Good bye!
-    SPIEraseChip();
-    return true;
-}
-
 uint8_t byte_of_aligned_array(const uint8_t *aligned_array, uint32_t index)
 {
     if ( (((uint32_t)aligned_array) % 4) != 0 )
