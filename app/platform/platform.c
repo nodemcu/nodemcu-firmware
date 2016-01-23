@@ -1,12 +1,16 @@
 // Platform-dependent functions
 
 #include "platform.h"
+#include "common.h"
 #include "c_stdio.h"
 #include "c_string.h"
 #include "c_stdlib.h"
 #include "gpio.h"
 #include "user_interface.h"
 #include "driver/uart.h"
+#include "driver/gpio16.h"
+#include "driver/i2c_master.h"
+#include "driver/spi.h"
 // Platform specific includes
 
 static void pwms_init();

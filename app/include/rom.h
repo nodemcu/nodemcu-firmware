@@ -140,4 +140,7 @@ void Cache_Read_Disable(void);
 void ets_intr_lock(void);
 void ets_intr_unlock(void);
 
+void ets_install_putc1(void *routine);
+void uart_div_modify(int no, unsigned int freq);
+
 #endif
