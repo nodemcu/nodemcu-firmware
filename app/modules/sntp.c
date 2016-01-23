@@ -41,6 +41,7 @@
 #include "c_stdlib.h"
 #include "user_modules.h"
 #include "lwip/dns.h"
+#include "user_interface.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
