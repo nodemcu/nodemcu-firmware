@@ -122,6 +122,7 @@ char *ets_strcpy (char *dst, const char *src);
 size_t ets_strlen (const char *s);
 int ets_strcmp (const char *s1, const char *s2);
 int ets_strncmp (const char *s1, const char *s2, size_t n);
+char *ets_strstr(const char *haystack, const char *needle);
 
 void ets_delay_us (uint32_t us);
 
