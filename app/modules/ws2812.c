@@ -4,54 +4,46 @@
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
+#include "driver/uart.h"
 
-static inline uint32_t _getCycleCount(void) {
-  uint32_t cycles;
-  __asm__ __volatile__("rsr %0,ccount":"=a" (cycles));
-  return cycles;
-}
-
-// This algorithm reads the cpu clock cycles to calculate the correct
-// pulse widths. It works in both 80 and 160 MHz mode.
-// The values for t0h, t1h, ttot have been tweaked and it doesn't get faster than this.
-// The datasheet is confusing and one might think that a shorter pulse time can be achieved.
-// The period has to be at least 1.25us, even if the datasheet says:
-//   T0H: 0.35 (+- 0.15) + T0L: 0.8 (+- 0.15), which is 0.85<->1.45 us.
-//   T1H: 0.70 (+- 0.15) + T1L: 0.6 (+- 0.15), which is 1.00<->1.60 us.
-// Anything lower than 1.25us will glitch in the long run.
+// Stream data using UART1 routed to GPIO2
+// NODE_DEBUG should not be activated because it also uses UART1
 static void ICACHE_RAM_ATTR ws2812_write(uint8_t pin, uint8_t *pixels, uint32_t length) {
-  uint8_t *p, *end, pixel, mask;
-  uint32_t t, t0h, t1h, ttot, c, start_time, pin_mask;
 
-  pin_mask = 1 << pin;
-  p =  pixels;
-  end =  p + length;
-  pixel = *p++;
-  mask = 0x80;
-  start_time = 0;
-  t0h  = (1000 * system_get_cpu_freq()) / 3022;  // 0.35us (spec=0.35 +- 0.15)
-  t1h  = (1000 * system_get_cpu_freq()) / 1477;  // 0.70us (spec=0.70 +- 0.15)
-  ttot = (1000 * system_get_cpu_freq()) /  800;  // 1.25us (MUST be >= 1.25)
+  // Data are sent LSB first, with a start bit at 0, an end bit at 1 and all inverted
+  // 0b00110111 => 110111 => [0]111011[1] => 10001000 => 00
+  // 0b00000111 => 000111 => [0]111000[1] => 10001110 => 01
+  // 0b00110100 => 110100 => [0]001011[1] => 11101000 => 10
+  // 0b00000100 => 000100 => [0]001000[1] => 11101110 => 11
+  uint8_t _uartData[4] = { 0b00110111, 0b00000111, 0b00110100, 0b00000100 };
 
-  while (true) {
-    if (pixel & mask) {
-        t = t1h;
-    } else {
-        t = t0h;
-    }
-    while (((c = _getCycleCount()) - start_time) < ttot); // Wait for the previous bit to finish
-    GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, pin_mask);      // Set pin high
-    start_time = c;                                       // Save the start time
-    while (((c = _getCycleCount()) - start_time) < t);    // Wait for high time to finish
-    GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, pin_mask);      // Set pin low
-    if (!(mask >>= 1)) {                                  // Next bit/byte
-      if (p >= end) {
-        break;
-      }
-      pixel= *p++;
-      mask = 0x80;
-    }
-  }
+  // Configure UART1
+  // Set baudrate of UART1 to 3200000
+  WRITE_PERI_REG(UART_CLKDIV(1), UART_CLK_FREQ / 3200000);
+  // Set UART Configuration No parity / 6 DataBits / 1 StopBits / Invert TX
+  WRITE_PERI_REG(UART_CONF0(1), UART_TXD_INV | (1 << UART_STOP_BIT_NUM_S) | (1 << UART_BIT_NUM_S));
+
+  // Redirect UART1 to GPIO2
+  // Disable GPIO2
+  GPIO_REG_WRITE(GPIO_ENABLE_W1TC_ADDRESS, BIT2);
+  // Enable Function 2 for GPIO2 (U1TXD)
+  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
+
+  uint8_t *end = pixels + length;
+  do {
+    uint8_t value = *pixels++;
+
+    // Wait enough space in the FIFO buffer
+    // (Less than 124 bytes in the buffer)
+    while (((READ_PERI_REG(UART_STATUS(1)) >> UART_TXFIFO_CNT_S) & UART_TXFIFO_CNT) > 124);
+
+    // Fill the buffer
+    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 6) & 3]);
+    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 4) & 3]);
+    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 2) & 3]);
+    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 0) & 3]);
+
+  } while(pixels < end);
 }
 
 // Lua: ws2812.writergb(pin, "string")
@@ -87,14 +79,8 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
     buffer[i + 1] = r;
   }
 
-  // Initialize the output pin and wait a bit
-  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  platform_gpio_write(pin, 0);
-
   // Send the buffer
-  ets_intr_lock();
   ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  ets_intr_unlock();
 
   c_free(buffer);
 
@@ -113,14 +99,8 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   size_t length;
   const char *buffer = luaL_checklstring(L, 2, &length);
 
-  // Initialize the output pin
-  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  platform_gpio_write(pin, 0);
-
   // Send the buffer
-  ets_intr_lock();
   ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
-  ets_intr_unlock();
 
   return 0;
 }
