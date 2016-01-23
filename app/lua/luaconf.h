@@ -632,7 +632,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 /*
 @@ The luai_num* macros define the primitive operations over numbers.
 */
-#if defined(LUA_CORE)
+#if defined(LUA_CORE) || defined(LUA_LIB)
 #ifdef LUA_CROSS_COMPILER
 #include <math.h>
 #else
