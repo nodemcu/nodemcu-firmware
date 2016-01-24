@@ -33,7 +33,7 @@ Avoid intermediate merge commits. [Rebase](https://www.atlassian.com/git/tutoria
 1. `git checkout <branch-name>`
 1. Make changes to the code base and commit them using e.g. `git commit -a -m 'Look ma, I did it'`
 1. When you're done:
- 1. [Squash your commits](http://stackoverflow.com/a/5201642/131929) into one. There are several ways of doing this.
+ 1. [Squash your commits](http://www.andrewconnell.com/blog/squash-multiple-git-commits-into-one) into one. There are [several ways](http://stackoverflow.com/a/5201642/131929) of doing this.
  1. Bring your fork up-to-date with the NodeMCU upstream repo ([see below](#keeping-your-fork-in-sync)). Then rebase your branch on `dev` running `git rebase dev`.
 1. `git push`
 1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/) (PR) on GitHub. 
