@@ -354,14 +354,16 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 		else if ( req->buffer[0] != '\0' )
 		{
 			/* FIXME: make sure this is not a partial response, using the Content-Length header. */
-			const char * version = "HTTP/1.1 ";
-			if ( os_strncmp( req->buffer, version, strlen( version ) ) != 0 )
+			const char * version_1_0 = "HTTP/1.0 ";
+			const char * version_1_1 = "HTTP/1.1 ";
+			if (( os_strncmp( req->buffer, version_1_0, strlen( version_1_0 ) ) != 0 ) &&
+				( os_strncmp( req->buffer, version_1_1, strlen( version_1_1 ) ) != 0 ))
 			{
 				HTTPCLIENT_DEBUG( "Invalid version in %s\n", req->buffer );
 			}
 			else  
 			{
-				http_status	= atoi( req->buffer + strlen( version ) );
+				http_status	= atoi( req->buffer + strlen( version_1_0 ) );
 				body		= (char *) os_strstr( req->buffer, "\r\n\r\n" ) + 4;
 				if ( os_strstr( req->buffer, "Transfer-Encoding: chunked" ) )
 				{
