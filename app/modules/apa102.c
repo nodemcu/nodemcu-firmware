@@ -1,9 +1,10 @@
-#include "lualib.h"
-#include "lauxlib.h"
-#include "platform.h"
-#include "lrotable.h"
 #include "c_stdlib.h"
 #include "c_string.h"
+#include "lualib.h"
+#include "lauxlib.h"
+#include "lrotable.h"
+#include "module.h"
+#include "platform.h"
 #include "user_interface.h"
 
 
@@ -100,8 +101,6 @@ static int apa102_write(lua_State* L) {
 }
 
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
 const LUA_REG_TYPE apa102_map[] =
 {
   { LSTRKEY( "write" ), LFUNCVAL( apa102_write )},
@@ -110,5 +109,7 @@ const LUA_REG_TYPE apa102_map[] =
 
 LUALIB_API int luaopen_apa102(lua_State *L) {
   LREGISTER(L, "apa102", apa102_map);
-  return 1;
+  return 0;
 }
+
+NODEMCU_MODULE(APA102, "apa102", apa102_map, luaopen_apa102);
