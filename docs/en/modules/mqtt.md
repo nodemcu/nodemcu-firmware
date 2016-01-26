@@ -78,12 +78,13 @@ none
 Connects to the broker specified by the given host, port, and secure options.
 
 #### Syntax
-`mqtt:connect(host, port, secure, function(client))`
+`mqtt:connect(host[, port[, secure[, autoreconnect]]][, function(client)])`
 
 #### Parameters
 - `host` host, domain or IP (string)
-- `port` broker port (number)
+- `port` broker port (number), default 1883
 - `secure` 0/1 for `false`/`true`, default 0. [As per #539](https://github.com/nodemcu/nodemcu-firmware/issues/539#issuecomment-170298120) secure connections use TLS 1.2.
+- `autoreconnect` 0/1 for `false`/`true`, default 0
 - `function(client)` call back function for when the connection was established
 
 #### Returns
@@ -94,7 +95,7 @@ Connects to the broker specified by the given host, port, and secure options.
 Setup [Last Will and Testament](http://www.hivemq.com/blog/mqtt-essentials-part-9-last-will-and-testament) (optional). A broker will publish a message with qos = 0, retain = 0, data = "offline" to topic "/lwt" if client does not send keepalive packet.
 
 #### Syntax
-`mqtt:lwt(topic, message, qos, retain)`
+`mqtt:lwt(topic, message[, qos[, retain]])`
 
 #### Parameters
 - `topic` the topic to publish to (string)
@@ -124,14 +125,14 @@ Registers a callback function for an event.
 Publishes a message.
 
 #### Syntax
-`mqtt:publish(topic, payload, qos, retain, function(client))`
+`mqtt:publish(topic, payload, qos, retain[, function(client)])`
 
 #### Parameters
 - `topic` the topic to publish to ([topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices))
 - `message` the message to publish, (buffer or string)
-- `qos` QoS level, default 0
-- `retain` retain flag, default 0
-- `function(client)` callback fired when PUBACK received
+- `qos` QoS level
+- `retain` retain flag
+- `function(client)` optional callback fired when PUBACK received
 
 #### Returns
 `nil`
@@ -141,12 +142,12 @@ Publishes a message.
 Subscribes to one or several topics.
 
 #### Syntax
-`mqtt:subscribe(topic, qos, function(client, topic, message))`
+`mqtt:subscribe(topic, qos[, function(client, topic, message)])`
 
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `qos` QoS subscription level, default 0
-- `function(client, topic, message)` callback fired when message received
+- `function(client, topic, message)` optional callback fired when message received
 
 #### Returns
 `nil`
