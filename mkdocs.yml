@@ -31,6 +31,7 @@ pages:
     - Support: 'en/support.md'
     - Modules:
         - 'adc': 'en/modules/adc.md'
+        - 'apa102': 'en/modules/apa102.md'
         - 'bit': 'en/modules/bit.md'
         - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
