@@ -1,4 +1,4 @@
-# pwm Module
+# PWM Module
 
 ## pwm.close()
 Quit PWM mode for the specified GPIO pin.

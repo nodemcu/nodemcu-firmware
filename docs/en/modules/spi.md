@@ -1,4 +1,4 @@
-#spi module
+# SPI Module
 All transactions for sending and receiving are most-significant-bit first and least-significant last.
 For technical details of the underlying hardware refer to [metalphreak's ESP8266 HSPI articles](http://d.av.id.au/blog/tag/hspi/).
 

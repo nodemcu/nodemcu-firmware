@@ -1,7 +1,9 @@
-# dht Module
+# DHT Module
 
 ## Constants
-`dht.OK` (0), `dht.ERROR_CHECKSUM` (1), `dht.ERROR_TIMEOUT` (2)
+Constants for various functions.
+
+`dht.OK`, `dht.ERROR_CHECKSUM`, `dht.ERROR_TIMEOUT` represent the potential values for the DHT read status
 
 ## dht.read()
 Read all kinds of DHT sensors, including DHT11, 21, 22, 33, 44 humidity temperature combo sensor.

@@ -1,4 +1,4 @@
-# i2c Module
+# I²C Module
 
 ## i2c.address()
 Setup I²C address and read/write mode for the next transfer.
