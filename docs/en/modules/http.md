@@ -2,7 +2,7 @@
 
 Basic HTTP client module.
 
-Provides an interface to do basic GET/POST/PUT/DELETE over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is limited to 1k. Attempting to receive pages larger than this limit will fail. If larger page/body sizes are necessary, consider using `net.createConnection()` and stream in the data.
+Provides an interface to do basic GET/POST/PUT/DELETE over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is limited by available memory. Attempting to receive pages larger than this will fail. If larger page/body sizes are necessary, consider using `net.createConnection()` and stream in the data.
 
 Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 10 seconds).
 
