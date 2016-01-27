@@ -1094,12 +1094,14 @@ exponent(char *p, int exp, int fmtch)
 #endif /* FLOATINGPT */
 
 
-void c_sprintf(char *s, char *fmt, ...)
+int c_sprintf(char *s, const char *fmt, ...)
 {
+    int n;
     va_list arg;
     va_start(arg, fmt);
-    vsprintf(s, fmt, arg);
+    n = vsprintf(s, fmt, arg);
     va_end(arg);
+    return n;
 }
 
 #endif
