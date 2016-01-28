@@ -122,6 +122,8 @@ char *ets_strcpy (char *dst, const char *src);
 size_t ets_strlen (const char *s);
 int ets_strcmp (const char *s1, const char *s2);
 int ets_strncmp (const char *s1, const char *s2, size_t n);
+char *ets_strncpy(char *dest, const char *src, size_t n);
+char *ets_strstr(const char *haystack, const char *needle);
 
 void ets_delay_us (uint32_t us);
 
@@ -141,6 +143,10 @@ void ets_intr_lock(void);
 void ets_intr_unlock(void);
 
 void ets_install_putc1(void *routine);
+
+int rand(void);
+void srand(unsigned int);
+
 void uart_div_modify(int no, unsigned int freq);
 
 #endif
