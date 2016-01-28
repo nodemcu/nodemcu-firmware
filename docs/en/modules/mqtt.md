@@ -149,7 +149,7 @@ Subscribes to one or several topics.
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `qos` QoS subscription level, default 0
 - `table` array of 'topic, qos' pairs to subscribe to
-- `function(client, topic, message)` optional callback fired when message received
+- `function(client)` optional callback fired when subscription(s) succeeded
 
 #### Returns
 `true` on success, `false` otherwise
