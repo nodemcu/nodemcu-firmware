@@ -665,8 +665,8 @@ static void enduser_setup_ap_start(void)
   cnf.ssid_hidden = 0;
   cnf.max_connection = 5;
   cnf.beacon_interval = 100;
+  wifi_set_opmode(SOFTAP_MODE | wifi_get_opmode()); // Changed behavior: Need to be in AP mode before AP config will save
   wifi_softap_set_config(&cnf);
-  wifi_set_opmode(SOFTAP_MODE | wifi_get_opmode());
 }
 
 
