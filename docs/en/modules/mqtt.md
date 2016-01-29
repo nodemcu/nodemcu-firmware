@@ -161,3 +161,4 @@ m:subscribe("/topic",0, function(conn) print("subscribe success") end)
 
 -- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
 m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
+```
