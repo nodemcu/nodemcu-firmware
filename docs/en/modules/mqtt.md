@@ -71,7 +71,7 @@ Closes connection to the broker.
 none
 
 #### Returns
-`nil`
+`true` on success, `false` otherwise
 
 ## mqtt.client:connect()
 
@@ -88,7 +88,7 @@ Connects to the broker specified by the given host, port, and secure options.
 - `function(client)` call back function for when the connection was established
 
 #### Returns
-`nil`
+`true` on success, `false` otherwise
 
 ## mqtt.client:lwt()
 
@@ -135,7 +135,7 @@ Publishes a message.
 - `function(client)` optional callback fired when PUBACK received
 
 #### Returns
-`nil`
+`true` on success, `false` otherwise
 
 ## mqtt.client:subscribe()
 
@@ -143,11 +143,21 @@ Subscribes to one or several topics.
 
 #### Syntax
 `mqtt:subscribe(topic, qos[, function(client, topic, message)])`
+`mqtt:subscribe(table[, function(client, topic, message)])`
 
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `qos` QoS subscription level, default 0
-- `function(client, topic, message)` optional callback fired when message received
+- `table` array of 'topic, qos' pairs to subscribe to
+- `function(client)` optional callback fired when subscription(s) succeeded
 
 #### Returns
-`nil`
+`true` on success, `false` otherwise
+
+#### Example
+```lua
+-- subscribe topic with qos = 0
+m:subscribe("/topic",0, function(conn) print("subscribe success") end)
+
+-- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
+m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
