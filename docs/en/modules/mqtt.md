@@ -142,8 +142,8 @@ Publishes a message.
 Subscribes to one or several topics.
 
 #### Syntax
-`mqtt:subscribe(topic, qos[, function(client, topic, message)])`
-`mqtt:subscribe(table[, function(client, topic, message)])`
+`mqtt:subscribe(topic, qos[, function(client)])`
+`mqtt:subscribe(table[, function(client)])`
 
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
