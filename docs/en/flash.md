@@ -29,3 +29,33 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 Source: [https://github.com/nodemcu/nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
 
 Supported platforms: Windows
+
+## Upgrading from SDK 0.9.x Firmware
+If you flash a recent NodeMCU firmware for the first time, it's advisable that you get all accompanying files right. A typical case that often fails is when a module is upgraded from a 0.9.x firmware to the latest version built from the [NodeMCU build service](http://nodemcu-build.com). It might look like the brand new firmware is broken, but the reason for the missing Lua prompt is related to the big jump in SDK versions: Vendor Espressif changed the `esp_init_data_default.bin` for their devices along the way with the [SDK 1.4.0 release](http://bbs.espressif.com/viewtopic.php?f=46&t=1124). So things break when a NodeMCU firmware with SDK 1.4.0 or above is flashed to a module which contains old init data from a previous SDK.
+
+Download a recent SDK release, e.g. [esp_iot_sdk_v1.4.0_15_09_18.zip](http://bbs.espressif.com/download/file.php?id=838) or later and extract `esp_init_data_default.bin` from there. *Use this file together with the new firmware during flashing*.
+
+### esptool
+
+For [esptool](https://github.com/themadinventor/esptool) you specify another file to download at the command line.
+```
+esptool.py write_flash 0x00000 <nodemcu-firmware>.bin 0x7c000 esp_init_data_default.bin
+```
+
+!!! note "Note:"
+
+    The address for `esp_init_data_default.bin` depends on the size of your module's flash. ESP-01, -03, -07 etc. with 512 kByte flash require `0x7c000`. Init data goes to `0x3fc000` on an ESP-12E with 4 MByte flash.
+
+### NodeMCU Flasher
+
+The [NodeMCU Flasher](https://github.com/nodemcu/nodemcu-flasher) will download init data using a special path:
+```
+INTERNAL://DEFAULT
+```
+
+Replace the provided (old) `esp_init_data_default.bin` with the one extracted above and use the flasher like you're used to.
+
+### References
+
+* [2A-ESP8266__IOT_SDK_User_Manual__EN_v1.5.pdf, Chapter 6](http://bbs.espressif.com/viewtopic.php?f=51&t=1024)
+* [SPI Flash ROM Layout (without OTA upgrades)](https://github.com/esp8266/esp8266-wiki/wiki/Memory-Map#spi-flash-rom-layout-without-ota-upgrades)
