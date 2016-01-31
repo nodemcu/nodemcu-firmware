@@ -56,6 +56,7 @@ pages:
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
         - 'rtcfifo': 'en/modules/rtcfifo.md'
+        - 'sigma delta': 'en/modules/sigma-delta.md'
         - 'sntp': 'en/modules/sntp.md'
         - 'spi': 'en/modules/spi.md'
         - 'tmr': 'en/modules/tmr.md'
