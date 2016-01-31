@@ -131,7 +131,7 @@ gpio.trig(pin, "down", pin1cb)
 #### See also
 [`gpio.mode()`](#gpiomode)
 
-## gpio.write ()
+## gpio.write()
 
 Set digital GPIO pin value.
 
