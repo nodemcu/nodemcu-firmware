@@ -6,6 +6,23 @@ This module provides a simple way of configuring ESP8266 chips without using a s
 After running [`enduser_setup.start()`](#enduser_setupstart) a portal like the above can be accessed through a wireless network called SetupGadget_XXXXXX. The portal is used to submit the credentials for the WiFi of the enduser.
 After an IP address has been successfully obtained this module will stop as if [`enduser_setup.stop()`](#enduser_setupstop) had been called.
 
+## enduser_setup.manual()
+
+Controls whether manual AP configuration is used.
+
+By default the `enduser_setup` module automatically configures an open access point when starting, and stops it when the device has been successfully joined to a WiFi network. If manual mode has been enabled, neither of this is done. The device must be manually configured for `wifi.SOFTAP` mode prior to calling `enduser_setup.start()`. Additionally, the portal is not stopped after the device has successfully joined to a WiFi network.
+
+Most importantly, *the `onConfigured()` callback is not supported in manual mode*. This limitation may disappear in the future.
+
+#### Syntax
+`enduser_setup.manual([on_off])`
+
+#### Parameters
+  - `on_off` a boolean value indicating whether to use manual mode; if not given, the function only returns the current setting.
+
+#### Returns
+The current setting, true if manual mode is enabled, false if it is not.
+
 ## enduser_setup.start()
 
 Starts the captive portal.
