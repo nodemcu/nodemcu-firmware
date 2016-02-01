@@ -1,0 +1,18 @@
+#include "wifi_common.h"
+
+void lua_table_add_int(lua_State* L, char* name, lua_Integer integer)
+{
+  lua_pushinteger(L, integer);
+  lua_setfield(L, -2,  name);
+}
+
+void lua_table_add_string(lua_State* L, char* name, char* string, ...)
+{
+  char buffer[256];
+  va_list arglist;
+  va_start( arglist, string );
+  vsprintf( buffer, string, arglist );
+  va_end( arglist );
+  lua_pushstring(L, buffer);
+  lua_setfield(L, -2,  name);
+}
