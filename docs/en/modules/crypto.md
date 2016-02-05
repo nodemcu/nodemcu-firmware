@@ -61,6 +61,32 @@ print(crypto.decrypt("AES-ECB", key, cipher))
   - [`crypto.encrypt()`](#cryptoencrypt)
 
 
+## crypto.fhash()
+
+Compute a cryptographic hash of a a file.
+
+#### Syntax
+`hash = crypto.fhash(algo, filename)`
+
+#### Parameters
+- `algo` the hash algorithm to use, case insensitive string
+- `filename` the path to the file to hash
+
+Supported hash algorithms are:
+
+- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
+- MD5
+- SHA1
+- SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
+
+#### Returns
+A binary string containing the message digest. To obtain the textual version (ASCII hex characters), please use [`crypto.toHex()`](#cryptotohex ).
+
+#### Example
+```lua
+print(crypto.toHex(crypto.fhash("sha1","myfile.lua")))
+```
+
 ## crypto.hash()
 
 Compute a cryptographic hash of a Lua string.

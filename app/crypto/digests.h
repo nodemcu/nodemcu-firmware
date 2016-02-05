@@ -6,6 +6,7 @@
 typedef void (*create_ctx_fn)(void *ctx);
 typedef void (*update_ctx_fn)(void *ctx, const uint8_t *msg, int len);
 typedef void (*finalize_ctx_fn)(uint8_t *digest, void *ctx);
+typedef size_t ( *read_fn )(int fd, void *ptr, size_t len);
 
 /**
  * Description of a message digest mechanism.
@@ -53,6 +54,16 @@ const digest_mech_info_t *crypto_digest_mech (const char *mech);
  */
 int crypto_hash (const digest_mech_info_t *mi, const char *data, size_t data_len, uint8_t *digest);
 
+/**
+ * Wrapper function for performing a one-in-all hashing operation of a file.
+ * @param mi       A mech from @c crypto_digest_mech(). A null pointer @c mi
+ *                 is harmless, but will of course result in an error return.
+ * @param read     Pointer to the read function (e.g. fs_read)
+ * @param readarg  Argument to pass to the read function (e.g. file descriptor)
+ * @param digest   Output buffer, must be at least @c mi->digest_size in size.
+ * @return 0 on success, non-zero on error.
+ */
+int crypto_fhash (const digest_mech_info_t *mi, read_fn read, int readarg, uint8_t *digest);
 
 /**
  * Generate a HMAC signature.
