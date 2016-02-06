@@ -100,6 +100,8 @@ In contrast to the source code based inclusion of XBMs into u8glib, it's require
 ## I²C Display Drivers
 Initialize a display via I²C.
 
+The init sequence would insert delays to match the display specs. These can destabilize the overall system if wifi service is blocked for too long. It is therefore advisable to disable such delays unless the specific use case can exclude wifi traffic while initializing the display driver.
+
 - `u8g.sh1106_128x64_i2c()`
 - `u8g.ssd1306_128x64_i2c()`
 - `u8g.ssd1306_64x48_i2c()`
@@ -109,10 +111,11 @@ Initialize a display via I²C.
 - `u8g.uc1611_dogxl240_i2c()`
 
 ####Syntax
-`u8g.ssd1306_128x64_i2c(address)`
+`u8g.ssd1306_128x64_i2c(address[, use_delay])`
 
 ####Parameters
-`address` I²C slave address of display
+- `address` I²C slave address of display
+- `use_delay` '1': use delays in init sequence, '0' if omitted
 
 ####Returns
 u8g display object
@@ -132,6 +135,8 @@ disp = u8g.ssd1306_128x64_i2c(sla)
 
 ## SPI Display Drivers
 Initialize a display via Hardware SPI.
+
+The init sequence would insert delays to match the display specs. These can destabilize the overall system if wifi service is blocked for too long. It is therefore advisable to disable such delays unless the specific use case can exclude wifi traffic while initializing the display driver.
 
 - `u8g.ld7032_60x32_hw_spi()`
 - `u8g.pcd8544_84x48_hw_spi()`
@@ -169,12 +174,13 @@ Initialize a display via Hardware SPI.
 - `u8g.uc1701_mini12864_hw_spi()`
 
 #### Syntax
-`u8g.ssd1306_128x64_spi(cs, dc[, res])`
+`u8g.ssd1306_128x64_spi(cs, dc[, res[, use_delay]])`
 
 #### Parameters
 - `cs` GPIO pin for /CS
 - `dc` GPIO pin for DC
-- `res` GPIO pin for /RES (optional)
+- `res` GPIO pin for /RES, none if omitted
+- `use_delay` '1': use delays in init sequence, '0' if omitted
 
 #### Returns
 u8g display object
