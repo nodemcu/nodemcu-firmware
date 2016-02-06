@@ -9,6 +9,7 @@ It is appreciated but optional if you raise an issue _before_ you start changing
 ### Table Of Contents
 
 * [Development environment setup](#development-environment-setup)
+* [Writing Documentation](#writing-documentation)
 * [Working with Git and GitHub](#working-with-git-and-github)
   * [General flow](#general-flow)
   * [Keeping your fork in sync](#keeping-your-fork-in-sync)
@@ -18,6 +19,22 @@ It is appreciated but optional if you raise an issue _before_ you start changing
 Use the platform and tools you feel most comfortable with. There are  no constraints imposed by this project. You have (at least) two options to set up the toolchain to build the NodeMCU firmware:
 - [Full-fledged Linux enviroment](http://www.esp8266.com/wiki/doku.php?id=toolchain#how_to_setup_a_vm_to_host_your_toolchain), either physical or virtual.
 - [Docker image](https://hub.docker.com/r/marcelstoer/nodemcu-build/) which allows to run the build inside the container as if you were running a build script on your local machine.
+
+## Writing Documentation
+The NodeMCU documentation is maintained within the same repository as the code. The primary reason is to keep the two in sync more easily. It's thus trivial for the NodeMCU team to verify that a PR includes the necessary documentation. Furthermore, the documentation is merged automatically with the code if it moves from branch X to Y.
+
+The documentation consists of a collection of Markdown (see note on syntax at end of chapter) files stored in the [`/docs`](docs) directory. With every commit a human readable and browsable version is automatically built with [Read the Docs](https://readthedocs.org/) (RTD). The public NodeMCU documentation can be found at [nodemcu.readthedocs.org](http://nodemcu.readthedocs.org/).
+
+There are essentially only two things to keep in mind if you're contributing a PR:
+
+- If you add functions to or change functions of an *existing module* you should modify the module's `.md` file in [`/docs/en/modules`](docs/en/modules). Adhere to the existing documentation structure and keep functions in alphabetical order.
+- If you add a *new module* you should, in addition to the above, also add a reference for the new `.md` file to [`mkdocs.yml`](./mkdocs.yml) (lines 32+). Note that modules are ordered alphabetically here as well.
+
+If you also want to verify that all is well with your Markdown files you can install Python-based [MkDocs](http://www.mkdocs.org/), which is used by RTD to build the static HTML files, and run `mkdocs serve` in the root of your NodeMCU firmware directory.
+
+A note on Markdown *syntax*. As Mkdocs is Python-based it's no surprise it uses a [Python Markdown implementation](https://pythonhosted.org/Markdown/). The good news is that it sticks pretty closely to John Gruber's Markdown and also [supports tables and fenced code blocks](http://www.mkdocs.org/user-guide/writing-your-docs/#markdown-extensions) just like GitHub does.
+
+If you're interested in some NodeMCU history you're welcome to read [issue #774](https://github.com/nodemcu/nodemcu-firmware/issues/774)
 
 ## Working with Git and GitHub
 
