@@ -821,7 +821,8 @@ static sint8 socket_connect(struct espconn *pesp_conn)
 #ifdef CLIENT_SSL_ENABLE
   if(mud->secure)
   {
-    espconn_status = espconn_secure_connect(pesp_conn);
+      espconn_secure_set_size(ESPCONN_CLIENT, 5120); /* set SSL buffer size */
+      espconn_status = espconn_secure_connect(pesp_conn);
   }
   else
 #endif
