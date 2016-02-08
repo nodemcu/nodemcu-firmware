@@ -7,6 +7,8 @@
 
 #include "c_types.h"
 #include "driver/pwm.h"
+#include "task/task.h"
+
 // Error / status codes
 enum
 {
@@ -35,14 +37,12 @@ uint8_t platform_key_led( uint8_t level);
 #define PLATFORM_GPIO_HIGH 1
 #define PLATFORM_GPIO_LOW 0
 
-/* GPIO interrupt handler */
-typedef void (* platform_gpio_intr_handler_fn_t)( unsigned pin, unsigned level );
-
+static inline int platform_gpio_exists( unsigned pin ) { return pin < NUM_GPIO; }
 int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull );
 int platform_gpio_write( unsigned pin, unsigned level );
 int platform_gpio_read( unsigned pin );
-void platform_gpio_init( platform_gpio_intr_handler_fn_t cb );
-int platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type );
+void platform_gpio_init( task_handle_t gpio_task );
+void platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type );
 // *****************************************************************************
 // Timer subsection
 
@@ -62,7 +62,7 @@ enum
   ELUA_CAN_ID_EXT
 };
 
-int platform_can_exists( unsigned id );
+static inline int platform_can_exists( unsigned id ) { return id < NUM_CAN; }
 uint32_t platform_can_setup( unsigned id, uint32_t clock );
 int platform_can_send( unsigned id, uint32_t canid, uint8_t idtype, uint8_t len, const uint8_t *data );
 int platform_can_recv( unsigned id, uint32_t *canid, uint8_t *idtype, uint8_t *len, uint8_t *data );
@@ -95,7 +95,7 @@ int platform_can_recv( unsigned id, uint32_t *canid, uint8_t *idtype, uint8_t *l
 typedef uint32_t spi_data_type;
 
 // The platform SPI functions
-int platform_spi_exists( unsigned id );
+static inline int platform_spi_exists( unsigned id ) { return id < NUM_SPI; }
 uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div);
 int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data );
 spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type data );
@@ -140,7 +140,7 @@ enum
 #define PLATFORM_UART_FLOW_CTS                2
 
 // The platform UART functions
-int platform_uart_exists( unsigned id );
+static inline int platform_uart_exists( unsigned id ) { return id < NUM_UART; }
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits );
 int platform_uart_set_buffer( unsigned id, unsigned size );
 void platform_uart_send( unsigned id, uint8_t data );
@@ -163,7 +163,7 @@ void platform_uart_alt( int set );
 #define DUTY(d) ((uint16_t)( ((unsigned)(d)*PWM_DEPTH) / NORMAL_PWM_DEPTH) )
 
 // The platform PWM functions
-int platform_pwm_exists( unsigned id );
+static inline int platform_pwm_exists( unsigned id ) { return ((id < NUM_PWM) && (id > 0)); }
 uint32_t platform_pwm_setup( unsigned id, uint32_t frequency, unsigned duty );
 void platform_pwm_close( unsigned id );
 void platform_pwm_start( unsigned id );
@@ -185,13 +185,23 @@ uint32_t  platform_adc_set_clock( unsigned id, uint32_t frequency);
 int  platform_adc_check_timer_id( unsigned id, unsigned timer_id );
 
 // ADC Common Functions
-int  platform_adc_exists( unsigned id );
+static inline int platform_adc_exists( unsigned id ) { return id < NUM_ADC; }
 uint32_t  platform_adc_get_maxval( unsigned id );
 uint32_t  platform_adc_set_smoothing( unsigned id, uint32_t length );
 void platform_adc_set_blocking( unsigned id, uint32_t mode );
 void platform_adc_set_freerunning( unsigned id, uint32_t mode );
 uint32_t  platform_adc_is_done( unsigned id );
 void platform_adc_set_timer( unsigned id, uint32_t timer );
+
+// ****************************************************************************
+// OneWire functions
+
+static inline int platform_ow_exists( unsigned id ) { return ((id < NUM_OW) && (id > 0)); }
+
+// ****************************************************************************
+// Timer functions
+
+static inline int platform_tmr_exists( unsigned id ) { return id < NUM_TMR; }
 
 // *****************************************************************************
 // I2C platform interface
@@ -210,7 +220,11 @@ enum
   PLATFORM_I2C_DIRECTION_RECEIVER
 };
 
-int platform_i2c_exists( unsigned id );
+#ifdef NUM_I2C
+static inline int platform_i2c_exists( unsigned id ) { return id < NUM_I2C; }
+#else
+static inline int platform_i2c_exists( unsigned id ) { return 0; }
+#endif
 uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed );
 void platform_i2c_send_start( unsigned id );
 void platform_i2c_send_stop( unsigned id );
@@ -271,7 +285,7 @@ int platform_tmr_exists( unsigned id );
 #define MOD_CHECK_TIMER( id )\
   if( id == PLATFORM_TIMER_SYS_ID && !platform_timer_sys_available() )\
     return luaL_error( L, "the system timer is not available on this platform" );\
-  if( !platform_timer_exists( id ) )\
+  if( !platform_tmr_exists( id ) )\
     return luaL_error( L, "timer %d does not exist", ( unsigned )id )\
 
 #define MOD_CHECK_RES_ID( mod, id, resmod, resid )\
