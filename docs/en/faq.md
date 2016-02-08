@@ -338,6 +338,11 @@ Of course you should still use functions to structure your code and encapsulate 
 ### How to save memory?
   * The NodeMCU development team recommends that you consider using a tailored firmware build, which only includes the modules that you plan to use before developing any Lua application. Once you have the ability to make and flash custom builds, the you also have the option of moving time sensitive or logic intensive code into your own custom module. Doing this can save a large amount of RAM as C code can be run directly from Flash memory. If you want an easy-to-use intermediate option then why note try the [cloud based NodeMCU custom build service](http://frightanic.com/NodeMCU-custom-build)?. 
 
+### How do I write my own C module?
+
+  * Follow the [Tutorial on writing C module for NodeMCU](cmodule.md)
+ 
+ 
 ## Hardware Specifics
 
 ### Why file writes fail all the time on DEVKIT V1.0?
