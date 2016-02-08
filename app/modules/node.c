@@ -305,6 +305,7 @@ static int node_key( lua_State* L )
 #endif
 
 extern lua_Load gLoad;
+extern bool user_process_input(bool force);
 // Lua: input("string")
 static int node_input( lua_State* L )
 {
@@ -321,7 +322,7 @@ static int node_input( lua_State* L )
       NODE_DBG("Get command:\n");
       NODE_DBG(load->line); // buggy here
       NODE_DBG("\nResult(if any):\n");
-      system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
+      user_process_input(true);
     }
   }
   return 0;

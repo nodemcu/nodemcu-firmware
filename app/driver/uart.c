@@ -12,6 +12,7 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "driver/uart.h"
+#include "task/task.h"
 #include "user_config.h"
 #include "user_interface.h"
 
@@ -27,8 +28,8 @@
 
 
 // For event signalling
-static uint8 task = USER_TASK_PRIO_MAX;
-static os_signal_t sig;
+// static uint8 task = USER_TASK_PRIO_MAX;
+static os_signal_t sig = 0;
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
@@ -267,8 +268,8 @@ uart0_rx_intr_handler(void *para)
         got_input = true;
     }
 
-    if (got_input && task != USER_TASK_PRIO_MAX)
-      system_os_post (task, sig, UART0);
+    if (got_input && sig)
+      task_post_low (sig, false);
 }
 
 /******************************************************************************
@@ -281,9 +282,8 @@ uart0_rx_intr_handler(void *para)
  * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-uart_init(UartBautRate uart0_br, UartBautRate uart1_br, uint8 task_prio, os_signal_t sig_input)
+uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input)
 {
-    task = task_prio;
     sig = sig_input;
 
     // rom use 74880 baut_rate, here reinitialize
