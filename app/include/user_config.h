@@ -46,6 +46,7 @@
 #define ICACHE_RAM_ATTR __attribute__((section(".iram0.text")))
 
 #define CLIENT_SSL_ENABLE
+//#define SENDQUEUE_ENABLE
 #define GPIO_INTERRUPT_ENABLE
 //#define MD2_ENABLE
 #define SHA2_ENABLE

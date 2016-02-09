@@ -11,8 +11,7 @@
 #include "mem.h"
 #include "lwip/ip_addr.h"
 #include "espconn.h"
-#include "lwip/dns.h" 
-
+#include "lwip/dns.h"
 #ifdef CLIENT_SSL_ENABLE
 unsigned char *default_certificate;
 unsigned int default_certificate_len = 0;
@@ -39,6 +38,13 @@ static uint16_t tcp_server_timeover = 30;
 static struct espconn *pTcpServer = NULL;
 static struct espconn *pUdpServer = NULL;
 
+typedef struct t_sendqueue // queue chain [block]->[block]->...->NULL
+{
+  uint16_t pos; // position
+  int lua_data;
+  struct t_sendqueue* next;
+} t_sendqueue;
+
 typedef struct lnet_userdata
 {
   struct espconn *pesp_conn;
@@ -49,10 +55,24 @@ typedef struct lnet_userdata
   int cb_receive_ref;
   int cb_send_ref;
   int cb_dns_found_ref;
+#ifdef SENDQUEUE_ENABLE
+  struct t_sendqueue *sendqueue; // stick to lua-datablock
+  uint8_t sending; // flag
+#endif
 #ifdef CLIENT_SSL_ENABLE
   uint8_t secure;
 #endif
-}lnet_userdata;
+} lnet_userdata;
+
+#ifdef SENDQUEUE_ENABLE
+#define SENDQUEUE_MAX_BLOCK_SIZE 1460    // chunking threshold
+
+static void sendqueue_prepare(lnet_userdata* nud);  // Init queue
+static void sendqueue_drop(lua_State* L, lnet_userdata* nud);     // Destroy entire chain
+static void sendqueue_node_free(lua_State* L, t_sendqueue *d);    // Destroy one node
+static void sendqueue_proceed(lua_State* L, lnet_userdata* nud);  // Send
+static void sendqueue_add(lua_State* L, lnet_userdata* nud, int lua_data);
+#endif
 
 static void net_server_disconnected(void *arg)    // for tcp server only
 {
@@ -80,11 +100,13 @@ static void net_server_disconnected(void *arg)    // for tcp server only
     lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
     lua_call(gL, 1, 0);
   }
+#ifdef SENDQUEUE_ENABLE
+  sendqueue_drop(gL, nud);
+#endif
   int i;
   lua_gc(gL, LUA_GCSTOP, 0);
-  for(i=0;i<MAX_SOCKET;i++){
-    if( (LUA_NOREF!=socket[i]) && (socket[i] == nud->self_ref) ){
-      // found the saved client
+  for(i=0; i < MAX_SOCKET; i++){
+    if( (LUA_NOREF!=socket[i]) && (socket[i] == nud->self_ref) ) {
       nud->pesp_conn->reverse = NULL;
       nud->pesp_conn = NULL;    // the espconn is made by low level sdk, do not need to free, delete() will not free it.
       nud->self_ref = LUA_NOREF;   // unref this, and the net.socket userdata will delete it self
@@ -119,6 +141,9 @@ static void net_socket_disconnected(void *arg)    // tcp only
   if(nud->pesp_conn)
     c_free(nud->pesp_conn);
   nud->pesp_conn = NULL;  // espconn is already disconnected
+#ifdef SENDQUEUE_ENABLE
+  sendqueue_drop(gL, nud);
+#endif
   lua_gc(gL, LUA_GCSTOP, 0);
   if(nud->self_ref != LUA_NOREF){
     luaL_unref(gL, LUA_REGISTRYINDEX, nud->self_ref);
@@ -172,6 +197,15 @@ static void net_socket_sent(void *arg)
   lnet_userdata *nud = (lnet_userdata *)pesp_conn->reverse;
   if(nud == NULL)
     return;
+
+#ifdef SENDQUEUE_ENABLE
+  if (nud->sendqueue) {
+    sendqueue_proceed(gL, nud);
+    return;
+  }
+  nud->sending = 0;
+#endif
+
   if(nud->cb_send_ref == LUA_NOREF)
     return;
   if(nud->self_ref == LUA_NOREF)
@@ -325,6 +359,9 @@ static void net_server_connected(void *arg) // for tcp only
 #ifdef CLIENT_SSL_ENABLE
   skt->secure = 0;    // as a server SSL is not supported.
 #endif
+#ifdef SENDQUEUE_ENABLE
+  sendqueue_prepare(skt);
+#endif
 
   skt->pesp_conn = pesp_conn;   // point to the espconn made by low level sdk
   pesp_conn->reverse = skt;   // let espcon carray the info of this userdata(net.socket)
@@ -373,7 +410,7 @@ static int net_create( lua_State* L, const char* mt )
 #endif
   uint8_t stack = 1;
   bool isserver = false;
-  
+
   if (mt!=NULL && c_strcmp(mt, "net.server")==0)
     isserver = true;
   else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
@@ -431,7 +468,9 @@ static int net_create( lua_State* L, const char* mt )
 #ifdef CLIENT_SSL_ENABLE
   nud->secure = secure;
 #endif
-
+#ifdef SENDQUEUE_ENABLE
+  sendqueue_prepare(nud);
+#endif
   // set its metatable
   luaL_getmetatable(L, mt);
   lua_setmetatable(L, -2);
@@ -500,7 +539,7 @@ static int net_create( lua_State* L, const char* mt )
     lua_call(L, 1, 0);
   }
 
-  return 1; 
+  return 1;
 }
 
 // static int net_close( lua_State* L, const char* mt );
@@ -527,27 +566,30 @@ static int net_delete( lua_State* L, const char* mt )
   lnet_userdata *nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
   if(nud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
+    NODE_DBG("userdata is nil.\n");
+    return 0;
   }
   if(nud->pesp_conn){     // for client connected to tcp server, this should set NULL in disconnect cb
-  	nud->pesp_conn->reverse = NULL;
+    nud->pesp_conn->reverse = NULL;
     if(!isserver)   // socket is freed here
     {
       if(nud->pesp_conn->type == ESPCONN_UDP){
-  	    if(nud->pesp_conn->proto.udp)
-  	      c_free(nud->pesp_conn->proto.udp);
-  	    nud->pesp_conn->proto.udp = NULL;
-  	  } else if (nud->pesp_conn->type == ESPCONN_TCP) {
-  	    if(nud->pesp_conn->proto.tcp)
-  	      c_free(nud->pesp_conn->proto.tcp);
-  	    nud->pesp_conn->proto.tcp = NULL;
-  	  }
+        if(nud->pesp_conn->proto.udp)
+          c_free(nud->pesp_conn->proto.udp);
+        nud->pesp_conn->proto.udp = NULL;
+      } else if (nud->pesp_conn->type == ESPCONN_TCP) {
+        if(nud->pesp_conn->proto.tcp)
+          c_free(nud->pesp_conn->proto.tcp);
+        nud->pesp_conn->proto.tcp = NULL;
+      }
       c_free(nud->pesp_conn);
     }
     nud->pesp_conn = NULL;    // for socket, it will free this when disconnected
   }
 
+#ifdef SENDQUEUE_ENABLE
+  sendqueue_drop(L, nud);
+#endif
   // free (unref) callback ref
   if(LUA_NOREF!=nud->cb_connect_ref){
     luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_connect_ref);
@@ -579,7 +621,7 @@ static int net_delete( lua_State* L, const char* mt )
     nud->self_ref = LUA_NOREF;
   }
   lua_gc(gL, LUA_GCRESTART, 0);
-  return 0;  
+  return 0;
 }
 
 static void socket_connect(struct espconn *pesp_conn)
@@ -679,7 +721,7 @@ static int net_start( lua_State* L, const char* mt )
   ip_addr_t ipaddr;
   const char *domain;
   uint8_t stack = 1;
-  
+
   if (mt!=NULL && c_strcmp(mt, "net.server")==0)
     isserver = true;
   else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
@@ -694,8 +736,8 @@ static int net_start( lua_State* L, const char* mt )
   stack++;
 
   if(nud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
+    NODE_DBG("userdata is nil.\n");
+    return 0;
   }
 
   if(nud->pesp_conn == NULL){
@@ -769,8 +811,8 @@ static int net_start( lua_State* L, const char* mt )
         if(tcpserver_cb_connect_ref != LUA_NOREF)
           luaL_unref(L, LUA_REGISTRYINDEX, tcpserver_cb_connect_ref);
         tcpserver_cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-      } 
-      else 
+      }
+      else
       {
         if(nud->cb_connect_ref != LUA_NOREF)
           luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_connect_ref);
@@ -780,10 +822,10 @@ static int net_start( lua_State* L, const char* mt )
   }
 
   if(!isserver || pesp_conn->type == ESPCONN_UDP){    // self_ref is only needed by socket userdata, or udp server
-  	lua_pushvalue(L, 1);  // copy to the top of stack
+    lua_pushvalue(L, 1);  // copy to the top of stack
     if(nud->self_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
-  	nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
   if( pesp_conn->type == ESPCONN_TCP )
@@ -804,14 +846,14 @@ static int net_start( lua_State* L, const char* mt )
       espconn_regist_reconcb(pesp_conn, net_socket_reconnected);
 #ifdef CLIENT_SSL_ENABLE
       if(nud->secure){
-      	if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
+        if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
           espconn_secure_disconnect(pesp_conn);
         // espconn_secure_connect(pesp_conn);
       }
       else
 #endif
       {
-      	if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
+        if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
           espconn_disconnect(pesp_conn);
         // espconn_connect(pesp_conn);
       }
@@ -821,8 +863,8 @@ static int net_start( lua_State* L, const char* mt )
   {
     espconn_regist_recvcb(pesp_conn, net_socket_received);
     espconn_regist_sentcb(pesp_conn, net_socket_sent);
-  	if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
-    	espconn_delete(pesp_conn);
+    if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
+      espconn_delete(pesp_conn);
     if(isserver)
       espconn_create(pesp_conn);    // if it's a server, no need to dns.
   }
@@ -841,7 +883,7 @@ static int net_start( lua_State* L, const char* mt )
       socket_connect(pesp_conn);
     }
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: server/socket:close()
@@ -903,8 +945,8 @@ static int net_close( lua_State* L, const char* mt )
     }
 
     if(skt==NULL){
-    	NODE_DBG("userdata is nil.\n");
-    	continue;
+      NODE_DBG("userdata is nil.\n");
+      continue;
     }
 
     if(skt->pesp_conn)    // disconnect the connection
@@ -913,13 +955,13 @@ static int net_close( lua_State* L, const char* mt )
       {
   #ifdef CLIENT_SSL_ENABLE
         if(skt->secure){
-        	if(skt->pesp_conn->proto.tcp->remote_port || skt->pesp_conn->proto.tcp->local_port)
-        	  espconn_secure_disconnect(skt->pesp_conn);
+          if(skt->pesp_conn->proto.tcp->remote_port || skt->pesp_conn->proto.tcp->local_port)
+            espconn_secure_disconnect(skt->pesp_conn);
         }
         else
   #endif
         {
-        	if(skt->pesp_conn->proto.tcp->remote_port || skt->pesp_conn->proto.tcp->local_port)
+          if(skt->pesp_conn->proto.tcp->remote_port || skt->pesp_conn->proto.tcp->local_port)
             espconn_disconnect(skt->pesp_conn);
         }
       }else if(skt->pesp_conn->type == ESPCONN_UDP)
@@ -937,8 +979,8 @@ static int net_close( lua_State* L, const char* mt )
 #if 0
     // unref the self_ref
     if(LUA_NOREF!=skt->self_ref){    // for a server self_ref is NOREF
-    	luaL_unref(L, LUA_REGISTRYINDEX, skt->self_ref);
-    	skt->self_ref = LUA_NOREF;   // for a socket, now only var in lua is ref to the userdata
+      luaL_unref(L, LUA_REGISTRYINDEX, skt->self_ref);
+      skt->self_ref = LUA_NOREF;   // for a socket, now only var in lua is ref to the userdata
     }
 #endif
     lua_settop(L, n);   // reset the stack top
@@ -952,7 +994,7 @@ static int net_close( lua_State* L, const char* mt )
   }
 #endif
 
-  return 0;  
+  return 0;
 }
 
 // Lua: socket/udpserver:on( "method", function(s) )
@@ -962,12 +1004,12 @@ static int net_on( lua_State* L, const char* mt )
   bool isserver = false;
   lnet_userdata *nud;
   size_t sl;
-  
+
   nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
   if(nud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
+    NODE_DBG("userdata is nil.\n");
+    return 0;
   }
 
   if (mt!=NULL && c_strcmp(mt, "net.server")==0)
@@ -1012,27 +1054,41 @@ static int net_on( lua_State* L, const char* mt )
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);
     nud->cb_dns_found_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else{
-  	lua_pop(L, 1);
+    lua_pop(L, 1);
     return luaL_error( L, "method not supported" );
   }
 
-  return 0;  
+  return 0;
+}
+
+static void net_send_do(lnet_userdata *nud, unsigned char *payload, size_t l) {
+  struct espconn *pesp_conn = nud->pesp_conn;
+
+#ifdef SENDQUEUE_ENABLE
+  nud->sending = 1;
+#endif
+#ifdef CLIENT_SSL_ENABLE
+  if(nud->secure)
+    espconn_secure_sent(pesp_conn, (unsigned char *)payload, l);
+  else
+#endif
+    espconn_sent(pesp_conn, (unsigned char *)payload, l);
 }
 
 // Lua: server/socket:send( string, function(sent) )
-static int net_send( lua_State* L, const char* mt )
+static int net_send( lua_State* L, const char* mt, uint8_t use_queue)
 {
   // NODE_DBG("net_send is called.\n");
   bool isserver = false;
   struct espconn *pesp_conn = NULL;
   lnet_userdata *nud;
   size_t l;
-  
+
   nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
   if(nud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
+    NODE_DBG("userdata is nil.\n");
+    return 0;
   }
 
   if(nud->pesp_conn == NULL){
@@ -1066,8 +1122,13 @@ static int net_send( lua_State* L, const char* mt )
 #endif
 
   const char *payload = luaL_checklstring( L, 2, &l );
+#ifdef SENDQUEUE_ENABLE
+  if (payload == NULL)
+    return luaL_error( L, "need not null payload" );
+#else
   if (l>1460 || payload == NULL)
     return luaL_error( L, "need <1460 payload" );
+#endif
 
   if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION){
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
@@ -1085,15 +1146,22 @@ static int net_send( lua_State* L, const char* mt )
     os_memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
     // The remot_info apparently should *not* be os_free()d, fyi
   }
-#ifdef CLIENT_SSL_ENABLE
-  if(nud->secure)
-    espconn_secure_sent(pesp_conn, (unsigned char *)payload, l);
-  else
-#endif
-    espconn_sent(pesp_conn, (unsigned char *)payload, l);
 
-  return 0;  
+#ifdef SENDQUEUE_ENABLE
+  NODE_DBG("Sending status %d.\n", nud->sending);
+  if ( use_queue && (l > SENDQUEUE_MAX_BLOCK_SIZE || nud->sending || nud->sendqueue) ) { // Already have a queue
+    NODE_DBG("sendqueue_add for %d bytes\n", l);
+    lua_pushvalue(L, 2);  // copy data
+    sendqueue_add(L, nud, luaL_ref(L, LUA_REGISTRYINDEX));
+    return 0;
+  }
+#endif
+  net_send_do(nud, (unsigned char*)payload, l);
+
+  return 0;
 }
+
+
 
 // Lua: socket:dns( string, function(socket, ip) )
 static int net_dns( lua_State* L, const char* mt )
@@ -1103,7 +1171,7 @@ static int net_dns( lua_State* L, const char* mt )
   struct espconn *pesp_conn = NULL;
   lnet_userdata *nud;
   size_t l;
-  
+
   nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
   if(nud==NULL){
@@ -1150,7 +1218,7 @@ static int net_dns( lua_State* L, const char* mt )
     net_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
 
 
-  return 0;  
+  return 0;
 }
 
 // Lua: net.dns.resolve( domain, function(ip) )
@@ -1159,7 +1227,7 @@ static int net_dns_static( lua_State* L )
   const char *mt = "net.socket";
   if (!lua_isstring( L, 1 ))
     return luaL_error( L, "wrong parameter type (domain)" );
-  
+
   int rfunc = LUA_NOREF; //save reference to func
   if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION){
     rfunc = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -1183,7 +1251,7 @@ static int net_dns_static( lua_State* L )
   struct espconn *pesp_conn = NULL;
   lnet_userdata *nud;
   size_t l;
-  
+
   nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
   if(nud==NULL){
@@ -1259,8 +1327,16 @@ static int net_udpserver_on( lua_State* L )
 static int net_udpserver_send( lua_State* L )
 {
   const char *mt = "net.server";
-  return net_send(L, mt);;
+  return net_send(L, mt, 0);
 }
+// Lua: udpserver:sendq(string, function() )
+#ifdef SENDQUEUE_ENABLE
+static int net_udpserver_sendq( lua_State* L )
+{
+  const char *mt = "net.server";
+  return net_send(L, mt, 1);
+}
+#endif
 
 // Lua: s = net.createConnection(type, function(conn))
 static int net_createConnection( lua_State* L )
@@ -1301,8 +1377,17 @@ static int net_socket_on( lua_State* L )
 static int net_socket_send( lua_State* L )
 {
   const char *mt = "net.socket";
-  return net_send(L, mt);
+  return net_send(L, mt, 0);
 }
+
+// Lua: socket:sendq( string, function() )
+#ifdef SENDQUEUE_ENABLE
+static int net_socket_sendq( lua_State* L )
+{
+  const char *mt = "net.socket";
+  return net_send(L, mt, 1);
+}
+#endif
 
 static int net_socket_hold( lua_State* L )
 {
@@ -1386,50 +1471,50 @@ static int net_socket_dns( lua_State* L )
 
 static int net_multicastJoinLeave( lua_State *L, int join)
 {
-	  size_t il;
-	  ip_addr_t multicast_addr;
-	  ip_addr_t if_addr;
-	  const char *multicast_ip;
-	  const char *if_ip;
+    size_t il;
+    ip_addr_t multicast_addr;
+    ip_addr_t if_addr;
+    const char *multicast_ip;
+    const char *if_ip;
 
-	  NODE_DBG("net_multicastJoin is called.\n");
-	  if(! lua_isstring(L,1) ) return luaL_error( L, "wrong arg type" );
-	  if_ip = luaL_checklstring( L, 1, &il );
-	  if (if_ip != NULL)
-		 if ( if_ip[0] == '\0' || stricmp(if_ip,"any") == 0)
-	     {
-			 if_ip = "0.0.0.0";
-			 il = 7;
-	     }
-	  if (if_ip == NULL || il > 15 || il < 7) return luaL_error( L, "invalid if ip" );
-	  if_addr.addr = ipaddr_addr(if_ip);
+    NODE_DBG("net_multicastJoin is called.\n");
+    if(! lua_isstring(L,1) ) return luaL_error( L, "wrong arg type" );
+    if_ip = luaL_checklstring( L, 1, &il );
+    if (if_ip != NULL)
+     if ( if_ip[0] == '\0' || stricmp(if_ip,"any") == 0)
+     {
+       if_ip = "0.0.0.0";
+       il = 7;
+     }
+    if (if_ip == NULL || il > 15 || il < 7) return luaL_error( L, "invalid if ip" );
+    if_addr.addr = ipaddr_addr(if_ip);
 
-	  if(! lua_isstring(L,2) ) return luaL_error( L, "wrong arg type" );
-	  multicast_ip = luaL_checklstring( L, 2, &il );
-	  if (multicast_ip == NULL || il > 15 || il < 7) return luaL_error( L, "invalid multicast ip" );
-	  multicast_addr.addr = ipaddr_addr(multicast_ip);
-	  if (join)
-	  {
-		  espconn_igmp_join(&if_addr, &multicast_addr);
-	  }
-	  else
-	  {
-		  espconn_igmp_leave(&if_addr, &multicast_addr);
-	  }
-	  return 0;
+    if(! lua_isstring(L,2) ) return luaL_error( L, "wrong arg type" );
+    multicast_ip = luaL_checklstring( L, 2, &il );
+    if (multicast_ip == NULL || il > 15 || il < 7) return luaL_error( L, "invalid multicast ip" );
+    multicast_addr.addr = ipaddr_addr(multicast_ip);
+    if (join)
+    {
+      espconn_igmp_join(&if_addr, &multicast_addr);
+    }
+    else
+    {
+      espconn_igmp_leave(&if_addr, &multicast_addr);
+    }
+    return 0;
 }
 // Lua: net.multicastJoin(ifip, multicastip)
 // if ifip "" or "any" all interfaces are affected
 static int net_multicastJoin( lua_State* L )
 {
-	return net_multicastJoinLeave(L,1);
+  return net_multicastJoinLeave(L,1);
 }
 
 // Lua: net.multicastLeave(ifip, multicastip)
 // if ifip "" or "any" all interfaces are affected
 static int net_multicastLeave( lua_State* L )
 {
-	return net_multicastJoinLeave(L,0);
+  return net_multicastJoinLeave(L,0);
 }
 
 
@@ -1477,6 +1562,75 @@ static int net_getdnsserver( lua_State* L )
   return 1;
 }
 
+// Send queue management
+#ifdef SENDQUEUE_ENABLE
+static void sendqueue_prepare(lnet_userdata* nud)
+{
+  nud->sending = 0;
+  nud->sendqueue = NULL;
+}
+
+static void sendqueue_drop(lua_State* L, lnet_userdata* nud)
+{
+  struct t_sendqueue* d = nud->sendqueue;
+
+  nud->sending = 0;
+  nud->sendqueue = NULL;
+  while (d) {
+    sendqueue_node_free(L, d);
+    d = d->next;
+  }
+}
+
+static void sendqueue_node_free(lua_State* L, t_sendqueue *d)
+{
+  luaL_unref(gL, LUA_REGISTRYINDEX, d->lua_data);
+  d->lua_data = LUA_NOREF;
+  c_free(d);
+}
+
+static void sendqueue_proceed(lua_State* L, lnet_userdata* nud)
+{
+  struct t_sendqueue* d = nud->sendqueue;
+  size_t len;
+
+  if (d) {
+    lua_rawgeti(gL, LUA_REGISTRYINDEX, d->lua_data); // the only way to get lua string from ref I found.
+    const unsigned char *st = lua_tolstring (L, -1, &len);
+    lua_pop(L, 1);
+    if (!st) {
+      nud->sendqueue = d->next;
+      sendqueue_node_free(L, d);
+      return;
+    }
+    uint16_t l = len - d->pos > SENDQUEUE_MAX_BLOCK_SIZE ? SENDQUEUE_MAX_BLOCK_SIZE : len - d->pos; // TODO: Find the real block size <1460
+    net_send_do(nud, (unsigned char*) st + d->pos, l);
+    d->pos+=l;
+    if (d->pos >= len) {
+      nud->sendqueue = d->next;
+      sendqueue_node_free(L, d);
+    }
+  } else {
+    nud->sending = 0;
+  }
+}
+
+static void sendqueue_add(lua_State* L, lnet_userdata* nud, int lua_data)
+{
+  struct t_sendqueue* d = nud->sendqueue;
+  while (d && d->next) d = d->next; // goto the queue end
+  if (d) {
+    d = d->next = c_malloc(sizeof(t_sendqueue));
+  } else { // empty queue
+    d = nud->sendqueue = c_malloc(sizeof(t_sendqueue));
+  }
+  d->lua_data = lua_data;
+  d->pos = 0;
+  d->next = NULL;
+  if (!nud->sending) sendqueue_proceed(L, nud);
+}
+#endif
+
 #if 0
 static int net_array_index( lua_State* L )
 {
@@ -1511,6 +1665,9 @@ static const LUA_REG_TYPE net_server_map[] = {
   { LSTRKEY( "close" ),   LFUNCVAL( net_server_close ) },
   { LSTRKEY( "on" ),      LFUNCVAL( net_udpserver_on ) },
   { LSTRKEY( "send" ),    LFUNCVAL( net_udpserver_send ) },
+#ifdef SENDQUEUE_ENABLE
+  { LSTRKEY( "sendq" ),   LFUNCVAL( net_udpserver_sendq ) },
+#endif
 //{ LSTRKEY( "delete" ),  LFUNCVAL( net_server_delete ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( net_server_delete ) },
   { LSTRKEY( "__index" ), LROVAL( net_server_map ) },
@@ -1522,6 +1679,9 @@ static const LUA_REG_TYPE net_socket_map[] = {
   { LSTRKEY( "close" ),   LFUNCVAL( net_socket_close ) },
   { LSTRKEY( "on" ),      LFUNCVAL( net_socket_on ) },
   { LSTRKEY( "send" ),    LFUNCVAL( net_socket_send ) },
+#ifdef SENDQUEUE_ENABLE
+  { LSTRKEY( "sendq" ),   LFUNCVAL( net_socket_sendq ) },
+#endif
   { LSTRKEY( "hold" ),    LFUNCVAL( net_socket_hold ) },
   { LSTRKEY( "unhold" ),  LFUNCVAL( net_socket_unhold ) },
   { LSTRKEY( "dns" ),     LFUNCVAL( net_socket_dns ) },
@@ -1540,9 +1700,9 @@ static const LUA_REG_TYPE net_array_map[] = {
 #endif
 
 static const LUA_REG_TYPE net_dns_map[] = {
-  { LSTRKEY( "setdnsserver" ), LFUNCVAL( net_setdnsserver ) },  
-  { LSTRKEY( "getdnsserver" ), LFUNCVAL( net_getdnsserver ) }, 
-  { LSTRKEY( "resolve" ),      LFUNCVAL( net_dns_static ) },  
+  { LSTRKEY( "setdnsserver" ), LFUNCVAL( net_setdnsserver ) },
+  { LSTRKEY( "getdnsserver" ), LFUNCVAL( net_getdnsserver ) },
+  { LSTRKEY( "resolve" ),      LFUNCVAL( net_dns_static ) },
   { LNILKEY, LNILVAL }
 };
 
