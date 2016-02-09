@@ -478,7 +478,7 @@ spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type 
   return spi_mast_get_miso( id, 0, bitlen );
 }
 
-int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data )
+int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data )
 {
   if (offset + bitlen > 512)
     return PLATFORM_ERR;
@@ -488,7 +488,7 @@ int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_
   return PLATFORM_OK;
 }
 
-spi_data_type platform_spi_get_miso( uint8_t id, uint8_t offset, uint8_t bitlen )
+spi_data_type platform_spi_get_miso( uint8_t id, uint16_t offset, uint8_t bitlen )
 {
   if (offset + bitlen > 512)
     return 0;

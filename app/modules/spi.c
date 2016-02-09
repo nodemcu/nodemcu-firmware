@@ -292,7 +292,7 @@ static int spi_transaction( lua_State *L )
     return luaL_error( L, "dummy_bitlen out of range" );
   }
 
-  if (miso_bitlen < -512 || miso_bitlen > 511) {
+  if (miso_bitlen < -512 || miso_bitlen > 512) {
     return luaL_error( L, "miso_bitlen out of range" );
   }
 
