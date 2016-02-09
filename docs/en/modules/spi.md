@@ -88,7 +88,7 @@ Refer to [Serial Peripheral Interface Bus](https://en.wikipedia.org/wiki/Serial_
 	- `spi.SLAVE` - **not supported currently**
 - `cpol` clock polarity selection
 	- `spi.CPOL_LOW` 
-	- `spi.CPOL_HIGH` - **not supported currently**
+	- `spi.CPOL_HIGH`
 - `cpha` clock phase selection
 	- `spi.CPHA_LOW`
 	- `spi.CPHA_HIGH`
