@@ -128,12 +128,12 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
  * Description  : Enter provided data into MOSI buffer.
  *                The data is regarded as a sequence of bits with length 'bitlen'.
  *                It will be written left-aligned starting from position 'offset'.
- * Parameters   :   uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
- *                  uint8 offset - offset into MOSI buffer (number of bits)
- *                  uint8 bitlen - valid number of bits in data
+ * Parameters   :   uint8  spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint16 offset - offset into MOSI buffer (number of bits)
+ *                  uint8  bitlen - valid number of bits in data
  *                  uint32 data  - data to be written into buffer
 *******************************************************************************/
-void spi_mast_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data)
+void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
 {
     uint8  wn, wn_offset, wn_bitlen;
     uint32 wn_data;
@@ -186,11 +186,11 @@ void spi_mast_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data)
  * Description  : Retrieve data from MISO buffer.
  *                The data is regarded as a sequence of bits with length 'bitlen'.
  *                It will be read starting left-aligned from position 'offset'.
- * Parameters   :   uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
- *                  uint8 offset - offset into MISO buffer (number of bits)
- *                  uint8 bitlen - requested number of bits in data
+ * Parameters   :   uint8  spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint16 offset - offset into MISO buffer (number of bits)
+ *                  uint8  bitlen - requested number of bits in data
 *******************************************************************************/
-uint32 spi_mast_get_miso(uint8 spi_no, uint8 offset, uint8 bitlen)
+uint32 spi_mast_get_miso(uint8 spi_no, uint16 offset, uint8 bitlen)
 {
     uint8  wn, wn_offset, wn_bitlen;
     uint32 wn_data = 0;
