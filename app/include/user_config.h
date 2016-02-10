@@ -13,8 +13,8 @@
 #define FLASH_SAFE_API
 
 // Byte 107 of esp_init_data_default, only one of these 3 can be picked
-#define ESP_INIT_DATA_ENABLE_READVDD33
-//#define ESP_INIT_DATA_ENABLE_READADC
+//#define ESP_INIT_DATA_ENABLE_READVDD33
+#define ESP_INIT_DATA_ENABLE_READADC
 //#define ESP_INIT_DATA_FIXED_VDD33_VALUE 33
 
 // #define DEVELOP_VERSION
