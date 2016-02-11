@@ -19,6 +19,7 @@
 
 import sys
 import struct
+import serial
 import math
 import time
 import argparse

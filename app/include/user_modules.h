@@ -4,7 +4,7 @@
 #define LUA_USE_BUILTIN_STRING		// for string.xxx()
 #define LUA_USE_BUILTIN_TABLE		// for table.xxx()
 #define LUA_USE_BUILTIN_COROUTINE	// for coroutine.xxx()
-//#define LUA_USE_BUILTIN_MATH		// for math.xxx(), partially work
+#define LUA_USE_BUILTIN_MATH		// for math.xxx(), partially work
 // #define LUA_USE_BUILTIN_IO 			// for io.xxx(), partially work
 
 // #define LUA_USE_BUILTIN_OS			// for os.xxx(), not work
@@ -14,7 +14,6 @@
 #ifndef LUA_CROSS_COMPILER
 
 #define LUA_USE_MODULES_ADC
-//#define LUA_USE_MODULES_APA102
 #define LUA_USE_MODULES_BIT
 //#define LUA_USE_MODULES_BMP085
 #define LUA_USE_MODULES_CJSON
@@ -24,7 +23,6 @@
 //#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
 #define LUA_USE_MODULES_FILE
 #define LUA_USE_MODULES_GPIO
-#define LUA_USE_MODULES_HTTP
 //#define LUA_USE_MODULES_HX711
 #define LUA_USE_MODULES_I2C
 #define LUA_USE_MODULES_MQTT
