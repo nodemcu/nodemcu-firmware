@@ -4,6 +4,16 @@
 ifndef PDIR
 
 endif
+#############################################################
+# Options
+#
+
+FSSOURCE = ../local/fs/
+FSSIZE = 196608
+
+#############################################################
+# recursion
+#
 
 SUBDIRS ?= $(patsubst %/,%,$(dir $(wildcard */Makefile)))
 
@@ -15,22 +25,39 @@ define ShortcutRule
 $(1): .subdirs $(2)/$(1)
 endef
 
-SPIFFSFILES ?= $(patsubst ./files/%,%,$(shell find ./files/ -name '*' ))
+SPIFFSFILES ?= $(patsubst $(FSSOURCE)%,%,$(shell find $(FSSOURCE) -name '*' ))
+
+#################################################################
+# Get the filesize of /bin/0x10000.bin
+#
+
+ROM0X10000SIZE = $$(du -b ../bin/0x10000.bin | cut -f 1)
+
+#################################################################
+# Calculate the address, the spiffs has o be placed for the given
+# 0x10000.bin file size.
+#
+
+SPIFFSBASE = $$(( ( ($(ROM0X10000SIZE) + 0x13FFF) / 0x4000) * 0x4000))
+SPIFFSBASEHEX = $$( echo "obase=16; $(SPIFFSBASE)" | bc )
+
 
 #############################################################
 # Rules base
-# Should be done in top-level makefile only
 #
 
 all:	.subdirs spiffssript
 
 spiffssript:	
-	rm -f spiffs.lst
-	$(foreach f, $(SPIFFSFILES), echo "import files/$(f) $(f)" >> spiffs.lst ;)
-	spiffsimg/spiffsimg -f spiffs.bin -c 196608 -r spiffs.lst 
+	rm -f ./spiffsimg/spiffs.lst
+	echo "" >> ./spiffsimg/spiffs.lst
+	$(foreach f, $(SPIFFSFILES), echo "import $(FSSOURCE)$(f) $(f)" >> ./spiffsimg/spiffs.lst ;)
+	spiffsimg/spiffsimg -f ../bin/0x$(SPIFFSBASEHEX).bin -c $(FSSIZE) -r ./spiffsimg/spiffs.lst 
+	
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
+	rm -f ./spiffsimg/spiffs.lst
 
 .subdirs:
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
