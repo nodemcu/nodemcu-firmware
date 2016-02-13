@@ -148,6 +148,9 @@ static int crypto_new_hash (lua_State *L)
     return bad_mech (L);
 
   void *ctx = os_malloc (mi->ctx_size);
+  if (ctx==NULL)
+    return bad_mem (L);
+
   mi->create (ctx);
 
   // create a userdataum with specific metatable
@@ -173,15 +176,8 @@ static int crypto_hash_update (lua_State *L)
 
   dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
   luaL_argcheck(L, dudat, 1, "crypto.hash expected");
-  if(dudat==NULL){
-    NODE_DBG("userdata is nil.\n");
-    return 0;
-  }
 
   const digest_mech_info_t *mi = dudat->mech_info;
-
-  if (!mi)
-    return bad_mech (L);
 
   size_t len = 0;
   const char *data = luaL_checklstring (L, 2, &len);
@@ -200,10 +196,6 @@ static int crypto_hash_finalize (lua_State *L)
 
   dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
   luaL_argcheck(L, dudat, 1, "crypto.hash expected");
-  if(dudat==NULL){
-    NODE_DBG("userdata is nil.\n");
-    return 0;
-  }
 
   const digest_mech_info_t *mi = dudat->mech_info;
 
@@ -219,14 +211,9 @@ static int crypto_hash_gcdelete (lua_State *L)
 {
   NODE_DBG("enter crypto_hash_delete.\n");
   digest_user_datum_t *dudat;
-  size_t sl;
 
   dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
   luaL_argcheck(L, dudat, 1, "crypto.hash expected");
-  if(dudat==NULL){
-    NODE_DBG("userdata is nil.\n");
-    return 0;
-  }
 
   os_free(dudat->ctx);
   os_free(dudat);
