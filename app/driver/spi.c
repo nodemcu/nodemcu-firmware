@@ -70,31 +70,14 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 
 	if(spi_no>1) 		return; //handle invalid input number
 
-	if(spi_no==SPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005); 
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
-	}
-	else if(spi_no==HSPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105); 
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 2);//configure io to spi mode	
-	}
-
 	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER|SPI_DOUTDIN);
 
-	//set clock polarity
-	// TODO: This doesn't work
-	//if (cpol == 1) {
-	//    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_HIGH_MODE<<SPI_CK_OUT_HIGH_MODE_S));
-	//} else {
-	//    SET_PERI_REG_MASK(SPI_CTRL2(spi_no), (SPI_CK_OUT_LOW_MODE<<SPI_CK_OUT_LOW_MODE_S));
-	//}
-	//os_printf("SPI_CTRL2 is %08x\n",READ_PERI_REG(SPI_CTRL2(spi_no)));
+	//set clock polarity (Reference: http://bbs.espressif.com/viewtopic.php?f=49&t=1570)
+	if (cpol == 1) {
+		SET_PERI_REG_MASK(SPI_PIN(spi_no), SPI_IDLE_EDGE);
+	} else {
+		CLEAR_PERI_REG_MASK(SPI_PIN(spi_no), SPI_IDLE_EDGE);
+	}
 
 	//set clock phase
 	if (cpha == 1) {
@@ -123,6 +106,21 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 					((1&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
 					((0&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
 					((1&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
+
+	if(spi_no==SPI){
+		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005); 
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
+	}
+	else if(spi_no==HSPI){
+		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105); 
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	
+		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 2);//configure io to spi mode	
+	}
 }
 
 /******************************************************************************
@@ -130,12 +128,12 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
  * Description  : Enter provided data into MOSI buffer.
  *                The data is regarded as a sequence of bits with length 'bitlen'.
  *                It will be written left-aligned starting from position 'offset'.
- * Parameters   :   uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
- *                  uint8 offset - offset into MOSI buffer (number of bits)
- *                  uint8 bitlen - valid number of bits in data
+ * Parameters   :   uint8  spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint16 offset - offset into MOSI buffer (number of bits)
+ *                  uint8  bitlen - valid number of bits in data
  *                  uint32 data  - data to be written into buffer
 *******************************************************************************/
-void spi_mast_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data)
+void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
 {
     uint8  wn, wn_offset, wn_bitlen;
     uint32 wn_data;
@@ -188,11 +186,11 @@ void spi_mast_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data)
  * Description  : Retrieve data from MISO buffer.
  *                The data is regarded as a sequence of bits with length 'bitlen'.
  *                It will be read starting left-aligned from position 'offset'.
- * Parameters   :   uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
- *                  uint8 offset - offset into MISO buffer (number of bits)
- *                  uint8 bitlen - requested number of bits in data
+ * Parameters   :   uint8  spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                  uint16 offset - offset into MISO buffer (number of bits)
+ *                  uint8  bitlen - requested number of bits in data
 *******************************************************************************/
-uint32 spi_mast_get_miso(uint8 spi_no, uint8 offset, uint8 bitlen)
+uint32 spi_mast_get_miso(uint8 spi_no, uint16 offset, uint8 bitlen)
 {
     uint8  wn, wn_offset, wn_bitlen;
     uint32 wn_data = 0;

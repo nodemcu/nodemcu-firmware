@@ -1,6 +1,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "rom.h"
 //#include "driver/easygpio.h"
 //static Ping_Data pingA;
 #define defPulseLen 185

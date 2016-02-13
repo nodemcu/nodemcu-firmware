@@ -114,6 +114,22 @@ static int file_seek (lua_State *L)
   return 1;
 }
 
+// Lua: exists(filename)
+static int file_exists( lua_State* L )
+{
+  size_t len;
+  const char *fname = luaL_checklstring( L, 1, &len );
+  if( len > FS_NAME_MAX_LENGTH )
+    return luaL_error(L, "filename too long");
+
+  spiffs_stat stat;
+  int rc = SPIFFS_stat(&fs, (char *)fname, &stat);
+
+  lua_pushboolean(L, (rc == SPIFFS_OK ? 1 : 0));
+
+  return 1;
+}
+
 // Lua: remove(filename)
 static int file_remove( lua_State* L )
 {
@@ -175,7 +191,7 @@ static int file_rename( lua_State* L )
 // Lua: fsinfo()
 static int file_fsinfo( lua_State* L )
 {
-  uint32_t total, used;
+  u32_t total, used;
   SPIFFS_info(&fs, &total, &used);
   NODE_DBG("total: %d, used:%d\n", total, used);
   if(total>0x7FFFFFFF || used>0x7FFFFFFF || used > total)
@@ -312,6 +328,7 @@ static const LUA_REG_TYPE file_map[] = {
 //{ LSTRKEY( "check" ),     LFUNCVAL( file_check ) },
   { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
+  { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
 #endif
   { LNILKEY, LNILVAL }
 };

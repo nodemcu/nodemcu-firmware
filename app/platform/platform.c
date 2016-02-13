@@ -1,12 +1,16 @@
 // Platform-dependent functions
 
 #include "platform.h"
+#include "common.h"
 #include "c_stdio.h"
 #include "c_string.h"
 #include "c_stdlib.h"
 #include "gpio.h"
 #include "user_interface.h"
 #include "driver/uart.h"
+#include "driver/gpio16.h"
+#include "driver/i2c_master.h"
+#include "driver/spi.h"
 // Platform specific includes
 
 static void pwms_init();
@@ -131,7 +135,8 @@ int platform_gpio_read( unsigned pin )
 }
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static void platform_gpio_intr_dispatcher( platform_gpio_intr_handler_fn_t cb){
+static void platform_gpio_intr_dispatcher( void *arg) {
+  platform_gpio_intr_handler_fn_t cb = arg;
   uint8 i, level;
   uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   for (i = 0; i < GPIO_PIN_NUM; i++) {
@@ -473,7 +478,7 @@ spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type 
   return spi_mast_get_miso( id, 0, bitlen );
 }
 
-int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data )
+int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data )
 {
   if (offset + bitlen > 512)
     return PLATFORM_ERR;
@@ -483,7 +488,7 @@ int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_
   return PLATFORM_OK;
 }
 
-spi_data_type platform_spi_get_miso( uint8_t id, uint8_t offset, uint8_t bitlen )
+spi_data_type platform_spi_get_miso( uint8_t id, uint16_t offset, uint8_t bitlen )
 {
   if (offset + bitlen > 512)
     return 0;

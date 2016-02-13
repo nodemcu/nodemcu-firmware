@@ -594,6 +594,7 @@ static void socket_connect(struct espconn *pesp_conn)
   {
 #ifdef CLIENT_SSL_ENABLE
     if(nud->secure){
+      espconn_secure_set_size(ESPCONN_CLIENT, 5120); /* set SSL buffer size */
       espconn_secure_connect(pesp_conn);
     }
     else
@@ -610,7 +611,7 @@ static void socket_connect(struct espconn *pesp_conn)
 }
 
 static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
-static dns_reconn_count = 0;
+static int dns_reconn_count = 0;
 static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
   NODE_DBG("socket_dns_found is called.\n");

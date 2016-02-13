@@ -101,8 +101,8 @@ int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data );
 spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type data );
 void platform_spi_select( unsigned id, int is_select );
 
-int platform_spi_set_mosi( uint8_t id, uint8_t offset, uint8_t bitlen, spi_data_type data );
-spi_data_type platform_spi_get_miso( uint8_t id, uint8_t offset, uint8_t bitlen );
+int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data );
+spi_data_type platform_spi_get_miso( uint8_t id, uint16_t offset, uint8_t bitlen );
 int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,
                               uint8_t addr_bitlen, spi_data_type addr_data,
                               uint16_t mosi_bitlen, uint8_t dummy_bitlen, int16_t miso_bitlen );
@@ -149,6 +149,7 @@ int platform_uart_recv( unsigned id, unsigned timer_id, timer_data_type timeout 
 int platform_s_uart_recv( unsigned id, timer_data_type timeout );
 int platform_uart_set_flow_control( unsigned id, int type );
 int platform_s_uart_set_flow_control( unsigned id, int type );
+void platform_uart_alt( int set );
 
 // *****************************************************************************
 // PWM subsection
@@ -252,6 +253,14 @@ uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
 
 void* platform_get_first_free_ram( unsigned id );
 void* platform_get_last_free_ram( unsigned id );
+
+
+// *****************************************************************************
+// Other glue
+
+int platform_ow_exists( unsigned id );
+int platform_gpio_exists( unsigned id );
+int platform_tmr_exists( unsigned id );
 
 // *****************************************************************************
 // Helper macros

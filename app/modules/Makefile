@@ -15,6 +15,8 @@ ifndef PDIR
 GEN_LIBS = libmodules.a
 endif
 
+STD_CFLAGS=-std=gnu11 -Wimplicit
+
 #############################################################
 # Configuration i.e. compile options etc.
 # Target specific stuff (defines etc.) goes in here!
@@ -50,6 +52,7 @@ INCLUDES += -I ../spiffs
 INCLUDES += -I ../smart
 INCLUDES += -I ../cjson
 INCLUDES += -I ../dhtlib
+INCLUDES += -I ../http
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

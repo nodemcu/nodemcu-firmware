@@ -3,6 +3,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "rom.h"
 
 #include "c_types.h"
 #include "c_string.h"

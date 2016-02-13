@@ -14,6 +14,7 @@
 #ifndef LUA_CROSS_COMPILER
 
 #define LUA_USE_MODULES_ADC
+//#define LUA_USE_MODULES_APA102
 #define LUA_USE_MODULES_BIT
 //#define LUA_USE_MODULES_BMP085
 #define LUA_USE_MODULES_CJSON
@@ -23,6 +24,7 @@
 //#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
 #define LUA_USE_MODULES_FILE
 #define LUA_USE_MODULES_GPIO
+#define LUA_USE_MODULES_HTTP
 //#define LUA_USE_MODULES_HX711
 #define LUA_USE_MODULES_I2C
 #define LUA_USE_MODULES_MQTT

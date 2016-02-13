@@ -82,21 +82,6 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
 }
 
 
-/* To avoid accidentally losing the fix for the TCP port randomization
- * during an LWIP upgrade, we've implemented most it outside the LWIP
- * source itself. This enables us to test for the presence of the fix
- * /at link time/ and error out if it's been lost.
- * The fix itself consists of putting the function-static 'port' variable
- * into its own section, and get the linker to provide an alias for it.
- * From there we can then manually randomize it at boot.
- */
-static inline void tcp_random_port_init (void)
-{
-  extern uint16_t _tcp_new_port_port; // provided by the linker script
-  _tcp_new_port_port += xthal_get_ccount () % 4096;
-}
-
-
 void task_lua(os_event_t *e){
     char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
     NODE_DBG("Task task_lua started.\n");
@@ -193,8 +178,6 @@ void nodemcu_init(void)
     // char* lua_argv[] = { (char *)"lua", (char *)"-e", (char *)"pwm.setup(0,100,50) pwm.start(0) pwm.stop(0)", NULL };
     // lua_main( 3, lua_argv );
     // NODE_DBG("Flash sec num: 0x%x\n", flash_get_sec_num());
-
-    tcp_random_port_init ();
 
     task_init();
     system_os_post(LUA_TASK_PRIO,SIG_LUA,'s');

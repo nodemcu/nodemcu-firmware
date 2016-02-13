@@ -571,6 +571,7 @@ void myspiffs_clearerr( int fd );
 int myspiffs_check( void );
 int myspiffs_rename( const char *old, const char *newname );
 size_t myspiffs_size( int fd );
+int myspiffs_format (void);
 
 s32_t SPIFFS_eof(spiffs *fs, spiffs_file fh);
 s32_t SPIFFS_tell(spiffs *fs, spiffs_file fh);
