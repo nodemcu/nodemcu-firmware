@@ -28,6 +28,34 @@ file.close()
 #### See also
 [`file.open()`](#fileopen)
 
+## file.exists()
+
+Determines whether the specified file exists.
+
+#### Syntax
+`file.exists(filename)`
+
+#### Parameters
+- `filename` file to check
+
+#### Returns
+true of the file exists (even if 0 bytes in size), and false if it does not exist
+
+#### Example
+
+```lua
+files = file.list()
+if files["device.config"] then
+    print("Config file exists")
+end
+
+if file.exists("device.config") then
+    print("Config file exists")
+end
+```
+#### See also
+[`file.list()`](#filelist)
+
 ## file.flush()
 
 Flushes any pending writes to the file system, ensuring no data is lost on a restart. Closing the open file using [`file.close()`](#fileclose) performs an implicit flush as well.
