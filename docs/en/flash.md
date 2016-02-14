@@ -43,6 +43,8 @@ Otherwise, if you built your own firmware from source code:
 
 Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash (depending on flash size and type), see [below](#upgrading-from-sdk-09x-firmware).
 
+If you have files added into the `local/fs/` folder you might want to flash the file named in `bin/spiffs.dat` to the address it's named about. This will copy the filesystem created as a copy of `local/fs/` to your nodeMCU and made available by the lua file module.
+
 If upgrading from [SPIFFS](https://github.com/pellepl/spiffs) version 0.3.2 to 0.3.3 or later, or after flashing any new firmware (particularly one with a much different size), you may need to run [`file.format()`](modules/file.md#fileformat) to re-format your flash filesystem. You will know if you need to do this if your flash files disappeared, or if they exist but seem empty, or if data cannot be written to new files.
 
 ## Upgrading from SDK 0.9.x Firmware
