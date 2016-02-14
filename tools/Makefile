@@ -40,6 +40,7 @@ ROM0X10000SIZE = $$(du -b ../bin/0x10000.bin | cut -f 1)
 
 SPIFFSBASE = $$(( ( ($(ROM0X10000SIZE) + 0x13FFF) / 0x4000) * 0x4000))
 SPIFFSBASEHEX = $$( echo "obase=16; $(SPIFFSBASE)" | bc )
+SPIFFSOLDNAME = $$( cat ../bin/spiffs.dat )
 
 
 #############################################################
@@ -50,14 +51,19 @@ all:	.subdirs spiffssript
 
 spiffssript:	
 	rm -f ./spiffsimg/spiffs.lst
+	rm -f $(SPIFFSOLDNAME) 
+	rm -f ../bin/spiffs.dat
 	echo "" >> ./spiffsimg/spiffs.lst
 	$(foreach f, $(SPIFFSFILES), echo "import $(FSSOURCE)$(f) $(f)" >> ./spiffsimg/spiffs.lst ;)
 	spiffsimg/spiffsimg -f ../bin/0x$(SPIFFSBASEHEX).bin -c $(FSSIZE) -r ./spiffsimg/spiffs.lst 
+	echo "0x$(SPIFFSBASEHEX).bin" >> ../bin/spiffs.dat
 	
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
 	rm -f ./spiffsimg/spiffs.lst
+	rm -f $(SPIFFSOLDNAME) 
+	rm -f ../bin/spiffs.dat
 
 .subdirs:
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
