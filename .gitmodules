@@ -1,0 +1,3 @@
+[submodule "tools/spiffsimg"]
+	path = tools/spiffsimg
+	url = https://github.com/DiUS/spiffsimg.git

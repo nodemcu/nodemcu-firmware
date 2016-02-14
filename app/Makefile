@@ -121,8 +121,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-lssl 					\
 	-lcrypto				\
 	$(DEP_LIBS_eagle.app.v6) 		\
-	-Wl,--end-group 			\
-	-lm
+	-Wl,--end-group 			
 
 DEPENDS_eagle.app.v6 = 				\
                 $(LD_FILE) 			\
