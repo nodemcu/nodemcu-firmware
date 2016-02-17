@@ -195,6 +195,7 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
     case BIT_RATE_74880:
     case BIT_RATE_115200:
     case BIT_RATE_230400:
+    case BIT_RATE_256000:
     case BIT_RATE_460800:
     case BIT_RATE_921600:
     case BIT_RATE_1843200:
