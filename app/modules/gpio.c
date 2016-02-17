@@ -43,6 +43,7 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
 // Lua: trig( pin, type, function )
 static int lgpio_trig( lua_State* L )
 {
+<<<<<<< HEAD
   unsigned pin = luaL_checkinteger( L, 1 );
   static const char * const opts[] = {"", "up", "down", "both", "low", "high"};
   static const int opts_type[] = {
@@ -54,13 +55,37 @@ static int lgpio_trig( lua_State* L )
   luaL_argcheck(L, platform_gpio_exists(pin) && pin>0, 1, "Invalid interrupt pin");
 
   if (type != GPIO_PIN_INTR_DISABLE) {
+=======
+  unsigned type = GPIO_PIN_INTR_DISABLE;
+  unsigned pin = luaL_checkinteger( L, 1 );
+  size_t sl;
+  const char *str = luaL_checklstring( L, 2, &sl );
+  const char * const opt[] = {"", "up", "down", "both", "low", "high"};
+  
+  luaL_argcheck(L, pin>0 && pin< NUM_GPIO, 1, "Invalid interrupt pin");
+  luaL_argcheck(L, str != NULL, 2, "trigger type ommitted" );
+
+  if      (str[0] == 'u') type = GPIO_PIN_INTR_POSEDGE;
+  else if (str[0] == 'd') type = GPIO_PIN_INTR_NEGEDGE;
+  else if (str[0] == 'b') type = GPIO_PIN_INTR_ANYEDGE;
+  else if (str[0] == 'l') type = GPIO_PIN_INTR_LOLEVEL;
+  else if (str[0] == 'h') type = GPIO_PIN_INTR_HILEVEL;
+  
+  if (c_strcmp(str,opt[type])) {
+    type = GPIO_PIN_INTR_DISABLE;
+  } else {
+>>>>>>> 9c76604291b75a688755f06a30dad07900d74073
     int cbtype = lua_type(L, 3);
     luaL_argcheck(L, cbtype == LUA_TFUNCTION || cbtype == LUA_TLIGHTFUNCTION, 3,
       "invalid callback type");
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     gpio_cb_ref[pin] = luaL_ref(L, LUA_REGISTRYINDEX);
   }
+<<<<<<< HEAD
   NODE_DBG("Pin data: %d %d %08x, %d %d %d %d, %08x\n",
+=======
+NODE_DBG("Pin data: %d %d %08x, %d %d %d %d, %08x\n", 
+>>>>>>> 9c76604291b75a688755f06a30dad07900d74073
           pin, type, pin_mux[pin], pin_num[pin], pin_func[pin], pin_int_type[pin], pin_trigger[pin], gpio_cb_ref[pin]);
   platform_gpio_intr_init(pin, type);
   return 0;
@@ -73,6 +98,7 @@ static int lgpio_mode( lua_State* L )
   unsigned pin = luaL_checkinteger( L, 1 );
   unsigned mode = luaL_checkinteger( L, 2 );
   unsigned pullup = luaL_optinteger( L, 3, FLOAT );
+<<<<<<< HEAD
 
   luaL_argcheck(L, platform_gpio_exists(pin) && (mode!=INTERRUPT || pin>0), 1, "Invalid pin");
   luaL_argcheck(L, mode==OUTPUT || mode==INPUT
@@ -84,6 +110,19 @@ static int lgpio_mode( lua_State* L )
 
 NODE_DBG("pin,mode,pullup= %d %d %d\n",pin,mode,pullup);
 NODE_DBG("Pin data at mode: %d %08x, %d %d %d %d, %08x\n",
+=======
+  
+  luaL_argcheck(L, pin< NUM_GPIO && (mode!=INTERRUPT || pin>0), 1, "Invalid pin");
+  luaL_argcheck(L, mode==OUTPUT || mode==INPUT 
+ #ifdef GPIO_INTERRUPT_ENABLE 
+                                               || mode==INTERRUPT
+ #endif
+                                                                  , 2,  "wrong arg type" );  
+  if(pullup!=FLOAT) pullup = PULLUP;
+
+NODE_DBG("pin,mode,pullup= %d %d %d\n",pin,mode,pullup);
+NODE_DBG("Pin data at mode: %d %08x, %d %d %d %d, %08x\n", 
+>>>>>>> 9c76604291b75a688755f06a30dad07900d74073
           pin, pin_mux[pin], pin_num[pin], pin_func[pin], pin_int_type[pin], pin_trigger[pin], gpio_cb_ref[pin]);
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -98,7 +137,11 @@ NODE_DBG("Pin data at mode: %d %08x, %d %d %d %d, %08x\n",
   if( platform_gpio_mode( pin, mode, pullup ) < 0 )
     return luaL_error( L, "wrong pin num." );
 
+<<<<<<< HEAD
   return 0;
+=======
+  return 0;  
+>>>>>>> 9c76604291b75a688755f06a30dad07900d74073
 }
 
 // Lua: read( pin )
@@ -107,7 +150,11 @@ static int lgpio_read( lua_State* L )
   unsigned pin = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( gpio, pin );
   lua_pushinteger( L, platform_gpio_read( pin ) );
+<<<<<<< HEAD
   return 1;
+=======
+  return 1; 
+>>>>>>> 9c76604291b75a688755f06a30dad07900d74073
 }
 
 // Lua: write( pin, level )
@@ -115,7 +162,11 @@ static int lgpio_write( lua_State* L )
 {
   unsigned pin = luaL_checkinteger( L, 1 );
   unsigned level = luaL_checkinteger( L, 2 );
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 9c76604291b75a688755f06a30dad07900d74073
   MOD_CHECK_ID( gpio, pin );
   luaL_argcheck(L, level==HIGH || level==LOW, 2, "wrong level type" );
 
@@ -161,10 +212,17 @@ static int lgpio_serout( lua_State* L )
   for( i = 0; i <= repeats; i++ )  {
     if (!i)    // skip the first loop (presumably this is some form of icache priming??).
       continue;
+<<<<<<< HEAD
 
     for( j = 0;j < table_len; j++ ){
       /* Direct Write is a ROM function which already disables interrupts for the atomic bit */
       GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
+=======
+    }
+    for(j=0;j<table_len;j++){
+      /* Direct Write is a ROM function which already disables interrupts for the atomic bit */
+      DIRECT_WRITE(pin, level);
+>>>>>>> 9c76604291b75a688755f06a30dad07900d74073
       delayMicroseconds(delay_table[j]);
       level = level==LOW ? HIGH : LOW;
     }
