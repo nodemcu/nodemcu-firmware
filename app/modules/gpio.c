@@ -2,8 +2,9 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lmem.h"
 #include "platform.h"
-
+#include "user_interface.h"
 #include "c_types.h"
 #include "c_string.h"
 
@@ -25,12 +26,12 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
   unsigned pin = param >> 1;
   unsigned level = param & 1;
   UNUSED(priority);
-  
+
   NODE_DBG("pin:%d, level:%d \n", pin, level);
   if(gpio_cb_ref[pin] != LUA_NOREF) {
     // GPIO callbacks are run in L0 and inlcude the level as a parameter
     lua_State *L = lua_getstate();
-NODE_DBG("Calling: %08x\n", gpio_cb_ref[pin]);
+    NODE_DBG("Calling: %08x\n", gpio_cb_ref[pin]);
     // The trigger is reset before the callback, as the callback itself might reset the trigger
     pin_trigger[pin] = true;
     lua_rawgeti(L, LUA_REGISTRYINDEX, gpio_cb_ref[pin]);
@@ -42,34 +43,27 @@ NODE_DBG("Calling: %08x\n", gpio_cb_ref[pin]);
 // Lua: trig( pin, type, function )
 static int lgpio_trig( lua_State* L )
 {
-  unsigned type = GPIO_PIN_INTR_DISABLE;
   unsigned pin = luaL_checkinteger( L, 1 );
-  size_t sl;
-  const char *str = luaL_checklstring( L, 2, &sl );
-  const char * const opt[] = {"", "up", "down", "both", "low", "high"};
-  
-  luaL_argcheck(L, pin>0 && pin< NUM_GPIO, 1, "Invalid interrupt pin");
-  luaL_argcheck(L, str != NULL, 2, "trigger type ommitted" );
+  static const char * const opts[] = {"", "up", "down", "both", "low", "high"};
+  static const int opts_type[] = {
+    GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_POSEDGE, GPIO_PIN_INTR_NEGEDGE,
+    GPIO_PIN_INTR_ANYEDGE, GPIO_PIN_INTR_LOLEVEL, GPIO_PIN_INTR_HILEVEL
+    };
+  int type = opts_type[luaL_checkoption(L, 2, "", opts)];
 
-  if      (str[0] == 'u') type = GPIO_PIN_INTR_POSEDGE;
-  else if (str[0] == 'd') type = GPIO_PIN_INTR_NEGEDGE;
-  else if (str[0] == 'b') type = GPIO_PIN_INTR_ANYEDGE;
-  else if (str[0] == 'l') type = GPIO_PIN_INTR_LOLEVEL;
-  else if (str[0] == 'h') type = GPIO_PIN_INTR_HILEVEL;
-  
-  if (c_strcmp(str,opt[type])) {
-    type = GPIO_PIN_INTR_DISABLE;
-  } else {
+  luaL_argcheck(L, platform_gpio_exists(pin) && pin>0, 1, "Invalid interrupt pin");
+
+  if (type != GPIO_PIN_INTR_DISABLE) {
     int cbtype = lua_type(L, 3);
     luaL_argcheck(L, cbtype == LUA_TFUNCTION || cbtype == LUA_TLIGHTFUNCTION, 3,
       "invalid callback type");
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     gpio_cb_ref[pin] = luaL_ref(L, LUA_REGISTRYINDEX);
   }
-NODE_DBG("Pin data: %d %d %08x, %d %d %d %d, %08x\n", 
+  NODE_DBG("Pin data: %d %d %08x, %d %d %d %d, %08x\n",
           pin, type, pin_mux[pin], pin_num[pin], pin_func[pin], pin_int_type[pin], pin_trigger[pin], gpio_cb_ref[pin]);
   platform_gpio_intr_init(pin, type);
-  return 0;  
+  return 0;
 }
 #endif
 
@@ -79,17 +73,17 @@ static int lgpio_mode( lua_State* L )
   unsigned pin = luaL_checkinteger( L, 1 );
   unsigned mode = luaL_checkinteger( L, 2 );
   unsigned pullup = luaL_optinteger( L, 3, FLOAT );
-  
-  luaL_argcheck(L, pin< NUM_GPIO && (mode!=INTERRUPT || pin>0), 1, "Invalid pin");
-  luaL_argcheck(L, mode==OUTPUT || mode==INPUT 
- #ifdef GPIO_INTERRUPT_ENABLE 
+
+  luaL_argcheck(L, platform_gpio_exists(pin) && (mode!=INTERRUPT || pin>0), 1, "Invalid pin");
+  luaL_argcheck(L, mode==OUTPUT || mode==INPUT
+ #ifdef GPIO_INTERRUPT_ENABLE
                                                || mode==INTERRUPT
  #endif
-                                                                  , 2,  "wrong arg type" );  
+                                                                  , 2,  "wrong arg type" );
   if(pullup!=FLOAT) pullup = PULLUP;
 
 NODE_DBG("pin,mode,pullup= %d %d %d\n",pin,mode,pullup);
-NODE_DBG("Pin data at mode: %d %08x, %d %d %d %d, %08x\n", 
+NODE_DBG("Pin data at mode: %d %08x, %d %d %d %d, %08x\n",
           pin, pin_mux[pin], pin_num[pin], pin_func[pin], pin_int_type[pin], pin_trigger[pin], gpio_cb_ref[pin]);
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -104,7 +98,7 @@ NODE_DBG("Pin data at mode: %d %08x, %d %d %d %d, %08x\n",
   if( platform_gpio_mode( pin, mode, pullup ) < 0 )
     return luaL_error( L, "wrong pin num." );
 
-  return 0;  
+  return 0;
 }
 
 // Lua: read( pin )
@@ -113,7 +107,7 @@ static int lgpio_read( lua_State* L )
   unsigned pin = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( gpio, pin );
   lua_pushinteger( L, platform_gpio_read( pin ) );
-  return 1; 
+  return 1;
 }
 
 // Lua: write( pin, level )
@@ -121,19 +115,16 @@ static int lgpio_write( lua_State* L )
 {
   unsigned pin = luaL_checkinteger( L, 1 );
   unsigned level = luaL_checkinteger( L, 2 );
-  
+
   MOD_CHECK_ID( gpio, pin );
   luaL_argcheck(L, level==HIGH || level==LOW, 2, "wrong level type" );
 
   platform_gpio_write(pin, level);
-  return 0;  
+  return 0;
 }
 
 #define DELAY_TABLE_MAX_LEN 256
-#define noInterrupts ets_intr_lock
-#define interrupts ets_intr_unlock
 #define delayMicroseconds os_delay_us
-#define DIRECT_WRITE(pin, level)    (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level))
 // Lua: serout( pin, firstLevel, delay_table, [repeatNum] )
 // -- serout( pin, firstLevel, delay_table, [repeatNum] )
 // gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
@@ -146,60 +137,41 @@ static int lgpio_write( lua_State* L )
 // gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
 static int lgpio_serout( lua_State* L )
 {
-  unsigned level;
-  unsigned pin;
-  unsigned table_len = 0;
-  unsigned repeat = 0;
-  int delay_table[DELAY_TABLE_MAX_LEN];
-  
-  pin = luaL_checkinteger( L, 1 );
-  MOD_CHECK_ID( gpio, pin );
-  level = luaL_checkinteger( L, 2 );
-  if ( level!=HIGH && level!=LOW )
-    return luaL_error( L, "wrong arg type" );
-  if( lua_istable( L, 3 ) )
-  {
-    table_len = lua_objlen( L, 3 );
-    if (table_len <= 0 || table_len>DELAY_TABLE_MAX_LEN)
-      return luaL_error( L, "wrong arg range" );
-    int i;
-    for( i = 0; i < table_len; i ++ )
-    {
-      lua_rawgeti( L, 3, i + 1 );
-      delay_table[i] = ( int )luaL_checkinteger( L, -1 );
-      lua_pop( L, 1 );
-      if( delay_table[i] < 0 || delay_table[i] > 1000000 )    // can not delay more than 1000000 us
-        return luaL_error( L, "delay must < 1000000 us" );
-    }
-  } else {
-    return luaL_error( L, "wrong arg range" );
-  } 
+  unsigned clocks_per_us = system_get_cpu_freq();
+  unsigned pin = luaL_checkinteger( L, 1 );
+  unsigned level = luaL_checkinteger( L, 2 );
+  unsigned repeats = luaL_optint( L, 4, 1 );
+  unsigned table_len, i, j;
 
-  if(lua_isnumber(L, 4))
-    repeat = lua_tointeger( L, 4 );
-  if( repeat < 0 || repeat > DELAY_TABLE_MAX_LEN )
-    return luaL_error( L, "delay must < 256" );
+  luaL_argcheck(L, platform_gpio_exists(pin), 1, "Invalid pin");
+  luaL_argcheck(L, level==HIGH || level==LOW, 2, "Wrong arg type" );
+  luaL_argcheck(L, lua_istable( L, 3 ) &&
+                   ((table_len = lua_objlen( L, 3 )<DELAY_TABLE_MAX_LEN)), 3, "Invalid table" );
+  luaL_argcheck(L, repeats<256, 4, "repeats >= 256" );
 
-  if(repeat==0)
-    repeat = 1;
-  int j;
-  bool skip_loop = true;
-  do
-  {
-    if(skip_loop){    // skip the first loop.
-      skip_loop = false;
+  uint32 *delay_table = luaM_newvector(L, table_len*repeats, uint32);
+  for( i = 1; i <= table_len; i++ )  {
+    lua_rawgeti( L, 3, i + 1 );
+    unsigned delay = (unsigned) luaL_checkinteger( L, -1 );
+    if (delay > 1000000) return luaL_error( L, "delay %u must be < 1,000,000 us", i );
+    delay_table[i-1] = delay;
+    lua_pop( L, 1 );
+  }
+
+  for( i = 0; i <= repeats; i++ )  {
+    if (!i)    // skip the first loop (presumably this is some form of icache priming??).
       continue;
-    }
-    for(j=0;j<table_len;j++){
-      /* Direct Write is a ROM function which already disables interrupts for the atomic bit */
-      DIRECT_WRITE(pin, level);
-      delayMicroseconds(delay_table[j]);
-      level=!level;
-    }
-    repeat--;
-  } while (repeat>0); 
 
-  return 0;  
+    for( j = 0;j < table_len; j++ ){
+      /* Direct Write is a ROM function which already disables interrupts for the atomic bit */
+      GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
+      delayMicroseconds(delay_table[j]);
+      level = level==LOW ? HIGH : LOW;
+    }
+  }
+
+  luaM_freearray(L, delay_table, table_len, uint32);
+  return 0;
 }
 #undef DELAY_TABLE_MAX_LEN
 

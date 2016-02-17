@@ -1,11 +1,11 @@
 # Extension Developer FAQ
 
-**# # # Work in Progress # # #** 
+**# # # Work in Progress # # #**
 
 ## How does the non-OS SDK structure execution
 
-Apologies for this long description, but none of this is documented by
-Espressif. So this summarises our understanding of how **non-OS SDK** execution
+Details of the execution model for the **non-OS SDK** is not well documented by 
+Espressif. This section summarises the project's understanding of how this execution
 model works based on the Espressif-supplied examples and SDK documentation, plus
 various posts on the Espressif BBS and other forums, and an examination of the
 BootROM code.
@@ -18,19 +18,22 @@ which are also used by the SDK. In this model, execution units are either:
     functions. ISRs can be defined on a range of priorities, where a higher
     priority ISR is able to interrupt a lower priority one. ISRs are time
     critical and should complete in no more than 50 µSec.
-  
-    ISR code and data constants should be run out of RAM or ROM, as the
+
+    ISR code and data constants should be run out of RAM or ROM, for two reasons:
+    if an ISR interrupts a flash I/O operation (which must disable the Flash 
+    instruction cache) and a cache miss occurs, then the ISR will trigger a
+    fatal exception; secondly, the
     execution time for Flash memory (that is located in the `irom0` load section)
     is indeterminate: whilst cache-hits can run at full memory bandwidth, any
     cache-misses require the code to be read from Flash; and even though
     H/W-based, this is at roughly 26x slower than memory bandwidth (for DIO
-    flash); this will cause ISR execution to fall outside the required time
-    limits. (Note that any time critical code within normal execution and that
+    flash); this will cause ISR execution to fall outside the require time
+    guidelines. (Note that any time critical code within normal execution and that
     is bracketed by interrupt lock / unlock guards should also follow this 50
-    µSec guideline.)
-
+    µSec guideline.)<br/><br/>
+    
 -   **TASKS**. A task is a normal execution unit running at a non-interrupt priority.
-    Tasks can the executed from Flash memory. An executing task can be interrupted
+    Tasks can be executed from Flash memory. An executing task can be interrupted
     by one or more ISRs being delivered, but it won't be preempted by another
     queued task. The Espressif guideline is that no individual task should run for
     more than 15 mSec, before returning control to the SDK.
@@ -38,7 +41,7 @@ which are also used by the SDK. In this model, execution units are either:
     The ROM will queue up to 32 pending tasks at priorities 0..31 and will
     execute the highest priority queued task next (or wait on interrupt if none
     is runnable). The SDK tasking system is layered on this ROM dispatcher and
-    it reserves 29 of these task prtioties for its own use, including the
+    it reserves 29 of these task priorities for its own use, including the
     implementation of the various SDK timer, WiFi and other callback mechanisms
     such as the software WDT.
 
@@ -55,11 +58,11 @@ which are also used by the SDK. In this model, execution units are either:
     to get WiFi and other failures. Espressif therefore recommends that you don't
     stay computable for more than 500 mSec to avoid such timeouts.
 
-Note that the 50µS, 15mSec and 500mSec limits and "No flash code" are guidelines
+Note that the 50µS, 15mSec and 500mSec limits are guidelines
 and not hard constraints -- that is if you break them (slightly) then your code
 may (usually) work, but you can get very difficult to diagnose and intermittent
-failures. For example running ISRs from Flash may work -- but any collision with
-SPIFFS output will then cause fatal errors.
+failures. Also running ISRs from Flash may work until there is a collision with
+SPIFFS I/O which will then a cause CPU exception.
 
 Also note that the SDK API function `system_os_post()`, and the `task_post_*()`
 macros which generate this can be safely called from an ISR.
@@ -80,14 +83,14 @@ declare one or more task handlers and that both ISPs and LLTs can then post a
 message for delivery to a task handler. Each task handler has a unique message
 associated with it, and may bind a single uint32 parameter. How this parameter
 is interpreted is left to the task poster and task handler to coordinate.
-  
+
 The interface is exposed through `#include "task/task.h"` and involves two API
 calls. Any task handlers are declared, typically in the module_init function by
 assigning `task_get_id(some_task_callback)` to a (typically globally) accessible
 handle variable, say `XXX_callback_handle`. This can then be used in an ISR or
 normal LLT to execute a `task_post_YYY(XXX_callback_handle,param)` where YYY is
-one iof `low`, `medium`, `high`. The callback will then be executed when the SDK
+one of `low`, `medium`, `high`. The callback will then be executed when the SDK
 delivers the task.
-  
-_Note_: `task_post_YYY` can fail with a false return if the task Q is full. The
-posting routine should have a policy for handling this overflow. 
+
+_Note_: `task_post_YYY` can fail with a false return if the task Q is full. 
+
