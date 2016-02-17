@@ -11,88 +11,12 @@ void cmn_platform_init(void)
 }
 
 // ****************************************************************************
-// GPIO functions
-
-int platform_gpio_exists( unsigned pin )
-{
-  return pin < NUM_GPIO;
-}
-
-// ****************************************************************************
-// CAN functions
-
-int platform_can_exists( unsigned id )
-{
-  return id < NUM_CAN;
-}
-
-// ****************************************************************************
-// SPI functions
-
-
-int platform_spi_exists( unsigned id )
-{
-  return id < NUM_SPI;
-}
-
-// ****************************************************************************
-// PWM functions
-
-int platform_pwm_exists( unsigned id )
-{
-  return ((id < NUM_PWM) && (id > 0));
-}
-
-// ****************************************************************************
-// ADC functions
-
-int platform_adc_exists( unsigned id )
-{
-  return id < NUM_ADC;
-}
-
-// ****************************************************************************
-// UART functions
-
-int platform_uart_exists( unsigned id )
-{
-  return id < NUM_UART;
-}
-
-// ****************************************************************************
-// OneWire functions
-
-int platform_ow_exists( unsigned id )
-{
-  return ((id < NUM_OW) && (id > 0));
-}
-
-// ****************************************************************************
-// Timer functions
-
-int platform_tmr_exists( unsigned id )
-{
-  return id < NUM_TMR;
-}
-
-// ****************************************************************************
-// I2C support
-int platform_i2c_exists( unsigned id )
-{
-#ifndef NUM_I2C
-  return 0;
-#else
-  return id < NUM_I2C;
-#endif
-}
-
-// ****************************************************************************
 // Internal flash support functions
 
 // This symbol must be exported by the linker command file and must reflect the
 // TOTAL size of flash used by the eLua image (not only the code and constants,
 // but also .data and whatever else ends up in the eLua image). FS will start
-// at the next usable (aligned to a flash sector boundary) address after 
+// at the next usable (aligned to a flash sector boundary) address after
 // flash_used_size.
 
 // extern char flash_used_size[];
@@ -151,12 +75,12 @@ uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
   if(_flash_used_end>0){ // find the used sector
     sect = flashh_find_sector( platform_flash_mapped2phys ( (uint32_t)_flash_used_end - 1), NULL, &end );
     if( psect )
-      *psect = sect + 1;    
+      *psect = sect + 1;
     return end + 1;
   }else{
     sect = flashh_find_sector( 0, &start, NULL ); // find the first free sector
     if( psect )
-      *psect = sect;   
+      *psect = sect;
     return start;
   }
 }
@@ -231,7 +155,7 @@ uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size )
     platform_s_flash_read( tmpdata, temp, blksize );
     for( i = rest; size && ( i < blksize ); i ++, size --, pto ++ )
       *pto = tmpdata[ i ];
-    
+
     if( size == 0 )
       return ssize;
     fromaddr = temp + blksize;

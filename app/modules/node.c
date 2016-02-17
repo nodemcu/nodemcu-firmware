@@ -145,8 +145,6 @@ static int node_heap( lua_State* L )
   return 1;
 }
 
-static lua_State *gL = NULL;
-
 #ifdef DEVKIT_VERSION_0_9
 static int led_high_count = LED_HIGH_COUNT_DEFAULT;
 static int led_low_count = LED_LOW_COUNT_DEFAULT;
@@ -174,27 +172,25 @@ static void default_short_press(void *arg) {
 }
 
 static void key_long_press(void *arg) {
+  lua_State *L = lua_getstate();
   NODE_DBG("key_long_press is called.\n");
   if (long_key_ref == LUA_NOREF) {
     default_long_press(arg);
     return;
   }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, long_key_ref);
-  lua_call(gL, 0, 0);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, long_key_ref);
+  lua_call(L, 0, 0);
 }
 
 static void key_short_press(void *arg) {
+  lua_State *L = lua_getstate();
   NODE_DBG("key_short_press is called.\n");
   if (short_key_ref == LUA_NOREF) {
     default_short_press(arg);
     return;
   }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, short_key_ref);
-  lua_call(gL, 0, 0);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, short_key_ref);
+  lua_call(L, 0, 0);
 }
 
 static void update_key_led (void *p)
@@ -286,7 +282,6 @@ static int node_key( lua_State* L )
   } else {
     ref = &short_key_ref;
   }
-  gL = L;
   // luaL_checkanyfunction(L, 2);
   if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION) {
     lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
@@ -305,6 +300,7 @@ static int node_key( lua_State* L )
 #endif
 
 extern lua_Load gLoad;
+extern bool user_process_input(bool force);
 // Lua: input("string")
 static int node_input( lua_State* L )
 {
@@ -321,7 +317,7 @@ static int node_input( lua_State* L )
       NODE_DBG("Get command:\n");
       NODE_DBG(load->line); // buggy here
       NODE_DBG("\nResult(if any):\n");
-      system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
+      user_process_input(true);
     }
   }
   return 0;
@@ -330,12 +326,13 @@ static int node_input( lua_State* L )
 static int output_redir_ref = LUA_NOREF;
 static int serial_debug = 1;
 void output_redirect(const char *str) {
+  lua_State *L = lua_getstate();
   // if(c_strlen(str)>=TX_BUFF_SIZE){
   //   NODE_ERR("output too long.\n");
   //   return;
   // }
 
-  if (output_redir_ref == LUA_NOREF || !gL) {
+  if (output_redir_ref == LUA_NOREF || !L) {
     uart0_sendStr(str);
     return;
   }
@@ -344,15 +341,14 @@ void output_redirect(const char *str) {
     uart0_sendStr(str);
   }
 
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, output_redir_ref);
-  lua_pushstring(gL, str);
-  lua_call(gL, 1, 0);   // this call back function should never user output.
+  lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir_ref);
+  lua_pushstring(L, str);
+  lua_call(L, 1, 0);   // this call back function should never user output.
 }
 
 // Lua: output(function(c), debug)
 static int node_output( lua_State* L )
 {
-  gL = L;
   // luaL_checkanyfunction(L, 1);
   if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
     lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
