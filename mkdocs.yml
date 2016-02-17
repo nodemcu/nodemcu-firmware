@@ -63,5 +63,6 @@ pages:
         - 'wifi': 'en/modules/wifi.md'
         - 'ws2801': 'en/modules/ws2801.md'
         - 'ws2812': 'en/modules/ws2812.md'
+    - Writing Modules in C: 'en/cmodule.md'
 #- Deutsch:
 #    - Home: 'de/index.md'
