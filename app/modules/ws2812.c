@@ -6,6 +6,14 @@
 #include "user_interface.h"
 #include "driver/uart.h"
 
+#define CANARY_VALUE 0x32383132
+
+typedef struct {
+  int canary;
+  int size;
+  uint8_t values[0];
+} ws2812_buffer;
+
 // Stream data using UART1 routed to GPIO2
 // NODE_DEBUG should not be activated because it also uses UART1
 static void ICACHE_RAM_ATTR ws2812_write(uint8_t pin, uint8_t *pixels, uint32_t length) {
@@ -47,13 +55,8 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t pin, uint8_t *pixels, uint32_t 
 }
 
 // Lua: ws2812.writergb(pin, "string")
-// Byte triples in the string are interpreted as R G B values and sent to the hardware as G R B.
-// WARNING: this function scrambles the input buffer :
-//    a = string.char(255,0,128)
-//    ws212.writergb(3,a)
-//    =a.byte()
-//    (0,255,128)
-
+// Byte triples in the string or buffer are interpreted as R G B values and sent to the hardware as G R B.
+//
 // ws2812.writergb(4, string.char(255, 0, 0)) uses GPIO2 and sets the first LED red.
 // ws2812.writergb(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
 // ws2812.writergb(4, string.char(0, 255, 0, 255, 255, 255)) first LED green, second LED white.
@@ -61,7 +64,19 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
 {
   const uint8_t pin = luaL_checkinteger(L, 1);
   size_t length;
-  const char *rgb = luaL_checklstring(L, 2, &length);
+  const char *rgb;
+
+  // Buffer or string
+  if(lua_isuserdata(L, 2)) {
+    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 2);
+
+    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 2, "ws2812.buffer expected");
+
+    rgb = &buffer->values[0];
+    length = 3*buffer->size;
+  } else {
+    rgb = luaL_checklstring(L, 2, &length);
+  }
 
   // dont modify lua-internal lstring - make a copy instead
   char *buffer = (char *)c_malloc(length);
@@ -88,8 +103,8 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
 }
 
 // Lua: ws2812.write(pin, "string")
-// Byte triples in the string are interpreted as G R B values.
-// This function does not corrupt your buffer.
+// Lua: ws2812.write(pin, ws2812.buffer)
+// Byte triples in the string or buffer are interpreted as G R B values.
 //
 // ws2812.write(4, string.char(0, 255, 0)) uses GPIO2 and sets the first LED red.
 // ws2812.write(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
@@ -97,23 +112,198 @@ static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L)
 static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   const uint8_t pin = luaL_checkinteger(L, 1);
   size_t length;
-  const char *buffer = luaL_checklstring(L, 2, &length);
+  const char *values;
+
+  // Buffer or string
+  if(lua_isuserdata(L, 2)) {
+    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 2);
+
+    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 2, "ws2812.buffer expected");
+
+    values = &buffer->values[0];
+    length = 3*buffer->size;
+  } else {
+    values = luaL_checklstring(L, 2, &length);
+  }
 
   // Send the buffer
-  ws2812_write(pin_num[pin], (uint8_t*) buffer, length);
+  ws2812_write(pin_num[pin], (uint8_t*) values, length);
 
   return 0;
 }
+
+// Handle a buffer where we can store led values
+static int ICACHE_FLASH_ATTR ws2812_new_buffer(lua_State *L) {
+  const int leds = luaL_checkint(L, 1);
+
+  luaL_argcheck(L, leds > 0, 1, "should be a positive integer");
+
+  // Allocate memory
+  size_t size = sizeof(ws2812_buffer) + 3*leds*sizeof(uint8_t);
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_newuserdata(L, size);
+
+  // Associate its metatable
+  luaL_getmetatable(L, "ws2812.buffer");
+  lua_setmetatable(L, -2);
+
+  // Save led strip size
+  buffer->size = leds;
+
+  // Store canary for future type checks
+  buffer->canary = CANARY_VALUE;
+
+  return 1;
+}
+
+static int ICACHE_FLASH_ATTR ws2812_buffer_fill(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+
+  const int g = luaL_checkinteger(L, 2);
+  const int r = luaL_checkinteger(L, 3);
+  const int b = luaL_checkinteger(L, 4);
+
+  uint8_t * p = &buffer->values[0];
+  int i;
+  for(i = 0; i < buffer->size; i++) {
+    *p++ = g;
+    *p++ = r;
+    *p++ = b;
+  }
+
+  return 0;
+}
+
+static int ICACHE_FLASH_ATTR ws2812_buffer_fade(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  const int fade = luaL_checkinteger(L, 2);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
+
+  uint8_t * p = &buffer->values[0];
+  int i;
+  for(i = 0; i < buffer->size; i++) {
+    *p++ /= fade;
+    *p++ /= fade;
+    *p++ /= fade;
+  }
+
+  return 0;
+}
+
+static int ICACHE_FLASH_ATTR ws2812_buffer_get(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  const int led = luaL_checkinteger(L, 2);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  luaL_argcheck(L, led >= 0 && led < buffer->size, 2, "index out of range");
+
+  lua_pushnumber(L, buffer->values[3*led+0]);
+  lua_pushnumber(L, buffer->values[3*led+1]);
+  lua_pushnumber(L, buffer->values[3*led+2]);
+
+  return 3;
+}
+
+static int ICACHE_FLASH_ATTR ws2812_buffer_set(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  const int led = luaL_checkinteger(L, 2);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  luaL_argcheck(L, led >= 0 && led < buffer->size, 2, "index out of range");
+
+  int type = lua_type(L, 3);
+  if(type == LUA_TTABLE)
+  {
+    // Get g,r,b values and push them on stash
+    lua_rawgeti(L, 3, 1);
+    lua_rawgeti(L, 3, 2);
+    lua_rawgeti(L, 3, 3);
+
+    // Convert them as int and store them in buffer
+    buffer->values[3*led+0] = lua_tonumber(L, -3);
+    buffer->values[3*led+1] = lua_tonumber(L, -2);
+    buffer->values[3*led+2] = lua_tonumber(L, -1);
+
+    // Clean up the stack
+    lua_pop(L, 3);
+  }
+  else if(type == LUA_TSTRING)
+  {
+    size_t len;
+    const char * buf = lua_tolstring(L, 3, &len);
+
+    // Overflow check
+    if( 3*led + len > 3*buffer->size )
+    {
+	return luaL_error(L, "string size will exceed strip length");
+    }
+
+    c_memcpy(&buffer->values[3*led], buf, len);
+  }
+  else
+  {
+    buffer->values[3*led+0] = luaL_checkinteger(L, 3);
+    buffer->values[3*led+1] = luaL_checkinteger(L, 4);
+    buffer->values[3*led+2] = luaL_checkinteger(L, 5);
+  }
+
+  return 0;
+}
+
+static int ICACHE_FLASH_ATTR ws2812_buffer_size(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+
+  lua_pushnumber(L, buffer->size);
+
+  return 1;
+}
+
+static int ICACHE_FLASH_ATTR ws2812_buffer_write(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  const uint8_t pin = luaL_checkinteger(L, 2);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+
+  // Initialize the output pin
+  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
+  platform_gpio_write(pin, 0);
+
+  // Send the buffer
+  ets_intr_lock();
+  ws2812_write(pin_num[pin], &buffer->values[0], 3*buffer->size);
+  ets_intr_unlock();
+
+  return 0;
+}
+
+static const LUA_REG_TYPE ws2812_buffer_map[] =
+{
+  { LSTRKEY( "fade" ),  LFUNCVAL( ws2812_buffer_fade )},
+  { LSTRKEY( "fill" ),  LFUNCVAL( ws2812_buffer_fill )},
+  { LSTRKEY( "get" ),   LFUNCVAL( ws2812_buffer_get )},
+  { LSTRKEY( "set" ),   LFUNCVAL( ws2812_buffer_set )},
+  { LSTRKEY( "size" ),  LFUNCVAL( ws2812_buffer_size )},
+  { LSTRKEY( "write" ), LFUNCVAL( ws2812_buffer_write )},
+  { LSTRKEY( "__index" ), LROVAL ( ws2812_buffer_map )},
+  { LNILKEY, LNILVAL}
+};
 
 static const LUA_REG_TYPE ws2812_map[] =
 {
   { LSTRKEY( "writergb" ), LFUNCVAL( ws2812_writergb )},
   { LSTRKEY( "write" ), LFUNCVAL( ws2812_writegrb )},
+  { LSTRKEY( "newBuffer" ), LFUNCVAL( ws2812_new_buffer )},
   { LNILKEY, LNILVAL}
 };
 
 int luaopen_ws2812(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
+  luaL_rometatable(L, "ws2812.buffer", (void *)ws2812_buffer_map);  // create metatable for ws2812.buffer
   return 0;
 }
 
