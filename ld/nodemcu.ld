@@ -90,7 +90,7 @@ SECTIONS
     LONG(0) LONG(0) /* Null-terminate the array */
 
     /* SDK doesn't use libc functions, and are therefore safe to put in flash */
-    */libc.a(.text* .literal*)
+    */libc.a:*.o(.text* .literal*)
     /* end libc functions */
 
     _irom0_text_end = ABSOLUTE(.);

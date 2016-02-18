@@ -41,12 +41,19 @@
 #define NODE_ERR
 #endif	/* NODE_ERROR */
 
+#define GPIO_INTERRUPT_ENABLE
+// #define GPIO_SAFE_NO_INTR_ENABLE
+
 #define ICACHE_STORE_TYPEDEF_ATTR __attribute__((aligned(4),packed))
 #define ICACHE_STORE_ATTR __attribute__((aligned(4)))
 #define ICACHE_RAM_ATTR __attribute__((section(".iram0.text")))
+#ifdef  GPIO_SAFE_NO_INTR_ENABLE
+#define NO_INTR_CODE ICACHE_RAM_ATTR __attribute__ ((noinline))
+#else
+#define NO_INTR_CODE inline
+#endif
 
 #define CLIENT_SSL_ENABLE
-#define GPIO_INTERRUPT_ENABLE
 //#define MD2_ENABLE
 #define SHA2_ENABLE
 

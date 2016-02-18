@@ -1,17 +1,17 @@
-// Platform-dependent functions
+// Platform-dependent functions and includes
 
 #include "platform.h"
 #include "common.h"
 #include "c_stdio.h"
 #include "c_string.h"
 #include "c_stdlib.h"
+#include "llimits.h"
 #include "gpio.h"
 #include "user_interface.h"
-#include "driver/uart.h"
 #include "driver/gpio16.h"
 #include "driver/i2c_master.h"
 #include "driver/spi.h"
-// Platform specific includes
+#include "driver/uart.h"
 
 static void pwms_init();
 
@@ -39,71 +39,89 @@ uint8_t platform_key_led( uint8_t level){
 
 // ****************************************************************************
 // GPIO functions
+
+/*
+ * Set GPIO mode to output. Optionally in RAM helper because interrupts are dsabled
+ */
+static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin) {
+  unsigned pnum = pin_num[pin];
+  ETS_GPIO_INTR_DISABLE();
 #ifdef GPIO_INTERRUPT_ENABLE
-extern void lua_gpio_unref(unsigned pin);
+  pin_trigger[pin] = false;
+  pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
 #endif
+  PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
+  //disable interrupt
+  gpio_pin_intr_state_set(GPIO_ID_PIN(pnum), GPIO_PIN_INTR_DISABLE);
+  //clear interrupt status
+  GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pnum));
+  GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum)),
+                 GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) &
+                 (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE))); //disable open drain;
+  ETS_GPIO_INTR_ENABLE();
+}
+
+/*
+ * Set GPIO mode to interrupt. Optionally RAM helper because interrupts are dsabled
+ */
+#ifdef GPIO_INTERRUPT_ENABLE
+static void NO_INTR_CODE set_gpio_interrupt(uint8 pin) {
+  ETS_GPIO_INTR_DISABLE();
+  PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
+  GPIO_DIS_OUTPUT(pin_num[pin]);
+  gpio_register_set(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])),
+                    GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
+                    | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
+                    | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
+  pin_trigger[pin] = true;
+  ETS_GPIO_INTR_ENABLE();
+}
+#endif
+
 int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 {
-  // NODE_DBG("Function platform_gpio_mode() is called. pin_mux:%d, func:%d\n",pin_mux[pin],pin_func[pin]);
+  NODE_DBG("Function platform_gpio_mode() is called. pin_mux:%d, func:%d\n", pin_mux[pin], pin_func[pin]);
   if (pin >= NUM_GPIO)
     return -1;
+
   if(pin == 0){
     if(mode==PLATFORM_GPIO_INPUT)
       gpio16_input_conf();
     else
       gpio16_output_conf();
+
     return 1;
   }
 
   platform_pwm_close(pin);    // closed from pwm module, if it is used in pwm
 
-  switch(pull){
-    case PLATFORM_GPIO_PULLUP:
-      PIN_PULLUP_EN(pin_mux[pin]);
-      break;
-    case PLATFORM_GPIO_FLOAT:
-      PIN_PULLUP_DIS(pin_mux[pin]);
-      break;
-    default:
-      PIN_PULLUP_DIS(pin_mux[pin]);
-      break;
+  if (pull == PLATFORM_GPIO_PULLUP) {
+    PIN_PULLUP_EN(pin_mux[pin]);
+  } else {
+    PIN_PULLUP_DIS(pin_mux[pin]);
   }
 
   switch(mode){
+
     case PLATFORM_GPIO_INPUT:
-#ifdef GPIO_INTERRUPT_ENABLE
-      lua_gpio_unref(pin);    // unref the lua ref call back.
-#endif
       GPIO_DIS_OUTPUT(pin_num[pin]);
+      /* run on */
     case PLATFORM_GPIO_OUTPUT:
-      ETS_GPIO_INTR_DISABLE();
-#ifdef GPIO_INTERRUPT_ENABLE
-      pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
-#endif
-      PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
-      //disable interrupt
-      gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), GPIO_PIN_INTR_DISABLE);
-      //clear interrupt status
-      GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
-      GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])), GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) & (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE))); //disable open drain; 
-      ETS_GPIO_INTR_ENABLE();
+      set_gpio_no_interrupt(pin);
       break;
+
 #ifdef GPIO_INTERRUPT_ENABLE
     case PLATFORM_GPIO_INT:
-      ETS_GPIO_INTR_DISABLE();
-      PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
-      GPIO_DIS_OUTPUT(pin_num[pin]);
-      gpio_register_set(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])), GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
-                        | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
-                        | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
-      ETS_GPIO_INTR_ENABLE();
+      set_gpio_interrupt(pin);
       break;
 #endif
+
     default:
       break;
   }
   return 1;
 }
+
 
 int platform_gpio_write( unsigned pin, unsigned level )
 {
@@ -135,41 +153,62 @@ int platform_gpio_read( unsigned pin )
 }
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static void platform_gpio_intr_dispatcher( void *arg) {
-  platform_gpio_intr_handler_fn_t cb = arg;
-  uint8 i, level;
+static task_handle_t gpio_task_handle;
+
+static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
+  uint32 j=0;
   uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-  for (i = 0; i < GPIO_PIN_NUM; i++) {
-    if (pin_int_type[i] && (gpio_status & BIT(pin_num[i])) ) {
-      //disable interrupt
-      gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), GPIO_PIN_INTR_DISABLE);
-      //clear interrupt status
-      GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(pin_num[i]));
-      level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[i]));
-      if(cb){
-        cb(i, level);
+  UNUSED(dummy);
+  /*
+   * gpio_status is a bit map where bit 0 is set if unmapped gpio pin 0 (pin3) has
+   * triggered the ISR. bit 1 if unmapped gpio pin 1 (pin10=U0TXD), etc.  Since this
+   * in the ISR, it makes sense to optimize this by doing a fast scan of the status
+   * and reverse mapping any set bits.
+   */
+   for (j = 0; gpio_status>0; j++, gpio_status >>= 1) {
+    if (gpio_status&1) {
+      int i = pin_num_inv[j];
+      if (pin_int_type[i]) {
+        //disable interrupt
+        gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        //clear interrupt status
+        GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
+        uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
+        if (pin_trigger[i]) {
+          /* the task is only posted if a trigger callback is defined */
+          pin_trigger[i] = false;
+          task_post_high (gpio_task_handle, (i<<1) + level);
+        }
+       // Interrupts are re-enabled but any interrupt occuring before pin_trigger[i] is reset will be ignored.
+      gpio_pin_intr_state_set(GPIO_ID_PIN(j), pin_int_type[i]);
       }
-      gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[i]), pin_int_type[i]);
     }
   }
 }
 
-void platform_gpio_init( platform_gpio_intr_handler_fn_t cb )
+void platform_gpio_init( task_handle_t gpio_task )
 {
-  ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, cb);
-}
+  int i;
+  gpio_task_handle = gpio_task;
 
-int platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
+  get_pin_map();
+  ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, NULL);
+}
+/*
+ * Initialise GPIO interrupt mode. Optionally in RAM because interrupts are dsabled
+ */
+void NO_INTR_CODE platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
 {
-  if (pin >= NUM_GPIO)
-    return -1;
-  ETS_GPIO_INTR_DISABLE();
-  //clear interrupt status
-  GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
-  pin_int_type[pin] = type;
-  //enable interrupt
-  gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
-  ETS_GPIO_INTR_ENABLE();
+  if (platform_gpio_exists(pin)) {
+    ETS_GPIO_INTR_DISABLE();
+    //clear interrupt status
+    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
+    pin_int_type[pin] = type;
+    pin_trigger[pin] = true;
+    //enable interrupt
+    gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
+    ETS_GPIO_INTR_ENABLE();
+  }
 }
 #endif
 
@@ -269,7 +308,7 @@ void platform_uart_alt( int set )
 
 
 // Send: version with and without mux
-void platform_uart_send( unsigned id, u8 data ) 
+void platform_uart_send( unsigned id, u8 data )
 {
   uart_tx_one_char(id, data);
 }
@@ -353,7 +392,7 @@ uint32_t platform_pwm_setup( unsigned pin, uint32_t frequency, unsigned duty )
   if ( pin < NUM_PWM)
   {
     platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);  // disable gpio interrupt first
-    if(!pwm_add(pin)) 
+    if(!pwm_add(pin))
       return 0;
     // pwm_set_duty(DUTY(duty), pin);
     pwm_set_duty(0, pin);
@@ -410,7 +449,7 @@ uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t spe
 
   // platform_pwm_close(sda);
   // platform_pwm_close(scl);
-  
+
   // disable gpio interrupt first
   platform_gpio_mode(sda, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);   // inside this func call platform_pwm_close
   platform_gpio_mode(scl, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);    // disable gpio interrupt first
