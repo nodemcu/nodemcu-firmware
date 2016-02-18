@@ -99,6 +99,25 @@ none
 #### See also
 [`file.remove()`](#fileremove)
 
+## file.fscfg ()
+
+Returns the flash address and physical size of the file system area, in bytes.
+
+#### Syntax
+`file.fscfg()`
+
+#### Parameters
+none
+
+#### Returns
+- `flash address` (number)
+- `size` (number)
+
+#### Example
+```lua
+print(string.format("0x%x", file.fscfg()))
+```
+
 ## file.fsinfo()
 
 Return size information for the file system, in bytes.
