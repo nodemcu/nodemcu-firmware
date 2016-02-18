@@ -166,7 +166,7 @@ void platform_uart_alt( int set );
 static inline int platform_pwm_exists( unsigned id ) { return ((id < NUM_PWM) && (id > 0)); }
 uint32_t platform_pwm_setup( unsigned id, uint32_t frequency, unsigned duty );
 void platform_pwm_close( unsigned id );
-void platform_pwm_start( unsigned id );
+bool platform_pwm_start( unsigned id );
 void platform_pwm_stop( unsigned id );
 uint32_t platform_pwm_set_clock( unsigned id, uint32_t data );
 uint32_t platform_pwm_get_clock( unsigned id );

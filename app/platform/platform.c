@@ -402,7 +402,9 @@ uint32_t platform_pwm_setup( unsigned pin, uint32_t frequency, unsigned duty )
     return 0;
   }
   clock = platform_pwm_get_clock( pin );
-  pwm_start();
+  if (!pwm_start()) {
+    return 0;
+  }
   return clock;
 }
 
@@ -416,16 +418,18 @@ void platform_pwm_close( unsigned pin )
   }
 }
 
-void platform_pwm_start( unsigned pin )
+bool platform_pwm_start( unsigned pin )
 {
   // NODE_DBG("Function platform_pwm_start() is called.\n");
   if ( pin < NUM_PWM)
   {
     if(!pwm_exist(pin))
-      return;
+      return FALSE;
     pwm_set_duty(DUTY(pwms_duty[pin]), pin);
-    pwm_start();
+    return pwm_start();
   }
+
+  return FALSE;
 }
 
 void platform_pwm_stop( unsigned pin )
