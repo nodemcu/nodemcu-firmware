@@ -25,7 +25,7 @@ SPIFFSFILES ?= $(patsubst $(FSSOURCE)%,%,$(shell find $(FSSOURCE) -name '*' ))
 ROM0X10000SIZE = $$(du -b ../bin/0x10000.bin | cut -f 1)
 
 #################################################################
-# Calculate the address, the spiffs has o be placed for the given
+# Calculate the address, the spiffs has to be placed for the given
 # 0x10000.bin file size.
 #
 
@@ -41,7 +41,7 @@ SPIFFSOLDNAME = $$( cat ../bin/spiffs.dat )
 all:	spiffssript
 
 spiffssript:
-	$(MAKE) -C spiffsimg CC=gcc ;)
+	$(MAKE) -C spiffsimg CC=gcc
 	rm -f ./spiffsimg/spiffs.lst
 	rm -f $(SPIFFSOLDNAME) 
 	rm -f ../bin/spiffs.dat
