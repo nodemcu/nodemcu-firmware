@@ -12,6 +12,7 @@
 #include "driver/i2c_master.h"
 #include "driver/spi.h"
 #include "driver/uart.h"
+#include "driver/sigma_delta.h"
 
 static void pwms_init();
 
@@ -443,6 +444,69 @@ void platform_pwm_stop( unsigned pin )
     pwm_start();
   }
 }
+
+
+// *****************************************************************************
+// Sigma-Delta platform interface
+
+uint8_t platform_sigma_delta_setup( uint8_t pin )
+{
+  if (pin < 1 || pin > NUM_GPIO)
+    return 0;
+
+  sigma_delta_setup();
+
+  // set GPIO output mode for this pin
+  platform_gpio_mode( pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+  platform_gpio_write( pin, PLATFORM_GPIO_LOW );
+
+  // enable sigma-delta on this pin
+  GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])),
+                 (GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) &(~GPIO_PIN_SOURCE_MASK)) |
+                 GPIO_PIN_SOURCE_SET( SIGMA_AS_PIN_SOURCE ));
+
+  return 1;
+}
+
+uint8_t platform_sigma_delta_close( uint8_t pin )
+{
+  if (pin < 1 || pin > NUM_GPIO)
+    return 0;
+
+  sigma_delta_stop();
+
+  // set GPIO input mode for this pin
+  platform_gpio_mode( pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP );
+
+  // CONNECT GPIO TO PIN PAD
+  GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])),
+                 (GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) &(~GPIO_PIN_SOURCE_MASK)) |
+                 GPIO_PIN_SOURCE_SET( GPIO_AS_PIN_SOURCE ));
+
+  return 1;
+}
+
+void platform_sigma_delta_set_pwmduty( uint8_t duty )
+{
+  uint8_t target = 0, prescale = 0;
+
+  target = duty > 128 ? 256 - duty : duty;
+  prescale = target == 0 ? 0 : target-1;
+
+  //freq = 80000 (khz) /256 /duty_target * (prescale+1)
+  sigma_delta_set_prescale_target( prescale, duty );
+}
+
+void platform_sigma_delta_set_prescale( uint8_t prescale )
+{
+  sigma_delta_set_prescale_target( prescale, -1 );
+}
+
+void platform_sigma_delta_set_target( uint8_t target )
+{
+    sigma_delta_set_prescale_target( -1, target );
+}
+
 
 // *****************************************************************************
 // I2C platform interface

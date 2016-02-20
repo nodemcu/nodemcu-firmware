@@ -204,6 +204,19 @@ static inline int platform_ow_exists( unsigned id ) { return ((id < NUM_OW) && (
 static inline int platform_tmr_exists( unsigned id ) { return id < NUM_TMR; }
 
 // *****************************************************************************
+// Sigma-Delta platform interface
+
+// ****************************************************************************
+// Sigma-Delta functions
+
+static inline int platform_sigma_delta_exists( unsigned id ) {return ((id < NUM_GPIO) && (id > 0)); }
+uint8_t platform_sigma_delta_setup( uint8_t pin );
+uint8_t platform_sigma_delta_close( uint8_t pin );
+void platform_sigma_delta_set_pwmduty( uint8_t duty );
+void platform_sigma_delta_set_prescale( uint8_t prescale );
+void platform_sigma_delta_set_target( uint8_t target );
+
+// *****************************************************************************
 // I2C platform interface
 
 // I2C speed
