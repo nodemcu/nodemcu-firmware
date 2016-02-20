@@ -9,6 +9,7 @@
 #include "lmem.h"
 #include "lobject.h"
 #include "lstate.h"
+#include "legc.h"
 
 #include "lopcodes.h"
 #include "lstring.h"
@@ -553,7 +554,30 @@ static int node_stripdebug (lua_State *L) {
 }
 #endif
 
+// Lua: node.egc.setmode( mode, [param])
+// where the mode is one of the node.egc constants  NOT_ACTIVE , ON_ALLOC_FAILURE, 
+// ON_MEM_LIMIT, ALWAYS.  In the case of ON_MEM_LIMIT an integer parameter is reqired
+// See legc.h and lecg.c.
+static int node_egc_setmode(lua_State* L) {
+  unsigned mode  = luaL_checkinteger(L, 1);
+  unsigned limit = luaL_optinteger (L, 2, 0);
+  
+  luaL_argcheck(L, mode <= (EGC_ON_ALLOC_FAILURE | EGC_ON_MEM_LIMIT | EGC_ALWAYS), 1, "invalid mode");
+  luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit>0, 1, "limit must be non-zero");
+  
+  legc_set_mode( L, mode, limit );
+  return 0;
+}
 // Module function map
+
+static const LUA_REG_TYPE node_egc_map[] = {
+  { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },  
+  { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
+  { LSTRKEY( "ON_ALLOC_FAILURE" ),  LNUMVAL( EGC_ON_ALLOC_FAILURE ) },
+  { LSTRKEY( "ON_MEM_LIMIT" ),      LNUMVAL( EGC_ON_MEM_LIMIT ) },
+  { LSTRKEY( "ALWAYS" ),            LNUMVAL( EGC_ALWAYS ) },
+  { LNILKEY, LNILVAL }
+};
 static const LUA_REG_TYPE node_map[] =
 {
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
@@ -580,6 +604,7 @@ static const LUA_REG_TYPE node_map[] =
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
 #endif
+  { LSTRKEY( "egc" ), LROVAL( node_egc_map ) },
 
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
