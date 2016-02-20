@@ -30,7 +30,7 @@ ROM0X10000SIZE = $$(du -b ../bin/0x10000.bin | cut -f 1)
 #
 
 SPIFFSBASE = $$(( ( ($(ROM0X10000SIZE) + 0x13FFF) / 0x4000) * 0x4000))
-SPIFFSBASEHEX = $$( echo "obase=16; $(SPIFFSBASE)" | bc )
+SPIFFSBASEHEX = $$( printf "%x" $(SPIFFSBASE) )
 SPIFFSOLDNAME = $$( cat ../bin/spiffs.dat )
 
 
