@@ -2,6 +2,7 @@
 This module provides access to the sigma-delta component. It's a hardware signal generator that can be routed to any of the GPIOs except pin 0.
 
 The signal generation is controlled by the [`setprescale()`](#sigma_deltasetprescale) and [`settarget()`](#sigma_deltasettarget) functions.
+
   - 0 < target <= 128<br />
     t<sub>high</sub> = (prescale + 1) / 80 µs<br />
     t<sub>period</sub>  = t<sub>high</sub> * 256 / target
