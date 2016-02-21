@@ -42,6 +42,7 @@ pages:
         - 'coap': 'en/modules/coap.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'dht': 'en/modules/dht.md'
+        - 'encoder': 'en/modules/encoder.md'
         - 'enduser setup': 'en/modules/enduser-setup.md'
         - 'file': 'en/modules/file.md'
         - 'gpio': 'en/modules/gpio.md'
