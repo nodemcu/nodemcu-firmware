@@ -37,6 +37,7 @@ pages:
         - 'am2320': 'en/modules/am2320.md'
         - 'apa102': 'en/modules/apa102.md'
         - 'bit': 'en/modules/bit.md'
+        - 'bme280': 'en/modules/bme280.md'
         - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'coap': 'en/modules/coap.md'

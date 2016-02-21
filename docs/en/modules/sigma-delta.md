@@ -2,13 +2,13 @@
 This module provides access to the sigma-delta component. It's a hardware signal generator that can be routed to any of the GPIOs except pin 0.
 
 The signal generation is controlled by the [`setprescale()`](#sigma_deltasetprescale) and [`settarget()`](#sigma_deltasettarget) functions.
-  * 0 < target <= 128<br />
+  - 0 < target <= 128<br />
     t<sub>high</sub> = (prescale + 1) / 80 µs<br />
     t<sub>period</sub>  = t<sub>high</sub> * 256 / target
-  * 128 < target < 256<br />
+  - 128 < target < 256<br />
     t<sub>low</sub>  = (prescale + 1) / 80 µs<br />
     t<sub>period</sub> = t<sub>low</sub> * 256 / (256 - target)
-  * target = 0<br />
+  - target = 0<br />
     signal stopped at low
 
 Fixed frequency PWM at ~312.5&nbsp;kHz is availble with the [`setpwmduty()`](#sigma_deltasetpwmduty) function.
