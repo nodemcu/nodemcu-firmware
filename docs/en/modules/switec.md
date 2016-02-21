@@ -23,6 +23,14 @@ is on the step. Then this point can be set as zero. It is important not to let t
 run into the endstops during normal operation as this will make the pointing inaccurate. 
 This module does not enforce any range limiting.
 
+### Sources
+
+These stepper motors are available at the following locations:
+
+- Amazon: These are [X27 Stepper motors](http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=instrument+stepper+motor+x27&rh=i%3Aaps%2Ck%3Ainstrument+stepper+motor+x27)
+- Aliexpress: These are [X27 Stepper motors](http://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20160221132322&SearchText=x27+stepper). They also have the [Dual shaft version](http://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20160221132428&SearchText=vid28-05)
+- Ebay: These are [X27 Stepper motors](http://www.ebay.com/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.Xx27+stepper+motor.TRS0&_nkw=x27+stepper+motor&_sacat=0)
+
 ##### Note
 
 This module uses the hardware timer interrupt and hence it cannot be used at the same time as the PWM module.
