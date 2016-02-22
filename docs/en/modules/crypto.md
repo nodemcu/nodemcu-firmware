@@ -96,6 +96,7 @@ Compute a cryptographic hash of a Lua string.
 
 #### Parameters
 `algo` the hash algorithm to use, case insensitive string
+`str` string to hash contents of
 
 Supported hash algorithms are:
 
@@ -110,6 +111,35 @@ A binary string containing the message digest. To obtain the textual version (AS
 #### Example
 ```lua
 print(crypto.toHex(crypto.hash("sha1","abc")))
+```
+
+## crypto.new_hash()
+
+Create a digest/hash object that can have any number of strings added to it. Object has `update` and `finalize` functions.
+
+#### Syntax
+`hashobj = crypto.new_hash(algo)`
+
+#### Parameters
+`algo` the hash algorithm to use, case insensitive string
+
+Supported hash algorithms are:
+
+- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
+- MD5
+- SHA1
+- SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
+
+#### Returns
+Userdata object with `update` and `finalize` functions available.
+
+#### Example
+```lua
+hashobj = crypto.new_hash("SHA1")
+hashobj:update("FirstString"))
+hashobj:update("SecondString"))
+digest = hashobj:finalize()
+print(crypto.toHex(digest))
 ```
 
 ## crypto.hmac()

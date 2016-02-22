@@ -105,11 +105,9 @@ static int crypto_mask( lua_State* L )
   return 1;
 }
 
-
 static inline int bad_mech (lua_State *L) { return luaL_error (L, "unknown hash mech"); }
 static inline int bad_mem  (lua_State *L) { return luaL_error (L, "insufficient memory"); }
 static inline int bad_file (lua_State *L) { return luaL_error (L, "file does not exist"); }
-
 
 /* rawdigest = crypto.hash("MD5", str)
  * strdigest = crypto.toHex(rawdigest)
@@ -128,6 +126,99 @@ static int crypto_lhash (lua_State *L)
 
   lua_pushlstring (L, digest, sizeof (digest));
   return 1;
+}
+
+typedef struct digest_user_datum_t  {
+	const digest_mech_info_t *mech_info;
+	void *ctx;
+} digest_user_datum_t;
+
+/* General Usage for extensible hash functions:
+ * sha = crypto.new_hash("MD5")
+ * sha.update("Data")
+ * sha.update("Data2")
+ * strdigest = crypto.toHex(sha.finalize())
+ */
+
+/* crypto.new_hash("MECHTYPE") */
+static int crypto_new_hash (lua_State *L)
+{
+  const digest_mech_info_t *mi = crypto_digest_mech (luaL_checkstring (L, 1));
+  if (!mi)
+    return bad_mech (L);
+
+  void *ctx = os_malloc (mi->ctx_size);
+  if (ctx==NULL)
+    return bad_mem (L);
+
+  mi->create (ctx);
+
+  // create a userdataum with specific metatable
+  digest_user_datum_t *dudat = (digest_user_datum_t *)lua_newuserdata(L, sizeof(digest_user_datum_t));
+  luaL_getmetatable(L, "crypto.hash");
+  lua_setmetatable(L, -2);
+
+  // Set pointers to the mechanics and CTX
+  dudat->mech_info = mi;
+  dudat->ctx       = ctx;
+
+  return 1; // Pass userdata object back
+}
+
+/* Called as object, params:
+   1 - userdata "this"
+   2 - new string to add to the hash state  */
+static int crypto_hash_update (lua_State *L)
+{
+  NODE_DBG("enter crypto_hash_update.\n");
+  digest_user_datum_t *dudat;
+  size_t sl;
+
+  dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
+  luaL_argcheck(L, dudat, 1, "crypto.hash expected");
+
+  const digest_mech_info_t *mi = dudat->mech_info;
+
+  size_t len = 0;
+  const char *data = luaL_checklstring (L, 2, &len);
+
+  mi->update (dudat->ctx, data, len);
+
+  return 0;  // No return value
+}
+
+/* Called as object, no params. Returns digest of default size. */
+static int crypto_hash_finalize (lua_State *L)
+{
+  NODE_DBG("enter crypto_hash_update.\n");
+  digest_user_datum_t *dudat;
+  size_t sl;
+
+  dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
+  luaL_argcheck(L, dudat, 1, "crypto.hash expected");
+
+  const digest_mech_info_t *mi = dudat->mech_info;
+
+  uint8_t digest[mi->digest_size]; // Allocate as local
+  mi->finalize (digest, dudat->ctx);
+
+  lua_pushlstring (L, digest, sizeof (digest));
+  return 1;
+}
+
+/* Frees memory for the user datum and CTX hash state */
+static int crypto_hash_gcdelete (lua_State *L)
+{
+  NODE_DBG("enter crypto_hash_delete.\n");
+  digest_user_datum_t *dudat;
+
+  dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
+  luaL_argcheck(L, dudat, 1, "crypto.hash expected");
+
+  os_free(dudat->ctx);
+  os_free(dudat);
+
+  return 0;
 }
 
 
@@ -249,6 +340,15 @@ static int lcrypto_decrypt (lua_State *L)
   return crypto_encdec (L, false);
 }
 
+// Hash function map
+static const LUA_REG_TYPE crypto_hash_map[] = {
+  { LSTRKEY( "update" ),  LFUNCVAL( crypto_hash_update ) },
+  { LSTRKEY( "finalize" ),   LFUNCVAL( crypto_hash_finalize ) },
+  { LSTRKEY( "__gc" ),    LFUNCVAL( crypto_hash_gcdelete ) },
+  { LSTRKEY( "__index" ), LROVAL( crypto_hash_map ) },
+  { LNILKEY, LNILVAL }
+};
+
 
 // Module function map
 static const LUA_REG_TYPE crypto_map[] = {
@@ -258,10 +358,17 @@ static const LUA_REG_TYPE crypto_map[] = {
   { LSTRKEY( "mask" ),     LFUNCVAL( crypto_mask ) },
   { LSTRKEY( "hash"   ),   LFUNCVAL( crypto_lhash ) },
   { LSTRKEY( "fhash"  ),   LFUNCVAL( crypto_flhash ) },
+  { LSTRKEY( "new_hash"   ),   LFUNCVAL( crypto_new_hash ) },
   { LSTRKEY( "hmac"   ),   LFUNCVAL( crypto_lhmac ) },
   { LSTRKEY( "encrypt" ),  LFUNCVAL( lcrypto_encrypt ) },
   { LSTRKEY( "decrypt" ),  LFUNCVAL( lcrypto_decrypt ) },
   { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(CRYPTO, "crypto", crypto_map, NULL);
+int luaopen_crypto ( lua_State *L )
+{
+  luaL_rometatable(L, "crypto.hash", (void *)crypto_hash_map);  // create metatable for crypto.hash
+  return 0;
+}
+
+NODEMCU_MODULE(CRYPTO, "crypto", crypto_map, luaopen_crypto);
