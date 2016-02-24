@@ -378,3 +378,28 @@ node.compile('bigstuff.lua')
 #### See also
 [`node.compile()`](#nodecompile)
 
+# node.egc module
+
+## node.egc.setmode()
+
+Sets the Emergency Garbage Collector mode. [The EGC whitepaper](http://www.eluaproject.net/doc/v0.9/en_elua_egc.html)
+provides more detailed information on the EGC.
+
+####Syntax
+`node.egc.setmode(mode, [param])`
+
+#### Parameters
+- `mode`
+	- `node.egc.NOT_ACTIVE` EGC inactive, no collection cycle will be forced in low memory situations
+	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error. 
+	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error.
+	- `node.egc.ALWAYS` Run the garbage collector before each memory allocation. If the allocation fails even after running the garbage collector, the allocator will return with error. This mode is very efficient with regards to memory savings, but it's also the slowest.
+- `level` in the case of `node.egc.ON_MEM_LIMIT`, this specifies the memory limit.
+  
+#### Returns
+`nil`
+
+#### Example
+
+`node.egc.setmode(node.egc.ALWAYS, 4096)  -- This is the default setting at startup.`
+`node.egc.setmode(node.egc.ON_ALLOC_FAILURE) -- This is the fastest activeEGC mode.`
