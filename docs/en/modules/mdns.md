@@ -1,4 +1,4 @@
-# mDns Module
+# mDNS Module
 
 [Multicast DNS](https://en.wikipedia.org/wiki/Multicast_DNS) is used as part of Bonjour / Zeroconf. This allows system to identify themselves and the services that they provide on a local area network. Clients are then able to discover these systems and connect to them. 
 
