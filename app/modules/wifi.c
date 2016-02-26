@@ -10,10 +10,14 @@
 
 #include "c_types.h"
 #include "user_interface.h"
+
+#ifdef WIFI_SMART_ENABLE
 #include "smart.h"
 #include "smartconfig.h"
 
 static int wifi_smart_succeed = LUA_NOREF;
+#endif
+
 static uint8 getap_output_format=0;
 
 //wifi.sleep variables
@@ -27,6 +31,7 @@ static os_timer_t wifi_sta_status_timer;
 static uint8 prev_wifi_status=0;
 
 
+#ifdef WIFI_SMART_ENABLE
 #if defined( NODE_SMART_OLDSTYLE )
 #else
 static lua_State* smart_L = NULL;
@@ -75,6 +80,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 }
+#endif // WIFI_SMART_ENABLE
 
 static int wifi_scan_succeed = LUA_NOREF;
 static lua_State* gL = NULL;
@@ -142,6 +148,7 @@ static void wifi_scan_done(void *arg, STATUS status)
   }
 }
 
+#ifdef WIFI_SMART_ENABLE
 // Lua: smart(channel, function succeed_cb)
 // Lua: smart(type, function succeed_cb)
 static int wifi_start_smart( lua_State* L )
@@ -224,6 +231,7 @@ static int wifi_exit_smart( lua_State* L )
   wifi_smart_succeed = LUA_NOREF;
   return 0;  
 }
+#endif // WIFI_SMART_ENABLE
 
 // Lua: realmode = setmode(mode)
 static int wifi_setmode( lua_State* L )
@@ -1441,8 +1449,10 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "sleep" ),          LFUNCVAL( wifi_sleep ) },
+#ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ),      LFUNCVAL( wifi_exit_smart ) },
+#endif
   { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_sleeptype ) },
 
   { LSTRKEY( "sta" ),            LROVAL( wifi_station_map ) },

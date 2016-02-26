@@ -25,7 +25,6 @@ SUBDIRS= 					\
 	user 					\
 	driver 					\
 	json 					\
-	upgrade 				\
 	platform 				\
 	libc 					\
 	lua 					\
@@ -36,7 +35,6 @@ SUBDIRS= 					\
 	u8glib 					\
 	ucglib					\
 	smart 					\
-	wofs 					\
 	modules 				\
 	spiffs 					\
 	cjson 					\
@@ -72,7 +70,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
 	driver/libdriver.a 			\
 	json/libjson.a 				\
-	upgrade/libupgrade.a 			\
 	platform/libplatform.a 			\
 	task/libtask.a 				\
 	libc/liblibc.a 				\
@@ -83,7 +80,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	u8glib/u8glib.a 			\
 	ucglib/ucglib.a 			\
 	smart/smart.a 				\
-	wofs/wofs.a 				\
 	spiffs/spiffs.a 			\
 	cjson/libcjson.a 			\
 	crypto/libcrypto.a 			\

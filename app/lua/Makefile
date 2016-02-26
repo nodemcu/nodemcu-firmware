@@ -40,7 +40,6 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
-INCLUDES += -I ../wofs
 INCLUDES += -I ../spiffs
 INCLUDES += -I ../libc
 INCLUDES += -I ../modules
