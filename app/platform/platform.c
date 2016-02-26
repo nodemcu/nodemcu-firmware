@@ -48,7 +48,6 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin) {
   unsigned pnum = pin_num[pin];
   ETS_GPIO_INTR_DISABLE();
 #ifdef GPIO_INTERRUPT_ENABLE
-  pin_trigger[pin] = false;
   pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
 #endif
   PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
@@ -74,7 +73,6 @@ static void NO_INTR_CODE set_gpio_interrupt(uint8 pin) {
                     GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
                     | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
                     | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
-  pin_trigger[pin] = true;
   ETS_GPIO_INTR_ENABLE();
 }
 #endif
@@ -175,13 +173,8 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
         //clear interrupt status
         GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
         uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
-        if (pin_trigger[i]) {
-          /* the task is only posted if a trigger callback is defined */
-          pin_trigger[i] = false;
-          task_post_high (gpio_task_handle, (i<<1) + level);
-        }
-       // Interrupts are re-enabled but any interrupt occuring before pin_trigger[i] is reset will be ignored.
-      gpio_pin_intr_state_set(GPIO_ID_PIN(j), pin_int_type[i]);
+	task_post_high (gpio_task_handle, (i<<1) + level);
+	// We re-enable the interrupt when we execute the callback
       }
     }
   }
@@ -205,7 +198,6 @@ void NO_INTR_CODE platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
     //clear interrupt status
     GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
     pin_int_type[pin] = type;
-    pin_trigger[pin] = true;
     //enable interrupt
     gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
     ETS_GPIO_INTR_ENABLE();
