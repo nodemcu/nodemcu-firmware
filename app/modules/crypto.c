@@ -38,7 +38,7 @@ static int crypto_sha1( lua_State* L )
 }
 
 #ifdef LUA_USE_MODULES_ENCODER
-static int call_endcoder( lua_State* L, const char *function ) {
+static int call_encoder( lua_State* L, const char *function ) {
   if (lua_gettop(L) != 1) { 
     luaL_error(L, "%s must have one argument", function);
   }
@@ -54,10 +54,10 @@ static int call_endcoder( lua_State* L, const char *function ) {
 }
 
 static int crypto_base64_encode (lua_State* L) { 
-  return call_endcoder(L, "toBase64"); 
+  return call_encoder(L, "toBase64"); 
 }
 static int crypto_hex_encode (lua_State* L) { 
-  return call_endcoder(L, "toHex"); 
+  return call_encoder(L, "toHex"); 
 }
 #else
 static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

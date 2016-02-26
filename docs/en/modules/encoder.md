@@ -17,12 +17,13 @@ A Base64 encoded string.
 
 #### Example
 ```lua
-print(encoder.toBase64(cyrpto.hash("sha1","abc")))
+print(encoder.toBase64(crypto.hash("sha1","abc")))
 ```
 
 ## encoder.fromBase64()
 
-Decodes a Base64 representation of a (binary) Lua string back into the original string.
+Decodes a Base64 representation of a (binary) Lua string back into the original string.  An error is
+thrown if the string is not a valid base64 encoding.
 
 #### Syntax
 `binary_string = encoder.toBase64(b64)`
@@ -40,7 +41,8 @@ print(encoder.fromBase64(encoder.toBase64("hello world")))
 
 ## encoder.toHex()
 
-Provides an ASCII hex representation of a (binary) Lua string. Each byte in the input string is represented as two hex characters in the output.
+Provides an ASCII hex representation of a (binary) Lua string. Each byte in the input string is
+represented as two hex characters in the output.
 
 #### Syntax
 `hexstr = encoder.toHex(binary)`
@@ -58,10 +60,12 @@ print(encoder.toHex(crypto.hash("sha1","abc")))
 
 ## encoder.fromHex()
 
-Provides a Lua binary string decode of a ASCII hex string. Each byte in the output string is represented as two hex characters in the input.
+Returns the Lua binary string decode of a ASCII hex string. Each byte in the output string is
+represented as two hex characters in the input.  An error is thrown if the string is not a 
+valid base64 encoding.
 
 #### Syntax
-`binary = encoder.toHex(hexstr)`
+`binary = encoder.fromHex(hexstr)`
 
 #### Parameters
 `hexstr`  An ASCII hex string.
