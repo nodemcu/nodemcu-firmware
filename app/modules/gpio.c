@@ -7,6 +7,7 @@
 #include "user_interface.h"
 #include "c_types.h"
 #include "c_string.h"
+#include "gpio.h"
 
 #define PULLUP PLATFORM_GPIO_PULLUP
 #define FLOAT PLATFORM_GPIO_FLOAT
@@ -17,6 +18,12 @@
 #define LOW PLATFORM_GPIO_LOW
 
 #ifdef GPIO_INTERRUPT_ENABLE
+
+// We also know that the non-level interrupt types are < LOLEVEL, and that
+// HILEVEL is > LOLEVEL. Since this is burned into the hardware it is not
+// going to change.
+#define INTERRUPT_TYPE_IS_LEVEL(x)	((x) >= GPIO_PIN_INTR_LOLEVEL)
+
 static int gpio_cb_ref[GPIO_PIN_NUM];
 
 // This task is scheduled by the ISR and is used
@@ -34,7 +41,7 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
     lua_State *L = lua_getstate();
     NODE_DBG("Calling: %08x\n", gpio_cb_ref[pin]);
     //
-    if (pin_int_type[pin] < 4) {
+    if (!INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
       // Edge triggered -- re-enable the interrupt
       platform_gpio_intr_init(pin, pin_int_type[pin]);
     }
@@ -44,7 +51,7 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
     lua_pushinteger(L, level);
     lua_call(L, 1, 0);
 
-    if (pin_int_type[pin] >= 4) {
+    if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
       // Level triggered -- re-enable the callback
       platform_gpio_intr_init(pin, pin_int_type[pin]);
     }
