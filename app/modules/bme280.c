@@ -92,6 +92,7 @@ static const uint32_t bme280_i2c_id = 0;
 static uint8_t bme280_i2c_addr = BME280_I2C_ADDRESS1;
 static uint8_t bme280_isbme = 0; // 1 if the chip is BME280, 0 for BMP280
 static uint8_t bme280_mode = 0; // stores oversampling settings
+static uint8_t bme280_ossh = 0; // stores humidity oversampling settings
 os_timer_t bme280_timer; // timer for forced mode readout
 int lua_connected_readout_ref; // callback when readout is ready
 
@@ -216,7 +217,6 @@ static BME280_U32_t bme280_compensate_H(BME280_S32_t adc_H) {
 static int bme280_lua_init(lua_State* L) {
 	uint8_t sda;
 	uint8_t scl;
-	uint8_t ossh;
 	uint8_t config;
 	uint8_t ack;
 	
@@ -233,11 +233,11 @@ static int bme280_lua_init(lua_State* L) {
 		| ((!lua_isnumber(L, 4)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 4)&bit3)) << 2) // 4-th parameter: pressure oversampling
 		| ((!lua_isnumber(L, 3)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 3)&bit3)) << 5); // 3-rd parameter: temperature oversampling
 		
-	ossh = (!lua_isnumber(L, 5))?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 5)&bit3); // 5-th parameter: humidity oversampling
+	bme280_ossh = (!lua_isnumber(L, 5))?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 5)&bit3); // 5-th parameter: humidity oversampling
 	
 	config = ((!lua_isnumber(L, 7)?BME280_STANDBY_TIME_20_MS:(luaL_checkinteger(L, 7)&bit3))<< 4) // 7-th parameter: inactive duration in normal mode
 		| ((!lua_isnumber(L, 8)?BME280_FILTER_COEFF_16:(luaL_checkinteger(L, 8)&bit3)) << 1); // 8-th parameter: IIR filter
-	NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme280_mode, ossh, config);
+	NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme280_mode, bme280_ossh, config);
 	
 	platform_i2c_setup(bme280_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
 
@@ -291,7 +291,7 @@ static int bme280_lua_init(lua_State* L) {
 		bme280_data.dig_H6 = (int8_t)r8u(reg);
 		// NODE_DBG("dig_H: %d\t%d\t%d\t%d\t%d\t%d\n", bme280_data.dig_H1, bme280_data.dig_H2, bme280_data.dig_H3, bme280_data.dig_H4, bme280_data.dig_H5, bme280_data.dig_H6);
 
-		w8u(BME280_REGISTER_CONTROL_HUM, ossh);
+		w8u(BME280_REGISTER_CONTROL_HUM, bme280_ossh);
 		lua_pushinteger(L, 2);
 	} else {
 		lua_pushinteger(L, 1);
@@ -326,6 +326,7 @@ static int bme280_lua_startreadout(lua_State* L) {
 		lua_connected_readout_ref = LUA_NOREF;
 	}
 
+	w8u(BME280_REGISTER_CONTROL_HUM, bme280_ossh);
 	w8u(BME280_REGISTER_CONTROL, (bme280_mode & 0xFC) | BME280_FORCED_MODE);
 	NODE_DBG("control old: %x, control: %x, delay: %d\n", bme280_mode, (bme280_mode & 0xFC) | BME280_FORCED_MODE, delay);
 
@@ -340,7 +341,8 @@ static int bme280_lua_startreadout(lua_State* L) {
 
 static int bme280_lua_temp(lua_State* L) {
 	uint32_t adc_T = bme280_adc_T();
-	if (adc_T ==0x80000) return 0;
+	if (adc_T == 0x80000 || adc_T == 0xfffff)
+		return 0;
 	lua_pushinteger(L, bme280_compensate_T(adc_T));
 	lua_pushinteger(L, bme280_t_fine);
 	return 2;
@@ -350,7 +352,7 @@ static int bme280_lua_baro(lua_State* L) {
 	uint32_t adc_T = bme280_adc_T();
 	uint32_t T = bme280_compensate_T(adc_T);
 	uint32_t adc_P = bme280_adc_P();
-	if (adc_P ==0x80000 || adc_T == 0x80000)
+	if (adc_T == 0x80000 || adc_T == 0xfffff || adc_P ==0x80000 || adc_P == 0xfffff)
 		return 0;
 	lua_pushinteger(L, bme280_compensate_P(adc_P));
 	lua_pushinteger(L, T);
@@ -362,7 +364,7 @@ static int bme280_lua_humi(lua_State* L) {
 	uint32_t adc_T = bme280_adc_T();
 	uint32_t T = bme280_compensate_T(adc_T);
 	uint32_t adc_H = bme280_adc_H();
-	if (adc_T == 0x80000)
+	if (adc_T == 0x80000 || adc_T == 0xfffff || adc_H == 0x8000 || adc_H == 0xffff)
 		return 0;
 	lua_pushinteger(L, bme280_compensate_H(adc_H));
 	lua_pushinteger(L, T);
