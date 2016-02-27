@@ -32,6 +32,7 @@ SUBDIRS= 					\
 	lwip 					\
 	coap 					\
 	mqtt 					\
+	task 					\
 	u8glib 					\
 	ucglib					\
 	smart 					\
@@ -73,6 +74,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	json/libjson.a 				\
 	upgrade/libupgrade.a 			\
 	platform/libplatform.a 			\
+	task/libtask.a 				\
 	libc/liblibc.a 				\
 	lua/liblua.a 				\
 	lwip/liblwip.a 				\

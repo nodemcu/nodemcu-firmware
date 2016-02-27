@@ -338,21 +338,4 @@ Of course you should still use functions to structure your code and encapsulate 
 ### How to save memory?
   * The NodeMCU development team recommends that you consider using a tailored firmware build, which only includes the modules that you plan to use before developing any Lua application. Once you have the ability to make and flash custom builds, the you also have the option of moving time sensitive or logic intensive code into your own custom module. Doing this can save a large amount of RAM as C code can be run directly from Flash memory. If you want an easy-to-use intermediate option then why note try the [cloud based NodeMCU custom build service](http://frightanic.com/NodeMCU-custom-build)?. 
 
-## Hardware Specifics
 
-### Why file writes fail all the time on DEVKIT V1.0?
-
-NodeMCU DEVKIT V1.0 uses ESP12-E-DIO(ESP-12-D) module.  This module runs the Flash memory in [Dual IO SPI](#whats-the-different-between-dio-and-qio-mode) (DIO) mode. This firmware will not be correctly loaded if you uses old flashtool version, and the filesystem will not work if you used a pre 0.9.6 firmware version (<0.9.5) or old. The easiest way to resolve this problem s update all the firmware and flash tool to  current version.
-
-- Use the latest [esptool.py](https://github.com/themadinventor/esptool) with DIO support and command option to flash firmware, or 
-- Use the latest [NodeMCU flasher](https://github.com/NodeMCU/NodeMCU-flasher) with default option. (You must select the `restore to default` option in advanced menu tab), or 
-- Use the latest Espressif's flash tool -- see [this Espressif forum topic](http://bbs.espressif.com/viewtopic.php?f=5&t=433) (without auto download support). Use DIO mode and 32M flash size option, and flash latest firmware to 0x00000. Before flashing firmware, remember to hold FLASH button, and press RST button once. Note that the new NodeMCU our firmware download tool, when released, will be capable of flashing firmware automatically without any button presses.
-
-### What's the different between DIO and QIO mode?
-<TODO>
-
-### How to use DEVKIT V0.9 on Mac OS X?
-<TODO>
-
-### How does DEVKIT use DTR and RTS enter download mode?
-<TODO>

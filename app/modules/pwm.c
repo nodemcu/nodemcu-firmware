@@ -47,7 +47,9 @@ static int lpwm_start( lua_State* L )
   unsigned id;
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( pwm, id );
-  platform_pwm_start( id );
+  if (!platform_pwm_start( id )) {
+    return luaL_error(L, "Unable to start PWM output");
+  }
   return 0;  
 }
 
