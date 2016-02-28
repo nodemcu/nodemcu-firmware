@@ -57,6 +57,7 @@ pages:
         - 'ow (1-Wire)': 'en/modules/ow.md'
         - 'perf': 'en/modules/perf.md'
         - 'pwm' : 'en/modules/pwm.md'
+        - 'rotary' : 'en/modules/rotary.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
         - 'rtcfifo': 'en/modules/rtcfifo.md'

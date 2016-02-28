@@ -14,6 +14,24 @@
 #include "driver/uart.h"
 #include "driver/sigma_delta.h"
 
+#ifdef GPIO_INTERRUPT_ENABLE
+static task_handle_t gpio_task_handle;
+
+#ifdef GPIO_INTERRUPT_HOOK_ENABLE
+struct gpio_hook_entry {
+  platform_hook_function func;
+  uint32_t               bits;
+};
+struct gpio_hook {
+  struct gpio_hook_entry *entry;
+  uint32_t                all_bits;
+  uint32_t                count;
+};
+
+static struct gpio_hook platform_gpio_hook;
+#endif
+#endif
+
 static void pwms_init();
 
 int platform_init()
@@ -152,16 +170,23 @@ int platform_gpio_read( unsigned pin )
 }
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static task_handle_t gpio_task_handle;
-
 static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
   uint32 j=0;
   uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   UNUSED(dummy);
+
+#ifdef GPIO_INTERRUPT_HOOK_ENABLE
+  if (gpio_status & platform_gpio_hook.all_bits) {
+    for (j = 0; j < platform_gpio_hook.count; j++) {
+       if (gpio_status & platform_gpio_hook.entry[j].bits)
+         gpio_status = (platform_gpio_hook.entry[j].func)(gpio_status);
+    }
+  }
+#endif
   /*
    * gpio_status is a bit map where bit 0 is set if unmapped gpio pin 0 (pin3) has
    * triggered the ISR. bit 1 if unmapped gpio pin 1 (pin10=U0TXD), etc.  Since this
-   * in the ISR, it makes sense to optimize this by doing a fast scan of the status
+   * is the ISR, it makes sense to optimize this by doing a fast scan of the status
    * and reverse mapping any set bits.
    */
    for (j = 0; gpio_status>0; j++, gpio_status >>= 1) {
@@ -188,6 +213,90 @@ void platform_gpio_init( task_handle_t gpio_task )
   get_pin_map();
   ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, NULL);
 }
+
+#ifdef GPIO_INTERRUPT_HOOK_ENABLE
+/*
+ * Register an ISR hook to be called from the GPIO ISR for a given GPIO bitmask.
+ * This routine is only called a few times so has been optimised for size and
+ * the unregister is a special case when the bits are 0.
+ *
+ * Each hook function can only be registered once. If it is re-registered
+ * then the hooked bits are just updated to the new value.
+ */
+int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
+{
+  struct gpio_hook nh, oh = platform_gpio_hook;
+  int i, j;
+
+  if (!hook) {
+    // Cannot register or unregister null hook
+    return 0;
+  }
+
+  int delete_slot = -1;
+
+  // If hook already registered, just update the bits
+  for (i=0; i<oh.count; i++) {
+    if (hook == oh.entry[i].func) {
+      if (!bits) {
+	// Unregister if move to zero bits
+	delete_slot = i;
+	break;
+      }
+      if (bits & (oh.all_bits & ~oh.entry[i].bits)) {
+	// Attempt to hook an already hooked bit
+	return 0;
+      }
+      // Update the hooked bits (in the right order)
+      uint32_t old_bits = oh.entry[i].bits;
+      *(volatile uint32_t *) &oh.entry[i].bits = bits;
+      *(volatile uint32_t *) &oh.all_bits = (oh.all_bits & ~old_bits) | bits;
+      return 1;
+    }
+  }
+
+  // This must be the register new hook / delete old hook
+  
+  if (delete_slot < 0) {
+    if (bits & oh.all_bits) {
+      return 0;   // Attempt to hook already hooked bits
+    }
+    nh.count = oh.count + 1;    // register a new hook
+  } else {
+    nh.count = oh.count - 1;    // unregister an old hook
+  }
+
+  // These return NULL if the count = 0 so only error check if > 0)
+  nh.entry = c_malloc( nh.count * sizeof(*(nh.entry)) );
+  if (nh.count && !(nh.entry)) {
+    return 0;  // Allocation failure
+  }
+
+  for (i=0, j=0; i<oh.count; i++) {
+    // Don't copy if this is the entry to delete
+    if (i != delete_slot) {
+      nh.entry[j++]   = oh.entry[i];
+    }
+  }
+
+  if (delete_slot < 0) { // for a register add the hook to the tail and set the all bits
+    nh.entry[j].bits  = bits;
+    nh.entry[j].func  = hook;
+    nh.all_bits = oh.all_bits | bits;
+  } else {    // for an unregister clear the matching all bits
+    nh.all_bits = oh.all_bits & (~oh.entry[delete_slot].bits);
+  }
+
+  ETS_GPIO_INTR_DISABLE();
+  // This is a structure copy, so interrupts need to be disabled
+  platform_gpio_hook = nh;
+  ETS_GPIO_INTR_ENABLE();
+
+  c_free(oh.entry);
+  return 1;
+}
+#endif // GPIO_INTERRUPT_HOOK_ENABLE
+
 /*
  * Initialise GPIO interrupt mode. Optionally in RAM because interrupts are dsabled
  */

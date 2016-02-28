@@ -42,6 +42,7 @@
 #endif	/* NODE_ERROR */
 
 #define GPIO_INTERRUPT_ENABLE
+#define GPIO_INTERRUPT_HOOK_ENABLE
 // #define GPIO_SAFE_NO_INTR_ENABLE
 
 #define ICACHE_STORE_TYPEDEF_ATTR __attribute__((aligned(4),packed))

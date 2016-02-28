@@ -37,12 +37,20 @@ uint8_t platform_key_led( uint8_t level);
 #define PLATFORM_GPIO_HIGH 1
 #define PLATFORM_GPIO_LOW 0
 
+typedef uint32_t (* platform_hook_function)(uint32_t bitmask);
+
 static inline int platform_gpio_exists( unsigned pin ) { return pin < NUM_GPIO; }
 int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull );
 int platform_gpio_write( unsigned pin, unsigned level );
 int platform_gpio_read( unsigned pin );
-void platform_gpio_init( task_handle_t gpio_task );
+
+// Note that these functions will not be compiled in unless GPIO_INTERRUPT_ENABLE and
+// GPIO_INTERRUPT_HOOK_ENABLE are defined.
+int platform_gpio_register_intr_hook(uint32_t gpio_bits, platform_hook_function hook);
+#define platform_gpio_unregister_intr_hook(hook) \
+  platform_gpio_register_intr_hook(0, hook);
 void platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type );
+void platform_gpio_init( task_handle_t gpio_task );
 // *****************************************************************************
 // Timer subsection
 
