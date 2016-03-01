@@ -43,6 +43,7 @@
 #include "user_interface.h"
 #include "espconn.h"
 #include "flash_fs.h"
+#include "task/task.h"
 
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 #define LITLEN(strliteral) (sizeof (strliteral) -1)
@@ -244,6 +245,7 @@ typedef struct
 
 static enduser_setup_state_t *state;
 static bool manual = false;
+static task_handle_t do_station_cfg_handle;
 
 static int enduser_setup_start(lua_State* L);
 static int enduser_setup_stop(lua_State* L);
@@ -330,7 +332,8 @@ static void enduser_setup_check_station_stop(void)
 {
   ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_check_station_stop");
 
-  os_timer_disarm(&(state->check_station_timer));
+  if (state != NULL)
+    os_timer_disarm(&(state->check_station_timer));
 }
 
 
@@ -493,6 +496,32 @@ static void enduser_setup_http_urldecode(char *dst, const char *src, int src_len
 
 
 /**
+ * Task to do the actual station configuration.
+ * This config *cannot* be done in the network receive callback or serious
+ * issues like memory corruption occur.
+ */
+static void do_station_cfg (task_param_t param, uint8_t prio)
+{
+  struct station_config *cnf = (struct station_config *)param;
+  (void)prio;
+
+  /* Best-effort disconnect-reconfig-reconnect. If the device is currently
+   * connected, the disconnect will work but the connect will report failure
+   * (though it will actually start connecting). If the devices is not
+   * connected, the disconnect may fail but the connect will succeed. A
+   * solid head-in-the-sand approach seems to be the best tradeoff on
+   * functionality-vs-code-size.
+   * TODO: maybe use an error callback to at least report if the set config
+   * call fails.
+   */
+  wifi_station_disconnect ();
+  wifi_station_set_config (cnf);
+  wifi_station_connect ();
+  os_free (cnf);
+}
+
+
+/**
  * Handle HTTP Credentials
  *
  * @return - return 0 iff credentials are found and handled successfully
@@ -522,30 +551,18 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
     return 1;
   }
 
-  struct station_config cnf;
-  c_memset(&cnf, 0, sizeof(struct station_config));
-  enduser_setup_http_urldecode(cnf.ssid, name_str_start, name_str_len);
-  enduser_setup_http_urldecode(cnf.password, pwd_str_start, pwd_str_len);
+  struct station_config *cnf = os_zalloc(sizeof(struct station_config));
+  enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len);
+  enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len);
 
-  if (!wifi_station_disconnect())
-  {
-    ENDUSER_SETUP_ERROR("station_start failed. wifi_station_disconnect failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
-  }
-  if (!wifi_station_set_config(&cnf))
-  {
-    ENDUSER_SETUP_ERROR("station_start failed. wifi_station_set_config failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
-  }
-  if (wifi_station_connect())
-  {
-    ENDUSER_SETUP_ERROR("station_start failed. wifi_station_connect failed.\n", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
-  }
+  task_post_medium(do_station_cfg_handle, (task_param_t)cnf);
 
   ENDUSER_SETUP_DEBUG(lua_getstate(), "WiFi Credentials Stored");
   ENDUSER_SETUP_DEBUG(lua_getstate(), "-----------------------");
   ENDUSER_SETUP_DEBUG(lua_getstate(), "name: ");
-  ENDUSER_SETUP_DEBUG(lua_getstate(), cnf.ssid);
+  ENDUSER_SETUP_DEBUG(lua_getstate(), cnf->ssid);
   ENDUSER_SETUP_DEBUG(lua_getstate(), "pass: ");
-  ENDUSER_SETUP_DEBUG(lua_getstate(), cnf.password);
+  ENDUSER_SETUP_DEBUG(lua_getstate(), cnf->password);
   ENDUSER_SETUP_DEBUG(lua_getstate(), "-----------------------");
 
   return 0;
@@ -621,15 +638,14 @@ static void serve_status (struct espconn *conn)
     "Content-type: text/plain\r\n"
     "Content-length: %d\r\n"
     "\r\n"
-    "%s";
+    "%s%s";
   const char *state[] =
   {
     "Idle",
     "Connecting...",
     "Failed to connect - wrong password",
     "Failed to connect - network not found",
-    "Failed to connect",
-    "WiFi successfully connected!" /* TODO: include SSID */
+    "Failed to connect"
   };
   const size_t num_states = sizeof(state)/sizeof(state[0]);
 
@@ -639,7 +655,17 @@ static void serve_status (struct espconn *conn)
     const char *s = state[which];
     int len = c_strlen (s);
     char buf[sizeof (fmt) + 10 + len]; /* more than enough for the formatted */
-    len = c_sprintf (buf, fmt, len, s);
+    len = c_sprintf (buf, fmt, len, s, "");
+    enduser_setup_http_serve_header (conn, buf, len);
+  }
+  else if (which == num_states)
+  {
+    struct station_config cnf = { 0, };
+    wifi_station_get_config (&cnf);
+    const char successmsg[] = "WiFi successfully connected to ";
+    int len = LITLEN(successmsg) + c_strlen (cnf.ssid);
+    char buf[sizeof (fmt) + sizeof (successmsg) + 32]; // max-ssid
+    len = c_sprintf (buf, fmt, len, successmsg, cnf.ssid);
     enduser_setup_http_serve_header (conn, buf, len);
   }
   else
@@ -1172,7 +1198,7 @@ static void enduser_setup_dns_stop(void)
 {
   ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_dns_stop");
 
-  if (state->espconn_dns_udp != NULL)
+  if (state != NULL && state->espconn_dns_udp != NULL)
   {
     espconn_delete(state->espconn_dns_udp);
   }
@@ -1247,6 +1273,9 @@ static int enduser_setup_manual (lua_State *L)
 static int enduser_setup_start(lua_State *L)
 {
   ENDUSER_SETUP_DEBUG(L, "enduser_setup_start");
+
+  if (!do_station_cfg_handle)
+    do_station_cfg_handle = task_get_id(do_station_cfg);
 
   if(enduser_setup_init(L))
     goto failed;
