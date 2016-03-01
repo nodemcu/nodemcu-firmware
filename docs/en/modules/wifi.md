@@ -155,6 +155,10 @@ Intended for use with SmartConfig apps, such as Espressif's [Android & iOS app](
 
 Only usable in `wifi.STATION` mode.
 
+!!! note "Note:"
+
+    SmartConfig is disabled by default and can be enabled by setting `WIFI_SMART_ENABLE` in [`user_config.h`](https://github.com/nodemcu/nodemcu-firmware/blob/dev/app/include/user_config.h#L96) before you build the firmware.
+
 #### Syntax
 `wifi.startsmart(type, callback)`
 
