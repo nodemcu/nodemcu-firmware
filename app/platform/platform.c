@@ -18,6 +18,9 @@ static void pwms_init();
 
 int platform_init()
 {
+  // Setup the various forward and reverse mappings for the pins
+  get_pin_map();
+
   // Setup PWMs
   pwms_init();
 
@@ -182,10 +185,8 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
 
 void platform_gpio_init( task_handle_t gpio_task )
 {
-  int i;
   gpio_task_handle = gpio_task;
 
-  get_pin_map();
   ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, NULL);
 }
 /*
