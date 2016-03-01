@@ -61,22 +61,7 @@ static int file_format( lua_State* L )
   return 0; 
 }
 
-#if defined(BUILD_WOFS)
-// Lua: list()
-static int file_list( lua_State* L )
-{
-  uint32_t start = 0;
-  size_t act_len = 0;
-  char fsname[ FS_NAME_MAX_LENGTH + 1 ];
-  lua_newtable( L );
-  while( FS_FILE_OK == wofs_next(&start, fsname, FS_NAME_MAX_LENGTH, &act_len) ){
-    lua_pushinteger(L, act_len);
-    lua_setfield( L, -2, fsname );
-  }
-  return 1;
-}
-
-#elif defined(BUILD_SPIFFS)
+#if defined(BUILD_SPIFFS)
 
 extern spiffs fs;
 
@@ -324,13 +309,13 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "read" ),      LFUNCVAL( file_read ) },
   { LSTRKEY( "readline" ),  LFUNCVAL( file_readline ) },
   { LSTRKEY( "format" ),    LFUNCVAL( file_format ) },
-#if defined(BUILD_SPIFFS) && !defined(BUILD_WOFS)
+#if defined(BUILD_SPIFFS)
   { LSTRKEY( "remove" ),    LFUNCVAL( file_remove ) },
   { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
   { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
   { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
-  { LSTRKEY( "fscfg" ),    LFUNCVAL( file_fscfg ) },
+  { LSTRKEY( "fscfg" ),     LFUNCVAL( file_fscfg ) },
   { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
 #endif
   { LNILKEY, LNILVAL }

@@ -57,9 +57,7 @@
 //#define MD2_ENABLE
 #define SHA2_ENABLE
 
-// #define BUILD_WOFS		1
 #define BUILD_SPIFFS	1
-
 #define SPIFFS_CACHE 1
 
 // #define LUA_NUMBER_INTEGRAL
@@ -93,6 +91,8 @@
 */
 //#define WIFI_STA_HOSTNAME "NodeMCU"
 //#define WIFI_STA_HOSTNAME_APPEND_MAC
+
+#define WIFI_SMART_ENABLE
 
 #define STRBUF_DEFAULT_INCREMENT 32
 

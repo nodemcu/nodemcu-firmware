@@ -47,7 +47,6 @@ INCLUDES += -I ../u8glib
 INCLUDES += -I ../ucglib
 INCLUDES += -I ../lua
 INCLUDES += -I ../platform
-INCLUDES += -I ../wofs
 INCLUDES += -I ../spiffs
 INCLUDES += -I ../smart
 INCLUDES += -I ../cjson

@@ -19,7 +19,6 @@
 #include "lrodefs.h"
 
 #include "c_types.h"
-#include "romfs.h"
 #include "c_string.h"
 #include "driver/uart.h"
 #include "user_interface.h"
