@@ -637,15 +637,14 @@ static void serve_status (struct espconn *conn)
     "Content-type: text/plain\r\n"
     "Content-length: %d\r\n"
     "\r\n"
-    "%s";
+    "%s%s";
   const char *state[] =
   {
     "Idle",
     "Connecting...",
     "Failed to connect - wrong password",
     "Failed to connect - network not found",
-    "Failed to connect",
-    "WiFi successfully connected!" /* TODO: include SSID */
+    "Failed to connect"
   };
   const size_t num_states = sizeof(state)/sizeof(state[0]);
 
@@ -655,7 +654,17 @@ static void serve_status (struct espconn *conn)
     const char *s = state[which];
     int len = c_strlen (s);
     char buf[sizeof (fmt) + 10 + len]; /* more than enough for the formatted */
-    len = c_sprintf (buf, fmt, len, s);
+    len = c_sprintf (buf, fmt, len, s, "");
+    enduser_setup_http_serve_header (conn, buf, len);
+  }
+  else if (which == num_states)
+  {
+    struct station_config cnf = { 0, };
+    wifi_station_get_config (&cnf);
+    const char successmsg[] = "WiFi successfully connected to ";
+    int len = LITLEN(successmsg) + c_strlen (cnf.ssid);
+    char buf[sizeof (fmt) + sizeof (successmsg) + 32]; // max-ssid
+    len = c_sprintf (buf, fmt, len, successmsg, cnf.ssid);
     enduser_setup_http_serve_header (conn, buf, len);
   }
   else
