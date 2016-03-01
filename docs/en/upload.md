@@ -1,7 +1,6 @@
 As with [flashing](flash.md) there are several ways to upload code from your computer to the device.
 
-Note that the NodeMCU serial interface uses 9600 bps at boot time. To increase the speed after booting, issue `uart.setup(0,115200,8,0,1,1)`. ESPlorer will do this automatically when changing the speed in the dropdown list.
-If the device panics and resets at any time, errors will be written to the serial interface at 115200 bps.
+Note that the NodeMCU serial interface uses 115200bps at boot time. To change the speed after booting, issue `uart.setup(0,9600,8,0,1,1)`. ESPlorer will do this automatically when changing the speed in the dropdown list. If the device panics and resets at any time, errors will be written to the serial interface at 115200 bps.
 
 # ESPlorer
 

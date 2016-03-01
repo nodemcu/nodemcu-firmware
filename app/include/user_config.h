@@ -21,9 +21,8 @@
 #ifdef DEVELOP_VERSION
 #define NODE_DEBUG
 #define COAP_DEBUG
-#define BIT_RATE_DEFAULT BIT_RATE_74880
 #else
-#define BIT_RATE_DEFAULT BIT_RATE_9600
+#define BIT_RATE_DEFAULT BIT_RATE_115200
 #endif /* DEVELOP_VERSION */
 
 
@@ -54,7 +53,7 @@
 #define NO_INTR_CODE inline
 #endif
 
-#define CLIENT_SSL_ENABLE
+//#define CLIENT_SSL_ENABLE
 //#define MD2_ENABLE
 #define SHA2_ENABLE
 
