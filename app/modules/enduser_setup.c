@@ -332,7 +332,8 @@ static void enduser_setup_check_station_stop(void)
 {
   ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_check_station_stop");
 
-  os_timer_disarm(&(state->check_station_timer));
+  if (state != NULL)
+    os_timer_disarm(&(state->check_station_timer));
 }
 
 
@@ -1197,7 +1198,7 @@ static void enduser_setup_dns_stop(void)
 {
   ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_dns_stop");
 
-  if (state->espconn_dns_udp != NULL)
+  if (state != NULL && state->espconn_dns_udp != NULL)
   {
     espconn_delete(state->espconn_dns_udp);
   }
