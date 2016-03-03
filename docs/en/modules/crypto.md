@@ -1,4 +1,7 @@
 # crypto Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-06-02 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson) | [Johny Mattsson](https://github.com/jmattsson) | [crypto.c](../../../app/modules/crypto.c)|
 
 The crypto modules provides various functions for working with cryptographic algorithms.
 

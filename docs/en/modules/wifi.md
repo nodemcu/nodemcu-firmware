@@ -1,4 +1,8 @@
 # WiFi Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-05-12 | [dnc40085](https://github.com/dnc40085) | [dnc40085](https://github.com/dnc40085) | [wifi.c](../../../app/modules/wifi.c)|
+
 The NodeMCU WiFi control is spread across several tables:
 
 - `wifi` for overall WiFi configuration

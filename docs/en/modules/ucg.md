@@ -1,4 +1,8 @@
 # ucg Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-08-05 | [Oli Kraus](https://github.com/olikraus/u8glib), [Arnim Läuger](https://github.com/devsaurus) | [Arnim Läuger](https://github.com/devsaurus) | [ucglib](../../../app/ucglib/)|
+
 Ucglib is a graphics library developed at [olikraus/ucglib](https://github.com/olikraus/ucglib) with support for color TFT displays. The NodeMCU firmware supports a subset of these:
 
 - ILI9163

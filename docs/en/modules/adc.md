@@ -1,4 +1,8 @@
 # ADC Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-24 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [adc.c](../../../app/modules/adc.c)|
+
 The ADC module provides access to the in-built ADC.
 
 On the ESP8266 there is only a single-channel, which is multiplexed with the battery voltage. Depending on the setting in the "esp init data" (byte 107) one can either use the ADC to read an external voltage, or to read the system voltage, but not both.

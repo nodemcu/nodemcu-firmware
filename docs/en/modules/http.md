@@ -1,8 +1,11 @@
 # HTTP Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2016-01-15 | [Vowstar](https://github.com/vowstar) | [Vowstar](https://github.com/vowstar) | [http.c](../../../app/modules/http.c)|
 
-Basic HTTP client module.
+Basic HTTP *client* module.
 
-Provides an interface to do basic GET/POST/PUT/DELETE over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is limited by available memory. Attempting to receive pages larger than this will fail. If larger page/body sizes are necessary, consider using `net.createConnection()` and stream in the data.
+Provides an interface to do basic GET/POST/PUT/DELETE over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is limited by available memory. Attempting to receive pages larger than this will fail. If larger page/body sizes are necessary, consider using [`net.createConnection()`](#netcreateconnection) and stream in the data.
 
 Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 10 seconds).
 
@@ -13,10 +16,7 @@ For each operation it is also possible to include custom headers. Note that foll
 
 The `Host` header is taken from the URL itself, the `Connection` is always set to `close`, and the `User-Agent` is `ESP8266`.
 
-Note that it is not possible to execute concurrent HTTP requests using this module. Starting a new request before the previous has completed will result in undefined behaviour.
-
-#### See also
-  - [`net.createConnection()`](#netcreateconnection)
+Note that it is not possible to execute concurrent HTTP requests using this module. Starting a new request before the previous has completed will result in undefined behavior.
 
 ## http.delete()
 
