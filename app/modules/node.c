@@ -449,19 +449,19 @@ static int node_compile( lua_State* L )
   return 0;
 }
 
-// Task callback handler for node.tasknow()
+// Task callback handler for node.task.post()
 static task_handle_t do_node_task_handle;
 static void do_node_task (task_param_t task_fn_ref, uint8_t prio)
 {
   UNUSED(prio);
   lua_State* L = lua_getstate();
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
-	luaL_unref(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
   lua_pushinteger(L, prio);
-	lua_call(L, 1, 0);
+  lua_call(L, 1, 0);
 }
 
-// Lua: node.tasknow(task_cb)) -- schedule a task for execution next
+// Lua: node.task.post([priority],task_cb) -- schedule a task for execution next
 static int node_task_post( lua_State* L )
 {
   int n = 1, Ltype = lua_type(L, 1);
@@ -472,14 +472,18 @@ static int node_task_post( lua_State* L )
     Ltype = lua_type(L, ++n);
   }
   luaL_argcheck(L, Ltype == LUA_TFUNCTION || Ltype == LUA_TLIGHTFUNCTION, n, "invalid function");
-	lua_pushvalue(L, n);
+    lua_pushvalue(L, n);
 
-	int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   if (!do_node_task_handle)  // bind the task handle to do_node_task on 1st call
     do_node_task_handle = task_get_id(do_node_task);
 
-  task_post(priority, do_node_task_handle, (task_param_t)task_fn_ref);
+  if(!task_post(priority, do_node_task_handle, (task_param_t)task_fn_ref)) {
+    luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
+    luaL_error(L, "Task queue overflow. Task not posted");
+  }
+  return 0;
 }
 
 // Lua: setcpufreq(mhz)

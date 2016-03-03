@@ -412,6 +412,8 @@ Enable a Lua callback or task to post another task request. Note that as per the
 example multiple tasks can be posted in any task, but the highest priority is 
 always delivered first.
 
+If the task queue is full then a queue full error is raised.  
+
 ####Syntax
 `node.task.post([task_priority], function)`
 
