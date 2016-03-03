@@ -122,6 +122,11 @@ static int lpwm_getduty( lua_State* L )
   return 1;
 }
 
+int lpwm_open( lua_State *L ) {
+  platform_pwm_init();
+  return 0;
+}
+
 // Module function map
 static const LUA_REG_TYPE pwm_map[] = {
   { LSTRKEY( "setup" ),    LFUNCVAL( lpwm_setup ) },
@@ -135,4 +140,4 @@ static const LUA_REG_TYPE pwm_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(PWM, "pwm", pwm_map, NULL);
+NODEMCU_MODULE(PWM, "pwm", pwm_map, lpwm_open);

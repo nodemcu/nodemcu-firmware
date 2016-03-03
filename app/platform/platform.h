@@ -70,7 +70,7 @@ enum
   ELUA_CAN_ID_EXT
 };
 
-static inline int platform_can_exists( unsigned id ) { return id < NUM_CAN; }
+static inline int platform_can_exists( unsigned id ) { return NUM_CAN && (id < NUM_CAN); }
 uint32_t platform_can_setup( unsigned id, uint32_t clock );
 int platform_can_send( unsigned id, uint32_t canid, uint8_t idtype, uint8_t len, const uint8_t *data );
 int platform_can_recv( unsigned id, uint32_t *canid, uint8_t *idtype, uint8_t *len, uint8_t *data );
@@ -171,6 +171,7 @@ void platform_uart_alt( int set );
 #define DUTY(d) ((uint16_t)( ((unsigned)(d)*PWM_DEPTH) / NORMAL_PWM_DEPTH) )
 
 // The platform PWM functions
+void platform_pwm_init( void );
 static inline int platform_pwm_exists( unsigned id ) { return ((id < NUM_PWM) && (id > 0)); }
 uint32_t platform_pwm_setup( unsigned id, uint32_t frequency, unsigned duty );
 void platform_pwm_close( unsigned id );

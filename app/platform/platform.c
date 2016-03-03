@@ -32,15 +32,10 @@ static struct gpio_hook platform_gpio_hook;
 #endif
 #endif
 
-static void pwms_init();
-
 int platform_init()
 {
   // Setup the various forward and reverse mappings for the pins
   get_pin_map();
-
-  // Setup PWMs
-  pwms_init();
 
   cmn_platform_init();
   // All done
@@ -113,7 +108,9 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
     return 1;
   }
 
+#ifdef LUA_USE_MODULES_PWM
   platform_pwm_close(pin);    // closed from pwm module, if it is used in pwm
+#endif
 
   if (pull == PLATFORM_GPIO_PULLUP) {
     PIN_PULLUP_EN(pin_mux[pin]);
@@ -421,7 +418,7 @@ void platform_uart_send( unsigned id, u8 data )
 
 static uint16_t pwms_duty[NUM_PWM] = {0};
 
-static void pwms_init()
+void platform_pwm_init()
 {
   int i;
   for(i=0;i<NUM_PWM;i++){
