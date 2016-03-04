@@ -453,7 +453,6 @@ static int node_compile( lua_State* L )
 static task_handle_t do_node_task_handle;
 static void do_node_task (task_param_t task_fn_ref, uint8_t prio)
 {
-  UNUSED(prio);
   lua_State* L = lua_getstate();
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
   luaL_unref(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
@@ -472,7 +471,7 @@ static int node_task_post( lua_State* L )
     Ltype = lua_type(L, ++n);
   }
   luaL_argcheck(L, Ltype == LUA_TFUNCTION || Ltype == LUA_TLIGHTFUNCTION, n, "invalid function");
-    lua_pushvalue(L, n);
+  lua_pushvalue(L, n);
 
   int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 

@@ -433,7 +433,7 @@ If the priority is omitted then  this defaults  to `node.task.MEDIUM_PRIORITY`
 ```lua
 for i = node.task.LOW_PRIORITY, node.task.HIGH_PRIORITY do 
   node.task.post(i,function(p2)
-    print("priority is ..p2)
+    print("priority is "..p2)
   end) 
 end      
 ``` 
