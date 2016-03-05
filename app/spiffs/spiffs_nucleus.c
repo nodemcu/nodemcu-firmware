@@ -1349,7 +1349,7 @@ static s32_t spiffs_object_find_object_index_header_by_name_v(
   if (objix_hdr.p_hdr.span_ix == 0 &&
       (objix_hdr.p_hdr.flags & (SPIFFS_PH_FLAG_DELET | SPIFFS_PH_FLAG_FINAL | SPIFFS_PH_FLAG_IXDELE)) ==
           (SPIFFS_PH_FLAG_DELET | SPIFFS_PH_FLAG_IXDELE)) {
-    if (strcmp((char *)user_p, (char *)objix_hdr.name) == 0) {
+    if (strncmp((char *)user_p, (char *)objix_hdr.name, SPIFFS_OBJ_NAME_LEN) == 0) {
       return SPIFFS_OK;
     }
   }
@@ -1715,7 +1715,7 @@ static s32_t spiffs_obj_lu_find_free_obj_id_bitmap_v(spiffs *fs, spiffs_obj_id i
       if (objix_hdr.p_hdr.span_ix == 0 &&
           (objix_hdr.p_hdr.flags & (SPIFFS_PH_FLAG_DELET | SPIFFS_PH_FLAG_FINAL | SPIFFS_PH_FLAG_IXDELE)) ==
               (SPIFFS_PH_FLAG_DELET | SPIFFS_PH_FLAG_IXDELE)) {
-        if (strcmp((char *)user_p, (char *)objix_hdr.name) == 0) {
+        if (strncmp((char *)user_p, (char *)objix_hdr.name, SPIFFS_OBJ_NAME_LEN) == 0) {
           return SPIFFS_ERR_CONFLICTING_NAME;
         }
       }
@@ -1745,7 +1745,7 @@ static s32_t spiffs_obj_lu_find_free_obj_id_compact_v(spiffs *fs, spiffs_obj_id 
         ((objix_hdr.p_hdr.flags & (SPIFFS_PH_FLAG_INDEX | SPIFFS_PH_FLAG_FINAL | SPIFFS_PH_FLAG_DELET)) ==
             (SPIFFS_PH_FLAG_DELET))) {
       // ok object look up entry
-      if (state->conflicting_name && strcmp((const char *)state->conflicting_name, (char *)objix_hdr.name) == 0) {
+      if (state->conflicting_name && strncmp((const char *)state->conflicting_name, (char *)objix_hdr.name, SPIFFS_OBJ_NAME_LEN) == 0) {
         return SPIFFS_ERR_CONFLICTING_NAME;
       }
 
