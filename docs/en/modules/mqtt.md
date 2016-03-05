@@ -1,4 +1,8 @@
 # MQTT Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-01-23 | [Stephen Robinson](https://github.com/esar/contiki-mqtt), [Tuan PM](https://github.com/tuanpmt/esp_mqtt) | [Vowstar](https://github.com/vowstar) | [mqtt.c](../../../app/modules/mqtt.c)|
+
 
 The client adheres to version 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/MQTT) protocol. Make sure that your broker supports and is correctly configured for version 3.1.1. The client is backwards incompatible with brokers running MQTT 3.1.
 

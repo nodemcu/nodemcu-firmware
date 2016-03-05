@@ -1,4 +1,7 @@
 # PWM Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [pwm.c](../../../app/modules/pwm.c)|
 
 ## pwm.close()
 Quit PWM mode for the specified GPIO pin.

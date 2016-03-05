@@ -1,4 +1,7 @@
-# rtctime Module
+# RTC Time Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-06-25 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson), Bernd Meyer <bmeyer@dius.com.au> | [Johny Mattsson](https://github.com/jmattsson) | [rtctime.c](../../../app/modules/rtctime.c)|
 
 The rtctime module provides advanced timekeeping support for NodeMCU, including keeping time across deep sleep cycles (provided [`rtctime.dsleep()`](#rtctimedsleep) is used instead of [`node.dsleep()`](node.md#nodedsleep)). This can be used to significantly extend battery life on battery powered sensor nodes, as it is no longer necessary to fire up the RF module each wake-up in order to obtain an accurate timestamp.
 

@@ -1,4 +1,7 @@
-# rtcfifo Module
+# RTC FIFO Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-06-26 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson), Bernd Meyer <bmeyer@dius.com.au> | [Johny Mattsson](https://github.com/jmattsson) | [rtcfifo.c](../../../app/modules/rtcfifo.c)|
 
 The rtcfifo module implements a first-in,first-out storage intended for sensor readings. As the name suggests, it is backed by the [RTC](https://en.wikipedia.org/wiki/Real-time_clock) user memory and as such survives deep sleep cycles. Conceptually it can be thought of as a cyclic array of `{ timestamp, name, value }` tuples. Internally it uses a space-optimized storage format to allow the greatest number of samples to be kept. This comes with several trade-offs, and as such is not a one-solution-fits-all. Notably:
 - Timestamps are stored with second-precision.

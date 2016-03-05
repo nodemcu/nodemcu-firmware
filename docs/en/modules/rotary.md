@@ -1,14 +1,12 @@
 # rotary Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2016-03-01 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [rotary.c](../../../app/modules/rotary.c)|
 
-This module can read the state of cheap rotary encoder switches. These are available at
-all the standard places for a dollar or two. They are five pin devices where three are used
-for a gray code encoder for rotation, and two are used for the push switch. These switches
-are commonly used in car audio systems. 
 
-These switches do not have absolute positioning, but only encode the number of positions
-rotated clockwise / anticlockwise. To make use of this module, connect the common pin on the quadrature
-encoder to ground and the A and B phases to the nodemcu. One pin of the push switch should
-also be grounded and the other pin connected to the nodemcu.
+This module can read the state of cheap rotary encoder switches. These are available at all the standard places for a dollar or two. They are five pin devices where three are used for a gray code encoder for rotation, and two are used for the push switch. These switches are commonly used in car audio systems. 
+
+These switches do not have absolute positioning, but only encode the number of positions rotated clockwise / anti-clockwise. To make use of this module, connect the common pin on the quadrature encoder to ground and the A and B phases to the NodeMCU. One pin of the push switch should also be grounded and the other pin connected to the NodeMCU.
 
 ## Sources for parts
 

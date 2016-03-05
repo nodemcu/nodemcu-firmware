@@ -1,4 +1,7 @@
 # CJSON Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-03-16 | [Mark Pulford](http://kyne.com.au/~mark/software/lua-cjson.php), [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [cjson](../../../app/modules/cjson.c) |
 
 The JSON support module. Allows encoding and decoding to/from JSON.
 
