@@ -17,10 +17,10 @@
 * is just a fixed fingerprint and the count is allocated serially by the task get_id()
 * function.
 */
-
-#define task_post_low(handle,param) system_os_post(0, (handle | TASK_PRIORITY_LOW), param)
-#define task_post_medium(handle,param) system_os_post(1, (handle | TASK_PRIORITY_MEDIUM), param)
-#define task_post_high(handle,param) system_os_post(2, (handle | TASK_PRIORITY_HIGH), param)
+#define task_post(priority,handle,param) system_os_post(priority, ((handle) | priority), param)
+#define task_post_low(handle,param)    task_post(TASK_PRIORITY_LOW,    handle, param)
+#define task_post_medium(handle,param) task_post(TASK_PRIORITY_MEDIUM, handle, param)
+#define task_post_high(handle,param)   task_post(TASK_PRIORITY_HIGH,   handle, param)
 
 #define task_handle_t os_signal_t
 #define task_param_t os_param_t

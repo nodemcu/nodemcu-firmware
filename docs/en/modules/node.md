@@ -403,3 +403,44 @@ provides more detailed information on the EGC.
 
 `node.egc.setmode(node.egc.ALWAYS, 4096)  -- This is the default setting at startup.`
 `node.egc.setmode(node.egc.ON_ALLOC_FAILURE) -- This is the fastest activeEGC mode.`
+
+# node.task module
+
+## node.task.post()
+
+Enable a Lua callback or task to post another task request. Note that as per the 
+example multiple tasks can be posted in any task, but the highest priority is 
+always delivered first.
+
+If the task queue is full then a queue full error is raised.  
+
+####Syntax
+`node.task.post([task_priority], function)`
+
+#### Parameters
+- `task_priority` (optional)
+	- `node.task.LOW_PRIORITY` = 0
+	- `node.task.MEDIUM_PRIORITY` = 1
+	- `node.task.HIGH_PRIORITY` = 2
+- `function` a callback function to be executed when the task is run. 
+
+If the priority is omitted then  this defaults  to `node.task.MEDIUM_PRIORITY`
+
+####  Returns
+`nil`
+
+#### Example
+```lua
+for i = node.task.LOW_PRIORITY, node.task.HIGH_PRIORITY do 
+  node.task.post(i,function(p2)
+    print("priority is "..p2)
+  end) 
+end      
+``` 
+prints
+```
+priority is 2
+priority is 1
+priority is 0
+```
+
