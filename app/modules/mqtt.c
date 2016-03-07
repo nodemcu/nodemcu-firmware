@@ -55,7 +55,6 @@ typedef struct mqtt_state_t
 
 typedef struct lmqtt_userdata
 {
-  lua_State *L;
   struct espconn *pesp_conn;
   int self_ref;
   int cb_connect_ref;
@@ -92,11 +91,13 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
 
   os_timer_disarm(&mud->mqttTimer);
 
+  lua_State *L = lua_getstate();
+
   if(mud->connected){     // call back only called when socket is from connection to disconnection.
     mud->connected = false;
-    if((mud->L != NULL) && (mud->cb_disconnect_ref != LUA_NOREF) && (mud->self_ref != LUA_NOREF)) {
-      lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
-      lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
+    if((mud->cb_disconnect_ref != LUA_NOREF) && (mud->self_ref != LUA_NOREF)) {
+      lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+      lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
       call_back = true;
     }
   }
@@ -121,18 +122,14 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
       mud->pesp_conn = NULL;
     }
 
-    if(mud->L == NULL)
-      return;
-    lua_gc(mud->L, LUA_GCSTOP, 0);
     if(mud->self_ref != LUA_NOREF){   // TODO: should we unref the client and delete it?
-      luaL_unref(mud->L, LUA_REGISTRYINDEX, mud->self_ref);
+      luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
       mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
     }
-    lua_gc(mud->L, LUA_GCRESTART, 0);
   }
 
-  if((mud->L != NULL) && call_back){
-    lua_call(mud->L, 1, 0);
+  if(call_back){
+    lua_call(L, 1, 0);
   }
 
   NODE_DBG("leave mqtt_socket_disconnected.\n");
@@ -178,23 +175,56 @@ static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, int length)
     return;
   if(mud->self_ref == LUA_NOREF)
     return;
-  if(mud->L == NULL)
-    return;
+  lua_State *L = lua_getstate();
   if(event_data.topic && (event_data.topic_length > 0)){
-    lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_message_ref);
-    lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-    lua_pushlstring(mud->L, event_data.topic, event_data.topic_length);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
+    lua_pushlstring(L, event_data.topic, event_data.topic_length);
   } else {
     NODE_DBG("get wrong packet.\n");
     return;
   }
   if(event_data.data && (event_data.data_length > 0)){
-    lua_pushlstring(mud->L, event_data.data, event_data.data_length);
-    lua_call(mud->L, 3, 0);
+    lua_pushlstring(L, event_data.data, event_data.data_length);
+    lua_call(L, 3, 0);
   } else {
-    lua_call(mud->L, 2, 0);
+    lua_call(L, 2, 0);
   }
   NODE_DBG("leave deliver_publish.\n");
+}
+
+static sint8 mqtt_send_if_possible(struct espconn *pesp_conn)
+{
+  if(pesp_conn == NULL)
+    return ESPCONN_OK;
+  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
+  if(mud == NULL)
+    return ESPCONN_OK;
+
+  sint8 espconn_status = ESPCONN_OK;
+
+  // This indicates if we have sent something and are waiting for something to
+  // happen
+  if (mud->event_timeout == 0) {
+    msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
+    if (pending_msg) {
+      mud->event_timeout = MQTT_SEND_TIMEOUT;
+      NODE_DBG("Sent: %d\n", pending_msg->msg.length);
+#ifdef CLIENT_SSL_ENABLE
+      if( mud->secure )
+      {
+	espconn_status = espconn_secure_send( pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
+      }
+      else
+#endif
+      {
+	espconn_status = espconn_send( pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
+      }
+      mud->keep_alive_tick = 0;
+    }
+  }
+  NODE_DBG("receive, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
+  return espconn_status;
 }
 
 static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
@@ -204,7 +234,6 @@ static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
   uint8_t msg_type;
   uint8_t msg_qos;
   uint16_t msg_id;
-  msg_queue_t *node = NULL;
   int length = (int)len;
   // uint8_t in_buffer[MQTT_BUF_SIZE];
   uint8_t *in_buffer = (uint8_t *)pdata;
@@ -224,6 +253,7 @@ READPACKET:
   uint8_t temp_buffer[MQTT_BUF_SIZE];
   mqtt_msg_init(&mud->mqtt_state.mqtt_connection, temp_buffer, MQTT_BUF_SIZE);
   mqtt_message_t *temp_msg = NULL;
+  lua_State *L = lua_getstate();
   switch(mud->connState){
     case MQTT_CONNECT_SENDING:
     case MQTT_CONNECT_SENT:
@@ -247,11 +277,9 @@ READPACKET:
           break;
         if(mud->self_ref == LUA_NOREF)
           break;
-        if(mud->L == NULL)
-          break;
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-        lua_call(mud->L, 1, 0);
+        lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+        lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
+        lua_call(L, 1, 0);
         break;
       }
       break;
@@ -280,11 +308,9 @@ READPACKET:
               break;
             if (mud->self_ref == LUA_NOREF)
               break;
-            if(mud->L == NULL)
-              break;
-            lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
-            lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);
-            lua_call(mud->L, 1, 0);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
+            lua_call(L, 1, 0);
           }
           break;
         case MQTT_MSG_TYPE_UNSUBACK:
@@ -296,12 +322,12 @@ READPACKET:
         case MQTT_MSG_TYPE_PUBLISH:
           if(msg_qos == 1){
             temp_msg = mqtt_msg_puback(&mud->mqtt_state.mqtt_connection, msg_id);
-            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
+            msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
                       msg_id, MQTT_MSG_TYPE_PUBACK, (int)mqtt_get_qos(temp_msg->data) );
           }
           else if(msg_qos == 2){
             temp_msg = mqtt_msg_pubrec(&mud->mqtt_state.mqtt_connection, msg_id);
-            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
+            msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
                       msg_id, MQTT_MSG_TYPE_PUBREC, (int)mqtt_get_qos(temp_msg->data) );
           }
           if(msg_qos == 1 || msg_qos == 2){
@@ -317,11 +343,9 @@ READPACKET:
               break;
             if(mud->self_ref == LUA_NOREF)
               break;
-            if(mud->L == NULL)
-              break;
-            lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-            lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-            lua_call(mud->L, 1, 0);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
+            lua_call(L, 1, 0);
           }
 
           break;
@@ -331,7 +355,7 @@ READPACKET:
             // Note: actrually, should not destroy the msg until PUBCOMP is received.
             msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
             temp_msg = mqtt_msg_pubrel(&mud->mqtt_state.mqtt_connection, msg_id);
-            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
+            msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
                       msg_id, MQTT_MSG_TYPE_PUBREL, (int)mqtt_get_qos(temp_msg->data) );
             NODE_DBG("MQTT: Response PUBREL\r\n");
           }
@@ -340,7 +364,7 @@ READPACKET:
           if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_PUBREC && pending_msg->msg_id == msg_id){
             msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
             temp_msg = mqtt_msg_pubcomp(&mud->mqtt_state.mqtt_connection, msg_id);
-            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
+            msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
                       msg_id, MQTT_MSG_TYPE_PUBCOMP, (int)mqtt_get_qos(temp_msg->data) );
             NODE_DBG("MQTT: Response PUBCOMP\r\n");
           }
@@ -353,16 +377,14 @@ READPACKET:
               break;
             if(mud->self_ref == LUA_NOREF)
               break;
-            if(mud->L == NULL)
-              break;
-            lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-            lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-            lua_call(mud->L, 1, 0);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
+            lua_call(L, 1, 0);
           }
           break;
         case MQTT_MSG_TYPE_PINGREQ:
             temp_msg = mqtt_msg_pingresp(&mud->mqtt_state.mqtt_connection);
-            node = msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
+            msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
                       msg_id, MQTT_MSG_TYPE_PINGRESP, (int)mqtt_get_qos(temp_msg->data) );
             NODE_DBG("MQTT: Response PINGRESP\r\n");
           break;
@@ -391,21 +413,7 @@ READPACKET:
       break;
   }
 
-  if(node && (1==msg_size(&(mud->mqtt_state.pending_msg_q))) && mud->event_timeout == 0){
-    mud->event_timeout = MQTT_SEND_TIMEOUT;
-    NODE_DBG("Sent: %d\n", node->msg.length);
-#ifdef CLIENT_SSL_ENABLE
-    if( mud->secure )
-    {
-      espconn_secure_send( pesp_conn, node->msg.data, node->msg.length );
-    }
-    else
-#endif
-    {
-      espconn_send( pesp_conn, node->msg.data, node->msg.length );
-    }
-  }
-  NODE_DBG("receive, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
+  mqtt_send_if_possible(pesp_conn);
   NODE_DBG("leave mqtt_socket_received.\n");
   return;
 }
@@ -452,22 +460,7 @@ static void mqtt_socket_sent(void *arg)
     try_send = 0;
   }
   if (try_send) {
-    msg_queue_t *node = msg_peek(&(mud->mqtt_state.pending_msg_q));
-    if (node) {
-      mud->event_timeout = MQTT_SEND_TIMEOUT;
-      NODE_DBG("Sent: %d\n", node->msg.length);
-#ifdef CLIENT_SSL_ENABLE
-      if( mud->secure )
-      {
-	(void) espconn_secure_send( mud->pesp_conn, node->msg.data, node->msg.length );
-      }
-      else
-#endif
-      {
-	(void) espconn_send( mud->pesp_conn, node->msg.data, node->msg.length );
-      }
-      mud->keep_alive_tick = 0;
-    }
+    mqtt_send_if_possible(mud->pesp_conn);
   }
   NODE_DBG("sent2, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
   NODE_DBG("leave mqtt_socket_sent.\n");
@@ -561,19 +554,7 @@ void mqtt_socket_timer(void *arg)
   } else if(mud->connState == MQTT_DATA){
     msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
     if(pending_msg){
-      mud->event_timeout = MQTT_SEND_TIMEOUT;
-#ifdef CLIENT_SSL_ENABLE
-      if(mud->secure)
-      {
-        espconn_secure_send(mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length);
-      }
-      else
-#endif
-      {
-        espconn_send(mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length);
-      }
-      mud->keep_alive_tick = 0;
-      NODE_DBG("id: %d - qos: %d, length: %d\n", pending_msg->msg_id, pending_msg->publish_qos, pending_msg->msg.length);
+      mqtt_send_if_possible(mud->pesp_conn);
     } else {
       // no queued event.
       mud->keep_alive_tick ++;
@@ -585,18 +566,7 @@ void mqtt_socket_timer(void *arg)
         mqtt_message_t* temp_msg = mqtt_msg_pingreq(&mud->mqtt_state.mqtt_connection);
         msg_queue_t *node = msg_enqueue( &(mud->mqtt_state.pending_msg_q), temp_msg,
                             0, MQTT_MSG_TYPE_PINGREQ, (int)mqtt_get_qos(temp_msg->data) );
-        // only one message in queue, send immediately.
-#ifdef CLIENT_SSL_ENABLE
-        if(mud->secure)
-        {
-          espconn_secure_send(mud->pesp_conn, temp_msg->data, temp_msg->length);
-        }
-        else
-#endif
-        {
-          espconn_send(mud->pesp_conn, temp_msg->data, temp_msg->length);
-        }
-        mud->keep_alive_tick = 0;
+        mqtt_send_if_possible(mud->pesp_conn);
       }
     }
   }
@@ -626,7 +596,6 @@ static int mqtt_socket_client( lua_State* L )
   // create a object
   mud = (lmqtt_userdata *)lua_newuserdata(L, sizeof(lmqtt_userdata));
   // pre-initialize it, in case of errors
-  mud->L = NULL;
   mud->self_ref = LUA_NOREF;
   mud->cb_connect_ref = LUA_NOREF;
   mud->cb_disconnect_ref = LUA_NOREF;
@@ -650,8 +619,6 @@ static int mqtt_socket_client( lua_State* L )
   // set its metatable
   luaL_getmetatable(L, "mqtt.socket");
   lua_setmetatable(L, -2);
-
-  mud->L = L;   // L for mqtt module.
 
   if( lua_isstring(L,stack) )   // deal with the clientid string
   {
@@ -1252,21 +1219,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
 
   sint8 espconn_status = ESPCONN_IF;
 
-  if(node && (1==msg_size(&(mud->mqtt_state.pending_msg_q))) && mud->event_timeout == 0){
-    mud->event_timeout = MQTT_SEND_TIMEOUT;
-    NODE_DBG("Sent: %d\n", node->msg.length);
-#ifdef CLIENT_SSL_ENABLE
-    if( mud->secure )
-    {
-      espconn_status = espconn_secure_send( mud->pesp_conn, node->msg.data, node->msg.length );
-    }
-    else
-#endif
-    {
-      espconn_status = espconn_send( mud->pesp_conn, node->msg.data, node->msg.length );
-    }
-    mud->keep_alive_tick = 0;
-  }
+  espconn_status = mqtt_send_if_possible(mud->pesp_conn);
 
   if(!node || espconn_status != ESPCONN_OK){
     lua_pushboolean(L, 0);
@@ -1343,21 +1296,7 @@ static int mqtt_socket_publish( lua_State* L )
 
   sint8 espconn_status = ESPCONN_OK;
 
-  if(node && (1==msg_size(&(mud->mqtt_state.pending_msg_q))) && mud->event_timeout == 0){
-    mud->event_timeout = MQTT_SEND_TIMEOUT;
-    NODE_DBG("Sent: %d\n", node->msg.length);
-#ifdef CLIENT_SSL_ENABLE
-    if( mud->secure )
-    {
-      espconn_status = espconn_secure_send( mud->pesp_conn, node->msg.data, node->msg.length );
-    }
-    else
-#endif
-    {
-      espconn_status = espconn_send( mud->pesp_conn, node->msg.data, node->msg.length );
-    }
-    mud->keep_alive_tick = 0;
-  }
+  espconn_status = mqtt_send_if_possible(mud->pesp_conn);
 
   if(!node || espconn_status != ESPCONN_OK){
     lua_pushboolean(L, 0);
