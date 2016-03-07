@@ -41,7 +41,7 @@ m:on("message", function(client, topic, data)
 end)
 
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
-m:connect("192.168.11.118", 1880, 0, function(client) print("connected") end, 
+m:connect("192.168.11.118", 1883, 0, function(client) print("connected") end, 
                                      function(client, reason) print("failed reason: "..reason) end)
 
 -- Calling subscribe/publish only makes sense once the connection

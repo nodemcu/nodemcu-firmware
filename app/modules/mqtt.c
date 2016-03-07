@@ -79,6 +79,7 @@ typedef struct lmqtt_userdata
 static sint8 socket_connect(struct espconn *pesp_conn);
 static void mqtt_socket_reconnected(void *arg, sint8_t err);
 static void mqtt_socket_connected(void *arg);
+static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code);
 
 static void mqtt_socket_disconnected(void *arg)    // tcp only
 {
@@ -198,6 +199,21 @@ static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, int length)
   NODE_DBG("leave deliver_publish.\n");
 }
 
+static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code)
+{
+    if(mud->cb_connect_fail_ref == LUA_NOREF)
+        return;
+    if(mud->self_ref == LUA_NOREF)
+        return;
+    if(mud->L == NULL)
+        return;
+        
+    lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
+    lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
+    lua_pushinteger(mud->L, reason_code);
+    lua_call(mud->L, 2, 0);
+}
+
 static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
 {
   NODE_DBG("enter mqtt_socket_received.\n");
@@ -245,17 +261,7 @@ READPACKET:
           espconn_disconnect(pesp_conn);
         }
         
-        if(mud->cb_connect_fail_ref == LUA_NOREF)
-          break;
-        if(mud->self_ref == LUA_NOREF)
-          break;
-        if(mud->L == NULL)
-          break;
-          
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-        lua_pushinteger(mud->L, MQTT_CONN_FAIL_NOT_A_CONNACK_MSG);
-        lua_call(mud->L, 2, 0);
+        mqtt_connack_fail(mud, MQTT_CONN_FAIL_NOT_A_CONNACK_MSG);
         
         break;
             
@@ -275,17 +281,7 @@ READPACKET:
           espconn_disconnect(pesp_conn);
         } 
         
-        if(mud->cb_connect_fail_ref == LUA_NOREF)
-          break;
-        if(mud->self_ref == LUA_NOREF)
-          break;
-        if(mud->L == NULL)
-          break;
-          
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-        lua_pushinteger(mud->L, mqtt_get_connect_ret_code(in_buffer)); // CONNACK response code contains the reason why failure occurred
-        lua_call(mud->L, 2, 0);
+        mqtt_connack_fail(mud, mqtt_get_connect_ret_code(in_buffer));
         
         break;
                 
@@ -591,26 +587,12 @@ void mqtt_socket_timer(void *arg)
 
   if(mud->connState == MQTT_INIT){ // socket connect time out.
     NODE_DBG("Can not connect to broker.\n");
-    
     os_timer_disarm(&mud->mqttTimer);
-        
-    if(mud->cb_connect_fail_ref != LUA_NOREF && mud->self_ref != LUA_NOREF && mud->L != NULL) {
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-        lua_pushinteger(mud->L, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
-        lua_call(mud->L, 2, 0);
-    }
-
+    mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
   } else if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT send time out.
     NODE_DBG("sSend MQTT_CONNECT failed.\n");
     mud->connState = MQTT_INIT;
-    
-    if(mud->cb_connect_fail_ref != LUA_NOREF && mud->self_ref != LUA_NOREF && mud->L != NULL) {
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-        lua_pushinteger(mud->L, MQTT_CONN_FAIL_TIMEOUT_SENDING);
-        lua_call(mud->L, 2, 0);
-    }
+    mqtt_connack_fail(mud, MQTT_CONN_FAIL_TIMEOUT_SENDING);
             
 #ifdef CLIENT_SSL_ENABLE
     if(mud->secure)
@@ -637,14 +619,7 @@ void mqtt_socket_timer(void *arg)
     {
       espconn_disconnect(mud->pesp_conn);
     }    
-    
-    if(mud->cb_connect_fail_ref != LUA_NOREF && mud->self_ref != LUA_NOREF && mud->L != NULL) {
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-        lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-        lua_pushinteger(mud->L, MQTT_CONN_FAIL_TIMEOUT_RECEIVING);
-        lua_call(mud->L, 2, 0);
-    }
-            
+    mqtt_connack_fail(mud, MQTT_CONN_FAIL_TIMEOUT_RECEIVING);
   } else if(mud->connState == MQTT_DATA){
     msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
     if(pending_msg){
@@ -982,12 +957,7 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
       if(pesp_conn != NULL) {
           lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
           if(mud != NULL) {
-            if(mud->cb_connect_fail_ref != LUA_NOREF && mud->self_ref != LUA_NOREF && mud->L != NULL) {
-                lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-                lua_rawgeti(mud->L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-                lua_pushinteger(mud->L, MQTT_CONN_FAIL_DNS);
-                lua_call(mud->L, 2, 0);
-            }
+            mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
           }
       }
       
