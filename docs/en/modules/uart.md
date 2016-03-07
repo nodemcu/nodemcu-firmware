@@ -1,4 +1,8 @@
 # UART Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [uart.c](../../../app/modules/uart.c)|
+
 The [UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver/transmitter) (Universal asynchronous receiver/transmitter) module allows configuration of and communication over the UART serial port.
 
 ## uart.alt()

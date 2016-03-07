@@ -1,7 +1,11 @@
 # net Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [net.c](../../../app/modules/net.c)|
+
 
 ## Constants
-`net.TCP`, `net.UDP`
+Constants to be used in other functions: `net.TCP`, `net.UDP`
 
 ## net.createConnection()
 

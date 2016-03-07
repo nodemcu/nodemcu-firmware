@@ -1,4 +1,8 @@
-# rtcmem Module
+# RTC User Memory Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-06-25 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson) | [Johny Mattsson](https://github.com/jmattsson) | [rtcmem.c](../../../app/modules/rtcmem.c)|
+
 The rtcmem module provides basic access to the [RTC](https://en.wikipedia.org/wiki/Real-time_clock) (Real Time Clock) memory.
 
 The RTC in the ESP8266 contains memory registers which survive a deep sleep, making them highly useful for keeping state across sleep cycles. Some of this memory is reserved for system use, but 128 slots (each 32bit wide) are available for application use. This module provides read and write access to these.

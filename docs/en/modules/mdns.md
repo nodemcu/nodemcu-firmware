@@ -1,4 +1,7 @@
 # mDNS Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2016-02-24 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [mdns.c](../../../app/modules/mdns.c)|
 
 [Multicast DNS](https://en.wikipedia.org/wiki/Multicast_DNS) is used as part of Bonjour / Zeroconf. This allows system to identify themselves and the services that they provide on a local area network. Clients are then able to discover these systems and connect to them. 
 

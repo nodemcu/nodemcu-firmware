@@ -1,4 +1,8 @@
 # GPIO Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [gpio.c](../../../app/modules/gpio.c)|
+
 
 This module provides access to the [GPIO](https://en.wikipedia.org/wiki/General-purpose_input/output) (General Purpose Input/Output) subsystem.
 

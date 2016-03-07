@@ -1,20 +1,13 @@
-# struct module
+# Struct Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-02-13 | [Roberto Ierusalimschy](http://www.inf.puc-rio.br/~roberto/struct/), [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [struct.c](../../../app/modules/struct.c)|
 
-This module offers basic facilities to convert Lua values to and from C
-structs. Its main functions are `struct.pack`, which packs multiple Lua
-values into a struct-like string; and `struct.unpack`, which unpacks
-multiple Lua values from a given struct-like string.
+This module offers basic facilities to convert Lua values to and from C structs. Its main functions are `struct.pack`, which packs multiple Lua values into a struct-like string; and `struct.unpack`, which unpacks multiple Lua values from a given struct-like string.
 
-The first argument to both functions is a *format string*, which
-describes the layout of the structure. The format string is a sequence
-of conversion elements, which respect the current endianess and the
-current alignment requirements. Initially, the current endianess is the
-machine's native endianness and the current alignment requirement is 1
-(meaning no alignment at all). You can change these settings with
-appropriate directives in the format string.
+The first argument to both functions is a *format string*, which describes the layout of the structure. The format string is a sequence of conversion elements, which respect the current endianess and the current alignment requirements. Initially, the current endianess is the machine's native endianness and the current alignment requirement is 1 (meaning no alignment at all). You can change these settings with appropriate directives in the format string.
 
-Note that the float and double conversions are only available with
-a floating point NodeMCU build.
+Note that the float and double conversions are only available with a floating point NodeMCU build.
 
 ### Format String
 

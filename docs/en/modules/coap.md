@@ -1,4 +1,8 @@
 # CoAP Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-02-04 | Toby Jaffey <toby@1248.io>, [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [coap.c](../../../app/modules/coap.c) |
+
 The CoAP module provides a simple implementation according to [CoAP](http://tools.ietf.org/html/rfc7252) protocol.
 The basic endpoint server part is based on [microcoap](https://github.com/1248/microcoap), and many other code reference [libcoap](https://github.com/obgm/libcoap).
 
