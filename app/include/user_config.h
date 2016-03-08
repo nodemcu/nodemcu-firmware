@@ -41,12 +41,19 @@
 #define NODE_ERR
 #endif	/* NODE_ERROR */
 
+#define GPIO_INTERRUPT_ENABLE
+// #define GPIO_SAFE_NO_INTR_ENABLE
+
 #define ICACHE_STORE_TYPEDEF_ATTR __attribute__((aligned(4),packed))
 #define ICACHE_STORE_ATTR __attribute__((aligned(4)))
 #define ICACHE_RAM_ATTR __attribute__((section(".iram0.text")))
+#ifdef  GPIO_SAFE_NO_INTR_ENABLE
+#define NO_INTR_CODE ICACHE_RAM_ATTR __attribute__ ((noinline))
+#else
+#define NO_INTR_CODE inline
+#endif
 
 #define CLIENT_SSL_ENABLE
-#define GPIO_INTERRUPT_ENABLE
 //#define MD2_ENABLE
 #define SHA2_ENABLE
 
@@ -56,13 +63,6 @@
 #define SPIFFS_CACHE 1
 
 // #define LUA_NUMBER_INTEGRAL
-
-#define LUA_OPTRAM
-#ifdef LUA_OPTRAM
-#define LUA_OPTIMIZE_MEMORY			2
-#else
-#define LUA_OPTIMIZE_MEMORY         0
-#endif	/* LUA_OPTRAM */
 
 #define READLINE_INTERVAL 80
 #define LUA_TASK_PRIO USER_TASK_PRIO_0
@@ -82,6 +82,17 @@
 #endif
 
 #define ENDUSER_SETUP_AP_SSID "SetupGadget"
+
+/*
+ * A valid hostname only contains alphanumeric and hyphen(-) characters, with no hyphens at first or last char
+ * if WIFI_STA_HOSTNAME not defined: hostname will default to NODE-xxxxxx (xxxxxx being last 3 octets of MAC address)
+ * if WIFI_STA_HOSTNAME defined: hostname must only contain alphanumeric characters
+ * if WIFI_STA_HOSTNAME_APPEND_MAC not defined: Hostname MUST be 32 chars or less
+ * if WIFI_STA_HOSTNAME_APPEND_MAC defined: Hostname MUST be 26 chars or less, since last 3 octets of MAC address will be appended
+ * if defined hostname is invalid: hostname will default to NODE-xxxxxx (xxxxxx being last 3 octets of MAC address)
+*/
+//#define WIFI_STA_HOSTNAME "NodeMCU"
+//#define WIFI_STA_HOSTNAME_APPEND_MAC
 
 #define STRBUF_DEFAULT_INCREMENT 32
 

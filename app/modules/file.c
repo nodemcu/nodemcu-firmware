@@ -20,8 +20,8 @@ static int file_open( lua_State* L )
   }
 
   const char *fname = luaL_checklstring( L, 1, &len );
-  if( len > FS_NAME_MAX_LENGTH )
-    return luaL_error(L, "filename too long");
+  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+
   const char *mode = luaL_optstring(L, 2, "r");
 
   file_fd = fs_open(fname, fs_mode2flag(mode));
@@ -114,13 +114,27 @@ static int file_seek (lua_State *L)
   return 1;
 }
 
+// Lua: exists(filename)
+static int file_exists( lua_State* L )
+{
+  size_t len;
+  const char *fname = luaL_checklstring( L, 1, &len );    
+  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+
+  spiffs_stat stat;
+  int rc = SPIFFS_stat(&fs, (char *)fname, &stat);
+
+  lua_pushboolean(L, (rc == SPIFFS_OK ? 1 : 0));
+
+  return 1;
+}
+
 // Lua: remove(filename)
 static int file_remove( lua_State* L )
 {
   size_t len;
-  const char *fname = luaL_checklstring( L, 1, &len );
-  if( len > FS_NAME_MAX_LENGTH )
-    return luaL_error(L, "filename too long");
+  const char *fname = luaL_checklstring( L, 1, &len );    
+  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
   file_close(L);
   SPIFFS_remove(&fs, (char *)fname);
   return 0;  
@@ -157,12 +171,10 @@ static int file_rename( lua_State* L )
   }
 
   const char *oldname = luaL_checklstring( L, 1, &len );
-  if( len > FS_NAME_MAX_LENGTH )
-    return luaL_error(L, "filename too long");
-
-  const char *newname = luaL_checklstring( L, 2, &len );
-  if( len > FS_NAME_MAX_LENGTH )
-    return luaL_error(L, "filename too long");
+  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+  
+  const char *newname = luaL_checklstring( L, 2, &len );  
+  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 2, "filename too long");
 
   if(SPIFFS_OK==myspiffs_rename( oldname, newname )){
     lua_pushboolean(L, 1);
@@ -175,7 +187,7 @@ static int file_rename( lua_State* L )
 // Lua: fsinfo()
 static int file_fsinfo( lua_State* L )
 {
-  uint32_t total, used;
+  u32_t total, used;
   SPIFFS_info(&fs, &total, &used);
   NODE_DBG("total: %d, used:%d\n", total, used);
   if(total>0x7FFFFFFF || used>0x7FFFFFFF || used > total)
@@ -295,6 +307,13 @@ static int file_writeline( lua_State* L )
   return 1;
 }
 
+static int file_fscfg (lua_State *L)
+{
+  lua_pushinteger (L, fs.cfg.phys_addr);
+  lua_pushinteger (L, fs.cfg.phys_size);
+  return 2;
+}
+
 // Module function map
 static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "list" ),      LFUNCVAL( file_list ) },
@@ -309,9 +328,10 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "remove" ),    LFUNCVAL( file_remove ) },
   { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
   { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
-//{ LSTRKEY( "check" ),     LFUNCVAL( file_check ) },
   { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
+  { LSTRKEY( "fscfg" ),    LFUNCVAL( file_fscfg ) },
+  { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
 #endif
   { LNILKEY, LNILVAL }
 };

@@ -32,6 +32,7 @@ SUBDIRS= 					\
 	lwip 					\
 	coap 					\
 	mqtt 					\
+	task 					\
 	u8glib 					\
 	ucglib					\
 	smart 					\
@@ -41,7 +42,8 @@ SUBDIRS= 					\
 	cjson 					\
 	crypto 					\
 	dhtlib					\
-	tsl2561
+	tsl2561					\
+	http
 
 endif # } PDIR
 
@@ -72,6 +74,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	json/libjson.a 				\
 	upgrade/libupgrade.a 			\
 	platform/libplatform.a 			\
+	task/libtask.a 				\
 	libc/liblibc.a 				\
 	lua/liblua.a 				\
 	lwip/liblwip.a 				\
@@ -86,6 +89,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	crypto/libcrypto.a 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
+	http/libhttp.a				\
 	modules/libmodules.a			\
 
 # Inspect the modules library and work out which modules need to be linked.
@@ -112,10 +116,12 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-lpp 					\
 	-lnet80211 				\
 	-lwpa 					\
+	-lwpa2					\
 	-lmain 					\
 	-ljson 					\
 	-lsmartconfig 				\
 	-lssl 					\
+	-lcrypto				\
 	$(DEP_LIBS_eagle.app.v6) 		\
 	-Wl,--end-group 			\
 	-lm
