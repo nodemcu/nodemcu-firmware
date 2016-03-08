@@ -12,8 +12,6 @@
 #include "platform.h"
 #include "c_string.h"
 #include "c_stdlib.h"
-#include "c_stdio.h"
-
 #include "flash_fs.h"
 #include "user_interface.h"
 #include "user_exceptions.h"
@@ -21,6 +19,7 @@
 
 #include "ets_sys.h"
 #include "driver/uart.h"
+#include "task/task.h"
 #include "mem.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
@@ -81,50 +80,27 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
   call_user_start ();
 }
 
-
-/* To avoid accidentally losing the fix for the TCP port randomization
- * during an LWIP upgrade, we've implemented most it outside the LWIP
- * source itself. This enables us to test for the presence of the fix
- * /at link time/ and error out if it's been lost.
- * The fix itself consists of putting the function-static 'port' variable
- * into its own section, and get the linker to provide an alias for it.
- * From there we can then manually randomize it at boot.
- */
-static inline void tcp_random_port_init (void)
-{
-  extern uint16_t _tcp_new_port_port; // provided by the linker script
-  _tcp_new_port_port += xthal_get_ccount () % 4096;
+// +================== New task interface ==================+
+static void start_lua(task_param_t param, uint8 priority) {
+  char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
+  NODE_DBG("Task task_lua started.\n");
+  lua_main( 2, lua_argv );
 }
 
-
-void task_lua(os_event_t *e){
-    char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
-    NODE_DBG("Task task_lua started.\n");
-    switch(e->sig){
-        case SIG_LUA:
-            NODE_DBG("SIG_LUA received.\n");
-            lua_main( 2, lua_argv );
-            break;
-        case SIG_UARTINPUT:
-            lua_handle_input (false);
-            break;
-        case LUA_PROCESS_LINE_SIG:
-            lua_handle_input (true);
-            break;
-        default:
-            break;
-    }
+static void handle_input(task_param_t flag, uint8 priority) {
+//  c_printf("HANDLE_INPUT: %u %u\n", flag, priority);          REMOVE
+  lua_handle_input (flag);
 }
 
-void task_init(void){
-    taskQueue = (os_event_t *)os_malloc(sizeof(os_event_t) * TASK_QUEUE_LEN);
-    system_os_task(task_lua, USER_TASK_PRIO_0, taskQueue, TASK_QUEUE_LEN);
+static task_handle_t input_sig;
+
+task_handle_t user_get_input_sig(void) {
+  return input_sig;
 }
 
-// extern void test_spiffs();
-// extern int test_romfs();
-
-// extern uint16_t flash_get_sec_num();
+bool user_process_input(bool force) {
+    return task_post_low(input_sig, force);
+}
 
 void nodemcu_init(void)
 {
@@ -168,36 +144,13 @@ void nodemcu_init(void)
         system_restart ();
     }
 
-#if defined( BUILD_WOFS )
-    romfs_init();
-
-    // if( !wofs_format() )
-    // {
-    //     NODE_ERR( "\ni*** ERROR ***: unable to erase the flash. WOFS might be compromised.\n" );
-    //     NODE_ERR( "It is advised to re-flash the NodeWifi image.\n" );
-    // }
-    // else
-    //     NODE_ERR( "format done.\n" );
-
-    // test_romfs();
-#elif defined ( BUILD_SPIFFS )
+#if defined ( BUILD_SPIFFS )
     fs_mount();
     // test_spiffs();
 #endif
     // endpoint_setup();
 
-    // char* lua_argv[] = { (char *)"lua", (char *)"-e", (char *)"print(collectgarbage'count');ttt={};for i=1,100 do table.insert(ttt,i*2 -1);print(i);end for k, v in pairs(ttt) do print('<'..k..' '..v..'>') end print(collectgarbage'count');", NULL };
-    // lua_main( 3, lua_argv );
-    // char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
-    // lua_main( 2, lua_argv );
-    // char* lua_argv[] = { (char *)"lua", (char *)"-e", (char *)"pwm.setup(0,100,50) pwm.start(0) pwm.stop(0)", NULL };
-    // lua_main( 3, lua_argv );
-    // NODE_DBG("Flash sec num: 0x%x\n", flash_get_sec_num());
-
-    tcp_random_port_init ();
-
-    task_init();
-    system_os_post(LUA_TASK_PRIO,SIG_LUA,'s');
+    task_post_low(task_get_id(start_lua),'s');
 }
 
 /******************************************************************************
@@ -211,14 +164,11 @@ void user_init(void)
 #ifdef LUA_USE_MODULES_RTCTIME
     rtctime_late_startup ();
 #endif
-    // NODE_DBG("SDK version:%s\n", system_get_sdk_version());
-    // system_print_meminfo();
-    // os_printf("Heap size::%d.\n",system_get_free_heap_size());
-    // os_delay_us(50*1000);   // delay 50ms before init uart
 
     UartBautRate br = BIT_RATE_DEFAULT;
 
-    uart_init (br, br, USER_TASK_PRIO_0, SIG_UARTINPUT);
+    input_sig = task_get_id(handle_input);
+    uart_init (br, br, input_sig);
 
     #ifndef NODE_DEBUG
     system_set_os_print(0);

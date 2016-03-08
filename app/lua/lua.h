@@ -19,6 +19,7 @@
 #include "c_stdarg.h"
 #include "c_stddef.h"
 #include "c_types.h"
+#include <ctype.h>
 #endif
 
 #include "luaconf.h"

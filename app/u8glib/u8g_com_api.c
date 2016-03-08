@@ -151,9 +151,9 @@ uint8_t u8g_WriteEscSeqP(u8g_t *u8g, u8g_dev_t *dev, const uint8_t *esc_seq)
         value &= 0x0f;
         value <<= 4;
         value+=2;
-        u8g_Delay(value);
+        u8g_Delay(u8g, value);
         u8g_SetResetHigh(u8g, dev);
-        u8g_Delay(value);
+        u8g_Delay(u8g, value);
       }
       else if ( value >= 0xbe )
       {
@@ -162,7 +162,7 @@ uint8_t u8g_WriteEscSeqP(u8g_t *u8g, u8g_dev_t *dev, const uint8_t *esc_seq)
       }
       else if ( value <= 127 )
       {
-        u8g_Delay(value);
+        u8g_Delay(u8g, value);
       }
       is_escape = 0;
     }

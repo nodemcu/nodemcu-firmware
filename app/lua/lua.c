@@ -11,6 +11,8 @@
 #include "c_string.h"
 #include "flash_fs.h"
 #include "user_version.h"
+#include "driver/readline.h"
+#include "driver/uart.h"
 
 #define lua_c
 

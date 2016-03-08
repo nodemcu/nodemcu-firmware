@@ -126,6 +126,7 @@
 #include <ets_sys.h>
 #include "rom.h"
 #include "rtcaccess.h"
+#include "user_interface.h"
 
 // Layout of the RTC storage space:
 //

@@ -87,7 +87,7 @@ static void do_sleep_opt (lua_State *L, int idx)
     uint32_t opt = lua_tonumber (L, idx);
     if (opt < 0 || opt > 4)
       luaL_error (L, "unknown sleep option");
-    deep_sleep_set_option (opt);
+    system_deep_sleep_set_option (opt);
   }
 }
 

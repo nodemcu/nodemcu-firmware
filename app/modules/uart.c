@@ -6,6 +6,7 @@
 
 #include "c_types.h"
 #include "c_string.h"
+#include "rom.h"
 
 static lua_State *gL = NULL;
 static int uart_receive_rf = LUA_NOREF;

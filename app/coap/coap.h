@@ -192,6 +192,11 @@ void coap_setup(void);
 void endpoint_setup(void);
 
 int coap_buildOptionHeader(uint32_t optDelta, size_t length, uint8_t *buf, size_t buflen);
+int check_token(coap_packet_t *pkt);
+
+#include "uri.h"
+int coap_make_request(coap_rw_buffer_t *scratch, coap_packet_t *pkt, coap_msgtype_t t, coap_method_t m, coap_uri_t *uri, const uint8_t *payload, size_t payload_len);
+
 
 #ifdef __cplusplus
 }
