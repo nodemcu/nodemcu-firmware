@@ -98,18 +98,18 @@ gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
 
 ## gpio.trig()
 
-Establish a callback function to run on interrupt for a pin.
-
-There is currently no support for unregistering the callback.
+Establish or clear a callback function to run on interrupt for a pin.
 
 This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile time.
 
 #### Syntax
-`gpio.trig(pin, type [, function(level)])`
+`gpio.trig(pin, [type [, function(level)]})`
 
 #### Parameters
 - `pin` **1~12**, IO index, pin D0 does not support interrupt.
-- `type` "up", "down", "both", "low", "high", which represent rising edge, falling edge, both edge, low level, high level trig mode correspondingly.
+- `type` "up", "down", "both", "low", "high", which represent rising edge, falling edge, both edge, 
+low level, high level trig mode correspondingly. If the type is "none" or omitted then the
+callback function is removed and the interrupt disabled.
 - `function(level)` callback function when triggered. The gpio level is the param. Use previous callback function if undefined here.
 
 #### Returns
@@ -131,6 +131,9 @@ function pin1cb(level)
 end
 gpio.trig(pin, "down", pin1cb)
 
+```
+```Lua
+gpio.trig(4, 'none') -- remove any existing trigger
 ```
 #### See also
 [`gpio.mode()`](#gpiomode)
