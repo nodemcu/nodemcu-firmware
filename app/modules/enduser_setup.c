@@ -35,6 +35,7 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lmem.h"
 #include "platform.h"
 #include "c_stdlib.h"
 #include "c_stdio.h"
@@ -76,6 +77,7 @@ static const char dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
 
 static const char http_html_filename[] = "index.html";
 static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nContent-Type: text/html\r\n"; /* Note single \r\n here! */
+static const char http_header_204[] = "HTTP/1.1 204 No Content\r\n\r\n";
 static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\n\r\n";
 static const char http_header_401[] = "HTTP/1.1 401 Bad request\r\n\r\n";
 static const char http_header_404[] = "HTTP/1.1 404 Not found\r\n\r\n";
@@ -98,40 +100,40 @@ static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\n\r\n";
     *{margin:0;padding:0}
     html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}
     body{font-family:arial,verdana}
-    div{position:absolute;margin:auto;top:0;right:0;bottom:0;left:0;width:320px;height:304px}
+    div{position:absolute;margin:auto;top:-150px;right:0;bottom:0;left:0;width:320px;height:304px}
     form{width:320px;text-align:center;position:relative}
     form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}
     form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}
     form .action-button{border:0 none;border-radius:3px;cursor:pointer;}
     #msform .submit:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60;}
-    #msform .wifitoggle:focus,form .wifitoggle:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #ccc;}
+    #formFrame{display: none;}
+    #aplist{display: block;}
     select{width:100%;margin-bottom: 20px;padding: 10px 5px; border:1px solid #ccc;display:none;}
     .fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}
     .fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}
     .fs-status{font-weight:400;font-size:13px;color:#666;margin-bottom:10px;padding-top:20px; border-top:1px solid #ccc}
     .submit{width:100px;background: #27AE60; color: #fff;font-weight:700;margin:10px 5px; padding: 10px 5px; }
-    .wifitoggle{float:right;clear:both;max-width:75%; font-size:11px;background:#ccc; color: #000; margin: 0 0 10px; 0; padding: 5px 10px;}
   </style>
 </head>
 <body>
   <div>
-    <form method="get" action="/update">
+    <form id="credentialsForm" method="get" action="/update" target="formFrame">
       <fieldset>
+        <iframe id="formFrame" src="" name="formFrame"></iframe> <!-- Used to submit data, needed to prevent re-direction after submission -->
         <h2 class="fs-title">WiFi Login</h2>
         <h3 class="fs-subtitle">Connect gadget to your WiFi network</h3>
-        <input autocorrect="off" autocapitalize="none" name="wifi_ssid" id="ssid" placeholder="WiFi Name">
-        <button type='button' class="action-button wifitoggle" id="apbutton" disabled>Searching for networks...</button>
-        <select name="aplist" id="aplist" size="2">
+        <input id="wifi_ssid" autocorrect="off" autocapitalize="none" name="wifi_ssid" placeholder="WiFi Name">
+        <select id="aplist" name="aplist" size="1" disabled>
+          <option>Scanning for networks...</option>
         </select>
         <input name="wifi_password" placeholder="Password" type="password">
-        <input type=submit name=save class='action-button submit' value='Save'>
+        <input type=submit name=save class="action-button submit" value="Save">
         <h3 class="fs-status">Status: <span id="status">Updating...</span></h3>
       </fieldset>
+      <h3 id="dbg"></h3>
     </form>
   </div>
   <script>
-    function aplist() { return document.getElementById("aplist"); }
-
     function fetch(url, method, callback)
     {
       var xhr = new XMLHttpRequest();
@@ -139,11 +141,14 @@ static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\n\r\n";
       function check_ready()
       {
         if (xhr.readyState === 4)
+        {
           callback(xhr.status === 200 ? xhr.responseText : null);
+        }
       }
       xhr.open(method, url, true);
       xhr.send();
     }
+
 
     function new_status(stat)
     {
@@ -152,76 +157,75 @@ static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\n\r\n";
         var e = document.getElementById("status");
         e.innerHTML = stat;
       }
-      setTimeout(refresh_status, 3000);
     }
 
-    function refresh_status()
+
+    function new_status_repeat(stat)
     {
-      fetch('/status','GET',new_status);
+      new_status(stat);
+      setTimeout(refresh_status, 750);
     }
 
-    function refresh_ap_list()
-    {
-      var sel = aplist ();
-      sel.innerHTML = '<option value="" disabled>Scanning...</option>';
-      fetch('/aplist','GET', got_ap_list);
-    }
 
-    function toggle_aplist(ev, force)
+    function new_ap_list(json)
     {
-      var sel = aplist();
-      var btn = document.getElementById("apbutton");
-      if (force || sel.style.display == 'block')
-      {
-        sel.style.display = 'none';
-        btn.innerHTML = 'Show networks';
-      }
-      else
-      {
-        sel.style.display = 'block';
-        btn.innerHTML = 'Hide networks';
-      }
-    }
-
-    function got_ap_list(json)
-    {
-      var btn = document.getElementById("apbutton");
       if (json)
       {
         var list = JSON.parse(json);
-        list.sort(function(a,b){ return b.rssi - a.rssi; });
-        var ssids=list.map(function(a) { return a.ssid; }).filter(function(item, pos, self) { return self.indexOf(item)==pos; });
-        var sel = aplist();
+        list.sort(function(a, b){ return b.rssi - a.rssi; });
+        var ssids = list.map(function(a) { return a.ssid; }).filter(function(item, pos, self) { return self.indexOf(item)==pos; });
+        var sel = document.getElementById("aplist");
         sel.innerHTML = "";
-        sel.setAttribute("size", Math.max(Math.min(5, list.length), 2));
+        sel.setAttribute("size", Math.max(Math.min(3, list.length), 1));
+        sel.removeAttribute("disabled");
         for (var i = 0; i < ssids.length; ++i)
         {
           var o = document.createElement("option");
-          sel.options.add(o);
           o.innerHTML = ssids[i];
+          sel.options.add(o);
         }
-        btn.disabled = false;
-        toggle_aplist(null, true);
-        btn.onclick = toggle_aplist;
-      }
-      else
-      {
-        btn.innerHTML = "No networks found";
+        sel.style.display = 'block';
       }
     }
 
-    window.onload=function()
+
+    function new_ap_list_repeat(json)
+    {
+      new_ap_list(json);
+      setTimeout(refresh_ap_list, 3000);
+    }
+
+
+    function refresh_status()
+    {
+      fetch('/status','GET', new_status_repeat);
+    }
+
+
+    function refresh_ap_list()
+    {
+      fetch('/aplist','GET', new_ap_list_repeat);
+    }
+
+
+    window.onload = function()
     {
       refresh_status();
       refresh_ap_list();
-      aplist().onchange = function() { document.getElementById("ssid").value = aplist().value; }
+      document.getElementById("aplist").onchange = function() {
+        var sel = document.getElementById("aplist");
+        document.getElementById("wifi_ssid").value = sel.value;
+      }
+      document.getElementById("credentialsForm").addEventListener("submit", function(){
+        fetch('/status','GET', new_status);
+      });
     }
   </script>
 </body>
 </html>
 #endif
 static const char http_html_backup[] =
-"<!DOCTYPE html><html><head><meta http-equiv=content-type content=\"text/html; charset=UTF-8\"><meta charset=utf-8><meta name=viewport content=\"width=380\"><title>WiFi Login</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:0;right:0;bottom:0;left:0;width:320px;height:304px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{border:0 none;border-radius:3px;cursor:pointer}#msform .submit:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}#msform .wifitoggle:focus,form .wifitoggle:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #ccc}select{width:100%;margin-bottom:20px;padding:10px 5px;border:1px solid #ccc;display:none}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}.fs-status{font-weight:400;font-size:13px;color:#666;margin-bottom:10px;padding-top:20px;border-top:1px solid #ccc}.submit{width:100px;background:#27AE60;color:#fff;font-weight:700;margin:10px 5px;padding:10px 5px}.wifitoggle{float:right;clear:both;max-width:75%;font-size:11px;background:#ccc;color:#000;margin:0 0 10px;padding:5px 10px}</style><body><div><form action=/update><fieldset><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi network</h3><input autocorrect=off autocapitalize=none name=wifi_ssid id=ssid placeholder=\"WiFi Name\"> <button type=button class=\"action-button wifitoggle\" id=apbutton disabled>Searching for networks...</button><select name=aplist id=aplist size=2></select><input name=wifi_password placeholder=Password type=password> <input type=submit name=save class=\"action-button submit\" value=Save><h3 class=fs-status>Status: <span id=status>Updating...</span></h3></fieldset></form></div><script>function aplist(){return document.getElementById(\"aplist\")}function fetch(t,e,n){function s(){4===i.readyState&&n(200===i.status?i.responseText:null)}var i=new XMLHttpRequest;i.onreadystatechange=s,i.open(e,t,!0),i.send()}function new_status(t){if(t){var e=document.getElementById(\"status\");e.innerHTML=t}setTimeout(refresh_status,3e3)}function refresh_status(){fetch(\"/status\",\"GET\",new_status)}function refresh_ap_list(){var t=aplist();t.innerHTML='<option value=\"\" disabled>Scanning...</option>',fetch(\"/aplist\",\"GET\",got_ap_list)}function toggle_aplist(t,e){var n=aplist(),s=document.getElementById(\"apbutton\");e||\"block\"==n.style.display?(n.style.display=\"none\",s.innerHTML=\"Show networks\"):(n.style.display=\"block\",s.innerHTML=\"Hide networks\")}function got_ap_list(t){var e=document.getElementById(\"apbutton\");if(t){var n=JSON.parse(t);n.sort(function(t,e){return e.rssi-t.rssi});var s=n.map(function(t){return t.ssid}).filter(function(t,e,n){return n.indexOf(t)==e}),i=aplist();i.innerHTML=\"\",i.setAttribute(\"size\",Math.max(Math.min(5,n.length),2));for(var a=0;a<s.length;++a){var o=document.createElement(\"option\");i.options.add(o),o.innerHTML=s[a]}e.disabled=!1,toggle_aplist(null,!0),e.onclick=toggle_aplist}else e.innerHTML=\"No networks found\"}window.onload=function(){refresh_status(),refresh_ap_list(),aplist().onchange=function(){document.getElementById(\"ssid\").value=aplist().value}};</script>";
+"<!DOCTYPE html><meta http-equiv=content-type content='text/html; charset=UTF-8'><meta charset=utf-8><meta name=viewport content='width=380'><title>WiFi Login</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:-150px;right:0;bottom:0;left:0;width:320px;height:304px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{border:0 none;border-radius:3px;cursor:pointer}#msform .submit:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}#formFrame{display:none}#aplist{display:block}select{width:100%;margin-bottom:20px;padding:10px 5px;border:1px solid #ccc;display:none}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}.fs-status{font-weight:400;font-size:13px;color:#666;margin-bottom:10px;padding-top:20px;border-top:1px solid #ccc}.submit{width:100px;background:#27AE60;color:#fff;font-weight:700;margin:10px 5px;padding:10px 5px}</style><div><form id=credentialsForm action=/update target=formFrame><fieldset><iframe id=formFrame src=''name=formFrame></iframe><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi network</h3><input id=wifi_ssid autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'><select id=aplist name=aplist size=1 disabled><option>Scanning for networks...</select><input name=wifi_password placeholder=Password type=password> <input type=submit name=save class='action-button submit'value=Save><h3 class=fs-status>Status: <span id=status>Updating...</span></h3></fieldset><h3 id=dbg></h3></form></div><script>function fetch(t,e,n){function s(){4===a.readyState&&n(200===a.status?a.responseText:null)}var a=new XMLHttpRequest;a.onreadystatechange=s,a.open(e,t,!0),a.send()}function new_status(t){if(t){var e=document.getElementById('status');e.innerHTML=t}}function new_status_repeat(t){new_status(t),setTimeout(refresh_status,750)}function new_ap_list(t){if(t){var e=JSON.parse(t);e.sort(function(t,e){return e.rssi-t.rssi});var n=e.map(function(t){return t.ssid}).filter(function(t,e,n){return n.indexOf(t)==e}),s=document.getElementById('aplist');s.innerHTML='',s.setAttribute('size',Math.max(Math.min(3,e.length),1)),s.removeAttribute('disabled');for(var a=0;a<n.length;++a){var i=document.createElement('option');i.innerHTML=n[a],s.options.add(i)}s.style.display='block'}}function new_ap_list_repeat(t){new_ap_list(t),setTimeout(refresh_ap_list,3e3)}function refresh_status(){fetch('/status','GET',new_status_repeat)}function refresh_ap_list(){fetch('/aplist','GET',new_ap_list_repeat)}window.onload=function(){refresh_status(),refresh_ap_list(),document.getElementById('aplist').onchange=function(){var t=document.getElementById('aplist');document.getElementById('wifi_ssid').value=t.value},document.getElementById('credentialsForm').addEventListener('submit',function(){fetch('/status','GET',new_status)})}</script>";
 
 typedef struct scan_listener
 {
@@ -237,6 +241,7 @@ typedef struct
   char *http_payload_data;
   uint32_t http_payload_len;
   os_timer_t check_station_timer;
+  os_timer_t shutdown_timer;
   int lua_connected_cb_ref;
   int lua_err_cb_ref;
   int lua_dbg_cb_ref;
@@ -247,71 +252,78 @@ static enduser_setup_state_t *state;
 static bool manual = false;
 static task_handle_t do_station_cfg_handle;
 
+static int enduser_setup_manual(lua_State* L);
 static int enduser_setup_start(lua_State* L);
 static int enduser_setup_stop(lua_State* L);
-static void enduser_setup_station_start(void);
+static void enduser_setup_stop_callback(void *ptr);
 static void enduser_setup_station_start(void);
 static void enduser_setup_ap_start(void);
 static void enduser_setup_ap_stop(void);
 static void enduser_setup_check_station(void *p);
-static void enduser_setup_debug(lua_State *L, const char *str);
+static void enduser_setup_debug(int line, const char *str);
 
 
 #define ENDUSER_SETUP_DEBUG_ENABLE 0
 #if ENDUSER_SETUP_DEBUG_ENABLE
-#define ENDUSER_SETUP_DEBUG(l, str) enduser_setup_debug(l, str)
+#define ENDUSER_SETUP_DEBUG(str) enduser_setup_debug(__LINE__, str)
 #else
-#define ENDUSER_SETUP_DEBUG(l, str) do {} while(0)
+#define ENDUSER_SETUP_DEBUG(str) do {} while(0)
 #endif
-
-
-static void enduser_setup_debug(lua_State *L, const char *str)
-{
-  if(state != NULL && L != NULL && state->lua_dbg_cb_ref != LUA_NOREF)
-  {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_dbg_cb_ref);
-    lua_pushstring(L, str);
-    lua_call(L, 1, 0);
-  }
-}
 
 
 #define ENDUSER_SETUP_ERROR(str, err, err_severity) \
   do { \
+    ENDUSER_SETUP_DEBUG(str); \
     if (err_severity & ENDUSER_SETUP_ERR_FATAL) enduser_setup_stop(lua_getstate());\
-      enduser_setup_error(lua_getstate(), str, err);\
+      enduser_setup_error(__LINE__, str, err);\
     if (!(err_severity & ENDUSER_SETUP_ERR_NO_RETURN)) \
       return err; \
   } while (0)
 
+
 #define ENDUSER_SETUP_ERROR_VOID(str, err, err_severity) \
   do { \
+    ENDUSER_SETUP_DEBUG(str); \
     if (err_severity & ENDUSER_SETUP_ERR_FATAL) enduser_setup_stop(lua_getstate());\
-       enduser_setup_error(lua_getstate(), str, err);\
+       enduser_setup_error(__LINE__, str, err);\
     if (!(err_severity & ENDUSER_SETUP_ERR_NO_RETURN)) \
       return; \
   } while (0)
 
 
-static void enduser_setup_error(lua_State *L, const char *str, int err)
+static void enduser_setup_debug(int line, const char *str)
 {
-  ENDUSER_SETUP_DEBUG(L, "enduser_setup_error");
+  lua_State *L = lua_getstate();
+  if(state != NULL && state->lua_dbg_cb_ref != LUA_NOREF)
+  {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_dbg_cb_ref);
+    lua_pushfstring(L, "%d: \t%s", line, str);
+    lua_call(L, 1, 0);
+  }
+}
 
-  if (state != NULL && L != NULL && state->lua_err_cb_ref != LUA_NOREF)
+
+static void enduser_setup_error(int line, const char *str, int err)
+{
+  ENDUSER_SETUP_DEBUG("enduser_setup_error");
+
+  lua_State *L = lua_getstate();
+  if (state != NULL && state->lua_err_cb_ref != LUA_NOREF)
   {
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->lua_err_cb_ref);
     lua_pushnumber(L, err);
-    lua_pushfstring(L, "enduser_setup: %s", str);
+    lua_pushfstring(L, "%d: \t%s", line, str);
     lua_call (L, 2, 0);
   }
 }
 
 
-static void enduser_setup_connected_callback(lua_State *L)
+static void enduser_setup_connected_callback()
 {
-  ENDUSER_SETUP_DEBUG(L, "enduser_setup_connected_callback");
+  ENDUSER_SETUP_DEBUG("enduser_setup_connected_callback");
 
-  if(state != NULL && L != NULL && state->lua_connected_cb_ref != LUA_NOREF)
+  lua_State *L = lua_getstate();
+  if (state != NULL && state->lua_connected_cb_ref != LUA_NOREF)
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_connected_cb_ref);
     lua_call(L, 0, 0);
@@ -321,7 +333,7 @@ static void enduser_setup_connected_callback(lua_State *L)
 
 static void enduser_setup_check_station_start(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_check_station_start");
+  ENDUSER_SETUP_DEBUG("enduser_setup_check_station_start");
 
   os_timer_setfn(&(state->check_station_timer), enduser_setup_check_station, NULL);
   os_timer_arm(&(state->check_station_timer), 1*1000, TRUE);
@@ -330,10 +342,12 @@ static void enduser_setup_check_station_start(void)
 
 static void enduser_setup_check_station_stop(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_check_station_stop");
+  ENDUSER_SETUP_DEBUG("enduser_setup_check_station_stop");
 
   if (state != NULL)
+  {
     os_timer_disarm(&(state->check_station_timer));
+  }
 }
 
 
@@ -344,6 +358,8 @@ static void enduser_setup_check_station_stop(void)
  */
 static void enduser_setup_check_station(void *p)
 {
+  ENDUSER_SETUP_DEBUG("enduser_setup_check_station");
+
   (void)p;
   struct ip_info ip;
   c_memset(&ip, 0, sizeof(struct ip_info));
@@ -362,8 +378,15 @@ static void enduser_setup_check_station(void *p)
     return;
   }
 
-  enduser_setup_connected_callback(lua_getstate());
-  enduser_setup_stop(NULL);
+  enduser_setup_check_station_stop();
+  enduser_setup_connected_callback();
+
+  /* Trigger shutdown, but allow time for HTTP client to fetch last status. */
+  if (!manual)
+  {
+    os_timer_setfn(&(state->shutdown_timer), enduser_setup_stop_callback, NULL);
+    os_timer_arm(&(state->shutdown_timer), 10*1000, FALSE);
+  }
 }
 
 
@@ -378,9 +401,13 @@ static int enduser_setup_srch_str(const char *str, const char *srch_str)
 {
   char *found = strpbrk (str, srch_str);
   if (!found)
+  {
     return -1;
+  }
   else
+  {
     return found - str;
+  }
 }
 
 
@@ -393,7 +420,7 @@ static int enduser_setup_srch_str(const char *str, const char *srch_str)
  */
 static int enduser_setup_http_load_payload(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_load_payload");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload");
 
   int f = fs_open(http_html_filename, fs_mode2flag("r"));
   int err = fs_seek(f, 0, FS_SEEK_END);
@@ -405,7 +432,7 @@ static int enduser_setup_http_load_payload(void)
 
   if (f == 0 || err == -1 || err2 == -1)
   {
-    ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_load_payload unable to load file index.html, loading backup HTML.");
+    ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file index.html, loading backup HTML.");
 
     int payload_len = LITLEN(http_header_200) + cl_len + LITLEN(http_html_backup);
     state->http_payload_len = payload_len;
@@ -446,9 +473,14 @@ static int enduser_setup_http_load_payload(void)
  * De-escape URL data
  *
  * Parse escaped and form encoded data of request.
+ *
+ * @return - return 0 iff the HTTP parameter is decoded into a valid string.
  */
-static void enduser_setup_http_urldecode(char *dst, const char *src, int src_len)
+static int enduser_setup_http_urldecode(char *dst, const char *src, int src_len, int dst_len)
 {
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_urldecode");
+
+  char *dst_start = dst;
   char a, b;
   int i;
   for (i = 0; i < src_len && *src; ++i)
@@ -490,8 +522,15 @@ static void enduser_setup_http_urldecode(char *dst, const char *src, int src_len
       }
       *dst++ = c;
     }
+    if ((dst - dst_start) >= dst_len - 1)
+    {
+      /* Try to leave a valid string even in the case of errors. */
+      *dst = '\0';
+      return 1;
+    }
   }
   *dst++ = '\0';
+  return 0;
 }
 
 
@@ -517,7 +556,7 @@ static void do_station_cfg (task_param_t param, uint8_t prio)
   wifi_station_disconnect ();
   wifi_station_set_config (cnf);
   wifi_station_connect ();
-  os_free (cnf);
+  luaM_free(lua_getstate(), cnf);
 }
 
 
@@ -530,12 +569,13 @@ static void do_station_cfg (task_param_t param, uint8_t prio)
  */
 static int enduser_setup_http_handle_credentials(char *data, unsigned short data_len)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_handle_credentials");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_handle_credentials");
 
   char *name_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_ssid="));
   char *pwd_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_password="));
   if (name_str == NULL || pwd_str == NULL)
   {
+    ENDUSER_SETUP_DEBUG("Password or SSID string not found");
     return 1;
   }
 
@@ -546,24 +586,37 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 
   int name_str_len = enduser_setup_srch_str(name_str_start, "& ");
   int pwd_str_len = enduser_setup_srch_str(pwd_str_start, "& ");
-  if (name_str_len == -1 || pwd_str_len == -1 || name_str_len > 31 || pwd_str_len > 63)
+  if (name_str_len == -1 || pwd_str_len == -1)
   {
+    ENDUSER_SETUP_DEBUG("Password or SSID HTTP paramter divider not found");
     return 1;
   }
 
-  struct station_config *cnf = os_zalloc(sizeof(struct station_config));
-  enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len);
-  enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len);
 
-  task_post_medium(do_station_cfg_handle, (task_param_t)cnf);
+  struct station_config *cnf = luaM_malloc(lua_getstate(), sizeof(struct station_config));
+  c_memset(cnf, 0, sizeof(struct station_config));
 
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "WiFi Credentials Stored");
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "-----------------------");
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "name: ");
-  ENDUSER_SETUP_DEBUG(lua_getstate(), cnf->ssid);
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "pass: ");
-  ENDUSER_SETUP_DEBUG(lua_getstate(), cnf->password);
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "-----------------------");
+  int err;
+  err  = enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len, 64);
+  err |= enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len, 32);
+  if (err != 0)
+  {
+    ENDUSER_SETUP_DEBUG("Unable to decode HTTP parameter to valid password or SSID");
+    return 1;
+  }
+
+
+  ENDUSER_SETUP_DEBUG("");
+  ENDUSER_SETUP_DEBUG("WiFi Credentials Stored");
+  ENDUSER_SETUP_DEBUG("-----------------------");
+  ENDUSER_SETUP_DEBUG("name: ");
+  ENDUSER_SETUP_DEBUG(cnf->ssid);
+  ENDUSER_SETUP_DEBUG("pass: ");
+  ENDUSER_SETUP_DEBUG(cnf->password);
+  ENDUSER_SETUP_DEBUG("-----------------------");
+  ENDUSER_SETUP_DEBUG("");
+
+  task_post_medium(do_station_cfg_handle, (task_param_t) cnf);
 
   return 0;
 }
@@ -576,7 +629,7 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
  */
 static int enduser_setup_http_serve_header(struct espconn *http_client, const char *header, uint32_t header_len)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_serve_header");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_header");
 
   int8_t err = espconn_send(http_client, (char *)header, header_len);
   if (err == ESPCONN_MEM)
@@ -603,7 +656,7 @@ static int enduser_setup_http_serve_header(struct espconn *http_client, const ch
  */
 static int enduser_setup_http_serve_html(struct espconn *http_client)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_serve_html");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_html");
 
   if (state->http_payload_data == NULL)
   {
@@ -628,9 +681,9 @@ static int enduser_setup_http_serve_html(struct espconn *http_client)
 }
 
 
-static void serve_status (struct espconn *conn)
+static void serve_status(struct espconn *conn)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_serve_status");
+  ENDUSER_SETUP_DEBUG("enduser_setup_serve_status");
 
   const char fmt[] =
     "HTTP/1.1 200 OK\r\n"
@@ -641,35 +694,65 @@ static void serve_status (struct espconn *conn)
     "%s%s";
   const char *state[] =
   {
-    "Idle",
-    "Connecting...",
-    "Failed to connect - wrong password",
-    "Failed to connect - network not found",
-    "Failed to connect"
+    "Idle.",
+    "Connecting to \"%s\".",
+    "Failed to connect to \"%s\" - Wrong password.",
+    "Failed to connect to \"%s\" - Network not found.",
+    "Failed to connect.",
+    "Connected to \"%s\"."
   };
-  const size_t num_states = sizeof(state)/sizeof(state[0]);
 
-  uint8_t which = wifi_station_get_connect_status ();
-  if (which < num_states)
+  const size_t num_states = sizeof(state)/sizeof(state[0]);
+  uint8_t curr_state = wifi_station_get_connect_status ();
+  if (curr_state < num_states)
   {
-    const char *s = state[which];
-    int len = c_strlen (s);
-    char buf[sizeof (fmt) + 10 + len]; /* more than enough for the formatted */
-    len = c_sprintf (buf, fmt, len, s, "");
-    enduser_setup_http_serve_header (conn, buf, len);
-  }
-  else if (which == num_states)
-  {
-    struct station_config cnf = { 0, };
-    wifi_station_get_config (&cnf);
-    const char successmsg[] = "WiFi successfully connected to ";
-    int len = LITLEN(successmsg) + c_strlen (cnf.ssid);
-    char buf[sizeof (fmt) + sizeof (successmsg) + 32]; // max-ssid
-    len = c_sprintf (buf, fmt, len, successmsg, cnf.ssid);
-    enduser_setup_http_serve_header (conn, buf, len);
+    switch (curr_state)
+    {
+      case STATION_CONNECTING:
+      case STATION_WRONG_PASSWORD:
+      case STATION_NO_AP_FOUND:
+      case STATION_GOT_IP:
+      {
+        const char *s = state[curr_state];
+        struct station_config config;
+        wifi_station_get_config(&config);
+        config.ssid[31] = '\0';
+
+        int state_len = c_strlen(s);
+        int ssid_len = c_strlen(config.ssid);
+        int status_len = state_len + ssid_len + 1;
+        char status_buf[status_len];
+        memset(status_buf, 0, status_len);
+        status_len = c_sprintf(status_buf, s, config.ssid);
+
+        int buf_len = sizeof(fmt) + status_len + 10; //10 = (9+1), 1 byte is '\0' and 9 are reserved for length field
+        char buf[buf_len];
+        memset(buf, 0, buf_len);
+        int output_len = c_sprintf(buf, fmt, status_len, status_buf);
+
+        enduser_setup_http_serve_header(conn, buf, output_len);
+      }
+      break;
+
+      /* Handle non-formatted strings */
+      default:
+      {
+        const char *s = state[curr_state];
+        int status_len = c_strlen(s);
+        int buf_len = sizeof(fmt) + status_len + 10; //10 = (9+1), 1 byte is '\0' and 9 are reserved for length field
+        char buf[buf_len];
+        memset(buf, 0, buf_len);
+        int output_len = c_sprintf(buf, fmt, status_len, s);
+
+        enduser_setup_http_serve_header(conn, buf, output_len);
+      }
+      break;
+    }
   }
   else
-    enduser_setup_http_serve_header (conn, http_header_500, LITLEN(http_header_500));
+  {
+    enduser_setup_http_serve_header(conn, http_header_500, LITLEN(http_header_500));
+  }
 }
 
 
@@ -680,8 +763,13 @@ static void serve_status (struct espconn *conn)
  */
 static void enduser_setup_http_disconnect(struct espconn *espconn)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_disconnect");
-//TODO: Construct and maintain os task queue(?) to be able to issue system_os_task with espconn_disconnect.
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_disconnect");
+  /*TODO: Implement early TCP disconnections.
+   * The espconn * here is frequently a temporary lwIP internal struct (when it is passed in to an API callback),
+   * and is not valid after the callback returns. The SDK doc isn't sufficiently explicit about
+   * (but see "2C" 1.5.1, p193 for the hint). To do the disconnects safely, you'll need to stash away
+   * the remote_ip and remote_port like what is done in the scan_listeners.
+   */
 }
 
 
@@ -690,7 +778,9 @@ static void enduser_setup_http_disconnect(struct espconn *espconn)
 static void free_scan_listeners (void)
 {
   if (!state || !state->scan_listeners)
+  {
     return;
+  }
 
   scan_listener_t *l = state->scan_listeners , *next = 0;
   while (l)
@@ -733,12 +823,15 @@ static void on_disconnect (void *arg)
   }
 }
 
+
 static char *escape_ssid (char *dst, const char *src)
 {
   for (int i = 0; i < 32 && src[i]; ++i)
   {
     if (src[i] == '\\' || src[i] == '"')
+    {
       *dst++ = '\\';
+    }
     *dst++ = src[i];
   }
   return dst;
@@ -748,9 +841,13 @@ static char *escape_ssid (char *dst, const char *src)
 static void notify_scan_listeners (const char *payload, size_t sz)
 {
   if (!state)
+  {
     return;
+  }
   if (!state->espconn_http_tcp)
+  {
     goto cleanup;
+  }
 
   struct espconn *conn = state->espconn_http_tcp;
   for (scan_listener_t *l = state->scan_listeners; l; l = l->next)
@@ -758,7 +855,9 @@ static void notify_scan_listeners (const char *payload, size_t sz)
     c_memcpy (conn->proto.tcp->remote_ip, l->remote_ip, 4);
     conn->proto.tcp->remote_port = l->remote_port;
     if (espconn_send(conn, (char *)payload, sz) != ESPCONN_OK)
-      ENDUSER_SETUP_DEBUG(lua_getstate(), "failed to send wifi list");
+    {
+      ENDUSER_SETUP_DEBUG("failed to send wifi list");
+    }
     enduser_setup_http_disconnect(conn);
   }
 
@@ -770,13 +869,17 @@ cleanup:
 static void on_scan_done (void *arg, STATUS status)
 {
   if (!state || !state->scan_listeners)
+  {
     return;
+  }
 
   if (status == OK)
   {
     unsigned num_nets = 0;
     for (struct bss_info *wn = arg; wn; wn = wn->next.stqe_next)
+    {
       ++num_nets;
+    }
 
     const char header_fmt[] =
       "HTTP/1.1 200 OK\r\n"
@@ -792,7 +895,9 @@ static void on_scan_done (void *arg, STATUS status)
     const size_t alloc_sz = hdr_sz + num_nets * max_entry_sz + 3;
     char *http = os_zalloc (alloc_sz);
     if (!http)
+    {
       goto serve_500;
+    }
 
     char *p = http + hdr_sz; /* start body where we know it will be */
     /* p[0] will be clobbered when we print the header, so fill it in last */
@@ -800,7 +905,9 @@ static void on_scan_done (void *arg, STATUS status)
     for (struct bss_info *wn = arg; wn; wn = wn->next.stqe_next)
     {
       if (wn != arg)
+      {
         *p++ = ',';
+      }
 
       const char entry_start[] = "{\"ssid\":\"";
       strcpy (p, entry_start);
@@ -836,10 +943,10 @@ serve_500:
 
 static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data_len)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_recvcb");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_recvcb");
   if (!state)
   {
-    ENDUSER_SETUP_DEBUG(lua_getstate(), "ignoring received data while stopped");
+    ENDUSER_SETUP_DEBUG("ignoring received data while stopped");
     return;
   }
 
@@ -849,15 +956,19 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
     if (c_strncmp(data + 4, "/ ", 2) == 0)
     {
       if (enduser_setup_http_serve_html(http_client) != 0)
+      {
         ENDUSER_SETUP_ERROR_VOID("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+      }
     }
     else if (c_strncmp(data + 4, "/aplist ", 8) == 0)
     {
       scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
       if (!l)
+      {
         ENDUSER_SETUP_ERROR_VOID("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
+      }
 
-      c_memcpy (l->remote_ip, http_client->proto.tcp->remote_ip, 4);
+      c_memcpy(l->remote_ip, http_client->proto.tcp->remote_ip, 4);
       l->remote_port = http_client->proto.tcp->remote_port;
 
       bool already = (state->scan_listeners != NULL);
@@ -867,17 +978,17 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
 
       if (!already)
       {
-        if (!wifi_station_scan (NULL, on_scan_done))
+        if (!wifi_station_scan(NULL, on_scan_done))
         {
-          enduser_setup_http_serve_header (http_client, http_header_500, LITLEN(http_header_500));
-          free_scan_listeners ();
+          enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
+          free_scan_listeners();
         }
       }
       return;
     }
     else if (c_strncmp(data + 4, "/status ", 8) == 0)
     {
-      serve_status (http_client);
+      serve_status(http_client);
     }
     else if (c_strncmp(data + 4, "/update?", 8) == 0)
     {
@@ -894,9 +1005,15 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
           break;
       }
     }
+    else if (c_strncmp(data + 4, "/generate_204 ", 14) == 0)
+    {
+      /* Convince Android devices that they have internet access to avoid pesky dialogues. */  
+      enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));
+    }
     else
     {
-      ENDUSER_SETUP_DEBUG(lua_getstate(), "serving 404");
+      ENDUSER_SETUP_DEBUG("serving 404");
+      ENDUSER_SETUP_DEBUG(data + 4);
       enduser_setup_http_serve_header(http_client, http_header_404, LITLEN(http_header_404));
     }
   }
@@ -911,7 +1028,7 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
 
 static void enduser_setup_http_connectcb(void *arg)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_connectcb");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_connectcb");
   struct espconn *callback_espconn = (struct espconn *) arg;
 
   int8_t err = 0;
@@ -927,7 +1044,7 @@ static void enduser_setup_http_connectcb(void *arg)
 
 static int enduser_setup_http_start(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_start");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_start");
   state->espconn_http_tcp = (struct espconn *) c_malloc(sizeof(struct espconn));
   if (state->espconn_http_tcp == NULL)
   {
@@ -980,7 +1097,7 @@ static int enduser_setup_http_start(void)
   err = enduser_setup_http_load_payload();
   if (err == 1)
   {
-    ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_start info. Loaded backup HTML.");
+    ENDUSER_SETUP_DEBUG("enduser_setup_http_start info. Loaded backup HTML.");
   }
   else if (err == 2)
   {
@@ -993,7 +1110,7 @@ static int enduser_setup_http_start(void)
 
 static void enduser_setup_http_stop(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_http_stop");
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_stop");
 
   if (state != NULL && state->espconn_http_tcp != NULL)
   {
@@ -1003,7 +1120,7 @@ static void enduser_setup_http_stop(void)
 
 static void enduser_setup_ap_stop(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_station_stop");
+  ENDUSER_SETUP_DEBUG("enduser_setup_station_stop");
 
   wifi_set_opmode(~SOFTAP_MODE & wifi_get_opmode());
 }
@@ -1011,7 +1128,7 @@ static void enduser_setup_ap_stop(void)
 
 static void enduser_setup_ap_start(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_ap_start");
+  ENDUSER_SETUP_DEBUG("enduser_setup_ap_start");
 
   struct softap_config cnf;
   c_memset(&(cnf), 0, sizeof(struct softap_config));
@@ -1041,7 +1158,7 @@ static void enduser_setup_ap_start(void)
 
 static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned short recv_len)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_dns_recv_callback.");
+  ENDUSER_SETUP_DEBUG("enduser_setup_dns_recv_callback.");
 
   struct espconn *callback_espconn = arg;
   struct ip_info ip_info;
@@ -1109,12 +1226,16 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
 
 static void enduser_setup_free(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_free");
+  ENDUSER_SETUP_DEBUG("enduser_setup_free");
 
   if (state == NULL)
   {
     return;
   }
+
+  /* Make sure no running timers are left. */
+  os_timer_disarm(&(state->check_station_timer));
+  os_timer_disarm(&(state->shutdown_timer));
 
   if (state->espconn_dns_udp != NULL)
   {
@@ -1144,7 +1265,7 @@ static void enduser_setup_free(void)
 
 static int enduser_setup_dns_start(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_dns_start");
+  ENDUSER_SETUP_DEBUG("enduser_setup_dns_start");
 
   if (state->espconn_dns_udp != NULL)
   {
@@ -1196,7 +1317,7 @@ static int enduser_setup_dns_start(void)
 
 static void enduser_setup_dns_stop(void)
 {
-  ENDUSER_SETUP_DEBUG(lua_getstate(), "enduser_setup_dns_stop");
+  ENDUSER_SETUP_DEBUG("enduser_setup_dns_stop");
 
   if (state != NULL && state->espconn_dns_udp != NULL)
   {
@@ -1207,18 +1328,18 @@ static void enduser_setup_dns_stop(void)
 
 static int enduser_setup_init(lua_State *L)
 {
-  ENDUSER_SETUP_DEBUG(L, "enduser_setup_init");
+  ENDUSER_SETUP_DEBUG("enduser_setup_init");
 
   if (state != NULL)
   {
-    enduser_setup_error(L, "init failed. Appears to already be started.", ENDUSER_SETUP_ERR_UNKOWN_ERROR);
+    ENDUSER_SETUP_ERROR("init failed. Appears to already be started.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
     return ENDUSER_SETUP_ERR_UNKOWN_ERROR;
   }
 
   state = (enduser_setup_state_t *) os_zalloc(sizeof(enduser_setup_state_t));
   if (state == NULL)
   {
-    enduser_setup_error(L, "init failed. Unable to allocate memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY);
+    ENDUSER_SETUP_ERROR("init failed. Unable to allocate memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
     return ENDUSER_SETUP_ERR_OUT_OF_MEMORY;
   }
   c_memset(state, 0, sizeof(enduser_setup_state_t));
@@ -1261,10 +1382,12 @@ static int enduser_setup_init(lua_State *L)
 }
 
 
-static int enduser_setup_manual (lua_State *L)
+static int enduser_setup_manual(lua_State *L)
 {
   if (!lua_isnoneornil (L, 1))
+  {
     manual = lua_toboolean (L, 1);
+  }
   lua_pushboolean (L, manual);
   return 1;
 }
@@ -1272,40 +1395,58 @@ static int enduser_setup_manual (lua_State *L)
 
 static int enduser_setup_start(lua_State *L)
 {
-  ENDUSER_SETUP_DEBUG(L, "enduser_setup_start");
+  ENDUSER_SETUP_DEBUG("enduser_setup_start");
 
   if (!do_station_cfg_handle)
+  {
     do_station_cfg_handle = task_get_id(do_station_cfg);
+  }
 
   if(enduser_setup_init(L))
+  {
     goto failed;
+  }
 
+  enduser_setup_check_station_start();
   if (!manual)
   {
-    enduser_setup_check_station_start();
     enduser_setup_ap_start();
   }
 
   if(enduser_setup_dns_start())
+  {
     goto failed;
+  }
 
   if(enduser_setup_http_start())
+  {
     goto failed;
+  }
 
   goto out;
 
 failed:
-  enduser_setup_stop(L);
+  enduser_setup_stop(lua_getstate());
 out:
   return 0;
 }
 
 
+/**
+ * A wrapper needed for type-reasons strictness reasons.
+ */
+static void enduser_setup_stop_callback(void *ptr)
+{
+  enduser_setup_stop(lua_getstate());
+}
+
+
 static int enduser_setup_stop(lua_State* L)
 {
+  ENDUSER_SETUP_DEBUG("enduser_setup_stop");
+
   if (!manual)
   {
-    enduser_setup_check_station_stop();
     enduser_setup_ap_stop();
   }
   enduser_setup_dns_stop();
