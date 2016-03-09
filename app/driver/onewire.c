@@ -171,18 +171,16 @@ static uint8_t onewire_read_bit(uint8_t pin)
 // go tri-state at the end of the write to avoid heating in a short or
 // other mishap.
 //
-void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
+void onewire_write(uint8_t pin, uint8_t v) {
   uint8_t bitMask;
 
   for (bitMask = 0x01; bitMask; bitMask <<= 1) {
 	  onewire_write_bit(pin, (bitMask & v)?1:0);
   }
-  if ( !power) {
-  	noInterrupts();
-  	DIRECT_MODE_INPUT(pin);
-  	DIRECT_WRITE_LOW(pin);
-  	interrupts();
-  }
+
+  noInterrupts();
+  DIRECT_MODE_INPUT(pin);
+  interrupts();
 }
 
 void onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
