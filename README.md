@@ -64,7 +64,7 @@ The following sections explain some of the options you have if you want to [buil
 
 ### Select Modules
 
-Disable modules you won't be using to reduce firmware size and free up some RAM. The ESP8266 is quite limited in available RAM and running out of memory can cause a system panic. 
+Disable modules you won't be using to reduce firmware size and free up some RAM. The ESP8266 is quite limited in available RAM and running out of memory can cause a system panic. The default configuration is designed to run on all ESP modules including the 512 KB modules like ESP-01 and only includes general purpose interface modules which require at most two GPIO pins.
 
 Edit `app/include/user_modules.h` and comment-out the `#define` statement for modules you don't need. Example:
 
@@ -89,8 +89,8 @@ Identify your firmware builds by editing `app/include/user_version.h`
 
 ### Set UART Bit Rate
 
-The initial baud rate at boot time is 9600bps. You can change this by
-editing `BIT_RATE_DEFAULT`  in `app/include/user_config.h`:
+The initial baud rate at boot time is 115200bps. You can change this by
+editing `BIT_RATE_DEFAULT` in `app/include/user_config.h`:
 
 ```c
 #define BIT_RATE_DEFAULT BIT_RATE_115200
@@ -103,5 +103,3 @@ To enable runtime debug messages to serial console edit `app/include/user_config
 ```c
 #define DEVELOP_VERSION
 ```
-
-`DEVELOP_VERSION` changes the startup baud rate to 74880bps.
