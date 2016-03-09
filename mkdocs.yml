@@ -39,6 +39,7 @@ pages:
         - 'bit': 'en/modules/bit.md'
         - 'bme280': 'en/modules/bme280.md'
         - 'bmp085': 'en/modules/bmp085.md'
+        - 'cirbuf': 'en/modules/cirbuf.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'coap': 'en/modules/coap.md'
         - 'crypto': 'en/modules/crypto.md'
