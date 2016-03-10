@@ -1,3 +1,4 @@
 sdk/
 cache/
 user_config.h
+server-ca.crt
