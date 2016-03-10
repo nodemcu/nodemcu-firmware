@@ -180,7 +180,7 @@ void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
   if ( !power) {
   	noInterrupts();
   	DIRECT_MODE_INPUT(pin);
-  	DIRECT_WRITE_LOW(pin);
+  	//DIRECT_WRITE_LOW(pin);
   	interrupts();
   }
 }
@@ -192,7 +192,7 @@ void onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool p
   if (!power) {
     noInterrupts();
     DIRECT_MODE_INPUT(pin);
-    DIRECT_WRITE_LOW(pin);
+    //DIRECT_WRITE_LOW(pin);
     interrupts();
   }
 }
