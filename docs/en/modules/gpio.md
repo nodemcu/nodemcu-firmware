@@ -20,20 +20,20 @@ If not using a NodeMCU dev kit, please refer to the below GPIO pin maps for the 
 |        5 | GPIO14      |       12 | GPIO10      |
 |        6 | GPIO12      |          |             |
 
-** [*] D0(GPIO16) can only be used as gpio read/write. No interrupt support. No pwm/i2c/ow support. **
+** [*] D0(GPIO16) can only be used as gpio read/write. No support for open-drain/interrupt/pwm/i2c/ow. **
 
 
 ## gpio.mode()
 
-Initialize pin to GPIO mode, set the pin in/out direction, and optional internal pullup.
+Initialize pin to GPIO mode, set the pin in/out direction, and optional internal weak pull-up.
 
 #### Syntax
 `gpio.mode(pin, mode [, pullup])`
 
 #### Parameters
 - `pin` pin to configure, IO index
-- `mode` one of gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)
-- `pullup` gpio.PULLUP or gpio.FLOAT; default is gpio.FLOAT
+- `mode` one of gpio.OUTPUT, gpio.OPENDRAIN, gpio.INPUT, or gpio.INT (interrupt mode)
+- `pullup` gpio.PULLUP enables the weak pull-up resistor; default is gpio.FLOAT
 
 #### Returns
 `nil`
