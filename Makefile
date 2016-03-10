@@ -224,11 +224,12 @@ endif
 
 .PHONY: pre_build
 
-pre_build:
 ifneq ($(wildcard $(TOP_DIR)/server-ca.crt),)
+pre_build:
 	python $(TOP_DIR)/tools/make_server_cert.py $(TOP_DIR)/server-ca.crt > $(TOP_DIR)/app/modules/server-ca.crt.h
 DEFINES += -DHAVE_SSL_SERVER_CRT=\"server-ca.crt.h\"
 else
+pre_build:
 	@-rm -f $(TOP_DIR)/app/modules/server-ca.crt.h
 endif
 
