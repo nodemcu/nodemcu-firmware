@@ -1,6 +1,7 @@
 ---
 -- @description Expands the ESP8266's GPIO to 8 more I/O pins via I2C with the MCP23017 I/O Expander
--- MCP23017 Datasheet: http://ww1.microchip.com/downloads/en/DeviceDoc/21919e.pdf
+-- MCP23017 Datasheet: http://ww1.microchip.com/downloads/en/DeviceDoc/21952b.pdf
+-- modifyed by Alberto Panu from MCP2308 module on March 11, 2016
 -- Tested on NodeMCU 0.9.5 build 20150213.
 -- @date March 02, 2015
 -- @author Miguel 
