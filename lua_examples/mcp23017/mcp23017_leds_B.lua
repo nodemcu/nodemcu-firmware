@@ -1,6 +1,8 @@
 ---
 -- @description Shows control of 8 GPIO pins/LEDs via I2C with the MCP23017 I/O expander.
 -- Tested on odeMCU 0.9.5 build 20150213. 
+-- modifyed by Alberto Panu from MCP2308 module on March 11, 2016
+-- Video on https://www.youtube.com/watch?v=uh4x8T8cQ-E
 -- @date March 02, 2015
 -- @circuit Connect 8 LEDs withs resistors to the GPIO pins of the MCP23017.
 --  Connect GPIO0 of the ESP8266-01 module to the SCL pin of the MCP23017. 
