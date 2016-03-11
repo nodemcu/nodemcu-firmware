@@ -80,19 +80,16 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
   call_user_start ();
 }
 
-static bool lua_started=false;
 // +================== New task interface ==================+
 static void start_lua(task_param_t param, uint8 priority) {
   char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
   NODE_DBG("Task task_lua started.\n");
   lua_main( 2, lua_argv );
-  lua_started=true;
 }
 
 static void handle_input(task_param_t flag, uint8 priority) {
 //  c_printf("HANDLE_INPUT: %u %u\n", flag, priority);          REMOVE
-  if (lua_started)
-    lua_handle_input (flag);
+  lua_handle_input (flag);
 }
 
 static task_handle_t input_sig;
