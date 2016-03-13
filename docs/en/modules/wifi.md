@@ -326,19 +326,18 @@ none
 Registers callbacks for WiFi station status events.
 
 ####  Syntax
-- `wifi.sta.eventMonReg(wifi_status, function([previous_state]))`
-- `wifi.sta.eventMonReg(wifi.status, "unreg")`
+- `wifi.sta.eventMonReg(wifi_status[, function([previous_state])])`
 
 ####  Parameters
-- `wifi_status` WiFi status you would like to set callback for, one of: 
+- `wifi_status` WiFi status you would like to set a callback for: 
     - `wifi.STA_IDLE`
     - `wifi.STA_CONNECTING`
     - `wifi.STA_WRONGPWD`
     - `wifi.STA_APNOTFOUND`
     - `wifi.STA_FAIL`
     - `wifi.STA_GOTIP`
-- `function` function to perform when event occurs
-- `"unreg"` unregister previously registered callback
+- `function` callback function to perform when event occurs 
+	- Note: leaving field blank unregisters callback.
 - `previous_state` previous wifi_state(0 - 5)
 
 ####  Returns
@@ -364,7 +363,7 @@ wifi.sta.eventMonReg(wifi.STA_CONNECTING, function(previous_State)
 end)
   
 --unregister callback
-wifi.sta.eventMonReg(wifi.STA_IDLE, "unreg")
+wifi.sta.eventMonReg(wifi.STA_IDLE)
 ```
 #### See also
 - [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
@@ -395,15 +394,16 @@ wifi.sta.eventMonStart(100)
 #### See also
 - [`wifi.sta.eventMonReg()`](#wifistaeventmonreg)
 - [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
-- 
+
 ## wifi.sta.eventMonStop()
 
 Stops WiFi station event monitor.
 ####  Syntax
-`wifi.sta.eventMonStop(["unreg all"])`
+`wifi.sta.eventMonStop([unregister_all])`
 
 ####  Parameters
-`"unreg all"` unregister all previously registered functions
+- `unregister_all` enter 1 to unregister all previously registered functions.
+	- Note: leave blank to leave callbacks registered
 
 ####  Returns
 `nil`
@@ -414,7 +414,7 @@ Stops WiFi station event monitor.
 wifi.sta.eventMonStop()
 
 --stop WiFi event monitor and unregister all callbacks
-wifi.sta.eventMonStop("unreg all")
+wifi.sta.eventMonStop(1)
 ```
 
 #### See also
