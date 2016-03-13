@@ -21,6 +21,7 @@ script:
 - file_name_integer="nodemcu_integer_${TRAVIS_TAG}.bin"
 - srec_cat -output ${file_name_integer} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
 # http://docs.travis-ci.com/user/environment-variables/#Convenience-Variables
+# test to trigger build
 - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/pr-build.sh; fi
 deploy:
   provider: releases
