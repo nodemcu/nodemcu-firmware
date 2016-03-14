@@ -2,16 +2,19 @@
 
 Basic HTTP client module.
 
-Provides an interface to do basic GET/POST/PUT/DELETE over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is limited by available memory. Attempting to receive pages larger than this will fail. If larger page/body sizes are necessary, consider using `net.createConnection()` and stream in the data.
+Provides an interface to do basic GET/POST/PUT/DELETE/HEAD over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is 
+limited by available memory. Attempting to receive pages larger than this will fail. If larger page/body sizes are necessary, consider using `net.createConnection()` and stream in 
+the data. You can also consider using [Byte Serving](https://en.wikipedia.org/wiki/Byte_serving) to download content in small chunks over multiple requests.
 
-Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 10 seconds).
+Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status 
+code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 10 seconds).
 
 For each operation it is also possible to include custom headers. Note that following headers *can not* be overridden however:
   - Host
   - Connection
-  - User-Agent
 
-The `Host` header is taken from the URL itself, the `Connection` is always set to `close`, and the `User-Agent` is `ESP8266`.
+The `Host` header is taken from the URL itself, the `Connection` is always set to `close`. If the `User-Agent` header is not provided by your Lua code, then a default of `ESP8266`
+will be used.
 
 Note that it is not possible to execute concurrent HTTP requests using this module. Starting a new request before the previous has completed will result in undefined behaviour.
 
@@ -29,7 +32,7 @@ Executes a HTTP DELETE request.
   - `url` The URL to fetch, including the `http://` or `https://` prefix
   - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
   - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body`, and `headers`
 
 #### Returns
 `nil`
@@ -58,18 +61,44 @@ Executes a HTTP GET request.
 #### Parameters
   - `url` The URL to fetch, including the `http://` or `https://` prefix
   - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
-  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body`, and `headers`
 
 #### Returns
 `nil`
 
 #### Example
 ```lua
-http.get("https://www.vowstar.com/nodemcu/", nil, function(code, data)
+http.get("https://www.vowstar.com/nodemcu/", nil, function(code, data, headers)
     if (code < 0) then
       print("HTTP request failed")
     else
-      print(code, data)
+      print(code, data, headers)
+    end
+  end)
+```
+
+## http.head()
+
+Executes a HTTP HEAD request. Note: This is the same as a GET request, except the server will only return headers (no response body).
+
+#### Syntax
+`http.head(url, headers, callback)`
+
+#### Parameters
+  - `url` The URL to fetch, including the `http://` or `https://` prefix
+  - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
+  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body`, and `headers`
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+http.head("https://www.vowstar.com/nodemcu/", nil, function(code, data, headers)
+    if (code < 0) then
+      print("HTTP request failed")
+    else
+      print(code, data, headers) -- data will be nil
     end
   end)
 ```
@@ -85,7 +114,7 @@ Executes a HTTP POST request.
   - `url` The URL to fetch, including the `http://` or `https://` prefix
   - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
   - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body`, and `headers`
 
 #### Returns
 `nil`
@@ -95,11 +124,11 @@ Executes a HTTP POST request.
 http.post('http://json.example.com/something',
   'Content-Type: application/json\r\n',
   '{"hello":"world"}',
-  function(code, data)
+  function(code, data, headers)
     if (code < 0) then
       print("HTTP request failed")
     else
-      print(code, data)
+      print(code, data, headers)
     end
   end)
 ```
@@ -115,7 +144,7 @@ Executes a HTTP PUT request.
   - `url` The URL to fetch, including the `http://` or `https://` prefix
   - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
   - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body`, and `headers`
 
 #### Returns
 `nil`
@@ -125,11 +154,11 @@ Executes a HTTP PUT request.
 http.put('http://db.example.com/items.php?key=deckard',
   'Content-Type: text/plain\r\n',
   'Hello!\nStay a while, and listen...\n',
-  function(code, data)
+  function(code, data, headers)
     if (code < 0) then
       print("HTTP request failed")
     else
-      print(code, data)
+      print(code, data, headers)
     end
   end)
 ```
@@ -146,7 +175,7 @@ Execute a custom HTTP request for any HTTP method.
   - `method` The HTTP method to use, e.g. "GET", "HEAD", "OPTIONS" etc
   - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
   - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+  - `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body`, and `headers`
 
 #### Returns
 `nil`
@@ -154,11 +183,11 @@ Execute a custom HTTP request for any HTTP method.
 #### Example
 ```lua
 http.request("https://www.example.com", "HEAD", "", "", function(code, data)
-  function(code, data)
+  function(code, data, headers)
     if (code < 0) then
       print("HTTP request failed")
     else
-      print(code, data)
+      print(code, data, headers)
     end
   end)
 ```

@@ -24,6 +24,10 @@
 #define espconn_secure_send espconn_secure_sent
 #endif
 
+#ifndef HTTP_DEFAULT_USER_AGENT
+#define HTTP_DEFAULT_USER_AGENT "ESP8266"
+#endif
+
 /*
  * In case of TCP or DNS error the callback is called with this status.
  */
@@ -46,7 +50,7 @@
  * A successful request corresponds to an HTTP status code of 200 (OK).
  * More info at http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
  */
-typedef void (* http_callback_t)(char * response_body, int http_status, char * full_response);
+typedef void (* http_callback_t)(char * response_body, int http_status, char * full_response, int content_length);
 
 /*
  * Call this function to skip URL parsing if the arguments are already in separate variables.
@@ -61,37 +65,5 @@ void ICACHE_FLASH_ATTR http_raw_request(const char * hostname, int port, bool se
  */
 void ICACHE_FLASH_ATTR http_request(const char * url, const char * method, const char * headers, const char * post_data, http_callback_t callback_handle);
 
-/*
- * Post data to a web form.
- * The data should be encoded as any format.
- * Try:
- * http_post("http://httpbin.org/post", "Content-type: application/json", "{\"hello\": \"world\"}", http_callback_example);
- */
-void ICACHE_FLASH_ATTR http_post(const char * url, const char * headers, const char * post_data, http_callback_t callback_handle);
-
-/*
- * Download a web page from its URL.
- * Try:
- * http_get("http://wtfismyip.com/text", NULL, http_callback_example);
- */
-void ICACHE_FLASH_ATTR http_get(const char * url, const char * headers, http_callback_t callback_handle);
-/*
- * Delete a web page from its URL.
- * Try:
- * http_delete("http://wtfismyip.com/text", NULL, http_callback_example);
- */
-void ICACHE_FLASH_ATTR http_delete(const char * url, const char * headers, const char * post_data, http_callback_t callback_handle);
-/*
- * Update data to a web form.
- * The data should be encoded as any format.
- * Try:
- * http_put("http://httpbin.org/post", "Content-type: application/json", "{\"hello\": \"world\"}", http_callback_example);
- */
-void ICACHE_FLASH_ATTR http_put(const char * url, const char * headers, const char * post_data, http_callback_t callback_handle);
-
-/*
- * Output on the UART.
- */
-void http_callback_example(char * response, int http_status, char * full_response);
 
 #endif // __HTTPCLIENT_H__
