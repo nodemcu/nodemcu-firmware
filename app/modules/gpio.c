@@ -62,25 +62,36 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
 static int lgpio_trig( lua_State* L )
 {
   unsigned pin = luaL_checkinteger( L, 1 );
-  int old_pin_ref = gpio_cb_ref[pin];
   static const char * const opts[] = {"none", "up", "down", "both", "low", "high", NULL};
   static const int opts_type[] = {
     GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_POSEDGE, GPIO_PIN_INTR_NEGEDGE,
     GPIO_PIN_INTR_ANYEDGE, GPIO_PIN_INTR_LOLEVEL, GPIO_PIN_INTR_HILEVEL
     };
   luaL_argcheck(L, platform_gpio_exists(pin) && pin>0, 1, "Invalid interrupt pin");
+
+  int old_pin_ref = gpio_cb_ref[pin];
   int type = opts_type[luaL_checkoption(L, 2, "none", opts)];
 
-  if (type != GPIO_PIN_INTR_DISABLE) {
-    int cbtype = lua_type(L, 3);
-    luaL_argcheck(L,  cbtype == LUA_TFUNCTION || cbtype == LUA_TLIGHTFUNCTION, 3,
-      "invalid callback type");
-    lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
-    gpio_cb_ref[pin] = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else {
+  if (type == GPIO_PIN_INTR_DISABLE) {
+    // "none" clears the callback
     gpio_cb_ref[pin] = LUA_NOREF;
+
+  } else if (lua_gettop(L)==2 && old_pin_ref != LUA_NOREF) {
+    // keep the old one if no callback 
+    old_pin_ref = LUA_NOREF;
+
+  } else if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
+    // set up the new callback if present
+    lua_pushvalue(L, 3);
+    gpio_cb_ref[pin] = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  } else {
+     // invalid combination, so clear down any old callback and throw an error
+    if(old_pin_ref != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, old_pin_ref);
+    luaL_argcheck(L,  0, 3, "invalid callback type");
   }
 
+  // unreference any overwritten callback
   if(old_pin_ref != LUA_NOREF) luaL_unref(L, LUA_REGISTRYINDEX, old_pin_ref);
 
   NODE_DBG("Pin data: %d %d %08x, %d %d %d, %08x\n",
