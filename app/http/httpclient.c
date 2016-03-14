@@ -9,7 +9,6 @@
 
 /*
  * FIXME: sprintf->snprintf everywhere.
- * FIXME: support null characters in responses.
  */
 
 #include "osapi.h"
@@ -52,29 +51,25 @@ static char * ICACHE_FLASH_ATTR esp_strdup( const char * str )
 }
 
 
-static int ICACHE_FLASH_ATTR
-esp_isupper( char c )
+static int ICACHE_FLASH_ATTR esp_isupper( char c )
 {
 	return(c >= 'A' && c <= 'Z');
 }
 
 
-static int ICACHE_FLASH_ATTR
-esp_isalpha( char c )
+static int ICACHE_FLASH_ATTR esp_isalpha( char c )
 {
 	return( (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') );
 }
 
 
-static int ICACHE_FLASH_ATTR
-esp_isspace( char c )
+static int ICACHE_FLASH_ATTR esp_isspace( char c )
 {
 	return(c == ' ' || c == '\t' || c == '\n' || c == '\12');
 }
 
 
-static int ICACHE_FLASH_ATTR
-esp_isdigit( char c )
+static int ICACHE_FLASH_ATTR esp_isdigit( char c )
 {
 	return(c >= '0' && c <= '9');
 }
@@ -86,11 +81,8 @@ esp_isdigit( char c )
  * Ignores `locale' stuff.  Assumes that the upper and lower case
  * alphabets and digits are each contiguous.
  */
-long ICACHE_FLASH_ATTR
-esp_strtol( nptr, endptr, base )
+long ICACHE_FLASH_ATTR esp_strtol( nptr, endptr, base )
 const char *nptr;
-
-
 char	**endptr;
 int	base;
 {
@@ -292,33 +284,48 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 
 	if ( req->post_data != NULL ) /* If there is data then add Content-Length header. */
 	{
-		os_sprintf( post_headers, "Content-Length: %d\r\n", strlen( req->post_data ) );
+		os_sprintf( post_headers, "Content-Length:%d\r\n", strlen( req->post_data ) );
 	}
 
-	if(req->headers == NULL) /* Avoid NULL pointer, it may cause exception */
+	if (req->headers == NULL) /* Avoid NULL pointer, it may cause exception */
 	{
 		req->headers = (char *)os_malloc(sizeof(char));
 		req->headers[0] = '\0';
 	}
 
+	char ua_header[32] = "";
+	
+	if ( os_strstr( req->headers, "User-Agent:" ) == NULL )
+	{
+		os_sprintf( ua_header, "User-Agent:%s\r\n", HTTP_DEFAULT_USER_AGENT );
+	}
+	
 	char buf[69 + strlen( req->method ) + strlen( req->path ) + strlen( req->hostname ) +
 		 strlen( req->headers ) + strlen( post_headers )];
 	int len = os_sprintf( buf,
 			      "%s %s HTTP/1.1\r\n"
-			      "Host: %s:%d\r\n"
-			      "Connection: close\r\n"
-			      "User-Agent: ESP8266\r\n"
-			      "%s"
-			      "%s"
+			      "Host:%s:%d\r\n"
+			      "Connection:close\r\n"
+			      "%s" // Headers from Lua (optional)
+			      "%s" // User-Agent (if not provided in the headers from Lua)
+			      "%s" // Content-Length
 			      "\r\n",
-			      req->method, req->path, req->hostname, req->port, req->headers, post_headers );
+			      req->method, req->path, req->hostname, req->port, req->headers, ua_header, post_headers );
 
 	if ( req->secure )
+	{
 		espconn_secure_send( conn, (uint8_t *) buf, len );
+	}
 	else
+	{
 		espconn_send( conn, (uint8_t *) buf, len );
-	if(req->headers != NULL)
+	}
+		
+	if (req->headers != NULL)
+	{
 		os_free( req->headers );
+	}
+	
 	req->headers = NULL;
 	HTTPCLIENT_DEBUG( "Sending request header\n" );
 }
@@ -338,12 +345,14 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 	{
 		os_free( conn->proto.tcp );
 	}
+	
 	if ( conn->reverse != NULL )
 	{
-		request_args_t	* req		= (request_args_t *) conn->reverse;
-		int		http_status	= -1;
-		char		* body		= "";
-
+		request_args_t	* req	= (request_args_t *) conn->reverse;
+		int http_status		= -1;
+		char * body				= "";
+		int content_length 	= 0;
+		
 		// Turn off timeout timer
 		os_timer_disarm( &(req->timeout_timer) );
 
@@ -356,36 +365,50 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			/* FIXME: make sure this is not a partial response, using the Content-Length header. */
 			const char * version_1_0 = "HTTP/1.0 ";
 			const char * version_1_1 = "HTTP/1.1 ";
+			
 			if (( os_strncmp( req->buffer, version_1_0, strlen( version_1_0 ) ) != 0 ) &&
-				( os_strncmp( req->buffer, version_1_1, strlen( version_1_1 ) ) != 0 ))
+				 ( os_strncmp( req->buffer, version_1_1, strlen( version_1_1 ) ) != 0 ))
 			{
 				HTTPCLIENT_DEBUG( "Invalid version in %s\n", req->buffer );
 			}
 			else  
 			{
 				http_status	= atoi( req->buffer + strlen( version_1_0 ) );
-				body		= (char *) os_strstr( req->buffer, "\r\n\r\n" ) + 4;
-				if ( os_strstr( req->buffer, "Transfer-Encoding: chunked" ) )
+				body = (char *) os_strstr( req->buffer, "\r\n\r\n" ) + 4;
+				
+				// Whitespace is optional in headers between colon and the field value (RFC7230 recommends no space)
+				if ( os_strstr( req->buffer, "Transfer-Encoding:chunked" ) || os_strstr( req->buffer, "Transfer-Encoding: chunked" ))
 				{
-					int	body_size = req->buffer_size - (body - req->buffer);
-					char	chunked_decode_buffer[body_size];
+					int body_size = req->buffer_size - (body - req->buffer);
+					char chunked_decode_buffer[body_size];
 					os_memset( chunked_decode_buffer, 0, body_size );
-					/* Chuncked data */
+					
+					/* Chunked data */
 					http_chunked_decode( body, chunked_decode_buffer );
 					os_memcpy( body, chunked_decode_buffer, body_size );
 				}
 			}
+			
+			char *contlen = os_strstr( req->buffer, "Content-Length:" );
+			
+			if ( contlen )
+			{
+				content_length = atoi( contlen + 16 ); 
+			}
 		}
+		
 		if ( req->callback_handle != NULL ) /* Callback is optional. */
 		{
-			req->callback_handle( body, http_status, req->buffer );
+			req->callback_handle( body, http_status, req->buffer, content_length );
 		}
+		
 		os_free( req->buffer );
 		os_free( req->hostname );
 		os_free( req->method );
 		os_free( req->path );
 		os_free( req );
 	}
+	
 	/* Fix memory leak. */
 	espconn_delete( conn );
 	os_free( conn );
@@ -429,7 +452,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		HTTPCLIENT_DEBUG( "DNS failed for %s\n", hostname );
 		if ( req->callback_handle != NULL )
 		{
-			req->callback_handle( "", -1, "" );
+			req->callback_handle( "", -1, "", -1 );
 		}
 		os_free( req );
 	}
@@ -440,10 +463,10 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		struct espconn * conn = (struct espconn *) os_zalloc( sizeof(struct espconn) );
 		conn->type			= ESPCONN_TCP;
 		conn->state			= ESPCONN_NONE;
-		conn->proto.tcp			= (esp_tcp *) os_zalloc( sizeof(esp_tcp) );
+		conn->proto.tcp		= (esp_tcp *) os_zalloc( sizeof(esp_tcp) );
 		conn->proto.tcp->local_port	= espconn_port();
-		conn->proto.tcp->remote_port	= req->port;
-		conn->reverse			= req;
+		conn->proto.tcp->remote_port = req->port;
+		conn->reverse		= req;
 
 		os_memcpy( conn->proto.tcp->remote_ip, addr, 4 );
 
@@ -594,42 +617,3 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	http_raw_request( hostname, port, secure, method, path, headers, post_data, callback_handle );
 }
 
-
-/*
- * Parse an URL of the form http://host:port/path
- * <host> can be a hostname or an IP address
- * <port> is optional
- */
-void ICACHE_FLASH_ATTR http_post( const char * url, const char * headers, const char * post_data, http_callback_t callback_handle )
-{
-	http_request( url, "POST", headers, post_data, callback_handle );
-}
-
-
-void ICACHE_FLASH_ATTR http_get( const char * url, const char * headers, http_callback_t callback_handle )
-{
-	http_request( url, "GET", headers, NULL, callback_handle );
-}
-
-
-void ICACHE_FLASH_ATTR http_delete( const char * url, const char * headers, const char * post_data, http_callback_t callback_handle )
-{
-	http_request( url, "DELETE", headers, post_data, callback_handle );
-}
-
-
-void ICACHE_FLASH_ATTR http_put( const char * url, const char * headers, const char * post_data, http_callback_t callback_handle )
-{
-	http_request( url, "PUT", headers, post_data, callback_handle );
-}
-
-
-void ICACHE_FLASH_ATTR http_callback_example( char * response, int http_status, char * full_response )
-{
-	os_printf( "http_status=%d\n", http_status );
-	if ( http_status != HTTP_STATUS_GENERIC_ERROR )
-	{
-		os_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
-		os_printf( "response=%s<EOF>\n", response );
-	}
-}
