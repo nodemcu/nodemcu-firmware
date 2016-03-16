@@ -223,7 +223,7 @@ static sint8 mqtt_send_if_possible(struct espconn *pesp_conn)
       mud->keep_alive_tick = 0;
     }
   }
-  NODE_DBG("receive, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
+  NODE_DBG("send_if_poss, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
   return espconn_status;
 }
 
@@ -559,7 +559,6 @@ void mqtt_socket_timer(void *arg)
       // no queued event.
       mud->keep_alive_tick ++;
       if(mud->keep_alive_tick > mud->mqtt_state.connect_info->keepalive){
-        mud->event_timeout = MQTT_SEND_TIMEOUT;
         uint8_t temp_buffer[MQTT_BUF_SIZE];
         mqtt_msg_init(&mud->mqtt_state.mqtt_connection, temp_buffer, MQTT_BUF_SIZE);
         NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
