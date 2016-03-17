@@ -12,6 +12,7 @@
 #define PULLUP PLATFORM_GPIO_PULLUP
 #define FLOAT PLATFORM_GPIO_FLOAT
 #define OUTPUT PLATFORM_GPIO_OUTPUT
+#define OPENDRAIN PLATFORM_GPIO_OPENDRAIN
 #define INPUT PLATFORM_GPIO_INPUT
 #define INTERRUPT PLATFORM_GPIO_INT
 #define HIGH PLATFORM_GPIO_HIGH
@@ -93,7 +94,7 @@ static int lgpio_mode( lua_State* L )
   unsigned pullup = luaL_optinteger( L, 3, FLOAT );
 
   luaL_argcheck(L, platform_gpio_exists(pin) && (mode!=INTERRUPT || pin>0), 1, "Invalid pin");
-  luaL_argcheck(L, mode==OUTPUT || mode==INPUT
+  luaL_argcheck(L, mode==OUTPUT || mode==OPENDRAIN || mode==INPUT
  #ifdef GPIO_INTERRUPT_ENABLE
                                                || mode==INTERRUPT
  #endif
@@ -203,12 +204,13 @@ static const LUA_REG_TYPE gpio_map[] = {
   { LSTRKEY( "trig" ),   LFUNCVAL( lgpio_trig ) },
   { LSTRKEY( "INT" ),    LNUMVAL( INTERRUPT ) },
 #endif
-  { LSTRKEY( "OUTPUT" ), LNUMVAL( OUTPUT ) },
-  { LSTRKEY( "INPUT" ),  LNUMVAL( INPUT ) },
-  { LSTRKEY( "HIGH" ),   LNUMVAL( HIGH ) },
-  { LSTRKEY( "LOW" ),    LNUMVAL( LOW ) },
-  { LSTRKEY( "FLOAT" ),  LNUMVAL( FLOAT ) },
-  { LSTRKEY( "PULLUP" ), LNUMVAL( PULLUP ) },
+  { LSTRKEY( "OUTPUT" ),    LNUMVAL( OUTPUT ) },
+  { LSTRKEY( "OPENDRAIN" ), LNUMVAL( OPENDRAIN ) },
+  { LSTRKEY( "INPUT" ),     LNUMVAL( INPUT ) },
+  { LSTRKEY( "HIGH" ),      LNUMVAL( HIGH ) },
+  { LSTRKEY( "LOW" ),       LNUMVAL( LOW ) },
+  { LSTRKEY( "FLOAT" ),     LNUMVAL( FLOAT ) },
+  { LSTRKEY( "PULLUP" ),    LNUMVAL( PULLUP ) },
   { LNILKEY, LNILVAL }
 };
 

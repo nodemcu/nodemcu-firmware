@@ -60,7 +60,7 @@ uint8_t platform_key_led( uint8_t level){
 /*
  * Set GPIO mode to output. Optionally in RAM helper because interrupts are dsabled
  */
-static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin) {
+static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
   unsigned pnum = pin_num[pin];
   ETS_GPIO_INTR_DISABLE();
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -71,9 +71,17 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin) {
   gpio_pin_intr_state_set(GPIO_ID_PIN(pnum), GPIO_PIN_INTR_DISABLE);
   //clear interrupt status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pnum));
-  GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum)),
-                 GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) &
-                 (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE))); //disable open drain;
+
+  // configure push-pull vs open-drain
+  if (push_pull) {
+    GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum)),
+                   GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) &
+                   (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE)));  //disable open drain;
+  } else {
+    GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum)),
+                   GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) |
+                   GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE));      //enable open drain;
+  }
   ETS_GPIO_INTR_ENABLE();
 }
 
@@ -124,7 +132,10 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
       GPIO_DIS_OUTPUT(pin_num[pin]);
       /* run on */
     case PLATFORM_GPIO_OUTPUT:
-      set_gpio_no_interrupt(pin);
+      set_gpio_no_interrupt(pin, TRUE);
+      break;
+    case PLATFORM_GPIO_OPENDRAIN:
+      set_gpio_no_interrupt(pin, FALSE);
       break;
 
 #ifdef GPIO_INTERRUPT_ENABLE
