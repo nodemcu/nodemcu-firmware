@@ -294,14 +294,16 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 	}
 
 	char ua_header[32] = "";
+	int ua_len = 0;
 	
 	if ( os_strstr( req->headers, "User-Agent:" ) == NULL )
 	{
 		os_sprintf( ua_header, "User-Agent:%s\r\n", HTTP_DEFAULT_USER_AGENT );
+		ua_len = strlen(ua_header);
 	}
 	
 	char buf[69 + strlen( req->method ) + strlen( req->path ) + strlen( req->hostname ) +
-		 strlen( req->headers ) + strlen( post_headers )];
+		 strlen( req->headers ) + strlen( post_headers ) + ua_len];
 	int len = os_sprintf( buf,
 			      "%s %s HTTP/1.1\r\n"
 			      "Host:%s:%d\r\n"
