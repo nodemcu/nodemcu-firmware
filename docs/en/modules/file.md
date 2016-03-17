@@ -1,4 +1,8 @@
 # file Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [file.c](../../../app/modules/file.c)|
+
 The file module provides access to the file system and its individual files.
 
 The file system is a flat file system, with no notion of directories/folders.

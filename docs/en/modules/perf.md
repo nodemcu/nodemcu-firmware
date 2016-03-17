@@ -1,12 +1,11 @@
 # perf Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2016-02-26 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [perf.c](../../../app/modules/perf.c)|
 
-This module provides simple performance measurement for an application.
-It samples the program counter roughly every 50 microseconds and builds
-a histogram of the values that it finds. Since there is only a small amount
-of memory to store the histogram, the user can specify which area of code
-is of interest. The default is the enitre flash which contains code. Once the hotspots are 
-identified, then the run can then be repeated with different areas and at different
-resolutions to get as much information as required.
+
+This module provides simple performance measurement for an application. It samples the program counter roughly every 50 microseconds and builds a histogram of the values that it finds. Since there is only a small amount
+of memory to store the histogram, the user can specify which area of code is of interest. The default is the entire flash which contains code. Once the hotspots are identified, then the run can then be repeated with different areas and at different resolutions to get as much information as required.
 
 ## perf.start()
 Starts a performance monitoring session. 

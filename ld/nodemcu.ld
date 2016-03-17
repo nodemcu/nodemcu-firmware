@@ -71,9 +71,11 @@ SECTIONS
     _dport0_data_end = ABSOLUTE(.);
   } >dport0_0_seg :dport0_0_phdr
 
-  .irom0.text : ALIGN(4)
+  .irom0.text : ALIGN(0x1000)
   {
     _irom0_text_start = ABSOLUTE(.);
+    *(.servercert.flash)
+    *(.clientcert.flash)
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
     *(.rodata*)
@@ -95,7 +97,7 @@ SECTIONS
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
-  } >irom0_0_seg :irom0_0_phdr
+  } >irom0_0_seg :irom0_0_phdr =0xffffffff
 
   .data : ALIGN(4)
   {

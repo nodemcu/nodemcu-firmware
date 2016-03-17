@@ -437,10 +437,10 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 	{
 		HTTPCLIENT_DEBUG( "DNS found %s " IPSTR "\n", hostname, IP2STR( addr ) );
 
-		struct espconn * conn = (struct espconn *) os_malloc( sizeof(struct espconn) );
+		struct espconn * conn = (struct espconn *) os_zalloc( sizeof(struct espconn) );
 		conn->type			= ESPCONN_TCP;
 		conn->state			= ESPCONN_NONE;
-		conn->proto.tcp			= (esp_tcp *) os_malloc( sizeof(esp_tcp) );
+		conn->proto.tcp			= (esp_tcp *) os_zalloc( sizeof(esp_tcp) );
 		conn->proto.tcp->local_port	= espconn_port();
 		conn->proto.tcp->remote_port	= req->port;
 		conn->reverse			= req;
@@ -473,7 +473,7 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 {
 	HTTPCLIENT_DEBUG( "DNS request\n" );
 
-	request_args_t * req = (request_args_t *) os_malloc( sizeof(request_args_t) );
+	request_args_t * req = (request_args_t *) os_zalloc( sizeof(request_args_t) );
 	req->hostname		= esp_strdup( hostname );
 	req->port		= port;
 	req->secure		= secure;
@@ -556,6 +556,11 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	if ( colon > path )
 	{
 		colon = NULL;                   /* Limit the search to characters before the path. */
+	}
+
+	if (path - url >= sizeof(hostname)) {
+		HTTPCLIENT_DEBUG( "hostname is too long %s\n", url );
+		return;
 	}
 
 	if ( colon == NULL )                    /* The port is not present. */
