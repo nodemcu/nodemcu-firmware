@@ -32,6 +32,7 @@ uint8_t platform_key_led( uint8_t level);
 
 #define PLATFORM_GPIO_INT 2
 #define PLATFORM_GPIO_OUTPUT 1
+#define PLATFORM_GPIO_OPENDRAIN 3
 #define PLATFORM_GPIO_INPUT 0
 
 #define PLATFORM_GPIO_HIGH 1

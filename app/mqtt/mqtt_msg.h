@@ -136,6 +136,10 @@ mqtt_message_t* mqtt_msg_pingreq(mqtt_connection_t* connection);
 mqtt_message_t* mqtt_msg_pingresp(mqtt_connection_t* connection);
 mqtt_message_t* mqtt_msg_disconnect(mqtt_connection_t* connection);
 
+mqtt_message_t* mqtt_msg_subscribe_init(mqtt_connection_t* connection, uint16_t* message_id);
+mqtt_message_t* mqtt_msg_subscribe_topic(mqtt_connection_t* connection, const char* topic, int qos);
+mqtt_message_t* mqtt_msg_subscribe_fini(mqtt_connection_t* connection);
+
 
 #ifdef	__cplusplus
 }
