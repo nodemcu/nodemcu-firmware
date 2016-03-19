@@ -447,20 +447,40 @@ mqtt_message_t* mqtt_msg_subscribe(mqtt_connection_t* connection, const char* to
   return result;
 }
 
-mqtt_message_t* mqtt_msg_unsubscribe(mqtt_connection_t* connection, const char* topic, uint16_t* message_id)
+mqtt_message_t* mqtt_msg_unsubscribe_init(mqtt_connection_t* connection, uint16_t *message_id)
 {
-  init_message(connection);
+  return mqtt_msg_subscribe_init(connection, message_id);
+}
 
+mqtt_message_t* mqtt_msg_unsubscribe_topic(mqtt_connection_t* connection, const char* topic)
+{
   if(topic == NULL || topic[0] == '\0')
-    return fail_message(connection);
-
-  if((*message_id = append_message_id(connection, 0)) == 0)
     return fail_message(connection);
 
   if(append_string(connection, topic, c_strlen(topic)) < 0)
     return fail_message(connection);
 
-  return fini_message(connection, MQTT_MSG_TYPE_SUBSCRIBE, 0, 1, 0);
+  return &connection->message;
+}
+
+mqtt_message_t* mqtt_msg_unsubscribe_fini(mqtt_connection_t* connection)
+{
+  return fini_message(connection, MQTT_MSG_TYPE_UNSUBSCRIBE, 0, 1, 0);
+}
+
+mqtt_message_t* mqtt_msg_unsubscribe(mqtt_connection_t* connection, const char* topic, uint16_t* message_id)
+{
+  mqtt_message_t* result;
+  
+  result = mqtt_msg_unsubscribe_init(connection, message_id);
+  if (result->length != 0) {
+    result = mqtt_msg_unsubscribe_topic(connection, topic);
+  }
+  if (result->length != 0) {
+    result = mqtt_msg_unsubscribe_fini(connection);
+  }
+
+  return result;
 }
 
 mqtt_message_t* mqtt_msg_pingreq(mqtt_connection_t* connection)
