@@ -38,12 +38,12 @@ os_event_t espconn_TaskQueue[espconn_TaskQueueLen];
 static err_t
 espconn_client_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err);
 static void
-espconn_client_close(void *arg, struct tcp_pcb *pcb);
+espconn_client_close(void *arg, struct tcp_pcb *pcb,u8 type);
 
 static err_t
 espconn_server_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err);
 static void
-espconn_server_close(void *arg, struct tcp_pcb *pcb);
+espconn_server_close(void *arg, struct tcp_pcb *pcb,u8 type);
 
 ///////////////////////////////common function/////////////////////////////////
 /******************************************************************************
@@ -495,14 +495,14 @@ espconn_tcp_sent(void *arg, uint8 *psent, uint16 length)
  * Parameters   : arg -- Additional argument to pass to the callback function
  * Returns      : none
 *******************************************************************************/
-void ICACHE_FLASH_ATTR espconn_tcp_disconnect(espconn_msg *pdiscon)
+void ICACHE_FLASH_ATTR espconn_tcp_disconnect(espconn_msg *pdiscon,u8 type)
 {
 	if (pdiscon != NULL){
 		/*disconnect with the host by send the FIN frame*/
 		if (pdiscon->preverse != NULL)
-			espconn_server_close(pdiscon, pdiscon->pcommon.pcb);
+			espconn_server_close(pdiscon, pdiscon->pcommon.pcb,type);
 		else
-			espconn_client_close(pdiscon, pdiscon->pcommon.pcb);
+			espconn_client_close(pdiscon, pdiscon->pcommon.pcb,type);
 	} else{
 		espconn_printf("espconn_tcp_disconnect err.\n");
 	}
@@ -517,7 +517,7 @@ void ICACHE_FLASH_ATTR espconn_tcp_disconnect(espconn_msg *pdiscon)
  * Returns      : none
 *******************************************************************************/
 static void ICACHE_FLASH_ATTR
-espconn_client_close(void *arg, struct tcp_pcb *pcb)
+espconn_client_close(void *arg, struct tcp_pcb *pcb, u8 type)
 {
     err_t err;
     espconn_msg *pclose = arg;
@@ -525,7 +525,11 @@ espconn_client_close(void *arg, struct tcp_pcb *pcb)
 	pclose->pcommon.pcb = pcb;
 	/*avoid recalling the disconnect function*/
 	tcp_recv(pcb, NULL);
-	err = tcp_close(pcb);
+
+	if(type == 0)
+		err = tcp_close(pcb);
+	else
+		{tcp_abort(pcb); err = ERR_OK;}
 
 	if (err != ERR_OK) {
 		/* closing failed, try again later */
@@ -647,7 +651,7 @@ espconn_client_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
     }
 
     if (err == ERR_OK && p == NULL) {
-        espconn_client_close(precv_cb, pcb);
+        espconn_client_close(precv_cb, pcb,0);
     }
 
     return ERR_OK;
@@ -943,7 +947,7 @@ espconn_tcp_client(struct espconn *espconn)
  * Returns      : none
 *******************************************************************************/
 static void ICACHE_FLASH_ATTR
-espconn_server_close(void *arg, struct tcp_pcb *pcb)
+espconn_server_close(void *arg, struct tcp_pcb *pcb,u8 type)
 {
     err_t err;
     espconn_msg *psclose = arg;
@@ -951,7 +955,11 @@ espconn_server_close(void *arg, struct tcp_pcb *pcb)
 	psclose->pcommon.pcb = pcb;
 	/*avoid recalling the disconnect function*/
 	tcp_recv(pcb, NULL);
-	err = tcp_close(pcb);
+
+	if(type ==0)
+		err = tcp_close(pcb);
+	else
+		{tcp_abort(pcb); err = ERR_OK;}
 
     if (err != ERR_OK) {
         /* closing failed, try again later */
@@ -1024,7 +1032,7 @@ espconn_server_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
             pbuf_free(p);
         }
 
-        espconn_server_close(precv_cb, pcb);
+        espconn_server_close(precv_cb, pcb,0);
     }
 
     return ERR_OK;
@@ -1086,7 +1094,7 @@ espconn_server_poll(void *arg, struct tcp_pcb *pcb)
 		if (pspoll_cb->pcommon.timeout != 0){/*no data sent in one active connection's set timeout, close.*/
 			if (pspoll_cb->pcommon.recv_check >= pspoll_cb->pcommon.timeout) {
 				pspoll_cb->pcommon.recv_check = 0;
-				espconn_server_close(pspoll_cb, pcb);
+				espconn_server_close(pspoll_cb, pcb,0);
 			}
 		} else {
 			espconn_msg *ptime_msg = pserver_list;
@@ -1095,7 +1103,7 @@ espconn_server_poll(void *arg, struct tcp_pcb *pcb)
 					if (ptime_msg->pcommon.timeout != 0){/*no data sent in server's set timeout, close.*/
 						if (pspoll_cb->pcommon.recv_check >= ptime_msg->pcommon.timeout){
 							pspoll_cb->pcommon.recv_check = 0;
-							espconn_server_close(pspoll_cb, pcb);
+							espconn_server_close(pspoll_cb, pcb,0);
 						}
 					} else {/*don't close for ever*/
 						pspoll_cb->pcommon.recv_check = 0;
@@ -1106,7 +1114,7 @@ espconn_server_poll(void *arg, struct tcp_pcb *pcb)
 			}
 		}
     } else {
-        espconn_server_close(pspoll_cb, pcb);
+        espconn_server_close(pspoll_cb, pcb,0);
     }
 
     return ERR_OK;

@@ -499,7 +499,7 @@ void smart_end(){
       wifi_station_connect();
 
       os_timer_disarm(&smart_timer);
-      os_timer_setfn(&smart_timer, (os_timer_func_t *)station_check_connect, 1);
+      os_timer_setfn(&smart_timer, (os_timer_func_t *)station_check_connect, (void *)1);
       os_timer_arm(&smart_timer, STATION_CHECK_TIME, 0);   // no repeat
     }
   }
@@ -716,6 +716,6 @@ void station_check_connect(bool smart){
       break;
   }
   os_timer_disarm(&smart_timer);
-  os_timer_setfn(&smart_timer, (os_timer_func_t *)station_check_connect, smart);
+  os_timer_setfn(&smart_timer, (os_timer_func_t *)station_check_connect, (void *)(int)smart);
   os_timer_arm(&smart_timer, STATION_CHECK_TIME, 0);   // no repeat
 }

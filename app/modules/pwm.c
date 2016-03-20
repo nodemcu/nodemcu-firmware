@@ -47,7 +47,9 @@ static int lpwm_start( lua_State* L )
   unsigned id;
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( pwm, id );
-  platform_pwm_start( id );
+  if (!platform_pwm_start( id )) {
+    return luaL_error(L, "Unable to start PWM output");
+  }
   return 0;  
 }
 
@@ -120,6 +122,11 @@ static int lpwm_getduty( lua_State* L )
   return 1;
 }
 
+int lpwm_open( lua_State *L ) {
+  platform_pwm_init();
+  return 0;
+}
+
 // Module function map
 static const LUA_REG_TYPE pwm_map[] = {
   { LSTRKEY( "setup" ),    LFUNCVAL( lpwm_setup ) },
@@ -133,4 +140,4 @@ static const LUA_REG_TYPE pwm_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(PWM, "pwm", pwm_map, NULL);
+NODEMCU_MODULE(PWM, "pwm", pwm_map, lpwm_open);

@@ -71,9 +71,11 @@ SECTIONS
     _dport0_data_end = ABSOLUTE(.);
   } >dport0_0_seg :dport0_0_phdr
 
-  .irom0.text : ALIGN(4)
+  .irom0.text : ALIGN(0x1000)
   {
     _irom0_text_start = ABSOLUTE(.);
+    *(.servercert.flash)
+    *(.clientcert.flash)
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
     *(.rodata*)
@@ -89,50 +91,18 @@ SECTIONS
     KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
 
-    /* These are *only* pulled in by Lua, and therefore safe to put in flash */
-    */libc.a:lib_a-isalnum.o(.text* .literal*)
-    */libc.a:lib_a-isalpha.o(.text* .literal*)
-    */libc.a:lib_a-iscntrl.o(.text* .literal*)
-    */libc.a:lib_a-isspace.o(.text* .literal*)
-    */libc.a:lib_a-islower.o(.text* .literal*)
-    */libc.a:lib_a-isupper.o(.text* .literal*)
-    */libc.a:lib_a-ispunct.o(.text* .literal*)
-    */libc.a:lib_a-isxdigit.o(.text* .literal*)
-    */libc.a:lib_a-locale.o(.text* .literal*)
-    */libc.a:lib_a-tolower.o(.text* .literal*)
-    */libc.a:lib_a-toupper.o(.text* .literal*)
-    */libc.a:lib_a-strcasecmp.o(.text* .literal*)
-    */libc.a:lib_a-strcoll.o(.text* .literal*)
-    */libc.a:lib_a-strchr.o(.text* .literal*)
-    */libc.a:lib_a-strrchr.o(.text* .literal*)
-    */libc.a:lib_a-strcat.o(.text* .literal*)
-    */libc.a:lib_a-strncat.o(.text* .literal*)
-    */libc.a:lib_a-strcspn.o(.text* .literal*)
-    */libc.a:lib_a-strtol.o(.text* .literal*)
-    */libc.a:lib_a-strtoul.o(.text* .literal*)
-    */libc.a:lib_a-strpbrk.o(.text* .literal*)
-    */libc.a:lib_a-memchr.o(.text* .literal*)
-    */libc.a:lib_a-setjmp.o(.text* .literal*)
-    /* end Lua C lib functions */
+    /* SDK doesn't use libc functions, and are therefore safe to put in flash */
+    */libc.a:*.o(.text* .literal*)
+    /* end libc functions */
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
-  } >irom0_0_seg :irom0_0_phdr
+  } >irom0_0_seg :irom0_0_phdr =0xffffffff
 
   .data : ALIGN(4)
   {
     _data_start = ABSOLUTE(.);
     *(.data)
-
-    /* Hook for randomizing TCP start numbers */
-    . = ALIGN(2);
-    _tcp_new_port_port = ABSOLUTE(.);
-    */liblwip.a:tcp.o(.port)
-    /* Verify that the LWIP source has been patched as needed, or fail with
-     * a divide by zero error (../ld/nodemcu.ld:xxx / by zero) */
-    _tcp_new_port_port_size = ABSOLUTE(.) - _tcp_new_port_port;
-    _ensure_tcp_port_randomization_fix_presence = 1 / _tcp_new_port_port_size;
-
     *(.data.*)
     *(.gnu.linkonce.d.*)
     *(.data1)

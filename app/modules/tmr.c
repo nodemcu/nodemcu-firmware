@@ -52,6 +52,7 @@ tmr.softwd(int)
 #include "lauxlib.h"
 #include "platform.h"
 #include "c_types.h"
+#include "user_interface.h"
 
 #define TIMER_MODE_OFF 3
 #define TIMER_MODE_SINGLE 0
@@ -59,25 +60,8 @@ tmr.softwd(int)
 #define TIMER_MODE_AUTO 1
 #define TIMER_IDLE_FLAG (1<<7) 
 
-//well, the following are my assumptions
-//why, oh why is there no good documentation
-//chinese companies should learn from Atmel
-extern void ets_timer_arm_new(os_timer_t* t, uint32_t milliseconds, uint32_t repeat_flag, uint32_t isMstimer);
-extern void ets_timer_disarm(os_timer_t* t);
-extern void ets_timer_setfn(os_timer_t* t, os_timer_func_t *f, void *arg);
-extern void ets_delay_us(uint32_t us);
-extern uint32_t system_get_time();
-extern uint32_t platform_tmr_exists(uint32_t t);
-extern uint32_t system_rtc_clock_cali_proc();
-extern uint32_t system_get_rtc_time();
-extern void system_restart();
-extern void system_soft_wdt_feed();
-
-//in fact lua_State is constant, it's pointless to pass it around
-//but hey, whatever, I'll just pass it, still we waste 28B here
 typedef struct{
 	os_timer_t os;
-	lua_State* L;
 	sint32_t lua_ref;
 	uint32_t interval;
 	uint8_t mode;
@@ -89,24 +73,26 @@ static union {
 	uint64_t block;
 	uint32_t part[2];
 } rtc_time;
+
 static sint32_t soft_watchdog  = -1;
 static timer_struct_t alarm_timers[NUM_TMR];
 static os_timer_t rtc_timer;
 
 static void alarm_timer_common(void* arg){
 	timer_t tmr = &alarm_timers[(uint32_t)arg];
-	if(tmr->lua_ref == LUA_NOREF || tmr->L == NULL)
+	lua_State* L = lua_getstate();
+	if(tmr->lua_ref == LUA_NOREF)
 		return;
-	lua_rawgeti(tmr->L, LUA_REGISTRYINDEX, tmr->lua_ref);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 	//if the timer was set to single run we clean up after it
 	if(tmr->mode == TIMER_MODE_SINGLE){
-		luaL_unref(tmr->L, LUA_REGISTRYINDEX, tmr->lua_ref);
+		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 		tmr->lua_ref = LUA_NOREF;
 		tmr->mode = TIMER_MODE_OFF;
 	}else if(tmr->mode == TIMER_MODE_SEMI){
 		tmr->mode |= TIMER_IDLE_FLAG;
 	}
-	lua_call(tmr->L, 0, 0);
+	lua_call(L, 0, 0);
 }
 
 // Lua: tmr.delay( us )
@@ -140,10 +126,11 @@ static int tmr_register(lua_State* L){
 	sint32_t interval = luaL_checkinteger(L, 2);
 	uint8_t mode = luaL_checkinteger(L, 3);
 	//validate arguments
-	uint8_t args_valid = interval <= 0
+    const int32_t MAX_TIMEOUT = 0xC49BA5; // assuming system_timer_reinit() has *not* been called
+	uint8_t args_invalid = (interval <= 0 || interval > MAX_TIMEOUT)
 		|| (mode != TIMER_MODE_SINGLE && mode != TIMER_MODE_SEMI && mode != TIMER_MODE_AUTO)
 		|| (lua_type(L, 4) != LUA_TFUNCTION && lua_type(L, 4) != LUA_TLIGHTFUNCTION);
-	if(args_valid)
+	if(args_invalid)
 		return luaL_error(L, "wrong arg range");
 	//get the lua function reference
 	lua_pushvalue(L, 4);
@@ -157,7 +144,6 @@ static int tmr_register(lua_State* L){
 	tmr->lua_ref = ref;
 	tmr->mode = mode|TIMER_IDLE_FLAG;
 	tmr->interval = interval;
-	tmr->L = L; 
 	ets_timer_setfn(&tmr->os, alarm_timer_common, (void*)id);
 	return 0;  
 }

@@ -169,7 +169,7 @@ typedef struct _espconn_msg{
 	struct espconn *pespconn;
 	comon_pkt pcommon;
 	uint8 count_opt;
-	int16_t hs_status;	//the status of the handshake
+	sint16_t hs_status;	//the status of the handshake
 	void *preverse;
 	void *pssl;
 	struct _espconn_msg *pnext;

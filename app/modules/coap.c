@@ -372,7 +372,7 @@ static int coap_request( lua_State* L, coap_method_t m )
   if(!pdu){
     if(uri)
       c_free(uri);
-    return;
+    return luaL_error (L, "alloc fail");
   }
 
   const char *payload = NULL;
