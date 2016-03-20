@@ -1,6 +1,0 @@
-eclipse.preferences.version=1
-environment/project/cdt.managedbuild.toolchain.gnu.cross.base.992255352/PATH/delimiter=;
-environment/project/cdt.managedbuild.toolchain.gnu.cross.base.992255352/PATH/operation=append
-environment/project/cdt.managedbuild.toolchain.gnu.cross.base.992255352/PATH/value=C\:\\Espressif\\xtensa-lx106-elf\\bin;C\:\\MinGW\\bin;C\:\\MinGW\\msys\\1.0\\bin;C\:\\Python27
-environment/project/cdt.managedbuild.toolchain.gnu.cross.base.992255352/append=true
-environment/project/cdt.managedbuild.toolchain.gnu.cross.base.992255352/appendContributed=true
