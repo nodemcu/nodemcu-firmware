@@ -15,6 +15,7 @@ ifndef PDIR
 GEN_LIBS = tsl2561lib.a
 endif
 
+STD_CFLAGS=-std=gnu11 -Wimplicit
 
 #############################################################
 # Configuration i.e. compile options etc.
