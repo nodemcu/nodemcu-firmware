@@ -86,6 +86,8 @@ typedef struct
     uint32_t segment_size;
 } ICACHE_STORE_TYPEDEF_ATTR SPIFlashInfo;
 
+SpiFlashOpResult SPIRead(uint32_t src_addr, uint32_t *des_addr, uint32_t size);
+
 uint32_t flash_detect_size_byte(void);
 uint32_t flash_safe_get_size_byte(void);
 uint16_t flash_safe_get_sec_num(void);

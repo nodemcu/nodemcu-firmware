@@ -10,6 +10,8 @@ int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 
 
 void NmiTimSetFunc(void (*func)(void));
 
+void call_user_start(void);
+
 #include_next "osapi.h"
 
 #endif
