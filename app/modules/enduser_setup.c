@@ -43,6 +43,8 @@
 #include "ctype.h"
 #include "user_interface.h"
 #include "espconn.h"
+#include "lwip/tcp.h"
+#include "lwip/pbuf.h"
 #include "flash_fs.h"
 #include "task/task.h"
 
@@ -227,17 +229,17 @@ static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\n\r\n";
 static const char http_html_backup[] =
 "<!DOCTYPE html><meta http-equiv=content-type content='text/html; charset=UTF-8'><meta charset=utf-8><meta name=viewport content='width=380'><title>WiFi Login</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:-150px;right:0;bottom:0;left:0;width:320px;height:304px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{border:0 none;border-radius:3px;cursor:pointer}#msform .submit:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}#formFrame{display:none}#aplist{display:block}select{width:100%;margin-bottom:20px;padding:10px 5px;border:1px solid #ccc;display:none}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}.fs-status{font-weight:400;font-size:13px;color:#666;margin-bottom:10px;padding-top:20px;border-top:1px solid #ccc}.submit{width:100px;background:#27AE60;color:#fff;font-weight:700;margin:10px 5px;padding:10px 5px}</style><div><form id=credentialsForm action=/update target=formFrame><fieldset><iframe id=formFrame src=''name=formFrame></iframe><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi network</h3><input id=wifi_ssid autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'><select id=aplist name=aplist size=1 disabled><option>Scanning for networks...</select><input name=wifi_password placeholder=Password type=password> <input type=submit name=save class='action-button submit'value=Save><h3 class=fs-status>Status: <span id=status>Updating...</span></h3></fieldset><h3 id=dbg></h3></form></div><script>function fetch(t,e,n){function s(){4===a.readyState&&n(200===a.status?a.responseText:null)}var a=new XMLHttpRequest;a.onreadystatechange=s,a.open(e,t,!0),a.send()}function new_status(t){if(t){var e=document.getElementById('status');e.innerHTML=t}}function new_status_repeat(t){new_status(t),setTimeout(refresh_status,750)}function new_ap_list(t){if(t){var e=JSON.parse(t);e.sort(function(t,e){return e.rssi-t.rssi});var n=e.map(function(t){return t.ssid}).filter(function(t,e,n){return n.indexOf(t)==e}),s=document.getElementById('aplist');s.innerHTML='',s.setAttribute('size',Math.max(Math.min(3,e.length),1)),s.removeAttribute('disabled');for(var a=0;a<n.length;++a){var i=document.createElement('option');i.innerHTML=n[a],s.options.add(i)}s.style.display='block'}}function new_ap_list_repeat(t){new_ap_list(t),setTimeout(refresh_ap_list,3e3)}function refresh_status(){fetch('/status','GET',new_status_repeat)}function refresh_ap_list(){fetch('/aplist','GET',new_ap_list_repeat)}window.onload=function(){refresh_status(),refresh_ap_list(),document.getElementById('aplist').onchange=function(){var t=document.getElementById('aplist');document.getElementById('wifi_ssid').value=t.value},document.getElementById('credentialsForm').addEventListener('submit',function(){fetch('/status','GET',new_status)})}</script>";
 
+
 typedef struct scan_listener
 {
+  struct tcp_pcb *conn;
   struct scan_listener *next;
-  int remote_port;
-  uint8 remote_ip[4];
 } scan_listener_t;
 
 typedef struct
 {
   struct espconn *espconn_dns_udp;
-  struct espconn *espconn_http_tcp;
+  struct tcp_pcb *http_pcb;
   char *http_payload_data;
   uint32_t http_payload_len;
   os_timer_t check_station_timer;
@@ -627,25 +629,58 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
  *
  * @return - return 0 iff html was served successfully
  */
-static int enduser_setup_http_serve_header(struct espconn *http_client, const char *header, uint32_t header_len)
+static int enduser_setup_http_serve_header(struct tcp_pcb *http_client, const char *header, uint32_t header_len)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_header");
 
-  int8_t err = espconn_send(http_client, (char *)header, header_len);
-  if (err == ESPCONN_MEM)
+  err_t err = tcp_write (http_client, header, header_len, TCP_WRITE_FLAG_COPY);
+  if (err != ERR_OK)
   {
-    ENDUSER_SETUP_ERROR("http_serve_header failed. espconn_send out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
-  }
-  else if (err == ESPCONN_ARG)
-  {
-    ENDUSER_SETUP_ERROR("http_serve_header failed. espconn_send can't find network transmission", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_NONFATAL);
-  }
-  else if (err != 0)
-  {
-    ENDUSER_SETUP_ERROR("http_serve_header failed. espconn_send failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    tcp_close (http_client);
+    ENDUSER_SETUP_ERROR("http_serve_header failed on tcp_write", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
   return 0;
+}
+
+
+static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
+{
+  (void)len;
+
+  unsigned offs = (unsigned)arg;
+
+  if (!state || !state->http_payload_data)
+  {
+    tcp_abort (pcb);
+    return ERR_ABRT;
+  }
+
+  unsigned wanted_len = state->http_payload_len - offs;
+  unsigned buf_free = tcp_sndbuf (pcb);
+  if (buf_free < wanted_len)
+    wanted_len = buf_free;
+
+  /* no-copy write */
+  err_t err = tcp_write (pcb, state->http_payload_data + offs, wanted_len, 0);
+  if (err != ERR_OK)
+  {
+    ENDUSER_SETUP_DEBUG("streaming out html failed");
+    tcp_abort (pcb);
+    return ERR_ABRT;
+  }
+
+  offs += wanted_len;
+
+  if (offs >= state->http_payload_len)
+  {
+    tcp_sent (pcb, 0);
+    tcp_close (pcb);
+  }
+  else
+    tcp_arg (pcb, (void *)offs);
+
+  return ERR_OK;
 }
 
 
@@ -654,7 +689,7 @@ static int enduser_setup_http_serve_header(struct espconn *http_client, const ch
  *
  * @return - return 0 iff html was served successfully
  */
-static int enduser_setup_http_serve_html(struct espconn *http_client)
+static int enduser_setup_http_serve_html(struct tcp_pcb *http_client)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_html");
 
@@ -663,25 +698,22 @@ static int enduser_setup_http_serve_html(struct espconn *http_client)
     enduser_setup_http_load_payload();
   }
 
-  int8_t err = espconn_send(http_client, state->http_payload_data, state->http_payload_len);
-  if (err == ESPCONN_MEM)
+  unsigned chunklen = tcp_sndbuf (http_client);
+  tcp_arg (http_client, (void *)chunklen);
+  tcp_recv (http_client, 0); /* avoid confusion about the tcp_arg */
+  tcp_sent (http_client, streamout_sent);
+  /* Begin the no-copy stream-out here */
+  err_t err = tcp_write (http_client, state->http_payload_data, chunklen, 0);
+  if (err != 0)
   {
-    ENDUSER_SETUP_ERROR("http_serve_html failed. espconn_send out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
-  }
-  else if (err == ESPCONN_ARG)
-  {
-    ENDUSER_SETUP_ERROR("http_serve_html failed. espconn_send can't find network transmission", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_NONFATAL);
-  }
-  else if (err != 0)
-  {
-    ENDUSER_SETUP_ERROR("http_serve_html failed. espconn_send failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    ENDUSER_SETUP_ERROR("http_serve_html failed. tcp_write failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
   return 0;
 }
 
 
-static void serve_status(struct espconn *conn)
+static void serve_status(struct tcp_pcb *conn)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_serve_status");
 
@@ -756,22 +788,6 @@ static void serve_status(struct espconn *conn)
 }
 
 
-/**
- * Disconnect HTTP client
- *
- * End TCP connection and free up resources.
- */
-static void enduser_setup_http_disconnect(struct espconn *espconn)
-{
-  ENDUSER_SETUP_DEBUG("enduser_setup_http_disconnect");
-  /*TODO: Implement early TCP disconnections.
-   * The espconn * here is frequently a temporary lwIP internal struct (when it is passed in to an API callback),
-   * and is not valid after the callback returns. The SDK doc isn't sufficiently explicit about
-   * (but see "2C" 1.5.1, p193 for the hint). To do the disconnects safely, you'll need to stash away
-   * the remote_ip and remote_port like what is done in the scan_listeners.
-   */
-}
-
 
 /* --- WiFi AP scanning support -------------------------------------------- */
 
@@ -793,25 +809,15 @@ static void free_scan_listeners (void)
 }
 
 
-static inline bool same_remote (uint8 addr1[4], int port1, uint8 addr2[4], int port2)
+static void remove_scan_listener (scan_listener_t *l)
 {
-  return (port1 == port2) && (c_memcmp (addr1, addr2, 4) == 0);
-}
-
-
-static void on_disconnect (void *arg)
-{
-  struct espconn *conn = arg;
-  if (conn->type == ESPCONN_TCP && state && state->scan_listeners)
+  if (state)
   {
     scan_listener_t **sl = &state->scan_listeners;
     while (*sl)
     {
       /* Remove any and all references to the closed conn from the scan list */
-      scan_listener_t *l = *sl;
-      if (same_remote (
-        l->remote_ip, l->remote_port,
-        conn->proto.tcp->remote_ip, conn->proto.tcp->remote_port))
+      if (*sl == l)
       {
         *sl = l->next;
         c_free (l);
@@ -844,24 +850,17 @@ static void notify_scan_listeners (const char *payload, size_t sz)
   {
     return;
   }
-  if (!state->espconn_http_tcp)
-  {
-    goto cleanup;
-  }
 
-  struct espconn *conn = state->espconn_http_tcp;
   for (scan_listener_t *l = state->scan_listeners; l; l = l->next)
   {
-    c_memcpy (conn->proto.tcp->remote_ip, l->remote_ip, 4);
-    conn->proto.tcp->remote_port = l->remote_port;
-    if (espconn_send(conn, (char *)payload, sz) != ESPCONN_OK)
+    if (tcp_write (l->conn, payload, sz, TCP_WRITE_FLAG_COPY) != ERR_OK)
     {
       ENDUSER_SETUP_DEBUG("failed to send wifi list");
     }
-    enduser_setup_http_disconnect(conn);
+    tcp_close (l->conn);
+    l->conn = 0;
   }
 
-cleanup:
   free_scan_listeners ();
 }
 
@@ -941,23 +940,48 @@ serve_500:
 /* ---- end WiFi AP scan support ------------------------------------------- */
 
 
-static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data_len)
+static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, struct pbuf *p, err_t err)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_recvcb");
-  if (!state)
+  if (!state || err != ERR_OK)
   {
-    ENDUSER_SETUP_DEBUG("ignoring received data while stopped");
-    return;
+    if (!state)
+      ENDUSER_SETUP_DEBUG("ignoring received data while stopped");
+    tcp_abort (http_client);
+    return ERR_ABRT;
   }
 
-  struct espconn *http_client = (struct espconn *) arg;
+  if (!p) /* remote side closed, close our end too */
+  {
+    ENDUSER_SETUP_DEBUG("connection closed");
+    scan_listener_t *l = arg; /* if it's waiting for scan, we have a ptr here */
+    if (l)
+      remove_scan_listener (l);
+
+    tcp_close (http_client);
+    return ERR_OK;
+  }
+
+  char *data = os_zalloc (p->tot_len + 1);
+  if (!data)
+    return ERR_MEM;
+
+  unsigned data_len = pbuf_copy_partial (p, data, p->tot_len, 0);
+  tcp_recved (http_client, p->tot_len);
+  pbuf_free (p);
+
   if (c_strncmp(data, "GET ", 4) == 0)
   {
     if (c_strncmp(data + 4, "/ ", 2) == 0)
     {
       if (enduser_setup_http_serve_html(http_client) != 0)
       {
-        ENDUSER_SETUP_ERROR_VOID("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+        ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+      }
+      else
+      {
+        os_free (data);
+        return ERR_OK; /* streaming now in progress */
       }
     }
     else if (c_strncmp(data + 4, "/aplist ", 8) == 0)
@@ -965,14 +989,14 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
       scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
       if (!l)
       {
-        ENDUSER_SETUP_ERROR_VOID("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
+        ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
       }
-
-      c_memcpy(l->remote_ip, http_client->proto.tcp->remote_ip, 4);
-      l->remote_port = http_client->proto.tcp->remote_port;
 
       bool already = (state->scan_listeners != NULL);
 
+      tcp_arg (http_client, l);
+      /* TODO: check if also need a tcp_err() cb, or if recv() is enough */
+      l->conn = http_client;
       l->next = state->scan_listeners;
       state->scan_listeners = l;
 
@@ -981,10 +1005,13 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
         if (!wifi_station_scan(NULL, on_scan_done))
         {
           enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
+          tcp_close (l->conn);
+          l->conn = 0;
           free_scan_listeners();
         }
       }
-      return;
+      os_free (data);
+      return ERR_OK;
     }
     else if (c_strncmp(data + 4, "/status ", 8) == 0)
     {
@@ -1001,7 +1028,7 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
           enduser_setup_http_serve_header(http_client, http_header_401, LITLEN(http_header_401));
           break;
         default:
-          ENDUSER_SETUP_ERROR_VOID("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+          ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
           break;
       }
     }
@@ -1022,79 +1049,67 @@ static void enduser_setup_http_recvcb(void *arg, char *data, unsigned short data
     enduser_setup_http_serve_header(http_client, http_header_401, LITLEN(http_header_401));
   }
 
-  enduser_setup_http_disconnect (http_client);
+  os_free (data);
+  #if 0
+  /* being nice apparently costs us a lot of pcbs in time_wait state :( */
+  tcp_close (http_client);
+  return ERR_OK;
+  #else
+  tcp_abort (http_client);
+  return ERR_ABRT;
+  #endif
 }
 
 
-static void enduser_setup_http_connectcb(void *arg)
+static err_t enduser_setup_http_connectcb(void *arg, struct tcp_pcb *pcb, err_t err)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_connectcb");
-  struct espconn *callback_espconn = (struct espconn *) arg;
-
-  int8_t err = 0;
-  err |= espconn_regist_recvcb(callback_espconn, enduser_setup_http_recvcb);
-  err |= espconn_regist_disconcb(callback_espconn, on_disconnect);
-
-  if (err != 0)
+  if (!state)
   {
-    ENDUSER_SETUP_ERROR_VOID("http_connectcb failed. Callback registration failed.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    ENDUSER_SETUP_DEBUG("connect callback but no state?!");
+    tcp_abort (pcb);
+    return ERR_ABRT;
   }
+
+  tcp_accepted (state->http_pcb);
+  tcp_recv (pcb, enduser_setup_http_recvcb);
+  return ERR_OK;
 }
 
 
 static int enduser_setup_http_start(void)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_start");
-  state->espconn_http_tcp = (struct espconn *) c_malloc(sizeof(struct espconn));
-  if (state->espconn_http_tcp == NULL)
+  struct tcp_pcb *pcb = tcp_new ();
+  if (pcb == NULL)
   {
-    ENDUSER_SETUP_ERROR("http_start failed. Memory allocation failed (espconn_http_tcp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
-  }
-  esp_tcp *esp_tcp_data = (esp_tcp *) c_malloc(sizeof(esp_tcp));
-  if (esp_tcp_data == NULL)
-  {
-    ENDUSER_SETUP_ERROR("http_start failed. Memory allocation failed (esp_udp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
+    ENDUSER_SETUP_ERROR("http_start failed. Memory allocation failed (http_pcb == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  c_memset(state->espconn_http_tcp, 0, sizeof(struct espconn));
-  c_memset(esp_tcp_data, 0, sizeof(esp_tcp));
-  state->espconn_http_tcp->proto.tcp = esp_tcp_data;
-  state->espconn_http_tcp->type = ESPCONN_TCP;
-  state->espconn_http_tcp->state = ESPCONN_NONE;
-  esp_tcp_data->local_port = 80;
-
-  int8_t err;
-  err = espconn_regist_connectcb(state->espconn_http_tcp, enduser_setup_http_connectcb);
-  if (err != 0)
+  if (tcp_bind (pcb, IP_ADDR_ANY, 80) != ERR_OK)
   {
-    ENDUSER_SETUP_ERROR("http_start failed. Couldn't add receive callback.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
+    ENDUSER_SETUP_ERROR("http_start bind failed", ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  err = espconn_accept(state->espconn_http_tcp);
-  if (err == ESPCONN_ISCONN)
+  state->http_pcb = tcp_listen (pcb);
+  if (!state->http_pcb)
   {
-    ENDUSER_SETUP_ERROR("http_start failed. Couldn't create connection, already listening for that connection.", ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN, ENDUSER_SETUP_ERR_FATAL);
-  }
-  else if (err == ESPCONN_MEM)
-  {
-    ENDUSER_SETUP_ERROR("http_start failed. Couldn't create connection, out of memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
-  }
-  else if (err == ESPCONN_ARG)
-  {
-    ENDUSER_SETUP_ERROR("http_start failed. Can't find connection from espconn argument", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_FATAL);
-  }
-  else if (err != 0)
-  {
-    ENDUSER_SETUP_ERROR("http_start failed. Unknown error", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
+    tcp_abort(pcb); /* original wasn't freed for us */
+    ENDUSER_SETUP_ERROR("http_start listen failed", ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN, ENDUSER_SETUP_ERR_FATAL);
   }
 
+  tcp_accept (state->http_pcb, enduser_setup_http_connectcb);
+
+  /* TODO: check lwip tcp timeouts */
+#if 0
   err = espconn_regist_time(state->espconn_http_tcp, 2, 0);
   if (err == ESPCONN_ARG)
   {
     ENDUSER_SETUP_ERROR("http_start failed. Unable to set TCP timeout.", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_NONFATAL | ENDUSER_SETUP_ERR_NO_RETURN);
   }
+#endif
 
-  err = enduser_setup_http_load_payload();
+  int err = enduser_setup_http_load_payload();
   if (err == 1)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_start info. Loaded backup HTML.");
@@ -1112,9 +1127,10 @@ static void enduser_setup_http_stop(void)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_stop");
 
-  if (state != NULL && state->espconn_http_tcp != NULL)
+  if (state && state->http_pcb)
   {
-    espconn_delete(state->espconn_http_tcp);
+    tcp_close (state->http_pcb); /* cannot fail for listening sockets */
+    state->http_pcb = 0;
   }
 }
 
@@ -1246,14 +1262,6 @@ static void enduser_setup_free(void)
     c_free(state->espconn_dns_udp);
   }
 
-  if (state->espconn_http_tcp != NULL)
-  {
-    if (state->espconn_http_tcp->proto.tcp != NULL)
-    {
-      c_free(state->espconn_http_tcp->proto.tcp);
-    }
-    c_free(state->espconn_http_tcp);
-  }
   c_free(state->http_payload_data);
 
   free_scan_listeners ();
