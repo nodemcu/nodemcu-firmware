@@ -94,7 +94,7 @@ static wrapper_t *process_args(lua_State *L, phase_t phase, size_t *sizep)
       } else {
         // put in the key
 	c_strcpy(p, luaL_checkstring(L, -2));
-        result->mdns_info.txt_data[slot] = p;
+        result->mdns_info.txt_data[slot++] = p;
 	p = advance_over_string(p);
 
 	// now smash in the value

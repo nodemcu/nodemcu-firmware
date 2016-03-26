@@ -202,6 +202,9 @@ static uint8 mdns_flag = 0;
 //#if (DNS_USES_STATIC_BUF == 1)
 static u8_t mdns_payload[DNS_MSG_SIZE];
 //#endif /* (MDNS_USES_STATIC_BUF == 1) */
+void ICACHE_FLASH_ATTR
+mdns_set_hostname(char *name);
+
 /*
  *  Function to set the UDP pcb used to send the mDNS packages
  */
@@ -547,7 +550,7 @@ mdns_answer(u16_t type, const char* name, u8_t id) {
  * @return ERR_OK if packet is sent; an err_t indicating the problem otherwise
  */
 static err_t ICACHE_FLASH_ATTR
-mdns_send_service(struct mdns_info *info, u8_t id) {
+mdns_send_service(struct mdns_info *info, u16_t id, struct ip_addr *dst_addr, u16_t dst_port) {
 	err_t err;
 	struct mdns_hdr *hdr;
 	struct mdns_answer ans;
@@ -555,8 +558,8 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 	struct mdns_auth auth;
 	struct pbuf *p ,*p_sta;
 	char *query, *nptr;
+	char *query_end;
 	const char *pHostname;
-	char *device_info;
 	const char *name = info->host_name;
 	u8_t n;
 	u8_t i = 0;
@@ -565,6 +568,7 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 	struct netif * sta_netif = NULL;
 	struct netif * ap_netif = NULL;
 	static char tmpBuf[PUCK_DATASHEET_SIZE + PUCK_SERVICE_LENGTH];
+	u16_t dns_class = dst_addr ? DNS_RRCLASS_IN : DNS_RRCLASS_FLUSH_IN;
 	/* if here, we have either a new query or a retry on a previous query to process */
 	p = pbuf_alloc(PBUF_TRANSPORT,
 			SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
@@ -577,6 +581,7 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 		hdr->flags1 = DNS_FLAG1_RESPONSE;
 		hdr->numanswers = htons(4);
 		query = (char*) hdr + SIZEOF_DNS_HDR;
+		query_end = (char *) p->payload + p->tot_len;
 		os_strcpy(tmpBuf, PUCK_SERVICE);
 
 		pHostname = tmpBuf;
@@ -616,6 +621,8 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 		/* resize the query */
 		query = query + SIZEOF_DNS_ANSWER;
 
+		int name_offset = query - (const char *) hdr;
+
 		pHostname = tmpBuf;
 		--pHostname;
 		/* convert hostname into suitable query format. */
@@ -632,57 +639,62 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 		} while (*pHostname != 0);
 		*query++ = DNS_OFFSET_FLAG;
 		*query++ = DNS_DEFAULT_OFFSET;
-		pHostname = name;
-		--pHostname;
-		/* convert hostname into suitable query format. */
-		do {
-			++pHostname;
-			nptr = query;
-			++query;
-			for (n = 0; *pHostname != '.' && *pHostname != 0; ++pHostname) {
-				*query = *pHostname;
-				++query;
-				++n;
-			}
-			*nptr = n;
-		} while (*pHostname != 0);
-		//*query++ = '\0';
-		*query++ = DNS_OFFSET_FLAG;
-		*query++ = DNS_DEFAULT_OFFSET;
+
+		*query++ = 0xc0 + (name_offset >> 8);
+		*query++ = name_offset & 0xff;
 
 		/* fill the answer */
 		ans.type = htons(DNS_RRTYPE_TXT);
-		ans.class = htons(DNS_RRCLASS_FLUSH_IN);
+		ans.class = htons(dns_class);
 		ans.ttl = htonl(300);
 //		length = os_strlen(TXT_DATA) + MDNS_LENGTH_ADD + 1;
-		device_info = (char *)os_zalloc(50);
-		ets_sprintf(device_info,"vendor = %s","Espressif");
-		for(i = 0; i < 10 &&(info->txt_data[i] != NULL);i++) {
-			length += os_strlen(info->txt_data[i]);
-			length++;
+		const char *attributes[12];
+		int attr_count = 0;
+		for(i = 0; i < 10 && (info->txt_data[i] != NULL); i++) {
+		  if (strncmp(info->txt_data[i], "hostname=", 9) == 0) {
+		    mdns_set_hostname(info->txt_data[i] + 9);
+		  } else {
+		    length += os_strlen(info->txt_data[i]);
+		    length++;
+		    attributes[attr_count++] = info->txt_data[i];
+		  }
 		}
-		length += os_strlen(device_info)+ 1 ;
+		//os_printf("Found %d user attributes\n", i);
+		static const char *defaults[] = { "platform=nodemcu", NULL };
+		for(i = 0; defaults[i] != NULL; i++) {
+		  // See if this is a duplicate
+		  int j;
+		  int len = strchr(defaults[i], '=') + 1 - defaults[i];
+		  for (j = 0; j < attr_count; j++) {
+		    if (strncmp(attributes[j], defaults[i], len) == 0) {
+		      break;
+		    }
+		  }
+		  if (j == attr_count) {
+		    length += os_strlen(defaults[i]);
+		    length++;
+		    attributes[attr_count++] = defaults[i];
+		  }
+		}
+		//os_printf("Found %d total attributes\n", attr_count);
+
 		ans.len = htons(length);
-		length = 0;
 		MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
 		query = query + SIZEOF_DNS_ANSWER;
-		pHostname = device_info;
-		--pHostname;
-		/* convert hostname into suitable query format. */
-		do {
-			++pHostname;
-			nptr = query;
-			++query;
-			for (n = 0;  *pHostname != 0; ++pHostname) {
-				*query = *pHostname;
-				++query;
-				++n;
-			}
-			*nptr = n;
-		} while (*pHostname != 0);
+		// Check enough space in the packet
+	        const char *end_of_packet = query + length + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_SERVICE +
+		    os_strlen(host_name) + 7 + 1 + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_AUTH;
+
+	        if (query_end <= end_of_packet) {
+		  os_printf("Too much data to send\n");
+		  pbuf_free(p);
+		  return ERR_MEM;
+		}
+		//os_printf("Query=%x, query_end=%x, end_ofpacket=%x, length=%x\n", query, query_end, end_of_packet, length);
+
 		i = 0;
-		while(info->txt_data[i] != NULL && i < 10) {
-			pHostname = info->txt_data[i];
+		while(attributes[i] != NULL && i < attr_count) {
+			pHostname = attributes[i];
 			--pHostname;
 			/* convert hostname into suitable query format. */
 			do {
@@ -699,29 +711,16 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 			i++;
 		}
 //		*query++ = '\0';
-		os_free(device_info);
-		os_strcpy(tmpBuf, name);
-		pHostname = tmpBuf;
-		--pHostname;
-		do {
-			++pHostname;
-			nptr = query;
-			++query;
-			for (n = 0; *pHostname != '.' && *pHostname != 0; ++pHostname) {
-				*query = *pHostname;
-				++query;
-				++n;
-			}
-			*nptr = n;
-		} while (*pHostname != 0);
+		// Increment by length
+		*query++ = 0xc0 + (name_offset >> 8);
+		*query++ = name_offset & 0xff;
 
-		*query++ = DNS_OFFSET_FLAG;
-		*query++ = DNS_DEFAULT_OFFSET;
+		// Increment by 2
 
 		ans.type = htons(DNS_RRTYPE_SRV);
-		ans.class = htons(DNS_RRCLASS_FLUSH_IN);
+		ans.class = htons(dns_class);
 		ans.ttl = htonl(300);
-		os_strcpy(tmpBuf,service_name);
+		os_strcpy(tmpBuf,host_name);
 		os_strcat(tmpBuf, ".");
 		os_strcat(tmpBuf, MDNS_LOCAL);
 		length = os_strlen(tmpBuf) + MDNS_LENGTH_ADD;
@@ -739,6 +738,8 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 		/* resize the query */
 		query = query + SIZEOF_MDNS_SERVICE;
 
+		int hostname_offset = query - (const char *) hdr;
+
 		pHostname = tmpBuf;
 		--pHostname;
 		do {
@@ -753,31 +754,14 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 			*nptr = n;
 		} while (*pHostname != 0);
 		*query++ = '\0';
-		/* set the name of the authority field.
-		 * The same name as the Query using the offset address*/
-		os_strcpy(tmpBuf,service_name);
-		os_strcat(tmpBuf, ".");
-		os_strcat(tmpBuf, MDNS_LOCAL);
-		pHostname = tmpBuf;
-		--pHostname;
-		do {
-			++pHostname;
-			nptr = query;
-			++query;
-			for (n = 0; *pHostname != '.' && *pHostname != 0; ++pHostname) {
-				*query = *pHostname;
-				++query;
-				++n;
-			}
-			*nptr = n;
-		} while (*pHostname != 0);
-		*query++ = '\0';
-		/* set the name of the authority field.
-		 * The same name as the Query using the offset address*/
-		//*query++ = DNS_OFFSET_FLAG;
-		//*query++ = DNS_DEFAULT_OFFSET;
+
+		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer + sizeof_mdns_service
+		
+		*query++ = 0xc0 + (hostname_offset >> 8);
+		*query++ = hostname_offset & 0xff;
+
 		ans.type = htons(DNS_RRTYPE_A);
-		ans.class = htons(DNS_RRCLASS_FLUSH_IN);
+		ans.class = htons(dns_class);
 		ans.ttl = htonl(300);
 		ans.len = htons(DNS_IP_ADDR_LEN);
 
@@ -785,6 +769,9 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 
 		/* resize the query */
 		query = query + SIZEOF_DNS_ANSWER;
+		
+		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer 
+		
 
 		/* fill the payload of the mDNS message */
 		/* set the local IP address */
@@ -793,31 +780,39 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 		/* resize the query */
 		query = query + SIZEOF_MDNS_AUTH;
 
+		//os_printf("Final ptr=%x\n", query);
+
+		// increment by sizeof_mdns_auth
+
 		/* set the name of the authority field.
 		 * The same name as the Query using the offset address*/
 
 		/* resize pbuf to the exact dns query */
 		pbuf_realloc(p, (query) - ((char*) (p->payload)));
 		/* send dns packet */
-		sta_netif = (struct netif *)eagle_lwip_getif(0x00);
-		ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
-		if(wifi_get_opmode() == 0x03 && wifi_get_broadcast_if() == 0x03 &&\
-				sta_netif != NULL && ap_netif != NULL) {
-			if(netif_is_up(sta_netif) && netif_is_up(ap_netif)) {
+		if (dst_addr) {
+		  err = udp_sendto(mdns_pcb, p, dst_addr, dst_port);
+		} else {
+		  sta_netif = (struct netif *)eagle_lwip_getif(0x00);
+		  ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
+		  if(wifi_get_opmode() == 0x03 && wifi_get_broadcast_if() == 0x03 &&\
+				  sta_netif != NULL && ap_netif != NULL) {
+		    if(netif_is_up(sta_netif) && netif_is_up(ap_netif)) {
 
-				p_sta = pbuf_alloc(PBUF_TRANSPORT,
-							SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
-			  if (pbuf_copy (p_sta,p) != ERR_OK) {
-				  os_printf("mdns_send_service copying to new pbuf failed\n");
-				  return -1;
-			  }
-			  netif_set_default(sta_netif);
-			  err = udp_sendto(mdns_pcb, p_sta, &multicast_addr, DNS_MDNS_PORT);
-			  pbuf_free(p_sta);
-			  netif_set_default(ap_netif);
-			}
+		      p_sta = pbuf_alloc(PBUF_TRANSPORT,
+					SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
+		      if (pbuf_copy (p_sta,p) != ERR_OK) {
+			      os_printf("mdns_send_service copying to new pbuf failed\n");
+			      return -1;
+		      }
+		      netif_set_default(sta_netif);
+		      err = udp_sendto(mdns_pcb, p_sta, &multicast_addr, DNS_MDNS_PORT);
+		      pbuf_free(p_sta);
+		      netif_set_default(ap_netif);
+		    }
+		  }
+		  err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
 		}
-		err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
 
 		/* free pbuf */
 		pbuf_free(p);
@@ -837,13 +832,11 @@ mdns_send_service(struct mdns_info *info, u8_t id) {
 static void ICACHE_FLASH_ATTR
 mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 		u16_t port) {
-	u8_t i;
+	u16_t i;
 	struct mdns_hdr *hdr;
 	u8_t nquestions;
 	LWIP_UNUSED_ARG(arg);
 	LWIP_UNUSED_ARG(pcb);
-	LWIP_UNUSED_ARG(addr);
-	LWIP_UNUSED_ARG(port);
 	struct mdns_info *info = (struct mdns_info *)arg;
 	/* is the dns message too big ? */
 	if (p->tot_len > DNS_MSG_SIZE) {
@@ -864,7 +857,7 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 		hdr = (struct mdns_hdr*) mdns_payload;
 
 		i = htons(hdr->id);
-		if (i < DNS_TABLE_SIZE) {
+//		if (i < DNS_TABLE_SIZE) {
 
 			nquestions = htons(hdr->numquestions);
 			//nanswers   = htons(hdr->numanswers);
@@ -879,11 +872,33 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 				} else if (mdns_compare_name((unsigned char *) PUCK_SERVICE,
 						(unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
 					/* respond with the puck service*/
-					mdns_send_service(info, 0);
-				} else
+					mdns_send_service(info, i, addr, port);
+				} else {
+				  
+				  char tmpBuf[PUCK_DATASHEET_SIZE + PUCK_SERVICE_LENGTH];
+				  os_strcpy(tmpBuf,host_name);
+				  os_strcat(tmpBuf, ".");
+				  os_strcat(tmpBuf, MDNS_LOCAL);
+
+				  if (mdns_compare_name((unsigned char *) tmpBuf,
+						(unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
+					/* respond with the puck service*/
+					mdns_send_service(info, i, addr, port);
+				  } else {
+				    os_strcpy(tmpBuf,service_name);
+				    os_strcat(tmpBuf, ".");
+				    os_strcat(tmpBuf, PUCK_SERVICE);
+				    if (mdns_compare_name((unsigned char *) tmpBuf,
+						(unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
+					/* respond with the puck service*/
+					mdns_send_service(info, i, addr, port);
+				    } else {
 					goto memerr2;
+				    }
+				  }
+				}
 			}
-		}
+//		}
 	}
 	goto memerr2;
 	memerr2:
@@ -900,6 +915,8 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 void ICACHE_FLASH_ATTR
 mdns_close(void)
 {
+	os_timer_disarm(&mdns_timer);
+
 	if (mdns_pcb != NULL && ms_info != NULL)
 		udp_remove(mdns_pcb);
 		os_free(ms_info);
@@ -952,8 +969,7 @@ mdns_set_hostname(char *name) {
 		return;
 	}
 	if (os_strlen(name) + 3 <= MDNS_NAME_LENGTH ){
-		os_strncpy(host_name, name, os_strlen(name) );
-//		os_memset(host_name + os_strlen(host_name) ,0x00,3);
+		os_strcpy(host_name, name );
 	} else {
 		os_strncpy(host_name, name, MDNS_NAME_LENGTH);
 	}
@@ -995,6 +1011,7 @@ mdns_server_unregister(void) {
 				return;
 			};
 		}
+		os_timer_disarm(&mdns_timer);
 		register_flag = 0;
 	}
 }
@@ -1014,14 +1031,7 @@ mdns_server_register(void) {
 
 void ICACHE_FLASH_ATTR
 mdns_reg(struct mdns_info *info) {
-
-   static uint8 i = 0;
-   if (i <= 3) {
-	   mdns_send_service(info,0);
-	   i++;
-   } else {
-	   os_timer_disarm(&mdns_timer);
-   }
+   mdns_send_service(info,0,0,0);
 }
 
 /**
@@ -1097,9 +1107,12 @@ mdns_init(struct mdns_info *info) {
 		 * Register the name of the instrument
 		 */
 
+		//os_printf("About to start timer\n");
 		os_timer_disarm(&mdns_timer);
 		os_timer_setfn(&mdns_timer, (os_timer_func_t *)mdns_reg,ms_info);
-		os_timer_arm(&mdns_timer, 1000, 1);
+		os_timer_arm(&mdns_timer, 1000 * 120, 1);
+		/* kick off the first one right away */
+		mdns_reg(ms_info);
 	}
 }
 
