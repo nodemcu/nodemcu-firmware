@@ -382,6 +382,25 @@ node.compile('bigstuff.lua')
 #### See also
 [`node.compile()`](#nodecompile)
 
+## node.osprint()
+
+Controls whether the debugging output from the Espressif SDK is printed. Note that this is only available if
+the firmware is build with DEVELOPMENT_TOOLS defined.
+
+####Syntax
+`node.osprint(enabled)`
+
+#### Parameters
+- `enabled` This is either `true` to enable printing, or `false` to disable it. The default is `false`.
+
+#### Returns
+Nothing
+
+#### Example
+```lua
+node.osprint(true)
+```
+
 # node.egc module
 
 ## node.egc.setmode()

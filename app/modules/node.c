@@ -604,6 +604,20 @@ static int node_egc_setmode(lua_State* L) {
   legc_set_mode( L, mode, limit );
   return 0;
 }
+//
+// Lua: osprint(true/false)
+// Allows you to turn on the native Espressif SDK printing
+static int node_osprint( lua_State* L )
+{
+  if (lua_toboolean(L, 1)) {
+    system_set_os_print(1);
+  } else {
+    system_set_os_print(0);
+  }
+
+  return 0;  
+}
+
 // Module function map
 
 static const LUA_REG_TYPE node_egc_map[] = {
@@ -650,6 +664,9 @@ static const LUA_REG_TYPE node_map[] =
 #endif
   { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
   { LSTRKEY( "task" ), LROVAL( node_task_map ) },
+#ifdef DEVELOPMENT_TOOLS
+  { LSTRKEY( "osprint" ), LFUNCVAL( node_osprint ) },
+#endif
 
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },

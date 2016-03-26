@@ -170,9 +170,9 @@ void user_init(void)
     input_sig = task_get_id(handle_input);
     uart_init (br, br, input_sig);
 
-    #ifndef NODE_DEBUG
+#ifndef NODE_DEBUG
     system_set_os_print(0);
-    #endif
+#endif
 
     system_init_done_cb(nodemcu_init);
 }
