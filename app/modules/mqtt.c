@@ -125,10 +125,8 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
       mud->pesp_conn = NULL;
     }
 
-    if(mud->self_ref != LUA_NOREF){   // TODO: should we unref the client and delete it?
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
-      mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
-    }
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+    mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
   }
 
   if(call_back){
@@ -832,35 +830,21 @@ static int mqtt_delete( lua_State* L )
   // -------
 
   // free (unref) callback ref
-  if(LUA_NOREF!=mud->cb_connect_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
-    mud->cb_connect_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_connect_fail_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-    mud->cb_connect_fail_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_disconnect_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
-    mud->cb_disconnect_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_message_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
-    mud->cb_message_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_suback_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
-    mud->cb_suback_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_puback_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-    mud->cb_puback_ref = LUA_NOREF;
-  }
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+  mud->cb_connect_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
+  mud->cb_connect_fail_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+  mud->cb_disconnect_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
+  mud->cb_message_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
+  mud->cb_suback_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+  mud->cb_puback_ref = LUA_NOREF;
   lua_gc(L, LUA_GCSTOP, 0);
-  if(LUA_NOREF!=mud->self_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
-    mud->self_ref = LUA_NOREF;
-  }
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+  mud->self_ref = LUA_NOREF;
   lua_gc(L, LUA_GCRESTART, 0);
   NODE_DBG("leave mqtt_delete.\n");
   return 0;
@@ -1069,8 +1053,7 @@ static int mqtt_socket_connect( lua_State* L )
   // call back function when a connection is obtained, tcp only
   if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(mud->cb_connect_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     stack++;
   }
@@ -1078,15 +1061,13 @@ static int mqtt_socket_connect( lua_State* L )
     // call back function when a connection fails
   if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(mud->cb_connect_fail_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
     mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     stack++;
   }
 
   lua_pushvalue(L, 1);  // copy userdata to the top of stack
-  if(mud->self_ref != LUA_NOREF)
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
   mud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   espconn_status = espconn_regist_connectcb(pesp_conn, mqtt_socket_connected);
@@ -1191,16 +1172,13 @@ static int mqtt_socket_on( lua_State* L )
   lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 
   if( sl == 7 && c_strcmp(method, "connect") == 0){
-    if(mud->cb_connect_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else if( sl == 7 && c_strcmp(method, "offline") == 0){
-    if(mud->cb_disconnect_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
     mud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else if( sl == 7 && c_strcmp(method, "message") == 0){
-    if(mud->cb_message_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
     mud->cb_message_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else{
     lua_pop(L, 1);
@@ -1298,8 +1276,7 @@ static int mqtt_socket_unsubscribe( lua_State* L ) {
 
   if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
     lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
-    if( mud->cb_unsuback_ref != LUA_NOREF )
-      luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref );
+    luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref );
     mud->cb_unsuback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
   }
 
@@ -1414,8 +1391,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
 
   if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
     lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
-    if( mud->cb_suback_ref != LUA_NOREF )
-      luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
+    luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
     mud->cb_suback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
   }
 
@@ -1490,8 +1466,7 @@ static int mqtt_socket_publish( lua_State* L )
 
   if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(mud->cb_puback_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
     mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
