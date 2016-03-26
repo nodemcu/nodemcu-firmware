@@ -17,6 +17,10 @@ Register a hostname and start the mDNS service. If the service is already runnin
 - `port` The port number for the primary service.
 - `attributes` A optional table of up to 10 attributes to be exposed. The keys must all be strings.
 
+There is a special option where you can specify (essentially) two hostnames. One is the pretty name, and the other is the simple name. In order to do this,
+you specify the pretty name as the hostname parameter, and then add an attribute with key hostname and value of the simple name. See the second example below 
+for an example.
+
 #### Returns
 `nil`
 
@@ -28,6 +32,8 @@ Various errors can be generated during argument validation. The NodeMCU must hav
     mdns.register("fishtank", "http", 80, { hardware='NodeMCU'})
 
 Using `dns-sd` on OS X, you can see `fishtank.local` as providing the `_http._tcp` service. You can also browse directly to `fishtank.local`. In Safari you can get all the mDNS web pages as part of your bookmarks menu.
+
+    mdns.register("Top Fishtank", "http", 80, { hostname='toptank', location='Living Room' })
 
 ## mdns.close()
 Shut down the mDNS service. This is not normally needed.
