@@ -1,6 +1,5 @@
 #include "module.h"
 #include "lauxlib.h"
-#include "lmem.h"
 #include "platform.h"
 #include "c_stdlib.h"
 #include "c_string.h"
@@ -69,55 +68,6 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t *pixels, uint32_t length) {
 
   } while(pixels < end);
 
-}
-
-// Lua: ws2812.writergb("string")
-// Byte triples in the string are interpreted as R G B values and sent to the hardware as G R B.
-//
-// ws2812.init() should be called first
-//
-// ws2812.writergb(string.char(255, 0, 0)) sets the first LED red.
-// ws2812.writergb(string.char(0, 0, 255):rep(10)) sets ten LEDs blue.
-// ws2812.writergb(string.char(0, 255, 0, 255, 255, 255)) first LED green, second LED white.
-static int ICACHE_FLASH_ATTR ws2812_writergb(lua_State* L) {
-  size_t length;
-  const char *rgb;
-
-  // Buffer or string
-  if(lua_isuserdata(L, 1)) {
-    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 2);
-
-    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 2, "ws2812.buffer expected");
-
-    rgb = &buffer->values[0];
-    length = 3*buffer->size;
-  } else {
-    rgb = luaL_checklstring(L, 1, &length);
-  }
-
-  // dont modify lua-internal lstring - make a copy instead
-  char *buffer = (char *)luaM_malloc(L, length);
-  c_memcpy(buffer, rgb, length);
-
-  // Ignore incomplete Byte triples at the end of buffer:
-  length -= length % 3;
-
-  // Rearrange R G B values to G R B order needed by WS2812 LEDs:
-  size_t i;
-  for (i = 0; i < length; i += 3)
-  {
-    const char r = buffer[i];
-    const char g = buffer[i + 1];
-    buffer[i] = g;
-    buffer[i + 1] = r;
-  }
-
-  // Send the buffer
-  ws2812_write((uint8_t*) buffer, length);
-
-  luaM_free(L, buffer);
-
-  return 0;
 }
 
 // Lua: ws2812.write("string")
@@ -306,7 +256,6 @@ static const LUA_REG_TYPE ws2812_buffer_map[] =
 
 static const LUA_REG_TYPE ws2812_map[] =
 {
-  { LSTRKEY( "writergb" ), LFUNCVAL( ws2812_writergb )},
   { LSTRKEY( "write" ), LFUNCVAL( ws2812_writegrb )},
   { LSTRKEY( "newBuffer" ), LFUNCVAL( ws2812_new_buffer )},
   { LSTRKEY( "init" ),     LFUNCVAL( ws2812_init )},
