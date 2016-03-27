@@ -80,19 +80,7 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t *pixels, uint32_t length) {
 // ws2812.write(string.char(255, 0, 0, 255, 255, 255)) first LED green, second LED white.
 static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
   size_t length;
-  const char *values;
-
-  // Buffer or string
-  if(lua_isuserdata(L, 1)) {
-    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 2);
-
-    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 2, "ws2812.buffer expected");
-
-    values = &buffer->values[0];
-    length = 3*buffer->size;
-  } else {
-    values = luaL_checklstring(L, 1, &length);
-  }
+  const char *values = luaL_checklstring(L, 1, &length);
 
   // Send the buffer
   ws2812_write((uint8_t*) values, length);
