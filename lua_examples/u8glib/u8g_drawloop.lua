@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 -- u8glib example which shows how to implement the draw loop without causing
 -- timeout issues with the WiFi stack. This is done by drawing one page at
--- a time, allowing the ESP SDK to do it's house keeping between the page
+-- a time, allowing the ESP SDK to do its house keeping between the page
 -- draws.
 --
 -- This example assumes you have an SSD1306 display connected to pins 4 and 5
@@ -9,10 +9,9 @@
 -- Please edit the init_display function to match your setup.
 --  
 -- Example:
--- dofile("u8g_displayloop.lua")
+-- dofile("u8g_drawloop.lua")
 ------------------------------------------------------------------------------
 
-local updateDrawFunc
 local disp
 local font
 
@@ -32,17 +31,16 @@ local function setLargeFont()
   disp:setFontPosTop()
 end
 
--- Draws one page and schedules the next page, if there is one
-local function drawPages()
-  updateDrawFunc()
-  if (disp:nextPage() == true) then
-    node.task.post(drawPages)
-  end
-end  
-
 -- Start the draw loop with the draw implementation in the provided function callback
 function updateDisplay(func)
-  updateDrawFunc = func
+  -- Draws one page and schedules the next page, if there is one
+  local function drawPages()
+    func()
+    if (disp:nextPage() == true) then
+      node.task.post(drawPages)
+    end
+  end
+  -- Restart the draw loop and start drawing pages
   disp:firstPage()
   node.task.post(drawPages)
 end
@@ -58,18 +56,18 @@ function drawWorld()
 end
 
 local drawDemo = { drawHello, drawWorld }
-local drawIndex = 1
 
 function demoLoop()
   -- Start the draw loop with one of the demo functions
-  updateDisplay(drawDemo[drawIndex])
-  drawIndex = drawIndex + 1
-  if drawDemo[drawIndex] == nil then
-    drawIndex = 1
-  end  
+  local f = table.remove(drawDemo,1)  
+  updateDisplay(f)
+  table.insert(drawDemo,f)
 end
 
--- Initialise the display and start the demo loop
+-- Initialise the display
 init_display()
+
+-- Draw demo page immediately and then schedule an update every 5 seconds.
+-- To test your own drawXYZ function, disable the next two lines and call updateDisplay(drawXYZ) instead.
 demoLoop()
 tmr.alarm(4, 5000, 1, demoLoop)
