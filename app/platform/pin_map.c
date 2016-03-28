@@ -1,45 +1,57 @@
 #include "pin_map.h"
 #include "eagle_soc.h"
-#if 0
-uint32_t pin_mux[GPIO_PIN_NUM] = {PERIPHS_IO_MUX_MTDI_U,  PERIPHS_IO_MUX_MTCK_U,  PERIPHS_IO_MUX_MTMS_U, 	 PERIPHS_IO_MUX_MTDO_U,
-								  PERIPHS_IO_MUX_U0RXD_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_SD_DATA2_U, PERIPHS_IO_MUX_SD_DATA3_U,
-								  PERIPHS_IO_MUX_GPIO0_U, PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_GPIO4_U, 	 PERIPHS_IO_MUX_GPIO5_U};
+#include "mem.h"
+#include "osapi.h"
 
-uint8_t pin_num[GPIO_PIN_NUM] = {12, 13, 14, 15,
-								  3,  1,  9, 10,
-								  0,  2,  4,  5};
-
-uint8_t pin_func[GPIO_PIN_NUM] = {FUNC_GPIO12, FUNC_GPIO13, FUNC_GPIO14, FUNC_GPIO15,
-								  FUNC_GPIO3,  FUNC_GPIO1,  FUNC_GPIO9,  FUNC_GPIO10,
-								  FUNC_GPIO0,  FUNC_GPIO2,  FUNC_GPIO4,  FUNC_GPIO5};
-
+uint32_t pin_mux[GPIO_PIN_NUM];
+uint8_t  pin_num[GPIO_PIN_NUM];
+uint8_t  pin_func[GPIO_PIN_NUM];
 #ifdef GPIO_INTERRUPT_ENABLE
-GPIO_INT_TYPE pin_int_type[GPIO_PIN_NUM] = {
-								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
-								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
-								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE};
+uint8_t  pin_num_inv[GPIO_PIN_NUM_INV];
+uint8_t  pin_int_type[GPIO_PIN_NUM];
 #endif
-#else
-uint32_t pin_mux[GPIO_PIN_NUM] = {PAD_XPD_DCDC_CONF,  PERIPHS_IO_MUX_GPIO5_U,  PERIPHS_IO_MUX_GPIO4_U, 	 PERIPHS_IO_MUX_GPIO0_U,
-								  PERIPHS_IO_MUX_GPIO2_U, PERIPHS_IO_MUX_MTMS_U, PERIPHS_IO_MUX_MTDI_U, PERIPHS_IO_MUX_MTCK_U,
-								  PERIPHS_IO_MUX_MTDO_U, PERIPHS_IO_MUX_U0RXD_U, PERIPHS_IO_MUX_U0TXD_U, PERIPHS_IO_MUX_SD_DATA2_U,
-								  PERIPHS_IO_MUX_SD_DATA3_U };
 
-uint8_t pin_num[GPIO_PIN_NUM] = {16, 5, 4, 0,
-								  2,  14,  12, 13,
-								  15,  3,  1, 9,
-								  10};
+typedef struct {
+  int8  mux;
+  uint8 num;
+  uint8 func;
+  uint8 intr_type;
+} pin_rec;
+#define DECLARE_PIN(n,p) { (PERIPHS_IO_MUX_##p##_U - PERIPHS_IO_MUX), n, FUNC_GPIO##n, GPIO_PIN_INTR_DISABLE}
+static const pin_rec pin_map[] = {
+   {PAD_XPD_DCDC_CONF  - PERIPHS_IO_MUX, 16, 0, GPIO_PIN_INTR_DISABLE},
+    DECLARE_PIN( 5, GPIO5),
+    DECLARE_PIN( 4, GPIO4),
+    DECLARE_PIN( 0, GPIO0),
+    DECLARE_PIN( 2, GPIO2),
+    DECLARE_PIN(14, MTMS),
+    DECLARE_PIN(12, MTDI),
+    DECLARE_PIN(13, MTCK),
+    DECLARE_PIN(15, MTDO),
+    DECLARE_PIN( 3, U0RXD),
+    DECLARE_PIN( 1, U0TXD),
+    DECLARE_PIN( 9, SD_DATA2),
+    DECLARE_PIN(10, SD_DATA3)
+};
+void get_pin_map(void) {
+  /*
+   * Flash copy of the pin map.  This has to be copied to RAM to be accessible from the ISR.
+   * Note that the mux field is a signed offset from PERIPHS_IO_MUX to allow the whole struct
+   * to be stored in a single 32-bit record.
+   */
+  int i;
+  /* Take temporary stack copy to avoid unaligned exceptions on Flash version */
+  pin_rec pin[GPIO_PIN_NUM];
+  os_memcpy(pin, pin_map, sizeof(pin_map) );
 
-uint8_t pin_func[GPIO_PIN_NUM] = {0, FUNC_GPIO5, FUNC_GPIO4, FUNC_GPIO0,
-								  FUNC_GPIO2,  FUNC_GPIO14,  FUNC_GPIO12,  FUNC_GPIO13,
-								  FUNC_GPIO15,  FUNC_GPIO3,  FUNC_GPIO1, FUNC_GPIO9,
-								  FUNC_GPIO10};
-
+  for (i=0; i<GPIO_PIN_NUM; i++) {
+    pin_mux[i]  = pin[i].mux + PERIPHS_IO_MUX;
+    pin_func[i] = pin[i].func;
+    pin_num[i]  = pin[i].num;
 #ifdef GPIO_INTERRUPT_ENABLE
-GPIO_INT_TYPE pin_int_type[GPIO_PIN_NUM] = {
-								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
-								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
-								GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_DISABLE,
-								GPIO_PIN_INTR_DISABLE};
+    pin_num_inv[pin_num[i]] = i;
+    pin_int_type[i]         = pin[i].intr_type;
 #endif
-#endif
+  }
+}
+

@@ -847,7 +847,7 @@ espconn_get_connection_info(struct espconn *pespconn, remot_info **pcon_info, ui
 			break;
 		case ESPCONN_UDP:
 			while(plist != NULL){
-				if (plist->pespconn && plist->pespconn->type == ESPCONN_UDP){
+				if (plist->pespconn == pespconn){
 					premot[pespconn->link_cnt].state = plist->pespconn->state;
 					premot[pespconn->link_cnt].remote_port = plist->pcommon.remote_port;
 					os_memcpy(premot[pespconn->link_cnt].remote_ip, plist->pcommon.remote_ip, 4);
@@ -860,6 +860,8 @@ espconn_get_connection_info(struct espconn *pespconn, remot_info **pcon_info, ui
 			break;
 	}
 	*pcon_info = premot;
+	if (pespconn->link_cnt == 0)
+		return ESPCONN_ARG;
 	return ESPCONN_OK;
 }
 
@@ -954,11 +956,42 @@ espconn_disconnect(struct espconn *espconn)
     	/*protect for redisconnection*/
     	if (espconn->state == ESPCONN_CLOSE)
     		return ESPCONN_INPROGRESS;
-    	espconn_tcp_disconnect(pnode);
+    	espconn_tcp_disconnect(pnode,0);	//1 force, 0 normal
     	return ESPCONN_OK;
     } else
     	return ESPCONN_ARG;
 }
+
+/******************************************************************************
+ * FunctionName : espconn_abort
+ * Description  : Forcely abort with host
+ * Parameters   : espconn -- the espconn used to disconnect the connection
+ * Returns      : none
+*******************************************************************************/
+sint8 ICACHE_FLASH_ATTR
+espconn_abort(struct espconn *espconn)
+{
+	espconn_msg *pnode = NULL;
+	bool value = false;
+
+    if (espconn == NULL) {
+        return ESPCONN_ARG;;
+    } else if (espconn ->type != ESPCONN_TCP)
+    	return ESPCONN_ARG;
+
+    /*Find the node depend on the espconn message*/
+    value = espconn_find_connection(espconn, &pnode);
+
+    if (value){
+    	/*protect for redisconnection*/
+    	if (espconn->state == ESPCONN_CLOSE)
+    		return ESPCONN_INPROGRESS;
+    	espconn_tcp_disconnect(pnode,1);	//1 force, 0 normal
+    	return ESPCONN_OK;
+    } else
+    	return ESPCONN_ARG;
+}
+
 
 /******************************************************************************
  * FunctionName : espconn_get_packet_info
@@ -1215,7 +1248,7 @@ espconn_port(void)
     static uint32 randnum = 0;
 
     do {
-        port = system_get_time();
+        port = os_random();
 
         if (port < 0) {
             port = os_random() - port;

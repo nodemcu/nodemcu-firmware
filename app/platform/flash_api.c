@@ -27,7 +27,7 @@ static const uint8_t flash_init_data[128] =
     0xE1, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x93, 0x43, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, INIT_107, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    0x03, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 uint32_t flash_detect_size_byte(void)
@@ -132,13 +132,13 @@ uint32_t flash_rom_get_size_byte(void)
             // 32Mbit, 4MByte
             flash_size = 4 * 1024 * 1024;
             break;
-        case SIZE_64MBIT:
-            // 64Mbit, 8MByte
-            flash_size = 8 * 1024 * 1024;
+        case SIZE_16MBIT_8M_8M:
+            // 16Mbit, 2MByte
+            flash_size = 2 * 1024 * 1024;
             break;
-        case SIZE_128MBIT:
-            // 128Mbit, 16MByte
-            flash_size = 16 * 1024 * 1024;
+        case SIZE_32MBIT_8M_8M:
+            // 32Mbit, 4MByte
+            flash_size = 4 * 1024 * 1024;
             break;
         default:
             // Unknown flash size, fall back mode.
@@ -206,16 +206,18 @@ bool flash_rom_set_size_byte(uint32_t size)
         flash_size = SIZE_32MBIT;
         flash_rom_set_size_type(flash_size);
         break;
+        /*
     case 8 * 1024 * 1024:
         // 64Mbit, 8MByte
-        flash_size = SIZE_64MBIT;
+        flash_size = SIZE_16MBIT_8M_8M;
         flash_rom_set_size_type(flash_size);
         break;
     case 16 * 1024 * 1024:
         // 128Mbit, 16MByte
-        flash_size = SIZE_128MBIT;
+        flash_size = SIZE_32MBIT_8M_8M;
         flash_rom_set_size_type(flash_size);
         break;
+        */
     default:
         // Unknown flash size.
         result = false;
@@ -372,13 +374,6 @@ bool flash_init_data_blank(void)
     }
 
     return result ;
-}
-
-bool flash_self_destruct(void)
-{
-    // Dangerous, Erase your flash. Good bye!
-    SPIEraseChip();
-    return true;
 }
 
 uint8_t byte_of_aligned_array(const uint8_t *aligned_array, uint32_t index)

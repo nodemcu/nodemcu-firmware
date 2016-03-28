@@ -122,6 +122,39 @@ int ICACHE_FLASH_ATTR crypto_hash (const digest_mech_info_t *mi,
 }
 
 
+int ICACHE_FLASH_ATTR crypto_fhash (const digest_mech_info_t *mi,
+  read_fn read, int readarg,
+  uint8_t *digest)
+{
+  if (!mi)
+    return EINVAL;
+
+  // Initialise
+  void *ctx = (void *)os_malloc (mi->ctx_size);
+  if (!ctx)
+    return ENOMEM;
+  mi->create (ctx);
+
+  // Hash bytes from file in blocks
+  uint8_t* buffer = (uint8_t*)os_malloc (mi->block_size);
+  if (!buffer)
+    return ENOMEM;
+  
+  int read_len = 0;
+  do {
+    read_len = read(readarg, buffer, mi->block_size);
+    mi->update (ctx, buffer, read_len);
+  } while (read_len == mi->block_size);
+
+  // Finish up
+  mi->finalize (digest, ctx);
+
+  os_free (buffer);
+  os_free (ctx);
+  return 0;
+}
+
+
 int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
    const char *data, size_t data_len,
    const char *key, size_t key_len,

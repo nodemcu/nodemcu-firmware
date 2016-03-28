@@ -2,7 +2,7 @@
 #define SPI_APP_H
 
 #include "spi_register.h"
-#include "ets_sys.h"
+#include "rom.h"
 #include "osapi.h"
 #include "uart.h"
 #include "os_type.h"
@@ -20,9 +20,9 @@ void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit);
 //spi master init funtion
 void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_div);
 // fill MOSI buffer
-void spi_set_mosi(uint8 spi_no, uint8 offset, uint8 bitlen, uint32 data);
+void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data);
 // retrieve data from MISO buffer
-uint32 spi_get_miso(uint8 spi_no, uint8 offset, uint8 bitlen);
+uint32 spi_mast_get_miso(uint8 spi_no, uint16 offset, uint8 bitlen);
 // initiate SPI transaction
 void spi_mast_transaction(uint8 spi_no, uint8 cmd_bitlen, uint16 cmd_data, uint8 addr_bitlen, uint32 addr_data,
                           uint16 mosi_bitlen, uint8 dummy_bitlen, sint16 miso_bitlen);

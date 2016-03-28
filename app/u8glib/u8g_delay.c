@@ -71,7 +71,7 @@
 #  define USE_AVR_DELAY
 #elif defined(__18CXX)
 #  define USE_PIC18_DELAY
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__XTENSA__)
 /* do not define anything, all procedures are expected to be defined outside u8glib */
 
 /*

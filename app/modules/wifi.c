@@ -6,13 +6,18 @@
 
 #include "c_string.h"
 #include "c_stdlib.h"
+#include "ctype.h"
 
 #include "c_types.h"
 #include "user_interface.h"
+
+#ifdef WIFI_SMART_ENABLE
 #include "smart.h"
 #include "smartconfig.h"
 
 static int wifi_smart_succeed = LUA_NOREF;
+#endif
+
 static uint8 getap_output_format=0;
 
 //wifi.sleep variables
@@ -22,10 +27,11 @@ static bool FLAG_wifi_force_sleep_enabled=0;
 
 //variables for wifi event monitor
 static sint32_t wifi_status_cb_ref[6] = {LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF,LUA_NOREF};
-static volatile os_timer_t wifi_sta_status_timer;
+static os_timer_t wifi_sta_status_timer;
 static uint8 prev_wifi_status=0;
 
 
+#ifdef WIFI_SMART_ENABLE
 #if defined( NODE_SMART_OLDSTYLE )
 #else
 static lua_State* smart_L = NULL;
@@ -74,6 +80,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 
 #endif // defined( NODE_SMART_OLDSTYLE )
 }
+#endif // WIFI_SMART_ENABLE
 
 static int wifi_scan_succeed = LUA_NOREF;
 static lua_State* gL = NULL;
@@ -97,7 +104,6 @@ static void wifi_scan_done(void *arg, STATUS status)
   if (status == OK)
   {
     struct bss_info *bss_link = (struct bss_info *)arg;
-    bss_link = bss_link->next.stqe_next;//ignore first
     lua_newtable( gL );
 
     while (bss_link != NULL)
@@ -142,6 +148,7 @@ static void wifi_scan_done(void *arg, STATUS status)
   }
 }
 
+#ifdef WIFI_SMART_ENABLE
 // Lua: smart(channel, function succeed_cb)
 // Lua: smart(type, function succeed_cb)
 static int wifi_start_smart( lua_State* L )
@@ -224,6 +231,7 @@ static int wifi_exit_smart( lua_State* L )
   wifi_smart_succeed = LUA_NOREF;
   return 0;  
 }
+#endif // WIFI_SMART_ENABLE
 
 // Lua: realmode = setmode(mode)
 static int wifi_setmode( lua_State* L )
@@ -920,6 +928,61 @@ static int wifi_station_listap( lua_State* L )
   }
 }
 
+// Lua: wifi.sta.gethostname()
+static int wifi_sta_gethostname( lua_State* L )
+{
+	char* hostname = wifi_station_get_hostname();
+	lua_pushstring(L, hostname);
+  return 1;
+}
+
+static uint8 wifi_sta_sethostname(const char *hostname, size_t len)
+{
+  uint8 status;
+  if(hostname[0]!='-' && hostname[len-1]!='-' && (len >= 1 && len <= 32))
+  {
+    uint8 i=0;
+	while(hostname[i])
+	{
+      if(!(isalnum(hostname[i])||hostname[i]=='-'))
+      {
+	    return 2;
+      }
+      i++;
+    }
+    status=wifi_station_set_hostname((char*)hostname);
+  }
+  else
+  {
+    return 2;
+  }
+  return status;
+}
+
+// Lua: wifi.sta.sethostname()
+static int wifi_sta_sethostname_lua( lua_State* L )
+{
+  size_t len;
+  const char *hostname = luaL_checklstring(L, 1, &len);
+  uint8 retval = wifi_sta_sethostname(hostname, len);
+  NODE_DBG("\n\tstring is: \"%s\"\n\tlength is: %u\t wifi_sta_sethostname returned: %u\n", hostname, len, retval);
+  if(retval==0)
+  {
+	lua_pushboolean(L, 0);
+	return 1;
+  }
+  else if (retval==1)
+  {
+    lua_pushboolean(L, 1);
+    return 1;
+  }
+  else if (retval==2)
+  {
+    return luaL_error(L, "Invalid hostname!");
+  }
+}
+
+
 // Lua: wifi.sta.status()
 static int wifi_station_status( lua_State* L )
 {
@@ -928,117 +991,65 @@ static int wifi_station_status( lua_State* L )
   return 1; 
 }
 
-/**
-  * wifi.sta.eventMonStop()
-  * Description:
-  * 	Stop wifi station event monitor
-  * Syntax:
-  * 	wifi.sta.eventMonStop()
-  * 	wifi.sta.eventMonStop("unreg all")
-  * Parameters:
-  * 	"unreg all": unregister all previously registered functions
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
-  	  	  --stop wifi event monitor
-  	  	  wifi.sta.eventMonStop()
-
-  	  	  --stop wifi event monitor and unregister all callbacks
-  	  	  wifi.sta.eventMonStop("unreg all")
-  */
-static void wifi_station_event_mon_stop(lua_State* L)
+// wifi.sta.eventMonStop()
+void wifi_station_event_mon_stop(lua_State* L)
 {
   os_timer_disarm(&wifi_sta_status_timer);
   if(lua_isstring(L,1))
   {
-
-    if (c_strcmp(luaL_checkstring(L, 1), "unreg all")==0)
+    int i;
+    for (i=0; i<6; i++)
     {
-	  int i;
-	  for (i=0;i<6;i++)
+  	  if(wifi_status_cb_ref[i] != LUA_NOREF)
   	  {
-  	    if(wifi_status_cb_ref[i] != LUA_NOREF)
-	    {
-		  luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[i]);
-		  wifi_status_cb_ref[i] = LUA_NOREF;
-	    }
+		luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[i]);
+		wifi_status_cb_ref[i] = LUA_NOREF;
 	  }
     }
   }
+  return;
 }
 
 static void wifi_status_cb(int arg)
 {
-  if (wifi_get_opmode()==2)
+  lua_State* L = lua_getstate();
+  if (wifi_get_opmode() == SOFTAP_MODE)
   {
-	  os_timer_disarm(&wifi_sta_status_timer);
-	  return;
+    os_timer_disarm(&wifi_sta_status_timer);
+    return;
   }
-  int wifi_status=wifi_station_get_connect_status();
-  if (wifi_status!=prev_wifi_status)
+  int wifi_status = wifi_station_get_connect_status();
+  if (wifi_status != prev_wifi_status)
   {
- 	if(wifi_status_cb_ref[wifi_status]!=LUA_NOREF)
- 	{
-	  lua_rawgeti(gL, LUA_REGISTRYINDEX, wifi_status_cb_ref[wifi_status]);
-	  lua_call(gL, 0, 0);
- 	}
+    if(wifi_status_cb_ref[wifi_status] != LUA_NOREF)
+    {
+      lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[wifi_status]);
+      lua_pushnumber(L, prev_wifi_status);
+      lua_call(L, 1, 0);
+    }
   }
-  prev_wifi_status=wifi_status;
+  prev_wifi_status = wifi_status;
 }
 
-/**
-  * wifi.sta.eventMonReg()
-  * Description:
-  * 	Register callback for wifi station status event
-  * Syntax:
-  * 	wifi.sta.eventMonReg(wifi_status, function)
-  * 	wifi.sta.eventMonReg(wifi.status, "unreg") //unregister callback
-  * Parameters:
-  * 	wifi_status: wifi status you would like to set callback for
-  * 		Valid wifi states:
-  * 			wifi.STA_IDLE
-  *				wifi.STA_CONNECTING
-  *				wifi.STA_WRONGPWD
-  *				wifi.STA_APNOTFOUND
-  *  			wifi.STA_FAIL
-  *  			wifi.STA_GOTIP
-  * 	function: function to perform
-  * 	"unreg": unregister previously registered function
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
-  	  	--register callback
-  	  	wifi.sta.eventMonReg(0, function() print("STATION_IDLE") end)
-		wifi.sta.eventMonReg(1, function() print("STATION_CONNECTING") end)
-		wifi.sta.eventMonReg(2, function() print("STATION_WRONG_PASSWORD") end)
-		wifi.sta.eventMonReg(3, function() print("STATION_NO_AP_FOUND") end)
-		wifi.sta.eventMonReg(4, function() print("STATION_CONNECT_FAIL") end)
-		wifi.sta.eventMonReg(5, function() print("STATION_GOT_IP") end)
-
-		--unregister callback
-		wifi.sta.eventMonReg(0, "unreg")
-  */
-static int wifi_station_event_mon_reg(lua_State* L)
+// wifi.sta.eventMonReg()
+int wifi_station_event_mon_reg(lua_State* L)
 {
-  gL=L;
-  uint8 id=luaL_checknumber(L, 1);
-  if (!(id >= 0 && id <=5))
+  uint8 id=(uint8)luaL_checknumber(L, 1);
+  if ((id > 5)) // verify user specified a valid wifi status
   {
-	return luaL_error( L, "valid wifi status:0-5" );
+    return luaL_error( L, "valid wifi status:0-5" );
   }
 
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION) //check if 2nd item on stack is a function
   {
-    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, 2); //push function to top of stack
     if(wifi_status_cb_ref[id] != LUA_NOREF)
     {
       luaL_unref(L, LUA_REGISTRYINDEX, wifi_status_cb_ref[id]);
     }
     wifi_status_cb_ref[id] = luaL_ref(L, LUA_REGISTRYINDEX);
   }
-  else if (c_strcmp(luaL_checkstring(L, 2), "unreg")==0)
+  else
   {
     if(wifi_status_cb_ref[id] != LUA_NOREF)
     {
@@ -1050,25 +1061,7 @@ static int wifi_station_event_mon_reg(lua_State* L)
 }
 
 
-/**
-  * wifi.sta.eventMonStart()
-  * Description:
-  * 	Start wifi station event monitor
-  * Syntax:
-  * 	wifi.sta.eventMonStart()
-  * 	wifi.sta.eventMonStart(mS)
-  * Parameters:
-  * 	mS:interval between checks in milliseconds. defaults to 150 mS if not provided
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
- 		--start wifi event monitor with default interval
- 		wifi.sta.eventMonStart()
-
- 		--start wifi event monitor with 100 mS interval
- 		wifi.sta.eventMonStart(100)
-  */
+//wifi.sta.eventMonStart()
 static int wifi_station_event_mon_start(lua_State* L)
 {
   if(wifi_get_opmode() == SOFTAP_MODE)
@@ -1349,6 +1342,8 @@ static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "getmac" ),        LFUNCVAL( wifi_station_getmac ) },
   { LSTRKEY( "setmac" ),        LFUNCVAL( wifi_station_setmac ) },
   { LSTRKEY( "getap" ),         LFUNCVAL( wifi_station_listap ) },
+  { LSTRKEY( "sethostname" ),   LFUNCVAL( wifi_sta_sethostname_lua ) },
+  { LSTRKEY( "gethostname" ),   LFUNCVAL( wifi_sta_gethostname ) },
   { LSTRKEY( "status" ),        LFUNCVAL( wifi_station_status ) },
   { LSTRKEY( "eventMonReg" ),   LFUNCVAL( wifi_station_event_mon_reg ) },
   { LSTRKEY( "eventMonStart" ), LFUNCVAL( wifi_station_event_mon_start ) },
@@ -1384,8 +1379,10 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "sleep" ),          LFUNCVAL( wifi_sleep ) },
+#ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ),      LFUNCVAL( wifi_exit_smart ) },
+#endif
   { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_sleeptype ) },
 
   { LSTRKEY( "sta" ),            LROVAL( wifi_station_map ) },
@@ -1421,4 +1418,40 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(WIFI, "wifi", wifi_map, NULL);
+int luaopen_wifi( lua_State *L )
+{
+#ifndef WIFI_STA_HOSTNAME
+  char temp[32];
+  uint8_t mac[6];
+  wifi_get_macaddr(STATION_IF, mac);
+  c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
+  wifi_sta_sethostname((const char*)temp, strlen(temp));
+
+ #elif defined(WIFI_STA_HOSTNAME) && !defined(WIFI_STA_HOSTNAME_APPEND_MAC)
+  const char* hostname=WIFI_STA_HOSTNAME;
+  uint8 retval=wifi_sta_sethostname(hostname, strlen(hostname));
+  if(retval!=1)
+  {
+    char temp[32];
+    uint8_t mac[6];
+    wifi_get_macaddr(STATION_IF, mac);
+    c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
+    wifi_sta_sethostname((const char*)temp, strlen(temp));
+  }
+
+#elif defined(WIFI_STA_HOSTNAME) && defined(WIFI_STA_HOSTNAME_APPEND_MAC)
+  char temp[32];
+  uint8_t mac[6];
+  wifi_get_macaddr(STATION_IF, mac);
+  c_sprintf(temp, "%s%X%X%X", WIFI_STA_HOSTNAME, (mac)[3], (mac)[4], (mac)[5]);
+  uint8 retval=wifi_sta_sethostname(temp, strlen(temp));
+  if(retval!=1)
+  {
+	c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
+    wifi_sta_sethostname((const char*)temp, strlen(temp));
+  }
+#endif
+return 0;
+}
+
+NODEMCU_MODULE(WIFI, "wifi", wifi_map, luaopen_wifi);

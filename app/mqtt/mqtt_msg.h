@@ -65,6 +65,21 @@ enum mqtt_message_type
   MQTT_MSG_TYPE_DISCONNECT = 14
 };
 
+enum mqtt_connack_return_code
+{
+    MQTT_CONN_FAIL_SERVER_NOT_FOUND = -5,
+    MQTT_CONN_FAIL_NOT_A_CONNACK_MSG = -4,
+    MQTT_CONN_FAIL_DNS = -3,
+    MQTT_CONN_FAIL_TIMEOUT_RECEIVING = -2,
+    MQTT_CONN_FAIL_TIMEOUT_SENDING = -1,
+    MQTT_CONNACK_ACCEPTED = 0,
+    MQTT_CONNACK_REFUSED_PROTOCOL_VER = 1,
+    MQTT_CONNACK_REFUSED_ID_REJECTED = 2,
+    MQTT_CONNACK_REFUSED_SERVER_UNAVAILABLE = 3,
+    MQTT_CONNACK_REFUSED_BAD_USER_OR_PASS = 4,
+    MQTT_CONNACK_REFUSED_NOT_AUTHORIZED = 5
+};
+
 typedef struct mqtt_message
 {
   uint8_t* data;
@@ -101,6 +116,7 @@ static inline int mqtt_get_type(uint8_t* buffer) { return (buffer[0] & 0xf0) >> 
 static inline int mqtt_get_dup(uint8_t* buffer) { return (buffer[0] & 0x08) >> 3; }
 static inline int mqtt_get_qos(uint8_t* buffer) { return (buffer[0] & 0x06) >> 1; }
 static inline int mqtt_get_retain(uint8_t* buffer) { return (buffer[0] & 0x01); }
+static inline int mqtt_get_connect_ret_code(uint8_t* buffer) { return (buffer[3]); }
 
 void mqtt_msg_init(mqtt_connection_t* connection, uint8_t* buffer, uint16_t buffer_length);
 int mqtt_get_total_length(uint8_t* buffer, uint16_t length);
@@ -119,6 +135,14 @@ mqtt_message_t* mqtt_msg_unsubscribe(mqtt_connection_t* connection, const char* 
 mqtt_message_t* mqtt_msg_pingreq(mqtt_connection_t* connection);
 mqtt_message_t* mqtt_msg_pingresp(mqtt_connection_t* connection);
 mqtt_message_t* mqtt_msg_disconnect(mqtt_connection_t* connection);
+
+mqtt_message_t* mqtt_msg_subscribe_init(mqtt_connection_t* connection, uint16_t* message_id);
+mqtt_message_t* mqtt_msg_subscribe_topic(mqtt_connection_t* connection, const char* topic, int qos);
+mqtt_message_t* mqtt_msg_subscribe_fini(mqtt_connection_t* connection);
+
+mqtt_message_t* mqtt_msg_unsubscribe_init(mqtt_connection_t* connection, uint16_t* message_id);
+mqtt_message_t* mqtt_msg_unsubscribe_topic(mqtt_connection_t* connection, const char* topic);
+mqtt_message_t* mqtt_msg_unsubscribe_fini(mqtt_connection_t* connection);
 
 
 #ifdef	__cplusplus
