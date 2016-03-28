@@ -267,11 +267,27 @@ mdns_compare_name(unsigned char *query, unsigned char *response) {
 static err_t send_packet(struct pbuf *p, struct ip_addr *dst_addr, u16_t dst_port, u8_t *addr_ptr) {
   err_t err;
   /* send dns packet */
+  struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
+  struct netif *ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
+
+  if (addr_ptr) {
+    if (wifi_get_opmode() == 0x02) {
+      if (!ap_netif) {
+	return;
+      }
+      memcpy(addr_ptr, &ap_netif->ip_addr, sizeof(ap_netif->ip_addr));
+    } else {
+      if (!sta_netif) {
+	return;
+      }
+      memcpy(addr_ptr, &sta_netif->ip_addr, sizeof(sta_netif->ip_addr));
+    }
+  }
+
   if (dst_addr) {
     err = udp_sendto(mdns_pcb, p, dst_addr, dst_port);
   } else {
-    struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
-    struct netif *ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
+    err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
     if(wifi_get_opmode() == 0x03 && wifi_get_broadcast_if() == 0x03 &&\
 		    sta_netif != NULL && ap_netif != NULL) {
       if(netif_is_up(sta_netif) && netif_is_up(ap_netif)) {
@@ -283,14 +299,6 @@ static err_t send_packet(struct pbuf *p, struct ip_addr *dst_addr, u16_t dst_por
 	netif_set_default(ap_netif);
       }
     }
-    if (addr_ptr) {
-      if (wifi_get_opmode() == 0x01) {
-	memcpy(addr_ptr, &ap_netif->ip_addr, sizeof(ap_netif->ip_addr));
-      } else {
-	memcpy(addr_ptr, &sta_netif->ip_addr, sizeof(sta_netif->ip_addr));
-      }
-    }
-    err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
   }
 
   /* free pbuf */
