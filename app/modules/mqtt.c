@@ -62,6 +62,7 @@ typedef struct lmqtt_userdata
   int cb_disconnect_ref;
   int cb_message_ref;
   int cb_suback_ref;
+  int cb_unsuback_ref;
   int cb_puback_ref;
   mqtt_state_t  mqtt_state;
   mqtt_connect_info_t connect_info;
@@ -124,10 +125,8 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
       mud->pesp_conn = NULL;
     }
 
-    if(mud->self_ref != LUA_NOREF){   // TODO: should we unref the client and delete it?
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
-      mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
-    }
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+    mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
   }
 
   if(call_back){
@@ -363,6 +362,14 @@ READPACKET:
           if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_UNSUBSCRIBE && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: UnSubscribe successful\r\n");
             msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
+
+            if (mud->cb_unsuback_ref == LUA_NOREF)
+              break;
+            if (mud->self_ref == LUA_NOREF)
+              break;
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
+            lua_call(L, 1, 0);
           }
           break;
         case MQTT_MSG_TYPE_PUBLISH:
@@ -823,35 +830,21 @@ static int mqtt_delete( lua_State* L )
   // -------
 
   // free (unref) callback ref
-  if(LUA_NOREF!=mud->cb_connect_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
-    mud->cb_connect_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_connect_fail_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-    mud->cb_connect_fail_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_disconnect_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
-    mud->cb_disconnect_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_message_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
-    mud->cb_message_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_suback_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
-    mud->cb_suback_ref = LUA_NOREF;
-  }
-  if(LUA_NOREF!=mud->cb_puback_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-    mud->cb_puback_ref = LUA_NOREF;
-  }
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+  mud->cb_connect_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
+  mud->cb_connect_fail_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+  mud->cb_disconnect_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
+  mud->cb_message_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
+  mud->cb_suback_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+  mud->cb_puback_ref = LUA_NOREF;
   lua_gc(L, LUA_GCSTOP, 0);
-  if(LUA_NOREF!=mud->self_ref){
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
-    mud->self_ref = LUA_NOREF;
-  }
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+  mud->self_ref = LUA_NOREF;
   lua_gc(L, LUA_GCRESTART, 0);
   NODE_DBG("leave mqtt_delete.\n");
   return 0;
@@ -1060,8 +1053,7 @@ static int mqtt_socket_connect( lua_State* L )
   // call back function when a connection is obtained, tcp only
   if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(mud->cb_connect_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     stack++;
   }
@@ -1069,15 +1061,13 @@ static int mqtt_socket_connect( lua_State* L )
     // call back function when a connection fails
   if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(mud->cb_connect_fail_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
     mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     stack++;
   }
 
   lua_pushvalue(L, 1);  // copy userdata to the top of stack
-  if(mud->self_ref != LUA_NOREF)
-    luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
   mud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   espconn_status = espconn_regist_connectcb(pesp_conn, mqtt_socket_connected);
@@ -1182,16 +1172,13 @@ static int mqtt_socket_on( lua_State* L )
   lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 
   if( sl == 7 && c_strcmp(method, "connect") == 0){
-    if(mud->cb_connect_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else if( sl == 7 && c_strcmp(method, "offline") == 0){
-    if(mud->cb_disconnect_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
     mud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else if( sl == 7 && c_strcmp(method, "message") == 0){
-    if(mud->cb_message_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
     mud->cb_message_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else{
     lua_pop(L, 1);
@@ -1199,6 +1186,118 @@ static int mqtt_socket_on( lua_State* L )
   }
   NODE_DBG("leave mqtt_socket_on.\n");
   return 0;
+}
+
+// Lua: bool = mqtt:unsubscribe(topic, function())
+static int mqtt_socket_unsubscribe( lua_State* L ) {
+  NODE_DBG("enter mqtt_socket_unsubscribe.\n");
+
+  uint8_t stack = 1;
+  uint16_t msg_id = 0;
+  const char *topic;
+  size_t il;
+  lmqtt_userdata *mud;
+
+  mud = (lmqtt_userdata *) luaL_checkudata( L, stack, "mqtt.socket" );
+  luaL_argcheck( L, mud, stack, "mqtt.socket expected" );
+  stack++;
+
+  if(mud==NULL){
+    NODE_DBG("userdata is nil.\n");
+    lua_pushboolean(L, 0);
+    return 1;
+  }
+
+  if(mud->pesp_conn == NULL){
+    NODE_DBG("mud->pesp_conn is NULL.\n");
+    lua_pushboolean(L, 0);
+    return 1;
+  }
+
+  if(!mud->connected){
+    luaL_error( L, "not connected" );
+    lua_pushboolean(L, 0);
+    return 1;
+  }
+
+  uint8_t temp_buffer[MQTT_BUF_SIZE];
+  mqtt_msg_init(&mud->mqtt_state.mqtt_connection, temp_buffer, MQTT_BUF_SIZE);
+  mqtt_message_t *temp_msg = NULL;
+
+  if( lua_istable( L, stack ) ) {
+    NODE_DBG("unsubscribe table\n");
+    lua_pushnil( L ); /* first key */
+
+    int topic_count = 0;
+    uint8_t overflow = 0;
+
+    while( lua_next( L, stack ) != 0 ) {
+      topic = luaL_checkstring( L, -2 );
+
+      if (topic_count == 0) {
+        temp_msg = mqtt_msg_unsubscribe_init( &mud->mqtt_state.mqtt_connection, &msg_id );
+      }
+      temp_msg = mqtt_msg_unsubscribe_topic( &mud->mqtt_state.mqtt_connection, topic );
+      topic_count++;
+
+      NODE_DBG("topic: %s - length: %d\n", topic, temp_msg->length);
+
+      if (temp_msg->length == 0) {
+        lua_pop(L, 1);
+        overflow = 1;
+        break;  // too long message for the outbuffer.
+      }
+
+      lua_pop( L, 1 );
+    }
+
+    if (topic_count == 0){
+      return luaL_error( L, "no topics found" );
+    }
+    if (overflow != 0){
+      return luaL_error( L, "buffer overflow, can't enqueue all unsubscriptions" );
+    }
+
+    temp_msg = mqtt_msg_unsubscribe_fini( &mud->mqtt_state.mqtt_connection );
+    if (temp_msg->length == 0) {
+      return luaL_error( L, "buffer overflow, can't enqueue all unsubscriptions" );
+    }
+
+    stack++;
+  } else {
+    NODE_DBG("unsubscribe string\n");
+    topic = luaL_checklstring( L, stack, &il );
+    stack++;
+    if( topic == NULL ){
+      return luaL_error( L, "need topic name" );
+    }
+    temp_msg = mqtt_msg_unsubscribe( &mud->mqtt_state.mqtt_connection, topic, &msg_id );
+  }
+
+  if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
+    lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
+    luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref );
+    mud->cb_unsuback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+  }
+
+  msg_queue_t *node = msg_enqueue( &(mud->mqtt_state.pending_msg_q), temp_msg,
+                                   msg_id, MQTT_MSG_TYPE_UNSUBSCRIBE, (int)mqtt_get_qos(temp_msg->data) );
+
+  NODE_DBG("topic: %s - id: %d - qos: %d, length: %d\n", topic, node->msg_id, node->publish_qos, node->msg.length);
+  NODE_DBG("msg_size: %d, event_timeout: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)), mud->event_timeout);
+
+  sint8 espconn_status = ESPCONN_IF;
+
+  espconn_status = mqtt_send_if_possible(mud->pesp_conn);
+
+  if(!node || espconn_status != ESPCONN_OK){
+    lua_pushboolean(L, 0);
+  } else {
+    lua_pushboolean(L, 1);  // enqueued succeed.
+  }
+  NODE_DBG("unsubscribe, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
+  NODE_DBG("leave mqtt_socket_unsubscribe.\n");
+  return 1;
 }
 
 // Lua: bool = mqtt:subscribe(topic, qos, function())
@@ -1292,8 +1391,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
 
   if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
     lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
-    if( mud->cb_suback_ref != LUA_NOREF )
-      luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
+    luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
     mud->cb_suback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
   }
 
@@ -1368,8 +1466,7 @@ static int mqtt_socket_publish( lua_State* L )
 
   if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
-    if(mud->cb_puback_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
     mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
@@ -1475,6 +1572,7 @@ static const LUA_REG_TYPE mqtt_socket_map[] = {
   { LSTRKEY( "close" ),     LFUNCVAL( mqtt_socket_close ) },
   { LSTRKEY( "publish" ),   LFUNCVAL( mqtt_socket_publish ) },
   { LSTRKEY( "subscribe" ), LFUNCVAL( mqtt_socket_subscribe ) },
+  { LSTRKEY( "unsubscribe" ), LFUNCVAL( mqtt_socket_unsubscribe ) },
   { LSTRKEY( "lwt" ),       LFUNCVAL( mqtt_socket_lwt ) },
   { LSTRKEY( "on" ),        LFUNCVAL( mqtt_socket_on ) },
   { LSTRKEY( "__gc" ),      LFUNCVAL( mqtt_delete ) },
