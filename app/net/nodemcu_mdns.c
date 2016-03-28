@@ -211,7 +211,6 @@ static const char *server_name;
 static struct udp_pcb *mdns_pcb = NULL;
 static struct nodemcu_mdns_info * ms_info = NULL;
 static struct ip_addr multicast_addr;
-static struct ip_addr host_addr;
 static uint8 register_flag = 0;
 static uint8 mdns_flag = 0;
 static u8_t *mdns_payload;
@@ -264,6 +263,41 @@ mdns_compare_name(unsigned char *query, unsigned char *response) {
 	return 0;
 }
 #endif /* DNS_DOES_NAME_CHECK */
+
+static err_t send_packet(struct pbuf *p, struct ip_addr *dst_addr, u16_t dst_port, u8_t *addr_ptr) {
+  err_t err;
+  /* send dns packet */
+  if (dst_addr) {
+    err = udp_sendto(mdns_pcb, p, dst_addr, dst_port);
+  } else {
+    struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
+    struct netif *ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
+    if(wifi_get_opmode() == 0x03 && wifi_get_broadcast_if() == 0x03 &&\
+		    sta_netif != NULL && ap_netif != NULL) {
+      if(netif_is_up(sta_netif) && netif_is_up(ap_netif)) {
+	netif_set_default(sta_netif);
+	if (addr_ptr) {
+	  memcpy(addr_ptr, &ap_netif->ip_addr, sizeof(ap_netif->ip_addr));
+	}
+	err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
+	netif_set_default(ap_netif);
+      }
+    }
+    if (addr_ptr) {
+      if (wifi_get_opmode() == 0x01) {
+	memcpy(addr_ptr, &ap_netif->ip_addr, sizeof(ap_netif->ip_addr));
+      } else {
+	memcpy(addr_ptr, &sta_netif->ip_addr, sizeof(sta_netif->ip_addr));
+      }
+    }
+    err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
+  }
+
+  /* free pbuf */
+  pbuf_free(p);
+
+  return err;
+}
 /**
  * Send a mDNS packet for the service type
  *
@@ -346,34 +380,8 @@ mdns_send_service_type(u16_t id, struct ip_addr *dst_addr, u16_t dst_port) {
 		/* resize pbuf to the exact dns query */
 		pbuf_realloc(p, (query + length) - ((char*) (p->payload)));
 
-		/* send dns packet */
-		if (dst_addr) {
-		  err = udp_sendto(mdns_pcb, p, dst_addr, dst_port);
-		} else {
-		  /*add by tzx for AP + STA MDNS begin------*/
-		  sta_netif = (struct netif *)eagle_lwip_getif(0x00);
-		  ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
-		  if(wifi_get_opmode() == 0x03 && wifi_get_broadcast_if() == 0x03 &&\
-				  sta_netif != NULL && ap_netif != NULL) {
-			  if(netif_is_up(sta_netif) && netif_is_up(ap_netif)) {
+		err = send_packet(p, dst_addr, dst_port, 0);
 
-				  p_sta = pbuf_alloc(PBUF_TRANSPORT,
-							  SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
-			    if (pbuf_copy (p_sta,p) != ERR_OK) {
-				    MDNS_DBG("mdns_answer copying to new pbuf failed\n");
-				    return -1;
-			    }
-			    netif_set_default(sta_netif);
-			    err = udp_sendto(mdns_pcb, p_sta, &multicast_addr, DNS_MDNS_PORT);
-			    pbuf_free(p_sta);
-			    netif_set_default(ap_netif);
-			  }
-		  }
-		  /*add by tzx for AP + STA MDNS end------*/
-		  err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
-		}
-		/* free pbuf */
-		pbuf_free(p);
 	} else {
 		err = ERR_MEM;
 	}
@@ -609,8 +617,9 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		/* fill the payload of the mDNS message */
 		/* set the local IP address */
-		auth.src = host_addr.addr; //ipAddr;
+		auth.src = 0;
 		MEMCPY( query, &auth, SIZEOF_MDNS_AUTH);
+		u8_t *addr_ptr = query + ((char *) &auth.src - (char *) &auth);
 		/* resize the query */
 		query = query + SIZEOF_MDNS_AUTH;
 
@@ -623,33 +632,8 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		/* resize pbuf to the exact dns query */
 		pbuf_realloc(p, (query) - ((char*) (p->payload)));
-		/* send dns packet */
-		if (dst_addr) {
-		  err = udp_sendto(mdns_pcb, p, dst_addr, dst_port);
-		} else {
-		  sta_netif = (struct netif *)eagle_lwip_getif(0x00);
-		  ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
-		  if(wifi_get_opmode() == 0x03 && wifi_get_broadcast_if() == 0x03 &&\
-				  sta_netif != NULL && ap_netif != NULL) {
-		    if(netif_is_up(sta_netif) && netif_is_up(ap_netif)) {
 
-		      p_sta = pbuf_alloc(PBUF_TRANSPORT,
-					SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
-		      if (pbuf_copy (p_sta,p) != ERR_OK) {
-			      MDNS_DBG("mdns_send_service copying to new pbuf failed\n");
-			      return -1;
-		      }
-		      netif_set_default(sta_netif);
-		      err = udp_sendto(mdns_pcb, p_sta, &multicast_addr, DNS_MDNS_PORT);
-		      pbuf_free(p_sta);
-		      netif_set_default(ap_netif);
-		    }
-		  }
-		  err = udp_sendto(mdns_pcb, p, &multicast_addr, DNS_MDNS_PORT);
-		}
-
-		/* free pbuf */
-		pbuf_free(p);
+		err = send_packet(p, dst_addr, dst_port, addr_ptr);
 	} else {
 		MDNS_DBG("ERR_MEM \n");
 		err = ERR_MEM;
@@ -806,41 +790,6 @@ mdns_set_servername(const char *name) {
 	service_name_with_suffix = server_name;
 }
 
-static void ICACHE_FLASH_ATTR
-mdns_server_unregister(void) {
-	struct ip_addr ap_host_addr;
-	struct ip_info ipconfig;
-	if(register_flag == 1){
-		if (igmp_leavegroup(&host_addr, &multicast_addr) != ERR_OK) {
-			MDNS_DBG("sta udp_leave_multigrup failed!\n");
-			return;
-		};
-		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x02) {
-		   wifi_get_ip_info(SOFTAP_IF, &ipconfig);
-		   ap_host_addr.addr = ipconfig.ip.addr;
-		   if (igmp_leavegroup(&ap_host_addr, &multicast_addr) != ERR_OK) {
-				MDNS_DBG("ap udp_join_multigrup failed!\n");
-				return;
-			};
-		}
-		os_timer_disarm(&mdns_timer);
-		register_flag = 0;
-	}
-}
-
-static void ICACHE_FLASH_ATTR
-mdns_server_register(void) {
-
-	if (register_flag == 1) {
-		MDNS_DBG("mdns server is already registered !\n");
-		return;
-	} else if (igmp_joingroup(&host_addr, &multicast_addr) != ERR_OK) {
-		MDNS_DBG("udp_join_multigrup failed!\n");
-		return;
-	};
-	register_flag = 1;
-}
-
 static u8_t reg_counter;
 
 static void
@@ -865,7 +814,6 @@ void ICACHE_FLASH_ATTR
 nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
 	/* initialize default DNS server address */
 	multicast_addr.addr = DNS_MULTICAST_ADDRESS;
-	struct ip_addr ap_host_addr;
 	struct ip_info ipconfig;
 	ms_info = info;		// Save the passed block. We need all the data forever
 
@@ -878,11 +826,6 @@ nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
 	  return;
 	}
 
-	if (ms_info->ipAddr == 0) {
-		MDNS_DBG("mdns ip error!\n ");
-		return;
-	}
-	host_addr.addr = ms_info->ipAddr ;
 	LWIP_DEBUGF(DNS_DEBUG, ("dns_init: initializing\n"));
 
 	mdns_set_hostname(ms_info->host_name);
@@ -906,18 +849,18 @@ nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
 	if (mdns_pcb != NULL) {
 		/* join to the multicast address 224.0.0.251 */
 		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x01) {
-			if (igmp_joingroup(&host_addr, &multicast_addr) != ERR_OK) {
-				MDNS_DBG("sta udp_join_multigrup failed!\n");
-				return;
-			};
+		  struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
+		  if (sta_netif && sta_netif->ip_addr.addr && igmp_joingroup(&sta_netif->ip_addr, &multicast_addr) != ERR_OK) {
+		    MDNS_DBG("sta udp_join_multigrup failed!\n");
+		    return;
+		  };
 		}
 		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x02) {
-		   wifi_get_ip_info(SOFTAP_IF, &ipconfig);
-		   ap_host_addr.addr = ipconfig.ip.addr;
-		   if (igmp_joingroup(&ap_host_addr, &multicast_addr) != ERR_OK) {
-				MDNS_DBG("ap udp_join_multigrup failed!\n");
-				return;
-			};
+		  struct netif *ap_netif = (struct netif *)eagle_lwip_getif(0x01);
+		  if (ap_netif && ap_netif->ip_addr.addr && igmp_joingroup(&ap_netif->ip_addr, &multicast_addr) != ERR_OK) {
+		    MDNS_DBG("ap udp_join_multigrup failed!\n");
+		    return;
+		  };
 		}
 		register_flag = 1;
 		/* join to any IP address at the port 5353 */

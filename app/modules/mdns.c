@@ -146,8 +146,6 @@ static int mdns_register(lua_State *L)
     return luaL_error( L, "failed to allocate info block" );
   }
 
-  result->mdns_info.ipAddr = ipconfig.ip.addr;
-
   // Close up the old session (if any). This cannot fail
   // so no chance of losing the memory in 'result'
   

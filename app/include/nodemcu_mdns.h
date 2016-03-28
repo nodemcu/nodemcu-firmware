@@ -6,7 +6,6 @@ struct nodemcu_mdns_info {
 	char *host_desc;
 	char *service_name;
 	uint16 server_port;
-	unsigned long ipAddr;
 	char *txt_data[10];
 };
 
