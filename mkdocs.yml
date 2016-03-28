@@ -47,6 +47,7 @@ pages:
         - 'enduser setup': 'en/modules/enduser-setup.md'
         - 'file': 'en/modules/file.md'
         - 'gpio': 'en/modules/gpio.md'
+        - 'history': 'en/modules/history.md'
         - 'http': 'en/modules/http.md'
         - 'hx711' : 'en/modules/hx711.md'
         - 'i2c' : 'en/modules/i2c.md'
