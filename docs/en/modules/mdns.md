@@ -9,14 +9,21 @@
 Register a hostname and start the mDNS service. If the service is already running, then it will be restarted with the new parameters.
 
 #### Syntax
-`mdns.register(hostname [, hostdesc], servicename, port [, attributes])`
+`mdns.register(hostname [, attributes])`
 
 #### Parameters
 - `hostname` The hostname for this device. Alphanumeric characters are best.
-- `hostdesc` The host description for this device. Short phrase, can include spaces.
-- `servicename` The service name for this device. Alphanumeric characters are best. This will get prefixed with `_` and suffixed with `._tcp`
-- `port` The port number for the primary service.
-- `attributes` A optional table of up to 10 attributes to be exposed. The keys must all be strings.
+- `attributes` A optional table of options. The keys must all be strings.
+
+The `attributes` contains two sorts of attributes -- those with specific names, and those that are service specific. [RFC 6763](https://tools.ietf.org/html/rfc6763#page-13} 
+defines how extra, service specific, attributes are encoded into the DNS. One example is that if the device supports printing, then the queue name can 
+be specified as an additional attribute. This module supports up to 10 such attributes.
+
+The specific names are:
+
+- `port` The port number for the service. Default value is 80.
+- `service` The name of the service. Default value is 'http'.
+- `dscription` A short phrase (under 63 characters) describing the service. Default is the hostname.
 
 #### Returns
 `nil`
@@ -26,11 +33,11 @@ Various errors can be generated during argument validation. The NodeMCU must hav
 
 #### Example
 
-    mdns.register("fishtank", "http", 80, { hardware='NodeMCU'})
+    mdns.register("fishtank", {hardware='NodeMCU'})
 
 Using `dns-sd` on OS X, you can see `fishtank.local` as providing the `_http._tcp` service. You can also browse directly to `fishtank.local`. In Safari you can get all the mDNS web pages as part of your bookmarks menu.
 
-    mdns.register("fishtank", "Top Fishtank", "http", 80, { location='Living Room' })
+    mdns.register("fishtank", { description="Top Fishtank", service="http", port=80, location='Living Room' })
 
 ## mdns.close()
 Shut down the mDNS service. This is not normally needed.

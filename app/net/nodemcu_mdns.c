@@ -193,7 +193,6 @@ PACK_STRUCT_END
 
 #define SIZEOF_MDNS_SERVICE 6
 
-static uint16 PUCK_PORT ;
 static os_timer_t mdns_timer;
 /* forward declarations */
 static void mdns_recv(void *s, struct udp_pcb *pcb, struct pbuf *p,
@@ -204,9 +203,6 @@ static void mdns_recv(void *s, struct udp_pcb *pcb, struct pbuf *p,
  *----------------------------------------------------------------------------*/
 
 /* MDNS variables */
-static const char *host_name;
-static const char *host_description;
-static const char *server_name;
 //static char puck_datasheet[PUCK_DATASHEET_SIZE];
 static struct udp_pcb *mdns_pcb = NULL;
 static struct nodemcu_mdns_info * ms_info = NULL;
@@ -214,18 +210,7 @@ static struct ip_addr multicast_addr;
 static uint8 register_flag = 0;
 static uint8 mdns_flag = 0;
 static u8_t *mdns_payload;
-static void ICACHE_FLASH_ATTR
-mdns_set_hostname(char *name);
 
-/*
- *  Function to set the UDP pcb used to send the mDNS packages
- */
-static void ICACHE_FLASH_ATTR
-getPcb(struct udp_pcb *pcb) {
-	mdns_pcb = pcb;
-}
-
-#if DNS_DOES_NAME_CHECK
 /**
  * Compare the "dotted" name "query" with the encoded name "response"
  * to make sure an answer from the DNS server matches the current mdns_table
@@ -262,7 +247,30 @@ mdns_compare_name(unsigned char *query, unsigned char *response) {
 
 	return 0;
 }
-#endif /* DNS_DOES_NAME_CHECK */
+
+static int 
+mdns_namelen(u8_t *p, unsigned int maxlen) {
+  u8_t *orig = p;
+
+  while (*p && *p <= 63) {
+    if (p - orig > maxlen) {
+      return -1;
+    }
+    p += *p + 1;
+  }
+
+  if (*p >= 0xc0) {
+    p += 2;	// advance over the two byte pointer
+  } else {
+    p++;	// advance over the final 0
+  }
+
+  if (p - orig > maxlen) {
+    return -1;
+  }
+
+  return p - orig;
+}
 
 static err_t send_packet(struct pbuf *p, struct ip_addr *dst_addr, u16_t dst_port, u8_t *addr_ptr) {
   err_t err;
@@ -467,7 +475,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		ans.type = htons(DNS_RRTYPE_PTR);
 		ans.class = htons(DNS_RRCLASS_IN);
 		ans.ttl = htonl(300);
-		length = os_strlen(host_description) + MDNS_LENGTH_ADD + 1;
+		length = os_strlen(ms_info->host_desc) + MDNS_LENGTH_ADD + 1;
 		ans.len = htons(length);
 		length = 0;
 
@@ -477,7 +485,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		int name_offset = query - (const char *) hdr;
 
-		pHostname = host_description;
+		pHostname = ms_info->host_desc;
 		--pHostname;
 		/* convert hostname into suitable query format. */
 		do {
@@ -533,7 +541,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		query = query + SIZEOF_DNS_ANSWER;
 		// Check enough space in the packet
 	        const char *end_of_packet = query + length + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_SERVICE +
-		    os_strlen(host_name) + 7 + 1 + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_AUTH;
+		    os_strlen(ms_info->host_name) + 7 + 1 + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_AUTH;
 
 	        if (query_end <= end_of_packet) {
 		  MDNS_DBG("Too much data to send\n");
@@ -570,7 +578,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		ans.type = htons(DNS_RRTYPE_SRV);
 		ans.class = htons(dns_class);
 		ans.ttl = htonl(300);
-		c_strlcpy(tmpBuf,host_name, sizeof(tmpBuf));
+		c_strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
 		c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
 		c_strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
 		length = os_strlen(tmpBuf) + MDNS_LENGTH_ADD;
@@ -583,7 +591,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		serv.prior = htons(0);
 		serv.weight = htons(0);
-		serv.port = htons(PUCK_PORT);
+		serv.port = htons(ms_info->service_port);
 		MEMCPY( query, &serv, SIZEOF_MDNS_SERVICE);
 		/* resize the query */
 		query = query + SIZEOF_MDNS_SERVICE;
@@ -683,56 +691,67 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 		hdr = (struct mdns_hdr*) mdns_payload;
 
 		i = htons(hdr->id);
-//		if (i < DNS_TABLE_SIZE) {
 
-			nquestions = htons(hdr->numquestions);
-			//nanswers   = htons(hdr->numanswers);
-			/* if we have a question send an answer if necessary */
-			if (nquestions > 0) {
-				/* MDNS_DS_DOES_NAME_CHECK */
-				/* Check if the name in the "question" part match with the name of the MDNS DS service. */
-				if (mdns_compare_name((unsigned char *) DNS_SD_SERVICE,
-						(unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-					/* respond with the puck service*/
-					mdns_send_service_type(i, addr, port);
-				} else if (mdns_compare_name((unsigned char *) service_name_with_suffix,
-						(unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-					/* respond with the puck service*/
-					mdns_send_service(info, i, addr, port);
-				} else {
-				  
-				  char tmpBuf[PUCK_DATASHEET_SIZE + PUCK_SERVICE_LENGTH];
-				  c_strlcpy(tmpBuf,host_name, sizeof(tmpBuf));
-				  c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
-				  c_strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
+		nquestions = htons(hdr->numquestions);
+		//nanswers   = htons(hdr->numanswers);
+		/* if we have a question send an answer if necessary */
+		if (nquestions > 0) {
+		  struct mdns_query qry;
 
-				  if (mdns_compare_name((unsigned char *) tmpBuf,
-						(unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-					/* respond with the puck service*/
-					mdns_send_service(info, i, addr, port);
-				  } else {
-				    c_strlcpy(tmpBuf,host_description, sizeof(tmpBuf));
-				    c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
-				    c_strlcat(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
-				    if (mdns_compare_name((unsigned char *) tmpBuf,
-						(unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-					/* respond with the puck service*/
-					mdns_send_service(info, i, addr, port);
-				    } else {
-					goto memerr2;
-				    }
-				  }
-				}
-			}
-//		}
+		  int namelen = mdns_namelen((u8_t *) (hdr + 1), p->tot_len);
+
+		  memcpy(&qry, namelen + (u8_t *) (hdr + 1), sizeof(qry));
+
+		  u16_t qry_type = ntohs(qry.type);
+
+		  /* MDNS_DS_DOES_NAME_CHECK */
+		  /* Check if the name in the "question" part match with the name of the MDNS DS service. */
+		  if (mdns_compare_name((unsigned char *) DNS_SD_SERVICE,
+				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
+			  if (qry_type == DNS_RRTYPE_PTR || qry_type == DNS_RRTYPE_ANY) {
+			    mdns_send_service_type(i, addr, port);
+			  }
+		  } else if (mdns_compare_name((unsigned char *) service_name_with_suffix,
+				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
+
+			  if (qry_type == DNS_RRTYPE_PTR || qry_type == DNS_RRTYPE_ANY) {
+			    mdns_send_service(info, i, addr, port);
+			  }
+		  } else {
+		    
+		    char tmpBuf[PUCK_DATASHEET_SIZE + PUCK_SERVICE_LENGTH];
+		    c_strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
+		    c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
+		    c_strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
+
+		    if (mdns_compare_name((unsigned char *) tmpBuf,
+				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
+			  if (qry_type == DNS_RRTYPE_A || qry_type == DNS_RRTYPE_ANY) {
+			    mdns_send_service(info, i, addr, port);
+			  }
+		    } else {
+		      c_strlcpy(tmpBuf,ms_info->host_desc, sizeof(tmpBuf));
+		      c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
+		      c_strlcat(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
+		      if (mdns_compare_name((unsigned char *) tmpBuf,
+				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
+			  if (qry_type == DNS_RRTYPE_TXT || qry_type == DNS_RRTYPE_SRV || qry_type == DNS_RRTYPE_ANY) {
+			    mdns_send_service(info, i, addr, port);
+			  }
+		      }
+		    }
+		  }
+		}
 	}
-	goto memerr2;
-	memerr2:
-	os_memset(mdns_payload , 0 ,DNS_MSG_SIZE);
-	memerr1:
+memerr1:
 	/* free pbuf */
 	pbuf_free(p);
 	return;
+}
+
+static void
+mdns_free_info(struct nodemcu_mdns_info *info) {
+  os_free((void *) info);
 }
 
 /**
@@ -741,61 +760,28 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 void ICACHE_FLASH_ATTR
 nodemcu_mdns_close(void)
 {
-	os_timer_disarm(&mdns_timer);
+  os_timer_disarm(&mdns_timer);
 
-	if (mdns_pcb != NULL) {
-		udp_remove(mdns_pcb);
-	}
-	if (mdns_payload) {
-	  os_free(mdns_payload);
-	}
-	mdns_payload = NULL;
-	mdns_pcb = NULL;
-	ms_info = NULL;
+  if (mdns_pcb != NULL) {
+    udp_remove(mdns_pcb);
+  }
+  if (mdns_payload) {
+    os_free(mdns_payload);
+  }
+  mdns_payload = NULL;
+  mdns_pcb = NULL;
+  mdns_free_info(ms_info);
+  ms_info = NULL;
 }
 
 static void ICACHE_FLASH_ATTR
-mdns_set_host_description(const char *name)
-{
-	host_description = name;
-}
-
-static void ICACHE_FLASH_ATTR
-mdns_enable(void)
-{
-	if(mdns_flag == 0) {
-		udp_recv(mdns_pcb, mdns_recv, NULL);
-	}
-}
-
-static void ICACHE_FLASH_ATTR
-mdns_disable(void)
-{
-	if (mdns_flag == 1) {
-		udp_recv(mdns_pcb, NULL, NULL);
-	}
-}
-
-static void ICACHE_FLASH_ATTR
-mdns_set_hostname(char *name) {
-	if (name == NULL) {
-	  name = "nodemcu";
-	}
-	host_name = name;
-}
-
-static void ICACHE_FLASH_ATTR
-mdns_set_servername(const char *name) {
-	if (name == NULL) {
-		name = "nodemcu";
-	}
+mdns_set_servicename(const char *name) {
 	char tmpBuf[128];
 	os_sprintf(tmpBuf, "_%s._tcp.local", name);
-	if (server_name) {
-	  os_free(server_name);
+	if (service_name_with_suffix) {
+	  os_free(service_name_with_suffix);
 	}
-	server_name = c_strdup(tmpBuf);
-	service_name_with_suffix = server_name;
+	service_name_with_suffix = c_strdup(tmpBuf);
 }
 
 static u8_t reg_counter;
@@ -814,85 +800,120 @@ mdns_reg(struct nodemcu_mdns_info *info) {
   }
 }
 
+static struct nodemcu_mdns_info *
+mdns_dup_info(const struct nodemcu_mdns_info *info) {
+  struct nodemcu_mdns_info *result;
+
+  // calculate length
+  int len = sizeof(struct nodemcu_mdns_info);
+
+  len += c_strlen(info->host_name) + 1;
+  len += c_strlen(info->host_desc) + 1;
+  len += c_strlen(info->service_name) + 1;
+  int i;
+  for (i = 0; i < sizeof(info->txt_data) / sizeof(info->txt_data[0]) && info->txt_data[i]; i++) {
+    len += c_strlen(info->txt_data[i]) + 1;
+  }
+
+#define COPY_OVER(dest, src, p)  len = c_strlen(src) + 1; memcpy(p, src, len); dest = p; p += len
+
+  result = (struct nodemcu_mdns_info *) os_zalloc(len);
+  if (result) {
+    char *p = (char *) (result + 1);
+    result->service_port = info->service_port;
+    COPY_OVER(result->host_name, info->host_name, p);
+    COPY_OVER(result->host_desc, info->host_desc, p);
+    COPY_OVER(result->service_name, info->service_name, p);
+    for (i = 0; i < sizeof(info->txt_data) / sizeof(info->txt_data[0]) && info->txt_data[i]; i++) {
+      COPY_OVER(result->txt_data[i], info->txt_data[i], p);
+    }
+  }
+
+#undef COPY_OVER
+
+  return result;
+}
+
 /**
  * Initialize the resolver: set up the UDP pcb and configure the default server
  * (NEW IP).
+ * 
+ * returns TRUE if it worked, FALSE if it failed.
  */
-void ICACHE_FLASH_ATTR
+bool ICACHE_FLASH_ATTR
 nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
-	/* initialize default DNS server address */
-	multicast_addr.addr = DNS_MULTICAST_ADDRESS;
-	struct ip_info ipconfig;
-	ms_info = info;		// Save the passed block. We need all the data forever
+  /* initialize default DNS server address */
+  multicast_addr.addr = DNS_MULTICAST_ADDRESS;
+  struct ip_info ipconfig;
+  mdns_free_info(ms_info);
+  ms_info = mdns_dup_info(info);		// Save the passed block. We need all the data forever
 
-	if (mdns_payload) {
-	  os_free(mdns_payload);
-	}
-	mdns_payload = (u8_t *) os_malloc(DNS_MSG_SIZE);
-	if (!mdns_payload) {
-	  MDNS_DBG("Alloc fail\n");
-	  return;
-	}
+  if (!ms_info) {
+    return FALSE;
+  }
 
-	LWIP_DEBUGF(DNS_DEBUG, ("dns_init: initializing\n"));
+  if (mdns_payload) {
+    os_free(mdns_payload);
+  }
+  mdns_payload = (u8_t *) os_malloc(DNS_MSG_SIZE);
+  if (!mdns_payload) {
+    MDNS_DBG("Alloc fail\n");
+    return FALSE;
+  }
 
-	mdns_set_hostname(ms_info->host_name);
-	mdns_set_servername(ms_info->service_name);
-	mdns_set_host_description(ms_info->host_desc);
+  LWIP_DEBUGF(DNS_DEBUG, ("dns_init: initializing\n"));
 
-	// get the host name as instrumentName_serialNumber for MDNS
-	// set the name of the service, the same as host name
-	MDNS_DBG("host_name = %s\n", host_name);
-	MDNS_DBG("server_name = %s\n", service_name_with_suffix);
-	if (ms_info->server_port == 0)
-	{
-		PUCK_PORT = 80;
-	} else {
-		PUCK_PORT = ms_info->server_port;
-	}
+  mdns_set_servicename(ms_info->service_name);
 
-	/* initialize mDNS */
-	mdns_pcb = udp_new();
+  // get the host name as instrumentName_serialNumber for MDNS
+  // set the name of the service, the same as host name
+  MDNS_DBG("host_name = %s\n", ms_info->host_name);
+  MDNS_DBG("server_name = %s\n", service_name_with_suffix);
 
-	if (mdns_pcb != NULL) {
-		/* join to the multicast address 224.0.0.251 */
-		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x01) {
-		  struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
-		  if (sta_netif && sta_netif->ip_addr.addr && igmp_joingroup(&sta_netif->ip_addr, &multicast_addr) != ERR_OK) {
-		    MDNS_DBG("sta udp_join_multigrup failed!\n");
-		    return;
-		  };
-		}
-		if(wifi_get_opmode() == 0x03 || wifi_get_opmode() == 0x02) {
-		  struct netif *ap_netif = (struct netif *)eagle_lwip_getif(0x01);
-		  if (ap_netif && ap_netif->ip_addr.addr && igmp_joingroup(&ap_netif->ip_addr, &multicast_addr) != ERR_OK) {
-		    MDNS_DBG("ap udp_join_multigrup failed!\n");
-		    return;
-		  };
-		}
-		register_flag = 1;
-		/* join to any IP address at the port 5353 */
-		if (udp_bind(mdns_pcb, IP_ADDR_ANY, DNS_MDNS_PORT) != ERR_OK) {
-			MDNS_DBG("udp_bind failed!\n");
-			return;
-		};
+  /* initialize mDNS */
+  mdns_pcb = udp_new();
 
-		/*loopback function for the multicast(224.0.0.251) messages received at port 5353*/
-//		mdns_enable();
-		udp_recv(mdns_pcb, mdns_recv, ms_info);
-		mdns_flag = 1;
-		/*
-		 * Register the name of the instrument
-		 */
+  if (!mdns_pcb) {
+    return FALSE;
+  }
+  /* join to the multicast address 224.0.0.251 */
+  if(wifi_get_opmode() & 0x01) {
+    struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
+    if (sta_netif && sta_netif->ip_addr.addr && igmp_joingroup(&sta_netif->ip_addr, &multicast_addr) != ERR_OK) {
+      MDNS_DBG("sta udp_join_multigrup failed!\n");
+      return FALSE;
+    };
+  }
+  if(wifi_get_opmode() & 0x02) {
+    struct netif *ap_netif = (struct netif *)eagle_lwip_getif(0x01);
+    if (ap_netif && ap_netif->ip_addr.addr && igmp_joingroup(&ap_netif->ip_addr, &multicast_addr) != ERR_OK) {
+      MDNS_DBG("ap udp_join_multigrup failed!\n");
+      return FALSE;
+    };
+  }
+  register_flag = 1;
+  /* join to any IP address at the port 5353 */
+  if (udp_bind(mdns_pcb, IP_ADDR_ANY, DNS_MDNS_PORT) != ERR_OK) {
+	  MDNS_DBG("udp_bind failed!\n");
+	  return FALSE;
+  };
 
-		//MDNS_DBG("About to start timer\n");
-		os_timer_disarm(&mdns_timer);
-		os_timer_setfn(&mdns_timer, (os_timer_func_t *)mdns_reg,ms_info);
-		os_timer_arm(&mdns_timer, 1000 * 120, 1);
-		/* kick off the first one right away */
-		mdns_reg_handler_restart();
-		mdns_reg(ms_info);
-	}
+  /*loopback function for the multicast(224.0.0.251) messages received at port 5353*/
+  udp_recv(mdns_pcb, mdns_recv, ms_info);
+  mdns_flag = 1;
+  /*
+   * Register the name of the instrument
+   */
+
+  //MDNS_DBG("About to start timer\n");
+  os_timer_disarm(&mdns_timer);
+  os_timer_setfn(&mdns_timer, (os_timer_func_t *)mdns_reg,ms_info);
+  os_timer_arm(&mdns_timer, 1000 * 120, 1);
+  /* kick off the first one right away */
+  mdns_reg_handler_restart();
+  mdns_reg(ms_info);
+
+  return TRUE;
 }
 
 #endif /* LWIP_MDNS */
