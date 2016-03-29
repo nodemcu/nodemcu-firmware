@@ -392,6 +392,65 @@ static void enduser_setup_check_station(void *p)
 }
 
 
+/* --- Connection closing handling ----------------------------------------- */
+
+/* It is far more memory efficient to let the other end close the connection
+ * first and respond to that, than us initiating the closing. The latter
+ * seems to leave the pcb in a fin_wait state for a long time, which can
+ * starve us of memory over time.
+ *
+ * By instead using the poll function to schedule a hard abort a few seconds
+ * from now we achieve a deadline close. The downside is a (very) slight
+ * risk of dropping the connection early, but in this application that's
+ * hidden by the retries on the JavaScript side anyway.
+ */
+
+
+/* Callback on timeout to hard-close a connection */
+static err_t force_abort (void *arg, struct tcp_pcb *pcb)
+{
+  (void)arg;
+  tcp_poll (pcb, 0, 0);
+  tcp_abort (pcb);
+  return ERR_ABRT;
+}
+
+/* Callback to detect a remote-close of a connection */
+static err_t handle_remote_close (void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
+{
+  (void)arg; (void)err;
+  if (p) /* server sent us data, just ACK and move on */
+  {
+    tcp_recved (pcb, p->tot_len);
+    pbuf_free (p);
+  }
+  else /* hey, remote end closed, we can do a soft close safely, yay! */
+  {
+    tcp_recv (pcb, 0);
+    tcp_poll (pcb, 0, 0);
+    tcp_close (pcb);
+  }
+  return ERR_OK;
+}
+
+/* Set up a deferred close of a connection, as discussed above. */
+static inline void deferred_close (struct tcp_pcb *pcb)
+{
+  tcp_poll (pcb, force_abort, 15); /* ~3sec from now */
+  tcp_recv (pcb, handle_remote_close);
+  tcp_sent (pcb, 0);
+}
+
+/* Convenience function to queue up a close-after-send.  */
+static err_t close_once_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
+{
+  (void)arg; (void)len;
+  deferred_close (pcb);
+  return ERR_OK;
+}
+
+/* ------------------------------------------------------------------------- */
+
 /**
  * Search String
  *
@@ -636,7 +695,7 @@ static int enduser_setup_http_serve_header(struct tcp_pcb *http_client, const ch
   err_t err = tcp_write (http_client, header, header_len, TCP_WRITE_FLAG_COPY);
   if (err != ERR_OK)
   {
-    tcp_close (http_client);
+    deferred_close (http_client);
     ENDUSER_SETUP_ERROR("http_serve_header failed on tcp_write", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
@@ -675,7 +734,7 @@ static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
   if (offs >= state->http_payload_len)
   {
     tcp_sent (pcb, 0);
-    tcp_close (pcb);
+    deferred_close (pcb);
   }
   else
     tcp_arg (pcb, (void *)offs);
@@ -692,7 +751,6 @@ static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 static int enduser_setup_http_serve_html(struct tcp_pcb *http_client)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_html");
-
   if (state->http_payload_data == NULL)
   {
     enduser_setup_http_load_payload();
@@ -719,8 +777,9 @@ static void serve_status(struct tcp_pcb *conn)
 
   const char fmt[] =
     "HTTP/1.1 200 OK\r\n"
-    "Cache-control: no-cache\r\n"
-    "Content-type: text/plain\r\n"
+    "Cache-control:no-cache\r\n"
+    "Connection:close\r\n"
+    "Content-type:text/plain\r\n"
     "Content-length: %d\r\n"
     "\r\n"
     "%s%s";
@@ -856,8 +915,10 @@ static void notify_scan_listeners (const char *payload, size_t sz)
     if (tcp_write (l->conn, payload, sz, TCP_WRITE_FLAG_COPY) != ERR_OK)
     {
       ENDUSER_SETUP_DEBUG("failed to send wifi list");
+      tcp_abort (l->conn);
     }
-    tcp_close (l->conn);
+    else
+      tcp_sent (l->conn, close_once_sent); /* TODO: time-out sends? */
     l->conn = 0;
   }
 
@@ -883,7 +944,7 @@ static void on_scan_done (void *arg, STATUS status)
     const char header_fmt[] =
       "HTTP/1.1 200 OK\r\n"
       "Connection:close\r\n"
-      "Cache-control: no-cache\r\n"
+      "Cache-control:no-cache\r\n"
       "Content-type:application/json\r\n"
       "Content-length:%4d\r\n"
       "\r\n";
@@ -939,10 +1000,10 @@ serve_500:
 
 /* ---- end WiFi AP scan support ------------------------------------------- */
 
-
 static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, struct pbuf *p, err_t err)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_recvcb");
+
   if (!state || err != ERR_OK)
   {
     if (!state)
@@ -958,7 +1019,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     if (l)
       remove_scan_listener (l);
 
-    tcp_close (http_client);
+    deferred_close (http_client);
     return ERR_OK;
   }
 
@@ -970,6 +1031,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   tcp_recved (http_client, p->tot_len);
   pbuf_free (p);
 
+  err_t ret = ERR_OK;
   if (c_strncmp(data, "GET ", 4) == 0)
   {
     if (c_strncmp(data + 4, "/ ", 2) == 0)
@@ -980,8 +1042,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
       }
       else
       {
-        os_free (data);
-        return ERR_OK; /* streaming now in progress */
+        goto free_out; /* streaming now in progress */
       }
     }
     else if (c_strncmp(data + 4, "/aplist ", 8) == 0)
@@ -1005,13 +1066,12 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
         if (!wifi_station_scan(NULL, on_scan_done))
         {
           enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
-          tcp_close (l->conn);
+          deferred_close (l->conn);
           l->conn = 0;
           free_scan_listeners();
         }
       }
-      os_free (data);
-      return ERR_OK;
+      goto free_out; /* request queued */
     }
     else if (c_strncmp(data + 4, "/status ", 8) == 0)
     {
@@ -1049,17 +1109,12 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     enduser_setup_http_serve_header(http_client, http_header_401, LITLEN(http_header_401));
   }
 
-  os_free (data);
-  #if 0
-  /* being nice apparently costs us a lot of pcbs in time_wait state :( */
-  tcp_close (http_client);
-  return ERR_OK;
-  #else
-  tcp_abort (http_client);
-  return ERR_ABRT;
-  #endif
-}
+  deferred_close (http_client);
 
+free_out:
+  os_free (data);
+  return ret;
+}
 
 static err_t enduser_setup_http_connectcb(void *arg, struct tcp_pcb *pcb, err_t err)
 {
@@ -1073,6 +1128,7 @@ static err_t enduser_setup_http_connectcb(void *arg, struct tcp_pcb *pcb, err_t 
 
   tcp_accepted (state->http_pcb);
   tcp_recv (pcb, enduser_setup_http_recvcb);
+  tcp_nagle_disable (pcb);
   return ERR_OK;
 }
 
