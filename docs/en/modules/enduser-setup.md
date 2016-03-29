@@ -10,7 +10,7 @@ This module provides a simple way of configuring ESP8266 chips without using a s
 After running [`enduser_setup.start()`](#enduser_setupstart) a portal like the above can be accessed through a wireless network called SetupGadget_XXXXXX. The portal is used to submit the credentials for the WiFi of the enduser.
 After an IP address has been successfully obtained this module will stop as if [`enduser_setup.stop()`](#enduser_setupstop) had been called.
 
-Alternative HTML can be served by placing a file called `index.html` in the filesystem. This file will be kept in RAM, so keep it as small as possible.
+Alternative HTML can be served by placing a file called `enduser_setup.html` in the filesystem. This file will be kept in RAM, so keep it as small as possible.
 
 ## enduser_setup.manual()
 
