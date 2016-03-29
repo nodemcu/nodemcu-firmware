@@ -16,7 +16,20 @@
 #define ESP_INIT_DATA_ENABLE_READVDD33
 //#define ESP_INIT_DATA_ENABLE_READADC
 //#define ESP_INIT_DATA_FIXED_VDD33_VALUE 33
+//
 
+// This adds the asserts in LUA. It also adds some useful extras to the
+// node module. This is all silent in normal operation and so can be enabled
+// without any harm (except for the code size increase and slight slowdown)
+//#define DEVELOPMENT_TOOLS
+
+#ifdef DEVELOPMENT_TOOLS
+extern void luaL_assertfail(const char *file, int line, const char *message);
+#define lua_assert(x)    ((x) ? (void) 0 : luaL_assertfail(__FILE__, __LINE__, #x))
+#endif
+
+// This enables lots of debug output and changes the serial bit rate. This
+// is normally only used by hardcore developers
 // #define DEVELOP_VERSION
 #ifdef DEVELOP_VERSION
 #define NODE_DEBUG
