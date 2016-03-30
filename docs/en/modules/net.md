@@ -100,10 +100,10 @@ Listen on port from IP address.
 sv = net.createServer(net.TCP, 30)
 -- server listens on 80, if data received, print data to console and send "hello world" back to caller
 sv:listen(80, function(c)
-	c:on("receive", function(c, pl) 
-		print(pl)
-	end)
-	c:send("hello world")
+  c:on("receive", function(c, pl) 
+    print(pl)
+  end)
+  c:send("hello world")
 end)
 ```
 
@@ -184,12 +184,12 @@ Register callback functions for specific events.
 
 #### Example
 ```lua
-sk = net.createConnection(net.TCP, 0)
-sk:on("receive", function(sck, c) print(c) end )
-sk:connect(80,"192.168.0.66")
-sk:on("connection", function(sck,c)
-    -- Wait for connection before sending.
-    sk:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+srv = net.createConnection(net.TCP, 0)
+srv:on("receive", function(sck, c) print(c) end)
+srv:connect(80,"192.168.0.66")
+srv:on("connection", function(sck, c)
+  -- Wait for connection before sending.
+  sck:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 end)
 ```
 
@@ -201,7 +201,9 @@ end)
 Sends data to server.
 
 #### Syntax
-`send(string, function(sent))`
+`send(string[, function(sent)])`
+
+`sck:send(data, fnA)` is functionally equivalent to `sck:send(data) sck:on("sent", fnA)`.
 
 #### Parameters
 - `string` data in string which will be sent to server
@@ -212,7 +214,51 @@ Sends data to server.
 
 #### Note
 
-Multiple consecutive `send()` calls aren't guaranteed to work (and often don't) as network requests are treated as separate tasks by the SDK. Instead, subscribe to the "sent" event on the socket and send additional data (or close) in that callback. See [#730](https://github.com/nodemcu/nodemcu-firmware/issues/730#issuecomment-154241161) for an example and explanation.
+Multiple consecutive `send()` calls aren't guaranteed to work (and often don't) as network requests are treated as separate tasks by the SDK. Instead, subscribe to the "sent" event on the socket and send additional data (or close) in that callback. See [#730](https://github.com/nodemcu/nodemcu-firmware/issues/730#issuecomment-154241161) for details.
+
+#### Example
+```lua
+srv = net.createServer(net.TCP)
+srv:listen(80, function(conn)
+  conn:on("receive", function(sck, req)
+    local response = {}
+
+    -- if you're sending back HTML over HTTP you'll want something like this instead
+    -- local response = {"HTTP/1.0 200 OK\r\nServer: NodeMCU on ESP8266\r\nContent-Type: text/html\r\n\r\n"}
+
+    response[#response + 1] = "lots of data"
+    response[#response + 1] = "even more data"
+    response[#response + 1] = "e.g. content read from a file"
+    
+	 -- sends and removes the first element from the 'response' table
+    local function send()
+      if #response > 0
+        then sck:send(table.remove(response, 1))
+      else
+        sck:close()
+      end
+    end
+
+    -- triggers the send() function again once the first chunk of data was sent
+    sck:on("sent", send)
+    
+    send()
+  end)
+end)
+```
+If you do not or can not keep all the data you send back in memory at one time (remember that `response` is an aggregation) you may use explicit callbacks instead of building up a table like so:
+
+```lua
+sck:send(header, function() 
+  local data1 = "some large chunk of dynamically loaded data"
+  sck:send(data1, function()
+    local data2 = "even more dynamically loaded data"
+    sck:send(data2, function() 
+      sck:close()
+    end)
+  end)
+end)
+```
 
 #### See also
 [`net.socket:on()`](#netsocketon)
