@@ -77,7 +77,7 @@ static const char dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
 /*        DNS Answer Part          |LBL OFFS|  |  TYPE  |  |  CLASS |  |         TTL        |  | RD LEN | */
                                    0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x04 };
 
-static const char http_html_filename[] = "index.html";
+static const char http_html_filename[] = "enduser_setup.html";
 static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nContent-Type: text/html\r\n"; /* Note single \r\n here! */
 static const char http_header_204[] = "HTTP/1.1 204 No Content\r\n\r\n";
 static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\n\r\n";
@@ -434,7 +434,7 @@ static int enduser_setup_http_load_payload(void)
 
   if (f == 0 || err == -1 || err2 == -1)
   {
-    ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file index.html, loading backup HTML.");
+    ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 
     int payload_len = LITLEN(http_header_200) + cl_len + LITLEN(http_html_backup);
     state->http_payload_len = payload_len;
@@ -1034,7 +1034,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     }
     else if (c_strncmp(data + 4, "/generate_204 ", 14) == 0)
     {
-      /* Convince Android devices that they have internet access to avoid pesky dialogues. */  
+      /* Convince Android devices that they have internet access to avoid pesky dialogues. */
       enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));
     }
     else
