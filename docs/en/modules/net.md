@@ -168,6 +168,22 @@ sk = nil
 #### See also
 [`net.createServer()`](#netcreateserver)
 
+## net.socket:hold()
+
+Throttle data reception by placing a request to block the TCP receive function. This request is not effective immediately, Espressif recommends to call it while reserving 5*1460 bytes of memory.
+
+#### Syntax
+`hold()`
+
+#### Parameters
+none
+
+#### Returns
+`nil`
+
+#### See also
+[`net.socket:unhold()`](#netsocketunhold)
+
 ## net.socket:on()
 
 Register callback functions for specific events.
@@ -194,7 +210,8 @@ end)
 ```
 
 #### See also
-[`net.createServer()`](#netcreateserver)
+- [`net.createServer()`](#netcreateserver)
+- [`net.socket:hold()`](#netsockethold)
 
 ## net.socket:send()
 
@@ -262,6 +279,22 @@ end)
 
 #### See also
 [`net.socket:on()`](#netsocketon)
+
+## net.socket:unhold()
+
+Unblock TCP receiving data, i.e. undo `hold()`.
+
+#### Syntax
+`unhold()`
+
+#### Parameters
+none
+
+#### Returns
+`nil`
+
+#### See also
+[`net.socket:hold()`](#netsockethold)
 
 # net.dns Module
 
