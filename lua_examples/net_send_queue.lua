@@ -19,12 +19,11 @@
 --
 ------------------------------------------------------------------------------
 do
-  -- cache
-  local shift = table.remove
   -- queue handler
   local make_sender = function(socket)
-    local queue = { }
-    local is_sending = false
+    local shift = table.remove
+    local max_send, queue, is_sending = 1460, { }, false
+
     local function send()
       if #queue > 0 then
         local item = shift(queue, 1)
@@ -33,13 +32,22 @@ do
         is_sending = false
       end
     end
-    return function(...)
-      queue[#queue + 1] = ...
+
+    return function(send_data)
+      -- handle max send size
+      while #send_data > max_send do
+        queue[#queue + 1] = send_data:sub(1, max_send)
+        send_data = send_data:sub(max_send + 1)
+      end
+      if #send_data > 0 then
+        queue[#queue + 1] = send_data
+      end
       if not is_sending then
         is_sending = true
         send()
       end
     end
+
   end
   -- expose
   return make_sender
