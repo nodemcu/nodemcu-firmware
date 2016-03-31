@@ -543,9 +543,10 @@ static int enduser_setup_http_urldecode(char *dst, const char *src, int src_len,
   ENDUSER_SETUP_DEBUG("enduser_setup_http_urldecode");
 
   char *dst_start = dst;
+  char *dst_last = dst + dst_len - 1; /* -1 to reserve space for last \0 */
   char a, b;
   int i;
-  for (i = 0; i < src_len && *src; ++i)
+  for (i = 0; i < src_len && *src && dst < dst_last; ++i)
   {
     if ((*src == '%') && ((a = src[1]) && (b = src[2])) && (isxdigit(a) && isxdigit(b)))
     {
@@ -584,15 +585,9 @@ static int enduser_setup_http_urldecode(char *dst, const char *src, int src_len,
       }
       *dst++ = c;
     }
-    if ((dst - dst_start) >= dst_len - 1)
-    {
-      /* Try to leave a valid string even in the case of errors. */
-      *dst = '\0';
-      return 1;
-    }
   }
   *dst++ = '\0';
-  return 0;
+  return (i < src_len); /* did we fail to process all the input? */
 }
 
 
@@ -659,8 +654,8 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   c_memset(cnf, 0, sizeof(struct station_config));
 
   int err;
-  err  = enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len, 64);
-  err |= enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len, 32);
+  err  = enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len, sizeof(cnf->ssid));
+  err |= enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len, sizeof(cnf->password));
   if (err != 0)
   {
     ENDUSER_SETUP_DEBUG("Unable to decode HTTP parameter to valid password or SSID");
