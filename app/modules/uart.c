@@ -8,19 +8,19 @@
 #include "c_string.h"
 #include "rom.h"
 
-static lua_State *gL = NULL;
 static int uart_receive_rf = LUA_NOREF;
 bool run_input = true;
 bool uart_on_data_cb(const char *buf, size_t len){
+  lua_State *L = lua_getstate();
   if(!buf || len==0)
     return false;
   if(uart_receive_rf == LUA_NOREF)
     return false;
-  if(!gL)
+  if(!L)
     return false;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, uart_receive_rf);
-  lua_pushlstring(gL, buf, len);
-  lua_call(gL, 1, 0);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, uart_receive_rf);
+  lua_pushlstring(L, buf, len);
+  lua_call(L, 1, 0);
   return !run_input;
 }
 
@@ -75,7 +75,6 @@ static int uart_on( lua_State* L )
     }
     if(!lua_isnil(L, -1)){
       uart_receive_rf = luaL_ref(L, LUA_REGISTRYINDEX);
-      gL = L;
       if(run==0)
         run_input = false;
     } else {

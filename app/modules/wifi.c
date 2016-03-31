@@ -83,7 +83,6 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 #endif // WIFI_SMART_ENABLE
 
 static int wifi_scan_succeed = LUA_NOREF;
-static lua_State* gL = NULL;
 /**
   * @brief  Wifi ap scan over callback to display.
   * @param  arg: contain the aps information
@@ -98,13 +97,13 @@ static void wifi_scan_done(void *arg, STATUS status)
     return;
   if(arg == NULL)
     return;
-  
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, wifi_scan_succeed);
+  lua_State* L = lua_getstate();
+  lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
 
   if (status == OK)
   {
     struct bss_info *bss_link = (struct bss_info *)arg;
-    lua_newtable( gL );
+    lua_newtable( L );
 
     while (bss_link != NULL)
     {
@@ -120,16 +119,16 @@ static void wifi_scan_done(void *arg, STATUS status)
       if(getap_output_format==1) //use new format(BSSID : SSID, RSSI, Authmode, Channel)
       {
     	c_sprintf(temp,"%s,%d,%d,%d", ssid, bss_link->rssi, bss_link->authmode, bss_link->channel);
-    	lua_pushstring(gL, temp);
+    	lua_pushstring(L, temp);
         NODE_DBG(MACSTR" : %s\n",MAC2STR(bss_link->bssid) , temp);
     	c_sprintf(temp,MACSTR, MAC2STR(bss_link->bssid));
-    	lua_setfield( gL, -2,  temp);
+    	lua_setfield( L, -2,  temp);
       }
       else//use old format(SSID : Authmode, RSSI, BSSID, Channel)
       {
   	    c_sprintf(temp,"%d,%d,"MACSTR",%d", bss_link->authmode, bss_link->rssi, MAC2STR(bss_link->bssid),bss_link->channel);
-        lua_pushstring(gL, temp);
-        lua_setfield( gL, -2, ssid );
+        lua_pushstring(L, temp);
+        lua_setfield( L, -2, ssid );
         NODE_DBG("%s : %s\n", ssid, temp);
       }
 
@@ -138,12 +137,12 @@ static void wifi_scan_done(void *arg, STATUS status)
   }
   else
   {
-    lua_newtable( gL );
+    lua_newtable( L );
   }
-  lua_call(gL, 1, 0);
+  lua_call(L, 1, 0);
   if(wifi_scan_succeed != LUA_NOREF)
   {
-    luaL_unref(gL, LUA_REGISTRYINDEX, wifi_scan_succeed);
+    luaL_unref(L, LUA_REGISTRYINDEX, wifi_scan_succeed);
     wifi_scan_succeed = LUA_NOREF;
   }
 }
@@ -781,7 +780,6 @@ static int wifi_station_listap( lua_State* L )
   {
     return luaL_error( L, "Can't list ap in SOFTAP mode" );
   }
-  gL = L;
   struct scan_config scan_cfg;
   getap_output_format=0;
 

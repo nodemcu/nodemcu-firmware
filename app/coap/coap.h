@@ -155,7 +155,6 @@ typedef struct
 typedef struct coap_luser_entry coap_luser_entry;
 
 struct coap_luser_entry{
-    lua_State *L;
     // int ref;
     // char name[MAX_SEGMENTS_SIZE+1];         // +1 for string '\0'
     const char *name;
