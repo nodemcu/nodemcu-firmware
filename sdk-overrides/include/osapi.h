@@ -8,6 +8,8 @@ int atoi(const char *nptr);
 int os_printf(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
 
+unsigned int uart_baudrate_detect(unsigned int uart_no, unsigned int async);
+
 void NmiTimSetFunc(void (*func)(void));
 
 #include_next "osapi.h"

@@ -34,10 +34,12 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #ifdef DEVELOP_VERSION
 #define NODE_DEBUG
 #define COAP_DEBUG
-#else
-#define BIT_RATE_DEFAULT BIT_RATE_115200
 #endif /* DEVELOP_VERSION */
 
+#define BIT_RATE_DEFAULT BIT_RATE_115200
+
+// This enables automatic baud rate detection at startup
+#define BIT_RATE_AUTOBAUD
 
 #define NODE_ERROR
 
