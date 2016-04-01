@@ -298,6 +298,12 @@ uart_init_autobaud(uint32_t uart_no)
   os_timer_arm(&autobaud_timer, 100, TRUE);
 }
 
+static void 
+uart_stop_autobaud()
+{
+  os_timer_disarm(&autobaud_timer);
+}
+
 /******************************************************************************
  * FunctionName : uart_init
  * Description  : user interface for init uart
@@ -326,6 +332,9 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input)
 void ICACHE_FLASH_ATTR
 uart_setup(uint8 uart_no)
 {
+#ifdef BIT_RATE_AUTOBAUD
+    uart_stop_autobaud();
+#endif
     ETS_UART_INTR_DISABLE();
     uart_config(uart_no);
     ETS_UART_INTR_ENABLE();
