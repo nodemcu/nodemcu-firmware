@@ -82,13 +82,13 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 	
 	//set clock phase
 	if (cpha == cpol) {
-		// Mode 3: MOSI is set on falling edge of clock, MISO is read on rising edge of clock
-		// Mode 0: MOSI is set on falling edge of clock, MISO is read on rising edge of clock
+		// Mode 3: MOSI is set on falling edge of clock
+		// Mode 0: MOSI is set on falling edge of clock
 		CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE);
 		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_I_EDGE);
 	} else {
-		// Mode 2: MOSI is set on rising edge of clock, MISO is read on falling edge of clock
-		// Mode 1: MOSI is set on rising edge of clock, MISO is read on falling edge of clock	
+		// Mode 2: MOSI is set on rising edge of clock
+		// Mode 1: MOSI is set on rising edge of clock	
 		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE);		
 		CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_I_EDGE);
 	}
