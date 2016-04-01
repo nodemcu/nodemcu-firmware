@@ -1,11 +1,7 @@
 #include "flash_fs.h"
 #include "c_string.h"
 
-#if defined( BUILD_WOFS )
-#include "romfs.h"
-#elif defined( BUILD_SPIFFS )
 #include "spiffs.h"
-#endif
 
 int fs_mode2flag(const char *mode){
   if(c_strlen(mode)==1){

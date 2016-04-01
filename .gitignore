@@ -1,0 +1,9 @@
+sdk/
+cache/
+user_config.h
+server-ca.crt
+
+#ignore Eclipse project files
+.cproject
+.project
+.settings/

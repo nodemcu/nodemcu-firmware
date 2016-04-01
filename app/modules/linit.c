@@ -57,7 +57,12 @@ extern const luaR_entry math_map[];
 BUILTIN_LIB(      MATH,      LUA_MATHLIBNAME,   math_map);
 #endif
 
+#ifdef LUA_CROSS_COMPILER
+const luaL_Reg lua_libs[] = {{NULL, NULL}};
+const luaR_table lua_rotable[] = {{NULL, NULL}};
+#else 
 extern const luaL_Reg lua_libs[];
+#endif
 
 void luaL_openlibs (lua_State *L) {
   const luaL_Reg *lib = lua_libs;

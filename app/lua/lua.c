@@ -11,6 +11,8 @@
 #include "c_string.h"
 #include "flash_fs.h"
 #include "user_version.h"
+#include "driver/readline.h"
+#include "driver/uart.h"
 
 #define lua_c
 
@@ -466,7 +468,7 @@ int lua_main (int argc, char **argv) {
 
 void lua_handle_input (bool force)
 {
-  if (force || readline (&gLoad))
+  if (gLoad.L && (force || readline (&gLoad)))
     dojob (&gLoad);
 }
 
