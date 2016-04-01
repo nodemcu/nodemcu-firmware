@@ -53,6 +53,34 @@ net.createServer(net.TCP, 30) -- 30s timeout
 #### See also
 [`net.createConnection()`](#netcreateconnection)
 
+## net.multicastJoin()
+
+Join multicast group.
+
+#### Syntax
+`net.multicastJoin(if_ip, multicast_ip)`
+
+#### Parameters
+- `if_ip` string containing the interface ip to join the multicast group. "any" or "" affects all interfaces.
+- `multicast_ip` of the group to join
+
+#### Returns
+`nil`
+
+## net.multicastLeave()
+
+Leave multicast group.
+
+#### Syntax
+`net.multicastLeave(if_ip, multicast_ip)`
+
+#### Parameters
+- `if_ip` string containing the interface ip to leave the multicast group. "any" or "" affects all interfaces.
+- `multicast_ip` of the group to leave
+
+#### Returns
+`nil`
+
 # net.server Module
 
 ## net.server:close()
@@ -109,6 +137,20 @@ end)
 
 #### See also
 [`net.createServer()`](#netcreateserver)
+
+## net.server:on()
+
+UDP server only: Register callback functions for specific events.
+
+#### See also
+[`net.socket:on()`](#netsocketon)
+
+## net.server:send()
+
+UDP server only: Sends data to remote peer.
+
+#### See also
+[`net.socket:send()`](#netsocketsend)
 
 # net.socket Module
 ## net.socket:close()
@@ -168,6 +210,20 @@ sk = nil
 #### See also
 [`net.createServer()`](#netcreateserver)
 
+## net.socket:getpeer()
+
+Retrieve port and ip of peer.
+
+#### Syntax
+`getpeer()`
+
+#### Parameters
+none
+
+#### Returns
+- `ip` of peer
+- `port` of peer
+
 ## net.socket:hold()
 
 Throttle data reception by placing a request to block the TCP receive function. This request is not effective immediately, Espressif recommends to call it while reserving 5*1460 bytes of memory.
@@ -215,7 +271,7 @@ end)
 
 ## net.socket:send()
 
-Sends data to server.
+Sends data to remote peer.
 
 #### Syntax
 `send(string[, function(sent)])`
@@ -282,7 +338,7 @@ end)
 
 ## net.socket:unhold()
 
-Unblock TCP receiving data, i.e. undo `hold()`.
+Unblock TCP receiving data by revocation of a preceding `hold()`.
 
 #### Syntax
 `unhold()`
