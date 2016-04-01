@@ -107,6 +107,10 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 
 //#define WIFI_SMART_ENABLE
 
+#define WIFI_STATION_STATUS_MONITOR_ENABLE
+#define WIFI_SDK_EVENT_MONITOR_ENABLE
+#define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
+
 #define STRBUF_DEFAULT_INCREMENT 32
 
 #endif	/* __USER_CONFIG_H__ */
