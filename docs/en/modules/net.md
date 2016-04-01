@@ -53,6 +53,34 @@ net.createServer(net.TCP, 30) -- 30s timeout
 #### See also
 [`net.createConnection()`](#netcreateconnection)
 
+## net.multicastJoin()
+
+Join multicast group.
+
+#### Syntax
+`net.multicastJoin(if_ip, multicast_ip)`
+
+#### Parameters
+- `if_ip` string containing the interface ip to join the multicast group. "any" or "" affects all interfaces.
+- `multicast_ip` of the group to join
+
+#### Returns
+`nil`
+
+## net.multicastLeave()
+
+Leave multicast group.
+
+#### Syntax
+`net.multicastLeave(if_ip, multicast_ip)`
+
+#### Parameters
+- `if_ip` string containing the interface ip to leave the multicast group. "any" or "" affects all interfaces.
+- `multicast_ip` of the group to leave
+
+#### Returns
+`nil`
+
 # net.server Module
 
 ## net.server:close()
