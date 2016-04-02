@@ -154,7 +154,8 @@ Publishes a message.
 - `message` the message to publish, (buffer or string)
 - `qos` QoS level
 - `retain` retain flag
-- `function(client)` optional callback fired when PUBACK received
+- `function(client)` optional callback fired when PUBACK received.  NOTE: When calling publish() more than once, the last callback function defined will be called for ALL publish commands.
+  
 
 #### Returns
 `true` on success, `false` otherwise
@@ -171,7 +172,7 @@ Subscribes to one or several topics.
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `qos` QoS subscription level, default 0
 - `table` array of 'topic, qos' pairs to subscribe to
-- `function(client)` optional callback fired when subscription(s) succeeded
+- `function(client)` optional callback fired when subscription(s) succeeded.  NOTE: When calling subscribe() more than once, the last callback function defined will be called for ALL subscribe commands.
 
 #### Returns
 `true` on success, `false` otherwise
@@ -196,7 +197,7 @@ Unsubscribes from one or several topics.
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `table` array of 'topic, anything' pairs to unsubscribe from
-- `function(client)` optional callback fired when unsubscription(s) succeeded
+- `function(client)` optional callback fired when unsubscription(s) succeeded.  NOTE: When calling unsubscribe() more than once, the last callback function defined will be called for ALL unsubscribe commands.
 
 #### Returns
 `true` on success, `false` otherwise
