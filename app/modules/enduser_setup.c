@@ -394,27 +394,27 @@ static void enduser_setup_check_station(void *p)
   
   if (has_ip == 0)
   {
-	 // No IP Address yet, so check the reported status 
+    // No IP Address yet, so check the reported status 
     uint8_t curr_status = wifi_station_get_connect_status();
 
-	 if (curr_status == 2 || curr_status == 3 || curr_status == 4)
-	 {
-		 state->connecting = 0;
-		 
-		 // If the status is an error status and the channel changed, then cache the 
-		 // status to state since the Station won't be able to report the same status
-		 // after switching the channel back to the SoftAP's
-		 if (currChan != state->softAPchannel) {
-			state->lastStationStatus = curr_status;
-			
-			ENDUSER_SETUP_DEBUG("Turning off Station due to different channel than AP");
-			
-			wifi_station_disconnect();
-			wifi_set_opmode(SOFTAP_MODE);
-			enduser_setup_ap_start();
-		 }
-	 }
-	 return;
+    if (curr_status == 2 || curr_status == 3 || curr_status == 4)
+    {
+      state->connecting = 0;
+     
+      // If the status is an error status and the channel changed, then cache the 
+      // status to state since the Station won't be able to report the same status
+      // after switching the channel back to the SoftAP's
+      if (currChan != state->softAPchannel) {
+        state->lastStationStatus = curr_status;
+      
+        ENDUSER_SETUP_DEBUG("Turning off Station due to different channel than AP");
+      
+        wifi_station_disconnect();
+        wifi_set_opmode(SOFTAP_MODE);
+        enduser_setup_ap_start();
+      }
+   }
+   return;
   }
 
   state->success = 1;
@@ -429,7 +429,7 @@ static void enduser_setup_check_station(void *p)
 
   if (currChan == state->softAPchannel)
   {
-	 enduser_setup_connected_callback();
+    enduser_setup_connected_callback();
     state->callbackDone = 1;
   }
   else
@@ -469,7 +469,7 @@ static void enduser_setup_check_station(void *p)
 static err_t force_abort (void *arg, struct tcp_pcb *pcb)
 {
   ENDUSER_SETUP_DEBUG("force_abort");
-	  
+    
   (void)arg;
   tcp_poll (pcb, 0, 0);
   tcp_abort (pcb);
@@ -480,7 +480,7 @@ static err_t force_abort (void *arg, struct tcp_pcb *pcb)
 static err_t handle_remote_close (void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 {
   ENDUSER_SETUP_DEBUG("handle_remote_close");
-  	
+    
   (void)arg; (void)err;
   if (p) /* server sent us data, just ACK and move on */
   {
@@ -500,7 +500,7 @@ static err_t handle_remote_close (void *arg, struct tcp_pcb *pcb, struct pbuf *p
 static inline void deferred_close (struct tcp_pcb *pcb)
 {
   ENDUSER_SETUP_DEBUG("deferred_close");
-  	
+    
   tcp_poll (pcb, force_abort, 15); /* ~3sec from now */
   tcp_recv (pcb, handle_remote_close);
   tcp_sent (pcb, 0);
@@ -573,7 +573,7 @@ static int enduser_setup_http_load_payload(void)
         ce_len = c_strlen(http_html_gzip_contentencoding);
         ENDUSER_SETUP_DEBUG("Content is gzipped");
     }   
-	 
+   
     int payload_len = LITLEN(http_header_200) + cl_len + ce_len + LITLEN(http_html_backup); 
     state->http_payload_len = payload_len;
     state->http_payload_data = (char *) c_malloc(payload_len);
@@ -590,7 +590,7 @@ static int enduser_setup_http_load_payload(void)
     c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
     offset += cl_len;
     c_memcpy(&(state->http_payload_data[offset]), &(http_html_backup), sizeof(http_html_backup));
-		  
+      
     return 1; 
   }
 
@@ -807,7 +807,7 @@ static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
   unsigned offs = (unsigned)arg;
 
   ENDUSER_SETUP_DEBUG("streamout_sent");
-		
+    
   if (!state || !state->http_payload_data)
   {
     tcp_abort (pcb);
@@ -878,7 +878,7 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
     "HTTP/1.1 200 OK\r\n"
     "Cache-control:no-cache\r\n"
     "Connection:close\r\n"
-	 "Access-Control-Allow-Origin: *\r\n"	 
+    "Access-Control-Allow-Origin: *\r\n"  
     "Content-type:text/plain\r\n"
     "Content-length: %d\r\n"
     "\r\n"
@@ -951,7 +951,7 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
   ENDUSER_SETUP_DEBUG("enduser_setup_serve_status_as_json");
   
   // If the station is currently shut down because of wi-fi channel issue, use the cached status
-	uint8_t curr_status = state->lastStationStatus > 0 ? state->lastStationStatus : wifi_station_get_connect_status ();  
+  uint8_t curr_status = state->lastStationStatus > 0 ? state->lastStationStatus : wifi_station_get_connect_status ();  
 
   char json_payload[64];
   c_sprintf(json_payload, "{\"deviceid\":\"%06X\", \"status\":%d}", system_get_chip_id(), curr_status);
@@ -959,8 +959,8 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
   const char fmt[] =
     "HTTP/1.1 200 OK\r\n"
     "Cache-Control: no-cache\r\n"
-	 "Connection: close\r\n"
-	 "Access-Control-Allow-Origin: *\r\n"
+    "Connection: close\r\n"
+    "Access-Control-Allow-Origin: *\r\n"
     "Content-Type: application/json\r\n"
     "Content-Length: %d\r\n"
     "\r\n"
@@ -975,35 +975,35 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
 
 static void enduser_setup_handle_OPTIONS (struct tcp_pcb *http_client, char *data, unsigned short data_len)
 {
-	ENDUSER_SETUP_DEBUG("enduser_setup_handle_OPTIONS");
-	
+  ENDUSER_SETUP_DEBUG("enduser_setup_handle_OPTIONS");
+  
   const char json[] =
     "HTTP/1.1 200 OK\r\n"
     "Cache-Control: no-cache\r\n"
-	 "Connection: close\r\n"
+    "Connection: close\r\n"
     "Content-Type: application/json\r\n"
     "Content-Length: 0\r\n"
-	 "Access-Control-Allow-Origin: *\r\n"
-	 "Access-Control-Allow-Methods: GET\r\n"
-	 "Access-Control-Allow-Age: 300\r\n"
+    "Access-Control-Allow-Origin: *\r\n"
+    "Access-Control-Allow-Methods: GET\r\n"
+    "Access-Control-Allow-Age: 300\r\n"
     "\r\n";
 
   const char others[] =
-  	"HTTP/1.1 200 OK\r\n"
-	"Cache-Control: no-cache\r\n"
-	"Connection: close\r\n"
-   "Content-Length: 0\r\n"	
-	"\r\n";
-	
+    "HTTP/1.1 200 OK\r\n"
+    "Cache-Control: no-cache\r\n"
+    "Connection: close\r\n"
+    "Content-Length: 0\r\n"  
+    "\r\n";
+  
   int type = 0;
   
   if (c_strncmp(data, "GET ", 4) == 0)
   {
     if (c_strncmp(data + 4, "/aplist", 7) == 0 || c_strncmp(data + 4, "/setwifi?", 9) == 0 || c_strncmp(data + 4, "/status.json", 12) == 0)
     {
-		   enduser_setup_http_serve_header (http_client, json, c_strlen(json));
-			return;
-	 }
+       enduser_setup_http_serve_header (http_client, json, c_strlen(json));
+      return;
+   }
   }
   enduser_setup_http_serve_header (http_client, others, c_strlen(others));
   return;
@@ -1067,7 +1067,7 @@ static char *escape_ssid (char *dst, const char *src)
 
 static void notify_scan_listeners (const char *payload, size_t sz)
 {
-  ENDUSER_SETUP_DEBUG("notify_scan_listeners");	
+  ENDUSER_SETUP_DEBUG("notify_scan_listeners"); 
   if (!state)
   {
     return;
@@ -1091,7 +1091,7 @@ static void notify_scan_listeners (const char *payload, size_t sz)
 
 static void on_scan_done (void *arg, STATUS status)
 {
-  ENDUSER_SETUP_DEBUG("on_scan_done");	
+  ENDUSER_SETUP_DEBUG("on_scan_done");  
   if (!state || !state->scan_listeners)
   {
     return;
@@ -1109,7 +1109,7 @@ static void on_scan_done (void *arg, STATUS status)
       "HTTP/1.1 200 OK\r\n"
       "Connection:close\r\n"
       "Cache-control:no-cache\r\n"
-	   "Access-Control-Allow-Origin: *\r\n"		
+      "Access-Control-Allow-Origin: *\r\n"   
       "Content-type:application/json\r\n"
       "Content-length:%4d\r\n"
       "\r\n";
@@ -1145,12 +1145,12 @@ static void on_scan_done (void *arg, STATUS status)
       p += sizeof (entry_mid) -1;
 
       p += c_sprintf (p, "%d", wn->rssi);
-		
+    
       const char entry_chan[] = ",\"chan\":"; 
       strcpy (p, entry_chan);
       p += sizeof (entry_chan) -1;
 
-      p += c_sprintf (p, "%d", wn->channel);		
+      p += c_sprintf (p, "%d", wn->channel);    
 
       *p++ = '}';
     }
@@ -1161,8 +1161,8 @@ static void on_scan_done (void *arg, STATUS status)
     http[hdr_sz] = '['; /* Rewrite the \0 with the correct start of body */
 
     notify_scan_listeners (http, hdr_sz + body_sz);
-    ENDUSER_SETUP_DEBUG(http + hdr_sz);		 
-	 
+    ENDUSER_SETUP_DEBUG(http + hdr_sz);    
+   
     c_free (http);
     return;
   }
@@ -1220,45 +1220,45 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     }
     else if (c_strncmp(data + 4, "/aplist", 7) == 0)
     {
-		// Don't do an AP Scan while station is trying to connect to Wi-Fi
-		if (state->connecting == 0) 
-		{
-			scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
-			if (!l)
-			{
-				ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
-			}
+    // Don't do an AP Scan while station is trying to connect to Wi-Fi
+    if (state->connecting == 0) 
+    {
+      scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
+      if (!l)
+      {
+        ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
+      }
 
-			bool already = (state->scan_listeners != NULL);
+      bool already = (state->scan_listeners != NULL);
 
-			tcp_arg (http_client, l);
-			/* TODO: check if also need a tcp_err() cb, or if recv() is enough */
-			l->conn = http_client;
-			l->next = state->scan_listeners;
-			state->scan_listeners = l;
+      tcp_arg (http_client, l);
+      /* TODO: check if also need a tcp_err() cb, or if recv() is enough */
+      l->conn = http_client;
+      l->next = state->scan_listeners;
+      state->scan_listeners = l;
 
-			if (!already)
-			{
-				if (!wifi_station_scan(NULL, on_scan_done))
-				{
-					enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
-					deferred_close (l->conn);
-					l->conn = 0;
-					free_scan_listeners();
-				}
-			}
-			goto free_out; /* request queued */
-		}
-		else
-		{
-		   // Return No Content status to the caller
-			enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));			
-		}
+      if (!already)
+      {
+        if (!wifi_station_scan(NULL, on_scan_done))
+        {
+          enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
+          deferred_close (l->conn);
+          l->conn = 0;
+          free_scan_listeners();
+        }
+      }
+      goto free_out; /* request queued */
+    }
+    else
+    {
+       // Return No Content status to the caller
+      enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));     
+    }
     }
     else if (c_strncmp(data + 4, "/status.json", 12) == 0)
     {
-		enduser_setup_serve_status_as_json(http_client);
-    }	 	 
+    enduser_setup_serve_status_as_json(http_client);
+    }    
     else if (c_strncmp(data + 4, "/status", 7) == 0)
     {
       enduser_setup_serve_status(http_client);
@@ -1293,7 +1293,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
           ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
           break;
       }
-    }	 
+    }  
     else if (c_strncmp(data + 4, "/generate_204", 13) == 0)
     {
       /* Convince Android devices that they have internet access to avoid pesky dialogues. */
@@ -1308,7 +1308,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   }
   else if (c_strncmp(data, "OPTIONS ", 8) == 0)
   {
-	   enduser_setup_handle_OPTIONS(http_client, data, data_len);
+     enduser_setup_handle_OPTIONS(http_client, data, data_len);
   }  
   else /* not GET or OPTIONS */
   {
@@ -1483,15 +1483,15 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   int i, j;
   
   for(i=12;i<(int)strlen(qname);i++) 
-	{
-		p=qname[i];
-		for(j=0;j<(int)p;j++) 
-		{
-			qname[i]=qname[i+1];
-			i=i+1;
-		}
-		qname[i]='.';
-	}
+  {
+    p=qname[i];
+    for(j=0;j<(int)p;j++) 
+    {
+      qname[i]=qname[i+1];
+      i=i+1;
+    }
+    qname[i]='.';
+  }
   qname[i-1]='\0';
   ENDUSER_SETUP_DEBUG(qname); 
   c_free(qname);
@@ -1750,7 +1750,7 @@ static int enduser_setup_start(lua_State *L)
   }
   else
   {
-	 enduser_setup_check_station_start();
+   enduser_setup_check_station_start();
   }
 
   if(enduser_setup_dns_start())
