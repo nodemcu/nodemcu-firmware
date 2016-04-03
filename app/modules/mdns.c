@@ -1,4 +1,4 @@
-// Module for access to the espconn_mdns functions
+// Module for access to the nodemcu_mdns functions
 
 #include "module.h"
 #include "lauxlib.h"
@@ -9,115 +9,59 @@
 #include "c_types.h"
 #include "mem.h"
 #include "lwip/ip_addr.h"
-#include "espconn.h"
+#include "nodemcu_mdns.h"
 #include "user_interface.h"
-
-typedef struct wrapper {
-  struct mdns_info mdns_info;
-  char data;
-} wrapper_t;
-
-static wrapper_t *info;
-
-typedef enum phase {
-  PHASE_CALCULATE_LENGTH,
-  PHASE_COPY_DATA
-} phase_t;
-
-static char *advance_over_string(char *s)
-{
-  while (*s++) {
-  }
-  // s now points after the null
-  return s;
-}
 
 //
 // mdns.close()
 // 
 static int mdns_close(lua_State *L)
 {
-  if (info) {
-    espconn_mdns_close();
-    c_free(info);
-    info = NULL;
-  }
+  nodemcu_mdns_close();
   return 0;
 }
 
-// 
-// this handles all the arguments. Two passes are necessary -- 
-// one to calculate the size of the block, and the other to 
-// copy the data. It is vitally important that these two
-// passes are kept in step.
 //
-static wrapper_t *process_args(lua_State *L, phase_t phase, size_t *sizep)
+// mdns.register(hostname [, { attributes} ])
+//
+static int mdns_register(lua_State *L)
 {
-  wrapper_t *result = NULL;
-  char *p = NULL;
+  struct nodemcu_mdns_info info;
 
-  if (phase == PHASE_COPY_DATA) {
-    result = (wrapper_t *) c_zalloc(sizeof(wrapper_t) + *sizep);
-    if (!result) {
-      return NULL;
-    }
-    p = &result->data;
-  }
+  memset(&info, 0, sizeof(info));
+  
+  info.host_name = luaL_checkstring(L, 1);
+  info.service_name = "http";
+  info.service_port = 80;
+  info.host_desc = info.host_name;
 
-  if (phase == PHASE_CALCULATE_LENGTH) {
-    luaL_checktype(L, 1, LUA_TSTRING);
-    luaL_checktype(L, 2, LUA_TSTRING);
-    (void) luaL_checkinteger(L, 3);
-    *sizep += c_strlen(luaL_checkstring(L, 1)) + 1;
-    *sizep += c_strlen(luaL_checkstring(L, 2)) + 1;
-  } else {
-    c_strcpy(p, luaL_checkstring(L, 1)); 
-    result->mdns_info.host_name = p;
-    p = advance_over_string(p);
-
-    c_strcpy(p, luaL_checkstring(L, 2));
-    result->mdns_info.server_name = p;
-    p = advance_over_string(p);
-
-    result->mdns_info.server_port = luaL_checkinteger(L, 3);
-  }
-
-  if (lua_gettop(L) >= 4) {
-    luaL_checktype(L, 4, LUA_TTABLE);
+  if (lua_gettop(L) >= 2) {
+    luaL_checktype(L, 2, LUA_TTABLE);
     lua_pushnil(L); // first key
     int slot = 0;
-    while (lua_next(L, 4) != 0 && slot < sizeof(result->mdns_info.txt_data) / sizeof(result->mdns_info.txt_data[0])) {
-      if (phase == PHASE_CALCULATE_LENGTH) {
-        luaL_checktype(L, -2, LUA_TSTRING);
-        *sizep += c_strlen(luaL_checkstring(L, -2)) + 1;
-        *sizep += c_strlen(luaL_checkstring(L, -1)) + 1;
-      } else {
-        // put in the key
-	c_strcpy(p, luaL_checkstring(L, -2));
-        result->mdns_info.txt_data[slot] = p;
-	p = advance_over_string(p);
+    while (lua_next(L, 2) != 0 && slot < sizeof(info.txt_data) / sizeof(info.txt_data[0])) {
+      luaL_checktype(L, -2, LUA_TSTRING);
+      const char *key = luaL_checkstring(L, -2);
 
-	// now smash in the value
+      if (c_strcmp(key, "port") == 0) {
+	info.service_port = luaL_checknumber(L, -1);
+      } else if (c_strcmp(key, "service") == 0) {
+	info.service_name = luaL_checkstring(L, -1);
+      } else if (c_strcmp(key, "description") == 0) {
+	info.host_desc = luaL_checkstring(L, -1);
+      } else {
+	int len = c_strlen(key) + 1;
 	const char *value = luaL_checkstring(L, -1);
-	p[-1] = '=';
-	c_strcpy(p, value);
-	p = advance_over_string(p);
+	char *p = alloca(len + c_strlen(value) + 1);
+	strcpy(p, key);
+	strcat(p, "=");
+	strcat(p, value);
+	info.txt_data[slot++] = p;
       }
       lua_pop(L, 1);
     }
   }
 
-  return result;
-}
-
-//
-// mdns.register(hostname, servicename, port [, attributes])
-//
-static int mdns_register(lua_State *L)
-{
-  size_t len = 0;
-
-  (void) process_args(L, PHASE_CALCULATE_LENGTH, &len);
 
   struct ip_info ipconfig;
 
@@ -127,25 +71,18 @@ static int mdns_register(lua_State *L)
     return luaL_error(L, "No network connection");
   }
 
-  wrapper_t *result = process_args(L, PHASE_COPY_DATA, &len);
-
-  if (!result) {
-    return luaL_error( L, "failed to allocate info block" );
-  }
-
-  result->mdns_info.ipAddr = ipconfig.ip.addr;
-
   // Close up the old session (if any). This cannot fail
   // so no chance of losing the memory in 'result'
   
   mdns_close(L);
 
-  // Save the result as it appears that espconn_mdns_init needs
+  // Save the result as it appears that nodemcu_mdns_init needs
   // to have the data valid while it is running.
 
-  info = result;
-
-  espconn_mdns_init(&(info->mdns_info));
+  if (!nodemcu_mdns_init(&info)) {
+    mdns_close(L);
+    return luaL_error(L, "Unable to start mDns daemon");
+  }
 
   return 0;
 }
