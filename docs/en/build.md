@@ -12,3 +12,54 @@ Occasional NodeMCU firmware hackers don't need full control over the complete to
 
 ## Linux Build Environment
 NodeMCU firmware developers commit or contribute to the project on GitHub and might want to build their own full fledged build environment with the complete tool chain. There is a [post in the esp8266.com Wiki](http://www.esp8266.com/wiki/doku.php?id=toolchain#how_to_setup_a_vm_to_host_your_toolchain) that describes this.
+
+## Customizing the build
+
+There is an optional file `user_override.h` that can be placed at the root of the build tree. If this file is present then it
+will be included into the compile of every file. This allows you to customize the build without altering any of the
+files that are part of the firmware. Note that this file is included *in addtion to* all the existing files so it 
+will typically be short. 
+
+In order to include extra fonts into the build, just add a #define:
+
+```
+#define U8G_FONT_TABLE_EXTRA U8G_FONT_TABLE_ENTRY(font_helvB24)
+```
+
+or
+
+```
+#define U8G_FONT_TABLE_EXTRA U8G_FONT_TABLE_ENTRY(font_helvB24) U8G_FONT_TABLE_ENTRY(font_helvR12)
+```
+
+In order to enable asserts:
+
+```
+#define DEVELOPMENT_TOOLS
+```
+
+In order to add a module into the build:
+
+```
+#define LUA_USE_MODULES_ENDUSER_SETUP
+````
+
+In this way, you can have your custom configuration which will work across multiple versions/branches of the firmware.
+
+For a project to control humidity in a carnivorous plant terrarium, you might have:
+
+```
+#define LUA_USE_MODULES_MDNS
+#define LUA_USE_MODULES_MQTT
+#define LUA_USE_MODULES_DHT
+#define LUA_USE_MODULES_RTCTIME
+#define LUA_USE_MODULES_RTCMEM
+#define LUA_USE_MODULES_SNTP
+#define LUA_USE_MODULES_ENDUSER_SETUP
+
+#define U8G_FONT_TABLE_EXTRA    U8G_FONT_TABLE_ENTRY(font_helvB24)
+#define LUA_USE_MODULES_U8G
+#define LUA_USE_MODULES_UCG
+
+#define DEVELOPMENT_TOOLS
+```

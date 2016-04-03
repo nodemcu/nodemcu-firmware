@@ -6,8 +6,14 @@
 // Configure U8glib fonts
 //
 // Add a U8G_FONT_TABLE_ENTRY for each font you want to compile into the image
+// or just define U8G_FONT_TABLE_EXTRA as U8G_FONT_TABLE_ENTRY(font_helvB24)
+
+#ifndef U8G_FONT_TABLE_EXTRA
+#define U8G_FONT_TABLE_EXTRA
+#endif
+
 #define U8G_FONT_TABLE_ENTRY(font)
-#define U8G_FONT_TABLE                          \
+#define U8G_FONT_TABLE    U8G_FONT_TABLE_EXTRA  \
     U8G_FONT_TABLE_ENTRY(font_6x10)             \
     U8G_FONT_TABLE_ENTRY(font_chikita)
 #undef U8G_FONT_TABLE_ENTRY
