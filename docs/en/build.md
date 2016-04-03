@@ -15,10 +15,10 @@ NodeMCU firmware developers commit or contribute to the project on GitHub and mi
 
 ## Customizing the build
 
-There is an optional file `user_config.h` that can be placed at the root of the build tree. If this file is present then it
+There is an optional file `user_override.h` that can be placed at the root of the build tree. If this file is present then it
 will be included into the compile of every file. This allows you to customize the build without altering any of the
 files that are part of the firmware. Note that this file is included *in addtion to* all the existing files so it 
-will typically be short. This file does not replace the `app/include/user_config.h`.
+will typically be short. 
 
 In order to include extra fonts into the build, just add a #define:
 
