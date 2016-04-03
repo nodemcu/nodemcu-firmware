@@ -15,7 +15,7 @@ Register a hostname and start the mDNS service. If the service is already runnin
 - `hostname` The hostname for this device. Alphanumeric characters are best.
 - `attributes` A optional table of options. The keys must all be strings.
 
-The `attributes` contains two sorts of attributes -- those with specific names, and those that are service specific. [RFC 6763](https://tools.ietf.org/html/rfc6763#page-13} 
+The `attributes` contains two sorts of attributes -- those with specific names, and those that are service specific. [RFC 6763](https://tools.ietf.org/html/rfc6763#page-13) 
 defines how extra, service specific, attributes are encoded into the DNS. One example is that if the device supports printing, then the queue name can 
 be specified as an additional attribute. This module supports up to 10 such attributes.
 
