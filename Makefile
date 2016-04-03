@@ -131,10 +131,6 @@ CCFLAGS += 			\
 	-mtext-section-literals
 #	-Wall			
 
-ifneq ($(wildcard $(TOP_DIR)/user_config.h),)
-INCLUDES += -include "$(TOP_DIR)/user_config.h"
-endif
-
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
 
