@@ -1496,24 +1496,27 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
 
 #if ENDUSER_SETUP_DEBUG_ENABLE
   char *qname = c_malloc(qname_len + 12); 
-  c_sprintf(qname, "DNS QUERY = %s", &(recv_data[12]));
-
-  uint32_t p;
-  int i, j;
-  
-  for(i=12;i<(int)strlen(qname);i++) 
+  if (qname != NULL)
   {
-    p=qname[i];
-    for(j=0;j<(int)p;j++) 
+    c_sprintf(qname, "DNS QUERY = %s", &(recv_data[12]));
+
+    uint32_t p;
+    int i, j;
+  
+    for(i=12;i<(int)strlen(qname);i++) 
     {
-      qname[i]=qname[i+1];
-      i=i+1;
+      p=qname[i];
+      for(j=0;j<(int)p;j++) 
+      {
+        qname[i]=qname[i+1];
+        i=i+1;
+      }
+      qname[i]='.';
     }
-    qname[i]='.';
+    qname[i-1]='\0';
+    ENDUSER_SETUP_DEBUG(qname); 
+    c_free(qname);
   }
-  qname[i-1]='\0';
-  ENDUSER_SETUP_DEBUG(qname); 
-  c_free(qname);
 #endif
 
   uint8_t if_mode = wifi_get_opmode();
