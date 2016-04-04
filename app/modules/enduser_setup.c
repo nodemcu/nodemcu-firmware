@@ -570,7 +570,7 @@ static int enduser_setup_http_load_payload(void)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 
-    c_sprintf(cl_hdr, http_header_content_len_fmt, c_strlen(http_html_backup));
+    c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(http_html_backup));
     cl_len = c_strlen(cl_hdr);
     
     if (http_html_backup[0] == 0x1f && http_html_backup[1] == 0x8b)
