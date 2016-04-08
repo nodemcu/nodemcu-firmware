@@ -1,7 +1,7 @@
 # HTTP Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2016-01-15 | [Vowstar](https://github.com/vowstar) | [Vowstar](https://github.com/vowstar) | [http.c](../../../app/modules/http.c)|
+| 2016-01-15 | [esphttpclient](https://github.com/Caerbannog/esphttpclient) / [Vowstar](https://github.com/vowstar) | [Vowstar](https://github.com/vowstar) | [http.c](../../../app/modules/http.c)|
 
 Basic HTTP *client* module.
 

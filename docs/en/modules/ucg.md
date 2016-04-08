@@ -77,10 +77,10 @@ Initialize a display via Hardware SPI.
 - `ili9163_18x128x128_hw_spi()`
 - `ili9341_18x240x320_hw_spi()`
 - `pcf8833_16x132x132_hw_spi()`
-- `seps225_16x128x128_univision_hw_spi()`
+- `seps225_16x128x128_uvis_hw_spi()`
 - `ssd1351_18x128x128_hw_spi()`
 - `ssd1351_18x128x128_ft_hw_spi()`
-- `ssd1331_18x96x64_univision_hw_spi()`
+- `ssd1331_18x96x64_uvis_hw_spi()`
 - `st7735_18x128x160_hw_spi()`
 
 #### Syntax

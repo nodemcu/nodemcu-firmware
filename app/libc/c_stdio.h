@@ -63,7 +63,7 @@ extern void output_redirect(const char *str);
 int c_sprintf(char* s,const char *fmt, ...);
 #endif
 
-// #define c_vsprintf ets_vsprintf
+#define c_vsprintf ets_vsprintf
 #define c_printf(...) do {					\
 	unsigned char __print_buf[BUFSIZ];		\
 	c_sprintf(__print_buf, __VA_ARGS__);	\

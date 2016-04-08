@@ -12,10 +12,8 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = ucglib.a
+GEN_LIBS = libnodemcu_net.a
 endif
-
-STD_CFLAGS=-std=gnu11 -Wimplicit
 
 #############################################################
 # Configuration i.e. compile options etc.

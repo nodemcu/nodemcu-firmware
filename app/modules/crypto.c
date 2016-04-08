@@ -238,7 +238,6 @@ static int crypto_hash_gcdelete (lua_State *L)
   luaL_argcheck(L, dudat, 1, "crypto.hash expected");
 
   os_free(dudat->ctx);
-  os_free(dudat);
 
   return 0;
 }

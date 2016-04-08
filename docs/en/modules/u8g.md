@@ -342,7 +342,7 @@ See [u8glib getWidth()](https://github.com/olikraus/u8glib/wiki/userreference#ge
 See [u8glib getStrWidth](https://github.com/olikraus/u8glib/wiki/userreference#getstrwidth).
 
 ## u8g.disp:nextPage()
-See [u8glib nextPage()(https://github.com/olikraus/u8glib/wiki/userreference#nextpage).
+See [u8glib nextPage()](https://github.com/olikraus/u8glib/wiki/userreference#nextpage).
 
 ## u8g.disp:setColorIndex()
 See [u8glib setColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#setcolortndex).

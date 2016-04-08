@@ -41,6 +41,7 @@ SUBDIRS= 					\
 	crypto 					\
 	dhtlib					\
 	tsl2561					\
+	net					\
 	http
 
 endif # } PDIR
@@ -86,6 +87,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
 	http/libhttp.a				\
+	net/libnodemcu_net.a			\
 	modules/libmodules.a			\
 
 # Inspect the modules library and work out which modules need to be linked.
