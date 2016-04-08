@@ -240,7 +240,9 @@ Sets up the search to find the device type `family_code`. The search itself has 
 [ow.search()](#owsearch)
 
 ## ow.write()
-Writes a byte. If `power` is 1 then the wire is held high at the end for parasitically powered devices. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+Writes a byte. If `power` is 1 then the wire is held high at the end for parasitically powered devices. For example, when the bus wire has a pull-up resistor,`power=0`. Otherwise this flag is 1. See the figure below for connections. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+
+<img src="https://cloud.githubusercontent.com/assets/11760870/13659742/3a0f0c6c-e652-11e5-9dec-461cd7b648d1.png" alt="circ" height="800px"/>
 
 #### Syntax
 `ow.write(pin, v, power)`
@@ -257,7 +259,10 @@ Writes a byte. If `power` is 1 then the wire is held high at the end for parasit
 [ow.depower()](#owdepower)
 
 ## ow.write_bytes()
-Writes multi bytes. If `power` is 1 then the wire is held high at the end for parasitically powered devices. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+Writes multi bytes. If `power` is 1 then the wire is held high at the end for parasitically powered devices. For example, when the bus wire has a pull-up resistor,`power=0`. Otherwise this flag is 1. See the figure below for connections. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+
+<img src="https://cloud.githubusercontent.com/assets/11760870/13659742/3a0f0c6c-e652-11e5-9dec-461cd7b648d1.png" alt="circ" height="800px"/>
+
 
 #### Syntax
 `ow.write_bytes(pin, buf, power)`
