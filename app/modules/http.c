@@ -10,7 +10,6 @@
 #include "httpclient.h"
 
 static int http_callback_registry  = LUA_NOREF;
-static lua_State * http_client_L = NULL;
 
 static void http_callback( char * response, int http_status, char * full_response )
 {
@@ -18,26 +17,30 @@ static void http_callback( char * response, int http_status, char * full_respons
   c_printf( "http_status=%d\n", http_status );
   if ( http_status != HTTP_STATUS_GENERIC_ERROR )
   {
-    c_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
+    if (full_response != NULL) {
+      c_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
+    }
     c_printf( "response=%s<EOF>\n", response );
   }
 #endif
   if (http_callback_registry != LUA_NOREF)
   {
-    lua_rawgeti(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
+    lua_State *L = lua_getstate();
 
-    lua_pushnumber(http_client_L, http_status);
-    if ( http_status != HTTP_STATUS_GENERIC_ERROR )
+    lua_rawgeti(L, LUA_REGISTRYINDEX, http_callback_registry);
+
+    lua_pushnumber(L, http_status);
+    if ( http_status != HTTP_STATUS_GENERIC_ERROR && response)
     {
-      lua_pushstring(http_client_L, response);
+      lua_pushstring(L, response);
     }
     else
     {
-      lua_pushnil(http_client_L);
+      lua_pushnil(L);
     }
-    lua_call(http_client_L, 2, 0); // With 2 arguments and 0 result
+    lua_call(L, 2, 0); // With 2 arguments and 0 result
 
-    luaL_unref(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
+    luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = LUA_NOREF;
   }
 }
@@ -46,7 +49,6 @@ static void http_callback( char * response, int http_status, char * full_respons
 static int http_lapi_request( lua_State *L )
 {
   int length;
-  http_client_L        = L;
   const char * url     = luaL_checklstring(L, 1, &length);
   const char * method  = luaL_checklstring(L, 2, &length);
   const char * headers = NULL;
@@ -68,7 +70,7 @@ static int http_lapi_request( lua_State *L )
   }
 
   if (lua_type(L, 5) == LUA_TFUNCTION || lua_type(L, 5) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 5);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, 5);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -82,7 +84,6 @@ static int http_lapi_request( lua_State *L )
 static int http_lapi_post( lua_State *L )
 {
   int length;
-  http_client_L        = L;
   const char * url     = luaL_checklstring(L, 1, &length);
   const char * headers = NULL;
   const char * body    = NULL;
@@ -103,7 +104,7 @@ static int http_lapi_post( lua_State *L )
   }
 
   if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -117,7 +118,6 @@ static int http_lapi_post( lua_State *L )
 static int http_lapi_put( lua_State *L )
 {
   int length;
-  http_client_L        = L;
   const char * url     = luaL_checklstring(L, 1, &length);
   const char * headers = NULL;
   const char * body    = NULL;
@@ -138,7 +138,7 @@ static int http_lapi_put( lua_State *L )
   }
 
   if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -152,7 +152,6 @@ static int http_lapi_put( lua_State *L )
 static int http_lapi_delete( lua_State *L )
 {
   int length;
-  http_client_L        = L;
   const char * url     = luaL_checklstring(L, 1, &length);
   const char * headers = NULL;
   const char * body    = NULL;
@@ -173,7 +172,7 @@ static int http_lapi_delete( lua_State *L )
   }
 
   if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -187,7 +186,6 @@ static int http_lapi_delete( lua_State *L )
 static int http_lapi_get( lua_State *L )
 {
   int length;
-  http_client_L        = L;
   const char * url     = luaL_checklstring(L, 1, &length);
   const char * headers = NULL;
 
@@ -203,7 +201,7 @@ static int http_lapi_get( lua_State *L )
   }
 
   if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
