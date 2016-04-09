@@ -12,7 +12,9 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
+UP_EXTRACT_DIR = ..
 GEN_LIBS = libcrypto.a
+COMPONENTS_libcrypto = micro-ecc/libuecc.a
 endif
 
 #############################################################
@@ -38,6 +40,7 @@ endif
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
+INCLUDES += -I ./micro-ecc
 INCLUDES += -I ../libc
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

@@ -19,6 +19,7 @@
 #define LUA_USE_MODULES_CJSON
 #define LUA_USE_MODULES_COAP
 #define LUA_USE_MODULES_CRYPTO
+#define LUA_USE_MODULES_ELLIPTIC
 #define LUA_USE_MODULES_DHT
 //#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
 #define LUA_USE_MODULES_FILE

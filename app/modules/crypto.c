@@ -6,6 +6,7 @@
 #include "c_types.h"
 #include "c_stdlib.h"
 #include "../crypto/digests.h"
+#include "../crypto/micro-ecc/uECC.h"
 
 #include "user_interface.h"
 
@@ -33,8 +34,6 @@ static int crypto_sha1( lua_State* L )
   lua_pushlstring(L, digest, 20);
   return 1;
 }
-
-
 static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 /**
   * encoded = crypto.toBase64(raw)
@@ -159,5 +158,126 @@ static const LUA_REG_TYPE crypto_map[] = {
   { LSTRKEY( "hmac"   ),   LFUNCVAL( crypto_lhmac ) },
   { LNILKEY, LNILVAL }
 };
+static uint8_t crypto_RNG(uint8_t *p_dest, uint8_t size)
+{
+  while(size--)
+  {
+    *p_dest = (uint8_t)rand();
+    p_dest++;
+  }
+  return 1;
+}
+static inline int bad_publickey (lua_State *L) { return luaL_error (L, "Public key is incorrect length or invalid"); }
+static inline int bad_privatekey (lua_State *L) { return luaL_error (L, "Private key is incorrect length or invalid"); }
+static inline int crypt_failed (lua_State *L) { return luaL_error (L, "uECC library returned a failure"); }
+static int crypto_randSeeded=0;
+void crypto_ensureRandomSeeded(void) {
+        uECC_set_rng((uECC_RNG_Function)&crypto_RNG);
+	if (!crypto_randSeeded) { 
+		crypto_randSeeded=true;
+	}
+}
+static int elliptic_compute_public_key( lua_State* L )
+{
+  uint8_t public_key[uECC_bytes()*2];
+  int len;
+  const char* private = luaL_checklstring(L, 1, &len);
+  if (len!=uECC_bytes()) { 
+    return bad_privatekey (L);
+  }
+  uECC_compute_public_key(private, public_key);
+  lua_pushlstring(L, public_key, uECC_bytes()*2);
+  return 1;
+}
+static int elliptic_generate_private_key( lua_State* L )
+{
+  uint8_t private_key[uECC_bytes()];
+  uint8_t public_key[uECC_bytes()*2];
+  crypto_ensureRandomSeeded();
+  uECC_make_key(public_key, private_key);
+  lua_pushlstring(L, private_key, uECC_bytes());
+  return 1;
+}
+static int elliptic_valid_public_key( lua_State* L )
+{
+  int len;
+  const char* public = luaL_checklstring(L, 1, &len);
+  if (len!=uECC_bytes()*2) { 
+    return bad_publickey (L);
+  }
+  int valid = uECC_valid_public_key(public);
+  lua_pushnumber(L, valid);
+  return 1;
+}
+static int elliptic_sign( lua_State* L )
+{
+  uint8_t signature[uECC_bytes()*2];
+  int len;
+  crypto_ensureRandomSeeded();
+  const char* private = luaL_checklstring(L, 1, &len);
+  if (len!=uECC_bytes()) { 
+    return bad_privatekey (L);
+  }
+  const char* message_hash = luaL_checklstring(L, 2, &len);
+  if (len!=uECC_bytes()) { 
+	// ERROR //TODO
+  }
+  uECC_sign(private, message_hash, signature);
+  lua_pushlstring(L, signature, uECC_bytes()*2);
+}
+static int elliptic_verify( lua_State* L )
+{
+  int len;
+  const char* public = luaL_checklstring(L, 1, &len);
+  if (len!=uECC_bytes()*2) { 
+    return bad_publickey (L);
+  }
+  const char* message_hash = luaL_checklstring(L, 2, &len);
+  if (len!=uECC_bytes()) { 
+	// ERROR //TODO
+  }
+  const char* signature = luaL_checklstring(L, 3, &len);
+  if (len!=uECC_bytes()*2) { 
+	// ERROR //TODO
+  }
+  uint8_t result = uECC_verify(public, message_hash, signature);
+  lua_pushnumber(L, result);
+  return 1;
+}
+static int elliptic_compress( lua_State* L)
+{
+  uint8_t compressed[uECC_bytes()+1];
+  int len;
+  const char* public = luaL_checklstring(L, 1, &len);
+  if (len!=uECC_bytes()*2) { 
+    return bad_publickey (L);
+  }
+  uECC_compress(public, compressed);
+  lua_pushlstring(L, compressed, uECC_bytes()+1);
+  return 1;
+}
+static int elliptic_decompress( lua_State* L)
+{
+  uint8_t decompressed[uECC_bytes()*2];
+  int len;
+  const char* public = luaL_checklstring(L, 1, &len);
+  if (len!=uECC_bytes()+1) { 
+    return bad_publickey (L);
+  }
+  uECC_decompress(public, decompressed);
+  lua_pushlstring(L, decompressed, uECC_bytes()*2);
+  return 1;
+}
 
+static const LUA_REG_TYPE elliptic_map[] = {
+  { LSTRKEY( "computePublicKey"   ),   LFUNCVAL( elliptic_compute_public_key ) },
+  { LSTRKEY( "generatePrivateKey"   ),   LFUNCVAL( elliptic_generate_private_key ) },
+  { LSTRKEY( "validPublicKey"   ),   LFUNCVAL( elliptic_valid_public_key ) },
+  { LSTRKEY( "sign"   ),   LFUNCVAL( elliptic_sign ) },
+  { LSTRKEY( "verify"   ),   LFUNCVAL( elliptic_verify ) },
+  { LSTRKEY( "compress"   ),   LFUNCVAL( elliptic_compress ) },
+  { LSTRKEY( "decompress"   ),   LFUNCVAL( elliptic_decompress ) },
+  { LNILKEY, LNILVAL }
+};
 NODEMCU_MODULE(CRYPTO, "crypto", crypto_map, NULL);
+NODEMCU_MODULE(ELLIPTIC, "elliptic", elliptic_map, NULL);

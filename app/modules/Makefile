@@ -42,6 +42,7 @@ INCLUDES += -I ../libc
 INCLUDES += -I ../coap
 INCLUDES += -I ../mqtt
 INCLUDES += -I ../u8glib
+INCLUDES += -I ../crypto
 INCLUDES += -I ../ucglib
 INCLUDES += -I ../lua
 INCLUDES += -I ../platform
