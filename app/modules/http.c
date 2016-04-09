@@ -7,224 +7,162 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "cpu_esp8266.h"
+#include "osapi.h"
 #include "httpclient.h"
 
 static int http_callback_registry  = LUA_NOREF;
 static lua_State * http_client_L = NULL;
 
-static void http_callback( char * response, int http_status, char * full_response )
+static void http_callback( char * response, int http_status, char * full_response, int content_length )
 {
+
 #if defined(HTTPCLIENT_DEBUG_ON)
-  c_printf( "http_status=%d\n", http_status );
-  if ( http_status != HTTP_STATUS_GENERIC_ERROR )
-  {
-    c_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
-    c_printf( "response=%s<EOF>\n", response );
-  }
+	HTTPCLIENT_DEBUG( "http_status=%d\n", http_status );
+	
+	if ( http_status != HTTP_STATUS_GENERIC_ERROR )
+	{
+		HTTPCLIENT_DEBUG( "content_length=%d\n", content_length);
+		HTTPCLIENT_DEBUG( "strlen(full_response)=%d\n", strlen( full_response ) );
+		HTTPCLIENT_DEBUG( "response=%s<EOF>\n", response );
+	}
 #endif
-  if (http_callback_registry != LUA_NOREF)
-  {
-    lua_rawgeti(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
 
-    lua_pushnumber(http_client_L, http_status);
-    if ( http_status != HTTP_STATUS_GENERIC_ERROR )
-    {
-      lua_pushstring(http_client_L, response);
-    }
-    else
-    {
-      lua_pushnil(http_client_L);
-    }
-    lua_call(http_client_L, 2, 0); // With 2 arguments and 0 result
+	if (http_callback_registry != LUA_NOREF)
+	{
+		lua_rawgeti(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
+		lua_pushnumber(http_client_L, http_status);
+		
+		if ( http_status != HTTP_STATUS_GENERIC_ERROR )
+		{
+			lua_pushlstring(http_client_L, response, content_length);
 
-    luaL_unref(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
-    http_callback_registry = LUA_NOREF;
-  }
+			char *endOfHeader = os_strstr( full_response, "\r\n\r\n" );			
+			
+			if (endOfHeader != NULL)
+			{
+				lua_pushlstring(http_client_L, full_response, endOfHeader - full_response);
+			}
+			else
+			{
+				// Malformed response, so push nothing instead of pushing full response of unknown content
+				lua_pushnil(http_client_L);
+			}
+		}
+		else
+		{
+			lua_pushnil(http_client_L);
+			lua_pushnil(http_client_L);
+		}
+		
+		lua_call(http_client_L, 3, 0); // With 3 arguments and 0 result
+		luaL_unref(http_client_L, LUA_REGISTRYINDEX, http_callback_registry);
+		http_callback_registry = LUA_NOREF;
+	}
 }
 
-// Lua: http.request( url, method, header, body, function(status, reponse) end )
+static int http_lapi_prepare_and_execute(lua_State *L, const char * reqMethod)
+{
+	int length;
+	int argIndex	 	= 0;
+	http_client_L 		= L;
+	
+	// URL
+	const char * url = luaL_checklstring(L, ++argIndex, &length);
+	luaL_argcheck(L, length > 0, argIndex, "URL not provided");	
+	
+	// Method
+	const char * method = reqMethod;
+	if (method == NULL)
+	{
+		method = luaL_checklstring(L, ++argIndex, &length);
+		luaL_argcheck(L, length > 0, argIndex, "Method not provided");
+	}
+
+	// Headers
+	const char * headers = NULL;
+	if (lua_isstring(L, ++argIndex))
+	{
+		headers = luaL_checklstring(L, argIndex, &length);
+	}
+	
+	// Body (not for GET)
+	const char * body = NULL;
+	if ((os_strcmp(method, "GET") != 0) && (os_strcmp(method, "HEAD") != 0))
+	{
+		if (lua_isstring(L, ++argIndex))
+		{
+			body = luaL_checklstring(L, argIndex, &length);
+		}
+	}
+	
+	// Callback
+	argIndex++;
+	if (lua_type(L, argIndex) == LUA_TFUNCTION || lua_type(L, argIndex) == LUA_TLIGHTFUNCTION) 
+	{
+		lua_pushvalue(L, argIndex);  // copy argument (func) to the top of stack
+		
+		if (http_callback_registry != LUA_NOREF)
+		{
+			luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
+		}
+		
+		http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
+	}
+	
+	http_request(url, method, headers, body, http_callback);
+	return 0;	
+}
+
+// Lua: http.request( url, method, header, body, function(status, reponse, headers) end )
 static int http_lapi_request( lua_State *L )
 {
-  int length;
-  http_client_L        = L;
-  const char * url     = luaL_checklstring(L, 1, &length);
-  const char * method  = luaL_checklstring(L, 2, &length);
-  const char * headers = NULL;
-  const char * body    = NULL;
-
-  // Check parameter
-  if ((url == NULL) || (method == NULL))
-  {
-    return luaL_error( L, "wrong arg type" );
-  }
-
-  if (lua_isstring(L, 3))
-  {
-    headers = luaL_checklstring(L, 3, &length);
-  }
-  if (lua_isstring(L, 4))
-  {
-    body = luaL_checklstring(L, 4, &length);
-  }
-
-  if (lua_type(L, 5) == LUA_TFUNCTION || lua_type(L, 5) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 5);  // copy argument (func) to the top of stack
-    if (http_callback_registry != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
-    http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  http_request(url, method, headers, body, http_callback);
-  return 0;
+	return http_lapi_prepare_and_execute( L, NULL);
 }
 
-// Lua: http.post( url, header, body, function(status, reponse) end )
+
+// Lua: http.post( url, header, body, function(status, reponse, headers) end )
 static int http_lapi_post( lua_State *L )
 {
-  int length;
-  http_client_L        = L;
-  const char * url     = luaL_checklstring(L, 1, &length);
-  const char * headers = NULL;
-  const char * body    = NULL;
-
-  // Check parameter
-  if ((url == NULL))
-  {
-    return luaL_error( L, "wrong arg type" );
-  }
-
-  if (lua_isstring(L, 2))
-  {
-    headers = luaL_checklstring(L, 2, &length);
-  }
-  if (lua_isstring(L, 3))
-  {
-    body = luaL_checklstring(L, 3, &length);
-  }
-
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
-    if (http_callback_registry != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
-    http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  http_post(url, headers, body, http_callback);
-  return 0;
+	return http_lapi_prepare_and_execute( L, "POST");
 }
 
-// Lua: http.put( url, header, body, function(status, reponse) end )
+// Lua: http.put( url, header, body, function(status, reponse, headers) end )
 static int http_lapi_put( lua_State *L )
 {
-  int length;
-  http_client_L        = L;
-  const char * url     = luaL_checklstring(L, 1, &length);
-  const char * headers = NULL;
-  const char * body    = NULL;
-
-  // Check parameter
-  if ((url == NULL))
-  {
-    return luaL_error( L, "wrong arg type" );
-  }
-
-  if (lua_isstring(L, 2))
-  {
-    headers = luaL_checklstring(L, 2, &length);
-  }
-  if (lua_isstring(L, 3))
-  {
-    body = luaL_checklstring(L, 3, &length);
-  }
-
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
-    if (http_callback_registry != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
-    http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  http_put(url, headers, body, http_callback);
-  return 0;
+	return http_lapi_prepare_and_execute( L, "PUT");
 }
 
-// Lua: http.delete( url, header, body, function(status, reponse) end )
+// Lua: http.delete( url, header, body, function(status, reponse, headers) end )
 static int http_lapi_delete( lua_State *L )
 {
-  int length;
-  http_client_L        = L;
-  const char * url     = luaL_checklstring(L, 1, &length);
-  const char * headers = NULL;
-  const char * body    = NULL;
-
-  // Check parameter
-  if ((url == NULL))
-  {
-    return luaL_error( L, "wrong arg type" );
-  }
-
-  if (lua_isstring(L, 2))
-  {
-    headers = luaL_checklstring(L, 2, &length);
-  }
-  if (lua_isstring(L, 3))
-  {
-    body = luaL_checklstring(L, 3, &length);
-  }
-
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
-    if (http_callback_registry != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
-    http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  http_delete(url, headers, body, http_callback);
-  return 0;
+	return http_lapi_prepare_and_execute( L, "DELETE");
 }
 
-// Lua: http.get( url, header, function(status, reponse) end )
+// Lua: http.get( url, header, function(status, reponse, headers) end )
 static int http_lapi_get( lua_State *L )
 {
-  int length;
-  http_client_L        = L;
-  const char * url     = luaL_checklstring(L, 1, &length);
-  const char * headers = NULL;
+	return http_lapi_prepare_and_execute( L, "GET");
+}
 
-  // Check parameter
-  if ((url == NULL))
-  {
-    return luaL_error( L, "wrong arg type" );
-  }
-
-  if (lua_isstring(L, 2))
-  {
-    headers = luaL_checklstring(L, 2, &length);
-  }
-
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
-  lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
-    if (http_callback_registry != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
-    http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  http_get(url, headers, http_callback);
-  return 0;
+// Lua: http.head( url, header, function(status, reponse, headers) end )
+static int http_lapi_head( lua_State *L )
+{
+	return http_lapi_prepare_and_execute( L, "HEAD");
 }
 
 // Module function map
 static const LUA_REG_TYPE http_map[] = {
-  { LSTRKEY( "request" ),         LFUNCVAL( http_lapi_request ) },
-  { LSTRKEY( "post" ),            LFUNCVAL( http_lapi_post ) },
-  { LSTRKEY( "put" ),             LFUNCVAL( http_lapi_put ) },
-  { LSTRKEY( "delete" ),          LFUNCVAL( http_lapi_delete ) },
-  { LSTRKEY( "get" ),             LFUNCVAL( http_lapi_get ) },
+{ LSTRKEY( "request" ),         LFUNCVAL( http_lapi_request ) },
+{ LSTRKEY( "post" ),            LFUNCVAL( http_lapi_post ) },
+{ LSTRKEY( "put" ),             LFUNCVAL( http_lapi_put ) },
+{ LSTRKEY( "delete" ),          LFUNCVAL( http_lapi_delete ) },
+{ LSTRKEY( "get" ),             LFUNCVAL( http_lapi_get ) },
+{ LSTRKEY( "head" ),            LFUNCVAL( http_lapi_head ) },
 
-  { LSTRKEY( "OK" ),              LNUMVAL( 0 ) },
-  { LSTRKEY( "ERROR" ),           LNUMVAL( HTTP_STATUS_GENERIC_ERROR ) },
-  
-  { LNILKEY, LNILVAL }
+{ LSTRKEY( "OK" ),              LNUMVAL( 0 ) },
+{ LSTRKEY( "ERROR" ),           LNUMVAL( HTTP_STATUS_GENERIC_ERROR ) },
+
+{ LNILKEY, LNILVAL }
 };
 
 NODEMCU_MODULE(HTTP, "http", http_map, NULL);
