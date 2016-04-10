@@ -21,3 +21,10 @@ limited space in the file system for creating new files.
 If no file system is found during platform boot, then a new file system will be formatted. This can take some time on the first boot.
 
 Note that the last 16k of the flash chip is reserved for the SDK to store parameters (such as the client wifi settings).
+
+In order to speed up the boot time, it is possible to define (at build time) the size of the SPIFFS Filesystem to be formatted. This can be as small as 32768 bytes which gives a filesystem with about 15k bytes of usable space.
+Just place the following define in `user_config.h` or some other file that is included during the build.
+
+```
+#define SPIFFS_MAX_FILESYSTEM_SIZE	32768
+```

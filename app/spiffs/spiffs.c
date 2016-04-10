@@ -67,7 +67,7 @@ static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int
  * Returns  TRUE if FS was found
  * align must be a power of two
  */
-static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset) {
+static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset, bool force_create) {
   cfg->phys_erase_block = INTERNAL_FLASH_SECTOR_SIZE; // according to datasheet
   cfg->log_page_size = LOG_PAGE_SIZE; // as we said
 
@@ -84,6 +84,10 @@ static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset) {
   NODE_DBG("fs.start:%x,max:%x\n",cfg->phys_addr,cfg->phys_size);
 
 #ifdef SPIFFS_USE_MAGIC_LENGTH
+  if (force_create) {
+    return TRUE;
+  }
+
   int size = SPIFFS_probe_fs(cfg);
 
   if (size > 0 && size < cfg->phys_size) {
@@ -99,41 +103,49 @@ static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset) {
 #endif
 }
 
-static bool myspiffs_find_cfg(spiffs_config *cfg) {
+static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
   int i;
 
-  if (INTERNAL_FLASH_SIZE >= 700000) {
+  if (!force_create) {
+    if (INTERNAL_FLASH_SIZE >= 700000) {
+      for (i = 0; i < 8; i++) {
+	if (myspiffs_set_cfg(cfg, 0x10000, 0x10000 * i, FALSE)) {
+	  return TRUE;
+	}
+      }
+    }
+
     for (i = 0; i < 8; i++) {
-      if (myspiffs_set_cfg(cfg, 0x10000, 0x10000 * i)) {
+      if (myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, LOG_BLOCK_SIZE * i, FALSE)) {
 	return TRUE;
       }
     }
   }
 
-  for (i = 0; i < 8; i++) {
-    if (myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, LOG_BLOCK_SIZE * i)) {
-      return TRUE;
-    }
-  }
-
   // No existing file system -- set up for a format
   if (INTERNAL_FLASH_SIZE >= 700000) {
-    myspiffs_set_cfg(cfg, 0x10000, 0x10000);
+    myspiffs_set_cfg(cfg, 0x10000, 0x10000, TRUE);
   } else {
-    myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, 0);
+    myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, 0, TRUE);
   }
 
+#ifdef SPIFFS_MAX_FILESYSTEM_SIZE
+  if (cfg->phys_size > SPIFFS_MAX_FILESYSTEM_SIZE) {
+    cfg->phys_size = (SPIFFS_MAX_FILESYSTEM_SIZE) & ~(cfg->log_block_size - 1);
+  }
+#endif
+  
   return FALSE;
 }
 
 static bool myspiffs_mount_internal(bool force_mount) {
   spiffs_config cfg;
-  if (!myspiffs_find_cfg(&cfg) && !force_mount) {
+  if (!myspiffs_find_cfg(&cfg, force_mount) && !force_mount) {
     return FALSE;
   }
 
   fs.err_code = 0;
-  
+
   int res = SPIFFS_mount(&fs,
     &cfg,
     spiffs_work_buf,
