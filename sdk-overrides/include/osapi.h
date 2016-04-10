@@ -16,14 +16,15 @@ void call_user_start(void);
 
 #include_next "osapi.h"
 
-extern void sw_timer_register(void* timer_ptr);
+#ifdef ENABLE_TIMER_SUSPEND
+extern void swtmr_register(void* timer_ptr);
 #undef os_timer_arm
-#define os_timer_arm(timer_ptr, duration, mode) do{sw_timer_register(timer_ptr); \
+#define os_timer_arm(timer_ptr, duration, mode) do{swtmr_register(timer_ptr); \
   ets_timer_arm_new(timer_ptr, duration, mode, 1);}while(0);
 
-extern void sw_timer_unregister(void* timer_ptr);
+extern void swtmr_unregister(void* timer_ptr);
 #undef os_timer_disarm
-#define os_timer_disarm(timer_ptr) do{sw_timer_unregister(timer_ptr); ets_timer_disarm(timer_ptr);}while(0);
-
+#define os_timer_disarm(timer_ptr) do{swtmr_unregister(timer_ptr); ets_timer_disarm(timer_ptr);}while(0);
+#endif
 
 #endif

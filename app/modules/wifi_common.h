@@ -52,6 +52,15 @@ void wifi_change_default_host_name(void);
 #define EVENT_DBG(...) //c_printf(__VA_ARGS__)
 #endif
 
+enum wifi_suspension_state
+{
+  WIFI_AWAKE = 0,
+  WIFI_SUSPENSION_PENDING = 1,
+  WIFI_SUSPENDED = 2
+};
+
+
+
 #ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
   extern const LUA_REG_TYPE wifi_event_monitor_map[];
   void wifi_eventmon_init();

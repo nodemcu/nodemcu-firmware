@@ -48,6 +48,7 @@ SUBDIRS= 					\
 	websocket				\
 	swTimer					\
 	misc					\
+	pm						\
 	
 
 endif # } PDIR
@@ -93,6 +94,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
 	http/libhttp.a				\
+	pm/libpm.a					\
 	websocket/libwebsocket.a		\
 	esp-gdbstub/libgdbstub.a		\
 	net/libnodemcu_net.a			\

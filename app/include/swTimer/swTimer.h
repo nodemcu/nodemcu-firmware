@@ -9,16 +9,15 @@
     #define SWTMR_DEBUG
   #endif
 
-
 #define SWTMR_DBG(fmt, ...) c_printf("\n SWTMR_DBG(%s):"fmt"\n", __FUNCTION__, ##__VA_ARGS__)
 #else
   #define SWTMR_DBG(...)
 #endif
 
-#if defined(SWTMR_ERROR) || defined(NODE_ERROR)
+#if (defined(SWTMR_ERROR) || defined(NODE_ERROR))
   #define SWTMR_ERR(fmt, ...) c_printf("\n SWTMR:"fmt"\n", ##__VA_ARGS__)
 #else
-  #define SWTMR_DBG(...)
+  #define SWTMR_ERR(...)
 #endif
 
 enum SWTMR_STATUS{
@@ -40,13 +39,11 @@ enum SWTMR_STATUS{
 
 };
 
-
-
 /*      Global Function Declarations      */
-void sw_timer_register(void* timer_ptr);
-void sw_timer_unregister(void* timer_ptr);
-int sw_timer_suspend(os_timer_t* timer_ptr);
-int sw_timer_resume(os_timer_t* timer_ptr);
+void swtmr_register(void* timer_ptr);
+void swtmr_unregister(void* timer_ptr);
+int swtmr_suspend(os_timer_t* timer_ptr);
+int swtmr_resume(os_timer_t* timer_ptr);
 void swtmr_print_registry(void);
 void swtmr_print_suspended(void);
 void swtmr_print_timer_list(void);
