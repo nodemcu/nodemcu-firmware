@@ -308,6 +308,11 @@ espconn_udp_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 		wifi_get_ip_info(0, &ipconfig);
 	}
 
+  precv->pespconn->proto.udp->remote_ip[0] = ip4_addr1_16(addr);
+  precv->pespconn->proto.udp->remote_ip[1] = ip4_addr2_16(addr);
+  precv->pespconn->proto.udp->remote_ip[2] = ip4_addr3_16(addr);
+  precv->pespconn->proto.udp->remote_ip[3] = ip4_addr4_16(addr);
+  precv->pespconn->proto.udp->remote_port = port;
 	precv->pespconn->proto.udp->local_ip[0] = ip4_addr1_16(&ipconfig.ip);
 	precv->pespconn->proto.udp->local_ip[1] = ip4_addr2_16(&ipconfig.ip);
 	precv->pespconn->proto.udp->local_ip[2] = ip4_addr3_16(&ipconfig.ip);

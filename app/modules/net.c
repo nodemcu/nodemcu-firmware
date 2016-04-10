@@ -1355,28 +1355,45 @@ static int net_socket_unhold( lua_State* L )
 }
 
 // Lua: ip,port = sk:getpeer()
-static int net_socket_getpeer( lua_State* L )
+static int net_getpeer( lua_State* L, const char *mt)
 {
   lnet_userdata *nud;
-  const char *mt = "net.socket";
+  int remote_port = 0;
+  uint8 *remote_ip;
+  
   nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
   luaL_argcheck(L, nud, 1, "Server/Socket expected");
 
-  if(nud!=NULL && nud->pesp_conn!=NULL ){
+  if (nud->pesp_conn!=NULL){
+    if (nud->pesp_conn->type == ESPCONN_UDP) {
+      remote_ip   = nud->pesp_conn->proto.udp->remote_ip;
+      remote_port = nud->pesp_conn->proto.udp->remote_port;
+    } else if (nud->pesp_conn->type == ESPCONN_TCP) {
+      luaL_argcheck(L, c_strcmp(mt, "net.socket")==0, 1, "Cannot getpeer() a TCP server");
+      remote_ip   = nud->pesp_conn->proto.tcp->remote_ip;
+      remote_port = nud->pesp_conn->proto.tcp->remote_port;
+    }        
+    if (remote_port != 0) {
       char temp[20] = {0};
-      c_sprintf(temp, IPSTR, IP2STR( &(nud->pesp_conn->proto.tcp->remote_ip) ) );
-      if ( nud->pesp_conn->proto.tcp->remote_port != 0 ) {
-        lua_pushstring( L, temp );
-        lua_pushinteger( L, nud->pesp_conn->proto.tcp->remote_port );
-      } else {
-        lua_pushnil( L );
-        lua_pushnil( L );
-      }
-  } else {
-      lua_pushnil( L );
-      lua_pushnil( L );
+      c_sprintf(temp, IPSTR, IP2STR(remote_ip));
+      lua_pushstring( L, temp );
+      lua_pushinteger( L, remote_port );
+      return 2;
+    } 
   }
-  return 2;
+  return 0;
+}
+
+// Lua: ip,port = sk:getpeer()
+static int net_udpserver_getpeer( lua_State* L )
+{
+  return net_getpeer(L, "net.server");
+}
+
+// Lua: ip,port = sk:getpeer()
+static int net_socket_getpeer( lua_State* L )
+{
+  return net_getpeer(L, "net.socket");
 }
 
 // Lua: socket:dns( string, function(ip) )
@@ -1708,6 +1725,7 @@ static const LUA_REG_TYPE net_server_map[] = {
   { LSTRKEY( "close" ),   LFUNCVAL( net_server_close ) },
   { LSTRKEY( "on" ),      LFUNCVAL( net_udpserver_on ) },
   { LSTRKEY( "send" ),    LFUNCVAL( net_udpserver_send ) },
+  { LSTRKEY( "getpeer" ), LFUNCVAL( net_udpserver_getpeer ) },
 //{ LSTRKEY( "delete" ),  LFUNCVAL( net_server_delete ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( net_server_delete ) },
   { LSTRKEY( "__index" ), LROVAL( net_server_map ) },

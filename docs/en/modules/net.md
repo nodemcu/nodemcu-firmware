@@ -107,6 +107,13 @@ sv:close()
 #### See also
 [`net.createServer()`](#netcreateserver)
 
+## net.server:getpeer()
+
+UDP server only: Can be used after receiving a UDP record to determine the sender.
+
+#### See also
+[`net.socket:getpeer()`](#netsocketgetpeer)
+
 ## net.server:listen()
 
 Listen on port from IP address.
