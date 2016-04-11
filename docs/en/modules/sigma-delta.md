@@ -75,7 +75,7 @@ sigma_delta.close(2)
 Sets the target value.
 
 #### Syntax
-`sigma_delta.settarget(value)
+`sigma_delta.settarget(value)`
 
 #### Parameters
 `value` target 0 to 255
