@@ -58,6 +58,14 @@
 # define sntp_dbg(...)
 #endif
 
+typedef enum {
+  NTP_NO_ERR = 0,
+  NTP_DNS_ERR,
+  NTP_MEM_ERR,
+  NTP_SEND_ERR,
+  NTP_TIMEOUT_ERR
+} ntp_err_t;
+
 typedef struct
 {
   uint32_t sec;
@@ -107,14 +115,15 @@ static void cleanup (lua_State *L)
 }
 
 
-static void handle_error (lua_State *L)
+static void handle_error (lua_State *L, ntp_err_t err)
 {
   sntp_dbg("sntp: handle_error\n");
   if (state->err_cb_ref != LUA_NOREF)
   {
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->err_cb_ref);
+    lua_pushinteger (L, err);
     cleanup (L);
-    lua_call (L, 0, 0);
+    lua_call (L, 1, 0);
   }
   else
     cleanup (L);
@@ -135,7 +144,7 @@ static void sntp_dosend (lua_State *L)
 
   struct pbuf *p = pbuf_alloc (PBUF_TRANSPORT, sizeof (ntp_frame_t), PBUF_RAM);
   if (!p)
-    handle_error (L);
+    handle_error (L, NTP_MEM_ERR);
 
   ntp_frame_t req;
   os_memset (&req, 0, sizeof (req));
@@ -156,7 +165,7 @@ static void sntp_dosend (lua_State *L)
   sntp_dbg("sntp: send: %d\n", ret);
   pbuf_free (p);
   if (ret != ERR_OK)
-    handle_error (L);
+    handle_error (L, NTP_SEND_ERR);
 }
 
 
@@ -167,8 +176,8 @@ static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   lua_State *L = lua_getstate ();
   if (ipaddr == NULL)
   {
-    NODE_ERR("DNS Fail!\n");
-    handle_error(L);
+    sntp_dbg("DNS Fail!\n");
+    handle_error(L, NTP_DNS_ERR);
   }
   else
   {
@@ -184,7 +193,7 @@ static void on_timeout (void *arg)
   sntp_dbg("sntp: timer\n");
   lua_State *L = lua_getstate ();
   if (state->attempts >= MAX_ATTEMPTS)
-    handle_error (L);
+    handle_error (L, NTP_TIMEOUT_ERR);
   else
     sntp_dosend (L);
 }
