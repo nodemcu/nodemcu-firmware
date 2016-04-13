@@ -1,0 +1,3 @@
+[submodule "app/crypto/micro-ecc"]
+	path = app/crypto/micro-ecc
+	url = https://github.com/kmackay/micro-ecc.git
