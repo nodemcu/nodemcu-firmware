@@ -341,8 +341,8 @@ static int sntp_sync (lua_State *L)
   if (!state->pcb)
     sync_err ("out of memory");
 
-  if (udp_bind (state->pcb, IP_ADDR_ANY, NTP_PORT) != ERR_OK)
-    sync_err ("ntp port in use");
+  if (udp_bind (state->pcb, IP_ADDR_ANY, 0) != ERR_OK)
+    sync_err ("no port available");
 
   udp_recv (state->pcb, on_recv, L);
 
