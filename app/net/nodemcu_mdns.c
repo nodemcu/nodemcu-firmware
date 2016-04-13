@@ -650,6 +650,13 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		pbuf_realloc(p, (query) - ((char*) (p->payload)));
 
 		err = send_packet(p, dst_addr, dst_port, addr_ptr);
+
+		if (!dst_addr) {
+		  // this is being sent multicast...
+		  // so reset the timer
+		  os_timer_disarm(&mdns_timer);
+		  os_timer_arm(&mdns_timer, 1000 * 120, 1);
+		}
 	} else {
 		MDNS_DBG("ERR_MEM \n");
 		err = ERR_MEM;
@@ -703,6 +710,10 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 		  memcpy(&qry, namelen + (u8_t *) (hdr + 1), sizeof(qry));
 
 		  u16_t qry_type = ntohs(qry.type);
+
+		  if (port == 5353 && (ntohs(qry.class) & 0x8000) == 0) {
+		    addr = NULL;
+		  }
 
 		  /* MDNS_DS_DOES_NAME_CHECK */
 		  /* Check if the name in the "question" part match with the name of the MDNS DS service. */
