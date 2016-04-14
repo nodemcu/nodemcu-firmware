@@ -1,6 +1,6 @@
 // Module for xpt2046
 // by Starofall
-// used source from:
+// used source code from:
 //  - https://github.com/spapadim/XPT2046/
 //  - https://github.com/PaulStoffregen/XPT2046_Touchscreen/
 
@@ -13,7 +13,7 @@
 #include "driver/uart.h"
 #include "gpio.h"
 
-// Hardware specific
+// Hardware specific values
 static const uint16_t CAL_MARGIN = 20;
 static const uint8_t CTRL_LO_DFR = 0b0011;
 static const uint8_t CTRL_LO_SER = 0b0100;
@@ -28,7 +28,7 @@ int32_t _cal_dx, _cal_dy, _cal_dvi, _cal_dvj;
 uint16_t _cal_vi1, _cal_vj1;
 
 // Average pair with least distance between each
-static int16_t ICACHE_FLASH_ATTR besttwoavg( int16_t x , int16_t y , int16_t z ) {
+static int16_t besttwoavg( int16_t x , int16_t y , int16_t z ) {
   int16_t da, db, dc;
   int16_t reta = 0;
 
@@ -44,21 +44,21 @@ static int16_t ICACHE_FLASH_ATTR besttwoavg( int16_t x , int16_t y , int16_t z )
 }
 
 // Checks if the irq_pin is down
-static int ICACHE_FLASH_ATTR isTouching() { 
+static int isTouching() { 
 	return (platform_gpio_read(_irq_pin) == 0); 
 }
 
 // transfer 16 bits from the touch display - returns the recived uint16_t
-static uint16_t ICACHE_FLASH_ATTR transfer16(uint16_t _data) {
+static uint16_t transfer16(uint16_t _data) {
 	union { uint16_t val; struct { uint8_t lsb; uint8_t msb; }; } t;
 	t.val = _data;
-	t.msb = platform_spi_send_recv(1, 8 , t.msb);
-	t.lsb = platform_spi_send_recv(1, 8 , t.lsb);
+	t.msb = platform_spi_send_recv(1, 8, t.msb);
+	t.lsb = platform_spi_send_recv(1, 8, t.lsb);
 	return t.val;
 }
 
 // reads the value from the touch panel
-static uint16_t ICACHE_FLASH_ATTR _readLoop(uint8_t ctrl, uint8_t max_samples) {
+static uint16_t _readLoop(uint8_t ctrl, uint8_t max_samples) {
   uint16_t prev = 0xffff, cur = 0xffff;
   uint8_t i = 0;
   do {
@@ -70,10 +70,10 @@ static uint16_t ICACHE_FLASH_ATTR _readLoop(uint8_t ctrl, uint8_t max_samples) {
 }
 
 // returns the raw position information
-static void ICACHE_FLASH_ATTR getRaw(uint16_t *vi, uint16_t *vj) {
+static void getRaw(uint16_t *vi, uint16_t *vj) {
   // Implementation based on TI Technical Note http://www.ti.com/lit/an/sbaa036/sbaa036.pdf
 
-  platform_gpio_write(_cs_pin, 0);
+  platform_gpio_write(_cs_pin, PLATFORM_GPIO_LOW);
   platform_spi_send_recv(1, 8 , CTRL_HI_X | CTRL_LO_DFR);  // Send first control int
   *vi = _readLoop(CTRL_HI_X | CTRL_LO_DFR, 255);
   *vj = _readLoop(CTRL_HI_Y | CTRL_LO_DFR, 255);
@@ -84,11 +84,11 @@ static void ICACHE_FLASH_ATTR getRaw(uint16_t *vi, uint16_t *vj) {
   platform_spi_send_recv(1, 8 , CTRL_HI_Y | CTRL_LO_SER);
   transfer16(0);  // Flush last read, just to be sure
   
-  platform_gpio_write(_cs_pin, 1);
+  platform_gpio_write(_cs_pin, PLATFORM_GPIO_HIGH);
 }
 
 // sets the calibration of the display
-static void ICACHE_FLASH_ATTR setCalibration (uint16_t vi1, uint16_t vj1, uint16_t vi2, uint16_t vj2) {
+static void setCalibration (uint16_t vi1, uint16_t vj1, uint16_t vi2, uint16_t vj2) {
   _cal_dx = _width - 2*CAL_MARGIN;
   _cal_dy = _height - 2*CAL_MARGIN;
 
@@ -99,7 +99,7 @@ static void ICACHE_FLASH_ATTR setCalibration (uint16_t vi1, uint16_t vj1, uint16
 }
 
 // returns the position on the screen by also applying the calibration
-static void ICACHE_FLASH_ATTR getPosition (uint16_t *x, uint16_t *y) {
+static void getPosition (uint16_t *x, uint16_t *y) {
   if (isTouching() == 0) {
     *x = *y = 0xffff;
     return;
@@ -115,14 +115,14 @@ static void ICACHE_FLASH_ATTR getPosition (uint16_t *x, uint16_t *y) {
 
 
 // Lua: xpt2046.setup(cspin,irqpin,height,width)
-static int ICACHE_FLASH_ATTR xpt2046_setup( lua_State* L ) {
+static int xpt2046_setup( lua_State* L ) {
   _cs_pin  = luaL_checkinteger( L, 1 );
   _irq_pin = luaL_checkinteger( L, 2 );
   _height  = luaL_checkinteger( L, 3 );
-  _width  = luaL_checkinteger( L, 4 );
+  _width   = luaL_checkinteger( L, 4 );
   // set pins correct
-  platform_gpio_mode(_cs_pin  , 1, 0);; //output
-  platform_gpio_mode(_irq_pin , 0, 1); //input with pullup
+  platform_gpio_mode(_cs_pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+  platform_gpio_mode(_irq_pin, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);
   
   setCalibration(
     /*vi1=*/((int32_t)CAL_MARGIN) * ADC_MAX / _width,
@@ -131,29 +131,29 @@ static int ICACHE_FLASH_ATTR xpt2046_setup( lua_State* L ) {
     /*vj2=*/((int32_t)_height - CAL_MARGIN) * ADC_MAX / _height
   );
   
-  // assume spi was inited before with a clockDiv of maximum 16
-  // as higher clockDivs produced inaccurate results
+  // assume spi was inited before with a clockDiv of >=16
+  // as higher spi clock speed produced inaccurate results
 
   // do first powerdown
-  platform_gpio_write(_cs_pin, 0);
+  platform_gpio_write(_cs_pin, PLATFORM_GPIO_LOW);
 
   // Issue a throw-away read, with power-down enabled (PD{1,0} == 0b00)
   // Otherwise, ADC is disabled
   platform_spi_send_recv(1, 8, CTRL_HI_Y | CTRL_LO_SER);
   transfer16(0); // Flush, just to be sure
 
-  platform_gpio_write(_cs_pin, 1);  
+  platform_gpio_write(_cs_pin, PLATFORM_GPIO_HIGH);  
   return 0;
 }
 
 // Lua: xpt2046.isTouched()
-static int ICACHE_FLASH_ATTR xpt2046_isTouched( lua_State* L ) {
+static int xpt2046_isTouched( lua_State* L ) {
   lua_pushinteger( L, isTouching());
   return 1;
 }
 
 // Lua: xpt2046.setCalibration(a,b,c,d)
-static int ICACHE_FLASH_ATTR xpt2046_setCalibration( lua_State* L ) {
+static int xpt2046_setCalibration( lua_State* L ) {
   int32_t a = luaL_checkinteger( L, 1 );
   int32_t b = luaL_checkinteger( L, 2 );
   int32_t c = luaL_checkinteger( L, 3 );
@@ -163,7 +163,7 @@ static int ICACHE_FLASH_ATTR xpt2046_setCalibration( lua_State* L ) {
 }
 
 // Lua: xpt2046.xpt2046_getRaw()
-static int ICACHE_FLASH_ATTR xpt2046_getRaw( lua_State* L ) {
+static int xpt2046_getRaw( lua_State* L ) {
   uint16_t x, y;
   getRaw(&x, &y);
   lua_pushinteger( L, x);
@@ -172,7 +172,7 @@ static int ICACHE_FLASH_ATTR xpt2046_getRaw( lua_State* L ) {
 }
 
 // Lua: xpt2046.xpt2046_getPosition()
-static int ICACHE_FLASH_ATTR xpt2046_getPosition( lua_State* L ) {
+static int xpt2046_getPosition( lua_State* L ) {
   uint16_t x, y;
   getPosition(&x, &y);
   lua_pushinteger( L, x);
@@ -182,7 +182,7 @@ static int ICACHE_FLASH_ATTR xpt2046_getPosition( lua_State* L ) {
 
 
 // Lua: xpt2046.xpt2046_getPositionMeaned()
-static int ICACHE_FLASH_ATTR xpt2046_getPositionMeaned( lua_State* L ) {
+static int xpt2046_getPositionMeaned( lua_State* L ) {
   // run three times
   uint16_t x1, y1, x2, y2, x3, y3;
   getPosition(&x1, &y1);
