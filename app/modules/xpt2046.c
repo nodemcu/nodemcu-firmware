@@ -148,7 +148,7 @@ static int xpt2046_setup( lua_State* L ) {
 
 // Lua: xpt2046.isTouched()
 static int xpt2046_isTouched( lua_State* L ) {
-  lua_pushinteger( L, isTouching());
+  lua_pushboolean( L, isTouching());
   return 1;
 }
 
