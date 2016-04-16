@@ -107,6 +107,11 @@ static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
   int i;
 
   if (!force_create) {
+#ifdef SPIFFS_FIXED_LOCATION
+    if (myspiffs_set_cfg(cfg, 0, 0, FALSE)) {
+      return TRUE;
+    }
+#else
     if (INTERNAL_FLASH_SIZE >= 700000) {
       for (i = 0; i < 8; i++) {
 	if (myspiffs_set_cfg(cfg, 0x10000, 0x10000 * i, FALSE)) {
@@ -120,6 +125,7 @@ static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
 	return TRUE;
       }
     }
+#endif
   }
 
   // No existing file system -- set up for a format

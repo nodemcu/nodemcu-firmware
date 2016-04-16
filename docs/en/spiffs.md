@@ -28,3 +28,15 @@ Just place the following define in `user_config.h` or some other file that is in
 ```
 #define SPIFFS_MAX_FILESYSTEM_SIZE	32768
 ```
+
+This filesystem size limit only affects the formatting of a file system -- if the firm finds an existing valid filesystem (of any size) it will use that. However, if the 
+filesystem is reformatted from Lua (using file.format()) then the new file system will obey the size limit. 
+
+There is also an option to control the positioning of the SPIFFS file system:
+
+```
+#define SPIFFS_FIXED_LOCATION   	0x100000
+```
+
+This specifies that the SPIFFS filesystem starts at 1Mb from the start of the flash. Unless otherwise specified, it will run to the end of the flash (excluding the 16k of space reserved by the SDK). 
+
