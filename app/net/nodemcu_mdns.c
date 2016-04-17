@@ -694,6 +694,48 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 	return err;
 }
 
+static char *append_nsec_record(char *query, u32_t actual_rr) {
+  struct mdns_answer ans;
+
+  ans.type = htons(DNS_RRTYPE_NSEC);
+  ans.class = htons(DNS_RRCLASS_IN);
+  ans.ttl = htonl(300);
+  ans.len = htons(9);
+
+  MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
+  char *rr_len = query + ((char *) &ans.len - (char *) &ans) + 1;
+  query = query + SIZEOF_DNS_ANSWER;
+  *query++ = 0xc0;
+  *query++ = sizeof(struct mdns_hdr);
+  *query++ = 0;
+  char *bm_len = query;
+  *query++ = 5;
+  char *abase = query;
+  *query++ = 0;
+  *query++ = 0;
+  *query++ = 0;
+  *query++ = 0;
+  *query++ = 0;
+
+  while (actual_rr > 0) {
+    int v = actual_rr & 255;
+
+    if (v < 5 * 8) {
+      abase[v >> 3] |= 0x80 >> (v & 7);
+
+      actual_rr = actual_rr >> 8;
+    }
+  }
+
+  while (query[-1] == 0) {
+    query--;
+    (*bm_len)--;
+    (*rr_len)--;
+  }
+
+  return query;
+}
+
 /**
  * This sends an empty response -- this is used when we doin't have an RR to send
  * but the name exists
@@ -714,55 +756,72 @@ mdns_send_no_rr(struct mdns_hdr *req, size_t reqlen, u32_t actual_rr, struct ip_
     hdr->numanswers = htons(1);
     char *query = (char*) hdr + SIZEOF_DNS_HDR;
     char *query_end = (char *) p->payload + p->tot_len;
-    // Now copy over the dns name plus the next four bytes (class, rrtype)
+    // Now copy over the dns name 
     int len = mdns_namelen((char *) (req + 1), reqlen - sizeof(*req));
 
-    if (query_end - query >= len + SIZEOF_DNS_QUERY + 9) {
+    if (query_end - query >= len + SIZEOF_DNS_QUERY + 15) {
       os_memcpy(query, (char *) (req + 1), len);
 
       query = query + len;
-      struct mdns_answer ans;
 
-      ans.type = htons(DNS_RRTYPE_NSEC);
-      ans.class = htons(DNS_RRCLASS_IN);
-      ans.ttl = htonl(300);
-      ans.len = htons(9);
-
-      MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
-      char *rr_len = query + ((char *) &ans.len - (char *) &ans) + 1;
-      query = query + SIZEOF_DNS_ANSWER;
-      *query++ = 0xc0;
-      *query++ = sizeof(*hdr);
-      *query++ = 0;
-      char *bm_len = query;
-      *query++ = 5;
-      char *abase = query;
-      *query++ = 0;
-      *query++ = 0;
-      *query++ = 0;
-      *query++ = 0;
-      *query++ = 0;
-
-      while (actual_rr > 0) {
-	int v = actual_rr & 255;
-
-	if (v < 5 * 8) {
-	  abase[v >> 3] |= 0x80 >> (v & 7);
-
-	  actual_rr = actual_rr >> 8;
-	}
-      }
-
-      while (query[-1] == 0) {
-	query--;
-	(*bm_len)--;
-	(*rr_len)--;
-      }
+      query = append_nsec_record(query, actual_rr);
 
       // Set the length code correctly
       pbuf_realloc(p, query - ((char*) (p->payload)));
 
       send_packet(p, dst_addr, dst_port, NULL);
+    }
+  }
+}
+
+/**
+ * This sends a single A record and the NSEC record as additional
+ */
+
+static void 
+mdns_send_a_rr(struct mdns_hdr *req, size_t reqlen, struct ip_addr *dst_addr, u16_t dst_port) {
+  struct pbuf *p;
+  p = pbuf_alloc(PBUF_TRANSPORT,
+		  SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
+  if (p != NULL) {
+    LWIP_ASSERT("pbuf must be in one piece", p->next == NULL);
+    /* fill dns header */
+    struct mdns_hdr *hdr = (struct mdns_hdr*) p->payload;
+    os_memset(hdr, 0, SIZEOF_DNS_HDR);
+    hdr->id = req->id;
+    hdr->flags1 = DNS_FLAG1_RESPONSE;
+    hdr->numanswers = htons(1);
+    hdr->numextrarr = htons(1);
+    char *query = (char*) hdr + SIZEOF_DNS_HDR;
+    char *query_end = (char *) p->payload + p->tot_len;
+    // Now copy over the dns name 
+    int len = mdns_namelen((char *) (req + 1), reqlen - sizeof(*req));
+
+    if (query_end - query >= len + SIZEOF_DNS_QUERY + 4 + 2 + 4 + 15) {
+      os_memcpy(query, (char *) (req + 1), len);
+
+      query = query + len;
+      struct mdns_answer ans;
+
+      ans.type = htons(DNS_RRTYPE_A);
+      ans.class = htons(DNS_RRCLASS_IN);
+      ans.ttl = htonl(300);
+      ans.len = htons(4);
+
+      MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
+      query = query + SIZEOF_DNS_ANSWER;
+      char *addr_ptr = query;
+      query += 4;
+
+      // Now add the NSEC record
+      *query++ = 0xc0;
+      *query++ = sizeof(*hdr);
+      query = append_nsec_record(query, DNS_RRTYPE_A);
+
+      // Set the length code correctly
+      pbuf_realloc(p, query - ((char*) (p->payload)));
+
+      send_packet(p, dst_addr, dst_port, addr_ptr);
     }
   }
 }
@@ -844,7 +903,7 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 		    if (mdns_compare_name((unsigned char *) tmpBuf,
 				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
 		      if (qry_type == DNS_RRTYPE_A || qry_type == DNS_RRTYPE_ANY) {
-			mdns_send_service(info, i, addr, port);
+			mdns_send_a_rr(hdr, p->tot_len, addr, port);
 		      } else {
 			actual_rr = DNS_RRTYPE_A;
 		      }
