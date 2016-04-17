@@ -1,4 +1,5 @@
 
+#include "platform.h"
 #include "driver/sigma_delta.h"
 
 
@@ -18,7 +19,7 @@ void sigma_delta_stop( void )
                    GPIO_SIGMA_DELTA_PRESCALE_SET(0x00) );
 }
 
-void sigma_delta_set_prescale_target( sint16 prescale, sint16 target )
+void ICACHE_RAM_ATTR sigma_delta_set_prescale_target( sint16 prescale, sint16 target )
 {
     uint32_t prescale_mask, target_mask;
 

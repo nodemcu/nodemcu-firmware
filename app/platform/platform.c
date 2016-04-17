@@ -612,7 +612,7 @@ void platform_sigma_delta_set_prescale( uint8_t prescale )
   sigma_delta_set_prescale_target( prescale, -1 );
 }
 
-void platform_sigma_delta_set_target( uint8_t target )
+void ICACHE_RAM_ATTR platform_sigma_delta_set_target( uint8_t target )
 {
     sigma_delta_set_prescale_target( -1, target );
 }
