@@ -15,6 +15,7 @@
 #include "task/task.h"
 #include "user_config.h"
 #include "user_interface.h"
+#include "osapi.h"
 
 #define UART0   0
 #define UART1   1
@@ -32,6 +33,8 @@ static task_handle_t sig = 0;
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
+
+static os_timer_t autobaud_timer;
 
 LOCAL void ICACHE_RAM_ATTR
 uart0_rx_intr_handler(void *para);
@@ -271,6 +274,36 @@ uart0_rx_intr_handler(void *para)
       task_post_low (sig, false);
 }
 
+static void 
+uart_autobaud_timeout(void *timer_arg)
+{
+  uint32_t uart_no = (uint32_t) timer_arg;
+  uint32_t divisor = uart_baudrate_detect(uart_no, 1);
+  static int called_count = 0;
+
+  // Shut off after two minutes to stop wasting CPU cycles if insufficient input received
+  if (called_count++ > 10 * 60 * 2 || divisor) {
+    os_timer_disarm(&autobaud_timer);
+  }
+
+  if (divisor) {
+    uart_div_modify(uart_no, divisor);
+  }
+}
+
+static void 
+uart_init_autobaud(uint32_t uart_no)
+{
+  os_timer_setfn(&autobaud_timer, uart_autobaud_timeout, (void *) uart_no);
+  os_timer_arm(&autobaud_timer, 100, TRUE);
+}
+
+static void 
+uart_stop_autobaud()
+{
+  os_timer_disarm(&autobaud_timer);
+}
+
 /******************************************************************************
  * FunctionName : uart_init
  * Description  : user interface for init uart
@@ -291,11 +324,17 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input)
     UartDev.baut_rate = uart1_br;
     uart_config(UART1);
     ETS_UART_INTR_ENABLE();
+#ifdef BIT_RATE_AUTOBAUD
+    uart_init_autobaud(0);
+#endif
 }
 
 void ICACHE_FLASH_ATTR
 uart_setup(uint8 uart_no)
 {
+#ifdef BIT_RATE_AUTOBAUD
+    uart_stop_autobaud();
+#endif
     ETS_UART_INTR_DISABLE();
     uart_config(uart_no);
     ETS_UART_INTR_ENABLE();

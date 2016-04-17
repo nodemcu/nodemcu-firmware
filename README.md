@@ -96,6 +96,9 @@ editing `BIT_RATE_DEFAULT` in `app/include/user_config.h`:
 #define BIT_RATE_DEFAULT BIT_RATE_115200
 ```
 
+Note that, by default, the firmware runs an auto-baudrate detection algorithm so that typing a few characters at boot time will cause
+the firmware to lock onto that baud rate (between 1200 and 230400). 
+
 ### Debugging
 
 To enable runtime debug messages to serial console edit `app/include/user_config.h`
