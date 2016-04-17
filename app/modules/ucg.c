@@ -754,33 +754,66 @@ static int16_t ucg_com_esp8266_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uin
         break;
 
     case UCG_COM_MSG_REPEAT_1_BYTE:
+        {
+        spi_data_type cache = 0;
+        uint8_t cached = 0;
         while( arg > 0 ) {
-            platform_spi_send( 1, 8, data[0] );
+            if (cached == 4) {
+                platform_spi_transaction( 1, 0, 0, 32, cache, 0, 0, 0 );
+                cache = cached = 0;
+            }
+            cache = (cache << 8) | data[0];
+            cached++;
             arg--;
+        }
+        if (cached > 0) {
+            platform_spi_transaction( 1, 0, 0, cached * 8, cache, 0, 0, 0 );
+        }
         }
         break;
 
     case UCG_COM_MSG_REPEAT_2_BYTES:
+        {
+        spi_data_type cache = 0;
+        uint8_t cached = 0;
         while( arg > 0 ) {
-            platform_spi_send( 1, 8, data[0] );
-            platform_spi_send( 1, 8, data[1] );
+            if (cached == 4) {
+                platform_spi_transaction( 1, 0, 0, 32, cache, 0, 0, 0 );
+                cache = cached = 0;
+            }
+            cache = (cache << 16) | (data[0] << 8) | data[1];
+            cached += 2;
             arg--;
+        }
+        if (cached > 0) {
+            platform_spi_transaction( 1, 0, 0, cached * 8, cache, 0, 0, 0 );
+        }
         }
         break;
 
     case UCG_COM_MSG_REPEAT_3_BYTES:
         while( arg > 0 ) {
-            platform_spi_send( 1, 8, data[0] );
-            platform_spi_send( 1, 8, data[1] );
-            platform_spi_send( 1, 8, data[2] );
+            platform_spi_transaction( 1, 0, 0, 24, (data[0] << 16) | (data[1] << 8) | data[0], 0, 0, 0 );
             arg--;
         }
         break;
 
     case UCG_COM_MSG_SEND_STR:
+        {
+        spi_data_type cache = 0;
+        uint8_t cached = 0;
         while( arg > 0 ) {
-            platform_spi_send( 1, 8, *data++ );
+            if (cached == 4) {
+                platform_spi_transaction( 1, 0, 0, 32, cache, 0, 0, 0 );
+                cache = cached = 0;
+            }
+            cache = (cache << 8) | *data++;
+            cached++;
             arg--;
+        }
+        if (cached > 0) {
+            platform_spi_transaction( 1, 0, 0, cached * 8, cache, 0, 0, 0 );
+        }
         }
         break;
 
