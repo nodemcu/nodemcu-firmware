@@ -6,19 +6,6 @@
 
 This module provides access to the [ADXL345](https://www.sparkfun.com/products/9836) triple axis accelerometer.
 
-## adxl345.init()
-Initializes the module and sets the pin configuration.
-
-#### Syntax
-`adxl345.init(sda, scl)`
-
-#### Parameters
-- `sda` data pin
-- `scl` clock pin
-
-#### Returns
-`nil`
-
 ## adxl345.data()
 Samples the sensor and returns X,Y and Z data from the accelerometer.
 
@@ -34,3 +21,16 @@ adxl345.init(1, 2)
 local x,y,z = adxl345.data()
 print(string.format("X = %d, Y = %d, Z = %d", x, y, z))
 ```
+
+## adxl345.init()
+Initializes the module and sets the pin configuration.
+
+#### Syntax
+`adxl345.init(sda, scl)`
+
+#### Parameters
+- `sda` data pin
+- `scl` clock pin
+
+#### Returns
+`nil`
