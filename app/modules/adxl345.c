@@ -32,16 +32,10 @@ static int ICACHE_FLASH_ATTR adxl345_init(lua_State* L) {
     uint32_t scl;
     uint8_t  devid;
 
-    if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
-        return luaL_error(L, "wrong arg range");
-    }
-
     sda = luaL_checkinteger(L, 1);
     scl = luaL_checkinteger(L, 2);
 
-    if (scl == 0 || sda == 0) {
-        return luaL_error(L, "no i2c for D0");
-    }
+    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
 
     platform_i2c_setup(adxl345_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
     
