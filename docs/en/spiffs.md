@@ -40,3 +40,8 @@ There is also an option to control the positioning of the SPIFFS file system:
 
 This specifies that the SPIFFS filesystem starts at 1Mb from the start of the flash. Unless otherwise specified, it will run to the end of the flash (excluding the 16k of space reserved by the SDK). 
 
+There is an option that limits the size of the file system to run up to the next 1MB boundary (minus the 16k for the parameter space). This may be useful when dealing with OTA upgrades.
+
+```
+#define SPIFFS_SIZE_1M_BOUNDARY
+```

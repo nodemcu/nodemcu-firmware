@@ -54,7 +54,11 @@ static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int
   cfg->phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ) + offset; 
   cfg->phys_addr = (cfg->phys_addr + align - 1) & ~(align - 1);
 #endif
+#ifdef SPIFFS_SIZE_1M_BOUNDARY
+  cfg->phys_size = ((0x100000 - 16384 - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1)) & 0xfffff;
+#else
   cfg->phys_size = (INTERNAL_FLASH_SIZE - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1);
+#endif
   if ((int) cfg->phys_size < 0) {
     return FALSE;
   }

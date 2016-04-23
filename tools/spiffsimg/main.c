@@ -235,7 +235,7 @@ int main (int argc, char *argv[])
       case 'o': resolved = optarg; break;
       case 'c': create = true; sz = getsize(optarg); break;
       case 'S': create = true; flashsize = getsize(optarg); break;
-      case 'U': create = true; used = getsize(optarg); break;
+      case 'U': create = true; used = strtol(optarg, 0, 0); break;
       case 'd': delete_on_die = 1; break;
       case 'l': command = CMD_LIST; break;
       case 'i': command = CMD_INTERACTIVE; break;
