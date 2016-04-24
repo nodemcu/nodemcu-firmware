@@ -135,6 +135,12 @@ static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
   // No existing file system -- set up for a format
   if (INTERNAL_FLASH_SIZE >= 700000) {
     myspiffs_set_cfg(cfg, 0x10000, 0x10000, TRUE);
+#ifndef SPIFFS_MAX_FILESYSTEM_SIZE
+    if (cfg->phys_size < 400000) {
+      // Don't waste so much in alignment
+      myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, LOG_BLOCK_SIZE * 4, TRUE);
+    }
+#endif
   } else {
     myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, 0, TRUE);
   }
