@@ -1,5 +1,6 @@
 #include "module.h"
 #include "lauxlib.h"
+#include "lmem.h"
 #include "platform.h"
 #include "c_stdlib.h"
 #include "c_string.h"
@@ -11,6 +12,7 @@
 typedef struct {
   int canary;
   int size;
+  uint8_t colorsPerLed;
   uint8_t values[0];
 } ws2812_buffer;
 
@@ -91,11 +93,13 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
 // Handle a buffer where we can store led values
 static int ICACHE_FLASH_ATTR ws2812_new_buffer(lua_State *L) {
   const int leds = luaL_checkint(L, 1);
+  const int colorsPerLed = luaL_checkint(L, 2);
 
   luaL_argcheck(L, leds > 0, 1, "should be a positive integer");
+  luaL_argcheck(L, colorsPerLed > 0, 2, "should be a positive integer");
 
   // Allocate memory
-  size_t size = sizeof(ws2812_buffer) + 3*leds*sizeof(uint8_t);
+  size_t size = sizeof(ws2812_buffer) + colorsPerLed*leds*sizeof(uint8_t);
   ws2812_buffer * buffer = (ws2812_buffer*)lua_newuserdata(L, size);
 
   // Associate its metatable
@@ -104,6 +108,7 @@ static int ICACHE_FLASH_ATTR ws2812_new_buffer(lua_State *L) {
 
   // Save led strip size
   buffer->size = leds;
+  buffer->colorsPerLed = colorsPerLed;
 
   // Store canary for future type checks
   buffer->canary = CANARY_VALUE;
@@ -116,17 +121,27 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_fill(lua_State* L) {
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
 
-  const int g = luaL_checkinteger(L, 2);
-  const int r = luaL_checkinteger(L, 3);
-  const int b = luaL_checkinteger(L, 4);
+  // Grab colors
+  int i, j;
+  int * colors = luaM_malloc(L, buffer->colorsPerLed * sizeof(int));
 
-  uint8_t * p = &buffer->values[0];
-  int i;
-  for(i = 0; i < buffer->size; i++) {
-    *p++ = g;
-    *p++ = r;
-    *p++ = b;
+  for (i = 0; i < buffer->colorsPerLed; i++)
+  {
+    colors[i] = luaL_checkinteger(L, 2+i);
   }
+
+  // Fill buffer
+  uint8_t * p = &buffer->values[0];
+  for(i = 0; i < buffer->size; i++)
+  {
+    for (j = 0; j < buffer->colorsPerLed; j++)
+    {
+      *p++ = colors[j];
+    }
+  }
+
+  // Free memory
+  luaM_free(L, colors);
 
   return 0;
 }
@@ -140,9 +155,8 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_fade(lua_State* L) {
 
   uint8_t * p = &buffer->values[0];
   int i;
-  for(i = 0; i < buffer->size; i++) {
-    *p++ /= fade;
-    *p++ /= fade;
+  for(i = 0; i < buffer->size * buffer->colorsPerLed; i++)
+  {
     *p++ /= fade;
   }
 
@@ -156,11 +170,13 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_get(lua_State* L) {
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, led >= 0 && led < buffer->size, 2, "index out of range");
 
-  lua_pushnumber(L, buffer->values[3*led+0]);
-  lua_pushnumber(L, buffer->values[3*led+1]);
-  lua_pushnumber(L, buffer->values[3*led+2]);
+  int i;
+  for (i = 0; i < buffer->colorsPerLed; i++)
+  {
+    lua_pushnumber(L, buffer->values[buffer->colorsPerLed*led+i]);
+  }
 
-  return 3;
+  return buffer->colorsPerLed;
 }
 
 static int ICACHE_FLASH_ATTR ws2812_buffer_set(lua_State* L) {
@@ -173,18 +189,18 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_set(lua_State* L) {
   int type = lua_type(L, 3);
   if(type == LUA_TTABLE)
   {
-    // Get g,r,b values and push them on stash
-    lua_rawgeti(L, 3, 1);
-    lua_rawgeti(L, 3, 2);
-    lua_rawgeti(L, 3, 3);
+    int i;
+    for (i = 0; i < buffer->colorsPerLed; i++)
+    {
+      // Get value and push it on stack
+      lua_rawgeti(L, 3, i+1);
 
-    // Convert them as int and store them in buffer
-    buffer->values[3*led+0] = lua_tonumber(L, -3);
-    buffer->values[3*led+1] = lua_tonumber(L, -2);
-    buffer->values[3*led+2] = lua_tonumber(L, -1);
+      // Convert it as int and store them in buffer
+      buffer->values[buffer->colorsPerLed*led+i] = lua_tonumber(L, -1);
+    }
 
     // Clean up the stack
-    lua_pop(L, 3);
+    lua_pop(L, buffer->colorsPerLed);
   }
   else if(type == LUA_TSTRING)
   {
@@ -192,18 +208,20 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_set(lua_State* L) {
     const char * buf = lua_tolstring(L, 3, &len);
 
     // Overflow check
-    if( 3*led + len > 3*buffer->size )
+    if( buffer->colorsPerLed*led + len > buffer->colorsPerLed*buffer->size )
     {
 	return luaL_error(L, "string size will exceed strip length");
     }
 
-    c_memcpy(&buffer->values[3*led], buf, len);
+    c_memcpy(&buffer->values[buffer->colorsPerLed*led], buf, len);
   }
   else
   {
-    buffer->values[3*led+0] = luaL_checkinteger(L, 3);
-    buffer->values[3*led+1] = luaL_checkinteger(L, 4);
-    buffer->values[3*led+2] = luaL_checkinteger(L, 5);
+    int i;
+    for (i = 0; i < buffer->colorsPerLed; i++)
+    {
+      buffer->values[buffer->colorsPerLed*led+i] = luaL_checkinteger(L, 3+i);
+    }
   }
 
   return 0;
@@ -225,7 +243,7 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_write(lua_State* L) {
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
 
   // Send the buffer
-  ws2812_write(buffer->values, 3*buffer->size);
+  ws2812_write(buffer->values, buffer->colorsPerLed*buffer->size);
 
   return 0;
 }
