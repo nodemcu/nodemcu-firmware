@@ -1,7 +1,7 @@
 # Sigma-delta Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2016-02-20 | [Arnim Läuger](https://github.com/devsaurus), [Espressif example](http://bbs.espressif.com/viewtopic.php?t=49) | [Arnim Läuger](https://github.com/devsaurus) | [sigma_delta.c](../../../app/modules/sigma_delta.c)|
+| 2016-02-20 | [Espressif example](http://bbs.espressif.com/viewtopic.php?t=49), [Arnim Läuger](https://github.com/devsaurus) | [Arnim Läuger](https://github.com/devsaurus) | [sigma_delta.c](../../../app/modules/sigma_delta.c)|
 
 This module provides access to the [sigma-delta](https://en.wikipedia.org/wiki/Delta-sigma_modulation) component. It's a hardware signal generator that can be routed to any of the GPIOs except pin 0.
 
