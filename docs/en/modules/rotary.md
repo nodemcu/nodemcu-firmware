@@ -64,8 +64,8 @@ Sets a callback on specific events.
 
 If the callback is None or omitted, then the registration is cancelled.
 
-The callback will be invoked with three arguments when the event happens. The first argument is the 
-current position of the rotary switch, the second is the eventtype, and the third is the time when the event happened. 
+The callback will be invoked with three arguments when the event happens. The first argument is the eventtype, 
+the second is the current position of the rotary switch, and the third is the time when the event happened. 
 
 The position is tracked
 and is represented as a signed 32-bit integer. Increasing values indicate clockwise motion. The time is the number of microseconds represented
@@ -73,7 +73,7 @@ in a 32-bit integer. Note that this wraps every hour or so.
 
 #### Example
 
-    rotary.on(0, rotary.ALL, function (pos, type, when) 
+    rotary.on(0, rotary.ALL, function (type, pos, when) 
       print "Position=" .. pos .. " event type=" .. type .. " time=" .. when
     end)
 
