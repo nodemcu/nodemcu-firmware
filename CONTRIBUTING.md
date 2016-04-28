@@ -23,7 +23,7 @@ Use the platform and tools you feel most comfortable with. There are  no constra
 ## Writing Documentation
 The NodeMCU documentation is maintained within the same repository as the code. The primary reason is to keep the two in sync more easily. It's thus trivial for the NodeMCU team to verify that a PR includes the necessary documentation. Furthermore, the documentation is merged automatically with the code if it moves from branch X to Y.
 
-The documentation consists of a collection of Markdown files (see note on Markdown syntax at end of chapter) stored in the [`/docs`](docs) directory. With every commit a human readable and browsable version is automatically built with [Read the Docs](https://readthedocs.org/) (RTD). The public NodeMCU documentation can be found at [nodemcu.readthedocs.org](http://nodemcu.readthedocs.org/).
+The documentation consists of a collection of Markdown files (see note on Markdown syntax at end of chapter) stored in the [`/docs`](docs) directory. With every commit a human readable and browsable version is automatically built with [Read the Docs](https://readthedocs.io/) (RTD). The public NodeMCU documentation can be found at [nodemcu.readthedocs.io](http://nodemcu.readthedocs.io/).
 
 There are essentially only two things to keep in mind if you're contributing a PR:
 

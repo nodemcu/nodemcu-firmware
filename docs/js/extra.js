@@ -66,9 +66,9 @@ var nodemcu = nodemcu || {};
    *
    * <dl>
    *   <dt>Languages</dt>
-   *   <dd><a href="http://nodemcu.readthedocs.org/en/<branch>/de/">de</a></dd>
+   *   <dd><a href="http://nodemcu.readthedocs.io/en/<branch>/de/">de</a></dd>
    *   <strong>
-   *     <dd><a href="http://nodemcu.readthedocs.org/en/<branch>/en/">en</a></dd>
+   *     <dd><a href="http://nodemcu.readthedocs.io/en/<branch>/en/">en</a></dd>
    *   </strong>
    * </dl>
    *
