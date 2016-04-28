@@ -106,4 +106,3 @@ To enable runtime debug messages to serial console edit `app/include/user_config
 ```c
 #define DEVELOP_VERSION
 ```
-readthedocs.io
