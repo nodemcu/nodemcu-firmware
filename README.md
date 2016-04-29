@@ -45,6 +45,7 @@ Because Lua is a high level language and several modules are built into the firm
     --nil
     wifi.setmode(wifi.STATION)
     wifi.sta.config("SSID", "password")
+    wifi.sta.connect()
     ip = wifi.sta.getip()
     print(ip)
     --192.168.18.110
