@@ -24,11 +24,6 @@ Gets the current WiFi channel.
 #### Returns
 current WiFi channel
 
-#### Example
-```lua
-print(wifi.getchannel())
-```
-
 ## wifi.getmode()
 
 Gets WiFi operation mode.
@@ -240,9 +235,9 @@ Sets the WiFi station configuration.
 
 - `ssid` string which is less than 32 bytes.
 - `password` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
-- `auto` value of 0 or 1 (default)
-	- 0, Disable auto connect and remain disconnected from access point
-	- 1, Enable auto connect and connect to access point
+- `auto` defaults to 1
+	- 0 to disable auto connect and remain disconnected from access point
+	- 1 to enable auto connect and connect to access point, hence with `auto=1` there's no need to call [`wifi.sta.connect()`](#wifistaconnect) later
 - `bssid` string that contains the MAC address of the access point (optional)
 	- You can set BSSID if you have multiple access points with the same SSID.
  	- Note: if you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
@@ -257,22 +252,22 @@ Sets the WiFi station configuration.
 #### Example
 
 ```lua
---Connect to access point automatically when in range
+-- Connect to access point automatically when in range, `auto` defaults to 1
 wifi.sta.config("myssid", "password")
 
---Connect to Unsecured access point automatically when in range
+-- Connect to Unsecured access point automatically when in range, `auto` defaults to 1
 wifi.sta.config("myssid", "")
   
---Connect to access point, User decides when to connect/disconnect to/from AP
+-- Connect to access point, User decides when to connect/disconnect to/from AP due to `auto=0`
 wifi.sta.config("myssid", "mypassword", 0)
 wifi.sta.connect()
 -- ... do some WiFi stuff
 wifi.sta.disconnect()
    
---Connect to specific access point automatically when in range
+-- Connect to specific access point automatically when in range, `auto` defaults to 1
 wifi.sta.config("myssid", "mypassword", "12:34:56:78:90:12")
 
---Connect to specific access point, User decides when to connect/disconnect to/from AP
+-- Connect to specific access point, User decides when to connect/disconnect to/from AP due to `auto=0`
 wifi.sta.config("myssid", "mypassword", 0, "12:34:56:78:90:12")
 wifi.sta.connect()
 -- ... do some WiFi stuff
@@ -285,7 +280,7 @@ wifi.sta.disconnect()
 
 ## wifi.sta.connect()
 
-Connects to AP in station mode.
+Connects to the configured AP in station mode. You only ever need to call this if auto-connect was disabled in [`wifi.sta.config()`](#wifistaconfig).
 
 #### Syntax
 `wifi.sta.connect()`
@@ -295,11 +290,6 @@ none
 
 #### Returns
 `nil`
-
-#### Example
-```lua
-wifi.sta.connect()
-```
 
 #### See also
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
