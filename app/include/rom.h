@@ -147,4 +147,7 @@ void srand(unsigned int);
 
 void uart_div_modify(int no, unsigned int freq);
 
+/* Returns 0 on success, 1 on failure */
+uint8_t SPIRead(uint32_t src_addr, uint32_t *des_addr, uint32_t size);
+
 #endif

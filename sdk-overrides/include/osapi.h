@@ -12,6 +12,8 @@ unsigned int uart_baudrate_detect(unsigned int uart_no, unsigned int async);
 
 void NmiTimSetFunc(void (*func)(void));
 
+void call_user_start(void);
+
 #include_next "osapi.h"
 
 #endif
