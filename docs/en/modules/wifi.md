@@ -726,12 +726,12 @@ Gets the current status in station mode.
 #### Returns
 number： 0~5
 
-- 0: STATION_IDLE,
-- 1: STATION_CONNECTING,
-- 2: STATION_WRONG_PASSWORD,
-- 3: STATION_NO_AP_FOUND,
-- 4: STATION_CONNECT_FAIL,
-- 5: STATION_GOT_IP.
+- 0: STA_IDLE,
+- 1: STA_CONNECTING,
+- 2: STA_WRONGPWD,
+- 3: STA_APNOTFOUND,
+- 4: STA_FAIL,
+- 5: STA_GOTIP.
 
 # wifi.ap Module
 
@@ -1071,7 +1071,7 @@ T: Table returned by event.
  T.old_auth_mode.."\n\tnew_auth_mode: "..T.new_auth_mode) 
  end)
 
- wifi.eventmon.register(wifi.eventmon.stasgottipa_got_ip, function(T) 
+ wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(T) 
  print("\n\tSTA - GOT IP".."\n\tStation IP: "..T.IP.."\n\tSubnet mask: "..
  T.netmask.."\n\tGateway IP: "..T.gateway)
  end)
