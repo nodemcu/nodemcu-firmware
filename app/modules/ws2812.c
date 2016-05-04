@@ -269,14 +269,8 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_write(lua_State* L) {
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
 
-  // Initialize the output pin
-  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  platform_gpio_write(pin, 0);
-
   // Send the buffer
-  ets_intr_lock();
   ws2812_write(pin_num[pin], &buffer->values[0], 3*buffer->size);
-  ets_intr_unlock();
 
   return 0;
 }
