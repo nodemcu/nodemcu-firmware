@@ -16,7 +16,7 @@ The external filter circuit is shown in the following schematic. Note that the v
 
 !!! note "Note:"
 
-    This driver shares hardware resources with other modules. Thus you can't operate it in parallel to the `sigma delta` of `perf` modules. They require the sigma-delta generator and the hw_timer, respectively.
+    This driver shares hardware resources with other modules. Thus you can't operate it in parallel to the `sigma delta`, `perf`, or `pwm` modules. They require the sigma-delta generator and the hw_timer, respectively.
 
 
 ## Audio format
