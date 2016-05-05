@@ -18,7 +18,7 @@ typedef struct {
 
 // Init UART1 to be able to stream WS2812 data
 // We use GPIO2 as output pin
-static void ICACHE_FLASH_ATTR ws2812_init() {
+static void ws2812_init() {
   // Configure UART1
   // Set baudrate of UART1 to 3200000
   WRITE_PERI_REG(UART_CLKDIV(1), UART_CLK_FREQ / 3200000);
@@ -80,7 +80,7 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t *pixels, uint32_t length) {
 // ws2812.write(string.char(0, 255, 0)) sets the first LED red.
 // ws2812.write(string.char(0, 0, 255):rep(10)) sets ten LEDs blue.
 // ws2812.write(string.char(255, 0, 0, 255, 255, 255)) first LED green, second LED white.
-static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
+static int ws2812_writegrb(lua_State* L) {
   size_t length;
   const char *values = luaL_checklstring(L, 1, &length);
 
@@ -91,7 +91,7 @@ static int ICACHE_FLASH_ATTR ws2812_writegrb(lua_State* L) {
 }
 
 // Handle a buffer where we can store led values
-static int ICACHE_FLASH_ATTR ws2812_new_buffer(lua_State *L) {
+static int ws2812_new_buffer(lua_State *L) {
   const int leds = luaL_checkint(L, 1);
   const int colorsPerLed = luaL_checkint(L, 2);
 
@@ -116,7 +116,7 @@ static int ICACHE_FLASH_ATTR ws2812_new_buffer(lua_State *L) {
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR ws2812_buffer_fill(lua_State* L) {
+static int ws2812_buffer_fill(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
@@ -146,7 +146,7 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_fill(lua_State* L) {
   return 0;
 }
 
-static int ICACHE_FLASH_ATTR ws2812_buffer_fade(lua_State* L) {
+static int ws2812_buffer_fade(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int fade = luaL_checkinteger(L, 2);
 
@@ -163,7 +163,7 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_fade(lua_State* L) {
   return 0;
 }
 
-static int ICACHE_FLASH_ATTR ws2812_buffer_get(lua_State* L) {
+static int ws2812_buffer_get(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int led = luaL_checkinteger(L, 2) - 1;
 
@@ -179,7 +179,7 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_get(lua_State* L) {
   return buffer->colorsPerLed;
 }
 
-static int ICACHE_FLASH_ATTR ws2812_buffer_set(lua_State* L) {
+static int ws2812_buffer_set(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int led = luaL_checkinteger(L, 2) - 1;
 
@@ -227,7 +227,7 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_set(lua_State* L) {
   return 0;
 }
 
-static int ICACHE_FLASH_ATTR ws2812_buffer_size(lua_State* L) {
+static int ws2812_buffer_size(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
@@ -237,7 +237,7 @@ static int ICACHE_FLASH_ATTR ws2812_buffer_size(lua_State* L) {
   return 1;
 }
 
-static int ICACHE_FLASH_ATTR ws2812_buffer_write(lua_State* L) {
+static int ws2812_buffer_write(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
