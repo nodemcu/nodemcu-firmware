@@ -51,7 +51,9 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t *pixels, uint32_t length) {
   // 0b00000111 => 000111 => [0]111000[1] => 10001110 => 01
   // 0b00110100 => 110100 => [0]001011[1] => 11101000 => 10
   // 0b00000100 => 000100 => [0]001000[1] => 11101110 => 11
-  uint8_t _uartData[4] = { 0b00110111, 0b00000111, 0b00110100, 0b00000100 };
+  // Array declared as static const to avoid runtime generation
+  // But declared in ".data" section to avoid read penalty from FLASH
+  static const __attribute__((section(".data._uartData"))) uint8_t _uartData[4] = { 0b00110111, 0b00000111, 0b00110100, 0b00000100 };
 
   uint8_t *end = pixels + length;
 
