@@ -60,6 +60,15 @@ tmr.softwd(int)
 #define TIMER_MODE_AUTO 1
 #define TIMER_IDLE_FLAG (1<<7) 
 
+#define STRINGIFY_VAL(x) #x
+#define STRINGIFY(x) STRINGIFY_VAL(x)
+
+// assuming system_timer_reinit() has *not* been called
+#define MAX_TIMEOUT_DEF 6870947  //SDK 1.5.3 limit (0x68D7A3)
+
+static const uint32 MAX_TIMEOUT=MAX_TIMEOUT_DEF;
+static const char* MAX_TIMEOUT_ERR_STR = "Range: 1-"STRINGIFY(MAX_TIMEOUT_DEF);
+
 typedef struct{
 	os_timer_t os;
 	sint32_t lua_ref;
@@ -129,16 +138,13 @@ static int tmr_now(lua_State* L){
 // Lua: tmr.register( id, interval, mode, function )
 static int tmr_register(lua_State* L){
 	uint32_t id = luaL_checkinteger(L, 1);
-	MOD_CHECK_ID(tmr, id);
-	sint32_t interval = luaL_checkinteger(L, 2);
+	uint32_t interval = luaL_checkinteger(L, 2);
 	uint8_t mode = luaL_checkinteger(L, 3);
-	//validate arguments
-    const int32_t MAX_TIMEOUT = 0xC49BA5; // assuming system_timer_reinit() has *not* been called
-	uint8_t args_invalid = (interval <= 0 || interval > MAX_TIMEOUT)
-		|| (mode != TIMER_MODE_SINGLE && mode != TIMER_MODE_SEMI && mode != TIMER_MODE_AUTO)
-		|| (lua_type(L, 4) != LUA_TFUNCTION && lua_type(L, 4) != LUA_TLIGHTFUNCTION);
-	if(args_invalid)
-		return luaL_error(L, "wrong arg range");
+	//Check if provided parameters are valid
+	MOD_CHECK_ID(tmr, id);
+	luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
+  luaL_argcheck(L, (mode == TIMER_MODE_SINGLE || mode == TIMER_MODE_SEMI || mode == TIMER_MODE_AUTO), 3, "Invalid mode");
+  luaL_argcheck(L, (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION), 4, "Must be function");
 	//get the lua function reference
 	lua_pushvalue(L, 4);
 	sint32_t ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -212,9 +218,8 @@ static int tmr_interval(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
 	MOD_CHECK_ID(tmr,id);
 	timer_t tmr = &alarm_timers[id];
-	sint32_t interval = luaL_checkinteger(L, 2);
-	if(interval <= 0)
-		return luaL_error(L, "wrong arg range");
+	uint32_t interval = luaL_checkinteger(L, 2);
+  luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
 	if(tmr->mode != TIMER_MODE_OFF){	
 		tmr->interval = interval;
 		if(!(tmr->mode&TIMER_IDLE_FLAG)){

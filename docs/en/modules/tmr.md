@@ -19,7 +19,7 @@ To free up the resources with this timer when done using it, call [`tmr.unregist
 
 #### Parameters
 - `id` timer id (0-6)
-- `interval_ms` timer interval in milliseconds. Maximum value is 12884901. In SDKs <= 1.5.0 values >6871948 result in incorrect behaviour.
+- `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 - `mode` timer mode:
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
 	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrstart) to restart)
@@ -68,7 +68,7 @@ Changes a registered timer's expiry interval.
 
 #### Parameters
 - `id` timer id (0-6)
-- `interval_ms` new timer interval in milliseconds. Maximum value is 12884901. In SDKs <= 1.5.0 values >6871948 result in incorrect behaviour.
+- `interval_ms` new timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 
 #### Returns
 `nil`
@@ -109,7 +109,7 @@ To free up the resources with this timer when done using it, call [`tmr.unregist
 
 #### Parameters
 - `id` timer id (0-6)
-- `interval_ms` timer interval in milliseconds. Maximum value is 12884901. In SDKs <= 1.5.0 values >6871948 result in incorrect behaviour.
+- `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 - `mode` timer mode:
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
 	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrunregister) to restart)
