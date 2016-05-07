@@ -198,6 +198,7 @@ $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip:
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
+	$(MAKE) -c tools clean
 	$(RM) -r $(ODIR)/$(TARGET)/$(FLAVOR)
 	$(RM) -r "$(TOP_DIR)/sdk"
 

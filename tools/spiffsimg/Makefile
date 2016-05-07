@@ -6,3 +6,6 @@ CFLAGS=-g -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -I. -I../../a
 
 spiffsimg: $(SRCS)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+clean:
+	rm -f spiffsimg

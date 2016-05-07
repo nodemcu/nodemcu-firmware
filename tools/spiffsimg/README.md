@@ -4,13 +4,24 @@ Ever wished you could prepare a SPIFFS image offline and flash the whole
 thing onto your microprocessor's storage instead of painstakingly upload
 file-by-file through your app on the micro? With spiffsimg you can!
 
-`Syntax: spiffsimg -f <filename> [-c size] [-l | -i | -r <scriptname> ]`
+`Syntax: spiffsimg -f <filename> 
+	[-o <offsetfile>]
+	[-c <size>] 
+	[-S <flashsize>]
+	[-U <usedsize>]
+	[-d]
+	[-l | -i | -r <scriptname> ]`
 
 ### Supported operations:
 
+  * -f specifies the filename for the disk image. '%x' will be replaced by the calculated offset of the file system.
+  * -o specifies the file which is to contain the calculated offset.
+  * -S specifies the size of the flash chip. '32m' is 32 mbits, '1MB' is 1 megabyte.
+  * -U specifies the amount of flash used by the firmware. Decimal or Hex bytes.
   * Create (-c size) a blank disk image of the given size.
   * List (-l) the contents of the given disk image.
   * Interactive (-i) or scripted (-r) commands.
+  * -d causes the disk image to be deleted on error. This makes it easier to script.
 
 ### Available commands:
 
@@ -23,7 +34,7 @@ file-by-file through your app on the micro? With spiffsimg you can!
 
 ### Example:
 ```lua
-# spiffsimg -f flash.img -c 524288 -i
+# spiffsimg -f flash.img -S 32m -U 524288 -i
 > import myapp/lua/init.lua init.lua
 > import myapp/lua/httpd.lua httpd.lua
 > import myapp/html/index.html http/index.html
