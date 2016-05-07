@@ -139,6 +139,10 @@ function M.init(pin)
   --_drv:on("stopped", cb_stopped)
 end
 
+function M.vu(cb, freq)
+ _drv:on("vu", cb, freq)
+end
+
 function M.close()
   stop_stream()
   _drv:close()

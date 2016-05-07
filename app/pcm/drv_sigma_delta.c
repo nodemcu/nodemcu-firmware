@@ -22,7 +22,22 @@ static void ICACHE_RAM_ATTR drv_sd_timer_isr( os_param_t arg )
   }
 
   if (!buf->empty) {
+    uint16_t tmp;
     // buffer is not empty, continue reading
+
+    tmp = abs((int16_t)(buf->data[buf->rpos]) - 128);
+    if (tmp > cfg->vu_peak_tmp) {
+      cfg->vu_peak_tmp = tmp;
+    }
+    cfg->vu_samples_tmp++;
+    if (cfg->vu_samples_tmp >= cfg->vu_req_samples) {
+      cfg->vu_peak = cfg->vu_peak_tmp;
+
+      task_post_low( cfg->data_vu_task, (os_param_t)cfg );
+
+      cfg->vu_samples_tmp = 0;
+      cfg->vu_peak_tmp    = 0;
+    }
 
     platform_sigma_delta_set_target( buf->data[buf->rpos++] );
     if (buf->rpos >= buf->len) {
@@ -64,6 +79,11 @@ static uint8_t drv_sd_close( cfg_t *cfg )
 
 static uint8_t drv_sd_play( cfg_t *cfg )
 {
+  // VU control: derive callback frequency
+  cfg->vu_req_samples = (uint16_t)((1000000L / (uint32_t)cfg->vu_freq) / (uint32_t)pcm_rate_def[cfg->rate]);
+  cfg->vu_samples_tmp = 0;
+  cfg->vu_peak_tmp    = 0;
+
   // (re)start hardware timer ISR to feed the sigma-delta
   if (platform_hw_timer_init( drv_sd_hw_timer_owner, FRC1_SOURCE, TRUE )) {
     platform_hw_timer_set_func( drv_sd_hw_timer_owner, drv_sd_timer_isr, (os_param_t)cfg );

@@ -61,7 +61,7 @@ none
 Register callback functions for events.
 
 #### Syntax
-`drv:on(event[, cb_fn])`
+`drv:on(event[, cb_fn[, freq]])`
 
 #### Parameters
 - `event` identifier, one of:
@@ -69,7 +69,8 @@ Register callback functions for events.
   - `drained` playback was stopped due to lack of data. The last 2 invocations of the `data` callback didn't provide new chunks in time (intentionally or unintentionally) and the internal buffers were fully consumed.
   - `paused` playback was paused by `pcm.drv:pause()`.
   - `stopped` playback was stopped by `pcm.drv:stop()`.
-- `cb_fn` callback function for the specified event. Unregisters previous function if omitted.
+  - `vu` new peak data, `cb_fn` is triggered `freq` times per second (1 to 200 Hz).
+- `cb_fn` callback function for the specified event. Unregisters previous function if omitted. First parameter is `drv`, followed by peak data for `vu` callback.
 
 #### Returns
 `nil`

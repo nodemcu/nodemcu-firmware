@@ -64,12 +64,16 @@ typedef struct {
   uint8_t rbuf_idx;   // read by ISR
   uint8_t fbuf_idx;   // fill by data task
   // task handles
-  task_handle_t data_play_task, start_play_task;
+  task_handle_t data_vu_task, data_play_task, start_play_task;
   // callback fn refs
   int self_ref;
-  int cb_data_ref, cb_drained_ref, cb_paused_ref, cb_stopped_ref;
+    int cb_data_ref, cb_drained_ref, cb_paused_ref, cb_stopped_ref, cb_vu_ref;
   // data buffers
   pcm_buf_t bufs[2];
+  // vu measuring
+  uint8_t  vu_freq;
+  uint16_t vu_req_samples, vu_samples_tmp;
+  uint16_t vu_peak_tmp, vu_peak;
   // sigma-delta: output pin
   int pin;
 } cfg_t;
@@ -91,6 +95,7 @@ typedef struct {
 } pud_t;
 
 
+void pcm_data_vu_task( task_param_t param, uint8 prio );
 void pcm_data_play_task( task_param_t param, uint8 prio );
 
 #endif /* _PCM_H */

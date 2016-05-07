@@ -36,6 +36,7 @@ static int pcm_drv_free( lua_State *L )
   UNREF_CB( cfg->cb_drained_ref );
   UNREF_CB( cfg->cb_paused_ref );
   UNREF_CB( cfg->cb_stopped_ref );
+  UNREF_CB( cfg->cb_vu_ref );
   UNREF_CB( cfg->self_ref );
 
   if (cfg->bufs[0].data) {
@@ -160,6 +161,13 @@ static int pcm_drv_on( lua_State *L )
   } else if ((len == 7) && (c_strcmp( event, "stopped" ) == 0)) {
     luaL_unref( L, LUA_REGISTRYINDEX, cfg->cb_stopped_ref);
     cfg->cb_stopped_ref = COND_REF( is_func );
+  } else if ((len == 2) && (c_strcmp( event, "vu" ) == 0)) {
+    luaL_unref( L, LUA_REGISTRYINDEX, cfg->cb_vu_ref);
+    cfg->cb_vu_ref = COND_REF( is_func );
+
+    int freq = luaL_optinteger( L, 4, 10 );
+    luaL_argcheck( L, (freq > 0) && (freq <= 200), 4, "invalid range" );
+    cfg->vu_freq = (uint8_t)freq;
   } else {
     if (is_func) {
       // need to pop pushed function arg
@@ -187,6 +195,7 @@ static int pcm_new( lua_State *L )
   cfg->self_ref      = LUA_NOREF;
   cfg->cb_data_ref   = cfg->cb_drained_ref = LUA_NOREF;
   cfg->cb_paused_ref = cfg->cb_stopped_ref = LUA_NOREF;
+  cfg->cb_vu_ref     = LUA_NOREF;
 
   cfg->bufs[0].buf_size = cfg->bufs[1].buf_size = 0;
   cfg->bufs[0].data     = cfg->bufs[1].data     = NULL;
@@ -194,6 +203,8 @@ static int pcm_new( lua_State *L )
   cfg->bufs[0].rpos     = cfg->bufs[1].rpos     = 0;
   cfg->bufs[0].empty    = cfg->bufs[1].empty    = TRUE;
 
+  cfg->data_vu_task    = task_get_id( pcm_data_vu_task );
+  cfg->vu_freq         = 10;
   cfg->data_play_task  = task_get_id( pcm_data_play_task );
   cfg->start_play_task = task_get_id( pcm_start_play_task );
 
