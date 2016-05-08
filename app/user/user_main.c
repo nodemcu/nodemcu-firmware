@@ -13,6 +13,7 @@
 #include "c_string.h"
 #include "c_stdlib.h"
 #include "flash_fs.h"
+#include "flash_api.h"
 #include "user_interface.h"
 #include "user_exceptions.h"
 #include "user_modules.h"
@@ -69,7 +70,7 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
    * terse and not as readable as one might like.
    */
   SPIFlashInfo sfi;
-  SPIRead (0, &sfi, sizeof (sfi)); // Cache read not enabled yet, safe to use
+  SPIRead (0, (uint32_t *)(&sfi), sizeof (sfi)); // Cache read not enabled yet, safe to use
   if (sfi.size < 2) // Compensate for out-of-order 4mbit vs 2mbit values
     sfi.size ^= 1;
   uint32_t flash_end_addr = (256 * 1024) << sfi.size;

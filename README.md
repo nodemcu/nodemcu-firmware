@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
-[![Documentation Status](https://readthedocs.org/projects/nodemcu/badge/?version=dev)](http://nodemcu.readthedocs.org/)
+[![Documentation Status](https://readthedocs.com/projects/nodemcu/badge/?version=dev)](http://nodemcu.readthedocs.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/nodemcu/nodemcu-firmware/blob/master/LICENSE)
 
 ### A Lua based firmware for ESP8266 WiFi SOC
@@ -18,7 +18,7 @@ The NodeMCU *firmware* is a companion project to the popular [NodeMCU dev kits](
 - Asynchronous event-driven programming model
 - 40+ built-in modules
 - Firmware available with or without floating point support (integer-only uses less memory)
-- Up-to-date documentation at [https://nodemcu.readthedocs.org](https://nodemcu.readthedocs.org)
+- Up-to-date documentation at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io)
 
 # Programming Model
 
@@ -43,17 +43,17 @@ wifi.sta.config("SSID", "password")
 
 # Documentation
 
-The entire [NodeMCU documentation](https://nodemcu.readthedocs.org) is maintained right in this repository at [/docs](docs). The fact that the API documentation is mainted in the same repository as the code that *provides* the API ensures consistency between the two. With every commit the documentation is rebuilt by Read the Docs and thus transformed from terse Markdown into a nicely browsable HTML site at [https://nodemcu.readthedocs.org](https://nodemcu.readthedocs.org). 
+The entire [NodeMCU documentation](https://nodemcu.readthedocs.io) is maintained right in this repository at [/docs](docs). The fact that the API documentation is mainted in the same repository as the code that *provides* the API ensures consistency between the two. With every commit the documentation is rebuilt by Read the Docs and thus transformed from terse Markdown into a nicely browsable HTML site at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io). 
 
-- How to [build the firmware](https://nodemcu.readthedocs.org/en/dev/en/build/)
-- How to [build the filesystem](https://nodemcu.readthedocs.org/en/dev/en/spiffs/)
-- How to [flash the firmware](https://nodemcu.readthedocs.org/en/dev/en/flash/)
-- How to [upload code and NodeMCU IDEs](https://nodemcu.readthedocs.org/en/dev/en/upload/)
+- How to [build the firmware](https://nodemcu.readthedocs.io/en/dev/en/build/)
+- How to [build the filesystem](https://nodemcu.readthedocs.io/en/dev/en/spiffs/)
+- How to [flash the firmware](https://nodemcu.readthedocs.io/en/dev/en/flash/)
+- How to [upload code and NodeMCU IDEs](https://nodemcu.readthedocs.io/en/dev/en/upload/)
 - API documentation for every module
 
 # Support
 
-See [https://nodemcu.readthedocs.org/en/dev/en/support/](https://nodemcu.readthedocs.org/en/dev/en/support/).
+See [https://nodemcu.readthedocs.io/en/dev/en/support/](https://nodemcu.readthedocs.io/en/dev/en/support/).
 
 # License
 
@@ -61,7 +61,7 @@ See [https://nodemcu.readthedocs.org/en/dev/en/support/](https://nodemcu.readthe
 
 # Build Options
 
-The following sections explain some of the options you have if you want to [build your own NodeMCU firmware](http://nodemcu.readthedocs.org/en/dev/en/build/).
+The following sections explain some of the options you have if you want to [build your own NodeMCU firmware](http://nodemcu.readthedocs.io/en/dev/en/build/).
 
 ### Select Modules
 
