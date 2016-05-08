@@ -52,8 +52,9 @@ static int file_format( lua_State* L )
   file_close(L);
   if( !fs_format() )
   {
-    NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
+    NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
     NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+    luaL_error(L, "Failed to format file system");
   }
   else{
     NODE_ERR( "format done.\n" );
@@ -173,11 +174,13 @@ static int file_rename( lua_State* L )
 static int file_fsinfo( lua_State* L )
 {
   u32_t total, used;
-  SPIFFS_info(&fs, &total, &used);
+  if (SPIFFS_info(&fs, &total, &used)) {
+    return luaL_error(L, "file system failed");
+  }
   NODE_DBG("total: %d, used:%d\n", total, used);
   if(total>0x7FFFFFFF || used>0x7FFFFFFF || used > total)
   {
-    return luaL_error(L, "file system error");;
+    return luaL_error(L, "file system error");
   }
   lua_pushinteger(L, total-used);
   lua_pushinteger(L, used);

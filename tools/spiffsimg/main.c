@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <sys/mman.h>
+#include <errno.h>
 #include "spiffs.h"
 
 static spiffs fs;
@@ -48,6 +49,12 @@ static uint8_t *flash;
 static int retcode = 0;
 
 #define LOG_PAGE_SIZE 256
+
+// If the caclulated size is this or less, then use smaller blocks
+// (1 page) rather than the normal 2 pages. This gives a little bit
+// more flexibility for the file system, at the expense of a bit of
+// efficiency
+#define SMALL_FILESYSTEM	(128 * 1024)
 
 static int delete_on_die = 0;
 static const char *delete_list[10];
@@ -74,6 +81,11 @@ static s32_t flash_erase (u32_t addr, u32_t size) {
 
 static void die (const char *what)
 {
+  if (errno == 0) {
+    fprintf(stderr, "%s: fatal error\n", what);
+  } else {
+    perror (what);
+  }
   if (delete_on_die) {
     const char **p = delete_list;
     while (*p) {
@@ -81,7 +93,6 @@ static void die (const char *what)
       p++;
     }
   }
-  perror (what);
   exit (1);
 }
 
@@ -233,7 +244,7 @@ int main (int argc, char *argv[])
     {
       case 'f': fname = optarg; break;
       case 'o': resolved = optarg; break;
-      case 'c': create = true; sz = getsize(optarg); break;
+      case 'c': create = true; sz = strtol(optarg, 0, 0); break;
       case 'S': create = true; flashsize = getsize(optarg); break;
       case 'U': create = true; used = strtol(optarg, 0, 0); break;
       case 'd': delete_on_die = 1; break;
@@ -260,7 +271,7 @@ int main (int argc, char *argv[])
       if (sz < 0x4000) {
 	die("Not enough space");
       }
-      if (sz > 512000) {
+      if (sz > SMALL_FILESYSTEM) {
 	used = (used + 0xffff) & ~0xffff;
       } else {
 	used = (used + 0x1fff) & ~0x1fff;
@@ -291,10 +302,7 @@ int main (int argc, char *argv[])
       die ("write");
   }
   else {
-    if (create) {
-      delete_list[delete_list_index++] = fname;
-    }
-    fd = open (fname, (create ? (O_CREAT | O_TRUNC) : 0) | O_RDWR, 0664);
+    fd = open (fname, O_RDWR, 0664);
     if (fd == -1)
       die ("open");
 
@@ -307,8 +315,8 @@ int main (int argc, char *argv[])
     }
   }
 
-  if (sz & (LOG_PAGE_SIZE -1))
-    die ("file size not multiple of page size");
+  if (sz & (0x1000 -1))
+    die ("file size not multiple of erase block size");
 
   flash = mmap (0, sz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (!flash)
@@ -321,11 +329,15 @@ int main (int argc, char *argv[])
   cfg.phys_size = sz;
   cfg.phys_addr = 0;
   cfg.phys_erase_block = 0x1000;
-  cfg.log_block_size = 0x1000 * (sz > 512000 ? 2 : 1);
+  cfg.log_block_size = 0x1000 * (sz > SMALL_FILESYSTEM ? 2 : 1);
   cfg.log_page_size = LOG_PAGE_SIZE;
   cfg.hal_read_f = flash_read;
   cfg.hal_write_f = flash_write;
   cfg.hal_erase_f = flash_erase;
+  if (cfg.phys_size < 4 * cfg.log_block_size) {
+    die("disk not large enough for four blocks");
+  }
+
   if (SPIFFS_mount (&fs, &cfg,
       spiffs_work_buf,
       spiffs_fds,
@@ -341,6 +353,9 @@ int main (int argc, char *argv[])
           sizeof(spiffs_fds),
           malloc(65536), 65536, 0) != 0) {
         die ("spiffs_mount");
+      }
+      if (command == CMD_INTERACTIVE) {
+	printf("Created filesystem -- size 0x%x, block_size=%d\n", cfg.phys_size, cfg.log_block_size);
       }
     } else {
       die ("spiffs_mount");

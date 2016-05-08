@@ -4,7 +4,13 @@ Ever wished you could prepare a SPIFFS image offline and flash the whole
 thing onto your microprocessor's storage instead of painstakingly upload
 file-by-file through your app on the micro? With spiffsimg you can!
 
-`Syntax: spiffsimg -f <filename> 
+NodeMCU uses a SPIFFS filesystem that knows how big it is -- i.e. when you build a file system
+image, it must fit into the flash chip, and it cannot be expanded once flashed.
+It is important to give the `spiffimg` tool the correct size. You can provide either the `-c` option or both the `-U` and `-S` options.
+
+### Syntax 
+
+`spiffsimg -f <filename> 
 	[-o <offsetfile>]
 	[-c <size>] 
 	[-S <flashsize>]

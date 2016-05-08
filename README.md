@@ -46,6 +46,7 @@ wifi.sta.config("SSID", "password")
 The entire [NodeMCU documentation](https://nodemcu.readthedocs.org) is maintained right in this repository at [/docs](docs). The fact that the API documentation is mainted in the same repository as the code that *provides* the API ensures consistency between the two. With every commit the documentation is rebuilt by Read the Docs and thus transformed from terse Markdown into a nicely browsable HTML site at [https://nodemcu.readthedocs.org](https://nodemcu.readthedocs.org). 
 
 - How to [build the firmware](https://nodemcu.readthedocs.org/en/dev/en/build/)
+- How to [build the filesystem](https://nodemcu.readthedocs.org/en/dev/en/spiffs/)
 - How to [flash the firmware](https://nodemcu.readthedocs.org/en/dev/en/flash/)
 - How to [upload code and NodeMCU IDEs](https://nodemcu.readthedocs.org/en/dev/en/upload/)
 - API documentation for every module

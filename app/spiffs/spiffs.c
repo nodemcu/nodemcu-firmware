@@ -62,7 +62,7 @@ static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int
   if ((int) cfg->phys_size < 0) {
     return FALSE;
   }
-  cfg->log_block_size = block_size; // Improve utilization
+  cfg->log_block_size = block_size; 
 
   return (cfg->phys_size / block_size) >= MIN_BLOCKS_FS;
 }
@@ -195,12 +195,13 @@ int myspiffs_format( void )
   myspiffs_mount_internal(TRUE);
   SPIFFS_unmount(&fs);
 
+  NODE_DBG("Formatting: size 0x%x, addr 0x%x\n", fs.cfg.phys_size, fs.cfg.phys_addr);
+
   if (SPIFFS_format(&fs) < 0) {
     return 0;
   }
 
-  myspiffs_mount();
-  return 1;
+  return myspiffs_mount();
 }
 
 int myspiffs_check( void )

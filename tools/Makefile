@@ -1,9 +1,3 @@
-#  copyright (c) 2010 Espressif System
-#
-.NOTPARALLEL:
-ifndef PDIR
-
-endif
 #############################################################
 # Options
 #
@@ -48,18 +42,3 @@ spiffsclean: remove-image
 	rm -f ./spiffsimg/spiffsimg
 	rm -f ./spiffsimg/spiffs.lst
 
-#############################################################
-# Recursion Magic - Don't touch this!!
-#
-# Each subtree potentially has an include directory
-#   corresponding to the common APIs applicable to modules
-#   rooted at that subtree. Accordingly, the INCLUDE PATH
-#   of a module can only contain the include directories up
-#   its parent path, and not its siblings
-#
-# Required for each makefile to inherit from the parent
-#
-
-INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
-PDIR := ../$(PDIR)
-sinclude $(PDIR)Makefile
