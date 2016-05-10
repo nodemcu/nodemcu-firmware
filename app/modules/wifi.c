@@ -580,7 +580,8 @@ static int wifi_station_getconfig( lua_State* L )
 /**
   * wifi.sta.config()
   * Description:
-  * 	Set current Station configuration.
+  * 	Persistently set current station configuration.
+  * 	Configuration information will be retained until changed even if device is turned off.
   * 	Note: If there are multiple APs with the same ssid, you can connect to a specific one by entering it's MAC address into the "bssid" field.
   * Syntax:
   * 	wifi.sta.getconfig(ssid, password) --Set STATION configuration, Auto-connect by default, Connects to any BSSID
