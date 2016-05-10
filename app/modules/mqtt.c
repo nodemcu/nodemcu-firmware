@@ -149,6 +149,8 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
 
   os_timer_disarm(&mud->mqttTimer);
 
+  mud->event_timeout = 0; // no need to count anymore
+
   if(mud->mqtt_state.auto_reconnect){
     pesp_conn->proto.tcp->remote_port = mud->mqtt_state.port;
     pesp_conn->proto.tcp->local_port = espconn_port();
@@ -608,7 +610,7 @@ void mqtt_socket_timer(void *arg)
     mud->keep_alive_tick = 0; // not need count anymore
   } else if(mud->connState == MQTT_CONNECT_SENT) { // wait for CONACK time out.
     NODE_DBG("MQTT_CONNECT timeout.\n");
-    mud->connState == MQTT_INIT;
+    mud->connState = MQTT_INIT;
     
 #ifdef CLIENT_SSL_ENABLE
     if(mud->secure)
@@ -1055,10 +1057,11 @@ static int mqtt_socket_connect( lua_State* L )
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    stack++;
   }
+
+  stack++;
   
-    // call back function when a connection fails
+  // call back function when a connection fails
   if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
