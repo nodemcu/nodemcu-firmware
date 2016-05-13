@@ -36,7 +36,7 @@ Executes a HTTP DELETE request.
 
 #### Example
 ```lua
-http.delete('https://connor.example.com/john',
+http.delete('http://httpbin.org/delete',
   "",
   "",
   function(code, data)
@@ -65,7 +65,7 @@ Executes a HTTP GET request.
 
 #### Example
 ```lua
-http.get("https://www.vowstar.com/nodemcu/", nil, function(code, data)
+http.get("http://httpbin.org/ip", nil, function(code, data)
     if (code < 0) then
       print("HTTP request failed")
     else
@@ -92,7 +92,7 @@ Executes a HTTP POST request.
 
 #### Example
 ```lua
-http.post('http://json.example.com/something',
+http.post('http://httpbin.org/post',
   'Content-Type: application/json\r\n',
   '{"hello":"world"}',
   function(code, data)
@@ -122,7 +122,7 @@ Executes a HTTP PUT request.
 
 #### Example
 ```lua
-http.put('http://db.example.com/items.php?key=deckard',
+http.put('http://httpbin.org/put',
   'Content-Type: text/plain\r\n',
   'Hello!\nStay a while, and listen...\n',
   function(code, data)
@@ -153,7 +153,7 @@ Execute a custom HTTP request for any HTTP method.
 
 #### Example
 ```lua
-http.request("https://www.example.com", "HEAD", "", "", function(code, data)
+http.request("http://httpbin.org", "HEAD", "", "", 
   function(code, data)
     if (code < 0) then
       print("HTTP request failed")
