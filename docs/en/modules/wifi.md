@@ -67,6 +67,8 @@ Configures the WiFi mode to use. NodeMCU can run in one of four WiFi modes:
 
 When using the combined Station + AP mode, the same channel will be used for both networks as the radio can only listen on a single channel.
 
+NOTE: WiFi Mode configuration will be retained until changed even if device is turned off. 
+
 #### Syntax
 `wifi.setmode(mode)`
 
@@ -227,6 +229,8 @@ wifi.sta.autoconnect(1)
 ## wifi.sta.config()
 
 Sets the WiFi station configuration.
+
+NOTE: Station configuration will be retained until changed even if device is turned off. 
 
 #### Syntax
 `wifi.sta.config(ssid, password[, auto[, bssid]])`
@@ -737,7 +741,9 @@ number： 0~5
 
 ## wifi.ap.config()
 
-Sets SSID and password in AP mode. Be sure to make the password at least 8 characters long! If you don't it will default to *no* password and not set the SSID! It will still work as an access point but use a default SSID like e.g. ESP_9997C3.
+Sets SSID and password in AP mode. Be sure to make the password at least 8 characters long! If you don't it will default to *no* password and not set the SSID! It will still work as an access point but use a default SSID like e.g. NODE-9997C3.
+
+NOTE: SoftAP Configuration will be retained until changed even if device is turned off. 
 
 #### Syntax
 `wifi.ap.config(cfg)`
