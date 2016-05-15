@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2016-01-15 | [esphttpclient](https://github.com/Caerbannog/esphttpclient) / [Vowstar](https://github.com/vowstar) | [Vowstar](https://github.com/vowstar) | [http.c](../../../app/modules/http.c)|
 
-Basic HTTP *client* module that provides an interface to do GET/POST/PUT/DELETE over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is limited by available memory. Attempting to receive pages larger than this will fail. If larger page/body sizes are necessary, consider using [`net.createConnection()`](#netcreateconnection) and stream in the data.
+Basic HTTP *client* module that provides an interface to do GET/POST/PUT/DELETE over HTTP(S), as well as customized requests. Due to the memory constraints on ESP8266, the supported page/body size is limited by available memory. Attempting to receive pages larger than this will fail. If larger page/body sizes are necessary, consider using [`net.createConnection()`](net.md#netcreateconnection) and stream in the data.
 
 !!! note "Note:"
 
