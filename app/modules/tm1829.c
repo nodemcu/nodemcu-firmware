@@ -22,14 +22,14 @@ static void ICACHE_RAM_ATTR tm1829_write(uint8_t pin, uint8_t *pixels, uint32_t 
   const uint32_t t0l  = (1000 * system_get_cpu_freq()) / 3333;  // 0.390us (spec=0.35 +- 0.15)
   const uint32_t t1l  = (1000 * system_get_cpu_freq()) / 1250;  // 0.800us (spec=0.70 +- 0.15)
 
-  const uint32_t ttot = (1000 * system_get_cpu_freq()) / 450;   // 2.2us (MUST be >= 1.25)
-
-  const uint32_t tbreak = (1000 * system_get_cpu_freq()) / 160; // 6us
+  const uint32_t ttot = (1000 * system_get_cpu_freq()) / 800;   // 1.25us
 
   while (p != end) {
     register int i;
 
     register uint8_t pixel = *p++;
+
+    ets_intr_lock();
 
     for (i = 7; i >= 0; i--) {
        register uint32_t pin_mask = 1 << pin;
@@ -50,10 +50,7 @@ static void ICACHE_RAM_ATTR tm1829_write(uint8_t pin, uint8_t *pixels, uint32_t 
        while (_getCycleCount() < t2);
     }
 
-    {
-      register uint32_t t = _getCycleCount() + tbreak;
-      while (_getCycleCount() < t);
-    }
+    ets_intr_unlock();
   }
 }
 
@@ -103,9 +100,7 @@ static int ICACHE_FLASH_ATTR tm1829_writergb(lua_State* L)
   platform_gpio_write(pin, 1);
 
   // Send the buffer
-  ets_intr_lock();
   tm1829_write(pin_num[pin], (uint8_t*) buffer, length);
-  ets_intr_unlock();
 
   os_delay_us(500); // reset time
 
