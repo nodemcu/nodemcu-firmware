@@ -75,5 +75,6 @@ pages:
         - 'wifi': 'en/modules/wifi.md'
         - 'ws2801': 'en/modules/ws2801.md'
         - 'ws2812': 'en/modules/ws2812.md'
+        - 'tm1829': 'en/modules/tm1829.md'
 #- Deutsch:
 #    - Home: 'de/index.md'
