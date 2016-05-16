@@ -66,6 +66,7 @@ pages:
         - 'sntp': 'en/modules/sntp.md'
         - 'spi': 'en/modules/spi.md'
         - 'struct': 'en/modules/struct.md'
+        - 'tm1829': 'en/modules/tm1829.md'
         - 'tmr': 'en/modules/tmr.md'
         - 'tsl2561': 'en/modules/tsl2561.md'
         - 'u8g': 'en/modules/u8g.md'
