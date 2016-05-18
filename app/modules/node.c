@@ -521,8 +521,6 @@ static int node_bootreason (lua_State *L)
 // Lua: restore()
 static int node_restore (lua_State *L)
 {
-  flash_init_data_default();
-  flash_init_data_blank();
   system_restore();
   return 0;
 }
