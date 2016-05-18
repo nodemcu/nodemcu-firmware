@@ -7,7 +7,7 @@ The ADC module provides access to the in-built ADC.
 
 On the ESP8266 there is only a single-channel, which is multiplexed with the battery voltage. Depending on the setting in the "esp init data" (byte 107) one can either use the ADC to read an external voltage, or to read the system voltage (vdd33), but not both.
 
-Which mode to use the ADC in can be configured via the `adc.force_init_mode()` function. Note that after switching from one to the other a system restart is required before the change takes effect.
+Which mode to use the ADC in can be configured via the `adc.force_init_mode()` function. Note that after switching from one to the other a system restart (e.g. power cycle, reset button, [`node.restart()`](node.md#noderestart)) is required before the change takes effect.
 
 ## adc.force_init_mode()
 
