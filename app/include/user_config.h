@@ -12,12 +12,6 @@
 #define FLASH_AUTOSIZE
 #define FLASH_SAFE_API
 
-// Byte 107 of esp_init_data_default, only one of these 3 can be picked
-#define ESP_INIT_DATA_ENABLE_READVDD33
-//#define ESP_INIT_DATA_ENABLE_READADC
-//#define ESP_INIT_DATA_FIXED_VDD33_VALUE 33
-//
-
 // This adds the asserts in LUA. It also adds some useful extras to the
 // node module. This is all silent in normal operation and so can be enabled
 // without any harm (except for the code size increase and slight slowdown)

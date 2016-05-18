@@ -315,9 +315,7 @@ none
 
 ## node.restore()
 
-Restores system configuration to defaults. Erases all stored WiFi settings, and resets the "esp init data" to the defaults. This function is intended as a last-resort without having to reflash the ESP altogether.
-
-This also uses the SDK function `system_restore()`, which doesn't document precisely what it erases/restores.
+Restores system configuration to defaults using the SDK function `system_restore()`, which doesn't document precisely what it erases/restores.
 
 #### Syntax
 `node.restore()`
