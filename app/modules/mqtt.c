@@ -674,6 +674,7 @@ static int mqtt_socket_client( lua_State* L )
 
   mud->cb_message_ref = LUA_NOREF;
   mud->cb_suback_ref = LUA_NOREF;
+  mud->cb_unsuback_ref = LUA_NOREF;
   mud->cb_puback_ref = LUA_NOREF;
   mud->pesp_conn = NULL;
 #ifdef CLIENT_SSL_ENABLE
@@ -842,6 +843,8 @@ static int mqtt_delete( lua_State* L )
   mud->cb_message_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
   mud->cb_suback_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref);
+  mud->cb_unsuback_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
   mud->cb_puback_ref = LUA_NOREF;
   lua_gc(L, LUA_GCSTOP, 0);
