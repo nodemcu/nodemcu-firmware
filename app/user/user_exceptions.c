@@ -38,6 +38,8 @@
 #define L16UI_MATCH 0x001002u
 #define L16SI_MATCH 0x009002u
 
+static exception_handler_fn load_store_handler;
+
 
 void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
 {
@@ -73,6 +75,9 @@ die:
     /* Turns out we couldn't fix this, trigger a system break instead
      * and hang if the break doesn't get handled. This is effectively
      * what would happen if the default handler was installed. */
+    if (load_store_handler) {
+      load_store_handler(ef, cause);
+    }
     asm ("break 1, 1");
     while (1) {}
   }
@@ -109,4 +114,6 @@ __wrap__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn)
 {
   if (cause != EXCCAUSE_LOAD_STORE_ERROR)
     __real__xtos_set_exception_handler (cause, fn);
+  else
+    load_store_handler = fn;
 }
