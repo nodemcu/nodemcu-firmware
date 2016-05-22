@@ -304,18 +304,19 @@ srv:listen(80, function(conn)
     response[#response + 1] = "e.g. content read from a file"
     
 	 -- sends and removes the first element from the 'response' table
-    local function send()
+    local function send(sk)
       if #response > 0
-        then sck:send(table.remove(response, 1))
+        then sk:send(table.remove(response, 1))
       else
-        sck:close()
+        sk:close()
+        response = nil
       end
     end
 
     -- triggers the send() function again once the first chunk of data was sent
     sck:on("sent", send)
     
-    send()
+    send(sck)
   end)
 end)
 ```
@@ -326,8 +327,8 @@ sck:send(header, function()
   local data1 = "some large chunk of dynamically loaded data"
   sck:send(data1, function()
     local data2 = "even more dynamically loaded data"
-    sck:send(data2, function() 
-      sck:close()
+    sck:send(data2, function(sk) 
+      sk:close()
     end)
   end)
 end)
