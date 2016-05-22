@@ -6,11 +6,11 @@
 
 This module provides access to the [ADXL345](https://www.sparkfun.com/products/9836) triple axis accelerometer.
 
-## adxl345.data()
+## adxl345.read()
 Samples the sensor and returns X,Y and Z data from the accelerometer.
 
 #### Syntax
-`adxl345.data()`
+`adxl345.read()`
 
 #### Returns
 X,Y,Z data (integers)
@@ -18,7 +18,7 @@ X,Y,Z data (integers)
 #### Example
 ```lua
 adxl345.init(1, 2)
-local x,y,z = adxl345.data()
+local x,y,z = adxl345.read()
 print(string.format("X = %d, Y = %d, Z = %d", x, y, z))
 ```
 

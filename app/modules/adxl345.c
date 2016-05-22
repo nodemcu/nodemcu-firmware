@@ -55,7 +55,7 @@ static int ICACHE_FLASH_ATTR adxl345_init(lua_State* L) {
     return 0;
 }
 
-static int ICACHE_FLASH_ATTR adxl345_data(lua_State* L) {
+static int ICACHE_FLASH_ATTR adxl345_read(lua_State* L) {
 
     uint8_t data[6];
     int x,y,z;
@@ -87,7 +87,7 @@ static int ICACHE_FLASH_ATTR adxl345_data(lua_State* L) {
 }
 
 static const LUA_REG_TYPE adxl345_map[] = {
-    { LSTRKEY( "data" ),         LFUNCVAL( adxl345_data )},
+    { LSTRKEY( "read" ),         LFUNCVAL( adxl345_read )},
     { LSTRKEY( "init" ),         LFUNCVAL( adxl345_init )},
     { LNILKEY, LNILVAL}
 };
