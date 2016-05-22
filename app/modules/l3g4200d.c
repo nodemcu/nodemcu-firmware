@@ -58,7 +58,7 @@ static int ICACHE_FLASH_ATTR l3g4200d_init(lua_State* L) {
     return 0;
 }
 
-static int ICACHE_FLASH_ATTR l3g4200d_data(lua_State* L) {
+static int ICACHE_FLASH_ATTR l3g4200d_read(lua_State* L) {
 
     uint8_t data[6];
     int x,y,z;
@@ -90,7 +90,7 @@ static int ICACHE_FLASH_ATTR l3g4200d_data(lua_State* L) {
 }
 
 static const LUA_REG_TYPE l3g4200d_map[] = {
-    { LSTRKEY( "data" ),         LFUNCVAL( l3g4200d_data )},
+    { LSTRKEY( "read" ),         LFUNCVAL( l3g4200d_read )},
     { LSTRKEY( "init" ),         LFUNCVAL( l3g4200d_init )},
     { LNILKEY, LNILVAL}
 };
