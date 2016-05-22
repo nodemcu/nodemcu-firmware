@@ -67,7 +67,7 @@ static int ICACHE_FLASH_ATTR hmc5883_init(lua_State* L) {
     return 0;
 }
 
-static int ICACHE_FLASH_ATTR hmc5883_data(lua_State* L) {
+static int ICACHE_FLASH_ATTR hmc5883_read(lua_State* L) {
 
     uint8_t data[6];
     int x,y,z;
@@ -100,7 +100,7 @@ static int ICACHE_FLASH_ATTR hmc5883_data(lua_State* L) {
 }
 
 static const LUA_REG_TYPE hmc5883_map[] = {
-    { LSTRKEY( "data" ),         LFUNCVAL( hmc5883_data )},
+    { LSTRKEY( "read" ),         LFUNCVAL( hmc5883_read )},
     { LSTRKEY( "init" ),         LFUNCVAL( hmc5883_init )},
     { LNILKEY, LNILVAL}
 };
