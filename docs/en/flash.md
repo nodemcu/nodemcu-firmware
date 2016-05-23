@@ -15,7 +15,10 @@ Supported platforms: OS X, Linux, Windows, anything that runs Python
 
 Run the following command to flash an *aggregated* binary as is produced for example by the [cloud build service](build.md#cloud-build-service) or the [Docker image](build.md#docker-image).
 
-`esptool.py --port <USB-port-with-ESP8266> write_flash 0x00000 <nodemcu-firmware>.bin`
+`esptool.py --port <USB-port-with-ESP8266> write_flash -fm <mode> -fs <size> 0x00000 <nodemcu-firmware>.bin`
+
+- `mode` is `qio` for 512&nbsp;kByte modules and `dio` for 4&nbsp;MByte modules (`qio` might work as well, YMMV).
+- `size` is given in bits. Specify `4m` for 512&nbsp;kByte and `32m` for 4&nbsp;MByte.
 
 ## NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
@@ -54,7 +57,7 @@ Download a recent SDK release, e.g. [esp_iot_sdk_v1.4.0_15_09_18.zip](http://bbs
 
 For [esptool](https://github.com/themadinventor/esptool) you specify another file to download at the command line.
 ```
-esptool.py write_flash 0x00000 <nodemcu-firmware>.bin 0x7c000 esp_init_data_default.bin
+esptool.py write_flash <flash options> 0x00000 <nodemcu-firmware>.bin 0x7c000 esp_init_data_default.bin
 ```
 
 !!! note "Note:"
