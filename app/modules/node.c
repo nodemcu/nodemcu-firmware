@@ -451,7 +451,7 @@ static int node_compile( lua_State* L )
 
 // Task callback handler for node.task.post()
 static task_handle_t do_node_task_handle;
-static void do_node_task (task_param_t task_fn_ref, uint8_t prio)
+static void do_node_task (task_param_t task_fn_ref, task_prio_t prio)
 {
   lua_State* L = lua_getstate();
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int)task_fn_ref);

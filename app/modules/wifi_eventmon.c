@@ -183,7 +183,7 @@ static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
 }
 
 
-static void wifi_event_monitor_process_event_queue(task_param_t param, uint8 priority)
+static void wifi_event_monitor_process_event_queue(task_param_t param, task_prio_t priority)
 {
   lua_State* L = lua_getstate();
   evt_queue_t *temp = wifi_event_queue_head; //copy event_queue_head pointer to temporary pointer

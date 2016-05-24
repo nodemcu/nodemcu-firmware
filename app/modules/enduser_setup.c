@@ -597,7 +597,7 @@ static int enduser_setup_http_urldecode(char *dst, const char *src, int src_len,
  * This config *cannot* be done in the network receive callback or serious
  * issues like memory corruption occur.
  */
-static void do_station_cfg (task_param_t param, uint8_t prio)
+static void do_station_cfg (task_param_t param, task_prio_t prio)
 {
   struct station_config *cnf = (struct station_config *)param;
   (void)prio;

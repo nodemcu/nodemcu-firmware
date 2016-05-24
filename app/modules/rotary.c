@@ -349,7 +349,7 @@ static void lrotary_check_timer(DATA *d, uint32_t time_us, bool dotimer)
   }
 }
 
-static void lrotary_task(os_param_t param, uint8_t prio) 
+static void lrotary_task(task_param_t param, task_prio_t prio) 
 {
   (void) param;
   (void) prio;

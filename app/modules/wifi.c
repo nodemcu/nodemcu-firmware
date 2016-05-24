@@ -1309,7 +1309,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LNILKEY, LNILVAL }
 };
 
-static void wifi_change_default_host_name(task_param_t param, uint8 priority)
+static void wifi_change_default_host_name(task_param_t param, task_prio_t priority)
 {
 #ifndef WIFI_STA_HOSTNAME
   char temp[32];

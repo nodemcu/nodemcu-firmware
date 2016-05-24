@@ -32,7 +32,7 @@ static int gpio_cb_ref[GPIO_PIN_NUM];
 // This task is scheduled by the ISR and is used
 // to initiate the Lua-land gpio.trig() callback function
 // It also re-enables the pin interrupt, so that we get another callback queued
-static void gpio_intr_callback_task (task_param_t param, uint8 priority)
+static void gpio_intr_callback_task (task_param_t param, task_prio_t priority)
 {
   unsigned pin = param >> 1;
   unsigned level = param & 1;
