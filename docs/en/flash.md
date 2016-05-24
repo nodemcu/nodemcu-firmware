@@ -20,6 +20,8 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 - `mode` is `qio` for 512&nbsp;kByte modules and `dio` for 4&nbsp;MByte modules (`qio` might work as well, YMMV).
 - `size` is given in bits. Specify `4m` for 512&nbsp;kByte and `32m` for 4&nbsp;MByte.
 
+Check the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for details and other options.
+
 ## NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
 
