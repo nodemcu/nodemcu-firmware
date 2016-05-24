@@ -13,6 +13,7 @@
 #include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "lwip/dns.h" 
+#include "esp_misc.h"
 
 #define TCP ESPCONN_TCP
 #define UDP ESPCONN_UDP
@@ -1573,8 +1574,9 @@ static int net_cert_auth(lua_State *L)
     enable = lua_toboolean(L, 1);
   }
 
-  bool rc;
+  bool rc = false;
 
+#if 0
   if (enable) {
     // See if there is a cert there
     if (net_client_cert_area[0] == 0x00 || net_client_cert_area[0] == 0xff) {
@@ -1584,6 +1586,7 @@ static int net_cert_auth(lua_State *L)
   } else {
     rc = espconn_secure_cert_req_disable(1);
   }
+#endif
 
   lua_pushboolean(L, rc);
   return 1;
@@ -1614,8 +1617,9 @@ static int net_cert_verify(lua_State *L)
     enable = lua_toboolean(L, 1);
   }
 
-  bool rc;
+  bool rc = false;
 
+#if 0
   if (enable) {
     // See if there is a cert there
     if (net_server_cert_area[0] == 0x00 || net_server_cert_area[0] == 0xff) {
@@ -1625,6 +1629,7 @@ static int net_cert_verify(lua_State *L)
   } else {
     rc = espconn_secure_ca_disable(1);
   }
+#endif
 
   lua_pushboolean(L, rc);
   return 1;

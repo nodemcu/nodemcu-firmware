@@ -75,7 +75,7 @@ typedef struct{
 	uint32_t interval;
 	uint8_t mode;
 }timer_struct_t;
-typedef timer_struct_t* timer_t;
+typedef timer_struct_t* ptimer_t;
 
 // The previous implementation extended the rtc counter to 64 bits, and then
 // applied rtc2sec with the current calibration value to that 64 bit value.
@@ -95,7 +95,7 @@ static timer_struct_t alarm_timers[NUM_TMR];
 static os_timer_t rtc_timer;
 
 static void alarm_timer_common(void* arg){
-	timer_t tmr = &alarm_timers[(uint32_t)arg];
+	ptimer_t tmr = &alarm_timers[(uint32_t)arg];
 	lua_State* L = lua_getstate();
 	if(tmr->lua_ref == LUA_NOREF)
 		return;
@@ -116,9 +116,9 @@ static int tmr_delay( lua_State* L ){
 	sint32_t us = luaL_checkinteger(L, 1);
 	if(us <= 0)
 		return luaL_error(L, "wrong arg range");
-	while(us >= 1000000){
-		us -= 1000000;
-		os_delay_us(1000000);
+	while(us >= 65000){
+		us -= 65000;
+		os_delay_us(65000);
 		system_soft_wdt_feed ();
 	}
 	if(us>0){
@@ -148,7 +148,7 @@ static int tmr_register(lua_State* L){
 	//get the lua function reference
 	lua_pushvalue(L, 4);
 	sint32_t ref = luaL_ref(L, LUA_REGISTRYINDEX);
-	timer_t tmr = &alarm_timers[id];
+	ptimer_t tmr = &alarm_timers[id];
 	if(!(tmr->mode & TIMER_IDLE_FLAG) && tmr->mode != TIMER_MODE_OFF)
 		ets_timer_disarm(&tmr->os);
 	//there was a bug in this part, the second part of the following condition was missing
@@ -165,7 +165,7 @@ static int tmr_register(lua_State* L){
 static int tmr_start(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
 	MOD_CHECK_ID(tmr,id);
-	timer_t tmr = &alarm_timers[id];
+	ptimer_t tmr = &alarm_timers[id];
 	//we return false if the timer is not idle
 	if(!(tmr->mode&TIMER_IDLE_FLAG)){
 		lua_pushboolean(L, 0);
@@ -187,7 +187,7 @@ static int tmr_alarm(lua_State* L){
 static int tmr_stop(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
 	MOD_CHECK_ID(tmr,id);
-	timer_t tmr = &alarm_timers[id];
+	ptimer_t tmr = &alarm_timers[id];
 	//we return false if the timer is idle (of not registered)
 	if(!(tmr->mode & TIMER_IDLE_FLAG) && tmr->mode != TIMER_MODE_OFF){
 		tmr->mode |= TIMER_IDLE_FLAG;
@@ -203,7 +203,7 @@ static int tmr_stop(lua_State* L){
 static int tmr_unregister(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
 	MOD_CHECK_ID(tmr,id);
-	timer_t tmr = &alarm_timers[id];
+	ptimer_t tmr = &alarm_timers[id];
 	if(!(tmr->mode & TIMER_IDLE_FLAG) && tmr->mode != TIMER_MODE_OFF)
 		ets_timer_disarm(&tmr->os);
 	if(tmr->lua_ref != LUA_NOREF)
@@ -217,7 +217,7 @@ static int tmr_unregister(lua_State* L){
 static int tmr_interval(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
 	MOD_CHECK_ID(tmr,id);
-	timer_t tmr = &alarm_timers[id];
+	ptimer_t tmr = &alarm_timers[id];
 	uint32_t interval = luaL_checkinteger(L, 2);
   luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
 	if(tmr->mode != TIMER_MODE_OFF){	
@@ -234,7 +234,7 @@ static int tmr_interval(lua_State* L){
 static int tmr_state(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
 	MOD_CHECK_ID(tmr,id);
-	timer_t tmr = &alarm_timers[id];
+	ptimer_t tmr = &alarm_timers[id];
 	if(tmr->mode == TIMER_MODE_OFF){
 		lua_pushnil(L);
 		return 1;

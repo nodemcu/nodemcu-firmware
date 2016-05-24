@@ -1,6 +1,5 @@
 #include "pin_map.h"
 #include "eagle_soc.h"
-#include "mem.h"
 #include "osapi.h"
 
 uint32_t pin_mux[GPIO_PIN_NUM];

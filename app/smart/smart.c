@@ -3,6 +3,7 @@
 #include "c_string.h"
 #include "user_interface.h"
 #include "smart.h"
+#include "esp_wifi.h"
 
 #define ADDR_MAP_NUM 10
 

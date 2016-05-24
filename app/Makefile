@@ -28,7 +28,6 @@ SUBDIRS= 					\
 	platform 				\
 	libc 					\
 	lua 					\
-	lwip 					\
 	coap 					\
 	mqtt 					\
 	task 					\
@@ -75,7 +74,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	task/libtask.a 				\
 	libc/liblibc.a 				\
 	lua/liblua.a 				\
-	lwip/liblwip.a 				\
 	coap/coap.a 				\
 	mqtt/mqtt.a 				\
 	u8glib/u8glib.a 			\
@@ -96,33 +94,42 @@ COMPONENTS_eagle.app.v6 = 			\
 # only those) modules are pulled in.
 SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
 
+USED_SDK_LIBS=					\
+	cirom					\
+	crypto					\
+	espconn					\
+	freertos				\
+	gcc					\
+	json					\
+	lwip					\
+	main					\
+	mirom					\
+	net80211				\
+	nopoll					\
+	phy					\
+	pp					\
+	smartconfig				\
+	ssc					\
+	ssl					\
+	wpa					\
+	wps					\
+
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
 	-Wl,-Map=mapfile 			\
 	-nostdlib 				\
 	-T$(LD_FILE) 				\
-	-Wl,@../ld/defsym.rom			\
+	-Wl,@$(LDDIR)/defsym.rom		\
+	-T$(LDDIR)/extrasyms.rom		\
 	-Wl,--no-check-sections 		\
 	-Wl,--wrap=_xtos_set_exception_handler	\
 	-Wl,-static 				\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
 	-Wl,--start-group 			\
-	-lc 					\
-	-lgcc 					\
-	-lhal 					\
-	-lphy 					\
-	-lpp 					\
-	-lnet80211 				\
-	-lwpa 					\
-	-lwpa2					\
-	-lmain 					\
-	-ljson 					\
-	-lsmartconfig 				\
-	-lssl 					\
-	-lcrypto				\
+	-lhal					\
+	$(addprefix -l,$(USED_SDK_LIBS))	\
 	$(DEP_LIBS_eagle.app.v6) 		\
 	-Wl,--end-group 			\
-	-lm
 
 DEPENDS_eagle.app.v6 = 				\
                 $(LD_FILE) 			\

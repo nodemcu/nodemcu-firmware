@@ -3,6 +3,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "esp_misc.h"
 
 #include "c_stdlib.h"
 

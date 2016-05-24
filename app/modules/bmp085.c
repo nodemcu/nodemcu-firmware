@@ -3,6 +3,7 @@
 #include "platform.h"
 #include "c_stdlib.h"
 #include "c_string.h"
+#include "esp_misc.h"
 
 static const uint32_t bmp085_i2c_id = 0;
 static const uint8_t bmp085_i2c_addr = 0x77;

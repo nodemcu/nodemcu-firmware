@@ -3,6 +3,7 @@
 #include "platform.h"
 #include "c_stdlib.h"
 #include "c_string.h"
+#include "esp_misc.h"
 
 /**
  * Code is based on https://github.com/CHERTS/esp8266-devkit/blob/master/Espressif/examples/EspLightNode/user/ws2801.c

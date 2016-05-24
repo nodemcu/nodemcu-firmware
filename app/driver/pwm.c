@@ -15,6 +15,7 @@
 #include "osapi.h"
 #include "gpio.h"
 #include "hw_timer.h"
+#include "esp_misc.h"
 
 #include "user_interface.h"
 #include "driver/pwm.h"

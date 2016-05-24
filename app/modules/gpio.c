@@ -9,6 +9,8 @@
 #include "c_string.h"
 #include "gpio.h"
 
+#undef INTERRUPT
+
 #define PULLUP PLATFORM_GPIO_PULLUP
 #define FLOAT PLATFORM_GPIO_FLOAT
 #define OUTPUT PLATFORM_GPIO_OUTPUT

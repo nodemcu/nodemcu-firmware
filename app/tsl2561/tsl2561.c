@@ -230,13 +230,13 @@ tsl2561Error_t tsl2561GetLuminosity(uint16_t *broadband, uint16_t *ir) {
 	// Wait x ms for ADC to complete
 	switch (_tsl2561IntegrationTime) {
 	case TSL2561_INTEGRATIONTIME_13MS:
-		os_delay_us(14000); //systickDelay(14);
+		ets_delay_us(14000); //systickDelay(14);
 		break;
 	case TSL2561_INTEGRATIONTIME_101MS:
-		os_delay_us(102000); //systickDelay(102);
+		ets_delay_us(102000); //systickDelay(102);
 		break;
 	default:
-		os_delay_us(404000); //systickDelay(404);
+		ets_delay_us(404000); //systickDelay(404);
 		break;
 	}
 

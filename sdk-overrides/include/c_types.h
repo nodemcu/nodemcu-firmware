@@ -1,7 +1,7 @@
 #ifndef _OVERRIDE_C_TYPES_H_
 #define _OVERRIDE_C_TYPES_H_
 
-#include_next "c_types.h"
+#include_next "espressif/c_types.h"
 
 typedef long long int64_t;
 typedef int8_t  sint8_t;

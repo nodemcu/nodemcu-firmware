@@ -12,6 +12,7 @@
 #include "os_type.h"
 #include "osapi.h"
 #include "mem.h"
+#include "platform.h"
 #include "gpio.h"
 #include "user_interface.h"
 

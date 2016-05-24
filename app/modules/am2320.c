@@ -21,6 +21,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "lwip/udp.h"
+#include "esp_misc.h"
 #include <errno.h>
 
 static const uint32_t am2320_i2c_id = 0;

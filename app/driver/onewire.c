@@ -59,6 +59,7 @@ sample code bearing this copyright.
 #include "driver/onewire.h"
 #include "platform.h"
 #include "osapi.h"
+#include "esp_misc.h"
 
 #define noInterrupts ets_intr_lock
 #define interrupts ets_intr_unlock

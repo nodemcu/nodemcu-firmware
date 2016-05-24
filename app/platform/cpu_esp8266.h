@@ -1,11 +1,16 @@
 #ifndef __CPU_ESP8266_H__
 #define __CPU_ESP8266_H__
 
+#include "c_types.h"
 #include "os_type.h"
 #include "spi_flash.h"
 #include "pin_map.h"
 #include "user_config.h"
 #include "flash_api.h"
+#include "eagle_soc.h"
+#include "esp8266/gpio_register.h"
+#include "esp8266/pin_mux_register.h"
+
 // Number of resources (0 if not available/not implemented)
 #define NUM_GPIO              GPIO_PIN_NUM
 #define NUM_SPI               2

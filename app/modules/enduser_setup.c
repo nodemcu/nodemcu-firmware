@@ -35,18 +35,18 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lwip/tcp.h"
+#include "lwip/pbuf.h"
 #include "lmem.h"
 #include "platform.h"
 #include "c_stdlib.h"
 #include "c_stdio.h"
 #include "c_string.h"
 #include "ctype.h"
-#include "user_interface.h"
 #include "espconn.h"
-#include "lwip/tcp.h"
-#include "lwip/pbuf.h"
 #include "flash_fs.h"
 #include "task/task.h"
+#include "esp_wifi.h"
 
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 #define LITLEN(strliteral) (sizeof (strliteral) -1)

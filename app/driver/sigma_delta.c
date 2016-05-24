@@ -1,5 +1,6 @@
 
 #include "driver/sigma_delta.h"
+#include "esp8266/gpio_register.h"
 
 
 void sigma_delta_setup( void )

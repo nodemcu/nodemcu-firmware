@@ -136,9 +136,11 @@ static void ICACHE_FLASH_ATTR http_receive_callback( void * arg, char * buf, uns
 	{
 		HTTPCLIENT_DEBUG( "Response too long (%d)\n", new_size );
 		req->buffer[0] = '\0';                                                                  /* Discard the buffer to avoid using an incomplete response. */
+    #if 0
 		if ( req->secure )
 			espconn_secure_disconnect( conn );
 		else
+    #endif
 			espconn_disconnect( conn );
 		return;                                                                                 /* The disconnect callback will be called. */
 	}
@@ -166,9 +168,11 @@ static void ICACHE_FLASH_ATTR http_send_callback( void * arg )
 	{
 		/* The headers were sent, now send the contents. */
 		HTTPCLIENT_DEBUG( "Sending request body\n" );
+    #if 0
 		if ( req->secure )
 			espconn_secure_send( conn, (uint8_t *) req->post_data, strlen( req->post_data ) );
 		else
+      #endif
 			espconn_send( conn, (uint8_t *) req->post_data, strlen( req->post_data ) );
 		os_free( req->post_data );
 		req->post_data = NULL;
@@ -210,9 +214,11 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 			      "\r\n",
 			      req->method, req->path, req->hostname, req->port, req->headers, post_headers );
 
+  #if 0
 	if ( req->secure )
 		espconn_secure_send( conn, (uint8_t *) buf, len );
 	else
+  #endif
 		espconn_send( conn, (uint8_t *) buf, len );
 	if(req->headers != NULL)
 		os_free( req->headers );
@@ -323,9 +329,11 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 	}
 	request_args_t * req = (request_args_t *) conn->reverse;
 	/* Call disconnect */
+  #if 0
 	if ( req->secure )
 		espconn_secure_disconnect( conn );
 	else
+  #endif
 		espconn_disconnect( conn );
 }
 
@@ -366,12 +374,14 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		os_timer_setfn( &(req->timeout_timer), (os_timer_func_t *) http_timeout_callback, conn );
 		os_timer_arm( &(req->timeout_timer), req->timeout, false );
 
+    #if 0
 		if ( req->secure )
 		{
 			espconn_secure_set_size( ESPCONN_CLIENT, 5120 ); /* set SSL buffer size */
 			espconn_secure_connect( conn );
 		} 
 		else 
+    #endif
 		{
 			espconn_connect( conn );
 		}

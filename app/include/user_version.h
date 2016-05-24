@@ -11,6 +11,6 @@
 #define BUILD_DATE	  "unspecified"
 #endif
 
-extern char SDK_VERSION[];
+#define SDK_VERSION "RTOS"
 
 #endif	/* __USER_VERSION_H__ */

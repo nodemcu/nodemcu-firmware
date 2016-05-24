@@ -23,6 +23,7 @@ LOCAL task_callback_t *task_func;
 LOCAL int task_count;
 
 LOCAL void task_dispatch (os_event_t *e) {
+  #if 0
   task_handle_t handle = e->sig;
   if ( (handle & TASK_HANDLE_MASK) == TASK_HANDLE_MONIKER) {
     uint16 entry    = (handle & TASK_HANDLE_UNMASK) >> TASK_HANDLE_SHIFT;
@@ -35,6 +36,7 @@ LOCAL void task_dispatch (os_event_t *e) {
   }
   /* Invalid signals are ignored */
   NODE_DBG ( "Invalid signal issued: %08x",  handle);
+  #endif
 }
 
 /*
@@ -42,6 +44,7 @@ LOCAL void task_dispatch (os_event_t *e) {
  * to be called explicitly as the get_id function will call this lazily.
  */
 bool task_init_handler(uint8 priority, uint8 qlen) {
+  #if 0
   if (priority <= TASK_PRIORITY_HIGH && task_Q[priority] == NULL) {
     task_Q[priority] = (os_event_t *) os_malloc( sizeof(os_event_t)*qlen );
     os_memset (task_Q[priority], 0, sizeof(os_event_t)*qlen);
@@ -49,10 +52,12 @@ bool task_init_handler(uint8 priority, uint8 qlen) {
       return system_os_task( task_dispatch, priority, task_Q[priority], qlen );
     }
   }
+  #endif
   return false;
 }
 
 task_handle_t task_get_id(task_callback_t t) {
+  #if 0
   int p = TASK_PRIORITY_COUNT;
   /* Initialise and uninitialised Qs with the default Q len */
     while(p--) if (!task_Q[p]) {
@@ -69,4 +74,5 @@ task_handle_t task_get_id(task_callback_t t) {
 
   task_func[task_count++] = t;
   return TASK_HANDLE_MONIKER + ((task_count-1)  << TASK_HANDLE_SHIFT);
+  #endif
 }

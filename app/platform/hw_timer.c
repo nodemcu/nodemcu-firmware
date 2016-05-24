@@ -145,11 +145,13 @@ bool platform_hw_timer_init(os_param_t owner, FRC1_TIMER_SOURCE_TYPE source_type
 		  DIVIDED_BY_16 | FRC1_ENABLE_TIMER | TM_EDGE_INT);
   }
 
+#if 0
   if (source_type == NMI_SOURCE) {
     ETS_FRC_TIMER1_NMI_INTR_ATTACH(hw_timer_nmi_cb);
   } else {
+#endif
     ETS_FRC_TIMER1_INTR_ATTACH(hw_timer_isr_cb, NULL);
-  }
+//  }
 
   TM1_EDGE_INT_ENABLE();
   ETS_FRC1_INTR_ENABLE();

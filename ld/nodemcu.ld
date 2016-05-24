@@ -71,6 +71,23 @@ SECTIONS
     _dport0_data_end = ABSOLUTE(.);
   } >dport0_0_seg :dport0_0_phdr
 
+  .data : ALIGN(4)
+  {
+    _data_start = ABSOLUTE(.);
+    *(.data)
+    *(.data.*)
+    *(.gnu.linkonce.d.*)
+    *(.data1)
+    *(.sdata)
+    *(.sdata.*)
+    *(.gnu.linkonce.s.*)
+    *(.sdata2)
+    *(.sdata2.*)
+    *(.gnu.linkonce.s2.*)
+    *(.jcr)
+    _data_end = ABSOLUTE(.);
+  } >dram0_0_seg :dram0_0_phdr
+
   .irom0.text : ALIGN(0x1000)
   {
     _irom0_text_start = ABSOLUTE(.);
@@ -78,7 +95,7 @@ SECTIONS
     *(.clientcert.flash)
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
-    *(.rodata*)
+    */.output/eagle*.a:*.o(.rodata*) /* only NodeMCU rodata, for now */
     *(.sdk.version)
 
     /* Link-time arrays containing the defs for the included modules */
@@ -99,26 +116,15 @@ SECTIONS
     _flash_used_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr =0xffffffff
 
-  .data : ALIGN(4)
-  {
-    _data_start = ABSOLUTE(.);
-    *(.data)
-    *(.data.*)
-    *(.gnu.linkonce.d.*)
-    *(.data1)
-    *(.sdata)
-    *(.sdata.*)
-    *(.gnu.linkonce.s.*)
-    *(.sdata2)
-    *(.sdata2.*)
-    *(.gnu.linkonce.s2.*)
-    *(.jcr)
-    _data_end = ABSOLUTE(.);
-  } >dram0_0_seg :dram0_0_phdr
-
   .rodata : ALIGN(4)
   {
     _rodata_start = ABSOLUTE(.);
+    /* Some stuff in the RTOS libmain uses rodata while flash isn't mapped,
+     * so said rodata has to reside in RAM. For now we know libmain does this,
+     * as well as "something else". Hopefully we can narrow that down */
+    *libmain.a:*.o(.rodata*)
+    */lib/lib*.a:*.o(.rodata*) /* rest of SDK rodata, for now */
+
     *(.gnu.linkonce.r.*)
     __XT_EXCEPTION_TABLE__ = ABSOLUTE(.);
     *(.xt_except_table)
@@ -127,10 +133,12 @@ SECTIONS
     *(.gnu.version_r)
     *(.eh_frame)
     /*  C++ constructor and destructor tables, properly ordered:  */
+    __init_array_start = ABSOLUTE(.);
     KEEP (*crtbegin.o(.ctors))
     KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
     KEEP (*(SORT(.ctors.*)))
     KEEP (*(.ctors))
+    __init_array_end = ABSOLUTE(.);
     KEEP (*crtbegin.o(.dtors))
     KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
     KEEP (*(SORT(.dtors.*)))
@@ -149,6 +157,13 @@ SECTIONS
     LONG(_bss_end)
     _bss_table_end = ABSOLUTE(.);
     _rodata_end = ABSOLUTE(.);
+  } >dram0_0_seg :dram0_0_phdr
+
+  .UserExceptionVector.literal : AT(LOADADDR(.rodata) + (ADDR(.UserExceptionVector.literal) - ADDR(.rodata))) ALIGN(4)
+  {
+  	_UserExceptionVector_literal_start = ABSOLUTE(.);
+  	*(.UserExceptionVector.literal)
+  	_UserExceptionVector_literal_end = ABSOLUTE(.);
   } >dram0_0_seg :dram0_0_phdr
 
   .bss ALIGN(8) (NOLOAD) : ALIGN(4)

@@ -12,6 +12,7 @@
 #include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "driver/uart.h"
+#include "esp_misc.h"
 
 #include "coap.h"
 #include "uri.h"

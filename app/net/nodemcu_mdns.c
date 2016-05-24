@@ -40,7 +40,7 @@
  * Includes
  *----------------------------------------------------------------------------*/
 #include "lwip/opt.h"
-#if LWIP_MDNS /* don't build if not configured for use in lwipopts.h */
+#ifdef LWIP_MDNS /* don't build if not configured for use in lwipopts.h */
 #include "lwip/mdns.h"
 #include "lwip/udp.h"
 #include "lwip/mem.h"

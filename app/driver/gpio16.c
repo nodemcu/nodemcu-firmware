@@ -1,5 +1,6 @@
 #include "ets_sys.h"
 #include "osapi.h"
+#include "eagle_soc.h"
 #include "driver/gpio16.h"
 
 void ICACHE_FLASH_ATTR

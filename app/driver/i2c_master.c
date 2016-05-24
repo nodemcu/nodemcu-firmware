@@ -10,6 +10,8 @@
 *******************************************************************************/
 #include "ets_sys.h"
 #include "osapi.h"
+#include "esp_misc.h"
+#include "platform.h"
 #include "gpio.h"
 
 #include "driver/i2c_master.h"

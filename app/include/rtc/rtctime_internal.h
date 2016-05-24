@@ -127,6 +127,11 @@
 #include "rom.h"
 #include "rtcaccess.h"
 #include "user_interface.h"
+#include "eagle_soc.h"
+
+#ifndef NOW
+# define NOW() READ_PERI_REG(REG_RTC_BASE + FRC2_COUNT_ADDRESS)
+#endif
 
 // Layout of the RTC storage space:
 //

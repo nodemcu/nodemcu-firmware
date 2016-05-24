@@ -15,6 +15,8 @@
 
 #include "wifi_common.h"
 
+#define event event_id
+
 #if defined(LUA_USE_MODULES_WIFI)
 
 #ifdef WIFI_STATION_STATUS_MONITOR_ENABLE

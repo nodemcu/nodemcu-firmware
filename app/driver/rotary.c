@@ -16,6 +16,7 @@
 #include "../libc/c_stdio.h"
 #include "driver/rotary.h"
 #include "user_interface.h"
+#include "esp_system.h"
 #include "task/task.h"
 #include "ets_sys.h"
 
@@ -87,7 +88,7 @@ int rotary_close(uint32_t channel)
   rotary_clear_pin(d->phase_b_pin);
   rotary_clear_pin(d->press_pin);
 
-  c_free(d);
+  os_free(d);
 
   set_gpio_bits();
 
@@ -207,7 +208,7 @@ int rotary_setup(uint32_t channel, int phase_a, int phase_b, int press, task_han
     }
   }
 
-  DATA *d = (DATA *) c_zalloc(sizeof(DATA));
+  DATA *d = (DATA *) os_zalloc(sizeof(DATA));
   if (!d) {
     return -1;
   }

@@ -143,7 +143,7 @@ static int lrotary_setup( lua_State* L )
   callback_free(L, id, ROTARY_ALL);
 
   if (!data[id]) {
-    data[id] = (DATA *) c_zalloc(sizeof(DATA));
+    data[id] = (DATA *) os_zalloc(sizeof(DATA));
     if (!data[id]) {
       return -1;
     } 
@@ -202,7 +202,7 @@ static int lrotary_close( lua_State* L )
   DATA *d = data[id];
   if (d) {
     data[id] = NULL;
-    c_free(d);
+    os_free(d);
   }
 
   if (rotary_close( id )) {

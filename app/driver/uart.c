@@ -15,7 +15,7 @@
 #include "task/task.h"
 #include "user_config.h"
 #include "user_interface.h"
-#include "osapi.h"
+#include "platform.h"
 
 #define UART0   0
 #define UART1   1

@@ -7,6 +7,8 @@
 #include "c_stdlib.h"
 #include "c_string.h"
 #include "user_interface.h"
+#include "esp_system.h"
+
 static uint8_t data_pin;
 static uint8_t clk_pin;
 

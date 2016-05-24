@@ -2,18 +2,25 @@
 #define _SDK_OVERRIDE_OSAPI_H_
 
 #include "rom.h"
-void ets_timer_arm_new (ETSTimer *a, int b, int c, int isMstimer);
-
-int atoi(const char *nptr);
-int os_printf(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
-int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
-
-unsigned int uart_baudrate_detect(unsigned int uart_no, unsigned int async);
-
-void NmiTimSetFunc(void (*func)(void));
+#include "user_config.h"
 
 void call_user_start(void);
 
-#include_next "osapi.h"
+#define os_memcmp   memcmp
+#define os_memcpy   memcpy
+#define os_memmove  memmove
+#define os_memset   memset
+#define os_strcat   strcat
+#define os_strchr   strchr
+#define os_strcmp   strcmp
+#define os_strcpy   strcpy
+#define os_strlen   strlen
+#define os_strncmp  strncmp
+#define os_strncpy  strncpy
+#define os_strstr   strstr
+#define os_sprintf  sprintf
+#define os_printf_plus printf
+
+#include <string.h>
 
 #endif

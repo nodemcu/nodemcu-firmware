@@ -42,17 +42,11 @@ extern unsigned char * base64_decode(const unsigned char *src, size_t len, size_
 // Unfortunately it that seems to require the ROM memory management to be
 // initialized because it uses mem_malloc
 
-extern void mem_init(void * start_addr);
-
 // Interrupt Service Routine functions
 typedef void (*ets_isr_fn) (void *arg);
 extern int ets_isr_attach (unsigned int interrupt, ets_isr_fn, void *arg);
 extern void ets_isr_mask (unsigned intr);
 extern void ets_isr_unmask (unsigned intr);
-
-// Cycle-counter
-extern unsigned int xthal_get_ccount (void);
-extern int xthal_set_ccompare (unsigned int timer_number, unsigned int compare_value);
 
 // 2, 3 = reset (module dependent?), 4 = wdt
 int rtc_get_reset_reason (void);
@@ -107,7 +101,7 @@ typedef void (*exception_handler_fn) (struct exception_frame *ef, uint32_t cause
  *                If NULL, reverts to the XTOS default handler.
  * @returns The previous exception handler, or NULL if none existed prior.
  */
-exception_handler_fn _xtos_set_exception_handler (uint32_t cause, exception_handler_fn handler);
+//exception_handler_fn _xtos_set_exception_handler (uint32_t cause, exception_handler_fn handler);
 
 
 void ets_update_cpu_frequency (uint32_t mhz);
@@ -146,6 +140,8 @@ int rand(void);
 void srand(unsigned int);
 
 void uart_div_modify(int no, unsigned int freq);
+unsigned int uart_baudrate_detect(unsigned int uart_no, unsigned int async);
+
 
 /* Returns 0 on success, 1 on failure */
 uint8_t SPIRead(uint32_t src_addr, uint32_t *des_addr, uint32_t size);

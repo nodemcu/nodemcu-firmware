@@ -1,88 +1,40 @@
 #  copyright (c) 2010 Espressif System
+#                2015-2016 NodeMCU team
 #
 .NOTPARALLEL:
 
-# SDK version NodeMCU is locked to
-SDK_VER:=1.5.1
-SDK_FILE_VER:=$(SDK_VER)_16_01_08
-SDK_FILE_ID:=1046
-SDK_FILE_SHA1:=374f689a5f9e47690d7b4cd2fc1a1094f3fd5a4f
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
-CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
-LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
+SDK_DIR:=$(TOP_DIR)/rtos-sdk
+
+# This is, sadly, the cleanest way to resolve the different non-standard
+# conventions for sized integers across the various components.
+BASIC_TYPES=-Du32_t=uint32_t -Du16_t=uint16_t -Du8_t=uint8_t -Duint32=uint32_t -Duint16=uint16_t -Duint8=uint8_t -Dsint32=int32_t -Dsint16=int16_t -Dsint8=int8_t
+
+# Include dirs, ensure the overrides come first
+INCLUDE_DIRS=$(TOP_DIR)/sdk-overrides/include $(SDK_DIR)/include $(SDK_DIR)/include/espressif $(SDK_DIR)/include/lwip $(SDK_DIR)/include/lwip/ipv4 $(SDK_DIR)/include/lwip/ipv6 $(SDK_DIR)/extra_include
+
+# ... and we have to mark them all as system include dirs rather than the usual
+# -I for user include dir, or the esp-open-sdk toolchain headers wreak havoc
+CCFLAGS:=$(addprefix -isystem,$(INCLUDE_DIRS)) $(BASIC_TYPES)
+
+LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -L$(SDK_DIR)/third_party/lwip/.output/eagle/debug/lib $(LDFLAGS)
+
 
 #############################################################
-# Select compile
-#
-ifeq ($(OS),Windows_NT)
-# WIN32
-# We are under windows.
-	ifeq ($(XTENSA_CORE),lx106)
-		# It is xcc
-		AR = xt-ar
-		CC = xt-xcc
-		NM = xt-nm
-		CPP = xt-cpp
-		OBJCOPY = xt-objcopy
-		#MAKE = xt-make
-		CCFLAGS += -Os --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
-	else 
-		# It is gcc, may be cygwin
-		# Can we use -fdata-sections?
-		CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
-		AR = xtensa-lx106-elf-ar
-		CC = xtensa-lx106-elf-gcc
-		NM = xtensa-lx106-elf-nm
-		CPP = xtensa-lx106-elf-cpp
-		OBJCOPY = xtensa-lx106-elf-objcopy
-	endif
-	FIRMWAREDIR = ..\\bin\\
-	ifndef COMPORT
-		ESPPORT = com1
-	else
-		ESPPORT = $(COMPORT)
-	endif
-    ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
-# ->AMD64
-    endif
-    ifeq ($(PROCESSOR_ARCHITECTURE),x86)
-# ->IA32
-    endif
+ifndef COMPORT
+	ESPPORT = /dev/ttyUSB0
 else
-# We are under other system, may be Linux. Assume using gcc.
-	# Can we use -fdata-sections?
-	ifndef COMPORT
-		ESPPORT = /dev/ttyUSB0
-	else
-		ESPPORT = $(COMPORT)
-	endif
-	CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
-	AR = xtensa-lx106-elf-ar
-	CC = xtensa-lx106-elf-gcc
-	NM = xtensa-lx106-elf-nm
-	CPP = xtensa-lx106-elf-cpp
-	OBJCOPY = xtensa-lx106-elf-objcopy
-	FIRMWAREDIR = ../bin/
-    UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Linux)
-# LINUX
-    endif
-    ifeq ($(UNAME_S),Darwin)
-# OSX
-    endif
-    UNAME_P := $(shell uname -p)
-    ifeq ($(UNAME_P),x86_64)
-# ->AMD64
-    endif
-    ifneq ($(filter %86,$(UNAME_P)),)
-# ->IA32
-    endif
-    ifneq ($(filter arm%,$(UNAME_P)),)
-# ->ARM
-    endif
+	ESPPORT = $(COMPORT)
 endif
+CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
+AR = xtensa-lx106-elf-ar
+CC = xtensa-lx106-elf-gcc
+NM = xtensa-lx106-elf-nm
+CPP = xtensa-lx106-elf-cpp
+OBJCOPY = xtensa-lx106-elf-objcopy
+FIRMWAREDIR = ../bin/
+
 #############################################################
 ESPTOOL ?= ../tools/esptool.py
 
@@ -90,7 +42,7 @@ ESPTOOL ?= ../tools/esptool.py
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
 ASRCS ?= $(wildcard *.S)
-SUBDIRS ?= $(patsubst %/,%,$(dir $(wildcard */Makefile)))
+SUBDIRS ?= $(filter-out rtos-sdk, $(patsubst %/,%,$(dir $(wildcard */Makefile))))
 
 ODIR := .output
 OBJODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/obj
@@ -171,22 +123,11 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 # Should be done in top-level makefile only
 #
 
-all:	sdk_extracted pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+all:	sdk_built pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
-.PHONY: sdk_extracted
-
-sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_VER)
-
-$(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
-	mkdir -p "$(dir $@)"
-	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_VER)*.zip esp_iot_sdk_v$(SDK_VER)/lib/* esp_iot_sdk_v$(SDK_VER)/ld/eagle.rom.addr.v6.ld esp_iot_sdk_v$(SDK_VER)/include/* )
-	rm -f $(SDK_DIR)/lib/liblwip.a
-	touch $@
-
-$(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip:
-	mkdir -p "$(dir $@)"
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@ || { rm -f "$@"; exit 1; }
-	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
+.PHONY: sdk_built
+sdk_built:
+	$(MAKE) -C $(SDK_DIR)/third_party/lwip SDK_PATH=$(SDK_DIR) -j1
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
@@ -204,11 +145,8 @@ else
 	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
-.subdirs:
+.subdirs: | sdk_built
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
-
-#.subdirs:
-#	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d))
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),clobber)
@@ -273,19 +211,3 @@ $(foreach bin,$(GEN_BINS),$(eval $(call ShortcutRule,$(bin),$(BINODIR))))
 $(foreach lib,$(GEN_LIBS),$(eval $(call MakeLibrary,$(basename $(lib)))))
 
 $(foreach image,$(GEN_IMAGES),$(eval $(call MakeImage,$(basename $(image)))))
-
-#############################################################
-# Recursion Magic - Don't touch this!!
-#
-# Each subtree potentially has an include directory
-#   corresponding to the common APIs applicable to modules
-#   rooted at that subtree. Accordingly, the INCLUDE PATH
-#   of a module can only contain the include directories up
-#   its parent path, and not its siblings
-#
-# Required for each makefile to inherit from the parent
-#
-
-INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
-PDIR := ../$(PDIR)
-sinclude $(PDIR)Makefile

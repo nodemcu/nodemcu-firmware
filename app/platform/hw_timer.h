@@ -1,6 +1,8 @@
 #ifndef _HW_TIMER_H
 #define _HW_TIMER_H
 
+#include "eagle_soc.h"
+
 #if APB_CLK_FREQ == 80 * 1000000
 // 80 MHz divided by 16 is 5 MHz count rate.
 #define US_TO_RTC_TIMER_TICKS(t)      ((t) * 5)

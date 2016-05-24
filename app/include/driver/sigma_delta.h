@@ -2,7 +2,7 @@
 #define SIGMA_DELTA_APP_H
 
 #include "eagle_soc.h"
-#include "os_type.h"
+#include "c_types.h"
 
 void sigma_delta_setup( void );
 void sigma_delta_stop( void );

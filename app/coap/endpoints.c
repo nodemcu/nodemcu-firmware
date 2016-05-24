@@ -184,7 +184,9 @@ static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
             NODE_DBG("Get command:\n");
             NODE_DBG(load->line); // buggy here
             NODE_DBG("\nResult(if any):\n");
+#if 0 // FIXME
             system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
+#endif
         }
         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
     }

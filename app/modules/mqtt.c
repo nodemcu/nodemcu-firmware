@@ -15,6 +15,8 @@
 #include "mqtt_msg.h"
 #include "msg_queue.h"
 
+#include "esp_misc.h"
+#include "esp_system.h"
 #include "user_interface.h"
 
 #define MQTT_BUF_SIZE 1024
