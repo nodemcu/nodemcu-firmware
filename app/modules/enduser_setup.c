@@ -819,7 +819,7 @@ static void serve_status(struct tcp_pcb *conn)
 
 
         int state_len = c_strlen(s);
-	int ip_len = c_strlen(ip_addr);
+        int ip_len = c_strlen(ip_addr);
         int ssid_len = c_strlen(config.ssid);
         int status_len = state_len + ssid_len + ip_len + 1;
         char status_buf[status_len];
