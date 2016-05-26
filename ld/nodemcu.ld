@@ -95,7 +95,7 @@ SECTIONS
     *(.clientcert.flash)
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
-    */.output/eagle*.a:*.o(.rodata*) /* only NodeMCU rodata, for now */
+    *(.rodata*)
     *(.sdk.version)
 
     /* Link-time arrays containing the defs for the included modules */
@@ -119,11 +119,6 @@ SECTIONS
   .rodata : ALIGN(4)
   {
     _rodata_start = ABSOLUTE(.);
-    /* Some stuff in the RTOS libmain uses rodata while flash isn't mapped,
-     * so said rodata has to reside in RAM. For now we know libmain does this,
-     * as well as "something else". Hopefully we can narrow that down */
-    *libmain.a:*.o(.rodata*)
-    */lib/lib*.a:*.o(.rodata*) /* rest of SDK rodata, for now */
 
     *(.gnu.linkonce.r.*)
     __XT_EXCEPTION_TABLE__ = ABSOLUTE(.);

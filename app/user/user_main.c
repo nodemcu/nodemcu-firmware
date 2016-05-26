@@ -45,6 +45,8 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
   rtctime_early_startup ();
 #endif
 
+  /* The first thing call_user_start() does is switch the interrupt vector
+   * base, which enables our 8/16bit load handler. */
   call_user_start ();
 }
 
