@@ -159,13 +159,6 @@ SECTIONS
     _rodata_end = ABSOLUTE(.);
   } >dram0_0_seg :dram0_0_phdr
 
-  .UserExceptionVector.literal : AT(LOADADDR(.rodata) + (ADDR(.UserExceptionVector.literal) - ADDR(.rodata))) ALIGN(4)
-  {
-  	_UserExceptionVector_literal_start = ABSOLUTE(.);
-  	*(.UserExceptionVector.literal)
-  	_UserExceptionVector_literal_end = ABSOLUTE(.);
-  } >dram0_0_seg :dram0_0_phdr
-
   .bss ALIGN(8) (NOLOAD) : ALIGN(4)
   {
     . = ALIGN (8);
@@ -206,11 +199,7 @@ SECTIONS
     LONG(0)
     LONG(0)
     . = ALIGN(16);
-    *(.UserExceptionVector.text)
-    LONG(0)
-    LONG(0)
-    LONG(0)
-    LONG(0)
+    KEEP(*(.UserExceptionVectorOverride.text))
     . = ALIGN(16);
     *(.DoubleExceptionVector.text)
     LONG(0)
@@ -218,6 +207,7 @@ SECTIONS
     LONG(0)
     LONG(0)
     . = ALIGN (16);
+    KEEP(*(.UserExceptionVector.text))
     *(.entry.text)
     *(.init.literal)
     *(.init)

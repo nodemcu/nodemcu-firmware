@@ -109,7 +109,6 @@ USED_SDK_LIBS=					\
 	phy					\
 	pp					\
 	smartconfig				\
-	ssc					\
 	ssl					\
 	wpa					\
 	wps					\
@@ -125,6 +124,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--wrap=_xtos_set_exception_handler	\
 	-Wl,-static 				\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
+	-u _UserExceptionVectorOverride		\
 	-Wl,--start-group 			\
 	-lhal					\
 	$(addprefix -l,$(USED_SDK_LIBS))	\

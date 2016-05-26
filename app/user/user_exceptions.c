@@ -31,82 +31,71 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 
-#include "user_exceptions.h"
-
-#define LOAD_MASK   0x00f00fu
-#define L8UI_MATCH  0x000002u
-#define L16UI_MATCH 0x001002u
-#define L16SI_MATCH 0x009002u
-
-
-void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
-{
-  /* If this is not EXCCAUSE_LOAD_STORE_ERROR you're doing it wrong! */
-  (void)cause;
-
-  uint32_t epc1 = ef->epc;
-  uint32_t excvaddr;
-  uint32_t insn;
-  asm (
-    "rsr   %0, EXCVADDR;"    /* read out the faulting address */
-    "movi  a4, ~3;"          /* prepare a mask for the EPC */
-    "and   a4, a4, %2;"      /* apply mask for 32bit aligned base */
-    "l32i  a5, a4, 0;"       /* load part 1 */
-    "l32i  a6, a4, 4;"       /* load part 2 */
-    "ssa8l %2;"              /* set up shift register for src op */
-    "src   %1, a6, a5;"      /* right shift to get faulting instruction */
-    :"=r"(excvaddr), "=r"(insn)
-    :"r"(epc1)
-    :"a4", "a5", "a6"
-  );
-
-  uint32_t valmask = 0;
-  uint32_t what = insn & LOAD_MASK;
-
-  if (what == L8UI_MATCH)
-    valmask = 0xffu;
-  else if (what == L16UI_MATCH || what == L16SI_MATCH)
-    valmask = 0xffffu;
-  else
-  {
-die:
-    /* Turns out we couldn't fix this, trigger a system break instead
-     * and hang if the break doesn't get handled. This is effectively
-     * what would happen if the default handler was installed. */
-    asm ("break 1, 1");
-    while (1) {}
-  }
-
-  /* Load, shift and mask down to correct size */
-  uint32_t val = (*(uint32_t *)(excvaddr & ~0x3));
-  val >>= (excvaddr & 0x3) * 8;
-  val &= valmask;
-
-  /* Sign-extend for L16SI, if applicable */
-  if (what == L16SI_MATCH && (val & 0x8000))
-    val |= 0xffff0000;
-
-  int regno = (insn & 0x0000f0u) >> 4;
-  if (regno == 1)
-    goto die;              /* we can't support loading into a1, just die */
-  else if (regno != 0)
-    --regno;               /* account for skipped a1 in exception_frame */
-
-  ef->a_reg[regno] = val;  /* carry out the load */
-  ef->epc += 3;            /* resume at following instruction */
-}
-
-
-/**
- * The SDK's user_main function installs a debugging handler regardless
- * of whether there's a proper handler installed for EXCCAUSE_LOAD_STORE_ERROR,
- * which of course breaks everything if we allow that to go through. As such,
- * we use the linker to wrap that call and stop the SDK from shooting itself in
- * its proverbial foot.
+/* Minimal handler function for 8/16bit loads from the mapped SPI flash.
+ * Called from the overridden UserExceptionVector on exception cause 3.
  */
-exception_handler_fn TEXT_SECTION_ATTR
-__wrap__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn)
-{
-  if (cause != EXCCAUSE_LOAD_STORE_ERROR)
-    __real__xtos_set_exception_handler (cause, fn);
-}
+asm(
+".section \".iram0.text\"\n"
+"  .align 4\n"
+"store_mask:\n"
+"  .word 0x004000\n"   /* bit 14 is set on store instructions (see note ^)    */
+"align_mask:\n"
+"  .word ~3\n"         /* mask to get 32bit alignment of addresses            */
+".type cause3_handler,@function\n"
+"cause3_handler:\n"
+"  wsr a2, EXCSAVE2\n" /* free up a2 for use too                              */
+"  rsr a2, EPC1\n"     /* get the program counter that caused the exception   */
+"  ssa8l a2\n"         /* prepare to extract the (unaligned) instruction      */
+"  l32r a0, align_mask\n"/* prepare mask for 32bit alignment                  */
+"  and a2, a2, a0\n"   /* get aligned base address of instruction             */
+"  l32i a0, a2, 0\n"   /* load first part                                     */
+"  l32i a2, a2, 4\n"   /* load second part                                    */
+"  src a0, a2, a0\n"   /* faulting instruction now in a0                      */
+"  l32r a2, store_mask\n"
+"  and a0, a0, a2\n"   /* test for store bit                                  */
+"  bnez a0, 1f\n"      /* it's a store, we don't do stores, get out           */
+
+""                     /* As it turns out, the ESP8266 happily does 8/16bit   */
+                       /* loads from the mapped SPI flash, but then raises an */
+                       /* exception anyway; we can simply increment the       */
+                       /* program counter and be our merry way, safe in       */
+                       /* the knowledge that the loads have already been done.*/
+                       /* Note that this only applies to the SPI flash, not   */
+                       /* internal ROM or IRAM - if we ever want to support   */
+                       /* those we'll need to add the appropriate loading     */
+                       /* logic here. For now I see no need for such support. */
+
+"  rsr a2, EPC1\n"     /* read the program counter again                      */
+"  addi a2, a2, 3\n"   /* advance program counter past faulting instruction   */
+"  wsr a2, EPC1\n"     /* and store it back                                   */
+"  rsr a2, EXCSAVE2\n" /* restore a2                                          */
+"  rsr a0, EXCSAVE1\n" /* restore a0                                          */
+"  rfe\n"              /* and done!                                           */
+"1:rsr a2, EXCSAVE2\n" /* we're about to chain, so restore the a2 we clobbered*/
+"  ret\n"              /* and hop back into the exception vector code         */
+);
+/* Note ^) Except for the S32E instruction, but that's not applicable here,
+ *         so we can happily ignore it.
+ */
+
+
+
+/* Our sneaky override of the UserExceptionVector to allow us to handle 8/16bit
+ * loads from SPI flash. MUST BE >= 32bytes compiled, as the next vector starts
+ * there.
+ */
+asm(
+".section \".UserExceptionVectorOverride.text\"\n"
+".type _UserExceptionVectorOverride,@function\n"
+".globl _UserExceptionVectorOverride\n"
+"_UserExceptionVectorOverride:\n"
+"  wsr a0, EXCSAVE1\n"     /* free up a0 for a while                          */
+"  rsr a0, EXCCAUSE\n"     /* get the exception cause                         */
+"  bnei a0, 3, 2f\n"       /* if not EXCCAUSE_LOAD_STORE_ERROR, chain to rtos */
+"  j 1f\n"                 /* jump past noncode bytes for cause3_handler addr */
+"  .align 4\n"             /* proper alignment for literals                   */
+"  .literal_position\n"    /* the linker will put cause3_handler addr here    */
+"1:call0 cause3_handler\n" /* handle loads and rfe, stores will return here   */
+"2:rsr a0, EXCSAVE1\n"     /* restore a0 before we chain                      */
+"  j _UserExceptionVector\n" /* and off we go to rtos                         */
+);

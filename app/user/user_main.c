@@ -39,9 +39,6 @@ static os_event_t *taskQueue;
  */
 void TEXT_SECTION_ATTR user_start_trampoline (void)
 {
-   __real__xtos_set_exception_handler (
-     EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
-
 #ifdef LUA_USE_MODULES_RTCTIME
   // Note: Keep this as close to call_user_start() as possible, since it
   // is where the cpu clock actually gets bumped to 80MHz.
@@ -113,7 +110,6 @@ void nodemcu_init(void)
     fs_mount();
     // test_spiffs();
 #endif
-    // endpoint_setup();
 
     task_post_low(task_get_id(start_lua),'s');
 }
