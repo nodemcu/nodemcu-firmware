@@ -11,7 +11,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_math.h"
+#include <math.h>
 #include "user_interface.h"
 
 /****************************************************/

@@ -8,7 +8,7 @@
 #define llimits_h
 
 
-//#include "c_limits.h"
+//#include <limits.h>
 
 #include "lua.h"
 

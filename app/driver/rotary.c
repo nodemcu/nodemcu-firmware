@@ -12,8 +12,8 @@
 
 #include "platform.h"
 #include "c_types.h"
-#include "../libc/c_stdlib.h"
-#include "../libc/c_stdio.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include "driver/rotary.h"
 #include "user_interface.h"
 #include "esp_system.h"
@@ -88,7 +88,7 @@ int rotary_close(uint32_t channel)
   rotary_clear_pin(d->phase_b_pin);
   rotary_clear_pin(d->press_pin);
 
-  os_free(d);
+  free(d);
 
   set_gpio_bits();
 
@@ -178,7 +178,7 @@ static uint32_t  ICACHE_RAM_ATTR rotary_interrupt(uint32_t ret_gpio_status)
 	if (HAS_QUEUE_SPACE(d)) {
 	  QUEUE_STATUS(d, new_status);
 	  if (!task_queued) {
-	    if (task_post_medium(d->tasknumber, (os_param_t) &task_queued)) {
+	    if (task_post_medium(d->tasknumber, (task_param_t) &task_queued)) {
 	      task_queued = 1;
 	    }
 	  }
@@ -208,7 +208,7 @@ int rotary_setup(uint32_t channel, int phase_a, int phase_b, int press, task_han
     }
   }
 
-  DATA *d = (DATA *) os_zalloc(sizeof(DATA));
+  DATA *d = (DATA *) zalloc(sizeof(DATA));
   if (!d) {
     return -1;
   }

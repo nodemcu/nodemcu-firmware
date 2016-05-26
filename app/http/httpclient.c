@@ -42,7 +42,7 @@ static char * ICACHE_FLASH_ATTR esp_strdup( const char * str )
 	{
 		return(NULL);
 	}
-	char * new_str = (char *) os_malloc( os_strlen( str ) + 1 ); /* 1 for null character */
+	char * new_str = (char *) malloc( os_strlen( str ) + 1 ); /* 1 for null character */
 	if ( new_str == NULL )
 	{
 		HTTPCLIENT_DEBUG( "esp_strdup: malloc error" );
@@ -132,7 +132,7 @@ static void ICACHE_FLASH_ATTR http_receive_callback( void * arg, char * buf, uns
 	/* Let's do the equivalent of a realloc(). */
 	const int	new_size = req->buffer_size + len;
 	char		* new_buffer;
-	if ( new_size > BUFFER_SIZE_MAX || NULL == (new_buffer = (char *) os_malloc( new_size ) ) )
+	if ( new_size > BUFFER_SIZE_MAX || NULL == (new_buffer = (char *) malloc( new_size ) ) )
 	{
 		HTTPCLIENT_DEBUG( "Response too long (%d)\n", new_size );
 		req->buffer[0] = '\0';                                                                  /* Discard the buffer to avoid using an incomplete response. */
@@ -149,7 +149,7 @@ static void ICACHE_FLASH_ATTR http_receive_callback( void * arg, char * buf, uns
 	os_memcpy( new_buffer + req->buffer_size - 1 /*overwrite the null character*/, buf, len );      /* Append new data. */
 	new_buffer[new_size - 1] = '\0';                                                                /* Make sure there is an end of string. */
 
-	os_free( req->buffer );
+	free( req->buffer );
 	req->buffer		= new_buffer;
 	req->buffer_size	= new_size;
 }
@@ -174,7 +174,7 @@ static void ICACHE_FLASH_ATTR http_send_callback( void * arg )
 		else
       #endif
 			espconn_send( conn, (uint8_t *) req->post_data, strlen( req->post_data ) );
-		os_free( req->post_data );
+		free( req->post_data );
 		req->post_data = NULL;
 	}
 }
@@ -198,7 +198,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 
 	if(req->headers == NULL) /* Avoid NULL pointer, it may cause exception */
 	{
-		req->headers = (char *)os_malloc(sizeof(char));
+		req->headers = (char *)malloc(sizeof(char));
 		req->headers[0] = '\0';
 	}
 
@@ -221,7 +221,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
   #endif
 		espconn_send( conn, (uint8_t *) buf, len );
 	if(req->headers != NULL)
-		os_free( req->headers );
+		free( req->headers );
 	req->headers = NULL;
 	HTTPCLIENT_DEBUG( "Sending request header\n" );
 }
@@ -239,7 +239,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 	if ( conn->proto.tcp != NULL )
 	{
-		os_free( conn->proto.tcp );
+		free( conn->proto.tcp );
 	}
 	if ( conn->reverse != NULL )
 	{
@@ -295,16 +295,16 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			req->callback_handle( body, http_status, req->buffer );
 		}
 		if (req->buffer) {
-		  os_free( req->buffer );
+		  free( req->buffer );
 		}
-		os_free( req->hostname );
-		os_free( req->method );
-		os_free( req->path );
-		os_free( req );
+		free( req->hostname );
+		free( req->method );
+		free( req->path );
+		free( req );
 	}
 	/* Fix memory leak. */
 	espconn_delete( conn );
-	os_free( conn );
+	free( conn );
 }
 
 
@@ -349,16 +349,16 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		{
 			req->callback_handle( "", -1, "" );
 		}
-		os_free( req );
+		free( req );
 	}
 	else  
 	{
 		HTTPCLIENT_DEBUG( "DNS found %s " IPSTR "\n", hostname, IP2STR( addr ) );
 
-		struct espconn * conn = (struct espconn *) os_zalloc( sizeof(struct espconn) );
+		struct espconn * conn = (struct espconn *) zalloc( sizeof(struct espconn) );
 		conn->type			= ESPCONN_TCP;
 		conn->state			= ESPCONN_NONE;
-		conn->proto.tcp			= (esp_tcp *) os_zalloc( sizeof(esp_tcp) );
+		conn->proto.tcp			= (esp_tcp *) zalloc( sizeof(esp_tcp) );
 		conn->proto.tcp->local_port	= espconn_port();
 		conn->proto.tcp->remote_port	= req->port;
 		conn->reverse			= req;
@@ -393,7 +393,7 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 {
 	HTTPCLIENT_DEBUG( "DNS request\n" );
 
-	request_args_t * req = (request_args_t *) os_zalloc( sizeof(request_args_t) );
+	request_args_t * req = (request_args_t *) zalloc( sizeof(request_args_t) );
 	req->hostname		= esp_strdup( hostname );
 	req->port		= port;
 	req->secure		= secure;
@@ -402,7 +402,7 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 	req->headers		= esp_strdup( headers );
 	req->post_data		= esp_strdup( post_data );
 	req->buffer_size	= 1;
-	req->buffer		= (char *) os_malloc( 1 );
+	req->buffer		= (char *) malloc( 1 );
 	req->buffer[0]		= '\0';                                         /* Empty string. */
 	req->callback_handle	= callback_handle;
 	req->timeout		= HTTP_REQUEST_TIMEOUT_MS;

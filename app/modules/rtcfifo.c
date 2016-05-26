@@ -6,6 +6,7 @@
 #include "rtc/rtctime.h"
 #define RTCTIME_SLEEP_ALIGNED rtctime_deep_sleep_until_aligned_us
 #include "rtc/rtcfifo.h"
+#include <string.h>
 
 // rtcfifo.prepare ([{sensor_count=n, interval_us=m, storage_begin=x, storage_end=y}])
 static int rtcfifo_prepare (lua_State *L)

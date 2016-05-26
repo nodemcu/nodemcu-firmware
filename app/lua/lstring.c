@@ -67,7 +67,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   ts->tsv.marked = luaC_white(G(L));
   ts->tsv.tt = LUA_TSTRING;
   if (!readonly) {
-    c_memcpy(ts+1, str, l*sizeof(char));
+    memcpy(ts+1, str, l*sizeof(char));
     ((char *)(ts+1))[l] = '\0';  /* ending 0 */
   } else {
     *(char **)(ts+1) = (char *)str;
@@ -92,7 +92,7 @@ static TString *luaS_newlstr_helper (lua_State *L, const char *str, size_t l, in
        o != NULL;
        o = o->gch.next) {
     TString *ts = rawgco2ts(o);
-    if (ts->tsv.len == l && (c_memcmp(str, getstr(ts), l) == 0)) {
+    if (ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0)) {
       /* string may be dead */
       if (isdead(G(L), o)) changewhite(o);
       return ts;
@@ -115,7 +115,7 @@ static int lua_is_ptr_in_ro_area(const char *p) {
 TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   // If the pointer is in a read-only memory and the string is at least 4 chars in length,
   // create it as a read-only string instead
-  if(lua_is_ptr_in_ro_area(str) && l+1 > sizeof(char**) && l == c_strlen(str))
+  if(lua_is_ptr_in_ro_area(str) && l+1 > sizeof(char**) && l == strlen(str))
     return luaS_newlstr_helper(L, str, l, LUAS_READONLY_STRING);
   else
     return luaS_newlstr_helper(L, str, l, LUAS_REGULAR_STRING);
@@ -123,7 +123,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 
 
 LUAI_FUNC TString *luaS_newrolstr (lua_State *L, const char *str, size_t l) {
-  if(l+1 > sizeof(char**) && l == c_strlen(str))
+  if(l+1 > sizeof(char**) && l == strlen(str))
     return luaS_newlstr_helper(L, str, l, LUAS_READONLY_STRING);
   else // no point in creating a RO string, as it would actually be larger
     return luaS_newlstr_helper(L, str, l, LUAS_REGULAR_STRING);

@@ -150,9 +150,9 @@ static void DumpNumber(lua_Number x, DumpState* D)
     if(D->target.is_arm_fpa)
     {
       char *pnum=(char*)&y, temp[4];
-      c_memcpy(temp,pnum,4);
-      c_memcpy(pnum,pnum+4,4);
-      c_memcpy(pnum+4,temp,4);
+      memcpy(temp,pnum,4);
+      memcpy(pnum,pnum+4,4);
+      memcpy(pnum+4,temp,4);
     }
     MaybeByteSwap((char*)&y,8,D);
     DumpVar(y,D);
@@ -171,7 +171,7 @@ static void DumpCode(const Proto *f, DumpState* D)
  Align4(D);
  for (i=0; i<f->sizecode; i++)
  {
-  c_memcpy(buf,&f->code[i],sizeof(Instruction));
+  memcpy(buf,&f->code[i],sizeof(Instruction));
   MaybeByteSwap(buf,sizeof(Instruction),D);
   DumpBlock(buf,sizeof(Instruction),D);
  }
@@ -230,7 +230,7 @@ static void DumpDebug(const Proto* f, DumpState* D)
  int i,n;
 
 #ifdef LUA_OPTIMIZE_DEBUG
- n = (D->strip || f->packedlineinfo == NULL) ? 0: c_strlen(cast(char *,f->packedlineinfo))+1;
+ n = (D->strip || f->packedlineinfo == NULL) ? 0: strlen(cast(char *,f->packedlineinfo))+1;
  DumpInt(n,D);
  Align4(D);
  if (n)
@@ -281,7 +281,7 @@ static void DumpHeader(DumpState* D)
  char *h=buf;
 
  /* This code must be kept in sync wiht luaU_header */
- c_memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
+ memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
  h+=sizeof(LUA_SIGNATURE)-1;
  *h++=(char)LUAC_VERSION;
  *h++=(char)LUAC_FORMAT;

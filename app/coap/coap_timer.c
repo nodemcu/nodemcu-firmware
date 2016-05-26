@@ -1,6 +1,6 @@
 #include "node.h"
 #include "coap_timer.h"
-#include "os_type.h"
+#include "esp_timer.h"
 
 static os_timer_t coap_timer;
 static coap_tick_t basetime = 0;

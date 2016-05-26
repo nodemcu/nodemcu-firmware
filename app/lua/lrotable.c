@@ -20,10 +20,10 @@ extern const luaR_table lua_rotable[];
 void* luaR_findglobal(const char *name, unsigned len) {
   unsigned i;
 
-  if (c_strlen(name) > LUA_MAX_ROTABLE_NAME)
+  if (strlen(name) > LUA_MAX_ROTABLE_NAME)
     return NULL;
   for (i=0; lua_rotable[i].name; i ++)
-    if (*lua_rotable[i].name != '\0' && c_strlen(lua_rotable[i].name) == len && !c_strncmp(lua_rotable[i].name, name, len)) {
+    if (*lua_rotable[i].name != '\0' && strlen(lua_rotable[i].name) == len && !strncmp(lua_rotable[i].name, name, len)) {
       return (void*)(lua_rotable[i].pentries);
     }
   return NULL;
@@ -37,7 +37,7 @@ static const TValue* luaR_auxfind(const luaR_entry *pentry, const char *strkey, 
   if (pentry == NULL)
     return NULL;  
   while(pentry->key.type != LUA_TNIL) {
-    if ((strkey && (pentry->key.type == LUA_TSTRING) && (!c_strcmp(pentry->key.id.strkey, strkey))) || 
+    if ((strkey && (pentry->key.type == LUA_TSTRING) && (!strcmp(pentry->key.id.strkey, strkey))) || 
         (!strkey && (pentry->key.type == LUA_TNUMBER) && ((luaR_numkey)pentry->key.id.numkey == numkey))) {
       res = &pentry->value;
       break;
@@ -120,7 +120,7 @@ void luaR_getcstr(char *dest, const TString *src, size_t maxsize) {
   if (src->tsv.len+1 > maxsize)
     dest[0] = '\0';
   else {
-    c_memcpy(dest, getstr(src), src->tsv.len);
+    memcpy(dest, getstr(src), src->tsv.len);
     dest[src->tsv.len] = '\0';
   } 
 }

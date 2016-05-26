@@ -1,11 +1,11 @@
 // Module for cryptography
 
-#include <c_errno.h>
+#include <errno.h>
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "c_types.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 #include "flash_fs.h"
 #include "../crypto/digests.h"
 #include "../crypto/mech.h"
@@ -71,7 +71,7 @@ static int crypto_base64_encode( lua_State* L )
   int len;
   const char* msg = luaL_checklstring(L, 1, &len);
   int blen = (len + 2) / 3 * 4;
-  char* out = (char*)c_malloc(blen);
+  char* out = (char*)malloc(blen);
   int j = 0, i;
   for (i = 0; i < len; i += 3) {
     int a = msg[i];
@@ -83,7 +83,7 @@ static int crypto_base64_encode( lua_State* L )
     out[j++] = (i + 2 < len) ? bytes64[(c & 63)] : 61;
   }
   lua_pushlstring(L, out, j);
-  c_free(out);
+  free(out);
   return 1;
 }
 
@@ -96,14 +96,14 @@ static int crypto_hex_encode( lua_State* L)
 {
   int len;
   const char* msg = luaL_checklstring(L, 1, &len);
-  char* out = (char*)c_malloc(len * 2);
+  char* out = (char*)malloc(len * 2);
   int i, j = 0;
   for (i = 0; i < len; i++) {
     out[j++] = crypto_hexbytes[msg[i] >> 4];
     out[j++] = crypto_hexbytes[msg[i] & 0xf];
   }
   lua_pushlstring(L, out, len*2);
-  c_free(out);
+  free(out);
   return 1;
 }
 #endif
@@ -118,12 +118,12 @@ static int crypto_mask( lua_State* L )
   const char* msg = luaL_checklstring(L, 1, &len);
   const char* mask = luaL_checklstring(L, 2, &mask_len);
   int i;
-  char* copy = (char*)c_malloc(len);
+  char* copy = (char*)malloc(len);
   for (i = 0; i < len; i++) {
     copy[i] = msg[i] ^ mask[i % 4];
   }
   lua_pushlstring(L, copy, len);
-  c_free(copy);
+  free(copy);
   return 1;
 }
 
@@ -169,7 +169,7 @@ static int crypto_new_hash (lua_State *L)
   if (!mi)
     return bad_mech (L);
 
-  void *ctx = os_malloc (mi->ctx_size);
+  void *ctx = malloc (mi->ctx_size);
   if (ctx==NULL)
     return bad_mem (L);
 
@@ -237,7 +237,7 @@ static int crypto_hash_gcdelete (lua_State *L)
   dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
   luaL_argcheck(L, dudat, 1, "crypto.hash expected");
 
-  os_free(dudat->ctx);
+  free(dudat->ctx);
 
   return 0;
 }
@@ -325,7 +325,7 @@ static int crypto_encdec (lua_State *L, bool enc)
 
   size_t bs = mech->block_size;
   size_t outlen = ((dlen + bs -1) / bs) * bs;
-  char *buf = (char *)os_zalloc (outlen);
+  char *buf = (char *)zalloc (outlen);
   if (!buf)
     return luaL_error (L, "crypto init failed");
 
@@ -339,14 +339,14 @@ static int crypto_encdec (lua_State *L, bool enc)
   };
   if (!mech->run (&op))
   {
-    os_free (buf);
+    free (buf);
     return luaL_error (L, "crypto op failed");
   }
   else
   {
     lua_pushlstring (L, buf, outlen);
     // note: if lua_pushlstring runs out of memory, we leak buf :(
-    os_free (buf);
+    free (buf);
     return 1;
   }
 }

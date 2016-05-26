@@ -12,7 +12,7 @@
 #include "c_types.h"
 #include "user_interface.h"
 #include "driver/rotary.h"
-#include "../libc/c_stdlib.h"
+#include <stdlib.h>
 
 #define MASK(x)		(1 << ROTARY_ ## x ## _INDEX)
 
@@ -143,7 +143,7 @@ static int lrotary_setup( lua_State* L )
   callback_free(L, id, ROTARY_ALL);
 
   if (!data[id]) {
-    data[id] = (DATA *) os_zalloc(sizeof(DATA));
+    data[id] = (DATA *) zalloc(sizeof(DATA));
     if (!data[id]) {
       return -1;
     } 
@@ -202,7 +202,7 @@ static int lrotary_close( lua_State* L )
   DATA *d = data[id];
   if (d) {
     data[id] = NULL;
-    os_free(d);
+    free(d);
   }
 
   if (rotary_close( id )) {

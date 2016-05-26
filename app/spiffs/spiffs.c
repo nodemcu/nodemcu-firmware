@@ -1,4 +1,4 @@
-#include "c_stdio.h"
+#include <stdio.h>
 #include "platform.h"
 #include "spiffs.h"
   

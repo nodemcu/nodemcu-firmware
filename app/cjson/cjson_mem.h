@@ -1,6 +1,7 @@
 #ifndef _CJSON_MEM_H_
 #define _CJSON_MEM_H_
 
+#include <stdint.h>
 #include "../lua/lua.h"
 
 void cjson_mem_setlua (lua_State *L);

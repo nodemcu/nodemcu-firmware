@@ -9,7 +9,7 @@
 #include "ets_sys.h"
 #include "os_type.h"
 #include "osapi.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 #include "module.h"
 #include "lauxlib.h"

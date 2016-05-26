@@ -6,7 +6,7 @@
 #include "user_config.h"
 #include "flash_api.h"
 #include "spi_flash.h"
-#include "c_stdio.h"
+#include <stdio.h>
 
 uint32_t flash_detect_size_byte(void)
 {
@@ -19,7 +19,7 @@ uint32_t flash_detect_size_byte(void)
         dummy_size = FLASH_SIZE_256KBYTE;
         while ((dummy_size < FLASH_SIZE_16MBYTE) &&
                 (SPI_FLASH_RESULT_OK == flash_safe_read(dummy_size, (uint32 *)data_new, FLASH_BUFFER_SIZE_DETECT)) &&
-                (0 != os_memcmp(data_orig, data_new, FLASH_BUFFER_SIZE_DETECT))
+                (0 != memcmp(data_orig, data_new, FLASH_BUFFER_SIZE_DETECT))
               )
         {
             dummy_size *= 2;
@@ -208,7 +208,7 @@ uint16_t flash_rom_get_sec_num(void)
 {
     //static uint16_t sec_num = 0;
     // return flash_rom_get_size_byte() / (SPI_FLASH_SEC_SIZE);
-    // c_printf("\nflash_rom_get_size_byte()=%d\n", ( flash_rom_get_size_byte() / (SPI_FLASH_SEC_SIZE) ));
+    // printf("\nflash_rom_get_size_byte()=%d\n", ( flash_rom_get_size_byte() / (SPI_FLASH_SEC_SIZE) ));
     // if( sec_num == 0 )
     //{
     //    sec_num = 4 * 1024 * 1024 / (SPI_FLASH_SEC_SIZE);
@@ -335,14 +335,14 @@ uint16_t word_of_aligned_array(const uint16_t *aligned_array, uint32_t index)
 //     // uint8_t buffer[64] = {0};
 //     // spi_flash_read(address, (uint32 *) buffer, 64);
 //     // uint8_t i = 0;
-//     // c_printf("\nBEGIN DUMP\n");
+//     // printf("\nBEGIN DUMP\n");
 //     // for (i = 0; i < 64; i++)
 //     // {
-//     //     c_printf("%02x," , buffer[i]);
+//     //     printf("%02x," , buffer[i]);
 //     // }
 //     // i = (address + 0x10) & 0x10 - 1;
-//     // c_printf("\nSIZE:%d CHECK SUM:%02x\n", spi_flash_info.segment_size, buffer[i]);
-//     // c_printf("\nEND DUMP\n");
+//     // printf("\nSIZE:%d CHECK SUM:%02x\n", spi_flash_info.segment_size, buffer[i]);
+//     // printf("\nEND DUMP\n");
 //     // return buffer[0];
 //     return 0;
 // }

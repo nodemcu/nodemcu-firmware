@@ -22,10 +22,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_stdarg.h"
-#include "c_string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
 
 #include "strbuf.h"
 #include "cjson_mem.h"
@@ -103,11 +103,11 @@ void strbuf_free(strbuf_t *s)
     debug_stats(s);
 
     if (s->buf) {
-        c_free(s->buf);
+        free(s->buf);
         s->buf = NULL;
     }
     if (s->dynamic)
-        c_free(s);
+        free(s);
 }
 
 char *strbuf_free_to_string(strbuf_t *s, int *len)
@@ -123,7 +123,7 @@ char *strbuf_free_to_string(strbuf_t *s, int *len)
         *len = s->length;
 
     if (s->dynamic)
-        c_free(s);
+        free(s);
 
     return buf;
 }

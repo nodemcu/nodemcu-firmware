@@ -374,7 +374,7 @@ const LUA_REG_TYPE math_map[] = {
 */
 
 #if defined LUA_NUMBER_INTEGRAL
-# include "c_limits.h"		/* for LONG_MAX */
+# include <limits.h>		/* for LONG_MAX */
 #endif
 
 LUALIB_API int luaopen_math (lua_State *L) {

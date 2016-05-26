@@ -22,8 +22,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "c_stdlib.h"
-#include "c_stdarg.h"
+#include <stdlib.h>
+#include <stdarg.h>
 #include "user_config.h"
 
 /* Size: Total bytes allocated to *buf
@@ -128,13 +128,13 @@ static inline void strbuf_append_char_unsafe(strbuf_t *s, const char c)
 static inline void strbuf_append_mem(strbuf_t *s, const char *c, int len)
 {
     strbuf_ensure_empty_length(s, len);
-    c_memcpy(s->buf + s->length, c, len);
+    memcpy(s->buf + s->length, c, len);
     s->length += len;
 }
 
 static inline void strbuf_append_mem_unsafe(strbuf_t *s, const char *c, int len)
 {
-    c_memcpy(s->buf + s->length, c, len);
+    memcpy(s->buf + s->length, c, len);
     s->length += len;
 }
 

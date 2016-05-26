@@ -19,7 +19,7 @@
 #include "lrodefs.h"
 
 #include "c_types.h"
-#include "c_string.h"
+#include <string.h>
 #include "driver/uart.h"
 #include "user_interface.h"
 #include "flash_api.h"
@@ -276,9 +276,9 @@ static int node_key( lua_State* L )
   if (str == NULL)
     return luaL_error( L, "wrong arg type" );
 
-  if (sl == 5 && c_strcmp(str, "short") == 0) {
+  if (sl == 5 && strcmp(str, "short") == 0) {
     ref = &short_key_ref;
-  } else if (sl == 4 && c_strcmp(str, "long") == 0) {
+  } else if (sl == 4 && strcmp(str, "long") == 0) {
     ref = &long_key_ref;
   } else {
     ref = &short_key_ref;
@@ -311,9 +311,9 @@ static int node_input( lua_State* L )
   {
     lua_Load *load = &gLoad;
     if (load->line_position == 0) {
-      c_memcpy(load->line, s, l);
+      memcpy(load->line, s, l);
       load->line[l + 1] = '\0';
-      load->line_position = c_strlen(load->line) + 1;
+      load->line_position = strlen(load->line) + 1;
       load->done = 1;
       NODE_DBG("Get command:\n");
       NODE_DBG(load->line); // buggy here
@@ -328,7 +328,7 @@ static int output_redir_ref = LUA_NOREF;
 static int serial_debug = 1;
 void output_redirect(const char *str) {
   lua_State *L = lua_getstate();
-  // if(c_strlen(str)>=TX_BUFF_SIZE){
+  // if(strlen(str)>=TX_BUFF_SIZE){
   //   NODE_ERR("output too long.\n");
   //   return;
   // }
@@ -402,13 +402,13 @@ static int node_compile( lua_State* L )
     return luaL_error(L, "filename too long");
 
   char output[FS_NAME_MAX_LENGTH];
-  c_strcpy(output, fname);
+  strcpy(output, fname);
   // check here that filename end with ".lua".
-  if (len < 4 || (c_strcmp( output + len - 4, ".lua") != 0) )
+  if (len < 4 || (strcmp( output + len - 4, ".lua") != 0) )
     return luaL_error(L, "not a .lua file");
 
-  output[c_strlen(output) - 2] = 'c';
-  output[c_strlen(output) - 1] = '\0';
+  output[strlen(output) - 2] = 'c';
+  output[strlen(output) - 1] = '\0';
   NODE_DBG(output);
   NODE_DBG("\n");
   if (luaL_loadfsfile(L, fname) != 0) {

@@ -33,7 +33,7 @@ LOCAL void ICACHE_RAM_ATTR key_intr_handler(void *arg);
 struct single_key_param *ICACHE_FLASH_ATTR
 key_init_single(uint8 gpio_id, uint32 gpio_name, uint8 gpio_func, key_function long_press, key_function short_press)
 {
-    struct single_key_param *single_key = (struct single_key_param *)os_zalloc(sizeof(struct single_key_param));
+    struct single_key_param *single_key = (struct single_key_param *)zalloc(sizeof(struct single_key_param));
 
     single_key->gpio_id = gpio_id;
     single_key->gpio_name = gpio_name;

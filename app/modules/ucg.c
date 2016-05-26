@@ -5,7 +5,7 @@
 #include "platform.h"
 #include "esp_misc.h"
 
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 #include "ucg.h"
 

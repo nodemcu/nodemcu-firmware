@@ -38,7 +38,7 @@
 #include "os_type.h"
 #include "osapi.h"
 #include "lwip/udp.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 #include "user_modules.h"
 #include "lwip/dns.h"
 #include "user_interface.h"
@@ -53,7 +53,7 @@
 #define MAX_ATTEMPTS 5
 
 #if 0
-# define sntp_dbg(...) c_printf(__VA_ARGS__)
+# define sntp_dbg(...) printf(__VA_ARGS__)
 #else
 # define sntp_dbg(...)
 #endif
@@ -110,7 +110,7 @@ static void cleanup (lua_State *L)
   udp_remove (state->pcb);
   luaL_unref (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
   luaL_unref (L, LUA_REGISTRYINDEX, state->err_cb_ref);
-  os_free (state);
+  free (state);
   state = 0;
 }
 
@@ -328,7 +328,7 @@ static int sntp_sync (lua_State *L)
   if (state)
     return luaL_error (L, "sync in progress");
 
-  state = (sntp_state_t *)c_malloc (sizeof (sntp_state_t));
+  state = (sntp_state_t *)malloc (sizeof (sntp_state_t));
   if (!state)
     sync_err ("out of memory");
 
@@ -386,7 +386,7 @@ error:
   {
     if (state->pcb)
       udp_remove (state->pcb);
-    c_free (state);
+    free (state);
     state = 0;
   }
   return luaL_error (L, errmsg);

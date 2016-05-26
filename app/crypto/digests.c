@@ -33,7 +33,7 @@
 #include "osapi.h"
 #include "mem.h"
 #include <string.h>
-#include <c_errno.h>
+#include <errno.h>
 
 #ifdef MD2_ENABLE
 #include "ssl/ssl_crypto.h"
@@ -109,7 +109,7 @@ int ICACHE_FLASH_ATTR crypto_hash (const digest_mech_info_t *mi,
   if (!mi)
     return EINVAL;
 
-  void *ctx = (void *)os_malloc (mi->ctx_size);
+  void *ctx = (void *)malloc (mi->ctx_size);
   if (!ctx)
     return ENOMEM;
 
@@ -117,7 +117,7 @@ int ICACHE_FLASH_ATTR crypto_hash (const digest_mech_info_t *mi,
   mi->update (ctx, data, data_len);
   mi->finalize (digest, ctx);
 
-  os_free (ctx);
+  free (ctx);
   return 0;
 }
 
@@ -130,13 +130,13 @@ int ICACHE_FLASH_ATTR crypto_fhash (const digest_mech_info_t *mi,
     return EINVAL;
 
   // Initialise
-  void *ctx = (void *)os_malloc (mi->ctx_size);
+  void *ctx = (void *)malloc (mi->ctx_size);
   if (!ctx)
     return ENOMEM;
   mi->create (ctx);
 
   // Hash bytes from file in blocks
-  uint8_t* buffer = (uint8_t*)os_malloc (mi->block_size);
+  uint8_t* buffer = (uint8_t*)malloc (mi->block_size);
   if (!buffer)
     return ENOMEM;
   
@@ -149,8 +149,8 @@ int ICACHE_FLASH_ATTR crypto_fhash (const digest_mech_info_t *mi,
   // Finish up
   mi->finalize (digest, ctx);
 
-  os_free (buffer);
-  os_free (ctx);
+  free (buffer);
+  free (ctx);
   return 0;
 }
 
@@ -163,7 +163,7 @@ int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
   if (!mi)
     return EINVAL;
 
-  void *ctx = (void *)os_malloc (mi->ctx_size);
+  void *ctx = (void *)malloc (mi->ctx_size);
   if (!ctx)
     return ENOMEM;
 
@@ -200,6 +200,6 @@ int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
   mi->update (ctx, digest, mi->digest_size);
   mi->finalize (digest, ctx);
 
-  os_free (ctx);
+  free (ctx);
   return 0;
 }

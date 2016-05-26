@@ -38,13 +38,13 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #define NODE_ERROR
 
 #ifdef NODE_DEBUG
-#define NODE_DBG c_printf
+#define NODE_DBG printf
 #else
 #define NODE_DBG
 #endif	/* NODE_DEBUG */
 
 #ifdef NODE_ERROR
-#define NODE_ERR c_printf
+#define NODE_ERR printf
 #else
 #define NODE_ERR
 #endif	/* NODE_ERROR */

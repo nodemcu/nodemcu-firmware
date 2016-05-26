@@ -48,7 +48,7 @@
 #include "osapi.h"
 #include "os_type.h"
 #include "user_interface.h"
-#include "c_string.h"
+#include <string.h>
 #include "nodemcu_mdns.h"
 
 #if 0
@@ -973,7 +973,7 @@ memerr1:
 
 static void
 mdns_free_info(struct nodemcu_mdns_info *info) {
-  os_free((void *) info);
+  free((void *) info);
 }
 
 /**
@@ -988,7 +988,7 @@ nodemcu_mdns_close(void)
     udp_remove(mdns_pcb);
   }
   if (mdns_payload) {
-    os_free(mdns_payload);
+    free(mdns_payload);
   }
   mdns_payload = NULL;
   mdns_pcb = NULL;
@@ -1001,7 +1001,7 @@ mdns_set_servicename(const char *name) {
 	char tmpBuf[128];
 	os_sprintf(tmpBuf, "_%s._tcp.local", name);
 	if (service_name_with_suffix) {
-	  os_free(service_name_with_suffix);
+	  free(service_name_with_suffix);
 	}
 	service_name_with_suffix = c_strdup(tmpBuf);
 }
@@ -1029,17 +1029,17 @@ mdns_dup_info(const struct nodemcu_mdns_info *info) {
   // calculate length
   int len = sizeof(struct nodemcu_mdns_info);
 
-  len += c_strlen(info->host_name) + 1;
-  len += c_strlen(info->host_desc) + 1;
-  len += c_strlen(info->service_name) + 1;
+  len += strlen(info->host_name) + 1;
+  len += strlen(info->host_desc) + 1;
+  len += strlen(info->service_name) + 1;
   int i;
   for (i = 0; i < sizeof(info->txt_data) / sizeof(info->txt_data[0]) && info->txt_data[i]; i++) {
-    len += c_strlen(info->txt_data[i]) + 1;
+    len += strlen(info->txt_data[i]) + 1;
   }
 
-#define COPY_OVER(dest, src, p)  len = c_strlen(src) + 1; memcpy(p, src, len); dest = p; p += len
+#define COPY_OVER(dest, src, p)  len = strlen(src) + 1; memcpy(p, src, len); dest = p; p += len
 
-  result = (struct nodemcu_mdns_info *) os_zalloc(len);
+  result = (struct nodemcu_mdns_info *) zalloc(len);
   if (result) {
     char *p = (char *) (result + 1);
     result->service_port = info->service_port;
@@ -1075,9 +1075,9 @@ nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
   }
 
   if (mdns_payload) {
-    os_free(mdns_payload);
+    free(mdns_payload);
   }
-  mdns_payload = (u8_t *) os_malloc(DNS_MSG_SIZE);
+  mdns_payload = (u8_t *) malloc(DNS_MSG_SIZE);
   if (!mdns_payload) {
     MDNS_DBG("Alloc fail\n");
     return FALSE;

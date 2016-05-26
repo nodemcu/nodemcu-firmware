@@ -2,9 +2,9 @@
 
 #include "platform.h"
 #include "common.h"
-#include "c_stdio.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "llimits.h"
 #include "gpio.h"
 #include "user_interface.h"
@@ -276,7 +276,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
   }
 
   // These return NULL if the count = 0 so only error check if > 0)
-  nh.entry = c_malloc( nh.count * sizeof(*(nh.entry)) );
+  nh.entry = malloc( nh.count * sizeof(*(nh.entry)) );
   if (nh.count && !(nh.entry)) {
     return 0;  // Allocation failure
   }
@@ -301,7 +301,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
   platform_gpio_hook = nh;
   ETS_GPIO_INTR_ENABLE();
 
-  c_free(oh.entry);
+  free(oh.entry);
   return 1;
 }
 #endif // GPIO_INTERRUPT_HOOK_ENABLE
@@ -745,15 +745,15 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
   if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_MAPPED_ADDRESS)) {
-    apbuf = (uint32_t *)c_malloc(size);
+    apbuf = (uint32_t *)malloc(size);
     if(!apbuf)
       return 0;
-    c_memcpy(apbuf, from, size);
+    memcpy(apbuf, from, size);
   }
   system_soft_wdt_feed ();
   r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
   if(apbuf)
-    c_free(apbuf);
+    free(apbuf);
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
@@ -783,7 +783,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
     r = flash_read(fromaddr, to2, size2);
     if(SPI_FLASH_RESULT_OK == r)
     {
-      os_memmove(to,to2,size2);
+      memmove(to,to2,size2);
       char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
       r=flash_read(fromaddr+size2,(uint32*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
       os_memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);

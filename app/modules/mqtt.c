@@ -4,8 +4,8 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 #include "c_types.h"
 #include "mem.h"
@@ -121,9 +121,9 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
     if(mud->pesp_conn){
       mud->pesp_conn->reverse = NULL;
       if(mud->pesp_conn->proto.tcp)
-        c_free(mud->pesp_conn->proto.tcp);
+        free(mud->pesp_conn->proto.tcp);
       mud->pesp_conn->proto.tcp = NULL;
-      c_free(mud->pesp_conn);
+      free(mud->pesp_conn);
       mud->pesp_conn = NULL;
     }
 
@@ -270,7 +270,7 @@ READPACKET:
   if(length > MQTT_BUF_SIZE || length <= 0)
 	  return;
 
-  // c_memcpy(in_buffer, pdata, length);
+  // memcpy(in_buffer, pdata, length);
   uint8_t temp_buffer[MQTT_BUF_SIZE];
   mqtt_msg_init(&mud->mqtt_state.mqtt_connection, temp_buffer, MQTT_BUF_SIZE);
   mqtt_message_t *temp_msg = NULL;
@@ -654,12 +654,12 @@ static int mqtt_socket_client( lua_State* L )
 
   lmqtt_userdata *mud;
   char tempid[20] = {0};
-  c_sprintf(tempid, "%s%x", "NodeMCU_", system_get_chip_id() );
+  sprintf(tempid, "%s%x", "NodeMCU_", system_get_chip_id() );
   NODE_DBG(tempid);
   NODE_DBG("\n");
 
   const char *clientId = tempid, *username = NULL, *password = NULL;
-  size_t idl = c_strlen(tempid);
+  size_t idl = strlen(tempid);
   size_t unl = 0, pwl = 0;
   int keepalive = 0;
   int stack = 1;
@@ -687,9 +687,9 @@ static int mqtt_socket_client( lua_State* L )
   mud->event_timeout = 0;
   mud->connState = MQTT_INIT;
   mud->connected = false;
-  c_memset(&mud->mqttTimer, 0, sizeof(ETSTimer));
-  c_memset(&mud->mqtt_state, 0, sizeof(mqtt_state_t));
-  c_memset(&mud->connect_info, 0, sizeof(mqtt_connect_info_t));
+  memset(&mud->mqttTimer, 0, sizeof(ETSTimer));
+  memset(&mud->mqtt_state, 0, sizeof(mqtt_state_t));
+  memset(&mud->connect_info, 0, sizeof(mqtt_connect_info_t));
 
   // set its metatable
   luaL_getmetatable(L, "mqtt.socket");
@@ -738,30 +738,30 @@ static int mqtt_socket_client( lua_State* L )
   }
 
   // TODO: check the zalloc result.
-  mud->connect_info.client_id = (uint8_t *)c_zalloc(idl+1);
-  mud->connect_info.username = (uint8_t *)c_zalloc(unl + 1);
-  mud->connect_info.password = (uint8_t *)c_zalloc(pwl + 1);
+  mud->connect_info.client_id = (uint8_t *)zalloc(idl+1);
+  mud->connect_info.username = (uint8_t *)zalloc(unl + 1);
+  mud->connect_info.password = (uint8_t *)zalloc(pwl + 1);
   if(!mud->connect_info.client_id || !mud->connect_info.username || !mud->connect_info.password){
     if(mud->connect_info.client_id) {
-      c_free(mud->connect_info.client_id);
+      free(mud->connect_info.client_id);
       mud->connect_info.client_id = NULL;
     }
     if(mud->connect_info.username) {
-      c_free(mud->connect_info.username);
+      free(mud->connect_info.username);
       mud->connect_info.username = NULL;
     }
     if(mud->connect_info.password) {
-      c_free(mud->connect_info.password);
+      free(mud->connect_info.password);
       mud->connect_info.password = NULL;
     }
   	return luaL_error(L, "not enough memory");
   }
 
-  c_memcpy(mud->connect_info.client_id, clientId, idl);
+  memcpy(mud->connect_info.client_id, clientId, idl);
   mud->connect_info.client_id[idl] = 0;
-  c_memcpy(mud->connect_info.username, username, unl);
+  memcpy(mud->connect_info.username, username, unl);
   mud->connect_info.username[unl] = 0;
-  c_memcpy(mud->connect_info.password, password, pwl);
+  memcpy(mud->connect_info.password, password, pwl);
   mud->connect_info.password[pwl] = 0;
 
   NODE_DBG("MQTT: Init info: %s, %s, %s\r\n", mud->connect_info.client_id, mud->connect_info.username, mud->connect_info.password);
@@ -801,35 +801,35 @@ static int mqtt_delete( lua_State* L )
   if(mud->pesp_conn){     // for client connected to tcp server, this should set NULL in disconnect cb
     mud->pesp_conn->reverse = NULL;
     if(mud->pesp_conn->proto.tcp)
-      c_free(mud->pesp_conn->proto.tcp);
+      free(mud->pesp_conn->proto.tcp);
     mud->pesp_conn->proto.tcp = NULL;
-    c_free(mud->pesp_conn);
+    free(mud->pesp_conn);
     mud->pesp_conn = NULL;    // for socket, it will free this when disconnected
   }
 
   // ---- alloc-ed in mqtt_socket_lwt()
   if(mud->connect_info.will_topic){
-  	c_free(mud->connect_info.will_topic);
+  	free(mud->connect_info.will_topic);
   	mud->connect_info.will_topic = NULL;
   }
 
   if(mud->connect_info.will_message){
-    c_free(mud->connect_info.will_message);
+    free(mud->connect_info.will_message);
     mud->connect_info.will_message = NULL;
   }
   // ----
 
   //--------- alloc-ed in mqtt_socket_client()
   if(mud->connect_info.client_id){
-    c_free(mud->connect_info.client_id);
+    free(mud->connect_info.client_id);
     mud->connect_info.client_id = NULL;
   }
   if(mud->connect_info.username){
-    c_free(mud->connect_info.username);
+    free(mud->connect_info.username);
     mud->connect_info.username = NULL;
   }
   if(mud->connect_info.password){
-    c_free(mud->connect_info.password);
+    free(mud->connect_info.password);
     mud->connect_info.password = NULL;
   }
   // -------
@@ -938,7 +938,7 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   if(ipaddr->addr != 0)
   {
     dns_reconn_count = 0;
-    c_memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
+    memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
     NODE_DBG("TCP ip is set: ");
     NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
     NODE_DBG("\n");
@@ -976,21 +976,21 @@ static int mqtt_socket_connect( lua_State* L )
   if(mud->pesp_conn){   //TODO: should I free tcp struct directly or ask user to call close()???
     mud->pesp_conn->reverse = NULL;
     if(mud->pesp_conn->proto.tcp)
-      c_free(mud->pesp_conn->proto.tcp);
+      free(mud->pesp_conn->proto.tcp);
     mud->pesp_conn->proto.tcp = NULL;
-    c_free(mud->pesp_conn);
+    free(mud->pesp_conn);
     mud->pesp_conn = NULL;
   }
 
   struct espconn *pesp_conn = NULL;
-  pesp_conn = mud->pesp_conn = (struct espconn *)c_zalloc(sizeof(struct espconn));
+  pesp_conn = mud->pesp_conn = (struct espconn *)zalloc(sizeof(struct espconn));
   if(!pesp_conn)
     return luaL_error(L, "not enough memory");
 
   pesp_conn->proto.udp = NULL;
-  pesp_conn->proto.tcp = (esp_tcp *)c_zalloc(sizeof(esp_tcp));
+  pesp_conn->proto.tcp = (esp_tcp *)zalloc(sizeof(esp_tcp));
   if(!pesp_conn->proto.tcp){
-    c_free(pesp_conn);
+    free(pesp_conn);
     pesp_conn = mud->pesp_conn = NULL;
     return luaL_error(L, "not enough memory");
   }
@@ -1010,7 +1010,7 @@ static int mqtt_socket_connect( lua_State* L )
       domain = "127.0.0.1";
     }
     ipaddr.addr = ipaddr_addr(domain);
-    c_memcpy(pesp_conn->proto.tcp->remote_ip, &ipaddr.addr, 4);
+    memcpy(pesp_conn->proto.tcp->remote_ip, &ipaddr.addr, 4);
     NODE_DBG("TCP ip is set: ");
     NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
     NODE_DBG("\n");
@@ -1085,7 +1085,7 @@ static int mqtt_socket_connect( lua_State* L )
   os_timer_setfn(&mud->mqttTimer, (os_timer_func_t *)mqtt_socket_timer, mud);
   // timer started in socket_connect()
 
-  if((ipaddr.addr == IPADDR_NONE) && (c_memcmp(domain,"255.255.255.255",16) != 0))
+  if((ipaddr.addr == IPADDR_NONE) && (memcmp(domain,"255.255.255.255",16) != 0))
   {
     host_ip.addr = 0;
     dns_reconn_count = 0;
@@ -1179,13 +1179,13 @@ static int mqtt_socket_on( lua_State* L )
   luaL_checkanyfunction(L, 3);
   lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 
-  if( sl == 7 && c_strcmp(method, "connect") == 0){
+  if( sl == 7 && strcmp(method, "connect") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 7 && c_strcmp(method, "offline") == 0){
+  }else if( sl == 7 && strcmp(method, "offline") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
     mud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 7 && c_strcmp(method, "message") == 0){
+  }else if( sl == 7 && strcmp(method, "message") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
     mud->cb_message_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else{
@@ -1528,30 +1528,30 @@ static int mqtt_socket_lwt( lua_State* L )
   }
   stack++;
   if(mud->connect_info.will_topic){    // free the previous one if there is any
-    c_free(mud->connect_info.will_topic);
+    free(mud->connect_info.will_topic);
     mud->connect_info.will_topic = NULL;
   }
   if(mud->connect_info.will_message){
-    c_free(mud->connect_info.will_message);
+    free(mud->connect_info.will_message);
     mud->connect_info.will_message = NULL;
   }
 
-  mud->connect_info.will_topic = (uint8_t*) c_zalloc( topicSize + 1 );
-  mud->connect_info.will_message = (uint8_t*) c_zalloc( msgSize + 1 );
+  mud->connect_info.will_topic = (uint8_t*) zalloc( topicSize + 1 );
+  mud->connect_info.will_message = (uint8_t*) zalloc( msgSize + 1 );
   if(!mud->connect_info.will_topic || !mud->connect_info.will_message){
     if(mud->connect_info.will_topic){
-      c_free(mud->connect_info.will_topic);
+      free(mud->connect_info.will_topic);
       mud->connect_info.will_topic = NULL;
     }
     if(mud->connect_info.will_message){
-      c_free(mud->connect_info.will_message);
+      free(mud->connect_info.will_message);
       mud->connect_info.will_message = NULL;
     }
     return luaL_error( L, "not enough memory");
   }
-  c_memcpy(mud->connect_info.will_topic, lwtTopic, topicSize);
+  memcpy(mud->connect_info.will_topic, lwtTopic, topicSize);
   mud->connect_info.will_topic[topicSize] = 0;
-  c_memcpy(mud->connect_info.will_message, lwtMsg, msgSize);
+  memcpy(mud->connect_info.will_message, lwtMsg, msgSize);
   mud->connect_info.will_message[msgSize] = 0;
 
   if ( lua_isnumber(L, stack) )

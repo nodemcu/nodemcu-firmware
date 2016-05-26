@@ -5,12 +5,12 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "c_types.h"
 #include "user_interface.h"
 #include "user_config.h"
-#include "c_stdio.h"
+#include <stdio.h>
 #include "task/task.h"
 
 void wifi_add_sprintf_field(lua_State* L, char* name, char* string, ...);
@@ -36,9 +36,9 @@ static inline void unregister_lua_cb(lua_State* L, int* cb_ref)
 }
 
 #ifdef NODE_DEBUG
-#define EVENT_DBG(...) c_printf(__VA_ARGS__)
+#define EVENT_DBG(...) printf(__VA_ARGS__)
 #else
-#define EVENT_DBG(...) //c_printf(__VA_ARGS__)
+#define EVENT_DBG(...) //printf(__VA_ARGS__)
 #endif
 
 #ifdef WIFI_SDK_EVENT_MONITOR_ENABLE

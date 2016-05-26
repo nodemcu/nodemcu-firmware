@@ -10,12 +10,13 @@
 *******************************************************************************/
 #include "lua.h"
 #include "platform.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "flash_fs.h"
 #include "flash_api.h"
 #include "user_interface.h"
 #include "user_modules.h"
+#include "rom.h"
 
 #include "ets_sys.h"
 #include "driver/uart.h"
@@ -29,9 +30,9 @@
 
 #define SIG_LUA 0
 #define SIG_UARTINPUT 1
-#define TASK_QUEUE_LEN 4
 
-static os_event_t *taskQueue;
+extern void call_user_start (void);
+
 
 /* Note: the trampoline *must* be explicitly put into the .text segment, since
  * by the time it is invoked the irom has not yet been mapped. This naturally

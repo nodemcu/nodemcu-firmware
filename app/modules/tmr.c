@@ -53,6 +53,7 @@ tmr.softwd(int)
 #include "platform.h"
 #include "c_types.h"
 #include "user_interface.h"
+#include "rom.h"
 
 #define TIMER_MODE_OFF 3
 #define TIMER_MODE_SINGLE 0

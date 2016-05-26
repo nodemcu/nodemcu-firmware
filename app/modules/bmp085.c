@@ -1,8 +1,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "esp_misc.h"
 
 static const uint32_t bmp085_i2c_id = 0;

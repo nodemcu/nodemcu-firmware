@@ -13,15 +13,15 @@ typedef size_t ( *read_fn )(int fd, void *ptr, size_t len);
  *
  * Typical usage (if not using the crypto_xxxx() functions below):
  *   digest_mech_info_t *mi = crypto_digest_mech (chosen_algorithm);
- *   void *ctx = os_malloc (mi->ctx_size);
+ *   void *ctx = malloc (mi->ctx_size);
  *   mi->create (ctx);
  *   mi->update (ctx, data, len);
  *   ...
- *   uint8_t *digest = os_malloc (mi->digest_size);
+ *   uint8_t *digest = malloc (mi->digest_size);
  *   mi->finalize (digest, ctx);
  *   ...
- *   os_free (ctx);
- *   os_free (digest);
+ *   free (ctx);
+ *   free (digest);
  */
 typedef struct
 {

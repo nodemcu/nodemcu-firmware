@@ -6,69 +6,29 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#define ICACHE_RODATA_ATTR
-#define TRUE  1
-#define FALSE 0
+#define true  1
+#define false 0
 
 #else
 
-#include "c_stdlib.h"
-#include "c_types.h"
-#include "c_string.h"
+#include <ctype.h>
+#include <string.h>
+#include <stdbool.h>
 
-// const char *lua_init_value = "print(\"Hello world\")";
 const char *lua_init_value = "@init.lua";
 
-// int c_abs(int x){
-//  return x>0?x:0-x;
-// }
-// void c_exit(int e){
-// }
 const char *c_getenv(const char *__string)
 {
-    if (c_strcmp(__string, "LUA_INIT") == 0)
+    if (strcmp(__string, "LUA_INIT") == 0)
     {
         return lua_init_value;
     }
     return NULL;
 }
-// make sure there is enough memory before real malloc, otherwise malloc will panic and reset
-// void *c_malloc(size_t __size){
-//  if(__size>system_get_free_heap_size()){
-//      NODE_ERR("malloc: not enough memory\n");
-//      return NULL;
-//  }
-//  return (void *)os_malloc(__size);
-// }
 
-// void *c_zalloc(size_t __size){
-//  if(__size>system_get_free_heap_size()){
-//      NODE_ERR("zalloc: not enough memory\n");
-//      return NULL;
-//  }
-//  return (void *)os_zalloc(__size);
-// }
-
-// void c_free(void *p){
-//  // NODE_ERR("free1: %d\n", system_get_free_heap_size());
-//  os_free(p);
-//  // NODE_ERR("-free1: %d\n", system_get_free_heap_size());
-// }c_stdlib.s
-
-
-
-// int  c_rand(void){
-// }
-// void c_srand(unsigned int __seed){
-// }
-
-// int  c_atoi(const char *__nptr){
-// }
-#include <_ansi.h>
-//#include <reent.h>
-//#include "mprec.h"
 #endif
-double powersOf10[] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =   /* Table giving binary powers of 10.  Entry */
+
+const double powersOf10[] =   /* Table giving binary powers of 10.  Entry */
 {
     10.,            /* is 10^2^i.  Used to convert decimal */
     100.,           /* exponents into floating-point numbers. */
@@ -89,8 +49,9 @@ double c_strtod(const char *string, char **endPtr)
                  * no need to worry about additional digits.
                  */
 
-    int sign, expSign = FALSE;
-    double fraction, dblExp, *d;
+    int sign, expSign = false;
+    double fraction, dblExp;
+    const double *d;
     register const char *p;
     register int c;
     int exp = 0;        /* Exponent read from "EX" field. */
@@ -120,7 +81,7 @@ double c_strtod(const char *string, char **endPtr)
     }
     if (*p == '-')
     {
-        sign = TRUE;
+        sign = true;
         p += 1;
     }
     else
@@ -129,7 +90,7 @@ double c_strtod(const char *string, char **endPtr)
         {
             p += 1;
         }
-        sign = FALSE;
+        sign = false;
     }
 
     /*
@@ -224,7 +185,7 @@ double c_strtod(const char *string, char **endPtr)
         p += 1;
         if (*p == '-')
         {
-            expSign = TRUE;
+            expSign = true;
             p += 1;
         }
         else
@@ -233,7 +194,7 @@ double c_strtod(const char *string, char **endPtr)
             {
                 p += 1;
             }
-            expSign = FALSE;
+            expSign = false;
         }
         if (!isdigit((unsigned char)(*p)))
         {
@@ -264,12 +225,12 @@ double c_strtod(const char *string, char **endPtr)
 
     if (exp < 0)
     {
-        expSign = TRUE;
+        expSign = true;
         exp = -exp;
     }
     else
     {
-        expSign = FALSE;
+        expSign = false;
     }
     if (exp > maxExponent)
     {
@@ -305,10 +266,3 @@ done:
     }
     return fraction;
 }
-
-// long c_strtol(const char *__n, char **__end_PTR, int __base){
-// }
-// unsigned long c_strtoul(const char *__n, char **__end_PTR, int __base){
-// }
-// long long c_strtoll(const char *__n, char **__end_PTR, int __base){
-// }

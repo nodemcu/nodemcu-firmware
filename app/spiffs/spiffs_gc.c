@@ -246,7 +246,7 @@ s32_t spiffs_gc_find_candidate(
   // using fs->work area as sorted candidate memory, (spiffs_block_ix)cand_bix/(s32_t)score
   int max_candidates = MIN(fs->block_count, (SPIFFS_CFG_LOG_PAGE_SZ(fs)-8)/(sizeof(spiffs_block_ix) + sizeof(s32_t)));
   *candidate_count = 0;
-  c_memset(fs->work, 0xff, SPIFFS_CFG_LOG_PAGE_SZ(fs));
+  memset(fs->work, 0xff, SPIFFS_CFG_LOG_PAGE_SZ(fs));
 
   // divide up work area into block indices and scores
   // todo alignment?
@@ -385,7 +385,7 @@ s32_t spiffs_gc_clean(spiffs *fs, spiffs_block_ix bix) {
 
   SPIFFS_GC_DBG("gc_clean: cleaning block %i\n", bix);
 
-  c_memset(&gc, 0, sizeof(spiffs_gc));
+  memset(&gc, 0, sizeof(spiffs_gc));
   gc.state = FIND_OBJ_DATA;
 
   if (fs->free_cursor_block_ix == bix) {

@@ -56,12 +56,12 @@ s32_t SPIFFS_mount(spiffs *fs, spiffs_config *config, u8_t *work,
     void *cache, u32_t cache_size,
     spiffs_check_callback check_cb_f) {
   SPIFFS_LOCK(fs);
-  c_memset(fs, 0, sizeof(spiffs));
-  c_memcpy(&fs->cfg, config, sizeof(spiffs_config));
+  memset(fs, 0, sizeof(spiffs));
+  memcpy(&fs->cfg, config, sizeof(spiffs_config));
   fs->block_count = SPIFFS_CFG_PHYS_SZ(fs) / SPIFFS_CFG_LOG_BLOCK_SZ(fs);
   fs->work = &work[0];
   fs->lu_work = &work[SPIFFS_CFG_LOG_PAGE_SZ(fs)];
-  c_memset(fd_space, 0, fd_space_size);
+  memset(fd_space, 0, fd_space_size);
   // align fd_space pointer to pointer size byte boundary, below is safe
   u8_t ptr_size = sizeof(void*);
 #pragma GCC diagnostic push
@@ -407,7 +407,7 @@ s32_t SPIFFS_write(spiffs *fs, spiffs_file fh, void *buf, s32_t len) {
             offset, offset_in_cpage, len);
         spiffs_cache *cache = spiffs_get_cache(fs);
         u8_t *cpage_data = spiffs_get_cache_page(fs, cache, fd->cache_page->ix);
-        c_memcpy(&cpage_data[offset_in_cpage], buf, len);
+        memcpy(&cpage_data[offset_in_cpage], buf, len);
         fd->cache_page->size = MAX(fd->cache_page->size, offset_in_cpage + len);
         fd->fdoffset += len;
         SPIFFS_UNLOCK(fs);

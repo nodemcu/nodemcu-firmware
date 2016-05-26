@@ -6,7 +6,7 @@
 
 
 #include "module.h"
-#include "c_limits.h"
+#include <limits.h>
 
 #include "lauxlib.h"
 

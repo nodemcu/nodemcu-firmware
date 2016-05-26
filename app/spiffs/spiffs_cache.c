@@ -161,7 +161,7 @@ s32_t spiffs_phys_rd(
     }
   }
   u8_t *mem =  spiffs_get_cache_page(fs, cache, cp->ix);
-  c_memcpy(dst, &mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], len);
+  memcpy(dst, &mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], len);
   return res;
 }
 
@@ -190,7 +190,7 @@ s32_t spiffs_phys_wr(
     }
 
     u8_t *mem =  spiffs_get_cache_page(fs, cache, cp->ix);
-    c_memcpy(&mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], src, len);
+    memcpy(&mem[SPIFFS_PADDR_TO_PAGE_OFFSET(fs, addr)], src, len);
 
     cache->last_access++;
     cp->last_access = cache->last_access;
@@ -282,17 +282,17 @@ void spiffs_cache_init(spiffs *fs) {
   }
 
   spiffs_cache cache;
-  c_memset(&cache, 0, sizeof(spiffs_cache));
+  memset(&cache, 0, sizeof(spiffs_cache));
   cache.cpage_count = cache_entries;
   cache.cpages = (u8_t *)((u8_t *)fs->cache + sizeof(spiffs_cache));
 
   cache.cpage_use_map = 0xffffffff;
   cache.cpage_use_mask = cache_mask;
-  c_memcpy(fs->cache, &cache, sizeof(spiffs_cache));
+  memcpy(fs->cache, &cache, sizeof(spiffs_cache));
 
   spiffs_cache *c = spiffs_get_cache(fs);
 
-  c_memset(c->cpages, 0, c->cpage_count * SPIFFS_CACHE_PAGE_SIZE(fs));
+  memset(c->cpages, 0, c->cpage_count * SPIFFS_CACHE_PAGE_SIZE(fs));
 
   c->cpage_use_map &= ~(c->cpage_use_mask);
   for (i = 0; i < cache.cpage_count; i++) {

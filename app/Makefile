@@ -26,7 +26,6 @@ SUBDIRS= 					\
 	driver 					\
 	json 					\
 	platform 				\
-	libc 					\
 	lua 					\
 	coap 					\
 	mqtt 					\
@@ -72,7 +71,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	json/libjson.a 				\
 	platform/libplatform.a 			\
 	task/libtask.a 				\
-	libc/liblibc.a 				\
 	lua/liblua.a 				\
 	coap/coap.a 				\
 	mqtt/mqtt.a 				\

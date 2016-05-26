@@ -38,9 +38,9 @@
 
 // #include <assert.h>
 #include "module.h"
-#include "c_string.h"
-#include "c_math.h"
-#include "c_limits.h"
+#include <string.h>
+#include <math.h>
+#include <limits.h>
 #include "lauxlib.h"
 #include "flash_api.h"
 #include "ctype.h"
@@ -340,7 +340,7 @@ static int json_integer_option(lua_State *l, int optindex, int *setting,
 
     if (!lua_isnil(l, optindex)) {
         value = luaL_checkinteger(l, optindex);
-        c_sprintf(errmsg, "expected integer between %d and %d", min, max);
+        sprintf(errmsg, "expected integer between %d and %d", min, max);
         luaL_argcheck(l, min <= value && value <= max, 1, errmsg);
         *setting = value;
     }
@@ -774,8 +774,8 @@ static void json_append_number(lua_State *l, json_config_t *cfg,
 
     strbuf_ensure_empty_length(json, FPCONV_G_FMT_BUFSIZE);
     // len = fpconv_g_fmt(strbuf_empty_ptr(json), num, cfg->encode_number_precision);
-    c_sprintf(strbuf_empty_ptr(json), LUA_NUMBER_FMT, (LUA_NUMBER)num);
-    len = c_strlen(strbuf_empty_ptr(json));
+    sprintf(strbuf_empty_ptr(json), LUA_NUMBER_FMT, (LUA_NUMBER)num);
+    len = strlen(strbuf_empty_ptr(json));
 
     strbuf_extend_length(json, len);
 }
@@ -1148,7 +1148,7 @@ static int json_is_invalid_number(json_parse_t *json)
         return 0;                           /* Ordinary number */
     }
 
-    char tmp[4];    // conv to lower. because c_strncasecmp == c_strcmp
+    char tmp[4];    // conv to lower. because strncasecmp == strcmp
     int i;
     for (i = 0; i < 3; ++i)
     {
@@ -1160,9 +1160,9 @@ static int json_is_invalid_number(json_parse_t *json)
     tmp[3] = 0;
 
     /* Reject inf/nan */
-    if (!c_strncasecmp(tmp, "inf", 3))
+    if (!strncasecmp(tmp, "inf", 3))
         return 1;
-    if (!c_strncasecmp(tmp, "nan", 3))
+    if (!strncasecmp(tmp, "nan", 3))
         return 1;
 
     /* Pass all other numbers which may still be invalid, but
@@ -1238,17 +1238,17 @@ static void json_next_token(json_parse_t *json, json_token_t *token)
         }
         json_next_number_token(json, token);
         return;
-    } else if (!c_strncmp(json->ptr, "true", 4)) {
+    } else if (!strncmp(json->ptr, "true", 4)) {
         token->type = T_BOOLEAN;
         token->value.boolean = 1;
         json->ptr += 4;
         return;
-    } else if (!c_strncmp(json->ptr, "false", 5)) {
+    } else if (!strncmp(json->ptr, "false", 5)) {
         token->type = T_BOOLEAN;
         token->value.boolean = 0;
         json->ptr += 5;
         return;
-    } else if (!c_strncmp(json->ptr, "null", 4)) {
+    } else if (!strncmp(json->ptr, "null", 4)) {
         token->type = T_NULL;
         json->ptr += 4;
         return;

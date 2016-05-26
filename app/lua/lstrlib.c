@@ -353,7 +353,7 @@ static const char *match_capture (MatchState *ms, const char *s, int l) {
   l = check_capture(ms, l);
   len = ms->capture[l].len;
   if ((size_t)(ms->src_end-s) >= len &&
-      c_memcmp(ms->capture[l].init, s, len) == 0)
+      memcmp(ms->capture[l].init, s, len) == 0)
     return s+len;
   else return NULL;
 }
@@ -448,7 +448,7 @@ static const char *lmemfind (const char *s1, size_t l1,
     l1 = l1-l2;  /* `s2' cannot be found after that */
     while (l1 > 0 && (init = (const char *)memchr(s1, *s2, l1)) != NULL) {
       init++;   /* 1st char is already checked */
-      if (c_memcmp(init, s2+1, l2) == 0)
+      if (memcmp(init, s2+1, l2) == 0)
         return init-1;
       else {  /* correct `l1' and `s1' to try again */
         l1 -= init-s1;
@@ -497,7 +497,7 @@ static int str_find_aux (lua_State *L, int find) {
   if (init < 0) init = 0;
   else if ((size_t)(init) > l1) init = (ptrdiff_t)l1;
   if (find && (lua_toboolean(L, 4) ||  /* explicit request? */
-      c_strpbrk(p, SPECIALS) == NULL)) {  /* or no special characters? */
+      strpbrk(p, SPECIALS) == NULL)) {  /* or no special characters? */
     /* do a plain search */
     const char *s2 = lmemfind(s+init, l1-init, p, l2);
     if (s2) {
@@ -724,7 +724,7 @@ static void addquoted (lua_State *L, luaL_Buffer *b, int arg) {
 
 static const char *scanformat (lua_State *L, const char *strfrmt, char *form) {
   const char *p = strfrmt;
-  while (*p != '\0' && c_strchr(FLAGS, *p) != NULL) p++;  /* skip flags */
+  while (*p != '\0' && strchr(FLAGS, *p) != NULL) p++;  /* skip flags */
   if ((size_t)(p - strfrmt) >= sizeof(FLAGS))
     luaL_error(L, "invalid format (repeated flags)");
   if (isdigit(uchar(*p))) p++;  /* skip width */
@@ -737,7 +737,7 @@ static const char *scanformat (lua_State *L, const char *strfrmt, char *form) {
   if (isdigit(uchar(*p)))
     luaL_error(L, "invalid format (width or precision too long)");
   *(form++) = '%';
-  c_strncpy(form, strfrmt, p - strfrmt + 1);
+  strncpy(form, strfrmt, p - strfrmt + 1);
   form += p - strfrmt + 1;
   *form = '\0';
   return p;
@@ -745,9 +745,9 @@ static const char *scanformat (lua_State *L, const char *strfrmt, char *form) {
 
 
 static void addintlen (char *form) {
-  size_t l = c_strlen(form);
+  size_t l = strlen(form);
   char spec = form[l - 1];
-  c_strcpy(form + l - 1, LUA_INTFRMLEN);
+  strcpy(form + l - 1, LUA_INTFRMLEN);
   form[l + sizeof(LUA_INTFRMLEN) - 2] = spec;
   form[l + sizeof(LUA_INTFRMLEN) - 1] = '\0';
 }
@@ -774,23 +774,23 @@ static int str_format (lua_State *L) {
       strfrmt = scanformat(L, strfrmt, form);
       switch (*strfrmt++) {
         case 'c': {
-          c_sprintf(buff, form, (int)luaL_checknumber(L, arg));
+          sprintf(buff, form, (int)luaL_checknumber(L, arg));
           break;
         }
         case 'd':  case 'i': {
           addintlen(form);
-          c_sprintf(buff, form, (LUA_INTFRM_T)luaL_checknumber(L, arg));
+          sprintf(buff, form, (LUA_INTFRM_T)luaL_checknumber(L, arg));
           break;
         }
         case 'o':  case 'u':  case 'x':  case 'X': {
           addintlen(form);
-          c_sprintf(buff, form, (unsigned LUA_INTFRM_T)luaL_checknumber(L, arg));
+          sprintf(buff, form, (unsigned LUA_INTFRM_T)luaL_checknumber(L, arg));
           break;
         }
 #if !defined LUA_NUMBER_INTEGRAL        
         case 'e':  case 'E': case 'f':
         case 'g': case 'G': {
-          c_sprintf(buff, form, (double)luaL_checknumber(L, arg));
+          sprintf(buff, form, (double)luaL_checknumber(L, arg));
           break;
         }
 #endif
@@ -801,7 +801,7 @@ static int str_format (lua_State *L) {
         case 's': {
           size_t l;
           const char *s = luaL_checklstring(L, arg, &l);
-          if (!c_strchr(form, '.') && l >= 100) {
+          if (!strchr(form, '.') && l >= 100) {
             /* no precision and string is too long to be formatted;
                keep original string */
             lua_pushvalue(L, arg);
@@ -809,7 +809,7 @@ static int str_format (lua_State *L) {
             continue;  /* skip the `addsize' at the end */
           }
           else {
-            c_sprintf(buff, form, s);
+            sprintf(buff, form, s);
             break;
           }
         }
@@ -818,7 +818,7 @@ static int str_format (lua_State *L) {
                                LUA_QL("format"), *(strfrmt - 1));
         }
       }
-      luaL_addlstring(&b, buff, c_strlen(buff));
+      luaL_addlstring(&b, buff, strlen(buff));
     }
   }
   luaL_pushresult(&b);

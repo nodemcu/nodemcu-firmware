@@ -9,12 +9,9 @@
 #define SPIFFS_CONFIG_H_
 
 #include "user_config.h"
-#include "c_stdio.h"
-#include "c_stdint.h"
-#include "c_string.h"
-
-// For u32_t etc
-#include "user_interface.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 
 // compile time switches
 
@@ -167,7 +164,7 @@
 #endif
 #if SPIFFS_TEST_VISUALISATION
 #ifndef spiffs_printf
-#define spiffs_printf(...)                c_printf(__VA_ARGS__)
+#define spiffs_printf(...)                printf(__VA_ARGS__)
 #endif
 // spiffs_printf argument for a free page
 #ifndef SPIFFS_TEST_VIS_FREE_STR

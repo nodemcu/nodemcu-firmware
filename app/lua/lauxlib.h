@@ -11,11 +11,7 @@
 
 #include "lua.h"
 
-#ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
-#else
-#include "c_stdio.h"
-#endif
 
 
 #if defined(LUA_COMPAT_GETN)

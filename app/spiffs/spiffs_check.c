@@ -501,7 +501,7 @@ static s32_t spiffs_page_consistency_check_i(spiffs *fs) {
   while (pix_offset < SPIFFS_PAGES_PER_BLOCK(fs) * fs->block_count) {
     // set this flag to abort all checks and rescan the page range
     u8_t restart = 0;
-    c_memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
+    memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
 
     spiffs_block_ix cur_block = 0;
     // build consistency bitmap for id range traversing all blocks
@@ -956,7 +956,7 @@ s32_t spiffs_object_index_consistency_check(spiffs *fs) {
   // indicating whether they can be reached or not. Acting as a fifo if object ids cannot fit.
   // In the temporary object index memory, SPIFFS_OBJ_ID_IX_FLAG bit is used to indicate
   // a reachable/unreachable object id.
-  c_memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
+  memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
   u32_t obj_id_log_ix = 0;
   if (fs->check_cb_f) fs->check_cb_f(SPIFFS_CHECK_INDEX, SPIFFS_CHECK_PROGRESS, 0, 0);
   res = spiffs_obj_lu_find_entry_visitor(fs, 0, 0, 0, 0, spiffs_object_index_consistency_check_v, 0, &obj_id_log_ix,

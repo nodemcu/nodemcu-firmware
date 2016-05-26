@@ -5,8 +5,8 @@
 #include "platform.h"
 #include "lmem.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 #include "c_types.h"
 #include "mem.h"
@@ -70,7 +70,7 @@ static void net_server_disconnected(void *arg)    // for tcp server only
     return;
 #if 0
   char temp[20] = {0};
-  c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
+  sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
   NODE_DBG("remote ");
   NODE_DBG(temp);
   NODE_DBG(":");
@@ -117,10 +117,10 @@ static void net_socket_disconnected(void *arg)    // tcp only
   }
 
   if(pesp_conn->proto.tcp)
-    c_free(pesp_conn->proto.tcp);
+    free(pesp_conn->proto.tcp);
   pesp_conn->proto.tcp = NULL;
   if(nud->pesp_conn)
-    c_free(nud->pesp_conn);
+    free(nud->pesp_conn);
   nud->pesp_conn = NULL;  // espconn is already disconnected
   lua_gc(gL, LUA_GCSTOP, 0);
   if(nud->self_ref != LUA_NOREF){
@@ -214,10 +214,10 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   }
   // ipaddr->addr is a uint32_t ip
   char ip_str[20];
-  c_memset(ip_str, 0, sizeof(ip_str));
+  memset(ip_str, 0, sizeof(ip_str));
   if(ipaddr->addr != 0)
   {
-    c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
+    sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
   }
 
   lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);    // the callback function
@@ -237,10 +237,10 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   }else{
     // ipaddr->addr is a uint32_t ip
     char ip_str[20];
-    c_memset(ip_str, 0, sizeof(ip_str));
+    memset(ip_str, 0, sizeof(ip_str));
     if(ipaddr->addr != 0)
     {
-      c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
+      sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
     }
     lua_pushstring(gL, ip_str);   // the ip para
   }
@@ -271,7 +271,7 @@ static void net_server_connected(void *arg) // for tcp only
 
 #if 0
   char temp[20] = {0};
-  c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
+  sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
   NODE_DBG("remote ");
   NODE_DBG(temp);
   NODE_DBG(":");
@@ -377,9 +377,9 @@ static int net_create( lua_State* L, const char* mt )
   uint8_t stack = 1;
   bool isserver = false;
   
-  if (mt!=NULL && c_strcmp(mt, "net.server")==0)
+  if (mt!=NULL && strcmp(mt, "net.server")==0)
     isserver = true;
-  else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
+  else if (mt!=NULL && strcmp(mt, "net.socket")==0)
     isserver = false;
   else
   {
@@ -454,7 +454,7 @@ static int net_create( lua_State* L, const char* mt )
     }
     pesp_conn = nud->pesp_conn = pUdpServer;
   } else {
-    pesp_conn = nud->pesp_conn = (struct espconn *)c_zalloc(sizeof(struct espconn));
+    pesp_conn = nud->pesp_conn = (struct espconn *)zalloc(sizeof(struct espconn));
     if(!pesp_conn)
       return luaL_error(L, "not enough memory");
 
@@ -463,9 +463,9 @@ static int net_create( lua_State* L, const char* mt )
     pesp_conn->reverse = NULL;
     if( type==ESPCONN_TCP )
     {
-      pesp_conn->proto.tcp = (esp_tcp *)c_zalloc(sizeof(esp_tcp));
+      pesp_conn->proto.tcp = (esp_tcp *)zalloc(sizeof(esp_tcp));
       if(!pesp_conn->proto.tcp){
-        c_free(pesp_conn);
+        free(pesp_conn);
         pesp_conn = nud->pesp_conn = NULL;
         return luaL_error(L, "not enough memory");
       }
@@ -473,9 +473,9 @@ static int net_create( lua_State* L, const char* mt )
     }
     else if( type==ESPCONN_UDP )
     {
-      pesp_conn->proto.udp = (esp_udp *)c_zalloc(sizeof(esp_udp));
+      pesp_conn->proto.udp = (esp_udp *)zalloc(sizeof(esp_udp));
       if(!pesp_conn->proto.udp){
-        c_free(pesp_conn);
+        free(pesp_conn);
         pesp_conn = nud->pesp_conn = NULL;
         return luaL_error(L, "not enough memory");
       }
@@ -515,9 +515,9 @@ static int net_delete( lua_State* L, const char* mt )
 {
   NODE_DBG("net_delete is called.\n");
   bool isserver = false;
-  if (mt!=NULL && c_strcmp(mt, "net.server")==0)
+  if (mt!=NULL && strcmp(mt, "net.server")==0)
     isserver = true;
-  else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
+  else if (mt!=NULL && strcmp(mt, "net.socket")==0)
     isserver = false;
   else
   {
@@ -539,14 +539,14 @@ static int net_delete( lua_State* L, const char* mt )
     {
       if(nud->pesp_conn->type == ESPCONN_UDP){
   	    if(nud->pesp_conn->proto.udp)
-  	      c_free(nud->pesp_conn->proto.udp);
+  	      free(nud->pesp_conn->proto.udp);
   	    nud->pesp_conn->proto.udp = NULL;
   	  } else if (nud->pesp_conn->type == ESPCONN_TCP) {
   	    if(nud->pesp_conn->proto.tcp)
-  	      c_free(nud->pesp_conn->proto.tcp);
+  	      free(nud->pesp_conn->proto.tcp);
   	    nud->pesp_conn->proto.tcp = NULL;
   	  }
-      c_free(nud->pesp_conn);
+      free(nud->pesp_conn);
     }
     nud->pesp_conn = NULL;    // for socket, it will free this when disconnected
   }
@@ -653,14 +653,14 @@ static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     dns_reconn_count = 0;
     if( pesp_conn->type == ESPCONN_TCP )
     {
-      c_memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
+      memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
       NODE_DBG("TCP ip is set: ");
       NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
       NODE_DBG("\n");
     }
     else if (pesp_conn->type == ESPCONN_UDP)
     {
-      c_memcpy(pesp_conn->proto.udp->remote_ip, &(ipaddr->addr), 4);
+      memcpy(pesp_conn->proto.udp->remote_ip, &(ipaddr->addr), 4);
       NODE_DBG("UDP ip is set: ");
       NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
       NODE_DBG("\n");
@@ -683,9 +683,9 @@ static int net_start( lua_State* L, const char* mt )
   const char *domain;
   uint8_t stack = 1;
   
-  if (mt!=NULL && c_strcmp(mt, "net.server")==0)
+  if (mt!=NULL && strcmp(mt, "net.server")==0)
     isserver = true;
-  else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
+  else if (mt!=NULL && strcmp(mt, "net.socket")==0)
     isserver = false;
   else
   {
@@ -744,9 +744,9 @@ static int net_start( lua_State* L, const char* mt )
     if( pesp_conn->type == ESPCONN_TCP )
     {
       if(isserver)
-        c_memcpy(pesp_conn->proto.tcp->local_ip, &ipaddr.addr, 4);
+        memcpy(pesp_conn->proto.tcp->local_ip, &ipaddr.addr, 4);
       else
-        c_memcpy(pesp_conn->proto.tcp->remote_ip, &ipaddr.addr, 4);
+        memcpy(pesp_conn->proto.tcp->remote_ip, &ipaddr.addr, 4);
       NODE_DBG("TCP ip is set: ");
       NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
       NODE_DBG("\n");
@@ -754,9 +754,9 @@ static int net_start( lua_State* L, const char* mt )
     else if (pesp_conn->type == ESPCONN_UDP)
     {
       if(isserver)
-        c_memcpy(pesp_conn->proto.udp->local_ip, &ipaddr.addr, 4);
+        memcpy(pesp_conn->proto.udp->local_ip, &ipaddr.addr, 4);
       else
-        c_memcpy(pesp_conn->proto.udp->remote_ip, &ipaddr.addr, 4);
+        memcpy(pesp_conn->proto.udp->remote_ip, &ipaddr.addr, 4);
       NODE_DBG("UDP ip is set: ");
       NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
       NODE_DBG("\n");
@@ -831,7 +831,7 @@ static int net_start( lua_State* L, const char* mt )
   }
 
   if(!isserver){
-    if((ipaddr.addr == IPADDR_NONE) && (c_memcmp(domain,"255.255.255.255",16) != 0))
+    if((ipaddr.addr == IPADDR_NONE) && (memcmp(domain,"255.255.255.255",16) != 0))
     {
       host_ip.addr = 0;
       dns_reconn_count = 0;
@@ -865,9 +865,9 @@ static int net_close( lua_State* L, const char* mt )
   if(nud->pesp_conn == NULL)
     return 0;
 
-  if (mt!=NULL && c_strcmp(mt, "net.server")==0)
+  if (mt!=NULL && strcmp(mt, "net.server")==0)
     isserver = true;
-  else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
+  else if (mt!=NULL && strcmp(mt, "net.socket")==0)
     isserver = false;
   else
   {
@@ -973,9 +973,9 @@ static int net_on( lua_State* L, const char* mt )
   	return 0;
   }
 
-  if (mt!=NULL && c_strcmp(mt, "net.server")==0)
+  if (mt!=NULL && strcmp(mt, "net.server")==0)
     isserver = true;
-  else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
+  else if (mt!=NULL && strcmp(mt, "net.socket")==0)
     isserver = false;
   else
   {
@@ -990,27 +990,27 @@ static int net_on( lua_State* L, const char* mt )
   luaL_checkanyfunction(L, 3);
   lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 
-  if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 10 && c_strcmp(method, "connection") == 0){
+  if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 10 && strcmp(method, "connection") == 0){
     if(nud->cb_connect_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_connect_ref);
     nud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 12 && c_strcmp(method, "reconnection") == 0){
+  }else if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 12 && strcmp(method, "reconnection") == 0){
     if(nud->cb_reconnect_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_reconnect_ref);
     nud->cb_reconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 13 && c_strcmp(method, "disconnection") == 0){
+  }else if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 13 && strcmp(method, "disconnection") == 0){
     if(nud->cb_disconnect_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_disconnect_ref);
     nud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if((!isserver || nud->pesp_conn->type == ESPCONN_UDP) && sl == 7 && c_strcmp(method, "receive") == 0){
+  }else if((!isserver || nud->pesp_conn->type == ESPCONN_UDP) && sl == 7 && strcmp(method, "receive") == 0){
     if(nud->cb_receive_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_receive_ref);
     nud->cb_receive_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if((!isserver || nud->pesp_conn->type == ESPCONN_UDP) && sl == 4 && c_strcmp(method, "sent") == 0){
+  }else if((!isserver || nud->pesp_conn->type == ESPCONN_UDP) && sl == 4 && strcmp(method, "sent") == 0){
     if(nud->cb_send_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_send_ref);
     nud->cb_send_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 3 && c_strcmp(method, "dns") == 0){
+  }else if(!isserver && nud->pesp_conn->type == ESPCONN_TCP && sl == 3 && strcmp(method, "dns") == 0){
     if(nud->cb_dns_found_ref != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);
     nud->cb_dns_found_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -1044,9 +1044,9 @@ static int net_send( lua_State* L, const char* mt )
   }
   pesp_conn = nud->pesp_conn;
 
-  if (mt!=NULL && c_strcmp(mt, "net.server")==0)
+  if (mt!=NULL && strcmp(mt, "net.server")==0)
     isserver = true;
-  else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
+  else if (mt!=NULL && strcmp(mt, "net.socket")==0)
     isserver = false;
   else
   {
@@ -1060,7 +1060,7 @@ static int net_send( lua_State* L, const char* mt )
 
 #if 0
   char temp[20] = {0};
-  c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
+  sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
   NODE_DBG("remote ");
   NODE_DBG(temp);
   NODE_DBG(":");
@@ -1085,8 +1085,8 @@ static int net_send( lua_State* L, const char* mt )
     if (espconn_get_connection_info (pesp_conn, &pr, 0) != ESPCONN_OK)
       return luaL_error (L, "remote ip/port unavailable");
     pesp_conn->proto.udp->remote_port = pr->remote_port;
-    os_memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
-    // The remot_info apparently should *not* be os_free()d, fyi
+    memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
+    // The remot_info apparently should *not* be free()d, fyi
   }
 #ifdef CLIENT_SSL_ENABLE
   if(nud->secure)
@@ -1114,9 +1114,9 @@ static int net_dns( lua_State* L, const char* mt )
     return 0;
   }
 
-  if (mt!=NULL && c_strcmp(mt, "net.server")==0)
+  if (mt!=NULL && strcmp(mt, "net.server")==0)
     isserver = true;
-  else if (mt!=NULL && c_strcmp(mt, "net.socket")==0)
+  else if (mt!=NULL && strcmp(mt, "net.socket")==0)
     isserver = false;
   else
   {
@@ -1365,7 +1365,7 @@ static int net_socket_getpeer( lua_State* L )
 
   if(nud!=NULL && nud->pesp_conn!=NULL ){
       char temp[20] = {0};
-      c_sprintf(temp, IPSTR, IP2STR( &(nud->pesp_conn->proto.tcp->remote_ip) ) );
+      sprintf(temp, IPSTR, IP2STR( &(nud->pesp_conn->proto.tcp->remote_ip) ) );
       if ( nud->pesp_conn->proto.tcp->remote_port != 0 ) {
         lua_pushstring( L, temp );
         lua_pushinteger( L, nud->pesp_conn->proto.tcp->remote_port );
@@ -1532,7 +1532,7 @@ static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_m
   memset(buffer, 0xff, buffer_limit - buffer);
 
   // Lets see if it matches what is already there....
-  if (c_memcmp(buffer_base, flash_memory, INTERNAL_FLASH_SECTOR_SIZE) != 0) {
+  if (memcmp(buffer_base, flash_memory, INTERNAL_FLASH_SECTOR_SIZE) != 0) {
     // Starts being dangerous
     if (platform_flash_erase_sector(flash_offset / INTERNAL_FLASH_SECTOR_SIZE) != PLATFORM_OK) {
       luaM_free(L, buffer_base);
@@ -1672,7 +1672,7 @@ static int net_getdnsserver( lua_State* L )
     lua_pushnil( L );
   } else {
     char temp[20] = {0};
-    c_sprintf(temp, IPSTR, IP2STR( &ipaddr.addr ) );
+    sprintf(temp, IPSTR, IP2STR( &ipaddr.addr ) );
     lua_pushstring( L, temp );
   }
 

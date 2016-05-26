@@ -9,7 +9,7 @@
 #ifndef _COAP_STR_H_
 #define _COAP_STR_H_
 
-#include "c_string.h"
+#include <string.h>
 
 typedef struct {
   size_t length;		/* length of string */

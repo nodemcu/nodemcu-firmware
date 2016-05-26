@@ -121,24 +121,24 @@ static int db_getinfo (lua_State *L) {
   if (!lua_getinfo(L1, options, &ar))
     return luaL_argerror(L, arg+2, "invalid option");
   lua_createtable(L, 0, 2);
-  if (c_strchr(options, 'S')) {
+  if (strchr(options, 'S')) {
     settabss(L, "source", ar.source);
     settabss(L, "short_src", ar.short_src);
     settabsi(L, "linedefined", ar.linedefined);
     settabsi(L, "lastlinedefined", ar.lastlinedefined);
     settabss(L, "what", ar.what);
   }
-  if (c_strchr(options, 'l'))
+  if (strchr(options, 'l'))
     settabsi(L, "currentline", ar.currentline);
-  if (c_strchr(options, 'u'))
+  if (strchr(options, 'u'))
     settabsi(L, "nups", ar.nups);
-  if (c_strchr(options, 'n')) {
+  if (strchr(options, 'n')) {
     settabss(L, "name", ar.name);
     settabss(L, "namewhat", ar.namewhat);
   }
-  if (c_strchr(options, 'L'))
+  if (strchr(options, 'L'))
     treatstackoption(L, L1, "activelines");
-  if (c_strchr(options, 'f'))
+  if (strchr(options, 'f'))
     treatstackoption(L, L1, "func");
   return 1;  /* return table */
 }
@@ -227,9 +227,9 @@ static void hookf (lua_State *L, lua_Debug *ar) {
 
 static int makemask (const char *smask, int count) {
   int mask = 0;
-  if (c_strchr(smask, 'c')) mask |= LUA_MASKCALL;
-  if (c_strchr(smask, 'r')) mask |= LUA_MASKRET;
-  if (c_strchr(smask, 'l')) mask |= LUA_MASKLINE;
+  if (strchr(smask, 'c')) mask |= LUA_MASKCALL;
+  if (strchr(smask, 'r')) mask |= LUA_MASKRET;
+  if (strchr(smask, 'l')) mask |= LUA_MASKLINE;
   if (count > 0) mask |= LUA_MASKCOUNT;
   return mask;
 }
@@ -312,9 +312,9 @@ static int db_debug (lua_State *L) {
 //    luai_writestringerror("%s", "lua_debug>");
     if (lua_readline(L, buffer, "lua_debug>") == 0 ||
 #endif
-        c_strcmp(buffer, "cont\n") == 0)
+        strcmp(buffer, "cont\n") == 0)
       return 0;
-    if (luaL_loadbuffer(L, buffer, c_strlen(buffer), "=(debug command)") ||
+    if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
         lua_pcall(L, 0, 0, 0)) {
 #if defined(LUA_USE_STDIO)
       c_fputs(lua_tostring(L, -1), c_stderr);

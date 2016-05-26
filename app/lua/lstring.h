@@ -17,8 +17,8 @@
 
 #define sizeudata(u)	(sizeof(union Udata)+(u)->len)
 
-#define luaS_new(L, s)	(luaS_newlstr(L, s, c_strlen(s)))
-#define luaS_newro(L, s)  (luaS_newrolstr(L, s, c_strlen(s)))
+#define luaS_new(L, s)	(luaS_newlstr(L, s, strlen(s)))
+#define luaS_newro(L, s)  (luaS_newrolstr(L, s, strlen(s)))
 #define luaS_newliteral(L, s)  (luaS_newlstr(L, "" s, \
                                   (sizeof(s)/sizeof(char))-1))
 

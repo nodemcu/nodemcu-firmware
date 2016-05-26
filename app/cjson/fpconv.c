@@ -28,10 +28,10 @@
  * fpconv_* will around these issues with a translation buffer if required.
  */
 
-#include "c_stdio.h"
-#include "c_stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
 // #include <assert.h>
-#include "c_string.h"
+#include <string.h>
 
 #include "fpconv.h"
 
@@ -54,7 +54,7 @@ static void fpconv_update_locale()
 {
     char buf[8];
 
-    c_sprintf(buf, "%g", 0.5);
+    sprintf(buf, "%g", 0.5);
 
     /* Failing this test might imply the platform has a buggy dtoa
      * implementation or wide characters */
@@ -125,7 +125,7 @@ double fpconv_strtod(const char *nptr, char **endptr)
     /* Duplicate number into buffer */
     if (buflen >= FPCONV_G_FMT_BUFSIZE) {
         /* Handle unusually large numbers */
-        buf = c_malloc(buflen + 1);
+        buf = malloc(buflen + 1);
         if (!buf) {
             NODE_ERR("not enough memory\n");
             return;
@@ -134,18 +134,18 @@ double fpconv_strtod(const char *nptr, char **endptr)
         /* This is the common case.. */
         buf = localbuf;
     }
-    c_memcpy(buf, nptr, buflen);
+    memcpy(buf, nptr, buflen);
     buf[buflen] = 0;
 
     /* Update decimal point character if found */
-    dp = c_strchr(buf, '.');
+    dp = strchr(buf, '.');
     if (dp)
         *dp = locale_decimal_point;
 
     value = c_strtod(buf, &endbuf);
     *endptr = (char *)&nptr[endbuf - buf];
     if (buflen >= FPCONV_G_FMT_BUFSIZE)
-        c_free(buf);
+        free(buf);
 
     return value;
 }
@@ -183,13 +183,13 @@ int fpconv_g_fmt(char *str, double num, int precision)
 
     /* Pass through when decimal point character is dot. */
     if (locale_decimal_point == '.'){
-        c_sprintf(str, fmt, num);
-        return c_strlen(str);
+        sprintf(str, fmt, num);
+        return strlen(str);
     }
 
     /* snprintf() to a buffer then translate for other decimal point characters */
-    c_sprintf(buf, fmt, num);
-    len = c_strlen(buf);
+    sprintf(buf, fmt, num);
+    len = strlen(buf);
 
     /* Copy into target location. Translate decimal point if required */
     b = buf;

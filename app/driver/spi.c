@@ -650,7 +650,7 @@ void ICACHE_FLASH_ATTR
 void ICACHE_FLASH_ATTR
     spi_task_init(void)
 {
-    spiQueue = (os_event_t*)os_malloc(sizeof(os_event_t)*SPI_QUEUE_LEN);
+    spiQueue = (os_event_t*)malloc(sizeof(os_event_t)*SPI_QUEUE_LEN);
     system_os_task(spi_task,USER_TASK_PRIO_1,spiQueue,SPI_QUEUE_LEN);
 }
 

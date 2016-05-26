@@ -56,7 +56,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
   if (!lua_getstack(L, 0, &ar))  /* no stack frame? */
     return luaL_error(L, "bad argument #%d (%s)", narg, extramsg);
   lua_getinfo(L, "n", &ar);
-  if (c_strcmp(ar.namewhat, "method") == 0) {
+  if (strcmp(ar.namewhat, "method") == 0) {
     narg--;  /* do not count `self' */
     if (narg == 0)  /* error is in the self argument itself? */
       return luaL_error(L, "calling " LUA_QS " on bad self (%s)",
@@ -113,7 +113,7 @@ LUALIB_API int luaL_checkoption (lua_State *L, int narg, const char *def,
                              luaL_checkstring(L, narg);
   int i;
   for (i=0; lst[i]; i++)
-    if (c_strcmp(lst[i], name) == 0)
+    if (strcmp(lst[i], name) == 0)
       return i;
   return luaL_argerror(L, narg,
                        lua_pushfstring(L, "invalid option " LUA_QS, name));
@@ -203,7 +203,7 @@ LUALIB_API const char *luaL_optlstring (lua_State *L, int narg,
                                         const char *def, size_t *len) {
   if (lua_isnoneornil(L, narg)) {
     if (len)
-      *len = (def ? c_strlen(def) : 0);
+      *len = (def ? strlen(def) : 0);
     return def;
   }
   else return luaL_checklstring(L, narg, len);
@@ -388,10 +388,10 @@ LUALIB_API int luaL_getn (lua_State *L, int t) {
 LUALIB_API const char *luaL_gsub (lua_State *L, const char *s, const char *p,
                                                                const char *r) {
   const char *wild;
-  size_t l = c_strlen(p);
+  size_t l = strlen(p);
   luaL_Buffer b;
   luaL_buffinit(L, &b);
-  while ((wild = c_strstr(s, p)) != NULL) {
+  while ((wild = strstr(s, p)) != NULL) {
     luaL_addlstring(&b, s, wild - s);  /* push prefix */
     luaL_addstring(&b, r);  /* push replacement in place of pattern */
     s = wild + l;  /* continue after `p' */
@@ -407,8 +407,8 @@ LUALIB_API const char *luaL_findtable (lua_State *L, int idx,
   const char *e;
   lua_pushvalue(L, idx);
   do {
-    e = c_strchr(fname, '.');
-    if (e == NULL) e = fname + c_strlen(fname);
+    e = strchr(fname, '.');
+    if (e == NULL) e = fname + strlen(fname);
     lua_pushlstring(L, fname, e - fname);
     lua_rawget(L, -2);
     if (lua_isnil(L, -1)) {
@@ -496,7 +496,7 @@ LUALIB_API void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l) {
 
 
 LUALIB_API void luaL_addstring (luaL_Buffer *B, const char *s) {
-  luaL_addlstring(B, s, c_strlen(s));
+  luaL_addlstring(B, s, strlen(s));
 }
 
 
@@ -512,7 +512,7 @@ LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
   size_t vl;
   const char *s = lua_tolstring(L, -1, &vl);
   if (vl <= bufffree(B)) {  /* fit into buffer? */
-    c_memcpy(B->p, s, vl);  /* put it there */
+    memcpy(B->p, s, vl);  /* put it there */
     B->p += vl;
     lua_pop(L, 1);  /* remove from stack */
   }
@@ -754,7 +754,7 @@ LUALIB_API int luaL_loadbuffer (lua_State *L, const char *buff, size_t size,
 
 
 LUALIB_API int (luaL_loadstring) (lua_State *L, const char *s) {
-  return luaL_loadbuffer(L, s, c_strlen(s), s);
+  return luaL_loadbuffer(L, s, strlen(s), s);
 }
 
 
@@ -786,7 +786,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   void *nptr;
 
   if (nsize == 0) {
-    c_free(ptr);
+    free(ptr);
     return NULL;
   }
   if (L != NULL && (mode & EGC_ALWAYS)) /* always collect memory if requested */
@@ -798,16 +798,16 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     if(G(L)->memlimit > 0 && (mode & EGC_ON_MEM_LIMIT) && l_check_memlimit(L, nsize - osize))
       return NULL;
   }
-  nptr = (void *)c_realloc(ptr, nsize);
+  nptr = (void *)realloc(ptr, nsize);
   if (nptr == NULL && L != NULL && (mode & EGC_ON_ALLOC_FAILURE)) {
     luaC_fullgc(L); /* emergency full collection. */
-    nptr = (void *)c_realloc(ptr, nsize); /* try allocation again */
+    nptr = (void *)realloc(ptr, nsize); /* try allocation again */
   }
   return nptr;
 }
 
 LUALIB_API void luaL_assertfail(const char *file, int line, const char *message) {
-  c_printf("ASSERT@%s(%d): %s\n", file, line, message); 
+  printf("ASSERT@%s(%d): %s\n", file, line, message); 
 }
 
 static int panic (lua_State *L) {

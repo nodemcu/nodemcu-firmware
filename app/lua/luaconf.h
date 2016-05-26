@@ -8,13 +8,8 @@
 #ifndef lconfig_h
 #define lconfig_h
 
-#ifdef LUA_CROSS_COMPILER
 #include <limits.h>
 #include <stddef.h>
-#else
-#include "c_limits.h"
-#include "c_stddef.h"
-#endif
 #include "user_config.h"
 
 /*
@@ -260,7 +255,7 @@
 #ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
 else
-#include "c_stdio.h"
+#include <stdio.h>
 #endif
 
 #define lua_stdin_is_tty()	_isatty(_fileno(stdin))
@@ -312,11 +307,11 @@ else
 #define lua_saveline(L,idx) \
 	if (lua_strlen(L,idx) > 0)  /* non-empty line? */ \
 	  add_history(lua_tostring(L, idx));  /* add it to history */
-#define lua_freeline(L,b)	((void)L, c_free(b))
+#define lua_freeline(L,b)	((void)L, free(b))
 #else // #if defined(LUA_CROSS_COMPILER) && defined(LUA_USE_READLINE)
 #define lua_readline(L,b,p)	\
-	((void)L, c_fputs(p, c_stdout), c_fflush(c_stdout),  /* show prompt */ \
-	c_fgets(b, LUA_MAXINPUT, c_stdin) != NULL)  /* get line */
+	((void)L, fputs(p, stdout), fflush(stdout),  /* show prompt */ \
+	fgets(b, LUA_MAXINPUT, stdin) != NULL)  /* get line */
 #define lua_saveline(L,idx)	{ (void)L; (void)idx; }
 #define lua_freeline(L,b)	{ (void)L; (void)b; }
 #endif // #if defined(LUA_USE_READLINE)
@@ -337,8 +332,8 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** avoids including 'stdio.h' everywhere.)
 */
 #if !defined(LUA_USE_STDIO)
-#define luai_writestring(s, l)  c_puts(s)
-#define luai_writeline()        c_puts("\n")
+#define luai_writestring(s, l)  puts(s)
+#define luai_writeline()        puts("\n")
 #endif // defined(LUA_USE_STDIO)
 
 /*
@@ -346,7 +341,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** (A format string with one argument is enough for Lua...)
 */
 #if !defined(LUA_USE_STDIO)
-#define luai_writestringerror(s,p)	c_printf((s), (p))
+#define luai_writestringerror(s,p)	printf((s), (p))
 #endif // defined(LUA_USE_STDIO)
 
 
@@ -617,27 +612,23 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 #define LUA_NUMBER_SCAN		"%lf"
 #define LUA_NUMBER_FMT		"%.14g"
 #endif // #if defined LUA_NUMBER_INTEGRAL
-#define lua_number2str(s,n)	c_sprintf((s), LUA_NUMBER_FMT, (n))
+#define lua_number2str(s,n)	sprintf((s), LUA_NUMBER_FMT, (n))
 #define LUAI_MAXNUMBER2STR	32 /* 16 digits, sign, point, and \0 */
 #if defined LUA_NUMBER_INTEGRAL
   #if !defined LUA_INTEGRAL_LONGLONG
-  #define lua_str2number(s,p)	c_strtol((s), (p), 10)
+  #define lua_str2number(s,p)	strtol((s), (p), 10)
   #else
-  #define lua_str2number(s,p) c_strtoll((s), (p), 10)
+  #define lua_str2number(s,p) strtoll((s), (p), 10)
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #else
-#define lua_str2number(s,p)	c_strtod((s), (p))
+#define lua_str2number(s,p)	strtod((s), (p))
 #endif // #if defined LUA_NUMBER_INTEGRAL
 
 /*
 @@ The luai_num* macros define the primitive operations over numbers.
 */
 #if defined(LUA_CORE) || defined(LUA_LIB)
-#ifdef LUA_CROSS_COMPILER
 #include <math.h>
-#else
-#include "c_math.h"
-#endif
 #define luai_numadd(a,b)	((a)+(b))
 #define luai_numsub(a,b)	((a)-(b))
 #define luai_nummul(a,b)	((a)*(b))
@@ -782,7 +773,7 @@ union luai_Cast { double l_d; long l_l; };
 #include <unistd.h>
 #define LUA_TMPNAMBUFSIZE	32
 #define lua_tmpnam(b,e)	{ \
-	c_strcpy(b, "/tmp/lua_XXXXXX"); \
+	strcpy(b, "/tmp/lua_XXXXXX"); \
 	e = mkstemp(b); \
 	if (e != -1) close(e); \
 	e = (e == -1); }
@@ -802,7 +793,7 @@ union luai_Cast { double l_d; long l_l; };
 */
 #if defined(LUA_USE_POPEN)
 
-#define lua_popen(L,c,m)	((void)L, c_fflush(NULL), popen(c,m))
+#define lua_popen(L,c,m)	((void)L, fflush(NULL), popen(c,m))
 #define lua_pclose(L,file)	((void)L, (pclose(file) != -1))
 
 #elif defined(LUA_WIN)

@@ -29,7 +29,7 @@
 
 #include "user_interface.h"
 #include "platform.h"
-#include "c_stdio.h"
+#include <stdio.h>
 #include "dht.h"
 
 #ifndef LOW

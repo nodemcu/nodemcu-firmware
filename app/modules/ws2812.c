@@ -2,8 +2,8 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
 #include "driver/uart.h"
 
@@ -215,7 +215,7 @@ static int ws2812_buffer_set(lua_State* L) {
 	return luaL_error(L, "string size will exceed strip length");
     }
 
-    c_memcpy(&buffer->values[buffer->colorsPerLed*led], buf, len);
+    memcpy(&buffer->values[buffer->colorsPerLed*led], buf, len);
   }
   else
   {

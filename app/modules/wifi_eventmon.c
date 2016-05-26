@@ -4,8 +4,8 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 #include "c_types.h"
 #include "user_interface.h"
@@ -158,14 +158,14 @@ static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
           evt->event == EVENT_STAMODE_DHCP_TIMEOUT||evt->event==EVENT_SOFTAPMODE_STACONNECTED ||
           evt->event == EVENT_SOFTAPMODE_STADISCONNECTED||evt->event==EVENT_SOFTAPMODE_PROBEREQRECVED)))
   {
-    evt_queue_t *temp = (evt_queue_t*)c_malloc(sizeof(evt_queue_t)); //allocate memory for new queue item
-    temp->evt = (System_Event_t*)c_malloc(sizeof(System_Event_t)); //allocate memory to hold event structure
+    evt_queue_t *temp = (evt_queue_t*)malloc(sizeof(evt_queue_t)); //allocate memory for new queue item
+    temp->evt = (System_Event_t*)malloc(sizeof(System_Event_t)); //allocate memory to hold event structure
     if(!temp || !temp->evt)
     {
       luaL_error(lua_getstate(), "wifi.eventmon malloc: out of memory");
       return;
     }
-    c_memcpy(temp->evt, evt, sizeof(System_Event_t)); //copy event data to new struct
+    memcpy(temp->evt, evt, sizeof(System_Event_t)); //copy event data to new struct
 
     if(wifi_event_queue_head == NULL && wifi_event_queue_tail == NULL)// if queue is empty add item to queue
     {
@@ -299,8 +299,8 @@ static void wifi_event_monitor_process_event_queue(task_param_t param, task_prio
     task_post_low(wifi_event_monitor_task_id, false); //post task to process next item in queue
   }
 
-  c_free(evt); //free memory used by event structure
-  c_free(temp); //free memory used by queue structure
+  free(evt); //free memory used by event structure
+  free(temp); //free memory used by queue structure
 }
 
 #ifdef WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE

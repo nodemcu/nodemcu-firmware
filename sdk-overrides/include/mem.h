@@ -5,9 +5,7 @@
 void *pvPortZalloc (size_t sz);
 void *pvPortRealloc (void *p, size_t sz);
 
-#define os_zalloc pvPortZalloc
-#define os_free   vPortFree
-#define os_malloc pvPortMalloc
+#include "esp_libc.h"
 
 #include_next "lwip/mem.h"
 

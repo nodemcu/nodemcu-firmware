@@ -5,10 +5,10 @@
 */
 
 
-// #include "c_errno.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+// #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "flash_fs.h"
 
 #define liolib_c
@@ -143,7 +143,7 @@ static int aux_close (lua_State *L) {
   return (lua_tocfunction(L, -1))(L);
 #else
   int *p = tofilep(L);
-  if(*p == c_stdin || *p == c_stdout || *p == c_stderr)
+  if(*p == fileno(stdin) || *p == fileno(stdout) || *p == fileno(stderr))
   {
     lua_pushnil(L);
     lua_pushliteral(L, "cannot close standard file");
@@ -329,7 +329,7 @@ static int read_line (lua_State *L, int f) {
       luaL_pushresult(&b);  /* close buffer */
       return (lua_objlen(L, -1) > 0);  /* check whether read something */
     }
-    l = c_strlen(p);
+    l = strlen(p);
     if (l == 0 || p[l-1] != '\n')
       luaL_addsize(&b, l);
     else {
@@ -644,9 +644,9 @@ LUALIB_API int luaopen_io (lua_State *L) {
 #endif
 #if 0
   /* create (and set) default files */
-  createstdfile(L, c_stdin, IO_INPUT, "stdin");
-  createstdfile(L, c_stdout, IO_OUTPUT, "stdout");
-  createstdfile(L, c_stderr, IO_STDERR, "stderr");
+  createstdfile(L, stdin, IO_INPUT, "stdin");
+  createstdfile(L, stdout, IO_OUTPUT, "stdout");
+  createstdfile(L, stderr, IO_STDERR, "stderr");
 
 #if LUA_OPTIMIZE_MEMORY != 2
   lua_pop(L, 1);  /* pop environment for default files */

@@ -6,7 +6,7 @@
 
 #include "c_types.h"
 #include "flash_fs.h"
-#include "c_string.h"
+#include <string.h>
 
 static volatile int file_fd = FS_OPEN_OK - 1;
 
@@ -20,7 +20,7 @@ static int file_open( lua_State* L )
   }
 
   const char *fname = luaL_checklstring( L, 1, &len );
-  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && strlen(fname) == len, 1, "filename invalid");
 
   const char *mode = luaL_optstring(L, 2, "r");
 

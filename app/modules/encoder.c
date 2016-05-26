@@ -3,7 +3,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "lmem.h"
-#include "c_string.h"
+#include <string.h>
+#include <stdint.h>
 #define BASE64_INVALID '\xff'
 #define BASE64_PADDING '='
 #define ISBASE64(c) (unbytes64[c] != BASE64_INVALID)
@@ -18,7 +19,7 @@ static uint8 *toBase64 ( lua_State* L, const uint8 *msg, size_t *len){
 
   uint8 * q, *out = (uint8 *)luaM_malloc(L, (n + 2) / 3 * 4);
   uint8 bytes64[sizeof(b64)];
-  c_memcpy(bytes64, b64, sizeof(b64));   //Avoid lots of flash unaligned fetches
+  memcpy(bytes64, b64, sizeof(b64));   //Avoid lots of flash unaligned fetches
   
   for (i = 0, q = out; i < n; i += 3) {
     int a = msg[i];
@@ -44,7 +45,7 @@ static uint8 *fromBase64 ( lua_State* L, const uint8 *enc_msg, size_t *len){
   if (n & 3)
     luaL_error (L, "Invalid base64 string"); 
    
-  c_memset(unbytes64, BASE64_INVALID, sizeof(unbytes64));
+  memset(unbytes64, BASE64_INVALID, sizeof(unbytes64));
   for (i = 0; i < sizeof(b64)-1; i++) unbytes64[b64[i]] = i;  // sequential so no exceptions 
   
   if (enc_msg[n-1] == BASE64_PADDING) {

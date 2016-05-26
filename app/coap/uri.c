@@ -1,10 +1,10 @@
 /* uri.c -- helper functions for URI treatment
  */
 
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
-#include "c_ctype.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "coap.h"
 #include "uri.h"
@@ -43,7 +43,7 @@ int coap_split_uri(unsigned char *str_var, size_t len, coap_uri_t *uri) {
   if (!str_var || !uri)
     return -1;
 
-  c_memset(uri, 0, sizeof(coap_uri_t));
+  memset(uri, 0, sizeof(coap_uri_t));
   uri->port = COAP_DEFAULT_PORT;
 
   /* search for scheme */
@@ -394,16 +394,16 @@ int coap_split_query(coap_rw_buffer_t *scratch, coap_packet_t *pkt, const unsign
 coap_uri_t * coap_new_uri(const unsigned char *uri, unsigned int length) {
   unsigned char *result;
 
-  result = (unsigned char *)c_malloc(length + 1 + sizeof(coap_uri_t));
+  result = (unsigned char *)malloc(length + 1 + sizeof(coap_uri_t));
 
   if (!result)
     return NULL;
 
-  c_memcpy(URI_DATA(result), uri, length);
+  memcpy(URI_DATA(result), uri, length);
   URI_DATA(result)[length] = '\0'; /* make it zero-terminated */
 
   if (coap_split_uri(URI_DATA(result), length, (coap_uri_t *)result) < 0) {
-    c_free(result);
+    free(result);
     return NULL;
   }
   return (coap_uri_t *)result;

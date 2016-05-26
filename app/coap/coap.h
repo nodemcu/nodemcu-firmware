@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#include "c_stdint.h"
-#include "c_stddef.h"
+#include <stdint.h>
+#include <stddef.h>
 #include "lualib.h"
 #include "lauxlib.h"
 

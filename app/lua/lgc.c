@@ -164,8 +164,8 @@ static int traversetable (global_State *g, Table *h) {
     markobject(g, h->metatable);
   mode = gfasttm(g, h->metatable, TM_MODE);
   if (mode && ttisstring(mode)) {  /* is there a weak mode? */
-    weakkey = (c_strchr(svalue(mode), 'k') != NULL);
-    weakvalue = (c_strchr(svalue(mode), 'v') != NULL);
+    weakkey = (strchr(svalue(mode), 'k') != NULL);
+    weakvalue = (strchr(svalue(mode), 'v') != NULL);
     if (weakkey || weakvalue) {  /* is really weak? */
       h->marked &= ~(KEYWEAK | VALUEWEAK);  /* clear bits */
       h->marked |= cast_byte((weakkey << KEYWEAKBIT) |
@@ -320,7 +320,7 @@ static l_mem propagatemark (global_State *g) {
                              (proto_is_readonly(p) ? 0 : sizeof(Instruction) * p->sizecode +
 #ifdef LUA_OPTIMIZE_DEBUG
                                                          (p->packedlineinfo ?
-                                                            c_strlen(cast(char *, p->packedlineinfo))+1 :
+                                                            strlen(cast(char *, p->packedlineinfo))+1 :
                                                             0));
 #else
                                                          sizeof(int) * p->sizelineinfo);

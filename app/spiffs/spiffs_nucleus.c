@@ -990,8 +990,8 @@ s32_t spiffs_object_append(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
           SPIFFS_CHECK_RES(res);
           spiffs_cb_object_event(fs, fd, SPIFFS_EV_IX_NEW, fd->obj_id, cur_objix_spix, cur_objix_pix, 0);
           // quick "load" of new object index page
-          c_memset(fs->work, 0xff, SPIFFS_CFG_LOG_PAGE_SZ(fs));
-          c_memcpy(fs->work, &p_hdr, sizeof(spiffs_page_header));
+          memset(fs->work, 0xff, SPIFFS_CFG_LOG_PAGE_SZ(fs));
+          memcpy(fs->work, &p_hdr, sizeof(spiffs_page_header));
           SPIFFS_DBG("append: %04x create objix page, %04x:%04x, written %i\n", fd->obj_id
               , cur_objix_pix, cur_objix_spix, written);
         } else {
@@ -1575,7 +1575,7 @@ s32_t spiffs_object_truncate(
       } else {
         // make uninitialized object
         SPIFFS_DBG("truncate: reset objix_hdr page %04x\n", objix_pix);
-        c_memset(fs->work + sizeof(spiffs_page_object_ix_header), 0xff,
+        memset(fs->work + sizeof(spiffs_page_object_ix_header), 0xff,
             SPIFFS_CFG_LOG_PAGE_SZ(fs) - sizeof(spiffs_page_object_ix_header));
         res = spiffs_object_update_index_hdr(fs, fd, fd->obj_id,
             objix_pix, fs->work, 0, SPIFFS_UNDEFINED_LEN, &new_objix_hdr_pix);
@@ -1783,7 +1783,7 @@ s32_t spiffs_obj_lu_find_free_obj_id(spiffs *fs, spiffs_obj_id *obj_id, u8_t *co
       u32_t i, j;
       SPIFFS_DBG("free_obj_id: BITM min:%04x max:%04x\n", state.min_obj_id, state.max_obj_id);
 
-      c_memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
+      memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
       res = spiffs_obj_lu_find_entry_visitor(fs, 0, 0, 0, 0, spiffs_obj_lu_find_free_obj_id_bitmap_v, state.min_obj_id,
           conflicting_name, 0, 0);
       if (res == SPIFFS_VIS_END) res = SPIFFS_OK;
@@ -1848,7 +1848,7 @@ s32_t spiffs_obj_lu_find_free_obj_id(spiffs *fs, spiffs_obj_id *obj_id, u8_t *co
       state.compaction = (state.max_obj_id-state.min_obj_id) / ((SPIFFS_CFG_LOG_PAGE_SZ(fs) / sizeof(u8_t)));
       SPIFFS_DBG("free_obj_id: COMP min:%04x max:%04x compact:%i\n", state.min_obj_id, state.max_obj_id, state.compaction);
 
-      c_memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
+      memset(fs->work, 0, SPIFFS_CFG_LOG_PAGE_SZ(fs));
       res = spiffs_obj_lu_find_entry_visitor(fs, 0, 0, 0, 0, spiffs_obj_lu_find_free_obj_id_compact_v, 0, &state, 0, 0);
       if (res == SPIFFS_VIS_END) res = SPIFFS_OK;
       SPIFFS_CHECK_RES(res);
