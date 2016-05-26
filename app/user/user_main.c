@@ -15,12 +15,12 @@
 #include "flash_fs.h"
 #include "flash_api.h"
 #include "user_interface.h"
-#include "user_exceptions.h"
 #include "user_modules.h"
 
 #include "ets_sys.h"
 #include "driver/uart.h"
 #include "task/task.h"
+#include "sections.h"
 #include "mem.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
