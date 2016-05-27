@@ -1309,7 +1309,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LNILKEY, LNILVAL }
 };
 
-static void wifi_change_default_host_name(task_param_t param, uint8 priority)
+void wifi_change_default_host_name(void)
 {
 #ifndef WIFI_STA_HOSTNAME
   char temp[32];
@@ -1344,7 +1344,6 @@ static void wifi_change_default_host_name(task_param_t param, uint8 priority)
 
 int luaopen_wifi( lua_State *L )
 {
-  task_post_low(task_get_id(wifi_change_default_host_name), FALSE);
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
   wifi_eventmon_init();
 #endif
