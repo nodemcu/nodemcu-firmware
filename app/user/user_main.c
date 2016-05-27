@@ -117,6 +117,16 @@ void nodemcu_init(void)
     task_post_low(task_get_id(start_lua),'s');
 }
 
+#ifdef LUA_USE_MODULES_WIFI
+#include "../modules/wifi_common.h"
+
+void user_rf_pre_init(void)
+{
+//set WiFi hostname before RF initialization (adds ~440 us to boot time)
+  wifi_change_default_host_name();
+}
+#endif
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
