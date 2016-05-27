@@ -810,7 +810,7 @@ static void serve_status(struct tcp_pcb *conn)
 
 	wifi_get_ip_info(STATION_IF , &ip_info);
 
-	char ip_addr[15];
+	char ip_addr[16];
 	ip_addr[0] = '\0';
 	if (curr_state == STATION_GOT_IP)
 	{
