@@ -326,7 +326,7 @@ static int coap_request( lua_State* L, coap_method_t m )
   stack++;
   pesp_conn = cud->pesp_conn;
   ip_addr_t ipaddr;
-  uint8_t host[32];
+  uint8_t host[64];
 
   unsigned t;
   if ( lua_isnumber(L, stack) )
@@ -348,6 +348,9 @@ static int coap_request( lua_State* L, coap_method_t m )
   coap_uri_t *uri = coap_new_uri(url, l);   // should call free(uri) somewhere
   if (uri == NULL)
     return luaL_error( L, "uri wrong format." );
+  if (uri->host.length + 1 /* for the null */ > sizeof(host)) {
+    return luaL_error(L, "host too long");
+  }
 
   pesp_conn->proto.udp->remote_port = uri->port;
   NODE_DBG("UDP port is set: %d.\n", uri->port);
@@ -372,7 +375,7 @@ static int coap_request( lua_State* L, coap_method_t m )
   if(!pdu){
     if(uri)
       c_free(uri);
-    return;
+    return luaL_error (L, "alloc fail");
   }
 
   const char *payload = NULL;

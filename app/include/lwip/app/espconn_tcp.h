@@ -29,7 +29,7 @@ extern void espconn_kill_oldest_pcb(void);
  * Returns      : none
 *******************************************************************************/
 
-extern void espconn_tcp_disconnect(espconn_msg *pdiscon);
+extern void espconn_tcp_disconnect(espconn_msg *pdiscon,u8 type);
 
 /******************************************************************************
  * FunctionName : espconn_tcp_client

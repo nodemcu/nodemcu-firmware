@@ -78,7 +78,7 @@ uint8_t u8g_dev_a2_micro_printer_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, voi
 	    u8g_WriteByte(u8g, dev, *ptr);
 	    ptr++;
 	  }
-	  u8g_Delay(LINE_DELAY);
+	  u8g_Delay(u8g, LINE_DELAY);
           y++;
         }
 
@@ -160,7 +160,7 @@ uint8_t u8g_dev_a2_micro_printer_double_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t m
 	    u8g_WriteByte(u8g, dev, u8g_dev_expand4(*p2 & 15));
 	    p2++;
 	  }
-	  u8g_Delay(LINE_DELAY);
+	  u8g_Delay(u8g, LINE_DELAY);
 	  p2 = ptr;
 	  for( j = 0; j < pb->width/8; j++ )
 	  {
@@ -168,7 +168,7 @@ uint8_t u8g_dev_a2_micro_printer_double_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t m
 	    u8g_WriteByte(u8g, dev, u8g_dev_expand4(*p2 & 15));
 	    p2++;
 	  }
-	  u8g_Delay(LINE_DELAY);
+	  u8g_Delay(u8g, LINE_DELAY);
 	  ptr += pb->width/8;
           y++;
         }

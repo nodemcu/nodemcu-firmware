@@ -52,6 +52,7 @@ tmr.softwd(int)
 #include "lauxlib.h"
 #include "platform.h"
 #include "c_types.h"
+#include "user_interface.h"
 
 #define TIMER_MODE_OFF 3
 #define TIMER_MODE_SINGLE 0
@@ -59,54 +60,55 @@ tmr.softwd(int)
 #define TIMER_MODE_AUTO 1
 #define TIMER_IDLE_FLAG (1<<7) 
 
-//well, the following are my assumptions
-//why, oh why is there no good documentation
-//chinese companies should learn from Atmel
-extern void ets_timer_arm_new(os_timer_t* t, uint32_t milliseconds, uint32_t repeat_flag, uint32_t isMstimer);
-extern void ets_timer_disarm(os_timer_t* t);
-extern void ets_timer_setfn(os_timer_t* t, os_timer_func_t *f, void *arg);
-extern void ets_delay_us(uint32_t us);
-extern uint32_t system_get_time();
-extern uint32_t platform_tmr_exists(uint32_t t);
-extern uint32_t system_rtc_clock_cali_proc();
-extern uint32_t system_get_rtc_time();
-extern void system_restart();
-extern void system_soft_wdt_feed();
+#define STRINGIFY_VAL(x) #x
+#define STRINGIFY(x) STRINGIFY_VAL(x)
 
-//in fact lua_State is constant, it's pointless to pass it around
-//but hey, whatever, I'll just pass it, still we waste 28B here
+// assuming system_timer_reinit() has *not* been called
+#define MAX_TIMEOUT_DEF 6870947  //SDK 1.5.3 limit (0x68D7A3)
+
+static const uint32 MAX_TIMEOUT=MAX_TIMEOUT_DEF;
+static const char* MAX_TIMEOUT_ERR_STR = "Range: 1-"STRINGIFY(MAX_TIMEOUT_DEF);
+
 typedef struct{
 	os_timer_t os;
-	lua_State* L;
 	sint32_t lua_ref;
 	uint32_t interval;
 	uint8_t mode;
 }timer_struct_t;
 typedef timer_struct_t* timer_t;
 
-//everybody just love unions! riiiiight?
-static union {
-	uint64_t block;
-	uint32_t part[2];
-} rtc_time;
+// The previous implementation extended the rtc counter to 64 bits, and then
+// applied rtc2sec with the current calibration value to that 64 bit value.
+// This means that *ALL* clock ticks since bootup are counted with the *current*
+// clock period. In extreme cases (long uptime, sudden temperature change), this
+// could result in tmr.time() going backwards....
+// This implementation instead applies rtc2usec to short time intervals only (the
+// longest being around 1 second), and then accumulates the resulting microseconds
+// in a 64 bit counter. That's guaranteed to be monotonic, and should be a lot closer
+// to representing an actual uptime.
+static uint32_t rtc_time_cali=0;
+static uint32_t last_rtc_time=0;
+static uint64_t last_rtc_time_us=0;
+
 static sint32_t soft_watchdog  = -1;
 static timer_struct_t alarm_timers[NUM_TMR];
 static os_timer_t rtc_timer;
 
 static void alarm_timer_common(void* arg){
 	timer_t tmr = &alarm_timers[(uint32_t)arg];
-	if(tmr->lua_ref == LUA_NOREF || tmr->L == NULL)
+	lua_State* L = lua_getstate();
+	if(tmr->lua_ref == LUA_NOREF)
 		return;
-	lua_rawgeti(tmr->L, LUA_REGISTRYINDEX, tmr->lua_ref);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 	//if the timer was set to single run we clean up after it
 	if(tmr->mode == TIMER_MODE_SINGLE){
-		luaL_unref(tmr->L, LUA_REGISTRYINDEX, tmr->lua_ref);
+		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 		tmr->lua_ref = LUA_NOREF;
 		tmr->mode = TIMER_MODE_OFF;
 	}else if(tmr->mode == TIMER_MODE_SEMI){
 		tmr->mode |= TIMER_IDLE_FLAG;
 	}
-	lua_call(tmr->L, 0, 0);
+	lua_call(L, 0, 0);
 }
 
 // Lua: tmr.delay( us )
@@ -136,15 +138,13 @@ static int tmr_now(lua_State* L){
 // Lua: tmr.register( id, interval, mode, function )
 static int tmr_register(lua_State* L){
 	uint32_t id = luaL_checkinteger(L, 1);
-	MOD_CHECK_ID(tmr, id);
-	sint32_t interval = luaL_checkinteger(L, 2);
+	uint32_t interval = luaL_checkinteger(L, 2);
 	uint8_t mode = luaL_checkinteger(L, 3);
-	//validate arguments
-	uint8_t args_valid = interval <= 0
-		|| (mode != TIMER_MODE_SINGLE && mode != TIMER_MODE_SEMI && mode != TIMER_MODE_AUTO)
-		|| (lua_type(L, 4) != LUA_TFUNCTION && lua_type(L, 4) != LUA_TLIGHTFUNCTION);
-	if(args_valid)
-		return luaL_error(L, "wrong arg range");
+	//Check if provided parameters are valid
+	MOD_CHECK_ID(tmr, id);
+	luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
+  luaL_argcheck(L, (mode == TIMER_MODE_SINGLE || mode == TIMER_MODE_SEMI || mode == TIMER_MODE_AUTO), 3, "Invalid mode");
+  luaL_argcheck(L, (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION), 4, "Must be function");
 	//get the lua function reference
 	lua_pushvalue(L, 4);
 	sint32_t ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -157,7 +157,6 @@ static int tmr_register(lua_State* L){
 	tmr->lua_ref = ref;
 	tmr->mode = mode|TIMER_IDLE_FLAG;
 	tmr->interval = interval;
-	tmr->L = L; 
 	ets_timer_setfn(&tmr->os, alarm_timer_common, (void*)id);
 	return 0;  
 }
@@ -219,9 +218,8 @@ static int tmr_interval(lua_State* L){
 	uint8_t id = luaL_checkinteger(L, 1);
 	MOD_CHECK_ID(tmr,id);
 	timer_t tmr = &alarm_timers[id];
-	sint32_t interval = luaL_checkinteger(L, 2);
-	if(interval <= 0)
-		return luaL_error(L, "wrong arg range");
+	uint32_t interval = luaL_checkinteger(L, 2);
+  luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
 	if(tmr->mode != TIMER_MODE_OFF){	
 		tmr->interval = interval;
 		if(!(tmr->mode&TIMER_IDLE_FLAG)){
@@ -262,28 +260,33 @@ static int tmr_wdclr( lua_State* L ){
 //it tells how many rtc clock ticks represent 1us.
 //the high 64 bits of the uint64_t multiplication
 //are unnedded (I did the math)
-static uint32_t rtc2sec(uint64_t rtc){
-	uint64_t aku = system_rtc_clock_cali_proc();
-	aku *= rtc;
-	return (aku>>12)/1000000;
+static uint32_t rtc2usec(uint64_t rtc){
+	return (rtc*rtc_time_cali)>>12;
 }
 
-//the following function workes, I just wrote it and didn't use it.
-/*static uint64_t sec2rtc(uint32_t sec){
-	uint64_t aku = (1<<20)/system_rtc_clock_cali_proc();
-	aku *= sec;
-	return (aku>>8)*1000000;
-}*/
+// This returns the number of microseconds uptime. Note that it relies on the rtc clock,
+// which is notoriously temperature dependent
+inline static uint64_t rtc_timer_update(bool do_calibration){
+	if (do_calibration || rtc_time_cali==0)
+		rtc_time_cali=system_rtc_clock_cali_proc();
 
-inline static void rtc_timer_update(){
 	uint32_t current = system_get_rtc_time();
-	if(rtc_time.part[0] > current) //overflow check
-		rtc_time.part[1]++;
-	rtc_time.part[0] = current;
+	uint32_t since_last=current-last_rtc_time; // This will transparently deal with wraparound
+	uint32_t us_since_last=rtc2usec(since_last);
+	uint64_t now=last_rtc_time_us+us_since_last;
+
+	// Only update if at least 100ms has passed since we last updated.
+	// This prevents the rounding errors in rtc2usec from accumulating
+	if (us_since_last>=100000)
+	{
+		last_rtc_time=current;
+		last_rtc_time_us=now;
+	}
+	return now;
 }
 
 void rtc_callback(void *arg){
-	rtc_timer_update();
+	rtc_timer_update(true);
 	if(soft_watchdog > 0){
 		soft_watchdog--;
 		if(soft_watchdog == 0)
@@ -293,8 +296,8 @@ void rtc_callback(void *arg){
 
 // Lua: tmr.time() , return rtc time in second
 static int tmr_time( lua_State* L ){
-	rtc_timer_update();
-	lua_pushinteger(L, rtc2sec(rtc_time.block));
+	uint64_t us=rtc_timer_update(false);
+	lua_pushinteger(L, us/1000000);
 	return 1; 
 }
 
@@ -332,7 +335,9 @@ int luaopen_tmr( lua_State *L ){
 		alarm_timers[i].mode = TIMER_MODE_OFF;
 		ets_timer_disarm(&alarm_timers[i].os);
 	}
-	rtc_time.block = 0;
+	last_rtc_time=system_get_rtc_time(); // Right now is time 0
+	last_rtc_time_us=0;
+
 	ets_timer_disarm(&rtc_timer);
 	ets_timer_setfn(&rtc_timer, rtc_callback, NULL);
 	ets_timer_arm_new(&rtc_timer, 1000, 1, 1);

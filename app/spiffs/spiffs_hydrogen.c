@@ -764,7 +764,8 @@ static s32_t spiffs_read_dir_v(
           (SPIFFS_PH_FLAG_DELET | SPIFFS_PH_FLAG_IXDELE)) {
     struct spiffs_dirent *e = (struct spiffs_dirent *)user_p;
     e->obj_id = obj_id;
-    strcpy((char *)e->name, (char *)objix_hdr.name);
+    strncpy((char *)e->name, (char *)objix_hdr.name, SPIFFS_OBJ_NAME_LEN);
+
     e->type = objix_hdr.type;
     e->size = objix_hdr.size == SPIFFS_UNDEFINED_LEN ? 0 : objix_hdr.size;
     e->pix = pix;

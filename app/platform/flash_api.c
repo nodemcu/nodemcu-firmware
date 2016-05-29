@@ -8,28 +8,6 @@
 #include "spi_flash.h"
 #include "c_stdio.h"
 
-#if defined(ESP_INIT_DATA_ENABLE_READVDD33)
-# define INIT_107 0xff
-#elif defined(ESP_INIT_DATA_ENABLE_READADC)
-# define INIT_107 0x00
-#elif defined(ESP_INIT_DATA_FIXED_VDD33_VALUE)
-# define INIT_107 ESP_INIT_DATA_FIXED_VDD33_VALUE
-#else
-# define INIT_107 0xff
-#endif
-
-static const uint8_t flash_init_data[128] =
-{
-    0x05, 0x00, 0x04, 0x02, 0x05, 0x05, 0x05, 0x02, 0x05, 0x00, 0x04, 0x05, 0x05, 0x04, 0x05, 0x05,
-    0x04, 0xFE, 0xFD, 0xFF, 0xF0, 0xF0, 0xF0, 0xE0, 0xE0, 0xE0, 0xE1, 0x0A, 0xFF, 0xFF, 0xF8, 0x00,
-    0xF8, 0xF8, 0x52, 0x4E, 0x4A, 0x44, 0x40, 0x38, 0x00, 0x00, 0x01, 0x01, 0x02, 0x03, 0x04, 0x05,
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0xE1, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x93, 0x43, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, INIT_107, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
 uint32_t flash_detect_size_byte(void)
 {
 #define FLASH_BUFFER_SIZE_DETECT 32
@@ -132,13 +110,13 @@ uint32_t flash_rom_get_size_byte(void)
             // 32Mbit, 4MByte
             flash_size = 4 * 1024 * 1024;
             break;
-        case SIZE_64MBIT:
-            // 64Mbit, 8MByte
-            flash_size = 8 * 1024 * 1024;
+        case SIZE_16MBIT_8M_8M:
+            // 16Mbit, 2MByte
+            flash_size = 2 * 1024 * 1024;
             break;
-        case SIZE_128MBIT:
-            // 128Mbit, 16MByte
-            flash_size = 16 * 1024 * 1024;
+        case SIZE_32MBIT_8M_8M:
+            // 32Mbit, 4MByte
+            flash_size = 4 * 1024 * 1024;
             break;
         default:
             // Unknown flash size, fall back mode.
@@ -206,16 +184,18 @@ bool flash_rom_set_size_byte(uint32_t size)
         flash_size = SIZE_32MBIT;
         flash_rom_set_size_type(flash_size);
         break;
+        /*
     case 8 * 1024 * 1024:
         // 64Mbit, 8MByte
-        flash_size = SIZE_64MBIT;
+        flash_size = SIZE_16MBIT_8M_8M;
         flash_rom_set_size_type(flash_size);
         break;
     case 16 * 1024 * 1024:
         // 128Mbit, 16MByte
-        flash_size = SIZE_128MBIT;
+        flash_size = SIZE_32MBIT_8M_8M;
         flash_rom_set_size_type(flash_size);
         break;
+        */
     default:
         // Unknown flash size.
         result = false;
@@ -318,66 +298,6 @@ bool flash_rom_set_speed(uint32_t speed)
         }
     }
     NODE_DBG("\nEND SET FLASH HEADER\n");
-    return true;
-}
-
-bool flash_init_data_default(void)
-{
-    /* Can't copy directly from flash (which is where the default data lives)
-     * due to it being unmapped during the write, so bounce via ram buffer. */
-    uint8_t init_data[128];
-    os_memcpy (init_data, flash_init_data, 128);
-
-    // FLASH SEC - 4
-    // Dangerous, here are dinosaur infested!!!!!
-    // Reboot required!!!
-    // It will init system data to default!
-    bool result = false;
-#if defined(FLASH_SAFE_API)
-    if (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 4)))
-    {
-        if (SPI_FLASH_RESULT_OK == flash_safe_write((flash_safe_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)init_data, 128))
-        {
-            result = true;
-        }
-    }
-#else
-    if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 4)))
-    {
-        if (SPI_FLASH_RESULT_OK == spi_flash_write((flash_rom_get_sec_num() - 4) * SPI_FLASH_SEC_SIZE, (uint32 *)init_data, 128))
-        {
-            result = true;
-        }
-    }
-#endif // defined(FLASH_SAFE_API)
-    return result;
-}
-
-bool flash_init_data_blank(void)
-{
-    // FLASH SEC - 2
-    // Dangerous, here are dinosaur infested!!!!!
-    // Reboot required!!!
-    // It will init system config to blank!
-    bool result = false;
-#if defined(FLASH_SAFE_API)
-    if ((SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 2))) &&
-            (SPI_FLASH_RESULT_OK == flash_safe_erase_sector((flash_safe_get_sec_num() - 1))))
-#else
-    if ((SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 2))) &&
-            (SPI_FLASH_RESULT_OK == spi_flash_erase_sector((flash_rom_get_sec_num() - 1))))
-#endif // defined(FLASH_SAFE_API)
-    {
-        result = true;
-    }
-
-    return result ;
-}
-
-bool flash_self_destruct(void)
-{
-    // Dangerous, Erase your flash. Good bye!
-    SPIEraseChip();
     return true;
 }
 
