@@ -119,7 +119,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,@$(LDDIR)/defsym.rom		\
 	-T$(LDDIR)/extrasyms.rom		\
 	-Wl,--no-check-sections 		\
-	-Wl,--wrap=_xtos_set_exception_handler	\
+	-Wl,--wrap=printf			\
 	-Wl,-static 				\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
 	-u _UserExceptionVectorOverride		\
