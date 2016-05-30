@@ -23,6 +23,7 @@
 #include "task/task.h"
 #include "sections.h"
 #include "mem.h"
+#include "freertos/task.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
@@ -117,6 +118,18 @@ void nodemcu_init(void)
     task_post_low(task_get_id(start_lua),'s');
 }
 
+
+static void nodemcu_main (void *param)
+{
+  (void)param;
+
+  nodemcu_init ();
+
+  task_pump_messages ();
+  __builtin_unreachable ();
+}
+
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -129,14 +142,21 @@ void user_init(void)
     rtctime_late_startup ();
 #endif
 
+#if 0
+    // TODO: fix uart driver to work with RTOS SDK
     UartBautRate br = BIT_RATE_DEFAULT;
 
     input_sig = task_get_id(handle_input);
     uart_init (br, br, input_sig);
+#endif
 
 #ifndef NODE_DEBUG
     system_set_os_print(0);
 #endif
 
-    system_init_done_cb(nodemcu_init);
+    // FIXME! Max supported RTOS stack size is 512 words (2k bytes), but
+    // NodeMCU currently uses more than that. The game is on to find these
+    // culprits, but this gcc doesn't do the -fstack-usage option :(
+    xTaskCreate (
+      nodemcu_main, "nodemcu", 600, 0, configTIMER_TASK_PRIORITY +1, NULL);
 }

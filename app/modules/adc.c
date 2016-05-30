@@ -29,19 +29,31 @@ static int adc_init107( lua_State *L )
 {
   uint8_t byte107 = luaL_checkinteger (L, 1);
 
+  int erridx = -1;
+  const char *errmsg[] = {
+    "out of memory",
+    "flash read error",
+    "flash erase error",
+    "flash write error"
+  };
+  #define return_error(idx) do { erridx = idx; goto out; } while (0)
+
+
   uint32 init_sector = flash_safe_get_sec_num () - 4;
 
-  // Note 32bit alignment so we can safely cast to uint32 for the flash api
-  char init_data[SPI_FLASH_SEC_SIZE] __attribute__((aligned(4)));
+  char *init_data = malloc (SPI_FLASH_SEC_SIZE);
+  if (!init_data)
+    return_error(0);
 
   if (SPI_FLASH_RESULT_OK != flash_safe_read (
     init_sector * SPI_FLASH_SEC_SIZE,
     (uint32 *)init_data, sizeof(init_data)))
-      return luaL_error(L, "flash read error");
+      return_error(1);
 
   // If it's already the correct value, we don't need to force it
   if (init_data[107] == byte107)
   {
+    free (init_data);
     lua_pushboolean (L, false);
     return 1;
   }
@@ -49,15 +61,22 @@ static int adc_init107( lua_State *L )
   // Nope, it differs, we need to rewrite it
   init_data[107] = byte107;
   if (SPI_FLASH_RESULT_OK != flash_safe_erase_sector (init_sector))
-    return luaL_error(L, "flash erase error");
+    return_error(2);
 
   if (SPI_FLASH_RESULT_OK != flash_safe_write (
     init_sector * SPI_FLASH_SEC_SIZE,
     (uint32 *)init_data, sizeof(init_data)))
-      return luaL_error(L, "flash write error");
+      return_error(3);
 
-  lua_pushboolean (L, true);
-  return 1;
+out:
+  free (init_data);
+  if (erridx >= 0)
+    return luaL_error(L, errmsg[erridx]);
+  else
+  {
+    lua_pushboolean (L, true);
+    return 1;
+  }
 }
 
 // Module function map

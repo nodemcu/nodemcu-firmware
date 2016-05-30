@@ -97,7 +97,7 @@ static bool next_event (task_event_t *ev, task_prio_t *prio)
 {
   for (task_prio_t p = TASK_PRIORITY_COUNT; p != TASK_PRIORITY_LOW; --p)
   {
-    if (xQueueReceive (task_Q[p-1], ev, 0) == pdTRUE)
+    if (task_Q[p-1] && xQueueReceive (task_Q[p-1], ev, 0) == pdTRUE)
     {
       *prio = p-1;
       return true;

@@ -133,7 +133,10 @@ bool flash_rom_set_size_type(uint8_t size)
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
     NODE_DBG("\nBEGIN SET FLASH HEADER\n");
-    uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
+    uint8_t *data = malloc (SPI_FLASH_SEC_SIZE);
+    if (!data)
+      return false;
+
     if (SPI_FLASH_RESULT_OK == spi_flash_read(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
     {
         ((SPIFlashInfo *)(&data[0]))->size = size;
@@ -146,6 +149,7 @@ bool flash_rom_set_size_type(uint8_t size)
             NODE_DBG("\nWRITE SUCCESS, %u\n", size);
         }
     }
+    free (data);
     NODE_DBG("\nEND SET FLASH HEADER\n");
     return true;
 }
@@ -267,7 +271,9 @@ bool flash_rom_set_speed(uint32_t speed)
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
     NODE_DBG("\nBEGIN SET FLASH HEADER\n");
-    uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
+    uint8_t *data = malloc (SPI_FLASH_SEC_SIZE);
+    if (!data)
+      return false;
     uint8_t speed_type = SPEED_40MHZ;
     if (speed < 26700000)
     {
@@ -297,6 +303,7 @@ bool flash_rom_set_speed(uint32_t speed)
             NODE_DBG("\nWRITE SUCCESS, %u\n", speed_type);
         }
     }
+    free (data);
     NODE_DBG("\nEND SET FLASH HEADER\n");
     return true;
 }

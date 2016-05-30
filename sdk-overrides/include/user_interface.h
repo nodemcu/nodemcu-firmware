@@ -14,7 +14,6 @@
 
 // FIXME
 static inline void system_set_os_print(uint8 onoff) { (void)onoff; }
-static inline void system_init_done_cb(void *cb) { (void)cb; }
 
 bool wifi_softap_deauth(uint8 mac[6]);
 
