@@ -13,7 +13,7 @@ static inline uint32_t _getCycleCount(void) {
 
 // This algorithm reads the cpu clock cycles to calculate the correct
 // pulse widths. It works in both 80 and 160 MHz mode.
-static void ICACHE_RAM_ATTR tm1829_write(uint8_t pin, uint8_t *pixels, uint32_t length) {
+static void ICACHE_RAM_ATTR tm1829_write_to_pin(uint8_t pin, uint8_t *pixels, uint32_t length) {
   uint8_t *p, *end;
 
   p   =  pixels;
@@ -61,11 +61,7 @@ static void ICACHE_RAM_ATTR tm1829_write(uint8_t pin, uint8_t *pixels, uint32_t 
 //    tm1829.write(3,a)
 //    =a.byte()
 //    (0,255,128)
-
-// tm1829.write(4, string.char(255, 0, 0)) uses GPIO2 and sets the first LED red.
-// tm1829.write(3, string.char(0, 0, 255):rep(10)) uses GPIO0 and sets ten LEDs blue.
-// tm1829.write(4, string.char(0, 255, 0, 255, 255, 255)) first LED green, second LED white.
-static int ICACHE_FLASH_ATTR tm1829_writergb(lua_State* L)
+static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
 {
   const uint8_t pin = luaL_checkinteger(L, 1);
   size_t length;
@@ -73,26 +69,21 @@ static int ICACHE_FLASH_ATTR tm1829_writergb(lua_State* L)
 
   // dont modify lua-internal lstring - make a copy instead
   char *buffer = (char *)c_malloc(length);
-  c_memcpy(buffer, rgb, length);
 
-  // Ignore incomplete Byte triples at the end of buffer:
+  // Ignore incomplete Byte triples at the end of buffer
   length -= length % 3;
 
-  // Rearrange R G B values to B R G order needed by tm1829 LEDs:
+  // Copy payload and make sure first byte is < 0xFF (triggers
+  // constant current command, instead of PWM duty command)
   size_t i;
   for (i = 0; i < length; i += 3) {
-    char r = buffer[i];
-    char g = buffer[i + 1];
-    char b = buffer[i + 2];
+    buffer[i]     = rgb[i];
+    buffer[i + 1] = rgb[i + 1];
+    buffer[i + 2] = rgb[i + 2];
 
-    // First 8 bit must not be 1s (constant current command,
-    // instead of PWM duty command)
-    if (b == 0xff)
-        b = 0xfe;
-
-    buffer[i] = b;
-    buffer[i + 1] = r;
-    buffer[i + 2] = g;
+    // Check for first byte
+    if (buffer[i] == 0xff)
+        buffer[i] = 0xfe;
   }
 
   // Initialize the output pin and wait a bit
@@ -100,7 +91,7 @@ static int ICACHE_FLASH_ATTR tm1829_writergb(lua_State* L)
   platform_gpio_write(pin, 1);
 
   // Send the buffer
-  tm1829_write(pin_num[pin], (uint8_t*) buffer, length);
+  tm1829_write_to_pin(pin_num[pin], (uint8_t*) buffer, length);
 
   os_delay_us(500); // reset time
 
@@ -111,8 +102,8 @@ static int ICACHE_FLASH_ATTR tm1829_writergb(lua_State* L)
 
 static const LUA_REG_TYPE tm1829_map[] =
 {
-  { LSTRKEY( "write" ), LFUNCVAL( tm1829_writergb )},
-  { LNILKEY, LNILVAL}
+  { LSTRKEY( "write" ), LFUNCVAL( tm1829_write) },
+  { LNILKEY, LNILVAL }
 };
 
 int luaopen_tm1829(lua_State *L) {
