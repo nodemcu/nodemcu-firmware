@@ -44,20 +44,20 @@
 .align 4
 .literal_position
 __wrap_printf:
-  addi a1, a1, -32      /* get some stack space                               */
+  addi a1, a1, -48      /* get some stack space                               */
   s32i a0, a1,  0       /* store a0 at the bottom                             */
-  s32i a2, a1,  8       /* copy the formatting string and first few arguments */
-  s32i a3, a1, 12       /* ...onto the stack in a way that we get a contiguous*/
-  s32i a4, a1, 16       /* ...array of all arguments to printf, with the      */
-  s32i a5, a1, 20       /* ...formatting string in the first array slot       */
-  s32i a6, a1, 24       /* ...                                                */
-  s32i a7, a1, 28       /* ...                                                */
+  s32i a2, a1, 16       /* copy the formatting string and first few arguments */
+  s32i a3, a1, 20       /* ...onto the stack in a way that we get a struct    */
+  s32i a4, a1, 24       /* ...{ uint32_t reg_args[6]; uint32_t ignore[2]; }   */
+  s32i a5, a1, 28       /* ...with the formatting string in the first array   */
+  s32i a6, a1, 32       /* ...array slot of .reg_args.                        */
+  s32i a7, a1, 36       /* ...                                                */
   mov a3, a2            /* print() wants the formatting string as arg 2 too   */
   movi a2, 0            /* and a zero for its first arg                       */
-  addi a4, a1, 8        /* third arg is the pointer to the argument array     */
+  addi a4, a1, 16       /* third arg is the pointer to the argument array     */
   mov a5, a4            /* as is the fourth arg                               */
   movi a6, 4            /* and the fifth arg is 4  (https://xkcd.com/221/ ?)  */
   call0 print           /* do it!                                             */
   l32i a0, a1, 0        /* restore return address into a0                     */
-  addi a1, a1, 32       /* release the stack                                  */
+  addi a1, a1, 48       /* release the stack                                  */
   ret                   /* all done                                           */
