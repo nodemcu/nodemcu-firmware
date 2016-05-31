@@ -54,12 +54,13 @@ bool task_init_handler(task_prio_t priority, uint8 qlen) {
 
 
 task_handle_t task_get_id(task_callback_t t) {
-  int p = TASK_PRIORITY_COUNT;
-  /* Initialise and uninitialised Qs with the default Q len */
-  while(p--)
+  /* Initialise any uninitialised Qs with the default Q len */
+  for (task_prio_t p = TASK_PRIORITY_LOW; p != TASK_PRIORITY_COUNT; ++p)
+  {
     if (!task_Q[p]) {
       CHECK(task_init_handler( p, TASK_DEFAULT_QUEUE_LEN ), 0, "Task initialisation failed");
     }
+  }
 
   if ( (task_count & (TASK_HANDLE_ALLOCATION_BRICK - 1)) == 0 ) {
     /* With a brick size of 4 this branch is taken at 0, 4, 8 ... and the new size is +4 */
@@ -71,8 +72,8 @@ task_handle_t task_get_id(task_callback_t t) {
     memset (task_func+task_count, 0, sizeof(task_callback_t)*TASK_HANDLE_ALLOCATION_BRICK);
   }
 
-  task_func[task_count++] = t;
-  return TASK_HANDLE_MONIKER + (task_count-1);
+  task_func[task_count] = t;
+  return TASK_HANDLE_MONIKER | task_count++;
 }
 
 
@@ -80,7 +81,7 @@ bool task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
 {
   if (priority >= TASK_PRIORITY_COUNT ||
       !task_Q[priority] ||
-      (handle & TASK_HANDLE_MASK != TASK_HANDLE_MONIKER))
+      (handle & TASK_HANDLE_MASK) != TASK_HANDLE_MONIKER)
     return false;
 
   task_event_t ev = { handle, param };
@@ -95,11 +96,12 @@ bool task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
 
 static bool next_event (task_event_t *ev, task_prio_t *prio)
 {
-  for (task_prio_t p = TASK_PRIORITY_COUNT; p != TASK_PRIORITY_LOW; --p)
+  for (task_prio_t pr = TASK_PRIORITY_COUNT; pr != TASK_PRIORITY_LOW; --pr)
   {
-    if (task_Q[p-1] && xQueueReceive (task_Q[p-1], ev, 0) == pdTRUE)
+    task_prio_t p = pr -1;
+    if (task_Q[p] && xQueueReceive (task_Q[p], ev, 0) == pdTRUE)
     {
-      *prio = p-1;
+      *prio = p;
       return true;
     }
   }

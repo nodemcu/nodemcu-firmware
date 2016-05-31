@@ -54,6 +54,7 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
 
 // +================== New task interface ==================+
 static void start_lua(task_param_t param, task_prio_t prio) {
+  (void)param;
   (void)prio;
   char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
   NODE_DBG("Task task_lua started.\n");
@@ -115,7 +116,7 @@ void nodemcu_init(void)
     // test_spiffs();
 #endif
 
-    task_post_low(task_get_id(start_lua),'s');
+    task_post_low(task_get_id(start_lua), 0);
 }
 
 
@@ -142,13 +143,10 @@ void user_init(void)
     rtctime_late_startup ();
 #endif
 
-#if 0
-    // TODO: fix uart driver to work with RTOS SDK
     UartBautRate br = BIT_RATE_DEFAULT;
 
     input_sig = task_get_id(handle_input);
     uart_init (br, br, input_sig);
-#endif
 
 #ifndef NODE_DEBUG
     system_set_os_print(0);
