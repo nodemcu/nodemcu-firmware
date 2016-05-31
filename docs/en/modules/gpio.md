@@ -77,7 +77,7 @@ Serialize output based on a sequence of delay-times. After each delay, the pin i
 #### Parameters
 - `pin`  pin to use, IO index
 - `start_level` level to start on, either `gpio.HIGH` or `gpio.LOW`
-- `delay_times` an array of delay times between each toggle of the gpio pin.
+- `delay_times` an array containing an even number of delay times (in microseconds) between each toggle of the gpio pin.
 - `repeat_num` an optional number of times to run through the sequence.
 
 Note that this function blocks, and as such any use of it must adhere to the SDK guidelines of time spent blocking the stack (10-100ms). Failure to do so may lead to WiFi issues or outright crashes/reboots.
