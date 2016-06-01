@@ -19,6 +19,10 @@ For each operation it is also possible to include custom headers. Note that foll
 
 The `Host` header is taken from the URL itself, the `Connection` is always set to `close`, and the `User-Agent` is `ESP8266`.
 
+**SSL/TLS support**
+
+Take note of constraints documented in the [net module](net.md). 
+
 ## http.delete()
 
 Executes a HTTP DELETE request. Note that concurrent requests are not supported.
