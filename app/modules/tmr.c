@@ -95,7 +95,11 @@ static sint32_t soft_watchdog  = -1;
 static timer_struct_t alarm_timers[NUM_TMR];
 static os_timer_t rtc_timer;
 
-static void alarm_timer_common(void* arg){
+static task_handle_t callback_task;
+
+static void run_callback (task_param_t arg, task_prio_t prio)
+{
+  (void)prio;
 	ptimer_t tmr = &alarm_timers[(uint32_t)arg];
 	lua_State* L = lua_getstate();
 	if(tmr->lua_ref == LUA_NOREF)
@@ -110,6 +114,12 @@ static void alarm_timer_common(void* arg){
 		tmr->mode |= TIMER_IDLE_FLAG;
 	}
 	lua_call(L, 0, 0);
+}
+
+static void alarm_timer_common(void* arg)
+{
+  if (!task_post_medium (callback_task, (task_param_t)arg))
+    NODE_ERROR("ERROR: lost timer callback!");
 }
 
 // Lua: tmr.delay( us )
@@ -342,6 +352,8 @@ int luaopen_tmr( lua_State *L ){
 	ets_timer_disarm(&rtc_timer);
 	ets_timer_setfn(&rtc_timer, rtc_callback, NULL);
 	ets_timer_arm_new(&rtc_timer, 1000, 1, 1);
+
+  callback_task = task_get_id (run_callback);
   return 0;
 }
 
