@@ -533,7 +533,7 @@ static void dojob(lua_Load *load){
   load->done = 0;
   load->line_position = 0;
   memset(load->line, 0, load->len);
-  puts(load->prmt);
+  printf(load->prmt);
 }
 
 #ifndef uart_putc
@@ -599,7 +599,7 @@ static bool readline(lua_Load *load){
         if (load->line_position == 0)
         {
           /* Get a empty line, then go to get a new line */
-          puts(load->prmt);
+          printf(load->prmt);
         } else {
           load->done = 1;
           need_dojob = true;
