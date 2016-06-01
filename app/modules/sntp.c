@@ -35,6 +35,7 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "task/task.h"
 #include "os_type.h"
 #include "osapi.h"
 #include "lwip/udp.h"
@@ -42,6 +43,8 @@
 #include "user_modules.h"
 #include "lwip/dns.h"
 #include "user_interface.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
@@ -97,15 +100,31 @@ typedef struct
   int sync_cb_ref;
   int err_cb_ref;
   uint8_t attempts;
+
+  /* callback cache, locked by mutex */
+  xSemaphoreHandle mtx;
+  struct
+  {
+    ntp_err_t result;
+    uint32_t  s, us;
+    ip_addr_t used_server;
+  } callback_args;
 } sntp_state_t;
 
+enum { TASKCMD_DOSEND, TASKCMD_TIMER, TASKCMD_CALLBACK };
+
+#define LockCbArgs() xSemaphoreTake(state->mtx, portMAX_DELAY)
+#define UnlockCbArgs() xSemaphoreGive(state->mtx)
+
 static sntp_state_t *state;
+static task_handle_t sntp_task;
 static ip_addr_t server;
 
 static void on_timeout (void *arg);
 
 static void cleanup (lua_State *L)
 {
+  vSemaphoreDelete (state->mtx);
   os_timer_disarm (&state->timer);
   udp_remove (state->pcb);
   luaL_unref (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
@@ -130,6 +149,15 @@ static void handle_error (lua_State *L, ntp_err_t err)
 }
 
 
+static inline void report_error (ntp_err_t err)
+{
+  LockCbArgs();
+  state->callback_args.result = err;
+  UnlockCbArgs();
+  task_post_medium (sntp_task, TASKCMD_CALLBACK);
+}
+
+
 static void sntp_dosend (lua_State *L)
 {
   if (state->attempts == 0)
@@ -144,7 +172,10 @@ static void sntp_dosend (lua_State *L)
 
   struct pbuf *p = pbuf_alloc (PBUF_TRANSPORT, sizeof (ntp_frame_t), PBUF_RAM);
   if (!p)
+  {
     handle_error (L, NTP_MEM_ERR);
+    return;
+  }
 
   ntp_frame_t req;
   os_memset (&req, 0, sizeof (req));
@@ -172,17 +203,15 @@ static void sntp_dosend (lua_State *L)
 static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
   (void)arg;
-
-  lua_State *L = lua_getstate ();
   if (ipaddr == NULL)
   {
     sntp_dbg("DNS Fail!\n");
-    handle_error(L, NTP_DNS_ERR);
+    report_error(NTP_DNS_ERR);
   }
   else
   {
     server = *ipaddr;
-    sntp_dosend(L);
+    task_post_medium (sntp_task, TASKCMD_DOSEND);
   }
 }
 
@@ -191,11 +220,7 @@ static void on_timeout (void *arg)
 {
   (void)arg;
   sntp_dbg("sntp: timer\n");
-  lua_State *L = lua_getstate ();
-  if (state->attempts >= MAX_ATTEMPTS)
-    handle_error (L, NTP_TIMEOUT_ERR);
-  else
-    sntp_dosend (L);
+  task_post_medium (sntp_task, TASKCMD_TIMER);
 }
 
 
@@ -292,38 +317,89 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
   if (have_cb)
   {
-    lua_rawgeti (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
-    lua_pushnumber (L, tv.tv_sec);
-    lua_pushnumber (L, tv.tv_usec);
+    LockCbArgs();
+    state->callback_args.s = tv.tv_sec;
+    state->callback_args.us = tv.tv_usec;
+    UnlockCbArgs();
   }
 #else
   if (have_cb)
   {
-    lua_rawgeti (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
-    lua_pushnumber (L, ntp.xmit.sec - NTP_TO_UNIX_EPOCH);
-    lua_pushnumber (L, (MICROSECONDS * ntp.xmit.frac) / UINT32_MAXI);
+    LockCbArgs();
+    state->callback_args.s = ntp.xmit.sec - NTP_TO_UNIX_EPOCH;
+    state->callback_args.us = (MICROSECONDS * ntp.xmit.frac) / UINT32_MAXI;
+    UnlockCbArgs();
   }
 #endif
 
-  cleanup (L);
-
   if (have_cb)
   {
-    lua_pushstring (L, ipaddr_ntoa (&server));
-    lua_call (L, 3, 0);
+    LockCbArgs();
+    state->callback_args.used_server = server;
+    UnlockCbArgs();
+    task_post_medium (sntp_task, TASKCMD_CALLBACK);
   }
 }
 
 
+static void run_task (task_param_t cmd, task_prio_t prio)
+{
+  (void)prio;
+  lua_State *L = lua_getstate ();
+  switch (cmd)
+  {
+    case TASKCMD_DOSEND:
+      sntp_dosend (L);
+      break;
+    case TASKCMD_TIMER:
+      if (state->attempts >= MAX_ATTEMPTS)
+        handle_error (L, NTP_TIMEOUT_ERR);
+      else
+        sntp_dosend (L);
+      break;
+    case TASKCMD_CALLBACK:
+    {
+      LockCbArgs();
+      ntp_err_t err = state->callback_args.result;
+      UnlockCbArgs();
+      if (err == NTP_NO_ERR)
+      {
+        bool have_cb = (state->sync_cb_ref != LUA_NOREF);
+        if (have_cb)
+        {
+          lua_rawgeti (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
+          LockCbArgs();
+          lua_pushnumber (L, state->callback_args.s);
+          lua_pushnumber (L, state->callback_args.us);
+          lua_pushstring (L, ipaddr_ntoa (&state->callback_args.used_server));
+          UnlockCbArgs();
+        }
+
+        cleanup (L);
+
+        if (have_cb)
+          lua_call (L, 3, 0);
+      }
+      else
+        handle_error (L, err);
+    }
+  }
+}
+
 // sntp.sync (server or nil, syncfn or nil, errfn or nil)
 static int sntp_sync (lua_State *L)
 {
+  const char *errmsg = 0;
+  #define sync_err(x) do { errmsg = x; goto error; } while (0)
+
+  if (!sntp_task)
+    sntp_task = task_get_id (run_task);
+  if (!sntp_task)
+    sync_err ("can't register task");
+
   // default to anycast address, then allow last server to stick
   if (server.addr == IPADDR_ANY)
     NTP_ANYCAST_ADDR(&server);
-
-  const char *errmsg = 0;
-  #define sync_err(x) do { errmsg = x; goto error; } while (0)
 
   if (state)
     return luaL_error (L, "sync in progress");
@@ -333,6 +409,10 @@ static int sntp_sync (lua_State *L)
     sync_err ("out of memory");
 
   memset (state, 0, sizeof (sntp_state_t));
+
+  state->mtx = xSemaphoreCreateMutex ();
+  if (!state->mtx)
+    sync_err ("no memory for mutex");
 
   state->sync_cb_ref = LUA_NOREF;
   state->err_cb_ref = LUA_NOREF;
