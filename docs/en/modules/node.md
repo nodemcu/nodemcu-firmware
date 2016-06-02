@@ -257,11 +257,11 @@ Redirects the Lua interpreter output to a callback function. Optionally also pri
     Do **not** attempt to `print()` or otherwise induce the Lua interpreter to produce output from within the callback function. Doing so results in infinite recursion, and leads to a watchdog-triggered restart.
 
 #### Syntax
-`node.output(function(str), serial_debug)`
+`node.output(function(str), serial_output)`
 
 #### Parameters
-  - `output_fn(str)` a function accept every output as str, and can send the output to a socket (or maybe a file).
-  - `serial_debug` 1 output also show in serial. 0: no serial output.
+  - `output_fn(str)` a function accept every output as str, and can send the output to a socket (or maybe a file). `nil` to unregister the previous function.
+  - `serial_output` 1 output also sent out the serial port. 0: no serial output. Defaults to 1 if not specified.
 
 #### Returns
 `nil`
@@ -293,6 +293,11 @@ s:listen(2323,function(c)
       node.output(nil)        -- un-regist the redirect output function, output goes to serial
    end)
 end)
+```
+
+```lua
+-- disable all output completely
+node.output(nil, 0)
 ```
 #### See also
 [`node.input()`](#nodeinput)

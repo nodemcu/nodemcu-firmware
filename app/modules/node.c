@@ -27,9 +27,18 @@
 #include "user_version.h"
 #include "rom.h"
 #include "task/task.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 #define CPU80MHZ 80
 #define CPU160MHZ 160
+
+#define REDIRECT_BUFFER_SZ 128
+
+static xQueueHandle redirQ;
+static task_handle_t redir_task;
+static int output_redir_ref = LUA_NOREF;
+static int serial_output = 1;
 
 // Lua: restart()
 static int node_restart( lua_State* L )
@@ -324,54 +333,100 @@ static int node_input( lua_State* L )
   return 0;
 }
 
-static int output_redir_ref = LUA_NOREF;
-static int serial_debug = 1;
-void output_redirect(const char *str) {
+void output_redirect(task_param_t arg, task_prio_t prio)
+{
+  (void)arg;
+  (void)prio;
+
   lua_State *L = lua_getstate();
-  // if(strlen(str)>=TX_BUFF_SIZE){
-  //   NODE_ERR("output too long.\n");
-  //   return;
-  // }
 
-  if (output_redir_ref == LUA_NOREF || !L) {
-    uart0_sendStr(str);
-    return;
+  luaL_Buffer buf;
+
+  char *p;
+  size_t total = 0;
+  unsigned qd = uxQueueMessagesWaitingFromISR (redirQ);
+  while (qd)
+  {
+    if (!total) /* load function onto stack and prepare a new buffer */
+    {
+      lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir_ref);
+      luaL_buffinit (L, &buf);
+      p = luaL_prepbuffer (&buf);
+    }
+
+    xQueueReceive (redirQ, p++, portMAX_DELAY);
+    ++total;
+    if (--qd == 0) /* Has anything been appended since we started? */
+      qd = uxQueueMessagesWaitingFromISR (redirQ);
+
+    /* Invoke callback either when we're out of characters, or when we've
+     * filled up the available buffer space. */
+    if (!qd || total == LUAL_BUFFERSIZE)
+    {
+      luaL_addsize (&buf, total);
+      luaL_pushresult (&buf);
+      lua_call(L, 1, 0);
+      total = 0;
+    }
   }
-
-  if (serial_debug != 0) {
-    uart0_sendStr(str);
-  }
-
-  lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir_ref);
-  lua_pushstring(L, str);
-  lua_call(L, 1, 0);   // this call back function should never user output.
 }
+
+
+/* This function may be invoked from any context, so we use xxxFromISR
+ * functions for all queue handling. */
+static void redir_putc (char c)
+{
+  if (serial_output)
+    uart0_putc (c);
+
+  if (redirQ)
+  {
+    bool wasEmpty = xQueueIsQueueEmptyFromISR (redirQ);
+    /* If we get pre-empted and re-entered here we'll end up posting two copies
+     * to our task, which is mostly harmless (just some wasted cycles) */
+    xQueueSendToBackFromISR(redirQ, &c, NULL);
+    if (wasEmpty)
+      task_post_high (redir_task, 0); /* Limited buffer, service often! */
+  }
+}
+
 
 // Lua: output(function(c), debug)
 static int node_output( lua_State* L )
 {
-  // luaL_checkanyfunction(L, 1);
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
-    lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
-    if (output_redir_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, output_redir_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, output_redir_ref);
+  output_redir_ref = LUA_NOREF;
+
+  unsigned len = REDIRECT_BUFFER_SZ;
+  if (lua_isnumber (L, 3))
+    len = lua_tonumber (L, 3);
+
+  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  {
+    lua_pushvalue(L, 1);
     output_redir_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else {    // unref the key press function
-    if (output_redir_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, output_redir_ref);
-    output_redir_ref = LUA_NOREF;
-    serial_debug = 1;
-    return 0;
+    if (!redirQ)
+      redirQ = xQueueCreate (len, sizeof(char));
+    if (!redir_task)
+      redir_task = task_get_id (output_redirect);
+    os_install_putc1 (redir_putc); /* It doesn't give us back the original :( */
+  }
+  else
+  {
+    if (redirQ)
+    {
+      xQueueHandle tmp = redirQ;
+      /* Dumb "locking" before free, relying on 32bit load/store atomicity */
+      redirQ = NULL;
+      vQueueDelete (tmp);
+    }
+    serial_output = 1; /* support node.output(nil, 0) to suppress all output */
   }
 
   if ( lua_isnumber(L, 2) )
-  {
-    serial_debug = lua_tointeger(L, 2);
-    if (serial_debug != 0)
-      serial_debug = 1;
-  } else {
-    serial_debug = 1; // default to 1
-  }
+    serial_output = lua_tointeger(L, 2) ? 1 : 0;
+  else
+    serial_output = 1; // default to 1
 
   return 0;
 }
