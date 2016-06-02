@@ -91,6 +91,12 @@ SECTIONS
   .irom0.text : ALIGN(0x1000)
   {
     _irom0_text_start = ABSOLUTE(.);
+
+    /* To be able to suppress SDK printfs, we place all SDK code first, with
+     * a marker at the end that we can easily compare against. */
+    */rtos-sdk/lib/lib*.a:*.o(.irom*)
+    _irom0_sdktext_end = ABSOLUTE(.);
+
     *(.servercert.flash)
     *(.clientcert.flash)
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
@@ -107,10 +113,6 @@ SECTIONS
     lua_rotable = ABSOLUTE(.);
     KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
-
-    /* SDK doesn't use libc functions, and are therefore safe to put in flash */
-    */libc.a:*.o(.text* .literal*)
-    /* end libc functions */
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);

@@ -44,7 +44,13 @@
 .align 4
 .literal_position
 __wrap_printf:
-  addi a1, a1, -48      /* get some stack space                               */
+  movi a9, os_printf_enabled  /* a9 is caller saved                           */
+  l8ui a9, a9, 0              /* load os_printf_enabled flag                  */
+  bnez a9, 1f                 /* if it's enabled, we print everything         */
+  movi a9, _irom0_sdktext_end /* else we check if it's SDK called             */
+  bgeu a0, a9, 1f             /* ...and only print from user code             */
+  ret
+1:addi a1, a1, -48      /* get some stack space                               */
   s32i a0, a1,  0       /* store a0 at the bottom                             */
   s32i a2, a1, 16       /* copy the formatting string and first few arguments */
   s32i a3, a1, 20       /* ...onto the stack in a way that we get a struct    */
@@ -61,3 +67,9 @@ __wrap_printf:
   l32i a0, a1, 0        /* restore return address into a0                     */
   addi a1, a1, 48       /* release the stack                                  */
   ret                   /* all done                                           */
+
+/* Flag for controlling whether SDK printf()s are suppressed or not.
+ * This is to provide an RTOS-safe reimplementation of system_set_os_print(). */
+.section ".data"
+.globl os_printf_enabled
+os_printf_enabled: .byte 1
