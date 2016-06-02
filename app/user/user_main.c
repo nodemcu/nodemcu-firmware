@@ -156,5 +156,5 @@ void user_init(void)
     // NodeMCU currently uses more than that. The game is on to find these
     // culprits, but this gcc doesn't do the -fstack-usage option :(
     xTaskCreate (
-      nodemcu_main, "nodemcu", 800, 0, configTIMER_TASK_PRIORITY +1, NULL);
+      nodemcu_main, "nodemcu", 1536, 0, configTIMER_TASK_PRIORITY +1, NULL);
 }
