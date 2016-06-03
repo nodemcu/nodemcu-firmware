@@ -8,5 +8,6 @@ fi
 git clone https://github.com/pellepl/spiffs
 
 cp spiffs/src/*.[ch] ../app/spiffs
+cp spiffs/LICENSE ../app/spiffs
 
 rm -fr spiffs
