@@ -787,7 +787,7 @@ static void serve_status(struct tcp_pcb *conn)
     "Failed to connect to \"%s\" - Wrong password.",
     "Failed to connect to \"%s\" - Network not found.",
     "Failed to connect.",
-    "Connected to \"%s\"."
+    "Connected to \"%s\" (%s)."
   };
 
   const size_t num_states = sizeof(state)/sizeof(state[0]);
@@ -806,12 +806,25 @@ static void serve_status(struct tcp_pcb *conn)
         wifi_station_get_config(&config);
         config.ssid[31] = '\0';
 
+	struct ip_info ip_info;
+
+	wifi_get_ip_info(STATION_IF , &ip_info);
+
+	char ip_addr[16];
+	ip_addr[0] = '\0';
+	if (curr_state == STATION_GOT_IP)
+	{
+		c_sprintf (ip_addr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
+	}
+
+
         int state_len = c_strlen(s);
+        int ip_len = c_strlen(ip_addr);
         int ssid_len = c_strlen(config.ssid);
-        int status_len = state_len + ssid_len + 1;
+        int status_len = state_len + ssid_len + ip_len + 1;
         char status_buf[status_len];
         memset(status_buf, 0, status_len);
-        status_len = c_sprintf(status_buf, s, config.ssid);
+        status_len = c_sprintf(status_buf, s, config.ssid, ip_addr);
 
         int buf_len = sizeof(fmt) + status_len + 10; //10 = (9+1), 1 byte is '\0' and 9 are reserved for length field
         char buf[buf_len];
