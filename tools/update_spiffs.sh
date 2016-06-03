@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# This script updates the SPIFFS code from the master repository
+
 if [ ! -e ../tools/update_spiffs.sh ]; then
   echo Must run from the tools directory
   exit 1
