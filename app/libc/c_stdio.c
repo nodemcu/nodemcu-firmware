@@ -272,7 +272,6 @@ strtoupper(char *p)
 //#include <string.h>
 //#include <pmon.h>
 #include "c_string.h"
-typedef int int32_t;
 typedef unsigned int u_int32_t;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
@@ -1095,12 +1094,14 @@ exponent(char *p, int exp, int fmtch)
 #endif /* FLOATINGPT */
 
 
-void c_sprintf(char *s, char *fmt, ...)
+int c_sprintf(char *s, const char *fmt, ...)
 {
+    int n;
     va_list arg;
     va_start(arg, fmt);
-    vsprintf(s, fmt, arg);
+    n = vsprintf(s, fmt, arg);
     va_end(arg);
+    return n;
 }
 
 #endif

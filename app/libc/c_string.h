@@ -39,5 +39,11 @@
 // size_t c_strcspn(const char * s1, const char * s2);
 // const char *c_strpbrk(const char * /*s1*/, const char * /*s2*/);
 // int c_strcoll(const char * /*s1*/, const char * /*s2*/);
+//
+
+extern size_t c_strlcpy(char *dst, const char *src, size_t siz);
+extern size_t c_strlcat(char *dst, const char *src, size_t siz);
+extern char *c_strdup(const char *src);
+
 
 #endif /* _C_STRING_H_ */

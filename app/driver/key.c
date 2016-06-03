@@ -17,7 +17,7 @@
 
 #include "driver/key.h"
 
-LOCAL void key_intr_handler(struct keys_param *keys);
+LOCAL void ICACHE_RAM_ATTR key_intr_handler(void *arg);
 
 /******************************************************************************
  * FunctionName : key_init_single
@@ -130,8 +130,9 @@ key_50ms_cb(struct single_key_param *single_key)
  * Returns      : none
 *******************************************************************************/
 LOCAL void
-key_intr_handler(struct keys_param *keys)
+key_intr_handler(void *arg)
 {
+    struct keys_param *keys = arg;
     uint8 i;
     uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
 

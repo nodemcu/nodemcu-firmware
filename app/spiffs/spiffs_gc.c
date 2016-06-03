@@ -250,6 +250,10 @@ s32_t spiffs_gc_find_candidate(
 
   // divide up work area into block indices and scores
   // todo alignment?
+  // YES DO PROPER ALIGNMENT !^@#%!@%!
+  if (max_candidates & 1)
+    ++max_candidates; // HACK WORKAROUND ICK for sizeof(spiffs_block_idx)==2
+
   spiffs_block_ix *cand_blocks = (spiffs_block_ix *)fs->work;
   s32_t *cand_scores = (s32_t *)(fs->work + max_candidates * sizeof(spiffs_block_ix));
 

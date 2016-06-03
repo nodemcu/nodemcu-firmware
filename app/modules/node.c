@@ -9,6 +9,7 @@
 #include "lmem.h"
 #include "lobject.h"
 #include "lstate.h"
+#include "legc.h"
 
 #include "lopcodes.h"
 #include "lstring.h"
@@ -18,13 +19,14 @@
 #include "lrodefs.h"
 
 #include "c_types.h"
-#include "romfs.h"
 #include "c_string.h"
 #include "driver/uart.h"
 #include "user_interface.h"
 #include "flash_api.h"
 #include "flash_fs.h"
 #include "user_version.h"
+#include "rom.h"
+#include "task/task.h"
 
 #define CPU80MHZ 80
 #define CPU160MHZ 160
@@ -39,7 +41,8 @@ static int node_restart( lua_State* L )
 // Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
-  s32 us, option;
+  uint32 us;
+  uint8 option;
   //us = luaL_checkinteger( L, 1 );
   // Set deleep option, skip if nil
   if ( lua_isnumber(L, 2) )
@@ -48,12 +51,12 @@ static int node_deepsleep( lua_State* L )
     if ( option < 0 || option > 4)
       return luaL_error( L, "wrong arg range" );
     else
-      deep_sleep_set_option( option );
+      system_deep_sleep_set_option( option );
   }
   // Set deleep time, skip if nil
   if ( lua_isnumber(L, 1) )
   {
-    us = lua_tointeger(L, 1);
+    us = luaL_checknumber(L, 1);
     // if ( us <= 0 )
     if ( us < 0 )
       return luaL_error( L, "wrong arg range" );
@@ -143,8 +146,6 @@ static int node_heap( lua_State* L )
   return 1;
 }
 
-static lua_State *gL = NULL;
-
 #ifdef DEVKIT_VERSION_0_9
 static int led_high_count = LED_HIGH_COUNT_DEFAULT;
 static int led_low_count = LED_LOW_COUNT_DEFAULT;
@@ -172,27 +173,25 @@ static void default_short_press(void *arg) {
 }
 
 static void key_long_press(void *arg) {
+  lua_State *L = lua_getstate();
   NODE_DBG("key_long_press is called.\n");
   if (long_key_ref == LUA_NOREF) {
     default_long_press(arg);
     return;
   }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, long_key_ref);
-  lua_call(gL, 0, 0);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, long_key_ref);
+  lua_call(L, 0, 0);
 }
 
 static void key_short_press(void *arg) {
+  lua_State *L = lua_getstate();
   NODE_DBG("key_short_press is called.\n");
   if (short_key_ref == LUA_NOREF) {
     default_short_press(arg);
     return;
   }
-  if (!gL)
-    return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, short_key_ref);
-  lua_call(gL, 0, 0);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, short_key_ref);
+  lua_call(L, 0, 0);
 }
 
 static void update_key_led (void *p)
@@ -284,7 +283,6 @@ static int node_key( lua_State* L )
   } else {
     ref = &short_key_ref;
   }
-  gL = L;
   // luaL_checkanyfunction(L, 2);
   if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION) {
     lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
@@ -303,6 +301,7 @@ static int node_key( lua_State* L )
 #endif
 
 extern lua_Load gLoad;
+extern bool user_process_input(bool force);
 // Lua: input("string")
 static int node_input( lua_State* L )
 {
@@ -319,7 +318,7 @@ static int node_input( lua_State* L )
       NODE_DBG("Get command:\n");
       NODE_DBG(load->line); // buggy here
       NODE_DBG("\nResult(if any):\n");
-      system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
+      user_process_input(true);
     }
   }
   return 0;
@@ -328,12 +327,13 @@ static int node_input( lua_State* L )
 static int output_redir_ref = LUA_NOREF;
 static int serial_debug = 1;
 void output_redirect(const char *str) {
+  lua_State *L = lua_getstate();
   // if(c_strlen(str)>=TX_BUFF_SIZE){
   //   NODE_ERR("output too long.\n");
   //   return;
   // }
 
-  if (output_redir_ref == LUA_NOREF || !gL) {
+  if (output_redir_ref == LUA_NOREF || !L) {
     uart0_sendStr(str);
     return;
   }
@@ -342,15 +342,14 @@ void output_redirect(const char *str) {
     uart0_sendStr(str);
   }
 
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, output_redir_ref);
-  lua_pushstring(gL, str);
-  lua_call(gL, 1, 0);   // this call back function should never user output.
+  lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir_ref);
+  lua_pushstring(L, str);
+  lua_call(L, 1, 0);   // this call back function should never user output.
 }
 
 // Lua: output(function(c), debug)
 static int node_output( lua_State* L )
 {
-  gL = L;
   // luaL_checkanyfunction(L, 1);
   if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
     lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
@@ -450,6 +449,42 @@ static int node_compile( lua_State* L )
   return 0;
 }
 
+// Task callback handler for node.task.post()
+static task_handle_t do_node_task_handle;
+static void do_node_task (task_param_t task_fn_ref, uint8_t prio)
+{
+  lua_State* L = lua_getstate();
+  lua_rawgeti(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
+  lua_pushinteger(L, prio);
+  lua_call(L, 1, 0);
+}
+
+// Lua: node.task.post([priority],task_cb) -- schedule a task for execution next
+static int node_task_post( lua_State* L )
+{
+  int n = 1, Ltype = lua_type(L, 1);
+  unsigned priority = TASK_PRIORITY_MEDIUM;
+  if (Ltype == LUA_TNUMBER) {
+    priority = (unsigned) luaL_checkint(L, 1);
+    luaL_argcheck(L, priority <= TASK_PRIORITY_HIGH, 1, "invalid  priority");
+    Ltype = lua_type(L, ++n);
+  }
+  luaL_argcheck(L, Ltype == LUA_TFUNCTION || Ltype == LUA_TLIGHTFUNCTION, n, "invalid function");
+  lua_pushvalue(L, n);
+
+  int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  if (!do_node_task_handle)  // bind the task handle to do_node_task on 1st call
+    do_node_task_handle = task_get_id(do_node_task);
+
+  if(!task_post(priority, do_node_task_handle, (task_param_t)task_fn_ref)) {
+    luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
+    luaL_error(L, "Task queue overflow. Task not posted");
+  }
+  return 0;
+}
+
 // Lua: setcpufreq(mhz)
 // mhz is either CPU80MHZ od CPU160MHZ
 static int node_setcpufreq(lua_State* L)
@@ -468,18 +503,24 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
-// Lua: code = bootreason()
+// Lua: code, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ] = bootreason()
 static int node_bootreason (lua_State *L)
 {
-  lua_pushnumber (L, rtc_get_reset_reason ());
-  return 1;
+  const struct rst_info *ri = system_get_rst_info ();
+  uint32_t arr[8] = {
+    rtc_get_reset_reason(),
+    ri->reason,
+    ri->exccause, ri->epc1, ri->epc2, ri->epc3, ri->excvaddr, ri->depc
+  };
+  int i, n = ((ri->reason != REASON_EXCEPTION_RST) ? 2 : 8);
+  for (i = 0; i < n; ++i)
+    lua_pushinteger (L, arr[i]);
+  return n;
 }
 
 // Lua: restore()
 static int node_restore (lua_State *L)
 {
-  flash_init_data_default();
-  flash_init_data_blank();
   system_restore();
   return 0;
 }
@@ -547,7 +588,52 @@ static int node_stripdebug (lua_State *L) {
 }
 #endif
 
+// Lua: node.egc.setmode( mode, [param])
+// where the mode is one of the node.egc constants  NOT_ACTIVE , ON_ALLOC_FAILURE,
+// ON_MEM_LIMIT, ALWAYS.  In the case of ON_MEM_LIMIT an integer parameter is reqired
+// See legc.h and lecg.c.
+static int node_egc_setmode(lua_State* L) {
+  unsigned mode  = luaL_checkinteger(L, 1);
+  unsigned limit = luaL_optinteger (L, 2, 0);
+
+  luaL_argcheck(L, mode <= (EGC_ON_ALLOC_FAILURE | EGC_ON_MEM_LIMIT | EGC_ALWAYS), 1, "invalid mode");
+  luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit>0, 1, "limit must be non-zero");
+
+  legc_set_mode( L, mode, limit );
+  return 0;
+}
+//
+// Lua: osprint(true/false)
+// Allows you to turn on the native Espressif SDK printing
+static int node_osprint( lua_State* L )
+{
+  if (lua_toboolean(L, 1)) {
+    system_set_os_print(1);
+  } else {
+    system_set_os_print(0);
+  }
+
+  return 0;  
+}
+
 // Module function map
+
+static const LUA_REG_TYPE node_egc_map[] = {
+  { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
+  { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
+  { LSTRKEY( "ON_ALLOC_FAILURE" ),  LNUMVAL( EGC_ON_ALLOC_FAILURE ) },
+  { LSTRKEY( "ON_MEM_LIMIT" ),      LNUMVAL( EGC_ON_MEM_LIMIT ) },
+  { LSTRKEY( "ALWAYS" ),            LNUMVAL( EGC_ALWAYS ) },
+  { LNILKEY, LNILVAL }
+};
+static const LUA_REG_TYPE node_task_map[] = {
+  { LSTRKEY( "post" ),            LFUNCVAL( node_task_post ) },
+  { LSTRKEY( "LOW_PRIORITY" ),    LNUMVAL( TASK_PRIORITY_LOW ) },
+  { LSTRKEY( "MEDIUM_PRIORITY" ), LNUMVAL( TASK_PRIORITY_MEDIUM ) },
+  { LSTRKEY( "HIGH_PRIORITY" ),   LNUMVAL( TASK_PRIORITY_HIGH ) },
+  { LNILKEY, LNILVAL }
+};
+
 static const LUA_REG_TYPE node_map[] =
 {
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
@@ -573,6 +659,11 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
+#endif
+  { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
+  { LSTRKEY( "task" ), LROVAL( node_task_map ) },
+#ifdef DEVELOPMENT_TOOLS
+  { LSTRKEY( "osprint" ), LFUNCVAL( node_osprint ) },
 #endif
 
 // Combined to dsleep(us, option)

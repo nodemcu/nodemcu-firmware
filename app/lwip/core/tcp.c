@@ -632,15 +632,19 @@ tcp_new_port(void)
   int i;
   struct tcp_pcb *pcb;
 #ifndef TCP_LOCAL_PORT_RANGE_START
-#define TCP_LOCAL_PORT_RANGE_START 4096
+#define TCP_LOCAL_PORT_RANGE_START 1024
 #define TCP_LOCAL_PORT_RANGE_END   0x7fff
 #endif
-  static u16_t port __attribute__((section(".port"))) = TCP_LOCAL_PORT_RANGE_START;
+  static u16_t port = TCP_LOCAL_PORT_RANGE_START;
   
  again:
-  if (++port >= TCP_LOCAL_PORT_RANGE_END) {
-    port = TCP_LOCAL_PORT_RANGE_START;
-  }
+//  if (++port >= TCP_LOCAL_PORT_RANGE_END) {
+//    port = TCP_LOCAL_PORT_RANGE_START;
+//  }
+  port = os_random();
+  port %= TCP_LOCAL_PORT_RANGE_END;
+  if (port < TCP_LOCAL_PORT_RANGE_START)
+	  port += TCP_LOCAL_PORT_RANGE_START;
   /* Check all PCB lists. */
   for (i = 0; i < NUM_TCP_PCB_LISTS; i++) {  
     for(pcb = *tcp_pcb_lists[i]; pcb != NULL; pcb = pcb->next) {
