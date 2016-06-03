@@ -119,7 +119,7 @@ static void run_callback (task_param_t arg, task_prio_t prio)
 static void alarm_timer_common(void* arg)
 {
   if (!task_post_medium (callback_task, (task_param_t)arg))
-    NODE_ERROR("ERROR: lost timer callback!");
+    NODE_ERR("ERROR: lost timer callback!");
 }
 
 // Lua: tmr.delay( us )
