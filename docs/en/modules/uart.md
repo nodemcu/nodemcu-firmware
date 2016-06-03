@@ -14,9 +14,10 @@ Change UART pin assignment.
 `uart.alt(on)`
 
 #### Parameters
-`on`:
-- `0` use standard pins
-- `1` use alternate pins GPIO13 and GPIO15
+`on`
+
+- 0 for standard pins
+- 1 to use alternate pins GPIO13 and GPIO15
 
 #### Returns
 `nil`

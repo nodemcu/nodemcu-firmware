@@ -25,14 +25,3 @@ script:
 - srec_cat -output ${file_name_integer} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
 # http://docs.travis-ci.com/user/environment-variables/#Convenience-Variables
 - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/pr-build.sh; fi
-deploy:
-  provider: releases
-  api_key:
-    secure: Swecz5lWvsuSbchSbVQ1rmCPN9nQIN5p/HlZNIEdEgAgnoLcJxRV4P8poVTB37jiA8Pck+8x2nWXpg74Rqik0i3KlPNvDfg5o4rIazWLNs4bc1Tbcpt44XAzFKKLYnDnWQUGcqjk7BcAXuNAF2X/fPBCVhFbHVg3Z7cDb32RsNw=
-  file:
-    - "$TRAVIS_BUILD_DIR/bin/${file_name_float}"
-    - "$TRAVIS_BUILD_DIR/bin/${file_name_integer}"
-  skip_cleanup: true
-  on:
-    tags: true
-    repo: nodemcu/nodemcu-firmware

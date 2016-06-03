@@ -57,7 +57,11 @@
 #define MDNS_DBG(...)  do {} while (0)
 #endif
 
+#define min(a,b) ((a) < (b) ? (a) : (b))
+
 #define MDNS_NAME_LENGTH     68 //68
+
+#define DNS_RRTYPE_NSEC    47
 
 static const char* service_name_with_suffix    = NULL;
 #define DNS_SD_SERVICE       "_services._dns-sd._udp.local"
@@ -176,12 +180,12 @@ PACK_STRUCT_END
 
 PACK_STRUCT_BEGIN
 /** MDNS answer message structure */
-struct mdns_auth {
+struct mdns_a_rr {
 	PACK_STRUCT_FIELD(u32_t src);
 }PACK_STRUCT_STRUCT;
 PACK_STRUCT_END
 
-#define SIZEOF_MDNS_AUTH 4
+#define SIZEOF_MDNS_A_RR 4
 PACK_STRUCT_BEGIN
 /** MDNS service registration message structure */
 struct mdns_service {
@@ -222,19 +226,31 @@ static u8_t *mdns_payload;
  * @return 0: names equal; 1: names differ
  */
 static u8_t ICACHE_FLASH_ATTR
-mdns_compare_name(unsigned char *query, unsigned char *response) {
+mdns_compare_name(unsigned char *query, unsigned char *response, unsigned char *pktbase) {
 	unsigned char n;
 
 	do {
 		n = *response++;
 		/** @see RFC 1035 - 4.1.4. Message compression */
 		if ((n & 0xc0) == 0xc0) {
-			/* Compressed name */
-			break;
+		  	n = ((n << 8) + *response) & 0x3fff;
+			if (n < response - pktbase) {
+			  response = pktbase + n;
+			} else {
+			  return 1;
+			}
 		} else {
 			/* Not compressed name */
 			while (n > 0) {
-				if ((*query) != (*response)) {
+				char q = *query;
+				if (q >= 'A' && q <= 'Z') {
+				  q = q + 'a' - 'A';
+				}
+				char r = *response;
+				if (r >= 'A' && r <= 'Z') {
+				  r = r + 'a' - 'A';
+				}
+				if (q != r) {
 					return 1;
 				}
 				++response;
@@ -270,6 +286,26 @@ mdns_namelen(u8_t *p, unsigned int maxlen) {
   }
 
   return p - orig;
+}
+
+/* Copy an unencoded name into an encoded name */
+static unsigned char *copy_and_encode_name(unsigned char *ptr, const char *name) {
+  while (*name) {
+    const char *p = name;
+    while (*p != '.' && *p) {
+      p++;
+    }
+    *ptr++ = p - name;
+    memcpy(ptr, name, p - name);
+    ptr += p - name;
+    if (!*p) {
+      break;
+    }
+    name = p + 1;
+  }
+  *ptr++ = 0;
+
+  return ptr;
 }
 
 static err_t send_packet(struct pbuf *p, struct ip_addr *dst_addr, u16_t dst_port, u8_t *addr_ptr) {
@@ -325,13 +361,14 @@ mdns_send_service_type(u16_t id, struct ip_addr *dst_addr, u16_t dst_port) {
 	err_t err;
 	struct mdns_hdr *hdr;
 	struct mdns_answer ans;
-	struct mdns_auth auth;
+	struct mdns_a_rr a_rr;
 	struct mdns_service serv;
 	struct pbuf *p ,*p_sta;
 	char *query, *nptr;
 	const char *pHostname;
 	struct netif * sta_netif = NULL;
 	struct netif * ap_netif = NULL;
+	int max_ttl = dst_addr ? 10 : 7200;
 	char tmpBuf[PUCK_DATASHEET_SIZE + PUCK_SERVICE_LENGTH];
 	u8_t n;
 	u16_t length = 0;
@@ -368,7 +405,7 @@ mdns_send_service_type(u16_t id, struct ip_addr *dst_addr, u16_t dst_port) {
 
 		ans.type = htons(DNS_RRTYPE_PTR);
 		ans.class = htons(DNS_RRCLASS_IN);
-		ans.ttl = htonl(3600);
+		ans.ttl = htonl(min(max_ttl, 3600));
 		ans.len = htons(os_strlen(service_name_with_suffix) + 1 +1 );
 		length = 0;
 
@@ -418,12 +455,13 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 	struct mdns_hdr *hdr;
 	struct mdns_answer ans;
 	struct mdns_service serv;
-	struct mdns_auth auth;
+	struct mdns_a_rr a_rr;
 	struct pbuf *p ,*p_sta;
 	char *query, *nptr;
 	char *query_end;
 	const char *pHostname;
 	const char *name = info->host_name;
+	int max_ttl = dst_addr ? 10 : 7200;
 	u8_t n;
 	u8_t i = 0;
 	u16_t length = 0;
@@ -443,6 +481,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		hdr->id = htons(id);
 		hdr->flags1 = DNS_FLAG1_RESPONSE;
 		hdr->numanswers = htons(4);
+		hdr->numextrarr = htons(1);
 		query = (char*) hdr + SIZEOF_DNS_HDR;
 		query_end = (char *) p->payload + p->tot_len;
 		c_strlcpy(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
@@ -474,7 +513,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		ans.type = htons(DNS_RRTYPE_PTR);
 		ans.class = htons(DNS_RRCLASS_IN);
-		ans.ttl = htonl(300);
+		ans.ttl = htonl(min(max_ttl, 300));
 		length = os_strlen(ms_info->host_desc) + MDNS_LENGTH_ADD + 1;
 		ans.len = htons(length);
 		length = 0;
@@ -508,7 +547,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		/* fill the answer */
 		ans.type = htons(DNS_RRTYPE_TXT);
 		ans.class = htons(dns_class);
-		ans.ttl = htonl(300);
+		ans.ttl = htonl(min(max_ttl, 300));
 //		length = os_strlen(TXT_DATA) + MDNS_LENGTH_ADD + 1;
 		const char *attributes[12];
 		int attr_count = 0;
@@ -541,7 +580,8 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		query = query + SIZEOF_DNS_ANSWER;
 		// Check enough space in the packet
 	        const char *end_of_packet = query + length + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_SERVICE +
-		    os_strlen(ms_info->host_name) + 7 + 1 + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_AUTH;
+		    os_strlen(ms_info->host_name) + 7 + 1 + 2 + SIZEOF_DNS_ANSWER + SIZEOF_MDNS_A_RR +
+		    2 + SIZEOF_DNS_ANSWER + 5;
 
 	        if (query_end <= end_of_packet) {
 		  MDNS_DBG("Too much data to send\n");
@@ -577,7 +617,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		ans.type = htons(DNS_RRTYPE_SRV);
 		ans.class = htons(dns_class);
-		ans.ttl = htonl(300);
+		ans.ttl = htonl(min(max_ttl, 300));
 		c_strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
 		c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
 		c_strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
@@ -620,7 +660,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		ans.type = htons(DNS_RRTYPE_A);
 		ans.class = htons(dns_class);
-		ans.ttl = htonl(300);
+		ans.ttl = htonl(min(max_ttl, 300));
 		ans.len = htons(DNS_IP_ADDR_LEN);
 
 		MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
@@ -633,15 +673,33 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		/* fill the payload of the mDNS message */
 		/* set the local IP address */
-		auth.src = 0;
-		MEMCPY( query, &auth, SIZEOF_MDNS_AUTH);
-		u8_t *addr_ptr = query + ((char *) &auth.src - (char *) &auth);
+		a_rr.src = 0;
+		MEMCPY( query, &a_rr, SIZEOF_MDNS_A_RR);
+		u8_t *addr_ptr = query + ((char *) &a_rr.src - (char *) &a_rr);
 		/* resize the query */
-		query = query + SIZEOF_MDNS_AUTH;
+		query = query + SIZEOF_MDNS_A_RR;
+
+		// Append the NSEC record that says we only have an A record
+		*query++ = 0xc0 + (hostname_offset >> 8);
+		*query++ = hostname_offset & 0xff;
+
+		ans.type = htons(DNS_RRTYPE_NSEC);
+		ans.class = htons(dns_class);
+		ans.ttl = htonl(min(max_ttl, 300));
+		ans.len = htons(5);
+
+		MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
+		query = query + SIZEOF_DNS_ANSWER;
+		*query++ = 0xc0 + (hostname_offset >> 8);
+		*query++ = hostname_offset & 0xff;
+		*query++ = 0;
+		*query++ = 1;
+		*query++ = 0x40;
+
 
 		//MDNS_DBG("Final ptr=%x\n", query);
 
-		// increment by sizeof_mdns_auth
+		// increment by sizeof_mdns_a_rr
 
 		/* set the name of the authority field.
 		 * The same name as the Query using the offset address*/
@@ -650,12 +708,150 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		pbuf_realloc(p, (query) - ((char*) (p->payload)));
 
 		err = send_packet(p, dst_addr, dst_port, addr_ptr);
+
+		if (!dst_addr) {
+		  // this is being sent multicast...
+		  // so reset the timer
+		  os_timer_disarm(&mdns_timer);
+		  os_timer_arm(&mdns_timer, 1000 * 280, 1);
+		}
 	} else {
 		MDNS_DBG("ERR_MEM \n");
 		err = ERR_MEM;
 	}
 
 	return err;
+}
+
+static char *append_nsec_record(char *query, u32_t actual_rr, int max_ttl) {
+  struct mdns_answer ans;
+
+  ans.type = htons(DNS_RRTYPE_NSEC);
+  ans.class = htons(DNS_RRCLASS_IN);
+  ans.ttl = htonl(min(max_ttl, 300));
+  ans.len = htons(9);
+
+  MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
+  char *rr_len = query + ((char *) &ans.len - (char *) &ans) + 1;
+  query = query + SIZEOF_DNS_ANSWER;
+  *query++ = 0xc0;
+  *query++ = sizeof(struct mdns_hdr);
+  *query++ = 0;
+  char *bm_len = query;
+  *query++ = 5;
+  char *abase = query;
+  *query++ = 0;
+  *query++ = 0;
+  *query++ = 0;
+  *query++ = 0;
+  *query++ = 0;
+
+  while (actual_rr > 0) {
+    int v = actual_rr & 255;
+
+    if (v < 5 * 8) {
+      abase[v >> 3] |= 0x80 >> (v & 7);
+
+      actual_rr = actual_rr >> 8;
+    }
+  }
+
+  while (query[-1] == 0) {
+    query--;
+    (*bm_len)--;
+    (*rr_len)--;
+  }
+
+  return query;
+}
+
+/**
+ * This sends an empty response -- this is used when we doin't have an RR to send
+ * but the name exists
+ */
+
+static void 
+mdns_send_no_rr(struct mdns_hdr *req, const char *name, u32_t actual_rr, struct ip_addr *dst_addr, u16_t dst_port) {
+  int max_ttl = dst_addr ? 10 : 7200;
+  struct pbuf *p;
+  p = pbuf_alloc(PBUF_TRANSPORT,
+		  SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
+  if (p != NULL) {
+    LWIP_ASSERT("pbuf must be in one piece", p->next == NULL);
+    /* fill dns header */
+    struct mdns_hdr *hdr = (struct mdns_hdr*) p->payload;
+    os_memset(hdr, 0, SIZEOF_DNS_HDR);
+    hdr->id = req->id;
+    hdr->flags1 = DNS_FLAG1_RESPONSE;
+    hdr->numextrarr = htons(1);
+    char *query = (char*) hdr + SIZEOF_DNS_HDR;
+    char *query_end = (char *) p->payload + p->tot_len;
+    // Now copy over the dns name 
+    int len = strlen(name);
+
+    if (query_end - query >= len + SIZEOF_DNS_QUERY + 15) {
+      query = copy_and_encode_name((char *) (hdr + 1), name);
+
+      query = append_nsec_record(query, actual_rr, max_ttl);
+
+      // Set the length code correctly
+      pbuf_realloc(p, query - ((char*) (p->payload)));
+
+      send_packet(p, dst_addr, dst_port, NULL);
+    }
+  }
+}
+
+/**
+ * This sends a single A record and the NSEC record as additional
+ */
+
+static void 
+mdns_send_a_rr(struct mdns_hdr *req, const char *name, struct ip_addr *dst_addr, u16_t dst_port) {
+  int max_ttl = dst_addr ? 10 : 7200;
+  struct pbuf *p;
+  p = pbuf_alloc(PBUF_TRANSPORT,
+		  SIZEOF_DNS_HDR + MDNS_MAX_NAME_LENGTH * 2 + SIZEOF_DNS_QUERY, PBUF_RAM);
+  if (p != NULL) {
+    LWIP_ASSERT("pbuf must be in one piece", p->next == NULL);
+    /* fill dns header */
+    struct mdns_hdr *hdr = (struct mdns_hdr*) p->payload;
+    os_memset(hdr, 0, SIZEOF_DNS_HDR);
+    hdr->id = req->id;
+    hdr->flags1 = DNS_FLAG1_RESPONSE;
+    hdr->numanswers = htons(1);
+    hdr->numextrarr = htons(1);
+    char *query = (char*) hdr + SIZEOF_DNS_HDR;
+    char *query_end = (char *) p->payload + p->tot_len;
+    // Now copy over the dns name 
+    int len = strlen(name) + 1;
+
+    if (query_end - query >= len + SIZEOF_DNS_QUERY + 4 + 2 + 4 + 15) {
+      query = copy_and_encode_name((char *) (hdr + 1), name);
+
+      struct mdns_answer ans;
+
+      ans.type = htons(DNS_RRTYPE_A);
+      ans.class = htons(DNS_RRCLASS_IN);
+      ans.ttl = htonl(min(max_ttl, 300));
+      ans.len = htons(4);
+
+      MEMCPY( query, &ans, SIZEOF_DNS_ANSWER);
+      query = query + SIZEOF_DNS_ANSWER;
+      char *addr_ptr = query;
+      query += 4;
+
+      // Now add the NSEC record
+      *query++ = 0xc0;
+      *query++ = sizeof(*hdr);
+      query = append_nsec_record(query, DNS_RRTYPE_A, max_ttl);
+
+      // Set the length code correctly
+      pbuf_realloc(p, query - ((char*) (p->payload)));
+
+      send_packet(p, dst_addr, dst_port, addr_ptr);
+    }
+  }
 }
 
 /**
@@ -695,52 +891,78 @@ mdns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr,
 		nquestions = htons(hdr->numquestions);
 		//nanswers   = htons(hdr->numanswers);
 		/* if we have a question send an answer if necessary */
-		if (nquestions > 0) {
+		u8_t qno;
+		u8_t *qptr = (u8_t *) (hdr + 1);
+		u8_t *qend = mdns_payload + p->tot_len;
+		for (qno = 0; qno < nquestions && qptr < qend; qno++) {
+		  char tmpBuf[PUCK_DATASHEET_SIZE + PUCK_SERVICE_LENGTH];
 		  struct mdns_query qry;
 
-		  int namelen = mdns_namelen((u8_t *) (hdr + 1), p->tot_len);
+		  int namelen = mdns_namelen(qptr, qend - qptr);
 
-		  memcpy(&qry, namelen + (u8_t *) (hdr + 1), sizeof(qry));
+		  memcpy(&qry, namelen + qptr, sizeof(qry));
 
 		  u16_t qry_type = ntohs(qry.type);
+
+		  if (port == 5353 && (ntohs(qry.class) & 0x8000) == 0) {
+		    addr = NULL;
+		  }
+
+		  u32_t actual_rr = 0;
+
+		  const char *no_rr_name = NULL;
 
 		  /* MDNS_DS_DOES_NAME_CHECK */
 		  /* Check if the name in the "question" part match with the name of the MDNS DS service. */
 		  if (mdns_compare_name((unsigned char *) DNS_SD_SERVICE,
-				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-			  if (qry_type == DNS_RRTYPE_PTR || qry_type == DNS_RRTYPE_ANY) {
-			    mdns_send_service_type(i, addr, port);
-			  }
+				  (unsigned char *) qptr, (unsigned char *) hdr) == 0) {
+		    if (qry_type == DNS_RRTYPE_PTR || qry_type == DNS_RRTYPE_ANY) {
+		      mdns_send_service_type(i, addr, port);
+		    } else {
+		      no_rr_name = DNS_SD_SERVICE;
+		      actual_rr = DNS_RRTYPE_PTR;
+		    }
 		  } else if (mdns_compare_name((unsigned char *) service_name_with_suffix,
-				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-
-			  if (qry_type == DNS_RRTYPE_PTR || qry_type == DNS_RRTYPE_ANY) {
-			    mdns_send_service(info, i, addr, port);
-			  }
+				  (unsigned char *) qptr, (unsigned char *) hdr) == 0) {
+		    if (qry_type == DNS_RRTYPE_PTR || qry_type == DNS_RRTYPE_ANY) {
+		      mdns_send_service(info, i, addr, port);
+		    } else {
+		      no_rr_name = service_name_with_suffix;
+		      actual_rr = DNS_RRTYPE_PTR;
+		    }
 		  } else {
-		    
-		    char tmpBuf[PUCK_DATASHEET_SIZE + PUCK_SERVICE_LENGTH];
 		    c_strlcpy(tmpBuf,ms_info->host_name, sizeof(tmpBuf));
 		    c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
 		    c_strlcat(tmpBuf, MDNS_LOCAL, sizeof(tmpBuf));
+		    no_rr_name = tmpBuf;
 
 		    if (mdns_compare_name((unsigned char *) tmpBuf,
-				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-			  if (qry_type == DNS_RRTYPE_A || qry_type == DNS_RRTYPE_ANY) {
-			    mdns_send_service(info, i, addr, port);
-			  }
+				  (unsigned char *) qptr, (unsigned char *) hdr) == 0) {
+		      if (qry_type == DNS_RRTYPE_A || qry_type == DNS_RRTYPE_ANY) {
+			mdns_send_a_rr(hdr, tmpBuf, addr, port);
+		      } else {
+			actual_rr = DNS_RRTYPE_A;
+		      }
 		    } else {
 		      c_strlcpy(tmpBuf,ms_info->host_desc, sizeof(tmpBuf));
 		      c_strlcat(tmpBuf, ".", sizeof(tmpBuf));
 		      c_strlcat(tmpBuf, service_name_with_suffix, sizeof(tmpBuf));
 		      if (mdns_compare_name((unsigned char *) tmpBuf,
-				  (unsigned char *) mdns_payload + SIZEOF_DNS_HDR) == 0) {
-			  if (qry_type == DNS_RRTYPE_TXT || qry_type == DNS_RRTYPE_SRV || qry_type == DNS_RRTYPE_ANY) {
-			    mdns_send_service(info, i, addr, port);
-			  }
+				  (unsigned char *) qptr, (unsigned char *) hdr) == 0) {
+			if (qry_type == DNS_RRTYPE_TXT || qry_type == DNS_RRTYPE_SRV || qry_type == DNS_RRTYPE_ANY) {
+			  mdns_send_service(info, i, addr, port);
+			} else {
+			  actual_rr = (DNS_RRTYPE_TXT << 8) + DNS_RRTYPE_SRV;
+			}
 		      }
 		    }
 		  }
+
+		  if (actual_rr) {
+		    mdns_send_no_rr(hdr, no_rr_name, actual_rr, addr, port);
+		  }
+
+		  qptr += namelen + sizeof(qry);		// Now points to next question
 		}
 	}
 memerr1:
@@ -908,7 +1130,7 @@ nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
   //MDNS_DBG("About to start timer\n");
   os_timer_disarm(&mdns_timer);
   os_timer_setfn(&mdns_timer, (os_timer_func_t *)mdns_reg,ms_info);
-  os_timer_arm(&mdns_timer, 1000 * 120, 1);
+  os_timer_arm(&mdns_timer, 1000 * 280, 1);
   /* kick off the first one right away */
   mdns_reg_handler_restart();
   mdns_reg(ms_info);

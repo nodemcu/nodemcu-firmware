@@ -35,6 +35,8 @@ static inline void unregister_lua_cb(lua_State* L, int* cb_ref)
   }
 }
 
+void wifi_change_default_host_name(void);
+
 #ifdef NODE_DEBUG
 #define EVENT_DBG(...) c_printf(__VA_ARGS__)
 #else
