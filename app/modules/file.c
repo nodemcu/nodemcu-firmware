@@ -105,7 +105,7 @@ static int file_exists( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );    
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
 
   spiffs_stat stat;
   int rc = SPIFFS_stat(&fs, (char *)fname, &stat);
@@ -120,7 +120,7 @@ static int file_remove( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );    
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
   file_close(L);
   SPIFFS_remove(&fs, (char *)fname);
   return 0;  
@@ -157,10 +157,10 @@ static int file_rename( lua_State* L )
   }
 
   const char *oldname = luaL_checklstring( L, 1, &len );
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(oldname) == len, 1, "filename invalid");
   
   const char *newname = luaL_checklstring( L, 2, &len );  
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 2, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(newname) == len, 2, "filename invalid");
 
   if(SPIFFS_OK==myspiffs_rename( oldname, newname )){
     lua_pushboolean(L, 1);
