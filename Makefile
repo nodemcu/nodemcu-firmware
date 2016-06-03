@@ -17,7 +17,6 @@
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 SDKDIR:=$(TOP_DIR)/rtos-sdk
-LWIPDIR:=$(SDKDIR)/third_party/lwip
 
 # This is, sadly, the cleanest way to resolve the different non-standard
 # conventions for sized integers across the various components.
@@ -30,7 +29,7 @@ INCLUDE_DIRS=$(TOP_DIR)/sdk-overrides/include $(SDKDIR)/include $(SDKDIR)/includ
 # -I for user include dir, or the esp-open-sdk toolchain headers wreak havoc
 CCFLAGS:=$(addprefix -isystem,$(INCLUDE_DIRS)) $(BASIC_TYPES)
 
-LDFLAGS:= -L$(SDKDIR)/lib -L$(SDKDIR)/ld -L$(LWIPDIR)/.output/eagle/debug/lib $(LDFLAGS)
+LDFLAGS:= -L$(SDKDIR)/lib -L$(SDKDIR)/ld $(LDFLAGS)
 
 
 #############################################################
@@ -137,20 +136,12 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 
 all:pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
-.PHONY: sdk_built
-sdk_built:
-ifndef PDIR
-	$(MAKE) -C $(LWIPDIR) SDK_PATH=$(SDKDIR) -j1
-else
-	:
-endif
-
 clean:
-	$(foreach d, $(SUBDIRS) $(LWIPDIR), $(MAKE) -C $(d) clean;)
+	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
 	$(RM) -r $(ODIR)/$(TARGET)/$(FLAVOR)
 
 clobber: $(SPECIAL_CLOBBER)
-	$(foreach d, $(SUBDIRS) $(LWIPDIR), $(MAKE) -C $(d) clobber;)
+	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clobber;)
 	$(RM) -r $(ODIR)
 
 flash: 
@@ -160,7 +151,7 @@ else
 	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
-.subdirs: sdk_built
+.subdirs:
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
 
 ifneq ($(MAKECMDGOALS),clean)
