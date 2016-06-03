@@ -3,22 +3,34 @@
 #
 .NOTPARALLEL:
 
+# Get rid of most of the implicit rules by clearing the .SUFFIXES target
+.SUFFIXES:
+# Get rid of the auto-checkout from old version control systems rules
+%: %,v
+%: RCS/%,v
+%: RCS/%
+%: s.%
+%: SCCS/s.%
+
+
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-SDK_DIR:=$(TOP_DIR)/rtos-sdk
+
+SDKDIR:=$(TOP_DIR)/rtos-sdk
+LWIPDIR:=$(SDKDIR)/third_party/lwip
 
 # This is, sadly, the cleanest way to resolve the different non-standard
 # conventions for sized integers across the various components.
 BASIC_TYPES=-Du32_t=uint32_t -Du16_t=uint16_t -Du8_t=uint8_t -Ds32_t=int32_t -Ds16_t=int16_t -Duint32=uint32_t -Duint16=uint16_t -Duint8=uint8_t -Dsint32=int32_t -Dsint16=int16_t -Dsint8=int8_t
 
 # Include dirs, ensure the overrides come first
-INCLUDE_DIRS=$(TOP_DIR)/sdk-overrides/include $(SDK_DIR)/include $(SDK_DIR)/include/espressif $(SDK_DIR)/include/lwip $(SDK_DIR)/include/lwip/ipv4 $(SDK_DIR)/include/lwip/ipv6 $(SDK_DIR)/extra_include
+INCLUDE_DIRS=$(TOP_DIR)/sdk-overrides/include $(SDKDIR)/include $(SDKDIR)/include/espressif $(SDKDIR)/include/lwip $(SDKDIR)/include/lwip/ipv4 $(SDKDIR)/include/lwip/ipv6 $(SDKDIR)/extra_include
 
 # ... and we have to mark them all as system include dirs rather than the usual
 # -I for user include dir, or the esp-open-sdk toolchain headers wreak havoc
 CCFLAGS:=$(addprefix -isystem,$(INCLUDE_DIRS)) $(BASIC_TYPES)
 
-LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -L$(SDK_DIR)/third_party/lwip/.output/eagle/debug/lib $(LDFLAGS)
+LDFLAGS:= -L$(SDKDIR)/lib -L$(SDKDIR)/ld -L$(LWIPDIR)/.output/eagle/debug/lib $(LDFLAGS)
 
 
 #############################################################
@@ -123,19 +135,22 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 # Should be done in top-level makefile only
 #
 
-all:	sdk_built pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+all:pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
 .PHONY: sdk_built
 sdk_built:
-	$(MAKE) -C $(SDK_DIR)/third_party/lwip SDK_PATH=$(SDK_DIR) -j1
+ifndef PDIR
+	$(MAKE) -C $(LWIPDIR) SDK_PATH=$(SDKDIR) -j1
+else
+	:
+endif
 
 clean:
-	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
+	$(foreach d, $(SUBDIRS) $(LWIPDIR), $(MAKE) -C $(d) clean;)
 	$(RM) -r $(ODIR)/$(TARGET)/$(FLAVOR)
-	$(RM) -r "$(TOP_DIR)/sdk"
 
 clobber: $(SPECIAL_CLOBBER)
-	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clobber;)
+	$(foreach d, $(SUBDIRS) $(LWIPDIR), $(MAKE) -C $(d) clobber;)
 	$(RM) -r $(ODIR)
 
 flash: 
@@ -145,7 +160,7 @@ else
 	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
-.subdirs: | sdk_built
+.subdirs: sdk_built
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
 
 ifneq ($(MAKECMDGOALS),clean)
