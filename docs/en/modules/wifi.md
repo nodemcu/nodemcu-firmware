@@ -45,7 +45,7 @@ The WiFi mode, as one of the `wifi.STATION`, `wifi.SOFTAP`, `wifi.STATIONAP` or 
 Gets WiFi physical mode.
 
 #### Syntax
-`wifi.getpymode()`
+`wifi.getphymode()`
 
 #### Parameters
 none
