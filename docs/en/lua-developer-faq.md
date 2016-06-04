@@ -135,7 +135,7 @@ SDK Callbacks include:
 | net.server | `sk:listen(port,[ip],function(socket))`                                    |
 | net        | `sk:on(event, function(socket, [, data]))`, `sk:send(string, function(sent))`, `sk:dns(domain, function(socket,ip))` |
 | gpio       | `trig(pin, type, function(level))`                                         |
-| mqqt       | `client:m:on(event, function(conn[, topic, data])`                         |
+| mqtt       | `client:m:on(event, function(conn[, topic, data])`                         |
 | uart       | `uart.on(event, cnt, [function(data)], [run_input])`                       |
 
 
