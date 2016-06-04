@@ -122,7 +122,7 @@ void nodemcu_init(void)
 
 void user_rf_pre_init(void)
 {
-//set WiFi hostname before RF initialization (adds ~440 us to boot time)
+//set WiFi hostname before RF initialization (adds ~479 us to boot time)
   wifi_change_default_host_name();
 }
 #endif
