@@ -1311,6 +1311,8 @@ static const LUA_REG_TYPE wifi_map[] =  {
 
 void wifi_change_default_host_name(void)
 {
+  uint8 opmode_temp=wifi_get_opmode();
+  wifi_set_opmode_current(STATION_MODE);
 #ifndef WIFI_STA_HOSTNAME
   char temp[32];
   uint8_t mac[6];
@@ -1318,7 +1320,7 @@ void wifi_change_default_host_name(void)
   c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
   wifi_sta_sethostname((const char*)temp, strlen(temp));
 
- #elif defined(WIFI_STA_HOSTNAME) && !defined(WIFI_STA_HOSTNAME_APPEND_MAC)
+#elif defined(WIFI_STA_HOSTNAME) && !defined(WIFI_STA_HOSTNAME_APPEND_MAC)
   if(!wifi_sta_sethostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME)))
   {
     char temp[32];
@@ -1335,11 +1337,14 @@ void wifi_change_default_host_name(void)
   c_sprintf(temp, "%s%X%X%X", WIFI_STA_HOSTNAME, (mac)[3], (mac)[4], (mac)[5]);
   if(!wifi_sta_sethostname(temp, strlen(temp)))
   {
-	c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
+    c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
     wifi_sta_sethostname((const char*)temp, strlen(temp));
   }
 #endif
-
+  if(opmode_temp!=wifi_get_opmode())
+  {
+    wifi_set_opmode_current(opmode_temp);
+  }
 }
 
 int luaopen_wifi( lua_State *L )
