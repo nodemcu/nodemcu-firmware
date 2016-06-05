@@ -148,7 +148,7 @@ static int ws2812_buffer_fill(lua_State* L) {
   return 0;
 }
 
-static int ws2812_buffer_fade(lua_State* L) {
+static int ws2812_buffer_fade_out(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int fade = luaL_checkinteger(L, 2);
 
@@ -164,6 +164,110 @@ static int ws2812_buffer_fade(lua_State* L) {
 
   return 0;
 }
+
+static int ws2812_buffer_fade_in(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  const int fade = luaL_checkinteger(L, 2);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
+
+  uint8_t * p = &buffer->values[0];
+  int i;
+  uint8_t val = 0;
+  for(i = 0; i < buffer->size * buffer->colorsPerLed; i++)
+  {
+    val = *p * fade;
+    if (val > 255) val = 255;
+    *p++ = val;
+  }
+
+  return 0;
+}
+
+
+static int ws2812_buffer_shift(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  const int shiftValue = luaL_checkinteger(L, 2);
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  luaL_argcheck(L, shiftValue > 0-buffer->size && shiftValue < buffer->size, 2, "shifting more elements than buffer size");
+
+  int shift = shiftValue >= 0 ? shiftValue : -shiftValue;
+    
+    
+  // check if we want to shift at all
+  if (shift == 0)
+  {
+    return 0;
+  }
+  
+
+  int * tmp_pixels = luaM_malloc(L, buffer->colorsPerLed * sizeof(int) * shift);
+  int i,j;
+  if (shiftValue > 0) 
+  {
+    // Store the values which are moved out of the array (last n pixels)
+    uint8_t * p = &buffer->values[(buffer->size-shift)*buffer->colorsPerLed];
+    for(i = 0; i < shift*buffer->colorsPerLed; i++)
+    {
+      tmp_pixels[i] = *p++;
+    }
+    // Move pixels to end
+    // start with last pixel byte and move backwards in loop
+    p = &buffer->values[buffer->size*buffer->colorsPerLed-1];
+    uint8_t * q = &buffer->values[(buffer->size-shift)*buffer->colorsPerLed-1];
+    for (i = 0; i < buffer->size-shift; i++)
+    {
+      for (j = 0; j < buffer->colorsPerLed; j++)
+      {
+        *p-- = *q;
+        q--;
+      }
+    }
+    // Fill beginning with temp data
+    p = &buffer->values[0];
+    for (i = 0; i < shift*buffer->colorsPerLed; i++)
+    {
+      *p++ = tmp_pixels[i];
+    }
+  }
+  else
+  {
+    // Store the values which are moved out of the array (first n pixels)
+    uint8_t * p = &buffer->values[0];
+    for(i = 0; i < shift*buffer->colorsPerLed; i++)
+    {
+      tmp_pixels[i] = *p++;
+    }
+    // Move pixels to front
+    p = &buffer->values[0];
+    uint8_t * q = &buffer->values[shift*buffer->colorsPerLed];
+    for (i = 0; i < buffer->size-shift; i++)
+    {
+      for (j = 0; j < buffer->colorsPerLed; j++)
+      {
+        *p++ = *q;
+        q++;
+      }
+    }
+    // Fill end with temp data
+    p = &buffer->values[(buffer->size-shift)*buffer->colorsPerLed];
+    for (i = 0; i < shift; i++)
+    {
+      for (j = 0; j < buffer->colorsPerLed; j++)
+      {
+        *p++ = tmp_pixels[(i*buffer->colorsPerLed)+j];
+      }
+    }
+  }
+  // Free memory
+  luaM_free(L, tmp_pixels);
+
+  return 0;
+}
+
+
 
 static int ws2812_buffer_get(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
@@ -252,7 +356,10 @@ static int ws2812_buffer_write(lua_State* L) {
 
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
-  { LSTRKEY( "fade" ),  LFUNCVAL( ws2812_buffer_fade )},
+  { LSTRKEY( "fadeIn" ),  LFUNCVAL( ws2812_buffer_fade_in )},
+  { LSTRKEY( "fadeOut" ),  LFUNCVAL( ws2812_buffer_fade_out )},
+  { LSTRKEY( "fade" ),  LFUNCVAL( ws2812_buffer_fade_out )},
+  { LSTRKEY( "shift" ),  LFUNCVAL( ws2812_buffer_shift )},
   { LSTRKEY( "fill" ),  LFUNCVAL( ws2812_buffer_fill )},
   { LSTRKEY( "get" ),   LFUNCVAL( ws2812_buffer_get )},
   { LSTRKEY( "set" ),   LFUNCVAL( ws2812_buffer_set )},
