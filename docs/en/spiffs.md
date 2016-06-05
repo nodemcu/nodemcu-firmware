@@ -1,6 +1,7 @@
 # SPIFFS File System
 
-The NodeMCU project uses the SPIFFS filesystem to store files in the flash chip. The technical details about how this is configured can be found below, along with vairous build time options.
+The NodeMCU project uses the [SPIFFS](https://github.com/pellepl/spiffs) 
+filesystem to store files in the flash chip. The technical details about how this is configured can be found below, along with various build time options.
 
 # spiffsimg - Manipulate SPI Flash File System disk images
 
@@ -14,24 +15,25 @@ It is important to give the `spiffimg` tool the correct size. You can provide ei
 
 ### Syntax 
 
-`spiffsimg -f <filename> 
+````spiffsimg -f <filename> 
 	[-o <offsetfile>]
 	[-c <size>] 
 	[-S <flashsize>]
 	[-U <usedsize>]
 	[-d]
-	[-l | -i | -r <scriptname> ]`
+	[-l | -i | -r <scriptname> ]```
 
 ### Supported operations:
 
-  * -f specifies the filename for the disk image. '%x' will be replaced by the calculated offset of the file system.
-  * -o specifies the file which is to contain the calculated offset.
-  * -S specifies the size of the flash chip. '32m' is 32 mbits, '1MB' is 1 megabyte.
-  * -U specifies the amount of flash used by the firmware. Decimal or Hex bytes.
-  * Create (-c size) a blank disk image of the given size.
-  * List (-l) the contents of the given disk image.
-  * Interactive (-i) or scripted (-r) commands.
-  * -d causes the disk image to be deleted on error. This makes it easier to script.
+  * `-f` specifies the filename for the disk image. '%x' will be replaced by the calculated offset of the file system.
+  * `-o` specifies the file which is to contain the calculated offset.
+  * `-S` specifies the size of the flash chip. `32m` is 32 mbits, `1MB` is 1 megabyte.
+  * `-U` specifies the amount of flash used by the firmware. Decimal or Hex bytes.
+  * `-c` Create a blank disk image of the given size.
+  * `-l` List the contents of the given disk image.
+  * `-i` Interactive commands.
+  * `-r` Scripted commands from filename.
+  * `-d` causes the disk image to be deleted on error. This makes it easier to script.
 
 ### Available commands:
 
@@ -65,9 +67,6 @@ f    880 http/favicon.ico
     early exit, others just print an error (both cause a non-zero exit though).
   * Only flat SPIFFS is supported.
 
-
-### See also:
-  * The SPIFFS project: https://github.com/pellepl/spiffs
 
 # Technical Details
 
