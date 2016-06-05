@@ -22,7 +22,8 @@ spiffsimg -f <filename>
 	[-S <flashsize>]
 	[-U <usedsize>]
 	[-d]
-	[-l | -i | -r <scriptname> ]```
+	[-l | -i | -r <scriptname> ]
+```
 
 ### Supported operations:
 
