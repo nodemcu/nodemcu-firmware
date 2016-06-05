@@ -15,7 +15,8 @@ It is important to give the `spiffimg` tool the correct size. You can provide ei
 
 ### Syntax 
 
-````spiffsimg -f <filename> 
+```
+spiffsimg -f <filename> 
 	[-o <offsetfile>]
 	[-c <size>] 
 	[-S <flashsize>]
