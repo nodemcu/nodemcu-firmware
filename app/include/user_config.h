@@ -69,6 +69,17 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #define BUILD_SPIFFS	1
 #define SPIFFS_CACHE 1
 
+// Uncomment this next line for fastest startup 
+// It reduces the format time dramatically
+// #define SPIFFS_MAX_FILESYSTEM_SIZE	32768
+//
+// You can force the spiffs file system to be at a fixed location
+// #define SPIFFS_FIXED_LOCATION   	0x100000
+//
+// You can force the SPIFFS file system to end on the next !M boundary
+// (minus the 16k parameter space). THis is useful for certain OTA scenarios
+// #define SPIFFS_SIZE_1M_BOUNDARY
+
 // #define LUA_NUMBER_INTEGRAL
 
 #define READLINE_INTERVAL 80

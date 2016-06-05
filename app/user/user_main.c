@@ -90,16 +90,6 @@ void nodemcu_init(void)
         // Fit hardware real flash size.
         flash_rom_set_size_byte(flash_safe_get_size_byte());
 
-        if( !fs_format() )
-        {
-            NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
-            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
-        }
-        else{
-            NODE_ERR( "format done.\n" );
-        }
-        fs_unmount();   // mounted by format.
-
         // Reboot to get SDK to use (or write) init data at new location
         system_restart ();
 
@@ -109,7 +99,15 @@ void nodemcu_init(void)
 #endif // defined(FLASH_SAFE_API)
 
 #if defined ( BUILD_SPIFFS )
-    fs_mount();
+    if (!fs_mount()) {
+        // Failed to mount -- try reformat
+	c_printf("Formatting file system.\n");
+        if (!fs_format()) {
+            NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
+            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+        }
+        // Note that fs_format leaves the file system mounted
+    }
     // test_spiffs();
 #endif
     // endpoint_setup();
