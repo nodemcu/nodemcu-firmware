@@ -6,8 +6,13 @@
 #include "c_string.h"
 #include "user_interface.h"
 #include "driver/uart.h"
+#include "osapi.h"
 
 #define CANARY_VALUE 0x32383132
+
+#define FADE_IN  1
+#define FADE_OUT 0
+
 
 typedef struct {
   int canary;
@@ -148,45 +153,37 @@ static int ws2812_buffer_fill(lua_State* L) {
   return 0;
 }
 
-static int ws2812_buffer_fade_out(lua_State* L) {
+static int ws2812_buffer_fade(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int fade = luaL_checkinteger(L, 2);
+  unsigned direction = luaL_optinteger( L, 3, FADE_OUT );
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
 
   uint8_t * p = &buffer->values[0];
+  int val = 0;
   int i;
   for(i = 0; i < buffer->size * buffer->colorsPerLed; i++)
   {
-    *p++ /= fade;
-  }
-
-  return 0;
-}
-
-static int ws2812_buffer_fade_in(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
-  const int fade = luaL_checkinteger(L, 2);
-
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
-  luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
-
-  uint8_t * p = &buffer->values[0];
-  int i;
-  uint8_t val = 0;
-  for(i = 0; i < buffer->size * buffer->colorsPerLed; i++)
-  {
-    val = *p * fade;
-    if (val > 255) val = 255;
-    *p++ = val;
+    if (direction == FADE_OUT)
+    {
+      *p++ /= fade;
+    }
+    else 
+    {
+      // as fade in can result in value overflow, an int is used to perform the check afterwards
+      val = *p * fade;
+      if (val > 255) val = 255;
+      *p++ = val;
+    }
   }
 
   return 0;
 }
 
 
-static int ws2812_buffer_shift(lua_State* L) {
+static int ws2812_buffer_rotate(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int shiftValue = luaL_checkinteger(L, 2);
 
@@ -195,71 +192,36 @@ static int ws2812_buffer_shift(lua_State* L) {
 
   int shift = shiftValue >= 0 ? shiftValue : -shiftValue;
     
-    
   // check if we want to shift at all
   if (shift == 0)
   {
     return 0;
   }
   
-
-  int * tmp_pixels = luaM_malloc(L, buffer->colorsPerLed * sizeof(int) * shift);
+  uint8_t * tmp_pixels = luaM_malloc(L, buffer->colorsPerLed * sizeof(uint8_t) * shift);
   int i,j;
+  size_t shift_len, remaining_len;
+  // calculate length of shift section and remaining section
+  shift_len = shift*buffer->colorsPerLed;
+  remaining_len = (buffer->size-shift)*buffer->colorsPerLed;
+  
   if (shiftValue > 0) 
   {
     // Store the values which are moved out of the array (last n pixels)
-    uint8_t * p = &buffer->values[(buffer->size-shift)*buffer->colorsPerLed];
-    for(i = 0; i < shift*buffer->colorsPerLed; i++)
-    {
-      tmp_pixels[i] = *p++;
-    }
+    c_memcpy(tmp_pixels, &buffer->values[(buffer->size-shift)*buffer->colorsPerLed], shift_len);
     // Move pixels to end
-    // start with last pixel byte and move backwards in loop
-    p = &buffer->values[buffer->size*buffer->colorsPerLed-1];
-    uint8_t * q = &buffer->values[(buffer->size-shift)*buffer->colorsPerLed-1];
-    for (i = 0; i < buffer->size-shift; i++)
-    {
-      for (j = 0; j < buffer->colorsPerLed; j++)
-      {
-        *p-- = *q;
-        q--;
-      }
-    }
+    os_memmove(&buffer->values[shift*buffer->colorsPerLed], &buffer->values[0], remaining_len);
     // Fill beginning with temp data
-    p = &buffer->values[0];
-    for (i = 0; i < shift*buffer->colorsPerLed; i++)
-    {
-      *p++ = tmp_pixels[i];
-    }
+    c_memcpy(&buffer->values[0], tmp_pixels, shift_len);
   }
   else
   {
-    // Store the values which are moved out of the array (first n pixels)
-    uint8_t * p = &buffer->values[0];
-    for(i = 0; i < shift*buffer->colorsPerLed; i++)
-    {
-      tmp_pixels[i] = *p++;
-    }
-    // Move pixels to front
-    p = &buffer->values[0];
-    uint8_t * q = &buffer->values[shift*buffer->colorsPerLed];
-    for (i = 0; i < buffer->size-shift; i++)
-    {
-      for (j = 0; j < buffer->colorsPerLed; j++)
-      {
-        *p++ = *q;
-        q++;
-      }
-    }
-    // Fill end with temp data
-    p = &buffer->values[(buffer->size-shift)*buffer->colorsPerLed];
-    for (i = 0; i < shift; i++)
-    {
-      for (j = 0; j < buffer->colorsPerLed; j++)
-      {
-        *p++ = tmp_pixels[(i*buffer->colorsPerLed)+j];
-      }
-    }
+    // Store the values which are moved out of the array (last n pixels)
+    c_memcpy(tmp_pixels, &buffer->values[0], shift_len);
+    // Move pixels to end
+    os_memmove(&buffer->values[0], &buffer->values[shift*buffer->colorsPerLed], remaining_len);
+    // Fill beginning with temp data
+    c_memcpy(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], tmp_pixels, shift_len);
   }
   // Free memory
   luaM_free(L, tmp_pixels);
@@ -356,15 +318,13 @@ static int ws2812_buffer_write(lua_State* L) {
 
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
-  { LSTRKEY( "fadeIn" ),  LFUNCVAL( ws2812_buffer_fade_in )},
-  { LSTRKEY( "fadeOut" ),  LFUNCVAL( ws2812_buffer_fade_out )},
-  { LSTRKEY( "fade" ),  LFUNCVAL( ws2812_buffer_fade_out )},
-  { LSTRKEY( "shift" ),  LFUNCVAL( ws2812_buffer_shift )},
-  { LSTRKEY( "fill" ),  LFUNCVAL( ws2812_buffer_fill )},
-  { LSTRKEY( "get" ),   LFUNCVAL( ws2812_buffer_get )},
-  { LSTRKEY( "set" ),   LFUNCVAL( ws2812_buffer_set )},
-  { LSTRKEY( "size" ),  LFUNCVAL( ws2812_buffer_size )},
-  { LSTRKEY( "write" ), LFUNCVAL( ws2812_buffer_write )},
+  { LSTRKEY( "fade" ),    LFUNCVAL( ws2812_buffer_fade )},
+  { LSTRKEY( "rotate" ),  LFUNCVAL( ws2812_buffer_rotate )},
+  { LSTRKEY( "fill" ),    LFUNCVAL( ws2812_buffer_fill )},
+  { LSTRKEY( "get" ),     LFUNCVAL( ws2812_buffer_get )},
+  { LSTRKEY( "set" ),     LFUNCVAL( ws2812_buffer_set )},
+  { LSTRKEY( "size" ),    LFUNCVAL( ws2812_buffer_size )},
+  { LSTRKEY( "write" ),   LFUNCVAL( ws2812_buffer_write )},
   { LSTRKEY( "__index" ), LROVAL ( ws2812_buffer_map )},
   { LNILKEY, LNILVAL}
 };
@@ -374,6 +334,8 @@ static const LUA_REG_TYPE ws2812_map[] =
   { LSTRKEY( "write" ), LFUNCVAL( ws2812_writegrb )},
   { LSTRKEY( "newBuffer" ), LFUNCVAL( ws2812_new_buffer )},
   { LSTRKEY( "init" ),     LFUNCVAL( ws2812_init )},
+  { LSTRKEY( "FADE_IN" ), LNUMVAL( FADE_IN ) },
+  { LSTRKEY( "FADE_OUT" ),LNUMVAL( FADE_OUT ) },
   { LNILKEY, LNILVAL}
 };
 
