@@ -12,6 +12,8 @@
 
 #define FADE_IN  1
 #define FADE_OUT 0
+#define SHIFT_LOGICAL  0
+#define SHIFT_CIRCULAR 1
 
 
 typedef struct {
@@ -183,9 +185,10 @@ static int ws2812_buffer_fade(lua_State* L) {
 }
 
 
-static int ws2812_buffer_rotate(lua_State* L) {
+static int ws2812_buffer_shift(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int shiftValue = luaL_checkinteger(L, 2);
+  const unsigned shift_type = luaL_optinteger( L, 3, SHIFT_LOGICAL );
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, shiftValue > 0-buffer->size && shiftValue < buffer->size, 2, "shifting more elements than buffer size");
@@ -212,7 +215,14 @@ static int ws2812_buffer_rotate(lua_State* L) {
     // Move pixels to end
     os_memmove(&buffer->values[shift*buffer->colorsPerLed], &buffer->values[0], remaining_len);
     // Fill beginning with temp data
-    c_memcpy(&buffer->values[0], tmp_pixels, shift_len);
+    if (shift_type == SHIFT_LOGICAL)
+    {
+      c_memset(&buffer->values[0], 0, shift_len);
+    }
+    else
+    {
+      c_memcpy(&buffer->values[0], tmp_pixels, shift_len);
+    }
   }
   else
   {
@@ -221,7 +231,14 @@ static int ws2812_buffer_rotate(lua_State* L) {
     // Move pixels to end
     os_memmove(&buffer->values[0], &buffer->values[shift*buffer->colorsPerLed], remaining_len);
     // Fill beginning with temp data
-    c_memcpy(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], tmp_pixels, shift_len);
+    if (shift_type == SHIFT_LOGICAL)
+    {
+      c_memset(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], 0, shift_len);
+    }
+    else
+    {
+      c_memcpy(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], tmp_pixels, shift_len);
+    }
   }
   // Free memory
   luaM_free(L, tmp_pixels);
@@ -319,7 +336,7 @@ static int ws2812_buffer_write(lua_State* L) {
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
   { LSTRKEY( "fade" ),    LFUNCVAL( ws2812_buffer_fade )},
-  { LSTRKEY( "rotate" ),  LFUNCVAL( ws2812_buffer_rotate )},
+  { LSTRKEY( "shift" ),  LFUNCVAL( ws2812_buffer_shift )},
   { LSTRKEY( "fill" ),    LFUNCVAL( ws2812_buffer_fill )},
   { LSTRKEY( "get" ),     LFUNCVAL( ws2812_buffer_get )},
   { LSTRKEY( "set" ),     LFUNCVAL( ws2812_buffer_set )},
@@ -336,6 +353,8 @@ static const LUA_REG_TYPE ws2812_map[] =
   { LSTRKEY( "init" ),     LFUNCVAL( ws2812_init )},
   { LSTRKEY( "FADE_IN" ), LNUMVAL( FADE_IN ) },
   { LSTRKEY( "FADE_OUT" ),LNUMVAL( FADE_OUT ) },
+  { LSTRKEY( "SHIFT_LOGICAL" ),LNUMVAL( SHIFT_LOGICAL ) },
+  { LSTRKEY( "SHIFT_CIRCULAR" ),LNUMVAL( SHIFT_CIRCULAR ) },
   { LNILKEY, LNILVAL}
 };
 
