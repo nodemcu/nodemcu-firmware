@@ -262,6 +262,7 @@ static int wifi_getchannel( lua_State* L )
   return 1;
 }
 
+#ifdef __ESP8266__
 /**
   * wifi.setphymode()
   * Description:
@@ -372,6 +373,7 @@ static int wifi_sleep(lua_State* L)
   }
   return 2;
 }
+#endif
 
 // Lua: mac = wifi.xx.getmac()
 static int wifi_getmac( lua_State* L, uint8_t mode )
@@ -487,6 +489,7 @@ static int wifi_setip( lua_State* L, uint8_t mode )
   return 1;  
 }
 
+#ifdef __ESP8266__
 // Lua: realtype = sleeptype(type)
 static int wifi_sleeptype( lua_State* L )
 {
@@ -506,6 +509,7 @@ static int wifi_sleeptype( lua_State* L )
   lua_pushinteger( L, type );
   return 1;  
 }
+#endif
 
 // Lua: wifi.sta.getmac()
 static int wifi_station_getmac( lua_State* L ){
@@ -897,6 +901,7 @@ static int wifi_station_listap( lua_State* L )
 	unregister_lua_cb(L, &wifi_scan_succeed);
   }
 }
+#ifdef __ESP8266__
 
 // Lua: wifi.sta.gethostname()
 static int wifi_sta_gethostname( lua_State* L )
@@ -933,6 +938,7 @@ static int wifi_sta_sethostname_lua( lua_State* L )
   luaL_argcheck(L, wifi_sta_sethostname(hostname, len), 1, "Invalid hostname");
   return 0;
 }
+#endif
 
 // Lua: wifi.sta.status()
 static int wifi_station_status( lua_State* L )
@@ -1228,8 +1234,10 @@ static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "getmac" ),        LFUNCVAL( wifi_station_getmac ) },
   { LSTRKEY( "setmac" ),        LFUNCVAL( wifi_station_setmac ) },
   { LSTRKEY( "getap" ),         LFUNCVAL( wifi_station_listap ) },
+#ifdef __ESP8266__
   { LSTRKEY( "sethostname" ),   LFUNCVAL( wifi_sta_sethostname_lua ) },
   { LSTRKEY( "gethostname" ),   LFUNCVAL( wifi_sta_gethostname ) },
+#endif
   { LSTRKEY( "getrssi" ),       LFUNCVAL( wifi_station_getrssi ) },
   { LSTRKEY( "status" ),        LFUNCVAL( wifi_station_status ) },
 #if defined(WIFI_STATION_STATUS_MONITOR_ENABLE)
@@ -1266,14 +1274,16 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setmode" ),        LFUNCVAL( wifi_setmode ) },
   { LSTRKEY( "getmode" ),        LFUNCVAL( wifi_getmode ) },
   { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
+#ifdef __ESP8266__
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "sleep" ),          LFUNCVAL( wifi_sleep ) },
+  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_sleeptype ) },
+#endif
 #ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ),      LFUNCVAL( wifi_exit_smart ) },
 #endif
-  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_sleeptype ) },
 
   { LSTRKEY( "sta" ),            LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ),             LROVAL( wifi_ap_map ) },
@@ -1285,6 +1295,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "SOFTAP" ),         LNUMVAL( SOFTAP_MODE ) },
   { LSTRKEY( "STATIONAP" ),      LNUMVAL( STATIONAP_MODE ) },
 
+#ifdef __ESP8266__
   { LSTRKEY( "PHYMODE_B" ),      LNUMVAL( PHY_MODE_11B ) },
   { LSTRKEY( "PHYMODE_G" ),      LNUMVAL( PHY_MODE_11G ) },
   { LSTRKEY( "PHYMODE_N" ),      LNUMVAL( PHY_MODE_11N ) },
@@ -1292,6 +1303,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "NONE_SLEEP" ),     LNUMVAL( NONE_SLEEP_T ) },
   { LSTRKEY( "LIGHT_SLEEP" ),    LNUMVAL( LIGHT_SLEEP_T ) },
   { LSTRKEY( "MODEM_SLEEP" ),    LNUMVAL( MODEM_SLEEP_T ) },
+#endif
 
   { LSTRKEY( "OPEN" ),           LNUMVAL( AUTH_OPEN ) },
 //{ LSTRKEY( "WEP" ),            LNUMVAL( AUTH_WEP ) },
@@ -1310,6 +1322,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LNILKEY, LNILVAL }
 };
 
+#ifdef __ESP8266__
 static void wifi_change_default_host_name(task_param_t param, task_prio_t priority)
 {
 #ifndef WIFI_STA_HOSTNAME
@@ -1342,10 +1355,13 @@ static void wifi_change_default_host_name(task_param_t param, task_prio_t priori
 #endif
 
 }
+#endif
 
 int luaopen_wifi( lua_State *L )
 {
+#ifdef __ESP8266__
   task_post_low(task_get_id(wifi_change_default_host_name), FALSE);
+#endif
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
   wifi_eventmon_init();
 #endif

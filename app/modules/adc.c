@@ -6,13 +6,19 @@
 
 #include "c_types.h"
 #include "user_interface.h"
+#include <stdlib.h>
 
 // Lua: read(id) , return system adc
 static int adc_sample( lua_State* L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( adc, id );
+#if defined(__ESP8266__)
   unsigned val = 0xFFFF & system_adc_read();
+#elif defined(__ESP32__)
+  // TODO: support reading the 8 ADC channels via system_adc1_read()
+  unsigned val = 0;
+#endif
   lua_pushinteger( L, val );
   return 1; 
 }

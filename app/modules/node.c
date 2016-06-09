@@ -47,6 +47,7 @@ static int node_restart( lua_State* L )
   return 0;
 }
 
+#ifdef __ESP8266__
 // Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
@@ -89,13 +90,33 @@ static int node_deepsleep( lua_State* L )
 // }
 // Lua: info()
 
+#endif
+
+static uint32_t system_chip_id (lua_State *L)
+{
+#if defined(__ESP8266__)
+  (void)L;
+  return system_get_chip_id ();
+#elif defined(__ESP32__)
+  uint8_t id = 0;
+  if (!system_get_chip_id (&id))
+    return luaL_error (L, "failed to read chip id");
+  return id;
+#endif
+}
+
+
 static int node_info( lua_State* L )
 {
   lua_pushinteger(L, NODE_VERSION_MAJOR);
   lua_pushinteger(L, NODE_VERSION_MINOR);
   lua_pushinteger(L, NODE_VERSION_REVISION);
-  lua_pushinteger(L, system_get_chip_id());   // chip id
+  lua_pushinteger(L, system_chip_id(L));   // chip id
+#if defined(__ESP8266__)
   lua_pushinteger(L, spi_flash_get_id());     // flash id
+#elif defined(__ESP32__)
+  lua_pushinteger (L, 0); // flash id not readable on ESP32?
+#endif
 #if defined(FLASH_SAFE_API)
   lua_pushinteger(L, flash_safe_get_size_byte() / 1024);  // flash size in KB
 #else
@@ -109,8 +130,7 @@ static int node_info( lua_State* L )
 // Lua: chipid()
 static int node_chipid( lua_State* L )
 {
-  uint32_t id = system_get_chip_id();
-  lua_pushinteger(L, id);
+  lua_pushinteger(L, system_chip_id (L));
   return 1;
 }
 
@@ -123,6 +143,7 @@ static int node_chipid( lua_State* L )
 //   return 1;
 // }
 
+#ifdef __ESP8266__
 // Lua: flashid()
 static int node_flashid( lua_State* L )
 {
@@ -130,6 +151,7 @@ static int node_flashid( lua_State* L )
   lua_pushinteger( L, id );
   return 1;
 }
+#endif
 
 // Lua: flashsize()
 static int node_flashsize( lua_State* L )
@@ -558,6 +580,7 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
+#ifdef __ESP8266__
 // Lua: code, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ] = bootreason()
 static int node_bootreason (lua_State *L)
 {
@@ -572,6 +595,7 @@ static int node_bootreason (lua_State *L)
     lua_pushinteger (L, arr[i]);
   return n;
 }
+#endif
 
 // Lua: restore()
 static int node_restore (lua_State *L)
@@ -692,10 +716,13 @@ static const LUA_REG_TYPE node_task_map[] = {
 static const LUA_REG_TYPE node_map[] =
 {
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
+#ifdef __ESP8266__
   { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
+  { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
+  { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
+#endif
   { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
   { LSTRKEY( "chipid" ), LFUNCVAL( node_chipid ) },
-  { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
   { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
   { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
 #ifdef DEVKIT_VERSION_0_9
@@ -710,13 +737,13 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
   { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
-  { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
 #endif
   { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
   { LSTRKEY( "task" ), LROVAL( node_task_map ) },
+#define DEVELOPMENT_TOOLS
 #ifdef DEVELOPMENT_TOOLS
   { LSTRKEY( "osprint" ), LFUNCVAL( node_osprint ) },
 #endif

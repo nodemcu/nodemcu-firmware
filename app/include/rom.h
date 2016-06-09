@@ -6,6 +6,26 @@
 #include "c_types.h"
 #include "ets_sys.h"
 
+/* Change GPIO pin output by setting, clearing, or disabling pins.
+ * In general, it is expected that a bit will be set in at most one
+ * of these masks.  If a bit is clear in all masks, the output state
+ * remains unchanged.
+ *
+ * There is no particular ordering guaranteed; so if the order of
+ * writes is significant, calling code should divide a single call
+ * into multiple calls.
+ */
+void gpio_output_set(uint32_t set_mask, uint32_t clear_mask, uint32_t enable_mask, uint32_t disable_mask);
+
+/* Set the specified GPIO register to the specified value.
+ * This is a very general and powerful interface that is not
+ * expected to be used during normal operation.  It is intended
+ * mainly for debug, or for unusual requirements.
+ */
+void gpio_register_set(uint32_t reg_id, uint32_t value);
+
+
+
 // SHA1 is assumed to match the netbsd sha1.h headers
 #define SHA1_DIGEST_LENGTH		20
 #define SHA1_DIGEST_STRING_LENGTH	41
@@ -125,6 +145,17 @@ int ets_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)))
 
 void ets_str2macaddr (uint8_t *dst, const char *str);
 
+typedef void (*ETSTimerFunc)(void *arg);
+typedef struct ETSTimer
+{
+  struct ETSTimer *timer_next;
+  void            *timer_handle;
+  uint32_t         timer_expire;
+  uint32_t         timer_period;
+  ETSTimerFunc     timer_func;
+  bool             timer_repeat_flag;
+  void             *timer_arg;
+} ETSTimer;
 void ets_timer_disarm (ETSTimer *a);
 void ets_timer_setfn (ETSTimer *t, ETSTimerFunc *fn, void *parg);
 
@@ -133,8 +164,6 @@ void Cache_Read_Disable(void);
 
 void ets_intr_lock(void);
 void ets_intr_unlock(void);
-
-void ets_install_putc1(void *routine);
 
 int rand(void);
 void srand(unsigned int);

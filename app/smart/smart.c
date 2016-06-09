@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "user_interface.h"
+#include "user_config.h"
 #include "smart.h"
 #include "esp_wifi.h"
+#include "esp_libc.h"
 
 #define ADDR_MAP_NUM 10
 

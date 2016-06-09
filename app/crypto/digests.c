@@ -34,6 +34,7 @@
 #include "mem.h"
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #ifdef MD2_ENABLE
 #include "ssl/ssl_crypto.h"

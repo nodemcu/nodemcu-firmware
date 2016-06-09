@@ -32,6 +32,14 @@
 #define SIG_LUA 0
 #define SIG_UARTINPUT 1
 
+
+#ifdef __ESP32__
+void system_soft_wdt_feed (void)
+{
+  // FIXME this shouldn't go here, and it needs to tickle hardware watchdog
+}
+#endif
+
 extern void call_user_start (void);
 
 

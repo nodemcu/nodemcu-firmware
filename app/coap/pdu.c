@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "pdu.h"
+#include "esp_libc.h"
 
 coap_pdu_t * coap_new_pdu(void) {
   coap_pdu_t *pdu = NULL;

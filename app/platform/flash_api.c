@@ -7,6 +7,8 @@
 #include "flash_api.h"
 #include "spi_flash.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 uint32_t flash_detect_size_byte(void)
 {

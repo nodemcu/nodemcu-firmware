@@ -3,7 +3,6 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "cpu_esp8266.h"
 #include "dht.h"
 
 #define NUM_DHT GPIO_PIN_NUM

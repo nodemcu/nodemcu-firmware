@@ -1,17 +1,18 @@
-#ifndef __CPU_ESP8266_H__
-#define __CPU_ESP8266_H__
+#ifndef _CPU_ESP32_H_
+#define _CPU_ESP32_H_
 
-#include "c_types.h"
-#include "os_type.h"
-#include "spi_flash.h"
-#include "pin_map.h"
+#include <stdint.h>
+#include <stdbool.h>
 #include "user_config.h"
+#include <spi_flash.h>
+#include <eagle_soc.h>
+#include <gpio.h>
+#include <gpio/io_mux_reg.h>
+#include <gpio/gpio_reg.h>
 #include "flash_api.h"
-#include "eagle_soc.h"
-#include "esp8266/gpio_register.h"
-#include "esp8266/pin_mux_register.h"
+#include "pin_map.h"
 
-// Number of resources (0 if not available/not implemented)
+/* FIXME: real numbers here! */
 #define NUM_GPIO              GPIO_PIN_NUM
 #define NUM_SPI               2
 #define NUM_UART              1
@@ -53,7 +54,9 @@
 #define INTERNAL_FLASH_READ_UNIT_SIZE	4
 
 #define INTERNAL_FLASH_SIZE             ( (SYS_PARAM_SEC_START) * INTERNAL_FLASH_SECTOR_SIZE )
-#define INTERNAL_FLASH_MAPPED_ADDRESS    0x40200000
+
+// TODO: double-check flash mapped address
+#define INTERNAL_FLASH_MAPPED_ADDRESS    0x40084000
 
 #if defined(FLASH_SAFE_API)
 #define flash_write flash_safe_write
@@ -65,9 +68,6 @@
 #define flash_read spi_flash_read
 #endif // defined(FLASH_SAFE_API)
 
-#define CACHE_FLASH_CTRL_REG         0x3ff0000c
-#define CACHE_FLASH_ACTIVE           0x00000100
-#define CACHE_FLASH_MAPPED0          0x02000000
-#define CACHE_FLASH_MAPPED1          0x00010000
 
-#endif // #ifndef __CPU_ESP8266_H__
+
+#endif

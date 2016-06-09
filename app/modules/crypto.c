@@ -5,6 +5,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "c_types.h"
+#include "esp_libc.h"
 #include <stdlib.h>
 #include "flash_fs.h"
 #include "../crypto/digests.h"

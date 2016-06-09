@@ -6,6 +6,8 @@
  * Philip Gladstone, N1DQ
  */
 
+#ifdef __ESP8266__
+
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -47,7 +49,7 @@ typedef struct {
   int longpress_delay_us;
   uint32_t last_event_time;
   int callback[CALLBACK_COUNT];
-  ETSTimer timer;
+  os_timer_t timer;
 } DATA;
 
 static DATA *data[ROTARY_CHANNEL_COUNT];
@@ -403,3 +405,4 @@ static const LUA_REG_TYPE rotary_map[] = {
 };
 
 NODEMCU_MODULE(ROTARY, "rotary", rotary_map, rotary_open);
+#endif

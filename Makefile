@@ -12,22 +12,61 @@
 %: s.%
 %: SCCS/s.%
 
+# Set up flags and paths based on hardware target
+HW?=ESP8266
+ifeq ($(HW),ESP8266)
+  TARGET=esp8266
+	TARGET_SDK_LIBS=espconn cirom mirom nopoll
+	TARGET_LDFLAGS=-u _UserExceptionVectorOverride -Wl,--wrap=printf
+	LD_FILE=$(LDDIR)/nodemcu.ld
+	AR = xtensa-lx106-elf-ar
+	CC = xtensa-lx106-elf-gcc
+	NM = xtensa-lx106-elf-nm
+	CPP = xtensa-lx106-elf-cpp
+	OBJCOPY = xtensa-lx106-elf-objcopy
+else ifeq ($(HW),ESP32)
+  TARGET=esp32
+	TARGET_SDK_LIBS=rtc c m driver
+	TARGET_LDFLAGS=
+	LD_FILE=$(LDDIR)/nodemcu32.ld
+	AR = xtensa-esp108-elf-ar
+	CC = xtensa-esp108-elf-gcc
+	NM = xtensa-esp108-elf-nm
+	CPP = xtensa-esp108-elf-cpp
+	OBJCOPY = xtensa-esp108-elf-objcopy
+else
+  $(error Unsupported hardware platform: $(HW))
+endif
 
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-
-SDKDIR:=$(TOP_DIR)/rtos-sdk
+SDKDIR:=$(TOP_DIR)/$(TARGET)-rtos-sdk
 
 # This is, sadly, the cleanest way to resolve the different non-standard
 # conventions for sized integers across the various components.
 BASIC_TYPES=-Du32_t=uint32_t -Du16_t=uint16_t -Du8_t=uint8_t -Ds32_t=int32_t -Ds16_t=int16_t -Duint32=uint32_t -Duint16=uint16_t -Duint8=uint8_t -Dsint32=int32_t -Dsint16=int16_t -Dsint8=int8_t
 
 # Include dirs, ensure the overrides come first
-INCLUDE_DIRS=$(TOP_DIR)/sdk-overrides/include $(SDKDIR)/include $(SDKDIR)/include/espressif $(SDKDIR)/include/lwip $(SDKDIR)/include/lwip/ipv4 $(SDKDIR)/include/lwip/ipv6 $(SDKDIR)/extra_include
+INCLUDE_DIRS=\
+  $(TOP_DIR)/sdk-overrides/include \
+	$(TOP_DIR)/sdk-overrides/$(TARGET)-include \
+	$(SDKDIR)/include \
+	$(SDKDIR)/include/espressif \
+	$(SDKDIR)/include/espressif/$(TARGET) \
+	$(SDKDIR)/include/$(TARGET) \
+	$(SDKDIR)/include/lwip \
+	$(SDKDIR)/include/lwip/ipv4 \
+	$(SDKDIR)/include/lwip/ipv6 \
+	$(SDKDIR)/extra_include \
+	$(SDKDIR)/third_party/include \
+	$(SDKDIR)/third_party/include/lwip \
+	$(SDKDIR)/third_party/include/lwip/ipv4 \
+	$(SDKDIR)/third_party/include/lwip/ipv6 \
+	$(SDKDIR)/driver_lib/include \
 
 # ... and we have to mark them all as system include dirs rather than the usual
 # -I for user include dir, or the esp-open-sdk toolchain headers wreak havoc
-CCFLAGS:=$(addprefix -isystem,$(INCLUDE_DIRS)) $(BASIC_TYPES)
+CCFLAGS:=$(addprefix -isystem,$(INCLUDE_DIRS)) $(BASIC_TYPES) -D__$(HW)__
 
 LDFLAGS:= -L$(SDKDIR)/lib -L$(SDKDIR)/ld $(LDFLAGS)
 
@@ -39,12 +78,8 @@ else
 	ESPPORT = $(COMPORT)
 endif
 CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
-AR = xtensa-lx106-elf-ar
-CC = xtensa-lx106-elf-gcc
-NM = xtensa-lx106-elf-nm
-CPP = xtensa-lx106-elf-cpp
-OBJCOPY = xtensa-lx106-elf-objcopy
-FIRMWAREDIR = ../bin/
+
+FIRMWAREDIR = ../bin/$(TARGET)/
 
 #############################################################
 ESPTOOL ?= ../tools/esptool.py
@@ -53,7 +88,7 @@ ESPTOOL ?= ../tools/esptool.py
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
 ASRCS ?= $(wildcard *.S)
-SUBDIRS ?= $(filter-out rtos-sdk, $(patsubst %/,%,$(dir $(wildcard */Makefile))))
+SUBDIRS ?= $(filter-out esp8266-rtos-sdk esp32-rtos-sdk, $(patsubst %/,%,$(dir $(wildcard */Makefile))))
 
 ODIR := .output
 OBJODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/obj
@@ -126,8 +161,18 @@ $$(IMAGEODIR)/$(1).out: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_
 endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
-	@mkdir -p $(BINODIR)
+	@mkdir -p $(BINODIR) $(FIRMWAREDIR)
+ifeq ($(HW),ESP8266)
 	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
+else ifeq ($(HW),ESP32)
+	@$(OBJCOPY) --only-section .text -O binary $< eagle.app.v7.text.bin
+	@$(OBJCOPY) --only-section .data -O binary $< eagle.app.v7.data.bin
+	@$(OBJCOPY) --only-section .rodata -O binary $< eagle.app.v7.rodata.bin
+	@$(OBJCOPY) --only-section .irom0.text -O binary $< eagle.app.v7.irom0text.bin
+	@$(OBJCOPY) --only-section .drom0.text -O binary $< eagle.app.v7.drom0text.bin
+	@python $(SDKDIR)/tools/gen_appbin.py $< $(LD_FILE) 0 0 unused_app_cpu.bin $(FIRMWAREDIR)
+	@rm -f eagle.app.v7.*.bin
+endif
 
 #############################################################
 # Rules base
@@ -143,13 +188,6 @@ clean:
 clobber: $(SPECIAL_CLOBBER)
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clobber;)
 	$(RM) -r $(ODIR)
-
-flash: 
-ifndef PDIR
-	$(MAKE) -C ./app flash
-else
-	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
-endif
 
 .subdirs:
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)

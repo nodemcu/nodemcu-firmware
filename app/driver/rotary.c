@@ -9,6 +9,7 @@
  *
  * Philip Gladstone, N1DQ
  */
+#ifdef __ESP8266__
 
 #include "platform.h"
 #include "c_types.h"
@@ -319,3 +320,4 @@ int rotary_getpos(uint32_t channel)
 
   return GET_LAST_STATUS(d).pos;
 }
+#endif

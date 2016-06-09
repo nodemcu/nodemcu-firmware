@@ -80,6 +80,7 @@ static int rtctime_get (lua_State *L)
   return 2;
 }
 
+#ifdef __ESP8266__
 static void do_sleep_opt (lua_State *L, int idx)
 {
   if (lua_isnumber (L, idx))
@@ -113,14 +114,17 @@ static int rtctime_dsleep_aligned (lua_State *L)
   rtctime_deep_sleep_until_aligned_us (align_us, min_us); // does not return
   return 0;
 }
+#endif
 
 
 // Module function map
 static const LUA_REG_TYPE rtctime_map[] = {
   { LSTRKEY("set"),            LFUNCVAL(rtctime_set) },
   { LSTRKEY("get"),            LFUNCVAL(rtctime_get) },
+#ifdef __ESP8266__
   { LSTRKEY("dsleep"),         LFUNCVAL(rtctime_dsleep)  },
   { LSTRKEY("dsleep_aligned"), LFUNCVAL(rtctime_dsleep_aligned) },
+#endif
   { LNILKEY, LNILVAL }
 };
 

@@ -12,6 +12,9 @@
  * FIXME: support null characters in responses.
  */
 
+// No espconn on ESP32
+#ifdef __ESP8266__
+
 #include "osapi.h"
 #include "user_interface.h"
 #include "espconn.h"
@@ -553,3 +556,4 @@ void ICACHE_FLASH_ATTR http_callback_example( char * response, int http_status, 
 		os_printf( "response=%s<EOF>\n", response );
 	}
 }
+#endif

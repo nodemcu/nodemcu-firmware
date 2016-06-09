@@ -1,5 +1,7 @@
 // Module for interfacing with sigma-delta hardware
 
+#ifdef __ESP8266__
+
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -85,3 +87,4 @@ static const LUA_REG_TYPE sigma_delta_map[] =
 };
 
 NODEMCU_MODULE(SIGMA_DELTA, "sigma_delta", sigma_delta_map, NULL);
+#endif

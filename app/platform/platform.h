@@ -3,7 +3,11 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
-#include "cpu_esp8266.h"
+#if defined(__ESP8266__)
+# include "cpu_esp8266.h"
+#elif defined(__ESP32__)
+# include "cpu_esp32.h"
+#endif
 
 #include "c_types.h"
 #include "driver/pwm.h"

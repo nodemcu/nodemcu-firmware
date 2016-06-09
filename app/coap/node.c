@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include "esp_libc.h"
 #include "node.h"
 
 static inline coap_queue_t *

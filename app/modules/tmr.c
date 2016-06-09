@@ -78,6 +78,7 @@ typedef struct{
 }timer_struct_t;
 typedef timer_struct_t* ptimer_t;
 
+#ifdef __ESP8266__
 // The previous implementation extended the rtc counter to 64 bits, and then
 // applied rtc2sec with the current calibration value to that 64 bit value.
 // This means that *ALL* clock ticks since bootup are counted with the *current*
@@ -90,10 +91,12 @@ typedef timer_struct_t* ptimer_t;
 static uint32_t rtc_time_cali=0;
 static uint32_t last_rtc_time=0;
 static uint64_t last_rtc_time_us=0;
+static os_timer_t rtc_timer;
 
 static sint32_t soft_watchdog  = -1;
+#endif
+
 static timer_struct_t alarm_timers[NUM_TMR];
-static os_timer_t rtc_timer;
 
 static task_handle_t callback_task;
 
@@ -161,14 +164,14 @@ static int tmr_register(lua_State* L){
 	sint32_t ref = luaL_ref(L, LUA_REGISTRYINDEX);
 	ptimer_t tmr = &alarm_timers[id];
 	if(!(tmr->mode & TIMER_IDLE_FLAG) && tmr->mode != TIMER_MODE_OFF)
-		ets_timer_disarm(&tmr->os);
+		os_timer_disarm(&tmr->os);
 	//there was a bug in this part, the second part of the following condition was missing
 	if(tmr->lua_ref != LUA_NOREF && tmr->lua_ref != ref)
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 	tmr->lua_ref = ref;
 	tmr->mode = mode|TIMER_IDLE_FLAG;
 	tmr->interval = interval;
-	ets_timer_setfn(&tmr->os, alarm_timer_common, (void*)id);
+	os_timer_setfn(&tmr->os, alarm_timer_common, (void*)id);
 	return 0;  
 }
 
@@ -182,7 +185,7 @@ static int tmr_start(lua_State* L){
 		lua_pushboolean(L, 0);
 	}else{
 		tmr->mode &= ~TIMER_IDLE_FLAG;
-		ets_timer_arm_new(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO, 1);
+		os_timer_arm(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO);
 		lua_pushboolean(L, 1);
 	}
 	return 1;
@@ -202,7 +205,7 @@ static int tmr_stop(lua_State* L){
 	//we return false if the timer is idle (of not registered)
 	if(!(tmr->mode & TIMER_IDLE_FLAG) && tmr->mode != TIMER_MODE_OFF){
 		tmr->mode |= TIMER_IDLE_FLAG;
-		ets_timer_disarm(&tmr->os);
+		os_timer_disarm(&tmr->os);
 		lua_pushboolean(L, 1);
 	}else{
 		lua_pushboolean(L, 0);
@@ -216,7 +219,7 @@ static int tmr_unregister(lua_State* L){
 	MOD_CHECK_ID(tmr,id);
 	ptimer_t tmr = &alarm_timers[id];
 	if(!(tmr->mode & TIMER_IDLE_FLAG) && tmr->mode != TIMER_MODE_OFF)
-		ets_timer_disarm(&tmr->os);
+		os_timer_disarm(&tmr->os);
 	if(tmr->lua_ref != LUA_NOREF)
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 	tmr->lua_ref = LUA_NOREF;
@@ -234,8 +237,8 @@ static int tmr_interval(lua_State* L){
 	if(tmr->mode != TIMER_MODE_OFF){	
 		tmr->interval = interval;
 		if(!(tmr->mode&TIMER_IDLE_FLAG)){
-			ets_timer_disarm(&tmr->os);
-			ets_timer_arm_new(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO, 1);
+			os_timer_disarm(&tmr->os);
+			os_timer_arm(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO);
 		}
 	}
 	return 0;
@@ -266,6 +269,7 @@ static int tmr_wdclr( lua_State* L ){
 	return 0;  
 }
 
+#ifdef __ESP8266__
 //system_rtc_clock_cali_proc() returns
 //a fixed point value (12 bit fraction part)
 //it tells how many rtc clock ticks represent 1us.
@@ -317,6 +321,7 @@ static int tmr_softwd( lua_State* L ){
 	soft_watchdog = luaL_checkinteger(L, 1);
 	return 0; 
 }
+#endif
 
 // Module function map
 
@@ -324,8 +329,10 @@ static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
 	{ LSTRKEY( "now" ),          LFUNCVAL( tmr_now ) },
 	{ LSTRKEY( "wdclr" ),        LFUNCVAL( tmr_wdclr ) },
+#ifdef __ESP8266__
 	{ LSTRKEY( "softwd" ),       LFUNCVAL( tmr_softwd ) },
 	{ LSTRKEY( "time" ),         LFUNCVAL( tmr_time ) },
+#endif
 	{ LSTRKEY( "register" ),     LFUNCVAL( tmr_register ) },
 	{ LSTRKEY( "alarm" ),        LFUNCVAL( tmr_alarm ) },
 	{ LSTRKEY( "start" ),        LFUNCVAL( tmr_start ) },
@@ -344,14 +351,16 @@ int luaopen_tmr( lua_State *L ){
 	for(i=0; i<NUM_TMR; i++){
 		alarm_timers[i].lua_ref = LUA_NOREF;
 		alarm_timers[i].mode = TIMER_MODE_OFF;
-		ets_timer_disarm(&alarm_timers[i].os);
+		os_timer_disarm(&alarm_timers[i].os);
 	}
+#ifdef __ESP8266__
 	last_rtc_time=system_get_rtc_time(); // Right now is time 0
 	last_rtc_time_us=0;
 
-	ets_timer_disarm(&rtc_timer);
-	ets_timer_setfn(&rtc_timer, rtc_callback, NULL);
-	ets_timer_arm_new(&rtc_timer, 1000, 1, 1);
+	os_timer_disarm(&rtc_timer);
+	os_timer_setfn(&rtc_timer, rtc_callback, NULL);
+	os_timer_arm(&rtc_timer, 1000, 1);
+#endif
 
   callback_task = task_get_id (run_callback);
   return 0;

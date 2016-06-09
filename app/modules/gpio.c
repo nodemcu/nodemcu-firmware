@@ -22,10 +22,15 @@
 
 #ifdef GPIO_INTERRUPT_ENABLE
 
+#if defined(__ESP8266__)
 // We also know that the non-level interrupt types are < LOLEVEL, and that
 // HILEVEL is > LOLEVEL. Since this is burned into the hardware it is not
 // going to change.
-#define INTERRUPT_TYPE_IS_LEVEL(x)	((x) >= GPIO_PIN_INTR_LOLEVEL)
+# define INTERRUPT_TYPE_IS_LEVEL(x)	((x) >= GPIO_PIN_INTR_LOLEVEL)
+#elif defined(__ESP32__)
+// There appears to be no level interrupt support on the ESP32?
+# define INTERRUPT_TYPE_IS_LEVEL(x) 0
+#endif
 
 static int gpio_cb_ref[GPIO_PIN_NUM];
 
@@ -65,10 +70,17 @@ static void gpio_intr_callback_task (task_param_t param, task_prio_t priority)
 static int lgpio_trig( lua_State* L )
 {
   unsigned pin = luaL_checkinteger( L, 1 );
-  static const char * const opts[] = {"none", "up", "down", "both", "low", "high", NULL};
+  static const char * const opts[] = {"none", "up", "down", "both",
+#ifdef __ESP8266__
+    "low", "high",
+#endif
+    NULL};
   static const int opts_type[] = {
     GPIO_PIN_INTR_DISABLE, GPIO_PIN_INTR_POSEDGE, GPIO_PIN_INTR_NEGEDGE,
-    GPIO_PIN_INTR_ANYEDGE, GPIO_PIN_INTR_LOLEVEL, GPIO_PIN_INTR_HILEVEL
+    GPIO_PIN_INTR_ANYEDGE
+#ifdef __ESP8266__
+    ,GPIO_PIN_INTR_LOLEVEL, GPIO_PIN_INTR_HILEVEL
+#endif
     };
   luaL_argcheck(L, platform_gpio_exists(pin) && pin>0, 1, "Invalid interrupt pin");
 

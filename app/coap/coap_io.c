@@ -1,3 +1,6 @@
+// No espconn on ESP32
+#ifdef __ESP8266__
+
 #include <string.h>
 #include "coap_io.h"
 #include "node.h"
@@ -69,3 +72,5 @@ coap_tid_t coap_send_confirmed(struct espconn *pesp_conn, coap_pdu_t *pdu) {
   coap_timer_start(&gQueue);
   return node->id;
 }
+
+#endif

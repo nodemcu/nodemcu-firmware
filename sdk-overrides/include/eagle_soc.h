@@ -2,7 +2,7 @@
 #define _SDK_OVERRIDE_EAGLE_SOC_H_
 
 
-#include_next "esp8266/eagle_soc.h"
+#include_next "eagle_soc.h"
 
 #define GPIO_AS_PIN_SOURCE                        0
 #define SIGMA_AS_PIN_SOURCE                     (~GPIO_AS_PIN_SOURCE)

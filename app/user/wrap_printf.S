@@ -38,6 +38,7 @@
  * have a minimal replacement printf() which omits the explicit flash-support
  * support, and just calls the internal SDK function print() directly.
  */
+#ifdef __ESP8266__
 .section ".iram0.text"
 .type __wrap_printf,@function
 .globl __wrap_printf
@@ -67,6 +68,7 @@ __wrap_printf:
   l32i a0, a1, 0        /* restore return address into a0                     */
   addi a1, a1, 48       /* release the stack                                  */
   ret                   /* all done                                           */
+#endif
 
 /* Flag for controlling whether SDK printf()s are suppressed or not.
  * This is to provide an RTOS-safe reimplementation of system_set_os_print(). */

@@ -6,8 +6,14 @@
 #include "user_config.h"
 #include "gpio.h"
 
-#define GPIO_PIN_NUM 13
-#define GPIO_PIN_NUM_INV 17
+#if defined(__ESP8266__)
+# define GPIO_PIN_NUM 13
+# define GPIO_PIN_NUM_INV 17
+#elif defined (__ESP32__)
+ // FIXME: real numbers here...
+# define GPIO_PIN_NUM 33
+# define GPIO_PIN_NUM_INV 17
+#endif
 
 extern uint32_t pin_mux[GPIO_PIN_NUM];
 extern uint8_t  pin_num[GPIO_PIN_NUM];

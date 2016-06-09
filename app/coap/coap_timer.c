@@ -1,6 +1,10 @@
+// No espconn on ESP32
+#ifdef __ESP8266__
 #include "node.h"
 #include "coap_timer.h"
+#include "coap_io.h"
 #include "esp_timer.h"
+#include "esp_system.h"
 
 static os_timer_t coap_timer;
 static coap_tick_t basetime = 0;
@@ -76,3 +80,4 @@ void coap_timer_start(coap_queue_t ** queue){
     coap_timer_setup(queue, (*queue)->t);
   }
 }
+#endif

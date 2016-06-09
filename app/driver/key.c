@@ -8,6 +8,8 @@
  * Modification history:
  *     2014/5/1, v1.0 create this file.
 *******************************************************************************/
+#ifdef __ESP8266__
+
 #include "ets_sys.h"
 #include "os_type.h"
 #include "osapi.h"
@@ -162,3 +164,4 @@ key_intr_handler(void *arg)
     }
 }
 
+#endif

@@ -2,6 +2,7 @@
 #include "c_types.h"
 
 #include "coap.h"
+#include "coap_timer.h"
 #include "hash.h"
 #include "node.h"
 

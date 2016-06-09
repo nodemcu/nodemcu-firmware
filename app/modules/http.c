@@ -6,7 +6,6 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "cpu_esp8266.h"
 #include "httpclient.h"
 
 static int http_callback_registry  = LUA_NOREF;

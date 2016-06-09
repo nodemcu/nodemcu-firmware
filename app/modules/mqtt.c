@@ -1,3 +1,6 @@
+// No espconn on ESP32
+#ifdef __ESP8266__
+
 // Module for mqtt
 
 #include "module.h"
@@ -74,7 +77,7 @@ typedef struct lmqtt_userdata
   uint8_t secure;
 #endif
   bool connected;     // indicate socket connected, not mqtt prot connected.
-  ETSTimer mqttTimer;
+  os_timer_t mqttTimer;
   tConnState connState;
 }lmqtt_userdata;
 
@@ -687,7 +690,7 @@ static int mqtt_socket_client( lua_State* L )
   mud->event_timeout = 0;
   mud->connState = MQTT_INIT;
   mud->connected = false;
-  memset(&mud->mqttTimer, 0, sizeof(ETSTimer));
+  memset(&mud->mqttTimer, 0, sizeof(os_timer_t));
   memset(&mud->mqtt_state, 0, sizeof(mqtt_state_t));
   memset(&mud->connect_info, 0, sizeof(mqtt_connect_info_t));
 
@@ -1615,3 +1618,4 @@ int luaopen_mqtt( lua_State *L )
 }
 
 NODEMCU_MODULE(MQTT, "mqtt", mqtt_map, luaopen_mqtt);
+#endif

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "esp_libc.h"
 #include "coap.h"
 
 #include "lua.h"
@@ -196,7 +197,13 @@ static uint32_t id = 0;
 static const coap_endpoint_path_t path_id = {2, {"v1", "id"}};
 static int handle_get_id(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt, uint8_t id_hi, uint8_t id_lo)
 {
+#if defined(__ESP8266__)
     id = system_get_chip_id();
+#elif defined(__ESP32__)
+    uint8_t tmp;
+    system_get_chip_id (&tmp); // TODO: deal with failure
+    id = tmp;
+#endif
     return coap_make_response(scratch, outpkt, (const uint8_t *)(&id), sizeof(uint32_t), id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
 }
 

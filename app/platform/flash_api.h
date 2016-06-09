@@ -2,7 +2,7 @@
 #define __FLASH_API_H__
 #include "ets_sys.h"
 #include "user_config.h"
-#include "cpu_esp8266.h"
+#include "platform.h"
 
 #define FLASH_SIZE_2MBIT    (2   * 1024 * 1024)
 #define FLASH_SIZE_4MBIT    (4   * 1024 * 1024)
@@ -20,15 +20,21 @@
 #define FLASH_SIZE_8MBYTE   (FLASH_SIZE_64MBIT / 8)
 #define FLASH_SIZE_16MBYTE  (FLASH_SIZE_128MBIT/ 8)
 
-#define FLASH_SAFEMODE_ENTER() \
+#if defined(__ESP8266__)
+# define FLASH_SAFEMODE_ENTER() \
 do { \
     extern SpiFlashChip flashchip; \
     flashchip.chip_size = FLASH_SIZE_16MBYTE
 
 
-#define FLASH_SAFEMODE_LEAVE() \
+# define FLASH_SAFEMODE_LEAVE() \
     flashchip.chip_size = flash_rom_get_size_byte(); \
 } while(0)
+#elif defined(__ESP32__)
+  // TODO: is there something similar to SpiFlashChip available on the ESP32?
+# define FLASH_SAFEMODE_ENTER() do{}while(0)
+# define FLASH_SAFEMODE_LEAVE() do{}while(0)
+#endif
 
 /******************************************************************************
  * ROM Function definition

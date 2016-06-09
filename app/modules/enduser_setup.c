@@ -33,6 +33,9 @@
  * Additions & fixes: Johny Mattsson <jmattsson@dius.com.au>
  */
 
+// No espconn on ESP32
+#ifdef __ESP8266__
+
 #include "module.h"
 #include "lauxlib.h"
 #include "lwip/tcp.h"
@@ -1528,3 +1531,4 @@ static const LUA_REG_TYPE enduser_setup_map[] = {
 };
 
 NODEMCU_MODULE(ENDUSER_SETUP, "enduser_setup", enduser_setup_map, NULL);
+#endif

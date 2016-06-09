@@ -15,7 +15,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "hw_timer.h"
-#include "cpu_esp8266.h"
+#include "platform.h"
 
 typedef struct {
   int ref;
@@ -31,9 +31,9 @@ typedef struct {
 static DATA *data;
 extern char _flash_used_end[];
 
-#define TIMER_OWNER ((os_param_t) 'p')
+#define TIMER_OWNER ((uint32_t) 'p')
 
-static void ICACHE_RAM_ATTR hw_timer_cb(os_param_t p)
+static void ICACHE_RAM_ATTR hw_timer_cb(uint32_t p)
 {
   (void) p;
   uint32_t stackaddr;

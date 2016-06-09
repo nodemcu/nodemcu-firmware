@@ -1,7 +1,10 @@
 #ifndef SPI_APP_H
 #define SPI_APP_H
 
-#include "spi_register.h"
+#ifdef __ESP8266__
+# include "spi_register.h"
+#endif
+#include "eagle_soc.h"
 #include "rom.h"
 #include "osapi.h"
 #include "uart.h"

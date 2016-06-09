@@ -1,3 +1,5 @@
+#ifdef __ESP8266__
+
 #include "ets_sys.h"
 #include "osapi.h"
 #include "eagle_soc.h"
@@ -41,3 +43,5 @@ gpio16_input_get(void)
 {
     return (uint8)(READ_PERI_REG(RTC_GPIO_IN_DATA) & 1);
 }
+
+#endif

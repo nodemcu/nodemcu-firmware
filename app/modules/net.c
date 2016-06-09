@@ -1,5 +1,8 @@
 // Module for network
 
+// No espconn on ESP32
+#ifdef __ESP8266__
+
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -1788,3 +1791,4 @@ int luaopen_net( lua_State *L ) {
 }
 
 NODEMCU_MODULE(NET, "net", net_map, luaopen_net);
+#endif

@@ -5,14 +5,8 @@
 #include "os_type.h"
 #include "espressif/esp_timer.h"
 
-// FIXME, these need to change/go together with the task implementation
-typedef uint32_t os_signal_t;
-typedef uint32_t os_event_t;
-typedef uint32_t os_param_t;
-
 #include "freertos/portmacro.h"
-#include_next "esp8266/ets_sys.h"
-
+#include_next "ets_sys.h"
 
 #define ets_vsprintf vsprintf
 

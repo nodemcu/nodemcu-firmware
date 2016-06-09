@@ -8,6 +8,9 @@
  * Modification history:
  *     2014/5/1, v1.0 create this file.
 *******************************************************************************/
+
+// ESP32 has own pwm driver in libdriver.a
+#ifdef __ESP8266__
 #include "platform.h"
 
 #include "ets_sys.h"
@@ -62,8 +65,8 @@ LOCAL uint16 pwm_gpio = 0;
 
 LOCAL uint8 pwm_channel_num = 0;
 
-LOCAL void ICACHE_RAM_ATTR pwm_tim1_intr_handler(os_param_t p);
-#define TIMER_OWNER ((os_param_t) 'P')
+LOCAL void ICACHE_RAM_ATTR pwm_tim1_intr_handler(uint32_t p);
+#define TIMER_OWNER ((uint32_t) 'P')
 
 LOCAL void ICACHE_FLASH_ATTR
 pwm_insert_sort(struct pwm_single_param pwm[], uint8 n)
@@ -318,7 +321,7 @@ pwm_get_freq(uint8 channel)
  * Returns      : NONE
 *******************************************************************************/
 LOCAL void ICACHE_RAM_ATTR
-pwm_tim1_intr_handler(os_param_t p)
+pwm_tim1_intr_handler(uint32_t p)
 {
   (void)p;
 
@@ -465,3 +468,4 @@ pwm_exist(uint8 channel){
     }
     return false;
 }
+#endif

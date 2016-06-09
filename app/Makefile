@@ -11,7 +11,6 @@
 #     subdir/lib to be extracted and rolled up into
 #     a generated lib/image xxx.a ()
 #
-TARGET = eagle
 #FLAVOR = release
 FLAVOR = debug
 
@@ -63,8 +62,6 @@ ifeq ($(FLAVOR),release)
     TARGET_LDFLAGS += -Os
 endif
 
-LD_FILE = $(LDDIR)/nodemcu.ld
-
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
 	driver/libdriver.a 			\
@@ -93,23 +90,19 @@ COMPONENTS_eagle.app.v6 = 			\
 SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
 
 USED_SDK_LIBS=					\
-	cirom					\
 	crypto					\
-	espconn					\
 	freertos				\
 	gcc					\
-	json					\
 	lwip					\
 	main					\
-	mirom					\
 	net80211				\
-	nopoll					\
 	phy					\
 	pp					\
 	smartconfig				\
 	ssl					\
 	wpa					\
 	wps					\
+	$(TARGET_SDK_LIBS)			\
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
@@ -119,10 +112,9 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,@$(LDDIR)/defsym.rom		\
 	-T$(LDDIR)/extrasyms.rom		\
 	-Wl,--no-check-sections 		\
-	-Wl,--wrap=printf			\
 	-Wl,-static 				\
+	$(TARGET_LDFLAGS)			\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
-	-u _UserExceptionVectorOverride		\
 	-Wl,--start-group 			\
 	-lhal					\
 	$(addprefix -l,$(USED_SDK_LIBS))	\

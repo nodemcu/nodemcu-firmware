@@ -1,7 +1,7 @@
 #ifndef _SDK_OVERRIDE_OSAPI_H_
 #define _SDK_OVERRIDE_OSAPI_H_
 
-#include "rom.h"
+#include "user_interface.h"
 #include "user_config.h"
 
 void call_user_start(void);

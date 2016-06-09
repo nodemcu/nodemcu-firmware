@@ -31,6 +31,7 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 
+#ifdef __ESP8266__
 
 /* Exception handler for supporting non-32bit wide loads from mapped SPI flash
  * (well, technically any mapped memory that can do 32bit loads). Pure assembly
@@ -56,7 +57,6 @@
  * we displaced. The cause3_handler is where the actual work gets done for
  * the load functionality.
  */
-
 
 /* frame save area, a0->a15, but a1=>sar */
 .section ".data"
@@ -199,3 +199,5 @@ _UserExceptionVectorOverride:
 1:call0 cause3_handler     /* handle loads with rfe, stores will return here  */
 2:rsr a0, EXCSAVE1         /* restore a0 before we chain                      */
   j _UserExceptionVector   /* and off we go to rtos                           */
+
+#endif

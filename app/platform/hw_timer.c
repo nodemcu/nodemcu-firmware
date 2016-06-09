@@ -12,7 +12,7 @@
 * 
 * The owner parameter should be a unique value per module using this API
 * It could be a pointer to a bit of data or code 
-* e.g.   #define OWNER    ((os_param_t) module_init)   
+* e.g.   #define OWNER    ((uint32_t) module_init)   
 * where module_init is a function. For builtin modules, it might be 
 * a small numeric value that is known not to clash.
 *******************************************************************************/
@@ -37,20 +37,20 @@ typedef enum {			//timer interrupt mode
     TM_EDGE_INT   = 0,	//edge interrupt
 } TIMER_INT_MODE;
 
-static os_param_t the_owner;
-static os_param_t callback_arg;
-static void (* user_hw_timer_cb)(os_param_t);
+static uint32_t the_owner;
+static uint32_t callback_arg;
+static void (* user_hw_timer_cb)(uint32_t);
 
 #define VERIFY_OWNER(owner)  if (owner != the_owner) { if (the_owner) { return 0; } the_owner = owner; }
 
 /******************************************************************************
 * FunctionName : platform_hw_timer_arm_ticks
 * Description  : set a trigger timer delay for this timer.
-* Parameters   : os_param_t owner
+* Parameters   : uint32_t owner
 *                uint32 ticks :
 * Returns      : true if it worked
 *******************************************************************************/
-bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks(os_param_t owner, uint32_t ticks)
+bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks(uint32_t owner, uint32_t ticks)
 {
   VERIFY_OWNER(owner);
   RTC_REG_WRITE(FRC1_LOAD_ADDRESS, ticks);
@@ -61,7 +61,7 @@ bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks(os_param_t owner, uint32_t tick
 /******************************************************************************
 * FunctionName : platform_hw_timer_arm_us
 * Description  : set a trigger timer delay for this timer.
-* Parameters   : os_param_t owner
+* Parameters   : uint32_t owner
 *                uint32 microseconds :
 * in autoload mode
 *                         50 ~ 0x7fffff;  for FRC1 source.
@@ -70,7 +70,7 @@ bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks(os_param_t owner, uint32_t tick
 *                         10 ~ 0x7fffff;
 * Returns      : true if it worked
 *******************************************************************************/
-bool ICACHE_RAM_ATTR platform_hw_timer_arm_us(os_param_t owner, uint32_t microseconds)
+bool ICACHE_RAM_ATTR platform_hw_timer_arm_us(uint32_t owner, uint32_t microseconds)
 {
   VERIFY_OWNER(owner);
   RTC_REG_WRITE(FRC1_LOAD_ADDRESS, US_TO_RTC_TIMER_TICKS(microseconds));
@@ -81,13 +81,13 @@ bool ICACHE_RAM_ATTR platform_hw_timer_arm_us(os_param_t owner, uint32_t microse
 /******************************************************************************
 * FunctionName : platform_hw_timer_set_func
 * Description  : set the func, when trigger timer is up.
-* Parameters   : os_param_t owner
-*                void (* user_hw_timer_cb_set)(os_param_t):
+* Parameters   : uint32_t owner
+*                void (* user_hw_timer_cb_set)(uint32_t):
                         timer callback function
-*	         os_param_t arg
+*	         uint32_t arg
 * Returns      : true if it worked
 *******************************************************************************/
-bool platform_hw_timer_set_func(os_param_t owner, void (* user_hw_timer_cb_set)(os_param_t), os_param_t arg)
+bool platform_hw_timer_set_func(uint32_t owner, void (* user_hw_timer_cb_set)(uint32_t), uint32_t arg)
 {
   VERIFY_OWNER(owner);
   callback_arg = arg;
@@ -112,10 +112,10 @@ static void ICACHE_RAM_ATTR hw_timer_nmi_cb(void)
 /******************************************************************************
 * FunctionName : platform_hw_timer_get_delay_ticks
 * Description  : figure out how long since th last timer interrupt
-* Parameters   : os_param_t owner
+* Parameters   : uint32_t owner
 * Returns      : the number of ticks
 *******************************************************************************/
-uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner)
+uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(uint32_t owner)
 {
   VERIFY_OWNER(owner);
 
@@ -125,7 +125,7 @@ uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner)
 /******************************************************************************
 * FunctionName : platform_hw_timer_init
 * Description  : initialize the hardware isr timer
-* Parameters   : os_param_t owner
+* Parameters   : uint32_t owner
 * FRC1_TIMER_SOURCE_TYPE source_type:
 *                         FRC1_SOURCE,    timer use frc1 isr as isr source.
 *                         NMI_SOURCE,     timer use nmi isr as isr source.
@@ -134,7 +134,7 @@ uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner)
 *                         1,  autoload mode,
 * Returns      : true if it worked
 *******************************************************************************/
-bool platform_hw_timer_init(os_param_t owner, FRC1_TIMER_SOURCE_TYPE source_type, bool autoload)
+bool platform_hw_timer_init(uint32_t owner, FRC1_TIMER_SOURCE_TYPE source_type, bool autoload)
 {
   VERIFY_OWNER(owner);
   if (autoload) {
@@ -162,10 +162,10 @@ bool platform_hw_timer_init(os_param_t owner, FRC1_TIMER_SOURCE_TYPE source_type
 /******************************************************************************
 * FunctionName : platform_hw_timer_close
 * Description  : ends use of the hardware isr timer
-* Parameters   : os_param_t owner
+* Parameters   : uint32_t owner
 * Returns      : true if it worked
 *******************************************************************************/
-bool ICACHE_RAM_ATTR platform_hw_timer_close(os_param_t owner)
+bool ICACHE_RAM_ATTR platform_hw_timer_close(uint32_t owner)
 {
   VERIFY_OWNER(owner);
 

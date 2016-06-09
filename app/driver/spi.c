@@ -1,3 +1,4 @@
+#ifdef __ESP8266__
 #include "driver/spi.h"
 #include "platform.h"
 
@@ -499,7 +500,6 @@ static uint8 idx = 0;
 static uint8 spi_flg = 0;
 #define SPI_MISO
 #define SPI_QUEUE_LEN 8
-os_event_t * spiQueue;
 #define MOSI  0
 #define MISO  1
 #define STATUS_R_IN_WR 2
@@ -585,6 +585,7 @@ void spi_slave_isr_handler(void *para)
 
 
 #ifdef SPI_SLAVE_DEBUG
+os_event_t * spiQueue;
 
 void ICACHE_FLASH_ATTR
     set_miso_data()
@@ -677,4 +678,4 @@ void ICACHE_FLASH_ATTR
 
 #endif
 
-
+#endif

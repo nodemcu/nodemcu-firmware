@@ -42,6 +42,7 @@ int platform_init()
   return PLATFORM_OK;
 }
 
+#ifdef __ESP2866__
 // ****************************************************************************
 // KEY_LED functions
 uint8_t platform_key_led( uint8_t level){
@@ -53,6 +54,7 @@ uint8_t platform_key_led( uint8_t level){
   gpio16_output_set(level);
   return temp;
 }
+#endif
 
 // ****************************************************************************
 // GPIO functions
@@ -107,6 +109,7 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
   if (pin >= NUM_GPIO)
     return -1;
 
+#ifdef __ESP8266__
   if(pin == 0){
     if(mode==PLATFORM_GPIO_INPUT)
       gpio16_input_conf();
@@ -115,6 +118,7 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 
     return 1;
   }
+#endif
 
 #ifdef LUA_USE_MODULES_PWM
   platform_pwm_close(pin);    // closed from pwm module, if it is used in pwm
@@ -156,11 +160,14 @@ int platform_gpio_write( unsigned pin, unsigned level )
   // NODE_DBG("Function platform_gpio_write() is called. pin:%d, level:%d\n",GPIO_ID_PIN(pin_num[pin]),level);
   if (pin >= NUM_GPIO)
     return -1;
+
+#ifdef __ESP8266__
   if(pin == 0){
     gpio16_output_conf();
     gpio16_output_set(level);
     return 1;
   }
+#endif
 
   GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
 }
@@ -171,10 +178,12 @@ int platform_gpio_read( unsigned pin )
   if (pin >= NUM_GPIO)
     return -1;
 
+#ifdef __ESP8266__
   if(pin == 0){
     // gpio16_input_conf();
     return 0x1 & gpio16_input_get();
   }
+#endif
 
   // GPIO_DIS_OUTPUT(pin_num[pin]);
   return 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin]));
@@ -448,15 +457,20 @@ uint32_t platform_pwm_get_clock( unsigned pin )
   // NODE_DBG("Function platform_pwm_get_clock() is called.\n");
   if( pin >= NUM_PWM)
     return 0;
+#ifdef __ESP8266__  // FIXME
   if(!pwm_exist(pin))
     return 0;
 
   return (uint32_t)pwm_get_freq(pin);
+#else
+  return 0;
+#endif
 }
 
 // Set the PWM clock
 uint32_t platform_pwm_set_clock( unsigned pin, uint32_t clock )
 {
+#ifdef __ESP8266__ // FIXME
   // NODE_DBG("Function platform_pwm_set_clock() is called.\n");
   if( pin >= NUM_PWM)
     return 0;
@@ -466,10 +480,14 @@ uint32_t platform_pwm_set_clock( unsigned pin, uint32_t clock )
   pwm_set_freq((uint16_t)clock, pin);
   pwm_start();
   return (uint32_t)pwm_get_freq( pin );
+#else
+  return 0;
+#endif
 }
 
 uint32_t platform_pwm_get_duty( unsigned pin )
 {
+#ifdef __ESP8266__ // FIXME
   // NODE_DBG("Function platform_pwm_get_duty() is called.\n");
   if( pin < NUM_PWM){
     if(!pwm_exist(pin))
@@ -477,12 +495,14 @@ uint32_t platform_pwm_get_duty( unsigned pin )
     // return NORMAL_DUTY(pwm_get_duty(pin));
     return pwms_duty[pin];
   }
+#endif
   return 0;
 }
 
 // Set the PWM duty
 uint32_t platform_pwm_set_duty( unsigned pin, uint32_t duty )
 {
+#ifdef __ESP8266__ // FIXME
   // NODE_DBG("Function platform_pwm_set_duty() is called.\n");
   if ( pin < NUM_PWM)
   {
@@ -494,12 +514,14 @@ uint32_t platform_pwm_set_duty( unsigned pin, uint32_t duty )
   }
   pwm_start();
   pwms_duty[pin] = NORMAL_DUTY(pwm_get_duty(pin));
+#endif
   return pwms_duty[pin];
 }
 
 uint32_t platform_pwm_setup( unsigned pin, uint32_t frequency, unsigned duty )
 {
   uint32_t clock;
+#ifdef __ESP8266__ // FIXME
   if ( pin < NUM_PWM)
   {
     platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);  // disable gpio interrupt first
@@ -516,6 +538,7 @@ uint32_t platform_pwm_setup( unsigned pin, uint32_t frequency, unsigned duty )
   if (!pwm_start()) {
     return 0;
   }
+#endif
   return clock;
 }
 
@@ -524,13 +547,16 @@ void platform_pwm_close( unsigned pin )
   // NODE_DBG("Function platform_pwm_stop() is called.\n");
   if ( pin < NUM_PWM)
   {
+#ifdef __ESP8266__ // FIXME
     pwm_delete(pin);
+#endif
     pwm_start();
   }
 }
 
 bool platform_pwm_start( unsigned pin )
 {
+#ifdef __ESP8266__ // FIXME
   // NODE_DBG("Function platform_pwm_start() is called.\n");
   if ( pin < NUM_PWM)
   {
@@ -539,12 +565,13 @@ bool platform_pwm_start( unsigned pin )
     pwm_set_duty(DUTY(pwms_duty[pin]), pin);
     return pwm_start();
   }
-
+#endif
   return FALSE;
 }
 
 void platform_pwm_stop( unsigned pin )
 {
+#ifdef __ESP8266__ // FIXME
   // NODE_DBG("Function platform_pwm_stop() is called.\n");
   if ( pin < NUM_PWM)
   {
@@ -553,6 +580,7 @@ void platform_pwm_stop( unsigned pin )
     pwm_set_duty(0, pin);
     pwm_start();
   }
+#endif
 }
 
 
@@ -561,6 +589,7 @@ void platform_pwm_stop( unsigned pin )
 
 uint8_t platform_sigma_delta_setup( uint8_t pin )
 {
+#ifdef __ESP8266__ // FIXME
   if (pin < 1 || pin > NUM_GPIO)
     return 0;
 
@@ -575,11 +604,13 @@ uint8_t platform_sigma_delta_setup( uint8_t pin )
                  (GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) &(~GPIO_PIN_SOURCE_MASK)) |
                  GPIO_PIN_SOURCE_SET( SIGMA_AS_PIN_SOURCE ));
 
+#endif
   return 1;
 }
 
 uint8_t platform_sigma_delta_close( uint8_t pin )
 {
+#ifdef __ESP8266__ // FIXME
   if (pin < 1 || pin > NUM_GPIO)
     return 0;
 
@@ -593,11 +624,13 @@ uint8_t platform_sigma_delta_close( uint8_t pin )
                  (GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) &(~GPIO_PIN_SOURCE_MASK)) |
                  GPIO_PIN_SOURCE_SET( GPIO_AS_PIN_SOURCE ));
 
+#endif
   return 1;
 }
 
 void platform_sigma_delta_set_pwmduty( uint8_t duty )
 {
+#ifdef __ESP8266__ // FIXME
   uint8_t target = 0, prescale = 0;
 
   target = duty > 128 ? 256 - duty : duty;
@@ -605,16 +638,21 @@ void platform_sigma_delta_set_pwmduty( uint8_t duty )
 
   //freq = 80000 (khz) /256 /duty_target * (prescale+1)
   sigma_delta_set_prescale_target( prescale, duty );
+#endif
 }
 
 void platform_sigma_delta_set_prescale( uint8_t prescale )
 {
+#ifdef __ESP8266__ // FIXME
   sigma_delta_set_prescale_target( prescale, -1 );
+#endif
 }
 
 void platform_sigma_delta_set_target( uint8_t target )
 {
+#ifdef __ESP8266__ // FIXME
     sigma_delta_set_prescale_target( -1, target );
+#endif
 }
 
 
@@ -673,7 +711,9 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 // SPI platform interface
 uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
+#ifdef __ESP8266__ // FIXME
   spi_master_init( id, cpol, cpha, clock_div );
+#endif
   return 1;
 }
 
@@ -682,7 +722,9 @@ int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data )
   if (bitlen > 32)
     return PLATFORM_ERR;
 
+#ifdef __ESP8266__ // FIXME
   spi_mast_transaction( id, 0, 0, bitlen, data, 0, 0, 0 );
+#endif
   return PLATFORM_OK;
 }
 
@@ -691,9 +733,13 @@ spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type 
   if (bitlen > 32)
     return 0;
 
+#ifdef __ESP8266__ // FIXME
   spi_mast_set_mosi( id, 0, bitlen, data );
   spi_mast_transaction( id, 0, 0, 0, 0, bitlen, 0, -1 );
   return spi_mast_get_miso( id, 0, bitlen );
+#else
+  return 0;
+#endif
 }
 
 int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data )
@@ -701,8 +747,9 @@ int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data
   if (offset + bitlen > 512)
     return PLATFORM_ERR;
 
+#ifdef __ESP8266__ // FIXME
   spi_mast_set_mosi( id, offset, bitlen, data );
-
+#endif
   return PLATFORM_OK;
 }
 
@@ -711,7 +758,11 @@ spi_data_type platform_spi_get_miso( uint8_t id, uint16_t offset, uint8_t bitlen
   if (offset + bitlen > 512)
     return 0;
 
+#ifdef __ESP8266__ // FIXME
   return spi_mast_get_miso( id, offset, bitlen );
+#else
+  return 0;
+#endif
 }
 
 int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,
@@ -725,7 +776,9 @@ int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_
       (miso_bitlen  > 512))
     return PLATFORM_ERR;
 
+#ifdef __ESP8266__ // FIXME
   spi_mast_transaction( id, cmd_bitlen, cmd_data, addr_bitlen, addr_data, mosi_bitlen, dummy_bitlen, miso_bitlen );
+#endif
 
   return PLATFORM_OK;
 }
@@ -808,6 +861,7 @@ int platform_flash_erase_sector( uint32_t sector_id )
 
 uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
 {
+#ifdef __ESP8266__
   uint32_t cache_ctrl = READ_PERI_REG(CACHE_FLASH_CTRL_REG);
   if (!(cache_ctrl & CACHE_FLASH_ACTIVE))
     return -1;
@@ -815,4 +869,8 @@ uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
   bool b1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 1 : 0;
   uint32_t meg = (b1 << 1) | b0;
   return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg * 0x100000;
+#else
+  // FIXME
+  return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS;
+#endif
 }

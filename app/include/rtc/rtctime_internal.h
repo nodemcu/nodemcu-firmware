@@ -343,7 +343,7 @@ static inline uint32_t rtc_time_get_calibration(void)
   if (!cal)
   {
     // Make a first guess, most likely to be rather bad, but better then nothing.
-#ifndef BOOTLOADER_CODE // This will pull in way too much of the system for the bootloader to handle.
+#if !defined(BOOTLOADER_CODE) && defined(__ESP8266__) // This will pull in way too much of the system for the bootloader to handle.
     ets_delay_us(200);
     cal=system_rtc_clock_cali_proc();
     rtc_mem_write(RTC_CALIBRATION_POS,cal);
@@ -583,7 +583,7 @@ static inline void rtc_time_tmrfn(void* arg)
 
 static inline void rtc_time_install_timer(void)
 {
-  static ETSTimer tmr;
+  static os_timer_t tmr;
 
   os_timer_setfn(&tmr,rtc_time_tmrfn,NULL);
   os_timer_arm(&tmr,10000,1);

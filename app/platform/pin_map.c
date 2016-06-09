@@ -17,6 +17,7 @@ typedef struct {
   uint8 intr_type;
 } pin_rec;
 #define DECLARE_PIN(n,p) { (PERIPHS_IO_MUX_##p##_U - PERIPHS_IO_MUX), n, FUNC_GPIO##n, GPIO_PIN_INTR_DISABLE}
+#if defined(__ESP8266__)
 static const pin_rec pin_map[] = {
    {PAD_XPD_DCDC_CONF  - PERIPHS_IO_MUX, 16, 0, GPIO_PIN_INTR_DISABLE},
     DECLARE_PIN( 5, GPIO5),
@@ -32,6 +33,11 @@ static const pin_rec pin_map[] = {
     DECLARE_PIN( 9, SD_DATA2),
     DECLARE_PIN(10, SD_DATA3)
 };
+#elif defined(__ESP32__)
+// FIXME: fill in
+static const pin_rec pin_map[] = {};
+#endif
+
 void get_pin_map(void) {
   /*
    * Flash copy of the pin map.  This has to be copied to RAM to be accessible from the ISR.

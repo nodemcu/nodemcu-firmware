@@ -1,3 +1,5 @@
+/* Sigma-delta only on the ESP8266 */
+#ifdef __ESP8266__
 
 #include "driver/sigma_delta.h"
 #include "esp8266/gpio_register.h"
@@ -32,3 +34,5 @@ void sigma_delta_set_prescale_target( sint16 prescale, sint16 target )
                    (GPIO_SIGMA_DELTA_PRESCALE_SET(prescale) & prescale_mask) |
                    (GPIO_SIGMA_DELTA_TARGET_SET(target) & target_mask));
 }
+
+#endif
