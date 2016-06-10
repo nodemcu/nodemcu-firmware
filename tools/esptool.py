@@ -443,7 +443,7 @@ if __name__ == '__main__':
     parser_write_flash.add_argument('--flash_mode', '-fm', help = 'SPI Flash mode',
             choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
     parser_write_flash.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
-            choices = ['4m', '2m', '8m', '16m', '32m'], default = '4m')
+            choices = ['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2', '64m', '128m'], default = '4m')
 
     parser_run = subparsers.add_parser(
             'run',
@@ -472,7 +472,7 @@ if __name__ == '__main__':
     parser_elf2image.add_argument('--flash_mode', '-fm', help = 'SPI Flash mode',
             choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
     parser_elf2image.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
-            choices = ['4m', '2m', '8m', '16m', '32m'], default = '4m')
+            choices = ['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2', '64m', '128m'], default = '4m')
 
     parser_read_mac = subparsers.add_parser(
             'read_mac',
@@ -542,7 +542,7 @@ if __name__ == '__main__':
         assert len(args.addr_filename) % 2 == 0
 
         flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
-        flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40}[args.flash_size]
+        flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1':0x50, '32m-c1':0x60, '32m-c2':0x70, '64m':0x80, '128m':0x90}[args.flash_size]
         flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
         flash_info = struct.pack('BB', flash_mode, flash_size_freq)
 
@@ -612,7 +612,7 @@ if __name__ == '__main__':
             image.add_segment(e.get_symbol_addr(start), data)
 
         image.flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
-        image.flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40}[args.flash_size]
+        image.flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1':0x50, '32m-c1':0x60, '32m-c2':0x70, '64m':0x80, '128m':0x90}[args.flash_size]
         image.flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
 
         image.save(args.output + "0x00000.bin")

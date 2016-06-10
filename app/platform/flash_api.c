@@ -118,6 +118,18 @@ uint32_t flash_rom_get_size_byte(void)
             // 32Mbit, 4MByte
             flash_size = 4 * 1024 * 1024;
             break;
+        case SIZE_32MBIT_16M_16M:
+            // 32Mbit, 4MByte
+            flash_size = 4 * 1024 * 1024;
+            break;
+        case SIZE_64MBIT:
+            // 64Mbit, 8MByte
+            flash_size = 8 * 1024 * 1024;
+            break;
+        case SIZE_128MBIT:
+            // 128Mbit, 16MByte
+            flash_size = 16 * 1024 * 1024;
+            break;
         default:
             // Unknown flash size, fall back mode.
             flash_size = 512 * 1024;
@@ -184,18 +196,16 @@ bool flash_rom_set_size_byte(uint32_t size)
         flash_size = SIZE_32MBIT;
         flash_rom_set_size_type(flash_size);
         break;
-        /*
     case 8 * 1024 * 1024:
         // 64Mbit, 8MByte
-        flash_size = SIZE_16MBIT_8M_8M;
+        flash_size = SIZE_64MBIT;
         flash_rom_set_size_type(flash_size);
         break;
     case 16 * 1024 * 1024:
         // 128Mbit, 16MByte
-        flash_size = SIZE_32MBIT_8M_8M;
+        flash_size = SIZE_128MBIT;
         flash_rom_set_size_type(flash_size);
         break;
-        */
     default:
         // Unknown flash size.
         result = false;
