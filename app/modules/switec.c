@@ -27,10 +27,8 @@ static task_handle_t tasknumber;
 
 static void callback_free(lua_State* L, unsigned int id) 
 {
-  if (stopped_callback[id] != LUA_NOREF) {
-    luaL_unref(L, LUA_REGISTRYINDEX, stopped_callback[id]);
-    stopped_callback[id] = LUA_NOREF;
-  }
+  luaL_unref(L, LUA_REGISTRYINDEX, stopped_callback[id]);
+  stopped_callback[id] = LUA_NOREF;
 }
 
 static void callback_set(lua_State* L, unsigned int id, int argNumber) 
@@ -204,7 +202,9 @@ static const LUA_REG_TYPE switec_map[] = {
   { LSTRKEY( "reset" ),    LFUNCVAL( lswitec_reset ) },
   { LSTRKEY( "moveto" ),   LFUNCVAL( lswitec_moveto) },
   { LSTRKEY( "getpos" ),   LFUNCVAL( lswitec_getpos) },
+#ifdef SQITEC_DEBUG
   { LSTRKEY( "dequeue" ),  LFUNCVAL( lswitec_dequeue) },
+#endif
 
   { LNILKEY, LNILVAL }
 };
