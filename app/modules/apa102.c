@@ -6,10 +6,37 @@
 #include "module.h"
 #include "platform.h"
 #include "user_interface.h"
-
+#include "lmem.h"
+#include "sinus.h"
 
 #define NOP asm volatile(" nop \n\t")
 
+void hsi2argb(int H, int S, int I, int* abgr) {
+  int idx2, idx1, idx0;
+      
+  if(H < 120) {
+    idx0 = 3;
+    idx1 = 2;
+    idx2 = 1;
+  } else if(H < 240) {
+    H = H - 120;
+    idx0 = 2;
+    idx1 = 1;
+    idx2 = 3;
+  } else {
+    H = H - 240;
+    idx0 = 1;
+    idx1 = 3;
+    idx2 = 2;
+  }
+
+  abgr[0] = 0x10 | (I >> 6);
+
+  abgr[idx0] = (I+SIcosH_cos_H(H,S,I))/12;
+  abgr[idx1] = (I+(((S*I)>>10)-SIcosH_cos_H(H,S,I)))/12;
+  abgr[idx2] = (I-((I*S)>>10))/12;
+ 
+}
 
 static inline void apa102_send_byte(uint32_t data_pin, uint32_t clock_pin, uint8_t byte) {
   int i;
@@ -81,13 +108,6 @@ static int apa102_write(lua_State* L) {
   MOD_CHECK_ID(gpio, clock_pin);
   uint32_t alt_clock_pin = pin_num[clock_pin];
 
-  size_t buf_len;
-  const char *buf = luaL_checklstring(L, 3, &buf_len);
-  uint32_t nbr_frames = buf_len / 4;
-
-  if (nbr_frames > 100000) {
-    return luaL_error(L, "The supplied buffer is too long, and might cause the callback watchdog to bark.");
-  }
 
   // Initialize the output pins
   platform_gpio_mode(data_pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
@@ -95,8 +115,54 @@ static int apa102_write(lua_State* L) {
   platform_gpio_mode(clock_pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
   GPIO_OUTPUT_SET(alt_clock_pin, PLATFORM_GPIO_LOW); // Set pin low
 
-  // Send the buffers
-  apa102_send_buffer(alt_data_pin, alt_clock_pin, (uint32_t *) buf, (uint32_t) nbr_frames);
+
+  if(lua_istable(L, 3)){
+    uint32_t nbr_frames = luaL_checkinteger(L, 4);
+    uint8_t *buf = luaM_malloc(L, nbr_frames * sizeof(uint8_t) * 4);
+
+    int i, j;
+    int hsi_in[3];
+    int abgr_out[4];
+    
+    for(j = 0; j < nbr_frames; j++)
+    {
+      lua_pushinteger(L, j+1);
+      lua_gettable(L, 3);      
+      if (lua_istable(L, -1))
+      {
+        for(i = 1; i <= 3; i++)
+        {
+          lua_pushinteger(L, i);
+          lua_gettable(L, -2);
+          hsi_in[i-1] = luaL_checknumber(L, -1);
+          lua_pop(L, 1);
+        }       
+        hsi2argb(hsi_in[0], hsi_in[1], hsi_in[2], abgr_out);
+      }
+  
+      buf[4*j+0] = abgr_out[0];
+      buf[4*j+1] = abgr_out[1];
+      buf[4*j+2] = abgr_out[2];
+      buf[4*j+3] = abgr_out[3];
+      
+      lua_pop(L, 1); 
+    }    
+
+
+    // Send the buffers
+    apa102_send_buffer(alt_data_pin, alt_clock_pin, (uint32_t *) buf, (uint32_t) nbr_frames);
+    luaM_free(L, buf);
+  }else{
+    size_t buf_len;
+    const char *buf = luaL_checklstring(L, 3, &buf_len);
+    uint32_t nbr_frames = buf_len / 4;
+    if (nbr_frames > 100000) {
+      return luaL_error(L, "The supplied buffer is too long, and might cause the callback watchdog to bark.");
+    }
+    // Send the buffers
+    apa102_send_buffer(alt_data_pin, alt_clock_pin, (uint32_t *) buf, (uint32_t) nbr_frames);
+  }
+
   return 0;
 }
 
