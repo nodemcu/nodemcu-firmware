@@ -1,4 +1,7 @@
 # I²C Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [i2c.c](../../../app/modules/i2c.c)|
 
 ## i2c.address()
 Setup I²C address and read/write mode for the next transfer.

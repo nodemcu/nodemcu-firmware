@@ -32,17 +32,26 @@ uint8_t platform_key_led( uint8_t level);
 
 #define PLATFORM_GPIO_INT 2
 #define PLATFORM_GPIO_OUTPUT 1
+#define PLATFORM_GPIO_OPENDRAIN 3
 #define PLATFORM_GPIO_INPUT 0
 
 #define PLATFORM_GPIO_HIGH 1
 #define PLATFORM_GPIO_LOW 0
 
+typedef uint32_t (* platform_hook_function)(uint32_t bitmask);
+
 static inline int platform_gpio_exists( unsigned pin ) { return pin < NUM_GPIO; }
 int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull );
 int platform_gpio_write( unsigned pin, unsigned level );
 int platform_gpio_read( unsigned pin );
-void platform_gpio_init( task_handle_t gpio_task );
+
+// Note that these functions will not be compiled in unless GPIO_INTERRUPT_ENABLE and
+// GPIO_INTERRUPT_HOOK_ENABLE are defined.
+int platform_gpio_register_intr_hook(uint32_t gpio_bits, platform_hook_function hook);
+#define platform_gpio_unregister_intr_hook(hook) \
+  platform_gpio_register_intr_hook(0, hook);
 void platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type );
+void platform_gpio_init( task_handle_t gpio_task );
 // *****************************************************************************
 // Timer subsection
 
@@ -62,7 +71,7 @@ enum
   ELUA_CAN_ID_EXT
 };
 
-static inline int platform_can_exists( unsigned id ) { return id < NUM_CAN; }
+static inline int platform_can_exists( unsigned id ) { return NUM_CAN && (id < NUM_CAN); }
 uint32_t platform_can_setup( unsigned id, uint32_t clock );
 int platform_can_send( unsigned id, uint32_t canid, uint8_t idtype, uint8_t len, const uint8_t *data );
 int platform_can_recv( unsigned id, uint32_t *canid, uint8_t *idtype, uint8_t *len, uint8_t *data );
@@ -163,6 +172,7 @@ void platform_uart_alt( int set );
 #define DUTY(d) ((uint16_t)( ((unsigned)(d)*PWM_DEPTH) / NORMAL_PWM_DEPTH) )
 
 // The platform PWM functions
+void platform_pwm_init( void );
 static inline int platform_pwm_exists( unsigned id ) { return ((id < NUM_PWM) && (id > 0)); }
 uint32_t platform_pwm_setup( unsigned id, uint32_t frequency, unsigned duty );
 void platform_pwm_close( unsigned id );

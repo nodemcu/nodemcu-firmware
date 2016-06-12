@@ -24,8 +24,7 @@ SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS= 					\
 	user 					\
 	driver 					\
-	json 					\
-	upgrade 				\
+	pcm					\
 	platform 				\
 	libc 					\
 	lua 					\
@@ -36,13 +35,13 @@ SUBDIRS= 					\
 	u8glib 					\
 	ucglib					\
 	smart 					\
-	wofs 					\
 	modules 				\
 	spiffs 					\
 	cjson 					\
 	crypto 					\
 	dhtlib					\
 	tsl2561					\
+	net					\
 	http
 
 endif # } PDIR
@@ -71,8 +70,7 @@ LD_FILE = $(LDDIR)/nodemcu.ld
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
 	driver/libdriver.a 			\
-	json/libjson.a 				\
-	upgrade/libupgrade.a 			\
+	pcm/pcm.a				\
 	platform/libplatform.a 			\
 	task/libtask.a 				\
 	libc/liblibc.a 				\
@@ -83,13 +81,13 @@ COMPONENTS_eagle.app.v6 = 			\
 	u8glib/u8glib.a 			\
 	ucglib/ucglib.a 			\
 	smart/smart.a 				\
-	wofs/wofs.a 				\
 	spiffs/spiffs.a 			\
 	cjson/libcjson.a 			\
 	crypto/libcrypto.a 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
 	http/libhttp.a				\
+	net/libnodemcu_net.a			\
 	modules/libmodules.a			\
 
 # Inspect the modules library and work out which modules need to be linked.
@@ -118,7 +116,6 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-lwpa 					\
 	-lwpa2					\
 	-lmain 					\
-	-ljson 					\
 	-lsmartconfig 				\
 	-lssl 					\
 	-lcrypto				\

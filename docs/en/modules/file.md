@@ -1,4 +1,8 @@
 # file Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [file.c](../../../app/modules/file.c)|
+
 The file module provides access to the file system and its individual files.
 
 The file system is a flat file system, with no notion of directories/folders.
@@ -204,12 +208,12 @@ Read content from the open file.
 
 #### Parameters
 - `n_or_str`:
-	- if nothing passed in, read all byte in file
-	- if pass a number n, then read n bytes from file, or EOF is reached
-	- if pass a string "str", then read until 'str' or EOF is reached
+	- if nothing passed in, read up to `LUAL_BUFFERSIZE` bytes (default 1024) or the entire file (whichever is smaller)
+	- if passed a number n, then read the file until the lesser of `n` bytes, `LUAL_BUFFERSIZE` bytes, or EOF is reached. Specifying a number larger than the buffer size will read the buffer size.
+	- if passed a string `str`, then read until `str` appears next in the file, `LUAL_BUFFERSIZE` bytes have been read, or EOF is reached
 
 #### Returns
-fdile content in string, or nil when EOF
+File content as a string, or nil when EOF
 
 #### Example
 ```lua
@@ -218,7 +222,7 @@ file.open("init.lua", "r")
 print(file.read('\n'))
 file.close()
 
--- print the first 5 byte of 'init.lua'
+-- print the first 5 bytes of 'init.lua'
 file.open("init.lua", "r")
 print(file.read(5))
 file.close()
@@ -230,7 +234,7 @@ file.close()
 
 ## file.readline()
 
-Read the next line from the open file.
+Read the next line from the open file. Lines are defined as zero or more bytes ending with a EOL ('\n') byte. If the next line is longer than `LUAL_BUFFERSIZE`, this function only returns the first `LUAL_BUFFERSIZE` bytes (this is 1024 bytes by default).
 
 #### Syntax
 `file.readline()`
@@ -239,7 +243,7 @@ Read the next line from the open file.
 none
 
 #### Returns
-File content in string, line by line, include EOL('\n'). Return `nil` when EOF.
+File content in string, line by line, including EOL('\n'). Return `nil` when EOF.
 
 #### Example
 ```lua

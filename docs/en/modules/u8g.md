@@ -1,4 +1,8 @@
 # u8g Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-01-30 | [Oli Kraus](https://github.com/olikraus/u8glib), [Arnim Läuger](https://github.com/devsaurus) | [Arnim Läuger](https://github.com/devsaurus) | [u8glib](../../../app/u8glib/)|
+
 U8glib is a graphics library developed at [olikraus/u8glib](https://github.com/olikraus/u8glib) with support for many different displays. The NodeMCU firmware supports a subset of these.
 
 I²C and SPI mode:
@@ -338,7 +342,7 @@ See [u8glib getWidth()](https://github.com/olikraus/u8glib/wiki/userreference#ge
 See [u8glib getStrWidth](https://github.com/olikraus/u8glib/wiki/userreference#getstrwidth).
 
 ## u8g.disp:nextPage()
-See [u8glib nextPage()(https://github.com/olikraus/u8glib/wiki/userreference#nextpage).
+See [u8glib nextPage()](https://github.com/olikraus/u8glib/wiki/userreference#nextpage).
 
 ## u8g.disp:setColorIndex()
 See [u8glib setColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#setcolortndex).

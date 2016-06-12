@@ -13,6 +13,7 @@
 #include "c_string.h"
 #include "c_stdlib.h"
 #include "flash_fs.h"
+#include "flash_api.h"
 #include "user_interface.h"
 #include "user_exceptions.h"
 #include "user_modules.h"
@@ -32,13 +33,6 @@
 
 static os_event_t *taskQueue;
 
-/* Important: no_init_data CAN NOT be left as zero initialised, as that
- * initialisation will happen after user_start_trampoline, but before
- * the user_init, thus clobbering our state!
- */
-static uint8_t no_init_data = 0xff;
-
-
 /* Note: the trampoline *must* be explicitly put into the .text segment, since
  * by the time it is invoked the irom has not yet been mapped. This naturally
  * also goes for anything the trampoline itself calls.
@@ -53,29 +47,6 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
   // is where the cpu clock actually gets bumped to 80MHz.
   rtctime_early_startup ();
 #endif
-
-
-  /* Minimal early detection of missing esp_init_data.
-   * If it is missing, the SDK will write its own and thus we'd end up
-   * using that unless the flash size field is incorrect. This then leads
-   * to different esp_init_data being used depending on whether the user
-   * flashed with the right flash size or not (and the better option would
-   * be to flash with an *incorrect* flash size, counter-intuitively).
-   * To avoid that mess, we read out the flash size and do a test for
-   * esp_init_data based on that size. If it's missing, flag for later.
-   * If the flash size was incorrect, we'll end up fixing it all up
-   * anyway, so this ends up solving the conundrum. Only remaining issue
-   * is lack of spare code bytes in iram, so this is deliberately quite
-   * terse and not as readable as one might like.
-   */
-  SPIFlashInfo sfi;
-  SPIRead (0, &sfi, sizeof (sfi)); // Cache read not enabled yet, safe to use
-  if (sfi.size < 2) // Compensate for out-of-order 4mbit vs 2mbit values
-    sfi.size ^= 1;
-  uint32_t flash_end_addr = (256 * 1024) << sfi.size;
-  uint32_t init_data_hdr = 0xffffffff;
-  SPIRead (flash_end_addr - 4 * SPI_FLASH_SEC_SIZE, &init_data_hdr, sizeof (init_data_hdr));
-  no_init_data = (init_data_hdr == 0xffffffff);
 
   call_user_start ();
 }
@@ -118,40 +89,41 @@ void nodemcu_init(void)
         NODE_ERR("Self adjust flash size.\n");
         // Fit hardware real flash size.
         flash_rom_set_size_byte(flash_safe_get_size_byte());
-        // Write out init data at real location.
-        no_init_data = true;
 
-        if( !fs_format() )
-        {
-            NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
-            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
-        }
-        else{
-            NODE_ERR( "format done.\n" );
-        }
-        fs_unmount();   // mounted by format.
+        // Reboot to get SDK to use (or write) init data at new location
+        system_restart ();
+
+        // Don't post the start_lua task, we're about to reboot...
+        return;
     }
 #endif // defined(FLASH_SAFE_API)
 
-    if (no_init_data)
-    {
-        NODE_ERR("Restore init data.\n");
-        // Flash init data at FLASHSIZE - 0x04000 Byte.
-        flash_init_data_default();
-        // Flash blank data at FLASHSIZE - 0x02000 Byte.
-        flash_init_data_blank();
-        // Reboot to make the new data come into effect
-        system_restart ();
-    }
-
 #if defined ( BUILD_SPIFFS )
-    fs_mount();
+    if (!fs_mount()) {
+        // Failed to mount -- try reformat
+	c_printf("Formatting file system.\n");
+        if (!fs_format()) {
+            NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
+            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+        }
+        // Note that fs_format leaves the file system mounted
+    }
     // test_spiffs();
 #endif
     // endpoint_setup();
 
     task_post_low(task_get_id(start_lua),'s');
 }
+
+#ifdef LUA_USE_MODULES_WIFI
+#include "../modules/wifi_common.h"
+
+void user_rf_pre_init(void)
+{
+//set WiFi hostname before RF initialization (adds ~479 us to boot time)
+  wifi_change_default_host_name();
+}
+#endif
 
 /******************************************************************************
  * FunctionName : user_init
@@ -170,9 +142,9 @@ void user_init(void)
     input_sig = task_get_id(handle_input);
     uart_init (br, br, input_sig);
 
-    #ifndef NODE_DEBUG
+#ifndef NODE_DEBUG
     system_set_os_print(0);
-    #endif
+#endif
 
     system_init_done_cb(nodemcu_init);
 }

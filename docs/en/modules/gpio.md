@@ -1,4 +1,8 @@
 # GPIO Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [gpio.c](../../../app/modules/gpio.c)|
+
 
 This module provides access to the [GPIO](https://en.wikipedia.org/wiki/General-purpose_input/output) (General Purpose Input/Output) subsystem.
 
@@ -16,20 +20,20 @@ If not using a NodeMCU dev kit, please refer to the below GPIO pin maps for the 
 |        5 | GPIO14      |       12 | GPIO10      |
 |        6 | GPIO12      |          |             |
 
-** [*] D0(GPIO16) can only be used as gpio read/write. No interrupt support. No pwm/i2c/ow support. **
+** [*] D0(GPIO16) can only be used as gpio read/write. No support for open-drain/interrupt/pwm/i2c/ow. **
 
 
 ## gpio.mode()
 
-Initialize pin to GPIO mode, set the pin in/out direction, and optional internal pullup.
+Initialize pin to GPIO mode, set the pin in/out direction, and optional internal weak pull-up.
 
 #### Syntax
 `gpio.mode(pin, mode [, pullup])`
 
 #### Parameters
 - `pin` pin to configure, IO index
-- `mode` one of gpio.OUTPUT or gpio.INPUT, or gpio.INT(interrupt mode)
-- `pullup` gpio.PULLUP or gpio.FLOAT; default is gpio.FLOAT
+- `mode` one of gpio.OUTPUT, gpio.OPENDRAIN, gpio.INPUT, or gpio.INT (interrupt mode)
+- `pullup` gpio.PULLUP enables the weak pull-up resistor; default is gpio.FLOAT
 
 #### Returns
 `nil`
@@ -94,19 +98,21 @@ gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
 
 ## gpio.trig()
 
-Establish a callback function to run on interrupt for a pin.
-
-There is currently no support for unregistering the callback.
+Establish or clear a callback function to run on interrupt for a pin.
 
 This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile time.
 
 #### Syntax
-`gpio.trig(pin, type [, function(level)])`
+`gpio.trig(pin, [type [, callback_function]])`
 
 #### Parameters
-- `pin` **1~12**, IO index, pin D0 does not support interrupt.
-- `type` "up", "down", "both", "low", "high", which represent rising edge, falling edge, both edge, low level, high level trig mode correspondingly.
-- `function(level)` callback function when triggered. The gpio level is the param. Use previous callback function if undefined here.
+- `pin` **1-12**, pin to trigger on, IO index. Note that pin 0 does not support interrupts.
+- `type` "up", "down", "both", "low", "high", which represent *rising edge*, *falling edge*, *both 
+edges*, *low level*, and *high level* trigger modes respectivey. If the type is "none" or omitted 
+then the callback function is removed and the interrupt is disabled.
+- `callback_function(level)` callback function when trigger occurs. The level of the specified pin 
+at the interrupt passed as the parameter to the callback. The previous callback function will be 
+used if the function is omitted.
 
 #### Returns
 `nil`
@@ -114,20 +120,20 @@ This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile
 #### Example
 
 ```lua
--- use pin 1 as the input pulse width counter
-pin = 1
-pulse1 = 0
-du = 0
-gpio.mode(pin,gpio.INT)
-function pin1cb(level)
-  du = tmr.now() - pulse1
-  print(du)
-  pulse1 = tmr.now()
-  if level == gpio.HIGH then gpio.trig(pin, "down") else gpio.trig(pin, "up") end
+do
+  -- use pin 1 as the input pulse width counter
+  local pin, pulse1, du, now, trig = 1, 0, 0, tmr.now, gpio.trig
+  gpio.mode(pin,gpio.INT)
+  local function pin1cb(level)
+    local pulse2 = now()
+    print( level, pulse2 - pulse1 )
+    pulse1 = pulse2
+    trig(pin, level == gpio.HIGH  and "down" or "up")
+  end
+  trig(pin, "down", pin1cb)
 end
-gpio.trig(pin, "down", pin1cb)
-
 ```
+
 #### See also
 [`gpio.mode()`](#gpiomode)
 

@@ -9,7 +9,6 @@ uint8_t  pin_func[GPIO_PIN_NUM];
 #ifdef GPIO_INTERRUPT_ENABLE
 uint8_t  pin_num_inv[GPIO_PIN_NUM_INV];
 uint8_t  pin_int_type[GPIO_PIN_NUM];
-uint8_t  pin_trigger[GPIO_PIN_NUM];
 #endif
 
 typedef struct {
@@ -52,7 +51,6 @@ void get_pin_map(void) {
 #ifdef GPIO_INTERRUPT_ENABLE
     pin_num_inv[pin_num[i]] = i;
     pin_int_type[i]         = pin[i].intr_type;
-    pin_trigger[i]          = false;
 #endif
   }
 }

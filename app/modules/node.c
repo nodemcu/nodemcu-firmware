@@ -9,6 +9,7 @@
 #include "lmem.h"
 #include "lobject.h"
 #include "lstate.h"
+#include "legc.h"
 
 #include "lopcodes.h"
 #include "lstring.h"
@@ -18,7 +19,6 @@
 #include "lrodefs.h"
 
 #include "c_types.h"
-#include "romfs.h"
 #include "c_string.h"
 #include "driver/uart.h"
 #include "user_interface.h"
@@ -26,6 +26,7 @@
 #include "flash_fs.h"
 #include "user_version.h"
 #include "rom.h"
+#include "task/task.h"
 
 #define CPU80MHZ 80
 #define CPU160MHZ 160
@@ -397,7 +398,7 @@ static int node_compile( lua_State* L )
   int file_fd = FS_OPEN_OK - 1;
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
-  if ( len > FS_NAME_MAX_LENGTH )
+  if ( len >= FS_NAME_MAX_LENGTH )
     return luaL_error(L, "filename too long");
 
   char output[FS_NAME_MAX_LENGTH];
@@ -448,6 +449,42 @@ static int node_compile( lua_State* L )
   return 0;
 }
 
+// Task callback handler for node.task.post()
+static task_handle_t do_node_task_handle;
+static void do_node_task (task_param_t task_fn_ref, uint8_t prio)
+{
+  lua_State* L = lua_getstate();
+  lua_rawgeti(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
+  lua_pushinteger(L, prio);
+  lua_call(L, 1, 0);
+}
+
+// Lua: node.task.post([priority],task_cb) -- schedule a task for execution next
+static int node_task_post( lua_State* L )
+{
+  int n = 1, Ltype = lua_type(L, 1);
+  unsigned priority = TASK_PRIORITY_MEDIUM;
+  if (Ltype == LUA_TNUMBER) {
+    priority = (unsigned) luaL_checkint(L, 1);
+    luaL_argcheck(L, priority <= TASK_PRIORITY_HIGH, 1, "invalid  priority");
+    Ltype = lua_type(L, ++n);
+  }
+  luaL_argcheck(L, Ltype == LUA_TFUNCTION || Ltype == LUA_TLIGHTFUNCTION, n, "invalid function");
+  lua_pushvalue(L, n);
+
+  int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  if (!do_node_task_handle)  // bind the task handle to do_node_task on 1st call
+    do_node_task_handle = task_get_id(do_node_task);
+
+  if(!task_post(priority, do_node_task_handle, (task_param_t)task_fn_ref)) {
+    luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
+    luaL_error(L, "Task queue overflow. Task not posted");
+  }
+  return 0;
+}
+
 // Lua: setcpufreq(mhz)
 // mhz is either CPU80MHZ od CPU160MHZ
 static int node_setcpufreq(lua_State* L)
@@ -484,8 +521,6 @@ static int node_bootreason (lua_State *L)
 // Lua: restore()
 static int node_restore (lua_State *L)
 {
-  flash_init_data_default();
-  flash_init_data_blank();
   system_restore();
   return 0;
 }
@@ -553,7 +588,52 @@ static int node_stripdebug (lua_State *L) {
 }
 #endif
 
+// Lua: node.egc.setmode( mode, [param])
+// where the mode is one of the node.egc constants  NOT_ACTIVE , ON_ALLOC_FAILURE,
+// ON_MEM_LIMIT, ALWAYS.  In the case of ON_MEM_LIMIT an integer parameter is reqired
+// See legc.h and lecg.c.
+static int node_egc_setmode(lua_State* L) {
+  unsigned mode  = luaL_checkinteger(L, 1);
+  unsigned limit = luaL_optinteger (L, 2, 0);
+
+  luaL_argcheck(L, mode <= (EGC_ON_ALLOC_FAILURE | EGC_ON_MEM_LIMIT | EGC_ALWAYS), 1, "invalid mode");
+  luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit>0, 1, "limit must be non-zero");
+
+  legc_set_mode( L, mode, limit );
+  return 0;
+}
+//
+// Lua: osprint(true/false)
+// Allows you to turn on the native Espressif SDK printing
+static int node_osprint( lua_State* L )
+{
+  if (lua_toboolean(L, 1)) {
+    system_set_os_print(1);
+  } else {
+    system_set_os_print(0);
+  }
+
+  return 0;  
+}
+
 // Module function map
+
+static const LUA_REG_TYPE node_egc_map[] = {
+  { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
+  { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
+  { LSTRKEY( "ON_ALLOC_FAILURE" ),  LNUMVAL( EGC_ON_ALLOC_FAILURE ) },
+  { LSTRKEY( "ON_MEM_LIMIT" ),      LNUMVAL( EGC_ON_MEM_LIMIT ) },
+  { LSTRKEY( "ALWAYS" ),            LNUMVAL( EGC_ALWAYS ) },
+  { LNILKEY, LNILVAL }
+};
+static const LUA_REG_TYPE node_task_map[] = {
+  { LSTRKEY( "post" ),            LFUNCVAL( node_task_post ) },
+  { LSTRKEY( "LOW_PRIORITY" ),    LNUMVAL( TASK_PRIORITY_LOW ) },
+  { LSTRKEY( "MEDIUM_PRIORITY" ), LNUMVAL( TASK_PRIORITY_MEDIUM ) },
+  { LSTRKEY( "HIGH_PRIORITY" ),   LNUMVAL( TASK_PRIORITY_HIGH ) },
+  { LNILKEY, LNILVAL }
+};
+
 static const LUA_REG_TYPE node_map[] =
 {
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
@@ -579,6 +659,11 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
+#endif
+  { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
+  { LSTRKEY( "task" ), LROVAL( node_task_map ) },
+#ifdef DEVELOPMENT_TOOLS
+  { LSTRKEY( "osprint" ), LFUNCVAL( node_osprint ) },
 #endif
 
 // Combined to dsleep(us, option)

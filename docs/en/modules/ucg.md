@@ -1,4 +1,8 @@
 # ucg Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2015-08-05 | [Oli Kraus](https://github.com/olikraus/ucglib), [Arnim Läuger](https://github.com/devsaurus) | [Arnim Läuger](https://github.com/devsaurus) | [ucglib](../../../app/ucglib/)|
+
 Ucglib is a graphics library developed at [olikraus/ucglib](https://github.com/olikraus/ucglib) with support for color TFT displays. The NodeMCU firmware supports a subset of these:
 
 - ILI9163
@@ -27,7 +31,7 @@ All other pins can be assigned to any available GPIO:
 * D/C
 * RES (optional for some displays)
 
-Also refer to the initialization sequence eg in [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/ucglib/GraphicsRest.lua):
+Also refer to the initialization sequence eg in [GraphicsTest.lua](https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/ucglib/GraphicsTest.lua):
 ```lua
 spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 ```
@@ -73,10 +77,10 @@ Initialize a display via Hardware SPI.
 - `ili9163_18x128x128_hw_spi()`
 - `ili9341_18x240x320_hw_spi()`
 - `pcf8833_16x132x132_hw_spi()`
-- `seps225_16x128x128_univision_hw_spi()`
+- `seps225_16x128x128_uvis_hw_spi()`
 - `ssd1351_18x128x128_hw_spi()`
 - `ssd1351_18x128x128_ft_hw_spi()`
-- `ssd1331_18x96x64_univision_hw_spi()`
+- `ssd1331_18x96x64_uvis_hw_spi()`
 - `st7735_18x128x160_hw_spi()`
 
 #### Syntax

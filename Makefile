@@ -90,7 +90,7 @@ ESPTOOL ?= ../tools/esptool.py
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
 ASRCS ?= $(wildcard *.S)
-SUBDIRS ?= $(patsubst %/,%,$(dir $(wildcard */Makefile)))
+SUBDIRS ?= $(patsubst %/,%,$(dir $(filter-out tools/Makefile,$(wildcard */Makefile))))
 
 ODIR := .output
 OBJODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/obj
@@ -112,6 +112,14 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
+ifndef PDIR
+ifneq ($(wildcard $(TOP_DIR)/local/fs/*),)
+SPECIAL_MKTARGETS += spiffs-image
+else
+SPECIAL_MKTARGETS += spiffs-image-remove
+endif
+endif
+
 #
 # Note: 
 # https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
@@ -130,10 +138,6 @@ CCFLAGS += 			\
 	-mlongcalls	\
 	-mtext-section-literals
 #	-Wall			
-
-ifneq ($(wildcard $(TOP_DIR)/user_config.h),)
-INCLUDES := $(INCLUDES) -include "$(TOP_DIR)/user_config.h"
-endif
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
@@ -175,7 +179,7 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 # Should be done in top-level makefile only
 #
 
-all:	sdk_extracted .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+all:	sdk_extracted pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
 .PHONY: sdk_extracted
 
@@ -221,6 +225,31 @@ sinclude $(DEPS)
 endif
 endif
 endif
+
+.PHONY: spiffs-image-remove
+
+spiffs-image-remove:
+	$(MAKE) -C tools remove-image
+
+.PHONY: spiffs-image
+
+spiffs-image: bin/0x10000.bin
+	$(MAKE) -C tools
+
+.PHONY: pre_build
+
+ifneq ($(wildcard $(TOP_DIR)/server-ca.crt),)
+pre_build: $(TOP_DIR)/app/modules/server-ca.crt.h
+
+$(TOP_DIR)/app/modules/server-ca.crt.h: $(TOP_DIR)/server-ca.crt
+	python $(TOP_DIR)/tools/make_server_cert.py $(TOP_DIR)/server-ca.crt > $(TOP_DIR)/app/modules/server-ca.crt.h
+
+DEFINES += -DHAVE_SSL_SERVER_CRT=\"server-ca.crt.h\"
+else
+pre_build:
+	@-rm -f $(TOP_DIR)/app/modules/server-ca.crt.h
+endif
+
 
 $(OBJODIR)/%.o: %.c
 	@mkdir -p $(OBJODIR);

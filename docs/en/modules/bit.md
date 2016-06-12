@@ -1,4 +1,8 @@
 # bit Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-24 | [https://github.com/LuaDist/bitlib](https://github.com/LuaDist/bitlib), [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [bit.c](../../../app/modules/bit.c)|
+
 
 Bit manipulation support, on 32bit integers.
 

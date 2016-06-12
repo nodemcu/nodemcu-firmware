@@ -1,6 +1,12 @@
 # UART Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [uart.c](../../../app/modules/uart.c)|
+
 The [UART](https://en.wikipedia.org/wiki/Universal_asynchronous_receiver/transmitter) (Universal asynchronous receiver/transmitter) module allows configuration of and communication over the UART serial port.
 
+The default setup for the uart is controlled by build-time settings. The default rate is 115,200 bps. In addition, auto-baudrate detection is enabled for the first two minutes
+after platform boot. This will cause a switch to the correct baud rate once a few characters are received. Auto-baudrate detection is disabled when `uart.setup` is called.
 ## uart.alt()
 Change UART pin assignment.
 
@@ -8,9 +14,10 @@ Change UART pin assignment.
 `uart.alt(on)`
 
 #### Parameters
-`on`:
-- `0` use standard pins
-- `1` use alternate pins GPIO13 and GPIO15
+`on`
+
+- 0 for standard pins
+- 1 to use alternate pins GPIO13 and GPIO15
 
 #### Returns
 `nil`

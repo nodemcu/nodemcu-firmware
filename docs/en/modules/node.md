@@ -1,4 +1,8 @@
 # node Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [node.c](../../../app/modules/node.c)|
+
 The node module provides access to system-level features such as sleep, restart and various info and IDs.
 
 ## node.bootreason()
@@ -311,9 +315,7 @@ none
 
 ## node.restore()
 
-Restores system configuration to defaults. Erases all stored WiFi settings, and resets the "esp init data" to the defaults. This function is intended as a last-resort without having to reflash the ESP altogether.
-
-This also uses the SDK function `system_restore()`, which doesn't document precisely what it erases/restores.
+Restores system configuration to defaults using the SDK function `system_restore()`, which doesn't document precisely what it erases/restores.
 
 #### Syntax
 `node.restore()`
@@ -377,4 +379,89 @@ node.compile('bigstuff.lua')
 
 #### See also
 [`node.compile()`](#nodecompile)
+
+## node.osprint()
+
+Controls whether the debugging output from the Espressif SDK is printed. Note that this is only available if
+the firmware is build with DEVELOPMENT_TOOLS defined.
+
+####Syntax
+`node.osprint(enabled)`
+
+#### Parameters
+- `enabled` This is either `true` to enable printing, or `false` to disable it. The default is `false`.
+
+#### Returns
+Nothing
+
+#### Example
+```lua
+node.osprint(true)
+```
+
+# node.egc module
+
+## node.egc.setmode()
+
+Sets the Emergency Garbage Collector mode. [The EGC whitepaper](http://www.eluaproject.net/doc/v0.9/en_elua_egc.html)
+provides more detailed information on the EGC.
+
+####Syntax
+`node.egc.setmode(mode, [param])`
+
+#### Parameters
+- `mode`
+	- `node.egc.NOT_ACTIVE` EGC inactive, no collection cycle will be forced in low memory situations
+	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error. 
+	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error.
+	- `node.egc.ALWAYS` Run the garbage collector before each memory allocation. If the allocation fails even after running the garbage collector, the allocator will return with error. This mode is very efficient with regards to memory savings, but it's also the slowest.
+- `level` in the case of `node.egc.ON_MEM_LIMIT`, this specifies the memory limit.
+  
+#### Returns
+`nil`
+
+#### Example
+
+`node.egc.setmode(node.egc.ALWAYS, 4096)  -- This is the default setting at startup.`
+`node.egc.setmode(node.egc.ON_ALLOC_FAILURE) -- This is the fastest activeEGC mode.`
+
+# node.task module
+
+## node.task.post()
+
+Enable a Lua callback or task to post another task request. Note that as per the 
+example multiple tasks can be posted in any task, but the highest priority is 
+always delivered first.
+
+If the task queue is full then a queue full error is raised.  
+
+####Syntax
+`node.task.post([task_priority], function)`
+
+#### Parameters
+- `task_priority` (optional)
+	- `node.task.LOW_PRIORITY` = 0
+	- `node.task.MEDIUM_PRIORITY` = 1
+	- `node.task.HIGH_PRIORITY` = 2
+- `function` a callback function to be executed when the task is run. 
+
+If the priority is omitted then  this defaults  to `node.task.MEDIUM_PRIORITY`
+
+####  Returns
+`nil`
+
+#### Example
+```lua
+for i = node.task.LOW_PRIORITY, node.task.HIGH_PRIORITY do 
+  node.task.post(i,function(p2)
+    print("priority is "..p2)
+  end) 
+end      
+``` 
+prints
+```
+priority is 2
+priority is 1
+priority is 0
+```
 

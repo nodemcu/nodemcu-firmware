@@ -8,8 +8,10 @@ var nodemcu = nodemcu || {};
 
   $(document).ready(function () {
     addToc();
+    fixSearch();
     hideNavigationForAllButSelectedLanguage();
     addLanguageSelectorToRtdFlyOutMenu();
+    replaceRelativeLinksWithStaticGitHubUrl();
   });
 
   /**
@@ -42,6 +44,34 @@ var nodemcu = nodemcu || {};
     }
   }
 
+  /*
+   * RTD messes up MkDocs' search feature by tinkering with the search box defined in the theme, see
+   * https://github.com/rtfd/readthedocs.org/issues/1088. This function sets up a DOM4 MutationObserver
+   * to react to changes to the search form (triggered by RTD on doc ready). It then reverts everything
+   * the RTD JS code modified.
+   */
+  function fixSearch() {
+    var target = document.getElementById('rtd-search-form');
+    var config = {attributes: true, childList: true};
+
+    var observer = new MutationObserver(function(mutations) {
+      // if it isn't disconnected it'll loop infinitely because the observed element is modified
+      observer.disconnect();
+      var form = $('#rtd-search-form');
+      form.empty();
+      form.attr('action', 'https://' + window.location.hostname + '/en/' + determineSelectedBranch() + '/search.html');
+      $('<input>').attr({
+        type: "text",
+        name: "q",
+        placeholder: "Search docs"
+      }).appendTo(form);
+    });
+
+    if (window.location.origin.indexOf('readthedocs') > -1) {
+      observer.observe(target, config);
+    }
+  }
+
   function hideNavigationForAllButSelectedLanguage() {
     var selectedLanguageCode = determineSelectedLanguageCode();
     var selectedLanguageName = languageCodeToNameMap[selectedLanguageCode];
@@ -65,9 +95,9 @@ var nodemcu = nodemcu || {};
    *
    * <dl>
    *   <dt>Languages</dt>
-   *   <dd><a href="http://nodemcu.readthedocs.org/en/<branch>/de/">de</a></dd>
+   *   <dd><a href="http://nodemcu.readthedocs.io/en/<branch>/de/">de</a></dd>
    *   <strong>
-   *     <dd><a href="http://nodemcu.readthedocs.org/en/<branch>/en/">en</a></dd>
+   *     <dd><a href="http://nodemcu.readthedocs.io/en/<branch>/en/">en</a></dd>
    *   </strong>
    * </dl>
    *
@@ -102,6 +132,20 @@ var nodemcu = nodemcu || {};
       // observed target node is the fly-out wrapper, the only event we care about is when children are modified
       observer.observe(flyOutWrapper[0], {childList: true});
     }
+  }
+
+  /**
+   * The module doc pages contain relative links to artifacts in the GitHub repository. For those links to work both
+   * on GitHub (i.e. when the page is viewed on GitHub) and on RTD they are defined with a relative URL. This function
+   * replaces the relative path with an absolute path based on the selected branch.
+   */
+  function replaceRelativeLinksWithStaticGitHubUrl() {
+    var relativePath = "../../../..";
+    var gitHubPath = "https://github.com/nodemcu/nodemcu-firmware/tree/" + determineSelectedBranch();
+    var gitHubLinks = $("a[href^='" + relativePath + "']").each(function (index) {
+      var url = $(this).attr('href');
+      $(this).attr('href', url.replace(relativePath, gitHubPath));
+    });
   }
 
   function createLanguageLinkFor(languageCode, isCurrentlySelected) {
@@ -144,6 +188,23 @@ var nodemcu = nodemcu || {};
       selectedLanguageCode = defaultLanguageCode;
     }
     return selectedLanguageCode;
+  }
+
+  /**
+   * Analyzes the URL of the current page to find out what the selected GitHub branch is. It's usually
+   * part of the location path. The code needs to distinguish between running MkDocs standalone
+   * and docs served from RTD. If no valid branch could be determined 'dev' returned.
+   *
+   * @returns GitHub branch name
+   */
+  function determineSelectedBranch() {
+    var branch = 'dev', path = window.location.pathname;
+    if (window.location.origin.indexOf('readthedocs') > -1) {
+      // path is like /en/<branch>/<lang>/build/ -> extract 'lang'
+      // split[0] is an '' because the path starts with the separator
+      branch = path.split('/')[2];
+    }
+    return branch;
   }
 
   function values(associativeArray) {

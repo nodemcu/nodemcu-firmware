@@ -129,8 +129,6 @@ void ets_delay_us (uint32_t us);
 
 int ets_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
 
-int ets_sprintf(char *str, const char *format, ...)  __attribute__ ((format (printf, 2, 3)));
-
 void ets_str2macaddr (uint8_t *dst, const char *str);
 
 void ets_timer_disarm (ETSTimer *a);
@@ -148,5 +146,8 @@ int rand(void);
 void srand(unsigned int);
 
 void uart_div_modify(int no, unsigned int freq);
+
+/* Returns 0 on success, 1 on failure */
+uint8_t SPIRead(uint32_t src_addr, uint32_t *des_addr, uint32_t size);
 
 #endif

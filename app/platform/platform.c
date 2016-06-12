@@ -14,12 +14,28 @@
 #include "driver/uart.h"
 #include "driver/sigma_delta.h"
 
-static void pwms_init();
+#ifdef GPIO_INTERRUPT_ENABLE
+static task_handle_t gpio_task_handle;
+
+#ifdef GPIO_INTERRUPT_HOOK_ENABLE
+struct gpio_hook_entry {
+  platform_hook_function func;
+  uint32_t               bits;
+};
+struct gpio_hook {
+  struct gpio_hook_entry *entry;
+  uint32_t                all_bits;
+  uint32_t                count;
+};
+
+static struct gpio_hook platform_gpio_hook;
+#endif
+#endif
 
 int platform_init()
 {
-  // Setup PWMs
-  pwms_init();
+  // Setup the various forward and reverse mappings for the pins
+  get_pin_map();
 
   cmn_platform_init();
   // All done
@@ -44,11 +60,10 @@ uint8_t platform_key_led( uint8_t level){
 /*
  * Set GPIO mode to output. Optionally in RAM helper because interrupts are dsabled
  */
-static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin) {
+static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
   unsigned pnum = pin_num[pin];
   ETS_GPIO_INTR_DISABLE();
 #ifdef GPIO_INTERRUPT_ENABLE
-  pin_trigger[pin] = false;
   pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
 #endif
   PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
@@ -56,9 +71,17 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin) {
   gpio_pin_intr_state_set(GPIO_ID_PIN(pnum), GPIO_PIN_INTR_DISABLE);
   //clear interrupt status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pnum));
-  GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum)),
-                 GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) &
-                 (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE))); //disable open drain;
+
+  // configure push-pull vs open-drain
+  if (push_pull) {
+    GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum)),
+                   GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) &
+                   (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE)));  //disable open drain;
+  } else {
+    GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum)),
+                   GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) |
+                   GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE));      //enable open drain;
+  }
   ETS_GPIO_INTR_ENABLE();
 }
 
@@ -74,7 +97,6 @@ static void NO_INTR_CODE set_gpio_interrupt(uint8 pin) {
                     GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
                     | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
                     | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
-  pin_trigger[pin] = true;
   ETS_GPIO_INTR_ENABLE();
 }
 #endif
@@ -94,7 +116,9 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
     return 1;
   }
 
+#ifdef LUA_USE_MODULES_PWM
   platform_pwm_close(pin);    // closed from pwm module, if it is used in pwm
+#endif
 
   if (pull == PLATFORM_GPIO_PULLUP) {
     PIN_PULLUP_EN(pin_mux[pin]);
@@ -108,7 +132,10 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
       GPIO_DIS_OUTPUT(pin_num[pin]);
       /* run on */
     case PLATFORM_GPIO_OUTPUT:
-      set_gpio_no_interrupt(pin);
+      set_gpio_no_interrupt(pin, TRUE);
+      break;
+    case PLATFORM_GPIO_OPENDRAIN:
+      set_gpio_no_interrupt(pin, FALSE);
       break;
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -154,16 +181,23 @@ int platform_gpio_read( unsigned pin )
 }
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static task_handle_t gpio_task_handle;
-
 static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
   uint32 j=0;
   uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   UNUSED(dummy);
+
+#ifdef GPIO_INTERRUPT_HOOK_ENABLE
+  if (gpio_status & platform_gpio_hook.all_bits) {
+    for (j = 0; j < platform_gpio_hook.count; j++) {
+       if (gpio_status & platform_gpio_hook.entry[j].bits)
+         gpio_status = (platform_gpio_hook.entry[j].func)(gpio_status);
+    }
+  }
+#endif
   /*
    * gpio_status is a bit map where bit 0 is set if unmapped gpio pin 0 (pin3) has
    * triggered the ISR. bit 1 if unmapped gpio pin 1 (pin10=U0TXD), etc.  Since this
-   * in the ISR, it makes sense to optimize this by doing a fast scan of the status
+   * is the ISR, it makes sense to optimize this by doing a fast scan of the status
    * and reverse mapping any set bits.
    */
    for (j = 0; gpio_status>0; j++, gpio_status >>= 1) {
@@ -175,13 +209,8 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
         //clear interrupt status
         GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
         uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
-        if (pin_trigger[i]) {
-          /* the task is only posted if a trigger callback is defined */
-          pin_trigger[i] = false;
-          task_post_high (gpio_task_handle, (i<<1) + level);
-        }
-       // Interrupts are re-enabled but any interrupt occuring before pin_trigger[i] is reset will be ignored.
-      gpio_pin_intr_state_set(GPIO_ID_PIN(j), pin_int_type[i]);
+	task_post_high (gpio_task_handle, (i<<1) + level);
+	// We re-enable the interrupt when we execute the callback
       }
     }
   }
@@ -189,12 +218,94 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
 
 void platform_gpio_init( task_handle_t gpio_task )
 {
-  int i;
   gpio_task_handle = gpio_task;
 
-  get_pin_map();
   ETS_GPIO_INTR_ATTACH(platform_gpio_intr_dispatcher, NULL);
 }
+
+#ifdef GPIO_INTERRUPT_HOOK_ENABLE
+/*
+ * Register an ISR hook to be called from the GPIO ISR for a given GPIO bitmask.
+ * This routine is only called a few times so has been optimised for size and
+ * the unregister is a special case when the bits are 0.
+ *
+ * Each hook function can only be registered once. If it is re-registered
+ * then the hooked bits are just updated to the new value.
+ */
+int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
+{
+  struct gpio_hook nh, oh = platform_gpio_hook;
+  int i, j;
+
+  if (!hook) {
+    // Cannot register or unregister null hook
+    return 0;
+  }
+
+  int delete_slot = -1;
+
+  // If hook already registered, just update the bits
+  for (i=0; i<oh.count; i++) {
+    if (hook == oh.entry[i].func) {
+      if (!bits) {
+	// Unregister if move to zero bits
+	delete_slot = i;
+	break;
+      }
+      if (bits & (oh.all_bits & ~oh.entry[i].bits)) {
+	// Attempt to hook an already hooked bit
+	return 0;
+      }
+      // Update the hooked bits (in the right order)
+      uint32_t old_bits = oh.entry[i].bits;
+      *(volatile uint32_t *) &oh.entry[i].bits = bits;
+      *(volatile uint32_t *) &oh.all_bits = (oh.all_bits & ~old_bits) | bits;
+      return 1;
+    }
+  }
+
+  // This must be the register new hook / delete old hook
+  
+  if (delete_slot < 0) {
+    if (bits & oh.all_bits) {
+      return 0;   // Attempt to hook already hooked bits
+    }
+    nh.count = oh.count + 1;    // register a new hook
+  } else {
+    nh.count = oh.count - 1;    // unregister an old hook
+  }
+
+  // These return NULL if the count = 0 so only error check if > 0)
+  nh.entry = c_malloc( nh.count * sizeof(*(nh.entry)) );
+  if (nh.count && !(nh.entry)) {
+    return 0;  // Allocation failure
+  }
+
+  for (i=0, j=0; i<oh.count; i++) {
+    // Don't copy if this is the entry to delete
+    if (i != delete_slot) {
+      nh.entry[j++]   = oh.entry[i];
+    }
+  }
+
+  if (delete_slot < 0) { // for a register add the hook to the tail and set the all bits
+    nh.entry[j].bits  = bits;
+    nh.entry[j].func  = hook;
+    nh.all_bits = oh.all_bits | bits;
+  } else {    // for an unregister clear the matching all bits
+    nh.all_bits = oh.all_bits & (~oh.entry[delete_slot].bits);
+  }
+
+  ETS_GPIO_INTR_DISABLE();
+  // This is a structure copy, so interrupts need to be disabled
+  platform_gpio_hook = nh;
+  ETS_GPIO_INTR_ENABLE();
+
+  c_free(oh.entry);
+  return 1;
+}
+#endif // GPIO_INTERRUPT_HOOK_ENABLE
+
 /*
  * Initialise GPIO interrupt mode. Optionally in RAM because interrupts are dsabled
  */
@@ -205,7 +316,6 @@ void NO_INTR_CODE platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
     //clear interrupt status
     GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
     pin_int_type[pin] = type;
-    pin_trigger[pin] = true;
     //enable interrupt
     gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
     ETS_GPIO_INTR_ENABLE();
@@ -319,7 +429,7 @@ void platform_uart_send( unsigned id, u8 data )
 
 static uint16_t pwms_duty[NUM_PWM] = {0};
 
-static void pwms_init()
+void platform_pwm_init()
 {
   int i;
   for(i=0;i<NUM_PWM;i++){
@@ -502,7 +612,7 @@ void platform_sigma_delta_set_prescale( uint8_t prescale )
   sigma_delta_set_prescale_target( prescale, -1 );
 }
 
-void platform_sigma_delta_set_target( uint8_t target )
+void ICACHE_RAM_ATTR platform_sigma_delta_set_target( uint8_t target )
 {
     sigma_delta_set_prescale_target( -1, target );
 }

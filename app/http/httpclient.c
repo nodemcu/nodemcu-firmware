@@ -18,6 +18,7 @@
 #include "mem.h"
 #include "limits.h"
 #include "httpclient.h"
+#include "stdlib.h"
 
 /* Internal state. */
 typedef struct request_args_t {
@@ -80,110 +81,6 @@ esp_isdigit( char c )
 }
 
 
-/*
- * Convert a string to a long integer.
- *
- * Ignores `locale' stuff.  Assumes that the upper and lower case
- * alphabets and digits are each contiguous.
- */
-long ICACHE_FLASH_ATTR
-esp_strtol( nptr, endptr, base )
-const char *nptr;
-
-
-char	**endptr;
-int	base;
-{
-	const char	*s = nptr;
-	unsigned long	acc;
-	int		c;
-	unsigned long	cutoff;
-	int		neg = 0, any, cutlim;
-
-
-	/*
-	 * Skip white space and pick up leading +/- sign if any.
-	 * If base is 0, allow 0x for hex and 0 for octal, else
-	 * assume decimal; if base is already 16, allow 0x.
-	 */
-	do
-	{
-		c = *s++;
-	}
-	while ( esp_isspace( c ) );
-	if ( c == '-' )
-	{
-		neg	= 1;
-		c	= *s++;
-	} else if ( c == '+' )
-		c = *s++;
-	if ( (base == 0 || base == 16) &&
-	     c == '0' && (*s == 'x' || *s == 'X') )
-	{
-		c	= s[1];
-		s	+= 2;
-		base	= 16;
-	} else if ( (base == 0 || base == 2) &&
-		    c == '0' && (*s == 'b' || *s == 'B') )
-	{
-		c	= s[1];
-		s	+= 2;
-		base	= 2;
-	}
-	if ( base == 0 )
-		base = c == '0' ? 8 : 10;
-
-
-	/*
-	 * Compute the cutoff value between legal numbers and illegal
-	 * numbers.  That is the largest legal value, divided by the
-	 * base.  An input number that is greater than this value, if
-	 * followed by a legal input character, is too big.  One that
-	 * is equal to this value may be valid or not; the limit
-	 * between valid and invalid numbers is then based on the last
-	 * digit.  For instance, if the range for longs is
-	 * [-2147483648..2147483647] and the input base is 10,
-	 * cutoff will be set to 214748364 and cutlim to either
-	 * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
-	 * a value > 214748364, or equal but the next digit is > 7 (or 8),
-	 * the number is too big, and we will return a range error.
-	 *
-	 * Set any if any `digits' consumed; make it negative to indicate
-	 * overflow.
-	 */
-	cutoff	= neg ? -(unsigned long) LONG_MIN : LONG_MAX;
-	cutlim	= cutoff % (unsigned long) base;
-	cutoff	/= (unsigned long) base;
-	for ( acc = 0, any = 0;; c = *s++ )
-	{
-		if ( esp_isdigit( c ) )
-			c -= '0';
-		else if ( esp_isalpha( c ) )
-			c -= esp_isupper( c ) ? 'A' - 10 : 'a' - 10;
-		else
-			break;
-		if ( c >= base )
-			break;
-		if ( any < 0 || acc > cutoff || acc == cutoff && c > cutlim )
-			any = -1;
-		else 
-		{
-			any	= 1;
-			acc	*= base;
-			acc	+= c;
-		}
-	}
-	if ( any < 0 )
-	{
-		acc = neg ? LONG_MIN : LONG_MAX;
-/*		errno = ERANGE; */
-	} else if ( neg )
-		acc = -acc;
-	if ( endptr != 0 )
-		*endptr = (char *) (any ? s - 1 : nptr);
-	return(acc);
-}
-
 static int ICACHE_FLASH_ATTR http_chunked_decode( const char * chunked, char * decode )
 {
 	int	i		= 0, j = 0;
@@ -191,9 +88,9 @@ static int ICACHE_FLASH_ATTR http_chunked_decode( const char * chunked, char * d
 	char	*str		= (char *) chunked;
 	do
 	{
-		char * endstr = NULL;
+		char * endstr;
 		/* [chunk-size] */
-		i = esp_strtol( str + j, endstr, 16 );
+		i = strtoul( str + j, NULL, 16 );
 		HTTPCLIENT_DEBUG( "Chunk Size:%d\r\n", i );
 		if ( i <= 0 )
 			break;
@@ -349,7 +246,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 		if ( req->buffer == NULL )
 		{
-			HTTPCLIENT_DEBUG( "Buffer shouldn't be NULL\n" );
+			HTTPCLIENT_DEBUG( "Buffer probably shouldn't be NULL\n" );
 		}
 		else if ( req->buffer[0] != '\0' )
 		{
@@ -364,7 +261,18 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			else  
 			{
 				http_status	= atoi( req->buffer + strlen( version_1_0 ) );
-				body		= (char *) os_strstr( req->buffer, "\r\n\r\n" ) + 4;
+			        body            = (char *) os_strstr(req->buffer, "\r\n\r\n");
+
+				if (NULL == body) {
+					  /* Find missing body */
+					  HTTPCLIENT_DEBUG("Body shouldn't be NULL\n");
+					  /* To avoid NULL body */
+					  body = "";
+				} else {                                        
+					  /* Skip CR & LF */
+					  body = body + 4;
+				}
+								   
 				if ( os_strstr( req->buffer, "Transfer-Encoding: chunked" ) )
 				{
 					int	body_size = req->buffer_size - (body - req->buffer);
@@ -380,7 +288,9 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 		{
 			req->callback_handle( body, http_status, req->buffer );
 		}
-		os_free( req->buffer );
+		if (req->buffer) {
+		  os_free( req->buffer );
+		}
 		os_free( req->hostname );
 		os_free( req->method );
 		os_free( req->path );
@@ -437,10 +347,10 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 	{
 		HTTPCLIENT_DEBUG( "DNS found %s " IPSTR "\n", hostname, IP2STR( addr ) );
 
-		struct espconn * conn = (struct espconn *) os_malloc( sizeof(struct espconn) );
+		struct espconn * conn = (struct espconn *) os_zalloc( sizeof(struct espconn) );
 		conn->type			= ESPCONN_TCP;
 		conn->state			= ESPCONN_NONE;
-		conn->proto.tcp			= (esp_tcp *) os_malloc( sizeof(esp_tcp) );
+		conn->proto.tcp			= (esp_tcp *) os_zalloc( sizeof(esp_tcp) );
 		conn->proto.tcp->local_port	= espconn_port();
 		conn->proto.tcp->remote_port	= req->port;
 		conn->reverse			= req;
@@ -473,7 +383,7 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 {
 	HTTPCLIENT_DEBUG( "DNS request\n" );
 
-	request_args_t * req = (request_args_t *) os_malloc( sizeof(request_args_t) );
+	request_args_t * req = (request_args_t *) os_zalloc( sizeof(request_args_t) );
 	req->hostname		= esp_strdup( hostname );
 	req->port		= port;
 	req->secure		= secure;
@@ -556,6 +466,11 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	if ( colon > path )
 	{
 		colon = NULL;                   /* Limit the search to characters before the path. */
+	}
+
+	if (path - url >= sizeof(hostname)) {
+		HTTPCLIENT_DEBUG( "hostname is too long %s\n", url );
+		return;
 	}
 
 	if ( colon == NULL )                    /* The port is not present. */
