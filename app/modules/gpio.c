@@ -172,31 +172,27 @@ static int lgpio_write( lua_State* L )
 // gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
 static int lgpio_serout( lua_State* L )
 {
-  unsigned clocks_per_us = system_get_cpu_freq();
   unsigned pin = luaL_checkinteger( L, 1 );
   unsigned level = luaL_checkinteger( L, 2 );
   unsigned repeats = luaL_optint( L, 4, 1 );
   unsigned table_len, i, j;
 
   luaL_argcheck(L, platform_gpio_exists(pin), 1, "Invalid pin");
-  luaL_argcheck(L, level==HIGH || level==LOW, 2, "Wrong arg type" );
+  luaL_argcheck(L, level==HIGH || level==LOW, 2, "Wrong level type" );
   luaL_argcheck(L, lua_istable( L, 3 ) &&
-                   ((table_len = lua_objlen( L, 3 )<DELAY_TABLE_MAX_LEN)), 3, "Invalid table" );
-  luaL_argcheck(L, repeats<256, 4, "repeats >= 256" );
+                   ((table_len = lua_objlen( L, 3 )) < DELAY_TABLE_MAX_LEN), 3, "Invalid delay_times" );
+  luaL_argcheck(L, repeats < 256, 4, "repeats >= 256" );
 
-  uint32 *delay_table = luaM_newvector(L, table_len*repeats, uint32);
-  for( i = 1; i <= table_len; i++ )  {
+  uint32 *delay_table = luaM_newvector(L, table_len, uint32);
+  for( i = 0; i < table_len; i++ )  {
     lua_rawgeti( L, 3, i + 1 );
     unsigned delay = (unsigned) luaL_checkinteger( L, -1 );
-    if (delay > 1000000) return luaL_error( L, "delay %u must be < 1,000,000 us", i );
-    delay_table[i-1] = delay;
+    if (delay >= 1000000) return luaL_error( L, "delay %d must be < 1,000,000 us", i );
+    delay_table[i] = delay;
     lua_pop( L, 1 );
   }
 
-  for( i = 0; i <= repeats; i++ )  {
-    if (!i)    // skip the first loop (presumably this is some form of icache priming??).
-      continue;
-
+  for( i = 0; i < repeats; i++ )  {
     for( j = 0;j < table_len; j++ ){
       /* Direct Write is a ROM function which already disables interrupts for the atomic bit */
       GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
