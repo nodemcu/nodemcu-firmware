@@ -180,7 +180,7 @@ typedef struct
   uint32 repeats;
   uint32 *delay_table;
   uint32 tablelen;
-  lua_State* L;
+  task_handle_t done_taskid;
   int lua_done_ref; // callback when transmission is done
 } serout_t;
 static serout_t serout;
@@ -188,9 +188,16 @@ static const os_param_t TIMER_OWNER = 0x6770696f; // "gpio"
 
 static void seroutasync_done (task_param_t arg)
 {
-  lua_rawgeti (serout.L, LUA_REGISTRYINDEX, serout.lua_done_ref);
-  lua_call (serout.L, 0, 0);
-  luaL_unref (serout.L, LUA_REGISTRYINDEX, serout.lua_done_ref);
+  lua_State *L = lua_getstate();
+  luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+  if (serout.lua_done_ref != LUA_REFNIL) { // we're here so serout.lua_done_ref != LUA_NOREF
+    lua_rawgeti (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
+    if (lua_pcall(L, 0, 0, 0)) {
+      // Uncaught Error. Print instead of sudden reset
+      luaL_error(L, "error: %s", lua_tostring(L, -1));
+    }
+    luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
+  }
 }
 
 static void ICACHE_RAM_ATTR seroutasync_cb(os_param_t p) {
@@ -204,16 +211,12 @@ static void ICACHE_RAM_ATTR seroutasync_cb(os_param_t p) {
     if (serout.repeats && serout.index>=serout.tablelen) {serout.index=0; serout.repeats--;}
   } else {
     platform_hw_timer_close(TIMER_OWNER);
-    luaM_freearray(serout.L, serout.delay_table, serout.tablelen, uint32);
-    if (serout.lua_done_ref != LUA_NOREF && serout.lua_done_ref != LUA_REFNIL) {
-      task_post_low (task_get_id((task_callback_t) seroutasync_done), (task_param_t)0);
-    }
+    task_post_low (serout.done_taskid, (task_param_t)0);
   }
 }
 
 static int lgpio_serout( lua_State* L )
 {
-  serout.L = L;
   serout.pin = luaL_checkinteger( L, 1 );
   serout.level = luaL_checkinteger( L, 2 );
   serout.repeats = luaL_optint( L, 4, 1 )-1;
@@ -292,6 +295,7 @@ int luaopen_gpio( lua_State *L ) {
   }
   platform_gpio_init(task_get_id(gpio_intr_callback_task));
 #endif
+  serout.done_taskid = task_get_id((task_callback_t) seroutasync_done);
   return 0;
 }
 
