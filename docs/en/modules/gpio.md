@@ -69,18 +69,29 @@ gpio.read(0)
 
 ## gpio.serout()
 
-Serialize output based on a sequence of delay-times. After each delay, the pin is toggled.
+Serialize output based on a sequence of delay-times in µs. After each delay, the pin is toggled. After the last repeat and last delay the pin is not toggled.
+
+The function works in two modes: 
+* synchronous - for sub-50 µs resolution, restricted to max. overall duration,
+* asynchrounous - synchronous operation with less granularity but virtually unrestricted duration.
+
+Whether the asynchronous mode is chosen is defined by presence of the `callback` parameter. If present and is of function type the function goes asynchronous the callback function is invoked when sequence finishes. If the parameter is numeric the function still goes asynchronous but no callback is invoked when done.
+
+For asynchronous version minimum delay time should not be shorter than 50 μs and maximum delay time is 0x7fffff μs (~8.3 seconds).
+In this mode the function does not block the stack and returns immediately before the output sequence is finalized. HW timer inf `FRC1_SOURCE` mode is used to change the states.
+
+Note that the synchronous variant (no or nil `callback` parameter) function blocks the stach and as such any use of it must adhere to the SDK guidelines (also explained [here](https://nodemcu.readthedocs.io/en/dev/en/extn-developer-faq/#extension-developer-faq)). Failure to do so may lead to WiFi issues or outright to crashes/reboots. Shortly it means that sum of all delay times multiplied by the number of repeats should not exceed 15 ms.
 
 #### Syntax
-`gpio.serout(pin, start_level, delay_times [, repeat_num])`
+`gpio.serout(pin, start_level, delay_times [, repeat_num[, callback]])`
 
 #### Parameters
 - `pin`  pin to use, IO index
 - `start_level` level to start on, either `gpio.HIGH` or `gpio.LOW`
-- `delay_times` an array of delay times between each toggle of the gpio pin.
+- `delay_times` an array of delay times in µs between each toggle of the gpio pin. 
 - `repeat_num` an optional number of times to run through the sequence.
+- `callback` an optional callback function or number, if present the function ruturns immediately and goes asynchronous.
 
-Note that this function blocks, and as such any use of it must adhere to the SDK guidelines of time spent blocking the stack (10-100ms). Failure to do so may lead to WiFi issues or outright crashes/reboots.
 
 #### Returns
 `nil`
@@ -94,6 +105,9 @@ gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
 gpio.serout(1,1,{0,0},8)  -- serial 50% pwm as fast as possible, lasts 8 cycles
 gpio.serout(1,0,{20,10,10,20,10,10,10,100}) -- sim uart one byte 0x5A at about 100kbps
 gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
+
+gpio.serout(1,1,{5000,995000},100, function() print("done") end) -- asynchronous 100 flashes 5 ms long every second with a callback function when done
+gpio.serout(1,1,{5000,995000},100, 1) -- asynchronous 100 flashes 5 ms long, no callback
 ```
 
 ## gpio.trig()
