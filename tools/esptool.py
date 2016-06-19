@@ -824,7 +824,7 @@ def dump_mem(esp, args):
 
 def write_flash(esp, args):
     flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
-    flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1': 0x50, '32m-c1':0x60, '32m-c2':0x70}[args.flash_size]
+    flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1': 0x50, '32m-c1':0x60, '32m-c2':0x70, '64m':0x80, '128m':0x90}[args.flash_size]
     flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
     flash_params = struct.pack('BB', flash_mode, flash_size_freq)
 
@@ -898,7 +898,7 @@ def elf2image(args):
         image.add_segment(e.get_symbol_addr(start), data)
 
     image.flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
-    image.flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1': 0x50, '32m-c1':0x60, '32m-c2':0x70}[args.flash_size]
+    image.flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1': 0x50, '32m-c1':0x60, '32m-c2':0x70, '64m':0x80, '128m':0x90}[args.flash_size]
     image.flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
 
     irom_offs = e.get_symbol_addr("_irom0_text_start") - 0x40200000
@@ -1052,7 +1052,7 @@ def main():
                             choices=['qio', 'qout', 'dio', 'dout'],
                             default=os.environ.get('ESPTOOL_FM', 'qio'))
         parent.add_argument('--flash_size', '-fs', help='SPI Flash size in Mbit', type=str.lower,
-                            choices=['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2'],
+                            choices=['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2', '64m', '128m'],
                             default=os.environ.get('ESPTOOL_FS', '4m'))
 
     parser_write_flash = subparsers.add_parser(
