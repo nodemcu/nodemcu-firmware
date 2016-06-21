@@ -751,7 +751,7 @@ NOTE: SoftAP Configuration will be retained until changed even if device is turn
 #### Parameters
 - `ssid` SSID chars 1-32
 - `pwd` password chars 8-64
-- `auth` authentication  one of AUTH\_OPEN, AUTH\_WPA\_PSK, AUTH\_WPA2\_PSK, AUTH\_WPA\_WPA2\_PSK, default = AUTH\_OPEN
+- `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
 - `channel` channel number 1-14 default = 6
 - `hidden` 0 = not hidden, 1 = hidden, default 0
 - `max` maximal number of connections 1-4 default=4
