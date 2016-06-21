@@ -165,6 +165,7 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 ifeq ($(HW),ESP8266)
 	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
 else ifeq ($(HW),ESP32)
+	@rm -f $(FIRMWAREDIR)/*
 	@$(OBJCOPY) --only-section .text -O binary $< eagle.app.v7.text.bin
 	@$(OBJCOPY) --only-section .data -O binary $< eagle.app.v7.data.bin
 	@$(OBJCOPY) --only-section .rodata -O binary $< eagle.app.v7.rodata.bin
