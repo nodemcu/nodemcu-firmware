@@ -1,6 +1,6 @@
 [submodule "esp8266-rtos-sdk"]
-	path = esp8266-rtos-sdk
+	path = sdk/esp8266-rtos-sdk
 	url = https://github.com/espressif/ESP8266_RTOS_SDK.git
 [submodule "esp32-rtos-sdk"]
-	path = esp32-rtos-sdk
+	path = sdk/esp32-rtos-sdk
 	url = https://github.com/espressif/ESP32_RTOS_SDK.git

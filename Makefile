@@ -40,7 +40,7 @@ endif
 
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-SDKDIR:=$(TOP_DIR)/$(TARGET)-rtos-sdk
+SDKDIR:=$(TOP_DIR)/sdk/$(TARGET)-rtos-sdk
 
 # This is, sadly, the cleanest way to resolve the different non-standard
 # conventions for sized integers across the various components.
@@ -88,7 +88,7 @@ ESPTOOL ?= ../tools/esptool.py
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
 ASRCS ?= $(wildcard *.S)
-SUBDIRS ?= $(filter-out esp8266-rtos-sdk esp32-rtos-sdk, $(patsubst %/,%,$(dir $(wildcard */Makefile))))
+SUBDIRS ?= $(patsubst %/,%,$(dir $(wildcard */Makefile)))
 
 ODIR := .output
 OBJODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/obj
