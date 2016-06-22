@@ -106,7 +106,7 @@ USED_SDK_LIBS=					\
 
 LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,--gc-sections 			\
-	-Wl,-Map=mapfile 			\
+	-Wl,-Map=mapfile.$(TARGET)		\
 	-nostdlib 				\
 	-T$(LD_FILE) 				\
 	-Wl,@$(LDDIR)/defsym.rom		\
@@ -116,9 +116,12 @@ LINKFLAGS_eagle.app.v6 = 			\
 	$(TARGET_LDFLAGS)			\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
 	-Wl,--start-group 			\
-	-lhal					\
-	$(addprefix -l,$(USED_SDK_LIBS))	\
 	$(DEP_LIBS_eagle.app.v6) 		\
+	-Wl,--end-group 			\
+	-Wl,--no-gc-sections			\
+	-Wl,--start-group 			\
+	$(addprefix -l,$(USED_SDK_LIBS))	\
+	-lhal					\
 	-Wl,--end-group 			\
 
 DEPENDS_eagle.app.v6 = 				\

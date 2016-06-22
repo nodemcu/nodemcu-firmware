@@ -43,6 +43,7 @@ void system_soft_wdt_feed (void)
 extern void call_user_start (void);
 
 
+#if defined(__ESP8266__)
 /* Note: the trampoline *must* be explicitly put into the .text segment, since
  * by the time it is invoked the irom has not yet been mapped. This naturally
  * also goes for anything the trampoline itself calls.
@@ -56,9 +57,10 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
 #endif
 
   /* The first thing call_user_start() does is switch the interrupt vector
-   * base, which enables our 8/16bit load handler. */
+   * base, which enables our 8/16bit load handler on the ESP8266. */
   call_user_start ();
 }
+#endif
 
 // +================== New task interface ==================+
 static void start_lua(task_param_t param, task_prio_t prio) {
@@ -95,7 +97,8 @@ void nodemcu_init(void)
         return;
     }
 
-#if defined(FLASH_SAFE_API)
+// FIXME: this breaks horribly on the ESP32 at the moment; possibly all flash writes?
+#if defined(FLASH_SAFE_API) && defined(__ESP8266__)
     if( flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
         NODE_ERR("Self adjust flash size.\n");
         // Fit hardware real flash size.
@@ -151,10 +154,13 @@ void user_init(void)
     rtctime_late_startup ();
 #endif
 
+#if !defined(__ESP32__)
+    // FIXME - need UART driver for ESP32
     UartBautRate br = BIT_RATE_DEFAULT;
 
     input_sig = task_get_id(handle_input);
     uart_init (br, br, input_sig);
+#endif
 
 #ifndef NODE_DEBUG
     system_set_os_print(0);
