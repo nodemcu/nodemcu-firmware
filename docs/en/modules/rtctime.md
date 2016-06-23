@@ -67,6 +67,34 @@ For applications where it is necessary to take samples with high regularity, thi
 rtctime.dsleep_aligned(5*1000000, 3*1000000)
 ```
 
+## rtctime.epoch2cal()
+
+Converts a Unix timestamp to calendar format.
+
+#### Syntax
+`rtctime.epoch2cal(timestamp)`
+
+#### Parameters
+`timestamp` seconds since Unix epoch
+
+#### Returns
+A table containing the fields:
+
+- `year` 1970 ~ 2038
+- `mon` month 1 ~ 12 in current year
+- `day` day 1 ~ 31 in current month
+- `hour`
+- `min`
+- `sec`
+- `yday` day 1 ~ 366 in current year
+- `wday` day 1 ~ 7 in current weak (Sunday is 1)
+
+#### Example
+```lua
+tm = rtctime.epoch2cal(rtctime.get())
+print(string.format("%04d/%02d/%02d %02d:%02d:%02d", tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"]))
+```
+
 ## rtctime.get()
 
 Returns the current time. If current time is not available, zero is returned.
