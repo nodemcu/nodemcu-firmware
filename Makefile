@@ -54,6 +54,7 @@ INCLUDE_DIRS=\
 	$(SDKDIR)/include/espressif \
 	$(SDKDIR)/include/espressif/$(TARGET) \
 	$(SDKDIR)/include/$(TARGET) \
+	$(SDKDIR)/include/$(TARGET)/uart \
 	$(SDKDIR)/include/lwip \
 	$(SDKDIR)/include/lwip/ipv4 \
 	$(SDKDIR)/include/lwip/ipv6 \

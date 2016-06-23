@@ -168,7 +168,6 @@ void ets_intr_unlock(void);
 int rand(void);
 void srand(unsigned int);
 
-void uart_div_modify(int no, unsigned int freq);
 unsigned int uart_baudrate_detect(unsigned int uart_no, unsigned int async);
 
 

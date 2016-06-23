@@ -76,14 +76,14 @@ static void handle_input(task_param_t flag, task_prio_t priority) {
   lua_handle_input (flag);
 }
 
-static task_handle_t input_sig;
+static task_handle_t input_task;
 
 task_handle_t user_get_input_sig(void) {
-  return input_sig;
+  return input_task;
 }
 
 bool user_process_input(bool force) {
-    return task_post_low(input_sig, force);
+    return task_post_low(input_task, force);
 }
 
 void nodemcu_init(void)
@@ -154,13 +154,18 @@ void user_init(void)
     rtctime_late_startup ();
 #endif
 
-#if !defined(__ESP32__)
-    // FIXME - need UART driver for ESP32
-    UartBautRate br = BIT_RATE_DEFAULT;
+    input_task = task_get_id (handle_input);
 
-    input_sig = task_get_id(handle_input);
-    uart_init (br, br, input_sig);
-#endif
+    UART_ConfigTypeDef cfg;
+    cfg.baud_rate         = BIT_RATE_DEFAULT;
+    cfg.data_bits         = UART_WordLength_8b;
+    cfg.parity            = USART_Parity_None;
+    cfg.stop_bits         = USART_StopBits_1;
+    cfg.flow_ctrl         = USART_HardwareFlowControl_None;
+    cfg.UART_RxFlowThresh = 120;
+    cfg.UART_InverseMask  = UART_None_Inverse;
+
+    uart_init_uart0_console (&cfg, input_task);
 
 #ifndef NODE_DEBUG
     system_set_os_print(0);

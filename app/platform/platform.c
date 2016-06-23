@@ -336,10 +336,9 @@ void NO_INTR_CODE platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
 // UART
 // TODO: Support timeouts.
 
-// UartDev is defined and initialized in rom code.
-extern UartDevice UartDev;
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits )
 {
+  UART_ConfigTypeDef cfg;
   switch( baud )
   {
     case BIT_RATE_300:
@@ -354,68 +353,61 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
     case BIT_RATE_74880:
     case BIT_RATE_115200:
     case BIT_RATE_230400:
-    case BIT_RATE_256000:
     case BIT_RATE_460800:
     case BIT_RATE_921600:
     case BIT_RATE_1843200:
     case BIT_RATE_3686400:
-      UartDev.baut_rate = baud;
+      cfg.baud_rate = baud;
       break;
     default:
-      UartDev.baut_rate = BIT_RATE_9600;
+      cfg.baud_rate = BIT_RATE_9600;
       break;
   }
 
   switch( databits )
   {
     case 5:
-      UartDev.data_bits = FIVE_BITS;
+      cfg.data_bits = UART_WordLength_5b;
       break;
     case 6:
-      UartDev.data_bits = SIX_BITS;
+      cfg.data_bits = UART_WordLength_6b;
       break;
     case 7:
-      UartDev.data_bits = SEVEN_BITS;
+      cfg.data_bits = UART_WordLength_7b;
       break;
     case 8:
-      UartDev.data_bits = EIGHT_BITS;
-      break;
     default:
-      UartDev.data_bits = EIGHT_BITS;
+      cfg.data_bits = UART_WordLength_8b;
       break;
   }
 
   switch (stopbits)
   {
     case PLATFORM_UART_STOPBITS_1_5:
-      UartDev.stop_bits = ONE_HALF_STOP_BIT;
+      cfg.stop_bits = USART_StopBits_1_5;
       break;
     case PLATFORM_UART_STOPBITS_2:
-      UartDev.stop_bits = TWO_STOP_BIT;
+      cfg.stop_bits = USART_StopBits_2;
       break;
     default:
-      UartDev.stop_bits = ONE_STOP_BIT;
+      cfg.stop_bits = USART_StopBits_1;
       break;
   }
 
   switch (parity)
   {
     case PLATFORM_UART_PARITY_EVEN:
-      UartDev.parity = EVEN_BITS;
-      UartDev.exist_parity = STICK_PARITY_EN;
+      cfg.parity = USART_Parity_Even;
       break;
     case PLATFORM_UART_PARITY_ODD:
-      UartDev.parity = ODD_BITS;
-      UartDev.exist_parity = STICK_PARITY_EN;
+      cfg.parity = USART_Parity_Odd;
       break;
     default:
-      UartDev.parity = NONE_BITS;
-      UartDev.exist_parity = STICK_PARITY_DIS;
+      cfg.parity = USART_Parity_None;
       break;
   }
 
-  uart_setup(id);
-
+  UART_ParamConfig (id, &cfg);
   return baud;
 }
 

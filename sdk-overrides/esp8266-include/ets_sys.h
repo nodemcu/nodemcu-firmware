@@ -17,8 +17,6 @@
 #define ETS_UART_INTR_ATTACH(fn,arg) _xt_isr_attach(ETS_UART_INUM, fn, arg)
 #define ETS_SPI_INTR_ATTACH(fn,arg) _xt_isr_attach(ETS_SPI_INUM, fn, arg)
 
-#define ETS_UART_INTR_ENABLE()  _xt_isr_unmask(1 << ETS_UART_INUM)
-#define ETS_UART_INTR_DISABLE() _xt_isr_mask(1 << ETS_UART_INUM)
 #define ETS_GPIO_INTR_ENABLE()  _xt_isr_unmask(1 << ETS_GPIO_INUM)
 #define ETS_GPIO_INTR_DISABLE() _xt_isr_mask(1 << ETS_GPIO_INUM)
 #define ETS_SPI_INTR_ENABLE()  _xt_isr_unmask(1 << ETS_SPI_INUM)

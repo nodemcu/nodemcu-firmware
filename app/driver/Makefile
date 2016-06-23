@@ -38,7 +38,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
+INCLUDES := $(INCLUDES) -I $(PDIR)include -I ../include/driver
 INCLUDES += -I ./
 INCLUDES += -I ../platform
 PDIR := ../$(PDIR)

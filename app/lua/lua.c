@@ -549,7 +549,7 @@ static bool readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
   bool need_dojob = false;
   char ch;
-  while (uart_getc(&ch))
+  while (uart0_getc(&ch))
   {
     if(run_input)
     {
