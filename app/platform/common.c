@@ -13,14 +13,21 @@ void cmn_platform_init(void)
 // ****************************************************************************
 // Internal flash support functions
 
+#if defined(__ESP8266__)
 // This symbol must be exported by the linker command file and must reflect the
 // TOTAL size of flash used by the eLua image (not only the code and constants,
 // but also .data and whatever else ends up in the eLua image). FS will start
 // at the next usable (aligned to a flash sector boundary) address after
 // flash_used_size.
-
-// extern char flash_used_size[];
 extern char _flash_used_end[];
+
+#elif defined(__ESP32__)
+/* This symbol must be exported by the linker command file and contain the
+ * size of all the sections packed into the irom0_flash.bin file, in order
+ * for us to find the end of used flash.
+ */
+extern char _irom0_bin_min_sz[];
+#endif
 
 // Helper function: find the flash sector in which an address resides
 // Return the sector number, as well as the start and end address of the sector
@@ -69,6 +76,7 @@ uint32_t platform_flash_get_num_sectors(void)
 
 uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
 {
+#if defined(__ESP8266__)
   // Round the total used flash size to the closest flash block address
   uint32_t start, end, sect;
   NODE_DBG("_flash_used_end:%08x\n", (uint32_t)_flash_used_end);
@@ -83,6 +91,17 @@ uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
       *psect = sect;
     return start;
   }
+#elif defined(__ESP32__)
+  uint32_t flash_offs = IROM0_START_FLASH_ADDR + (uint32_t)_irom0_bin_min_sz;
+  uint32_t sect =
+    (flash_offs + INTERNAL_FLASH_SECTOR_SIZE-1)/INTERNAL_FLASH_SECTOR_SIZE;
+  ++sect; /* compensate for various headers not counted in _irom0_bin_min_sz */
+
+  if (psect)
+    *psect = sect;
+
+  return sect * INTERNAL_FLASH_SECTOR_SIZE;
+#endif
 }
 
 uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size )

@@ -55,8 +55,11 @@
 
 #define INTERNAL_FLASH_SIZE             ( (SYS_PARAM_SEC_START) * INTERNAL_FLASH_SECTOR_SIZE )
 
-// TODO: double-check flash mapped address
-#define INTERNAL_FLASH_MAPPED_ADDRESS    0x40084000
+/* Note: technically irom0 starts at +0x10, but that's not a page boundary! */
+#define IROM0_START_MAPPED_ADDR 0x40080000
+#define IROM0_START_FLASH_ADDR     0x40000
+// TODO: might need to revamp all this once cache windows fully understood
+#define INTERNAL_FLASH_MAPPED_ADDRESS   IROM0_START_MAPPED_ADDR
 
 #if defined(FLASH_SAFE_API)
 #define flash_write flash_safe_write

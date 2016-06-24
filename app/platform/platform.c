@@ -853,7 +853,7 @@ int platform_flash_erase_sector( uint32_t sector_id )
 
 uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
 {
-#ifdef __ESP8266__
+#if defined(__ESP8266__)
   uint32_t cache_ctrl = READ_PERI_REG(CACHE_FLASH_CTRL_REG);
   if (!(cache_ctrl & CACHE_FLASH_ACTIVE))
     return -1;
@@ -861,8 +861,10 @@ uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
   bool b1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 1 : 0;
   uint32_t meg = (b1 << 1) | b0;
   return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg * 0x100000;
+#elif defined(__ESP32__)
+  // TODO: need to handle drom0 addresses too?
+  return mapped_addr - IROM0_START_MAPPED_ADDR + IROM0_START_FLASH_ADDR;
 #else
-  // FIXME
-  return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS;
+# error "unknown board"
 #endif
 }

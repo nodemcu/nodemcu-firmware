@@ -278,7 +278,19 @@ SECTIONS
     LONG(0) LONG(0) /* Null-terminate the array */
 
     _irom0_text_end = ABSOLUTE(.);
-    _flash_used_end = ABSOLUTE(.);
+
+    /* Due to the way the gen_appbin.py script packs the bundle that goes into
+     * flash, we don't have a convenient _flash_used_end symbol on the ESP32.
+     * Instead we sum up the three sections we know goes into the
+     * irom0_flash.bin, so we can use that as a starting point to scan for
+     * the next free page. We could presumably be even more specific and
+     * account for the block headers and trailing checksum. Maybe later.
+     */
+    _irom0_bin_min_sz = ABSOLUTE(
+      _irom0_text_end - _irom0_text_start +
+      _text_end - _text_start +
+      _data_end - _data_start);
+
   } >irom0_0_seg :irom0_0_phdr
 
   .lit4 : ALIGN(4)
