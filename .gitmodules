@@ -4,3 +4,6 @@
 [submodule "esp32-rtos-sdk"]
 	path = sdk/esp32-rtos-sdk
 	url = https://github.com/espressif/ESP32_RTOS_SDK.git
+[submodule "toolchains"]
+	path = tools/toolchains
+	url = https://github.com/jmattsson/nodemcu-prebuilt-toolchains.git
