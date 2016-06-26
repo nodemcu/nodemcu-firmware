@@ -80,6 +80,9 @@ typedef struct
         SIZE_32MBIT = 4,
         SIZE_16MBIT_8M_8M = 5,
         SIZE_32MBIT_8M_8M = 6,
+        SIZE_32MBIT_16M_16M = 7,
+        SIZE_64MBIT = 8,
+        SIZE_128MBIT = 9,
     } size : 4;
     uint32_t entry_point;
     uint32_t memory_offset;
