@@ -1,6 +1,6 @@
-# switec Module
+# Switec Module
 
-This module controls a Switec X.27 (or compatible) instrument stepper motor. These are the 
+This module controls a [Switec X.27](http://www.jukenswisstech.com/?page_id=103) (or compatible) instrument stepper motor. These are the 
 stepper motors that are used in modern automotive instrument clusters. They are incredibly cheap
 and can be found at your favorite auction site or Chinese shopping site. There are varieties
 which are dual axis -- i.e. have two stepper motors driving two concentric shafts so you 
@@ -8,12 +8,12 @@ can mount two needles from the same axis.
 
 These motors run off 5V (some may work off 3.3V). They draw under 20mA and are designed to be
 driven directly from MCU pins. Since the nodemcu runs at 3.3V, a level translator is required.
-An octal translator like the 74LVC4245A can perfom this translation. It also includes all the
+An octal translator like the [74LVC4245A](http://www.nxp.com/products/discretes-and-logic/logic/voltage-level-translators/octal-dual-supply-translating-transceiver-3-state-based-on-pip-74lvc4245a:74LVC4245A) can perfom this translation. It also includes all the
 protection diodes required. 
 
 These motors can be driven off three pins, with `pin2` and `pin3` being the same GPIO pin. 
 If the motor is directly connected to the MCU, then the current load is doubled and may exceed
-the maximum ratings. If, however, a driver chip is being used, then the load on the MCU is neglible
+the maximum ratings. If, however, a driver chip is being used, then the load on the MCU is negligible
 and the same MCU pin can be connected to two driver pins. In order to do this, just specify
 the same pin for `pin2` and `pin3`.
 
@@ -23,19 +23,9 @@ is on the step. Then this point can be set as zero. It is important not to let t
 run into the endstops during normal operation as this will make the pointing inaccurate. 
 This module does not enforce any range limiting.
 
-### Sources
+!!! note "Note:"
 
-These stepper motors are available at the following locations:
-
-- Amazon: These are [X27 Stepper motors](http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=instrument+stepper+motor+x27&rh=i%3Aaps%2Ck%3Ainstrument+stepper+motor+x27)
-- Aliexpress: These are [X27 Stepper motors](http://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20160221132322&SearchText=x27+stepper). They also have the [Dual shaft version](http://www.aliexpress.com/wholesale?catId=0&initiative_id=SB_20160221132428&SearchText=vid28-05)
-- Ebay: These are [X27 Stepper motors](http://www.ebay.com/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.Xx27+stepper+motor.TRS0&_nkw=x27+stepper+motor&_sacat=0)
-
-##### Note
-
-This module uses the hardware timer interrupt and hence it cannot be used at the same time as the PWM module.
-Both modules can be compiled into the same firmware image, but an application can only use one. It may be
-possible for an application to alternate between `switec` and `pwm`, but care must be taken.
+    This module uses the hardware timer interrupt and hence it cannot be used at the same time as the PWM module. Both modules can be compiled into the same firmware image, but an application can only use one. It may be possible for an application to alternate between `switec` and `pwm`, but care must be taken.
 
 ## switec.setup()
 Initialize the nodemcu to talk to a switec X.27 or compatible instrument stepper motor. The default
@@ -61,7 +51,9 @@ Once a channel is setup, it cannot be re-setup until the needle has stopped movi
 
 #### Example
 
-    switec.setup(0, 5,6,7,8)
+```lua
+switec.setup(0, 5, 6, 7, 8)
+```
 
 ## switec.moveto()
 Starts the needle moving to the specified position. If the needle is already moving, then the current
@@ -84,9 +76,11 @@ The channel must have been setup, otherwise an error is thrown.
 
 #### Example
 
-    switec.moveto(0, 1000, function ()
-        switec.moveto(0, 0)
-    end)
+```lua
+switec.moveto(0, 1000, function ()
+    switec.moveto(0, 0)
+end)
+```
 
 ## switec.reset()
 This sets the current position of the needle as being zero. The needle must be stationary.
@@ -99,10 +93,6 @@ This sets the current position of the needle as being zero. The needle must be s
 
 #### Errors
 The channel must have been setup and the needle must not be moving, otherwise an error is thrown.
-
-#### Example
-
-    switec.reset(0)
 
 ## switec.getpos()
 Gets the current position of the needle and whether it is moving.
@@ -117,10 +107,6 @@ Gets the current position of the needle and whether it is moving.
 - `position` the current position of the needle
 - `moving` 0 if the needle is stationary. 1 for clockwise, -1 for anti-clockwise.
 
-#### Example
-
-    print switec.getpos(0)
-
 ## switec.close()
 Releases the resources associated with the stepper.
 
@@ -132,10 +118,6 @@ Releases the resources associated with the stepper.
 
 #### Errors
 The needle must not be moving, otherwise an error is thrown.
-
-#### Example
-
-    switec.close(0)
 
 ## Calibration
 In order to set the zero point correctly, the needle should be driven anti-clockwise until
