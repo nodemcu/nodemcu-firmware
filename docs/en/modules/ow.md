@@ -240,7 +240,10 @@ Sets up the search to find the device type `family_code`. The search itself has 
 [ow.search()](#owsearch)
 
 ## ow.write()
-Writes a byte. If `power` is 1 then the wire is held high at the end for parasitically powered devices. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+Writes a byte. If `power` is 1 then the wire is held high at the end for parasitically powered devices. In this mode, the wire can be hold high without an external pull-up resistor, and the gpio output can drive a few parasitically powered devices (See the figure below for typical connections). During the wire being parasitically powered, no other device should pull down the wire to GND in case of shorting. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+
+<img src="https://cloud.githubusercontent.com/assets/11760870/14408046/af7370de-feb1-11e5-9d97-63a0c85ded0f.png" alt="circ" height="800px"/>
+
 
 #### Syntax
 `ow.write(pin, v, power)`
@@ -257,7 +260,10 @@ Writes a byte. If `power` is 1 then the wire is held high at the end for parasit
 [ow.depower()](#owdepower)
 
 ## ow.write_bytes()
-Writes multi bytes. If `power` is 1 then the wire is held high at the end for parasitically powered devices. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+Writes multi bytes. If `power` is 1 then the wire is held high in push-pull mode at the end for parasitically powered devices. In this mode, the wire can be hold high without an external pull-up resistor, and the gpio output can drive a few parasitically powered devices (See the figure below for typical connections). During the wire being parasitically powered, no other device should pull down the wire to GND in case of shorting. You are responsible for eventually depowering it by calling `ow.depower()` or doing another read or write.
+
+<img src="https://cloud.githubusercontent.com/assets/11760870/14408046/af7370de-feb1-11e5-9d97-63a0c85ded0f.png" alt="circ" height="800px"/>
+
 
 #### Syntax
 `ow.write_bytes(pin, buf, power)`
