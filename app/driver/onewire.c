@@ -107,7 +107,6 @@ uint8_t onewire_reset(uint8_t pin)
 
 	noInterrupts();
 	DIRECT_WRITE_LOW(pin);
-	DIRECT_MODE_OUTPUT(pin);	// drive output low
 	interrupts();
 	delayMicroseconds(480);
 	noInterrupts();
@@ -126,19 +125,12 @@ uint8_t onewire_reset(uint8_t pin)
 static void onewire_write_bit(uint8_t pin, uint8_t v)
 {
 	if (v & 1) {
-		noInterrupts();
-		DIRECT_WRITE_LOW(pin);
-		DIRECT_MODE_OUTPUT(pin);	// drive output low
-		delayMicroseconds(10);
-		DIRECT_WRITE_HIGH(pin);	// drive output high
-		interrupts();
-		delayMicroseconds(55);
+        onewire_read_bit(pin);
 	} else {
 		noInterrupts();
 		DIRECT_WRITE_LOW(pin);
-		DIRECT_MODE_OUTPUT(pin);	// drive output low
 		delayMicroseconds(65);
-		DIRECT_WRITE_HIGH(pin);	// drive output high
+		DIRECT_MODE_INPUT(pin);	// drive output high by the pull-up
 		interrupts();
 		delayMicroseconds(5);
 	}
@@ -153,14 +145,14 @@ static uint8_t onewire_read_bit(uint8_t pin)
 	uint8_t r;
 
 	noInterrupts();
-	DIRECT_MODE_OUTPUT(pin);
 	DIRECT_WRITE_LOW(pin);
-	delayMicroseconds(3);
+
+	delayMicroseconds(5);
 	DIRECT_MODE_INPUT(pin);	// let pin float, pull up will raise
-	delayMicroseconds(10);
+	delayMicroseconds(8);
 	r = DIRECT_READ(pin);
 	interrupts();
-	delayMicroseconds(53);
+	delayMicroseconds(52);
 	return r;
 }
 
@@ -177,10 +169,10 @@ void onewire_write(uint8_t pin, uint8_t v, uint8_t power /* = 0 */) {
   for (bitMask = 0x01; bitMask; bitMask <<= 1) {
 	  onewire_write_bit(pin, (bitMask & v)?1:0);
   }
-  if ( !power) {
+  if ( power ) {
   	noInterrupts();
-  	DIRECT_MODE_INPUT(pin);
-  	DIRECT_WRITE_LOW(pin);
+  	DIRECT_WRITE_HIGH(pin);
+
   	interrupts();
   }
 }
@@ -189,10 +181,10 @@ void onewire_write_bytes(uint8_t pin, const uint8_t *buf, uint16_t count, bool p
   uint16_t i;
   for (i = 0 ; i < count ; i++)
     onewire_write(pin, buf[i], owDefaultPower);
-  if (!power) {
+  if ( power ) {
     noInterrupts();
-    DIRECT_MODE_INPUT(pin);
-    DIRECT_WRITE_LOW(pin);
+    DIRECT_WRITE_HIGH(pin);
+
     interrupts();
   }
 }
@@ -474,7 +466,7 @@ uint8_t onewire_crc8(const uint8_t *addr, uint8_t len)
 uint8_t onewire_crc8(const uint8_t *addr, uint8_t len)
 {
 	uint8_t crc = 0;
-	
+
 	while (len--) {
 		uint8_t inbyte = *addr++;
     uint8_t i;
@@ -501,8 +493,8 @@ uint8_t onewire_crc8(const uint8_t *addr, uint8_t len)
 //    ReadBytes(net, buf+3, 10);  // Read 6 data bytes, 2 0xFF, 2 CRC16
 //    if (!CheckCRC16(buf, 11, &buf[11])) {
 //        // Handle error.
-//    }     
-//          
+//    }
+//
 // @param input - Array of bytes to checksum.
 // @param len - How many bytes to use.
 // @param inverted_crc - The two CRC16 bytes in the received data.
