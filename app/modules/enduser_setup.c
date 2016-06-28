@@ -485,15 +485,20 @@ static int enduser_setup_http_load_payload(void)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload");
 
+  int err = (FS_OPEN_OK -1);
+  int err2 = (FS_OPEN_OK -1);
+  int file_len = 0;
   int f = fs_open(http_html_filename, fs_mode2flag("r"));
-  int err = fs_seek(f, 0, FS_SEEK_END);
-  int file_len = (int) fs_tell(f);
-  int err2 = fs_seek(f, 0, FS_SEEK_SET);
+  if (f >= FS_OPEN_OK) {
+      err = fs_seek(f, 0, FS_SEEK_END);
+      file_len = (int) fs_tell(f);
+      err2 = fs_seek(f, 0, FS_SEEK_SET);
+  }
 
   const char cl_hdr[] = "Content-length:%5d\r\n\r\n";
   const size_t cl_len = LITLEN(cl_hdr) + 3; /* room to expand %4d */
 
-  if (f == 0 || err == -1 || err2 == -1)
+  if (f < FS_OPEN_OK || err < FS_OPEN_OK || err2 < FS_OPEN_OK)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 
@@ -527,6 +532,7 @@ static int enduser_setup_http_load_payload(void)
   offset += LITLEN(http_header_200);
   offset += c_sprintf(state->http_payload_data + offset, cl_hdr, file_len);
   fs_read(f, &(state->http_payload_data[offset]), file_len);
+  fs_close(f);
 
   return 0;
 }
