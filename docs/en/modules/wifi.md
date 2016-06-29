@@ -626,7 +626,7 @@ Gets MAC address in station mode.
 none
 
 #### Returns
-MAC address as string e.g. "18-33-44-FE-55-BB"
+MAC address as string e.g. "18:fe:34:a2:d7:34"
 
 #### See also
 [`wifi.sta.getip()`](#wifistagetip)
