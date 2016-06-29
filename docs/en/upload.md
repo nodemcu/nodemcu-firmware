@@ -79,19 +79,19 @@ Inspired by [https://github.com/ckuehnel/NodeMCU-applications](https://github.co
 
 # Compiling Lua on your PC for Uploading
 
-If you install lua on your development PC or Laptop then you can use the standard Lua
+If you install `lua` on your development PC or Laptop then you can use the standard Lua
 compiler to syntax check any Lua source before downloading it to the ESP8266 module.  However,
-the nodemcu compiler output uses different data types (e.g. it supports ROMtables) so the
+the NodeMCU compiler output uses different data types (e.g. it supports ROMtables) so the
 compiled output cannot run on the ESP8266.  
 
 Compiling source on one platform for use on another (e.g. Intel x38 Window to ESP8266) is 
-known as _cross-compilation_ and the nodemcu firmware supports the compilation of `luac.cross` 
+known as _cross-compilation_ and the NodeMCU firmware supports the compilation of `luac.cross` 
 on \*nix patforms which have Lua 5.1, the Lua filesystem module (lfs), and the essential
-GCC tools.  Simply change directory to the firmware root directoy and run the command:
+GCC tools. Simply change directory to the firmware root directoy and run the command:
 
     lua tools/cross-lua.lua
     
 This will generate a `luac.cross` executable in your root directory which can be used to
 compile and to syntax-check Lua source on the Development machine for execution under 
-nodemcu lua on the ESP8266. 
+NodeMCU Lua on the ESP8266. 
  
