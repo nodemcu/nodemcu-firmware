@@ -51,6 +51,11 @@ Also, in some special circumstances, you may need to flash `blank.bin` or `esp_i
 If upgrading from [SPIFFS](https://github.com/pellepl/spiffs) version 0.3.2 to 0.3.3 or later, or after flashing any new firmware (particularly one with a much different size), you may need to run [`file.format()`](modules/file.md#fileformat) to re-format your flash filesystem. You will know if you need to do this if your flash files disappeared, or if they exist but seem empty, or if data cannot be written to new files.
 
 ## Upgrading from SDK 0.9.x Firmware
+
+!!! note "Note:"
+
+    It goes without saying that you shouldn't expect your NodeMCU 0.9.x Lua scripts to work error-free on a more recent firmware. Most notably Espressif changed the `socket:send` operation to be asynchronous i.e. non-blocking. See [API documentation](modules/net.md#netsocketsend) for details.
+
 If you flash a recent NodeMCU firmware for the first time, it's advisable that you get all accompanying files right. A typical case that often fails is when a module is upgraded from a 0.9.x firmware to the latest version built from the [NodeMCU build service](http://nodemcu-build.com). It might look like the brand new firmware is broken, but the reason for the missing Lua prompt is related to the big jump in SDK versions: Espressif changed the `esp_init_data_default.bin` for their devices along the way with the [SDK 1.4.0 release](http://bbs.espressif.com/viewtopic.php?f=46&t=1124). So things break when a NodeMCU firmware with SDK 1.4.0 or above is flashed to a module which contains old init data from a previous SDK.
 
 Download a recent SDK release, e.g. [esp_iot_sdk_v1.4.0_15_09_18.zip](http://bbs.espressif.com/download/file.php?id=838) or later and extract `esp_init_data_default.bin` from there. *Use this file together with the new firmware during flashing*.
