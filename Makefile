@@ -3,10 +3,10 @@
 .NOTPARALLEL:
 
 # SDK version NodeMCU is locked to
-SDK_VER:=1.5.1
-SDK_FILE_VER:=$(SDK_VER)_16_01_08
-SDK_FILE_ID:=1046
-SDK_FILE_SHA1:=374f689a5f9e47690d7b4cd2fc1a1094f3fd5a4f
+SDK_VER:=1.5.4
+SDK_FILE_VER:=$(SDK_VER)_16_05_20
+SDK_FILE_ID:=1469
+SDK_FILE_SHA1:=868784bd37d47f31d52b81f133aa1fb70c58e17d
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
@@ -187,7 +187,8 @@ sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_VER)
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
-	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_VER)*.zip esp_iot_sdk_v$(SDK_VER)/lib/* esp_iot_sdk_v$(SDK_VER)/ld/eagle.rom.addr.v6.ld esp_iot_sdk_v$(SDK_VER)/include/* )
+	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_VER)*.zip ESP8266_NONOS_SDK/lib/* ESP8266_NONOS_SDK/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK/include/* )
+	mv $(dir $@)/ESP8266_NONOS_SDK $(dir $@)/esp_iot_sdk_v$(SDK_VER)
 	rm -f $(SDK_DIR)/lib/liblwip.a
 	touch $@
 
