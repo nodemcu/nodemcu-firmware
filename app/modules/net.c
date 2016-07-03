@@ -1083,70 +1083,59 @@ static int net_dns( lua_State* L, const char* mt )
   return 0;  
 }
 
-// Lua: net.dns.resolve( domain, function(ip) )
-static int net_dns_static( lua_State* L )
-{
-  const char *mt = "net.socket";
-  if (!lua_isstring( L, 1 ))
-    return luaL_error( L, "wrong parameter type (domain)" );
-  
-  int rfunc = LUA_NOREF; //save reference to func
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION){
-    rfunc = luaL_ref(L, LUA_REGISTRYINDEX);
+static int luaL_lwip_checkerr(err_t res, lua_State *L);
+
+static void net_dns_static_cb(const char *name, ip_addr_t *ipaddr, void *callback_arg) {
+  ip_addr_t addr;
+  if (ipaddr != NULL)
+    addr = *ipaddr;
+  else addr.addr = 0xFFFFFFFF;
+  int cb_ref = ((int*)callback_arg)[0];
+  c_free(callback_arg);
+  lua_State *L = lua_getstate();
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, cb_ref);
+  lua_pushnil(L);
+  if (addr.addr != 0xFFFFFFFF) {
+    char iptmp[20];
+    size_t ipl = c_sprintf(iptmp, IPSTR, IP2STR(&addr.addr));
+    lua_pushlstring(L, iptmp, ipl);
+  } else {
+    lua_pushnil(L);
   }
-  int rdom = luaL_ref(L, LUA_REGISTRYINDEX); //save reference to domain
+  lua_call(L, 2, 0);
 
-  lua_settop(L,0); //empty stack
-  lua_getfield(L, LUA_GLOBALSINDEX, "net");
-  lua_getfield(L, -1, "createConnection");
-  lua_remove(L, -2); //remove "net" from stack
-  lua_pushinteger(L, UDP); // we are going to create a new dummy UDP socket
-  lua_call(L,1,1);// after this the stack should have a socket
+  luaL_unref(L, LUA_REGISTRYINDEX, cb_ref);
+}
 
-  lua_rawgeti(L, LUA_REGISTRYINDEX, rdom);    // load domain back to the stack
-  lua_rawgeti(L, LUA_REGISTRYINDEX, rfunc);    // load the callback function back to the stack
+// Lua: net.dns.resolve( domain, function(sk, ip) )
+static int net_dns_static( lua_State* L ) {
+  size_t dl;
+  const char* domain = luaL_checklstring(L, 1, &dl);
+  if (!domain && dl > 128) {
+    return luaL_error(L, "wrong domain");
+  }
 
-  luaL_unref(L, LUA_REGISTRYINDEX, rdom); //free reference
-  luaL_unref(L, LUA_REGISTRYINDEX, rfunc); //free reference
-
-  bool isserver = false;
-  struct espconn *pesp_conn = NULL;
-  lnet_userdata *nud;
-  size_t l;
-  
-  nud = (lnet_userdata *)luaL_checkudata(L, 1, mt);
-  luaL_argcheck(L, nud, 1, "Server/Socket expected");
-  if(nud==NULL){
-    NODE_DBG("userdata is nil.\n");
+  luaL_checkanyfunction(L, 2);
+  lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
+  int cbref = luaL_ref(L, LUA_REGISTRYINDEX);
+  if (cbref == LUA_NOREF) {
+    return luaL_error(L, "wrong callback");
+  }
+  int *cbref_ptr = c_zalloc(sizeof(int));
+  cbref_ptr[0] = cbref;
+  ip_addr_t addr;
+  err_t err = dns_gethostbyname(domain, &addr, net_dns_static_cb, cbref_ptr);
+  if (err == ERR_OK) {
+    net_dns_static_cb(domain, &addr, cbref_ptr);
     return 0;
-  }
-  if(nud->pesp_conn == NULL){
-    NODE_DBG("nud->pesp_conn is NULL.\n");
+  } else if (err == ERR_INPROGRESS) {
     return 0;
+  } else {
+    int e = luaL_lwip_checkerr(err, L);
+    c_free(cbref_ptr);
+    return e;
   }
-  pesp_conn = nud->pesp_conn;
-
-  lua_pushvalue(L, 1);  // copy to the top of stack
-  if(nud->self_ref != LUA_NOREF)
-    luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
-  nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-
-  const char *domain = luaL_checklstring( L, 2, &l );
-  if (l>128 || domain == NULL)
-    return luaL_error( L, "need <128 domain" );
-
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION){
-    lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
-    if(nud->cb_dns_found_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);
-    nud->cb_dns_found_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  host_ip.addr = 0;
-  if(ESPCONN_OK == espconn_gethostbyname(pesp_conn, domain, &host_ip, net_dns_found))
-    net_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
-
-
   return 0;
 }
 

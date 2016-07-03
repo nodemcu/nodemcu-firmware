@@ -397,11 +397,11 @@ print(net.dns.getdnsserver(1)) -- 192.168.1.252
 Resolve a hostname to an IP address. Doesn't require a socket like [`net.socket.dns()`](#netsocketdns).
 
 #### Syntax
-`net.dns.resolve(host, function(ip))`
+`net.dns.resolve(host, function(sk, ip))`
 
 #### Parameters
 - `host` hostname to resolve
-- `function(sk, ip)` callback called when the name was resolved. Don't use `sk`, it's a socket used internally to resolve the hostname.
+- `function(sk, ip)` callback called when the name was resolved. `sk` is always `nil` (kept for backward compatibility)
 
 #### Returns
 `nil`
