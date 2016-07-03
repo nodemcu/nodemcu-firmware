@@ -13,6 +13,7 @@
 #include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "lwip/dns.h" 
+#include "lwip/igmp.h"
 
 #define TCP ESPCONN_TCP
 #define UDP ESPCONN_UDP
@@ -1339,11 +1340,11 @@ static int net_multicastJoinLeave( lua_State *L, int join)
 	  multicast_addr.addr = ipaddr_addr(multicast_ip);
 	  if (join)
 	  {
-		  espconn_igmp_join(&if_addr, &multicast_addr);
+		  igmp_joingroup(&if_addr, &multicast_addr);
 	  }
 	  else
 	  {
-		  espconn_igmp_leave(&if_addr, &multicast_addr);
+		  igmp_leavegroup(&if_addr, &multicast_addr);
 	  }
 	  return 0;
 }
@@ -1497,6 +1498,7 @@ int luaopen_net( lua_State *L ) {
   {
     socket[i] = LUA_NOREF;
   }
+  igmp_init();
 
   luaL_rometatable(L, "net.server", (void *)net_server_map);  // create metatable for net.server
   luaL_rometatable(L, "net.socket", (void *)net_socket_map);  // create metatable for net.socket
