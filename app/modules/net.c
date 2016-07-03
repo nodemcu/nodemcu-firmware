@@ -20,10 +20,6 @@
 
 static ip_addr_t host_ip; // for dns
 
-#if 0
-static int expose_array(lua_State* L, char *array, unsigned short len);
-#endif
-
 #define MAX_SOCKET 5
 static int socket_num = 0;
 static int socket[MAX_SOCKET];
@@ -55,15 +51,6 @@ static void net_server_disconnected(void *arg)    // for tcp server only
   if(nud == NULL)
     return;
   lua_State *L = lua_getstate();
-#if 0
-  char temp[20] = {0};
-  c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
-  NODE_DBG("remote ");
-  NODE_DBG(temp);
-  NODE_DBG(":");
-  NODE_DBG("%d",pesp_conn->proto.tcp->remote_port);
-  NODE_DBG(" disconnected.\n");
-#endif
   if(nud->cb_disconnect_ref != LUA_NOREF && nud->self_ref != LUA_NOREF)
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_disconnect_ref);
@@ -146,18 +133,13 @@ static void net_socket_received(void *arg, char *pdata, unsigned short len)
   lua_State *L = lua_getstate();
   lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_receive_ref);
   lua_rawgeti(L, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
-  // expose_array(L, pdata, len);
-  // *(pdata+len) = 0;
-  // NODE_DBG(pdata);
-  // NODE_DBG("\n");
   lua_pushlstring(L, pdata, len);
-  // lua_pushinteger(L, len);
   lua_call(L, 2, 0);
 }
 
 static void net_socket_sent(void *arg)
 {
-  // NODE_DBG("net_socket_sent is called.\n");
+  NODE_DBG("net_socket_sent is called.\n");
   struct espconn *pesp_conn = arg;
   if(pesp_conn == NULL)
     return;
@@ -216,7 +198,6 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     }
     lua_pushstring(L, ip_str);   // the ip para
   }
-  // "enhanced" end
 
   lua_call(L, 2, 0);
 
@@ -240,16 +221,6 @@ static void net_server_connected(void *arg) // for tcp only
   lnet_userdata *skt = NULL;
   if(pesp_conn == NULL)
     return;
-
-#if 0
-  char temp[20] = {0};
-  c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
-  NODE_DBG("remote ");
-  NODE_DBG(temp);
-  NODE_DBG(":");
-  NODE_DBG("%d",pesp_conn->proto.tcp->remote_port);
-  NODE_DBG(" connected.\n");
-#endif
 
   for(i=0;i<MAX_SOCKET;i++){
     if(socket[i] == LUA_NOREF)  // found empty slot
@@ -826,10 +797,6 @@ static int net_close( lua_State* L, const char* mt )
     if(isserver && skt == NULL){
       if(socket[i] != LUA_NOREF){  // there is client socket exists
         lua_rawgeti(L, LUA_REGISTRYINDEX, socket[i]);    // get the referenced user_data to stack top
-#if 0
-        socket[i] = LUA_NOREF;
-        socket_num--;
-#endif  // do this in net_server_disconnected
         i++;
         if(lua_isuserdata(L,-1)){
           skt = lua_touserdata(L,-1);
@@ -869,23 +836,9 @@ static int net_close( lua_State* L, const char* mt )
         }
       }
     }
-#if 0
-    // unref the self_ref
-    if(LUA_NOREF!=skt->self_ref){    // for a server self_ref is NOREF
-    	luaL_unref(L, LUA_REGISTRYINDEX, skt->self_ref);
-    	skt->self_ref = LUA_NOREF;   // for a socket, now only var in lua is ref to the userdata
-    }
-#endif
     lua_settop(L, n);   // reset the stack top
     skt = NULL;
   } while( isserver && i<MAX_SOCKET);
-#if 0
-  // unref the self_ref, for both socket and server
-  if(LUA_NOREF!=nud->self_ref){    // for a server self_ref is NOREF
-    luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
-    nud->self_ref = LUA_NOREF;   // now only var in lua is ref to the userdata
-  }
-#endif
 
   return 0;  
 }
@@ -989,16 +942,6 @@ static int net_send( lua_State* L, const char* mt )
   if(isserver && nud->pesp_conn->type == ESPCONN_TCP){
     return luaL_error( L, "tcp server send not supported" );
   }
-
-#if 0
-  char temp[20] = {0};
-  c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
-  NODE_DBG("remote ");
-  NODE_DBG(temp);
-  NODE_DBG(":");
-  NODE_DBG("%d",pesp_conn->proto.tcp->remote_port);
-  NODE_DBG(" sending data.\n");
-#endif
 
   const char *payload = luaL_checklstring( L, 2, &l );
   if (l>1460 || payload == NULL)
@@ -1395,34 +1338,6 @@ static int net_getdnsserver( lua_State* L )
   return 1;
 }
 
-#if 0
-static int net_array_index( lua_State* L )
-{
-  char** parray = luaL_checkudata(L, 1, "net.array");
-  int index = luaL_checkint(L, 2);
-  lua_pushnumber(L, (*parray)[index-1]);
-  return 1;
-}
-
-static int net_array_newindex( lua_State* L )
-{
-  char** parray = luaL_checkudata(L, 1, "net.array");
-  int index = luaL_checkint(L, 2);
-  int value = luaL_checkint(L, 3);
-  (*parray)[index-1] = value;
-  return 0;
-}
-
-// expose an array to lua, by storing it in a userdata with the array metatable
-static int expose_array(lua_State* L, char *array, unsigned short len) {
-  char** parray = lua_newuserdata(L, len);
-  *parray = array;
-  luaL_getmetatable(L, "net.array");
-  lua_setmetatable(L, -2);
-  return 1;
-}
-#endif
-
 extern const LUA_REG_TYPE tls_cert_map[];
 
 // Module function map
@@ -1451,13 +1366,6 @@ static const LUA_REG_TYPE net_socket_map[] = {
   { LSTRKEY( "__index" ), LROVAL( net_socket_map ) },
   { LNILKEY, LNILVAL }
 };
-#if 0
-static const LUA_REG_TYPE net_array_map[] = {
-  { LSTRKEY( "__index" ),    LFUNCVAL( net_array_index ) },
-  { LSTRKEY( "__newindex" ), LFUNCVAL( net_array_newindex ) },
-  { LNILKEY, LNILVAL }
-};
-#endif
 
 static const LUA_REG_TYPE net_dns_map[] = {
   { LSTRKEY( "setdnsserver" ), LFUNCVAL( net_setdnsserver ) },  
@@ -1491,9 +1399,6 @@ int luaopen_net( lua_State *L ) {
 
   luaL_rometatable(L, "net.server", (void *)net_server_map);  // create metatable for net.server
   luaL_rometatable(L, "net.socket", (void *)net_socket_map);  // create metatable for net.socket
-  #if 0
-  luaL_rometatable(L, "net.array", (void *)net_array_map);    // create metatable for net.array
-  #endif
 
   return 0;
 }
