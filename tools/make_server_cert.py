@@ -31,8 +31,8 @@ def main():
 		    help='specify the section for the data (default is .servercert.flash)')
 
     parser.add_argument('--name', 
-                   default='net_server_cert_area',
-		    help='specify the variable name for the data (default is net_server_cert_area)')
+                   default='tls_server_cert_area',
+		    help='specify the variable name for the data (default is tls_server_cert_area)')
 
     parser.add_argument('file', nargs='+',
 		    help='One or more PEM files')

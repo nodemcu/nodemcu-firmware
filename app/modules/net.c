@@ -19,14 +19,6 @@
 
 static ip_addr_t host_ip; // for dns
 
-#ifdef HAVE_SSL_SERVER_CRT
-#include HAVE_SSL_SERVER_CRT
-#else
-__attribute__((section(".servercert.flash"))) unsigned char net_server_cert_area[INTERNAL_FLASH_SECTOR_SIZE];
-#endif
-
-__attribute__((section(".clientcert.flash"))) unsigned char net_client_cert_area[INTERNAL_FLASH_SECTOR_SIZE];
-
 #if 0
 static int expose_array(lua_State* L, char *array, unsigned short len);
 #endif
@@ -50,9 +42,6 @@ typedef struct lnet_userdata
   int cb_receive_ref;
   int cb_send_ref;
   int cb_dns_found_ref;
-#ifdef CLIENT_SSL_ENABLE
-  uint8_t secure;
-#endif
 }lnet_userdata;
 
 static void net_server_disconnected(void *arg)    // for tcp server only
@@ -306,10 +295,6 @@ static void net_server_connected(void *arg) // for tcp only
   skt->cb_send_ref = LUA_NOREF;
   skt->cb_dns_found_ref = LUA_NOREF;
 
-#ifdef CLIENT_SSL_ENABLE
-  skt->secure = 0;    // as a server SSL is not supported.
-#endif
-
   skt->pesp_conn = pesp_conn;   // point to the espconn made by low level sdk
   pesp_conn->reverse = skt;   // let espcon carray the info of this userdata(net.socket)
 
@@ -346,6 +331,8 @@ static void net_socket_connected(void *arg)
   lua_call(L, 1, 0);
 }
 
+extern int tls_socket_create( lua_State *L );
+
 // Lua: s = net.create(type, secure/timeout, function(conn))
 static int net_create( lua_State* L, const char* mt )
 {
@@ -353,9 +340,6 @@ static int net_create( lua_State* L, const char* mt )
   struct espconn *pesp_conn = NULL;
   lnet_userdata *nud, *temp = NULL;
   unsigned type;
-#ifdef CLIENT_SSL_ENABLE
-  unsigned secure = 0;
-#endif
   uint8_t stack = 1;
   bool isserver = false;
   
@@ -377,13 +361,14 @@ static int net_create( lua_State* L, const char* mt )
   if(!isserver){
     if ( lua_isnumber(L, stack) )
     {
-      secure = lua_tointeger(L, stack);
+      unsigned secure = lua_tointeger(L, stack);
       stack++;
       if ( secure != 0 && secure != 1 ){
         return luaL_error( L, "wrong arg type" );
       }
-    } else {
-      secure = 0; // default to 0
+      if ( secure == 1 ) {
+        return tls_socket_create(L);
+      }
     }
   }
 #endif
@@ -413,9 +398,6 @@ static int net_create( lua_State* L, const char* mt )
   nud->cb_send_ref = LUA_NOREF;
   nud->cb_dns_found_ref = LUA_NOREF;
   nud->pesp_conn = NULL;
-#ifdef CLIENT_SSL_ENABLE
-  nud->secure = secure;
-#endif
 
   // set its metatable
   luaL_getmetatable(L, mt);
@@ -575,15 +557,7 @@ static void socket_connect(struct espconn *pesp_conn)
 
   if( pesp_conn->type == ESPCONN_TCP )
   {
-#ifdef CLIENT_SSL_ENABLE
-    if(nud->secure){
-      espconn_secure_connect(pesp_conn);
-    }
-    else
-#endif
-    {
       espconn_connect(pesp_conn);
-    }
   }
   else if (pesp_conn->type == ESPCONN_UDP)
   {
@@ -771,26 +745,12 @@ static int net_start( lua_State* L, const char* mt )
   {
     if(isserver){   // no secure server support for now
       espconn_regist_connectcb(pesp_conn, net_server_connected);
-      // tcp server, SSL is not supported
-#ifdef CLIENT_SSL_ENABLE
-      // if(nud->secure)
-      //   espconn_secure_accept(pesp_conn);
-      // else
-#endif
         espconn_accept(pesp_conn);    // if it's a server, no need to dns.
         espconn_regist_time(pesp_conn, tcp_server_timeover, 0);
     }
     else{
       espconn_regist_connectcb(pesp_conn, net_socket_connected);
       espconn_regist_reconcb(pesp_conn, net_socket_reconnected);
-#ifdef CLIENT_SSL_ENABLE
-      if(nud->secure){
-      	if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
-          espconn_secure_disconnect(pesp_conn);
-        // espconn_secure_connect(pesp_conn);
-      }
-      else
-#endif
       {
       	if(pesp_conn->proto.tcp->remote_port || pesp_conn->proto.tcp->local_port)
           espconn_disconnect(pesp_conn);
@@ -892,13 +852,6 @@ static int net_close( lua_State* L, const char* mt )
     {
       if(skt->pesp_conn->type == ESPCONN_TCP)
       {
-  #ifdef CLIENT_SSL_ENABLE
-        if(skt->secure){
-        	if(skt->pesp_conn->proto.tcp->remote_port || skt->pesp_conn->proto.tcp->local_port)
-        	  espconn_secure_disconnect(skt->pesp_conn);
-        }
-        else
-  #endif
         {
         	if(skt->pesp_conn->proto.tcp->remote_port || skt->pesp_conn->proto.tcp->local_port)
             espconn_disconnect(skt->pesp_conn);
@@ -1066,11 +1019,6 @@ static int net_send( lua_State* L, const char* mt )
     os_memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
     // The remot_info apparently should *not* be os_free()d, fyi
   }
-#ifdef CLIENT_SSL_ENABLE
-  if(nud->secure)
-    espconn_secure_sent(pesp_conn, (unsigned char *)payload, l);
-  else
-#endif
     espconn_sent(pesp_conn, (unsigned char *)payload, l);
 
   return 0;  
@@ -1413,202 +1361,6 @@ static int net_multicastLeave( lua_State* L )
 	return net_multicastJoinLeave(L,0);
 }
 
-// Returns NULL on success, error message otherwise
-static const char *append_pem_blob(const char *pem, const char *type, uint8_t **buffer_p, uint8_t *buffer_limit, const char *name) {
-  char unb64[256];
-  memset(unb64, 0xff, sizeof(unb64));
-  int i;
-  for (i = 0; i < 64; i++) {
-    unb64["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[i]] = i;
-  }
-
-  if (!pem) {
-    return "No PEM blob";
-  }
-
-  // Scan for -----BEGIN CERT
-  pem = strstr(pem, "-----BEGIN ");
-  if (!pem) {
-    return "No PEM header";
-  }
-
-  if (strncmp(pem + 11, type, strlen(type))) {
-    return "Wrong PEM type";
-  }
-
-  pem = strchr(pem, '\n');
-  if (!pem) {
-    return "Incorrect PEM format";
-  }
-  //
-  // Base64 encoded data starts here
-  // Get all the base64 data into a single buffer....
-  // We will use the back end of the buffer....
-  //
-
-  uint8_t *buffer = *buffer_p;
-
-  uint8_t *dest = buffer + 32 + 2;  // Leave space for name and length
-  int bitcount = 0;
-  int accumulator = 0;
-  for (; *pem && dest < buffer_limit; pem++) {
-    int val = unb64[*(uint8_t*) pem];
-    if (val & 0xC0) {
-      // not a base64 character
-      if (isspace(*(uint8_t*) pem)) {
-	continue;
-      }
-      if (*pem == '=') {
-	// just ignore -- at the end
-	bitcount = 0;
-	continue;
-      }
-      if (*pem == '-') {
-	break;
-      }
-      return "Invalid character in PEM";
-    } else {
-      bitcount += 6;
-      accumulator = (accumulator << 6) + val;
-      if (bitcount >= 8) {
-	bitcount -= 8;
-	*dest++ = accumulator >> bitcount;
-      }
-    }
-  }
-  if (dest >= buffer_limit || strncmp(pem, "-----END ", 9) || strncmp(pem + 9, type, strlen(type)) || bitcount) {
-    return "Invalid PEM format data";
-  }
-  size_t len = dest - (buffer + 32 + 2);
-
-  memset(buffer, 0, 32);
-  strcpy(buffer, name);
-  buffer[32] = len & 0xff;
-  buffer[33] = (len >> 8) & 0xff;
-  *buffer_p = dest;
-  return NULL;
-}
-
-static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_memory, int flash_offset, const char **types, const char **names) 
-{
-  uint8_t  *buffer = luaM_malloc(L, INTERNAL_FLASH_SECTOR_SIZE);
-  uint8_t  *buffer_base = buffer;
-  uint8_t  *buffer_limit = buffer + INTERNAL_FLASH_SECTOR_SIZE;
-
-  int argno;
-
-  for (argno = 1; argno <= lua_gettop(L) && types[argno - 1]; argno++) {
-    const char *pem = lua_tostring(L, argno);
-
-    const char *error = append_pem_blob(pem, types[argno - 1], &buffer, buffer_limit, names[argno - 1]);
-    if (error) {
-      luaM_free(L, buffer_base);
-      return error;
-    }
-  }
-
-  memset(buffer, 0xff, buffer_limit - buffer);
-
-  // Lets see if it matches what is already there....
-  if (c_memcmp(buffer_base, flash_memory, INTERNAL_FLASH_SECTOR_SIZE) != 0) {
-    // Starts being dangerous
-    if (platform_flash_erase_sector(flash_offset / INTERNAL_FLASH_SECTOR_SIZE) != PLATFORM_OK) {
-      luaM_free(L, buffer_base);
-      return "Failed to erase sector";
-    }
-    if (platform_s_flash_write(buffer_base, flash_offset, INTERNAL_FLASH_SECTOR_SIZE) != INTERNAL_FLASH_SECTOR_SIZE) {
-      luaM_free(L, buffer_base);
-      return "Failed to write sector";
-    }
-    // ends being dangerous
-  }
-
-  luaM_free(L, buffer_base);
-
-  return NULL;
-}
-
-// Lua: net.cert.auth(true / false | PEM data [, PEM data] )
-static int net_cert_auth(lua_State *L)
-{
-  int enable;
-
-  uint32_t flash_offset = platform_flash_mapped2phys((uint32_t) &net_client_cert_area[0]);
-  if ((flash_offset & 0xfff) || flash_offset > 0xff000 || INTERNAL_FLASH_SECTOR_SIZE != 0x1000) {
-    // THis should never happen
-    return luaL_error( L, "bad offset" );
-  }
-
-  if (lua_type(L, 1) == LUA_TSTRING) {
-    const char *types[3] = { "CERTIFICATE", "RSA PRIVATE KEY", NULL };
-    const char *names[2] = { "certificate", "private_key" };
-    const char *error = fill_page_with_pem(L, &net_client_cert_area[0], flash_offset, types, names);
-    if (error) {
-      return luaL_error(L, error);
-    }
-
-    enable = 1;
-  } else {
-    enable = lua_toboolean(L, 1);
-  }
-
-  bool rc;
-
-  if (enable) {
-    // See if there is a cert there
-    if (net_client_cert_area[0] == 0x00 || net_client_cert_area[0] == 0xff) {
-      return luaL_error( L, "no certificates found" );
-    }
-    rc = espconn_secure_cert_req_enable(1, flash_offset / INTERNAL_FLASH_SECTOR_SIZE);
-  } else {
-    rc = espconn_secure_cert_req_disable(1);
-  }
-
-  lua_pushboolean(L, rc);
-  return 1;
-}
-
-// Lua: net.cert.verify(true / false | PEM data [, PEM data] )
-static int net_cert_verify(lua_State *L)
-{
-  int enable;
-
-  uint32_t flash_offset = platform_flash_mapped2phys((uint32_t) &net_server_cert_area[0]);
-  if ((flash_offset & 0xfff) || flash_offset > 0xff000 || INTERNAL_FLASH_SECTOR_SIZE != 0x1000) {
-    // THis should never happen
-    return luaL_error( L, "bad offset" );
-  }
-
-  if (lua_type(L, 1) == LUA_TSTRING) {
-    const char *types[2] = { "CERTIFICATE", NULL };
-    const char *names[1] = { "certificate" };
-
-    const char *error = fill_page_with_pem(L, &net_server_cert_area[0], flash_offset, types, names);
-    if (error) {
-      return luaL_error(L, error);
-    }
-
-    enable = 1;
-  } else {
-    enable = lua_toboolean(L, 1);
-  }
-
-  bool rc;
-
-  if (enable) {
-    // See if there is a cert there
-    if (net_server_cert_area[0] == 0x00 || net_server_cert_area[0] == 0xff) {
-      return luaL_error( L, "no certificates found" );
-    }
-    rc = espconn_secure_ca_enable(1, flash_offset / INTERNAL_FLASH_SECTOR_SIZE);
-  } else {
-    rc = espconn_secure_ca_disable(1);
-  }
-
-  lua_pushboolean(L, rc);
-  return 1;
-}
-
 // Lua: s = net.dns.setdnsserver(ip_addr, [index])
 static int net_setdnsserver( lua_State* L )
 {
@@ -1681,6 +1433,8 @@ static int expose_array(lua_State* L, char *array, unsigned short len) {
 }
 #endif
 
+extern const LUA_REG_TYPE tls_cert_map[];
+
 // Module function map
 static const LUA_REG_TYPE net_server_map[] = {
   { LSTRKEY( "listen" ),  LFUNCVAL( net_server_listen ) },
@@ -1715,14 +1469,6 @@ static const LUA_REG_TYPE net_array_map[] = {
 };
 #endif
 
-static const LUA_REG_TYPE net_cert_map[] = {
-  { LSTRKEY( "verify" ), 	LFUNCVAL( net_cert_verify ) },  
-#ifdef CLIENT_SSL_CERT_AUTH_ENABLE
-  { LSTRKEY( "auth" ),		LFUNCVAL( net_cert_auth ) }, 
-#endif
-  { LNILKEY, LNILVAL }
-};
-
 static const LUA_REG_TYPE net_dns_map[] = {
   { LSTRKEY( "setdnsserver" ), LFUNCVAL( net_setdnsserver ) },  
   { LSTRKEY( "getdnsserver" ), LFUNCVAL( net_getdnsserver ) }, 
@@ -1737,7 +1483,7 @@ static const LUA_REG_TYPE net_map[] = {
   { LSTRKEY( "multicastLeave"),    LFUNCVAL( net_multicastLeave ) },
   { LSTRKEY( "dns" ),              LROVAL( net_dns_map ) },
 #ifdef CLIENT_SSL_ENABLE
-  { LSTRKEY( "cert" ),             LROVAL(net_cert_map) },
+  { LSTRKEY( "cert" ),             LROVAL( tls_cert_map ) },
 #endif
   { LSTRKEY( "TCP" ),              LNUMVAL( TCP ) },
   { LSTRKEY( "UDP" ),              LNUMVAL( UDP ) },

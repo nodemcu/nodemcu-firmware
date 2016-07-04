@@ -75,6 +75,7 @@ pages:
         - 'spi': 'en/modules/spi.md'
         - 'struct': 'en/modules/struct.md'
         - 'switec': 'en/modules/switec.md'
+        - 'tls': 'en/modules/tls.md'
         - 'tm1829': 'en/modules/tm1829.md'
         - 'tmr': 'en/modules/tmr.md'
         - 'tsl2561': 'en/modules/tsl2561.md'
