@@ -202,7 +202,11 @@ var nodemcu = nodemcu || {};
     if (window.location.origin.indexOf('readthedocs') > -1) {
       // path is like /en/<branch>/<lang>/build/ -> extract 'lang'
       // split[0] is an '' because the path starts with the separator
-      branch = path.split('/')[2];
+      var thirdPathSegment = path.split('/')[2];
+      // 'latest' is an alias on RTD for the 'dev' branch - which is the default for 'branch' here
+      if (thirdPathSegment != 'latest') {
+        branch = thirdPathSegment;
+      }
     }
     return branch;
   }
