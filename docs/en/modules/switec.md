@@ -1,4 +1,7 @@
 # Switec Module
+| Since  | Origin / Contributor  | Maintainer  | Source  |
+| :----- | :-------------------- | :---------- | :------ |
+| 2016-06-26 |[Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [switec.c](../../../app/modules/switec.c)|
 
 This module controls a [Switec X.27](http://www.jukenswisstech.com/?page_id=103) (or compatible) instrument stepper motor. These are the 
 stepper motors that are used in modern automotive instrument clusters. They are incredibly cheap
