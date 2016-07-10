@@ -103,7 +103,7 @@ void nodemcu_init(void)
     espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
 #endif
 
-#if defined ( BUILD_SPIFFS )
+#ifdef BUILD_SPIFFS
     if (!fs_mount()) {
         // Failed to mount -- try reformat
 	c_printf("Formatting file system. Please wait...\n");

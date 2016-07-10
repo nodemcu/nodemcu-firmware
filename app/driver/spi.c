@@ -1,5 +1,12 @@
 #include "driver/spi.h"
 
+typedef union {
+    uint32 word[2];
+    uint64 dword;
+} spi_buf_t;
+
+static uint32_t spi_clkdiv[2];
+
 
 /******************************************************************************
  * FunctionName : spi_lcd_mode_init
@@ -60,6 +67,45 @@ void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
 }
 
 /******************************************************************************
+ * FunctionName : spi_set_clkdiv
+ * Description  : Set the clock divider
+ * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                uint32 clock_div - new clock divider
+ * Returns      : uint32 - previous clock divider
+*******************************************************************************/
+uint32_t spi_set_clkdiv(uint8 spi_no, uint32_t clock_div)
+{
+	uint32_t tmp_clkdiv;
+
+	if (spi_no > 1) return 0; //handle invalid input number
+	tmp_clkdiv = spi_clkdiv[spi_no];
+
+	if (clock_div > 1) {
+		uint8 i, k;
+		i = (clock_div / 40) ? (clock_div / 40) : 1;
+		k = clock_div / i;
+		WRITE_PERI_REG(SPI_CLOCK(spi_no),
+			       (((i - 1) & SPI_CLKDIV_PRE) << SPI_CLKDIV_PRE_S) |
+			       (((k - 1) & SPI_CLKCNT_N) << SPI_CLKCNT_N_S) |
+			       ((((k + 1) / 2 - 1) & SPI_CLKCNT_H) << SPI_CLKCNT_H_S) |
+			       (((k - 1) & SPI_CLKCNT_L) << SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
+	} else {
+		WRITE_PERI_REG(SPI_CLOCK(spi_no), SPI_CLK_EQU_SYSCLK); // 80Mhz speed
+	}
+
+	if(spi_no==SPI){
+		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005 | (clock_div <= 1 ? 0x100 : 0));
+	}
+	else if(spi_no==HSPI){
+		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105 | (clock_div <= 1 ? 0x200 : 0)); 
+	}
+
+	spi_clkdiv[spi_no] = clock_div;
+
+	return tmp_clkdiv;
+}
+
+/******************************************************************************
  * FunctionName : spi_master_init
  * Description  : SPI master initial function for common byte units transmission
  * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
@@ -96,33 +142,58 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 	//clear Dual or Quad lines transmission mode
 	CLEAR_PERI_REG_MASK(SPI_CTRL(spi_no), SPI_QIO_MODE|SPI_DIO_MODE|SPI_DOUT_MODE|SPI_QOUT_MODE);
 
-	if (clock_div > 1) {
-		uint8 i, k;
-		i = (clock_div / 40) ? (clock_div / 40) : 1;
-		k = clock_div / i;
-		WRITE_PERI_REG(SPI_CLOCK(spi_no),
-			       (((i - 1) & SPI_CLKDIV_PRE) << SPI_CLKDIV_PRE_S) |
-			       (((k - 1) & SPI_CLKCNT_N) << SPI_CLKCNT_N_S) |
-			       ((((k + 1) / 2 - 1) & SPI_CLKCNT_H) << SPI_CLKCNT_H_S) |
-			       (((k - 1) & SPI_CLKCNT_L) << SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
-	} else {
-		WRITE_PERI_REG(SPI_CLOCK(spi_no), SPI_CLK_EQU_SYSCLK); // 80Mhz speed
-	}
+	spi_set_clkdiv(spi_no, clock_div);
 
 	if(spi_no==SPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005 | (clock_div <= 1 ? 0x100 : 0));
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
 	}
 	else if(spi_no==HSPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105 | (clock_div <= 1 ? 0x200 : 0)); 
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 2);//configure io to spi mode	
 	}
+}
+
+void spi_mast_byte_order(uint8 spi_no, uint8 order)
+{
+    if(spi_no > 1)
+        return;
+
+    if (order == SPI_ORDER_MSB) {
+	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_RD_BYTE_ORDER | SPI_WR_BYTE_ORDER);
+    } else if (order == SPI_ORDER_LSB) {
+	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_RD_BYTE_ORDER | SPI_WR_BYTE_ORDER);
+    }
+}
+
+/******************************************************************************
+ * FunctionName : spi_mast_blkset
+ * Description  : Copy a block of data to the MOSI FIFO
+ * Parameters   : uint8  spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                size_t bitlen - number of bits to copy, multiple of 8
+ *                uint8  *data  - pointer to data buffer
+*******************************************************************************/
+void spi_mast_blkset(uint8 spi_no, size_t bitlen, const uint8 *data)
+{
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
+    os_memcpy((void *)SPI_W0(spi_no), (const void *)data, bitlen >> 3);
+}
+
+/******************************************************************************
+ * FunctionName : spi_mast_blkget
+ * Description  : Copy a block of data from the MISO FIFO
+ * Parameters   : uint8  spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *                size_t bitlen - number of bits to copy, multiple of 8
+ *                uint8  *data  - pointer to data buffer
+*******************************************************************************/
+void spi_mast_blkget(uint8 spi_no, size_t bitlen, uint8 *data)
+{
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
+    os_memcpy((void *)data, (void *)SPI_W0(spi_no), bitlen >> 3);
 }
 
 /******************************************************************************
@@ -137,48 +208,36 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 *******************************************************************************/
 void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
 {
-    uint8  wn, wn_offset, wn_bitlen;
-    uint32 wn_data;
+    uint8     wn, shift;
+    spi_buf_t spi_buf;
 
     if (spi_no > 1)
         return; // handle invalid input number
     if (bitlen > 32)
         return; // handle invalid input number
 
-    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
-
     // determine which SPI_Wn register is addressed
     wn = offset >> 5;
-    if (wn > 15)
+    if (wn > 15) {
         return; // out of range
-    wn_offset = offset & 0x1f;
-    if (32 - wn_offset < bitlen)
-    {
-        // splitting required
-        wn_bitlen = 32 - wn_offset;
-        wn_data   = data >> (bitlen - wn_bitlen);
-    }
-    else
-    {
-        wn_bitlen = bitlen;
-        wn_data   = data;
     }
 
-    do
-    {
-        // write payload data to SPI_Wn
-        SET_PERI_REG_BITS(REG_SPI_BASE(spi_no) +0x40 + wn*4, BIT(wn_bitlen) - 1, wn_data, 32 - (wn_offset + wn_bitlen));
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
 
-        // prepare writing of dangling data part
-        wn += 1;
-        wn_offset = 0;
-        if (wn <= 15)
-            bitlen -= wn_bitlen;
-        else
-            bitlen = 0; // force abort
-        wn_bitlen = bitlen;
-        wn_data   = data;
-    } while (bitlen > 0);
+    // transfer Wn to buf
+    spi_buf.word[1] = READ_PERI_REG(SPI_W0(spi_no) + wn*4);
+    if (wn < 15) {
+        spi_buf.word[0] = READ_PERI_REG(SPI_W0(spi_no) + (wn+1)*4);
+    }
+
+    shift = 64 - (offset & 0x1f) - bitlen;
+    spi_buf.dword &= ~((1ULL << bitlen)-1 << shift);
+    spi_buf.dword |= (uint64)data << shift;
+
+    if (wn < 15) {
+       WRITE_PERI_REG(SPI_W0(spi_no) + (wn+1)*4, spi_buf.word[0]);
+    }
+    WRITE_PERI_REG(SPI_W0(spi_no) + wn*4, spi_buf.word[1]);
 
     return;
 }
@@ -194,46 +253,30 @@ void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
 *******************************************************************************/
 uint32 spi_mast_get_miso(uint8 spi_no, uint16 offset, uint8 bitlen)
 {
-    uint8  wn, wn_offset, wn_bitlen;
-    uint32 wn_data = 0;
+    uint8     wn;
+    spi_buf_t spi_buf;
+    uint32    result;
 
     if (spi_no > 1)
         return 0; // handle invalid input number
-
-    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
 
     // determine which SPI_Wn register is addressed
     wn = offset >> 5;
     if (wn > 15)
         return 0; // out of range
-    wn_offset = offset & 0x1f;
 
-    if (bitlen > (32 - wn_offset))
-    {
-        // splitting required
-        wn_bitlen = 32 - wn_offset;
-    }
-    else
-    {
-        wn_bitlen = bitlen;
+    while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
+
+    // transfer Wn to buf
+    spi_buf.word[1] = READ_PERI_REG(SPI_W0(spi_no) + wn*4);
+    if (wn < 15) {
+        spi_buf.word[0] = READ_PERI_REG(SPI_W0(spi_no) + (wn+1)*4);
     }
 
-    do
-    {
-        wn_data |= (READ_PERI_REG(REG_SPI_BASE(spi_no) +0x40 + wn*4) >> (32 - (wn_offset + wn_bitlen))) & (BIT(wn_bitlen) - 1);
+    result = (uint32)(spi_buf.dword >> (64 - ((offset & 0x1f) + bitlen)));
+    result &= (1UL << bitlen)-1;
 
-        // prepare reading of dangling data part
-        wn_data <<= bitlen - wn_bitlen;
-        wn += 1;
-        wn_offset = 0;
-        if (wn <= 15)
-            bitlen -= wn_bitlen;
-        else
-            bitlen = 0; // force abort
-        wn_bitlen = bitlen;
-    } while (bitlen > 0);
-
-    return wn_data;
+    return result;
 }
 
 /******************************************************************************

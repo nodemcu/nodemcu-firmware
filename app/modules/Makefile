@@ -52,6 +52,7 @@ INCLUDES += -I ../spiffs
 INCLUDES += -I ../smart
 INCLUDES += -I ../cjson
 INCLUDES += -I ../dhtlib
+INCLUDES += -I ../fatfs
 INCLUDES += -I ../http
 INCLUDES += -I ../websocket
 PDIR := ../$(PDIR)

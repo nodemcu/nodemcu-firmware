@@ -4,7 +4,7 @@
 
 #include "user_config.h"
 
-#if defined( BUILD_SPIFFS )
+#ifdef BUILD_SPIFFS
 
 #include "myspiffs.h"
 

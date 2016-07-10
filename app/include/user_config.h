@@ -68,8 +68,10 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 //#define MD2_ENABLE
 #define SHA2_ENABLE
 
-#define BUILD_SPIFFS	1
+#define BUILD_SPIFFS
 #define SPIFFS_CACHE 1
+
+//#define BUILD_FATFS
 
 // Uncomment this next line for fastest startup 
 // It reduces the format time dramatically

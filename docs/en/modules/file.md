@@ -9,6 +9,38 @@ The file system is a flat file system, with no notion of directories/folders.
 
 Only one file can be open at any given time.
 
+Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card.
+
+```lua
+-- open file in flash:
+file.open("init.lua")
+print(file.read())
+file.close()
+
+-- or with full pathspec
+file.open("FLASH:init.lua")
+
+-- open file on SD card
+file.open("SD0:somefile.txt")
+print(file.read())
+file.close()
+```
+
+## file.chdrive()
+
+Change current drive. This will be used when no drive identifier is prepended to filenames.
+
+Current drive defaults to internal SPIFFS (`FLASH:`) after system start.
+
+#### Syntax
+`file.chdrive(ldrv)`
+
+#### Parameters
+`ldrv` name of the logical drive - `FLASH:`, `SD0:`, `SD1:`, etc.
+
+#### Returns
+`true` on success, `false` otherwise
+
 ## file.close()
 
 Closes the open file, if any.
@@ -91,6 +123,8 @@ file.close()
 
 Format the file system. Completely erases any existing file system and writes a new one. Depending on the size of the flash chip in the ESP, this may take several seconds.
 
+Not supported for SD cards.
+
 #### Syntax
 `file.format()`
 
@@ -106,6 +140,8 @@ none
 ## file.fscfg ()
 
 Returns the flash address and physical size of the file system area, in bytes.
+
+Not supported for SD cards.
 
 #### Syntax
 `file.fscfg()`
@@ -125,6 +161,8 @@ print(string.format("0x%x", file.fscfg()))
 ## file.fsinfo()
 
 Return size information for the file system, in bytes.
+
+Not supported for SD cards.
 
 #### Syntax
 `file.fsinfo()`
@@ -164,6 +202,28 @@ l = file.list();
 for k,v in pairs(l) do
   print("name:"..k..", size:"..v)
 end
+```
+
+## file.mount()
+
+Mounts a FatFs volume on SD card.
+
+Not supported for internal flash.
+
+#### Syntax
+`file.mount(ldrv[, pin])`
+
+#### Parameters
+- `ldrv` name of the logical drive, `SD0:`, `SD1:`, etc.
+- `pin` 1~12, IO index for SS/CS, defaults to 8 if omitted.
+
+#### Returns
+Volume object
+
+#### Example
+```lua
+vol = file.mount("SD0:")
+vol:umount()
 ```
 
 ## file.open()
