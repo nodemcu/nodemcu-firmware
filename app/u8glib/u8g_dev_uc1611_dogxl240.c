@@ -43,8 +43,17 @@
 
 
 static const uint8_t u8g_dev_uc1611_dogxl240_init_seq[] PROGMEM = {
+  U8G_ESC_CS(0),             /* disable chip */
+  U8G_ESC_ADR(0),           /* instruction mode */
+  U8G_ESC_RST(1),           /* do reset low pulse with (1*16)+2 milliseconds */
+  U8G_ESC_DLY(200),
   U8G_ESC_CS(1),             // enable chip
   U8G_ESC_ADR(0),           // instruction mode
+  
+  0xe2,	// system reset
+  U8G_ESC_DLY(1),
+  0x2f,	// enable internal charge pump
+  
   0xF1,     // set last COM electrode
   0x7F,     // DOGXL240
   0xF2,     // set display start line
@@ -96,16 +105,16 @@ static uint8_t u8g_dev_uc1611_dogxl240_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t ms
       u8g_SetAddress(u8g, dev, 1);     /* data mode */
       if ( u8g_pb_WriteBuffer(pb, u8g, dev) == 0 )
         return 0;
-      u8g_SetChipSelect(u8g, dev, 1);
+      u8g_SetChipSelect(u8g, dev, 0);
       }
       break;
     case U8G_DEV_MSG_CONTRAST:
-      u8g_SetChipSelect(u8g, dev, 0);
+      u8g_SetChipSelect(u8g, dev, 1);
       u8g_SetAddress(u8g, dev, 0);          /* instruction mode */
       u8g_WriteByte(u8g, dev, 0x81);
       /* 11 Jul 2015: bugfix, github issue 339 */
       u8g_WriteByte(u8g, dev, (*(uint8_t *)arg) );	/* set contrast from, keep gain at 0 */
-      u8g_SetChipSelect(u8g, dev, 1);
+      u8g_SetChipSelect(u8g, dev, 0);
       return 1;
   }
   return u8g_dev_pb8v1_base_fn(u8g, dev, msg, arg);

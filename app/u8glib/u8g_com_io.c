@@ -65,6 +65,83 @@ uint8_t u8g_Pin(uint8_t port, uint8_t bitpos)
   return port;
 }
 
+#if defined(__AVR_XMEGA__)
+
+const IO_PTR u8g_avr_ddr_P[] PROGMEM = {
+#ifdef PORTA
+  &PORTA.DIR,
+#else
+  0,
+#endif
+  &PORTB.DIR,
+#ifdef PORTC
+  &PORTC.DIR,
+#ifdef PORTD
+  &PORTD.DIR,
+#ifdef PORTE
+  &PORTE.DIR,
+#ifdef PORTF
+  &PORTF.DIR,
+#ifdef PORTR
+  &PORTR.DIR,
+#endif
+#endif
+#endif
+#endif
+#endif
+};
+
+
+const IO_PTR u8g_avr_port_P[] PROGMEM = {
+#ifdef PORTA
+  &PORTA.OUT,
+#else
+  0,
+#endif
+  &PORTB.OUT,
+#ifdef PORTC
+  &PORTC.OUT,
+#ifdef PORTD
+  &PORTD.OUT,
+#ifdef PORTE
+  &PORTE.OUT,
+#ifdef PORTF
+  &PORTF.OUT,
+#ifdef PORTR
+  &PORTR.OUT,
+#endif
+#endif
+#endif
+#endif
+#endif
+};
+
+const IO_PTR u8g_avr_pin_P[] PROGMEM = {
+#ifdef PORTA
+  &PORTA.IN,
+#else
+  0,
+#endif
+  &PORTB.IN,
+#ifdef PORTC
+  &PORTC.IN,
+#ifdef PORTD
+  &PORTD.IN,
+#ifdef PORTE
+  &PORTE.IN,
+#ifdef PORTF
+  &PORTF.IN,
+#ifdef PORTR
+  &PORTR.IN,
+#endif
+#endif
+#endif
+#endif
+#endif
+};
+
+
+#else
 const IO_PTR u8g_avr_ddr_P[] PROGMEM = {
 #ifdef DDRA
   &DDRA,
@@ -146,6 +223,7 @@ const IO_PTR u8g_avr_pin_P[] PROGMEM = {
 #endif
 #endif
 };
+#endif
 
 static volatile uint8_t *u8g_get_avr_io_ptr(const IO_PTR *base, uint8_t offset)
 {

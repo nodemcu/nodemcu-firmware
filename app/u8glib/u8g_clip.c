@@ -62,7 +62,7 @@
 #define U8G_ALWAYS_INLINE __inline__ __attribute__((always_inline))
 #else
 #define U8G_ALWAYS_INLINE
- #endif 
+#endif 
 
 /*
   intersection assumptions:

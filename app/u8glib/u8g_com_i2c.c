@@ -67,8 +67,8 @@ uint8_t u8g_i2c_get_err_pos(void)
 }
 
 
-
-#if defined(__AVR__)
+#if defined(__AVR_XMEGA__)
+#elif defined(__AVR__)
 
 static void u8g_i2c_set_error(uint8_t code, uint8_t pos)
 {

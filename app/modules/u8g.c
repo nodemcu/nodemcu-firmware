@@ -238,6 +238,19 @@ static int lu8g_getMode( lua_State *L )
     return 1;
 }
 
+// Lua: u8g.setContrast( self, constrast )
+static int lu8g_setContrast( lua_State *L )
+{
+    lu8g_userdata_t *lud;
+
+    if ((lud = get_lud( L )) == NULL)
+        return 0;
+
+    u8g_SetContrast( LU8G, luaL_checkinteger( L, 2 ) );
+
+    return 0;
+}
+
 // Lua: u8g.setColorIndex( self, color )
 static int lu8g_setColorIndex( lua_State *L )
 {
@@ -1086,6 +1099,7 @@ static const LUA_REG_TYPE lu8g_display_map[] = {
   { LSTRKEY( "getStrWidth" ),                  LFUNCVAL( lu8g_getStrWidth ) },
   { LSTRKEY( "getWidth" ),                     LFUNCVAL( lu8g_getWidth ) },
   { LSTRKEY( "nextPage" ),                     LFUNCVAL( lu8g_nextPage ) },
+  { LSTRKEY( "setContrast" ),                  LFUNCVAL( lu8g_setContrast ) },
   { LSTRKEY( "setColorIndex" ),                LFUNCVAL( lu8g_setColorIndex ) },
   { LSTRKEY( "setDefaultBackgroundColor" ),    LFUNCVAL( lu8g_setDefaultBackgroundColor ) },
   { LSTRKEY( "setDefaultForegroundColor" ),    LFUNCVAL( lu8g_setDefaultForegroundColor ) },
