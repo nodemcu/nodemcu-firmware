@@ -1,4 +1,4 @@
-# **NodeMCU 1.5.1** #
+# **NodeMCU 1.5.4** #
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
@@ -7,7 +7,7 @@
 
 ### A Lua based firmware for ESP8266 WiFi SOC
 
-NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/). The firmware is based on the [Espressif NON-OS SDK 1.5.1](http://bbs.espressif.com/viewtopic.php?f=46&p=5315) and uses a file system based on [spiffs](https://github.com/pellepl/spiffs). The code repository consists of 98.1% C-code that glues the thin Lua veneer to the SDK.
+NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/). The firmware is based on the [Espressif NON-OS SDK 1.5.4](http://bbs.espressif.com/viewtopic.php?f=46&t=2198) and uses a file system based on [spiffs](https://github.com/pellepl/spiffs). The code repository consists of 98.1% C-code that glues the thin Lua veneer to the SDK.
 
 The NodeMCU *firmware* is a companion project to the popular [NodeMCU dev kits](https://github.com/nodemcu/nodemcu-devkit-v1.0), ready-made open source development boards with ESP8266-12E chips.
 
@@ -90,7 +90,7 @@ Edit `app/include/user_modules.h` and comment-out the `#define` statement for mo
 Identify your firmware builds by editing `app/include/user_version.h`
 
 ```c
-#define NODE_VERSION    "NodeMCU 1.5.1+myname"
+#define NODE_VERSION    "NodeMCU 1.5.4+myname"
 #ifndef BUILD_DATE
 #define BUILD_DATE      "YYYYMMDD"
 #endif
