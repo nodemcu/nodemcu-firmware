@@ -56,9 +56,9 @@ If upgrading from [SPIFFS](https://github.com/pellepl/spiffs) version 0.3.2 to 0
 
     It goes without saying that you shouldn't expect your NodeMCU 0.9.x Lua scripts to work error-free on a more recent firmware. Most notably Espressif changed the `socket:send` operation to be asynchronous i.e. non-blocking. See [API documentation](modules/net.md#netsocketsend) for details.
 
-If you flash a recent NodeMCU firmware for the first time, it's advisable that you get all accompanying files right. A typical case that often fails is when a module is upgraded from a 0.9.x firmware to the latest version built from the [NodeMCU build service](http://nodemcu-build.com). It might look like the brand new firmware is broken, but the reason for the missing Lua prompt is related to the big jump in SDK versions: Espressif changed the `esp_init_data_default.bin` for their devices along the way with the [SDK 1.4.0 release](http://bbs.espressif.com/viewtopic.php?f=46&t=1124). So things break when a NodeMCU firmware with SDK 1.4.0 or above is flashed to a module which contains old init data from a previous SDK.
+If you flash a recent NodeMCU firmware for the first time, it's advisable that you get all accompanying files right. A typical case that often fails is when a module is upgraded from a 0.9.x firmware to the latest version built from the [NodeMCU build service](http://nodemcu-build.com). It might look like the brand new firmware is broken, but the reason for the missing Lua prompt is related to the big jump in SDK versions: Espressif changes the `esp_init_data_default.bin` for their devices along the way with the SDK. So things break when a NodeMCU firmware with a certain SDK is flashed to a module which contains init data from a previous SDK.
 
-Download a recent SDK release, e.g. [esp_iot_sdk_v1.4.0_15_09_18.zip](http://bbs.espressif.com/download/file.php?id=838) or later and extract `esp_init_data_default.bin` from there. *Use this file together with the new firmware during flashing*.
+Download SDK 1.5.4 (http://bbs.espressif.com/download/file.php?id=1469) and extract `esp_init_data_default.bin` from there. *Use this file together with the new firmware during flashing*.
 
 **esptool**
 
