@@ -69,7 +69,7 @@ rtctime.dsleep_aligned(5*1000000, 3*1000000)
 
 ## rtctime.epoch2cal()
 
-Converts a Unix timestamp to calendar format.
+Converts a Unix timestamp to calendar format. Neither timezone nor DST correction is performed - the result is UTC time.
 
 #### Syntax
 `rtctime.epoch2cal(timestamp)`
