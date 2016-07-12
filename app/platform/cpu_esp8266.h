@@ -38,7 +38,8 @@
 #else
 #define FLASH_SEC_NUM 	0x80
 #endif
-#define SYS_PARAM_SEC_NUM 4
+// SDK 1.5.4.1 added 1 sector for rf_cal
+#define SYS_PARAM_SEC_NUM 5
 #define SYS_PARAM_SEC_START (FLASH_SEC_NUM - SYS_PARAM_SEC_NUM)
 
 #define INTERNAL_FLASH_SECTOR_SIZE      SPI_FLASH_SEC_SIZE

@@ -58,7 +58,7 @@ If upgrading from [SPIFFS](https://github.com/pellepl/spiffs) version 0.3.2 to 0
 
 If you flash a recent NodeMCU firmware for the first time, it's advisable that you get all accompanying files right. A typical case that often fails is when a module is upgraded from a 0.9.x firmware to the latest version built from the [NodeMCU build service](http://nodemcu-build.com). It might look like the brand new firmware is broken, but the reason for the missing Lua prompt is related to the big jump in SDK versions: Espressif changes the `esp_init_data_default.bin` for their devices along the way with the SDK. So things break when a NodeMCU firmware with a certain SDK is flashed to a module which contains init data from a previous SDK.
 
-Download SDK 1.5.4 (http://bbs.espressif.com/download/file.php?id=1469) and extract `esp_init_data_default.bin` from there. *Use this file together with the new firmware during flashing*.
+Download SDK patch 1.5.4.1 (http://bbs.espressif.com/download/file.php?id=1572) and extract `esp_init_data_default.bin` from there. *Use this file together with the new firmware during flashing*.
 
 **esptool**
 
