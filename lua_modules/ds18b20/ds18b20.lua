@@ -74,7 +74,8 @@ function readNumber(addr, unit)
     ow.reset_search(pin)
   end
   if(addr == nil) then
-    return result
+  -- return result
+    return "Not found any sensor"
   end
   crc = ow.crc8(string.sub(addr,1,7))
   if (crc == addr:byte(8)) then
@@ -83,7 +84,7 @@ function readNumber(addr, unit)
       ow.reset(pin)
       ow.select(pin, addr)
       ow.write(pin, 0x44, 1)
-      -- tmr.delay(1000000)
+      tmr.delay(750000)
       present = ow.reset(pin)
       ow.select(pin, addr)
       ow.write(pin,0xBE,1)
@@ -102,11 +103,17 @@ function readNumber(addr, unit)
           t = t - 65536
         end
 
-		if (addr:byte(1) == 0x28) then
-		  t = t * 625  -- DS18B20, 4 fractional bits
-		else
-		  t = t * 5000 -- DS18S20, 1 fractional bit
-		end
+        if (addr:byte(1) == 0x28) then
+          t = t * 625  -- DS18B20, 4 fractional bits
+        else
+          -- t = t * 5000 -- DS18S20, 1 fractional bit
+          t = 1000 * (bit.rshift(t, 1))
+          t = t - 250
+          local h = 1000 * (data:byte(8) - data:byte(7))
+          h = h / data:byte(8)
+          t = t + h
+          t = t * 10
+        end
 
         if(unit == nil or unit == 'C') then
           -- do nothing
@@ -115,17 +122,22 @@ function readNumber(addr, unit)
         elseif(unit == 'K') then
           t = t + 2731500
         else
-          return nil
+        -- return nil
+          return "Unknown unit"
         end
         t = t / 10000
         return t
+      else
+        result = "Data CRC is not valid"
       end
       tmr.wdclr()
     else
     -- print("Device family is not recognized.")
+      result = "Device family is not recognized."
     end
   else
   -- print("CRC is not valid!")
+    result = "Address CRC is not valid"
   end
   return result
 end
