@@ -55,7 +55,7 @@ static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int
   cfg->phys_addr = (cfg->phys_addr + align - 1) & ~(align - 1);
 #endif
 #ifdef SPIFFS_SIZE_1M_BOUNDARY
-  cfg->phys_size = ((0x100000 - 16384 - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1)) & 0xfffff;
+  cfg->phys_size = ((0x100000 - (SYS_PARAM_SEC_NUM * INTERNAL_FLASH_SECTOR_SIZE) - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1)) & 0xfffff;
 #else
   cfg->phys_size = (INTERNAL_FLASH_SIZE - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1);
 #endif

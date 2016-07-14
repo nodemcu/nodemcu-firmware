@@ -42,6 +42,8 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include "spiffs.h"
+#define NO_CPU_ESP8266_INCLUDE
+#include "../platform/cpu_esp8266.h"
 
 static spiffs fs;
 static uint8_t *flash;
@@ -267,7 +269,7 @@ int main (int argc, char *argv[])
       if (!flashsize || !used) {
 	die("Missing flashSize or Used");
       }
-      sz = flashsize - used - 4 * 4096;   // This leaves space for the parameter area
+      sz = flashsize - used - SYS_PARAM_SEC_NUM * 4096;   // This leaves space for the parameter area
       if (sz < 0x4000) {
 	die("Not enough space");
       }
@@ -276,7 +278,7 @@ int main (int argc, char *argv[])
       } else {
 	used = (used + 0x1fff) & ~0x1fff;
       }
-      sz = flashsize - used - 4 * 4096;
+      sz = flashsize - used - SYS_PARAM_SEC_NUM * 4096;
     }
     sz &= ~(0x1fff);
 
