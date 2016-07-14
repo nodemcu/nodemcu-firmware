@@ -9,7 +9,7 @@ The rtcfifo module implements a first-in,first-out storage intended for sensor r
 - Values are limited to 16 bits of precision, but have a separate field for storing an E<sup>-n</sup> multiplier. This allows for high fidelity even when working with very small values. The effective range is thus 1E<sup>-7</sup> to 65535.
 - Sensor names are limited to a maximum of 4 characters.
 
-!!! note "Important:"
+!!! important
 
 	This module uses two sets of RTC memory slots, 10-20 for its control block, and a variable number of slots for samples and sensor names. By default these span 32-127, but this is configurable. Slots are claimed when [`rtcfifo.prepare()`](#rtcfifoprepare) is called.
 

@@ -15,7 +15,7 @@ To enable this module, it needs to be given a reference time at least once (via 
 
 Note that while the rtctime module can keep time across deep sleeps, it *will* lose the time if the module is unexpectedly reset.
 
-!!! note "Important:"
+!!! important
 
     This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
 

@@ -26,7 +26,7 @@ is on the step. Then this point can be set as zero. It is important not to let t
 run into the endstops during normal operation as this will make the pointing inaccurate. 
 This module does not enforce any range limiting.
 
-!!! note "Note:"
+!!! important
 
     This module uses the hardware timer interrupt and hence it cannot be used at the same time as the PWM module. Both modules can be compiled into the same firmware image, but an application can only use one. It may be possible for an application to alternate between `switec` and `pwm`, but care must be taken.
 

@@ -1,6 +1,6 @@
 Adafruit provides a really nice [firmware flashing tutorial](https://learn.adafruit.com/building-and-running-micropython-on-the-esp8266/flash-firmware). Below you'll find just the basics for the two popular tools esptool and NodeMCU Flasher.
 
-!!! note "Note:"
+!!! attention
 
     Keep in mind that the ESP8266 needs to be [put into flash mode](#putting-device-into-flash-mode) before you can flash a new firmware!
 
@@ -52,7 +52,7 @@ If upgrading from [SPIFFS](https://github.com/pellepl/spiffs) version 0.3.2 to 0
 
 ## Upgrading from SDK 0.9.x Firmware
 
-!!! note "Note:"
+!!! important
 
     It goes without saying that you shouldn't expect your NodeMCU 0.9.x Lua scripts to work error-free on a more recent firmware. Most notably Espressif changed the `socket:send` operation to be asynchronous i.e. non-blocking. See [API documentation](modules/net.md#netsocketsend) for details.
 
