@@ -28,6 +28,8 @@ local string = string
 local ow = ow
 -- Timer module
 local tmr = tmr
+-- bit module
+local bit = bit
 -- Limited to local environment
 setfenv(1,M)
 --------------------------------------------------------------------------------
