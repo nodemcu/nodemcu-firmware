@@ -1,10 +1,10 @@
-Adafruit provides a really nice [firmware flashing tutorial](https://learn.adafruit.com/building-and-running-micropython-on-the-esp8266/flash-firmware). Below you'll find just the basics for the two popular tools esptool and NodeMCU Flasher.
+Adafruit provides a really nice [firmware flashing tutorial](https://learn.adafruit.com/building-and-running-micropython-on-the-esp8266/flash-firmware). Below you'll find just the basics for three popular tools: esptool.py, esptool-ck and NodeMCU Flasher.
 
 !!! attention
 
     Keep in mind that the ESP8266 needs to be [put into flash mode](#putting-device-into-flash-mode) before you can flash a new firmware!
 
-## esptool
+## esptool.py
 > A cute Python utility to communicate with the ROM bootloader in Espressif ESP8266. It is intended to be a simple, platform independent, open source replacement for XTCOM.
 
 Source: [https://github.com/themadinventor/esptool](https://github.com/themadinventor/esptool)
@@ -15,12 +15,32 @@ Supported platforms: OS X, Linux, Windows, anything that runs Python
 
 Run the following command to flash an *aggregated* binary as is produced for example by the [cloud build service](build.md#cloud-build-service) or the [Docker image](build.md#docker-image).
 
-`esptool.py --port <USB-port-with-ESP8266> write_flash -fm <mode> -fs <size> 0x00000 <nodemcu-firmware>.bin`
+`esptool.py --port <serial-port-of-ESP8266> write_flash -fm <mode> -fs <size> 0x00000 <nodemcu-firmware>.bin`
 
 - `mode` is `qio` for 512&nbsp;kByte modules and `dio` for 4&nbsp;MByte modules (`qio` might work as well, YMMV).
 - `size` is given in bits. Specify `4m` for 512&nbsp;kByte and `32m` for 4&nbsp;MByte.
 
 Check the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for details and other options.
+
+## esptool-ck
+> Esptool reads the compiled program in ELF format, extracts code and data sections, and either dumps a section to a file or assembles the firmware file from several segments. Esptool also communicates with the bootloader to upload firmware files to flash. Esptool can automatically put the board into UART bootloader mode using a variety of methods.
+
+Source: [https://github.com/igrr/esptool-ck](https://github.com/igrr/esptool-ck)
+
+Supported platforms: Windows, OS X, Linux, or any other POSIX compatible OS with a C compiler. If you're a Windows or Linux user, you can also [download the binary release here](https://github.com/igrr/esptool-ck/releases).
+
+Run the following command to flash an *aggregated* binary image.
+
+`esptool -cd nodemcu -cp <serial-port-of-ESP8266> -bm <mode> -bz <size> -ca 0x00000 -cf <nodemcu-firmware>.bin`
+
+- `mode` is `qio` for 512&nbsp;kByte modules and `dio` for 4&nbsp;MByte modules.
+- `size` is given in bytes, not in bits.
+
+See the [README](https://github.com/igrr/esptool-ck/blob/master/README.md) for details and other command line options.
+
+!!! attention
+
+    Both the [esptool.py](https://github.com/themadinventor/esptool)(initially created by Fredrik Ahlberg in Python) and the [esptool-ck](https://github.com/igrr/esptool-ck)(authored by Christian Klippel in C) call their own project 'esptool'. Don't confuse these two projects, as they have different command line options and flash size representations.
 
 ## NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
@@ -60,11 +80,18 @@ If you flash a recent NodeMCU firmware for the first time, it's advisable that y
 
 Download SDK 1.5.4 (http://bbs.espressif.com/download/file.php?id=1469) and extract `esp_init_data_default.bin` from there. *Use this file together with the new firmware during flashing*.
 
-**esptool**
+**esptool.py**
 
-For [esptool](https://github.com/themadinventor/esptool) you specify another file to download at the command line.
+For [esptool.py](https://github.com/themadinventor/esptool) you specify another file to download at the command line.
 ```
 esptool.py write_flash <flash options> 0x00000 <nodemcu-firmware>.bin 0x7c000 esp_init_data_default.bin
+```
+
+**esptool-ck**
+
+For [esptool-ck](https://github.com/igrr/esptool-ck) you can use `-ca` and `-cf` options in pair to specify multiple files.
+```
+esptool <flash options> -ca 0x00000 <nodemcu-firmware>.bin -ca 0x7c000 -cf esp_init_data_default.bin
 ```
 
 !!! note "Note:"
