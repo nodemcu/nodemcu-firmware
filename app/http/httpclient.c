@@ -233,6 +233,22 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 	HTTPCLIENT_DEBUG( "Sending request header\n" );
 }
 
+static void http_free_req( request_args_t * req)
+{
+	if (req->buffer) {
+		os_free( req->buffer );
+	}
+	if (req->post_data) {
+		os_free( req->post_data );
+	}
+	if (req->headers) {
+		os_free( req->headers );
+	}
+	os_free( req->hostname );
+	os_free( req->method );
+	os_free( req->path );
+	os_free( req );
+}
 
 static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 {
@@ -301,19 +317,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 		{
 			req->callback_handle( body, http_status, req->buffer );
 		}
-		if (req->buffer) {
-			os_free( req->buffer );
-		}
-		if (req->post_data) {
-			os_free( req->post_data );
-		}
-		if (req->headers) {
-			os_free( req->headers );
-		}
-		os_free( req->hostname );
-		os_free( req->method );
-		os_free( req->path );
-		os_free( req );
+		http_free_req( req );
 	}
 	/* Fix memory leak. */
 	espconn_delete( conn );
@@ -360,7 +364,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		{
 			req->callback_handle( "", -1, "" );
 		}
-		os_free( req );
+		http_free_req( req );
 	}
 	else  
 	{
