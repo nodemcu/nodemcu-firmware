@@ -302,7 +302,13 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			req->callback_handle( body, http_status, req->buffer );
 		}
 		if (req->buffer) {
-		  os_free( req->buffer );
+			os_free( req->buffer );
+		}
+		if (req->post_data) {
+			os_free( req->post_data );
+		}
+		if (req->headers) {
+			os_free( req->headers );
 		}
 		os_free( req->hostname );
 		os_free( req->method );
