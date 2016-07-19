@@ -179,11 +179,12 @@ static void add_table_item (lua_State *L, const char *key, int val)
   lua_rawset (L, -3);
 }
 
-// rtctime.unix2date (stamp)
+// rtctime.epoch2cal (stamp)
 static int rtctime_epoch2cal (lua_State *L)
 {
   struct rtc_tm date;
   int32_t stamp = luaL_checkint (L, 1);
+  luaL_argcheck (L, stamp >= 0, 1, "wrong arg range");
 
   rtctime_gmtime (stamp, &date);
 
