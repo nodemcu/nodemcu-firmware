@@ -396,17 +396,6 @@ static int ws2812_buffer_size(lua_State* L) {
   return 1;
 }
 
-static int ws2812_buffer_write(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
-
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
-
-  // Send the buffer
-  ws2812_write_data(buffer->values, buffer->colorsPerLed*buffer->size, 0, 0);
-
-  return 0;
-}
-
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
   { LSTRKEY( "fade" ),    LFUNCVAL( ws2812_buffer_fade )},
@@ -415,7 +404,6 @@ static const LUA_REG_TYPE ws2812_buffer_map[] =
   { LSTRKEY( "set" ),     LFUNCVAL( ws2812_buffer_set )},
   { LSTRKEY( "size" ),    LFUNCVAL( ws2812_buffer_size )},
   { LSTRKEY( "shift" ),   LFUNCVAL( ws2812_buffer_shift )},
-  { LSTRKEY( "write" ),   LFUNCVAL( ws2812_buffer_write )},
   { LSTRKEY( "__index" ), LROVAL( ws2812_buffer_map )},
   { LNILKEY, LNILVAL}
 };
