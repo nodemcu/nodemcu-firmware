@@ -16,7 +16,7 @@ Creates a client.
 `net.createConnection(type, secure)`
 
 #### Parameters
-- `type` `net.TCP` or `net.UDP`
+- `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
 - `secure` 1 for encrypted, 0 for plain. Secure connections chained to [tls.createConnection()](tls#tlscreateconnection)
 
 #### Returns
@@ -29,7 +29,7 @@ net.createConnection(net.TCP, 0)
 ```
 
 #### See also
-[`net.createServer()`](#netcreateserver), [`tls.createConnection()`](tls#tlscreateconnection)
+[`net.createServer()`](#netcreateserver), [`net.createUDPSocket()`](#netcreateudpsocket), [`tls.createConnection()`](tls#tlscreateconnection)
 
 ## net.createServer()
 
@@ -39,7 +39,7 @@ Creates a server.
 `net.createServer(type, timeout)`
 
 #### Parameters
-- `type` `net.TCP` or `net.UDP`
+- `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
 - `timeout` for a TCP server timeout is 1~28'800 seconds (for an inactive client to be disconnected)
 
 #### Returns
@@ -50,6 +50,22 @@ net.server sub module
 ```lua
 net.createServer(net.TCP, 30) -- 30s timeout
 ```
+
+#### See also
+[`net.createConnection()`](#netcreateconnection), [`net.createUDPSocket()`](#netcreateudpsocket)
+
+## net.createUDPSocket()
+
+Creates an UDP socket.
+
+#### Syntax
+`net.createUDPSocket()`
+
+#### Parameters
+none
+
+#### Returns
+net.udpsocket sub module
 
 #### See also
 [`net.createConnection()`](#netcreateconnection)
@@ -113,10 +129,10 @@ sv:close()
 Listen on port from IP address.
 
 #### Syntax
-`net.server.listen(port,[ip],function(net.socket))`
+`net.server.listen([port],[ip],function(net.socket))`
 
 #### Parameters
-- `port` port number
+- `port` port number, can be omitted (random port will be chosen)
 - `ip` IP address string, can be omitted
 - `function(net.socket)` callback function, pass to caller function as param if a connection is created successfully
 
@@ -145,19 +161,22 @@ end
 #### See also
 [`net.createServer()`](#netcreateserver)
 
-## net.server:on()
+## net.server:getaddr()
 
-UDP server only: Register callback functions for specific events.
+Returns server local address/port.
+
+#### Syntax
+`net.server.getaddr()`
+
+#### Parameters
+none
+
+#### Returns
+`port`, `ip` (or `nil, nil` if not listening)
 
 #### See also
-[`net.socket:on()`](#netsocketon)
+[`net.server:listen()`](#netserverlisten)
 
-## net.server:send()
-
-UDP server only: Sends data to remote peer.
-
-#### See also
-[`net.socket:send()`](#netsocketsend)
 
 # net.socket Module
 ## net.socket:close()
@@ -231,6 +250,20 @@ none
 - `ip` of peer
 - `port` of peer
 
+## net.socket:getaddr()
+
+Retrieve local port and ip of socket.
+
+#### Syntax
+`getpeer()`
+
+#### Parameters
+none
+
+#### Returns
+- `ip` of socket
+- `port` of socket
+
 ## net.socket:hold()
 
 Throttle data reception by placing a request to block the TCP receive function. This request is not effective immediately, Espressif recommends to call it while reserving 5*1460 bytes of memory.
@@ -256,7 +289,16 @@ Register callback functions for specific events.
 
 #### Parameters
 - `event` string, which can be "connection", "reconnection", "disconnection", "receive" or "sent"
-- `function(net.socket[, string])` callback function. The first parameter is the socket. If event is "receive", the second parameter is the received data as string.
+- `function(net.socket[, string])` callback function. Can be `nil` to remove callback.
+
+The first parameter of callback is the socket.
+
+- If event is "receive", the second parameter is the received data as string.
+- If event is "disconnection" or "reconnection", the second parameter is error code.
+
+If reconnection event is specified, disconnection receives only "normal close" events.
+
+Otherwise, all connection errors (with normal close) passed to disconnection event.
 
 #### Returns
 `nil`
@@ -265,11 +307,11 @@ Register callback functions for specific events.
 ```lua
 srv = net.createConnection(net.TCP, 0)
 srv:on("receive", function(sck, c) print(c) end)
-srv:connect(80,"192.168.0.66")
 srv:on("connection", function(sck, c)
   -- Wait for connection before sending.
   sck:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 end)
+srv:connect(80,"192.168.0.66")
 ```
 
 #### See also
@@ -362,6 +404,44 @@ none
 
 #### See also
 [`net.socket:hold()`](#netsockethold)
+
+# net.udpsocket Module
+
+## net.udpsocket:close()
+
+Closes UDP socket.
+
+The syntax and functional identical to [`net.socket:close()`](#netsocketclose).
+
+## net.udpsocket:listen()
+
+Listen on port from IP address.
+
+The syntax and functional similar to [`net.server:listen()`](#netserverlisten), but callback parameter is not provided.
+
+## net.udpsocket:on()
+
+Register callback functions for specific events.
+
+The syntax and functional similar to [`net.socket:on()`](#netsocketon), only "received", "sent" and "dns" events is valid.
+
+**`received` callback have `port` and `ip` after `data` argument.**
+
+## net.udpsocket:send()
+
+Sends data to specific remote peer.
+
+## net.udpsocket:dns()
+
+Provides DNS resolution for a hostname.
+
+The syntax and functional identical to [`net.socket:dns()`](#netsocketdns).
+
+## net.udpsocket:getaddr()
+
+Retrieve local port and ip of socket.
+
+The syntax and functional identical to [`net.socket:getaddr()`](#netsocketgetaddr).
 
 # net.dns Module
 
