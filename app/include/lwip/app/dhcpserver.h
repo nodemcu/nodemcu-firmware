@@ -7,6 +7,7 @@ typedef struct dhcps_state{
         sint16_t state;
 } dhcps_state;
 
+//#define DHCP_OPTIONS_HARDCODE
 // ����dhcpclient�Զ����һ��DHCP msg�ṹ��
 typedef struct dhcps_msg {
         uint8_t op, htype, hlen, hops;
@@ -19,7 +20,13 @@ typedef struct dhcps_msg {
         uint8_t chaddr[16];
         uint8_t sname[64];
         uint8_t file[128];
-        uint8_t options[312];
+
+
+#ifdef DHCP_OPTIONS_HARDCODE
+        uint8_t options[532]; // 312
+#else
+        uint8_t *options;
+#endif
 }dhcps_msg;
 
 #ifndef LWIP_OPEN_SRC

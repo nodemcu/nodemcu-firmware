@@ -13,6 +13,8 @@
 
 #include "user_interface.h"
 
+#include "../libc/c_stdio.h"
+
 #ifdef MEMLEAK_DEBUG
 static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #endif
@@ -34,6 +36,7 @@ static uint8 offer = 0xFF;
 static bool renew = false;
 #define DHCPS_LEASE_TIME_DEF	(120)
 uint32 dhcps_lease_time = DHCPS_LEASE_TIME_DEF;  //minute
+u16_t optionsLen;
 /******************************************************************************
  * FunctionName : node_insert_to_list
  * Description  : insert the node to the list
@@ -290,7 +293,13 @@ static void ICACHE_FLASH_ATTR send_offer(struct dhcps_msg *m)
         end = add_offer_options(end);
         end = add_end(end);
 
+#ifdef DHCP_OPTIONS_HARDCODE
 	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg), PBUF_RAM);
+
+#else
+	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg) + optionsLen, PBUF_RAM);
+#endif
+
 #if DHCPS_DEBUG
 		os_printf("udhcp: send_offer>>p->ref = %d\n", p->ref);
 #endif
@@ -356,7 +365,13 @@ static void ICACHE_FLASH_ATTR send_nak(struct dhcps_msg *m)
         end = add_msg_type(&m->options[4], DHCPNAK);
         end = add_end(end);
 
+#ifdef DHCP_OPTIONS_HARDCODE
 	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg), PBUF_RAM);
+
+#else
+	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg) + optionsLen, PBUF_RAM);
+#endif
+
 #if DHCPS_DEBUG
 		os_printf("udhcp: send_nak>>p->ref = %d\n", p->ref);
 #endif
@@ -422,8 +437,12 @@ static void ICACHE_FLASH_ATTR send_ack(struct dhcps_msg *m)
         end = add_msg_type(&m->options[4], DHCPACK);
         end = add_offer_options(end);
         end = add_end(end);
-	    
+#ifdef DHCP_OPTIONS_HARDCODE
 	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg), PBUF_RAM);
+
+#else
+	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg) + optionsLen, PBUF_RAM);
+#endif
 #if DHCPS_DEBUG
 		os_printf("udhcp: send_ack>>p->ref = %d\n", p->ref);
 #endif
@@ -574,57 +593,27 @@ static uint8_t ICACHE_FLASH_ATTR parse_options(uint8_t *optptr, sint16_t len)
 ///////////////////////////////////////////////////////////////////////////////////
 static sint16_t ICACHE_FLASH_ATTR parse_msg(struct dhcps_msg *m, u16_t len)
 {
-		if(os_memcmp((char *)m->options,
-              &magic_cookie,
-              sizeof(magic_cookie)) == 0){
+		if(os_memcmp((char *)m->options,&magic_cookie,sizeof(magic_cookie)) == 0)
+		{
 #if DHCPS_DEBUG
         	os_printf("dhcps: len = %d\n", len);
 #endif
-	        /*
-         	 * ��¼��ǰ��xid���ﴦ���?
-         	 * �˺�ΪDHCP�ͻ����������û�ͳһ��ȡIPʱ��
-         	*/
-//	        if((old_xid[0] == 0) &&
-//	           (old_xid[1] == 0) &&
-//	           (old_xid[2] == 0) &&
-//	           (old_xid[3] == 0)){
-//	            /*
-//	             * old_xidδ��¼�κ����?
-//	             * �϶��ǵ�һ��ʹ��
-//	            */
-//	            os_memcpy((char *)old_xid, (char *)m->xid, sizeof(m->xid));
-//	        }else{
-//	            /*
-//	             * ���δ����DHCP msg��Я���xid���ϴμ�¼�Ĳ�ͬ��
-//	             * �϶�Ϊ��ͬ��DHCP�ͻ��˷��ͣ���ʱ����Ҫ����Ŀͻ���IP
-//	             * ���� 192.168.4.100(0x6404A8C0) <--> 192.168.4.200(0xC804A8C0)
-//	             *
-//	            */
-//	            if(os_memcmp((char *)old_xid, (char *)m->xid, sizeof(m->xid)) != 0){
-	                /*
-                 	 * ��¼���ε�xid�ţ�ͬʱ�����IP����
-                 	*/
-	                struct ip_addr addr_tmp;    
-//	                os_memcpy((char *)old_xid, (char *)m->xid, sizeof(m->xid));
 
-//	                {
+	                struct ip_addr addr_tmp;    
+
 						struct dhcps_pool *pdhcps_pool = NULL;
 						list_node *pnode = NULL;
 						list_node *pback_node = NULL;
 						struct ip_addr first_address;
 						bool flag = false;
 
-//						POOL_START:
 						first_address.addr = dhcps_lease.start_ip.addr;
 						client_address.addr = client_address_plus.addr;
 						renew = false;
-//							addr_tmp.addr =  htonl(client_address_plus.addr);
-//							addr_tmp.addr++;
-//							client_address_plus.addr = htonl(addr_tmp.addr);
+
 						for (pback_node = plist; pback_node != NULL;pback_node = pback_node->pnext) {
 							pdhcps_pool = pback_node->pnode;
 							if (os_memcmp(pdhcps_pool->mac, m->chaddr, sizeof(pdhcps_pool->mac)) == 0){
-//									os_printf("the same device request ip\n");
 								if (os_memcmp(&pdhcps_pool->ip.addr, m->ciaddr, sizeof(pdhcps_pool->ip.addr)) == 0) {
 								    renew = true;
 								}
@@ -633,8 +622,6 @@ static sint16_t ICACHE_FLASH_ATTR parse_msg(struct dhcps_msg *m, u16_t len)
 								pnode = pback_node;
 								goto POOL_CHECK;
 							} else if (pdhcps_pool->ip.addr == client_address_plus.addr){
-//									client_address.addr = client_address_plus.addr;
-//									os_printf("the ip addr has been request\n");
 								addr_tmp.addr = htonl(client_address_plus.addr);
 								addr_tmp.addr++;
 								client_address_plus.addr = htonl(addr_tmp.addr);
@@ -685,45 +672,46 @@ static sint16_t ICACHE_FLASH_ATTR parse_msg(struct dhcps_msg *m, u16_t len)
 						        pnode = NULL;
 						    }
 
-						    if (pdhcps_pool != NULL) {
+						    if (pdhcps_pool != NULL)
+						    {
 						        os_free(pdhcps_pool);
 						        pdhcps_pool = NULL;
 						    }
-//							client_address_plus.addr = dhcps_lease.start_ip.addr;
 							return 4;
 						}
 
-						sint16_t ret = parse_options(&m->options[4], len);;
+						sint16_t ret = parse_options(&m->options[4], len);
 
-						if(ret == DHCPS_STATE_RELEASE) {
-						    if(pnode != NULL) {
+						if(ret == DHCPS_STATE_RELEASE)
+						{
+						    if(pnode != NULL)
+						    {
 						        node_remove_from_list(&plist,pnode);
 						        os_free(pnode);
 						        pnode = NULL;
 						    }
 
-						    if (pdhcps_pool != NULL) {
+						    if (pdhcps_pool != NULL)
+						    {
 						        os_free(pdhcps_pool);
 						        pdhcps_pool = NULL;
 						    }
 						    os_memset(&client_address,0x0,sizeof(client_address));
 						}
 
-						if (wifi_softap_set_station_info(m->chaddr, &client_address) == false) {
+						if (wifi_softap_set_station_info(m->chaddr, &client_address) == false)
+						{
 						    return 0;
 						}
-//	                }
 
 #if DHCPS_DEBUG
 	                os_printf("dhcps: xid changed\n");
 	                os_printf("dhcps: client_address.addr = %x\n", client_address.addr);
 #endif
-	               
-//	            }
-	            
-//	        }
+
 	        return ret;
 	    }
+
         return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////////
@@ -750,6 +738,8 @@ static void ICACHE_FLASH_ATTR handle_dhcp(void *arg,
 	    u16_t dhcps_msg_cnt = 0;
 	    u8_t *p_dhcps_msg = NULL;
 	    u8_t *data = NULL;
+	    u16_t dhcp_header_len = 0;
+	    u16_t j = 0;
 
 #if DHCPS_DEBUG
     	os_printf("dhcps: handle_dhcp-> receive a packet\n");
@@ -757,20 +747,55 @@ static void ICACHE_FLASH_ATTR handle_dhcp(void *arg,
 	    if (p==NULL) return;
 
 	    pmsg_dhcps = (struct dhcps_msg *)os_zalloc(sizeof(struct dhcps_msg));
-	    if (NULL == pmsg_dhcps){
+
+	    if (NULL == pmsg_dhcps)
+	    {
 	    	pbuf_free(p);
 	    	return;
 	    }
+
 	    p_dhcps_msg = (u8_t *)pmsg_dhcps;
 		tlen = p->tot_len;
-	    data = p->payload;
+		data = p->payload;
+
+#ifndef DHCP_OPTIONS_HARDCODE
+	    optionsLen = tlen;
+	    pmsg_dhcps->options = (u8_t*) os_zalloc(optionsLen * sizeof(u8_t));
+
+	    if( pmsg_dhcps->options == NULL )
+	    {
+	    	os_free(pmsg_dhcps);
+	    	pbuf_free(p);
+	    	return;
+	    }
+	    dhcp_header_len = sizeof(dhcps_msg) - sizeof(pmsg_dhcps->options);
+#endif
+
+
 
 #if DHCPS_DEBUG
 	    os_printf("dhcps: handle_dhcp-> p->tot_len = %d\n", tlen);
 	    os_printf("dhcps: handle_dhcp-> p->len = %d\n", p->len);
-#endif		
+#endif
+#ifndef DHCP_OPTIONS_HARDCODE
+	    for(i = 0; i < dhcp_header_len; i++)
+	    	p_dhcps_msg[i] = data[i];
 
-	    for(i=0; i<p->len; i++){
+	    for( j = 0; j < (p->len - dhcp_header_len); j++ )
+	       	pmsg_dhcps->options[j] = data[i++];
+
+	    if( p->next != NULL )
+	    {
+	    	data = p->next->payload;
+			for(i = 0; i < p->next->len; i++)
+				pmsg_dhcps->options[j++] = data[i];
+	    }
+
+
+#else
+
+	    for(i=0; i< p->len; i++)
+	    {
 	        p_dhcps_msg[dhcps_msg_cnt++] = data[i];
 #if DHCPS_DEBUG					
 			os_printf("%02x ",data[i]);
@@ -779,8 +804,10 @@ static void ICACHE_FLASH_ATTR handle_dhcp(void *arg,
 			}
 #endif
 	    }
-		
-		if(p->next != NULL) {
+
+
+		if(p->next != NULL)
+		{
 #if DHCPS_DEBUG
 	        os_printf("dhcps: handle_dhcp-> p->next != NULL\n");
 	        os_printf("dhcps: handle_dhcp-> p->next->tot_len = %d\n",p->next->tot_len);
@@ -788,7 +815,8 @@ static void ICACHE_FLASH_ATTR handle_dhcp(void *arg,
 #endif
 			
 	        data = p->next->payload;
-	        for(i=0; i<p->next->len; i++){
+	        for(i=0; i<p->next->len; i++)
+	        {
 	            p_dhcps_msg[dhcps_msg_cnt++] = data[i];
 #if DHCPS_DEBUG					
 				os_printf("%02x ",data[i]);
@@ -798,17 +826,17 @@ static void ICACHE_FLASH_ATTR handle_dhcp(void *arg,
 #endif
 			}
 		}
-
+#endif
 		/*
 	     * DHCP �ͻ���������Ϣ����
 	    */
 #if DHCPS_DEBUG
     	os_printf("dhcps: handle_dhcp-> parse_msg(p)\n");
 #endif
-		
-        switch(parse_msg(pmsg_dhcps, tlen - 240)) {
-
+        switch(parse_msg(pmsg_dhcps, tlen - 240))
+        {
 	        case DHCPS_STATE_OFFER://1
+
 #if DHCPS_DEBUG            
             	 os_printf("dhcps: handle_dhcp-> DHCPD_STATE_OFFER\n");
 #endif			
@@ -833,6 +861,9 @@ static void ICACHE_FLASH_ATTR handle_dhcp(void *arg,
     	os_printf("dhcps: handle_dhcp-> pbuf_free(p)\n");
 #endif
         pbuf_free(p);
+#ifndef DHCP_OPTIONS_HARDCODE
+        os_free(pmsg_dhcps->options);
+#endif
         os_free(pmsg_dhcps);
         pmsg_dhcps = NULL;
 }
