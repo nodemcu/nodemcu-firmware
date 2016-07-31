@@ -11,13 +11,7 @@ Basic HTTP *client* module that provides an interface to do GET/POST/PUT/DELETE 
 
 Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 10 seconds).
 
-For each operation it is also possible to include custom headers. Note that following headers *can not* be overridden however:
-
-- Host
-- Connection
-- User-Agent
-
-The `Host` header is taken from the URL itself, the `Connection` is always set to `close`, and the `User-Agent` is `ESP8266`.
+For each operation it is possible to provide custom HTTP headers or override standard headers. By default the `Host` header is deduced from the URL and `User-Agent` is `ESP8266`. Note, however, that the `Connection` header *can not* be overridden! It is always set to `close`.
 
 **SSL/TLS support**
 
