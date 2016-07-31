@@ -1036,7 +1036,7 @@ T: Table returned by event.
 	- `SSID`: SSID of access point.  
 	- `BSSID`: BSSID of access point.  
 	- `channel`: The channel the access point is on.  
-- `wifi.eventmon.STA_DISCONNECT`: Station was disconnected from access point.  
+- `wifi.eventmon.STA_DISCONNECTED`: Station was disconnected from access point.  
 	- `SSID`: SSID of access point.  
 	- `BSSID`: BSSID of access point.  
 	- `REASON`: See [wifi.eventmon.reason](#wifieventmonreason) below.  
