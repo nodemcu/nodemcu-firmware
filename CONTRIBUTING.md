@@ -34,6 +34,8 @@ If you also want to verify that all is well with your Markdown files you can ins
 
 A note on Markdown *syntax*. As Mkdocs is Python-based it's no surprise it uses a [Python Markdown implementation](https://pythonhosted.org/Markdown/). The good news is that it sticks pretty closely to John Gruber's Markdown and also [supports tables and fenced code blocks](http://www.mkdocs.org/user-guide/writing-your-docs/#markdown-extensions) just like GitHub does.
 
+A collection of doc-writing hints and tips is maintained on the [wiki](https://github.com/nodemcu/nodemcu-firmware/wiki/Notes-about-writing-docs).
+
 If you're interested in some NodeMCU history you're welcome to read [issue #774](https://github.com/nodemcu/nodemcu-firmware/issues/774)
 
 ## Working with Git and GitHub

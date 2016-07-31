@@ -97,9 +97,9 @@ Refer to [Serial Peripheral Interface Bus](https://en.wikipedia.org/wiki/Serial_
 	- `spi.CPHA_LOW`
 	- `spi.CPHA_HIGH`
 - `databits` number of bits per data item 1 - 32
-- `clock_div` SPI clock divider, f(SPI) = f(CPU) / `clock_div`
+- `clock_div` SPI clock divider, f(SPI) = 80 MHz / `clock_div`, 1 .. n (0 defaults to divider 8)
 - `duplex_mode` duplex mode
-	-  `spi.HALFDUPLEX` (default when omitted)
+	- `spi.HALFDUPLEX` (default when omitted)
 	- `spi.FULLDUPLEX`
 
 #### Returns

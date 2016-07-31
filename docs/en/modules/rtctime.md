@@ -15,7 +15,7 @@ To enable this module, it needs to be given a reference time at least once (via 
 
 Note that while the rtctime module can keep time across deep sleeps, it *will* lose the time if the module is unexpectedly reset.
 
-!!! note "Important:"
+!!! important
 
     This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
 
@@ -65,6 +65,34 @@ For applications where it is necessary to take samples with high regularity, thi
 ```lua
 -- sleep at least 3 seconds, then wake up on the next 5-second boundary
 rtctime.dsleep_aligned(5*1000000, 3*1000000)
+```
+
+## rtctime.epoch2cal()
+
+Converts a Unix timestamp to calendar format. Neither timezone nor DST correction is performed - the result is UTC time.
+
+#### Syntax
+`rtctime.epoch2cal(timestamp)`
+
+#### Parameters
+`timestamp` seconds since Unix epoch
+
+#### Returns
+A table containing the fields:
+
+- `year` 1970 ~ 2038
+- `mon` month 1 ~ 12 in current year
+- `day` day 1 ~ 31 in current month
+- `hour`
+- `min`
+- `sec`
+- `yday` day 1 ~ 366 in current year
+- `wday` day 1 ~ 7 in current weak (Sunday is 1)
+
+#### Example
+```lua
+tm = rtctime.epoch2cal(rtctime.get())
+print(string.format("%04d/%02d/%02d %02d:%02d:%02d", tm["year"], tm["mon"], tm["day"], tm["hour"], tm["min"], tm["sec"]))
 ```
 
 ## rtctime.get()

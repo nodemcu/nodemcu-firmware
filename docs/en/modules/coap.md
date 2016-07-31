@@ -6,10 +6,12 @@
 The CoAP module provides a simple implementation according to [CoAP](http://tools.ietf.org/html/rfc7252) protocol.
 The basic endpoint server part is based on [microcoap](https://github.com/1248/microcoap), and many other code reference [libcoap](https://github.com/obgm/libcoap).
 
-This module implements both the client and the server side. GET/PUT/POST/DELETE is partially supported by the client. Server can register Lua functions and varibles. No observe or discover supported yet.
+This module implements both the client and the server side. GET/PUT/POST/DELETE is partially supported by the client. Server can register Lua functions and variables. No observe or discover supported yet.
 
-## Caution
-This module is only in the very early stage and not complete yet.
+!!! caution
+
+    This module is only in the very early stages and not complete yet.
+
 
 ## Constants
 Constants for various functions.

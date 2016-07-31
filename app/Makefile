@@ -24,7 +24,7 @@ SPECIAL_MKTARGETS=$(APP_MKTARGETS)
 SUBDIRS= 					\
 	user 					\
 	driver 					\
-	json 					\
+	pcm					\
 	platform 				\
 	libc 					\
 	lua 					\
@@ -70,7 +70,7 @@ LD_FILE = $(LDDIR)/nodemcu.ld
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
 	driver/libdriver.a 			\
-	json/libjson.a 				\
+	pcm/pcm.a				\
 	platform/libplatform.a 			\
 	task/libtask.a 				\
 	libc/liblibc.a 				\
@@ -116,7 +116,6 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-lwpa 					\
 	-lwpa2					\
 	-lmain 					\
-	-ljson 					\
 	-lsmartconfig 				\
 	-lssl 					\
 	-lcrypto				\

@@ -12,11 +12,10 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-
-GEN_LIBS = libjson.a
-
+GEN_LIBS = pcm.a
 endif
 
+STD_CFLAGS=-std=gnu11 -Wimplicit
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -41,6 +40,8 @@ endif
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
+INCLUDES += -I ../lua
+INCLUDES += -I ../libc
+INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
-

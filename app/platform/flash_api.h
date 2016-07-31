@@ -80,6 +80,9 @@ typedef struct
         SIZE_32MBIT = 4,
         SIZE_16MBIT_8M_8M = 5,
         SIZE_32MBIT_8M_8M = 6,
+        SIZE_32MBIT_16M_16M = 7,
+        SIZE_64MBIT = 8,
+        SIZE_128MBIT = 9,
     } size : 4;
     uint32_t entry_point;
     uint32_t memory_offset;
@@ -100,9 +103,6 @@ bool flash_rom_set_size_byte(uint32_t);
 uint16_t flash_rom_get_sec_num(void);
 uint8_t flash_rom_get_mode(void);
 uint32_t flash_rom_get_speed(void);
-bool flash_init_data_written(void);
-bool flash_init_data_default(void);
-bool flash_init_data_blank(void);
 uint8_t byte_of_aligned_array(const uint8_t* aligned_array, uint32_t index);
 uint16_t word_of_aligned_array(const uint16_t *aligned_array, uint32_t index);
 // uint8_t flash_rom_get_checksum(void);

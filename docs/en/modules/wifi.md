@@ -45,7 +45,7 @@ The WiFi mode, as one of the `wifi.STATION`, `wifi.SOFTAP`, `wifi.STATIONAP` or 
 Gets WiFi physical mode.
 
 #### Syntax
-`wifi.getpymode()`
+`wifi.getphymode()`
 
 #### Parameters
 none
@@ -66,6 +66,8 @@ Configures the WiFi mode to use. NodeMCU can run in one of four WiFi modes:
 - WiFi off
 
 When using the combined Station + AP mode, the same channel will be used for both networks as the radio can only listen on a single channel.
+
+NOTE: WiFi Mode configuration will be retained until changed even if device is turned off. 
 
 #### Syntax
 `wifi.setmode(mode)`
@@ -155,7 +157,7 @@ Intended for use with SmartConfig apps, such as Espressif's [Android & iOS app](
 
 Only usable in `wifi.STATION` mode.
 
-!!! note "Note:"
+!!! important
 
     SmartConfig is disabled by default and can be enabled by setting `WIFI_SMART_ENABLE` in [`user_config.h`](https://github.com/nodemcu/nodemcu-firmware/blob/dev/app/include/user_config.h#L96) before you build the firmware.
 
@@ -227,6 +229,8 @@ wifi.sta.autoconnect(1)
 ## wifi.sta.config()
 
 Sets the WiFi station configuration.
+
+NOTE: Station configuration will be retained until changed even if device is turned off. 
 
 #### Syntax
 `wifi.sta.config(ssid, password[, auto[, bssid]])`
@@ -622,7 +626,7 @@ Gets MAC address in station mode.
 none
 
 #### Returns
-MAC address as string e.g. "18-33-44-FE-55-BB"
+MAC address as string e.g. "18:fe:34:a2:d7:34"
 
 #### See also
 [`wifi.sta.getip()`](#wifistagetip)
@@ -726,18 +730,20 @@ Gets the current status in station mode.
 #### Returns
 number： 0~5
 
-- 0: STATION_IDLE,
-- 1: STATION_CONNECTING,
-- 2: STATION_WRONG_PASSWORD,
-- 3: STATION_NO_AP_FOUND,
-- 4: STATION_CONNECT_FAIL,
-- 5: STATION_GOT_IP.
+- 0: STA_IDLE,
+- 1: STA_CONNECTING,
+- 2: STA_WRONGPWD,
+- 3: STA_APNOTFOUND,
+- 4: STA_FAIL,
+- 5: STA_GOTIP.
 
 # wifi.ap Module
 
 ## wifi.ap.config()
 
-Sets SSID and password in AP mode. Be sure to make the password at least 8 characters long! If you don't it will default to *no* password and not set the SSID! It will still work as an access point but use a default SSID like e.g. ESP_9997C3.
+Sets SSID and password in AP mode. Be sure to make the password at least 8 characters long! If you don't it will default to *no* password and not set the SSID! It will still work as an access point but use a default SSID like e.g. NODE-9997C3.
+
+NOTE: SoftAP Configuration will be retained until changed even if device is turned off. 
 
 #### Syntax
 `wifi.ap.config(cfg)`
@@ -745,7 +751,7 @@ Sets SSID and password in AP mode. Be sure to make the password at least 8 chara
 #### Parameters
 - `ssid` SSID chars 1-32
 - `pwd` password chars 8-64
-- `auth` authentication  one of AUTH\_OPEN, AUTH\_WPA\_PSK, AUTH\_WPA2\_PSK, AUTH\_WPA\_WPA2\_PSK, default = AUTH\_OPEN
+- `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
 - `channel` channel number 1-14 default = 6
 - `hidden` 0 = not hidden, 1 = hidden, default 0
 - `max` maximal number of connections 1-4 default=4
@@ -1071,7 +1077,7 @@ T: Table returned by event.
  T.old_auth_mode.."\n\tnew_auth_mode: "..T.new_auth_mode) 
  end)
 
- wifi.eventmon.register(wifi.eventmon.stasgottipa_got_ip, function(T) 
+ wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(T) 
  print("\n\tSTA - GOT IP".."\n\tStation IP: "..T.IP.."\n\tSubnet mask: "..
  T.netmask.."\n\tGateway IP: "..T.gateway)
  end)

@@ -10,14 +10,16 @@ When compiled together with the [rtctime](rtctime.md) module it also offers seam
 
 ## sntp.sync()
 
-Attempts to obtain time synchronization.
+Attempts to obtain time synchronization. 
+
+For best results you may want to to call this periodically in order to compensate for internal clock drift. As stated in the [rtctime](rtctime.md) module documentation it's advisable to sync time after deep sleep and it's necessary to sync after module reset (add it to [`init.lua`](upload.md#initlua) after WiFi initialization).
 
 #### Syntax
 `sntp.sync([server_ip], [callback], [errcallback])`
 
 #### Parameters
 - `server_ip` if non-`nil`, that server is used. If `nil`, then the last contacted server is used. This ties in with the NTP anycast mode, where the first responding server is remembered for future synchronization requests. The easiest way to use anycast is to always pass nil for the server argument.
-- `callback` Iif provided it will be invoked on a successful synchronization, with three parameters: seconds, microseconds, and server. Note that when the [rtctime](rtctime.md) module is available, there is no need to explicitly call [`rtctime.set()`](rtctime.md#rtctimeset) - this module takes care of doing so internally automatically, for best accuracy.
+- `callback` if provided it will be invoked on a successful synchronization, with three parameters: seconds, microseconds, and server. Note that when the [rtctime](rtctime.md) module is available, there is no need to explicitly call [`rtctime.set()`](rtctime.md#rtctimeset) - this module takes care of doing so internally automatically, for best accuracy.
 - `errcallback` failure callback with a single integer parameter describing the type of error. The module automatically performs a number of retries before giving up and reporting the error. Error codes:
   - 1: DNS lookup failed
   - 2: Memory allocation failure

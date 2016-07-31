@@ -31,7 +31,7 @@ The current setting, true if manual mode is enabled, false if it is not.
 #### Example
 ```lua
 wifi.setmode(wifi.STATIONAP)
-wifi.ap.config({ssid="MyPersonalSSID",auth=wifi.AUTH_OPEN})
+wifi.ap.config({ssid="MyPersonalSSID", auth=wifi.OPEN})
 enduser_setup.manual(true)
 enduser_setup.start(
   function()

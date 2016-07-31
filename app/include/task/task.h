@@ -4,6 +4,7 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "os_type.h"
+#include "user_interface.h"
 
 /* use LOW / MEDIUM / HIGH since it isn't clear from the docs which is higher */
 

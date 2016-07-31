@@ -52,8 +52,9 @@ static int file_format( lua_State* L )
   file_close(L);
   if( !fs_format() )
   {
-    NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
+    NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
     NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+    luaL_error(L, "Failed to format file system");
   }
   else{
     NODE_ERR( "format done.\n" );
@@ -104,7 +105,7 @@ static int file_exists( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );    
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
 
   spiffs_stat stat;
   int rc = SPIFFS_stat(&fs, (char *)fname, &stat);
@@ -119,7 +120,7 @@ static int file_remove( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );    
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
   file_close(L);
   SPIFFS_remove(&fs, (char *)fname);
   return 0;  
@@ -156,10 +157,10 @@ static int file_rename( lua_State* L )
   }
 
   const char *oldname = luaL_checklstring( L, 1, &len );
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 1, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(oldname) == len, 1, "filename invalid");
   
   const char *newname = luaL_checklstring( L, 2, &len );  
-  luaL_argcheck(L, len <= FS_NAME_MAX_LENGTH, 2, "filename too long");
+  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(newname) == len, 2, "filename invalid");
 
   if(SPIFFS_OK==myspiffs_rename( oldname, newname )){
     lua_pushboolean(L, 1);
@@ -173,11 +174,13 @@ static int file_rename( lua_State* L )
 static int file_fsinfo( lua_State* L )
 {
   u32_t total, used;
-  SPIFFS_info(&fs, &total, &used);
+  if (SPIFFS_info(&fs, &total, &used)) {
+    return luaL_error(L, "file system failed");
+  }
   NODE_DBG("total: %d, used:%d\n", total, used);
   if(total>0x7FFFFFFF || used>0x7FFFFFFF || used > total)
   {
-    return luaL_error(L, "file system error");;
+    return luaL_error(L, "file system error");
   }
   lua_pushinteger(L, total-used);
   lua_pushinteger(L, used);

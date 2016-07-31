@@ -24,7 +24,7 @@ Read all kinds of DHT sensors, including DHT11, 21, 22, 33, 44 humidity temperat
 - `temp_dec` temperature decimal
 - `humi_dec` humidity decimal
 
-!!! note "Note:"
+!!! note
 
     If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
 
@@ -67,7 +67,7 @@ Read DHT11 humidity temperature combo sensor.
 - `temp_dec` temperature decimal
 - `humi_dec` humidity decimal
 
-!!! note "Note:"
+!!! note
 
     If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
 
@@ -90,7 +90,7 @@ Read all kinds of DHT sensors, except DHT11.
 - `temp_dec` temperature decimal
 - `humi_dec` humidity decimal
 
-!!! note "Note:"
+!!! note
 
     If using float firmware then `temp` and `humi` are floating point numbers. On an integer firmware, the final values have to be concatenated from `temp` and `temp_dec` / `humi` and `hum_dec`.
 

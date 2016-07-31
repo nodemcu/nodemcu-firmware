@@ -485,15 +485,20 @@ static int enduser_setup_http_load_payload(void)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload");
 
+  int err = (FS_OPEN_OK -1);
+  int err2 = (FS_OPEN_OK -1);
+  int file_len = 0;
   int f = fs_open(http_html_filename, fs_mode2flag("r"));
-  int err = fs_seek(f, 0, FS_SEEK_END);
-  int file_len = (int) fs_tell(f);
-  int err2 = fs_seek(f, 0, FS_SEEK_SET);
+  if (f >= FS_OPEN_OK) {
+      err = fs_seek(f, 0, FS_SEEK_END);
+      file_len = (int) fs_tell(f);
+      err2 = fs_seek(f, 0, FS_SEEK_SET);
+  }
 
   const char cl_hdr[] = "Content-length:%5d\r\n\r\n";
   const size_t cl_len = LITLEN(cl_hdr) + 3; /* room to expand %4d */
 
-  if (f == 0 || err == -1 || err2 == -1)
+  if (f < FS_OPEN_OK || err < FS_OPEN_OK || err2 < FS_OPEN_OK)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 
@@ -527,6 +532,7 @@ static int enduser_setup_http_load_payload(void)
   offset += LITLEN(http_header_200);
   offset += c_sprintf(state->http_payload_data + offset, cl_hdr, file_len);
   fs_read(f, &(state->http_payload_data[offset]), file_len);
+  fs_close(f);
 
   return 0;
 }
@@ -787,7 +793,7 @@ static void serve_status(struct tcp_pcb *conn)
     "Failed to connect to \"%s\" - Wrong password.",
     "Failed to connect to \"%s\" - Network not found.",
     "Failed to connect.",
-    "Connected to \"%s\"."
+    "Connected to \"%s\" (%s)."
   };
 
   const size_t num_states = sizeof(state)/sizeof(state[0]);
@@ -806,12 +812,25 @@ static void serve_status(struct tcp_pcb *conn)
         wifi_station_get_config(&config);
         config.ssid[31] = '\0';
 
+	struct ip_info ip_info;
+
+	wifi_get_ip_info(STATION_IF , &ip_info);
+
+	char ip_addr[16];
+	ip_addr[0] = '\0';
+	if (curr_state == STATION_GOT_IP)
+	{
+		c_sprintf (ip_addr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
+	}
+
+
         int state_len = c_strlen(s);
+        int ip_len = c_strlen(ip_addr);
         int ssid_len = c_strlen(config.ssid);
-        int status_len = state_len + ssid_len + 1;
+        int status_len = state_len + ssid_len + ip_len + 1;
         char status_buf[status_len];
         memset(status_buf, 0, status_len);
-        status_len = c_sprintf(status_buf, s, config.ssid);
+        status_len = c_sprintf(status_buf, s, config.ssid, ip_addr);
 
         int buf_len = sizeof(fmt) + status_len + 10; //10 = (9+1), 1 byte is '\0' and 9 are reserved for length field
         char buf[buf_len];
