@@ -58,7 +58,7 @@ Espressif changes the init data block (`esp_init_data_default.bin`) for their de
 
 A typical case that often fails is when a module is upgraded from a 0.9.x firmware to a recent version. It might look like the new firmware is broken, but the reason for the missing Lua prompt is related to the big jump in SDK versions.
 
-If there is no init data block found during SDK startup, the SDK will install one itself. If there is a previous (potentially too old init block), the SDK *probably* doesn't do anything with it but there is no documentation from Espressif on this topic.
+If there is no init data block found during SDK startup, the SDK will install one itself. If there is a previous (potentially too old) init block, the SDK *probably* doesn't do anything with it but there is no documentation from Espressif on this topic.
 
 Hence, there are two strategies to update the SDK init data:
 
