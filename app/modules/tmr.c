@@ -146,6 +146,7 @@ static int tmr_now(lua_State* L){
 }
 
 static timer_t tmr_get( lua_State *L, int stack ) {
+	// Deprecated: static 0-6 timers control by index.
 	luaL_argcheck(L, (lua_isuserdata(L, stack) || lua_isnumber(L, stack)), 1, "timer object or numerical ID expected");
 	if (lua_isuserdata(L, stack)) {
 		return (timer_t)luaL_checkudata(L, stack, "tmr.timer");

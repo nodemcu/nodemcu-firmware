@@ -11,6 +11,10 @@ What the tmr module is *not* however, is a time keeping module. While most timeo
 
 NodeMCU provides 7 static timers, numbered 0-6, and dynamic timer creation function [`tmr.create()`](#tmrcreate).
 
+!!! attention
+
+    Static timers are deprecated and will be removed later.
+
 ## tmr.alarm()
 
 This is a convenience function combining [`tmr.register()`](#tmrregister) and [`tmr.start()`](#tmrstart) into a single call.
