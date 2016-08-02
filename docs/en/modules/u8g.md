@@ -28,7 +28,7 @@ SPI only:
 - uc1611 - dogm240 and dogxl240 variants
 - uc1701 - dogs102 and mini12864 variants
 
-This integration is based on [v1.18.1](https://github.com/olikraus/U8glib_Arduino/releases/tag/1.18.1).
+This integration is based on [v1.19.1](https://github.com/olikraus/U8glib_Arduino/releases/tag/1.19.1).
 
 ## Overview
 ### I²C Connection
@@ -347,6 +347,9 @@ See [u8glib nextPage()](https://github.com/olikraus/u8glib/wiki/userreference#ne
 ## u8g.disp:setColorIndex()
 See [u8glib setColorIndex()](https://github.com/olikraus/u8glib/wiki/userreference#setcolortndex).
 
+## u8g.disp:setContrast()
+See [u8glib setContrast()](https://github.com/olikraus/u8glib/wiki/userreference#setcontrast).
+
 ## u8g.disp:setDefaultBackgroundColor()
 See [u8glib setDefaultBackgroundColor()](https://github.com/olikraus/u8glib/wiki/userreference#setdefaultbackgroundcolor).
 
@@ -437,7 +440,6 @@ See [u8glib undoScale()](https://github.com/olikraus/u8glib/wiki/userreference#u
 	- setCursorPos()
 	- setCursorStyle()
 - General functions
-	- setContrast()
 	- setPrintPos()
 	- setHardwareBackup()
 	- setRGB()

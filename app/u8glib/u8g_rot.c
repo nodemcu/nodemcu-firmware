@@ -40,7 +40,7 @@ uint8_t u8g_dev_rot90_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg);
 uint8_t u8g_dev_rot180_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg);
 uint8_t u8g_dev_rot270_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg);
 
-uint8_t u8g_dev_rot_dummy_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
+uint8_t u8g_dev_rot_dummy_fn(u8g_t *u8g, u8g_dev_t*dev, uint8_t msg, void *arg)
 {
   return 0;
 }
