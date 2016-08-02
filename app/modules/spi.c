@@ -39,8 +39,8 @@ static int spi_setup( lua_State *L )
     return luaL_error( L, "out of range" );
   }
 
-  if (clock_div < 4) {
-    // defaulting to 8
+  if (clock_div == 0) {
+    // defaulting to 8 for backward compatibility
     clock_div = 8;
   }
 

@@ -6,8 +6,17 @@
 #include "c_string.h"
 #include "user_interface.h"
 #include "driver/uart.h"
+#include "osapi.h"
 
 #define CANARY_VALUE 0x32383132
+#define MODE_SINGLE  0
+#define MODE_DUAL    1
+
+#define FADE_IN  1
+#define FADE_OUT 0
+#define SHIFT_LOGICAL  0
+#define SHIFT_CIRCULAR 1
+
 
 typedef struct {
   int canary;
@@ -16,14 +25,26 @@ typedef struct {
   uint8_t values[0];
 } ws2812_buffer;
 
-// Init UART1 to be able to stream WS2812 data
-// We use GPIO2 as output pin
-static void ws2812_init() {
+// Init UART1 to be able to stream WS2812 data to GPIO2 pin
+// If DUAL mode is selected, init UART0 to stream to TXD0 as well
+// You HAVE to redirect LUA's output somewhere else
+static void ws2812_init(lua_State* L) {
+  const int mode = luaL_optinteger(L, 1, MODE_SINGLE);
+  luaL_argcheck(L, mode == MODE_SINGLE || mode == MODE_DUAL, 1, "ws2812.SINGLE or ws2812.DUAL expected");
+
   // Configure UART1
   // Set baudrate of UART1 to 3200000
   WRITE_PERI_REG(UART_CLKDIV(1), UART_CLK_FREQ / 3200000);
   // Set UART Configuration No parity / 6 DataBits / 1 StopBits / Invert TX
   WRITE_PERI_REG(UART_CONF0(1), UART_TXD_INV | (1 << UART_STOP_BIT_NUM_S) | (1 << UART_BIT_NUM_S));
+
+  if (mode == MODE_DUAL) {
+    // Configure UART0
+    // Set baudrate of UART0 to 3200000
+    WRITE_PERI_REG(UART_CLKDIV(0), UART_CLK_FREQ / 3200000);
+    // Set UART Configuration No parity / 6 DataBits / 1 StopBits / Invert TX
+    WRITE_PERI_REG(UART_CONF0(0), UART_TXD_INV | (1 << UART_STOP_BIT_NUM_S) | (1 << UART_BIT_NUM_S));
+  }
 
   // Pull GPIO2 down
   platform_gpio_mode(4, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
@@ -39,12 +60,11 @@ static void ws2812_init() {
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
 }
 
-
 // Stream data using UART1 routed to GPIO2
 // ws2812.init() should be called first
 //
 // NODE_DEBUG should not be activated because it also uses UART1
-static void ICACHE_RAM_ATTR ws2812_write(uint8_t *pixels, uint32_t length) {
+static void ICACHE_RAM_ATTR ws2812_write_data(const uint8_t *pixels, uint32_t length, const uint8_t *pixels2, uint32_t length2) {
 
   // Data are sent LSB first, with a start bit at 0, an end bit at 1 and all inverted
   // 0b00110111 => 110111 => [0]111011[1] => 10001000 => 00
@@ -55,23 +75,33 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t *pixels, uint32_t length) {
   // But declared in ".data" section to avoid read penalty from FLASH
   static const __attribute__((section(".data._uartData"))) uint8_t _uartData[4] = { 0b00110111, 0b00000111, 0b00110100, 0b00000100 };
 
-  uint8_t *end = pixels + length;
+  const uint8_t *end  = pixels + length;
+  const uint8_t *end2 = pixels2 + length2;
 
   do {
-    uint8_t value = *pixels++;
+    // If something to send for first buffer and enough room
+    // in FIFO buffer (we wants to write 4 bytes, so less than
+    // 124 in the buffer)
+    if (pixels < end && (((READ_PERI_REG(UART_STATUS(1)) >> UART_TXFIFO_CNT_S) & UART_TXFIFO_CNT) <= 124)) {
+      uint8_t value = *pixels++;
 
-    // Wait enough space in the FIFO buffer
-    // (Less than 124 bytes in the buffer)
-    while (((READ_PERI_REG(UART_STATUS(1)) >> UART_TXFIFO_CNT_S) & UART_TXFIFO_CNT) > 124);
+      // Fill the buffer
+      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 6) & 3]);
+      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 4) & 3]);
+      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 2) & 3]);
+      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 0) & 3]);
+    }
+    // Same for the second buffer
+    if (pixels2 < end2 && (((READ_PERI_REG(UART_STATUS(0)) >> UART_TXFIFO_CNT_S) & UART_TXFIFO_CNT) <= 124)) {
+      uint8_t value = *pixels2++;
 
-    // Fill the buffer
-    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 6) & 3]);
-    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 4) & 3]);
-    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 2) & 3]);
-    WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 0) & 3]);
-
-  } while(pixels < end);
-
+      // Fill the buffer
+      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 6) & 3]);
+      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 4) & 3]);
+      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 2) & 3]);
+      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 0) & 3]);
+    }
+  } while(pixels < end || pixels2 < end2); // Until there is still something to send
 }
 
 // Lua: ws2812.write("string")
@@ -82,12 +112,63 @@ static void ICACHE_RAM_ATTR ws2812_write(uint8_t *pixels, uint32_t length) {
 // ws2812.write(string.char(0, 255, 0)) sets the first LED red.
 // ws2812.write(string.char(0, 0, 255):rep(10)) sets ten LEDs blue.
 // ws2812.write(string.char(255, 0, 0, 255, 255, 255)) first LED green, second LED white.
-static int ws2812_writegrb(lua_State* L) {
-  size_t length;
-  const char *values = luaL_checklstring(L, 1, &length);
+//
+// In DUAL mode 'ws2812.init(ws2812.DUAL)', you may pass a second string as parameter
+// It will be sent through TXD0 in parallel
+static int ws2812_write(lua_State* L) {
+  size_t length1, length2;
+  const char *buffer1, *buffer2;
 
-  // Send the buffer
-  ws2812_write((uint8_t*) values, length);
+  // First mandatory parameter
+  int type = lua_type(L, 1);
+  if (type == LUA_TNIL)
+  {
+    buffer1 = 0;
+    length1 = 0;
+  }
+  else if(type == LUA_TSTRING)
+  {
+    buffer1 = lua_tolstring(L, 1, &length1);
+  }
+  else if (type == LUA_TUSERDATA)
+  {
+    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+
+    buffer1 = buffer->values;
+    length1 = buffer->colorsPerLed*buffer->size;
+  }
+  else
+  {
+    luaL_argerror(L, 1, "ws2812.buffer or string expected");
+  }
+
+  // Second optionnal parameter
+  type = lua_type(L, 2);
+  if (type == LUA_TNONE || type == LUA_TNIL)
+  {
+    buffer2 = 0;
+    length2 = 0;
+  }
+  else if (type == LUA_TSTRING)
+  {
+    buffer2 = lua_tolstring(L, 2, &length2);
+  }
+  else if (type == LUA_TUSERDATA)
+  {
+    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 2);
+    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 2, "ws2812.buffer expected");
+
+    buffer2 = buffer->values;
+    length2 = buffer->colorsPerLed*buffer->size;
+  }
+  else
+  {
+    luaL_argerror(L, 2, "ws2812.buffer or string expected");
+  }
+
+  // Send the buffers
+  ws2812_write_data(buffer1, length1, buffer2, length2);
 
   return 0;
 }
@@ -151,19 +232,95 @@ static int ws2812_buffer_fill(lua_State* L) {
 static int ws2812_buffer_fade(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
   const int fade = luaL_checkinteger(L, 2);
+  unsigned direction = luaL_optinteger( L, 3, FADE_OUT );
 
   luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
 
   uint8_t * p = &buffer->values[0];
+  int val = 0;
   int i;
   for(i = 0; i < buffer->size * buffer->colorsPerLed; i++)
   {
-    *p++ /= fade;
+    if (direction == FADE_OUT)
+    {
+      *p++ /= fade;
+    }
+    else
+    {
+      // as fade in can result in value overflow, an int is used to perform the check afterwards
+      val = *p * fade;
+      if (val > 255) val = 255;
+      *p++ = val;
+    }
   }
 
   return 0;
 }
+
+
+static int ws2812_buffer_shift(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  const int shiftValue = luaL_checkinteger(L, 2);
+  const unsigned shift_type = luaL_optinteger( L, 3, SHIFT_LOGICAL );
+
+  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  luaL_argcheck(L, shiftValue > 0-buffer->size && shiftValue < buffer->size, 2, "shifting more elements than buffer size");
+
+  int shift = shiftValue >= 0 ? shiftValue : -shiftValue;
+
+  // check if we want to shift at all
+  if (shift == 0)
+  {
+    return 0;
+  }
+
+  uint8_t * tmp_pixels = luaM_malloc(L, buffer->colorsPerLed * sizeof(uint8_t) * shift);
+  int i,j;
+  size_t shift_len, remaining_len;
+  // calculate length of shift section and remaining section
+  shift_len = shift*buffer->colorsPerLed;
+  remaining_len = (buffer->size-shift)*buffer->colorsPerLed;
+
+  if (shiftValue > 0)
+  {
+    // Store the values which are moved out of the array (last n pixels)
+    c_memcpy(tmp_pixels, &buffer->values[(buffer->size-shift)*buffer->colorsPerLed], shift_len);
+    // Move pixels to end
+    os_memmove(&buffer->values[shift*buffer->colorsPerLed], &buffer->values[0], remaining_len);
+    // Fill beginning with temp data
+    if (shift_type == SHIFT_LOGICAL)
+    {
+      c_memset(&buffer->values[0], 0, shift_len);
+    }
+    else
+    {
+      c_memcpy(&buffer->values[0], tmp_pixels, shift_len);
+    }
+  }
+  else
+  {
+    // Store the values which are moved out of the array (last n pixels)
+    c_memcpy(tmp_pixels, &buffer->values[0], shift_len);
+    // Move pixels to end
+    os_memmove(&buffer->values[0], &buffer->values[shift*buffer->colorsPerLed], remaining_len);
+    // Fill beginning with temp data
+    if (shift_type == SHIFT_LOGICAL)
+    {
+      c_memset(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], 0, shift_len);
+    }
+    else
+    {
+      c_memcpy(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], tmp_pixels, shift_len);
+    }
+  }
+  // Free memory
+  luaM_free(L, tmp_pixels);
+
+  return 0;
+}
+
+
 
 static int ws2812_buffer_get(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
@@ -239,34 +396,29 @@ static int ws2812_buffer_size(lua_State* L) {
   return 1;
 }
 
-static int ws2812_buffer_write(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
-
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
-
-  // Send the buffer
-  ws2812_write(buffer->values, buffer->colorsPerLed*buffer->size);
-
-  return 0;
-}
-
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
-  { LSTRKEY( "fade" ),  LFUNCVAL( ws2812_buffer_fade )},
-  { LSTRKEY( "fill" ),  LFUNCVAL( ws2812_buffer_fill )},
-  { LSTRKEY( "get" ),   LFUNCVAL( ws2812_buffer_get )},
-  { LSTRKEY( "set" ),   LFUNCVAL( ws2812_buffer_set )},
-  { LSTRKEY( "size" ),  LFUNCVAL( ws2812_buffer_size )},
-  { LSTRKEY( "write" ), LFUNCVAL( ws2812_buffer_write )},
-  { LSTRKEY( "__index" ), LROVAL ( ws2812_buffer_map )},
+  { LSTRKEY( "fade" ),    LFUNCVAL( ws2812_buffer_fade )},
+  { LSTRKEY( "fill" ),    LFUNCVAL( ws2812_buffer_fill )},
+  { LSTRKEY( "get" ),     LFUNCVAL( ws2812_buffer_get )},
+  { LSTRKEY( "set" ),     LFUNCVAL( ws2812_buffer_set )},
+  { LSTRKEY( "size" ),    LFUNCVAL( ws2812_buffer_size )},
+  { LSTRKEY( "shift" ),   LFUNCVAL( ws2812_buffer_shift )},
+  { LSTRKEY( "__index" ), LROVAL( ws2812_buffer_map )},
   { LNILKEY, LNILVAL}
 };
 
 static const LUA_REG_TYPE ws2812_map[] =
 {
-  { LSTRKEY( "write" ), LFUNCVAL( ws2812_writegrb )},
-  { LSTRKEY( "newBuffer" ), LFUNCVAL( ws2812_new_buffer )},
-  { LSTRKEY( "init" ),     LFUNCVAL( ws2812_init )},
+  { LSTRKEY( "init" ),           LFUNCVAL( ws2812_init )},
+  { LSTRKEY( "newBuffer" ),      LFUNCVAL( ws2812_new_buffer )},
+  { LSTRKEY( "write" ),          LFUNCVAL( ws2812_write )},
+  { LSTRKEY( "FADE_IN" ),        LNUMVAL( FADE_IN ) },
+  { LSTRKEY( "FADE_OUT" ),       LNUMVAL( FADE_OUT ) },
+  { LSTRKEY( "MODE_SINGLE" ),    LNUMVAL( MODE_SINGLE ) },
+  { LSTRKEY( "MODE_DUAL" ),      LNUMVAL( MODE_DUAL ) },
+  { LSTRKEY( "SHIFT_LOGICAL" ),  LNUMVAL( SHIFT_LOGICAL ) },
+  { LSTRKEY( "SHIFT_CIRCULAR" ), LNUMVAL( SHIFT_CIRCULAR ) },
   { LNILKEY, LNILVAL}
 };
 

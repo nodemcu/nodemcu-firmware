@@ -6,7 +6,7 @@
 
 #if defined( BUILD_SPIFFS )
 
-#include "spiffs.h"
+#include "myspiffs.h"
 
 #define FS_OPEN_OK	1
 

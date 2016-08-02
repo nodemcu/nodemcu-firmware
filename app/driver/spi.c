@@ -70,7 +70,7 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 
 	if(spi_no>1) 		return; //handle invalid input number
 
-	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER|SPI_DOUTDIN);
+	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER);
 
 	// set clock polarity (Reference: http://bbs.espressif.com/viewtopic.php?f=49&t=1570)
 	// phase is dependent on polarity. See Issue #1161
@@ -85,12 +85,10 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 		// Mode 3: MOSI is set on falling edge of clock
 		// Mode 0: MOSI is set on falling edge of clock
 		CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE);
-		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_I_EDGE);
 	} else {
 		// Mode 2: MOSI is set on rising edge of clock
 		// Mode 1: MOSI is set on rising edge of clock	
 		SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_OUT_EDGE);		
-		CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_CK_I_EDGE);
 	}
 
 	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_FLASH_MODE|SPI_USR_MISO|SPI_USR_ADDR|SPI_USR_COMMAND|SPI_USR_DUMMY);
@@ -98,31 +96,28 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 	//clear Dual or Quad lines transmission mode
 	CLEAR_PERI_REG_MASK(SPI_CTRL(spi_no), SPI_QIO_MODE|SPI_DIO_MODE|SPI_DOUT_MODE|SPI_QOUT_MODE);
 
-	// SPI clock = CPU clock / clock_div
-	// the divider needs to be a multiple of 2 to get a proper waveform shape
-	if ((clock_div & 0x01) != 0) {
-		// bump the divider to the next N*2
-		clock_div += 0x02;
+	if (clock_div > 1) {
+		uint8 i, k;
+		i = (clock_div / 40) ? (clock_div / 40) : 1;
+		k = clock_div / i;
+		WRITE_PERI_REG(SPI_CLOCK(spi_no),
+			       (((i - 1) & SPI_CLKDIV_PRE) << SPI_CLKDIV_PRE_S) |
+			       (((k - 1) & SPI_CLKCNT_N) << SPI_CLKCNT_N_S) |
+			       ((((k + 1) / 2 - 1) & SPI_CLKCNT_H) << SPI_CLKCNT_H_S) |
+			       (((k - 1) & SPI_CLKCNT_L) << SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
+	} else {
+		WRITE_PERI_REG(SPI_CLOCK(spi_no), SPI_CLK_EQU_SYSCLK); // 80Mhz speed
 	}
-	clock_div >>= 1;
-	// clip to maximum possible CLKDIV_PRE
-	clock_div = clock_div > SPI_CLKDIV_PRE ? SPI_CLKDIV_PRE : clock_div - 1;
-
-	WRITE_PERI_REG(SPI_CLOCK(spi_no), 
-					((clock_div&SPI_CLKDIV_PRE)<<SPI_CLKDIV_PRE_S)|
-					((1&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
-					((0&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
-					((1&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
 
 	if(spi_no==SPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005); 
+		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005 | (clock_div <= 1 ? 0x100 : 0));
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
 	}
 	else if(spi_no==HSPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105); 
+		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105 | (clock_div <= 1 ? 0x200 : 0)); 
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	

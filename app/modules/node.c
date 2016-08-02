@@ -398,7 +398,7 @@ static int node_compile( lua_State* L )
   int file_fd = FS_OPEN_OK - 1;
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
-  if ( len > FS_NAME_MAX_LENGTH )
+  if ( len >= FS_NAME_MAX_LENGTH )
     return luaL_error(L, "filename too long");
 
   char output[FS_NAME_MAX_LENGTH];

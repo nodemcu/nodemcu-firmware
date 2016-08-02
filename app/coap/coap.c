@@ -98,7 +98,7 @@ int coap_buildToken(const coap_buffer_t *tokbuf, const coap_header_t *hdr, uint8
     p = buf + 4;
     if ((hdr->tkl > 0) && (hdr->tkl != tokbuf->len))
         return COAP_ERR_UNSUPPORTED;
-    
+
     if (hdr->tkl > 0)
         c_memcpy(p, tokbuf->p, hdr->tkl);
 
@@ -483,7 +483,7 @@ int coap_make_request(coap_rw_buffer_t *scratch, coap_packet_t *pkt, coap_msgtyp
 
     if (uri->port != COAP_DEFAULT_PORT) {
         pkt->opts[pkt->numopts].num = COAP_OPTION_URI_PORT;
-        res = coap_encode_var_bytes(scratch->p, uri->port); 
+        res = coap_encode_var_bytes(scratch->p, uri->port);
         pkt->opts[pkt->numopts].buf.len = res;
         pkt->opts[pkt->numopts].buf.p = scratch->p;
         scratch->p += res;
@@ -496,7 +496,7 @@ int coap_make_request(coap_rw_buffer_t *scratch, coap_packet_t *pkt, coap_msgtyp
     }
 
     if (uri->query.length) {
-        res = coap_split_query(scratch, pkt, uri->query.s, uri->query.length);    
+        res = coap_split_query(scratch, pkt, uri->query.s, uri->query.length);
     }
 
     pkt->payload.p = payload;
@@ -546,7 +546,7 @@ next:
 
 void coap_setup(void)
 {
-    message_id = (unsigned short)rand();      // calculate only once
+    message_id = (unsigned short)os_random();      // calculate only once
 }
 
 inline int

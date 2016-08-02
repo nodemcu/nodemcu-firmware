@@ -181,7 +181,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 	HTTPCLIENT_DEBUG( "Connected\n" );
 	struct espconn	* conn	= (struct espconn *) arg;
 	request_args_t	* req	= (request_args_t *) conn->reverse;
-
+	int len;
 	espconn_regist_recvcb( conn, http_receive_callback );
 	espconn_regist_sentcb( conn, http_send_callback );
 
@@ -200,16 +200,29 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 
 	char buf[69 + strlen( req->method ) + strlen( req->path ) + strlen( req->hostname ) +
 		 strlen( req->headers ) + strlen( post_headers )];
-	int len = os_sprintf( buf,
-			      "%s %s HTTP/1.1\r\n"
-			      "Host: %s:%d\r\n"
-			      "Connection: close\r\n"
-			      "User-Agent: ESP8266\r\n"
-			      "%s"
-			      "%s"
-			      "\r\n",
-			      req->method, req->path, req->hostname, req->port, req->headers, post_headers );
 
+	if ((req->port == 80) || ((req->port == 443) && ( req->secure )))
+	{
+		len = os_sprintf( buf,
+		  		"%s %s HTTP/1.1\r\n"
+			    "Host: %s\r\n"
+			    "Connection: close\r\n"
+			    "User-Agent: ESP8266\r\n"
+			    "%s"
+			    "%s"
+			    "\r\n",
+			    req->method, req->path, req->hostname, req->headers, post_headers );
+	} else {
+		len = os_sprintf( buf,
+				"%s %s HTTP/1.1\r\n"
+				"Host: %s:%d\r\n"
+				"Connection: close\r\n"
+				"User-Agent: ESP8266\r\n"
+				"%s"
+				"%s"
+				"\r\n",
+				req->method, req->path, req->hostname, req->port, req->headers, post_headers );
+	}
 	if ( req->secure )
 		espconn_secure_send( conn, (uint8_t *) buf, len );
 	else
@@ -220,6 +233,22 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 	HTTPCLIENT_DEBUG( "Sending request header\n" );
 }
 
+static void http_free_req( request_args_t * req)
+{
+	if (req->buffer) {
+		os_free( req->buffer );
+	}
+	if (req->post_data) {
+		os_free( req->post_data );
+	}
+	if (req->headers) {
+		os_free( req->headers );
+	}
+	os_free( req->hostname );
+	os_free( req->method );
+	os_free( req->path );
+	os_free( req );
+}
 
 static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 {
@@ -288,13 +317,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 		{
 			req->callback_handle( body, http_status, req->buffer );
 		}
-		if (req->buffer) {
-		  os_free( req->buffer );
-		}
-		os_free( req->hostname );
-		os_free( req->method );
-		os_free( req->path );
-		os_free( req );
+		http_free_req( req );
 	}
 	/* Fix memory leak. */
 	espconn_delete( conn );
@@ -341,7 +364,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		{
 			req->callback_handle( "", -1, "" );
 		}
-		os_free( req );
+		http_free_req( req );
 	}
 	else  
 	{

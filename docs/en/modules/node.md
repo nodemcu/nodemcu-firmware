@@ -90,7 +90,7 @@ Enters deep sleep mode, wakes up when timed out.
 The maximum sleep time is 4294967295us, ~71 minutes. This is an SDK limitation.
 Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 
-!!! note "Note:"
+!!! caution
 
     This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
 
@@ -179,7 +179,7 @@ print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
 
 Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, but without the single-line limitation.
 
-!!! note "Note:"
+!!! attention
 
     This function only has an effect when invoked from a callback. Using it directly on the console **does not work**.
 
@@ -252,7 +252,7 @@ node.led(0)
 
 Redirects the Lua interpreter output to a callback function. Optionally also prints it to the serial console.
 
-!!! note "Note:"
+!!! caution
 
     Do **not** attempt to `print()` or otherwise induce the Lua interpreter to produce output from within the callback function. Doing so results in infinite recursion, and leads to a watchdog-triggered restart.
 
