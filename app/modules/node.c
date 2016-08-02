@@ -333,7 +333,7 @@ void output_redirect(const char *str) {
   //   return;
   // }
 
-  if (output_redir_ref == LUA_NOREF || !L) {
+  if (output_redir_ref == LUA_NOREF) {
     uart0_sendStr(str);
     return;
   }

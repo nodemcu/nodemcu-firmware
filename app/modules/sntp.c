@@ -204,7 +204,7 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   (void)port;
   sntp_dbg("sntp: on_recv\n");
 
-  lua_State *L = arg;
+  lua_State *L = lua_getstate();
 
   if (!state || state->pcb != pcb)
   {
