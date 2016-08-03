@@ -3,6 +3,7 @@
 
 #include "lwip/dns.h"
 #include "os_type.h"
+#include "lwip/app/espconn_buf.h"
 
 #if 0
 #define espconn_printf(fmt, args...) os_printf(fmt,## args)
@@ -32,6 +33,8 @@ typedef void (* espconn_reconnect_callback)(void *arg, sint8 err);
 #define ESPCONN_ARG        -12   /* Illegal argument.        */
 #define ESPCONN_IF		   -14	 /* Low_level error			 */
 #define ESPCONN_ISCONN     -15   /* Already connected.       */
+#define ESPCONN_TIME	   -16	 /* Sync Time error			 */
+#define ESPCONN_NODATA	   -17	 /* No data can be read	     */
 
 #define ESPCONN_HANDSHAKE  -28   /* ssl handshake failed	 */
 #define ESPCONN_RESP_TIMEOUT -29 /* ssl handshake no response*/
@@ -127,6 +130,14 @@ enum espconn_level{
 	ESPCONN_KEEPCNT
 };
 
+enum espconn_mode{
+	ESPCONN_NOMODE,
+	ESPCONN_TCPSERVER_MODE,
+	ESPCONN_TCPCLIENT_MODE,
+	ESPCONN_UDP_MODE,
+	ESPCONN_NUM_MODE
+};
+
 struct espconn_packet{
 	uint16 sent_length;		/* sent length successful*/
 	uint16 snd_buf_size;	/* Available buffer size for sending  */
@@ -169,6 +180,7 @@ typedef struct _espconn_msg{
 	struct espconn *pespconn;
 	comon_pkt pcommon;
 	uint8 count_opt;
+	uint8 espconn_mode;
 	sint16_t hs_status;	//the status of the handshake
 	void *preverse;
 	void *pssl;
@@ -177,6 +189,8 @@ typedef struct _espconn_msg{
 //***********Code for WIFI_BLOCK from upper**************
 	uint8 recv_hold_flag;
 	uint16 recv_holded_buf_Len;
+//*******************************************************
+	ringbuf *readbuf;
 }espconn_msg;
 
 #ifndef _MDNS_INFO
