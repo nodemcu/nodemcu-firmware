@@ -209,7 +209,14 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
     int host_len = 0;
     if ( os_strstr( req->headers, "Host:" ) == NULL && os_strstr( req->headers, "host:" ) == NULL)
     {
-        os_sprintf( host_header, "Host: %s:%d\r\n", req->hostname, req->port );
+        if ((req->port == 80) || ((req->port == 443) && ( req->secure )))
+        {
+            os_sprintf( host_header, "Host: %s\r\n", req->hostname );
+        }
+        else
+        {
+            os_sprintf( host_header, "Host: %s:%d\r\n", req->hostname, req->port );
+        }
         host_len = strlen(host_header);
     }
 
