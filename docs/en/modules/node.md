@@ -200,54 +200,6 @@ sk:on("receive", function(conn, payload) node.input(payload) end)
 #### See also
 [`node.output()`](#nodeoutput)
 
-## node.key() --deprecated
-
-Defines action to take on button press (on the old devkit 0.9), button connected to GPIO 16.
-
-This function is only available if the firmware was compiled with DEVKIT_VERSION_0_9 defined.
-
-#### Syntax
-`node.key(type, function())`
-
-#### Parameters
-  - `type`: type is either string "long" or "short". long: press the key for 3 seconds, short: press shortly(less than 3 seconds)
-  - `function`: user defined function which is called when key is pressed. If nil, remove the user defined function. Default function: long: change LED blinking rate,  short: reset chip
-
-#### Returns
-`nil`
-
-#### Example
-```lua
-node.key("long", function() print('hello world') end)
-```
-#### See also
-[`node.led()`](#nodeled-deprecated)
-
-## node.led() --deprecated
-
-Sets the on/off time for the LED (on the old devkit 0.9), with the LED connected to GPIO16, multiplexed with [`node.key()`](#nodekey-deprecated).
-
-This function is only available if the firmware was compiled with DEVKIT_VERSION_0_9 defined.
-
-#### Syntax
-`node.led(low, high)`
-
-#### Parameters
-  - `low` LED off time, LED keeps on when low=0. Unit: milliseconds, time resolution: 80~100ms
-  - `high` LED on time. Unit: milliseconds, time resolution: 80~100ms
-
-#### Returns
-`nil`
-
-#### Example
-```lua
--- turn led on forever.
-node.led(0)
-```
-
-#### See also
-[`node.key()`](#nodekey-deprecated)
-
 ## node.output()
 
 Redirects the Lua interpreter output to a callback function. Optionally also prints it to the serial console.
