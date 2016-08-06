@@ -231,11 +231,22 @@ clobber: $(SPECIAL_CLOBBER)
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clobber;)
 	$(RM) -r $(ODIR)
 
-flash: 
+flash:
+	@echo "use one of the following targets to flash the firmware"
+	@echo "  make flash512k - for ESP with 512kB flash size"
+	@echo "  make flash4m   - for ESP with   4MB flash size"
+
+flash512k:
+	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" flashinternal
+
+flash4m:
+	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" flashinternal
+
+flashinternal:
 ifndef PDIR
-	$(MAKE) -C ./app flash
+	$(MAKE) -C ./app flashinternal
 else
-	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
 .subdirs:
