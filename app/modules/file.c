@@ -8,7 +8,7 @@
 #include "vfs.h"
 #include "c_string.h"
 
-static vfs_file *file_fd = NULL;
+static int file_fd = 0;
 
 
 
@@ -17,7 +17,7 @@ static int file_close( lua_State* L )
 {
   if(file_fd){
     vfs_close(file_fd);
-    file_fd = NULL;
+    file_fd = 0;
   }
   return 0;  
 }
@@ -39,18 +39,16 @@ static int file_format( lua_State* L )
   return 0;
 }
 
-#ifdef BUILD_SPIFFS
-#include "flash_fs.h"
-
-extern spiffs fs;
-
 static int file_fscfg (lua_State *L)
 {
-  lua_pushinteger (L, fs.cfg.phys_addr);
-  lua_pushinteger (L, fs.cfg.phys_size);
+  uint32_t phys_addr, phys_size;
+
+  vfs_fscfg("FLASH:", &phys_addr, &phys_size);
+
+  lua_pushinteger (L, phys_addr);
+  lua_pushinteger (L, phys_size);
   return 2;
 }
-#endif
 
 // Lua: open(filename, mode)
 static int file_open( lua_State* L )
@@ -58,11 +56,11 @@ static int file_open( lua_State* L )
   size_t len;
   if(file_fd){
     vfs_close(file_fd);
-    file_fd = NULL;
+    file_fd = 0;
   }
 
   const char *fname = luaL_checklstring( L, 1, &len );
-  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, len < VFS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
 
   const char *mode = luaL_optstring(L, 2, "r");
 
@@ -116,7 +114,7 @@ static int file_exists( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );    
-  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, len < VFS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
 
   vfs_item *stat = vfs_stat((char *)fname);
 
@@ -132,7 +130,7 @@ static int file_remove( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );    
-  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, len < VFS_NAME_MAX_LENGTH && c_strlen(fname) == len, 1, "filename invalid");
   file_close(L);
   vfs_remove((char *)fname);
   return 0;
@@ -156,14 +154,14 @@ static int file_rename( lua_State* L )
   size_t len;
   if(file_fd){
     vfs_close(file_fd);
-    file_fd = NULL;
+    file_fd = 0;
   }
 
   const char *oldname = luaL_checklstring( L, 1, &len );
-  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(oldname) == len, 1, "filename invalid");
+  luaL_argcheck(L, len < VFS_NAME_MAX_LENGTH && c_strlen(oldname) == len, 1, "filename invalid");
   
   const char *newname = luaL_checklstring( L, 2, &len );  
-  luaL_argcheck(L, len < FS_NAME_MAX_LENGTH && c_strlen(newname) == len, 2, "filename invalid");
+  luaL_argcheck(L, len < VFS_NAME_MAX_LENGTH && c_strlen(newname) == len, 2, "filename invalid");
 
   if(0 <= vfs_rename( oldname, newname )){
     lua_pushboolean(L, 1);

@@ -84,6 +84,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	ucglib/ucglib.a 			\
 	smart/smart.a 				\
 	spiffs/spiffs.a 			\
+	fatfs/libfatfs.a			\
 	cjson/libcjson.a 			\
 	crypto/libcrypto.a 			\
 	dhtlib/libdhtlib.a 			\
@@ -91,7 +92,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	http/libhttp.a				\
 	websocket/libwebsocket.a			\
 	net/libnodemcu_net.a			\
-	fatfs/libfatfs.a			\
 	modules/libmodules.a			\
 
 # Inspect the modules library and work out which modules need to be linked.

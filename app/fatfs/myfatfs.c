@@ -26,6 +26,7 @@ static sint32_t myfatfs_eof( const struct vfs_file *fd );
 static sint32_t myfatfs_tell( const struct vfs_file *fd );
 static sint32_t myfatfs_flush( const struct vfs_file *fd );
 static uint32_t myfatfs_fsize( const struct vfs_file *fd );
+static sint32_t myfatfs_ferrno( const struct vfs_file *fd );
 
 static sint32_t  myfatfs_closedir( const struct vfs_dir *dd );
 static vfs_item *myfatfs_readdir( const struct vfs_dir *dd );
@@ -66,9 +67,10 @@ static vfs_fs_fns myfatfs_fs_fns = {
   .rename   = myfatfs_rename,
   .mkdir    = myfatfs_mkdir,
   .fsinfo   = NULL,
+  .fscfg    = NULL,
   .format   = NULL,
   .chdrive  = myfatfs_chdrive,
-  .errno    = myfatfs_errno,
+  .ferrno   = myfatfs_errno,
   .clearerr = myfatfs_clearerr
 };
 
@@ -80,7 +82,8 @@ static vfs_file_fns myfatfs_file_fns = {
   .eof       = myfatfs_eof,
   .tell      = myfatfs_tell,
   .flush     = myfatfs_flush,
-  .size      = myfatfs_fsize
+  .size      = myfatfs_fsize,
+  .ferrno    = myfatfs_ferrno
 };
 
 static vfs_item_fns myfatfs_item_fns = {
@@ -280,6 +283,11 @@ static uint32_t myfatfs_fsize( const struct vfs_file *fd )
   last_result = FR_OK;
 
   return f_size( fp );
+}
+
+static sint32_t myfatfs_ferrno( const struct vfs_file *fd )
+{
+  return -last_result;
 }
 
 

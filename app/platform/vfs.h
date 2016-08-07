@@ -4,6 +4,13 @@
 
 #include "vfs_int.h"
 
+// DEPRECATED, DON'T USE
+// Check for fd != 0 instead
+#define FS_OPEN_OK 1
+
+// TODO: align with SPIFFS_OBJ_NAME_LEN
+#define VFS_NAME_MAX_LENGTH 32
+
 // ---------------------------------------------------------------------------
 // file functions
 //
@@ -11,21 +18,34 @@
 // vfs_close - close file descriptor and free memory
 //   fd: file descriptor
 //   Returns: VFS_RES_OK or negative value in case of error
-inline sint32_t vfs_close( vfs_file *fd ) { return fd->fns->close( fd ); }
+inline sint32_t vfs_close( int fd ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f ? f->fns->close( f ) : VFS_RES_ERR;
+}
 
 // vfs_read - read data from file
 //   fd: file descriptor
 //   ptr: destination data buffer
 //   len: requested length
 //   Returns: Number of bytes read, or VFS_RES_ERR in case of error
-inline sint32_t vfs_read( vfs_file *fd, void *ptr, size_t len ) { return fd->fns->read( fd, ptr, len ); }
+inline sint32_t vfs_read( int fd, void *ptr, size_t len ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f ? f->fns->read( f, ptr, len ) : VFS_RES_ERR;
+}
 
 // vfs_write - write data to file
 //   fd: file descriptor
 //   ptr: source data buffer
 //   len: requested length
 //   Returns: Number of bytes written, or VFS_RES_ERR in case of error
-inline sint32_t vfs_write( vfs_file *fd, const void *ptr, size_t len ) { return fd->fns->write( fd, ptr, len ); }
+inline sint32_t vfs_write( int fd, const void *ptr, size_t len ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f ? f->fns->write( f, ptr, len ) : VFS_RES_ERR;
+}
+
+int vfs_getc( int fd );
+
+int vfs_ungetc( int c, int fd );
 
 // vfs_lseek - move read/write pointer
 //   fd: file descriptor
@@ -34,27 +54,47 @@ inline sint32_t vfs_write( vfs_file *fd, const void *ptr, size_t len ) { return 
 //           VFS_SEEK_CUR - set pointer to current position + off
 //           VFS_SEEK_END - set pointer to end of file + off
 //   Returns: New position, or VFS_RES_ERR in case of error
-inline sint32_t vfs_lseek( vfs_file *fd, sint32_t off, int whence ) { return fd->fns->lseek( fd, off, whence ); }
+inline sint32_t vfs_lseek( int fd, sint32_t off, int whence ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f ? f->fns->lseek( f, off, whence ) : VFS_RES_ERR;
+}
 
 // vfs_eof - test for end-of-file
 //   fd: file descriptor
 //   Returns: 0 if not at end, != 0 if end of file
-inline sint32_t vfs_eof( vfs_file *fd ) { return fd->fns->eof( fd ); }
+inline sint32_t vfs_eof( int fd ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f ? f->fns->eof( f ) : VFS_RES_ERR;
+}
 
 // vfs_tell - get read/write position
 //   fd: file descriptor
 //   Returns: Current position
-inline sint32_t vfs_tell( vfs_file *fd ) { return fd->fns->tell( fd ); }
+inline sint32_t vfs_tell( int fd ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f ? f->fns->tell( f ) : VFS_RES_ERR;
+}
 
 // vfs_flush - flush write cache to file
 //   fd: file descriptor
 //   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
-inline sint32_t vfs_flush( vfs_file *fd ) { return fd->fns->flush( fd ); }
+inline sint32_t vfs_flush( int fd ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f ? f->fns->flush( f ) : VFS_RES_ERR;
+}
 
 // vfs_size - get current file size
 //   fd: file descriptor
 //   Returns: File size
-inline uint32_t vfs_size( vfs_file *fd ) { return fd->fns->size ? fd->fns->size( fd ) : 0; }
+inline uint32_t vfs_size( int fd ) {
+  vfs_file *f = (vfs_file *)fd;
+  return f && f->fns->size ? f->fns->size( f ) : 0;
+}
+
+// vfs_ferrno - get file system specific errno
+//   fd: file descriptor
+//   Returns: errno
+sint32_t vfs_ferrno( int fd );
 
 // ---------------------------------------------------------------------------
 // dir functions
@@ -142,7 +182,7 @@ vfs_vol  *vfs_mount( const char *name, int num );
 //   name: file name
 //   mode: open mode
 //   Returns: File descriptor, or NULL in case of error
-vfs_file *vfs_open( const char *name, const char *mode );
+int vfs_open( const char *name, const char *mode );
 
 // vfs_opendir - open directory
 //   name: dir name
@@ -184,6 +224,12 @@ sint32_t  vfs_format( void );
 //   ldrv: new default logical drive
 //   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
 sint32_t  vfs_chdrive( const char *ldrv );
+
+// vfs_fscfg - query configuration settings of file system
+//   phys_addr: pointer to store physical address information
+//   phys_size: pointer to store physical size information
+//   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
+sint32_t vfs_fscfg( const char *name, uint32_t *phys_addr, uint32_t *phys_size);
 
 // vfs_errno - get file system specific errno
 //   name: logical drive identifier

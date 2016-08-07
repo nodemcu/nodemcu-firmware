@@ -14,6 +14,8 @@
 #endif
 
 
+#define VFS_EOF -1
+
 enum vfs_filesystems {
   VFS_FS_NONE = 0,
   VFS_FS_SPIFFS,
@@ -55,6 +57,7 @@ struct vfs_file_fns {
   sint32_t (*tell)( const struct vfs_file *fd );
   sint32_t (*flush)( const struct vfs_file *fd );
   uint32_t (*size)( const struct vfs_file *fd );
+  sint32_t (*ferrno)( const struct vfs_file *fd );
 };
 typedef const struct vfs_file_fns vfs_file_fns;
 
@@ -115,9 +118,10 @@ struct vfs_fs_fns {
   sint32_t  (*rename)( const char *oldname, const char *newname );
   sint32_t  (*mkdir)( const char *name );
   sint32_t  (*fsinfo)( uint32_t *total, uint32_t *used );
+  sint32_t  (*fscfg)( uint32_t *phys_addr, uint32_t *phys_size );
   sint32_t  (*format)( void );
   sint32_t  (*chdrive)( const char * );
-  sint32_t  (*errno)( void );
+  sint32_t  (*ferrno)( void );
   void      (*clearerr)( void );
 };
 typedef const struct vfs_fs_fns vfs_fs_fns;

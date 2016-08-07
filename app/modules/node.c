@@ -23,7 +23,7 @@
 #include "driver/uart.h"
 #include "user_interface.h"
 #include "flash_api.h"
-#include "flash_fs.h"
+#include "vfs.h"
 #include "user_version.h"
 #include "rom.h"
 #include "task/task.h"
@@ -226,11 +226,11 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 {
   UNUSED(L);
   int file_fd = *( (int *)u );
-  if ((FS_OPEN_OK - 1) == file_fd)
+  if (!file_fd)
     return 1;
   NODE_DBG("get fd:%d,size:%d\n", file_fd, size);
 
-  if (size != 0 && (size != fs_write(file_fd, (const char *)p, size)) )
+  if (size != 0 && (size != vfs_write(file_fd, (const char *)p, size)) )
     return 1;
   NODE_DBG("write fd:%d,size:%d\n", file_fd, size);
   return 0;
@@ -241,13 +241,13 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 static int node_compile( lua_State* L )
 {
   Proto* f;
-  int file_fd = FS_OPEN_OK - 1;
+  int file_fd = 0;
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
-  if ( len >= FS_NAME_MAX_LENGTH )
+  if ( len >= VFS_NAME_MAX_LENGTH )
     return luaL_error(L, "filename too long");
 
-  char output[FS_NAME_MAX_LENGTH];
+  char output[VFS_NAME_MAX_LENGTH];
   c_strcpy(output, fname);
   // check here that filename end with ".lua".
   if (len < 4 || (c_strcmp( output + len - 4, ".lua") != 0) )
@@ -265,8 +265,8 @@ static int node_compile( lua_State* L )
 
   int stripping = 1;      /* strip debug information? */
 
-  file_fd = fs_open(output, fs_mode2flag("w+"));
-  if (file_fd < FS_OPEN_OK)
+  file_fd = vfs_open(output, "w+");
+  if (!file_fd)
   {
     return luaL_error(L, "cannot open/write to file");
   }
@@ -275,12 +275,12 @@ static int node_compile( lua_State* L )
   int result = luaU_dump(L, f, writer, &file_fd, stripping);
   lua_unlock(L);
 
-  if (fs_flush(file_fd) < 0) {   // result codes aren't propagated by flash_fs.h
+  if (vfs_flush(file_fd) != VFS_RES_OK) {
     // overwrite Lua error, like writer() does in case of a file io error
     result = 1;
   }
-  fs_close(file_fd);
-  file_fd = FS_OPEN_OK - 1;
+  vfs_close(file_fd);
+  file_fd = 0;
 
   if (result == LUA_ERR_CC_INTOVERFLOW) {
     return luaL_error(L, "value too big or small for target integer type");

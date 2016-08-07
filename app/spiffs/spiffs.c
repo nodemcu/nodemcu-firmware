@@ -204,87 +204,6 @@ int myspiffs_format( void )
   return myspiffs_mount();
 }
 
-int myspiffs_check( void )
-{
-  // ets_wdt_disable();
-  // int res = (int)SPIFFS_check(&fs);
-  // ets_wdt_enable();
-  // return res;
-}
-
-int myspiffs_open(const char *name, int flags){
-  return (int)SPIFFS_open(&fs, (char *)name, (spiffs_flags)flags, 0);
-}
-
-int myspiffs_close( int fd ){
-  return SPIFFS_close(&fs, (spiffs_file)fd);
-}
-size_t myspiffs_write( int fd, const void* ptr, size_t len ){
-#if 0
-  if(fd==c_stdout || fd==c_stderr){
-    uart0_tx_buffer((u8_t*)ptr, len);
-    return len;
-  }
-#endif
-  int res = SPIFFS_write(&fs, (spiffs_file)fd, (void *)ptr, len);
-  if (res < 0) {
-    NODE_DBG("write errno %i\n", SPIFFS_errno(&fs));
-    return 0;
-  }
-  return res;
-}
-size_t myspiffs_read( int fd, void* ptr, size_t len){
-  int res = SPIFFS_read(&fs, (spiffs_file)fd, ptr, len);
-  if (res < 0) {
-    NODE_DBG("read errno %i\n", SPIFFS_errno(&fs));
-    return 0;
-  }
-  return res;
-}
-int myspiffs_lseek( int fd, int off, int whence ){
-  return SPIFFS_lseek(&fs, (spiffs_file)fd, off, whence);
-}
-int myspiffs_eof( int fd ){
-  return SPIFFS_eof(&fs, (spiffs_file)fd);
-}
-int myspiffs_tell( int fd ){
-  return SPIFFS_tell(&fs, (spiffs_file)fd);
-}
-int myspiffs_getc( int fd ){
-  unsigned char c = 0xFF;
-  int res;
-  if(!myspiffs_eof(fd)){
-    res = SPIFFS_read(&fs, (spiffs_file)fd, &c, 1);
-    if (res != 1) {
-      NODE_DBG("getc errno %i\n", SPIFFS_errno(&fs));
-      return (int)EOF;
-    } else {
-      return (int)c;
-    }
-  }
-  return (int)EOF;
-}
-int myspiffs_ungetc( int c, int fd ){
-  return SPIFFS_lseek(&fs, (spiffs_file)fd, -1, SEEK_CUR);
-}
-int myspiffs_flush( int fd ){
-  return SPIFFS_fflush(&fs, (spiffs_file)fd);
-}
-int myspiffs_error( int fd ){
-  return SPIFFS_errno(&fs);
-}
-void myspiffs_clearerr( int fd ){
-  SPIFFS_clearerr(&fs);
-}
-int myspiffs_rename( const char *old, const char *newname ){
-  return SPIFFS_rename(&fs, (char *)old, (char *)newname);
-}
-size_t myspiffs_size( int fd ){
-  int32_t curpos = SPIFFS_tell(&fs, (spiffs_file) fd);
-  int32_t size = SPIFFS_lseek(&fs, (spiffs_file) fd, SPIFFS_SEEK_END, 0);
-  (void) SPIFFS_lseek(&fs, (spiffs_file) fd, SPIFFS_SEEK_SET, curpos);
-  return size;
-}
 #if 0
 void test_spiffs() {
   char buf[12];
@@ -324,6 +243,7 @@ static sint32_t myspiffs_vfs_lseek( const struct vfs_file *fd, sint32_t off, int
 static sint32_t myspiffs_vfs_eof( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_tell( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_flush( const struct vfs_file *fd );
+static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd );
 
 static sint32_t  myspiffs_vfs_closedir( const struct vfs_dir *dd );
 static vfs_item *myspiffs_vfs_readdir( const struct vfs_dir *dd );
@@ -340,6 +260,7 @@ static vfs_item *myspiffs_vfs_stat( const char *name );
 static sint32_t  myspiffs_vfs_remove( const char *name );
 static sint32_t  myspiffs_vfs_rename( const char *oldname, const char *newname );
 static sint32_t  myspiffs_vfs_fsinfo( uint32_t *total, uint32_t *used );
+static sint32_t  myspiffs_vfs_fscfg( uint32_t *phys_addr, uint32_t *phys_size );
 static sint32_t  myspiffs_vfs_format( void );
 static sint32_t  myspiffs_vfs_chdrive( const char *name );
 static sint32_t  myspiffs_vfs_errno( void );
@@ -351,7 +272,7 @@ static sint32_t myspiffs_vfs_umount( const struct vfs_vol *vol );
 // function tables
 //
 static vfs_fs_fns myspiffs_fs_fns = {
-  .mount    = NULL,
+  .mount    = myspiffs_vfs_mount,
   .open     = myspiffs_vfs_open,
   .opendir  = myspiffs_vfs_opendir,
   .stat     = myspiffs_vfs_stat,
@@ -359,9 +280,10 @@ static vfs_fs_fns myspiffs_fs_fns = {
   .rename   = myspiffs_vfs_rename,
   .mkdir    = NULL,
   .fsinfo   = myspiffs_vfs_fsinfo,
+  .fscfg    = myspiffs_vfs_fscfg,
   .format   = myspiffs_vfs_format,
   .chdrive  = myspiffs_vfs_chdrive,
-  .errno    = myspiffs_vfs_errno,
+  .ferrno   = myspiffs_vfs_errno,
   .clearerr = myspiffs_vfs_clearerr
 };
 
@@ -373,7 +295,8 @@ static vfs_file_fns myspiffs_file_fns = {
   .eof       = myspiffs_vfs_eof,
   .tell      = myspiffs_vfs_tell,
   .flush     = myspiffs_vfs_flush,
-  .size      = NULL
+  .size      = NULL,
+  .ferrno    = myspiffs_vfs_ferrno
 };
 
 static vfs_item_fns myspiffs_item_fns = {
@@ -554,6 +477,34 @@ static sint32_t myspiffs_vfs_flush( const struct vfs_file *fd ) {
   return SPIFFS_fflush( &fs, fh );
 }
 
+static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd ) {
+  return SPIFFS_errno( &fs );
+}
+
+
+static int fs_mode2flag(const char *mode){
+  if(c_strlen(mode)==1){
+  	if(c_strcmp(mode,"w")==0)
+  	  return SPIFFS_WRONLY|SPIFFS_CREAT|SPIFFS_TRUNC;
+  	else if(c_strcmp(mode, "r")==0)
+  	  return SPIFFS_RDONLY;
+  	else if(c_strcmp(mode, "a")==0)
+  	  return SPIFFS_WRONLY|SPIFFS_CREAT|SPIFFS_APPEND;
+  	else
+  	  return SPIFFS_RDONLY;
+  } else if (c_strlen(mode)==2){
+  	if(c_strcmp(mode,"r+")==0)
+  	  return SPIFFS_RDWR;
+  	else if(c_strcmp(mode, "w+")==0)
+  	  return SPIFFS_RDWR|SPIFFS_CREAT|SPIFFS_TRUNC;
+  	else if(c_strcmp(mode, "a+")==0)
+  	  return SPIFFS_RDWR|SPIFFS_CREAT|SPIFFS_APPEND;
+  	else
+  	  return SPIFFS_RDONLY;
+  } else {
+  	return SPIFFS_RDONLY;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // filesystem functions
@@ -617,6 +568,17 @@ static sint32_t myspiffs_vfs_rename( const char *oldname, const char *newname ) 
 
 static sint32_t myspiffs_vfs_fsinfo( uint32_t *total, uint32_t *used ) {
   return SPIFFS_info( &fs, total, used );
+}
+
+static sint32_t myspiffs_vfs_fscfg( uint32_t *phys_addr, uint32_t *phys_size ) {
+  *phys_addr = fs.cfg.phys_addr;
+  *phys_size = fs.cfg.phys_size;
+  return VFS_RES_OK;
+}
+
+static vfs_vol  *myspiffs_vfs_mount( const char *name, int num ) {
+  // volume descriptor not supported, just return TRUE / FALSE
+  return myspiffs_mount() ? (vfs_vol *)1 : NULL;
 }
 
 static sint32_t myspiffs_vfs_format( void ) {

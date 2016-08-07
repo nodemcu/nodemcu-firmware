@@ -1,6 +1,6 @@
 
 
-#include "vfs_int.h"
+#include "vfs.h"
 
 
 
@@ -36,7 +36,9 @@ vfs_vol *vfs_mount( const char *name, int num )
   const char *outname;
 
 #ifdef BUILD_SPIFFS
-  // not supported
+  if (fs_fns = myspiffs_realm( name, &outname )) {
+    return fs_fns->mount( outname, num );
+  }
 #endif
 
 #ifdef BUILD_FATFS
@@ -48,24 +50,24 @@ vfs_vol *vfs_mount( const char *name, int num )
   return NULL;
 }
 
-vfs_file *vfs_open( const char *name, const char *mode )
+int vfs_open( const char *name, const char *mode )
 {
   vfs_fs_fns *fs_fns;
   const char *outname;
 
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( name, &outname )) {
-    return fs_fns->open( outname, mode );
+    return (int)fs_fns->open( outname, mode );
   }
 #endif
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( name, &outname )) {
-    return fs_fns->open( outname, mode );
+    return (int)fs_fns->open( outname, mode );
   }
 #endif
 
-  return NULL;
+  return 0;
 }
 
 vfs_dir *vfs_opendir( const char *name )
@@ -194,6 +196,25 @@ sint32_t vfs_fsinfo( const char *name, uint32_t *total, uint32_t *used )
   return VFS_RES_ERR;
 }
 
+sint32_t vfs_fscfg( const char *name, uint32_t *phys_addr, uint32_t *phys_size)
+{
+  vfs_fs_fns *fs_fns;
+  const char *outname;
+
+#ifdef BUILD_SPIFFS
+  if (fs_fns = myspiffs_realm( "FLASH:", &outname )) {
+    return fs_fns->fscfg( phys_addr, phys_size );
+  }
+#endif
+
+#ifdef BUILD_FATFS
+  // not supported
+#endif
+
+  // Error
+  return VFS_RES_ERR;
+}
+
 sint32_t vfs_format( void )
 {
   vfs_fs_fns *fs_fns;
@@ -252,18 +273,44 @@ sint32_t vfs_errno( const char *name )
 
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( name, &outname )) {
-    return fs_fns->errno( );
+    return fs_fns->ferrno( );
   }
 #endif
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( name, &outname )) {
-    return fs_fns->errno( );
+    return fs_fns->ferrno( );
   }
 #endif
 
   return VFS_RES_ERR;
 }
+
+sint32_t vfs_ferrno( int fd )
+{
+  vfs_file *f = (vfs_file *)fd;
+
+  if (f) {
+    return f->fns->ferrno ? f->fns->ferrno( f ) : 0;
+  } else {
+    vfs_fs_fns *fs_fns;
+    const char *name = "";  // current drive
+    const char *outname;
+
+#ifdef BUILD_SPIFFS
+    if (fs_fns = myspiffs_realm( name, &outname )) {
+      return fs_fns->ferrno( );
+    }
+#endif
+
+#ifdef BUILD_FATFS
+    if (fs_fns = myfatfs_realm( name, &outname )) {
+      return fs_fns->ferrno( );
+    }
+#endif
+  }
+}
+
 
 void vfs_clearerr( const char *name )
 {
@@ -283,4 +330,29 @@ void vfs_clearerr( const char *name )
     fs_fns->clearerr( );
   }
 #endif
+}
+
+
+// ---------------------------------------------------------------------------
+// supplementary functions
+//
+int vfs_getc( int fd )
+{
+  unsigned char c = 0xFF;
+  sint32_t res;
+
+  if(!vfs_eof( fd )) {
+    if (1 != vfs_read( fd, &c, 1 )) {
+      NODE_DBG("getc errno %i\n", vfs_ferrno( fd ));
+      return VFS_EOF;
+    } else {
+      return (int)c;
+    }
+  }
+  return VFS_EOF;
+}
+
+int vfs_ungetc( int c, int fd )
+{
+  return vfs_lseek( fd, -1, VFS_SEEK_CUR );
 }

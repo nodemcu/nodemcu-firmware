@@ -45,7 +45,7 @@
 #include "espconn.h"
 #include "lwip/tcp.h"
 #include "lwip/pbuf.h"
-#include "flash_fs.h"
+#include "vfs.h"
 #include "task/task.h"
 
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
@@ -485,20 +485,20 @@ static int enduser_setup_http_load_payload(void)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload");
 
-  int err = (FS_OPEN_OK -1);
-  int err2 = (FS_OPEN_OK -1);
+  int err = VFS_RES_ERR;
+  int err2 = VFS_RES_ERR;
   int file_len = 0;
-  int f = fs_open(http_html_filename, fs_mode2flag("r"));
-  if (f >= FS_OPEN_OK) {
-      err = fs_seek(f, 0, FS_SEEK_END);
-      file_len = (int) fs_tell(f);
-      err2 = fs_seek(f, 0, FS_SEEK_SET);
+  int f = vfs_open(http_html_filename, "r");
+  if (f) {
+      err = vfs_lseek(f, 0, VFS_SEEK_END);
+      file_len = (int) vfs_tell(f);
+      err2 = vfs_lseek(f, 0, VFS_SEEK_SET);
   }
 
   const char cl_hdr[] = "Content-length:%5d\r\n\r\n";
   const size_t cl_len = LITLEN(cl_hdr) + 3; /* room to expand %4d */
 
-  if (f < FS_OPEN_OK || err < FS_OPEN_OK || err2 < FS_OPEN_OK)
+  if (!f || err != VFS_RES_OK || err2 != VFS_RES_OK)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 
@@ -531,8 +531,8 @@ static int enduser_setup_http_load_payload(void)
   c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
   offset += LITLEN(http_header_200);
   offset += c_sprintf(state->http_payload_data + offset, cl_hdr, file_len);
-  fs_read(f, &(state->http_payload_data[offset]), file_len);
-  fs_close(f);
+  vfs_read(f, &(state->http_payload_data[offset]), file_len);
+  vfs_close(f);
 
   return 0;
 }
