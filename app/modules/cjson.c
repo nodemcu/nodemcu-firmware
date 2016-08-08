@@ -43,6 +43,7 @@
 #include "c_limits.h"
 #include "lauxlib.h"
 #include "flash_api.h"
+#include "ctype.h"
 
 #include "strbuf.h"
 #include "cjson_mem.h"

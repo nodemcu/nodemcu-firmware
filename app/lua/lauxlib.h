@@ -100,7 +100,7 @@ LUALIB_API const char *(luaL_gsub) (lua_State *L, const char *s, const char *p,
 LUALIB_API const char *(luaL_findtable) (lua_State *L, int idx,
                                          const char *fname, int szhint);
 
-
+LUALIB_API void luaL_assertfail(const char *file, int line, const char *message);
 
 
 /*

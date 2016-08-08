@@ -43,7 +43,7 @@ static void ws2801_strip(uint8_t const * data, uint16_t len) {
     GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, ws2801_bit_data);
 }
 
-static void enable_pin_mux(pin) {
+static void enable_pin_mux(int pin) {
     // The API only supports setting PERIPHS_IO_MUX on GPIO 0, 2, 4, 5
     switch (pin) {
     case 0:

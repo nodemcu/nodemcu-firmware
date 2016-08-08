@@ -15,6 +15,7 @@ ifndef PDIR
 GEN_LIBS = libuser.a
 endif
 
+STD_CFLAGS=-std=gnu11 -Wimplicit
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -43,7 +44,6 @@ INCLUDES += -I ../../include/ets
 INCLUDES += -I ../libc
 INCLUDES += -I ../platform
 INCLUDES += -I ../lua
-INCLUDES += -I ../wofs
 INCLUDES += -I ../spiffs
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

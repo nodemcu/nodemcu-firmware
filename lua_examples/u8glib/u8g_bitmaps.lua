@@ -25,12 +25,16 @@ function init_spi_display()
      -- Hardware SPI CLK  = GPIO14
      -- Hardware SPI MOSI = GPIO13
      -- Hardware SPI MISO = GPIO12 (not used)
+     -- Hardware SPI /CS  = GPIO15 (not used)
      -- CS, D/C, and RES can be assigned freely to available GPIOs
      local cs  = 8 -- GPIO15, pull-down 10k to GND
      local dc  = 4 -- GPIO2
      local res = 0 -- GPIO16
 
      spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
+     -- we won't be using the HSPI /CS line, so disable it again
+     gpio.mode(8, gpio.INPUT, gpio.PULLUP)
+
      disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 end
 
@@ -61,14 +65,22 @@ function draw(draw_state)
 end
 
 
-function bitmap_test()
-    dir = 0
-    next_rotation = 0
-
-    disp:firstPage()
-    repeat
+function draw_loop()
+    -- Draws one page and schedules the next page, if there is one
+    local function draw_pages()
         draw(draw_state)
-    until disp:nextPage() == false
+        if disp:nextPage() then
+            node.task.post(draw_pages)
+        else
+            node.task.post(bitmap_test)
+        end
+    end
+    -- Restart the draw loop and start drawing pages
+    disp:firstPage()
+    node.task.post(draw_pages)
+end
+
+function bitmap_test()
 
     if (draw_state <= 7 + 1*8) then
         draw_state = draw_state + 1
@@ -78,8 +90,8 @@ function bitmap_test()
     end
 
     print("Heap: " .. node.heap())
-    -- retrigger timer to give room for system housekeeping
-    tmr.start(0)
+    -- retrigger draw_loop
+    node.task.post(draw_loop)
 
 end
 
@@ -99,8 +111,5 @@ bm_data = file.read()
 file.close()
 
 
--- set up timer 0 with short interval, will be retriggered in graphics_test()
-tmr.register(0, 100, tmr.ALARM_SEMI, function() bitmap_test() end)
-
 print("--- Starting Bitmap Test ---")
-tmr.start(0)
+node.task.post(draw_loop)

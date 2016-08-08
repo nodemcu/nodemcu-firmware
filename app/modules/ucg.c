@@ -703,6 +703,23 @@ static int lucg_undoScale( lua_State *L )
 }
 
 
+spi_data_type cache;
+uint8_t cached;
+
+#define CACHED_TRANSFER(dat, num) cache = cached = 0;  \
+    while( arg > 0 ) {                                \
+        if (cached == 4) {                                              \
+            platform_spi_transaction( 1, 0, 0, 32, cache, 0, 0, 0 );    \
+            cache = cached = 0;                                         \
+        }                                                               \
+        cache = (cache << num*8) | dat;                                 \
+        cached += num;                                                  \
+        arg--;                                                          \
+    }                                                                   \
+    if (cached > 0) {                                                   \
+        platform_spi_transaction( 1, 0, 0, cached * 8, cache, 0, 0, 0 ); \
+    }
+
 
 static int16_t ucg_com_esp8266_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uint8_t *data)
 {
@@ -754,34 +771,22 @@ static int16_t ucg_com_esp8266_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uin
         break;
 
     case UCG_COM_MSG_REPEAT_1_BYTE:
-        while( arg > 0 ) {
-            platform_spi_send( 1, 8, data[0] );
-            arg--;
-        }
+        CACHED_TRANSFER(data[0], 1);
         break;
 
     case UCG_COM_MSG_REPEAT_2_BYTES:
-        while( arg > 0 ) {
-            platform_spi_send( 1, 8, data[0] );
-            platform_spi_send( 1, 8, data[1] );
-            arg--;
-        }
+        CACHED_TRANSFER((data[0] << 8) | data[1], 2);
         break;
 
     case UCG_COM_MSG_REPEAT_3_BYTES:
         while( arg > 0 ) {
-            platform_spi_send( 1, 8, data[0] );
-            platform_spi_send( 1, 8, data[1] );
-            platform_spi_send( 1, 8, data[2] );
+            platform_spi_transaction( 1, 0, 0, 24, (data[0] << 16) | (data[1] << 8) | data[2], 0, 0, 0 );
             arg--;
         }
         break;
 
     case UCG_COM_MSG_SEND_STR:
-        while( arg > 0 ) {
-            platform_spi_send( 1, 8, *data++ );
-            arg--;
-        }
+        CACHED_TRANSFER(*data++, 1);
         break;
 
     case UCG_COM_MSG_SEND_CD_DATA_SEQUENCE:

@@ -1,11 +1,13 @@
 #ifndef __CPU_ESP8266_H__
 #define __CPU_ESP8266_H__
 
+#ifndef NO_CPU_ESP8266_INCLUDE
 #include "os_type.h"
 #include "spi_flash.h"
 #include "pin_map.h"
 #include "user_config.h"
 #include "flash_api.h"
+#endif
 // Number of resources (0 if not available/not implemented)
 #define NUM_GPIO              GPIO_PIN_NUM
 #define NUM_SPI               2
@@ -38,14 +40,9 @@
 #else
 #define FLASH_SEC_NUM 	0x80
 #endif
-#define SYS_PARAM_SEC_NUM 4
+// SDK 1.5.4.1 added 1 sector for rf_cal
+#define SYS_PARAM_SEC_NUM 5
 #define SYS_PARAM_SEC_START (FLASH_SEC_NUM - SYS_PARAM_SEC_NUM)
-
-// #define WOFS_SEC_START	0x80
-// #define WOFS_SEC_START	0x60
-// #define WOFS_SEC_END	(SYS_PARAM_SEC_START)
-// #define WOFS_SEC_NUM	(WOFS_SEC_END - WOFS_SEC_START)
-// #define WOFS_SEC_NUM 0xc
 
 #define INTERNAL_FLASH_SECTOR_SIZE      SPI_FLASH_SEC_SIZE
 // #define INTERNAL_FLASH_SECTOR_ARRAY     { 0x4000, 0x4000, 0x4000, 0x4000, 0x10000, 0x20000, 0x20000, 0x20000, 0x20000, 0x20000 }

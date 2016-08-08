@@ -1,0 +1,85 @@
+site_name: NodeMCU Documentation
+site_description: Description of the NodeMCU documentation
+repo_url: https://github.com/nodemcu/nodemcu-firmware/
+
+theme: readthedocs
+strict: true
+
+markdown_extensions:
+#http://pythonhosted.org/Markdown/extensions/admonition.html
+- admonition:
+- toc:
+    permalink: True
+
+#requird due to https://github.com/rtfd/readthedocs.org/issues/1313
+#see http://mkdocs.readthedocs.org/en/latest/user-guide/styling-your-docs/#customising-a-theme
+extra_css:
+- css/extra.css
+extra_javascript:
+- js/extra.js
+
+site_favicon: img/favicon.png
+
+pages:
+- Overview: 'index.md'
+- English:
+    - Home: 'en/index.md'
+    - Building the firmware: 'en/build.md'
+    - Flashing the firmware: 'en/flash.md'
+    - Filesystem notes: 'en/spiffs.md'
+    - Uploading code: 'en/upload.md'
+    - FAQs:
+        - Lua Developer FAQ: 'en/lua-developer-faq.md'
+        - Extension Developer FAQ: 'en/extn-developer-faq.md'
+        - Hardware FAQ: 'en/hardware-faq.md'
+    - Support: 'en/support.md'
+    - Modules:
+        - 'adc': 'en/modules/adc.md'
+        - 'adxl345': 'en/modules/adxl345.md'
+        - 'am2320': 'en/modules/am2320.md'
+        - 'apa102': 'en/modules/apa102.md'
+        - 'bit': 'en/modules/bit.md'
+        - 'bme280': 'en/modules/bme280.md'
+        - 'bmp085': 'en/modules/bmp085.md'
+        - 'cjson': 'en/modules/cjson.md'
+        - 'coap': 'en/modules/coap.md'
+        - 'crypto': 'en/modules/crypto.md'
+        - 'dht': 'en/modules/dht.md'
+        - 'encoder': 'en/modules/encoder.md'
+        - 'enduser setup': 'en/modules/enduser-setup.md'
+        - 'file': 'en/modules/file.md'
+        - 'gpio': 'en/modules/gpio.md'
+        - 'hmc5883l': 'en/modules/hmc5883l.md'
+        - 'http': 'en/modules/http.md'
+        - 'hx711' : 'en/modules/hx711.md'
+        - 'i2c' : 'en/modules/i2c.md'
+        - 'l3g4200d' : 'en/modules/l3g4200d.md'
+        - 'mdns': 'en/modules/mdns.md'
+        - 'mqtt': 'en/modules/mqtt.md'
+        - 'net': 'en/modules/net.md'
+        - 'node': 'en/modules/node.md'
+        - 'ow (1-Wire)': 'en/modules/ow.md'
+        - 'pcm' : 'en/modules/pcm.md'
+        - 'perf': 'en/modules/perf.md'
+        - 'pwm' : 'en/modules/pwm.md'
+        - 'rc' : 'en/modules/rc.md'
+        - 'rotary' : 'en/modules/rotary.md'
+        - 'rtcfifo': 'en/modules/rtcfifo.md'
+        - 'rtcmem': 'en/modules/rtcmem.md'
+        - 'rtctime': 'en/modules/rtctime.md'
+        - 'sigma delta': 'en/modules/sigma-delta.md'
+        - 'sntp': 'en/modules/sntp.md'
+        - 'spi': 'en/modules/spi.md'
+        - 'struct': 'en/modules/struct.md'
+        - 'switec': 'en/modules/switec.md'
+        - 'tm1829': 'en/modules/tm1829.md'
+        - 'tmr': 'en/modules/tmr.md'
+        - 'tsl2561': 'en/modules/tsl2561.md'
+        - 'u8g': 'en/modules/u8g.md'
+        - 'uart': 'en/modules/uart.md'
+        - 'ucg': 'en/modules/ucg.md'
+        - 'wifi': 'en/modules/wifi.md'
+        - 'ws2801': 'en/modules/ws2801.md'
+        - 'ws2812': 'en/modules/ws2812.md'
+#- Deutsch:
+#    - Home: 'de/index.md'
