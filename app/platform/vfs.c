@@ -332,6 +332,22 @@ void vfs_clearerr( const char *name )
 #endif
 }
 
+const char *vfs_basename( const char *path )
+{
+  const char *basename;
+
+  // deduce basename (incl. extension) for length check
+  if (basename = c_strrchr( path, '/' )) {
+    basename++;
+  } else if (basename = c_strrchr( path, ':' )) {
+    basename++;
+  } else {
+    basename = path;
+  }
+
+  return basename;
+}
+
 
 // ---------------------------------------------------------------------------
 // supplementary functions

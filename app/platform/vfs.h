@@ -8,9 +8,6 @@
 // Check for fd != 0 instead
 #define FS_OPEN_OK 1
 
-// TODO: align with SPIFFS_OBJ_NAME_LEN
-#define VFS_NAME_MAX_LENGTH 32
-
 // ---------------------------------------------------------------------------
 // file functions
 //
@@ -242,5 +239,10 @@ void      vfs_clearerr( const char *name );
 // vfs_register_rtc_cb - register callback function for RTC query
 //   cb: pointer to callback function
 void vfs_register_rtc_cb( sint32_t (*cb)( vfs_time *tm ) );
+
+// vfs_basename - identify basename (incl. extension)
+//   path: full file system path
+//   Returns: pointer to basename within path string
+const char *vfs_basename( const char *path );
 
 #endif

@@ -4,6 +4,8 @@
 
 #define _FFCONF 88100	/* Revision ID */
 
+#include "user_config.h"
+
 /*---------------------------------------------------------------------------/
 / Function Configurations
 /---------------------------------------------------------------------------*/
@@ -100,7 +102,7 @@
 
 
 #define	_USE_LFN	3
-#define	_MAX_LFN	63
+#define	_MAX_LFN	(FS_OBJ_NAME_LEN+1+1)
 /* The _USE_LFN switches the support of long file name (LFN).
 /
 /   0: Disable support of LFN. _MAX_LFN has no effect.

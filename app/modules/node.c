@@ -244,20 +244,23 @@ static int node_compile( lua_State* L )
   int file_fd = 0;
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
-  if ( len >= VFS_NAME_MAX_LENGTH )
-    return luaL_error(L, "filename too long");
+  const char *basename = vfs_basename( fname );
+  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
 
-  char output[VFS_NAME_MAX_LENGTH];
+  char *output = luaM_malloc( L, len+1 );
   c_strcpy(output, fname);
   // check here that filename end with ".lua".
-  if (len < 4 || (c_strcmp( output + len - 4, ".lua") != 0) )
+  if (len < 4 || (c_strcmp( output + len - 4, ".lua") != 0) ) {
+    luaM_free( L, output );
     return luaL_error(L, "not a .lua file");
+  }
 
   output[c_strlen(output) - 2] = 'c';
   output[c_strlen(output) - 1] = '\0';
   NODE_DBG(output);
   NODE_DBG("\n");
   if (luaL_loadfsfile(L, fname) != 0) {
+    luaM_free( L, output );
     return luaL_error(L, lua_tostring(L, -1));
   }
 
@@ -268,6 +271,7 @@ static int node_compile( lua_State* L )
   file_fd = vfs_open(output, "w+");
   if (!file_fd)
   {
+    luaM_free( L, output );
     return luaL_error(L, "cannot open/write to file");
   }
 
@@ -281,6 +285,7 @@ static int node_compile( lua_State* L )
   }
   vfs_close(file_fd);
   file_fd = 0;
+  luaM_free( L, output );
 
   if (result == LUA_ERR_CC_INTOVERFLOW) {
     return luaL_error(L, "value too big or small for target integer type");

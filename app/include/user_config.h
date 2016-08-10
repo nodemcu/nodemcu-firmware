@@ -73,6 +73,9 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 
 //#define BUILD_FATFS
 
+// maximum length of a filename
+#define FS_OBJ_NAME_LEN 31
+
 // Uncomment this next line for fastest startup 
 // It reduces the format time dramatically
 // #define SPIFFS_MAX_FILESYSTEM_SIZE	32768
