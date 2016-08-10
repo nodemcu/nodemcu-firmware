@@ -78,7 +78,12 @@ esptool.py --port <serial-port-of-ESP8266> write_flash <flash options> 0x00000 <
 
 !!! note "Note:"
 
-    The address for `esp_init_data_default.bin` depends on the size of your module's flash. ESP-01, -03, -07 etc. with 512 kByte flash require `0x7c000`. Init data goes to `0x3fc000` on an ESP-12E with 4 MByte flash.
+    The address for `esp_init_data_default.bin` depends on the size of your module's flash. 
+    
+    - `0x7c000` for 512 kB, modules like ESP-01, -03, -07 etc.
+    - `0xfc000` for 1 MB, modules like ESP8285, PSF-A85
+    - `0x1fc000` for 2 MB
+    - `0x3fc000` for 4 MB, modules like ESP-12E, NodeMCU devkit 1.0, WeMos D1 mini
 
 **NodeMCU Flasher**
 
