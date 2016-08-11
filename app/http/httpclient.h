@@ -51,15 +51,15 @@ typedef void (* http_callback_t)(char * response_body, int http_status, char * f
 /*
  * Call this function to skip URL parsing if the arguments are already in separate variables.
  */
-void ICACHE_FLASH_ATTR http_raw_request(const char * hostname, int port, bool secure, const char * method, const char * path, const char * headers, const char * post_data, http_callback_t callback_handle);
+void ICACHE_FLASH_ATTR http_raw_request(const char * hostname, int port, bool secure, const char * method, const char * path, const char * headers, const char * post_data, http_callback_t callback_handle, int redirect_follow_count);
 
 /*
  * Request data from URL use custom method.
  * The data should be encoded as any format.
  * Try:
- * http_request("http://httpbin.org/post", "OPTIONS", "Content-type: text/plain", "Hello world", http_callback_example);
+ * http_request("http://httpbin.org/post", "OPTIONS", "Content-type: text/plain", "Hello world", http_callback_example, 0);
  */
-void ICACHE_FLASH_ATTR http_request(const char * url, const char * method, const char * headers, const char * post_data, http_callback_t callback_handle);
+void ICACHE_FLASH_ATTR http_request(const char * url, const char * method, const char * headers, const char * post_data, http_callback_t callback_handle, int redirect_follow_count);
 
 /*
  * Post data to a web form.
