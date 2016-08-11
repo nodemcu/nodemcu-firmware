@@ -181,7 +181,6 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 	HTTPCLIENT_DEBUG( "Connected\n" );
 	struct espconn	* conn	= (struct espconn *) arg;
 	request_args_t	* req	= (request_args_t *) conn->reverse;
-	int len;
 	espconn_regist_recvcb( conn, http_receive_callback );
 	espconn_regist_sentcb( conn, http_send_callback );
 
@@ -198,39 +197,57 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 		req->headers[0] = '\0';
 	}
 
-	char buf[69 + strlen( req->method ) + strlen( req->path ) + strlen( req->hostname ) +
-		 strlen( req->headers ) + strlen( post_headers )];
+	char ua_header[32] = "";
+    int ua_len = 0;
+    if (os_strstr( req->headers, "User-Agent:" ) == NULL && os_strstr( req->headers, "user-agent:" ) == NULL)
+    {
+        os_sprintf( ua_header, "User-Agent: %s\r\n", "ESP8266" );
+        ua_len = strlen(ua_header);
+    }
 
-	if ((req->port == 80) || ((req->port == 443) && ( req->secure )))
-	{
-		len = os_sprintf( buf,
-		  		"%s %s HTTP/1.1\r\n"
-			    "Host: %s\r\n"
-			    "Connection: close\r\n"
-			    "User-Agent: ESP8266\r\n"
-			    "%s"
-			    "%s"
-			    "\r\n",
-			    req->method, req->path, req->hostname, req->headers, post_headers );
-	} else {
-		len = os_sprintf( buf,
-				"%s %s HTTP/1.1\r\n"
-				"Host: %s:%d\r\n"
-				"Connection: close\r\n"
-				"User-Agent: ESP8266\r\n"
-				"%s"
-				"%s"
-				"\r\n",
-				req->method, req->path, req->hostname, req->port, req->headers, post_headers );
-	}
-	if ( req->secure )
-		espconn_secure_send( conn, (uint8_t *) buf, len );
-	else
-		espconn_send( conn, (uint8_t *) buf, len );
-	if(req->headers != NULL)
-		os_free( req->headers );
-	req->headers = NULL;
-	HTTPCLIENT_DEBUG( "Sending request header\n" );
+	char host_header[32] = "";
+    int host_len = 0;
+    if ( os_strstr( req->headers, "Host:" ) == NULL && os_strstr( req->headers, "host:" ) == NULL)
+    {
+        if ((req->port == 80) || ((req->port == 443) && ( req->secure )))
+        {
+            os_sprintf( host_header, "Host: %s\r\n", req->hostname );
+        }
+        else
+        {
+            os_sprintf( host_header, "Host: %s:%d\r\n", req->hostname, req->port );
+        }
+        host_len = strlen(host_header);
+    }
+
+    char buf[69 + strlen( req->method ) + strlen( req->path ) + host_len +
+           strlen( req->headers ) + ua_len + strlen( post_headers )];
+    int len = os_sprintf( buf,
+            "%s %s HTTP/1.1\r\n"
+            "%s" // Host (if not provided in the headers from Lua)
+            "Connection: close\r\n"
+            "%s" // Headers from Lua (optional)
+            "%s" // User-Agent (if not provided in the headers from Lua)
+            "%s" // Content-Length
+            "\r\n",
+            req->method, req->path, host_header, req->headers, ua_header, post_headers );
+
+    if (req->secure)
+    {
+        espconn_secure_send( conn, (uint8_t *) buf, len );
+    }
+    else
+    {
+        espconn_send( conn, (uint8_t *) buf, len );
+    }
+
+    if (req->headers != NULL)
+    {
+        os_free( req->headers );
+    }
+
+    req->headers = NULL;
+    HTTPCLIENT_DEBUG( "Sending request header\n" );
 }
 
 static void http_free_req( request_args_t * req)
