@@ -350,7 +350,7 @@ int platform_sdcard_init( uint8_t spi_no, uint8_t ss_pin )
   // initialize card and send host supports SDHC if SD2
   arg = m_type == SD_CARD_TYPE_SD2 ? 0x40000000 : 0;
 
-  set_timeout( &to, 100 * 1000 );
+  set_timeout( &to, 500 * 1000 );
   while (sdcard_acmd( ACMD41, arg ) != R1_READY_STATE) {
     if (timed_out( &to )) {
       goto fail;
