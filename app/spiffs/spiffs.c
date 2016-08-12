@@ -322,7 +322,7 @@ static vfs_dir_fns myspiffs_dd_fns = {
 //
 struct myvfs_file {
   struct vfs_file vfs_file;
-  int fh;
+  spiffs_file fh;
 };
 
 struct myvfs_dir {
@@ -474,7 +474,7 @@ static sint32_t myspiffs_vfs_tell( const struct vfs_file *fd ) {
 static sint32_t myspiffs_vfs_flush( const struct vfs_file *fd ) {
   GET_FILE_FH(fd);
 
-  return SPIFFS_fflush( &fs, fh );
+  return SPIFFS_fflush( &fs, fh ) >= 0 ? VFS_RES_OK : VFS_RES_ERR;
 }
 
 static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd ) {
