@@ -13,6 +13,8 @@ Each request method takes a callback which is invoked when the response has been
 
 For each operation it is possible to provide custom HTTP headers or override standard headers. By default the `Host` header is deduced from the URL and `User-Agent` is `ESP8266`. Note, however, that the `Connection` header *can not* be overridden! It is always set to `close`.
 
+HTTP redirects (HTTP status 300-308) are followed automatically up to a limit of 20 to avoid the dreaded redirect loops.
+
 **SSL/TLS support**
 
 Take note of constraints documented in the [net module](net.md). 
