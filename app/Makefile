@@ -25,6 +25,7 @@ SUBDIRS= 					\
 	user 					\
 	driver 					\
 	pcm					\
+	mbedtls 				\
 	platform 				\
 	libc 					\
 	lua 					\
@@ -94,6 +95,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	websocket/libwebsocket.a		\
 	esp-gdbstub/libgdbstub.a		\
 	net/libnodemcu_net.a			\
+	mbedtls/libmbedtls.a      \
 	modules/libmodules.a			\
 
 # Inspect the modules library and work out which modules need to be linked.
@@ -113,6 +115,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-Wl,-static 				\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
 	-Wl,--start-group 			\
+	-lmain 					\
 	-lc 					\
 	-lgcc 					\
 	-lhal 					\
@@ -121,9 +124,7 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-lnet80211 				\
 	-lwpa 					\
 	-lwpa2					\
-	-lmain 					\
 	-lsmartconfig 				\
-	-lssl 					\
 	-lcrypto				\
 	$(DEP_LIBS_eagle.app.v6) 		\
 	-Wl,--end-group 			\
@@ -154,6 +155,7 @@ CONFIGURATION_DEFINES =	-D__ets__ 		\
 			-DLWIP_OPEN_SRC 	\
 			-DPBUF_RSV_FOR_WLAN 	\
 			-DEBUF_LWIP		\
+			-DMBEDTLS_USER_CONFIG_FILE=\"user_mbedtls.h\"  \
 
 DEFINES += 					\
 	$(UNIVERSAL_TARGET_DEFINES) 		\
