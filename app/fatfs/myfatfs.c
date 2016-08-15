@@ -48,7 +48,9 @@ static vfs_item *myfatfs_stat( const char *name );
 static sint32_t  myfatfs_remove( const char *name );
 static sint32_t  myfatfs_rename( const char *oldname, const char *newname );
 static sint32_t  myfatfs_mkdir( const char *name );
+static sint32_t  myfatfs_fsinfo( uint32_t *total, uint32_t *used );
 static sint32_t  myfatfs_chdrive( const char *name );
+static sint32_t  myfatfs_chdir( const char *name );
 static sint32_t  myfatfs_errno( void );
 static void      myfatfs_clearerr( void );
 
@@ -66,10 +68,11 @@ static vfs_fs_fns myfatfs_fs_fns = {
   .remove   = myfatfs_remove,
   .rename   = myfatfs_rename,
   .mkdir    = myfatfs_mkdir,
-  .fsinfo   = NULL,
+  .fsinfo   = myfatfs_fsinfo,
   .fscfg    = NULL,
   .format   = NULL,
   .chdrive  = myfatfs_chdrive,
+  .chdir    = myfatfs_chdir,
   .ferrno   = myfatfs_errno,
   .clearerr = myfatfs_clearerr
 };
@@ -430,10 +433,7 @@ static vfs_vol *myfatfs_mount( const char *name, int num )
   }
 
   if (vol = c_malloc( sizeof( struct myvfs_vol ) )) {
-    if (vol->ldrname = c_malloc( len + 1 )) {
-      c_strncpy( vol->ldrname, name, len );
-      vol->ldrname[len] = '\0';
-
+    if (vol->ldrname = c_strdup( name )) {
       if (FR_OK == (last_result = f_mount( &(vol->fs), name, 1 ))) {
 	vol->vfs_vol.fs_type = VFS_FS_FATFS;
 	vol->vfs_vol.fns     = &myfatfs_vol_fns;
@@ -551,15 +551,32 @@ static sint32_t myfatfs_mkdir( const char *name )
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
+static sint32_t  myfatfs_fsinfo( uint32_t *total, uint32_t *used )
+{
+  DWORD free_clusters;
+  FATFS *fatfs;
+
+  if ((last_result = f_getfree( "", &free_clusters, &fatfs )) == FR_OK) {
+    // provide information in kByte since uint32_t would clip to 4 GByte
+    *total = (fatfs->n_fatent * fatfs->csize) / (1024 / _MAX_SS);
+    *used  = *total - (free_clusters * fatfs->csize) / (1024 / _MAX_SS);
+  }
+
+  return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
+}
+
 static sint32_t myfatfs_chdrive( const char *name )
 {
-  if (FR_OK == f_chdrive( name )) {
-    is_current_drive = TRUE;
-    return VFS_RES_OK;
-  } else {
-    is_current_drive = FALSE;
-    return VFS_RES_ERR;
-  }
+  last_result = f_chdrive( name );
+
+  return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
+}
+
+static sint32_t myfatfs_chdir( const char *name )
+{
+  last_result = f_chdir( name );
+
+  return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
 static sint32_t myfatfs_errno( void )
@@ -576,25 +593,32 @@ static void myfatfs_clearerr( void )
 // ---------------------------------------------------------------------------
 // VFS interface functions
 //
-vfs_fs_fns *myfatfs_realm( const char *inname, const char **outname )
+vfs_fs_fns *myfatfs_realm( const char *inname, char **outname, int set_current_drive )
 {
-  char *colon_pos = c_strchr( inname, ':' );
+  if (inname[0] == '/') {
+    char *oname;
 
-  if (colon_pos) {
     // logical drive is specified, check if it's one of ours
     for (int i = 0; i < _VOLUMES; i++) {
-      if (0 == c_strncmp( inname, volstr[i], c_strlen( volstr[i] ) )) {
-        *outname = inname;
+      size_t volstr_len = c_strlen( volstr[i] );
+      if (0 == c_strncmp( &(inname[1]), volstr[i], volstr_len )) {
+        oname = c_strdup( inname );
+        c_strcpy( oname, volstr[i] );
+        oname[volstr_len] = ':';
+        *outname = oname;
+
+        if (set_current_drive) is_current_drive = TRUE;
         return &myfatfs_fs_fns;
       }
     }
   } else {
     // no logical drive in patchspec, are we current drive?
     if (is_current_drive) {
-      *outname = inname;
+      *outname = c_strdup( inname );
       return &myfatfs_fs_fns;
     }
   }
 
+  if (set_current_drive) is_current_drive = FALSE;
   return NULL;
 }

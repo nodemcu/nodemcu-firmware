@@ -217,10 +217,10 @@ sint32_t  vfs_fsinfo( const char *name, uint32_t *total, uint32_t *used );
 //   Returns: 1, or 0 in case of error
 sint32_t  vfs_format( void );
 
-// vfs_chdrive - change default logical drive
-//   ldrv: new default logical drive
+// vfs_chdir - change default directory
+//   path: new default directory
 //   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
-sint32_t  vfs_chdrive( const char *ldrv );
+sint32_t  vfs_chdir( const char *path );
 
 // vfs_fscfg - query configuration settings of file system
 //   phys_addr: pointer to store physical address information

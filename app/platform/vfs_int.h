@@ -121,14 +121,15 @@ struct vfs_fs_fns {
   sint32_t  (*fscfg)( uint32_t *phys_addr, uint32_t *phys_size );
   sint32_t  (*format)( void );
   sint32_t  (*chdrive)( const char * );
+  sint32_t  (*chdir)( const char * );
   sint32_t  (*ferrno)( void );
   void      (*clearerr)( void );
 };
 typedef const struct vfs_fs_fns vfs_fs_fns;
 
 
-vfs_fs_fns *myspiffs_realm( const char *inname, const char **outname );
-vfs_fs_fns *myfatfs_realm( const char *inname, const char **outname );
+vfs_fs_fns *myspiffs_realm( const char *inname, char **outname, int set_current_drive );
+vfs_fs_fns *myfatfs_realm( const char *inname, char **outname, int set_current_drive );
 
 sint32_t vfs_get_rtc( vfs_time *tm );
 

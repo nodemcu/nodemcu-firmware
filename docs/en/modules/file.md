@@ -5,38 +5,40 @@
 
 The file module provides access to the file system and its individual files.
 
-The file system is a flat file system, with no notion of directories/folders.
+The file system is a flat file system, with no notion of subdirectories/folders.
 
 Only one file can be open at any given time.
 
-Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card.
+Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card is [FatFS is enabled](../sdcard.md).
 
 ```lua
 -- open file in flash:
-file.open("init.lua")
-print(file.read())
-file.close()
+if file.open("init.lua") then
+  print(file.read())
+  file.close()
+end
 
 -- or with full pathspec
-file.open("FLASH:init.lua")
+file.open("/FLASH/init.lua")
 
 -- open file on SD card
-file.open("SD0:somefile.txt")
-print(file.read())
-file.close()
+if file.open("/SD0/somefile.txt") then
+  print(file.read())
+  file.close()
+end
 ```
 
-## file.chdrive()
+## file.chdir()
 
-Change current drive. This will be used when no drive identifier is prepended to filenames.
+Change current directory (and drive). This will be used when no drive/directory is prepended to filenames.
 
-Current drive defaults to internal SPIFFS (`FLASH:`) after system start.
+Current directory defaults to the root of internal SPIFFS (`/FLASH`) after system start.
 
 #### Syntax
-`file.chdrive(ldrv)`
+`file.chdir(dir)`
 
 #### Parameters
-`ldrv` name of the logical drive - `FLASH:`, `SD0:`, `SD1:`, etc.
+`dir` directory name - `/FLASH`, `/SD0`, `/SD1`, etc.
 
 #### Returns
 `true` on success, `false` otherwise
@@ -57,9 +59,10 @@ none
 #### Example
 ```lua
 -- open 'init.lua', print the first line.
-file.open("init.lua", "r")
-print(file.readline())
-file.close()
+if file.open("init.lua", "r") then
+  print(file.readline())
+  file.close()
+end
 ```
 #### See also
 [`file.open()`](#fileopen)
@@ -108,13 +111,14 @@ none
 #### Example
 ```lua
 -- open 'init.lua' in 'a+' mode
-file.open("init.lua", "a+")
--- write 'foo bar' to the end of the file
-file.write('foo bar')
-file.flush()
--- write 'baz' too
-file.write('baz')
-file.close()
+if file.open("init.lua", "a+") then
+  -- write 'foo bar' to the end of the file
+  file.write('foo bar')
+  file.flush()
+  -- write 'baz' too
+  file.write('baz')
+  file.close()
+end
 ```
 #### See also
 [`file.close()`](#fileclose)
@@ -160,9 +164,7 @@ print(string.format("0x%x", file.fscfg()))
 
 ## file.fsinfo()
 
-Return size information for the file system, in bytes.
-
-Not supported for SD cards.
+Return size information for the file system. The unit is Byte for SPIFFS and kByte for FatFS.
 
 #### Syntax
 `file.fsinfo()`
@@ -180,7 +182,7 @@ none
 ```lua
 -- get file system info
 remaining, used, total=file.fsinfo()
-print("\nFile system info:\nTotal : "..total.." Bytes\nUsed : "..used.." Bytes\nRemain: "..remaining.." Bytes\n")
+print("\nFile system info:\nTotal : "..total.." (k)Bytes\nUsed : "..used.." (k)Bytes\nRemain: "..remaining.." (k)Bytes\n")
 ```
 
 ## file.list()
@@ -251,9 +253,10 @@ When done with the file, it must be closed using `file.close()`.
 #### Example
 ```lua
 -- open 'init.lua', print the first line.
-file.open("init.lua", "r")
-print(file.readline())
-file.close()
+if file.open("init.lua", "r") then
+  print(file.readline())
+  file.close()
+end
 ```
 #### See also
 - [`file.close()`](#fileclose)
@@ -278,14 +281,16 @@ File content as a string, or nil when EOF
 #### Example
 ```lua
 -- print the first line of 'init.lua'
-file.open("init.lua", "r")
-print(file.read('\n'))
-file.close()
+if file.open("init.lua", "r") then
+  print(file.read('\n'))
+  file.close()
+end
 
 -- print the first 5 bytes of 'init.lua'
-file.open("init.lua", "r")
-print(file.read(5))
-file.close()
+if file.open("init.lua", "r") then
+  print(file.read(5))
+  file.close()
+end
 ```
 
 #### See also
@@ -308,9 +313,10 @@ File content in string, line by line, including EOL('\n'). Return `nil` when EOF
 #### Example
 ```lua
 -- print the first line of 'init.lua'
-file.open("init.lua", "r")
-print(file.readline())
-file.close()
+if file.open("init.lua", "r") then
+  print(file.readline())
+  file.close()
+end
 ```
 #### See also
 - [`file.open()`](#fileopen)
@@ -380,11 +386,12 @@ the resulting file position, or `nil` on error
 
 #### Example
 ```lua
-file.open("init.lua", "r")
--- skip the first 5 bytes of the file
-file.seek("set", 5)
-print(file.readline())
-file.close()
+if file.open("init.lua", "r") then
+  -- skip the first 5 bytes of the file
+  file.seek("set", 5)
+  print(file.readline())
+  file.close()
+end
 ```
 #### See also
 [`file.open()`](#fileopen)
@@ -405,10 +412,11 @@ Write a string to the open file.
 #### Example
 ```lua
 -- open 'init.lua' in 'a+' mode
-file.open("init.lua", "a+")
--- write 'foo bar' to the end of the file
-file.write('foo bar')
-file.close()
+if file.open("init.lua", "a+") then
+  -- write 'foo bar' to the end of the file
+  file.write('foo bar')
+  file.close()
+end
 ```
 
 #### See also
@@ -431,10 +439,11 @@ Write a string to the open file and append '\n' at the end.
 #### Example
 ```lua
 -- open 'init.lua' in 'a+' mode
-file.open("init.lua", "a+")
--- write 'foo bar' to the end of the file
-file.writeline('foo bar')
-file.close()
+if file.open("init.lua", "a+") then
+  -- write 'foo bar' to the end of the file
+  file.writeline('foo bar')
+  file.close()
+end
 ```
 
 #### See also

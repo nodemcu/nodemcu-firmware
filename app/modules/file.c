@@ -43,7 +43,7 @@ static int file_fscfg (lua_State *L)
 {
   uint32_t phys_addr, phys_size;
 
-  vfs_fscfg("FLASH:", &phys_addr, &phys_size);
+  vfs_fscfg("/FLASH", &phys_addr, &phys_size);
 
   lua_pushinteger (L, phys_addr);
   lua_pushinteger (L, phys_size);
@@ -81,7 +81,7 @@ static int file_list( lua_State* L )
   vfs_dir  *dir;
   vfs_item *item;
 
-  if (dir = vfs_opendir("/")) {
+  if (dir = vfs_opendir("")) {
     lua_newtable( L );
     while (item = vfs_readdir(dir)) {
       lua_pushinteger(L, vfs_item_size(item));
@@ -303,7 +303,7 @@ typedef struct {
   vfs_vol *vol;
 } volume_type;
 
-// Lua: vol = file.mount("SD0:")
+// Lua: vol = file.mount("/SD0")
 static int file_mount( lua_State *L )
 {
   const char *ldrv = luaL_checkstring( L, 1 );
@@ -322,12 +322,12 @@ static int file_mount( lua_State *L )
   }
 }
 
-// Lua: success = file.chdrive("SD0:")
-static int file_chdrive( lua_State *L )
+// Lua: success = file.chdir("/SD0/")
+static int file_chdir( lua_State *L )
 {
-  const char *ldrv = luaL_checkstring( L, 1 );
+  const char *path = luaL_checkstring( L, 1 );
 
-  lua_pushboolean( L, 0 <= vfs_chdrive( ldrv ) );
+  lua_pushboolean( L, 0 <= vfs_chdir( path ) );
   return 1;
 }
 
@@ -375,7 +375,7 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
 #ifdef BUILD_FATFS
   { LSTRKEY( "mount" ),     LFUNCVAL( file_mount ) },
-  { LSTRKEY( "chdrive" ),   LFUNCVAL( file_chdrive ) },
+  { LSTRKEY( "chdir" ),     LFUNCVAL( file_chdir ) },
 #endif
   { LNILKEY, LNILVAL }
 };

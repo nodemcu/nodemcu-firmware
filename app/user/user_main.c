@@ -105,7 +105,7 @@ void nodemcu_init(void)
 #endif
 
 #ifdef BUILD_SPIFFS
-    if (!vfs_mount("FLASH:", 0)) {
+    if (!vfs_mount("/FLASH", 0)) {
         // Failed to mount -- try reformat
 	c_printf("Formatting file system. Please wait...\n");
         if (!vfs_format()) {

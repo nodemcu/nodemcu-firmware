@@ -33,20 +33,20 @@ spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 
 -- initialize other slaves
 
-vol = file.mount("SD0:", 8)   -- incl. 2nd optional parameter for SS/CS pin
+vol = file.mount("/SD0", 8)   -- incl. 2nd optional parameter for SS/CS pin
 if not vol then
-  print("retrying mount")
-  vol = file.mount("SD0:", 8)
+  print("retry mounting")
+  vol = file.mount("/SD0", 8)
   if not vol then
     error("mount failed")
   end
 end
-file.open("SD0:somefile")
+file.open("/SD0/somefile")
 print(file.read())
 file.close()
 ```
 
-DOS-like identifiers are used to distinguish between internal flash (`FLASH:`) and the card's paritions (`SD0:` to `SD3:`). This identifier can be omitted for backwards-compatibility and access will be directed to internal flash in this case. Use `file.chdrive("SD0:")` to map the default drive to SD card.
+DOS-like identifiers are used to distinguish between internal flash (`/FLASH`) and the card's paritions (`/SD0` to `/SD3`). This identifier can be omitted for backwards-compatibility and access will be directed to internal flash in this case. Use `file.chdir("/SD0")` to switch the current drive to SD card.
 
 !!! note "Note:"
 
@@ -54,4 +54,4 @@ DOS-like identifiers are used to distinguish between internal flash (`FLASH:`) a
 
 ## Multiple partitions / multiple cards
 
-The mapping from logical volumes (eg. `SD0:`) to partitions on an SD card is define in [`fatfs_config.h`](../../app/include/fatfs_config.h). More volumes can be added to the `VolToPart` array with any combination of physical drive number (aka SS/CS pin) and partition number. Their names have to be added to `_VOLUME_STRS` in [`ffconf.h`](../../app/fatfs/ffconf.h) as well.
+The mapping from logical volumes (eg. `/SD0`) to partitions on an SD card is define in [`fatfs_config.h`](../../app/include/fatfs_config.h). More volumes can be added to the `VolToPart` array with any combination of physical drive number (aka SS/CS pin) and partition number. Their names have to be added to `_VOLUME_STRS` in [`ffconf.h`](../../app/fatfs/ffconf.h) as well.

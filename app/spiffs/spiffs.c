@@ -230,7 +230,7 @@ void test_spiffs() {
 #include <c_stdlib.h>
 #include "vfs_int.h"
 
-#define MY_LDRV_ID "FLASH:"
+#define MY_LDRV_ID "FLASH"
 
 // default current drive
 static int is_current_drive = TRUE;
@@ -262,7 +262,6 @@ static sint32_t  myspiffs_vfs_rename( const char *oldname, const char *newname )
 static sint32_t  myspiffs_vfs_fsinfo( uint32_t *total, uint32_t *used );
 static sint32_t  myspiffs_vfs_fscfg( uint32_t *phys_addr, uint32_t *phys_size );
 static sint32_t  myspiffs_vfs_format( void );
-static sint32_t  myspiffs_vfs_chdrive( const char *name );
 static sint32_t  myspiffs_vfs_errno( void );
 static void      myspiffs_vfs_clearerr( void );
 
@@ -282,7 +281,8 @@ static vfs_fs_fns myspiffs_fs_fns = {
   .fsinfo   = myspiffs_vfs_fsinfo,
   .fscfg    = myspiffs_vfs_fscfg,
   .format   = myspiffs_vfs_format,
-  .chdrive  = myspiffs_vfs_chdrive,
+  .chdrive  = NULL,
+  .chdir    = NULL,
   .ferrno   = myspiffs_vfs_errno,
   .clearerr = myspiffs_vfs_clearerr
 };
@@ -585,17 +585,6 @@ static sint32_t myspiffs_vfs_format( void ) {
   return myspiffs_format();
 }
 
-static sint32_t myspiffs_vfs_chdrive( const char *name )
-{
-  if (0 == c_strncmp( name, MY_LDRV_ID, c_strlen( MY_LDRV_ID ) )) {
-    is_current_drive = TRUE;
-    return VFS_RES_OK;
-  } else {
-    is_current_drive = FALSE;
-    return VFS_RES_ERR;
-  }
-}
-
 static sint32_t myspiffs_vfs_errno( void ) {
   return SPIFFS_errno( &fs );
 }
@@ -608,22 +597,28 @@ static void myspiffs_vfs_clearerr( void ) {
 // ---------------------------------------------------------------------------
 // VFS interface functions
 //
-vfs_fs_fns *myspiffs_realm( const char *inname, const char **outname ) {
-  char *colon_pos = c_strchr( inname, ':' );
-
-  if (colon_pos) {
+vfs_fs_fns *myspiffs_realm( const char *inname, char **outname, int set_current_drive ) {
+  if (inname[0] == '/') {
+    size_t idstr_len = c_strlen( MY_LDRV_ID );
     // logical drive is specified, check if it's our id
-    if (0 == c_strncmp( inname, MY_LDRV_ID, c_strlen( MY_LDRV_ID ) )) {
-      *outname = &(colon_pos[1]);
+    if (0 == c_strncmp( &(inname[1]), MY_LDRV_ID, idstr_len )) {
+      *outname = (char *)&(inname[1 + idstr_len]);
+      if (*outname[0] == '/') {
+        // skip leading /
+        (*outname)++;
+      }
+
+      if (set_current_drive) is_current_drive = TRUE;
       return &myspiffs_fs_fns;
     }
   } else {
     // no logical drive in patchspec, are we current drive?
     if (is_current_drive) {
-      *outname = inname;
+      *outname = (char *)inname;
       return &myspiffs_fs_fns;
     }
   }
 
+  if (set_current_drive) is_current_drive = FALSE;
   return NULL;
 }
