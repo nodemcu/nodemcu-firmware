@@ -1,11 +1,13 @@
-/*---------------------------------------------------------------------------/
-/  FatFs - FAT file system module include R0.12     (C)ChaN, 2016
-/----------------------------------------------------------------------------/
-/ FatFs module is a free software that opened under license policy of
-/ following conditions.
+/*----------------------------------------------------------------------------/
+/  FatFs - Generic FAT file system module  R0.12a                             /
+/-----------------------------------------------------------------------------/
 /
 / Copyright (C) 2016, ChaN, all right reserved.
 /
+/ FatFs module is an open source software. Redistribution and use of FatFs in
+/ source and binary forms, with or without modification, are permitted provided
+/ that the following condition is met:
+
 / 1. Redistributions of source code must retain the above copyright notice,
 /    this condition and the following disclaimer.
 /
@@ -13,11 +15,11 @@
 / and any warranties related to this software are DISCLAIMED.
 / The copyright owner or contributors be NOT LIABLE for any damages caused
 / by use of this software.
-/---------------------------------------------------------------------------*/
+/----------------------------------------------------------------------------*/
 
 
 #ifndef _FATFS
-#define _FATFS	88100	/* Revision ID */
+#define _FATFS	80186	/* Revision ID */
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +27,7 @@ extern "C" {
 
 #include "integer.h"	/* Basic integer types */
 #include "ffconf.h"		/* FatFs configuration options */
+
 #if _FATFS != _FFCONF
 #error Wrong configuration file (ffconf.h).
 #endif
@@ -52,7 +55,7 @@ extern PARTITION VolToPart[];	/* Volume - Partition resolution table */
 
 /* Type of path name strings on FatFs API */
 
-#if _LFN_UNICODE			/* Unicode string */
+#if _LFN_UNICODE			/* Unicode (UTF-16) string */
 #if _USE_LFN == 0
 #error _LFN_UNICODE must be 0 at non-LFN cfg.
 #endif
@@ -61,14 +64,25 @@ typedef WCHAR TCHAR;
 #define _T(x) L ## x
 #define _TEXT(x) L ## x
 #endif
-
 #else						/* ANSI/OEM string */
 #ifndef _INC_TCHAR
 typedef char TCHAR;
 #define _T(x) x
 #define _TEXT(x) x
 #endif
+#endif
 
+
+
+/* Type of file size variables */
+
+#if _FS_EXFAT
+#if _USE_LFN == 0
+#error LFN must be enabled when enable exFAT
+#endif
+typedef QWORD FSIZE_t;
+#else
+typedef DWORD FSIZE_t;
 #endif
 
 
@@ -86,6 +100,9 @@ typedef struct {
 	WORD	csize;			/* Cluster size [sectors] */
 #if _MAX_SS != _MIN_SS
 	WORD	ssize;			/* Sector size (512, 1024, 2048 or 4096) */
+#endif
+#if _USE_LFN != 0
+	WCHAR*	lfnbuf;			/* LFN working buffer */
 #endif
 #if _FS_EXFAT
 	BYTE*	dirbuf;			/* Directory entry block scratchpad buffer */
@@ -114,19 +131,6 @@ typedef struct {
 	DWORD	winsect;		/* Current sector appearing in the win[] */
 	BYTE	win[_MAX_SS];	/* Disk access window for Directory, FAT (and file data at tiny cfg) */
 } FATFS;
-
-
-
-/* Type of file size variables and object identifier */
-
-#if _FS_EXFAT
-#if _USE_LFN == 0
-#error LFN must be enabled when enable exFAT
-#endif
-typedef QWORD FSIZE_t;
-#else
-typedef DWORD FSIZE_t;
-#endif
 
 
 
@@ -159,14 +163,14 @@ typedef struct {
 	BYTE	flag;			/* File status flags */
 	BYTE	err;			/* Abort flag (error code) */
 	FSIZE_t	fptr;			/* File read/write pointer (Zeroed on file open) */
-	DWORD	clust;			/* Current cluster of fpter (not valid when fprt is 0) */
+	DWORD	clust;			/* Current cluster of fpter (invalid when fprt is 0) */
 	DWORD	sect;			/* Sector number appearing in buf[] (0:invalid) */
 #if !_FS_READONLY
 	DWORD	dir_sect;		/* Sector number containing the directory entry */
 	BYTE*	dir_ptr;		/* Pointer to the directory entry in the win[] */
 #endif
 #if _USE_FASTSEEK
-	DWORD*	cltbl;			/* Pointer to the cluster link map table (Nulled on file open) */
+	DWORD*	cltbl;			/* Pointer to the cluster link map table (nulled on open, set by application) */
 #endif
 #if !_FS_TINY
 	BYTE	buf[_MAX_SS];	/* File private data read/write window */
@@ -183,10 +187,9 @@ typedef struct {
 	DWORD	clust;			/* Current cluster */
 	DWORD	sect;			/* Current sector */
 	BYTE*	dir;			/* Pointer to the directory item in the win[] */
-	BYTE*	fn;				/* Pointer to the SFN (in/out) {body[8],ext[3],status[1]} */
+	BYTE	fn[12];			/* SFN (in/out) {body[8],ext[3],status[1]} */
 #if _USE_LFN != 0
 	DWORD	blk_ofs;		/* Offset of current entry block being processed (0xFFFFFFFF:Invalid) */
-	WCHAR*	lfn;			/* Pointer to the LFN working buffer */
 #endif
 #if _USE_FIND
 	const TCHAR* pat;		/* Pointer to the name matching pattern */
@@ -229,7 +232,7 @@ typedef enum {
 	FR_INVALID_DRIVE,		/* (11) The logical drive number is invalid */
 	FR_NOT_ENABLED,			/* (12) The volume has no work area */
 	FR_NO_FILESYSTEM,		/* (13) There is no valid FAT volume */
-	FR_MKFS_ABORTED,		/* (14) The f_mkfs() aborted due to any parameter error */
+	FR_MKFS_ABORTED,		/* (14) The f_mkfs() aborted due to any problem */
 	FR_TIMEOUT,				/* (15) Could not get a grant to access the volume within defined period */
 	FR_LOCKED,				/* (16) The operation is rejected according to the file sharing policy */
 	FR_NOT_ENOUGH_CORE,		/* (17) LFN working buffer could not be allocated */
@@ -244,11 +247,11 @@ typedef enum {
 
 FRESULT f_open (FIL* fp, const TCHAR* path, BYTE mode);				/* Open or create a file */
 FRESULT f_close (FIL* fp);											/* Close an open file object */
-FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* Read data from a file */
-FRESULT f_write (FIL* fp, const void* buff, UINT btw, UINT* bw);	/* Write data to a file */
-FRESULT f_lseek (FIL* fp, FSIZE_t ofs);								/* Move file pointer of a file object */
-FRESULT f_truncate (FIL* fp);										/* Truncate file */
-FRESULT f_sync (FIL* fp);											/* Flush cached data of a writing file */
+FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);			/* Read data from the file */
+FRESULT f_write (FIL* fp, const void* buff, UINT btw, UINT* bw);	/* Write data to the file */
+FRESULT f_lseek (FIL* fp, FSIZE_t ofs);								/* Move file pointer of the file object */
+FRESULT f_truncate (FIL* fp);										/* Truncate the file */
+FRESULT f_sync (FIL* fp);											/* Flush cached data of the writing file */
 FRESULT f_opendir (DIR* dp, const TCHAR* path);						/* Open a directory */
 FRESULT f_closedir (DIR* dp);										/* Close an open directory */
 FRESULT f_readdir (DIR* dp, FILINFO* fno);							/* Read a directory item */
@@ -258,8 +261,8 @@ FRESULT f_mkdir (const TCHAR* path);								/* Create a sub directory */
 FRESULT f_unlink (const TCHAR* path);								/* Delete an existing file or directory */
 FRESULT f_rename (const TCHAR* path_old, const TCHAR* path_new);	/* Rename/Move a file or directory */
 FRESULT f_stat (const TCHAR* path, FILINFO* fno);					/* Get file status */
-FRESULT f_chmod (const TCHAR* path, BYTE attr, BYTE mask);			/* Change attribute of the file/dir */
-FRESULT f_utime (const TCHAR* path, const FILINFO* fno);			/* Change timestamp of the file/dir */
+FRESULT f_chmod (const TCHAR* path, BYTE attr, BYTE mask);			/* Change attribute of a file/dir */
+FRESULT f_utime (const TCHAR* path, const FILINFO* fno);			/* Change timestamp of a file/dir */
 FRESULT f_chdir (const TCHAR* path);								/* Change current directory */
 FRESULT f_chdrive (const TCHAR* path);								/* Change current drive */
 FRESULT f_getcwd (TCHAR* buff, UINT len);							/* Get current directory */
@@ -269,8 +272,8 @@ FRESULT f_setlabel (const TCHAR* label);							/* Set volume label */
 FRESULT f_forward (FIL* fp, UINT(*func)(const BYTE*,UINT), UINT btf, UINT* bf);	/* Forward data to the stream */
 FRESULT f_expand (FIL* fp, FSIZE_t szf, BYTE opt);					/* Allocate a contiguous block to the file */
 FRESULT f_mount (FATFS* fs, const TCHAR* path, BYTE opt);			/* Mount/Unmount a logical drive */
-FRESULT f_mkfs (const TCHAR* path, BYTE sfd, UINT au);				/* Create a file system on the volume */
-FRESULT f_fdisk (BYTE pdrv, const DWORD szt[], void* work);			/* Divide a physical drive into some partitions */
+FRESULT f_mkfs (const TCHAR* path, BYTE opt, DWORD au, void* work, UINT len);	/* Create a FAT volume */
+FRESULT f_fdisk (BYTE pdrv, const DWORD* szt, void* work);			/* Divide a physical drive into some partitions */
 int f_putc (TCHAR c, FIL* fp);										/* Put a character to the file */
 int f_puts (const TCHAR* str, FIL* cp);								/* Put a string to the file */
 int f_printf (FIL* fp, const TCHAR* str, ...);						/* Put a formatted string to the file */
@@ -323,40 +326,37 @@ int ff_del_syncobj (_SYNC_t sobj);				/* Delete a sync object */
 /* Flags and offset address                                     */
 
 
-/* File access control and file status flags (FIL.flag) */
-
+/* File access mode and open method flags (3rd argument of f_open) */
 #define	FA_READ				0x01
 #define	FA_WRITE			0x02
 #define	FA_OPEN_EXISTING	0x00
 #define	FA_CREATE_NEW		0x04
 #define	FA_CREATE_ALWAYS	0x08
 #define	FA_OPEN_ALWAYS		0x10
-#define _FA_MODIFIED		0x20
-#define _FA_DIRTY			0x40
+#define	FA_OPEN_APPEND		0x30
 
+/* Fast seek controls (2nd argument of f_lseek) */
+#define CREATE_LINKMAP	((FSIZE_t)0 - 1)
 
-/* FAT sub type (FATFS.fs_type) */
+/* Format options (2nd argument of f_mkfs) */
+#define FM_FAT		0x01
+#define FM_FAT32	0x02
+#define FM_EXFAT	0x04
+#define FM_ANY		0x07
+#define FM_SFD		0x08
 
+/* Filesystem type (FATFS.fs_type) */
 #define FS_FAT12	1
 #define FS_FAT16	2
 #define FS_FAT32	3
 #define FS_EXFAT	4
 
-
-/* File attribute bits for directory entry */
-
+/* File attribute bits for directory entry (FILINFO.fattrib) */
 #define	AM_RDO	0x01	/* Read only */
 #define	AM_HID	0x02	/* Hidden */
 #define	AM_SYS	0x04	/* System */
-#define	AM_VOL	0x08	/* Volume label */
-#define AM_LFN	0x0F	/* LFN entry */
 #define AM_DIR	0x10	/* Directory */
 #define AM_ARC	0x20	/* Archive */
-#define AM_MASK	0x3F	/* Mask of defined bits */
-
-
-/* Fast seek controls */
-#define CREATE_LINKMAP	((FSIZE_t)0 - 1)
 
 
 #ifdef __cplusplus

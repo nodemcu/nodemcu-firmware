@@ -10,7 +10,7 @@ R0.00 (February 26, 2006)
 
 R0.01 (April 29, 2006)
 
-  First stable version.
+  The first release.
 
 
 
@@ -246,9 +246,22 @@ R0.11a (September 05, 2015)
 
 R0.12 (April 12, 2016)
 
-  Added support of exFAT file system. (_FS_EXFAT)
+  Added support for exFAT file system. (_FS_EXFAT)
   Added f_expand(). (_USE_EXPAND)
   Changed some members in FINFO structure and behavior of f_readdir().
-  Added an option _USE_CHMOD and removed an option _WORD_ACCESS.
-  Fixed errors in the case conversion teble of Unicode (cc*.c).
+  Added an option _USE_CHMOD.
+  Removed an option _WORD_ACCESS.
+  Fixed errors in the case conversion table of Unicode (cc*.c).
+
+
+
+R0.12a (July 10, 2016)
+
+  Added support for creating exFAT volume with some changes of f_mkfs().
+  Added a file open method FA_OPEN_APPEND. An f_lseek() following f_open() is no longer needed.
+  f_forward() is available regardless of _FS_TINY.
+  Fixed f_mkfs() creates wrong volume.
+  Fixed compilation fails at some configurations, _USE_FASTSEEK and _USE_FORWARD.
+  Fixed wrong memory read in create_name().
+
 
