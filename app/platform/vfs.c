@@ -34,7 +34,7 @@ static int dir_level = 1;
 
 static const char *normalize_path( const char *path )
 {
-#if LDRV_TRAVERSAL
+#if ! LDRV_TRAVERSAL
   return path;
 #else
   const char *temp = path;
