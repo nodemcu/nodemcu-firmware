@@ -9,8 +9,84 @@
 #include "c_string.h"
 
 static int file_fd = 0;
+static int rtc_cb_ref = LUA_NOREF;
 
 
+static void table2tm( lua_State *L, vfs_time *tm )
+{
+  int idx = lua_gettop( L );
+
+  // extract items from table
+  lua_getfield( L, idx, "year" );
+  lua_getfield( L, idx, "mon" );
+  lua_getfield( L, idx, "day" );
+  lua_getfield( L, idx, "hour" );
+  lua_getfield( L, idx, "min" );
+  lua_getfield( L, idx, "sec" );
+
+  tm->year = luaL_optint( L, ++idx, 2016 );
+  tm->mon  = luaL_optint( L, ++idx, 6 );
+  tm->day  = luaL_optint( L, ++idx, 21 );
+  tm->hour = luaL_optint( L, ++idx, 0 );
+  tm->min  = luaL_optint( L, ++idx, 0 );
+  tm->sec  = luaL_optint( L, ++idx, 0 );
+
+  // remove items from stack
+  lua_pop( L, 6 );
+}
+
+static sint32_t file_rtc_cb( vfs_time *tm )
+{
+  sint32_t res = VFS_RES_ERR;
+
+  if (rtc_cb_ref != LUA_NOREF) {
+    lua_State *L = lua_getstate();
+
+    lua_rawgeti( L, LUA_REGISTRYINDEX, rtc_cb_ref );
+    lua_call( L, 0, 1 );
+
+    if (lua_type( L, lua_gettop( L ) ) == LUA_TTABLE) {
+      table2tm( L, tm );
+      res = VFS_RES_OK;
+    }
+
+    // pop item returned by callback
+    lua_pop( L, 1 );
+  }
+
+  return res;
+}
+
+// Lua: on()
+static int file_on(lua_State *L)
+{
+  enum events{
+    ON_RTC = 0
+  };
+  const char *const eventnames[] = {"rtc", NULL};
+
+  int event = luaL_checkoption(L, 1, "rtc", eventnames);
+
+  switch (event) {
+  case ON_RTC:
+    luaL_unref(L, LUA_REGISTRYINDEX, rtc_cb_ref);
+
+    if ((lua_type(L, 2) == LUA_TFUNCTION) ||
+        (lua_type(L, 2) == LUA_TLIGHTFUNCTION)) {
+      lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
+      rtc_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      vfs_register_rtc_cb(file_rtc_cb);
+    } else {
+      rtc_cb_ref = LUA_NOREF;
+      vfs_register_rtc_cb(NULL);
+    }
+    break;
+  default:
+    break;
+  }
+
+  return 0;
+}
 
 // Lua: close()
 static int file_close( lua_State* L )
@@ -373,6 +449,7 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
   { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
+  { LSTRKEY( "on" ),        LFUNCVAL( file_on ) },
 #ifdef BUILD_FATFS
   { LSTRKEY( "mount" ),     LFUNCVAL( file_mount ) },
   { LSTRKEY( "chdir" ),     LFUNCVAL( file_chdir ) },

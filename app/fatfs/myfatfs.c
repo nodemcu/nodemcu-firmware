@@ -153,10 +153,18 @@ inline void ff_memfree( void *mblock )
 DWORD get_fattime( void )
 {
   DWORD stamp;
-  struct vfs_time tm;
+  vfs_time tm;
 
   if (VFS_RES_OK == vfs_get_rtc( &tm )) {
-    stamp = tm.year << 25 | tm.mon << 21 | tm.day << 16 |
+    // sanity checks
+    tm.year = (tm.year >= 1980) && (tm.year < 2108) ? tm.year : 1980;
+    tm.mon  = (tm.mon  >= 1) && (tm.mon  <= 12) ? tm.mon  : 1;
+    tm.day  = (tm.day  >= 1) && (tm.day  <= 31) ? tm.day  : 1;
+    tm.hour = (tm.hour >= 0) && (tm.hour <= 23) ? tm.hour : 0;
+    tm.min  = (tm.min  >= 0) && (tm.min  <= 59) ? tm.min  : 0;
+    tm.sec  = (tm.sec  >= 0) && (tm.sec  <= 59) ? tm.sec  : 0;
+
+    stamp = (tm.year-1980) << 25 | tm.mon << 21 | tm.day << 16 |
             tm.hour << 11 | tm.min << 5 | tm.sec;
   } else {
     // default time stamp derived from ffconf.h

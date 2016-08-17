@@ -13,7 +13,7 @@
 static sint32_t (*rtc_cb)( vfs_time *tm ) = NULL;
 
 // called by operating system
-void vfs_register_rtc_cb( sint32_t (*cb)( const struct vfs_time *tm ) )
+void vfs_register_rtc_cb( sint32_t (*cb)( vfs_time *tm ) )
 {
   // allow NULL pointer to unregister callback function
   rtc_cb = cb;

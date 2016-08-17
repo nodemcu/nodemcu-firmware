@@ -228,6 +228,38 @@ vol = file.mount("SD0:")
 vol:umount()
 ```
 
+## file.on()
+
+Registers callback functions.
+
+Trigger events are:
+- `rtc` deliver current date & time to the file system. Function is expected to return a table containing the fields `year`, `mon`, `day`, `hour`, `min`, `sec` of current date and time. Not supported for internal flash.
+
+#### Syntax
+`file.on(event[, function()])`
+
+#### Parameters
+- `event` string
+- `function()` callback function. Unregisters the callback if `function()` is omitted.
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+sntp.sync(server_ip,
+  function()
+    print("sntp time sync ok")
+    file.on("rtc",
+      function()
+        return rtctime.epoch2cal(rtctime.get())
+      end)
+  end)
+```
+
+#### See also
+[`rtctime.epoch2cal()`](rtctime.md#rtctimepoch2cal)
+
 ## file.open()
 
 Opens a file for access, potentially creating it (for write modes).

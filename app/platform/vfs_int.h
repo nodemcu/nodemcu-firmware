@@ -38,7 +38,7 @@ struct vfs_time {
   int year, mon, day;
   int hour, min, sec;
 };
-typedef const struct vfs_time vfs_time;
+typedef struct vfs_time vfs_time;
 
 // generic file descriptor
 struct vfs_file {
