@@ -199,6 +199,49 @@ static int ws2812_new_buffer(lua_State *L) {
   return 1;
 }
 
+static int ws2812_buffer_write(lua_State* L) {
+  size_t length;
+  const char *buffer;
+
+  ws2812_buffer * destBuffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  luaL_argcheck(L, destBuffer && destBuffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+
+  // Second mandatory parameter
+  int type = lua_type(L, 2);
+  if (type == LUA_TNONE || type == LUA_TNIL)
+  {
+    return 0;
+  }
+  else if(type == LUA_TSTRING)
+  {
+    buffer = lua_tolstring(L, 2, &length);
+    
+    char strError[64];
+    os_sprintf(strError, "data length is greater then buffer size: %d", length);
+
+    luaL_argcheck(L, destBuffer->size*destBuffer->colorsPerLed >= length, 2, strError);
+
+    c_memcpy(&destBuffer->values[0], buffer, length);
+  }
+  else if (type == LUA_TUSERDATA)
+  {
+    ws2812_buffer * sourceBuffer = (ws2812_buffer*)lua_touserdata(L, 2);
+    luaL_argcheck(L, sourceBuffer && sourceBuffer->canary == CANARY_VALUE, 2, "ws2812.buffer expected");
+
+    if (destBuffer->size != sourceBuffer->size || destBuffer->colorsPerLed != sourceBuffer->colorsPerLed) {
+      luaL_argerror(L, 2, "ws2812.buffer is not the same size");
+    }
+
+    c_memcpy(&destBuffer->values[0], &sourceBuffer->values[0], destBuffer->size*destBuffer->colorsPerLed);
+  }
+  else
+  {
+    luaL_argerror(L, 2, "ws2812.buffer or string expected");
+  }
+
+  return 0;
+}
+
 static int ws2812_buffer_fill(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
 
@@ -404,6 +447,7 @@ static const LUA_REG_TYPE ws2812_buffer_map[] =
   { LSTRKEY( "set" ),     LFUNCVAL( ws2812_buffer_set )},
   { LSTRKEY( "size" ),    LFUNCVAL( ws2812_buffer_size )},
   { LSTRKEY( "shift" ),   LFUNCVAL( ws2812_buffer_shift )},
+  { LSTRKEY( "write" ),    LFUNCVAL( ws2812_buffer_write )},
   { LSTRKEY( "__index" ), LROVAL( ws2812_buffer_map )},
   { LNILKEY, LNILVAL}
 };
