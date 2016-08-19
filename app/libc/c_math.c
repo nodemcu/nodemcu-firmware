@@ -4,7 +4,7 @@
 
 double floor(double x)
 {
-    return (double) (x < 0.f ? (((int) x) - 1) : ((int) x));
+    return (double) (x < 0.f ? ((int) x == x ? x : (((int) x) - 1)) : ((int) x)); 
 }
 
 #define MAXEXP 2031     /* (MAX_EXP * 16) - 1           */
