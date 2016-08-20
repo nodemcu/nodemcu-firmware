@@ -254,8 +254,16 @@ dns_init()
       LWIP_ASSERT("For implicit initialization to work, DNS_STATE_UNUSED needs to be 0",
         DNS_STATE_UNUSED == 0);
 
-      /* initialize DNS client */
-      udp_bind(dns_pcb, IP_ADDR_ANY, 0);
+      /* PR #1324 */
+      /* initialize DNS client, try to get RFC 5452 random source port */
+      u16_t port = UDP_LOCAL_PORT_RANGE_START + (os_random() % (UDP_LOCAL_PORT_RANGE_END - UDP_LOCAL_PORT_RANGE_START));
+      for(;;) {
+        if(udp_bind(dns_pcb, IP_ADDR_ANY, port) == ERR_OK)
+          break;
+        LWIP_ASSERT("Unable to get a PCB for DNS", port != 0);
+        port=0; // try again with random source
+      }
+      /* END PR #1324 */
       udp_recv(dns_pcb, dns_recv, NULL);
 
       /* initialize default DNS primary server */
