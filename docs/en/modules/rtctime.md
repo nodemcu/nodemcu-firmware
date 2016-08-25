@@ -24,6 +24,7 @@ This is a companion module to the [rtcmem](rtcmem.md) and [SNTP](sntp.md) module
 ## rtctime.dsleep()
 
 Puts the ESP8266 into deep sleep mode, like [`node.dsleep()`](node.md#nodedsleep). It differs from [`node.dsleep()`](node.md#nodedsleep) in the following ways:
+
 - Time is kept across the deep sleep. I.e. [`rtctime.get()`](#rtctimeget) will keep working (provided time was available before the sleep).
 - This call never returns. The module is put to sleep immediately. This is both to support accurate time keeping and to reduce power consumption.
 - The time slept will generally be considerably more accurate than with [`node.dsleep()`](node.md#nodedsleep).
