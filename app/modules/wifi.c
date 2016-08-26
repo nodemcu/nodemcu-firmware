@@ -372,6 +372,26 @@ static int wifi_sleep(lua_State* L)
   return 2;
 }
 
+//wifi.nullmodesleep()
+static int wifi_null_mode_auto_sleep(lua_State* L)
+{
+  if (!lua_isnone(L, 1))
+  {
+    bool auto_sleep_setting=lua_toboolean(L, 1);
+    if (auto_sleep_setting!=(bool) get_fpm_auto_sleep_flag())
+    {
+      wifi_fpm_auto_sleep_set_in_null_mode((uint8)auto_sleep_setting);
+      //if esp is already in NULL_MODE, auto sleep setting won't take effect until next wifi_set_opmode(NULL_MODE) call.
+      if(wifi_get_opmode()==NULL_MODE)
+      {
+        wifi_set_opmode_current(NULL_MODE);
+      }
+    }
+  }
+  lua_pushboolean(L, (bool) get_fpm_auto_sleep_flag());
+  return 1;
+}
+
 // Lua: mac = wifi.xx.getmac()
 static int wifi_getmac( lua_State* L, uint8_t mode )
 {
@@ -1268,6 +1288,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "sleep" ),          LFUNCVAL( wifi_sleep ) },
+  { LSTRKEY( "nullmodesleep" ),  LFUNCVAL( wifi_null_mode_auto_sleep ) },
 #ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ),      LFUNCVAL( wifi_exit_smart ) },
@@ -1349,6 +1370,12 @@ void wifi_change_default_host_name(void)
 
 int luaopen_wifi( lua_State *L )
 {
+  wifi_fpm_auto_sleep_set_in_null_mode(1);
+  //if esp is already in NULL_MODE, auto sleep setting won't take effect until next wifi_set_opmode(NULL_MODE) call.
+  if(wifi_get_opmode()==NULL_MODE)
+  {
+    wifi_set_opmode_current(NULL_MODE);
+  }
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
   wifi_eventmon_init();
 #endif
