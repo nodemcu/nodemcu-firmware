@@ -7,7 +7,7 @@ Use one of the two templates below and delete the rest.
 ### Actual behavior
 
 ### Test code
-Provide a minimal and isolated test which will reproduce the problem.
+Provide a [Minimal, Complete, and Verifiable example](http://stackoverflow.com/help/mcve) which will reproduce the problem.
 ```Lua
 -- add code here
 ```
