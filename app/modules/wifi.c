@@ -76,12 +76,8 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 #endif // WIFI_SMART_ENABLE
 
 static int wifi_scan_succeed = LUA_NOREF;
-/**
-  * @brief  Wifi ap scan over callback to display.
-  * @param  arg: contain the aps information
-  * @param  status: scan over status
-  * @retval None
-  */
+
+// callback for wifi_station_listap
 static void wifi_scan_done(void *arg, STATUS status)
 {
   lua_State* L = lua_getstate();
@@ -215,7 +211,7 @@ static int wifi_exit_smart( lua_State* L )
 }
 #endif // WIFI_SMART_ENABLE
 
-// Lua: realmode = setmode(mode)
+// Lua: wifi.setmode(mode)
 static int wifi_setmode( lua_State* L )
 {
   unsigned mode;
@@ -230,8 +226,7 @@ static int wifi_setmode( lua_State* L )
   return 1;  
 }
 
-// Lua: realmode = getmode()
-
+// Lua: wifi.getmode()
 static int wifi_getmode( lua_State* L )
 {
   unsigned mode;
@@ -239,20 +234,8 @@ static int wifi_getmode( lua_State* L )
   lua_pushinteger( L, mode );
   return 1;  
 }
-/**
-  * wifi.getchannel()
-  * Description:
-  * 	Get current wifi Channel
-  *
-  * Syntax:
-  * 	wifi.getchannel()
-  * Parameters:
-  * 	nil
-  *
-  * Returns:
-  * 	Current wifi channel
-  */
 
+// Lua: wifi.getchannel()
 static int wifi_getchannel( lua_State* L )
 {
   unsigned channel;
@@ -261,22 +244,7 @@ static int wifi_getchannel( lua_State* L )
   return 1;
 }
 
-/**
-  * wifi.setphymode()
-  * Description:
-  * 	Set wifi physical mode（802.11 b/g/n）
-  * 	Note： SoftAP only supports 802.11 b/g.
-  * Syntax:
-  * 	wifi.setphymode(mode)
-  * Parameters:
-  * 	mode:
-  * 		wifi.PHYMODE_B
-  *	 		wifi.PHYMODE_G
-  * 		wifi.PHYMODE_N
-  * Returns:
-  * 	Current physical mode after setup
-  */
-
+// Lua: wifi.setphymode()
 static int wifi_setphymode( lua_State* L )
 {
   unsigned mode;
@@ -291,18 +259,7 @@ static int wifi_setphymode( lua_State* L )
   return 1;
 }
 
-/**
-  * wifi.getphymode()
-  * Description:
-  * 	Get wifi physical mode（802.11 b/g/n）
-  * Syntax:
-  * 	wifi.getphymode()
-  * Parameters:
-  * 	nil
-  * Returns:
-  * 	Current physical mode.
-  *
-  */
+// Lua: wifi.getphymode()
 static int wifi_getphymode( lua_State* L )
 {
   unsigned mode;
@@ -311,7 +268,7 @@ static int wifi_getphymode( lua_State* L )
   return 1;
 }
 
-//wifi.sleep()
+// Lua: wifi.sleep()
 static int wifi_sleep(lua_State* L)
 {
   uint8 desired_sleep_state = 2;
@@ -372,7 +329,7 @@ static int wifi_sleep(lua_State* L)
   return 2;
 }
 
-//wifi.nullmodesleep()
+// Lua: wifi.nullmodesleep()
 static int wifi_null_mode_auto_sleep(lua_State* L)
 {
   if (!lua_isnone(L, 1))
@@ -459,7 +416,7 @@ static int wifi_getbroadcast( lua_State* L, uint8_t mode )
   }
 }
 
-
+// Used by wifi_setip
 static uint32_t parse_key(lua_State* L, const char * key){
   lua_getfield(L, 1, key);
   if( lua_isstring(L, -1) )   // deal with the ip/netmask/gw string
@@ -506,7 +463,7 @@ static int wifi_setip( lua_State* L, uint8_t mode )
   return 1;  
 }
 
-// Lua: realtype = sleeptype(type)
+// Lua: wifi.sleeptype(type)
 static int wifi_sleeptype( lua_State* L )
 {
   unsigned type;
@@ -551,19 +508,7 @@ static int wifi_station_getbroadcast( lua_State* L ){
   return wifi_getbroadcast(L, STATION_IF);
 }
 
-/**
-  * wifi.sta.getconfig()
-  * Description:
-  * 	Get current Station configuration.
-  * 	Note:  if bssid_set==1 STATION is configured to connect to specified BSSID
-  * 		   if bssid_set==0 specified BSSID address is irrelevant.
-  * Syntax:
-  * 	ssid, pwd, bssid_set, bssid=wifi.sta.getconfig()
-  * Parameters:
-  * 	none
-  * Returns:
-  * 	SSID, Password, BSSID_set, BSSID
-  */
+// Lua: wifi.sta.getconfig()
 static int wifi_station_getconfig( lua_State* L )
 {
 	struct station_config sta_conf;
@@ -585,44 +530,7 @@ static int wifi_station_getconfig( lua_State* L )
 	}
 }
 
-/**
-  * wifi.sta.config()
-  * Description:
-  * 	Set current Station configuration.
-  * 	Note: If there are multiple APs with the same ssid, you can connect to a specific one by entering it's MAC address into the "bssid" field.
-  * Syntax:
-  * 	wifi.sta.getconfig(ssid, password) --Set STATION configuration, Auto-connect by default, Connects to any BSSID
-  * 	wifi.sta.getconfig(ssid, password, Auto_connect) --Set STATION configuration, Auto-connect(0 or 1), Connects to any BSSID
-  * 	wifi.sta.getconfig(ssid, password, bssid) --Set STATION configuration, Auto-connect by default, Connects to specific BSSID
-  * 	wifi.sta.getconfig(ssid, password, Auto_connect, bssid) --Set STATION configuration, Auto-connect(0 or 1), Connects to specific BSSID
-  * Parameters:
-  * 	ssid: string which is less than 32 bytes.
-  * 	Password: string which is less than 64 bytes.
-  * 	Auto_connect: 0 (disable Auto-connect) or 1 (to enable Auto-connect).
-  * 	bssid: MAC address of Access Point you would like to connect to.
-  * Returns:
-  * 	Nothing.
-  *
-  *	Example:
-  	  	--Connect to Access Point automatically when in range
-  	  	wifi.sta.getconfig("myssid", "password")
-
-  	  	--Connect to Access Point, User decides when to connect/disconnect to/from AP
-  	  	wifi.sta.getconfig("myssid", "mypassword", 0)
-  	  	wifi.sta.connect()
-  	  	--do some wifi stuff
-  	  	wifi.sta.disconnect()
-
-  	  	--Connect to specific Access Point automatically when in range
-  	  	wifi.sta.getconfig("myssid", "mypassword", "12:34:56:78:90:12")
-
-  	  	--Connect to specific Access Point, User decides when to connect/disconnect to/from AP
-  	  	wifi.sta.getconfig("myssid", "mypassword", 0)
-  	  	wifi.sta.connect()
-  	  	--do some wifi stuff
-  	  	wifi.sta.disconnect()
-  *
-  */
+// Lua: wifi.sta.config()
 static int wifi_station_config( lua_State* L )
 {
   size_t sl, pl, ml;
@@ -733,42 +641,7 @@ static int wifi_station_setauto( lua_State* L )
   return 0;  
 }
 
-/**
-  * wifi.sta.listap()
-  * Description:
-  * 	scan and get ap list as a lua table into callback function.
-  * Syntax:
-  * 	wifi.sta.getap(function(table))
-  * 	wifi.sta.getap(format, function(table))
-  * 	wifi.sta.getap(cfg, function(table))
-  * 	wifi.sta.getap(cfg, format, function(table))
-  * Parameters:
-  * 	cfg: table that contains scan configuration
-  * 	Format:Select output table format.
-  * 		0 for the old format (SSID : Authmode, RSSI, BSSID, Channel) (Default)
-  * 		1 for the new format (BSSID : SSID, RSSI, Authmode, Channel)
-  * 	function(table): a callback function to receive ap table when scan is done
-			this function receive a table, the key is the ssid,
-			value is other info in format: authmode,rssi,bssid,channel
-  * Returns:
-  * 	nil
-  *
-  * Example:
-  	  --original function left intact to preserve backward compatibility
-  	  wifi.sta.getap(function(T) for k,v in pairs(T) do print(k..":"..v) end end)
-
-  	  --if no scan configuration is desired cfg can be set to nil or previous example can be used
-  	  wifi.sta.getap(nil, function(T) for k,v in pairs(T) do print(k..":"..v) end end)
-
-  	  --scan configuration
-  	  scan_cfg={}
-	  scan_cfg.ssid="myssid"  			 --if set to nil, ssid is not filtered
-	  scan_cfg.bssid="AA:AA:AA:AA:AA:AA" --if set to nil, MAC address is not filtered
-	  scan_cfg.channel=0  				 --if set to nil, channel will default to 0(scans all channels), if set scan will be faster
-	  scan_cfg.show_hidden=1			 --if set to nil, show_hidden will default to 0
-  	  wifi.sta.getap(scan_cfg, function(T) for k,v in pairs(T) do print(k..":"..v) end end)
-
-  */
+// Lua: wifi.sta.listap()
 static int wifi_station_listap( lua_State* L )
 {
   if(wifi_get_opmode() == SOFTAP_MODE)
@@ -925,6 +798,7 @@ static int wifi_sta_gethostname( lua_State* L )
   return 1;
 }
 
+// Used by wifi_sta_sethostname_lua and wifi_change_default_hostname
 static bool wifi_sta_sethostname(const char *hostname, size_t len)
 {
   //this function follows RFC 952 & RFC 1123 host name standards.
@@ -945,6 +819,7 @@ static bool wifi_sta_sethostname(const char *hostname, size_t len)
   return wifi_station_set_hostname((char*)hostname);
 }
 
+// Lua: wifi.sta.sethostname()
 static int wifi_sta_sethostname_lua( lua_State* L )
 {
   size_t len;
@@ -1330,6 +1205,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LNILKEY, LNILVAL }
 };
 
+// Used by user_rf_pre_init(user_main.c)
 void wifi_change_default_host_name(void)
 {
   uint8 opmode_temp=wifi_get_opmode();
