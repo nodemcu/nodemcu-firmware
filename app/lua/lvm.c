@@ -759,7 +759,6 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         fixedstack(L);
         if (n == 0) {
           n = cast_int(L->top - ra) - 1;
-          L->top = L->ci->top;
         }
         if (c == 0) c = cast_int(*pc++);
         runtime_check(L, ttistable(ra));
@@ -772,6 +771,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
           setobj2t(L, luaH_setnum(L, h, last--), val);
           luaC_barriert(L, h, val);
         }
+	L->top = L->ci->top;
         unfixedstack(L);
         continue;
       }
