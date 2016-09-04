@@ -24,6 +24,23 @@ Gets the current WiFi channel.
 #### Returns
 current WiFi channel
 
+## wifi.getdefaultmode()
+
+Gets default WiFi operation mode.
+
+#### Syntax
+`wifi.getdefaultmode()`
+
+#### Parameters
+`nil`
+
+#### Returns
+The WiFi mode, as one of the `wifi.STATION`, `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE` constants.
+
+#### See also
+[`wifi.getmode()`](#wifigetmode)
+[`wifi.setmode()`](#wifisetmode)
+
 ## wifi.getmode()
 
 Gets WiFi operation mode.
@@ -38,6 +55,7 @@ Gets WiFi operation mode.
 The WiFi mode, as one of the `wifi.STATION`, `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE` constants.
 
 #### See also
+[`wifi.getdefaultmode()`](#wifigetdefaultmode)
 [`wifi.setmode()`](#wifisetmode)
 
 ## wifi.getphymode()
@@ -67,18 +85,20 @@ Configures the WiFi mode to use. NodeMCU can run in one of four WiFi modes:
 
 When using the combined Station + AP mode, the same channel will be used for both networks as the radio can only listen on a single channel.
 
-NOTE: WiFi Mode configuration will be retained until changed even if device is turned off. 
+NOTE: WiFi Mode configuration will be retained until changed even if device is turned off.
 
 #### Syntax
-`wifi.setmode(mode)`
+`wifi.setmode(mode[, save])`
 
 #### Parameters
-`mode` value should be one of
-
-- `wifi.STATION` for when the device is connected to a WiFi router. This is often done to give the device access to the Internet.
-- `wifi.SOFTAP` for when the device is acting *only* as an access point. This will allow you to see the device in the list of WiFi networks (unless you hide the SSID, of course). In this mode your computer can connect to the device, creating a local area network. Unless you change the value, the NodeMCU device will be given a local IP address of 192.168.4.1 and assign your computer the next available IP address, such as 192.168.4.2.
-- `wifi.STATIONAP` is the combination of `wifi.STATION` and `wifi.SOFTAP`. It allows you to create a local WiFi connection *and* connect to another WiFi router.
-- `wifi.NULLMODE` to switch off WiFi
+- `mode` value should be one of
+ - `wifi.STATION` for when the device is connected to a WiFi router. This is often done to give the device access to the Internet.
+ - `wifi.SOFTAP` for when the device is acting *only* as an access point. This will allow you to see the device in the list of WiFi networks (unless you hide the SSID, of course). In this mode your computer can connect to the device, creating a local area network. Unless you change the value, the NodeMCU device will be given a local IP address of 192.168.4.1 and assign your computer the next available IP address, such as 192.168.4.2.
+ - `wifi.STATIONAP` is the combination of `wifi.STATION` and `wifi.SOFTAP`. It allows you to create a local WiFi connection *and* connect to another WiFi router.
+ - `wifi.NULLMODE` changing WiFi mode to NULL_MODE will put wifi into a low power state similar to MODEM_SLEEP, provided `wifi.nullmodesleep(false)` has not been called.
+- `save` choose whether or not to save wifi mode to flash
+   - `true` WiFi mode configuration **will** be retained through power cycle. (Default)
+   - `false` WiFi mode configuration **will not** be retained through power cycle.
 
 #### Returns
 current mode after setup
@@ -90,11 +110,12 @@ wifi.setmode(wifi.STATION)
 
 #### See also
 [`wifi.getmode()`](#wifigetmode)
+[`wifi.getdefaultmode()`](#wifigetdefaultmode)
 
 ## wifi.setphymode()
 
 Sets WiFi physical mode.
- 
+
 - `wifi.PHYMODE_B`
     802.11b, more range, low Transfer rate, more current draw
 - `wifi.PHYMODE_G`
@@ -116,7 +137,7 @@ Information from the Espressif datasheet v4.3
 `wifi.setphymode(mode)`
 
 #### Parameters
-`mode` one of the following 
+`mode` one of the following
 
 - `wifi.PHYMODE_B`
 - `wifi.PHYMODE_G`
@@ -130,22 +151,30 @@ physical mode after setup
 
 ## wifi.nullmodesleep()
 
-Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled by default. 
+Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled by default.
+
+	!!! note
+		This function **does not** store it's setting in flash, if auto sleep in NULL_MODE is not desired, `wifi.nullmodesleep(false)` must be called after powerup, restart, or wake from deep sleep.
 
 #### Syntax
-`wifi.nullmodesleep(enable)`
+`wifi.nullmodesleep([enable])`
 
 #### Parameters
-- `enable` 
-  - true: Enable WiFi auto sleep in NULL_MODE. (Default setting)
-  - false: Disable WiFi auto sleep in NULL_MODE. 
+- `enable`
+  - `true` Enable WiFi auto sleep in NULL_MODE. (Default setting)
+  - `false` Disable WiFi auto sleep in NULL_MODE.
 
 #### Returns
-Current/new NULL_MODE sleep setting.
+- `sleep_enabled` Current/New NULL_MODE sleep setting
+ - If `wifi.nullmodesleep()` is called with no arguments, current setting is returned.
+ - If `wifi.nullmodesleep()` is called with `enable` argument, confirmation of new setting is returned.
 
 ## wifi.sleeptype()
 
-Configures the WiFi modem sleep type.
+Configures the WiFi modem sleep type to be used while station is connected to an Access Point.
+
+	!!! note
+		Does not apply to `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE`.
 
 #### Syntax
 `wifi.sleeptype(type_wanted)`
@@ -154,7 +183,7 @@ Configures the WiFi modem sleep type.
 `type_wanted` one of the following:
 
 - `wifi.NONE_SLEEP` to keep the modem on at all times
-- `wifi.LIGHT_SLEEP` to allow the modem to power down under some circumstances
+- `wifi.LIGHT_SLEEP` to allow the CPU to power down under some circumstances
 - `wifi.MODEM_SLEEP` to power down the modem as much as possible
 
 #### Returns
@@ -218,6 +247,97 @@ none
 
 # wifi.sta Module
 
+## wifi.sta.apchange()
+
+Select Access Point from list returned by `wifi.sta.apinfo()`
+
+#### Syntax
+`wifi.sta.apchange(ap_index)`
+
+#### Parameters
+`ap_index` Index of Access Point you would like to change to. (Range:0-4)
+ - Corresponds to index used by [`wifi.sta.apinfo()`](#wifistaapinfo) and [`wifi.sta.getapindex()`](#wifistagetapindex)
+
+#### Returns
+- `true`  Success
+- `false` Failure
+
+#### Example
+```lua
+wifi.sta.apchange(4)
+```
+
+#### See also
+- [`wifi.sta.apinfo()`](#wifistaapinfo)
+- [`wifi.sta.getapindex()`](#wifistagetapindex)
+
+## wifi.sta.apinfo()
+
+Get information of APs cached by ESP8266 station.
+
+!!! Note
+		Any Access Points configured with save disabled `wifi.sta.config({save=false})` will populate this list (appearing to overwrite APs stored in flash) until restart.
+
+#### Syntax
+`wifi.sta.apinfo()`
+
+#### Parameters
+`nil`
+
+#### Returns
+- `ap_info`
+ - `qty` quantity of APs returned
+ - `0-4` index of AP. (the index corresponds to index used by [`wifi.sta.apchange()`](#wifistaapchange) and [`wifi.sta.getapindex()`](#wifistagetapindex))
+   - `ssid`  ssid of Access Point
+    - `pwd`	 Password for Access Point
+    - `bssid` MAC address of Access Point, if no MAC address available this field will be `nil`
+
+
+#### Example
+```lua
+do
+  local apinfo=wifi.sta.apinfo()
+  local apindex=wifi.sta.getapindex()
+  print("\n Number of APs stored in flash:", apinfo.APqty)
+  print(string.format("  %-6s %-32s %-64s %-18s", "index:", "SSID:", "Password:", "BSSID:"))
+  for i=0, (apinfo.APqty-1), 1 do
+    print(string.format(" %s%-6d %-32s %-64s %-18s",(i==apindex and ">" or " "), i, apinfo[i].ssid, apinfo[i].password, apinfo[i].bssid))
+  end
+end
+```
+
+#### See also
+- [`wifi.sta.getapindex()`](#wifistagetapindex)
+- [`wifi.sta.aplimit()`](#wifistaaplimit)
+- [`wifi.sta.apchange()`](#wifistaapchange)
+- [`wifi.sta.config()`](#wifistaconfig)
+
+## wifi.sta.aplimit()
+
+Set Maximum number of Access Points to store in flash.
+ - This value is written to flash
+
+!!! Attention
+		If 5 Access Points are stored and AP limit is set to 4, the AP at index 5 will remain until [`node.restore()`](node.md#noderestore) is called or AP limit is set to 5 and AP is overwritten.  
+
+#### Syntax
+`wifi.sta.aplimit(qty)`
+
+#### Parameters
+`qty` Quantity of Access Points to store in flash. Range: 1-5 (Default: 5)
+
+#### Returns
+- `true`  Success
+- `false` Failure
+
+#### Example
+```lua
+wifi.sta.aplimit(1)
+```
+
+#### See also
+- [`wifi.sta.apinfo()`](#wifistaapinfo)
+
 ## wifi.sta.autoconnect()
 
 Auto connects to AP in station mode.
@@ -245,57 +365,67 @@ wifi.sta.autoconnect(1)
 
 Sets the WiFi station configuration.
 
-NOTE: Station configuration will be retained until changed even if device is turned off. 
-
 #### Syntax
-`wifi.sta.config(ssid, password[, auto[, bssid]])`
+`wifi.sta.config(station_config)`
 
 #### Parameters
-
-- `ssid` string which is less than 32 bytes.
-- `password` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
-- `auto` defaults to 1
-	- 0 to disable auto connect and remain disconnected from access point
-	- 1 to enable auto connect and connect to access point, hence with `auto=1` there's no need to call [`wifi.sta.connect()`](#wifistaconnect) later
-- `bssid` string that contains the MAC address of the access point (optional)
+- `station_config` table containing configuration data for station
+ - `ssid` string which is less than 32 bytes.
+ - `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
+ - `auto` defaults to true
+	- `true` to disable auto connect and remain disconnected from access point
+	- `false` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
+ - `bssid` string that contains the MAC address of the access point (optional)
 	- You can set BSSID if you have multiple access points with the same SSID.
  	- Note: if you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
  	- The following formats are valid:
-		- "DE-C1-A5-51-F1-ED"
+		- "DE:C1:A5:51:F1:ED"
 		- "AC-1D-1C-B1-0B-22"
 		- "DE AD BE EF 7A C0"
+ - `save` Save station configuration to flash. 
+   - `true` configuration **will** be retained through power cycle. 
+   - `false` configuration **will not** be retained through power cycle. (Default)
 
 #### Returns
-`nil`
+- `true`  Success
+- `false` Failure
 
 #### Example
 
 ```lua
--- Connect to access point automatically when in range, `auto` defaults to 1
-wifi.sta.config("myssid", "password")
+--connect to Access Point (DO NOT save config to flash)
+station_cfg={}
+station_cfg.ssid="NODE-AABBCC"
+station_cfg.pwd="password"
+wifi.sta.config(station_cfg)
 
--- Connect to Unsecured access point automatically when in range, `auto` defaults to 1
-wifi.sta.config("myssid", "")
-  
--- Connect to access point, User decides when to connect/disconnect to/from AP due to `auto=0`
-wifi.sta.config("myssid", "mypassword", 0)
-wifi.sta.connect()
--- ... do some WiFi stuff
-wifi.sta.disconnect()
-   
--- Connect to specific access point automatically when in range, `auto` defaults to 1
-wifi.sta.config("myssid", "mypassword", "12:34:56:78:90:12")
+--connect to Access Point (DO save config to flash)
+station_cfg={}
+station_cfg.ssid="NODE-AABBCC"
+station_cfg.pwd="password"
+station_cfg.save=true
+wifi.sta.config(station_cfg)
 
--- Connect to specific access point, User decides when to connect/disconnect to/from AP due to `auto=0`
-wifi.sta.config("myssid", "mypassword", 0, "12:34:56:78:90:12")
-wifi.sta.connect()
--- ... do some WiFi stuff
-wifi.sta.disconnect()
+--connect to Access Point with specific MAC address  
+station_cfg={}
+station_cfg.ssid="NODE-AABBCC"
+station_cfg.pwd="password"
+station_cfg.bssid="AA:BB:CC:DD:EE:FF"
+wifi.sta.config(station_cfg)
+
+--configure station but don't connect to Access point
+station_cfg={}
+station_cfg.ssid="NODE-AABBCC"
+station_cfg.pwd="password"
+station_cfg.auto=false
+wifi.sta.config(station_cfg)
+
 ```
 
 #### See also
 - [`wifi.sta.connect()`](#wifistaconnect)
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
+- [`wifi.sta.apinfo()`](#wifistaapinfo)
 
 ## wifi.sta.connect()
 
@@ -318,6 +448,10 @@ none
 
 Disconnects from AP in station mode.
 
+	!!! note
+		Please note that disconnecting from Access Point does not reduce power consumption.
+		If power saving is your goal, please refer to the description for `wifi.NULLMODE` in the function [`wifi.setmode()`](#wifisetmode) for more details.
+
 #### Syntax
 `wifi.sta.disconnect()`
 
@@ -339,14 +473,14 @@ Registers callbacks for WiFi station status events.
 - `wifi.sta.eventMonReg(wifi_status[, function([previous_state])])`
 
 ####  Parameters
-- `wifi_status` WiFi status you would like to set a callback for: 
+- `wifi_status` WiFi status you would like to set a callback for:
     - `wifi.STA_IDLE`
     - `wifi.STA_CONNECTING`
     - `wifi.STA_WRONGPWD`
     - `wifi.STA_APNOTFOUND`
     - `wifi.STA_FAIL`
     - `wifi.STA_GOTIP`
-- `function` callback function to perform when event occurs 
+- `function` callback function to perform when event occurs
 	- Note: leaving field blank unregisters callback.
 - `previous_state` previous wifi_state(0 - 5)
 
@@ -354,7 +488,7 @@ Registers callbacks for WiFi station status events.
 `nil`
 
 ####  Example
-```lua 
+```lua
 --register callback
 wifi.sta.eventMonReg(wifi.STA_IDLE, function() print("STATION_IDLE") end)
 wifi.sta.eventMonReg(wifi.STA_CONNECTING, function() print("STATION_CONNECTING") end)
@@ -362,16 +496,16 @@ wifi.sta.eventMonReg(wifi.STA_WRONGPWD, function() print("STATION_WRONG_PASSWORD
 wifi.sta.eventMonReg(wifi.STA_APNOTFOUND, function() print("STATION_NO_AP_FOUND") end)
 wifi.sta.eventMonReg(wifi.STA_FAIL, function() print("STATION_CONNECT_FAIL") end)
 wifi.sta.eventMonReg(wifi.STA_GOTIP, function() print("STATION_GOT_IP") end)
-  
+
 --register callback: use previous state
 wifi.sta.eventMonReg(wifi.STA_CONNECTING, function(previous_State)
-	if(previous_State==wifi.STA_GOTIP) then 
+	if(previous_State==wifi.STA_GOTIP) then
 		print("Station lost connection with access point\n\tAttempting to reconnect...")
 	else
 		print("STATION_CONNECTING")
 	end
 end)
-  
+
 --unregister callback
 wifi.sta.eventMonReg(wifi.STA_IDLE)
 ```
@@ -447,7 +581,7 @@ Scans AP list as a Lua table into callback function.
 
 #### Parameters
 - `cfg` table that contains scan configuration
-	- `ssid` SSID == nil, don't filter SSID 
+	- `ssid` SSID == nil, don't filter SSID
 	- `bssid` BSSID == nil, don't filter BSSID
 	- `channel` channel == 0, scan all channels, otherwise scan set channel (default is 0)
 	- `show_hidden` show_hidden == 1, get info for router with hidden SSID (default is 0)
@@ -479,7 +613,7 @@ function listap(t) -- (SSID : Authmode, RSSI, BSSID, Channel)
 	end
 end
 wifi.sta.getap(listap)
-	
+
 -- print AP list in new format
 function listap(t)
 	for k,v in pairs(t) do
@@ -507,8 +641,8 @@ function listap(t)
 	end
 end
 scan_cfg = {}
-scan_cfg.ssid = "myssid" 
-scan_cfg.bssid = "AA:AA:AA:AA:AA:AA" 
+scan_cfg.ssid = "myssid"
+scan_cfg.bssid = "AA:AA:AA:AA:AA:AA"
 scan_cfg.channel = 0
 scan_cfg.show_hidden = 1
 wifi.sta.getap(scan_cfg, 1, listap)
@@ -520,10 +654,10 @@ function listap(t)
 		print("CURRENT RSSI IS: "..rssi)
 	end
 end
-ssid, tmp, bssid_set, bssid=wifi.sta.getconfig() 
+ssid, tmp, bssid_set, bssid=wifi.sta.getconfig()
 
 scan_cfg = {}
-scan_cfg.ssid = ssid 
+scan_cfg.ssid = ssid
 if bssid_set == 1 then scan_cfg.bssid = bssid else scan_cfg.bssid = nil end
 scan_cfg.channel = wifi.getchannel()
 scan_cfg.show_hidden = 0
@@ -534,6 +668,30 @@ wifi.sta.getap(scan_cfg, 1, listap)
 
 #### See also
 [`wifi.sta.getip()`](#wifistagetip)
+
+## wifi.sta.getapindex()
+
+Get index of current Access Point stored in AP cache.
+
+
+#### Syntax
+`wifi.sta.getapindex()`
+
+#### Parameters
+none
+
+#### Returns
+`current_index` index of currently selected Access Point. (Range:0-4)
+
+#### Example
+```lua
+print("the index of the currently selected AP is: "..wifi.sta.getapindex())
+```
+
+#### See also
+- [`wifi.sta.getapindex()`](#wifistagetapindex)
+- [`wifi.sta.apinfo()`](#wifistaapinfo)
+- [`wifi.sta.apchange()`](#wifistaapchange)
 
 ## wifi.sta.getbroadcast()
 
@@ -546,7 +704,7 @@ Gets the broadcast address in station mode.
 `nil`
 
 #### Returns
-broadcast address as string, for example "192.168.0.255", 
+broadcast address as string, for example "192.168.0.255",
 returns `nil` if IP address = "0.0.0.0".
 
 #### See also
@@ -554,23 +712,37 @@ returns `nil` if IP address = "0.0.0.0".
 
 ## wifi.sta.getconfig()
 
-Gets the WiFi station configuration. 
+Gets the WiFi station configuration.
 
 #### Syntax
 `wifi.sta.getconfig()`
 
 #### Parameters
-none
+- `return_table`
+ - `true` returns data in a table
+ - `false` returns data in the old format (default)
 
 #### Returns
-ssid, password, bssid_set, bssid
+If `return_table` is `true`:
+- `config_table`
+ - `ssid` ssid of Access Point.
+ - `pwd` password to Access Point.
+ - `bssid` MAC address of Access Point. (Note: If MAC address is not available `bssid` = `nil`)
 
-Note: If bssid_set is equal to 0 then bssid is irrelevant 
+If `return_table` is `false`:
+- ssid, password, bssid_set, bssid   
+ - Note: If `bssid_set` is equal to `0` then `bssid` is irrelevant,
 
 #### Example
 
 ```lua
---Get current Station configuration
+--Get current Station configuration (NEW FORMAT)
+do
+local def_sta_config=wifi.sta.getconfig(true)
+print(string.format("\tDefault station config\n\tssid:\"%s\"\tpassword:\"%s\"%s", def_sta_config.ssid, def_sta_config.pwd, (type(def_sta_config.bssid)=="string" and "\tbssid:\""..def_sta_config.bssid.."\"" or "")))
+end
+
+--Get current Station configuration (OLD FORMAT)
 ssid, password, bssid_set, bssid=wifi.sta.getconfig()
 print("\nCurrent Station configuration:\nSSID : "..ssid
 .."\nPassword  : "..password
@@ -580,6 +752,53 @@ ssid, password, bssid_set, bssid=nil, nil, nil, nil
 ```
 
 #### See also
+- [`wifi.sta.getdefaultconfig()`](#wifistagetdefaultconfig)
+- [`wifi.sta.connect()`](#wifistaconnect)
+- [`wifi.sta.disconnect()`](#wifistadisconnect)
+
+## wifi.sta.getdefaultconfig()
+
+Gets the default WiFi station configuration stored in flash.
+
+#### Syntax
+`wifi.sta.getdefaultconfig(return_table)`
+
+#### Parameters
+- `return_table`
+ - `true` returns data in a table
+ - `false` returns data in the old format (default)
+
+#### Returns
+If `return_table` is `true`:
+- `config_table`
+ - `ssid` ssid of Access Point.
+ - `pwd` password to Access Point.
+ - `bssid` MAC address of Access Point. (Note: If MAC address is not available `bssid` = `nil`)
+
+If `return_table` is `false`:
+- ssid, password, bssid_set, bssid   
+ - Note: If `bssid_set` is equal to `0` then `bssid` is irrelevant,
+
+#### Example
+
+```lua
+--Get default Station configuration (NEW FORMAT)
+do
+  local def_sta_config=wifi.sta.getdefaultconfig(true)
+  print(string.format("\tDefault station config\n\tssid:\"%s\"\tpassword:\"%s\"%s", def_sta_config.ssid, def_sta_config.pwd, (type(def_sta_config.bssid)=="string" and "\tbssid:\""..def_sta_config.bssid.."\"" or "")))
+end
+
+--Get default Station configuration (OLD FORMAT)
+ssid, password, bssid_set, bssid=wifi.sta.getdefaultconfig()
+print("\nCurrent Station configuration:\nSSID : "..ssid
+.."\nPassword  : "..password
+.."\nBSSID_set  : "..bssid_set
+.."\nBSSID: "..bssid.."\n")
+ssid, password, bssid_set, bssid=nil, nil, nil, nil
+```
+
+#### See also
+- [`wifi.sta.getconfig()`](#wifistagetconfig)
 - [`wifi.sta.connect()`](#wifistaconnect)
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
 
@@ -758,22 +977,26 @@ number： 0~5
 
 Sets SSID and password in AP mode. Be sure to make the password at least 8 characters long! If you don't it will default to *no* password and not set the SSID! It will still work as an access point but use a default SSID like e.g. NODE-9997C3.
 
-NOTE: SoftAP Configuration will be retained until changed even if device is turned off. 
-
 #### Syntax
 `wifi.ap.config(cfg)`
 
 #### Parameters
-- `ssid` SSID chars 1-32
-- `pwd` password chars 8-64
-- `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
-- `channel` channel number 1-14 default = 6
-- `hidden` 0 = not hidden, 1 = hidden, default 0
-- `max` maximal number of connections 1-4 default=4
-- `beacon` beacon interval time in range 100-60000, default = 100
+- `cfg` table to hold configuration
+ - `ssid` SSID chars 1-32
+ - `pwd` password chars 8-64
+ - `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
+ - `channel` channel number 1-14 default = 6
+ - `hidden` false = not hidden, true = hidden, default = false
+ - `max` maximum number of connections 1-4 default=4
+ - `beacon` beacon interval time in range 100-60000, default = 100
+ - `save` save configuration to flash.
+   - `true` configuration **will** be retained through power cycle. (Default)
+   - `false` configuration **will not** be retained through power cycle.
+ 
 
 #### Returns
-`nil`
+- `true`  Success
+- `false` Failure
 
 #### Example:
 ```lua
@@ -785,7 +1008,7 @@ NOTE: SoftAP Configuration will be retained until changed even if device is turn
 
 ## wifi.ap.deauth()
 
-Deauths (forcibly removes) a client from the ESP access point by sending a corresponding IEEE802.11 management packet (first) and removing the client from it's data structures (afterwards). 
+Deauths (forcibly removes) a client from the ESP access point by sending a corresponding IEEE802.11 management packet (first) and removing the client from it's data structures (afterwards).
 
 The IEEE802.11 reason code used is 2 for "Previous authentication no longer valid"(AUTH_EXPIRE).
 
@@ -803,11 +1026,11 @@ Returns true unless called while the ESP is in the STATION opmode
 ```lua
 allowed_mac_list={"18:fe:34:00:00:00", "18:fe:34:00:00:01"}
 
-wifi.eventmon.register(wifi.eventmon.AP_STACONNECTED, function(T) 
+wifi.eventmon.register(wifi.eventmon.AP_STACONNECTED, function(T)
   print("\n\tAP - STATION CONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
   if(allowed_mac_list~=nil) then
-    for _, v in pairs(allowed_mac_list) do 
-      if(v == T.MAC) then return end 
+    for _, v in pairs(allowed_mac_list) do
+      if(v == T.MAC) then return end
     end
   end
   wifi.ap.deauth(T.MAC)
@@ -831,7 +1054,7 @@ Gets broadcast address in AP mode.
 none
 
 #### Returns
-broadcast address in string, for example "192.168.0.255", 
+broadcast address in string, for example "192.168.0.255",
 returns `nil` if IP address = "0.0.0.0".
 
 #### Example
@@ -868,6 +1091,100 @@ end
 -- or shorter
 for mac,ip in pairs(wifi.ap.getclient()) do
 	print(mac,ip)
+end
+```
+
+## wifi.ap.getconfig()
+
+Gets the current SoftAP configuration.
+
+#### Syntax
+`wifi.ap.getconfig(return_table)`
+
+#### Parameters
+- `return_table`
+ - `true` returns data in a table
+ - `false` returns data in the old format (default)
+
+#### Returns
+If `return_table` is true:
+- `config_table`
+ - `ssid` Network name
+ - `pwd` Password
+ - `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
+ - `channel` Channel number
+ - `hidden` `false` = not hidden, `true` = hidden
+ - `max` Maximum number of client connections
+ - `beacon` Beacon interval
+
+If `return_table` is false:
+ssid, password   
+	Note: If bssid_set is equal to 0 then bssid is irrelevant
+
+#### Example
+
+```lua
+--Get SoftAP configuration table (NEW FORMAT)
+do
+  print("\n  Current SoftAP configuration:")
+  for k,v in pairs(wifi.ap.getconfig(true)) do
+      print("   "..k.." :",v)
+  end
+end
+
+--Get current SoftAP configuration (OLD FORMAT)
+do
+  local ssid, password=wifi.ap.getconfig()
+  print("\n  Current SoftAP configuration:\n   SSID : "..ssid..
+    "\n   Password  :",password)
+  ssid, password=nil, nil
+end
+```
+
+## wifi.ap.getdefaultconfig()
+
+Gets the default SoftAP configuration stored in flash.
+
+#### Syntax
+`wifi.ap.getdefaultconfig(return_table)`
+
+#### Parameters
+- `return_table`
+ - `true` returns data in a table
+ - `false` returns data in the old format (default)
+
+#### Returns
+If `return_table` is true:
+- `config_table`
+ - `ssid` Network name
+ - `pwd` Password
+ - `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
+ - `channel` Channel number
+ - `hidden` `false` = not hidden, `true` = hidden
+ - `max` Maximum number of client connections
+ - `beacon` Beacon interval
+
+If `return_table` is false:
+ssid, password   
+	Note: If bssid_set is equal to 0 then bssid is irrelevant
+
+#### Example
+
+```lua
+--Get default SoftAP configuration table (NEW FORMAT)
+do
+  print("\n  Default SoftAP configuration:")
+  for k,v in pairs(wifi.ap.getdefaultconfig(true)) do
+      print("   "..k.." :",v)
+  end
+end
+
+--Get default SoftAP configuration (OLD FORMAT)
+do
+  local ssid, password=wifi.ap.getdefaultconfig()
+  print("\n  Default SoftAP configuration:\n   SSID : "..ssid..
+    "\n   Password  :",password)
+  ssid, password=nil, nil
 end
 ```
 
@@ -1077,39 +1394,39 @@ T: Table returned by event.
 #### Example
 
 ```lua
- wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(T) 
+ wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, function(T)
  print("\n\tSTA - CONNECTED".."\n\tSSID: "..T.SSID.."\n\tBSSID: "..
  T.BSSID.."\n\tChannel: "..T.channel)
  end)
- 
- wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, function(T) 
+
+ wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, function(T)
  print("\n\tSTA - DISCONNECTED".."\n\tSSID: "..T.SSID.."\n\tBSSID: "..
  T.BSSID.."\n\treason: "..T.reason)
  end)
 
- wifi.eventmon.register(wifi.eventmon.STA_AUTHMODE_CHANGE, Function(T) 
+ wifi.eventmon.register(wifi.eventmon.STA_AUTHMODE_CHANGE, Function(T)
  print("\n\tSTA - AUTHMODE CHANGE".."\n\told_auth_mode: "..
- T.old_auth_mode.."\n\tnew_auth_mode: "..T.new_auth_mode) 
+ T.old_auth_mode.."\n\tnew_auth_mode: "..T.new_auth_mode)
  end)
 
- wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(T) 
+ wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, function(T)
  print("\n\tSTA - GOT IP".."\n\tStation IP: "..T.IP.."\n\tSubnet mask: "..
  T.netmask.."\n\tGateway IP: "..T.gateway)
  end)
 
- wifi.eventmon.register(wifi.eventmon.STA_DHCP_TIMEOUT, function() 
+ wifi.eventmon.register(wifi.eventmon.STA_DHCP_TIMEOUT, function()
  print("\n\tSTA - DHCP TIMEOUT")
  end)
 
- wifi.eventmon.register(wifi.eventmon.AP_STACONNECTED, function(T) 
+ wifi.eventmon.register(wifi.eventmon.AP_STACONNECTED, function(T)
  print("\n\tAP - STATION CONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
  end)
 
- wifi.eventmon.register(wifi.eventmon.AP_STADISCONNECTED, function(T) 
+ wifi.eventmon.register(wifi.eventmon.AP_STADISCONNECTED, function(T)
  print("\n\tAP - STATION DISCONNECTED".."\n\tMAC: "..T.MAC.."\n\tAID: "..T.AID)
  end)
 
- wifi.eventmon.register(wifi.eventmon.AP_PROBEREQRECVED, function(T) 
+ wifi.eventmon.register(wifi.eventmon.AP_PROBEREQRECVED, function(T)
  print("\n\tAP - STATION DISCONNECTED".."\n\tMAC: ".. T.MAC.."\n\tRSSI: "..T.RSSI)
  end)
 ```
