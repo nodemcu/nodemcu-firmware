@@ -47,8 +47,6 @@
 #define PORT_INSECURE 80
 #define PORT_MAX_VALUE 65535
 
-#define SSL_BUFFER_SIZE 5120
-
 // TODO: user agent configurable
 #define WS_INIT_HEADERS  "GET %s HTTP/1.1\r\n"\
                          "Host: %s:%d\r\n"\
@@ -656,7 +654,6 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
 
   if (ws->isSecure) {
     NODE_DBG("secure connecting \n");
-    espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
     espconn_secure_connect(conn);
   }
   else {

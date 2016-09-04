@@ -22,6 +22,7 @@
 #include "driver/uart.h"
 #include "task/task.h"
 #include "mem.h"
+#include "espconn.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
@@ -97,6 +98,10 @@ void nodemcu_init(void)
         return;
     }
 #endif // defined(FLASH_SAFE_API)
+
+#if defined ( CLIENT_SSL_ENABLE ) && defined ( SSL_BUFFER_SIZE )
+    espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
+#endif
 
 #if defined ( BUILD_SPIFFS )
     if (!fs_mount()) {

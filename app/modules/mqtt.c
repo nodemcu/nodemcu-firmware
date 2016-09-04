@@ -1618,9 +1618,6 @@ static const LUA_REG_TYPE mqtt_map[] = {
 int luaopen_mqtt( lua_State *L )
 {
   luaL_rometatable(L, "mqtt.socket", (void *)mqtt_socket_map);  // create metatable for mqtt.socket
-#ifdef CLIENT_SSL_ENABLE
-  espconn_secure_set_size(ESPCONN_CLIENT, 4096);
-#endif
   return 0;
 }
 
