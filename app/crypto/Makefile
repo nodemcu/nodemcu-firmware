@@ -41,6 +41,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
 INCLUDES += -I ../libc
+INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

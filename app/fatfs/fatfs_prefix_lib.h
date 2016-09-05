@@ -1,0 +1,24 @@
+
+#define f_chdir    fatfslib_f_chdir
+#define f_chdrive  fatfslib_f_chdrive
+#define f_chmod    fatfslib_f_chmod
+#define f_close    fatfslib_f_close
+#define f_closedir fatfslib_f_closedir
+#define f_getcwd   fatfslib_f_getcwd
+#define f_getfree  fatfslib_f_getfree
+#define f_getlabel fatfslib_f_getlabel
+#define f_lseek    fatfslib_f_lseek
+#define f_mkdir    fatfslib_f_mkdir
+#define f_mount    fatfslib_f_mount
+#define f_open     fatfslib_f_open
+#define f_opendir  fatfslib_f_opendir
+#define f_read     fatfslib_f_read
+#define f_readdir  fatfslib_f_readdir
+#define f_rename   fatfslib_f_rename
+#define f_setlabel fatfslib_f_setlabel
+#define f_stat     fatfslib_f_stat
+#define f_sync     fatfslib_f_sync
+#define f_truncate fatfslib_f_truncate
+#define f_unlink   fatfslib_f_unlink
+#define f_utime    fatfslib_f_utime
+#define f_write    fatfslib_f_write

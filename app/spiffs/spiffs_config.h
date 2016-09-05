@@ -14,6 +14,8 @@
 #include "nodemcu_spiffs.h"
 // ----------- >8 ------------
 
+#include "user_config.h"
+
 // compile time switches
 
 // Set generic spiffs debug output call.
@@ -99,7 +101,7 @@
 // zero-termination character, meaning maximum string of characters
 // can at most be SPIFFS_OBJ_NAME_LEN - 1.
 #ifndef SPIFFS_OBJ_NAME_LEN
-#define SPIFFS_OBJ_NAME_LEN             (32)
+#define SPIFFS_OBJ_NAME_LEN             (FS_OBJ_NAME_LEN+1)
 #endif
 
 // Size of buffer allocated on stack used when copying data.

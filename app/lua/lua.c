@@ -9,7 +9,7 @@
 #include "c_stdio.h"
 #include "c_stdlib.h"
 #include "c_string.h"
-#include "flash_fs.h"
+#include "user_interface.h"
 #include "user_version.h"
 #include "driver/readline.h"
 #include "driver/uart.h"

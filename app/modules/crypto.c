@@ -6,7 +6,7 @@
 #include "platform.h"
 #include "c_types.h"
 #include "c_stdlib.h"
-#include "flash_fs.h"
+#include "vfs.h"
 #include "../crypto/digests.h"
 #include "../crypto/mech.h"
 
@@ -243,6 +243,11 @@ static int crypto_hash_gcdelete (lua_State *L)
 }
 
 
+static sint32_t vfs_read_wrap (int fd, void *ptr, size_t len)
+{
+  return vfs_read (fd, ptr, len);
+}
+
 /* rawdigest = crypto.hash("MD5", filename)
  * strdigest = crypto.toHex(rawdigest)
  */
@@ -254,17 +259,17 @@ static int crypto_flhash (lua_State *L)
   const char *filename = luaL_checkstring (L, 2);
 
   // Open the file
-  int file_fd = fs_open (filename, FS_RDONLY);
-  if(file_fd < FS_OPEN_OK) {
+  int file_fd = vfs_open (filename, "r");
+  if(!file_fd) {
     return bad_file(L);
   }
 
   // Compute hash
   uint8_t digest[mi->digest_size];
-  int returncode = crypto_fhash (mi, &fs_read, file_fd, digest);
+  int returncode = crypto_fhash (mi, &vfs_read_wrap, file_fd, digest);
 
   // Finish up
-  fs_close(file_fd);
+  vfs_close(file_fd);
 
   if (returncode == ENOMEM)
     return bad_mem (L);

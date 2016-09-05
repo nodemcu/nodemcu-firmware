@@ -27,6 +27,7 @@
  * SUCH DAMAGE.
  *
  */
+#include "vfs.h"
 #include "digests.h"
 #include "user_config.h"
 #include "rom.h"

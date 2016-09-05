@@ -11,6 +11,9 @@ cat user_modules.h
 
 # enable SSL
 sed -i.bak 's@//#define CLIENT_SSL_ENABLE@#define CLIENT_SSL_ENABLE@' user_config.h
+
+# enable FATFS
+sed -i 's@//#define BUILD_FATFS@#define BUILD_FATFS@' user_config.h
 cat user_config.h
 
 cd "$TRAVIS_BUILD_DIR"/ld || exit

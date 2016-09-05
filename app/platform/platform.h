@@ -110,6 +110,8 @@ int platform_spi_send( uint8_t id, uint8_t bitlen, spi_data_type data );
 spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type data );
 void platform_spi_select( unsigned id, int is_select );
 
+int platform_spi_blkwrite( uint8_t id, size_t len, const uint8_t *data );
+int platform_spi_blkread( uint8_t id, size_t len, uint8_t *data );
 int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data );
 spi_data_type platform_spi_get_miso( uint8_t id, uint16_t offset, uint8_t bitlen );
 int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,
