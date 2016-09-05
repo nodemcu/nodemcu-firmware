@@ -1,6 +1,7 @@
 
 
 #include "c_stdlib.h"
+#include "c_stdio.h"
 #include "vfs.h"
 
 
