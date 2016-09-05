@@ -1,6 +1,7 @@
 # FAT File System on SD Card
 
 Accessing files on external SD cards is currently only supported from the `file` module. This imposes the same overall restrictions of internal SPIFFS to SD cards:
+
 - only one file can be opened at a time
 - no support for sub-folders
 - no timestamps
@@ -17,6 +18,7 @@ Uncomment `#define BUILD_FATFS` in [`user_config.h`](../../app/include/user_conf
 ## SD Card connection
 
 The SD card is operated in SPI mode, thus the card has to be wired to the respective ESP pins of the HSPI interface. There are several naming schemes used on different adapters - the following list shows alternative terms:
+
 - `CK, CLK, SCLK` to pin5 / GPIO14
 - `DO, DAT0, MISO` to pin 6 / GPIO12
 - `DI, CMD, MOSI` to pin 7 / GPIO13
@@ -30,8 +32,8 @@ Connection of `SS/CS` can be done to any of the GPIOs on pins 1 to 12. This allo
 
     The adapter does not require level shifters since SD and ESP are supposed to be powered with the same voltage. If your specific model contains level shifters then make sure that both sides can be operated at 3V3.
 
-<img src="../img/micro_sd.jpg" alt="1:1 micro-sd adapter" width="200"/>
-<img src="../img/micro_sd_shield.jpg" alt="micro-sd shield" width="200"/>
+![1:1 micro-sd adapter](../img/micro_sd-small.jpg "1:1 micro-sd adapter")
+![micro-sd shield](../img/micro_sd_shield-small.jpg "micro-sd shield")
 
 ## Lua bindings
 
