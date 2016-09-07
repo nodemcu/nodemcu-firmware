@@ -59,6 +59,7 @@ double pow(double x, double y)
 {
     double frexp(), g, ldexp(), r, u1, u2, v, w, w1, w2, y1, y2, z;
     int iw1, m, p;
+    bool flipsignal = false;
 
     if (y == 0.0)
         return (1.0);
@@ -67,7 +68,7 @@ double pow(double x, double y)
         if (x == 0.0)
         {
             if (y > 0.0)
-                return (x);
+                return 0.0;
             //cmemsg(FP_POWO, &y);
             //return(HUGE);
         }
@@ -75,6 +76,11 @@ double pow(double x, double y)
         {
             //cmemsg(FP_POWN, &x);
             x = -x;
+
+            if (y != (int) y) { // if y is fractional, then this woud result in a complex number
+                return NAN;
+            }
+            flipsignal = ((int) y) & 1;
         }
     }
     g = frexp(x, &m);
@@ -125,7 +131,8 @@ double pow(double x, double y)
     p = 16 * m - iw1;
     z = ((((((q7 * w2 + q6) * w2 + q5) * w2 + q4) * w2 + q3) * w2 + q2) * w2 + q1) * w2;
     z = a1[p] + a1[p] * z;
-    return (ldexp(z, m));
+    double res = ldexp(z, m);
+    return flipsignal ? -res : res;
 }
 
 #if 0
