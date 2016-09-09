@@ -169,30 +169,6 @@ Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled
  - If `wifi.nullmodesleep()` is called with no arguments, current setting is returned.
  - If `wifi.nullmodesleep()` is called with `enable` argument, confirmation of new setting is returned.
 
-## wifi.sleeptype()
-
-Configures the WiFi modem sleep type to be used while station is connected to an Access Point.
-
-	!!! note
-		Does not apply to `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE`.
-
-#### Syntax
-`wifi.sleeptype(type_wanted)`
-
-#### Parameters
-`type_wanted` one of the following:
-
-- `wifi.NONE_SLEEP` to keep the modem on at all times
-- `wifi.LIGHT_SLEEP` to allow the CPU to power down under some circumstances
-- `wifi.MODEM_SLEEP` to power down the modem as much as possible
-
-#### Returns
-The actual sleep mode set, as one of `wifi.NONE_SLEEP`, `wifi.LIGHT_SLEEP` or `wifi.MODEM_SLEEP`.
-
-#### See also
-- [`node.dsleep()`](node.md#nodedsleep)
-- [`rtctime.dsleep()`](rtctime.md#rtctimedsleep)
-
 ## wifi.startsmart()
 
 Starts to auto configuration, if success set up SSID and password automatically.
@@ -950,6 +926,26 @@ print(wifi.sta.setmac("DE:AD:BE:EF:7A:C0"))
 
 #### See also
 [`wifi.sta.setip()`](#wifistasetip)
+
+## wifi.sta.sleeptype()
+
+Configures the WiFi modem sleep type to be used while station is connected to an Access Point.
+
+	!!! note
+		Does not apply to `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE`.
+
+#### Syntax
+`wifi.sta.sleeptype(type_wanted)`
+
+#### Parameters
+`type_wanted` one of the following:
+
+- `wifi.NONE_SLEEP` to keep the modem on at all times
+- `wifi.LIGHT_SLEEP` to allow the CPU to power down under some circumstances
+- `wifi.MODEM_SLEEP` to power down the modem as much as possible
+
+#### Returns
+The actual sleep mode set, as one of `wifi.NONE_SLEEP`, `wifi.LIGHT_SLEEP` or `wifi.MODEM_SLEEP`.
 
 ## wifi.sta.status()
 

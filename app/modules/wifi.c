@@ -475,26 +475,6 @@ static int wifi_setip( lua_State* L, uint8_t mode )
   return 1;  
 }
 
-// Lua: wifi.sleeptype(type)
-static int wifi_sleeptype( lua_State* L )
-{
-  unsigned type;
-  
-  if ( lua_isnumber(L, 1) ){
-    type = lua_tointeger(L, 1);
-    if ( type != NONE_SLEEP_T && type != LIGHT_SLEEP_T && type != MODEM_SLEEP_T )
-      return luaL_error( L, "wrong arg type" );
-    if(!wifi_set_sleep_type(type)){
-      lua_pushnil(L);
-      return 1;
-    }
-  }
-
-  type = wifi_get_sleep_type();
-  lua_pushinteger( L, type );
-  return 1;  
-}
-
 // Lua: wifi.sta.getaplist
 static int wifi_station_get_ap_info4lua( lua_State* L )
 {
@@ -999,6 +979,26 @@ static int wifi_sta_sethostname_lua( lua_State* L )
   return 0;
 }
 
+// Lua: wifi.sta.sleeptype(type)
+static int wifi_station_sleeptype( lua_State* L )
+{
+  unsigned type;
+
+  if ( lua_isnumber(L, 1) ){
+    type = lua_tointeger(L, 1);
+    if ( type != NONE_SLEEP_T && type != LIGHT_SLEEP_T && type != MODEM_SLEEP_T )
+      return luaL_error( L, "wrong arg type" );
+    if(!wifi_set_sleep_type(type)){
+      lua_pushnil(L);
+      return 1;
+    }
+  }
+
+  type = wifi_get_sleep_type();
+  lua_pushinteger( L, type );
+  return 1;
+}
+
 // Lua: wifi.sta.status()
 static int wifi_station_status( lua_State* L )
 {
@@ -1397,6 +1397,7 @@ static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "sethostname" ),      LFUNCVAL( wifi_sta_sethostname_lua ) },
   { LSTRKEY( "gethostname" ),      LFUNCVAL( wifi_sta_gethostname ) },
   { LSTRKEY( "getrssi" ),          LFUNCVAL( wifi_station_getrssi ) },
+  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_station_sleeptype ) },
   { LSTRKEY( "status" ),           LFUNCVAL( wifi_station_status ) },
 #if defined(WIFI_STATION_STATUS_MONITOR_ENABLE)
   { LSTRKEY( "eventMonReg" ),   LFUNCVAL( wifi_station_event_mon_reg ) }, //declared in wifi_eventmon.c
@@ -1442,7 +1443,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
   { LSTRKEY( "stopsmart" ),      LFUNCVAL( wifi_exit_smart ) },
 #endif
-  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_sleeptype ) },
+  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_station_sleeptype ) },
 
   { LSTRKEY( "sta" ),            LROVAL( wifi_station_map ) },
   { LSTRKEY( "ap" ),             LROVAL( wifi_ap_map ) },
