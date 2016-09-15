@@ -29,11 +29,11 @@ else ifeq ($(HW),ESP32)
 	TARGET_SDK_LIBS=rtc c m driver
 	TARGET_LDFLAGS=
 	LD_FILE=$(LDDIR)/nodemcu32.ld
-	AR = xtensa-esp108-elf-ar
-	CC = xtensa-esp108-elf-gcc
-	NM = xtensa-esp108-elf-nm
-	CPP = xtensa-esp108-elf-cpp
-	OBJCOPY = xtensa-esp108-elf-objcopy
+	AR = xtensa-esp32-elf-ar
+	CC = xtensa-esp32-elf-gcc
+	NM = xtensa-esp32-elf-nm
+	CPP = xtensa-esp32-elf-cpp
+	OBJCOPY = xtensa-esp32-elf-objcopy
 else
   $(error Unsupported hardware platform: $(HW))
 endif
