@@ -46,6 +46,14 @@ Otherwise, if you built your own firmware from source code:
 - `bin/0x00000.bin` to 0x00000
 - `bin/0x10000.bin` to 0x10000
 
+If you're using 512k bytes flash, you should flash:
+
+- `bin/0x7c000.bin` to 0x7c000
+
+If you're using 4M bytes flash, you should flash:
+
+- `bin/0x3fc000.bin` to 0x3fc000
+
 Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash (depending on flash size and type), see [below](#upgrading-from-sdk-09x-firmware).
 
 ## Upgrading Firmware
