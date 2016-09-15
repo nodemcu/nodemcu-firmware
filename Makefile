@@ -237,16 +237,30 @@ flash:
 	@echo "  make flash4m   - for ESP with   4MB flash size"
 
 flash512k:
-	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" flashinternal
+	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" -e INITDATAADDR="0x7c000" flashinternal
 
 flash4m:
-	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" flashinternal
+	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" -e INITDATAADDR="0x3fc000" flashinternal
 
-flashinternal:
+flashinternal: initdata
 ifndef PDIR
 	$(MAKE) -C ./app flashinternal
 else
-	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin $(INITDATAADDR) $(FIRMWAREDIR)$(INITDATAADDR).bin
+endif
+
+initdata:
+ifndef PDIR
+	$(MAKE) -C ./app initdata
+else
+	@printf "\005\000\004\002\005\005\005\002\005\000\004\005\005\004\005\005">$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@printf "\004\376\375\377\360\360\360\340\340\340\341\012\377\377\370\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@printf "\370\370\122\116\112\104\100\070\000\000\001\001\002\003\004\005">>$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@printf "\001\000\000\000\000\000\002\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@printf "\341\012\000\000\000\000\000\000\000\000\001\223\103\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@printf "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@printf "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@printf "\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
 endif
 
 .subdirs:
