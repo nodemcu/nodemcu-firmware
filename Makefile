@@ -200,7 +200,7 @@ sdk_patched: sdk_extracted $(TOP_DIR)/sdk/.patched-$(SDK_VER)
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
-	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK/lib/* ESP8266_NONOS_SDK/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK/include/* )
+	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK/lib/* ESP8266_NONOS_SDK/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK/include/* ESP8266_NONOS_SDK/bin/esp_init_data_default.bin)
 	mv $(dir $@)/ESP8266_NONOS_SDK $(dir $@)/esp_iot_sdk_v$(SDK_VER)
 	rm -f $(SDK_DIR)/lib/liblwip.a
 	touch $@
@@ -253,14 +253,7 @@ initdata:
 ifndef PDIR
 	$(MAKE) -C ./app initdata
 else
-	@printf "\005\000\004\002\005\005\005\002\005\000\004\005\005\004\005\005">$(FIRMWAREDIR)$(INITDATAADDR).bin
-	@printf "\004\376\375\377\360\360\360\340\340\340\341\012\377\377\370\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
-	@printf "\370\370\122\116\112\104\100\070\000\000\001\001\002\003\004\005">>$(FIRMWAREDIR)$(INITDATAADDR).bin
-	@printf "\001\000\000\000\000\000\002\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
-	@printf "\341\012\000\000\000\000\000\000\000\000\001\223\103\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
-	@printf "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
-	@printf "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
-	@printf "\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000\000">>$(FIRMWAREDIR)$(INITDATAADDR).bin
+	@cp -f $(SDK_DIR)/bin/esp_init_data_default.bin $(FIRMWAREDIR)$(INITDATAADDR).bin
 endif
 
 .subdirs:
