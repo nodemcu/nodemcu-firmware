@@ -5,6 +5,16 @@
 
 The crypto modules provides various functions for working with cryptographic algorithms.
 
+The following encryption/decryption algorithms/modes are supported:
+- `"AES-ECB"` for 128-bit AES in ECB mode (NOT recommended)
+- `"AES-CBC"` for 128-bit AES in CBC mode
+
+The following hash algorithms are supported:
+- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
+- MD5
+- SHA1
+- SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
+
 ## crypto.encrypt()
 
 Encrypts Lua strings.
@@ -13,9 +23,7 @@ Encrypts Lua strings.
 `crypto.encrypt(algo, key, plain [, iv])`
 
 #### Parameters
-  - `algo` the name of the encryption algorithm to use, one of
-    - `"AES-ECB"` for 128-bit AES in ECB mode
-    - `"AES-CBC"` for 128-bit AES in CBC mode
+  - `algo` the name of a supported encryption algorithm to use
   - `key` the encryption key as a string; for AES encryption this *MUST* be 16 bytes long
   - `plain` the string to encrypt; it will be automatically zero-padded to a 16-byte boundary if necessary
   - `iv` the initilization vector, if using AES-CBC; defaults to all-zero if not given
@@ -40,9 +48,7 @@ Decrypts previously encrypted data.
 `crypto.decrypt(algo, key, cipher [, iv])`
 
 #### Parameters
-  - `algo` the name of the encryption algorithm to use, one of
-    - `"AES-ECB"` for 128-bit AES in ECB mode
-    - `"AES-CBC"` for 128-bit AES in CBC mode
+  - `algo` the name of a supported encryption algorithm to use
   - `key` the encryption key as a string; for AES encryption this *MUST* be 16 bytes long
   - `cipher` the cipher text to decrypt (as obtained from `crypto.encrypt()`)
   - `iv` the initilization vector, if using AES-CBC; defaults to all-zero if not given
@@ -75,13 +81,6 @@ Compute a cryptographic hash of a a file.
 - `algo` the hash algorithm to use, case insensitive string
 - `filename` the path to the file to hash
 
-Supported hash algorithms are:
-
-- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
-- MD5
-- SHA1
-- SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
-
 #### Returns
 A binary string containing the message digest. To obtain the textual version (ASCII hex characters), please use [`crypto.toHex()`](#cryptotohex ).
 
@@ -101,13 +100,6 @@ Compute a cryptographic hash of a Lua string.
 `algo` the hash algorithm to use, case insensitive string
 `str` string to hash contents of
 
-Supported hash algorithms are:
-
-- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
-- MD5
-- SHA1
-- SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
-
 #### Returns
 A binary string containing the message digest. To obtain the textual version (ASCII hex characters), please use [`crypto.toHex()`](#cryptotohex	).
 
@@ -125,13 +117,6 @@ Create a digest/hash object that can have any number of strings added to it. Obj
 
 #### Parameters
 `algo` the hash algorithm to use, case insensitive string
-
-Supported hash algorithms are:
-
-- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
-- MD5
-- SHA1
-- SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
 
 #### Returns
 Userdata object with `update` and `finalize` functions available.
@@ -157,13 +142,6 @@ Compute a [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication
 - `str` data to calculate the hash for
 - `key` key to use for signing, may be a binary string
 
-Supported hash algorithms are:
-
-- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
-- MD5
-- SHA1
-- SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
-
 #### Returns
 A binary string containing the HMAC signature. Use [`crypto.toHex()`](#cryptotohex	) to obtain the textual version.
 
@@ -171,6 +149,30 @@ A binary string containing the HMAC signature. Use [`crypto.toHex()`](#cryptotoh
 ```lua
 print(crypto.toHex(crypto.hmac("sha1","abc","mysecret")))
 ```
+
+## crypto.new_hmac()
+
+Create a hmac object that can have any number of strings added to it. Object has `update` and `finalize` functions.
+
+#### Syntax
+`hmacobj = crypto.new_hmac(algo, key)`
+
+#### Parameters
+- `algo` the hash algorithm to use, case insensitive string
+- `key` the key to use (may be a binary string)
+
+#### Returns
+Userdata object with `update` and `finalize` functions available.
+
+#### Example
+```lua
+hmacobj = crypto.new_hmac("SHA1", "s3kr3t")
+hmacobj:update("FirstString"))
+hmacobj:update("SecondString"))
+digest = hmacobj:finalize()
+print(crypto.toHex(digest))
+```
+
 
 ## crypto.mask()
 
