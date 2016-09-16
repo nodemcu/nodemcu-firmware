@@ -46,15 +46,25 @@ Otherwise, if you built your own firmware from source code:
 - `bin/0x00000.bin` to 0x00000
 - `bin/0x10000.bin` to 0x10000
 
-If you're using 512k bytes flash, you should flash:
+Also, in some special circumstances, such as:
 
-- `bin/0x7c000.bin` to 0x7c000
+- this is your first time using esp8266 based hardware
+- you want upgrade firmware
+- you want downgrade firmware
+- you want change firmware
+- you got ``rf_cal[0] !=0x05,is 0xFF`` error when boot
+- the boards reboot again and again
+- you can not connect some AP that you have successfully connected
 
-If you're using 4M bytes flash, you should flash:
+you may need to flash `esp_init_data_default.bin`(RF & SoC configuration) to various addresses on the flash (depending on flash size and type), see [below](#upgrading-firmware).
 
-- `bin/0x3fc000.bin` to 0x3fc000
+And, in below circumstances, such as:
 
-Also, in some special circumstances, you may need to flash `blank.bin` or `esp_init_data_default.bin` to various addresses on the flash (depending on flash size and type), see [below](#upgrading-from-sdk-09x-firmware).
+- you want upgrade firmware
+- you want downgrade firmware
+- you want let esp8266 forget Wi-Fi SSID and PASSWORD
+
+you may need to flash `blank.bin`(Wi-Fi configuration) to various addresses on the flash (depending on flash size and type), see [below](#upgrading-firmware).
 
 ## Upgrading Firmware
 
@@ -86,12 +96,26 @@ esptool.py --port <serial-port-of-ESP8266> write_flash <flash options> 0x00000 <
 
 !!! note "Note:"
 
-    The address for `esp_init_data_default.bin` depends on the size of your module's flash. 
+    The address for `esp_init_data_default.bin`(RF & SoC configuration) depends on the size of your module's flash. 
     
     - `0x7c000` for 512 kB, modules like ESP-01, -03, -07 etc.
     - `0xfc000` for 1 MB, modules like ESP8285, PSF-A85
     - `0x1fc000` for 2 MB
     - `0x3fc000` for 4 MB, modules like ESP-12E, NodeMCU devkit 1.0, WeMos D1 mini
+
+    The address for `blank.bin`(Wi-Fi configuration) depends on the size of your module's flash.
+
+    - `0x7e000` for 512 kB, modules like ESP-01, -03, -07 etc.
+    - `0xfe000` for 1 MB, modules like ESP8285, PSF-A85
+    - `0x1fe000` for 2 MB
+    - `0x3fe000` for 4 MB, modules like ESP-12E, NodeMCU devkit 1.0, WeMos D1 mini
+
+    |Flash bytes |Flash bits  |RF & SoC configuration|Wi-Fi configuration|
+    |------------|------------|------------------------|-------------------|
+    |512 kB      |4  Mb       |0x7c000                 |0x7e000            |
+    |1   MB      |8  Mb       |0xfc000                 |0xfe000            |
+    |2   MB      |16 Mb       |0x1fc000                |0x1fe000           |
+    |4   MB      |32 Mb       |0x3fc000                |0x3fe000           |
 
 **NodeMCU Flasher**
 
