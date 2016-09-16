@@ -1,7 +1,7 @@
 #ifndef _SDK_OVERRIDES_ETS_SYS_H_
 #define _SDK_OVERRIDES_ETS_SYS_H_
 
-#include_next <ets_sys.h>
+#include_next <rom/ets_sys.h>
 
 #include <freertos/xtensa_api.h>
 #define ETS_UART_INTR_ATTACH(fn,arg) xt_set_interrupt_handler(ETS_UART_INUM, fn, arg)

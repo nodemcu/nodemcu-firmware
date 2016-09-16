@@ -1,0 +1,118 @@
+menu "Platform hardware config"
+
+choice FLASH_SIZE
+  bool "Platform SPI flash size"
+  default FLASH_SIZE_AUTO
+  help
+      Configure the size of the SPI flash on the platform.
+
+      This is used to determine various things such as file system size,
+      the location of SDK configuration data, and initial RF data.
+config FLASH_SIZE_AUTO
+  bool "Auto-detect"
+config FLASH_SIZE_512K
+  bool "512KB (4Mbit)"
+config FLASH_SIZE_1M
+  bool "1MB (8Mbit)"
+config FLASH_SIZE_2M
+  bool "2MB (16Mbit)"
+config FLASH_SIZE_4M
+  bool "4MB (32Mbit)"
+config FLASH_SIZE_8M
+  bool "8MB (64Mbit)"
+config FLASH_SIZE_16M
+  bool "16MB (128Mbit)"
+endchoice
+
+choice CONSOLE_BIT_RATE
+  prompt "UART console default bit rate"
+  default CONSOLE_BIT_RATE_115200
+  help
+      Configure the default bit rate for the UART console.
+
+      The resulting UART setting will be xxx-8N1, where xxx represents the
+      chosen bit rate.
+config CONSOLE_BIT_RATE_300
+  bool "300"
+config CONSOLE_BIT_RATE_600
+  bool "600"
+config CONSOLE_BIT_RATE_1200
+  bool "1200"
+config CONSOLE_BIT_RATE_2400
+  bool "2400"
+config CONSOLE_BIT_RATE_4800
+  bool "4800"
+config CONSOLE_BIT_RATE_9600
+  bool "9600"
+config CONSOLE_BIT_RATE_19200
+  bool "19200"
+config CONSOLE_BIT_RATE_38400
+  bool "38400"
+config CONSOLE_BIT_RATE_57600
+  bool "57600"
+config CONSOLE_BIT_RATE_74880
+  bool "74880"
+config CONSOLE_BIT_RATE_115200
+  bool "115200"
+config CONSOLE_BIT_RATE_230400
+  bool "230400"
+config CONSOLE_BIT_RATE_460800
+  bool "460800"
+config CONSOLE_BIT_RATE_921600
+  bool "921600"
+config CONSOLE_BIT_RATE_1843200
+  bool "1843200"
+config CONSOLE_BIT_RATE_3683400
+  bool "3683400"
+endchoice
+
+config CONSOLE_BIT_RATE
+  int
+  default     300 if CONSOLE_BIT_RATE_300
+  default     600 if CONSOLE_BIT_RATE_600
+  default    1200 if CONSOLE_BIT_RATE_1200
+  default    2400 if CONSOLE_BIT_RATE_2400
+  default    4800 if CONSOLE_BIT_RATE_4800
+  default    9600 if CONSOLE_BIT_RATE_9600
+  default   19200 if CONSOLE_BIT_RATE_19200
+  default   38400 if CONSOLE_BIT_RATE_38400
+  default   57600 if CONSOLE_BIT_RATE_57600
+  default   74880 if CONSOLE_BIT_RATE_74880
+  default  115200 if CONSOLE_BIT_RATE_115200
+  default  230400 if CONSOLE_BIT_RATE_230400
+  default  460800 if CONSOLE_BIT_RATE_460800
+  default  921600 if CONSOLE_BIT_RATE_921600
+  default 1843200 if CONSOLE_BIT_RATE_1843200
+  default 3683400 if CONSOLE_BIT_RATE_3683400
+
+config CONSOLE_BIT_RATE_AUTO
+  bool "UART console auto-baud detection"
+  default "y"
+  help
+      Enables auto-baud detection for the UART console.
+
+      By typing a few characters into the console shortly after boot,
+      NodeMCU can automatically detect your terminal settings and
+      adjust accordingly.
+
+      If you are doing advanced things with the console, you may want
+      to disable this feature.
+
+config NODE_DEBUG
+  bool "Enable NODE_DBG() output"
+  default "n"
+  help
+      Enable debugging output via NODE_DBG(). This is VERY chatty.
+      For development/debugging use only.
+
+config NODE_ERROR
+  bool "Enable NODE_ERR() output"
+  default "y"
+  help
+      Enable error reporting via NODE_ERR().
+
+      It is recommended to leave this enabled - if it ever produces output,
+      something has gone seriously wrong and you probably want to know about
+      it.
+
+endmenu
