@@ -266,7 +266,7 @@ endif
 .PHONY: spiffs-image-remove
 
 spiffs-image-remove:
-	$(MAKE) -C tools remove-image
+	$(MAKE) -C tools remove-image spiffsimg/spiffsimg
 
 .PHONY: spiffs-image
 
