@@ -92,6 +92,8 @@ The disk image file is placed into the `bin` directory and it is named `0x<offse
 flashed, and the size is the size of the flash part. It is quite valid (and quicker) to flash the 512k image into a 4M part. However, there will probably be
 limited space in the file system for creating new files.
 
+The default configuration will try and build three different file systems for 512KB, 1MB and 4MB flash sizes. The 1MB size is suitable for the ESP8285. This can be overridden by specifying the FLASHSIZE parameter to the makefile.
+
 If the `local/fs` directory is empty, then no flash images will be created (and the ones from the last build will be removed). The `spiffsimg` tool can 
 then be used to build an image as required. 
 

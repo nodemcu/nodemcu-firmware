@@ -3,7 +3,7 @@
 #
 
 FSSOURCE ?= ../local/fs/
-FLASHSIZE ?= 4mb 32mb
+FLASHSIZE ?= 4mb 32mb 8mb
 SUBDIRS = 
 
 OBJDUMP = $(or $(shell which objdump),xtensa-lx106-elf-objdump)
