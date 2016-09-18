@@ -27,11 +27,11 @@ spiffsimg -f <filename>
 
 ### Supported operations:
 
-  * `-f` specifies the filename for the disk image. '%x' will be replaced by the calculated offset of the file system.
-  * `-o` specifies the file which is to contain the calculated offset.
-  * `-S` specifies the size of the flash chip. `32m` is 32 mbits, `1MB` is 1 megabyte.
-  * `-U` specifies the amount of flash used by the firmware. Decimal or Hex bytes.
-  * `-c` Create a blank disk image of the given size.
+  * `-f` specifies the filename for the disk image. '%x' will be replaced by the calculated offset of the file system (`-U` must also be specified to calculate the offset).
+  * `-o` specifies the filename which is to contain the calculated offset.
+  * `-S` specifies the size of the flash chip. `32m` is 32 mbits, `4MB` is 4 megabytes.
+  * `-U` specifies the amount of flash used by the firmware. Decimal or Hex bytes (if starts with 0x).
+  * `-c` Create a blank disk image of the given size. Decimal or Hex bytes (if starts with 0x).
   * `-l` List the contents of the given disk image.
   * `-i` Interactive commands.
   * `-r` Scripted commands from filename.
