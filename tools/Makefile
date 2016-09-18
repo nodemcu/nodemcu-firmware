@@ -28,10 +28,15 @@ FLASH_USED_END = $$((0x`$(OBJDUMP) -t ../app/.output/eagle/debug/image/eagle.app
 
 all:	spiffsscript
 
+.PHONY: spiffsimg
+
 .PHONY: spiffsimg/spiffsimg
 
+spiffsimg: spiffsimg/spiffsimg
+	@echo Built spiffsimg in spiffsimg/spiffsimg
+
 spiffsimg/spiffsimg: 
-	$(MAKE) -C spiffsimg CC=gcc
+	@$(MAKE) -C spiffsimg CC=gcc
 
 spiffsscript: remove-image spiffsimg/spiffsimg
 	rm -f ./spiffsimg/spiffs.lst
