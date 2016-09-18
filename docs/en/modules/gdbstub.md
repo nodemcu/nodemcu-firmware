@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2016-09-18 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [gdbstub.c](../../../app/modules/gdbstub.c)|
 
-This module provides basic source code debugging of the firmware in conjunction with a version of gdb built for the lx108. If you
+This module provides basic source code debugging of the firmware when used in conjunction with a version of gdb built for the lx108. If you
 enable this module, then fatal errors (like invalid memory reads) will trap into the gdbstub. This uses UART0 to talk to GDB. If 
 this happens while the UART0 is connected to a terminal (or some IDE like esplorer) then you will see a string starting with `$T` and a few 
 more characters after that. This is the signal that a trap has happened, and control should be passed to gdb.
