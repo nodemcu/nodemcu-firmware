@@ -231,7 +231,7 @@ Select Access Point from list returned by `wifi.sta.apinfo()`
 `wifi.sta.apchange(ap_index)`
 
 #### Parameters
-`ap_index` Index of Access Point you would like to change to. (Range:0-4)
+`ap_index` Index of Access Point you would like to change to. (Range:1-5)
  - Corresponds to index used by [`wifi.sta.apinfo()`](#wifistaapinfo) and [`wifi.sta.getapindex()`](#wifistagetapindex)
 
 #### Returns
@@ -263,21 +263,38 @@ Get information of APs cached by ESP8266 station.
 #### Returns
 - `ap_info`
  - `qty` quantity of APs returned
- - `0-4` index of AP. (the index corresponds to index used by [`wifi.sta.apchange()`](#wifistaapchange) and [`wifi.sta.getapindex()`](#wifistagetapindex))
+ - `1-5` index of AP. (the index corresponds to index used by [`wifi.sta.apchange()`](#wifistaapchange) and [`wifi.sta.getapindex()`](#wifistagetapindex))
    - `ssid`  ssid of Access Point
-    - `pwd`	 Password for Access Point
-    - `bssid` MAC address of Access Point, if no MAC address available this field will be `nil`
+   - `pwd`	 Password for Access Point
+     - If no password was configured, the `pwd` field will be `nil`
+   - `bssid` MAC address of Access Point
+     - If no MAC address was configured, the `bssid` field will be `nil`
 
 
 #### Example
 ```lua
+--print stored access point info
 do
-  local apinfo=wifi.sta.apinfo()
-  local apindex=wifi.sta.getapindex()
-  print("\n Number of APs stored in flash:", apinfo.APqty)
-  print(string.format("  %-6s %-32s %-64s %-18s", "index:", "SSID:", "Password:", "BSSID:"))
-  for i=0, (apinfo.APqty-1), 1 do
-    print(string.format(" %s%-6d %-32s %-64s %-18s",(i==apindex and ">" or " "), i, apinfo[i].ssid, apinfo[i].password, apinfo[i].bssid))
+  for k,v in pairs(wifi.sta.apinfo()) do
+    if (type(v)=="table") then
+      print(" "..k.." : "..type(v))
+      for k,v in pairs(v) do
+        print("\t\t"..k.." : "..v)
+      end
+    else
+      print(" "..k.." : "..v)
+    end
+  end
+end
+
+--print stored access point info(formatted)
+do
+  local x=wifi.sta.apinfo()
+  local y=wifi.sta.getapindex()
+  print("\n Number of APs stored in flash:", x.qty)
+  print(string.format("  %-6s %-32s %-64s %-18s", "index:", "SSID:", "Password:", "BSSID:")) 
+  for i=1, (x.qty), 1 do
+    print(string.format(" %s%-6d %-32s %-64s %-18s",(i==y and ">" or " "), i, x[i].ssid, x[i].pwd and x[i].pwd or type(nil), x[i].bssid and x[i].bssid or type(nil)))
   end
 end
 ```
@@ -703,7 +720,9 @@ If `return_table` is `true`:
 - `config_table`
  - `ssid` ssid of Access Point.
  - `pwd` password to Access Point.
- - `bssid` MAC address of Access Point. (Note: If MAC address is not available `bssid` = `nil`)
+   - If no password was configured, the `pwd` field will be `nil`
+ - `bssid` MAC address of Access Point
+   - If no MAC address was configured, the `bssid` field will be `nil`
 
 If `return_table` is `false`:
 - ssid, password, bssid_set, bssid   
@@ -749,7 +768,9 @@ If `return_table` is `true`:
 - `config_table`
  - `ssid` ssid of Access Point.
  - `pwd` password to Access Point.
- - `bssid` MAC address of Access Point. (Note: If MAC address is not available `bssid` = `nil`)
+   - If no password was configured, the `pwd` field will be `nil`
+ - `bssid` MAC address of Access Point
+   - If no MAC address was configured, the `bssid` field will be `nil`
 
 If `return_table` is `false`:
 - ssid, password, bssid_set, bssid   
@@ -1107,6 +1128,7 @@ If `return_table` is true:
 - `config_table`
  - `ssid` Network name
  - `pwd` Password
+   - If no password was configured, the `pwd` field will be `nil`
  - `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
  - `channel` Channel number
  - `hidden` `false` = not hidden, `true` = hidden
@@ -1154,6 +1176,7 @@ If `return_table` is true:
 - `config_table`
  - `ssid` Network name
  - `pwd` Password
+   - If no password was configured, the `pwd` field will be `nil`
  - `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
  - `channel` Channel number
  - `hidden` `false` = not hidden, `true` = hidden

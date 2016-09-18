@@ -1,5 +1,7 @@
 // Module for interfacing with WIFI
 
+// FIXME: sprintf->snprintf everywhere.
+
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -218,10 +220,11 @@ static int wifi_setmode( lua_State* L )
   bool save_to_flash=true;
   mode = luaL_checkinteger( L, 1 );
   luaL_argcheck(L, mode == STATION_MODE || mode == SOFTAP_MODE || mode == STATIONAP_MODE || mode == NULL_MODE, 1, "Invalid mode");
-//  c_printf("\n\tlua_type(L, 2)=\n");
-  luaL_argcheck(L, (lua_type(L, 2)<=LUA_TBOOLEAN), 2, "Not boolean");
-  if(lua_isboolean(L, 2)) save_to_flash=lua_toboolean(L, 2);
-
+  if(!lua_isnoneornil(L, 2))
+  {
+    if(!lua_isboolean(L, 2)) luaL_typerror(L, 2, lua_typename(L, LUA_TBOOLEAN));
+    save_to_flash=lua_toboolean(L, 2);
+  }
   if(save_to_flash) wifi_set_opmode( (uint8_t)mode);
     else wifi_set_opmode_current( (uint8_t)mode);
   mode = (unsigned)wifi_get_opmode();
@@ -478,27 +481,54 @@ static int wifi_setip( lua_State* L, uint8_t mode )
 // Lua: wifi.sta.getaplist
 static int wifi_station_get_ap_info4lua( lua_State* L )
 {
-  char temp[64];
   struct station_config config[5];
+  char temp[sizeof(config[0].password)+1]; //max password length + '\0'
   uint8 number_of_aps = wifi_station_get_ap_info(config);
+
+#if defined(WIFI_DEBUG)
+  char debug_temp[128];
+#endif
   lua_newtable(L);
   lua_pushnumber(L, number_of_aps);
   lua_setfield(L, -2, "qty");
   WIFI_DBG("\n\t# of APs stored in flash:%d\n", number_of_aps);
-  WIFI_DBG("%-6s %-32s %-64s %-18s\n", "index:", "ssid:", "password:", "bssid:");
-  for(int i;i<number_of_aps;i++)
+  WIFI_DBG(" %-6s %-32s %-64s %-17s\n", "index:", "ssid:", "password:", "bssid:");
+
+  for(int i=0;i<number_of_aps;i++)
   {
     lua_newtable(L);
-    lua_pushstring(L, config[i].ssid);
-    lua_setfield(L, -2, "ssid");
-    lua_pushstring(L, config[i].password);
-    lua_setfield(L, -2, "password");
+
     memset(temp, 0, sizeof(temp));
-    c_sprintf(temp, MACSTR, MAC2STR(config[i].bssid));
+    memcpy(temp, config[i].ssid, sizeof(config[i].ssid));
     lua_pushstring(L, temp);
-    lua_setfield(L, -2, "bssid");
-    WIFI_DBG("%-6d %-32s %-64s %-18s\n", i, config[i].ssid, config[i].password, temp);
-    lua_pushnumber(L, i);
+    lua_setfield(L, -2, "ssid");
+#if defined(WIFI_DEBUG)
+    c_sprintf(debug_temp, " %-6d %-32s ", i, temp);
+#endif
+
+      memset(temp, 0, sizeof(temp));
+    if(strlen(config[i].password) >= 8)
+    {
+      memcpy(temp, config[i].password, sizeof(config[i].password));
+      lua_pushstring(L, temp);
+      lua_setfield(L, -2, "pwd");
+    }
+#if defined(WIFI_DEBUG)
+    c_sprintf(debug_temp + strlen(debug_temp), "%-64s ", temp);
+#endif
+
+      memset(temp, 0, sizeof(temp));
+    if (config[i].bssid_set)
+    {
+      c_sprintf(temp, MACSTR, MAC2STR(config[i].bssid));
+      lua_pushstring(L, temp);
+      lua_setfield(L, -2, "bssid");
+    }
+
+#if defined(WIFI_DEBUG)
+    WIFI_DBG("%s%-17s \n", debug_temp, temp);
+#endif
+    lua_pushnumber(L, i+1); //Add one, so that AP index follows Lua Conventions
     lua_insert(L, -2);
     lua_settable(L, -3);
   }
@@ -518,15 +548,15 @@ static int wifi_station_ap_number_set4lua( lua_State* L )
 static int wifi_station_change_ap( lua_State* L )
 {
   uint8 ap_index=luaL_checkinteger(L, 1);
-  luaL_argcheck(L, (ap_index >= 0 && ap_index < 5), 1, "Valid range: 0-4");
-  lua_pushboolean(L, wifi_station_ap_change(ap_index));
+  luaL_argcheck(L, (ap_index >= 1 && ap_index <= 5), 1, "Valid range: 1-5");
+  lua_pushboolean(L, wifi_station_ap_change(ap_index-1));
   return 1;
 }
 
 // Lua: wifi.setapnumber(number_of_aps_to_save)
 static int wifi_station_get_ap_index( lua_State* L )
 {
-  lua_pushnumber(L, wifi_station_get_current_ap_id());
+  lua_pushnumber(L, wifi_station_get_current_ap_id()+1);
   return 1;
 }
 
@@ -559,7 +589,7 @@ static int wifi_station_getbroadcast( lua_State* L ){
 static int wifi_station_getconfig( lua_State* L, bool get_flash_cfg)
 {
   struct station_config sta_conf;
-  char bssid[17];
+  char temp[sizeof(sta_conf.password)+1]; //max password length + '\0'
   if(get_flash_cfg) wifi_station_get_config_default(&sta_conf);
     else wifi_station_get_config(&sta_conf);
   if(sta_conf.ssid==0)
@@ -572,25 +602,39 @@ static int wifi_station_getconfig( lua_State* L, bool get_flash_cfg)
     if(lua_isboolean(L, 1) && lua_toboolean(L, 1)==true)
     {
       lua_newtable(L);
-      lua_pushstring(L, sta_conf.ssid);
+      memset(temp, 0, sizeof(temp));
+      memcpy(temp, sta_conf.ssid, sizeof(sta_conf.ssid));
+      lua_pushstring(L, temp);
       lua_setfield(L, -2, "ssid");
-      lua_pushstring(L, sta_conf.password);
-      lua_setfield(L, -2, "pwd");
+
+      if(strlen(sta_conf.password) >= 8)
+      {
+        memset(temp, 0, sizeof(temp));
+        memcpy(temp, sta_conf.password, sizeof(sta_conf.password));
+        lua_pushstring(L, temp);
+        lua_setfield(L, -2, "pwd");
+      }
+
       if(sta_conf.bssid_set==1)
       {
-        c_sprintf(bssid, MACSTR, MAC2STR(sta_conf.bssid));
-        lua_pushstring( L, bssid);
+        memset(temp, 0, sizeof(temp));
+        c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
+        lua_pushstring( L, temp);
         lua_setfield(L, -2, "bssid");
       }
       return 1;
     }
     else
     {
-      lua_pushstring( L, sta_conf.ssid );
-      lua_pushstring( L, sta_conf.password );
+      memset(temp, 0, sizeof(temp));
+      memcpy(temp, sta_conf.ssid, sizeof(sta_conf.ssid));
+      lua_pushstring(L, temp);
+      memset(temp, 0, sizeof(temp));
+      memcpy(temp, sta_conf.password, sizeof(sta_conf.password));
+      lua_pushstring(L, temp);
       lua_pushinteger( L, sta_conf.bssid_set);
-      c_sprintf(bssid, MACSTR, MAC2STR(sta_conf.bssid));
-      lua_pushstring( L, bssid);
+      c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
+      lua_pushstring( L, temp);
       return 4;
     }
   }
@@ -616,9 +660,9 @@ static int wifi_station_config( lua_State* L )
   bool save_to_flash=true;
   size_t sl, pl, ml;
 
-  c_memset(sta_conf.ssid, 0, 32);
-  c_memset(sta_conf.password, 0, 64);
-  c_memset(sta_conf.bssid, 0, 6);
+  memset(sta_conf.ssid, 0, sizeof(sta_conf.ssid));
+  memset(sta_conf.password, 0, sizeof(sta_conf.password));
+  memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
   sta_conf.bssid_set=0;
 
   if(lua_istable(L, 1))
@@ -629,8 +673,8 @@ static int wifi_station_config( lua_State* L )
       if( lua_isstring(L, -1) )
       {
         const char *ssid = luaL_checklstring( L, -1, &sl );
-        luaL_argcheck(L, ((sl>=1 && sl<=32) ), 1, "ssid: length:1-32");
-        c_memcpy(sta_conf.ssid, ssid, sl);
+        luaL_argcheck(L, ((sl>=1 && sl<=sizeof(sta_conf.ssid)) ), 1, "ssid: length:1-32");
+        memcpy(sta_conf.ssid, ssid, sl);
       }
       else return luaL_argerror( L, 1, "ssid:not string" );
     }
@@ -643,8 +687,8 @@ static int wifi_station_config( lua_State* L )
       if( lua_isstring(L, -1) )
       {
         const char *pwd = luaL_checklstring( L, -1, &pl );
-        luaL_argcheck(L, ((pl>=8 && pl<=64) ), 1, "pwd: length:8-64");
-        c_memcpy(sta_conf.password, pwd, pl);
+        luaL_argcheck(L, ((pl>=8 && pl<=sizeof(sta_conf.password)) ), 1, "pwd: length:8-64");
+        memcpy(sta_conf.password, pwd, pl);
       }
       else return luaL_argerror( L, 1, "pwd:not string" );
     }
@@ -656,7 +700,7 @@ static int wifi_station_config( lua_State* L )
       if (lua_isstring(L, -1))
       {
         const char *macaddr = luaL_checklstring( L, -1, &ml );
-        luaL_argcheck(L, ((ml==17) ), 1, "bssid: FF:FF:FF:FF:FF:FF");
+        luaL_argcheck(L, ((ml==sizeof("AA:BB:CC:DD:EE:FF")-1) ), 1, "bssid: FF:FF:FF:FF:FF:FF");
         ets_str2macaddr(sta_conf.bssid, macaddr);
         sta_conf.bssid_set = 1;
       }
@@ -685,17 +729,17 @@ static int wifi_station_config( lua_State* L )
     lua_pop(L, 1);
 
   }
-  else
+  else //to be depreciated
   {
     const char *ssid = luaL_checklstring( L, 1, &sl );
-    if (sl>32 || ssid == NULL)
-      return luaL_error( L, "ssid:<32" );
-    c_memcpy(sta_conf.ssid, ssid, sl);
+    luaL_argcheck(L, ((sl>=1 && sl<sizeof(sta_conf.ssid)) ), 1, "length:1-32");
+
+    memcpy(sta_conf.ssid, ssid, sl);
 
     const char *password = luaL_checklstring( L, 2, &pl );
-    if ((pl!=0 && (pl<8 || pl>64)) || password == NULL)
-      return luaL_error( L, "pwd:0,8~64" );
-    c_memcpy(sta_conf.password, password, pl);
+    luaL_argcheck(L, (pl==0||(pl>=8 && pl<sizeof(sta_conf.password)) ), 2, "length:0 or 8-64");
+
+    memcpy(sta_conf.password, password, pl);
 
     if(lua_isnumber(L, 3))
     {
@@ -720,34 +764,35 @@ static int wifi_station_config( lua_State* L )
     if(lua_isnumber(L, 4))
     {
       sta_conf.bssid_set = 0;
-      c_memset(sta_conf.bssid, 0, 6);
+      memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
     }
     else
     {
       if (lua_isstring(L, 4))
       {
         const char *macaddr = luaL_checklstring( L, 4, &ml );
-        luaL_argcheck(L, ml==17, 1, INVALID_MAC_STR);
-        c_memset(sta_conf.bssid, 0, 6);
+        luaL_argcheck(L, ml==sizeof("AA:BB:CC:DD:EE:FF")-1, 1, INVALID_MAC_STR);
+        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
         ets_str2macaddr(sta_conf.bssid, macaddr);
         sta_conf.bssid_set = 1;
       }
       else
       {
         sta_conf.bssid_set = 0;
-        c_memset(sta_conf.bssid, 0, 6);
+        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
       }
     }
   }
 
 #if defined(WIFI_DEBUG)
-  char debug_temp[65];
+  char debug_temp[sizeof(sta_conf.password)+1];  //max password length + '\0'
+
   memset(debug_temp, 0, sizeof(debug_temp));
-  memcpy(debug_temp, sta_conf.ssid, sl);
+  memcpy(debug_temp, sta_conf.ssid, sizeof(sta_conf.ssid));
   WIFI_DBG("\n\tsta_conf.ssid=\"%s\" len=%d\n", debug_temp, sl);
 
   memset(debug_temp, 0, sizeof(debug_temp));
-  memcpy(debug_temp, sta_conf.password, pl);
+  memcpy(debug_temp, sta_conf.password, sizeof(sta_conf.password));
   WIFI_DBG("\tsta_conf.password=\"%s\" len=%d\n", debug_temp, pl);
   WIFI_DBG("\tsta_conf.bssid=\""MACSTR"\"\tbssid_set=%d\n", MAC2STR(sta_conf.bssid), sta_conf.bssid_set);
   WIFI_DBG("\tsave_to_flash=%s\n", save_to_flash ? "true":"false");
@@ -986,8 +1031,7 @@ static int wifi_station_sleeptype( lua_State* L )
 
   if ( lua_isnumber(L, 1) ){
     type = lua_tointeger(L, 1);
-    if ( type != NONE_SLEEP_T && type != LIGHT_SLEEP_T && type != MODEM_SLEEP_T )
-      return luaL_error( L, "wrong arg type" );
+    luaL_argcheck(L, (type == NONE_SLEEP_T || type == LIGHT_SLEEP_T || type == MODEM_SLEEP_T), 1, "range:0-2");
     if(!wifi_set_sleep_type(type)){
       lua_pushnil(L);
       return 1;
@@ -1070,23 +1114,28 @@ static int wifi_ap_getbroadcast( lua_State* L ){
 static int wifi_ap_getconfig( lua_State* L, bool get_flash_cfg)
 {
   struct softap_config config;
+  char temp[sizeof(config.password)+1]; //max password length + '\0'
   if (get_flash_cfg) wifi_softap_get_config_default(&config);
     else wifi_softap_get_config(&config);
   if(lua_isboolean(L, 1) && lua_toboolean(L, 1)==true)
   {
     lua_newtable(L);
-    lua_pushstring(L, config.ssid);
+
+    memset(temp, 0, sizeof(temp));
+    memcpy(temp, config.ssid, sizeof(config.ssid));
+    lua_pushstring(L, temp);
     lua_setfield(L, -2, "ssid");
     if(config.authmode!=AUTH_OPEN)
     {
-      lua_pushstring(L, config.password);
+      memset(temp, 0, sizeof(temp));
+      memcpy(temp, config.password, sizeof(config.password));
+      lua_pushstring(L, temp);
       lua_setfield(L, -2, "pwd");
     }
     lua_pushnumber(L, config.authmode);
     lua_setfield(L, -2, "auth");
     lua_pushnumber(L, config.channel);
     lua_setfield(L, -2, "channel");
-    //    lua_pushnumber(L, config.ssid_hidden);
     lua_pushboolean(L, (bool)config.ssid_hidden);
     lua_setfield(L, -2, "hidden");
     lua_pushnumber(L, config.max_connection);
@@ -1097,11 +1146,17 @@ static int wifi_ap_getconfig( lua_State* L, bool get_flash_cfg)
   }
   else
   {
-  lua_pushstring( L, config.ssid );
-  if(config.authmode == AUTH_OPEN)
-    lua_pushnil(L);
-  else
-    lua_pushstring( L, config.password );
+    memset(temp, 0, sizeof(temp));
+    memcpy(temp, config.ssid, sizeof(config.ssid));
+    lua_pushstring(L, temp);
+
+    if(config.authmode == AUTH_OPEN) lua_pushnil(L);
+    else
+    {
+      memset(temp, 0, sizeof(temp));
+      memcpy(temp, config.password, sizeof(config.password));
+      lua_pushstring(L, temp);
+    }
   return 2;
   }
 }
@@ -1122,25 +1177,24 @@ static int wifi_ap_getconfig_default(lua_State *L)
 static int wifi_ap_config( lua_State* L )
 {
   if (!lua_istable(L, 1))
-    return luaL_error( L, "wrong arg type" );
+    return luaL_typerror(L, 1, lua_typename(L, LUA_TTABLE));
 
   struct softap_config config;
-//  wifi_softap_get_config(&config);
   bool save_to_flash=true;
   size_t sl = 0 , pl = 0;
   lua_Integer lint=0;
   int Ltype_tmp=LUA_TNONE;
 
-  c_memset(config.ssid, 0, 32);
-  c_memset(config.password, 0, 64);
+  memset(config.ssid, 0, sizeof(config.ssid));
+  memset(config.password, 0, sizeof(config.password));
 
   lua_getfield(L, 1, "ssid");
   if (!lua_isnil(L, -1)){  /* found? */
     if( lua_isstring(L, -1) )   // deal with the ssid string
     {
       const char *ssid = luaL_checklstring( L, -1, &sl );
-      luaL_argcheck(L, ((sl>=1 && sl<=32) ), 1, "ssid: length:1-32");
-      c_memcpy(config.ssid, ssid, sl);
+      luaL_argcheck(L, ((sl>=1 && sl<=sizeof(config.ssid)) ), 1, "ssid: length:1-32");
+      memcpy(config.ssid, ssid, sl);
       config.ssid_len = sl;
       config.ssid_hidden = 0;
     } 
@@ -1155,8 +1209,8 @@ static int wifi_ap_config( lua_State* L )
     if( lua_isstring(L, -1) )   // deal with the password string
     {
       const char *pwd = luaL_checklstring( L, -1, &pl );
-      luaL_argcheck(L, (pl>=8 && pl<=63), 1, "pwd: length:8-63");
-      c_memcpy(config.password, pwd, pl);
+      luaL_argcheck(L, (pl>=8 && pl<=sizeof(config.password)), 1, "pwd: length:0 or 8-64");
+      memcpy(config.password, pwd, pl);
       config.authmode = AUTH_WPA_WPA2_PSK;
     }
     else
@@ -1246,9 +1300,6 @@ static int wifi_ap_config( lua_State* L )
   {
     if(lua_isnumber(L, -1))
     {
-      //    unsigned beacon = luaL_checkinteger(L, -1);
-      //    if (beacon < 100 || beacon > 60000)
-      //      return luaL_error( L, "beacon:100~60000" );
       lint=luaL_checkinteger(L, -1);
       luaL_argcheck(L, (lint >= 100 && lint <= 60000), 1, "beacon: 100-60000");
       config.beacon_interval = (uint16_t)lint;
@@ -1275,11 +1326,13 @@ static int wifi_ap_config( lua_State* L )
 
 
 #if defined(WIFI_DEBUG)
-  char temp[sizeof(config.password+1)];
-  strncpy(temp, config.ssid, sl);
-  WIFI_DBG("\n\tconfig.ssid=\"%s\" len=%d\n", temp, sl);
-  strncpy(temp, config.password, pl);
-  WIFI_DBG("\tconfig.password=\"%s\" len=%d\n", temp, pl);
+  char debug_temp[sizeof(config.password)+1];
+  memset(debug_temp, 0, sizeof(debug_temp));
+  memcpy(debug_temp, config.ssid, sizeof(config.ssid));
+  WIFI_DBG("\n\tconfig.ssid=\"%s\" len=%d\n", debug_temp, sl);
+  memset(debug_temp, 0, sizeof(debug_temp));
+  memcpy(debug_temp, config.password, sizeof(config.password));
+  WIFI_DBG("\tconfig.password=\"%s\" len=%d\n", debug_temp, pl);
   WIFI_DBG("\tconfig.authmode=%d\n", config.authmode);
   WIFI_DBG("\tconfig.channel=%d\n", config.channel);
   WIFI_DBG("\tconfig.ssid_hidden=%d\n", config.ssid_hidden);
