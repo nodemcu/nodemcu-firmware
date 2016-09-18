@@ -16,7 +16,7 @@ normally disabled because not many situations need it. If for some reason the GD
 stops when you run into an error in your code, try enabling this.
 */
 #ifndef GDBSTUB_USE_OWN_STACK
-#define GDBSTUB_USE_OWN_STACK 1
+#define GDBSTUB_USE_OWN_STACK 0
 #endif
 
 /*

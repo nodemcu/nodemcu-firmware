@@ -13,6 +13,7 @@
 #include "c_types.h"
 #include "gpio.h"
 #include "xtensa/corebits.h"
+#include "driver/uart.h"
 
 #include "gdbstub.h"
 #include "gdbstub-entry.h"
@@ -89,8 +90,8 @@ extern void xthal_set_intenable(int);
 #define UART_TXFIFO_CNT 0x000000FF
 #define UART_TXFIFO_CNT_S                   16
 #define UART_FIFO( i )                          (REG_UART_BASE( i ) + 0x0)
-#define UART_INT_ENA(i)                     (REG_UART_BASE(i) + 0xC)
-#define UART_INT_CLR(i)                 (REG_UART_BASE(i) + 0x10)
+//#define UART_INT_ENA(i)                     (REG_UART_BASE(i) + 0xC)
+//#define UART_INT_CLR(i)                 (REG_UART_BASE(i) + 0x10)
 #define UART_RXFIFO_TOUT_INT_ENA            (BIT(8))
 #define UART_RXFIFO_FULL_INT_ENA            (BIT(0))
 #define UART_RXFIFO_TOUT_INT_CLR            (BIT(8))
@@ -114,10 +115,8 @@ int exceptionStack[256];
 
 static unsigned char cmd[PBUFLEN];		//GDB command input buffer
 static char chsum;						//Running checksum of the output packet
-#if GDBSTUB_REDIRECT_CONSOLE_OUTPUT
 static unsigned char obuf[OBUFLEN];		//GDB stdout buffer
 static int obufpos=0;					//Current position in the buffer
-#endif
 static int32_t singleStepPs=-1;			//Stores ps when single-stepping instruction. -1 when not in use.
 
 //Small function to feed the hardware watchdog. Needed to stop the ESP from resetting
@@ -639,21 +638,25 @@ static void ATTR_GDBFN gdb_exception_handler(struct XTensa_exception_frame_s *fr
 }
 #endif
 
-#if GDBSTUB_REDIRECT_CONSOLE_OUTPUT
+static void ATTR_GDBFN gdb_flush_output_buffer() {
+    if (obufpos > 0) {
+	gdbPacketStart();
+	gdbPacketChar('O');
+	for (i=0; i<obufpos; i++) gdbPacketHex(obuf[i], 8);
+	gdbPacketEnd();
+	obufpos=0;
+    }
+}
+
 //Replacement putchar1 routine. Instead of spitting out the character directly, it will buffer up to
 //OBUFLEN characters (or up to a \n, whichever comes earlier) and send it out as a gdb stdout packet.
 static void ATTR_GDBFN gdb_semihost_putchar1(char c) {
 	int i;
 	obuf[obufpos++]=c;
 	if (c=='\n' || obufpos==OBUFLEN) {
-		gdbPacketStart();
-		gdbPacketChar('O');
-		for (i=0; i<obufpos; i++) gdbPacketHex(obuf[i], 8);
-		gdbPacketEnd();
-		obufpos=0;
+  	    gdb_flush_output_buffer();
 	}
 }
-#endif
 
 #if !GDBSTUB_FREERTOS
 //The OS-less SDK uses the Xtensa HAL to handle exceptions. We can use those functions to catch any 
@@ -773,6 +776,15 @@ static void ATTR_GDBINIT install_uart_hdlr() {
 
 #endif
 
+
+void ATTR_GDBINIT gdbstub_redirect_output(int enable) {
+  if (enable) {
+    os_install_putc1(gdb_semihost_putchar1);
+  } else {
+    gdb_flush_output_buffer();
+    os_install_putc1(uart0_putc);
+  }
+}
 
 
 //gdbstub initialization routine.
