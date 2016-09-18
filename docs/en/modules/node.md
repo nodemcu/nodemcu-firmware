@@ -104,7 +104,7 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 	- 0, init data byte 108 is valuable
 	- \> 0, init data byte 108 is valueless
 	- 0, RF_CAL or not after deep-sleep wake up, depends on init data byte 108
-	- 1, RF_CAL after deep-sleep wake up, there will belarge current
+	- 1, RF_CAL after deep-sleep wake up, there will be large current
 	- 2, no RF_CAL after deep-sleep wake up, there will only be small current
 	- 4, disable RF after deep-sleep wake up, just like modem sleep, there will be the smallest current
 
