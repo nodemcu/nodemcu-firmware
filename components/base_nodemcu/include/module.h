@@ -2,6 +2,7 @@
 #define __MODULE_H__
 
 #include "lrodefs.h"
+#include "sdkconfig.h"
 
 /* Registering a module within NodeMCU is really easy these days!
  *
@@ -25,11 +26,9 @@
  *
  * if you don't need an init function.
  *
- * When you've done this, the module can be enabled in user_modules.h with:
- *
- *   #define LUA_USE_MODULES_MYNAME
- *
- * and within NodeMCU you access it with myname.foo(), assuming you have
+ * When you've done this, you can simply add a Kconfig entry for the module
+ * to control whether it gets linked in or not. With it linked in, you can
+ * then within NodeMCU access it with myname.foo(), assuming you have
  * a foo function in your module.
  */
 
@@ -40,10 +39,10 @@
 #define LOCK_IN_SECTION(s) __attribute__((used,unused,section(s)))
 
 /* For the ROM table, we name the variable according to ( | denotes concat):
- *   cfgname | _module_selected | LUA_USE_MODULES_##cfgname
- * where the LUA_USE_MODULES_XYZ macro is first expanded to yield either
+ *   cfgname | _module_selected | CONFIG_LUA_MODULE_##cfgname
+ * where the CONFIG_LUA_MODULE_XYZ macro is first expanded to yield either
  * an empty string (or 1) if the module has been enabled, or the literal
- * LUA_USE_MOUDLE_XYZ in the case it hasn't. Thus, the name of the variable
+ * CONFIG_LUA_MODULE_XYZ in the case it hasn't. Thus, the name of the variable
  * ends up looking either like XYZ_module_enabled, or if not enabled,
  * XYZ_module_enabledLUA_USE_MODULES_XYZ.  This forms the basis for
  * letting the build system detect automatically (via nm) which modules need
@@ -53,11 +52,11 @@
   const LOCK_IN_SECTION(".lua_libs") \
     luaL_Reg MODULE_PASTE_(lua_lib_,cfgname) = { luaname, initfunc }; \
   const LOCK_IN_SECTION(".lua_rotable") \
-    luaR_table MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
+    luaR_table MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(CONFIG_LUA_MODULE_,cfgname))) \
     = { luaname, map }
 
 
-/* System module registration support, not using LUA_USE_MODULES_XYZ. */
+/* System module registration support, not using CONFIG_LUA_MODULE_XYZ. */
 #define BUILTIN_LIB_INIT(name, luaname, initfunc) \
   const LOCK_IN_SECTION(".lua_libs") \
     luaL_Reg MODULE_PASTE_(lua_lib_,name) = { luaname, initfunc }

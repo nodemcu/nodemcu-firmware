@@ -2,10 +2,10 @@
   This file encapsulates the SDK-based task handling for the NodeMCU Lua firmware.
  */
 #include "task/task.h"
-#include "mem.h"
 #include <stdlib.h>
 #include <string.h>
 
+#include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 

@@ -3,7 +3,6 @@
  * NodeMCU Team
  * 2014-12-31
 *******************************************************************************/
-#include "user_config.h"
 #include "flash_api.h"
 #include <stdio.h>
 #include <string.h>

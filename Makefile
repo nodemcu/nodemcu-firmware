@@ -14,23 +14,17 @@ else
 
 PROJECT_NAME:=NodeMCU
 
-COMPONENTS:=bootloader bt esp32 esptool_py expat freertos json lwip mbedtls newlib nvs_flash partition_table spi_flash tcpip_adapter test task platform spiffs driver_uart
- 
 # This is, sadly, the cleanest way to resolve the different non-standard
 # conventions for sized integers across the various components.
 BASIC_TYPES=-Du32_t=uint32_t -Du16_t=uint16_t -Du8_t=uint8_t -Ds32_t=int32_t -Ds16_t=int16_t -Duint32=uint32_t -Duint16=uint16_t -Duint8=uint8_t -Dsint32=int32_t -Dsint16=int16_t -Dsint8=int8_t
 
 include $(IDF_PATH)/make/project.mk
 
-# SDK/IDF include overrides
-INCLUDE_OVERRIDES=\
-  $(addprefix -I $(PROJECT_PATH)/sdk-overrides/,include esp32-include)
-
 LUA_LTR_DEFINES=\
 	-DLUA_OPTIMIZE_MEMORY=2 \
 	-DMIN_OPT_LEVEL=2 \
 
 # Ensure these overrides are always used
-CC:=$(CC) $(BASIC_TYPES) $(INCLUDE_OVERRIDES) $(LUA_LTR_DEFINES) -D__ESP32__
+CC:=$(CC) $(BASIC_TYPES) $(LUA_LTR_DEFINES) -D__ESP32__
 
 endif

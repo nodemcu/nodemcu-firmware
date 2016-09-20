@@ -11,10 +11,10 @@
 #include <string.h>
 #include "flash_fs.h"
 #include "user_version.h"
-#include "driver/readline.h"
-#include "driver/uart.h"
+#include "driver/console.h"
 #include "esp_system.h"
 #include "platform.h"
+#include "c_stdlib.h"
 
 #define lua_c
 
@@ -23,8 +23,6 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "legc.h"
-
-#include "os_type.h"
 
 lua_State *globalL = NULL;
 
@@ -535,11 +533,9 @@ static void dojob(lua_Load *load){
   load->line_position = 0;
   memset(load->line, 0, load->len);
   printf(load->prmt);
+  fflush (stdout);
 }
 
-#ifndef uart_putc
-#define uart_putc uart0_putc
-#endif
 extern bool uart_on_data_cb(const char *buf, size_t len);
 extern bool uart0_echo;
 extern bool run_input;
@@ -550,7 +546,7 @@ static bool readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
   bool need_dojob = false;
   char ch;
-  while (uart0_getc(&ch))
+  while (console_getc(&ch))
   {
     if(run_input)
     {
@@ -571,9 +567,9 @@ static bool readline(lua_Load *load){
       {
         if (load->line_position > 0)
         {
-          if(uart0_echo) uart_putc(0x08);
-          if(uart0_echo) uart_putc(' ');
-          if(uart0_echo) uart_putc(0x08);
+          if(uart0_echo) putchar(0x08);
+          if(uart0_echo) putchar(' ');
+          if(uart0_echo) putchar(0x08);
           load->line_position--;
         }
         load->line[load->line_position] = 0;
@@ -595,12 +591,13 @@ static bool readline(lua_Load *load){
         last_nl_char = ch;
 
         load->line[load->line_position] = 0;
-        if(uart0_echo) uart_putc('\n');
+        if(uart0_echo) putchar('\n');
         uart_on_data_cb(load->line, load->line_position);
         if (load->line_position == 0)
         {
           /* Get a empty line, then go to get a new line */
           printf(load->prmt);
+          fflush (stdout);
         } else {
           load->done = 1;
           need_dojob = true;
@@ -615,7 +612,7 @@ static bool readline(lua_Load *load){
       // }
       
       /* echo */
-      if(uart0_echo) uart_putc(ch);
+      if(uart0_echo) putchar(ch);
 
           /* it's a large line, discard it */
       if ( load->line_position + 1 >= load->len ){

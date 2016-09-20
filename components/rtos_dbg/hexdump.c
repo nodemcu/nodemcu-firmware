@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include <rom.h>
+#include "rom/ets_sys.h"
 
 static char space[]=" ";
 static char blank[]=".. ";

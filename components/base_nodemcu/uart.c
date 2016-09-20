@@ -4,7 +4,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include <string.h>
 
 static lua_State *gL = NULL;
@@ -113,17 +113,6 @@ static int uart_setup( lua_State* L )
   return 1;
 }
 
-// Lua: alt( set )
-static int uart_alt( lua_State* L )
-{
-  unsigned set;
-  
-  set = luaL_checkinteger( L, 1 );
-
-  platform_uart_alt( set );
-  return 0;
-}
-
 // Lua: write( id, string1, [string2], ..., [stringn] )
 static int uart_write( lua_State* L )
 {
@@ -159,7 +148,6 @@ static const LUA_REG_TYPE uart_map[] =  {
   { LSTRKEY( "setup" ), LFUNCVAL( uart_setup ) },
   { LSTRKEY( "write" ), LFUNCVAL( uart_write ) },
   { LSTRKEY( "on" ),    LFUNCVAL( uart_on ) },
-  { LSTRKEY( "alt" ),   LFUNCVAL( uart_alt ) },
   { LSTRKEY( "STOPBITS_1" ),   LNUMVAL( PLATFORM_UART_STOPBITS_1 ) },
   { LSTRKEY( "STOPBITS_1_5" ), LNUMVAL( PLATFORM_UART_STOPBITS_1_5 ) },
   { LSTRKEY( "STOPBITS_2" ),   LNUMVAL( PLATFORM_UART_STOPBITS_2 ) },

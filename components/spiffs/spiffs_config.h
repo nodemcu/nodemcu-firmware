@@ -8,7 +8,6 @@
 #ifndef SPIFFS_CONFIG_H_
 #define SPIFFS_CONFIG_H_
 
-#include "user_config.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

@@ -1,6 +1,3 @@
-//#include "user_interface.h"
-#include "user_config.h"
-
 #ifdef LUA_CROSS_COMPILER
 
 #include <stdlib.h>

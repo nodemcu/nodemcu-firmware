@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <c_types.h>
 
 /* use LOW / MEDIUM / HIGH since it isn't clear from the docs which is higher */
 

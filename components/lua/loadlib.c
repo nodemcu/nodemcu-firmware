@@ -20,6 +20,7 @@
 
 #ifndef LUA_CROSS_COMPILER
 #include "flash_fs.h"
+#include "c_stdlib.h"
 #endif
 
 #include "lauxlib.h"

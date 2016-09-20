@@ -1,5 +1,6 @@
 #include "platform.h"
-#include "driver/uart.h"
+#include "driver/console.h"
+#include <stdio.h>
 
 int platform_init (void)
 {
@@ -11,89 +12,49 @@ int platform_init (void)
 
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits )
 {
-  UART_ConfigTypeDef cfg;
-  switch( baud )
+  if (id == CONSOLE_UART)
   {
-    case BIT_RATE_300:
-    case BIT_RATE_600:
-    case BIT_RATE_1200:
-    case BIT_RATE_2400:
-    case BIT_RATE_4800:
-    case BIT_RATE_9600:
-    case BIT_RATE_19200:
-    case BIT_RATE_38400:
-    case BIT_RATE_57600:
-    case BIT_RATE_74880:
-    case BIT_RATE_115200:
-    case BIT_RATE_230400:
-    case BIT_RATE_460800:
-    case BIT_RATE_921600:
-    case BIT_RATE_1843200:
-    case BIT_RATE_3686400:
-      cfg.baud_rate = baud;
-      break;
-    default:
-      cfg.baud_rate = BIT_RATE_9600;
-      break;
+    ConsoleSetup_t cfg;
+    cfg.bit_rate  = baud;
+    switch (databits)
+    {
+      case 5: cfg.data_bits = CONSOLE_NUM_BITS_5; break;
+      case 6: cfg.data_bits = CONSOLE_NUM_BITS_6; break;
+      case 7: cfg.data_bits = CONSOLE_NUM_BITS_7; break;
+      case 8: // fall-through
+      default: cfg.data_bits = CONSOLE_NUM_BITS_8; break;
+    }
+    switch (parity)
+    {
+      case PLATFORM_UART_PARITY_EVEN: cfg.parity = CONSOLE_PARITY_EVEN; break;
+      case PLATFORM_UART_PARITY_ODD:  cfg.parity = CONSOLE_PARITY_ODD; break;
+      default: // fall-through
+      case PLATFORM_UART_PARITY_NONE: cfg.parity = CONSOLE_PARITY_NONE; break;
+    }
+    switch (stopbits)
+    {
+      default: // fall-through
+      case PLATFORM_UART_STOPBITS_1:
+        cfg.stop_bits = CONSOLE_STOP_BITS_1; break;
+      case PLATFORM_UART_STOPBITS_1_5:
+        cfg.stop_bits = CONSOLE_STOP_BITS_1_5; break;
+      case PLATFORM_UART_STOPBITS_2:
+        cfg.stop_bits = CONSOLE_STOP_BITS_2; break;
+    }
+    cfg.auto_baud = false;
+    console_setup (&cfg);
+    return baud;
   }
-
-  switch( databits )
+  else
   {
-    case 5:
-      cfg.data_bits = UART_WordLength_5b;
-      break;
-    case 6:
-      cfg.data_bits = UART_WordLength_6b;
-      break;
-    case 7:
-      cfg.data_bits = UART_WordLength_7b;
-      break;
-    case 8:
-    default:
-      cfg.data_bits = UART_WordLength_8b;
-      break;
+    printf("UART1/UART2 not yet supported\n");
+    return 0;
   }
-
-  switch (stopbits)
-  {
-    case PLATFORM_UART_STOPBITS_1_5:
-      cfg.stop_bits = USART_StopBits_1_5;
-      break;
-    case PLATFORM_UART_STOPBITS_2:
-      cfg.stop_bits = USART_StopBits_2;
-      break;
-    default:
-      cfg.stop_bits = USART_StopBits_1;
-      break;
-  }
-
-  switch (parity)
-  {
-    case PLATFORM_UART_PARITY_EVEN:
-      cfg.parity = USART_Parity_Even;
-      break;
-    case PLATFORM_UART_PARITY_ODD:
-      cfg.parity = USART_Parity_Odd;
-      break;
-    default:
-      cfg.parity = USART_Parity_None;
-      break;
-  }
-
-  UART_ParamConfig (id, &cfg);
-  return baud;
-}
-
-
-// if set=1, then alternate serial output pins are used. (15=rx, 13=tx)
-void platform_uart_alt( int set )
-{
-    uart0_alt( set );
-    return;
 }
 
 
 void platform_uart_send( unsigned id, uint8_t data )
 {
-  uart_tx_one_char(id, data);
+  if (id == CONSOLE_UART)
+    putchar (data);
 }

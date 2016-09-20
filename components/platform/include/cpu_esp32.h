@@ -4,7 +4,7 @@
 #include "sdkconfig.h"
 #include "esp_spi_flash.h"
 
-#define NUM_UART 2
+#define NUM_UART 3
 
 #if defined(CONFIG_FLASH_SIZE_512K)
 # define FLASH_SEC_NUM  0x80  // 4MByte: 0x400, 2MByte: 0x200, 1MByte: 0x100, 512KByte: 0x80

@@ -16,49 +16,16 @@
 #include "flash_api.h"
 #include "sdkconfig.h"
 
-#include "ets_sys.h"
-#include "driver/uart.h"
+#include "driver/console.h"
 #include "task/task.h"
 #include "sections.h"
-#include "mem.h"
-#include "freertos/task.h"
 
-#ifdef LUA_USE_MODULES_RTCTIME
-#include "rtc/rtctime.h"
-#endif
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #define SIG_LUA 0
 #define SIG_UARTINPUT 1
 
-
-#ifdef __ESP32__
-void system_soft_wdt_feed (void)
-{
-  // FIXME this shouldn't go here, and it needs to tickle hardware watchdog
-}
-#endif
-
-extern void call_user_start (void);
-
-
-#if defined(__ESP8266__)
-/* Note: the trampoline *must* be explicitly put into the .text segment, since
- * by the time it is invoked the irom has not yet been mapped. This naturally
- * also goes for anything the trampoline itself calls.
- */
-void TEXT_SECTION_ATTR user_start_trampoline (void)
-{
-#ifdef LUA_USE_MODULES_RTCTIME
-  // Note: Keep this as close to call_user_start() as possible, since it
-  // is where the cpu clock actually gets bumped to 80MHz.
-  rtctime_early_startup ();
-#endif
-
-  /* The first thing call_user_start() does is switch the interrupt vector
-   * base, which enables our 8/16bit load handler on the ESP8266. */
-  call_user_start ();
-}
-#endif
 
 // +================== New task interface ==================+
 static void start_lua(task_param_t param, task_prio_t prio) {
@@ -139,34 +106,19 @@ static void nodemcu_main (void *param)
 }
 
 
-void user_init (void)
+void app_main (void)
 {
-#ifdef LUA_USE_MODULES_RTCTIME
-    rtctime_late_startup ();
-#endif
-
     input_task = task_get_id (handle_input);
 
-    UART_ConfigTypeDef cfg;
-    cfg.baud_rate         = CONFIG_CONSOLE_BIT_RATE;
-    cfg.data_bits         = UART_WordLength_8b;
-    cfg.parity            = USART_Parity_None;
-    cfg.stop_bits         = USART_StopBits_1;
-    cfg.flow_ctrl         = USART_HardwareFlowControl_None;
-    cfg.UART_RxFlowThresh = 120;
-    cfg.UART_InverseMask  = UART_None_Inverse;
+    ConsoleSetup_t cfg;
+    cfg.bit_rate  = CONFIG_CONSOLE_BIT_RATE;
+    cfg.data_bits = CONSOLE_NUM_BITS_8;
+    cfg.parity    = CONSOLE_PARITY_NONE;
+    cfg.stop_bits = CONSOLE_STOP_BITS_1;
+    cfg.auto_baud = CONFIG_CONSOLE_BIT_RATE_AUTO;
 
-    uart_init_uart0_console (&cfg, input_task);
+    console_init (&cfg, input_task);
 
-#ifndef NODE_DEBUG
-# ifndef __ESP32__
-    system_set_os_print(0);
-# endif
-#endif
-
-    // FIXME! Max supported RTOS stack size is 512 words (2k bytes), but
-    // NodeMCU currently uses more than that. The game is on to find these
-    // culprits, but this gcc doesn't do the -fstack-usage option :(
     xTaskCreate (
-      nodemcu_main, "nodemcu", 1536, 0, configTIMER_TASK_PRIORITY +1, NULL);
+      nodemcu_main, "nodemcu", 2048, 0, configTIMER_TASK_PRIORITY +1, NULL);
 }

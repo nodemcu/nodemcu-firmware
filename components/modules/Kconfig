@@ -1,0 +1,9 @@
+menu "NodeMCU modules"
+
+config LUA_MODULE_NODE
+  bool "Node module"
+  default "y"
+  help
+      Includes the node module (recommended).
+
+endmenu
