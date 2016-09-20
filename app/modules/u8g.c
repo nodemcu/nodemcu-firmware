@@ -2,23 +2,13 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lmem.h"
 #include "platform.h"
 
-#include "c_stdlib.h"
-
 #include "u8g.h"
+#include "u8g_glue.h"
 
 #include "u8g_config.h"
-
-struct _lu8g_userdata_t
-{
-    u8g_t u8g;
-};
-
-typedef struct _lu8g_userdata_t lu8g_userdata_t;
-
-// shorthand macro for the u8g structure inside the userdata
-#define LU8G (&(lud->u8g))
 
 
 // helper function: retrieve and check userdata argument
@@ -986,8 +976,6 @@ uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, voi
 }
 
 
-
-
 // device destructor
 static int lu8g_close_display( lua_State *L )
 {
@@ -995,6 +983,19 @@ static int lu8g_close_display( lua_State *L )
 
     if ((lud = get_lud( L )) == NULL)
         return 0;
+
+    if (lud->cb_ref != LUA_NOREF) {
+        // this is the fb_rle device
+        u8g_dev_t *fb_dev = LU8G->dev;
+        u8g_pb_t *fb_dev_pb = (u8g_pb_t *)(fb_dev->dev_mem);
+        uint8_t *fb_dev_buf = fb_dev_pb->buf;
+
+        luaM_free( L, fb_dev_buf );
+        luaM_free( L, fb_dev_pb );
+        luaM_free( L, fb_dev );
+
+        luaL_unref( L, lud->cb_ref, LUA_REGISTRYINDEX );
+    }
 
     return 0;
 }
@@ -1016,6 +1017,7 @@ static int lu8g_close_display( lua_State *L )
             return luaL_error( L, "i2c address required" );             \
                                                                         \
         lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) ); \
+        lud->cb_ref = LUA_NOREF;                                        \
                                                                         \
         lud->u8g.i2c_addr = (uint8_t)addr;                              \
         lud->u8g.use_delay = del > 0 ? 1 : 0;                           \
@@ -1049,6 +1051,7 @@ U8G_DISPLAY_TABLE_I2C
         unsigned del = luaL_optinteger( L, 4, 0 );                      \
                                                                         \
         lu8g_userdata_t *lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) ); \
+        lud->cb_ref = LUA_NOREF;                                        \
                                                                         \
         lud->u8g.use_delay = del > 0 ? 1 : 0;                           \
                                                                         \
@@ -1063,6 +1066,53 @@ U8G_DISPLAY_TABLE_I2C
 //
 // Unroll the display table and insert binding functions for SPI based displays.
 U8G_DISPLAY_TABLE_SPI
+//
+//
+//
+// This display forwards the framebuffer contents as run-length encoded chunks to a Lua callback
+static int lu8g_fb_rle( lua_State *L ) {
+    lu8g_userdata_t *lud;
+
+    if ((lua_type( L, 1 ) != LUA_TFUNCTION) &&
+        (lua_type( L, 1 ) != LUA_TLIGHTFUNCTION)) {
+        luaL_typerror( L, 1, "function" );
+    }
+
+    int width = luaL_checkint( L, 2 );
+    int height = luaL_checkint( L, 3 );
+
+    luaL_argcheck( L, (width > 0) && (width < 256) && ((width % 8) == 0), 2, "invalid width" );
+    luaL_argcheck( L, (height > 0) && (height < 256) && ((height % 8) == 0), 3, "invalid height" );
+
+    // construct display device structures manually because width and height are configurable
+    uint8_t *fb_dev_buf = (uint8_t *)luaM_malloc( L, width );
+
+    u8g_pb_t *fb_dev_pb = (u8g_pb_t *)luaM_malloc( L, sizeof( u8g_pb_t ) );
+    fb_dev_pb->p.page_height  = 8;
+    fb_dev_pb->p.total_height = height;
+    fb_dev_pb->p.page_y0      = 0;
+    fb_dev_pb->p.page_y1      = 0;
+    fb_dev_pb->p.page         = 0;
+    fb_dev_pb->width = width;
+    fb_dev_pb->buf   = fb_dev_buf;
+
+    u8g_dev_t *fb_dev = (u8g_dev_t *)luaM_malloc( L, sizeof( u8g_dev_t ) );
+    fb_dev->dev_fn = u8g_dev_gen_fb_fn;
+    fb_dev->dev_mem = fb_dev_pb;
+    fb_dev->com_fn = u8g_com_esp8266_fbrle_fn;
+
+    lud = (lu8g_userdata_t *) lua_newuserdata( L, sizeof( lu8g_userdata_t ) );
+    lua_pushvalue( L, 1 );  // copy argument (func) to the top of stack
+    lud->cb_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+
+    /* set metatable for userdata */
+    luaL_getmetatable(L, "u8g.display");
+    lua_setmetatable(L, -2);
+
+    u8g_Init8BitFixedPort( LU8G, fb_dev, width, height, 0, 0, 0);
+
+    return 1;
+}
 //
 // ***************************************************************************
 
@@ -1137,6 +1187,8 @@ static const LUA_REG_TYPE lu8g_map[] = {
 #define U8G_FONT_TABLE_ENTRY(font) \
   { LSTRKEY( #font ),              LUDATA( (void *)(u8g_ ## font) ) },
   U8G_FONT_TABLE
+  //
+  { LSTRKEY( "fb_rle" ),  LFUNCVAL( lu8g_fb_rle ) },
   // Options for circle/ ellipse drawing
   { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( U8G_DRAW_UPPER_RIGHT ) },
   { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( U8G_DRAW_UPPER_LEFT ) },
