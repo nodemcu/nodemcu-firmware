@@ -5,30 +5,15 @@ addons:
     packages:
     - python-serial
     - srecord
+    - gperf
 cache:
   directories:
     - cache
 install:
   - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:$PATH
 script:
-- exit 0
 - export BUILD_DATE=$(date +%Y%m%d)
-- make EXTRA_CCFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" all
-- cd bin/esp8266
-- file_name_float="nodemcu_float_${TRAVIS_TAG}.bin"
-- srec_cat -output ${file_name_float} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
-- cd ../..
-- make clean
-- make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'"
-- cd bin/esp8266
-- file_name_integer="nodemcu_integer_${TRAVIS_TAG}.bin"
-- srec_cat -output ${file_name_integer} -binary 0x00000.bin -binary -fill 0xff 0x00000 0x10000 0x10000.bin -binary -offset 0x10000
-- cd ../..
-- make clean
-- make HW=ESP32 EXTRA_CCFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" all
-- mv bin/esp32 bin/esp32-float
-- make clean
-- make HW=ESP32 EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'"
-- mv bin/esp32 bin/esp32-integer
+- env BUILD_DIR_BASE=build/float make MORE_CFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
+- env BUILD_DIR_BASE=build/integer make MORE_CFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
 # http://docs.travis-ci.com/user/environment-variables/#Convenience-Variables
-- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/pr-build.sh; fi
+#- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/pr-build.sh; fi

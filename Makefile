@@ -25,6 +25,6 @@ LUA_LTR_DEFINES=\
 	-DMIN_OPT_LEVEL=2 \
 
 # Ensure these overrides are always used
-CC:=$(CC) $(BASIC_TYPES) $(LUA_LTR_DEFINES) -D__ESP32__
+CC:=$(CC) $(BASIC_TYPES) $(LUA_LTR_DEFINES) -D__ESP32__ $(MORE_CFLAGS)
 
 endif
