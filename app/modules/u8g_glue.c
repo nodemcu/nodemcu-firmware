@@ -3,11 +3,222 @@
 */
 
 #include "lauxlib.h"
+#include "platform.h"
 
 #include "c_stdlib.h"
 
 #include "u8g.h"
 #include "u8g_glue.h"
+
+
+// ------------------------------------------------------------
+// comm functions
+//
+#define I2C_CMD_MODE    0x000
+#define I2C_DATA_MODE   0x040
+
+#define ESP_I2C_ID 0
+
+
+static uint8_t do_i2c_start(uint8_t id, uint8_t sla)
+{
+    platform_i2c_send_start( id );
+
+    // ignore return value -> tolerate missing ACK
+    platform_i2c_send_address( id, sla, PLATFORM_I2C_DIRECTION_TRANSMITTER );
+
+    return 1;
+}
+
+static uint8_t u8g_com_esp8266_ssd_start_sequence(struct _lu8g_userdata_t *lu8g)
+{
+    /* are we requested to set the a0 state? */
+    if ( lu8g->u8g.pin_list[U8G_PI_SET_A0] == 0 )
+        return 1;
+
+    /* setup bus, might be a repeated start */
+    if ( do_i2c_start( ESP_I2C_ID, lu8g->i2c_addr ) == 0 )
+        return 0;
+    if ( lu8g->u8g.pin_list[U8G_PI_A0_STATE] == 0 )
+    {
+        // ignore return value -> tolerate missing ACK
+        if ( platform_i2c_send_byte( ESP_I2C_ID, I2C_CMD_MODE ) == 0 )
+            ; //return 0;
+    }
+    else
+    {
+        platform_i2c_send_byte( ESP_I2C_ID, I2C_DATA_MODE );
+    }
+
+    lu8g->u8g.pin_list[U8G_PI_SET_A0] = 0;
+    return 1;
+}
+
+
+static void lu8g_digital_write( struct _lu8g_userdata_t *lu8g, uint8_t pin_index, uint8_t value )
+{
+    uint8_t pin;
+
+    pin = lu8g->u8g.pin_list[pin_index];
+    if ( pin != U8G_PIN_NONE )
+        platform_gpio_write( pin, value );
+}
+
+void u8g_Delay(u8g_t *u8g, uint16_t msec)
+{
+    struct _lu8g_userdata_t *lu8g = (struct _lu8g_userdata_t *)u8g;
+    const uint16_t chunk = 50;
+
+    if (lu8g->use_delay == 0)
+        return;
+
+    while (msec > chunk)
+    {
+        os_delay_us( chunk*1000 );
+        msec -= chunk;
+    }
+    if (msec > 0)
+        os_delay_us( msec*1000 );
+}
+void u8g_MicroDelay(void)
+{
+    os_delay_us( 1 );
+}
+void u8g_10MicroDelay(void)
+{
+    os_delay_us( 10 );
+}
+
+
+uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
+{
+    struct _lu8g_userdata_t *lu8g = (struct _lu8g_userdata_t *)u8g;
+
+    switch(msg)
+    {
+    case U8G_COM_MSG_STOP:
+        break;
+    
+    case U8G_COM_MSG_INIT:
+        // we assume that the SPI interface was already initialized
+        // just care for the /CS and D/C pins
+        lu8g_digital_write( lu8g, U8G_PI_CS, PLATFORM_GPIO_HIGH );
+        platform_gpio_mode( lu8g->u8g.pin_list[U8G_PI_CS], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+        platform_gpio_mode( lu8g->u8g.pin_list[U8G_PI_A0], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+        break;
+    
+    case U8G_COM_MSG_ADDRESS:                     /* define cmd (arg_val = 0) or data mode (arg_val = 1) */
+        lu8g_digital_write( lu8g, U8G_PI_A0, arg_val == 0 ? PLATFORM_GPIO_LOW : PLATFORM_GPIO_HIGH );
+        break;
+
+    case U8G_COM_MSG_CHIP_SELECT:
+        if (arg_val == 0)
+        {
+            /* disable */
+            lu8g_digital_write( lu8g, U8G_PI_CS, PLATFORM_GPIO_HIGH );
+        }
+        else
+        {
+            /* enable */
+            lu8g_digital_write( lu8g, U8G_PI_CS, PLATFORM_GPIO_LOW );
+        }
+        break;
+      
+    case U8G_COM_MSG_RESET:
+        if ( lu8g->u8g.pin_list[U8G_PI_RESET] != U8G_PIN_NONE )
+            lu8g_digital_write( lu8g, U8G_PI_RESET, arg_val == 0 ? PLATFORM_GPIO_LOW : PLATFORM_GPIO_HIGH );
+        break;
+    
+    case U8G_COM_MSG_WRITE_BYTE:
+        platform_spi_send( 1, 8, arg_val );
+        break;
+    
+    case U8G_COM_MSG_WRITE_SEQ:
+    case U8G_COM_MSG_WRITE_SEQ_P:
+        {
+            register uint8_t *ptr = arg_ptr;
+            while( arg_val > 0 )
+            {
+                platform_spi_send( 1, 8, *ptr++ );
+                arg_val--;
+            }
+        }
+        break;
+    }
+    return 1;
+}
+
+
+uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
+{
+    struct _lu8g_userdata_t *lu8g = (struct _lu8g_userdata_t *)u8g;
+
+    switch(msg)
+    {
+    case U8G_COM_MSG_INIT:
+        // we assume that the i2c bus was already initialized
+        //u8g_i2c_init(u8g->pin_list[U8G_PI_I2C_OPTION]);
+
+        break;
+    
+    case U8G_COM_MSG_STOP:
+        break;
+
+    case U8G_COM_MSG_RESET:
+        /* Currently disabled, but it could be enable. Previous restrictions have been removed */
+        /* u8g_com_arduino_digital_write(u8g, U8G_PI_RESET, arg_val); */
+        break;
+      
+    case U8G_COM_MSG_CHIP_SELECT:
+        lu8g->u8g.pin_list[U8G_PI_A0_STATE] = 0;
+        lu8g->u8g.pin_list[U8G_PI_SET_A0] = 1;		/* force a0 to set again, also forces start condition */
+        if ( arg_val == 0 )
+        {
+            /* disable chip, send stop condition */
+            platform_i2c_send_stop( ESP_I2C_ID );
+        }
+        else
+        {
+            /* enable, do nothing: any byte writing will trigger the i2c start */
+        }
+        break;
+
+    case U8G_COM_MSG_WRITE_BYTE:
+        //u8g->pin_list[U8G_PI_SET_A0] = 1;
+        if ( u8g_com_esp8266_ssd_start_sequence(lu8g) == 0 )
+            return platform_i2c_send_stop( ESP_I2C_ID ), 0;
+        // ignore return value -> tolerate missing ACK
+        if ( platform_i2c_send_byte( ESP_I2C_ID, arg_val) == 0 )
+            ; //return platform_i2c_send_stop( ESP_I2C_ID ), 0;
+        // platform_i2c_send_stop( ESP_I2C_ID );
+        break;
+    
+    case U8G_COM_MSG_WRITE_SEQ:
+    case U8G_COM_MSG_WRITE_SEQ_P:
+        //u8g->pin_list[U8G_PI_SET_A0] = 1;
+        if ( u8g_com_esp8266_ssd_start_sequence(lu8g) == 0 )
+            return platform_i2c_send_stop( ESP_I2C_ID ), 0;
+        {
+            register uint8_t *ptr = arg_ptr;
+            while( arg_val > 0 )
+            {
+                // ignore return value -> tolerate missing ACK
+                if ( platform_i2c_send_byte( ESP_I2C_ID, *ptr++) == 0 )
+                    ; //return platform_i2c_send_stop( ESP_I2C_ID ), 0;
+                arg_val--;
+            }
+        }
+        // platform_i2c_send_stop( ESP_I2C_ID );
+        break;
+
+    case U8G_COM_MSG_ADDRESS:                     /* define cmd (arg_val = 0) or data mode (arg_val = 1) */
+        lu8g->u8g.pin_list[U8G_PI_A0_STATE] = arg_val;
+        lu8g->u8g.pin_list[U8G_PI_SET_A0] = 1;		/* force a0 to set again */
+    
+        break;
+    }
+    return 1;
+}
 
 
 // ***************************************************************************

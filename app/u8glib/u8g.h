@@ -1178,9 +1178,6 @@ struct _u8g_t
   u8g_state_cb state_cb;
   
   u8g_box_t current_page;		/* current box of the visible page */
-
-  uint8_t i2c_addr;
-  uint8_t use_delay;
 };
 
 #define u8g_GetFontAscent(u8g) ((u8g)->font_ref_ascent)

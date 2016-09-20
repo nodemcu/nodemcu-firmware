@@ -7,6 +7,8 @@
 struct _lu8g_userdata_t
 {
     u8g_t u8g;
+    uint8_t i2c_addr;
+    uint8_t use_delay;
     int cb_ref;
 };
 typedef struct _lu8g_userdata_t lu8g_userdata_t;
