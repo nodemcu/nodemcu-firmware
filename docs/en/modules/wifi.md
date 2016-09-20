@@ -674,7 +674,7 @@ Get index of current Access Point stored in AP cache.
 none
 
 #### Returns
-`current_index` index of currently selected Access Point. (Range:0-4)
+`current_index` index of currently selected Access Point. (Range:1-5)
 
 #### Example
 ```lua
