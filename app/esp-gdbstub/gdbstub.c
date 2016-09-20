@@ -640,6 +640,7 @@ static void ATTR_GDBFN gdb_exception_handler(struct XTensa_exception_frame_s *fr
 
 static void ATTR_GDBFN gdb_flush_output_buffer() {
     if (obufpos > 0) {
+	int i;
 	gdbPacketStart();
 	gdbPacketChar('O');
 	for (i=0; i<obufpos; i++) gdbPacketHex(obuf[i], 8);
@@ -651,7 +652,6 @@ static void ATTR_GDBFN gdb_flush_output_buffer() {
 //Replacement putchar1 routine. Instead of spitting out the character directly, it will buffer up to
 //OBUFLEN characters (or up to a \n, whichever comes earlier) and send it out as a gdb stdout packet.
 static void ATTR_GDBFN gdb_semihost_putchar1(char c) {
-	int i;
 	obuf[obufpos++]=c;
 	if (c=='\n' || obufpos==OBUFLEN) {
   	    gdb_flush_output_buffer();
@@ -780,6 +780,7 @@ static void ATTR_GDBINIT install_uart_hdlr() {
 void ATTR_GDBINIT gdbstub_redirect_output(int enable) {
   if (enable) {
     os_install_putc1(gdb_semihost_putchar1);
+    uart_set_alt_output_uart0(gdb_semihost_putchar1);
   } else {
     gdb_flush_output_buffer();
     os_install_putc1(uart0_putc);

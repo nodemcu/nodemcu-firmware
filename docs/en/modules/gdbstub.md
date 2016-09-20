@@ -30,7 +30,10 @@ Enters gdb by executing a `break 0,0` instruction.
 `gdbstub.brk()`
 
 ## gdbstub.gdboutput()
-Controls whether system output is encapsulated in gdb remote debugging protocol.
+Controls whether system output is encapsulated in gdb remote debugging protocol. This turns out not to be as useful as you
+would hopei -- mostly because you can't send input to the nodemcu board. Also becuase you really only should make this call
+*after* you get gdb running and connected to the nodemcu. The example below first does the break and then switches to 
+redirect the output. This works (but you are unable to send any more console input). 
 
 #### Syntax
 `gdbstub.gdboutput(enable)`
@@ -40,7 +43,13 @@ Controls whether system output is encapsulated in gdb remote debugging protocol.
 
 #### Example
 
-    gdbstub.gdboutput(1)
+    function entergdb()
+      gdbstub.brk()
+      gdbstub.gdboutput(1)
+      print("Active")
+    end
+
+    entergdb()
 
 #### Notes
 
