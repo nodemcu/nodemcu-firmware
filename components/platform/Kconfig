@@ -1,4 +1,4 @@
-menu "Platform hardware config"
+menu "Platform config"
 
 choice FLASH_SIZE
   bool "Platform SPI flash size"
@@ -105,7 +105,7 @@ config NODE_DEBUG
       Enable debugging output via NODE_DBG(). This is VERY chatty.
       For development/debugging use only.
 
-config NODE_ERROR
+config NODE_ERR
   bool "Enable NODE_ERR() output"
   default "y"
   help
@@ -114,5 +114,22 @@ config NODE_ERROR
       It is recommended to leave this enabled - if it ever produces output,
       something has gone seriously wrong and you probably want to know about
       it.
+
+config FS_OBJ_NAME_LEN
+  int "Make filesystem object name length"
+  default 31
+  help
+    Maximum name of filesystem objects (files, directories).
+
+# I don't think we can deal without SPIFFS at this point, so always on for now
+config BUILD_SPIFFS
+  bool
+  default "y"
+
+config BUILD_FATFS
+  bool "Support for FAT filesystems"
+  default "n"
+  help
+      Include support for accessing FAT filesystems on SD cards.
 
 endmenu

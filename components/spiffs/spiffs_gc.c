@@ -1,5 +1,8 @@
 #include "spiffs.h"
 #include "spiffs_nucleus.h"
+#include <string.h>
+
+#if !SPIFFS_READ_ONLY
 
 // Erases a logical block and updates the erase counter.
 // If cache is enabled, all pages that might be cached in this block
@@ -36,7 +39,7 @@ s32_t spiffs_gc_quick(
   int cur_entry = 0;
   spiffs_obj_id *obj_lu_buf = (spiffs_obj_id *)fs->lu_work;
 
-  SPIFFS_GC_DBG("gc_quick: running\n", cur_block);
+  SPIFFS_GC_DBG("gc_quick: running\n");
 #if SPIFFS_GC_STATS
   fs->stats_gc_runs++;
 #endif
@@ -249,13 +252,11 @@ s32_t spiffs_gc_find_candidate(
   memset(fs->work, 0xff, SPIFFS_CFG_LOG_PAGE_SZ(fs));
 
   // divide up work area into block indices and scores
-  // todo alignment?
-  // YES DO PROPER ALIGNMENT !^@#%!@%!
-  if (max_candidates & 1)
-    ++max_candidates; // HACK WORKAROUND ICK for sizeof(spiffs_block_idx)==2
-
   spiffs_block_ix *cand_blocks = (spiffs_block_ix *)fs->work;
   s32_t *cand_scores = (s32_t *)(fs->work + max_candidates * sizeof(spiffs_block_ix));
+
+   // align cand_scores on s32_t boundary
+  cand_scores = (s32_t*)(((ptrdiff_t)cand_scores + sizeof(ptrdiff_t) - 1) & ~(sizeof(ptrdiff_t) - 1));
 
   *block_candidates = cand_blocks;
 
@@ -570,3 +571,4 @@ s32_t spiffs_gc_clean(spiffs *fs, spiffs_block_ix bix) {
   return res;
 }
 
+#endif // !SPIFFS_READ_ONLY

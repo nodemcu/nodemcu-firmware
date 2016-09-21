@@ -12,9 +12,9 @@
 #include "platform.h"
 #include <string.h>
 #include <stdlib.h>
-#include "flash_fs.h"
-#include "flash_api.h"
+#include "vfs.h"
 #include "sdkconfig.h"
+#include "esp_system.h"
 
 #include "driver/console.h"
 #include "task/task.h"
@@ -62,22 +62,11 @@ void nodemcu_init(void)
         return;
     }
 
-// FIXME: this breaks horribly on the ESP32 at the moment; possibly all flash writes?
-#if defined(FLASH_SAFE_API) && defined(__ESP8266__)
-    if( flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
+#if defined(FLASH_SAFE_API)
+    if (flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
         NODE_ERR("Self adjust flash size.\n");
         // Fit hardware real flash size.
         flash_rom_set_size_byte(flash_safe_get_size_byte());
-
-        if( !fs_format() )
-        {
-            NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
-            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
-        }
-        else{
-            NODE_ERR( "format done.\n" );
-        }
-        fs_unmount();   // mounted by format.
 
         // Reboot to get SDK to use (or write) init data at new location
         system_restart ();
@@ -87,9 +76,16 @@ void nodemcu_init(void)
     }
 #endif // defined(FLASH_SAFE_API)
 
-#if defined ( BUILD_SPIFFS )
-    fs_mount();
-    // test_spiffs();
+#if defined ( CONFIG_BUILD_SPIFFS )
+    if (!vfs_mount("/FLASH", 0)) {
+        // Failed to mount -- try reformat
+	      NODE_ERR("Formatting file system. Please wait...\n");
+        if (1 || !vfs_format()) { // FIXME
+            NODE_ERR( "*** ERROR ***: unable to format. FS might be compromised.\n" );
+            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+        }
+        // Note that fs_format leaves the file system mounted
+    }
 #endif
 
     task_post_low(task_get_id(start_lua), 0);
@@ -120,5 +116,5 @@ void app_main (void)
     console_init (&cfg, input_task);
 
     xTaskCreate (
-      nodemcu_main, "nodemcu", 2048, 0, configTIMER_TASK_PRIORITY +1, NULL);
+      nodemcu_main, "nodemcu", 2560, 0, tskIDLE_PRIORITY +1, NULL);
 }

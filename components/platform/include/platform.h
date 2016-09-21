@@ -2,6 +2,8 @@
 #define _PLATFORM_H_
 
 #include <stdint.h>
+#include <stdio.h>
+#include "sdkconfig.h"
 #include "cpu_esp32.h"
 
 #define PLATFORM_ALIGNMENT __attribute__((aligned(4)))

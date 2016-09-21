@@ -8,26 +8,25 @@
 #ifndef SPIFFS_CONFIG_H_
 #define SPIFFS_CONFIG_H_
 
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
+#include "nodemcu_spiffs.h"
+#include "sdkconfig.h"
 
 // compile time switches
 
 // Set generic spiffs debug output call.
-#ifndef SPIFFS_DGB
+#ifndef SPIFFS_DBG
 #define SPIFFS_DBG(...) //printf(__VA_ARGS__)
 #endif
 // Set spiffs debug output call for garbage collecting.
-#ifndef SPIFFS_GC_DGB
+#ifndef SPIFFS_GC_DBG
 #define SPIFFS_GC_DBG(...) //printf(__VA_ARGS__)
 #endif
 // Set spiffs debug output call for caching.
-#ifndef SPIFFS_CACHE_DGB
+#ifndef SPIFFS_CACHE_DBG
 #define SPIFFS_CACHE_DBG(...) //printf(__VA_ARGS__)
 #endif
 // Set spiffs debug output call for system consistency checks.
-#ifndef SPIFFS_CHECK_DGB
+#ifndef SPIFFS_CHECK_DBG
 #define SPIFFS_CHECK_DBG(...) //printf(__VA_ARGS__)
 #endif
 
@@ -51,10 +50,8 @@
 
 // Enable/disable statistics on caching. Debug/test purpose only.
 #ifndef  SPIFFS_CACHE_STATS
-#define SPIFFS_CACHE_STATS              0
+#define SPIFFS_CACHE_STATS              1
 #endif
-#else
-#define SPIFFS_CACHE_WR                 0
 #endif
 
 // Always check header of each accessed page to ensure consistent state.
@@ -70,7 +67,7 @@
 
 // Enable/disable statistics on gc. Debug/test purpose only.
 #ifndef SPIFFS_GC_STATS
-#define SPIFFS_GC_STATS                 0
+#define SPIFFS_GC_STATS                 1
 #endif
 
 // Garbage collecting examines all pages in a block which and sums up
@@ -95,9 +92,11 @@
 #define SPIFFS_GC_HEUR_W_ERASE_AGE      (50)
 #endif
 
-// Object name maximum length.
+// Object name maximum length. Note that this length include the
+// zero-termination character, meaning maximum string of characters
+// can at most be CONFIG_SPIFFS_OBJ_NAME_LEN - 1.
 #ifndef SPIFFS_OBJ_NAME_LEN
-#define SPIFFS_OBJ_NAME_LEN             (32)
+#define SPIFFS_OBJ_NAME_LEN             (CONFIG_FS_OBJ_NAME_LEN+1)
 #endif
 
 // Size of buffer allocated on stack used when copying data.
@@ -115,18 +114,28 @@
 #define SPIFFS_USE_MAGIC                (0)
 #endif
 
+#if SPIFFS_USE_MAGIC
+// Only valid when SPIFFS_USE_MAGIC is enabled. If SPIFFS_USE_MAGIC_LENGTH is
+// enabled, the magic will also be dependent on the length of the filesystem.
+// For example, a filesystem configured and formatted for 4 megabytes will not
+// be accepted for mounting with a configuration defining the filesystem as 2
+// megabytes.
+#ifndef SPIFFS_USE_MAGIC_LENGTH
+#define SPIFFS_USE_MAGIC_LENGTH         (0)
+#endif
+#endif
+
 // SPIFFS_LOCK and SPIFFS_UNLOCK protects spiffs from reentrancy on api level
 // These should be defined on a multithreaded system
 
-// define this to entering a mutex if you're running on a multithreaded system
+// define this to enter a mutex if you're running on a multithreaded system
 #ifndef SPIFFS_LOCK
 #define SPIFFS_LOCK(fs)
 #endif
-// define this to exiting a mutex if you're running on a multithreaded system
+// define this to exit a mutex if you're running on a multithreaded system
 #ifndef SPIFFS_UNLOCK
 #define SPIFFS_UNLOCK(fs)
 #endif
-
 
 // Enable if only one spiffs instance with constant configuration will exist
 // on the target. This will reduce calculations, flash and memory accesses.
@@ -155,7 +164,41 @@
 #endif
 #endif
 
-// Set SPFIFS_TEST_VISUALISATION to non-zero to enable SPIFFS_vis function
+// Enable this if your target needs aligned data for index tables
+#ifndef SPIFFS_ALIGNED_OBJECT_INDEX_TABLES
+#define SPIFFS_ALIGNED_OBJECT_INDEX_TABLES       0
+#endif
+
+// Enable this if you want the HAL callbacks to be called with the spiffs struct
+#ifndef SPIFFS_HAL_CALLBACK_EXTRA
+#define SPIFFS_HAL_CALLBACK_EXTRA         0
+#endif
+
+// Enable this if you want to add an integer offset to all file handles
+// (spiffs_file). This is useful if running multiple instances of spiffs on
+// same target, in order to recognise to what spiffs instance a file handle
+// belongs.
+// NB: This adds config field fh_ix_offset in the configuration struct when
+// mounting, which must be defined.
+#ifndef SPIFFS_FILEHDL_OFFSET
+#define SPIFFS_FILEHDL_OFFSET                 0
+#endif
+
+// Enable this to compile a read only version of spiffs.
+// This will reduce binary size of spiffs. All code comprising modification
+// of the file system will not be compiled. Some config will be ignored.
+// HAL functions for erasing and writing to spi-flash may be null. Cache
+// can be disabled for even further binary size reduction (and ram savings).
+// Functions modifying the fs will return SPIFFS_ERR_RO_NOT_IMPL.
+// If the file system cannot be mounted due to aborted erase operation and
+// SPIFFS_USE_MAGIC is enabled, SPIFFS_ERR_RO_ABORTED_OPERATION will be
+// returned.
+// Might be useful for e.g. bootloaders and such.
+#ifndef SPIFFS_READ_ONLY
+#define SPIFFS_READ_ONLY                      0
+#endif
+
+// Set SPIFFS_TEST_VISUALISATION to non-zero to enable SPIFFS_vis function
 // in the api. This function will visualize all filesystem using given printf
 // function.
 #ifndef SPIFFS_TEST_VISUALISATION
