@@ -108,5 +108,6 @@ void uart0_putc(const char c);
 void uart0_tx_buffer(uint8 *buf, uint16 len);
 void uart_setup(uint8 uart_no);
 STATUS uart_tx_one_char(uint8 uart, uint8 TxChar);
+void uart_set_alt_output_uart0(void (*fn)(char));
 #endif
 

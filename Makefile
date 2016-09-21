@@ -24,6 +24,13 @@ SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
 CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
+ifdef DEBUG
+  CCFLAGS += -ggdb -O0
+  LDFLAGS += -ggdb
+else
+  CCFLAGS += -Os
+endif
+
 #############################################################
 # Select compile
 #
@@ -38,11 +45,11 @@ ifeq ($(OS),Windows_NT)
 		CPP = xt-cpp
 		OBJCOPY = xt-objcopy
 		#MAKE = xt-make
-		CCFLAGS += -Os --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
+		CCFLAGS += --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
 	else 
 		# It is gcc, may be cygwin
 		# Can we use -fdata-sections?
-		CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
+		CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 		AR = xtensa-lx106-elf-ar
 		CC = xtensa-lx106-elf-gcc
 		NM = xtensa-lx106-elf-nm
@@ -69,7 +76,7 @@ else
 	else
 		ESPPORT = $(COMPORT)
 	endif
-	CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
+	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = xtensa-lx106-elf-gcc
 	NM = xtensa-lx106-elf-nm
