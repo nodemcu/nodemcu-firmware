@@ -2,8 +2,6 @@ There are essentially three ways to build your NodeMCU firmware: cloud build ser
 
 **Building manually**
 
-Note that the *default configuration in the C header files* (`user_config.h`, `user_modules.h`) is designed to run on all ESP modules including the 512 KB modules like ESP-01 and only includes general purpose interface modules which require at most two GPIO pins.
-
 ## Cloud Build Service
 NodeMCU "application developers" just need a ready-made firmware. There's a [cloud build service](http://nodemcu-build.com/) with a nice UI and configuration options for them.
 
