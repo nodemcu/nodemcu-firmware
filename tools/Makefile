@@ -5,6 +5,7 @@
 FSSOURCE ?= ../local/fs/
 FLASHSIZE ?= 4mb 32mb 8mb
 SUBDIRS = 
+HOSTCC ?= gcc
 
 OBJDUMP = $(or $(shell which objdump),xtensa-lx106-elf-objdump)
 
@@ -36,7 +37,7 @@ spiffsimg: spiffsimg/spiffsimg
 	@echo Built spiffsimg in spiffsimg/spiffsimg
 
 spiffsimg/spiffsimg: 
-	@$(MAKE) -C spiffsimg CC=gcc
+	@$(MAKE) -C spiffsimg CC=$(HOSTCC)
 
 spiffsscript: remove-image spiffsimg/spiffsimg
 	rm -f ./spiffsimg/spiffs.lst
