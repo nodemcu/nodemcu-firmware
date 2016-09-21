@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2016-09-18 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [gdbstub.c](../../../app/modules/gdbstub.c)|
 
-This module provides basic source code debugging of the firmware when used in conjunction with a version of gdb built for the lx108. If you
+This module provides basic source code debugging of the firmware when used in conjunction with a version of gdb built for the lx106. If you
 enable this module, then fatal errors (like invalid memory reads) will trap into the gdbstub. This uses UART0 to talk to GDB. If 
 this happens while the UART0 is connected to a terminal (or some IDE like esplorer) then you will see a string starting with `$T` and a few 
 more characters after that. This is the signal that a trap has happened, and control should be passed to gdb.
@@ -20,7 +20,7 @@ At this point, you can just poke around and see what happened, but you cannot co
 
 In order to do interactive debugging, add a call to `gdbstub.brk()` in your lua code. This will trigger a break instruction and
 will trap into gdb as above. However, continuation is supported from a break instruction and so you can single step, set breakpoints, etc.
-Note that the lx108 processor as configured by Espressif only supports a single hardware breakpoint -- so this means that you
+Note that the lx106 processor as configured by Espressif only supports a single hardware breakpoint -- so this means that you
 can only put a single breakpoint in flash code. You can single step as much as you like. 
 
 ## gdbstub.brk()
@@ -31,7 +31,7 @@ Enters gdb by executing a `break 0,0` instruction.
 
 ## gdbstub.gdboutput()
 Controls whether system output is encapsulated in gdb remote debugging protocol. This turns out not to be as useful as you
-would hopei -- mostly because you can't send input to the nodemcu board. Also becuase you really only should make this call
+would hope -- mostly because you can't send input to the nodemcu board. Also because you really only should make this call
 *after* you get gdb running and connected to the nodemcu. The example below first does the break and then switches to 
 redirect the output. This works (but you are unable to send any more console input). 
 

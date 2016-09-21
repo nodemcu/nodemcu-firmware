@@ -1,5 +1,14 @@
 /*
- * Module for doing various horrible things 
+ * This module, when enabled with the LUA_USE_MODULES_GDBSTUB define causes
+ * the gdbstub code to be included and enabled to handle all fatal exceptions.
+ * This allows you to use the lx106 gdb to catch the exception and then poke
+ * around. You can't continue from an exception (at least not easily). 
+ *
+ * This should not be included in production builds as any exception will
+ * put the nodemcu into a state where it is waiting for serial input and it has
+ * the watchdog disabled. Good for debugging. Bad for unattended operation!
+ *
+ * See the docs for more information.
  *
  * Philip Gladstone, N1DQ
  */
