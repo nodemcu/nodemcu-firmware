@@ -2,6 +2,51 @@
 
 **# # # Work in Progress # # #**
 
+### Changes in IDF compared to non-OS/RTOS SDK
+This is a non-exhaustive list, obviously, but some key points are:
+
+  - **No more `c_types.h`**. Standard C types are finally the norm.
+    - `stdint.h` for all your `[u]intX_t` needs
+    - `stdbool.h` for bool (note `true`/`false` vs old `TRUE`/`FALSE`)
+    - `stddef.h` for `size_t`
+
+  - **A real C library**. All the `os_`, `ets_` and `c_` prefixes for
+    standard library functions are gone (except for the special case
+    c_getenv, for now).
+
+  - **Everything builds on at least C99 level**, with plenty of warnings
+    enabled. Fix the code so it doesn't produce warnings - don't turn
+    off the warnings! Yes, there *may* be exceptions, but they're rare.
+
+  - **`user_config.h` is no more**. All configuration is now handled
+    via Kconfig (`make menuconfig` to configure). From the developer
+    perspective, simply include `sdkconfig.h` and test the
+    corresponding CONFIG_YOUR_FEATURE macro. The `platform.h` header
+    is guaranteed to include `sdkconfig.h`, btw.
+
+  - **`user_modules.h` is also gone**. Module selection is now done
+    via Kconfig. Rather than adding a #define to `user_modules.h`,
+    add an option in `components/modules/Kconfig` of the form
+    `LUA_MODULE_XYZ`, and the existing `NODEMCU_MODULE()` macros
+    will take care of the rest. Example Kconfig entry:
+    ```
+    config LUA_MODULE_XYZ
+      bool "Xyz module"
+      default "y"
+      help
+          Includes the XYZ module. Provides features X, Y and Z.
+    ```
+
+  - **Preemptive multithreading**. The network stack and other drivers
+    now run in their own threads with private stacks. This makes for
+    a more robust architecture, but does mean proper synchronization
+    *MUST* be employed between the threads. This includes between
+    API callbacks and main Lua thread.
+
+  - **Logical flash partitions**. Rather than hardcoding assumptions of
+    flash area usage, there is now an actual logical partition table
+    kept on the flash.
+
 ### NodeMCU task paradigm
 
 NodeMCU uses a task based approach for scheduling work to run within
