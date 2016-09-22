@@ -30,5 +30,6 @@ pages:
         - Extension Developer FAQ: 'en/extn-developer-faq.md'
     - Support: 'en/support.md'
     - Modules:
+        - 'file': 'en/modules/file.md'
         - 'node': 'en/modules/node.md'
         - 'uart': 'en/modules/uart.md'
