@@ -2,6 +2,7 @@
 #define _PLATFORM_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include "sdkconfig.h"
 #include "cpu_esp32.h"
@@ -17,8 +18,21 @@ enum
   PLATFORM_UNDERFLOW = -1
 };
 
-int platform_init (void);
 
+#if CONFIG_NODE_DEBUG
+# define NODE_DBG printf
+#else
+# define NODE_DBG(...) do{}while(0)
+#endif
+
+#if CONFIG_NODE_ERR
+# define NODE_ERR printf
+#else
+# define NODE_ERR(...) do{}while(0)
+#endif
+
+
+int platform_init (void);
 
 // *****************************************************************************
 // UART subsection
@@ -54,7 +68,6 @@ void platform_uart_send( unsigned id, uint8_t data );
 int platform_uart_set_flow_control( unsigned id, int type );
 
 
-
 // Internal flash erase/write functions
 
 uint32_t platform_flash_get_first_free_block_address( uint32_t *psect );
@@ -76,17 +89,25 @@ int platform_flash_erase_sector( uint32_t sector_id );
  */
 uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
 
-#if CONFIG_NODE_DEBUG
-# define NODE_DBG printf
-#else
-# define NODE_DBG(...) do{}while(0)
-#endif
 
-#if CONFIG_NODE_ERR
-# define NODE_ERR printf
-#else
-# define NODE_ERR(...) do{}while(0)
-#endif
+// Internal flash partitions
+typedef struct {
+  uint8_t  label[16];
+  uint32_t offs;
+  uint32_t size;
+  uint8_t  type;
+  uint8_t  subtype;
+} platform_partition_t;
+
+/**
+ * Obtain partition information for the internal flash.
+ * @param idx Which partition index to load info for.
+ * @param info Buffer to store the info in.
+ * @returns True if the partition info was loaded, false if not (e.g. no such
+ *   partition idx).
+ */
+bool platform_partition_info (uint8_t idx, platform_partition_t *info);
+
 
 
 // *****************************************************************************
