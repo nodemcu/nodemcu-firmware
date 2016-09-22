@@ -12,7 +12,9 @@ This is a non-exhaustive list, obviously, but some key points are:
 
   - **A real C library**. All the `os_`, `ets_` and `c_` prefixes for
     standard library functions are gone (except for the special case
-    c_getenv, for now).
+    c_getenv, for now). stdout/stdin are wired up to the UART0 console.
+    The NodeMCU vfs layer is not currently hooked up to the C library,
+    but that would be a nice thing to do.
 
   - **Everything builds on at least C99 level**, with plenty of warnings
     enabled. Fix the code so it doesn't produce warnings - don't turn
