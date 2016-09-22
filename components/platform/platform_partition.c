@@ -76,7 +76,7 @@ bool platform_partition_add (const platform_partition_t *info)
   esp_err_t err =
     spi_flash_read (PARTITION_ADD, (uint32_t *)part_table, SPI_FLASH_SEC_SIZE);
   if (err != ESP_OK)
-    return false;
+    goto out;
 
   uint8_t idx = 0;
   for (; possible_idx (idx); ++idx)
@@ -99,6 +99,7 @@ bool platform_partition_add (const platform_partition_t *info)
         PARTITION_ADD, (uint32_t *)part_table, SPI_FLASH_SEC_SIZE);
   }
 
+out:
   free (part_table);
   return err == ESP_OK;
 }
