@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "platform.h"
 #include "flash_api.h"
 #include "spiffs.h"
@@ -53,6 +54,7 @@ The small 4KB sectors allow for greater flexibility in applications th
 static bool get_spiffs_partition (spiffs_config *cfg)
 {
   platform_partition_t info;
+  uint32_t next_free_offs = 0;
   uint8_t i = 0;
   while (platform_partition_info (i, &info))
   {
@@ -64,11 +66,34 @@ static bool get_spiffs_partition (spiffs_config *cfg)
       return true;
     }
     else
+    {
       ++i;
+      if ((info.offs + info.size) > next_free_offs)
+        next_free_offs = info.offs + info.size;
+    }
   }
-  // TODO: try to automatically append a spiffs partition; needs support
-  // over in platform_partition.c for that too
-  return false;
+  // Attempt to append a spiffs partition
+  NODE_ERR("No filesystem partition found, attempting to create it...\n");
+  info.type = PLATFORM_PARTITION_TYPE_NODEMCU;
+  info.subtype = PLATFORM_PARTITION_SUBTYPE_NODEMCU_SPIFFS;
+  strcpy (info.label, "spiffs");
+  info.offs = cfg->phys_addr = next_free_offs;
+  info.size = cfg->phys_size = flash_safe_get_size_byte () - info.offs;
+  if (info.size <= 0)
+  {
+    NODE_ERR("No space available at end of flash, can't add fs partition!\n");
+    return false;
+  }
+  if (platform_partition_add (&info))
+  {
+    NODE_ERR("Ok.\n");
+    return true;
+  }
+  else
+  {
+    NODE_ERR("Error rewriting partition table!\n");
+    return false;
+  }
 }
 
 
