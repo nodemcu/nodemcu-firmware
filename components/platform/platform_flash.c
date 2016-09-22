@@ -175,7 +175,7 @@ uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size )
  */
 uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size )
 {
-  SpiFlashOpResult r;
+  esp_err_t r;
   const uint32_t blkmask = INTERNAL_FLASH_WRITE_UNIT_SIZE - 1;
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
@@ -188,7 +188,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
   if(apbuf)
     free(apbuf);
-  if(SPI_FLASH_RESULT_OK == r)
+  if(ESP_OK == r)
     return size;
   else{
     NODE_ERR( "ERROR in flash_write: r=%d at %08X\n", ( int )r, ( unsigned )toaddr);
@@ -207,7 +207,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if (size==0)
     return 0;
 
-  SpiFlashOpResult r;
+  esp_err_t r;
 
   const uint32_t blkmask = (INTERNAL_FLASH_READ_UNIT_SIZE - 1);
   if( ((uint32_t)to) & blkmask )
@@ -215,7 +215,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
     uint32_t size2=size-INTERNAL_FLASH_READ_UNIT_SIZE;
     uint32* to2=(uint32*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
     r = flash_read(fromaddr, to2, size2);
-    if(SPI_FLASH_RESULT_OK == r)
+    if(ESP_OK == r)
     {
       memmove(to,to2,size2);
       char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
@@ -226,7 +226,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   else
     r = flash_read(fromaddr, (uint32 *)to, size);
 
-  if(SPI_FLASH_RESULT_OK == r)
+  if(ESP_OK == r)
     return size;
   else{
     NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr);
@@ -237,7 +237,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 
 int platform_flash_erase_sector( uint32_t sector_id )
 {
-  return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
+  return flash_erase( sector_id ) == ESP_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
 
 

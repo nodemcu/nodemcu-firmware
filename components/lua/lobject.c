@@ -54,7 +54,7 @@ int luaO_fb2int (int x) {
 
 
 int luaO_log2 (unsigned int x) {
-  static const lu_byte log_2[256] PLATFORM_ALIGNMENT = {
+  static const lu_byte log_2[256] = {
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -66,11 +66,7 @@ int luaO_log2 (unsigned int x) {
   };
   int l = -1;
   while (x >= 256) { l += 8; x >>= 8; }
-#ifdef LUA_CROSS_COMPILER
   return l + log_2[x];
-#else
-  return l + byte_of_aligned_array(log_2,x);
-#endif
 }
 
 

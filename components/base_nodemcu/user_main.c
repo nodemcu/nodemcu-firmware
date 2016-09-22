@@ -15,6 +15,7 @@
 #include "vfs.h"
 #include "sdkconfig.h"
 #include "esp_system.h"
+#include "flash_api.h"
 
 #include "driver/console.h"
 #include "task/task.h"
@@ -62,9 +63,8 @@ void nodemcu_init(void)
         return;
     }
 
-#if defined(FLASH_SAFE_API)
     if (flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
-        NODE_ERR("Self adjust flash size.\n");
+        NODE_ERR("Incorrect flash size reported, adjusting...\n");
         // Fit hardware real flash size.
         flash_rom_set_size_byte(flash_safe_get_size_byte());
 
@@ -74,7 +74,6 @@ void nodemcu_init(void)
         // Don't post the start_lua task, we're about to reboot...
         return;
     }
-#endif // defined(FLASH_SAFE_API)
 
 #if defined ( CONFIG_BUILD_SPIFFS )
     if (!vfs_mount("/FLASH", 0)) {
