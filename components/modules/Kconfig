@@ -6,4 +6,10 @@ config LUA_MODULE_NODE
   help
       Includes the node module (recommended).
 
+config LUA_MODULE_FILE
+  bool "File module"
+  default "y"
+  help
+      Includes the file module (recommended).
+
 endmenu

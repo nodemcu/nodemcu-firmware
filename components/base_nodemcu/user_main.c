@@ -79,7 +79,7 @@ void nodemcu_init(void)
     if (!vfs_mount("/FLASH", 0)) {
         // Failed to mount -- try reformat
 	      NODE_ERR("Formatting file system. Please wait...\n");
-        if (1 || !vfs_format()) { // FIXME
+        if (!vfs_format()) {
             NODE_ERR( "*** ERROR ***: unable to format. FS might be compromised.\n" );
             NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
         }
@@ -115,5 +115,5 @@ void app_main (void)
     console_init (&cfg, input_task);
 
     xTaskCreate (
-      nodemcu_main, "nodemcu", 2560, 0, tskIDLE_PRIORITY +1, NULL);
+      nodemcu_main, "nodemcu", 3072, 0, tskIDLE_PRIORITY +1, NULL);
 }

@@ -7,17 +7,10 @@
 // ****************************************************************************
 // Internal flash support functions
 
-/* This symbol must be exported by the linker command file and contain the
- * size of all the sections packed into the irom0_flash.bin file, in order
- * for us to find the end of used flash.
- */
-extern char _irom0_bin_min_sz[];
-
 // Helper function: find the flash sector in which an address resides
 // Return the sector number, as well as the start and end address of the sector
 static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
 {
-#ifdef INTERNAL_FLASH_SECTOR_SIZE
   // All the sectors in the flash have the same size, so just align the address
   uint32_t sect_id = address / INTERNAL_FLASH_SECTOR_SIZE;
 
@@ -26,20 +19,6 @@ static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t
   if( pend )
     *pend = ( sect_id + 1 ) * INTERNAL_FLASH_SECTOR_SIZE - 1;
   return sect_id;
-#else // #ifdef INTERNAL_FLASH_SECTOR_SIZE
-  // The flash has blocks of different size
-  // Their size is decribed in the INTERNAL_FLASH_SECTOR_ARRAY macro
-  const uint32_t flash_sect_size[] = INTERNAL_FLASH_SECTOR_ARRAY;
-  uint32_t total = 0, i = 0;
-
-  while( ( total <= address ) && ( i < sizeof( flash_sect_size ) / sizeof( uint32_t ) ) )
-    total += flash_sect_size[ i ++ ];
-  if( pstart )
-    *pstart = ( total - flash_sect_size[ i - 1 ] );
-  if( pend )
-    *pend = total - 1;
-  return i - 1;
-#endif // #ifdef INTERNAL_FLASH_SECTOR_SIZE
 }
 
 uint32_t platform_flash_get_sector_of_address( uint32_t addr )
@@ -49,26 +28,7 @@ uint32_t platform_flash_get_sector_of_address( uint32_t addr )
 
 uint32_t platform_flash_get_num_sectors(void)
 {
-#ifdef INTERNAL_FLASH_SECTOR_SIZE
-  return INTERNAL_FLASH_SIZE / INTERNAL_FLASH_SECTOR_SIZE;
-#else // #ifdef INTERNAL_FLASH_SECTOR_SIZE
-  const uint32_t flash_sect_size[] = INTERNAL_FLASH_SECTOR_ARRAY;
-
-  return sizeof( flash_sect_size ) / sizeof( uint32_t );
-#endif // #ifdef INTERNAL_FLASH_SECTOR_SIZE
-}
-
-uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
-{
-  uint32_t flash_offs = IROM0_START_FLASH_ADDR + (uint32_t)_irom0_bin_min_sz;
-  uint32_t sect =
-    (flash_offs + INTERNAL_FLASH_SECTOR_SIZE-1)/INTERNAL_FLASH_SECTOR_SIZE;
-  ++sect; /* compensate for various headers not counted in _irom0_bin_min_sz */
-
-  if (psect)
-    *psect = sect;
-
-  return sect * INTERNAL_FLASH_SECTOR_SIZE;
+  return flash_safe_get_sec_num ();
 }
 
 uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size )
@@ -168,6 +128,7 @@ uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 #endif // #ifndef INTERNAL_FLASH_READ_UNIT_SIZE
 }
 
+
 /*
  * Assumptions:
  * > toaddr is INTERNAL_FLASH_WRITE_UNIT_SIZE aligned
@@ -179,7 +140,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   const uint32_t blkmask = INTERNAL_FLASH_WRITE_UNIT_SIZE - 1;
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
-  if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_MAPPED_ADDRESS)) {
+  if( (fromaddr & blkmask ) || is_cache_flash_addr(fromaddr)) {
     apbuf = (uint32_t *)malloc(size);
     if(!apbuf)
       return 0;
@@ -240,9 +201,3 @@ int platform_flash_erase_sector( uint32_t sector_id )
   return flash_erase( sector_id ) == ESP_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
 
-
-uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
-{
-  // FIXME: need to take actual memory maps into account!
-  return mapped_addr - IROM0_START_MAPPED_ADDR + IROM0_START_FLASH_ADDR;
-}

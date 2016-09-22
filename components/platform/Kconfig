@@ -1,29 +1,5 @@
 menu "Platform config"
 
-choice FLASH_SIZE
-  bool "Platform SPI flash size"
-  default FLASH_SIZE_AUTO
-  help
-      Configure the size of the SPI flash on the platform.
-
-      This is used to determine various things such as file system size,
-      the location of SDK configuration data, and initial RF data.
-config FLASH_SIZE_AUTO
-  bool "Auto-detect"
-config FLASH_SIZE_512K
-  bool "512KB (4Mbit)"
-config FLASH_SIZE_1M
-  bool "1MB (8Mbit)"
-config FLASH_SIZE_2M
-  bool "2MB (16Mbit)"
-config FLASH_SIZE_4M
-  bool "4MB (32Mbit)"
-config FLASH_SIZE_8M
-  bool "8MB (64Mbit)"
-config FLASH_SIZE_16M
-  bool "16MB (128Mbit)"
-endchoice
-
 choice CONSOLE_BIT_RATE
   prompt "UART console default bit rate"
   default CONSOLE_BIT_RATE_115200

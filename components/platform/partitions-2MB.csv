@@ -1,0 +1,7 @@
+# Espressif ESP32 Partition Table
+# Name,  Type, SubType, Offset,  Size
+factory, app,  factory, 0x10000, 1M
+rfdata,  data, rf,     0x110000, 256K
+wifidata,data, wifi,   0x150000, 256K
+# 0xC2 => NodeMCU, 0x0 => Spiffs
+spiffs,  0xC2, 0x0,    ,         448K

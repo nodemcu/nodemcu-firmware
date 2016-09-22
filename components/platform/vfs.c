@@ -29,7 +29,9 @@ int32_t vfs_get_rtc( vfs_time *tm )
 }
 
 
+#if LDRV_TRAVERSAL
 static int dir_level = 1;
+#endif
 
 static const char *normalize_path( const char *path )
 {
@@ -216,14 +218,14 @@ int32_t vfs_rename( const char *oldname, const char *newname )
 int32_t vfs_mkdir( const char *name )
 {
   vfs_fs_fns *fs_fns;
-  const char *normname = normalize_path( name );
-  char *outname;
 
 #ifdef CONFIG_BUILD_SPIFFS
   // not supported
 #endif
 
 #ifdef CONFIG_BUILD_FATFS
+  const char *normname = normalize_path( name );
+  char *outname;
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
     int32_t r = fs_fns->mkdir( outname );
     free( outname );
@@ -301,11 +303,11 @@ int32_t vfs_chdir( const char *path )
 {
   vfs_fs_fns *fs_fns;
   const char *normpath = normalize_path( path );
-  const char *level;
   char *outname;
   int ok = VFS_RES_ERR;
 
 #if LDRV_TRAVERSAL
+  const char *level;
   // track dir level
   if (normpath[0] == '/') {
     dir_level = 0;
@@ -450,8 +452,6 @@ const char *vfs_basename( const char *path )
 int vfs_getc( int fd )
 {
   unsigned char c = 0xFF;
-  int32_t res;
-
   if(!vfs_eof( fd )) {
     if (1 != vfs_read( fd, &c, 1 )) {
       NODE_DBG("getc errno %i\n", vfs_ferrno( fd ));

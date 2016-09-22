@@ -70,7 +70,6 @@ int platform_uart_set_flow_control( unsigned id, int type );
 
 // Internal flash erase/write functions
 
-uint32_t platform_flash_get_first_free_block_address( uint32_t *psect );
 uint32_t platform_flash_get_sector_of_address( uint32_t addr );
 uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size );
 uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size );
@@ -79,18 +78,22 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size );
 uint32_t platform_flash_get_num_sectors(void);
 int platform_flash_erase_sector( uint32_t sector_id );
 
-/**
- * Translated a mapped address to a physical flash address, based on the
- * current flash cache mapping.
- * @param mapped_addr Address to translate (>= INTERNAL_FLASH_MAPPED_ADDRESS)
- * @return the corresponding physical flash address, or -1 if flash cache is
- *  not currently active.
- * @see Cache_Read_Enable.
- */
-uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
-
 
 // Internal flash partitions
+#define PLATFORM_PARTITION_TYPE_APP     0x00
+#define PLATFORM_PARTITION_TYPE_DATA    0x01
+#define PLATFORM_PARTITION_TYPE_NODEMCU 0xC2
+
+#define PLATFORM_PARTITION_SUBTYPE_APP_FACTORY 0x00
+#define PLATFORM_PARTITION_SUBTYPE_APP_OTA(n)  (0x10+n)
+#define PLATFORM_PARTITION_SUBTYPE_APP_TEST    0x20
+
+#define PLATFORM_PARTITION_SUBTYPE_DATA_OTA    0x00
+#define PLATFORM_PARTITION_SUBTYPE_DATA_RF     0x01
+#define PLATFORM_PARTITION_SUBTYPE_DATA_WIFI   0x02
+
+#define PLATFORM_PARTITION_SUBTYPE_NODEMCU_SPIFFS 0x00
+
 typedef struct {
   uint8_t  label[16];
   uint32_t offs;
