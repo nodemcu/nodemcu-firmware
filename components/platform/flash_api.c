@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "rom/spi_flash.h"
 
 #include "../../bootloader/src/main/bootloader_config.h"
 
@@ -24,7 +25,14 @@ static inline struct flash_hdr flash_load_rom_header (void)
   return hdr;
 }
 
-static uint32_t flash_detect_size_byte(void)
+#define IRAM_SECTION __attribute__((section(".iram1")))
+static void IRAM_SECTION do_flash_cfg_workaround (uint32_t sz)
+{
+  // workaround: configure SPI flash size manually (2nd argument)
+  SPIParamCfg (0x1540ef, sz, 64*1024, 4096, 256, 0xffff);
+}
+
+static uint32_t __attribute__((section(".iram1"))) flash_detect_size_byte(void)
 {
 #define DETECT_SZ 32
   uint32_t detected_size = FLASH_SIZE_1MBYTE;
@@ -33,6 +41,7 @@ static uint32_t flash_detect_size_byte(void)
   // Detect read failure or wrap-around on flash read to find end of flash
   if (ESP_OK == spi_flash_read (0, (uint32_t *)data_orig, DETECT_SZ))
   {
+    do_flash_cfg_workaround (FLASH_SIZE_16MBYTE);
     while ((detected_size < FLASH_SIZE_16MBYTE) &&
            (ESP_OK == spi_flash_read (
               detected_size, (uint32_t *)data_new, DETECT_SZ)) &&
@@ -40,6 +49,7 @@ static uint32_t flash_detect_size_byte(void)
     {
         detected_size *= 2;
     }
+    do_flash_cfg_workaround (detected_size);
   };
   return detected_size;
 #undef FLASH_BUFFER_SIZE_DETECT

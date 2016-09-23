@@ -76,6 +76,8 @@ void nodemcu_init(void)
     }
 
 #if defined ( CONFIG_BUILD_SPIFFS )
+    // This can take a while, so be nice and provide some feedback while waiting
+    printf ("Mounting flash filesystem...\n");
     if (!vfs_mount("/FLASH", 0)) {
         // Failed to mount -- try reformat
 	      NODE_ERR("Formatting file system. Please wait...\n");
