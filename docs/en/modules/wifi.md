@@ -223,114 +223,6 @@ none
 
 # wifi.sta Module
 
-## wifi.sta.apchange()
-
-Select Access Point from list returned by `wifi.sta.apinfo()`
-
-#### Syntax
-`wifi.sta.apchange(ap_index)`
-
-#### Parameters
-`ap_index` Index of Access Point you would like to change to. (Range:1-5)
- - Corresponds to index used by [`wifi.sta.apinfo()`](#wifistaapinfo) and [`wifi.sta.getapindex()`](#wifistagetapindex)
-
-#### Returns
-- `true`  Success
-- `false` Failure
-
-#### Example
-```lua
-wifi.sta.apchange(4)
-```
-
-#### See also
-- [`wifi.sta.apinfo()`](#wifistaapinfo)
-- [`wifi.sta.getapindex()`](#wifistagetapindex)
-
-## wifi.sta.apinfo()
-
-Get information of APs cached by ESP8266 station.
-
-!!! Note
-		Any Access Points configured with save disabled `wifi.sta.config({save=false})` will populate this list (appearing to overwrite APs stored in flash) until restart.
-
-#### Syntax
-`wifi.sta.apinfo()`
-
-#### Parameters
-`nil`
-
-#### Returns
-- `ap_info`
- - `qty` quantity of APs returned
- - `1-5` index of AP. (the index corresponds to index used by [`wifi.sta.apchange()`](#wifistaapchange) and [`wifi.sta.getapindex()`](#wifistagetapindex))
-   - `ssid`  ssid of Access Point
-   - `pwd`	 Password for Access Point
-     - If no password was configured, the `pwd` field will be `nil`
-   - `bssid` MAC address of Access Point
-     - If no MAC address was configured, the `bssid` field will be `nil`
-
-
-#### Example
-```lua
---print stored access point info
-do
-  for k,v in pairs(wifi.sta.apinfo()) do
-    if (type(v)=="table") then
-      print(" "..k.." : "..type(v))
-      for k,v in pairs(v) do
-        print("\t\t"..k.." : "..v)
-      end
-    else
-      print(" "..k.." : "..v)
-    end
-  end
-end
-
---print stored access point info(formatted)
-do
-  local x=wifi.sta.apinfo()
-  local y=wifi.sta.getapindex()
-  print("\n Number of APs stored in flash:", x.qty)
-  print(string.format("  %-6s %-32s %-64s %-18s", "index:", "SSID:", "Password:", "BSSID:")) 
-  for i=1, (x.qty), 1 do
-    print(string.format(" %s%-6d %-32s %-64s %-18s",(i==y and ">" or " "), i, x[i].ssid, x[i].pwd and x[i].pwd or type(nil), x[i].bssid and x[i].bssid or type(nil)))
-  end
-end
-```
-
-#### See also
-- [`wifi.sta.getapindex()`](#wifistagetapindex)
-- [`wifi.sta.aplimit()`](#wifistaaplimit)
-- [`wifi.sta.apchange()`](#wifistaapchange)
-- [`wifi.sta.config()`](#wifistaconfig)
-
-## wifi.sta.aplimit()
-
-Set Maximum number of Access Points to store in flash.
- - This value is written to flash
-
-!!! Attention
-		If 5 Access Points are stored and AP limit is set to 4, the AP at index 5 will remain until [`node.restore()`](node.md#noderestore) is called or AP limit is set to 5 and AP is overwritten.  
-
-#### Syntax
-`wifi.sta.aplimit(qty)`
-
-#### Parameters
-`qty` Quantity of Access Points to store in flash. Range: 1-5 (Default: 5)
-
-#### Returns
-- `true`  Success
-- `false` Failure
-
-#### Example
-```lua
-wifi.sta.aplimit(1)
-```
-
-#### See also
-- [`wifi.sta.apinfo()`](#wifistaapinfo)
-
 ## wifi.sta.autoconnect()
 
 Auto connects to AP in station mode.
@@ -353,6 +245,30 @@ wifi.sta.autoconnect(1)
 - [`wifi.sta.config()`](#wifistaconfig)
 - [`wifi.sta.connect()`](#wifistaconnect)
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
+
+## wifi.sta.changeap()
+
+Select Access Point from list returned by `wifi.sta.getapinfo()`
+
+#### Syntax
+`wifi.sta.changeap(ap_index)`
+
+#### Parameters
+`ap_index` Index of Access Point you would like to change to. (Range:1-5)
+ - Corresponds to index used by [`wifi.sta.getapinfo()`](#wifistagetapinfo) and [`wifi.sta.getapindex()`](#wifistagetapindex)
+
+#### Returns
+- `true`  Success
+- `false` Failure
+
+#### Example
+```lua
+wifi.sta.changeap(4)
+```
+
+#### See also
+- [`wifi.sta.getapinfo()`](#wifistagetapinfo)
+- [`wifi.sta.getapindex()`](#wifistagetapindex)
 
 ## wifi.sta.config()
 
@@ -686,6 +602,64 @@ print("the index of the currently selected AP is: "..wifi.sta.getapindex())
 - [`wifi.sta.apinfo()`](#wifistaapinfo)
 - [`wifi.sta.apchange()`](#wifistaapchange)
 
+## wifi.sta.getapinfo()
+
+Get information of APs cached by ESP8266 station.
+
+!!! Note
+		Any Access Points configured with save disabled `wifi.sta.config({save=false})` will populate this list (appearing to overwrite APs stored in flash) until restart.
+
+#### Syntax
+`wifi.sta.getapinfo()`
+
+#### Parameters
+`nil`
+
+#### Returns
+- `ap_info`
+ - `qty` quantity of APs returned
+ - `1-5` index of AP. (the index corresponds to index used by [`wifi.sta.changeap()`](#wifistachangeap) and [`wifi.sta.getapindex()`](#wifistagetapindex))
+   - `ssid`  ssid of Access Point
+   - `pwd`	 Password for Access Point
+     - If no password was configured, the `pwd` field will be `nil`
+   - `bssid` MAC address of Access Point
+     - If no MAC address was configured, the `bssid` field will be `nil`
+
+
+#### Example
+```lua
+--print stored access point info
+do
+  for k,v in pairs(wifi.sta.getapinfo()) do
+    if (type(v)=="table") then
+      print(" "..k.." : "..type(v))
+      for k,v in pairs(v) do
+        print("\t\t"..k.." : "..v)
+      end
+    else
+      print(" "..k.." : "..v)
+    end
+  end
+end
+
+--print stored access point info(formatted)
+do
+  local x=wifi.sta.getapinfo()
+  local y=wifi.sta.getapindex()
+  print("\n Number of APs stored in flash:", x.qty)
+  print(string.format("  %-6s %-32s %-64s %-18s", "index:", "SSID:", "Password:", "BSSID:")) 
+  for i=1, (x.qty), 1 do
+    print(string.format(" %s%-6d %-32s %-64s %-18s",(i==y and ">" or " "), i, x[i].ssid, x[i].pwd and x[i].pwd or type(nil), x[i].bssid and x[i].bssid or type(nil)))
+  end
+end
+```
+
+#### See also
+- [`wifi.sta.getapindex()`](#wifistagetapindex)
+- [`wifi.sta.setaplimit()`](#wifistasetaplimit)
+- [`wifi.sta.changeap()`](#wifistachangeap)
+- [`wifi.sta.config()`](#wifistaconfig)
+
 ## wifi.sta.getbroadcast()
 
 Gets the broadcast address in station mode.
@@ -882,6 +856,32 @@ none
 RSSI=wifi.sta.getrssi()
 print("RSSI is", RSSI)
 ```
+
+## wifi.sta.setaplimit()
+
+Set Maximum number of Access Points to store in flash.
+ - This value is written to flash
+
+!!! Attention
+		If 5 Access Points are stored and AP limit is set to 4, the AP at index 5 will remain until [`node.restore()`](node.md#noderestore) is called or AP limit is set to 5 and AP is overwritten.  
+
+#### Syntax
+`wifi.sta.setaplimit(qty)`
+
+#### Parameters
+`qty` Quantity of Access Points to store in flash. Range: 1-5 (Default: 5)
+
+#### Returns
+- `true`  Success
+- `false` Failure
+
+#### Example
+```lua
+wifi.sta.setaplimit(true)
+```
+
+#### See also
+- [`wifi.sta.getapinfo()`](#wifistagetapinfo)
 
 ## wifi.sta.sethostname()
 

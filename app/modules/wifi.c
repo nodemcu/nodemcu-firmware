@@ -1431,32 +1431,32 @@ static int wifi_ap_dhcp_stop( lua_State* L )
 
 // Module function map
 static const LUA_REG_TYPE wifi_station_map[] = {
-  { LSTRKEY( "apinfo" ),           LFUNCVAL( wifi_station_get_ap_info4lua ) },
-  { LSTRKEY( "aplimit" ),          LFUNCVAL( wifi_station_ap_number_set4lua ) },
-  { LSTRKEY( "apchange" ),         LFUNCVAL( wifi_station_change_ap ) },
-  { LSTRKEY( "getapindex" ),       LFUNCVAL( wifi_station_get_ap_index ) },
-  { LSTRKEY( "getconfig" ),        LFUNCVAL( wifi_station_getconfig_current ) },
-  { LSTRKEY( "getdefaultconfig" ), LFUNCVAL( wifi_station_getconfig_default ) },
+  { LSTRKEY( "autoconnect" ),      LFUNCVAL( wifi_station_setauto ) },
+  { LSTRKEY( "changeap" ),         LFUNCVAL( wifi_station_change_ap ) },
   { LSTRKEY( "config" ),           LFUNCVAL( wifi_station_config ) },
   { LSTRKEY( "connect" ),          LFUNCVAL( wifi_station_connect4lua ) },
   { LSTRKEY( "disconnect" ),       LFUNCVAL( wifi_station_disconnect4lua ) },
-  { LSTRKEY( "autoconnect" ),      LFUNCVAL( wifi_station_setauto ) },
-  { LSTRKEY( "getip" ),            LFUNCVAL( wifi_station_getip ) },
-  { LSTRKEY( "setip" ),            LFUNCVAL( wifi_station_setip ) },
-  { LSTRKEY( "getbroadcast" ),     LFUNCVAL( wifi_station_getbroadcast) },
-  { LSTRKEY( "getmac" ),           LFUNCVAL( wifi_station_getmac ) },
-  { LSTRKEY( "setmac" ),           LFUNCVAL( wifi_station_setmac ) },
-  { LSTRKEY( "getap" ),            LFUNCVAL( wifi_station_listap ) },
-  { LSTRKEY( "sethostname" ),      LFUNCVAL( wifi_sta_sethostname_lua ) },
-  { LSTRKEY( "gethostname" ),      LFUNCVAL( wifi_sta_gethostname ) },
-  { LSTRKEY( "getrssi" ),          LFUNCVAL( wifi_station_getrssi ) },
-  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_station_sleeptype ) },
-  { LSTRKEY( "status" ),           LFUNCVAL( wifi_station_status ) },
 #if defined(WIFI_STATION_STATUS_MONITOR_ENABLE)
-  { LSTRKEY( "eventMonReg" ),   LFUNCVAL( wifi_station_event_mon_reg ) }, //declared in wifi_eventmon.c
-  { LSTRKEY( "eventMonStart" ), LFUNCVAL( wifi_station_event_mon_start ) }, //declared in wifi_eventmon.c
-  { LSTRKEY( "eventMonStop" ),  LFUNCVAL( wifi_station_event_mon_stop ) }, //declared in wifi_eventmon.c
+  { LSTRKEY( "eventMonReg" ),      LFUNCVAL( wifi_station_event_mon_reg ) }, //defined in wifi_eventmon.c
+  { LSTRKEY( "eventMonStart" ),    LFUNCVAL( wifi_station_event_mon_start ) }, //defined in wifi_eventmon.c
+  { LSTRKEY( "eventMonStop" ),     LFUNCVAL( wifi_station_event_mon_stop ) }, //defined in wifi_eventmon.c
 #endif
+  { LSTRKEY( "getap" ),            LFUNCVAL( wifi_station_listap ) },
+  { LSTRKEY( "getapindex" ),       LFUNCVAL( wifi_station_get_ap_index ) },
+  { LSTRKEY( "getapinfo" ),        LFUNCVAL( wifi_station_get_ap_info4lua ) },
+  { LSTRKEY( "getbroadcast" ),     LFUNCVAL( wifi_station_getbroadcast) },
+  { LSTRKEY( "getconfig" ),        LFUNCVAL( wifi_station_getconfig_current ) },
+  { LSTRKEY( "getdefaultconfig" ), LFUNCVAL( wifi_station_getconfig_default ) },
+  { LSTRKEY( "gethostname" ),      LFUNCVAL( wifi_sta_gethostname ) },
+  { LSTRKEY( "getip" ),            LFUNCVAL( wifi_station_getip ) },
+  { LSTRKEY( "getmac" ),           LFUNCVAL( wifi_station_getmac ) },
+  { LSTRKEY( "getrssi" ),          LFUNCVAL( wifi_station_getrssi ) },
+  { LSTRKEY( "setaplimit" ),       LFUNCVAL( wifi_station_ap_number_set4lua ) },
+  { LSTRKEY( "sethostname" ),      LFUNCVAL( wifi_sta_sethostname_lua ) },
+  { LSTRKEY( "setip" ),            LFUNCVAL( wifi_station_setip ) },
+  { LSTRKEY( "setmac" ),           LFUNCVAL( wifi_station_setmac ) },
+  { LSTRKEY( "sleeptype" ),        LFUNCVAL( wifi_station_sleeptype ) },
+  { LSTRKEY( "status" ),           LFUNCVAL( wifi_station_status ) },
   { LNILKEY, LNILVAL }
 };
 
