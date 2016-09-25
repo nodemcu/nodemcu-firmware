@@ -136,6 +136,19 @@ none
 #### Returns
 flash ID (number)
 
+## node.flashsize()
+
+Returns the flash chip size in bytes. On 4MB modules like ESP-12 the return value is 4194304 = 4096KB.
+
+#### Syntax
+`node.flashsize()`
+
+#### Parameters
+none
+
+#### Returns
+flash size in bytes (integer)
+
 ## node.heap()
 
 Returns the current available heap size in bytes. Note that due to fragmentation, actual allocations of this size may not be possible.
