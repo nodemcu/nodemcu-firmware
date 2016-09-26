@@ -20,11 +20,7 @@ BASIC_TYPES=-Du32_t=uint32_t -Du16_t=uint16_t -Du8_t=uint8_t -Ds32_t=int32_t -Ds
 
 include $(IDF_PATH)/make/project.mk
 
-LUA_LTR_DEFINES=\
-	-DLUA_OPTIMIZE_MEMORY=2 \
-	-DMIN_OPT_LEVEL=2 \
-
 # Ensure these overrides are always used
-CC:=$(CC) $(BASIC_TYPES) $(LUA_LTR_DEFINES) -D__ESP32__ $(MORE_CFLAGS)
+CC:=$(CC) $(BASIC_TYPES) -D__ESP32__ $(MORE_CFLAGS)
 
 endif
