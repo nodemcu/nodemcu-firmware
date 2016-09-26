@@ -76,7 +76,7 @@ static bool get_spiffs_partition (spiffs_config *cfg)
   NODE_ERR("No filesystem partition found, attempting to create it...\n");
   info.type = PLATFORM_PARTITION_TYPE_NODEMCU;
   info.subtype = PLATFORM_PARTITION_SUBTYPE_NODEMCU_SPIFFS;
-  strcpy (info.label, "spiffs");
+  strcpy ((char *)info.label, "spiffs");
   info.offs = cfg->phys_addr = next_free_offs;
   info.size = cfg->phys_size = flash_safe_get_size_byte () - info.offs;
   if (info.size <= 0)
@@ -306,7 +306,7 @@ static uint32_t myspiffs_vfs_isize( const struct vfs_item *di ) {
 static const char *myspiffs_vfs_name( const struct vfs_item *di ) {
   GET_STAT_S(di);
 
-  return s->name;
+  return (const char *)s->name;
 }
 
 
@@ -349,7 +349,7 @@ static vfs_item *myspiffs_vfs_readdir( const struct vfs_dir *dd ) {
       stat->vfs_item.fns     = &myspiffs_item_fns;
       // copy entries to vfs' directory item
       stat->s.size = dirent.size;
-      strncpy( stat->s.name, dirent.name, SPIFFS_OBJ_NAME_LEN );
+      strncpy((char *)stat->s.name, (char *)dirent.name, SPIFFS_OBJ_NAME_LEN );
       return (vfs_item *)stat;
     } else {
       free( stat );
