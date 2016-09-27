@@ -15,17 +15,77 @@
 #include "vfs.h"
 #include "sdkconfig.h"
 #include "esp_system.h"
+#include "esp_event.h"
+#include "nvs_flash.h"
 #include "flash_api.h"
 
 #include "driver/console.h"
 #include "task/task.h"
 #include "sections.h"
+#include "nodemcu_esp_event.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 
 #define SIG_LUA 0
 #define SIG_UARTINPUT 1
+
+
+static task_handle_t esp_event_task;
+static QueueHandle_t esp_event_queue;
+
+// We provide our own esp_event_send which hooks into the NodeMCU task
+// task framework, and ensures all events are handled in the same context
+// as the LVM, making life as easy as possible for us.
+esp_err_t esp_event_send (system_event_t *event)
+{
+  if (!event)
+    return ESP_ERR_INVALID_ARG;
+
+  if (!esp_event_task || !esp_event_queue)
+    return ESP_ERR_INVALID_STATE; // too early!
+
+  portBASE_TYPE ret = xQueueSendToBack (esp_event_queue, event, 0);
+  if (ret != pdPASS)
+  {
+    NODE_ERR("failed to queue esp event %d", event->event_id);
+    return ESP_FAIL;
+  }
+
+  // If the task_post() fails, it only means the event gets delayed, hence
+  // we claim OK regardless.
+  task_post_medium (esp_event_task, 0);
+  return ESP_OK;
+}
+
+
+QueueHandle_t esp_event_loop_get_queue (void)
+{
+  return esp_event_queue;
+}
+
+
+static void handle_esp_event (task_param_t param, task_prio_t prio)
+{
+  (void)param;
+  (void)prio;
+
+  system_event_t evt;
+  while (xQueueReceive (esp_event_queue, &evt, 0) == pdPASS)
+  {
+    esp_err_t ret = esp_event_process_default (&evt);
+    if (ret != ESP_OK)
+      NODE_ERR("default event handler failed for %d", evt.event_id);
+
+    nodemcu_esp_event_reg_t *evregs;
+    for (evregs = esp_event_cb_table; evregs->callback; ++evregs)
+    {
+      if (evregs->event_id == evt.event_id)
+        evregs->callback (&evt);
+    }
+  }
+}
 
 
 // +================== New task interface ==================+
@@ -93,29 +153,29 @@ void nodemcu_init(void)
 }
 
 
-static void nodemcu_main (void *param)
+void app_main (void)
 {
-  (void)param;
+  esp_event_queue =
+    xQueueCreate (CONFIG_SYSTEM_EVENT_QUEUE_SIZE, sizeof (system_event_t));
+  esp_event_task = task_get_id (handle_esp_event);
+
+  input_task = task_get_id (handle_input);
+
+  ConsoleSetup_t cfg;
+  cfg.bit_rate  = CONFIG_CONSOLE_BIT_RATE;
+  cfg.data_bits = CONSOLE_NUM_BITS_8;
+  cfg.parity    = CONSOLE_PARITY_NONE;
+  cfg.stop_bits = CONSOLE_STOP_BITS_1;
+  cfg.auto_baud = CONFIG_CONSOLE_BIT_RATE_AUTO;
+
+  console_init (&cfg, input_task);
+
   nodemcu_init ();
+
+  nvs_flash_init (6, 3);
+  system_init ();
+  tcpip_adapter_init ();
 
   task_pump_messages ();
   __builtin_unreachable ();
-}
-
-
-void app_main (void)
-{
-    input_task = task_get_id (handle_input);
-
-    ConsoleSetup_t cfg;
-    cfg.bit_rate  = CONFIG_CONSOLE_BIT_RATE;
-    cfg.data_bits = CONSOLE_NUM_BITS_8;
-    cfg.parity    = CONSOLE_PARITY_NONE;
-    cfg.stop_bits = CONSOLE_STOP_BITS_1;
-    cfg.auto_baud = CONFIG_CONSOLE_BIT_RATE_AUTO;
-
-    console_init (&cfg, input_task);
-
-    xTaskCreate (
-      nodemcu_main, "nodemcu", 3072, 0, tskIDLE_PRIORITY +1, NULL);
 }
