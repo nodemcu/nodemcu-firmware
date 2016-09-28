@@ -57,9 +57,6 @@
 // Event callback prototype
 typedef void (*nodemcu_esp_event_cb) (const system_event_t *event);
 
-// System event queue getter (matching esp_event_loop.h's declaration)
-QueueHandle_t esp_event_loop_get_queue (void);
-
 // Internal definitions
 typedef struct {
   system_event_id_t    event_id;

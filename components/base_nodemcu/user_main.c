@@ -60,12 +60,6 @@ esp_err_t esp_event_send (system_event_t *event)
 }
 
 
-QueueHandle_t esp_event_loop_get_queue (void)
-{
-  return esp_event_queue;
-}
-
-
 static void handle_esp_event (task_param_t param, task_prio_t prio)
 {
   (void)param;
@@ -172,7 +166,7 @@ void app_main (void)
 
   nodemcu_init ();
 
-  nvs_flash_init (6, 3);
+  nvs_flash_init ();
   system_init ();
   tcpip_adapter_init ();
 
