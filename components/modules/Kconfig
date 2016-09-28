@@ -12,4 +12,11 @@ config LUA_MODULE_FILE
   help
       Includes the file module (recommended).
 
+config LUA_MODULE_ENCODER
+  bool "Encoder module"
+  default "n"
+  help
+      Includes the encoder module. This provides hex and base64 encoding and
+      decoding functionality.
+
 endmenu
