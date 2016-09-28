@@ -6,6 +6,7 @@
 #include "task/task.h"
 #include "vfs.h"
 #include "esp_system.h"
+#include "esp_log.h"
 #include "ldebug.h"
 
 // Lua: heap()
@@ -248,6 +249,16 @@ static int node_task_post( lua_State* L )
 }
 
 
+static int node_osprint (lua_State *L)
+{
+  if (lua_toboolean (L, 1))
+    esp_log_level_set ("*", CONFIG_LOG_DEFAULT_LEVEL);
+  else
+    esp_log_level_set ("*", ESP_LOG_NONE);
+  return 0;
+}
+
+
 static const LUA_REG_TYPE node_egc_map[] = {
   { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
   { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
@@ -274,6 +285,7 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "egc" ),		LROVAL( node_egc_map )  	},
   { LSTRKEY( "heap" ),      LFUNCVAL( node_heap )   	},
   { LSTRKEY( "input" ),		LFUNCVAL( node_input )		},
+  { LSTRKEY( "osprint" ),   LFUNCVAL( node_osprint )    },
   { LSTRKEY( "restart" ),   LFUNCVAL( node_restart )	},
   { LSTRKEY( "stripdebug"), LFUNCVAL( node_stripdebug )	},
   { LSTRKEY( "task" ),      LROVAL( node_task_map ) 	},
