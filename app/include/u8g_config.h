@@ -78,7 +78,7 @@
 
 // Special display device to provide run-length encoded framebuffer contents
 // to a Lua callback:
-#define U8G_DISPLAY_FB_RLE
+//#define U8G_DISPLAY_FB_RLE
 //
 // ***************************************************************************
 
