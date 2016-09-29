@@ -73,7 +73,7 @@ static void handle_esp_event (task_param_t param, task_prio_t prio)
       NODE_ERR("default event handler failed for %d", evt.event_id);
 
     nodemcu_esp_event_reg_t *evregs;
-    for (evregs = esp_event_cb_table; evregs->callback; ++evregs)
+    for (evregs = &esp_event_cb_table; evregs->callback; ++evregs)
     {
       if (evregs->event_id == evt.event_id)
         evregs->callback (&evt);
