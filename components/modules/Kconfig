@@ -19,4 +19,10 @@ config LUA_MODULE_ENCODER
       Includes the encoder module. This provides hex and base64 encoding and
       decoding functionality.
 
+config LUA_MODULE_BTHCI
+  bool "BlueTooth HCI interface module"
+  default "n"
+  help
+      Includes the simple BlueTooth HCI module.
+
 endmenu
