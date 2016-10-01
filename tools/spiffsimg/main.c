@@ -282,6 +282,12 @@ int main (int argc, char *argv[])
     }
     sz &= ~(0x1fff);
 
+    if (used == 0) {
+      if (strchr(fname, '%')) {
+	die("Unable to calculate where to put the flash image, and % present in filename");
+      }
+    }
+
     char fnamebuff[1024];
 
     sprintf(fnamebuff, fname, used);

@@ -27,6 +27,7 @@
  * SUCH DAMAGE.
  *
  */
+#include "vfs.h"
 #include "digests.h"
 #include "user_config.h"
 #include "rom.h"
@@ -155,31 +156,22 @@ int ICACHE_FLASH_ATTR crypto_fhash (const digest_mech_info_t *mi,
 }
 
 
-int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
-   const char *data, size_t data_len,
-   const char *key, size_t key_len,
-   uint8_t *digest)
+void crypto_hmac_begin (void *ctx, const digest_mech_info_t *mi,
+  const char *key, size_t key_len, uint8_t *k_opad)
 {
-  if (!mi)
-    return EINVAL;
-
-  void *ctx = (void *)os_malloc (mi->ctx_size);
-  if (!ctx)
-    return ENOMEM;
-
   // If key too long, it needs to be hashed before use
+  char tmp[mi->digest_size];
   if (key_len > mi->block_size)
   {
-    mi->create (ctx);
     mi->update (ctx, key, key_len);
-    mi->finalize (digest, ctx);
-    key = digest;
+    mi->finalize (tmp, ctx);
+    key = tmp;
     key_len = mi->digest_size;
+    mi->create (ctx); // refresh
   }
 
   const size_t bs = mi->block_size;
   uint8_t k_ipad[bs];
-  uint8_t k_opad[bs];
 
   os_memset (k_ipad, 0x36, bs);
   os_memset (k_opad, 0x5c, bs);
@@ -190,16 +182,42 @@ int ICACHE_FLASH_ATTR crypto_hmac (const digest_mech_info_t *mi,
     k_opad[i] ^= key[i];
   }
 
-  mi->create (ctx);
   mi->update (ctx, k_ipad, bs);
-  mi->update (ctx, data, data_len);
+}
+
+
+void crypto_hmac_finalize (void *ctx, const digest_mech_info_t *mi,
+  const uint8_t *k_opad, uint8_t *digest)
+{
   mi->finalize (digest, ctx);
 
   mi->create (ctx);
-  mi->update (ctx, k_opad, bs);
+  mi->update (ctx, k_opad, mi->block_size);
   mi->update (ctx, digest, mi->digest_size);
   mi->finalize (digest, ctx);
+}
 
-  os_free (ctx);
+
+int crypto_hmac (const digest_mech_info_t *mi,
+   const char *data, size_t data_len,
+   const char *key, size_t key_len,
+   uint8_t *digest)
+{
+  if (!mi)
+    return EINVAL;
+
+  struct {
+    uint8_t ctx[mi->ctx_size];
+    uint8_t k_opad[mi->block_size];
+  } *tmp = os_malloc (sizeof (*tmp));
+  if (!tmp)
+    return ENOMEM;
+
+  mi->create (tmp->ctx);
+  crypto_hmac_begin (tmp->ctx, mi, key, key_len, tmp->k_opad);
+  mi->update (tmp->ctx, data, data_len);
+  crypto_hmac_finalize (tmp->ctx, mi, tmp->k_opad, digest);
+
+  os_free (tmp);
   return 0;
 }

@@ -671,7 +671,7 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 
 // *****************************************************************************
 // SPI platform interface
-uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div)
+uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div )
 {
   spi_master_init( id, cpol, cpha, clock_div );
   return 1;
@@ -694,6 +694,49 @@ spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type 
   spi_mast_set_mosi( id, 0, bitlen, data );
   spi_mast_transaction( id, 0, 0, 0, 0, bitlen, 0, -1 );
   return spi_mast_get_miso( id, 0, bitlen );
+}
+
+int platform_spi_blkwrite( uint8_t id, size_t len, const uint8_t *data )
+{
+  spi_mast_byte_order( id, SPI_ORDER_LSB );
+
+  while (len > 0) {
+    size_t chunk_len = len > 64 ? 64 : len;
+
+    spi_mast_blkset( id, chunk_len * 8, data );
+    spi_mast_transaction( id, 0, 0, 0, 0, chunk_len * 8, 0, 0 );
+
+    data = &(data[chunk_len]);
+    len -= chunk_len;
+  }
+
+  spi_mast_byte_order( id, SPI_ORDER_MSB );
+
+  return PLATFORM_OK;
+}
+
+int platform_spi_blkread( uint8_t id, size_t len, uint8_t *data )
+{
+  uint8_t mosi_idle[64];
+
+  os_memset( (void *)mosi_idle, 0xff, len > 64 ? 64 : len );
+
+  spi_mast_byte_order( id, SPI_ORDER_LSB );
+
+  while (len > 0 ) {
+    size_t chunk_len = len > 64 ? 64 : len;
+
+    spi_mast_blkset( id, chunk_len * 8, mosi_idle );
+    spi_mast_transaction( id, 0, 0, 0, 0, chunk_len * 8, 0, -1 );
+    spi_mast_blkget( id, chunk_len * 8, data );
+
+    data = &(data[chunk_len]);
+    len -= chunk_len;
+  }
+
+  spi_mast_byte_order( id, SPI_ORDER_MSB );
+
+  return PLATFORM_OK;
 }
 
 int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data )

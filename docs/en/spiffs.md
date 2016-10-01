@@ -27,11 +27,11 @@ spiffsimg -f <filename>
 
 ### Supported operations:
 
-  * `-f` specifies the filename for the disk image. '%x' will be replaced by the calculated offset of the file system.
-  * `-o` specifies the file which is to contain the calculated offset.
-  * `-S` specifies the size of the flash chip. `32m` is 32 mbits, `1MB` is 1 megabyte.
-  * `-U` specifies the amount of flash used by the firmware. Decimal or Hex bytes.
-  * `-c` Create a blank disk image of the given size.
+  * `-f` specifies the filename for the disk image. '%x' will be replaced by the calculated offset of the file system (`-U` must also be specified to calculate the offset).
+  * `-o` specifies the filename which is to contain the calculated offset.
+  * `-S` specifies the size of the flash chip. `32m` is 32 mbits, `4MB` is 4 megabytes.
+  * `-U` specifies the amount of flash used by the firmware. Decimal or Hex bytes (if starts with 0x).
+  * `-c` Create a blank disk image of the given size. Decimal or Hex bytes (if starts with 0x).
   * `-l` List the contents of the given disk image.
   * `-i` Interactive commands.
   * `-r` Scripted commands from filename.
@@ -73,7 +73,8 @@ f    880 http/favicon.ico
 # Technical Details
 
 The SPIFFS configuration is 4k sectors (the only size supported by the SDK) and 8k blocks. 256 byte pages. Magic is enabled and magic_len is also enabled. This allows the firmware to find the start of the filesystem (and also the size).
-One of the goals is to make the filsystem more persistent across reflashing of the firmware.
+One of the goals is to make the filsystem more persistent across reflashing of the firmware. However, there are still cases
+where spiffs detects a filesystem and uses it when it isn't valid. If you are getting weirdness with the filesystem, then just reformat it.
 
 There are two significant sizes of flash -- the 512K and 4M (or bigger). 
 
@@ -82,13 +83,19 @@ not much spare space, so a newly formatted file system will start as low as poss
 file system will start on a 64k boundary. A newly formatted file system will start between 64k and 128k from the end of the firmware. This means that the file 
 system will survive lots of reflashing and at least 64k of firmware growth. 
 
-The spiffsimg tool can also be built (from source) in the nodemcu-firmware build tree. If there is any data in the `local/fs` directory tree, then it will
-be copied into the flash disk image. Two images will normally be created -- one for the 512k flash part and the other for the 4M flash part. If the data doesn't 
+The standard build process for the firmware builds the `spiffsimg` tool (found in the `tools/spiffsimg` subdirectory).
+The top level Makfile also checks if
+there is any data in the `local/fs` directory tree, and it will then copy these files
+into the flash disk image. Two images will normally be created -- one for the 512k flash part and the other for the 4M flash part. If the data doesn't 
 fit into the 512k part after the firmware is included, then the file will not be generated.
-
 The disk image file is placed into the `bin` directory and it is named `0x<offset>-<size>.bin` where the offset is the location where it should be 
 flashed, and the size is the size of the flash part. It is quite valid (and quicker) to flash the 512k image into a 4M part. However, there will probably be
 limited space in the file system for creating new files.
+
+The default configuration will try and build three different file systems for 512KB, 1MB and 4MB flash sizes. The 1MB size is suitable for the ESP8285. This can be overridden by specifying the FLASHSIZE parameter to the makefile.
+
+If the `local/fs` directory is empty, then no flash images will be created (and the ones from the last build will be removed). The `spiffsimg` tool can 
+then be used to build an image as required. 
 
 If no file system is found during platform boot, then a new file system will be formatted. This can take some time on the first boot.
 

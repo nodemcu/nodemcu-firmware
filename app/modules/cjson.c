@@ -1617,8 +1617,6 @@ static const LUA_REG_TYPE cjson_map[] = {
 
 int luaopen_cjson( lua_State *L )
 {
-  cjson_mem_setlua (L);
-
   /* Initialise number conversions */
   // fpconv_init();         // not needed for a specific cpu.
   if(-1==cfg_init(&_cfg)){

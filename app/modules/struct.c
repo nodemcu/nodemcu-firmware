@@ -309,7 +309,7 @@ static int b_unpack (lua_State *L) {
     size_t size = optsize(L, opt, &fmt);
     pos += gettoalign(pos, &h, opt, size);
     luaL_argcheck(L, pos+size <= ld, 2, "data string too short");
-    luaL_checkstack(L, 1, "too many results");
+    luaL_checkstack(L, 2, "too many results");
     switch (opt) {
       case 'b': case 'B': case 'h': case 'H':
       case 'l': case 'L': case 'T': case 'i':  case 'I': {  /* integer types */

@@ -36,6 +36,8 @@ extern UartDevice UartDev;
 
 static os_timer_t autobaud_timer;
 
+static void (*alt_uart0_tx)(char txchar);
+
 LOCAL void ICACHE_RAM_ATTR
 uart0_rx_intr_handler(void *para);
 
@@ -125,6 +127,11 @@ uart0_alt(uint8 on)
 STATUS ICACHE_FLASH_ATTR
 uart_tx_one_char(uint8 uart, uint8 TxChar)
 {
+    if (uart == 0 && alt_uart0_tx) {
+      (*alt_uart0_tx)(TxChar);
+      return OK;
+    }
+
     while (true)
     {
       uint32 fifo_cnt = READ_PERI_REG(UART_STATUS(uart)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S);
@@ -338,4 +345,8 @@ uart_setup(uint8 uart_no)
     ETS_UART_INTR_DISABLE();
     uart_config(uart_no);
     ETS_UART_INTR_ENABLE();
+}
+
+void ICACHE_FLASH_ATTR uart_set_alt_output_uart0(void (*fn)(char)) {
+  alt_uart0_tx = fn;
 }

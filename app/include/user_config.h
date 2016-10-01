@@ -1,8 +1,6 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
-// #define DEVKIT_VERSION_0_9 1 	// define this only if you use NodeMCU devkit v0.9
-
 // #define FLASH_512K
 // #define FLASH_1M
 // #define FLASH_2M
@@ -62,12 +60,21 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #define NO_INTR_CODE inline
 #endif
 
+// SSL buffer size used only for espconn-layer secure connections.
+// See https://github.com/nodemcu/nodemcu-firmware/issues/1457 for conversation details.
+#define SSL_BUFFER_SIZE 5120
+
 //#define CLIENT_SSL_ENABLE
 //#define MD2_ENABLE
 #define SHA2_ENABLE
 
-#define BUILD_SPIFFS	1
+#define BUILD_SPIFFS
 #define SPIFFS_CACHE 1
+
+//#define BUILD_FATFS
+
+// maximum length of a filename
+#define FS_OBJ_NAME_LEN 31
 
 // Uncomment this next line for fastest startup 
 // It reduces the format time dramatically
@@ -86,18 +93,6 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #define LUA_TASK_PRIO USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG 2
 #define LUA_OPTIMIZE_DEBUG      2
-
-#ifdef DEVKIT_VERSION_0_9
-#define KEYLED_INTERVAL	80
-
-#define KEY_SHORT_MS	200
-#define KEY_LONG_MS		3000
-#define KEY_SHORT_COUNT (KEY_SHORT_MS / READLINE_INTERVAL)
-#define KEY_LONG_COUNT (KEY_LONG_MS / READLINE_INTERVAL)
-
-#define LED_HIGH_COUNT_DEFAULT 10
-#define LED_LOW_COUNT_DEFAULT 0
-#endif
 
 #define ENDUSER_SETUP_AP_SSID "SetupGadget"
 

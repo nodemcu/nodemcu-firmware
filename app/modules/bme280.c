@@ -304,7 +304,7 @@ static int bme280_lua_init(lua_State* L) {
 static void bme280_readoutdone (void *arg)
 {
 	NODE_DBG("timer out\n");
-	lua_State *L = arg;
+	lua_State *L = lua_getstate();
 	lua_rawgeti (L, LUA_REGISTRYINDEX, lua_connected_readout_ref);
 	lua_call (L, 0, 0);
 	luaL_unref (L, LUA_REGISTRYINDEX, lua_connected_readout_ref);

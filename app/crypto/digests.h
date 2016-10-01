@@ -6,7 +6,7 @@
 typedef void (*create_ctx_fn)(void *ctx);
 typedef void (*update_ctx_fn)(void *ctx, const uint8_t *msg, int len);
 typedef void (*finalize_ctx_fn)(uint8_t *digest, void *ctx);
-typedef size_t ( *read_fn )(int fd, void *ptr, size_t len);
+typedef sint32_t ( *read_fn )(int fd, void *ptr, size_t len);
 
 /**
  * Description of a message digest mechanism.
@@ -66,7 +66,35 @@ int crypto_hash (const digest_mech_info_t *mi, const char *data, size_t data_len
 int crypto_fhash (const digest_mech_info_t *mi, read_fn read, int readarg, uint8_t *digest);
 
 /**
- * Generate a HMAC signature.
+ * Commence calculating a HMAC signature.
+ *
+ * Once this fuction returns successfully, the @c ctx may be updated with
+ * data in multiple passes uses @c mi->update(), before being finalized via
+ * @c crypto_hmac_finalize().
+ *
+ * @param ctx     A created context for the given mech @c mi.
+ * @param mi      A mech from @c crypto_digest_mech().
+ * @param key     The key bytes to use.
+ * @param key_len Number of bytes the @c key comprises.
+ * @param k_opad  Buffer of size @c mi->block_size bytes to store the second
+ *                round of key material in.
+ *                Must be passed to @c crypto_hmac_finalize().
+ */
+void crypto_hmac_begin (void *ctx, const digest_mech_info_t *mi, const char *key, size_t key_len, uint8_t *k_opad);
+
+/**
+ * Finalizes calculating a HMAC signature.
+ * @param ctx     The created context used with @c crypto_hmac_begin().
+ * @param mi      The mech used with @c crypto_hmac_begin().
+ * @param k_opad  Second round of keying material, obtained
+ *                from @c crypto_hmac_begin().
+ * @param digest  Output buffer, must be at least @c mi->digest_size in size.
+ */
+void crypto_hmac_finalize (void *ctx, const digest_mech_info_t *mi, const uint8_t *k_opad, uint8_t *digest);
+
+/**
+ * Generate a HMAC signature in one pass.
+ * Implemented in terms of @c crypto_hmac_begin() / @c crypto_hmac_end().
  * @param mi       A mech from @c crypto_digest_mech(). A null pointer @c mi
  *                 is harmless, but will of course result in an error return.
  * @param data     The data to generate a signature for.

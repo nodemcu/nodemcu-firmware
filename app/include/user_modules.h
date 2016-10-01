@@ -31,6 +31,7 @@
 //#define LUA_USE_MODULES_ENCODER
 //#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
 #define LUA_USE_MODULES_FILE
+//#define LUA_USE_MODULES_GDBSTUB
 #define LUA_USE_MODULES_GPIO
 //#define LUA_USE_MODULES_HMC5883L
 //#define LUA_USE_MODULES_HTTP
@@ -61,6 +62,7 @@
 //#define LUA_USE_MODULES_U8G
 #define LUA_USE_MODULES_UART
 //#define LUA_USE_MODULES_UCG
+//#define LUA_USE_MODULES_WEBSOCKET
 #define LUA_USE_MODULES_WIFI
 //#define LUA_USE_MODULES_WS2801
 //#define LUA_USE_MODULES_WS2812

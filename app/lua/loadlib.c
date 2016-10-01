@@ -19,7 +19,7 @@
 #include C_HEADER_FCNTL
 
 #ifndef LUA_CROSS_COMPILER
-#include "flash_fs.h"
+#include "vfs.h"
 #endif
 
 #include "lauxlib.h"
@@ -340,9 +340,9 @@ static int readable (const char *filename) {
 }
 #else
 static int readable (const char *filename) {
-  int f = fs_open(filename, FS_RDONLY);  /* try to open file */
-  if (f < FS_OPEN_OK) return 0;  /* open failed */
-  fs_close(f);
+  int f = vfs_open(filename, "r");  /* try to open file */
+  if (!f) return 0;  /* open failed */
+  vfs_close(f);
   return 1;
 }
 #endif

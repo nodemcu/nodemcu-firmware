@@ -34,7 +34,6 @@ static int expose_array(lua_State* L, char *array, unsigned short len);
 #define MAX_SOCKET 5
 static int socket_num = 0;
 static int socket[MAX_SOCKET];
-static lua_State *gL = NULL;
 static int tcpserver_cb_connect_ref = LUA_NOREF;  // for tcp server connected callback
 static uint16_t tcp_server_timeover = 30;
 
@@ -65,8 +64,7 @@ static void net_server_disconnected(void *arg)    // for tcp server only
   lnet_userdata *nud = (lnet_userdata *)pesp_conn->reverse;
   if(nud == NULL)
     return;
-  if(gL == NULL)
-    return;
+  lua_State *L = lua_getstate();
 #if 0
   char temp[20] = {0};
   c_sprintf(temp, IPSTR, IP2STR( &(pesp_conn->proto.tcp->remote_ip) ) );
@@ -78,25 +76,25 @@ static void net_server_disconnected(void *arg)    // for tcp server only
 #endif
   if(nud->cb_disconnect_ref != LUA_NOREF && nud->self_ref != LUA_NOREF)
   {
-    lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_disconnect_ref);
-    lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
-    lua_call(gL, 1, 0);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_disconnect_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
+    lua_call(L, 1, 0);
   }
   int i;
-  lua_gc(gL, LUA_GCSTOP, 0);
+  lua_gc(L, LUA_GCSTOP, 0);
   for(i=0;i<MAX_SOCKET;i++){
     if( (LUA_NOREF!=socket[i]) && (socket[i] == nud->self_ref) ){
       // found the saved client
       nud->pesp_conn->reverse = NULL;
       nud->pesp_conn = NULL;    // the espconn is made by low level sdk, do not need to free, delete() will not free it.
       nud->self_ref = LUA_NOREF;   // unref this, and the net.socket userdata will delete it self
-      luaL_unref(gL, LUA_REGISTRYINDEX, socket[i]);
+      luaL_unref(L, LUA_REGISTRYINDEX, socket[i]);
       socket[i] = LUA_NOREF;
       socket_num--;
       break;
     }
   }
-  lua_gc(gL, LUA_GCRESTART, 0);
+  lua_gc(L, LUA_GCRESTART, 0);
 }
 
 static void net_socket_disconnected(void *arg)    // tcp only
@@ -108,11 +106,12 @@ static void net_socket_disconnected(void *arg)    // tcp only
   lnet_userdata *nud = (lnet_userdata *)pesp_conn->reverse;
   if(nud == NULL)
     return;
+  lua_State *L = lua_getstate();
   if(nud->cb_disconnect_ref != LUA_NOREF && nud->self_ref != LUA_NOREF)
   {
-    lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_disconnect_ref);
-    lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
-    lua_call(gL, 1, 0);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_disconnect_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
+    lua_call(L, 1, 0);
   }
 
   if(pesp_conn->proto.tcp)
@@ -121,12 +120,12 @@ static void net_socket_disconnected(void *arg)    // tcp only
   if(nud->pesp_conn)
     c_free(nud->pesp_conn);
   nud->pesp_conn = NULL;  // espconn is already disconnected
-  lua_gc(gL, LUA_GCSTOP, 0);
+  lua_gc(L, LUA_GCSTOP, 0);
   if(nud->self_ref != LUA_NOREF){
-    luaL_unref(gL, LUA_REGISTRYINDEX, nud->self_ref);
+    luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
     nud->self_ref = LUA_NOREF; // unref this, and the net.socket userdata will delete it self
   }
-  lua_gc(gL, LUA_GCRESTART, 0);
+  lua_gc(L, LUA_GCRESTART, 0);
 }
 
 static void net_server_reconnected(void *arg, sint8_t err)
@@ -154,15 +153,16 @@ static void net_socket_received(void *arg, char *pdata, unsigned short len)
     return;
   if(nud->self_ref == LUA_NOREF)
     return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_receive_ref);
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
-  // expose_array(gL, pdata, len);
+  lua_State *L = lua_getstate();
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_receive_ref);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
+  // expose_array(L, pdata, len);
   // *(pdata+len) = 0;
   // NODE_DBG(pdata);
   // NODE_DBG("\n");
-  lua_pushlstring(gL, pdata, len);
-  // lua_pushinteger(gL, len);
-  lua_call(gL, 2, 0);
+  lua_pushlstring(L, pdata, len);
+  // lua_pushinteger(L, len);
+  lua_call(L, 2, 0);
 }
 
 static void net_socket_sent(void *arg)
@@ -178,9 +178,10 @@ static void net_socket_sent(void *arg)
     return;
   if(nud->self_ref == LUA_NOREF)
     return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_send_ref);
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
-  lua_call(gL, 1, 0);
+  lua_State *L = lua_getstate();
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_send_ref);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(server) to callback func in lua
+  lua_call(L, 1, 0);
 }
 
 static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
@@ -205,34 +206,16 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     NODE_DBG("self_ref null.\n");
     return;
   }
-/* original
-  if(ipaddr == NULL)
-  {
-    NODE_ERR( "DNS Fail!\n" );
-    goto end;
-  }
-  // ipaddr->addr is a uint32_t ip
-  char ip_str[20];
-  c_memset(ip_str, 0, sizeof(ip_str));
-  if(ipaddr->addr != 0)
-  {
-    c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
-  }
 
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);    // the callback function
-  //lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(conn) to callback func in lua
-  lua_pushstring(gL, ip_str);   // the ip para
-*/
+  lua_State *L = lua_getstate();
 
-  // "enhanced"
-
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);    // the callback function
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(conn) to callback func in lua
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);    // the callback function
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(conn) to callback func in lua
 
   if(ipaddr == NULL)
   {
     NODE_DBG( "DNS Fail!\n" );
-    lua_pushnil(gL);
+    lua_pushnil(L);
   }else{
     // ipaddr->addr is a uint32_t ip
     char ip_str[20];
@@ -241,21 +224,21 @@ static void net_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
     {
       c_sprintf(ip_str, IPSTR, IP2STR(&(ipaddr->addr)));
     }
-    lua_pushstring(gL, ip_str);   // the ip para
+    lua_pushstring(L, ip_str);   // the ip para
   }
   // "enhanced" end
 
-  lua_call(gL, 2, 0);
+  lua_call(L, 2, 0);
 
 end:
   if((pesp_conn->type == ESPCONN_TCP && pesp_conn->proto.tcp->remote_port == 0)
     || (pesp_conn->type == ESPCONN_UDP && pesp_conn->proto.udp->remote_port == 0) ){
-    lua_gc(gL, LUA_GCSTOP, 0);
+    lua_gc(L, LUA_GCSTOP, 0);
     if(nud->self_ref != LUA_NOREF){
-      luaL_unref(gL, LUA_REGISTRYINDEX, nud->self_ref);
+      luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
       nud->self_ref = LUA_NOREF; // unref this, and the net.socket userdata will delete it self
     }
-    lua_gc(gL, LUA_GCRESTART, 0);
+    lua_gc(L, LUA_GCRESTART, 0);
   }
 }
 
@@ -295,25 +278,24 @@ static void net_server_connected(void *arg) // for tcp only
 
   if(tcpserver_cb_connect_ref == LUA_NOREF)
     return;
-  if(!gL)
-    return;
+  lua_State *L = lua_getstate();
 
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, tcpserver_cb_connect_ref);  // get function
+  lua_rawgeti(L, LUA_REGISTRYINDEX, tcpserver_cb_connect_ref);  // get function
   // create a new client object
-  skt = (lnet_userdata *)lua_newuserdata(gL, sizeof(lnet_userdata));
+  skt = (lnet_userdata *)lua_newuserdata(L, sizeof(lnet_userdata));
 
   if(!skt){
     NODE_ERR("can't newudata\n");
-    lua_pop(gL, 1);
+    lua_pop(L, 1);
     return;
   }
   // set its metatable
-  luaL_getmetatable(gL, "net.socket");
-  lua_setmetatable(gL, -2);
+  luaL_getmetatable(L, "net.socket");
+  lua_setmetatable(L, -2);
   // pre-initialize it, in case of errors
   skt->self_ref = LUA_NOREF;
-  lua_pushvalue(gL, -1);  // copy the top of stack
-  skt->self_ref = luaL_ref(gL, LUA_REGISTRYINDEX);    // ref to it self, for module api to find the userdata
+  lua_pushvalue(L, -1);  // copy the top of stack
+  skt->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);    // ref to it self, for module api to find the userdata
   socket[i] = skt->self_ref;  // save to socket array
   socket_num++;
   skt->cb_connect_ref = LUA_NOREF;  // this socket already connected
@@ -337,7 +319,7 @@ static void net_server_connected(void *arg) // for tcp only
   espconn_regist_reconcb(pesp_conn, net_server_reconnected);
 
   // now socket[i] has the client ref, and stack top has the userdata
-  lua_call(gL, 1, 0);  // function(conn)
+  lua_call(L, 1, 0);  // function(conn)
 }
 
 static void net_socket_connected(void *arg)
@@ -358,9 +340,10 @@ static void net_socket_connected(void *arg)
     return;
   if(nud->self_ref == LUA_NOREF)
     return;
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->cb_connect_ref);
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
-  lua_call(gL, 1, 0);
+  lua_State *L = lua_getstate();
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->cb_connect_ref);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, nud->self_ref);  // pass the userdata(client) to callback func in lua
+  lua_call(L, 1, 0);
 }
 
 // Lua: s = net.create(type, secure/timeout, function(conn))
@@ -492,8 +475,6 @@ static int net_create( lua_State* L, const char* mt )
     pUdpServer = pesp_conn;
   }
 
-  gL = L;   // global L for net module.
-
   // if call back function is specified, call it with para userdata
   // luaL_checkanyfunction(L, 2);
   if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
@@ -575,12 +556,12 @@ static int net_delete( lua_State* L, const char* mt )
     luaL_unref(L, LUA_REGISTRYINDEX, nud->cb_dns_found_ref);
     nud->cb_dns_found_ref = LUA_NOREF;
   }
-  lua_gc(gL, LUA_GCSTOP, 0);
+  lua_gc(L, LUA_GCSTOP, 0);
   if(LUA_NOREF!=nud->self_ref){
     luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
     nud->self_ref = LUA_NOREF;
   }
-  lua_gc(gL, LUA_GCRESTART, 0);
+  lua_gc(L, LUA_GCRESTART, 0);
   return 0;  
 }
 
@@ -596,7 +577,6 @@ static void socket_connect(struct espconn *pesp_conn)
   {
 #ifdef CLIENT_SSL_ENABLE
     if(nud->secure){
-      espconn_secure_set_size(ESPCONN_CLIENT, 5120); /* set SSL buffer size */
       espconn_secure_connect(pesp_conn);
     }
     else
@@ -625,19 +605,18 @@ static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   lnet_userdata *nud = (lnet_userdata *)pesp_conn->reverse;
   if(nud == NULL)
     return;
-  if(gL == NULL)
-    return;
+  lua_State *L = lua_getstate();
   if(ipaddr == NULL)
   {
     dns_reconn_count++;
     if( dns_reconn_count >= 5 ){
       NODE_ERR( "DNS Fail!\n" );
-      lua_gc(gL, LUA_GCSTOP, 0);
+      lua_gc(L, LUA_GCSTOP, 0);
       if(nud->self_ref != LUA_NOREF){
-        luaL_unref(gL, LUA_REGISTRYINDEX, nud->self_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, nud->self_ref);
         nud->self_ref = LUA_NOREF; // unref this, and the net.socket userdata will delete it self
       }
-      lua_gc(gL, LUA_GCRESTART, 0);
+      lua_gc(L, LUA_GCRESTART, 0);
       return;
     }
     NODE_ERR( "DNS retry %d!\n", dns_reconn_count );
@@ -1175,8 +1154,8 @@ static int net_dns_static( lua_State* L )
   lua_pushinteger(L, UDP); // we are going to create a new dummy UDP socket
   lua_call(L,1,1);// after this the stack should have a socket
 
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, rdom);    // load domain back to the stack
-  lua_rawgeti(gL, LUA_REGISTRYINDEX, rfunc);    // load the callback function back to the stack
+  lua_rawgeti(L, LUA_REGISTRYINDEX, rdom);    // load domain back to the stack
+  lua_rawgeti(L, LUA_REGISTRYINDEX, rfunc);    // load the callback function back to the stack
 
   luaL_unref(L, LUA_REGISTRYINDEX, rdom); //free reference
   luaL_unref(L, LUA_REGISTRYINDEX, rfunc); //free reference

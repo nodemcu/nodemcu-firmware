@@ -1,6 +1,8 @@
 #ifndef __DHCPS_H__
 #define __DHCPS_H__
 
+#include "lwipopts.h"
+
 #define USE_DNS
 
 typedef struct dhcps_state{
@@ -19,7 +21,9 @@ typedef struct dhcps_msg {
         uint8_t chaddr[16];
         uint8_t sname[64];
         uint8_t file[128];
-        uint8_t options[312];
+	// Recommendation from Espressif:
+	// To avoid crash in DHCP big packages modify option length from 312 to MTU - IPHEAD(20) - UDPHEAD(8) - DHCPHEAD(236).
+        uint8_t options[IP_FRAG_MAX_MTU - 20 - 8 - 236];
 }dhcps_msg;
 
 #ifndef LWIP_OPEN_SRC

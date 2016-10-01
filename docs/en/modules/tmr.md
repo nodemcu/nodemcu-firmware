@@ -9,7 +9,11 @@ It is aimed at setting up regularly occurring tasks, timing out operations, and 
 
 What the tmr module is *not* however, is a time keeping module. While most timeouts are expressed in milliseconds or even microseconds, the accuracy is limited and compounding errors would lead to rather inaccurate time keeping. Consider using the [rtctime](rtctime.md) module for "wall clock" time.
 
-NodeMCU provides 7 timers, numbered 0-6. It is currently up to the user to keep track of which timers are used for what.
+NodeMCU provides 7 static timers, numbered 0-6, and dynamic timer creation function [`tmr.create()`](#tmrcreate).
+
+!!! attention
+
+    Static timers are deprecated and will be removed later.
 
 ## tmr.alarm()
 
@@ -18,7 +22,7 @@ This is a convenience function combining [`tmr.register()`](#tmrregister) and [`
 To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
 #### Parameters
-- `id` timer id (0-6)
+- `id`/`ref` timer id (0-6) or object
 - `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 - `mode` timer mode:
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
@@ -33,9 +37,45 @@ To free up the resources with this timer when done using it, call [`tmr.unregist
 if not tmr.alarm(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end) then print("whoopsie") end
 ```
 #### See also
+- [`tmr.create()`](#tmrcreate)
 - [`tmr.register()`](#tmrregister)
 - [`tmr.start()`](#tmrstart)
 - [`tmr.unregister()`](#tmrunregister)
+
+## tmr.create()
+
+Creates a dynamic timer object.
+
+Dynamic timer can be used instead of numeric ID in control functions. Also can be controlled in object-oriented way.
+
+Functions supported in timer object:
+
+- [`t:alarm()`](#tmralarm)
+- [`t:register()`](#tmrregister)
+- [`t:start()`](#tmrstart)
+- [`t:stop()`](#tmrstop)
+- [`t:unregister()`](#tmrunregister)
+- [`t:state()`](#tmrstate)
+- [`t:interval()`](#tmrinterval)
+
+#### Parameters
+none
+
+#### Returns
+`timer` object
+
+#### Example
+```lua
+local mytimer = tmr.create()
+
+-- oo calling
+mytimer:register(5000, tmr.ALARM_SINGLE, function (t) print("expired"); t:unregister() end)
+mytimer:start()
+
+-- with self parameter
+tmr.register(mytimer, 5000, tmr.ALARM_SINGLE, function (t) print("expired"); tmr.unregister(t) end)
+tmr.start(mytimer)
+```
 
 ## tmr.delay()
 
@@ -64,10 +104,10 @@ tmr.delay(100)
 Changes a registered timer's expiry interval.
 
 #### Syntax
-`tmr.interval(id, interval_ms)`
+`tmr.interval(id/ref, interval_ms)`
 
 #### Parameters
-- `id` timer id (0-6)
+- `id`/`ref` timer id (0-6) or object
 - `interval_ms` new timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 
 #### Returns
@@ -105,10 +145,10 @@ Configures a timer and registers the callback function to call on expiry.
 To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
 #### Syntax
-`tmr.register(id, interval_ms, mode, func)`
+`tmr.register(id/ref, interval_ms, mode, func)`
 
 #### Parameters
-- `id` timer id (0-6)
+- `id`/`ref` timer id (0-6) or object
 - `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 - `mode` timer mode:
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
@@ -126,7 +166,8 @@ tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
 tmr.start(0)
 ```
 #### See also
-[`tmr.alarm()`](#tmralarm)
+- [`tmr.create()`](#tmrcreate)
+- [`tmr.alarm()`](#tmralarm)
 
 ## tmr.softwd()
 
@@ -158,10 +199,10 @@ complex_stuff_which_might_never_call_the_callback(on_success_callback)
 Starts or restarts a previously configured timer.
 
 #### Syntax
-`tmr.start(id)`
+`tmr.start(id/ref)`
 
 #### Parameters
-`id` timer id (0-6)
+`id`/`ref` timer id (0-6) or object
 
 #### Returns
 `true` if the timer was started, `false` on error
@@ -172,6 +213,7 @@ tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
 if not tmr.start(0) then print("uh oh") end
 ```
 #### See also
+- [`tmr.create()`](#tmrcreate)
 - [`tmr.register()`](#tmrregister)
 - [`tmr.stop()`](#tmrstop)
 - [`tmr.unregister()`](#tmrunregister)
@@ -181,10 +223,10 @@ if not tmr.start(0) then print("uh oh") end
 Checks the state of a timer.
 
 #### Syntax
-`tmr.state(id)`
+`tmr.state(id/ref)`
 
 #### Parameters
-`id` timer id (0-6)
+`id`/`ref` timer id (0-6) or object
 
 #### Returns
 (bool, int) or `nil`
@@ -201,10 +243,10 @@ running, mode = tmr.state(0)
 Stops a running timer, but does *not* unregister it. A stopped timer can be restarted with [`tmr.start()`](#tmrstart).
 
 #### Syntax
-`tmr.stop(id)`
+`tmr.stop(id/ref)`
 
 #### Parameters
-`id` timer id (0-6)
+`id`/`ref` timer id (0-6) or object
 
 #### Returns
 `true` if the timer was stopped, `false` on error
@@ -243,10 +285,10 @@ Stops the timer (if running) and unregisters the associated callback.
 This isn't necessary for one-shot timers (`tmr.ALARM_SINGLE`), as those automatically unregister themselves when fired.
 
 #### Syntax
-`tmr.unregister(id)`
+`tmr.unregister(id/ref)`
 
 #### Parameters
-`id` timer id (0-6)
+`id`/`ref` timer id (0-6) or object
 
 #### Returns
 `nil`

@@ -758,10 +758,6 @@ udp_bind(struct udp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
 
   /* no port specified? */
   if (port == 0) {
-#ifndef UDP_LOCAL_PORT_RANGE_START
-#define UDP_LOCAL_PORT_RANGE_START 4096
-#define UDP_LOCAL_PORT_RANGE_END   0x7fff
-#endif
     port = UDP_LOCAL_PORT_RANGE_START;
     ipcb = udp_pcbs;
     while ((ipcb != NULL) && (port != UDP_LOCAL_PORT_RANGE_END)) {

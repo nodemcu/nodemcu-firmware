@@ -76,7 +76,7 @@ static int http_lapi_request( lua_State *L )
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
-  http_request(url, method, headers, body, http_callback);
+  http_request(url, method, headers, body, http_callback, 0);
   return 0;
 }
 

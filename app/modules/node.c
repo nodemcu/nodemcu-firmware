@@ -23,7 +23,7 @@
 #include "driver/uart.h"
 #include "user_interface.h"
 #include "flash_api.h"
-#include "flash_fs.h"
+#include "vfs.h"
 #include "user_version.h"
 #include "rom.h"
 #include "task/task.h"
@@ -146,160 +146,6 @@ static int node_heap( lua_State* L )
   return 1;
 }
 
-#ifdef DEVKIT_VERSION_0_9
-static int led_high_count = LED_HIGH_COUNT_DEFAULT;
-static int led_low_count = LED_LOW_COUNT_DEFAULT;
-static int led_count = 0;
-static int key_press_count = 0;
-static bool key_short_pressed = false;
-static bool key_long_pressed = false;
-static os_timer_t keyled_timer;
-static int long_key_ref = LUA_NOREF;
-static int short_key_ref = LUA_NOREF;
-
-static void default_long_press(void *arg) {
-  if (led_high_count == 12 && led_low_count == 12) {
-    led_low_count = led_high_count = 6;
-  } else {
-    led_low_count = led_high_count = 12;
-  }
-  // led_high_count = 1000 / READLINE_INTERVAL;
-  // led_low_count = 1000 / READLINE_INTERVAL;
-  // NODE_DBG("default_long_press is called. hc: %d, lc: %d\n", led_high_count, led_low_count);
-}
-
-static void default_short_press(void *arg) {
-  system_restart();
-}
-
-static void key_long_press(void *arg) {
-  lua_State *L = lua_getstate();
-  NODE_DBG("key_long_press is called.\n");
-  if (long_key_ref == LUA_NOREF) {
-    default_long_press(arg);
-    return;
-  }
-  lua_rawgeti(L, LUA_REGISTRYINDEX, long_key_ref);
-  lua_call(L, 0, 0);
-}
-
-static void key_short_press(void *arg) {
-  lua_State *L = lua_getstate();
-  NODE_DBG("key_short_press is called.\n");
-  if (short_key_ref == LUA_NOREF) {
-    default_short_press(arg);
-    return;
-  }
-  lua_rawgeti(L, LUA_REGISTRYINDEX, short_key_ref);
-  lua_call(L, 0, 0);
-}
-
-static void update_key_led (void *p)
-{
-  (void)p;
-  uint8_t temp = 1, level = 1;
-  led_count++;
-  if(led_count>led_low_count+led_high_count){
-    led_count = 0;    // reset led_count, the level still high
-  } else if(led_count>led_low_count && led_count <=led_high_count+led_low_count){
-    level = 1;    // output high level
-  } else if(led_count<=led_low_count){
-    level = 0;    // output low level
-  }
-  temp = platform_key_led(level);
-  if(temp == 0){      // key is pressed
-    key_press_count++;
-    if(key_press_count>=KEY_LONG_COUNT){
-      // key_long_press(NULL);
-      key_long_pressed = true;
-      key_short_pressed = false;
-      // key_press_count = 0;
-    } else if(key_press_count>=KEY_SHORT_COUNT){    // < KEY_LONG_COUNT
-      // key_short_press(NULL);
-      key_short_pressed = true;
-    }
-  }else{  // key is released
-    key_press_count = 0;
-    if(key_long_pressed){
-      key_long_press(NULL);
-      key_long_pressed = false;
-    }
-    if(key_short_pressed){
-      key_short_press(NULL);
-      key_short_pressed = false;
-    }
-  }
-}
-
-static void prime_keyled_timer (void)
-{
-  os_timer_disarm (&keyled_timer);
-  os_timer_setfn (&keyled_timer, update_key_led, 0);
-  os_timer_arm (&keyled_timer, KEYLED_INTERVAL, 1);
-}
-
-// Lua: led(low, high)
-static int node_led( lua_State* L )
-{
-  int low, high;
-  if ( lua_isnumber(L, 1) )
-  {
-    low = lua_tointeger(L, 1);
-    if ( low < 0 ) {
-      return luaL_error( L, "wrong arg type" );
-    }
-  } else {
-    low = LED_LOW_COUNT_DEFAULT; // default to LED_LOW_COUNT_DEFAULT
-  }
-  if ( lua_isnumber(L, 2) )
-  {
-    high = lua_tointeger(L, 2);
-    if ( high < 0 ) {
-      return luaL_error( L, "wrong arg type" );
-    }
-  } else {
-    high = LED_HIGH_COUNT_DEFAULT; // default to LED_HIGH_COUNT_DEFAULT
-  }
-  led_high_count = (uint32_t)high / READLINE_INTERVAL;
-  led_low_count = (uint32_t)low / READLINE_INTERVAL;
-  prime_keyled_timer();
-  return 0;
-}
-
-// Lua: key(type, function)
-static int node_key( lua_State* L )
-{
-  int *ref = NULL;
-  size_t sl;
-
-  const char *str = luaL_checklstring( L, 1, &sl );
-  if (str == NULL)
-    return luaL_error( L, "wrong arg type" );
-
-  if (sl == 5 && c_strcmp(str, "short") == 0) {
-    ref = &short_key_ref;
-  } else if (sl == 4 && c_strcmp(str, "long") == 0) {
-    ref = &long_key_ref;
-  } else {
-    ref = &short_key_ref;
-  }
-  // luaL_checkanyfunction(L, 2);
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION) {
-    lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
-    if (*ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, *ref);
-    *ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else {    // unref the key press function
-    if (*ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, *ref);
-    *ref = LUA_NOREF;
-  }
-
-  prime_keyled_timer();
-  return 0;
-}
-#endif
-
 extern lua_Load gLoad;
 extern bool user_process_input(bool force);
 // Lua: input("string")
@@ -333,7 +179,7 @@ void output_redirect(const char *str) {
   //   return;
   // }
 
-  if (output_redir_ref == LUA_NOREF || !L) {
+  if (output_redir_ref == LUA_NOREF) {
     uart0_sendStr(str);
     return;
   }
@@ -380,11 +226,11 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 {
   UNUSED(L);
   int file_fd = *( (int *)u );
-  if ((FS_OPEN_OK - 1) == file_fd)
+  if (!file_fd)
     return 1;
   NODE_DBG("get fd:%d,size:%d\n", file_fd, size);
 
-  if (size != 0 && (size != fs_write(file_fd, (const char *)p, size)) )
+  if (size != 0 && (size != vfs_write(file_fd, (const char *)p, size)) )
     return 1;
   NODE_DBG("write fd:%d,size:%d\n", file_fd, size);
   return 0;
@@ -395,23 +241,26 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 static int node_compile( lua_State* L )
 {
   Proto* f;
-  int file_fd = FS_OPEN_OK - 1;
+  int file_fd = 0;
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
-  if ( len >= FS_NAME_MAX_LENGTH )
-    return luaL_error(L, "filename too long");
+  const char *basename = vfs_basename( fname );
+  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
 
-  char output[FS_NAME_MAX_LENGTH];
+  char *output = luaM_malloc( L, len+1 );
   c_strcpy(output, fname);
   // check here that filename end with ".lua".
-  if (len < 4 || (c_strcmp( output + len - 4, ".lua") != 0) )
+  if (len < 4 || (c_strcmp( output + len - 4, ".lua") != 0) ) {
+    luaM_free( L, output );
     return luaL_error(L, "not a .lua file");
+  }
 
   output[c_strlen(output) - 2] = 'c';
   output[c_strlen(output) - 1] = '\0';
   NODE_DBG(output);
   NODE_DBG("\n");
   if (luaL_loadfsfile(L, fname) != 0) {
+    luaM_free( L, output );
     return luaL_error(L, lua_tostring(L, -1));
   }
 
@@ -419,9 +268,10 @@ static int node_compile( lua_State* L )
 
   int stripping = 1;      /* strip debug information? */
 
-  file_fd = fs_open(output, fs_mode2flag("w+"));
-  if (file_fd < FS_OPEN_OK)
+  file_fd = vfs_open(output, "w+");
+  if (!file_fd)
   {
+    luaM_free( L, output );
     return luaL_error(L, "cannot open/write to file");
   }
 
@@ -429,12 +279,13 @@ static int node_compile( lua_State* L )
   int result = luaU_dump(L, f, writer, &file_fd, stripping);
   lua_unlock(L);
 
-  if (fs_flush(file_fd) < 0) {   // result codes aren't propagated by flash_fs.h
+  if (vfs_flush(file_fd) != VFS_RES_OK) {
     // overwrite Lua error, like writer() does in case of a file io error
     result = 1;
   }
-  fs_close(file_fd);
-  file_fd = FS_OPEN_OK - 1;
+  vfs_close(file_fd);
+  file_fd = 0;
+  luaM_free( L, output );
 
   if (result == LUA_ERR_CC_INTOVERFLOW) {
     return luaL_error(L, "value too big or small for target integer type");
@@ -643,10 +494,6 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
   { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
   { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
-#ifdef DEVKIT_VERSION_0_9
-  { LSTRKEY( "key" ), LFUNCVAL( node_key ) },
-  { LSTRKEY( "led" ), LFUNCVAL( node_led ) },
-#endif
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
 // Moved to adc module, use adc.readvdd33()

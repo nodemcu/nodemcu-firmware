@@ -128,6 +128,21 @@ physical mode after setup
 #### See also
 [`wifi.getphymode()`](#wifigetphymode)
 
+## wifi.nullmodesleep()
+
+Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled by default. 
+
+#### Syntax
+`wifi.nullmodesleep(enable)`
+
+#### Parameters
+- `enable` 
+  - true: Enable WiFi auto sleep in NULL_MODE. (Default setting)
+  - false: Disable WiFi auto sleep in NULL_MODE. 
+
+#### Returns
+Current/new NULL_MODE sleep setting.
+
 ## wifi.sleeptype()
 
 Configures the WiFi modem sleep type.

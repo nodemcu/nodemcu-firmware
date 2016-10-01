@@ -12,7 +12,8 @@
 #include "platform.h"
 #include "c_string.h"
 #include "c_stdlib.h"
-#include "flash_fs.h"
+#include "c_stdio.h"
+#include "vfs.h"
 #include "flash_api.h"
 #include "user_interface.h"
 #include "user_exceptions.h"
@@ -22,6 +23,7 @@
 #include "driver/uart.h"
 #include "task/task.h"
 #include "mem.h"
+#include "espconn.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
@@ -98,11 +100,15 @@ void nodemcu_init(void)
     }
 #endif // defined(FLASH_SAFE_API)
 
-#if defined ( BUILD_SPIFFS )
-    if (!fs_mount()) {
+#if defined ( CLIENT_SSL_ENABLE ) && defined ( SSL_BUFFER_SIZE )
+    espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
+#endif
+
+#ifdef BUILD_SPIFFS
+    if (!vfs_mount("/FLASH", 0)) {
         // Failed to mount -- try reformat
 	c_printf("Formatting file system. Please wait...\n");
-        if (!fs_format()) {
+        if (!vfs_format()) {
             NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
             NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
         }

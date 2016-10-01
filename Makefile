@@ -24,6 +24,13 @@ SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
 CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
+ifdef DEBUG
+  CCFLAGS += -ggdb -O0
+  LDFLAGS += -ggdb
+else
+  CCFLAGS += -Os
+endif
+
 #############################################################
 # Select compile
 #
@@ -38,11 +45,11 @@ ifeq ($(OS),Windows_NT)
 		CPP = xt-cpp
 		OBJCOPY = xt-objcopy
 		#MAKE = xt-make
-		CCFLAGS += -Os --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
+		CCFLAGS += --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
 	else 
 		# It is gcc, may be cygwin
 		# Can we use -fdata-sections?
-		CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
+		CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 		AR = xtensa-lx106-elf-ar
 		CC = xtensa-lx106-elf-gcc
 		NM = xtensa-lx106-elf-nm
@@ -69,7 +76,7 @@ else
 	else
 		ESPPORT = $(COMPORT)
 	endif
-	CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
+	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = xtensa-lx106-elf-gcc
 	NM = xtensa-lx106-elf-nm
@@ -231,11 +238,22 @@ clobber: $(SPECIAL_CLOBBER)
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clobber;)
 	$(RM) -r $(ODIR)
 
-flash: 
+flash:
+	@echo "use one of the following targets to flash the firmware"
+	@echo "  make flash512k - for ESP with 512kB flash size"
+	@echo "  make flash4m   - for ESP with   4MB flash size"
+
+flash512k:
+	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" flashinternal
+
+flash4m:
+	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" flashinternal
+
+flashinternal:
 ifndef PDIR
-	$(MAKE) -C ./app flash
+	$(MAKE) -C ./app flashinternal
 else
-	$(ESPTOOL) --port $(ESPPORT) write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
 .subdirs:
@@ -255,7 +273,7 @@ endif
 .PHONY: spiffs-image-remove
 
 spiffs-image-remove:
-	$(MAKE) -C tools remove-image
+	$(MAKE) -C tools remove-image spiffsimg/spiffsimg
 
 .PHONY: spiffs-image
 

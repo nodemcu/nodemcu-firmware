@@ -156,6 +156,11 @@ void             udp_input      (struct pbuf *p, struct netif *inp)ICACHE_FLASH_
 
 #define udp_init() /* Compatibility define, not init needed. */
 
+#ifndef UDP_LOCAL_PORT_RANGE_START
+#define UDP_LOCAL_PORT_RANGE_START 4096
+#define UDP_LOCAL_PORT_RANGE_END   0x7fff
+#endif
+
 #if UDP_DEBUG
 void udp_debug_print(struct udp_hdr *udphdr)ICACHE_FLASH_ATTR;
 #else

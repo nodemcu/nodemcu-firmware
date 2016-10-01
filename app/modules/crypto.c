@@ -6,13 +6,20 @@
 #include "platform.h"
 #include "c_types.h"
 #include "c_stdlib.h"
-#include "flash_fs.h"
+#include "vfs.h"
 #include "../crypto/digests.h"
 #include "../crypto/mech.h"
+#include "lmem.h"
 
 #include "user_interface.h"
 
 #include "rom.h"
+
+typedef struct {
+  const digest_mech_info_t *mech_info;
+  void *ctx;
+  uint8_t *k_opad;
+} digest_user_datum_t;
 
 /**
   * hash = crypto.sha1(input)
@@ -150,11 +157,6 @@ static int crypto_lhash (lua_State *L)
   return 1;
 }
 
-typedef struct digest_user_datum_t  {
-	const digest_mech_info_t *mech_info;
-	void *ctx;
-} digest_user_datum_t;
-
 /* General Usage for extensible hash functions:
  * sha = crypto.new_hash("MD5")
  * sha.update("Data")
@@ -162,18 +164,29 @@ typedef struct digest_user_datum_t  {
  * strdigest = crypto.toHex(sha.finalize())
  */
 
-/* crypto.new_hash("MECHTYPE") */
-static int crypto_new_hash (lua_State *L)
+#define WANT_HASH 0
+#define WANT_HMAC 1
+
+static int crypto_new_hash_hmac (lua_State *L, int what)
 {
   const digest_mech_info_t *mi = crypto_digest_mech (luaL_checkstring (L, 1));
   if (!mi)
     return bad_mech (L);
 
-  void *ctx = os_malloc (mi->ctx_size);
-  if (ctx==NULL)
-    return bad_mem (L);
+  size_t len = 0;
+  const char *key = 0;
+  uint8_t *k_opad = 0;
+  if (what == WANT_HMAC)
+  {
+    key = luaL_checklstring (L, 2, &len);
+    k_opad = luaM_malloc (L, mi->block_size);
+  }
+  void *ctx = luaM_malloc (L, mi->ctx_size);
 
   mi->create (ctx);
+
+  if (what == WANT_HMAC)
+    crypto_hmac_begin (ctx, mi, key, len, k_opad);
 
   // create a userdataum with specific metatable
   digest_user_datum_t *dudat = (digest_user_datum_t *)lua_newuserdata(L, sizeof(digest_user_datum_t));
@@ -183,9 +196,23 @@ static int crypto_new_hash (lua_State *L)
   // Set pointers to the mechanics and CTX
   dudat->mech_info = mi;
   dudat->ctx       = ctx;
+  dudat->k_opad    = k_opad;
 
   return 1; // Pass userdata object back
 }
+
+/* crypto.new_hash("MECHTYPE") */
+static int crypto_new_hash (lua_State *L)
+{
+  return crypto_new_hash_hmac (L, WANT_HASH);
+}
+
+/* crypto.new_hmac("MECHTYPE", "KEY") */
+static int crypto_new_hmac (lua_State *L)
+{
+  return crypto_new_hash_hmac (L, WANT_HMAC);
+}
+
 
 /* Called as object, params:
    1 - userdata "this"
@@ -197,7 +224,6 @@ static int crypto_hash_update (lua_State *L)
   size_t sl;
 
   dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
-  luaL_argcheck(L, dudat, 1, "crypto.hash expected");
 
   const digest_mech_info_t *mi = dudat->mech_info;
 
@@ -217,12 +243,14 @@ static int crypto_hash_finalize (lua_State *L)
   size_t sl;
 
   dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
-  luaL_argcheck(L, dudat, 1, "crypto.hash expected");
 
   const digest_mech_info_t *mi = dudat->mech_info;
 
   uint8_t digest[mi->digest_size]; // Allocate as local
-  mi->finalize (digest, dudat->ctx);
+  if (dudat->k_opad)
+    crypto_hmac_finalize (dudat->ctx, mi, dudat->k_opad, digest);
+  else
+    mi->finalize (digest, dudat->ctx);
 
   lua_pushlstring (L, digest, sizeof (digest));
   return 1;
@@ -235,13 +263,20 @@ static int crypto_hash_gcdelete (lua_State *L)
   digest_user_datum_t *dudat;
 
   dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
-  luaL_argcheck(L, dudat, 1, "crypto.hash expected");
 
-  os_free(dudat->ctx);
+  // luaM_free() uses type info to obtain original size, so have to delve
+  // one level deeper and explicitly pass the size due to void*
+  luaM_realloc_ (L, dudat->ctx, dudat->mech_info->ctx_size, 0);
+  luaM_free (L, dudat->k_opad);
 
   return 0;
 }
 
+
+static sint32_t vfs_read_wrap (int fd, void *ptr, size_t len)
+{
+  return vfs_read (fd, ptr, len);
+}
 
 /* rawdigest = crypto.hash("MD5", filename)
  * strdigest = crypto.toHex(rawdigest)
@@ -254,17 +289,17 @@ static int crypto_flhash (lua_State *L)
   const char *filename = luaL_checkstring (L, 2);
 
   // Open the file
-  int file_fd = fs_open (filename, FS_RDONLY);
-  if(file_fd < FS_OPEN_OK) {
+  int file_fd = vfs_open (filename, "r");
+  if(!file_fd) {
     return bad_file(L);
   }
 
   // Compute hash
   uint8_t digest[mi->digest_size];
-  int returncode = crypto_fhash (mi, &fs_read, file_fd, digest);
+  int returncode = crypto_fhash (mi, &vfs_read_wrap, file_fd, digest);
 
   // Finish up
-  fs_close(file_fd);
+  vfs_close(file_fd);
 
   if (returncode == ENOMEM)
     return bad_mem (L);
@@ -381,6 +416,7 @@ static const LUA_REG_TYPE crypto_map[] = {
   { LSTRKEY( "fhash"  ),   LFUNCVAL( crypto_flhash ) },
   { LSTRKEY( "new_hash"   ),   LFUNCVAL( crypto_new_hash ) },
   { LSTRKEY( "hmac"   ),   LFUNCVAL( crypto_lhmac ) },
+  { LSTRKEY( "new_hmac"   ),   LFUNCVAL( crypto_new_hmac ) },
   { LSTRKEY( "encrypt" ),  LFUNCVAL( lcrypto_encrypt ) },
   { LSTRKEY( "decrypt" ),  LFUNCVAL( lcrypto_decrypt ) },
   { LNILKEY, LNILVAL }

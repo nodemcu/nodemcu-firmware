@@ -75,7 +75,7 @@ static const uint8_t u8g_dev_lc7981_160x80_init_seq[] PROGMEM = {
   U8G_ESC_ADR(1),               /* instruction mode */
   0x003,                                /* time division */
   U8G_ESC_ADR(0),               /* data mode */
-  0x07f,                                /*  */
+  0x050,                                /* Oct 2015: Changed from 7f to 50 (1/80 duty cycle) */
 
   U8G_ESC_ADR(1),               /* instruction mode */
   0x008,                                /* display start low */
