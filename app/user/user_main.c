@@ -29,11 +29,8 @@
 #include "rtc/rtctime.h"
 #endif
 
-#define SIG_LUA 0
-#define SIG_UARTINPUT 1
-#define TASK_QUEUE_LEN 4
+static task_handle_t input_sig;
 
-static os_event_t *taskQueue;
 
 /* Note: the trampoline *must* be explicitly put into the .text segment, since
  * by the time it is invoked the irom has not yet been mapped. This naturally
@@ -58,17 +55,15 @@ static void start_lua(task_param_t param, uint8 priority) {
   char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
   NODE_DBG("Task task_lua started.\n");
   lua_main( 2, lua_argv );
+  // Only enable UART interrupts once we've successfully started up,
+  // otherwise the task queue might fill up with input events and prevent
+  // the start_lua task from being posted.
+  ETS_UART_INTR_ENABLE();
 }
 
 static void handle_input(task_param_t flag, uint8 priority) {
-//  c_printf("HANDLE_INPUT: %u %u\n", flag, priority);          REMOVE
+  (void)priority;
   lua_handle_input (flag);
-}
-
-static task_handle_t input_sig;
-
-task_handle_t user_get_input_sig(void) {
-  return input_sig;
 }
 
 bool user_process_input(bool force) {
@@ -118,7 +113,8 @@ void nodemcu_init(void)
 #endif
     // endpoint_setup();
 
-    task_post_low(task_get_id(start_lua),'s');
+    if (!task_post_low(task_get_id(start_lua),'s'))
+      NODE_ERR("Failed to post the start_lua task!\n");
 }
 
 #ifdef LUA_USE_MODULES_WIFI
