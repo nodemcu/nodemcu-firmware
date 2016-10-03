@@ -83,9 +83,8 @@ static void handle_esp_event (task_param_t param, task_prio_t prio)
 
 
 // +================== New task interface ==================+
-static void start_lua(task_param_t param, task_prio_t prio) {
-  (void)param;
-  (void)prio;
+static void start_lua ()
+{
   char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
   NODE_DBG("Task task_lua started.\n");
   lua_main( 2, lua_argv );
@@ -142,8 +141,6 @@ void nodemcu_init(void)
         // Note that fs_format leaves the file system mounted
     }
 #endif
-
-    task_post_low(task_get_id(start_lua), 0);
 }
 
 
@@ -170,6 +167,7 @@ void app_main (void)
   system_init ();
   tcpip_adapter_init ();
 
+  start_lua ();
   task_pump_messages ();
   __builtin_unreachable ();
 }
