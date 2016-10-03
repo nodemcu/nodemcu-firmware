@@ -85,7 +85,7 @@ inline sint32_t vfs_flush( int fd ) {
 //   Returns: File size
 inline uint32_t vfs_size( int fd ) {
   vfs_file *f = (vfs_file *)fd;
-  return f && f->fns->size ? f->fns->size( f ) : 0;
+  return f ? f->fns->size( f ) : 0;
 }
 
 // vfs_ferrno - get file system specific errno

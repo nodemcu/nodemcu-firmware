@@ -243,6 +243,7 @@ static sint32_t myspiffs_vfs_lseek( const struct vfs_file *fd, sint32_t off, int
 static sint32_t myspiffs_vfs_eof( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_tell( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_flush( const struct vfs_file *fd );
+static uint32_t myspiffs_vfs_size( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd );
 
 static sint32_t  myspiffs_vfs_closedir( const struct vfs_dir *dd );
@@ -295,7 +296,7 @@ static vfs_file_fns myspiffs_file_fns = {
   .eof       = myspiffs_vfs_eof,
   .tell      = myspiffs_vfs_tell,
   .flush     = myspiffs_vfs_flush,
-  .size      = NULL,
+  .size      = myspiffs_vfs_size,
   .ferrno    = myspiffs_vfs_ferrno
 };
 
@@ -475,6 +476,16 @@ static sint32_t myspiffs_vfs_flush( const struct vfs_file *fd ) {
   GET_FILE_FH(fd);
 
   return SPIFFS_fflush( &fs, fh ) >= 0 ? VFS_RES_OK : VFS_RES_ERR;
+}
+
+static uint32_t myspiffs_vfs_size( const struct vfs_file *fd ) {
+  GET_FILE_FH(fd);
+
+  int32_t curpos = SPIFFS_tell( &fs, fh );
+  int32_t size = SPIFFS_lseek( &fs, fh, 0, SPIFFS_SEEK_END );
+  (void) SPIFFS_lseek( &fs, fh, curpos, SPIFFS_SEEK_SET );
+
+   return size;
 }
 
 static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd ) {
