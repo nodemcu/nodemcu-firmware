@@ -10,4 +10,10 @@ MODULE_NAMES:=$(call uppercase,$(subst .c,,$(wildcard *.c)))
 FORCE_LINK:=$(foreach mod,$(MODULE_NAMES),$(if $(CONFIG_LUA_MODULE_$(mod)), -u $(mod)_module_selected1))
 COMPONENT_ADD_LDFLAGS=$(FORCE_LINK) -lmodules $(if $(CONFIG_LUA_MODULE_BTHCI),-lbtdm_app)
 
+# These are disabled by default in the IDF, so switch them back on
+CFLAGS += \
+	-Werror=unused-function \
+	-Werror=unused-but-set-variable \
+	-Werror=unused-variable \
+
 include $(IDF_PATH)/make/component_common.mk
