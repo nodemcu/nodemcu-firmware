@@ -330,7 +330,6 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input)
     uart_config(UART0);
     UartDev.baut_rate = uart1_br;
     uart_config(UART1);
-    ETS_UART_INTR_ENABLE();
 #ifdef BIT_RATE_AUTOBAUD
     uart_init_autobaud(0);
 #endif
