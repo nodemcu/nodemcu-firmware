@@ -207,7 +207,7 @@ sdk_patched: sdk_extracted $(TOP_DIR)/sdk/.patched-$(SDK_VER)
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
-	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK/lib/* ESP8266_NONOS_SDK/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK/include/* )
+	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK/lib/* ESP8266_NONOS_SDK/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK/include/* ESP8266_NONOS_SDK/bin/esp_init_data_default.bin)
 	mv $(dir $@)/ESP8266_NONOS_SDK $(dir $@)/esp_iot_sdk_v$(SDK_VER)
 	rm -f $(SDK_DIR)/lib/liblwip.a
 	touch $@
@@ -244,16 +244,23 @@ flash:
 	@echo "  make flash4m   - for ESP with   4MB flash size"
 
 flash512k:
-	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" flashinternal
+	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" -e INITDATAADDR="0x7c000" flashinternal
 
 flash4m:
-	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" flashinternal
+	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" -e INITDATAADDR="0x3fc000" flashinternal
 
-flashinternal:
+flashinternal: initdata
 ifndef PDIR
 	$(MAKE) -C ./app flashinternal
 else
-	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin $(INITDATAADDR) $(FIRMWAREDIR)$(INITDATAADDR).bin
+endif
+
+initdata:
+ifndef PDIR
+	$(MAKE) -C ./app initdata
+else
+	@cp -f $(SDK_DIR)/bin/esp_init_data_default.bin $(FIRMWAREDIR)$(INITDATAADDR).bin
 endif
 
 .subdirs:
