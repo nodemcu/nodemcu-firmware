@@ -5,7 +5,7 @@
 
 This module provides a simple interface to control Somfy blinds via an RF transmitter (433.42 MHz). It is based on [Nickduino Somfy Remote Arduino skecth](https://github.com/Nickduino/Somfy_Remote). 
 
-The hardware used is the standard [433 MHz RF transmitter](http://www.ebay.com/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.X433Mhz+RF+transmitter+and+receiver+link+kit+for+Arduino%2FARM%2FMCU+WL.TRS0&_nkw=433Mhz+RF+transmitter+and+receiver+link+kit+for+Arduino%2FARM%2FMCU+WL&_sacat=0) (on eBay usually sold also with the receiver). Unfortunately these chips are usually transmitting at he frequency of 433.92MHz so the crystal resonator should be replaced with the [433.42 MHz resonator](http://www.ebay.com/sch/i.html?_from=R40&_trksid=p2047675.m570.l1313.TR0.TRC0.H0.X433.42MHz+Resonator+Crystals+DIP-3+TO-39.TRS0&_nkw=433.42MHz+Resonator+Crystals+DIP-3+TO-39&_sacat=0) though some reporting that it is working even with the original crystal.
+The hardware used is the standard 433 MHz RF transmitter. Unfortunately these chips are usually transmitting at he frequency of 433.92MHz so the crystal resonator should be replaced with the 433.42 MHz resonator though some reporting that it is working even with the original crystal.
 
 To understand details of the Somfy protocol please refer to [Somfy RTS protocol](https://pushstack.wordpress.com/somfy-rts-protocol/) and also discussion [here](https://forum.arduino.cc/index.php?topic=208346.0).
 
