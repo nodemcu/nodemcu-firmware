@@ -47,6 +47,49 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
   rtctime_early_startup ();
 #endif
 
+  /* Re-implementation of default init data deployment. The SDK does not
+   * appear to be laying down its own version of init data anymore, so
+   * we have to do it again. To see whether we need to, we read out
+   * the flash size and do a test for esp_init_data based on that size.
+   * If it's missing, we need to initialize it *right now* before the SDK
+   * starts up and gets stuck at "rf_cal[0] !=0x05,is 0xFF".
+   * If the size byte is wrong, then we'll end up fixing up the init data
+   * again on the next boot, after we've corrected the size byte.
+   * Only remaining issue is lack of spare code bytes in iram, so this
+   * is deliberately quite terse and not as readable as one might like.
+   */
+  SPIFlashInfo sfi;
+  SPIRead (0, (uint32_t *)(&sfi), sizeof (sfi)); // Cache read not enabled yet, safe to use
+  if (sfi.size < 2) // Compensate for out-of-order 4mbit vs 2mbit values
+    sfi.size ^= 1;
+  uint32_t flash_end_addr = (256 * 1024) << sfi.size;
+  uint32_t init_data_hdr = 0xffffffff;
+  uint32_t init_data_addr = flash_end_addr - 4 * SPI_FLASH_SEC_SIZE;
+  SPIRead (init_data_addr, &init_data_hdr, sizeof (init_data_hdr));
+  if (init_data_hdr == 0xffffffff)
+  {
+    // Note: ideally we should generate the actual init data from the
+    // SDK's bin/esp_init_data_default.bin during the build, and #include it
+    // straight into this array. E.g.:
+    //   xxd -i esp_init_data_default | tail -n13 | head -n11 > eidd.h
+    static uint8_t flash_init_data[128] __attribute__((aligned(4))) =
+    {
+      0x05, 0x00, 0x04, 0x02, 0x05, 0x05, 0x05, 0x02, 0x05, 0x00, 0x04, 0x05,
+      0x05, 0x04, 0x05, 0x05, 0x04, 0xfe, 0xfd, 0xff, 0xf0, 0xf0, 0xf0, 0xe0,
+      0xe0, 0xe0, 0xe1, 0x0a, 0xff, 0xff, 0xf8, 0x00, 0xf8, 0xf8, 0x52, 0x4e,
+      0x4a, 0x44, 0x40, 0x38, 0x00, 0x00, 0x01, 0x01, 0x02, 0x03, 0x04, 0x05,
+      0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0xe1, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x01, 0x93, 0x43, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    SPIEraseSector (init_data_addr);
+    SPIWrite (init_data_addr, (const uint32_t *)flash_init_data, sizeof (flash_init_data));
+  }
+
   call_user_start ();
 }
 
@@ -87,9 +130,7 @@ void nodemcu_init(void)
         // Fit hardware real flash size.
         flash_rom_set_size_byte(flash_safe_get_size_byte());
 
-        // Reboot to get SDK to use (or write) init data at new location
         system_restart ();
-
         // Don't post the start_lua task, we're about to reboot...
         return;
     }
