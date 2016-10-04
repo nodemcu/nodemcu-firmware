@@ -13,6 +13,7 @@
 
 #include "os_type.h"
 #include "osapi.h"
+#include "sections.h"
 
 #include "module.h"
 #include "lauxlib.h"
@@ -39,9 +40,8 @@ static uint8_t    sync;
 static uint8_t    repeat;
 
 //static uint32_t   delay[10] = {9415, 89565, 4*SYMBOL, 4*SYMBOL, 4*SYMBOL, 4550, SYMBOL, SYMBOL, SYMBOL, 30415}; // in us
-static const __attribute__((section(".data.delay"))) uint32_t delay[10] = {US_TO_RTC_TIMER_TICKS(9415), US_TO_RTC_TIMER_TICKS(89565), US_TO_RTC_TIMER_TICKS(4*SYMBOL), US_TO_RTC_TIMER_TICKS(4*SYMBOL), US_TO_RTC_TIMER_TICKS(4*SYMBOL), US_TO_RTC_TIMER_TICKS(4550), US_TO_RTC_TIMER_TICKS(SYMBOL), US_TO_RTC_TIMER_TICKS(SYMBOL), US_TO_RTC_TIMER_TICKS(SYMBOL), US_TO_RTC_TIMER_TICKS(30415)}; // in ticks (no need to recalulate)
-
-//static uint32_t*  pdelay; //pointer to store delay array in ram
+// the `delay` array of constants must be in RAM as it is accessed from the timer interrupt
+static const RAM_CONST_SECTION_ATTR uint32_t delay[10] = {US_TO_RTC_TIMER_TICKS(9415), US_TO_RTC_TIMER_TICKS(89565), US_TO_RTC_TIMER_TICKS(4*SYMBOL), US_TO_RTC_TIMER_TICKS(4*SYMBOL), US_TO_RTC_TIMER_TICKS(4*SYMBOL), US_TO_RTC_TIMER_TICKS(4550), US_TO_RTC_TIMER_TICKS(SYMBOL), US_TO_RTC_TIMER_TICKS(SYMBOL), US_TO_RTC_TIMER_TICKS(SYMBOL), US_TO_RTC_TIMER_TICKS(30415)}; // in ticks (no need to recalculate)
 
 static uint8_t    repeatindex;
 static uint8_t    signalindex;
