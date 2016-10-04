@@ -15,7 +15,7 @@
 #include "lauxlib.h"
 #include "luaconf.h"
 #include "module.h"
-
+#include "sdkconfig.h"
 
 BUILTIN_LIB_INIT( BASE,      "",                 luaopen_base);
 BUILTIN_LIB_INIT( LOADLIB,   LUA_LOADLIBNAME,    luaopen_package);
@@ -24,19 +24,19 @@ BUILTIN_LIB_INIT( LOADLIB,   LUA_LOADLIBNAME,    luaopen_package);
 BUILTIN_LIB_INIT( IO,        LUA_IOLIBNAME,      luaopen_io);
 #endif
 
-#if defined (LUA_USE_BUILTIN_STRING)
+#if defined (CONFIG_LUA_BUILTIN_STRING)
 extern const luaR_entry strlib[];
 BUILTIN_LIB_INIT( STRING,    LUA_STRLIBNAME,     luaopen_string);
 BUILTIN_LIB(      STRING,    LUA_STRLIBNAME,     strlib);
 #endif
 
-#if defined(LUA_USE_BUILTIN_TABLE)
+#if defined(CONFIG_LUA_BUILTIN_TABLE)
 extern const luaR_entry tab_funcs[];
 BUILTIN_LIB_INIT( TABLE,     LUA_TABLIBNAME,     luaopen_table);
 BUILTIN_LIB(      TABLE,     LUA_TABLIBNAME,     tab_funcs);
 #endif
 
-#if defined(LUA_USE_BUILTIN_DEBUG) || defined(LUA_USE_BUILTIN_DEBUG_MINIMAL)
+#if defined(CONFIG_LUA_BUILTIN_DEBUG)
 extern const luaR_entry dblib[];
 BUILTIN_LIB_INIT( DBG,       LUA_DBLIBNAME,      luaopen_debug);
 BUILTIN_LIB(      DBG,       LUA_DBLIBNAME,      dblib);
@@ -47,12 +47,12 @@ extern const luaR_entry syslib[];
 BUILTIN_LIB(      OS,        LUA_OSLIBNAME,     syslib);
 #endif
 
-#if defined(LUA_USE_BUILTIN_COROUTINE)
+#if defined(CONFIG_LUA_BUILTIN_COROUTINE)
 extern const luaR_entry co_funcs[];
 BUILTIN_LIB(      CO,        LUA_COLIBNAME,     co_funcs);
 #endif
 
-#if defined(LUA_USE_BUILTIN_MATH)
+#if defined(CONFIG_LUA_BUILTIN_MATH)
 extern const luaR_entry math_map[];
 BUILTIN_LIB(      MATH,      LUA_MATHLIBNAME,   math_map);
 #endif

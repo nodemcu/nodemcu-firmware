@@ -1,5 +1,51 @@
 menu "NodeMCU modules"
 
+menu "Core Lua modules"
+
+config LUA_BUILTIN_STRING
+  bool "String module"
+  default "y"
+  help
+    Includes the string module (recommended).
+
+config LUA_BUILTIN_TABLE
+  bool "Table module"
+  default "y"
+  help
+    Includes the table module (recommended).
+
+config LUA_BUILTIN_COROUTINE
+  bool "Coroutine module"
+  default "y"
+  help
+    Includes the coroutine module (recommended).
+
+config LUA_BUILTIN_MATH
+  bool "Math module"
+  default "y"
+  help
+    Includes the math module (recommended).
+
+config LUA_BUILTIN_DEBUG
+  bool "Debug module"
+  default "n"
+  help
+    Includes the debug module.
+
+config LUA_BUILTIN_DEBUG_EXTENDED
+depends on LUA_BUILTIN_DEBUG
+  bool "Extended debug support
+  default "n"
+  help
+    Includes the full debug module, rather than just getregistry and traceback.
+
+config LUA_BUILTIN_DEBUG_MINIMAL
+depends on LUA_BUILTIN_DEBUG
+  bool
+  default !LUA_BUILTIN_DEBUG_EXTENDED
+
+endmenu
+
 config LUA_MODULE_NODE
   bool "Node module"
   default "y"

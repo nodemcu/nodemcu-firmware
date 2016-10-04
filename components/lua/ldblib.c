@@ -25,7 +25,7 @@ static int db_getregistry (lua_State *L) {
   return 1;
 }
 
-#ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
+#ifndef CONFIG_LUA_USE_BUILTIN_DEBUG_MINIMAL
 
 static int db_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
@@ -85,7 +85,7 @@ static lua_State *getthread (lua_State *L, int *arg) {
     return L;
   }
 }
-#ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
+#ifndef CONFIG_LUA_USE_BUILTIN_DEBUG_MINIMAL
 
 static void treatstackoption (lua_State *L, lua_State *L1, const char *fname) {
   if (L == L1) {
@@ -305,8 +305,8 @@ static int db_debug (lua_State *L) {
   for (;;) {
     char buffer[LUA_MAXINPUT];
 #if defined(LUA_USE_STDIO)
-    c_fputs("lua_debug> ", c_stderr);
-    if (c_fgets(buffer, sizeof(buffer), c_stdin) == 0 ||
+    fputs("lua_debug> ", stderr);
+    if (fgets(buffer, sizeof(buffer), stdin) == 0 ||
 #else
 //    luai_writestringerror("%s", "lua_debug>");
     if (lua_readline(L, buffer, "lua_debug>") == 0 ||
@@ -316,8 +316,8 @@ static int db_debug (lua_State *L) {
     if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
         lua_pcall(L, 0, 0, 0)) {
 #if defined(LUA_USE_STDIO)
-      c_fputs(lua_tostring(L, -1), c_stderr);
-      c_fputs("\n", c_stderr);
+      fputs(lua_tostring(L, -1), stderr);
+      fputs("\n", stderr);
 #else
       luai_writestringerror("%s\n", lua_tostring(L, -1));
 #endif
@@ -386,7 +386,7 @@ static int db_errorfb (lua_State *L) {
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
 const LUA_REG_TYPE dblib[] = {
-#ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
+#ifndef CONFIG_LUA_USE_BUILTIN_DEBUG_MINIMAL
   {LSTRKEY("debug"), LFUNCVAL(db_debug)},
   {LSTRKEY("getfenv"), LFUNCVAL(db_getfenv)},
   {LSTRKEY("gethook"), LFUNCVAL(db_gethook)},
@@ -394,7 +394,7 @@ const LUA_REG_TYPE dblib[] = {
   {LSTRKEY("getlocal"), LFUNCVAL(db_getlocal)},
 #endif
   {LSTRKEY("getregistry"), LFUNCVAL(db_getregistry)},
-#ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
+#ifndef CONFIG_LUA_USE_BUILTIN_DEBUG_MINIMAL
   {LSTRKEY("getmetatable"), LFUNCVAL(db_getmetatable)},
   {LSTRKEY("getupvalue"), LFUNCVAL(db_getupvalue)},
   {LSTRKEY("setfenv"), LFUNCVAL(db_setfenv)},

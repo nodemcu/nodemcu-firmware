@@ -41,8 +41,8 @@ static int luaB_print (lua_State *L) {
       return luaL_error(L, LUA_QL("tostring") " must return a string to "
                            LUA_QL("print"));
 #if defined(LUA_USE_STDIO)
-    if (i>1) c_fputs("\t", c_stdout);
-    c_fputs(s, c_stdout);
+    if (i>1) fputs("\t", stdout);
+    fputs(s, stdout);
 #else
     if (i>1)  luai_writestring("\t", 1);
     luai_writestring(s, strlen(s));
@@ -50,7 +50,7 @@ static int luaB_print (lua_State *L) {
     lua_pop(L, 1);  /* pop result */
   }
 #if defined(LUA_USE_STDIO)
-  c_fputs("\n", c_stdout);
+  fputs("\n", stdout);
 #else
   luai_writeline();
 #endif

@@ -48,7 +48,7 @@ static void laction (int i) {
 
 static void print_usage (void) {
 #if defined(LUA_USE_STDIO)
-  c_fprintf(c_stderr,
+  fprintf(stderr,
 #else
   luai_writestringerror(
 #endif
@@ -64,16 +64,16 @@ static void print_usage (void) {
   ,
   progname);
 #if defined(LUA_USE_STDIO)
-  c_fflush(c_stderr);
+  fflush(stderr);
 #endif
 }
 #endif
 
 static void l_message (const char *pname, const char *msg) {
 #if defined(LUA_USE_STDIO)
-  if (pname) c_fprintf(c_stderr, "%s: ", pname);
-  c_fprintf(c_stderr, "%s\n", msg);
-  c_fflush(c_stderr);
+  if (pname) fprintf(stderr, "%s: ", pname);
+  fprintf(stderr, "%s\n", msg);
+  fflush(stderr);
 #else
   if (pname) luai_writestringerror("%s: ", pname);
   luai_writestringerror("%s\n", msg);
@@ -260,8 +260,8 @@ static void dotty (lua_State *L) {
   lua_settop(L, 0);  /* clear stack */
   
 #if defined(LUA_USE_STDIO)
-  c_fputs("\n", c_stdout);
-  c_fflush(c_stdout);
+  fputs("\n", stdout);
+  fflush(stdout);
 #else
   luai_writeline();
 #endif
