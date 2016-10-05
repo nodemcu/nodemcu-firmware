@@ -292,8 +292,6 @@ s32_t spiffs_probe(
     SPIFFS_CHECK_RES(res);
   }
 
-  // check that we have sane number of blocks
-  if (bix_count[0] < 3 && bix_count[1] < 2) return SPIFFS_ERR_PROBE_TOO_FEW_BLOCKS;
   // check that the order is correct, take aborted erases in calculation
   // Note that bix_count[0] should be blockcnt, [1] should be blockcnt - 1
   // and [2] should be blockcnt - 3
@@ -316,6 +314,9 @@ s32_t spiffs_probe(
   } else {
     return SPIFFS_ERR_PROBE_NOT_A_FS;
   }
+
+  // check that we have sane number of blocks
+  if (fs_size < 3) return SPIFFS_ERR_PROBE_TOO_FEW_BLOCKS;
 
   dummy_fs.block_count = fs_size;
 
