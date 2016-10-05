@@ -44,6 +44,8 @@ This is a non-exhaustive list, obviously, but some key points are:
     a more robust architecture, but does mean proper synchronization
     *MUST* be employed between the threads. This includes between
     API callbacks and main Lua thread.
+    Note that many API callbacks have turned into events in the IDF,
+    and NodeMCU handle those in the context of the main Lua thread.
 
   - **Logical flash partitions**. Rather than hardcoding assumptions of
     flash area usage, there is now an actual logical partition table
@@ -77,7 +79,7 @@ callbacks must not access the Lua API or Lua resources._ This typically
 means that messages need to be posted using the NodeMCU task API for
 handling within the correct thread context. Depending on the scenario,
 data may need to be put on a FreeRTOS queue to transfer ownership safely
-between the threads.
+between the threads, or posted directly across with the NodeMCU task API.
 
 The application has no control over the relative time ordering of
 tasks and API callbacks, and no assumptions can be made about whether a
@@ -130,4 +132,68 @@ with medium priority. This is the friendly, cooperative level. If something
 is time sensitive (e.g. audio buffer running low), high priority may be
 warranted. The low priority level is intended for background processing
 during otherwise idle time.
+
+
+### Processing system events
+The IDF is quite flexible in how system events may be handled, and NodeMCU
+takes advantage of this to get all system events handled by the main Lua
+thread. Event listening registration is very similar to module registration,
+and happens at link-time. The following snippet shows how to use this:
+```
+#include "nodemcu_esp_event.h"
+
+static void on_got_ip (const system_event_t *evt)
+{
+  // Do stuff, maybe invoke a Lua callback
+}
+
+// Register for the event SYSTEM_EVENT_STA_GOT_IP (see esp_event.h for list).
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_GOT_IP, on_got_ip);
+```
+
+
+### Memory allocation in modules
+There are three main ways of allocating memory when writing modules for
+NodeMCU - stack (for temporaries), heap, and Lua heap. Using the stack
+is the same as for other embedded development, i.e. feel free to put
+small(ish) temporary objects there, but don't expect to get away with
+hundreds of bytes on the stack. Under good circumstances RTOS will detect
+a stack overflow and throw an error, under less good circumstances anything
+can happen.
+
+Heap allocation is through the standard C malloc and friends. Their use
+is best limited to third-party libraries which do not allow for custom
+allocators. Also, if dynamic memory allocation is done in a thread other
+than the main Lua thread, this is the only available option.
+
+The best way to allocate memory in a module however, is to use the luaM
+memory allocation routines. What makes this the best option is that an
+allocation made this way may trigger a garbage collection. Where a regular
+C malloc might have failed due to out of memory, the Lua allocation can
+succeed by virtue of freeing up memory first. The downside of course is
+that this is only possible to do while running in the main Lua thread.
+Note that memory allocated via e.g. `luaM_malloc()` is not subject to
+garbage collection, it behaves just like memory from the C `malloc()`,
+and must be explicitly free'd via `luaM_free()`.
+
+A quick example:
+```
+static int some_func (lua_State *L)
+{
+  char *buf = luaM_malloc (L, 512);
+  int result = calc_using_large_buf (buf, 1, 2, 3);
+  lua_pushinteger (L, result);
+  luaM_free (buf);
+  return 1;
+}
+```
+
+#### Caution
+Do note that `luaM_malloc()` raises a Lua error on allocation failure, and
+will exit the calling function right then and there. This can lead to
+resource leaks if care is not taken, though in most cases a failure
+will result in a Lua panic and require a reboot.
+
+On the upside, there is never a need to test the return value from
+`luaM_malloc()` for NULL, as on failure the function does not return.
 
