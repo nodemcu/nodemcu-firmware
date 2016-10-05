@@ -125,7 +125,6 @@ static void uart0_rx_intr_handler (void *arg)
         char c = UART_GET_RXFIFO_RD_BYTE(CONSOLE_UART);
         if (uart0Q)
          xQueueSendToBackFromISR (uart0Q, &c, NULL);
-uart_tx_one_char (c);
       }
       WRITE_PERI_REG(UART_INT_CLR_REG(CONSOLE_UART),
         UART_RXFIFO_TOUT_INT_ENA | UART_RXFIFO_FULL_INT_ENA);
