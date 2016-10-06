@@ -34,7 +34,7 @@ config LUA_BUILTIN_DEBUG
 
 config LUA_BUILTIN_DEBUG_EXTENDED
 depends on LUA_BUILTIN_DEBUG
-  bool "Extended debug support
+  bool "Extended debug support"
   default "n"
   help
     Includes the full debug module, rather than just getregistry and traceback.
@@ -46,17 +46,13 @@ depends on LUA_BUILTIN_DEBUG
 
 endmenu
 
-config LUA_MODULE_NODE
-  bool "Node module"
-  default "y"
-  help
-      Includes the node module (recommended).
 
-config LUA_MODULE_FILE
-  bool "File module"
-  default "y"
+
+config LUA_MODULE_BTHCI
+  bool "BlueTooth HCI interface module"
+  default "n"
   help
-      Includes the file module (recommended).
+      Includes the simple BlueTooth HCI module.
 
 config LUA_MODULE_ENCODER
   bool "Encoder module"
@@ -65,16 +61,28 @@ config LUA_MODULE_ENCODER
       Includes the encoder module. This provides hex and base64 encoding and
       decoding functionality.
 
+config LUA_MODULE_FILE
+  bool "File module"
+  default "y"
+  help
+      Includes the file module (recommended).
+
+config LUA_MODULE_NET
+  bool "Net module"
+  default "y"
+  help
+      Includes the net module (recommended).
+
+config LUA_MODULE_NODE
+  bool "Node module"
+  default "y"
+  help
+      Includes the node module (recommended).
+
 config LUA_MODULE_WIFI
   bool "WiFi module"
   default "y"
   help
       Includes the WiFi module (recommended).
-
-config LUA_MODULE_BTHCI
-  bool "BlueTooth HCI interface module"
-  default "n"
-  help
-      Includes the simple BlueTooth HCI module.
 
 endmenu
