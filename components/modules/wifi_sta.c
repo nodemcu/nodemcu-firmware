@@ -36,6 +36,7 @@
 #include "lmem.h"
 #include "nodemcu_esp_event.h"
 #include "wifi_common.h"
+#include "ip_fmt.h"
 #include "esp_wifi.h"
 #include <string.h>
 

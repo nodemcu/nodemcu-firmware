@@ -30,35 +30,21 @@
  *
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
-#include "wifi_common.h"
-#include <stdio.h>
-#include "lwip/sockets.h"
+
+#ifndef _IP_FMT_H_
+#define _IP_FMT_H_
+
+#include <stdint.h>
 #include "lwip/ip_addr.h"
-#include "lwip/ip4_addr.h"
 
-void macstr (char *str, const uint8_t *mac)
-{
-  sprintf (str, "%02x:%02x:%02x:%02x:%02x:%02x",
-    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-}
+// String buffer for a formatted MAC/BSSID
+#define MAC_STR_SZ (6*2+5+1)
+void macstr (char *out, const uint8_t *mac);
 
+// String buffer for a formatted IPv4 or IPv6 address
+#define IP_STR_SZ (8*4+7+1)
+void ipstr (char *out, const ip_addr_t *ip);
+void ip4str (char *out, const ip4_addr_t *ip);
+void ip6str (char *out, const ip6_addr_t *ip);
 
-void ipstr (char *out, const ip_addr_t *ip)
-{
-  if (ip->type == IPADDR_TYPE_V4)
-    ip4str (out, &ip->u_addr.ip4);
-  else if (ip->type == IPADDR_TYPE_V6)
-    ip6str (out, &ip->u_addr.ip6);
-}
-
-
-void ip4str (char *out, const ip4_addr_t *ip)
-{
-  ip4addr_ntoa_r (ip, out, IP_STR_SZ);
-}
-
-
-void ip6str (char *out, const ip6_addr_t *ip)
-{
-  ip6addr_ntoa_r (ip, out, IP_STR_SZ);
-}
+#endif
