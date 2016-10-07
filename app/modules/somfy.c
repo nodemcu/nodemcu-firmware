@@ -207,6 +207,7 @@ static int somfy_lua_sendcommand(lua_State* L) { // pin, remote, command, rollin
 
     luaL_argcheck(L, platform_gpio_exists(pin), 1, "Invalid pin");
 
+    luaL_unref(L, LUA_REGISTRYINDEX, lua_done_ref);
     if (!lua_isnoneornil(L, 6)) {
         lua_pushvalue(L, 6);
         lua_done_ref = luaL_ref(L, LUA_REGISTRYINDEX);
