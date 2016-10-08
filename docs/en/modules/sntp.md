@@ -47,3 +47,29 @@ sntp.sync('192.168.0.1',
 ```
 #### See also
 [`rtctime.set()`](rtctime.md#rtctimeset)
+
+## sntp.setoffset
+
+Sets the offset between the rtc clock and the NTP time. Note that NTP time has leap seconds in it and hence it runs slow when a leap second is 
+inserted. The `setoffset` call enables explicit leap second tracking and causes the rtc clock to tick more evenly -- but it gets out of step
+with wall clock time. The number of seconds is the offset.
+
+#### Syntax
+`sntp.setoffset([offset])`
+
+#### Parameters
+- `offset` The offset between NTP time and the rtc time. This can be omitted, and defaults to zero. This call enables the offset tracking.
+
+#### Returns
+nothing.
+
+## sntp.getoffset
+
+Gets the offset between the rtc clock and the NTP time. This value should be subtracted from the rtc time to get the NTP time -- which
+corresponds to wall clock time. If the offset returned has changed from the pervious call, then there has been a leap second inbetween.
+
+#### Syntax
+`offset = sntp.getoffset()`
+
+#### Returns
+The current offset.

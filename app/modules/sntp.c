@@ -101,6 +101,10 @@ typedef struct
 
 static sntp_state_t *state;
 static ip_addr_t server;
+static int8_t the_offset;	// Keep it small
+static uint8_t using_offset;
+static uint8_t pending_LI;
+static int32_t next_midnight;
 
 static void on_timeout (void *arg);
 
@@ -153,7 +157,7 @@ static void sntp_dosend (lua_State *L)
 #ifdef LUA_USE_MODULES_RTCTIME
   struct rtc_timeval tv;
   rtctime_gettimeofday (&tv);
-  req.xmit.sec = htonl (tv.tv_sec);
+  req.xmit.sec = htonl (tv.tv_sec - the_offset);
   req.xmit.frac = htonl (tv.tv_usec);
 #else
   req.xmit.frac = htonl (system_get_time ());
@@ -198,6 +202,39 @@ static void on_timeout (void *arg)
     sntp_dosend (L);
 }
 
+static void update_offset()
+{
+  // This may insert or remove an offset second -- i.e. a leap second
+  // This can only happen if it is at midnight UTC.
+#ifdef LUA_USE_MODULES_RTCTIME
+  struct rtc_timeval tv;
+
+  if (pending_LI && using_offset) {
+    rtctime_gettimeofday (&tv);
+    if (tv.tv_sec - the_offset >= next_midnight) {
+      next_midnight = tv.tv_sec + 86400 - the_offset - (tv.tv_sec - the_offset) % 86400;
+      // is this the first day of the month
+      int day = (tv.tv_sec - the_offset) / 86400 + 1975 * 365 + 1970 / 4 - 74;
+
+      int century = (4 * day + 3) / 146097;
+      day = day - century * 146097 / 4;
+      int year = (4 * day + 3) / 1461;
+      day = day - year * 1461 / 4;
+      int month = (5 * day + 2) / 153;
+      day = day - (153 * month + 2) / 5;
+
+      if (day == 0) {
+	if (pending_LI == 1) {
+	  the_offset ++;
+	} else {
+	  the_offset --;
+	}
+      }
+      pending_LI = 0;
+    }
+  }
+#endif
+}
 
 static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, uint16_t port)
 {
@@ -242,6 +279,12 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   if (ntp.LI == 3)
     return; // server clock not synchronized (why did it even respond?!)
 
+  if (ntp.LI) {
+    pending_LI = ntp.LI;
+  }
+
+  update_offset();
+
   server.addr = addr->addr;
   ntp.origin.sec  = ntohl (ntp.origin.sec);
   ntp.origin.frac = ntohl (ntp.origin.frac);
@@ -263,8 +306,8 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
   rtctime_gettimeofday (&tv);
   ntp_timestamp_t dest;
-  dest.sec = tv.tv_sec;
-  dest.frac = (MICROSECONDS * tv.tv_usec) / UINT32_MAXI;
+  dest.sec = tv.tv_sec - the_offset;
+  dest.frac = (MICROSECONDS * tv.tv_usec) >> 32;
 
   // Compensation as per RFC2030
   int64_t delta_s = (((int64_t)ntp.recv.sec - ntp.origin.sec) +
@@ -286,8 +329,8 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   }
   dest.frac += delta_f;
 
-  tv.tv_sec = dest.sec - NTP_TO_UNIX_EPOCH;
-  tv.tv_usec = (MICROSECONDS * dest.frac) / UINT32_MAXI;
+  tv.tv_sec = dest.sec - NTP_TO_UNIX_EPOCH + the_offset;
+  tv.tv_usec = (MICROSECONDS * dest.frac) >> 32;
   rtctime_settimeofday (&tv);
 
   if (have_cb)
@@ -314,6 +357,26 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   }
 }
 
+static int sntp_setoffset(lua_State *L)
+{
+  the_offset = luaL_checkinteger(L, 1);
+  if (!using_offset) {
+    struct rtc_timeval tv;
+    rtctime_gettimeofday (&tv);
+    next_midnight = tv.tv_sec + 86400 - the_offset - (tv.tv_sec - the_offset) % 86400;
+  }
+  using_offset = 1;
+
+  return 0;
+}
+
+static int sntp_getoffset(lua_State *L)
+{
+  update_offset();
+  lua_pushnumber(L, the_offset);
+
+  return 1;
+}
 
 // sntp.sync (server or nil, syncfn or nil, errfn or nil)
 static int sntp_sync (lua_State *L)
@@ -396,6 +459,10 @@ error:
 // Module function map
 static const LUA_REG_TYPE sntp_map[] = {
   { LSTRKEY("sync"),  LFUNCVAL(sntp_sync)  },
+#ifdef LUA_USE_MODULES_RTCTIME
+  { LSTRKEY("setoffset"),  LFUNCVAL(sntp_setoffset)  },
+  { LSTRKEY("getoffset"),  LFUNCVAL(sntp_getoffset)  },
+#endif
   { LNILKEY, LNILVAL }
 };
 
