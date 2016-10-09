@@ -357,6 +357,7 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   }
 }
 
+#ifdef LUA_USE_MODULES_RTCTIME
 static int sntp_setoffset(lua_State *L)
 {
   the_offset = luaL_checkinteger(L, 1);
@@ -377,6 +378,7 @@ static int sntp_getoffset(lua_State *L)
 
   return 1;
 }
+#endif
 
 // sntp.sync (server or nil, syncfn or nil, errfn or nil)
 static int sntp_sync (lua_State *L)
