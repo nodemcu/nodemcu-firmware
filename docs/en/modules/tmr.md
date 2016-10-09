@@ -13,7 +13,7 @@ NodeMCU provides 7 static timers, numbered 0-6, and dynamic timer creation funct
 
 !!! attention
 
-    Static timers are deprecated and will be removed later.
+    Static timers are deprecated and will be removed at the end of 2016.
 
 ## tmr.alarm()
 
