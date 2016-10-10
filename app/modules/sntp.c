@@ -58,6 +58,8 @@
 # define sntp_dbg(...)
 #endif
 
+#define US_TO_FRAC(us)		((((uint64_t) (us)) << 32) / 1000000ul)
+
 typedef enum {
   NTP_NO_ERR = 0,
   NTP_DNS_ERR,
@@ -155,10 +157,11 @@ static void sntp_dosend (lua_State *L)
   req.ver = 4;
   req.mode = 3; // client
 #ifdef LUA_USE_MODULES_RTCTIME
+  const uint32_t NTP_TO_UNIX_EPOCH = 2208988800ul;
   struct rtc_timeval tv;
   rtctime_gettimeofday (&tv);
-  req.xmit.sec = htonl (tv.tv_sec - the_offset);
-  req.xmit.frac = htonl (tv.tv_usec);
+  req.xmit.sec = htonl (tv.tv_sec - the_offset + NTP_TO_UNIX_EPOCH);
+  req.xmit.frac = htonl (US_TO_FRAC(tv.tv_usec));
 #else
   req.xmit.frac = htonl (system_get_time ());
 #endif
@@ -239,6 +242,12 @@ static void update_offset()
 static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, uint16_t port)
 {
   (void)port;
+#ifdef LUA_USE_MODULES_RTCTIME
+  // Ideally this would be done when we receive the packet....
+  struct rtc_timeval tv;
+
+  rtctime_gettimeofday (&tv);
+#endif
   sntp_dbg("sntp: on_recv\n");
 
   lua_State *L = lua_getstate();
@@ -293,7 +302,6 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   ntp.xmit.sec  = ntohl (ntp.xmit.sec);
   ntp.xmit.frac = ntohl (ntp.xmit.frac);
 
-  const uint32_t UINT32_MAXI = (uint32_t)-1;
   const uint64_t MICROSECONDS = 1000000ull;
   const uint32_t NTP_TO_UNIX_EPOCH = 2208988800ul;
 
@@ -302,35 +310,29 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   // if we have rtctime, do higher resolution delta calc, else just use
   // the transmit timestamp
 #ifdef LUA_USE_MODULES_RTCTIME
-  struct rtc_timeval tv;
-
-  rtctime_gettimeofday (&tv);
   ntp_timestamp_t dest;
-  dest.sec = tv.tv_sec - the_offset;
-  dest.frac = (MICROSECONDS * tv.tv_usec) >> 32;
+  dest.sec = tv.tv_sec + NTP_TO_UNIX_EPOCH - the_offset;
+  dest.frac = US_TO_FRAC(tv.tv_usec);
+
+  uint64_t ntp_recv = (((uint64_t) ntp.recv.sec) << 32) + (uint64_t) ntp.recv.frac;
+  uint64_t ntp_origin = (((uint64_t) ntp.origin.sec) << 32) + (uint64_t) ntp.origin.frac;
+  uint64_t ntp_xmit = (((uint64_t) ntp.xmit.sec) << 32) + (uint64_t) ntp.xmit.frac;
+  uint64_t ntp_dest = (((uint64_t) dest.sec) << 32) + (uint64_t) dest.frac;
 
   // Compensation as per RFC2030
-  int64_t delta_s = (((int64_t)ntp.recv.sec - ntp.origin.sec) +
-                     ((int64_t)ntp.xmit.sec - dest.sec)) / 2;
+  int64_t delta = (int64_t) (ntp_recv - ntp_origin) / 2 + (int64_t) (ntp_xmit - ntp_dest) / 2;
 
-  int64_t delta_f = (((int64_t)ntp.recv.frac - ntp.origin.frac) +
-                     ((int64_t)ntp.xmit.frac - dest.frac)) / 2;
-
-  dest.sec += delta_s;
-  if (delta_f + dest.frac < 0)
-  {
-    delta_f += UINT32_MAXI;
-    --dest.sec;
+  rtctime_gettimeofday (&tv);
+  tv.tv_sec += (int)(delta >> 32);
+  tv.tv_usec += (MICROSECONDS * (delta & 0xffffffff)) >> 32;
+  int32_t usec = tv.tv_usec;
+  if (usec >= 1000000) {
+    tv.tv_usec -= 1000000;
+    tv.tv_sec++;
+  } else if (usec < 0) {
+    tv.tv_usec += 1000000;
+    tv.tv_sec--;
   }
-  else if (delta_f + dest.frac > UINT32_MAXI)
-  {
-    delta_f -= UINT32_MAXI;
-    ++dest.sec;
-  }
-  dest.frac += delta_f;
-
-  tv.tv_sec = dest.sec - NTP_TO_UNIX_EPOCH + the_offset;
-  tv.tv_usec = (MICROSECONDS * dest.frac) >> 32;
   rtctime_settimeofday (&tv);
 
   if (have_cb)
@@ -338,13 +340,37 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
     lua_pushnumber (L, tv.tv_sec);
     lua_pushnumber (L, tv.tv_usec);
+    lua_pushstring (L, ipaddr_ntoa (&server));
+    lua_newtable(L);
+    int d40 = delta >> 40;
+    if (d40 != 0 && d40 != -1) {
+      lua_pushnumber(L, delta >> 32);
+      lua_setfield(L, -2, "offset_s");
+    } else {
+      lua_pushnumber(L, (delta * MICROSECONDS) >> 32);
+      lua_setfield(L, -2, "offset_us");
+    }
+    lua_pushnumber(L, ((int64_t)(ntp_dest - ntp_origin) * MICROSECONDS) >> 32);
+    lua_setfield(L, -2, "delay_us");
+    lua_pushnumber(L, ntp.stratum);
+    lua_setfield(L, -2, "stratum");
+    lua_pushnumber(L, ntp.LI);
+    lua_setfield(L, -2, "leap");
   }
 #else
   if (have_cb)
   {
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
     lua_pushnumber (L, ntp.xmit.sec - NTP_TO_UNIX_EPOCH);
-    lua_pushnumber (L, (MICROSECONDS * ntp.xmit.frac) / UINT32_MAXI);
+    lua_pushnumber (L, (MICROSECONDS * ntp.xmit.frac) >> 32);
+    lua_pushstring (L, ipaddr_ntoa (&server));
+    lua_newtable(L);
+    lua_pushnumber(L, system_get_time() - ntp.origin.frac);
+    lua_setfield(L, -2, "delay_us");
+    lua_pushnumber(L, ntp.stratum);
+    lua_setfield(L, -2, "stratum");
+    lua_pushnumber(L, ntp.LI);
+    lua_setfield(L, -2, "leap");
   }
 #endif
 
@@ -352,8 +378,7 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
   if (have_cb)
   {
-    lua_pushstring (L, ipaddr_ntoa (&server));
-    lua_call (L, 3, 0);
+    lua_call (L, 4, 0);
   }
 }
 
