@@ -24,7 +24,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+DEFINES += -DESP_INIT_DATA_DEFAULT="\"$(SDK_DIR)/bin/esp_init_data_default.bin\""
 
 #############################################################
 # Recursion Magic - Don't touch this!!
