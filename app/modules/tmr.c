@@ -151,6 +151,7 @@ static timer_t tmr_get( lua_State *L, int stack ) {
 	if (lua_isuserdata(L, stack)) {
 		return (timer_t)luaL_checkudata(L, stack, "tmr.timer");
 	} else {
+		platform_print_deprecation_note("Use the dynamic timer API rather than the static one.", "end of 2016");
 		uint32_t id = luaL_checkinteger(L, 1);
 		luaL_argcheck(L, platform_tmr_exists(id), 1, "invalid timer index");
 		return &alarm_timers[id];
