@@ -2,6 +2,8 @@
 #include "platform.h"
 #include "spiffs.h"
 
+#include "spiffs_nucleus.h"
+
 spiffs fs;
 
 #define LOG_PAGE_SIZE       	256
@@ -10,9 +12,9 @@ spiffs fs;
 #define MIN_BLOCKS_FS		4
   
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
-static u8_t spiffs_fds[32*4];
+static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
 #if SPIFFS_CACHE
-static u8_t spiffs_cache[(LOG_PAGE_SIZE+32)*2];
+static u8_t myspiffs_cache[(LOG_PAGE_SIZE+32)*2];
 #endif
 
 static s32_t my_spiffs_read(u32_t addr, u32_t size, u8_t *dst) {
@@ -168,8 +170,8 @@ static bool myspiffs_mount_internal(bool force_mount) {
     spiffs_fds,
     sizeof(spiffs_fds),
 #if SPIFFS_CACHE
-    spiffs_cache,
-    sizeof(spiffs_cache),
+    myspiffs_cache,
+    sizeof(myspiffs_cache),
 #else
     0, 0,
 #endif

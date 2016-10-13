@@ -7,8 +7,6 @@ The file module provides access to the file system and its individual files.
 
 The file system is a flat file system, with no notion of subdirectories/folders.
 
-Only one file can be open at any given time.
-
 Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card is [FatFS is enabled](../sdcard.md).
 
 ```lua
@@ -331,9 +329,13 @@ if src then
 end
 ```
 
-+!!! Attention
-+
-+    It is recommended to use only one single model within the application. Concurrent use of both models within can yield unpredictable behavior: Closing the default file from basic model will also close the correspoding file object. Closing a file from object model will also close the default file if they are the same file.
+!!! Attention
+
+    It is recommended to use only one single model within the application. Concurrent use of both models can yield unpredictable behavior: Closing the default file from basic model will also close the correspoding file object. Closing a file from object model will also close the default file if they are the same file.
+
+!!! Note
+
+    The maximum number of open files on SPIFFS is determined at compile time by `SPIFFS_MAX_OPEN_FILES` in `user_config.h`.
 
 ## file.close()
 ## file.obj:close()
