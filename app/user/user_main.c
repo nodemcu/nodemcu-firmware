@@ -177,7 +177,7 @@ void user_rf_pre_init(void)
 uint32
 user_rf_cal_sector_set(void)
 {
-    enum flash_size_map size_map = system_get_flash_size_map();
+    enum ext_flash_size_map size_map = system_get_flash_size_map();
     uint32 rf_cal_sec = 0;
 
     switch (size_map) {
@@ -196,7 +196,16 @@ user_rf_cal_sector_set(void)
 
         case FLASH_SIZE_32M_MAP_512_512:
         case FLASH_SIZE_32M_MAP_1024_1024:
+        case FLASH_SIZE_32M_MAP_2048_2048:
             rf_cal_sec = 1024 - 5;
+            break;
+
+        case FLASH_SIZE_64M_MAP:
+            rf_cal_sec = 2048 - 5;
+            break;
+
+        case FLASH_SIZE_128M_MAP:
+            rf_cal_sec = 4096 - 5;
             break;
 
         default:
