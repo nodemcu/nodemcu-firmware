@@ -30,6 +30,7 @@
 #endif
 
 static task_handle_t input_sig;
+static uint8 input_sig_flag = 0;
 
 /* Contents of esp_init_data_default.bin */
 extern const uint32_t init_data[];
@@ -100,7 +101,10 @@ static void start_lua(task_param_t param, uint8 priority) {
 
 static void handle_input(task_param_t flag, uint8 priority) {
   (void)priority;
-  lua_handle_input (flag);
+  if (flag & 0x8000) {
+    input_sig_flag = flag & 0x4000 ? 1 : 0;
+  }
+  lua_handle_input (flag & 0x01);
 }
 
 bool user_process_input(bool force) {
@@ -231,7 +235,7 @@ void user_init(void)
     UartBautRate br = BIT_RATE_DEFAULT;
 
     input_sig = task_get_id(handle_input);
-    uart_init (br, br, input_sig);
+    uart_init (br, br, input_sig, &input_sig_flag);
 
 #ifndef NODE_DEBUG
     system_set_os_print(0);
