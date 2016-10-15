@@ -75,12 +75,13 @@ The function works in two modes:
 * synchronous - for sub-50 µs resolution, restricted to max. overall duration,
 * asynchrounous - synchronous operation with less granularity but virtually unrestricted duration.
 
-Whether the asynchronous mode is chosen is defined by presence of the `callback` parameter. If present and is of function type the function goes asynchronous the callback function is invoked when sequence finishes. If the parameter is numeric the function still goes asynchronous but no callback is invoked when done.
+Whether the asynchronous mode is chosen is defined by presence of the `callback` parameter. If present and is of function type the function goes asynchronous and the callback function is invoked when sequence finishes. If the parameter is numeric the function still goes asynchronous but no callback is invoked when done.
 
-For asynchronous version minimum delay time should not be shorter than 50 μs and maximum delay time is 0x7fffff μs (~8.3 seconds).
-In this mode the function does not block the stack and returns immediately before the output sequence is finalized. HW timer inf `FRC1_SOURCE` mode is used to change the states.
+For the asynchronous version, the minimum delay time should not be shorter than 50 μs and maximum delay time is 0x7fffff μs (~8.3 seconds).
+In this mode the function does not block the stack and returns immediately before the output sequence is finalized. HW timer `FRC1_SOURCE` mode is used to change the states. As there is only a single hardware timer, there
+are restrictions on which modules can be used at the same time. An error will be raised if the timer is already in use.
 
-Note that the synchronous variant (no or nil `callback` parameter) function blocks the stach and as such any use of it must adhere to the SDK guidelines (also explained [here](https://nodemcu.readthedocs.io/en/dev/en/extn-developer-faq/#extension-developer-faq)). Failure to do so may lead to WiFi issues or outright to crashes/reboots. Shortly it means that sum of all delay times multiplied by the number of cycles should not exceed 15 ms.
+Note that the synchronous variant (no or nil `callback` parameter) function blocks the stack and as such any use of it must adhere to the SDK guidelines (also explained [here](../extn-developer-faq/#extension-developer-faq)). Failure to do so may lead to WiFi issues or outright to crashes/reboots. In short it means that the sum of all delay times multiplied by the number of cycles should not exceed 15 ms.
 
 #### Syntax
 `gpio.serout(pin, start_level, delay_times [, cycle_num[, callback]])`
