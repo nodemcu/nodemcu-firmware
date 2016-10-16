@@ -2,11 +2,16 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lmem.h"
 #include "platform.h"
 
 #include "c_types.h"
 #include "vfs.h"
 #include "c_string.h"
+
+#include <alloca.h>
+
+#define FILE_READ_CHUNK 1024
 
 static int file_fd = 0;
 static int rtc_cb_ref = LUA_NOREF;
@@ -255,18 +260,25 @@ static int file_rename( lua_State* L )
 // g_read()
 static int file_g_read( lua_State* L, int n, int16_t end_char )
 {
-  if(n <= 0 || n > LUAL_BUFFERSIZE)
-    n = LUAL_BUFFERSIZE;
+  if(n <= 0)
+    n = FILE_READ_CHUNK;
   if(end_char < 0 || end_char >255)
     end_char = EOF;
-  
-  luaL_Buffer b;
+
   if(!file_fd)
     return luaL_error(L, "open a file first");
 
-  luaL_buffinit(L, &b);
-  char *p = luaL_prepbuffer(&b);
+  char *p;
+  char *heap_mem = NULL;
   int i;
+
+  if (n > LUAL_BUFFERSIZE) {
+    // get buffer from heap
+    p = heap_mem = luaM_malloc(L, n);
+  } else {
+    // small chunks go onto the stack
+    p = alloca(n);
+  }
 
   n = vfs_read(file_fd, p, n);
   for (i = 0; i < n; ++i)
@@ -276,15 +288,17 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
       break;
     }
 
-  if(i==0){
-    luaL_pushresult(&b);  /* close buffer */
-    return (lua_objlen(L, -1) > 0);  /* check whether read something */
+  if (i == 0) {
+    if (heap_mem)
+      luaM_free(L, heap_mem);
+    return 0;
   }
 
   vfs_lseek(file_fd, -(n - i), VFS_SEEK_CUR);
-  luaL_addsize(&b, i);
-  luaL_pushresult(&b);  /* close buffer */
-  return 1;  /* read at least an `eol' */ 
+  lua_pushlstring(L, p, i);
+  if (heap_mem)
+    luaM_free(L, heap_mem);
+  return 1;
 }
 
 // Lua: read()
@@ -293,15 +307,12 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
 // file.read('q') will read until 'q' or EOF is reached. 
 static int file_read( lua_State* L )
 {
-  unsigned need_len = LUAL_BUFFERSIZE;
+  unsigned need_len = FILE_READ_CHUNK;
   int16_t end_char = EOF;
   size_t el;
   if( lua_type( L, 1 ) == LUA_TNUMBER )
   {
     need_len = ( unsigned )luaL_checkinteger( L, 1 );
-    if( need_len > LUAL_BUFFERSIZE ){
-      need_len = LUAL_BUFFERSIZE;
-    }
   }
   else if(lua_isstring(L, 1))
   {
@@ -318,7 +329,7 @@ static int file_read( lua_State* L )
 // Lua: readline()
 static int file_readline( lua_State* L )
 {
-  return file_g_read(L, LUAL_BUFFERSIZE, '\n');
+  return file_g_read(L, FILE_READ_CHUNK, '\n');
 }
 
 // Lua: write("string")
