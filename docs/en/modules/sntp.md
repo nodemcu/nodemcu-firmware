@@ -13,12 +13,15 @@ When compiled together with the [rtctime](rtctime.md) module it also offers seam
 Attempts to obtain time synchronization. 
 
 For best results you may want to to call this periodically in order to compensate for internal clock drift. As stated in the [rtctime](rtctime.md) module documentation it's advisable to sync time after deep sleep and it's necessary to sync after module reset (add it to [`init.lua`](upload.md#initlua) after WiFi initialization).
+Note that either a single server can be provided as an argument (name or address), or a list (table) of servers can be provided. 
 
 #### Syntax
 `sntp.sync([server_ip], [callback], [errcallback])`
+`sntp.sync({ server1, server2, .. }, [callback], [errcallback])`
 
 #### Parameters
 - `server_ip` if non-`nil`, that server is used. If `nil`, then the last contacted server is used. This ties in with the NTP anycast mode, where the first responding server is remembered for future synchronization requests. The easiest way to use anycast is to always pass nil for the server argument.
+- `server1`, `server2` these are either the ip address or dns name of one or more servers to try.
 - `callback` if provided it will be invoked on a successful synchronization, with four parameters: seconds, microseconds, server and info. Note that when the [rtctime](rtctime.md) module is available, there is no need to explicitly call [`rtctime.set()`](rtctime.md#rtctimeset) - this module takes care of doing so internally automatically, for best accuracy. The info parameter is a table of (semi) interesting values. These are described below.
 - `errcallback` failure callback with a single integer parameter describing the type of error. The module automatically performs a number of retries before giving up and reporting the error. Error codes:
   - 1: DNS lookup failed
@@ -40,12 +43,12 @@ This is passed to the success callback and contains useful information about the
 
 #### Example
 ```lua
--- Best effort, use the last known NTP server (or the NTP "anycast" address 224.0.1.1 initially)
+-- Best effort, use the last known NTP server(s) (or the NTP "anycast" address 224.0.1.1 initially)
 sntp.sync()
 ```
 ```lua
--- Sync time with 192.168.0.1 and print the result, or that it failed
-sntp.sync('192.168.0.1',
+-- Sync time with some servers from the NTP pool and print the result, or that it failed
+sntp.sync({ '1.pool.ntp.org', '2.pool.ntp.org', '3.pool.ntp.org' },
   function(sec, usec, server, info)
     print('sync', sec, usec, server)
   end,
