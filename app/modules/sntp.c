@@ -47,6 +47,8 @@
 #include "rtc/rtctime.h"
 #endif
 
+#define max(a,b) ((a < b) ? b : a)
+
 #define NTP_PORT 123
 #define NTP_ANYCAST_ADDR(dst)  IP4_ADDR(dst, 224, 0, 1, 1)
 
@@ -98,17 +100,32 @@ typedef struct
   os_timer_t timer;
   int sync_cb_ref;
   int err_cb_ref;
-  uint8_t attempts;
+  uint8_t attempts;    // Number of repeats of each entry
+  uint8_t server_index;   // index into server table
+  uint8_t lookup_pos;
+  int server_pos;
+  int list_ref;
+  struct {
+    int delay_us;
+    uint8_t LI;
+    uint8_t stratum;
+    int when;
+    int64_t delta;
+    ip_addr_t server;
+  } best;
 } sntp_state_t;
 
+
 static sntp_state_t *state;
-static ip_addr_t server;
-static int8_t the_offset;	// Keep it small
+static ip_addr_t *serverp;
+static uint8_t server_count;
 static uint8_t using_offset;
+static uint8_t the_offset;
 static uint8_t pending_LI;
 static int32_t next_midnight;
 
-static void on_timeout (void *arg);
+static void on_timeout(void *arg);
+static void sntp_dolookups(lua_State *L);
 
 static void cleanup (lua_State *L)
 {
@@ -116,10 +133,24 @@ static void cleanup (lua_State *L)
   udp_remove (state->pcb);
   luaL_unref (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
   luaL_unref (L, LUA_REGISTRYINDEX, state->err_cb_ref);
+  luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
   os_free (state);
   state = 0;
 }
 
+static ip_addr_t* get_free_server() {
+  ip_addr_t* temp = (ip_addr_t *) c_malloc((server_count + 1) * sizeof(ip_addr_t));
+
+  if (server_count > 0) {
+    memcpy(temp, serverp, server_count * sizeof(ip_addr_t));
+  }
+  if (serverp) {
+    c_free(serverp);
+  }
+  serverp = temp;
+
+  return serverp + server_count;
+}
 
 static void handle_error (lua_State *L, ntp_err_t err)
 {
@@ -135,18 +166,113 @@ static void handle_error (lua_State *L, ntp_err_t err)
     cleanup (L);
 }
 
+static void sntp_handle_result(lua_State *L) {
+  const uint32_t MICROSECONDS = 1000000;
+
+  if (state->best.stratum == 0) {
+    handle_error(L, NTP_TIMEOUT_ERR);
+    return;
+  }
+
+  bool have_cb = (state->sync_cb_ref != LUA_NOREF);
+
+  // if we have rtctime, do higher resolution delta calc, else just use
+  // the transmit timestamp
+#ifdef LUA_USE_MODULES_RTCTIME
+  struct rtc_timeval tv;
+  rtctime_gettimeofday (&tv);
+  int adjust_us = 0;
+  if (tv.tv_sec == 0) {
+    adjust_us = system_get_time() - state->best.when;
+  }
+  tv.tv_sec += (int)(state->best.delta >> 32);
+  tv.tv_usec += (int) ((MICROSECONDS * (state->best.delta & 0xffffffff)) >> 32) + adjust_us;
+  while (tv.tv_usec >= 1000000) {
+    tv.tv_usec -= 1000000;
+    tv.tv_sec++;
+  }
+  rtctime_settimeofday (&tv);
+
+  if (have_cb)
+  {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->sync_cb_ref);
+    lua_pushnumber(L, tv.tv_sec);
+    lua_pushnumber(L, tv.tv_usec);
+    lua_pushstring(L, ipaddr_ntoa (&state->best.server));
+    lua_newtable(L);
+    int d40 = state->best.delta >> 40;
+    if (d40 != 0 && d40 != -1) {
+      lua_pushnumber(L, state->best.delta >> 32);
+      lua_setfield(L, -2, "offset_s");
+    } else {
+      lua_pushnumber(L, (state->best.delta * MICROSECONDS) >> 32);
+      lua_setfield(L, -2, "offset_us");
+    }
+    if (state->best.delay_us > 0) {
+      lua_pushnumber(L, state->best.delay_us);
+      lua_setfield(L, -2, "delay_us");
+    }
+    lua_pushnumber(L, state->best.stratum);
+    lua_setfield(L, -2, "stratum");
+    lua_pushnumber(L, state->best.LI);
+    lua_setfield(L, -2, "leap");
+  }
+#else
+  if (have_cb)
+  {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->sync_cb_ref);
+    int adjust_us = system_get_time() - state->best.when;
+    int tv_sec = state->best.delta >> 32;
+    int tv_usec = (int) (((state->best.delta & 0xffffffff) * MICROSECONDS) >> 32) + adjust_us;
+    while (tv_usec >= 1000000) {
+      tv_usec -= 1000000;
+      tv_sec++;
+    }
+    lua_pushnumber(L, tv_sec);
+    lua_pushnumber(L, tv_usec);
+    lua_pushstring(L, ipaddr_ntoa (&state->best.server));
+    lua_newtable(L);
+    if (state->best.delay_us > 0) {
+      lua_pushnumber(L, state->best.delay_us);
+      lua_setfield(L, -2, "delay_us");
+    }
+    lua_pushnumber(L, state->best.stratum);
+    lua_setfield(L, -2, "stratum");
+    lua_pushnumber(L, state->best.LI);
+    lua_setfield(L, -2, "leap");
+  }
+#endif
+
+  cleanup (L);
+
+  if (have_cb)
+  {
+    lua_call (L, 4, 0);
+  }
+}
+
 
 static void sntp_dosend (lua_State *L)
 {
-  if (state->attempts == 0)
-  {
-    os_timer_disarm (&state->timer);
-    os_timer_setfn (&state->timer, on_timeout, NULL);
-    os_timer_arm (&state->timer, 1000, 1);
+  if (state->server_pos < 0) {
+    os_timer_disarm(&state->timer);
+    os_timer_setfn(&state->timer, on_timeout, NULL);
+    state->server_pos = 0;
+  } else {
+    ++state->server_pos;
   }
 
-  ++state->attempts;
-  sntp_dbg("sntp: attempt %d\n", state->attempts);
+  if (state->server_pos >= server_count) {
+    state->server_pos = 0;
+    ++state->attempts;
+  }
+
+  if (state->attempts >= MAX_ATTEMPTS || state->attempts * server_count > 10) {
+    sntp_handle_result(L);
+    return;
+  }
+
+  sntp_dbg("sntp: server %s (%d), attempt %d\n", ipaddr_ntoa(serverp + state->server_pos), state->server_pos, state->attempts);
 
   struct pbuf *p = pbuf_alloc (PBUF_TRANSPORT, sizeof (ntp_frame_t), PBUF_RAM);
   if (!p)
@@ -168,11 +294,13 @@ static void sntp_dosend (lua_State *L)
   state->cookie = req.xmit;
 
   os_memcpy (p->payload, &req, sizeof (req));
-  int ret = udp_sendto (state->pcb, p, &server, NTP_PORT);
+  int ret = udp_sendto (state->pcb, p, serverp + state->server_pos, NTP_PORT);
   sntp_dbg("sntp: send: %d\n", ret);
   pbuf_free (p);
   if (ret != ERR_OK)
     handle_error (L, NTP_SEND_ERR);
+
+  os_timer_arm (&state->timer, 1000, 0);
 }
 
 
@@ -188,8 +316,9 @@ static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   }
   else
   {
-    server = *ipaddr;
-    sntp_dosend(L);
+    serverp[server_count] = *ipaddr;
+    server_count++;
+    sntp_dolookups(L);
   }
 }
 
@@ -199,10 +328,7 @@ static void on_timeout (void *arg)
   (void)arg;
   sntp_dbg("sntp: timer\n");
   lua_State *L = lua_getstate ();
-  if (state->attempts >= MAX_ATTEMPTS)
-    handle_error (L, NTP_TIMEOUT_ERR);
-  else
-    sntp_dosend (L);
+  sntp_dosend (L);
 }
 
 static void update_offset()
@@ -237,6 +363,22 @@ static void update_offset()
     }
   }
 #endif
+}
+
+static void record_result(ip_addr_t *addr, int64_t delta, int stratum, int LI, int delay_us) {
+  sntp_dbg("Recording %s: delta=%08x.%08x, stratum=%d, li=%d, delay=%dus", 
+      ipaddr_ntoa(addr), (uint32_t) (delta >> 32), (uint32_t) (delta & 0xffffffff), stratum, LI, delay_us);
+  if (!state->best.stratum || stratum * max(delay_us, 1000) < state->best.stratum * max(state->best.delay_us, 1000)) {
+    sntp_dbg("   --BEST\n");
+    state->best.server = *addr;
+    state->best.delay_us = delay_us;
+    state->best.delta = delta;
+    state->best.stratum = stratum;
+    state->best.LI = LI;
+    state->best.when = system_get_time();
+  } else {
+    sntp_dbg("\n");
+  }
 }
 
 static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, uint16_t port)
@@ -278,7 +420,7 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   // sanity checks before we touch our clocks
   ip_addr_t anycast;
   NTP_ANYCAST_ADDR(&anycast);
-  if (server.addr != anycast.addr && server.addr != addr->addr)
+  if (serverp[state->server_pos].addr != anycast.addr && serverp[state->server_pos].addr != addr->addr)
     return; // unknown sender, ignore
 
   if (ntp.origin.sec  != state->cookie.sec ||
@@ -288,13 +430,14 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   if (ntp.LI == 3)
     return; // server clock not synchronized (why did it even respond?!)
 
+  os_timer_disarm(&state->timer);
+
   if (ntp.LI) {
     pending_LI = ntp.LI;
   }
 
   update_offset();
 
-  server.addr = addr->addr;
   ntp.origin.sec  = ntohl (ntp.origin.sec);
   ntp.origin.frac = ntohl (ntp.origin.frac);
   ntp.recv.sec  = ntohl (ntp.recv.sec);
@@ -304,8 +447,6 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 
   const uint64_t MICROSECONDS = 1000000ull;
   const uint32_t NTP_TO_UNIX_EPOCH = 2208988800ul;
-
-  bool have_cb = (state->sync_cb_ref != LUA_NOREF);
 
   // if we have rtctime, do higher resolution delta calc, else just use
   // the transmit timestamp
@@ -322,64 +463,14 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   // Compensation as per RFC2030
   int64_t delta = (int64_t) (ntp_recv - ntp_origin) / 2 + (int64_t) (ntp_xmit - ntp_dest) / 2;
 
-  rtctime_gettimeofday (&tv);
-  tv.tv_sec += (int)(delta >> 32);
-  tv.tv_usec += (MICROSECONDS * (delta & 0xffffffff)) >> 32;
-  int32_t usec = tv.tv_usec;
-  if (usec >= 1000000) {
-    tv.tv_usec -= 1000000;
-    tv.tv_sec++;
-  } else if (usec < 0) {
-    tv.tv_usec += 1000000;
-    tv.tv_sec--;
-  }
-  rtctime_settimeofday (&tv);
+  record_result(addr, delta, ntp.stratum, ntp.LI, ((int64_t)(ntp_dest - ntp_origin - (ntp_xmit - ntp_recv)) * MICROSECONDS) >> 32);
 
-  if (have_cb)
-  {
-    lua_rawgeti (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
-    lua_pushnumber (L, tv.tv_sec);
-    lua_pushnumber (L, tv.tv_usec);
-    lua_pushstring (L, ipaddr_ntoa (&server));
-    lua_newtable(L);
-    int d40 = delta >> 40;
-    if (d40 != 0 && d40 != -1) {
-      lua_pushnumber(L, delta >> 32);
-      lua_setfield(L, -2, "offset_s");
-    } else {
-      lua_pushnumber(L, (delta * MICROSECONDS) >> 32);
-      lua_setfield(L, -2, "offset_us");
-    }
-    lua_pushnumber(L, ((int64_t)(ntp_dest - ntp_origin) * MICROSECONDS) >> 32);
-    lua_setfield(L, -2, "delay_us");
-    lua_pushnumber(L, ntp.stratum);
-    lua_setfield(L, -2, "stratum");
-    lua_pushnumber(L, ntp.LI);
-    lua_setfield(L, -2, "leap");
-  }
 #else
-  if (have_cb)
-  {
-    lua_rawgeti (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
-    lua_pushnumber (L, ntp.xmit.sec - NTP_TO_UNIX_EPOCH);
-    lua_pushnumber (L, (MICROSECONDS * ntp.xmit.frac) >> 32);
-    lua_pushstring (L, ipaddr_ntoa (&server));
-    lua_newtable(L);
-    lua_pushnumber(L, system_get_time() - ntp.origin.frac);
-    lua_setfield(L, -2, "delay_us");
-    lua_pushnumber(L, ntp.stratum);
-    lua_setfield(L, -2, "stratum");
-    lua_pushnumber(L, ntp.LI);
-    lua_setfield(L, -2, "leap");
-  }
+  uint64_t ntp_xmit = (((uint64_t) ntp.xmit.sec - NTP_TO_UNIX_EPOCH) << 32) + (uint64_t) ntp.xmit.frac;
+  record_result(addr, ntp_xmit, ntp.stratum, ntp.LI, system_get_time() - ntp.origin.frac);
 #endif
 
-  cleanup (L);
-
-  if (have_cb)
-  {
-    lua_call (L, 4, 0);
-  }
+  sntp_dosend(L);
 }
 
 #ifdef LUA_USE_MODULES_RTCTIME
@@ -405,15 +496,58 @@ static int sntp_getoffset(lua_State *L)
 }
 #endif
 
+static void sntp_dolookups (lua_State *L) {
+  // Step through each element of the table, converting it to an address
+  // at the end, start the lookups
+  //
+  if (state->list_ref == LUA_NOREF) {
+    sntp_dosend(L);
+  }
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, state->list_ref);
+  while (1) {
+    if (lua_objlen(L, -1) <= state->lookup_pos) {
+      // We reached the end
+      sntp_dosend(L);
+      break;
+    }
+
+    state->lookup_pos++;
+
+    lua_rawgeti(L, -1, state->lookup_pos);
+
+    int l;
+
+    const char *hostname = luaL_checklstring(L, -1, &l);
+    lua_pop(L, 1);
+
+    if (l>128 || hostname == NULL) {
+      handle_error(L, NTP_DNS_ERR);
+      break;
+    }
+    err_t err = dns_gethostbyname(hostname, get_free_server(), sntp_dns_found, state);
+    if (err == ERR_INPROGRESS)
+      break;  // Callback function sntp_dns_found will handle sntp_dosend for us
+    else if (err == ERR_ARG) {
+      handle_error(L, NTP_DNS_ERR);
+      break;
+    }
+    server_count++;
+  }
+  lua_pop(L, 1);
+}
+
 // sntp.sync (server or nil, syncfn or nil, errfn or nil)
 static int sntp_sync (lua_State *L)
 {
   // default to anycast address, then allow last server to stick
-  if (server.addr == IPADDR_ANY)
-    NTP_ANYCAST_ADDR(&server);
+  if (server_count == 0) {
+    NTP_ANYCAST_ADDR(get_free_server());
+    server_count++;
+  }
 
   const char *errmsg = 0;
-  #define sync_err(x) do { errmsg = x; goto error; } while (0)
+#define sync_err(x) do { errmsg = x; goto error; } while (0)
 
   if (state)
     return luaL_error (L, "sync in progress");
@@ -426,6 +560,7 @@ static int sntp_sync (lua_State *L)
 
   state->sync_cb_ref = LUA_NOREF;
   state->err_cb_ref = LUA_NOREF;
+  state->list_ref = LUA_NOREF;
 
   state->pcb = udp_new ();
   if (!state->pcb)
@@ -452,20 +587,31 @@ static int sntp_sync (lua_State *L)
   else
     state->err_cb_ref = LUA_NOREF;
 
-  state->attempts = 0;
+  state->server_pos = -1;
 
   // use last server, unless new one specified
   if (!lua_isnoneornil (L, 1))
   {
-    size_t l;
-    const char *hostname = luaL_checklstring(L, 1, &l);
-    if (l>128 || hostname == NULL)
-      sync_err("need <128 hostname");
-    err_t err = dns_gethostbyname(hostname, &server, sntp_dns_found, state);
-    if (err == ERR_INPROGRESS)
-      return 0;  // Callback function sntp_dns_found will handle sntp_dosend for us
-    else if (err == ERR_ARG)
-      sync_err("bad hostname");
+    server_count = 0;
+    if (lua_istable(L, 1)) {
+      // Save a reference to the table
+      lua_pushvalue(L, 1);
+      state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      sntp_dolookups(L);
+      return 0;
+    } else {
+      size_t l;
+      const char *hostname = luaL_checklstring(L, 1, &l);
+      if (l>128 || hostname == NULL)
+	sync_err("need <128 hostname");
+      err_t err = dns_gethostbyname(hostname, get_free_server(), sntp_dns_found, state);
+      if (err == ERR_INPROGRESS)
+	return 0;  // Callback function sntp_dns_found will handle sntp_dosend for us
+      else if (err == ERR_ARG)
+	sync_err("bad hostname");
+
+      server_count++;
+    }
   }
 
   sntp_dosend (L);
