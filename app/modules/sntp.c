@@ -119,8 +119,14 @@ typedef struct
   } best;
 } sntp_state_t;
 
+typedef struct {
+  int32_t sync_cb_ref;
+  int32_t err_cb_ref;
+  os_timer_t timer;
+} sntp_repeat_t;
 
 static sntp_state_t *state;
+static sntp_repeat_t *repeat;
 static ip_addr_t *serverp;
 static uint8_t server_count;
 static uint8_t using_offset;
@@ -133,6 +139,7 @@ static uint64_t pll_increment;
 #define PLL_B   (1 << (32 - 11 - 2))
 
 static void on_timeout(void *arg);
+static void on_long_timeout(void *arg);
 static void sntp_dolookups(lua_State *L);
 
 static void cleanup (lua_State *L)
@@ -575,8 +582,48 @@ static char *state_init(lua_State *L) {
   return NULL;
 }
 
-static void set_repeat_mode(lua_State *L, bool enable) 
+static char *set_repeat_mode(lua_State *L, bool enable) 
 {
+  if (enable) {
+    set_repeat_mode(L, FALSE);
+    repeat = (sntp_repeat_t *) c_malloc(sizeof(sntp_repeat_t));
+    if (!repeat) {
+      return "no memory";
+    }
+    memset(repeat, 0, sizeof(repeat));
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->sync_cb_ref);
+    repeat->sync_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->err_cb_ref);
+    repeat->err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    os_timer_setfn(&repeat->timer, on_long_timeout, NULL);
+    os_timer_arm(&repeat->timer, 1000 * 1000, 1);
+  } else {
+    if (repeat) {
+      os_timer_disarm (&repeat->timer);
+      luaL_unref (L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
+      luaL_unref (L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
+      c_free(repeat);
+      repeat = NULL;
+    }
+  }
+  return NULL;
+}
+
+static void on_long_timeout (void *arg)
+{
+  (void)arg;
+  sntp_dbg("sntp: long timer\n");
+  lua_State *L = lua_getstate ();
+  if (!state) {
+    if (!state_init(L)) {
+      // Good.
+      lua_rawgeti(L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
+      state->sync_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      lua_rawgeti(L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
+      state->err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      sntp_dosend (L);
+    }
+  }
 }
 
 // sntp.sync (server or nil, syncfn or nil, errfn or nil)
