@@ -49,6 +49,11 @@ void rtctime_late_startup (void)
   rtc_time_switch_system ();
 }
 
+void rtctime_adjust_rate (int rate)
+{
+  rtc_time_adjust_rate (rate);
+}
+
 void rtctime_gettimeofday (struct rtc_timeval *tv)
 {
   rtc_time_gettimeofday (tv);

@@ -60,7 +60,10 @@
 # define sntp_dbg(...)
 #endif
 
-#define US_TO_FRAC(us)		((((uint64_t) (us)) << 32) / 1000000ul)
+#define US_TO_FRAC(us)		((((uint64_t) (us)) << 32) / 1000000)
+#define SUS_TO_FRAC(us)		((((int64_t) (us)) << 32) / 1000000)
+#define US_TO_FRAC16(us)	((((uint64_t) (us)) << 16) / 1000000)
+#define FRAC16_TO_US(frac)	((((uint64_t) (frac)) * 1000000) >> 16)
 
 typedef enum {
   NTP_NO_ERR = 0,
@@ -106,7 +109,8 @@ typedef struct
   int server_pos;
   int list_ref;
   struct {
-    int delay_us;
+    uint32_t delay_frac;
+    uint32_t root_maxerr;
     uint8_t LI;
     uint8_t stratum;
     int when;
@@ -123,6 +127,10 @@ static uint8_t using_offset;
 static uint8_t the_offset;
 static uint8_t pending_LI;
 static int32_t next_midnight;
+static uint64_t pll_increment;
+
+#define PLL_A	(1 << (32 - 11))
+#define PLL_B   (1 << (32 - 11 - 2))
 
 static void on_timeout(void *arg);
 static void sntp_dolookups(lua_State *L);
@@ -185,17 +193,29 @@ static void sntp_handle_result(lua_State *L) {
   if (tv.tv_sec == 0) {
     adjust_us = system_get_time() - state->best.when;
   }
-  tv.tv_sec += (int)(state->best.delta >> 32);
-  tv.tv_usec += (int) ((MICROSECONDS * (state->best.delta & 0xffffffff)) >> 32) + adjust_us;
-  while (tv.tv_usec >= 1000000) {
-    tv.tv_usec -= 1000000;
-    tv.tv_sec++;
+  if (adjust_us == 0 && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
+    // Adjust rate
+    // f is frequency -- f should be 1 << 32 for nominal
+    sntp_dbg("delta=%d, increment=%d, ", (int32_t) state->best.delta, (int32_t) pll_increment);
+    int64_t f = ((state->best.delta * PLL_A) >> 32) + pll_increment;
+    pll_increment += (state->best.delta * PLL_B) >> 32;
+    sntp_dbg("f=%d, increment=%d\n", (int32_t) f, (int32_t) pll_increment);
+    rtctime_adjust_rate((int32_t) f);
+  } else {
+    tv.tv_sec += (int)(state->best.delta >> 32);
+    tv.tv_usec += (int) ((MICROSECONDS * (state->best.delta & 0xffffffff)) >> 32) + adjust_us;
+    while (tv.tv_usec >= 1000000) {
+      tv.tv_usec -= 1000000;
+      tv.tv_sec++;
+    }
+    rtctime_settimeofday (&tv);
   }
-  rtctime_settimeofday (&tv);
+#endif
 
   if (have_cb)
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->sync_cb_ref);
+#ifdef LUA_USE_MODULES_RTCTIME
     lua_pushnumber(L, tv.tv_sec);
     lua_pushnumber(L, tv.tv_usec);
     lua_pushstring(L, ipaddr_ntoa (&state->best.server));
@@ -208,19 +228,7 @@ static void sntp_handle_result(lua_State *L) {
       lua_pushnumber(L, (state->best.delta * MICROSECONDS) >> 32);
       lua_setfield(L, -2, "offset_us");
     }
-    if (state->best.delay_us > 0) {
-      lua_pushnumber(L, state->best.delay_us);
-      lua_setfield(L, -2, "delay_us");
-    }
-    lua_pushnumber(L, state->best.stratum);
-    lua_setfield(L, -2, "stratum");
-    lua_pushnumber(L, state->best.LI);
-    lua_setfield(L, -2, "leap");
-  }
 #else
-  if (have_cb)
-  {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, state->sync_cb_ref);
     int adjust_us = system_get_time() - state->best.when;
     int tv_sec = state->best.delta >> 32;
     int tv_usec = (int) (((state->best.delta & 0xffffffff) * MICROSECONDS) >> 32) + adjust_us;
@@ -232,16 +240,18 @@ static void sntp_handle_result(lua_State *L) {
     lua_pushnumber(L, tv_usec);
     lua_pushstring(L, ipaddr_ntoa (&state->best.server));
     lua_newtable(L);
-    if (state->best.delay_us > 0) {
-      lua_pushnumber(L, state->best.delay_us);
+#endif
+    if (state->best.delay_frac > 0) {
+      lua_pushnumber(L, FRAC16_TO_US(state->best.delay_frac));
       lua_setfield(L, -2, "delay_us");
     }
+    lua_pushnumber(L, FRAC16_TO_US(state->best.root_maxerr + state->best.delay_frac / 2));
+    lua_setfield(L, -2, "root_maxerr_us");
     lua_pushnumber(L, state->best.stratum);
     lua_setfield(L, -2, "stratum");
     lua_pushnumber(L, state->best.LI);
     lua_setfield(L, -2, "leap");
   }
-#endif
 
   cleanup (L);
 
@@ -365,13 +375,14 @@ static void update_offset()
 #endif
 }
 
-static void record_result(ip_addr_t *addr, int64_t delta, int stratum, int LI, int delay_us) {
-  sntp_dbg("Recording %s: delta=%08x.%08x, stratum=%d, li=%d, delay=%dus", 
-      ipaddr_ntoa(addr), (uint32_t) (delta >> 32), (uint32_t) (delta & 0xffffffff), stratum, LI, delay_us);
-  if (!state->best.stratum || stratum * max(delay_us, 1000) < state->best.stratum * max(state->best.delay_us, 1000)) {
+static void record_result(ip_addr_t *addr, int64_t delta, int stratum, int LI, uint32_t delay_frac, uint32_t root_maxerr) {
+  sntp_dbg("Recording %s: delta=%08x.%08x, stratum=%d, li=%d, delay=%dus, root_maxerr=%dus", 
+      ipaddr_ntoa(addr), (uint32_t) (delta >> 32), (uint32_t) (delta & 0xffffffff), stratum, LI, (int32_t) FRAC16_TO_US(delay_frac), (int32_t) FRAC16_TO_US(root_maxerr));
+  if (!state->best.stratum || root_maxerr + delay_frac / 2 < state->best.root_maxerr + state->best.delay_frac / 2) {
     sntp_dbg("   --BEST\n");
     state->best.server = *addr;
-    state->best.delay_us = delay_us;
+    state->best.delay_frac = delay_frac;
+    state->best.root_maxerr = root_maxerr;
     state->best.delta = delta;
     state->best.stratum = stratum;
     state->best.LI = LI;
@@ -448,6 +459,8 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   const uint64_t MICROSECONDS = 1000000ull;
   const uint32_t NTP_TO_UNIX_EPOCH = 2208988800ul;
 
+  uint32_t root_maxerr = ntohl(ntp.root_dispersion) + ntohl(ntp.root_delay) / 2;
+
   // if we have rtctime, do higher resolution delta calc, else just use
   // the transmit timestamp
 #ifdef LUA_USE_MODULES_RTCTIME
@@ -463,11 +476,11 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   // Compensation as per RFC2030
   int64_t delta = (int64_t) (ntp_recv - ntp_origin) / 2 + (int64_t) (ntp_xmit - ntp_dest) / 2;
 
-  record_result(addr, delta, ntp.stratum, ntp.LI, ((int64_t)(ntp_dest - ntp_origin - (ntp_xmit - ntp_recv)) * MICROSECONDS) >> 32);
+  record_result(addr, delta, ntp.stratum, ntp.LI, ((int64_t)(ntp_dest - ntp_origin - (ntp_xmit - ntp_recv))) >> 16, root_maxerr);
 
 #else
   uint64_t ntp_xmit = (((uint64_t) ntp.xmit.sec - NTP_TO_UNIX_EPOCH) << 32) + (uint64_t) ntp.xmit.frac;
-  record_result(addr, ntp_xmit, ntp.stratum, ntp.LI, system_get_time() - ntp.origin.frac);
+  record_result(addr, ntp_xmit, ntp.stratum, ntp.LI, (((int64_t) (system_get_time() - ntp.origin.frac)) << 16) / MICROSECONDS, root_maxerr);
 #endif
 
   sntp_dosend(L);
@@ -537,24 +550,10 @@ static void sntp_dolookups (lua_State *L) {
   lua_pop(L, 1);
 }
 
-// sntp.sync (server or nil, syncfn or nil, errfn or nil)
-static int sntp_sync (lua_State *L)
-{
-  // default to anycast address, then allow last server to stick
-  if (server_count == 0) {
-    NTP_ANYCAST_ADDR(get_free_server());
-    server_count++;
-  }
-
-  const char *errmsg = 0;
-#define sync_err(x) do { errmsg = x; goto error; } while (0)
-
-  if (state)
-    return luaL_error (L, "sync in progress");
-
+static char *state_init(lua_State *L) {
   state = (sntp_state_t *)c_malloc (sizeof (sntp_state_t));
   if (!state)
-    sync_err ("out of memory");
+    return ("out of memory");
 
   memset (state, 0, sizeof (sntp_state_t));
 
@@ -564,30 +563,56 @@ static int sntp_sync (lua_State *L)
 
   state->pcb = udp_new ();
   if (!state->pcb)
-    sync_err ("out of memory");
+    return ("out of memory");
 
   if (udp_bind (state->pcb, IP_ADDR_ANY, 0) != ERR_OK)
-    sync_err ("no port available");
+    return ("no port available");
 
   udp_recv (state->pcb, on_recv, L);
+
+  state->server_pos = -1;
+
+  return NULL;
+}
+
+static void set_repeat_mode(lua_State *L, bool enable) 
+{
+}
+
+// sntp.sync (server or nil, syncfn or nil, errfn or nil)
+static int sntp_sync (lua_State *L)
+{
+  // default to anycast address, then allow last server to stick
+  if (server_count == 0) {
+    NTP_ANYCAST_ADDR(get_free_server());
+    server_count++;
+  }
+
+  set_repeat_mode(L, 0);
+
+  const char *errmsg = 0;
+#define sync_err(x) do { errmsg = x; goto error; } while (0)
+
+  if (state)
+    return luaL_error (L, "sync in progress");
+
+  char *state_err;
+  state_err = state_init(L);
+  if (state_err) {
+    sync_err(state_err);
+  }
 
   if (!lua_isnoneornil (L, 2))
   {
     lua_pushvalue (L, 2);
     state->sync_cb_ref = luaL_ref (L, LUA_REGISTRYINDEX);
   }
-  else
-    state->sync_cb_ref = LUA_NOREF;
 
   if (!lua_isnoneornil (L, 3))
   {
     lua_pushvalue (L, 3);
     state->err_cb_ref = luaL_ref (L, LUA_REGISTRYINDEX);
   }
-  else
-    state->err_cb_ref = LUA_NOREF;
-
-  state->server_pos = -1;
 
   // use last server, unless new one specified
   if (!lua_isnoneornil (L, 1))
@@ -598,16 +623,16 @@ static int sntp_sync (lua_State *L)
       lua_pushvalue(L, 1);
       state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       sntp_dolookups(L);
-      return 0;
+      goto good_ret;
     } else {
       size_t l;
       const char *hostname = luaL_checklstring(L, 1, &l);
       if (l>128 || hostname == NULL)
 	sync_err("need <128 hostname");
       err_t err = dns_gethostbyname(hostname, get_free_server(), sntp_dns_found, state);
-      if (err == ERR_INPROGRESS)
-	return 0;  // Callback function sntp_dns_found will handle sntp_dosend for us
-      else if (err == ERR_ARG)
+      if (err == ERR_INPROGRESS) {
+	goto good_ret;
+      } else if (err == ERR_ARG)
 	sync_err("bad hostname");
 
       server_count++;
@@ -615,6 +640,12 @@ static int sntp_sync (lua_State *L)
   }
 
   sntp_dosend (L);
+
+good_ret:
+  if (!lua_isnoneornil(L, 4)) {
+    set_repeat_mode(L, 1);
+  }
+
   return 0;
 
 error:

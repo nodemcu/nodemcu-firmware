@@ -192,6 +192,9 @@
 #define RTC_SLEEPTOTALCYCLES_POS (RTC_TIME_BASE+7)
 #define RTC_TODOFFSETUS_POS      (RTC_TIME_BASE+8)
 #define RTC_LASTTODUS_POS        (RTC_TIME_BASE+9)
+#define RTC_USATLASTRATE_POS	 (RTC_TIME_BASE + 10)
+#define RTC_RATEADJUSTEDUS_POS	 (RTC_TIME_BASE + 12)
+#define RTC_USRATE_POS		 (RTC_TIME_BASE + 14)
 
 
 struct rtc_timeval
@@ -483,6 +486,9 @@ static inline void rtc_time_reset(bool clear_cali)
   rtc_mem_write(RTC_LASTTODUS_POS,0);
   rtc_mem_write(RTC_SOURCECYCLEUNITS_POS,0);
   rtc_mem_write(RTC_LASTSOURCEVAL_POS,0);
+  rtc_mem_write64(RTC_USATLASTRATE_POS, 0);
+  rtc_mem_write64(RTC_RATEADJUSTEDUS_POS, 0);
+  rtc_mem_write(RTC_USRATE_POS, 0);
 
   if (clear_cali)
     rtc_mem_write(RTC_CALIBRATION_POS,0);
@@ -571,10 +577,7 @@ static inline void rtc_time_switch_to_system_clock(void)
     rtc_time_select_frc2_source();
 }
 
-static inline void rtc_time_tmrfn(void* arg)
-{
-  rtc_time_source_offset();
-}
+static inline void rtc_time_tmrfn(void* arg);
 
 static inline void rtc_time_install_timer(void)
 {
@@ -662,9 +665,37 @@ static inline void rtc_time_prepare(void)
   rtc_time_select_frc2_source();
 }
 
+static inline uint64_t rtc_time_adjust_us_by_rate(uint64_t us, int force) {
+  uint64_t usoff = us - rtc_mem_read64(RTC_USATLASTRATE_POS);
+  uint64_t usadj = (usoff * ((1ull << 32) + (int) rtc_mem_read(RTC_USRATE_POS))) >> 32;
+  usadj = usadj + rtc_mem_read64(RTC_RATEADJUSTEDUS_POS);
+
+  if (usoff > 1000000000 || force) {
+    rtc_mem_write64(RTC_USATLASTRATE_POS, us);
+    rtc_mem_write64(RTC_RATEADJUSTEDUS_POS, usadj);
+  }
+
+  return usadj;
+}
+
+static inline void rtc_time_adjust_rate(int32_t rate) {
+  uint64_t now=rtc_time_get_now_us_adjusted();
+  rtc_time_adjust_us_by_rate(now, 1);
+  rtc_mem_write(RTC_USRATE_POS, rate);
+}
+
+static inline void rtc_time_tmrfn(void* arg)
+{
+  uint64_t now=rtc_time_get_now_us_adjusted();
+  rtc_time_adjust_us_by_rate(now, 0);
+  rtc_time_source_offset();
+}
+
+
 static inline void rtc_time_gettimeofday(struct rtc_timeval* tv)
 {
   uint64_t now=rtc_time_get_now_us_adjusted();
+  now = rtc_time_adjust_us_by_rate(now, 0);
   uint32_t sec=now/1000000;
   uint32_t usec=now%1000000;
   uint32_t to_adjust=rtc_mem_read(RTC_TODOFFSETUS_POS);
@@ -698,6 +729,7 @@ static inline void rtc_time_settimeofday(const struct rtc_timeval* tv)
   uint32_t sleep_cycles=rtc_mem_read(RTC_SLEEPTOTALCYCLES_POS);
   // At this point, the CPU clock will definitely be at the default rate (nodemcu fully booted)
   uint64_t now_esp_us=rtc_time_get_now_us_adjusted();
+  now_esp_us = rtc_time_adjust_us_by_rate(now_esp_us, 1);
   uint64_t now_ntp_us=((uint64_t)tv->tv_sec)*1000000+tv->tv_usec;
   int64_t  diff_us=now_esp_us-now_ntp_us;
 
@@ -718,6 +750,10 @@ static inline void rtc_time_settimeofday(const struct rtc_timeval* tv)
 
   rtc_mem_write(RTC_SLEEPTOTALUS_POS,0);
   rtc_mem_write(RTC_SLEEPTOTALCYCLES_POS,0);
+
+  rtc_mem_write64(RTC_USATLASTRATE_POS, now_ntp_us);
+  rtc_mem_write(RTC_USRATE_POS, 0);
+  rtc_mem_write64(RTC_RATEADJUSTEDUS_POS, now_ntp_us);
 
   // Deal with time adjustment if necessary
   if (diff_us>0) // Time went backwards. Avoid that....
