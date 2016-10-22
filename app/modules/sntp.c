@@ -200,7 +200,7 @@ static void sntp_handle_result(lua_State *L) {
   if (tv.tv_sec == 0) {
     adjust_us = system_get_time() - state->best.when;
   }
-  if (adjust_us == 0 && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
+  if (adjust_us == 0 && repeat && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
     // Adjust rate
     // f is frequency -- f should be 1 << 32 for nominal
     sntp_dbg("delta=%d, increment=%d, ", (int32_t) state->best.delta, (int32_t) pll_increment);
@@ -385,7 +385,9 @@ static void update_offset()
 static void record_result(ip_addr_t *addr, int64_t delta, int stratum, int LI, uint32_t delay_frac, uint32_t root_maxerr) {
   sntp_dbg("Recording %s: delta=%08x.%08x, stratum=%d, li=%d, delay=%dus, root_maxerr=%dus", 
       ipaddr_ntoa(addr), (uint32_t) (delta >> 32), (uint32_t) (delta & 0xffffffff), stratum, LI, (int32_t) FRAC16_TO_US(delay_frac), (int32_t) FRAC16_TO_US(root_maxerr));
-  if (!state->best.stratum || root_maxerr + delay_frac / 2 < state->best.root_maxerr + state->best.delay_frac / 2) {
+  // I want to favor close by servers as they probably have a more consistent clock, even if the path to the root is
+  // long.
+  if (!state->best.stratum || root_maxerr + delay_frac < state->best.root_maxerr + state->best.delay_frac) {
     sntp_dbg("   --BEST\n");
     state->best.server = *addr;
     state->best.delay_frac = delay_frac;

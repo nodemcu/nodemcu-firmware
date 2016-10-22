@@ -16,8 +16,8 @@ For best results you may want to to call this periodically in order to compensat
 Note that either a single server can be provided as an argument (name or address), or a list (table) of servers can be provided. 
 
 #### Syntax
-`sntp.sync([server_ip], [callback], [errcallback])`
-`sntp.sync({ server1, server2, .. }, [callback], [errcallback])`
+`sntp.sync([server_ip], [callback], [errcallback], [autorepeat])`
+`sntp.sync({ server1, server2, .. }, [callback], [errcallback], [autorepeat])`
 
 #### Parameters
 - `server_ip` if non-`nil`, that server is used. If `nil`, then the last contacted server is used. This ties in with the NTP anycast mode, where the first responding server is remembered for future synchronization requests. The easiest way to use anycast is to always pass nil for the server argument.
@@ -28,6 +28,7 @@ Note that either a single server can be provided as an argument (name or address
   - 2: Memory allocation failure
   - 3: UDP send failed
   - 4: Timeout, no NTP response received
+- `autorepeat` if this is non-nil, then the synchronization will happen every 1000 seconds and try and condition the clock if possible. The callbacks will be called after each sync operation.
 
 #### Returns
 `nil`

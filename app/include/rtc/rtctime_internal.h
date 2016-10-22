@@ -678,10 +678,14 @@ static inline uint64_t rtc_time_adjust_us_by_rate(uint64_t us, int force) {
   return usadj;
 }
 
-static inline void rtc_time_adjust_rate(int32_t rate) {
+static inline void rtc_time_set_rate(int32_t rate) {
   uint64_t now=rtc_time_get_now_us_adjusted();
   rtc_time_adjust_us_by_rate(now, 1);
   rtc_mem_write(RTC_USRATE_POS, rate);
+}
+
+static inline int32_t rtc_time_get_rate() {
+  return rtc_mem_read(RTC_USRATE_POS);
 }
 
 static inline void rtc_time_tmrfn(void* arg)
