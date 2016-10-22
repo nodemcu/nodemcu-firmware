@@ -134,6 +134,8 @@ static int ow_read_bytes( lua_State *L )
   if( size == 0 )
     return 0;
 
+  luaL_argcheck(L, size <= LUAL_BUFFERSIZE, 2, "Attempt to read too many characters");
+
   luaL_Buffer b;
   luaL_buffinit( L, &b );
   char *p = luaL_prepbuffer(&b);
