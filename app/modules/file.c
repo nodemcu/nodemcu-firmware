@@ -262,6 +262,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
 {
   if(n <= 0)
     n = FILE_READ_CHUNK;
+
   if(end_char < 0 || end_char >255)
     end_char = EOF;
 
@@ -269,10 +270,13 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
     return luaL_error(L, "open a file first");
 
   char *p;
-  char *heap_mem = NULL;
+  static char *heap_mem = NULL;
   int i;
 
   if (n > LUAL_BUFFERSIZE) {
+    // free leftover memory
+    if (heap_mem)
+      luaM_free(L, heap_mem);
     // get buffer from heap
     p = heap_mem = luaM_malloc(L, n);
   } else {
@@ -281,7 +285,8 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
   }
 
   n = vfs_read(file_fd, p, n);
-  for (i = 0; i < n; ++i)
+  // bypass search if no end character provided
+  for (i = end_char != EOF ? 0 : n; i < n; ++i)
     if (p[i] == end_char)
     {
       ++i;
@@ -289,15 +294,19 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
     }
 
   if (i == 0) {
-    if (heap_mem)
+    if (heap_mem) {
       luaM_free(L, heap_mem);
+      heap_mem = NULL;
+    }
     return 0;
   }
 
   vfs_lseek(file_fd, -(n - i), VFS_SEEK_CUR);
   lua_pushlstring(L, p, i);
-  if (heap_mem)
+  if (heap_mem) {
     luaM_free(L, heap_mem);
+    heap_mem = NULL;
+  }
   return 1;
 }
 

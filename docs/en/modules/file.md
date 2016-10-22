@@ -298,14 +298,18 @@ end
 
 Read content from the open file.
 
+!!! note
+
+    The function temporarily allocates 2 * (number of requested bytes) on the heap for buffering and processing the read data. Default chunk size (`FILE_READ_CHUNK`) is 1024 bytes and is regarded to be safe. Pushing this by 4x or more can cause heap overflows depending on the application. Consider this when selecting a value for parameter `n_or_char`.
+
 #### Syntax
-`file.read([n_or_str])`
+`file.read([n_or_char])`
 
 #### Parameters
-- `n_or_str`:
-	- if nothing passed in, then read up to 1024 bytes or the entire file (whichever is smaller).
-	- if passed a number n, then read up to `n` bytes or the entire file (whichever is smaller).
-	- if passed a string `str`, then read until `str` appears next in the file, 1024 bytes have been read, or EOF is reached.
+- `n_or_char`:
+	- if nothing passed in, then read up to `FILE_READ_CHUNK` bytes or the entire file (whichever is smaller).
+	- if passed a number `n`, then read up to `n` bytes or the entire file (whichever is smaller).
+	- if passed a string containing the single character `char`, then read until `char` appears next in the file, `FILE_READ_CHUNK` bytes have been read, or EOF is reached.
 
 #### Returns
 File content as a string, or nil when EOF
