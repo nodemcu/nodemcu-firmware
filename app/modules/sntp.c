@@ -111,6 +111,8 @@ typedef struct
   struct {
     uint32_t delay_frac;
     uint32_t root_maxerr;
+    uint32_t root_delay;
+    uint32_t root_dispersion;
     uint8_t LI;
     uint8_t stratum;
     int when;
@@ -252,12 +254,18 @@ static void sntp_handle_result(lua_State *L) {
       lua_pushnumber(L, FRAC16_TO_US(state->best.delay_frac));
       lua_setfield(L, -2, "delay_us");
     }
+    lua_pushnumber(L, FRAC16_TO_US(state->best.root_delay));
+    lua_setfield(L, -2, "root_delay_us");
+    lua_pushnumber(L, FRAC16_TO_US(state->best.root_dispersion));
+    lua_setfield(L, -2, "root_dispersion_us");
     lua_pushnumber(L, FRAC16_TO_US(state->best.root_maxerr + state->best.delay_frac / 2));
     lua_setfield(L, -2, "root_maxerr_us");
     lua_pushnumber(L, state->best.stratum);
     lua_setfield(L, -2, "stratum");
     lua_pushnumber(L, state->best.LI);
     lua_setfield(L, -2, "leap");
+    lua_pushnumber(L, pending_LI);
+    lua_setfield(L, -2, "pending_leap");
   }
 
   cleanup (L);
@@ -382,16 +390,17 @@ static void update_offset()
 #endif
 }
 
-static void record_result(ip_addr_t *addr, int64_t delta, int stratum, int LI, uint32_t delay_frac, uint32_t root_maxerr) {
+static void record_result(ip_addr_t *addr, int64_t delta, int stratum, int LI, uint32_t delay_frac, uint32_t root_maxerr, uint32_t root_dispersion, uint32_t root_delay) {
   sntp_dbg("Recording %s: delta=%08x.%08x, stratum=%d, li=%d, delay=%dus, root_maxerr=%dus", 
       ipaddr_ntoa(addr), (uint32_t) (delta >> 32), (uint32_t) (delta & 0xffffffff), stratum, LI, (int32_t) FRAC16_TO_US(delay_frac), (int32_t) FRAC16_TO_US(root_maxerr));
-  // I want to favor close by servers as they probably have a more consistent clock, even if the path to the root is
-  // long.
-  if (!state->best.stratum || root_maxerr + delay_frac < state->best.root_maxerr + state->best.delay_frac) {
+  // I want to favor close by servers as they probably have a more consistent clock, 
+  if (!state->best.stratum || root_delay * 2 + delay_frac < state->best.root_delay * 2 + state->best.delay_frac) {
     sntp_dbg("   --BEST\n");
     state->best.server = *addr;
     state->best.delay_frac = delay_frac;
     state->best.root_maxerr = root_maxerr;
+    state->best.root_dispersion = root_dispersion;
+    state->best.root_delay = root_delay;
     state->best.delta = delta;
     state->best.stratum = stratum;
     state->best.LI = LI;
@@ -485,11 +494,11 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   // Compensation as per RFC2030
   int64_t delta = (int64_t) (ntp_recv - ntp_origin) / 2 + (int64_t) (ntp_xmit - ntp_dest) / 2;
 
-  record_result(addr, delta, ntp.stratum, ntp.LI, ((int64_t)(ntp_dest - ntp_origin - (ntp_xmit - ntp_recv))) >> 16, root_maxerr);
+  record_result(addr, delta, ntp.stratum, ntp.LI, ((int64_t)(ntp_dest - ntp_origin - (ntp_xmit - ntp_recv))) >> 16, root_maxerr, ntohl(ntp.root_dispersion), ntohl(ntp.root_delay));
 
 #else
   uint64_t ntp_xmit = (((uint64_t) ntp.xmit.sec - NTP_TO_UNIX_EPOCH) << 32) + (uint64_t) ntp.xmit.frac;
-  record_result(addr, ntp_xmit, ntp.stratum, ntp.LI, (((int64_t) (system_get_time() - ntp.origin.frac)) << 16) / MICROSECONDS, root_maxerr);
+  record_result(addr, ntp_xmit, ntp.stratum, ntp.LI, (((int64_t) (system_get_time() - ntp.origin.frac)) << 16) / MICROSECONDS, root_maxerr, ntohl(ntp.root_dispersion), ntohl(ntp.root_delay));
 #endif
 
   sntp_dosend(L);
