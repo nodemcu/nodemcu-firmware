@@ -23,8 +23,8 @@ Note that either a single server can be provided as an argument (name or address
 - `server_ip` if non-`nil`, that server is used. If `nil`, then the last contacted server is used. This ties in with the NTP anycast mode, where the first responding server is remembered for future synchronization requests. The easiest way to use anycast is to always pass nil for the server argument.
 - `server1`, `server2` these are either the ip address or dns name of one or more servers to try.
 - `callback` if provided it will be invoked on a successful synchronization, with four parameters: seconds, microseconds, server and info. Note that when the [rtctime](rtctime.md) module is available, there is no need to explicitly call [`rtctime.set()`](rtctime.md#rtctimeset) - this module takes care of doing so internally automatically, for best accuracy. The info parameter is a table of (semi) interesting values. These are described below.
-- `errcallback` failure callback with a single integer parameter describing the type of error. The module automatically performs a number of retries before giving up and reporting the error. Error codes:
-  - 1: DNS lookup failed
+- `errcallback` failure callback with two parameters. The first is an integer describing the type of error. The module automatically performs a number of retries before giving up and reporting the error. The second is a string containing supplementary information (if any). Error codes:
+  - 1: DNS lookup failed (the second parameter is the failing DNS name)
   - 2: Memory allocation failure
   - 3: UDP send failed
   - 4: Timeout, no NTP response received
