@@ -60,10 +60,10 @@
 # define sntp_dbg(...)
 #endif
 
-#define US_TO_FRAC(us)		((((uint64_t) (us)) << 32) / 1000000)
-#define SUS_TO_FRAC(us)		((((int64_t) (us)) << 32) / 1000000)
-#define US_TO_FRAC16(us)	((((uint64_t) (us)) << 16) / 1000000)
-#define FRAC16_TO_US(frac)	((((uint64_t) (frac)) * 1000000) >> 16)
+#define US_TO_FRAC(us)          ((((uint64_t) (us)) << 32) / 1000000)
+#define SUS_TO_FRAC(us)         ((((int64_t) (us)) << 32) / 1000000)
+#define US_TO_FRAC16(us)        ((((uint64_t) (us)) << 16) / 1000000)
+#define FRAC16_TO_US(frac)      ((((uint64_t) (frac)) * 1000000) >> 16)
 
 typedef enum {
   NTP_NO_ERR = 0,
@@ -138,7 +138,7 @@ static uint8_t pending_LI;
 static int32_t next_midnight;
 static uint64_t pll_increment;
 
-#define PLL_A	(1 << (32 - 11))
+#define PLL_A   (1 << (32 - 11))
 #define PLL_B   (1 << (32 - 11 - 2))
 
 static void on_timeout(void *arg);
@@ -170,15 +170,16 @@ static ip_addr_t* get_free_server() {
   return serverp + server_count;
 }
 
-static void handle_error (lua_State *L, ntp_err_t err)
+static void handle_error (lua_State *L, ntp_err_t err, const char *msg)
 {
   sntp_dbg("sntp: handle_error\n");
   if (state->err_cb_ref != LUA_NOREF)
   {
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->err_cb_ref);
     lua_pushinteger (L, err);
+    lua_pushstring (L, msg);
     cleanup (L);
-    lua_call (L, 1, 0);
+    lua_call (L, 2, 0);
   }
   else
     cleanup (L);
@@ -188,7 +189,7 @@ static void sntp_handle_result(lua_State *L) {
   const uint32_t MICROSECONDS = 1000000;
 
   if (state->best.stratum == 0) {
-    handle_error(L, NTP_TIMEOUT_ERR);
+    handle_error(L, NTP_TIMEOUT_ERR, NULL);
     return;
   }
 
@@ -302,7 +303,7 @@ static void sntp_dosend (lua_State *L)
 
   struct pbuf *p = pbuf_alloc (PBUF_TRANSPORT, sizeof (ntp_frame_t), PBUF_RAM);
   if (!p)
-    handle_error (L, NTP_MEM_ERR);
+    handle_error (L, NTP_MEM_ERR, NULL);
 
   ntp_frame_t req;
   os_memset (&req, 0, sizeof (req));
@@ -324,7 +325,7 @@ static void sntp_dosend (lua_State *L)
   sntp_dbg("sntp: send: %d\n", ret);
   pbuf_free (p);
   if (ret != ERR_OK)
-    handle_error (L, NTP_SEND_ERR);
+    handle_error (L, NTP_SEND_ERR, NULL);
 
   os_timer_arm (&state->timer, 1000, 0);
 }
@@ -338,7 +339,7 @@ static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   if (ipaddr == NULL)
   {
     sntp_dbg("DNS Fail!\n");
-    handle_error(L, NTP_DNS_ERR);
+    handle_error(L, NTP_DNS_ERR, name);
   }
   else
   {
@@ -379,11 +380,11 @@ static void update_offset()
       day = day - (153 * month + 2) / 5;
 
       if (day == 0) {
-	if (pending_LI == 1) {
-	  the_offset ++;
-	} else {
-	  the_offset --;
-	}
+        if (pending_LI == 1) {
+          the_offset ++;
+        } else {
+          the_offset --;
+        }
       }
       pending_LI = 0;
     }
@@ -392,9 +393,9 @@ static void update_offset()
 }
 
 static void record_result(ip_addr_t *addr, int64_t delta, int stratum, int LI, uint32_t delay_frac, uint32_t root_maxerr, uint32_t root_dispersion, uint32_t root_delay) {
-  sntp_dbg("Recording %s: delta=%08x.%08x, stratum=%d, li=%d, delay=%dus, root_maxerr=%dus", 
+  sntp_dbg("Recording %s: delta=%08x.%08x, stratum=%d, li=%d, delay=%dus, root_maxerr=%dus",
       ipaddr_ntoa(addr), (uint32_t) (delta >> 32), (uint32_t) (delta & 0xffffffff), stratum, LI, (int32_t) FRAC16_TO_US(delay_frac), (int32_t) FRAC16_TO_US(root_maxerr));
-  // I want to favor close by servers as they probably have a more consistent clock, 
+  // I want to favor close by servers as they probably have a more consistent clock,
   if (!state->best.stratum || root_delay * 2 + delay_frac < state->best.root_delay * 2 + state->best.delay_frac) {
     sntp_dbg("   --BEST\n");
     state->best.server = *addr;
@@ -554,14 +555,14 @@ static void sntp_dolookups (lua_State *L) {
     lua_pop(L, 1);
 
     if (l>128 || hostname == NULL) {
-      handle_error(L, NTP_DNS_ERR);
+      handle_error(L, NTP_DNS_ERR, hostname);
       break;
     }
     err_t err = dns_gethostbyname(hostname, get_free_server(), sntp_dns_found, state);
     if (err == ERR_INPROGRESS)
       break;  // Callback function sntp_dns_found will handle sntp_dosend for us
     else if (err == ERR_ARG) {
-      handle_error(L, NTP_DNS_ERR);
+      handle_error(L, NTP_DNS_ERR, hostname);
       break;
     }
     server_count++;
@@ -594,7 +595,7 @@ static char *state_init(lua_State *L) {
   return NULL;
 }
 
-static char *set_repeat_mode(lua_State *L, bool enable) 
+static char *set_repeat_mode(lua_State *L, bool enable)
 {
   if (enable) {
     set_repeat_mode(L, FALSE);
@@ -688,12 +689,12 @@ static int sntp_sync (lua_State *L)
       size_t l;
       const char *hostname = luaL_checklstring(L, 1, &l);
       if (l>128 || hostname == NULL)
-	sync_err("need <128 hostname");
+        sync_err("need <128 hostname");
       err_t err = dns_gethostbyname(hostname, get_free_server(), sntp_dns_found, state);
       if (err == ERR_INPROGRESS) {
-	goto good_ret;
+        goto good_ret;
       } else if (err == ERR_ARG)
-	sync_err("bad hostname");
+        sync_err("bad hostname");
 
       server_count++;
     }
