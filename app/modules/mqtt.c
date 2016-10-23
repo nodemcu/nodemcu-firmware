@@ -653,6 +653,7 @@ void mqtt_socket_timer(void *arg)
           msg_queue_t *node = msg_enqueue( &(mud->mqtt_state.pending_msg_q), temp_msg,
                               0, MQTT_MSG_TYPE_PINGREQ, (int)mqtt_get_qos(temp_msg->data) );
           mud->keepalive_sent = 1;
+          mud->keep_alive_tick = 0;     // Need to reset to zero in case flow control stopped.
           mqtt_send_if_possible(mud->pesp_conn);
         }
       }
