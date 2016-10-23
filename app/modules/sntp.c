@@ -106,6 +106,7 @@ typedef struct
   uint8_t attempts;    // Number of repeats of each entry
   uint8_t server_index;   // index into server table
   uint8_t lookup_pos;
+  bool is_on_timeout;
   int server_pos;
   int list_ref;
   struct {
@@ -202,7 +203,7 @@ static void sntp_handle_result(lua_State *L) {
   if (tv.tv_sec == 0) {
     adjust_us = system_get_time() - state->best.when;
   }
-  if (adjust_us == 0 && repeat && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
+  if (adjust_us == 0 && state->is_on_timeout && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
     // Adjust rate
     // f is frequency -- f should be 1 << 32 for nominal
     sntp_dbg("delta=%d, increment=%d, ", (int32_t) state->best.delta, (int32_t) pll_increment);
@@ -632,6 +633,7 @@ static void on_long_timeout (void *arg)
       state->sync_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       lua_rawgeti(L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
       state->err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      state->is_on_timeout = 1;
       sntp_dosend (L);
     }
   }
