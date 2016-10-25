@@ -645,10 +645,10 @@ void ICACHE_FLASH_ATTR http_put( const char * url, const char * headers, const c
 
 void ICACHE_FLASH_ATTR http_callback_example( char * response, int http_status, char * full_response )
 {
-	os_printf( "http_status=%d\n", http_status );
+	dbg_printf( "http_status=%d\n", http_status );
 	if ( http_status != HTTP_STATUS_GENERIC_ERROR )
 	{
-		os_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
-		os_printf( "response=%s<EOF>\n", response );
+		dbg_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
+		dbg_printf( "response=%s<EOF>\n", response );
 	}
 }

@@ -14,13 +14,13 @@ static int http_callback_registry  = LUA_NOREF;
 static void http_callback( char * response, int http_status, char * full_response )
 {
 #if defined(HTTPCLIENT_DEBUG_ON)
-  c_printf( "http_status=%d\n", http_status );
+  dbg_printf( "http_status=%d\n", http_status );
   if ( http_status != HTTP_STATUS_GENERIC_ERROR )
   {
     if (full_response != NULL) {
-      c_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
+      dbg_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
     }
-    c_printf( "response=%s<EOF>\n", response );
+    dbg_printf( "response=%s<EOF>\n", response );
   }
 #endif
   if (http_callback_registry != LUA_NOREF)

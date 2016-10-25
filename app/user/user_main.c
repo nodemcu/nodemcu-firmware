@@ -141,7 +141,7 @@ void nodemcu_init(void)
 #ifdef BUILD_SPIFFS
     if (!vfs_mount("/FLASH", 0)) {
         // Failed to mount -- try reformat
-	c_printf("Formatting file system. Please wait...\n");
+	dbg_printf("Formatting file system. Please wait...\n");
         if (!vfs_format()) {
             NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
             NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
