@@ -137,7 +137,7 @@
   ((spiffs_obj_id)(0x20140529 ^ SPIFFS_CFG_LOG_PAGE_SZ(fs)))
 #else // SPIFFS_USE_MAGIC_LENGTH
 #define SPIFFS_MAGIC(fs, bix)           \
-  ((spiffs_obj_id)(0x20140529 ^ SPIFFS_CFG_LOG_PAGE_SZ(fs) ^ ((fs)->block_count - (bix))))
+  ((spiffs_obj_id)(0x20140529 ^ SPIFFS_CFG_LOG_PAGE_SZ(fs) ^ ((fs)->block_count - ((bix) < 3 ? (1<<(bix)) - 1 : (bix)<<2))))
 #endif // SPIFFS_USE_MAGIC_LENGTH
 #endif // SPIFFS_USE_MAGIC
 
