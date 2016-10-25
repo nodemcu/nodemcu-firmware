@@ -260,6 +260,11 @@ static int file_rename( lua_State* L )
 // g_read()
 static int file_g_read( lua_State* L, int n, int16_t end_char )
 {
+  static char *heap_mem = NULL;
+  // free leftover memory
+  if (heap_mem)
+    luaM_free(L, heap_mem);
+
   if(n <= 0)
     n = FILE_READ_CHUNK;
 
@@ -270,13 +275,9 @@ static int file_g_read( lua_State* L, int n, int16_t end_char )
     return luaL_error(L, "open a file first");
 
   char *p;
-  static char *heap_mem = NULL;
   int i;
 
   if (n > LUAL_BUFFERSIZE) {
-    // free leftover memory
-    if (heap_mem)
-      luaM_free(L, heap_mem);
     // get buffer from heap
     p = heap_mem = luaM_malloc(L, n);
   } else {
