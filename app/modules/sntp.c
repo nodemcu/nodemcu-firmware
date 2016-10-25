@@ -185,6 +185,13 @@ static void handle_error (lua_State *L, ntp_err_t err, const char *msg)
     cleanup (L);
 }
 
+static void get_zero_base_timeofday(struct rtc_timeval *tv) {
+  uint32_t now = system_get_time();
+
+  tv->tv_sec = now / 1000000;
+  tv->tv_usec = now % 1000000;
+}
+
 static void sntp_handle_result(lua_State *L) {
   const uint32_t MICROSECONDS = 1000000;
 
@@ -200,11 +207,16 @@ static void sntp_handle_result(lua_State *L) {
 #ifdef LUA_USE_MODULES_RTCTIME
   struct rtc_timeval tv;
   rtctime_gettimeofday (&tv);
-  int adjust_us = 0;
   if (tv.tv_sec == 0) {
-    adjust_us = system_get_time() - state->best.when;
+    get_zero_base_timeofday(&tv);
   }
-  if (adjust_us == 0 && state->is_on_timeout && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
+  tv.tv_sec += (int)(state->best.delta >> 32);
+  tv.tv_usec += (int) ((MICROSECONDS * (state->best.delta & 0xffffffff)) >> 32);
+  while (tv.tv_usec >= 1000000) {
+    tv.tv_usec -= 1000000;
+    tv.tv_sec++;
+  }
+  if (state->is_on_timeout && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
     // Adjust rate
     // f is frequency -- f should be 1 << 32 for nominal
     sntp_dbg("delta=%d, increment=%d, ", (int32_t) state->best.delta, (int32_t) pll_increment);
@@ -213,12 +225,6 @@ static void sntp_handle_result(lua_State *L) {
     sntp_dbg("f=%d, increment=%d\n", (int32_t) f, (int32_t) pll_increment);
     rtctime_adjust_rate((int32_t) f);
   } else {
-    tv.tv_sec += (int)(state->best.delta >> 32);
-    tv.tv_usec += (int) ((MICROSECONDS * (state->best.delta & 0xffffffff)) >> 32) + adjust_us;
-    while (tv.tv_usec >= 1000000) {
-      tv.tv_usec -= 1000000;
-      tv.tv_sec++;
-    }
     rtctime_settimeofday (&tv);
   }
 #endif
@@ -313,6 +319,9 @@ static void sntp_dosend (lua_State *L)
   const uint32_t NTP_TO_UNIX_EPOCH = 2208988800ul;
   struct rtc_timeval tv;
   rtctime_gettimeofday (&tv);
+  if (tv.tv_sec == 0) {
+    get_zero_base_timeofday(&tv);
+  }
   req.xmit.sec = htonl (tv.tv_sec - the_offset + NTP_TO_UNIX_EPOCH);
   req.xmit.frac = htonl (US_TO_FRAC(tv.tv_usec));
 #else
@@ -420,6 +429,9 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   struct rtc_timeval tv;
 
   rtctime_gettimeofday (&tv);
+  if (tv.tv_sec == 0) {
+    get_zero_base_timeofday(&tv);
+  }
 #endif
   sntp_dbg("sntp: on_recv\n");
 
