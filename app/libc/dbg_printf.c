@@ -35,6 +35,10 @@
  *	@(#)printf.c	8.1 (Berkeley) 6/11/93
  */
 
+// This version uses almost no stack, and does not suffer from buffer 
+// overflows. The downside is that it does not implement a wide range
+// of formatting characters.
+
 #include <c_stdlib.h>
 #include <c_types.h>
 #include <c_stdarg.h>

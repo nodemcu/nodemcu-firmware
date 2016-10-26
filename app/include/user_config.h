@@ -35,8 +35,6 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 
 #define NODE_ERROR
 
-extern void dbg_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-
 #ifdef NODE_DEBUG
 #define NODE_DBG dbg_printf
 #else
