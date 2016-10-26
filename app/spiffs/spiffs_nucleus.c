@@ -292,27 +292,60 @@ s32_t spiffs_probe(
     SPIFFS_CHECK_RES(res);
   }
 
-  // check that we have sane number of blocks
-  if (bix_count[0] < 3) return SPIFFS_ERR_PROBE_TOO_FEW_BLOCKS;
   // check that the order is correct, take aborted erases in calculation
+  // Note that bix_count[0] should be blockcnt, [1] should be blockcnt - 1
+  // and [2] should be blockcnt - 3
   // first block aborted erase
-  if (magic[0] == (spiffs_obj_id)(-1) && bix_count[1] - bix_count[2] == 1) {
-    return (bix_count[1]+1) * cfg->log_block_size;
-  }
+  int fs_size;
+  if (magic[0] == (spiffs_obj_id)(-1) && bix_count[1] - bix_count[2] == 2) {
+    fs_size = bix_count[1]+1;
+  } else
   // second block aborted erase
-  if (magic[1] == (spiffs_obj_id)(-1) && bix_count[0] - bix_count[2] == 2) {
-    return bix_count[0] * cfg->log_block_size;
-  }
+  if (magic[1] == (spiffs_obj_id)(-1) && bix_count[0] - bix_count[2] == 3) {
+    fs_size = bix_count[0];
+  } else
   // third block aborted erase
   if (magic[2] == (spiffs_obj_id)(-1) && bix_count[0] - bix_count[1] == 1) {
-    return bix_count[0] * cfg->log_block_size;
-  }
+    fs_size = bix_count[0];
+  } else 
   // no block has aborted erase
-  if (bix_count[0] - bix_count[1] == 1 && bix_count[1] - bix_count[2] == 1) {
-    return bix_count[0] * cfg->log_block_size;
+  if (bix_count[0] - bix_count[1] == 1 && bix_count[1] - bix_count[2] == 2) {
+    fs_size = bix_count[0];
+  } else {
+    return SPIFFS_ERR_PROBE_NOT_A_FS;
   }
 
-  return SPIFFS_ERR_PROBE_NOT_A_FS;
+  // check that we have sane number of blocks
+  if (fs_size < 3) return SPIFFS_ERR_PROBE_TOO_FEW_BLOCKS;
+
+  dummy_fs.block_count = fs_size;
+
+  // Now verify that there is at least one good block at the end
+  for (bix = fs_size - 1; bix >= 3; bix--) {
+    spiffs_obj_id end_magic;
+    paddr = SPIFFS_MAGIC_PADDR(&dummy_fs, bix);
+#if SPIFFS_HAL_CALLBACK_EXTRA
+    // not any proper fs to report here, so callback with null
+    // (cross fingers that no-one gets angry)
+    res = cfg->hal_read_f((void *)0, paddr, sizeof(spiffs_obj_id), (u8_t *)&end_magic);
+#else
+    res = cfg->hal_read_f(paddr, sizeof(spiffs_obj_id), (u8_t *)&end_magic);
+#endif
+    if (res < 0) {
+      return SPIFFS_ERR_PROBE_NOT_A_FS;
+    }
+    if (end_magic == (spiffs_obj_id)(-1)) {
+      if (bix < fs_size - 1) {
+	return SPIFFS_ERR_PROBE_NOT_A_FS;
+      }
+    } else if (end_magic != SPIFFS_MAGIC(&dummy_fs, bix)) {
+      return SPIFFS_ERR_PROBE_NOT_A_FS;
+    } else {
+      break;
+    }
+  }
+
+  return fs_size * cfg->log_block_size;
 }
 #endif // SPIFFS_USE_MAGIC && SPIFFS_USE_MAGIC_LENGTH && SPIFFS_SINGLETON==0
 
