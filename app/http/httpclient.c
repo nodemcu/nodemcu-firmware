@@ -412,13 +412,6 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 }
 
 
-static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
-{
-	HTTPCLIENT_DEBUG( "Disconnected with error\n" );
-	http_disconnect_callback( arg );
-}
-
-
 static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 {
 	HTTPCLIENT_DEBUG( "Connection timeout\n" );
@@ -437,6 +430,13 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 		espconn_secure_disconnect( conn );
 	else
 		espconn_disconnect( conn );
+}
+
+
+static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
+{
+	HTTPCLIENT_DEBUG( "Disconnected with error: %d\n", errType );
+	http_timeout_callback( arg );
 }
 
 
