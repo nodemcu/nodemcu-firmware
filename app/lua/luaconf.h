@@ -346,7 +346,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** (A format string with one argument is enough for Lua...)
 */
 #if !defined(LUA_USE_STDIO)
-#define luai_writestringerror(s,p)	c_printf((s), (p))
+#define luai_writestringerror(s,p)	dbg_printf((s), (p))
 #endif // defined(LUA_USE_STDIO)
 
 

@@ -14,7 +14,7 @@
 #define HTTPCLIENT_DEBUG_ON
 #endif
 #if defined(HTTPCLIENT_DEBUG_ON)
-#define HTTPCLIENT_DEBUG(format, ...) os_printf(format, ##__VA_ARGS__)
+#define HTTPCLIENT_DEBUG(format, ...) dbg_printf(format, ##__VA_ARGS__)
 #else
 #define HTTPCLIENT_DEBUG(format, ...)
 #endif

@@ -63,6 +63,8 @@ extern void output_redirect(const char *str);
 int c_sprintf(char* s,const char *fmt, ...);
 #endif
 
+extern void dbg_printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+
 #define c_vsprintf ets_vsprintf
 #define c_printf(...) do {					\
 	unsigned char __print_buf[BUFSIZ];		\
