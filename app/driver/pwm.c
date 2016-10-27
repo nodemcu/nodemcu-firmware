@@ -180,7 +180,7 @@ pwm_start(void)
         // yeah, if all channels' duty is 0 or 255, don't need to start timer, otherwise start...
         if (*local_channel != 1) {
 	  PWM_DBG("Need to setup timer\n");
-	  if (!platform_hw_timer_init(TIMER_OWNER, NMI_SOURCE, FALSE)) {
+	  if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, FALSE)) {
 	    return FALSE;
 	  }
 	  pwm_timer_down = 0;

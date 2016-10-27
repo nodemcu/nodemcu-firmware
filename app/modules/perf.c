@@ -93,7 +93,7 @@ static int perf_start(lua_State *L)
   data = d;
 
   // Start the timer
-  if (!platform_hw_timer_init(TIMER_OWNER, NMI_SOURCE, TRUE)) {
+  if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
     // Failed to init the timer
     data = NULL;
     lua_unref(L, d->ref);
