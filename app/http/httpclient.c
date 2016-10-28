@@ -138,7 +138,7 @@ static void ICACHE_FLASH_ATTR http_receive_callback( void * arg, char * buf, uns
 	char		* new_buffer;
 	if ( new_size > BUFFER_SIZE_MAX || NULL == (new_buffer = (char *) os_malloc( new_size ) ) )
 	{
-		HTTPCLIENT_DEBUG( "Response too long (%d)\n", new_size );
+		NODE_ERR( "Response too long (%d)\n", new_size );
 		req->buffer[0] = '\0';                                                                  /* Discard the buffer to avoid using an incomplete response. */
 		if ( req->secure )
 			espconn_secure_disconnect( conn );
@@ -306,7 +306,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			if (( os_strncmp( req->buffer, version_1_0, strlen( version_1_0 ) ) != 0 ) &&
 				( os_strncmp( req->buffer, version_1_1, strlen( version_1_1 ) ) != 0 ))
 			{
-				HTTPCLIENT_DEBUG( "Invalid version in %s\n", req->buffer );
+				NODE_ERR( "Invalid version in %s\n", req->buffer );
 			}
 			else  
 			{
@@ -327,7 +327,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 						char *locationOffsetEnd = (char *) os_strstr(locationOffset, "\r\n");
 						if ( locationOffsetEnd == NULL ) {
-							HTTPCLIENT_DEBUG( "Found Location header but was incomplete\n" );
+							NODE_ERR( "Found Location header but was incomplete\n" );
 							http_status = -1;
 						} else {
 							*locationOffsetEnd = '\0';
@@ -372,7 +372,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 							return;
 						}
 					} else {
-						HTTPCLIENT_DEBUG("Too many redirections\n");
+						NODE_ERR("Too many redirections\n");
 						http_status = -1;
 					}
 				} else {
@@ -380,7 +380,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 					if (NULL == body) {
 						  /* Find missing body */
-						  HTTPCLIENT_DEBUG("Body shouldn't be NULL\n");
+						  NODE_ERR("Body shouldn't be NULL\n");
 						  /* To avoid NULL body */
 						  body = "";
 					} else {
@@ -414,7 +414,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 {
-	HTTPCLIENT_DEBUG( "Connection timeout\n" );
+	NODE_ERR( "Connection timeout\n" );
 	struct espconn * conn = (struct espconn *) arg;
 	if ( conn == NULL )
 	{
@@ -435,7 +435,7 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 
 static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
 {
-	HTTPCLIENT_DEBUG( "Disconnected with error: %d\n", errType );
+	NODE_ERR( "Disconnected with error: %d\n", errType );
 	http_timeout_callback( arg );
 }
 
@@ -446,7 +446,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 
 	if ( addr == NULL )
 	{
-		HTTPCLIENT_DEBUG( "DNS failed for %s\n", hostname );
+		NODE_ERR( "DNS failed for %s\n", hostname );
 		if ( req->callback_handle != NULL )
 		{
 			req->callback_handle( "", -1, "" );
@@ -524,9 +524,9 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 	{
 		if ( error == ESPCONN_ARG )
 		{
-			HTTPCLIENT_DEBUG( "DNS arg error %s\n", hostname );
+			NODE_ERR( "DNS arg error %s\n", hostname );
 		}else  {
-			HTTPCLIENT_DEBUG( "DNS error code %d\n", error );
+			NODE_ERR( "DNS error code %d\n", error );
 		}
 		http_dns_callback( hostname, NULL, req ); /* Handle all DNS errors the same way. */
 	}
@@ -562,7 +562,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	} 
 	else 
 	{
-		HTTPCLIENT_DEBUG( "URL is not HTTP or HTTPS %s\n", url );
+		NODE_ERR( "URL is not HTTP or HTTPS %s\n", url );
 		return;
 	}
 
@@ -579,7 +579,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	}
 
 	if (path - url >= sizeof(hostname)) {
-		HTTPCLIENT_DEBUG( "hostname is too long %s\n", url );
+		NODE_ERR( "hostname is too long %s\n", url );
 		return;
 	}
 
@@ -593,7 +593,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 		port = atoi( colon + 1 );
 		if ( port == 0 )
 		{
-			HTTPCLIENT_DEBUG( "Port error %s\n", url );
+			NODE_ERR( "Port error %s\n", url );
 			return;
 		}
 
