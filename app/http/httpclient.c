@@ -13,6 +13,7 @@
  */
 
 #include "osapi.h"
+#include "../libc/c_stdio.h"
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"
@@ -411,13 +412,6 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 }
 
 
-static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
-{
-	HTTPCLIENT_DEBUG( "Disconnected with error\n" );
-	http_disconnect_callback( arg );
-}
-
-
 static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 {
 	HTTPCLIENT_DEBUG( "Connection timeout\n" );
@@ -436,6 +430,13 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 		espconn_secure_disconnect( conn );
 	else
 		espconn_disconnect( conn );
+}
+
+
+static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
+{
+	HTTPCLIENT_DEBUG( "Disconnected with error: %d\n", errType );
+	http_timeout_callback( arg );
 }
 
 
@@ -645,10 +646,10 @@ void ICACHE_FLASH_ATTR http_put( const char * url, const char * headers, const c
 
 void ICACHE_FLASH_ATTR http_callback_example( char * response, int http_status, char * full_response )
 {
-	os_printf( "http_status=%d\n", http_status );
+	dbg_printf( "http_status=%d\n", http_status );
 	if ( http_status != HTTP_STATUS_GENERIC_ERROR )
 	{
-		os_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
-		os_printf( "response=%s<EOF>\n", response );
+		dbg_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
+		dbg_printf( "response=%s<EOF>\n", response );
 	}
 }

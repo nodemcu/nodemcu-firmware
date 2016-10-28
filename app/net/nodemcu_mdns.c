@@ -52,7 +52,7 @@
 #include "nodemcu_mdns.h"
 
 #if 0
-#define MDNS_DBG(...)  os_printf(...)
+#define MDNS_DBG(...)  dbg_printf(...)
 #else
 #define MDNS_DBG(...)  do {} while (0)
 #endif
