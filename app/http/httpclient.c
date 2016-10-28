@@ -22,6 +22,7 @@
 #include "stdlib.h"
 
 #define REDIRECTION_FOLLOW_MAX 20
+#define HTTPCLIENT_TAG "http client"
 
 /* Internal state. */
 typedef struct request_args_t {
@@ -138,7 +139,7 @@ static void ICACHE_FLASH_ATTR http_receive_callback( void * arg, char * buf, uns
 	char		* new_buffer;
 	if ( new_size > BUFFER_SIZE_MAX || NULL == (new_buffer = (char *) os_malloc( new_size ) ) )
 	{
-		NODE_ERR( "Response too long (%d)\n", new_size );
+		NODE_ERR( "%s: Response too long (%d)\n", HTTPCLIENT_TAG, new_size );
 		req->buffer[0] = '\0';                                                                  /* Discard the buffer to avoid using an incomplete response. */
 		if ( req->secure )
 			espconn_secure_disconnect( conn );
@@ -306,7 +307,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			if (( os_strncmp( req->buffer, version_1_0, strlen( version_1_0 ) ) != 0 ) &&
 				( os_strncmp( req->buffer, version_1_1, strlen( version_1_1 ) ) != 0 ))
 			{
-				NODE_ERR( "Invalid version in %s\n", req->buffer );
+				NODE_ERR( "%s: Invalid version in %s\n", HTTPCLIENT_TAG, req->buffer );
 			}
 			else  
 			{
@@ -327,7 +328,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 						char *locationOffsetEnd = (char *) os_strstr(locationOffset, "\r\n");
 						if ( locationOffsetEnd == NULL ) {
-							NODE_ERR( "Found Location header but was incomplete\n" );
+							NODE_ERR( "%s: Found Location header but was incomplete\n", HTTPCLIENT_TAG );
 							http_status = -1;
 						} else {
 							*locationOffsetEnd = '\0';
@@ -414,7 +415,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 {
-	NODE_ERR( "Connection timeout\n" );
+	NODE_ERR( "%s: Connection timeout\n", HTTPCLIENT_TAG );
 	struct espconn * conn = (struct espconn *) arg;
 	if ( conn == NULL )
 	{
@@ -435,7 +436,7 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 
 static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
 {
-	NODE_ERR( "Disconnected with error: %d\n", errType );
+	NODE_ERR( "%s: Disconnected with error: %d\n", HTTPCLIENT_TAG, errType );
 	http_timeout_callback( arg );
 }
 
@@ -446,7 +447,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 
 	if ( addr == NULL )
 	{
-		NODE_ERR( "DNS failed for %s\n", hostname );
+		NODE_ERR( "%s: DNS failed for %s\n", HTTPCLIENT_TAG, hostname );
 		if ( req->callback_handle != NULL )
 		{
 			req->callback_handle( "", -1, "" );
@@ -524,9 +525,9 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 	{
 		if ( error == ESPCONN_ARG )
 		{
-			NODE_ERR( "DNS arg error %s\n", hostname );
+			NODE_ERR( "%s: DNS arg error %s\n", HTTPCLIENT_TAG, hostname );
 		}else  {
-			NODE_ERR( "DNS error code %d\n", error );
+			NODE_ERR( "%s: DNS error code %d\n", HTTPCLIENT_TAG, error );
 		}
 		http_dns_callback( hostname, NULL, req ); /* Handle all DNS errors the same way. */
 	}
@@ -562,7 +563,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	} 
 	else 
 	{
-		NODE_ERR( "URL is not HTTP or HTTPS %s\n", url );
+		NODE_ERR( "%s: URL is not HTTP or HTTPS %s\n", HTTPCLIENT_TAG, url );
 		return;
 	}
 
@@ -579,7 +580,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	}
 
 	if (path - url >= sizeof(hostname)) {
-		NODE_ERR( "hostname is too long %s\n", url );
+		NODE_ERR( "%s: hostname is too long %s\n", HTTPCLIENT_TAG, url );
 		return;
 	}
 
@@ -593,7 +594,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 		port = atoi( colon + 1 );
 		if ( port == 0 )
 		{
-			NODE_ERR( "Port error %s\n", url );
+			NODE_ERR( "%s: Port error %s\n", HTTPCLIENT_TAG, url );
 			return;
 		}
 
