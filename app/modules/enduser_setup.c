@@ -498,7 +498,7 @@ static int enduser_setup_http_load_payload(void)
   const char cl_hdr[] = "Content-length:%5d\r\n\r\n";
   const size_t cl_len = LITLEN(cl_hdr) + 3; /* room to expand %4d */
 
-  if (!f || err != VFS_RES_OK || err2 != VFS_RES_OK)
+  if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 

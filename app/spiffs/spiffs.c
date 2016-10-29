@@ -457,7 +457,8 @@ static sint32_t myspiffs_vfs_lseek( const struct vfs_file *fd, sint32_t off, int
     break;
   }
 
-  return SPIFFS_lseek( &fs, fh, off, spiffs_whence );
+  sint32_t res = SPIFFS_lseek( &fs, fh, off, spiffs_whence );
+  return res >= 0 ? res : VFS_RES_ERR;
 }
 
 static sint32_t myspiffs_vfs_eof( const struct vfs_file *fd ) {
