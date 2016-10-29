@@ -185,12 +185,14 @@ static void handle_error (lua_State *L, ntp_err_t err, const char *msg)
     cleanup (L);
 }
 
+#ifdef LUA_USE_MODULES_RTCTIME
 static void get_zero_base_timeofday(struct rtc_timeval *tv) {
   uint32_t now = system_get_time();
 
   tv->tv_sec = now / 1000000;
   tv->tv_usec = now % 1000000;
 }
+#endif
 
 static void sntp_handle_result(lua_State *L) {
   const uint32_t MICROSECONDS = 1000000;
