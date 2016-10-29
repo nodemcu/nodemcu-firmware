@@ -8,7 +8,7 @@ U8glib is a graphics library developed at [olikraus/u8glib](https://github.com/o
 I²C and SPI mode:
 
 - sh1106_128x64
-- ssd1306 - 128x64 and 64x48 variants
+- ssd1306 - 128x32, 128x64, and 64x48 variants
 - ssd1309_128x64
 - ssd1327_96x96_gr
 - uc1611 - dogm240 and dogxl240 variants
@@ -107,6 +107,7 @@ Initialize a display via I²C.
 The init sequence would insert delays to match the display specs. These can destabilize the overall system if wifi service is blocked for too long. It is therefore advisable to disable such delays unless the specific use case can exclude wifi traffic while initializing the display driver.
 
 - `u8g.sh1106_128x64_i2c()`
+- `u8g.ssd1306_128x32_i2c()`
 - `u8g.ssd1306_128x64_i2c()`
 - `u8g.ssd1306_64x48_i2c()`
 - `u8g.ssd1309_128x64_i2c()`
@@ -146,6 +147,7 @@ The init sequence would insert delays to match the display specs. These can dest
 - `u8g.pcd8544_84x48_hw_spi()`
 - `u8g.pcf8812_96x65_hw_spi()`
 - `u8g.sh1106_128x64_hw_spi()`
+- `u8g.ssd1306_128x32_hw_spi()`
 - `u8g.ssd1306_128x64_hw_spi()`
 - `u8g.ssd1306_64x48_hw_spi()`
 - `u8g.ssd1309_128x64_hw_spi()`
