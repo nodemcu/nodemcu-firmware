@@ -7,10 +7,6 @@ A websocket *client* module that implements [RFC6455](https://tools.ietf.org/htm
 
 The implementation supports fragmented messages, automatically respondes to ping requests and periodically pings if the server isn't communicating.
 
-!!! note
-
-    Currently, it is **not** possible to change the request headers, most notably the user agent.
-
 **SSL/TLS support**
 
 Take note of constraints documented in the [net module](net.md). 
@@ -75,10 +71,11 @@ ws = nil -- fully dispose the client as lua will now gc it
 Attempts to estabilish a websocket connection to the given URL.
 
 #### Syntax
-`websocket:connect(url)`
+`websocket:connect(url, headers)`
 
 #### Parameters
 - `url` the URL for the websocket.
+- `headers` optional additional headers to append, *including \r\n*; may be `nil`
 
 #### Returns
 `nil`

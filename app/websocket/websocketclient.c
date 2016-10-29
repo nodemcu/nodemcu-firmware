@@ -52,10 +52,11 @@
                          "Host: %s:%d\r\n"\
                          "Upgrade: websocket\r\n"\
                          "Connection: Upgrade\r\n"\
-                         "User-Agent: ESP8266\r\n"\
                          "Sec-Websocket-Key: %s\r\n"\
-                         "Sec-WebSocket-Protocol: chat\r\n"\
                          "Sec-WebSocket-Version: 13\r\n"\
+                         "%s"\
+                         "%s"\
+                         "%s"\
                          "\r\n"
 
 #define WS_INIT_HEADERS_LENGTH 169
@@ -65,6 +66,10 @@
 #define WS_HTTP_SWITCH_PROTOCOL_HEADER "HTTP/1.1 101"
 #define WS_HTTP_SEC_WEBSOCKET_ACCEPT "Sec-WebSocket-Accept:"
 
+#define WS_HTTP_USER_AGENT_HEADER "User-Agent:"
+#define WS_HTTP_DEFAULT_USER_AGENT_HEADER WS_HTTP_USER_AGENT_HEADER " ESP8266\r\n"
+#define WS_HTTP_PROTOCOL_HEADER "Sec-WebSocket-Protocol:"
+#define WS_HTTP_DEFAULT_PROTOCOL_HEADER WS_HTTP_PROTOCOL_HEADER " chat\r\n"
 #define WS_CONNECT_TIMEOUT_MS 10 * 1000
 #define WS_PING_INTERVAL_MS 30 * 1000
 #define WS_FORCE_CLOSE_TIMEOUT_MS 5 * 1000
@@ -452,7 +457,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
       } else if (opCode == WS_OPCODE_PONG) {
         // ping alarm was already reset...
       } else {
-        if (ws->onReceive) ws->onReceive(ws, payload, opCode);
+        if (ws->onReceive) ws->onReceive(ws, payloadLength, payload, opCode);
       }
       os_free(payload);
     }
@@ -509,7 +514,7 @@ static void ws_initReceiveCallback(void *arg, char *buf, unsigned short len) {
   }
 
   // Check server has valid sec key
-  if (strstr(buf, WS_HTTP_SEC_WEBSOCKET_ACCEPT) == NULL || strstr(buf, ws->expectedSecKey) == NULL) {
+  if (strstr(buf, ws->expectedSecKey) == NULL) {
     NODE_DBG("Server has invalid response\n");
     ws->knownFailureCode = -7;
     if (ws->isSecure)
@@ -550,11 +555,25 @@ static void connect_callback(void *arg) {
   char *key;
   generateSecKeys(&key, &ws->expectedSecKey);
 
-  char buf[WS_INIT_HEADERS_LENGTH + strlen(ws->path) + strlen(ws->hostname) + strlen(key)];
-  int len = os_sprintf(buf, WS_INIT_HEADERS, ws->path, ws->hostname, ws->port, key);
+  const char *extraHeaders = ws->extraHeaders ? ws->extraHeaders : "";
+
+  char buf[WS_INIT_HEADERS_LENGTH + strlen(ws->path) + strlen(ws->hostname) + strlen(key) +
+          strlen(WS_HTTP_DEFAULT_USER_AGENT_HEADER) + strlen(WS_HTTP_DEFAULT_PROTOCOL_HEADER) + strlen(extraHeaders)];
+
+  int len = os_sprintf(
+                  buf,
+                  WS_INIT_HEADERS,
+                  ws->path,
+                  ws->hostname,
+                  ws->port,
+                  key,
+                  extraHeaders,
+                  strstr(extraHeaders, WS_HTTP_USER_AGENT_HEADER) ? "" : WS_HTTP_DEFAULT_USER_AGENT_HEADER,
+                  strstr(extraHeaders, WS_HTTP_PROTOCOL_HEADER) ? "" : WS_HTTP_DEFAULT_PROTOCOL_HEADER
+                  );
 
   os_free(key);
-
+  NODE_DBG("request: %s", buf);
   NODE_DBG("connecting\n");
   if (ws->isSecure)
     espconn_secure_send(conn, (uint8_t *) buf, len);
@@ -586,6 +605,10 @@ static void disconnect_callback(void *arg) {
 
   if (ws->payloadBuffer != NULL) {
     os_free(ws->payloadBuffer);
+  }
+
+  if (ws->extraHeaders != NULL) {
+    os_free(ws->extraHeaders);
   }
 
   if (conn->proto.tcp != NULL) {
@@ -630,7 +653,7 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
   ws_info *ws = (ws_info *) conn->reverse;
 
   if (ws->conn == NULL || ws->connectionState == 4) {
-  	return;
+          return;
   }
 
   if (addr == NULL)  {
@@ -664,7 +687,7 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
   NODE_DBG("DNS found %s " IPSTR " \n", hostname, IP2STR(addr));
 }
 
-void ws_connect(ws_info *ws, const char *url) {
+void ws_connect(ws_info *ws, const char *url, const char *extraHeaders) {
   NODE_DBG("ws_connect called\n");
 
   if (ws == NULL) {
@@ -751,6 +774,7 @@ void ws_connect(ws_info *ws, const char *url) {
   ws->payloadBufferLen = 0;
   ws->payloadOriginalOpCode = 0;
   ws->unhealthyPoints = 0;
+  ws->extraHeaders = extraHeaders ? c_strdup(extraHeaders) : NULL;
 
   // Prepare espconn
   struct espconn *conn = (struct espconn *) c_zalloc(sizeof(struct espconn));

@@ -40,7 +40,7 @@
 struct ws_info;
 
 typedef void (*ws_onConnectionCallback)(struct ws_info *wsInfo);
-typedef void (*ws_onReceiveCallback)(struct ws_info *wsInfo, char *message, int opCode);
+typedef void (*ws_onReceiveCallback)(struct ws_info *wsInfo, int len, char *message, int opCode);
 typedef void (*ws_onFailureCallback)(struct ws_info *wsInfo, int errorCode);
 
 typedef struct ws_info {
@@ -51,6 +51,7 @@ typedef struct ws_info {
   int port;
   char *path;
   char *expectedSecKey;
+  char *extraHeaders;
 
   struct espconn *conn;
   void *reservedData;
@@ -74,7 +75,7 @@ typedef struct ws_info {
 /*
  * Attempts to estabilish a websocket connection to the given url.
  */
-void ws_connect(ws_info *wsInfo, const char *url);
+void ws_connect(ws_info *wsInfo, const char *url, const char *extraHeaders);
 
 /*
  * Sends a message with a given opcode.

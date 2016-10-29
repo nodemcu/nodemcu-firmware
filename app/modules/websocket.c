@@ -45,7 +45,7 @@ static void websocketclient_onConnectionCallback(ws_info *ws) {
   }
 }
 
-static void websocketclient_onReceiveCallback(ws_info *ws, char *message, int opCode) {
+static void websocketclient_onReceiveCallback(ws_info *ws, int len, char *message, int opCode) {
   NODE_DBG("websocketclient_onReceiveCallback\n");
 
   lua_State *L = lua_getstate();
@@ -59,7 +59,7 @@ static void websocketclient_onReceiveCallback(ws_info *ws, char *message, int op
   if (data->onReceive != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->onReceive); // load the callback function
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->self_ref);  // pass itself, #1 callback argument
-    lua_pushstring(L, message); // #2 callback argument
+    lua_pushlstring(L, message, len); // #2 callback argument
     lua_pushnumber(L, opCode); // #3 callback argument
     lua_call(L, 3, 0);
   }
@@ -183,7 +183,8 @@ static int websocketclient_connect(lua_State *L) {
   data->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   const char *url = luaL_checkstring(L, 2);
-  ws_connect(ws, url);
+  const char *extraHeaders = luaL_optstring(L, 3, NULL);
+  ws_connect(ws, url, extraHeaders);
 
   return 0;
 }
