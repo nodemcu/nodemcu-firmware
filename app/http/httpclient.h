@@ -11,17 +11,22 @@
 #define __HTTPCLIENT_H__
 
 #if defined(GLOBAL_DEBUG_ON)
-#define HTTPCLIENT_DEBUG_ON
+  #define HTTPCLIENT_DEBUG_ON
 #endif
 #if defined(HTTPCLIENT_DEBUG_ON)
-#define HTTPCLIENT_DEBUG(format, ...) dbg_printf(format, ##__VA_ARGS__)
+  #define HTTPCLIENT_DEBUG(format, ...) dbg_printf("HTTP client: "format"\n", ##__VA_ARGS__)
 #else
-#define HTTPCLIENT_DEBUG(format, ...)
+  #define HTTPCLIENT_DEBUG(format, ...)
+#endif
+#if defined(NODE_ERROR)
+  #define HTTPCLIENT_ERR(format, ...) NODE_ERR("HTTP client: "format"\n", ##__VA_ARGS__)
+#else
+  #define HTTPCLIENT_ERR(...)
 #endif
 
 #if defined(USES_SDK_BEFORE_V140)
-#define espconn_send espconn_sent
-#define espconn_secure_send espconn_secure_sent
+  #define espconn_send espconn_sent
+  #define espconn_secure_send espconn_secure_sent
 #endif
 
 /*
