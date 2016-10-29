@@ -298,14 +298,18 @@ end
 
 Read content from the open file.
 
+!!! note
+
+    The function temporarily allocates 2 * (number of requested bytes) on the heap for buffering and processing the read data. Default chunk size (`FILE_READ_CHUNK`) is 1024 bytes and is regarded to be safe. Pushing this by 4x or more can cause heap overflows depending on the application. Consider this when selecting a value for parameter `n_or_char`.
+
 #### Syntax
-`file.read([n_or_str])`
+`file.read([n_or_char])`
 
 #### Parameters
-- `n_or_str`:
-	- if nothing passed in, read up to `LUAL_BUFFERSIZE` bytes (default 1024) or the entire file (whichever is smaller)
-	- if passed a number n, then read the file until the lesser of `n` bytes, `LUAL_BUFFERSIZE` bytes, or EOF is reached. Specifying a number larger than the buffer size will read the buffer size.
-	- if passed a string `str`, then read until `str` appears next in the file, `LUAL_BUFFERSIZE` bytes have been read, or EOF is reached
+- `n_or_char`:
+	- if nothing passed in, then read up to `FILE_READ_CHUNK` bytes or the entire file (whichever is smaller).
+	- if passed a number `n`, then read up to `n` bytes or the entire file (whichever is smaller).
+	- if passed a string containing the single character `char`, then read until `char` appears next in the file, `FILE_READ_CHUNK` bytes have been read, or EOF is reached.
 
 #### Returns
 File content as a string, or nil when EOF
@@ -331,7 +335,7 @@ end
 
 ## file.readline()
 
-Read the next line from the open file. Lines are defined as zero or more bytes ending with a EOL ('\n') byte. If the next line is longer than `LUAL_BUFFERSIZE`, this function only returns the first `LUAL_BUFFERSIZE` bytes (this is 1024 bytes by default).
+Read the next line from the open file. Lines are defined as zero or more bytes ending with a EOL ('\n') byte. If the next line is longer than 1024, this function only returns the first 1024 bytes.
 
 #### Syntax
 `file.readline()`
