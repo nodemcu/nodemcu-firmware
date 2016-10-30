@@ -19,7 +19,6 @@
 
 
 typedef struct {
-  int canary;
   int size;
   uint8_t colorsPerLed;
   uint8_t values[0];
@@ -132,8 +131,7 @@ static int ws2812_write(lua_State* L) {
   }
   else if (type == LUA_TUSERDATA)
   {
-    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
-    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+    ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
 
     buffer1 = buffer->values;
     length1 = buffer->colorsPerLed*buffer->size;
@@ -156,8 +154,7 @@ static int ws2812_write(lua_State* L) {
   }
   else if (type == LUA_TUSERDATA)
   {
-    ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 2);
-    luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 2, "ws2812.buffer expected");
+    ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 2, "ws2812.buffer");
 
     buffer2 = buffer->values;
     length2 = buffer->colorsPerLed*buffer->size;
@@ -193,16 +190,11 @@ static int ws2812_new_buffer(lua_State *L) {
   buffer->size = leds;
   buffer->colorsPerLed = colorsPerLed;
 
-  // Store canary for future type checks
-  buffer->canary = CANARY_VALUE;
-
   return 1;
 }
 
 static int ws2812_buffer_fill(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
-
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
 
   // Grab colors
   int i, j;
@@ -230,11 +222,10 @@ static int ws2812_buffer_fill(lua_State* L) {
 }
 
 static int ws2812_buffer_fade(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.udata");
   const int fade = luaL_checkinteger(L, 2);
   unsigned direction = luaL_optinteger( L, 3, FADE_OUT );
 
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
 
   uint8_t * p = &buffer->values[0];
@@ -260,11 +251,10 @@ static int ws2812_buffer_fade(lua_State* L) {
 
 
 static int ws2812_buffer_shift(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.udata");
   const int shiftValue = luaL_checkinteger(L, 2);
   const unsigned shift_type = luaL_optinteger( L, 3, SHIFT_LOGICAL );
 
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, shiftValue > 0-buffer->size && shiftValue < buffer->size, 2, "shifting more elements than buffer size");
 
   int shift = shiftValue >= 0 ? shiftValue : -shiftValue;
@@ -322,11 +312,84 @@ static int ws2812_buffer_shift(lua_State* L) {
 
 
 
+static int ws2812_buffer_dump(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
+
+  lua_pushlstring(L, buffer->values, buffer->size * buffer->colorsPerLed);
+
+  return 1;
+}
+
+static int ws2812_buffer_load(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
+
+  const char *str;
+  size_t length;
+
+  str = lua_tolstring(L, 2, &length);
+
+  luaL_argcheck(L, length == buffer->size * buffer->colorsPerLed, 2, "Incorrect string length");
+
+  memcpy(buffer->values, str, length);
+
+  return 0;
+}
+
+// buffer:mix(factor1, buffer1, ..)
+// factor is 256 for 100%
+// uses saturating arithmetic (one buffer at a time)
+static int ws2812_buffer_mix(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
+
+  int pos = 2;
+  size_t cells = buffer->size * buffer->colorsPerLed;
+
+  c_memset(buffer->values, 0, cells);
+
+  while (pos < lua_gettop(L)) {
+    int factor = luaL_checkinteger(L, pos);
+    ws2812_buffer *src = (ws2812_buffer*) luaL_checkudata(L, pos + 1, "ws2812.buffer");
+
+    luaL_argcheck(L, src->size == buffer->size && src->colorsPerLed == buffer->colorsPerLed, pos + 1, "Buffer not same shape");
+    
+    size_t i;
+    for (i = 0; i < cells; i++) {
+      int val = buffer->values[i] + ((int)(src->values[i] * factor) >> 8);
+      if (val < 0) {
+        val = 0;
+      } else if (val > 255) {
+        val = 255;
+      }
+      buffer->values[i] = val;
+    }
+
+    pos += 2;
+  }
+
+  return 0;
+}
+
+// Returns the total of all channels
+static int ws2812_buffer_power(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
+
+  size_t cells = buffer->size * buffer->colorsPerLed;
+
+  size_t i;
+  int total = 0;
+  for (i = 0; i < cells; i++) {
+    total += buffer->values[i];
+  }
+
+  lua_pushnumber(L, total);
+
+  return 1;
+}
+
 static int ws2812_buffer_get(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   const int led = luaL_checkinteger(L, 2) - 1;
 
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, led >= 0 && led < buffer->size, 2, "index out of range");
 
   int i;
@@ -339,10 +402,9 @@ static int ws2812_buffer_get(lua_State* L) {
 }
 
 static int ws2812_buffer_set(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   const int led = luaL_checkinteger(L, 2) - 1;
 
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
   luaL_argcheck(L, led >= 0 && led < buffer->size, 2, "index out of range");
 
   int type = lua_type(L, 3);
@@ -387,9 +449,7 @@ static int ws2812_buffer_set(lua_State* L) {
 }
 
 static int ws2812_buffer_size(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)lua_touserdata(L, 1);
-
-  luaL_argcheck(L, buffer && buffer->canary == CANARY_VALUE, 1, "ws2812.buffer expected");
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
 
   lua_pushnumber(L, buffer->size);
 
@@ -398,9 +458,13 @@ static int ws2812_buffer_size(lua_State* L) {
 
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
+  { LSTRKEY( "dump" ),    LFUNCVAL( ws2812_buffer_dump )},
   { LSTRKEY( "fade" ),    LFUNCVAL( ws2812_buffer_fade )},
   { LSTRKEY( "fill" ),    LFUNCVAL( ws2812_buffer_fill )},
   { LSTRKEY( "get" ),     LFUNCVAL( ws2812_buffer_get )},
+  { LSTRKEY( "load" ),    LFUNCVAL( ws2812_buffer_load )},
+  { LSTRKEY( "mix" ),     LFUNCVAL( ws2812_buffer_mix )},
+  { LSTRKEY( "power" ),   LFUNCVAL( ws2812_buffer_power )},
   { LSTRKEY( "set" ),     LFUNCVAL( ws2812_buffer_set )},
   { LSTRKEY( "size" ),    LFUNCVAL( ws2812_buffer_size )},
   { LSTRKEY( "shift" ),   LFUNCVAL( ws2812_buffer_shift )},
