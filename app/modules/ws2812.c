@@ -190,6 +190,8 @@ static int ws2812_new_buffer(lua_State *L) {
   buffer->size = leds;
   buffer->colorsPerLed = colorsPerLed;
 
+  c_memset(buffer->values, 0, colorsPerLed * leds);
+
   return 1;
 }
 
@@ -344,26 +346,37 @@ static int ws2812_buffer_mix(lua_State* L) {
   int pos = 2;
   size_t cells = buffer->size * buffer->colorsPerLed;
 
-  c_memset(buffer->values, 0, cells);
+  int n_sources = (lua_gettop(L) - 1) / 2;
 
-  while (pos < lua_gettop(L)) {
+  struct {
+    int factor;
+    const uint8_t *values;
+  } source[n_sources];
+
+  int src;
+  for (src = 0; src < n_sources; src++, pos += 2) {
     int factor = luaL_checkinteger(L, pos);
-    ws2812_buffer *src = (ws2812_buffer*) luaL_checkudata(L, pos + 1, "ws2812.buffer");
+    ws2812_buffer *src_buffer = (ws2812_buffer*) luaL_checkudata(L, pos + 1, "ws2812.buffer");
 
-    luaL_argcheck(L, src->size == buffer->size && src->colorsPerLed == buffer->colorsPerLed, pos + 1, "Buffer not same shape");
+    luaL_argcheck(L, src_buffer->size == buffer->size && src_buffer->colorsPerLed == buffer->colorsPerLed, pos + 1, "Buffer not same shape");
     
-    size_t i;
-    for (i = 0; i < cells; i++) {
-      int val = buffer->values[i] + ((int)(src->values[i] * factor) >> 8);
-      if (val < 0) {
-        val = 0;
-      } else if (val > 255) {
-        val = 255;
-      }
-      buffer->values[i] = val;
+    source[src].factor = factor;
+    source[src].values = src_buffer->values;
+  }
+
+  size_t i;
+  for (i = 0; i < cells; i++) {
+    int val = 0;
+    for (src = 0; src < n_sources; src++) {
+      val += ((int)(source[src].values[i] * source[src].factor) >> 8);
     }
 
-    pos += 2;
+    if (val < 0) {
+      val = 0;
+    } else if (val > 255) {
+      val = 255;
+    }
+    buffer->values[i] = val;
   }
 
   return 0;
@@ -456,6 +469,38 @@ static int ws2812_buffer_size(lua_State* L) {
   return 1;
 }
 
+static int ws2812_buffer_tostring(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
+
+  luaL_Buffer result;
+  luaL_buffinit(L, &result);
+
+  luaL_addchar(&result, '[');
+  int i;
+  int p = 0;
+  for (i = 0; i < buffer->size; i++) {
+    int j;
+    if (i > 0) {
+      luaL_addchar(&result, ',');
+    }
+    luaL_addchar(&result, '(');
+    for (j = 0; j < buffer->colorsPerLed; j++, p++) {
+      if (j > 0) {
+        luaL_addchar(&result, ',');
+      }
+      char numbuf[5];
+      c_sprintf(numbuf, "%d", buffer->values[p]);
+      luaL_addstring(&result, numbuf);
+    }
+    luaL_addchar(&result, ')');
+  }
+
+  luaL_addchar(&result, ']');
+  luaL_pushresult(&result);
+
+  return 1;
+}
+
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
   { LSTRKEY( "dump" ),    LFUNCVAL( ws2812_buffer_dump )},
@@ -469,6 +514,7 @@ static const LUA_REG_TYPE ws2812_buffer_map[] =
   { LSTRKEY( "size" ),    LFUNCVAL( ws2812_buffer_size )},
   { LSTRKEY( "shift" ),   LFUNCVAL( ws2812_buffer_shift )},
   { LSTRKEY( "__index" ), LROVAL( ws2812_buffer_map )},
+  { LSTRKEY( "__tostring" ), LFUNCVAL( ws2812_buffer_tostring )},
   { LNILKEY, LNILVAL}
 };
 
