@@ -269,12 +269,21 @@ static int ws2812_buffer_shift(lua_State* L) {
   const int shiftValue = luaL_checkinteger(L, 2);
   const unsigned shift_type = luaL_optinteger( L, 3, SHIFT_LOGICAL );
 
-  luaL_argcheck(L, shiftValue > 0-buffer->size && shiftValue < buffer->size, 2, "shifting more elements than buffer size");
+  ptrdiff_t start = posrelat(luaL_optinteger(L, 4, 1), buffer->size);
+  ptrdiff_t end = posrelat(luaL_optinteger(L, 5, -1), buffer->size);
+  if (start < 1) start = 1;
+  if (end > (ptrdiff_t)buffer->size) end = (ptrdiff_t)buffer->size;
+
+  start--;
+  int size = end - start;
+  size_t offset = start * buffer->colorsPerLed;
+
+  luaL_argcheck(L, shiftValue > 0-size && shiftValue < size, 2, "shifting more elements than buffer size");
 
   int shift = shiftValue >= 0 ? shiftValue : -shiftValue;
 
   // check if we want to shift at all
-  if (shift == 0)
+  if (shift == 0 || size <= 0)
   {
     return 0;
   }
@@ -284,38 +293,38 @@ static int ws2812_buffer_shift(lua_State* L) {
   size_t shift_len, remaining_len;
   // calculate length of shift section and remaining section
   shift_len = shift*buffer->colorsPerLed;
-  remaining_len = (buffer->size-shift)*buffer->colorsPerLed;
+  remaining_len = (size-shift)*buffer->colorsPerLed;
 
   if (shiftValue > 0)
   {
     // Store the values which are moved out of the array (last n pixels)
-    c_memcpy(tmp_pixels, &buffer->values[(buffer->size-shift)*buffer->colorsPerLed], shift_len);
+    c_memcpy(tmp_pixels, &buffer->values[offset + (size-shift)*buffer->colorsPerLed], shift_len);
     // Move pixels to end
-    os_memmove(&buffer->values[shift*buffer->colorsPerLed], &buffer->values[0], remaining_len);
+    os_memmove(&buffer->values[offset + shift*buffer->colorsPerLed], &buffer->values[0], remaining_len);
     // Fill beginning with temp data
     if (shift_type == SHIFT_LOGICAL)
     {
-      c_memset(&buffer->values[0], 0, shift_len);
+      c_memset(&buffer->values[offset], 0, shift_len);
     }
     else
     {
-      c_memcpy(&buffer->values[0], tmp_pixels, shift_len);
+      c_memcpy(&buffer->values[offset], tmp_pixels, shift_len);
     }
   }
   else
   {
     // Store the values which are moved out of the array (last n pixels)
-    c_memcpy(tmp_pixels, &buffer->values[0], shift_len);
+    c_memcpy(tmp_pixels, &buffer->values[offset], shift_len);
     // Move pixels to end
-    os_memmove(&buffer->values[0], &buffer->values[shift*buffer->colorsPerLed], remaining_len);
+    os_memmove(&buffer->values[0], &buffer->values[offset + shift*buffer->colorsPerLed], remaining_len);
     // Fill beginning with temp data
     if (shift_type == SHIFT_LOGICAL)
     {
-      c_memset(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], 0, shift_len);
+      c_memset(&buffer->values[offset + (size-shift)*buffer->colorsPerLed], 0, shift_len);
     }
     else
     {
-      c_memcpy(&buffer->values[(buffer->size-shift)*buffer->colorsPerLed], tmp_pixels, shift_len);
+      c_memcpy(&buffer->values[offset + (size-shift)*buffer->colorsPerLed], tmp_pixels, shift_len);
     }
   }
   // Free memory
