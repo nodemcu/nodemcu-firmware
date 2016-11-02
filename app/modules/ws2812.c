@@ -224,7 +224,7 @@ static int ws2812_buffer_fill(lua_State* L) {
 }
 
 static int ws2812_buffer_fade(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.udata");
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   const int fade = luaL_checkinteger(L, 2);
   unsigned direction = luaL_optinteger( L, 3, FADE_OUT );
 
@@ -253,7 +253,7 @@ static int ws2812_buffer_fade(lua_State* L) {
 
 
 static int ws2812_buffer_shift(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.udata");
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   const int shiftValue = luaL_checkinteger(L, 2);
   const unsigned shift_type = luaL_optinteger( L, 3, SHIFT_LOGICAL );
 
