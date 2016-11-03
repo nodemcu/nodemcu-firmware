@@ -300,7 +300,7 @@ static int ws2812_buffer_shift(lua_State* L) {
     // Store the values which are moved out of the array (last n pixels)
     c_memcpy(tmp_pixels, &buffer->values[offset + (size-shift)*buffer->colorsPerLed], shift_len);
     // Move pixels to end
-    os_memmove(&buffer->values[offset + shift*buffer->colorsPerLed], &buffer->values[0], remaining_len);
+    os_memmove(&buffer->values[offset + shift*buffer->colorsPerLed], &buffer->values[offset], remaining_len);
     // Fill beginning with temp data
     if (shift_type == SHIFT_LOGICAL)
     {
@@ -316,7 +316,7 @@ static int ws2812_buffer_shift(lua_State* L) {
     // Store the values which are moved out of the array (last n pixels)
     c_memcpy(tmp_pixels, &buffer->values[offset], shift_len);
     // Move pixels to end
-    os_memmove(&buffer->values[0], &buffer->values[offset + shift*buffer->colorsPerLed], remaining_len);
+    os_memmove(&buffer->values[offset], &buffer->values[offset + shift*buffer->colorsPerLed], remaining_len);
     // Fill beginning with temp data
     if (shift_type == SHIFT_LOGICAL)
     {
