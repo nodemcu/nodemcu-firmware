@@ -13,7 +13,7 @@
 // This adds the asserts in LUA. It also adds some useful extras to the
 // node module. This is all silent in normal operation and so can be enabled
 // without any harm (except for the code size increase and slight slowdown)
-#define DEVELOPMENT_TOOLS
+//#define DEVELOPMENT_TOOLS
 
 #ifdef DEVELOPMENT_TOOLS
 extern void luaL_assertfail(const char *file, int line, const char *message);
