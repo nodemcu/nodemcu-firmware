@@ -15,6 +15,7 @@
 
 #include "c_types.h"
 #include "c_string.h"
+#include "c_stdlib.h"
 
 #include "websocketclient.h"
 
@@ -102,6 +103,7 @@ static int websocket_createClient(lua_State *L) {
 
   ws_info *ws = (ws_info *) lua_newuserdata(L, sizeof(ws_info));
   ws->connectionState = 0;
+  ws->extraHeaders = NULL;
   ws->onConnection = &websocketclient_onConnectionCallback;
   ws->onReceive = &websocketclient_onReceiveCallback;
   ws->onFailure = &websocketclient_onCloseCallback;
@@ -183,8 +185,59 @@ static int websocketclient_connect(lua_State *L) {
   data->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   const char *url = luaL_checkstring(L, 2);
-  const char *extraHeaders = luaL_optstring(L, 3, NULL);
-  ws_connect(ws, url, extraHeaders);
+  ws_connect(ws, url);
+
+  return 0;
+}
+
+static header_t *realloc_headers(header_t *headers, int new_size) {
+  if(headers) {
+    for(header_t *header = headers; header->key; header++) {
+      c_free(header->value);
+      c_free(header->key);
+    }
+    c_free(headers);
+  }
+  if(!new_size)
+    return NULL;
+  return (header_t *)c_malloc(sizeof(header_t) * (new_size + 1));
+}
+
+static int websocketclient_config(lua_State *L) {
+  NODE_DBG("websocketclient_config is called.\n");
+
+  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
+  luaL_argcheck(L, ws, 1, "Client websocket expected");
+
+  ws_data *data = (ws_data *) ws->reservedData;
+
+  luaL_checktype(L, 2, LUA_TTABLE);
+  lua_getfield(L, 2, "headers");
+  if(lua_istable(L, -1)) {
+
+    lua_pushnil(L);
+    int size = 0;
+    while(lua_next(L, -2)) {
+      size++;
+      lua_pop(L, 1);
+    }
+
+    ws->extraHeaders = realloc_headers(ws->extraHeaders, size);
+    if(ws->extraHeaders) {
+      header_t *header = ws->extraHeaders;
+
+      lua_pushnil(L);
+      while(lua_next(L, -2)) {
+        header->key = c_strdup(lua_tostring(L, -2));
+        header->value = c_strdup(lua_tostring(L, -1));
+        header++;
+        lua_pop(L, 1);
+      }
+
+      header->key = header->value = NULL;
+    }
+  }
+  lua_pop(L, 1); // pop headers
 
   return 0;
 }
@@ -228,6 +281,8 @@ static int websocketclient_gc(lua_State *L) {
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
   luaL_argcheck(L, ws, 1, "Client websocket expected");
 
+  ws->extraHeaders = realloc_headers(ws->extraHeaders, 0);
+
   ws_data *data = (ws_data *) ws->reservedData;
 
   luaL_unref(L, LUA_REGISTRYINDEX, data->onConnection);
@@ -266,6 +321,7 @@ static const LUA_REG_TYPE websocket_map[] =
 static const LUA_REG_TYPE websocketclient_map[] =
 {
   { LSTRKEY("on"), LFUNCVAL(websocketclient_on) },
+  { LSTRKEY("config"), LFUNCVAL(websocketclient_config) },
   { LSTRKEY("connect"), LFUNCVAL(websocketclient_connect) },
   { LSTRKEY("send"), LFUNCVAL(websocketclient_send) },
   { LSTRKEY("close"), LFUNCVAL(websocketclient_close) },

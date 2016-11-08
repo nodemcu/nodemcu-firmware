@@ -47,29 +47,16 @@
 #define PORT_INSECURE 80
 #define PORT_MAX_VALUE 65535
 
-// TODO: user agent configurable
-#define WS_INIT_HEADERS  "GET %s HTTP/1.1\r\n"\
-                         "Host: %s:%d\r\n"\
-                         "Upgrade: websocket\r\n"\
-                         "Connection: Upgrade\r\n"\
-                         "Sec-Websocket-Key: %s\r\n"\
-                         "Sec-WebSocket-Version: 13\r\n"\
-                         "%s"\
-                         "%s"\
-                         "%s"\
-                         "\r\n"
+#define WS_INIT_REQUEST  "GET %s HTTP/1.1\r\n"\
+                         "Host: %s:%d\r\n"
 
-#define WS_INIT_HEADERS_LENGTH 169
+#define WS_INIT_REQUEST_LENGTH 30
 #define WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 #define WS_GUID_LENGTH 36
 
 #define WS_HTTP_SWITCH_PROTOCOL_HEADER "HTTP/1.1 101"
 #define WS_HTTP_SEC_WEBSOCKET_ACCEPT "Sec-WebSocket-Accept:"
 
-#define WS_HTTP_USER_AGENT_HEADER "User-Agent:"
-#define WS_HTTP_DEFAULT_USER_AGENT_HEADER WS_HTTP_USER_AGENT_HEADER " ESP8266\r\n"
-#define WS_HTTP_PROTOCOL_HEADER "Sec-WebSocket-Protocol:"
-#define WS_HTTP_DEFAULT_PROTOCOL_HEADER WS_HTTP_PROTOCOL_HEADER " chat\r\n"
 #define WS_CONNECT_TIMEOUT_MS 10 * 1000
 #define WS_PING_INTERVAL_MS 30 * 1000
 #define WS_FORCE_CLOSE_TIMEOUT_MS 5 * 1000
@@ -81,6 +68,13 @@
 #define WS_OPCODE_CLOSE 0x8
 #define WS_OPCODE_PING 0x9
 #define WS_OPCODE_PONG 0xA
+
+header_t DEFAULT_HEADERS[] = {
+  {"User-Agent", "ESP8266"},
+  {"Sec-WebSocket-Protocol", "chat"},
+  {0}
+};
+header_t *EMPTY_HEADERS = DEFAULT_HEADERS + sizeof(DEFAULT_HEADERS) / sizeof(header_t) - 1;
 
 static char *cryptoSha1(char *data, unsigned int len) {
   SHA1_CTX ctx;
@@ -131,6 +125,37 @@ static void generateSecKeys(char **key, char **expectedKey) {
   *expectedKey = base64Encode(keyEncrypted, 20);
 
   os_free(keyEncrypted);
+}
+
+static int headers_length(header_t *headers) {
+  int length = 0;
+  for(; headers->key; headers++)
+    length += strlen(headers->key) + strlen(headers->value) + 4;
+  return length;
+}
+
+static int sprintf_headers(char *buf, ...) {
+  int len = 0;
+  va_list args;
+  va_start(args, buf);
+  for(header_t *header_set = va_arg(args, header_t *); header_set; header_set = va_arg(args, header_t *))
+    for(header_t *header = header_set; header->key; header++) {
+      va_list args2;
+      va_start(args2, buf);
+      for(header_t *header_set2 = va_arg(args2, header_t *); header_set2; header_set2 = va_arg(args2, header_t *))
+        for(header_t *header2 = header_set2; header2->key; header2++) {
+          if(header == header2)
+            goto ok;
+          if(!strcasecmp(header->key, header2->key))
+            goto skip;
+        }
+ok:
+      len += os_sprintf(buf + len, "%s: %s\r\n", header->key, header->value);
+skip:;
+    }
+  buf[len] = '\r';
+  buf[len+1] = '\n';
+  return len + 2;
 }
 
 static void ws_closeSentCallback(void *arg) {
@@ -555,26 +580,31 @@ static void connect_callback(void *arg) {
   char *key;
   generateSecKeys(&key, &ws->expectedSecKey);
 
-  const char *extraHeaders = ws->extraHeaders ? ws->extraHeaders : "";
+  header_t headers[] = {
+	  {"Upgrade", "websocket"},
+	  {"Connection", "Upgrade"},
+	  {"Sec-Websocket-Key", key},
+	  {"Sec-WebSocket-Version", "13"},
+	  {0}
+  };
 
-  char buf[WS_INIT_HEADERS_LENGTH + strlen(ws->path) + strlen(ws->hostname) + strlen(key) +
-          strlen(WS_HTTP_DEFAULT_USER_AGENT_HEADER) + strlen(WS_HTTP_DEFAULT_PROTOCOL_HEADER) + strlen(extraHeaders)];
+  header_t *extraHeaders = ws->extraHeaders ? ws->extraHeaders : EMPTY_HEADERS;
+
+  char buf[WS_INIT_REQUEST_LENGTH + strlen(ws->path) + strlen(ws->hostname) +
+	  headers_length(DEFAULT_HEADERS) + headers_length(headers) + headers_length(extraHeaders) + 2];
 
   int len = os_sprintf(
                   buf,
-                  WS_INIT_HEADERS,
+                  WS_INIT_REQUEST,
                   ws->path,
                   ws->hostname,
-                  ws->port,
-                  key,
-                  extraHeaders,
-                  strstr(extraHeaders, WS_HTTP_USER_AGENT_HEADER) ? "" : WS_HTTP_DEFAULT_USER_AGENT_HEADER,
-                  strstr(extraHeaders, WS_HTTP_PROTOCOL_HEADER) ? "" : WS_HTTP_DEFAULT_PROTOCOL_HEADER
-                  );
+                  ws->port
+		  );
+
+  len += sprintf_headers(buf + len, headers, extraHeaders, DEFAULT_HEADERS, 0);
 
   os_free(key);
   NODE_DBG("request: %s", buf);
-  NODE_DBG("connecting\n");
   if (ws->isSecure)
     espconn_secure_send(conn, (uint8_t *) buf, len);
   else
@@ -605,10 +635,6 @@ static void disconnect_callback(void *arg) {
 
   if (ws->payloadBuffer != NULL) {
     os_free(ws->payloadBuffer);
-  }
-
-  if (ws->extraHeaders != NULL) {
-    os_free(ws->extraHeaders);
   }
 
   if (conn->proto.tcp != NULL) {
@@ -687,7 +713,7 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
   NODE_DBG("DNS found %s " IPSTR " \n", hostname, IP2STR(addr));
 }
 
-void ws_connect(ws_info *ws, const char *url, const char *extraHeaders) {
+void ws_connect(ws_info *ws, const char *url) {
   NODE_DBG("ws_connect called\n");
 
   if (ws == NULL) {
@@ -774,7 +800,6 @@ void ws_connect(ws_info *ws, const char *url, const char *extraHeaders) {
   ws->payloadBufferLen = 0;
   ws->payloadOriginalOpCode = 0;
   ws->unhealthyPoints = 0;
-  ws->extraHeaders = extraHeaders ? c_strdup(extraHeaders) : NULL;
 
   // Prepare espconn
   struct espconn *conn = (struct espconn *) c_zalloc(sizeof(struct espconn));

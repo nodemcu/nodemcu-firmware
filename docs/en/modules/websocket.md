@@ -66,16 +66,36 @@ ws = nil -- fully dispose the client as lua will now gc it
 ```
 
 
+## websocket.client:config(params)
+
+Configures websocket client instance.
+
+#### Syntax
+`websocket:config(params)`
+
+#### Parameters
+- `params` table with configuration parameters. Following keys are recognized:
+  - `headers` table of extra request headers
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+ws = websocket.createClient()
+ws:config({headers={['User-Agent']='NodeMCU'}})
+```
+
+
 ## websocket.client:connect()
 
 Attempts to estabilish a websocket connection to the given URL.
 
 #### Syntax
-`websocket:connect(url, headers)`
+`websocket:connect(url)`
 
 #### Parameters
 - `url` the URL for the websocket.
-- `headers` optional additional headers to append, *including \r\n*; may be `nil`
 
 #### Returns
 `nil`
