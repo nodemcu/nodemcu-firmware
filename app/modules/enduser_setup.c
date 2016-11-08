@@ -424,7 +424,7 @@ static int enduser_setup_http_load_payload(void)
   c_sprintf(cl_hdr, http_header_content_len_fmt, file_len);
   size_t cl_len = c_strlen(cl_hdr);
 
-  if (!f || err != VFS_RES_OK || err2 != VFS_RES_OK)
+  if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 
