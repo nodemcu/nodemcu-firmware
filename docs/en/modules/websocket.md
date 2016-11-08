@@ -75,7 +75,7 @@ Configures websocket client instance.
 
 #### Parameters
 - `params` table with configuration parameters. Following keys are recognized:
-  - `headers` table of extra request headers
+  - `headers` table of extra request headers affecting every request
 
 #### Returns
 `nil`
