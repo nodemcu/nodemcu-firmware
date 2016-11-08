@@ -583,7 +583,7 @@ static void connect_callback(void *arg) {
   header_t headers[] = {
 	  {"Upgrade", "websocket"},
 	  {"Connection", "Upgrade"},
-	  {"Sec-Websocket-Key", key},
+	  {"Sec-WebSocket-Key", key},
 	  {"Sec-WebSocket-Version", "13"},
 	  {0}
   };
