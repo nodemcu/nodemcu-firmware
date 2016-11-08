@@ -20,6 +20,18 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 - `mode` is `qio` for 512&nbsp;kByte modules and `dio` for 4&nbsp;MByte modules (`qio` might work as well, YMMV).
 - `size` is given in bits. Specify `4m` for 512&nbsp;kByte and `32m` for 4&nbsp;MByte.
 
+Working example for ESP-01:
+
+`sudo python esptool.py --port /dev/ttyUSB0 write_flash  -fm qio  -fs 8m 0x00000 ./nodemcu-master-9-modules-2016-11-08-09-33-18-integer.bin 0xfc000 esp_init_data_default.bin `
+
+Working example for ESP-12:
+
+`sudo python esptool.py --port /dev/ttyUSB0 write_flash -fs 32m -fm dio 0x0000 nodemcu-master-22-modules-2016-08-10-16-54-08-float.bin 
+sudo python esptool.py --port /dev/ttyUSB0 write_flash -fs 32m -fm dio 0x3fc000 esp_init_data_default.bin`
+
+After Flash upgrade set ESPlorer Baud Rate to 115200!! (or having garbage serial output)
+
+
 Check the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for details and other options.
 
 ## NodeMCU Flasher
