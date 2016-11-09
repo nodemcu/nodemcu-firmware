@@ -384,6 +384,21 @@ static int node_restore (lua_State *L)
   return 0;
 }
 
+#include "swTimer/swTimer.h"
+
+static int node_suspend_timers (lua_State *L)
+{
+  lua_pushnumber(L, sw_timer_suspend(NULL));
+  return 1;
+}
+
+static int node_resume_timers (lua_State *L)
+{
+  lua_pushnumber(L, sw_timer_resume(NULL));
+  return 1;
+}
+
+
 #ifdef LUA_OPTIMIZE_DEBUG
 /* node.stripdebug([level[, function]]). 
  * level:    1 don't discard debug
@@ -585,6 +600,8 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
+  { LSTRKEY( "suspendTimers" ), LFUNCVAL( node_suspend_timers ) },
+  { LSTRKEY( "resumeTimers" ), LFUNCVAL( node_resume_timers ) },
   { LSTRKEY( "random" ), LFUNCVAL( node_random) },
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },

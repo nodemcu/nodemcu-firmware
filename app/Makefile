@@ -45,7 +45,10 @@ SUBDIRS= 					\
 	http					\
 	fatfs					\
 	esp-gdbstub				\
-	websocket
+	websocket				\
+	swTimer					\
+	misc					\
+	
 
 endif # } PDIR
 
@@ -95,6 +98,9 @@ COMPONENTS_eagle.app.v6 = 			\
 	net/libnodemcu_net.a			\
 	mbedtls/libmbedtls.a      \
 	modules/libmodules.a			\
+	swTimer/libswtimer.a			\
+	misc/libmisc.a					\
+	
 
 # Inspect the modules library and work out which modules need to be linked.
 # For each enabled module, a symbol name of the form XYZ_module_selected is
