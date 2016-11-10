@@ -11,10 +11,10 @@ Below you'll find all necessary information to flash a NodeMCU firmware binary t
 
 ## Tool overview
 
-**esptool.py**
-> A cute Python utility to communicate with the ROM bootloader in Espressif ESP8266. It is intended to be a simple, platform independent, open source replacement for XTCOM.
+### esptool.py
+> A Python-based, open source, platform independent, utility to communicate with the ROM bootloader in Espressif ESP8266.
 
-Source: [https://github.com/themadinventor/esptool](https://github.com/themadinventor/esptool)
+Source: [https://github.com/espressif/esptool](https://github.com/espressif/esptool)
 
 Supported platforms: OS X, Linux, Windows, anything that runs Python
 
@@ -22,28 +22,25 @@ Supported platforms: OS X, Linux, Windows, anything that runs Python
 
 Run the following command to flash an *aggregated* binary as is produced for example by the [cloud build service](build.md#cloud-build-service) or the [Docker image](build.md#docker-image).
 
-`esptool.py --port <serial-port-of-ESP8266> write_flash -fm <mode> -fs <size> 0x00000 <nodemcu-firmware>.bin`
+`esptool.py --port <serial-port-of-ESP8266> write_flash -fm <mode> 0x00000 <nodemcu-firmware>.bin`
 
-- `mode` is `qio` for 512&nbsp;kByte modules and `dio` for 4&nbsp;MByte modules (`qio` might work as well, YMMV).
-- `size` is given in bits. Specify `4m` for 512&nbsp;kByte and `32m` for 4&nbsp;MByte.  If unsure, try a smaller size;
-NodeMCU will by default detect and correct the size at first boot.
+`mode` is `qio` for 512&nbsp;kByte modules and `dio` for >=4&nbsp;MByte modules (`qio` might work as well, YMMV).
 
-See [below](#determine-flash-size) if you don't know or are uncertain about the capacity of flash chip on your device. It might help to double check as e.g. some ESP-01 modules come with 512kB while others are equipped with 1MB.
+**Gotchas**
 
-In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
-
+- See [below](#determine-flash-size) if you don't know or are uncertain about the capacity of the flash chip on your device. It might help to double check as e.g. some ESP-01 modules come with 512kB while others are equipped with 1MB.
+- esptool.py is under heavy development. It's advised you run the latest version (check with `esptool.py version`). Since this documentation may not have been able to keep up refer to the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for current options and parameters.
+- In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
 `esptool.py --port <serial-port-of-ESP8266> erase_flash`
 
-Check the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for details and other options.
-
-**NodeMCU Flasher**
+### NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
 
 Source: [https://github.com/nodemcu/nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
 
 Supported platforms: Windows
 
-Note that this tool was created by the initial developers of the NodeMCU firmware. It hasn't seen updates since September 2015 and is not maintained by the current NodeMCU *firmware* team. Be careful not to accidentally flash the very old default firmware the tool is shipped with.
+Note that this tool was created by the initial developers of the NodeMCU firmware. It hasn't seen updates since September 2015 and is not maintained by the current NodeMCU *firmware* team. Be careful to not accidentally flash the very old default firmware the tool is shipped with.
 
 ## Putting Device Into Flash Mode
 
@@ -62,21 +59,6 @@ Otherwise, if you built your own firmware from source code:
 - `bin/0x00000.bin` to 0x00000
 - `bin/0x10000.bin` to 0x10000
 
-## Determine flash size
-
-To determine the capacity of the flash chip *before* a firmware is installed you can run
-
-`esptool.py --port <serial-port> flash_id`
-
-It will return a manufacturer ID and a chip ID like so:
-
-```
-Connecting...
-Manufacturer: e0
-Device: 4016
-```
-The chip ID can then be looked up in [https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h](https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h). This leads to a manufacturer name and a chip model name/number e.g. `AMIC_A25LQ032`. That information can then be fed into your favorite search engine to find chip descriptions and data sheets.
-
 ## Upgrading Firmware
 
 There are three potential issues that arise from upgrading (or downgrading!) firmware from one NodeMCU version to another:
@@ -84,6 +66,7 @@ There are three potential issues that arise from upgrading (or downgrading!) fir
 * Lua scripts written for one NodeMCU version (like 0.9.x) may not work error-free on a more recent firmware.  For example, Espressif changed the `socket:send` operation to be asynchronous i.e. non-blocking. See [API documentation](modules/net.md#netsocketsend) for details.
 
 * The NodeMCU flash file system may need to be reformatted, particularly if its address has changed because the new firmware is different in size from the old firmware.  If it is not automatically formatted then it should be valid and have the same contents as before the flash operation. You can still run [`file.format()`](modules/file.md#fileformat) manually to re-format your flash file system. You will know if you need to do this if your flash files exist but seem empty, or if data cannot be written to new files. However, this should be an exceptional case.
+Formatting a file system on a large flash device (e.g. the 16MB parts) can take some time. So, on the first boot, you shouldn't get worried if nothing appears to happen for a minute. There's a message printed to console to make you aware of this.
 
 * The Espressif SDK Init Data may change between each NodeMCU firmware version, and may need to be erased or reflashed.  See [SDK Init Data](#sdk-init-data) for details.  Fully erasing the module before upgrading firmware will avoid this issue.
 
@@ -107,7 +90,7 @@ Espressif refers to this area as "System Param" and it resides in the last four 
 
 The default init data is provided as part of the SDK in the file `esp_init_data_default.bin`. NodeMCU will automatically flash this file to the right place on first boot if the sector appears to be empty.
 
-If you need to customize the contents of the init data first download the [SDK patch 1.5.4.1](http://bbs.espressif.com/download/file.php?id=1572) and extract `esp_init_data_default.bin`. This file then needs to be flashed just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip. 
+If you need to customize init data then first download the [Espressif SDK patch 1.5.4.1](http://bbs.espressif.com/download/file.php?id=1572) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip. 
 
 - `0x7c000` for 512 kB, modules like most ESP-01, -03, -07 etc.
 - `0xfc000` for 1 MB, modules like ESP8285, PSF-A85, some ESP-01, -03 etc.
@@ -116,3 +99,19 @@ If you need to customize the contents of the init data first download the [SDK p
 
 See "4.1 Non-FOTA Flash Map" and "6.3 RF Initialization Configuration" of the [ESP8266 Getting Started Guide](https://espressif.com/en/support/explore/get-started/esp8266/getting-started-guide) for details on init data addresses and customization.
 
+## Determine flash size
+
+To determine the capacity of the flash chip *before* a firmware is installed you can run
+
+`esptool.py --port <serial-port> flash_id`
+
+It will return a manufacturer ID and a chip ID like so:
+
+```
+Connecting...
+Manufacturer: e0
+Device: 4016
+```
+The chip ID can then be looked up in [https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h](https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h). This leads to a manufacturer name and a chip model name/number e.g. `AMIC_A25LQ032`. That information can then be fed into your favorite search engine to find chip descriptions and data sheets.
+
+By convention the last two or three digits in the module name denote the capacity in megabits. So, `A25LQ032` in the example above is a 32Mb(=4MB) module.
