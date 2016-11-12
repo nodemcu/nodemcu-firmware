@@ -9,13 +9,13 @@
 #include <stdlib.h>
 #include "rom/spi_flash.h"
 
-#include "../../bootloader/src/main/bootloader_config.h"
+#include "esp_flash_data_types.h"
 
 #define FLASH_HDR_ADDR 0x1000
 
-static inline struct flash_hdr flash_load_rom_header (void)
+static inline esp_image_header_t flash_load_rom_header (void)
 {
-  struct flash_hdr hdr;
+  esp_image_header_t hdr;
   if (ESP_OK !=
       spi_flash_read (FLASH_HDR_ADDR, (uint32_t *)&hdr, sizeof (hdr)))
   {
@@ -79,11 +79,11 @@ uint32_t flash_rom_get_size_byte(void)
     switch (flash_load_rom_header ().spi_size)
     {
       default: // Unknown flash size, fall back mode.
-      case SPI_SIZE_1MB:  flash_size = FLASH_SIZE_1MBYTE; break;
-      case SPI_SIZE_2MB:  flash_size = FLASH_SIZE_2MBYTE; break;
-      case SPI_SIZE_4MB:  flash_size = FLASH_SIZE_4MBYTE; break;
-      case SPI_SIZE_8MB:  flash_size = FLASH_SIZE_8MBYTE; break;
-      case SPI_SIZE_16MB: flash_size = FLASH_SIZE_16MBYTE; break;
+      case ESP_IMAGE_FLASH_SIZE_1MB:  flash_size = FLASH_SIZE_1MBYTE; break;
+      case ESP_IMAGE_FLASH_SIZE_2MB:  flash_size = FLASH_SIZE_2MBYTE; break;
+      case ESP_IMAGE_FLASH_SIZE_4MB:  flash_size = FLASH_SIZE_4MBYTE; break;
+      case ESP_IMAGE_FLASH_SIZE_8MB:  flash_size = FLASH_SIZE_8MBYTE; break;
+      case ESP_IMAGE_FLASH_SIZE_16MB: flash_size = FLASH_SIZE_16MBYTE; break;
     }
   }
   return flash_size;
@@ -95,7 +95,7 @@ static bool flash_rom_set_size_type(uint8_t size_code)
     // Reboot required!!!
     // If you don't know what you're doing, your nodemcu may turn into stone ...
     NODE_DBG("\nBEGIN SET FLASH HEADER\n");
-    struct flash_hdr *hdr = (struct flash_hdr *)malloc (SPI_FLASH_SEC_SIZE);
+    esp_image_header_t *hdr = (esp_image_header_t *)malloc (SPI_FLASH_SEC_SIZE);
     if (!hdr)
       return false;
 
@@ -125,11 +125,11 @@ bool flash_rom_set_size_byte(uint32_t size)
     uint8_t size_code = 0;
     switch (size)
     {
-      case FLASH_SIZE_1MBYTE:  size_code = SPI_SIZE_1MB; break;
-      case FLASH_SIZE_2MBYTE:  size_code = SPI_SIZE_2MB; break;
-      case FLASH_SIZE_4MBYTE:  size_code = SPI_SIZE_4MB; break;
-      case FLASH_SIZE_8MBYTE:  size_code = SPI_SIZE_8MB; break;
-      case FLASH_SIZE_16MBYTE: size_code = SPI_SIZE_16MB; break;
+      case FLASH_SIZE_1MBYTE:  size_code = ESP_IMAGE_FLASH_SIZE_1MB; break;
+      case FLASH_SIZE_2MBYTE:  size_code = ESP_IMAGE_FLASH_SIZE_2MB; break;
+      case FLASH_SIZE_4MBYTE:  size_code = ESP_IMAGE_FLASH_SIZE_4MB; break;
+      case FLASH_SIZE_8MBYTE:  size_code = ESP_IMAGE_FLASH_SIZE_8MB; break;
+      case FLASH_SIZE_16MBYTE: size_code = ESP_IMAGE_FLASH_SIZE_16MB; break;
       default: ok = false; break;
     }
     if (ok)
@@ -154,10 +154,10 @@ uint32_t flash_rom_get_speed(void)
 {
   switch (flash_load_rom_header ().spi_speed)
   {
-    case SPI_SPEED_40M: return 40000000;
-    case SPI_SPEED_26M: return 26700000; // TODO: verify 26.7MHz
-    case SPI_SPEED_20M: return 20000000;
-    case SPI_SPEED_80M: return 80000000;
+    case ESP_IMAGE_SPI_SPEED_40M: return 40000000;
+    case ESP_IMAGE_SPI_SPEED_26M: return 26700000; // TODO: verify 26.7MHz
+    case ESP_IMAGE_SPI_SPEED_20M: return 20000000;
+    case ESP_IMAGE_SPI_SPEED_80M: return 80000000;
     default: break;
   }
   return 0;

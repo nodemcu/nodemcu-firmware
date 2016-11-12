@@ -179,10 +179,10 @@ static void on_scan_done (const system_event_t *evt)
   if (!lua_isnoneornil (L, -1))
   {
     uint16_t num_ap = 0;
-    esp_err_t err = esp_wifi_get_ap_num (&num_ap);
-    wifi_ap_list_t *aps = luaM_malloc (L, num_ap * sizeof (wifi_ap_list_t));
+    esp_err_t err = esp_wifi_scan_get_ap_num (&num_ap);
+    wifi_ap_record_t *aps = luaM_malloc (L, num_ap * sizeof (wifi_ap_record_t));
     if ((err == ESP_OK) && (aps) &&
-        (err = esp_wifi_get_ap_list (&num_ap, aps)) == ESP_OK)
+        (err = esp_wifi_scan_get_ap_records (&num_ap, aps)) == ESP_OK)
     {
       lua_pushnil (L); // no error
 
