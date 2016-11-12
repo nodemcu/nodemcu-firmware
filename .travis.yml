@@ -12,7 +12,6 @@ cache:
 install:
   - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:$PATH
 script:
-- sed -i -e 's,../include,$(PROJECT_PATH)/build/include,' sdk/esp32-esp-idf/components/esp32/component.mk # Temporary workaround: delete broken idf dependency
 - export BUILD_DATE=$(date +%Y%m%d)
 - env BUILD_DIR_BASE=build/float make MORE_CFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
 - env BUILD_DIR_BASE=build/integer make MORE_CFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
