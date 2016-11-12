@@ -164,7 +164,6 @@ void app_main (void)
   nodemcu_init ();
 
   nvs_flash_init ();
-  system_init ();
   tcpip_adapter_init ();
 
   start_lua ();
