@@ -8,7 +8,7 @@ IDF_PATH=$(THIS_DIR)/sdk/esp32-esp-idf
 all:
 %:
 	@echo Setting IDF_PATH and re-invoking...
-	@env IDF_PATH=$(IDF_PATH) $(MAKE) -f $(THIS_MK_FILE) $@
+	@env IDF_PATH=$(IDF_PATH) PATH=$(PATH):$(THIS_DIR)/tools/toolchains/esp32/bin/ $(MAKE) -f $(THIS_MK_FILE) $@
 
 else
 
