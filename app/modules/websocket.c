@@ -120,7 +120,6 @@ static int websocketclient_on(lua_State *L) {
   NODE_DBG("websocketclient_on\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -172,7 +171,6 @@ static int websocketclient_connect(lua_State *L) {
   NODE_DBG("websocketclient_connect is called.\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -207,7 +205,6 @@ static int websocketclient_config(lua_State *L) {
   NODE_DBG("websocketclient_config is called.\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -246,7 +243,6 @@ static int websocketclient_send(lua_State *L) {
   NODE_DBG("websocketclient_send is called.\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -279,7 +275,6 @@ static int websocketclient_gc(lua_State *L) {
   NODE_DBG("websocketclient_gc\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws->extraHeaders = realloc_headers(ws->extraHeaders, 0);
 
