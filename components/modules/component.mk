@@ -15,5 +15,3 @@ CFLAGS += \
 	-Werror=unused-function \
 	-Werror=unused-but-set-variable \
 	-Werror=unused-variable \
-
-include $(IDF_PATH)/make/component_common.mk

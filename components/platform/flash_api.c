@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include "rom/spi_flash.h"
 
-#include "esp_flash_data_types.h"
+#include "esp_image_format.h"
 
 #define FLASH_HDR_ADDR 0x1000
 
