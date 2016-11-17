@@ -77,6 +77,10 @@
     U8G_DISPLAY_TABLE_ENTRY(ssd1306_128x64_hw_spi)              \
 
 #undef U8G_DISPLAY_TABLE_ENTRY
+
+// Special display device to provide run-length encoded framebuffer contents
+// to a Lua callback:
+//#define U8G_DISPLAY_FB_RLE
 //
 // ***************************************************************************
 

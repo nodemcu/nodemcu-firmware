@@ -204,6 +204,30 @@ disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 #### See also
 [I²C Display Drivers](#i2c-display-drivers)
 
+## u8g.fb_rle
+Initialize a virtual display that provides run-length encoded framebuffer contents to a Lua callback.
+
+The callback function can be used to process the framebuffer line by line. It's called with either `nil` as parameter to indicate the start of a new frame or with a string containing a line of the framebuffer with run-length encoding. First byte in the string specifies how many pairs of (x, len) follow, while each pair defines the start (leftmost x-coordinate) and length of a sequence of lit pixels. All other pixels in the line are dark.
+
+```lua
+n = struct.unpack("B", rle_line)
+print(n.." pairs")
+for i = 0,n-1 do
+  print(string.format("  x: %d len: %d", struct.unpack("BB", rle_line, 1+1 + i*2)))
+end
+```
+
+#### Syntax
+`u8g.fb_rle(cb_fn, width, height)`
+
+#### Parameters
+- `cb_fn([rle_line])` callback function. `rle_line` is a string containing a run-length encoded framebuffer line, or `nil` to indicate start of frame.
+- `width` of display. Must be a multiple of 8, less than or equal to 248.
+- `height` of display. Must be a multiple of 8, less than or equal to 248.
+
+#### Returns
+u8g display object
+
 ___
 
 ## Constants
