@@ -79,6 +79,13 @@ config LUA_MODULE_NODE
   help
       Includes the node module (recommended).
 
+config LUA_MODULE_STRUCT
+  bool "Struct module"
+  default "n"
+  help
+      Includes the struct module. This module provides [un]packing of raw
+      byte strings into Lua values and vice versa.
+
 config LUA_MODULE_WIFI
   bool "WiFi module"
   default "y"
