@@ -6,7 +6,7 @@
 -include $(PROJECT_PATH)/build/include/config/auto.conf
 include $(PROJECT_PATH)/components/modules/uppercase.mk
 
-MODULE_NAMES:=$(call uppercase,$(subst .c,,$(wildcard *.c)))
+MODULE_NAMES:=$(call uppercase,$(patsubst $(COMPONENT_PATH)/%.c,%,$(wildcard $(COMPONENT_PATH)/*.c)))
 FORCE_LINK:=$(foreach mod,$(MODULE_NAMES),$(if $(CONFIG_LUA_MODULE_$(mod)), -u $(mod)_module_selected1))
 COMPONENT_ADD_LDFLAGS=$(FORCE_LINK) -lmodules $(if $(CONFIG_LUA_MODULE_BTHCI),-lbtdm_app)
 
