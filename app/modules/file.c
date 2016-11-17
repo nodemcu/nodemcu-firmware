@@ -357,7 +357,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
       break;
     }
 
-  if (i == 0) {
+  if (i == 0 || n == VFS_RES_ERR) {
     if (heap_mem) {
       luaM_free(L, heap_mem);
       heap_mem = NULL;
