@@ -190,7 +190,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if(ESP_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr);
+    NODE_ERR( "ERROR in flash_read: r=%d at %08X sz %x\n", ( int )r, ( unsigned )fromaddr, size);
     return 0;
   }
 }

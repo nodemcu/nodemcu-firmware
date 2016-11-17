@@ -10,6 +10,7 @@
 #include "rom/spi_flash.h"
 
 #include "esp_image_format.h"
+#include "esp_flash_data_types.h"
 
 #define FLASH_HDR_ADDR 0x1000
 
@@ -26,10 +27,15 @@ static inline esp_image_header_t flash_load_rom_header (void)
 }
 
 #define IRAM_SECTION __attribute__((section(".iram1")))
-static void IRAM_SECTION do_flash_cfg_workaround (uint32_t sz)
+static void IRAM_SECTION update_flash_chip_size (uint32_t sz)
 {
-  // workaround: configure SPI flash size manually (2nd argument)
-  SPIParamCfg (0x1540ef, sz, 64*1024, 4096, 256, 0xffff);
+  SPIParamCfg (
+    g_rom_flashchip.deviceId,
+    sz,
+    g_rom_flashchip.block_size,
+    g_rom_flashchip.sector_size,
+    g_rom_flashchip.page_size,
+    g_rom_flashchip.status_mask);
 }
 
 static uint32_t __attribute__((section(".iram1"))) flash_detect_size_byte(void)
@@ -38,18 +44,21 @@ static uint32_t __attribute__((section(".iram1"))) flash_detect_size_byte(void)
   uint32_t detected_size = FLASH_SIZE_1MBYTE;
   uint8_t data_orig[DETECT_SZ] PLATFORM_ALIGNMENT = {0};
   uint8_t data_new[DETECT_SZ] PLATFORM_ALIGNMENT = {0};
+  // Ensure we read something which isn't just 0xff...
+  const uint32_t offs = ESP_PARTITION_TABLE_ADDR;
   // Detect read failure or wrap-around on flash read to find end of flash
-  if (ESP_OK == spi_flash_read (0, (uint32_t *)data_orig, DETECT_SZ))
+  if (ESP_OK == spi_flash_read (offs, (uint32_t *)data_orig, DETECT_SZ))
   {
-    do_flash_cfg_workaround (FLASH_SIZE_16MBYTE);
+    update_flash_chip_size (FLASH_SIZE_16MBYTE);
     while ((detected_size < FLASH_SIZE_16MBYTE) &&
            (ESP_OK == spi_flash_read (
-              detected_size, (uint32_t *)data_new, DETECT_SZ)) &&
+              detected_size + offs, (uint32_t *)data_new, DETECT_SZ)) &&
            (0 != memcmp(data_orig, data_new, DETECT_SZ)))
     {
         detected_size *= 2;
     }
-    do_flash_cfg_workaround (detected_size);
+
+    update_flash_chip_size (detected_size);
   };
   return detected_size;
 #undef FLASH_BUFFER_SIZE_DETECT
