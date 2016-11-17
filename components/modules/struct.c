@@ -197,6 +197,7 @@ static void putinteger (lua_State *L, luaL_Buffer *b, int arg, int endian,
 }
 
 
+#ifndef LUA_NUMBER_INTEGRAL
 static void correctbytes (char *b, int size, int endian) {
   if (endian != native.endian) {
     int i = 0;
@@ -207,6 +208,7 @@ static void correctbytes (char *b, int size, int endian) {
     }
   }
 }
+#endif
 
 
 static int b_pack (lua_State *L) {
