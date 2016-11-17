@@ -649,10 +649,12 @@ static const lua_CFunction loaders[] =
 #undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
+LUA_TABLE_REG_1(lmt);
 const LUA_REG_TYPE lmt[] = {
   {LRO_STRKEY("__gc"), LRO_FUNCVAL(gctm)},
   {LRO_NILKEY, LRO_NILVAL}
 };
+LUA_TABLE_REG_2(lmt);
 #endif
 
 LUALIB_API int luaopen_package (lua_State *L) {
@@ -663,7 +665,7 @@ LUALIB_API int luaopen_package (lua_State *L) {
   lua_pushlightfunction(L, gctm);
   lua_setfield(L, -2, "__gc");
 #else
-  luaL_rometatable(L, "_LOADLIB", (void*)lmt);
+  luaL_rometatable(L, "_LOADLIB", &lmt_table);
 #endif
   /* create `package' table */
   luaL_register_light(L, LUA_LOADLIBNAME, pk_funcs);

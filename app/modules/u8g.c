@@ -1068,6 +1068,7 @@ U8G_DISPLAY_TABLE_SPI
 
 
 // Module function map
+LUA_TABLE_REG_1(lu8g_display_map);
 static const LUA_REG_TYPE lu8g_display_map[] = {
   { LSTRKEY( "begin" ),                        LFUNCVAL( lu8g_begin ) },
   { LSTRKEY( "drawBitmap" ),                   LFUNCVAL( lu8g_drawBitmap ) },
@@ -1124,10 +1125,12 @@ static const LUA_REG_TYPE lu8g_display_map[] = {
   { LSTRKEY( "__index" ),                      LROVAL( lu8g_display_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(lu8g_display_map);
 
 #undef U8G_DISPLAY_TABLE_ENTRY
 #undef U8G_FONT_TABLE_ENTRY
 
+LUA_TABLE_REG_1(lu8g_map);
 static const LUA_REG_TYPE lu8g_map[] = {
 #define U8G_DISPLAY_TABLE_ENTRY(device) \
   { LSTRKEY( #device ),            LFUNCVAL ( lu8g_ ##device ) },
@@ -1149,9 +1152,10 @@ static const LUA_REG_TYPE lu8g_map[] = {
   { LSTRKEY( "__metatable" ), LROVAL( lu8g_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(lu8g_map);
 
 int luaopen_u8g( lua_State *L ) {
-  luaL_rometatable(L, "u8g.display", (void *)lu8g_display_map);  // create metatable
+  luaL_rometatable(L, "u8g.display", &lu8g_display_map_table);  // create metatable
   return 0;
 }
 

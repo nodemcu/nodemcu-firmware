@@ -23,7 +23,7 @@
 #define LFUNCVAL                    LRO_FUNCVAL
 #define LUDATA                      LRO_LUDATA
 #define LNUMVAL                     LRO_NUMVAL
-#define LROVAL                      LRO_ROVAL
+#define LROVAL(x)                   LRO_ROVAL(&x##_table)
 #define LNILVAL                     LRO_NILVAL
 #define LREGISTER(L, name, table)\
   return 0

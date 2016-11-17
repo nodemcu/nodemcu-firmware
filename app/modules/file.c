@@ -513,6 +513,7 @@ static int file_vol_umount( lua_State *L )
 }
 
 
+LUA_TABLE_REG_1(file_obj_map);
 static const LUA_REG_TYPE file_obj_map[] =
 {
   { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
@@ -526,7 +527,9 @@ static const LUA_REG_TYPE file_obj_map[] =
   { LSTRKEY( "__index" ),   LROVAL( file_obj_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(file_obj_map);
 
+LUA_TABLE_REG_1(file_vol_map);
 static const LUA_REG_TYPE file_vol_map[] =
 {
   { LSTRKEY( "umount" ),   LFUNCVAL( file_vol_umount )},
@@ -536,6 +539,7 @@ static const LUA_REG_TYPE file_vol_map[] =
   { LSTRKEY( "__index" ),  LROVAL( file_vol_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(file_vol_map);
 
 // Module function map
 static const LUA_REG_TYPE file_map[] = {
@@ -565,8 +569,8 @@ static const LUA_REG_TYPE file_map[] = {
 };
 
 int luaopen_file( lua_State *L ) {
-  luaL_rometatable( L, "file.vol",  (void *)file_vol_map );
-  luaL_rometatable( L, "file.obj",  (void *)file_obj_map );
+  luaL_rometatable( L, "file.vol",  &file_vol_map_table );
+  luaL_rometatable( L, "file.obj",  &file_obj_map_table );
   return 0;
 }
 

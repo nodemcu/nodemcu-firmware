@@ -828,6 +828,7 @@ static int str_format (lua_State *L) {
 #undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
+LUA_TABLE_REG_1(strlib);
 const LUA_REG_TYPE strlib[] = {
   {LSTRKEY("byte"), LFUNCVAL(str_byte)},
   {LSTRKEY("char"), LFUNCVAL(str_char)},
@@ -853,6 +854,7 @@ const LUA_REG_TYPE strlib[] = {
 #endif
   {LNILKEY, LNILVAL}
 };
+LUA_TABLE_REG_2(strlib);
 
 
 #if LUA_OPTIMIZE_MEMORY != 2
@@ -882,7 +884,7 @@ LUALIB_API int luaopen_string (lua_State *L) {
   return 1;
 #else
   lua_pushliteral(L,"");
-  lua_pushrotable(L, (void*)strlib);
+  lua_pushrotable(L, (void *) &strlib_table);
   lua_setmetatable(L, -2);
   lua_pop(L,1);
   return 0;  

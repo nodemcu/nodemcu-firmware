@@ -354,6 +354,7 @@ static int tmr_create( lua_State *L ) {
 
 // Module function map
 
+LUA_TABLE_REG_1(tmr_dyn_map);
 static const LUA_REG_TYPE tmr_dyn_map[] = {
 	{ LSTRKEY( "register" ),    LFUNCVAL( tmr_register ) },
 	{ LSTRKEY( "alarm" ),       LFUNCVAL( tmr_alarm ) },
@@ -366,6 +367,7 @@ static const LUA_REG_TYPE tmr_dyn_map[] = {
 	{ LSTRKEY( "__index" ),     LROVAL( tmr_dyn_map ) },
 	{ LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(tmr_dyn_map);
 
 static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
@@ -390,7 +392,7 @@ static const LUA_REG_TYPE tmr_map[] = {
 int luaopen_tmr( lua_State *L ){
 	int i;	
 
-	luaL_rometatable(L, "tmr.timer", (void *)tmr_dyn_map);
+	luaL_rometatable(L, "tmr.timer", &tmr_dyn_map_table);
 
 	for(i=0; i<NUM_TMR; i++){
 		alarm_timers[i].lua_ref = LUA_NOREF;

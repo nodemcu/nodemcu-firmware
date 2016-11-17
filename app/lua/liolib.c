@@ -552,9 +552,11 @@ const LUA_REG_TYPE iolib[] = {
 };
 
 #if LUA_OPTIMIZE_MEMORY == 2
+const uint32_t __attribute((weak)) lua_iolib_func_table_hashtable[1] = {0};
+const luaR_table lua_iolib_func_table = { 0, iolib_funcs, lua_iolib_func_table_hashtable };
 static int luaL_index(lua_State *L)
 {
-  return luaR_findfunction(L, iolib_funcs);
+  return luaR_findfunction(L, &lua_iolib_func_table);
 }
   
 const luaL_Reg iolib[] = {
@@ -566,6 +568,7 @@ const luaL_Reg iolib[] = {
 #undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
+LUA_TABLE_REG_1(flib);
 const LUA_REG_TYPE flib[] = {
   {LSTRKEY("close"), LFUNCVAL(io_close)},
   {LSTRKEY("flush"), LFUNCVAL(f_flush)},
@@ -581,6 +584,7 @@ const LUA_REG_TYPE flib[] = {
 #endif
   {LNILKEY, LNILVAL}
 };
+LUA_TABLE_REG_2(flib);
 
 static void createmeta (lua_State *L) {
 #if LUA_OPTIMIZE_MEMORY == 0
@@ -589,7 +593,7 @@ static void createmeta (lua_State *L) {
   lua_setfield(L, -2, "__index");  /* metatable.__index = metatable */
   luaL_register(L, NULL, flib);  /* file methods */
 #else
-  luaL_rometatable(L, LUA_FILEHANDLE, (void*)flib);  /* create metatable for file handles */
+  luaL_rometatable(L, LUA_FILEHANDLE, &flib_table);  /* create metatable for file handles */
 #endif
 }
 

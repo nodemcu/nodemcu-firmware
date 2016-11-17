@@ -1582,6 +1582,7 @@ static int mqtt_socket_lwt( lua_State* L )
 }
 
 // Module function map
+LUA_TABLE_REG_1(mqtt_socket_map);
 static const LUA_REG_TYPE mqtt_socket_map[] = {
   { LSTRKEY( "connect" ),   LFUNCVAL( mqtt_socket_connect ) },
   { LSTRKEY( "close" ),     LFUNCVAL( mqtt_socket_close ) },
@@ -1594,8 +1595,10 @@ static const LUA_REG_TYPE mqtt_socket_map[] = {
   { LSTRKEY( "__index" ),   LROVAL( mqtt_socket_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(mqtt_socket_map);
 
 
+LUA_TABLE_REG_1(mqtt_map);
 static const LUA_REG_TYPE mqtt_map[] = {
   { LSTRKEY( "Client" ),                                LFUNCVAL( mqtt_socket_client ) },
 
@@ -1614,10 +1617,11 @@ static const LUA_REG_TYPE mqtt_map[] = {
   { LSTRKEY( "__metatable" ),                           LROVAL( mqtt_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(mqtt_map);
 
 int luaopen_mqtt( lua_State *L )
 {
-  luaL_rometatable(L, "mqtt.socket", (void *)mqtt_socket_map);  // create metatable for mqtt.socket
+  luaL_rometatable(L, "mqtt.socket", &mqtt_socket_map_table);  // create metatable for mqtt.socket
   return 0;
 }
 

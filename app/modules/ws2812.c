@@ -565,6 +565,7 @@ static int ws2812_buffer_tostring(lua_State* L) {
   return 1;
 }
 
+LUA_TABLE_REG_1(ws2812_buffer_map);
 static const LUA_REG_TYPE ws2812_buffer_map[] =
 {
   { LSTRKEY( "dump" ),    LFUNCVAL( ws2812_buffer_dump )},
@@ -583,7 +584,9 @@ static const LUA_REG_TYPE ws2812_buffer_map[] =
   { LSTRKEY( "__tostring" ), LFUNCVAL( ws2812_buffer_tostring )},
   { LNILKEY, LNILVAL}
 };
+LUA_TABLE_REG_2(ws2812_buffer_map);
 
+LUA_TABLE_REG_1(ws2812_map);
 static const LUA_REG_TYPE ws2812_map[] =
 {
   { LSTRKEY( "init" ),           LFUNCVAL( ws2812_init )},
@@ -597,10 +600,11 @@ static const LUA_REG_TYPE ws2812_map[] =
   { LSTRKEY( "SHIFT_CIRCULAR" ), LNUMVAL( SHIFT_CIRCULAR ) },
   { LNILKEY, LNILVAL}
 };
+LUA_TABLE_REG_2(ws2812_map);
 
 int luaopen_ws2812(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
-  luaL_rometatable(L, "ws2812.buffer", (void *)ws2812_buffer_map);  // create metatable for ws2812.buffer
+  luaL_rometatable(L, "ws2812.buffer", &ws2812_buffer_map_table);  // create metatable for ws2812.buffer
   return 0;
 }
 

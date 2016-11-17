@@ -556,6 +556,7 @@ static int coap_client_delete( lua_State* L )
 }
 
 // Module function map
+LUA_TABLE_REG_1(coap_server_map);
 static const LUA_REG_TYPE coap_server_map[] = {
   { LSTRKEY( "listen" ),  LFUNCVAL( coap_server_listen ) },
   { LSTRKEY( "close" ),   LFUNCVAL( coap_server_close ) },
@@ -565,7 +566,9 @@ static const LUA_REG_TYPE coap_server_map[] = {
   { LSTRKEY( "__index" ), LROVAL( coap_server_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(coap_server_map);
 
+LUA_TABLE_REG_1(coap_client_map);
 static const LUA_REG_TYPE coap_client_map[] = {
   { LSTRKEY( "get" ),     LFUNCVAL( coap_client_get ) },
   { LSTRKEY( "post" ),    LFUNCVAL( coap_client_post ) },
@@ -575,7 +578,9 @@ static const LUA_REG_TYPE coap_client_map[] = {
   { LSTRKEY( "__index" ), LROVAL( coap_client_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(coap_client_map);
 
+LUA_TABLE_REG_1(coap_map);
 static const LUA_REG_TYPE coap_map[] = 
 {
   { LSTRKEY( "Server" ),      LFUNCVAL( coap_createServer ) },
@@ -591,12 +596,13 @@ static const LUA_REG_TYPE coap_map[] =
   { LSTRKEY( "__metatable" ), LROVAL( coap_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(coap_map);
 
 int luaopen_coap( lua_State *L )
 {
   endpoint_setup();
-  luaL_rometatable(L, "coap_server", (void *)coap_server_map);  // create metatable for coap_server 
-  luaL_rometatable(L, "coap_client", (void *)coap_client_map);  // create metatable for coap_client  
+  luaL_rometatable(L, "coap_server", &coap_server_map_table);  // create metatable for coap_server 
+  luaL_rometatable(L, "coap_client", &coap_client_map_table);  // create metatable for coap_client  
   return 0;
 }
 

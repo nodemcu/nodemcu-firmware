@@ -86,8 +86,23 @@ static TString *luaS_newlstr_helper (lua_State *L, const char *str, size_t l, in
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
   size_t l1;
-  for (l1=l; l1>=step; l1-=step)  /* compute hash */
-    h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+  if ((((uint32_t) str) & 3) || step > 1) {
+    for (l1=l; l1>=step; l1-=step)  /* compute hash */
+      h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+  } else {
+    // Use version that doesn't do byte loads
+    uint32_t * strp = (uint32_t *) str;
+    uint32_t v = strp[(l - 1) >> 2];
+    for (l1=l; l1>0; ) {  /* compute hash */
+      l1--;
+
+      unsigned char char_val = (v >> ((l1 & 3) << 3)) & 0xff;
+      h = h ^ ((h<<5)+(h>>2)+char_val);
+      if (l1 > 0 && !(l1 & 3)) {
+        v = strp[(l1 - 1) >> 2];
+      }
+    }
+  }
   for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
        o != NULL;
        o = o->gch.next) {

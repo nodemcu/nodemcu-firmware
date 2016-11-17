@@ -57,7 +57,7 @@ typedef struct GCheader {
 
 
 
-
+struct _luaR_table;
 /*
 ** Union of all Lua values
 */
@@ -169,7 +169,7 @@ typedef TValuefields TValue;
 #endif // #ifndef LUA_PACK_VALUE
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
-#define rvalue(o)	check_exp(ttisrotable(o), (o)->value.p)
+#define rvalue(o)	check_exp(ttisrotable(o), (struct _luaR_table *) (o)->value.p)
 #define fvalue(o) check_exp(ttislightfunction(o), (o)->value.p)
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
 #define rawtsvalue(o)	check_exp(ttisstring(o), &(o)->value.gc->ts)
@@ -213,7 +213,7 @@ typedef TValuefields TValue;
   { void *i_x = (x); TValue *i_o=(obj); i_o->value.p=i_x; i_o->tt=LUA_TLIGHTUSERDATA; }
 
 #define setrvalue(obj,x) \
-  { void *i_x = (x); TValue *i_o=(obj); i_o->value.p=i_x; i_o->tt=LUA_TROTABLE; }
+  { struct _luaR_table *i_x = (x); TValue *i_o=(obj); i_o->value.p=i_x; i_o->tt=LUA_TROTABLE; }
 
 #define setfvalue(obj,x) \
   { void *i_x = (x); TValue *i_o=(obj); i_o->value.p=i_x; i_o->tt=LUA_TLIGHTFUNCTION; }

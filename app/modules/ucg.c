@@ -879,6 +879,7 @@ UCG_DISPLAY_TABLE
 
 
 // Module function map
+LUA_TABLE_REG_1(lucg_display_map);
 static const LUA_REG_TYPE lucg_display_map[] =
 {
     { LSTRKEY( "begin" ),              LFUNCVAL( lucg_begin ) },
@@ -929,7 +930,9 @@ static const LUA_REG_TYPE lucg_display_map[] =
     { LSTRKEY( "__index" ), LROVAL ( lucg_display_map ) },
     { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(lucg_display_map);
 
+LUA_TABLE_REG_1(lucg_map);
 static const LUA_REG_TYPE lucg_map[] = 
 {
 #undef UCG_DISPLAY_TABLE_ENTRY
@@ -955,10 +958,11 @@ static const LUA_REG_TYPE lucg_map[] =
     { LSTRKEY( "__metatable" ), LROVAL( lucg_map ) },
     { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(lucg_map);
 
 int luaopen_ucg( lua_State *L )
 {
-    luaL_rometatable(L, "ucg.display", (void *)lucg_display_map);  // create metatable
+    luaL_rometatable(L, "ucg.display", &lucg_display_map_table);  // create metatable
     return 0;
 }
 

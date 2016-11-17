@@ -53,9 +53,10 @@
 #define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
   const LOCK_IN_SECTION(".lua_libs") \
     luaL_Reg MODULE_PASTE_(lua_lib_,cfgname) = { luaname, initfunc }; \
+  const uint32_t __attribute__((weak)) MODULE_PASTE_(cfgname,_hashtable)[1] = {0}; \
   const LOCK_IN_SECTION(".lua_rotable") \
     luaR_table MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
-    = { luaname, map }
+    = { luaname, map, MODULE_PASTE_(cfgname,_hashtable), sizeof(luaname) }
 
 
 /* System module registration support, not using LUA_USE_MODULES_XYZ. */
@@ -64,8 +65,9 @@
     luaL_Reg MODULE_PASTE_(lua_lib_,name) = { luaname, initfunc }
 
 #define BUILTIN_LIB(name, luaname, map) \
+  const uint32_t __attribute__((weak)) MODULE_PASTE_(name,_hashtable)[1] = {0}; \
   const LOCK_IN_SECTION(".lua_rotable") \
-    luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map }
+    luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map, MODULE_PASTE_(name,_hashtable) }
 
 #if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
 # error "NodeMCU modules must be built with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)"

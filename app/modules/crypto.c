@@ -397,6 +397,7 @@ static int lcrypto_decrypt (lua_State *L)
 }
 
 // Hash function map
+LUA_TABLE_REG_1(crypto_hash_map);
 static const LUA_REG_TYPE crypto_hash_map[] = {
   { LSTRKEY( "update" ),  LFUNCVAL( crypto_hash_update ) },
   { LSTRKEY( "finalize" ),   LFUNCVAL( crypto_hash_finalize ) },
@@ -404,6 +405,7 @@ static const LUA_REG_TYPE crypto_hash_map[] = {
   { LSTRKEY( "__index" ), LROVAL( crypto_hash_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(crypto_hash_map);
 
 
 // Module function map
@@ -424,7 +426,7 @@ static const LUA_REG_TYPE crypto_map[] = {
 
 int luaopen_crypto ( lua_State *L )
 {
-  luaL_rometatable(L, "crypto.hash", (void *)crypto_hash_map);  // create metatable for crypto.hash
+  luaL_rometatable(L, "crypto.hash", &crypto_hash_map_table);  // create metatable for crypto.hash
   return 0;
 }
 

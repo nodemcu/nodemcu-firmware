@@ -229,6 +229,7 @@ static int pcm_new( lua_State *L )
 }
 
 
+LUA_TABLE_REG_1(pcm_driver_map);
 static const LUA_REG_TYPE pcm_driver_map[] = {
   { LSTRKEY( "play" ),    LFUNCVAL( pcm_drv_play ) },
   { LSTRKEY( "pause" ),   LFUNCVAL( pcm_drv_pause ) },
@@ -239,6 +240,7 @@ static const LUA_REG_TYPE pcm_driver_map[] = {
   { LSTRKEY( "__index" ), LROVAL( pcm_driver_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(pcm_driver_map);
 
 // Module function map
 static const LUA_REG_TYPE pcm_map[] = {
@@ -256,7 +258,7 @@ static const LUA_REG_TYPE pcm_map[] = {
 };
 
 int luaopen_pcm( lua_State *L ) {
-  luaL_rometatable( L, "pcm.driver", (void *)pcm_driver_map );  // create metatable
+  luaL_rometatable( L, "pcm.driver", &pcm_driver_map_table );  // create metatable
   return 0;
 }
 

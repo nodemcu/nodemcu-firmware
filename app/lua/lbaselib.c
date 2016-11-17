@@ -17,6 +17,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lrotable.h"
+#include "lstate.h"
 
 
 
@@ -496,24 +497,26 @@ const LUA_REG_TYPE base_funcs_list[] = {
   LUA_BASELIB_FUNCLIST,
   {LNILKEY, LNILVAL}
 };
+const uint32_t __attribute__((weak)) lua_base_funcs_table_hashtable[1] = {0};
+const luaR_table lua_base_funcs_table = { 0, base_funcs_list, lua_base_funcs_table_hashtable };
 #endif
 
 
 static int luaB_index(lua_State *L) {
 #if LUA_OPTIMIZE_MEMORY == 2
   int fres;
-  if ((fres = luaR_findfunction(L, base_funcs_list)) != 0)
+  if ((fres = luaR_findfunction(L, &lua_base_funcs_table)) != 0)
     return fres;
 #endif  
   const char *keyname = luaL_checkstring(L, 2);
-  if (!c_strcmp(keyname, "_VERSION")) {
-    lua_pushliteral(L, LUA_VERSION);
-    return 1;
-  }
-  void *res = luaR_findglobal(keyname, c_strlen(keyname));
-  if (!res)
+  void *res = luaR_findglobalhash(keyname, tsvalue(L->base + 2 - 1)->hash);
+  if (!res) {
+    if (!c_strcmp(keyname, "_VERSION")) {
+      lua_pushliteral(L, LUA_VERSION);
+      return 1;
+    }
     return 0;
-  else {
+  } else {
     lua_pushrotable(L, res);
     return 1;
   }

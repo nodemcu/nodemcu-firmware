@@ -131,12 +131,12 @@ LUALIB_API int luaL_newmetatable (lua_State *L, const char *tname) {
   return 1;
 }
 
-LUALIB_API int luaL_rometatable (lua_State *L, const char* tname, void *p) {
+LUALIB_API int luaL_rometatable (lua_State *L, const char* tname, const struct _luaR_table *p) {
   lua_getfield(L, LUA_REGISTRYINDEX, tname);  /* get registry.name */
   if (!lua_isnil(L, -1))  /* name already in use? */
     return 0;  /* leave previous value on top, but return 0 */
   lua_pop(L, 1);
-  lua_pushrotable(L, p);
+  lua_pushrotable(L, (struct _luaR_table *) p);
   lua_pushvalue(L, -1);
   lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
   return 1;

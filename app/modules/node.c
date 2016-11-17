@@ -469,6 +469,7 @@ static int node_osprint( lua_State* L )
 
 // Module function map
 
+LUA_TABLE_REG_1(node_egc_map);
 static const LUA_REG_TYPE node_egc_map[] = {
   { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
   { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
@@ -477,6 +478,8 @@ static const LUA_REG_TYPE node_egc_map[] = {
   { LSTRKEY( "ALWAYS" ),            LNUMVAL( EGC_ALWAYS ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(node_egc_map);
+LUA_TABLE_REG_1(node_task_map);
 static const LUA_REG_TYPE node_task_map[] = {
   { LSTRKEY( "post" ),            LFUNCVAL( node_task_post ) },
   { LSTRKEY( "LOW_PRIORITY" ),    LNUMVAL( TASK_PRIORITY_LOW ) },
@@ -484,6 +487,7 @@ static const LUA_REG_TYPE node_task_map[] = {
   { LSTRKEY( "HIGH_PRIORITY" ),   LNUMVAL( TASK_PRIORITY_HIGH ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(node_task_map);
 
 static const LUA_REG_TYPE node_map[] =
 {
