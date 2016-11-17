@@ -30,6 +30,10 @@ pages:
         - Extension Developer FAQ: 'en/extn-developer-faq.md'
     - Support: 'en/support.md'
     - Modules:
-        - 'file': 'en/modules/file.md'
-        - 'node': 'en/modules/node.md'
-        - 'uart': 'en/modules/uart.md'
+        - 'bit':        'en/modules/bit.md'
+        - 'bthci':      'en/modules/bthci.md'
+        - 'file':       'en/modules/file.md'
+        - 'node':       'en/modules/node.md'
+        - 'struct':     'en/modules/struct.md'
+        - 'uart':       'en/modules/uart.md'
+

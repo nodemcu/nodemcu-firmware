@@ -47,6 +47,12 @@ depends on LUA_BUILTIN_DEBUG
 endmenu
 
 
+config LUA_MODULE_BIT
+  bool "Bit module"
+  default "n"
+  help
+      Includes the bit module. This module provide bit manipulation functions
+      on Lua numbers.
 
 config LUA_MODULE_BTHCI
   bool "BlueTooth HCI interface module"
