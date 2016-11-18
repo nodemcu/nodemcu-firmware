@@ -67,7 +67,6 @@ typedef struct _luaR_table
   const uint32_t namesize;
 } luaR_table;
 
-luaR_table* luaR_findglobal(const char *key, unsigned len);
 luaR_table* luaR_findglobalhash(const char *key, uint32_t hash);
 int luaR_findfunction(lua_State *L, const luaR_table *ptable);
 const TValue* luaR_findentry(const luaR_table *ptable, const char *strkey, luaR_numkey numkey, unsigned *ppos);

@@ -14,6 +14,9 @@
 #define LUAR_FINDFUNCTION     0
 #define LUAR_FINDVALUE        1
 
+#undef NODE_DBG
+#define NODE_DBG dbg_printf
+
 /* Externally defined read-only table array */
 extern const luaR_table lua_rotable[];
 const uint32_t __attribute__((weak)) lua_rotable_table_hashtable[1];
@@ -27,20 +30,6 @@ static uint32_t strhash(const char *str) {
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
 
   return h;
-}
-
-/* Find a global "read only table" in the constant lua_rotable array */
-luaR_table* luaR_findglobal(const char *name, unsigned len) {
-  unsigned i;
-
-  if (c_strlen(name) > LUA_MAX_ROTABLE_NAME)
-    return NULL;
-  for (i=0; lua_rotable[i].name; i ++) {
-    if (lua_rotable[len].name == '\0' && !c_strncmp(lua_rotable[i].name, name, len)) {
-      return (luaR_table *) &(lua_rotable[i]);
-    }
-  }
-  return NULL;
 }
 
 /* Find a global "read only table" in the constant lua_rotable array */
@@ -64,6 +53,8 @@ luaR_table* luaR_findglobalhash(const char *name, uint32_t hash) {
     return NULL;
   }
 
+  NODE_DBG("rotable is not optimized\n");
+
   for (i=0; lua_rotable[i].name; i ++) {
     if (!c_strcmp(lua_rotable[i].name, name)) {
       return (luaR_table *) &(lua_rotable[i]);
@@ -80,6 +71,7 @@ static const TValue* luaR_auxfind(const luaR_table *ptable, const char *strkey, 
   
   if (pentry == NULL)
     return NULL;  
+  NODE_DBG("Looking up %s/%d in %s\n", strkey, numkey, ptable->name);
   while(pentry->key.type != LUA_TNIL) {
     if ((strkey && ((pentry->key.type & 0xff) == LUA_TSTRING) && (!c_strcmp(pentry->key.id.strkey, strkey))) || 
         (!strkey && (pentry->key.type == LUA_TNUMBER) && ((luaR_numkey)pentry->key.id.numkey == numkey))) {
@@ -103,7 +95,7 @@ static const TValue* luaR_auxfindstr(const luaR_table *ptable, const char *strke
   if (bits) {
     if (hash == 0) {
       hash = strhash(strkey);
-      dbg_printf("Hashing %s to 0x%x\n", strkey, hash);
+      NODE_DBG("Hashing %s to 0x%x\n", strkey, hash);
     }
   
     uint32_t mask = *bits++;
@@ -122,6 +114,8 @@ static const TValue* luaR_auxfindstr(const luaR_table *ptable, const char *strke
       return NULL;
     }
   }
+
+  NODE_DBG("Looking up %s in %s (nonopt) bits=%x, tbl=%x\n", strkey, ptable->name, (uint32_t) bits, (uint32_t) ptable);
 
   while (pentry->key.type != LUA_TNIL) {
     if (((pentry->key.type & 0xff) == LUA_TSTRING) && (!c_strcmp(pentry->key.id.strkey, strkey))) {

@@ -4,7 +4,7 @@
 
 int memeq(const char *a, const char *b, size_t l) {
   if (((uint32_t) a | (uint32_t) b) & 3) {
-    return memcmp(a, b, l);
+    return c_memcmp(a, b, l);
   }
 
   const uint32_t *a32 = (const uint32_t *) a;
@@ -16,7 +16,7 @@ int memeq(const char *a, const char *b, size_t l) {
     res = res | (*a32++ ^ *b32++);
     res = res | (*a32++ ^ *b32++);
     if (res) {
-      return 1;
+      return res;
     }
     l -= 16;
   }
@@ -25,7 +25,7 @@ int memeq(const char *a, const char *b, size_t l) {
     int res = (*a32++ ^ *b32++);
     res = res | (*a32++ ^ *b32++);
     if (res) {
-      return 1;
+      return res;
     }
     l -= 8;
   }
@@ -33,7 +33,7 @@ int memeq(const char *a, const char *b, size_t l) {
   if (l >= 4) {
     int res = (*a32++ ^ *b32++);
     if (res) {
-      return 1;
+      return res;
     }
     l -= 4;
   }
@@ -47,9 +47,5 @@ int memeq(const char *a, const char *b, size_t l) {
   // Processor is little endian
   res = res << ((4 - l) << 3);
 
-  if (res) {
-    return 1;
-  }
-
-  return 0;
+  return res;
 }
