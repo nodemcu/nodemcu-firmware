@@ -127,6 +127,11 @@ static void generateSecKeys(char **key, char **expectedKey) {
   os_free(keyEncrypted);
 }
 
+static char *_strcpy(char *dst, char *src) {
+    while(*dst++ = *src++);
+    return dst - 1;
+}
+
 static int headers_length(header_t *headers) {
   int length = 0;
   for(; headers->key; headers++)
@@ -134,8 +139,8 @@ static int headers_length(header_t *headers) {
   return length;
 }
 
-static int sprintf_headers(char *buf, ...) {
-  int len = 0;
+static char *sprintf_headers(char *buf, ...) {
+  char *dst = buf;
   va_list args;
   va_start(args, buf);
   for(header_t *header_set = va_arg(args, header_t *); header_set; header_set = va_arg(args, header_t *))
@@ -150,12 +155,14 @@ static int sprintf_headers(char *buf, ...) {
             goto skip;
         }
 ok:
-      len += os_sprintf(buf + len, "%s: %s\r\n", header->key, header->value);
+      dst = _strcpy(dst, header->key);
+      dst = _strcpy(dst, ": ");
+      dst = _strcpy(dst, header->value);
+      dst = _strcpy(dst, "\r\n");
 skip:;
     }
-  buf[len] = '\r';
-  buf[len+1] = '\n';
-  return len + 2;
+  dst = _strcpy(dst, "\r\n");
+  return dst;
 }
 
 static void ws_closeSentCallback(void *arg) {
@@ -601,7 +608,7 @@ static void connect_callback(void *arg) {
                   ws->port
 		  );
 
-  len += sprintf_headers(buf + len, headers, extraHeaders, DEFAULT_HEADERS, 0);
+  len = sprintf_headers(buf + len, headers, extraHeaders, DEFAULT_HEADERS, 0) - buf;
 
   os_free(key);
   NODE_DBG("request: %s", buf);
