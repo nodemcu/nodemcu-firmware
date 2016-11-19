@@ -7,10 +7,6 @@ A websocket *client* module that implements [RFC6455](https://tools.ietf.org/htm
 
 The implementation supports fragmented messages, automatically respondes to ping requests and periodically pings if the server isn't communicating.
 
-!!! note
-
-    Currently, it is **not** possible to change the request headers, most notably the user agent.
-
 **SSL/TLS support**
 
 Take note of constraints documented in the [net module](net.md). 
@@ -67,6 +63,27 @@ ws:close()
 ws:close() -- nothing will happen
 
 ws = nil -- fully dispose the client as lua will now gc it
+```
+
+
+## websocket.client:config(params)
+
+Configures websocket client instance.
+
+#### Syntax
+`websocket:config(params)`
+
+#### Parameters
+- `params` table with configuration parameters. Following keys are recognized:
+  - `headers` table of extra request headers affecting every request
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+ws = websocket.createClient()
+ws:config({headers={['User-Agent']='NodeMCU'}})
 ```
 
 
