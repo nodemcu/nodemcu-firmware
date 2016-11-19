@@ -40,6 +40,12 @@
 
 static exception_handler_fn load_store_handler;
 
+#ifdef DEVELOPMENT_TOOLS
+uint32_t wide_handler_count;
+uint32_t wide_handler_last_epc[4];
+uint8_t wide_handler_last_epc_index;  // Points to most recent to be used
+#endif
+
 
 void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
 {
@@ -82,6 +88,14 @@ die:
     asm ("break 1, 1");
     while (1) {}
   }
+
+#ifdef DEVELOPMENT_TOOLS
+  wide_handler_count++;
+  if (wide_handler_last_epc[wide_handler_last_epc_index & 3] != epc1) {
+    wide_handler_last_epc_index++;
+    wide_handler_last_epc[wide_handler_last_epc_index & 3] = epc1;
+  }
+#endif
 
   /* Load, shift and mask down to correct size */
   uint32_t val = (*(uint32_t *)(excvaddr & ~0x3));

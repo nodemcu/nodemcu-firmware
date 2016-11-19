@@ -439,6 +439,51 @@ static int node_stripdebug (lua_State *L) {
 }
 #endif
 
+#ifdef DEVELOPMENT_TOOLS
+// Return some statistics about the interpreter
+static int node_stats(lua_State *L) {
+  extern uint32_t wide_handler_count;
+  extern uint32_t wide_handler_last_epc[];
+  extern uint8_t wide_handler_last_epc_index;
+  uint32_t copy_wide_handler_last_epc[4];
+  memcpy(copy_wide_handler_last_epc, wide_handler_last_epc, 4 * sizeof(uint32_t));
+  lua_newtable(L);
+  lua_pushnumber(L, wide_handler_count);
+  lua_setfield(L, -2, "non_32_load_count");
+  lua_newtable(L);
+  int i;
+  for (i = 0; i < 4; i++) {
+    lua_pushnumber(L, copy_wide_handler_last_epc[(wide_handler_last_epc_index - i) & 3]);
+    lua_rawseti(L, -2, i + 1);
+  }
+  lua_setfield(L, -2, "non_32_last_epc");
+
+#if 0
+  const volatile char *romptrc = "32-bit";
+  const volatile uint32_t *romptr = (const uint32_t *) romptrc;
+  for (i = 0; i < 1024; i++) {
+    (void) romptr[i];
+  }
+  uint32_t t1 = system_get_time();
+  for (i = 0; i < 1000; i++) {
+    (void) romptr[i];
+  }
+  uint32_t t2 = system_get_time();
+  for (i = 0; i < 1000 * 4; i++) {
+    (void) romptrc[i];
+  }
+  uint32_t t3 = system_get_time();
+
+  lua_pushnumber(L, t2 - t1);
+  lua_setfield(L, -2, "nsec_for_32_bit_loads");
+  lua_pushnumber(L, t3 - t2);
+  lua_setfield(L, -2, "nsec_for_4x8_bit_loads");
+#endif
+
+  return 1;
+}
+#endif
+
 // Lua: node.egc.setmode( mode, [param])
 // where the mode is one of the node.egc constants  NOT_ACTIVE , ON_ALLOC_FAILURE,
 // ON_MEM_LIMIT, ALWAYS.  In the case of ON_MEM_LIMIT an integer parameter is reqired
@@ -508,6 +553,9 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
+#ifdef DEVELOPMENT_TOOLS
+  { LSTRKEY( "stats" ), LFUNCVAL( node_stats) },
+#endif
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
 #endif

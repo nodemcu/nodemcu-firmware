@@ -59,6 +59,7 @@ class ELFFile(object):
         if self.symbols is not None:
             return
         self.symbols = {}
+        self.addrs = {}
         try:
             tool_nm = "xtensa-lx106-elf-nm"
             if os.getenv('XTENSA_CORE') == 'lx106':
@@ -76,12 +77,17 @@ class ELFFile(object):
                 if fields[0] == "w":
                     continue  # can skip weak symbols
                 self.symbols[fields[2]] = int(fields[0], 16)
+                self.addrs[int(fields[0], 16)] = fields[2]
             except ValueError:
                 raise FatalError("Failed to strip symbol output from nm: %s" % fields)
 
     def get_symbol_addr(self, sym):
         self._fetch_symbols()
         return self.symbols[sym]
+
+    def get_addr_symbol(self, addr):
+        self._fetch_symbols()
+        return self.addrs[addr]
 
     def foreach_symbol(self, fn):
         for symbol in self.symbols.iterkeys():
@@ -177,9 +183,12 @@ def setoffset(hash, h, i):
 
     hash[h & mask] = 128 + i + 1
 
-def dump_rotable(image, rotable, name, forcesize=None):
+def dump_rotable(image, e, rotable, name, forcesize=None):
     # Count entries in tbl
     # name, value
+
+    name = name + '_hashtable'
+
     i = 0
     while image.read32(rotable + i * 16):
       i += 1
@@ -209,12 +218,17 @@ def dump_rotable(image, rotable, name, forcesize=None):
 
 dumped = {}
 
-def dump_table(image, rotable=None, name=None, forcesize=None):
+def dump_table(image, e, rotable=None, name=None, forcesize=None):
     if dumped.get(rotable):
       return
     dumped[rotable] = 1
     if not name:
-        name = image.readstring(image.read32(rotable)).upper()
+      # Find the symbol that offset 8 points to
+      hashaddr = image.read32(rotable + 8)
+      name = e.get_addr_symbol(hashaddr)
+    else:
+      name = name + '_hashtable'
+
     tbl = image.read32(rotable + 4)
 
     # Count entries in tbl
@@ -222,8 +236,6 @@ def dump_table(image, rotable=None, name=None, forcesize=None):
     i = 0
     while image.read32(tbl + i * 16):
       i += 1
-
-    print "// %s: %d entries" % (name, i)
 
     nents = 4
     while nents < i * 3:
@@ -245,14 +257,16 @@ def dump_table(image, rotable=None, name=None, forcesize=None):
 
         if image.read32(tbl + i * 16 + 12) == 2:
           nexttbl = image.read32(tbl + i * 16 + 8)
-          dump_table(image, rotable=nexttbl, name=image.readstring(image.read32(nexttbl)))
+          dump_table(image, e, rotable=nexttbl, name=image.readstring(image.read32(nexttbl)))
 
       i += 1
+
+    print "// %s: %d entries" % (name, i)
 
     dump_with_name(hash, name, nents)
 
 def dump_with_name(hash, name, nents):
-    print "const unsigned int %s_hashtable[] = { %d " % (name, nents - 1)
+    print "const unsigned int %s[] = { %d " % (name, nents - 1)
     print "// ", "".join(["," + hex(x) for x in hash])
     val = 0
     for i in range(0, nents):
@@ -262,13 +276,13 @@ def dump_with_name(hash, name, nents):
         val = 0
     print "\n};"
 
-def maybe_dump_table(image, symbol, addr):
+def maybe_dump_table(image, e, symbol, addr):
     if symbol.endswith("_table"):
       name_addr = image.read32(addr)
       if name_addr:
         name = image.readstring(name_addr)
         if name and symbol.startswith(name):
-          dump_table(image, addr, name)
+          dump_table(image, e, addr, name)
 
 
 def hashimage(args):
@@ -288,14 +302,14 @@ def hashimage(args):
     rotable = e.get_symbol_addr("lua_rotable")
 
     while image.read32(rotable):
-      dump_table(image, rotable)
+      dump_table(image, e, rotable)
       rotable += 16
 
-    dump_table(image, e.get_symbol_addr("lua_base_funcs_table"), "lua_base_funcs_table", forcesize=256)
-    dump_table(image, e.get_symbol_addr("strlib_table"), "strlib_table")
-    dump_rotable(image, e.get_symbol_addr("lua_rotable"), "lua_rotable_table", forcesize=256)
+    dump_table(image, e, e.get_symbol_addr("lua_base_funcs_table"), "lua_base_funcs_table", forcesize=256)
+    dump_table(image, e, e.get_symbol_addr("strlib_table"), "strlib_table")
+    dump_rotable(image, e, e.get_symbol_addr("lua_rotable"), "lua_rotable_table", forcesize=256)
 
-    e.foreach_symbol(lambda symbol: maybe_dump_table(image, symbol, e.get_symbol_addr(symbol)))
+    e.foreach_symbol(lambda symbol: maybe_dump_table(image, e, symbol, e.get_symbol_addr(symbol)))
 
 
 class FatalError(RuntimeError):

@@ -412,9 +412,12 @@ LUALIB_API const char *luaL_findtable (lua_State *L, int idx,
     lua_pushlstring(L, fname, e - fname);
     int fnamehash = tsvalue(L->top - 1)->hash;
     lua_rawget(L, -2);
-    if (lua_isnil(L, -1)) {
+    if (lua_isnil(L, -1) && e - fname <= LUA_MAX_ROTABLE_NAME) {
+      char fnamenull[LUA_MAX_ROTABLE_NAME + 1];
+      c_memcpy(fnamenull, fname, e - fname);
+      fnamenull[e - fname] = 0;
       /* If looking for a global variable, check the rotables too */
-      void *ptable = luaR_findglobalhash(fname, fnamehash);
+      void *ptable = luaR_findglobalhash(fnamenull, fnamehash);
       if (ptable) {
         lua_pop(L, 1);
         lua_pushrotable(L, ptable);
