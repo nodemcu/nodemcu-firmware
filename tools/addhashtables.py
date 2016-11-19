@@ -173,6 +173,15 @@ class Image(object):
       return None
     return struct.unpack("i", data)[0]
 
+  def read8(self, addr):
+    base, data = self.find_section(addr)
+    if not base:
+      return None
+    data = data[addr - base : addr - base + 1]
+    if not data:
+      return None
+    return struct.unpack("B", data)[0]
+
 
 def setoffset(hash, h, i):
     mask = len(hash) - 1
@@ -183,14 +192,14 @@ def setoffset(hash, h, i):
 
     hash[h & mask] = 128 + i + 1
 
-def dump_rotable(image, e, rotable, name, forcesize=None):
+def dump_rotable(image, e, rotable, name, forcesize=None, table_size=None):
     # Count entries in tbl
     # name, value
 
     name = name + '_hashtable'
 
     i = 0
-    while image.read32(rotable + i * 16):
+    while image.read32(rotable + i * table_size):
       i += 1
 
     print "// %s: %d entries" % (name, i)
@@ -207,8 +216,8 @@ def dump_rotable(image, e, rotable, name, forcesize=None):
 
     hash = [0] * nents
     i = 0
-    while image.read32(rotable + i * 16):
-      str = image.readstring(image.read32(rotable + i * 16))
+    while image.read32(rotable + i * table_size):
+      str = image.readstring(image.read32(rotable + i * table_size))
       h = luahash(str) % nents
       setoffset(hash, h, i)
 
@@ -218,7 +227,7 @@ def dump_rotable(image, e, rotable, name, forcesize=None):
 
 dumped = {}
 
-def dump_table(image, e, rotable=None, name=None, forcesize=None):
+def dump_table(image, e, rotable=None, name=None, forcesize=None, entry_size=None):
     if dumped.get(rotable):
       return
     dumped[rotable] = 1
@@ -234,7 +243,7 @@ def dump_table(image, e, rotable=None, name=None, forcesize=None):
     # Count entries in tbl
     # name, value
     i = 0
-    while image.read32(tbl + i * 16):
+    while image.read32(tbl + i * entry_size):
       i += 1
 
     nents = 4
@@ -249,15 +258,15 @@ def dump_table(image, e, rotable=None, name=None, forcesize=None):
 
     hash = [0] * nents
     i = 0
-    while image.read32(tbl + i * 16):
-      if (image.read32(tbl + i * 16) & 0xff) == 6:
-        str = image.readstring(image.read32(tbl + i * 16 + 4))
+    while image.read32(tbl + i * entry_size):
+      if (image.read32(tbl + i * entry_size) & 0xff) == 6:
+        str = image.readstring(image.read32(tbl + i * entry_size + 4))
         h = luahash(str) % nents
         setoffset(hash, h, i)
 
-        if image.read32(tbl + i * 16 + 12) == 2:
-          nexttbl = image.read32(tbl + i * 16 + 8)
-          dump_table(image, e, rotable=nexttbl, name=image.readstring(image.read32(nexttbl)))
+        if image.read32(tbl + i * entry_size + 4 + entry_size / 2) == 2:
+          nexttbl = image.read32(tbl + i * entry_size + 8)
+          dump_table(image, e, rotable=nexttbl, name=image.readstring(image.read32(nexttbl)), entry_size=entry_size)
 
       i += 1
 
@@ -276,13 +285,13 @@ def dump_with_name(hash, name, nents):
         val = 0
     print "\n};"
 
-def maybe_dump_table(image, e, symbol, addr):
+def maybe_dump_table(image, e, symbol, addr, entry_size=None):
     if symbol.endswith("_table"):
       name_addr = image.read32(addr)
       if name_addr:
         name = image.readstring(name_addr)
         if name and symbol.startswith(name):
-          dump_table(image, e, addr, name)
+          dump_table(image, e, addr, name, entry_size=entry_size)
 
 
 def hashimage(args):
@@ -297,19 +306,33 @@ def hashimage(args):
         data = e.load_section(section)
         image.add_segment(e.get_symbol_addr(start), data)
 
+    sizes = image.read32(e.get_symbol_addr("lua_rotable_table_hashtable"))
+
+    #table_size = (sizes >> 16) & 0xff
+    #entry_size = (sizes >> 8) & 0xff
+
+    table_size = 16
+    entry_size = 16
+
+    if table_size != 16:
+      raise FatalError("luaR_table size is not recognized (%d)" % (table_size))
+
+    if entry_size != 16 and entry_size != 24:
+      raise FatalError("luaR_entry size is not recognized (%d)" % (entry_size))
+
     #luaR_table is name, table, stuff
 
     rotable = e.get_symbol_addr("lua_rotable")
 
     while image.read32(rotable):
-      dump_table(image, e, rotable)
-      rotable += 16
+      dump_table(image, e, rotable, entry_size=entry_size)
+      rotable += table_size
 
-    dump_table(image, e, e.get_symbol_addr("lua_base_funcs_table"), "lua_base_funcs_table", forcesize=256)
-    dump_table(image, e, e.get_symbol_addr("strlib_table"), "strlib_table")
-    dump_rotable(image, e, e.get_symbol_addr("lua_rotable"), "lua_rotable_table", forcesize=256)
+    dump_table(image, e, e.get_symbol_addr("lua_base_funcs_table"), "lua_base_funcs_table", forcesize=256, entry_size=entry_size)
+    dump_table(image, e, e.get_symbol_addr("strlib_table"), "strlib_table", entry_size=entry_size)
+    dump_rotable(image, e, e.get_symbol_addr("lua_rotable"), "lua_rotable_table", forcesize=256, table_size=table_size)
 
-    e.foreach_symbol(lambda symbol: maybe_dump_table(image, e, symbol, e.get_symbol_addr(symbol)))
+    e.foreach_symbol(lambda symbol: maybe_dump_table(image, e, symbol, e.get_symbol_addr(symbol), entry_size=entry_size))
 
 
 class FatalError(RuntimeError):
@@ -355,5 +378,5 @@ if __name__ == '__main__':
     try:
         main()
     except FatalError as e:
-        print '\nA fatal error occurred: %s' % e
+        print >> sys.stderr, '\nA fatal error occurred: %s' % e
         sys.exit(2)

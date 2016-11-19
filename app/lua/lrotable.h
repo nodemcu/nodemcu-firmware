@@ -89,5 +89,5 @@ int luaR_isrotable(void *p);
 
 #define LUA_TABLE_REG_2(x) \
   const uint32_t __attribute__((weak)) LUA_TABLE_PASTE(x,_hashtable)[1] = {0}; \
-  const luaR_table LUA_TABLE_PASTE(x,_table) = { LUA_TABLE_STRINGIFY(x), x, LUA_TABLE_PASTE(x,_hashtable) };
+  const luaR_table LUA_TABLE_PASTE(x,_table) = { LUA_TABLE_STRINGIFY(x), x, LUA_TABLE_PASTE(x,_hashtable), 0 };
 #endif

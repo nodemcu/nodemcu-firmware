@@ -67,7 +67,7 @@
 #define BUILTIN_LIB(name, luaname, map) \
   const uint32_t __attribute__((weak)) MODULE_PASTE_(name,_hashtable)[1] = {0}; \
   const LOCK_IN_SECTION(".lua_rotable") \
-    luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map, MODULE_PASTE_(name,_hashtable) }
+    luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map, MODULE_PASTE_(name,_hashtable), sizeof(luaname) }
 
 #if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
 # error "NodeMCU modules must be built with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)"
