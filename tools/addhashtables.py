@@ -306,13 +306,8 @@ def hashimage(args):
         data = e.load_section(section)
         image.add_segment(e.get_symbol_addr(start), data)
 
-    sizes = image.read32(e.get_symbol_addr("lua_rotable_table_hashtable"))
-
-    #table_size = (sizes >> 16) & 0xff
-    #entry_size = (sizes >> 8) & 0xff
-
-    table_size = 16
-    entry_size = 16
+    table_size = image.read8(e.get_symbol_addr("luaR_table_size"))
+    entry_size = image.read8(e.get_symbol_addr("luaR_entry_size"))
 
     if table_size != 16:
       raise FatalError("luaR_table size is not recognized (%d)" % (table_size))

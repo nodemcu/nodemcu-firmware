@@ -21,6 +21,9 @@
 extern const luaR_table lua_rotable[];
 const uint32_t __attribute__((weak)) lua_rotable_table_hashtable[1];
 
+const uint8_t __attribute__((section(".keep.rodata"))) luaR_table_size = sizeof(luaR_table);
+const uint8_t __attribute__((section(".keep.rodata"))) luaR_entry_size = sizeof(luaR_entry);
+
 static uint32_t strhash(const char *str) {
   uint32_t l = c_strlen(str);
   unsigned int h = cast(unsigned int, l);  /* seed */

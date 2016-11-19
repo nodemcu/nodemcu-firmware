@@ -81,6 +81,8 @@ SECTIONS
     *(.rodata*)
     *(.sdk.version)
 
+    KEEP(*(.keep.rodata))
+
     /* Link-time arrays containing the defs for the included modules */
     . = ALIGN(4);
     lua_libs = ABSOLUTE(.);
