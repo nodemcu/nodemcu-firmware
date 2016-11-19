@@ -433,13 +433,17 @@ static sint32_t myspiffs_vfs_close( const struct vfs_file *fd ) {
 static sint32_t myspiffs_vfs_read( const struct vfs_file *fd, void *ptr, size_t len ) {
   GET_FILE_FH(fd);
 
-  return SPIFFS_read( &fs, fh, ptr, len );
+  sint32_t n = SPIFFS_read( &fs, fh, ptr, len );
+
+  return n >= 0 ? n : VFS_RES_ERR;
 }
 
 static sint32_t myspiffs_vfs_write( const struct vfs_file *fd, const void *ptr, size_t len ) {
   GET_FILE_FH(fd);
 
-  return SPIFFS_write( &fs, fh, (void *)ptr, len );
+  sint32_t n = SPIFFS_write( &fs, fh, (void *)ptr, len );
+
+  return n >= 0 ? n : VFS_RES_ERR;
 }
 
 static sint32_t myspiffs_vfs_lseek( const struct vfs_file *fd, sint32_t off, int whence ) {

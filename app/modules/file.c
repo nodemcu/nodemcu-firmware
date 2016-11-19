@@ -350,14 +350,18 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 
   n = vfs_read(fd, p, n);
   // bypass search if no end character provided
-  for (i = end_char != EOF ? 0 : n; i < n; ++i)
-    if (p[i] == end_char)
-    {
-      ++i;
-      break;
-    }
+  if (n > 0 && end_char != EOF) {
+    for (i = 0; i < n; ++i)
+      if (p[i] == end_char)
+      {
+        ++i;
+        break;
+      }
+  } else {
+    i = n;
+  }
 
-  if (i == 0) {
+  if (i == 0 || n == VFS_RES_ERR) {
     if (heap_mem) {
       luaM_free(L, heap_mem);
       heap_mem = NULL;
