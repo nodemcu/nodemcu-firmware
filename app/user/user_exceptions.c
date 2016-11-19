@@ -40,7 +40,7 @@
 
 static exception_handler_fn load_store_handler;
 
-#ifdef DEVELOPMENT_TOOLS
+#ifdef NODE_BYTE_LOAD_STATS
 uint32_t wide_handler_count;
 uint32_t wide_handler_last_epc[4];
 uint8_t wide_handler_last_epc_index;  // Points to most recent to be used
@@ -89,7 +89,7 @@ die:
     while (1) {}
   }
 
-#ifdef DEVELOPMENT_TOOLS
+#ifdef NODE_BYTE_LOAD_STATS
   wide_handler_count++;
   if (wide_handler_last_epc[wide_handler_last_epc_index & 3] != epc1) {
     wide_handler_last_epc_index++;

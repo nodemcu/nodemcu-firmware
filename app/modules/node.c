@@ -439,9 +439,9 @@ static int node_stripdebug (lua_State *L) {
 }
 #endif
 
-#ifdef DEVELOPMENT_TOOLS
+#ifdef NODE_BYTE_LOAD_STATS
 // Return some statistics about the interpreter
-static int node_stats(lua_State *L) {
+static int node_byte_stats(lua_State *L) {
   extern uint32_t wide_handler_count;
   extern uint32_t wide_handler_last_epc[];
   extern uint8_t wide_handler_last_epc_index;
@@ -553,8 +553,8 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
-#ifdef DEVELOPMENT_TOOLS
-  { LSTRKEY( "stats" ), LFUNCVAL( node_stats) },
+#ifdef NODE_BYTE_LOAD_STATS
+  { LSTRKEY( "bytestats" ), LFUNCVAL( node_byte_stats) },
 #endif
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
