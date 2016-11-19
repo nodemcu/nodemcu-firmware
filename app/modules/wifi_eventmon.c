@@ -338,6 +338,8 @@ static const LUA_REG_TYPE wifi_event_monitor_reason_map[] =
 LUA_TABLE_REG_2(wifi_event_monitor_reason_map);
 #endif
 
+// This doesn't need the LUA_TABLE_REG wrapper her as the wrapper is actually in wifi.c
+// This table is not actually referenced here, but is only referenced from wifi.c
 const LUA_REG_TYPE wifi_event_monitor_map[] =
 {
   { LSTRKEY( "register" ),            LFUNCVAL( wifi_event_monitor_register ) },
