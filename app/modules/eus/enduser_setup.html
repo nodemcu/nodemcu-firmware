@@ -142,7 +142,7 @@
 		}
 		
 		#i {
-			text-align: justify;
+			text-align: center;
 		}
 	</style>
 </head>
@@ -165,7 +165,7 @@
 			<div id=f2>
 				<h1>Success!</h1>
 				<div id=i>
-					<h3>Your device has successfully connected to the Wi-Fi network.</h3>
+					<h3>Your device has successfully connected to the Wi-Fi network.<br /><br/>You may now close this web page.</h3>
 				</div>
 			</div>
 			<div id=f3>
@@ -178,7 +178,7 @@
 	<script>
         var $ = function (selector) { return document.querySelector(selector); };
         var ab = $('#networks'), ap = $('#aplist');
-        var stopAll = false, ra, rs;
+        var stopAll = false, ra, rs, submitted = false;
 
         function show(f, y) {
             if (y == null) y = f;
@@ -210,11 +210,11 @@
                     d = JSON.parse(d);
                 }
 
-                $('#deviceId').innerText = d.deviceid;
+                $('#deviceId').innerText = "Device: " + d.deviceid;
 
                 var c = d.pairing;
 
-                var s = [
+                var st = [
                     'Idle',
                     'Connecting...',
                     'Failed - wrong password',
@@ -223,7 +223,13 @@
                     'Wi-Fi successfully connected!'
                 ][d.status];
 
-                $('#st').innerText = s;
+				if (st == null) 
+					st = "";
+
+				if (!submitted && d.status > 1 && d.status < 5)
+					st = "Need a valid Network and Password";
+
+                $('#st').innerText = st;
 
                 if (d.status === 5) {
                     cur('#f2');
@@ -235,6 +241,7 @@
             }
         }
         function submit() {
+			submitted = true;
             var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value);
             clearTimeout(rs);
             fetch(url, 'GET', newSt, 2);
