@@ -19,7 +19,7 @@ return 1;
 
 static int node_restart (lua_State *L)
 {
-   system_restart ();
+   esp_restart ();
    return 0;
 }
 
@@ -28,7 +28,7 @@ static int node_restart (lua_State *L)
 static int node_dsleep (lua_State *L)
 {
   uint64_t us = luaL_optinteger (L, 1, 0);
-  system_deep_sleep (us);
+  esp_deep_sleep (us);
   return 0;
 }
 
