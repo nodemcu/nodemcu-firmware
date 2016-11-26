@@ -73,6 +73,12 @@ config LUA_MODULE_FILE
   help
       Includes the file module (recommended).
 
+config LUA_MODULE_GPIO
+  bool "GPIO module"
+  default "y"
+  help
+      Includes the GPIO module (recommended).
+
 config LUA_MODULE_NET
   bool "Net module"
   default "y"
