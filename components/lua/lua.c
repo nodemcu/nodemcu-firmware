@@ -128,15 +128,14 @@ static int docall (lua_State *L, int narg, int clear) {
 
 
 static void print_version (lua_State *L) {
-  lua_pushliteral (L, NODE_VERSION " build " BUILD_DATE " powered by " LUA_RELEASE " on IDF ");
-  lua_pushstring (L, system_get_sdk_version ());
-  lua_concat (L, 2);
+  lua_pushliteral (L, NODE_VERSION " build " BUILD_DATE " powered by " LUA_RELEASE);
   const char *msg = lua_tostring (L, -1);
   l_message (NULL, msg);
   lua_pop (L, 1);
 }
 
 
+#if 0
 static int getargs (lua_State *L, char **argv, int n) {
   int narg;
   int i;
@@ -154,7 +153,6 @@ static int getargs (lua_State *L, char **argv, int n) {
   return narg;
 }
 
-#if 0
 static int dofile (lua_State *L, const char *name) {
   int status = luaL_loadfile(L, name) || docall(L, 0, 1);
   return report(L, status);
@@ -477,7 +475,7 @@ void donejob(lua_Load *load){
 }
 
 static void dojob(lua_Load *load){
-  size_t l, rs;
+  size_t l;
   int status;
   char *b = load->line;
   lua_State *L = load->L;

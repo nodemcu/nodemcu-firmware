@@ -12,7 +12,7 @@
 // Lua: heap()
 static int node_heap( lua_State* L )
 {
-  uint32_t sz = system_get_free_heap_size();
+  uint32_t sz = esp_get_free_heap_size();
   lua_pushinteger(L, sz);
 return 1;
 }

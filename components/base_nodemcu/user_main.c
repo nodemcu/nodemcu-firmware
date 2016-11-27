@@ -122,7 +122,7 @@ void nodemcu_init(void)
         flash_rom_set_size_byte(flash_safe_get_size_byte());
 
         // Reboot to get SDK to use (or write) init data at new location
-        system_restart ();
+        esp_restart ();
 
         // Don't post the start_lua task, we're about to reboot...
         return;

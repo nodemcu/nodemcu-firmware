@@ -603,6 +603,7 @@ static void createmeta (lua_State *L) {
 }
 
 
+#if 0
 static void createstdfile (lua_State *L, int f, int k, const char *fname) {
   *newfile(L) = f;
 #if LUA_OPTIMIZE_MEMORY != 2
@@ -619,6 +620,7 @@ static void createstdfile (lua_State *L, int f, int k, const char *fname) {
   lua_setfield(L, -2, fname);
 #endif
 }
+#endif
 
 #if LUA_OPTIMIZE_MEMORY != 2
 static void newfenv (lua_State *L, lua_CFunction cls) {
