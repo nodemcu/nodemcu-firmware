@@ -398,6 +398,8 @@ static inline void rtc_time_add_sleep_tracking(uint32_t us, uint32_t cycles)
 
 static void rtc_time_enter_deep_sleep_us(uint32_t us)
 {
+  ets_intr_lock();
+
   if (rtc_time_check_wake_magic())
     rtc_time_set_sleep_magic();
 
