@@ -70,6 +70,7 @@ pages:
         - 'rtctime': 'en/modules/rtctime.md'
         - 'sigma delta': 'en/modules/sigma-delta.md'
         - 'sntp': 'en/modules/sntp.md'
+        - 'somfy': 'en/modules/somfy.md'
         - 'spi': 'en/modules/spi.md'
         - 'struct': 'en/modules/struct.md'
         - 'switec': 'en/modules/switec.md'
