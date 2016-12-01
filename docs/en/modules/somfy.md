@@ -34,7 +34,8 @@ When I send the `somfy.DOWN` command, repeating the frame twice (which seems to 
 nil
 
 #### Example
-To start with controlling your Somfy blinds you need to
+To start with controlling your Somfy blinds you need to:
+
 - Choose an arbitrary remote address (different from your existing remote) - `123` in this example
 - Choose a starting point for the rolling code. Any unsigned int works, 1 is a good start
 - Long-press the program button of your existing remote control until your blind goes up and down slightly
