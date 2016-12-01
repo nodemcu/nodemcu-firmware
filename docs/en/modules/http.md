@@ -7,13 +7,16 @@ Basic HTTP *client* module that provides an interface to do GET/POST/PUT/DELETE 
 
 !!! attention
 
-    It is **not** possible to execute concurrent HTTP requests using this module. Starting a new request before the previous has completed will result in undefined behavior. Use [`node.task.post()`](https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodetaskpost) in the callbacks of your calls to start subsequent calls if you want to chain them (see [#1258](https://github.com/nodemcu/nodemcu-firmware/issues/1258)).
+    It is **not** possible to execute concurrent HTTP requests using this module. 
 
 Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 10 seconds).
 
 For each operation it is possible to provide custom HTTP headers or override standard headers. By default the `Host` header is deduced from the URL and `User-Agent` is `ESP8266`. Note, however, that the `Connection` header *can not* be overridden! It is always set to `close`.
 
 HTTP redirects (HTTP status 300-308) are followed automatically up to a limit of 20 to avoid the dreaded redirect loops.
+
+When the callback is invoked, it is passed the HTTP status code, the body as it was received, and a table of the response headers. All the header names have been lower cased
+to make it easy to access. If there are multiple headers of the same name, then only the last one is returned.
 
 **SSL/TLS support**
 
@@ -30,7 +33,7 @@ Executes a HTTP DELETE request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
 
 #### Returns
 `nil`
@@ -59,7 +62,7 @@ Executes a HTTP GET request. Note that concurrent requests are not supported.
 #### Parameters
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
 
 #### Returns
 `nil`
@@ -86,7 +89,7 @@ Executes a HTTP POST request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
 
 #### Returns
 `nil`
@@ -116,7 +119,7 @@ Executes a HTTP PUT request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
 
 #### Returns
 `nil`
@@ -147,7 +150,7 @@ Execute a custom HTTP request for any HTTP method. Note that concurrent requests
 - `method` The HTTP method to use, e.g. "GET", "HEAD", "OPTIONS" etc
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code` and `body`
+- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
 
 #### Returns
 `nil`

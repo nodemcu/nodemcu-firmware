@@ -402,9 +402,20 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 		}
 		if ( req->callback_handle != NULL ) /* Callback is optional. */
 		{
-			req->callback_handle( body, http_status, req->buffer );
-		}
-		http_free_req( req );
+                  char *req_buffer = req->buffer;
+                  req->buffer = NULL;
+                  http_callback_t req_callback;
+                  req_callback = req->callback_handle;
+
+		  http_free_req( req );
+
+                  req_callback( body, http_status, &req_buffer );
+                  if (req_buffer) {
+                    os_free(req_buffer);
+                  }
+		} else {
+		  http_free_req( req );
+                }
 	}
 	/* Fix memory leak. */
 	espconn_delete( conn );
@@ -449,7 +460,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		HTTPCLIENT_ERR( "DNS failed for %s", hostname );
 		if ( req->callback_handle != NULL )
 		{
-			req->callback_handle( "", -1, "" );
+			req->callback_handle( "", -1, NULL );
 		}
 		http_free_req( req );
 	}
