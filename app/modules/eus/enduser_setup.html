@@ -142,7 +142,7 @@
 		}
 		
 		#i {
-			text-align: justify;
+			text-align: center;
 		}
 	</style>
 </head>
@@ -165,7 +165,7 @@
 			<div id=f2>
 				<h1>Success!</h1>
 				<div id=i>
-					<h3>Your device has successfully connected to the Wi-Fi network.</h3>
+					<h3>Your device has successfully connected to the Wi-Fi network.<br /><br/>You may now close this web page.</h3>
 				</div>
 			</div>
 			<div id=f3>
@@ -176,139 +176,146 @@
 		<h4 id='st'>Updating Status...</h4>
 	</div>
 	<script>
-        var $ = function (selector) { return document.querySelector(selector); };
-        var ab = $('#networks'), ap = $('#aplist');
-        var stopAll = false, ra, rs;
+		var $ = function (selector) { return document.querySelector(selector); };
+		var ab = $('#networks'), ap = $('#aplist');
+		var stopAll = false, ra, rs, submitted = false;
 
-        function show(f, y) {
-            if (y == null) y = f;
-            $(f).style.display = y == f ? 'block' : 'none';
-        }
-        function hide(f) {
-            $(f).style.display = 'none';
-        }
-        function to(cb, x) {
-            return setTimeout(cb, 1000 * x);
-        }
-        function refr() {
-            if (!stopAll)
-                fetch('/status.json?n=' + Math.random(), 'GET', newSt, 2);
-        }
-        function cur(f) {
-            show('#f1', f);
-            show('#f2', f);
-            show('#f3', f);
-        }
-        function newSt(s, d) {
-            clearTimeout(rs);
-            rs = to(refr, 3);
+		function show(f, y) {
+			if (y == null) y = f;
+			$(f).style.display = y == f ? 'block' : 'none';
+		}
+		function hide(f) {
+			$(f).style.display = 'none';
+		}
+		function to(cb, x) {
+			return setTimeout(cb, 1000 * x);
+		}
+		function refr() {
+			if (!stopAll)
+				fetch('/status.json?n=' + Math.random(), 'GET', newSt, 2);
+		}
+		function cur(f) {
+			show('#f1', f);
+			show('#f2', f);
+			show('#f3', f);
+		}
+		function newSt(s, d) {
+			clearTimeout(rs);
+			rs = to(refr, 3);
 
-            if (s != 200) {
-                $('#st').innerText = 'Awaiting Status (' + s + ')';
-            } else {
-                if (typeof d === 'string') {
-                    d = JSON.parse(d);
-                }
+			if (s != 200) {
+				$('#st').innerText = 'Awaiting Status (' + s + ')';
+			} else {
+				if (typeof d === 'string') {
+					d = JSON.parse(d);
+				}
 
-                $('#deviceId').innerText = d.deviceid;
+				$('#deviceId').innerText = "Device: " + d.deviceid;
 
-                var c = d.pairing;
+				var c = d.pairing;
 
-                var s = [
-                    'Idle',
-                    'Connecting...',
-                    'Failed - wrong password',
-                    'Failed - network not found',
-                    'Failed',
-                    'Wi-Fi successfully connected!'
-                ][d.status];
+				var st = [
+					'Idle',
+					'Connecting...',
+					'Failed - wrong password',
+					'Failed - network not found',
+					'Failed',
+					'Wi-Fi successfully connected!'
+				][d.status];
 
-                $('#st').innerText = s;
+				if (st == null)
+					st = "";
 
-                if (d.status === 5) {
-                    cur('#f2');
-                    stopAll = true;
-                    clearTimeout(ra);
-                } else if (d.status > 1) {
-                    cur('#f1');
-                }
-            }
-        }
-        function submit() {
-            var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value);
-            clearTimeout(rs);
-            fetch(url, 'GET', newSt, 2);
-            cur('#f3');
-        }
-        function fetch(url, method, callback, time_out) {
-            var xhr = new XMLHttpRequest();
-            xhr.onloadend = function () {
-                callback(xhr.status, xhr.responseText);
-            }
-            xhr.ontimeout = function () {
-                callback(-1, null);
-            }
-            xhr.open(method, url, true);
-            xhr.setRequestHeader('Accept', 'application/json');
-            xhr.timeout = (time_out || 10) * 1000;
-            xhr.send();
-        }
-        function gotAp(s, json) {
-            var list;
-            if (s === 200 && json != null) {
-                if (typeof json === 'string' && json.length > 0) {
-                    list = JSON.parse(json);
-                } else if (typeof json === 'object') {
-                    list = json;
-                }
+				if (!submitted && d.status > 1 && d.status < 5)
+					st = "Need a valid Network and Password";
 
-                list.sort(function (a, b) {
-                    return b.rssi - a.rssi;
-                });
-                var ops = '<option>Select a Network...</option>';
-                for (var i = 0; i < list.length; ++i) {
-                    ops += '<option>' + list[i].ssid + '</option>';
-                }
-                ap.innerHTML = ops;
-                ab.disabled = false;
-                togAp(null, true);
-                ab.onclick = togAp;
-            } else {
-                ab.innerText = 'No networks found (' + s + ')';
-                ra = to(refrAp, 5);
-            }
-        }
-        function togAp(ev, force) {
-            if (!force || ap.style.display == 'block') {
-                hide('#dropdown');
-                show('#ssid');
-                ab.innerText = 'Scan for Networks';
-                ab.onclick = refrAp;
-            } else {
-                show('#dropdown');
-                hide('#ssid');
-                ab.innerText = 'Manual Entry';
-            }
-        }
-        function refrAp() {
-            ab.innerText = 'Searching for networks...';
-            ab.disabled = true;
-            ap.innerHTML = '<option disabled>Scanning...</option>';
-            if (!stopAll)
-                fetch('/aplist?n=' + Math.random(), 'GET', gotAp, 10);
-        }
-        window.onload = function() {
-          ab.innerText = 'Scan for Networks';
-          ab.onclick = refrAp;
-          $('#aplist').onchange = function () {
-              $('#ssid').value = $('#aplist').value;
-          };
-          $('#submit').onclick = submit;
-          $('#bk2').onclick = function () {
-              cur('#f1')
-          }
-          rs = to(refr, 0.5);
-        }
+				$('#st').innerText = st;
+
+				if (d.status === 5) {
+					cur('#f2');
+					stopAll = true;
+					clearTimeout(ra);
+				} else if (d.status > 1) {
+					cur('#f1');
+				}
+			}
+		}
+		function submit() {
+			submitted = true;
+			var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value);
+			clearTimeout(rs);
+			fetch(url, 'GET', newSt, 2);
+			cur('#f3');
+		}
+		function fetch(url, method, callback, time_out) {
+			var xhr = new XMLHttpRequest();
+			xhr.onloadend = function () {
+				callback(xhr.status, xhr.responseText);
+			}
+			xhr.ontimeout = function () {
+				callback(-1, null);
+			}
+			xhr.open(method, url, true);
+			xhr.setRequestHeader('Accept', 'application/json');
+			xhr.timeout = (time_out || 10) * 1000;
+			xhr.send();
+		}
+		function gotAp(s, json) {
+			var list;
+			if (s === 200 && json != null) {
+				if (typeof json === 'string' && json.length > 0) {
+					list = JSON.parse(json);
+				} else if (typeof json === 'object') {
+					list = json;
+				}
+
+				list.sort(function (a, b) {
+					return b.rssi - a.rssi;
+				});
+				var ops = '<option>Select a Network...</option>';
+				for (var i = 0; i < list.length; ++i) {
+					ops += '<option>' + list[i].ssid + '</option>';
+				}
+				ap.innerHTML = ops;
+				ab.disabled = false;
+				togAp(null, true);
+				ab.onclick = togAp;
+			} else {
+				ab.innerText = 'No networks found (' + s + ')';
+				ra = to(refrAp, 5);
+			}
+		}
+		function togAp(ev, force) {
+			if (!force || ap.style.display == 'block') {
+				hide('#dropdown');
+				show('#ssid');
+				ab.innerText = 'Scan for Networks';
+				ab.onclick = refrAp;
+			} else {
+				show('#dropdown');
+				hide('#ssid');
+				ab.innerText = 'Manual Entry';
+			}
+		}
+		function refrAp() {
+			ab.innerText = 'Searching for networks...';
+			ab.disabled = true;
+			ap.innerHTML = '<option disabled>Scanning...</option>';
+			if (!stopAll)
+				fetch('/aplist?n=' + Math.random(), 'GET', gotAp, 10);
+		}
+		window.onload = function() {
+		  ab.innerText = 'Scan for Networks';
+		  ab.onclick = refrAp;
+		  $('#aplist').onchange = function () {
+			  $('#ssid').value = $('#aplist').value;
+		  };
+		  $('#submit').onclick = submit;
+		  $('#bk2').onclick = function () {
+			  cur('#f1')
+		  }
+		  rs = to(refr, 0.5);
+		}
   </script>
 </body>
 
