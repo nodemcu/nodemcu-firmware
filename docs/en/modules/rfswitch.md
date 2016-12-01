@@ -1,7 +1,7 @@
 # rfswitch Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2016-10-27 | [Roman Fedorov](https://github.com/ffedoroff) | [Roman Fedorov](https://github.com/ffedoroff) | [rfswitch.c](../../../app/modules/rfswitch.c)|
+| 2016-12-01 | [Roman Fedorov](https://github.com/ffedoroff) | [Roman Fedorov](https://github.com/ffedoroff) | [rfswitch.c](../../../app/modules/rfswitch.c)|
 
 
 Module for operate 433/315Mhz devices like power outlet sockets, relays, etc.
