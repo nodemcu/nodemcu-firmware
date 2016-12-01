@@ -8,7 +8,7 @@ U8glib is a graphics library developed at [olikraus/u8glib](https://github.com/o
 I²C and SPI mode:
 
 - sh1106_128x64
-- ssd1306 - 128x64 and 64x48 variants
+- ssd1306 - 128x32, 128x64, and 64x48 variants
 - ssd1309_128x64
 - ssd1327_96x96_gr
 - uc1611 - dogm240 and dogxl240 variants
@@ -107,6 +107,7 @@ Initialize a display via I²C.
 The init sequence would insert delays to match the display specs. These can destabilize the overall system if wifi service is blocked for too long. It is therefore advisable to disable such delays unless the specific use case can exclude wifi traffic while initializing the display driver.
 
 - `u8g.sh1106_128x64_i2c()`
+- `u8g.ssd1306_128x32_i2c()`
 - `u8g.ssd1306_128x64_i2c()`
 - `u8g.ssd1306_64x48_i2c()`
 - `u8g.ssd1309_128x64_i2c()`
@@ -146,6 +147,7 @@ The init sequence would insert delays to match the display specs. These can dest
 - `u8g.pcd8544_84x48_hw_spi()`
 - `u8g.pcf8812_96x65_hw_spi()`
 - `u8g.sh1106_128x64_hw_spi()`
+- `u8g.ssd1306_128x32_hw_spi()`
 - `u8g.ssd1306_128x64_hw_spi()`
 - `u8g.ssd1306_64x48_hw_spi()`
 - `u8g.ssd1309_128x64_hw_spi()`
@@ -201,6 +203,30 @@ disp = u8g.ssd1306_128x64_hw_spi(cs, dc, res)
 
 #### See also
 [I²C Display Drivers](#i2c-display-drivers)
+
+## u8g.fb_rle
+Initialize a virtual display that provides run-length encoded framebuffer contents to a Lua callback.
+
+The callback function can be used to process the framebuffer line by line. It's called with either `nil` as parameter to indicate the start of a new frame or with a string containing a line of the framebuffer with run-length encoding. First byte in the string specifies how many pairs of (x, len) follow, while each pair defines the start (leftmost x-coordinate) and length of a sequence of lit pixels. All other pixels in the line are dark.
+
+```lua
+n = struct.unpack("B", rle_line)
+print(n.." pairs")
+for i = 0,n-1 do
+  print(string.format("  x: %d len: %d", struct.unpack("BB", rle_line, 1+1 + i*2)))
+end
+```
+
+#### Syntax
+`u8g.fb_rle(cb_fn, width, height)`
+
+#### Parameters
+- `cb_fn([rle_line])` callback function. `rle_line` is a string containing a run-length encoded framebuffer line, or `nil` to indicate start of frame.
+- `width` of display. Must be a multiple of 8, less than or equal to 248.
+- `height` of display. Must be a multiple of 8, less than or equal to 248.
+
+#### Returns
+u8g display object
 
 ___
 

@@ -55,7 +55,7 @@ rtctime.dsleep(5000000, 4)
 For applications where it is necessary to take samples with high regularity, this function is useful. It provides an easy way to implement a "wake up on the next 5-minute boundary" scheme, without having to explicitly take into account how long the module has been active for etc before going back to sleep.
 
 #### Syntax
-`rtctime.dsleep(aligned_us, minsleep_us [, option])`
+`rtctime.dsleep_aligned(aligned_us, minsleep_us [, option])`
 
 #### Parameters
 - `aligned_us` boundary interval in microseconds

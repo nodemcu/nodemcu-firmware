@@ -346,7 +346,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** (A format string with one argument is enough for Lua...)
 */
 #if !defined(LUA_USE_STDIO)
-#define luai_writestringerror(s,p)	c_printf((s), (p))
+#define luai_writestringerror(s,p)	dbg_printf((s), (p))
 #endif // defined(LUA_USE_STDIO)
 
 
@@ -556,7 +556,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** For example: If set to 4K a call to string.gsub will need more than 
 ** 5k C stack space.
 */
-#define LUAL_BUFFERSIZE		BUFSIZ
+#define LUAL_BUFFERSIZE		256
 
 /* }================================================================== */
 

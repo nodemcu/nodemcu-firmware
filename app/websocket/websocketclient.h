@@ -40,8 +40,13 @@
 struct ws_info;
 
 typedef void (*ws_onConnectionCallback)(struct ws_info *wsInfo);
-typedef void (*ws_onReceiveCallback)(struct ws_info *wsInfo, char *message, int opCode);
+typedef void (*ws_onReceiveCallback)(struct ws_info *wsInfo, int len, char *message, int opCode);
 typedef void (*ws_onFailureCallback)(struct ws_info *wsInfo, int errorCode);
+
+typedef struct {
+	char *key;
+	char *value;
+} header_t;
 
 typedef struct ws_info {
   int connectionState;
@@ -51,6 +56,7 @@ typedef struct ws_info {
   int port;
   char *path;
   char *expectedSecKey;
+  header_t *extraHeaders;
 
   struct espconn *conn;
   void *reservedData;

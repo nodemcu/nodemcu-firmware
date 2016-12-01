@@ -24,6 +24,7 @@
 //
 // I2C based displays go into here:
 //    U8G_DISPLAY_TABLE_ENTRY(sh1106_128x64_i2c)          \
+//    U8G_DISPLAY_TABLE_ENTRY(ssd1306_128x32_i2c)         \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1306_128x64_i2c)         \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1306_64x48_i2c)          \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1309_128x64_i2c)         \
@@ -40,6 +41,7 @@
 //    U8G_DISPLAY_TABLE_ENTRY(pcd8544_84x48_hw_spi)               \
 //    U8G_DISPLAY_TABLE_ENTRY(pcf8812_96x65_hw_spi)               \
 //    U8G_DISPLAY_TABLE_ENTRY(sh1106_128x64_hw_spi)               \
+//    U8G_DISPLAY_TABLE_ENTRY(ssd1306_128x32_hw_spi)              \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1306_128x64_hw_spi)              \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1306_64x48_hw_spi)               \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1309_128x64_hw_spi)              \
@@ -75,6 +77,10 @@
     U8G_DISPLAY_TABLE_ENTRY(ssd1306_128x64_hw_spi)              \
 
 #undef U8G_DISPLAY_TABLE_ENTRY
+
+// Special display device to provide run-length encoded framebuffer contents
+// to a Lua callback:
+//#define U8G_DISPLAY_FB_RLE
 //
 // ***************************************************************************
 

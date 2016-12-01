@@ -15,6 +15,7 @@
 
 #include "c_types.h"
 #include "c_string.h"
+#include "c_stdlib.h"
 
 #include "websocketclient.h"
 
@@ -45,7 +46,7 @@ static void websocketclient_onConnectionCallback(ws_info *ws) {
   }
 }
 
-static void websocketclient_onReceiveCallback(ws_info *ws, char *message, int opCode) {
+static void websocketclient_onReceiveCallback(ws_info *ws, int len, char *message, int opCode) {
   NODE_DBG("websocketclient_onReceiveCallback\n");
 
   lua_State *L = lua_getstate();
@@ -59,7 +60,7 @@ static void websocketclient_onReceiveCallback(ws_info *ws, char *message, int op
   if (data->onReceive != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->onReceive); // load the callback function
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->self_ref);  // pass itself, #1 callback argument
-    lua_pushstring(L, message); // #2 callback argument
+    lua_pushlstring(L, message, len); // #2 callback argument
     lua_pushnumber(L, opCode); // #3 callback argument
     lua_call(L, 3, 0);
   }
@@ -102,6 +103,7 @@ static int websocket_createClient(lua_State *L) {
 
   ws_info *ws = (ws_info *) lua_newuserdata(L, sizeof(ws_info));
   ws->connectionState = 0;
+  ws->extraHeaders = NULL;
   ws->onConnection = &websocketclient_onConnectionCallback;
   ws->onReceive = &websocketclient_onReceiveCallback;
   ws->onFailure = &websocketclient_onCloseCallback;
@@ -118,7 +120,6 @@ static int websocketclient_on(lua_State *L) {
   NODE_DBG("websocketclient_on\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -170,7 +171,6 @@ static int websocketclient_connect(lua_State *L) {
   NODE_DBG("websocketclient_connect is called.\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -188,11 +188,61 @@ static int websocketclient_connect(lua_State *L) {
   return 0;
 }
 
+static header_t *realloc_headers(header_t *headers, int new_size) {
+  if(headers) {
+    for(header_t *header = headers; header->key; header++) {
+      c_free(header->value);
+      c_free(header->key);
+    }
+    c_free(headers);
+  }
+  if(!new_size)
+    return NULL;
+  return (header_t *)c_malloc(sizeof(header_t) * (new_size + 1));
+}
+
+static int websocketclient_config(lua_State *L) {
+  NODE_DBG("websocketclient_config is called.\n");
+
+  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
+
+  ws_data *data = (ws_data *) ws->reservedData;
+
+  luaL_checktype(L, 2, LUA_TTABLE);
+  lua_getfield(L, 2, "headers");
+  if(lua_istable(L, -1)) {
+
+    lua_pushnil(L);
+    int size = 0;
+    while(lua_next(L, -2)) {
+      size++;
+      lua_pop(L, 1);
+    }
+
+    ws->extraHeaders = realloc_headers(ws->extraHeaders, size);
+    if(ws->extraHeaders) {
+      header_t *header = ws->extraHeaders;
+
+      lua_pushnil(L);
+      while(lua_next(L, -2)) {
+        header->key = c_strdup(lua_tostring(L, -2));
+        header->value = c_strdup(lua_tostring(L, -1));
+        header++;
+        lua_pop(L, 1);
+      }
+
+      header->key = header->value = NULL;
+    }
+  }
+  lua_pop(L, 1); // pop headers
+
+  return 0;
+}
+
 static int websocketclient_send(lua_State *L) {
   NODE_DBG("websocketclient_send is called.\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -225,7 +275,8 @@ static int websocketclient_gc(lua_State *L) {
   NODE_DBG("websocketclient_gc\n");
 
   ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
-  luaL_argcheck(L, ws, 1, "Client websocket expected");
+
+  ws->extraHeaders = realloc_headers(ws->extraHeaders, 0);
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -265,6 +316,7 @@ static const LUA_REG_TYPE websocket_map[] =
 static const LUA_REG_TYPE websocketclient_map[] =
 {
   { LSTRKEY("on"), LFUNCVAL(websocketclient_on) },
+  { LSTRKEY("config"), LFUNCVAL(websocketclient_config) },
   { LSTRKEY("connect"), LFUNCVAL(websocketclient_connect) },
   { LSTRKEY("send"), LFUNCVAL(websocketclient_send) },
   { LSTRKEY("close"), LFUNCVAL(websocketclient_close) },
