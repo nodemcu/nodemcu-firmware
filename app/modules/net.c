@@ -1682,6 +1682,7 @@ static int expose_array(lua_State* L, char *array, unsigned short len) {
 #endif
 
 // Module function map
+LUA_TABLE_REG_1(net_server_map);
 static const LUA_REG_TYPE net_server_map[] = {
   { LSTRKEY( "listen" ),  LFUNCVAL( net_server_listen ) },
   { LSTRKEY( "close" ),   LFUNCVAL( net_server_close ) },
@@ -1692,7 +1693,9 @@ static const LUA_REG_TYPE net_server_map[] = {
   { LSTRKEY( "__index" ), LROVAL( net_server_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(net_server_map);
 
+LUA_TABLE_REG_1(net_socket_map);
 static const LUA_REG_TYPE net_socket_map[] = {
   { LSTRKEY( "connect" ), LFUNCVAL( net_socket_connect ) },
   { LSTRKEY( "close" ),   LFUNCVAL( net_socket_close ) },
@@ -1707,6 +1710,7 @@ static const LUA_REG_TYPE net_socket_map[] = {
   { LSTRKEY( "__index" ), LROVAL( net_socket_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(net_socket_map);
 #if 0
 static const LUA_REG_TYPE net_array_map[] = {
   { LSTRKEY( "__index" ),    LFUNCVAL( net_array_index ) },
@@ -1715,6 +1719,7 @@ static const LUA_REG_TYPE net_array_map[] = {
 };
 #endif
 
+LUA_TABLE_REG_1(net_cert_map);
 static const LUA_REG_TYPE net_cert_map[] = {
   { LSTRKEY( "verify" ), 	LFUNCVAL( net_cert_verify ) },  
 #ifdef CLIENT_SSL_CERT_AUTH_ENABLE
@@ -1722,14 +1727,18 @@ static const LUA_REG_TYPE net_cert_map[] = {
 #endif
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(net_cert_map);
 
+LUA_TABLE_REG_1(net_dns_map);
 static const LUA_REG_TYPE net_dns_map[] = {
   { LSTRKEY( "setdnsserver" ), LFUNCVAL( net_setdnsserver ) },  
   { LSTRKEY( "getdnsserver" ), LFUNCVAL( net_getdnsserver ) }, 
   { LSTRKEY( "resolve" ),      LFUNCVAL( net_dns_static ) },  
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(net_dns_map);
 
+LUA_TABLE_REG_1(net_map);
 static const LUA_REG_TYPE net_map[] = {
   { LSTRKEY( "createServer" ),     LFUNCVAL( net_createServer ) },
   { LSTRKEY( "createConnection" ), LFUNCVAL( net_createConnection ) },
@@ -1744,6 +1753,7 @@ static const LUA_REG_TYPE net_map[] = {
   { LSTRKEY( "__metatable" ),      LROVAL( net_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(net_map);
 
 int luaopen_net( lua_State *L ) {
   int i;
@@ -1752,10 +1762,10 @@ int luaopen_net( lua_State *L ) {
     socket[i] = LUA_NOREF;
   }
 
-  luaL_rometatable(L, "net.server", (void *)net_server_map);  // create metatable for net.server
-  luaL_rometatable(L, "net.socket", (void *)net_socket_map);  // create metatable for net.socket
+  luaL_rometatable(L, "net.server", &net_server_map_table);  // create metatable for net.server
+  luaL_rometatable(L, "net.socket", &net_socket_map_table);  // create metatable for net.socket
   #if 0
-  luaL_rometatable(L, "net.array", (void *)net_array_map);    // create metatable for net.array
+  luaL_rometatable(L, "net.array", &net_array_map_table);    // create metatable for net.array
   #endif
 
   return 0;

@@ -30,7 +30,7 @@
 #endif // #ifdef ELUA_ENDIAN_LITTLE
 #endif // #ifndef LUA_PACK_VALUE
 
-#define LRO_STRKEY(k)   {LUA_TSTRING, {.strkey = k}}
+#define LRO_STRKEY(k)   {(sizeof(k) << 8) + LUA_TSTRING, {.strkey = k}}
 #define LRO_NUMKEY(k)   {LUA_TNUMBER, {.numkey = k}}
 #define LRO_NILKEY      {LUA_TNIL, {.strkey=NULL}}
 
@@ -43,7 +43,7 @@ typedef int luaR_numkey;
 /* The next structure defines the type of a key */
 typedef struct
 {
-  int type;
+  int type;   // is actually size << 8 + type -- size is sizeof(string)
   union
   {
     const char*   strkey;
@@ -59,22 +59,35 @@ typedef struct
 } luaR_entry;
 
 /* A rotable */
-typedef struct
+typedef struct _luaR_table
 {
   const char *name;
   const luaR_entry *pentries;
+  const uint32_t *hashtable;
+  const uint32_t namesize;
 } luaR_table;
 
-void* luaR_findglobal(const char *key, unsigned len);
-int luaR_findfunction(lua_State *L, const luaR_entry *ptable);
-const TValue* luaR_findentry(void *data, const char *strkey, luaR_numkey numkey, unsigned *ppos);
+luaR_table* luaR_findglobalhash(const char *key, uint32_t hash);
+int luaR_findfunction(lua_State *L, const luaR_table *ptable);
+const TValue* luaR_findentry(const luaR_table *ptable, const char *strkey, luaR_numkey numkey, unsigned *ppos);
+const TValue* luaR_findentrytstr(const luaR_table *ptable, const TString *key);
 void luaR_getcstr(char *dest, const TString *src, size_t maxsize);
-void luaR_next(lua_State *L, void *data, TValue *key, TValue *val);
-void* luaR_getmeta(void *data);
+void luaR_next(lua_State *L, const luaR_table *ptable, TValue *key, TValue *val);
+void* luaR_getmeta(const luaR_table *ptable);
 #ifdef LUA_META_ROTABLES
 int luaR_isrotable(void *p);
 #else
 #define luaR_isrotable(p)     (0)
 #endif
 
+#define LUA_TABLE_PASTE(x,y) x##y
+#define LUA_TABLE_STRINGIFY(x) LUA_TABLE_XSTRINGIFY(x)
+#define LUA_TABLE_XSTRINGIFY(x) #x
+
+#define LUA_TABLE_REG_1(x) \
+  const luaR_table LUA_TABLE_PASTE(x,_table);
+
+#define LUA_TABLE_REG_2(x) \
+  const uint32_t __attribute__((weak)) LUA_TABLE_PASTE(x,_hashtable)[1] = {0}; \
+  const luaR_table LUA_TABLE_PASTE(x,_table) = { LUA_TABLE_STRINGIFY(x), x, LUA_TABLE_PASTE(x,_hashtable), 0 };
 #endif

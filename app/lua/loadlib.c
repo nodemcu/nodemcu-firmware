@@ -25,6 +25,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lrotable.h"
+#include "lstate.h"
 
 /* prefix for open functions in C libraries */
 #define LUA_POF		"luaopen_"
@@ -474,7 +475,7 @@ static int ll_require (lua_State *L) {
     return 1;  /* package is already loaded */
   }
   /* Is this a readonly table? */
-  void *res = luaR_findglobal(name, c_strlen(name));
+  void *res = luaR_findglobalhash(name, tsvalue(L->base + 1 - 1)->hash);
   if (res) {
     lua_pushrotable(L, res);
     return 1;
@@ -563,7 +564,7 @@ static void modinit (lua_State *L, const char *modname) {
 
 static int ll_module (lua_State *L) {
   const char *modname = luaL_checkstring(L, 1);
-  if (luaR_findglobal(modname, c_strlen(modname)))
+  if (luaR_findglobalhash(modname, tsvalue(L->base + 1 - 1)->hash))
     return 0;
   int loaded = lua_gettop(L) + 1;  /* index of _LOADED table */
   lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
@@ -649,10 +650,12 @@ static const lua_CFunction loaders[] =
 #undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
+LUA_TABLE_REG_1(lmt);
 const LUA_REG_TYPE lmt[] = {
   {LRO_STRKEY("__gc"), LRO_FUNCVAL(gctm)},
   {LRO_NILKEY, LRO_NILVAL}
 };
+LUA_TABLE_REG_2(lmt);
 #endif
 
 LUALIB_API int luaopen_package (lua_State *L) {
@@ -663,7 +666,7 @@ LUALIB_API int luaopen_package (lua_State *L) {
   lua_pushlightfunction(L, gctm);
   lua_setfield(L, -2, "__gc");
 #else
-  luaL_rometatable(L, "_LOADLIB", (void*)lmt);
+  luaL_rometatable(L, "_LOADLIB", &lmt_table);
 #endif
   /* create `package' table */
   luaL_register_light(L, LUA_LOADLIBNAME, pk_funcs);

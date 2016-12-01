@@ -1430,6 +1430,7 @@ static int wifi_ap_dhcp_stop( lua_State* L )
 
 
 // Module function map
+LUA_TABLE_REG_1(wifi_station_map);
 static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "autoconnect" ),      LFUNCVAL( wifi_station_setauto ) },
   { LSTRKEY( "changeap" ),         LFUNCVAL( wifi_station_change_ap ) },
@@ -1459,14 +1460,18 @@ static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "status" ),           LFUNCVAL( wifi_station_status ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(wifi_station_map);
 
+LUA_TABLE_REG_1(wifi_ap_dhcp_map);
 static const LUA_REG_TYPE wifi_ap_dhcp_map[] = {
   { LSTRKEY( "config" ),  LFUNCVAL( wifi_ap_dhcp_config ) },
   { LSTRKEY( "start" ),   LFUNCVAL( wifi_ap_dhcp_start ) },
   { LSTRKEY( "stop" ),    LFUNCVAL( wifi_ap_dhcp_stop ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(wifi_ap_dhcp_map);
 
+LUA_TABLE_REG_1(wifi_ap_map);
 static const LUA_REG_TYPE wifi_ap_map[] = {
   { LSTRKEY( "config" ),              LFUNCVAL( wifi_ap_config ) },
   { LSTRKEY( "deauth" ),              LFUNCVAL( wifi_ap_deauth ) },
@@ -1482,7 +1487,11 @@ static const LUA_REG_TYPE wifi_ap_map[] = {
 //{ LSTRKEY( "__metatable" ),         LROVAL( wifi_ap_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(wifi_ap_map);
 
+LUA_TABLE_REG_2(wifi_event_monitor_map);
+
+LUA_TABLE_REG_1(wifi_map);
 static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setmode" ),        LFUNCVAL( wifi_setmode ) },
   { LSTRKEY( "getmode" ),        LFUNCVAL( wifi_getmode ) },
@@ -1532,6 +1541,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "__metatable" ),    LROVAL( wifi_map ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(wifi_map);
 
 // Used by user_rf_pre_init(user_main.c)
 void wifi_change_default_host_name(void)

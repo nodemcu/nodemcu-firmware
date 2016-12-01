@@ -302,6 +302,7 @@ static void wifi_event_monitor_process_event_queue(task_param_t param, uint8 pri
 }
 
 #ifdef WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
+LUA_TABLE_REG_1(wifi_event_monitor_reason_map);
 static const LUA_REG_TYPE wifi_event_monitor_reason_map[] =
 {
   { LSTRKEY( "UNSPECIFIED" ),              LNUMVAL( REASON_UNSPECIFIED ) },
@@ -334,8 +335,11 @@ static const LUA_REG_TYPE wifi_event_monitor_reason_map[] =
   { LSTRKEY( "HANDSHAKE_TIMEOUT" ),        LNUMVAL( REASON_HANDSHAKE_TIMEOUT ) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(wifi_event_monitor_reason_map);
 #endif
 
+// This doesn't need the LUA_TABLE_REG wrapper her as the wrapper is actually in wifi.c
+// This table is not actually referenced here, but is only referenced from wifi.c
 const LUA_REG_TYPE wifi_event_monitor_map[] =
 {
   { LSTRKEY( "register" ),            LFUNCVAL( wifi_event_monitor_register ) },

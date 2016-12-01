@@ -5,7 +5,7 @@ MEMORY
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10
   dram0_0_seg :                         org = 0x3FFE8000, len = 0x14000
   iram1_0_seg :                         org = 0x40100000, len = 0x8000
-  irom0_0_seg :                         org = 0x40210000, len = 0x80000
+  irom0_0_seg :                         org = 0x40210000, len = 0x90000
 }
 
 PHDRS
@@ -80,6 +80,8 @@ SECTIONS
     *(.literal.* .text.*)
     *(.rodata*)
     *(.sdk.version)
+
+    KEEP(*(.keep.rodata))
 
     /* Link-time arrays containing the defs for the included modules */
     . = ALIGN(4);

@@ -105,8 +105,9 @@ static Node *mainposition (const Table *t, const TValue *key) {
       return hashstr(t, rawtsvalue(key));
     case LUA_TBOOLEAN:
       return hashboolean(t, bvalue(key));
-    case LUA_TLIGHTUSERDATA:
     case LUA_TROTABLE:
+      return hashpointer(t, rvalue(key));
+    case LUA_TLIGHTUSERDATA:
     case LUA_TLIGHTFUNCTION:
       return hashpointer(t, pvalue(key));
     default:
@@ -598,12 +599,10 @@ const TValue *luaH_getstr (Table *t, TString *key) {
 
 /* same thing for rotables */
 const TValue *luaH_getstr_ro (void *t, TString *key) {
-  char keyname[LUA_MAX_ROTABLE_NAME + 1];
   const TValue *res;  
   if (!t)
     return luaO_nilobject;
-  luaR_getcstr(keyname, key, LUA_MAX_ROTABLE_NAME);   
-  res = luaR_findentry(t, keyname, 0, NULL);
+  res = luaR_findentrytstr(t, key);
   return res ? res : luaO_nilobject;
 }
 

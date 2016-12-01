@@ -40,7 +40,7 @@ typedef struct luaL_Reg {
   lua_CFunction func;
 } luaL_Reg;
 
-
+struct _luaR_table;
 
 LUALIB_API void (luaI_openlib) (lua_State *L, const char *libname,
                                 const luaL_Reg *l, int nup, int ftype);
@@ -70,7 +70,7 @@ LUALIB_API void (luaL_checkanyfunction) (lua_State *L, int narg);
 LUALIB_API void (luaL_checkanytable) (lua_State *L, int narg);
 
 LUALIB_API int   (luaL_newmetatable) (lua_State *L, const char *tname);
-LUALIB_API int   (luaL_rometatable) (lua_State *L, const char* tname, void *p);
+LUALIB_API int   (luaL_rometatable) (lua_State *L, const char* tname, const struct _luaR_table *p);
 LUALIB_API void *(luaL_checkudata) (lua_State *L, int ud, const char *tname);
 
 LUALIB_API void (luaL_where) (lua_State *L, int lvl);

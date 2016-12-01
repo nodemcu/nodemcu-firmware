@@ -412,6 +412,7 @@ LUA_API const void *lua_topointer (lua_State *L, int idx) {
     case LUA_TLIGHTUSERDATA:
       return lua_touserdata(L, idx);
     case LUA_TROTABLE: 
+      return rvalue(o);
     case LUA_TLIGHTFUNCTION:
       return pvalue(o);
     default: return NULL;
@@ -642,7 +643,7 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex) {
     res = 0;
   else {
     if(luaR_isrotable(mt))
-      setrvalue(L->top, mt)
+      setrvalue(L->top, (struct _luaR_table *) mt)
     else
       sethvalue(L, L->top, mt)
     api_incr_top(L);

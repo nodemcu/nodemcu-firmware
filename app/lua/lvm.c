@@ -131,7 +131,7 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
     if (ttistable(t) || ttisrotable(t)) {  /* `t' is a table? */
-      void *h = ttistable(t) ? hvalue(t) : rvalue(t);
+      void *h = ttistable(t) ? hvalue(t) : (void *) rvalue(t);
       const TValue *res = ttistable(t) ? luaH_get((Table*)h, key) : luaH_get_ro(h, key); /* do a primitive get */
       if (!ttisnil(res) ||  /* result is no nil? */
           (tm = fasttm(L, ttistable(t) ? ((Table*)h)->metatable : (Table*)luaR_getmeta(h), TM_INDEX)) == NULL) { /* or no TM? */
@@ -163,7 +163,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;
     if (ttistable(t) || ttisrotable(t)) {  /* `t' is a table? */
-      void *h = ttistable(t) ? hvalue(t) : rvalue(t);
+      void *h = ttistable(t) ? hvalue(t) : (void *) rvalue(t);
       TValue *oldval = ttistable(t) ? luaH_set(L, (Table*)h, key) : NULL; /* do a primitive set */
       if ((oldval && !ttisnil(oldval)) ||  /* result is no nil? */
           (tm = fasttm(L, ttistable(t) ? ((Table*)h)->metatable : (Table*)luaR_getmeta(h), TM_NEWINDEX)) == NULL) { /* or no TM? */
@@ -292,8 +292,9 @@ int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_TNIL: return 1;
     case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
     case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
-    case LUA_TLIGHTUSERDATA: 
     case LUA_TROTABLE:
+      return rvalue(t1) == rvalue(t2);
+    case LUA_TLIGHTUSERDATA: 
     case LUA_TLIGHTFUNCTION:
       return pvalue(t1) == pvalue(t2);
     case LUA_TUSERDATA: {

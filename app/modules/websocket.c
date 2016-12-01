@@ -313,6 +313,7 @@ static const LUA_REG_TYPE websocket_map[] =
   { LNILKEY, LNILVAL }
 };
 
+LUA_TABLE_REG_1(websocketclient_map);
 static const LUA_REG_TYPE websocketclient_map[] =
 {
   { LSTRKEY("on"), LFUNCVAL(websocketclient_on) },
@@ -324,9 +325,10 @@ static const LUA_REG_TYPE websocketclient_map[] =
   { LSTRKEY("__index"), LROVAL(websocketclient_map) },
   { LNILKEY, LNILVAL }
 };
+LUA_TABLE_REG_2(websocketclient_map);
 
 int loadWebsocketModule(lua_State *L) {
-  luaL_rometatable(L, METATABLE_WSCLIENT, (void *) websocketclient_map);
+  luaL_rometatable(L, METATABLE_WSCLIENT, &websocketclient_map_table);
 
   return 0;
 }
