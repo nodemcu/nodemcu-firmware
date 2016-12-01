@@ -99,7 +99,7 @@ static void http_callback( char * response, int http_status, char ** full_respon
     luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = LUA_NOREF;
 
-    lua_call(L, 3, 0); // With 2 arguments and 0 result
+    lua_call(L, 3, 0); // With 3 arguments and 0 result
   }
 }
 
