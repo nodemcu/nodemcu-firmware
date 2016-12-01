@@ -64,6 +64,7 @@ pages:
         - 'perf': 'en/modules/perf.md'
         - 'pwm' : 'en/modules/pwm.md'
         - 'rc' : 'en/modules/rc.md'
+        - 'rfswitch' : 'en/modules/rfswitch.md'
         - 'rotary' : 'en/modules/rotary.md'
         - 'rtcfifo': 'en/modules/rtcfifo.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
