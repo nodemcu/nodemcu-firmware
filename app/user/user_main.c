@@ -37,7 +37,7 @@ extern const uint32_t init_data[];
 extern const uint32_t init_data_end[];
 __asm__(
   /* Place in .text for same reason as user_start_trampoline */
-  ".section \".text\"\n"
+  ".section \".rodata.dram\"\n"
   ".align 4\n"
   "init_data:\n"
   ".incbin \"" ESP_INIT_DATA_DEFAULT "\"\n"
