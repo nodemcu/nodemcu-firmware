@@ -74,7 +74,7 @@ with wall clock time. The number of seconds is the offset.
 - `offset` The offset between NTP time and the rtc time. This can be omitted, and defaults to zero. This call enables the offset tracking.
 
 #### Returns
-nothing.
+nil
 
 ## sntp.getoffset
 
