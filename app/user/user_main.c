@@ -122,17 +122,26 @@ void nodemcu_init(void)
         return;
     }
 
-#if defined(FLASH_SAFE_API)
-    if( flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
-        NODE_ERR("Self adjust flash size.\n");
-        // Fit hardware real flash size.
-        flash_rom_set_size_byte(flash_safe_get_size_byte());
+    if( flash_safe_get_size_byte() <= FLASH_SIZE_4MBYTE ) {
+        if( flash_safe_get_size_byte() != flash_rom_get_size_byte() ) {
+            NODE_ERR("Self adjust flash size.\n");
+            // Fit hardware real flash size.
+            flash_rom_set_size_byte(flash_safe_get_size_byte());
+
+            system_restart ();
+            // Don't post the start_lua task, we're about to reboot...
+            return;
+        }
+    } else if( (flash_rom_get_size_byte() < FLASH_SIZE_1MBYTE) ||
+               (flash_rom_get_size_byte() > FLASH_SIZE_4MBYTE) ) {
+        NODE_ERR("Locking flash size for SDK to 1MByte.\n");
+        // SDK/ROM can't handle flash size > 4MByte, ensure a minimum of 1MByte for firmware image
+        flash_rom_set_size_byte(FLASH_SIZE_1MBYTE);
 
         system_restart ();
         // Don't post the start_lua task, we're about to reboot...
         return;
     }
-#endif // defined(FLASH_SAFE_API)
 
 #if defined ( CLIENT_SSL_ENABLE ) && defined ( SSL_BUFFER_SIZE )
     espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
