@@ -15,9 +15,13 @@ To enable this module, it needs to be given a reference time at least once (via 
 
 Note that while the rtctime module can keep time across deep sleeps, it *will* lose the time if the module is unexpectedly reset.
 
+This module can compensate for the underlying clock not running at exactly the required rate. The adjustment is in steps of 1 part in 2^32 (i.e. around 0.25 ppb). This adjustment
+is done automatically if the `sntp.sync` is called with the `autorepeat` flag set. The rate is settable using the `set()` function below. When the platform
+is booted, it defaults to 0 (i.e. nominal). 
+
 !!! important
 
-    This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
+    This module uses RTC memory slots 0-14, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
 
 This is a companion module to the [rtcmem](rtcmem.md) and [SNTP](sntp.md) modules.
 
@@ -107,14 +111,15 @@ Returns the current time. If current time is not available, zero is returned.
 none
 
 #### Returns
-A two-value timestamp containing:
+A three-value timestamp containing:
 
 - `sec` seconds since the Unix epoch
 - `usec` the microseconds part
+- `rate` the current clock rate offset. This is an offset of `rate / 2^32` (where the nominal rate is 1)
 
 #### Example
 ```lua
-sec, usec = rtctime.get()
+sec, usec, rate = rtctime.get()
 ```
 #### See also
 [`rtctime.set()`](#rtctimeset)
@@ -128,11 +133,12 @@ It is highly recommended that the timestamp is obtained via NTP (see [SNTP modul
 Values very close to the epoch are not supported. This is a side effect of keeping the memory requirements as low as possible. Considering that it's no longer 1970, this is not considered a problem.
 
 #### Syntax
-`rtctime.set(seconds, microseconds)`
+`rtctime.set(seconds, microseconds, [rate])`
 
 #### Parameters
 - `seconds` the seconds part, counted from the Unix epoch
 - `microseconds` the microseconds part
+- `rate` the rate in the same units as for `rtctime.get()`. The stored rate is not modified if not specified.
 
 #### Returns
 `nil`

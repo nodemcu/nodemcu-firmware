@@ -60,9 +60,10 @@
 # define sntp_dbg(...)
 #endif
 
-#define US_TO_FRAC(us)          ((((uint64_t) (us)) << 32) / 1000000)
+//#define US_TO_FRAC(us)          ((((uint64_t) (us)) << 32) / 1000000)
+#define US_TO_FRAC(us)          (div1m(((uint64_t) (us)) << 32))
 #define SUS_TO_FRAC(us)         ((((int64_t) (us)) << 32) / 1000000)
-#define US_TO_FRAC16(us)        ((((uint64_t) (us)) << 16) / 1000000)
+//#define US_TO_FRAC16(us)        ((((uint64_t) (us)) << 16) / 1000000)
 #define FRAC16_TO_US(frac)      ((((uint64_t) (frac)) * 1000000) >> 16)
 
 typedef enum {
@@ -145,6 +146,19 @@ static void on_timeout(void *arg);
 static void on_long_timeout(void *arg);
 static void sntp_dolookups(lua_State *L);
 
+static uint64_t div1m(uint64_t n) {
+  uint64_t q1 = (n >> 5) + (n >> 10);
+  uint64_t q2 = (n >> 12) + (q1 >> 1);
+  uint64_t q3 = (q2 >> 11) - (q2 >> 23);
+
+  uint64_t q = n + q1 + q2 - q3;
+
+  q = q >> 20;
+
+  // Ignore the error term -- it is measured in pico seconds
+  return q;
+}
+
 static void cleanup (lua_State *L)
 {
   os_timer_disarm (&state->timer);
@@ -225,7 +239,7 @@ static void sntp_handle_result(lua_State *L) {
     int64_t f = ((state->best.delta * PLL_A) >> 32) + pll_increment;
     pll_increment += (state->best.delta * PLL_B) >> 32;
     sntp_dbg("f=%d, increment=%d\n", (int32_t) f, (int32_t) pll_increment);
-    //rtctime_adjust_rate((int32_t) f);
+    rtctime_adjust_rate((int32_t) f);
   } else {
     rtctime_settimeofday (&tv);
   }
