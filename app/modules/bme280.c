@@ -286,7 +286,7 @@ static int bme280_lua_init(lua_State* L) {
 		reg = BME280_REGISTER_DIG_H2;
 		bme280_data.dig_H2 = r16sLE(reg); reg+=2;
 		bme280_data.dig_H3 = r8u(reg); reg++;
-		bme280_data.dig_H4 = ((int16_t)r8u(reg) << 4 | (r8u(reg+1) & 0xF)); reg+=2;
+		bme280_data.dig_H4 = ((int16_t)r8u(reg) << 4 | (r8u(reg+1) & 0xF)); reg++;
 		bme280_data.dig_H5 = ((int16_t)r8u(reg+1) << 4 | (r8u(reg) >> 4)); reg+=2;
 		bme280_data.dig_H6 = (int8_t)r8u(reg);
 		// NODE_DBG("dig_H: %d\t%d\t%d\t%d\t%d\t%d\n", bme280_data.dig_H1, bme280_data.dig_H2, bme280_data.dig_H3, bme280_data.dig_H4, bme280_data.dig_H5, bme280_data.dig_H6);
