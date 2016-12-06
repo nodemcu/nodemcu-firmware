@@ -5,19 +5,19 @@
 
 The rtctime module provides advanced timekeeping support for NodeMCU, including keeping time across deep sleep cycles (provided [`rtctime.dsleep()`](#rtctimedsleep) is used instead of [`node.dsleep()`](node.md#nodedsleep)). This can be used to significantly extend battery life on battery powered sensor nodes, as it is no longer necessary to fire up the RF module each wake-up in order to obtain an accurate timestamp.
 
-This module is intended for use together with [NTP](https://en.wikipedia.org/wiki/Network_Time_Protocol) (Network Time Protocol) for keeping highly accurate real time at all times. Timestamps are available with microsecond precision, based on the Unix Epoch (1970/01/01 00:00:00).
+This module is intended for use together with [NTP](https://en.wikipedia.org/wiki/Network_Time_Protocol) (Network Time Protocol) for keeping highly accurate real time at all times. Timestamps are available with microsecond precision, based on the Unix Epoch (1970/01/01 00:00:00). However, the accuracy is (in practice) no better then 1ms, and often worse than that. 
 
 Time keeping on the ESP8266 is technically quite challenging. Despite being named [RTC](https://en.wikipedia.org/wiki/Real-time_clock), the RTC is not really a Real Time Clock in the normal sense of the word. While it does keep a counter ticking while the module is sleeping, the accuracy with which it does so is *highly* dependent on the temperature of the chip. Said temperature changes significantly between when the chip is running and when it is sleeping, meaning that any calibration performed while the chip is active becomes useless mere moments after the chip has gone to sleep. As such, calibration values need to be deduced across sleep cycles in order to enable accurate time keeping. This is one of the things this module does.
 
 Further complicating the matter of time keeping is that the ESP8266 operates on three different clock frequencies - 52MHz right at boot, 80MHz during regular operation, and 160MHz if boosted. This module goes to considerable length to take all of this into account to properly keep the time.
 
 To enable this module, it needs to be given a reference time at least once (via [`rtctime.set()`](#rtctimeset)). For best accuracy it is recommended to provide reference
-times at regular intervals. The `sntp.sync` function has an easy way to do this. It is important that a reference time is provided at least twice, with the second time being after a deep sleep.
+times at regular intervals. The [`sntp.sync`](sntp.md#sntpsync) function has an easy way to do this. It is important that a reference time is provided at least twice, with the second time being after a deep sleep.
 
 Note that while the rtctime module can keep time across deep sleeps, it *will* lose the time if the module is unexpectedly reset.
 
 This module can compensate for the underlying clock not running at exactly the required rate. The adjustment is in steps of 1 part in 2^32 (i.e. around 0.25 ppb). This adjustment
-is done automatically if the `sntp.sync` is called with the `autorepeat` flag set. The rate is settable using the `set()` function below. When the platform
+is done automatically if the [`sntp.sync`](sntp.md#sntpsync) is called with the `autorepeat` flag set. The rate is settable using the [`set()`](#rtctimeset) function below. When the platform
 is booted, it defaults to 0 (i.e. nominal). A sample of modules shows that the actual clock rate is temperature dependant, but is normally within 5ppm of the nominal rate. This translates to around 15 seconds per month. 
 
 In the automatic update mode it can take a couple of hours for the clock rate to settle down to the correct value. After that, how well it tracks will depend on the amount
@@ -26,7 +26,7 @@ time tracking is somewhat worse, but normally within 10ms.
 
 !!! important
 
-    This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
+This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
 
 This is a companion module to the [rtcmem](rtcmem.md) and [SNTP](sntp.md) modules.
 
