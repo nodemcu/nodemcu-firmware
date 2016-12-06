@@ -12,12 +12,12 @@ Time keeping on the ESP8266 is technically quite challenging. Despite being name
 Further complicating the matter of time keeping is that the ESP8266 operates on three different clock frequencies - 52MHz right at boot, 80MHz during regular operation, and 160MHz if boosted. This module goes to considerable length to take all of this into account to properly keep the time.
 
 To enable this module, it needs to be given a reference time at least once (via [`rtctime.set()`](#rtctimeset)). For best accuracy it is recommended to provide reference
-times at regular intervals. The [`sntp.sync`](sntp.md#sntpsync) function has an easy way to do this. It is important that a reference time is provided at least twice, with the second time being after a deep sleep.
+times at regular intervals. The [`sntp.sync()`](sntp.md#sntpsync) function has an easy way to do this. It is important that a reference time is provided at least twice, with the second time being after a deep sleep.
 
 Note that while the rtctime module can keep time across deep sleeps, it *will* lose the time if the module is unexpectedly reset.
 
 This module can compensate for the underlying clock not running at exactly the required rate. The adjustment is in steps of 1 part in 2^32 (i.e. around 0.25 ppb). This adjustment
-is done automatically if the [`sntp.sync`](sntp.md#sntpsync) is called with the `autorepeat` flag set. The rate is settable using the [`set()`](#rtctimeset) function below. When the platform
+is done automatically if the [`sntp.sync()`](sntp.md#sntpsync) is called with the `autorepeat` flag set. The rate is settable using the [`set()`](#rtctimeset) function below. When the platform
 is booted, it defaults to 0 (i.e. nominal). A sample of modules shows that the actual clock rate is temperature dependant, but is normally within 5ppm of the nominal rate. This translates to around 15 seconds per month. 
 
 In the automatic update mode it can take a couple of hours for the clock rate to settle down to the correct value. After that, how well it tracks will depend on the amount
@@ -39,7 +39,7 @@ Puts the ESP8266 into deep sleep mode, like [`node.dsleep()`](node.md#nodedsleep
 - The time slept will generally be considerably more accurate than with [`node.dsleep()`](node.md#nodedsleep).
 - A sleep time of zero does not mean indefinite sleep, it is interpreted as a zero length sleep instead.
 
-When the sleep timer expires, the platform is rebooted and the lua code is started with the `init.lua`. The clock is set reasonably accurately.
+When the sleep timer expires, the platform is rebooted and the lua code is started with the `init.lua` file. The clock is set reasonably accurately.
 
 #### Syntax
 `rtctime.dsleep(microseconds [, option])`
