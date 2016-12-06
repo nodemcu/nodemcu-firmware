@@ -270,28 +270,24 @@ static inline uint64_t div2080(uint64_t n) {
 }
 
 static uint32_t div1m(uint32_t *rem, unsigned long long n) {
-  // These constants are pretty magic
-  uint64_t q1 = (n >> 5) + (n >> 10);
-  uint64_t q2 = (n >> 12) + (q1 >> 1);
-  uint64_t q3 = (q2 >> 11) - (q2 >> 23);
+  // 0   -> 0002000000000000 sub
+  // 0 >> 5 - 0 >> 19 + [-1]  -> 00020fffc0000000 add
+  // 0 >> 9 - 0 >> 6 + [-1]  -> 000208ffc0000000 add
+  // 2 >> 12 - 2 >> 23   -> 000000208bea0080 sub
 
-  uint64_t q = n + q1 + q2 - q3;
+  uint64_t q1 = (n >> 5) - (n >> 19) + n;
+  uint64_t q2 = q1 + (n >> 9) - (n >> 6);
+  uint64_t q3 = (q2 >> 12) - (q2 >> 23);
+
+  uint64_t q = q1 - n + q2 - q3;
 
   q = q >> 20;
 
   uint32_t r = (uint32_t) n - (uint32_t) q * 1000000;
 
-  //off = ((r >> 6) * 34359 + 34611) >> 29;
-
-  // Provided that the 'n' fits into 51 bits, the r is under 3000000
   if (r >= 1000000) {
-    if (r >= 2000000) {
-      q += 2;
-      r -= 2000000;
-    } else {
-      q++;
-      r -= 1000000;
-    }
+    r -= 1000000;
+    q++;
   }
 
   *rem = r;
