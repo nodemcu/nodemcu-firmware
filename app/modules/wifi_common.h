@@ -13,9 +13,6 @@
 #include "c_stdio.h"
 #include "task/task.h"
 
-//#define WIFI_DEBUG
-//#define EVENT_DEBUG
-
 void wifi_add_sprintf_field(lua_State* L, char* name, char* string, ...);
 void wifi_add_int_field(lua_State* L, char* name, lua_Integer integer);
 
@@ -40,13 +37,7 @@ static inline void unregister_lua_cb(lua_State* L, int* cb_ref)
 
 void wifi_change_default_host_name(void);
 
-#if defined(WIFI_DEBUG) || defined(NODE_DEBUG)
-#define WIFI_DBG(...) c_printf(__VA_ARGS__)
-#else
-#define WIFI_DBG(...) //c_printf(__VA_ARGS__)
-#endif
-
-#if defined(EVENT_DEBUG) || defined(NODE_DEBUG)
+#ifdef NODE_DEBUG
 #define EVENT_DBG(...) c_printf(__VA_ARGS__)
 #else
 #define EVENT_DBG(...) //c_printf(__VA_ARGS__)

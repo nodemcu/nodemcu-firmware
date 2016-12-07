@@ -53,7 +53,7 @@
 #define MAX_ATTEMPTS 5
 
 #if 0
-# define sntp_dbg(...) dbg_printf(__VA_ARGS__)
+# define sntp_dbg(...) c_printf(__VA_ARGS__)
 #else
 # define sntp_dbg(...)
 #endif

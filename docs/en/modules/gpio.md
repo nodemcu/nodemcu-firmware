@@ -69,29 +69,28 @@ gpio.read(0)
 
 ## gpio.serout()
 
-Serialize output based on a sequence of delay-times in µs. After each delay, the pin is toggled. After the last cycle and last delay the pin is not toggled.
+Serialize output based on a sequence of delay-times in µs. After each delay, the pin is toggled. After the last repeat and last delay the pin is not toggled.
 
 The function works in two modes: 
 * synchronous - for sub-50 µs resolution, restricted to max. overall duration,
 * asynchrounous - synchronous operation with less granularity but virtually unrestricted duration.
 
-Whether the asynchronous mode is chosen is defined by presence of the `callback` parameter. If present and is of function type the function goes asynchronous and the callback function is invoked when sequence finishes. If the parameter is numeric the function still goes asynchronous but no callback is invoked when done.
+Whether the asynchronous mode is chosen is defined by presence of the `callback` parameter. If present and is of function type the function goes asynchronous the callback function is invoked when sequence finishes. If the parameter is numeric the function still goes asynchronous but no callback is invoked when done.
 
-For the asynchronous version, the minimum delay time should not be shorter than 50 μs and maximum delay time is 0x7fffff μs (~8.3 seconds).
-In this mode the function does not block the stack and returns immediately before the output sequence is finalized. HW timer `FRC1_SOURCE` mode is used to change the states. As there is only a single hardware timer, there
-are restrictions on which modules can be used at the same time. An error will be raised if the timer is already in use.
+For asynchronous version minimum delay time should not be shorter than 50 μs and maximum delay time is 0x7fffff μs (~8.3 seconds).
+In this mode the function does not block the stack and returns immediately before the output sequence is finalized. HW timer inf `FRC1_SOURCE` mode is used to change the states.
 
-Note that the synchronous variant (no or nil `callback` parameter) function blocks the stack and as such any use of it must adhere to the SDK guidelines (also explained [here](../extn-developer-faq/#extension-developer-faq)). Failure to do so may lead to WiFi issues or outright to crashes/reboots. In short it means that the sum of all delay times multiplied by the number of cycles should not exceed 15 ms.
+Note that the synchronous variant (no or nil `callback` parameter) function blocks the stach and as such any use of it must adhere to the SDK guidelines (also explained [here](https://nodemcu.readthedocs.io/en/dev/en/extn-developer-faq/#extension-developer-faq)). Failure to do so may lead to WiFi issues or outright to crashes/reboots. Shortly it means that sum of all delay times multiplied by the number of repeats should not exceed 15 ms.
 
 #### Syntax
-`gpio.serout(pin, start_level, delay_times [, cycle_num[, callback]])`
+`gpio.serout(pin, start_level, delay_times [, repeat_num[, callback]])`
 
 #### Parameters
 - `pin`  pin to use, IO index
 - `start_level` level to start on, either `gpio.HIGH` or `gpio.LOW`
 - `delay_times` an array of delay times in µs between each toggle of the gpio pin. 
-- `cycle_num` an optional number of times to run through the sequence. (default is 1)
-- `callback` an optional callback function or number, if present the function returns immediately and goes asynchronous.
+- `repeat_num` an optional number of times to run through the sequence.
+- `callback` an optional callback function or number, if present the function ruturns immediately and goes asynchronous.
 
 
 #### Returns

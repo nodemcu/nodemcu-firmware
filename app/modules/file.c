@@ -2,24 +2,15 @@
 
 #include "module.h"
 #include "lauxlib.h"
-#include "lmem.h"
 #include "platform.h"
 
 #include "c_types.h"
 #include "vfs.h"
 #include "c_string.h"
 
-#include <alloca.h>
-
-#define FILE_READ_CHUNK 1024
-
 static int file_fd = 0;
-static int file_fd_ref = LUA_NOREF;
 static int rtc_cb_ref = LUA_NOREF;
 
-typedef struct _file_fd_ud {
-  int fd;
-} file_fd_ud;
 
 static void table2tm( lua_State *L, vfs_time *tm )
 {
@@ -100,46 +91,11 @@ static int file_on(lua_State *L)
 // Lua: close()
 static int file_close( lua_State* L )
 {
-  int need_pop = FALSE;
-  file_fd_ud *ud;
-
-  if (lua_type( L, 1 ) != LUA_TUSERDATA) {
-    // fall back to last opened file
-    if (file_fd_ref != LUA_NOREF) {
-      lua_rawgeti( L, LUA_REGISTRYINDEX, file_fd_ref );
-      // top of stack is now default file descriptor
-      ud = (file_fd_ud *)luaL_checkudata(L, -1, "file.obj");
-      lua_pop( L, 1 );
-    } else {
-      // no default file currently opened
-      return 0;
-    }
-  } else {
-    ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
-  }
-
-  // unref default file descriptor
-  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
-  file_fd_ref = LUA_NOREF;
-
-  if(ud->fd){
-      vfs_close(ud->fd);
-      // mark as closed
-      ud->fd = 0;
+  if(file_fd){
+    vfs_close(file_fd);
+    file_fd = 0;
   }
   return 0;  
-}
-
-static int file_obj_free( lua_State *L )
-{
-  file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
-  if (ud->fd) {
-    // close file if it's still open
-    vfs_close(ud->fd);
-    ud->fd = 0;
-  }
-
-  return 0;
 }
 
 // Lua: format()
@@ -174,10 +130,10 @@ static int file_fscfg (lua_State *L)
 static int file_open( lua_State* L )
 {
   size_t len;
-
-  // unref last file descriptor to allow gc'ing if not kept by user script
-  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
-  file_fd_ref = LUA_NOREF;
+  if(file_fd){
+    vfs_close(file_fd);
+    file_fd = 0;
+  }
 
   const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
@@ -190,14 +146,7 @@ static int file_open( lua_State* L )
   if(!file_fd){
     lua_pushnil(L);
   } else {
-    file_fd_ud *ud = (file_fd_ud *) lua_newuserdata( L, sizeof( file_fd_ud ) );
-    ud->fd = file_fd;
-    luaL_getmetatable( L, "file.obj" );
-    lua_setmetatable( L, -2 );
-
-    // store reference to opened file
-    lua_pushvalue( L, -1 );
-    file_fd_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+    lua_pushboolean(L, 1);
   }
   return 1; 
 }
@@ -221,36 +170,19 @@ static int file_list( lua_State* L )
   return 0;
 }
 
-static int get_file_obj( lua_State *L, int *argpos )
+static int file_seek (lua_State *L) 
 {
-  if (lua_type( L, 1 ) == LUA_TUSERDATA) {
-    file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
-    *argpos = 2;
-    return ud->fd;
-  } else {
-    *argpos = 1;
-    return file_fd;
-  }
-}
-
-#define GET_FILE_OBJ int argpos; \
-  int fd = get_file_obj( L, &argpos );
-
-static int file_seek (lua_State *L)
-{
-  GET_FILE_OBJ;
-
   static const int mode[] = {VFS_SEEK_SET, VFS_SEEK_CUR, VFS_SEEK_END};
   static const char *const modenames[] = {"set", "cur", "end", NULL};
-  if(!fd)
+  if(!file_fd)
     return luaL_error(L, "open a file first");
-  int op = luaL_checkoption(L, argpos, "cur", modenames);
-  long offset = luaL_optlong(L, ++argpos, 0);
-  op = vfs_lseek(fd, offset, mode[op]);
+  int op = luaL_checkoption(L, 1, "cur", modenames);
+  long offset = luaL_optlong(L, 2, 0);
+  op = vfs_lseek(file_fd, offset, mode[op]);
   if (op < 0)
     lua_pushnil(L);  /* error */
   else
-    lua_pushinteger(L, vfs_tell(fd));
+    lua_pushinteger(L, vfs_tell(file_fd));
   return 1;
 }
 
@@ -278,6 +210,7 @@ static int file_remove( lua_State* L )
   const char *fname = luaL_checklstring( L, 1, &len );    
   const char *basename = vfs_basename( fname );
   luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  file_close(L);
   vfs_remove((char *)fname);
   return 0;
 }
@@ -285,11 +218,9 @@ static int file_remove( lua_State* L )
 // Lua: flush()
 static int file_flush( lua_State* L )
 {
-  GET_FILE_OBJ;
-
-  if(!fd)
+  if(!file_fd)
     return luaL_error(L, "open a file first");
-  if(vfs_flush(fd) == 0)
+  if(vfs_flush(file_fd) == 0)
     lua_pushboolean(L, 1);
   else
     lua_pushnil(L);
@@ -300,6 +231,10 @@ static int file_flush( lua_State* L )
 static int file_rename( lua_State* L )
 {
   size_t len;
+  if(file_fd){
+    vfs_close(file_fd);
+    file_fd = 0;
+  }
 
   const char *oldname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( oldname );
@@ -318,64 +253,38 @@ static int file_rename( lua_State* L )
 }
 
 // g_read()
-static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
+static int file_g_read( lua_State* L, int n, int16_t end_char )
 {
-  static char *heap_mem = NULL;
-  // free leftover memory
-  if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
-  }
-
-  if(n <= 0)
-    n = FILE_READ_CHUNK;
-
+  if(n <= 0 || n > LUAL_BUFFERSIZE)
+    n = LUAL_BUFFERSIZE;
   if(end_char < 0 || end_char >255)
     end_char = EOF;
-
-
-  if(!fd)
+  
+  luaL_Buffer b;
+  if(!file_fd)
     return luaL_error(L, "open a file first");
 
-  char *p;
+  luaL_buffinit(L, &b);
+  char *p = luaL_prepbuffer(&b);
   int i;
 
-  if (n > LUAL_BUFFERSIZE) {
-    // get buffer from heap
-    p = heap_mem = luaM_malloc(L, n);
-  } else {
-    // small chunks go onto the stack
-    p = alloca(n);
-  }
-
-  n = vfs_read(fd, p, n);
-  // bypass search if no end character provided
-  if (n > 0 && end_char != EOF) {
-    for (i = 0; i < n; ++i)
-      if (p[i] == end_char)
-      {
-        ++i;
-        break;
-      }
-  } else {
-    i = n;
-  }
-
-  if (i == 0 || n == VFS_RES_ERR) {
-    if (heap_mem) {
-      luaM_free(L, heap_mem);
-      heap_mem = NULL;
+  n = vfs_read(file_fd, p, n);
+  for (i = 0; i < n; ++i)
+    if (p[i] == end_char)
+    {
+      ++i;
+      break;
     }
-    return 0;
+
+  if(i==0){
+    luaL_pushresult(&b);  /* close buffer */
+    return (lua_objlen(L, -1) > 0);  /* check whether read something */
   }
 
-  vfs_lseek(fd, -(n - i), VFS_SEEK_CUR);
-  lua_pushlstring(L, p, i);
-  if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
-  }
-  return 1;
+  vfs_lseek(file_fd, -(n - i), VFS_SEEK_CUR);
+  luaL_addsize(&b, i);
+  luaL_pushresult(&b);  /* close buffer */
+  return 1;  /* read at least an `eol' */ 
 }
 
 // Lua: read()
@@ -384,46 +293,42 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 // file.read('q') will read until 'q' or EOF is reached. 
 static int file_read( lua_State* L )
 {
-  unsigned need_len = FILE_READ_CHUNK;
+  unsigned need_len = LUAL_BUFFERSIZE;
   int16_t end_char = EOF;
   size_t el;
-
-  GET_FILE_OBJ;
-
-  if( lua_type( L, argpos ) == LUA_TNUMBER )
+  if( lua_type( L, 1 ) == LUA_TNUMBER )
   {
-    need_len = ( unsigned )luaL_checkinteger( L, argpos );
+    need_len = ( unsigned )luaL_checkinteger( L, 1 );
+    if( need_len > LUAL_BUFFERSIZE ){
+      need_len = LUAL_BUFFERSIZE;
+    }
   }
-  else if(lua_isstring(L, argpos))
+  else if(lua_isstring(L, 1))
   {
-    const char *end = luaL_checklstring( L, argpos, &el );
+    const char *end = luaL_checklstring( L, 1, &el );
     if(el!=1){
       return luaL_error( L, "wrong arg range" );
     }
     end_char = (int16_t)end[0];
   }
 
-  return file_g_read(L, need_len, end_char, fd);
+  return file_g_read(L, need_len, end_char);
 }
 
 // Lua: readline()
 static int file_readline( lua_State* L )
 {
-  GET_FILE_OBJ;
-
-  return file_g_read(L, LUAL_BUFFERSIZE, '\n', fd);
+  return file_g_read(L, LUAL_BUFFERSIZE, '\n');
 }
 
 // Lua: write("string")
 static int file_write( lua_State* L )
 {
-  GET_FILE_OBJ;
-
-  if(!fd)
+  if(!file_fd)
     return luaL_error(L, "open a file first");
   size_t l, rl;
-  const char *s = luaL_checklstring(L, argpos, &l);
-  rl = vfs_write(fd, s, l);
+  const char *s = luaL_checklstring(L, 1, &l);
+  rl = vfs_write(file_fd, s, l);
   if(rl==l)
     lua_pushboolean(L, 1);
   else
@@ -434,15 +339,13 @@ static int file_write( lua_State* L )
 // Lua: writeline("string")
 static int file_writeline( lua_State* L )
 {
-  GET_FILE_OBJ;
-
-  if(!fd)
+  if(!file_fd)
     return luaL_error(L, "open a file first");
   size_t l, rl;
-  const char *s = luaL_checklstring(L, argpos, &l);
-  rl = vfs_write(fd, s, l);
+  const char *s = luaL_checklstring(L, 1, &l);
+  rl = vfs_write(file_fd, s, l);
   if(rl==l){
-    rl = vfs_write(fd, "\n", 1);
+    rl = vfs_write(file_fd, "\n", 1);
     if(rl==1)
       lua_pushboolean(L, 1);
     else
@@ -517,20 +420,6 @@ static int file_vol_umount( lua_State *L )
 }
 
 
-static const LUA_REG_TYPE file_obj_map[] =
-{
-  { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
-  { LSTRKEY( "read" ),      LFUNCVAL( file_read ) },
-  { LSTRKEY( "readline" ),  LFUNCVAL( file_readline ) },
-  { LSTRKEY( "write" ),     LFUNCVAL( file_write ) },
-  { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
-  { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
-  { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
-  { LSTRKEY( "__gc" ),      LFUNCVAL( file_obj_free ) },
-  { LSTRKEY( "__index" ),   LROVAL( file_obj_map ) },
-  { LNILKEY, LNILVAL }
-};
-
 static const LUA_REG_TYPE file_vol_map[] =
 {
   { LSTRKEY( "umount" ),   LFUNCVAL( file_vol_umount )},
@@ -570,7 +459,6 @@ static const LUA_REG_TYPE file_map[] = {
 
 int luaopen_file( lua_State *L ) {
   luaL_rometatable( L, "file.vol",  (void *)file_vol_map );
-  luaL_rometatable( L, "file.obj",  (void *)file_obj_map );
   return 0;
 }
 

@@ -47,10 +47,18 @@
 #define PORT_INSECURE 80
 #define PORT_MAX_VALUE 65535
 
-#define WS_INIT_REQUEST  "GET %s HTTP/1.1\r\n"\
-                         "Host: %s:%d\r\n"
+// TODO: user agent configurable
+#define WS_INIT_HEADERS  "GET %s HTTP/1.1\r\n"\
+                         "Host: %s:%d\r\n"\
+                         "Upgrade: websocket\r\n"\
+                         "Connection: Upgrade\r\n"\
+                         "User-Agent: ESP8266\r\n"\
+                         "Sec-Websocket-Key: %s\r\n"\
+                         "Sec-WebSocket-Protocol: chat\r\n"\
+                         "Sec-WebSocket-Version: 13\r\n"\
+                         "\r\n"
 
-#define WS_INIT_REQUEST_LENGTH 30
+#define WS_INIT_HEADERS_LENGTH 169
 #define WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 #define WS_GUID_LENGTH 36
 
@@ -68,13 +76,6 @@
 #define WS_OPCODE_CLOSE 0x8
 #define WS_OPCODE_PING 0x9
 #define WS_OPCODE_PONG 0xA
-
-header_t DEFAULT_HEADERS[] = {
-  {"User-Agent", "ESP8266"},
-  {"Sec-WebSocket-Protocol", "chat"},
-  {0}
-};
-header_t *EMPTY_HEADERS = DEFAULT_HEADERS + sizeof(DEFAULT_HEADERS) / sizeof(header_t) - 1;
 
 static char *cryptoSha1(char *data, unsigned int len) {
   SHA1_CTX ctx;
@@ -125,44 +126,6 @@ static void generateSecKeys(char **key, char **expectedKey) {
   *expectedKey = base64Encode(keyEncrypted, 20);
 
   os_free(keyEncrypted);
-}
-
-static char *_strcpy(char *dst, char *src) {
-    while(*dst++ = *src++);
-    return dst - 1;
-}
-
-static int headers_length(header_t *headers) {
-  int length = 0;
-  for(; headers->key; headers++)
-    length += strlen(headers->key) + strlen(headers->value) + 4;
-  return length;
-}
-
-static char *sprintf_headers(char *buf, ...) {
-  char *dst = buf;
-  va_list args;
-  va_start(args, buf);
-  for(header_t *header_set = va_arg(args, header_t *); header_set; header_set = va_arg(args, header_t *))
-    for(header_t *header = header_set; header->key; header++) {
-      va_list args2;
-      va_start(args2, buf);
-      for(header_t *header_set2 = va_arg(args2, header_t *); header_set2; header_set2 = va_arg(args2, header_t *))
-        for(header_t *header2 = header_set2; header2->key; header2++) {
-          if(header == header2)
-            goto ok;
-          if(!strcasecmp(header->key, header2->key))
-            goto skip;
-        }
-ok:
-      dst = _strcpy(dst, header->key);
-      dst = _strcpy(dst, ": ");
-      dst = _strcpy(dst, header->value);
-      dst = _strcpy(dst, "\r\n");
-skip:;
-    }
-  dst = _strcpy(dst, "\r\n");
-  return dst;
 }
 
 static void ws_closeSentCallback(void *arg) {
@@ -489,7 +452,7 @@ static void ws_receiveCallback(void *arg, char *buf, unsigned short len) {
       } else if (opCode == WS_OPCODE_PONG) {
         // ping alarm was already reset...
       } else {
-        if (ws->onReceive) ws->onReceive(ws, payloadLength, payload, opCode);
+        if (ws->onReceive) ws->onReceive(ws, payload, opCode);
       }
       os_free(payload);
     }
@@ -546,7 +509,7 @@ static void ws_initReceiveCallback(void *arg, char *buf, unsigned short len) {
   }
 
   // Check server has valid sec key
-  if (strstr(buf, ws->expectedSecKey) == NULL) {
+  if (strstr(buf, WS_HTTP_SEC_WEBSOCKET_ACCEPT) == NULL || strstr(buf, ws->expectedSecKey) == NULL) {
     NODE_DBG("Server has invalid response\n");
     ws->knownFailureCode = -7;
     if (ws->isSecure)
@@ -587,31 +550,12 @@ static void connect_callback(void *arg) {
   char *key;
   generateSecKeys(&key, &ws->expectedSecKey);
 
-  header_t headers[] = {
-	  {"Upgrade", "websocket"},
-	  {"Connection", "Upgrade"},
-	  {"Sec-WebSocket-Key", key},
-	  {"Sec-WebSocket-Version", "13"},
-	  {0}
-  };
-
-  header_t *extraHeaders = ws->extraHeaders ? ws->extraHeaders : EMPTY_HEADERS;
-
-  char buf[WS_INIT_REQUEST_LENGTH + strlen(ws->path) + strlen(ws->hostname) +
-	  headers_length(DEFAULT_HEADERS) + headers_length(headers) + headers_length(extraHeaders) + 2];
-
-  int len = os_sprintf(
-                  buf,
-                  WS_INIT_REQUEST,
-                  ws->path,
-                  ws->hostname,
-                  ws->port
-		  );
-
-  len = sprintf_headers(buf + len, headers, extraHeaders, DEFAULT_HEADERS, 0) - buf;
+  char buf[WS_INIT_HEADERS_LENGTH + strlen(ws->path) + strlen(ws->hostname) + strlen(key)];
+  int len = os_sprintf(buf, WS_INIT_HEADERS, ws->path, ws->hostname, ws->port, key);
 
   os_free(key);
-  NODE_DBG("request: %s", buf);
+
+  NODE_DBG("connecting\n");
   if (ws->isSecure)
     espconn_secure_send(conn, (uint8_t *) buf, len);
   else
@@ -686,7 +630,7 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
   ws_info *ws = (ws_info *) conn->reverse;
 
   if (ws->conn == NULL || ws->connectionState == 4) {
-          return;
+  	return;
   }
 
   if (addr == NULL)  {

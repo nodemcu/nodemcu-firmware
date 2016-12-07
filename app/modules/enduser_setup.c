@@ -31,7 +31,6 @@
  * @author Robert Foss <dev@robertfoss.se>
  *
  * Additions & fixes: Johny Mattsson <jmattsson@dius.com.au>
- *                    Jason Follas <jfollas@gmail.com>
  */
 
 #include "module.h"
@@ -51,8 +50,6 @@
 
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 #define LITLEN(strliteral) (sizeof (strliteral) -1)
-#define STRINGIFY(x) #x
-#define NUMLEN(x) (sizeof(STRINGIFY(x)) - 1)
 
 #define ENDUSER_SETUP_ERR_FATAL        (1 << 0)
 #define ENDUSER_SETUP_ERR_NONFATAL     (1 << 1)
@@ -62,7 +59,7 @@
 #define ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND   2
 #define ENDUSER_SETUP_ERR_UNKOWN_ERROR           3
 #define ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN    4
-#define ENDUSER_SETUP_ERR_MAX_NUMBER             5
+
 
 /**
  * DNS Response Packet:
@@ -81,19 +78,159 @@ static const char dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
                                    0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x04 };
 
 static const char http_html_filename[] = "enduser_setup.html";
-static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nConnection:close\r\nContent-Type:text/html\r\n"; /* Note single \r\n here! */
-static const char http_header_204[] = "HTTP/1.1 204 No Content\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_400[] = "HTTP/1.1 400 Bad request\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_405[] = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nContent-Type: text/html\r\n"; /* Note single \r\n here! */
+static const char http_header_204[] = "HTTP/1.1 204 No Content\r\n\r\n";
+static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\n\r\n";
+static const char http_header_401[] = "HTTP/1.1 401 Bad request\r\n\r\n";
+static const char http_header_404[] = "HTTP/1.1 404 Not found\r\n\r\n";
+static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\n\r\n";
 
-static const char http_header_content_len_fmt[] = "Content-length:%5d\r\n\r\n";
-static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n";
+/* The below is the un-minified version of the http_html_backup[] string.
+ * Minified using https://kangax.github.io/html-minifier/
+ * Note: using method="get" due to iOS not always sending body in same
+ *       packet as the HTTP header, and us thus missing it in that case
+ */
+#if 0
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=380">
+  <title>WiFi Login</title>
+  <style media="screen" type="text/css">
+    *{margin:0;padding:0}
+    html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}
+    body{font-family:arial,verdana}
+    div{position:absolute;margin:auto;top:-150px;right:0;bottom:0;left:0;width:320px;height:304px}
+    form{width:320px;text-align:center;position:relative}
+    form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}
+    form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}
+    form .action-button{border:0 none;border-radius:3px;cursor:pointer;}
+    #msform .submit:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60;}
+    #formFrame{display: none;}
+    #aplist{display: block;}
+    select{width:100%;margin-bottom: 20px;padding: 10px 5px; border:1px solid #ccc;display:none;}
+    .fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}
+    .fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}
+    .fs-status{font-weight:400;font-size:13px;color:#666;margin-bottom:10px;padding-top:20px; border-top:1px solid #ccc}
+    .submit{width:100px;background: #27AE60; color: #fff;font-weight:700;margin:10px 5px; padding: 10px 5px; }
+  </style>
+</head>
+<body>
+  <div>
+    <form id="credentialsForm" method="get" action="/update" target="formFrame">
+      <fieldset>
+        <iframe id="formFrame" src="" name="formFrame"></iframe> <!-- Used to submit data, needed to prevent re-direction after submission -->
+        <h2 class="fs-title">WiFi Login</h2>
+        <h3 class="fs-subtitle">Connect gadget to your WiFi network</h3>
+        <input id="wifi_ssid" autocorrect="off" autocapitalize="none" name="wifi_ssid" placeholder="WiFi Name">
+        <select id="aplist" name="aplist" size="1" disabled>
+          <option>Scanning for networks...</option>
+        </select>
+        <input name="wifi_password" placeholder="Password" type="password">
+        <input type=submit name=save class="action-button submit" value="Save">
+        <h3 class="fs-status">Status: <span id="status">Updating...</span></h3>
+      </fieldset>
+      <h3 id="dbg"></h3>
+    </form>
+  </div>
+  <script>
+    function fetch(url, method, callback)
+    {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange=check_ready;
+      function check_ready()
+      {
+        if (xhr.readyState === 4)
+        {
+          callback(xhr.status === 200 ? xhr.responseText : null);
+        }
+      }
+      xhr.open(method, url, true);
+      xhr.send();
+    }
 
-// Externally defined: static const char http_html_backup[] = ...
-#include "eus/http_html_backup.def"
+
+    function new_status(stat)
+    {
+      if (stat)
+      {
+        var e = document.getElementById("status");
+        e.innerHTML = stat;
+      }
+    }
+
+
+    function new_status_repeat(stat)
+    {
+      new_status(stat);
+      setTimeout(refresh_status, 750);
+    }
+
+
+    function new_ap_list(json)
+    {
+      if (json)
+      {
+        var list = JSON.parse(json);
+        list.sort(function(a, b){ return b.rssi - a.rssi; });
+        var ssids = list.map(function(a) { return a.ssid; }).filter(function(item, pos, self) { return self.indexOf(item)==pos; });
+        var sel = document.getElementById("aplist");
+        sel.innerHTML = "";
+        sel.setAttribute("size", Math.max(Math.min(3, list.length), 1));
+        sel.removeAttribute("disabled");
+        for (var i = 0; i < ssids.length; ++i)
+        {
+          var o = document.createElement("option");
+          o.innerHTML = ssids[i];
+          sel.options.add(o);
+        }
+        sel.style.display = 'block';
+      }
+    }
+
+
+    function new_ap_list_repeat(json)
+    {
+      new_ap_list(json);
+      setTimeout(refresh_ap_list, 3000);
+    }
+
+
+    function refresh_status()
+    {
+      fetch('/status','GET', new_status_repeat);
+    }
+
+
+    function refresh_ap_list()
+    {
+      fetch('/aplist','GET', new_ap_list_repeat);
+    }
+
+    function set_ssid_field() {
+        var sel = document.getElementById("aplist");
+        document.getElementById("wifi_ssid").value = sel.value;
+    }
+
+    window.onload = function()
+    {
+      refresh_status();
+      refresh_ap_list();
+      document.getElementById("aplist").onclick = set_ssid_field;
+      document.getElementById("aplist").onchange = set_ssid_field;
+      document.getElementById("credentialsForm").addEventListener("submit", function(){
+        fetch('/status','GET', new_status);
+      });
+    }
+  </script>
+</body>
+</html>
+#endif
+static const char http_html_backup[] =
+"<!DOCTYPE html><meta http-equiv=content-type content='text/html; charset=UTF-8'><meta charset=utf-8><meta name=viewport content='width=380'><title>WiFi Login</title><style media=screen type=text/css>*{margin:0;padding:0}html{height:100%;background:linear-gradient(rgba(196,102,0,.2),rgba(155,89,182,.2)),url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAAA8AgMAAACm+SSwAAAADFBMVEVBR1FFS1VHTlg8Q0zU/YXIAAADVElEQVQ4yy1TTYvTUBQ9GTKiYNoodsCF4MK6U4TZChOhiguFWHyBFzqlLl4hoeNvEBeCrlrhBVKq1EUKLTP+hvi1GyguXqBdiZCBzGqg20K8L3hDQnK55+OeJNguHx6UujYl3dL5ALn4JOIUluAqeAWciyGaSdvngOWzNT+G0UyGUOxVOAdqkjXDCbBiUyjZ5QzYEbGadYAi6kHxth+kthXNVNCDofwhGv1D4QGGiM9iAjbCHgr2iUUpDJbs+VPQ4xAr2fX7KXbkOJMdok965Ksb+6lrjdkem8AshIuHm9Nyu19uTunYlOXDTQqi8VgeH0kBXH2xq/ouiMZPzuMukymutrBmulUTovC6HqNFW2ZOiqlpSXZOTvSUeUPxChjxol8BLbRy4gJuhV7OR4LRVBs3WQ9VVAU7SXgK2HeUrOj7bC8YsUgr3lEV/TXB7hK90EBnxaeg1Ov15bY80M736ekCGesGAaGvG0Ct4WRkVQVHIgIM9xJgvSFfPay8Q6GNv7VpR7xUnkvhnMQCJDYkYOtNLihV70tCU1Sk+BQrpoP+HLHUrJkuta40C6LP5GvBv+Hqo10ATxxFrTPvNdPr7XwgQud6RvQN/sXjBGzqbU27wcj9cgsyvSTrpyXV8gKpXeNJU3aFl7MOdldzV4+HfO19jBa5f2IjWwx1OLHIvFHkqbBj20ro1g7nDfY1DpScvDRUNARgjMMVO0zoMjKxJ6uWCPP+YRAWbGoaN8kXYHmLjB9FXLGOazfFVCvOgqzfnicNPrHtPKlex2ye824gMza0cTZ2sS2Xm7Qst/UfFw8O6vVtmUKxZy9xFgzMys5cJ5fxZw4y37Ufk1Dsfb8MqOjYxE3ZMWxiDcO0PYUaD2ys+8OW1pbB7/e3sfZeGVCL0Q2aMjjPdm2sxADuejZxHJAd8dO9DSUdA0V8/NggRRanDkBrANn8yHlEQOn/MmwoQfQF7xgmKDnv520bS/pgylP67vf3y2V5sCwfoCEMkZClgOfJAFX9eXefR2RpnmRs4CDVPceaRfoFzCkJVJX27vWZnoqyvmtXU3+dW1EIXIu8Qg5Qta4Zlv7drUCoWe8/8MXzaEwux7ESE9h6qnHj3mIO0/D9RvzfxPmjWiQ1vbeSk4rrHwhAre35EEVaAAAAAElFTkSuQmCC)}body{font-family:arial,verdana}div{position:absolute;margin:auto;top:-150px;right:0;bottom:0;left:0;width:320px;height:304px}form{width:320px;text-align:center;position:relative}form fieldset{background:#fff;border:0 none;border-radius:5px;box-shadow:0 0 15px 1px rgba(0,0,0,.4);padding:20px 30px;box-sizing:border-box}form input{padding:15px;border:1px solid #ccc;border-radius:3px;margin-bottom:10px;width:100%;box-sizing:border-box;font-family:montserrat;color:#2C3E50;font-size:13px}form .action-button{border:0 none;border-radius:3px;cursor:pointer}#msform .submit:focus,form .action-button:hover{box-shadow:0 0 0 2px #fff,0 0 0 3px #27AE60}#formFrame{display:none}#aplist{display:block}select{width:100%;margin-bottom:20px;padding:10px 5px;border:1px solid #ccc;display:none}.fs-title{font-size:15px;text-transform:uppercase;color:#2C3E50;margin-bottom:10px}.fs-subtitle{font-weight:400;font-size:13px;color:#666;margin-bottom:20px}.fs-status{font-weight:400;font-size:13px;color:#666;margin-bottom:10px;padding-top:20px;border-top:1px solid #ccc}.submit{width:100px;background:#27AE60;color:#fff;font-weight:700;margin:10px 5px;padding:10px 5px}</style><div><form id=credentialsForm action=/update target=formFrame><fieldset><iframe id=formFrame src=''name=formFrame></iframe><h2 class=fs-title>WiFi Login</h2><h3 class=fs-subtitle>Connect gadget to your WiFi network</h3><input id=wifi_ssid autocorrect=off autocapitalize=none name=wifi_ssid placeholder='WiFi Name'><select id=aplist name=aplist size=1 disabled><option>Scanning for networks...</select><input name=wifi_password placeholder=Password type=password> <input type=submit name=save class='action-button submit'value=Save><h3 class=fs-status>Status: <span id=status>Updating...</span></h3></fieldset><h3 id=dbg></h3></form></div><script>function fetch(t,e,n){function s(){4===i.readyState&&n(200===i.status?i.responseText:null)}var i=new XMLHttpRequest;i.onreadystatechange=s,i.open(e,t,!0),i.send()}function new_status(t){if(t){var e=document.getElementById('status');e.innerHTML=t}}function new_status_repeat(t){new_status(t),setTimeout(refresh_status,750)}function new_ap_list(t){if(t){var e=JSON.parse(t);e.sort(function(t,e){return e.rssi-t.rssi});var n=e.map(function(t){return t.ssid}).filter(function(t,e,n){return n.indexOf(t)==e}),s=document.getElementById('aplist');s.innerHTML='',s.setAttribute('size',Math.max(Math.min(3,e.length),1)),s.removeAttribute('disabled');for(var i=0;i<n.length;++i){var a=document.createElement('option');a.innerHTML=n[i],s.options.add(a)}s.style.display='block'}}function new_ap_list_repeat(t){new_ap_list(t),setTimeout(refresh_ap_list,3e3)}function refresh_status(){fetch('/status','GET',new_status_repeat)}function refresh_ap_list(){fetch('/aplist','GET',new_ap_list_repeat)}function set_ssid_field(){var t=document.getElementById('aplist');document.getElementById('wifi_ssid').value=t.value}window.onload=function(){refresh_status(),refresh_ap_list(),document.getElementById('aplist').onclick=set_ssid_field,document.getElementById('aplist').onchange=set_ssid_field,document.getElementById('credentialsForm').addEventListener('submit',function(){fetch('/status','GET',new_status)})}</script>";
+
 
 typedef struct scan_listener
 {
@@ -113,15 +250,9 @@ typedef struct
   int lua_err_cb_ref;
   int lua_dbg_cb_ref;
   scan_listener_t *scan_listeners;
-  uint8_t softAPchannel;
-  uint8_t success;
-  uint8_t callbackDone;
-  uint8_t lastStationStatus;
-  uint8_t connecting;
 } enduser_setup_state_t;
 
 static enduser_setup_state_t *state;
-
 static bool manual = false;
 static task_handle_t do_station_cfg_handle;
 
@@ -209,7 +340,7 @@ static void enduser_setup_check_station_start(void)
   ENDUSER_SETUP_DEBUG("enduser_setup_check_station_start");
 
   os_timer_setfn(&(state->check_station_timer), enduser_setup_check_station, NULL);
-  os_timer_arm(&(state->check_station_timer), 3*1000, TRUE);
+  os_timer_arm(&(state->check_station_timer), 1*1000, TRUE);
 }
 
 
@@ -246,60 +377,13 @@ static void enduser_setup_check_station(void *p)
     has_ip |= ((char *) &ip)[i];
   }
 
-  uint8_t currChan = wifi_get_channel();
-  
   if (has_ip == 0)
   {
-    // No IP Address yet, so check the reported status 
-    uint8_t curr_status = wifi_station_get_connect_status();
-    char buf[20];
-    c_sprintf(buf, "status=%d,chan=%d", curr_status, currChan);
-    ENDUSER_SETUP_DEBUG(buf);
-
-    if (curr_status == 2 || curr_status == 3 || curr_status == 4)
-    {
-      state->connecting = 0;
-     
-      // If the status is an error status and the channel changed, then cache the 
-      // status to state since the Station won't be able to report the same status
-      // after switching the channel back to the SoftAP's
-      if (currChan != state->softAPchannel) {
-        state->lastStationStatus = curr_status;
-      
-        ENDUSER_SETUP_DEBUG("Turning off Station due to different channel than AP");
-      
-        wifi_station_disconnect();
-        wifi_set_opmode(SOFTAP_MODE);
-        enduser_setup_ap_start();
-      }
-   }
-   return;
+    return;
   }
 
-  state->success = 1;
-  state->lastStationStatus = 5; // We have an IP Address, so the status is 5 (as of SDK 1.5.1)
-  state->connecting = 0;
-  
-#if ENDUSER_SETUP_DEBUG_ENABLE  
-  char debuginfo[100];
-  c_sprintf(debuginfo, "AP_CHAN: %d, STA_CHAN: %d", state->softAPchannel, currChan);
-  ENDUSER_SETUP_DEBUG(debuginfo); 
-#endif
-
-  if (currChan == state->softAPchannel)
-  {
-    enduser_setup_connected_callback();
-    state->callbackDone = 1;
-  }
-  else
-  {
-    ENDUSER_SETUP_DEBUG("Turning off Station due to different channel than AP");
-    wifi_station_disconnect();
-    wifi_set_opmode(SOFTAP_MODE);
-    enduser_setup_ap_start();
-  }
-  
   enduser_setup_check_station_stop();
+  enduser_setup_connected_callback();
 
   /* Trigger shutdown, but allow time for HTTP client to fetch last status. */
   if (!manual)
@@ -327,8 +411,6 @@ static void enduser_setup_check_station(void *p)
 /* Callback on timeout to hard-close a connection */
 static err_t force_abort (void *arg, struct tcp_pcb *pcb)
 {
-  ENDUSER_SETUP_DEBUG("force_abort");
-    
   (void)arg;
   tcp_poll (pcb, 0, 0);
   tcp_abort (pcb);
@@ -338,8 +420,6 @@ static err_t force_abort (void *arg, struct tcp_pcb *pcb)
 /* Callback to detect a remote-close of a connection */
 static err_t handle_remote_close (void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 {
-  ENDUSER_SETUP_DEBUG("handle_remote_close");
-    
   (void)arg; (void)err;
   if (p) /* server sent us data, just ACK and move on */
   {
@@ -358,8 +438,6 @@ static err_t handle_remote_close (void *arg, struct tcp_pcb *pcb, struct pbuf *p
 /* Set up a deferred close of a connection, as discussed above. */
 static inline void deferred_close (struct tcp_pcb *pcb)
 {
-  ENDUSER_SETUP_DEBUG("deferred_close");
-    
   tcp_poll (pcb, force_abort, 15); /* ~3sec from now */
   tcp_recv (pcb, handle_remote_close);
   tcp_sent (pcb, 0);
@@ -368,8 +446,6 @@ static inline void deferred_close (struct tcp_pcb *pcb)
 /* Convenience function to queue up a close-after-send.  */
 static err_t close_once_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 {
-  ENDUSER_SETUP_DEBUG("close_once_sent");
-
   (void)arg; (void)len;
   deferred_close (pcb);
   return ERR_OK;
@@ -397,6 +473,7 @@ static int enduser_setup_srch_str(const char *str, const char *srch_str)
   }
 }
 
+
 /**
  * Load HTTP Payload
  *
@@ -418,26 +495,14 @@ static int enduser_setup_http_load_payload(void)
       err2 = vfs_lseek(f, 0, VFS_SEEK_SET);
   }
 
-  char cl_hdr[30];
-  size_t ce_len = 0;
-  
-  c_sprintf(cl_hdr, http_header_content_len_fmt, file_len);
-  size_t cl_len = c_strlen(cl_hdr);
+  const char cl_hdr[] = "Content-length:%5d\r\n\r\n";
+  const size_t cl_len = LITLEN(cl_hdr) + 3; /* room to expand %4d */
 
-  if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
+  if (!f || err != VFS_RES_OK || err2 != VFS_RES_OK)
   {
     ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
 
-    c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(http_html_backup));
-    cl_len = c_strlen(cl_hdr);
-    
-    if (http_html_backup[0] == 0x1f && http_html_backup[1] == 0x8b)
-    {
-        ce_len = c_strlen(http_html_gzip_contentencoding);
-        ENDUSER_SETUP_DEBUG("Content is gzipped");
-    }   
-   
-    int payload_len = LITLEN(http_header_200) + cl_len + ce_len + LITLEN(http_html_backup); 
+    int payload_len = LITLEN(http_header_200) + cl_len + LITLEN(http_html_backup);
     state->http_payload_len = payload_len;
     state->http_payload_data = (char *) c_malloc(payload_len);
     if (state->http_payload_data == NULL)
@@ -448,25 +513,13 @@ static int enduser_setup_http_load_payload(void)
     int offset = 0;
     c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
     offset += LITLEN(http_header_200);
-    if (ce_len > 0)
-        offset += c_sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);
-    c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
-    offset += cl_len;
-    c_memcpy(&(state->http_payload_data[offset]), &(http_html_backup), sizeof(http_html_backup));
-      
-    return 1; 
+    offset += c_sprintf(state->http_payload_data + offset, cl_hdr, LITLEN(http_html_backup));
+    c_memcpy(&(state->http_payload_data[offset]), &(http_html_backup), LITLEN(http_html_backup));
+
+    return 1;
   }
 
-  char magic[2];
-  vfs_read(f, magic, 2);
-    
-  if (magic[0] == 0x1f && magic[1] == 0x8b)
-  {
-    ce_len = c_strlen(http_html_gzip_contentencoding);
-    ENDUSER_SETUP_DEBUG("Content is gzipped");
-  }
-  
-  int payload_len = LITLEN(http_header_200) + cl_len + ce_len + file_len;
+  int payload_len = LITLEN(http_header_200) + cl_len + file_len;
   state->http_payload_len = payload_len;
   state->http_payload_data = (char *) c_malloc(payload_len);
   if (state->http_payload_data == NULL)
@@ -474,19 +527,13 @@ static int enduser_setup_http_load_payload(void)
     return 2;
   }
 
-  vfs_lseek(f, 0, VFS_SEEK_SET);
-  
   int offset = 0;
-
   c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
   offset += LITLEN(http_header_200);
-  if (ce_len > 0)
-    offset += c_sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);  
-  c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
-  offset += cl_len;
+  offset += c_sprintf(state->http_payload_data + offset, cl_hdr, file_len);
   vfs_read(f, &(state->http_payload_data[offset]), file_len);
-  vfs_close(f);  
-  
+  vfs_close(f);
+
   return 0;
 }
 
@@ -558,9 +605,6 @@ static int enduser_setup_http_urldecode(char *dst, const char *src, int src_len,
  */
 static void do_station_cfg (task_param_t param, uint8_t prio)
 {
-  ENDUSER_SETUP_DEBUG("do_station_cfg");
-  
-  state->connecting = 1;
   struct station_config *cnf = (struct station_config *)param;
   (void)prio;
 
@@ -591,9 +635,6 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_handle_credentials");
 
-  state->success = 0;
-  state->lastStationStatus = 0;
-  
   char *name_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_ssid="));
   char *pwd_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_password="));
   if (name_str == NULL || pwd_str == NULL)
@@ -622,7 +663,7 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   int err;
   err  = enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len, sizeof(cnf->ssid));
   err |= enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len, sizeof(cnf->password));
-  if (err != 0 || c_strlen(cnf->ssid) == 0)
+  if (err != 0)
   {
     ENDUSER_SETUP_DEBUG("Unable to decode HTTP parameter to valid password or SSID");
     return 1;
@@ -653,7 +694,7 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 static int enduser_setup_http_serve_header(struct tcp_pcb *http_client, const char *header, uint32_t header_len)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_header");
-  
+
   err_t err = tcp_write (http_client, header, header_len, TCP_WRITE_FLAG_COPY);
   if (err != ERR_OK)
   {
@@ -667,9 +708,8 @@ static int enduser_setup_http_serve_header(struct tcp_pcb *http_client, const ch
 
 static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 {
-  ENDUSER_SETUP_DEBUG("streamout_sent");
-
   (void)len;
+
   unsigned offs = (unsigned)arg;
 
   if (!state || !state->http_payload_data)
@@ -714,7 +754,6 @@ static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 static int enduser_setup_http_serve_html(struct tcp_pcb *http_client)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_html");
-
   if (state->http_payload_data == NULL)
   {
     enduser_setup_http_load_payload();
@@ -735,7 +774,7 @@ static int enduser_setup_http_serve_html(struct tcp_pcb *http_client)
 }
 
 
-static void enduser_setup_serve_status(struct tcp_pcb *conn)
+static void serve_status(struct tcp_pcb *conn)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_serve_status");
 
@@ -743,12 +782,11 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
     "HTTP/1.1 200 OK\r\n"
     "Cache-control:no-cache\r\n"
     "Connection:close\r\n"
-    "Access-Control-Allow-Origin: *\r\n"  
     "Content-type:text/plain\r\n"
     "Content-length: %d\r\n"
     "\r\n"
-    "%s";
-  const char *states[] =
+    "%s%s";
+  const char *state[] =
   {
     "Idle.",
     "Connecting to \"%s\".",
@@ -758,8 +796,8 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
     "Connected to \"%s\" (%s)."
   };
 
-  const size_t num_states = sizeof(states)/sizeof(states[0]);
-  uint8_t curr_state = state->lastStationStatus > 0 ? state->lastStationStatus : wifi_station_get_connect_status ();  
+  const size_t num_states = sizeof(state)/sizeof(state[0]);
+  uint8_t curr_state = wifi_station_get_connect_status ();
   if (curr_state < num_states)
   {
     switch (curr_state)
@@ -769,21 +807,22 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
       case STATION_NO_AP_FOUND:
       case STATION_GOT_IP:
       {
-        const char *s = states[curr_state];
+        const char *s = state[curr_state];
         struct station_config config;
         wifi_station_get_config(&config);
         config.ssid[31] = '\0';
 
-        struct ip_info ip_info;
+	struct ip_info ip_info;
 
-        wifi_get_ip_info(STATION_IF , &ip_info);
+	wifi_get_ip_info(STATION_IF , &ip_info);
 
-        char ip_addr[16];
-        ip_addr[0] = '\0';
-        if (curr_state == STATION_GOT_IP)
-        {
-          c_sprintf (ip_addr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
-        }
+	char ip_addr[16];
+	ip_addr[0] = '\0';
+	if (curr_state == STATION_GOT_IP)
+	{
+		c_sprintf (ip_addr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
+	}
+
 
         int state_len = c_strlen(s);
         int ip_len = c_strlen(ip_addr);
@@ -805,7 +844,7 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
       /* Handle non-formatted strings */
       default:
       {
-        const char *s = states[curr_state];
+        const char *s = state[curr_state];
         int status_len = c_strlen(s);
         int buf_len = sizeof(fmt) + status_len + 10; //10 = (9+1), 1 byte is '\0' and 9 are reserved for length field
         char buf[buf_len];
@@ -823,76 +862,12 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
   }
 }
 
-static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
-{
-  ENDUSER_SETUP_DEBUG("enduser_setup_serve_status_as_json");
-  
-  // If the station is currently shut down because of wi-fi channel issue, use the cached status
-  uint8_t curr_status = state->lastStationStatus > 0 ? state->lastStationStatus : wifi_station_get_connect_status ();  
-
-  char json_payload[64];
-  c_sprintf(json_payload, "{\"deviceid\":\"%06X\", \"status\":%d}", system_get_chip_id(), curr_status);
-     
-  const char fmt[] =
-    "HTTP/1.1 200 OK\r\n"
-    "Cache-Control: no-cache\r\n"
-    "Connection: close\r\n"
-    "Access-Control-Allow-Origin: *\r\n"
-    "Content-Type: application/json\r\n"
-    "Content-Length: %d\r\n"
-    "\r\n"
-    "%s";
-
-  int len = c_strlen(json_payload);
-  char buf[c_strlen(fmt) + NUMLEN(len) + len - 4];
-  len = c_sprintf (buf, fmt, len, json_payload);
-  enduser_setup_http_serve_header (http_client, buf, len);
-}
-
-
-static void enduser_setup_handle_OPTIONS (struct tcp_pcb *http_client, char *data, unsigned short data_len)
-{
-  ENDUSER_SETUP_DEBUG("enduser_setup_handle_OPTIONS");
-  
-  const char json[] =
-    "HTTP/1.1 200 OK\r\n"
-    "Cache-Control: no-cache\r\n"
-    "Connection: close\r\n"
-    "Content-Type: application/json\r\n"
-    "Content-Length: 0\r\n"
-    "Access-Control-Allow-Origin: *\r\n"
-    "Access-Control-Allow-Methods: GET\r\n"
-    "Access-Control-Allow-Age: 300\r\n"
-    "\r\n";
-
-  const char others[] =
-    "HTTP/1.1 200 OK\r\n"
-    "Cache-Control: no-cache\r\n"
-    "Connection: close\r\n"
-    "Content-Length: 0\r\n"  
-    "\r\n";
-  
-  int type = 0;
-  
-  if (c_strncmp(data, "GET ", 4) == 0)
-  {
-    if (c_strncmp(data + 4, "/aplist", 7) == 0 || c_strncmp(data + 4, "/setwifi?", 9) == 0 || c_strncmp(data + 4, "/status.json", 12) == 0)
-    {
-      enduser_setup_http_serve_header (http_client, json, c_strlen(json));
-      return;
-   }
-  }
-  enduser_setup_http_serve_header (http_client, others, c_strlen(others));
-  return;
-}
 
 
 /* --- WiFi AP scanning support -------------------------------------------- */
 
 static void free_scan_listeners (void)
 {
-  ENDUSER_SETUP_DEBUG("free_scan_listeners"); 
-
   if (!state || !state->scan_listeners)
   {
     return;
@@ -911,8 +886,6 @@ static void free_scan_listeners (void)
 
 static void remove_scan_listener (scan_listener_t *l)
 {
-  ENDUSER_SETUP_DEBUG("remove_scan_listener"); 
-
   if (state)
   {
     scan_listener_t **sl = &state->scan_listeners;
@@ -948,8 +921,6 @@ static char *escape_ssid (char *dst, const char *src)
 
 static void notify_scan_listeners (const char *payload, size_t sz)
 {
-  ENDUSER_SETUP_DEBUG("notify_scan_listeners"); 
-
   if (!state)
   {
     return;
@@ -973,8 +944,6 @@ static void notify_scan_listeners (const char *payload, size_t sz)
 
 static void on_scan_done (void *arg, STATUS status)
 {
-  ENDUSER_SETUP_DEBUG("on_scan_done");  
-
   if (!state || !state->scan_listeners)
   {
     return;
@@ -992,14 +961,13 @@ static void on_scan_done (void *arg, STATUS status)
       "HTTP/1.1 200 OK\r\n"
       "Connection:close\r\n"
       "Cache-control:no-cache\r\n"
-      "Access-Control-Allow-Origin: *\r\n"   
       "Content-type:application/json\r\n"
       "Content-length:%4d\r\n"
       "\r\n";
     const size_t hdr_sz = sizeof (header_fmt) +1 -1; /* +expand %4d, -\0 */
 
     /* To be able to safely escape a pathological SSID, we need 2*32 bytes */
-    const size_t max_entry_sz = 27 + 2*32 + 6; // {"ssid":"","rssi":,"chan":}
+    const size_t max_entry_sz = sizeof("{\"ssid\":\"\",\"rssi\":},") + 2*32 + 6;
     const size_t alloc_sz = hdr_sz + num_nets * max_entry_sz + 3;
     char *http = os_zalloc (alloc_sz);
     if (!http)
@@ -1028,12 +996,6 @@ static void on_scan_done (void *arg, STATUS status)
       p += sizeof (entry_mid) -1;
 
       p += c_sprintf (p, "%d", wn->rssi);
-    
-      const char entry_chan[] = ",\"chan\":"; 
-      strcpy (p, entry_chan);
-      p += sizeof (entry_chan) -1;
-
-      p += c_sprintf (p, "%d", wn->channel);    
 
       *p++ = '}';
     }
@@ -1044,8 +1006,6 @@ static void on_scan_done (void *arg, STATUS status)
     http[hdr_sz] = '['; /* Rewrite the \0 with the correct start of body */
 
     notify_scan_listeners (http, hdr_sz + body_sz);
-    ENDUSER_SETUP_DEBUG(http + hdr_sz);    
-   
     c_free (http);
     return;
   }
@@ -1088,9 +1048,6 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   pbuf_free (p);
 
   err_t ret = ERR_OK;
-
-  ENDUSER_SETUP_DEBUG(data);
-  
   if (c_strncmp(data, "GET ", 4) == 0)
   {
     if (c_strncmp(data + 4, "/ ", 2) == 0)
@@ -1104,52 +1061,38 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
         goto free_out; /* streaming now in progress */
       }
     }
-    else if (c_strncmp(data + 4, "/aplist", 7) == 0)
+    else if (c_strncmp(data + 4, "/aplist ", 8) == 0)
     {
-      // Don't do an AP Scan while station is trying to connect to Wi-Fi
-      if (state->connecting == 0) 
+      scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
+      if (!l)
       {
-        scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
-        if (!l)
-        {
-          ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
-        }
-
-        bool already = (state->scan_listeners != NULL);
-
-        tcp_arg (http_client, l);
-        /* TODO: check if also need a tcp_err() cb, or if recv() is enough */
-        l->conn = http_client;
-        l->next = state->scan_listeners;
-        state->scan_listeners = l;
-
-        if (!already)
-        {
-          if (!wifi_station_scan(NULL, on_scan_done))
-          {
-            enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
-            deferred_close (l->conn);
-            l->conn = 0;
-            free_scan_listeners();
-          }
-        }
-        goto free_out; /* request queued */
+        ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
       }
-      else
+
+      bool already = (state->scan_listeners != NULL);
+
+      tcp_arg (http_client, l);
+      /* TODO: check if also need a tcp_err() cb, or if recv() is enough */
+      l->conn = http_client;
+      l->next = state->scan_listeners;
+      state->scan_listeners = l;
+
+      if (!already)
       {
-        // Return No Content status to the caller
-        enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));     
+        if (!wifi_station_scan(NULL, on_scan_done))
+        {
+          enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
+          deferred_close (l->conn);
+          l->conn = 0;
+          free_scan_listeners();
+        }
       }
+      goto free_out; /* request queued */
     }
-    else if (c_strncmp(data + 4, "/status.json", 12) == 0)
+    else if (c_strncmp(data + 4, "/status ", 8) == 0)
     {
-    enduser_setup_serve_status_as_json(http_client);
-    }    
-    else if (c_strncmp(data + 4, "/status", 7) == 0)
-    {
-      enduser_setup_serve_status(http_client);
+      serve_status(http_client);
     }
-
     else if (c_strncmp(data + 4, "/update?", 8) == 0)
     {
       switch (enduser_setup_http_handle_credentials(data, data_len))
@@ -1158,29 +1101,14 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
           enduser_setup_http_serve_header(http_client, http_header_302, LITLEN(http_header_302));
           break;
         case 1:
-          enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
+          enduser_setup_http_serve_header(http_client, http_header_401, LITLEN(http_header_401));
           break;
         default:
           ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
           break;
       }
     }
-    else if (c_strncmp(data + 4, "/setwifi?", 9) == 0)
-    {
-      switch (enduser_setup_http_handle_credentials(data, data_len))
-      {
-        case 0:
-          enduser_setup_serve_status_as_json(http_client);
-          break;
-        case 1:
-          enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
-          break;
-        default:
-          ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
-          break;
-      }
-    }  
-    else if (c_strncmp(data + 4, "/generate_204", 13) == 0)
+    else if (c_strncmp(data + 4, "/generate_204 ", 14) == 0)
     {
       /* Convince Android devices that they have internet access to avoid pesky dialogues. */
       enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));
@@ -1188,16 +1116,13 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     else
     {
       ENDUSER_SETUP_DEBUG("serving 404");
+      ENDUSER_SETUP_DEBUG(data + 4);
       enduser_setup_http_serve_header(http_client, http_header_404, LITLEN(http_header_404));
     }
   }
-  else if (c_strncmp(data, "OPTIONS ", 8) == 0)
+  else /* not GET */
   {
-     enduser_setup_handle_OPTIONS(http_client, data, data_len);
-  }  
-  else /* not GET or OPTIONS */
-  {
-    enduser_setup_http_serve_header(http_client, http_header_405, LITLEN(http_header_405));
+    enduser_setup_http_serve_header(http_client, http_header_401, LITLEN(http_header_401));
   }
 
   deferred_close (http_client);
@@ -1210,7 +1135,6 @@ free_out:
 static err_t enduser_setup_http_connectcb(void *arg, struct tcp_pcb *pcb, err_t err)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_connectcb");
-
   if (!state)
   {
     ENDUSER_SETUP_DEBUG("connect callback but no state?!");
@@ -1284,7 +1208,7 @@ static void enduser_setup_http_stop(void)
 
 static void enduser_setup_ap_stop(void)
 {
-  ENDUSER_SETUP_DEBUG("enduser_setup_ap_stop");
+  ENDUSER_SETUP_DEBUG("enduser_setup_station_stop");
 
   wifi_set_opmode(~SOFTAP_MODE & wifi_get_opmode());
 }
@@ -1310,47 +1234,15 @@ static void enduser_setup_ap_start(void)
   cnf.ssid[ssid_name_len] = '_';
   c_sprintf(cnf.ssid + ssid_name_len + 1, "%02X%02X%02X", mac[3], mac[4], mac[5]);
   cnf.ssid_len = ssid_name_len + 7;
-  cnf.channel = state == NULL? 1 : state->softAPchannel;
+  cnf.channel = 1;
   cnf.authmode = AUTH_OPEN;
   cnf.ssid_hidden = 0;
   cnf.max_connection = 5;
   cnf.beacon_interval = 100;
   wifi_set_opmode(STATIONAP_MODE);
   wifi_softap_set_config(&cnf);
-
-#if ENDUSER_SETUP_DEBUG_ENABLE  
-  char debuginfo[100];
-  c_sprintf(debuginfo, "SSID: %s, CHAN: %d", cnf.ssid, cnf.channel);
-  ENDUSER_SETUP_DEBUG(debuginfo);  
-#endif  
 }
 
-static void on_initial_scan_done (void *arg, STATUS status)
-{
-  ENDUSER_SETUP_DEBUG("on_initial_scan_done");
-
-  if (!state)
-  {
-    return;
-  }
-
-  int8_t rssi = -100;
-  
-  if (status == OK)
-  {
-    for (struct bss_info *wn = arg; wn; wn = wn->next.stqe_next)
-    {
-      if (wn->rssi > rssi)
-      {
-        state->softAPchannel = wn->channel;
-        rssi = wn->rssi;
-      }
-    }
-  }
-  
-  enduser_setup_ap_start();
-  enduser_setup_check_station_start();
-}
 
 static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned short recv_len)
 {
@@ -1362,31 +1254,6 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   uint32_t qname_len = c_strlen(&(recv_data[12])) + 1; // \0=1byte
   uint32_t dns_reply_static_len = (uint32_t) sizeof(dns_header) + (uint32_t) sizeof(dns_body) + 2 + 4; // dns_id=2bytes, ip=4bytes
   uint32_t dns_reply_len = dns_reply_static_len + qname_len;
-
-#if ENDUSER_SETUP_DEBUG_ENABLE
-  char *qname = c_malloc(qname_len + 12); 
-  if (qname != NULL)
-  {
-    c_sprintf(qname, "DNS QUERY = %s", &(recv_data[12]));
-
-    uint32_t p;
-    int i, j;
-  
-    for(i=12;i<(int)strlen(qname);i++) 
-    {
-      p=qname[i];
-      for(j=0;j<(int)p;j++) 
-      {
-        qname[i]=qname[i+1];
-        i=i+1;
-      }
-      qname[i]='.';
-    }
-    qname[i-1]='\0';
-    ENDUSER_SETUP_DEBUG(qname); 
-    c_free(qname);
-  }
-#endif
 
   uint8_t if_mode = wifi_get_opmode();
   if ((if_mode & SOFTAP_MODE) == 0)
@@ -1438,14 +1305,6 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   {
     ENDUSER_SETUP_ERROR_VOID("dns_recv_callback failed. Can't execute transmission.", ENDUSER_SETUP_ERR_CONNECTION_NOT_FOUND, ENDUSER_SETUP_ERR_FATAL);
   }
-  else if (err == ESPCONN_MAXNUM)
-  {
-    ENDUSER_SETUP_ERROR_VOID("dns_recv_callback failed. Buffer full. Discarding...", ENDUSER_SETUP_ERR_MAX_NUMBER, ENDUSER_SETUP_ERR_NONFATAL);
-  }  
-  else if (err == ESPCONN_IF)
-  {
-    ENDUSER_SETUP_ERROR_VOID("dns_recv_callback failed. Send UDP data failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
-  }    
   else if (err != 0)
   {
     ENDUSER_SETUP_ERROR_VOID("dns_recv_callback failed. espconn_send failed", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
@@ -1549,7 +1408,6 @@ static void enduser_setup_dns_stop(void)
 
 static int enduser_setup_init(lua_State *L)
 {
-  // Note: Normal to not see this debug message on first invocation because debug callback is set below
   ENDUSER_SETUP_DEBUG("enduser_setup_init");
 
   if (state != NULL)
@@ -1594,19 +1452,12 @@ static int enduser_setup_init(lua_State *L)
   {
     lua_pushvalue (L, 3);
     state->lua_dbg_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    ENDUSER_SETUP_DEBUG("enduser_setup_init: Debug callback has been defined");    
   }
   else
   {
     state->lua_dbg_cb_ref = LUA_NOREF;
   }
 
-  state->softAPchannel = 1;
-  state->success = 0;
-  state->callbackDone = 0;
-  state->lastStationStatus = 0;
-  state->connecting = 0;
-  
   return 0;
 }
 
@@ -1624,7 +1475,6 @@ static int enduser_setup_manual(lua_State *L)
 
 static int enduser_setup_start(lua_State *L)
 {
-  // Note: The debug callback is set in enduser_setup_init. It's normal to not see this debug message on first invocation.
   ENDUSER_SETUP_DEBUG("enduser_setup_start");
 
   if (!do_station_cfg_handle)
@@ -1637,14 +1487,10 @@ static int enduser_setup_start(lua_State *L)
     goto failed;
   }
 
+  enduser_setup_check_station_start();
   if (!manual)
   {
-    ENDUSER_SETUP_DEBUG("Performing AP Scan to identify likely AP's channel");    
-    wifi_station_scan(NULL, on_initial_scan_done);
-  }
-  else
-  {
-   enduser_setup_check_station_start();
+    enduser_setup_ap_start();
   }
 
   if(enduser_setup_dns_start())
@@ -1683,12 +1529,6 @@ static int enduser_setup_stop(lua_State* L)
   {
     enduser_setup_ap_stop();
   }
-  if (state->success && !state->callbackDone)
-  {
-    wifi_set_opmode(STATION_MODE | wifi_get_opmode());
-    wifi_station_connect();
-    enduser_setup_connected_callback();
-  }  
   enduser_setup_dns_stop();
   enduser_setup_http_stop();
   enduser_setup_free();

@@ -12,7 +12,7 @@ When compiled together with the [rtctime](rtctime.md) module it also offers seam
 
 Attempts to obtain time synchronization. 
 
-For best results you may want to to call this periodically in order to compensate for internal clock drift. As stated in the [rtctime](rtctime.md) module documentation it's advisable to sync time after deep sleep and it's necessary to sync after module reset (add it to [`init.lua`](../upload.md#initlua) after WiFi initialization).
+For best results you may want to to call this periodically in order to compensate for internal clock drift. As stated in the [rtctime](rtctime.md) module documentation it's advisable to sync time after deep sleep and it's necessary to sync after module reset (add it to [`init.lua`](upload.md#initlua) after WiFi initialization).
 
 #### Syntax
 `sntp.sync([server_ip], [callback], [errcallback])`

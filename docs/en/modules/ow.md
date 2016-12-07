@@ -84,7 +84,7 @@ Reads multi bytes.
 
 #### Parameters
 - `pin` 1~12, I/O index
-- `size` number of bytes to be read from slave device (up to 256)
+- `size` number of bytes to be read from slave device
 
 #### Returns
 `string` bytes read from slave device

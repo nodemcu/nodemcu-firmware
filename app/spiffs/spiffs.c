@@ -2,8 +2,6 @@
 #include "platform.h"
 #include "spiffs.h"
 
-#include "spiffs_nucleus.h"
-
 spiffs fs;
 
 #define LOG_PAGE_SIZE       	256
@@ -12,9 +10,9 @@ spiffs fs;
 #define MIN_BLOCKS_FS		4
   
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
-static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
+static u8_t spiffs_fds[32*4];
 #if SPIFFS_CACHE
-static u8_t myspiffs_cache[(LOG_PAGE_SIZE+32)*2];
+static u8_t spiffs_cache[(LOG_PAGE_SIZE+32)*2];
 #endif
 
 static s32_t my_spiffs_read(u32_t addr, u32_t size, u8_t *dst) {
@@ -170,8 +168,8 @@ static bool myspiffs_mount_internal(bool force_mount) {
     spiffs_fds,
     sizeof(spiffs_fds),
 #if SPIFFS_CACHE
-    myspiffs_cache,
-    sizeof(myspiffs_cache),
+    spiffs_cache,
+    sizeof(spiffs_cache),
 #else
     0, 0,
 #endif
@@ -245,7 +243,6 @@ static sint32_t myspiffs_vfs_lseek( const struct vfs_file *fd, sint32_t off, int
 static sint32_t myspiffs_vfs_eof( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_tell( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_flush( const struct vfs_file *fd );
-static uint32_t myspiffs_vfs_size( const struct vfs_file *fd );
 static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd );
 
 static sint32_t  myspiffs_vfs_closedir( const struct vfs_dir *dd );
@@ -298,7 +295,7 @@ static vfs_file_fns myspiffs_file_fns = {
   .eof       = myspiffs_vfs_eof,
   .tell      = myspiffs_vfs_tell,
   .flush     = myspiffs_vfs_flush,
-  .size      = myspiffs_vfs_size,
+  .size      = NULL,
   .ferrno    = myspiffs_vfs_ferrno
 };
 
@@ -433,17 +430,13 @@ static sint32_t myspiffs_vfs_close( const struct vfs_file *fd ) {
 static sint32_t myspiffs_vfs_read( const struct vfs_file *fd, void *ptr, size_t len ) {
   GET_FILE_FH(fd);
 
-  sint32_t n = SPIFFS_read( &fs, fh, ptr, len );
-
-  return n >= 0 ? n : VFS_RES_ERR;
+  return SPIFFS_read( &fs, fh, ptr, len );
 }
 
 static sint32_t myspiffs_vfs_write( const struct vfs_file *fd, const void *ptr, size_t len ) {
   GET_FILE_FH(fd);
 
-  sint32_t n = SPIFFS_write( &fs, fh, (void *)ptr, len );
-
-  return n >= 0 ? n : VFS_RES_ERR;
+  return SPIFFS_write( &fs, fh, (void *)ptr, len );
 }
 
 static sint32_t myspiffs_vfs_lseek( const struct vfs_file *fd, sint32_t off, int whence ) {
@@ -463,8 +456,7 @@ static sint32_t myspiffs_vfs_lseek( const struct vfs_file *fd, sint32_t off, int
     break;
   }
 
-  sint32_t res = SPIFFS_lseek( &fs, fh, off, spiffs_whence );
-  return res >= 0 ? res : VFS_RES_ERR;
+  return SPIFFS_lseek( &fs, fh, off, spiffs_whence );
 }
 
 static sint32_t myspiffs_vfs_eof( const struct vfs_file *fd ) {
@@ -483,16 +475,6 @@ static sint32_t myspiffs_vfs_flush( const struct vfs_file *fd ) {
   GET_FILE_FH(fd);
 
   return SPIFFS_fflush( &fs, fh ) >= 0 ? VFS_RES_OK : VFS_RES_ERR;
-}
-
-static uint32_t myspiffs_vfs_size( const struct vfs_file *fd ) {
-  GET_FILE_FH(fd);
-
-  int32_t curpos = SPIFFS_tell( &fs, fh );
-  int32_t size = SPIFFS_lseek( &fs, fh, 0, SPIFFS_SEEK_END );
-  (void) SPIFFS_lseek( &fs, fh, curpos, SPIFFS_SEEK_SET );
-
-   return size;
 }
 
 static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd ) {

@@ -343,19 +343,28 @@ static int read_line (lua_State *L, int f) {
 static int read_line (lua_State *L, int f) {
   luaL_Buffer b;
   luaL_buffinit(L, &b);
-  signed char c;
-  do {
+  char *p = luaL_prepbuffer(&b);
+  signed char c = EOF;
+  int i = 0;
+  do{
     c = (signed char)vfs_getc(f);
-    if (c==EOF) {
+    if(c==EOF){
       break;
     }
-    if (c != '\n') {
-      luaL_addchar(&b, c);
-    }
-  } while (c != '\n');
+    p[i++] = c;
+  }while((c!=EOF) && (c!='\n') && (i<LUAL_BUFFERSIZE) );
 
+  if(i>0 && p[i-1] == '\n')
+    i--;    /* do not include `eol' */
+
+  if(i==0){
+    luaL_pushresult(&b);  /* close buffer */
+    return (lua_objlen(L, -1) > 0);  /* check whether read something */
+  }
+
+  luaL_addsize(&b, i);
   luaL_pushresult(&b);  /* close buffer */
-  return (lua_objlen(L, -1) > 0);  /* check whether read something */
+  return 1;  /* read at least an `eol' */ 
 }
 #endif
 

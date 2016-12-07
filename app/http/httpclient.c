@@ -13,7 +13,6 @@
  */
 
 #include "osapi.h"
-#include "../libc/c_stdio.h"
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"
@@ -95,7 +94,7 @@ static int ICACHE_FLASH_ATTR http_chunked_decode( const char * chunked, char * d
 		char * endstr;
 		/* [chunk-size] */
 		i = strtoul( str + j, NULL, 16 );
-		HTTPCLIENT_DEBUG( "Chunk Size:%d", i );
+		HTTPCLIENT_DEBUG( "Chunk Size:%d\r\n", i );
 		if ( i <= 0 )
 			break;
 		/* [chunk-size-end-ptr] */
@@ -138,7 +137,7 @@ static void ICACHE_FLASH_ATTR http_receive_callback( void * arg, char * buf, uns
 	char		* new_buffer;
 	if ( new_size > BUFFER_SIZE_MAX || NULL == (new_buffer = (char *) os_malloc( new_size ) ) )
 	{
-		HTTPCLIENT_ERR( "Response too long (%d)", new_size );
+		HTTPCLIENT_DEBUG( "Response too long (%d)\n", new_size );
 		req->buffer[0] = '\0';                                                                  /* Discard the buffer to avoid using an incomplete response. */
 		if ( req->secure )
 			espconn_secure_disconnect( conn );
@@ -164,12 +163,12 @@ static void ICACHE_FLASH_ATTR http_send_callback( void * arg )
 
 	if ( req->post_data == NULL )
 	{
-		HTTPCLIENT_DEBUG( "All sent" );
+		HTTPCLIENT_DEBUG( "All sent\n" );
 	}
 	else  
 	{
 		/* The headers were sent, now send the contents. */
-		HTTPCLIENT_DEBUG( "Sending request body" );
+		HTTPCLIENT_DEBUG( "Sending request body\n" );
 		if ( req->secure )
 			espconn_secure_send( conn, (uint8_t *) req->post_data, strlen( req->post_data ) );
 		else
@@ -182,7 +181,7 @@ static void ICACHE_FLASH_ATTR http_send_callback( void * arg )
 
 static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 {
-	HTTPCLIENT_DEBUG( "Connected" );
+	HTTPCLIENT_DEBUG( "Connected\n" );
 	struct espconn	* conn	= (struct espconn *) arg;
 	request_args_t	* req	= (request_args_t *) conn->reverse;
 	espconn_regist_recvcb( conn, http_receive_callback );
@@ -251,7 +250,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
     }
 
     req->headers = NULL;
-    HTTPCLIENT_DEBUG( "Sending request header" );
+    HTTPCLIENT_DEBUG( "Sending request header\n" );
 }
 
 static void http_free_req( request_args_t * req)
@@ -273,7 +272,7 @@ static void http_free_req( request_args_t * req)
 
 static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 {
-	HTTPCLIENT_DEBUG( "Disconnected" );
+	HTTPCLIENT_DEBUG( "Disconnected\n" );
 	struct espconn *conn = (struct espconn *) arg;
 
 	if ( conn == NULL )
@@ -296,7 +295,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 		if ( req->buffer == NULL )
 		{
-			HTTPCLIENT_DEBUG( "Buffer probably shouldn't be NULL" );
+			HTTPCLIENT_DEBUG( "Buffer probably shouldn't be NULL\n" );
 		}
 		else if ( req->buffer[0] != '\0' )
 		{
@@ -306,7 +305,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			if (( os_strncmp( req->buffer, version_1_0, strlen( version_1_0 ) ) != 0 ) &&
 				( os_strncmp( req->buffer, version_1_1, strlen( version_1_1 ) ) != 0 ))
 			{
-				HTTPCLIENT_ERR( "Invalid version in %s", req->buffer );
+				HTTPCLIENT_DEBUG( "Invalid version in %s\n", req->buffer );
 			}
 			else  
 			{
@@ -327,7 +326,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 						char *locationOffsetEnd = (char *) os_strstr(locationOffset, "\r\n");
 						if ( locationOffsetEnd == NULL ) {
-							HTTPCLIENT_ERR( "Found Location header but was incomplete" );
+							HTTPCLIENT_DEBUG( "Found Location header but was incomplete\n" );
 							http_status = -1;
 						} else {
 							*locationOffsetEnd = '\0';
@@ -372,7 +371,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 							return;
 						}
 					} else {
-						HTTPCLIENT_ERR("Too many redirections");
+						HTTPCLIENT_DEBUG("Too many redirections\n");
 						http_status = -1;
 					}
 				} else {
@@ -380,7 +379,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 					if (NULL == body) {
 						  /* Find missing body */
-						  HTTPCLIENT_ERR("Body shouldn't be NULL");
+						  HTTPCLIENT_DEBUG("Body shouldn't be NULL\n");
 						  /* To avoid NULL body */
 						  body = "";
 					} else {
@@ -412,9 +411,16 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 }
 
 
+static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
+{
+	HTTPCLIENT_DEBUG( "Disconnected with error\n" );
+	http_disconnect_callback( arg );
+}
+
+
 static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 {
-	HTTPCLIENT_ERR( "Connection timeout" );
+	HTTPCLIENT_DEBUG( "Connection timeout\n" );
 	struct espconn * conn = (struct espconn *) arg;
 	if ( conn == NULL )
 	{
@@ -433,20 +439,13 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 }
 
 
-static void ICACHE_FLASH_ATTR http_error_callback( void *arg, sint8 errType )
-{
-	HTTPCLIENT_ERR( "Disconnected with error: %d", errType );
-	http_timeout_callback( arg );
-}
-
-
 static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_t * addr, void * arg )
 {
 	request_args_t * req = (request_args_t *) arg;
 
 	if ( addr == NULL )
 	{
-		HTTPCLIENT_ERR( "DNS failed for %s", hostname );
+		HTTPCLIENT_DEBUG( "DNS failed for %s\n", hostname );
 		if ( req->callback_handle != NULL )
 		{
 			req->callback_handle( "", -1, "" );
@@ -455,7 +454,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 	}
 	else  
 	{
-		HTTPCLIENT_DEBUG( "DNS found %s " IPSTR, hostname, IP2STR( addr ) );
+		HTTPCLIENT_DEBUG( "DNS found %s " IPSTR "\n", hostname, IP2STR( addr ) );
 
 		struct espconn * conn = (struct espconn *) os_zalloc( sizeof(struct espconn) );
 		conn->type			= ESPCONN_TCP;
@@ -490,7 +489,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 
 void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool secure, const char * method, const char * path, const char * headers, const char * post_data, http_callback_t callback_handle, int redirect_follow_count )
 {
-	HTTPCLIENT_DEBUG( "DNS request" );
+	HTTPCLIENT_DEBUG( "DNS request\n" );
 
 	request_args_t * req = (request_args_t *) os_zalloc( sizeof(request_args_t) );
 	req->hostname		= esp_strdup( hostname );
@@ -513,7 +512,7 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 
 	if ( error == ESPCONN_INPROGRESS )
 	{
-		HTTPCLIENT_DEBUG( "DNS pending" );
+		HTTPCLIENT_DEBUG( "DNS pending\n" );
 	}
 	else if ( error == ESPCONN_OK )
 	{
@@ -524,9 +523,9 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 	{
 		if ( error == ESPCONN_ARG )
 		{
-			HTTPCLIENT_ERR( "DNS arg error %s", hostname );
+			HTTPCLIENT_DEBUG( "DNS arg error %s\n", hostname );
 		}else  {
-			HTTPCLIENT_ERR( "DNS error code %d", error );
+			HTTPCLIENT_DEBUG( "DNS error code %d\n", error );
 		}
 		http_dns_callback( hostname, NULL, req ); /* Handle all DNS errors the same way. */
 	}
@@ -562,7 +561,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	} 
 	else 
 	{
-		HTTPCLIENT_ERR( "URL is not HTTP or HTTPS %s", url );
+		HTTPCLIENT_DEBUG( "URL is not HTTP or HTTPS %s\n", url );
 		return;
 	}
 
@@ -579,7 +578,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 	}
 
 	if (path - url >= sizeof(hostname)) {
-		HTTPCLIENT_ERR( "hostname is too long %s", url );
+		HTTPCLIENT_DEBUG( "hostname is too long %s\n", url );
 		return;
 	}
 
@@ -593,7 +592,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 		port = atoi( colon + 1 );
 		if ( port == 0 )
 		{
-			HTTPCLIENT_ERR( "Port error %s", url );
+			HTTPCLIENT_DEBUG( "Port error %s\n", url );
 			return;
 		}
 
@@ -607,10 +606,10 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 		path = "/";
 	}
 
-	HTTPCLIENT_DEBUG( "hostname=%s", hostname );
-	HTTPCLIENT_DEBUG( "port=%d", port );
-	HTTPCLIENT_DEBUG( "method=%s", method );
-	HTTPCLIENT_DEBUG( "path=%s", path );
+	HTTPCLIENT_DEBUG( "hostname=%s\n", hostname );
+	HTTPCLIENT_DEBUG( "port=%d\n", port );
+	HTTPCLIENT_DEBUG( "method=%s\n", method );
+	HTTPCLIENT_DEBUG( "path=%s\n", path );
 	http_raw_request( hostname, port, secure, method, path, headers, post_data, callback_handle, redirect_follow_count);
 }
 
@@ -646,11 +645,10 @@ void ICACHE_FLASH_ATTR http_put( const char * url, const char * headers, const c
 
 void ICACHE_FLASH_ATTR http_callback_example( char * response, int http_status, char * full_response )
 {
-	dbg_printf( "http_status=%d\n", http_status );
+	os_printf( "http_status=%d\n", http_status );
 	if ( http_status != HTTP_STATUS_GENERIC_ERROR )
 	{
-		dbg_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
-		dbg_printf( "response=%s<EOF>\n", response );
+		os_printf( "strlen(full_response)=%d\n", strlen( full_response ) );
+		os_printf( "response=%s<EOF>\n", response );
 	}
 }
-
