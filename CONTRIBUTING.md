@@ -106,7 +106,7 @@ Don't forget to [reference affected issues](https://help.github.com/articles/clo
 - Be careful and reluctant to merge PRs once we're past the 6-weeks mark of a milestone. Ideally we don't merge anything in the last 2 weeks.
 - Cutting a release
 	- Create a PR for the `master` branch for collaborators to approve.
-	- Once approved merge it.
+	- Once approved merge it. :exclamation::boom::exclamation: Make sure you do NOT "squash and merge" but make a regular merge commit!
 	- Fetch the changes into your local clone and create an annotated tag like so: `git tag -a <SDK-version>-master_<yyyyMMdd> -m ""`, `git push --tags`
  	- Create a new [release](https://github.com/nodemcu/nodemcu-firmware/releases) based on the tag you just pushed. The version name is the same as the tag name.
  	- Write release notes. Mention breaking changes explicitly. Since every PR that went into this release is linked to from the milestone it should be fairly easy to include important changes in the release notes.
