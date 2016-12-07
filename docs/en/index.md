@@ -44,7 +44,7 @@ print(gpio.read(pin))
 ```
 
 ## Getting Started
-1. [Build the firmeware](build.md) with the modules you need.
+1. [Build the firmware](build.md) with the modules you need.
 1. [Flash the firmware](flash.md) to the chip.
 1. [Upload code](upload.md) to the firmware.
 

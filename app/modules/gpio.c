@@ -190,19 +190,20 @@ static void seroutasync_done (task_param_t arg)
 {
   lua_State *L = lua_getstate();
   luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
-  if (serout.lua_done_ref != LUA_REFNIL) { // we're here so serout.lua_done_ref != LUA_NOREF
+  serout.delay_table = NULL;
+  if (serout.lua_done_ref != LUA_NOREF) {
     lua_rawgeti (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
+    luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
+    serout.lua_done_ref = LUA_NOREF;
     if (lua_pcall(L, 0, 0, 0)) {
       // Uncaught Error. Print instead of sudden reset
       luaL_error(L, "error: %s", lua_tostring(L, -1));
     }
-    luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
   }
 }
 
 static void ICACHE_RAM_ATTR seroutasync_cb(os_param_t p) {
   (void) p;
-  NODE_DBG("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", serout.repeats, serout.index, serout.level, serout.pin, serout.tablelen, serout.delay_table[serout.index], system_get_time()); // timing is delayed for short timings when debug output is enabled
   if (serout.index < serout.tablelen) {
     GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[serout.pin]), serout.level);
     serout.level = serout.level==LOW ? HIGH : LOW;
@@ -220,15 +221,23 @@ static int lgpio_serout( lua_State* L )
   serout.pin = luaL_checkinteger( L, 1 );
   serout.level = luaL_checkinteger( L, 2 );
   serout.repeats = luaL_optint( L, 4, 1 )-1;
+  luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
+  uint8_t is_async = FALSE;
   if (!lua_isnoneornil(L, 5)) {
     if (lua_isnumber(L, 5)) {
-      serout.lua_done_ref = LUA_REFNIL;
+      serout.lua_done_ref = LUA_NOREF;
     } else {
       lua_pushvalue(L, 5);
       serout.lua_done_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }
+    is_async = TRUE;
   } else {
     serout.lua_done_ref = LUA_NOREF;
+  }
+
+  if (serout.delay_table) {
+    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    serout.delay_table = NULL;
   }
 
   luaL_argcheck(L, platform_gpio_exists(serout.pin), 1, "Invalid pin");
@@ -244,7 +253,7 @@ static int lgpio_serout( lua_State* L )
     lua_pop( L, 1 );
   }
 
-  if (serout.lua_done_ref != LUA_NOREF) { // async version for duration above 15 mSec
+  if (is_async) { // async version for duration above 15 mSec
     if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
       // Failed to init the timer
       luaL_error(L, "Unable to initialize timer");
@@ -296,6 +305,7 @@ int luaopen_gpio( lua_State *L ) {
   platform_gpio_init(task_get_id(gpio_intr_callback_task));
 #endif
   serout.done_taskid = task_get_id((task_callback_t) seroutasync_done);
+  serout.lua_done_ref = LUA_NOREF;
   return 0;
 }
 

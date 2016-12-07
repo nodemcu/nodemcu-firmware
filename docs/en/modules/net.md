@@ -135,15 +135,21 @@ Listen on port from IP address.
 
 #### Example
 ```lua
- -- 30s time out for a inactive client
-sv = net.createServer(net.TCP, 30)
 -- server listens on 80, if data received, print data to console and send "hello world" back to caller
-sv:listen(80, function(c)
-  c:on("receive", function(c, pl) 
-    print(pl)
+-- 30s time out for a inactive client
+sv = net.createServer(net.TCP, 30)
+
+function receiver(sck, data)
+  print(data)
+  sck:close()
+end
+
+if sv then
+  sv:listen(80, function(conn)
+    conn:on("receive", receiver)
+    conn:send("hello world")
   end)
-  c:send("hello world")
-end)
+end
 ```
 
 #### See also
@@ -303,32 +309,35 @@ Multiple consecutive `send()` calls aren't guaranteed to work (and often don't) 
 #### Example
 ```lua
 srv = net.createServer(net.TCP)
-srv:listen(80, function(conn)
-  conn:on("receive", function(sck, req)
-    local response = {}
 
-    -- if you're sending back HTML over HTTP you'll want something like this instead
-    -- local response = {"HTTP/1.0 200 OK\r\nServer: NodeMCU on ESP8266\r\nContent-Type: text/html\r\n\r\n"}
+function receiver(sck, data)
+  local response = {}
 
-    response[#response + 1] = "lots of data"
-    response[#response + 1] = "even more data"
-    response[#response + 1] = "e.g. content read from a file"
-    
-	 -- sends and removes the first element from the 'response' table
-    local function send(sk)
-      if #response > 0
-        then sk:send(table.remove(response, 1))
-      else
-        sk:close()
-        response = nil
-      end
+  -- if you're sending back HTML over HTTP you'll want something like this instead
+  -- local response = {"HTTP/1.0 200 OK\r\nServer: NodeMCU on ESP8266\r\nContent-Type: text/html\r\n\r\n"}
+
+  response[#response + 1] = "lots of data"
+  response[#response + 1] = "even more data"
+  response[#response + 1] = "e.g. content read from a file"
+
+  -- sends and removes the first element from the 'response' table
+  local function send(localSocket)
+    if #response > 0
+    then localSocket:send(table.remove(response, 1))
+    else
+      localSocket:close()
+      response = nil
     end
+  end
 
-    -- triggers the send() function again once the first chunk of data was sent
-    sck:on("sent", send)
-    
-    send(sck)
-  end)
+  -- triggers the send() function again once the first chunk of data was sent
+  sck:on("sent", send)
+
+  send(sck)
+end
+
+srv:listen(80, function(conn)
+  conn:on("receive", receiver)
 end)
 ```
 If you do not or can not keep all the data you send back in memory at one time (remember that `response` is an aggregation) you may use explicit callbacks instead of building up a table like so:

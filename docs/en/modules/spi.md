@@ -6,6 +6,10 @@
 All transactions for sending and receiving are most-significant-bit first and least-significant last.
 For technical details of the underlying hardware refer to [metalphreak's ESP8266 HSPI articles](http://d.av.id.au/blog/tag/hspi/).
 
+!!! note
+
+	The ESP hardware provides two SPI busses, with IDs 0, and 1, which map to pins generally labelled SPI and HSPI. If you are using any kind of development board which provides flash, then bus ID 0 (SPI) is almost certainly used for communicating with the flash chip. You probably want to choose bus ID 1 (HSPI) for your communication, as you will have uncontended use of it.
+
 ## High Level Functions
 The high level functions provide a send & receive API for half- and
 full-duplex mode. Sent and received data items are restricted to 1 - 32 bit

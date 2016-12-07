@@ -355,10 +355,11 @@ sint32_t vfs_chdir( const char *path )
 sint32_t vfs_errno( const char *name )
 {
   vfs_fs_fns *fs_fns;
-  const char *normname = normalize_path( name );
   char *outname;
 
   if (!name) name = "";  // current drive
+
+  const char *normname = normalize_path( name );
 
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( normname, &outname, FALSE )) {

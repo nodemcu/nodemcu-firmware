@@ -29,11 +29,21 @@
 #include "rtc/rtctime.h"
 #endif
 
-#define SIG_LUA 0
-#define SIG_UARTINPUT 1
-#define TASK_QUEUE_LEN 4
+static task_handle_t input_sig;
+static uint8 input_sig_flag = 0;
 
-static os_event_t *taskQueue;
+/* Contents of esp_init_data_default.bin */
+extern const uint32_t init_data[];
+extern const uint32_t init_data_end[];
+__asm__(
+  /* Place in .text for same reason as user_start_trampoline */
+  ".section \".text\"\n"
+  ".align 4\n"
+  "init_data:\n"
+  ".incbin \"" ESP_INIT_DATA_DEFAULT "\"\n"
+  "init_data_end:\n"
+  ".previous\n"
+);
 
 /* Note: the trampoline *must* be explicitly put into the .text segment, since
  * by the time it is invoked the irom has not yet been mapped. This naturally
@@ -50,6 +60,31 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
   rtctime_early_startup ();
 #endif
 
+  /* Re-implementation of default init data deployment. The SDK does not
+   * appear to be laying down its own version of init data anymore, so
+   * we have to do it again. To see whether we need to, we read out
+   * the flash size and do a test for esp_init_data based on that size.
+   * If it's missing, we need to initialize it *right now* before the SDK
+   * starts up and gets stuck at "rf_cal[0] !=0x05,is 0xFF".
+   * If the size byte is wrong, then we'll end up fixing up the init data
+   * again on the next boot, after we've corrected the size byte.
+   * Only remaining issue is lack of spare code bytes in iram, so this
+   * is deliberately quite terse and not as readable as one might like.
+   */
+  SPIFlashInfo sfi;
+  SPIRead (0, (uint32_t *)(&sfi), sizeof (sfi)); // Cache read not enabled yet, safe to use
+  if (sfi.size < 2) // Compensate for out-of-order 4mbit vs 2mbit values
+    sfi.size ^= 1;
+  uint32_t flash_end_addr = (256 * 1024) << sfi.size;
+  uint32_t init_data_hdr = 0xffffffff;
+  uint32_t init_data_addr = flash_end_addr - 4 * SPI_FLASH_SEC_SIZE;
+  SPIRead (init_data_addr, &init_data_hdr, sizeof (init_data_hdr));
+  if (init_data_hdr == 0xffffffff)
+  {
+    SPIEraseSector (init_data_addr);
+    SPIWrite (init_data_addr, init_data, 4 * (init_data_end - init_data));
+  }
+
   call_user_start ();
 }
 
@@ -58,17 +93,18 @@ static void start_lua(task_param_t param, uint8 priority) {
   char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
   NODE_DBG("Task task_lua started.\n");
   lua_main( 2, lua_argv );
+  // Only enable UART interrupts once we've successfully started up,
+  // otherwise the task queue might fill up with input events and prevent
+  // the start_lua task from being posted.
+  ETS_UART_INTR_ENABLE();
 }
 
 static void handle_input(task_param_t flag, uint8 priority) {
-//  c_printf("HANDLE_INPUT: %u %u\n", flag, priority);          REMOVE
-  lua_handle_input (flag);
-}
-
-static task_handle_t input_sig;
-
-task_handle_t user_get_input_sig(void) {
-  return input_sig;
+  (void)priority;
+  if (flag & 0x8000) {
+    input_sig_flag = flag & 0x4000 ? 1 : 0;
+  }
+  lua_handle_input (flag & 0x01);
 }
 
 bool user_process_input(bool force) {
@@ -92,9 +128,7 @@ void nodemcu_init(void)
         // Fit hardware real flash size.
         flash_rom_set_size_byte(flash_safe_get_size_byte());
 
-        // Reboot to get SDK to use (or write) init data at new location
         system_restart ();
-
         // Don't post the start_lua task, we're about to reboot...
         return;
     }
@@ -107,7 +141,7 @@ void nodemcu_init(void)
 #ifdef BUILD_SPIFFS
     if (!vfs_mount("/FLASH", 0)) {
         // Failed to mount -- try reformat
-	c_printf("Formatting file system. Please wait...\n");
+	dbg_printf("Formatting file system. Please wait...\n");
         if (!vfs_format()) {
             NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
             NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
@@ -118,7 +152,8 @@ void nodemcu_init(void)
 #endif
     // endpoint_setup();
 
-    task_post_low(task_get_id(start_lua),'s');
+    if (!task_post_low(task_get_id(start_lua),'s'))
+      NODE_ERR("Failed to post the start_lua task!\n");
 }
 
 #ifdef LUA_USE_MODULES_WIFI
@@ -146,7 +181,7 @@ void user_rf_pre_init(void)
 uint32
 user_rf_cal_sector_set(void)
 {
-    enum flash_size_map size_map = system_get_flash_size_map();
+    enum ext_flash_size_map size_map = system_get_flash_size_map();
     uint32 rf_cal_sec = 0;
 
     switch (size_map) {
@@ -165,7 +200,16 @@ user_rf_cal_sector_set(void)
 
         case FLASH_SIZE_32M_MAP_512_512:
         case FLASH_SIZE_32M_MAP_1024_1024:
+        case FLASH_SIZE_32M_MAP_2048_2048:
             rf_cal_sec = 1024 - 5;
+            break;
+
+        case FLASH_SIZE_64M_MAP:
+            rf_cal_sec = 2048 - 5;
+            break;
+
+        case FLASH_SIZE_128M_MAP:
+            rf_cal_sec = 4096 - 5;
             break;
 
         default:
@@ -191,7 +235,7 @@ void user_init(void)
     UartBautRate br = BIT_RATE_DEFAULT;
 
     input_sig = task_get_id(handle_input);
-    uart_init (br, br, input_sig);
+    uart_init (br, br, input_sig, &input_sig_flag);
 
 #ifndef NODE_DEBUG
     system_set_os_print(0);

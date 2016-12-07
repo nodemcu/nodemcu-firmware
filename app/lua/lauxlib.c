@@ -807,7 +807,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
 }
 
 LUALIB_API void luaL_assertfail(const char *file, int line, const char *message) {
-  c_printf("ASSERT@%s(%d): %s\n", file, line, message); 
+  dbg_printf("ASSERT@%s(%d): %s\n", file, line, message); 
 }
 
 static int panic (lua_State *L) {

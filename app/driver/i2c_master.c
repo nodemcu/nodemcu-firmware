@@ -33,6 +33,8 @@ LOCAL uint8 pinSCL = 15;
 LOCAL void ICACHE_FLASH_ATTR
 i2c_master_setDC(uint8 SDA, uint8 SCL)
 {
+    uint8 sclLevel;
+
     SDA	&= 0x01;
     SCL	&= 0x01;
     m_nLastSDA = SDA;
@@ -46,6 +48,11 @@ i2c_master_setDC(uint8 SDA, uint8 SCL)
         I2C_MASTER_SDA_HIGH_SCL_LOW();
     } else {
         I2C_MASTER_SDA_HIGH_SCL_HIGH();
+    }
+    if(1 == SCL) {
+        do {
+            sclLevel = GPIO_INPUT_GET(GPIO_ID_PIN(I2C_MASTER_SCL_GPIO));
+        } while(sclLevel == 0);
     }
 }
 

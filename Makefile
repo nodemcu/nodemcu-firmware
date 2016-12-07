@@ -207,14 +207,14 @@ sdk_patched: sdk_extracted $(TOP_DIR)/sdk/.patched-$(SDK_VER)
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
-	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK/lib/* ESP8266_NONOS_SDK/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK/include/* )
+	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK/lib/* ESP8266_NONOS_SDK/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK/include/* ESP8266_NONOS_SDK/bin/esp_init_data_default.bin)
 	mv $(dir $@)/ESP8266_NONOS_SDK $(dir $@)/esp_iot_sdk_v$(SDK_VER)
 	rm -f $(SDK_DIR)/lib/liblwip.a
 	touch $@
 
 $(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VER).zip
 	mkdir -p "$(dir $@)/patch"
-	(cd "$(dir $@)/patch" && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VER)*.zip *.a && mv *.a $(SDK_DIR)/lib/)
+	(cd "$(dir $@)/patch" && unzip $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VER)*.zip *.a esp_init_data_default.bin && mv *.a $(SDK_DIR)/lib/ && mv esp_init_data_default.bin $(SDK_DIR)/bin/)
 	rmdir $(dir $@)/patch
 	rm -f $(SDK_DIR)/lib/liblwip.a
 	touch $@
