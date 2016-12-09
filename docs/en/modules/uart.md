@@ -67,10 +67,11 @@ end, 0)
 
 ## uart.setup()
 
-(Re-)configures the communication parameters of the UART.
+(Re-)configures the communication parameters of the UART. If only the id parameter is passed, then the currently configured baud rate is returned.
 
 #### Syntax
 `uart.setup(id, baud, databits, parity, stopbits, echo)`
+`uart.setup(id)`
 
 #### Parameters
 - `id` always zero, only one uart supported
