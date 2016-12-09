@@ -410,6 +410,10 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   return baud;
 }
 
+int platform_uart_get_baudrate(unsigned id) {
+  return uart_get_baudrate(id);
+}
+
 // if set=1, then alternate serial output pins are used. (15=rx, 13=tx)
 void platform_uart_alt( int set )
 {

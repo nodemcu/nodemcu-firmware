@@ -98,7 +98,7 @@ static int uart_setup( lua_State* L )
   MOD_CHECK_ID( uart, id );
 
   if (lua_gettop(L) == 1) {
-    lua_pushinteger(L, uart_get_baudrate(id));
+    lua_pushinteger(L, platform_uart_get_baudrate(id));
     return 1;
   }
   baud = luaL_checkinteger( L, 2 );
