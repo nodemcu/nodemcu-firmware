@@ -41,6 +41,7 @@
 #include "c_stdlib.h"
 #include "user_modules.h"
 #include "lwip/dns.h"
+#include "task/task.h"
 #include "user_interface.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
@@ -71,7 +72,8 @@ typedef enum {
   NTP_DNS_ERR,
   NTP_MEM_ERR,
   NTP_SEND_ERR,
-  NTP_TIMEOUT_ERR
+  NTP_TIMEOUT_ERR,
+  NTP_MAX_ERR_ID     // must be last
 } ntp_err_t;
 
 typedef struct
@@ -145,6 +147,13 @@ static uint64_t pll_increment;
 static void on_timeout(void *arg);
 static void on_long_timeout(void *arg);
 static void sntp_dolookups(lua_State *L);
+
+// Value passed:
+// ntp_err_t  or char pointer
+#define SNTP_HANDLE_RESULT_ID   20
+#define SNTP_DOLOOKUPS_ID       21
+static task_handle_t tasknumber;
+
 
 static uint64_t div1m(uint64_t n) {
   uint64_t q1 = (n >> 5) + (n >> 10);
@@ -301,7 +310,7 @@ static void sntp_handle_result(lua_State *L) {
 }
 
 
-static void sntp_dosend (lua_State *L)
+static void sntp_dosend ()
 {
   if (state->server_pos < 0) {
     os_timer_disarm(&state->timer);
@@ -317,15 +326,17 @@ static void sntp_dosend (lua_State *L)
   }
 
   if (state->attempts >= MAX_ATTEMPTS || state->attempts * server_count > 10) {
-    sntp_handle_result(L);
+    task_post_high(tasknumber, SNTP_HANDLE_RESULT_ID);
     return;
   }
 
   sntp_dbg("sntp: server %s (%d), attempt %d\n", ipaddr_ntoa(serverp + state->server_pos), state->server_pos, state->attempts);
 
   struct pbuf *p = pbuf_alloc (PBUF_TRANSPORT, sizeof (ntp_frame_t), PBUF_RAM);
-  if (!p)
-    handle_error (L, NTP_MEM_ERR, NULL);
+  if (!p) {
+    task_post_low(tasknumber, NTP_MEM_ERR);
+    return;
+  }
 
   ntp_frame_t req;
   os_memset (&req, 0, sizeof (req));
@@ -349,8 +360,8 @@ static void sntp_dosend (lua_State *L)
   int ret = udp_sendto (state->pcb, p, serverp + state->server_pos, NTP_PORT);
   sntp_dbg("sntp: send: %d\n", ret);
   pbuf_free (p);
-  if (ret != ERR_OK)
-    handle_error (L, NTP_SEND_ERR, NULL);
+
+  // Ignore send errors -- let the timeout handle it
 
   os_timer_arm (&state->timer, 1000, 0);
 }
@@ -360,17 +371,16 @@ static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
   (void)arg;
 
-  lua_State *L = lua_getstate ();
   if (ipaddr == NULL)
   {
     sntp_dbg("DNS Fail!\n");
-    handle_error(L, NTP_DNS_ERR, name);
+    task_post_low(tasknumber, (uint32_t) name);
   }
   else
   {
     serverp[server_count] = *ipaddr;
     server_count++;
-    sntp_dolookups(L);
+    task_post_low(tasknumber, SNTP_DOLOOKUPS_ID);
   }
 }
 
@@ -379,8 +389,7 @@ static void on_timeout (void *arg)
 {
   (void)arg;
   sntp_dbg("sntp: timer\n");
-  lua_State *L = lua_getstate ();
-  sntp_dosend (L);
+  sntp_dosend ();
 }
 
 static void update_offset()
@@ -450,8 +459,6 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   }
 #endif
   sntp_dbg("sntp: on_recv\n");
-
-  lua_State *L = lua_getstate();
 
   if (!state || state->pcb != pcb)
   {
@@ -531,7 +538,7 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
   record_result(addr, ntp_xmit, ntp.stratum, ntp.LI, (((int64_t) (system_get_time() - ntp.origin.frac)) << 16) / MICROSECONDS, root_maxerr, ntohl(ntp.root_dispersion), ntohl(ntp.root_delay));
 #endif
 
-  sntp_dosend(L);
+  sntp_dosend();
 }
 
 #ifdef LUA_USE_MODULES_RTCTIME
@@ -748,6 +755,34 @@ error:
   return luaL_error (L, errmsg);
 }
 
+static void sntp_task(os_param_t param, uint8_t prio) 
+{
+  (void) param;
+  (void) prio;
+
+  lua_State *L = lua_getstate();
+
+  if (param == SNTP_HANDLE_RESULT_ID) {
+    sntp_handle_result(L);
+  } else if (param == SNTP_DOLOOKUPS_ID) {
+    sntp_dolookups(L);
+  } else if (param >= 0 && param <= NTP_MAX_ERR_ID) {
+    handle_error(L, param, NULL);
+  } else {
+    handle_error(L, NTP_DNS_ERR, (const char *) param);
+  }
+}
+
+static int sntp_open(lua_State *L)
+{
+  (void) L;
+
+  tasknumber = task_get_id(sntp_task);
+
+  return 0;
+}
+
+
 
 // Module function map
 static const LUA_REG_TYPE sntp_map[] = {
@@ -759,4 +794,4 @@ static const LUA_REG_TYPE sntp_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(SNTP, "sntp", sntp_map, NULL);
+NODEMCU_MODULE(SNTP, "sntp", sntp_map, sntp_open);
