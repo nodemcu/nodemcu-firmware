@@ -102,6 +102,7 @@ typedef struct {
 } UartDevice;
 
 void uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input, uint8 *flag_input);
+int uart_get_baudrate(uint8 uart_no);
 void uart0_alt(uint8 on);
 void uart0_sendStr(const char *str);
 void uart0_putc(const char c);

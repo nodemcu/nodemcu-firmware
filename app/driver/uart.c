@@ -356,3 +356,7 @@ uart_setup(uint8 uart_no)
 void ICACHE_FLASH_ATTR uart_set_alt_output_uart0(void (*fn)(char)) {
   alt_uart0_tx = fn;
 }
+
+int ICACHE_FLASH_ATTR uart_get_baudrate(uint8 uart_no) {
+  return UART_CLK_FREQ / (*(uint32_t *) (0x60000014 + 0xf00 * uart_no));
+}
