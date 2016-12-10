@@ -1,5 +1,6 @@
 /*
- * Copyright 2016 Dius Computing Pty Ltd. All rights reserved.
+ * Copyright (c) 2016 Johny Mattsson
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,43 +28,44 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * @author Johny Mattsson <jmattsson@dius.com.au>
  */
-#ifndef _NODEMCU_WIFI_H_
-#define _NODEMCU_WIFI_H_
 
-#include <stdint.h>
-#include "esp_wifi.h"
-#include "lua.h"
+#include "wifi_common.h"
+#include "ip_fmt.h"
+#include "lauxlib.h"
+#include <string.h>
 
-// Shared sta/ap macros
-
-#define DEFAULT_SAVE false
-#define SET_SAVE_MODE(save) \
-  do { esp_err_t storage_err = \
-    esp_wifi_set_storage (save ? WIFI_STORAGE_FLASH : WIFI_STORAGE_RAM); \
-    if (storage_err != ESP_OK) \
-      return luaL_error (L, "failed to update wifi storage, code %d", \
-         storage_err); \
-  } while(0)
-
-
-// Shared event handling support
-
-typedef void (*fill_cb_arg_fn) (lua_State *L, const system_event_t *evt);
-typedef struct
+int wifi_event_idx_by_name (const event_desc_t *table, unsigned n, const char *name)
 {
-  const char *name;
-  system_event_id_t event_id;
-  fill_cb_arg_fn fill_cb_arg;
-} event_desc_t;
+  for (unsigned i = 0; i < n; ++i)
+    if (strcmp (table[i].name, name) == 0)
+      return i;
+  return -1;
+}
 
-#define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
+int wifi_event_idx_by_id (const event_desc_t *table, unsigned n, system_event_id_t id)
+{
+  for (unsigned i = 0; i < n; ++i)
+    if (table[i].event_id == id)
+      return i;
+  return -1;
+}
 
-int wifi_event_idx_by_name (const event_desc_t *table, unsigned n, const char *name);
-int wifi_event_idx_by_id (const event_desc_t *table, unsigned n, system_event_id_t id);
+int wifi_on (lua_State *L, const event_desc_t *table, unsigned n, int *event_cb)
+{
+  const char *event_name = luaL_checkstring (L, 1);
+  if (!lua_isnoneornil (L, 2))
+    luaL_checkanyfunction (L, 2);
+  lua_settop (L, 2);
 
-int wifi_on (lua_State *L, const event_desc_t *table, unsigned n, int *event_cb);
+  int idx = wifi_event_idx_by_name (table, n, event_name);
+  if (idx < 0)
+    return luaL_error (L, "unknown event: %s", event_name);
 
-#endif
+  luaL_unref (L, LUA_REGISTRYINDEX, event_cb[idx]);
+  event_cb[idx] = lua_isnoneornil (L, 2) ?
+    LUA_NOREF : luaL_ref (L, LUA_REGISTRYINDEX);
+
+  return 0;
+}
+ 

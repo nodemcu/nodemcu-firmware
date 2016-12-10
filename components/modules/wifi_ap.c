@@ -34,13 +34,92 @@
 #include "lauxlib.h"
 #include "lextra.h"
 #include "wifi_common.h"
-#include "esp_wifi.h"
+#include "ip_fmt.h"
+#include "nodemcu_esp_event.h"
 #include <string.h>
 
 
 #define DEFAULT_AP_CHANNEL 11
 #define DEFAULT_AP_MAXCONNS 4
 #define DEFAULT_AP_BEACON 100
+
+// --- Event handling ----------------------------------------------------
+static void ap_staconn (lua_State *L, const system_event_t *evt);
+static void ap_stadisconn (lua_State *L, const system_event_t *evt);
+static void ap_probe_req (lua_State *L, const system_event_t *evt);
+static void empty_arg (lua_State *L, const system_event_t *evt) {}
+
+static const event_desc_t events[] =
+{
+  { "start",             SYSTEM_EVENT_AP_START,            empty_arg     },
+  { "stop",              SYSTEM_EVENT_AP_STOP,             empty_arg     },
+  { "sta_connected",     SYSTEM_EVENT_AP_STACONNECTED,     ap_staconn    },
+  { "sta_disconnected",  SYSTEM_EVENT_AP_STADISCONNECTED,  ap_stadisconn },
+  { "probe_req",         SYSTEM_EVENT_AP_PROBEREQRECVED,   ap_probe_req  }
+};
+
+static int event_cb[ARRAY_LEN(events)];
+
+static void ap_staconn (lua_State *L, const system_event_t *evt)
+{
+  char mac[MAC_STR_SZ];
+  macstr (mac, evt->event_info.sta_connected.mac);
+  lua_pushstring (L, mac);
+  lua_setfield (L, -2, "mac");
+
+  lua_pushinteger (L, evt->event_info.sta_connected.aid);
+  lua_setfield (L, -2, "id");
+}
+
+static void ap_stadisconn (lua_State *L, const system_event_t *evt)
+{
+  char mac[MAC_STR_SZ];
+  macstr (mac, evt->event_info.sta_disconnected.mac);
+  lua_pushstring (L, mac);
+  lua_setfield (L, -2, "mac");
+
+  lua_pushinteger (L, evt->event_info.sta_disconnected.aid);
+  lua_setfield (L, -2, "id");
+}
+
+static void ap_probe_req (lua_State *L, const system_event_t *evt)
+{
+  char str[MAC_STR_SZ];
+  macstr (str, evt->event_info.ap_probereqrecved.mac);
+  lua_pushstring (L, str);
+  lua_setfield (L, -2, "from");
+
+  lua_pushinteger (L, evt->event_info.ap_probereqrecved.rssi);
+  lua_setfield (L, -2, "rssi");
+}
+
+static void on_event (const system_event_t *evt)
+{
+  int idx = wifi_event_idx_by_id (events, ARRAY_LEN(events), evt->event_id);
+  if (idx < 0 || event_cb[idx] == LUA_NOREF)
+    return;
+
+  lua_State *L = lua_getstate ();
+  lua_rawgeti (L, LUA_REGISTRYINDEX, event_cb[idx]);
+  lua_pushstring (L, events[idx].name);
+  lua_createtable (L, 0, 5);
+  events[idx].fill_cb_arg (L, evt);
+  lua_call (L, 2, 0);
+}
+
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_AP_START,            on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_AP_STOP,             on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_AP_STACONNECTED,     on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_AP_STADISCONNECTED,  on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_AP_PROBEREQRECVED,   on_event);
+
+void wifi_ap_init (void)
+{
+  for (unsigned i = 0; i < ARRAY_LEN(event_cb); ++i)
+    event_cb[i] = LUA_NOREF;
+}
+
+// --- Lua API funcs -----------------------------------------------------
 
 static int wifi_ap_config (lua_State *L)
 {
@@ -89,9 +168,16 @@ static int wifi_ap_config (lua_State *L)
 }
 
 
+static int wifi_ap_on (lua_State *L)
+{
+  return wifi_on (L, events, ARRAY_LEN(events), event_cb);
+}
+
+
 const LUA_REG_TYPE wifi_ap_map[] =
 {
   { LSTRKEY( "config" ),              LFUNCVAL( wifi_ap_config )        },
+  { LSTRKEY( "on" ),                  LFUNCVAL( wifi_ap_on )            },
 
   { LSTRKEY( "AUTH_OPEN" ),           LNUMVAL( WIFI_AUTH_OPEN )         },
   { LSTRKEY( "AUTH_WEP" ),            LNUMVAL( WIFI_AUTH_WEP )          },

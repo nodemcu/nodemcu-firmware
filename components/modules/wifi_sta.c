@@ -37,10 +37,120 @@
 #include "nodemcu_esp_event.h"
 #include "wifi_common.h"
 #include "ip_fmt.h"
-#include "esp_wifi.h"
+#include "nodemcu_esp_event.h"
 #include <string.h>
 
 static int scan_cb_ref = LUA_NOREF;
+
+// --- Event handling -----------------------------------------------------
+
+static void sta_conn (lua_State *L, const system_event_t *evt);
+static void sta_disconn (lua_State *L, const system_event_t *evt);
+static void sta_authmode (lua_State *L, const system_event_t *evt);
+static void sta_got_ip (lua_State *L, const system_event_t *evt);
+static void empty_arg (lua_State *L, const system_event_t *evt) {}
+
+static const event_desc_t events[] =
+{
+  { "start",            SYSTEM_EVENT_STA_START,           empty_arg     },
+  { "stop",             SYSTEM_EVENT_STA_STOP,            empty_arg     },
+  { "connected",        SYSTEM_EVENT_STA_CONNECTED,       sta_conn      },
+  { "disconnected",     SYSTEM_EVENT_STA_DISCONNECTED,    sta_disconn   },
+  { "authmode_changed", SYSTEM_EVENT_STA_AUTHMODE_CHANGE, sta_authmode  },
+  { "got_ip",           SYSTEM_EVENT_STA_GOT_IP,          sta_got_ip    },
+};
+
+#define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
+static int event_cb[ARRAY_LEN(events)];
+
+static void sta_conn (lua_State *L, const system_event_t *evt)
+{
+  lua_pushlstring (L,
+    (const char *)evt->event_info.connected.ssid,
+    evt->event_info.connected.ssid_len);
+  lua_setfield (L, -2, "ssid");
+
+  char bssid_str[MAC_STR_SZ];
+  macstr (bssid_str, evt->event_info.connected.bssid);
+  lua_pushstring (L, bssid_str);
+  lua_setfield (L, -2, "bssid");
+
+  lua_pushinteger (L, evt->event_info.connected.channel);
+  lua_setfield (L, -2, "channel");
+
+  lua_pushinteger (L, evt->event_info.connected.authmode);
+  lua_setfield (L, -2, "auth");
+}
+
+static void sta_disconn (lua_State *L, const system_event_t *evt)
+{
+  lua_pushlstring (L,
+    (const char *)evt->event_info.disconnected.ssid,
+    evt->event_info.disconnected.ssid_len);
+  lua_setfield (L, -2, "ssid");
+
+  char bssid_str[MAC_STR_SZ];
+  macstr (bssid_str, evt->event_info.disconnected.bssid);
+  lua_pushstring (L, bssid_str);
+  lua_setfield (L, -2, "bssid");
+
+  lua_pushinteger (L, evt->event_info.disconnected.reason);
+  lua_setfield (L, -2, "reason");
+}
+
+static void sta_authmode (lua_State *L, const system_event_t *evt)
+{
+  lua_pushinteger (L, evt->event_info.auth_change.old_mode);
+  lua_setfield (L, -2, "old_mode");
+  lua_pushinteger (L, evt->event_info.auth_change.new_mode);
+  lua_setfield (L, -2, "new_mode");
+}
+
+static void sta_got_ip (lua_State *L, const system_event_t *evt)
+{
+  char ipstr[IP_STR_SZ] = { 0 };
+  ip4str (ipstr, &evt->event_info.got_ip.ip_info.ip);
+  lua_pushstring (L, ipstr);
+  lua_setfield (L, -2, "ip");
+
+  ip4str (ipstr, &evt->event_info.got_ip.ip_info.netmask);
+  lua_pushstring (L, ipstr);
+  lua_setfield (L, -2, "netmask");
+
+  ip4str (ipstr, &evt->event_info.got_ip.ip_info.gw);
+  lua_pushstring (L, ipstr);
+  lua_setfield (L, -2, "gw");
+}
+
+static void on_event (const system_event_t *evt)
+{
+  int idx = wifi_event_idx_by_id (events, ARRAY_LEN(events), evt->event_id);
+  if (idx < 0 || event_cb[idx] == LUA_NOREF)
+    return;
+
+  lua_State *L = lua_getstate ();
+  lua_rawgeti (L, LUA_REGISTRYINDEX, event_cb[idx]);
+  lua_pushstring (L, events[idx].name);
+  lua_createtable (L, 0, 5);
+  events[idx].fill_cb_arg (L, evt);
+  lua_call (L, 2, 0);
+}
+
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_START,           on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_STOP,            on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_CONNECTED,       on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_DISCONNECTED,    on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_AUTHMODE_CHANGE, on_event);
+NODEMCU_ESP_EVENT(SYSTEM_EVENT_STA_GOT_IP,          on_event);
+
+void wifi_sta_init (void)
+{
+  for (unsigned i = 0; i < ARRAY_LEN(event_cb); ++i)
+    event_cb[i] = LUA_NOREF;
+}
+
+
+// --- Helper functions -----------------------------------------------------
 
 
 static void do_connect (const system_event_t *evt)
@@ -49,6 +159,8 @@ static void do_connect (const system_event_t *evt)
   esp_wifi_connect ();
 }
 
+
+// --- Lua API functions ----------------------------------------------------
 
 static int wifi_sta_config (lua_State *L)
 {
@@ -226,6 +338,11 @@ static void on_scan_done (const system_event_t *evt)
 }
 
 
+static int wifi_sta_on (lua_State *L)
+{
+  return wifi_on (L, events, ARRAY_LEN(events), event_cb);
+}
+
 static int wifi_sta_scan (lua_State *L)
 {
   if (scan_cb_ref != LUA_NOREF)
@@ -259,6 +376,7 @@ const LUA_REG_TYPE wifi_sta_map[] = {
   { LSTRKEY( "connect" ),     LFUNCVAL( wifi_sta_connect )    },
   { LSTRKEY( "disconnect" ),  LFUNCVAL( wifi_sta_disconnect ) },
   { LSTRKEY( "getconfig" ),   LFUNCVAL( wifi_sta_getconfig )  },
+  { LSTRKEY( "on" ),          LFUNCVAL( wifi_sta_on )         },
   { LSTRKEY( "scan" ),        LFUNCVAL( wifi_sta_scan )       },
 
   { LNILKEY, LNILVAL }
