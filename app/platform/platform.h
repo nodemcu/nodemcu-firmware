@@ -7,6 +7,7 @@
 
 #include "c_types.h"
 #include "driver/pwm.h"
+#include "driver/uart.h"
 #include "task/task.h"
 
 // Error / status codes
@@ -161,7 +162,7 @@ int platform_s_uart_recv( unsigned id, timer_data_type timeout );
 int platform_uart_set_flow_control( unsigned id, int type );
 int platform_s_uart_set_flow_control( unsigned id, int type );
 void platform_uart_alt( int set );
-int platform_uart_get_baudrate(unsigned id);
+void platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp);
 
 // *****************************************************************************
 // PWM subsection
