@@ -467,6 +467,79 @@ static int node_osprint( lua_State* L )
   return 0;  
 }
 
+int node_random_range(int l, int u) {
+  // The range is the number of different values to return
+  unsigned int range = u + 1 - l;
+
+  // If this is very large then use simpler code
+  if (range >= 0x7fffffff) {
+    unsigned int v;
+
+    // This cannot loop more than half the time
+    while ((v = os_random()) >= range) {
+    }
+
+    // Now v is in the range [0, range)
+    return v + l;
+  }
+
+  // Easy case, with only one value, we know the result
+  if (range == 1) {
+    return l;
+  }
+
+  // Another easy case -- uniform 32-bit
+  if (range == 0) {
+    return os_random();
+  }
+
+  // Now we have to figure out what a large multiple of range is
+  // that just fits into 32 bits.
+  // The limit will be less than 1 << 32 by some amount (not much)
+  uint32_t limit = ((0x80000000 / ((range + 1) >> 1)) - 1) * range;
+
+  uint32_t v;
+
+  while ((v = os_random()) >= limit) {
+  }
+
+  // Now v is uniformly distributed in [0, limit) and limit is a multiple of range
+
+  return (v % range) + l;
+}
+
+static int node_random (lua_State *L) {
+  int u;
+  int l;
+
+  switch (lua_gettop(L)) {  /* check number of arguments */
+    case 0: {  /* no arguments */
+#ifdef LUA_NUMBER_INTEGRAL
+      lua_pushnumber(L, 0);  /* Number between 0 and 1 - always 0 with ints */
+#else
+      lua_pushnumber(L, (lua_Number)os_random() / (lua_Number)(1LL << 32));
+#endif
+      return 1;
+    }
+    case 1: {  /* only upper limit */
+      l = 1;
+      u = luaL_checkint(L, 1);
+      break;
+    }
+    case 2: {  /* lower and upper limits */
+      l = luaL_checkint(L, 1);
+      u = luaL_checkint(L, 2);
+      break;
+    }
+    default: 
+      return luaL_error(L, "wrong number of arguments");
+  }
+  luaL_argcheck(L, l<=u, 2, "interval is empty");
+  lua_pushnumber(L, node_random_range(l, u));  /* int between `l' and `u' */
+  return 1;
+}
+
+
 // Module function map
 
 static const LUA_REG_TYPE node_egc_map[] = {
@@ -504,6 +577,7 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
+  { LSTRKEY( "random" ), LFUNCVAL( node_random) },
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
 #endif
