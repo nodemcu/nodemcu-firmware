@@ -110,7 +110,10 @@ Four values as follows:
 #### Example
 ```lua
 print (uart.check(0))
+-- prints 9600 8 0 1   for 9600, 8N1
 ```
+
+
 
 ## uart.write()
 
