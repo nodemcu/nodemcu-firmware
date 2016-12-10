@@ -396,10 +396,10 @@ static inline void rtc_time_add_sleep_tracking(uint32_t us, uint32_t cycles)
   }
 }
 
+extern void rtc_time_enter_deep_sleep_final(void);
+
 static void rtc_time_enter_deep_sleep_us(uint32_t us)
 {
-  ets_intr_lock();
-
   if (rtc_time_check_wake_magic())
     rtc_time_set_sleep_magic();
 
@@ -439,8 +439,7 @@ static void rtc_time_enter_deep_sleep_us(uint32_t us)
   rtc_reg_write(0x44,32);
   rtc_reg_write(0x10,0);
 
-  rtc_reg_write(0x18,8);
-  rtc_reg_write_and_loop(0x08,0x00100000); //  go to sleep
+  rtc_time_enter_deep_sleep_final();
 }
 
 static inline void rtc_time_deep_sleep_us(uint32_t us)
