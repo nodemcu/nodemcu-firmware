@@ -114,8 +114,8 @@ static int l_uart_setup( lua_State* L )
   return 1;
 }
 
-// uart.check(id)
-static int l_uart_check( lua_State* L )
+// uart.getconfig(id)
+static int l_uart_getconfig( lua_State* L )
 {
   uint32_t id, databits, parity, stopbits;
   uint32_t baud;
@@ -176,7 +176,7 @@ static int l_uart_write( lua_State* L )
 // Module function map
 static const LUA_REG_TYPE uart_map[] =  {
   { LSTRKEY( "setup" ), LFUNCVAL( l_uart_setup ) },
-  { LSTRKEY( "check" ), LFUNCVAL( l_uart_check ) },
+  { LSTRKEY( "getconfig" ), LFUNCVAL( l_uart_getconfig ) },
   { LSTRKEY( "write" ), LFUNCVAL( l_uart_write ) },
   { LSTRKEY( "on" ),    LFUNCVAL( l_uart_on ) },
   { LSTRKEY( "alt" ),   LFUNCVAL( l_uart_alt ) },

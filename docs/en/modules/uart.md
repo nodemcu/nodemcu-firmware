@@ -89,12 +89,12 @@ configured baud rate (number)
 uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1, 1)
 ```
 
-## uart.check()
+## uart.getconfig()
 
 Returns the current configuration parameters of the UART. 
 
 #### Syntax
-`uart.check(id)`
+`uart.getconfig(id)`
 
 #### Parameters
 - `id` always zero, only one uart supported
@@ -109,7 +109,7 @@ Four values as follows:
 
 #### Example
 ```lua
-print (uart.check(0))
+print (uart.getconfig(0))
 -- prints 9600 8 0 1   for 9600, 8N1
 ```
 
