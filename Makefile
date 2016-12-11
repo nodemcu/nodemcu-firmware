@@ -3,21 +3,19 @@
 .NOTPARALLEL:
 
 # SDK version NodeMCU is locked to
-SDK_VER:=1.5.4.1
+SDK_VER:=2.0.0
 
 # no patch: SDK_BASE_VER equals SDK_VER and sdk dir depends on sdk_extracted
-#SDK_BASE_VER:=SDK_VER
-#SDK_DIR_DEPENDS:=sdk_extracted
+SDK_BASE_VER:=$(SDK_VER)
+SDK_DIR_DEPENDS:=sdk_extracted
 # with patch: SDK_BASE_VER differs from SDK_VER and sdk dir depends on sdk_patched
-SDK_BASE_VER:=1.5.4
-SDK_DIR_DEPENDS:=sdk_patched
+#SDK_BASE_VER:=1.5.4
+#SDK_DIR_DEPENDS:=sdk_patched
 
-SDK_FILE_VER:=$(SDK_BASE_VER)_16_05_20
-SDK_FILE_ID:=1469
-SDK_FILE_SHA1:=868784bd37d47f31d52b81f133aa1fb70c58e17d
-SDK_PATCH_VER:=$(SDK_VER)_patch_20160704
-SDK_PATCH_ID:=1572
-SDK_PATCH_SHA1:=388d9e91df74e3b49fca126da482cf822cf1ebf1
+SDK_FILE_VER:=$(SDK_BASE_VER)_16_08_10
+SDK_FILE_SHA1:=b0127a99b45b3778be4a752387ab8dc0f6dd7810
+#SDK_PATCH_VER:=$(SDK_VER)_patch_20160704
+#SDK_PATCH_SHA1:=388d9e91df74e3b49fca126da482cf822cf1ebf1
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
@@ -221,12 +219,12 @@ $(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VE
 
 $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@ || { rm -f "$@"; exit 1; }
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://espressif.com/sites/default/files/sdks/esp8266_nonos_sdk_v$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VER).zip:
 	mkdir -p "$(dir $@)"
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://bbs.espressif.com/download/file.php?id=$(SDK_PATCH_ID) -O $@ || { rm -f "$@"; exit 1; }
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://espressif.com/sites/default/files/sdks/esp8266_nonos_sdk_v$(SDK_PATCH_VER).zip -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_PATCH_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 clean:

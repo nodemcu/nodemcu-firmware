@@ -231,7 +231,7 @@ tcp_pbuf_prealloc(pbuf_layer layer, u16_t length, u16_t max_length,
   LWIP_UNUSED_ARG(apiflags);
   LWIP_UNUSED_ARG(first_seg);
   /* always create MSS-sized pbufs */
-  alloc = TCP_MSS;
+  alloc = pcb->mss;		//TCP_MSS;
 #else /* LWIP_NETIF_TX_SINGLE_PBUF */
   if (length < max_length) {
     /* Should we allocate an oversized pbuf, or just the minimum
@@ -420,8 +420,8 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
 
   /* Find the tail of the unsent queue. */
   if (pcb->unsent != NULL) {
-    u16_t space;
-    u16_t unsent_optlen;
+    u16_t space = 0;
+    u16_t unsent_optlen = 0;
 
     /* @todo: this could be sped up by keeping last_unsent in the pcb */
     for (last_unsent = pcb->unsent; last_unsent->next != NULL;
@@ -457,7 +457,11 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
     LWIP_ASSERT("inconsistend oversize vs. len", (oversize == 0) || (pos == len));
 #endif /* TCP_OVERSIZE */
 
-    /*
+    if (pos > len) {
+      return ERR_MEM;
+    }
+
+   /*
      * Phase 2: Chain a new pbuf to the end of pcb->unsent.
      *
      * We don't extend segments containing SYN/FIN flags or options
@@ -955,7 +959,8 @@ tcp_output(struct tcp_pcb *pcb)
   /* data available and window allows it to be sent? 
     *��ǰ��Ч�������?�ķ��ͣ�ѭ�����ͱ��ģ�ֱ�������*/
   while (seg != NULL &&
-         ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd) {
+         ntohl(seg->tcphdr->seqno) - pcb->lastack + seg->len <= wnd
+		 && (seg->p->ref<2) ) {
     LWIP_ASSERT("RST not expected here!", 
                 (TCPH_FLAGS(seg->tcphdr) & TCP_RST) == 0);
     /* Stop sending if the nagle algorithm would prevent it
@@ -1290,6 +1295,7 @@ tcp_rexmit_rto(struct tcp_pcb *pcb)
   /* unacked queue is now empty */
   pcb->unacked = NULL;
 #endif
+  /* last unsent hasn't changed, no need to reset unsent_oversize */
 
   /* increment number of retransmissions */
   ++pcb->nrtx;

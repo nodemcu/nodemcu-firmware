@@ -99,6 +99,13 @@ Steve Reynolds
 static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #endif
 
+//#define DYC_IGMP_DEBUG
+#ifdef DYC_IGMP_DEBUG
+#define IGMP_LOG		os_printf
+#else
+#define IGMP_LOG		//os_printf
+#endif
+
 /* 
  * IGMP constants
  */
@@ -149,7 +156,7 @@ static err_t  igmp_ip_output_if(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
 static void   igmp_send(struct igmp_group *group, u8_t type)ICACHE_FLASH_ATTR;
 
 
-static struct igmp_group* igmp_group_list;
+static struct igmp_group* igmp_group_list = NULL;
 static ip_addr_t     allsystems;
 static ip_addr_t     allrouters;
 
@@ -166,22 +173,29 @@ igmp_init(void)
   IP4_ADDR(&allrouters, 224, 0, 0, 2);
 }
 
-#ifdef LWIP_DEBUG
+//#ifdef LWIP_DEBUG
+#ifdef DYC_IGMP_DEBUG
 /**
  * Dump global IGMP groups list
  */
 void
 igmp_dump_group_list()
 { 
-  struct igmp_group *group = igmp_group_list;
-
-  while (group != NULL) {
-    LWIP_DEBUGF(IGMP_DEBUG, ("igmp_dump_group_list: [%"U32_F"] ", (u32_t)(group->group_state)));
-    ip_addr_debug_print(IGMP_DEBUG, &group->group_address);
-    LWIP_DEBUGF(IGMP_DEBUG, (" on if %p\n", group->netif));
-    group = group->next;
-  }
-  LWIP_DEBUGF(IGMP_DEBUG, ("\n"));
+	struct igmp_group *group = igmp_group_list;
+	IGMP_LOG("igmp_dump:\n");
+	
+	while (group != NULL) {
+		LWIP_DEBUGF(IGMP_DEBUG, ("igmp_dump_group_list: [%"U32_F"] ", (u32_t)(group->group_state)));
+		ip_addr_debug_print(IGMP_DEBUG, &group->group_address);
+		LWIP_DEBUGF(IGMP_DEBUG, (" on if %p\n", group->netif));
+		
+		if(group!=NULL)
+			IGMP_LOG("group:%p,netif:%p\n",group,group->netif);
+		
+		group = group->next;
+	}
+	LWIP_DEBUGF(IGMP_DEBUG, ("\n"));
+	IGMP_LOG("\n");
 }
 #else
 #define igmp_dump_group_list()
@@ -236,6 +250,9 @@ igmp_stop(struct netif *netif)
     next = group->next;
     /* is it a group joined on this interface? */
     if (group->netif == netif) {
+
+		IGMP_LOG("stop igmp:%p,%p,",group,group->netif);
+
       /* is it the first group of the list? */
       if (group == igmp_group_list) {
         igmp_group_list = next;
@@ -253,6 +270,9 @@ igmp_stop(struct netif *netif)
       }
       /* free group */
       memp_free(MEMP_IGMP_GROUP, group);
+
+igmp_dump_group_list();
+
     } else {
       /* change the "previous" */
       prev = group;
@@ -339,14 +359,14 @@ igmp_lookup_group(struct netif *ifp, ip_addr_t *addr)
     group->last_reporter_flag = 0;
     group->use                = 0;
     group->next               = igmp_group_list;
-    
+
     igmp_group_list = group;
   }
-
+	IGMP_LOG("add igmp:%p,%p,",group,group->netif);
   LWIP_DEBUGF(IGMP_DEBUG, ("igmp_lookup_group: %sallocated a new group with address ", (group?"":"impossible to ")));
   ip_addr_debug_print(IGMP_DEBUG, addr);
   LWIP_DEBUGF(IGMP_DEBUG, (" on if %p\n", ifp));
-
+	igmp_dump_group_list();
   return group;
 }
 
@@ -360,7 +380,7 @@ static err_t
 igmp_remove_group(struct igmp_group *group)
 {
   err_t err = ERR_OK;
-
+	IGMP_LOG("rmv igmp:%p,%p,",group,group->netif);
   /* Is it the first group? */
   if (igmp_group_list == group) {
     igmp_group_list = group->next;
@@ -380,6 +400,7 @@ igmp_remove_group(struct igmp_group *group)
   /* free group */
   memp_free(MEMP_IGMP_GROUP, group);
 
+igmp_dump_group_list();
   return err;
 }
 
@@ -707,6 +728,9 @@ igmp_start_timer(struct igmp_group *group, u8_t max_time)
     max_time = 1;
   }
   /* ensure the random value is > 0 */
+if(max_time == 1)
+  group->timer = 1;
+else
   group->timer = (LWIP_RAND() % (max_time - 1)) + 1;
 }
 

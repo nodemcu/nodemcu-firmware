@@ -6,7 +6,6 @@
 typedef long long int64_t;
 typedef int8_t  sint8_t;
 typedef int16_t sint16_t;
-typedef int32_t sint32_t;
 typedef int64_t sint64_t;
 
 #endif

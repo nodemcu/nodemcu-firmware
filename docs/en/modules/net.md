@@ -5,15 +5,9 @@
 
 **SSL/TLS support**
 
-Secure connections use **TLS 1.1** with the following cipher suites:
+NodeMCU includes [mbedTLS library](https://tls.mbed.org/). With default config it supports **TLS** 1.0 / 1.1 / 1.2 and most common cipher suites, including DH/ECDH key exchange methods.
 
-- `TLS_RSA_WITH_AES_128_CBC_SHA`
-- `TLS_RSA_WITH_AES_256_CBC_SHA`
-- `TLS_RSA_WITH_RC4_128_SHA`
-- `TLS_RSA_WITH_RC4_128_MD5`
-
-This specification is imposed by the [axTLS library](http://axtls.sourceforge.net/specifications.htm) used by the SDK. 
-
+Full list of features you may get on [mbedTLS page](https://tls.mbed.org/core-features).
 
 ## Constants
 Constants to be used in other functions: `net.TCP`, `net.UDP`
