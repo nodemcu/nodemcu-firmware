@@ -356,3 +356,18 @@ uart_setup(uint8 uart_no)
 void ICACHE_FLASH_ATTR uart_set_alt_output_uart0(void (*fn)(char)) {
   alt_uart0_tx = fn;
 }
+
+UartConfig ICACHE_FLASH_ATTR uart_get_config(uint8 uart_no) {
+  UartConfig config;
+
+  config.baut_rate = UART_CLK_FREQ / READ_PERI_REG(UART_CLKDIV(uart_no));
+
+  uint32_t conf = READ_PERI_REG(UART_CONF0(uart_no));
+
+  config.exist_parity = (conf >> UART_PARITY_EN_S)    & UART_PARITY_EN_M;
+  config.parity       = (conf >> UART_PARITY_S)       & UART_PARITY_M;
+  config.stop_bits    = (conf >> UART_STOP_BIT_NUM_S) & UART_STOP_BIT_NUM;
+  config.data_bits    = (conf >> UART_BIT_NUM_S)      & UART_BIT_NUM;
+
+  return config;
+}

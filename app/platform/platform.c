@@ -32,6 +32,26 @@ static struct gpio_hook platform_gpio_hook;
 #endif
 #endif
 
+static const int uart_bitrates[] = {
+    BIT_RATE_300,
+    BIT_RATE_600,
+    BIT_RATE_1200,
+    BIT_RATE_2400,
+    BIT_RATE_4800,
+    BIT_RATE_9600,
+    BIT_RATE_19200,
+    BIT_RATE_38400,
+    BIT_RATE_57600,
+    BIT_RATE_74880,
+    BIT_RATE_115200,
+    BIT_RATE_230400,
+    BIT_RATE_256000,
+    BIT_RATE_460800,
+    BIT_RATE_921600,
+    BIT_RATE_1843200,
+    BIT_RATE_3686400
+};
+
 int platform_init()
 {
   // Setup the various forward and reverse mappings for the pins
@@ -408,6 +428,64 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   uart_setup(id);
 
   return baud;
+}
+
+void platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp) {
+  UartConfig config =  uart_get_config(id);
+  int i;
+
+  int offset = config.baut_rate;
+
+  for (i = 0; i < sizeof(uart_bitrates) / sizeof(uart_bitrates[0]); i++) {
+    int diff = config.baut_rate - uart_bitrates[i];
+
+    if (diff < 0) {
+      diff = -diff;
+    }
+
+    if (diff < offset) {
+       offset = diff;
+       *baudp = uart_bitrates[i];
+    }
+  }
+
+  switch( config.data_bits )
+  {
+    case FIVE_BITS:
+      *databitsp = 5;
+      break;
+    case SIX_BITS:
+      *databitsp = 6;
+      break;
+    case SEVEN_BITS:
+      *databitsp = 7;
+      break;
+    case EIGHT_BITS:
+    default:
+      *databitsp = 8;
+      break;
+  }
+
+  switch (config.stop_bits)
+  {
+    case ONE_HALF_STOP_BIT:
+      *stopbitsp = PLATFORM_UART_STOPBITS_1_5;
+      break;
+    case TWO_STOP_BIT:
+      *stopbitsp = PLATFORM_UART_STOPBITS_2;
+      break;
+    default:
+      *stopbitsp = PLATFORM_UART_STOPBITS_1;
+      break;
+  }
+
+  if (config.exist_parity == STICK_PARITY_DIS) {
+    *parityp = PLATFORM_UART_PARITY_NONE;
+  } else if (config.parity == EVEN_BITS) {
+    *parityp = PLATFORM_UART_PARITY_EVEN;
+  } else {
+    *parityp = PLATFORM_UART_PARITY_ODD;
+  }
 }
 
 // if set=1, then alternate serial output pins are used. (15=rx, 13=tx)
