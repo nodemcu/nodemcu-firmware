@@ -27,7 +27,7 @@ bool uart_on_data_cb(const char *buf, size_t len){
 uint16_t need_len = 0;
 int16_t end_char = -1;
 // Lua: uart.on("method", [number/char], function, [run_input])
-static int uart_on( lua_State* L )
+static int l_uart_on( lua_State* L )
 {
   size_t sl, el;
   int32_t run = 1;
@@ -89,13 +89,14 @@ static int uart_on( lua_State* L )
 
 bool uart0_echo = true;
 // Lua: actualbaud = setup( id, baud, databits, parity, stopbits, echo )
-static int uart_setup( lua_State* L )
+static int l_uart_setup( lua_State* L )
 {
-  unsigned id, databits, parity, stopbits, echo = 1;
-  u32 baud, res;
+  uint32_t id, databits, parity, stopbits, echo = 1;
+  uint32_t baud, res;
   
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
+
   baud = luaL_checkinteger( L, 2 );
   databits = luaL_checkinteger( L, 3 );
   parity = luaL_checkinteger( L, 4 );
@@ -113,8 +114,26 @@ static int uart_setup( lua_State* L )
   return 1;
 }
 
+// uart.getconfig(id)
+static int l_uart_getconfig( lua_State* L )
+{
+  uint32_t id, databits, parity, stopbits;
+  uint32_t baud;
+  
+  id = luaL_checkinteger( L, 1 );
+  MOD_CHECK_ID( uart, id );
+
+  platform_uart_get_config(id, &baud, &databits, &parity, &stopbits);
+
+  lua_pushinteger(L, baud);
+  lua_pushinteger(L, databits);
+  lua_pushinteger(L, parity);
+  lua_pushinteger(L, stopbits);
+  return 4;
+}
+
 // Lua: alt( set )
-static int uart_alt( lua_State* L )
+static int l_uart_alt( lua_State* L )
 {
   unsigned set;
   
@@ -125,7 +144,7 @@ static int uart_alt( lua_State* L )
 }
 
 // Lua: write( id, string1, [string2], ..., [stringn] )
-static int uart_write( lua_State* L )
+static int l_uart_write( lua_State* L )
 {
   int id;
   const char* buf;
@@ -156,10 +175,11 @@ static int uart_write( lua_State* L )
 
 // Module function map
 static const LUA_REG_TYPE uart_map[] =  {
-  { LSTRKEY( "setup" ), LFUNCVAL( uart_setup ) },
-  { LSTRKEY( "write" ), LFUNCVAL( uart_write ) },
-  { LSTRKEY( "on" ),    LFUNCVAL( uart_on ) },
-  { LSTRKEY( "alt" ),   LFUNCVAL( uart_alt ) },
+  { LSTRKEY( "setup" ), LFUNCVAL( l_uart_setup ) },
+  { LSTRKEY( "getconfig" ), LFUNCVAL( l_uart_getconfig ) },
+  { LSTRKEY( "write" ), LFUNCVAL( l_uart_write ) },
+  { LSTRKEY( "on" ),    LFUNCVAL( l_uart_on ) },
+  { LSTRKEY( "alt" ),   LFUNCVAL( l_uart_alt ) },
   { LSTRKEY( "STOPBITS_1" ),   LNUMVAL( PLATFORM_UART_STOPBITS_1 ) },
   { LSTRKEY( "STOPBITS_1_5" ), LNUMVAL( PLATFORM_UART_STOPBITS_1_5 ) },
   { LSTRKEY( "STOPBITS_2" ),   LNUMVAL( PLATFORM_UART_STOPBITS_2 ) },

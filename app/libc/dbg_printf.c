@@ -144,7 +144,7 @@ reswitch:	switch (ch = *fmt++) {
 }
 
 static void
-kprintn(void (*put)(const char), unsigned long ul, int base, int width, char padchar)
+kprintn(void (*put)(const char), uint32_t ul, int base, int width, char padchar)
 {
 					/* hold a long in base 8 */
 	char *p, buf[(sizeof(long) * 8 / 3) + 2];

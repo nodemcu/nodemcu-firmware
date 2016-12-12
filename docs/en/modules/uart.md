@@ -67,7 +67,7 @@ end, 0)
 
 ## uart.setup()
 
-(Re-)configures the communication parameters of the UART.
+(Re-)configures the communication parameters of the UART. 
 
 #### Syntax
 `uart.setup(id, baud, databits, parity, stopbits, echo)`
@@ -88,6 +88,32 @@ configured baud rate (number)
 -- configure for 9600, 8N1, with echo
 uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1, 1)
 ```
+
+## uart.getconfig()
+
+Returns the current configuration parameters of the UART. 
+
+#### Syntax
+`uart.getconfig(id)`
+
+#### Parameters
+- `id` always zero, only one uart supported
+
+#### Returns
+Four values as follows:
+
+- `baud` one of 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 74880, 115200, 230400, 256000, 460800, 921600, 1843200, 3686400
+- `databits` one of 5, 6, 7, 8
+- `parity` `uart.PARITY_NONE`, `uart.PARITY_ODD`, or `uart.PARITY_EVEN`
+- `stopbits` `uart.STOPBITS_1`, `uart.STOPBITS_1_5`, or `uart.STOPBITS_2`
+
+#### Example
+```lua
+print (uart.getconfig(0))
+-- prints 9600 8 0 1   for 9600, 8N1
+```
+
+
 
 ## uart.write()
 
