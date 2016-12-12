@@ -186,10 +186,16 @@
 #define CPU_DEFAULT_MHZ   80
 #define CPU_BOOTUP_MHZ    52
 
+#ifdef RTC_DEBUG_ENABLED
 #define RTC_DBG(...)         do { if (rtc_dbg_enabled == 'R') { dbg_printf(__VA_ARGS__); } } while (0)
 static bool rtc_dbg_enabled;
 #define RTC_DBG_ENABLED()   rtc_dbg_enabled = 'R'
 #define RTC_DBG_NOT_ENABLED()   rtc_dbg_enabled = 0
+#else
+#define RTC_DBG(...)
+#define RTC_DBG_ENABLED()
+#define RTC_DBG_NOT_ENABLED()
+#endif
 
 // RTCTIME storage
 #define RTC_TIME_MAGIC_POS       (RTC_TIME_BASE+0)
