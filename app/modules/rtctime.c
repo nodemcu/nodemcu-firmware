@@ -35,6 +35,14 @@ static int __isleap (int year) {
 }
 
 // ******* C API functions *************
+void __attribute__((noreturn)) TEXT_SECTION_ATTR rtc_time_enter_deep_sleep_final (void)
+{
+  ets_intr_lock();
+  Cache_Read_Disable();
+  rtc_reg_write(0x18,8);
+  rtc_reg_write_and_loop(0x08,0x00100000); //  go to sleep
+  __builtin_unreachable();
+}
 
 void rtctime_early_startup (void)
 {
