@@ -20,7 +20,10 @@ Creates a client.
 - `secure` 1 for encrypted, 0 for plain. Secure connections chained to [tls.createConnection()](tls#tlscreateconnection)
 
 #### Returns
-net.socket sub module
+
+- for `net.TCP` - net.socket sub module
+- for `net.UDP` - net.udpsocket sub module
+- for `net.TCP` with `secure` - tls.socket sub module
 
 #### Example
 
@@ -43,7 +46,9 @@ Creates a server.
 - `timeout` for a TCP server timeout is 1~28'800 seconds (for an inactive client to be disconnected)
 
 #### Returns
-net.server sub module
+
+- for `net.TCP` - net.server sub module
+- for `net.UDP` - net.udpsocket sub module
 
 #### Example
 
@@ -238,7 +243,7 @@ sk = nil
 
 ## net.socket:getpeer()
 
-Retrieve port and ip of peer.
+Retrieve port and ip of remote peer.
 
 #### Syntax
 `getpeer()`
@@ -247,22 +252,20 @@ Retrieve port and ip of peer.
 none
 
 #### Returns
-- `ip` of peer
-- `port` of peer
+`port`, `ip` (or `nil, nil` if not connected)
 
 ## net.socket:getaddr()
 
 Retrieve local port and ip of socket.
 
 #### Syntax
-`getpeer()`
+`getaddr()`
 
 #### Parameters
 none
 
 #### Returns
-- `ip` of socket
-- `port` of socket
+`port`, `ip` (or `nil, nil` if not connected)
 
 ## net.socket:hold()
 
@@ -307,7 +310,7 @@ Otherwise, all connection errors (with normal close) passed to disconnection eve
 ```lua
 srv = net.createConnection(net.TCP, 0)
 srv:on("receive", function(sck, c) print(c) end)
-srv:on("connection", function(sck, c)
+srv:on("connection", function(sck)
   -- Wait for connection before sending.
   sck:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 end)
@@ -423,7 +426,7 @@ The syntax and functional similar to [`net.server:listen()`](#netserverlisten), 
 
 Register callback functions for specific events.
 
-The syntax and functional similar to [`net.socket:on()`](#netsocketon), only "received", "sent" and "dns" events is valid.
+The syntax and functional similar to [`net.socket:on()`](#netsocketon), only "received", "sent" and "dns" events are valid.
 
 **`received` callback have `port` and `ip` after `data` argument.**
 
@@ -481,7 +484,7 @@ Resolve a hostname to an IP address. Doesn't require a socket like [`net.socket.
 
 #### Parameters
 - `host` hostname to resolve
-- `function(sk, ip)` callback called when the name was resolved. `sk` is always `nil` (kept for backward compatibility)
+- `function(sk, ip)` callback called when the name was resolved. `sk` is always `nil`
 
 #### Returns
 `nil`
