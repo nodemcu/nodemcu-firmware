@@ -5,6 +5,9 @@
 
 **SSL/TLS support**
 
+!!! important
+    TLS module requires [net](net.md) module.
+
 NodeMCU includes [mbedTLS library](https://tls.mbed.org/). With default config it supports **TLS** 1.0 / 1.1 / 1.2 and most common cipher suites, including DH/ECDH key exchange methods.
 
 Full list of features you may get on [mbedTLS page](https://tls.mbed.org/core-features).
