@@ -1,7 +1,7 @@
-# tls Module
+# TLS Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2016-07-04 | [PhoeniX](https://github.com/djphoenix) | [PhoeniX](https://github.com/djphoenix) | [tls.c](../../../app/modules/tls.c)|
+| 2016-12-15 | [PhoeniX](https://github.com/djphoenix) | [PhoeniX](https://github.com/djphoenix) | [tls.c](../../../app/modules/tls.c)|
 
 **SSL/TLS support**
 

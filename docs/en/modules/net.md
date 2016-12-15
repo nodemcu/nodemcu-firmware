@@ -1,9 +1,9 @@
 # net Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [net.c](../../../app/modules/net.c)|
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [PhoeniX](https://github.com/djphoenix) | [net.c](../../../app/modules/net.c)|
 
-** TLS operations moved to [tls](tls) module **
+** TLS operations was moved to the [TLS](tls.md) module **
 
 ## Constants
 Constants to be used in other functions: `net.TCP`, `net.UDP`
@@ -17,7 +17,7 @@ Creates a client.
 
 #### Parameters
 - `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
-- `secure` 1 for encrypted, 0 for plain. Secure connections chained to [tls.createConnection()](tls#tlscreateconnection)
+- `secure` 1 for encrypted, 0 for plain. Secure connections chained to [tls.createConnection()](tls.md#tlscreateconnection)
 
 #### Returns
 
@@ -32,7 +32,7 @@ net.createConnection(net.TCP, 0)
 ```
 
 #### See also
-[`net.createServer()`](#netcreateserver), [`net.createUDPSocket()`](#netcreateudpsocket), [`tls.createConnection()`](tls#tlscreateconnection)
+[`net.createServer()`](#netcreateserver), [`net.createUDPSocket()`](#netcreateudpsocket), [`tls.createConnection()`](tls.md#tlscreateconnection)
 
 ## net.createServer()
 
@@ -517,4 +517,4 @@ Sets the IP of the DNS server used to resolve hostnames. Default: resolver1.open
 
 # net.cert Module
 
-This part gone to [tls](tls) module, link kept for backward compatibility.
+This part gone to the [TLS](tls.md) module, link kept for backward compatibility.
