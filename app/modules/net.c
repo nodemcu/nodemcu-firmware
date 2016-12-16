@@ -18,6 +18,10 @@
 #include "lwip/tcp.h"
 #include "lwip/udp.h"
 
+#if defined(CLIENT_SSL_ENABLE) && defined(LUA_USE_MODULES_NET) && defined(LUA_USE_MODULES_TLS)
+#define TLS_MODULE_PRESENT
+#endif
+
 typedef enum net_type {
   TYPE_TCP_SERVER = 0,
   TYPE_TCP_CLIENT,
@@ -276,7 +280,9 @@ static err_t net_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 #pragma mark - Lua API - create
 
+#ifdef TLS_MODULE_PRESENT
 extern int tls_socket_create( lua_State *L );
+#endif
 
 // Lua: net.createUDPSocket()
 int net_createUDPSocket( lua_State *L ) {
@@ -309,7 +315,7 @@ int net_createConnection( lua_State *L ) {
   if (type == TYPE_UDP) return net_createUDPSocket( L );
   if (type != TYPE_TCP) return luaL_error(L, "invalid type");
   if (secure) {
-#ifdef CLIENT_SSL_ENABLE
+#ifdef TLS_MODULE_PRESENT
     return tls_socket_create( L );
 #else
     return luaL_error(L, "secure connections not enabled");
@@ -927,7 +933,9 @@ static int net_getdnsserver( lua_State* L ) {
 
 #pragma mark - Tables
 
+#ifdef TLS_MODULE_PRESENT
 extern const LUA_REG_TYPE tls_cert_map[];
+#endif
 
 // Module function map
 static const LUA_REG_TYPE net_tcpserver_map[] = {
@@ -980,7 +988,7 @@ static const LUA_REG_TYPE net_map[] = {
   { LSTRKEY( "multicastJoin"),     LFUNCVAL( net_multicastJoin ) },
   { LSTRKEY( "multicastLeave"),    LFUNCVAL( net_multicastLeave ) },
   { LSTRKEY( "dns" ),              LROVAL( net_dns_map ) },
-#ifdef CLIENT_SSL_ENABLE
+#ifdef TLS_MODULE_PRESENT
   { LSTRKEY( "cert" ),             LROVAL( tls_cert_map ) },
 #endif
   { LSTRKEY( "TCP" ),              LNUMVAL( TYPE_TCP ) },
