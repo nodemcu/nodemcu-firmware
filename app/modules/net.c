@@ -428,6 +428,12 @@ int net_connect( lua_State *L ) {
     size_t dl = 0;
     domain = luaL_checklstring(L, 3, &dl);
   }
+  if (lua_gettop(L) > 3) {
+    luaL_argcheck(L, lua_isfunction(L, 4) || lua_islightfunction(L, 4), 4, "not a function");
+    lua_pushvalue(L, 4);
+    luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_connect_ref);
+    ud->client.cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
   ud->tcp_pcb = tcp_new();
   if (!ud->tcp_pcb)
     return luaL_error(L, "cannot allocate PCB");
