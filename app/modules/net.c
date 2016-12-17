@@ -583,9 +583,6 @@ int net_hold( lua_State *L ) {
     return luaL_error(L, "invalid user data");
   if (!ud->client.hold && ud->tcp_pcb) {
 	ud->client.hold = 1;
-	ud->tcp_pcb->rcv_wnd = 0;
-	ud->tcp_pcb->flags |= TF_ACK_NOW;
-	tcp_recved(ud->tcp_pcb, 0);
   }
   return 0;
 }
@@ -597,9 +594,8 @@ int net_unhold( lua_State *L ) {
     return luaL_error(L, "invalid user data");
   if (ud->client.hold && ud->tcp_pcb) {
 	ud->client.hold = 0;
-	ud->tcp_pcb->rcv_wnd = TCP_WND;
 	ud->tcp_pcb->flags |= TF_ACK_NOW;
-	tcp_recved(ud->tcp_pcb, 0);
+    tcp_recved(ud->tcp_pcb, TCP_WND);
   }
   return 0;
 }
