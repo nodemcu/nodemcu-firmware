@@ -32,6 +32,8 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 - esptool.py is under heavy development. It's advised you run the latest version (check with `esptool.py version`). Since this documentation may not have been able to keep up refer to the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for current options and parameters.
 - In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
 `esptool.py --port <serial-port-of-ESP8266> erase_flash`
+- Modules with flash chips larger than 4&nbsp;MByte (e.g. WeMos D1 mini pro) need to be manually configured to at least 1&nbsp;MByte: Firmware image and SDK init data occupy the first MByte, while the remaining 7/15&nbsp;MByte of the flash are used for SPIFFS:
+`esptool.py --port <serial-port-of-ESP8266> write_flash -fm <mode> -fs 8m 0x00000 <nodemcu-firmware>.bin`
 
 ### NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
@@ -115,5 +117,3 @@ Device: 4016
 The chip ID can then be looked up in [https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h](https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h). This leads to a manufacturer name and a chip model name/number e.g. `AMIC_A25LQ032`. That information can then be fed into your favorite search engine to find chip descriptions and data sheets.
 
 By convention the last two or three digits in the module name denote the capacity in megabits. So, `A25LQ032` in the example above is a 32Mb(=4MB) module.
-
-Modules with flash chips larger than 4MB (e.g. WeMos D1 mini pro) are configured automatically to 1MB/15MB: Firmware image and SDK init data occupy the first 1MB, while the remaining 15MB of the flash are used for SPIFFS.
