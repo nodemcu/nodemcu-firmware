@@ -392,6 +392,10 @@ static void on_timeout (void *arg)
   sntp_dosend ();
 }
 
+static int32_t get_next_midnight(int32_t now) {
+  return now + 86400 - the_offset - (now - the_offset) % 86400;
+}
+
 static void update_offset()
 {
   // This may insert or remove an offset second -- i.e. a leap second
@@ -401,10 +405,14 @@ static void update_offset()
 
   if (pending_LI && using_offset) {
     rtctime_gettimeofday (&tv);
-    if (tv.tv_sec - the_offset >= next_midnight) {
-      next_midnight = tv.tv_sec + 86400 - the_offset - (tv.tv_sec - the_offset) % 86400;
+    sntp_dbg("Now=%d, next=%d\n", tv.tv_sec - the_offset, next_midnight);
+    if (next_midnight < 100000) {
+      next_midnight = get_next_midnight(tv.tv_sec);
+    } else if (tv.tv_sec - the_offset >= next_midnight) {
+      next_midnight = get_next_midnight(tv.tv_sec);
       // is this the first day of the month
-      int day = (tv.tv_sec - the_offset) / 86400 + 1975 * 365 + 1970 / 4 - 74;
+      // Number of days since 1/mar/0000
+      int day = (tv.tv_sec - the_offset) / 86400 + 1970 * 365 + 1970 / 4 - 19 + 4 - 31 - 28;
 
       int century = (4 * day + 3) / 146097;
       day = day - century * 146097 / 4;
@@ -412,6 +420,8 @@ static void update_offset()
       day = day - year * 1461 / 4;
       int month = (5 * day + 2) / 153;
       day = day - (153 * month + 2) / 5;
+
+      sntp_dbg("century=%d, year=%d, month=%d, day=%d\n", century, year, month + 3, day + 1);
 
       if (day == 0) {
         if (pending_LI == 1) {
@@ -545,11 +555,13 @@ static void on_recv (void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_a
 static int sntp_setoffset(lua_State *L)
 {
   the_offset = luaL_checkinteger(L, 1);
-  if (!using_offset) {
-    struct rtc_timeval tv;
-    rtctime_gettimeofday (&tv);
-    next_midnight = tv.tv_sec + 86400 - the_offset - (tv.tv_sec - the_offset) % 86400;
+
+  struct rtc_timeval tv;
+  rtctime_gettimeofday (&tv);
+  if (tv.tv_sec) {
+    next_midnight = get_next_midnight(tv.tv_sec);
   }
+
   using_offset = 1;
 
   return 0;
