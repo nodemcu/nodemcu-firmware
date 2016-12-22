@@ -124,13 +124,19 @@ static int crypto_mask( lua_State* L )
   int len, mask_len;
   const char* msg = luaL_checklstring(L, 1, &len);
   const char* mask = luaL_checklstring(L, 2, &mask_len);
+
+  if(mask_len <= 0)
+    return luaL_error(L, "invalid argument: mask");
+
   int i;
   char* copy = (char*)c_malloc(len);
+
   for (i = 0; i < len; i++) {
-    copy[i] = msg[i] ^ mask[i % 4];
+    copy[i] = msg[i] ^ mask[i % mask_len];
   }
   lua_pushlstring(L, copy, len);
   c_free(copy);
+
   return 1;
 }
 
