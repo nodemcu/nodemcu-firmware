@@ -282,8 +282,8 @@ Sets the WiFi station configuration.
 	- `ssid` string which is less than 32 bytes.
 	- `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
 	- `auto` defaults to true
-	- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
-	- `false` to disable auto connect and remain disconnected from access point
+		- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
+		- `false` to disable auto connect and remain disconnected from access point
 	- `bssid` string that contains the MAC address of the access point (optional)
 		- You can set BSSID if you have multiple access points with the same SSID.
 		- If you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
