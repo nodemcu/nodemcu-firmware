@@ -420,6 +420,11 @@ static void update_offset()
       next_midnight = get_next_midnight(tv.tv_sec);
       // is this the first day of the month
       // Number of days since 1/mar/0000
+      // 1970 * 365 is the number of days in full years
+      // 1970 / 4 is the number of leap days (ignoring century rules)
+      // 19 is the number of centuries
+      // 4 is the number of 400 years (where there was a leap day)
+      // 31 & 28 are the number of days in Jan 1970 and Feb 1970
       int day = (tv.tv_sec - the_offset) / 86400 + 1970 * 365 + 1970 / 4 - 19 + 4 - 31 - 28;
 
       int century = (4 * day + 3) / 146097;
@@ -429,6 +434,7 @@ static void update_offset()
       int month = (5 * day + 2) / 153;
       day = day - (153 * month + 2) / 5;
 
+      // Months 13 & 14 are really Jan and Feb in the following year.
       sntp_dbg("century=%d, year=%d, month=%d, day=%d\n", century, year, month + 3, day + 1);
 
       if (day == 0) {
