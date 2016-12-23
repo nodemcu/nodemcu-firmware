@@ -100,15 +100,15 @@ Note that the synchronous variant (no or nil `callback` parameter) function bloc
 #### Example
 ```lua
 gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
-gpio.serout(1,1,{30,30,60,60,30,30})  -- serial one byte, b10110010
-gpio.serout(1,1,{30,70},8)  -- serial 30% pwm 10k, lasts 8 cycles
-gpio.serout(1,1,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
-gpio.serout(1,1,{0,0},8)  -- serial 50% pwm as fast as possible, lasts 8 cycles
-gpio.serout(1,0,{20,10,10,20,10,10,10,100}) -- sim uart one byte 0x5A at about 100kbps
-gpio.serout(1,1,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
+gpio.serout(1,gpio.HIGH,{30,30,60,60,30,30})  -- serial one byte, b10110010
+gpio.serout(1,gpio.HIGH,{30,70},8)  -- serial 30% pwm 10k, lasts 8 cycles
+gpio.serout(1,gpio.HIGH,{3,7},8)  -- serial 30% pwm 100k, lasts 8 cycles
+gpio.serout(1,gpio.HIGH,{0,0},8)  -- serial 50% pwm as fast as possible, lasts 8 cycles
+gpio.serout(1,gpio.LOW,{20,10,10,20,10,10,10,100}) -- sim uart one byte 0x5A at about 100kbps
+gpio.serout(1,gpio.HIGH,{8,18},8) -- serial 30% pwm 38k, lasts 8 cycles
 
-gpio.serout(1,1,{5000,995000},100, function() print("done") end) -- asynchronous 100 flashes 5 ms long every second with a callback function when done
-gpio.serout(1,1,{5000,995000},100, 1) -- asynchronous 100 flashes 5 ms long, no callback
+gpio.serout(1,gpio.HIGH,{5000,995000},100, function() print("done") end) -- asynchronous 100 flashes 5 ms long every second with a callback function when done
+gpio.serout(1,gpio.HIGH,{5000,995000},100, 1) -- asynchronous 100 flashes 5 ms long, no callback
 ```
 
 ## gpio.trig()
