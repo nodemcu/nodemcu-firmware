@@ -279,21 +279,21 @@ Sets the WiFi station configuration.
 
 #### Parameters
 - `station_config` table containing configuration data for station
- - `ssid` string which is less than 32 bytes.
- - `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
- - `auto` defaults to true
+	- `ssid` string which is less than 32 bytes.
+	- `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
+	- `auto` defaults to true
 	- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
 	- `false` to disable auto connect and remain disconnected from access point
- - `bssid` string that contains the MAC address of the access point (optional)
-	- You can set BSSID if you have multiple access points with the same SSID.
- 	- Note: if you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
- 	- The following formats are valid:
-		- "DE:C1:A5:51:F1:ED"
-		- "AC-1D-1C-B1-0B-22"
-		- "DE AD BE EF 7A C0"
- - `save` Save station configuration to flash. 
-   - `true` configuration **will** be retained through power cycle. 
-   - `false` configuration **will not** be retained through power cycle. (Default)
+	- `bssid` string that contains the MAC address of the access point (optional)
+		- You can set BSSID if you have multiple access points with the same SSID.
+		- If you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
+		- The following formats are valid:
+			- "DE:C1:A5:51:F1:ED"
+			- "AC-1D-1C-B1-0B-22"
+			- "DE AD BE EF 7A C0"
+	- `save` Save station configuration to flash. 
+		- `true` configuration **will** be retained through power cycle. 
+		- `false` configuration **will not** be retained through power cycle. (Default)
 
 #### Returns
 - `true`  Success
@@ -999,16 +999,16 @@ Sets SSID and password in AP mode. Be sure to make the password at least 8 chara
 
 #### Parameters
 - `cfg` table to hold configuration
- - `ssid` SSID chars 1-32
- - `pwd` password chars 8-64
- - `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
- - `channel` channel number 1-14 default = 6
- - `hidden` false = not hidden, true = hidden, default = false
- - `max` maximum number of connections 1-4 default=4
- - `beacon` beacon interval time in range 100-60000, default = 100
- - `save` save configuration to flash.
-   - `true` configuration **will** be retained through power cycle. (Default)
-   - `false` configuration **will not** be retained through power cycle.
+	- `ssid` SSID chars 1-32
+	- `pwd` password chars 8-64
+	- `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
+	- `channel` channel number 1-14 default = 6
+	- `hidden` false = not hidden, true = hidden, default = false
+	- `max` maximum number of connections 1-4 default=4
+	- `beacon` beacon interval time in range 100-60000, default = 100
+	- `save` save configuration to flash.
+		- `true` configuration **will** be retained through power cycle. (Default)
+		- `false` configuration **will not** be retained through power cycle.
  
 
 #### Returns
