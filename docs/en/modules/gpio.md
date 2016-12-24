@@ -125,9 +125,11 @@ This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile
 - `type` "up", "down", "both", "low", "high", which represent *rising edge*, *falling edge*, *both 
 edges*, *low level*, and *high level* trigger modes respectivey. If the type is "none" or omitted 
 then the callback function is removed and the interrupt is disabled.
-- `callback_function(level)` callback function when trigger occurs. The level of the specified pin 
-at the interrupt passed as the parameter to the callback. The previous callback function will be 
-used if the function is omitted.
+- `callback_function(level, when)` callback function when trigger occurs. The level of the specified pin 
+at the interrupt passed as the first parameter to the callback. The timestamp of the event is passed
+as the second parameter. This is in microseconds and has the same base as for `tmr.now()`. This timestamp
+is grabbed at interrupt level and is more consistent than getting the time in the callback function.
+The previous callback function will be used if the function is omitted.
 
 #### Returns
 `nil`
@@ -139,8 +141,7 @@ do
   -- use pin 1 as the input pulse width counter
   local pin, pulse1, du, now, trig = 1, 0, 0, tmr.now, gpio.trig
   gpio.mode(pin,gpio.INT)
-  local function pin1cb(level)
-    local pulse2 = now()
+  local function pin1cb(level, pulse2)
     print( level, pulse2 - pulse1 )
     pulse1 = pulse2
     trig(pin, level == gpio.HIGH  and "down" or "up")
