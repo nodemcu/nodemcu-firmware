@@ -3,21 +3,21 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2016-12-18 | [PhoeniX](https://github.com/djphoenix) | [PhoeniX](https://github.com/djphoenix) | [cron.c](../../../app/modules/cron.c)|
 
-Cron-like scheduler module.
+[Cron](https://en.wikipedia.org/wiki/Cron)-like scheduler module.
 
 !!! important
-    This module needs RTC time to operate correctly. Do not forget to enable [`rtctime`](rtctime.md) module
+    This module needs RTC time to operate correctly. Do not forget to include the [`rtctime`](rtctime.md) module.
 
 ## cron.schedule()
 
-Create new schedule entry.
+Creates a new schedule entry.
 
 #### Syntax
 `cron.schedule(mask, callback)`
 
 #### Parameters
 - `mask` - [crontab](https://en.wikipedia.org/wiki/Cron#Overview)-like string mask for schedule
-- `callback` - callback `function(entry)` that being performed at schedule time
+- `callback` - callback `function(entry)` that is executed at the scheduled time
 
 #### Returns
 `cron.entry` sub module
@@ -40,7 +40,7 @@ end)
 
 ## cron.reset()
 
-Remove all schedule entries.
+Removes all scheduled entries.
 
 #### Syntax
 `cron.reset()`
@@ -49,28 +49,22 @@ Remove all schedule entries.
 none
 
 #### Returns
-none
-
-#### Example
-
-```lua
-cron.reset()
-```
+nil
 
 # cron.entry Module
 
 ## cron.entry:handler()
 
-Set new handler for entry.
+Sets a new handler for entry.
 
 #### Syntax
 `handler(callback)`
 
 #### Parameters
-- `callback` - callback `function(entry)` that being performed at schedule time
+- `callback` - callback `function(entry)` that is executed at the scheduled time
 
 #### Returns
-none
+nil
 
 #### Example
 
@@ -86,7 +80,7 @@ end)
 
 ## cron.entry:schedule()
 
-Set new schedule mask.
+Sets a new schedule mask.
 
 #### Syntax
 `schedule(mask)`
@@ -110,9 +104,9 @@ ent:schedule("*/5 * * * *")
 
 ## cron.entry:unschedule()
 
-Disable schedule.
+Disables schedule.
 
-Disabled schedule may be enabled again by calling [`:schedule(mask)`](#cronentryschedule).
+Disabled schedules may be enabled again by calling [`:schedule(mask)`](cron.md#cronentryschedule).
 
 #### Syntax
 `unschedule()`
@@ -121,7 +115,7 @@ Disabled schedule may be enabled again by calling [`:schedule(mask)`](#cronentry
 none
 
 #### Returns
-none
+nil
 
 #### Example
 
