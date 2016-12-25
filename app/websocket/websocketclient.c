@@ -69,12 +69,12 @@
 #define WS_OPCODE_PING 0x9
 #define WS_OPCODE_PONG 0xA
 
-header_t DEFAULT_HEADERS[] = {
+static const header_t DEFAULT_HEADERS[] = {
   {"User-Agent", "ESP8266"},
   {"Sec-WebSocket-Protocol", "chat"},
   {0}
 };
-header_t *EMPTY_HEADERS = DEFAULT_HEADERS + sizeof(DEFAULT_HEADERS) / sizeof(header_t) - 1;
+static const header_t *EMPTY_HEADERS = DEFAULT_HEADERS + sizeof(DEFAULT_HEADERS) / sizeof(header_t) - 1;
 
 static char *cryptoSha1(char *data, unsigned int len) {
   SHA1_CTX ctx;
@@ -132,7 +132,7 @@ static char *_strcpy(char *dst, char *src) {
     return dst - 1;
 }
 
-static int headers_length(header_t *headers) {
+static int headers_length(const header_t *headers) {
   int length = 0;
   for(; headers->key; headers++)
     length += strlen(headers->key) + strlen(headers->value) + 4;
@@ -595,7 +595,7 @@ static void connect_callback(void *arg) {
 	  {0}
   };
 
-  header_t *extraHeaders = ws->extraHeaders ? ws->extraHeaders : EMPTY_HEADERS;
+  const header_t *extraHeaders = ws->extraHeaders ? ws->extraHeaders : EMPTY_HEADERS;
 
   char buf[WS_INIT_REQUEST_LENGTH + strlen(ws->path) + strlen(ws->hostname) +
 	  headers_length(DEFAULT_HEADERS) + headers_length(headers) + headers_length(extraHeaders) + 2];

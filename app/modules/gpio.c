@@ -34,9 +34,18 @@ static int gpio_cb_ref[GPIO_PIN_NUM];
 // It also re-enables the pin interrupt, so that we get another callback queued
 static void gpio_intr_callback_task (task_param_t param, uint8 priority)
 {
-  unsigned pin = param >> 1;
-  unsigned level = param & 1;
+  uint32_t then = (param >> 8) & 0xffffff;
+  uint32_t pin = (param >> 1) & 127;
+  uint32_t level = param & 1;
   UNUSED(priority);
+
+  uint32_t now = system_get_time();
+
+  // Now must be >= then . Add the missing bits
+  if (then > (now & 0xffffff)) {
+    then += 0x1000000;
+  }
+  then = (then + (now & 0x7f000000)) & 0x7fffffff;
 
   NODE_DBG("pin:%d, level:%d \n", pin, level);
   if(gpio_cb_ref[pin] != LUA_NOREF) {
@@ -52,7 +61,8 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
     // Do the actual callback
     lua_rawgeti(L, LUA_REGISTRYINDEX, gpio_cb_ref[pin]);
     lua_pushinteger(L, level);
-    lua_call(L, 1, 0);
+    lua_pushinteger(L, then);
+    lua_call(L, 2, 0);
 
     if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
       // Level triggered -- re-enable the callback

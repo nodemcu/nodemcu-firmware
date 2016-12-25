@@ -316,8 +316,8 @@ function receiver(sck, data)
 
   -- sends and removes the first element from the 'response' table
   local function send(localSocket)
-    if #response > 0
-    then localSocket:send(table.remove(response, 1))
+    if #response > 0 then
+      localSocket:send(table.remove(response, 1))
     else
       localSocket:close()
       response = nil

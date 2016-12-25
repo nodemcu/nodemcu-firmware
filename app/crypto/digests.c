@@ -144,7 +144,9 @@ int ICACHE_FLASH_ATTR crypto_fhash (const digest_mech_info_t *mi,
   int read_len = 0;
   do {
     read_len = read(readarg, buffer, mi->block_size);
-    mi->update (ctx, buffer, read_len);
+    if (read_len > 0) {
+      mi->update (ctx, buffer, read_len);
+    }
   } while (read_len == mi->block_size);
 
   // Finish up
