@@ -96,6 +96,11 @@ Connects to the broker specified by the given host, port, and secure options.
 #### Returns
 `true` on success, `false` otherwise
 
+#### Notes
+
+When `autoreconnect` is set, then the connection will be re-established when it breaks. No error indication will be given. However, if the
+very first connection fails, then no reconnect attempt is made, and the error is signalled through the callback (if any).
+
 #### Connection failure callback reason codes:
 
 | Constant | Value | Description |
