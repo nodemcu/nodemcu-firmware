@@ -200,7 +200,7 @@ static ip_addr_t* get_free_server() {
 static void handle_error (lua_State *L, ntp_err_t err, const char *msg)
 {
   sntp_dbg("sntp: handle_error\n");
-  if (state->err_cb_ref != LUA_NOREF)
+  if (state->err_cb_ref != LUA_NOREF && state->err_cb_ref != LUA_REFNIL)
   {
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->err_cb_ref);
     lua_pushinteger (L, err);
@@ -229,7 +229,7 @@ static void sntp_handle_result(lua_State *L) {
     return;
   }
 
-  bool have_cb = (state->sync_cb_ref != LUA_NOREF);
+  bool have_cb = (state->sync_cb_ref != LUA_NOREF && state->sync_cb_ref != LUA_REFNIL);
 
   state->last_server_pos = state->best.server_pos;    // Remember for next time
 
