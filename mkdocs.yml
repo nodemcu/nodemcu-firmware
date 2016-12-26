@@ -44,6 +44,7 @@ pages:
         - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'coap': 'en/modules/coap.md'
+        - 'cron': 'en/modules/cron.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'dht': 'en/modules/dht.md'
         - 'encoder': 'en/modules/encoder.md'
