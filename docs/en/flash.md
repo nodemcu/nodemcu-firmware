@@ -32,6 +32,8 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 - esptool.py is under heavy development. It's advised you run the latest version (check with `esptool.py version`). Since this documentation may not have been able to keep up refer to the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for current options and parameters.
 - In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
 `esptool.py --port <serial-port-of-ESP8266> erase_flash`
+- Modules with flash chips larger than 4&nbsp;MByte (e.g. WeMos D1 mini pro) need to be manually configured to at least 1&nbsp;MByte: Firmware image and SDK init data occupy the first MByte, while the remaining 7/15&nbsp;MByte of the flash are used for SPIFFS:
+`esptool.py --port <serial-port-of-ESP8266> write_flash -fm <mode> -fs 8m 0x00000 <nodemcu-firmware>.bin`
 
 ### NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
