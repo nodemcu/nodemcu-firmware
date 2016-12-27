@@ -200,7 +200,7 @@ static ip_addr_t* get_free_server() {
 static void handle_error (lua_State *L, ntp_err_t err, const char *msg)
 {
   sntp_dbg("sntp: handle_error\n");
-  if (state->err_cb_ref != LUA_NOREF)
+  if (state->err_cb_ref != LUA_NOREF && state->err_cb_ref != LUA_REFNIL)
   {
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->err_cb_ref);
     lua_pushinteger (L, err);
@@ -229,7 +229,9 @@ static void sntp_handle_result(lua_State *L) {
     return;
   }
 
-  bool have_cb = (state->sync_cb_ref != LUA_NOREF);
+  bool have_cb = (state->sync_cb_ref != LUA_NOREF && state->sync_cb_ref != LUA_REFNIL);
+
+  state->last_server_pos = state->best.server_pos;    // Remember for next time
 
   state->last_server_pos = state->best.server_pos;    // Remember for next time
 
@@ -420,6 +422,11 @@ static void update_offset()
       next_midnight = get_next_midnight(tv.tv_sec);
       // is this the first day of the month
       // Number of days since 1/mar/0000
+      // 1970 * 365 is the number of days in full years
+      // 1970 / 4 is the number of leap days (ignoring century rules)
+      // 19 is the number of centuries
+      // 4 is the number of 400 years (where there was a leap day)
+      // 31 & 28 are the number of days in Jan 1970 and Feb 1970
       int day = (tv.tv_sec - the_offset) / 86400 + 1970 * 365 + 1970 / 4 - 19 + 4 - 31 - 28;
 
       int century = (4 * day + 3) / 146097;
@@ -429,6 +436,7 @@ static void update_offset()
       int month = (5 * day + 2) / 153;
       day = day - (153 * month + 2) / 5;
 
+      // Months 13 & 14 are really Jan and Feb in the following year.
       sntp_dbg("century=%d, year=%d, month=%d, day=%d\n", century, year, month + 3, day + 1);
 
       if (day == 0) {
