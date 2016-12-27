@@ -336,6 +336,9 @@ READPACKET:
       } else {
         mud->connState = MQTT_DATA;
         NODE_DBG("MQTT: Connected\r\n");
+        if (mud->mqtt_state.auto_reconnect == RECONNECT_POSSIBLE) {
+          mud->mqtt_state.auto_reconnect = RECONNECT_ON;
+        }
         if(mud->cb_connect_ref == LUA_NOREF)
           break;
         if(mud->self_ref == LUA_NOREF)
@@ -549,9 +552,6 @@ static void mqtt_socket_connected(void *arg)
   if(mud == NULL)
     return;
   mud->connected = true;
-  if (mud->mqtt_state.auto_reconnect == RECONNECT_POSSIBLE) {
-    mud->mqtt_state.auto_reconnect == RECONNECT_ON;
-  }
   espconn_regist_recvcb(pesp_conn, mqtt_socket_received);
   espconn_regist_sentcb(pesp_conn, mqtt_socket_sent);
   espconn_regist_disconcb(pesp_conn, mqtt_socket_disconnected);
