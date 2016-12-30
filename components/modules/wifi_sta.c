@@ -176,13 +176,13 @@ static int wifi_sta_config (lua_State *L)
   const char *str = luaL_checklstring (L, -1, &len);
   if (len > sizeof (cfg.sta.ssid))
     len = sizeof (cfg.sta.ssid);
-  strncpy (cfg.sta.ssid, str, len);
+  strncpy ((char *)cfg.sta.ssid, str, len);
 
   lua_getfield (L, 1, "pwd");
   str = luaL_optlstring (L, -1, "", &len);
   if (len > sizeof (cfg.sta.password))
     len = sizeof (cfg.sta.password);
-  strncpy (cfg.sta.password, str, len);
+  strncpy ((char *)cfg.sta.password, str, len);
 
   lua_getfield (L, 1, "bssid");
   cfg.sta.bssid_set = false;
@@ -251,12 +251,12 @@ static int wifi_sta_getconfig (lua_State *L)
     return luaL_error (L, "failed to get config, code %d", err);
 
   lua_createtable (L, 0, 3);
-  size_t ssid_len = strnlen (cfg.sta.ssid, sizeof (cfg.sta.ssid));
-  lua_pushlstring (L, cfg.sta.ssid, ssid_len);
+  size_t ssid_len = strnlen ((char *)cfg.sta.ssid, sizeof (cfg.sta.ssid));
+  lua_pushlstring (L, (char *)cfg.sta.ssid, ssid_len);
   lua_setfield (L, -2, "ssid");
 
-  size_t pwd_len = strnlen (cfg.sta.password, sizeof (cfg.sta.password));
-  lua_pushlstring (L, cfg.sta.password, pwd_len);
+  size_t pwd_len = strnlen ((char *)cfg.sta.password, sizeof (cfg.sta.password));
+  lua_pushlstring (L, (char *)cfg.sta.password, pwd_len);
   lua_setfield (L, -2, "pwd");
 
   if (cfg.sta.bssid_set)

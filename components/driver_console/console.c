@@ -33,6 +33,7 @@
 
 #include "driver/console.h"
 #include "esp_intr.h"
+#include "esp_intr_alloc.h"
 #include "soc/soc.h"
 #include "soc/uart_reg.h"
 #include "soc/dport_reg.h"
@@ -44,7 +45,6 @@
 #include "sys/reent.h"
 
 #define UART_INPUT_QUEUE_SZ 0x100
-#define MAP_CONSOLE_UART_PRO_INT_NO 9  // PRO interrupt used by this driver for uart0
 
 // These used to be available in soc/uart_register.h:
 #define UART_GET_RXFIFO_RD_BYTE(i)  GET_PERI_REG_BITS2(UART_FIFO_REG(i) , UART_RXFIFO_RD_BYTE_V, UART_RXFIFO_RD_BYTE_S)
@@ -66,7 +66,7 @@ static _read_r_fn _read_r_pro, _read_r_app;
 
 static xQueueHandle uart0Q;
 static task_handle_t input_task = 0;
-
+static intr_handle_t intr_handle;
 
 // --- Syscall support for reading from STDIN_FILENO ---------------
 
@@ -159,9 +159,9 @@ void console_init (const ConsoleSetup_t *cfg, task_handle_t tsk)
 
   console_setup (cfg);
 
-  ESP_INTR_DISABLE(MAP_CONSOLE_UART_PRO_INT_NO);
-
-  xt_set_interrupt_handler (MAP_CONSOLE_UART_PRO_INT_NO, uart0_rx_intr_handler, NULL);
+  esp_intr_alloc (ETS_UART0_INTR_SOURCE,
+      ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_INTRDISABLED,
+      uart0_rx_intr_handler, NULL, &intr_handle);
 
   UART_SET_RX_TOUT_EN(CONSOLE_UART, true);
   UART_SET_RX_TOUT_THRHD(CONSOLE_UART, 2);
@@ -172,8 +172,7 @@ void console_init (const ConsoleSetup_t *cfg, task_handle_t tsk)
       UART_RXFIFO_FULL_INT_ENA |
       UART_FRM_ERR_INT_ENA);
 
-  WRITE_PERI_REG(DPORT_PRO_UART_INTR_MAP_REG, MAP_CONSOLE_UART_PRO_INT_NO);
-  ESP_INTR_ENABLE(MAP_CONSOLE_UART_PRO_INT_NO);
+  esp_intr_enable (intr_handle);
 
   // Register our console_read_r_xxx functions to support stdin input
   _read_r_pro = syscall_table_ptr_pro->_read_r;

@@ -134,14 +134,14 @@ static int wifi_ap_config (lua_State *L)
   const char *str = luaL_checklstring (L, -1, &len);
   if (len > sizeof (cfg.ap.ssid))
     len = sizeof (cfg.ap.ssid);
-  strncpy (cfg.ap.ssid, str, len);
+  strncpy ((char *)cfg.ap.ssid, str, len);
   cfg.ap.ssid_len = len;
 
   lua_getfield (L, 1, "pwd");
   str = luaL_optlstring (L, -1, "", &len);
   if (len > sizeof (cfg.ap.password))
     len = sizeof (cfg.ap.password);
-  strncpy (cfg.ap.password, str, len);
+  strncpy ((char *)cfg.ap.password, str, len);
 
   lua_getfield (L, 1, "auth");
   int authmode = luaL_optint (L, -1, WIFI_AUTH_WPA2_PSK);

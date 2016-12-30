@@ -42,9 +42,6 @@
 #define PULL_UP 1
 #define PULL_DOWN 2
 
-// TODO: change this to dynamically allocated once that framework is available!
-#define MAP_GPIO_PRO_INT_NO 12
-
 static int *gpio_cb_refs = NULL; // Lazy init
 static task_handle_t cb_task;
 
@@ -53,9 +50,19 @@ static int check_err (lua_State *L, esp_err_t err)
   switch (err)
   {
     case ESP_ERR_INVALID_ARG: luaL_error (L, "invalid argument");
+    case ESP_ERR_INVALID_STATE: luaL_error (L, "internal logic error");
     case ESP_OK: break;
   }
   return 0;
+}
+
+// TODO: can/should we attempt to guard against task q overflow?
+_Static_assert(GPIO_PIN_COUNT<256, "task post encoding assumes < 256 gpios");
+static void IRAM_ATTR single_pin_isr (void *p)
+{
+  gpio_num_t gpio_num = (gpio_num_t)p;
+  gpio_intr_disable (gpio_num);
+  task_post_low (cb_task, (gpio_num) | (gpio_get_level (gpio_num) << 8));
 }
 
 
@@ -159,10 +166,14 @@ static int lgpio_trig (lua_State *L)
   check_err (L, gpio_intr_disable (gpio));
 
   if (gpio_cb_refs[gpio] == LUA_NOREF)
+  {
     check_err (L, gpio_set_intr_type (gpio, GPIO_INTR_DISABLE));
+    check_err (L, gpio_isr_handler_remove (gpio));
+  }
   else
   {
     check_err (L, gpio_set_intr_type (gpio, intr_type));
+    check_err (L, gpio_isr_handler_add (gpio, single_pin_isr, (void *)gpio));
     check_err (L, gpio_intr_enable (gpio));
   }
   return 0;
@@ -192,36 +203,6 @@ static int lgpio_write (lua_State *L)
 }
 
 
-// TODO: move this to the platform layer so it can be shared
-// TODO: can/should we attempt to guard against task q overflow?
-_Static_assert(GPIO_PIN_COUNT<256, "task post encoding assumes < 256 gpios");
-static void IRAM_ATTR nodemcu_gpio_isr (void *p)
-{
-  uint32_t intrs = READ_PERI_REG(GPIO_STATUS_REG);
-  uint32_t intrs_rtc = READ_PERI_REG(GPIO_STATUS1_REG);
-
-  #define handle_gpio_intr(gpio_num) do { \
-    gpio_intr_disable (gpio_num); \
-    task_post_low (cb_task, (gpio_num) | (gpio_get_level (gpio_num) << 8)); \
-  } while (0)
-
-  // Regular gpios
-  for (uint32_t gpio = 0; intrs && gpio < 32; ++gpio)
-  {
-    if (intrs & BIT(gpio))
-      handle_gpio_intr (gpio);
-  }
-  // RTC gpios
-  for (uint32_t gpio = 0; intrs_rtc && gpio < (GPIO_PIN_COUNT - 32); ++gpio)
-  {
-    if (intrs_rtc & BIT(gpio))
-      handle_gpio_intr (gpio + 32);
-  }
-
-  SET_PERI_REG_MASK(GPIO_STATUS_W1TC_REG, intrs);
-  SET_PERI_REG_MASK(GPIO_STATUS1_W1TC_REG, intrs_rtc);
-}
-
 
 static void nodemcu_gpio_callback_task (task_param_t param, task_prio_t prio)
 {
@@ -245,7 +226,7 @@ static int nodemcu_gpio_init (lua_State *L)
 {
   cb_task = task_get_id (nodemcu_gpio_callback_task);
   check_err (L,
-    gpio_isr_register (MAP_GPIO_PRO_INT_NO, nodemcu_gpio_isr, NULL));
+    gpio_install_isr_service (ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM));
   return 0;
 }
 

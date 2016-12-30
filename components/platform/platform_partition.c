@@ -93,7 +93,7 @@ bool platform_partition_add (const platform_partition_t *info)
     slot->pos.offset = info->offs;
     slot->pos.size = info->size;
     memcpy (slot->label, info->label, sizeof (slot->label));
-    memset (slot->reserved, 0xff, sizeof (slot->reserved));
+    slot->flags = 0;
     err = spi_flash_erase_sector (
       ESP_PARTITION_TABLE_ADDR / SPI_FLASH_SEC_SIZE);
     if (err == ESP_OK)
