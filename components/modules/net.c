@@ -52,6 +52,7 @@ typedef struct lnet_userdata {
   union {
     struct {
       int cb_accept_ref;
+      int timeout;
     } server;
     struct {
       int wait_dns;
@@ -351,9 +352,8 @@ int net_createServer( lua_State *L ) {
   if (type == TYPE_UDP) return net_createUDPSocket( L );
   if (type != TYPE_TCP) return luaL_error(L, "invalid type");
 
-  net_create(L, TYPE_TCP_SERVER);
-  // TODO: timeout
-  (void)timeout;
+  lnet_userdata *ud = net_create(L, TYPE_TCP_SERVER);
+  ud->server.timeout = timeout;
   return 1;
 }
 
@@ -1020,7 +1020,9 @@ static void laccept_cb (lua_State *L, lnet_userdata *ud, struct tcp_pcb *newpcb)
   tcp_err(nud->tcp_pcb, net_err_cb);
   tcp_recv(nud->tcp_pcb, net_tcp_recv_cb);
   tcp_sent(nud->tcp_pcb, net_sent_cb);
-
+  nud->tcp_pcb->so_options |= SOF_KEEPALIVE;
+  nud->tcp_pcb->keep_idle = ud->server.timeout * 1000;
+  nud->tcp_pcb->keep_cnt = 1;
   tcp_accepted(ud->tcp_pcb);
 
   lua_call(L, 1, 0);
