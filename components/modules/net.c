@@ -279,7 +279,7 @@ static err_t net_tcp_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, er
   }
 
   if (post_net_recv (ud, p, 0, 0))
-    tcp_recved(tpcb, p->len);
+    tcp_recved(tpcb, ud->client.hold ? 0 : TCP_WND(tpcb));
 
   return ERR_OK;
 }
@@ -632,7 +632,10 @@ int net_hold( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type != TYPE_TCP_CLIENT)
     return luaL_error(L, "invalid user data");
-  ud->client.hold = 1;
+  if (!ud->client.hold && ud->tcp_pcb)
+  {
+    ud->client.hold = 1;
+  }
   return 0;
 }
 
@@ -641,7 +644,12 @@ int net_unhold( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type != TYPE_TCP_CLIENT)
     return luaL_error(L, "invalid user data");
-  ud->client.hold = 0;
+  if (ud->client.hold && ud->tcp_pcb)
+  {
+    ud->client.hold = 0;
+    ud->tcp_pcb->flags |= TF_ACK_NOW;
+    tcp_recved(ud->tcp_pcb, TCP_WND(ud->tcp_pcb));
+  }
   return 0;
 }
 
