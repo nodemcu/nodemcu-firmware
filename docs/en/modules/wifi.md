@@ -153,8 +153,8 @@ physical mode after setup
 
 Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled by default.
 
-	!!! note
-		This function **does not** store it's setting in flash, if auto sleep in NULL_MODE is not desired, `wifi.nullmodesleep(false)` must be called after powerup, restart, or wake from deep sleep.
+!!! note
+	This function **does not** store it's setting in flash, if auto sleep in NULL_MODE is not desired, `wifi.nullmodesleep(false)` must be called after power-up, restart, or wake from deep sleep.
 
 #### Syntax
 `wifi.nullmodesleep([enable])`
@@ -357,9 +357,8 @@ none
 
 Disconnects from AP in station mode.
 
-	!!! note
-		Please note that disconnecting from Access Point does not reduce power consumption.
-		If power saving is your goal, please refer to the description for `wifi.NULLMODE` in the function [`wifi.setmode()`](#wifisetmode) for more details.
+!!! note
+	Please note that disconnecting from Access Point does not reduce power consumption. If power saving is your goal, please refer to the description for `wifi.NULLMODE` in the function [`wifi.setmode()`](#wifisetmode) for more details.
 
 #### Syntax
 `wifi.sta.disconnect()`
@@ -946,8 +945,8 @@ print(wifi.sta.setmac("DE:AD:BE:EF:7A:C0"))
 
 Configures the WiFi modem sleep type to be used while station is connected to an Access Point.
 
-	!!! note
-		Does not apply to `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE`.
+!!! note
+	Does not apply to `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE`.
 
 #### Syntax
 `wifi.sta.sleeptype(type_wanted)`
