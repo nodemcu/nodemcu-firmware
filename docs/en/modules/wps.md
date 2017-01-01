@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2017-01-01 | [Frank Exoo](https://github.com/FrankX0) | [Frank Exoo](https://github.com/FrankX0) | [wps.c](../../../app/modules/wps.c)|
 
-[WPS](https://en.wikipedia.org/wiki/WiFi_Protected_Setup) allows devices to be added to an existing network without entering the network credentials.
+[WPS](https://en.wikipedia.org/wiki/Wi-Fi_Protected_Setup) allows devices to be added to an existing network without entering the network credentials.
 
 ## wps.disable()
 Disable WiFi WPS function.
