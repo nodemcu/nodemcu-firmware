@@ -1,4 +1,4 @@
-# mDNS Module
+# WPS Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
 | 2017-01-01 | [Frank Exoo](https://github.com/FrankX0) | [Frank Exoo](https://github.com/FrankX0) | [wps.c](../../../app/modules/wps.c)|
