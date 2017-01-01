@@ -85,6 +85,7 @@ pages:
         - 'ucg': 'en/modules/ucg.md'
         - 'websocket': 'en/modules/websocket.md'
         - 'wifi': 'en/modules/wifi.md'
+		- 'wps': 'en/modules/wps.md'
         - 'ws2801': 'en/modules/ws2801.md'
         - 'ws2812': 'en/modules/ws2812.md'
 #- Deutsch:
