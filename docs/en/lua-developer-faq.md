@@ -70,7 +70,7 @@ node.restart(); for i = 1, 20 do print("not quite yet -- ",i); end
 * Whilst the SDK provides a number of interrupt driven device drivers, the hardware architecture severely limits the memory available for these drivers, so writing new device drivers is not a viable options for most developers
 * The SDK interfaces internally with hardware and device drivers to queue pending events.
 * The registered callback routines are invoked sequentially with the associated C task running to completion uninterrupted.
-* In the case of Lua, these C tasks are typically functions within the Lua runtime library code and these typically act as C wrappers around the corresponding developer-provided Lua callback functions.  An example here is the Lua [`tmr:alarm(interval, repeat, callback)`](modules/tmr.md#tmralarm) function.  The calls a function in the `tmr` library which registers a C function for this alarm using the SDK, and when this C function is called it then invokes the Lua callback.  
+* In the case of Lua, these C tasks are typically functions within the Lua runtime library code and these typically act as C wrappers around the corresponding developer-provided Lua callback functions.  An example here is the Lua [`mytimer:alarm(interval, repeat, callback)`](modules/tmr.md#tmralarm) function.  The calls a function in the `tmr` library which registers a C function for this alarm using the SDK, and when this C function is called it then invokes the Lua callback.  
 
 The NodeMCU firmware simply mirrors this structure at a Lua scripting level:
 
