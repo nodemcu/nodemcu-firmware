@@ -37,8 +37,7 @@ LOCAL void ICACHE_FLASH_ATTR user_wps_status_cb(int status)
 static int ICACHE_FLASH_ATTR wps_start(lua_State* L)
 {
   // retrieve callback arg (optional)
-  if (wps_callback_ref != LUA_NOREF)
-    luaL_unref(L, LUA_REGISTRYINDEX, wps_callback_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, wps_callback_ref);
 
   wps_callback_ref = LUA_NOREF;
 
