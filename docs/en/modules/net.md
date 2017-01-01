@@ -310,11 +310,11 @@ Otherwise, all connection errors (with normal close) passed to disconnection eve
 ```lua
 srv = net.createConnection(net.TCP, 0)
 srv:on("receive", function(sck, c) print(c) end)
-srv:on("connection", function(sck)
+srv:on("connection", function(sck, c)
   -- Wait for connection before sending.
-  sck:send("GET / HTTP/1.1\r\nHost: 192.168.0.66\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+  sck:send("GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
 end)
-srv:connect(80,"192.168.0.66")
+srv:connect(80,"httpbin.org")
 ```
 
 #### See also
