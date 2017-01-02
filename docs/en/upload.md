@@ -62,8 +62,7 @@ print("Connecting to WiFi access point...")
 wifi.setmode(wifi.STATION)
 wifi.sta.config(SSID, PASSWORD)
 -- wifi.sta.connect() not necessary because config() uses auto-connect=true by default
-wifitimer = tmr.create()
-wifitimer:alarm(1000, tmr.ALARM_AUTO, function(cb_timer)
+tmr.create():alarm(1000, tmr.ALARM_AUTO, function(cb_timer)
     if wifi.sta.getip() == nil then
         print("Waiting for IP address...")
     else
