@@ -253,8 +253,6 @@ static void bbram_save() {
   rtc_mem_write(RTC_USRATE_POS		 , rtc_usrate);
 }
 
-#define FIVE6  (5*5*5*5*5*5)
-
 static inline uint64_t div2080(uint64_t n) {
   n = n >> 5;
   uint64_t t = n >> 7;
