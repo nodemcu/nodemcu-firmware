@@ -266,7 +266,8 @@ Stops a running timer, but does *not* unregister it. A stopped timer can be rest
 
 #### Example
 ```lua
-if not tmr.create():stop() then print("timer not stopped, not registered?") end
+mytimer = tmr.create()
+if not mytimer:stop() then print("timer not stopped, not registered?") end
 ```
 #### See also
 - [`tmr.register()`](#tmrregister)
