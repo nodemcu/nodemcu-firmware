@@ -233,8 +233,6 @@ static void sntp_handle_result(lua_State *L) {
 
   state->last_server_pos = state->best.server_pos;    // Remember for next time
 
-  state->last_server_pos = state->best.server_pos;    // Remember for next time
-
   // if we have rtctime, do higher resolution delta calc, else just use
   // the transmit timestamp
 #ifdef LUA_USE_MODULES_RTCTIME
