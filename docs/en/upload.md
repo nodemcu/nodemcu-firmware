@@ -63,11 +63,11 @@ wifi.setmode(wifi.STATION)
 wifi.sta.config(SSID, PASSWORD)
 -- wifi.sta.connect() not necessary because config() uses auto-connect=true by default
 wifitimer = tmr.create()
-wifitimer:alarm(1000, tmr.ALARM_AUTO, function()
+wifitimer:alarm(1000, tmr.ALARM_AUTO, function(cb_timer)
     if wifi.sta.getip() == nil then
         print("Waiting for IP address...")
     else
-        wifitimer:stop()
+        cb_timer:unregister()
         print("WiFi connection established, IP address: " .. wifi.sta.getip())
         print("You have 3 seconds to abort")
         print("Waiting...")

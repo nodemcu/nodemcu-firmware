@@ -21,6 +21,9 @@ This is a convenience function combining [`tmr.register()`](#tmrregister) and [`
 
 To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
+#### Syntax
+`tmr.register([id/ref], interval_ms, mode, func())`
+
 #### Parameters
 - `id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 - `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
@@ -28,6 +31,7 @@ To free up the resources with this timer when done using it, call [`tmr.unregist
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
 	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrstart) to restart)
 	- `tmr.ALARM_AUTO` automatically repeating alarm
+- `func(timer)` callback function which is invoked with the timer object as an argument
 
 #### Returns
 `true` if the timer was started, `false` on error
@@ -152,7 +156,7 @@ Configures a timer and registers the callback function to call on expiry.
 To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
 #### Syntax
-`tmr.register([id/ref], interval_ms, mode, func)`
+`tmr.register([id/ref], interval_ms, mode, func())`
 
 #### Parameters
 - `id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
@@ -161,6 +165,7 @@ To free up the resources with this timer when done using it, call [`tmr.unregist
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
 	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrunregister) to restart)
 	- `tmr.ALARM_AUTO` automatically repeating alarm
+- `func(timer)` callback function which is invoked with the timer object as an argument
 
 Note that registering does *not* start the alarm.
 
