@@ -323,8 +323,7 @@ static void on_scan_done (const system_event_t *evt)
         lua_pushinteger (L, aps[i].authmode);
         lua_setfield (L, -2, "auth");
 
-        lua_pushstring (L, (aps[i].second == WIFI_SECOND_CHAN_NONE) ?
-          "ht20" : "ht40");
+        lua_pushstring (L, wifi_second_chan_names[aps[i].second]);
         lua_setfield (L, -2, "bandwidth");
 
         lua_rawseti (L, -2, i + 1); // add table to array
@@ -350,14 +349,24 @@ static int wifi_sta_scan (lua_State *L)
 
   luaL_checkanytable (L, 1);
 
-  wifi_scan_config_t scan_cfg;
-  memset (&scan_cfg, 0, sizeof (scan_cfg));
-
-  // TODO: support ssid/bssid/channel/hidden features of wifi_scan_config_t
-
   luaL_checkanyfunction (L, 2);
   lua_settop (L, 2);
   scan_cb_ref = luaL_ref (L, LUA_REGISTRYINDEX);
+
+  wifi_scan_config_t scan_cfg;
+  memset (&scan_cfg, 0, sizeof (scan_cfg));
+
+  lua_getfield (L, 1, "ssid");
+  scan_cfg.ssid = (uint8_t *)luaL_optstring (L, -1, NULL);
+
+  lua_getfield (L, 1, "bssid");
+  scan_cfg.bssid = (uint8_t *)luaL_optstring (L, -1, NULL);
+
+  lua_getfield (L, 1, "channel");
+  scan_cfg.channel = luaL_optint (L, -1, 0);
+
+  lua_getfield (L, 1, "hidden");
+  scan_cfg.show_hidden = luaL_optint (L, -1, 0);
 
   esp_err_t err = esp_wifi_scan_start (&scan_cfg, false);
   if (err != ESP_OK)

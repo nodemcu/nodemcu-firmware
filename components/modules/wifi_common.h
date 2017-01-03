@@ -66,4 +66,9 @@ int wifi_event_idx_by_id (const event_desc_t *table, unsigned n, system_event_id
 
 int wifi_on (lua_State *L, const event_desc_t *table, unsigned n, int *event_cb);
 
+#define STR_WIFI_SECOND_CHAN_NONE "HT20"
+#define STR_WIFI_SECOND_CHAN_ABOVE "HT40_ABOVE"
+#define STR_WIFI_SECOND_CHAN_BELOW "HT40_BELOW"
+extern const char * const wifi_second_chan_names[];
+
 #endif

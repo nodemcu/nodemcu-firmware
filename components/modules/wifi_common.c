@@ -35,6 +35,14 @@
 #include "lauxlib.h"
 #include <string.h>
 
+// Important: match order of wifi_second_chan_t enum
+const char *const wifi_second_chan_names[] =
+{
+  STR_WIFI_SECOND_CHAN_NONE,
+  STR_WIFI_SECOND_CHAN_ABOVE,
+  STR_WIFI_SECOND_CHAN_BELOW,
+};
+
 int wifi_event_idx_by_name (const event_desc_t *table, unsigned n, const char *name)
 {
   for (unsigned i = 0; i < n; ++i)

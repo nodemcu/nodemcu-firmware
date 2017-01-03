@@ -36,4 +36,5 @@ pages:
         - 'node':       'en/modules/node.md'
         - 'struct':     'en/modules/struct.md'
         - 'uart':       'en/modules/uart.md'
+        - 'wifi':       'en/modules/wifi.md'
 

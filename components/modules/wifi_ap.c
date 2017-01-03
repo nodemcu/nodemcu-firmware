@@ -39,6 +39,7 @@
 #include <string.h>
 
 
+// Note: these are documented in wifi.md, update there too if changed here!
 #define DEFAULT_AP_CHANNEL 11
 #define DEFAULT_AP_MAXCONNS 4
 #define DEFAULT_AP_BEACON 100
@@ -178,12 +179,6 @@ const LUA_REG_TYPE wifi_ap_map[] =
 {
   { LSTRKEY( "config" ),              LFUNCVAL( wifi_ap_config )        },
   { LSTRKEY( "on" ),                  LFUNCVAL( wifi_ap_on )            },
-
-  { LSTRKEY( "AUTH_OPEN" ),           LNUMVAL( WIFI_AUTH_OPEN )         },
-  { LSTRKEY( "AUTH_WEP" ),            LNUMVAL( WIFI_AUTH_WEP )          },
-  { LSTRKEY( "AUTH_WPA_PSK" ),        LNUMVAL( WIFI_AUTH_WPA_PSK )      },
-  { LSTRKEY( "AUTH_WPA2_PSK" ),       LNUMVAL( WIFI_AUTH_WPA2_PSK )     },
-  { LSTRKEY( "AUTH_WPA_WPA2_PSK" ),   LNUMVAL( WIFI_AUTH_WPA_WPA2_PSK ) },
 
   { LNILKEY, LNILVAL }
 };

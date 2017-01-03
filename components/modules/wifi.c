@@ -45,6 +45,17 @@ static int wifi_getmode (lua_State *L)
   return 1;
 }
 
+static int wifi_getchannel (lua_State *L)
+{
+  uint8_t primary;
+  wifi_second_chan_t secondary;
+  esp_err_t err = esp_wifi_get_channel (&primary, &secondary);
+  if (err != ESP_OK)
+    return luaL_error (L, "failed to get channel, code %d", err);
+  lua_pushinteger (L, primary);
+  lua_pushinteger (L, secondary);
+  return 2;
+}
 
 static int wifi_mode (lua_State *L)
 {
@@ -102,6 +113,7 @@ extern const LUA_REG_TYPE wifi_ap_map[];
 
 static const LUA_REG_TYPE wifi_map[] =
 {
+  { LSTRKEY( "getchannel"),   LFUNCVAL( wifi_getchannel )     },
   { LSTRKEY( "getmode" ),     LFUNCVAL( wifi_getmode )        },
   { LSTRKEY( "mode" ),        LFUNCVAL( wifi_mode )           },
   { LSTRKEY( "start" ),       LFUNCVAL( wifi_start )          },
@@ -115,6 +127,16 @@ static const LUA_REG_TYPE wifi_map[] =
   { LSTRKEY( "STATION" ),     LNUMVAL( WIFI_MODE_STA )        },
   { LSTRKEY( "SOFTAP" ),      LNUMVAL( WIFI_MODE_AP )         },
   { LSTRKEY( "STATIONAP" ),   LNUMVAL( WIFI_MODE_APSTA )      },
+
+  { LSTRKEY( "AUTH_OPEN" ),           LNUMVAL( WIFI_AUTH_OPEN )         },
+  { LSTRKEY( "AUTH_WEP" ),            LNUMVAL( WIFI_AUTH_WEP )          },
+  { LSTRKEY( "AUTH_WPA_PSK" ),        LNUMVAL( WIFI_AUTH_WPA_PSK )      },
+  { LSTRKEY( "AUTH_WPA2_PSK" ),       LNUMVAL( WIFI_AUTH_WPA2_PSK )     },
+  { LSTRKEY( "AUTH_WPA_WPA2_PSK" ),   LNUMVAL( WIFI_AUTH_WPA_WPA2_PSK ) },
+
+  { LSTRKEY( STR_WIFI_SECOND_CHAN_NONE ),  LNUMVAL( WIFI_SECOND_CHAN_NONE )  },
+  { LSTRKEY( STR_WIFI_SECOND_CHAN_ABOVE ), LNUMVAL( WIFI_SECOND_CHAN_ABOVE )  },
+  { LSTRKEY( STR_WIFI_SECOND_CHAN_BELOW ), LNUMVAL( WIFI_SECOND_CHAN_BELOW )  },
 
   { LNILKEY, LNILVAL }
 };
