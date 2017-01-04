@@ -41,6 +41,7 @@ typedef enum {
     BIT_RATE_4800    = 4800,
     BIT_RATE_9600    = 9600,
     BIT_RATE_19200   = 19200,
+    BIT_RATE_31250   = 31250,
     BIT_RATE_38400   = 38400,
     BIT_RATE_57600   = 57600,
     BIT_RATE_74880   = 74880,
