@@ -22,7 +22,7 @@ This is a convenience function combining [`tmr.register()`](#tmrregister) and [`
 To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
 #### Syntax
-`tmr.register([id/ref], interval_ms, mode, func())`
+`tmr.alarm([id/ref], interval_ms, mode, func())`
 
 #### Parameters
 - `id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))

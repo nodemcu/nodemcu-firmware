@@ -70,7 +70,7 @@ tmr.create():alarm(1000, tmr.ALARM_AUTO, function(cb_timer)
         print("WiFi connection established, IP address: " .. wifi.sta.getip())
         print("You have 3 seconds to abort")
         print("Waiting...")
-        tmr.alarm(0, 3000, 0, startup)
+        tmr.create():alarm(3000, tmr.ALARM_SINGLE, startup)
     end
 end)
 ```
