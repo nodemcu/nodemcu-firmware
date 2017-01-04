@@ -27,7 +27,9 @@
 typedef struct request_args_t {
 	char		* hostname;
 	int		port;
+#ifdef CLIENT_SSL_ENABLE
 	bool		secure;
+#endif
 	char		* method;
 	char		* path;
 	char		* headers;
@@ -140,9 +142,11 @@ static void ICACHE_FLASH_ATTR http_receive_callback( void * arg, char * buf, uns
 	{
 		HTTPCLIENT_ERR( "Response too long (%d)", new_size );
 		req->buffer[0] = '\0';                                                                  /* Discard the buffer to avoid using an incomplete response. */
+#ifdef CLIENT_SSL_ENABLE
 		if ( req->secure )
 			espconn_secure_disconnect( conn );
 		else
+#endif
 			espconn_disconnect( conn );
 		return;                                                                                 /* The disconnect callback will be called. */
 	}
@@ -170,9 +174,11 @@ static void ICACHE_FLASH_ATTR http_send_callback( void * arg )
 	{
 		/* The headers were sent, now send the contents. */
 		HTTPCLIENT_DEBUG( "Sending request body" );
+#ifdef CLIENT_SSL_ENABLE
 		if ( req->secure )
 			espconn_secure_send( conn, (uint8_t *) req->post_data, strlen( req->post_data ) );
 		else
+#endif
 			espconn_send( conn, (uint8_t *) req->post_data, strlen( req->post_data ) );
 		os_free( req->post_data );
 		req->post_data = NULL;
@@ -213,7 +219,11 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
     int host_len = 0;
     if ( os_strstr( req->headers, "Host:" ) == NULL && os_strstr( req->headers, "host:" ) == NULL)
     {
-        if ((req->port == 80) || ((req->port == 443) && ( req->secure )))
+        if ((req->port == 80)
+#ifdef CLIENT_SSL_ENABLE
+            || ((req->port == 443) && ( req->secure ))
+#endif
+            )
         {
             os_sprintf( host_header, "Host: %s\r\n", req->hostname );
         }
@@ -236,11 +246,13 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
             "\r\n",
             req->method, req->path, host_header, req->headers, ua_header, post_headers );
 
+#ifdef CLIENT_SSL_ENABLE
     if (req->secure)
     {
         espconn_secure_send( conn, (uint8_t *) buf, len );
     }
     else
+#endif
     {
         espconn_send( conn, (uint8_t *) buf, len );
     }
@@ -343,8 +355,13 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 									req->post_data, req->callback_handle, req->redirect_follow_count );
 							} else {
 								if ( os_strncmp( locationOffset, "/", 1 ) == 0) { // relative and full path
-									http_raw_request( req->hostname, req->port, req->secure, req->method,
-										locationOffset, req->headers, req->post_data, req->callback_handle, req->redirect_follow_count );
+									http_raw_request( req->hostname, req->port,
+#ifdef CLIENT_SSL_ENABLE
+									                  req->secure,
+#else
+									                  0,
+#endif
+									                  req->method, locationOffset, req->headers, req->post_data, req->callback_handle, req->redirect_follow_count );
 								} else { // relative and relative path
 
 									// find last /
@@ -360,8 +377,13 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 									os_memcpy( completeRelativePath, req->path, pathFolderLength );
 									os_memcpy( completeRelativePath + pathFolderLength, locationOffset, locationLength);
 
-									http_raw_request( req->hostname, req->port, req->secure, req->method,
-										completeRelativePath, req->headers, req->post_data, req->callback_handle, req->redirect_follow_count );
+									http_raw_request( req->hostname, req->port,
+#ifdef CLIENT_SSL_ENABLE
+									                  req->secure,
+#else
+									                  0,
+#endif
+									                  req->method, completeRelativePath, req->headers, req->post_data, req->callback_handle, req->redirect_follow_count );
 
 									os_free( completeRelativePath );
 								}
@@ -437,9 +459,11 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 	}
 	request_args_t * req = (request_args_t *) conn->reverse;
 	/* Call disconnect */
+#ifdef CLIENT_SSL_ENABLE
 	if ( req->secure )
 		espconn_secure_disconnect( conn );
 	else
+#endif
 		espconn_disconnect( conn );
 }
 
@@ -487,11 +511,13 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		os_timer_setfn( &(req->timeout_timer), (os_timer_func_t *) http_timeout_callback, conn );
 		os_timer_arm( &(req->timeout_timer), req->timeout, false );
 
+#ifdef CLIENT_SSL_ENABLE
 		if ( req->secure )
 		{
 			espconn_secure_connect( conn );
 		} 
 		else 
+#endif
 		{
 			espconn_connect( conn );
 		}
@@ -506,7 +532,9 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 	request_args_t * req = (request_args_t *) os_zalloc( sizeof(request_args_t) );
 	req->hostname		= esp_strdup( hostname );
 	req->port		= port;
+#ifdef CLIENT_SSL_ENABLE
 	req->secure		= secure;
+#endif
 	req->method		= esp_strdup( method );
 	req->path		= esp_strdup( path );
 	req->headers		= esp_strdup( headers );
