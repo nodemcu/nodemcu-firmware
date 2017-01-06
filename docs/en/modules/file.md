@@ -162,7 +162,7 @@ Not supported for internal flash.
 `file.mount(ldrv[, pin])`
 
 #### Parameters
-- `ldrv` name of the logical drive, `SD0:`, `SD1:`, etc.
+- `ldrv` name of the logical drive, `/SD0`, `/SD1`, etc.
 - `pin` 1~12, IO index for SS/CS, defaults to 8 if omitted.
 
 #### Returns
@@ -170,7 +170,7 @@ Volume object
 
 #### Example
 ```lua
-vol = file.mount("SD0:")
+vol = file.mount("/SD0")
 vol:umount()
 ```
 
@@ -179,6 +179,7 @@ vol:umount()
 Registers callback functions.
 
 Trigger events are:
+
 - `rtc` deliver current date & time to the file system. Function is expected to return a table containing the fields `year`, `mon`, `day`, `hour`, `min`, `sec` of current date and time. Not supported for internal flash.
 
 #### Syntax
@@ -204,7 +205,7 @@ sntp.sync(server_ip,
 ```
 
 #### See also
-[`rtctime.epoch2cal()`](rtctime.md#rtctimepoch2cal)
+[`rtctime.epoch2cal()`](rtctime.md#rtctimeepoch2cal)
 
 ## file.open()
 
