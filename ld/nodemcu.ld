@@ -103,7 +103,11 @@ SECTIONS
     *(.init.literal)
     *(.init)
     
-    *sdk/esp_iot_sdk_*lib/lib*.a:*(.literal .text)
+    *libmain.a:*(.literal .text)
+    *libnet80211.a:*(.literal .text)
+    *libphy.a:*(.literal .text)
+    *libpp.a:*(.literal .text)
+    *libgcc.a:*(.literal .text)
 
     *(.iram.text .iram0.text)
 
