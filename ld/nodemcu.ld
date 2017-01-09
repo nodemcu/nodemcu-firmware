@@ -103,7 +103,24 @@ SECTIONS
     *(.init.literal)
     *(.init)
     
-    *sdk/esp_iot_sdk_*lib/lib*.a:*(.literal .text)
+    /* SDK libraries that used in bootup process, interruption handling
+     * and other ways where flash cache (iROM) is unavailable: */
+    *libmain.a:*(.literal .text)
+    *libnet80211.a:*(.literal .text)
+    *libphy.a:*(.literal .text)
+    *libpp.a:*(.literal .text)
+    *libgcc.a:*(.literal .text)
+    
+    /* Following SDK libraries have .text sections, but not included in iRAM: */
+    /* *libat.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *libcrypto.a:*(.literal .text) - tested that safe to keep in iROM */
+    /* *libdriver.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *libespnow.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *libmesh.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *liblwip_536.a:*(.literal .text) - source-based library used instead */
+    /* *libpwm.a:*(.literal .text) - our own implementation used instead */
+    /* *libwpa.a:*(.literal .text) - tested that safe to keep in iROM */
+    /* *libwps.a:*(.literal .text) - tested that safe to keep in iROM */
 
     *(.iram.text .iram0.text)
 
