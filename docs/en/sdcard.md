@@ -2,7 +2,6 @@
 
 Accessing files on external SD cards is currently only supported from the `file` module. This imposes the same overall restrictions of internal SPIFFS to SD cards:
 
-- only one file can be opened at a time
 - no support for sub-folders
 - no timestamps
 - no file attributes (read-only, system, etc.)
