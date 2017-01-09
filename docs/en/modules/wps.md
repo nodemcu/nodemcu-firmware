@@ -5,11 +5,16 @@
 
 [WPS](https://en.wikipedia.org/wiki/Wi-Fi_Protected_Setup) allows devices to be added to an existing network without entering the network credentials.
 
+!!! danger
+
+    Use this with caution. There are serious security concerns about using WPS.
+
+    WPA/WPA2 networks that have the WPS feature enabled are [very easy to crack](http://www.howtogeek.com/176124/wi-fi-protected-setup-wps-is-insecure-heres-why-you-should-disable-it/). Once the WPS pin has been stolen [the router gives out the password](https://scotthelme.co.uk/wifi-insecurity-wps/) even if it has been changed.
+
+    You should use WPA/WPA2 with the WPS feature disabled.
+
 ## wps.disable()
 Disable WiFi WPS function.
-
-#### Syntax
-`wps.disable()`
 
 #### Parameters
 none
@@ -19,9 +24,6 @@ none
 
 ## wps.enable()
 Enable WiFi WPS function.
-
-#### Syntax
-`wps.enable()`
 
 #### Parameters
 none
