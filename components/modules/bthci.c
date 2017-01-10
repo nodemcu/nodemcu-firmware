@@ -188,7 +188,7 @@ static int on_bthci_receive (uint8_t *data, uint16_t len)
   return 0;
 }
 
-static const vhci_host_callback_t bthci_callbacks =
+static const esp_vhci_host_callback_t bthci_callbacks =
 {
   on_bthci_can_send,
   on_bthci_receive
@@ -200,7 +200,7 @@ static const vhci_host_callback_t bthci_callbacks =
 // Expects callback function at top of stack
 static int send_hci_command (lua_State *L, uint8_t *data, unsigned len)
 {
-  if (API_vhci_host_check_send_available ())
+  if (esp_vhci_host_check_send_available ())
   {
     uint16_t cmd = (((uint16_t)data[2]) << 8) | data[1];
     for (int i = 0; i < MAX_CMD_Q; ++i)
@@ -214,7 +214,7 @@ static int send_hci_command (lua_State *L, uint8_t *data, unsigned len)
           lua_pushvalue (L, -1);
           cmd_q[i].cb_ref = luaL_ref (L, LUA_REGISTRYINDEX);
         }
-        API_vhci_host_send_packet (data, len);
+        esp_vhci_host_send_packet (data, len);
         return 0;
       }
     }
@@ -245,7 +245,7 @@ static void enable_le_meta_events (void)
   STREAM_U8 (p, 0x00);
   STREAM_U8 (p, 0x20); // LE Meta-Event
 
-  API_vhci_host_send_packet (buf, sizeof (buf));
+  esp_vhci_host_send_packet (buf, sizeof (buf));
 }
 
 
@@ -327,9 +327,9 @@ static int lbthci_init (lua_State *L)
   for (int i = 0; i < MAX_CMD_Q; ++i)
     cmd_q[i].cb_ref = LUA_NOREF;
 
-  bt_controller_init ();
+  esp_bt_controller_init ();
 
-  API_vhci_host_register_callback (&bthci_callbacks);
+  esp_vhci_host_register_callback (&bthci_callbacks);
 
   enable_le_meta_events ();
   return 0;
