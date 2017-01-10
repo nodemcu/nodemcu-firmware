@@ -329,7 +329,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
 #endif // GPIO_INTERRUPT_HOOK_ENABLE
 
 /*
- * Initialise GPIO interrupt mode. Optionally in RAM because interrupts are dsabled
+ * Initialise GPIO interrupt mode. Optionally in RAM because interrupts are disabled
  */
 void NO_INTR_CODE platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
 {
