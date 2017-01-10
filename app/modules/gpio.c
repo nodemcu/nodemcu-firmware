@@ -49,7 +49,7 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
 
   NODE_DBG("pin:%d, level:%d \n", pin, level);
   if(gpio_cb_ref[pin] != LUA_NOREF) {
-    // GPIO callbacks are run in L0 and inlcude the level as a parameter
+    // GPIO callbacks are run in L0 and include the level as a parameter
     lua_State *L = lua_getstate();
     NODE_DBG("Calling: %08x\n", gpio_cb_ref[pin]);
     //
