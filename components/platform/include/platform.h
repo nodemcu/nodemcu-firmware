@@ -68,6 +68,18 @@ void platform_uart_send( unsigned id, uint8_t data );
 int platform_uart_set_flow_control( unsigned id, int type );
 
 
+// *****************************************************************************
+// Sigma-Delta subsection
+int platform_sigma_delta_exists( unsigned channel );
+
+uint8_t platform_sigma_delta_setup( uint8_t channel, uint8_t gpio_num );
+uint8_t platform_sigma_delta_close( uint8_t channel );
+// PWM emulation not possible, code kept for future reference
+//uint8_t platform_sigma_delta_set_pwmduty( uint8_t channel, uint8_t duty );
+uint8_t platform_sigma_delta_set_prescale( uint8_t channel, uint8_t prescale );
+uint8_t platform_sigma_delta_set_duty( uint8_t channel, int8_t duty );
+
+
 // Internal flash erase/write functions
 
 uint32_t platform_flash_get_sector_of_address( uint32_t addr );
