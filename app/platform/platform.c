@@ -231,8 +231,8 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
         //clear interrupt status
         GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
         uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
-	task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level);
-	// We re-enable the interrupt when we execute the callback
+        task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level);
+        // We re-enable the interrupt when we execute the callback
       }
     }
   }
