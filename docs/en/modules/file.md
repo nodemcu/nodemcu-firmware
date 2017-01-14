@@ -294,6 +294,55 @@ Renames a file. If a file is currently open, it will be closed first.
 file.rename("temp.lua","init.lua")
 ```
 
+## file.stat()
+
+Get attribtues of a file or directory in a table:
+
+- `size` file size in bytes
+- `name` file name
+- `time` table with time stamp information. Default is 2016-06-21 00:00:00 in case time stamps are not supported (on SPIFFS).
+  - `year`
+  - `mon`
+  - `day`
+  - `hour`
+  - `min`
+  - `sec`
+- `is_dir` flag `true` if item is a directory, otherwise `false`
+- `is_rdonly` flag `true` if item is read-only, otherwise `false`
+- `is_hidden` flag `true` if item is hidden, otherwise `false`
+- `is_sys` flag `true` if item is system, otherwise `false`
+- `is_arch` flag `true` if item is archive, otherwise `false`
+
+#### Syntax
+`file.stat(filename)`
+
+#### Parameters
+`filename` file name
+
+#### Returns
+table containing file attributes
+
+#### Example
+
+```lua
+s = file.stat("/SD0/myfile")
+print("name: " .. s.name)
+print("size: " .. s.size)
+
+t = s.time
+print(string.format("%02d:%02d:%02d", t.hour, t.min, t.sec))
+print(string.format("%04d-%02d-%02d", t.year, t.mon, t.day))
+
+if s.is_dir then print("is directory") else print("is file") end
+if s.is_rdonly then print("is read-only") else print("is writable") end
+if s.is_hidden then print("is hidden") else print("is not hidden") end
+if s.is_sys then print("is system") else print("is not system") end
+if s.is_arch then print("is archive") else print("is not archive") end
+
+s = nil
+t = nil
+```
+
 # File access functions
 
 The `file` module provides several functions to access the content of a file after it has been opened with [`file.open()`](#fileopen). They can be used as part of a basic model or an object model:
