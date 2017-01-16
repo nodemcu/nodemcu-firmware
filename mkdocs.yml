@@ -33,6 +33,7 @@ pages:
         - 'bit':         'en/modules/bit.md'
         - 'bthci':       'en/modules/bthci.md'
         - 'file':        'en/modules/file.md'
+        - 'i2c':         'en/modules/i2c.md'
         - 'node':        'en/modules/node.md'
         - 'sigma delta': 'en/modules/sigma-delta.md'
         - 'struct':      'en/modules/struct.md'

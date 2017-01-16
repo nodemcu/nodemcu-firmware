@@ -35,6 +35,13 @@ enum
 int platform_init (void);
 
 // *****************************************************************************
+// GPIO subsection
+
+int platform_gpio_exists( unsigned gpio );
+int platform_gpio_output_exists( unsigned gpio );
+
+
+// *****************************************************************************
 // UART subsection
 
 // Parity
@@ -78,6 +85,33 @@ uint8_t platform_sigma_delta_close( uint8_t channel );
 //uint8_t platform_sigma_delta_set_pwmduty( uint8_t channel, uint8_t duty );
 uint8_t platform_sigma_delta_set_prescale( uint8_t channel, uint8_t prescale );
 uint8_t platform_sigma_delta_set_duty( uint8_t channel, int8_t duty );
+
+
+// *****************************************************************************
+// I2C platform interface
+
+// I2C speed
+enum
+{
+  PLATFORM_I2C_SPEED_SLOW = 100000,
+  PLATFORM_I2C_SPEED_FAST = 400000
+};
+
+// I2C direction
+enum
+{
+  PLATFORM_I2C_DIRECTION_TRANSMITTER,
+  PLATFORM_I2C_DIRECTION_RECEIVER
+};
+
+int platform_i2c_exists( unsigned id );
+int platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed );
+int platform_i2c_send_start( unsigned id );
+int platform_i2c_send_stop( unsigned id );
+int platform_i2c_send_address( unsigned id, uint16_t address, int direction, int ack_check_en );
+int platform_i2c_send_byte( unsigned id, uint8_t data, int ack_check_en );
+// ack_val: 1 = send ACK, 0 = send NACK
+int platform_i2c_recv_byte( unsigned id, int ack_val );
 
 
 // Internal flash erase/write functions

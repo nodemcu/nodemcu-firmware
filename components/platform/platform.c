@@ -8,6 +8,14 @@ int platform_init (void)
   return PLATFORM_OK;
 }
 
+
+// *****************************************************************************
+// GPIO subsection
+
+int platform_gpio_exists( unsigned gpio ) { return GPIO_IS_VALID_GPIO(gpio); }
+int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_GPIO(gpio); }
+
+
 // ****************************************************************************
 // UART
 
@@ -138,3 +146,149 @@ uint8_t IRAM_ATTR platform_sigma_delta_set_duty( uint8_t channel, int8_t duty )
 {
   return ESP_OK == sigmadelta_set_duty( channel, duty ) ? 1 : 0;
 }
+
+// *****************************************************************************
+// I2C platform interface
+
+#if 0
+// platform functions for the IDF I2C driver
+// they're currently deactivated because of https://github.com/espressif/esp-idf/issues/241
+// long-term goal is to use these instead of the SW driver in the #else branch
+
+#include "driver/i2c.h"
+int platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed ) {
+  i2c_config_t conf;
+  conf.mode = I2C_MODE_MASTER;
+  conf.sda_io_num = sda;
+  conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+  conf.scl_io_num = scl;
+  conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+  conf.master.clk_speed = speed;
+  if (ESP_OK != i2c_param_config( id, &conf ))
+    return 0;
+
+  if (ESP_OK != i2c_driver_install( id, conf.mode, 0, 0, 0 ))
+    return 0;
+
+  return 1;
+}
+
+int platform_i2c_send_start( unsigned id ) {
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  i2c_master_start( cmd );
+  esp_err_t ret = i2c_master_cmd_begin( id, cmd, 1000 / portTICK_RATE_MS );
+  i2c_cmd_link_delete( cmd );
+
+  return ret == ESP_OK ? 1 : 0;
+}
+
+int platform_i2c_send_stop( unsigned id ) {
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  i2c_master_stop( cmd );
+  esp_err_t ret = i2c_master_cmd_begin( id, cmd, 1000 / portTICK_RATE_MS );
+  i2c_cmd_link_delete( cmd );
+
+  return ret == ESP_OK ? 1 : 0;
+}
+
+int platform_i2c_send_address( unsigned id, uint16_t address, int direction, int ack_check_en ) {
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+
+  direction = ( direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ) ? 0 : 1;
+
+  i2c_master_write_byte( cmd, (uint8_t) ((address << 1) | direction ), ack_check_en );
+
+  esp_err_t ret = i2c_master_cmd_begin( id, cmd, 1000 / portTICK_RATE_MS );
+  i2c_cmd_link_delete( cmd );
+
+  // we return ack (1=acked).
+  if (ret == ESP_FAIL)
+    return 0;
+  else if (ret == ESP_OK)
+    return 1;
+  else
+    return -1;
+}
+
+int platform_i2c_send_byte( unsigned id, uint8_t data, int ack_check_en ) {
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  i2c_master_write_byte( cmd, data, ack_check_en );
+
+  esp_err_t ret = i2c_master_cmd_begin( id, cmd, 1000 / portTICK_RATE_MS );
+  i2c_cmd_link_delete( cmd );
+
+  // we return ack (1=acked).
+  if (ret == ESP_FAIL)
+    return 0;
+  else if (ret == ESP_OK)
+    return 1;
+  else
+    return -1;
+}
+
+int platform_i2c_recv_byte( unsigned id, int ack_val ){
+  uint8_t data;
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  i2c_master_read_byte( cmd, &data, ack_val > 0 ? 0 : 1 );
+
+  esp_err_t ret = i2c_master_cmd_begin( id, cmd, 1000 / portTICK_RATE_MS );
+  i2c_cmd_link_delete( cmd );
+
+  return ret == ESP_OK ? data : -1;
+}
+
+#else
+
+// platform functions for SW-based I2C driver
+// they work around the issue with the IDF driver
+// remove when functions for the IDF driver can be used instead
+
+#include "driver/i2c_sw_master.h"
+int platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed ){
+  if (!platform_gpio_output_exists(sda) || !platform_gpio_output_exists(scl))
+    return 0;
+
+  if (speed != PLATFORM_I2C_SPEED_SLOW)
+    return 0;
+
+  i2c_sw_master_gpio_init(sda, scl);
+  return 1;
+}
+
+int platform_i2c_send_start( unsigned id ){
+  i2c_sw_master_start();
+  return 1;
+}
+
+int platform_i2c_send_stop( unsigned id ){
+  i2c_sw_master_stop();
+  return 1;
+}
+
+int platform_i2c_send_address( unsigned id, uint16_t address, int direction, int ack_check_en ){
+  // Convert enum codes to R/w bit value.
+  // If TX == 0 and RX == 1, this test will be removed by the compiler
+  if ( ! ( PLATFORM_I2C_DIRECTION_TRANSMITTER == 0 &&
+           PLATFORM_I2C_DIRECTION_RECEIVER == 1 ) ) {
+    direction = ( direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ) ? 0 : 1;
+  }
+
+  i2c_sw_master_writeByte( (uint8_t) ((address << 1) | direction ));
+  // Low-level returns nack (0=acked); we return ack (1=acked).
+  return ! i2c_sw_master_getAck();
+}
+
+int platform_i2c_send_byte( unsigned id, uint8_t data, int ack_check_en ){
+  i2c_sw_master_writeByte(data);
+  // Low-level returns nack (0=acked); we return ack (1=acked).
+  return ! i2c_sw_master_getAck();
+}
+
+int platform_i2c_recv_byte( unsigned id, int ack ){
+  uint8_t r = i2c_sw_master_readByte();
+  i2c_sw_master_setAck( !ack );
+  return r;
+}
+#endif
+
+int platform_i2c_exists( unsigned id ) { return id < I2C_NUM_MAX; }
