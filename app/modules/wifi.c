@@ -737,7 +737,7 @@ static int wifi_station_config( lua_State* L )
     memcpy(sta_conf.ssid, ssid, sl);
 
     const char *password = luaL_checklstring( L, 2, &pl );
-    luaL_argcheck(L, (pl==0||(pl>=8 && pl<sizeof(sta_conf.password)) ), 2, "length:0 or 8-64");
+    luaL_argcheck(L, (pl==0||(pl>=8 && pl<=sizeof(sta_conf.password)) ), 2, "length:0 or 8-64");
 
     memcpy(sta_conf.password, password, pl);
 
