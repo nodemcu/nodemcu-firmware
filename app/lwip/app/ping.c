@@ -164,7 +164,10 @@ ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, ip_addr_t *addr)
 				  pingresp.resp_time = delay;
 				  pingresp.seqno = ntohs(iecho->seqno);
 				  pingresp.ping_err = 0;
-				  pingmsg->ping_opt->recv_function(pingmsg->ping_opt,(void*) &pingresp);
+//				  pingresp.ttl = iphdr->_ttl;
+//				  pingmsg->ping_opt->recv_function(pingmsg,(void*) &pingresp);
+				  pingmsg->ping_opt->recv_function(pingmsg->ping_opt, (void*) &pingresp);
+
 			  }
 		  }
 		  seqno = iecho->seqno;
