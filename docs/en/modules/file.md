@@ -300,7 +300,7 @@ Get attribtues of a file or directory in a table:
 
 - `size` file size in bytes
 - `name` file name
-- `time` table with time stamp information. Default is 2016-06-21 00:00:00 in case time stamps are not supported (on SPIFFS).
+- `time` table with time stamp information. Default is 1970-01-01 00:00:00 in case time stamps are not supported (on SPIFFS).
   - `year`
   - `mon`
   - `day`

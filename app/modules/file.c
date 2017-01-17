@@ -14,9 +14,9 @@
 #define FILE_READ_CHUNK 1024
 
 // use this time/date in absence of a timestamp
-#define FILE_TIMEDEF_YEAR 2016
-#define FILE_TIMEDEF_MON 06
-#define FILE_TIMEDEF_DAY 21
+#define FILE_TIMEDEF_YEAR 1970
+#define FILE_TIMEDEF_MON 01
+#define FILE_TIMEDEF_DAY 01
 #define FILE_TIMEDEF_HOUR 00
 #define FILE_TIMEDEF_MIN 00
 #define FILE_TIMEDEF_SEC 00
@@ -325,27 +325,6 @@ static int file_rename( lua_State* L )
   return 1;
 }
 
-static void add_table_int( lua_State *L, const char *key, int val )
-{
-  lua_pushstring( L, key );
-  lua_pushinteger( L, val );
-  lua_rawset( L, -3 );
-}
-
-static void add_table_string( lua_State *L, const char *key, const char *str )
-{
-  lua_pushstring( L, key );
-  lua_pushstring( L, str );
-  lua_rawset( L, -3 );
-}
-
-static void add_table_boolean( lua_State *L, const char *key, int b )
-{
-  lua_pushstring( L, key );
-  lua_pushboolean( L, b );
-  lua_rawset( L, -3 );
-}
-
 // Lua: stat(filename)
 static int file_stat( lua_State* L )
 {
@@ -361,27 +340,53 @@ static int file_stat( lua_State* L )
   }
 
   lua_createtable( L, 0, 7 );
-  add_table_int( L, "size", vfs_item_size( stat ) );
-  add_table_string( L, "name", vfs_item_name( stat ) );
-  add_table_boolean( L, "is_dir", vfs_item_is_dir( stat ) );
-  add_table_boolean( L, "is_rdonly", vfs_item_is_rdonly( stat ) );
-  add_table_boolean( L, "is_hidden", vfs_item_is_hidden( stat ) );
-  add_table_boolean( L, "is_sys", vfs_item_is_sys( stat ) );
-  add_table_boolean( L, "is_arch", vfs_item_is_arch( stat ) );
+
+  lua_pushinteger( L, vfs_item_size( stat ) );
+  lua_setfield( L, -2, "size" );
+
+  lua_pushstring( L, vfs_item_name( stat ) );
+  lua_setfield( L, -2, "name" );
+
+  lua_pushboolean( L, vfs_item_is_dir( stat ) );
+  lua_setfield( L, -2, "is_dir" );
+
+  lua_pushboolean( L, vfs_item_is_rdonly( stat ) );
+  lua_setfield( L, -2, "is_rdonly" );
+
+  lua_pushboolean( L, vfs_item_is_hidden( stat ) );
+  lua_setfield( L, -2, "is_hidden" );
+
+  lua_pushboolean( L, vfs_item_is_sys( stat ) );
+  lua_setfield( L, -2, "is_sys" );
+
+  lua_pushboolean( L, vfs_item_is_arch( stat ) );
+  lua_setfield( L, -2, "is_arch" );
 
   // time stamp as sub-table
   vfs_time tm;
   int got_time = VFS_RES_OK == vfs_item_time( stat, &tm ) ? TRUE : FALSE;
   
-  lua_pushstring( L, "time" );
   lua_createtable( L, 0, 6 );
-  add_table_int( L, "year", got_time ? tm.year : FILE_TIMEDEF_YEAR );
-  add_table_int( L, "mon",  got_time ? tm.mon  : FILE_TIMEDEF_MON );
-  add_table_int( L, "day",  got_time ? tm.day  : FILE_TIMEDEF_DAY );
-  add_table_int( L, "hour", got_time ? tm.hour : FILE_TIMEDEF_HOUR );
-  add_table_int( L, "min",  got_time ? tm.min  : FILE_TIMEDEF_MIN );
-  add_table_int( L, "sec",  got_time ? tm.sec  : FILE_TIMEDEF_SEC );
-  lua_rawset( L, -3 );
+
+  lua_pushinteger( L, got_time ? tm.year : FILE_TIMEDEF_YEAR );
+  lua_setfield( L, -2, "year" );
+
+  lua_pushinteger( L, got_time ? tm.mon : FILE_TIMEDEF_MON );
+  lua_setfield( L, -2, "mon" );
+
+  lua_pushinteger( L, got_time ? tm.day : FILE_TIMEDEF_DAY );
+  lua_setfield( L, -2, "day" );
+
+  lua_pushinteger( L, got_time ? tm.hour : FILE_TIMEDEF_HOUR );
+  lua_setfield( L, -2, "hour" );
+
+  lua_pushinteger( L, got_time ? tm.min : FILE_TIMEDEF_MIN );
+  lua_setfield( L, -2, "min" );
+
+  lua_pushinteger( L, got_time ? tm.sec : FILE_TIMEDEF_SEC );
+  lua_setfield( L, -2, "sec" );
+
+  lua_setfield( L, -2, "time" );
 
   return 1;
 }
