@@ -63,9 +63,9 @@ static const Protocol proto[] = {
  * Transmit a single high-low pulse.
  */
 void transmit(HighLow pulses, bool invertedSignal, int pulseLength, int pin) {
-  platform_gpio_write(pin, invertedSignal);
-  os_delay_us(pulseLength * pulses.high);
   platform_gpio_write(pin, !invertedSignal);
+  os_delay_us(pulseLength * pulses.high);
+  platform_gpio_write(pin, invertedSignal);
   os_delay_us(pulseLength * pulses.low);
 }
 
@@ -85,7 +85,6 @@ void send(unsigned long protocol_id, unsigned long pulse_length, unsigned long r
         transmit(p.zero, p.invertedSignal, pulse_length, pin);
     }
     transmit(p.syncFactor, p.invertedSignal, pulse_length, pin);
-    platform_gpio_write(pin, false);
   }
 }
 
