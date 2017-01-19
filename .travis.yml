@@ -11,12 +11,12 @@ cache:
   - directories:
     - cache
 before_install:
-- pip install --user hererocks
+- pip install --user hererocks esptool
 - hererocks env --lua 5.1 -rlatest
 - source env/bin/activate
 - luarocks install luafilesystem
 install:
-- tar -zxvf tools/esp-open-sdk.tar.gz
+- tar -Jxvf tools/esp-open-sdk.tar.xz
 - export PATH=$PATH:$PWD/esp-open-sdk/xtensa-lx106-elf/bin
 script:
 - lua tools/cross-lua.lua || exit 1
