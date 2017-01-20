@@ -54,6 +54,7 @@ struct ping_option{
 	ping_recv_function recv_function;
 	ping_sent_function sent_function;
 	void* reverse;
+	struct ping_msg *parent_msg;
 };
 
 struct ping_msg{

@@ -56,7 +56,7 @@
 #include "os_type.h"
 #include "osapi.h"
 
-#include "lwip/app/ping2.h"
+#include "lwip/app/ping.h"
 
 #if PING_USE_SOCKETS
 #include "lwip/sockets.h"
@@ -165,8 +165,12 @@ ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, ip_addr_t *addr)
 				  pingresp.seqno = ntohs(iecho->seqno);
 				  pingresp.ping_err = 0;
 				  pingresp.ttl = iphdr->_ttl;
-				  pingmsg->ping_opt->recv_function(pingmsg,(void*) &pingresp);
-//				  pingmsg->ping_opt->recv_function(pingmsg->ping_opt, (void*) &pingresp);
+
+				// hand back pointer to message without breaking compatibility
+				  pingmsg->ping_opt->parent_msg = pingmsg;
+
+//				  pingmsg->ping_opt->recv_function(pingmsg,(void*) &pingresp);
+				  pingmsg->ping_opt->recv_function(pingmsg->ping_opt, (void*) &pingresp);
 
 			  }
 		  }

@@ -16,7 +16,7 @@
 #include "espconn.h"
 #include "lwip/dns.h" 
 // #include "lwip/app/ping.h"
-#include "lwip/app/ping2.h"
+#include "lwip/app/ping.h"
 #include "lwip/raw.h"
 #include "c_stdio.h"
 
@@ -48,8 +48,11 @@ static int test_add(lua_State *L) {
 // https://github.com/smcl/nodemcu-firmware/blob/cc04aaf92c1c076c30ef0b0eee43b3f924137440/app/modules/test.c
 
 void ping_received(void *arg, void *data) {
-    struct ping_msg *pingmsg = (struct ping_msg*)arg;
-    struct ping_option *pingopt = pingmsg->ping_opt;
+    // struct ping_msg *pingmsg = (struct ping_msg*)arg;
+    // struct ping_option *pingopt = pingmsg->ping_opt;
+    struct ping_option *pingopt = (struct ping_option*)arg;
+    struct ping_msg *pingmsg = pingopt->parent_msg ; 
+
     struct ping_resp *pingresp = (struct ping_resp*)data;
 
     // c_printf("[wjr] what do we have in ping_recieved? | arg= %X | data= %X | pingmsg= %X | pingopt= %X | pingresp = %X | \n", 
