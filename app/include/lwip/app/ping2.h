@@ -75,7 +75,7 @@ struct ping_resp{
 	uint32 bytes;
 	uint32 total_bytes;
 	uint32 total_time;
-//        uint8  ttl;
+        uint8  ttl;
 	sint8  ping_err;
 };
 

@@ -15,7 +15,8 @@
 #include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "lwip/dns.h" 
-#include "lwip/app/ping.h"
+// #include "lwip/app/ping.h"
+#include "lwip/app/ping2.h"
 #include "lwip/raw.h"
 #include "c_stdio.h"
 
