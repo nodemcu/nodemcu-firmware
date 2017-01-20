@@ -95,6 +95,10 @@ void ping_received(void *arg, void *data) {
 static void ping_by_hostname(const char *name, ip_addr_t *ipaddr, void *arg) {
     struct ping_option *ping_opt = (struct ping_option *)c_zalloc(sizeof(struct ping_option));
 
+    if (ipaddr == NULL) {
+      c_printf("SEVERE problem resolving hostname\n");
+        return;
+    }
     if (ipaddr->addr == IPADDR_NONE) {
       c_printf("problem resolving hostname\n");
 	return;
