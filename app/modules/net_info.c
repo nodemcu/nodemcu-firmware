@@ -1,7 +1,8 @@
 /* 
  * http://blog.mclemon.io/esp8266-contributing-to-the-nodemcu-ecosystem
+ * https://github.com/smcl/nodemcu-firmware/blob/cc04aaf92c1c076c30ef0b0eee43b3f924137440/app/modules/test.c
  *
- * test.c - simple lua for playing about with
+ * extracted ping function
  * adoptet jan 2017 for commit to nodeMCU by Wolfgang Rosner
  */
 
@@ -26,27 +27,9 @@ static int ping_callback_ref;
 static int ping_host_count;
 static ip_addr_t ping_host_ip;
 
-/*
-// test.identity() - takes a single value, returns it
-static int test_identity(lua_State *L) {  
-  return 1;
-}
-
-
-
-// test.add(x,y) - take two values and add them
-static int test_add(lua_State *L) {
-  double x = lua_tonumber(L, 1);
-  double y = lua_tonumber(L, 2);
-  lua_pushnumber(L, x+y);
-  return 1;
-} 
-
-*/
-
-// https://github.com/smcl/nodemcu-firmware/blob/cc04aaf92c1c076c30ef0b0eee43b3f924137440/app/modules/test.c
 
 void ping_received(void *arg, void *data) {
+    // this would require change of the interface 
     // struct ping_msg *pingmsg = (struct ping_msg*)arg;
     // struct ping_option *pingopt = pingmsg->ping_opt;
     struct ping_option *pingopt = (struct ping_option*)arg;
@@ -54,28 +37,18 @@ void ping_received(void *arg, void *data) {
 
     struct ping_resp *pingresp = (struct ping_resp*)data;
 
-    // c_printf("[wjr] what do we have in ping_recieved? | arg= %X | data= %X | pingmsg= %X | pingopt= %X | pingresp = %X | \n", 
-    //	      arg, data, pingmsg, pingopt, pingresp);
-    
     char ipaddrstr[16];
     ip_addr_t source_ip;
     
-    // c_printf("[wjr] before accessing pingopt\n");
     source_ip.addr = pingopt->ip;
-    // c_printf("[wjr] after accessing pingopt\n");
     ipaddr_ntoa_r(&source_ip, ipaddrstr, sizeof(ipaddrstr));
-    // c_printf("[wjr] after ipaddr_ntoa_r\n");
 
-    // if we've registered a lua callback function, retrieve
-    // it from registry + call it, otherwise just print the ping
-    // response in a similar way to the standard iputils ping util
     if (ping_callback_ref != LUA_NOREF) {
       lua_rawgeti(gL, LUA_REGISTRYINDEX, ping_callback_ref);
       lua_pushinteger(gL, pingresp->bytes);
       lua_pushstring(gL, ipaddrstr);
       lua_pushinteger(gL, pingresp->seqno);
       lua_pushinteger(gL, pingresp->ttl);
-      // lua_pushinteger(gL, 99999);
       lua_pushinteger(gL, pingresp->resp_time);
       lua_call(gL, 5, 0);
     } else {
@@ -84,7 +57,6 @@ void ping_received(void *arg, void *data) {
 	       ipaddrstr,
 	       pingresp->seqno,
 	       pingresp->ttl,
-	       // 99999,
 	       pingresp->resp_time);
     }
 }
@@ -95,11 +67,11 @@ static void ping_by_hostname(const char *name, ip_addr_t *ipaddr, void *arg) {
     struct ping_option *ping_opt = (struct ping_option *)c_zalloc(sizeof(struct ping_option));
 
     if (ipaddr == NULL) {
-      c_printf("SEVERE problem resolving hostname\n");
+      c_printf("SEVERE problem resolving hostname - network and DNS accessible?\n");
         return;
     }
     if (ipaddr->addr == IPADDR_NONE) {
-      c_printf("problem resolving hostname\n");
+      c_printf("problem resolving hostname - maybe nonexistent host?\n");
 	return;
     }
     
@@ -109,7 +81,6 @@ static void ping_by_hostname(const char *name, ip_addr_t *ipaddr, void *arg) {
     ping_opt->recv_function = &ping_received;
     
     ping_start(ping_opt);
-    // ping_start(ping_opt *);
 }
 
 
@@ -117,9 +88,6 @@ static void ping_by_hostname(const char *name, ip_addr_t *ipaddr, void *arg) {
   * test.ping()
   * Description:
   * 	Send ICMP ping request to address, optionally call callback when response received
-  * [wjr] is this stuff going into the doc automagically????
-  * so this would be the proper way to write doc???
-  *	         ...... foo bar tralalala .........
   *
   * Syntax:
   * 	wifi.sta.getconfig(ssid, password) --Set STATION configuration, Auto-connect by default, Connects to any BSSID
@@ -157,8 +125,6 @@ static int net_info_ping(lua_State *L)
 	count = luaL_checkinteger(L, 2);
     }
    
-    // c_printf("[wjr] checked number arg\n");
-    
     // retrieve callback arg (optional)
     if (ping_callback_ref != LUA_NOREF) 
       luaL_unref(L, LUA_REGISTRYINDEX, ping_callback_ref);
@@ -170,14 +136,9 @@ static int net_info_ping(lua_State *L)
     gL = L;   // global L
 
 
-    // c_printf("[wjr] checked callback arg\n");
-    
-    
     // attempt to parse ping target as IP
     uint32 ip = ipaddr_addr(ping_target);
 
-    // c_printf("[wjr] checked IP conversion - result 0x%08X from %s \n", ip, ping_target);
-    
     if (ip != IPADDR_NONE) {
 	struct ping_option *ping_opt = (struct ping_option *)c_zalloc(sizeof(struct ping_option));
 
@@ -185,13 +146,10 @@ static int net_info_ping(lua_State *L)
 	ping_opt->ip = ip;
 	ping_opt->coarse_time = 0;
 	ping_opt->recv_function = &ping_received;
-
-	// c_printf("[wjr] just befor calling ping_start | %i | 0x%08X  | %i | %X |\n", ping_opt->count, ping_opt->ip, ping_opt->coarse_time, ping_opt->recv_function);
 	
 	ping_start(ping_opt);
 	
     } else {
-        // return luaL_error(L, "[wjr] dns lookup ###ToDo");
 	ping_host_count = count;
 
 	struct espconn *ping_dns_lookup;
@@ -206,26 +164,13 @@ static int net_info_ping(lua_State *L)
 
 // Module function map
 static const LUA_REG_TYPE net_info_map[] = {
-//  { LSTRKEY( "identity" ),         LFUNCVAL( test_identity ) },
-//  { LSTRKEY( "add" ),              LFUNCVAL( test_add ) },
   { LSTRKEY( "ping" ),             LFUNCVAL( net_info_ping ) },
 
   { LSTRKEY( "__metatable" ),      LROVAL( net_info_map ) },
   { LNILKEY, LNILVAL }
 };
 
-/*
-// Define an empty test function - we won't use this functionality
-// should I know what this is for??? testing my module??
-int luaopen_test( lua_State *L ) {
-  return 0;
-}
- */
 
-
-// Register the module - NODEMCU_MODULE() will make sure a module called "test" 
-// is available when we define the LUA_USE_MODULES_TEST macro in user_modules.h
+// Register the module - NODEMCU_MODULE()  
 NODEMCU_MODULE(NET_INFO, "net_info", net_info_map, NULL);
-// NODEMCU_MODULE(TEST, "test", test_map);
-
 
