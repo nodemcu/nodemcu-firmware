@@ -18,6 +18,8 @@
 
 #define LUA_SJSONLIBNAME "sjson"
 
+#define DEFAULT_DEPTH   20
+
 #define DBG_PRINTF(...)    
 
 typedef struct {
@@ -266,13 +268,13 @@ cleanup_closing_element(jsonsl_t jsn,
 }
 
 static int sjson_decoder_int(lua_State *L, int argno) {
-  int nlevels = 20;
+  int nlevels = DEFAULT_DEPTH;
 
   if (lua_type(L, argno) == LUA_TTABLE) {
     lua_getfield(L, argno, "depth");
     nlevels = lua_tointeger(L, argno);
     if (nlevels == 0) {
-      nlevels = 20;
+      nlevels = DEFAULT_DEPTH;
     }
     if (nlevels < 4) {
       nlevels = 4;
@@ -541,7 +543,7 @@ static void enc_push_stack(lua_State *L, ENC_DATA *data, int argno) {
 }
 
 static int sjson_encoder(lua_State *L) {
-  int nlevels = 32;
+  int nlevels = DEFAULT_DEPTH;
   int argno = 1;
 
   // Validate first arg is a table
@@ -551,7 +553,7 @@ static int sjson_encoder(lua_State *L) {
     lua_getfield(L, argno, "depth");
     nlevels = lua_tointeger(L, argno);
     if (nlevels == 0) {
-      nlevels = 32;
+      nlevels = DEFAULT_DEPTH;
     }
     if (nlevels < 4) {
       nlevels = 4;

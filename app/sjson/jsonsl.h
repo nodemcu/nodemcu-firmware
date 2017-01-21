@@ -269,10 +269,7 @@ struct jsonsl_state_st {
     /**
      * The JSON object type
      */
-    unsigned type;
-
-    /** If this element is special, then its extended type is here */
-    unsigned special_flags;
+    unsigned int type;
 
     /**
      * The position (in terms of number of bytes since the first call to
@@ -291,12 +288,15 @@ struct jsonsl_state_st {
      * jsonsl_st::pos at pop-time */
     size_t pos_cur;
 
+    /** If this element is special, then its extended type is here */
+    unsigned short special_flags;
+
     /**
      * Level of recursion into nesting. This is mainly a convenience
      * variable, as this can technically be deduced from the lexer's
      * level parameter (though the logic is not that simple)
      */
-    unsigned int level;
+    unsigned short level;
 
 
     /**
@@ -310,7 +310,7 @@ struct jsonsl_state_st {
      * numbers. Otherwise a special flag is set, and extra handling is not
      * performed.
      */
-    uint64_t nelem;
+    uint32_t nelem;
 
 
 
@@ -321,7 +321,7 @@ struct jsonsl_state_st {
      * Useful for an opening nest, this will prevent a callback from being
      * invoked on this item or any of its children
      */
-    int ignore_callback;
+    int ignore_callback : 1;
 
     /**
      * Counter which is incremented each time an escape ('\') is encountered.
@@ -329,7 +329,7 @@ struct jsonsl_state_st {
      * inspected by the user if the state actually represents a string
      * type.
      */
-    unsigned int nescapes;
+    unsigned int nescapes : 31;
 
     /**
      * Put anything you want here. if JSONSL_STATE_USER_FIELDS is here, then
