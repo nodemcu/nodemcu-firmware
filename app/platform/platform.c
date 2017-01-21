@@ -755,6 +755,8 @@ int platform_i2c_recv_byte( unsigned id, int ack ){
 uint32_t platform_spi_setup( uint8_t id, int mode, unsigned cpol, unsigned cpha, uint32_t clock_div )
 {
   spi_master_init( id, cpol, cpha, clock_div );
+  // all platform functions assume LSB order for MOSI & MISO buffer
+  spi_mast_byte_order( id, SPI_ORDER_LSB );
   return 1;
 }
 
@@ -779,8 +781,6 @@ spi_data_type platform_spi_send_recv( uint8_t id, uint8_t bitlen, spi_data_type 
 
 int platform_spi_blkwrite( uint8_t id, size_t len, const uint8_t *data )
 {
-  spi_mast_byte_order( id, SPI_ORDER_LSB );
-
   while (len > 0) {
     size_t chunk_len = len > 64 ? 64 : len;
 
@@ -791,8 +791,6 @@ int platform_spi_blkwrite( uint8_t id, size_t len, const uint8_t *data )
     len -= chunk_len;
   }
 
-  spi_mast_byte_order( id, SPI_ORDER_MSB );
-
   return PLATFORM_OK;
 }
 
@@ -801,8 +799,6 @@ int platform_spi_blkread( uint8_t id, size_t len, uint8_t *data )
   uint8_t mosi_idle[64];
 
   os_memset( (void *)mosi_idle, 0xff, len > 64 ? 64 : len );
-
-  spi_mast_byte_order( id, SPI_ORDER_LSB );
 
   while (len > 0 ) {
     size_t chunk_len = len > 64 ? 64 : len;
@@ -815,27 +811,7 @@ int platform_spi_blkread( uint8_t id, size_t len, uint8_t *data )
     len -= chunk_len;
   }
 
-  spi_mast_byte_order( id, SPI_ORDER_MSB );
-
   return PLATFORM_OK;
-}
-
-int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data )
-{
-  if (offset + bitlen > 512)
-    return PLATFORM_ERR;
-
-  spi_mast_set_mosi( id, offset, bitlen, data );
-
-  return PLATFORM_OK;
-}
-
-spi_data_type platform_spi_get_miso( uint8_t id, uint16_t offset, uint8_t bitlen )
-{
-  if (offset + bitlen > 512)
-    return 0;
-
-  return spi_mast_get_miso( id, offset, bitlen );
 }
 
 int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,

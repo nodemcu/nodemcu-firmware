@@ -19,13 +19,13 @@ void spi_lcd_mode_init(uint8 spi_no)
 	if(spi_no>1) 		return; //handle invalid input number
 	//bit9 of PERIPHS_IO_MUX should be cleared when HSPI clock doesn't equal CPU clock
 	//bit8 of PERIPHS_IO_MUX should be cleared when SPI clock doesn't equal CPU clock
-	if(spi_no==SPI){
+	if(spi_no==SPI_SPI){
 		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005); //clear bit9,and bit8
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
-	}else if(spi_no==HSPI){
+	}else if(spi_no==SPI_HSPI){
 		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105); //clear bit9
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
@@ -93,10 +93,10 @@ uint32_t spi_set_clkdiv(uint8 spi_no, uint32_t clock_div)
 		WRITE_PERI_REG(SPI_CLOCK(spi_no), SPI_CLK_EQU_SYSCLK); // 80Mhz speed
 	}
 
-	if(spi_no==SPI){
+	if(spi_no==SPI_SPI){
 		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005 | (clock_div <= 1 ? 0x100 : 0));
 	}
-	else if(spi_no==HSPI){
+	else if(spi_no==SPI_HSPI){
 		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105 | (clock_div <= 1 ? 0x200 : 0)); 
 	}
 
@@ -144,13 +144,13 @@ void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_
 
 	spi_set_clkdiv(spi_no, clock_div);
 
-	if(spi_no==SPI){
+	if(spi_no==SPI_SPI){
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
 	}
-	else if(spi_no==HSPI){
+	else if(spi_no==SPI_HSPI){
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
 		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	
@@ -179,8 +179,16 @@ void spi_mast_byte_order(uint8 spi_no, uint8 order)
 *******************************************************************************/
 void spi_mast_blkset(uint8 spi_no, size_t bitlen, const uint8 *data)
 {
+    size_t aligned_len = bitlen >> 3;
+
     while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
-    os_memcpy((void *)SPI_W0(spi_no), (const void *)data, bitlen >> 3);
+
+    if (aligned_len % 4) {
+        // length for memcpy needs to be aligned to uint32 bounday
+        // otherwise single byte writes are issued to the register and corrupt data
+        aligned_len += 4 - (aligned_len % 4);
+    }
+    os_memcpy((void *)SPI_W0(spi_no), (const void *)data, aligned_len);
 }
 
 /******************************************************************************
@@ -188,12 +196,29 @@ void spi_mast_blkset(uint8 spi_no, size_t bitlen, const uint8 *data)
  * Description  : Copy a block of data from the MISO FIFO
  * Parameters   : uint8  spi_no - SPI module number, Only "SPI" and "HSPI" are valid
  *                size_t bitlen - number of bits to copy, multiple of 8
- *                uint8  *data  - pointer to data buffer
+ *                uint8  *data  - pointer to data buffer, the buffer must be able to
+ *                                accept a multiple of 4*8 bits
 *******************************************************************************/
 void spi_mast_blkget(uint8 spi_no, size_t bitlen, uint8 *data)
 {
+    size_t aligned_len = bitlen >> 3;
+
     while(READ_PERI_REG(SPI_CMD(spi_no)) & SPI_USR);
-    os_memcpy((void *)data, (void *)SPI_W0(spi_no), bitlen >> 3);
+
+    if (aligned_len % 4) {
+        // length for memcpy needs to be aligned to uint32 bounday
+        // otherwise single byte reads are issued to the register and corrupt data
+        aligned_len += 4 - (aligned_len % 4);
+    }
+    os_memcpy((void *)data, (void *)SPI_W0(spi_no), aligned_len);
+}
+
+static uint32 swap_endianess(uint32 n)
+{
+    return ((n & 0xff) << 24) |
+            ((n & 0xff00) << 8) |
+            ((n & 0xff0000UL) >> 8) |
+            ((n & 0xff000000UL) >> 24);
 }
 
 /******************************************************************************
@@ -208,8 +233,8 @@ void spi_mast_blkget(uint8 spi_no, size_t bitlen, uint8 *data)
 *******************************************************************************/
 void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
 {
-    uint8     wn, shift;
     spi_buf_t spi_buf;
+    uint8     wn, shift;
 
     if (spi_no > 1)
         return; // handle invalid input number
@@ -226,8 +251,10 @@ void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
 
     // transfer Wn to buf
     spi_buf.word[1] = READ_PERI_REG(SPI_W0(spi_no) + wn*4);
+    spi_buf.word[1] = swap_endianess(spi_buf.word[1]);
     if (wn < 15) {
         spi_buf.word[0] = READ_PERI_REG(SPI_W0(spi_no) + (wn+1)*4);
+        spi_buf.word[0] = swap_endianess(spi_buf.word[0]);
     }
 
     shift = 64 - (offset & 0x1f) - bitlen;
@@ -235,9 +262,9 @@ void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
     spi_buf.dword |= (uint64)data << shift;
 
     if (wn < 15) {
-       WRITE_PERI_REG(SPI_W0(spi_no) + (wn+1)*4, spi_buf.word[0]);
+        WRITE_PERI_REG(SPI_W0(spi_no) + (wn+1)*4, swap_endianess(spi_buf.word[0]));
     }
-    WRITE_PERI_REG(SPI_W0(spi_no) + wn*4, spi_buf.word[1]);
+    WRITE_PERI_REG(SPI_W0(spi_no) + wn*4, swap_endianess(spi_buf.word[1]));
 
     return;
 }
@@ -269,8 +296,10 @@ uint32 spi_mast_get_miso(uint8 spi_no, uint16 offset, uint8 bitlen)
 
     // transfer Wn to buf
     spi_buf.word[1] = READ_PERI_REG(SPI_W0(spi_no) + wn*4);
+    spi_buf.word[1] = swap_endianess(spi_buf.word[1]);
     if (wn < 15) {
         spi_buf.word[0] = READ_PERI_REG(SPI_W0(spi_no) + (wn+1)*4);
+        spi_buf.word[0] = swap_endianess(spi_buf.word[0]);
     }
 
     result = (uint32)(spi_buf.dword >> (64 - ((offset & 0x1f) + bitlen)));
@@ -419,12 +448,12 @@ void spi_slave_init(uint8 spi_no)
     //bit9 should be cleared when HSPI clock doesn't equal CPU clock
     //bit8 should be cleared when SPI clock doesn't equal CPU clock
     ////WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105); //clear bit9//TEST
-    if(spi_no==SPI){
+    if(spi_no==SPI_SPI){
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
-    }else if(spi_no==HSPI){
+    }else if(spi_no==SPI_HSPI){
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	
@@ -511,10 +540,10 @@ void hspi_master_readwrite_repeat(void)
 	uint8 temp;
 
 	os_timer_disarm(&timer2);
-	spi_byte_read_espslave(HSPI,&temp);
+	spi_byte_read_espslave(SPI_HSPI,&temp);
 
 	temp++;
-	spi_byte_write_espslave(HSPI,temp);
+	spi_byte_write_espslave(SPI_HSPI,temp);
        os_timer_setfn(&timer2, (os_timer_func_t *)hspi_master_readwrite_repeat, NULL);
        os_timer_arm(&timer2, 500, 0);
 }
@@ -570,23 +599,23 @@ void spi_slave_isr_handler(void *para)
 
 	if(READ_PERI_REG(0x3ff00020)&BIT4){		
         //following 3 lines is to clear isr signal
-        	CLEAR_PERI_REG_MASK(SPI_SLAVE(SPI), 0x3ff);
+        	CLEAR_PERI_REG_MASK(SPI_SLAVE(SPI_SPI), 0x3ff);
     	}else if(READ_PERI_REG(0x3ff00020)&BIT7){ //bit7 is for hspi isr,
-        	regvalue=READ_PERI_REG(SPI_SLAVE(HSPI));
-         	CLEAR_PERI_REG_MASK(SPI_SLAVE(HSPI),  
+        	regvalue=READ_PERI_REG(SPI_SLAVE(SPI_HSPI));
+         	CLEAR_PERI_REG_MASK(SPI_SLAVE(SPI_HSPI),  
 								SPI_TRANS_DONE_EN|
 								SPI_SLV_WR_STA_DONE_EN|
 								SPI_SLV_RD_STA_DONE_EN|
 								SPI_SLV_WR_BUF_DONE_EN|
 								SPI_SLV_RD_BUF_DONE_EN);
-        	SET_PERI_REG_MASK(SPI_SLAVE(HSPI), SPI_SYNC_RESET);
-        	CLEAR_PERI_REG_MASK(SPI_SLAVE(HSPI),  
+        	SET_PERI_REG_MASK(SPI_SLAVE(SPI_HSPI), SPI_SYNC_RESET);
+        	CLEAR_PERI_REG_MASK(SPI_SLAVE(SPI_HSPI),  
 								SPI_TRANS_DONE|
 								SPI_SLV_WR_STA_DONE|
 								SPI_SLV_RD_STA_DONE|
 								SPI_SLV_WR_BUF_DONE|
 								SPI_SLV_RD_BUF_DONE); 
-		SET_PERI_REG_MASK(SPI_SLAVE(HSPI),  
+		SET_PERI_REG_MASK(SPI_SLAVE(SPI_HSPI),  
 								SPI_TRANS_DONE_EN|
 								SPI_SLV_WR_STA_DONE_EN|
 								SPI_SLV_RD_STA_DONE_EN|
@@ -597,7 +626,7 @@ void spi_slave_isr_handler(void *para)
             		GPIO_OUTPUT_SET(0, 0);
             		idx=0;
             		while(idx<8){
-            			recv_data=READ_PERI_REG(SPI_W0(HSPI)+(idx<<2));
+            			recv_data=READ_PERI_REG(SPI_W0(SPI_HSPI)+(idx<<2));
             			spi_data[idx<<2] = recv_data&0xff;
             			spi_data[(idx<<2)+1] = (recv_data>>8)&0xff;
             			spi_data[(idx<<2)+2] = (recv_data>>16)&0xff;
@@ -627,15 +656,15 @@ void ICACHE_FLASH_ATTR
     set_miso_data()
 {
     if(GPIO_INPUT_GET(2)==0){
-        WRITE_PERI_REG(SPI_W8(HSPI),0x05040302);
-        WRITE_PERI_REG(SPI_W9(HSPI),0x09080706);
-        WRITE_PERI_REG(SPI_W10(HSPI),0x0d0c0b0a);
-        WRITE_PERI_REG(SPI_W11(HSPI),0x11100f0e);
+        WRITE_PERI_REG(SPI_W8(SPI_HSPI),0x05040302);
+        WRITE_PERI_REG(SPI_W9(SPI_HSPI),0x09080706);
+        WRITE_PERI_REG(SPI_W10(SPI_HSPI),0x0d0c0b0a);
+        WRITE_PERI_REG(SPI_W11(SPI_HSPI),0x11100f0e);
 
-        WRITE_PERI_REG(SPI_W12(HSPI),0x15141312);
-        WRITE_PERI_REG(SPI_W13(HSPI),0x19181716);
-        WRITE_PERI_REG(SPI_W14(HSPI),0x1d1c1b1a);
-        WRITE_PERI_REG(SPI_W15(HSPI),0x21201f1e);
+        WRITE_PERI_REG(SPI_W12(SPI_HSPI),0x15141312);
+        WRITE_PERI_REG(SPI_W13(SPI_HSPI),0x19181716);
+        WRITE_PERI_REG(SPI_W14(SPI_HSPI),0x1d1c1b1a);
+        WRITE_PERI_REG(SPI_W15(SPI_HSPI),0x21201f1e);
         GPIO_OUTPUT_SET(2, 1);
     }
 }
@@ -697,7 +726,7 @@ void ICACHE_FLASH_ATTR
     spi_test_init()
 {
     os_printf("spi init\n\r");
-    spi_slave_init(HSPI);
+    spi_slave_init(SPI_HSPI);
     os_printf("gpio init\n\r");
     gpio_init();
     os_printf("spi task init \n\r");
