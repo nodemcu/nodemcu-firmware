@@ -2,6 +2,7 @@
  * http://blog.mclemon.io/esp8266-contributing-to-the-nodemcu-ecosystem
  *
  * test.c - simple lua for playing about with
+ * adoptet jan 2017 for commit to nodeMCU by Wolfgang Rosner
  */
 
 
@@ -11,11 +12,9 @@
 
 #include "c_stdlib.h"
 
-// this stuff all required for ping?
 #include "lwip/ip_addr.h"
 #include "espconn.h"
 #include "lwip/dns.h" 
-// #include "lwip/app/ping.h"
 #include "lwip/app/ping.h"
 #include "lwip/raw.h"
 #include "c_stdio.h"
@@ -23,11 +22,11 @@
 
 
 static lua_State *gL = NULL;
-static int ping_callback_ref;   // do we really assign a pointer to a string? Portability??
+static int ping_callback_ref; 
 static int ping_host_count;
 static ip_addr_t ping_host_ip;
 
-
+/*
 // test.identity() - takes a single value, returns it
 static int test_identity(lua_State *L) {  
   return 1;
@@ -43,7 +42,7 @@ static int test_add(lua_State *L) {
   return 1;
 } 
 
-
+*/
 
 // https://github.com/smcl/nodemcu-firmware/blob/cc04aaf92c1c076c30ef0b0eee43b3f924137440/app/modules/test.c
 
@@ -141,7 +140,7 @@ static void ping_by_hostname(const char *name, ip_addr_t *ipaddr, void *arg) {
   *                                           --     ping results
   */
 
-static int test_ping(lua_State *L)
+static int net_info_ping(lua_State *L)
 {
     const char *ping_target;
     unsigned count = 4;
@@ -206,27 +205,27 @@ static int test_ping(lua_State *L)
 
 
 // Module function map
-static const LUA_REG_TYPE test_map[] = {
-  { LSTRKEY( "identity" ),         LFUNCVAL( test_identity ) },
-  { LSTRKEY( "add" ),              LFUNCVAL( test_add ) },
-  { LSTRKEY( "ping" ),             LFUNCVAL( test_ping ) },
+static const LUA_REG_TYPE net_info_map[] = {
+//  { LSTRKEY( "identity" ),         LFUNCVAL( test_identity ) },
+//  { LSTRKEY( "add" ),              LFUNCVAL( test_add ) },
+  { LSTRKEY( "ping" ),             LFUNCVAL( net_info_ping ) },
 
-  { LSTRKEY( "__metatable" ),      LROVAL( test_map ) },
+  { LSTRKEY( "__metatable" ),      LROVAL( net_info_map ) },
   { LNILKEY, LNILVAL }
 };
 
-
+/*
 // Define an empty test function - we won't use this functionality
 // should I know what this is for??? testing my module??
 int luaopen_test( lua_State *L ) {
   return 0;
 }
-
+ */
 
 
 // Register the module - NODEMCU_MODULE() will make sure a module called "test" 
 // is available when we define the LUA_USE_MODULES_TEST macro in user_modules.h
-NODEMCU_MODULE(TEST, "test", test_map, luaopen_test);
+NODEMCU_MODULE(NET_INFO, "net_info", net_info_map, NULL);
 // NODEMCU_MODULE(TEST, "test", test_map);
 
 

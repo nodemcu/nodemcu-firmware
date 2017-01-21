@@ -59,6 +59,7 @@ pages:
         - 'mdns': 'en/modules/mdns.md'
         - 'mqtt': 'en/modules/mqtt.md'
         - 'net': 'en/modules/net.md'
+        - 'net_info': 'en/modules/net_info.md'
         - 'node': 'en/modules/node.md'
         - 'ow (1-Wire)': 'en/modules/ow.md'
         - 'pcm' : 'en/modules/pcm.md'
