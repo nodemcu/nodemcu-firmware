@@ -137,7 +137,8 @@ If a parse error occurrs during this decode, then an error is thrown and the par
 
 ## sjson.decoder:result
 
-This gets the decoded lua object, or raises an error if the decode is not yet complete
+This gets the decoded lua object, or raises an error if the decode is not yet complete. This can be called multiple times and will return the 
+same object each time.
 
 ####Syntax
 `decoder:result()`
