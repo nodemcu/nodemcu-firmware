@@ -5,14 +5,17 @@
 
 **SSL/TLS support**
 
-!!! important
-    TLS module requires [net](net.md) module.
+!!! attention
+    The TLS module depends on the [net](net.md) module, it is a required dependency.
 
-NodeMCU includes [mbed TLS library](https://tls.mbed.org/). With default config it supports **TLS** 1.0 / 1.1 / 1.2 and most common cipher suites, including DH/ECDH key exchange methods.
+NodeMCU includes the open-source version of [mbed TLS library](https://tls.mbed.org/). With the NodeMCU default configuration it supports **TLS** 1.0 / 1.1 / 1.2 and the most common cipher suites, including DH/ECDH. ECDSA-based cipher suites are disabled by default.
 
-Full list of features you may get on [mbed TLS page](https://tls.mbed.org/core-features).
+!!! tip
+	The complete configuration is stored in [user_mbedtls.h](../../../app/include/user_mbedtls.h). This is the file to edit if you build your own firmware and want to change mbed TLS behavior.
 
-This controls certificate verification when SSL is in use.
+For a list of features have a look at the [mbed TLS features page](https://tls.mbed.org/core-features).
+
+This module handles certificate verification when SSL/TLS is in use.
 
 ## tls.createConnection()
 
