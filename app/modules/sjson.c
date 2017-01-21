@@ -3,17 +3,20 @@
 #include "lua.h"
 #include "lauxlib.h"
 #include "lstring.h"
+
+#ifndef LOCAL_LUA
 #include "module.h"
 #include "c_string.h"
 #include "c_math.h"
 #include "c_limits.h"
+#endif
 
 #define JSONSL_STATE_USER_FIELDS        int lua_object_ref; int used_count;
 #define JSONSL_NO_JPR
 
 #include "jsonsl.c"
 
-#define LUA_IJSONLIBNAME "sjson"
+#define LUA_SJSONLIBNAME "sjson"
 
 #define DBG_PRINTF(...)    
 
@@ -21,6 +24,7 @@ typedef struct {
   jsonsl_t jsn;
   int result_ref;
   int hkey_ref;
+  int null_ref;
   int metatable;
   uint8_t complete;
   const char *error;
@@ -229,7 +233,7 @@ cleanup_closing_element(jsonsl_t jsn,
           lua_pushboolean(data->L, 0);
         } else if (state->special_flags & JSONSL_SPECIALf_NULL) {
           DBG_PRINTF("Outputting null\n");
-          lua_pushnil(data->L);
+          lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->null_ref);
         } else if (state->special_flags & JSONSL_SPECIALf_NUMERIC) {
           push_number(data, state);
         }
@@ -259,104 +263,24 @@ cleanup_closing_element(jsonsl_t jsn,
       }
       break;
  }
-#if 0
- switch (state->type) {
-   case JSONSL_T_HKEY:
- 
-      obj_text = get_obj_text (jsn, state, buf, &len);
-      printf ("\"%.*s\": ", (int) len - 1, obj_text + 1);  /* skip quotes */
-      fflush (stdout);
-      break;
-
-   case JSONSL_T_STRING:
-      obj_text = get_obj_text (jsn, state, buf, &len);
-      printf ("\"%.*s\"", (int) len - 1, obj_text + 1);  /* skip quotes */
-      fflush (stdout);
-      break;
-   case JSONSL_T_OBJECT:
-      printf ("}");
-      list_comma (jsn, state);
-      fflush (stdout);
-      break;
-   case JSONSL_T_LIST:
-      printf ("]");
-      list_comma (jsn, state);
-      fflush (stdout);
-      break;
-   case JSONSL_T_SPECIAL:
-      obj_text = get_obj_text (jsn, state, buf, &len);
-      if (obj_text != buf) {
-         ((char *) obj_text)[len] = '\0';
-      }
- 
-      if (state->special_flags & JSONSL_SPECIALf_NUMERIC) {
-         d = strtod (obj_text, &endptr);
- 
-         if ((d == HUGE_VAL || d == -HUGE_VAL) && errno == ERANGE) {
-            /* TODO: error */
-         }
- 
-         if (endptr - obj_text != len) {
-            printf ("int parse err\n");
-            jsonsl_stop (jsn);
-         }
- 
-         printf ("%f", d);
-         fflush (stdout);
-      }
- 
-      list_comma (jsn, state);
-      break;
-   case JSONSL_T_UESCAPE:
-      /* TODO */
-      break;
-   default:
-      break;
-   }
- 
-   min_needed = -1;
-   /*
-#endif
-#if 0
-    /* termination of an element */
-
-    struct element_st *elem = (struct element_st*)state->data;
-    struct string_st *str = (struct string_st*)elem;
-    assert(state);
-    if (!DumpIncremental) {
-        dump_action_state(jsn, action, state);
-    }
-
-    if (elem->type == TYPE_STRING) {
-        if (*at != '"') {
-            return;
-        }
-
-        *(char*)at = '\0';
-        str->data++;
-    }
-
-    if (DumpIncremental) {
-        struct objgraph_st *objgraph = jsn->data;
-        printf("Incremental dump at input position %lu\n", jsn->pos);
-        dump_element(objgraph->root, 0);
-    }
-#endif
 }
 
-static int sjson_decoder(lua_State *L) {
+static int sjson_decoder_int(lua_State *L, int argno) {
   int nlevels = 20;
-  int argno = 1;
 
-  if (lua_type(L, argno) == LUA_TNUMBER) {
-    nlevels = luaL_checkinteger(L, argno);
+  if (lua_type(L, argno) == LUA_TTABLE) {
+    lua_getfield(L, argno, "depth");
+    nlevels = lua_tointeger(L, argno);
+    if (nlevels == 0) {
+      nlevels = 20;
+    }
     if (nlevels < 4) {
       nlevels = 4;
     }
     if (nlevels > 1000) {
       nlevels = 1000;
     }
-    argno++;
+    lua_pop(L, 1);
   }
 
   JSN_DATA *data = (JSN_DATA *) lua_newuserdata(L, sizeof(JSN_DATA) + jsonsl_get_size(nlevels));
@@ -372,8 +296,10 @@ static int sjson_decoder(lua_State *L) {
     jsn->stack[i].lua_object_ref = LUA_NOREF;
   }
   data->jsn = jsn;
-  lua_newtable(L);
-  data->result_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  data->result_ref = LUA_NOREF;
+
+  data->null_ref = LUA_REFNIL;
+  data->metatable = LUA_NOREF;
   data->hkey_ref = LUA_NOREF;
   data->complete = 0;
   data->error = NULL;
@@ -382,12 +308,20 @@ static int sjson_decoder(lua_State *L) {
   
   data->min_needed = data->min_available = jsn->pos;
 
-  // If the argument is a table, then use it as the metatable for all tables created
-  data->metatable = LUA_NOREF;
+  lua_pushlightuserdata(L, 0);
+  data->null_ref = lua_ref(L, 1);
+
+  // This may throw...
+  lua_newtable(L);
+  data->result_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
   if (lua_type(L, argno) == LUA_TTABLE) {
-    lua_pushvalue(L, argno);
-    data->metatable = luaL_ref(L, LUA_REGISTRYINDEX);
-    argno++;
+    luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
+    lua_getfield(L, argno, "null");
+    data->null_ref = lua_ref(L, 1);
+
+    lua_getfield(L, argno, "metatable");
+    data->metatable = lua_ref(L, 1);
   }
 
   jsonsl_enable_all_callbacks(data->jsn);
@@ -397,9 +331,13 @@ static int sjson_decoder(lua_State *L) {
   jsn->action_callback_POP = cleanup_closing_element;
   jsn->error_callback = error_callback;
   jsn->data = data;
-  jsn->max_callback_level = 20;
+  jsn->max_callback_level = nlevels;
 
   return 1;
+}
+
+static int sjson_decoder(lua_State *L) {
+  return sjson_decoder_int(L, 1);
 }
 
 static int sjson_decoder_result_int(lua_State *L, JSN_DATA *data) {
@@ -469,7 +407,7 @@ static int sjson_decoder_write(lua_State *L) {
 }
 
 static int sjson_decode(lua_State *L) {
-  int push_count = sjson_decoder(L);
+  int push_count = sjson_decoder_int(L, 2);
   if (push_count != 1) {
     luaL_error(L, "Internal error in sjson.deocder");
   }
@@ -497,11 +435,11 @@ static int sjson_decoder_destructor(lua_State *L) {
   for (i = 0; i < jsn->levels_max; i++) {
     luaL_unref(L, LUA_REGISTRYINDEX, jsn->stack[i].lua_object_ref);
   }
-  //jsonsl_destroy(data->jsn);
   data->jsn = NULL;
   luaL_unref(L, LUA_REGISTRYINDEX, data->result_ref);
   luaL_unref(L, LUA_REGISTRYINDEX, data->metatable);
   luaL_unref(L, LUA_REGISTRYINDEX, data->hkey_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
 
   DBG_PRINTF("Destructor called\n");
 
@@ -540,6 +478,7 @@ typedef struct {
   int nlevels;
   int level;
   int current_str_ref;
+  int null_ref;
   int offset;
 
 } ENC_DATA;
@@ -608,15 +547,19 @@ static int sjson_encoder(lua_State *L) {
   // Validate first arg is a table
   luaL_checktype(L, argno++, LUA_TTABLE);
 
-  if (lua_type(L, argno) == LUA_TNUMBER) {
-    nlevels = luaL_checkinteger(L, argno);
+  if (lua_type(L, argno) == LUA_TTABLE) {
+    lua_getfield(L, argno, "depth");
+    nlevels = lua_tointeger(L, argno);
+    if (nlevels == 0) {
+      nlevels = 32;
+    }
     if (nlevels < 4) {
       nlevels = 4;
     }
     if (nlevels > 1000) {
       nlevels = 1000;
     }
-    argno++;
+    lua_pop(L, 1);
   }
 
   ENC_DATA *data = (ENC_DATA *) lua_newuserdata(L, sizeof(ENC_DATA) + nlevels * sizeof(ENC_DATA_STATE));
@@ -636,10 +579,18 @@ static int sjson_encoder(lua_State *L) {
   }
   enc_push_stack(L, data, 1);
 
+  data->null_ref = LUA_REFNIL;
+
+  if (lua_type(L, argno) == LUA_TTABLE) {
+    luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
+    lua_getfield(L, argno, "null");
+    data->null_ref = lua_ref(L, 1);
+  }
+
   return 1;
 }
 
-static void encode_lua_object(lua_State *L, int argno, const char *prefix, const char *suffix) {
+static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const char *prefix, const char *suffix) {
   luaL_Buffer b;
   luaL_buffinit(L, &b);
 
@@ -647,7 +598,19 @@ static void encode_lua_object(lua_State *L, int argno, const char *prefix, const
 
   int type = lua_type(L, argno);
 
+  if (type == LUA_TSTRING) {
+    // Check to see if it is the NULL value
+    if (data->null_ref != LUA_REFNIL) {
+      lua_rawgeti(L, LUA_REGISTRYINDEX, data->null_ref);
+      if (lua_equal(L, -1, -2)) {
+        type = LUA_TNIL;
+      } 
+      lua_pop(L, 1);
+    }
+  }
+
   switch (type) {
+    case LUA_TLIGHTUSERDATA:
     case LUA_TNIL:
       luaL_addstring(&b, "null");
       break;
@@ -723,6 +686,17 @@ static void encode_lua_object(lua_State *L, int argno, const char *prefix, const
   luaL_pushresult(&b);
 }
 
+static int sjson_encoder_next_value_is_table(lua_State *L) {
+  int count = 10;
+
+  while (lua_type(L, -1) == LUA_TFUNCTION && count-- > 0) {
+    // call it and use the return value
+    lua_call(L, 0, 1);          // Expecting replacement value
+  }
+
+  return (lua_type(L, -1) == LUA_TTABLE);
+}
+
 static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
   if (data->level < 0) {
     return;
@@ -753,13 +727,13 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
         // output the value
         lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_object_ref);
         lua_rawgeti(L, -1, (state->offset >> 1) + 1);
-        if (lua_type(L, -1) == LUA_TTABLE) {
+        if (sjson_encoder_next_value_is_table(L)) {
           enc_push_stack(L, data, -1);
           lua_pop(L, 2);
           state->offset++;
           continue;
         }
-        encode_lua_object(L, -1, "", "");
+        encode_lua_object(L, data, -1, "", "");
         lua_remove(L, -2);
         lua_remove(L, -2);
         luaL_addvalue(&b);
@@ -787,19 +761,19 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
           // stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
           // key
           lua_tostring(L, -1);
-          encode_lua_object(L, -1, state->offset ? "," : "{", ":");
+          encode_lua_object(L, data, -1, state->offset ? "," : "{", ":");
           lua_remove(L, -2);
           lua_remove(L, -2);
           lua_remove(L, -2);
           lua_remove(L, -2);
         } else {
-          if (lua_type(L, -1) == LUA_TTABLE) {
+          if (sjson_encoder_next_value_is_table(L)) {
             enc_push_stack(L, data, -1);
             lua_pop(L, 3);
             state->offset++;
             continue;
           }
-          encode_lua_object(L, -1, "", "");
+          encode_lua_object(L, data, -1, "", "");
           lua_remove(L, -2);
           lua_remove(L, -2);
           lua_remove(L, -2);
@@ -909,6 +883,9 @@ static int sjson_encoder_destructor(lua_State *L) {
     luaL_unref(L, LUA_REGISTRYINDEX, data->stack[i].lua_key_ref);
   }
 
+  luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, data->current_str_ref);
+
   DBG_PRINTF("Destructor called\n");
 
   return 0;
@@ -939,6 +916,7 @@ static const luaL_Reg sjsonlib[] = {
 static const LUA_REG_TYPE sjson_encoder_map[] = {
   { LSTRKEY( "read" ),                    LFUNCVAL( sjson_encoder_read ) },
   { LSTRKEY( "__gc" ),                    LFUNCVAL( sjson_encoder_destructor ) },
+  { LSTRKEY( "__index" ),                 LROVAL( sjson_encoder_map ) },
   { LNILKEY, LNILVAL }
 };
 
@@ -946,6 +924,7 @@ static const LUA_REG_TYPE sjson_decoder_map[] = {
   { LSTRKEY( "write" ),                   LFUNCVAL( sjson_decoder_write ) },
   { LSTRKEY( "result" ),                  LFUNCVAL( sjson_decoder_result ) },
   { LSTRKEY( "__gc" ),                    LFUNCVAL( sjson_decoder_destructor ) },
+  { LSTRKEY( "__index" ),                 LROVAL( sjson_decoder_map ) },
   { LNILKEY, LNILVAL }
 };
 
@@ -954,13 +933,19 @@ static const LUA_REG_TYPE sjson_map[] = {
   { LSTRKEY( "decode" ),                  LFUNCVAL( sjson_decode ) },
   { LSTRKEY( "encoder" ),                 LFUNCVAL( sjson_encoder ) },
   { LSTRKEY( "decoder" ),                 LFUNCVAL( sjson_decoder ) },
+  { LSTRKEY( "NULL" ),                    LUDATA( 0 ) },
   { LNILKEY, LNILVAL }
 };
 #endif
 
 LUALIB_API int luaopen_sjson (lua_State *L) {
 #ifdef LOCAL_LUA
-  luaL_register(L, LUA_IJSONLIBNAME, sjsonlib);
+  luaL_register(L, LUA_SJSONLIBNAME, sjsonlib);
+  lua_getglobal(L, LUA_SJSONLIBNAME);
+  lua_pushstring(L, "NULL");
+  lua_pushlightuserdata(L, 0);
+  lua_settable(L, -3);
+  lua_pop(L, 1);
   luaL_newmetatable(L, "sjson.encoder");
   luaL_register(L, NULL, sjson_encoder_map);
   lua_setfield(L, -1, "__index");
@@ -974,4 +959,6 @@ LUALIB_API int luaopen_sjson (lua_State *L) {
   return 1;
 }
 
+#ifndef LOCAL_LUA
 NODEMCU_MODULE(SJSON, "sjson", sjson_map, luaopen_sjson);
+#endif
