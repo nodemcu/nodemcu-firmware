@@ -15,11 +15,11 @@ The more advanced approach is to use the streaming interface. This allows encodi
 The handling of json null is as follows:
 
 - By default, the decoder represents null as sjson.NULL (which is a userdata object). This is the behavior of cjson.
-- The encoder always converts any userdata object into null
+- The encoder always converts any userdata object into null.
 - Optionally, a single string can be specified in both the encoder and decoder. This string will be used in encoding/decoding to represent json null values. This string should not be used
-anywhere else in your data structures. A suitable value might be `"\0"`
+anywhere else in your data structures. A suitable value might be `"\0"`.
 
-When encoding a lua object, if a function is found, then it is invoked and the (single) returned value is encoded in the place of the function.
+When encoding a lua object, if a function is found, then it is invoked (with no arguments) and the (single) returned value is encoded in the place of the function.
 
 ## sjson.encoder()
 
@@ -101,7 +101,8 @@ end
 
 ## sjson.decoder()
 
-This makes a decoder object that can parse a JSON encoded string into a lua object.
+This makes a decoder object that can parse a JSON encoded string into a lua object. A metatable can be specified for all the newly created lua tables. This allows
+you to handle each value as it is inserted into each table.
 
 ####Syntax
 `sjson.decoder([opts])`
@@ -157,6 +158,18 @@ for k,v in pairs(decoder:result()) do
 end
 ```
 
+The next example demonstrates the use of the metatable argument. In this case it just prints out the operations, but it could suppress the assignment
+altogether if desired.
+
+```
+local decoder = sjson.decoder({metatable=
+        {__newindex=function(t,k,v) print("Setting '" .. k .. "' = '" .. tostring(v) .."'") 
+                                    rawset(t,k,v) end}})
+
+decoder:write('[1, 2, {"foo":"bar"}]')
+
+```
+
 
 ## sjson.decode()
 
@@ -183,3 +196,8 @@ If the string is not valid JSON, then an error is thrown.
 t = sjson.decode('{"key":"value"}')
 for k,v in pairs(t) do print(k,v) end
 ```
+
+##Constants
+
+There is one constant -- `sjson.NULL` -- which is used in lua structures to represent the presence of a JSON null.
+
