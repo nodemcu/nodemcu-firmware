@@ -9,9 +9,8 @@ Please note that nested tables can require a lot of memory to encode. To catch o
 
 This code using the streaming json library [jsonsl](https://github.com/mnunberg/jsonsl) to do the parsing of the string.
 
-This module can be used in two ways. The simpler way is to use it as a direct drop-in for cjson. The more advanced approach is to use the streaming interface. This allows encoding and decoding of significantly larger objects.
-
-In the event of errors, all memory consumed is released.
+This module can be used in two ways. The simpler way is to use it as a direct drop-in for cjson (you can just do `_G.cjson = sjson`). 
+The more advanced approach is to use the streaming interface. This allows encoding and decoding of significantly larger objects.
 
 The handling of json null is as follows:
 
@@ -32,8 +31,8 @@ This creates an encoder object that can convert a LUA object into a JSON encoded
 ####Parameters
 - `table` data to encode
 - `opts` an optional table of options. The possible entries are:
-        - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
-        - `null` the string value to treat as null.
+   - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
+   - `null` the string value to treat as null.
 
 ####Returns
 A `sjson.encoder` object.
@@ -49,7 +48,7 @@ This gets a chunk of JSON encoded data.
 - `size` an optional value for the number of bytes to return. The default is 1024.
 
 ####Returns
-A string of up to `size` bytes, or `nil`
+A string of up to `size` bytes, or `nil` if the encoding is complete and all data has been returned.
 
 #### Example
 The following example prints out (in 64 byte chunks) a JSON encoded string containing the first 4k of every file in the file system. The total string
@@ -84,8 +83,8 @@ Encode a Lua table to a JSON string. This is a convenience method provided for b
 ####Parameters
 - `table` data to encode
 - `opts` an optional table of options. The possible entries are:
-        - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
-        - `null` the string value to treat as null.
+    - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
+    - `null` the string value to treat as null.
 
 ####Returns
 JSON string
@@ -109,9 +108,9 @@ This makes a decoder object that can parse a JSON encoded string into a lua obje
 
 #### Parameters
 - `opts` an optional table of options. The possible entries are:
-        - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
-        - `null` the string value to treat as null.
-        - `metatable` a table to use as the metatable for all the new tables in the returned object.
+    - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
+    - `null` the string value to treat as null.
+    - `metatable` a table to use as the metatable for all the new tables in the returned object.
 
 #### Returns
 A `sjson.decoder` object
@@ -131,6 +130,9 @@ This provides more data to be parsed into the lua object.
 ####Returns
 The constructed lua object or `nil` if the decode is not yet complete.
 
+####Errors
+If a parse error occurrs during this decode, then an error is thrown and the parse is aborted. The object cannot be used again.
+
 
 ## sjson.decoder:result
 
@@ -138,6 +140,9 @@ This gets the decoded lua object, or raises an error if the decode is not yet co
 
 ####Syntax
 `decoder:result()`
+
+####Errors
+If the decode is not complete, then an error is thrown.
 
 ####Example
 ```
@@ -163,12 +168,15 @@ Decode a JSON string to a Lua table. This is a convenience method provided for b
 ####Parameters
 - `str` JSON string to decode
 - `opts` an optional table of options. The possible entries are:
-        - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
-        - `null` the string value to treat as null.
-        - `metatable` a table to use as the metatable for all the new tables in the returned object.
+    - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
+    - `null` the string value to treat as null.
+    - `metatable` a table to use as the metatable for all the new tables in the returned object.
 
 ####Returns
 Lua table representation of the JSON data
+
+####Errors
+If the string is not valid JSON, then an error is thrown.
 
 ####Example
 ```lua
