@@ -156,9 +156,10 @@ static void push_string(JSN_DATA *data, struct jsonsl_state_st *state) {
   int i;
   const char *c = get_state_buffer(data, state) + 1;
   for (i = 0; i < state->pos_cur - state->pos_begin - 1; i++) {
-    if (c[i] == '\\') {
+    int nc = c[i];
+    if (nc == '\\') {
       i++;
-      int nc = c[i] & 255;
+      nc = c[i] & 255;
       switch (c[i]) {
         case 'b':
           nc = '\b';
@@ -183,10 +184,8 @@ static void push_string(JSN_DATA *data, struct jsonsl_state_st *state) {
           output_utf8(&b, nc);
           continue;
       }
-      luaL_putchar(&b, nc);
-    } else {
-      luaL_putchar(&b, c[i]);
     }
+    luaL_putchar(&b, nc);
   }
   luaL_pushresult(&b);
 }

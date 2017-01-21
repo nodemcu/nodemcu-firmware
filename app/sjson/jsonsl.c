@@ -1425,7 +1425,7 @@ size_t jsonsl_util_unescape_ex(const char *in,
  * This table contains the beginnings of non-string
  * allowable (bareword) values.
  */
-static unsigned short Special_Table[0x100] = {
+static const unsigned short Special_Table[0x80] = {
         /* 0x00 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x1f */
         /* 0x20 */ 0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x2c */
         /* 0x2d */ JSONSL_SPECIALf_DASH /* <-> */, /* 0x2d */
@@ -1446,19 +1446,16 @@ static unsigned short Special_Table[0x100] = {
         /* 0x67 */ 0,0,0,0,0,0,0, /* 0x6d */
         /* 0x6e */ JSONSL_SPECIALf_NULL /* <n> */, /* 0x6e */
         /* 0x6f */ 0,0,0,0,0, /* 0x73 */
-        /* 0x74 */ JSONSL_SPECIALf_TRUE /* <t> */, /* 0x74 */
-        /* 0x75 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x94 */
-        /* 0x95 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xb4 */
-        /* 0xb5 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xd4 */
-        /* 0xd5 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xf4 */
-        /* 0xf5 */ 0,0,0,0,0,0,0,0,0,0, /* 0xfe */
+        /* 0x74 */ JSONSL_SPECIALf_TRUE /* <t> */ /* 0x74 */
 };
 
+// Bit tables are order such that the MSB is bit 0.
+//
 /**
  * Contains characters which signal the termination of any of the 'special' bareword
  * values.
  */
-static int Special_Endings[0x100] = {
+static const char Special_Endings[0x100] = {
         /* 0x00 */ 0,0,0,0,0,0,0,0,0, /* 0x08 */
         /* 0x09 */ 1 /* <TAB> */, /* 0x09 */
         /* 0x0a */ 1 /* <LF> */, /* 0x0a */
@@ -1486,11 +1483,45 @@ static int Special_Endings[0x100] = {
         /* 0xde */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xfd */
         /* 0xfe */ 0 /* 0xfe */
 };
+static const uint32_t Special_Endings_bits[0x80 / 32] = {
+        0b00000000110010000000000000000000,
+        0b10100000000010000000000000100000,
+        0b00000000000000000000000000011100,
+        0b00000000000000000000000000000000
+#if 0
+        /* 0x00 */ 0,0,0,0,0,0,0,0,0, /* 0x08 */
+        /* 0x09 */ 1 /* <TAB> */, /* 0x09 */
+        /* 0x0a */ 1 /* <LF> */, /* 0x0a */
+        /* 0x0b */ 0,0, /* 0x0c */
+        /* 0x0d */ 1 /* <CR> */, /* 0x0d */
+        /* 0x0e */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x1f */
+        /* 0x20 */ 1 /* <SP> */, /* 0x20 */
+        /* 0x21 */ 0, /* 0x21 */
+        /* 0x22 */ 1 /* " */, /* 0x22 */
+        /* 0x23 */ 0,0,0,0,0,0,0,0,0, /* 0x2b */
+        /* 0x2c */ 1 /* , */, /* 0x2c */
+        /* 0x2d */ 0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x39 */
+        /* 0x3a */ 1 /* : */, /* 0x3a */
+        /* 0x3b */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x5a */
+        /* 0x5b */ 1 /* [ */, /* 0x5b */
+        /* 0x5c */ 1 /* \ */, /* 0x5c */
+        /* 0x5d */ 1 /* ] */, /* 0x5d */
+        /* 0x5e */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x7a */
+        /* 0x7b */ 1 /* { */, /* 0x7b */
+        /* 0x7c */ 0, /* 0x7c */
+        /* 0x7d */ 1 /* } */, /* 0x7d */
+        /* 0x7e */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x9d */
+        /* 0x9e */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xbd */
+        /* 0xbe */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xdd */
+        /* 0xde */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xfd */
+        /* 0xfe */ 0 /* 0xfe */
+#endif
+};
 
 /**
  * This table contains entries for the allowed whitespace as per RFC 4627
  */
-static int Allowed_Whitespace[0x100] = {
+static const char Allowed_Whitespace[0x100] = {
         /* 0x00 */ 0,0,0,0,0,0,0,0,0, /* 0x08 */
         /* 0x09 */ 1 /* <TAB> */, /* 0x09 */
         /* 0x0a */ 1 /* <LF> */, /* 0x0a */
@@ -1506,8 +1537,9 @@ static int Allowed_Whitespace[0x100] = {
         /* 0xc1 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xe0 */
         /* 0xe1 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /* 0xfe */
 };
+static const uint32_t Allowed_Whitespace_bits = 0b00000000011001000000000000000000;
 
-static const int String_No_Passthrough[0x100] = {
+static const char String_No_Passthrough[0x100] = {
         /* 0x00 */ 1 /* <NUL> */, /* 0x00 */
         /* 0x01 */ 1 /* <SOH> */, /* 0x01 */
         /* 0x02 */ 1 /* <STX> */, /* 0x02 */
@@ -1544,7 +1576,7 @@ static const int String_No_Passthrough[0x100] = {
 /**
  * Allowable two-character 'common' escapes:
  */
-static int Allowed_Escapes[0x100] = {
+static const char Allowed_Escapes[0x100] = {
         /* 0x00 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0x1f */
         /* 0x20 */ 0,0, /* 0x21 */
         /* 0x22 */ 1 /* <"> */, /* 0x22 */
@@ -1569,6 +1601,12 @@ static int Allowed_Escapes[0x100] = {
         /* 0xb6 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xd5 */
         /* 0xd6 */ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xf5 */
         /* 0xf6 */ 0,0,0,0,0,0,0,0,0, /* 0xfe */
+};
+static const uint32_t Allowed_Escapes_bits[0x80 / 32] = {
+        0b00000000000000000000000000000000,
+        0b00100000000000010000000000000000,
+        0b00000000000000000000000000001000,
+        0b00100010000000100010110000000000
 };
 
 /**
@@ -1597,22 +1635,35 @@ static unsigned char Escape_Equivs[0x100] = {
 
 /* Definitions of above-declared static functions */
 static char get_escape_equiv(unsigned c) {
-    return Escape_Equivs[c & 0xff];
+    switch(c) {
+      case 'b':
+        return '\b';
+      case 'n':
+        return '\n';
+      case 'r':
+        return '\r';
+      case 't':
+        return '\t';
+      case 'f':
+        return '\f';
+    }
+    return 0;
 }
+
 static unsigned extract_special(unsigned c) {
-    return Special_Table[c & 0xff];
+    return (c < 0x80) && Special_Table[c & 0xff];
 }
 static int is_special_end(unsigned c) {
-    return Special_Endings[c & 0xff];
+  return c < 0x80 && (Special_Endings_bits[c >> 5] & (1 << (31 - (c & 31))));
 }
 static int is_allowed_whitespace(unsigned c) {
-    return c == ' ' || Allowed_Whitespace[c & 0xff];
+    return c == ' ' || (c < 0x20 && Allowed_Whitespace_bits & (1 << (31 - c)));
 }
 static int is_allowed_escape(unsigned c) {
-    return Allowed_Escapes[c & 0xff];
+  return c < 0x80 && (Allowed_Escapes_bits[c >> 5] & (1 << (31 - (c & 31))));
 }
 static int is_simple_char(unsigned c) {
-    return !String_No_Passthrough[c & 0xff];
+    return !(c < 0x14 || c == '"' || c == '\\');
 }
 
 /* Clean up all our macros! */
