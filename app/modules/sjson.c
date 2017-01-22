@@ -690,7 +690,7 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
 static int sjson_encoder_next_value_is_table(lua_State *L) {
   int count = 10;
 
-  while (lua_type(L, -1) == LUA_TFUNCTION && count-- > 0) {
+  while ((lua_type(L, -1) == LUA_TFUNCTION || lua_type(L, -1) == LUA_TLIGHTFUNCTION) && count-- > 0) {
     // call it and use the return value
     lua_call(L, 0, 1);          // Expecting replacement value
   }
