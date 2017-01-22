@@ -611,6 +611,10 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
   }
 
   switch (type) {
+    default:
+      luaL_error(L, "Cannot encode type %d", type);
+      break;
+
     case LUA_TLIGHTUSERDATA:
     case LUA_TNIL:
       luaL_addstring(&b, "null");
