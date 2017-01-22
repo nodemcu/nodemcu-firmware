@@ -102,7 +102,7 @@ end
 ## sjson.decoder()
 
 This makes a decoder object that can parse a JSON encoded string into a lua object. A metatable can be specified for all the newly created lua tables. This allows
-you to handle each value as it is inserted into each table.
+you to handle each value as it is inserted into each table (by implementing the `__newindex` method).
 
 ####Syntax
 `sjson.decoder([opts])`
@@ -116,6 +116,20 @@ you to handle each value as it is inserted into each table.
 #### Returns
 A `sjson.decoder` object
 
+####Metatable
+
+There are two principal methods that are invoked in the metatable (if it is present).
+
+- `__newindex` this is the standard method invoked whenever a new table element is created.
+- `setpath` this is invoked (if defined) whenever a new table is created. It is invoked with two arguments:
+    - `table` this is the newly created table
+    - `path` this is a list of the keys from the root. 
+
+For example, when decoding `{ "foo": [1, 2, []] }` the setpath will be invoked as follows:
+
+- `setpath({}, {})` the `table` argument is the object that will correspond with the value of the JSON object.
+- `setpath({}, {"foo"})` the `table` argument is the object that will correspond with the value of the outer JSON array.
+- `setpath({}, {"foo", 3})` the `table` argument is the object that will correspond to the empty inner JSON array.
 
 ## sjson.decoder:write
 
@@ -184,7 +198,7 @@ Decode a JSON string to a Lua table. This is a convenience method provided for b
 - `opts` an optional table of options. The possible entries are:
     - `depth` the maximum encoding depth needed to encode the table. The default is 20 which should be enough for nearly all situations.
     - `null` the string value to treat as null.
-    - `metatable` a table to use as the metatable for all the new tables in the returned object.
+    - `metatable` a table to use as the metatable for all the new tables in the returned object. See the metatable section in the description of `sjson.decoder()` above.
 
 ####Returns
 Lua table representation of the JSON data

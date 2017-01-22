@@ -28,6 +28,7 @@ typedef struct {
   int hkey_ref;
   int null_ref;
   int metatable;
+  int pos_ref;
   uint8_t complete;
   const char *error;
   lua_State *L;
@@ -106,9 +107,28 @@ create_new_element(jsonsl_t jsn,
         data->hkey_ref = LUA_NOREF;
         DBG_PRINTF("Adding hash element\n");
       }
+      if (data->pos_ref != LUA_NOREF && state->level > 1) {
+        lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
+        lua_pushnumber(data->L, state->level - 1);
+        lua_pushvalue(data->L, -3);     // get the key
+        lua_settable(data->L, -3);
+        lua_pop(data->L, 1);
+      }
       lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
       lua_settable(data->L, -3);
       lua_pop(data->L, 1);
+
+      // Invoke the setpath method if possible
+      if (data->pos_ref != LUA_NOREF) {
+        lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->metatable);
+        lua_getfield(data->L, -1, "setpath");
+        if (lua_type(data->L, -1) != LUA_TNIL) {
+          // Call with the new table and the path as arguments
+          lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
+          lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
+          lua_call(data->L, 2, 0);
+        }
+      }
 
       break;
 
@@ -259,6 +279,13 @@ cleanup_closing_element(jsonsl_t jsn,
    case JSONSL_T_LIST:
       lua_unref(data->L, state->lua_object_ref);
       state->lua_object_ref = LUA_NOREF;
+      if (data->pos_ref != LUA_NOREF) {
+        lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
+        lua_pushnumber(data->L, state->level);
+        lua_pushnil(data->L);
+        lua_settable(data->L, -3);
+        lua_pop(data->L, 1);
+      }
       if (state->level == 1) {
         data->complete = 1;
       }
@@ -302,6 +329,7 @@ static int sjson_decoder_int(lua_State *L, int argno) {
   data->null_ref = LUA_REFNIL;
   data->metatable = LUA_NOREF;
   data->hkey_ref = LUA_NOREF;
+  data->pos_ref = LUA_NOREF;
   data->complete = 0;
   data->error = NULL;
   data->L = L;
@@ -322,7 +350,18 @@ static int sjson_decoder_int(lua_State *L, int argno) {
     data->null_ref = lua_ref(L, 1);
 
     lua_getfield(L, argno, "metatable");
+    lua_pushvalue(L, -1);
     data->metatable = lua_ref(L, 1);
+
+    if (lua_type(L, -1) != LUA_TNIL) {
+      lua_getfield(L, -1, "setpath");
+      if (lua_type(L, -1) != LUA_TNIL) {
+        lua_newtable(L);
+        data->pos_ref = lua_ref(L, 1);
+      }
+      lua_pop(L, 1);      // Throw away the setpath value 
+    }
+    lua_pop(L, 1);      // Throw away the metatable
   }
 
   jsonsl_enable_all_callbacks(data->jsn);
@@ -441,6 +480,7 @@ static int sjson_decoder_destructor(lua_State *L) {
   luaL_unref(L, LUA_REGISTRYINDEX, data->metatable);
   luaL_unref(L, LUA_REGISTRYINDEX, data->hkey_ref);
   luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, data->pos_ref);
 
   DBG_PRINTF("Destructor called\n");
 
@@ -694,7 +734,11 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
 static int sjson_encoder_next_value_is_table(lua_State *L) {
   int count = 10;
 
-  while ((lua_type(L, -1) == LUA_TFUNCTION || lua_type(L, -1) == LUA_TLIGHTFUNCTION) && count-- > 0) {
+  while ((lua_type(L, -1) == LUA_TFUNCTION 
+#ifdef LUA_TLIGHTFUNCTION
+    || lua_type(L, -1) == LUA_TLIGHTFUNCTION
+#endif
+    ) && count-- > 0) {
     // call it and use the return value
     lua_call(L, 0, 1);          // Expecting replacement value
   }
