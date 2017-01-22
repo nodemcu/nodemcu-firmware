@@ -19,11 +19,6 @@ sed -E -i.bak 's@// ?#define DEVELOP_VERSION@#define DEVELOP_VERSION@' user_conf
 sed -i 's@//#define BUILD_FATFS@#define BUILD_FATFS@' user_config.h
 cat user_config.h
 
-cd "$TRAVIS_BUILD_DIR"/ld || exit
-# increase irom0_0_seg size for all modules build
-sed -E -i.bak 's@(.*irom0_0_seg *:.*len *=) *[^,]*(.*)@\1 0xD0000\2@' nodemcu.ld
-cat nodemcu.ld
-
 # change to "root" directory no matter where the script was started from
 cd "$TRAVIS_BUILD_DIR" || exit
 make clean

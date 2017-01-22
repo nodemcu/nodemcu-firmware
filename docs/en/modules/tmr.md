@@ -13,7 +13,7 @@ NodeMCU provides 7 static timers, numbered 0-6, and dynamic timer creation funct
 
 !!! attention
 
-    Static timers are deprecated and will be removed later.
+    Static timers are deprecated and will be removed later. Use the OO API initiated with [`tmr.create()`](#tmrcreate).
 
 ## tmr.alarm()
 
@@ -21,20 +21,29 @@ This is a convenience function combining [`tmr.register()`](#tmrregister) and [`
 
 To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
+#### Syntax
+`tmr.alarm([id/ref], interval_ms, mode, func())`
+
 #### Parameters
-- `id`/`ref` timer id (0-6) or object
+- `id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 - `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 - `mode` timer mode:
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
 	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrstart) to restart)
 	- `tmr.ALARM_AUTO` automatically repeating alarm
+- `func(timer)` callback function which is invoked with the timer object as an argument
 
 #### Returns
 `true` if the timer was started, `false` on error
 
 #### Example
 ```lua
-if not tmr.alarm(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end) then print("whoopsie") end
+if not tmr.create():alarm(5000, tmr.ALARM_SINGLE, function()
+  print("hey there")
+end)
+then
+  print("whoopsie")
+end
 ```
 #### See also
 - [`tmr.create()`](#tmrcreate)
@@ -51,12 +60,12 @@ Dynamic timer can be used instead of numeric ID in control functions. Also can b
 Functions supported in timer object:
 
 - [`t:alarm()`](#tmralarm)
+- [`t:interval()`](#tmrinterval)
 - [`t:register()`](#tmrregister)
 - [`t:start()`](#tmrstart)
+- [`t:state()`](#tmrstate)
 - [`t:stop()`](#tmrstop)
 - [`t:unregister()`](#tmrunregister)
-- [`t:state()`](#tmrstate)
-- [`t:interval()`](#tmrinterval)
 
 #### Parameters
 none
@@ -104,10 +113,10 @@ tmr.delay(100)
 Changes a registered timer's expiry interval.
 
 #### Syntax
-`tmr.interval(id/ref, interval_ms)`
+`tmr.interval([id/ref], interval_ms)`
 
 #### Parameters
-- `id`/`ref` timer id (0-6) or object
+- `id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 - `interval_ms` new timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 
 #### Returns
@@ -115,8 +124,10 @@ Changes a registered timer's expiry interval.
 
 #### Example
 ```lua
-tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
-tmr.interval(0, 3000) -- actually, 3 seconds is better!
+mytimer = tmr.create()
+mytimer:register(10000, tmr.ALARM_AUTO, function() print("hey there") end)
+mytimer:interval(3000) -- actually, 3 seconds is better!
+mytimer:start()
 ```
 
 ## tmr.now()
@@ -145,15 +156,16 @@ Configures a timer and registers the callback function to call on expiry.
 To free up the resources with this timer when done using it, call [`tmr.unregister()`](#tmrunregister) on it. For one-shot timers this is not necessary, unless they were stopped before they expired.
 
 #### Syntax
-`tmr.register(id/ref, interval_ms, mode, func)`
+`tmr.register([id/ref], interval_ms, mode, func())`
 
 #### Parameters
-- `id`/`ref` timer id (0-6) or object
+- `id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 - `interval_ms` timer interval in milliseconds. Maximum value is 6870947 (1:54:30.947).
 - `mode` timer mode:
 	- `tmr.ALARM_SINGLE` a one-shot alarm (and no need to call [`tmr.unregister()`](#tmrunregister))
 	- `tmr.ALARM_SEMI` manually repeating alarm (call [`tmr.start()`](#tmrunregister) to restart)
 	- `tmr.ALARM_AUTO` automatically repeating alarm
+- `func(timer)` callback function which is invoked with the timer object as an argument
 
 Note that registering does *not* start the alarm.
 
@@ -162,8 +174,9 @@ Note that registering does *not* start the alarm.
 
 #### Example
 ```lua
-tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
-tmr.start(0)
+mytimer = tmr.create()
+mytimer:register(5000, tmr.ALARM_SINGLE, function() print("hey there") end)
+mytimer:start()
 ```
 #### See also
 - [`tmr.create()`](#tmrcreate)
@@ -199,18 +212,19 @@ complex_stuff_which_might_never_call_the_callback(on_success_callback)
 Starts or restarts a previously configured timer.
 
 #### Syntax
-`tmr.start(id/ref)`
+`tmr.start([id/ref])`
 
 #### Parameters
-`id`/`ref` timer id (0-6) or object
+`id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 
 #### Returns
 `true` if the timer was started, `false` on error
 
 #### Example
 ```lua
-tmr.register(0, 5000, tmr.ALARM_SINGLE, function() print("hey there") end)
-if not tmr.start(0) then print("uh oh") end
+mytimer = tmr.create()
+mytimer:register(5000, tmr.ALARM_SINGLE, function() print("hey there") end)
+if not mytimer:start() then print("uh oh") end
 ```
 #### See also
 - [`tmr.create()`](#tmrcreate)
@@ -223,10 +237,10 @@ if not tmr.start(0) then print("uh oh") end
 Checks the state of a timer.
 
 #### Syntax
-`tmr.state(id/ref)`
+`tmr.state([id/ref])`
 
 #### Parameters
-`id`/`ref` timer id (0-6) or object
+`id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 
 #### Returns
 (bool, int) or `nil`
@@ -235,7 +249,11 @@ If the specified timer is registered, returns whether it is currently started an
 
 #### Example
 ```lua
-running, mode = tmr.state(0)
+mytimer = tmr.create()
+print(mytimer:state()) -- nil
+mytimer:register(5000, tmr.ALARM_SINGLE, function() print("hey there") end)
+running, mode = mytimer:state()
+print("running: " .. tostring(running) .. ", mode: " .. mode) -- running: false, mode: 0
 ```
 
 ## tmr.stop()
@@ -243,17 +261,18 @@ running, mode = tmr.state(0)
 Stops a running timer, but does *not* unregister it. A stopped timer can be restarted with [`tmr.start()`](#tmrstart).
 
 #### Syntax
-`tmr.stop(id/ref)`
+`tmr.stop([id/ref])`
 
 #### Parameters
-`id`/`ref` timer id (0-6) or object
+`id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 
 #### Returns
 `true` if the timer was stopped, `false` on error
 
 #### Example
 ```lua
-if not tmr.stop(2) then print("timer 2 not stopped, not registered?") end
+mytimer = tmr.create()
+if not mytimer:stop() then print("timer not stopped, not registered?") end
 ```
 #### See also
 - [`tmr.register()`](#tmrregister)
@@ -285,10 +304,10 @@ Stops the timer (if running) and unregisters the associated callback.
 This isn't necessary for one-shot timers (`tmr.ALARM_SINGLE`), as those automatically unregister themselves when fired.
 
 #### Syntax
-`tmr.unregister(id/ref)`
+`tmr.unregister([id/ref])`
 
 #### Parameters
-`id`/`ref` timer id (0-6) or object
+`id`/`ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
 
 #### Returns
 `nil`

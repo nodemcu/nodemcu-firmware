@@ -40,6 +40,7 @@ static const int uart_bitrates[] = {
     BIT_RATE_4800,
     BIT_RATE_9600,
     BIT_RATE_19200,
+    BIT_RATE_31250,
     BIT_RATE_38400,
     BIT_RATE_57600,
     BIT_RATE_74880,
@@ -328,7 +329,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
 #endif // GPIO_INTERRUPT_HOOK_ENABLE
 
 /*
- * Initialise GPIO interrupt mode. Optionally in RAM because interrupts are dsabled
+ * Initialise GPIO interrupt mode. Optionally in RAM because interrupts are disabled
  */
 void NO_INTR_CODE platform_gpio_intr_init( unsigned pin, GPIO_INT_TYPE type )
 {
@@ -361,6 +362,7 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
     case BIT_RATE_4800:
     case BIT_RATE_9600:
     case BIT_RATE_19200:
+    case BIT_RATE_31250:
     case BIT_RATE_38400:
     case BIT_RATE_57600:
     case BIT_RATE_74880:

@@ -70,7 +70,7 @@ node.restart(); for i = 1, 20 do print("not quite yet -- ",i); end
 * Whilst the SDK provides a number of interrupt driven device drivers, the hardware architecture severely limits the memory available for these drivers, so writing new device drivers is not a viable options for most developers
 * The SDK interfaces internally with hardware and device drivers to queue pending events.
 * The registered callback routines are invoked sequentially with the associated C task running to completion uninterrupted.
-* In the case of Lua, these C tasks are typically functions within the Lua runtime library code and these typically act as C wrappers around the corresponding developer-provided Lua callback functions.  An example here is the Lua `tmr.alarm(id, interval, repeat, callback)` function.  The calls a function in the `tmr` library which registers a C function for this alarm using the SDK, and when this C function is called it then invokes the Lua callback.  
+* In the case of Lua, these C tasks are typically functions within the Lua runtime library code and these typically act as C wrappers around the corresponding developer-provided Lua callback functions.  An example here is the Lua [`mytimer:alarm(interval, repeat, callback)`](modules/tmr.md#tmralarm) function.  The calls a function in the `tmr` library which registers a C function for this alarm using the SDK, and when this C function is called it then invokes the Lua callback.  
 
 The NodeMCU firmware simply mirrors this structure at a Lua scripting level:
 
@@ -185,7 +185,7 @@ status = mail.send(to, subject, body)
 
 ### When and why should I avoid using tmr.delay()?
 
-If you are used coding in a procedural paradigm then it is understandable that you consider using `tmr.delay()` to time sequence your application.  However as discussed in the previous section, with NodeMCU Lua you are coding in an event-driven paradigm.  
+If you are used coding in a procedural paradigm then it is understandable that you consider using [`tmr.delay()`](modules/tmr.md#tmrdelay) to time sequence your application.  However as discussed in the previous section, with NodeMCU Lua you are coding in an event-driven paradigm.  
 
 If you look at the `app/modules/tmr.c` code for this function, then you will see that it executes a low level  `ets_delay_us(delay)`.  This function isn't part of the NodeMCU code or the SDK; it's actually part of the xtensa-lx106 boot ROM, and is a simple timing loop which polls against the internal CPU clock.  It does this with interrupts disabled, because if they are enabled then there is no guarantee that the delay will be as requested.
 
@@ -197,9 +197,12 @@ The latest SDK includes a caution that if any (callback) task runs for more than
 ### How do I avoid a PANIC loop in init.lua?
 
 Most of us have fallen into the trap of creating an `init.lua` that has a bug in it, which then causes the system to reboot and hence gets stuck in a reboot loop.  If you haven't then you probably will do so at least once.
-* When this happens, the only robust solution is to reflash the firmware.
-* The simplest way to avoid having to do this is to keep the `init.lua` as simple as possible -- say configure the wifi and then start your app using a one-time `tmr.alarm()` after a 2-3 sec delay.  This delay is long enough to issue a `file.remove("init.lua")` through the serial port and recover control that way.
-* Also it is always best to test any new `init.lua` by creating it as `init_test.lua`, say, and manually issuing a `dofile("init_test.lua")` through the serial port, and then only rename it when you are certain it is working as you require.
+
+- When this happens, the only robust solution is to reflash the firmware.
+- The simplest way to avoid having to do this is to keep the `init.lua` as simple as possible -- say configure the wifi and then start your app using a one-time `tmr.alarm()` after a 2-3 sec delay.  This delay is long enough to issue a `file.remove("init.lua")` through the serial port and recover control that way.
+- Also it is always best to test any new `init.lua` by creating it as `init_test.lua`, say, and manually issuing a `dofile("init_test.lua")` through the serial port, and then only rename it when you are certain it is working as you require.
+
+See ["Uploading code" → init.lua](upload.md#initlua) for an example.
 
 ## Techniques for Reducing RAM and SPIFFS footprint
 

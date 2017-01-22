@@ -27,8 +27,8 @@ file.open("jump_8k.u8", "r")
 
 drv = pcm.new(pcm.SD, 1)
 
--- fetch data in chunks of LUA_BUFFERSIZE (1024) from file
-drv:on("data", file.read)
+-- fetch data in chunks of FILE_READ_CHUNK (1024) from file
+drv:on("data", function(drv) return file.read() end)
 
 -- get called back when all samples were read from the file
 drv:on("drained", cb_drained)

@@ -119,7 +119,7 @@ function M.play(rate, ip, port, path, cb)
   _path = path
   _play_cb = cb
 
-  _conn = net.createConnection(net.TCP, false)
+  _conn = net.createConnection(net.TCP, 0)
   _conn:on("receive", data_received)
   _conn:on("disconnection", cb_disconnected)
   _conn:connect(port, ip, cb_connected)
