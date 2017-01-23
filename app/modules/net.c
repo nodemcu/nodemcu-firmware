@@ -638,6 +638,27 @@ int net_dns( lua_State *L ) {
   return 0;
 }
 
+// Lua: client/socket:ttl([ttl])
+int net_ttl( lua_State *L ) {
+  lnet_userdata *ud = net_get_udata(L);
+  if (!ud || ud->type == TYPE_TCP_SERVER)
+    return luaL_error(L, "invalid user data");
+  if (!ud->pcb)
+    return luaL_error(L, "socket is not open/bound yet");
+  int ttl = luaL_optinteger(L, 2, -1);
+  // Since `ttl` field is part of IP_PCB macro
+  // (which are at beginning of both udp_pcb/tcp_pcb)
+  // and PCBs declared as `union` there is safe to
+  // access ttl field without checking for type.
+  if (ttl == -1) {
+    ttl = ud->udp_pcb->ttl;
+  } else {
+    ud->udp_pcb->ttl = ttl;
+  }
+  lua_pushinteger(L, ttl);
+  return 1;
+}
+
 // Lua: client:getpeer()
 int net_getpeer( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
@@ -951,6 +972,7 @@ static const LUA_REG_TYPE net_tcpsocket_map[] = {
   { LSTRKEY( "hold" ),    LFUNCVAL( net_hold ) },
   { LSTRKEY( "unhold" ),  LFUNCVAL( net_unhold ) },
   { LSTRKEY( "dns" ),     LFUNCVAL( net_dns ) },
+  { LSTRKEY( "ttl" ),     LFUNCVAL( net_ttl ) },
   { LSTRKEY( "getpeer" ), LFUNCVAL( net_getpeer ) },
   { LSTRKEY( "getaddr" ), LFUNCVAL( net_getaddr ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( net_delete ) },
@@ -964,6 +986,7 @@ static const LUA_REG_TYPE net_udpsocket_map[] = {
   { LSTRKEY( "on" ),      LFUNCVAL( net_on ) },
   { LSTRKEY( "send" ),    LFUNCVAL( net_send ) },
   { LSTRKEY( "dns" ),     LFUNCVAL( net_dns ) },
+  { LSTRKEY( "ttl" ),     LFUNCVAL( net_ttl ) },
   { LSTRKEY( "getaddr" ), LFUNCVAL( net_getaddr ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( net_delete ) },
   { LSTRKEY( "__index" ), LROVAL( net_udpsocket_map ) },
