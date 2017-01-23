@@ -1,5 +1,5 @@
 // Module for mqtt
-
+//
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -170,6 +170,7 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
     {
       espconn_disconnect(pesp_conn);
     }
+
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
 
     mqtt_socket_disconnected(arg);
@@ -293,7 +294,7 @@ READPACKET:
   switch(mud->connState){
     case MQTT_CONNECT_SENDING:
     case MQTT_CONNECT_SENT:
-        mud->event_timeout = 0;
+      mud->event_timeout = 0;
 
       if(mqtt_get_type(in_buffer) != MQTT_MSG_TYPE_CONNACK){
         NODE_DBG("MQTT: Invalid packet\r\n");
