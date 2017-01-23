@@ -131,6 +131,23 @@ For example, when decoding `{ "foo": [1, 2, []] }` the setpath will be invoked a
 - `setpath({}, {"foo"})` the `table` argument is the object that will correspond with the value of the outer JSON array.
 - `setpath({}, {"foo", 3})` the `table` argument is the object that will correspond to the empty inner JSON array.
 
+When the `setpath` method is called, the metatable has already be associated with the new table. Thus the `setpath` method can replace it
+if desired. For example, if you are decoding `{ "foo": { "bar": [1,2,3,4], "cat": [5] } }` and, for some reason, you did not want to capture the
+value of the `"bar"` key, then there are various ways to do this:
+
+* In the `__newindex` metamethod, just check for the value of the key and skip the `rawset` if the key is `"bar"`. This only works if you want to skip all the 
+`"bar"` keys.
+
+* In the `setpath` method, if the path is `["foo"]`, then make a new metatable which contains the `__newindex` method that skips assigning `"bar"`. Then assign
+this metatable to the first argument of the `setpath` call. This will
+then restrict the skipping to just a single value.
+
+* Use the following `setpath`:  `setpath=function(tab, path) tab['__json_path'] = path end` This will save the path in each constructed object. Now the `__newindex` method can perform more sophisticated filtering.
+
+The reason for being able to filter is that it enables processing of very large JSON responses ona memory constrained platform. Many APIs return lots of information
+which would exceed the memory budget of the platform. For example, `https://api.github.com/repos/nodemcu/nodemcu-firmware/contents` is over 13kB, and yet, if 
+you only need the `download_url` keys, then the total size is around 600B. This can be handled with a simple `__newindex` method. 
+
 ## sjson.decoder:write
 
 This provides more data to be parsed into the lua object.
