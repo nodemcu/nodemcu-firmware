@@ -92,7 +92,7 @@ Connects to the broker specified by the given host, port, and secure options.
 - `host` host, domain or IP (string)
 - `port` broker port (number), default 1883
 - `secure` 0/1 for `false`/`true`, default 0. Take note of constraints documented in the [net module](net.md).
-- `autoreconnect` 0/1 for `false`/`true`, default 0
+- `autoreconnect` 0/1 for `false`/`true`, default 0. This option is *deprecated*.
 - `function(client)` callback function for when the connection was established
 - `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
 
