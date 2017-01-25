@@ -478,7 +478,7 @@ static int wifi_setip( lua_State* L, uint8_t mode )
   return 1;  
 }
 
-// Lua: wifi.sta.getaplist
+// Lua: wifi.sta.getapinfo
 static int wifi_station_get_ap_info4lua( lua_State* L )
 {
   struct station_config config[5];
@@ -506,8 +506,8 @@ static int wifi_station_get_ap_info4lua( lua_State* L )
     c_sprintf(debug_temp, " %-6d %-32s ", i, temp);
 #endif
 
-      memset(temp, 0, sizeof(temp));
-    if(strlen(config[i].password) >= 8)
+    memset(temp, 0, sizeof(temp));
+    if(strlen(config[i].password) >= 0) /* WPA = min 8, but WEP has no minimum */
     {
       memcpy(temp, config[i].password, sizeof(config[i].password));
       lua_pushstring(L, temp);
@@ -517,7 +517,7 @@ static int wifi_station_get_ap_info4lua( lua_State* L )
     c_sprintf(debug_temp + strlen(debug_temp), "%-64s ", temp);
 #endif
 
-      memset(temp, 0, sizeof(temp));
+    memset(temp, 0, sizeof(temp));
     if (config[i].bssid_set)
     {
       c_sprintf(temp, MACSTR, MAC2STR(config[i].bssid));
@@ -607,7 +607,7 @@ static int wifi_station_getconfig( lua_State* L, bool get_flash_cfg)
       lua_pushstring(L, temp);
       lua_setfield(L, -2, "ssid");
 
-      if(strlen(sta_conf.password) >= 8)
+      if(strlen(sta_conf.password) >= 0) /* WPA = min 8, but WEP has no minimum */
       {
         memset(temp, 0, sizeof(temp));
         memcpy(temp, sta_conf.password, sizeof(sta_conf.password));
@@ -652,6 +652,30 @@ static int wifi_station_getconfig_default(lua_State *L)
   return wifi_station_getconfig(L, true);
 }
 
+// Lua: wifi.sta.clearconfig()
+static int wifi_station_clear_config ( lua_State* L )
+{
+  struct station_config sta_conf;
+  bool auto_connect=true;
+  bool save_to_flash=true;
+
+  memset(sta_conf.ssid, 0, sizeof(sta_conf.ssid));
+  memset(sta_conf.password, 0, sizeof(sta_conf.password));
+  memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
+  sta_conf.bssid_set=0;
+
+  wifi_station_disconnect();
+
+  bool config_success;
+  if(save_to_flash) config_success = wifi_station_set_config(&sta_conf);
+    else config_success = wifi_station_set_config_current(&sta_conf);
+
+  wifi_station_set_auto_connect((uint8)0);
+
+  lua_pushboolean(L, config_success);
+  return 1;  
+}
+
 // Lua: wifi.sta.config()
 static int wifi_station_config( lua_State* L )
 {
@@ -673,7 +697,7 @@ static int wifi_station_config( lua_State* L )
       if( lua_isstring(L, -1) )
       {
         const char *ssid = luaL_checklstring( L, -1, &sl );
-        luaL_argcheck(L, ((sl>=1 && sl<=sizeof(sta_conf.ssid)) ), 1, "ssid: length:1-32");
+        luaL_argcheck(L, ((sl>=0 && sl<=sizeof(sta_conf.ssid)) ), 1, "ssid: length:0-32"); /* Zero-length SSID is valid as a way to clear config */
         memcpy(sta_conf.ssid, ssid, sl);
       }
       else return luaL_argerror( L, 1, "ssid:not string" );
@@ -687,7 +711,7 @@ static int wifi_station_config( lua_State* L )
       if( lua_isstring(L, -1) )
       {
         const char *pwd = luaL_checklstring( L, -1, &pl );
-        luaL_argcheck(L, ((pl>=8 && pl<=sizeof(sta_conf.password)) ), 1, "pwd: length:8-64");
+        luaL_argcheck(L, ((pl>=0 && pl<=sizeof(sta_conf.password)) ), 1, "pwd: length:0-64"); /* WPA = min 8, but WEP has no min */
         memcpy(sta_conf.password, pwd, pl);
       }
       else return luaL_argerror( L, 1, "pwd:not string" );
@@ -729,15 +753,15 @@ static int wifi_station_config( lua_State* L )
     lua_pop(L, 1);
 
   }
-  else //to be depreciated
+  else //to be deprecated
   {
     const char *ssid = luaL_checklstring( L, 1, &sl );
-    luaL_argcheck(L, ((sl>=1 && sl<sizeof(sta_conf.ssid)) ), 1, "length:1-32");
+    luaL_argcheck(L, (sl>=0 && sl<sizeof(sta_conf.ssid)), 1, "length:0-32"); /* Zero-length SSID is valid as a way to clear config */
 
     memcpy(sta_conf.ssid, ssid, sl);
 
     const char *password = luaL_checklstring( L, 2, &pl );
-    luaL_argcheck(L, (pl==0||(pl>=8 && pl<=sizeof(sta_conf.password)) ), 2, "length:0 or 8-64");
+    luaL_argcheck(L, (pl>=0 && pl<=sizeof(sta_conf.password)), 2, "length:0-64"); /* WPA = min 8, but WEP has no min */
 
     memcpy(sta_conf.password, password, pl);
 
@@ -1433,6 +1457,7 @@ static int wifi_ap_dhcp_stop( lua_State* L )
 static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "autoconnect" ),      LFUNCVAL( wifi_station_setauto ) },
   { LSTRKEY( "changeap" ),         LFUNCVAL( wifi_station_change_ap ) },
+  { LSTRKEY( "clearconfig"),       LFUNCVAL( wifi_station_clear_config ) },
   { LSTRKEY( "config" ),           LFUNCVAL( wifi_station_config ) },
   { LSTRKEY( "connect" ),          LFUNCVAL( wifi_station_connect4lua ) },
   { LSTRKEY( "disconnect" ),       LFUNCVAL( wifi_station_disconnect4lua ) },

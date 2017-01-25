@@ -270,6 +270,24 @@ wifi.sta.changeap(4)
 - [`wifi.sta.getapinfo()`](#wifistagetapinfo)
 - [`wifi.sta.getapindex()`](#wifistagetapindex)
 
+## wifi.sta.clearconfig()
+
+Clears the currently saved WiFi station configuration. This will erase the saved configuration from the flash (useful for 
+factory-reset scenarios, or to prepare for [End-User Setup](enduser-setup) so that the SoftAP can lock onto a single channel)
+
+#### Syntax
+`wifi.sta.clearconfig()`
+
+#### Parameters
+none
+
+#### Returns
+- `true`  Success
+- `false` Failure
+
+#### See also
+- [`wifi.sta.config()`](#wifistaconfig)
+
 ## wifi.sta.config()
 
 Sets the WiFi station configuration.
@@ -280,7 +298,7 @@ Sets the WiFi station configuration.
 #### Parameters
 - `station_config` table containing configuration data for station
 	- `ssid` string which is less than 32 bytes.
-	- `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
+	- `pwd` string which is 0-64. Empty string indicates an open WiFi access point. _Note: WPA requires a minimum of 8-characters, but the ESP8266 can also connect to a WEP access point, which does not have a minimum password length._
 	- `auto` defaults to true
 		- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
 		- `false` to disable auto connect and remain disconnected from access point
@@ -332,6 +350,7 @@ wifi.sta.config(station_cfg)
 ```
 
 #### See also
+- [`wifi.sta.clearconfig()`](#wifistaclearconfig)
 - [`wifi.sta.connect()`](#wifistaconnect)
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
 - [`wifi.sta.apinfo()`](#wifistaapinfo)
