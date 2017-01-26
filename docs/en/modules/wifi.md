@@ -273,7 +273,7 @@ wifi.sta.changeap(4)
 ## wifi.sta.clearconfig()
 
 Clears the currently saved WiFi station configuration, erasing it from the flash. May be useful for certain factory-reset 
-scenarios when a full [`node.restore()`](node#noderestore) is not desired, or to prepare for using
+scenarios when a full [`node.restore()`](node.md#noderestore) is not desired, or to prepare for using
 [End-User Setup](enduser-setup) so that the SoftAP is able to lock onto a single hardware radio channel.
 
 #### Syntax
@@ -288,7 +288,7 @@ none
 
 #### See also
 - [`wifi.sta.config()`](#wifistaconfig)
-- [`node.restore()`](node#noderestore)
+- [`node.restore()`](node.md#noderestore)
 
 ## wifi.sta.config()
 
