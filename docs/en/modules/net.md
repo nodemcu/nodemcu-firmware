@@ -19,6 +19,11 @@ Creates a client.
 - `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
 - `secure` 1 for encrypted, 0 for plain. Secure connections chained to [tls.createConnection()](tls.md#tlscreateconnection)
 
+!!! attention
+    This will change in upcoming releases so that `net.createConnection` will always create an unencrypted TCP connection.
+
+    There's no such thing as a UDP _connection_ because UDP is connection*less*. Thus no connection `type` parameter should be required. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead. To create *secure* connections use [tls.createConnection()](tls.md#tlscreateconnection) instead.
+
 #### Returns
 
 - for `net.TCP` - net.socket sub module
@@ -44,6 +49,9 @@ Creates a server.
 #### Parameters
 - `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
 - `timeout` for a TCP server timeout is 1~28'800 seconds (for an inactive client to be disconnected)
+
+!!! attention
+    The `type` parameter will be removed in upcoming releases so that `net.createServer` will always create a TCP-based server. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead.
 
 #### Returns
 
