@@ -410,6 +410,14 @@ none
 
 # net.udpsocket Module
 
+Remember that in contrast to TCP [UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) is connectionless. Therefore, there is a minor but natural mismatch as for TCP/UDP functions in this module. While you would call [net.createConnection()](#netcreateconnection) for TCP it is [net.createUDPSocket()](#netcreateudpsocket) for UDP.
+
+Other points worth noting:
+
+- UDP sockets do not have a connection callback for the [`listen`](#netudpsocketlisten) function.
+- UDP sockets do not have a `connect` function. Remote IP and port thus need to be defined in [`send()`](#netudpsocketsend).
+- UDP socket's `receive` callback receives port/ip after the `data` argument.
+
 ## net.udpsocket:close()
 
 Closes UDP socket.
@@ -426,9 +434,10 @@ The syntax and functional similar to [`net.server:listen()`](#netserverlisten), 
 
 Register callback functions for specific events.
 
-The syntax and functional similar to [`net.socket:on()`](#netsocketon), only "received", "sent" and "dns" events are valid.
+The syntax and functional similar to [`net.socket:on()`](#netsocketon). However, only "received", "sent" and "dns" are supported events.
 
-**`received` callback have `port` and `ip` after `data` argument.**
+!!! note
+	The `received` callback receives `port` and `ip` *after* the `data` argument.
 
 ## net.udpsocket:send()
 
