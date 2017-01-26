@@ -298,7 +298,7 @@ Sets the WiFi station configuration.
 #### Parameters
 - `station_config` table containing configuration data for station
 	- `ssid` string which is less than 32 bytes.
-	- `pwd` string which is 0-64. Empty string indicates an open WiFi access point. _Note: WPA requires a minimum of 8-characters, but the ESP8266 can also connect to a WEP access point, which does not have a minimum password length._
+	- `pwd` string which is 0-64. Empty string indicates an open WiFi access point. _Note: WPA requires a minimum of 8-characters, but the ESP8266 can also connect to a WEP access point (a 40-bit WEP key can be provided as its corresponding 5-character ASCII string)._
 	- `auto` defaults to true
 		- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
 		- `false` to disable auto connect and remain disconnected from access point

@@ -507,7 +507,7 @@ static int wifi_station_get_ap_info4lua( lua_State* L )
 #endif
 
     memset(temp, 0, sizeof(temp));
-    if(strlen(config[i].password) >= 0) /* WPA = min 8, but WEP has no minimum */
+    if(strlen(config[i].password) >= 0) /* WPA = min 8, WEP = min 5 ASCII characters for a 40-bit key */
     {
       memcpy(temp, config[i].password, sizeof(config[i].password));
       lua_pushstring(L, temp);
@@ -607,7 +607,7 @@ static int wifi_station_getconfig( lua_State* L, bool get_flash_cfg)
       lua_pushstring(L, temp);
       lua_setfield(L, -2, "ssid");
 
-      if(strlen(sta_conf.password) >= 0) /* WPA = min 8, but WEP has no minimum */
+      if(strlen(sta_conf.password) >= 0) /* WPA = min 8, WEP = min 5 ASCII characters for a 40-bit key */
       {
         memset(temp, 0, sizeof(temp));
         memcpy(temp, sta_conf.password, sizeof(sta_conf.password));
@@ -711,7 +711,7 @@ static int wifi_station_config( lua_State* L )
       if( lua_isstring(L, -1) )
       {
         const char *pwd = luaL_checklstring( L, -1, &pl );
-        luaL_argcheck(L, ((pl>=0 && pl<=sizeof(sta_conf.password)) ), 1, "pwd: length:0-64"); /* WPA = min 8, but WEP has no min */
+        luaL_argcheck(L, ((pl>=0 && pl<=sizeof(sta_conf.password)) ), 1, "pwd: length:0-64"); /* WPA = min 8, WEP = min 5 ASCII characters for a 40-bit key */
         memcpy(sta_conf.password, pwd, pl);
       }
       else return luaL_argerror( L, 1, "pwd:not string" );
@@ -761,7 +761,7 @@ static int wifi_station_config( lua_State* L )
     memcpy(sta_conf.ssid, ssid, sl);
 
     const char *password = luaL_checklstring( L, 2, &pl );
-    luaL_argcheck(L, (pl>=0 && pl<=sizeof(sta_conf.password)), 2, "length:0-64"); /* WPA = min 8, but WEP has no min */
+    luaL_argcheck(L, (pl>=0 && pl<=sizeof(sta_conf.password)), 2, "length:0-64"); /* WPA = min 8, WEP = min 5 ASCII characters for a 40-bit key */
 
     memcpy(sta_conf.password, password, pl);
 
