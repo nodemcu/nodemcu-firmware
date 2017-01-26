@@ -50,6 +50,7 @@ pages:
         - 'encoder': 'en/modules/encoder.md'
         - 'enduser setup': 'en/modules/enduser-setup.md'
         - 'file': 'en/modules/file.md'
+        - 'gdbstub': 'en/modules/gdbstub.md'
         - 'gpio': 'en/modules/gpio.md'
         - 'hmc5883l': 'en/modules/hmc5883l.md'
         - 'http': 'en/modules/http.md'
