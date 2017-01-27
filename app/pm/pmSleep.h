@@ -8,7 +8,25 @@
 #include "task/task.h"
 #include "c_string.h"
 
-//#define PMSLEEP_DEBUG
+#if defined(DEVELOP_VERSION)
+#define PMSLEEP_DEBUG
+#endif
+
+#if defined(PMSLEEP_DEBUG)
+  #define PMSLEEP_DBG(fmt, ...) dbg_printf("\tPMSLEEP(%s):"fmt"\n", __FUNCTION__, ##__VA_ARGS__)
+#else
+  #define PMSLEEP_DBG(...) //c_printf(__VA_ARGS__)
+#endif
+
+#if defined(NODE_ERROR)
+  #define PMSLEEP_ERR(fmt, ...) NODE_ERR("%s"fmt"\n", "PMSLEEP:", ##__VA_ARGS__)
+#else
+  #define PMSLEEP_ERR(...)
+#endif
+
+
+
+
 
 #define PMSLEEP_SLEEP_MIN_TIME 50000
 #define PMSLEEP_SLEEP_MAX_TIME 268435454 //FPM_MAX_SLEEP_TIME-1
@@ -23,11 +41,6 @@
   { LSTRKEY( "INT_LOW" ),       LNUMVAL( GPIO_PIN_INTR_LOLEVEL ) }
 
 
-#if defined(PMSLEEP_DEBUG) || defined(NODE_DEBUG)
-  #define PMSLEEP_DBG(fmt, ...) c_printf("\tPMSLEEP_DBG(%s):"fmt"\n", __FUNCTION__, ##__VA_ARGS__)
-#else
-  #define PMSLEEP_DBG(...) //c_printf(__VA_ARGS__)
-#endif
 
 typedef struct pmSleep_param{
   uint32 sleep_duration;

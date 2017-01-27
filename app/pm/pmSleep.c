@@ -19,9 +19,9 @@ static pmSleep_param_t current_config;
 
 
 /*  INTERNAL FUNCTION DECLARATIONS  */
-static void disarm_all_timers(void);
+static void suspend_all_timers(void);
 static void null_mode_check_timer_cb(void* arg);
-static void rearm_all_sw_timers(void);
+static void resume_all_timers(void);
 static inline void register_lua_cb(lua_State* L,int* cb_ref);
 static void resume_cb(void);
 static void wifi_suspended_timer_cb(int arg);
@@ -29,14 +29,14 @@ static void wifi_suspended_timer_cb(int arg);
 /*  INTERNAL FUNCTIONS  */
 
 #include "swTimer/swTimer.h"
-static void disarm_all_timers(void){
+static void suspend_all_timers(void){
 #ifdef ENABLE_TIMER_SUSPEND
   swtmr_suspend(NULL);
 #endif
   return;
 }
 
-static void rearm_all_sw_timers(void){
+static void resume_all_timers(void){
 #ifdef ENABLE_TIMER_SUSPEND
   swtmr_resume(NULL);
 #endif
@@ -44,17 +44,21 @@ static void rearm_all_sw_timers(void){
 }
 
 static void null_mode_check_timer_cb(void* arg){
-
-  // if current opmode is NULL and uart 0 tx buffer is empty and uart 1 tx buffer is empty
-  if (wifi_get_opmode() == NULL_MODE && (READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0 &&
-      (READ_PERI_REG(UART_STATUS(1)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0){
-    os_timer_disarm(&null_mode_check_timer);
-    disarm_all_timers();
+  if (wifi_get_opmode() == NULL_MODE){
+    //check if uart 0 tx buffer is empty and uart 1 tx buffer is empty
     if(current_config.sleep_mode == LIGHT_SLEEP_T){
-      wifi_fpm_do_sleep(current_config.sleep_duration);
-      return;
+      if((READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0 &&
+         (READ_PERI_REG(UART_STATUS(1)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0){
+        ets_timer_disarm(&null_mode_check_timer);
+        suspend_all_timers();
+        wifi_fpm_do_sleep(current_config.sleep_duration);
+        return;
+      }
+      else{
+        return;
+      }
     }
-    else{
+    else{  //MODEM_SLEEP_T
       sint8 retval_wifi_fpm_do_sleep = wifi_fpm_do_sleep(current_config.sleep_duration); // Request WiFi suspension and store return value
 
       // If wifi_fpm_do_sleep success
@@ -65,16 +69,12 @@ static void null_mode_check_timer_cb(void* arg){
         os_timer_arm(&wifi_suspended_test_timer, 1, 1);
       }
       else{ // This should never happen. if it does, return the value for error reporting
-
         wifi_fpm_close();
-        luaL_error(lua_getstate(), "wifi_fpm_do_sleep returned %d", retval_wifi_fpm_do_sleep);
-        return;
+        PMSLEEP_ERR("wifi_fpm_do_sleep returned %d", retval_wifi_fpm_do_sleep);
       }
     }
-
-  }
-  else{
-//    PMSLEEP_DBG("wifi_get_opmode()!=NULL_MODE");
+    ets_timer_disarm(&null_mode_check_timer);
+    return;
   }
 }
 
@@ -93,7 +93,7 @@ static void resume_cb(void){
   wifi_fpm_close(); // Disable force sleep API
   PMSLEEP_DBG("WiFi resume");
 
-  rearm_all_sw_timers();
+  resume_all_timers();
 
   //this section restores null mode auto sleep setting
   if(autosleep_setting_temp == 1)  {
@@ -360,12 +360,14 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
 
     c_memcpy(&current_config, cfg, sizeof(pmSleep_param_t));
     PMSLEEP_DBG("sleep duration is %d", current_config.sleep_duration);
-    os_timer_disarm(&null_mode_check_timer);
-    os_timer_setfn(&null_mode_check_timer, null_mode_check_timer_cb, false);
-    os_timer_arm(&null_mode_check_timer, 1, 1);
+
+    //this timer intentionally bypasses the swtimer timer registration process
+    ets_timer_disarm(&null_mode_check_timer);
+    ets_timer_setfn(&null_mode_check_timer, null_mode_check_timer_cb, false);
+    ets_timer_arm_new(&null_mode_check_timer, 1, 1, 1);
   }
   else{
-    luaL_error(L, "ERR, mode change fail");
+    PMSLEEP_ERR("opmode change fail");
   }
   PMSLEEP_DBG("END");
   return;

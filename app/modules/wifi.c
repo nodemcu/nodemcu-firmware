@@ -345,7 +345,7 @@ static int wifi_suspend(lua_State* L)
   }
 
   pmSleep_INIT_CFG(cfg);
-  cfg.sleep_mode=MODEM_SLEEP_T;
+  cfg.sleep_mode = MODEM_SLEEP_T;
   if(lua_istable(L, 1))
   {
     pmSleep_parse_table_lua(L, 1, &cfg, &wifi_suspend_cb_ref, &wifi_resume_cb_ref);
@@ -361,9 +361,9 @@ static int wifi_suspend(lua_State* L)
 static int wifi_resume(lua_State* L)
 {
   PMSLEEP_DBG("\n\tDBG: %s start\n", __func__);
-  uint8 fpm_state=pmSleep_get_state();
+  uint8 fpm_state = pmSleep_get_state();
 // If forced sleep api is not enabled, return error
-  if (fpm_state==0)
+  if (fpm_state == 0)
   {
       return luaL_error(L, "WIFi not suspended");
   }
@@ -374,11 +374,6 @@ static int wifi_resume(lua_State* L)
     // If there is already a resume callback reference
     lua_pushvalue(L, 1); //Push resume callback to the top of the stack
     register_lua_cb(L, &wifi_resume_cb_ref);
-//    if (wifi_resume_cb_ref != LUA_NOREF)
-//    {
-//      luaL_unref(L, LUA_REGISTRYINDEX, wifi_resume_cb_ref); // Discard old callback
-//    }
-//    wifi_resume_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX); // Register resume callback in LUA_REGISTRY and store it's reference
     PMSLEEP_DBG("\n\tDBG: Resume CB registered\n");
   }
   pmSleep_resume(NULL);

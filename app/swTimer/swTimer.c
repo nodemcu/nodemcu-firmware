@@ -58,11 +58,11 @@
 static const char* SWTMR_ERROR_STRINGS[]={
     [SWTMR_MALLOC_FAIL] = "Out of memory!",
     [SWTMR_TIMER_NOT_ARMED] = "Timer is not armed",
-    [SWTMR_NULL_PTR] = "A NULL pointer was passed to timer suspend api",
+//    [SWTMR_NULL_PTR] = "A NULL pointer was passed to timer suspend api",
     [SWTMR_REGISTRY_NO_REGISTERED_TIMERS] = "No timers in registry",
-    [SWTMR_SUSPEND_ARRAY_INITIALIZATION_FAILED] = "Suspend array init fail",
-    [SWTMR_SUSPEND_ARRAY_ADD_FAILED] = "Unable to add suspended timer to array",
-    [SWTMR_SUSPEND_ARRAY_REMOVE_FAILED] = "Unable to remove suspended timer from array",
+//    [SWTMR_SUSPEND_ARRAY_INITIALIZATION_FAILED] = "Suspend array init fail",
+//    [SWTMR_SUSPEND_ARRAY_ADD_FAILED] = "Unable to add suspended timer to array",
+//    [SWTMR_SUSPEND_ARRAY_REMOVE_FAILED] = "Unable to remove suspended timer from array",
     [SWTMR_SUSPEND_TIMER_ALREADY_SUSPENDED] = "Already suspended",
     [SWTMR_SUSPEND_TIMER_ALREADY_REARMED] = "Already been re-armed",
     [SWTMR_SUSPEND_NO_SUSPENDED_TIMERS] = "No suspended timers",
@@ -125,8 +125,8 @@ static inline bool timer_armed_check(os_timer_t* timer_ptr){
 
 static inline int timer_do_suspend(os_timer_t* timer_ptr){
   if(timer_ptr == NULL){
-    SWTMR_DBG("timer_ptr is NULL");
-    return SWTMR_NULL_PTR;
+    SWTMR_ERR("timer_ptr is invalid");
+    return SWTMR_FAIL;
   }
 
   volatile uint32 frc2_count = RTC_REG_READ(FRC2_COUNT_ADDRESS);
@@ -155,14 +155,16 @@ static inline int timer_do_suspend(os_timer_t* timer_ptr){
 
   if(suspended_timers.data_ptr == NULL){
     if(!dynarr_init(&suspended_timers, 10, sizeof(os_timer_t*))){
-      return SWTMR_SUSPEND_ARRAY_INITIALIZATION_FAILED;
+      SWTMR_ERR("Suspend array init fail");
+      return SWTMR_FAIL;
     }
   }
 
   if(suspended_timer_ptr == NULL){
 //    return SWTMR_SUSPEND_TIMER_ALREADY_SUSPENDED;
     if(!dynarr_add(&suspended_timers, &timer_ptr, sizeof(timer_ptr))){
-      return SWTMR_SUSPEND_ARRAY_ADD_FAILED;
+      SWTMR_ERR("Unable to add suspended timer to array");
+      return SWTMR_FAIL;
     }
   }
 
@@ -172,8 +174,8 @@ static inline int timer_do_suspend(os_timer_t* timer_ptr){
 //NOTE: Interrupts are temporarily blocked during the execution of this function
 static inline int timer_do_resume_single(os_timer_t** suspended_timer_ptr){
   if(suspended_timer_ptr == NULL){
-    SWTMR_DBG("suspended_timer_ptr is NULL");
-    return SWTMR_NULL_PTR;
+    SWTMR_ERR("suspended_timer_ptr is invalid");
+    return SWTMR_FAIL;
   }
 
   os_timer_t* timer_list_ptr = NULL;
@@ -183,7 +185,10 @@ static inline int timer_do_resume_single(os_timer_t** suspended_timer_ptr){
   //verify timer has not been rearmed
   if(timer_armed_check(resume_timer_ptr) == TRUE){
     SWTMR_DBG("Timer(%p) already rearmed, removing from array", resume_timer_ptr);
-    dynarr_remove(&suspended_timers, suspended_timer_ptr);
+    if(!dynarr_remove(&suspended_timers, suspended_timer_ptr)){
+      SWTMR_ERR("Failed to remove timer from suspend array");
+      return SWTMR_FAIL;
+    }
     return SWTMR_OK;
   }
 
@@ -202,7 +207,7 @@ static inline int timer_do_resume_single(os_timer_t** suspended_timer_ptr){
 
   while(timer_list_ptr != NULL){
     if(resume_timer_ptr->timer_expire > timer_list_ptr->timer_expire){
-      if(timer_list_ptr->timer_next!=NULL){
+      if(timer_list_ptr->timer_next != NULL){
         if(resume_timer_ptr->timer_expire < timer_list_ptr->timer_next->timer_expire){
           resume_timer_ptr->timer_next = timer_list_ptr->timer_next;
           timer_list_ptr->timer_next = resume_timer_ptr;
@@ -352,7 +357,7 @@ static void timer_unregister_task(task_param_t param, uint8 priority){
   else{
 
     if(unregister_queue == NULL) {
-      SWTMR_ERR("ERROR: REGISTER QUEUE EMPTY");
+      SWTMR_ERR("ERROR register queue empty");
       return;
     }
       registry_queue_t* queue_temp = unregister_queue;
@@ -365,6 +370,7 @@ static void timer_unregister_task(task_param_t param, uint8 priority){
       }
   }
   if(timer_armed_check(timer_ptr) == TRUE){
+    SWTMR_DBG("%p still armed, can't remove from registry", timer_ptr);
     return;
   }
 
@@ -372,8 +378,10 @@ static void timer_unregister_task(task_param_t param, uint8 priority){
   os_timer_t** registry_ptr = timer_registry_check(timer_ptr);
   if(registry_ptr != NULL){
     if(!dynarr_remove(&timer_registry, registry_ptr)){
-      /**/SWTMR_ERR("Failed to remove timer(%p) from registry", timer_ptr);
-      //timer remove FAIL
+
+      /**/SWTMR_ERR("Failed to remove timer from registry");
+      /**/SWTMR_DBG("registry_ptr = %p", registry_ptr);
+      return;
     }
   }
   else{

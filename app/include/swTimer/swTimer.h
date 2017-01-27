@@ -4,34 +4,35 @@
 //#define SWTMR_DEBUG
 #define USE_SWTMR_ERROR_STRINGS
 
-#if defined(SWTMR_DEBUG) || defined(NODE_DEBUG)
-  #ifndef SWTMR_DEBUG
-    #define SWTMR_DEBUG
-  #endif
+#if defined(DEVELOP_VERSION)
+#define SWTMR_DEBUG
+#endif
 
-#define SWTMR_DBG(fmt, ...) c_printf("\n SWTMR_DBG(%s):"fmt"\n", __FUNCTION__, ##__VA_ARGS__)
+#if defined(SWTMR_DEBUG)
+  #define SWTMR_DBG(fmt, ...) dbg_printf("\tSWTIMER(%s):"fmt"\n", __FUNCTION__, ##__VA_ARGS__)
 #else
   #define SWTMR_DBG(...)
 #endif
 
-#if (defined(SWTMR_ERROR) || defined(NODE_ERROR))
-  #define SWTMR_ERR(fmt, ...) c_printf("\n SWTMR:"fmt"\n", ##__VA_ARGS__)
+#if defined(NODE_ERROR)
+  #define SWTMR_ERR(fmt, ...) NODE_ERR("%s"fmt"\n", "SWTIMER:", ##__VA_ARGS__)
 #else
   #define SWTMR_ERR(...)
 #endif
 
 enum SWTMR_STATUS{
-  SWTMR_OK = 0,
+  SWTMR_FAIL = 0,
+  SWTMR_OK = 1,
 
   SWTMR_MALLOC_FAIL = 10,
   SWTMR_TIMER_NOT_ARMED,
-  SWTMR_NULL_PTR,
+//  SWTMR_NULL_PTR,
 
   SWTMR_REGISTRY_NO_REGISTERED_TIMERS,
 
-  SWTMR_SUSPEND_ARRAY_INITIALIZATION_FAILED,
-  SWTMR_SUSPEND_ARRAY_ADD_FAILED,
-  SWTMR_SUSPEND_ARRAY_REMOVE_FAILED,
+//  SWTMR_SUSPEND_ARRAY_INITIALIZATION_FAILED,
+//  SWTMR_SUSPEND_ARRAY_ADD_FAILED,
+//  SWTMR_SUSPEND_ARRAY_REMOVE_FAILED,
   SWTMR_SUSPEND_TIMER_ALREADY_SUSPENDED,
   SWTMR_SUSPEND_TIMER_ALREADY_REARMED,
   SWTMR_SUSPEND_NO_SUSPENDED_TIMERS,
