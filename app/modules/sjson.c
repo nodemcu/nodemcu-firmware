@@ -114,20 +114,31 @@ create_new_element(jsonsl_t jsn,
         lua_settable(data->L, -3);
         lua_pop(data->L, 1);
       }
-      lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
-      lua_settable(data->L, -3);
-      lua_pop(data->L, 1);
-
-      // Invoke the setpath method if possible
+      // At this point, the stack:
+      // top: index/hash key
+      //    : table
+      
+      int want_value = 1;
+      // Invoke the checkpath method if possible
       if (data->pos_ref != LUA_NOREF) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->metatable);
-        lua_getfield(data->L, -1, "setpath");
+        lua_getfield(data->L, -1, "checkpath");
         if (lua_type(data->L, -1) != LUA_TNIL) {
           // Call with the new table and the path as arguments
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
-          lua_call(data->L, 2, 0);
+          lua_call(data->L, 2, 1);
+          want_value = lua_toboolean(data->L, -1);
         }
+        lua_pop(data->L, 2);    // Discard the metatable and either the getfield result or retval
+      }
+
+      if (want_value) {
+        lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
+        lua_settable(data->L, -3);
+        lua_pop(data->L, 1);    // the table
+      } else {
+        lua_pop(data->L, 2);    // the index and table
       }
 
       break;
@@ -354,12 +365,12 @@ static int sjson_decoder_int(lua_State *L, int argno) {
     data->metatable = lua_ref(L, 1);
 
     if (lua_type(L, -1) != LUA_TNIL) {
-      lua_getfield(L, -1, "setpath");
+      lua_getfield(L, -1, "checkpath");
       if (lua_type(L, -1) != LUA_TNIL) {
         lua_newtable(L);
         data->pos_ref = lua_ref(L, 1);
       }
-      lua_pop(L, 1);      // Throw away the setpath value 
+      lua_pop(L, 1);      // Throw away the checkpath value 
     }
     lua_pop(L, 1);      // Throw away the metatable
   }
