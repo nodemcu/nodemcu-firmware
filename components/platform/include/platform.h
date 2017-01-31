@@ -94,7 +94,8 @@ uint8_t platform_sigma_delta_set_duty( uint8_t channel, int8_t duty );
 enum
 {
   PLATFORM_I2C_SPEED_SLOW = 100000,
-  PLATFORM_I2C_SPEED_FAST = 400000
+  PLATFORM_I2C_SPEED_FAST = 400000,
+  PLATFORM_I2C_SPEED_FASTPLUS = 1000000
 };
 
 // I2C direction
