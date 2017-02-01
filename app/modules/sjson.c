@@ -35,13 +35,14 @@ typedef struct {
   size_t min_needed;
   size_t min_available;
   size_t buffer_len;
-  char buffer[512];
+  const char *buffer; // Points into buffer_ref
+  int buffer_ref;
 } JSN_DATA;
 
 #define get_parent_object_ref() ((state->level == 1) ? data->result_ref : state[-1].lua_object_ref)
 #define get_parent_object_used_count_pre_inc() ((state->level == 1) ? 1 : ++state[-1].used_count)
 
-static char* get_state_buffer(JSN_DATA *ctx, struct jsonsl_state_st *state)
+static const char* get_state_buffer(JSN_DATA *ctx, struct jsonsl_state_st *state)
 {
   size_t offset = state->pos_begin - ctx->min_available;
   return ctx->buffer + offset;
@@ -341,6 +342,7 @@ static int sjson_decoder_int(lua_State *L, int argno) {
   data->metatable = LUA_NOREF;
   data->hkey_ref = LUA_NOREF;
   data->pos_ref = LUA_NOREF;
+  data->buffer_ref = LUA_NOREF;
   data->complete = 0;
   data->error = NULL;
   data->L = L;
@@ -357,6 +359,7 @@ static int sjson_decoder_int(lua_State *L, int argno) {
 
   if (lua_type(L, argno) == LUA_TTABLE) {
     luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
+    data->null_ref = LUA_NOREF;
     lua_getfield(L, argno, "null");
     data->null_ref = lua_ref(L, 1);
 
@@ -410,6 +413,27 @@ static int sjson_decoder_result(lua_State *L) {
 }
 
 
+static void sjson_free_working_data(lua_State *L, JSN_DATA *data) {
+  jsonsl_t jsn = data->jsn;
+  int i;
+
+  for (i = 0; i < jsn->levels_max; i++) {
+    luaL_unref(L, LUA_REGISTRYINDEX, jsn->stack[i].lua_object_ref);
+    jsn->stack[i].lua_object_ref = LUA_NOREF;
+  }
+
+  luaL_unref(L, LUA_REGISTRYINDEX, data->metatable);
+  data->metatable = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, data->hkey_ref);
+  data->hkey_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
+  data->null_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, data->pos_ref);
+  data->pos_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, data->buffer_ref);
+  data->buffer_ref = LUA_NOREF;
+}
+
 static int sjson_decoder_write_int(lua_State *L, int udata_pos, int string_pos) {
   JSN_DATA *data = (JSN_DATA *)luaL_checkudata(L, udata_pos, "sjson.decoder");
   size_t len;
@@ -420,36 +444,55 @@ static int sjson_decoder_write_int(lua_State *L, int udata_pos, int string_pos) 
     luaL_error(L, "JSON parse error: previous call");
   }
 
-  data->L = L;
+  if (!data->complete) {
+    data->L = L;
 
-  while (len > 0) {
-    DBG_PRINTF("len=%d, min_needed=%d, avail=%d\n", data->buffer_len, data->min_needed, data->min_available);
-    int discard = data->min_needed - data->min_available;
-    if (discard > 0) {
-      data->buffer_len -= discard;
-      memmove(data->buffer, data->buffer + discard, data->buffer_len);
+    // Merge into any existing buffer and deal with discard
+    if (data->buffer_ref != LUA_NOREF) {
+      luaL_Buffer b;
+      luaL_buffinit(L, &b);
+
+      lua_rawgeti(L, LUA_REGISTRYINDEX, data->buffer_ref);
+      size_t prev_len;
+      const char *prev_buffer = luaL_checklstring(L, -1, &prev_len);
+      lua_pop(L, 1);              // But string still referenced so it cannot move
+      int discard = data->min_needed - data->min_available;
+      prev_buffer += discard;
+      prev_len -= discard;
+      if (prev_len > 0) {
+        luaL_addlstring(&b, prev_buffer, prev_len);
+      }
       data->min_available += discard;
+
+      luaL_unref(L, LUA_REGISTRYINDEX, data->buffer_ref);
+      data->buffer_ref = LUA_NOREF;
+
+      lua_pushvalue(L, string_pos);
+      luaL_addvalue(&b);
+      luaL_pushresult(&b);
+    } else {
+      lua_pushvalue(L, string_pos);
     }
-    int space = sizeof(data->buffer) - data->buffer_len;
-    if (space <= 0) {
-      luaL_error(L, "JSON parse error: no buffer space");
-    }
-    if (space > len) {
-      space = len;
-    }
-    memcpy(data->buffer + data->buffer_len, str, space);
-    data->buffer_len += space;
-    jsonsl_feed(data->jsn, str, space);
-    str += space;
-    len -= space;
+
+    size_t blen;
+    data->buffer = luaL_checklstring(L, -1, &blen);
+    data->buffer_len = blen;
+    data->buffer_ref = lua_ref(L, 1);
+
+    jsonsl_feed(data->jsn, str, len);
+
     if (data->error) {
       luaL_error(L, "JSON parse error: %s", data->error);
     }
   }
 
   if (data->complete) {
+    // We no longer need the buffer
+    sjson_free_working_data(L, data);
+
     return sjson_decoder_result_int(L, data);
   }
+
   return 0;
 }
 
@@ -479,19 +522,13 @@ static int sjson_decode(lua_State *L) {
 
 static int sjson_decoder_destructor(lua_State *L) {
   JSN_DATA *data = (JSN_DATA *)luaL_checkudata(L, 1, "sjson.decoder");
-  jsonsl_t jsn = data->jsn;
 
-  int i;
+  sjson_free_working_data(L, data);
 
-  for (i = 0; i < jsn->levels_max; i++) {
-    luaL_unref(L, LUA_REGISTRYINDEX, jsn->stack[i].lua_object_ref);
-  }
   data->jsn = NULL;
+
   luaL_unref(L, LUA_REGISTRYINDEX, data->result_ref);
-  luaL_unref(L, LUA_REGISTRYINDEX, data->metatable);
-  luaL_unref(L, LUA_REGISTRYINDEX, data->hkey_ref);
-  luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
-  luaL_unref(L, LUA_REGISTRYINDEX, data->pos_ref);
+  data->result_ref = LUA_NOREF;
 
   DBG_PRINTF("Destructor called\n");
 
@@ -635,6 +672,7 @@ static int sjson_encoder(lua_State *L) {
 
   if (lua_type(L, argno) == LUA_TTABLE) {
     luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
+    data->null_ref = LUA_NOREF;
     lua_getfield(L, argno, "null");
     data->null_ref = lua_ref(L, 1);
   }
@@ -810,6 +848,7 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
         // save the key
         if (state->offset & 1) {
           lua_unref(L, state->lua_key_ref);
+          state->lua_key_ref = LUA_NOREF;
           // Duplicate the key
           lua_pushvalue(L, -2);
           state->lua_key_ref = lua_ref(L, 1);
