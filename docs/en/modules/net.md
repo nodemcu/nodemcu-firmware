@@ -451,6 +451,35 @@ The syntax and functional similar to [`net.socket:on()`](#netsocketon). However,
 
 Sends data to specific remote peer.
 
+#### Syntax
+`send(port, ip, data)`
+
+#### Parameters
+- `port` remote socket port
+- `ip` remote socket IP
+- `data` the payload to send
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+udpSocket = net.createUDPSocket()
+udpSocket:listen(5000)
+udpSocket:on("receive", function(s, data, port, ip)
+    print(string.format("received '%s' from %s:%d", data, ip, port))
+    s:send(port, ip, "echo: " .. data)
+end)
+port, ip = udpSocket:getaddr()
+print(string.format("local UDP socket address / port: %s:%d", ip, port))
+```
+On *nix systems that can then be tested by issuing
+
+```
+echo -n "foo" | nc -w1 -u <device-IP-address> 5000
+```
+
+
 ## net.udpsocket:dns()
 
 Provides DNS resolution for a hostname.
