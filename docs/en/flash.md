@@ -42,7 +42,17 @@ Source: [https://github.com/nodemcu/nodemcu-flasher](https://github.com/nodemcu/
 
 Supported platforms: Windows
 
-Note that this tool was created by the initial developers of the NodeMCU firmware. It hasn't seen updates since September 2015 and is not maintained by the current NodeMCU *firmware* team. Be careful to not accidentally flash the very old default firmware the tool is shipped with.
+Note that this tool was created by the initial developers of the NodeMCU firmware. **It hasn't seen updates since September 2015** and is not maintained by the current NodeMCU *firmware* team. Be careful to not accidentally flash the very old default firmware the tool is shipped with.
+
+### NodeMCU PyFlasher
+> Self-contained [NodeMCU](https://github.com/nodemcu/nodemcu-firmware) flasher with GUI based on [esptool.py](https://github.com/espressif/esptool) and [wxPython](https://www.wxpython.org/).
+
+Source: [https://github.com/marcelstoer/nodemcu-pyflasher](https://github.com/marcelstoer/nodemcu-pyflasher)
+
+Supported platforms: anything that runs Python, runnable .exe available for Windows
+
+Disclaimer: the availability of [NodeMCU PyFlasher was announced on the NodeMCU Facebook page](https://www.facebook.com/NodeMCU/posts/663197460515251) but it is not an official offering of the current NodeMCU firmware team.
+
 
 ## Putting Device Into Flash Mode
 
