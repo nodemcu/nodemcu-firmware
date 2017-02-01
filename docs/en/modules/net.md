@@ -78,7 +78,7 @@ Creates an UDP socket.
 none
 
 #### Returns
-net.udpsocket sub module
+[net.udpsocket sub module](#netudpsocket-module)
 
 #### See also
 [`net.createConnection()`](#netcreateconnection)
@@ -442,10 +442,10 @@ The syntax and functional similar to [`net.server:listen()`](#netserverlisten), 
 
 Register callback functions for specific events.
 
-The syntax and functional similar to [`net.socket:on()`](#netsocketon). However, only "received", "sent" and "dns" are supported events.
+The syntax and functional similar to [`net.socket:on()`](#netsocketon). However, only "receive", "sent" and "dns" are supported events.
 
 !!! note
-	The `received` callback receives `port` and `ip` *after* the `data` argument.
+	The `receive` callback receives `port` and `ip` *after* the `data` argument.
 
 ## net.udpsocket:send()
 
