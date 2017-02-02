@@ -35,6 +35,12 @@ uint32_t flash_safe_get_size_byte(void)
     if (flash_size == 0)
     {
         flash_size = flash_detect_size_byte();
+#if !defined(FLASH_SAFE_API)
+	// clip maximum flash size to 4MByte if "SAFE API" is not used
+	if (flash_size > FLASH_SIZE_4MBYTE) {
+	    flash_size = FLASH_SIZE_4MBYTE;
+	}
+#endif
     }
     return flash_size;
 }

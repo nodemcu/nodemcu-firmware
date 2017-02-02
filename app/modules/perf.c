@@ -24,7 +24,6 @@ typedef struct {
   uint32_t bucket_count;
   uint32_t total_samples;
   uint32_t outside_samples;
-  uint32_t pc_offset;
   uint32_t bucket[1];
 } DATA;
 
@@ -39,7 +38,11 @@ static void ICACHE_RAM_ATTR hw_timer_cb(os_param_t p)
   uint32_t stackaddr;
 
   if (data) {
-    uint32_t pc = *(&stackaddr + data->pc_offset);
+    uint32_t pc;
+    asm (
+      "rsr   %0, EPC1;"    /* read out the EPC */
+      :"=r"(pc)
+    );
 
     uint32_t bucket_number = (pc - data->start) >> data->bucket_shift;
     if (bucket_number < data->bucket_count) {
@@ -72,11 +75,6 @@ static int perf_start(lua_State *L)
 
   bins = (end - start + (1 << shift) - 1) / (1 << shift);
 
-  int pc_offset = 20;  // This appears to be correct
-  if (lua_gettop(L) >= 4) {
-    pc_offset = luaL_checkinteger(L, 4);
-  }
-
   size_t data_size = sizeof(DATA) + bins * sizeof(uint32_t);
   DATA *d = (DATA *) lua_newuserdata(L, data_size);
   memset(d, 0, data_size);
@@ -84,7 +82,6 @@ static int perf_start(lua_State *L)
   d->start = start;
   d->bucket_shift = shift;
   d->bucket_count = bins;
-  d->pc_offset = pc_offset;	
 
   if (data) {
     lua_unref(L, data->ref);
@@ -93,7 +90,7 @@ static int perf_start(lua_State *L)
   data = d;
 
   // Start the timer
-  if (!platform_hw_timer_init(TIMER_OWNER, NMI_SOURCE, TRUE)) {
+  if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
     // Failed to init the timer
     data = NULL;
     lua_unref(L, d->ref);

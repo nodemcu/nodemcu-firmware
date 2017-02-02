@@ -364,6 +364,33 @@ Nothing
 node.osprint(true)
 ```
 
+## node.random()
+
+This behaves like math.random except that it uses true random numbers derived from the ESP8266 hardware. It returns uniformly distributed
+numbers in the required range. It also takes care to get large ranges correct. 
+
+It can be called in three ways. Without arguments in the floating point build of NodeMCU, it returns a random real number with uniform distribution in the interval [0,1). 
+When called with only one argument, an integer n, it returns an integer random number x such that 1 <= x <= n. For instance, you can simulate the result of a die with random(6). 
+Finally, random can be called with two integer arguments, l and u, to get a pseudo-random integer x such that l <= x <= u.
+
+#### Syntax
+`node.random()`
+`node.random(n)`
+`node.random(l, u)`
+
+#### Parameters
+- `n` the number of distinct integer values that can be returned -- in the (inclusive) range 1 .. `n`
+- `l` the lower bound of the range
+- `u` the upper bound of the range
+
+#### Returns
+The random number in the appropriate range. Note that the zero argument form will always return 0 in the integer build.
+
+#### Example
+```lua
+print ("I rolled a", node.random(6))
+```
+
 # node.egc module
 
 ## node.egc.setmode()

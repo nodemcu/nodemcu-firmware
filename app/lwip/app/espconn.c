@@ -436,6 +436,39 @@ espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length)
     return ESPCONN_ARG;
 }
 
+sint16 ICACHE_FLASH_ATTR espconn_recv(struct espconn *espconn, void *mem, size_t len)
+{
+	espconn_msg *pnode = NULL;
+	bool value = false;
+	int bytes_used = 0;
+	if (espconn == NULL || mem == NULL || len == 0)
+		return ESPCONN_ARG;
+
+	/*Find the node depend on the espconn message*/
+	value = espconn_find_connection(espconn, &pnode);
+	if (value && espconn->type == ESPCONN_TCP){
+		if (pnode->readbuf != NULL){
+			bytes_used = ringbuf_bytes_used(pnode->readbuf);
+			if (bytes_used != 0) {
+				if (len > bytes_used) {
+					len = bytes_used;
+				}
+				ringbuf_memcpy_from(mem, pnode->readbuf, len);
+				espconn_recv_unhold(pnode->pespconn);
+				return len;
+			} else {
+				return ESPCONN_OK;
+			}
+		} else{
+			return ESPCONN_OK;
+		}
+	} else{
+		return ESPCONN_ARG;
+	}
+
+	return ESPCONN_ARG;
+}
+
 /******************************************************************************
  * FunctionName : espconn_sendto
  * Description  : send data for UDP
@@ -954,7 +987,7 @@ espconn_disconnect(struct espconn *espconn)
 
     if (value){
     	/*protect for redisconnection*/
-    	if (espconn->state == ESPCONN_CLOSE)
+    	if (pnode->preverse == NULL && espconn->state == ESPCONN_CLOSE)
     		return ESPCONN_INPROGRESS;
     	espconn_tcp_disconnect(pnode,0);	//1 force, 0 normal
     	return ESPCONN_OK;

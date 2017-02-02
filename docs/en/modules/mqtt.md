@@ -11,7 +11,7 @@ The client adheres to version 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/
 Creates a MQTT client.
 
 #### Syntax
-`mqtt.Client(clientid, keepalive, username, password[, cleansession])`
+`mqtt.Client(clientid, keepalive[, username, password, cleansession])`
 
 #### Parameters
 - `clientid` client ID
@@ -25,7 +25,10 @@ MQTT client
 
 #### Example
 ```lua
--- init mqtt client with keepalive timer 120sec
+-- init mqtt client without logins, keepalive timer 120s
+m = mqtt.Client("clientid", 120)
+
+-- init mqtt client with logins, keepalive timer 120sec
 m = mqtt.Client("clientid", 120, "user", "password")
 
 -- setup Last Will and Testament (optional)

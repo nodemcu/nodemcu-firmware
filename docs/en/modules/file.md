@@ -162,7 +162,7 @@ Not supported for internal flash.
 `file.mount(ldrv[, pin])`
 
 #### Parameters
-- `ldrv` name of the logical drive, `SD0:`, `SD1:`, etc.
+- `ldrv` name of the logical drive, `/SD0`, `/SD1`, etc.
 - `pin` 1~12, IO index for SS/CS, defaults to 8 if omitted.
 
 #### Returns
@@ -170,7 +170,7 @@ Volume object
 
 #### Example
 ```lua
-vol = file.mount("SD0:")
+vol = file.mount("/SD0")
 vol:umount()
 ```
 
@@ -179,6 +179,7 @@ vol:umount()
 Registers callback functions.
 
 Trigger events are:
+
 - `rtc` deliver current date & time to the file system. Function is expected to return a table containing the fields `year`, `mon`, `day`, `hour`, `min`, `sec` of current date and time. Not supported for internal flash.
 
 #### Syntax
@@ -204,7 +205,7 @@ sntp.sync(server_ip,
 ```
 
 #### See also
-[`rtctime.epoch2cal()`](rtctime.md#rtctimepoch2cal)
+[`rtctime.epoch2cal()`](rtctime.md#rtctimeepoch2cal)
 
 ## file.open()
 
@@ -291,6 +292,55 @@ Renames a file. If a file is currently open, it will be closed first.
 ```lua
 -- rename file 'temp.lua' to 'init.lua'.
 file.rename("temp.lua","init.lua")
+```
+
+## file.stat()
+
+Get attribtues of a file or directory in a table:
+
+- `size` file size in bytes
+- `name` file name
+- `time` table with time stamp information. Default is 1970-01-01 00:00:00 in case time stamps are not supported (on SPIFFS).
+  - `year`
+  - `mon`
+  - `day`
+  - `hour`
+  - `min`
+  - `sec`
+- `is_dir` flag `true` if item is a directory, otherwise `false`
+- `is_rdonly` flag `true` if item is read-only, otherwise `false`
+- `is_hidden` flag `true` if item is hidden, otherwise `false`
+- `is_sys` flag `true` if item is system, otherwise `false`
+- `is_arch` flag `true` if item is archive, otherwise `false`
+
+#### Syntax
+`file.stat(filename)`
+
+#### Parameters
+`filename` file name
+
+#### Returns
+table containing file attributes
+
+#### Example
+
+```lua
+s = file.stat("/SD0/myfile")
+print("name: " .. s.name)
+print("size: " .. s.size)
+
+t = s.time
+print(string.format("%02d:%02d:%02d", t.hour, t.min, t.sec))
+print(string.format("%04d-%02d-%02d", t.year, t.mon, t.day))
+
+if s.is_dir then print("is directory") else print("is file") end
+if s.is_rdonly then print("is read-only") else print("is writable") end
+if s.is_hidden then print("is hidden") else print("is not hidden") end
+if s.is_sys then print("is system") else print("is not system") end
+if s.is_arch then print("is archive") else print("is not archive") end
+
+s = nil
+t = nil
 ```
 
 # File access functions

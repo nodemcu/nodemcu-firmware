@@ -49,6 +49,13 @@
 #include "vfs.h"
 #include "task/task.h"
 
+/* Set this to 1 to generate debug messages. Uses debug callback provided by Lua. Example: enduser_setup.start(successFn, print, print) */ 
+#define ENDUSER_SETUP_DEBUG_ENABLE 0
+
+/* Set this to 1 to output the contents of HTTP requests when debugging. Useful if you need it, but can get pretty noisy */
+#define ENDUSER_SETUP_DEBUG_SHOW_HTTP_REQUEST 0
+
+
 #define MIN(x, y)  (((x) < (y)) ? (x) : (y))
 #define LITLEN(strliteral) (sizeof (strliteral) -1)
 #define STRINGIFY(x) #x
@@ -63,6 +70,7 @@
 #define ENDUSER_SETUP_ERR_UNKOWN_ERROR           3
 #define ENDUSER_SETUP_ERR_SOCKET_ALREADY_OPEN    4
 #define ENDUSER_SETUP_ERR_MAX_NUMBER             5
+#define ENDUSER_SETUP_ERR_ALREADY_INITIALIZED    6
 
 /**
  * DNS Response Packet:
@@ -80,6 +88,7 @@ static const char dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
 /*        DNS Answer Part          |LBL OFFS|  |  TYPE  |  |  CLASS |  |         TTL        |  | RD LEN | */
                                    0xC0, 0x0C, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x78, 0x00, 0x04 };
 
+static const char http_html_gz_filename[] = "enduser_setup.html.gz";
 static const char http_html_filename[] = "enduser_setup.html";
 static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nConnection:close\r\nContent-Type:text/html\r\n"; /* Note single \r\n here! */
 static const char http_header_204[] = "HTTP/1.1 204 No Content\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
@@ -92,7 +101,7 @@ static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Le
 static const char http_header_content_len_fmt[] = "Content-length:%5d\r\n\r\n";
 static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n";
 
-// Externally defined: static const char http_html_backup[] = ...
+/* Externally defined: static const char http_html_backup[] = ... */
 #include "eus/http_html_backup.def"
 
 typedef struct scan_listener
@@ -136,7 +145,6 @@ static void enduser_setup_check_station(void *p);
 static void enduser_setup_debug(int line, const char *str);
 
 
-#define ENDUSER_SETUP_DEBUG_ENABLE 0
 #if ENDUSER_SETUP_DEBUG_ENABLE
 #define ENDUSER_SETUP_DEBUG(str) enduser_setup_debug(__LINE__, str)
 #else
@@ -250,7 +258,7 @@ static void enduser_setup_check_station(void *p)
   
   if (has_ip == 0)
   {
-    // No IP Address yet, so check the reported status 
+    /* No IP Address yet, so check the reported status */ 
     uint8_t curr_status = wifi_station_get_connect_status();
     char buf[20];
     c_sprintf(buf, "status=%d,chan=%d", curr_status, currChan);
@@ -260,9 +268,10 @@ static void enduser_setup_check_station(void *p)
     {
       state->connecting = 0;
      
-      // If the status is an error status and the channel changed, then cache the 
-      // status to state since the Station won't be able to report the same status
-      // after switching the channel back to the SoftAP's
+      /* If the status is an error status and the channel changed, then cache the 
+       * status to state since the Station won't be able to report the same status
+       * after switching the channel back to the SoftAP's
+       */
       if (currChan != state->softAPchannel) {
         state->lastStationStatus = curr_status;
       
@@ -277,7 +286,7 @@ static void enduser_setup_check_station(void *p)
   }
 
   state->success = 1;
-  state->lastStationStatus = 5; // We have an IP Address, so the status is 5 (as of SDK 1.5.1)
+  state->lastStationStatus = 5; /*  We have an IP Address, so the status is 5 (as of SDK 1.5.1) */
   state->connecting = 0;
   
 #if ENDUSER_SETUP_DEBUG_ENABLE  
@@ -411,11 +420,33 @@ static int enduser_setup_http_load_payload(void)
   int err = VFS_RES_ERR;
   int err2 = VFS_RES_ERR;
   int file_len = 0;
-  int f = vfs_open(http_html_filename, "r");
-  if (f) {
+
+  /* Try to open enduser_setup.html.gz from SPIFFS first */
+  int f = vfs_open(http_html_gz_filename, "r");
+
+  if (f) 
+  {
       err = vfs_lseek(f, 0, VFS_SEEK_END);
       file_len = (int) vfs_tell(f);
       err2 = vfs_lseek(f, 0, VFS_SEEK_SET);
+  }
+
+  if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
+  {
+    if (f) 
+    {
+      vfs_close(f);
+    }
+
+    /* If that didn't work, try to open enduser_setup.html from SPIFFS */
+    f = vfs_open(http_html_filename, "r");
+
+    if (f) 
+    {
+        err = vfs_lseek(f, 0, VFS_SEEK_END);
+        file_len = (int) vfs_tell(f);
+        err2 = vfs_lseek(f, 0, VFS_SEEK_SET);
+    }
   }
 
   char cl_hdr[30];
@@ -426,20 +457,23 @@ static int enduser_setup_http_load_payload(void)
 
   if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
   {
-    ENDUSER_SETUP_DEBUG("enduser_setup_http_load_payload unable to load file enduser_setup.html, loading backup HTML.");
+    ENDUSER_SETUP_DEBUG("Unable to load file enduser_setup.html, loading backup HTML...");
 
     c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(http_html_backup));
     cl_len = c_strlen(cl_hdr);
-    
+    int html_len = LITLEN(http_html_backup);
+
     if (http_html_backup[0] == 0x1f && http_html_backup[1] == 0x8b)
     {
         ce_len = c_strlen(http_html_gzip_contentencoding);
+        html_len = http_html_backup_len; /* Defined in eus/http_html_backup.def by xxd -i */
         ENDUSER_SETUP_DEBUG("Content is gzipped");
     }   
    
-    int payload_len = LITLEN(http_header_200) + cl_len + ce_len + LITLEN(http_html_backup); 
+    int payload_len = LITLEN(http_header_200) + cl_len + ce_len + html_len; 
     state->http_payload_len = payload_len;
     state->http_payload_data = (char *) c_malloc(payload_len);
+
     if (state->http_payload_data == NULL)
     {
       return 2;
@@ -448,8 +482,12 @@ static int enduser_setup_http_load_payload(void)
     int offset = 0;
     c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
     offset += LITLEN(http_header_200);
+
     if (ce_len > 0)
+    {
         offset += c_sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);
+    }
+    
     c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
     offset += cl_len;
     c_memcpy(&(state->http_payload_data[offset]), &(http_html_backup), sizeof(http_html_backup));
@@ -469,6 +507,7 @@ static int enduser_setup_http_load_payload(void)
   int payload_len = LITLEN(http_header_200) + cl_len + ce_len + file_len;
   state->http_payload_len = payload_len;
   state->http_payload_data = (char *) c_malloc(payload_len);
+
   if (state->http_payload_data == NULL)
   {
     return 2;
@@ -480,8 +519,12 @@ static int enduser_setup_http_load_payload(void)
 
   c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
   offset += LITLEN(http_header_200);
+
   if (ce_len > 0)
+  {
     offset += c_sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);  
+  }
+  
   c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
   offset += cl_len;
   vfs_read(f, &(state->http_payload_data[offset]), file_len);
@@ -793,7 +836,7 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
         memset(status_buf, 0, status_len);
         status_len = c_sprintf(status_buf, s, config.ssid, ip_addr);
 
-        int buf_len = sizeof(fmt) + status_len + 10; //10 = (9+1), 1 byte is '\0' and 9 are reserved for length field
+        int buf_len = sizeof(fmt) + status_len + 10; /* 10 = (9+1), 1 byte is '\0' and 9 are reserved for length field */
         char buf[buf_len];
         memset(buf, 0, buf_len);
         int output_len = c_sprintf(buf, fmt, status_len, status_buf);
@@ -807,7 +850,7 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
       {
         const char *s = states[curr_state];
         int status_len = c_strlen(s);
-        int buf_len = sizeof(fmt) + status_len + 10; //10 = (9+1), 1 byte is '\0' and 9 are reserved for length field
+        int buf_len = sizeof(fmt) + status_len + 10; /* 10 = (9+1), 1 byte is '\0' and 9 are reserved for length field */
         char buf[buf_len];
         memset(buf, 0, buf_len);
         int output_len = c_sprintf(buf, fmt, status_len, s);
@@ -827,7 +870,7 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_serve_status_as_json");
   
-  // If the station is currently shut down because of wi-fi channel issue, use the cached status
+  /* If the station is currently shut down because of wi-fi channel issue, use the cached status */
   uint8_t curr_status = state->lastStationStatus > 0 ? state->lastStationStatus : wifi_station_get_connect_status ();  
 
   char json_payload[64];
@@ -999,7 +1042,7 @@ static void on_scan_done (void *arg, STATUS status)
     const size_t hdr_sz = sizeof (header_fmt) +1 -1; /* +expand %4d, -\0 */
 
     /* To be able to safely escape a pathological SSID, we need 2*32 bytes */
-    const size_t max_entry_sz = 27 + 2*32 + 6; // {"ssid":"","rssi":,"chan":}
+    const size_t max_entry_sz = 27 + 2*32 + 6; /* {"ssid":"","rssi":,"chan":} */
     const size_t alloc_sz = hdr_sz + num_nets * max_entry_sz + 3;
     char *http = os_zalloc (alloc_sz);
     if (!http)
@@ -1089,8 +1132,10 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
 
   err_t ret = ERR_OK;
 
+#if ENDUSER_SETUP_DEBUG_SHOW_HTTP_REQUEST
   ENDUSER_SETUP_DEBUG(data);
-  
+#endif
+
   if (c_strncmp(data, "GET ", 4) == 0)
   {
     if (c_strncmp(data + 4, "/ ", 2) == 0)
@@ -1106,7 +1151,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     }
     else if (c_strncmp(data + 4, "/aplist", 7) == 0)
     {
-      // Don't do an AP Scan while station is trying to connect to Wi-Fi
+      /* Don't do an AP Scan while station is trying to connect to Wi-Fi */
       if (state->connecting == 0) 
       {
         scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
@@ -1137,7 +1182,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
       }
       else
       {
-        // Return No Content status to the caller
+        /* Return No Content status to the caller */
         enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));     
       }
     }
@@ -1329,7 +1374,7 @@ static void on_initial_scan_done (void *arg, STATUS status)
 {
   ENDUSER_SETUP_DEBUG("on_initial_scan_done");
 
-  if (!state)
+  if (state == NULL)
   {
     return;
   }
@@ -1338,6 +1383,14 @@ static void on_initial_scan_done (void *arg, STATUS status)
   
   if (status == OK)
   {
+    /* Find the strongest signal and use the same wi-fi channel for the SoftAP. This is based on an assumption that end-user 
+     * will likely be choosing that AP to connect to. Since ESP only has one radio, STA and AP must share same channel. This  
+     * algorithm tries to minimize the SoftAP unavailability when the STA is connecting to verify. If the STA must switch to  
+     * another wi-fi channel, then the SoftAP will follow it, but the end-user's device will not know that the SoftAP is no  
+     * longer there until it times out. To mitigate, we try to prevent the need to switch channels, and if a switch does occur,
+     * be quick about returning to this channel so that status info can be delivered to the end-user's device before shutting 
+     * down EUS. 
+     */
     for (struct bss_info *wn = arg; wn; wn = wn->next.stqe_next)
     {
       if (wn->rssi > rssi)
@@ -1359,8 +1412,8 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   struct espconn *callback_espconn = arg;
   struct ip_info ip_info;
 
-  uint32_t qname_len = c_strlen(&(recv_data[12])) + 1; // \0=1byte
-  uint32_t dns_reply_static_len = (uint32_t) sizeof(dns_header) + (uint32_t) sizeof(dns_body) + 2 + 4; // dns_id=2bytes, ip=4bytes
+  uint32_t qname_len = c_strlen(&(recv_data[12])) + 1; /* \0=1byte */
+  uint32_t dns_reply_static_len = (uint32_t) sizeof(dns_header) + (uint32_t) sizeof(dns_body) + 2 + 4; /* dns_id=2bytes, ip=4bytes */
   uint32_t dns_reply_len = dns_reply_static_len + qname_len;
 
 #if ENDUSER_SETUP_DEBUG_ENABLE
@@ -1418,7 +1471,7 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   insert_byte += (uint32_t) sizeof(dns_body);
   c_memcpy(&(dns_reply[insert_byte]), &(ip_info.ip), 4);
 
-  // SDK 1.4.0 changed behaviour, for UDP server need to look up remote ip/port
+  /* SDK 1.4.0 changed behaviour, for UDP server need to look up remote ip/port */
   remot_info *pr = 0;
   if (espconn_get_connection_info(callback_espconn, &pr, 0) != ESPCONN_OK)
   {
@@ -1490,7 +1543,7 @@ static int enduser_setup_dns_start(void)
 
   if (state->espconn_dns_udp != NULL)
   {
-    ENDUSER_SETUP_ERROR("dns_start failed. Appears to already be started (espconn_dns_udp != NULL).", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
+    ENDUSER_SETUP_ERROR("dns_start failed. Appears to already be started (espconn_dns_udp != NULL).", ENDUSER_SETUP_ERR_ALREADY_INITIALIZED, ENDUSER_SETUP_ERR_FATAL);
   }
   state->espconn_dns_udp = (struct espconn *) c_malloc(sizeof(struct espconn));
   if (state->espconn_dns_udp == NULL)
@@ -1549,35 +1602,44 @@ static void enduser_setup_dns_stop(void)
 
 static int enduser_setup_init(lua_State *L)
 {
-  // Note: Normal to not see this debug message on first invocation because debug callback is set below
+  /* Note: Normal to not see this debug message on first invocation because debug callback is set below */
   ENDUSER_SETUP_DEBUG("enduser_setup_init");
+
+  /* Defer errors until the bottom, so that callbacks can be set, if applicable, to handle debug and error messages */
+  int ret = 0;
 
   if (state != NULL)
   {
-    ENDUSER_SETUP_ERROR("init failed. Appears to already be started.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_FATAL);
-    return ENDUSER_SETUP_ERR_UNKOWN_ERROR;
+    ret = ENDUSER_SETUP_ERR_ALREADY_INITIALIZED;
   }
-
-  state = (enduser_setup_state_t *) os_zalloc(sizeof(enduser_setup_state_t));
-  if (state == NULL)
+  else
   {
-    ENDUSER_SETUP_ERROR("init failed. Unable to allocate memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
-    return ENDUSER_SETUP_ERR_OUT_OF_MEMORY;
-  }
-  c_memset(state, 0, sizeof(enduser_setup_state_t));
+    state = (enduser_setup_state_t *) os_zalloc(sizeof(enduser_setup_state_t));
 
-  state->lua_connected_cb_ref = LUA_NOREF;
-  state->lua_err_cb_ref = LUA_NOREF;
-  state->lua_dbg_cb_ref = LUA_NOREF;
+    if (state == NULL)
+    {
+      ret = ENDUSER_SETUP_ERR_OUT_OF_MEMORY;
+    }
+    else
+    {
+      c_memset(state, 0, sizeof(enduser_setup_state_t));    
+
+      state->lua_connected_cb_ref = LUA_NOREF;
+      state->lua_err_cb_ref = LUA_NOREF;
+      state->lua_dbg_cb_ref = LUA_NOREF;    
+
+      state->softAPchannel = 1;
+      state->success = 0;
+      state->callbackDone = 0;
+      state->lastStationStatus = 0;
+      state->connecting = 0;    
+    }
+  }
 
   if (!lua_isnoneornil(L, 1))
   {
     lua_pushvalue(L, 1);
     state->lua_connected_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-  else
-  {
-    state->lua_connected_cb_ref = LUA_NOREF;
   }
 
   if (!lua_isnoneornil(L, 2))
@@ -1585,29 +1647,24 @@ static int enduser_setup_init(lua_State *L)
     lua_pushvalue (L, 2);
     state->lua_err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
-  else
-  {
-    state->lua_err_cb_ref = LUA_NOREF;
-  }
 
   if (!lua_isnoneornil(L, 3))
   {
     lua_pushvalue (L, 3);
     state->lua_dbg_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    ENDUSER_SETUP_DEBUG("enduser_setup_init: Debug callback has been defined");    
-  }
-  else
-  {
-    state->lua_dbg_cb_ref = LUA_NOREF;
+    ENDUSER_SETUP_DEBUG("enduser_setup_init: Debug callback has been set");    
   }
 
-  state->softAPchannel = 1;
-  state->success = 0;
-  state->callbackDone = 0;
-  state->lastStationStatus = 0;
-  state->connecting = 0;
-  
-  return 0;
+  if (ret == ENDUSER_SETUP_ERR_ALREADY_INITIALIZED) 
+  {
+    ENDUSER_SETUP_ERROR("init failed. Appears to already be started. EUS will shut down now.", ENDUSER_SETUP_ERR_ALREADY_INITIALIZED, ENDUSER_SETUP_ERR_FATAL);
+  }
+  else if (ret == ENDUSER_SETUP_ERR_OUT_OF_MEMORY) 
+  {
+    ENDUSER_SETUP_ERROR("init failed. Unable to allocate memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
+  }
+
+  return ret;
 }
 
 
@@ -1624,7 +1681,7 @@ static int enduser_setup_manual(lua_State *L)
 
 static int enduser_setup_start(lua_State *L)
 {
-  // Note: The debug callback is set in enduser_setup_init. It's normal to not see this debug message on first invocation.
+  /* Note: The debug callback is set in enduser_setup_init. It's normal to not see this debug message on first invocation. */
   ENDUSER_SETUP_DEBUG("enduser_setup_start");
 
   if (!do_station_cfg_handle)
@@ -1639,7 +1696,8 @@ static int enduser_setup_start(lua_State *L)
 
   if (!manual)
   {
-    ENDUSER_SETUP_DEBUG("Performing AP Scan to identify likely AP's channel");    
+    ENDUSER_SETUP_DEBUG("Performing AP Scan to identify likely AP's channel. Enabling Station if it wasn't already.");    
+    wifi_set_opmode(STATION_MODE | wifi_get_opmode());
     wifi_station_scan(NULL, on_initial_scan_done);
   }
   else
@@ -1683,7 +1741,7 @@ static int enduser_setup_stop(lua_State* L)
   {
     enduser_setup_ap_stop();
   }
-  if (state->success && !state->callbackDone)
+  if (state != NULL && state->success && !state->callbackDone)
   {
     wifi_set_opmode(STATION_MODE | wifi_get_opmode());
     wifi_station_connect();

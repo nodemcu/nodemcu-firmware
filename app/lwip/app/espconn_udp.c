@@ -54,8 +54,8 @@ static void ICACHE_FLASH_ATTR espconn_data_sent(void *arg, enum send_opt opt)
 
     if (psent->pcommon.cntr == 0) {
         psent->pespconn->state = ESPCONN_CONNECT;
-//        sys_timeout(10, espconn_data_sentcb, psent->pespconn);
-        espconn_data_sentcb(psent->pespconn);
+        if (psent->pcommon.err == 0)
+        	espconn_data_sentcb(psent->pespconn);
     } else {
     	if (opt == ESPCONN_SEND){
     		espconn_udp_sent(arg, psent->pcommon.ptrbuf, psent->pcommon.cntr);
@@ -94,8 +94,8 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
         return ESPCONN_ARG;
     }
 
-    if (1470 < length) {
-        datalen = 1470;
+    if ((IP_FRAG_MAX_MTU - 20 - 8) < length) {
+        datalen = IP_FRAG_MAX_MTU - 20 - 8;
     } else {
         datalen = length;
     }
@@ -157,6 +157,7 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
         pbuf_free(p);
         pudp_sent->pcommon.ptrbuf = psent + datalen;
         pudp_sent->pcommon.cntr = length - datalen;
+        pudp_sent->pcommon.err = err;
         espconn_data_sent(pudp_sent, ESPCONN_SEND);
         if (err > 0)
         	return ESPCONN_IF;
@@ -199,8 +200,8 @@ espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
         return ESPCONN_ARG;
     }
 
-    if (1470 < length) {
-        datalen = 1470;
+    if ((IP_FRAG_MAX_MTU - 20 - 8) < length) {
+        datalen = IP_FRAG_MAX_MTU - 20 - 8;
     } else {
         datalen = length;
     }
@@ -257,8 +258,8 @@ espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
     	pbuf_free(p);
     	pudp_sent->pcommon.ptrbuf = psent + datalen;
 		pudp_sent->pcommon.cntr = length - datalen;
-		if (err == ERR_OK)
-			espconn_data_sent(pudp_sent, ESPCONN_SENDTO);
+		pudp_sent->pcommon.err = err;
+		espconn_data_sent(pudp_sent, ESPCONN_SENDTO);
 
 		if (err > 0)
 			return ESPCONN_IF;

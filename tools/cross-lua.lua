@@ -16,7 +16,7 @@ end
 builder:init( args )
 builder:set_build_mode( builder.BUILD_DIR_LINEARIZED )
 local output = 'luac.cross'
-local cdefs = '-DLUA_CROSS_COMPILER'
+local cdefs = '-DLUA_CROSS_COMPILER -Ddbg_printf=printf'
 
 -- Lua source files and include path
 local lua_files = [[

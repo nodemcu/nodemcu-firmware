@@ -83,9 +83,11 @@ function loop()
         if ( r > 3 ) then
             disp:clearScreen()
             set_clip_range()
+        else
+            disp:undoClipRange()
         end
 
-        r = bit.band(r + 1, 255)
+        r = bit.band(r + 1, 7)
     end
 
     switch(loop_idx) : caseof {

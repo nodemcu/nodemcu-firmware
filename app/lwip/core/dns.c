@@ -578,7 +578,7 @@ dns_send(u8_t numdns, const char* name, u8_t id)
   char *query, *nptr;
   const char *pHostname;
   u8_t n;
-  dns_random = (u16_t)os_random();
+  dns_random = os_random()>>16;
   LWIP_DEBUGF(DNS_DEBUG, ("dns_send: dns_servers[%"U16_F"] \"%s\": request\n",
               (u16_t)(numdns), name));
   LWIP_ASSERT("dns server out of array", numdns < DNS_MAX_SERVERS);
@@ -706,7 +706,7 @@ dns_check_entry(u8_t i)
 
     case DNS_STATE_DONE: {
       /* if the time to live is nul */
-      if (--pEntry->ttl == 0) {
+      if ((pEntry->ttl == 0) || (--pEntry->ttl == 0)) {
         LWIP_DEBUGF(DNS_DEBUG, ("dns_check_entry: \"%s\": flush\n", pEntry->name));
         /* flush this entry */
         pEntry->state = DNS_STATE_UNUSED;
@@ -782,8 +782,6 @@ dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t 
     if (i < DNS_TABLE_SIZE) {
       pEntry = &dns_table[i];
       if(pEntry->state == DNS_STATE_ASKING) {
-        /* This entry is now completed. */
-        pEntry->state = DNS_STATE_DONE;
         pEntry->err   = hdr->flags2 & DNS_FLAG2_ERR_MASK;
 
         /* We only care about the question(s) and the answers. The authrr
@@ -795,8 +793,11 @@ dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t 
         if (((hdr->flags1 & DNS_FLAG1_RESPONSE) == 0) || (pEntry->err != 0) || (nquestions != 1)) {
           LWIP_DEBUGF(DNS_DEBUG, ("dns_recv: \"%s\": error in flags\n", pEntry->name));
           /* call callback to indicate error, clean up memory and return */
-          goto responseerr;
+          //goto responseerr;
+          goto memerr;
         }
+        /* This entry is now completed. */
+        pEntry->state = DNS_STATE_DONE;
 
 #if DNS_DOES_NAME_CHECK
         /* Check if the name in the "question" part match with the name in the entry. */
@@ -832,6 +833,13 @@ dns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, ip_addr_t *addr, u16_t 
             if (pEntry->found) {
               (*pEntry->found)(pEntry->name, &pEntry->ipaddr, pEntry->arg);
             }
+            if (pEntry->ttl == 0) {
+              /* RFC 883, page 29: "Zero values are
+                 interpreted to mean that the RR can only be used for the
+                 transaction in progress, and should not be cached."
+                 -> flush this entry now */
+              goto flushentry;
+            }
             /* deallocate memory and return */
             goto memerr;
           } else {
@@ -854,6 +862,7 @@ responseerr:
   if (pEntry->found) {
     (*pEntry->found)(pEntry->name, NULL, pEntry->arg);
   }
+flushentry:
   /* flush this entry */
   pEntry->state = DNS_STATE_UNUSED;
   pEntry->found = NULL;

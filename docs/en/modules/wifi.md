@@ -92,13 +92,13 @@ NOTE: WiFi Mode configuration will be retained until changed even if device is t
 
 #### Parameters
 - `mode` value should be one of
- - `wifi.STATION` for when the device is connected to a WiFi router. This is often done to give the device access to the Internet.
- - `wifi.SOFTAP` for when the device is acting *only* as an access point. This will allow you to see the device in the list of WiFi networks (unless you hide the SSID, of course). In this mode your computer can connect to the device, creating a local area network. Unless you change the value, the NodeMCU device will be given a local IP address of 192.168.4.1 and assign your computer the next available IP address, such as 192.168.4.2.
- - `wifi.STATIONAP` is the combination of `wifi.STATION` and `wifi.SOFTAP`. It allows you to create a local WiFi connection *and* connect to another WiFi router.
- - `wifi.NULLMODE` changing WiFi mode to NULL_MODE will put wifi into a low power state similar to MODEM_SLEEP, provided `wifi.nullmodesleep(false)` has not been called.
+	- `wifi.STATION` for when the device is connected to a WiFi router. This is often done to give the device access to the Internet.
+	- `wifi.SOFTAP` for when the device is acting *only* as an access point. This will allow you to see the device in the list of WiFi networks (unless you hide the SSID, of course). In this mode your computer can connect to the device, creating a local area network. Unless you change the value, the NodeMCU device will be given a local IP address of 192.168.4.1 and assign your computer the next available IP address, such as 192.168.4.2.
+	- `wifi.STATIONAP` is the combination of `wifi.STATION` and `wifi.SOFTAP`. It allows you to create a local WiFi connection *and* connect to another WiFi router.
+	- `wifi.NULLMODE` changing WiFi mode to NULL_MODE will put wifi into a low power state similar to MODEM_SLEEP, provided `wifi.nullmodesleep(false)` has not been called.
 - `save` choose whether or not to save wifi mode to flash
-   - `true` WiFi mode configuration **will** be retained through power cycle. (Default)
-   - `false` WiFi mode configuration **will not** be retained through power cycle.
+	- `true` WiFi mode configuration **will** be retained through power cycle. (Default)
+	- `false` WiFi mode configuration **will not** be retained through power cycle.
 
 #### Returns
 current mode after setup
@@ -153,8 +153,8 @@ physical mode after setup
 
 Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled by default.
 
-	!!! note
-		This function **does not** store it's setting in flash, if auto sleep in NULL_MODE is not desired, `wifi.nullmodesleep(false)` must be called after powerup, restart, or wake from deep sleep.
+!!! note
+	This function **does not** store it's setting in flash, if auto sleep in NULL_MODE is not desired, `wifi.nullmodesleep(false)` must be called after power-up, restart, or wake from deep sleep.
 
 #### Syntax
 `wifi.nullmodesleep([enable])`
@@ -166,8 +166,8 @@ Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled
 
 #### Returns
 - `sleep_enabled` Current/New NULL_MODE sleep setting
- - If `wifi.nullmodesleep()` is called with no arguments, current setting is returned.
- - If `wifi.nullmodesleep()` is called with `enable` argument, confirmation of new setting is returned.
+	- If `wifi.nullmodesleep()` is called with no arguments, current setting is returned.
+	- If `wifi.nullmodesleep()` is called with `enable` argument, confirmation of new setting is returned.
 
 ## wifi.startsmart()
 
@@ -279,21 +279,21 @@ Sets the WiFi station configuration.
 
 #### Parameters
 - `station_config` table containing configuration data for station
- - `ssid` string which is less than 32 bytes.
- - `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
- - `auto` defaults to true
-	- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
-	- `false` to disable auto connect and remain disconnected from access point
- - `bssid` string that contains the MAC address of the access point (optional)
-	- You can set BSSID if you have multiple access points with the same SSID.
- 	- Note: if you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
- 	- The following formats are valid:
-		- "DE:C1:A5:51:F1:ED"
-		- "AC-1D-1C-B1-0B-22"
-		- "DE AD BE EF 7A C0"
- - `save` Save station configuration to flash. 
-   - `true` configuration **will** be retained through power cycle. 
-   - `false` configuration **will not** be retained through power cycle. (Default)
+	- `ssid` string which is less than 32 bytes.
+	- `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
+	- `auto` defaults to true
+		- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
+		- `false` to disable auto connect and remain disconnected from access point
+	- `bssid` string that contains the MAC address of the access point (optional)
+		- You can set BSSID if you have multiple access points with the same SSID.
+		- If you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
+		- The following formats are valid:
+			- "DE:C1:A5:51:F1:ED"
+			- "AC-1D-1C-B1-0B-22"
+			- "DE AD BE EF 7A C0"
+	- `save` Save station configuration to flash. 
+		- `true` configuration **will** be retained through power cycle. 
+		- `false` configuration **will not** be retained through power cycle. (Default)
 
 #### Returns
 - `true`  Success
@@ -357,9 +357,8 @@ none
 
 Disconnects from AP in station mode.
 
-	!!! note
-		Please note that disconnecting from Access Point does not reduce power consumption.
-		If power saving is your goal, please refer to the description for `wifi.NULLMODE` in the function [`wifi.setmode()`](#wifisetmode) for more details.
+!!! note
+	Please note that disconnecting from Access Point does not reduce power consumption. If power saving is your goal, please refer to the description for `wifi.NULLMODE` in the function [`wifi.setmode()`](#wifisetmode) for more details.
 
 #### Syntax
 `wifi.sta.disconnect()`
@@ -582,7 +581,6 @@ wifi.sta.getap(scan_cfg, 1, listap)
 
 Get index of current Access Point stored in AP cache.
 
-
 #### Syntax
 `wifi.sta.getapindex()`
 
@@ -617,14 +615,11 @@ Get information of APs cached by ESP8266 station.
 
 #### Returns
 - `ap_info`
- - `qty` quantity of APs returned
- - `1-5` index of AP. (the index corresponds to index used by [`wifi.sta.changeap()`](#wifistachangeap) and [`wifi.sta.getapindex()`](#wifistagetapindex))
-   - `ssid`  ssid of Access Point
-   - `pwd`	 Password for Access Point
-     - If no password was configured, the `pwd` field will be `nil`
-   - `bssid` MAC address of Access Point
-     - If no MAC address was configured, the `bssid` field will be `nil`
-
+	- `qty` quantity of APs returned
+	- `1-5` index of AP. (the index corresponds to index used by [`wifi.sta.changeap()`](#wifistachangeap) and [`wifi.sta.getapindex()`](#wifistagetapindex))
+	- `ssid`  ssid of Access Point
+	- `pwd` password for Access Point, `nil` if no password was configured 
+	- `bssid` MAC address of Access Point, `nil` if no MAC address was configured
 
 #### Example
 ```lua
@@ -686,21 +681,20 @@ Gets the WiFi station configuration.
 
 #### Parameters
 - `return_table`
- - `true` returns data in a table
- - `false` returns data in the old format (default)
+	- `true` returns data in a table
+	- `false` returns data in the old format (default)
 
 #### Returns
 If `return_table` is `true`:
+
 - `config_table`
- - `ssid` ssid of Access Point.
- - `pwd` password to Access Point.
-   - If no password was configured, the `pwd` field will be `nil`
- - `bssid` MAC address of Access Point
-   - If no MAC address was configured, the `bssid` field will be `nil`
+	- `ssid` ssid of Access Point.
+	- `pwd` password to Access Point, `nil` if no password was configured 
+	- `bssid` MAC address of Access Point, `nil` if no MAC address was configured 
 
 If `return_table` is `false`:
-- ssid, password, bssid_set, bssid   
- - Note: If `bssid_set` is equal to `0` then `bssid` is irrelevant,
+
+- ssid, password, bssid_set, bssid, if `bssid_set` is equal to `0` then `bssid` is irrelevant
 
 #### Example
 
@@ -734,21 +728,20 @@ Gets the default WiFi station configuration stored in flash.
 
 #### Parameters
 - `return_table`
- - `true` returns data in a table
- - `false` returns data in the old format (default)
+	- `true` returns data in a table
+	- `false` returns data in the old format (default)
 
 #### Returns
 If `return_table` is `true`:
+
 - `config_table`
- - `ssid` ssid of Access Point.
- - `pwd` password to Access Point.
-   - If no password was configured, the `pwd` field will be `nil`
- - `bssid` MAC address of Access Point
-   - If no MAC address was configured, the `bssid` field will be `nil`
+	- `ssid` ssid of Access Point.
+	- `pwd` password to Access Point, `nil` if no password was configured
+	- `bssid` MAC address of Access Point, `nil` if no MAC address was configured
 
 If `return_table` is `false`:
-- ssid, password, bssid_set, bssid   
- - Note: If `bssid_set` is equal to `0` then `bssid` is irrelevant,
+
+- ssid, password, bssid_set, bssid, if `bssid_set` is equal to `0` then `bssid` is irrelevant
 
 #### Example
 
@@ -952,8 +945,8 @@ print(wifi.sta.setmac("DE:AD:BE:EF:7A:C0"))
 
 Configures the WiFi modem sleep type to be used while station is connected to an Access Point.
 
-	!!! note
-		Does not apply to `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE`.
+!!! note
+	Does not apply to `wifi.SOFTAP`, `wifi.STATIONAP` or `wifi.NULLMODE`.
 
 #### Syntax
 `wifi.sta.sleeptype(type_wanted)`
@@ -999,16 +992,16 @@ Sets SSID and password in AP mode. Be sure to make the password at least 8 chara
 
 #### Parameters
 - `cfg` table to hold configuration
- - `ssid` SSID chars 1-32
- - `pwd` password chars 8-64
- - `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
- - `channel` channel number 1-14 default = 6
- - `hidden` false = not hidden, true = hidden, default = false
- - `max` maximum number of connections 1-4 default=4
- - `beacon` beacon interval time in range 100-60000, default = 100
- - `save` save configuration to flash.
-   - `true` configuration **will** be retained through power cycle. (Default)
-   - `false` configuration **will not** be retained through power cycle.
+	- `ssid` SSID chars 1-32
+	- `pwd` password chars 8-64
+	- `auth` authentication method, one of `wifi.OPEN` (default), `wifi.WPA_PSK`, `wifi.WPA2_PSK`, `wifi.WPA_WPA2_PSK`
+	- `channel` channel number 1-14 default = 6
+	- `hidden` false = not hidden, true = hidden, default = false
+	- `max` maximum number of connections 1-4 default=4
+	- `beacon` beacon interval time in range 100-60000, default = 100
+	- `save` save configuration to flash.
+		- `true` configuration **will** be retained through power cycle. (Default)
+		- `false` configuration **will not** be retained through power cycle.
  
 
 #### Returns
@@ -1120,24 +1113,23 @@ Gets the current SoftAP configuration.
 
 #### Parameters
 - `return_table`
- - `true` returns data in a table
- - `false` returns data in the old format (default)
+	- `true` returns data in a table
+	- `false` returns data in the old format (default)
 
 #### Returns
 If `return_table` is true:
+
 - `config_table`
- - `ssid` Network name
- - `pwd` Password
-   - If no password was configured, the `pwd` field will be `nil`
- - `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
- - `channel` Channel number
- - `hidden` `false` = not hidden, `true` = hidden
- - `max` Maximum number of client connections
- - `beacon` Beacon interval
+	- `ssid` Network name
+	- `pwd` Password, `nil` if no password was configured	- `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
+	- `channel` Channel number
+	- `hidden` `false` = not hidden, `true` = hidden
+	- `max` Maximum number of client connections
+	- `beacon` Beacon interval
 
 If `return_table` is false:
-ssid, password   
-	Note: If bssid_set is equal to 0 then bssid is irrelevant
+
+- ssid, password, if `bssid_set` is equal to 0 then `bssid` is irrelevant
 
 #### Example
 
@@ -1168,24 +1160,23 @@ Gets the default SoftAP configuration stored in flash.
 
 #### Parameters
 - `return_table`
- - `true` returns data in a table
- - `false` returns data in the old format (default)
+	- `true` returns data in a table
+	- `false` returns data in the old format (default)
 
 #### Returns
 If `return_table` is true:
+
 - `config_table`
- - `ssid` Network name
- - `pwd` Password
-   - If no password was configured, the `pwd` field will be `nil`
- - `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
- - `channel` Channel number
- - `hidden` `false` = not hidden, `true` = hidden
- - `max` Maximum number of client connections
- - `beacon` Beacon interval
+	- `ssid` Network name
+	- `pwd` Password, `nil` if no password was configured	- `auth` Authentication Method (`wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` or `wifi.WPA_WPA2_PSK`)
+	- `channel` Channel number
+	- `hidden` `false` = not hidden, `true` = hidden
+	- `max` Maximum number of client connections
+	- `beacon` Beacon interval
 
 If `return_table` is false:
-ssid, password   
-	Note: If bssid_set is equal to 0 then bssid is irrelevant
+
+- ssid, password, if `bssid_set` is equal to 0 then `bssid` is irrelevant
 
 #### Example
 

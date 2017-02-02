@@ -396,6 +396,8 @@ static inline void rtc_time_add_sleep_tracking(uint32_t us, uint32_t cycles)
   }
 }
 
+extern void rtc_time_enter_deep_sleep_final(void);
+
 static void rtc_time_enter_deep_sleep_us(uint32_t us)
 {
   if (rtc_time_check_wake_magic())
@@ -430,14 +432,14 @@ static void rtc_time_enter_deep_sleep_us(uint32_t us)
   rtc_reg_write(0x9c,17);
   rtc_reg_write(0xa0,3);
 
-  // Clear bit 0 of DPORT 0x04. Doesn't seem to be necessary
-  // wm(0x3fff0004,bitrm(0x3fff0004),0xfffffffe));
+  volatile uint32_t* dport4=(volatile uint32_t*)0x3ff00004;
+  *dport4&=0xfffffffe;
+
   rtc_reg_write(0x40,-1);
   rtc_reg_write(0x44,32);
   rtc_reg_write(0x10,0);
 
-  rtc_reg_write(0x18,8);
-  rtc_reg_write(0x08,0x00100000); //  go to sleep
+  rtc_time_enter_deep_sleep_final();
 }
 
 static inline void rtc_time_deep_sleep_us(uint32_t us)

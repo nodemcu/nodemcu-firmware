@@ -292,8 +292,9 @@ int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_TNIL: return 1;
     case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
     case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
-    case LUA_TLIGHTUSERDATA: 
     case LUA_TROTABLE:
+      return rvalue(t1) == rvalue(t2);
+    case LUA_TLIGHTUSERDATA: 
     case LUA_TLIGHTFUNCTION:
       return pvalue(t1) == pvalue(t2);
     case LUA_TUSERDATA: {

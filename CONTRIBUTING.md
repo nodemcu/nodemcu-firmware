@@ -15,7 +15,7 @@ It is appreciated if you raise an issue _before_ you start changing NodeMCU, dis
   * [Keeping your fork in sync](#keeping-your-fork-in-sync)
   * [Commit messages](#commit-messages)
 * [For collaborators](#for-collaborators)
-  * [Handling releases](#handling-release)
+  * [Handling releases](#handling-releases)
   
 ## General remarks
 We are a friendly and welcoming community and look forward to your contributions. Once your contribution is integrated into this repository we feel responsible for it. Therefore, be prepared for constructive feedback. Before we merge anything we need to ensure that it fits in and is consistent with the rest of NodeMCU.
@@ -105,6 +105,8 @@ Don't forget to [reference affected issues](https://help.github.com/articles/clo
 - Add notes to the description of the milestone in the course of the ~2 months it lives.
 - Be careful and reluctant to merge PRs once we're past the 6-weeks mark of a milestone. Ideally we don't merge anything in the last 2 weeks.
 - Cutting a release
- - Create an annotated tag like so: `git tag -a <SDK-version>-master_<yyyyMMdd> -m ""`, `git push --tags`
- - Create a new [release](https://github.com/nodemcu/nodemcu-firmware/releases) based on the tag you just pushed. The version name is the same as the tag name.
- - Write release notes. Mention breaking changes explicitly. Since every PR that went into this release is linked to from the milestone it should be fairly easy to include important changes in the release notes.
+	- Create a PR for the `master` branch for collaborators to approve.
+	- Once approved merge it. :exclamation::boom::exclamation: Make sure you do NOT "squash and merge" but make a regular merge commit!
+	- Fetch the changes into your local clone and create an annotated tag like so: `git tag -a <SDK-version>-master_<yyyyMMdd> -m ""`, `git push --tags`
+ 	- Create a new [release](https://github.com/nodemcu/nodemcu-firmware/releases) based on the tag you just pushed. The version name is the same as the tag name.
+ 	- Write release notes. Mention breaking changes explicitly. Since every PR that went into this release is linked to from the milestone it should be fairly easy to include important changes in the release notes.

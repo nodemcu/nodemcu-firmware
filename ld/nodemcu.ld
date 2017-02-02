@@ -5,7 +5,7 @@ MEMORY
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10
   dram0_0_seg :                         org = 0x3FFE8000, len = 0x14000
   iram1_0_seg :                         org = 0x40100000, len = 0x8000
-  irom0_0_seg :                         org = 0x40210000, len = 0x80000
+  irom0_0_seg :                         org = 0x40210000, len = 0xD0000
 }
 
 PHDRS
@@ -71,33 +71,67 @@ SECTIONS
     _dport0_data_end = ABSOLUTE(.);
   } >dport0_0_seg :dport0_0_phdr
 
-  .irom0.text : ALIGN(0x1000)
+  .text : ALIGN(4)
   {
-    _irom0_text_start = ABSOLUTE(.);
-    *(.servercert.flash)
-    *(.clientcert.flash)
-    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
-    *(.literal.* .text.*)
-    *(.rodata*)
-    *(.sdk.version)
+    _stext = .;
+    _text_start = ABSOLUTE(.);
+    *(.UserEnter.text)
+    . = ALIGN(16);
+    *(.DebugExceptionVector.text)
+    . = ALIGN(16);
+    *(.NMIExceptionVector.text)
+    . = ALIGN(16);
+    *(.KernelExceptionVector.text)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    . = ALIGN(16);
+    *(.UserExceptionVector.text)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    . = ALIGN(16);
+    *(.DoubleExceptionVector.text)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    LONG(0)
+    . = ALIGN (16);
+    *(.entry.text)
+    *(.init.literal)
+    *(.init)
+    
+    /* SDK libraries that used in bootup process, interruption handling
+     * and other ways where flash cache (iROM) is unavailable: */
+    *libmain.a:*(.literal .text)
+    *libnet80211.a:*(.literal .text)
+    *libphy.a:*(.literal .text)
+    *libpp.a:*(.literal .text)
+    *libgcc.a:*(.literal .text)
+    
+    /* Following SDK libraries have .text sections, but not included in iRAM: */
+    /* *libat.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *libcrypto.a:*(.literal .text) - tested that safe to keep in iROM */
+    /* *libdriver.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *libespnow.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *libmesh.a:*(.literal .text) - not used anywhere in NodeMCU */
+    /* *liblwip_536.a:*(.literal .text) - source-based library used instead */
+    /* *libpwm.a:*(.literal .text) - our own implementation used instead */
+    /* *libwpa.a:*(.literal .text) - tested that safe to keep in iROM */
+    /* *libwps.a:*(.literal .text) - tested that safe to keep in iROM */
 
-    /* Link-time arrays containing the defs for the included modules */
-    . = ALIGN(4);
-    lua_libs = ABSOLUTE(.);
-    /* Allow either empty define or defined-to-1 to include the module */
-    KEEP(*(.lua_libs))
-    LONG(0) LONG(0) /* Null-terminate the array */
-    lua_rotable = ABSOLUTE(.);
-    KEEP(*(.lua_rotable))
-    LONG(0) LONG(0) /* Null-terminate the array */
+    *(.iram.text .iram0.text)
 
-    /* SDK doesn't use libc functions, and are therefore safe to put in flash */
-    */libc.a:*.o(.text* .literal*)
-    /* end libc functions */
-
-    _irom0_text_end = ABSOLUTE(.);
-    _flash_used_end = ABSOLUTE(.);
-  } >irom0_0_seg :irom0_0_phdr =0xffffffff
+    *(.stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
+    
+    *(.fini.literal)
+    *(.fini)
+    *(.gnu.version)
+    _text_end = ABSOLUTE(.);
+    _etext = .;
+  } >iram1_0_seg :iram1_0_phdr
 
   .data : ALIGN(4)
   {
@@ -119,6 +153,9 @@ SECTIONS
   .rodata : ALIGN(4)
   {
     _rodata_start = ABSOLUTE(.);
+
+    *(.rodata.dram .rodata.dram*)
+
     *(.gnu.linkonce.r.*)
     __XT_EXCEPTION_TABLE__ = ABSOLUTE(.);
     *(.xt_except_table)
@@ -175,46 +212,6 @@ SECTIONS
   } >dram0_0_seg :dram0_0_bss_phdr
 /* __stack = 0x3ffc8000; */
 
-  .text : ALIGN(4)
-  {
-    _stext = .;
-    _text_start = ABSOLUTE(.);
-    *(.UserEnter.text)
-    . = ALIGN(16);
-    *(.DebugExceptionVector.text)
-    . = ALIGN(16);
-    *(.NMIExceptionVector.text)
-    . = ALIGN(16);
-    *(.KernelExceptionVector.text)
-    LONG(0)
-    LONG(0)
-    LONG(0)
-    LONG(0)
-    . = ALIGN(16);
-    *(.UserExceptionVector.text)
-    LONG(0)
-    LONG(0)
-    LONG(0)
-    LONG(0)
-    . = ALIGN(16);
-    *(.DoubleExceptionVector.text)
-    LONG(0)
-    LONG(0)
-    LONG(0)
-    LONG(0)
-    . = ALIGN (16);
-    *(.entry.text)
-    *(.init.literal)
-    *(.init)
-    *(.literal .text .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
-    *(.iram0.text)
-    *(.fini.literal)
-    *(.fini)
-    *(.gnu.version)
-    _text_end = ABSOLUTE(.);
-    _etext = .;
-  } >iram1_0_seg :iram1_0_phdr
-
   .lit4 : ALIGN(4)
   {
     _lit4_start = ABSOLUTE(.);
@@ -223,6 +220,34 @@ SECTIONS
     *(.gnu.linkonce.lit4.*)
     _lit4_end = ABSOLUTE(.);
   } >iram1_0_seg :iram1_0_phdr
+
+  .irom0.text : ALIGN(0x1000)
+  {
+    _irom0_text_start = ABSOLUTE(.);
+    *(.servercert.flash)
+    *(.clientcert.flash)
+    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
+    *(.literal .text .literal.* .text.*)
+    *(.rodata*)
+    *(.sdk.version)
+
+    /* Link-time arrays containing the defs for the included modules */
+    . = ALIGN(4);
+    lua_libs = ABSOLUTE(.);
+    /* Allow either empty define or defined-to-1 to include the module */
+    KEEP(*(.lua_libs))
+    LONG(0) LONG(0) /* Null-terminate the array */
+    lua_rotable = ABSOLUTE(.);
+    KEEP(*(.lua_rotable))
+    LONG(0) LONG(0) /* Null-terminate the array */
+
+    /* SDK doesn't use libc functions, and are therefore safe to put in flash */
+    */libc.a:*.o(.text* .literal*)
+    /* end libc functions */
+
+    _irom0_text_end = ABSOLUTE(.);
+    _flash_used_end = ABSOLUTE(.);
+  } >irom0_0_seg :irom0_0_phdr =0xffffffff
 
 }
 
