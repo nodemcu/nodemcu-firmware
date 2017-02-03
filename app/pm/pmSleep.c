@@ -51,6 +51,11 @@ static void null_mode_check_timer_cb(void* arg){
          (READ_PERI_REG(UART_STATUS(1)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0){
         ets_timer_disarm(&null_mode_check_timer);
         suspend_all_timers();
+        //Ensure UART 0/1 TX FIFO is clear
+        SET_PERI_REG_MASK(UART_CONF0(0), UART_TXFIFO_RST);//RESET FIFO
+        CLEAR_PERI_REG_MASK(UART_CONF0(0), UART_TXFIFO_RST);
+        SET_PERI_REG_MASK(UART_CONF0(1), UART_TXFIFO_RST);//RESET FIFO
+        CLEAR_PERI_REG_MASK(UART_CONF0(1), UART_TXFIFO_RST);
         wifi_fpm_do_sleep(current_config.sleep_duration);
         return;
       }
