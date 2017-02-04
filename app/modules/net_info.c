@@ -7,6 +7,23 @@
  */
 
 
+
+// https://github.com/nodemcu/nodemcu-firmware/wiki/[DRAFT]-How-to-write-a-C-module#debug-and-error-messages
+#if defined(DEVELOP_VERSION)
+  #define NET_INFO_DEBUG_ON
+#endif
+#if defined(NET_INFO_DEBUG_ON)
+  #define NET_INFO_DEBUG(format, ...) dbg_printf("%s"format"\n", log_prefix, ##__VA_ARGS__)
+#else
+  #define NET_INFO_DEBUG(...)
+#endif
+#if defined(NODE_ERROR)
+  #define NET_INFO_ERR(format, ...) NODE_ERR("%s"format"\n", log_prefix, ##__VA_ARGS__)
+#else
+  #define NET_INFO_ERR(...)
+#endif
+
+
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -21,12 +38,69 @@
 #include "c_stdio.h"
 
 
+#include "task/task.h"
 
+#define NET_INFO_PRIORITY_OUTPUT   TASK_PRIORITY_MEDIUM
+#define NET_INFO_PRIORITY_ERROR    TASK_PRIORITY_MEDIUM
+
+
+// these statics should go away for reentrancy and maybe other reasons!
 static lua_State *gL = NULL;
 static int ping_callback_ref; 
 static int ping_host_count;
 static ip_addr_t ping_host_ip;
 
+
+// static task numbers for task API should be reentrant - I hope....
+//    do they contain a counter, right???
+static task_handle_t taskno_generic ;
+static task_handle_t taskno_error ;
+
+// task handling callbacks
+
+static void net_if_generic (task_param_t param, uint8_t prio ) {
+  (void) param;
+  (void) prio;
+
+  lua_State *L = lua_getstate();
+// do what has to be done
+
+}
+
+static void net_if_error (task_param_t param, uint8_t prio ) {
+  (void) param;
+  (void) prio;
+
+  // get lua state (I'm supposed to be able in the task, right?)
+  lua_State *L = lua_getstate();
+  // convert param to char*
+
+  // raise lua error with message 
+}
+
+
+
+
+
+
+
+// register task handlers
+
+static int register_task_handlers(lua_State *L) {
+  taskno_generic = task_get_id(net_if_generic);
+  taskno_error = task_get_id(net_if_error);
+
+  return 0;
+
+
+}
+
+// task handler test dummie
+
+
+
+
+// ================================ start of old ping stuff ===================================
 
 void ping_received(void *arg, void *data) {
     // this would require change of the interface 
@@ -172,5 +246,6 @@ static const LUA_REG_TYPE net_info_map[] = {
 
 
 // Register the module - NODEMCU_MODULE()  
-NODEMCU_MODULE(NET_INFO, "net_info", net_info_map, NULL);
+// NODEMCU_MODULE(NET_INFO, "net_info", net_info_map, NULL);
+NODEMCU_MODULE(NET_INFO, "net_info", net_info_map, register_task_handlers);
 
