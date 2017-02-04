@@ -80,7 +80,9 @@ static void net_if_error (task_param_t param, uint8_t prio ) {
 
 
   // convert param to char*
-
+  char *errmsg = (char*) param ;
+  NET_INFO_DEBUG("   ... in error got message: %s\n", errmsg );
+ 
   // raise lua error with message 
 }
 
@@ -115,7 +117,12 @@ static int net_info_err_task_dummy (lua_State *L) {
   char msg[] = "I am the stupid hello task dummy";
 
   NET_INFO_DEBUG("   and my message is %s\n", msg);
-  
+
+  // task_param_t param = (task_param_t*) msg; 
+  task_post ( NET_INFO_PRIORITY_ERROR, taskno_error,  (task_param_t) msg );
+
+  NET_INFO_DEBUG("   ... have postet my msg task now... \n");
+
 
 }
 
