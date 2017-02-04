@@ -7,23 +7,6 @@
  */
 
 
-
-// https://github.com/nodemcu/nodemcu-firmware/wiki/[DRAFT]-How-to-write-a-C-module#debug-and-error-messages
-#if defined(DEVELOP_VERSION)
-  #define NET_INFO_DEBUG_ON
-#endif
-#if defined(NET_INFO_DEBUG_ON)
-  #define NET_INFO_DEBUG(format, ...) dbg_printf("%s"format"\n", log_prefix, ##__VA_ARGS__)
-#else
-  #define NET_INFO_DEBUG(...)
-#endif
-#if defined(NODE_ERROR)
-  #define NET_INFO_ERR(format, ...) NODE_ERR("%s"format"\n", log_prefix, ##__VA_ARGS__)
-#else
-  #define NET_INFO_ERR(...)
-#endif
-
-
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -39,6 +22,28 @@
 
 
 #include "task/task.h"
+
+
+
+// https://github.com/nodemcu/nodemcu-firmware/wiki/[DRAFT]-How-to-write-a-C-module#debug-and-error-messages
+
+#define log_prefix "net_info "
+
+#if defined(DEVELOP_VERSION)
+  #define NET_INFO_DEBUG_ON
+#endif
+#if defined(NET_INFO_DEBUG_ON)
+  #define NET_INFO_DEBUG(format, ...) dbg_printf("%s"format"\n", log_prefix, ##__VA_ARGS__)
+#else
+  #define NET_INFO_DEBUG(...)
+#endif
+#if defined(NODE_ERROR)
+  #define NET_INFO_ERR(format, ...) NODE_ERR("%s"format"\n", log_prefix, ##__VA_ARGS__)
+#else
+  #define NET_INFO_ERR(...)
+#endif
+
+
 
 #define NET_INFO_PRIORITY_OUTPUT   TASK_PRIORITY_MEDIUM
 #define NET_INFO_PRIORITY_ERROR    TASK_PRIORITY_MEDIUM
@@ -74,6 +79,7 @@ static void net_if_error (task_param_t param, uint8_t prio ) {
   (void) prio;
  
   NET_INFO_DEBUG(" entering net_if_error \n");
+
   // get lua state (I'm supposed to be able in the task, right?)
   lua_State *L = lua_getstate();
   NET_INFO_DEBUG("   ... in error got lua state: 0x%x\n", L);
@@ -103,6 +109,7 @@ static void net_if_error (task_param_t param, uint8_t prio ) {
 static int register_task_handlers(lua_State *L) {
   NET_INFO_DEBUG("start registering task handlers\n");
 
+
   taskno_generic = task_get_id(net_if_generic);
   NET_INFO_DEBUG("   ...registered generic: 0x%x\n", taskno_generic);
 
@@ -125,7 +132,7 @@ static int net_info_err_task_dummy (lua_State *L) {
   NET_INFO_DEBUG("   and my message is %s\n", msg);
 
   // task_param_t param = (task_param_t*) msg; 
-  task_post ( NET_INFO_PRIORITY_ERROR, taskno_error,  (task_param_t) msg );
+  // task_post ( NET_INFO_PRIORITY_ERROR, taskno_error,  (task_param_t) msg );
 
   NET_INFO_DEBUG("   ... have postet my msg task now... \n");
 
