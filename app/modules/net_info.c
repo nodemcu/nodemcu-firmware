@@ -118,7 +118,7 @@ static int register_task_handlers(lua_State *L) {
 
 static int net_info_err_task_dummy (lua_State *L) {
   NET_INFO_DEBUG("entering task error dummy\n");
-  NET_INFO_DEBUG("   ... in dummy got lua state: 0x%x\n", L);
+  // NET_INFO_DEBUG("   ... in dummy got lua state: 0x%x\n", L);
 
   char msg[] = "I am the stupid hello task dummy";
 
