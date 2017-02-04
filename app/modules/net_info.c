@@ -62,7 +62,9 @@ static void net_if_generic (task_param_t param, uint8_t prio ) {
   (void) param;
   (void) prio;
 
+  NET_INFO_DEBUG(" entering net_if_generic \n");
   lua_State *L = lua_getstate();
+  NET_INFO_DEBUG("   ... in generic got lua state: 0x%x\n", L);
 // do what has to be done
 
 }
@@ -70,9 +72,13 @@ static void net_if_generic (task_param_t param, uint8_t prio ) {
 static void net_if_error (task_param_t param, uint8_t prio ) {
   (void) param;
   (void) prio;
-
+ 
+  NET_INFO_DEBUG(" entering net_if_error \n");
   // get lua state (I'm supposed to be able in the task, right?)
   lua_State *L = lua_getstate();
+  NET_INFO_DEBUG("   ... in error got lua state: 0x%x\n", L);
+
+
   // convert param to char*
 
   // raise lua error with message 
