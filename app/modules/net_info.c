@@ -83,7 +83,13 @@ static void net_if_error (task_param_t param, uint8_t prio ) {
   char *errmsg = (char*) param ;
   NET_INFO_DEBUG("   ... in error got message: %s\n", errmsg );
  
-  // raise lua error with message 
+  // raise lua error with message
+  lua_pushstring(L errmsg);
+  NET_INFO_DEBUG("   ... pushed my msg to the stack...\n" );
+
+  lua_error(L);
+  NET_INFO_DEBUG("   ... and called a lua error (will I see this???)\n" );
+ 
 }
 
 
