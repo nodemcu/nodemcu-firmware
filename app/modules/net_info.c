@@ -105,8 +105,19 @@ static int register_task_handlers(lua_State *L) {
 
 }
 
-// task handler test dummie
+// task handler test dummies
 
+
+static int net_info_err_task_dummy (lua_State *L) {
+  NET_INFO_DEBUG("entering task error dummy\n");
+  NET_INFO_DEBUG("   ... in dummy got lua state: 0x%x\n", L);
+
+  char msg[] = "I am the stupid hello task dummy";
+
+  NET_INFO_DEBUG("   and my message is %s\n", msg);
+  
+
+}
 
 
 
@@ -249,6 +260,7 @@ static int net_info_ping(lua_State *L)
 // Module function map
 static const LUA_REG_TYPE net_info_map[] = {
   { LSTRKEY( "ping" ),             LFUNCVAL( net_info_ping ) },
+  { LSTRKEY( "dummy" ),            LFUNCVAL( net_info_err_task_dummy  ) },
 
   { LSTRKEY( "__metatable" ),      LROVAL( net_info_map ) },
   { LNILKEY, LNILVAL }
