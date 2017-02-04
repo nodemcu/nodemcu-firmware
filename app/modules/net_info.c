@@ -87,9 +87,13 @@ static void net_if_error (task_param_t param, uint8_t prio ) {
 // register task handlers
 
 static int register_task_handlers(lua_State *L) {
-  taskno_generic = task_get_id(net_if_generic);
-  taskno_error = task_get_id(net_if_error);
+  NET_INFO_DEBUG("start registering task handlers\n");
 
+  taskno_generic = task_get_id(net_if_generic);
+  NET_INFO_DEBUG("   ...registered generic: 0x%x\n", taskno_generic);
+
+  taskno_error = task_get_id(net_if_error);
+  NET_INFO_DEBUG("   ...registered error 0x%x\n", taskno_error);
   return 0;
 
 
