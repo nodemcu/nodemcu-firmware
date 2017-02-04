@@ -27,13 +27,13 @@
 
 // https://github.com/nodemcu/nodemcu-firmware/wiki/[DRAFT]-How-to-write-a-C-module#debug-and-error-messages
 
-#define log_prefix "net_info "
+#define log_prefix " ### DEBUG: net_info ### :  "
 
 #if defined(DEVELOP_VERSION)
   #define NET_INFO_DEBUG_ON
 #endif
 #if defined(NET_INFO_DEBUG_ON)
-  #define NET_INFO_DEBUG(format, ...) dbg_printf("%s"format"\n", log_prefix, ##__VA_ARGS__)
+  #define NET_INFO_DEBUG(format, ...) dbg_printf("%s"format"", log_prefix, ##__VA_ARGS__)
 #else
   #define NET_INFO_DEBUG(...)
 #endif
