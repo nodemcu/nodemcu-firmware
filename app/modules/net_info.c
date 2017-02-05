@@ -75,19 +75,21 @@ static void net_if_generic (task_param_t param, uint8_t prio ) {
 }
 
 static void net_if_error (task_param_t param, uint8_t prio ) {
-  (void) param;
-  (void) prio;
+  // (void) param;
+  // (void) prio;
  
   NET_INFO_DEBUG(" entering net_if_error \n");
-
   // get lua state (I'm supposed to be able in the task, right?)
   lua_State *L = lua_getstate();
   NET_INFO_DEBUG("   ... in error got lua state: 0x%x\n", L);
 
-
-  // convert param to char*
+  // cast param to char*
   char *errmsg = (char*) param ;
-  NET_INFO_DEBUG("   ... in error got message: %s\n", errmsg );
+
+  // char errmsg[] = "lets try it with a dummy message";
+
+
+  NET_INFO_DEBUG("   ... in error got message: %s - pointers were 0x%x from 0x%x  \n", errmsg, errmsg , param );
  
   // raise lua error with message
   lua_pushstring(L , errmsg);
@@ -98,17 +100,9 @@ static void net_if_error (task_param_t param, uint8_t prio ) {
  
 }
 
-
-
-
-
-
-
 // register task handlers
-
 static int register_task_handlers(lua_State *L) {
   NET_INFO_DEBUG("start registering task handlers\n");
-
 
   taskno_generic = task_get_id(net_if_generic);
   NET_INFO_DEBUG("   ...registered generic: 0x%x\n", taskno_generic);
@@ -116,29 +110,33 @@ static int register_task_handlers(lua_State *L) {
   taskno_error = task_get_id(net_if_error);
   NET_INFO_DEBUG("   ...registered error 0x%x\n", taskno_error);
   return 0;
-
-
 }
 
 // task handler test dummies
-
-
 static int net_info_err_task_dummy (lua_State *L) {
   NET_INFO_DEBUG("entering task error dummy\n");
-  // NET_INFO_DEBUG("   ... in dummy got lua state: 0x%x\n", L);
-
+  NET_INFO_DEBUG("   ... in dummy got lua state: 0x%x\n", L);
   char msg[] = "I am the stupid hello task dummy";
 
   NET_INFO_DEBUG("   and my message is %s\n", msg);
+  task_param_t param = (task_param_t) msg; 
+  NET_INFO_DEBUG("   have casted my param from 0x%x to 0x%x \n", msg, param);
 
-  // task_param_t param = (task_param_t*) msg; 
-  // task_post ( NET_INFO_PRIORITY_ERROR, taskno_error,  (task_param_t) msg );
-
+  task_post ( NET_INFO_PRIORITY_ERROR, taskno_error,  param );
   NET_INFO_DEBUG("   ... have postet my msg task now... \n");
-
-
 }
 
+
+static int net_info_panic_dummy(lua_State *L) {
+  char errmsg[] = "Does lua_error really produce a panic?";
+  NET_INFO_DEBUG("   ... this is my panicking message: %s \n", errmsg );
+
+  // raise lua error with message
+  lua_pushstring(L , errmsg);
+  NET_INFO_DEBUG("   ... pushed my msg to the stack...\n" );
+  lua_error(L);
+  NET_INFO_DEBUG("   ... and called a lua error (will I see this?)\n" );
+}
 
 
 // ================================ start of old ping stuff ===================================
@@ -281,6 +279,7 @@ static int net_info_ping(lua_State *L)
 static const LUA_REG_TYPE net_info_map[] = {
   { LSTRKEY( "ping" ),             LFUNCVAL( net_info_ping ) },
   { LSTRKEY( "dummy" ),            LFUNCVAL( net_info_err_task_dummy  ) },
+  { LSTRKEY( "panic" ),            LFUNCVAL (net_info_panic_dummy) },
 
   { LSTRKEY( "__metatable" ),      LROVAL( net_info_map ) },
   { LNILKEY, LNILVAL }
