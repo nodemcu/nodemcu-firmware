@@ -3,12 +3,12 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [i2c.c](../../../app/modules/i2c.c)|
 
-This module supports different interfaces for talking to I²C slaves. All interfaces can be assigned to arbitrary GPIOs for SCL and SDA and can be operated concurrently.
-- `i2c.SW` software based bitbanging, synchronous operation
-- `i2c.HW0` ESP32 hardware port 0, synchronous or asynchronous operation
-- `i2c.HW1` ESP32 hardware port 1, synchronous or asynchronous operation
+This module supports different interfaces for communicating via I²C protocol. All interfaces can be assigned to arbitrary GPIOs for SCL and SDA and can be operated concurrently.
+- `i2c.SW` software based bitbanging, master mode only, synchronous operation
+- `i2c.HW0` ESP32 hardware port 0, master or slave mode, synchronous or asynchronous operation
+- `i2c.HW1` ESP32 hardware port 1, master or slave mode, synchronous or asynchronous operation
 
-The hardware interfaces differ from the SW interface as the commands (start, stop, read, write) are queued up to an internal command list. Actual I²C communication is initiated afterwards using the `i2c.transfer()` function. Commands for the `i2c.SW` interface are immediately effective on the I²C bus and read data is also instantly available.
+The hardware master interfaces differ from the SW interface as the commands (start, stop, read, write) are queued up to an internal command list. Actual I²C communication is initiated afterwards using the `i2c.transfer()` function. Commands for the `i2c.SW` interface are immediately effective on the I²C bus and read data is also instantly available.
 
 ## i2c.address()
 Send (`i2c.SW`) or queue (`i2c.HWx`) I²C address and read/write mode for the next transfer.
@@ -75,7 +75,7 @@ print(string.byte(reg))
 [i2c.write()](#i2cwrite)
 
 ## i2c.setup()
-Initialize the I²C module.
+Initialize the I²C interface for master mode.
 
 #### Syntax
 `i2c.setup(id, pinSDA, pinSCL, speed)`
@@ -165,3 +165,55 @@ i2c.write(0, "hello", "world")
 
 #### See also
 [i2c.read()](#i2cread)
+
+# I²C slave mode
+The I²C slave mode is only available for the hardware interfaces `i2c.HW0` and `i2c.HW1`.
+
+## i2c.slave.on()
+Registers or unregisters an event callback handler.
+
+#### Syntax
+`i2c.slave.on(id, event[, cb_fn])
+
+#### Parameters
+- `id` interface id, `i2c.HW0` or `i2c.HW1`
+- `event` one of
+  - "receive" data received from master
+- `cb_fn(err, data)` function to be called when data was received from the master. Unregisters previous callback for `event` when omitted.
+
+#### Returns
+`nil`
+
+## i2c.slave.setup()
+Initialize the I²C interface for slave mode.
+
+#### Syntax
+`i2c.slave.setup(id, slave_config)
+
+#### Parameters
+- `id` interface id, `i2c.HW0` or `i2c.HW1`
+- `slave_config` table containing slave configuration information
+  - `sda` 0~33, IO index
+  - `scl` 0-33, IO index
+  - `addr` slave address (7bit or 10bit)
+  - `10bit` enable 10bit addressing with `true`, use 7bit with `false` (optional, defaults to `false` is omitted)
+  - `rxbuf_len` length of receive buffer (optional, defaults to 128 if omitted)
+  - `txbuf_len` length of transmit buffer (optional, defaults to 128 if omitted)
+
+#### Returns
+`nil`
+
+## i2c.slave.send()
+Writes send data for the master into the transmit buffer. This function returns immediately if there's enough room left in the buffer. It blocks if the buffer is doesn't provide enough space.
+
+Data items can be multiple numbers, strings or lua tables.
+
+#### Syntax
+`i2c.slave.send(id, data1[, data2[, ..., datan]])`
+
+#### Parameters
+- `id` interface id, `i2c.HW0` or `i2c.HW1`
+- `data` data can be numbers, string or lua table.
+
+#### Returns
+`number` number of bytes written

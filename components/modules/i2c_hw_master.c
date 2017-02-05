@@ -46,34 +46,39 @@ typedef struct {
 static i2c_hw_master_ud_type i2c_hw_master_ud[I2C_NUM_MAX];
 
 // Transfer task handle and job queue
-static task_handle_t i2c_result_task_id;
+static task_handle_t i2c_transfer_task_id;
 
-// Transfer Task
+// Transfer Task, FreeRTOS layer
 // This is a fully-fledged FreeRTOS task which runs concurrently and pulls
 // jobs off the queue. Jobs are forwarded to i2c_master_cmd_begin() which blocks
 // this task throughout the I2C transfer.
 // Posts a task to the nodemcu task system to resume.
 //
-void vTransferTask( void *pvParameters )
+static void vTransferTask( void *pvParameters )
 {
   QueueHandle_t xQueue = (QueueHandle_t)pvParameters;
   i2c_job_desc_type *job;
 
   for (;;) {
     job = (i2c_job_desc_type *)malloc( sizeof( i2c_job_desc_type ) );
+    if (!job) {
+      // shut down this task in case of memory shortage
+      vTaskSuspend( NULL );
+    }
+
     // get a job descriptor
     xQueueReceive( xQueue, job, portMAX_DELAY );
 
     job->err = i2c_master_cmd_begin( job->port, job->cmd,
                                      job->to_ms > 0 ? job->to_ms / portTICK_RATE_MS : portMAX_DELAY );
 
-    task_post_low( i2c_result_task_id, (task_param_t)job );
+    task_post_medium( i2c_transfer_task_id, (task_param_t)job );
   }
 }
 
 // Free memory of a job descriptor
 //
-void free_job_memory( lua_State *L, i2c_job_desc_type *job )
+static void free_job_memory( lua_State *L, i2c_job_desc_type *job )
 {
   if (job->result)
     luaM_free( L, job->result );
@@ -84,11 +89,11 @@ void free_job_memory( lua_State *L, i2c_job_desc_type *job )
     i2c_cmd_link_delete( job->cmd );
 }
 
-// Result Task
-// Is posted by the Transfer Task and triggers the Lua callback with optional
+// Transfer Task, NodeMCU layer
+// Is posted by the FreeRTOS Transfer Task and triggers the Lua callback with optional
 // read result data.
 //
-void i2c_result_task( task_param_t param, task_prio_t prio )
+static void i2c_transfer_task( task_param_t param, task_prio_t prio )
 {
   i2c_job_desc_type *job = (i2c_job_desc_type *)param;
 
@@ -115,15 +120,14 @@ void i2c_result_task( task_param_t param, task_prio_t prio )
 // Set up FreeRTOS task and queue
 // Prepares the gory tasking stuff.
 //
-void setup_task_and_queue( lua_State *L, i2c_hw_master_ud_type *ud )
+static int setup_rtos_task_and_queue( i2c_hw_master_ud_type *ud )
 {
-
   // create queue
   // depth 1 allows to skip "wait for empty queue" in synchronous mode
   // consider this when increasing depth
   ud->xTransferJobQueue = xQueueCreate( 1, sizeof( i2c_job_desc_type ) );
   if (!ud->xTransferJobQueue)
-    luaL_error( L, "failed to create queue" );
+    return 0;
 
   char pcName[configMAX_TASK_NAME_LEN+1];
   snprintf( pcName, configMAX_TASK_NAME_LEN+1, "I2C_Task_%d", ud->job.port );
@@ -139,8 +143,10 @@ void setup_task_and_queue( lua_State *L, i2c_hw_master_ud_type *ud )
   if (xReturned != pdPASS) {
     vQueueDelete( ud->xTransferJobQueue );
     ud->xTransferJobQueue = NULL;
-    luaL_error( L, "failed to create task" );
+    return 0;
   }
+
+  return 1;
 }
 
 
@@ -215,7 +221,11 @@ void li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl
   i2c_setup_ud_transfer( L, ud );
 
   // kick-start transfer task
-  setup_task_and_queue( L, ud );
+  if (!setup_rtos_task_and_queue( ud )) {
+    free_job_memory( L, &(ud->job) );
+    i2c_driver_delete( port );
+    luaL_error( L, "rtos task creation failed" );
+  }
 }
 
 void li2c_hw_master_start( lua_State *L, unsigned id )
@@ -272,6 +282,8 @@ void li2c_hw_master_read( lua_State *L, unsigned id, uint32_t len )
 
   // allocate read buffer as user data
   i2c_result_type *res = (i2c_result_type *)luaM_malloc( L, sizeof( i2c_result_type ) + len-1 );
+  if (!res)
+    luaL_error( L, "out of memory" );
   res->len = len;
   job->result = res;
 
@@ -357,5 +369,5 @@ int li2c_hw_master_transfer( lua_State *L )
 void li2c_hw_master_init( lua_State *L )
 {
   // prepare task id
-  i2c_result_task_id = task_get_id( i2c_result_task );
+  i2c_transfer_task_id = task_get_id( i2c_transfer_task );
 }

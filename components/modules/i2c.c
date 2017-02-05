@@ -210,6 +210,7 @@ static const LUA_REG_TYPE i2c_map[] = {
   { LSTRKEY( "write" ),       LFUNCVAL( i2c_write ) },
   { LSTRKEY( "read" ),        LFUNCVAL( i2c_read ) },
   { LSTRKEY( "transfer" ),    LFUNCVAL( li2c_hw_master_transfer ) },
+  { LSTRKEY( "slave"),        LROVAL( li2c_slave_map ) },
   { LSTRKEY( "FASTPLUS" ),    LNUMVAL( PLATFORM_I2C_SPEED_FASTPLUS ) },
   { LSTRKEY( "FAST" ),        LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
   { LSTRKEY( "SLOW" ),        LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
@@ -224,6 +225,7 @@ static const LUA_REG_TYPE i2c_map[] = {
 
 int luaopen_i2c( lua_State *L ) {
   li2c_hw_master_init( L );
+  li2c_hw_slave_init( L );
   return 0;
 }
 

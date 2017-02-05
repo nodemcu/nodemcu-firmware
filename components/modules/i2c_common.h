@@ -13,6 +13,9 @@ typedef enum {
 } i2c_id_type;
 
 
+// ***************************************************************************
+// Hardware master prototypes
+//
 void li2c_hw_master_init( lua_State *L );
 void li2c_hw_master_setup( lua_State *L, unsigned id, unsigned sda, unsigned scl, uint32_t speed );
 void li2c_hw_master_start( lua_State *L, unsigned id );
@@ -21,5 +24,14 @@ int li2c_hw_master_address( lua_State *L, unsigned id, uint16_t address, uint8_t
 void li2c_hw_master_write( lua_State *L, unsigned id, uint8_t data, bool ack_check_en );
 void li2c_hw_master_read( lua_State *L, unsigned id, uint32_t len );
 int li2c_hw_master_transfer( lua_State *L );
+
+
+// ***************************************************************************
+// Hardware slave prototypes
+//
+extern const LUA_REG_TYPE li2c_slave_map[];
+void li2c_hw_slave_init( lua_State *L );
+
+
 
 #endif /*_NODEMCU_I2C_COMMON_H_*/
