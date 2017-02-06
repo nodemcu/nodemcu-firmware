@@ -400,6 +400,29 @@ end)
 #### See also
 [`net.socket:on()`](#netsocketon)
 
+## net.socket:ttl()
+
+Changes or retrieves Time-To-Live value on socket.
+
+#### Syntax
+`ttl([ttl])`
+
+#### Parameters
+- `ttl` (optional) new time-to-live value
+
+#### Returns
+current / new ttl value
+
+#### Example
+```lua
+sk = net.createConnection(net.TCP, 0)
+sk:connect(80, '192.168.1.1')
+sk:ttl(1) -- restrict frames to single subnet
+```
+
+#### See also
+[`net.createConnection()`](#netcreateconnection)
+
 ## net.socket:unhold()
 
 Unblock TCP receiving data by revocation of a preceding `hold()`.
@@ -491,6 +514,12 @@ The syntax and functional identical to [`net.socket:dns()`](#netsocketdns).
 Retrieve local port and ip of socket.
 
 The syntax and functional identical to [`net.socket:getaddr()`](#netsocketgetaddr).
+
+## net.udpsocket:ttl()
+
+Changes or retrieves Time-To-Live value on socket.
+
+The syntax and functional identical to [`net.socket:ttl()`](#netsocketttl).
 
 # net.dns Module
 
