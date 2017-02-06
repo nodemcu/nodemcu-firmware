@@ -119,7 +119,10 @@ transactions are initiated with full control over the hardware features.
 Extract data items from MISO buffer after `spi.transaction()`.
 
 #### Syntax
-`data1[, data2[, ..., datan]] = spi.get_miso(id, offset, bitlen, num)`
+```lua
+data1[, data2[, ..., datan]] = spi.get_miso(id, offset, bitlen, num)
+string = spi.get_miso(id, num)
+```
 
 #### Parameters
 - `id` SPI ID number: 0 for SPI, 1 for HSPI
@@ -128,7 +131,7 @@ Extract data items from MISO buffer after `spi.transaction()`.
 - `num` number of data items to retrieve
 
 ####Returns
-`num` data items
+`num` data items or `string`
 
 #### See also
 [spi.transaction()](#spitransaction)
@@ -137,13 +140,17 @@ Extract data items from MISO buffer after `spi.transaction()`.
 Insert data items into MOSI buffer for `spi.transaction()`.
 
 #### Syntax
-`spi.set_mosi(id, offset, bitlen, data1[, data2[, ..., datan]])`
+```lua
+spi.set_mosi(id, offset, bitlen, data1[, data2[, ..., datan]])
+spi.set_mosi(id, string)
+```
 
 ####Parameters
 - `id` SPI ID number: 0 for SPI, 1 for HSPI
 - `offset` bit offset into MOSI buffer for inserting data1 and subsequent items
 - `bitlen` bit length of data1, data2, ...
 - `data` data items where `bitlen` number of bits are considered for the transaction.
+- `string` send data to be copied into MOSI buffer at offset 0, bit length 8
 
 #### Returns
 `nil`
