@@ -6,6 +6,7 @@
 
 #include "i2c_common.h"
 
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_task.h"
@@ -325,8 +326,7 @@ int li2c_hw_master_transfer( lua_State *L )
 
     // the transfer task should be unblocked now
     //   (i.e. in eReady state since it can receive from the queue)
-    // block this task briefly to allow switch over to the transfer task (it has higher prio)
-    vTaskDelay( 1 );
+    portYIELD();
 
     // invalidate last job, it's queued now
     job->cmd = NULL;          // don't delete link! it's used by the transfer task

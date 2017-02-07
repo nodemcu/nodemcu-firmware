@@ -7,6 +7,7 @@
 
 #include "i2c_common.h"
 
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_task.h"
