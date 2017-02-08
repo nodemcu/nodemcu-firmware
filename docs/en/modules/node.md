@@ -280,7 +280,9 @@ none
 
 ## node.restore()
 
-Restores system configuration to defaults using the SDK function `system_restore()`, which doesn't document precisely what it erases/restores.
+Restores system configuration to defaults using the SDK function `system_restore()`, which is described in the documentation as:
+
+> Reset default settings of following APIs: `wifi_station_set_auto_connect`, `wifi_set_phy_mode`, `wifi_softap_set_config` related, `wifi_station_set_config` related, `wifi_set_opmode`, and APs’ information recorded by `#define	AP_CACHE`.
 
 #### Syntax
 `node.restore()`
