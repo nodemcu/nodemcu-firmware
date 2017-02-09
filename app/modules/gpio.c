@@ -43,7 +43,8 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
 
   // Now must be >= then . Add the missing bits
   if (then > (now & 0xffffff)) {
-    then += 0x1000000;
+    // Now must have rolled over since the interrupt -- back it down
+    now -= 0x1000000;
   }
   then = (then + (now & 0x7f000000)) & 0x7fffffff;
 
