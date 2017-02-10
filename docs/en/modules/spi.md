@@ -10,6 +10,17 @@ For technical details of the underlying hardware refer to [metalphreak's ESP8266
 
 	The ESP hardware provides two SPI busses, with IDs 0, and 1, which map to pins generally labelled SPI and HSPI. If you are using any kind of development board which provides flash, then bus ID 0 (SPI) is almost certainly used for communicating with the flash chip. You probably want to choose bus ID 1 (HSPI) for your communication, as you will have uncontended use of it.
 
+HSPI signals are fixed to the following IO indices and GPIO pins:
+
+| Signal    | IO index | ESP8266 pin |
+|-----------|----------|-------------|
+| HSPI CLK  |    5     | GPIO14      |
+| HSPI /CS  |    8     | GPIO15      |
+| HSPI MOSI |    7     | GPIO13      |
+| HSPI MISO |    6     | GPIO12      |
+
+See also [spi.setup()](#spisetup).
+
 ## High Level Functions
 The high level functions provide a send & receive API for half- and
 full-duplex mode. Sent and received data items are restricted to 1 - 32 bit
@@ -86,6 +97,8 @@ _, _, x = spi.send(1, 0, {255, 255, 255})
 Set up the SPI configuration.
 Refer to [Serial Peripheral Interface Bus](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase) for details regarding the clock polarity and phase definition.
 
+Calling `spi.setup()` will route the HSPI signals to the related pins, overriding previous configuration and control by the `gpio` module. It is possible to revert any pin back to gpio control if its HSPI functionality is not needed, just set the desired `gpio.mode()` for it. This is recommended especially for the HSPI /CS pin function in case that SPI slave-select is driven from a different pin by `gpio.write()` - the SPI engine would toggle pin 8 otherwise.
+
 #### Syntax
 `spi.setup(id, mode, cpol, cpha, databits, clock_div[, duplex_mode])`
 
@@ -108,6 +121,13 @@ Refer to [Serial Peripheral Interface Bus](https://en.wikipedia.org/wiki/Serial_
 
 #### Returns
 Number: 1
+
+#### Example
+```lua
+spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
+-- we won't be using the HSPI /CS line, so disable it again
+gpio.mode(8, gpio.INPUT, gpio.PULLUP)
+```
 
 ## Low Level Hardware Functions
 The low level functions provide a hardware-centric API for application
