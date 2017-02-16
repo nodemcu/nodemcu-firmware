@@ -31,6 +31,7 @@ pages:
         - Extension Developer FAQ: 'en/extn-developer-faq.md'
     - Support: 'en/support.md'
     - Modules:
+        - 'adc':         'en/modules/adc.md'
         - 'bit':         'en/modules/bit.md'
         - 'bthci':       'en/modules/bthci.md'
         - 'dht':         'en/modules/dht.md'
