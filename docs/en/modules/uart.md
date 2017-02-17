@@ -67,7 +67,11 @@ end, 0)
 
 ## uart.setup()
 
-(Re-)configures the communication parameters of the UART. 
+(Re-)configures the communication parameters of the UART.
+
+!!! note
+
+    Bytes sent to the UART can get lost if this function re-configures the UART while reception is in progress.
 
 #### Syntax
 `uart.setup(id, baud, databits, parity, stopbits, echo)`
