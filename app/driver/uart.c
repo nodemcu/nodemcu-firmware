@@ -368,6 +368,8 @@ uart_setup(uint8 uart_no)
 #ifdef BIT_RATE_AUTOBAUD
     uart_stop_autobaud();
 #endif
+    // poll Tx FIFO empty outside before disabling interrupts
+    uart_wait_tx_empty(uart_no);
     ETS_UART_INTR_DISABLE();
     uart_config(uart_no);
     ETS_UART_INTR_ENABLE();
