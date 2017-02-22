@@ -1168,7 +1168,7 @@ static int wifi_station_status( lua_State* L )
 // Lua: wifi.sta.getrssi()
 static int wifi_station_getrssi( lua_State* L ){
   sint8 rssival=wifi_station_get_rssi();
-  NODE_DBG("\n\tRSSI is %i\n", rssival);
+  NODE_DBG("\n\tRSSI is %d\n", rssival);
   if (rssival<10)
   {
     lua_pushinteger(L, rssival);
