@@ -27,7 +27,7 @@ typedef struct {
 // Init UART1 to be able to stream WS2812 data to GPIO2 pin
 // If DUAL mode is selected, init UART0 to stream to TXD0 as well
 // You HAVE to redirect LUA's output somewhere else
-static void ws2812_init(lua_State* L) {
+static int ws2812_init(lua_State* L) {
   const int mode = luaL_optinteger(L, 1, MODE_SINGLE);
   luaL_argcheck(L, mode == MODE_SINGLE || mode == MODE_DUAL, 1, "ws2812.SINGLE or ws2812.DUAL expected");
 
@@ -57,6 +57,8 @@ static void ws2812_init(lua_State* L) {
   GPIO_REG_WRITE(GPIO_ENABLE_W1TC_ADDRESS, BIT2);
   // Enable Function 2 for GPIO2 (U1TXD)
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
+
+  return 0;
 }
 
 // Stream data using UART1 routed to GPIO2
