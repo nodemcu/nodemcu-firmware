@@ -302,6 +302,9 @@ int platform_gpio_exists( unsigned id );
 int platform_tmr_exists( unsigned id );
 
 // *****************************************************************************
+
+void* platform_print_deprecation_note( const char *msg, const char *time_frame);
+
 // Helper macros
 #define MOD_CHECK_ID( mod, id )\
   if( !platform_ ## mod ## _exists( id ) )\

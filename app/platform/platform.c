@@ -916,3 +916,8 @@ uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
   uint32_t meg = (b1 << 1) | b0;
   return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg * 0x100000;
 }
+
+void* platform_print_deprecation_note( const char *msg, const char *time_frame)
+{
+  c_printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
+}
