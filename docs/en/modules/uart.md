@@ -67,10 +67,14 @@ end, 0)
 
 ## uart.setup()
 
-(Re-)configures the communication parameters of the UART. 
+(Re-)configures the communication parameters of the UART.
+
+!!! note
+
+    Bytes sent to the UART can get lost if this function re-configures the UART while reception is in progress.
 
 #### Syntax
-`uart.setup(id, baud, databits, parity, stopbits, echo)`
+`uart.setup(id, baud, databits, parity, stopbits[, echo])`
 
 #### Parameters
 - `id` always zero, only one uart supported
@@ -78,7 +82,7 @@ end, 0)
 - `databits` one of 5, 6, 7, 8
 - `parity` `uart.PARITY_NONE`, `uart.PARITY_ODD`, or `uart.PARITY_EVEN`
 - `stopbits` `uart.STOPBITS_1`, `uart.STOPBITS_1_5`, or `uart.STOPBITS_2`
-- `echo` if 0, disable echo, otherwise enable echo
+- `echo` if 0, disable echo, otherwise enable echo (default if omitted)
 
 #### Returns
 configured baud rate (number)
