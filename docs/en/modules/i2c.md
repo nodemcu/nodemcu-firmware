@@ -4,6 +4,7 @@
 | 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [i2c.c](../../../app/modules/i2c.c)|
 
 This module supports different interfaces for communicating via I²C protocol. All interfaces can be assigned to arbitrary GPIOs for SCL and SDA and can be operated concurrently.
+
 - `i2c.SW` software based bitbanging, master mode only, synchronous operation
 - `i2c.HW0` ESP32 hardware port 0, master or slave mode, synchronous or asynchronous operation
 - `i2c.HW1` ESP32 hardware port 1, master or slave mode, synchronous or asynchronous operation
@@ -11,7 +12,7 @@ This module supports different interfaces for communicating via I²C protocol. A
 The hardware master interfaces differ from the SW interface as the commands (start, stop, read, write) are queued up to an internal command list. Actual I²C communication is initiated afterwards using the `i2c.transfer()` function. Commands for the `i2c.SW` interface are immediately effective on the I²C bus and read data is also instantly available.
 
 ## i2c.address()
-Send (`i2c.SW`) or queue (`i2c.HWx`) I²C address and read/write mode for the next transfer.
+Send (`SW`) or queue (`HWx`) I²C address and read/write mode for the next transfer.
 
 Communication stops when the slave answers with NACK to the address byte. This can be avoided with parameter `ack_check_en` on `false`.
 
@@ -31,7 +32,7 @@ Communication stops when the slave answers with NACK to the address byte. This c
 [i2c.read()](#i2cread)
 
 ## i2c.read()
-Read (`i2c.SW`) or queue (`i2c.HWx`) data for variable number of bytes.
+Read (`SW`) or queue (`HWx`) data for variable number of bytes.
 
 #### Syntax
 `i2c.read(id, len)`
@@ -96,7 +97,7 @@ Initialize the I²C interface for master mode.
 [i2c.read()](#i2cread)
 
 ## i2c.start()
-Send (`i2c.SW`) or queue (`i2c.HWx`) an I²C start condition.
+Send (`SW`) or queue (`HWx`) an I²C start condition.
 
 #### Syntax
 `i2c.start(id)`
@@ -111,7 +112,7 @@ Send (`i2c.SW`) or queue (`i2c.HWx`) an I²C start condition.
 [i2c.read()](#i2cread)
 
 ## i2c.stop()
-Send (`i2c.SW`) or queue (`i2c.HWx`) an I²C stop condition.
+Send (`SW`) or queue (`HWx`) an I²C stop condition.
 
 #### Syntax
 `i2c.stop(id)`
@@ -143,7 +144,7 @@ First argument to the callback is the error code (0 = no error), followed by a s
 - `nil` for asynchronous operation
 
 ## i2c.write()
-Write (`i2c.SW`) or queue (`i2c.HWx`) data to I²C bus. Data items can be multiple numbers, strings or lua tables.
+Write (`SW`) or queue (`HWx`) data to I²C bus. Data items can be multiple numbers, strings or lua tables.
 
 Communication stops when the slave answers with NACK to a written byte. This can be avoided with parameter `ack_check_en` on `false`.
 
@@ -173,12 +174,12 @@ The I²C slave mode is only available for the hardware interfaces `i2c.HW0` and 
 Registers or unregisters an event callback handler.
 
 #### Syntax
-`i2c.slave.on(id, event[, cb_fn])
+`i2c.slave.on(id, event[, cb_fn])`
 
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
 - `event` one of
-  - "receive" data received from master
+    - "receive" data received from master
 - `cb_fn(err, data)` function to be called when data was received from the master. Unregisters previous callback for `event` when omitted.
 
 #### Returns
@@ -188,17 +189,17 @@ Registers or unregisters an event callback handler.
 Initialize the I²C interface for slave mode.
 
 #### Syntax
-`i2c.slave.setup(id, slave_config)
+`i2c.slave.setup(id, slave_config)`
 
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
 - `slave_config` table containing slave configuration information
-  - `sda` 0~33, IO index
-  - `scl` 0-33, IO index
-  - `addr` slave address (7bit or 10bit)
-  - `10bit` enable 10bit addressing with `true`, use 7bit with `false` (optional, defaults to `false` is omitted)
-  - `rxbuf_len` length of receive buffer (optional, defaults to 128 if omitted)
-  - `txbuf_len` length of transmit buffer (optional, defaults to 128 if omitted)
+    - `sda` 0~33, IO index
+    - `scl` 0-33, IO index
+    - `addr` slave address (7bit or 10bit)
+    - `10bit` enable 10bit addressing with `true`, use 7bit with `false` (optional, defaults to `false` is omitted)
+    - `rxbuf_len` length of receive buffer (optional, defaults to 128 if omitted)
+    - `txbuf_len` length of transmit buffer (optional, defaults to 128 if omitted)
 
 #### Returns
 `nil`
