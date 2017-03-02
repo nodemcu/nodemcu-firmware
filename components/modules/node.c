@@ -7,14 +7,33 @@
 #include "vfs.h"
 #include "esp_system.h"
 #include "esp_log.h"
+#include "soc/efuse_reg.h"
 #include "ldebug.h"
 
-// Lua: heap()
+// Lua: node.chipid()
+static int node_chipid( lua_State *L )
+{
+  // This matches the way esptool.py generates a chipid for the ESP32 as of
+  // esptool commit e9e9179f6fc3f2ecfc568987d3224b5e53a05f06
+  // Oddly, this drops the lowest byte what's effectively the MAC address, so
+  // it would seem plausible to encounter up to 256 chips with the same chipid
+  uint64_t word16 = REG_READ(EFUSE_BLK0_RDATA1_REG);
+  uint64_t word17 = REG_READ(EFUSE_BLK0_RDATA2_REG);
+  const uint64_t MAX_UINT24 = 0xffffff;
+  uint64_t cid = ((word17 & MAX_UINT24) << 24) | ((word16 >> 8) & MAX_UINT24);
+  char chipid[17] = { 0 };
+  sprintf(chipid, "0x%llx", cid);
+  lua_pushstring(L, chipid);
+  return 1;
+}
+
+
+// Lua: node.heap()
 static int node_heap( lua_State* L )
 {
   uint32_t sz = esp_get_free_heap_size();
   lua_pushinteger(L, sz);
-return 1;
+  return 1;
 }
 
 static int node_restart (lua_State *L)
@@ -146,6 +165,7 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
   NODE_DBG("write fd:%d,size:%d\n", file_fd, size);
   return 0;
 }
+
 
 #define toproto(L,i) (clvalue(L->top+(i))->l.p)
 // Lua: compile(filename) -- compile lua file into lua bytecode, and save to .lc
@@ -280,6 +300,7 @@ static const LUA_REG_TYPE node_task_map[] = {
 
 static const LUA_REG_TYPE node_map[] =
 {
+  { LSTRKEY( "chipid" ),	LFUNCVAL( node_chipid )	},
   { LSTRKEY( "compile" ),	LFUNCVAL( node_compile )	},
   { LSTRKEY( "dsleep" ),    LFUNCVAL( node_dsleep ) 	},
   { LSTRKEY( "egc" ),		LROVAL( node_egc_map )  	},
