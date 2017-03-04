@@ -1,8 +1,13 @@
 As with [flashing](flash.md) there are several ways to upload code from your computer to the device.
 
-Note that the NodeMCU serial interface uses 115'200bps at boot time. To change the speed after booting, issue `uart.setup(0,9600,8,0,1,1)`. ESPlorer will do this automatically when changing the speed in the dropdown list. If the device panics and resets at any time, errors will be written to the serial interface at 115'200 bps.
+!!! note
+	
+	The NodeMCU serial interface uses 115'200bps at boot time. To change the speed after booting, issue `uart.setup(0,9600,8,0,1,1)`. If the device panics and resets at any time, errors will be written to the serial interface at 115'200 bps.
 
 # Tools
+Transferring application code to ESP8266/8285 is an essential task, one that you'll perform quite frequently. Hence, it does make sense to try a few different uploading tools until you find one you feel comfortable with. [https://frightanic.com/iot/tools-ides-nodemcu/](https://frightanic.com/iot/tools-ides-nodemcu/) lists almost a dozen classical uploaders - in addition to IDEs or IDE-like applications which of course transfer code as well.
+
+The NodeMCU firmware team does not give any recommendations as for which uploader to use nor are there any "NodeMCU approved" tools. The below listed tools are just three, in no particular order, which seem popular and/or reasonably well maintained.
 
 ## ESPlorer
 
@@ -12,7 +17,7 @@ Note that the NodeMCU serial interface uses 115'200bps at boot time. To change t
 
 Source: [https://github.com/4refr0nt/ESPlorer](https://github.com/4refr0nt/ESPlorer)
 
-Supported platforms: OS X, Linux, Windows, anything that runs Java
+Supported platforms: macOS, Linux, Windows, anything that runs Java
 
 ## nodemcu-uploader.py
 
@@ -20,23 +25,16 @@ Supported platforms: OS X, Linux, Windows, anything that runs Java
 
 Source: [https://github.com/kmpm/nodemcu-uploader](https://github.com/kmpm/nodemcu-uploader)
 
-Supported platforms: OS X, Linux, Windows, anything that runs Python
+Supported platforms: macOS, Linux, Windows, anything that runs Python
 
-## NodeMCU Studio
+## NodeMCU-Tool
 
-> THIS TOOL IS IN REALLY REALLY REALLY REALLY EARLY STAGE!!!!!!!!!!!!!!!!!!!!!!!!!!!
+> Upload/Download Lua files to your ESP8266 module with NodeMCU firmware.
+> Simple. Command Line. Cross-Platform. File Management. NodeMCU.
 
-Source: [https://github.com/nodemcu/nodemcu-studio-csharp](https://github.com/nodemcu/nodemcu-studio-csharp)
+Source: [https://github.com/andidittrich/NodeMCU-Tool](https://github.com/andidittrich/NodeMCU-Tool)
 
-Supported platforms: Windows
-
-## luatool
-
-> Allow easy uploading of any Lua-based script into the ESP8266 flash memory with NodeMcu firmware
-
-Source: [https://github.com/4refr0nt/luatool](https://github.com/4refr0nt/luatool)
-
-Supported platforms: OS X, Linux, Windows, anything that runs Python
+Supported platforms: macOS, Linux Windows, anything that runs Node.js
 
 # init.lua
 You will see "lua: cannot open init.lua" printed to the serial console when the device boots after it's been freshly flashed. If NodeMCU finds a `init.lua` in the root of the file system it will execute it as part of the boot sequence (standard Lua feature). Hence, your application is initialized and triggered from `init.lua`. Usually you first set up the WiFi connection and only continue once that has been successful.
