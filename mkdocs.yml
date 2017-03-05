@@ -37,6 +37,7 @@ pages:
         - 'node':        'en/modules/node.md'
         - 'sigma delta': 'en/modules/sigma-delta.md'
         - 'struct':      'en/modules/struct.md'
+        - 'tmr':         'en/modules/tmr.md'
         - 'uart':        'en/modules/uart.md'
         - 'wifi':        'en/modules/wifi.md'
 
