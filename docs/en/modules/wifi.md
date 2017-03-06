@@ -993,14 +993,14 @@ Gets the current status in station mode.
 `nil`
 
 #### Returns
-number： 0~5
+The current state which can be one of the following:
 
-- 0: STA_IDLE,
-- 1: STA_CONNECTING,
-- 2: STA_WRONGPWD,
-- 3: STA_APNOTFOUND,
-- 4: STA_FAIL,
-- 5: STA_GOTIP.
+- `wifi.STA_IDLE`
+- `wifi.STA_CONNECTING`
+- `wifi.STA_WRONGPWD`
+- `wifi.STA_APNOTFOUND`
+- `wifi.STA_FAIL`
+- `wifi.STA_GOTIP`
 
 # wifi.ap Module
 
