@@ -11,8 +11,10 @@ Setup I²C address and read/write mode for the next transfer.
 
 #### Parameters
 - `id` always 0
-- `device_addr` device address
+- `device_addr` device address (7-bit)<sup>[1](#7bit)</sup>
 - `direction` `i2c.TRANSMITTER` for writing mode , `i2c. RECEIVER` for reading mode
+
+<a name="7bit">[1]</a>: 8bit frame = 7bit address + R/W bit as LSB
 
 #### Returns
 `true` if ack received, `false` if no ack received.
