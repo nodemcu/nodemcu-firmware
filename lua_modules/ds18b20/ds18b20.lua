@@ -12,12 +12,12 @@ return({
   pin=3,
   sens={},
   temp={},
-  
+
   conversion = function(self)
     local pin = self.pin
     for i,s in ipairs(self.sens) do
       if s.status == 0 then
-        print("starting conversion:", encoder.toBase64(s.addr), s.parasite == 1 and "parasite" or " ")
+        print("starting conversion:", encoder.toHex(s.addr), s.parasite == 1 and "parasite" or " ")
         ow.reset(pin)
         ow.select(pin, s.addr)  -- select the sensor
         ow.write(pin, 0x44, 1)  -- and start conversion
@@ -27,14 +27,14 @@ return({
     end
     tmr.alarm(tmr.create(), 750, tmr.ALARM_SINGLE, function() self:readout() end)
   end,
-  
+
   readTemp = function(self, cb, lpin)
     local pin = self.pin
     self.cb = cb
     self.temp={}
     if lpin then pin = lpin end
     ow.setup(pin)
-    
+
     self.sens={}
     ow.reset_search(pin)
     -- ow.target_search(pin,0x28)
@@ -50,25 +50,25 @@ return({
         ow.write(pin, 0xB4, 1) -- Read Power Supply [B4h]
         local parasite = (ow.read(pin)==0 and 1 or 0)
         table.insert(self.sens,{addr=addr, parasite=parasite, status=0})
-        print("contact: ", encoder.toBase64(addr), parasite == 1 and "parasite" or " ")
+        print("contact: ", encoder.toHex(addr), parasite == 1 and "parasite" or " ")
       end
 
       addr = ow.search(pin)
       tmr.wdclr()
     end
-      
+
     -- place powered sensors first
     table.sort(self.sens, function(a,b) return a.parasite<b.parasite end)
-    
+
     node.task.post(node.task.MEDIUM_PRIORITY, function() self:conversion() end)
   end,
-  
+
   readout=function(self)
     local pin = self.pin
     local next = false
         if not self.sens then return 0 end
     for i,s in ipairs(self.sens) do
-      -- print(encoder.toBase64(s.addr), s.status)
+      -- print(encoder.toHex(s.addr), s.status)
       if s.status == 1 then
         ow.reset(pin)
         ow.select(pin, s.addr)   -- select the  sensor
@@ -82,38 +82,37 @@ return({
         else
           t = t * 5000 -- DS18S20, 1 fractional bit
         end
-        
+
         -- integer version
         local sgn = t<0 and -1 or 1
         local tA = sgn*t
         local tH=tA/10000
         local tL=(tA%10000)/1000 + ((tA%1000)/100 >= 5 and 1 or 0)
-              
+
         if tH and (tH~=85) then
           self.temp[s.addr]=(sgn<0 and "-" or "")..tH.."."..tL
-          print(encoder.toBase64(s.addr),(sgn<0 and "-" or "")..tH.."."..tL)
+          print(encoder.toHex(s.addr),(sgn<0 and "-" or "")..tH.."."..tL)
           s.status = 2
         end
         -- end integer version
         -- -- float version
         -- if t and (math.floor(t/10000)~=85) then
           -- self.temp[s.addr]=t
-          -- print(encoder.toBase64(s.addr), t)
+          -- print(encoder.toHex(s.addr), t)
           -- s.status = 2
         -- end
         -- -- end float version
       end
       next = next or s.status == 0
     end
-    if next then 
+    if next then
       node.task.post(node.task.MEDIUM_PRIORITY, function() self:conversion()  end)
     else
       self.sens = nil
-      if self.cb then 
-        node.task.post(node.task.MEDIUM_PRIORITY, function()  self.cb(self.temp) end) 
+      if self.cb then
+        node.task.post(node.task.MEDIUM_PRIORITY, function()  self.cb(self.temp) end)
       end
     end
-    
+
   end
 })
-
