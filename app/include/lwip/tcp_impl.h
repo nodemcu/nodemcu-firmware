@@ -130,6 +130,7 @@ u32_t            tcp_update_rcv_ann_wnd(struct tcp_pcb *pcb)ICACHE_FLASH_ATTR;
 #define TCP_OOSEQ_TIMEOUT        6U /* x RTO */
 
 #ifndef TCP_MSL
+/* See https://github.com/nodemcu/nodemcu-firmware/issues/1836 for details */
 #define TCP_MSL 5000UL /* The maximum segment lifetime in milliseconds */
 #endif
 

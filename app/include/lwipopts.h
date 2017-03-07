@@ -1455,6 +1455,7 @@
  * SO_REUSE==1: Enable SO_REUSEADDR option.
  */
 #ifndef SO_REUSE
+/* See https://github.com/nodemcu/nodemcu-firmware/issues/1836 for details */
 #define SO_REUSE                        1
 #endif
 
