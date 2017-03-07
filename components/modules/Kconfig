@@ -97,7 +97,7 @@ config LUA_MODULE_NODE
   help
       Includes the node module (recommended).
 
-config LUA_MODULE_SIGMADELTA
+config LUA_MODULE_SIGMA_DELTA
   bool "Sigma-Delta module"
   default "n"
   help
