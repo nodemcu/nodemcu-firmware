@@ -297,7 +297,10 @@ int net_createServer( lua_State *L ) {
   type = luaL_optlong(L, 1, TYPE_TCP);
   timeout = luaL_optlong(L, 2, 30);
 
-  if (type == TYPE_UDP) return net_createUDPSocket( L );
+  if (type == TYPE_UDP) {
+    platform_print_deprecation_note("net.createServer with net.UDP type", "in next version");
+    return net_createUDPSocket( L );
+  }
   if (type != TYPE_TCP) return luaL_error(L, "invalid type");
 
   lnet_userdata *u = net_create(L, TYPE_TCP_SERVER);
@@ -312,9 +315,13 @@ int net_createConnection( lua_State *L ) {
   type = luaL_optlong(L, 1, TYPE_TCP);
   secure = luaL_optlong(L, 2, 0);
 
-  if (type == TYPE_UDP) return net_createUDPSocket( L );
+  if (type == TYPE_UDP) {
+    platform_print_deprecation_note("net.createConnection with net.UDP type", "in next version");
+    return net_createUDPSocket( L );
+  }
   if (type != TYPE_TCP) return luaL_error(L, "invalid type");
   if (secure) {
+    platform_print_deprecation_note("net.createConnection with secure flag", "in next version");
 #ifdef TLS_MODULE_PRESENT
     return tls_socket_create( L );
 #else

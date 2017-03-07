@@ -13,11 +13,11 @@ Constants to be used in other functions: `net.TCP`, `net.UDP`
 Creates a client.
 
 #### Syntax
-`net.createConnection(type, secure)`
+`net.createConnection([type[, secure]])`
 
 #### Parameters
-- `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
-- `secure` 1 for encrypted, 0 for plain. Secure connections chained to [tls.createConnection()](tls.md#tlscreateconnection)
+- `type` `net.TCP` (default) or `net.UDP`
+- `secure` 1 for encrypted, 0 for plain (default)
 
 !!! attention
     This will change in upcoming releases so that `net.createConnection` will always create an unencrypted TCP connection.
@@ -44,11 +44,11 @@ net.createConnection(net.TCP, 0)
 Creates a server.
 
 #### Syntax
-`net.createServer(type, timeout)`
+`net.createServer([type[, timeout]])`
 
 #### Parameters
-- `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
-- `timeout` for a TCP server timeout is 1~28'800 seconds (for an inactive client to be disconnected)
+- `type` `net.TCP` (default) or `net.UDP`
+- `timeout` for a TCP server timeout is 1~28'800 seconds, 30 sec by default (for an inactive client to be disconnected)
 
 !!! attention
     The `type` parameter will be removed in upcoming releases so that `net.createServer` will always create a TCP-based server. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead.
