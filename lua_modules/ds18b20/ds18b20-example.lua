@@ -7,7 +7,7 @@ pin = 3 -- gpio0 = 3, gpio2 = 4
 function readout(temp)
   for addr, temp in pairs(temp) do
     -- print(string.format("Sensor %s: %s 'C", addr, temp))
-    print(string.format("Sensor %s: %s 'C", encoder.toBase64(addr), temp)) -- readable address with base64 encoding is preferred when encoder module is available
+    print(string.format("Sensor %s: %s °C", encoder.toHex(addr), temp)) -- readable address with base64 encoding is preferred when encoder module is available
   end
 
   -- Module can be released when it is no longer needed
@@ -21,6 +21,6 @@ if t.sens then
   print("Total number of DS18B20 sensors: "..table.getn(t.sens))
   for i, s in ipairs(t.sens) do
     -- print(string.format("  sensor #%d address: %s%s", i, s.addr, s.parasite == 1 and " (parasite)" or ""))
-    print(string.format("  sensor #%d address: %s%s",  i, encoder.toBase64(s.addr), s.parasite == 1 and " (parasite)" or "")) -- readable address with base64 encoding is preferred when encoder module is available
+    print(string.format("  sensor #%d address: %s%s",  i, encoder.toHex(s.addr), s.parasite == 1 and " (parasite)" or "")) -- readable address with base64 encoding is preferred when encoder module is available
   end
 end
