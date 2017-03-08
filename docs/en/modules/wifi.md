@@ -23,9 +23,9 @@ Gets the current WiFi channel.
 #### Returns
 - current WiFi channel (primary channel)
 - HT20/HT40 information (secondary channel). One of the constants:
-  - `wifi.HT20 `
-  - `wifi.HT40_ABOVE`
-  - `wifi.HT40_BELOW`
+    - `wifi.HT20 `
+    - `wifi.HT40_ABOVE`
+    - `wifi.HT40_BELOW`
 
 ## wifi.getmode()
 
@@ -61,13 +61,13 @@ When using the combined Station + AP mode, the same channel will be used for bot
 
 #### Parameters
 - `mode` value should be one of
- - `wifi.STATION` for when the device is connected to a WiFi router. This is often done to give the device access to the Internet.
- - `wifi.SOFTAP` for when the device is acting *only* as an access point. This will allow you to see the device in the list of WiFi networks (unless you hide the SSID, of course). In this mode your computer can connect to the device, creating a local area network. Unless you change the value, the NodeMCU device will be given a local IP address of 192.168.4.1 and assign your computer the next available IP address, such as 192.168.4.2.
- - `wifi.STATIONAP` is the combination of `wifi.STATION` and `wifi.SOFTAP`. It allows you to create a local WiFi connection *and* connect to another WiFi router.
- - `wifi.NULLMODE` disables the WiFi interface(s). Use `wifi.stop()` to fully shut down the WiFi interface.
+    - `wifi.STATION` for when the device is connected to a WiFi router. This is often done to give the device access to the Internet.
+    - `wifi.SOFTAP` for when the device is acting *only* as an access point. This will allow you to see the device in the list of WiFi networks (unless you hide the SSID, of course). In this mode your computer can connect to the device, creating a local area network. Unless you change the value, the NodeMCU device will be given a local IP address of 192.168.4.1 and assign your computer the next available IP address, such as 192.168.4.2.
+    - `wifi.STATIONAP` is the combination of `wifi.STATION` and `wifi.SOFTAP`. It allows you to create a local WiFi connection *and* connect to another WiFi router.
+    - `wifi.NULLMODE` disables the WiFi interface(s). Use `wifi.stop()` to fully shut down the WiFi interface.
 - `save` choose whether or not to save wifi mode to flash
-   - `true` WiFi mode configuration **will** be retained through power cycle. (Default)
-   - `false` WiFi mode configuration **will not** be retained through power cycle.
+    - `true` WiFi mode configuration **will** be retained through power cycle. (Default)
+    - `false` WiFi mode configuration **will not** be retained through power cycle.
 
 #### Returns
 current mode after setup
@@ -136,23 +136,23 @@ function can be used.
 
 #### Parameters
 - `station_config` table containing configuration data for station
- - `ssid` string which is less than 32 bytes.
- - `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
- - `auto` defaults to true
-	- `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
-	- `false` to disable auto connect and remain disconnected from access point
- - `bssid` string that contains the MAC address of the access point (optional)
-	- You can set BSSID if you have multiple access points with the same SSID.
- 	- Note: if you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
- 	- The following formats are valid:
-		- "DE:C1:A5:51:F1:ED"
-		- "AC-1D-1C-B1-0B-22"
-		- "DE AD BE EF 7A C0"
-    - "AcDc0123c0DE"
+    - `ssid` string which is less than 32 bytes.
+    - `pwd` string which is 8-64 or 0 bytes. Empty string indicates an open WiFi access point.
+    - `auto` defaults to true
+        - `true` to enable auto connect and connect to access point, hence with `auto=true` there's no need to call [`wifi.sta.connect()`](#wifistaconnect)
+        - `false` to disable auto connect and remain disconnected from access point
+    - `bssid` string that contains the MAC address of the access point (optional)
+        - You can set BSSID if you have multiple access points with the same SSID.
+        - Note: if you set BSSID for a specific SSID and would like to configure station to connect to the same SSID only without the BSSID requirement, you MUST first configure to station to a different SSID first, then connect to the desired SSID
+        - The following formats are valid:
+            - "DE:C1:A5:51:F1:ED"
+            - "AC-1D-1C-B1-0B-22"
+            - "DE AD BE EF 7A C0"
+        - "AcDc0123c0DE"
 
 - `save` Save station configuration to flash. 
- - `true` configuration **will** be retained through power cycle. 
- - `false` configuration **will not** be retained through power cycle. (Default)
+    - `true` configuration **will** be retained through power cycle. 
+    - `false` configuration **will not** be retained through power cycle. (Default)
 
 #### Returns
 `nil`
@@ -213,9 +213,10 @@ Connects to the configured AP in station mode. You only ever need to call this i
 
 Disconnects from AP in station mode.
 
-	!!! note
-		Please note that disconnecting from Access Point does not reduce power consumption much.
-		If power saving is your goal, please use [`wifi.stop()`](#wifisetmode).
+!!! note
+
+    Please note that disconnecting from Access Point does not reduce power consumption much.
+    If power saving is your goal, please use [`wifi.stop()`](#wifisetmode).
 
 #### Syntax
 `wifi.sta.disconnect()`
@@ -252,24 +253,25 @@ Registers callbacks for WiFi station status events.
   the event.
 
 Event information provided for each event is as follows:
+
 - `start`: no additional info
 - `stop`: no additional info
 - `connected`: information about network/AP that was connected to:
-  - `ssid`: the SSID of the network
-  - `bssid`: the BSSID of the AP
-  - `channel`: the primary channel of the network
-  - `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
+    - `ssid`: the SSID of the network
+    - `bssid`: the BSSID of the AP
+    - `channel`: the primary channel of the network
+    - `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
 - `disconnected`: information about the network/AP that was disconnected from:
-  - `ssid`: the SSID of the network
-  - `bssid`: the BSSID of the AP
-  - `reason`: an integer code for the reason (see table below for mapping)
+    - `ssid`: the SSID of the network
+    - `bssid`: the BSSID of the AP
+    - `reason`: an integer code for the reason (see table below for mapping)
 - `authmode_changed`: authentication mode information:
-  - `old_mode`: the previous auth mode used
-  - `new_mode`: the new auth mode used
+    - `old_mode`: the previous auth mode used
+    - `new_mode`: the new auth mode used
 - `got_ip`: IP network information:
-  - `ip`: the IP address assigned
-  - `netmask`: the IP netmask
-  - `gw`: the gateway ("0.0.0.0" if no gateway)
+    - `ip`: the IP address assigned
+    - `netmask`: the IP netmask
+    - `gw`: the gateway ("0.0.0.0" if no gateway)
 
 Table containing disconnect reasons.
 
@@ -327,22 +329,23 @@ Scan for available networks.
 
 #### Parameters
 - `cfg` table that contains scan configuration:
-	- `ssid` SSID == nil, don't filter SSID
-	- `bssid` BSSID == nil, don't filter BSSID
-	- `channel` channel == 0, scan all channels, otherwise scan set channel (default is 0)
-	- `hidden` hidden == 1, get info for router with hidden SSID (default is 0)
+    - `ssid` SSID == nil, don't filter SSID
+    - `bssid` BSSID == nil, don't filter BSSID
+    - `channel` channel == 0, scan all channels, otherwise scan set channel (default is 0)
+    - `hidden` hidden == 1, get info for router with hidden SSID (default is 0)
 - `callback(ap_list)` a callback function to receive the list of APs when the scan is done. Each entry in the returned array follows the format used for [`wifi.sta.config()`](#wifistaconfig), with some additional fields.
 
 The following fields are provided for each scanned AP:
+
 - `ssid`: the network SSID
 - `bssid`: the BSSID of the AP
 - `channel`: primary WiFi channel of the AP
 - `rssi`: Received Signal Strength Indicator value
 - `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
 - `bandwidth`: one of the following constants:
-  - `wifi.HT20`
-  - `wifi.HT40_ABOVE`
-  - `wifi.HT40_BELOW`
+    - `wifi.HT20`
+    - `wifi.HT40_ABOVE`
+    - `wifi.HT40_BELOW`
 
 #### Returns
 `nil`
@@ -378,17 +381,16 @@ function can be used.
 
 #### Parameters
 - `cfg` table to hold configuration:
- - `ssid` SSID chars 1-32
- - `pwd` password chars 8-64
- - `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
- - `channel` channel number 1-14 default = 11
- - `hidden` false = not hidden, true = hidden, default = false
- - `max` maximum number of connections 1-4 default=4
- - `beacon` beacon interval time in range 100-60000, default = 100
-
+    - `ssid` SSID chars 1-32
+    - `pwd` password chars 8-64
+    - `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
+    - `channel` channel number 1-14 default = 11
+    - `hidden` false = not hidden, true = hidden, default = false
+    - `max` maximum number of connections 1-4 default=4
+    - `beacon` beacon interval time in range 100-60000, default = 100
 - `save` save configuration to flash.
- - `true` configuration **will** be retained through power cycle. (Default)
- - `false` configuration **will not** be retained through power cycle.
+    - `true` configuration **will** be retained through power cycle. (Default)
+    - `false` configuration **will not** be retained through power cycle.
 
 #### Returns
 `nil`
@@ -422,14 +424,15 @@ Registers callbacks for WiFi AP events.
   the event.
 
 Event information provided for each event is as follows:
+
 - `start`: no additional info
 - `stop`: no additional info
 - `sta_connected`: information about the client that connected:
-  - `mac`: the MAC address
-  - `id`: assigned station id (AID)
+    - `mac`: the MAC address
+    - `id`: assigned station id (AID)
 - `disconnected`: information about disconnecting client
-  - `mac`: the MAC address
-  - `id`: assigned station id (AID)
+    - `mac`: the MAC address
+    - `id`: assigned station id (AID)
 - `probe_req`: information about the probing client
-  - `from`: MAC address of the probing client
-  - `rssi`: Received Signal Strength Indicator value
+    - `from`: MAC address of the probing client
+    - `rssi`: Received Signal Strength Indicator value

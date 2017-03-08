@@ -86,9 +86,9 @@ Initialize the I²C interface for master mode.
 - `pinSDA` 0~33, IO index
 - `pinSCL` 0-33, IO index
 - `speed` bit rate in Hz, positive integer
-  - `i2c.SLOW` for 100000 Hz, max for `i2c.SW`
-  - `i2c.FAST` for 400000 Hz
-  - `i2c.FASTPLUS` for 1000000 Hz
+    - `i2c.SLOW` for 100000 Hz, max for `i2c.SW`
+    - `i2c.FAST` for 400000 Hz
+    - `i2c.FASTPLUS` for 1000000 Hz
 
 #### Returns
 `speed` the selected speed
