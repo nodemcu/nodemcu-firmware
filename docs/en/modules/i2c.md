@@ -129,18 +129,20 @@ Send (`SW`) or queue (`HWx`) an I²C stop condition.
 ## i2c.transfer()
 Starts a transfer for the specified hardware module. Providing a callback function allows the transfer to be started asynchronously in the background and `i2c.transfer()` finishes immediately. Without a callback function, the transfer is executed synchronously and `i2c.transfer()` comes back when the transfer completed. Data from a read operation is returned from `i2c.transfer()` in this case.
 
-First argument to the callback is the error code (0 = no error), followed by a string with data obtained from a read operation during the transfer or `nil`.
+First argument to the callback is a string with data obtained from a read operation during the transfer or `nil`, followed by the ack flag (true = ACK received).
 
 #### Syntax
 `i2c.transfer(id[, cb_fn][, to_ms])`
 
 #### Parameters
 - `id` interface id, `i2c.SW` not allowed
-- `cb_fn(err, data)` function to be called when transfer finished
+- `cb_fn(data, ack)` function to be called when transfer finished
 - `to_ms` timeout for the transfer in ms, defaults to 0=infinite
 
 #### Returns
-- `string` of received data (or `nil` if no read) for synchronous operation
+- synchronous operation:
+    - `data` string of received data (`nil` if no read or NACK)
+    - `ack` true if ACK received, false for NACK
 - `nil` for asynchronous operation
 
 ## i2c.write()

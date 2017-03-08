@@ -102,13 +102,13 @@ static void i2c_transfer_task( task_param_t param, task_prio_t prio )
 
   if (job->cb_ref != LUA_NOREF) {
     lua_rawgeti( L, LUA_REGISTRYINDEX, job->cb_ref );
-    lua_pushinteger( L, job->err );
     if (job->result) {
       // all fine, deliver read data
       lua_pushlstring( L, (char *)job->result->data, job->result->len );
     } else {
       lua_pushnil( L );
     }
+    lua_pushboolean( L, job->err == ESP_OK );
     lua_call(L, 2, 0);
   }
 
@@ -347,21 +347,32 @@ int li2c_hw_master_transfer( lua_State *L )
     esp_err_t err = i2c_master_cmd_begin( job->port, job->cmd,
                                           job->to_ms > 0 ? job->to_ms / portTICK_RATE_MS : portMAX_DELAY );
 
-    if (err == ESP_OK) {
+    switch (err) {
+    case ESP_OK:
       if (job->result) {
         // all fine, deliver read data
         lua_pushlstring( L, (char *)job->result->data, job->result->len );
       } else {
         lua_pushnil( L );
       }
+      lua_pushboolean( L, 1 );
 
       // prepare the next transfer
       i2c_setup_ud_transfer( L, ud );
-      return 1;
-    }
+      return 2;
 
-    i2c_setup_ud_transfer( L, ud );
-    return i2c_lua_checkerr( L, err );
+    case ESP_FAIL:
+      lua_pushnil( L );
+      lua_pushboolean( L, 0 );
+
+      // prepare the next transfer
+      i2c_setup_ud_transfer( L, ud );
+      return 2;
+
+    default:
+      i2c_setup_ud_transfer( L, ud );
+      return i2c_lua_checkerr( L, err );
+    }
   }
 }
 
