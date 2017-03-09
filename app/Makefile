@@ -38,7 +38,6 @@ SUBDIRS= 					\
 	smart 					\
 	modules 				\
 	spiffs 					\
-	cjson 					\
 	crypto 					\
 	dhtlib					\
 	tsl2561					\
