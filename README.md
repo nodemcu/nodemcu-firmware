@@ -1,9 +1,12 @@
-# **NodeMCU 1.5.4.1** #
+# **NodeMCU 1.5.4.1 final** #
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
-[![Documentation Status](https://img.shields.io/badge/docs-dev-yellow.svg?style=flat)](http://nodemcu.readthedocs.io/en/dev/)
+[![Documentation Status](https://img.shields.io/badge/docs-1.5.4.1_final-yellow.svg?style=flat)](http://nodemcu.readthedocs.io/en/1.5.4.1-final/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/nodemcu/nodemcu-firmware/blob/master/LICENSE)
+
+## :no_entry: This branch is frozen at the last commit before the Espressif SDK was upgraded to 2.0 :no_entry:
+
 
 ### A Lua based firmware for ESP8266 WiFi SOC
 

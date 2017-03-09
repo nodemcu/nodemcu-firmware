@@ -1,5 +1,8 @@
 # NodeMCU Documentation
 
+!!! attention
+	This branch is frozen at the last commit before the Espressif SDK was upgraded to 2.0!
+
 NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/).  The NodeMCU *firmware* is a companion project to the popular [NodeMCU dev kits](https://github.com/nodemcu/nodemcu-devkit-v1.0), ready-made open source development boards with ESP8266-12E chips.
 
 ## Up-To-Date Documentation
