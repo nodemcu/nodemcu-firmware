@@ -192,12 +192,13 @@ static int tmr_interval(lua_State* L)
   luaL_argcheck(L, interval > 0 && interval <= MAX_TIMEOUT, 2, MAX_TIMEOUT_ERR_STR);
   if (tmr->mode != TIMER_MODE_OFF) {
     tmr->interval = interval;
-    if (!(tmr->mode & TIMER_IDLE_FLAG)) {
-      xTimerStop(tmr->timer, portMAX_DELAY);
-      if (xTimerChangePeriod(tmr->timer, tmr->interval, portMAX_DELAY) != pdPASS) {
-	luaL_error(L, "cannot change period");
-      }
-      // stop again since xTimerChangePeriod will re-start the timer
+    if (xTimerChangePeriod(tmr->timer,
+			   pdMS_TO_TICKS(tmr->interval),
+			   portMAX_DELAY) != pdPASS) {
+      luaL_error(L, "cannot change period");
+    }
+    if (tmr->mode & TIMER_IDLE_FLAG) {
+      // xTimerChangePeriod will start a dormant timer, thus force stop if it was dormant
       xTimerStop(tmr->timer, portMAX_DELAY);
     }
   }
