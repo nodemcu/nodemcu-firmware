@@ -324,6 +324,22 @@ srv:on("connection", function(sck, c)
 end)
 srv:connect(80,"httpbin.org")
 ```
+!!! note
+    The `receive` event is fired for every network frame! Hence, if the data sent to the device exceeds 1460 bytes (derived from [Ethernet frame size](https://en.wikipedia.org/wiki/Ethernet_frame)) it will fire more than once. There may be other situations where incoming data is split across multiple frames (e.g. HTTP POST with `multipart/form-data`). You need to manually buffer the data and find means to determine if all data was received.
+    
+```lua
+local buffer = nil
+
+srv:on("receive", function(sck, c)
+  if buffer == nil then
+    buffer = c
+  else
+    buffer = buffer .. c
+  end
+end)
+-- throttling could be implemented using socket:hold()
+-- example: https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/pcm/play_network.lua#L83
+```    
 
 #### See also
 - [`net.createServer()`](#netcreateserver)
