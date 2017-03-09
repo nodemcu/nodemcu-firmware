@@ -86,7 +86,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	smart/smart.a 				\
 	spiffs/spiffs.a 			\
 	fatfs/libfatfs.a			\
-	cjson/libcjson.a 			\
 	crypto/libcrypto.a 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
