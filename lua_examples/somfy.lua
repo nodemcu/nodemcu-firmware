@@ -1,4 +1,4 @@
--- Somfy module example (beside somfy module requires also CJSON module)
+-- Somfy module example (beside somfy module requires also SJSON module)
 -- The rolling code number is stored in the file somfy.cfg. A cached write of the somfy.cfg file is implemented in order to reduce the number of write to the EEPROM memory. Together with the logic of the file module it should allow long lasting operation.
 
 config_file = "somfy."
