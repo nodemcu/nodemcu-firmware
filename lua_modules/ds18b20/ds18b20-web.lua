@@ -8,13 +8,13 @@ function readout(temp)
   local resp = "HTTP/1.1 200 OK\nContent-Type: text/html\nRefresh: 5\n\n" ..
       "<!DOCTYPE HTML>" ..
       "<html><body>" ..
-      "<b>ESP8266</b></br>" 
-      
+      "<b>ESP8266</b></br>"
+
   for addr, temp in pairs(temp) do
     -- resp = resp .. string.format("Sensor %s: %s &#8451</br>", addr, temp)
-    resp = resp .. string.format("Sensor %s: %s &#8451</br>", encoder.toBase64(addr), temp) -- readable address with base64 encoding is preferred when encoder module is available
+    resp = resp .. string.format("Sensor %s: %s &#8451</br>", encoder.toHex(addr), temp) -- readable address with base64 encoding is preferred when encoder module is available
   end
-  
+
   resp = resp ..
       "Node ChipID: " .. node.chipid() .. "<br>" ..
       "Node MAC: " .. wifi.sta.getmac() .. "<br>" ..
