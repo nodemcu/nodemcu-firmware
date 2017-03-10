@@ -36,6 +36,14 @@ Source: [https://github.com/andidittrich/NodeMCU-Tool](https://github.com/andidi
 
 Supported platforms: macOS, Linux Windows, anything that runs Node.js
 
+## NodeMCU REPL
+
+> Comfortable REPL and file uploader for NodeMCU.
+
+Source: [https://github.com/matiasbattocchia/nodemcu-repl](https://github.com/matiasbattocchia/nodemcu-repl)
+
+Supported platforms: OS X, Linux, Windows, anything that runs Python
+
 # init.lua
 You will see "lua: cannot open init.lua" printed to the serial console when the device boots after it's been freshly flashed. If NodeMCU finds a `init.lua` in the root of the file system it will execute it as part of the boot sequence (standard Lua feature). Hence, your application is initialized and triggered from `init.lua`. Usually you first set up the WiFi connection and only continue once that has been successful.
 
