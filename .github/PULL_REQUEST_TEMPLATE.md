@@ -7,4 +7,4 @@ Make sure all boxes are checked (add x inside the brackets) when you submit your
 - [ ] I have thoroughly tested my contribution.
 - [ ] The code changes are reflected in the documentation at `docs/en/*`.
 
-\<Description of and rational behind this PR\>
+\<Description of and rationale behind this PR\>
