@@ -53,6 +53,9 @@ static int node_deepsleep( lua_State* L )
     else
       system_deep_sleep_set_option( option );
   }
+  bool instant = false;
+  if (lua_isnumber(L, 3))
+    instant = lua_tointeger(L, 3);
   // Set deleep time, skip if nil
   if ( lua_isnumber(L, 1) )
   {
@@ -61,7 +64,12 @@ static int node_deepsleep( lua_State* L )
     if ( us < 0 )
       return luaL_error( L, "wrong arg range" );
     else
-      system_deep_sleep( us );
+    {
+      if (instant)
+        system_deep_sleep_instant(us);
+      else
+        system_deep_sleep( us );
+    }
   }
   return 0;
 }
