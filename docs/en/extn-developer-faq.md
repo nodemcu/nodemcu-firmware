@@ -1,6 +1,7 @@
 # Extension Developer FAQ
 
-**# # # Work in Progress # # #**
+## Firmware build options
+[Building the firmware → Build Options](build.md#build-options) lists a few of the common parameters to customize your firmware *at build time*.
 
 ## How does the non-OS SDK structure execution
 
