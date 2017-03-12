@@ -35,6 +35,8 @@ To enable TLS support edit `app/include/user_config.h` and uncomment the followi
 //#define CLIENT_SSL_ENABLE
 ```
 
+The complete configuration is stored in `app/include/user_mbedtls.h`. This is the file to edit if you build your own firmware and want to change mbed TLS behavior. See the [`tls` documentation](modules/tls.md) for details.
+
 ### Debugging
 To enable runtime debug messages to serial console edit `app/include/user_config.h`
 
@@ -62,3 +64,9 @@ Identify your firmware builds by editing `app/include/user_version.h`
 #define BUILD_DATE      "YYYYMMDD"
 #endif
 ```
+
+### u8g Module Configuration
+Display drivers and embedded fonts are compiled into the firmware image based on the settings in `app/include/u8g_config.h`. See the [`u8g` documentation](modules/u8g.md#displays) for details.
+
+### ucg Module Configuration
+Display drivers and embedded fonts are compiled into the firmware image based on the settings in `app/include/ucg_config.h`. See the [`ucg` documentation](modules/ucg.md#displays) for details.
