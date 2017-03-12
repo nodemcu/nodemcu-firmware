@@ -110,7 +110,7 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
  - `instant` number (integer) or `nil`. If present and non-zero, do not use
     the normal grace time before entering deep sleep.  This is a largely
     undocumented feature, and is only briefly mentioned in Espressif's
-    [low power solutions](https://espressif.com/sites/default/files/documentation/9b-esp8266_low_power_solutions_en.pdf) document.
+    [low power solutions](https://espressif.com/sites/default/files/documentation/9b-esp8266_low_power_solutions_en.pdf#page=10) document (chapter 4.5).
 
 #### Returns
 `nil`
