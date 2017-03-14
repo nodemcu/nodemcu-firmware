@@ -12,5 +12,7 @@ enum ext_flash_size_map {
     FLASH_SIZE_128M_MAP = 9
 };
 
+// Documented in section 4.5 of 9b-esp8266_low_power_solutions_en.pdf
+void system_deep_sleep_instant(uint32 time_in_us);
 
 #endif /* SDK_OVERRIDES_INCLUDE_USER_INTERFACE_H_ */

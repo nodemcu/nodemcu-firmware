@@ -95,7 +95,7 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
     This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
 
 #### Syntax
-`node.dsleep(us, option)`
+`node.dsleep(us, option, instant)`
 
 #### Parameters
  - `us` number (integer) or `nil`, sleep time in micro second. If `us == 0`, it will sleep forever. If `us == nil`, will not set sleep time.
@@ -107,6 +107,10 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 	- 1, RF_CAL after deep-sleep wake up, there will be large current
 	- 2, no RF_CAL after deep-sleep wake up, there will only be small current
 	- 4, disable RF after deep-sleep wake up, just like modem sleep, there will be the smallest current
+ - `instant` number (integer) or `nil`. If present and non-zero, do not use
+    the normal grace time before entering deep sleep.  This is a largely
+    undocumented feature, and is only briefly mentioned in Espressif's
+    [low power solutions](https://espressif.com/sites/default/files/documentation/9b-esp8266_low_power_solutions_en.pdf#page=10) document (chapter 4.5).
 
 #### Returns
 `nil`
