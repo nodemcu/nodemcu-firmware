@@ -97,6 +97,12 @@ config LUA_MODULE_NODE
   help
       Includes the node module (recommended).
 
+config LUA_MODULE_OW
+  bool "1-Wire module"
+  default "y"
+  help
+      Includes the 1-Wire (ow) module (recommended).
+
 config LUA_MODULE_SIGMA_DELTA
   bool "Sigma-Delta module"
   default "n"

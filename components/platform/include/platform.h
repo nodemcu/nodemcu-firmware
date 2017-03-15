@@ -115,6 +115,31 @@ int platform_i2c_send_byte( unsigned id, uint8_t data, int ack_check_en );
 int platform_i2c_recv_byte( unsigned id, int ack_val );
 
 
+// *****************************************************************************
+// Onewire platform interface
+
+typedef struct {
+  unsigned char ROM_NO[8];
+  uint8_t LastDiscrepancy;
+  uint8_t LastFamilyDiscrepancy;
+  uint8_t LastDeviceFlag;
+  uint8_t power;
+} platform_onewire_bus_t;
+
+int platform_onewire_init( uint8_t gpio_num );
+int platform_onewire_reset( uint8_t gpio_num, uint8_t *presence );
+int platform_onewire_write_bytes( uint8_t gpio_num, const uint8_t *buf, uint16_t count, bool power );
+int platform_onewire_depower( uint8_t gpio_num );
+int platform_onewire_read_bytes( uint8_t gpio_num, uint8_t *buf, uint16_t count );
+int platform_onewire_depower( uint8_t gpio_num );
+void platform_onewire_reset_search( platform_onewire_bus_t *bus );
+void platform_onewire_target_search( uint8_t family_code, platform_onewire_bus_t *bus );
+uint8_t platform_onewire_search( uint8_t pin, uint8_t *newAddr, platform_onewire_bus_t *bus );
+uint8_t platform_onewire_crc8( const uint8_t *addr, uint8_t len );
+uint8_t platform_onewire_crc8( const uint8_t *addr, uint8_t len );
+bool platform_onewire_check_crc16( const uint8_t* input, uint16_t len, const uint8_t* inverted_crc, uint16_t crc );
+uint16_t platform_onewire_crc16( const uint8_t* input, uint16_t len, uint16_t crc );
+
 // Internal flash erase/write functions
 
 uint32_t platform_flash_get_sector_of_address( uint32_t addr );

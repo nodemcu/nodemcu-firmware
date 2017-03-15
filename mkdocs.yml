@@ -35,6 +35,7 @@ pages:
         - 'file':        'en/modules/file.md'
         - 'i2c':         'en/modules/i2c.md'
         - 'node':        'en/modules/node.md'
+        - 'ow (1-Wire)': 'en/modules/ow.md'
         - 'sigma delta': 'en/modules/sigma-delta.md'
         - 'struct':      'en/modules/struct.md'
         - 'tmr':         'en/modules/tmr.md'
