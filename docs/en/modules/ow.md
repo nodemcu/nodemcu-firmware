@@ -137,7 +137,7 @@ Issues a 1-Wire rom select command. Make sure you do the `ow.reset(pin)` first.
 
 #### Parameters
 - `pin` 1~12, I/O index
-- `rom` string value, len 8, rom code of the salve device
+- `rom` string value, len 8, rom code of the slave device
 
 #### Returns
 `nil`
@@ -247,7 +247,7 @@ Writes a byte. If `power` is 1 then the wire is held high at the end for parasit
 
 #### Parameters
 - `pin` 1~12, I/O index
-- `v` byte to be written to salve device 
+- `v` byte to be written to slave device 
 - `power` 1 for wire being held high for parasitically powered devices
 
 #### Returns
