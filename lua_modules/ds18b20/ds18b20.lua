@@ -25,7 +25,7 @@ return({
         if s.parasite == 1 then break end -- parasite sensor blocks bus during conversion
       end
     end
-    tmr.alarm(tmr.create(), 750, tmr.ALARM_SINGLE, function() self:readout() end)
+    tmr.create():alarm(750, tmr.ALARM_SINGLE, function() self:readout() end)
   end,
 
   readTemp = function(self, cb, lpin)
@@ -83,25 +83,28 @@ return({
           t = t * 5000 -- DS18S20, 1 fractional bit
         end
 
-        -- integer version
-        local sgn = t<0 and -1 or 1
-        local tA = sgn*t
-        local tH=tA/10000
-        local tL=(tA%10000)/1000 + ((tA%1000)/100 >= 5 and 1 or 0)
+        if 1/2 == 0 then
+          -- integer version
+          local sgn = t<0 and -1 or 1
+          local tA = sgn*t
+          local tH=tA/10000
+          local tL=(tA%10000)/1000 + ((tA%1000)/100 >= 5 and 1 or 0)
 
-        if tH and (tH~=85) then
-          self.temp[s.addr]=(sgn<0 and "-" or "")..tH.."."..tL
-          print(encoder.toHex(s.addr),(sgn<0 and "-" or "")..tH.."."..tL)
-          s.status = 2
+          if tH and (tH~=85) then
+            self.temp[s.addr]=(sgn<0 and "-" or "")..tH.."."..tL
+            print(encoder.toHex(s.addr),(sgn<0 and "-" or "")..tH.."."..tL)
+            s.status = 2
+          end
+          -- end integer version
+        else
+          -- float version
+          if t and (math.floor(t/10000)~=85) then
+            self.temp[s.addr]=t/10000
+            print(encoder.toHex(s.addr), t)
+            s.status = 2
+          end
+          -- end float version
         end
-        -- end integer version
-        -- -- float version
-        -- if t and (math.floor(t/10000)~=85) then
-          -- self.temp[s.addr]=t
-          -- print(encoder.toHex(s.addr), t)
-          -- s.status = 2
-        -- end
-        -- -- end float version
       end
       next = next or s.status == 0
     end
