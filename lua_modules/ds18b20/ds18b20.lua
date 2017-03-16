@@ -29,10 +29,10 @@ return({
   end,
 
   readTemp = function(self, cb, lpin)
+    if lpin then self.pin = lpin end
     local pin = self.pin
     self.cb = cb
     self.temp={}
-    if lpin then pin = lpin end
     ow.setup(pin)
 
     self.sens={}
