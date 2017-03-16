@@ -144,6 +144,7 @@ static void enduser_setup_ap_stop(void);
 static void enduser_setup_check_station(void *p);
 static void enduser_setup_debug(int line, const char *str);
 
+static char ipaddr[16];
 
 #if ENDUSER_SETUP_DEBUG_ENABLE
 #define ENDUSER_SETUP_DEBUG(str) enduser_setup_debug(__LINE__, str)
@@ -284,6 +285,8 @@ static void enduser_setup_check_station(void *p)
    }
    return;
   }
+
+  c_sprintf (ipaddr, "%d.%d.%d.%d", IP2STR(&ip.ip.addr));
 
   state->success = 1;
   state->lastStationStatus = 5; /*  We have an IP Address, so the status is 5 (as of SDK 1.5.1) */
@@ -874,7 +877,23 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
   uint8_t curr_status = state->lastStationStatus > 0 ? state->lastStationStatus : wifi_station_get_connect_status ();  
 
   char json_payload[64];
-  c_sprintf(json_payload, "{\"deviceid\":\"%06X\", \"status\":%d}", system_get_chip_id(), curr_status);
+
+  struct ip_info ip_info;
+
+  if (curr_status == 5)
+  {
+    wifi_get_ip_info(STATION_IF , &ip_info);
+    /* If IP address not yet available, get now */
+    if (strlen(ipaddr) == 0)
+    {
+      c_sprintf(ipaddr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
+    }
+    c_sprintf(json_payload, "{\"deviceid\":\"%s\", \"status\":%d}", ipaddr, curr_status);
+  }
+  else
+  {
+    c_sprintf(json_payload, "{\"deviceid\":\"%06X\", \"status\":%d}", system_get_chip_id(), curr_status);
+  }
      
   const char fmt[] =
     "HTTP/1.1 200 OK\r\n"
@@ -1683,6 +1702,8 @@ static int enduser_setup_start(lua_State *L)
 {
   /* Note: The debug callback is set in enduser_setup_init. It's normal to not see this debug message on first invocation. */
   ENDUSER_SETUP_DEBUG("enduser_setup_start");
+
+  ipaddr[0] = '\0';
 
   if (!do_station_cfg_handle)
   {
