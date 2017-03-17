@@ -58,7 +58,7 @@ static int check_err (lua_State *L, esp_err_t err)
 
 // TODO: can/should we attempt to guard against task q overflow?
 _Static_assert(GPIO_PIN_COUNT<256, "task post encoding assumes < 256 gpios");
-static void IRAM_ATTR single_pin_isr (void *p)
+static void single_pin_isr (void *p)
 {
   gpio_num_t gpio_num = (gpio_num_t)p;
   gpio_intr_disable (gpio_num);
@@ -226,7 +226,7 @@ static int nodemcu_gpio_init (lua_State *L)
 {
   cb_task = task_get_id (nodemcu_gpio_callback_task);
   check_err (L,
-    gpio_install_isr_service (ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM));
+    gpio_install_isr_service (ESP_INTR_FLAG_LOWMED));
   return 0;
 }
 
