@@ -386,6 +386,7 @@ int net_listen( lua_State *L ) {
       ud->tcp_pcb = tcp_new();
       if (!ud->tcp_pcb)
         return luaL_error(L, "cannot allocate PCB");
+      ud->tcp_pcb->so_options |= SOF_REUSEADDR;
       err = tcp_bind(ud->tcp_pcb, &addr, port);
       if (err == ERR_OK) {
         tcp_arg(ud->tcp_pcb, ud);

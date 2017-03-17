@@ -900,6 +900,15 @@
 #endif
 
 /**
+ * TCP_MSL: Maximum segment lifetime
+ * Override for <tcp_impl.h> file
+ * See https://github.com/nodemcu/nodemcu-firmware/issues/1836 for details
+ */
+#ifndef TCP_MSL
+#define TCP_MSL 5000UL
+#endif
+
+/**
  * TCP_MAXRTX: Maximum number of retransmissions of data segments.
  */
 #ifndef TCP_MAXRTX
@@ -1455,7 +1464,8 @@
  * SO_REUSE==1: Enable SO_REUSEADDR option.
  */
 #ifndef SO_REUSE
-#define SO_REUSE                        0
+/* See https://github.com/nodemcu/nodemcu-firmware/issues/1836 for details */
+#define SO_REUSE                        1
 #endif
 
 /**
