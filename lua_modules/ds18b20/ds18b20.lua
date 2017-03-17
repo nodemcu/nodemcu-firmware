@@ -54,7 +54,6 @@ return({
       end
 
       addr = ow.search(pin)
-      tmr.wdclr()
     end
 
     -- place powered sensors first
