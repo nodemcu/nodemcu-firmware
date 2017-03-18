@@ -24,6 +24,7 @@ pages:
 - Overview: 'index.md'
 - English:
     - Building the firmware: 'en/build.md'
+    - Flashing the firmware: 'en/flash.md'
     - Uploading code: 'en/upload.md'
     - FAQs:
         - Lua Developer FAQ: 'en/lua-developer-faq.md'
