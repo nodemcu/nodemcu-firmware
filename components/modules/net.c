@@ -1018,24 +1018,22 @@ static void lconnected_cb (lua_State *L, lnet_userdata *ud) {
 }
 
 static void laccept_cb (lua_State *L, lnet_userdata *ud, struct tcp_pcb *newpcb) {
-  if (ud->server.cb_accept_ref != LUA_NOREF) {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
 
-    lnet_userdata *nud = net_create(L, TYPE_TCP_CLIENT);
-    lua_pushvalue(L, -1);
-    nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    nud->tcp_pcb = newpcb;
-    tcp_arg(nud->tcp_pcb, nud);
-    tcp_err(nud->tcp_pcb, net_err_cb);
-    tcp_recv(nud->tcp_pcb, net_tcp_recv_cb);
-    tcp_sent(nud->tcp_pcb, net_sent_cb);
-    nud->tcp_pcb->so_options |= SOF_KEEPALIVE;
-    nud->tcp_pcb->keep_idle = ud->server.timeout * 1000;
-    nud->tcp_pcb->keep_cnt = 1;
-    tcp_accepted(ud->tcp_pcb);
+  lnet_userdata *nud = net_create(L, TYPE_TCP_CLIENT);
+  lua_pushvalue(L, -1);
+  nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  nud->tcp_pcb = newpcb;
+  tcp_arg(nud->tcp_pcb, nud);
+  tcp_err(nud->tcp_pcb, net_err_cb);
+  tcp_recv(nud->tcp_pcb, net_tcp_recv_cb);
+  tcp_sent(nud->tcp_pcb, net_sent_cb);
+  nud->tcp_pcb->so_options |= SOF_KEEPALIVE;
+  nud->tcp_pcb->keep_idle = ud->server.timeout * 1000;
+  nud->tcp_pcb->keep_cnt = 1;
+  tcp_accepted(ud->tcp_pcb);
 
-    lua_call(L, 1, 0);
-  }
+  lua_call(L, 1, 0);
 }
 
 static void lrecv_cb (lua_State *L, lnet_userdata *ud, const lnet_recvdata *rd) {
