@@ -313,7 +313,7 @@ static bool post_net_accept (lnet_userdata *ud, struct tcp_pcb *newpcb) {
   lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
   if (!ev)
     return false;
-  ev->event = SENTDATA;
+  ev->event = ACCEPT;
   ev->ud = ud;
   ev->accept_newpcb = newpcb;
   if (!task_post_medium (net_event, (task_param_t)ev)) {
@@ -1021,7 +1021,7 @@ static void laccept_cb (lua_State *L, lnet_userdata *ud, struct tcp_pcb *newpcb)
   lua_rawgeti(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
 
   lnet_userdata *nud = net_create(L, TYPE_TCP_CLIENT);
-  lua_pushvalue(L, 2);
+  lua_pushvalue(L, -1);
   nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   nud->tcp_pcb = newpcb;
   tcp_arg(nud->tcp_pcb, nud);
