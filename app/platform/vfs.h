@@ -188,8 +188,9 @@ vfs_dir  *vfs_opendir( const char *name );
 
 // vfs_stat - stat file or directory
 //   name: file or directory name
-//   Returns: Item object, or NULL in case of error
-vfs_item *vfs_stat( const char *name );
+//   buf:  pre-allocated structure to be filled in
+//   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
+sint32_t  vfs_stat( const char *name, struct vfs_stat *buf );
 
 // vfs_remove - remove file or directory
 //   name: file or directory name

@@ -44,7 +44,7 @@ static sint32_t    myfatfs_is_arch( const struct vfs_item *di );
 static vfs_vol  *myfatfs_mount( const char *name, int num );
 static vfs_file *myfatfs_open( const char *name, const char *mode );
 static vfs_dir  *myfatfs_opendir( const char *name );
-static vfs_item *myfatfs_stat( const char *name );
+static sint32_t  myfatfs_stat( const char *name, struct vfs_stat *buf );
 static sint32_t  myfatfs_remove( const char *name );
 static sint32_t  myfatfs_rename( const char *oldname, const char *newname );
 static sint32_t  myfatfs_mkdir( const char *name );
@@ -521,21 +521,30 @@ static vfs_dir *myfatfs_opendir( const char *name )
   return NULL;
 }
 
-static vfs_item *myfatfs_stat( const char *name )
+static sint32_t myfatfs_stat( const char *name, struct vfs_stat *buf )
 {
-  struct myvfs_item *di;
+  struct myvfs_item item;
+  struct vfs_item *di = (struct vfs_item *)&item;
 
-  if (di = c_malloc( sizeof( struct myvfs_item ) )) {
-    if (FR_OK == (last_result = f_stat( name, &(di->fno) ))) {
-      di->vfs_item.fs_type = VFS_FS_FATFS;
-      di->vfs_item.fns     = &myfatfs_item_fns;
-      return (vfs_item *)di;
-    } else {
-      c_free( di );
-    }
+  if (FR_OK == (last_result = f_stat( name, &(item.fno) ))) {
+    c_memset( buf, 0, sizeof( struct vfs_stat ) );
+
+    // fill in supported stat entries
+    c_strncpy( buf->name, myfatfs_name( di ), FS_OBJ_NAME_LEN+1 );
+    buf->name[FS_OBJ_NAME_LEN] = '\0';
+    buf->size = myfatfs_isize( di );
+    buf->is_dir = myfatfs_is_dir( di );
+    buf->is_rdonly = myfatfs_is_rdonly( di );
+    buf->is_hidden = myfatfs_is_hidden( di );
+    buf->is_sys = myfatfs_is_sys( di );
+    buf->is_arch = myfatfs_is_arch( di );
+    myfatfs_time( di, &(buf->tm) );
+    buf->tm_valid = 1;
+
+    return VFS_RES_OK;
+  } else {
+    return VFS_RES_ERR;
   }
-
-  return NULL;
 }
 
 static sint32_t myfatfs_remove( const char *name )

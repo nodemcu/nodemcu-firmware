@@ -47,6 +47,19 @@ struct vfs_file {
 };
 typedef const struct vfs_file vfs_file;
 
+// stat data
+struct vfs_stat {
+  uint32_t size;
+  char name[FS_OBJ_NAME_LEN+1];
+  struct vfs_time tm;
+  uint8_t tm_valid;
+  uint8_t is_dir;
+  uint8_t is_rdonly;
+  uint8_t is_hidden;
+  uint8_t is_sys;
+  uint8_t is_arch;
+};
+
 // file descriptor functions
 struct vfs_file_fns {
   sint32_t (*close)( const struct vfs_file *fd );
@@ -113,7 +126,7 @@ struct vfs_fs_fns {
   vfs_vol  *(*mount)( const char *name, int num );
   vfs_file *(*open)( const char *name, const char *mode );
   vfs_dir  *(*opendir)( const char *name );
-  vfs_item *(*stat)( const char *name );
+  sint32_t  (*stat)( const char *name, struct vfs_stat *buf );
   sint32_t  (*remove)( const char *name );
   sint32_t  (*rename)( const char *oldname, const char *newname );
   sint32_t  (*mkdir)( const char *name );

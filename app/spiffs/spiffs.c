@@ -265,7 +265,7 @@ static const char *myspiffs_vfs_name( const struct vfs_item *di );
 static vfs_vol  *myspiffs_vfs_mount( const char *name, int num );
 static vfs_file *myspiffs_vfs_open( const char *name, const char *mode );
 static vfs_dir  *myspiffs_vfs_opendir( const char *name );
-static vfs_item *myspiffs_vfs_stat( const char *name );
+static sint32_t  myspiffs_vfs_stat( const char *name, struct vfs_stat *buf );
 static sint32_t  myspiffs_vfs_remove( const char *name );
 static sint32_t  myspiffs_vfs_rename( const char *oldname, const char *newname );
 static sint32_t  myspiffs_vfs_fsinfo( uint32_t *total, uint32_t *used );
@@ -566,20 +566,21 @@ static vfs_dir *myspiffs_vfs_opendir( const char *name ){
   return NULL;
 }
 
-static vfs_item *myspiffs_vfs_stat( const char *name ) {
-  struct myvfs_stat *s;
+static sint32_t myspiffs_vfs_stat( const char *name, struct vfs_stat *buf ) {
+  spiffs_stat stat;
 
-  if (s = (struct myvfs_stat *)c_malloc( sizeof( struct myvfs_stat ) )) {
-    if (0 <= SPIFFS_stat( &fs, name, &(s->s) )) {
-      s->vfs_item.fs_type = VFS_FS_SPIFFS;
-      s->vfs_item.fns     = &myspiffs_item_fns;
-      return (vfs_item *)s;
-    } else {
-      c_free( s );
-    }
+  if (0 <= SPIFFS_stat( &fs, name, &stat )) {
+    c_memset( buf, 0, sizeof( struct vfs_stat ) );
+
+    // fill in supported stat entries
+    c_strncpy( buf->name, stat.name, FS_OBJ_NAME_LEN+1 );
+    buf->name[FS_OBJ_NAME_LEN] = '\0';
+    buf->size = stat.size;
+
+    return VFS_RES_OK;
+  } else {
+    return VFS_RES_ERR;
   }
-
-  return NULL;
 }
 
 static sint32_t myspiffs_vfs_remove( const char *name ) {
