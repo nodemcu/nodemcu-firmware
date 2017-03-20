@@ -11,7 +11,7 @@ Setup I²C address and read/write mode for the next transfer.
 
 #### Parameters
 - `id` always 0
-- `device_addr` device address
+- `device_addr` 7-bit device address, remember that [in I²C `device_addr` represents the upper 7 bits](http://www.nxp.com/documents/user_manual/UM10204.pdf#page=13) followed by a single `direction` bit
 - `direction` `i2c.TRANSMITTER` for writing mode , `i2c. RECEIVER` for reading mode
 
 #### Returns
