@@ -198,6 +198,7 @@ int platform_onewire_reset( uint8_t gpio_num, uint8_t *presence )
 {
   rmt_item32_t tx_items[1];
   uint8_t _presence = 0;
+  int res = PLATFORM_OK;
 
   if (onewire_rmt_attach_pin( gpio_num ) != PLATFORM_OK)
     return PLATFORM_ERR;
@@ -218,8 +219,7 @@ int platform_onewire_reset( uint8_t gpio_num, uint8_t *presence )
   if (rmt_write_items( ow_rmt.tx, tx_items, 1, true ) == ESP_OK) {
 
     size_t rx_size;
-    rmt_item32_t* rx_items = (rmt_item32_t *)xRingbufferReceive( ow_rmt.rb, &rx_size, portMAX_DELAY );
-    rmt_rx_stop( ow_rmt.rx );
+    rmt_item32_t* rx_items = (rmt_item32_t *)xRingbufferReceive( ow_rmt.rb, &rx_size, 100 / portTICK_PERIOD_MS );
 
     if (rx_items) {
       if (rx_size >= 1 * sizeof( rmt_item32_t )) {
@@ -238,17 +238,21 @@ int platform_onewire_reset( uint8_t gpio_num, uint8_t *presence )
       }
 
       vRingbufferReturnItem( ow_rmt.rb, (void *)rx_items );
+    } else {
+      // time out occurred, this indicates an unconnected / misconfigured bus
+      res = PLATFORM_ERR;
     }
 
   } else {
-    // clean up in case of error
-    rmt_rx_stop( ow_rmt.rx );
+    // error in tx channel
+    res = PLATFORM_ERR;
   }
 
+  rmt_rx_stop( ow_rmt.rx );
   rmt_set_rx_idle_thresh( ow_rmt.rx, old_rx_thresh );
 
   *presence = _presence;
-  return PLATFORM_OK;
+  return res;
 }
 
 static rmt_item32_t onewire_encode_write_slot( uint8_t val )
@@ -337,6 +341,7 @@ static int onewire_read_bits( uint8_t gpio_num, uint8_t *data, uint8_t num )
 {
   rmt_item32_t tx_items[num+1];
   uint8_t read_data = 0;
+  int res = PLATFORM_OK;
 
   if (num > 8)
     return PLATFORM_ERR;
@@ -359,7 +364,6 @@ static int onewire_read_bits( uint8_t gpio_num, uint8_t *data, uint8_t num )
 
     size_t rx_size;
     rmt_item32_t* rx_items = (rmt_item32_t *)xRingbufferReceive( ow_rmt.rb, &rx_size, portMAX_DELAY );
-    rmt_rx_stop( ow_rmt.rx );
 
     if (rx_items) {
 #if 0
@@ -383,15 +387,20 @@ static int onewire_read_bits( uint8_t gpio_num, uint8_t *data, uint8_t num )
       }
 
       vRingbufferReturnItem( ow_rmt.rb, (void *)rx_items );
+    } else {
+      // time out occurred, this indicates an unconnected / misconfigured bus
+      res = PLATFORM_ERR;
     }
 
   } else {
-    // clean up in case of error
-    rmt_rx_stop( ow_rmt.rx );
+    // error in tx channel
+    res = PLATFORM_ERR;
   }
 
+  rmt_rx_stop( ow_rmt.rx );
+
   *data = read_data;
-  return PLATFORM_OK;
+  return res;
 }
 
 int platform_onewire_read_bytes( uint8_t gpio_num, uint8_t *buf, uint16_t count )
