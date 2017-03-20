@@ -11,10 +11,8 @@ Setup I²C address and read/write mode for the next transfer.
 
 #### Parameters
 - `id` always 0
-- `device_addr` device address (7-bit)<sup>[1](#7bit)</sup>
+- `device_addr` 7-bit device address, remember that [in I²C `device_addr` represents the upper 7 bits](http://www.nxp.com/documents/user_manual/UM10204.pdf#page=13) followed by a single `direction` bit
 - `direction` `i2c.TRANSMITTER` for writing mode , `i2c. RECEIVER` for reading mode
-
-<a name="7bit">[1]</a>: 8bit frame = 7bit address + R/W bit as LSB
 
 #### Returns
 `true` if ack received, `false` if no ack received.
