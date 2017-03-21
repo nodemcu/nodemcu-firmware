@@ -214,14 +214,13 @@ static int file_open( lua_State* L )
 static int file_list( lua_State* L )
 {
   vfs_dir  *dir;
-  vfs_item *item;
 
   if (dir = vfs_opendir("")) {
     lua_newtable( L );
-    while (item = vfs_readdir(dir)) {
-      lua_pushinteger(L, vfs_item_size(item));
-      lua_setfield(L, -2, vfs_item_name(item));
-      vfs_closeitem(item);
+    struct vfs_stat stat;
+    while (vfs_readdir(dir, &stat) == VFS_RES_OK) {
+      lua_pushinteger(L, stat.size);
+      lua_setfield(L, -2, stat.name);
     }
     vfs_closedir(dir);
     return 1;

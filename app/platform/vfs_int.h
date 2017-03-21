@@ -74,27 +74,6 @@ struct vfs_file_fns {
 };
 typedef const struct vfs_file_fns vfs_file_fns;
 
-// generic dir item descriptor
-struct vfs_item {
-  int fs_type;
-  const struct vfs_item_fns *fns;
-};
-typedef const struct vfs_item vfs_item;
-
-// directory item functions
-struct vfs_item_fns {
-  void (*close)( const struct vfs_item *di );
-  uint32_t (*size)( const struct vfs_item *di );
-  sint32_t (*time)( const struct vfs_item *di, struct vfs_time *tm );
-  const char *(*name)( const struct vfs_item *di );
-  sint32_t (*is_dir)( const struct vfs_item *di );
-  sint32_t (*is_rdonly)( const struct vfs_item *di );
-  sint32_t (*is_hidden)( const struct vfs_item *di );
-  sint32_t (*is_sys)( const struct vfs_item *di );
-  sint32_t (*is_arch)( const struct vfs_item *di );
-};
-typedef const struct vfs_item_fns vfs_item_fns;
-
 // generic dir descriptor
 struct vfs_dir {
   int fs_type;
@@ -105,7 +84,7 @@ typedef const struct vfs_dir vfs_dir;
 // dir descriptor functions
 struct vfs_dir_fns {
   sint32_t (*close)( const struct vfs_dir *dd );
-  vfs_item *(*readdir)( const struct vfs_dir *dd );
+  sint32_t (*readdir)( const struct vfs_dir *dd, struct vfs_stat *buf );
 };
 typedef const struct vfs_dir_fns vfs_dir_fns;
 
