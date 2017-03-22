@@ -52,6 +52,7 @@ pages:
         - 'file': 'en/modules/file.md'
         - 'gdbstub': 'en/modules/gdbstub.md'
         - 'gpio': 'en/modules/gpio.md'
+	- 'hdc1080': 'en/modules/hdc1080.md'
         - 'hmc5883l': 'en/modules/hmc5883l.md'
         - 'http': 'en/modules/http.md'
         - 'hx711' : 'en/modules/hx711.md'
@@ -72,7 +73,6 @@ pages:
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
         - 'sigma delta': 'en/modules/sigma-delta.md'
-        - 'sjson': 'en/modules/sjson.md'
         - 'sntp': 'en/modules/sntp.md'
         - 'somfy': 'en/modules/somfy.md'
         - 'spi': 'en/modules/spi.md'
@@ -90,6 +90,5 @@ pages:
         - 'wps': 'en/modules/wps.md'
         - 'ws2801': 'en/modules/ws2801.md'
         - 'ws2812': 'en/modules/ws2812.md'
-        - 'xpt2046': 'en/modules/xpt2046.md'
 #- Deutsch:
 #    - Home: 'de/index.md'
