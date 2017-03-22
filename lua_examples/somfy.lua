@@ -1,4 +1,4 @@
--- Somfy module example (beside somfy module requires also CJSON module)
+-- Somfy module example (beside somfy module requires also SJSON module)
 -- The rolling code number is stored in the file somfy.cfg. A cached write of the somfy.cfg file is implemented in order to reduce the number of write to the EEPROM memory. Together with the logic of the file module it should allow long lasting operation.
 
 config_file = "somfy."
@@ -43,7 +43,7 @@ function readconfig()
     end
     if not ln then ln = "{}" end
     print("Configuration: "..ln)
-    config = cjson.decode(ln)
+    config = sjson.decode(ln)
     config_saved = deepcopy(config)
 end
 
@@ -52,7 +52,7 @@ function writeconfighard()
     file.remove(config_file.."bak")
     file.rename(config_file.."cfg", config_file.."bak")
     file.open(config_file.."cfg", "w+")
-    local ok, cfg = pcall(cjson.encode, config)
+    local ok, cfg = pcall(sjson.encode, config)
     if ok then
         file.writeline(cfg)
     else
@@ -68,8 +68,8 @@ function writeconfig()
     local savenow = false
     local savelater = false
 
---print("Config: "..cjson.encode(config))
---print("Config saved: "..cjson.encode(config))
+--print("Config: "..sjson.encode(config))
+--print("Config saved: "..sjson.encode(config))
  
     local count = 0
     for _ in pairs(config_saved) do count = count + 1 end
@@ -134,7 +134,7 @@ end
 --======================================================================================================--
 if not config then readconfig() end
 if #config == 0 then -- somfy.cfg does not exist
-    config = cjson.decode([[{"window1":{"rc":1,"address":123},"window2":{"rc":1,"address":124}}]])
+    config = sjson.decode([[{"window1":{"rc":1,"address":123},"window2":{"rc":1,"address":124}}]])
     config_saved = deepcopy(config)
 end
 down('window1', 

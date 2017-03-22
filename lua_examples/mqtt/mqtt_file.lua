@@ -18,7 +18,7 @@ end
 -- payload(json): {"cmd":xxx,"content":xxx}
 function topic1func(m,pl)
 	print("get1: "..pl)
-	local pack = cjson.decode(pl)
+	local pack = sjson.decode(pl)
 	if pack.content then
 		if pack.cmd == "open" then file.open(pack.content,"w+")
 		elseif pack.cmd == "write" then file.write(pack.content)
