@@ -37,7 +37,7 @@ static int ICACHE_FLASH_ATTR hdc1080_init(lua_State* L) {
     platform_i2c_send_start(hdc1080_i2c_id);
     platform_i2c_send_address(hdc1080_i2c_id, hdc1080_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
     platform_i2c_send_byte(hdc1080_i2c_id, HDC1080_CONFIG_REGISTER); 
-    platform_i2c_send_byte(hdc1080_i2c_id, 0x50); //Bit[10] to 1 for 11 bit resolution , Set Bit[9:8] to 01 for 11 bit resolution.
+    platform_i2c_send_byte(hdc1080_i2c_id, 0x05); //Bit[10] to 1 for 11 bit resolution , Set Bit[9:8] to 01 for 11 bit resolution.
     platform_i2c_send_byte(hdc1080_i2c_id, 0x00);
     platform_i2c_send_stop(hdc1080_i2c_id);
 
@@ -48,7 +48,6 @@ static int ICACHE_FLASH_ATTR hdc1080_readTemperature(lua_State* L) {
 
     uint8_t data[2];
     double temp;
-    int temp_dec;
     int i;
 
     platform_i2c_send_start(hdc1080_i2c_id);
@@ -67,7 +66,7 @@ static int ICACHE_FLASH_ATTR hdc1080_readTemperature(lua_State* L) {
 
     platform_i2c_send_stop(hdc1080_i2c_id);
 
-    temp = ((data[0]*256+data[1])/pow(2,16))*165.0f-40.0f;
+    temp = ((data[0]*256+data[1])/pow(2,16))*165-40;
 
     lua_pushinteger(L, (int)temp);
 
@@ -78,7 +77,6 @@ static int ICACHE_FLASH_ATTR hdc1080_readHumidity(lua_State* L) {
 
     uint8_t data[2];
     double humidity;
-    int humidity_dec;
     int i;
 
     platform_i2c_send_start(hdc1080_i2c_id);
@@ -97,7 +95,7 @@ static int ICACHE_FLASH_ATTR hdc1080_readHumidity(lua_State* L) {
 
     platform_i2c_send_stop(hdc1080_i2c_id);
 
-    humidity = ((data[0]*256+data[1])/pow(2,16))*100.0f;
+    humidity = ((data[0]*256+data[1])/pow(2,16))*100;
 
 
     lua_pushinteger(L, (int)humidity);
