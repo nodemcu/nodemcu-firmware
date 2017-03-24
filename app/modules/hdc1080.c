@@ -47,7 +47,13 @@ static int ICACHE_FLASH_ATTR hdc1080_init(lua_State* L) {
 static int ICACHE_FLASH_ATTR hdc1080_readTemperature(lua_State* L) {
 
     uint8_t data[2];
-    double temp;
+    
+    #ifdef LUA_NUMBER_INTEGRAL
+    	int temp;
+    #else
+    	float temp;
+    #endif
+    
     int i;
 
     platform_i2c_send_start(hdc1080_i2c_id);
@@ -61,14 +67,21 @@ static int ICACHE_FLASH_ATTR hdc1080_readTemperature(lua_State* L) {
     platform_i2c_send_address(hdc1080_i2c_id, hdc1080_i2c_addr, PLATFORM_I2C_DIRECTION_RECEIVER);
 
     for (i=0; i<2; i++) {
-	data[i] = platform_i2c_recv_byte(hdc1080_i2c_id, 1);
+		data[i] = platform_i2c_recv_byte(hdc1080_i2c_id, 1);
     }
 
     platform_i2c_send_stop(hdc1080_i2c_id);
 
-    temp = ((data[0]*256+data[1])/pow(2,16))*165-40;
+	#ifdef LUA_NUMBER_INTEGRAL
+    	temp = ((((data[0]<<8)|data[1])*165)>>16)-40;
+    	lua_pushinteger(L, (int)temp);
+    #else
+    	temp = ((float)((data[0]<<8)|data[1])/(float)pow(2,16))*165.0f-40.0f;
+    	lua_pushnumber(L, temp);
+    #endif
+    
 
-    lua_pushinteger(L, (int)temp);
+   
 
     return 1;
 }
@@ -76,7 +89,13 @@ static int ICACHE_FLASH_ATTR hdc1080_readTemperature(lua_State* L) {
 static int ICACHE_FLASH_ATTR hdc1080_readHumidity(lua_State* L) {
 
     uint8_t data[2];
-    double humidity;
+    
+    #ifdef LUA_NUMBER_INTEGRAL
+    	int humidity;
+    #else
+    	float humidity;
+    #endif
+    
     int i;
 
     platform_i2c_send_start(hdc1080_i2c_id);
@@ -90,15 +109,18 @@ static int ICACHE_FLASH_ATTR hdc1080_readHumidity(lua_State* L) {
     platform_i2c_send_address(hdc1080_i2c_id, hdc1080_i2c_addr, PLATFORM_I2C_DIRECTION_RECEIVER);
 
     for (i=0; i<2; i++) {
-	data[i] = platform_i2c_recv_byte(hdc1080_i2c_id, 1);
+		data[i] = platform_i2c_recv_byte(hdc1080_i2c_id, 1);
     }
 
     platform_i2c_send_stop(hdc1080_i2c_id);
 
-    humidity = ((data[0]*256+data[1])/pow(2,16))*100;
-
-
-    lua_pushinteger(L, (int)humidity);
+	#ifdef LUA_NUMBER_INTEGRAL
+    	humidity = ((((data[0]<<8)|data[1]))*100)>>16;
+    	lua_pushinteger(L, (int)humidity);
+    #else
+    	humidity = ((float)((data[0]<<8)|data[1])/(float)pow(2,16))*100.0f;
+    	lua_pushnumber(L, humidity);
+    #endif
 
 
     return 1;
