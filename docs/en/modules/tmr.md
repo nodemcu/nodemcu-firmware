@@ -62,9 +62,11 @@ Functions supported in timer object:
 - [`t:alarm()`](#tmralarm)
 - [`t:interval()`](#tmrinterval)
 - [`t:register()`](#tmrregister)
+- [`t:resume()`](#tmrresume)
 - [`t:start()`](#tmrstart)
 - [`t:state()`](#tmrstate)
 - [`t:stop()`](#tmrstop)
+- [`t:suspend()`](#tmrsuspend)
 - [`t:unregister()`](#tmrunregister)
 
 #### Parameters
