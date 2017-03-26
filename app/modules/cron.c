@@ -53,7 +53,7 @@ static uint64_t lcron_parsepart(lua_State *L, char *str, char **end, uint8_t min
       if (val < min || val > max) {
         return luaL_error(L, "invalid spec (val %d out of range %d..%d)", val, min, max);
       }
-      res |= (1 << (val - min));
+      res |= (uint64_t)1 << (val - min);
       if (**end != ',') break;
       str = *end + 1;
     }
