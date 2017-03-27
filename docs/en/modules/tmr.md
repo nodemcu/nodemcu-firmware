@@ -7,6 +7,10 @@ The tmr module allows access to simple timers. It is aimed at setting up regular
 
 What the tmr module is *not* however, is a time keeping module. While all timeouts are expressed in milliseconds, the accuracy is limited and compounding errors would lead to rather inaccurate time keeping. Consider using the [rtctime](rtctime.md) module for "wall clock" time.
 
+!!! note
+
+    The resolution of the timers is determined by FreeRTOS' tick rate. The default rate of 100&nbsp;kHz (resulting in 10&nbsp;ms resolution) can be changed with `make menuconfig` at item `Component config ---> FreeRTOS ---> Tick rate (Hz)`.
+
 ## tmr.create()
 
 Creates a dynamic timer object.
