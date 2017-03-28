@@ -76,9 +76,9 @@ it detects a successful connection. It is recommended that you force disconnecti
 wifi (such as `wifi.sta.disconnect()`) before starting if you need setup to recur (such as detecting
 a new field is missing if you are doing OTA (over the air) updates).
 
-Any extra parameters (field/value combinations) passed to the esp will be saved in a file called `enduser.json` in json format.
+Any extra parameters (field/value combinations) passed to the esp will be saved in a file called `enduser_custom_parameters.json` in json format.
 
-*Note: wifi ssid and password are not stored in enduser.json or passed to validation.*
+*Note: wifi ssid and password are not stored in enduser_custom_parameters.json or passed to validation.*
 
 #### Syntax
 `enduser_setup.start([onConnected()], [onError(err_num, string)], [onDebug(string)], [onValidation(table)])`
@@ -89,7 +89,7 @@ Any extra parameters (field/value combinations) passed to the esp will be saved 
  - `onDebug()` callback is disabled by default (controlled by `#define ENDUSER_SETUP_DEBUG_ENABLE` in `enduser_setup.c`). It is intended to be used to find internal issues in the module. `string` contains a description of what is going on.
  - `onValidation()` callback if there are fields other than wifi ssid and password passed. expects either no return or a table
  consisting of a status (mandatory), content_type and body (both optional). This method is optional and 
- extra fields will still be stored in the enduser.json file regardless of whether they pass
+ extra fields will still be stored in the `enduser_custom_parameters.json` file regardless of whether they pass
  validation. 
 
 #### Returns
