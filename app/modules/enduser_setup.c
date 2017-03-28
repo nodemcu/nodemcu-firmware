@@ -754,10 +754,10 @@ static int enduser_find_wifi_pwd_loc(int param_count, char *fields_str[],
 
   if (param_count > 2)
   {
-    ENDUSER_SETUP_DEBUG("enduser: opening enduser.json for write");
+    ENDUSER_SETUP_DEBUG("enduser: opening enduser_custom_parameters.json for write");
 
     // setup the file output
-    p_file = vfs_open("enduser.json", "w");
+    p_file = vfs_open("enduser_custom_parameters.json", "w");
     if (p_file == 0)
     {
       ENDUSER_SETUP_DEBUG("Can't write to file!");
