@@ -84,10 +84,8 @@ static int _read(uint32_t id, void *buf, uint8_t len, uint8_t off)
     return 0;
 }
 
-static int am2320_init(lua_State* L)
+static int am2320_setup(lua_State* L)
 {
-    uint32_t sda;
-    uint32_t scl;
     int ret;
     struct {
     	uint8_t  cmd;
@@ -96,6 +94,24 @@ static int am2320_init(lua_State* L)
 	uint8_t	 version;
 	uint32_t id;
     } nfo;
+
+    os_delay_us(1500); // give some time to settle things down
+    ret = _read(am2320_i2c_id, &nfo, sizeof(nfo)-2, 0x08);
+    if(ret)
+        return luaL_error(L, "transmission error");
+
+    lua_pushinteger(L, ntohs(nfo.model));
+    lua_pushinteger(L, nfo.version);
+    lua_pushinteger(L, ntohl(nfo.id));
+    return 3;
+}
+
+static int am2320_init(lua_State* L)
+{
+    uint32_t sda;
+    uint32_t scl;
+
+    platform_print_deprecation_note("am2320.init() is replaced by am2320.setup()", "in the next version");
 
     if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
         return luaL_error(L, "wrong arg range");
@@ -110,15 +126,7 @@ static int am2320_init(lua_State* L)
 
     platform_i2c_setup(am2320_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
 
-    os_delay_us(1500); // give some time to settle things down
-    ret = _read(am2320_i2c_id, &nfo, sizeof(nfo)-2, 0x08);
-    if(ret)
-        return luaL_error(L, "transmission error");
-
-    lua_pushinteger(L, ntohs(nfo.model));
-    lua_pushinteger(L, nfo.version);
-    lua_pushinteger(L, ntohl(nfo.id));
-    return 3;
+    return am2320_setup(L);
 }
 
 static int am2320_read(lua_State* L)
@@ -145,8 +153,10 @@ static int am2320_read(lua_State* L)
 }
 
 static const LUA_REG_TYPE am2320_map[] = {
-    { LSTRKEY( "read" ), LFUNCVAL( am2320_read )},
-    { LSTRKEY( "init" ), LFUNCVAL( am2320_init )},
+    { LSTRKEY( "read" ),  LFUNCVAL( am2320_read )},
+    { LSTRKEY( "setup" ), LFUNCVAL( am2320_setup )},
+    // init() is deprecated
+    { LSTRKEY( "init" ),  LFUNCVAL( am2320_init )},
     { LNILKEY, LNILVAL}
 };
 
