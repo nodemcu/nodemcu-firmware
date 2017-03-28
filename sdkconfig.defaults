@@ -1,0 +1,2 @@
+# Empirical value to prevent a firmware crash due to stack overflow.
+CONFIG_MAIN_TASK_STACK_SIZE=6144

@@ -2,7 +2,8 @@ sdk/
 cache/
 user_config.h
 server-ca.crt
-sdkconfig*
+sdkconfig
+sdkconfig.old*
 build/
 components/*/.output/
 
