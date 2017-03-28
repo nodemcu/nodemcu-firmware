@@ -121,6 +121,7 @@ typedef struct
   int lua_connected_cb_ref;
   int lua_err_cb_ref;
   int lua_dbg_cb_ref;
+  int lua_validation_cb_ref; // used if they want to validate extra data
   scan_listener_t *scan_listeners;
   uint8_t softAPchannel;
   uint8_t success;
@@ -625,6 +626,228 @@ static void do_station_cfg (task_param_t param, uint8_t prio)
   luaM_free(lua_getstate(), cnf);
 }
 
+enum HTTP_FIELD_PARSER {
+  STATE_FIELD = 1,
+  STATE_DATA = 2,
+  STATE_FIN = 3
+};
+
+// we could detect how many params here (by counting ?), but not sure that is wise
+const int MAX_HTTP_FIELDS = 10;
+
+static int decode_http_queryparam(char *data, unsigned short data_len, char *fields[], char *values[]) {
+  unsigned int counter = 0;
+
+  int lastPos = -1;
+  int state = STATE_FIELD;
+  int pos;
+
+  for(pos = 0; pos < MAX_HTTP_FIELDS; pos ++) {
+    fields[pos] = values[pos] = NULL;
+  }
+
+  for (pos = 0; pos < data_len; pos++) {
+    if (data[pos] == '?' && (pos + 1 < data_len)) {
+      fields[counter] = &data[pos + 1];
+      break;
+    }
+  }
+
+  data[data_len] = 0; // this must be true by definition
+
+  for (pos = 0; pos < data_len && counter < MAX_HTTP_FIELDS && state != STATE_FIN; pos++) {
+    //std::cout << "val" << pos << ":" << data[pos] << std::endl;
+    if (data[pos] == '&' || data[pos] == ';') { // w3c states & or ; separate params
+      if (lastPos != -1) {
+        data[pos] = 0; // terminate the string
+        counter++;
+
+        if (counter < MAX_HTTP_FIELDS) {
+          fields[counter] = NULL;
+          values[counter] = NULL;
+        }
+        state = STATE_FIELD;
+      } else { // invalid state, started with &, skip it
+
+      }
+    } else if (state == STATE_FIELD) {
+      if (data[pos] == '=') {
+        state = STATE_DATA;
+        data[pos] = 0;
+      } else {
+        if (fields[counter] == NULL) {
+          fields[counter] = &data[pos];
+        }
+      }
+    } else if (state == STATE_DATA) {
+      // ensure we deal with "field=" (i.e. no value)
+      if (values[counter] == NULL) {
+        values[counter] = &data[pos];
+      }
+
+      if (data[pos] == ' ') { // at the end - this is invalid query param, space is %20
+        counter ++;
+        data[pos] = 0;
+        state = STATE_FIN;
+      }
+    }
+
+    lastPos = pos;
+  }
+
+  // we always fall out with one less than the actual number of fields
+  if (state == STATE_DATA) {
+    counter ++;
+  }
+
+  if (counter >= MAX_HTTP_FIELDS) {
+    counter = MAX_HTTP_FIELDS-1;
+  }
+
+  return counter;
+}
+
+typedef struct enduser_Validation_Result {
+  int status;
+  const char* body;
+  const char* content_type;
+} enduser_Validation_Result;
+
+static void enduser_extract_validation_result(lua_State *L, enduser_Validation_Result *val) {
+  int idx = lua_gettop( L );
+
+  lua_getfield( L, idx, "status" );
+  lua_getfield( L, idx, "content_type");
+  lua_getfield( L, idx, "body" );
+
+  val->status = luaL_optint( L, ++idx, 200 );
+  val->content_type =  luaL_optlstring(L, ++idx, NULL, 0);
+  val->body =  luaL_optlstring(L, ++idx, NULL, 0);
+
+  if (val->content_type) {
+    val->content_type = c_strdup(val->content_type);
+  }
+
+  if (val->body) {
+    val->body = c_strdup(val->body);
+  }
+
+  lua_pop( L, 3 );
+}
+
+static void enduser_cleanup_validation_result(enduser_Validation_Result* val) {
+  if (val->body != NULL)
+  {
+    os_free((void *)val->body);
+  }
+  if (val->content_type != NULL)
+  {
+    os_free((void *)val->content_type);
+  }
+}
+
+static int enduser_find_wifi_pwd_loc(int param_count, char *fields_str[],
+               char *values_str[], enduser_Validation_Result *validation,
+               int *wifi_ssid_loc, int *wifi_pwd_loc) {
+  int p_file = 0;
+  lua_State *L = NULL;
+
+  if (param_count > 2)
+  {
+    ENDUSER_SETUP_DEBUG("enduser: opening enduser.json for write");
+
+    // setup the file output
+    p_file = vfs_open("enduser.json", "w");
+    if (p_file == 0)
+    {
+      ENDUSER_SETUP_DEBUG("Can't write to file!");
+      return 1;
+    }
+
+    vfs_write(p_file, "{", 1);
+
+    if (state != NULL && state->lua_validation_cb_ref != LUA_NOREF)
+    {
+      L = lua_getstate();
+      lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_validation_cb_ref);
+      lua_createtable( L, 0, param_count - 2 );
+    }
+  }
+
+  int file_field_counter = 0;
+  int max_len = 0;
+  for (int p_count = 0; p_count < param_count; p_count++)
+  {
+    int len = c_strlen(fields_str[p_count]);
+    if (len > max_len)
+    {
+      max_len = len;
+    }
+    len = c_strlen(values_str[p_count]);
+    if (len > max_len)
+    {
+      max_len = len;
+    }
+  }
+
+  char file_buf[max_len+1];
+
+  // make sure  you don't return in here as Lua is set up ready for a call
+  for (int p_count = 0; p_count < param_count; p_count++) {
+    ENDUSER_SETUP_DEBUG(fields_str[p_count]);
+    ENDUSER_SETUP_DEBUG(values_str[p_count]);
+
+    if (c_strcmp(fields_str[p_count], "wifi_ssid") == 0) {
+      *wifi_ssid_loc = p_count;
+    } else if (c_strcmp(fields_str[p_count], "wifi_password") == 0) {
+      *wifi_pwd_loc = p_count;
+    } else if (p_file != 0) {
+      if (file_field_counter > 0) {
+        vfs_write(p_file, ",", 1);
+      }
+
+      file_field_counter++;
+      vfs_write(p_file, "\"", 1);
+
+      enduser_setup_http_urldecode(file_buf, fields_str[p_count], c_strlen(fields_str[p_count]), max_len);
+      if (L != NULL) {
+        lua_pushlstring(L, file_buf, c_strlen(file_buf));
+      }
+      vfs_write(p_file, file_buf, c_strlen(file_buf));
+      vfs_write(p_file, "\":\"", 3);
+
+      enduser_setup_http_urldecode(file_buf, values_str[p_count], c_strlen(values_str[p_count]), max_len);
+      if (L != NULL) {
+        lua_pushlstring(L, file_buf, c_strlen(file_buf));
+        lua_settable(L, -3); // can't use setfield because of the order
+      }
+      vfs_write(p_file, file_buf, c_strlen(file_buf));
+      vfs_write(p_file, "\"", 1);
+    }
+  }
+
+  if (p_file != 0) {
+    vfs_write(p_file, "}", 1);
+    vfs_close(p_file);
+  }
+
+  if (L != NULL) {
+    ENDUSER_SETUP_DEBUG("enduser: calling lua for validation");
+
+    lua_call(L, 1, 1);
+
+    // did we get a table back? should have a status
+    ENDUSER_SETUP_DEBUG("enduser: checking if lua table was returned");
+
+    if (lua_type( L, lua_gettop( L ) ) == LUA_TTABLE) {
+      enduser_extract_validation_result(L, validation);
+    }
+
+    lua_pop( L, 1 );
+  }
+
+  return 0;
+}
 
 /**
  * Handle HTTP Credentials
@@ -633,47 +856,62 @@ static void do_station_cfg (task_param_t param, uint8_t prio)
  *           return 1 iff credentials aren't found
  *           return 2 iff an error occured
  */
-static int enduser_setup_http_handle_credentials(char *data, unsigned short data_len)
+static int enduser_setup_http_handle_credentials(char *data, unsigned short data_len, enduser_Validation_Result *validation)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_http_handle_credentials");
 
+  char *fields_str[MAX_HTTP_FIELDS];
+  char *values_str[MAX_HTTP_FIELDS];
+
   state->success = 0;
   state->lastStationStatus = 0;
-  
-  char *name_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_ssid="));
-  char *pwd_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_password="));
-  if (name_str == NULL || pwd_str == NULL)
-  {
+
+  // ideally we want to strip all of the params out of here, and save off the wifi ssid & password
+  // all other params should get written out to the defined file
+  int param_count = decode_http_queryparam(data, data_len, fields_str, values_str);
+
+  if (param_count == 0) {
+    ENDUSER_SETUP_DEBUG("No parameters found at all!");
+    return 1;
+  }
+
+  ENDUSER_SETUP_DEBUG("enduser: starting checking for parameters in query string");
+
+  // set the defaults
+  validation->status = 0;
+  validation->body = NULL;
+  validation->content_type = NULL;
+
+  int wifi_ssid_loc = -1;
+  int wifi_pwd_loc = -1;
+
+  if (enduser_find_wifi_pwd_loc(param_count, fields_str, values_str, validation, &wifi_ssid_loc, &wifi_pwd_loc) > 0) {
+    return 1;
+  }
+
+  if (validation->status != 0 && validation->status != 200) {
+    return 2;
+  }
+
+  if (wifi_pwd_loc == -1 || wifi_ssid_loc == -1) {
     ENDUSER_SETUP_DEBUG("Password or SSID string not found");
     return 1;
   }
-
-  int name_field_len = LITLEN("wifi_ssid=");
-  int pwd_field_len = LITLEN("wifi_password=");
-  char *name_str_start = name_str + name_field_len;
-  char *pwd_str_start = pwd_str + pwd_field_len;
-
-  int name_str_len = enduser_setup_srch_str(name_str_start, "& ");
-  int pwd_str_len = enduser_setup_srch_str(pwd_str_start, "& ");
-  if (name_str_len == -1 || pwd_str_len == -1)
-  {
-    ENDUSER_SETUP_DEBUG("Password or SSID HTTP paramter divider not found");
-    return 1;
-  }
-
 
   struct station_config *cnf = luaM_malloc(lua_getstate(), sizeof(struct station_config));
   c_memset(cnf, 0, sizeof(struct station_config));
 
   int err;
-  err  = enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len, sizeof(cnf->ssid));
-  err |= enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len, sizeof(cnf->password));
+  err  = enduser_setup_http_urldecode(cnf->ssid, values_str[wifi_ssid_loc],
+                                      c_strlen(values_str[wifi_ssid_loc]), sizeof(cnf->ssid));
+  err |= enduser_setup_http_urldecode(cnf->password, values_str[wifi_pwd_loc],
+                                      c_strlen(values_str[wifi_pwd_loc]), sizeof(cnf->password));
+
   if (err != 0 || c_strlen(cnf->ssid) == 0)
   {
     ENDUSER_SETUP_DEBUG("Unable to decode HTTP parameter to valid password or SSID");
     return 1;
   }
-
 
   ENDUSER_SETUP_DEBUG("");
   ENDUSER_SETUP_DEBUG("WiFi Credentials Stored");
@@ -706,6 +944,8 @@ static int enduser_setup_http_serve_header(struct tcp_pcb *http_client, const ch
     deferred_close (http_client);
     ENDUSER_SETUP_ERROR("http_serve_header failed on tcp_write", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
   }
+
+  ENDUSER_SETUP_DEBUG("enduser_setup_http_serve_header");
 
   return 0;
 }
@@ -909,6 +1149,38 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
   char buf[c_strlen(fmt) + NUMLEN(len) + len - 4];
   len = c_sprintf (buf, fmt, len, json_payload);
   enduser_setup_http_serve_header (http_client, buf, len);
+}
+
+static void enduser_setup_serve_validation(struct tcp_pcb *http_client, enduser_Validation_Result* validation) {
+  ENDUSER_SETUP_DEBUG("enduser_setup_serve_validation");
+  const char fmt[] =
+    "HTTP/1.1 %d OK\r\n"
+      "Cache-Control: no-cache\r\n"
+      "Connection: close\r\n"
+      "Access-Control-Allow-Origin: *\r\n"
+      "Content-Length: %d\r\n%s"
+      "\r\n"
+      "%s";
+
+  const char content[] =
+    "Content-Type: %s\r\n";
+
+  // out of this we get c_buf = "Content-Type: blah/blah\r\n" or an empty string
+  int c_len = validation->content_type == NULL ? 0 : c_strlen(validation->content_type);
+  char c_buf[c_len > 0 ? (c_strlen(content) + c_len - 1) : 1];
+  if (c_len > 0) {
+    c_len = c_sprintf(c_buf, content, validation->content_type);
+  } else {
+    c_buf[0] = 0;
+  }
+
+  int b_len = validation->body == NULL ? 0 : c_strlen(validation->body);
+
+  // NUMLEN is indicating the size of a number (e.g 345 = len 3)
+  char buf[c_strlen(fmt) + NUMLEN(len) + b_len - 6 + c_len + NUMLEN(validation->status) ]; // should be -8 but...
+
+  b_len =c_sprintf(buf, fmt, validation->status, b_len, c_buf, validation->body == NULL ? "" : validation->body);
+  enduser_setup_http_serve_header (http_client, buf, b_len);
 }
 
 
@@ -1216,7 +1488,8 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
 
     else if (c_strncmp(data + 4, "/update?", 8) == 0)
     {
-      switch (enduser_setup_http_handle_credentials(data, data_len))
+      enduser_Validation_Result validation;
+      switch (enduser_setup_http_handle_credentials(data, data_len, &validation))
       {
         case 0:
           enduser_setup_http_serve_header(http_client, http_header_302, LITLEN(http_header_302));
@@ -1224,14 +1497,19 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
         case 1:
           enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
           break;
+        case 2:
+          enduser_setup_serve_validation(http_client, &validation);
+          break;
         default:
           ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
           break;
       }
+      enduser_cleanup_validation_result(&validation);
     }
     else if (c_strncmp(data + 4, "/setwifi?", 9) == 0)
     {
-      switch (enduser_setup_http_handle_credentials(data, data_len))
+      enduser_Validation_Result validation;
+      switch (enduser_setup_http_handle_credentials(data, data_len, &validation))
       {
         case 0:
           enduser_setup_serve_status_as_json(http_client);
@@ -1239,10 +1517,14 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
         case 1:
           enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
           break;
+        case 2:
+          enduser_setup_serve_validation(http_client, &validation);
+          break;
         default:
           ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
           break;
       }
+      enduser_cleanup_validation_result(&validation);
     }  
     else if (c_strncmp(data + 4, "/generate_204", 13) == 0)
     {
@@ -1645,7 +1927,8 @@ static int enduser_setup_init(lua_State *L)
 
       state->lua_connected_cb_ref = LUA_NOREF;
       state->lua_err_cb_ref = LUA_NOREF;
-      state->lua_dbg_cb_ref = LUA_NOREF;    
+      state->lua_dbg_cb_ref = LUA_NOREF;
+      state->lua_validation_cb_ref = LUA_NOREF;
 
       state->softAPchannel = 1;
       state->success = 0;
@@ -1672,6 +1955,13 @@ static int enduser_setup_init(lua_State *L)
     lua_pushvalue (L, 3);
     state->lua_dbg_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     ENDUSER_SETUP_DEBUG("enduser_setup_init: Debug callback has been set");    
+  }
+
+  if (!lua_isnoneornil(L, 4))
+  {
+    lua_pushvalue (L, 4);
+    state->lua_validation_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    ENDUSER_SETUP_DEBUG("enduser_setup_init: Validation callback has been set");
   }
 
   if (ret == ENDUSER_SETUP_ERR_ALREADY_INITIALIZED) 

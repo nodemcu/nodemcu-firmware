@@ -71,18 +71,32 @@ Starts the captive portal.
 
 *Note: Calling start() while EUS is already running is an error, and will result in stop() to be invoked to shut down EUS.*
 
+Calling EUS `start()` when there is already a valid network connection will cause EUS to call `stop()` when
+it detects a successful connection. It is recommended that you force disconnection from the
+wifi (such as `wifi.sta.disconnect()`) before starting if you need setup to recur (such as detecting
+a new field is missing if you are doing OTA (over the air) updates).
+
+Any extra parameters (field/value combinations) passed to the esp will be saved in a file called `enduser.json` in json format.
+
+*Note: wifi ssid and password are not stored in enduser.json or passed to validation.*
+
 #### Syntax
-`enduser_setup.start([onConnected()], [onError(err_num, string)], [onDebug(string)])`
+`enduser_setup.start([onConnected()], [onError(err_num, string)], [onDebug(string)], [onValidation(table)])`
 
 #### Parameters
  - `onConnected()` callback will be fired when an IP-address has been obtained, just before the enduser_setup module will terminate itself
  - `onError()` callback will be fired if an error is encountered. `err_num` is a number describing the error, and `string` contains a description of the error.
  - `onDebug()` callback is disabled by default (controlled by `#define ENDUSER_SETUP_DEBUG_ENABLE` in `enduser_setup.c`). It is intended to be used to find internal issues in the module. `string` contains a description of what is going on.
+ - `onValidation()` callback if there are fields other than wifi ssid and password passed. expects either no return or a table
+ consisting of a status (mandatory), content_type and body (both optional). This method is optional and 
+ extra fields will still be stored in the enduser.json file regardless of whether they pass
+ validation. 
 
 #### Returns
 `nil`
 
 #### Example
+(no extra fields expected)
 ```lua
 enduser_setup.start(
   function()
@@ -93,6 +107,51 @@ enduser_setup.start(
   end,
   print -- Lua print function can serve as the debug callback
 );
+```
+#### Example
+(using validation)
+```lua
+enduser_setup.start(
+  function()
+    print("Connected to wifi as:" .. wifi.sta.getip())
+  end,
+  function(err, str)
+    print("enduser_setup: Err #" .. err .. ": " .. str)
+  end,
+  print,
+  function(t)
+    print "validation called - fields passed are"
+    for k, v in pairs( t ) do
+      print(k, v)
+    end
+    if t["location"] == nil or t["location"] == '' then
+      val = {}
+      val["status"] = 400
+      return val
+    end
+  end
+);
+```
+
+To try this example, you can do the following things:
+ - download the default enduser_setup.html file from [NodeMCU Github](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/modules/eus/enduser_setup.html)
+ - modify it so it accepts a 400 response and adds in the location field. (see below)
+ - upload the file to your esp (I use the Upload feature from ESPlorer)
+ - run the above example (forcing wifi disconnect if your esp is already wifi connected)
+ 
+The HTML changes for the enduser_setup.html file are:
+```html
+				<input id=wifi_password type=text autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
+				<!-- add the following line in, don't waste space with this comment -->
+				<input id=location type=text autocorrect=off autocapitalize=none autocomplete=off placeholder=Location />
+```
+
+```javascript
+    if (s == 400) { // note 400 check must come first
+       $('#st').innerText = 'Please specify location';
+      cur('#f1');
+    } else if (s != 200) {
+        $('#st').innerText = 'Awaiting Status (' + s + ')';
 ```
 
 ## enduser_setup.stop()

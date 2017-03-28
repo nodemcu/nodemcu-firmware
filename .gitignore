@@ -7,3 +7,8 @@ server-ca.crt
 .cproject
 .project
 .settings/
+
+#ignore CLion project files
+.idea
+*.iml
+CMakeLists.txt
