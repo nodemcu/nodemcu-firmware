@@ -550,7 +550,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** For example: If set to 4K a call to string.gsub will need more than 
 ** 5k C stack space.
 */
-#define LUAL_BUFFERSIZE		BUFSIZ
+#define LUAL_BUFFERSIZE		1024
 
 /* }================================================================== */
 
