@@ -104,57 +104,9 @@ inline sint32_t vfs_closedir( vfs_dir *dd ) { return dd->fns->close( dd ); }
 
 // vfs_readdir - read next directory item
 //   dd: dir descriptor
-//   Returns: item object, or NULL in case of error
-inline vfs_item  *vfs_readdir( vfs_dir *dd ) { return dd->fns->readdir( dd ); }
-
-// ---------------------------------------------------------------------------
-// dir item functions
-//
-
-// vfs_closeitem - close directory item and free memory
-//   di: item descriptor
-//   Returns: nothing
-inline void vfs_closeitem( vfs_item *di ) { return di->fns->close( di ); }
-
-// vfs_item_size - get item's size
-//   di: item descriptor
-//   Returns: Item size
-inline uint32_t vfs_item_size( vfs_item *di ) { return di->fns->size( di ); }
-
-// vfs_item_time - get item's modification time
-//   di: item descriptor
-//   Returns: Item modification time
-inline sint32_t vfs_item_time( vfs_item *di, struct vfs_time *tm ) { return di->fns->time ? di->fns->time( di, tm ) : VFS_RES_ERR; }
-
-// vfs_item_name - get item's name
-//   di: item descriptor
-//   Returns: Item name
-inline const char *vfs_item_name( vfs_item *di ) { return di->fns->name( di ); }
-
-// vfs_item_is_dir - check for directory
-//   di: item descriptor
-//   Returns: >0 if item is a directory, 0 if not
-inline sint32_t vfs_item_is_dir( vfs_item *di ) { return di->fns->is_dir ? di->fns->is_dir( di ) : 0; }
-
-// vfs_item_is_rdonly - check for read-only
-//   di: item descriptor
-//   Returns: >0 if item is read only, 0 if not
-inline sint32_t vfs_item_is_rdonly( vfs_item *di ) { return di->fns->is_rdonly ? di->fns->is_rdonly( di ) : 0; }
-
-// vfs_item_is_hidden - check for hidden attribute
-//   di: item descriptor
-//   Returns: >0 if item is hidden, 0 if not
-inline sint32_t vfs_item_is_hidden( vfs_item *di ) { return di->fns->is_hidden ? di->fns->is_hidden( di ) : 0; }
-
-// vfs_item_is_sys - check for sys attribute
-//   di: item descriptor
-//   Returns: >0 if item is sys, 0 if not
-inline sint32_t vfs_item_is_sys( vfs_item *di ) { return di->fns->is_sys ? di->fns->is_sys( di ) : 0; }
-
-// vfs_item_is_arch - check for archive attribute
-//   di: item descriptor
-//   Returns: >0 if item is archive, 0 if not
-inline sint32_t vfs_item_is_arch( vfs_item *di ) { return di->fns->is_arch ? di->fns->is_arch( di ) : 0; }
+//   buf:  pre-allocated stat structure to be filled in
+//   Returns: VFS_RES_OK if next item found, otherwise VFS_RES_ERR
+inline sint32_t vfs_readdir( vfs_dir *dd, struct vfs_stat *buf ) { return dd->fns->readdir( dd, buf ); }
 
 // ---------------------------------------------------------------------------
 // volume functions
@@ -188,8 +140,9 @@ vfs_dir  *vfs_opendir( const char *name );
 
 // vfs_stat - stat file or directory
 //   name: file or directory name
-//   Returns: Item object, or NULL in case of error
-vfs_item *vfs_stat( const char *name );
+//   buf:  pre-allocated structure to be filled in
+//   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
+sint32_t  vfs_stat( const char *name, struct vfs_stat *buf );
 
 // vfs_remove - remove file or directory
 //   name: file or directory name
