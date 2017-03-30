@@ -399,7 +399,7 @@ none
 Registers callbacks for WiFi station status events.
 
 !!! note
-    Please update your program to use the [`wifi.eventmon`](#wifieventmon-module) API, as the `wifi.sta.eventmon___()` API is to be depreciated. 
+    Please update your program to use the [`wifi.eventmon`](#wifieventmon-module) API, as the `wifi.sta.eventmon___()` API is deprecated. 
 
 ####  Syntax
 - `wifi.sta.eventMonReg(wifi_status[, function([previous_state])])`
