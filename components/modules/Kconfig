@@ -60,6 +60,12 @@ config LUA_MODULE_BTHCI
   help
       Includes the simple BlueTooth HCI module.
 
+config LUA_MODULE_DHT
+  bool "DHT11/21/22/AM2301/AM2302 module"
+  default "n"
+  help
+      Includes the dht module.
+
 config LUA_MODULE_ENCODER
   bool "Encoder module"
   default "n"

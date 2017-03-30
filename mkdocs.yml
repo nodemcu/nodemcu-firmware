@@ -33,6 +33,7 @@ pages:
     - Modules:
         - 'bit':         'en/modules/bit.md'
         - 'bthci':       'en/modules/bthci.md'
+        - 'dht':         'en/modules/dht.md'
         - 'file':        'en/modules/file.md'
         - 'i2c':         'en/modules/i2c.md'
         - 'node':        'en/modules/node.md'

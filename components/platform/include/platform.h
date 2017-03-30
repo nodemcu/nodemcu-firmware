@@ -164,6 +164,14 @@ uint8_t platform_onewire_crc8( const uint8_t *addr, uint8_t len );
 bool platform_onewire_check_crc16( const uint8_t* input, uint16_t len, const uint8_t* inverted_crc, uint16_t crc );
 uint16_t platform_onewire_crc16( const uint8_t* input, uint16_t len, uint16_t crc );
 
+// *****************************************************************************
+// DHT platform interface
+#define PLATFORM_DHT11_WAKEUP_MS 20
+#define PLATFORM_DHT2X_WAKEUP_MS 1
+
+int platform_dht_read( uint8_t gpio_num, uint8_t wakeup_ms, uint8_t *data );
+
+
 // Internal flash erase/write functions
 
 uint32_t platform_flash_get_sector_of_address( uint32_t addr );
