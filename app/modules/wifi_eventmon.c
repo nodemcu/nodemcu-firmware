@@ -63,6 +63,8 @@ static void wifi_status_cb(int arg)
 // wifi.sta.eventMonReg()
 int wifi_station_event_mon_reg(lua_State* L)
 {
+  platform_print_deprecation_note("wifi.sta.eventmonreg() is replaced by wifi.eventmon.register()", "in the next version");
+
   uint8 id=(uint8)luaL_checknumber(L, 1);
   if ((id > 5)) // verify user specified a valid wifi status
   {
