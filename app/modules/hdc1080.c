@@ -66,7 +66,7 @@ static int hdc1080_read(lua_State* L) {
     
     #ifdef LUA_NUMBER_INTEGRAL
     	int temp;
-    	int humidity
+    	int humidity;
     #else
     	float temp;
     	float humidity;
