@@ -1,9 +1,11 @@
-require('ds3231')
-
-port = 80
 
 -- ESP-01 GPIO Mapping
 gpio0, gpio2 = 3, 4
+i2c.setup(gpio0, gpio2, scl, i2c.SLOW) -- call i2c.setup() only once
+
+require('ds3231')
+
+port = 80
 
 days = {
     [1] = "Sunday",
@@ -29,8 +31,6 @@ months = {
     [11] = "November",
     [12] = "December"
 }
-
-ds3231.init(gpio0, gpio2)
 
 srv=net.createServer(net.TCP)
 srv:listen(port,
