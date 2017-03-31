@@ -22,18 +22,7 @@ static const uint8_t hdc1080_i2c_addr = 0x40;
 
 static int hdc1080_setup(lua_State* L) {
 
-    uint32_t sda;
-    uint32_t scl;
-    uint8_t  devid;
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(hdc1080_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-    
-    // Configure Sensor
+	// Configure Sensor
     platform_i2c_send_start(hdc1080_i2c_id);
     platform_i2c_send_address(hdc1080_i2c_id, hdc1080_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
     platform_i2c_send_byte(hdc1080_i2c_id, HDC1080_CONFIG_REGISTER); 
@@ -41,11 +30,34 @@ static int hdc1080_setup(lua_State* L) {
     platform_i2c_send_byte(hdc1080_i2c_id, 0x00);
     platform_i2c_send_stop(hdc1080_i2c_id);
     
+    return 0;
+}
+
+static int hdc1080_init(lua_State* L) {
+
+	uint32_t sda;
+    uint32_t scl;
+    
+    platform_print_deprecation_note("hdc1080.init() is replaced by hdc1080.setup()", "in the next version");
+    
+    if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
+        return luaL_error(L, "wrong arg range");
+    }
+
+    sda = luaL_checkinteger(L, 1);
+    scl = luaL_checkinteger(L, 2);
+    
+    if (scl == 0 || sda == 0) {
+        return luaL_error(L, "no i2c for D0");
+    }
+
+    platform_i2c_setup(hdc1080_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
+    
     // remove sda and scl parameters from stack
     lua_remove(L, 1);
     lua_remove(L, 1);
-
-    return 0;
+    
+    return hdc1080_setup(L);
 }
 
 static int hdc1080_read(lua_State* L) {
@@ -117,6 +129,7 @@ static int hdc1080_read(lua_State* L) {
 static const LUA_REG_TYPE hdc1080_map[] = {
     { LSTRKEY( "read"  ),        LFUNCVAL( hdc1080_read )},
     { LSTRKEY( "setup" ),        LFUNCVAL( hdc1080_setup )},
+    { LSTRKEY( "init" ),         LFUNCVAL( hdc1080_init )},
     { LNILKEY, LNILVAL}
 };
 
