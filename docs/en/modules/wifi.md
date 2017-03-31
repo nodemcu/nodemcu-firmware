@@ -398,6 +398,9 @@ none
 
 Registers callbacks for WiFi station status events.
 
+!!! note
+    Please update your program to use the [`wifi.eventmon`](#wifieventmon-module) API, as the `wifi.sta.eventmon___()` API is deprecated. 
+
 ####  Syntax
 - `wifi.sta.eventMonReg(wifi_status[, function([previous_state])])`
 
@@ -1371,6 +1374,10 @@ Note: The functions `wifi.sta.eventMon___()` and `wifi.eventmon.___()` are compl
 ## wifi.eventmon.register()
 
 Register/unregister callbacks for WiFi event monitor.
+ - After a callback is registered, this function may be called to update a callback's function at any time
+
+!!! note
+    To ensure all WiFi events are caught, the Wifi event monitor callbacks should be registered as early as possible in `init.lua`. Any events that occur before callbacks are registered will be discarded!
 
 #### Syntax
 wifi.eventmon.register(Event[, function(T)])
