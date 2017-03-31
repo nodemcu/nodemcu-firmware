@@ -20,7 +20,7 @@ static const uint8_t hdc1080_i2c_addr = 0x40;
 #define HDC1080_CONFIG_REGISTER		0X02
 
 
-static int ICACHE_FLASH_ATTR hdc1080_init(lua_State* L) {
+static int hdc1080_setup(lua_State* L) {
 
     uint32_t sda;
     uint32_t scl;
@@ -40,18 +40,24 @@ static int ICACHE_FLASH_ATTR hdc1080_init(lua_State* L) {
     platform_i2c_send_byte(hdc1080_i2c_id, 0x05); //Bit[10] to 1 for 11 bit resolution , Set Bit[9:8] to 01 for 11 bit resolution.
     platform_i2c_send_byte(hdc1080_i2c_id, 0x00);
     platform_i2c_send_stop(hdc1080_i2c_id);
+    
+    // remove sda and scl parameters from stack
+    lua_remove(L, 1);
+    lua_remove(L, 1);
 
     return 0;
 }
 
-static int ICACHE_FLASH_ATTR hdc1080_readTemperature(lua_State* L) {
+static int hdc1080_read(lua_State* L) {
 
     uint8_t data[2];
     
     #ifdef LUA_NUMBER_INTEGRAL
     	int temp;
+    	int humidity
     #else
     	float temp;
+    	float humidity;
     #endif
     
     int i;
@@ -80,24 +86,7 @@ static int ICACHE_FLASH_ATTR hdc1080_readTemperature(lua_State* L) {
     	lua_pushnumber(L, temp);
     #endif
     
-
-   
-
-    return 1;
-}
-
-static int ICACHE_FLASH_ATTR hdc1080_readHumidity(lua_State* L) {
-
-    uint8_t data[2];
     
-    #ifdef LUA_NUMBER_INTEGRAL
-    	int humidity;
-    #else
-    	float humidity;
-    #endif
-    
-    int i;
-
     platform_i2c_send_start(hdc1080_i2c_id);
     platform_i2c_send_address(hdc1080_i2c_id, hdc1080_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
     platform_i2c_send_byte(hdc1080_i2c_id, HDC1080_HUMIDITY_REGISTER);
@@ -121,15 +110,13 @@ static int ICACHE_FLASH_ATTR hdc1080_readHumidity(lua_State* L) {
     	humidity = ((float)((data[0]<<8)|data[1])/(float)pow(2,16))*100.0f;
     	lua_pushnumber(L, humidity);
     #endif
-
-
-    return 1;
+    
+    return 2;
 }
 
 static const LUA_REG_TYPE hdc1080_map[] = {
-    { LSTRKEY( "readTemperature" ),         LFUNCVAL( hdc1080_readTemperature )},
-    { LSTRKEY( "readHumidity" ),         LFUNCVAL( hdc1080_readHumidity )},
-    { LSTRKEY( "init" ),         LFUNCVAL( hdc1080_init )},
+    { LSTRKEY( "read"  ),        LFUNCVAL( hdc1080_read )},
+    { LSTRKEY( "setup" ),        LFUNCVAL( hdc1080_setup )},
     { LNILKEY, LNILVAL}
 };
 
