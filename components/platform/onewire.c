@@ -180,17 +180,17 @@ static int onewire_rmt_attach_pin( uint8_t gpio_num )
     return PLATFORM_ERR;
 
   if (gpio_num != ow_rmt.gpio) {
+    // attach GPIO to previous pin
+    if (gpio_num < 32) {
+      GPIO.enable_w1ts = (0x1 << gpio_num);
+    } else {
+      GPIO.enable1_w1ts.data = (0x1 << (gpio_num - 32));
+    }
+    gpio_matrix_out( ow_rmt.gpio, SIG_GPIO_OUT_IDX, 0, 0 );
+
     // attach RMT channels to new gpio pin
     rmt_set_pin( ow_rmt.tx, RMT_MODE_TX, gpio_num );
     rmt_set_pin( ow_rmt.rx, RMT_MODE_RX, gpio_num );
-
-    // attach GPIO to previous pin
-    gpio_matrix_out( ow_rmt.gpio, SIG_GPIO_OUT_IDX, 0, 0 );
-    if (gpio_num < 32) {
-        GPIO.enable_w1ts = (0x1 << gpio_num);
-    } else {
-        GPIO.enable1_w1ts.data = (0x1 << (gpio_num - 32));
-    }
 
     ow_rmt.gpio = gpio_num;
   }
@@ -207,7 +207,9 @@ int platform_onewire_init( uint8_t gpio_num )
 
   // enable open-drain mode on pin
   OW_DEPOWER(gpio_num);
+
   // and prepare driving 1
+  // note: gpio module is *not necessarily* routed to the pin at this point
   gpio_set_level( gpio_num, 1 );
 
   return PLATFORM_OK;
