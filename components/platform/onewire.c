@@ -67,6 +67,8 @@ sample code bearing this copyright.
 #define TRUE (1==1)
 #define FALSE !TRUE
 
+#undef OW_DEBUG
+
 // *****************************************************************************
 // Onewire platform interface
 
@@ -105,43 +107,60 @@ static const uint8_t owDefaultPower = 0;
 
 static int onewire_rmt_init( uint8_t gpio_num )
 {
-  // acquire an RMT module for TX and RX
-  rmt_config_t rmt_tx;
-  ow_rmt.tx = RMT_CHANNEL_7;
-  rmt_tx.channel = ow_rmt.tx;
-  rmt_tx.gpio_num = gpio_num;
-  rmt_tx.mem_block_num = 1;
-  rmt_tx.clk_div = 80;
-  rmt_tx.tx_config.loop_en = false;
-  rmt_tx.tx_config.carrier_en = false;
-  rmt_tx.tx_config.idle_level = 1;
-  rmt_tx.tx_config.idle_output_en = true;
-  rmt_tx.rmt_mode = RMT_MODE_TX;
-  if (rmt_config( &rmt_tx ) != ESP_OK)
-    return PLATFORM_ERR;
-  if (rmt_driver_install( rmt_tx.channel, 0, 0 ) != ESP_OK)
-    return PLATFORM_ERR;
+  // acquire an RMT module for TX and RX each
+  if ((ow_rmt.tx = platform_rmt_allocate( 1 )) >= 0) {
+    if ((ow_rmt.rx = platform_rmt_allocate( 1 )) >= 0) {
 
-  rmt_config_t rmt_rx;
-  ow_rmt.rx = RMT_CHANNEL_6;
-  rmt_rx.channel = ow_rmt.rx;
-  rmt_rx.gpio_num = gpio_num;
-  rmt_rx.clk_div = 80;
-  rmt_rx.mem_block_num = 1;
-  rmt_rx.rmt_mode = RMT_MODE_RX;
-  rmt_rx.rx_config.filter_en = true;
-  rmt_rx.rx_config.filter_ticks_thresh = 30;
-  rmt_rx.rx_config.idle_threshold = OW_DURATION_RX_IDLE;
-  if (rmt_config( &rmt_rx ) != ESP_OK)
-    return PLATFORM_ERR;
-  if (rmt_driver_install( rmt_rx.channel, 512, 0 ) != ESP_OK)
-    return PLATFORM_ERR;
+#ifdef OW_DEBUG
+      ESP_LOGI("ow", "RMT TX channel: %d", ow_rmt.tx);
+      ESP_LOGI("ow", "RMT RX channel: %d", ow_rmt.rx);
+#endif
 
-  rmt_get_ringbuf_handler( ow_rmt.rx, &ow_rmt.rb );
+      rmt_config_t rmt_tx;
+      rmt_tx.channel = ow_rmt.tx;
+      rmt_tx.gpio_num = gpio_num;
+      rmt_tx.mem_block_num = 1;
+      rmt_tx.clk_div = 80;
+      rmt_tx.tx_config.loop_en = false;
+      rmt_tx.tx_config.carrier_en = false;
+      rmt_tx.tx_config.idle_level = 1;
+      rmt_tx.tx_config.idle_output_en = true;
+      rmt_tx.rmt_mode = RMT_MODE_TX;
+      if (rmt_config( &rmt_tx ) == ESP_OK) {
+        if (rmt_driver_install( rmt_tx.channel, 0, 0 ) == ESP_OK) {
 
-  ow_rmt.gpio = gpio_num;
+          rmt_config_t rmt_rx;
+          rmt_rx.channel = ow_rmt.rx;
+          rmt_rx.gpio_num = gpio_num;
+          rmt_rx.clk_div = 80;
+          rmt_rx.mem_block_num = 1;
+          rmt_rx.rmt_mode = RMT_MODE_RX;
+          rmt_rx.rx_config.filter_en = true;
+          rmt_rx.rx_config.filter_ticks_thresh = 30;
+          rmt_rx.rx_config.idle_threshold = OW_DURATION_RX_IDLE;
+          if (rmt_config( &rmt_rx ) == ESP_OK) {
+            if (rmt_driver_install( rmt_rx.channel, 512, 0 ) == ESP_OK) {
 
-  return PLATFORM_OK;
+              rmt_get_ringbuf_handler( ow_rmt.rx, &ow_rmt.rb );
+
+              ow_rmt.gpio = gpio_num;
+
+              return PLATFORM_OK;
+
+            }
+          }
+
+          rmt_driver_uninstall( rmt_tx.channel );
+        }
+      }
+
+      platform_rmt_release( ow_rmt.rx );
+    }
+
+    platform_rmt_release( ow_rmt.tx );
+  }
+
+  return PLATFORM_ERR;
 }
 
 // flush any pending/spurious traces from the RX channel
@@ -223,7 +242,8 @@ int platform_onewire_reset( uint8_t gpio_num, uint8_t *presence )
 
     if (rx_items) {
       if (rx_size >= 1 * sizeof( rmt_item32_t )) {
-#if 0
+
+#ifdef OW_DEBUG
 	for (int i = 0; i < rx_size / 4; i++) {
 	  ESP_LOGI("ow", "level: %d, duration %d", rx_items[i].level0, rx_items[i].duration0);
 	  ESP_LOGI("ow", "level: %d, duration %d", rx_items[i].level1, rx_items[i].duration1);
@@ -366,12 +386,14 @@ static int onewire_read_bits( uint8_t gpio_num, uint8_t *data, uint8_t num )
     rmt_item32_t* rx_items = (rmt_item32_t *)xRingbufferReceive( ow_rmt.rb, &rx_size, portMAX_DELAY );
 
     if (rx_items) {
-#if 0
+
+#ifdef OW_DEBUG
 	for (int i = 0; i < rx_size / 4; i++) {
 	  ESP_LOGI("ow", "level: %d, duration %d", rx_items[i].level0, rx_items[i].duration0);
 	  ESP_LOGI("ow", "level: %d, duration %d", rx_items[i].level1, rx_items[i].duration1);
 	}
 #endif
+
       if (rx_size >= num * sizeof( rmt_item32_t )) {
 	for (int i = 0; i < num; i++) {
 	  read_data >>= 1;
