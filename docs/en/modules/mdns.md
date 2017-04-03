@@ -23,7 +23,7 @@ The specific names are:
 
 - `port` The port number for the service. Default value is 80.
 - `service` The name of the service. Default value is 'http'.
-- `dscription` A short phrase (under 63 characters) describing the service. Default is the hostname.
+- `description` A short phrase (under 63 characters) describing the service. Default is the hostname.
 
 #### Returns
 `nil`
