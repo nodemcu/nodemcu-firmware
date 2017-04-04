@@ -85,7 +85,8 @@ Configures the WiFi mode to use. NodeMCU can run in one of four WiFi modes:
 
 When using the combined Station + AP mode, the same channel will be used for both networks as the radio can only listen on a single channel.
 
-NOTE: WiFi Mode configuration will be retained until changed even if device is turned off.
+!!! note
+	WiFi configuration will be retained until changed even if device is turned off.
 
 #### Syntax
 `wifi.setmode(mode[, save])`
