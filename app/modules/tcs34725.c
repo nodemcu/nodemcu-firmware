@@ -182,6 +182,7 @@ uint16_t tcs34725Read16(uint8_t reg)
 uint8_t tcs34725EnableDone(lua_State* L)
 {
 	dbg_printf("Enable second bit\n");
+	os_timer_disarm (&tcs34725_timer);
 	tcs34725Write8(TCS34725_ENABLE, TCS34725_ENABLE_PON | TCS34725_ENABLE_AEN);
 
 	/* Ready to go ... set the initialised flag */
