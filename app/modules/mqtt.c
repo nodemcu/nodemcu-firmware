@@ -1073,6 +1073,9 @@ static int mqtt_socket_connect( lua_State* L )
   if ( (stack<=top) && lua_isnumber(L, stack) )
   {
     auto_reconnect = lua_tointeger(L, stack);
+    if ( auto_reconnect == RECONNECT_POSSIBLE ) {
+      platform_print_deprecation_note("autoreconnect == 1 is deprecated", "in the next version");
+    }
     stack++;
     if ( auto_reconnect != RECONNECT_OFF && auto_reconnect != RECONNECT_POSSIBLE ){
       auto_reconnect = RECONNECT_OFF; // default to 0
