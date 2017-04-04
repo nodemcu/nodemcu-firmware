@@ -74,6 +74,37 @@ The current physical mode as one of `wifi.PHYMODE_B`, `wifi.PHYMODE_G` or `wifi.
 #### See also
 [`wifi.setphymode()`](#wifisetphymode)
 
+## wifi.resume()
+
+Wake up WiFi from suspended state or cancel pending wifi suspension
+
+#### Syntax
+`wifi.resume([resume_cb])`
+
+#### Parameters
+- `resume_cb` Callback to execute when WiFi wakes from suspension. 
+ !!! note "Note:"
+
+    Any previously provided callbacks will be replaced!
+
+#### Returns
+`nil`
+
+#### Example
+
+```lua
+--Resume wifi from timed or indefinite sleep
+wifi.resume()
+
+--Resume wifi from timed or indefinite sleep w/ resume callback
+wifi.resume(function() print("WiFi resume") end)
+```
+
+#### See also
+[`wifi.suspend()`](#wifisuspend)
+[`node.sleep()`](node.md#nodesleep)
+[`node.dsleep()`](node.md#nodedsleep)
+
 ## wifi.setmode()
 
 Configures the WiFi mode to use. NodeMCU can run in one of four WiFi modes:
@@ -221,6 +252,61 @@ none
 
 #### See also
 [`wifi.startsmart()`](#wifistartsmart)
+
+## wifi.suspend()
+
+Suspend Wifi to reduce current consumption. 
+
+This function is also useful for preventing WiFi stack related crashes when executing functions or tasks that take longer than ~500ms 
+
+#### Syntax
+`wifi.suspend({duration[, suspend_cb, resume_cb, preserve_mode]})`
+
+#### Parameters
+- `duration` Suspend duration in microseconds(μs). If a suspend duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))
+- `suspend_cb` Callback to execute when WiFi is suspended. (Optional)
+- `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
+- `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
+ - If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
+ - If false, discard WiFi mode and leave NodeMCU in [`wifi.NULL_MODE`](#wifigetmode). WiFi mode will be restored to original mode on restart.
+
+#### Returns
+- `suspend_state` if no parameters are provided, current WiFi suspension state will be returned
+ - States:
+  - `0` WiFi is awake.
+  - `1` WiFi suspension is pending. (Waiting for idle task)
+  - `2` WiFi is suspended.
+
+
+#### Example
+
+```lua
+--get current wifi suspension state
+print(wifi.suspend())
+
+--Suspend WiFi for 10 seconds with suspend/resume callbacks
+ cfg={}
+ cfg.duration=10*1000*1000
+ cfg.resume_cb=function() print("WiFi resume") end
+ cfg.suspend_cb=function() print("WiFi suspended") end
+
+ wifi.suspend(cfg)
+
+--Suspend WiFi for 10 seconds with suspend/resume callbacks and discard WiFi mode
+ cfg={}
+ cfg.duration=10*1000*1000
+ cfg.resume_cb=function() print("WiFi resume") end
+ cfg.suspend_cb=function() print("WiFfi suspended") end
+ cfg.preserve_mode=false
+
+ wifi.suspend(cfg)
+
+```
+
+#### See also
+[`wifi.resume()`](#wifiresume)
+[`node.sleep()`](node.md#nodesleep)
+[`node.dsleep()`](node.md#nodedsleep)
 
 # wifi.sta Module
 
@@ -1010,7 +1096,7 @@ The current state which can be one of the following:
 
 ## wifi.ap.config()
 
-Sets SSID and password in AP mode. Be sure to make the password at least 8 characters long! If you don't it will default to *no* password and not set the SSID! It will still work as an access point but use a default SSID like e.g. NODE-9997C3.
+Sets SSID and password in AP mode. Be sure to make the password at least 8 characters long! If you don't it will default to *no* password and not set the SSID! It will still work as an access point but use a default SSID like e.g. NODE_9997C3.
 
 #### Syntax
 `wifi.ap.config(cfg)`
