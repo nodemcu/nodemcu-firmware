@@ -250,15 +250,13 @@ uint8_t tcs34725Init(lua_State* L)
 	id = tcs34725Read8(TCS34725_ID);
 	dbg_printf("id: %x\n",id);
 	if (id != 0x44) {
-		luaL_error(L, "No TCS34725 found.");
-		return 0;
+		return luaL_error(L, "No TCS34725 found.");
 	}
 
 	/* Enable the device */
 	// TODO this doesn't quite work as it should. Enable is non-blocking.
 	if (tcs34725Enable(L) != 0) {
-		luaL_error(L, "TCS34725 Not initialising.");
-		return 0;
+		return luaL_error(L, "TCS34725 Not initialising.");
 	}
 	
 	// TODO Block here and wait for _tcs34725Initialised?
