@@ -99,7 +99,7 @@ typedef enum
 }
 tcs34725Gain_t;
 static void temp_setup_debug(int line, const char *str);
-uint8_t tcs34725Init(lua_State* L);
+uint8_t tcs34725Setup(lua_State* L);
 uint8_t tcs34725Enable(lua_State* L);
 uint8_t tcs34725Disable(lua_State* L);
 uint8_t tcs34725GetRawData(lua_State* L);
@@ -231,22 +231,10 @@ uint8_t tcs34725Disable(lua_State* L)
 		@brief	Initialises the I2C block
 */
 /**************************************************************************/
-uint8_t tcs34725Init(lua_State* L)
+uint8_t tcs34725Setup(lua_State* L)
 {
-	int lua_dbg_cb_ref;
 	uint8_t id = 0;
-	uint8_t sda;
-	uint8_t scl;
-	uint8_t config;
-	uint8_t ack;
 
-	if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
-		return luaL_error(L, "wrong arg range");
-	}
-	sda = luaL_checkinteger(L, 1);
-	scl = luaL_checkinteger(L, 2);
-	platform_i2c_setup(TCS34725_BUS_ID, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-	
 	/* Make sure we have the right IC (0x44 = TCS34725 and TCS34721) */
 	id = tcs34725Read8(TCS34725_ID);
 	dbg_printf("id: %x\n",id);
@@ -289,7 +277,7 @@ uint8_t tcs34725SetIntegrationTime(tcs34725IntegrationTime_t it, lua_State* L)
 {
 	if (!_tcs34725Initialised)
 	{
-		tcs34725Init(L);
+		tcs34725Setup(L);
 	}
 
 	tcs34725Write8(TCS34725_ATIME, it);
@@ -318,7 +306,7 @@ uint8_t tcs34725SetGain(tcs34725Gain_t gain, lua_State* L)
 {
   if (!_tcs34725Initialised)
   {
-    tcs34725Init(L);
+    tcs34725Setup(L);
   }
 
   tcs34725Write8(TCS34725_CONTROL, gain);
@@ -341,7 +329,7 @@ uint8_t tcs34725GetRawData(lua_State* L)
 	
 	if (!_tcs34725Initialised)
 	{
-		tcs34725Init(L);
+		tcs34725Setup(L);
 	}
 
 	/* ToDo: Insert a blocky delay until the data is ready! */
@@ -358,7 +346,7 @@ uint8_t tcs34725GetRawData(lua_State* L)
 
 
 static const LUA_REG_TYPE tcs34725_map[] = {
-	{ LSTRKEY( "init" ), LFUNCVAL(tcs34725Init)},
+	{ LSTRKEY( "setup" ), LFUNCVAL(tcs34725Setup)},
 	{ LSTRKEY( "enable" ),  LFUNCVAL(tcs34725Enable)},
 	{ LSTRKEY( "disable" ),  LFUNCVAL(tcs34725Disable)},
 	{ LSTRKEY( "raw" ),  LFUNCVAL(tcs34725GetRawData)},
