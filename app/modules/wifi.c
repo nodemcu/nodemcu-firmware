@@ -26,10 +26,6 @@ static uint8 getap_output_format=0;
 
 #define INVALID_MAC_STR "MAC:FF:FF:FF:FF:FF:FF"
 
-//wifi.sleep variables
-#define FPM_SLEEP_MAX_TIME 0xFFFFFFF
-static bool FLAG_wifi_force_sleep_enabled=0;
-
 #ifdef WIFI_SMART_ENABLE
 static void wifi_smart_succeed_cb(sc_status status, void *pdata){
   NODE_DBG("wifi_smart_succeed_cb is called.\n");
@@ -302,65 +298,91 @@ static int wifi_getphymode( lua_State* L )
   return 1;
 }
 
-// Lua: wifi.sleep()
-static int wifi_sleep(lua_State* L)
-{
-  uint8 desired_sleep_state = 2;
-  sint8 wifi_fpm_do_sleep_return_value = 1;
-  if(lua_isnumber(L, 1))
-  {
-    if(luaL_checknumber(L, 1) == 0)
-    {
-      desired_sleep_state = 0;
-    }
-    else if(luaL_checknumber(L, 1) == 1)
-    {
-      desired_sleep_state = 1;
-    }
-  }
-  if (!FLAG_wifi_force_sleep_enabled && desired_sleep_state == 1)
-  {
-    uint8 wifi_current_opmode = wifi_get_opmode();
-    if (wifi_current_opmode == 1 || wifi_current_opmode == 3)
-    {
-      wifi_station_disconnect();
-    }
-    // set WiFi mode to null mode
-    wifi_set_opmode(NULL_MODE);
-    // set force sleep type
-    wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
-    wifi_fpm_open();
-    wifi_fpm_do_sleep_return_value = wifi_fpm_do_sleep(FPM_SLEEP_MAX_TIME);
-    if (wifi_fpm_do_sleep_return_value == 0)
-    {
-      FLAG_wifi_force_sleep_enabled = TRUE;
-    }
-    else
-    {
-      wifi_fpm_close();
-      FLAG_wifi_force_sleep_enabled = FALSE;
-    }
-  }
-  else if(FLAG_wifi_force_sleep_enabled && desired_sleep_state == 0)
-  {
-    FLAG_wifi_force_sleep_enabled = FALSE;
-    // wake up to use WiFi again
-    wifi_fpm_do_wakeup();
-    wifi_fpm_close();
-  }
+#ifdef PMSLEEP_ENABLE
+/* Begin WiFi suspend functions*/
+#include "pmSleep.h"
 
-  if (desired_sleep_state == 1 && FLAG_wifi_force_sleep_enabled == FALSE)
+static int wifi_resume_cb_ref = LUA_NOREF; // Holds resume callback reference
+static int wifi_suspend_cb_ref = LUA_NOREF; // Holds suspend callback reference
+
+void wifi_pmSleep_suspend_CB(void)
+{
+  PMSLEEP_DBG("\n\tDBG: %s start\n", __func__);
+  if (wifi_suspend_cb_ref != LUA_NOREF)
   {
-    lua_pushnil(L);
-    lua_pushnumber(L, wifi_fpm_do_sleep_return_value);
+    lua_State* L = lua_getstate(); // Get main Lua thread pointer
+    lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // Push suspend callback onto stack
+    lua_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
+    wifi_suspend_cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
+    lua_call(L, 0, 0); // Execute suspend callback
   }
   else
   {
-    lua_pushnumber(L, FLAG_wifi_force_sleep_enabled);
-    lua_pushnil(L);
+    PMSLEEP_DBG("\n\tDBG: lua cb unavailable\n");
   }
-  return 2;
+  PMSLEEP_DBG("\n\tDBG: %s end\n", __func__);
+  return;
 }
+
+void wifi_pmSleep_resume_CB(void)
+{
+  PMSLEEP_DBG("\n\tDBG: %s start\n", __func__);
+  // If resume callback was defined
+  pmSleep_execute_lua_cb(&wifi_resume_cb_ref);
+  PMSLEEP_DBG("\n\tDBG: %s end\n", __func__);
+  return;
+}
+
+// Lua: wifi.suspend({duration, suspend_cb, resume_cb, preserve_mode})
+static int wifi_suspend(lua_State* L)
+{
+  // If no parameters were provided
+  if (lua_isnone(L, 1))
+  {
+    // Return current WiFi suspension state
+    lua_pushnumber(L, pmSleep_get_state());
+    return 1; // Return WiFi suspension state
+  }
+
+  pmSleep_INIT_CFG(cfg);
+  cfg.sleep_mode = MODEM_SLEEP_T;
+  if(lua_istable(L, 1))
+  {
+    pmSleep_parse_table_lua(L, 1, &cfg, &wifi_suspend_cb_ref, &wifi_resume_cb_ref);
+  }
+  else
+    return luaL_argerror(L, 1, "must be table");
+  cfg.resume_cb_ptr  = &wifi_pmSleep_resume_CB;
+  cfg.suspend_cb_ptr = &wifi_pmSleep_suspend_CB;
+  pmSleep_suspend(&cfg);
+  return 0;
+}
+// Lua: wifi.resume([Resume_CB])
+static int wifi_resume(lua_State* L)
+{
+  PMSLEEP_DBG("\n\tDBG: %s start\n", __func__);
+  uint8 fpm_state = pmSleep_get_state();
+// If forced sleep api is not enabled, return error
+  if (fpm_state == 0)
+  {
+      return luaL_error(L, "WIFi not suspended");
+  }
+
+  // If a resume callback was provided
+  if (lua_isfunction(L, 1))
+  {
+    // If there is already a resume callback reference
+    lua_pushvalue(L, 1); //Push resume callback to the top of the stack
+    register_lua_cb(L, &wifi_resume_cb_ref);
+    PMSLEEP_DBG("\n\tDBG: Resume CB registered\n");
+  }
+  pmSleep_resume(NULL);
+  PMSLEEP_DBG("\n\tDBG: %s end\n", __func__);
+  return 0;
+}
+
+/* End WiFi suspend functions*/
+#endif
 
 // Lua: wifi.nullmodesleep()
 static int wifi_null_mode_auto_sleep(lua_State* L)
@@ -1659,7 +1681,10 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
-  { LSTRKEY( "sleep" ),          LFUNCVAL( wifi_sleep ) },
+#ifdef PMSLEEP_ENABLE
+  { LSTRKEY( "suspend" ),        LFUNCVAL( wifi_suspend ) },
+  { LSTRKEY( "resume" ),         LFUNCVAL( wifi_resume ) },
+#endif
   { LSTRKEY( "nullmodesleep" ),  LFUNCVAL( wifi_null_mode_auto_sleep ) },
 #ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
