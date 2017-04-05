@@ -241,12 +241,6 @@ uint8_t tcs34725Setup(lua_State* L)
 	if (id != 0x44) {
 		return luaL_error(L, "No TCS34725 found.");
 	}
-
-	/* Enable the device */
-	// TODO this doesn't quite work as it should. Enable is non-blocking.
-	if (tcs34725Enable(L) != 0) {
-		return luaL_error(L, "TCS34725 Not initialising.");
-	}
 	
 	lua_pushinteger(L, 1);
 	return 1;
@@ -299,10 +293,10 @@ uint8_t tcs34725LuaSetGain(lua_State* L)
 /**************************************************************************/
 uint8_t tcs34725SetGain(tcs34725Gain_t gain, lua_State* L)
 {
-  if (!_tcs34725Initialised)
-  {
-    tcs34725Setup(L);
-  }
+	if (!_tcs34725Initialised)
+	{
+		return luaL_error(L, "TCS34725 not initialised.");
+	}
 
 	tcs34725Write8(TCS34725_CONTROL, gain);
 	_tcs34725Gain = gain;
@@ -324,7 +318,7 @@ uint8_t tcs34725GetRawData(lua_State* L)
 	
 	if (!_tcs34725Initialised)
 	{
-		tcs34725Setup(L);
+		return luaL_error(L, "TCS34725 not initialised.");
 	}
 
 	c = tcs34725Read16(TCS34725_CDATAL);
