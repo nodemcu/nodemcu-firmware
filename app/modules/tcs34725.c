@@ -181,7 +181,7 @@ uint16_t tcs34725Read16(uint8_t reg)
 /**************************************************************************/
 uint8_t tcs34725EnableDone(lua_State* L)
 {
-	dbg_printf("Enable second bit\n");
+	dbg_printf("Enable finished\n");
 	os_timer_disarm (&tcs34725_timer);
 	tcs34725Write8(TCS34725_ENABLE, TCS34725_ENABLE_PON | TCS34725_ENABLE_AEN);
 
@@ -201,7 +201,7 @@ uint8_t tcs34725EnableDone(lua_State* L)
 /**************************************************************************/
 uint8_t tcs34725Enable(lua_State* L)
 {
-	dbg_printf("Enable first bit\n");
+	dbg_printf("Enable begun\n");
 	tcs34725Write8(TCS34725_ENABLE, TCS34725_ENABLE_PON);
 	// Start a timer to wait TCS34725_EN_DELAY before calling tcs34725EnableDone
 	os_timer_disarm (&tcs34725_timer);
