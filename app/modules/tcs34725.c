@@ -160,19 +160,9 @@ uint8_t tcs34725Read8(uint8_t reg)
 */
 /**************************************************************************/
 uint16_t tcs34725Read16(uint8_t reg)
-{	
-	uint8_t low = 0x00;
-	uint8_t high = 0x00;
-	platform_i2c_send_start(TCS34725_BUS_ID);
-	platform_i2c_send_address(TCS34725_BUS_ID, TCS34725_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
-	platform_i2c_send_byte(TCS34725_BUS_ID, TCS34725_COMMAND_BIT | reg);
-	platform_i2c_send_stop(TCS34725_BUS_ID);
-	
-	platform_i2c_send_start(TCS34725_BUS_ID);
-	platform_i2c_send_address(TCS34725_BUS_ID, TCS34725_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
-	low = platform_i2c_recv_byte(TCS34725_BUS_ID, 1);
-	high = platform_i2c_recv_byte(TCS34725_BUS_ID, 0);
-	platform_i2c_send_stop(TCS34725_BUS_ID);
+{		
+	uint8_t low = tcs34725Read8(reg);
+	uint8_t high = tcs34725Read8(++reg);
 	
 	return (high << 8) | low;
 }
