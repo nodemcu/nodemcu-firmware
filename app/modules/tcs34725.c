@@ -172,7 +172,7 @@ uint16_t tcs34725Read16(uint8_t reg)
 	high = platform_i2c_recv_byte(TCS34725_BUS_ID, 0);
 	platform_i2c_send_stop(TCS34725_BUS_ID);
 	
-	return (high << 8) | low;;
+	return (high << 8) | low;
 }
 /**************************************************************************/
 /*!
@@ -190,7 +190,7 @@ uint8_t tcs34725EnableDone(lua_State* L)
 	
 	/* This needs to take place after the initialisation flag! */
 	tcs34725SetIntegrationTime(TCS34725_INTEGRATIONTIME_2_4MS, L);
-	tcs34725SetGain(TCS34725_GAIN_60X, L);
+	tcs34725SetGain(TCS34725_GAIN_60X, L);	
 	return 0;
 }
 
@@ -248,11 +248,6 @@ uint8_t tcs34725Setup(lua_State* L)
 		return luaL_error(L, "TCS34725 Not initialising.");
 	}
 	
-	// TODO Block here and wait for _tcs34725Initialised?
-
-	/* This needs to take place after the initialisation flag! */
-	// tcs34725SetIntegrationTime(TCS34725_INTEGRATIONTIME_2_4MS, L);
-	// tcs34725SetGain(TCS34725_GAIN_60X, L);
 	lua_pushinteger(L, 1);
 	return 1;
 }
@@ -309,10 +304,10 @@ uint8_t tcs34725SetGain(tcs34725Gain_t gain, lua_State* L)
     tcs34725Setup(L);
   }
 
-  tcs34725Write8(TCS34725_CONTROL, gain);
-  _tcs34725Gain = gain;
+	tcs34725Write8(TCS34725_CONTROL, gain);
+	_tcs34725Gain = gain;
 
-  return 0;
+	return 0;
 }
 
 /**************************************************************************/
@@ -332,7 +327,6 @@ uint8_t tcs34725GetRawData(lua_State* L)
 		tcs34725Setup(L);
 	}
 
-	/* ToDo: Insert a blocky delay until the data is ready! */
 	c = tcs34725Read16(TCS34725_CDATAL);
 	r = tcs34725Read16(TCS34725_RDATAL);
 	g = tcs34725Read16(TCS34725_GDATAL);
