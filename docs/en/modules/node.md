@@ -128,9 +128,9 @@ node.dsleep(nil,4)
 ```
 
 #### See also
-[`wifi.suspend()`](wifi.md#wifisuspend)
-[`wifi.resume()`](wifi.md#wifiresume)
-[`node.sleep()`](#nodesleep)
+- [`wifi.suspend()`](wifi.md#wifisuspend)
+- [`wifi.resume()`](wifi.md#wifiresume)
+- [`node.sleep()`](#nodesleep)
 
 ## node.flashid()
 
@@ -387,9 +387,9 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 ```
 
 #### See also
-[`wifi.suspend()`](wifi.md#wifisuspend)
-[`wifi.resume()`](wifi.md#wifiresume)
-[`node.dsleep()`](#nodedsleep)
+- [`wifi.suspend()`](wifi.md#wifisuspend)
+- [`wifi.resume()`](wifi.md#wifiresume)
+- [`node.dsleep()`](#nodedsleep)
 
 ## node.stripdebug()
 
