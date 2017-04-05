@@ -114,6 +114,8 @@ static tcs34725Gain_t				_tcs34725Gain = TCS34725_GAIN_1X;
 static tcs34725IntegrationTime_t	_tcs34725IntegrationTime = TCS34725_INTEGRATIONTIME_2_4MS;
 
 os_timer_t tcs34725_timer; // timer for forced mode readout
+sint32_t cb_tcs_en;
+sint32_t self_ref;
 
 /**************************************************************************/
 /*!
@@ -191,6 +193,15 @@ uint8_t tcs34725EnableDone(lua_State* L)
 	/* This needs to take place after the initialisation flag! */
 	tcs34725SetIntegrationTime(TCS34725_INTEGRATIONTIME_2_4MS, L);
 	tcs34725SetGain(TCS34725_GAIN_60X, L);	
+	
+	lua_rawgeti(L, LUA_REGISTRYINDEX, cb_tcs_en); // Get the callback to call
+	luaL_unref(L, LUA_REGISTRYINDEX, cb_tcs_en); // Unregister the callback to avoid leak
+	lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
+	luaL_unref(L, LUA_REGISTRYINDEX, self_ref);
+	self_ref = LUA_NOREF;
+	cb_tcs_en = LUA_NOREF;
+	lua_call(L, 1, 0);
+	
 	return 0;
 }
 
@@ -202,6 +213,18 @@ uint8_t tcs34725EnableDone(lua_State* L)
 uint8_t tcs34725Enable(lua_State* L)
 {
 	dbg_printf("Enable begun\n");
+
+	if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
+		if (cb_tcs_en != LUA_NOREF) {
+			luaL_unref(L, LUA_REGISTRYINDEX, cb_tcs_en);
+		}
+		lua_pushvalue(L, 1);
+		cb_tcs_en = luaL_ref(L, LUA_REGISTRYINDEX);
+		self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+	} else {
+		return luaL_error(L, "Enable argument must be a function.");
+	}
+	
 	tcs34725Write8(TCS34725_ENABLE, TCS34725_ENABLE_PON);
 	// Start a timer to wait TCS34725_EN_DELAY before calling tcs34725EnableDone
 	os_timer_disarm (&tcs34725_timer);
@@ -222,7 +245,7 @@ uint8_t tcs34725Disable(lua_State* L)
 	uint8_t reg = 0;
 	reg = tcs34725Read8(TCS34725_ENABLE);
 	tcs34725Write8(TCS34725_ENABLE, reg & ~(TCS34725_ENABLE_PON | TCS34725_ENABLE_AEN));
-
+	_tcs34725Initialised = false;
 	return 0;
 }
 
