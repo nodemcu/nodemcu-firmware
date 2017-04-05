@@ -209,9 +209,9 @@ tmr.resume(mytimer)
 
 ```
 #### See also
-[`tmr.suspend()`](#tmrsuspend)
-[`tmr.suspend_all()`](#tmrsuspendall)
-[`tmr.resume_all()`](#tmrresumeall)
+- [`tmr.suspend()`](#tmrsuspend)
+- [`tmr.suspend_all()`](#tmrsuspendall)
+- [`tmr.resume_all()`](#tmrresumeall)
 
 ## tmr.resume_all()
 
@@ -235,9 +235,9 @@ tmr.resume_all()
 
 ```
 #### See also
-[`tmr.suspend()`](#tmrsuspend)
-[`tmr.suspend_all()`](#tmrsuspendall)
-[`tmr.resume()`](#tmrresume)
+- [`tmr.suspend()`](#tmrsuspend)
+- [`tmr.suspend_all()`](#tmrsuspendall)
+- [`tmr.resume()`](#tmrresume)
 
 ## tmr.softwd()
 
@@ -362,9 +362,9 @@ tmr.suspend(mytimer)
 
 ```
 #### See also
-[`tmr.suspend_all()`](#tmrsuspendall)
-[`tmr.resume()`](#tmrresume)
-[`tmr.resume_all()`](#tmrresumeall)
+- [`tmr.suspend_all()`](#tmrsuspendall)
+- [`tmr.resume()`](#tmrresume)
+- [`tmr.resume_all()`](#tmrresumeall)
 
 
 ## tmr.suspend_all()
@@ -392,9 +392,9 @@ tmr.suspend_all()
 
 ```
 #### See also
-[`tmr.suspendl()`](#tmrsuspend)
-[`tmr.resume()`](#tmrresume)
-[`tmr.resume_all()`](#tmrresumeall)
+- [`tmr.suspendl()`](#tmrsuspend)
+- [`tmr.resume()`](#tmrresume)
+- [`tmr.resume_all()`](#tmrresumeall)
 
 
 ## tmr.time()

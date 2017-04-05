@@ -101,9 +101,9 @@ wifi.resume(function() print("WiFi resume") end)
 ```
 
 #### See also
-[`wifi.suspend()`](#wifisuspend)
-[`node.sleep()`](node.md#nodesleep)
-[`node.dsleep()`](node.md#nodedsleep)
+- [`wifi.suspend()`](#wifisuspend)
+- [`node.sleep()`](node.md#nodesleep)
+- [`node.dsleep()`](node.md#nodedsleep)
 
 ## wifi.setmode()
 
@@ -304,9 +304,9 @@ print(wifi.suspend())
 ```
 
 #### See also
-[`wifi.resume()`](#wifiresume)
-[`node.sleep()`](node.md#nodesleep)
-[`node.dsleep()`](node.md#nodedsleep)
+- [`wifi.resume()`](#wifiresume)
+- [`node.sleep()`](node.md#nodesleep)
+- [`node.dsleep()`](node.md#nodedsleep)
 
 # wifi.sta Module
 
