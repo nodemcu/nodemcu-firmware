@@ -172,6 +172,14 @@ uint16_t platform_onewire_crc16( const uint8_t* input, uint16_t len, uint16_t cr
 int platform_dht_read( uint8_t gpio_num, uint8_t wakeup_ms, uint8_t *data );
 
 
+// *****************************************************************************
+// WS2812 platform interface
+
+int platform_ws2812_setup( uint8_t gpio_num, uint8_t num_mem, const uint8_t *data, size_t len );
+int platform_ws2812_release( void );
+int platform_ws2812_send( void );
+
+
 // Internal flash erase/write functions
 
 uint32_t platform_flash_get_sector_of_address( uint32_t addr );

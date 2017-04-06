@@ -43,4 +43,5 @@ pages:
         - 'tmr':         'en/modules/tmr.md'
         - 'uart':        'en/modules/uart.md'
         - 'wifi':        'en/modules/wifi.md'
+        - 'ws2812':      'en/modules/ws2812.md'
 

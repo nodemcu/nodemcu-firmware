@@ -135,4 +135,10 @@ config LUA_MODULE_WIFI
   help
       Includes the WiFi module (recommended).
 
+config LUA_MODULE_WS2812
+  bool "WS2812 module"
+  default "n"
+  help
+      Includes the ws2812 module.
+
 endmenu
