@@ -157,7 +157,12 @@ void app_main (void)
   cfg.data_bits = CONSOLE_NUM_BITS_8;
   cfg.parity    = CONSOLE_PARITY_NONE;
   cfg.stop_bits = CONSOLE_STOP_BITS_1;
-  cfg.auto_baud = CONFIG_CONSOLE_BIT_RATE_AUTO;
+  cfg.auto_baud = 
+#ifdef CONFIG_CONSOLE_BIT_RATE_AUTO
+    true;
+#else
+    false;
+#endif
 
   console_init (&cfg, input_task);
 
