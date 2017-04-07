@@ -188,7 +188,7 @@ static int wifi_start_smart( lua_State* L )
     register_lua_cb(L, &wifi_smart_succeed);
   }
 
-  if ( smart_type > 1 )
+  if ( smart_type > 2 )
     return luaL_error( L, "wrong arg range" );
 
   smartconfig_set_type(smart_type);
