@@ -7,7 +7,7 @@ The file module provides access to the file system and its individual files.
 
 The file system is a flat file system, with no notion of subdirectories/folders.
 
-Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card is [FatFS is enabled](../sdcard.md).
+Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card if [FatFS is enabled](../sdcard.md).
 
 ```lua
 -- open file in flash:
@@ -31,6 +31,10 @@ end
 Change current directory (and drive). This will be used when no drive/directory is prepended to filenames.
 
 Current directory defaults to the root of internal SPIFFS (`/FLASH`) after system start.
+
+!!! note
+
+    Command is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware.
 
 #### Syntax
 `file.chdir(dir)`
@@ -73,7 +77,9 @@ end
 
 Format the file system. Completely erases any existing file system and writes a new one. Depending on the size of the flash chip in the ESP, this may take several seconds.
 
-Not supported for SD cards.
+!!! note
+
+    Command is not supported for SD cards.
 
 #### Syntax
 `file.format()`
@@ -91,7 +97,9 @@ none
 
 Returns the flash address and physical size of the file system area, in bytes.
 
-Not supported for SD cards.
+!!! note
+
+    Command is not supported for SD cards.
 
 #### Syntax
 `file.fscfg()`
@@ -156,7 +164,9 @@ end
 
 Mounts a FatFs volume on SD card.
 
-Not supported for internal flash.
+!!! note
+
+    Command is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware and it is not supported for internal flash.
 
 #### Syntax
 `file.mount(ldrv[, pin])`
@@ -217,7 +227,7 @@ When done with the file, it must be closed using `file.close()`.
 `file.open(filename, mode)`
 
 #### Parameters
-- `filename` file to be opened, directories are not supported
+- `filename` file to be opened
 - `mode`:
     - "r": read mode (the default)
     - "w": write mode
@@ -296,17 +306,19 @@ file.rename("temp.lua","init.lua")
 
 ## file.stat()
 
-Get attribtues of a file or directory in a table:
+Get attribtues of a file or directory in a table. Elements of the table are:
 
 - `size` file size in bytes
 - `name` file name
 - `time` table with time stamp information. Default is 1970-01-01 00:00:00 in case time stamps are not supported (on SPIFFS).
-  - `year`
-  - `mon`
-  - `day`
-  - `hour`
-  - `min`
-  - `sec`
+
+    - `year`
+    - `mon`
+    - `day`
+    - `hour`
+    - `min`
+    - `sec`
+
 - `is_dir` flag `true` if item is a directory, otherwise `false`
 - `is_rdonly` flag `true` if item is read-only, otherwise `false`
 - `is_hidden` flag `true` if item is hidden, otherwise `false`
