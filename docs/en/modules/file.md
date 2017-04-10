@@ -34,7 +34,7 @@ Current directory defaults to the root of internal SPIFFS (`/FLASH`) after syste
 
 !!! note
 
-    Command is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware.
+    Function is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware.
 
 #### Syntax
 `file.chdir(dir)`
@@ -79,7 +79,7 @@ Format the file system. Completely erases any existing file system and writes a 
 
 !!! note
 
-    Command is not supported for SD cards.
+    Function is not supported for SD cards.
 
 #### Syntax
 `file.format()`
@@ -99,7 +99,7 @@ Returns the flash address and physical size of the file system area, in bytes.
 
 !!! note
 
-    Command is not supported for SD cards.
+    Function is not supported for SD cards.
 
 #### Syntax
 `file.fscfg()`
@@ -166,7 +166,7 @@ Mounts a FatFs volume on SD card.
 
 !!! note
 
-    Command is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware and it is not supported for internal flash.
+    Function is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware and it is not supported for internal flash.
 
 #### Syntax
 `file.mount(ldrv[, pin])`
