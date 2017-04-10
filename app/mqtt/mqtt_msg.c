@@ -162,7 +162,7 @@ const char* mqtt_get_publish_topic(uint8_t* buffer, uint16_t* length)
   }
   totlen += i;
 
-  if(i + 2 >= *length)
+  if(i + 2 > *length)
     return NULL;
   topiclen = buffer[i++] << 8;
   topiclen |= buffer[i++];
@@ -191,12 +191,12 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
   }
   totlen += i;
 
-  if(i + 2 >= *length)
+  if(i + 2 > *length)
     return NULL;
   topiclen = buffer[i++] << 8;
   topiclen |= buffer[i++];
 
-  if(i + topiclen >= *length){
+  if(i + topiclen > *length){
 	*length = 0;
     return NULL;
   }
@@ -204,7 +204,7 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
 
   if(mqtt_get_qos(buffer) > 0)
   {
-    if(i + 2 >= *length)
+    if(i + 2 > *length)
       return NULL;
     i += 2;
   }
@@ -231,6 +231,9 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
       int i;
       int topiclen;
 
+      if(mqtt_get_qos(buffer) <= 0)
+        return 0;
+
       for(i = 1; i < length; ++i)
       {
         if((buffer[i] & 0x80) == 0)
@@ -240,23 +243,17 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
         }
       }
 
-      if(i + 2 >= length)
+      if(i + 2 > length)
         return 0;
       topiclen = buffer[i++] << 8;
       topiclen |= buffer[i++];
 
-      if(i + topiclen >= length)
+      if(i + topiclen > length)
         return 0;
       i += topiclen;
 
-      if(mqtt_get_qos(buffer) > 0)
-      {
-        if(i + 2 >= length)
-          return 0;
-        //i += 2;
-      } else {
-    	  return 0;
-      }
+      if(i + 2 > length)
+        return 0;
 
       return (buffer[i] << 8) | buffer[i + 1];
     }
