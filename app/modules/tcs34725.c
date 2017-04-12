@@ -171,9 +171,10 @@ uint16_t tcs34725Read16(uint8_t reg)
 		@brief	Finishes enabling the device
 */
 /**************************************************************************/
-uint8_t tcs34725EnableDone(lua_State* L)
+uint8_t tcs34725EnableDone()
 {
 	dbg_printf("Enable finished\n");
+	lua_State *L = lua_getstate();
 	os_timer_disarm (&tcs34725_timer);
 	tcs34725Write8(TCS34725_ENABLE, TCS34725_ENABLE_PON | TCS34725_ENABLE_AEN);
 
@@ -218,7 +219,7 @@ uint8_t tcs34725Enable(lua_State* L)
 	tcs34725Write8(TCS34725_ENABLE, TCS34725_ENABLE_PON);
 	// Start a timer to wait TCS34725_EN_DELAY before calling tcs34725EnableDone
 	os_timer_disarm (&tcs34725_timer);
-	os_timer_setfn (&tcs34725_timer, (os_timer_func_t *)tcs34725EnableDone, L);
+	os_timer_setfn (&tcs34725_timer, (os_timer_func_t *)tcs34725EnableDone, NULL);
 	os_timer_arm (&tcs34725_timer, TCS34725_EN_DELAY, 0); // trigger callback when readout is ready
 
 	return 0;
