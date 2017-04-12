@@ -115,7 +115,6 @@ static tcs34725IntegrationTime_t	_tcs34725IntegrationTime = TCS34725_INTEGRATION
 
 os_timer_t tcs34725_timer; // timer for forced mode readout
 sint32_t cb_tcs_en;
-sint32_t self_ref;
 
 /**************************************************************************/
 /*!
@@ -187,11 +186,8 @@ uint8_t tcs34725EnableDone()
 	
 	lua_rawgeti(L, LUA_REGISTRYINDEX, cb_tcs_en); // Get the callback to call
 	luaL_unref(L, LUA_REGISTRYINDEX, cb_tcs_en); // Unregister the callback to avoid leak
-	lua_rawgeti(L, LUA_REGISTRYINDEX, self_ref);
-	luaL_unref(L, LUA_REGISTRYINDEX, self_ref);
-	self_ref = LUA_NOREF;
 	cb_tcs_en = LUA_NOREF;
-	lua_call(L, 1, 0);
+	lua_call(L, 0, 0);
 	
 	return 0;
 }
@@ -211,7 +207,6 @@ uint8_t tcs34725Enable(lua_State* L)
 		}
 		lua_pushvalue(L, 1);
 		cb_tcs_en = luaL_ref(L, LUA_REGISTRYINDEX);
-		self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 	} else {
 		return luaL_error(L, "Enable argument must be a function.");
 	}
