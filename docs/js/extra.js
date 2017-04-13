@@ -38,7 +38,8 @@ var nodemcu = nodemcu || {};
     }
     function createTocTableRow(func, intro) {
       // fragile attempt to auto-create the in-page anchor
-      var href = func.replace(/\.|:/g, '').replace('()', '').replace(' --', '-').replace(/ /g, '-');
+      // good tests: file.md,
+      var href = func.replace(/[\.:\(\)]/g, '').replace(/ --|, | /g, '-');
       var link = '<a href="#' + href.toLowerCase() + '">' + func + '</a>';
       return '<tr><td>' + link + '</td><td>' + intro + '</td></tr>';
     }
