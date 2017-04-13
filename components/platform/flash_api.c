@@ -29,8 +29,8 @@ static inline esp_image_header_t flash_load_rom_header (void)
 #define IRAM_SECTION __attribute__((section(".iram1")))
 static void IRAM_SECTION update_flash_chip_size (uint32_t sz)
 {
-  SPIParamCfg (
-    g_rom_flashchip.deviceId,
+  esp_rom_spiflash_config_param (
+    g_rom_flashchip.device_id,
     sz,
     g_rom_flashchip.block_size,
     g_rom_flashchip.sector_size,

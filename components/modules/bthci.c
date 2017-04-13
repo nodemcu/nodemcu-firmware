@@ -31,6 +31,9 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 
+#include "sdkconfig.h"
+#ifdef CONFIG_LUA_MODULE_BTHCI
+
 #include "module.h"
 #include "lauxlib.h"
 #include "task/task.h"
@@ -327,7 +330,8 @@ static int lbthci_init (lua_State *L)
   for (int i = 0; i < MAX_CMD_Q; ++i)
     cmd_q[i].cb_ref = LUA_NOREF;
 
-  esp_bt_controller_init ();
+  esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+  esp_bt_controller_init (&bt_cfg);
 
   esp_vhci_host_register_callback (&bthci_callbacks);
 
@@ -573,3 +577,4 @@ static const LUA_REG_TYPE bthci_map[] =
 };
 
 NODEMCU_MODULE(BTHCI, "bthci", bthci_map, lbthci_init);
+#endif
