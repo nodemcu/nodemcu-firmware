@@ -127,7 +127,7 @@ static int onewire_rmt_init( uint8_t gpio_num )
       rmt_tx.tx_config.idle_output_en = true;
       rmt_tx.rmt_mode = RMT_MODE_TX;
       if (rmt_config( &rmt_tx ) == ESP_OK) {
-        if (rmt_driver_install( rmt_tx.channel, 0, 0 ) == ESP_OK) {
+        if (rmt_driver_install( rmt_tx.channel, 0, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED ) == ESP_OK) {
 
           rmt_config_t rmt_rx;
           rmt_rx.channel = ow_rmt.rx;
@@ -139,7 +139,7 @@ static int onewire_rmt_init( uint8_t gpio_num )
           rmt_rx.rx_config.filter_ticks_thresh = 30;
           rmt_rx.rx_config.idle_threshold = OW_DURATION_RX_IDLE;
           if (rmt_config( &rmt_rx ) == ESP_OK) {
-            if (rmt_driver_install( rmt_rx.channel, 512, 0 ) == ESP_OK) {
+            if (rmt_driver_install( rmt_rx.channel, 512, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED ) == ESP_OK) {
 
               rmt_get_ringbuf_handler( ow_rmt.rx, &ow_rmt.rb );
 

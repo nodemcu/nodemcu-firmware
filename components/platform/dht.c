@@ -91,7 +91,7 @@ static int dht_init( uint8_t gpio_num )
     rmt_rx.rx_config.filter_ticks_thresh = 30;
     rmt_rx.rx_config.idle_threshold = DHT_DURATION_RX_IDLE;
     if (rmt_config( &rmt_rx ) == ESP_OK) {
-      if (rmt_driver_install( rmt_rx.channel, 512, 0 ) == ESP_OK) {
+      if (rmt_driver_install( rmt_rx.channel, 512, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED ) == ESP_OK) {
 
         rmt_get_ringbuf_handler( dht_rmt.channel, &dht_rmt.rb );
 
