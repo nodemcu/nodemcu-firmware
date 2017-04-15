@@ -35,6 +35,7 @@ pages:
         - 'bthci':       'en/modules/bthci.md'
         - 'dht':         'en/modules/dht.md'
         - 'file':        'en/modules/file.md'
+        - 'gpio':        'en/modules/gpio.md'
         - 'i2c':         'en/modules/i2c.md'
         - 'node':        'en/modules/node.md'
         - 'ow (1-Wire)': 'en/modules/ow.md'
