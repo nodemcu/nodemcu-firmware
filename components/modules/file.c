@@ -380,25 +380,6 @@ typedef struct {
 } volume_type;
 
 #ifdef CONFIG_BUILD_FATFS
-// Lua: vol = file.mount("/SD0")
-static int file_mount( lua_State *L )
-{
-  const char *ldrv = luaL_checkstring( L, 1 );
-  int num = luaL_optint( L, 2, -1 );
-  volume_type *vol = (volume_type *)lua_newuserdata( L, sizeof( volume_type ) );
-
-  if ((vol->vol = vfs_mount( ldrv, num ))) {
-    /* set its metatable */
-    luaL_getmetatable(L, "vfs.vol");
-    lua_setmetatable(L, -2);
-    return 1;
-  } else {
-    // remove created userdata
-    lua_pop( L, 1 );
-    return 0;
-  }
-}
-
 // Lua: success = file.chdir("/SD0/")
 static int file_chdir( lua_State *L )
 {
@@ -408,29 +389,6 @@ static int file_chdir( lua_State *L )
   return 1;
 }
 #endif
-
-static int file_vol_umount( lua_State *L )
-{
-  volume_type *vol = luaL_checkudata( L, 1, "file.vol" );
-  luaL_argcheck( L, vol, 1, "volume expected" );
-
-  lua_pushboolean( L, 0 <= vfs_umount( vol->vol ) );
-
-  // invalidate vfs descriptor, it has been free'd anyway
-  vol->vol = NULL;
-  return 1;
-}
-
-
-static const LUA_REG_TYPE file_vol_map[] =
-{
-  { LSTRKEY( "umount" ),   LFUNCVAL( file_vol_umount )},
-  //{ LSTRKEY( "getfree" ),  LFUNCVAL( file_vol_getfree )},
-  //{ LSTRKEY( "getlabel" ), LFUNCVAL( file_vol_getlabel )},
-  //{ LSTRKEY( "__gc" ),     LFUNCVAL( file_vol_free ) },
-  { LSTRKEY( "__index" ),  LROVAL( file_vol_map ) },
-  { LNILKEY, LNILVAL }
-};
 
 // Module function map
 static const LUA_REG_TYPE file_map[] = {
@@ -453,15 +411,9 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
   { LSTRKEY( "on" ),        LFUNCVAL( file_on ) },
 #ifdef CONFIG_BUILD_FATFS
-  { LSTRKEY( "mount" ),     LFUNCVAL( file_mount ) },
   { LSTRKEY( "chdir" ),     LFUNCVAL( file_chdir ) },
 #endif
   { LNILKEY, LNILVAL }
 };
 
-int luaopen_file( lua_State *L ) {
-  luaL_rometatable( L, "file.vol",  (void *)file_vol_map );
-  return 0;
-}
-
-NODEMCU_MODULE(FILE, "file", file_map, luaopen_file);
+NODEMCU_MODULE(FILE, "file", file_map, NULL);

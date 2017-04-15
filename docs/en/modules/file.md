@@ -1,7 +1,7 @@
 # file Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [file.c](../../../app/modules/file.c)|
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [file.c](../../../components/modules/file.c)|
 
 The file module provides access to the file system and its individual files.
 
@@ -204,28 +204,6 @@ l = file.list();
 for k,v in pairs(l) do
   print("name:"..k..", size:"..v)
 end
-```
-
-## file.mount()
-
-Mounts a FatFs volume on SD card.
-
-Not supported for internal flash.
-
-#### Syntax
-`file.mount(ldrv[, pin])`
-
-#### Parameters
-- `ldrv` name of the logical drive, `SD0:`, `SD1:`, etc.
-- `pin` 1~12, IO index for SS/CS, defaults to 8 if omitted.
-
-#### Returns
-Volume object
-
-#### Example
-```lua
-vol = file.mount("SD0:")
-vol:umount()
 ```
 
 ## file.on()

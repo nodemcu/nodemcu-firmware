@@ -8,7 +8,11 @@
 /*-----------------------------------------------------------------------*/
 
 #include "diskio.h"		/* FatFs lower layer API */
-#include "sdcard.h"
+#include "sdmmc_cmd.h"
+
+// defined in components/modules/sdmmc.c
+extern sdmmc_card_t lsdmmc_card[2];
+
 
 static DSTATUS m_status = STA_NOINIT;
 
@@ -20,6 +24,8 @@ DSTATUS disk_status (
 	BYTE pdrv		/* Physical drive nmuber to identify the drive */
 )
 {
+  (void)pdrv;
+
   return m_status;
 }
 
@@ -33,9 +39,9 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-  if (platform_sdcard_init( 1, pdrv )) {
-    m_status &= ~STA_NOINIT;
-  }
+  (void)pdrv;
+
+  m_status &= ~STA_NOINIT;
 
   return m_status;
 }
@@ -53,17 +59,10 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-  if (count == 1) {
-    if (! platform_sdcard_read_block( pdrv, sector, buff )) {
-      return RES_ERROR;
-    }
-  } else {
-    if (! platform_sdcard_read_blocks( pdrv, sector, count, buff )) {
-      return RES_ERROR;
-    }
-  }
+  if (sdmmc_read_sectors( &(lsdmmc_card[pdrv]), buff, sector, count ) == ESP_OK)
+    return RES_OK;
 
-  return RES_OK;
+  return RES_ERROR;
 }
 
 
@@ -78,17 +77,10 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-  if (count == 1) {
-    if (! platform_sdcard_write_block( pdrv, sector, buff )) {
-      return RES_ERROR;
-    }
-  } else {
-    if (! platform_sdcard_write_blocks( pdrv, sector, count, buff )) {
-      return RES_ERROR;
-    }
-  }
+  if (sdmmc_write_sectors( &(lsdmmc_card[pdrv]), buff, sector, count ) == ESP_OK)
+    return RES_OK;
 
-  return RES_OK;
+  return RES_ERROR;
 }
 
 
@@ -102,6 +94,9 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
+  (void)pdrv;
+  (void)buff;
+
   switch (cmd) {
   case CTRL_TRIM:    /* no-op */
   case CTRL_SYNC:    /* no-op */

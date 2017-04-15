@@ -3,4 +3,4 @@ COMPONENT_SRCDIRS:=. option
 COMPONENT_OBJS:=diskio.o ff.o myfatfs.o option/unicode.o 
 COMPONENT_ADD_INCLUDEDIRS:=.
 
-EXTRA_CFLAGS:=-imacros fatfs_prefix_lib.h
+CFLAGS+=-imacros fatfs_prefix_lib.h

@@ -11,14 +11,14 @@ typedef struct {
 #endif
 
 // Table to map physical drive & partition to a logical volume.
-// The first value is the physical drive and contains the GPIO pin for SS/CS of the SD card (default pin 8)
+// The first value is the physical drive which relates to the SDMMC slot number
 // The second value is the partition number.
 #define NUM_LOGICAL_DRIVES 4
 PARTITION VolToPart[NUM_LOGICAL_DRIVES] = {
-  {8, 1},   /* Logical drive "0:" ==> SS pin 8, 1st partition */
-  {8, 2},   /* Logical drive "1:" ==> SS pin 8, 2st partition */
-  {8, 3},   /* Logical drive "2:" ==> SS pin 8, 3st partition */
-  {8, 4}    /* Logical drive "3:" ==> SS pin 8, 4st partition */
+  {1, 1},   /* Logical drive "0:" ==> slot 1, 1st partition */
+  {1, 2},   /* Logical drive "1:" ==> slot 1, 2st partition */
+  {1, 3},   /* Logical drive "2:" ==> slot 1, 3st partition */
+  {1, 4}    /* Logical drive "3:" ==> slot 1, 4st partition */
 };
 
 #endif	/* __FATFS_CONFIG_H__ */

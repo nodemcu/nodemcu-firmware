@@ -105,6 +105,7 @@ config BUILD_SPIFFS
 config BUILD_FATFS
   bool "Support for FAT filesystems"
   default "n"
+  select LUA_MODULE_SDMMC
   help
       Include support for accessing FAT filesystems on SD cards.
 

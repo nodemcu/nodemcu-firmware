@@ -185,6 +185,7 @@ DWORD get_fattime( void )
 static int32_t myfatfs_umount( const struct vfs_vol *vol )
 {
   GET_FATFS_FS(vol);
+  (void)fs;
 
   last_result = f_mount( NULL, myvol->ldrname, 0 );
 
@@ -354,6 +355,7 @@ static vfs_item *myfatfs_readdir( const struct vfs_dir *dd )
 static void myfatfs_iclose( const struct vfs_item *di )
 {
   GET_FILINFO_FNO(di);
+  (void)fno;
 
   // free descriptor memory
   free( (void *)di );
@@ -430,7 +432,7 @@ static vfs_vol *myfatfs_mount( const char *name, int num )
 {
   struct myvfs_vol *vol;
 
-  // num argument specifies the physical driver = SS/CS pin number for this sd card
+  // num argument specifies the physical driver
   if (num >= 0) {
     for (int i = 0; i < NUM_LOGICAL_DRIVES; i++) {
       if (0 == strncmp( name, volstr[i], strlen( volstr[i] ) )) {

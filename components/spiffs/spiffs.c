@@ -214,8 +214,6 @@ static int32_t  myspiffs_vfs_format( void );
 static int32_t  myspiffs_vfs_errno( void );
 static void      myspiffs_vfs_clearerr( void );
 
-static int32_t myspiffs_vfs_umount( const struct vfs_vol *vol );
-
 // ---------------------------------------------------------------------------
 // function tables
 //
@@ -307,16 +305,6 @@ static const char *myspiffs_vfs_name( const struct vfs_item *di ) {
   GET_STAT_S(di);
 
   return (const char *)s->name;
-}
-
-
-// ---------------------------------------------------------------------------
-// volume functions
-//
-static int32_t myspiffs_vfs_umount( const struct vfs_vol *vol ) {
-  // not implemented
-
-  return VFS_RES_ERR;
 }
 
 

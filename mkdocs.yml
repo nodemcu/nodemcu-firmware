@@ -25,6 +25,7 @@ pages:
 - English:
     - Building the firmware: 'en/build.md'
     - Flashing the firmware: 'en/flash.md'
+    - Filesystem on SD card: 'en/sdcard.md'
     - Uploading code: 'en/upload.md'
     - FAQs:
         - Lua Developer FAQ: 'en/lua-developer-faq.md'
@@ -40,6 +41,7 @@ pages:
         - 'i2c':         'en/modules/i2c.md'
         - 'node':        'en/modules/node.md'
         - 'ow (1-Wire)': 'en/modules/ow.md'
+        - 'sdmmc':       'en/modules/sdmmc.md'
         - 'sigma delta': 'en/modules/sigma-delta.md'
         - 'struct':      'en/modules/struct.md'
         - 'tmr':         'en/modules/tmr.md'
