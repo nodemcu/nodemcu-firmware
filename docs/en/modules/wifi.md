@@ -4,8 +4,7 @@
 | 2015-05-12 | [Zeroday](https://github.com/funshine) | [dnc40085](https://github.com/dnc40085) | [wifi.c](../../../app/modules/wifi.c)|
 
 !!! important
-The wifi subsystem is maintained by background tasks that must run periodically, any function or task that takes longer than 15 ms (miliseconds) may cause the wifi subsystem to crash.
-To avoid these potential crashes, it is advised that the wifi subsystem be suspended with wifi.suspend() prior to the execution of any tasks or functions that exceed this 15 ms guideline.
+	The WiFi subsystem is maintained by background tasks that must run periodically. Any function or task that takes longer than 15ms (milliseconds) may cause the WiFi subsystem to crash. To avoid these potential crashes, it is advised that the WiFi subsystem be suspended with [wifi.suspend()](#wifisuspend) prior to the execution of any tasks or functions that exceed this 15ms guideline.
 
 
 The NodeMCU WiFi control is spread across several tables:
