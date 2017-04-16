@@ -181,7 +181,7 @@ var nodemcu = nodemcu || {};
       // path is like /en/<branch>/<lang>/build/ -> extract 'lang'
       // split[0] is an '' because the path starts with the separator
       selectedLanguageCode = path.split('/')[3];
-    } else {
+    } else if (!window.location.href.startsWith('file://')) {
       // path is like /<lang>/build/ -> extract 'lang'
       selectedLanguageCode = path.substr(1, 2);
     }
