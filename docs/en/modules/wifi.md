@@ -3,6 +3,10 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-05-12 | [Zeroday](https://github.com/funshine) | [dnc40085](https://github.com/dnc40085) | [wifi.c](../../../app/modules/wifi.c)|
 
+!!! important
+	The WiFi subsystem is maintained by background tasks that must run periodically. Any function or task that takes longer than 15ms (milliseconds) may cause the WiFi subsystem to crash. To avoid these potential crashes, it is advised that the WiFi subsystem be suspended with [wifi.suspend()](#wifisuspend) prior to the execution of any tasks or functions that exceed this 15ms guideline.
+
+
 The NodeMCU WiFi control is spread across several tables:
 
 - `wifi` for overall WiFi configuration
@@ -77,6 +81,10 @@ The current physical mode as one of `wifi.PHYMODE_B`, `wifi.PHYMODE_G` or `wifi.
 ## wifi.resume()
 
 Wake up WiFi from suspended state or cancel pending wifi suspension
+
+!!! note
+   Wifi resume occurs asynchronously, this means that the resume request will only be processed when control of the processor is passed back to the SDK (after MyResumeFunction() has completed)
+   The resume callback also occurs asynchronously and will only execute after wifi has resumed normal operation. 
 
 #### Syntax
 `wifi.resume([resume_cb])`
@@ -257,7 +265,10 @@ none
 
 Suspend Wifi to reduce current consumption. 
 
-This function is also useful for preventing WiFi stack related crashes when executing functions or tasks that take longer than ~500ms 
+!!! note
+   Wifi suspension occurs asynchronously, this means that the suspend request will only be processed when control of the processor is passed back to the SDK (after MySuspendFunction() has completed)
+   The suspend callback also occurs asynchronously and will only execute after wifi has been successfully been suspended. 
+
 
 #### Syntax
 `wifi.suspend({duration[, suspend_cb, resume_cb, preserve_mode]})`
