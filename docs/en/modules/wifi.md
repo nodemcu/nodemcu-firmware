@@ -78,6 +78,26 @@ The current physical mode as one of `wifi.PHYMODE_B`, `wifi.PHYMODE_G` or `wifi.
 #### See also
 [`wifi.setphymode()`](#wifisetphymode)
 
+## wifi.nullmodesleep()
+
+Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled by default.
+
+!!! note
+	This function **does not** store it's setting in flash, if auto sleep in NULL_MODE is not desired, `wifi.nullmodesleep(false)` must be called after power-up, restart, or wake from deep sleep.
+
+#### Syntax
+`wifi.nullmodesleep([enable])`
+
+#### Parameters
+- `enable`
+  - `true` Enable WiFi auto sleep in NULL_MODE. (Default setting)
+  - `false` Disable WiFi auto sleep in NULL_MODE.
+
+#### Returns
+- `sleep_enabled` Current/New NULL_MODE sleep setting
+	- If `wifi.nullmodesleep()` is called with no arguments, current setting is returned.
+	- If `wifi.nullmodesleep()` is called with `enable` argument, confirmation of new setting is returned.
+
 ## wifi.resume()
 
 Wake up WiFi from suspended state or cancel pending wifi suspension.
@@ -187,26 +207,6 @@ physical mode after setup
 
 #### See also
 [`wifi.getphymode()`](#wifigetphymode)
-
-## wifi.nullmodesleep()
-
-Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled by default.
-
-!!! note
-	This function **does not** store it's setting in flash, if auto sleep in NULL_MODE is not desired, `wifi.nullmodesleep(false)` must be called after power-up, restart, or wake from deep sleep.
-
-#### Syntax
-`wifi.nullmodesleep([enable])`
-
-#### Parameters
-- `enable`
-  - `true` Enable WiFi auto sleep in NULL_MODE. (Default setting)
-  - `false` Disable WiFi auto sleep in NULL_MODE.
-
-#### Returns
-- `sleep_enabled` Current/New NULL_MODE sleep setting
-	- If `wifi.nullmodesleep()` is called with no arguments, current setting is returned.
-	- If `wifi.nullmodesleep()` is called with `enable` argument, confirmation of new setting is returned.
 
 ## wifi.startsmart()
 
