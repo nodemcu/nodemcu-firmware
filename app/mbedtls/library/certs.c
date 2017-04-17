@@ -27,8 +27,6 @@
 
 #include "mbedtls/certs.h"
 
-#if defined(MBEDTLS_SELF_TEST)
-
 #if defined(MBEDTLS_CERTS_C)
 
 #if defined(MBEDTLS_ECDSA_C)
@@ -351,7 +349,3 @@ const size_t mbedtls_test_cli_key_len = sizeof( mbedtls_test_cli_key_ec );
 #endif /* MBEDTLS_RSA_C */
 
 #endif /* MBEDTLS_CERTS_C */
-
-#else
-
-#endif

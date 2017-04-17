@@ -6,7 +6,7 @@
 #define MBEDTLS_HAVE_TIME
 #define MBEDTLS_HAVE_TIME_DATE
 
-#undef MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_PLATFORM_MEMORY
 #undef MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
 
 #undef MBEDTLS_PLATFORM_EXIT_ALT
@@ -126,8 +126,6 @@
 
 #define MBEDTLS_SHA256_SMALLER
 
-#undef MBEDTLS_SSL_AEAD_RANDOM_IV
-
 #define MBEDTLS_SSL_ALL_ALERT_MESSAGES
 #undef MBEDTLS_SSL_DEBUG_ALL
 
@@ -187,6 +185,7 @@
 #define MBEDTLS_CCM_C
 #undef MBEDTLS_CERTS_C
 #define MBEDTLS_CIPHER_C
+#define MBEDTLS_CMAC_C
 #define MBEDTLS_CTR_DRBG_C
 #undef MBEDTLS_DEBUG_C
 #define MBEDTLS_DES_C
@@ -260,13 +259,14 @@
 
 //#define MBEDTLS_ENTROPY_MAX_SOURCES                20 /**< Maximum number of sources supported */
 //#define MBEDTLS_ENTROPY_MAX_GATHER                128 /**< Maximum amount requested from entropy sources */
+//#define MBEDTLS_ENTROPY_MIN_HARDWARE               32 /**< Default minimum number of bytes required for the hardware entropy source mbedtls_hardware_poll() before entropy is released */
 //#define MBEDTLS_MEMORY_ALIGN_MULTIPLE      4 /**< Align on multiples of this value */
 
 //#define MBEDTLS_PLATFORM_STD_MEM_HDR   <stdlib.h> /**< Header to include if MBEDTLS_PLATFORM_NO_STD_FUNCTIONS is defined. Don't define if no header is needed. */
-//#define MBEDTLS_PLATFORM_STD_CALLOC        calloc /**< Default allocator to use, can be undefined */
-//#define MBEDTLS_PLATFORM_STD_FREE            free /**< Default free to use, can be undefined */
+#define MBEDTLS_PLATFORM_STD_CALLOC        pvPortCalloc /**< Default allocator to use, can be undefined */
+#define MBEDTLS_PLATFORM_STD_FREE            vPortFree /**< Default free to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_EXIT            exit /**< Default exit to use, can be undefined */
-//#define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined */
+//#define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 //#define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_PRINTF        printf /**< Default printf to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_SNPRINTF    snprintf /**< Default snprintf to use, can be undefined */
@@ -278,11 +278,11 @@
 //#define MBEDTLS_PLATFORM_CALLOC_MACRO        calloc /**< Default allocator macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_FREE_MACRO            free /**< Default free macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_EXIT_MACRO            exit /**< Default exit macro to use, can be undefined */
-//#define MBEDTLS_PLATFORM_TIME_MACRO            time /**< Default time macro to use, can be undefined */
-//#define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined */
+//#define MBEDTLS_PLATFORM_TIME_MACRO            time /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
+//#define MBEDTLS_PLATFORM_TIME_TYPE_MACRO       time_t /**< Default time macro to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
 //#define MBEDTLS_PLATFORM_FPRINTF_MACRO      fprintf /**< Default fprintf macro to use, can be undefined */
-//#define MBEDTLS_PLATFORM_PRINTF_MACRO        printf /**< Default printf macro to use, can be undefined */
-//#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    snprintf /**< Default snprintf macro to use, can be undefined */
+#define MBEDTLS_PLATFORM_PRINTF_MACRO        ets_printf /**< Default printf macro to use, can be undefined */
+#define MBEDTLS_PLATFORM_SNPRINTF_MACRO    ets_snprintf /**< Default snprintf macro to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_READ_MACRO   mbedtls_platform_std_nv_seed_read /**< Default nv_seed_read function to use, can be undefined */
 //#define MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
 //#define MBEDTLS_SSL_CACHE_DEFAULT_TIMEOUT       86400 /**< 1 day  */
@@ -294,3 +294,4 @@
 
 //#define MBEDTLS_SSL_CIPHERSUITES MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
 #define MBEDTLS_X509_MAX_INTERMEDIATE_CA   3   /**< Maximum number of intermediate CAs in a verification chain. */
+//#define MBEDTLS_X509_MAX_FILE_PATH_LEN     512 /**< Maximum length of a path/filename string in bytes including the null terminator character ('\0'). */

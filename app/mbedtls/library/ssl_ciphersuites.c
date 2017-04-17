@@ -29,10 +29,14 @@
 
 #if defined(MBEDTLS_SSL_TLS_C)
 
+#if defined(MBEDTLS_PLATFORM_C)
+#include "mbedtls/platform.h"
+#else
+#include <stdlib.h>
+#endif
+
 #include "mbedtls/ssl_ciphersuites.h"
 #include "mbedtls/ssl.h"
-
-#include "c_types.h"
 
 #include <string.h>
 
@@ -48,7 +52,7 @@
  * 4. By hash function used when relevant
  * 5. By key exchange/auth again: EC > non-EC
  */
-static const int ciphersuite_preference[] ICACHE_RODATA_ATTR STORE_ATTR =
+static const int ciphersuite_preference[] =
 {
 #if defined(MBEDTLS_SSL_CIPHERSUITES)
     MBEDTLS_SSL_CIPHERSUITES,
@@ -260,7 +264,7 @@ static const int ciphersuite_preference[] ICACHE_RODATA_ATTR STORE_ATTR =
     0
 };
 
-static const mbedtls_ssl_ciphersuite_t ciphersuite_definitions[] ICACHE_RODATA_ATTR STORE_ATTR =
+static const mbedtls_ssl_ciphersuite_t ciphersuite_definitions[] =
 {
 #if defined(MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED)
 #if defined(MBEDTLS_AES_C)

@@ -33,7 +33,6 @@
 
 #if defined(MBEDTLS_AES_C)
 
-#include "c_types.h"
 #include <string.h>
 
 #include "mbedtls/aes.h"
@@ -57,7 +56,7 @@
 
 /* Implementation that should never be optimized out by the compiler */
 static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
+    volatile unsigned char *p = (unsigned char*)v; while( n-- ) *p++ = 0;
 }
 
 /*
@@ -92,7 +91,7 @@ static int aes_padlock_ace = -1;
 /*
  * Forward S-box
  */
-static const unsigned char FSb[256] ICACHE_RODATA_ATTR STORE_ATTR =
+static const unsigned char FSb[256] =
 {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5,
     0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -199,19 +198,19 @@ static const unsigned char FSb[256] ICACHE_RODATA_ATTR STORE_ATTR =
     V(CB,B0,B0,7B), V(FC,54,54,A8), V(D6,BB,BB,6D), V(3A,16,16,2C)
 
 #define V(a,b,c,d) 0x##a##b##c##d
-static const uint32_t FT0[256] ICACHE_RODATA_ATTR STORE_ATTR = { FT };
+static const uint32_t FT0[256] = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##b##c##d##a
-static const uint32_t FT1[256] ICACHE_RODATA_ATTR STORE_ATTR = { FT };
+static const uint32_t FT1[256] = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##c##d##a##b
-static const uint32_t FT2[256] ICACHE_RODATA_ATTR STORE_ATTR = { FT };
+static const uint32_t FT2[256] = { FT };
 #undef V
 
 #define V(a,b,c,d) 0x##d##a##b##c
-static const uint32_t FT3[256] ICACHE_RODATA_ATTR STORE_ATTR = { FT };
+static const uint32_t FT3[256] = { FT };
 #undef V
 
 #undef FT
@@ -219,7 +218,7 @@ static const uint32_t FT3[256] ICACHE_RODATA_ATTR STORE_ATTR = { FT };
 /*
  * Reverse S-box
  */
-static const unsigned char RSb[256] ICACHE_RODATA_ATTR STORE_ATTR =
+static const unsigned char RSb[256] =
 {
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38,
     0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
@@ -326,19 +325,19 @@ static const unsigned char RSb[256] ICACHE_RODATA_ATTR STORE_ATTR =
     V(61,84,CB,7B), V(70,B6,32,D5), V(74,5C,6C,48), V(42,57,B8,D0)
 
 #define V(a,b,c,d) 0x##a##b##c##d
-static const uint32_t RT0[256] ICACHE_RODATA_ATTR STORE_ATTR = { RT };
+static const uint32_t RT0[256] = { RT };
 #undef V
 
 #define V(a,b,c,d) 0x##b##c##d##a
-static const uint32_t RT1[256] ICACHE_RODATA_ATTR STORE_ATTR = { RT };
+static const uint32_t RT1[256] = { RT };
 #undef V
 
 #define V(a,b,c,d) 0x##c##d##a##b
-static const uint32_t RT2[256] ICACHE_RODATA_ATTR STORE_ATTR = { RT };
+static const uint32_t RT2[256] = { RT };
 #undef V
 
 #define V(a,b,c,d) 0x##d##a##b##c
-static const uint32_t RT3[256] ICACHE_RODATA_ATTR STORE_ATTR = { RT };
+static const uint32_t RT3[256] = { RT };
 #undef V
 
 #undef RT
@@ -346,7 +345,7 @@ static const uint32_t RT3[256] ICACHE_RODATA_ATTR STORE_ATTR = { RT };
 /*
  * Round constants
  */
-static const uint32_t RCON[10] ICACHE_RODATA_ATTR =
+static const uint32_t RCON[10] =
 {
     0x00000001, 0x00000002, 0x00000004, 0x00000008,
     0x00000010, 0x00000020, 0x00000040, 0x00000080,
@@ -532,10 +531,10 @@ int mbedtls_aes_setkey_enc( mbedtls_aes_context *ctx, const unsigned char *key,
             for( i = 0; i < 10; i++, RK += 4 )
             {
                 RK[4]  = RK[0] ^ RCON[i] ^
-                ( (uint32_t) system_get_data_of_array_8(FSb ,( RK[3] >>  8 ) & 0xFF )       ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb ,( RK[3] >> 16 ) & 0xFF ) <<  8 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb ,( RK[3] >> 24 ) & 0xFF ) << 16 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb ,( RK[3]       ) & 0xFF ) << 24 );
+                ( (uint32_t) FSb[ ( RK[3] >>  8 ) & 0xFF ]       ) ^
+                ( (uint32_t) FSb[ ( RK[3] >> 16 ) & 0xFF ] <<  8 ) ^
+                ( (uint32_t) FSb[ ( RK[3] >> 24 ) & 0xFF ] << 16 ) ^
+                ( (uint32_t) FSb[ ( RK[3]       ) & 0xFF ] << 24 );
 
                 RK[5]  = RK[1] ^ RK[4];
                 RK[6]  = RK[2] ^ RK[5];
@@ -548,10 +547,10 @@ int mbedtls_aes_setkey_enc( mbedtls_aes_context *ctx, const unsigned char *key,
             for( i = 0; i < 8; i++, RK += 6 )
             {
                 RK[6]  = RK[0] ^ RCON[i] ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[5] >>  8 ) & 0xFF )       ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[5] >> 16 ) & 0xFF ) <<  8 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[5] >> 24 ) & 0xFF ) << 16 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[5]       ) & 0xFF ) << 24 );
+                ( (uint32_t) FSb[ ( RK[5] >>  8 ) & 0xFF ]       ) ^
+                ( (uint32_t) FSb[ ( RK[5] >> 16 ) & 0xFF ] <<  8 ) ^
+                ( (uint32_t) FSb[ ( RK[5] >> 24 ) & 0xFF ] << 16 ) ^
+                ( (uint32_t) FSb[ ( RK[5]       ) & 0xFF ] << 24 );
 
                 RK[7]  = RK[1] ^ RK[6];
                 RK[8]  = RK[2] ^ RK[7];
@@ -566,20 +565,20 @@ int mbedtls_aes_setkey_enc( mbedtls_aes_context *ctx, const unsigned char *key,
             for( i = 0; i < 7; i++, RK += 8 )
             {
                 RK[8]  = RK[0] ^ RCON[i] ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[7] >>  8 ) & 0xFF )       ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[7] >> 16 ) & 0xFF ) <<  8 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[7] >> 24 ) & 0xFF ) << 16 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[7]       ) & 0xFF ) << 24 );
+                ( (uint32_t) FSb[ ( RK[7] >>  8 ) & 0xFF ]       ) ^
+                ( (uint32_t) FSb[ ( RK[7] >> 16 ) & 0xFF ] <<  8 ) ^
+                ( (uint32_t) FSb[ ( RK[7] >> 24 ) & 0xFF ] << 16 ) ^
+                ( (uint32_t) FSb[ ( RK[7]       ) & 0xFF ] << 24 );
 
                 RK[9]  = RK[1] ^ RK[8];
                 RK[10] = RK[2] ^ RK[9];
                 RK[11] = RK[3] ^ RK[10];
 
                 RK[12] = RK[4] ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[11]       ) & 0xFF )       ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[11] >>  8 ) & 0xFF ) <<  8 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[11] >> 16 ) & 0xFF ) << 16 ) ^
-                ( (uint32_t) system_get_data_of_array_8(FSb, ( RK[11] >> 24 ) & 0xFF ) << 24 );
+                ( (uint32_t) FSb[ ( RK[11]       ) & 0xFF ]       ) ^
+                ( (uint32_t) FSb[ ( RK[11] >>  8 ) & 0xFF ] <<  8 ) ^
+                ( (uint32_t) FSb[ ( RK[11] >> 16 ) & 0xFF ] << 16 ) ^
+                ( (uint32_t) FSb[ ( RK[11] >> 24 ) & 0xFF ] << 24 );
 
                 RK[13] = RK[5] ^ RK[12];
                 RK[14] = RK[6] ^ RK[13];
@@ -642,10 +641,10 @@ int mbedtls_aes_setkey_dec( mbedtls_aes_context *ctx, const unsigned char *key,
     {
         for( j = 0; j < 4; j++, SK++ )
         {
-            *RK++ = RT0[ system_get_data_of_array_8(FSb, ( *SK       ) & 0xFF ) ] ^
-                    RT1[ system_get_data_of_array_8(FSb, ( *SK >>  8 ) & 0xFF ) ] ^
-                    RT2[ system_get_data_of_array_8(FSb, ( *SK >> 16 ) & 0xFF ) ] ^
-                    RT3[ system_get_data_of_array_8(FSb, ( *SK >> 24 ) & 0xFF ) ];
+            *RK++ = RT0[ FSb[ ( *SK       ) & 0xFF ] ] ^
+                    RT1[ FSb[ ( *SK >>  8 ) & 0xFF ] ] ^
+                    RT2[ FSb[ ( *SK >> 16 ) & 0xFF ] ] ^
+                    RT3[ FSb[ ( *SK >> 24 ) & 0xFF ] ];
         }
     }
 
@@ -734,28 +733,28 @@ void mbedtls_aes_encrypt( mbedtls_aes_context *ctx,
     AES_FROUND( Y0, Y1, Y2, Y3, X0, X1, X2, X3 );
 
     X0 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y0       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y1 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y2 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y3 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) FSb[ ( Y0       ) & 0xFF ]       ) ^
+            ( (uint32_t) FSb[ ( Y1 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) FSb[ ( Y2 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) FSb[ ( Y3 >> 24 ) & 0xFF ] << 24 );
 
     X1 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y1       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y2 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y3 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y0 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) FSb[ ( Y1       ) & 0xFF ]       ) ^
+            ( (uint32_t) FSb[ ( Y2 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) FSb[ ( Y3 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) FSb[ ( Y0 >> 24 ) & 0xFF ] << 24 );
 
     X2 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y2       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y3 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y0 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y1 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) FSb[ ( Y2       ) & 0xFF ]       ) ^
+            ( (uint32_t) FSb[ ( Y3 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) FSb[ ( Y0 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) FSb[ ( Y1 >> 24 ) & 0xFF ] << 24 );
 
     X3 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y3       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y0 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y1 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(FSb, ( Y2 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) FSb[ ( Y3       ) & 0xFF ]       ) ^
+            ( (uint32_t) FSb[ ( Y0 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) FSb[ ( Y1 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) FSb[ ( Y2 >> 24 ) & 0xFF ] << 24 );
 
     PUT_UINT32_LE( X0, output,  0 );
     PUT_UINT32_LE( X1, output,  4 );
@@ -791,28 +790,28 @@ void mbedtls_aes_decrypt( mbedtls_aes_context *ctx,
     AES_RROUND( Y0, Y1, Y2, Y3, X0, X1, X2, X3 );
 
     X0 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y0       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y3 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y2 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y1 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) RSb[ ( Y0       ) & 0xFF ]       ) ^
+            ( (uint32_t) RSb[ ( Y3 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) RSb[ ( Y2 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) RSb[ ( Y1 >> 24 ) & 0xFF ] << 24 );
 
     X1 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y1       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y0 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y3 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y2 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) RSb[ ( Y1       ) & 0xFF ]       ) ^
+            ( (uint32_t) RSb[ ( Y0 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) RSb[ ( Y3 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) RSb[ ( Y2 >> 24 ) & 0xFF ] << 24 );
 
     X2 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y2       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y1 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y0 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y3 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) RSb[ ( Y2       ) & 0xFF ]       ) ^
+            ( (uint32_t) RSb[ ( Y1 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) RSb[ ( Y0 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) RSb[ ( Y3 >> 24 ) & 0xFF ] << 24 );
 
     X3 = *RK++ ^ \
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y3       ) & 0xFF )       ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y2 >>  8 ) & 0xFF ) <<  8 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y1 >> 16 ) & 0xFF ) << 16 ) ^
-            ( (uint32_t) system_get_data_of_array_8(RSb, ( Y0 >> 24 ) & 0xFF ) << 24 );
+            ( (uint32_t) RSb[ ( Y3       ) & 0xFF ]       ) ^
+            ( (uint32_t) RSb[ ( Y2 >>  8 ) & 0xFF ] <<  8 ) ^
+            ( (uint32_t) RSb[ ( Y1 >> 16 ) & 0xFF ] << 16 ) ^
+            ( (uint32_t) RSb[ ( Y0 >> 24 ) & 0xFF ] << 24 );
 
     PUT_UINT32_LE( X0, output,  0 );
     PUT_UINT32_LE( X1, output,  4 );
@@ -1223,7 +1222,9 @@ int mbedtls_aes_self_test( int verbose )
     int ret = 0, i, j, u, v;
     unsigned char key[32];
     unsigned char buf[64];
+#if defined(MBEDTLS_CIPHER_MODE_CBC) || defined(MBEDTLS_CIPHER_MODE_CFB)
     unsigned char iv[16];
+#endif
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
     unsigned char prv[16];
 #endif

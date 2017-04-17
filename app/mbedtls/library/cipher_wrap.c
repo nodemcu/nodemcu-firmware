@@ -178,7 +178,7 @@ static void aes_ctx_free( void *ctx )
     mbedtls_free( ctx );
 }
 
-static const mbedtls_cipher_base_t aes_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t aes_info = {
     MBEDTLS_CIPHER_ID_AES,
     aes_crypt_ecb_wrap,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -199,7 +199,7 @@ static const mbedtls_cipher_base_t aes_info ICACHE_RODATA_ATTR = {
     aes_ctx_free
 };
 
-static const mbedtls_cipher_info_t aes_128_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_128_ecb_info = {
     MBEDTLS_CIPHER_AES_128_ECB,
     MBEDTLS_MODE_ECB,
     128,
@@ -210,7 +210,7 @@ static const mbedtls_cipher_info_t aes_128_ecb_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_192_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_192_ecb_info = {
     MBEDTLS_CIPHER_AES_192_ECB,
     MBEDTLS_MODE_ECB,
     192,
@@ -221,7 +221,7 @@ static const mbedtls_cipher_info_t aes_192_ecb_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_256_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_256_ecb_info = {
     MBEDTLS_CIPHER_AES_256_ECB,
     MBEDTLS_MODE_ECB,
     256,
@@ -233,7 +233,7 @@ static const mbedtls_cipher_info_t aes_256_ecb_info ICACHE_RODATA_ATTR = {
 };
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-static const mbedtls_cipher_info_t aes_128_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_128_cbc_info = {
     MBEDTLS_CIPHER_AES_128_CBC,
     MBEDTLS_MODE_CBC,
     128,
@@ -244,7 +244,7 @@ static const mbedtls_cipher_info_t aes_128_cbc_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_192_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_192_cbc_info = {
     MBEDTLS_CIPHER_AES_192_CBC,
     MBEDTLS_MODE_CBC,
     192,
@@ -255,7 +255,7 @@ static const mbedtls_cipher_info_t aes_192_cbc_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_256_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_256_cbc_info = {
     MBEDTLS_CIPHER_AES_256_CBC,
     MBEDTLS_MODE_CBC,
     256,
@@ -268,7 +268,7 @@ static const mbedtls_cipher_info_t aes_256_cbc_info ICACHE_RODATA_ATTR = {
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-static const mbedtls_cipher_info_t aes_128_cfb128_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_128_cfb128_info = {
     MBEDTLS_CIPHER_AES_128_CFB128,
     MBEDTLS_MODE_CFB,
     128,
@@ -279,7 +279,7 @@ static const mbedtls_cipher_info_t aes_128_cfb128_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_192_cfb128_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_192_cfb128_info = {
     MBEDTLS_CIPHER_AES_192_CFB128,
     MBEDTLS_MODE_CFB,
     192,
@@ -290,7 +290,7 @@ static const mbedtls_cipher_info_t aes_192_cfb128_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_256_cfb128_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_256_cfb128_info = {
     MBEDTLS_CIPHER_AES_256_CFB128,
     MBEDTLS_MODE_CFB,
     256,
@@ -303,7 +303,7 @@ static const mbedtls_cipher_info_t aes_256_cfb128_info ICACHE_RODATA_ATTR = {
 #endif /* MBEDTLS_CIPHER_MODE_CFB */
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-static const mbedtls_cipher_info_t aes_128_ctr_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_128_ctr_info = {
     MBEDTLS_CIPHER_AES_128_CTR,
     MBEDTLS_MODE_CTR,
     128,
@@ -314,7 +314,7 @@ static const mbedtls_cipher_info_t aes_128_ctr_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_192_ctr_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_192_ctr_info = {
     MBEDTLS_CIPHER_AES_192_CTR,
     MBEDTLS_MODE_CTR,
     192,
@@ -325,7 +325,7 @@ static const mbedtls_cipher_info_t aes_192_ctr_info ICACHE_RODATA_ATTR = {
     &aes_info
 };
 
-static const mbedtls_cipher_info_t aes_256_ctr_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_256_ctr_info = {
     MBEDTLS_CIPHER_AES_256_CTR,
     MBEDTLS_MODE_CTR,
     256,
@@ -345,7 +345,7 @@ static int gcm_aes_setkey_wrap( void *ctx, const unsigned char *key,
                      key, key_bitlen );
 }
 
-static const mbedtls_cipher_base_t gcm_aes_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t gcm_aes_info = {
     MBEDTLS_CIPHER_ID_AES,
     NULL,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -366,7 +366,7 @@ static const mbedtls_cipher_base_t gcm_aes_info ICACHE_RODATA_ATTR = {
     gcm_ctx_free,
 };
 
-static const mbedtls_cipher_info_t aes_128_gcm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_128_gcm_info = {
     MBEDTLS_CIPHER_AES_128_GCM,
     MBEDTLS_MODE_GCM,
     128,
@@ -377,7 +377,7 @@ static const mbedtls_cipher_info_t aes_128_gcm_info ICACHE_RODATA_ATTR = {
     &gcm_aes_info
 };
 
-static const mbedtls_cipher_info_t aes_192_gcm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_192_gcm_info = {
     MBEDTLS_CIPHER_AES_192_GCM,
     MBEDTLS_MODE_GCM,
     192,
@@ -388,7 +388,7 @@ static const mbedtls_cipher_info_t aes_192_gcm_info ICACHE_RODATA_ATTR = {
     &gcm_aes_info
 };
 
-static const mbedtls_cipher_info_t aes_256_gcm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_256_gcm_info = {
     MBEDTLS_CIPHER_AES_256_GCM,
     MBEDTLS_MODE_GCM,
     256,
@@ -408,7 +408,7 @@ static int ccm_aes_setkey_wrap( void *ctx, const unsigned char *key,
                      key, key_bitlen );
 }
 
-static const mbedtls_cipher_base_t ccm_aes_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t ccm_aes_info = {
     MBEDTLS_CIPHER_ID_AES,
     NULL,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -429,7 +429,7 @@ static const mbedtls_cipher_base_t ccm_aes_info ICACHE_RODATA_ATTR = {
     ccm_ctx_free,
 };
 
-static const mbedtls_cipher_info_t aes_128_ccm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_128_ccm_info = {
     MBEDTLS_CIPHER_AES_128_CCM,
     MBEDTLS_MODE_CCM,
     128,
@@ -440,7 +440,7 @@ static const mbedtls_cipher_info_t aes_128_ccm_info ICACHE_RODATA_ATTR = {
     &ccm_aes_info
 };
 
-static const mbedtls_cipher_info_t aes_192_ccm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_192_ccm_info = {
     MBEDTLS_CIPHER_AES_192_CCM,
     MBEDTLS_MODE_CCM,
     192,
@@ -451,7 +451,7 @@ static const mbedtls_cipher_info_t aes_192_ccm_info ICACHE_RODATA_ATTR = {
     &ccm_aes_info
 };
 
-static const mbedtls_cipher_info_t aes_256_ccm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t aes_256_ccm_info = {
     MBEDTLS_CIPHER_AES_256_CCM,
     MBEDTLS_MODE_CCM,
     256,
@@ -535,7 +535,7 @@ static void camellia_ctx_free( void *ctx )
     mbedtls_free( ctx );
 }
 
-static const mbedtls_cipher_base_t camellia_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t camellia_info = {
     MBEDTLS_CIPHER_ID_CAMELLIA,
     camellia_crypt_ecb_wrap,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -556,7 +556,7 @@ static const mbedtls_cipher_base_t camellia_info ICACHE_RODATA_ATTR = {
     camellia_ctx_free
 };
 
-static const mbedtls_cipher_info_t camellia_128_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_128_ecb_info = {
     MBEDTLS_CIPHER_CAMELLIA_128_ECB,
     MBEDTLS_MODE_ECB,
     128,
@@ -567,7 +567,7 @@ static const mbedtls_cipher_info_t camellia_128_ecb_info ICACHE_RODATA_ATTR = {
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_192_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_192_ecb_info = {
     MBEDTLS_CIPHER_CAMELLIA_192_ECB,
     MBEDTLS_MODE_ECB,
     192,
@@ -578,7 +578,7 @@ static const mbedtls_cipher_info_t camellia_192_ecb_info ICACHE_RODATA_ATTR = {
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_256_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_256_ecb_info = {
     MBEDTLS_CIPHER_CAMELLIA_256_ECB,
     MBEDTLS_MODE_ECB,
     256,
@@ -590,7 +590,7 @@ static const mbedtls_cipher_info_t camellia_256_ecb_info ICACHE_RODATA_ATTR = {
 };
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-static const mbedtls_cipher_info_t camellia_128_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_128_cbc_info = {
     MBEDTLS_CIPHER_CAMELLIA_128_CBC,
     MBEDTLS_MODE_CBC,
     128,
@@ -601,7 +601,7 @@ static const mbedtls_cipher_info_t camellia_128_cbc_info ICACHE_RODATA_ATTR = {
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_192_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_192_cbc_info = {
     MBEDTLS_CIPHER_CAMELLIA_192_CBC,
     MBEDTLS_MODE_CBC,
     192,
@@ -612,7 +612,7 @@ static const mbedtls_cipher_info_t camellia_192_cbc_info ICACHE_RODATA_ATTR = {
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_256_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_256_cbc_info = {
     MBEDTLS_CIPHER_CAMELLIA_256_CBC,
     MBEDTLS_MODE_CBC,
     256,
@@ -625,7 +625,7 @@ static const mbedtls_cipher_info_t camellia_256_cbc_info ICACHE_RODATA_ATTR = {
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-static const mbedtls_cipher_info_t camellia_128_cfb128_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_128_cfb128_info = {
     MBEDTLS_CIPHER_CAMELLIA_128_CFB128,
     MBEDTLS_MODE_CFB,
     128,
@@ -636,7 +636,7 @@ static const mbedtls_cipher_info_t camellia_128_cfb128_info ICACHE_RODATA_ATTR =
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_192_cfb128_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_192_cfb128_info = {
     MBEDTLS_CIPHER_CAMELLIA_192_CFB128,
     MBEDTLS_MODE_CFB,
     192,
@@ -647,7 +647,7 @@ static const mbedtls_cipher_info_t camellia_192_cfb128_info ICACHE_RODATA_ATTR =
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_256_cfb128_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_256_cfb128_info = {
     MBEDTLS_CIPHER_CAMELLIA_256_CFB128,
     MBEDTLS_MODE_CFB,
     256,
@@ -660,7 +660,7 @@ static const mbedtls_cipher_info_t camellia_256_cfb128_info ICACHE_RODATA_ATTR =
 #endif /* MBEDTLS_CIPHER_MODE_CFB */
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-static const mbedtls_cipher_info_t camellia_128_ctr_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_128_ctr_info = {
     MBEDTLS_CIPHER_CAMELLIA_128_CTR,
     MBEDTLS_MODE_CTR,
     128,
@@ -671,7 +671,7 @@ static const mbedtls_cipher_info_t camellia_128_ctr_info ICACHE_RODATA_ATTR = {
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_192_ctr_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_192_ctr_info = {
     MBEDTLS_CIPHER_CAMELLIA_192_CTR,
     MBEDTLS_MODE_CTR,
     192,
@@ -682,7 +682,7 @@ static const mbedtls_cipher_info_t camellia_192_ctr_info ICACHE_RODATA_ATTR = {
     &camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_256_ctr_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_256_ctr_info = {
     MBEDTLS_CIPHER_CAMELLIA_256_CTR,
     MBEDTLS_MODE_CTR,
     256,
@@ -702,7 +702,7 @@ static int gcm_camellia_setkey_wrap( void *ctx, const unsigned char *key,
                      key, key_bitlen );
 }
 
-static const mbedtls_cipher_base_t gcm_camellia_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t gcm_camellia_info = {
     MBEDTLS_CIPHER_ID_CAMELLIA,
     NULL,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -723,7 +723,7 @@ static const mbedtls_cipher_base_t gcm_camellia_info ICACHE_RODATA_ATTR = {
     gcm_ctx_free,
 };
 
-static const mbedtls_cipher_info_t camellia_128_gcm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_128_gcm_info = {
     MBEDTLS_CIPHER_CAMELLIA_128_GCM,
     MBEDTLS_MODE_GCM,
     128,
@@ -734,7 +734,7 @@ static const mbedtls_cipher_info_t camellia_128_gcm_info ICACHE_RODATA_ATTR = {
     &gcm_camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_192_gcm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_192_gcm_info = {
     MBEDTLS_CIPHER_CAMELLIA_192_GCM,
     MBEDTLS_MODE_GCM,
     192,
@@ -745,7 +745,7 @@ static const mbedtls_cipher_info_t camellia_192_gcm_info ICACHE_RODATA_ATTR = {
     &gcm_camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_256_gcm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_256_gcm_info = {
     MBEDTLS_CIPHER_CAMELLIA_256_GCM,
     MBEDTLS_MODE_GCM,
     256,
@@ -765,7 +765,7 @@ static int ccm_camellia_setkey_wrap( void *ctx, const unsigned char *key,
                      key, key_bitlen );
 }
 
-static const mbedtls_cipher_base_t ccm_camellia_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t ccm_camellia_info = {
     MBEDTLS_CIPHER_ID_CAMELLIA,
     NULL,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -786,7 +786,7 @@ static const mbedtls_cipher_base_t ccm_camellia_info ICACHE_RODATA_ATTR = {
     ccm_ctx_free,
 };
 
-static const mbedtls_cipher_info_t camellia_128_ccm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_128_ccm_info = {
     MBEDTLS_CIPHER_CAMELLIA_128_CCM,
     MBEDTLS_MODE_CCM,
     128,
@@ -797,7 +797,7 @@ static const mbedtls_cipher_info_t camellia_128_ccm_info ICACHE_RODATA_ATTR = {
     &ccm_camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_192_ccm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_192_ccm_info = {
     MBEDTLS_CIPHER_CAMELLIA_192_CCM,
     MBEDTLS_MODE_CCM,
     192,
@@ -808,7 +808,7 @@ static const mbedtls_cipher_info_t camellia_192_ccm_info ICACHE_RODATA_ATTR = {
     &ccm_camellia_info
 };
 
-static const mbedtls_cipher_info_t camellia_256_ccm_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t camellia_256_ccm_info = {
     MBEDTLS_CIPHER_CAMELLIA_256_CCM,
     MBEDTLS_MODE_CCM,
     256,
@@ -941,7 +941,7 @@ static void des3_ctx_free( void *ctx )
     mbedtls_free( ctx );
 }
 
-static const mbedtls_cipher_base_t des_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t des_info = {
     MBEDTLS_CIPHER_ID_DES,
     des_crypt_ecb_wrap,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -962,7 +962,7 @@ static const mbedtls_cipher_base_t des_info ICACHE_RODATA_ATTR = {
     des_ctx_free
 };
 
-static const mbedtls_cipher_info_t des_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t des_ecb_info = {
     MBEDTLS_CIPHER_DES_ECB,
     MBEDTLS_MODE_ECB,
     MBEDTLS_KEY_LENGTH_DES,
@@ -974,7 +974,7 @@ static const mbedtls_cipher_info_t des_ecb_info ICACHE_RODATA_ATTR = {
 };
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-static const mbedtls_cipher_info_t des_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t des_cbc_info = {
     MBEDTLS_CIPHER_DES_CBC,
     MBEDTLS_MODE_CBC,
     MBEDTLS_KEY_LENGTH_DES,
@@ -986,7 +986,7 @@ static const mbedtls_cipher_info_t des_cbc_info ICACHE_RODATA_ATTR = {
 };
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
-static const mbedtls_cipher_base_t des_ede_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t des_ede_info = {
     MBEDTLS_CIPHER_ID_DES,
     des3_crypt_ecb_wrap,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -1007,7 +1007,7 @@ static const mbedtls_cipher_base_t des_ede_info ICACHE_RODATA_ATTR = {
     des3_ctx_free
 };
 
-static const mbedtls_cipher_info_t des_ede_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t des_ede_ecb_info = {
     MBEDTLS_CIPHER_DES_EDE_ECB,
     MBEDTLS_MODE_ECB,
     MBEDTLS_KEY_LENGTH_DES_EDE,
@@ -1019,7 +1019,7 @@ static const mbedtls_cipher_info_t des_ede_ecb_info ICACHE_RODATA_ATTR = {
 };
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-static const mbedtls_cipher_info_t des_ede_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t des_ede_cbc_info = {
     MBEDTLS_CIPHER_DES_EDE_CBC,
     MBEDTLS_MODE_CBC,
     MBEDTLS_KEY_LENGTH_DES_EDE,
@@ -1031,7 +1031,7 @@ static const mbedtls_cipher_info_t des_ede_cbc_info ICACHE_RODATA_ATTR = {
 };
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
-static const mbedtls_cipher_base_t des_ede3_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t des_ede3_info = {
     MBEDTLS_CIPHER_ID_3DES,
     des3_crypt_ecb_wrap,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -1052,7 +1052,7 @@ static const mbedtls_cipher_base_t des_ede3_info ICACHE_RODATA_ATTR = {
     des3_ctx_free
 };
 
-static const mbedtls_cipher_info_t des_ede3_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t des_ede3_ecb_info = {
     MBEDTLS_CIPHER_DES_EDE3_ECB,
     MBEDTLS_MODE_ECB,
     MBEDTLS_KEY_LENGTH_DES_EDE3,
@@ -1063,7 +1063,7 @@ static const mbedtls_cipher_info_t des_ede3_ecb_info ICACHE_RODATA_ATTR = {
     &des_ede3_info
 };
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-static const mbedtls_cipher_info_t des_ede3_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t des_ede3_cbc_info = {
     MBEDTLS_CIPHER_DES_EDE3_CBC,
     MBEDTLS_MODE_CBC,
     MBEDTLS_KEY_LENGTH_DES_EDE3,
@@ -1140,7 +1140,7 @@ static void blowfish_ctx_free( void *ctx )
     mbedtls_free( ctx );
 }
 
-static const mbedtls_cipher_base_t blowfish_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t blowfish_info = {
     MBEDTLS_CIPHER_ID_BLOWFISH,
     blowfish_crypt_ecb_wrap,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -1161,7 +1161,7 @@ static const mbedtls_cipher_base_t blowfish_info ICACHE_RODATA_ATTR = {
     blowfish_ctx_free
 };
 
-static const mbedtls_cipher_info_t blowfish_ecb_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t blowfish_ecb_info = {
     MBEDTLS_CIPHER_BLOWFISH_ECB,
     MBEDTLS_MODE_ECB,
     128,
@@ -1173,7 +1173,7 @@ static const mbedtls_cipher_info_t blowfish_ecb_info ICACHE_RODATA_ATTR = {
 };
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
-static const mbedtls_cipher_info_t blowfish_cbc_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t blowfish_cbc_info = {
     MBEDTLS_CIPHER_BLOWFISH_CBC,
     MBEDTLS_MODE_CBC,
     128,
@@ -1186,7 +1186,7 @@ static const mbedtls_cipher_info_t blowfish_cbc_info ICACHE_RODATA_ATTR = {
 #endif /* MBEDTLS_CIPHER_MODE_CBC */
 
 #if defined(MBEDTLS_CIPHER_MODE_CFB)
-static const mbedtls_cipher_info_t blowfish_cfb64_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t blowfish_cfb64_info = {
     MBEDTLS_CIPHER_BLOWFISH_CFB64,
     MBEDTLS_MODE_CFB,
     128,
@@ -1199,7 +1199,7 @@ static const mbedtls_cipher_info_t blowfish_cfb64_info ICACHE_RODATA_ATTR = {
 #endif /* MBEDTLS_CIPHER_MODE_CFB */
 
 #if defined(MBEDTLS_CIPHER_MODE_CTR)
-static const mbedtls_cipher_info_t blowfish_ctr_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t blowfish_ctr_info = {
     MBEDTLS_CIPHER_BLOWFISH_CTR,
     MBEDTLS_MODE_CTR,
     128,
@@ -1250,7 +1250,7 @@ static void arc4_ctx_free( void *ctx )
     mbedtls_free( ctx );
 }
 
-static const mbedtls_cipher_base_t arc4_base_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t arc4_base_info = {
     MBEDTLS_CIPHER_ID_ARC4,
     NULL,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -1271,7 +1271,7 @@ static const mbedtls_cipher_base_t arc4_base_info ICACHE_RODATA_ATTR = {
     arc4_ctx_free
 };
 
-static const mbedtls_cipher_info_t arc4_128_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t arc4_128_info = {
     MBEDTLS_CIPHER_ARC4_128,
     MBEDTLS_MODE_STREAM,
     128,
@@ -1313,7 +1313,7 @@ static void null_ctx_free( void *ctx )
     ((void) ctx);
 }
 
-static const mbedtls_cipher_base_t null_base_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_base_t null_base_info = {
     MBEDTLS_CIPHER_ID_NULL,
     NULL,
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -1334,7 +1334,7 @@ static const mbedtls_cipher_base_t null_base_info ICACHE_RODATA_ATTR = {
     null_ctx_free
 };
 
-static const mbedtls_cipher_info_t null_cipher_info ICACHE_RODATA_ATTR = {
+static const mbedtls_cipher_info_t null_cipher_info = {
     MBEDTLS_CIPHER_NULL,
     MBEDTLS_MODE_STREAM,
     0,
@@ -1346,7 +1346,7 @@ static const mbedtls_cipher_info_t null_cipher_info ICACHE_RODATA_ATTR = {
 };
 #endif /* defined(MBEDTLS_CIPHER_NULL_CIPHER) */
 
-const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] ICACHE_RODATA_ATTR =
+const mbedtls_cipher_definition_t mbedtls_cipher_definitions[] =
 {
 #if defined(MBEDTLS_AES_C)
     { MBEDTLS_CIPHER_AES_128_ECB,          &aes_128_ecb_info },
