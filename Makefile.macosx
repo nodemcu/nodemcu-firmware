@@ -1,0 +1,12 @@
+#TOOLCHAIN_HOME = /home/supermap/OpenThings/esp-open-sdk
+TOOLCHAIN_HOME = /Volumes/ESPTools/esp-open-sdk
+
+#SDK_HOME = ../../esp8266_sdk
+
+XTENSA_TOOLS_ROOT = $(TOOLCHAIN_HOME)/xtensa-lx106-elf/bin
+
+SDK_BASE	= .
+#SDK_BASE	= $(SDK_HOME)/esp_iot_sdk_v0.9.4
+#SDK_BASE	= $(SDK_HOME)/esp_iot_sdk_v1.0.0
+
+include Makefile.openthings
