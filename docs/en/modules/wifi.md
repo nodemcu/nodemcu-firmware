@@ -80,11 +80,10 @@ The current physical mode as one of `wifi.PHYMODE_B`, `wifi.PHYMODE_G` or `wifi.
 
 ## wifi.resume()
 
-Wake up WiFi from suspended state or cancel pending wifi suspension
+Wake up WiFi from suspended state or cancel pending wifi suspension.
 
 !!! note
-   Wifi resume occurs asynchronously, this means that the resume request will only be processed when control of the processor is passed back to the SDK (after MyResumeFunction() has completed)
-   The resume callback also occurs asynchronously and will only execute after wifi has resumed normal operation. 
+	Wifi resume occurs asynchronously, this means that the resume request will only be processed when control of the processor is passed back to the SDK (after MyResumeFunction() has completed). The resume callback also executes asynchronously and will only execute after wifi has resumed normal operation. 
 
 #### Syntax
 `wifi.resume([resume_cb])`
@@ -262,12 +261,10 @@ none
 [`wifi.startsmart()`](#wifistartsmart)
 
 ## wifi.suspend()
-
 Suspend Wifi to reduce current consumption. 
 
 !!! note
-   Wifi suspension occurs asynchronously, this means that the suspend request will only be processed when control of the processor is passed back to the SDK (after MySuspendFunction() has completed)
-   The suspend callback also occurs asynchronously and will only execute after wifi has been successfully been suspended. 
+	Wifi suspension occurs asynchronously, this means that the suspend request will only be processed when control of the processor is passed back to the SDK (after MySuspendFunction() has completed). The suspend callback also executes asynchronously and will only execute after wifi has been successfully been suspended. 
 
 
 #### Syntax
