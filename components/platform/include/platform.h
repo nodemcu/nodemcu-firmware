@@ -72,6 +72,7 @@ enum
 static inline int platform_uart_exists( unsigned id ) { return id < NUM_UART; }
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits );
 void platform_uart_send( unsigned id, uint8_t data );
+void platform_uart_flush( unsigned id );
 int platform_uart_set_flow_control( unsigned id, int type );
 
 

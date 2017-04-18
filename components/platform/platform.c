@@ -68,6 +68,12 @@ void platform_uart_send( unsigned id, uint8_t data )
     putchar (data);
 }
 
+void platform_uart_flush( unsigned id )
+{
+  if (id == CONSOLE_UART)
+    fflush (stdout);
+}
+
 // *****************************************************************************
 // Sigma-Delta platform interface
 
