@@ -381,6 +381,9 @@ none
 
 Sets the WiFi station configuration.
 
+!!! note
+	It is not advised to assume that the WiFi is connected at any time during initialization start-up. WiFi connection status should be validated either by using a WiFi event callback or by polling the status on a timer.
+
 #### Syntax
 `wifi.sta.config(station_config)`
 
