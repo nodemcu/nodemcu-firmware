@@ -131,6 +131,7 @@ static int uart_write( lua_State* L )
       if( len > 255 )
         return luaL_error( L, "invalid number" );
       platform_uart_send( id, (uint8_t)len );
+      platform_uart_flush( id );
     }
     else
     {
@@ -138,6 +139,7 @@ static int uart_write( lua_State* L )
       buf = lua_tolstring( L, s, &len );
       for( i = 0; i < len; i ++ )
         platform_uart_send( id, buf[ i ] );
+      platform_uart_flush( id );
     }
   }
   return 0;
