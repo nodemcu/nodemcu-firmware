@@ -52,6 +52,7 @@ pages:
         - 'file': 'en/modules/file.md'
         - 'gdbstub': 'en/modules/gdbstub.md'
         - 'gpio': 'en/modules/gpio.md'
+        - 'hdc1080': 'en/modules/hdc1080.md'
         - 'hmc5883l': 'en/modules/hmc5883l.md'
         - 'http': 'en/modules/http.md'
         - 'hx711' : 'en/modules/hx711.md'
@@ -94,3 +95,4 @@ pages:
         - 'xpt2046': 'en/modules/xpt2046.md'
 #- Deutsch:
 #    - Home: 'de/index.md'
+
