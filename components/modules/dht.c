@@ -66,6 +66,7 @@ static int ldht_read_generic( lua_State *L, ldht_type_t type )
     break;
   default:
     res = LDHT_INVALID_VALUE;
+    temp = humi = 0;
     break;
   }
   lua_pushinteger( L, res );
