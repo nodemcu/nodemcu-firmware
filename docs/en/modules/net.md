@@ -318,9 +318,12 @@ Otherwise, all connection errors (with normal close) passed to disconnection eve
 ```lua
 srv = net.createConnection(net.TCP, 0)
 srv:on("receive", function(sck, c) print(c) end)
+-- Wait for connection before sending.
 srv:on("connection", function(sck, c)
-  -- Wait for connection before sending.
-  sck:send("GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+  -- 'Connection: close' rather than 'Connection: keep-alive' to have server 
+  -- initiate a close of the connection after final response (frees memory 
+  -- earlier here), http://bit.ly/2pkOrsi 
+  sck:send("GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\nAccept: */*\r\n\r\n")
 end)
 srv:connect(80,"httpbin.org")
 ```
