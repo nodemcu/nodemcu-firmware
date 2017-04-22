@@ -322,7 +322,7 @@ srv:on("receive", function(sck, c) print(c) end)
 srv:on("connection", function(sck, c)
   -- 'Connection: close' rather than 'Connection: keep-alive' to have server 
   -- initiate a close of the connection after final response (frees memory 
-  -- earlier here), http://bit.ly/2pkOrsi 
+  -- earlier here), https://tools.ietf.org/html/rfc7230#section-6.6 
   sck:send("GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\nAccept: */*\r\n\r\n")
 end)
 srv:connect(80,"httpbin.org")
