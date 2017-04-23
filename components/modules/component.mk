@@ -6,6 +6,12 @@
 -include $(PROJECT_PATH)/build/include/config/auto.conf
 include $(PROJECT_PATH)/components/modules/uppercase.mk
 
+ifneq (4.0, $(firstword $(sort $(MAKE_VERSION) 4.0)))
+  # make versions below 4.0 will fail on the uppercase function used in
+  # the exapnsion of MODULE_NAMES.
+  $(error GNU make version 4.0 or above required)
+endif
+
 MODULE_NAMES:=$(call uppercase,$(patsubst $(COMPONENT_PATH)/%.c,%,$(wildcard $(COMPONENT_PATH)/*.c)))
 FORCE_LINK:=$(foreach mod,$(MODULE_NAMES),$(if $(CONFIG_LUA_MODULE_$(mod)), -u $(mod)_module_selected1))
 COMPONENT_ADD_LDFLAGS=$(FORCE_LINK) -lmodules $(if $(CONFIG_LUA_MODULE_BTHCI),-lbtdm_app)
