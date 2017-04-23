@@ -23,6 +23,10 @@ git clone --branch dev-esp32 --recurse-submodules https://github.com/nodemcu/nod
 
 The `make` command initiates the build process, which will start with the configuration menu to set the build options.
 
+!!! important
+
+    GNU make version 4.0 or higher is required for a successful build. Versions 3.8.2 and below will produce an incomplete firmware image.
+
 Updating your clone from upstream needs an additional command to update the submodules as well:
 ```
 git pull origin dev-esp32
