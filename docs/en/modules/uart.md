@@ -33,7 +33,7 @@ Sets the callback function to handle UART events.
 Currently only the "data" event is supported.
 
 !!! note 
-	Due to limitations of the ESP8266, only UART 0 is capable of recieving data.  
+	Due to limitations of the ESP8266, only UART 0 is capable of receiving data.  
 
 #### Syntax
 `uart.on(method, [number/end_char], [function], [run_input])`
