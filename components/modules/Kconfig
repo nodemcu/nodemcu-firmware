@@ -47,6 +47,13 @@ depends on LUA_BUILTIN_DEBUG
 endmenu
 
 
+config LUA_MODULE_ADC
+  bool "ADC module"
+  default "n"
+  help
+      Includes the adc module. This module provides access to the
+      adc1 hardware.
+
 config LUA_MODULE_BIT
   bool "Bit module"
   default "n"

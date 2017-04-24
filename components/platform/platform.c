@@ -1,6 +1,7 @@
 #include "platform.h"
 #include "driver/console.h"
 #include "driver/sigmadelta.h"
+#include "driver/adc.h"
 #include <stdio.h>
 
 int platform_init (void)
@@ -152,7 +153,42 @@ uint8_t IRAM_ATTR platform_sigma_delta_set_duty( uint8_t channel, int8_t duty )
 {
   return ESP_OK == sigmadelta_set_duty( channel, duty ) ? 1 : 0;
 }
+// *****************************************************************************
+// ADC
 
+int platform_adc_exists( uint8_t adc ) { return adc < 2 && adc > 0; }
+
+int platform_adc_channel_exists( uint8_t adc, uint8_t channel ) {
+  return (adc == 1 && (channel >= 0 && channel < 8));
+}
+
+uint8_t platform_adc_set_width( uint8_t adc, int bits ) {
+  bits = bits - 9;
+  if (bits < ADC_WIDTH_9Bit || bits > ADC_WIDTH_12Bit)
+    return 0;
+  if (ESP_OK != adc1_config_width( bits ))
+    return 0;
+
+  return 1;
+}
+
+uint8_t platform_adc_setup( uint8_t adc, uint8_t channel, uint8_t atten ) {
+  if (adc == 1 && ESP_OK != adc1_config_channel_atten( channel, atten ))
+    return 0;
+
+  return 1;
+}
+
+int platform_adc_read( uint8_t adc, uint8_t channel ) {
+  int value = -1;
+  if (adc == 1) value = adc1_get_voltage( channel );
+  return value;
+}
+
+int platform_adc_read_hall_sensor( ) {
+  int value = hall_sensor_read( );
+  return value;
+}
 // *****************************************************************************
 // I2C platform interface
 

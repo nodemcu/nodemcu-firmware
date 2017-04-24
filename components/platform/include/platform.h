@@ -87,6 +87,20 @@ uint8_t platform_sigma_delta_close( uint8_t channel );
 uint8_t platform_sigma_delta_set_prescale( uint8_t channel, uint8_t prescale );
 uint8_t platform_sigma_delta_set_duty( uint8_t channel, int8_t duty );
 
+// *****************************************************************************
+// ADC
+int platform_adc_exists( uint8_t adc );
+int platform_adc_channel_exists( uint8_t adc, uint8_t channel );
+uint8_t platform_adc_set_width( uint8_t adc, int bits );
+uint8_t platform_adc_setup( uint8_t adc, uint8_t channel, uint8_t attn );
+int platform_adc_read( uint8_t adc, uint8_t channel );
+int platform_adc_read_hall_sensor( );
+enum {
+    PLATFORM_ADC_ATTEN_0db   = 0,
+    PLATFORM_ADC_ATTEN_2_5db = 1,
+    PLATFORM_ADC_ATTEN_6db   = 2,
+    PLATFORM_ADC_ATTEN_11db  = 3,
+};
 
 // *****************************************************************************
 // I2C platform interface
