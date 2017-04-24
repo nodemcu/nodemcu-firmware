@@ -11,7 +11,7 @@
 // Number of resources (0 if not available/not implemented)
 #define NUM_GPIO              GPIO_PIN_NUM
 #define NUM_SPI               2
-#define NUM_UART              1
+#define NUM_UART              2
 #define NUM_PWM               GPIO_PIN_NUM
 #define NUM_ADC               1
 #define NUM_CAN               0
