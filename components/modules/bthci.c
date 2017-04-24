@@ -332,6 +332,7 @@ static int lbthci_init (lua_State *L)
 
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
   esp_bt_controller_init (&bt_cfg);
+  esp_bt_controller_enable (ESP_BT_MODE_BTDM);
 
   esp_vhci_host_register_callback (&bthci_callbacks);
 
