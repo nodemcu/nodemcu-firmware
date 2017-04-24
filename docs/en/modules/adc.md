@@ -12,10 +12,11 @@ On the ESP32 there are two ADC. ADC1 has 8 channels, while ADC2 has 10 channels.
 The configuration is in effect for all channels of ADC1
 
 #### Syntax
-`adc.setwidth(bits)`
+`adc.setwidth(adc_number, bits)`
 
 #### Parameters
-`bits` One of `9`/`10`/`11`/`12`.
+- `adc_number` Only `adc.ADC1` now
+- `bits` One of `9`/`10`/`11`/`12`.
 
 #### Returns
 nil
@@ -26,11 +27,16 @@ nil
 Configuration ADC1 capture attenuation of channels
 
 #### Syntax
-`adc.setup(channel, atten)`
+`adc.setup(adc_number, channel, atten)`
 
 #### Parameters
-`channel` `0` to `7`. 0: GPIO36, 1: GPIO37, 2: GPIO38, 3: GPIO39, 4: GPIO32, 5: GPIO33, 6: GPIO34, 7: GPIO35
-`atten` `adc.ATTEN_0db`, `adc.ATTEN_2_5db`, `adc.ATTEN_6db` or `adc.ATTEN_11db`.
+- `adc_number` Only `adc.ADC1` now
+- `channel`  When using `adc.ADC1`: `0` to `7`. 0: GPIO36, 1: GPIO37, 2: GPIO38, 3: GPIO39, 4: GPIO32, 5: GPIO33, 6: GPIO34, 7: GPIO35
+- `atten` One of following constants
+  - `adc.ATTEN_0db`    The input voltage of ADC will be reduced to about 1/1    (1.1V when VDD_A=3.3V)
+  - `adc.ATTEN_2_5db`  The input voltage of ADC will be reduced to about 1/1.34 (1.5V when VDD_A=3.3V)
+  - `adc.ATTEN_6db`    The input voltage of ADC will be reduced to about 1/2    (2.2V when VDD_A=3.3V)
+  - `adc.ATTEN_11db`   The input voltage of ADC will be reduced to about 1/3.6  (3.9V when VDD_A=3.3V,  maximum voltage is limited by VDD_A)
 
 #### Returns
 nil
@@ -41,34 +47,32 @@ nil
 Samples the ADC. You should to call `setwidth()` before `read()`.
 
 #### Syntax
-`adc.read(channel)`
+`adc.read(adc_number, channel)`
 
 #### Parameters
-`channel` 0 to 7 on the ESP32
+- `adc_number` Only `adc.ADC1` now
+- `channel` 0 to 7 for adc.ADC1
 
 #### Returns
 the sampled value (number)
 
 #### Example
 ```lua
-val = adc.read(0)
+val = adc.read(adc.ADC1, 0)
 ```
 
 ## adc.read_hall_sensor()
 
-Read Hall sensor (GPIO36, GPIO39). We recommend `setwidth(12)`.
+Read Hall sensor (GPIO36, GPIO39). We recommend using 12-bits width on ADC1.
 
 #### Syntax
-`adc.read(channel)`
-
-#### Parameters
-`channel` 0 to 7 on the ESP32
+`adc.read_hall_sensor()`
 
 #### Returns
 the sampled value (number)
 
 #### Example
 ```lua
-val = adc.read(0)
+val = adc.read_hall_sensor()
 ```
 

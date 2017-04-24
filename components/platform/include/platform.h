@@ -89,10 +89,11 @@ uint8_t platform_sigma_delta_set_duty( uint8_t channel, int8_t duty );
 
 // *****************************************************************************
 // ADC
-int platform_adc_exists( uint8_t channel );
-uint8_t platform_adc_set_width( int bits );
-uint8_t platform_adc_setup( uint8_t channel, uint8_t attn );
-int platform_adc_read( uint8_t channel );
+int platform_adc_exists( uint8_t adc );
+int platform_adc_channel_exists( uint8_t adc, uint8_t channel );
+uint8_t platform_adc_set_width( uint8_t adc, int bits );
+uint8_t platform_adc_setup( uint8_t adc, uint8_t channel, uint8_t attn );
+int platform_adc_read( uint8_t adc, uint8_t channel );
 int platform_adc_read_hall_sensor( );
 enum {
     PLATFORM_ADC_ATTEN_0db   = 0,
