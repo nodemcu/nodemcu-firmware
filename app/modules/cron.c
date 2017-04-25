@@ -67,12 +67,12 @@ static int lcron_parsedesc(lua_State *L, char *str, struct cronent_desc *desc) {
   if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   desc->hour = lcron_parsepart(L, s + 1, &s, 0, 23);
   if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
-  desc->dow = lcron_parsepart(L, s + 1, &s, 0, 6);
-  if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   desc->dom = lcron_parsepart(L, s + 1, &s, 1, 31);
   if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   desc->mon = lcron_parsepart(L, s + 1, &s, 1, 12);
   if (*s != 0) return luaL_error(L, "invalid spec (trailing @%d)", s - str);
+  desc->dow = lcron_parsepart(L, s + 1, &s, 0, 6);
+  if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   return 0;
 }
 
