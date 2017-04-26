@@ -35,6 +35,7 @@ pages:
         - 'adc':         'en/modules/adc.md'
         - 'bit':         'en/modules/bit.md'
         - 'bthci':       'en/modules/bthci.md'
+        - 'can':         'en/modules/can.md'
         - 'dht':         'en/modules/dht.md'
         - 'file':        'en/modules/file.md'
         - 'gpio':        'en/modules/gpio.md'
