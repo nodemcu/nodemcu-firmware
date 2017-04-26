@@ -836,6 +836,8 @@ static int wifi_station_config( lua_State* L )
   }
   else //to be deprecated
   {
+    platform_print_deprecation_note("Argument style station configuration is replaced by table style station configuration", "in the next version");
+
     const char *ssid = luaL_checklstring( L, 1, &sl );
     luaL_argcheck(L, (sl>=0 && sl<sizeof(sta_conf.ssid)), 1, "length:0-32"); /* Zero-length SSID is valid as a way to clear config */
 
