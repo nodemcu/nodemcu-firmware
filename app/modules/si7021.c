@@ -34,14 +34,37 @@
 #define SI7021_CMD_FIRM_REV				(0x84B8)
 
 //***************************************************************************
+// REGISTER DEFINITON
+//***************************************************************************
+
+#define SI7021_RH12_TEMP14				(0x00)
+#define SI7021_RH08_TEMP12				(0x01)
+#define SI7021_RH10_TEMP13				(0x80)
+#define SI7021_RH11_TEMP11				(0x81)
+#define SI7021_HEATER_ENABLE			(0x04)
+#define SI7021_HEATER_DISABLE			(0x00)
+
+//***************************************************************************
 
 static const uint32_t si7021_i2c_id = 0;
 static uint8_t si7021_i2c_addr = SI7021_I2C_ADDRESS;
+static uint8_t si7021_res = 0x00;
+static uint8_t si7021_config = 0x3A;
+static uint8_t si7021_heater = 0x00;
+static uint8_t si7021_heater_setting = 0x00;
 
 static uint8_t write_byte(uint8_t reg) {
 	platform_i2c_send_start(si7021_i2c_id);
 	platform_i2c_send_address(si7021_i2c_id, si7021_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
 	platform_i2c_send_byte(si7021_i2c_id, reg);
+	platform_i2c_send_stop(si7021_i2c_id);
+}
+
+static uint8_t write_reg(uint8_t reg, uint8_t data) {
+	platform_i2c_send_start(si7021_i2c_id);
+	platform_i2c_send_address(si7021_i2c_id, si7021_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+	platform_i2c_send_byte(si7021_i2c_id, reg);
+	platform_i2c_send_byte(si7021_i2c_id, data);
 	platform_i2c_send_stop(si7021_i2c_id);
 }
 
@@ -87,10 +110,10 @@ uint8_t si7021_crc8(uint8_t crc, uint8_t *buf, uint8_t size) {
 }
 
 static int si7021_lua_setup(lua_State* L) {
-	
+
 	write_byte(SI7021_CMD_RESET);
 	os_delay_us(50000);
-	
+
 	// check for device on i2c bus
 	uint8_t buf_r[1];
 	read_reg(SI7021_CMD_READ_RHT_REG, buf_r, 1);
@@ -98,6 +121,58 @@ static int si7021_lua_setup(lua_State* L) {
 		return luaL_error(L, "found no device");
 
 	return 0;
+}
+
+// Change sensor settings and returns them
+// Lua: 	res, vdds, heater[, heater_set] = si7021.settings(RESOLUTION[,HEATER,HEATER_SETTING])
+static int si7021_lua_setting(lua_State* L) {
+
+	// check variable
+	if (!lua_isnumber(L, 1)) {
+		return luaL_error(L, "wrong arg range");
+	}
+
+	si7021_res = luaL_checkinteger(L, 1);
+	if (!((si7021_res == SI7021_RH12_TEMP14) || (si7021_res == SI7021_RH08_TEMP12) || (si7021_res == SI7021_RH10_TEMP13) || (si7021_res == SI7021_RH11_TEMP11))) {
+		return luaL_error(L, "Invalid argument: resolution");
+	}
+
+	si7021_config = (si7021_res | 0x3A);
+	write_reg(SI7021_CMD_WRITE_RHT_REG,si7021_config);
+
+	// Parse optional parameters
+	if (lua_isnumber(L, 2)) {
+
+		if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3)) {
+			return luaL_error(L, "wrong arg range");
+		}
+
+		si7021_heater = luaL_checkinteger(L, 2);
+		if (!((si7021_heater == SI7021_HEATER_ENABLE) || (si7021_heater == SI7021_HEATER_DISABLE))) {
+			return luaL_error(L, "Invalid argument: heater");
+		}
+
+		si7021_heater_setting = luaL_checkinteger(L, 3);
+		if ((si7021_heater_setting < 0x00) || (si7021_heater_setting > 0x0F)) {
+			return luaL_error(L, "Invalid argument: heater_setting");
+		}
+
+		si7021_config = (si7021_res | si7021_heater | 0x3A);
+		write_reg(SI7021_CMD_WRITE_RHT_REG,si7021_config);
+		write_reg(SI7021_CMD_WRITE_HEATER_REG,(si7021_heater_setting & 0x0F));
+	}
+
+	uint8_t buf_c[1];
+	uint8_t buf_h[1];
+	read_reg(SI7021_CMD_READ_RHT_REG, buf_c, 1);
+	read_reg(SI7021_CMD_READ_HEATER_REG, buf_h, 1);
+
+	lua_pushinteger(L, ((buf_c[0] >> 6) + (buf_c[0] & 0x01)));
+	lua_pushinteger(L, ((buf_c[0] >> 6) & 0x01));
+	lua_pushinteger(L, ((buf_c[0] >> 2) & 0x01));
+	lua_pushinteger(L, (buf_h[0] & 0x0F));
+
+	return 4;
 }
 
 // Reads sensor values from device and returns them
@@ -173,11 +248,18 @@ static int si7021_lua_firmware(lua_State* L) {
 }
 
 static const LUA_REG_TYPE si7021_map[] = {
-	{	LSTRKEY( "setup" ),		LFUNCVAL(si7021_lua_setup)			},
-	{	LSTRKEY( "read" ),		LFUNCVAL(si7021_lua_read)			},
-	{	LSTRKEY( "serial" ),	LFUNCVAL(si7021_lua_serial)			},
-	{	LSTRKEY( "firmware" ),	LFUNCVAL(si7021_lua_firmware)		},
-	{	LNILKEY, LNILVAL											}
+	{	LSTRKEY( "setup" ),				LFUNCVAL(si7021_lua_setup)		},
+	{	LSTRKEY( "setting" ),			LFUNCVAL(si7021_lua_setting)	},
+	{	LSTRKEY( "read" ),				LFUNCVAL(si7021_lua_read)		},
+	{	LSTRKEY( "serial" ),			LFUNCVAL(si7021_lua_serial)		},
+	{	LSTRKEY( "firmware" ),			LFUNCVAL(si7021_lua_firmware)	},
+	{	LSTRKEY( "RH12_TEMP14" ),		LNUMVAL(SI7021_RH12_TEMP14)		},
+	{	LSTRKEY( "RH08_TEMP12" ),		LNUMVAL(SI7021_RH08_TEMP12)		},
+	{	LSTRKEY( "RH10_TEMP13" ),		LNUMVAL(SI7021_RH10_TEMP13)		},
+	{	LSTRKEY( "RH11_TEMP11" ),		LNUMVAL(SI7021_RH11_TEMP11)		},
+	{	LSTRKEY( "HEATER_ENABLE" ),		LNUMVAL(SI7021_HEATER_ENABLE)	},
+	{	LSTRKEY( "HEATER_DISABLE" ),	LNUMVAL(SI7021_HEATER_DISABLE)	},
+	{	LNILKEY, LNILVAL												}
 };
 
 NODEMCU_MODULE(SI7021, "si7021", si7021_map, NULL);
