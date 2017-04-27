@@ -113,7 +113,7 @@ static void IRAM_ATTR ws2812_isr(void *arg)
         RMTMEM.chan[channel].data32[chain->tx_offset].val = 0;
       } else {
         ws2812_fill_memory_encoded( channel, chain->data, chain->len, chain->tx_offset );
-        RMTMEM.chan[channel].data32[chain->tx_offset + chain->len].val = 0;
+        RMTMEM.chan[channel].data32[chain->tx_offset + chain->len*8].val = 0;
         chain->data += chain->len;
         chain->len = 0;
       }
