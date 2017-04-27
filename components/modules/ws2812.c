@@ -36,6 +36,9 @@ static int ws2812_write( lua_State* L )
   int top = lua_gettop( L );
 
   for (int stack = 1; stack <= top; stack++) {
+    if (lua_type( L, stack ) == LUA_TNIL)
+      continue;
+
     if (lua_type( L, stack ) != LUA_TTABLE) {
       ws2812_cleanup( L, 0 );
       luaL_checktype( L, stack, LUA_TTABLE ); // trigger error
