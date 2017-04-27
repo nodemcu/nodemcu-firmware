@@ -72,6 +72,7 @@ pages:
         - 'rtcfifo': 'en/modules/rtcfifo.md'
         - 'rtcmem': 'en/modules/rtcmem.md'
         - 'rtctime': 'en/modules/rtctime.md'
+        - 'si7021' : 'en/modules/si7021'
         - 'sigma delta': 'en/modules/sigma-delta.md'
         - 'sjson': 'en/modules/sjson.md'
         - 'sntp': 'en/modules/sntp.md'
