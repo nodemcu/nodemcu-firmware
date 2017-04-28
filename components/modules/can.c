@@ -19,6 +19,9 @@ CAN_device_t CAN_cfg = {
   .tx_pin_id = GPIO_NUM_5,    // CAN TX pin
   .rx_pin_id = GPIO_NUM_4,    // CAN RX pin
   .rx_queue = NULL,          // FreeRTOS queue for RX frames
+  .code = 0,
+  .mask = 0xffffffff,
+  .dual_filter = false
 };
 
 static int can_on_received = LUA_NOREF;
@@ -66,6 +69,12 @@ static int can_setup( lua_State *L )
   CAN_cfg.tx_pin_id = luaL_optint(L, -1, GPIO_NUM_5);
   lua_getfield (L, 1, "rx");
   CAN_cfg.rx_pin_id = luaL_optint(L, -1, GPIO_NUM_4);
+  lua_getfield (L, 1, "dual_filter");
+  CAN_cfg.dual_filter = lua_toboolean(L, -1);
+  lua_getfield (L, 1, "code");
+  CAN_cfg.code = luaL_optint(L, -1, 0);
+  lua_getfield (L, 1, "mask");
+  CAN_cfg.mask = luaL_optint(L, -1, 0xffffffff);
   return 0;
 }
 

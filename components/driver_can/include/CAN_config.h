@@ -50,6 +50,9 @@ typedef struct  {
     gpio_num_t 			tx_pin_id;		/**< \brief TX pin. */
     gpio_num_t 			rx_pin_id;		/**< \brief RX pin. */
     QueueHandle_t 		rx_queue;		/**< \brief Handler to FreeRTOS RX queue. */
+	uint32_t			code;
+	uint32_t			mask;
+	bool				dual_filter;
 }CAN_device_t;
 
 /** \brief CAN configuration reference */

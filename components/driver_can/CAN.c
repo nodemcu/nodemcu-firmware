@@ -138,12 +138,6 @@ int CAN_write_frame(const CAN_frame_t* p_frame){
 
 int CAN_init(){
 
-	//Time quantum
-	double __tq = 0;
-
-	//Bit timing
-	float __bt = 1000/CAN_cfg.speed;
-
     //enable module
     SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_CAN_CLK_EN);
     CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_CAN_RST);
@@ -164,27 +158,19 @@ int CAN_init(){
 	//synchronization jump width is the same for all baud rates
 	MODULE_CAN->BTR0.B.SJW		=0x1;
 
-	//TSEG2 is the same for all baud rates
-	MODULE_CAN->BTR1.B.TSEG2	=0x1;
-
 	//select time quantum and set TSEG1
 	switch(CAN_cfg.speed){
 		case CAN_SPEED_1000KBPS:
-			MODULE_CAN->BTR1.B.TSEG1	=0x4;
-			__tq = 0.125;
-			break;
-
 		case CAN_SPEED_800KBPS:
-			MODULE_CAN->BTR1.B.TSEG1	=0x6;
-			__tq = 0.125;
+			MODULE_CAN->BTR1.B.TSEG1	= 8 - 1;
+			MODULE_CAN->BTR1.B.TSEG2	= 1 - 1;
+			MODULE_CAN->BTR0.B.BRP = APB_CLK_FREQ / CAN_cfg.speed / 2000 / (1 + 8 + 1) - 1;
 			break;
 		default:
-			MODULE_CAN->BTR1.B.TSEG1	=0xc;
-			__tq = __bt / 16;
+			MODULE_CAN->BTR1.B.TSEG1	= 13 - 1;
+			MODULE_CAN->BTR1.B.TSEG2	= 2 - 1;
+			MODULE_CAN->BTR0.B.BRP = APB_CLK_FREQ / CAN_cfg.speed/ 2000 / (1 + 13 + 2) - 1;
 	}
-
-	//set baud rate prescaler
-	MODULE_CAN->BTR0.B.BRP=(uint8_t)round((((APB_CLK_FREQ * __tq) / 2) - 1)/1000000)-1;
 
     /* Set sampling
      * 1 -> triple; the bus is sampled three times; recommended for low/medium speed buses     (class A and B) where filtering spikes on the bus line is beneficial
@@ -195,14 +181,14 @@ int CAN_init(){
     MODULE_CAN->IER.U = 0xff;
 
     //no acceptance filtering, as we want to fetch all messages
-    MODULE_CAN->MBX_CTRL.ACC.CODE[0] = 0;
-    MODULE_CAN->MBX_CTRL.ACC.CODE[1] = 0;
-    MODULE_CAN->MBX_CTRL.ACC.CODE[2] = 0;
-    MODULE_CAN->MBX_CTRL.ACC.CODE[3] = 0;
-    MODULE_CAN->MBX_CTRL.ACC.MASK[0] = 0xff;
-    MODULE_CAN->MBX_CTRL.ACC.MASK[1] = 0xff;
-    MODULE_CAN->MBX_CTRL.ACC.MASK[2] = 0xff;
-    MODULE_CAN->MBX_CTRL.ACC.MASK[3] = 0xff;
+    MODULE_CAN->MBX_CTRL.ACC.CODE[0] = CAN_cfg.code >> 24;
+    MODULE_CAN->MBX_CTRL.ACC.CODE[1] = (CAN_cfg.code >> 16) && 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.CODE[2] = (CAN_cfg.code >> 8) && 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.CODE[3] = CAN_cfg.code && 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.MASK[0] = CAN_cfg.mask >> 24;
+    MODULE_CAN->MBX_CTRL.ACC.MASK[1] = (CAN_cfg.mask >> 16) && 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.MASK[2] = (CAN_cfg.mask >> 8) && 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.MASK[3] = CAN_cfg.mask && 0x00ff;
 
     //set to normal mode
     MODULE_CAN->OCR.B.OCMODE=__CAN_OC_NOM;
