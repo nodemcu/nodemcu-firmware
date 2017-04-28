@@ -81,7 +81,7 @@ static int can_setup( lua_State *L )
 static int can_start( lua_State *L )
 {
   if(xCanTaskHandle != NULL)
-    luaL_error( L, "can started" );
+    luaL_error( L, "CAN started" );
   xTaskCreate(&task_CAN, "CAN", 2048, NULL, ESP_TASK_MAIN_PRIO + 1, &xCanTaskHandle);
   return 0;
 }
@@ -109,7 +109,7 @@ static int can_send( lua_State *L )
   CAN_frame_t frame;
   
   if(len > 8)
-    luaL_error( L, "can not send more than 8 bytes" );
+    luaL_error( L, "CAN can not send more than 8 bytes" );
   
   frame.MsgID = msg_id;
   frame.DLC = len;
