@@ -105,6 +105,12 @@ config LUA_MODULE_I2C
   help
       Includes the I2C module (recommended).
 
+config LUA_MODULE_I2S
+  bool "I2S module"
+  default "n"
+  help
+      Includes the I2S module.
+
 config LUA_MODULE_LEDC
   bool "LEDC module"
   default "n"

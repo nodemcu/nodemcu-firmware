@@ -40,6 +40,7 @@ pages:
         - 'file':         'en/modules/file.md'
         - 'gpio':         'en/modules/gpio.md'
         - 'i2c':          'en/modules/i2c.md'
+        - 'i2s':         'en/modules/i2s.md'
         - 'ledc':         'en/modules/ledc.md'
         - 'mqtt':         'en/modules/mqtt.md'
         - 'net':          'en/modules/net.md'
