@@ -24,17 +24,34 @@ CAN_device_t CAN_cfg = {
   .dual_filter = false
 };
 
+static task_handle_t can_data_task_id;
 static int can_on_received = LUA_NOREF;
 
 static xTaskHandle  xCanTaskHandle = NULL;
 
+// LUA
+static void can_data_task( task_param_t param, task_prio_t prio ) {
+  CAN_frame_t *frame = (CAN_frame_t *)param;
+
+  if(can_on_received == LUA_NOREF) {
+    free( frame );
+    return;
+  }
+  lua_State *L = lua_getstate();
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, can_on_received);
+  lua_pushinteger(L, frame->MsgID);
+  lua_pushlstring(L, (char *)frame->data.u8, frame->DLC); 
+  free( frame );
+  lua_call(L, 2, 0);
+}
+
+// RTOS
 static void task_CAN( void *pvParameters ){
   (void)pvParameters;
   
-  lua_State *L = lua_getstate();
-
   //frame buffer
-  CAN_frame_t __RX_frame;
+  CAN_frame_t *frame = NULL;
 
   //create CAN RX Queue
   CAN_cfg.rx_queue = xQueueCreate(10, sizeof(CAN_frame_t));
@@ -43,12 +60,12 @@ static void task_CAN( void *pvParameters ){
   CAN_init();
 
   for (;;){
+    if(frame == NULL) {
+      frame = (CAN_frame_t *)malloc( sizeof( CAN_frame_t ) );
+    }
     //receive next CAN frame from queue
-    if( xQueueReceive( CAN_cfg.rx_queue, &__RX_frame, 3 * portTICK_PERIOD_MS ) == pdTRUE ){
-      lua_rawgeti(L, LUA_REGISTRYINDEX, can_on_received);
-      lua_pushinteger(L, __RX_frame.MsgID);
-      lua_pushlstring(L, (char *)__RX_frame.data.u8, __RX_frame.DLC); 
-      lua_call(L, 2, 0);
+    if( xQueueReceive( CAN_cfg.rx_queue, frame, 3 * portTICK_PERIOD_MS ) == pdTRUE ){
+	  task_post_medium( can_data_task_id, (task_param_t)frame );
     }
   }
 }
@@ -131,4 +148,9 @@ static const LUA_REG_TYPE can_map[] =
   { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(CAN, "can", can_map, NULL);
+int luaopen_can( lua_State *L ) {
+  can_data_task_id = task_get_id( can_data_task );
+  return 0;
+}
+
+NODEMCU_MODULE(CAN, "can", can_map, luaopen_can);
