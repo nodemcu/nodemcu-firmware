@@ -19,9 +19,9 @@
 #define I2S_CHECK_ID(id)   if(id >= MAX_I2C_NUM) luaL_error( L, "i2s not exists" )
 
 typedef struct {
-    xTaskHandle taskHandle;
-    QueueHandle_t *event_queue;
-    int event_cb;
+  xTaskHandle taskHandle;
+  QueueHandle_t *event_queue;
+  int event_cb;
 } i2s_status_t;
 
 typedef struct {
@@ -40,16 +40,16 @@ static void i2s_event_task( task_param_t param, task_prio_t prio ) {
   lua_State *L = lua_getstate();
   int event_cb = post->status->event_cb;
   if(event_cb == LUA_NOREF) {
-	  free( post );
-	  return;
+    free( post );
+    return;
   }
   lua_rawgeti(L, LUA_REGISTRYINDEX, event_cb);
   if(post->event.type == I2S_EVENT_TX_DONE) 
-	lua_pushstring(L, "sent");
+    lua_pushstring(L, "sent");
   else if(post->event.type == I2S_EVENT_RX_DONE) 
-	lua_pushstring(L, "data");
+    lua_pushstring(L, "data");
   else
-	lua_pushstring(L, "error");
+    lua_pushstring(L, "error");
   lua_pushinteger(L, post->event.size);
   free( post );
   lua_call(L, 2, 0);
@@ -62,14 +62,14 @@ static void task_I2S( void *pvParameters ){
   i2s_event_post_type *post = NULL;
 
   for (;;){
-	  if(post == NULL) {
-		  post = (i2s_event_post_type *)malloc( sizeof( i2s_event_post_type ) );
-		  post->status = is;
-	  }
+    if(post == NULL) {
+      post = (i2s_event_post_type *)malloc( sizeof( i2s_event_post_type ) );
+      post->status = is;
+    }
 
     if( xQueueReceive( is->event_queue, &(post->event), 3 * portTICK_PERIOD_MS ) == pdTRUE ){
-		task_post_high( i2s_event_task_id, (task_param_t)post );
-		post = NULL;
+    task_post_high( i2s_event_task_id, (task_param_t)post );
+    post = NULL;
     }
   }
 }
@@ -113,7 +113,9 @@ static int node_i2s_start( lua_State *L )
   lua_settop(L, 3);
   i2s_status[i2s_id].event_cb = luaL_ref(L, LUA_REGISTRYINDEX);
 
-  i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_buf_count, &i2s_status[i2s_id].event_queue);
+  esp_err_t err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_buf_count, &i2s_status[i2s_id].event_queue);
+  if(err != ESP_OK)
+    luaL_error( L, "i2s can not start" );
   i2s_set_pin(i2s_id, &pin_config);
 
   char pcName[5];
@@ -171,14 +173,14 @@ static int node_i2s_write( lua_State *L )
   size_t bytes;
   char *data;
   if( lua_istable( L, 2 ) ) {
-	  bytes = lua_objlen( L, 2 );
-	  data = (char *)luaM_malloc( L, bytes );
-      for( int i = 0; i < bytes; i ++ ) {
-        lua_rawgeti( L, 2, i + 1 );
-        data[i] = (uint8_t)luaL_checkinteger( L, -1 );
-      }
+    bytes = lua_objlen( L, 2 );
+    data = (char *)luaM_malloc( L, bytes );
+    for( int i = 0; i < bytes; i ++ ) {
+      lua_rawgeti( L, 2, i + 1 );
+      data[i] = (uint8_t)luaL_checkinteger( L, -1 );
+    }
   } else {
-	data = (char *) luaL_checklstring(L, 2, &bytes);
+		data = (char *) luaL_checklstring(L, 2, &bytes);
   }
   int wait_ms = luaL_optint(L, 3, 0);
   size_t wrote = i2s_write_bytes(i2s_id, data, bytes, wait_ms / portTICK_RATE_MS);
@@ -220,9 +222,9 @@ static const LUA_REG_TYPE i2s_map[] =
 
 int luaopen_i2s( lua_State *L ) {
   for(int i2s_id = 0; i2s_id < MAX_I2C_NUM; i2s_id++) {
-	  i2s_status[i2s_id].event_queue = NULL;
-	  i2s_status[i2s_id].taskHandle = NULL;
-	  i2s_status[i2s_id].event_cb = LUA_NOREF;
+    i2s_status[i2s_id].event_queue = NULL;
+    i2s_status[i2s_id].taskHandle = NULL;
+    i2s_status[i2s_id].event_cb = LUA_NOREF;
   }
   i2s_event_task_id = task_get_id( i2s_event_task );
   return 0;
