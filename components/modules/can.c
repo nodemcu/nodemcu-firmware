@@ -65,12 +65,12 @@ static void task_CAN( void *pvParameters ){
     }
     //receive next CAN frame from queue
     if( xQueueReceive( CAN_cfg.rx_queue, frame, 3 * portTICK_PERIOD_MS ) == pdTRUE ){
-	  task_post_medium( can_data_task_id, (task_param_t)frame );
+      task_post_medium( can_data_task_id, (task_param_t)frame );
     }
   }
 }
 
-// Lua: setup( {} )
+// Lua: setup( {}, callback )
 static int can_setup( lua_State *L )
 {
   luaL_checkanytable (L, 1);
