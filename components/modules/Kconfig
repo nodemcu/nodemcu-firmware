@@ -135,6 +135,12 @@ config LUA_MODULE_SIGMA_DELTA
       Includes the sigma_delta module. This module provides access to the
       sigma-delta hardware.
 
+config LUA_MODULE_SPI
+  bool "SPI module"
+  default "n"
+  help
+      Includes the spi module.
+
 config LUA_MODULE_STRUCT
   bool "Struct module"
   default "n"
