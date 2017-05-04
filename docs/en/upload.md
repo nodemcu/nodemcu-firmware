@@ -59,7 +59,7 @@ end
 -- Define WiFi station event callbacks 
 wifi_connect_event = function(T) 
   print("Connection to AP("..T.SSID..") established!")
-  print("Wating for ip...") 
+  print("Waiting for ip...") 
 end
 
 wifi_got_ip_event = function(T) 
@@ -70,6 +70,10 @@ wifi_got_ip_event = function(T)
 end
 
 wifi_disconnect_event = function(T)
+  if T.reason == wifi.eventmon.reason.ASSOC_LEAVE then 
+    --the station has disassociated from a previously connected AP
+    return 
+  end
   local retry_ct = 3
   print("WiFi connection to AP("..T.SSID..") has failed!")
   print("Disconnect reason:"..T.reason)
