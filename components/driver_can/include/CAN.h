@@ -34,6 +34,7 @@
 
 /** \brief CAN Frame structure */
 typedef struct {
+	uint8_t				Extended;
     uint32_t 			MsgID;     		/**< \brief Message ID */
     uint32_t 			DLC;			/**< \brief Length */
     union {

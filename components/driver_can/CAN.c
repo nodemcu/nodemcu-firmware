@@ -87,23 +87,31 @@ static void CAN_read_frame(){
 	//frame read buffer
 	CAN_frame_t __frame;
 
-    //only handle standard frames, for extended format frames, FF is 0.
+    // for extended format frames, FF is 1.
     if(MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.FF==1){
-        // Let the hardware know the frame has been read.
-        MODULE_CAN->CMR.B.RRB=1;
-    	return;
-    }
+		//Get Message ID
+		__frame.MsgID = (((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[0] << 21)
+						| (MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[1] << 13)
+						| (MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[2] << 5)
+						| (MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[3] >> 3));
 
-    //Get Message ID
-    __frame.MsgID = (((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] << 3) | (MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1]>>5));
+		//get DLC
+		__frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
+		__frame.Extended = 1;
+		//deep copy data bytes
+		for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+			__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i];
+    } else {
+		//Get Message ID
+		__frame.MsgID = (((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] << 3) | (MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1]>>5));
 
-    //get DLC
-    __frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
-
-    //deep copy data bytes
-    for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
-    	__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i];
-
+		//get DLC
+		__frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
+		__frame.Extended = 0;
+		//deep copy data bytes
+		for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+			__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i];
+	}
     // Let the hardware know the frame has been read.
     MODULE_CAN->CMR.B.RRB=1;
 
@@ -117,17 +125,30 @@ int CAN_write_frame(const CAN_frame_t* p_frame){
 	//byte iterator
 	uint8_t __byte_i;
 
-	//set frame format to standard and no RTR (needs to be done in a single write)
-	MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->DLC;
+	if(p_frame->Extended) {
+		MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->DLC | 0x80;
 
-	//Write message ID
-	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] = ((p_frame->MsgID) >> 3);
-	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1] = ((p_frame->MsgID) << 5);
+		//Write message ID
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[0] = ((p_frame->MsgID & 0x1fe00000) >> 21);
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[1] = ((p_frame->MsgID & 0x001fe000) >> 13);
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[2] = ((p_frame->MsgID & 0x00001fe0) >> 5);
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[3] = ((p_frame->MsgID & 0x0000001f) << 3);
 
-    // Copy the frame data to the hardware
-    for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
-    	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i]=p_frame->data.u8[__byte_i];
+		// Copy the frame data to the hardware
+		for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+			MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i]=p_frame->data.u8[__byte_i];
+	} else {
+		//set frame format to standard and no RTR (needs to be done in a single write)
+		MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->DLC;
 
+		//Write message ID
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] = ((p_frame->MsgID) >> 3);
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1] = ((p_frame->MsgID) << 5);
+
+		// Copy the frame data to the hardware
+		for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+			MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i]=p_frame->data.u8[__byte_i];
+	}
     // Transmit frame
     MODULE_CAN->CMR.B.TR=1;
 
@@ -161,34 +182,36 @@ int CAN_init(){
 	//select time quantum and set TSEG1
 	switch(CAN_cfg.speed){
 		case CAN_SPEED_1000KBPS:
-		case CAN_SPEED_800KBPS:
-			MODULE_CAN->BTR1.B.TSEG1	= 8 - 1;
-			MODULE_CAN->BTR1.B.TSEG2	= 1 - 1;
-			MODULE_CAN->BTR0.B.BRP = APB_CLK_FREQ / CAN_cfg.speed / 2000 / (1 + 8 + 1) - 1;
-			break;
-		default:
-			MODULE_CAN->BTR1.B.TSEG1	= 13 - 1;
-			MODULE_CAN->BTR1.B.TSEG2	= 2 - 1;
-			MODULE_CAN->BTR0.B.BRP = APB_CLK_FREQ / CAN_cfg.speed/ 2000 / (1 + 13 + 2) - 1;
-	}
+        case CAN_SPEED_800KBPS:
+            MODULE_CAN->BTR1.B.TSEG1    = 8 - 1;
+            MODULE_CAN->BTR1.B.TSEG2    = 1 - 1;
+            MODULE_CAN->BTR0.B.BRP = APB_CLK_FREQ / CAN_cfg.speed / 2000 / (1 + 8 + 1) - 1;
+            break;
+        default:
+            MODULE_CAN->BTR1.B.TSEG1    = 13 - 1;
+            MODULE_CAN->BTR1.B.TSEG2    = 2 - 1;
+            MODULE_CAN->BTR0.B.BRP = APB_CLK_FREQ / CAN_cfg.speed/ 2000 / (1 + 13 + 2) - 1;
+    }
 
     /* Set sampling
      * 1 -> triple; the bus is sampled three times; recommended for low/medium speed buses     (class A and B) where filtering spikes on the bus line is beneficial
      * 0 -> single; the bus is sampled once; recommended for high speed buses (SAE class C)*/
-    MODULE_CAN->BTR1.B.SAM	=0x1;
+    MODULE_CAN->BTR1.B.SAM =0x1;
 
     //enable all interrupts
     MODULE_CAN->IER.U = 0xff;
+    
+    MODULE_CAN->MOD.B.AFM = CAN_cfg.dual_filter? 0 : 1;
 
     //no acceptance filtering, as we want to fetch all messages
     MODULE_CAN->MBX_CTRL.ACC.CODE[0] = CAN_cfg.code >> 24;
-    MODULE_CAN->MBX_CTRL.ACC.CODE[1] = (CAN_cfg.code >> 16) && 0x00ff;
-    MODULE_CAN->MBX_CTRL.ACC.CODE[2] = (CAN_cfg.code >> 8) && 0x00ff;
-    MODULE_CAN->MBX_CTRL.ACC.CODE[3] = CAN_cfg.code && 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.CODE[1] = (CAN_cfg.code >> 16) & 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.CODE[2] = (CAN_cfg.code >> 8) & 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.CODE[3] = CAN_cfg.code & 0x00ff;
     MODULE_CAN->MBX_CTRL.ACC.MASK[0] = CAN_cfg.mask >> 24;
-    MODULE_CAN->MBX_CTRL.ACC.MASK[1] = (CAN_cfg.mask >> 16) && 0x00ff;
-    MODULE_CAN->MBX_CTRL.ACC.MASK[2] = (CAN_cfg.mask >> 8) && 0x00ff;
-    MODULE_CAN->MBX_CTRL.ACC.MASK[3] = CAN_cfg.mask && 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.MASK[1] = (CAN_cfg.mask >> 16) & 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.MASK[2] = (CAN_cfg.mask >> 8) & 0x00ff;
+    MODULE_CAN->MBX_CTRL.ACC.MASK[3] = CAN_cfg.mask & 0x00ff;
 
     //set to normal mode
     MODULE_CAN->OCR.B.OCMODE=__CAN_OC_NOM;
@@ -212,7 +235,7 @@ int CAN_init(){
 
 int CAN_stop(){
 
-	MODULE_CAN->MOD.B.RM = 1;
+    MODULE_CAN->MOD.B.RM = 1;
 
-	return 0;
+    return 0;
 }
