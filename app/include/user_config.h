@@ -110,7 +110,7 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 //#define WIFI_STA_HOSTNAME "NodeMCU"
 //#define WIFI_STA_HOSTNAME_APPEND_MAC
 
-//#define WIFI_SMART_ENABLE
+#define WIFI_SMART_ENABLE
 
 #define WIFI_STATION_STATUS_MONITOR_ENABLE
 #define WIFI_SDK_EVENT_MONITOR_ENABLE
