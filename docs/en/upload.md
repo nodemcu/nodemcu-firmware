@@ -74,19 +74,31 @@ wifi_disconnect_event = function(T)
     --the station has disassociated from a previously connected AP
     return 
   end
-  local retry_ct = 3
-  print("WiFi connection to AP("..T.SSID..") has failed!")
-  print("Disconnect reason:"..T.reason)
+  -- total_tries: how many times the station will attempt to connect to the AP.
+  local total_tries = 3
+  local reason_string=""
+  print("\nWiFi connection to AP("..T.SSID..") has failed!")
+
+  --There are many possible disconnect reasons, the following iterates through 
+  --the list and returns the string corresponding to the disconnect reason.
+  for key,val in pairs(wifi.eventmon.reason) do
+    if val == T.reason then
+      print("Disconnect reason:"..T.reason.."("..key..")")
+      reason_string=key
+      break
+    end
+  end
+
   if disconnect_ct == nil then 
     disconnect_ct = 1 
   else
     disconnect_ct = disconnect_ct + 1 
   end
-  if disconnect_ct < retry_ct then 
-    print("Retrying connection...(attempt "..(disconnect_ct+1).." of "..retry_ct..")")
+  if disconnect_ct < total_tries then 
+    print("Retrying connection...(attempt "..(disconnect_ct+1).." of "..total_tries..")")
   else
     wifi.sta.disconnect()
-    print("Aborting Connection to AP("..T.SSID..")")
+    print("Aborting connection to AP!")
     disconnect_ct=nil  
   end
 end
@@ -100,6 +112,7 @@ print("Connecting to WiFi access point...")
 wifi.setmode(wifi.STATION)
 wifi.sta.config({ssid=SSID, pwd=PASSWORD, save=true})
 -- wifi.sta.connect() not necessary because config() uses auto-connect=true by default
+
 ```
 
 Inspired by [https://github.com/ckuehnel/NodeMCU-applications](https://github.com/ckuehnel/NodeMCU-applications)
