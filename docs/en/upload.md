@@ -56,21 +56,46 @@ function startup()
     end
 end
 
+-- Define WiFi station event callbacks 
+wifi_connect_event = function(T) 
+  print("Connection to AP("..T.SSID..") established!")
+  print("Wating for ip...") 
+end
+
+wifi_got_ip_event = function(T) 
+  print("Wifi connection is ready! IP address is: "..T.IP)
+  print("Startup will resume momentarily, you have 3 seconds to abort.")
+  print("Waiting...") 
+  tmr.create():alarm(3000, tmr.ALARM_SINGLE, startup)
+end
+
+wifi_disconnect_event = function(T)
+  local retry_ct = 3
+  print("WiFi connection to AP("..T.SSID..") has failed!")
+  print("Disconnect reason:"..T.reason)
+  if disconnect_ct == nil then 
+    disconnect_ct = 1 
+  else
+    disconnect_ct = disconnect_ct + 1 
+  end
+  if disconnect_ct < retry_ct then 
+    print("Retrying connection...(attempt "..(disconnect_ct+1).." of "..retry_ct..")")
+  else
+    wifi.sta.disconnect()
+    print("Aborting Connection to AP("..T.SSID..")")
+    disconnect_ct=nil  
+  end
+end
+
+-- Register WiFi Station event callbacks
+wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, wifi_connect_event)
+wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, wifi_got_ip_event)
+wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, wifi_disconnect_event)
+
 print("Connecting to WiFi access point...")
 wifi.setmode(wifi.STATION)
-wifi.sta.config(SSID, PASSWORD)
+wifi.sta.config({ssid=SSID, pwd=PASSWORD, save=true})
 -- wifi.sta.connect() not necessary because config() uses auto-connect=true by default
-tmr.create():alarm(1000, tmr.ALARM_AUTO, function(cb_timer)
-    if wifi.sta.getip() == nil then
-        print("Waiting for IP address...")
-    else
-        cb_timer:unregister()
-        print("WiFi connection established, IP address: " .. wifi.sta.getip())
-        print("You have 3 seconds to abort")
-        print("Waiting...")
-        tmr.create():alarm(3000, tmr.ALARM_SINGLE, startup)
-    end
-end)
 ```
 
 Inspired by [https://github.com/ckuehnel/NodeMCU-applications](https://github.com/ckuehnel/NodeMCU-applications)
