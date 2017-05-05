@@ -59,10 +59,13 @@ end
 -- Define WiFi station event callbacks 
 wifi_connect_event = function(T) 
   print("Connection to AP("..T.SSID..") established!")
-  print("Waiting for ip...") 
+  print("Waiting for IP address...")
+  if disconnect_ct ~= nil then disconnect_ct = nil end  
 end
 
 wifi_got_ip_event = function(T) 
+  -- Note: Having an ip address does not mean there is internet access!
+  -- Internet connectivity can be determined with net.dns.resolve().    
   print("Wifi connection is ready! IP address is: "..T.IP)
   print("Startup will resume momentarily, you have 3 seconds to abort.")
   print("Waiting...") 
@@ -75,16 +78,14 @@ wifi_disconnect_event = function(T)
     return 
   end
   -- total_tries: how many times the station will attempt to connect to the AP.
-  local total_tries = 3
-  local reason_string=""
+  local total_tries = 75
   print("\nWiFi connection to AP("..T.SSID..") has failed!")
 
   --There are many possible disconnect reasons, the following iterates through 
   --the list and returns the string corresponding to the disconnect reason.
   for key,val in pairs(wifi.eventmon.reason) do
     if val == T.reason then
-      print("Disconnect reason:"..T.reason.."("..key..")")
-      reason_string=key
+      print("Disconnect reason:"..val.."("..key..")")
       break
     end
   end
@@ -99,7 +100,7 @@ wifi_disconnect_event = function(T)
   else
     wifi.sta.disconnect()
     print("Aborting connection to AP!")
-    disconnect_ct=nil  
+    disconnect_ct = nil  
   end
 end
 
@@ -114,8 +115,6 @@ wifi.sta.config({ssid=SSID, pwd=PASSWORD, save=true})
 -- wifi.sta.connect() not necessary because config() uses auto-connect=true by default
 
 ```
-
-Inspired by [https://github.com/ckuehnel/NodeMCU-applications](https://github.com/ckuehnel/NodeMCU-applications)
 
 # Compiling Lua on your PC for Uploading
 
