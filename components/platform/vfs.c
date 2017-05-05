@@ -221,6 +221,7 @@ int32_t vfs_mkdir( const char *name )
 
 #ifdef CONFIG_BUILD_SPIFFS
   // not supported
+  (void)fs_fns;
 #endif
 
 #ifdef CONFIG_BUILD_FATFS

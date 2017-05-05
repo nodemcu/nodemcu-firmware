@@ -159,7 +159,7 @@ uint8_t IRAM_ATTR platform_sigma_delta_set_duty( uint8_t channel, int8_t duty )
 int platform_adc_exists( uint8_t adc ) { return adc < 2 && adc > 0; }
 
 int platform_adc_channel_exists( uint8_t adc, uint8_t channel ) {
-  return (adc == 1 && (channel >= 0 && channel < 8));
+  return (adc == 1 && channel < 8);
 }
 
 uint8_t platform_adc_set_width( uint8_t adc, int bits ) {
