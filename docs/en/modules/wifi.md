@@ -1504,7 +1504,7 @@ T: Table returned by event.
 - `wifi.eventmon.STA_DISCONNECTED`: Station was disconnected from access point.  
 	- `SSID`: SSID of access point.  
 	- `BSSID`: BSSID of access point.  
-	- `REASON`: See [wifi.eventmon.reason](#wifieventmonreason) below.  
+	- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below.  
 - `wifi.eventmon.STA_AUTHMODE_CHANGE`: Access point has changed authorization mode.    
 	- `old_auth_mode`: Old wifi authorization mode.  
 	- `new_auth_mode`: New wifi authorization mode.  
