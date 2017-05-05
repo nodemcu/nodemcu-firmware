@@ -64,7 +64,7 @@ wifi_connect_event = function(T)
 end
 
 wifi_got_ip_event = function(T) 
-  -- Note: Having an ip address does not mean there is internet access!
+  -- Note: Having an IP address does not mean there is internet access!
   -- Internet connectivity can be determined with net.dns.resolve().    
   print("Wifi connection is ready! IP address is: "..T.IP)
   print("Startup will resume momentarily, you have 3 seconds to abort.")
@@ -77,7 +77,7 @@ wifi_disconnect_event = function(T)
     --the station has disassociated from a previously connected AP
     return 
   end
-  -- total_tries: how many times the station will attempt to connect to the AP.
+  -- total_tries: how many times the station will attempt to connect to the AP. Should consider AP reboot duration.
   local total_tries = 75
   print("\nWiFi connection to AP("..T.SSID..") has failed!")
 
@@ -85,7 +85,7 @@ wifi_disconnect_event = function(T)
   --the list and returns the string corresponding to the disconnect reason.
   for key,val in pairs(wifi.eventmon.reason) do
     if val == T.reason then
-      print("Disconnect reason:"..val.."("..key..")")
+      print("Disconnect reason: "..val.."("..key..")")
       break
     end
   end
