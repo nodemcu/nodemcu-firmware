@@ -1437,7 +1437,7 @@ T: Table returned by event.
  end)
 
  wifi.eventmon.register(wifi.eventmon.AP_PROBEREQRECVED, function(T)
- print("\n\tAP - STATION DISCONNECTED".."\n\tMAC: ".. T.MAC.."\n\tRSSI: "..T.RSSI)
+ print("\n\tAP - PROBE REQUEST RECEIVED".."\n\tMAC: ".. T.MAC.."\n\tRSSI: "..T.RSSI)
  end)
 ```
 #### See also
