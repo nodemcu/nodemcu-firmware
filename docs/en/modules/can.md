@@ -6,6 +6,21 @@
 The CAN module provides access to the in-built CAN controller.
 
 
+## can.send()
+Send a frame.
+
+#### Syntax
+`can.send(format, msg_id, data)`
+
+#### Parameters
+- `format` Frame format. `can.STANDARD_FRAME` or `can.EXTENDED_FRAME`
+- `msg_id` CAN Messge ID
+- `data` CAN data, up to 8 bytes
+  
+#### Returns
+nil
+
+
 ## can.setup()
 Configuration CAN controller.
 
@@ -58,20 +73,5 @@ Stop CAN controller.
 
 #### Parameters
 
-#### Returns
-nil
-
-
-## can.send()
-Send a frame.
-
-#### Syntax
-`can.send(format, msg_id, data)`
-
-#### Parameters
-- `format` Frame format. `can.STANDARD_FRAME` or `can.EXTENDED_FRAME`
-- `msg_id` CAN Messge ID
-- `data` CAN data, up to 8 bytes
-  
 #### Returns
 nil
