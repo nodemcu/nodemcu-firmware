@@ -12,6 +12,8 @@
 #include "esp_task.h"
 #include "esp_log.h"
 
+#include <string.h>
+
 #include "task/task.h"
 
 CAN_device_t CAN_cfg = {
@@ -52,7 +54,7 @@ static void task_CAN( void *pvParameters ){
   (void)pvParameters;
   
   //frame buffer
-  CAN_frame_t *frame = NULL;
+  CAN_frame_t frame;
 
   //create CAN RX Queue
   CAN_cfg.rx_queue = xQueueCreate(10, sizeof(CAN_frame_t));
@@ -61,13 +63,11 @@ static void task_CAN( void *pvParameters ){
   CAN_init();
 
   for (;;){
-    if(frame == NULL) {
-      frame = (CAN_frame_t *)malloc( sizeof( CAN_frame_t ) );
-    }
     //receive next CAN frame from queue
-    if( xQueueReceive( CAN_cfg.rx_queue, frame, 3 * portTICK_PERIOD_MS ) == pdTRUE ){
-      task_post_medium( can_data_task_id, (task_param_t)frame );
-	  frame = (CAN_frame_t *)malloc( sizeof( CAN_frame_t ) );
+    if( xQueueReceive( CAN_cfg.rx_queue, &frame, 3 * portTICK_PERIOD_MS ) == pdTRUE ){
+	  CAN_frame_t *postFrame = (CAN_frame_t *)malloc( sizeof( CAN_frame_t ) );
+	  memcpy(postFrame, &frame, sizeof( CAN_frame_t ));
+      task_post_medium( can_data_task_id, (task_param_t)postFrame );
     }
   }
 }
@@ -91,7 +91,7 @@ static int can_setup( lua_State *L )
   lua_getfield (L, 1, "rx");
   CAN_cfg.rx_pin_id = luaL_checkint(L, -1);
   lua_getfield (L, 1, "dual_filter");
-  CAN_cfg.dual_filter = lua_toboolean(L, -1);
+  CAN_cfg.dual_filter = lua_toboolean(L, 0);
   lua_getfield (L, 1, "code");
   CAN_cfg.code = (uint32_t)luaL_optnumber(L, -1, 0);
   lua_getfield (L, 1, "mask");
@@ -103,7 +103,7 @@ static int can_start( lua_State *L )
 {
   if(xCanTaskHandle != NULL)
     luaL_error( L, "CAN started" );
-  xTaskCreate(&task_CAN, "CAN", 2048, NULL, ESP_TASK_MAIN_PRIO + 1, &xCanTaskHandle);
+  xTaskCreate(task_CAN, "CAN", 2048, NULL, ESP_TASK_MAIN_PRIO + 1, &xCanTaskHandle);
   return 0;
 }
 
