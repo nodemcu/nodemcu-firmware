@@ -23,10 +23,6 @@ local _ws2812
 -- Implement esp8266 compatability API
 --
 function M.init(mode)
-  if _pin_strip1 == nil then
-    error("gpio for data1 undefined")
-  end
-
   if _pin_strip2 == nil and mode == M.MODE_DUAL then
     error("gpio for data2 undefined")
   end
@@ -66,9 +62,8 @@ return function (pin_strip1, pin_strip2)
   M.SHIFT_LOGICAL  = _ws2812.SHIFT_LOGICAL
   M.SHIFT_CIRCULAR = _ws2812.SHIFT_CIRCULAR
 
-  _pin_strip1 = pin_strip1
+  _pin_strip1 = pin_strip1 or error("pin_strip1 not defined")
   _pin_strip2 = pin_strip2
 
   return M
 end
-
