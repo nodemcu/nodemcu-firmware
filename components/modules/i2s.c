@@ -59,17 +59,14 @@ static void i2s_event_task( task_param_t param, task_prio_t prio ) {
 static void task_I2S( void *pvParameters ){
   i2s_status_t* is = (i2s_status_t*)pvParameters;
   
-  i2s_event_post_type *post = NULL;
+  i2s_event_t event;
 
   for (;;){
-    if(post == NULL) {
-      post = (i2s_event_post_type *)malloc( sizeof( i2s_event_post_type ) );
+    if( xQueueReceive( is->event_queue, &event, 3 * portTICK_PERIOD_MS ) == pdTRUE ){
+      i2s_event_post_type *post = (i2s_event_post_type *)malloc( sizeof( i2s_event_post_type ) );
       post->status = is;
-    }
-
-    if( xQueueReceive( is->event_queue, &(post->event), 3 * portTICK_PERIOD_MS ) == pdTRUE ){
-    task_post_high( i2s_event_task_id, (task_param_t)post );
-    post = NULL;
+      memcpy(&(post->event), &event, sizeof(i2s_event_t));
+      task_post_high( i2s_event_task_id, (task_param_t)post );
     }
   }
 }
@@ -121,7 +118,7 @@ static int node_i2s_start( lua_State *L )
   char pcName[5];
   snprintf( pcName, 5, "I2S%d", i2s_id );
   pcName[4] = '\0';
-  xTaskCreate(&task_I2S, pcName, 2048, &i2s_status[i2s_id], ESP_TASK_MAIN_PRIO + 1, &i2s_status[i2s_id].taskHandle);
+  xTaskCreate(task_I2S, pcName, 2048, &i2s_status[i2s_id], ESP_TASK_MAIN_PRIO + 1, &i2s_status[i2s_id].taskHandle);
 
   return 0;
 }
@@ -180,7 +177,7 @@ static int node_i2s_write( lua_State *L )
       data[i] = (uint8_t)luaL_checkinteger( L, -1 );
     }
   } else {
-		data = (char *) luaL_checklstring(L, 2, &bytes);
+        data = (char *) luaL_checklstring(L, 2, &bytes);
   }
   int wait_ms = luaL_optint(L, 3, 0);
   size_t wrote = i2s_write_bytes(i2s_id, data, bytes, wait_ms / portTICK_RATE_MS);
