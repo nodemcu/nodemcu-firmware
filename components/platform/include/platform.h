@@ -1,11 +1,15 @@
 #ifndef _PLATFORM_H_
 #define _PLATFORM_H_
 
+#include "driver/uart.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include "sdkconfig.h"
 #include "cpu_esp32.h"
+
+#include "esp_task.h"
+
 
 #define PLATFORM_ALIGNMENT __attribute__((aligned(4)))
 #define PLATFORM_ALIGNMENT_PACKED __attribute__((aligned(4),packed))
@@ -44,6 +48,8 @@ int platform_gpio_output_exists( unsigned gpio );
 // *****************************************************************************
 // UART subsection
 
+#define UART_BUFFER_SIZE    512
+
 // Parity
 enum
 {
@@ -63,6 +69,36 @@ enum
   PLATFORM_UART_STOPBITS_1_5 = 3
 };
 
+typedef struct {
+  int tx_pin;
+  int rx_pin;
+  int rts_pin;
+  int cts_pin;
+  bool tx_inverse;
+  bool rx_inverse;
+  bool rts_inverse;
+  bool cts_inverse;
+  int flow_control;
+} uart_pins_t;
+
+typedef struct {
+  QueueHandle_t queue;
+  xTaskHandle taskHandle;
+  int receive_rf;
+  int error_rf;
+  char *line_buffer;
+  size_t line_position;
+  uint16_t need_len;
+  int16_t end_char;
+} uart_status_t;
+
+typedef struct {
+  unsigned id;
+  int type;
+  size_t size;
+  char* data;
+} uart_event_post_t;
+
 // Flow control types (this is a bit mask, one can specify PLATFORM_UART_FLOW_RTS | PLATFORM_UART_FLOW_CTS )
 #define PLATFORM_UART_FLOW_NONE               0
 #define PLATFORM_UART_FLOW_RTS                1
@@ -70,10 +106,12 @@ enum
 
 // The platform UART functions
 static inline int platform_uart_exists( unsigned id ) { return id < NUM_UART; }
-uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits );
+uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins );
+void platform_uart_send_multi( unsigned id, const char *data, size_t len );
 void platform_uart_send( unsigned id, uint8_t data );
 void platform_uart_flush( unsigned id );
-int platform_uart_set_flow_control( unsigned id, int type );
+int platform_uart_start( unsigned id );
+void platform_uart_stop( unsigned id );
 
 
 // *****************************************************************************
