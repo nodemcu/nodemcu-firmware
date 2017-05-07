@@ -59,7 +59,7 @@ the firmware to lock onto that baud rate (between 1200 and 230400).
 Identify your firmware builds by editing `app/include/user_version.h`
 
 ```c
-#define NODE_VERSION    "NodeMCU 2.0.0+myname"
+#define NODE_VERSION    "NodeMCU 2.1.0+myname"
 #ifndef BUILD_DATE
 #define BUILD_DATE      "YYYYMMDD"
 #endif
