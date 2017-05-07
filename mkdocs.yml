@@ -36,6 +36,7 @@ pages:
     - Support: 'en/support.md'
     - Modules:
         - 'adc': 'en/modules/adc.md'
+        - 'ads1115' : 'en/modules/ads1115.md'
         - 'adxl345': 'en/modules/adxl345.md'
         - 'am2320': 'en/modules/am2320.md'
         - 'apa102': 'en/modules/apa102.md'
@@ -96,4 +97,3 @@ pages:
         - 'xpt2046': 'en/modules/xpt2046.md'
 #- Deutsch:
 #    - Home: 'de/index.md'
-
