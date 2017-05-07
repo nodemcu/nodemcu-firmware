@@ -55,6 +55,15 @@ editing `BIT_RATE_DEFAULT` in `app/include/user_config.h`:
 Note that, by default, the firmware runs an auto-baudrate detection algorithm so that typing a few characters at boot time will cause
 the firmware to lock onto that baud rate (between 1200 and 230400).
 
+### Integer build
+By default a build will be generated supporting floating-point variables.
+To reduce memory size an integer build can be created.  You can change this by
+uncommenting `LUA_NUMBER_INTEGRAL` in `app/include/user_config.h`:
+
+```c
+#define LUA_NUMBER_INTEGRAL
+```
+
 ### Tag Your Build
 Identify your firmware builds by editing `app/include/user_version.h`
 
