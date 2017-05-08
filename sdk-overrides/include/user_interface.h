@@ -6,11 +6,6 @@
 bool wifi_softap_deauth(uint8 mac[6]);
 uint8 get_fpm_auto_sleep_flag(void);
 
-enum ext_flash_size_map {
-    FLASH_SIZE_64M_MAP = 8,
-    FLASH_SIZE_128M_MAP = 9
-};
-
 //force sleep API
 #define FPM_SLEEP_MAX_TIME 268435455 //0xFFFFFFF
 void wifi_fpm_set_wakeup_cb(void (*fpm_wakeup_cb_func)(void));

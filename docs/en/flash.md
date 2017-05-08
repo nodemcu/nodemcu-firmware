@@ -32,8 +32,6 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 - esptool.py is under heavy development. It's advised you run the latest version (check with `esptool.py version`). Since this documentation may not have been able to keep up refer to the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for current options and parameters.
 - In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
 `esptool.py --port <serial-port-of-ESP8266> erase_flash`
-- Modules with flash chips larger than 4&nbsp;MByte (e.g. WeMos D1 mini pro) need to be manually configured to at least 1&nbsp;MByte: Firmware image and SDK init data occupy the first MByte, while the remaining 7/15&nbsp;MByte of the flash are used for SPIFFS:
-`esptool.py --port <serial-port-of-ESP8266> write_flash -fm <mode> -fs 8m 0x00000 <nodemcu-firmware>.bin`
 
 ### NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
@@ -102,12 +100,14 @@ Espressif refers to this area as "System Param" and it resides in the last four 
 
 The default init data is provided as part of the SDK in the file `esp_init_data_default.bin`. NodeMCU will automatically flash this file to the right place on first boot if the sector appears to be empty.
 
-If you need to customize init data then first download the [Espressif SDK 2.0.0](https://espressif.com/sites/default/files/sdks/esp8266_nonos_sdk_v2.0.0_16_08_10.zip) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip. 
+If you need to customize init data then first download the [Espressif SDK 2.1.0](https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.1.0.zip) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip. 
 
 - `0x7c000` for 512 kB, modules like most ESP-01, -03, -07 etc.
 - `0xfc000` for 1 MB, modules like ESP8285, PSF-A85, some ESP-01, -03 etc.
 - `0x1fc000` for 2 MB
 - `0x3fc000` for 4 MB, modules like ESP-12E, NodeMCU devkit 1.0, WeMos D1 mini
+- `0x7fc000` for 8 MB
+- `0xffc000` for 16 MB, modules like WeMos D1 mini pro
 
 See "4.1 Non-FOTA Flash Map" and "6.3 RF Initialization Configuration" of the [ESP8266 Getting Started Guide](https://espressif.com/en/support/explore/get-started/esp8266/getting-started-guide) for details on init data addresses and customization.
 
