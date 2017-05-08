@@ -57,11 +57,18 @@ the firmware to lock onto that baud rate (between 1200 and 230400).
 
 ### Integer build
 By default a build will be generated supporting floating-point variables.
-To reduce memory size an integer build can be created.  You can change this by
-uncommenting `LUA_NUMBER_INTEGRAL` in `app/include/user_config.h`:
+To reduce memory size an integer build can be created.  You can change this 
+either by uncommenting `LUA_NUMBER_INTEGRAL` in `app/include/user_config.h`:
 
 ```c
 #define LUA_NUMBER_INTEGRAL
+```
+
+OR by overriding this with the `make` command as it's [done during the CI
+build](https://github.com/nodemcu/nodemcu-firmware/blob/master/.travis.yml#L30):
+
+```
+make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL ....
 ```
 
 ### Tag Your Build
