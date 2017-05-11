@@ -154,9 +154,10 @@ static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
 
   if((wifi_event_cb_ref[evt->event] != LUA_NOREF) || ((wifi_event_cb_ref[EVENT_MAX] != LUA_NOREF) &&
       !(evt->event == EVENT_STAMODE_CONNECTED || evt->event == EVENT_STAMODE_DISCONNECTED ||
-          evt->event == EVENT_STAMODE_AUTHMODE_CHANGE||evt->event==EVENT_STAMODE_GOT_IP ||
-          evt->event == EVENT_STAMODE_DHCP_TIMEOUT||evt->event==EVENT_SOFTAPMODE_STACONNECTED ||
-          evt->event == EVENT_SOFTAPMODE_STADISCONNECTED||evt->event==EVENT_SOFTAPMODE_PROBEREQRECVED)))
+          evt->event == EVENT_STAMODE_AUTHMODE_CHANGE || evt->event == EVENT_STAMODE_GOT_IP ||
+          evt->event == EVENT_STAMODE_DHCP_TIMEOUT || evt->event == EVENT_SOFTAPMODE_STACONNECTED ||
+          evt->event == EVENT_SOFTAPMODE_STADISCONNECTED || evt->event == EVENT_SOFTAPMODE_PROBEREQRECVED ||
+          evt->event == EVENT_OPMODE_CHANGED)))
   {
     evt_queue_t *temp = (evt_queue_t*)c_malloc(sizeof(evt_queue_t)); //allocate memory for new queue item
     temp->evt = (System_Event_t*)c_malloc(sizeof(System_Event_t)); //allocate memory to hold event structure
@@ -279,7 +280,16 @@ static void wifi_event_monitor_process_event_queue(task_param_t param, uint8 pri
           evt->event_info.ap_probereqrecved.rssi);
       break;
 
-    default://if event is not implemented, push table with userdata containing event data
+    case EVENT_OPMODE_CHANGED:
+      EVENT_DBG("\n\tOPMODE_CHANGED\n");
+      wifi_add_int_field(L, "old_mode", evt->event_info.opmode_changed.old_opmode);
+      wifi_add_int_field(L, "new_mode", evt->event_info.opmode_changed.new_opmode);
+      EVENT_DBG("\topmode: %u -> %u\n",
+          evt->event_info.opmode_changed.old_opmode,
+          evt->event_info.opmode_changed.new_opmode);
+      break;
+
+    default://if event is not implemented, return event id
       EVENT_DBG("\n\tswitch/case default\n");
       wifi_add_sprintf_field(L, "info", "event %u not implemented", evt->event);
       break;
@@ -350,6 +360,7 @@ const LUA_REG_TYPE wifi_event_monitor_map[] =
   { LSTRKEY( "AP_STACONNECTED" ),     LNUMVAL( EVENT_SOFTAPMODE_STACONNECTED ) },
   { LSTRKEY( "AP_STADISCONNECTED" ),  LNUMVAL( EVENT_SOFTAPMODE_STADISCONNECTED ) },
   { LSTRKEY( "AP_PROBEREQRECVED" ),   LNUMVAL( EVENT_SOFTAPMODE_PROBEREQRECVED ) },
+  { LSTRKEY( "WIFI_MODE_CHANGED" ),   LNUMVAL( EVENT_OPMODE_CHANGED ) },
   { LSTRKEY( "EVENT_MAX" ),           LNUMVAL( EVENT_MAX ) },
 #ifdef WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
   { LSTRKEY( "reason" ),              LROVAL( wifi_event_monitor_reason_map ) },
