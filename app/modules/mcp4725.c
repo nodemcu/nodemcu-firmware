@@ -22,6 +22,72 @@
 
 static const unsigned mcp4725_i2c_id = 0;
 
+static uint8 get_address(lua_State* L, uint8 i2c_address){
+  uint8 addr_temp = i2c_address;
+  uint16 temp_var = 0;
+  lua_getfield(L, 1, "A2");
+  if (!lua_isnil(L, -1))
+  {
+    if( lua_isnumber(L, -1) )
+    {
+      temp_var = lua_tonumber(L, -1);
+      if(temp_var < 2){
+        temp_var = MCP4725_I2C_ADDR_A2_MASK & (temp_var << 2);
+        addr_temp|=temp_var;
+      }
+      else
+        return luaL_argerror( L, 1, "A2: Must be 0 or 1" );
+    }
+    else
+    {
+      return luaL_argerror( L, 1, "A2: Must be number" );
+    }
+  }
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "A1");
+  if (!lua_isnil(L, -1))
+  {
+    if( lua_isnumber(L, -1) )
+    {
+      temp_var = lua_tonumber(L, -1);
+      if(temp_var < 2){
+        temp_var = MCP4725_I2C_ADDR_A1_MASK & (temp_var << 1);
+        addr_temp|=temp_var;
+      }
+      else
+        return luaL_argerror( L, 1, "A1: Must be 0 or 1" );
+    }
+    else
+    {
+      return luaL_argerror( L, 1, "A1: Must be number" );
+    }
+  }
+  lua_pop(L, 1);
+
+  lua_getfield(L, 1, "A0");
+  if (!lua_isnil(L, -1))
+  {
+    if( lua_isnumber(L, -1) )
+    {
+      temp_var = lua_tonumber(L, -1);
+      if(temp_var<2){
+        temp_var = MCP4725_I2C_ADDR_A0_MASK & (temp_var);
+        addr_temp|=temp_var;
+      }
+      else
+        return luaL_argerror( L, 1, "A0: Must be 0 or 1" );
+    }
+    else
+    {
+      return luaL_argerror( L, 1, "A0: Must be number" );
+    }
+  }
+  lua_pop(L, 1);
+
+  return addr_temp;
+}
+
 static int mcp4725_write(lua_State* L){
 
   uint8 i2c_address = MCP4725_I2C_ADDR_BASE;
@@ -30,68 +96,8 @@ static int mcp4725_write(lua_State* L){
 
   if(lua_istable(L, 1))
   {
+    i2c_address = get_address(L, i2c_address);
     uint16 temp_var=0;
-    lua_getfield(L, 1, "A2");
-    if (!lua_isnil(L, -1))
-    {
-      if( lua_isnumber(L, -1) )
-      {
-        temp_var = lua_tonumber(L, -1);
-        if(temp_var < 2){
-          temp_var = MCP4725_I2C_ADDR_A2_MASK & (temp_var << 2);
-          i2c_address|=temp_var;
-        }
-        else
-          return luaL_argerror( L, 1, "A2: Must be 0 or 1" );
-      }
-      else
-      {
-        return luaL_argerror( L, 1, "A2: Must be number" );
-      }
-    }
-    lua_pop(L, 1);
-
-    lua_getfield(L, 1, "A1");
-    if (!lua_isnil(L, -1))
-    {
-      if( lua_isnumber(L, -1) )
-      {
-        temp_var = lua_tonumber(L, -1);
-        if(temp_var < 2){
-          temp_var = MCP4725_I2C_ADDR_A1_MASK & (temp_var << 1);
-          i2c_address|=temp_var;
-        }
-        else
-          return luaL_argerror( L, 1, "A1: Must be 0 or 1" );
-      }
-      else
-      {
-        return luaL_argerror( L, 1, "A1: Must be number" );
-      }
-    }
-    lua_pop(L, 1);
-
-    lua_getfield(L, 1, "A0");
-    if (!lua_isnil(L, -1))
-    {
-      if( lua_isnumber(L, -1) )
-      {
-        temp_var = lua_tonumber(L, -1);
-        if(temp_var<2){
-          temp_var = MCP4725_I2C_ADDR_A0_MASK & (temp_var);
-          i2c_address|=temp_var;
-        }
-        else
-          return luaL_argerror( L, 1, "A0: Must be 0 or 1" );
-      }
-      else
-      {
-        return luaL_argerror( L, 1, "A0: Must be number" );
-      }
-    }
-    lua_pop(L, 1);
-
-
     lua_getfield(L, 1, "value");
     if (!lua_isnil(L, -1))
     {
@@ -177,69 +183,7 @@ static int mcp4725_read(lua_State* L){
 
   if(lua_istable(L, 1))
    {
-     uint16 temp_var = 0;
-     lua_getfield(L, 1, "A2");
-     if (!lua_isnil(L, -1))
-     {
-       if( lua_isnumber(L, -1) )
-       {
-         temp_var = lua_tonumber(L, -1);
-         if(temp_var<2){
-           temp_var = MCP4725_I2C_ADDR_A2_MASK & (temp_var << 2);
-           i2c_address|=temp_var;
-         }
-         else
-           return luaL_argerror( L, 1, "A2: Must be 0 or 1" );
-       }
-       else
-       {
-         return luaL_argerror( L, 1, "A2: Must be number" );
-       }
-     }
-     lua_pop(L, 1);
-
-     lua_getfield(L, 1, "A1");
-     if (!lua_isnil(L, -1))
-     {
-       if( lua_isnumber(L, -1) )
-       {
-         temp_var = lua_tonumber(L, -1);
-         if(temp_var < 2){
-           temp_var = MCP4725_I2C_ADDR_A1_MASK & (temp_var << 1);
-           i2c_address|=temp_var;
-         }
-         else
-           return luaL_argerror( L, 1, "A1: Must be 0 or 1" );
-       }
-       else
-       {
-         return luaL_argerror( L, 1, "A1: Must be number" );
-       }
-     }
-     else
-     lua_pop(L, 1);
-
-     lua_getfield(L, 1, "A0");
-     if (!lua_isnil(L, -1))
-     {
-       if( lua_isnumber(L, -1) )
-       {
-         temp_var = lua_tonumber(L, -1);
-         if(temp_var<2){
-           temp_var = MCP4725_I2C_ADDR_A0_MASK & (temp_var);
-           i2c_address|=temp_var;
-         }
-         else
-           return luaL_argerror( L, 1, "A0: Must be 0 or 1" );
-       }
-       else
-       {
-         return luaL_argerror( L, 1, "A0: Must be number" );
-       }
-     }
-     else
-     lua_pop(L, 1);
-
+    i2c_address = get_address(L, i2c_address);
    }
 
   platform_i2c_send_start(mcp4725_i2c_id);
