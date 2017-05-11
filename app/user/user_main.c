@@ -140,10 +140,10 @@ void nodemcu_init(void)
         return;
     }
 
-    if( flash_safe_get_size_byte() != flash_rom_get_size_byte() ) {
+    if( flash_rom_get_size_byte() != flash_rom_get_size_byte() ) {
         NODE_ERR("Self adjust flash size.\n");
         // Fit hardware real flash size.
-        flash_rom_set_size_byte(flash_safe_get_size_byte());
+        flash_rom_set_size_byte(flash_rom_get_size_byte());
 
         system_restart ();
         // Don't post the start_lua task, we're about to reboot...
