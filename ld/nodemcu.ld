@@ -105,7 +105,7 @@ SECTIONS
     
     /* SDK libraries that used in bootup process, interruption handling
      * and other ways where flash cache (iROM) is unavailable: */
-    *libmain.a:*(.literal .text)
+    *libmain.a:*(.literal .literal.* .text .text.*)
     *libnet80211.a:*(.literal .text)
     *libphy.a:*(.literal .text)
     *libpp.a:*(.literal .text)
