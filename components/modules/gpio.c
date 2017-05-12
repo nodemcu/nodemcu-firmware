@@ -102,7 +102,7 @@ static int lgpio_config (lua_State *L)
     lua_getfield(L, i, "gpio");
     int type = lua_type (L, -1);
     if (type == LUA_TNUMBER)
-      cfg.pin_bit_mask = 1 << lua_tointeger (L, -1);
+      cfg.pin_bit_mask = 1ULL << lua_tointeger (L, -1);
     else if (type == LUA_TTABLE)
     {
       lua_pushnil (L);
@@ -111,7 +111,7 @@ static int lgpio_config (lua_State *L)
         lua_pushvalue (L, -1); // copy, so lua_tonumber() doesn't break iter
         int pin = lua_tointeger (L, -1);
         lua_pop (L, 2); // leave key
-        cfg.pin_bit_mask |= 1 << pin;
+        cfg.pin_bit_mask |= 1ULL << pin;
       }
     }
     else
