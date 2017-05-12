@@ -10,6 +10,12 @@
 
 uint32_t flash_detect_size_byte(void)
 {
+    // enable operations on whole physical flash, SDK might have restricted
+    // the flash size already
+    extern SpiFlashChip * flashchip;
+    uint32 orig_chip_size = flashchip->chip_size;
+    flashchip->chip_size = FLASH_SIZE_16MBYTE;
+
 #define FLASH_BUFFER_SIZE_DETECT 32
     uint32_t dummy_size = FLASH_SIZE_256KBYTE;
     uint8_t data_orig[FLASH_BUFFER_SIZE_DETECT] ICACHE_STORE_ATTR = {0};
@@ -25,6 +31,10 @@ uint32_t flash_detect_size_byte(void)
             dummy_size *= 2;
         }
     };
+
+    // revert temporary setting
+    flashchip->chip_size = orig_chip_size;
+
     return dummy_size;
 #undef FLASH_BUFFER_SIZE_DETECT
 }
