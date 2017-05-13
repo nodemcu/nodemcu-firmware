@@ -160,8 +160,8 @@ int CAN_write_frame(const CAN_frame_t* p_frame){
 int CAN_init(){
 
     //enable module
-    SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_CAN_CLK_EN);
-    CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_CAN_RST);
+    DPORT_SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_CAN_CLK_EN);
+    DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_CAN_RST);
 
     //configure TX pin
     gpio_set_direction(CAN_cfg.tx_pin_id,GPIO_MODE_OUTPUT);
