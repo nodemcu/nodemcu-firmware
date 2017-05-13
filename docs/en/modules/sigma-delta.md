@@ -59,7 +59,7 @@ Routes the sigma-delta channel to the specified pin. Target prescale and duty va
 
 #### Parameters
 - `channel` 0~7, sigma-delta channel index
-- `pin` 0~33, IO index
+- `pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 `nil`

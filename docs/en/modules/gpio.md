@@ -57,7 +57,7 @@ Read digital GPIO pin value.
 `gpio.read(pin)`
 
 #### Parameters
-`pin` pin to read, 0 ~ 33 I/O index
+`pin` pin to read, see [GPIO Overview](#gpio-overview)
 
 #### Returns
 0 = low, 1 = high
@@ -70,13 +70,13 @@ Establish or clear a callback function to run on interrupt for a GPIO.
 `gpio.trig(pin, type [, callback])`
 
 #### Parameters
-- `pin` 0 ~ 33 I/O index
+- `pin`, see [GPIO Overview](#gpio-overview)
 - `type` trigger type, one of
-    - `INTR_UP` for trigger on rising edge
-    - `INTR_DOWN` for trigger on falling edge
-    - `INTR_UP_DOWN` for trigger on both edges
-    - `INTR_LOW` for trigger on low level
-    - `INTR_HIGH` for trigger on high level
+    - `gpio.INTR_UP` for trigger on rising edge
+    - `gpio.INTR_DOWN` for trigger on falling edge
+    - `gpio.INTR_UP_DOWN` for trigger on both edges
+    - `gpio.INTR_LOW` for trigger on low level
+    - `gpio.INTR_HIGH` for trigger on high level
 - `callback` optional function to be called when trigger fires, trigger is disabled when omitted. Parameters are:
     - `pin`
     - `level`
@@ -91,11 +91,11 @@ Configuring wake-from-sleep-on-GPIO-level.
 `gpio.wakeup(pin, level)`
 
 #### Parameters
-- `pin` 0 ~ 33 I/O index
+- `pin`, see [GPIO Overview](#gpio-overview)
 - `level` wake-up level, one of
-    - `INTR_NONE` to disable wake-up
-    - `INTR_LOW` for wake-up on low level
-    - `INTR_HIGH` for wake-up on high level
+    - `gpio.INTR_NONE` to disable wake-up
+    - `gpio.INTR_LOW` for wake-up on low level
+    - `gpio.INTR_HIGH` for wake-up on high level
 
 #### Returns
 `nil`
@@ -108,8 +108,8 @@ Set digital GPIO pin value.
 `gpio.write(pin, level)`
 
 #### Parameters
-- `pin` pin to write, 0 ~ 33 I/O index
-- `level` `gpio.HIGH` or `gpio.LOW`
+- `pin` pin to write, see [GPIO Overview](#gpio-overview)
+- `level` 1 or 0
 
 #### Returns
 `nil`

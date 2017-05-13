@@ -15,7 +15,7 @@ Read DHT11 humidity temperature combo sensor.
 `dht.read11(pin)`
 
 #### Parameters
-`pin` 0~33, IO index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 - `status` as defined in Constants
@@ -45,7 +45,7 @@ Read DHT21/22/33/43 and AM2301/2302/2303 humidity temperature combo sensors.
 `dht.read2x(pin)`
 
 #### Parameters
-`pin` 0~33, IO index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 - `status` as defined in Constants

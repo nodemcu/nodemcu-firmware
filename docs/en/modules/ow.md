@@ -55,7 +55,7 @@ Stops forcing power onto the bus. You only need to do this if you used the 'powe
 `ow.depower(pin)`
 
 #### Parameters
-`pin` 0~33, I/O index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 `nil`
@@ -71,7 +71,7 @@ Reads a byte.
 `ow.read(pin)`
 
 #### Parameters
-`pin` 0~33, I/O index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 byte read from slave device
@@ -83,7 +83,7 @@ Reads multi bytes.
 `ow.read_bytes(pin, size)`
 
 #### Parameters
-- `pin` 0~33, I/O index
+- `pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 - `size` number of bytes to be read from slave device (up to 256)
 
 #### Returns
@@ -96,7 +96,7 @@ Performs a 1-Wire reset cycle.
 `ow.reset(pin)`
 
 #### Parameters
-`pin` 0~33, I/O index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 - `1` if a device responds with a presence pulse
@@ -109,7 +109,7 @@ Clears the search state so that it will start from the beginning again.
 `ow.reset_search(pin)`
 
 #### Parameters
-`pin` 0~33, I/O index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 `nil`
@@ -121,7 +121,7 @@ Looks for the next device.
 `ow.search(pin)`
 
 #### Parameters
-`pin` 0~33, I/O index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 `rom_code` string with length of 8 upon success. It contains the rom code of slave device. Returns `nil` if search was unsuccessful.
@@ -136,7 +136,7 @@ Issues a 1-Wire rom select command. Make sure you do the `ow.reset(pin)` first.
 `ow.select(pin, rom)`
 
 #### Parameters
-- `pin` 0~33, I/O index
+- `pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 - `rom` string value, len 8, rom code of the slave device
 
 #### Returns
@@ -204,7 +204,7 @@ Sets a pin in onewire mode.
 `ow.setup(pin)`
 
 #### Parameters
-`pin` 0~33, I/O index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 `nil`
@@ -216,7 +216,7 @@ Issues a 1-Wire rom skip command, to address all on bus.
 `ow.skip(pin)`
 
 #### Parameters
-`pin` 0~33, I/O index
+`pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 
 #### Returns
 `nil`
@@ -228,7 +228,7 @@ Sets up the search to find the device type `family_code`. The search itself has 
 `ow.target_search(pin, family_code)`
 
 #### Parameters
-- `pin` 0~33, I/O index
+- `pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 - `family_code` byte for family code
 
 #### Returns
@@ -244,7 +244,7 @@ Writes a byte. If `power` is 1 then the wire is held high at the end for parasit
 `ow.write(pin, v, power)`
 
 #### Parameters
-- `pin` 0~33, I/O index
+- `pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 - `v` byte to be written to slave device 
 - `power` 1 for wire being held high for parasitically powered devices
 
@@ -261,7 +261,7 @@ Writes multi bytes. If `power` is 1 then the wire is held high at the end for pa
 `ow.write_bytes(pin, buf, power)`
 
 #### Parameters
-- `pin` 0~33, IO index
+- `pin` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 - `buf` string to be written to slave device
 - `power` 1 for wire being held high for parasitically powered devices
 

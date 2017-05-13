@@ -83,8 +83,8 @@ Initialize the I²C interface for master mode.
 
 ####Parameters
 - `id` interface id
-- `pinSDA` 0~33, IO index
-- `pinSCL` 0-33, IO index
+- `pinSDA` IO index, see [GPIO Overview](gpio.md#gpio-overview)
+- `pinSCL` IO index, see [GPIO Overview](gpio.md#gpio-overview)
 - `speed` bit rate in Hz, positive integer
     - `i2c.SLOW` for 100000 Hz, max for `i2c.SW`
     - `i2c.FAST` for 400000 Hz
@@ -196,8 +196,8 @@ Initialize the I²C interface for slave mode.
 #### Parameters
 - `id` interface id, `i2c.HW0` or `i2c.HW1`
 - `slave_config` table containing slave configuration information
-    - `sda` 0~33, IO index
-    - `scl` 0-33, IO index
+    - `sda` IO index, see [GPIO Overview](gpio.md#gpio-overview)
+    - `scl` IO index, see [GPIO Overview](gpio.md#gpio-overview)
     - `addr` slave address (7bit or 10bit)
     - `10bit` enable 10bit addressing with `true`, use 7bit with `false` (optional, defaults to `false` is omitted)
     - `rxbuf_len` length of receive buffer (optional, defaults to 128 if omitted)
