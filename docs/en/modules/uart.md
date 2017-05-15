@@ -14,8 +14,6 @@ For other uarts, you should call `uart.setup` and `uart.start` to get them worki
 
 Sets the callback function to handle UART events.
 
-Currently only the "data" event is supported.
-
 #### Syntax
 `uart.on([id], method, [number/end_char], [function], [run_input])`
 
@@ -29,7 +27,7 @@ Currently only the "data" event is supported.
 - `function` callback function. 
   - event "data" has a callback like this: `function(data) end`
   - event "error" has a callback like this: `function(err) end`. `err` could be one of "out_of_memory", "break", "rx_error".
-- `run_input` 0 or 1. Only for "data" event on UART 0. If 0, input from UART will not go into Lua interpreter, can accept binary data. If 1, input from UART will go into Lua interpreter, and run.
+- `run_input` 0 or 1. Only for "data" event on console uart. If 0, input from UART will not go into Lua interpreter, can accept binary data. If 1, input from UART will go into Lua interpreter, and run.
 
 To unregister the callback, provide only the "data" parameter.
 
@@ -82,7 +80,7 @@ uart.on(2, "error",
 - `parity` `uart.PARITY_NONE`, `uart.PARITY_ODD`, or `uart.PARITY_EVEN`
 - `stopbits` `uart.STOPBITS_1`, `uart.STOPBITS_1_5`, or `uart.STOPBITS_2`
 - `echo_or_pins`
-  - for `uart 0`, this should be a int. if 0, disable echo, otherwise enable echo
+  - for console uart, this should be a int. if 0, disable echo, otherwise enable echo
   - for others, this is a table:
     - `tx` int. TX pin. Required
 	- `rx` int. RX pin. Required
