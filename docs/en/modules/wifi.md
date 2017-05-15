@@ -1523,6 +1523,9 @@ T: Table returned by event.
 - `wifi.eventmon.AP_PROBEREQRECVED`: A probe request was received.  
 	- `MAC`: MAC address of the client that is probing the access point.  
 	- `RSSI`: Received Signal Strength Indicator of client.  
+- `wifi.eventmon.WIFI_MODE_CHANGE`: WiFi mode has changed.    
+	- `old_auth_mode`: Old WiFi mode.  
+	- `new_auth_mode`: New WiFi mode.  
 
 #### Example
 
@@ -1537,7 +1540,7 @@ T: Table returned by event.
  T.BSSID.."\n\treason: "..T.reason)
  end)
 
- wifi.eventmon.register(wifi.eventmon.STA_AUTHMODE_CHANGE, Function(T)
+ wifi.eventmon.register(wifi.eventmon.STA_AUTHMODE_CHANGE, function(T)
  print("\n\tSTA - AUTHMODE CHANGE".."\n\told_auth_mode: "..
  T.old_auth_mode.."\n\tnew_auth_mode: "..T.new_auth_mode)
  end)
@@ -1561,6 +1564,11 @@ T: Table returned by event.
 
  wifi.eventmon.register(wifi.eventmon.AP_PROBEREQRECVED, function(T)
  print("\n\tAP - PROBE REQUEST RECEIVED".."\n\tMAC: ".. T.MAC.."\n\tRSSI: "..T.RSSI)
+ end)
+
+ wifi.eventmon.register(wifi.eventmon.WIFI_MODE_CHANGED, function(T)
+ print("\n\tSTA - WIFI MODE CHANGED".."\n\told_mode: "..
+ T.old_mode.."\n\tnew_mode: "..T.new_mode)
  end)
 ```
 #### See also
@@ -1588,6 +1596,7 @@ Event: WiFi event you would like to set a callback for.
 	- wifi.eventmon.AP_STACONNECTED  
 	- wifi.eventmon.AP_STADISCONNECTED  
 	- wifi.eventmon.AP_PROBEREQRECVED  
+	- wifi.eventmon.WIFI_MODE_CHANGED  
 
 #### Returns
 `nil`
