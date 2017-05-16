@@ -8,7 +8,6 @@
 // #define FLASH_8M
 // #define FLASH_16M
 #define FLASH_AUTOSIZE
-#define FLASH_SAFE_API
 
 // This adds the asserts in LUA. It also adds some useful extras to the
 // node module. This is all silent in normal operation and so can be enabled

@@ -53,14 +53,8 @@ static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int
 #ifdef SPIFFS_FIXED_LOCATION
   cfg->phys_addr = (SPIFFS_FIXED_LOCATION + block_size - 1) & ~(block_size-1);
 #else
-  if (flash_safe_get_size_byte() <= FLASH_SIZE_4MBYTE) {
-    // 256kByte - 4MByte modules: SPIFFS partition starts right after firmware image
-    cfg->phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ) + offset;
-    cfg->phys_addr = (cfg->phys_addr + align - 1) & ~(align - 1);
-  } else {
-    // > 4MByte modules: SPIFFS partition starts after SDK data
-    cfg->phys_addr = flash_rom_get_size_byte();
-  }
+  cfg->phys_addr = ( u32_t )platform_flash_get_first_free_block_address( NULL ) + offset;
+  cfg->phys_addr = (cfg->phys_addr + align - 1) & ~(align - 1);
 #endif
 #ifdef SPIFFS_SIZE_1M_BOUNDARY
   cfg->phys_size = ((0x100000 - (SYS_PARAM_SEC_NUM * INTERNAL_FLASH_SECTOR_SIZE) - ( ( u32_t )cfg->phys_addr )) & ~(block_size - 1)) & 0xfffff;
