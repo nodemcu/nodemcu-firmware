@@ -105,7 +105,11 @@ function readNumber(addr, unit)
 		if (addr:byte(1) == 0x28) then
 		  t = t * 625  -- DS18B20, 4 fractional bits
 		else
-		  t = t * 5000 -- DS18S20, 1 fractional bit
+		  -- 12 bits resolution. If you need 9 bits only comment the
+		  -- two following lines and un-comment the third
+		  c = (((data:byte(8)-data:byte(7))/data:byte(8)) - 0.25) * 10000
+		  t = (t * 5000) + c
+		  -- t = t * 5000 -- DS18S20, 1 fractional bit			
 		end
 
         if(unit == nil or unit == 'C') then
