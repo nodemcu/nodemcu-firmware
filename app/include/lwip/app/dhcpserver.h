@@ -5,6 +5,8 @@
 
 #define USE_DNS
 
+#define DHCP_MSGOPTIONS_MIN_LEN 312
+
 typedef struct dhcps_state{
         sint16_t state;
 } dhcps_state;

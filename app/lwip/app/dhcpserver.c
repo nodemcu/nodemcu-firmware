@@ -298,7 +298,8 @@ static void ICACHE_FLASH_ATTR send_offer(struct dhcps_msg *m)
         end = add_offer_options(end);
         end = add_end(end);
 
-	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg), PBUF_RAM);
+        // ensure that not more than the minimum options length is transmitted
+        p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg) - sizeof(m->options) + DHCP_MSGOPTIONS_MIN_LEN, PBUF_RAM);
 #if DHCPS_DEBUG
 		os_printf("udhcp: send_offer>>p->ref = %d\n", p->ref);
 #endif
@@ -358,7 +359,8 @@ static void ICACHE_FLASH_ATTR send_nak(struct dhcps_msg *m)
         end = add_msg_type(&m->options[4], DHCPNAK);
         end = add_end(end);
 
-	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg), PBUF_RAM);
+        // ensure that not more than the minimum options length is transmitted
+	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg) - sizeof(m->options) + DHCP_MSGOPTIONS_MIN_LEN, PBUF_RAM);
 #if DHCPS_DEBUG
 		os_printf("udhcp: send_nak>>p->ref = %d\n", p->ref);
 #endif
@@ -418,8 +420,9 @@ static void ICACHE_FLASH_ATTR send_ack(struct dhcps_msg *m)
         end = add_msg_type(&m->options[4], DHCPACK);
         end = add_offer_options(end);
         end = add_end(end);
-	    
-	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg), PBUF_RAM);
+
+        // ensure that not more than the minimum options length is transmitted
+	    p = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcps_msg) - sizeof(m->options) + DHCP_MSGOPTIONS_MIN_LEN, PBUF_RAM);
 #if DHCPS_DEBUG
 		os_printf("udhcp: send_ack>>p->ref = %d\n", p->ref);
 #endif
