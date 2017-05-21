@@ -18,7 +18,7 @@ Creates a MQTT client.
 - `keepalive` keepalive seconds
 - `username` user name
 - `password` user password
-- `cleansession` 0/1 for `false`/`true`
+- `cleansession` 0/1 for `false`/`true`. Default is 1 (`true`).
 
 #### Returns
 MQTT client
@@ -48,18 +48,22 @@ m:on("message", function(client, topic, data)
 end)
 
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
-m:connect("192.168.11.118", 1883, 0, function(client) print("connected") end, 
-                                     function(client, reason) print("failed reason: "..reason) end)
+m:connect("192.168.11.118", 1883, 0, function(client)
+  print("connected")
+  -- Calling subscribe/publish only makes sense once the connection
+  -- was successfully established. You can do that either here in the
+  -- 'connect' callback or you need to otherwise make sure the
+  -- connection was established (e.g. tracking connection status or in
+  -- m:on("connect", function)).
 
--- Calling subscribe/publish only makes sense once the connection
--- was successfully established. In a real-world application you want
--- move those into the 'connect' callback or make otherwise sure the 
--- connection was established.
-
--- subscribe topic with qos = 0
-m:subscribe("/topic",0, function(client) print("subscribe success") end)
--- publish a message with data = hello, QoS = 0, retain = 0
-m:publish("/topic","hello",0,0, function(client) print("sent") end)
+  -- subscribe topic with qos = 0
+  client:subscribe("/topic", 0, function(client) print("subscribe success") end)
+  -- publish a message with data = hello, QoS = 0, retain = 0
+  client:publish("/topic", "hello", 0, 0, function(client) print("sent") end)
+end,
+function(client, reason)
+  print("failed reason: " .. reason)
+end)
 
 m:close();
 -- you can call m:connect again
@@ -92,12 +96,40 @@ Connects to the broker specified by the given host, port, and secure options.
 - `host` host, domain or IP (string)
 - `port` broker port (number), default 1883
 - `secure` 0/1 for `false`/`true`, default 0. Take note of constraints documented in the [net module](net.md).
-- `autoreconnect` 0/1 for `false`/`true`, default 0
+- `autoreconnect` 0/1 for `false`/`true`, default 0. This option is *deprecated*.
 - `function(client)` callback function for when the connection was established
-- `function(client, reason)` callback function for when the connection could not be established
+- `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
 
 #### Returns
 `true` on success, `false` otherwise
+
+#### Notes
+
+Don't use `autoreconnect`. Let me repeat that, don't use `autoreconnect`. You should handle the errors explicitly and appropriately for
+your application. In particular, the default for `cleansession` above is `true`, so all subscriptions are destroyed when the connection
+is lost for any reason.
+
+In order to acheive a consistent connection, handle errors in the error callback. For example:
+
+```
+function handle_mqtt_error(client, reason) 
+  tmr.create():alarm(10 * 1000, tmr.ALARM_SINGLE, do_mqtt_connect)
+end
+
+function do_mqtt_connect()
+  mqtt:connect("server", function(client) print("connected") end, handle_mqtt_error)
+end
+```
+
+In reality, the connected function should do something useful!
+
+This is the description of how the `autoreconnect` functionality may (or may not) work.
+
+> When `autoreconnect` is set, then the connection will be re-established when it breaks. No error indication will be given (but all the
+> subscriptions may be lost if `cleansession` is true). However, if the
+> very first connection fails, then no reconnect attempt is made, and the error is signalled through the callback (if any). The first connection
+> is considered a success if the client connects to a server and gets back a good response packet in response to its MQTT connection request.
+> This implies (for example) that the username and password are correct.
 
 #### Connection failure callback reason codes:
 

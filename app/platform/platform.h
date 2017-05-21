@@ -113,8 +113,6 @@ void platform_spi_select( unsigned id, int is_select );
 
 int platform_spi_blkwrite( uint8_t id, size_t len, const uint8_t *data );
 int platform_spi_blkread( uint8_t id, size_t len, uint8_t *data );
-int platform_spi_set_mosi( uint8_t id, uint16_t offset, uint8_t bitlen, spi_data_type data );
-spi_data_type platform_spi_get_miso( uint8_t id, uint16_t offset, uint8_t bitlen );
 int platform_spi_transaction( uint8_t id, uint8_t cmd_bitlen, spi_data_type cmd_data,
                               uint8_t addr_bitlen, spi_data_type addr_data,
                               uint16_t mosi_bitlen, uint8_t dummy_bitlen, int16_t miso_bitlen );
@@ -304,6 +302,9 @@ int platform_gpio_exists( unsigned id );
 int platform_tmr_exists( unsigned id );
 
 // *****************************************************************************
+
+void* platform_print_deprecation_note( const char *msg, const char *time_frame);
+
 // Helper macros
 #define MOD_CHECK_ID( mod, id )\
   if( !platform_ ## mod ## _exists( id ) )\

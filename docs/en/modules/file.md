@@ -7,7 +7,7 @@ The file module provides access to the file system and its individual files.
 
 The file system is a flat file system, with no notion of subdirectories/folders.
 
-Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card is [FatFS is enabled](../sdcard.md).
+Besides the SPIFFS file system on internal flash, this module can also access FAT partitions on an external SD card if [FatFS is enabled](../sdcard.md).
 
 ```lua
 -- open file in flash:
@@ -31,6 +31,10 @@ end
 Change current directory (and drive). This will be used when no drive/directory is prepended to filenames.
 
 Current directory defaults to the root of internal SPIFFS (`/FLASH`) after system start.
+
+!!! note
+
+    Function is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware.
 
 #### Syntax
 `file.chdir(dir)`
@@ -73,7 +77,9 @@ end
 
 Format the file system. Completely erases any existing file system and writes a new one. Depending on the size of the flash chip in the ESP, this may take several seconds.
 
-Not supported for SD cards.
+!!! note
+
+    Function is not supported for SD cards.
 
 #### Syntax
 `file.format()`
@@ -91,7 +97,9 @@ none
 
 Returns the flash address and physical size of the file system area, in bytes.
 
-Not supported for SD cards.
+!!! note
+
+    Function is not supported for SD cards.
 
 #### Syntax
 `file.fscfg()`
@@ -156,7 +164,9 @@ end
 
 Mounts a FatFs volume on SD card.
 
-Not supported for internal flash.
+!!! note
+
+    Function is only available when [FatFS support](../sdcard.md#enabling-fatfs) is compiled into the firmware and it is not supported for internal flash.
 
 #### Syntax
 `file.mount(ldrv[, pin])`
@@ -217,7 +227,7 @@ When done with the file, it must be closed using `file.close()`.
 `file.open(filename, mode)`
 
 #### Parameters
-- `filename` file to be opened, directories are not supported
+- `filename` file to be opened
 - `mode`:
     - "r": read mode (the default)
     - "w": write mode
@@ -248,8 +258,8 @@ end
 ```
 
 #### See also
-- [`file.close()`](#fileclose)
-- [`file.readline()`](#filereadline)
+- [`file.close()`](#fileclose-fileobjclose)
+- [`file.readline()`](#filereadline-fileobjreadline)
 
 ## file.remove()
 
@@ -296,17 +306,19 @@ file.rename("temp.lua","init.lua")
 
 ## file.stat()
 
-Get attribtues of a file or directory in a table:
+Get attribtues of a file or directory in a table. Elements of the table are:
 
 - `size` file size in bytes
 - `name` file name
 - `time` table with time stamp information. Default is 1970-01-01 00:00:00 in case time stamps are not supported (on SPIFFS).
-  - `year`
-  - `mon`
-  - `day`
-  - `hour`
-  - `min`
-  - `sec`
+
+    - `year`
+    - `mon`
+    - `day`
+    - `hour`
+    - `min`
+    - `sec`
+
 - `is_dir` flag `true` if item is a directory, otherwise `false`
 - `is_rdonly` flag `true` if item is read-only, otherwise `false`
 - `is_hidden` flag `true` if item is hidden, otherwise `false`
@@ -387,8 +399,7 @@ end
 
     The maximum number of open files on SPIFFS is determined at compile time by `SPIFFS_MAX_OPEN_FILES` in `user_config.h`.
 
-## file.close()
-## file.obj:close()
+## file.close(), file.obj:close()
 
 Closes the open file, if any.
 
@@ -406,10 +417,9 @@ none
 #### See also
 [`file.open()`](#fileopen)
 
-## file.flush()
-## file.obj:flush()
+## file.flush(), file.obj:flush()
 
-Flushes any pending writes to the file system, ensuring no data is lost on a restart. Closing the open file using [`file.close()` / `fd:close()`](#fileclose) performs an implicit flush as well.
+Flushes any pending writes to the file system, ensuring no data is lost on a restart. Closing the open file using [`file.close()` / `fd:close()`](#fileclose-fileobjclose) performs an implicit flush as well.
 
 #### Syntax
 `file.flush()`
@@ -436,10 +446,9 @@ end
 ```
 
 #### See also
-[`file.close()` / `file.obj:close()`](#fileclose)
+[`file.close()` / `file.obj:close()`](#fileclose-fileobjclose)
 
-## file.read()
-## file.obj:read()
+## file.read(), file.obj:read()
 
 Read content from the open file.
 
@@ -482,10 +491,9 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.readline()` / `file.obj:readline()`](#filereadline)
+- [`file.readline()` / `file.obj:readline()`](#filereadline-fileobjreadline)
 
-## file.readline()
-## file.obj:readline()
+## file.readline(), file.obj:readline()
 
 Read the next line from the open file. Lines are defined as zero or more bytes ending with a EOL ('\n') byte. If the next line is longer than 1024, this function only returns the first 1024 bytes.
 
@@ -511,12 +519,11 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.close()` / `file.obj:close()`](#fileclose)
-- [`file.read()` / `file.obj:read()`](#fileread)
+- [`file.close()` / `file.obj:close()`](#fileclose-fileobjclose)
+- [`file.read()` / `file.obj:read()`](#fileread-fileobjread)
 
 
-## file.seek()
-## file.obj:seek()
+## file.seek(), file.obj:seek()
 
 Sets and gets the file position, measured from the beginning of the file, to the position given by offset plus a base specified by the string whence.
 
@@ -549,8 +556,7 @@ end
 #### See also
 [`file.open()`](#fileopen)
 
-## file.write()
-## file.obj:write()
+## file.write(), file.obj:write()
 
 Write a string to the open file.
 
@@ -588,10 +594,9 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.writeline()` / `file.obj:writeline()`](#filewriteline)
+- [`file.writeline()` / `file.obj:writeline()`](#filewriteline-fileobjwriteline)
 
-## file.writeline()
-## file.obj:writeline()
+## file.writeline(), file.obj:writeline()
 
 Write a string to the open file and append '\n' at the end.
 
@@ -618,4 +623,4 @@ end
 
 #### See also
 - [`file.open()`](#fileopen)
-- [`file.readline()` / `file.obj:readline()`](#filereadline)
+- [`file.readline()` / `file.obj:readline()`](#filereadline-fileobjreadline)

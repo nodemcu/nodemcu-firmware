@@ -9,4 +9,6 @@ int ets_sprintf(char *str, const char *format, ...)  __attribute__ ((format (pri
 
 int ets_vsprintf (char *d, const char *s, va_list ap);
 
+extern ETSTimer *timer_list;
+
 #endif /* SDK_OVERRIDES_INCLUDE_ETS_SYS_H_ */

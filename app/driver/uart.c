@@ -43,6 +43,22 @@ static void (*alt_uart0_tx)(char txchar);
 LOCAL void ICACHE_RAM_ATTR
 uart0_rx_intr_handler(void *para);
 
+
+/******************************************************************************
+ * FunctionName : uart_wait_tx_empty
+ * Description  : Internal used function
+ *                Wait for TX FIFO to become empty.
+ * Parameters   : uart_no, use UART0 or UART1 defined ahead
+ * Returns      : NONE
+*******************************************************************************/
+LOCAL void ICACHE_FLASH_ATTR
+uart_wait_tx_empty(uint8 uart_no)
+{
+    while ((READ_PERI_REG(UART_STATUS(uart_no)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) > 0)
+        ;
+}
+
+
 /******************************************************************************
  * FunctionName : uart_config
  * Description  : Internal used function
@@ -54,6 +70,8 @@ uart0_rx_intr_handler(void *para);
 LOCAL void ICACHE_FLASH_ATTR
 uart_config(uint8 uart_no)
 {
+    uart_wait_tx_empty(uart_no);
+
     if (uart_no == UART1) {
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
     } else {
@@ -98,6 +116,8 @@ uart_config(uint8 uart_no)
 void ICACHE_FLASH_ATTR
 uart0_alt(uint8 on)
 {
+    uart_wait_tx_empty(UART0);
+
     if (on)
     {
         PIN_PULLUP_DIS(PERIPHS_IO_MUX_MTDO_U);
@@ -348,6 +368,8 @@ uart_setup(uint8 uart_no)
 #ifdef BIT_RATE_AUTOBAUD
     uart_stop_autobaud();
 #endif
+    // poll Tx FIFO empty outside before disabling interrupts
+    uart_wait_tx_empty(uart_no);
     ETS_UART_INTR_DISABLE();
     uart_config(uart_no);
     ETS_UART_INTR_ENABLE();

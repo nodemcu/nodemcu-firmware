@@ -5,7 +5,7 @@ MEMORY
   dport0_0_seg :                        org = 0x3FF00000, len = 0x10
   dram0_0_seg :                         org = 0x3FFE8000, len = 0x14000
   iram1_0_seg :                         org = 0x40100000, len = 0x8000
-  irom0_0_seg :                         org = 0x40210000, len = 0xD0000
+  irom0_0_seg :                         org = 0x40210000, len = 0xE0000
 }
 
 PHDRS
@@ -105,7 +105,7 @@ SECTIONS
     
     /* SDK libraries that used in bootup process, interruption handling
      * and other ways where flash cache (iROM) is unavailable: */
-    *libmain.a:*(.literal .text)
+    *libmain.a:*(.literal .literal.* .text .text.*)
     *libnet80211.a:*(.literal .text)
     *libphy.a:*(.literal .text)
     *libpp.a:*(.literal .text)

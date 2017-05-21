@@ -8,8 +8,8 @@
 #include "os_type.h"
 
 /*SPI number define*/
-#define SPI 			0
-#define HSPI			1
+#define SPI_SPI 		0
+#define SPI_HSPI		1
 
 #define SPI_ORDER_LSB 0
 #define SPI_ORDER_MSB 1

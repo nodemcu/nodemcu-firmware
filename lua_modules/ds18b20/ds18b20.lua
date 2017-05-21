@@ -1,143 +1,121 @@
 --------------------------------------------------------------------------------
 -- DS18B20 one wire module for NODEMCU
--- NODEMCU TEAM
--- LICENCE: http://opensource.org/licenses/MIT
--- Vowstar <vowstar@nodemcu.com>
--- 2015/02/14 sza2 <sza2trash@gmail.com> Fix for negative values
+-- by @voborsky, @devsaurus
+-- encoder module is needed only for debug output; lines can be removed if no
+-- debug output is needed and/or encoder module is missing
+--
+-- by default the module is for integer version, comment integer version and
+-- uncomment float version part for float version
 --------------------------------------------------------------------------------
 
--- Set module name as parameter of require
-local modname = ...
-local M = {}
-_G[modname] = M
---------------------------------------------------------------------------------
--- Local used variables
---------------------------------------------------------------------------------
--- DS18B20 dq pin
-local pin = nil
--- DS18B20 default pin
-local defaultPin = 9
---------------------------------------------------------------------------------
--- Local used modules
---------------------------------------------------------------------------------
--- Table module
-local table = table
--- String module
-local string = string
--- One wire module
-local ow = ow
--- Timer module
-local tmr = tmr
--- Limited to local environment
-setfenv(1,M)
---------------------------------------------------------------------------------
--- Implementation
---------------------------------------------------------------------------------
-C = 'C'
-F = 'F'
-K = 'K'
-function setup(dq)
-  pin = dq
-  if(pin == nil) then
-    pin = defaultPin
-  end
-  ow.setup(pin)
-end
+return({
+  pin=3,
+  sens={},
+  temp={},
 
-function addrs()
-  setup(pin)
-  tbl = {}
-  ow.reset_search(pin)
-  repeat
-    addr = ow.search(pin)
-    if(addr ~= nil) then
-      table.insert(tbl, addr)
+  conversion = function(self)
+    local pin = self.pin
+    for i,s in ipairs(self.sens) do
+      if s.status == 0 then
+        print("starting conversion:", encoder.toHex(s.addr), s.parasite == 1 and "parasite" or " ")
+        ow.reset(pin)
+        ow.select(pin, s.addr)  -- select the sensor
+        ow.write(pin, 0x44, 1)  -- and start conversion
+        s.status = 1
+        if s.parasite == 1 then break end -- parasite sensor blocks bus during conversion
+      end
     end
-    tmr.wdclr()
-  until (addr == nil)
-  ow.reset_search(pin)
-  return tbl
-end
+    tmr.create():alarm(750, tmr.ALARM_SINGLE, function() self:readout() end)
+  end,
 
-function readNumber(addr, unit)
-  result = nil
-  setup(pin)
-  flag = false
-  if(addr == nil) then
+  readTemp = function(self, cb, lpin)
+    if lpin then self.pin = lpin end
+    local pin = self.pin
+    self.cb = cb
+    self.temp={}
+    ow.setup(pin)
+
+    self.sens={}
     ow.reset_search(pin)
-    count = 0
-    repeat
-      count = count + 1
+    -- ow.target_search(pin,0x28)
+    -- search the first device
+    local addr = ow.search(pin)
+    -- and loop through all devices
+    while addr do
+      -- search next device
+      local crc=ow.crc8(string.sub(addr,1,7))
+      if (crc==addr:byte(8)) and ((addr:byte(1)==0x10) or (addr:byte(1)==0x28)) then
+        ow.reset(pin)
+        ow.select(pin, addr)   -- select the found sensor
+        ow.write(pin, 0xB4, 1) -- Read Power Supply [B4h]
+        local parasite = (ow.read(pin)==0 and 1 or 0)
+        table.insert(self.sens,{addr=addr, parasite=parasite, status=0})
+        print("contact: ", encoder.toHex(addr), parasite == 1 and "parasite" or " ")
+      end
+
       addr = ow.search(pin)
       tmr.wdclr()
-    until((addr ~= nil) or (count > 100))
-    ow.reset_search(pin)
-  end
-  if(addr == nil) then
-    return result
-  end
-  crc = ow.crc8(string.sub(addr,1,7))
-  if (crc == addr:byte(8)) then
-    if ((addr:byte(1) == 0x10) or (addr:byte(1) == 0x28)) then
-      -- print("Device is a DS18S20 family device.")
-      ow.reset(pin)
-      ow.select(pin, addr)
-      ow.write(pin, 0x44, 1)
-      -- tmr.delay(1000000)
-      present = ow.reset(pin)
-      ow.select(pin, addr)
-      ow.write(pin,0xBE,1)
-      -- print("P="..present)
-      data = nil
-      data = string.char(ow.read(pin))
-      for i = 1, 8 do
-        data = data .. string.char(ow.read(pin))
-      end
-      -- print(data:byte(1,9))
-      crc = ow.crc8(string.sub(data,1,8))
-      -- print("CRC="..crc)
-      if (crc == data:byte(9)) then
-        t = (data:byte(1) + data:byte(2) * 256)
-        if (t > 32767) then
-          t = t - 65536
-        end
-
-		if (addr:byte(1) == 0x28) then
-		  t = t * 625  -- DS18B20, 4 fractional bits
-		else
-		  t = t * 5000 -- DS18S20, 1 fractional bit
-		end
-
-        if(unit == nil or unit == 'C') then
-          -- do nothing
-        elseif(unit == 'F') then
-          t = t * 1.8 + 320000
-        elseif(unit == 'K') then
-          t = t + 2731500
-        else
-          return nil
-        end
-        t = t / 10000
-        return t
-      end
-      tmr.wdclr()
-    else
-    -- print("Device family is not recognized.")
     end
-  else
-  -- print("CRC is not valid!")
-  end
-  return result
-end
 
-function read(addr, unit)
-  t = readNumber(addr, unit)
-  if (t == nil) then
-    return nil
-  else
-    return t
-  end
-end
+    -- place powered sensors first
+    table.sort(self.sens, function(a,b) return a.parasite<b.parasite end)
 
--- Return module table
-return M
+    node.task.post(node.task.MEDIUM_PRIORITY, function() self:conversion() end)
+  end,
+
+  readout=function(self)
+    local pin = self.pin
+    local next = false
+        if not self.sens then return 0 end
+    for i,s in ipairs(self.sens) do
+      -- print(encoder.toHex(s.addr), s.status)
+      if s.status == 1 then
+        ow.reset(pin)
+        ow.select(pin, s.addr)   -- select the  sensor
+        ow.write(pin, 0xBE, 0) -- READ_SCRATCHPAD
+        data = ow.read_bytes(pin, 9)
+
+        local t=(data:byte(1)+data:byte(2)*256)
+        if (t > 0x7fff) then t = t - 0x10000 end
+        if (s.addr:byte(1) == 0x28) then
+          t = t * 625  -- DS18B20, 4 fractional bits
+        else
+          t = t * 5000 -- DS18S20, 1 fractional bit
+        end
+
+        if 1/2 == 0 then
+          -- integer version
+          local sgn = t<0 and -1 or 1
+          local tA = sgn*t
+          local tH=tA/10000
+          local tL=(tA%10000)/1000 + ((tA%1000)/100 >= 5 and 1 or 0)
+
+          if tH and (tH~=85) then
+            self.temp[s.addr]=(sgn<0 and "-" or "")..tH.."."..tL
+            print(encoder.toHex(s.addr),(sgn<0 and "-" or "")..tH.."."..tL)
+            s.status = 2
+          end
+          -- end integer version
+        else
+          -- float version
+          if t and (math.floor(t/10000)~=85) then
+            self.temp[s.addr]=t/10000
+            print(encoder.toHex(s.addr), t)
+            s.status = 2
+          end
+          -- end float version
+        end
+      end
+      next = next or s.status == 0
+    end
+    if next then
+      node.task.post(node.task.MEDIUM_PRIORITY, function() self:conversion()  end)
+    else
+      self.sens = nil
+      if self.cb then
+        node.task.post(node.task.MEDIUM_PRIORITY, function()  self.cb(self.temp) end)
+      end
+    end
+
+  end
+})

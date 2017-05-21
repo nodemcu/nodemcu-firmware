@@ -72,9 +72,24 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
    * is deliberately quite terse and not as readable as one might like.
    */
   SPIFlashInfo sfi;
+
+  // enable operations on >4MB flash chip
+  extern SpiFlashChip * flashchip;
+  uint32 orig_chip_size = flashchip->chip_size;
+  flashchip->chip_size = FLASH_SIZE_16MBYTE;
+
   SPIRead (0, (uint32_t *)(&sfi), sizeof (sfi)); // Cache read not enabled yet, safe to use
-  if (sfi.size < 2) // Compensate for out-of-order 4mbit vs 2mbit values
-    sfi.size ^= 1;
+  // handle all size entries
+  switch (sfi.size) {
+  case 0: sfi.size = 1; break; // SIZE_4MBIT
+  case 1: sfi.size = 0; break; // SIZE_2MBIT
+  case 5: sfi.size = 3; break; // SIZE_16MBIT_8M_8M
+  case 6: // fall-through
+  case 7: sfi.size = 4; break; // SIZE_32MBIT_8M_8M, SIZE_32MBIT_16M_16M
+  case 8: sfi.size = 5; break; // SIZE_64MBIT
+  case 9: sfi.size = 6; break; // SIZE_128MBIT
+  default: break;
+  }
   uint32_t flash_end_addr = (256 * 1024) << sfi.size;
   uint32_t init_data_hdr = 0xffffffff;
   uint32_t init_data_addr = flash_end_addr - 4 * SPI_FLASH_SEC_SIZE;
@@ -84,6 +99,9 @@ void TEXT_SECTION_ATTR user_start_trampoline (void)
     SPIEraseSector (init_data_addr);
     SPIWrite (init_data_addr, init_data, 4 * (init_data_end - init_data));
   }
+
+  // revert temporary setting
+  flashchip->chip_size = orig_chip_size;
 
   call_user_start ();
 }
@@ -122,21 +140,10 @@ void nodemcu_init(void)
         return;
     }
 
-    if( flash_safe_get_size_byte() <= FLASH_SIZE_4MBYTE ) {
-        if( flash_safe_get_size_byte() != flash_rom_get_size_byte() ) {
-            NODE_ERR("Self adjust flash size.\n");
-            // Fit hardware real flash size.
-            flash_rom_set_size_byte(flash_safe_get_size_byte());
-
-            system_restart ();
-            // Don't post the start_lua task, we're about to reboot...
-            return;
-        }
-    } else if( (flash_rom_get_size_byte() < FLASH_SIZE_1MBYTE) ||
-               (flash_rom_get_size_byte() > FLASH_SIZE_4MBYTE) ) {
-        NODE_ERR("Locking flash size for SDK to 1MByte.\n");
-        // SDK/ROM can't handle flash size > 4MByte, ensure a minimum of 1MByte for firmware image
-        flash_rom_set_size_byte(FLASH_SIZE_1MBYTE);
+    if( flash_detect_size_byte() != flash_rom_get_size_byte() ) {
+        NODE_ERR("Self adjust flash size.\n");
+        // Fit hardware real flash size.
+        flash_rom_set_size_byte(flash_detect_size_byte());
 
         system_restart ();
         // Don't post the start_lua task, we're about to reboot...
@@ -190,7 +197,7 @@ void user_rf_pre_init(void)
 uint32
 user_rf_cal_sector_set(void)
 {
-    enum ext_flash_size_map size_map = system_get_flash_size_map();
+    enum flash_size_map size_map = system_get_flash_size_map();
     uint32 rf_cal_sec = 0;
 
     switch (size_map) {
@@ -213,11 +220,11 @@ user_rf_cal_sector_set(void)
             rf_cal_sec = 1024 - 5;
             break;
 
-        case FLASH_SIZE_64M_MAP:
+        case FLASH_SIZE_64M_MAP_1024_1024:
             rf_cal_sec = 2048 - 5;
             break;
 
-        case FLASH_SIZE_128M_MAP:
+        case FLASH_SIZE_128M_MAP_1024_1024:
             rf_cal_sec = 4096 - 5;
             break;
 

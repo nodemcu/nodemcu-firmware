@@ -297,7 +297,10 @@ int net_createServer( lua_State *L ) {
   type = luaL_optlong(L, 1, TYPE_TCP);
   timeout = luaL_optlong(L, 2, 30);
 
-  if (type == TYPE_UDP) return net_createUDPSocket( L );
+  if (type == TYPE_UDP) {
+    platform_print_deprecation_note("net.createServer with net.UDP type", "in next version");
+    return net_createUDPSocket( L );
+  }
   if (type != TYPE_TCP) return luaL_error(L, "invalid type");
 
   lnet_userdata *u = net_create(L, TYPE_TCP_SERVER);
@@ -312,9 +315,13 @@ int net_createConnection( lua_State *L ) {
   type = luaL_optlong(L, 1, TYPE_TCP);
   secure = luaL_optlong(L, 2, 0);
 
-  if (type == TYPE_UDP) return net_createUDPSocket( L );
+  if (type == TYPE_UDP) {
+    platform_print_deprecation_note("net.createConnection with net.UDP type", "in next version");
+    return net_createUDPSocket( L );
+  }
   if (type != TYPE_TCP) return luaL_error(L, "invalid type");
   if (secure) {
+    platform_print_deprecation_note("net.createConnection with secure flag", "in next version");
 #ifdef TLS_MODULE_PRESENT
     return tls_socket_create( L );
 #else
@@ -379,6 +386,7 @@ int net_listen( lua_State *L ) {
       ud->tcp_pcb = tcp_new();
       if (!ud->tcp_pcb)
         return luaL_error(L, "cannot allocate PCB");
+      ud->tcp_pcb->so_options |= SOF_REUSEADDR;
       err = tcp_bind(ud->tcp_pcb, &addr, port);
       if (err == ERR_OK) {
         tcp_arg(ud->tcp_pcb, ud);
@@ -636,6 +644,27 @@ int net_dns( lua_State *L ) {
     return lwip_lua_checkerr(L, err);
   }
   return 0;
+}
+
+// Lua: client/socket:ttl([ttl])
+int net_ttl( lua_State *L ) {
+  lnet_userdata *ud = net_get_udata(L);
+  if (!ud || ud->type == TYPE_TCP_SERVER)
+    return luaL_error(L, "invalid user data");
+  if (!ud->pcb)
+    return luaL_error(L, "socket is not open/bound yet");
+  int ttl = luaL_optinteger(L, 2, -1);
+  // Since `ttl` field is part of IP_PCB macro
+  // (which are at beginning of both udp_pcb/tcp_pcb)
+  // and PCBs declared as `union` there is safe to
+  // access ttl field without checking for type.
+  if (ttl == -1) {
+    ttl = ud->udp_pcb->ttl;
+  } else {
+    ud->udp_pcb->ttl = ttl;
+  }
+  lua_pushinteger(L, ttl);
+  return 1;
 }
 
 // Lua: client:getpeer()
@@ -951,6 +980,7 @@ static const LUA_REG_TYPE net_tcpsocket_map[] = {
   { LSTRKEY( "hold" ),    LFUNCVAL( net_hold ) },
   { LSTRKEY( "unhold" ),  LFUNCVAL( net_unhold ) },
   { LSTRKEY( "dns" ),     LFUNCVAL( net_dns ) },
+  { LSTRKEY( "ttl" ),     LFUNCVAL( net_ttl ) },
   { LSTRKEY( "getpeer" ), LFUNCVAL( net_getpeer ) },
   { LSTRKEY( "getaddr" ), LFUNCVAL( net_getaddr ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( net_delete ) },
@@ -964,6 +994,7 @@ static const LUA_REG_TYPE net_udpsocket_map[] = {
   { LSTRKEY( "on" ),      LFUNCVAL( net_on ) },
   { LSTRKEY( "send" ),    LFUNCVAL( net_send ) },
   { LSTRKEY( "dns" ),     LFUNCVAL( net_dns ) },
+  { LSTRKEY( "ttl" ),     LFUNCVAL( net_ttl ) },
   { LSTRKEY( "getaddr" ), LFUNCVAL( net_getaddr ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( net_delete ) },
   { LSTRKEY( "__index" ), LROVAL( net_udpsocket_map ) },

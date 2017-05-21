@@ -249,8 +249,8 @@ static int bme280_lua_init(lua_State* L) {
 		
 	bme280_ossh = (!lua_isnumber(L, 5))?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 5)&bit3); // 5-th parameter: humidity oversampling
 	
-	config = ((!lua_isnumber(L, 7)?BME280_STANDBY_TIME_20_MS:(luaL_checkinteger(L, 7)&bit3))<< 4) // 7-th parameter: inactive duration in normal mode
-		| ((!lua_isnumber(L, 8)?BME280_FILTER_COEFF_16:(luaL_checkinteger(L, 8)&bit3)) << 1); // 8-th parameter: IIR filter
+	config = ((!lua_isnumber(L, 7)?BME280_STANDBY_TIME_20_MS:(luaL_checkinteger(L, 7)&bit3))<< 5) // 7-th parameter: inactive duration in normal mode
+		| ((!lua_isnumber(L, 8)?BME280_FILTER_COEFF_16:(luaL_checkinteger(L, 8)&bit3)) << 2); // 8-th parameter: IIR filter
 	full_init = !lua_isnumber(L, 9)?1:lua_tointeger(L, 9); // 9-th parameter: init the chip too
 	NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme280_mode, bme280_ossh, config);
 	

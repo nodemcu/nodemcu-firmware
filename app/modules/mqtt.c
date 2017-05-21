@@ -1,5 +1,5 @@
 // Module for mqtt
-
+//
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -42,10 +42,14 @@ typedef struct mqtt_event_data_t
   uint16_t data_offset;
 } mqtt_event_data_t;
 
+#define RECONNECT_OFF   0
+#define RECONNECT_POSSIBLE 1
+#define RECONNECT_ON    2
+
 typedef struct mqtt_state_t
 {
   uint16_t port;
-  int auto_reconnect;
+  uint8_t auto_reconnect;   // 0 is not auto_reconnect. 1 is auto reconnect, but never connected. 2 is auto reconnect, but once connected
   mqtt_connect_info_t* connect_info;
   uint16_t message_length;
   uint16_t message_length_read;
@@ -106,7 +110,7 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
     }
   }
 
-  if(mud->mqtt_state.auto_reconnect){
+  if(mud->mqtt_state.auto_reconnect == RECONNECT_ON) {
     mud->pesp_conn->reverse = mud;
     mud->pesp_conn->type = ESPCONN_TCP;
     mud->pesp_conn->state = ESPCONN_NONE;
@@ -153,7 +157,7 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
 
   mud->event_timeout = 0; // no need to count anymore
 
-  if(mud->mqtt_state.auto_reconnect){
+  if(mud->mqtt_state.auto_reconnect == RECONNECT_ON) {
     pesp_conn->proto.tcp->remote_port = mud->mqtt_state.port;
     pesp_conn->proto.tcp->local_port = espconn_port();
     socket_connect(pesp_conn);
@@ -166,6 +170,9 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
     {
       espconn_disconnect(pesp_conn);
     }
+
+    mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
+
     mqtt_socket_disconnected(arg);
   }
   NODE_DBG("leave mqtt_socket_reconnected.\n");
@@ -287,7 +294,7 @@ READPACKET:
   switch(mud->connState){
     case MQTT_CONNECT_SENDING:
     case MQTT_CONNECT_SENT:
-        mud->event_timeout = 0;
+      mud->event_timeout = 0;
 
       if(mqtt_get_type(in_buffer) != MQTT_MSG_TYPE_CONNACK){
         NODE_DBG("MQTT: Invalid packet\r\n");
@@ -330,6 +337,9 @@ READPACKET:
       } else {
         mud->connState = MQTT_DATA;
         NODE_DBG("MQTT: Connected\r\n");
+        if (mud->mqtt_state.auto_reconnect == RECONNECT_POSSIBLE) {
+          mud->mqtt_state.auto_reconnect = RECONNECT_ON;
+        }
         if(mud->cb_connect_ref == LUA_NOREF)
           break;
         if(mud->self_ref == LUA_NOREF)
@@ -603,6 +613,16 @@ void mqtt_socket_timer(void *arg)
     NODE_DBG("Can not connect to broker.\n");
     os_timer_disarm(&mud->mqttTimer);
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
+#ifdef CLIENT_SSL_ENABLE
+    if(mud->secure)
+    {
+      espconn_secure_disconnect(mud->pesp_conn);
+    }
+    else
+#endif
+    {
+      espconn_disconnect(mud->pesp_conn);
+    }
   } else if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT send time out.
     NODE_DBG("sSend MQTT_CONNECT failed.\n");
     mud->connState = MQTT_INIT;
@@ -779,7 +799,7 @@ static int mqtt_socket_client( lua_State* L )
   mud->connect_info.keepalive = keepalive;
 
   mud->mqtt_state.pending_msg_q = NULL;
-  mud->mqtt_state.auto_reconnect = 0;
+  mud->mqtt_state.auto_reconnect = RECONNECT_OFF;
   mud->mqtt_state.port = 1883;
   mud->mqtt_state.connect_info = &mud->connect_info;
 
@@ -924,7 +944,7 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   {
     dns_reconn_count++;
     if( dns_reconn_count >= 5 ){
-      NODE_ERR( "DNS Fail!\n" );
+      NODE_DBG( "DNS Fail!\n" );
       // Note: should delete the pesp_conn or unref self_ref here.
 
       struct espconn *pesp_conn = arg;
@@ -938,7 +958,7 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
       mqtt_socket_disconnected(arg);   // although not connected, but fire disconnect callback to release every thing.
       return -1;
     }
-    NODE_ERR( "DNS retry %d!\n", dns_reconn_count );
+    NODE_DBG( "DNS retry %d!\n", dns_reconn_count );
     host_ip.addr = 0;
     return espconn_gethostbyname(pesp_conn, name, &host_ip, socket_dns_foundcb);
   }
@@ -968,7 +988,7 @@ static int mqtt_socket_connect( lua_State* L )
   ip_addr_t ipaddr;
   const char *domain;
   int stack = 1;
-  unsigned secure = 0, auto_reconnect = 0;
+  unsigned secure = 0, auto_reconnect = RECONNECT_OFF;
   int top = lua_gettop(L);
   sint8 espconn_status;
 
@@ -1053,12 +1073,15 @@ static int mqtt_socket_connect( lua_State* L )
   if ( (stack<=top) && lua_isnumber(L, stack) )
   {
     auto_reconnect = lua_tointeger(L, stack);
+    if ( auto_reconnect == RECONNECT_POSSIBLE ) {
+      platform_print_deprecation_note("autoreconnect == 1 is deprecated", "in the next version");
+    }
     stack++;
-    if ( auto_reconnect != 0 && auto_reconnect != 1 ){
-      auto_reconnect = 0; // default to 0
+    if ( auto_reconnect != RECONNECT_OFF && auto_reconnect != RECONNECT_POSSIBLE ){
+      auto_reconnect = RECONNECT_OFF; // default to 0
     }
   } else {
-    auto_reconnect = 0; // default to 0
+    auto_reconnect = RECONNECT_OFF; // default to 0
   }
   mud->mqtt_state.auto_reconnect = auto_reconnect;
 
@@ -1128,7 +1151,7 @@ static int mqtt_socket_close( lua_State* L )
     return 1;
   }
 
-  mud->mqtt_state.auto_reconnect = 0;   // stop auto reconnect.
+  mud->mqtt_state.auto_reconnect = RECONNECT_OFF;   // stop auto reconnect.
 
   sint8 espconn_status = ESPCONN_CONN;
   if (mud->connected) {

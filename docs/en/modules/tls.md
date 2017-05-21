@@ -148,6 +148,8 @@ srv:on("connection", function(sck, c)
 end)
 srv:connect(443,"google.com")
 ```
+!!! note
+    The `receive` event is fired for every network frame! See details at [net.socket:on()](net.md#netsocketon).
 
 #### See also
 - [`tls.createConnection()`](#tlscreateconnection)

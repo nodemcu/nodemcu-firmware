@@ -8,7 +8,6 @@
 // #define FLASH_8M
 // #define FLASH_16M
 #define FLASH_AUTOSIZE
-#define FLASH_SAFE_API
 
 // This adds the asserts in LUA. It also adds some useful extras to the
 // node module. This is all silent in normal operation and so can be enabled
@@ -115,6 +114,10 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #define WIFI_STATION_STATUS_MONITOR_ENABLE
 #define WIFI_SDK_EVENT_MONITOR_ENABLE
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
+
+#define ENABLE_TIMER_SUSPEND
+#define PMSLEEP_ENABLE
+
 
 #define STRBUF_DEFAULT_INCREMENT 32
 

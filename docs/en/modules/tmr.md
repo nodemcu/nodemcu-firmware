@@ -62,9 +62,11 @@ Functions supported in timer object:
 - [`t:alarm()`](#tmralarm)
 - [`t:interval()`](#tmrinterval)
 - [`t:register()`](#tmrregister)
+- [`t:resume()`](#tmrresume)
 - [`t:start()`](#tmrstart)
 - [`t:state()`](#tmrstate)
 - [`t:stop()`](#tmrstop)
+- [`t:suspend()`](#tmrsuspend)
 - [`t:unregister()`](#tmrunregister)
 
 #### Parameters
@@ -182,6 +184,61 @@ mytimer:start()
 - [`tmr.create()`](#tmrcreate)
 - [`tmr.alarm()`](#tmralarm)
 
+## tmr.resume()
+
+Resume an individual timer.
+
+Resumes a timer that has previously been suspended with either `tmr.suspend` or `tmr.suspend_all` 
+
+#### Syntax
+`tmr.resume(id/ref)`
+
+#### Parameters
+`id/ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
+
+#### Returns
+`true` if timer was resumed successfully 
+
+#### Example
+```lua
+--resume timer mytimer
+mytimer:resume()
+
+--alternate metod
+tmr.resume(mytimer)
+
+```
+#### See also
+- [`tmr.suspend()`](#tmrsuspend)
+- [`tmr.suspend_all()`](#tmrsuspendall)
+- [`tmr.resume_all()`](#tmrresumeall)
+
+## tmr.resume_all()
+
+Resume all timers.
+
+Resumes all timers including those previously been suspended with either `tmr.suspend` or `tmr.suspend_all` 
+
+#### Syntax
+`tmr.resume_all()`
+
+#### Parameters
+none
+
+#### Returns
+`true` if timers were resumed successfully 
+
+#### Example
+```lua
+--resume all previously suspended timers
+tmr.resume_all()
+
+```
+#### See also
+- [`tmr.suspend()`](#tmrsuspend)
+- [`tmr.suspend_all()`](#tmrsuspendall)
+- [`tmr.resume()`](#tmrresume)
+
 ## tmr.softwd()
 
 Provides a simple software watchdog, which needs to be re-armed or disabled before it expires, or the system will be restarted.
@@ -278,6 +335,67 @@ if not mytimer:stop() then print("timer not stopped, not registered?") end
 - [`tmr.register()`](#tmrregister)
 - [`tmr.stop()`](#tmrstop)
 - [`tmr.unregister()`](#tmrunregister)
+
+## tmr.suspend()
+
+Suspend an armed timer. 
+
+* Timers can be suspended at any time after they are armed.
+* If a timer is rearmed with `tmr.start` or `tmr.alarm` any matching suspended timers will be discarded.
+
+#### Syntax
+`tmr.suspend(id/ref)`
+
+#### Parameters
+`id/ref` timer id (0-6) or object, obsolete for OO API (→ [`tmr.create()`](#tmrcreate))
+
+#### Returns
+`true` if timer was resumed successfully 
+
+#### Example
+```lua
+--suspend timer mytimer
+mytimer:suspend()
+
+--alternate metod
+tmr.suspend(mytimer)
+
+```
+#### See also
+- [`tmr.suspend_all()`](#tmrsuspendall)
+- [`tmr.resume()`](#tmrresume)
+- [`tmr.resume_all()`](#tmrresumeall)
+
+
+## tmr.suspend_all()
+
+Suspend all currently armed timers. 
+
+!!! Warning
+	This function suspends ALL active timers, including any active timers started by the NodeMCU subsystem or other modules. this may cause parts of your program to stop functioning properly. 
+	USE THIS FUNCTION AT YOUR OWN RISK!
+
+
+#### Syntax
+`tmr.suspend_all()`
+
+#### Parameters
+none
+
+#### Returns
+`true` if timers were suspended successfully 
+
+#### Example
+```lua
+--suspend timer mytimer
+tmr.suspend_all()
+
+```
+#### See also
+- [`tmr.suspendl()`](#tmrsuspend)
+- [`tmr.resume()`](#tmrresume)
+- [`tmr.resume_all()`](#tmrresumeall)
+
 
 ## tmr.time()
 

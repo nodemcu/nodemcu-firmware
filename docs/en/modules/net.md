@@ -13,11 +13,11 @@ Constants to be used in other functions: `net.TCP`, `net.UDP`
 Creates a client.
 
 #### Syntax
-`net.createConnection(type, secure)`
+`net.createConnection([type[, secure]])`
 
 #### Parameters
-- `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
-- `secure` 1 for encrypted, 0 for plain. Secure connections chained to [tls.createConnection()](tls.md#tlscreateconnection)
+- `type` `net.TCP` (default) or `net.UDP`
+- `secure` 1 for encrypted, 0 for plain (default)
 
 !!! attention
     This will change in upcoming releases so that `net.createConnection` will always create an unencrypted TCP connection.
@@ -44,11 +44,11 @@ net.createConnection(net.TCP, 0)
 Creates a server.
 
 #### Syntax
-`net.createServer(type, timeout)`
+`net.createServer([type[, timeout]])`
 
 #### Parameters
-- `type` `net.TCP` or `net.UDP`. UDP connections chained to [net.createUDPSocket()](#netcreateudpsocket)
-- `timeout` for a TCP server timeout is 1~28'800 seconds (for an inactive client to be disconnected)
+- `type` `net.TCP` (default) or `net.UDP`
+- `timeout` for a TCP server timeout is 1~28'800 seconds, 30 sec by default (for an inactive client to be disconnected)
 
 !!! attention
     The `type` parameter will be removed in upcoming releases so that `net.createServer` will always create a TCP-based server. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead.
@@ -318,12 +318,31 @@ Otherwise, all connection errors (with normal close) passed to disconnection eve
 ```lua
 srv = net.createConnection(net.TCP, 0)
 srv:on("receive", function(sck, c) print(c) end)
+-- Wait for connection before sending.
 srv:on("connection", function(sck, c)
-  -- Wait for connection before sending.
-  sck:send("GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: keep-alive\r\nAccept: */*\r\n\r\n")
+  -- 'Connection: close' rather than 'Connection: keep-alive' to have server 
+  -- initiate a close of the connection after final response (frees memory 
+  -- earlier here), https://tools.ietf.org/html/rfc7230#section-6.6 
+  sck:send("GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\nAccept: */*\r\n\r\n")
 end)
 srv:connect(80,"httpbin.org")
 ```
+!!! note
+    The `receive` event is fired for every network frame! Hence, if the data sent to the device exceeds 1460 bytes (derived from [Ethernet frame size](https://en.wikipedia.org/wiki/Ethernet_frame)) it will fire more than once. There may be other situations where incoming data is split across multiple frames (e.g. HTTP POST with `multipart/form-data`). You need to manually buffer the data and find means to determine if all data was received.
+    
+```lua
+local buffer = nil
+
+srv:on("receive", function(sck, c)
+  if buffer == nil then
+    buffer = c
+  else
+    buffer = buffer .. c
+  end
+end)
+-- throttling could be implemented using socket:hold()
+-- example: https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/pcm/play_network.lua#L83
+```    
 
 #### See also
 - [`net.createServer()`](#netcreateserver)
@@ -399,6 +418,29 @@ end)
 
 #### See also
 [`net.socket:on()`](#netsocketon)
+
+## net.socket:ttl()
+
+Changes or retrieves Time-To-Live value on socket.
+
+#### Syntax
+`ttl([ttl])`
+
+#### Parameters
+- `ttl` (optional) new time-to-live value
+
+#### Returns
+current / new ttl value
+
+#### Example
+```lua
+sk = net.createConnection(net.TCP, 0)
+sk:connect(80, '192.168.1.1')
+sk:ttl(1) -- restrict frames to single subnet
+```
+
+#### See also
+[`net.createConnection()`](#netcreateconnection)
 
 ## net.socket:unhold()
 
@@ -491,6 +533,12 @@ The syntax and functional identical to [`net.socket:dns()`](#netsocketdns).
 Retrieve local port and ip of socket.
 
 The syntax and functional identical to [`net.socket:getaddr()`](#netsocketgetaddr).
+
+## net.udpsocket:ttl()
+
+Changes or retrieves Time-To-Live value on socket.
+
+The syntax and functional identical to [`net.socket:ttl()`](#netsocketttl).
 
 # net.dns Module
 

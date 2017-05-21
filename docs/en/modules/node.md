@@ -95,7 +95,7 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
     This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
 
 #### Syntax
-`node.dsleep(us, option)`
+`node.dsleep(us, option, instant)`
 
 #### Parameters
  - `us` number (integer) or `nil`, sleep time in micro second. If `us == 0`, it will sleep forever. If `us == nil`, will not set sleep time.
@@ -107,6 +107,10 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 	- 1, RF_CAL after deep-sleep wake up, there will be large current
 	- 2, no RF_CAL after deep-sleep wake up, there will only be small current
 	- 4, disable RF after deep-sleep wake up, just like modem sleep, there will be the smallest current
+ - `instant` number (integer) or `nil`. If present and non-zero, do not use
+    the normal grace time before entering deep sleep.  This is a largely
+    undocumented feature, and is only briefly mentioned in Espressif's
+    [low power solutions](https://espressif.com/sites/default/files/documentation/9b-esp8266_low_power_solutions_en.pdf#page=10) document (chapter 4.5).
 
 #### Returns
 `nil`
@@ -122,6 +126,11 @@ node.dsleep(1000000, 4)
 --set sleep option only
 node.dsleep(nil,4)
 ```
+
+#### See also
+- [`wifi.suspend()`](wifi.md#wifisuspend)
+- [`wifi.resume()`](wifi.md#wifiresume)
+- [`node.sleep()`](#nodesleep)
 
 ## node.flashid()
 
@@ -280,7 +289,9 @@ none
 
 ## node.restore()
 
-Restores system configuration to defaults using the SDK function `system_restore()`, which doesn't document precisely what it erases/restores.
+Restores system configuration to defaults using the SDK function `system_restore()`, which is described in the documentation as:
+
+> Reset default settings of following APIs: `wifi_station_set_auto_connect`, `wifi_set_phy_mode`, `wifi_softap_set_config` related, `wifi_station_set_config` related, `wifi_set_opmode`, and APs’ information recorded by `#define	AP_CACHE`.
 
 #### Syntax
 `node.restore()`
@@ -314,6 +325,71 @@ target CPU frequency (number)
 ```lua
 node.setcpufreq(node.CPU80MHZ)
 ```
+
+
+## node.sleep()
+
+Put NodeMCU in light sleep mode to reduce current consumption. 
+
+* NodeMCU can not enter light sleep mode if wifi is suspended.
+* All active timers will be suspended and then resumed when NodeMCU wakes from sleep. 
+* Any previously suspended timers will be resumed when NodeMCU wakes from sleep.
+
+#### Syntax
+`node.sleep({wake_gpio[, duration, int_type, resume_cb, preserve_mode]})`
+
+#### Parameters
+- `duration` Sleep duration in microseconds(μs). If a sleep duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))
+- `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts. 
+ - If sleep duration is indefinite, `wake_pin` must be specified
+ - Please refer to the [`GPIO module`](gpio.md) for more info on the pin map.
+- `int_type` type of interrupt that you would like to wake on. (Optional, Default: `node.INT_LOW`)
+ - valid interrupt modes:
+  - `node.INT_UP`   Rising edge
+  - `node.INT_DOWN` Falling edge
+  - `node.INT_BOTH` Both edges
+  - `node.INT_LOW`  Low level
+  - `node.INT_HIGH` High level
+- `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
+- `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
+ - If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
+ - If false, discard WiFi mode and leave NodeMCU in `wifi.NULL_MODE`. WiFi mode will be restored to original mode on restart.
+
+#### Returns
+- `nil`
+
+#### Example
+
+```lua
+
+--Put NodeMCU in light sleep mode indefinitely with resume callback and wake interrupt
+ cfg={}
+ cfg.wake_pin=3
+ cfg.resume_cb=function() print("WiFi resume") end
+
+ node.sleep(cfg)
+
+--Put NodeMCU in light sleep mode with interrupt, resume callback and discard WiFi mode
+ cfg={}
+ cfg.wake_pin=3 --GPIO0
+ cfg.resume_cb=function() print("WiFi resume") end
+ cfg.preserve_mode=false
+
+ node.sleep(cfg)
+
+--Put NodeMCU in light sleep mode for 10 seconds with resume callback
+ cfg={}
+ cfg.duration=10*1000*1000
+ cfg.resume_cb=function() print("WiFi resume") end
+
+ node.sleep(cfg)
+
+```
+
+#### See also
+- [`wifi.suspend()`](wifi.md#wifisuspend)
+- [`wifi.resume()`](wifi.md#wifiresume)
+- [`node.dsleep()`](#nodedsleep)
 
 ## node.stripdebug()
 

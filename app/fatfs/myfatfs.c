@@ -29,22 +29,12 @@ static uint32_t myfatfs_fsize( const struct vfs_file *fd );
 static sint32_t myfatfs_ferrno( const struct vfs_file *fd );
 
 static sint32_t  myfatfs_closedir( const struct vfs_dir *dd );
-static vfs_item *myfatfs_readdir( const struct vfs_dir *dd );
-
-static void        myfatfs_iclose( const struct vfs_item *di );
-static uint32_t    myfatfs_isize( const struct vfs_item *di );
-static sint32_t    myfatfs_time( const struct vfs_item *di, struct vfs_time *tm );
-static const char *myfatfs_name( const struct vfs_item *di );
-static sint32_t    myfatfs_is_dir( const struct vfs_item *di );
-static sint32_t    myfatfs_is_rdonly( const struct vfs_item *di );
-static sint32_t    myfatfs_is_hidden( const struct vfs_item *di );
-static sint32_t    myfatfs_is_sys( const struct vfs_item *di );
-static sint32_t    myfatfs_is_arch( const struct vfs_item *di );
+static sint32_t  myfatfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf );
 
 static vfs_vol  *myfatfs_mount( const char *name, int num );
 static vfs_file *myfatfs_open( const char *name, const char *mode );
 static vfs_dir  *myfatfs_opendir( const char *name );
-static vfs_item *myfatfs_stat( const char *name );
+static sint32_t  myfatfs_stat( const char *name, struct vfs_stat *buf );
 static sint32_t  myfatfs_remove( const char *name );
 static sint32_t  myfatfs_rename( const char *oldname, const char *newname );
 static sint32_t  myfatfs_mkdir( const char *name );
@@ -89,18 +79,6 @@ static vfs_file_fns myfatfs_file_fns = {
   .ferrno    = myfatfs_ferrno
 };
 
-static vfs_item_fns myfatfs_item_fns = {
-  .close     = myfatfs_iclose,
-  .size      = myfatfs_isize,
-  .time      = myfatfs_time,
-  .name      = myfatfs_name,
-  .is_dir    = myfatfs_is_dir,
-  .is_rdonly = myfatfs_is_rdonly,
-  .is_hidden = myfatfs_is_hidden,
-  .is_sys    = myfatfs_is_sys,
-  .is_arch   = myfatfs_is_arch
-};
-
 static vfs_dir_fns myfatfs_dir_fns = {
   .close     = myfatfs_closedir,
   .readdir   = myfatfs_readdir
@@ -128,11 +106,6 @@ struct myvfs_file {
 struct myvfs_dir {
   struct vfs_dir vfs_dir;
   DIR dp;
-};
-
-struct myvfs_item {
-  struct vfs_item vfs_item;
-  FILINFO fno;
 };
 
 
@@ -321,105 +294,45 @@ static sint32_t myfatfs_closedir( const struct vfs_dir *dd )
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
 }
 
-static vfs_item *myfatfs_readdir( const struct vfs_dir *dd )
+static void myfatfs_fill_stat( const FILINFO *fno, struct vfs_stat *buf )
 {
-  GET_DIR_DP(dd);
-  struct myvfs_item *di;
+  c_memset( buf, 0, sizeof( struct vfs_stat ) );
 
-  if (di = c_malloc( sizeof( struct myvfs_item ) )) {
-    FILINFO *fno = &(di->fno);
+  // fill in supported stat entries
+  c_strncpy( buf->name, fno->fname, FS_OBJ_NAME_LEN+1 );
+  buf->name[FS_OBJ_NAME_LEN] = '\0';
+  buf->size = fno->fsize;
+  buf->is_dir = fno->fattrib & AM_DIR ? 1 : 0;
+  buf->is_rdonly = fno->fattrib & AM_RDO ? 1 : 0;
+  buf->is_hidden = fno->fattrib & AM_HID ? 1 : 0;
+  buf->is_sys = fno->fattrib & AM_SYS ? 1 : 0;
+  buf->is_arch = fno->fattrib & AM_ARC ? 1 : 0;
 
-    if (FR_OK == (last_result = f_readdir( dp, fno ))) {
-      // condition "no further item" is signalled with empty name
-      if (fno->fname[0] != '\0') {
-        di->vfs_item.fs_type = VFS_FS_FATFS;
-        di->vfs_item.fns     = &myfatfs_item_fns;
-        return (vfs_item *)di;
-      }
-    }
-    c_free( di );
-  }
-
-  return NULL;
-}
-
-
-// ---------------------------------------------------------------------------
-// dir info functions
-//
-#define GET_FILINFO_FNO(descr) \
-  const struct myvfs_item *mydi = (const struct myvfs_item *)descr; \
-  FILINFO *fno = (FILINFO *)&(mydi->fno);
-
-static void myfatfs_iclose( const struct vfs_item *di )
-{
-  GET_FILINFO_FNO(di);
-
-  // free descriptor memory
-  c_free( (void *)di );
-}
-
-static uint32_t myfatfs_isize( const struct vfs_item *di )
-{
-  GET_FILINFO_FNO(di);
-
-  return fno->fsize;
-}
-
-static sint32_t myfatfs_time( const struct vfs_item *di, struct vfs_time *tm )
-{
-  GET_FILINFO_FNO(di);
-
+  struct vfs_time *tm = &(buf->tm);
   tm->year = (fno->fdate >>  9) + 1980;
   tm->mon  = (fno->fdate >>  5) & 0x0f;
   tm->day  =  fno->fdate        & 0x1f;
   tm->hour = (fno->ftime >> 11);
   tm->min  = (fno->ftime >>  5) & 0x3f;
   tm->sec  =  fno->ftime        & 0x3f;
-
-  return VFS_RES_OK;
+  buf->tm_valid = 1;
 }
 
-static const char *myfatfs_name( const struct vfs_item *di )
+static sint32_t myfatfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf )
 {
-  GET_FILINFO_FNO(di);
+  GET_DIR_DP(dd);
+  FILINFO fno;
 
-  return fno->fname;
-}
+  if (FR_OK == (last_result = f_readdir( dp, &fno ))) {
+    // condition "no further item" is signalled with empty name
+    if (fno.fname[0] != '\0') {
+      myfatfs_fill_stat( &fno, buf );
 
-static sint32_t myfatfs_is_dir( const struct vfs_item *di )
-{
-  GET_FILINFO_FNO(di);
+      return VFS_RES_OK;
+    }
+  }
 
-  return fno->fattrib & AM_DIR ? 1 : 0;
-}
-
-static sint32_t myfatfs_is_rdonly( const struct vfs_item *di )
-{
-  GET_FILINFO_FNO(di);
-
-  return fno->fattrib & AM_RDO ? 1 : 0;
-}
-
-static sint32_t myfatfs_is_hidden( const struct vfs_item *di )
-{
-  GET_FILINFO_FNO(di);
-
-  return fno->fattrib & AM_HID ? 1 : 0;
-}
-
-static sint32_t myfatfs_is_sys( const struct vfs_item *di )
-{
-  GET_FILINFO_FNO(di);
-
-  return fno->fattrib & AM_SYS ? 1 : 0;
-}
-
-static sint32_t myfatfs_is_arch( const struct vfs_item *di )
-{
-  GET_FILINFO_FNO(di);
-
-  return fno->fattrib & AM_ARC ? 1 : 0;
+  return VFS_RES_ERR;
 }
 
 
@@ -521,21 +434,17 @@ static vfs_dir *myfatfs_opendir( const char *name )
   return NULL;
 }
 
-static vfs_item *myfatfs_stat( const char *name )
+static sint32_t myfatfs_stat( const char *name, struct vfs_stat *buf )
 {
-  struct myvfs_item *di;
+  FILINFO fno;
 
-  if (di = c_malloc( sizeof( struct myvfs_item ) )) {
-    if (FR_OK == (last_result = f_stat( name, &(di->fno) ))) {
-      di->vfs_item.fs_type = VFS_FS_FATFS;
-      di->vfs_item.fns     = &myfatfs_item_fns;
-      return (vfs_item *)di;
-    } else {
-      c_free( di );
-    }
+  if (FR_OK == (last_result = f_stat( name, &fno ))) {
+    myfatfs_fill_stat( &fno, buf );
+
+    return VFS_RES_OK;
+  } else {
+    return VFS_RES_ERR;
   }
-
-  return NULL;
 }
 
 static sint32_t myfatfs_remove( const char *name )
