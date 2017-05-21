@@ -12,7 +12,7 @@
 static const uint32_t hmc5883_i2c_id = 0;
 static const uint8_t hmc5883_i2c_addr = 0x1E;
 
-static uint8_t ICACHE_FLASH_ATTR r8u(uint32_t id, uint8_t reg) {
+static uint8_t r8u(uint32_t id, uint8_t reg) {
     uint8_t ret;
 
     platform_i2c_send_start(id);
@@ -26,7 +26,7 @@ static uint8_t ICACHE_FLASH_ATTR r8u(uint32_t id, uint8_t reg) {
     return ret;
 }
 
-static void ICACHE_FLASH_ATTR w8u(uint32_t id, uint8_t reg, uint8_t val) {
+static void w8u(uint32_t id, uint8_t reg, uint8_t val) {
     platform_i2c_send_start(hmc5883_i2c_id);
     platform_i2c_send_address(hmc5883_i2c_id, hmc5883_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
     platform_i2c_send_byte(hmc5883_i2c_id, reg);
@@ -34,19 +34,9 @@ static void ICACHE_FLASH_ATTR w8u(uint32_t id, uint8_t reg, uint8_t val) {
     platform_i2c_send_stop(hmc5883_i2c_id);
 }
 
-static int ICACHE_FLASH_ATTR hmc5883_init(lua_State* L) {
-
-    uint32_t sda;
-    uint32_t scl;
+static int hmc5883_setup(lua_State* L) {
     uint8_t  devid_a, devid_b, devid_c;
 
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(hmc5883_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-    
     devid_a = r8u(hmc5883_i2c_id, 10);
     devid_b = r8u(hmc5883_i2c_id, 11);
     devid_c = r8u(hmc5883_i2c_id, 12);
@@ -67,7 +57,24 @@ static int ICACHE_FLASH_ATTR hmc5883_init(lua_State* L) {
     return 0;
 }
 
-static int ICACHE_FLASH_ATTR hmc5883_read(lua_State* L) {
+static int hmc5883_init(lua_State* L) {
+
+    uint32_t sda;
+    uint32_t scl;
+
+    platform_print_deprecation_note("hmc5883l.init() is replaced by hmc5883l.setup()", "in the next version");
+
+    sda = luaL_checkinteger(L, 1);
+    scl = luaL_checkinteger(L, 2);
+
+    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
+
+    platform_i2c_setup(hmc5883_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
+
+    return hmc5883_setup(L);
+}
+
+static int hmc5883_read(lua_State* L) {
 
     uint8_t data[6];
     int x,y,z;
@@ -101,6 +108,8 @@ static int ICACHE_FLASH_ATTR hmc5883_read(lua_State* L) {
 
 static const LUA_REG_TYPE hmc5883_map[] = {
     { LSTRKEY( "read" ),         LFUNCVAL( hmc5883_read )},
+    { LSTRKEY( "setup" ),        LFUNCVAL( hmc5883_setup )},
+    // init() is deprecated
     { LSTRKEY( "init" ),         LFUNCVAL( hmc5883_init )},
     { LNILKEY, LNILVAL}
 };

@@ -227,35 +227,25 @@ static double bme280_qfe2qnh(int32_t qfe, int32_t h) {
 	return qnh;
 }
 
-static int bme280_lua_init(lua_State* L) {
-	uint8_t sda;
-	uint8_t scl;
+static int bme280_lua_setup(lua_State* L) {
 	uint8_t config;
 	uint8_t ack;
 	uint8_t full_init;
-	
+
 	uint8_t const bit3 = 0b111;
 	uint8_t const bit2 = 0b11;
 
-	if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
-		return luaL_error(L, "wrong arg range");
-	}
-	sda = luaL_checkinteger(L, 1);
-	scl = luaL_checkinteger(L, 2);
-	
-	bme280_mode = (!lua_isnumber(L, 6)?BME280_NORMAL_MODE:(luaL_checkinteger(L, 6)&bit2)) // 6-th parameter: power mode
-		| ((!lua_isnumber(L, 4)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 4)&bit3)) << 2) // 4-th parameter: pressure oversampling
-		| ((!lua_isnumber(L, 3)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 3)&bit3)) << 5); // 3-rd parameter: temperature oversampling
+	bme280_mode = (!lua_isnumber(L, 4)?BME280_NORMAL_MODE:(luaL_checkinteger(L, 4)&bit2)) // 4-th parameter: power mode
+		| ((!lua_isnumber(L, 2)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 2)&bit3)) << 2) // 2-nd parameter: pressure oversampling
+		| ((!lua_isnumber(L, 1)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 1)&bit3)) << 5); // 1-st parameter: temperature oversampling
 		
-	bme280_ossh = (!lua_isnumber(L, 5))?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 5)&bit3); // 5-th parameter: humidity oversampling
+	bme280_ossh = (!lua_isnumber(L, 3))?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 3)&bit3); // 3-rd parameter: humidity oversampling
 	
-	config = ((!lua_isnumber(L, 7)?BME280_STANDBY_TIME_20_MS:(luaL_checkinteger(L, 7)&bit3))<< 5) // 7-th parameter: inactive duration in normal mode
-		| ((!lua_isnumber(L, 8)?BME280_FILTER_COEFF_16:(luaL_checkinteger(L, 8)&bit3)) << 2); // 8-th parameter: IIR filter
-	full_init = !lua_isnumber(L, 9)?1:lua_tointeger(L, 9); // 9-th parameter: init the chip too
+	config = ((!lua_isnumber(L, 5)?BME280_STANDBY_TIME_20_MS:(luaL_checkinteger(L, 5)&bit3))<< 5) // 5-th parameter: inactive duration in normal mode
+		| ((!lua_isnumber(L, 6)?BME280_FILTER_COEFF_16:(luaL_checkinteger(L, 6)&bit3)) << 2); // 6-th parameter: IIR filter
+	full_init = !lua_isnumber(L, 7)?1:lua_tointeger(L, 7); // 7-th parameter: init the chip too
 	NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme280_mode, bme280_ossh, config);
 	
-	platform_i2c_setup(bme280_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
 	bme280_i2c_addr = BME280_I2C_ADDRESS1;
 	platform_i2c_send_start(bme280_i2c_id);
 	ack = platform_i2c_send_address(bme280_i2c_id, bme280_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
@@ -322,6 +312,30 @@ static int bme280_lua_init(lua_State* L) {
 	if (full_init) w8u(BME280_REGISTER_CONTROL, bme280_mode);
 	
 	return 1;
+}
+
+static int bme280_lua_init(lua_State* L) {
+	uint8_t sda;
+	uint8_t scl;
+	uint8_t config;
+	uint8_t ack;
+	uint8_t full_init;
+	
+	platform_print_deprecation_note("bme280.init() is replaced by bme280.setup()", "in the next version");
+
+	if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
+		return luaL_error(L, "wrong arg range");
+	}
+	sda = luaL_checkinteger(L, 1);
+	scl = luaL_checkinteger(L, 2);
+	
+	platform_i2c_setup(bme280_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
+
+	// remove sda and scl parameters from stack
+	lua_remove(L, 1);
+	lua_remove(L, 1);
+
+	return bme280_lua_setup(L);
 }
 
 static void bme280_readoutdone (void *arg)
@@ -481,7 +495,9 @@ static int bme280_lua_dewpoint(lua_State* L) {
 }
 
 static const LUA_REG_TYPE bme280_map[] = {
+        // init() is deprecated
 	{ LSTRKEY( "init" ), LFUNCVAL(bme280_lua_init)},
+	{ LSTRKEY( "setup" ), LFUNCVAL(bme280_lua_setup)},
 	{ LSTRKEY( "temp" ),  LFUNCVAL(bme280_lua_temp)},
 	{ LSTRKEY( "baro" ),  LFUNCVAL(bme280_lua_baro)},
 	{ LSTRKEY( "humi" ),  LFUNCVAL(bme280_lua_humi)},
