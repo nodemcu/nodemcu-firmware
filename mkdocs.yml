@@ -59,6 +59,7 @@ pages:
         - 'hx711' : 'en/modules/hx711.md'
         - 'i2c' : 'en/modules/i2c.md'
         - 'l3g4200d' : 'en/modules/l3g4200d.md'
+        - 'mcp4725': 'en/modules/mcp4725.md'
         - 'mdns': 'en/modules/mdns.md'
         - 'mqtt': 'en/modules/mqtt.md'
         - 'net': 'en/modules/net.md'
