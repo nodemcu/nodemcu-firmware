@@ -1629,11 +1629,6 @@ static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "config" ),           LFUNCVAL( wifi_station_config ) },
   { LSTRKEY( "connect" ),          LFUNCVAL( wifi_station_connect4lua ) },
   { LSTRKEY( "disconnect" ),       LFUNCVAL( wifi_station_disconnect4lua ) },
-#if defined(WIFI_STATION_STATUS_MONITOR_ENABLE)
-  { LSTRKEY( "eventMonReg" ),      LFUNCVAL( wifi_station_event_mon_reg ) }, //defined in wifi_eventmon.c
-  { LSTRKEY( "eventMonStart" ),    LFUNCVAL( wifi_station_event_mon_start ) }, //defined in wifi_eventmon.c
-  { LSTRKEY( "eventMonStop" ),     LFUNCVAL( wifi_station_event_mon_stop ) }, //defined in wifi_eventmon.c
-#endif
   { LSTRKEY( "getap" ),            LFUNCVAL( wifi_station_listap ) },
   { LSTRKEY( "getapindex" ),       LFUNCVAL( wifi_station_get_ap_index ) },
   { LSTRKEY( "getapinfo" ),        LFUNCVAL( wifi_station_get_ap_info4lua ) },

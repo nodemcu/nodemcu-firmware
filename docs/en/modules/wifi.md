@@ -489,116 +489,6 @@ none
 - [`wifi.sta.config()`](#wifistaconfig)
 - [`wifi.sta.connect()`](#wifistaconnect)
 
-## wifi.sta.eventMonReg()
-
-Registers callbacks for WiFi station status events.
-
-!!! note
-    Please update your program to use the [`wifi.eventmon`](#wifieventmon-module) API, as the `wifi.sta.eventmon___()` API is deprecated. 
-
-####  Syntax
-- `wifi.sta.eventMonReg(wifi_status[, function([previous_state])])`
-
-####  Parameters
-- `wifi_status` WiFi status you would like to set a callback for:
-    - `wifi.STA_IDLE`
-    - `wifi.STA_CONNECTING`
-    - `wifi.STA_WRONGPWD`
-    - `wifi.STA_APNOTFOUND`
-    - `wifi.STA_FAIL`
-    - `wifi.STA_GOTIP`
-- `function` callback function to perform when event occurs
-	- Note: leaving field blank unregisters callback.
-- `previous_state` previous wifi_state(0 - 5)
-
-####  Returns
-`nil`
-
-####  Example
-```lua
---register callback
-wifi.sta.eventMonReg(wifi.STA_IDLE, function() print("STATION_IDLE") end)
-wifi.sta.eventMonReg(wifi.STA_CONNECTING, function() print("STATION_CONNECTING") end)
-wifi.sta.eventMonReg(wifi.STA_WRONGPWD, function() print("STATION_WRONG_PASSWORD") end)
-wifi.sta.eventMonReg(wifi.STA_APNOTFOUND, function() print("STATION_NO_AP_FOUND") end)
-wifi.sta.eventMonReg(wifi.STA_FAIL, function() print("STATION_CONNECT_FAIL") end)
-wifi.sta.eventMonReg(wifi.STA_GOTIP, function() print("STATION_GOT_IP") end)
-
---register callback: use previous state
-wifi.sta.eventMonReg(wifi.STA_CONNECTING, function(previous_State)
-	if(previous_State==wifi.STA_GOTIP) then
-		print("Station lost connection with access point\n\tAttempting to reconnect...")
-	else
-		print("STATION_CONNECTING")
-	end
-end)
-
---unregister callback
-wifi.sta.eventMonReg(wifi.STA_IDLE)
-```
-#### See also
-- [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
-- [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
-- [`wifi.eventmon.register()`](#wifieventmonregister)
-- [`wifi.eventmon.unregister()`](#wifieventmonunregister)
-
-
-## wifi.sta.eventMonStart()
-
-Starts WiFi station event monitor.
-
-####  Syntax
-`wifi.sta.eventMonStart([ms])`
-
-### Parameters
-- `ms` interval between checks in milliseconds, defaults to 150ms if not provided.
-
-####  Returns
-`nil`
-
-####  Example
-```lua
---start WiFi event monitor with default interval
-wifi.sta.eventMonStart()
-
---start WiFi event monitor with 100ms interval
-wifi.sta.eventMonStart(100)
-```
-
-#### See also
-- [`wifi.sta.eventMonReg()`](#wifistaeventmonreg)
-- [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
-- [`wifi.eventmon.register()`](#wifieventmonregister)
-- [`wifi.eventmon.unregister()`](#wifieventmonunregister)
-
-## wifi.sta.eventMonStop()
-
-Stops WiFi station event monitor.
-####  Syntax
-`wifi.sta.eventMonStop([unregister_all])`
-
-####  Parameters
-- `unregister_all` enter 1 to unregister all previously registered functions.
-	- Note: leave blank to leave callbacks registered
-
-####  Returns
-`nil`
-
-####  Example
-```lua
---stop WiFi event monitor
-wifi.sta.eventMonStop()
-
---stop WiFi event monitor and unregister all callbacks
-wifi.sta.eventMonStop(1)
-```
-
-#### See also
-- [`wifi.sta.eventMonReg()`](#wifistaeventmonreg)
-- [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
-- [`wifi.eventmon.register()`](#wifieventmonregister)
-- [`wifi.eventmon.unregister()`](#wifieventmonunregister)
-
 ## wifi.sta.getap()
 
 Scans AP list as a Lua table into callback function.
@@ -1464,7 +1354,6 @@ none
 boolean indicating success
 
 # wifi.eventmon Module
-Note: The functions `wifi.sta.eventMon___()` and `wifi.eventmon.___()` are completely seperate and can be used independently of one another.
 
 ## wifi.eventmon.register()
 
@@ -1573,9 +1462,6 @@ T: Table returned by event.
 ```
 #### See also
 - [`wifi.eventmon.unregister()`](#wifieventmonunregister)
-- [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
-- [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
-- [`wifi.sta.eventMonReg()`](#wifistaeventmonreg)
 
 ## wifi.eventmon.unregister()
 
@@ -1608,8 +1494,6 @@ Event: WiFi event you would like to set a callback for.
 ```
 #### See also
 - [`wifi.eventmon.register()`](#wifieventmonregister)
-- [`wifi.sta.eventMonStart()`](#wifistaeventmonstart)
-- [`wifi.sta.eventMonStop()`](#wifistaeventmonstop)
 
 ## wifi.eventmon.reason
 
