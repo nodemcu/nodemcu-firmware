@@ -833,6 +833,102 @@ static int wifi_station_config( lua_State* L )
     }
     lua_pop(L, 1);
 
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+
+    lua_State* L_temp = NULL;
+
+    lua_getfield(L, 1, "connect_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "connect_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "disconnect_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "disconnect_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "authmode_change_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_AUTHMODE_CHANGE);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "authmode_change_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "got_ip_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_GOT_IP);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "gotip_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "dhcp_timeout_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_DHCP_TIMEOUT);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "dhcp_timeout_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+#endif
+
   }
   else //to be deprecated
   {
@@ -930,6 +1026,13 @@ static int wifi_station_config( lua_State* L )
 // Lua: wifi.sta.connect()
 static int wifi_station_connect4lua( lua_State* L )
 {
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+  if(lua_isfunction(L, 1)){
+    lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
+    lua_pushvalue(L, 1);
+    wifi_event_monitor_register(L);
+  }
+#endif
   wifi_station_connect();
   return 0;  
 }
@@ -937,6 +1040,13 @@ static int wifi_station_connect4lua( lua_State* L )
 // Lua: wifi.sta.disconnect()
 static int wifi_station_disconnect4lua( lua_State* L )
 {
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+  if(lua_isfunction(L, 1)){
+    lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
+    lua_pushvalue(L, 1);
+    wifi_event_monitor_register(L);
+  }
+#endif
   wifi_station_disconnect();
   return 0;  
 }
@@ -1509,6 +1619,65 @@ static int wifi_ap_config( lua_State* L )
   }
   lua_pop(L, 1);
 
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+
+    lua_State* L_temp = NULL;
+
+    lua_getfield(L, 1, "staconnected_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_SOFTAPMODE_STACONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "staconnected_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "stadisconnected_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_SOFTAPMODE_STADISCONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "stadisconnected_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "probereq_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_SOFTAPMODE_PROBEREQRECVED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "probereq_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+#endif
 
 #if defined(WIFI_DEBUG)
   char debug_temp[sizeof(config.password)+1];

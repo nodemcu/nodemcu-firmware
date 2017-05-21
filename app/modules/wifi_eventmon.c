@@ -32,7 +32,7 @@ static evt_queue_t *wifi_event_queue_tail; //pointer to end of queue
 static int wifi_event_cb_ref[EVENT_MAX+1] = { [0 ... EVENT_MAX] = LUA_NOREF}; //holds references to registered Lua callbacks
 
 // wifi.eventmon.register()
-static int wifi_event_monitor_register(lua_State* L)
+int wifi_event_monitor_register(lua_State* L)
 {
   uint8 id = (uint8)luaL_checknumber(L, 1);
   if ( id > EVENT_MAX ) //Check if user is trying to register a callback for a valid event.
