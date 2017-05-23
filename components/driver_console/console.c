@@ -159,7 +159,7 @@ void console_init (const ConsoleSetup_t *cfg, task_handle_t tsk)
 
   console_setup (cfg);
 
-  esp_intr_alloc (ETS_UART0_INTR_SOURCE,
+  esp_intr_alloc (ETS_UART0_INTR_SOURCE + CONSOLE_UART,
       ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_INTRDISABLED,
       uart0_rx_intr_handler, NULL, &intr_handle);
 
