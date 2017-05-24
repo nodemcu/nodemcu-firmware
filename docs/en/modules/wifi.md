@@ -905,7 +905,7 @@ Set Maximum number of Access Points to store in flash.
 `wifi.sta.setaplimit(qty)`
 
 #### Parameters
-`qty` Quantity of Access Points to store in flash. Range: 1-5 (Default: 5)
+`qty` Quantity of Access Points to store in flash. Range: 1-5 (Default: 1)
 
 #### Returns
 - `true`  Success
