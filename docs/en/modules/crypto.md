@@ -89,6 +89,29 @@ A binary string containing the message digest. To obtain the textual version (AS
 print(crypto.toHex(crypto.fhash("sha1","myfile.lua")))
 ```
 
+## crypto.frnd()
+
+Obtain a random number from the hardware random number generator in the
+range \[0,1). Not available in an integer-only build.
+
+#### Syntax
+`random = crypto.frnd()`
+
+#### Parameters
+none
+
+#### Returns
+A random floating point number in the range \[0,1), sourced from the hardware
+random number generator.
+
+#### Example
+```lua
+int0_to_5 = math.floor(crypto.frnd() * 6)
+```
+
+#### See also
+  - [`crypto.rnd32()`](#cryptornd32)
+
 ## crypto.hash()
 
 Compute a cryptographic hash of a Lua string.
@@ -192,6 +215,28 @@ The masked message, as a binary string. Use [`crypto.toHex()`](#cryptotohex) to 
 ```lua
 print(crypto.toHex(crypto.mask("some message to obscure","X0Y7")))
 ```
+
+## crypto.rnd32()
+
+Provides access to the hardware random number generator on the ESP.
+
+#### Syntax
+`random = crypto.rnd32()`
+
+#### Parameters
+none
+
+#### Return
+A 32bit (unsigned) random value, sourced from the hardware random number generator.
+
+#### Example
+```lua
+-- Seed the regular Lua PRNG from the HWRNG
+math.randomseed(crypto.rnd32())
+```
+
+#### See also
+  - [`crypto.frnd()`](#cryptofrnd)
 
 ## crypto.toBase64()
 

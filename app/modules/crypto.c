@@ -402,6 +402,24 @@ static int lcrypto_decrypt (lua_State *L)
   return crypto_encdec (L, false);
 }
 
+// returns integer between 0 and 2^32-1, inclusive
+static int lcrypto_rnd32 (lua_State *L)
+{
+  lua_pushnumber (L, (uint32_t)os_random());
+
+  return 1;
+}
+
+#ifndef LUA_NUMBER_INTEGRAL
+// returns double in the range [0,1)
+static int lcrypto_frnd (lua_State *L)
+{
+  lua_pushnumber (L, (double)((uint32_t)os_random())/4294967296.0);
+
+  return 1;
+}
+#endif
+
 // Hash function map
 static const LUA_REG_TYPE crypto_hash_map[] = {
   { LSTRKEY( "update" ),  LFUNCVAL( crypto_hash_update ) },
@@ -425,6 +443,10 @@ static const LUA_REG_TYPE crypto_map[] = {
   { LSTRKEY( "new_hmac"   ),   LFUNCVAL( crypto_new_hmac ) },
   { LSTRKEY( "encrypt" ),  LFUNCVAL( lcrypto_encrypt ) },
   { LSTRKEY( "decrypt" ),  LFUNCVAL( lcrypto_decrypt ) },
+  { LSTRKEY( "rnd32" ),    LFUNCVAL( lcrypto_rnd32 ) },
+#ifndef LUA_NUMBER_INTEGRAL
+  { LSTRKEY( "frnd" ),     LFUNCVAL( lcrypto_frnd ) },
+#endif
   { LNILKEY, LNILVAL }
 };
 
