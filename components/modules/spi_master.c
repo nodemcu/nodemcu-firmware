@@ -10,6 +10,8 @@
 
 #include "esp_log.h"
 
+#include "spi_common.h"
+
 #define SPI_MASTER_TAG "spi.master"
 
 #define UD_HOST_STR "spi.master"
@@ -188,10 +190,6 @@ static const LUA_REG_TYPE lspi_device_map[] = {
 // ****************************************************************************
 // Host related functions
 //
-typedef struct {
-  int host;
-} lspi_host_t;
-
 #define GET_UD_HOST \
   lspi_host_t *ud = (lspi_host_t *)luaL_checkudata( L, 1, UD_HOST_STR );
 //

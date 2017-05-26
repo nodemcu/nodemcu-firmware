@@ -21,3 +21,13 @@ CFLAGS += \
 	-Werror=unused-function \
 	-Werror=unused-but-set-variable \
 	-Werror=unused-variable \
+
+COMPONENT_EXTRA_CLEAN := u8g2_fonts.h u8g2_displays.h
+
+u8g2.o: u8g2_fonts.h u8g2_displays.h
+
+u8g2_fonts.h: $(BUILD_DIR_BASE)/include/sdkconfig.h
+	perl -w $(PROJECT_PATH)/tools/u8g2_config_fonts.pl < $^ > $@
+
+u8g2_displays.h: $(BUILD_DIR_BASE)/include/sdkconfig.h
+	perl -w $(PROJECT_PATH)/tools/u8g2_config_displays.pl < $^ > $@

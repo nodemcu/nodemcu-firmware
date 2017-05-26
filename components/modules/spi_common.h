@@ -4,6 +4,10 @@
 
 #include "lauxlib.h"
 
+typedef struct {
+  int host;
+} lspi_host_t;
+
 // ***************************************************************************
 // SPI master
 //

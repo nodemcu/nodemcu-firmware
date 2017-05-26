@@ -5,3 +5,6 @@
 	path = sdk/esp32-esp-idf
 	url = https://github.com/espressif/esp-idf.git
   ignore = dirty
+[submodule "components/u8g2/u8g2"]
+	path = components/u8g2/u8g2
+	url = https://github.com/olikraus/U8g2_Arduino.git
