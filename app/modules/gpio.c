@@ -72,6 +72,31 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
   }
 }
 
+//Lua: wakeup(pin, mode)
+static int lgpio_wakeup_enable(lua_State* L)
+{
+    unsigned pin, mode;
+    
+    pin = luaL_checkinteger(L, 1);
+    mode = luaL_checkinteger(L, 2);
+    
+    if(mode != HIGH && mode != LOW){
+        return luaL_error( L, "wrong arg type" );
+    }
+    
+    if(pin == 0){
+        return luaL_error( L, "no interrupt for D0" );
+    }
+    
+    if(pin > 12 || pin < 1){
+        return luaL_error( L, "wrong pin num" );
+    }
+    
+    gpio_pin_wakeup_enable(GPIO_ID_PIN(pin), mode); 
+    
+    return 0;
+}
+
 // Lua: trig( pin, type, function )
 static int lgpio_trig( lua_State* L )
 {
@@ -296,6 +321,7 @@ static const LUA_REG_TYPE gpio_map[] = {
 #ifdef GPIO_INTERRUPT_ENABLE
   { LSTRKEY( "trig" ),   LFUNCVAL( lgpio_trig ) },
   { LSTRKEY( "INT" ),    LNUMVAL( INTERRUPT ) },
+  { LSTRKEY("wakeup"),   LFUNCVAL(lgpio_wakeup_enable)},
 #endif
   { LSTRKEY( "OUTPUT" ),    LNUMVAL( OUTPUT ) },
   { LSTRKEY( "OPENDRAIN" ), LNUMVAL( OPENDRAIN ) },
