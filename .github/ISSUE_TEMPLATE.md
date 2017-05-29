@@ -1,4 +1,4 @@
-Make sure you read and understand http://nodemcu.readthedocs.io/en/dev/en/support/.
+Make sure you read and understand http://nodemcu.readthedocs.io/en/master/en/support/.
 Use one of the two templates below and delete the rest.
 
 8<------------------------ BUG REPORT -----------------------------------------
