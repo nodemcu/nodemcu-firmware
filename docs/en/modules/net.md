@@ -417,7 +417,8 @@ end)
 ```
 
 #### See also
-[`net.socket:on()`](#netsocketon)
+- `lua_examples/net_send_queue.lua`
+- [`net.socket:on()`](#netsocketon)
 
 ## net.socket:ttl()
 
