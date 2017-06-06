@@ -275,12 +275,15 @@ int platform_uart_start( unsigned id )
     return 0;
   else {
     uart_status_t *us = & uart_status[id];
-    us->line_buffer = malloc(LUA_MAXINPUT);
-    us->line_position = 0;
     
     esp_err_t ret = uart_driver_install(id, UART_BUFFER_SIZE, UART_BUFFER_SIZE, 3, & us->queue, 0);
     if(ret != ESP_OK) {
-      free(us->line_buffer);
+      return -1;
+    }
+    us->line_buffer = malloc(LUA_MAXINPUT);
+    us->line_position = 0;
+    if(us->line_buffer == NULL) {
+      uart_driver_delete(id);
       return -1;
     }
 
@@ -289,6 +292,8 @@ int platform_uart_start( unsigned id )
     pcName[5] = '\0';
     if(xTaskCreate(task_uart, pcName, 2048, (void*)id, ESP_TASK_MAIN_PRIO + 1, & us->taskHandle) != pdPASS) {
       uart_driver_delete(id);
+      free(us->line_buffer);
+      us->line_buffer = NULL;
       return -1;
     }
   return 0;
