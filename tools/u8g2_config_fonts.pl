@@ -10,8 +10,7 @@ while (<STDIN>) {
     }
 }
 
-if (@font_selection > 0) {
-    print << 'HEADER';
+print << 'HEADER';
 
 #ifndef _U8G2_FONTS_H
 #define _U8G2_FONTS_H
@@ -21,13 +20,12 @@ if (@font_selection > 0) {
 #define U8G2_FONT_TABLE \
 HEADER
 
-    foreach my $font (@font_selection) {
-        print("  U8G2_FONT_TABLE_ENTRY($font) \\\n");
-    }
+foreach my $font (@font_selection) {
+    print("  U8G2_FONT_TABLE_ENTRY($font) \\\n");
+}
 
-    print << 'FOOTER';
+print << 'FOOTER';
 
 
 #endif /* _U8G2_FONTS_H */
 FOOTER
-}

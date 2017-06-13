@@ -160,7 +160,7 @@ config LUA_MODULE_U8G2
   help
       Includes the u8g2 module.
 
-source "../components/u8g2/u8g2.kconfig"
+source "$PROJECT_PATH/components/u8g2/u8g2.kconfig"
 
 config LUA_MODULE_WIFI
   bool "WiFi module"

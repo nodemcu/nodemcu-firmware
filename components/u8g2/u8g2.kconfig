@@ -105,7 +105,7 @@ config U8G2_I2C_UC1611_EA_DOGXL240
 menuconfig U8G2_COMM_SPI
        bool "SPI"
        select LUA_MODULE_SPI
-       default "n"
+       default "y"
 
 config U8G2_SPI_IST3020_ERC19264
        depends on U8G2_COMM_SPI
@@ -315,7 +315,7 @@ menu "Fonts"
 config U8G2_FONT_SELECTION
        depends on LUA_MODULE_U8G2
        string  "Font list"
-       default "font_6x10_tf"
+       default "font_6x10_tf,font_unifont_t_symbols"
        help
          Enter a comma-separated list of fonts.
 

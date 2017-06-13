@@ -13,8 +13,7 @@ while (<STDIN>) {
 }
 
 
-if (@i2c_displays > 0 || @spi_displays > 0) {
-    print << 'HEADER';
+print << 'HEADER';
 
 #ifndef _U8G2_DISPLAYS_H
 #define _U8G2_DISPLAYS_H
@@ -23,20 +22,19 @@ if (@i2c_displays > 0 || @spi_displays > 0) {
 
 HEADER
 
-    print("#define U8G2_DISPLAY_TABLE_I2C \\\n");
-    foreach my $display (@i2c_displays) {
-        print("  U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_${display}_f, $display) \\\n");
-    }
-    print("\n");
+print("#define U8G2_DISPLAY_TABLE_I2C \\\n");
+foreach my $display (@i2c_displays) {
+    print("  U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_${display}_f, $display) \\\n");
+}
+print("\n");
 
-    print("#define U8G2_DISPLAY_TABLE_SPI \\\n");
-    foreach my $display (@spi_displays) {
-        print("  U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_${display}_f, $display) \\\n");
-    }
-    print("\n");
+print("#define U8G2_DISPLAY_TABLE_SPI \\\n");
+foreach my $display (@spi_displays) {
+    print("  U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_${display}_f, $display) \\\n");
+}
+print("\n");
 
-    print << 'FOOTER';
+print << 'FOOTER';
 
 #endif /* _U8G2_DISPLAYS_H */
 FOOTER
-}
