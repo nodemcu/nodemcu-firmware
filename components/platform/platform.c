@@ -2,7 +2,13 @@
 #include "driver/console.h"
 #include "driver/sigmadelta.h"
 #include "driver/adc.h"
+#include "driver/uart.h"
 #include <stdio.h>
+#include <string.h>
+
+#include "lua.h"
+
+#include "esp_log.h"
 
 int platform_init (void)
 {
@@ -20,7 +26,136 @@ int platform_gpio_output_exists( unsigned gpio ) { return GPIO_IS_VALID_OUTPUT_G
 // ****************************************************************************
 // UART
 
-uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits )
+#define PLATFORM_UART_EVENT_DATA     (UART_EVENT_MAX + 1)
+#define PLATFORM_UART_EVENT_OOM      (UART_EVENT_MAX + 2)
+#define PLATFORM_UART_EVENT_RX       (UART_EVENT_MAX + 3)
+#define PLATFORM_UART_EVENT_BREAK    (UART_EVENT_MAX + 4)
+
+static const char *UART_TAG = "uart";
+
+uart_status_t uart_status[NUM_UART];
+
+extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
+extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
+task_handle_t uart_event_task_id = 0;
+
+void uart_event_task( task_param_t param, task_prio_t prio ) {
+  size_t p;
+  uint16_t need_len;
+  int16_t end_char;
+  char ch;
+  unsigned id;
+  uart_status_t *us;
+  uart_event_post_t *post = (uart_event_post_t *)param;
+  id = post->id;
+  us = & uart_status[id];
+  if(post->type == PLATFORM_UART_EVENT_DATA) {
+    need_len = us->need_len;
+    end_char = us->end_char;
+    
+    for(p = 0; p < post->size; p++) {
+      ch = *(post->data + p);
+      us->line_buffer[us->line_position] = ch;
+      us->line_position++;
+
+      if((end_char == -1 && us->line_position == (need_len == 0? LUA_MAXINPUT : need_len))
+        || (end_char >= 0 && (unsigned char)ch == (unsigned char)end_char)) {
+        // us->line_buffer[us->line_position] = 0;
+        uart_on_data_cb(id, us->line_buffer, us->line_position);
+        us->line_position = 0;
+      }
+      if(us->line_position + 1 >= LUA_MAXINPUT) {
+        us->line_position = 0;
+      }
+    }
+    if(end_char == -1 && need_len == 0 && us->line_position > 0) {
+      // us->line_buffer[us->line_position] = 0;
+      uart_on_data_cb(id, us->line_buffer, us->line_position);
+      us->line_position = 0;
+    }
+    
+    free(post->data);
+    free(post);
+  } else {
+    char *err;
+    switch(post->type) {
+      case PLATFORM_UART_EVENT_OOM:
+        err = "out_of_memory";
+        break;
+      case PLATFORM_UART_EVENT_BREAK:
+        err = "break";
+        break;
+      case PLATFORM_UART_EVENT_RX:
+      default:
+        err = "rx_error";
+    }
+    uart_on_error_cb(id, err, strlen(err));
+  }
+}
+
+static void task_uart( void *pvParameters ){
+  unsigned id = (unsigned)pvParameters;
+  
+  uart_event_post_t* post = NULL;
+  uart_event_t event;
+  
+  for(;;) {
+    if(xQueueReceive(uart_status[id].queue, (void * )&event, (portTickType)portMAX_DELAY)) {
+      switch(event.type) {
+        case UART_DATA:
+          post = (uart_event_post_t*)malloc(sizeof(uart_event_post_t));
+          if(post == NULL) {
+            ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
+            // reboot here?
+            continue;
+          }
+          post->data = malloc(event.size);
+          if(post->data == NULL) {
+            ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
+            post->id = id;
+            post->type = PLATFORM_UART_EVENT_OOM;
+          } else {
+            post->id = id;
+            post->type = PLATFORM_UART_EVENT_DATA;
+            post->size = uart_read_bytes(id, (uint8_t *)post->data, event.size, 0);        
+          }
+          break;
+        case UART_BREAK:
+          post = (uart_event_post_t*)malloc(sizeof(uart_event_post_t));
+          if(post == NULL) {
+            ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
+            // reboot here?
+            continue;
+          }
+          post->id = id;
+          post->type = PLATFORM_UART_EVENT_BREAK;
+        case UART_FIFO_OVF:
+        case UART_BUFFER_FULL:
+        case UART_PARITY_ERR:
+        case UART_FRAME_ERR:
+          post = (uart_event_post_t*)malloc(sizeof(uart_event_post_t));
+          if(post == NULL) {
+            ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
+            // reboot here?
+            continue;
+          }
+          post->id = id;
+          post->type = PLATFORM_UART_EVENT_RX;
+          break;
+        case UART_PATTERN_DET:
+        default:
+          ;
+      }
+      if(post != NULL) {
+        task_post_medium( uart_event_task_id, (task_param_t)post );
+        post = NULL;
+      }
+    }
+  }
+}
+
+// pins must not be null for non-console uart
+uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins )
 {
   if (id == CONSOLE_UART)
   {
@@ -57,22 +192,126 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   }
   else
   {
-    printf("UART1/UART2 not yet supported\n");
-    return 0;
+    int flow_control = UART_HW_FLOWCTRL_DISABLE;
+    if(pins->flow_control & PLATFORM_UART_FLOW_CTS) flow_control |= UART_HW_FLOWCTRL_CTS;
+    if(pins->flow_control & PLATFORM_UART_FLOW_RTS) flow_control |= UART_HW_FLOWCTRL_RTS;
+    
+    uart_config_t cfg = {
+       .baud_rate = baud,
+       .flow_ctrl = flow_control,
+       .rx_flow_ctrl_thresh = UART_FIFO_LEN - 16,
+    };
+    
+    switch (databits)
+    {
+      case 5: cfg.data_bits = UART_DATA_5_BITS; break;
+      case 6: cfg.data_bits = UART_DATA_6_BITS; break;
+      case 7: cfg.data_bits = UART_DATA_7_BITS; break;
+      case 8: // fall-through
+      default: cfg.data_bits = UART_DATA_8_BITS; break;
+    }
+    switch (parity)
+    {
+      case PLATFORM_UART_PARITY_EVEN: cfg.parity = UART_PARITY_EVEN; break;
+      case PLATFORM_UART_PARITY_ODD:  cfg.parity = UART_PARITY_ODD; break;
+      default: // fall-through
+      case PLATFORM_UART_PARITY_NONE: cfg.parity = UART_PARITY_DISABLE; break;
+    }
+    switch (stopbits)
+    {
+      default: // fall-through
+      case PLATFORM_UART_STOPBITS_1:
+        cfg.stop_bits = UART_STOP_BITS_1; break;
+      case PLATFORM_UART_STOPBITS_1_5:
+        cfg.stop_bits = UART_STOP_BITS_1_5; break;
+      case PLATFORM_UART_STOPBITS_2:
+        cfg.stop_bits = UART_STOP_BITS_2; break;
+    }
+    uart_param_config(id, &cfg);
+    uart_set_pin(id, pins->tx_pin, pins->rx_pin, pins->rts_pin, pins->cts_pin);
+    uart_set_line_inverse(id, (pins->tx_inverse? UART_INVERSE_TXD : UART_INVERSE_DISABLE)
+                                | (pins->rx_inverse? UART_INVERSE_RXD : UART_INVERSE_DISABLE)
+                                | (pins->rts_inverse? UART_INVERSE_RTS : UART_INVERSE_DISABLE)
+                                | (pins->cts_inverse? UART_INVERSE_CTS : UART_INVERSE_DISABLE)
+                        );
+
+    if(uart_event_task_id == 0) uart_event_task_id = task_get_id( uart_event_task );
+
+    return baud;
   }
 }
 
+
+void platform_uart_send_multi( unsigned id, const char *data, size_t len )
+{
+  size_t i;
+  if (id == CONSOLE_UART) {
+      for( i = 0; i < len; i ++ ) {
+        putchar (data[ i ]);
+    }
+  } else {
+    uart_write_bytes(id, data, len);
+  }
+}
 
 void platform_uart_send( unsigned id, uint8_t data )
 {
   if (id == CONSOLE_UART)
     putchar (data);
+  else
+    uart_write_bytes(id, (const char *)&data, 1);
 }
 
 void platform_uart_flush( unsigned id )
 {
   if (id == CONSOLE_UART)
     fflush (stdout);
+}
+
+
+int platform_uart_start( unsigned id )
+{
+  if (id == CONSOLE_UART)
+    return 0;
+  else {
+    uart_status_t *us = & uart_status[id];
+    
+    esp_err_t ret = uart_driver_install(id, UART_BUFFER_SIZE, UART_BUFFER_SIZE, 3, & us->queue, 0);
+    if(ret != ESP_OK) {
+      return -1;
+    }
+    us->line_buffer = malloc(LUA_MAXINPUT);
+    us->line_position = 0;
+    if(us->line_buffer == NULL) {
+      uart_driver_delete(id);
+      return -1;
+    }
+
+    char pcName[6];
+    snprintf( pcName, 6, "uart%d", id );
+    pcName[5] = '\0';
+    if(xTaskCreate(task_uart, pcName, 2048, (void*)id, ESP_TASK_MAIN_PRIO + 1, & us->taskHandle) != pdPASS) {
+      uart_driver_delete(id);
+      free(us->line_buffer);
+      us->line_buffer = NULL;
+      return -1;
+    }
+  return 0;
+  }
+}
+
+void platform_uart_stop( unsigned id )
+{
+  if (id == CONSOLE_UART)
+    ;
+  else {
+    uart_status_t *us = & uart_status[id];  
+    uart_driver_delete(id);
+    if(us->line_buffer) free(us->line_buffer);
+    us->line_buffer = NULL;
+    if(us->taskHandle) vTaskDelete(us->taskHandle);
+    us->taskHandle = NULL;
+  }
 }
 
 // *****************************************************************************

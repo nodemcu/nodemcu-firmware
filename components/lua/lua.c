@@ -287,7 +287,7 @@ static int handle_script (lua_State *L, char **argv, int n) {
 #endif
 
 /* check that argument has no extra characters at the end */
-#define notail(x)	{if ((x)[2] != '\0') return -1;}
+#define notail(x)    {if ((x)[2] != '\0') return -1;}
 
 
 static int collectargs (char **argv, int *pi, int *pv, int *pe) {
@@ -534,16 +534,16 @@ static void dojob(lua_Load *load){
   fflush (stdout);
 }
 
-extern bool uart_on_data_cb(const char *buf, size_t len);
+extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
 extern bool uart0_echo;
 extern bool run_input;
-extern uint16_t need_len;
-extern int16_t end_char;
+extern uart_status_t uart_status[];
 static char last_nl_char = '\0';
 static bool readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
   bool need_dojob = false;
   char ch;
+  uart_status_t *us = & uart_status[CONSOLE_UART]; 
   while (console_getc(&ch))
   {
     if(run_input)
@@ -590,7 +590,7 @@ static bool readline(lua_Load *load){
 
         load->line[load->line_position] = 0;
         if(uart0_echo) putchar('\n');
-        uart_on_data_cb(load->line, load->line_position);
+        uart_on_data_cb(CONSOLE_UART, load->line, load->line_position);
         if (load->line_position == 0)
         {
           /* Get a empty line, then go to get a new line */
@@ -623,11 +623,11 @@ static bool readline(lua_Load *load){
 
     if(!run_input)
     {
-      if( ((need_len!=0) && (load->line_position >= need_len)) || \
+      if( ((us->need_len!=0) && (load->line_position >= us->need_len)) || \
         (load->line_position >= load->len) || \
-        ((end_char>=0) && ((unsigned char)ch==(unsigned char)end_char)) )
+        ((us->end_char>=0) && ((unsigned char)ch==(unsigned char)us->end_char)) )
       {
-        uart_on_data_cb(load->line, load->line_position);
+        uart_on_data_cb(CONSOLE_UART, load->line, load->line_position);
         load->line_position = 0;
       }
     }
@@ -635,9 +635,9 @@ static bool readline(lua_Load *load){
     ch = 0;
   }
   
-  if( (load->line_position > 0) && (!run_input) && (need_len==0) && (end_char<0) )
+  if( (load->line_position > 0) && (!run_input) && (us->need_len==0) && (us->end_char<0) )
   {
-    uart_on_data_cb(load->line, load->line_position);
+    uart_on_data_cb(CONSOLE_UART, load->line, load->line_position);
     load->line_position = 0;
   }
 
