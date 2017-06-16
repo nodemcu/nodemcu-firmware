@@ -32,6 +32,14 @@
 #define DS18B20_FUNC_POWER_READ			(0xB4)
 
 //***************************************************************************
+// Initial EEPROM values
+//***************************************************************************
+
+#define DS18B20_EEPROM_TH				(0x4B)		// 75 degree
+#define DS18B20_EEPROM_TL				(0x46)		// 70 degree
+#define DS18B20_EEPROM_RES				(0x7F)		// 12 bit resolution
+
+//***************************************************************************
 
 static uint8_t ds18b20_bus_pin = 3;
 static uint8_t ds18b20_device_index;
@@ -86,8 +94,8 @@ static int ds18b20_lua_setting(lua_State *L) {
 	}
 	
 	// no change to th and tl setting
-	ds18b20_device_conf[0] = 0x4B;
-	ds18b20_device_conf[1] = 0x46;
+	ds18b20_device_conf[0] = DS18B20_EEPROM_TH;
+	ds18b20_device_conf[1] = DS18B20_EEPROM_TL;
 	ds18b20_device_conf[2] = ((ds18b20_device_res - 9) << 5) + 0x1F;
 	
 	// set conversion delay once to max if sensors with higher resolution still on the bus
