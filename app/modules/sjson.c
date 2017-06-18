@@ -56,7 +56,9 @@ static int error_callback(jsonsl_t jsn,
                    char *at)
 {
   JSN_DATA *data = (JSN_DATA *) jsn->data;
-  data->error = jsonsl_strerror(err);
+  if (!data->complete) {
+    data->error = jsonsl_strerror(err);
+  }
 
   //fprintf(stderr, "Got error at pos %lu: %s\n", jsn->pos, jsonsl_strerror(err));
   return 0;
