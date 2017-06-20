@@ -12,6 +12,7 @@
 
 int platform_init (void)
 {
+  platform_ws2812_init();
   return PLATFORM_OK;
 }
 

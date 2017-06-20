@@ -159,6 +159,7 @@ int platform_ws2812_release( void )
       rmt_driver_uninstall( channel );
 
       platform_rmt_release( channel );
+      chain->valid = false;
 
       // attach GPIO to pin, driving 0
       gpio_set_level( chain->gpio, 0 );
@@ -234,4 +235,11 @@ int platform_ws2812_send( void )
 
 
   return res;
+}
+
+void platform_ws2812_init( void )
+{
+  for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX; channel++) {
+    ws2812_chains[channel].valid = false;
+  }
 }
