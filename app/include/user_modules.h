@@ -77,6 +77,7 @@
 //#define LUA_USE_MODULES_WS2801
 //#define LUA_USE_MODULES_WS2812
 //#define LUA_USE_MODULES_XPT2046
+//#define LUA_USE_MODULES_SQLITE3
 
 #endif  /* LUA_CROSS_COMPILER */
 #endif	/* __USER_MODULES_H__ */

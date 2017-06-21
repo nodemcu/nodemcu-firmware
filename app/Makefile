@@ -48,7 +48,8 @@ SUBDIRS= 					\
 	websocket				\
 	swTimer					\
 	misc					\
-	pm						\
+	pm					\
+	sqlite3					\
 	
 
 endif # } PDIR
@@ -94,14 +95,15 @@ COMPONENTS_eagle.app.v6 = 			\
 	dhtlib/libdhtlib.a 			\
 	tsl2561/tsl2561lib.a			\
 	http/libhttp.a				\
-	pm/libpm.a					\
+	pm/libpm.a				\
 	websocket/libwebsocket.a		\
 	esp-gdbstub/libgdbstub.a		\
 	net/libnodemcu_net.a			\
-	mbedtls/libmbedtls.a      \
+	mbedtls/libmbedtls.a    		\
 	modules/libmodules.a			\
 	swTimer/libswtimer.a			\
-	misc/libmisc.a					\
+	sqlite3/libsqlite3.a			\
+	misc/libmisc.a				\
 	
 
 # Inspect the modules library and work out which modules need to be linked.
