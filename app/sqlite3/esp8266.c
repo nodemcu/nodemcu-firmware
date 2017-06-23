@@ -16,10 +16,10 @@
 #include <time.h>
 #include <spi_flash.h>
 #include <sqlite3.h>
-#include <caching.h>
 
 #undef dbg_printf
 #define dbg_printf(...) 0
+#define CACHEBLOCKSZ 64
 #define ESP8266_DEFAULT_MAXNAMESIZE 32
 
 static int esp8266_Close(sqlite3_file*);
@@ -52,66 +52,217 @@ static int esp8266mem_Write(sqlite3_file*, const void*, int, sqlite3_int64);
 static int esp8266mem_FileSize(sqlite3_file*, sqlite3_int64*);
 static int esp8266mem_Sync(sqlite3_file*, int);
 
-struct esp8266_file {
-  sqlite3_file base;
-  int fd;
-  filecache_t *cache;
-  char name[ESP8266_DEFAULT_MAXNAMESIZE];
-};
-typedef struct esp8266_file esp8266_file;
+typedef struct st_linkedlist {
+	uint16_t blockid;
+	struct st_linkedlist *next;
+	uint8_t data[CACHEBLOCKSZ];
+} linkedlist_t, *pLinkedList_t;
+
+typedef struct st_filecache {
+	uint32_t size;
+	linkedlist_t *list;
+} filecache_t, *pFileCache_t;
+
+typedef struct esp8266_file {
+	sqlite3_file base;
+	int fd;
+	filecache_t *cache;
+	char name[ESP8266_DEFAULT_MAXNAMESIZE];
+} esp8266_file;
 
 static sqlite3_vfs  esp8266Vfs = {
-  1,                       // iVersion
-  sizeof(esp8266_file),    // szOsFile
-  FS_OBJ_NAME_LEN,         // mxPathname
-  NULL,                    // pNext
-  "esp8266",               // name
-  0,                       // pAppData
-  esp8266_Open,            // xOpen
-  esp8266_Delete,          // xDelete
-  esp8266_Access,          // xAccess
-  esp8266_FullPathname,    // xFullPathname
-  esp8266_DlOpen,          // xDlOpen
-  esp8266_DlError,         // xDlError
-  esp8266_DlSym,           // xDlSym
-  esp8266_DlClose,         // xDlClose
-  esp8266_Randomness,      // xRandomness
-  esp8266_Sleep,           // xSleep
-  esp8266_CurrentTime,     // xCurrentTime
-  0                        // xGetLastError
+	1,			// iVersion
+	sizeof(esp8266_file),	// szOsFile
+	FS_OBJ_NAME_LEN,	// mxPathname
+	NULL,			// pNext
+	"esp8266",		// name
+	0,			// pAppData
+	esp8266_Open,		// xOpen
+	esp8266_Delete,		// xDelete
+	esp8266_Access,		// xAccess
+	esp8266_FullPathname,	// xFullPathname
+	esp8266_DlOpen,		// xDlOpen
+	esp8266_DlError,	// xDlError
+	esp8266_DlSym,		// xDlSym
+	esp8266_DlClose,	// xDlClose
+	esp8266_Randomness,	// xRandomness
+	esp8266_Sleep,		// xSleep
+	esp8266_CurrentTime,	// xCurrentTime
+	0			// xGetLastError
 };
 
 static const sqlite3_io_methods esp8266IoMethods = {
-  1,    // iVersion
-  esp8266_Close,
-  esp8266_Read,
-  esp8266_Write,
-  esp8266_Truncate,
-  esp8266_Sync,
-  esp8266_FileSize,
-  esp8266_Lock,
-  esp8266_Unlock,
-  esp8266_CheckReservedLock,
-  esp8266_FileControl,
-  esp8266_SectorSize,
-  esp8266_DeviceCharacteristics
+	1,
+	esp8266_Close,
+	esp8266_Read,
+	esp8266_Write,
+	esp8266_Truncate,
+	esp8266_Sync,
+	esp8266_FileSize,
+	esp8266_Lock,
+	esp8266_Unlock,
+	esp8266_CheckReservedLock,
+	esp8266_FileControl,
+	esp8266_SectorSize,
+	esp8266_DeviceCharacteristics
 };
 
 static const sqlite3_io_methods esp8266MemMethods = {
-  1,    // iVersion
-  esp8266mem_Close,
-  esp8266mem_Read,
-  esp8266mem_Write,
-  esp8266_Truncate,
-  esp8266mem_Sync,
-  esp8266mem_FileSize,
-  esp8266_Lock,
-  esp8266_Unlock,
-  esp8266_CheckReservedLock,
-  esp8266_FileControl,
-  esp8266_SectorSize,
-  esp8266_DeviceCharacteristics
+	1,
+	esp8266mem_Close,
+	esp8266mem_Read,
+	esp8266mem_Write,
+	esp8266_Truncate,
+	esp8266mem_Sync,
+	esp8266mem_FileSize,
+	esp8266_Lock,
+	esp8266_Unlock,
+	esp8266_CheckReservedLock,
+	esp8266_FileControl,
+	esp8266_SectorSize,
+	esp8266_DeviceCharacteristics
 };
+
+static uint32_t linkedlist_store (linkedlist_t **leaf, uint32_t offset, uint32_t len, const uint8_t *data) {
+	const uint8_t blank[CACHEBLOCKSZ] = { 0 };
+	uint16_t blockid = offset/CACHEBLOCKSZ;
+	linkedlist_t *block;
+
+	if (!memcmp(data, blank, CACHEBLOCKSZ))
+		return len;
+
+	block = *leaf;
+	if (!block || ( block->blockid != blockid ) ) {
+		block = sqlite3_malloc ( sizeof( linkedlist_t ) );
+		if (!block)
+			return SQLITE_NOMEM;
+
+		memset (block->data, 0, CACHEBLOCKSZ);
+		block->blockid = blockid;
+	}
+
+	if (!*leaf) {
+		*leaf = block;
+		block->next = NULL;
+	} else if (block != *leaf) {
+		if (block->blockid > (*leaf)->blockid) {
+			block->next = (*leaf)->next;
+			(*leaf)->next = block;
+		} else {
+			block->next = (*leaf);
+			(*leaf) = block;
+		}
+	}
+
+	memcpy (block->data + offset%CACHEBLOCKSZ, data, len);
+
+	return len;
+}
+
+static uint32_t filecache_pull (pFileCache_t cache, uint32_t offset, uint32_t len, uint8_t *data) {
+	uint16_t i;
+	float blocks;
+	uint32_t r = 0;
+
+	blocks = ( offset % CACHEBLOCKSZ + len ) / (float) CACHEBLOCKSZ;
+
+	if (blocks == 0.0)
+		return 0;
+
+	if (( blocks - (int) blocks) > 0.0)
+		blocks = blocks + 1.0;
+
+	for (i = 0; i < (uint16_t) blocks; i++) {
+		uint16_t round;
+		float relablock;
+		linkedlist_t *leaf;
+		uint32_t relaoffset, relalen;
+		uint8_t * reladata = (uint8_t*) data;
+
+		relalen = len - r;
+
+		reladata = reladata + r;
+		relaoffset = offset + r;
+
+		round = CACHEBLOCKSZ - relaoffset%CACHEBLOCKSZ;
+		if (relalen > round) relalen = round;
+
+		for (leaf = cache->list; leaf && leaf->next; leaf = leaf->next) {
+			if ( ( leaf->next->blockid * CACHEBLOCKSZ ) > relaoffset )
+				break;
+		}
+
+		relablock = relaoffset/((float)CACHEBLOCKSZ) - leaf->blockid;
+
+		if ( ( relablock >= 0 ) && ( relablock < 1 ) )
+			memcpy (data + r, leaf->data + (relaoffset % CACHEBLOCKSZ), relalen);
+
+		r = r + relalen;
+	}
+
+	return 0;
+}
+
+static uint32_t filecache_push (pFileCache_t cache, uint32_t offset, uint32_t len, const uint8_t *data) {
+	uint16_t i;
+	float blocks;
+	uint32_t r = 0;
+	uint8_t updateroot = 0x1;
+
+	blocks = ( offset % CACHEBLOCKSZ + len ) / (float) CACHEBLOCKSZ;
+
+	if (blocks == 0.0)
+		return 0;
+
+	if (( blocks - (int) blocks) > 0.0)
+		blocks = blocks + 1.0;
+
+	for (i = 0; i < (uint16_t) blocks; i++) {
+		uint16_t round;
+		uint32_t localr;
+		linkedlist_t *leaf;
+		uint32_t relaoffset, relalen;
+		uint8_t * reladata = (uint8_t*) data;
+
+		relalen = len - r;
+
+		reladata = reladata + r;
+		relaoffset = offset + r;
+
+		round = CACHEBLOCKSZ - relaoffset%CACHEBLOCKSZ;
+		if (relalen > round) relalen = round;
+
+		for (leaf = cache->list; leaf && leaf->next; leaf = leaf->next) {
+			if ( ( leaf->next->blockid * CACHEBLOCKSZ ) > relaoffset )
+				break;
+			updateroot = 0x0;
+		}
+
+		localr = linkedlist_store(&leaf, relaoffset, (relalen > CACHEBLOCKSZ) ? CACHEBLOCKSZ : relalen, reladata);
+		if (localr == SQLITE_NOMEM)
+			return SQLITE_NOMEM;
+
+		r = r + localr;
+
+		if (updateroot & 0x1)
+			cache->list = leaf;
+	}
+
+	if (offset + len > cache->size)
+		cache->size = offset + len;
+
+	return r;
+}
+
+static void filecache_free (pFileCache_t cache) {
+	pLinkedList_t this = cache->list, next;
+
+	while (this != NULL) {
+		next = this->next;
+		sqlite3_free (this);
+		this = next;
+	}
+}
 
 static int esp8266mem_Close(sqlite3_file *id)
 {
