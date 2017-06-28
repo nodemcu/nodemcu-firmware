@@ -930,61 +930,9 @@ static int wifi_station_config( lua_State* L )
 #endif
 
   }
-  else //to be deprecated
+  else
   {
-    platform_print_deprecation_note("Argument style station configuration is replaced by table style station configuration", "in the next version");
-
-    const char *ssid = luaL_checklstring( L, 1, &sl );
-    luaL_argcheck(L, (sl>=0 && sl<sizeof(sta_conf.ssid)), 1, "length:0-32"); /* Zero-length SSID is valid as a way to clear config */
-
-    memcpy(sta_conf.ssid, ssid, sl);
-
-    const char *password = luaL_checklstring( L, 2, &pl );
-    luaL_argcheck(L, (pl>=0 && pl<=sizeof(sta_conf.password)), 2, "length:0-64"); /* WPA = min 8, WEP = min 5 ASCII characters for a 40-bit key */
-
-    memcpy(sta_conf.password, password, pl);
-
-    if(lua_isnumber(L, 3))
-    {
-      lua_Integer lint=luaL_checkinteger( L, 3 );
-      if ( lint != 0 && lint != 1)
-        return luaL_error( L, "wrong arg type" );
-      auto_connect=(bool)lint;
-    }
-    else if (lua_isstring(L, 3)&& !(lua_isnumber(L, 3)))
-    {
-      lua_pushnil(L);
-      lua_insert(L, 3);
-
-    }
-    else
-    {
-      if(lua_isnil(L, 3))
-        return luaL_error( L, "wrong arg type" );
-      auto_connect=1;
-    }
-
-    if(lua_isnumber(L, 4))
-    {
-      sta_conf.bssid_set = 0;
-      memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-    }
-    else
-    {
-      if (lua_isstring(L, 4))
-      {
-        const char *macaddr = luaL_checklstring( L, 4, &ml );
-        luaL_argcheck(L, ml==sizeof("AA:BB:CC:DD:EE:FF")-1, 1, INVALID_MAC_STR);
-        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-        ets_str2macaddr(sta_conf.bssid, macaddr);
-        sta_conf.bssid_set = 1;
-      }
-      else
-      {
-        sta_conf.bssid_set = 0;
-        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-      }
-    }
+    return luaL_argerror(L, 1, "config table not found!");
   }
 
 #if defined(WIFI_DEBUG)
