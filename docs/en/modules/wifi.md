@@ -899,7 +899,10 @@ Set Maximum number of Access Points to store in flash.
  - This value is written to flash
 
 !!! Attention
-		If 5 Access Points are stored and AP limit is set to 4, the AP at index 5 will remain until [`node.restore()`](node.md#noderestore) is called or AP limit is set to 5 and AP is overwritten.  
+	New setting will not take effect until restart. 
+
+!!! Note
+	If 5 Access Points are stored and AP limit is set to 4, the AP at index 5 will remain until [`node.restore()`](node.md#noderestore) is called or AP limit is set to 5 and AP is overwritten.
 
 #### Syntax
 `wifi.sta.setaplimit(qty)`
@@ -913,7 +916,7 @@ Set Maximum number of Access Points to store in flash.
 
 #### Example
 ```lua
-wifi.sta.setaplimit(true)
+wifi.sta.setaplimit(5)
 ```
 
 #### See also
