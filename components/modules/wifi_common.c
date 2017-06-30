@@ -76,4 +76,18 @@ int wifi_on (lua_State *L, const event_desc_t *table, unsigned n, int *event_cb)
 
   return 0;
 }
- 
+
+int wifi_getmac (wifi_interface_t interface, lua_State *L)
+{
+  uint8_t mac[6];
+  esp_err_t err = esp_wifi_get_mac(interface, mac);
+  if (err != ESP_OK)
+    return luaL_error (L, "failed to get mac, code %d", err);
+
+  char mac_str[MAC_STR_SZ];
+  macstr (mac_str, mac);
+  lua_pushstring (L, mac_str);
+
+  return 1;
+}
+

@@ -320,6 +320,17 @@ end)
 wifi.sta.on("got_ip", nil)
 ```
 
+
+## wifi.sta.getmac()
+Gets MAC address in station mode.
+
+#### Syntax
+`wifi.sta.getmac()`
+
+#### Parameters
+None
+
+
 ## wifi.sta.scan()
 
 Scan for available networks.
@@ -436,3 +447,16 @@ Event information provided for each event is as follows:
 - `probe_req`: information about the probing client
     - `from`: MAC address of the probing client
     - `rssi`: Received Signal Strength Indicator value
+
+## wifi.ap.getmac()
+
+Gets MAC address in access point mode.
+
+#### Syntax
+`wifi.ap.getmac()`
+
+#### Parameters
+None
+
+#### Returns
+MAC address as string e.g. "18:fe:34:a2:d7:34"
