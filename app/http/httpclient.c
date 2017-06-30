@@ -451,16 +451,16 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 	struct espconn * conn = (struct espconn *) arg;
 	if ( conn == NULL )
 	{
-		HTTPCLIENT_ERR( "Connection is NULL" );
+		HTTPCLIENT_DEBUG( "Connection is NULL" );
 		return;
 	}
 	if ( conn->reverse == NULL )
 	{
-		HTTPCLIENT_ERR( "reverse is NULL" );
+		HTTPCLIENT_DEBUG( "reverse is NULL" );
 		return;
 	}
 	request_args_t * req = (request_args_t *) conn->reverse;
-	HTTPCLIENT_ERR( "Calling disconnect" );
+	HTTPCLIENT_DEBUG( "Calling disconnect" );
 	/* Call disconnect */
 	sint8 result;
 #ifdef CLIENT_SSL_ENABLE
@@ -474,7 +474,8 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 		return;
 	else
 	{
-		HTTPCLIENT_ERR( "manually Calling disconnect callback due to error %d", result );
+		/* not connected; execute the callback ourselves. */
+		HTTPCLIENT_DEBUG( "manually Calling disconnect callback due to error %d", result );
 		http_disconnect_callback( arg );
 	}		
 }
