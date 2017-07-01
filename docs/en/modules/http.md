@@ -62,7 +62,7 @@ Executes a HTTP GET request. Note that concurrent requests are not supported.
 #### Parameters
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
-- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
