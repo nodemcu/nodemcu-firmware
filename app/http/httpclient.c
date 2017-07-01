@@ -456,7 +456,7 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 	}
 	if ( conn->reverse == NULL )
 	{
-		HTTPCLIENT_DEBUG( "reverse is NULL" );
+		HTTPCLIENT_DEBUG( "Connection request data (reverse) is NULL" );
 		return;
 	}
 	request_args_t * req = (request_args_t *) conn->reverse;
