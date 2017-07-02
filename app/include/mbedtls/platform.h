@@ -206,8 +206,10 @@ int mbedtls_platform_set_snprintf( int (*snprintf_func)( char * s, size_t n,
 #else /* MBEDTLS_PLATFORM_SNPRINTF_ALT */
 #if defined(MBEDTLS_PLATFORM_SNPRINTF_MACRO)
 #define mbedtls_snprintf   MBEDTLS_PLATFORM_SNPRINTF_MACRO
+#define mbedtls_vsnprintf  MBEDTLS_PLATFORM_VSNPRINTF_MACRO
 #else
 #define mbedtls_snprintf   snprintf
+#define mbedtls_vsnprintf  vsnprintf
 #endif /* MBEDTLS_PLATFORM_SNPRINTF_MACRO */
 #endif /* MBEDTLS_PLATFORM_SNPRINTF_ALT */
 

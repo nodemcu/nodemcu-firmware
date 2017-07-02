@@ -102,7 +102,7 @@ void mbedtls_debug_print_msg( const mbedtls_ssl_context *ssl, int level,
     }
 #endif
 #else
-    ret = vsnprintf( str, DEBUG_BUF_SIZE, format, argp );
+    ret = mbedtls_vsnprintf( str, DEBUG_BUF_SIZE, format, argp );
 #endif
     va_end( argp );
 
