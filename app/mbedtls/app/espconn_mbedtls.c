@@ -704,6 +704,12 @@ exit:
 	}
 }
 
+static void
+mbedtls_dbg(void *p, int level, const char *file, int line, const char *str)
+{
+	os_printf("TLS<%d>: %s:%d %s", level, file, line, str);
+}
+
 static bool mbedtls_msg_config(mbedtls_msg *msg)
 {
 	const char *pers = NULL;
@@ -784,7 +790,7 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_NONE);
 	}
 	mbedtls_ssl_conf_rng(&msg->conf, mbedtls_ctr_drbg_random, &msg->ctr_drbg);
-	mbedtls_ssl_conf_dbg(&msg->conf, NULL, NULL);
+	mbedtls_ssl_conf_dbg(&msg->conf, mbedtls_dbg, NULL);
 	
 	ret = mbedtls_ssl_setup(&msg->ssl, &msg->conf);
 	lwIP_REQUIRE_NOERROR(ret, exit);
