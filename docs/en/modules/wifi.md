@@ -734,7 +734,7 @@ If `return_table` is `true`:
 - `config_table`
 	- `ssid` ssid of Access Point.
 	- `pwd` password to Access Point, `nil` if no password was configured 
-	- `bssid_set` will return `true` if the station was configured to specifically connect to the AP with the matching `bssid`. 
+	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`. 
 	- `bssid` MAC address of Access Point. 
 	 - If a connection has been made to the configured AP this field will contain the AP's MAC address. Otherwise "ff:ff:ff:ff:ff:ff" will be returned.
  
@@ -784,7 +784,7 @@ If `return_table` is `true`:
 - `config_table`
 	- `ssid` ssid of Access Point.
 	- `pwd` password to Access Point, `nil` if no password was configured
-	- `bssid_set` will return `true` if the station was configured to specifically connect to the AP with the matching `bssid`. 
+	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`. 
 	- `bssid` MAC address of Access Point. 
 	 - If a connection has been made to the configured AP this field will contain the AP's MAC address. Otherwise "ff:ff:ff:ff:ff:ff" will be returned.
 
