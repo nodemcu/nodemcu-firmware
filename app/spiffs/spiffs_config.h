@@ -91,6 +91,11 @@
 #ifndef  SPIFFS_CACHE_STATS
 #define SPIFFS_CACHE_STATS              1
 #endif
+#else
+// No SPIFFS_CACHE, also disable SPIFFS_CACHE_WR
+#ifndef SPIFFS_CACHE_WR
+#define SPIFFS_CACHE_WR                 0
+#endif
 #endif
 
 // Always check header of each accessed page to ensure consistent state.
