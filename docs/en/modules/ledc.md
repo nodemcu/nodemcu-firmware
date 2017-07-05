@@ -30,7 +30,7 @@ ledc.setup({
 List of configuration tables:
 
 - `gpio` one or more (given as list) pins, see [GPIO Overview](../gpio/#gpio-overview)
-- `bits` Channel duty depth, one of
+- `bits` Channel duty depth. Defaults to ledc.TIMER_13_BIT. Otherwise one of
     - `ledc.TIMER_10_BIT`
     - ...
     - `ledc.TIMER_15_BIT`

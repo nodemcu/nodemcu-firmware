@@ -20,43 +20,65 @@ static int lledc_config( lua_State *L )
     return luaL_error (L, "bits field out of range");
 
   lua_getfield(L, t, "frequency");
-  ledc_timer.freq_hz = luaL_checkinteger(L, -1);
+  if (lua_type (L, -1) == LUA_TNUMBER) {
+    ledc_timer.freq_hz = luaL_checkinteger(L, -1);
+  } else {
+    return luaL_error(L, "missing or invalid 'frequency' field");
+  }
 
   lua_getfield(L, t, "mode");
-  ledc_timer.speed_mode = luaL_checkinteger(L, -1);
-  if(ledc_timer.speed_mode != LEDC_HIGH_SPEED_MODE && ledc_timer.speed_mode != LEDC_LOW_SPEED_MODE)
-    return luaL_error (L, "Invalid mode");
+  if (lua_type (L, -1) == LUA_TNUMBER) {
+    ledc_timer.speed_mode = luaL_checkinteger(L, -1);
+    if(ledc_timer.speed_mode != LEDC_HIGH_SPEED_MODE && ledc_timer.speed_mode != LEDC_LOW_SPEED_MODE)
+      return luaL_error (L, "Invalid mode");
+  } else {
+    return luaL_error(L, "missing or invalid 'mode' field");
+  }
 
   lua_getfield(L, t, "timer");
-  ledc_timer.timer_num = luaL_checkinteger(L, -1);
-  if(ledc_timer.timer_num < LEDC_TIMER_0 || ledc_timer.timer_num > LEDC_TIMER_3)
-    return luaL_error (L, "Invalid timer");
-
-  esp_err_t timerErr = ledc_timer_config(&ledc_timer);
-  if(timerErr != ESP_OK)
-    return luaL_error (L, "timer configuration failed code %d", timerErr);
+  if (lua_type (L, -1) == LUA_TNUMBER) {
+    ledc_timer.timer_num = luaL_checkinteger(L, -1);
+    if(ledc_timer.timer_num < LEDC_TIMER_0 || ledc_timer.timer_num > LEDC_TIMER_3)
+      return luaL_error (L, "Invalid timer");
+  } else {
+    return luaL_error(L, "missing or invalid 'timer' field");
+  }
 
   /* Setup channel */
   ledc_channel_config_t channel_config = {
     .speed_mode = ledc_timer.speed_mode,
-    .timer_sel = ledc_timer.timer_num
+    .timer_sel = ledc_timer.timer_num,
+    .intr_type = LEDC_INTR_DISABLE
   };
 
   lua_getfield(L, t, "channel");
-  channel_config.channel = luaL_checkinteger(L, -1);
-  if(channel_config.channel < LEDC_CHANNEL_0 || channel_config.channel > LEDC_CHANNEL_7)
-    return luaL_error (L, "Invalid timer");
+  if (lua_type (L, -1) == LUA_TNUMBER) {
+    channel_config.channel = luaL_checkinteger(L, -1);
+    if(channel_config.channel < LEDC_CHANNEL_0 || channel_config.channel > LEDC_CHANNEL_7)
+      return luaL_error (L, "Invalid channel");
+  } else {
+    return luaL_error(L, "missing or invalid 'channel' field");
+  }
 
   lua_getfield(L, t, "duty");
-  channel_config.duty = luaL_checkinteger(L, -1);
+  if (lua_type (L, -1) == LUA_TNUMBER) {
+    channel_config.duty = luaL_checkinteger(L, -1);
+  } else {
+    return luaL_error(L, "missing or invalid 'duty' field");
+  }
 
   lua_getfield(L, t, "gpio");
-  channel_config.gpio_num = luaL_checkinteger(L, -1);
-  if(!GPIO_IS_VALID_GPIO(channel_config.gpio_num))
-    return luaL_error (L, "Invalid gpio");
+  if (lua_type (L, -1) == LUA_TNUMBER) {
+    channel_config.gpio_num = luaL_checkinteger(L, -1);
+    if(!GPIO_IS_VALID_GPIO(channel_config.gpio_num))
+      return luaL_error (L, "Invalid gpio");
+  } else {
+    return luaL_error(L, "missing or invalid 'gpio' field");
+  }
 
-  lua_getfield(L, t, "interupt");
-  channel_config.intr_type = luaL_optint (L, -1, 0) > 0 ? LEDC_INTR_FADE_END : LEDC_INTR_DISABLE;
+  esp_err_t timerErr = ledc_timer_config(&ledc_timer);
+  if(timerErr != ESP_OK)
+    return luaL_error (L, "timer configuration failed code %d", timerErr);
 
   esp_err_t channelErr = ledc_channel_config(&channel_config);
   if(channelErr != ESP_OK)
