@@ -1,2 +1,6 @@
 # Empirical value to prevent a firmware crash due to stack overflow.
 CONFIG_MAIN_TASK_STACK_SIZE=8192
+
+# Enable address reuse for sockets in TIME_WAIT
+# see https://github.com/nodemcu/nodemcu-firmware/pull/1838
+CONFIG_LWIP_SO_REUSE=y
