@@ -399,17 +399,19 @@ static int ws2812_buffer_mix(lua_State* L) {
 
   size_t i;
   for (i = 0; i < cells; i++) {
-    int val = 0;
+    int32_t val = 0;
     for (src = 0; src < n_sources; src++) {
-      val += ((int)(source[src].values[i] * source[src].factor) >> 8);
+      val += (int32_t)(source[src].values[i] * source[src].factor);
     }
+
+    val >>= 8;
 
     if (val < 0) {
       val = 0;
     } else if (val > 255) {
       val = 255;
     }
-    buffer->values[i] = val;
+    buffer->values[i] = (uint8_t)val;
   }
 
   return 0;
