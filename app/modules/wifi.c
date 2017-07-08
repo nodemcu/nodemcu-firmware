@@ -830,7 +830,7 @@ static int wifi_station_config( lua_State* L )
     }
     else 
     {
-      save_to_flash=false;
+      save_to_flash=true;
     }
     lua_pop(L, 1);
 

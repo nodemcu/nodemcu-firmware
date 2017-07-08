@@ -410,8 +410,8 @@ Sets the WiFi station configuration.
 			- "AC-1D-1C-B1-0B-22"
 			- "DE AD BE EF 7A C0"
 	- `save` Save station configuration to flash. 
-		- `true` configuration **will** be retained through power cycle. 
-		- `false` configuration **will not** be retained through power cycle. (Default).
+		- `true` configuration **will** be retained through power cycle.  (Default).
+		- `false` configuration **will not** be retained through power cycle.
 	- Event callbacks will only be available if `WIFI_SDK_EVENT_MONITOR_ENABLE` is uncommented in `user_config.h`
 		- Please note: To ensure all station events are handled at boot time, all relevant callbacks must be registered as early as possible in `init.lua` with either `wifi.sta.config()` or `wifi.eventmon.register()`.     
 		- `connected_cb`: Callback to execute when station is connected to an access point. (Optional)
