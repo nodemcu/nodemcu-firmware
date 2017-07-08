@@ -666,13 +666,14 @@ static int wifi_station_getconfig( lua_State* L, bool get_flash_cfg)
         lua_setfield(L, -2, "pwd");
       }
 
-      if(sta_conf.bssid_set==1)
-      {
-        memset(temp, 0, sizeof(temp));
-        c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
-        lua_pushstring( L, temp);
-        lua_setfield(L, -2, "bssid");
-      }
+      lua_pushboolean(L, sta_conf.bssid_set);
+      lua_setfield(L, -2, "bssid_set");
+
+      memset(temp, 0, sizeof(temp));
+      c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
+      lua_pushstring( L, temp);
+      lua_setfield(L, -2, "bssid");
+
       return 1;
     }
     else

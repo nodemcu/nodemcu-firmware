@@ -662,7 +662,8 @@ Get information of APs cached by ESP8266 station.
 	- `1-5` index of AP. (the index corresponds to index used by [`wifi.sta.changeap()`](#wifistachangeap) and [`wifi.sta.getapindex()`](#wifistagetapindex))
 	- `ssid`  ssid of Access Point
 	- `pwd` password for Access Point, `nil` if no password was configured 
-	- `bssid` MAC address of Access Point, `nil` if no MAC address was configured
+	- `bssid` MAC address of Access Point
+	  - `nil` will be returned if no MAC address was configured during station configuration.
 
 #### Example
 ```lua
@@ -733,7 +734,9 @@ If `return_table` is `true`:
 - `config_table`
 	- `ssid` ssid of Access Point.
 	- `pwd` password to Access Point, `nil` if no password was configured 
-	- `bssid` MAC address of Access Point, `nil` if no MAC address was configured 
+	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`. 
+	- `bssid` If a connection has been made to the configured AP this field will contain the AP's MAC address. Otherwise "ff:ff:ff:ff:ff:ff" will be returned.
+ 
 
 If `return_table` is `false`:
 
@@ -744,8 +747,8 @@ If `return_table` is `false`:
 ```lua
 --Get current Station configuration (NEW FORMAT)
 do
-local def_sta_config=wifi.sta.getconfig(true)
-print(string.format("\tDefault station config\n\tssid:\"%s\"\tpassword:\"%s\"%s", def_sta_config.ssid, def_sta_config.pwd, (type(def_sta_config.bssid)=="string" and "\tbssid:\""..def_sta_config.bssid.."\"" or "")))
+local sta_config=wifi.sta.getconfig(true)
+print(string.format("\tCurrent station config\n\tssid:\"%s\"\tpassword:\"%s\"\n\tbssid:\"%s\"\tbssid_set:%s", sta_config.ssid, sta_config.pwd, sta_config.bssid, (sta_config.bssid_set and "true" or "false")))
 end
 
 --Get current Station configuration (OLD FORMAT)
@@ -780,7 +783,8 @@ If `return_table` is `true`:
 - `config_table`
 	- `ssid` ssid of Access Point.
 	- `pwd` password to Access Point, `nil` if no password was configured
-	- `bssid` MAC address of Access Point, `nil` if no MAC address was configured
+	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`. 
+	- `bssid` If a connection has been made to the configured AP this field will contain the AP's MAC address. Otherwise "ff:ff:ff:ff:ff:ff" will be returned.
 
 If `return_table` is `false`:
 
@@ -791,8 +795,8 @@ If `return_table` is `false`:
 ```lua
 --Get default Station configuration (NEW FORMAT)
 do
-  local def_sta_config=wifi.sta.getdefaultconfig(true)
-  print(string.format("\tDefault station config\n\tssid:\"%s\"\tpassword:\"%s\"%s", def_sta_config.ssid, def_sta_config.pwd, (type(def_sta_config.bssid)=="string" and "\tbssid:\""..def_sta_config.bssid.."\"" or "")))
+local def_sta_config=wifi.sta.getdefaultconfig(true)
+print(string.format("\tDefault station config\n\tssid:\"%s\"\tpassword:\"%s\"\n\tbssid:\"%s\"\tbssid_set:%s", def_sta_config.ssid, def_sta_config.pwd, def_sta_config.bssid, (def_sta_config.bssid_set and "true" or "false")))
 end
 
 --Get default Station configuration (OLD FORMAT)
