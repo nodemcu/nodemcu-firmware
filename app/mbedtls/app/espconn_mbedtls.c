@@ -707,7 +707,7 @@ exit:
 static void
 mbedtls_dbg(void *p, int level, const char *file, int line, const char *str)
 {
-	os_printf("TLS<%d>: %s:%d %s", level, file, line, str);
+	os_printf("TLS<%d> (heap=%d): %s:%d %s", level, system_get_free_heap_size(), file, line, str);
 }
 
 static bool mbedtls_msg_config(mbedtls_msg *msg)
