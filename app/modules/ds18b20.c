@@ -9,6 +9,8 @@
 #include "platform.h"
 #include "osapi.h"
 #include "driver/onewire.h"
+#include "c_stdio.h"
+#include "c_stdlib.h"
 
 //***************************************************************************
 // OW ROM COMMANDS
@@ -41,7 +43,9 @@
 
 //***************************************************************************
 
-static uint8_t ds18b20_bus_pin = 3;
+static uint8_t ds18b20_bus_pin;
+static uint8_t ds18b20_device_family;
+static uint8_t ds18b20_device_search = 0;
 static uint8_t ds18b20_device_index;
 static uint8_t ds18b20_device_par;
 static uint8_t ds18b20_device_conf[3];
@@ -54,6 +58,9 @@ static uint8_t ds18b20_device_res = 12;			// 12 bit resolution (750ms conversion
 
 os_timer_t ds18b20_timer;						// timer for conversion delay
 int ds18b20_timer_ref;							// callback when readout is ready
+
+int ds18b20_table_ref;
+static int ds18b20_table_offset;
 
 static int ds18b20_lua_readoutdone(void);
 
@@ -70,6 +77,13 @@ static int ds18b20_lua_setup(lua_State *L) {
 	onewire_init(ds18b20_bus_pin);
 }
 
+static int ds18b20_set_device(uint8_t *ds18b20_device_rom) {
+	onewire_reset(ds18b20_bus_pin);
+	onewire_select(ds18b20_bus_pin, ds18b20_device_rom);
+	onewire_write(ds18b20_bus_pin, DS18B20_FUNC_SCRATCH_WRITE, 0);
+	onewire_write_bytes(ds18b20_bus_pin, ds18b20_device_conf, 3, 0);
+}
+
 // Change sensor settings
 // Lua: ds18b20.setting(ROM, RES)
 static int ds18b20_lua_setting(lua_State *L) {
@@ -84,38 +98,73 @@ static int ds18b20_lua_setting(lua_State *L) {
 		return luaL_error(L, "Invalid argument: resolution");
 	}
 	
-	for (uint8_t i = 0; i < 8; i++) {
-		lua_pushinteger(L, i+1);
-		lua_gettable(L, -3);
-		if (lua_isnumber(L, -1)) {
-			ds18b20_device_rom[i] = lua_tonumber(L, -1);
-		}
-		lua_pop(L, 1);
-	}
-	
 	// no change to th and tl setting
 	ds18b20_device_conf[0] = DS18B20_EEPROM_TH;
 	ds18b20_device_conf[1] = DS18B20_EEPROM_TL;
 	ds18b20_device_conf[2] = ((ds18b20_device_res - 9) << 5) + 0x1F;
 	
+	uint8_t table_len = lua_objlen(L, 1);
+	
+	const char *str[table_len];
+	const char *sep = ":";
+	
+	uint8_t string_index = 0;
+	
+	lua_pushnil(L);
+	while (lua_next(L, -3)) {
+		str[string_index] = lua_tostring(L, -1);
+		lua_pop(L, 1);
+		string_index++;
+	}
+	lua_pop(L, 1);
+	
+	for (uint8_t i = 0; i < string_index; i++) {
+		for (uint8_t j = 0; j < 8; j++) {
+			ds18b20_device_rom[j] = strtoul(str[i], NULL, 16);
+			str[i] = strchr(str[i], *sep);
+			if (str[i] == NULL || *str[i] == '\0') break;
+			str[i]++;
+		}
+		ds18b20_set_device(ds18b20_device_rom);
+	}
+	
 	// set conversion delay once to max if sensors with higher resolution still on the bus
 	ds18b20_device_res = 12;
-	
-	onewire_reset(ds18b20_bus_pin);
-	onewire_select(ds18b20_bus_pin, ds18b20_device_rom);
-	onewire_write(ds18b20_bus_pin, DS18B20_FUNC_SCRATCH_WRITE, 0);
-	onewire_write_bytes(ds18b20_bus_pin, ds18b20_device_conf, 3, 0);
 	
 	return 0;
 }
 
 // Reads sensor values from all devices
-// Lua: 	ds18b20.read(function(INDEX, ROM0, ROM1, ROM2, ROM3, ROM4, ROM5, ROM6, ROM7, RES, TEMP, TEMP_DEC, PAR) print(INDEX, ROM0, ROM1, ROM2, ROM3, ROM4, ROM5, ROM6, ROM7, RES, TEMP, TEMP_DEC, PAR) end)
+// Lua: 	ds18b20.read(function(INDEX, ROM, RES, TEMP, TEMP_DEC, PAR) print(INDEX, ROM, RES, TEMP, TEMP_DEC, PAR) end, ROM[, FAMILY])
 static int ds18b20_lua_read(lua_State *L) {
 	
 	luaL_argcheck(L, (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION), 1, "Must be function");
+	
 	lua_pushvalue(L, 1);
 	ds18b20_timer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+	
+	if (!lua_istable(L, 2)) {
+		return luaL_error(L, "wrong arg range");
+	}
+	
+	if (lua_isnumber(L, 3)) {
+		ds18b20_device_family = luaL_checkinteger(L, 3);
+		onewire_target_search(ds18b20_bus_pin, ds18b20_device_family);
+		ds18b20_table_offset = -3;
+	} else {
+		ds18b20_table_offset = -2;
+	}
+	
+	lua_pushvalue(L, 2);
+	ds18b20_table_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+	
+	lua_pushnil(L);
+	if (lua_next(L, ds18b20_table_offset)) {
+		lua_pop(L, 2);
+		ds18b20_device_search = 0;
+	} else {
+		ds18b20_device_search = 1;
+	}
 	
 	os_timer_disarm(&ds18b20_timer);
 	
@@ -123,26 +172,69 @@ static int ds18b20_lua_read(lua_State *L) {
 	onewire_reset(ds18b20_bus_pin);
 	onewire_write(ds18b20_bus_pin, DS18B20_ROM_SKIP, 0);
 	onewire_write(ds18b20_bus_pin, DS18B20_FUNC_CONVERT, 1);
-	os_timer_setfn (&ds18b20_timer, (os_timer_func_t *)ds18b20_lua_readoutdone, NULL);
+	os_timer_setfn(&ds18b20_timer, (os_timer_func_t *)ds18b20_lua_readoutdone, NULL);
 	
 	switch (ds18b20_device_res) {
 		case (9):
-			os_timer_arm (&ds18b20_timer, 95, 0);
+			os_timer_arm(&ds18b20_timer, 95, 0);
 			break;
 		case (10):
-			os_timer_arm (&ds18b20_timer, 190, 0);
+			os_timer_arm(&ds18b20_timer, 190, 0);
 			break;
 		case (11):
-			os_timer_arm (&ds18b20_timer, 380, 0);
+			os_timer_arm(&ds18b20_timer, 380, 0);
 			break;
 		case (12):
-			os_timer_arm (&ds18b20_timer, 760, 0);
+			os_timer_arm(&ds18b20_timer, 760, 0);
 			break;
 	}
-	
-	return 0;
 }
 
+static int ds18b20_read_device(uint8_t *ds18b20_device_rom) {
+	lua_State *L = lua_getstate();
+
+	if (onewire_crc8(ds18b20_device_rom,7) == ds18b20_device_rom[7]) {
+		
+		onewire_reset(ds18b20_bus_pin);
+		onewire_select(ds18b20_bus_pin, ds18b20_device_rom);
+		onewire_write(ds18b20_bus_pin, DS18B20_FUNC_POWER_READ, 0);
+		
+		if (onewire_read(ds18b20_bus_pin)) ds18b20_device_par = 0;
+		else ds18b20_device_par = 1;
+			
+		onewire_reset(ds18b20_bus_pin);
+		onewire_select(ds18b20_bus_pin, ds18b20_device_rom);
+		onewire_write(ds18b20_bus_pin, DS18B20_FUNC_SCRATCH_READ, 0);
+		onewire_read_bytes(ds18b20_bus_pin, ds18b20_device_scratchpad, 9);
+		
+		if (onewire_crc8(ds18b20_device_scratchpad,8) == ds18b20_device_scratchpad[8]) {
+			
+			lua_rawgeti(L, LUA_REGISTRYINDEX, ds18b20_timer_ref);
+			
+			lua_pushinteger(L, ds18b20_device_index);
+			
+			lua_pushfstring(L, "%d:%d:%d:%d:%d:%d:%d:%d", ds18b20_device_rom[0], ds18b20_device_rom[1], ds18b20_device_rom[2], ds18b20_device_rom[3], ds18b20_device_rom[4], ds18b20_device_rom[5], ds18b20_device_rom[6], ds18b20_device_rom[7]);
+			
+			ds18b20_device_scratchpad_conf = (ds18b20_device_scratchpad[4] >> 5) + 9;
+			ds18b20_device_scratchpad_temp = ((int8_t)(ds18b20_device_scratchpad[1] << 4) + (ds18b20_device_scratchpad[0] >> 4) + ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16));
+			ds18b20_device_scratchpad_temp_dec = ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16 * 1000);
+			
+			if (ds18b20_device_scratchpad_conf >= ds18b20_device_res) {
+				ds18b20_device_res = ds18b20_device_scratchpad_conf;
+			}
+			
+			lua_pushinteger(L, ds18b20_device_scratchpad_conf);
+			lua_pushnumber(L, ds18b20_device_scratchpad_temp);
+			lua_pushinteger(L, ds18b20_device_scratchpad_temp_dec);
+			
+			lua_pushinteger(L, ds18b20_device_par);
+			
+			lua_pcall(L, 6, 0, 0);
+			
+			ds18b20_device_index++;
+		}
+	}
+}
 
 static int ds18b20_lua_readoutdone(void) {
 	
@@ -153,56 +245,44 @@ static int ds18b20_lua_readoutdone(void) {
 	// set conversion delay to min and change it after finding the sensor with the highest resolution setting
 	ds18b20_device_res = 9;
 	
-	// iterate through all sensors on the bus and read temperature, resolution and parasitc settings
-	while (onewire_search(ds18b20_bus_pin, ds18b20_device_rom)) {
-		if (onewire_crc8(ds18b20_device_rom,7) == ds18b20_device_rom[7] && ds18b20_device_rom[0] == 0x28) {
-			
-			onewire_reset(ds18b20_bus_pin);
-			onewire_select(ds18b20_bus_pin, ds18b20_device_rom);
-			onewire_write(ds18b20_bus_pin, DS18B20_FUNC_POWER_READ, 0);
-			
-			if (onewire_read(ds18b20_bus_pin)) ds18b20_device_par = 0;
-			else ds18b20_device_par = 1;
-				
-			onewire_reset(ds18b20_bus_pin);
-			onewire_select(ds18b20_bus_pin, ds18b20_device_rom);
-			onewire_write(ds18b20_bus_pin, DS18B20_FUNC_SCRATCH_READ, 0);
-			onewire_read_bytes(ds18b20_bus_pin, ds18b20_device_scratchpad, 9);
-			
-			if (onewire_crc8(ds18b20_device_scratchpad,8) == ds18b20_device_scratchpad[8]) {
-				
-				lua_rawgeti(L, LUA_REGISTRYINDEX, ds18b20_timer_ref);
-				
-				lua_pushinteger(L, ds18b20_device_index);
-				
-				for (uint8_t i = 0; i < 8; i++) {
-					lua_pushinteger(L, ds18b20_device_rom[i]);
-				}
-				
-				ds18b20_device_scratchpad_conf = (ds18b20_device_scratchpad[4] >> 5) + 9;
-				ds18b20_device_scratchpad_temp = ((int8_t)(ds18b20_device_scratchpad[1] << 4) + (ds18b20_device_scratchpad[0] >> 4) + ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16));
-				ds18b20_device_scratchpad_temp_dec = ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16 * 1000);
-				
-				if (ds18b20_device_scratchpad_conf >= ds18b20_device_res) {
-					ds18b20_device_res = ds18b20_device_scratchpad_conf;
-				}
-				
-				lua_pushinteger(L, ds18b20_device_scratchpad_conf);
-				lua_pushnumber(L, ds18b20_device_scratchpad_temp);
-				lua_pushinteger(L, ds18b20_device_scratchpad_temp_dec);
-				
-				lua_pushinteger(L, ds18b20_device_par);
-				
-				lua_call(L, 13, 0);
-				
-				ds18b20_device_index++;
+	if (ds18b20_device_search) {
+		// iterate through all sensors on the bus and read temperature, resolution and parasitc settings
+		while (onewire_search(ds18b20_bus_pin, ds18b20_device_rom)) {
+			ds18b20_read_device(ds18b20_device_rom);
+		}
+	} else {
+		lua_rawgeti(L, LUA_REGISTRYINDEX, ds18b20_table_ref);
+		uint8_t table_len = lua_objlen(L, -1);
+		
+		const char *str[table_len];
+		const char *sep = ":";
+		
+		uint8_t string_index = 0;
+		
+		lua_pushnil(L);
+		while (lua_next(L, -2)) {
+			str[string_index] = lua_tostring(L, -1);
+			lua_pop(L, 1);
+			string_index++;
+		}
+		lua_pop(L, 1);
+		
+		for (uint8_t i = 0; i < string_index; i++) {
+			for (uint8_t j = 0; j < 8; j++) {
+				ds18b20_device_rom[j] = strtoul(str[i], NULL, 16);
+				str[i] = strchr(str[i], *sep);
+				if (str[i] == NULL || *str[i] == '\0') break;
+				str[i]++;
 			}
+			ds18b20_read_device(ds18b20_device_rom);
 		}
 	}
 	
+	luaL_unref(L, LUA_REGISTRYINDEX, ds18b20_table_ref);
+	ds18b20_table_ref = LUA_NOREF;
+	
 	luaL_unref(L, LUA_REGISTRYINDEX, ds18b20_timer_ref);
 	ds18b20_timer_ref = LUA_NOREF;
-	
 }
 
 static const LUA_REG_TYPE ds18b20_map[] = {
