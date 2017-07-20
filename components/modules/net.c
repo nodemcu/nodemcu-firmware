@@ -46,6 +46,7 @@ typedef struct lnet_userdata {
   int self_ref;
   uint16_t port;
   struct netconn *netconn;
+  bool closing;
   union {
     struct {
       int cb_accept_ref;
@@ -56,7 +57,6 @@ typedef struct lnet_userdata {
       int cb_dns_ref;
       int cb_receive_ref;
       int cb_sent_ref;
-      bool closing;
       // Only for TCP:
       bool connecting;
       int hold;
@@ -130,6 +130,7 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
   ud->type = type;
   ud->self_ref = LUA_NOREF;
   ud->netconn = NULL;
+  ud->closing = false;
 
   switch (type) {
     case TYPE_TCP_CLIENT:
@@ -140,7 +141,6 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
       ud->client.num_held = 0;
       ud->client.connecting = false;
     case TYPE_UDP_SOCKET:
-      ud->client.closing = false;
       ud->client.wait_dns = 0;
       ud->client.cb_dns_ref = LUA_NOREF;
       ud->client.cb_receive_ref = LUA_NOREF;
@@ -277,9 +277,11 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
   lnet_userdata *ud = (lnet_userdata *)netconn->socket;
   if (!ud || !ud->netconn) return;
 
+  // if a previous event or the user triggered to close the connection then
+  // skip further event processing, we might run the cbs in Lua task on outdated userdata
+  if (ud->closing) return;
+
   if (ud->type == TYPE_TCP_CLIENT || ud->type == TYPE_UDP_SOCKET) {
-    // if a previous event triggered to close the connection then skip further event processing
-    if (ud->client.closing) return;
 
     switch (evt) {
     case NETCONN_EVT_SENDPLUS:
@@ -295,7 +297,7 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
 
     case NETCONN_EVT_ERROR:
       post_net_err(ud, netconn_err(ud->netconn));
-      ud->client.closing = true;
+      ud->closing = true;
       break;
 
     case NETCONN_EVT_RCVPLUS:
@@ -305,7 +307,7 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
       } else {
         // signals closed connection from peer
         post_net_err(ud, 0);
-        ud->client.closing = true;
+        ud->closing = true;
       }
       break;
 
@@ -326,6 +328,7 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
 
     case NETCONN_EVT_ERROR:
       post_net_err(ud, netconn_err(ud->netconn));
+      ud->closing = true;
       break;
 
     default:
@@ -471,6 +474,7 @@ int net_listen( lua_State *L ) {
     default: break;
   }
   if (err != ERR_OK) {
+    ud->closing = true;
     switch (ud->type) {
       case TYPE_TCP_SERVER:
         NETCONN_CLOSE(ud->netconn);
@@ -533,6 +537,7 @@ int net_connect( lua_State *L ) {
       luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
       ud->self_ref = LUA_NOREF;
     }
+    ud->closing = true;
     NETCONN_CLOSE(ud->netconn);
     ud->netconn = NULL;
     return lwip_lua_checkerr(L, err);
@@ -614,6 +619,7 @@ int net_send( lua_State *L ) {
     ud->netconn->socket = (int)ud;
     err_t err = netconn_bind(ud->netconn, IP_ADDR_ANY, 0);
     if (err != ERR_OK) {
+      ud->closing = true;
       NETCONN_CLOSE(ud->netconn);
       ud->netconn = NULL;
       return lwip_lua_checkerr(L, err);
@@ -782,6 +788,7 @@ int net_close( lua_State *L ) {
       case TYPE_TCP_CLIENT:
       case TYPE_TCP_SERVER:
       case TYPE_UDP_SOCKET:
+        ud->closing = true;
         NETCONN_CLOSE(ud->netconn);
         ud->netconn = NULL;
         break;
@@ -808,6 +815,7 @@ int net_delete( lua_State *L ) {
       case TYPE_TCP_CLIENT:
       case TYPE_TCP_SERVER:
       case TYPE_UDP_SOCKET:
+        ud->closing = true;
         NETCONN_CLOSE(ud->netconn);
         ud->netconn = NULL;
         break;
