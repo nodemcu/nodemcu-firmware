@@ -212,7 +212,7 @@ static void net_dns_cb(const char *name, const ip_addr_t *ipaddr, void *arg) {
 
 static bool post_net_recv (lnet_userdata *ud)
 {
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event) /*+ p->len*/);
+  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
   if (!ev)
     return false;
 
@@ -258,9 +258,9 @@ static bool post_net_accept (lnet_userdata *ud) {
 
 static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt, u16_t len)
 {
-  SYS_ARCH_DECL_PROTECT(lev);
-
   if (!netconn) return;
+
+  SYS_ARCH_DECL_PROTECT(lev);
 
   SYS_ARCH_PROTECT(lev);
   if (netconn->socket < 0) {
@@ -287,7 +287,6 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
         // connection established, trigger Lua callback
         ud->client.connecting = false;
         post_net_connected(ud);
-
       } else if (len > 0) {
         // data sent, trigger Lua callback
         post_net_sent(ud);
@@ -320,13 +319,11 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
     case NETCONN_EVT_RCVPLUS:
       // new connection available from netconn_listen()
       if (ud->netconn &&
-          ud->self_ref != LUA_NOREF &&
           ud->server.cb_accept_ref != LUA_NOREF) {
         post_net_accept(ud);
       }
       break;
 
-      // no error callback for server type
     case NETCONN_EVT_ERROR:
       post_net_err(ud, netconn_err(ud->netconn));
       break;
@@ -1032,6 +1029,8 @@ static void lconnected_cb (lua_State *L, lnet_userdata *ud) {
 }
 
 static void laccept_cb (lua_State *L, lnet_userdata *ud) {
+  if (!ud || !ud->netconn) return;
+
   SYS_ARCH_DECL_PROTECT(lev);
   lua_rawgeti(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
 
@@ -1068,7 +1067,7 @@ static void laccept_cb (lua_State *L, lnet_userdata *ud) {
 }
 
 static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
-  if (!ud->netconn) return;
+  if (!ud || !ud->netconn) return;
 
   struct netbuf *p;
   char *payload;
@@ -1126,7 +1125,7 @@ static void lsent_cb (lua_State *L, lnet_userdata *ud) {
 
 static void lerr_cb (lua_State *L, lnet_userdata *ud, err_t err)
 {
-  if (!ud->netconn) return;
+  if (!ud || !ud->netconn) return;
 
   int ref;
   if (err != ERR_OK && ud->client.cb_reconnect_ref != LUA_NOREF)
