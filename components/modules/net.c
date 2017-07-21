@@ -650,6 +650,11 @@ int net_send( lua_State *L ) {
   } else if (ud->type == TYPE_TCP_CLIENT) {
     size_t bytes_written;
     err = netconn_write_partly(ud->netconn, data, datalen, NETCONN_COPY, &bytes_written);
+    if (err == ERR_OK && (datalen != bytes_written)) {
+      // the string object is potentially gc'ed after net_send finishes and we can't ensure
+      // integrity of the data pointer to netconn -> signal error to Lua layer
+      err = ERR_BUF;
+    }
   }
   else {
     err = ERR_VAL;
