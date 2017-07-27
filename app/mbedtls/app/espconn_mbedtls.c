@@ -423,22 +423,30 @@ static bool mbedtls_handshake_result(const pmbedtls_msg Threadmsg)
 static void mbedtls_fail_info(espconn_msg *pinfo, int ret)
 {
 	pmbedtls_msg TLSmsg = NULL;
-	lwIP_REQUIRE_ACTION(pinfo,exit,ret = ERR_ARG);
+	lwIP_REQUIRE_ACTION(pinfo,exit,);
 	TLSmsg = pinfo->pssl;
-	lwIP_REQUIRE_ACTION(TLSmsg,exit,ret = ERR_ARG);
+	lwIP_REQUIRE_ACTION(TLSmsg,exit,);
 
-	if (TLSmsg->quiet){
-		if (pinfo->preverse != NULL) {
-			os_printf("server's data invalid protocol\n");
-		} else {
-			os_printf("client's data invalid protocol\n");
-		}
+	if (TLSmsg->quiet) {
 		mbedtls_ssl_close_notify(&TLSmsg->ssl);
-	} else{
-		if (pinfo->preverse != NULL) {
-			os_printf("server handshake failed!\n");
-		} else {
-			os_printf("client handshake failed!\n");
+	}
+
+	/* Don't complain to console if we've been told the other end is hanging
+	 * up.  That's entirely normal and not worthy of the confusion it sows!
+	 */
+	if (ret != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+		if (TLSmsg->quiet){
+			if (pinfo->preverse != NULL) {
+				os_printf("server's data invalid protocol\n");
+			} else {
+				os_printf("client's data invalid protocol\n");
+			}
+		} else{
+			if (pinfo->preverse != NULL) {
+				os_printf("server handshake failed!\n");
+			} else {
+				os_printf("client handshake failed!\n");
+			}
 		}
 	}
 
