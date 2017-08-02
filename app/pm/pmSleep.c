@@ -28,17 +28,18 @@ static void wifi_suspended_timer_cb(int arg);
 
 /*  INTERNAL FUNCTIONS  */
 
-#include "swTimer/swTimer.h"
 static void suspend_all_timers(void){
-#ifdef ENABLE_TIMER_SUSPEND
-  swtmr_suspend(NULL);
+#ifdef TIMER_SUSPEND_ENABLE
+  extern void swtmr_suspend_timers();
+  swtmr_suspend_timers();
 #endif
   return;
 }
 
 static void resume_all_timers(void){
-#ifdef ENABLE_TIMER_SUSPEND
-  swtmr_resume(NULL);
+#ifdef TIMER_SUSPEND_ENABLE
+  extern void swtmr_resume_timers();
+  swtmr_resume_timers();
 #endif
   return;
 }
@@ -49,7 +50,7 @@ static void null_mode_check_timer_cb(void* arg){
     if(current_config.sleep_mode == LIGHT_SLEEP_T){
       if((READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0 &&
          (READ_PERI_REG(UART_STATUS(1)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S)) == 0){
-        ets_timer_disarm(&null_mode_check_timer);
+        os_timer_disarm(&null_mode_check_timer);
         suspend_all_timers();
         //Ensure UART 0/1 TX FIFO is clear
         SET_PERI_REG_MASK(UART_CONF0(0), UART_TXFIFO_RST);//RESET FIFO
@@ -78,7 +79,7 @@ static void null_mode_check_timer_cb(void* arg){
         PMSLEEP_ERR("wifi_fpm_do_sleep returned %d", retval_wifi_fpm_do_sleep);
       }
     }
-    ets_timer_disarm(&null_mode_check_timer);
+    os_timer_disarm(&null_mode_check_timer);
     return;
   }
 }
@@ -173,24 +174,24 @@ uint8 pmSleep_get_state(void){
 int pmSleep_parse_table_lua( lua_State* L, int table_idx, pmSleep_param_t *cfg, int *suspend_lua_cb_ref, int *resume_lua_cb_ref){
   lua_Integer Linteger_tmp = 0;
 
-  lua_getfield(L, table_idx, "duration");
-  if( !lua_isnil(L, -1) ){  /* found? */
-    if( lua_isnumber(L, -1) ){
-      lua_Integer Linteger=luaL_checkinteger(L, -1);
-      luaL_argcheck(L,(((Linteger >= PMSLEEP_SLEEP_MIN_TIME) && (Linteger <= PMSLEEP_SLEEP_MAX_TIME)) ||
-          (Linteger == 0)), table_idx, PMSLEEP_DURATION_ERR_STR);
-      cfg->sleep_duration = (uint32)Linteger; // Get suspend duration
+  if( cfg->sleep_mode == MODEM_SLEEP_T ){ //WiFi suspend
+    lua_getfield(L, table_idx, "duration");
+    if( !lua_isnil(L, -1) ){  /* found? */
+      if( lua_isnumber(L, -1) ){
+        lua_Integer Linteger=luaL_checkinteger(L, -1);
+        luaL_argcheck(L,(((Linteger >= PMSLEEP_SLEEP_MIN_TIME) && (Linteger <= PMSLEEP_SLEEP_MAX_TIME)) ||
+            (Linteger == 0)), table_idx, PMSLEEP_DURATION_ERR_STR);
+        cfg->sleep_duration = (uint32)Linteger; // Get suspend duration
+      }
+      else{
+        return luaL_argerror( L, table_idx, "duration: must be number" );
+      }
     }
     else{
-      return luaL_argerror( L, table_idx, "duration: must be number" );
+      return luaL_argerror( L, table_idx, PMSLEEP_DURATION_ERR_STR );
     }
-  }
-  else{
-    return luaL_argerror( L, table_idx, PMSLEEP_DURATION_ERR_STR );
-  }
-  lua_pop(L, 1);
+    lua_pop(L, 1);
 
-  if( cfg->sleep_mode == MODEM_SLEEP_T ){ //WiFi suspend
     lua_getfield(L, table_idx, "suspend_cb");
     if( !lua_isnil(L, -1) ){  /* found? */
       if( lua_isfunction(L, -1) ){
@@ -204,7 +205,7 @@ int pmSleep_parse_table_lua( lua_State* L, int table_idx, pmSleep_param_t *cfg, 
     lua_pop(L, 1);
   }
   else if (cfg->sleep_mode == LIGHT_SLEEP_T){ //CPU suspend
-#ifdef ENABLE_TIMER_SUSPEND
+#ifdef TIMER_SUSPEND_ENABLE
     lua_getfield(L, table_idx, "wake_pin");
     if( !lua_isnil(L, -1) ){  /* found? */
       if( lua_isnumber(L, -1) ){
@@ -300,7 +301,7 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
   PMSLEEP_DBG("START");
 
   lua_State* L = lua_getstate();
-#ifndef ENABLE_TIMER_SUSPEND
+#ifndef TIMER_SUSPEND_ENABLE
   if(cfg->sleep_mode == LIGHT_SLEEP_T){
     luaL_error(L, "timer suspend API is disabled, light sleep unavailable");
     return;
@@ -336,7 +337,7 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
     wifi_fpm_open(); // Enable force sleep API
 
     if (cfg->sleep_mode == LIGHT_SLEEP_T){
-#ifdef ENABLE_TIMER_SUSPEND
+#ifdef TIMER_SUSPEND_ENABLE
       if(platform_gpio_exists(cfg->wake_pin) && cfg->wake_pin > 0){
         PMSLEEP_DBG("Wake-up pin is %d\t interrupt type is %d", cfg->wake_pin, cfg->int_type);
 
@@ -367,9 +368,9 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
     PMSLEEP_DBG("sleep duration is %d", current_config.sleep_duration);
 
     //this timer intentionally bypasses the swtimer timer registration process
-    ets_timer_disarm(&null_mode_check_timer);
-    ets_timer_setfn(&null_mode_check_timer, null_mode_check_timer_cb, false);
-    ets_timer_arm_new(&null_mode_check_timer, 1, 1, 1);
+    os_timer_disarm(&null_mode_check_timer);
+    os_timer_setfn(&null_mode_check_timer, null_mode_check_timer_cb, false);
+    os_timer_arm(&null_mode_check_timer, 1, 1);
   }
   else{
     PMSLEEP_ERR("opmode change fail");

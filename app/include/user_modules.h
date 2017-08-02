@@ -86,5 +86,9 @@
 //#define LUA_USE_MODULES_WS2812_EFFECTS
 //#define LUA_USE_MODULES_XPT2046
 
+/*sub feature debug*/
+//#define LUA_USE_MODULES_TIMER_SUSPEND_DEBUG
+
+
 #endif  /* LUA_CROSS_COMPILER */
 #endif	/* __USER_MODULES_H__ */
