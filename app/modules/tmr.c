@@ -230,6 +230,28 @@ static int tmr_stop(lua_State* L){
 	return 1;  
 }
 
+#ifdef TIMER_SUSPEND_ENABLE
+
+#define TMR_SUSPEND_REMOVED_MSG "This feature has been removed, we apologize for any inconvenience this may have caused."
+static int tmr_suspend(lua_State* L){
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
+}
+
+static int tmr_resume(lua_State* L){
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
+}
+
+static int tmr_suspend_all (lua_State *L){
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
+}
+
+static int tmr_resume_all (lua_State *L){
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
+}
+
+
+#endif
+
 // Lua: tmr.unregister( id / ref )
 static int tmr_unregister(lua_State* L){
 	timer_t tmr = tmr_get(L, 1);
@@ -381,11 +403,14 @@ static const LUA_REG_TYPE tmr_dyn_map[] = {
 	{ LSTRKEY( "unregister" ),  LFUNCVAL( tmr_unregister ) },
 	{ LSTRKEY( "state" ),       LFUNCVAL( tmr_state ) },
 	{ LSTRKEY( "interval" ),    LFUNCVAL( tmr_interval) },
+#ifdef TIMER_SUSPEND_ENABLE
+	{ LSTRKEY( "suspend" ),      LFUNCVAL( tmr_suspend ) },
+  { LSTRKEY( "resume" ),       LFUNCVAL( tmr_resume ) },
+#endif
 	{ LSTRKEY( "__gc" ),        LFUNCVAL( tmr_unregister ) },
 	{ LSTRKEY( "__index" ),     LROVAL( tmr_dyn_map ) },
 	{ LNILKEY, LNILVAL }
 };
-
 
 static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
@@ -397,6 +422,12 @@ static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "alarm" ),        LFUNCVAL( tmr_alarm ) },
 	{ LSTRKEY( "start" ),        LFUNCVAL( tmr_start ) },
   { LSTRKEY( "stop" ),         LFUNCVAL( tmr_stop ) },
+#ifdef TIMER_SUSPEND_ENABLE
+  { LSTRKEY( "suspend" ),      LFUNCVAL( tmr_suspend ) },
+  { LSTRKEY( "suspend_all" ),  LFUNCVAL( tmr_suspend_all ) },
+  { LSTRKEY( "resume" ),       LFUNCVAL( tmr_resume ) },
+  { LSTRKEY( "resume_all" ),   LFUNCVAL( tmr_resume_all ) },
+#endif
 	{ LSTRKEY( "unregister" ),   LFUNCVAL( tmr_unregister ) },
 	{ LSTRKEY( "state" ),        LFUNCVAL( tmr_state ) },
 	{ LSTRKEY( "interval" ),     LFUNCVAL( tmr_interval ) },
