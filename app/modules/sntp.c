@@ -254,7 +254,7 @@ static void sntp_handle_result(lua_State *L) {
     int64_t f = ((state->best.delta * PLL_A) >> 32) + pll_increment;
     pll_increment += (state->best.delta * PLL_B) >> 32;
     sntp_dbg("f=%d, increment=%d\n", (int32_t) f, (int32_t) pll_increment);
-    //rtctime_adjust_rate((int32_t) f);
+    rtctime_adjust_rate((int32_t) f);
   } else {
     rtctime_settimeofday (&tv);
   }

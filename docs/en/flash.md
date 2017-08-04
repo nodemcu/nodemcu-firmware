@@ -30,6 +30,7 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 
 - See [below](#determine-flash-size) if you don't know or are uncertain about the capacity of the flash chip on your device. It might help to double check as e.g. some ESP-01 modules come with 512kB while others are equipped with 1MB.
 - esptool.py is under heavy development. It's advised you run the latest version (check with `esptool.py version`). Since this documentation may not have been able to keep up refer to the [esptool flash modes documentation](https://github.com/themadinventor/esptool#flash-modes) for current options and parameters.
+- The firmware image file contains default settings `dio` for flash mode and `40m` for flash frequency.
 - In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
 `esptool.py --port <serial-port-of-ESP8266> erase_flash`
 

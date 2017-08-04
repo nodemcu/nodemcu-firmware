@@ -666,13 +666,14 @@ static int wifi_station_getconfig( lua_State* L, bool get_flash_cfg)
         lua_setfield(L, -2, "pwd");
       }
 
-      if(sta_conf.bssid_set==1)
-      {
-        memset(temp, 0, sizeof(temp));
-        c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
-        lua_pushstring( L, temp);
-        lua_setfield(L, -2, "bssid");
-      }
+      lua_pushboolean(L, sta_conf.bssid_set);
+      lua_setfield(L, -2, "bssid_set");
+
+      memset(temp, 0, sizeof(temp));
+      c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
+      lua_pushstring( L, temp);
+      lua_setfield(L, -2, "bssid");
+
       return 1;
     }
     else
@@ -829,66 +830,110 @@ static int wifi_station_config( lua_State* L )
     }
     else 
     {
-      save_to_flash=false;
+      save_to_flash=true;
     }
     lua_pop(L, 1);
 
-  }
-  else //to be deprecated
-  {
-    platform_print_deprecation_note("Argument style station configuration is replaced by table style station configuration", "in the next version");
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
 
-    const char *ssid = luaL_checklstring( L, 1, &sl );
-    luaL_argcheck(L, (sl>=0 && sl<sizeof(sta_conf.ssid)), 1, "length:0-32"); /* Zero-length SSID is valid as a way to clear config */
+    lua_State* L_temp = NULL;
 
-    memcpy(sta_conf.ssid, ssid, sl);
-
-    const char *password = luaL_checklstring( L, 2, &pl );
-    luaL_argcheck(L, (pl>=0 && pl<=sizeof(sta_conf.password)), 2, "length:0-64"); /* WPA = min 8, WEP = min 5 ASCII characters for a 40-bit key */
-
-    memcpy(sta_conf.password, password, pl);
-
-    if(lua_isnumber(L, 3))
+    lua_getfield(L, 1, "connect_cb");
+    if (!lua_isnil(L, -1))
     {
-      lua_Integer lint=luaL_checkinteger( L, 3 );
-      if ( lint != 0 && lint != 1)
-        return luaL_error( L, "wrong arg type" );
-      auto_connect=(bool)lint;
-    }
-    else if (lua_isstring(L, 3)&& !(lua_isnumber(L, 3)))
-    {
-      lua_pushnil(L);
-      lua_insert(L, 3);
-
-    }
-    else
-    {
-      if(lua_isnil(L, 3))
-        return luaL_error( L, "wrong arg type" );
-      auto_connect=1;
-    }
-
-    if(lua_isnumber(L, 4))
-    {
-      sta_conf.bssid_set = 0;
-      memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-    }
-    else
-    {
-      if (lua_isstring(L, 4))
+      if (lua_isfunction(L, -1))
       {
-        const char *macaddr = luaL_checklstring( L, 4, &ml );
-        luaL_argcheck(L, ml==sizeof("AA:BB:CC:DD:EE:FF")-1, 1, INVALID_MAC_STR);
-        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-        ets_str2macaddr(sta_conf.bssid, macaddr);
-        sta_conf.bssid_set = 1;
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
       }
       else
       {
-        sta_conf.bssid_set = 0;
-        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
+        return luaL_argerror(L, 1, "connect_cb:not function");
       }
     }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "disconnect_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "disconnect_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "authmode_change_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_AUTHMODE_CHANGE);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "authmode_change_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "got_ip_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_GOT_IP);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "gotip_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "dhcp_timeout_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_STAMODE_DHCP_TIMEOUT);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "dhcp_timeout_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+#endif
+
+  }
+  else
+  {
+    return luaL_argerror(L, 1, "config table not found!");
   }
 
 #if defined(WIFI_DEBUG)
@@ -930,6 +975,13 @@ static int wifi_station_config( lua_State* L )
 // Lua: wifi.sta.connect()
 static int wifi_station_connect4lua( lua_State* L )
 {
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+  if(lua_isfunction(L, 1)){
+    lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
+    lua_pushvalue(L, 1);
+    wifi_event_monitor_register(L);
+  }
+#endif
   wifi_station_connect();
   return 0;  
 }
@@ -937,6 +989,13 @@ static int wifi_station_connect4lua( lua_State* L )
 // Lua: wifi.sta.disconnect()
 static int wifi_station_disconnect4lua( lua_State* L )
 {
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+  if(lua_isfunction(L, 1)){
+    lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
+    lua_pushvalue(L, 1);
+    wifi_event_monitor_register(L);
+  }
+#endif
   wifi_station_disconnect();
   return 0;  
 }
@@ -1509,6 +1568,65 @@ static int wifi_ap_config( lua_State* L )
   }
   lua_pop(L, 1);
 
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+
+    lua_State* L_temp = NULL;
+
+    lua_getfield(L, 1, "staconnected_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_SOFTAPMODE_STACONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "staconnected_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "stadisconnected_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_SOFTAPMODE_STADISCONNECTED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "stadisconnected_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "probereq_cb");
+    if (!lua_isnil(L, -1))
+    {
+      if (lua_isfunction(L, -1))
+      {
+          L_temp = lua_newthread(L);
+          lua_pushnumber(L, EVENT_SOFTAPMODE_PROBEREQRECVED);
+          lua_pushvalue(L, -3);
+          lua_xmove(L, L_temp, 2);
+          wifi_event_monitor_register(L_temp);
+      }
+      else
+      {
+        return luaL_argerror(L, 1, "probereq_cb:not function");
+      }
+    }
+    lua_pop(L, 1);
+
+#endif
 
 #if defined(WIFI_DEBUG)
   char debug_temp[sizeof(config.password)+1];
@@ -1629,11 +1747,6 @@ static const LUA_REG_TYPE wifi_station_map[] = {
   { LSTRKEY( "config" ),           LFUNCVAL( wifi_station_config ) },
   { LSTRKEY( "connect" ),          LFUNCVAL( wifi_station_connect4lua ) },
   { LSTRKEY( "disconnect" ),       LFUNCVAL( wifi_station_disconnect4lua ) },
-#if defined(WIFI_STATION_STATUS_MONITOR_ENABLE)
-  { LSTRKEY( "eventMonReg" ),      LFUNCVAL( wifi_station_event_mon_reg ) }, //defined in wifi_eventmon.c
-  { LSTRKEY( "eventMonStart" ),    LFUNCVAL( wifi_station_event_mon_start ) }, //defined in wifi_eventmon.c
-  { LSTRKEY( "eventMonStop" ),     LFUNCVAL( wifi_station_event_mon_stop ) }, //defined in wifi_eventmon.c
-#endif
   { LSTRKEY( "getap" ),            LFUNCVAL( wifi_station_listap ) },
   { LSTRKEY( "getapindex" ),       LFUNCVAL( wifi_station_get_ap_index ) },
   { LSTRKEY( "getapinfo" ),        LFUNCVAL( wifi_station_get_ap_info4lua ) },

@@ -12,7 +12,7 @@
 static const uint32_t i2c_id = 0;
 static const uint8_t i2c_addr = 0x69;
 
-static uint8_t ICACHE_FLASH_ATTR r8u(uint32_t id, uint8_t reg) {
+static uint8_t r8u(uint32_t id, uint8_t reg) {
     uint8_t ret;
 
     platform_i2c_send_start(id);
@@ -26,7 +26,7 @@ static uint8_t ICACHE_FLASH_ATTR r8u(uint32_t id, uint8_t reg) {
     return ret;
 }
 
-static void ICACHE_FLASH_ATTR w8u(uint32_t id, uint8_t reg, uint8_t val) {
+static void w8u(uint32_t id, uint8_t reg, uint8_t val) {
     platform_i2c_send_start(i2c_id);
     platform_i2c_send_address(i2c_id, i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
     platform_i2c_send_byte(i2c_id, reg);
@@ -34,19 +34,9 @@ static void ICACHE_FLASH_ATTR w8u(uint32_t id, uint8_t reg, uint8_t val) {
     platform_i2c_send_stop(i2c_id);
 }
 
-static int ICACHE_FLASH_ATTR l3g4200d_init(lua_State* L) {
-
-    uint32_t sda;
-    uint32_t scl;
+static int l3g4200d_setup(lua_State* L) {
     uint8_t  devid;
 
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-    
     devid = r8u(i2c_id, 0xF);
 
     if (devid != 0xD3) {
@@ -58,7 +48,24 @@ static int ICACHE_FLASH_ATTR l3g4200d_init(lua_State* L) {
     return 0;
 }
 
-static int ICACHE_FLASH_ATTR l3g4200d_read(lua_State* L) {
+static int l3g4200d_init(lua_State* L) {
+
+    uint32_t sda;
+    uint32_t scl;
+
+    platform_print_deprecation_note("l3g4200d.init() is replaced by l3g4200d.setup()", "in the next version");
+
+    sda = luaL_checkinteger(L, 1);
+    scl = luaL_checkinteger(L, 2);
+
+    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
+
+    platform_i2c_setup(i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
+
+    return l3g4200d_setup(L);
+}
+
+static int l3g4200d_read(lua_State* L) {
 
     uint8_t data[6];
     int x,y,z;
@@ -91,6 +98,8 @@ static int ICACHE_FLASH_ATTR l3g4200d_read(lua_State* L) {
 
 static const LUA_REG_TYPE l3g4200d_map[] = {
     { LSTRKEY( "read" ),         LFUNCVAL( l3g4200d_read )},
+    { LSTRKEY( "setup" ),        LFUNCVAL( l3g4200d_setup )},
+    // init() is deprecated
     { LSTRKEY( "init" ),         LFUNCVAL( l3g4200d_init )},
     { LNILKEY, LNILVAL}
 };

@@ -57,6 +57,11 @@ void rtctime_late_startup (void)
   rtc_time_switch_system ();
 }
 
+void rtctime_adjust_rate (int rate)
+{
+  rtc_time_set_rate (rate);
+}
+
 void rtctime_gettimeofday (struct rtc_timeval *tv)
 {
   rtc_time_gettimeofday (tv);
@@ -66,7 +71,9 @@ void rtctime_settimeofday (const struct rtc_timeval *tv)
 {
   if (!rtc_time_check_magic ())
     rtc_time_prepare ();
+  int32_t rate = rtc_time_get_rate();
   rtc_time_settimeofday (tv);
+  rtc_time_set_rate(rate);
 }
 
 bool rtctime_have_time (void)
@@ -131,6 +138,9 @@ static int rtctime_set (lua_State *L)
 
   struct rtc_timeval tv = { sec, usec };
   rtctime_settimeofday (&tv);
+
+  if (lua_isnumber(L, 3))
+    rtc_time_set_rate(lua_tonumber(L, 3));
   return 0;
 }
 
@@ -142,7 +152,8 @@ static int rtctime_get (lua_State *L)
   rtctime_gettimeofday (&tv);
   lua_pushnumber (L, tv.tv_sec);
   lua_pushnumber (L, tv.tv_usec);
-  return 2;
+  lua_pushnumber (L, rtc_time_get_rate());
+  return 3;
 }
 
 static void do_sleep_opt (lua_State *L, int idx)

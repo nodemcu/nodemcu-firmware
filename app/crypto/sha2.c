@@ -32,6 +32,8 @@
  *
  */
 
+/* ESP8266-specific tweaks by Johny Mattsson <jmattsson@dius.com.au> */
+
 #include "user_config.h"
 
 #ifdef SHA2_ENABLE
@@ -491,7 +493,14 @@ void ICACHE_FLASH_ATTR SHA256_Update(SHA256_CTX* context, const sha2_byte *data,
 	}
 	while (len >= SHA256_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA256_Transform(context, (sha2_word32*)data);
+    if ((int)data & (sizeof(sha2_word32)-1))
+    {
+      // have to bounce via buffer, otherwise we'll hit unaligned load exception
+      MEMCPY_BCOPY(context->buffer, data, SHA256_BLOCK_LENGTH);
+			SHA256_Transform(context, (sha2_word32*)context->buffer);
+    }
+    else
+      SHA256_Transform(context, (sha2_word32*)data);
 		context->bitcount += SHA256_BLOCK_LENGTH << 3;
 		len -= SHA256_BLOCK_LENGTH;
 		data += SHA256_BLOCK_LENGTH;
@@ -782,7 +791,14 @@ void ICACHE_FLASH_ATTR SHA512_Update(SHA512_CTX* context, const sha2_byte *data,
 	}
 	while (len >= SHA512_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
-		SHA512_Transform(context, (sha2_word64*)data);
+    if ((int)data & (sizeof(sha2_word64)-1))
+    {
+      // have to bounce via buffer, otherwise we'll hit unaligned load exception
+      MEMCPY_BCOPY(context->buffer, data, SHA512_BLOCK_LENGTH);
+			SHA512_Transform(context, (sha2_word64*)context->buffer);
+    }
+    else
+      SHA512_Transform(context, (sha2_word64*)data);
 		ADDINC128(context->bitcount, SHA512_BLOCK_LENGTH << 3);
 		len -= SHA512_BLOCK_LENGTH;
 		data += SHA512_BLOCK_LENGTH;

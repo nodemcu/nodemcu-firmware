@@ -73,7 +73,7 @@ static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int
  * Returns  TRUE if FS was found
  * align must be a power of two
  */
-static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset, bool force_create) {
+static bool myspiffs_set_cfg_block(spiffs_config *cfg, int align, int offset, int block_size, bool force_create) {
   cfg->phys_erase_block = INTERNAL_FLASH_SECTOR_SIZE; // according to datasheet
   cfg->log_page_size = LOG_PAGE_SIZE; // as we said
 
@@ -81,10 +81,8 @@ static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset, bool for
   cfg->hal_write_f = my_spiffs_write;
   cfg->hal_erase_f = my_spiffs_erase;
 
-  if (!myspiffs_set_location(cfg, align, offset, LOG_BLOCK_SIZE)) {
-    if (!myspiffs_set_location(cfg, align, offset, LOG_BLOCK_SIZE_SMALL_FS)) {
-      return FALSE;
-    }
+  if (!myspiffs_set_location(cfg, align, offset, block_size)) {
+    return FALSE;
   }
 
   NODE_DBG("fs.start:%x,max:%x\n",cfg->phys_addr,cfg->phys_size);
@@ -107,6 +105,16 @@ static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset, bool for
 #else
   return TRUE;
 #endif
+}
+
+static bool myspiffs_set_cfg(spiffs_config *cfg, int align, int offset, bool force_create) {
+  if (force_create) {
+    return myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE         , TRUE) ||
+           myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE_SMALL_FS, TRUE);
+  }
+
+  return myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE_SMALL_FS, FALSE) ||
+         myspiffs_set_cfg_block(cfg, align, offset, LOG_BLOCK_SIZE         , FALSE);
 }
 
 static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
