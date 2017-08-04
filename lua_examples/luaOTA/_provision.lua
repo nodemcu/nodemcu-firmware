@@ -22,7 +22,7 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
   local cmd,hash = rec:sub(1,cmdlen-6), rec:sub(cmdlen-5,cmdlen)
   if cmdlen < 16 or
      hash ~= crypto.toHex(crypto.hash("MD5",self.secret .. cmd):sub(-3)) then
-    return error("invalid command signature")
+    return error("Invalid command signature")
   end
 
   local s; s, cmd = pcall(json.decode, cmd)
@@ -48,7 +48,7 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
       if cmd.data == #rec - cmdlen - 1 then
         buf[#buf+1] = rec:sub(cmdlen +2)
       else
-        error(("record size mismatch, %u expected, %u received"):format(
+        error(("Record size mismatch, %u expected, %u received"):format(
               cmd.data or "nil", #buf - cmdlen - 1))
       end
     end
@@ -118,7 +118,7 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
   gc()
 end
 
--- Replace the receive CB by the provisioning version and the tailcall this to
+-- Replace the receive CB by the provisioning version and then tailcall this to
 -- process this first record. 
 socket:on("receive", receiveRec)
 return receiveRec(socket, first_rec)

@@ -21,7 +21,7 @@ tmr.stop(0)--SAFETRIM
     local cmd,hash = rec:sub(1,cmdlen-6), rec:sub(cmdlen-5,cmdlen)
     if cmd:find('"r":"OK!"',1,true) or cmdlen < 16 or
       hash ~= crypto.toHex(crypto.hash("MD5",self.secret .. cmd):sub(-3)) then
-      print "No provsioning changes required"
+      print "No provisioning changes required"
       self.socket = nil
       self.post(function()  --upval: socket
                   if socket then pcall(socket.close, socket) end 

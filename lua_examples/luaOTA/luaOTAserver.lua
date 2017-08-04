@@ -9,7 +9,7 @@
 --[[ luaOTAserver.lua - an example provisioning server 
 
   This module implements an example server-side implementation of LuaOTA provisioning 
-  system for ESPs used the SPI Flash FS (SPIFFS) on developmment and production modules. 
+  system for ESPs used the SPI Flash FS (SPIFFS) on development and production modules. 
 
   This implementation is a simple TCP listener which can have one active provisioning
   client executing the luaOTA module at a time.  It will synchronise the client's FS

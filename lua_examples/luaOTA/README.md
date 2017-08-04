@@ -31,7 +31,7 @@ call which invokes the `luaOTA` module by a `require "luaOTA.check"` statement.
 
 The `config.json` file which provides the minimum configuration parameters to connect to
 the WiFi and provisioning server, however these can by overridden through the UART by
-first doing a `tmr.stop(0) and then a manual initialisation as described in the
+first doing a `tmr.stop(0)` and then a manual initialisation as described in the
 [init.lua](#initlua) section below.
 
 `luaOTA` configures the wifi and connects to the required sid in STA mode using the
@@ -44,7 +44,7 @@ shutdown.), and it then transfers control by a `node.task.post()` to the configu
 application module and function.
 
 If `luaOTA` does establish a connection to IP address:port of the provisioning service,
-it, then issues a "getupdate" request using its CPU ID and a configuration parameter
+it then issues a "getupdate" request using its CPU ID and a configuration parameter
 block as context. This update dialogue uses a simple JSON protocol(described below) that
 enables the provision server either to respond with a "no update", or to start a
 dialogue to reprovision the ESP8266's SPIFFS.
@@ -52,7 +52,7 @@ dialogue to reprovision the ESP8266's SPIFFS.
 In the case of "no update", `luaOTA` is by design ephemeral, that is it shuts down the
 net services and does a full resource clean up. Hence the presence of the provisioning
 service is entirely optional and it doesn't needed to be online during normal operation,
-as `luaOTA` will fail back to transferring control to the main Lua application.
+as `luaOTA` will fall back to transferring control to the main Lua application.
 
 In the case of an active update, **the ESP is restarted** so resource cleanup on
 completion is not an issue. The provisioning dialogue is signed, so the host
@@ -76,10 +76,10 @@ file mode. Hence if the `init.lua` file contains pre-compiled content, and simil
 loaded modules use pre-compiled lc files, then the ESP can run in production mode
 _without needing to invoke the compiler at all_.
 
-The simplest model for the host provisioning service to maintain a reference source
-directory on the host (per ESP module). The Lua developer keep this under **git** or
-equivalent and make any changes there, so that synchronisation of the ESP will be done
-automatically on reboot.
+The simplest strategy for the host provisioning service is to maintain a reference
+source directory on the host (per ESP module). The Lua developer can maintain this under
+**git** or equivalent and make any changes there, so that synchronisation of the ESP
+will be done automatically on reboot.
 
 ### init.lua
 
@@ -97,7 +97,7 @@ where the parameters to the `_init` method are:
 -  `ssid` and `spwd`.  The SSID of the Wifi service to connect to, together with its 
 password.
 -  `server` and `port`.  The name or IP address and port of the provisioning server.
--  `secret`.  A site-specific secret shared with the provsioning server for MD5-based 
+-  `secret`.  A site-specific secret shared with the provisioning server for MD5-based 
 signing of the protocol messages.
 -  `leave`.  If true the STA service is left connected otherwise the wifi is shutdown
 -  `espip`,`gw`,`nm`,`ns`.  These parameters are omitted if the ESP is using a DHCP 
@@ -123,7 +123,7 @@ This is often tailored to specific project requirements, but a simple example of
 provisioning server is included which provides the corresponding server-side
 functionality. This example is coded in Lua and can run on any development PC or server
 that supports Lua 5.1 - 5.3 and the common modules `socket`, `lfs`, `md5` and `cjson`.
-It can be easiliy be used as the basis of one for your specific project needs.
+It can be easily be used as the basis of one for your specific project needs.
 
 Note that even though this file is included in the `luaOTA` subdirectory within Lua
 examples, this is designed to run on the host and should not be included in the
@@ -134,7 +134,7 @@ ESP SPIFFS.
 -  The NodeMCu build must include the following modules: `wifi`, `net`, `file`, `tmr`,
 `crypto` and`sjason`. 
 
--  This implementation follow ephemral practices, that it is coded to ensure that all
+-  This implementation follow ephemeral practices, that it is coded to ensure that all
 resources used are collected by the Lua GC, and hence the available heap on 
 application start is the same as if luaOTA had not been called.
 
@@ -142,7 +142,7 @@ application start is the same as if luaOTA had not been called.
 
 -  In order to run comfortably within ESP resources, luaOTA executes its main 
 functionality as a number of overlay methods. These are loaded dynamically (and largely
-transparently by an `__index` metamethod.
+transparently) by an `__index` metamethod.
 
    -  Methods starting with a "_" are call-once and return the function reference
 

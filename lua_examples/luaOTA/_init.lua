@@ -37,7 +37,7 @@
             { ssid = config.ssid, pwd  = config.spwd, auto = false, save = false } ))
 
   if config.espip then
-    log( "Stati IP setup:", sta.setip(
+    log( "Static IP setup:", sta.setip(
             { ip = config.espip, gateway = config.gw, netmask = config.nm }))
   end
   sta.connect(1)
