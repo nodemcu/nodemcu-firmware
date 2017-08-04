@@ -30,6 +30,7 @@
 
   self.config = config
   self.secret = config.secret
+  config.secret = nil
 
   log("Config is:",json.encode(self.config))
   log("Mode is", wifi.setmode(wifi.STATION, false), config.ssid, config.spwd)

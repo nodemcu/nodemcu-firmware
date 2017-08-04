@@ -105,6 +105,7 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
 
     elseif action == "restart" then
       cmd.a = nil
+      cmd.secret = self.secret
       file.open(self.prefix.."config.json", "w+")
       file.writeline(json.encode(cmd))
       file.close()
