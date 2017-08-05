@@ -428,7 +428,7 @@ static int tmr_create( lua_State *L ) {
 }
 
 
-#if defined(SWTMR_DEBUG)
+#if defined(ENABLE_TIMER_SUSPEND) && defined(SWTMR_DEBUG)
 static void tmr_printRegistry(lua_State* L){
   swtmr_print_registry();
 }
@@ -463,7 +463,7 @@ static const LUA_REG_TYPE tmr_dyn_map[] = {
 	{ LNILKEY, LNILVAL }
 };
 
-#if defined(SWTMR_DEBUG)
+#if defined(ENABLE_TIMER_SUSPEND) && defined(SWTMR_DEBUG)
 static const LUA_REG_TYPE tmr_dbg_map[] = {
     { LSTRKEY( "printRegistry" ),        LFUNCVAL( tmr_printRegistry ) },
     { LSTRKEY( "printSuspended" ),        LFUNCVAL( tmr_printSuspended ) },
@@ -492,7 +492,7 @@ static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "state" ),        LFUNCVAL( tmr_state ) },
 	{ LSTRKEY( "interval" ),     LFUNCVAL( tmr_interval ) },
 	{ LSTRKEY( "create" ),       LFUNCVAL( tmr_create ) },
-#if defined(SWTMR_DEBUG)
+#if defined(ENABLE_TIMER_SUSPEND) && defined(SWTMR_DEBUG)
   { LSTRKEY( "debug" ),       LROVAL( tmr_dbg_map ) },
 #endif
 	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
