@@ -10,6 +10,7 @@ Constants for various functions.
 
 ## dht.read()
 Read all kinds of DHT sensors, including DHT11, 21, 22, 33, 44 humidity temperature combo sensor.
+for DHT12 please use dht.read11().
 
 #### Syntax
 `dht.read(pin)`
@@ -75,7 +76,7 @@ Read DHT11 humidity temperature combo sensor.
 [dht.read()](#dhtread)
 
 ## dht.readxx()
-Read all kinds of DHT sensors, except DHT11.
+Read all kinds of DHT sensors, except DHT11 and DHT12.
 
 ####Syntax
 `dht.readxx(pin)`
