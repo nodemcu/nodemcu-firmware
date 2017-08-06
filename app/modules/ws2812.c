@@ -10,7 +10,8 @@
 
 #define CANARY_VALUE 0x32383132
 #define MODE_SINGLE  0
-#define MODE_DUAL    1
+#define MODE_SINGLE_OPEN 1
+#define MODE_DUAL    2
 
 #define FADE_IN  1
 #define FADE_OUT 0
@@ -29,7 +30,7 @@ typedef struct {
 // You HAVE to redirect LUA's output somewhere else
 static int ws2812_init(lua_State* L) {
   const int mode = luaL_optinteger(L, 1, MODE_SINGLE);
-  luaL_argcheck(L, mode == MODE_SINGLE || mode == MODE_DUAL, 1, "ws2812.SINGLE or ws2812.DUAL expected");
+  luaL_argcheck(L, mode >= MODE_SINGLE && mode <= MODE_DUAL, 1, "ws2812 mode expected");
 
   // Configure UART1
   // Set baudrate of UART1 to 3200000
@@ -46,7 +47,11 @@ static int ws2812_init(lua_State* L) {
   }
 
   // Pull GPIO2 down
-  platform_gpio_mode(4, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
+  if (mode == MODE_SINGLE_OPEN) {
+    platform_gpio_mode(4, PLATFORM_GPIO_OPENDRAIN, PLATFORM_GPIO_FLOAT);
+  } else {
+    platform_gpio_mode(4, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
+  }
   platform_gpio_write(4, 0);
 
   // Waits 10us to simulate a reset
@@ -594,6 +599,7 @@ static const LUA_REG_TYPE ws2812_map[] =
   { LSTRKEY( "FADE_IN" ),        LNUMVAL( FADE_IN ) },
   { LSTRKEY( "FADE_OUT" ),       LNUMVAL( FADE_OUT ) },
   { LSTRKEY( "MODE_SINGLE" ),    LNUMVAL( MODE_SINGLE ) },
+  { LSTRKEY( "MODE_SINGLE_OPEN" ),    LNUMVAL( MODE_SINGLE_OPEN ) },
   { LSTRKEY( "MODE_DUAL" ),      LNUMVAL( MODE_DUAL ) },
   { LSTRKEY( "SHIFT_LOGICAL" ),  LNUMVAL( SHIFT_LOGICAL ) },
   { LSTRKEY( "SHIFT_CIRCULAR" ), LNUMVAL( SHIFT_CIRCULAR ) },
