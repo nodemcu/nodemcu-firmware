@@ -37,7 +37,7 @@ setmetatable( self, {__index=function(self, func) --upval: loadfile
 
 function self.sign(arg)  --upval: crypto, json, self
   arg = json.encode(arg)
-  return arg .. crypto.toHex(crypto.hash("MD5", self.secret .. arg):sub(-3)) .. '\n'
+  return arg .. crypto.toHex(crypto.hmac("MD5", arg, self.secret):sub(-3)) .. '\n'
 end
 
 function self.startApp(arg) --upval: gc, self, tmr, wifi

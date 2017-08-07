@@ -32,6 +32,7 @@ local provision         -- function(esp, config, files, inventory, fingerprint)
 local read_file         -- function(fname)
 local save_file         -- function(fname, data)
 local compress_lua      -- function(lua_file)
+local hmac              -- function(data)
 
 -- Function-wide locals (can be upvalues)
 local unpack = table.unpack or unpack
@@ -47,7 +48,6 @@ getmetatable("").__mod =
 
 local ESPport    = 8266
 local ESPtimeout = 15
-local secret     = "yoursecret"
 
 local src_dir    = arg[1] or "."
 
@@ -87,6 +87,17 @@ end
 
 -- Local Function Implementations ------------------------------------------------------
 
+local function get_hmac_md5(key)
+  if key:len() > 64 then 
+    key = md5.sum(key) 
+  elseif key:len() < 64 then
+    key = key .. ('\0'):rep(64-key:len())
+  end
+  local ki = md5.exor(('\54'):rep(64),key)
+  local ko = md5.exor(('\92'):rep(64),key)
+  return function (data) return md5.sumhexa(ko..md5.sum(ki..data)) end
+end
+
 -- Enumerate the sources directory and load the relevent inventory
 ------------------------------------------------------------------
 get_inventory = function(dir, cpuid)
@@ -123,7 +134,10 @@ get_inventory = function(dir, cpuid)
     assert (f[i].size == #(f[i].content or ''), "File %s unreadable" % name )
   end
 
-  assert (#f == #fp, "Aborting provisioning die to missing fies",0)
+  assert(#f == #fp, "Aborting provisioning die to missing fies",0)
+  assert(type(inventory.secret) == "string", 
+         "Aborting, config must contain a shared secret")
+  hmac = get_hmac_md5(inventory.secret) 
   return inventory, md5.sumhexa(concat(fp,":"))
 end
 
@@ -137,7 +151,7 @@ send_command = function(esp, resp, buffer)
     buffer = ''
   end
   local rec = json.encode(resp)
-  rec = rec .. md5.sumhexa(secret .. rec):sub(-6) .."\n"
+  rec = rec .. hmac(rec):sub(-6) .."\n"
 -- print("requesting ", rec:sub(1,-2), #(buffer or ''))
   esp:send(rec .. buffer)  
 end
@@ -150,7 +164,7 @@ receive_and_parse = function(esp)
   local packed_cmd, sig = line:sub(1,#line-6),line:sub(-6)
 -- print("reply:", packed_cmd, sig)
   local status, cmd = pcall(json.decode, packed_cmd)
-  if md5.sumhexa(secret .. packed_cmd):sub(-6) == sig then
+  if hmac(packed_cmd):sub(-6) == sig then
     if cmd and cmd.data == "number" then
       local data = esp:receive(cmd.data)
       return cmd, data
