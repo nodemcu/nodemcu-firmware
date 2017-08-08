@@ -143,7 +143,8 @@ static int onewire_rmt_init( uint8_t gpio_num )
 
               rmt_get_ringbuf_handler( ow_rmt.rx, &ow_rmt.rb );
 
-              ow_rmt.gpio = gpio_num;
+              // don't set ow_rmt.gpio here
+              // -1 forces a full pin set procedure in first call to onewire_rmt_attach_pin()
 
               return PLATFORM_OK;
 
@@ -186,11 +187,17 @@ static int onewire_rmt_attach_pin( uint8_t gpio_num )
     } else {
       GPIO.enable1_w1ts.data = (0x1 << (gpio_num - 32));
     }
-    gpio_matrix_out( ow_rmt.gpio, SIG_GPIO_OUT_IDX, 0, 0 );
+    if (ow_rmt.gpio >= 0) {
+      gpio_matrix_out( ow_rmt.gpio, SIG_GPIO_OUT_IDX, 0, 0 );
+    }
 
     // attach RMT channels to new gpio pin
-    rmt_set_pin( ow_rmt.tx, RMT_MODE_TX, gpio_num );
+    // ATTENTION: set pin for rx first since gpio_output_disable() will
+    //            remove rmt output signal in matrix!
     rmt_set_pin( ow_rmt.rx, RMT_MODE_RX, gpio_num );
+    rmt_set_pin( ow_rmt.tx, RMT_MODE_TX, gpio_num );
+    // force pin direction to input to enable path to RX channel
+    PIN_INPUT_ENABLE(GPIO_PIN_MUX_REG[gpio_num]);
 
     ow_rmt.gpio = gpio_num;
   }

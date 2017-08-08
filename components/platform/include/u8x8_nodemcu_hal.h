@@ -9,6 +9,13 @@
 typedef struct {
   u8g2_t u8g2;
   void *hal;
+
+  // elements for the overlay display driver
+  struct {
+    u8x8_msg_cb hardware_display_cb, template_display_cb;
+    int rfb_cb_ref;
+    uint8_t fb_update_ongoing;
+  } overlay;
 } u8g2_nodemcu_t;
 
 

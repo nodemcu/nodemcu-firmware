@@ -12,6 +12,13 @@
 
 #include "spi_common.h"
 
+#include "sdkconfig.h"
+#ifndef CONFIG_LUA_MODULE_U8G2
+// ignore unused functions if u8g2 module will be skipped anyhow
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
+
 typedef struct {
   int font_ref;
   int host_ref;
@@ -569,95 +576,172 @@ static const LUA_REG_TYPE lu8g2_display_map[] = {
 };
 
 
+uint8_t u8x8_d_overlay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
+
+typedef void (*display_setup_fn_t)(u8g2_t *u8g2, const u8g2_cb_t *rotation, u8x8_msg_cb byte_cb, u8x8_msg_cb gpio_and_delay_cb);
 
 // ***************************************************************************
 // Device constructors
 //
-//
 // I2C based devices will use this function template to implement the Lua binding.
+//
+static int ldisplay_i2c( lua_State *L, display_setup_fn_t setup_fn )
+{
+  int stack = 0;
+
+  int id = -1;
+  int i2c_addr = -1;
+  int rfb_cb_ref = LUA_NOREF;
+
+  if (lua_type( L, ++stack) == LUA_TNUMBER) {
+    /* hardware display connected */
+    id = luaL_checkint( L, stack );
+    i2c_addr = luaL_checkint( L, ++stack );
+    luaL_argcheck( L, i2c_addr >= 0 && i2c_addr <= 0x7f, stack, "invalid i2c address" );
+  } else
+    stack--;
+  if (lua_isfunction( L, ++stack )) {
+    lua_pushvalue( L, stack );
+    rfb_cb_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+  }
+  if (id < 0 && rfb_cb_ref == LUA_NOREF)
+    return luaL_error( L, "wrong args" );
+
+  u8g2_ud_t *ud = (u8g2_ud_t *)lua_newuserdata( L, sizeof( u8g2_ud_t ) );
+  u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
+  ud->font_ref = LUA_NOREF;
+  ud->host_ref = LUA_NOREF;
+  /* the i2c driver id is forwarded in the hal member */
+  ext_u8g2->hal = id >= 0 ? (void *)id : NULL;
+
+  u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
+  u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_i2c, u8x8_gpio_and_delay_nodemcu );
+
+  /* prepare overlay data */
+  if (rfb_cb_ref != LUA_NOREF) {
+    ext_u8g2->overlay.template_display_cb = u8x8->display_cb;
+    ext_u8g2->overlay.hardware_display_cb = NULL;
+    ext_u8g2->overlay.rfb_cb_ref = LUA_NOREF;
+    u8x8->display_cb = u8x8_d_overlay;
+  }
+  if (id >= 0) {
+    /* hardware device specific initialization */
+    u8x8_SetI2CAddress( u8x8, i2c_addr );
+    ext_u8g2->overlay.hardware_display_cb = ext_u8g2->overlay.template_display_cb;
+  }
+
+  u8g2_InitDisplay( (u8g2_t *)u8g2 );
+  u8g2_ClearDisplay( (u8g2_t *)u8g2 );
+  u8g2_SetPowerSave( (u8g2_t *)u8g2, 0 );
+
+  if (rfb_cb_ref != LUA_NOREF) {
+    /* finally enable rfb display driver */
+    ext_u8g2->overlay.rfb_cb_ref = rfb_cb_ref;
+  }
+
+  /* set its metatable */
+  luaL_getmetatable(L, "u8g2.display");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+//
+// SPI based devices will use this function template to implement the Lua binding.
+//
+static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
+{
+  int stack = 0;
+
+  lspi_host_t *host = NULL;
+  int host_ref = LUA_NOREF;
+  int cs = -1;
+  int dc = -1;
+  int res = -1;
+  int rfb_cb_ref = LUA_NOREF;
+
+  if (lua_type( L, ++stack) == LUA_TUSERDATA) {
+    host = (lspi_host_t *)luaL_checkudata( L, stack, "spi.master" );
+    /* reference host object to avoid automatic gc */
+    lua_pushvalue( L, stack );
+    host_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+
+    cs = luaL_checkint( L, ++stack );
+    dc = luaL_checkint( L, ++stack );
+    res = luaL_optint( L, ++stack, -1 );
+  } else
+    stack--;
+  if (lua_isfunction( L, ++stack )) {
+    lua_pushvalue( L, stack );
+    rfb_cb_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+  }
+  if (!host && rfb_cb_ref == LUA_NOREF)
+    return luaL_error( L, "wrong args" );
+
+  u8g2_ud_t *ud = (u8g2_ud_t *)lua_newuserdata( L, sizeof( u8g2_ud_t ) );
+  u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
+  ud->font_ref = LUA_NOREF;
+  ud->host_ref = host_ref;
+  /* the spi host id is forwarded in the hal member */
+  ext_u8g2->hal = host ? (void *)(host->host) : NULL;
+
+  u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
+  u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_spi, u8x8_gpio_and_delay_nodemcu );
+
+  /* prepare overlay data */
+  if (rfb_cb_ref != LUA_NOREF) {
+    ext_u8g2->overlay.template_display_cb = u8x8->display_cb;
+    ext_u8g2->overlay.hardware_display_cb = NULL;
+    ext_u8g2->overlay.rfb_cb_ref = LUA_NOREF;
+    u8x8->display_cb = u8x8_d_overlay;
+  }
+  if (host) {
+    /* hardware specific device initialization */
+    u8x8_SetPin( u8x8, U8X8_PIN_CS, cs );
+    u8x8_SetPin( u8x8, U8X8_PIN_DC, dc );
+    if (res >= 0)
+      u8x8_SetPin( u8x8, U8X8_PIN_RESET, res );
+    ext_u8g2->overlay.hardware_display_cb = ext_u8g2->overlay.template_display_cb;
+  }
+
+  u8g2_InitDisplay( (u8g2_t *)u8g2 );
+  u8g2_ClearDisplay( (u8g2_t *)u8g2 );
+  u8g2_SetPowerSave( (u8g2_t *)u8g2, 0 );
+
+  if (rfb_cb_ref != LUA_NOREF) {
+    /* finally enable rfb display driver */
+    ext_u8g2->overlay.rfb_cb_ref = rfb_cb_ref;
+  }
+
+  /* set its metatable */
+  luaL_getmetatable(L, "u8g2.display");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+//
+//
 #undef U8G2_DISPLAY_TABLE_ENTRY
-#define U8G2_DISPLAY_TABLE_ENTRY(function, binding)                     \
-  static int l ## binding( lua_State *L )                               \
-  {                                                                     \
-    int stack = 0;                                                      \
-                                                                        \
-    int id = luaL_checkint( L, ++stack );                 \
-                                                                        \
-    int i2c_addr = luaL_checkint( L, ++stack );                         \
-    luaL_argcheck( L, i2c_addr >= 0 && i2c_addr <= 0x7f, stack, "invalid i2c address" ); \
-                                                                        \
-    u8g2_ud_t *ud = (u8g2_ud_t *)lua_newuserdata( L, sizeof( u8g2_ud_t ) ); \
-    u8g2_nodemcu_t *u8g2 = &(ud->u8g2);                                 \
-    ud->font_ref = LUA_NOREF;                                           \
-    ud->host_ref = LUA_NOREF;                                           \
-    /* the i2c driver id is forwarded in the hal member */              \
-    u8g2->hal = (void *)id;                                             \
-                                                                        \
-    function( (u8g2_t *)u8g2, U8G2_R0, u8x8_byte_nodemcu_i2c, u8x8_gpio_and_delay_nodemcu ); \
-    u8x8_SetI2CAddress( (u8x8_t *)u8g2, i2c_addr );                     \
-                                                                        \
-    u8g2_InitDisplay( (u8g2_t *)u8g2 );                                 \
-    u8g2_ClearDisplay( (u8g2_t *)u8g2 );                                \
-    u8g2_SetPowerSave( (u8g2_t *)u8g2, 0 );                             \
-                                                                        \
-    /* set its metatable */                                             \
-    luaL_getmetatable(L, "u8g2.display");                               \
-    lua_setmetatable(L, -2);                                            \
-                                                                        \
-    return 1;                                                           \
+#define U8G2_DISPLAY_TABLE_ENTRY(function, binding) \
+  static int l ## binding( lua_State *L )           \
+  {                                                 \
+    return ldisplay_i2c( L, function );             \
   }
 //
 // Unroll the display table and insert binding functions for I2C based displays.
 U8G2_DISPLAY_TABLE_I2C
 //
 //
-//
-
-
-// SPI based devices will use this function template to implement the Lua binding.
 #undef U8G2_DISPLAY_TABLE_ENTRY
-#define U8G2_DISPLAY_TABLE_ENTRY(function, binding)                     \
-  static int l ## binding( lua_State *L )                               \
-  {                                                                     \
-    int stack = 0;                                                      \
-                                                                        \
-    lspi_host_t *host = (lspi_host_t *)luaL_checkudata( L, ++stack, "spi.master" ); \
-    /* reference host object to avoid automatic gc */                   \
-    lua_pushvalue( L, stack );                                          \
-    int host_ref = luaL_ref( L, LUA_REGISTRYINDEX );                    \
-                                                                        \
-    int cs = luaL_checkint( L, ++stack );                               \
-    int dc = luaL_checkint( L, ++stack );                               \
-    int res = luaL_optint( L, ++stack, -1 );                            \
-                                                                        \
-    u8g2_ud_t *ud = (u8g2_ud_t *)lua_newuserdata( L, sizeof( u8g2_ud_t ) ); \
-    u8g2_nodemcu_t *u8g2 = &(ud->u8g2);                                 \
-    ud->font_ref = LUA_NOREF;                                           \
-    ud->host_ref = host_ref;                                            \
-    /* the spi host id is forwarded in the hal member */                \
-    u8g2->hal = (void *)(host->host);                                   \
-                                                                        \
-    function( (u8g2_t *)u8g2, U8G2_R0, u8x8_byte_nodemcu_spi, u8x8_gpio_and_delay_nodemcu ); \
-    u8x8_SetPin( (u8x8_t *)u8g2, U8X8_PIN_CS, cs );                     \
-    u8x8_SetPin( (u8x8_t *)u8g2, U8X8_PIN_DC, dc );                     \
-    if (res >= 0)                                                       \
-      u8x8_SetPin( (u8x8_t *)u8g2, U8X8_PIN_RESET, res );               \
-                                                                        \
-    u8g2_InitDisplay( (u8g2_t *)u8g2 );                                 \
-    u8g2_ClearDisplay( (u8g2_t *)u8g2 );                                \
-    u8g2_SetPowerSave( (u8g2_t *)u8g2, 0 );                             \
-                                                                        \
-    /* set its metatable */                                             \
-    luaL_getmetatable(L, "u8g2.display");                               \
-    lua_setmetatable(L, -2);                                            \
-                                                                        \
-    return 1;                                                           \
+#define U8G2_DISPLAY_TABLE_ENTRY(function, binding) \
+  static int l ## binding( lua_State *L )           \
+  {                                                 \
+    return ldisplay_spi( L, function );             \
   }
 //
 // Unroll the display table and insert binding functions for SPI based displays.
 U8G2_DISPLAY_TABLE_SPI
-//
-//
 //
 
 
