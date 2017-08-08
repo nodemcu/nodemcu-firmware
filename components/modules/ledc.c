@@ -6,7 +6,13 @@
 
 #include "driver/ledc.h"
 
-static int lledc_config( lua_State *L )
+typedef struct {
+  int timer;
+  int channel;
+  int mode;
+} ledc_channel;
+
+static int lledc_new_channel( lua_State *L )
 {
   int t=1;
   luaL_checkanytable (L, t);
@@ -84,34 +90,24 @@ static int lledc_config( lua_State *L )
   if(channelErr != ESP_OK)
     return luaL_error (L, "channel configuration failed code %d", channelErr);
 
+  ledc_channel * channel = (ledc_channel*)lua_newuserdata(L, sizeof(ledc_channel));
+  luaL_getmetatable(L, "ledc.channel");
+  lua_setmetatable(L, -2);
+
+  channel->mode = ledc_timer.speed_mode;
+  channel->channel = channel_config.channel;
+  channel->timer = ledc_timer.timer_num;
+
   return 1;
 }
 
-static void lledc_check_speed_argument( lua_State *L, int stack, int mode ) {
-  luaL_argcheck(L, mode == LEDC_HIGH_SPEED_MODE || mode == LEDC_LOW_SPEED_MODE, stack, "Invalid mode");
-}
-
-static void lledc_check_channel_argument( lua_State *L, int stack, int channel ) {
-  luaL_argcheck(L, channel >= LEDC_CHANNEL_0 && channel <= LEDC_CHANNEL_7, stack, "Invalid channel");
-}
-
-static void lledc_check_timer_argument( lua_State *L, int stack, int timer ) {
-  luaL_argcheck(L, timer >= LEDC_TIMER_0 && timer <= LEDC_TIMER_3, stack, "Invalid channel");
-}
-
 static int lledc_stop( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
+  int idleLevel = luaL_checkint (L, 2);
+  luaL_argcheck(L, idleLevel >= 0 && idleLevel <= 1, 1, "Invalid idle level");
 
-  int channel = luaL_checkint (L, ++stack);
-  lledc_check_channel_argument(L, stack, channel);
-
-  int idleLevel = luaL_checkint (L, ++stack);
-  luaL_argcheck(L, idleLevel >= 0 && idleLevel <= 1, stack, "Invalid idle level");
-
-  esp_err_t err = ledc_stop(mode, channel, idleLevel);
+  esp_err_t err = ledc_stop(channel->mode, channel->channel, idleLevel);
   if(err != ESP_OK)
     return luaL_error (L, "stop failed, code %d", err);
 
@@ -119,17 +115,11 @@ static int lledc_stop( lua_State *L ) {
 }
 
 static int lledc_set_freq( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
+  int frequency = luaL_checkint (L, 2);
 
-  int timer = luaL_checkint (L, ++stack);
-  lledc_check_timer_argument(L, stack, timer);
-
-  int frequency = luaL_checkint (L, ++stack);
-
-  esp_err_t err = ledc_set_freq(mode, timer, frequency);
+  esp_err_t err = ledc_set_freq(channel->mode, channel->timer, frequency);
   if(err != ESP_OK)
     return luaL_error (L, "set freq failed, code %d", err);
 
@@ -137,36 +127,23 @@ static int lledc_set_freq( lua_State *L ) {
 }
 
 static int lledc_get_freq( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int timer = luaL_checkint (L, ++stack);
-  lledc_check_timer_argument(L, stack, timer);
-
-  int frequency = ledc_get_freq(mode, timer);
+  int frequency = ledc_get_freq(channel->mode, channel->timer);
   lua_pushinteger (L, frequency);
 
   return 1;
 }
 
 static int lledc_set_duty( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
+  int duty = luaL_checkint (L, 2);
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int channel = luaL_checkint (L, ++stack);
-  lledc_check_channel_argument(L, stack, channel);
-
-  int duty = luaL_checkint (L, 3);
-
-  esp_err_t dutyErr = ledc_set_duty(mode, channel, duty);
+  esp_err_t dutyErr = ledc_set_duty(channel->mode, channel->channel, duty);
   if(dutyErr != ESP_OK)
     return luaL_error (L, "set duty failed, code %d", dutyErr);
 
-  esp_err_t updateErr = ledc_update_duty(mode, channel);
+  esp_err_t updateErr = ledc_update_duty(channel->mode, channel->channel);
   if(updateErr != ESP_OK)
     return luaL_error (L, "update duty failed, code %d", updateErr);
 
@@ -174,30 +151,18 @@ static int lledc_set_duty( lua_State *L ) {
 }
 
 static int lledc_get_duty( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int channel = luaL_checkint (L, ++stack);
-  lledc_check_channel_argument(L, stack, channel);
-
-  int duty = ledc_get_duty(mode, channel);
+  int duty = ledc_get_duty(channel->mode, channel->channel);
   lua_pushinteger (L, duty);
 
   return 1;
 }
 
 static int lledc_timer_rst( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int timer = luaL_checkint (L, ++stack);
-  lledc_check_timer_argument(L, stack, timer);
-
-  esp_err_t err = ledc_timer_rst(mode, timer);
+  esp_err_t err = ledc_timer_rst(channel->mode, channel->timer);
   if(err != ESP_OK)
     return luaL_error (L, "reset failed, code %d", err);
 
@@ -205,15 +170,9 @@ static int lledc_timer_rst( lua_State *L ) {
 }
 
 static int lledc_timer_pause( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int timer = luaL_checkint (L, ++stack);
-  lledc_check_timer_argument(L, stack, timer);
-
-  esp_err_t err = ledc_timer_pause(mode, timer);
+  esp_err_t err = ledc_timer_pause(channel->mode, channel->timer);
   if(err != ESP_OK)
     return luaL_error (L, "pause failed, code %d", err);
 
@@ -221,15 +180,9 @@ static int lledc_timer_pause( lua_State *L ) {
 }
 
 static int lledc_timer_resume( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int timer = luaL_checkint (L, ++stack);
-  lledc_check_timer_argument(L, stack, timer);
-
-  esp_err_t err = ledc_timer_resume(mode, timer);
+  esp_err_t err = ledc_timer_resume(channel->mode, channel->timer);
   if(err != ESP_OK)
     return luaL_error (L, "resume failed, code %d", err);
 
@@ -237,13 +190,9 @@ static int lledc_timer_resume( lua_State *L ) {
 }
 
 static int lledc_set_fade_with_time( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int channel = luaL_checkint (L, ++stack);
-  lledc_check_channel_argument(L, stack, channel);
+  int stack = 1;
 
   int targetDuty = luaL_checkint (L, ++stack);
   int maxFadeTime = luaL_checkint (L, ++stack);
@@ -253,11 +202,11 @@ static int lledc_set_fade_with_time( lua_State *L ) {
 
   ledc_fade_func_install(0);
 
-  esp_err_t fadeErr = ledc_set_fade_with_time(mode, channel, targetDuty, maxFadeTime);
+  esp_err_t fadeErr = ledc_set_fade_with_time(channel->mode, channel->channel, targetDuty, maxFadeTime);
   if(fadeErr != ESP_OK)
     return luaL_error (L, "set fade failed, code %d", fadeErr);
 
-  esp_err_t startErr = ledc_fade_start(mode, channel, wait);
+  esp_err_t startErr = ledc_fade_start(channel->mode, channel->channel, wait);
   if(startErr != ESP_OK)
     return luaL_error (L, "start fade failed, code %d", startErr);
 
@@ -265,13 +214,9 @@ static int lledc_set_fade_with_time( lua_State *L ) {
 }
 
 static int lledc_set_fade_with_step( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int channel = luaL_checkint (L, ++stack);
-  lledc_check_channel_argument(L, stack, channel);
+  int stack = 1;
 
   int targetDuty = luaL_checkint (L, ++stack);
   int scale = luaL_checkint (L, ++stack);
@@ -282,11 +227,11 @@ static int lledc_set_fade_with_step( lua_State *L ) {
 
   ledc_fade_func_install(0);
 
-  esp_err_t fadeErr = ledc_set_fade_with_step(mode, channel, targetDuty, scale, cycleNum);
+  esp_err_t fadeErr = ledc_set_fade_with_step(channel->mode, channel->channel, targetDuty, scale, cycleNum);
   if(fadeErr != ESP_OK)
     return luaL_error (L, "set fade failed, code %d", fadeErr);
 
-  esp_err_t startErr = ledc_fade_start(mode, channel, wait);
+  esp_err_t startErr = ledc_fade_start(channel->mode, channel->channel, wait);
   if(startErr != ESP_OK)
     return luaL_error (L, "start fade failed, code %d", startErr);
 
@@ -294,13 +239,9 @@ static int lledc_set_fade_with_step( lua_State *L ) {
 }
 
 static int lledc_set_fade( lua_State *L ) {
-  int stack = 0;
+  ledc_channel * channel = (ledc_channel*)luaL_checkudata(L, 1, "ledc.channel");
 
-  int mode = luaL_checkint (L, ++stack);
-  lledc_check_speed_argument(L, stack, mode);
-
-  int channel = luaL_checkint (L, ++stack);
-  lledc_check_channel_argument(L, stack, channel);
+  int stack = 1;
 
   int duty = luaL_checkint (L, ++stack);
   int direction = luaL_checkint (L, ++stack);
@@ -315,11 +256,11 @@ static int lledc_set_fade( lua_State *L ) {
 
   ledc_fade_func_install(0);
 
-  esp_err_t fadeErr = ledc_set_fade(mode, channel, duty, direction, stepNum, cycleNum, scale);
+  esp_err_t fadeErr = ledc_set_fade(channel->mode, channel->channel, duty, direction, stepNum, cycleNum, scale);
   if(fadeErr != ESP_OK)
     return luaL_error (L, "set fade failed, code %d", fadeErr);
 
-  esp_err_t startErr = ledc_fade_start(mode, channel, wait);
+  esp_err_t startErr = ledc_fade_start(channel->mode, channel->channel, wait);
   if(startErr != ESP_OK)
     return luaL_error (L, "start fade failed, code %d", startErr);
 
@@ -327,10 +268,8 @@ static int lledc_set_fade( lua_State *L ) {
 }
 
 // Module function map
-static const LUA_REG_TYPE ledc_map[] =
+static const LUA_REG_TYPE ledc_channel_map[] =
 {
-  { LSTRKEY( "config" ),           LFUNCVAL( lledc_config ) },
-
   { LSTRKEY( "getduty" ),         LFUNCVAL( lledc_get_duty ) },
   { LSTRKEY( "setduty" ),         LFUNCVAL( lledc_set_duty ) },
   { LSTRKEY( "getfreq" ),         LFUNCVAL( lledc_get_freq ) },
@@ -344,6 +283,15 @@ static const LUA_REG_TYPE ledc_map[] =
   { LSTRKEY( "fadewithtime" ),    LFUNCVAL( lledc_set_fade_with_time ) },
   { LSTRKEY( "fadewithstep" ),    LFUNCVAL( lledc_set_fade_with_step ) },
   { LSTRKEY( "fade" ),            LFUNCVAL( lledc_set_fade ) },
+
+  { LSTRKEY( "__index" ),         LROVAL( ledc_channel_map )},
+
+  { LNILKEY, LNILVAL }
+};
+
+static const LUA_REG_TYPE ledc_map[] =
+{
+  { LSTRKEY( "newChannel" ),      LFUNCVAL( lledc_new_channel ) },
 
   { LSTRKEY( "HIGH_SPEED"),       LNUMVAL( LEDC_HIGH_SPEED_MODE ) },
   { LSTRKEY( "LOW_SPEED"),        LNUMVAL( LEDC_LOW_SPEED_MODE ) },
@@ -373,7 +321,13 @@ static const LUA_REG_TYPE ledc_map[] =
   { LSTRKEY( "FADE_NO_WAIT"),     LNUMVAL( LEDC_FADE_NO_WAIT ) },
   { LSTRKEY( "FADE_WAIT_DONE"),   LNUMVAL( LEDC_FADE_WAIT_DONE ) },
   { LSTRKEY( "FADE_DECREASE"),    LNUMVAL( LEDC_DUTY_DIR_DECREASE ) },
-  { LSTRKEY( "FADE_INCREASE"),    LNUMVAL( LEDC_DUTY_DIR_INCREASE ) }
+  { LSTRKEY( "FADE_INCREASE"),    LNUMVAL( LEDC_DUTY_DIR_INCREASE ) },
+  { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(LEDC, "ledc", ledc_map, NULL);
+int luaopen_ledc(lua_State *L) {
+  luaL_rometatable(L, "ledc.channel", (void *)ledc_channel_map);  // create metatable for ledc.channel
+  return 0;
+}
+
+NODEMCU_MODULE(LEDC, "ledc", ledc_map, luaopen_ledc);
