@@ -188,7 +188,8 @@ endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
+	@$(NM) $< | grep -w U && { echo "Firmware has undefined (but unused) symbols!"; exit 1; } || true
+	$(ESPTOOL) elf2image --flash_mode dio --flash_freq 40m $< -o $(FIRMWAREDIR)
 
 #############################################################
 # Rules base

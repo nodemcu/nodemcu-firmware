@@ -64,11 +64,7 @@ enum wifi_suspension_state
 #ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
   extern const LUA_REG_TYPE wifi_event_monitor_map[];
   void wifi_eventmon_init();
-#endif
-#ifdef WIFI_STATION_STATUS_MONITOR_ENABLE
-  int wifi_station_event_mon_start(lua_State* L);
-  int wifi_station_event_mon_reg(lua_State* L);
-  void wifi_station_event_mon_stop(lua_State* L);
+  int wifi_event_monitor_register(lua_State* L);
 #endif
 
 #endif /* APP_MODULES_WIFI_COMMON_H_ */
