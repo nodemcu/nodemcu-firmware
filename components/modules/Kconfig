@@ -104,6 +104,12 @@ config LUA_MODULE_I2C
   help
       Includes the I2C module (recommended).
 
+config LUA_MODULE_LEDC
+  bool "LEDC module"
+  default "n"
+  help
+      Includes the LEDC module.
+
 config LUA_MODULE_NET
   bool "Net module"
   default "y"
