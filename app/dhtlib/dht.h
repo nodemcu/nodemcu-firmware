@@ -53,7 +53,7 @@
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
 int dht_read_universal(uint8_t pin);
-int dht_read11(uint8_t pin);
+int dht_read11_12(uint8_t pin);
 int dht_read(uint8_t pin);
 
 int dht_read21(uint8_t pin);

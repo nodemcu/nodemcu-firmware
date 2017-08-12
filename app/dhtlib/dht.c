@@ -140,7 +140,7 @@ int dht_read_universal(uint8_t pin)
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-int dht_read11(uint8_t pin)
+int dht_read11_12(uint8_t pin)
 {
   // READ VALUES
   int rv = dht_readSensor(pin, DHTLIB_DHT_WAKEUP);
@@ -167,6 +167,16 @@ int dht_read11(uint8_t pin)
   }
   return DHTLIB_OK;
 }
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+int dht_read11(uint8_t pin)  __attribute__((alias("dht_read11_12")));
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+int dht_read12(uint8_t pin)  __attribute__((alias("dht_read11_12")));
 
 
 // return values:
