@@ -343,13 +343,17 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
 #include "lwip/priv/api_msg.h"
 #define NETCONN_DELETE(conn) \
   if (netconn_delete(conn) == ERR_OK) netconn_free(conn);
-#define NETCONN_CLOSE(conn) netconn_close_wa(conn);
-static void netconn_close_wa(struct netconn *conn) {
-  if (netconn_close(conn) != ERR_OK) {
-    NETCONN_DELETE(conn);
-  } else {
-    netconn_free(conn);
+#define NETCONN_CLOSE(conn) netconn_close_wa(conn)
+static err_t netconn_close_wa(struct netconn *conn) {
+  err_t err = netconn_close(conn);
+  if (err == ERR_OK) {
+    err = netconn_delete(conn);
+    if (err == ERR_OK) {
+      netconn_free(conn);
+    }
   }
+
+  return err;
 }
 
 
@@ -477,12 +481,12 @@ int net_listen( lua_State *L ) {
     ud->closing = true;
     switch (ud->type) {
       case TYPE_TCP_SERVER:
-        NETCONN_CLOSE(ud->netconn);
-        ud->netconn = NULL;
+        if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
+          ud->netconn = NULL;
         break;
       case TYPE_UDP_SOCKET:
-        NETCONN_CLOSE(ud->netconn);
-        ud->netconn = NULL;
+        if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
+          ud->netconn = NULL;
         break;
       default: break;
     }
@@ -538,8 +542,8 @@ int net_connect( lua_State *L ) {
       ud->self_ref = LUA_NOREF;
     }
     ud->closing = true;
-    NETCONN_CLOSE(ud->netconn);
-    ud->netconn = NULL;
+    if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
+      ud->netconn = NULL;
     return lwip_lua_checkerr(L, err);
   }
   return 0;
@@ -620,8 +624,8 @@ int net_send( lua_State *L ) {
     err_t err = netconn_bind(ud->netconn, IP_ADDR_ANY, 0);
     if (err != ERR_OK) {
       ud->closing = true;
-      NETCONN_CLOSE(ud->netconn);
-      ud->netconn = NULL;
+      if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
+        ud->netconn = NULL;
       return lwip_lua_checkerr(L, err);
     }
     if (ud->self_ref == LUA_NOREF) {
@@ -786,6 +790,7 @@ int net_getaddr( lua_State *L ) {
 
 // Lua: client/server/socket:close()
 int net_close( lua_State *L ) {
+  err_t err = ERR_OK;
   lnet_userdata *ud = net_get_udata(L);
   if (!ud) return luaL_error(L, "invalid user data");
   if (ud->netconn) {
@@ -794,8 +799,9 @@ int net_close( lua_State *L ) {
       case TYPE_TCP_SERVER:
       case TYPE_UDP_SOCKET:
         ud->closing = true;
-        NETCONN_CLOSE(ud->netconn);
-        ud->netconn = NULL;
+        err = NETCONN_CLOSE(ud->netconn);
+        if (err == ERR_OK)
+          ud->netconn = NULL;
         break;
       default: break;
     }
@@ -809,7 +815,7 @@ int net_close( lua_State *L ) {
     ud->self_ref = LUA_NOREF;
     lua_gc(L, LUA_GCRESTART, 0);
   }
-  return 0;
+  return lwip_lua_checkerr(L, err);
 }
 
 int net_delete( lua_State *L ) {
@@ -821,7 +827,7 @@ int net_delete( lua_State *L ) {
       case TYPE_TCP_SERVER:
       case TYPE_UDP_SOCKET:
         ud->closing = true;
-        NETCONN_CLOSE(ud->netconn);
+        NETCONN_DELETE(ud->netconn);
         ud->netconn = NULL;
         break;
       default: break;
