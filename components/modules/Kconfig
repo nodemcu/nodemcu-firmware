@@ -122,6 +122,12 @@ config LUA_MODULE_NODE
   help
       Includes the node module (recommended).
 
+config LUA_MODULE_OTA
+  bool "Over-the-air updates"
+  default "n"
+  help
+      Includes the over-the-air updates module. OTA partion table needs to be selected.
+
 config LUA_MODULE_OW
   bool "1-Wire module"
   default "y"
