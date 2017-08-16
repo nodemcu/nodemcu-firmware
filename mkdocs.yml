@@ -48,6 +48,7 @@ pages:
         - 'cron': 'en/modules/cron.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'dht': 'en/modules/dht.md'
+        - 'ds18b20': 'en/modules/ds18b20.md'
         - 'encoder': 'en/modules/encoder.md'
         - 'enduser setup': 'en/modules/enduser-setup.md'
         - 'file': 'en/modules/file.md'
