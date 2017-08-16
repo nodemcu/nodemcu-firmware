@@ -1,4 +1,7 @@
 # DS18B20 Module
+
+This is a Lua module for the DS18B20 1-Wire digital thermometer. Note that NodeMCU offers both a Lua module (this one) and [a C module for this sensor](http://nodemcu.readthedocs.io/en/latest/en/modules/ds18b20/). See [#2003](https://github.com/nodemcu/nodemcu-firmware/pull/2003) for a discussion on the respective merits of them.
+
 ## Require
 ```lua
 ds18b20 = require("ds18b20")
@@ -8,7 +11,6 @@ ds18b20 = require("ds18b20")
 ds18b20 = nil
 package.loaded["ds18b20"]=nil
 ```
-<a id="ds18b20_setup"></a>
 
 # Methods
 
