@@ -120,6 +120,10 @@ reswitch:	switch (ch = *fmt++) {
 			    va_arg(ap, uint32_t) : va_arg(ap, uint32_t);
 			kprintn(put, ul, 10, width, zwidth);
 			break;
+		case 'p':
+			ul = va_arg(ap, ptrdiff_t);
+			kprintn(put, ul, 16, width, zwidth);
+			break;
 		case 'x':
 			ul = lflag ?
 			    va_arg(ap, uint32_t) : va_arg(ap, uint32_t);
