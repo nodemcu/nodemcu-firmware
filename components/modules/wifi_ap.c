@@ -168,6 +168,10 @@ static int wifi_ap_config (lua_State *L)
     0 : luaL_error (L, "failed to set wifi config, code %d", err);
 }
 
+static int wifi_ap_getmac (lua_State *L)
+{
+  return wifi_getmac(WIFI_IF_AP, L);
+}
 
 static int wifi_ap_on (lua_State *L)
 {
@@ -179,6 +183,7 @@ const LUA_REG_TYPE wifi_ap_map[] =
 {
   { LSTRKEY( "config" ),              LFUNCVAL( wifi_ap_config )        },
   { LSTRKEY( "on" ),                  LFUNCVAL( wifi_ap_on )            },
+  { LSTRKEY( "getmac" ),              LFUNCVAL( wifi_ap_getmac )        },
 
   { LNILKEY, LNILVAL }
 };
