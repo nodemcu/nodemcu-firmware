@@ -76,9 +76,9 @@ else
 	endif
 	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
-	CC = xtensa-lx106-elf-gcc
+	CC = $(WRAPCC) xtensa-lx106-elf-gcc
 	NM = xtensa-lx106-elf-nm
-	CPP = xtensa-lx106-elf-cpp
+	CPP = $(WRAPCC) xtensa-lx106-elf-gcc -E
 	OBJCOPY = xtensa-lx106-elf-objcopy
 	FIRMWAREDIR = ../bin/
     UNAME_S := $(shell uname -s)
