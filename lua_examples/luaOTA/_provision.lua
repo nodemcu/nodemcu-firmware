@@ -21,7 +21,7 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
   local cmdlen = (rec:find('\n',1, true) or 0) - 1
   local cmd,hash = rec:sub(1,cmdlen-6), rec:sub(cmdlen-5,cmdlen)
   if cmdlen < 16 or
-     hash ~= crypto.toHex(crypto.hash("MD5",self.secret .. cmd):sub(-3)) then
+     hash ~= crypto.toHex(crypto.hmac("MD5",cmd,self.secret):sub(-3)) then
     return error("Invalid command signature")
   end
 

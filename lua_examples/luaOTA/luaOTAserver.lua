@@ -164,7 +164,7 @@ receive_and_parse = function(esp)
   local packed_cmd, sig = line:sub(1,#line-6),line:sub(-6)
 -- print("reply:", packed_cmd, sig)
   local status, cmd = pcall(json.decode, packed_cmd)
-  if hmac(packed_cmd):sub(-6) == sig then
+  if not hmac or hmac(packed_cmd):sub(-6) == sig then
     if cmd and cmd.data == "number" then
       local data = esp:receive(cmd.data)
       return cmd, data
