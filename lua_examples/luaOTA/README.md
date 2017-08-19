@@ -89,9 +89,9 @@ require "LuaOTA.check"
 ```
 however if the configuration is incomplete then this can be aborted as manual process 
 by entering the manual command through the UART
-``Lua
+```Lua
 tmr.stop(0); require "luaOTA.check":_init {ssid ="SOMESID" --[[etc. ]]}
-``` 
+```
 where the parameters to the `_init` method are: 
 
 -  `ssid` and `spwd`.  The SSID of the Wifi service to connect to, together with its 
