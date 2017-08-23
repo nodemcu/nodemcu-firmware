@@ -128,6 +128,13 @@ config LUA_MODULE_OTA
   help
       Includes the over-the-air updates module. OTA partion table needs to be selected.
 
+config LUA_MODULE_OTAHTTP
+  depends on LUA_MODULE_OTA
+  bool "Download OTA over http"
+  default "n"
+  help
+      Includes the over-the-air http-module.
+
 config LUA_MODULE_OW
   bool "1-Wire module"
   default "y"
