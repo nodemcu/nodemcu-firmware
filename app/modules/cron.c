@@ -8,7 +8,6 @@
 #include "c_string.h"
 #include "ets_sys.h"
 #include "time.h"
-#include "rtc/rtctime_internal.h"
 #include "rtc/rtctime.h"
 #include "stdlib.h"
 #include "mem.h"
@@ -189,7 +188,7 @@ static void cron_handle_time(uint8_t mon, uint8_t dom, uint8_t dow, uint8_t hour
 
 static void cron_handle_tmr() {
   struct rtc_timeval tv;
-  rtc_time_gettimeofday(&tv);
+  rtctime_gettimeofday(&tv);
   if (tv.tv_sec == 0) { // Wait for RTC time
     ets_timer_arm_new(&cron_timer, 1000, 0, 1);
     return;
