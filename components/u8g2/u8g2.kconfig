@@ -31,6 +31,11 @@ config U8G2_I2C_SSD1306_64X48_ER
        bool "ssd1306_i2c_64x48_er"
        default "n"
 
+config U8G2_I2C_SSD1306_96X16_ER
+       depends on U8G2_COMM_I2C
+       bool "ssd1306_i2c_96x16_er"
+       default "n"
+
 config U8G2_I2C_SSD1306_128X32_UNIVISION
        depends on U8G2_COMM_I2C
        bool "ssd1306_i2c_128x32_univision"
@@ -122,6 +127,11 @@ config U8G2_SPI_LS013B7DH03_128X128
        bool "ls013b7dh03_128x128"
        default "n"
 
+config U8G2_SPI_MAX7219_32X8
+       depends on U8G2_COMM_SPI
+       bool "max7219_32x8"
+       default "n"
+
 config U8G2_SPI_NT7534_TG12864R
        depends on U8G2_COMM_SPI
        bool "nt7534_tg12864r"
@@ -135,6 +145,11 @@ config U8G2_SPI_PCD8544_84X48
 config U8G2_SPI_PCF8812_96X65
        depends on U8G2_COMM_SPI
        bool "pcf8812_96x65"
+       default "n"
+
+config U8G2_SPI_SED1520_122x32
+       depends on U8G2_COMM_SPI
+       bool "sed1520_122x32"
        default "n"
 
 config U8G2_SPI_SH1106_128X64_NONAME
@@ -170,6 +185,11 @@ config U8G2_SPI_SSD1306_128X64_VCOMH0
 config U8G2_SPI_SSD1306_64X48_ER
        depends on U8G2_COMM_SPI
        bool "ssd1306_64x48_er"
+       default "n"
+
+config U8G2_SPI_SSD1306_96X16_ER
+       depends on U8G2_COMM_SPI
+       bool "ssd1306_96x16_er"
        default "n"
 
 config U8G2_SPI_SSD1309_128X64_NONAME0
@@ -210,6 +230,11 @@ config U8G2_SPI_SSD1606_172X72
 config U8G2_SPI_SSD1607_200X200
        depends on U8G2_COMM_SPI
        bool "ssd1607_200x200"
+       default "n"
+
+config U8G2_SPI_ST7565_64128N
+       depends on U8G2_COMM_SPI
+       bool "st7565_64128n"
        default "n"
 
 config U8G2_SPI_ST7565_EA_DOGM128

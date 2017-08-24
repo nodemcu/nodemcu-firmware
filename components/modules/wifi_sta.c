@@ -278,6 +278,10 @@ static int wifi_sta_getconfig (lua_State *L)
   return 1;
 }
 
+static int wifi_sta_getmac (lua_State *L)
+{
+  return wifi_getmac(WIFI_IF_STA, L);
+}
 
 static void on_scan_done (const system_event_t *evt)
 {
@@ -385,6 +389,7 @@ const LUA_REG_TYPE wifi_sta_map[] = {
   { LSTRKEY( "connect" ),     LFUNCVAL( wifi_sta_connect )    },
   { LSTRKEY( "disconnect" ),  LFUNCVAL( wifi_sta_disconnect ) },
   { LSTRKEY( "getconfig" ),   LFUNCVAL( wifi_sta_getconfig )  },
+  { LSTRKEY( "getmac" ),      LFUNCVAL( wifi_sta_getmac )     },
   { LSTRKEY( "on" ),          LFUNCVAL( wifi_sta_on )         },
   { LSTRKEY( "scan" ),        LFUNCVAL( wifi_sta_scan )       },
 
