@@ -1,5 +1,5 @@
-sudo: required
-#dist: trusty
+sudo: required # due to manual install of make 4.1
+dist: trusty # due to the make 4.1 not installable on precise
 language: cpp
 # we need at least GNU Make 4.0, which isn't available in trusty, so grab it
 # manually from xenial
