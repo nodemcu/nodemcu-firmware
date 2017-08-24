@@ -18,6 +18,9 @@ install:
   - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:$PATH
 script:
 - dpkg -l | grep serial
+- which python python2.7 python3
+- python --version
+- dkpg -L python-serial
 - python -c "import serial; print(serial.__file__)"
 - python3 -c "import serial; print(serial.__file__)"
 - export BUILD_DATE=$(date +%Y%m%d)
