@@ -1,6 +1,8 @@
 sudo: required
 dist: trusty
 language: cpp
+# we need at least GNU Make 4.0, which isn't available in trusty, so grab it
+# manually from xenial
 before_install:
 - wget http://mirrors.kernel.org/ubuntu/pool/main/m/make-dfsg/make_4.1-6_amd64.deb
 - sudo dpkg -i make_4.1-6_amd64.deb
@@ -8,20 +10,19 @@ addons:
   apt:
     packages:
     - python-serial
-    - srecord
     - gperf
 cache:
   directories:
     - cache
+# note that we clobber $PATH completely, to get rid of /opt/python* stuff so
+# we can use the system python and python-serial, rather than messing around
+# with pip all over the place
 install:
   - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:/bin:/usr/bin:/sbin:/usr/sbin
 script:
-- which python python2.7
-- python --version
-- dpkg -L python-serial
-- python -c "import serial; print(serial.__file__)"
 - export BUILD_DATE=$(date +%Y%m%d)
 - env BUILD_DIR_BASE=`pwd`/build/float make MORE_CFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
 - env BUILD_DIR_BASE=`pwd`/build/integer make MORE_CFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
+- ls -l cache/
 # http://docs.travis-ci.com/user/environment-variables/#Convenience-Variables
 #- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/pr-build.sh; fi
