@@ -2,16 +2,22 @@ sudo: false
 language: cpp
 addons:
   apt:
+    sources:
+    - debian-sid
     packages:
+    - python-serial
     - python3-serial
     - srecord
     - gperf
+    - make
 cache:
   directories:
     - cache
 install:
   - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:$PATH
 script:
+- python -c "import serial; print(serial.__file__)"
+- python3 -c "import serial; print(serial.__file__)"
 - export BUILD_DATE=$(date +%Y%m%d)
 - env BUILD_DIR_BASE=`pwd`/build/float make MORE_CFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
 - env BUILD_DIR_BASE=`pwd`/build/integer make MORE_CFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
