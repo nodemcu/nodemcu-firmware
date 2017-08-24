@@ -2,8 +2,8 @@ sudo: false
 language: cpp
 addons:
   apt:
-    sources:
-    - debian-sid
+#    sources:
+#    - debian-sid
     packages:
     - python-serial
     - python3-serial
