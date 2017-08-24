@@ -11,8 +11,7 @@ function readout(temp)
       "<b>ESP8266</b></br>"
 
   for addr, temp in pairs(temp) do
-    -- resp = resp .. string.format("Sensor %s: %s &#8451</br>", addr, temp)
-    resp = resp .. string.format("Sensor %s: %s &#8451</br>", encoder.toHex(addr), temp) -- readable address with base64 encoding is preferred when encoder module is available
+    resp = resp .. string.format("Sensor %s: %s &#8451</br>", ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X '):format(addr:byte(1,8)), temp)
   end
 
   resp = resp ..
@@ -30,7 +29,7 @@ srv=net.createServer(net.TCP)
 srv:listen(port,
      function(conn)
         gconn = conn
-        -- t:readTemp(readout) -- default pin value is 3
-        t:readTemp(readout, pin)
+        -- t:read_temp(readout) -- default pin value is 3
+        t:read_temp(readout, pin)
      end
 )

@@ -221,6 +221,10 @@ m:subscribe("/topic",0, function(conn) print("subscribe success") end)
 m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
 ```
 
+!!! caution
+
+    Rather than calling `subscribe` multiple times you should use the multiple topics syntax shown in the above example if you want to subscribe to more than one topic at once.
+
 ## mqtt.client:unsubscribe()
 
 Unsubscribes from one or several topics.
