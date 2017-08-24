@@ -1,5 +1,5 @@
 sudo: required
-dist: trusty
+#dist: trusty
 language: cpp
 # we need at least GNU Make 4.0, which isn't available in trusty, so grab it
 # manually from xenial
@@ -11,9 +11,6 @@ addons:
     packages:
     - python-serial
     - gperf
-cache:
-  directories:
-    - cache
 # note that we clobber $PATH completely, to get rid of /opt/python* stuff so
 # we can use the system python and python-serial, rather than messing around
 # with pip all over the place
@@ -23,6 +20,5 @@ script:
 - export BUILD_DATE=$(date +%Y%m%d)
 - env BUILD_DIR_BASE=`pwd`/build/float make MORE_CFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
 - env BUILD_DIR_BASE=`pwd`/build/integer make MORE_CFLAGS="-DLUA_NUMBER_INTEGRAL -DBUILD_DATE='\"'$BUILD_DATE'\"'" defconfig all
-- ls -l cache/
 # http://docs.travis-ci.com/user/environment-variables/#Convenience-Variables
 #- if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/pr-build.sh; fi
