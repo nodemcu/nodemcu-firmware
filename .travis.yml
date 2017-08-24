@@ -14,9 +14,8 @@ cache:
   directories:
     - cache
 install:
-  - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:$PATH
+  - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:/bin:/usr/bin:/sbin:/usr/sbin
 script:
-- dpkg -l | grep python
 - which python python2.7
 - python --version
 - dpkg -L python-serial
