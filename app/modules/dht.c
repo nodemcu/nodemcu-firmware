@@ -33,11 +33,11 @@ static int dht_lapi_read( lua_State *L )
 }
 
 // Lua: status, temp, humi, tempdec, humidec = dht.read11( id ))
-static int dht_lapi_read11( lua_State *L )
+static int dht_lapi_read11_12( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( dht, id );
-  lua_pushinteger( L, dht_read11(id) );
+  lua_pushinteger( L, dht_read11_12(id) );
   double temp = dht_getTemperature();
   double humi = dht_getHumidity();
   int tempdec = (int)((temp - (int)temp) * 1000);
@@ -101,7 +101,8 @@ static int dht_lapi_readxx( lua_State *L )
 // Module function map
 static const LUA_REG_TYPE dht_map[] = {
   { LSTRKEY( "read" ),           LFUNCVAL( dht_lapi_read ) },
-  { LSTRKEY( "read11" ),         LFUNCVAL( dht_lapi_read11 ) },
+  { LSTRKEY( "read11" ),         LFUNCVAL( dht_lapi_read11_12 ) },
+  { LSTRKEY( "read12" ),         LFUNCVAL( dht_lapi_read11_12 ) },
   { LSTRKEY( "readxx" ),         LFUNCVAL( dht_lapi_readxx ) },
   { LSTRKEY( "OK" ),             LNUMVAL( DHTLIB_OK ) },
   { LSTRKEY( "ERROR_CHECKSUM" ), LNUMVAL( DHTLIB_ERROR_CHECKSUM ) },

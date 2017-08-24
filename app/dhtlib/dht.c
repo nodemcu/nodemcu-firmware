@@ -41,6 +41,7 @@
 #endif /* ifndef HIGH */
 
 #define COMBINE_HIGH_AND_LOW_BYTE(byte_high, byte_low)  (((byte_high) << 8) | (byte_low))
+#define COMBINE_INT_AND_FRACTION(integer,  fraction)  ((integer * 10) + (fraction))
 
 static double dht_humidity;
 static double dht_temperature;
@@ -139,28 +140,43 @@ int dht_read_universal(uint8_t pin)
 // DHTLIB_OK
 // DHTLIB_ERROR_CHECKSUM
 // DHTLIB_ERROR_TIMEOUT
-int dht_read11(uint8_t pin)
+int dht_read11_12(uint8_t pin)
 {
-    // READ VALUES
-    int rv = dht_readSensor(pin, DHTLIB_DHT11_WAKEUP);
-    if (rv != DHTLIB_OK)
-    {
-        dht_humidity    = DHTLIB_INVALID_VALUE; // invalid value, or is NaN prefered?
-        dht_temperature = DHTLIB_INVALID_VALUE; // invalid value
-        return rv;
-    }
+  // READ VALUES
+  int rv = dht_readSensor(pin, DHTLIB_DHT_WAKEUP);
+  if (rv != DHTLIB_OK)
+  {
+      dht_humidity    = DHTLIB_INVALID_VALUE;  // invalid value, or is NaN prefered?
+      dht_temperature = DHTLIB_INVALID_VALUE;  // invalid value
+      return rv; // propagate error value
+  }
 
-    // CONVERT AND STORE
-    dht_humidity    = dht_bytes[0];  // dht_bytes[1] == 0;
-    dht_temperature = dht_bytes[2];  // dht_bytes[3] == 0;
+  // CONVERT AND STORE
+  dht_humidity = (double)COMBINE_INT_AND_FRACTION(dht_bytes[0], dht_bytes[1]) * 0.1;
+  dht_temperature = (double)COMBINE_INT_AND_FRACTION(dht_bytes[2] & 0x7F, dht_bytes[3]) * 0.1;
+  if (dht_bytes[2] & 0x80)  // negative dht_temperature
+  {
+      dht_temperature = -dht_temperature;
+  }
 
-    // TEST CHECKSUM
-    // dht_bytes[1] && dht_bytes[3] both 0
-    uint8_t sum = dht_bytes[0] + dht_bytes[2];
-    if (dht_bytes[4] != sum) return DHTLIB_ERROR_CHECKSUM;
-
-    return DHTLIB_OK;
+  // TEST CHECKSUM
+  uint8_t sum = dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3];
+  if (dht_bytes[4] != sum)
+  {
+      return DHTLIB_ERROR_CHECKSUM;
+  }
+  return DHTLIB_OK;
 }
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+int dht_read11(uint8_t pin)  __attribute__((alias("dht_read11_12")));
+// return values:
+// DHTLIB_OK
+// DHTLIB_ERROR_CHECKSUM
+// DHTLIB_ERROR_TIMEOUT
+int dht_read12(uint8_t pin)  __attribute__((alias("dht_read11_12")));
 
 
 // return values:
