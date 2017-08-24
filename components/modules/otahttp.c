@@ -143,6 +143,7 @@ static int otahttp_download( lua_State *L )
   }
 
   bool found_body = false, flag = true;
+  int packet_counter = 0;
 
   /* Deal with all receive packets */
   while (flag) {
@@ -158,6 +159,8 @@ static int otahttp_download( lua_State *L )
       close(socket_id);
       break;
     }
+
+    packet_counter++;
 
     int body_offset = 0;
     if(!found_body) {
@@ -177,7 +180,9 @@ static int otahttp_download( lua_State *L )
     }
 
     image_length += length;
-    ESP_LOGI(TAG, "Have written image length %d", length);
+    if(packet_counter % 100 == 0) {
+      ESP_LOGI(TAG, "Have written image length %d", image_length);
+    }
   }
 
   if(!found_body) {
