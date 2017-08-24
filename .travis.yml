@@ -1,4 +1,5 @@
 sudo: required
+dist: trusty
 language: cpp
 before_install:
 - wget http://mirrors.kernel.org/ubuntu/pool/main/m/make-dfsg/make_4.1-6_amd64.deb
