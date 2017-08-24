@@ -3,7 +3,7 @@ language: cpp
 addons:
   apt:
     packages:
-    - python-serial
+    - python3-serial
     - srecord
     - gperf
 cache:
