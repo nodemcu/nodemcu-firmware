@@ -16,7 +16,7 @@ cache:
 install:
   - export PATH=$PWD/tools/toolchains/esp8266/bin:$PWD/tools/toolchains/esp32/bin:$PATH
 script:
-- dpkg -l | grep serial
+- dpkg -l | grep python
 - which python python2.7
 - python --version
 - dpkg -L python-serial
