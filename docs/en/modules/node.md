@@ -28,7 +28,7 @@ The second value returned is the extended reset cause. Values are:
 
 In general, the extended reset cause supercedes the raw code. The raw code is kept for backwards compatibility only. For new applications it is highly recommended to use the extended reset cause instead.
 
-In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, EXCCAUSE, EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
+In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, [EXCCAUSE](https://arduino-esp8266.readthedocs.io/en/latest/exception_causes.html), EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
 
 #### Syntax
 `node.bootreason()`
