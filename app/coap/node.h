@@ -30,7 +30,7 @@ typedef struct coap_queue_t {
 
   // coap_packet_t *pkt;
   coap_pdu_t *pdu;		/**< the CoAP PDU to send */
-  struct espconn *pconn;
+  //struct espconn *pconn;
 } coap_queue_t;
 
 void coap_free_node(coap_queue_t *node);
@@ -48,6 +48,8 @@ void coap_delete_all(coap_queue_t *queue);
 coap_queue_t *coap_new_node(void);
 
 coap_queue_t *coap_pop_next( coap_queue_t **queue );
+
+coap_queue_t * coap_find_node(coap_queue_t *queue, const coap_tid_t id);
 
 int coap_remove_node( coap_queue_t **queue, const coap_tid_t id);
 

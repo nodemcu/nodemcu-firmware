@@ -6,225 +6,148 @@
 The CoAP module provides a simple implementation according to [CoAP](http://tools.ietf.org/html/rfc7252) protocol.
 The basic endpoint server part is based on [microcoap](https://github.com/1248/microcoap), and many other code reference [libcoap](https://github.com/obgm/libcoap).
 
-This module implements both the client and the server side. GET/PUT/POST/DELETE is partially supported by the client. Server can register Lua functions and variables. No observe or discover supported yet.
+This module implements both the client and the server side.It can support basic usage No observe or discover supported yet.
 
 !!! caution
 
-    This module is only in the very early stages and not complete yet.
+    This module is only in the early stages and not complete yet.
 
 
 ## Constants
 Constants for various functions.
 
-`coap.CON`, `coap.NON` represent the request types.
+### Request Types
 
-`coap.TEXT_PLAIN`, `coap.LINKFORMAT`, `coap.XML`, `coap.OCTET_STREAM`, `coap.EXI`, `coap.JSON` represent content types.
+`coap.type.con`, `coap.type.non` represent the request types.
 
-## coap.Client()
+### Methods
 
-Creates a CoAP client.
+`coap.method.get`, `coap.method.post`, `coap.method.put`, `coap.method.delete` represent Methods.
+
+### Content Types
+
+`coap.content_type.none`, `coap.content_type.text_plain`, `coap.content_type.link_format`, `coap.content_type.xml`, `coap.content_type.exi`, `coap.content_type.json` represent content types.
+
+### Codes
+
+`coap.code.created`, `coap.code.deleted`, `coap.code.vaild`, `coap.code.changed`, `coap.code.content`, `coap.code.bad_request`, `coap.code.unauthorized`, `coap.code.bad_option`, `coap.code.forbidden`, `coap.code.not_found`, `coap.code.method_not_allowed`, `coap.code.precondition_failed`, `coap.code.request_entity_too_large`, `coap.code.unsupported_content_format`, `coap.code.internal_server_error`, `coap.code.not_implemented`, `coap.code.bad_gateway`, `coap.code.service_unavailable`, `coap.code.gateway_timeout`, `coap.code.method_not_allowed`, `coap.code.proxying_not_supported` represent Codes.
+
+
+## coap.new()
+
+Creates a CoAP instance.
 
 #### Syntax
-`coap.Client()`
+`coap.new()`
 
 #### Parameters
 none
 
 #### Returns
-CoAP client
+CoAP peer instance
 
 #### Example
 ```lua
-cc = coap.Client()
--- assume there is a coap server at ip 192.168.100
-cc:get(coap.CON, "coap://192.168.18.100:5683/.well-known/core")
--- GET is not complete, the result/payload only print out in console.
-cc:post(coap.NON, "coap://192.168.18.100:5683/", "Hello")
-```
-
-## coap.Server()
-
-Creates a CoAP server.
-
-#### Syntax
-`coap.Server()`
-
-#### Parameters
-none
-
-#### Returns
-CoAP server
-
-#### Example
-```lua
--- use copper addon for firefox
-cs=coap.Server()
-cs:listen(5683)
-
-myvar=1
-cs:var("myvar") -- get coap://192.168.18.103:5683/v1/v/myvar will return the value of myvar: 1
-
-all='[1,2,3]'
-cs:var("all", coap.JSON) -- sets content type to json
-
--- function should tack one string, return one string.
-function myfun(payload)
-  print("myfun called")
-  respond = "hello"
-  return respond
-end
-cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
+-- Create UDP Socket to send or receive data
+u = net.createUDPSocket()
+-- Create CoAP instance to handle data;
+c = coap.new()
+u:listen(5683)
+-- The function is called when data is received
+u:on("receive", function(s, data, port, ip) c:receive(data,ip,port) end)
+-- Set CoAP sender
+c:sender(function(data,ip,port) u:send(port,ip,data) end)
 
 ```
 
-# CoAP Client
 
-## coap.client:get()
+## coap.peer:handler()
 
-Issues a GET request to the server.
+Set the CoAP server request handler.
 
 #### Syntax
-`coap.client:get(type, uri[, payload])`
+`coap.peer:handler(function(pkt,ip,port))`
 
 #### Parameters
-- `type` `coap.CON`, `coap.NON`, defaults to CON. If the type is CON and request fails, the library retries four more times before giving up.
-- `uri` the URI such as "coap://192.168.18.103:5683/v1/v/myvar", only IP addresses are supported i.e. no hostname resoltion.
+- `function(data,ip,port)`callback function.
+
+The first parameter of callback is the `CoAP package` instance that receive from remote.
+The second and third parameter of callback is the address of the data being received.
+
+You must return the first argument after processing the request.
+
+#### Returns
+`nil`
+
+## coap.peer:receive()
+
+This function must be called when you receive data from UDP Socket.
+
+#### Syntax
+`coap.peer:receive(data, ip, port)`
+
+#### Parameters
+- `data`, the data received from UDP Socket.
+- `ip`, the source IP of UDP data.
+- `port` the source port of UDP data.
+
+#### Returns
+`nil`
+
+
+## coap.peer:request()
+
+Issues a CoAP request to the server.
+
+#### Syntax
+`coap.peer:request(method [,type], uri[, payload, handler])`
+
+#### Parameters
+- `method` `coap.method.get`, `coap.method.post`, `coap.method.put`, `coap.method.delete`. You can specify a CoAP request method
+- `type` `coap.CON`, `coap.NON`, defaults to NON. If the type is CON and request fails, the library retries four more times before giving up.
+- `uri` the URI such as "coap://192.168.18.103:5683/path/to/resource", only IP addresses are supported. If you want to use the host name, please resolve it in the sender function.
 - `payload` optional, the payload will be put in the payload section of the request.
+- `handler` optional, the callback function is called when a CON reply is received. Only supports CON messages.
 
 #### Returns
 `nil`
 
-## coap.client:put()
+## coap.peer:sender()
 
-Issues a PUT request to the server.
+Set the sender function for the CoAP instance.
 
 #### Syntax
-`coap.client:put(type, uri[, payload])`
+`coap.peer:sender(function(data,ip,port))`
 
 #### Parameters
-- `type` `coap.CON`, `coap.NON`, defaults to CON. If the type is CON and request fails, the library retries four more times before giving up.
-- `uri` the URI such as "coap://192.168.18.103:5683/v1/v/myvar", only IP addresses are supported i.e. no hostname resoltion.
-- `payload` optional, the payload will be put in the payload section of the request.
+
+- `function(data,ip,port)`callback function.
+
+The first parameter of callback is the data that needs to be sent. The second and third parameter of callback is the address of the data being sent.
 
 #### Returns
 `nil`
 
-## coap.client:post()
+## CoAP package
 
-Issues a POST request to the server.
+Received or issued CoAP packet.
 
-#### Syntax
-`coap.client:post(type, uri[, payload])`
+The CoAP package is a Userdata similar to a table. You can read and write the specified index on the object
 
-#### Parameters
-- `type` coap.CON, coap.NON, defaults to CON. when type is CON, and request failed, the request will retry another 4 times before giving up.
-- `uri` the uri such as coap://192.168.18.103:5683/v1/v/myvar, only IP is supported.
-- `payload` optional, the payload will be put in the payload section of the request.
-
-#### Returns
-`nil`
-
-## coap.client:delete()
-
-Issues a DELETE request to the server.
-
-#### Syntax
-`coap.client:delete(type, uri[, payload])`
-
-#### Parameters
-- `type` `coap.CON`, `coap.NON`, defaults to CON. If the type is CON and request fails, the library retries four more times before giving up.
-- `uri` the URI such as "coap://192.168.18.103:5683/v1/v/myvar", only IP addresses are supported i.e. no hostname resoltion.
-- `payload` optional, the payload will be put in the payload section of the request.
-
-#### Returns
-`nil`
-
-# CoAP Server
-
-## coap.server:listen()
-
-Starts the CoAP server on the given port.
-
-#### Syntax
-`coap.server:listen(port[, ip])`
-
-#### Parameters
-- `port` server port (number)
-- `ip` optional IP address
-
-#### Returns
-`nil`
-
-## coap.server:close()
-
-Closes the CoAP server.
-
-#### Syntax
-`coap.server:close()`
-
-#### Parameters
-none
-
-#### Returns
-`nil`
-
-## coap.server:var()
-
-Registers a Lua variable as an endpoint in the server. the variable value then can be retrieved by a client via GET method, represented as an [URI](http://tools.ietf.org/html/rfc7252#section-6) to the client. The endpoint path for varialble is '/v1/v/'.
-
-#### Syntax
-`coap.server:var(name[, content_type])`
-
-#### Parameters
-- `name` the Lua variable's name
-- `content_type` optional, defaults to `coap.TEXT_PLAIN`, see [Content Negotiation](http://tools.ietf.org/html/rfc7252#section-5.5.4)
-
-#### Returns
-`nil`
+#### Indexs
+- `code` ,the methods and codes
+- `type` ,read only. mid is message id
+- `token` ,CoAP token
+- `options` ,CoAP options.The headers of the request or response are recorded. You can read or write a lua table
+- `payload` ,Request's or response's payload.
 
 #### Example
-```lua
--- use copper addon for firefox
-cs=coap.Server()
-cs:listen(5683)
-
-myvar=1
-cs:var("myvar") -- get coap://192.168.18.103:5683/v1/v/myvar will return the value of myvar: 1
--- cs:var(myvar), WRONG, this api accept the name string of the varialbe. but not the variable itself.
-all='[1,2,3]'
-cs:var("all", coap.JSON) -- sets content type to json
 ```
-
-## coap.server:func()
-
-Registers a Lua function as an endpoint in the server. The function then can be called by a client via POST method. represented as an [URI](http://tools.ietf.org/html/rfc7252#section-6) to the client. The endpoint path for function is '/v1/f/'. 
-
-When the client issues a POST request to this URI, the payload will be passed to the function as parameter. The function's return value will be the payload in the message to the client.
-
-The function registered SHOULD accept ONLY ONE string type parameter, and return ONE string value or return nothing.
-
-#### Syntax
-`coap.server:func(name[, content_type])`
-
-#### Parameters
-- `name` the Lua function's name
-- `content_type` optional, defaults to `coap.TEXT_PLAIN`, see [Content Negotiation](http://tools.ietf.org/html/rfc7252#section-5.5.4)
-
-#### Returns
-`nil`
-
-#### Example
-```lua
--- use copper addon for firefox
-cs=coap.Server()
-cs:listen(5683)
-
--- function should take only one string, return one string.
-function myfun(payload)
-  print("myfun called")
-  respond = "hello"
-  return respond
-end
-cs:func("myfun") -- post coap://192.168.18.103:5683/v1/f/myfun will call myfun
--- cs:func(myfun), WRONG, this api accept the name string of the function. but not the function itself.
+c:handler(function(pkt,ip,port)
+    print("request method is",pkt.code)
+    pkt.code = coap.code.content
+    pkt.options = {ooap.options.content_format, coap.content_type.text_plain}
+    pkt.payload = "hello"
+    return pkt
+end) 
 ```

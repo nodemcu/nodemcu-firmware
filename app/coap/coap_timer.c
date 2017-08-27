@@ -18,7 +18,8 @@ void coap_timer_elapsed(coap_tick_t *diff){
 void coap_timer_tick(void *arg){
   if( !arg )
     return;
-  coap_queue_t **queue = (coap_queue_t **)arg;
+  coap_peer_t *peer = (coap_peer_t *)arg;
+  coap_queue_t **queue = &(peer->queue);
   if( !(*queue) )
     return;
 
@@ -30,24 +31,25 @@ void coap_timer_tick(void *arg){
 
     NODE_DBG("** retransmission #%d of transaction %d\n", 
         node->retransmit_cnt, (((uint16_t)(node->pdu->pkt->hdr.id[0]))<<8)+node->pdu->pkt->hdr.id[1]);
-    node->id = coap_send(node->pconn, node->pdu);
-    if (COAP_INVALID_TID == node->id) {
-      NODE_DBG("retransmission: error sending pdu\n");
-      coap_delete_node(node);
-    } else {
+    coap_send(peer, node->pdu);
+    //if (COAP_INVALID_TID == node->id) {
+    //  NODE_DBG("retransmission: error sending pdu\n");
+    //  coap_delete_node(node);
+    //} else {
       coap_insert_node(queue, node);    
-    }
+    //}
   } else {
     /* And finally delete the node */
     coap_delete_node( node );
   }
 
-  coap_timer_start(queue);
+  coap_timer_start(peer);
 }
 
-void coap_timer_setup(coap_queue_t ** queue, coap_tick_t t){
+void coap_timer_setup(coap_peer_t * peer, coap_tick_t t){
+  coap_queue_t ** queue = &peer->queue;
   os_timer_disarm(&coap_timer);
-  os_timer_setfn(&coap_timer, (os_timer_func_t *)coap_timer_tick, queue);
+  os_timer_setfn(&coap_timer, (os_timer_func_t *)coap_timer_tick, peer);
   os_timer_arm(&coap_timer, t, 0);   // no repeat
 }
 
@@ -55,7 +57,8 @@ void coap_timer_stop(void){
   os_timer_disarm(&coap_timer);
 }
 
-void coap_timer_update(coap_queue_t ** queue){
+void coap_timer_update(coap_peer_t * peer){
+  coap_queue_t ** queue = &peer->queue;
   if (!queue)
     return;
   coap_tick_t diff = 0;
@@ -71,8 +74,9 @@ void coap_timer_update(coap_queue_t ** queue){
   }
 }
 
-void coap_timer_start(coap_queue_t ** queue){
+void coap_timer_start(coap_peer_t * peer){
+  coap_queue_t ** queue = &peer->queue;
   if(*queue){ // if there is node in the queue, set timeout to its ->t.
-    coap_timer_setup(queue, (*queue)->t);
+    coap_timer_setup(peer, (*queue)->t);
   }
 }

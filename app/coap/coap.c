@@ -4,15 +4,15 @@
 #include "coap.h"
 #include "uri.h"
 
-extern void endpoint_setup(void);
-extern const coap_endpoint_t endpoints[];
+//extern void endpoint_setup(void);
+//extern const coap_endpoint_t endpoints[];
 
 #ifdef COAP_DEBUG
 void coap_dumpHeader(coap_header_t *hdr)
 {
     c_printf("Header:\n");
     c_printf("  ver  0x%02X\n", hdr->ver);
-    c_printf("  t    0x%02X\n", hdr->ver);
+    c_printf("  t    0x%02X\n", hdr->t);
     c_printf("  tkl  0x%02X\n", hdr->tkl);
     c_printf("  code 0x%02X\n", hdr->code);
     c_printf("  id   0x%02X%02X\n", hdr->id[0], hdr->id[1]);
@@ -442,28 +442,29 @@ unsigned int coap_encode_var_bytes(unsigned char *buf, unsigned int val) {
   return n;
 }
 
-static uint8_t _token_data[4] = {'n','o','d','e'};
-coap_buffer_t the_token = { _token_data, 4 };
-static unsigned short message_id;
+//static uint8_t _token_data[4] = {'n','o','d','e'};
+//coap_buffer_t the_token = { _token_data, 4 };
+//unsigned short message_id;
 
-int coap_make_request(coap_rw_buffer_t *scratch, coap_packet_t *pkt, coap_msgtype_t t, coap_method_t m, coap_uri_t *uri, const uint8_t *payload, size_t payload_len)
+int coap_make_request(coap_rw_buffer_t *scratch, unsigned short message_id, coap_packet_t *pkt, coap_msgtype_t t, coap_method_t m, coap_uri_t *uri, const uint8_t *payload, size_t payload_len)
 {
     int res;
     pkt->hdr.ver = 0x01;
     pkt->hdr.t = t;
     pkt->hdr.tkl = 0;
     pkt->hdr.code = m;
+    message_id ++;
     pkt->hdr.id[0] = (message_id >> 8) & 0xFF;  //msgid_hi;
     pkt->hdr.id[1] = message_id & 0xFF; //msgid_lo;
     message_id++;
     NODE_DBG("message_id: %d.\n", message_id);
     pkt->numopts = 0;
 
-    if (the_token.len) {
+/*    if (the_token.len) {
         pkt->hdr.tkl = the_token.len;
         pkt->tok = the_token;
     }
-
+*/
     if (scratch->len < 2)   // TBD...
         return COAP_ERR_BUFFER_TOO_SMALL;
 
@@ -505,51 +506,9 @@ int coap_make_request(coap_rw_buffer_t *scratch, coap_packet_t *pkt, coap_msgtyp
     return 0;
 }
 
-// FIXME, if this looked in the table at the path before the method then
-// it could more easily return 405 errors
-int coap_handle_req(coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt)
-{
-    const coap_option_t *opt;
-    int i;
-    uint8_t count;
-    const coap_endpoint_t *ep = endpoints;
-
-    while(NULL != ep->handler)
-    {
-        if (ep->method != inpkt->hdr.code)
-            goto next;
-        if (NULL != (opt = coap_findOptions(inpkt, COAP_OPTION_URI_PATH, &count)))
-        {
-            // if (count != ep->path->count)
-            if ((count != ep->path->count ) && (count != ep->path->count + 1)) // +1 for /f/[function], /v/[variable]
-                goto next;
-            for (i=0;i<ep->path->count;i++)
-            {
-                if (opt[i].buf.len != c_strlen(ep->path->elems[i]))
-                    goto next;
-                if (0 != c_memcmp(ep->path->elems[i], opt[i].buf.p, opt[i].buf.len))
-                    goto next;
-            }
-            // pre-path match!
-            if (count==ep->path->count+1 && ep->user_entry == NULL)
-                goto next;
-            return ep->handler(ep, scratch, inpkt, outpkt, inpkt->hdr.id[0], inpkt->hdr.id[1]);
-        }
-next:
-        ep++;
-    }
-
-    coap_make_response(scratch, outpkt, NULL, 0, inpkt->hdr.id[0], inpkt->hdr.id[1], &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
-
-    return 0;
-}
-
-void coap_setup(void)
-{
-    message_id = (unsigned short)os_random();      // calculate only once
-}
-
+/*
 inline int
 check_token(coap_packet_t *pkt) {
   return pkt->tok.len == the_token.len && c_memcmp(pkt->tok.p, the_token.p, the_token.len) == 0;
 }
+*/
