@@ -10,7 +10,7 @@ The host signals can be mapped to any suitable GPIO pins.
 
 !!! note
 
-    The API on ESP32 differs from the API on ESP8266. For backwards compatibility please refer to [`lua_compat/spi_compat.lua`](../../../lua_compat/spi_compat.lua`).
+    The API on ESP32 differs from the API on ESP8266. For backwards compatibility please refer to [`lua_compat/spi_compat.lua`](../../../lua_compat/spi_compat.lua).
 
 
 ## spi.master()
@@ -83,14 +83,14 @@ Adds a device on the given master bus. Up to three devices per bus are supported
 - `cs_ena_pretrans`, optional
 - `cs_ena_posttrans`, optional
 - `duty_cycle_pos`, optional
-- `tx_lsb_first` transmit command/address/data LSB first if `true`, MSB first otherwise
-- `rx_lsb_first` receive data LSB first if `true`, MSB first otherwise
-- `wire3` use spiq for both transmit and receive if `true`, use mosi and miso otherwise
-- `positive_cs` chip-select is active high during a transaction if `true`, cs is active low otherwise
-- `halfduplex` transmit data before receiving data if `true`, transmit and receive simultaneously otherwise
-- `clk_as_cs` output clock on cs line when cs is active if `true`
+- `tx_lsb_first` transmit command/address/data LSB first if `true`, MSB first otherwise (or if omitted)
+- `rx_lsb_first` receive data LSB first if `true`, MSB first otherwise (or if omitted)
+- `wire3` use spiq for both transmit and receive if `true`, use mosi and miso otherwise (or if omitted)
+- `positive_cs` chip-select is active high during a transaction if `true`, cs is active low otherwise (or if omitted)
+- `halfduplex` transmit data before receiving data if `true`, transmit and receive simultaneously otherwise (or if omitted)
+- `clk_as_cs` output clock on cs line when cs is active if `true`, defaults to `false` if omitted
 
-#### Returns
+#### Returns    
 SPI device object
 
 #### Example
