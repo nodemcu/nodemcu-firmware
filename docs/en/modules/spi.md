@@ -17,7 +17,7 @@ The host signals can be mapped to any suitable GPIO pins.
 Initializes a bus in master mode and returns a bus master object.
 
 #### Syntax
-`spi.master(host, config)`
+`spi.master(host, config[, dma])`
 
 #### Parameters
 - `host` id, one of
@@ -30,6 +30,9 @@ Initializes a bus in master mode and returns a bus master object.
     - `miso`
     - `quadwp`
     - `quadhd`
+- `dma` set DMA channel (1 or 2) or disable DMA (0), defaults to 1 if omitted.
+  Enabling DMA allows sending and receiving an unlimited amount of bytes but has restrictions in halfduplex mode (see [`spi.master:device()`](#spimasterdevice)).
+  Disabling DMA limits a transaction to 32&nbsp;bytes max.
 
 #### Returns
 SPI bus master object
@@ -60,6 +63,10 @@ none
 
 ## spi.master:device()
 Adds a device on the given master bus. Up to three devices per bus are supported.
+
+!!! note
+
+    Due to restrictions of the ESP IDF, halfduplex mode does not support DMA with both MOSI and MISO phases. Disable DMA during the call to [`spi.master()`](#spimaster) in this case and ensure that transaction data is not larger than 32&nbsp;bytes.
 
 #### Syntax
 `busmaster:device(config)`

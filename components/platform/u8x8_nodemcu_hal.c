@@ -10,7 +10,7 @@
 
 #include "u8x8_nodemcu_hal.h"
 
-#include "esp_heap_alloc_caps.h"
+#include "esp_heap_caps.h"
 
 
 uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
@@ -289,7 +289,7 @@ uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 
   case U8X8_MSG_BYTE_START_TRANSFER:
     hal->buffer.size = 256;
-    if (!(hal->buffer.data = (uint8_t *)pvPortMallocCaps( hal->buffer.size, MALLOC_CAP_DMA )))
+    if (!(hal->buffer.data = (uint8_t *)heap_caps_malloc( hal->buffer.size, MALLOC_CAP_DMA )))
       return 0;
     hal->buffer.used = 0;
 
@@ -300,12 +300,13 @@ uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
     while (hal->buffer.size - hal->buffer.used < arg_int) {
       hal->buffer.size *= 2;
       uint8_t *tmp;
-      if (!(tmp = (uint8_t *)pvPortMallocCaps( hal->buffer.size, MALLOC_CAP_DMA ))) {
-        free( hal->buffer.data );
+      if (!(tmp = (uint8_t *)heap_caps_malloc( hal->buffer.size, MALLOC_CAP_DMA ))) {
+        heap_caps_free( hal->buffer.data );
+        hal->buffer.data = NULL;
         return 0;
       }
       memcpy( tmp, hal->buffer.data, hal->buffer.used );
-      free( hal->buffer.data );
+      heap_caps_free( hal->buffer.data );
       hal->buffer.data = tmp;
     }
     memcpy( hal->buffer.data + hal->buffer.used, arg_ptr, arg_int );
@@ -318,7 +319,7 @@ uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
     u8x8_gpio_SetCS( u8x8, u8x8->display_info->chip_disable_level );
 
     if (hal->buffer.data)
-      free( hal->buffer.data );
+      heap_caps_free( hal->buffer.data );
     break;
 
   default:

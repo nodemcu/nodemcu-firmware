@@ -6,7 +6,7 @@
 #include "lextra.h"
 
 #include "driver/spi_master.h"
-#include "esp_heap_alloc_caps.h"
+#include "esp_heap_caps.h"
 
 #include "esp_log.h"
 
@@ -97,8 +97,8 @@ static int lspi_device_transfer( lua_State *L )
     const char * const options[] = {"std", "dio", "qio"};
     const uint32_t options_flags[] = {0, SPI_TRANS_MODE_DIO, SPI_TRANS_MODE_QIO};
 
-    CONFIG_TRANS_FROM_FIELD(command);
-    CONFIG_TRANS_FROM_FIELD(address);
+    CONFIG_TRANS_FROM_FIELD(cmd);
+    CONFIG_TRANS_FROM_FIELD(addr);
     //
     lua_getfield( L, stack, "rxlen" );
     rx_len = luaL_optint( L, -1, 0 );
@@ -128,7 +128,7 @@ static int lspi_device_transfer( lua_State *L )
 
   } else {
     // use DMA'able buffer
-    if ((trans.tx_buffer = pvPortMallocCaps( data_len, MALLOC_CAP_DMA ))) {
+    if ((trans.tx_buffer = heap_caps_malloc( data_len, MALLOC_CAP_DMA ))) {
       memcpy( (void *)trans.tx_buffer, data, data_len );
     } else {
       msg = "no memory";
@@ -147,7 +147,7 @@ static int lspi_device_transfer( lua_State *L )
 
   } else {
     // use DMA'able buffer
-    if (!(trans.rx_buffer = pvPortMallocCaps( rx_len, MALLOC_CAP_DMA ))) {
+    if (!(trans.rx_buffer = heap_caps_malloc( rx_len, MALLOC_CAP_DMA ))) {
       msg = "no mem";
       goto free_mem;
     }
@@ -167,9 +167,9 @@ static int lspi_device_transfer( lua_State *L )
 
 free_mem:
   if (!(trans.flags & SPI_TRANS_USE_TXDATA) && trans.tx_buffer)
-    free( (void *)trans.tx_buffer );
+    heap_caps_free( (void *)trans.tx_buffer );
   if (!(trans.flags & SPI_TRANS_USE_RXDATA) && trans.rx_buffer)
-    free( (void *)trans.rx_buffer );
+    heap_caps_free( (void *)trans.rx_buffer );
 
   if (msg)
     return luaL_error( L, msg );
@@ -237,9 +237,12 @@ int lspi_master( lua_State *L )
   CONFIG_BUS_PIN_FROM_FIELD(miso);
   CONFIG_BUS_PIN_FROM_FIELD(quadwp);
   CONFIG_BUS_PIN_FROM_FIELD(quadhd);
-  lua_settop( L, stack );
-  //
-  if (no_err( spi_bus_initialize( host, &config, 1 ) )) {
+  lua_pop( L, 5 );
+
+  int use_dma = luaL_optint( L, ++stack, 1 );
+  luaL_argcheck( L, use_dma >= 0 && use_dma <= 2, stack, "out of range" );
+
+  if (no_err( spi_bus_initialize( host, &config, use_dma ) )) {
     lspi_host_t *ud = (lspi_host_t *)lua_newuserdata( L, sizeof( lspi_host_t ) );
     luaL_getmetatable( L, UD_HOST_STR );
     lua_setmetatable( L, -2 );
