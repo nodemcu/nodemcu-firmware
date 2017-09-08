@@ -979,6 +979,7 @@ static int wifi_station_connect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
@@ -993,6 +994,7 @@ static int wifi_station_disconnect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
