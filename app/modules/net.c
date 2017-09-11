@@ -203,19 +203,22 @@ static void net_recv_cb(lnet_userdata *ud, struct pbuf *p, ip_addr_t *addr, u16_
     return;
   }
 
+  int num_args = 2;
+  char iptmp[16] = { 0, };
+  if (ud->type == TYPE_UDP_SOCKET)
+  {
+    num_args += 2;
+    ets_sprintf(iptmp, IPSTR, IP2STR(&addr->addr));
+  }
+
   lua_State *L = lua_getstate();
   struct pbuf *pp = p;
   while (pp)
   {
-    int num_args = 2;
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_receive_ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
     lua_pushlstring(L, pp->payload, pp->len);
     if (ud->type == TYPE_UDP_SOCKET) {
-      num_args += 2;
-      char iptmp[16];
-      bzero(iptmp, 16);
-      ets_sprintf(iptmp, IPSTR, IP2STR(&addr->addr));
       lua_pushinteger(L, port);
       lua_pushstring(L, iptmp);
     }
