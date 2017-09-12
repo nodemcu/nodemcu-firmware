@@ -421,7 +421,7 @@ uint8_t platform_adc_setup( uint8_t adc, uint8_t channel, uint8_t atten ) {
 
 int platform_adc_read( uint8_t adc, uint8_t channel ) {
   int value = -1;
-  if (adc == 1) value = adc1_get_voltage( channel );
+  if (adc == 1) value = adc1_get_raw( channel );
   return value;
 }
 

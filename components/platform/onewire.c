@@ -141,7 +141,7 @@ static int onewire_rmt_init( uint8_t gpio_num )
           if (rmt_config( &rmt_rx ) == ESP_OK) {
             if (rmt_driver_install( rmt_rx.channel, 512, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED ) == ESP_OK) {
 
-              rmt_get_ringbuf_handler( ow_rmt.rx, &ow_rmt.rb );
+              rmt_get_ringbuf_handle( ow_rmt.rx, &ow_rmt.rb );
 
               // don't set ow_rmt.gpio here
               // -1 forces a full pin set procedure in first call to onewire_rmt_attach_pin()

@@ -93,7 +93,7 @@ static int dht_init( uint8_t gpio_num )
     if (rmt_config( &rmt_rx ) == ESP_OK) {
       if (rmt_driver_install( rmt_rx.channel, 512, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED ) == ESP_OK) {
 
-        rmt_get_ringbuf_handler( dht_rmt.channel, &dht_rmt.rb );
+        rmt_get_ringbuf_handle( dht_rmt.channel, &dht_rmt.rb );
 
         dht_rmt.gpio = gpio_num;
 

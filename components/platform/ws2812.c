@@ -225,7 +225,7 @@ int platform_ws2812_send( void )
   // wait for all channels to finish
   for (rmt_channel_t channel = 0; channel < RMT_CHANNEL_MAX; channel++) {
     if (ws2812_chains[channel].valid) {
-      rmt_wait_tx_done( channel );
+      rmt_wait_tx_done( channel, portMAX_DELAY );
     }
   }
 

@@ -1,6 +1,13 @@
+# Don't warn about undefined variables
+CONFIG_MAKE_WARN_UNDEFINED_VARIABLES=n
+
 # Empirical value to prevent a firmware crash due to stack overflow.
 CONFIG_MAIN_TASK_STACK_SIZE=8192
 
 # Enable address reuse for sockets in TIME_WAIT
 # see https://github.com/nodemcu/nodemcu-firmware/pull/1838
 CONFIG_LWIP_SO_REUSE=y
+
+# Decrease the duration of sockets in TIME_WAIT
+# see https://github.com/nodemcu/nodemcu-firmware/issues/1836
+CONFIG_TCP_MSL=5000
