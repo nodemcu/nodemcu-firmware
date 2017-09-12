@@ -347,10 +347,8 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
 static err_t netconn_close_wa(struct netconn *conn) {
   err_t err = netconn_close(conn);
   if (err == ERR_OK) {
-    err = netconn_delete(conn);
-    if (err == ERR_OK) {
-      netconn_free(conn);
-    }
+    netconn_delete(conn);
+    netconn_free(conn);
   }
 
   return err;
