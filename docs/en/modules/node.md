@@ -335,6 +335,9 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 * All active timers will be suspended and then resumed when NodeMCU wakes from sleep. 
 * Any previously suspended timers will be resumed when NodeMCU wakes from sleep.
 
+!!! attention
+    This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
+
 #### Syntax
 `node.sleep({wake_gpio[, duration, int_type, resume_cb, preserve_mode]})`
 
