@@ -765,6 +765,8 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
           }
           *d = '\0';
           luaL_addstring(&b, value);
+        } else if (*str == '"') {
+          luaL_addstring(&b, "\\\"");
         } else {
           luaL_addchar(&b, *str);
         }
