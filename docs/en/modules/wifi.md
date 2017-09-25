@@ -937,7 +937,9 @@ Sets station hostname.
 `hostname` must only contain letters, numbers and hyphens('-') and be 32 characters or less with first and last character being alphanumeric
 
 #### Returns
-`nil`
+- `true`  Success
+- `false` Failure
+
 
 #### Example
 ```lua

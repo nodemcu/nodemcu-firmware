@@ -26,7 +26,7 @@ time tracking is somewhat worse, but normally within 10ms.
 
 !!! important
 
-This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
+	This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
 
 This is a companion module to the [rtcmem](rtcmem.md) and [SNTP](sntp.md) modules.
 
