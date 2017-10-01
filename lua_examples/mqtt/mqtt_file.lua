@@ -51,6 +51,6 @@ m:connect(192.168.18.88,1883,0,1)
 -- {"cmd":"open","content":"test.lua"}
 -- {"cmd":"write","content":"print([[hello world]])\n"}
 -- {"cmd":"write","content":"print(\"hello2 world2\")\n"}
--- {"cmd":"write","content":"test.lua"}
+-- {"cmd":"remove","content":"test.lua"}
 -- {"cmd":"run","content":"test.lua"}
 -- {"cmd":"read","content":"test.lua"}
