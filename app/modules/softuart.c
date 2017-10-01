@@ -33,7 +33,7 @@ typedef struct {
     uint32_t baudrate;
 	uint16_t bit_time;
     uint16_t need_len;
-    uint16_t end_char;
+    int16_t end_char;
     int uart_receive_rf;
 } Softuart;
 
@@ -156,7 +156,7 @@ void softuart_intr_handler()
                 s->buffer.receive_buffer[s->buffer.length] = d; // save new byte
                 s->buffer.length = next;
 
-                NODE_DBG("SOFTUART buffer length %d\r\n", s->buffer.length);
+                NODE_DBG("SOFTUART char received - new buffer length %d\r\n", s->buffer.length);
                 if( ((s->need_len != 0) && (s->buffer.length >= s->need_len)) || \
                     ((s->end_char>=0) && ((unsigned char)d==(unsigned char)s->end_char)))
                 {
