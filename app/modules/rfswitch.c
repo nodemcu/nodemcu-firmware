@@ -15,6 +15,10 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "user_interface.h"
+#include "hw_timer.h"
+
+#define DIRECT_WRITE_LOW(pin)    (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), protocol.invertedSignal))
+#define DIRECT_WRITE_HIGH(pin)   (GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), !protocol.invertedSignal))
 
 typedef struct HighLow {
   uint8_t high;
@@ -29,7 +33,6 @@ typedef struct Protocol {
   /** @brief if true inverts the high and low logic levels in the HighLow structs */
   bool invertedSignal;
 } Protocol;
-
 
 /* Format for protocol definitions:
  * {pulselength, Sync bit, "0" bit, "1" bit}
@@ -59,45 +62,131 @@ static const Protocol proto[] = {
   { 450, { 23,  1 }, {  1,  2 }, {  2,  1 }, true }      // protocol 6 (HT6P20B)
 };
 
-/**
- * Transmit a single high-low pulse.
- */
-void transmit(HighLow pulses, bool invertedSignal, int pulseLength, int pin) {
-  platform_gpio_write(pin, !invertedSignal);
-  os_delay_us(pulseLength * pulses.high);
-  platform_gpio_write(pin, invertedSignal);
-  os_delay_us(pulseLength * pulses.low);
-}
+static const os_param_t TIMER_OWNER = 0x7266; // "rf"
+
+static uint8_t    repeatindex;
+static uint8_t    signalindex;
+static uint8_t pulse_part;
+static uint8_t pulse_length;
+static uint8_t pin;
+static bool do_sync;
+static unsigned long signal_length;
+static unsigned long command;
+static unsigned int length;
+
+Protocol protocol;
 
 /**
  * Transmit the first 'length' bits of the integer 'code'. The
  * bits are sent from MSB to LSB, i.e., first the bit at position length-1,
  * then the bit at position length-2, and so on, till finally the bit at position 0.
  */
-void send(unsigned long protocol_id, unsigned long pulse_length, unsigned long repeat, unsigned long pin, unsigned long value, unsigned int length) {
-  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  Protocol p = proto[protocol_id-1];
-  for (int nRepeat = 0; nRepeat < repeat; nRepeat++) {
-    for (int i = length-1; i >= 0; i--) {
-      if (value & (1L << i))
-        transmit(p.one, p.invertedSignal, pulse_length, pin);
-      else
-        transmit(p.zero, p.invertedSignal, pulse_length, pin);
-    }
-    transmit(p.syncFactor, p.invertedSignal, pulse_length, pin);
-  }
+
+static void prepare_to_send()
+{
+  signalindex=signal_length-1;
+  pulse_part=0;
+  do_sync = 0;
 }
 
+static void ICACHE_RAM_ATTR send_pulse(os_param_t p) {
+    (void) p;
+    unsigned long delay;
+    if (do_sync)
+    {
+      if (pulse_part == 0)
+      {
+        DIRECT_WRITE_HIGH(pin);
+        pulse_part=1;
+        delay = protocol.syncFactor.high;
+      } else
+      {
+        DIRECT_WRITE_LOW(pin);
+        do_sync=false;
+        delay = protocol.syncFactor.low;
+      }
+    }
+    else
+    {
+      if (command & (1L << signalindex))  // a '1'
+      {
+        if (pulse_part == 0)
+        {
+          DIRECT_WRITE_HIGH(pin);
+          pulse_part=1;
+          delay = protocol.one.high;
+        }
+        else
+        {
+          DIRECT_WRITE_LOW(pin);
+          pulse_part=0;
+          signalindex--;
+          delay = protocol.one.low;
+        }
+      }
+      else // a '0'
+      {
+        if (pulse_part == 0)
+        {
+          DIRECT_WRITE_HIGH(pin);
+          pulse_part=1;
+          delay = protocol.zero.high;
+        }
+        else
+        {
+          DIRECT_WRITE_LOW(pin);
+          pulse_part=0;
+          signalindex--;
+          delay = protocol.zero.low;
+        }
+      }
+      if (signalindex == 0)
+      {
+        do_sync = true;
+      }
+    }
+
+    bool finishedTransmit = (signalindex == 0) && !do_sync;
+    if (finishedTransmit)
+    {
+      repeatindex--;
+      if (repeatindex == 0) // sent all repeats
+      {
+        platform_hw_timer_close(TIMER_OWNER);
+        // we're done!
+      }
+      else // need to repeat
+      {
+        prepare_to_send();
+        send_pulse(0);
+      }
+    }
+    else // re-arm the timer for the next pulse part
+    {
+      platform_hw_timer_arm_ticks(TIMER_OWNER, delay * pulse_length);
+    }
+}
 
 static int rfswitch_send( lua_State *L )
 {
   unsigned int protocol_id = luaL_checkinteger( L, 1 );
-  unsigned int pulse_length = luaL_checkinteger( L, 2 );
-  unsigned int repeat = luaL_checkinteger( L, 3 );
-  unsigned int pin = luaL_checkinteger( L, 4 );
-  unsigned long value = luaL_checkinteger( L, 5 );
-  unsigned long length = luaL_checkinteger( L, 6 );
-  send(protocol_id, pulse_length, repeat, pin, value, length);
+  pulse_length = luaL_checkinteger( L, 2 );
+  repeatindex = luaL_checkinteger( L, 3 );
+  pin = luaL_checkinteger( L, 4 );
+  command = luaL_checkinteger( L, 5 );
+  signal_length = luaL_checkinteger( L, 6 );
+
+  if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
+      // Failed to init the timer
+      luaL_error(L, "Unable to initialize timer");
+  }
+  platform_hw_timer_set_func(TIMER_OWNER, send_pulse, 0);
+
+  platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
+  protocol = proto[protocol_id-1];
+
+  prepare_to_send();
+  send_pulse(0);
   return 0;
 }
 
