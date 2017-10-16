@@ -44,7 +44,6 @@ static int hmc5883_setup(lua_State* L) {
     if ((devid_a != 0x48) || (devid_b != 0x34) || (devid_c != 0x33)) {
         return luaL_error(L, "device not found");
     }
-
     // 8 sample average, 15 Hz update rate, normal measurement
     w8u(hmc5883_i2c_id, 0x00, 0x70);
 
@@ -58,7 +57,6 @@ static int hmc5883_setup(lua_State* L) {
 }
 
 static int hmc5883_init(lua_State* L) {
-
     uint32_t sda;
     uint32_t scl;
 
@@ -96,8 +94,8 @@ static int hmc5883_read(lua_State* L) {
     platform_i2c_send_stop(hmc5883_i2c_id);
 
     x = (int16_t) ((data[0] << 8) | data[1]);
-    y = (int16_t) ((data[2] << 8) | data[3]);
-    z = (int16_t) ((data[4] << 8) | data[5]);
+    z = (int16_t) ((data[2] << 8) | data[3]);
+    y = (int16_t) ((data[4] << 8) | data[5]);
 
     lua_pushinteger(L, x);
     lua_pushinteger(L, y);
