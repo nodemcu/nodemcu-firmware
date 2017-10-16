@@ -96,8 +96,8 @@ static int hmc5883_read(lua_State* L) {
     platform_i2c_send_stop(hmc5883_i2c_id);
 
     x = (int16_t) ((data[0] << 8) | data[1]);
-    y = (int16_t) ((data[2] << 8) | data[3]);
-    z = (int16_t) ((data[4] << 8) | data[5]);
+    z = (int16_t) ((data[2] << 8) | data[3]);
+    y = (int16_t) ((data[4] << 8) | data[5]);
 
     lua_pushinteger(L, x);
     lua_pushinteger(L, y);
