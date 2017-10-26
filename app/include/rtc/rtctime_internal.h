@@ -506,11 +506,6 @@ extern void rtc_time_enter_deep_sleep_final(void);
 
 static void rtc_time_enter_deep_sleep_us(uint32_t us)
 {
-  if (rtc_time_check_wake_magic())
-    rtc_time_set_sleep_magic();
-  else 
-    bbram_save();
-
   rtc_reg_write(0,0);
   rtc_reg_write(0,rtc_reg_read(0)&0xffffbfff);
   rtc_reg_write(0,rtc_reg_read(0)|0x30);
@@ -535,6 +530,11 @@ static void rtc_time_enter_deep_sleep_us(uint32_t us)
 
   uint32_t cycles=rtc_time_us_to_ticks(us);
   rtc_time_add_sleep_tracking(us,cycles);
+
+  if (rtc_time_check_wake_magic())
+    rtc_time_set_sleep_magic();
+  else 
+    bbram_save();
 
   rtc_reg_write(RTC_TARGET_ADDR,rtc_time_read_raw()+cycles);
   rtc_reg_write(0x9c,17);
