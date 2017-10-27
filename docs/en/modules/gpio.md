@@ -129,6 +129,7 @@ then the callback function is removed and the interrupt is disabled.
 at the interrupt passed as the first parameter to the callback. The timestamp of the event is passed
 as the second parameter. This is in microseconds and has the same base as for `tmr.now()`. This timestamp
 is grabbed at interrupt level and is more consistent than getting the time in the callback function.
+This timestamp is normally of the first interrupt detected, but, under overload conditions, might be a later one.
 The eventcount is the number of interrupts that were elided for this callback. This works best for edge triggered
 interrupts and enables counting of edges. However, beware
 of switch bounces -- you can get multiple pulses for a single switch closure. Counting
