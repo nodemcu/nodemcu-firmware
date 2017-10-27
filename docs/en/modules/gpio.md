@@ -125,10 +125,14 @@ This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile
 - `type` "up", "down", "both", "low", "high", which represent *rising edge*, *falling edge*, *both 
 edges*, *low level*, and *high level* trigger modes respectivey. If the type is "none" or omitted 
 then the callback function is removed and the interrupt is disabled.
-- `callback_function(level, when)` callback function when trigger occurs. The level of the specified pin 
+- `callback_function(level, when, eventcount)` callback function when trigger occurs. The level of the specified pin 
 at the interrupt passed as the first parameter to the callback. The timestamp of the event is passed
 as the second parameter. This is in microseconds and has the same base as for `tmr.now()`. This timestamp
 is grabbed at interrupt level and is more consistent than getting the time in the callback function.
+The eventcount is the number of interrupts that were elided for this callback. This works best for edge triggered
+interrupts and enables counting of edges. However, beware
+of switch bounces -- you can get multiple pulses for a single switch closure. Counting
+works best when the edges are digitally generated.
 The previous callback function will be used if the function is omitted.
 
 #### Returns

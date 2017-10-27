@@ -53,17 +53,27 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
     // GPIO callbacks are run in L0 and include the level as a parameter
     lua_State *L = lua_getstate();
     NODE_DBG("Calling: %08x\n", gpio_cb_ref[pin]);
-    //
-    if (!INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
-      // Edge triggered -- re-enable the interrupt
-      platform_gpio_intr_init(pin, pin_int_type[pin]);
-    }
 
-    // Do the actual callback
-    lua_rawgeti(L, LUA_REGISTRYINDEX, gpio_cb_ref[pin]);
-    lua_pushinteger(L, level);
-    lua_pushinteger(L, then);
-    lua_call(L, 2, 0);
+    bool needs_callback = 1;
+
+    while (needs_callback)  {
+      // Note that the interrupt level only modifies 'seen' and
+      // the base level only modifies 'reported'. 
+
+      // Do the actual callback
+      lua_rawgeti(L, LUA_REGISTRYINDEX, gpio_cb_ref[pin]);
+      lua_pushinteger(L, level);
+      lua_pushinteger(L, then);
+      uint16_t seen = pin_counter[pin].seen;
+      lua_pushinteger(L, 0x7fff & (seen - pin_counter[pin].reported));
+      pin_counter[pin].reported = seen & 0x7fff; // This will cause the next interrupt to trigger a callback
+      uint16_t diff = (seen ^ pin_counter[pin].seen);
+
+      lua_call(L, 3, 0);
+
+      // Needs another callback if seen changed but not if the top bit is set
+      needs_callback = diff <= 0x7fff && diff > 0;
+    } 
 
     if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
       // Level triggered -- re-enable the callback
