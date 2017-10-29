@@ -753,11 +753,9 @@ static void rtc_time_register_bootup(void)
     return;
   }
 
-  if (rtc_time_check_magic())
-  {
-    // We did not go to sleep properly. All our time keeping is f*cked!
-    rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
-  }
+  // We did not go to sleep properly. All our time keeping is f*cked!
+  rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
+
   RTC_DBG_ENABLED();
 }
 
