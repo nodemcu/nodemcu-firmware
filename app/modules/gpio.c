@@ -132,7 +132,13 @@ static int lgpio_mode( lua_State* L )
 
 NODE_DBG("pin,mode,pullup= %d %d %d\n",pin,mode,pullup);
 NODE_DBG("Pin data at mode: %d %08x, %d %d %d, %08x\n",
-          pin, pin_mux[pin], pin_num[pin], pin_func[pin], pin_int_type[pin], gpio_cb_ref[pin]);
+          pin, pin_mux[pin], pin_num[pin], pin_func[pin], 
+#ifdef GPIO_INTERRUPT_ENABLE
+          pin_int_type[pin], gpio_cb_ref[pin]
+#else
+          0, 0
+#endif
+          );
 
 #ifdef GPIO_INTERRUPT_ENABLE
   if (mode != INTERRUPT){     // disable interrupt
