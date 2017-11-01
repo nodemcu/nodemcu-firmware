@@ -148,6 +148,113 @@ uint8_t u8g_com_esp8266_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void
     return 1;
 }
 
+void u8g_com_esp8266_st7920_write_byte_hw_spi(uint8_t rs, uint8_t val) {
+  uint8_t i;
+
+  if ( rs == 0 )
+  {
+    /* command */
+    platform_spi_send( 1, 8, 0xf8 );
+  }
+  else if ( rs == 1 )
+  {
+    /* data */
+    platform_spi_send( 1, 8, 0xfa );
+  }
+  
+  platform_spi_send( 1, 8, (val & 0xf0) );
+  platform_spi_send( 1, 8, ((val << 4) & 0xf0) );
+
+  for( i = 0; i < 4; i++ ) {
+    u8g_10MicroDelay();
+  }
+}
+
+void u8g_com_esp8266_st7920_write_byte_hw_spi_seq(uint8_t rs, uint8_t *ptr, uint8_t len)
+{
+  uint8_t i;
+
+  if ( rs == 0 )
+  {
+    /* command */
+    platform_spi_send( 1, 8, 0xf8 );
+  }
+  else if ( rs == 1 )
+  {
+    /* data */
+    platform_spi_send( 1, 8, 0xfa );
+  }
+  
+  while( len > 0 )
+  {
+    platform_spi_send( 1, 8, (*ptr & 0xf0) );
+    platform_spi_send( 1, 8, ((*ptr << 4) & 0xf0) );
+    ptr++;
+    len--;
+    u8g_10MicroDelay();
+  }
+  
+  for( i = 0; i < 4; i++ ) {
+    u8g_10MicroDelay();
+  }
+}
+
+uint8_t u8g_com_esp8266_st7920_hw_spi_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
+{
+    struct _lu8g_userdata_t *lu8g = (struct _lu8g_userdata_t *)u8g;
+
+    switch(msg)
+    {
+    case U8G_COM_MSG_STOP:
+        break;
+    
+    case U8G_COM_MSG_INIT:
+        if ( lu8g->u8g.pin_list[U8G_PI_RESET] != U8G_PIN_NONE ) {
+          platform_gpio_mode( lu8g->u8g.pin_list[U8G_PI_RESET], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+        }
+
+        platform_gpio_mode( lu8g->u8g.pin_list[U8G_PI_CS], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
+        
+        lu8g_digital_write( lu8g, U8G_PI_CS, PLATFORM_GPIO_HIGH );
+        lu8g->u8g.pin_list[U8G_PI_A0] = 0;
+        break;
+    
+    case U8G_COM_MSG_ADDRESS:                     /* define cmd (arg_val = 0) or data mode (arg_val = 1) */
+        lu8g->u8g.pin_list[U8G_PI_A0] = arg_val;
+        break;
+
+    case U8G_COM_MSG_CHIP_SELECT:
+        if (arg_val == 0)
+        {
+            /* disable */
+            lu8g_digital_write( lu8g, U8G_PI_CS, PLATFORM_GPIO_LOW );
+        }
+        else
+        {
+            /* enable */
+            lu8g_digital_write( lu8g, U8G_PI_CS, PLATFORM_GPIO_HIGH );
+        }
+        break;
+      
+    case U8G_COM_MSG_RESET:
+        if ( lu8g->u8g.pin_list[U8G_PI_RESET] != U8G_PIN_NONE ) {
+            lu8g_digital_write( lu8g, U8G_PI_RESET, arg_val == 0 ? PLATFORM_GPIO_LOW : PLATFORM_GPIO_HIGH );
+        }
+        break;
+    
+    case U8G_COM_MSG_WRITE_BYTE:
+        u8g_com_esp8266_st7920_write_byte_hw_spi(lu8g->u8g.pin_list[U8G_PI_A0], arg_val);
+        break;
+    
+    case U8G_COM_MSG_WRITE_SEQ:
+    case U8G_COM_MSG_WRITE_SEQ_P:
+        {
+            u8g_com_esp8266_st7920_write_byte_hw_spi_seq(u8g->pin_list[U8G_PI_A0], (uint8_t *)arg_ptr, arg_val);   
+        }
+        break;
+    }
+    return 1;
+}
 
 uint8_t u8g_com_esp8266_ssd_i2c_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 {

@@ -56,6 +56,7 @@
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1351_128x128gh_hicolor_hw_spi)   \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1353_160x128_332_hw_spi)         \
 //    U8G_DISPLAY_TABLE_ENTRY(ssd1353_160x128_hicolor_hw_spi)     \
+//    U8G_DISPLAY_TABLE_ENTRY(st7920_128x64_hw_spi)               \
 //    U8G_DISPLAY_TABLE_ENTRY(st7565_64128n_hw_spi)               \
 //    U8G_DISPLAY_TABLE_ENTRY(st7565_dogm128_hw_spi)              \
 //    U8G_DISPLAY_TABLE_ENTRY(st7565_dogm132_hw_spi)              \
