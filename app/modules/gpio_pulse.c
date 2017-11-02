@@ -15,14 +15,16 @@ typedef struct {
   uint32_t gpio_set;
   uint32_t gpio_clr;
   uint32_t delay;
+  uint32_t delay_min;
+  uint32_t delay_max;
   uint32_t count;
   uint32_t count_left;
   uint16_t loop;
-  uint8_t adjustable;
 } pulse_entry_t;
 
 typedef struct {
   uint32_t entry_count;
+  volatile uint32_t steps;
   volatile uint16_t entry_pos;
   volatile int16_t stop_pos;  // -1 is stop nowhere, -2 is stop everywhere, otherwise is stop point
   pulse_entry_t *entry;
@@ -39,22 +41,27 @@ static int gpio_pulse_push_state(lua_State *L, pulse_t *pulser) {
   uint32_t now;
   uint32_t expected_end_time;
   uint32_t entry_pos;
+  uint32_t steps;
   do {
     now = 0x7FFFFFFF & system_get_time();
     expected_end_time = pulser->expected_end_time;
     entry_pos = pulser->entry_pos;
+    steps = pulser->steps;
   } while (expected_end_time != pulser->expected_end_time ||
-           entry_pos != pulser->entry_pos);
+           entry_pos != pulser->entry_pos ||
+           steps != pulser->steps);
 
   if (entry_pos >= pulser->entry_count) {
     lua_pushnil(L);
   } else {
     lua_pushinteger(L, entry_pos + 1);    // Lua is 1 offset
   }
+  lua_pushinteger(L, steps);
+
   int32_t diff = (expected_end_time - now) & 0x7fffffff;
   lua_pushinteger(L, (diff << 1) >> 1);
   lua_pushinteger(L, now);
-  return 3;
+  return 4;
 }
 
 static int gpio_pulse_getstate(lua_State *L) {
@@ -146,6 +153,9 @@ static int gpio_pulse_build(lua_State *L) {
   for (i = 0; i < size; i++) {
     pulse_entry_t *entry = pulser->entry + i;
 
+    entry->delay_min = -1;
+    entry->delay_max = -1;
+
     lua_rawgeti(L, 1, i + 1);
 
     if (lua_type(L, -1) != LUA_TTABLE) {
@@ -173,9 +183,10 @@ static int gpio_pulse_build(lua_State *L) {
 
         if (strcmp(str, "delay") == 0) {
           entry->delay = lua_tonumber(L, -1);
-        } else if (strcmp(str, "adjustable") == 0) {
-          entry->delay = lua_tonumber(L, -1);
-          entry->adjustable = 1;
+        } else if (strcmp(str, "min") == 0) {
+          entry->delay_min = lua_tonumber(L, -1);
+        } else if (strcmp(str, "max") == 0) {
+          entry->delay_max = lua_tonumber(L, -1);
         } else if (strcmp(str, "count") == 0) {
           entry->count = lua_tonumber(L, -1);
         } else if (strcmp(str, "loop") == 0) {
@@ -186,6 +197,17 @@ static int gpio_pulse_build(lua_State *L) {
       }
       lua_pop(L, 1);
     }
+
+    if (entry->delay_min != -1 || entry->delay_max != -1) {
+      if (entry->delay_min == -1) {
+        entry->delay_min = 0;
+      }
+      if (entry->delay_min > entry->delay ||
+          entry->delay_max < entry->delay) {
+        return luaL_error(L, "Delay of %d must be between min and max", entry->delay);
+      }
+    }
+
     lua_pop(L, 1);
   }
 
@@ -201,11 +223,11 @@ static int gpio_pulse_adjust(lua_State *L) {
 
   int offset = luaL_checkinteger(L, 2);
   // This will alter the next adjustable
-  pulser->next_adjust += offset;
+  pulser->next_adjust = offset;
 
-  gpio_pulse_push_state(L, active_pulser);
+  int rc = gpio_pulse_push_state(L, active_pulser);
 
-  return 3;
+  return rc;
 }
 
 static int gpio_pulse_cancel(lua_State *L) {
@@ -218,7 +240,7 @@ static int gpio_pulse_cancel(lua_State *L) {
   // Shut off the timer
   platform_hw_timer_close(TIMER_OWNER);
 
-  gpio_pulse_push_state(L, active_pulser);
+  int rc = gpio_pulse_push_state(L, active_pulser);
 
   active_pulser = NULL;
 
@@ -226,7 +248,7 @@ static int gpio_pulse_cancel(lua_State *L) {
   active_pulser_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, pulser_ref);
 
-  return 3;
+  return rc;
 }
 
 static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
@@ -236,10 +258,15 @@ static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
 
   do {
     if (!active_pulser || active_pulser->entry_pos >= active_pulser->entry_count) {
+      if (active_pulser) {
+        active_pulser->steps++;
+      }
       platform_hw_timer_close(TIMER_OWNER);
       task_post_low(tasknumber, (task_param_t)0);
       return;
     }
+    active_pulser->steps++;
+
     pulse_entry_t *entry = active_pulser->entry + active_pulser->entry_pos;
 
     GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, entry->gpio_set);
@@ -267,11 +294,18 @@ static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
 
     delay = entry->delay;
 
-    if (entry->adjustable) {
+    if (entry->delay_min != -1) {
       int offset = active_pulser->next_adjust;
       active_pulser->next_adjust = 0;
       int delay_offset = 0x7fffffff & (system_get_time() - (active_pulser->expected_end_time + offset));
       delay -= (delay_offset << 1) >> 1;
+      if (delay < entry->delay_min) {
+        active_pulser->next_adjust = entry->delay_min - delay;
+        delay = entry->delay_min;
+      } else if (delay > entry->delay_max) {
+        active_pulser->next_adjust = entry->delay_max - delay;
+        delay = entry->delay_max;
+      }
     }
 
     active_pulser->expected_end_time += delay;
@@ -305,6 +339,7 @@ static int gpio_pulse_start(lua_State *L) {
     pulser->entry[i].count_left = 0;
   }
   pulser->entry_pos = 0;
+  pulser->steps = 0;
   pulser->stop_pos = -1;
 
   // Now start things up
@@ -330,14 +365,14 @@ static void gpio_pulse_task(os_param_t param, uint8_t prio)
     // Invoke the callback
     lua_rawgeti(L, LUA_REGISTRYINDEX, active_pulser->cb_ref);
 
-    gpio_pulse_push_state(L, active_pulser);
+    int rc = gpio_pulse_push_state(L, active_pulser);
 
     active_pulser = NULL;
     int pulser_ref = active_pulser_ref;
     active_pulser_ref = LUA_NOREF;
     luaL_unref(L, LUA_REGISTRYINDEX, pulser_ref);
 
-    lua_call(L, 3, 0);
+    lua_call(L, rc, 0);
   }
 }
 
@@ -355,6 +390,7 @@ static const LUA_REG_TYPE pulse_map[] = {
 const LUA_REG_TYPE gpio_pulse_map[] =
 {
   { LSTRKEY( "build" ),               LFUNCVAL( gpio_pulse_build ) },
+  { LSTRKEY( "__index" ),             LROVAL( gpio_pulse_map ) },
   { LNILKEY, LNILVAL }
 };
 
