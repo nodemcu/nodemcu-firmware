@@ -857,7 +857,8 @@ static void rtc_time_settimeofday(const struct rtc_timeval* tv)
 
   // calibrate sleep period based on difference between expected time and actual time
   if (sleep_us>0 && sleep_us<0xffffffff &&
-      sleep_cycles>0 && sleep_cycles<0xffffffff)
+      sleep_cycles>0 && sleep_cycles<0xffffffff &&
+      tv->tv_sec)
   {
     uint64_t actual_sleep_us=sleep_us-diff_us;
     uint32_t cali=(actual_sleep_us<<12)/sleep_cycles;
@@ -873,14 +874,15 @@ static void rtc_time_settimeofday(const struct rtc_timeval* tv)
   rtc_usrate = 0;
 
   // Deal with time adjustment if necessary
-  if (diff_us>0) // Time went backwards. Avoid that....
+  if (diff_us>0 && tv->tv_sec) // Time went backwards. Avoid that....
   {
     if (diff_us>0xffffffffULL)
       diff_us=0xffffffffULL;
     now_ntp_us+=diff_us;
-  }
-  else
+  } else {
     diff_us=0;
+  }
+
   rtc_todoffsetus = diff_us;
 
   uint32_t now_s=now_ntp_us/1000000;
