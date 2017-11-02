@@ -321,8 +321,16 @@ static int gpio_pulse_start(lua_State *L) {
     return luaL_error(L, "pulse operation already in progress");
   }
 
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION) {
-    lua_pushvalue(L, 2);
+  int argno = 2;
+  int initial_adjust;
+
+  if (lua_type(L, argno) == LUA_TNUMBER) {
+    initial_adjust = luaL_checkinteger(L, argno);
+    argno++;
+  }
+
+  if (lua_type(L, argno) == LUA_TFUNCTION || lua_type(L, argno) == LUA_TLIGHTFUNCTION) {
+    lua_pushvalue(L, argno);
   } else {
     return luaL_error( L, "missing callback" );
   }
@@ -341,6 +349,7 @@ static int gpio_pulse_start(lua_State *L) {
   pulser->entry_pos = 0;
   pulser->steps = 0;
   pulser->stop_pos = -1;
+  pulser->next_adjust = initial_adjust;
 
   // Now start things up
   if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
