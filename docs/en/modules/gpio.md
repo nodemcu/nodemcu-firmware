@@ -192,6 +192,9 @@ One of the uses for this is to generate bipolar impulse for driving clock moveme
 second, and a pulse on Pin 2 on the odd second. `:getstate` and `:adjust` can be used to keep the pulse synchronized to the
 RTC clock (that is itself synchronized with NTP).
 
+!!! Configuration
+This feature is only available if `LUA_USE_MODULES_GPIO_PULSE` is defined at build time.
+
 ## gpio.pulse.build
 
 This builds the `gpio.pulse` object from the supplied argument -- which is a table as described below.
