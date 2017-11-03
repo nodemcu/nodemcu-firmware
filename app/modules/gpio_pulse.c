@@ -89,7 +89,7 @@ static int gpio_pulse_stop(lua_State *L) {
     stop_pos = luaL_checkinteger(L, 2);  
     if (stop_pos != -2) {
       if (stop_pos < 1 || stop_pos > pulser->entry_count) {
-        return luaL_error( L, "bad stop position: %d", stop_pos );
+        return luaL_error( L, "bad stop position: %d (valid range 1 - %d)", stop_pos, pulser->entry_count );
       }
       stop_pos = stop_pos - 1;
     }
@@ -135,7 +135,7 @@ static int gpio_pulse_build(lua_State *L) {
   size_t size = luaL_getn(L, 1);
 
   if (size > 100) {
-    return luaL_error(L, "table is too large");
+    return luaL_error(L, "table is too large: %d entries is more than 100", size);
   }
 
   size_t memsize = sizeof(pulse_t) + size * sizeof(pulse_entry_t);
@@ -169,8 +169,8 @@ static int gpio_pulse_build(lua_State *L) {
         int pin = lua_tonumber(L, -2);
         int value = lua_tonumber(L, -1);
 
-        if (pin < 0 || pin >= GPIO_PIN_NUM) {
-          luaL_error(L, "pin number %d must be in range", pin);
+        if (pin < 1 || pin >= GPIO_PIN_NUM) {
+          luaL_error(L, "pin number %d must be in range 1 .. %d", pin, GPIO_PIN_NUM - 1);
         }
 
         if (value) {
