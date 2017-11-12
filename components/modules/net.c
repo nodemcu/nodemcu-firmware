@@ -61,6 +61,7 @@ typedef struct lnet_userdata {
       bool connecting;
       int hold;
       size_t num_held;
+      size_t num_send;
       int cb_connect_ref;
       int cb_disconnect_ref;
       int cb_reconnect_ref;
@@ -290,8 +291,13 @@ static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt,
         ud->client.connecting = false;
         post_net_connected(ud);
       } else if (len > 0) {
-        // data sent, trigger Lua callback
-        post_net_sent(ud);
+        // we're potentially called back from netconn several times for a single send job
+        // keep track of them in num_send and postpone the Lua callback until all data is sent
+        ud->client.num_send -= len;
+        if (ud->client.num_send == 0) {
+          // all data sent, trigger Lua callback
+          post_net_sent(ud);
+        }
       }
       break;
 
@@ -608,6 +614,7 @@ int net_send( lua_State *L ) {
   }
   data = luaL_checklstring(L, stack++, &datalen);
   if (!data || datalen == 0) return luaL_error(L, "no data to send");
+  ud->client.num_send = datalen;
   if (lua_isfunction(L, stack) || lua_islightfunction(L, stack)) {
     lua_pushvalue(L, stack++);
     luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
