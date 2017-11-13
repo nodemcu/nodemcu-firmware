@@ -1891,7 +1891,7 @@ int luaopen_wifi( lua_State *L )
   wifi_eventmon_init();
 #endif
 #if defined(LUA_USE_MODULES_WIFI_MONITOR)
-  wifi_monitor_init();
+  wifi_monitor_init(L);
 #endif
  return 0;
 }
