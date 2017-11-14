@@ -14,6 +14,9 @@
 #include "sys/network_80211.h"
 
 static int recv_cb;
+static uint8 mon_offset;
+static uint8 mon_value;
+static uint8 mon_mask;
 
 static int8 variable_start[16] = {
    4,   // assoc req
@@ -48,7 +51,12 @@ static void wifi_rx_cb(uint8 *buf, uint16 len) {
   if ((void *) (mgt + 1) > (void *) (buf + len)) {
     return;
   }
-  if (mgt->framectrl.Type != FRAME_TYPE_MANAGEMENT) {
+
+  if (mon_offset > len) {
+    return;
+  }
+
+  if ((buf[mon_offset] & mon_mask) != mon_value) {
     return;
   }
 
@@ -210,9 +218,35 @@ static int packet_subhex(lua_State *L) {
 }
 
 static int wifi_monitor_start(lua_State *L) {
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  int argno = 1;
+  if (lua_type(L, argno) == LUA_TNUMBER) {
+    int offset = luaL_checkinteger(L, argno);
+    argno++;
+    if (lua_type(L, argno) == LUA_TNUMBER) {
+      int value = luaL_checkinteger(L, argno);
+
+      int mask = 0xff;
+      argno++;
+
+      if (lua_type(L, argno) == LUA_TNUMBER) {
+        mask = luaL_checkinteger(L, argno);
+        argno++;
+      }
+      mon_offset = offset - 1;
+      mon_value = value;
+      mon_mask = mask;
+    } else {
+      return luaL_error(L, "Must supply offset and value");
+    }
+  } else {
+    // Management frames by default
+    mon_offset = 12;
+    mon_value = 0x00;
+    mon_mask = 0x0C;
+  }
+  if (lua_type(L, argno) == LUA_TFUNCTION || lua_type(L, argno) == LUA_TLIGHTFUNCTION)
   {
-    lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
+    lua_pushvalue(L, argno);  // copy argument (func) to the top of stack
     recv_cb = luaL_ref(L, LUA_REGISTRYINDEX);
     wifi_set_opmode_current(1);
     wifi_station_disconnect();
