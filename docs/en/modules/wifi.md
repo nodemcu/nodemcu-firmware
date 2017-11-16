@@ -211,6 +211,20 @@ physical mode after setup
 #### See also
 [`wifi.getphymode()`](#wifigetphymode)
 
+## wifi.setmaxtxpower()
+
+Sets WiFi maximum tx power
+
+#### Syntax
+`wifi.setmaxtxpower(max_tpw)`
+
+#### Parameters
+`max_tpw` maximum value of RF Tx Power, unit: 0.25 dBm, range [0, 82]. 
+
+#### Returns
+`nil`
+
+
 ## wifi.startsmart()
 
 Starts to auto configuration, if success set up SSID and password automatically.
