@@ -190,6 +190,7 @@ static int packet_subhex(lua_State *L) {
 
   ptrdiff_t start = posrelat(luaL_checkinteger(L, 2), packet->len);
   ptrdiff_t end = posrelat(luaL_optinteger(L, 3, -1), packet->len);
+  const char *sep = luaL_optstring(L, 4, "");
 
   if (start < 1) start = 1;
   if (end > (ptrdiff_t)packet->len) end = (ptrdiff_t)packet->len;
@@ -200,6 +201,10 @@ static int packet_subhex(lua_State *L) {
     int i;
     for (i = start - 1; i < end; i++) {
       char hex[3];
+
+      if (i >= start) {
+        luaL_addstring(&b, sep);
+      }
 
       uint8 c = packet->buf[i];
 
