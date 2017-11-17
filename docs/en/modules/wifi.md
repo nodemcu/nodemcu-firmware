@@ -102,6 +102,9 @@ Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled
 
 Wake up WiFi from suspended state or cancel pending wifi suspension.
 
+!!! attention
+    This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
+
 !!! note
 	Wifi resume occurs asynchronously, this means that the resume request will only be processed when control of the processor is passed back to the SDK (after MyResumeFunction() has completed). The resume callback also executes asynchronously and will only execute after wifi has resumed normal operation. 
 
@@ -262,6 +265,9 @@ none
 
 ## wifi.suspend()
 Suspend Wifi to reduce current consumption. 
+
+!!! attention
+    This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 !!! note
 	Wifi suspension occurs asynchronously, this means that the suspend request will only be processed when control of the processor is passed back to the SDK (after MySuspendFunction() has completed). The suspend callback also executes asynchronously and will only execute after wifi has been successfully been suspended. 
@@ -937,7 +943,9 @@ Sets station hostname.
 `hostname` must only contain letters, numbers and hyphens('-') and be 32 characters or less with first and last character being alphanumeric
 
 #### Returns
-`nil`
+- `true`  Success
+- `false` Failure
+
 
 #### Example
 ```lua

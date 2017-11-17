@@ -979,6 +979,7 @@ static int wifi_station_connect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
@@ -993,6 +994,7 @@ static int wifi_station_disconnect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
@@ -1191,24 +1193,21 @@ static int wifi_sta_gethostname( lua_State* L )
 }
 
 // Used by wifi_sta_sethostname_lua and wifi_change_default_hostname
-static bool wifi_sta_sethostname(const char *hostname, size_t len)
+// This function checks host name to ensure that it follows RFC 952 & RFC 1123 host name standards.
+static bool wifi_sta_checkhostname(const char *hostname, size_t len)
 {
-  //this function follows RFC 952 & RFC 1123 host name standards.
   //the hostname must be 32 chars or less and first and last char must be alphanumeric
-  if (!isalnum(hostname[0]) || !isalnum(hostname[len-1]) || len > 32)
-  {
+  if (len == 0 || len > 32 || !isalnum(hostname[0]) || !isalnum(hostname[len-1])){
     return false;
   }
-
-  for (int i=1; i<len; i++)
-  {
-    //characters in the middle of the host name can be alphanumeric or a hyphen(-) only
-  if (!(isalnum(hostname[i]) || hostname[i]=='-'))
-    {
+  //characters in the middle of the host name must be alphanumeric or a hyphen(-) only
+  for (int i=1; i<len; i++){
+    if (!(isalnum(hostname[i]) || hostname[i]=='-')){
       return false;
     }
   }
-  return wifi_station_set_hostname((char*)hostname);
+
+  return true;
 }
 
 // Lua: wifi.sta.sethostname()
@@ -1216,8 +1215,9 @@ static int wifi_sta_sethostname_lua( lua_State* L )
 {
   size_t len;
   const char *hostname = luaL_checklstring(L, 1, &len);
-  luaL_argcheck(L, wifi_sta_sethostname(hostname, len), 1, "Invalid hostname");
-  return 0;
+  luaL_argcheck(L, wifi_sta_checkhostname(hostname, len), 1, "Invalid hostname");
+  lua_pushboolean(L, wifi_station_set_hostname((char*)hostname));
+  return 1;
 }
 
 // Lua: wifi.sta.sleeptype(type)
@@ -1847,36 +1847,31 @@ void wifi_change_default_host_name(void)
 {
   uint8 opmode_temp=wifi_get_opmode();
   wifi_set_opmode_current(STATION_MODE);
+  char temp[33] = {0};//32 chars + NULL
+  uint8_t mac[6];
+  wifi_get_macaddr(STATION_IF, mac);
+
 #ifndef WIFI_STA_HOSTNAME
-  char temp[32];
-  uint8_t mac[6];
-  wifi_get_macaddr(STATION_IF, mac);
   c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
-  wifi_sta_sethostname((const char*)temp, strlen(temp));
-
 #elif defined(WIFI_STA_HOSTNAME) && !defined(WIFI_STA_HOSTNAME_APPEND_MAC)
-  if(!wifi_sta_sethostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME)))
-  {
-    char temp[32];
-    uint8_t mac[6];
-    wifi_get_macaddr(STATION_IF, mac);
-    c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
-    wifi_sta_sethostname((const char*)temp, strlen(temp));
+  if(wifi_sta_checkhostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME))){
+    c_sprintf(temp, "%s", WIFI_STA_HOSTNAME);
   }
-
-#elif defined(WIFI_STA_HOSTNAME) && defined(WIFI_STA_HOSTNAME_APPEND_MAC)
-  char temp[32];
-  uint8_t mac[6];
-  wifi_get_macaddr(STATION_IF, mac);
-  c_sprintf(temp, "%s%X%X%X", WIFI_STA_HOSTNAME, (mac)[3], (mac)[4], (mac)[5]);
-  if(!wifi_sta_sethostname(temp, strlen(temp)))
-  {
+  else{
     c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
-    wifi_sta_sethostname((const char*)temp, strlen(temp));
+  }
+#elif defined(WIFI_STA_HOSTNAME) && defined(WIFI_STA_HOSTNAME_APPEND_MAC)
+  if(strlen(WIFI_STA_HOSTNAME) <= 26 && wifi_sta_checkhostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME))){
+    c_sprintf(temp, "%s%X%X%X", WIFI_STA_HOSTNAME, (mac)[3], (mac)[4], (mac)[5]);
+  }
+  else{
+    c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
   }
 #endif
-  if(opmode_temp!=wifi_get_opmode())
-  {
+
+  wifi_station_set_hostname((char*)temp);
+
+  if(opmode_temp != wifi_get_opmode()){
     wifi_set_opmode_current(opmode_temp);
   }
 }
