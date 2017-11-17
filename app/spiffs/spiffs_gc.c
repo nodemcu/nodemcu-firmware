@@ -294,7 +294,7 @@ s32_t spiffs_gc_find_candidate(
 
     // calculate score and insert into candidate table
     // stoneage sort, but probably not so many blocks
-    if (res == SPIFFS_OK && deleted_pages_in_block > 0) {
+    if (res == SPIFFS_OK /*&& deleted_pages_in_block > 0*/) {
       // read erase count
       spiffs_obj_id erase_count;
       res = _spiffs_rd(fs, SPIFFS_OP_C_READ | SPIFFS_OP_T_OBJ_LU2, 0,
