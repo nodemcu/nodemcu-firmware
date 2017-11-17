@@ -213,7 +213,7 @@ physical mode after setup
 
 ## wifi.setmaxtxpower()
 
-Sets WiFi maximum tx power
+Sets WiFi maximum tx power.  This setting is not persisted across power cycles, and the documentation does not specify if the setting persists after deep sleep.
 
 #### Syntax
 `wifi.setmaxtxpower(max_tpw)`
