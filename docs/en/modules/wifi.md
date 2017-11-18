@@ -453,6 +453,7 @@ Sets the WiFi station configuration.
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
+station_cfg.save=false
 wifi.sta.config(station_cfg)
 
 --connect to Access Point (DO save config to flash)
@@ -462,14 +463,14 @@ station_cfg.pwd="password"
 station_cfg.save=true
 wifi.sta.config(station_cfg)
 
---connect to Access Point with specific MAC address  
+--connect to Access Point with specific MAC address (DO save config to flash)
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
 station_cfg.bssid="AA:BB:CC:DD:EE:FF"
 wifi.sta.config(station_cfg)
 
---configure station but don't connect to Access point
+--configure station but don't connect to Access point (DO save config to flash)
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
