@@ -10,7 +10,7 @@
 #include "../crypto/sha2.h"
 
 #if defined(LUA_USE_MODULES_BLOOM) && !defined(SHA2_ENABLE)
-#error Must have SHA2)ENABLE set for BLOOM module
+#error Must have SHA2_ENABLE set for BLOOM module
 #endif
 
 typedef struct {
