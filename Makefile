@@ -308,11 +308,11 @@ endif
 
 
 $(OBJODIR)/%.o: %.c
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
 
 $(OBJODIR)/%.d: %.c
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	@echo DEPEND: $(CC) -M $(CFLAGS) $<
 	@set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
@@ -331,22 +331,22 @@ $(OBJODIR)/%.d: %.cpp
 	rm -f $@.$$$$
 
 $(OBJODIR)/%.o: %.s
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(OBJODIR)/%.d: %.s
-	@mkdir -p $(OBJODIR); \
+	@mkdir -p $(dir $@); \
 	set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 $(OBJODIR)/%.o: %.S
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	$(CC) $(CFLAGS) -D__ASSEMBLER__ -o $@ -c $<
 
 $(OBJODIR)/%.d: %.S
-	@mkdir -p $(OBJODIR); \
+	@mkdir -p $(dir $@); \
 	set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \

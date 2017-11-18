@@ -38,6 +38,7 @@ SUBDIRS= 					\
 	lua 					\
 	lwip 					\
 	task 					\
+	u8g2lib					\
 	smart 					\
 	modules 				\
 	spiffs 					\
@@ -68,6 +69,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	libc/liblibc.a 				\
 	lua/liblua.a 				\
 	lwip/liblwip.a 				\
+	u8g2lib/u8g2lib.a			\
 	smart/smart.a 				\
 	spiffs/spiffs.a 			\
 	fatfs/libfatfs.a			\

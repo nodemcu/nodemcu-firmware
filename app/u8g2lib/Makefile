@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = libplatform.a
+GEN_LIBS = u8g2lib.a
 endif
 
 STD_CFLAGS=-std=gnu11 -Wimplicit
@@ -24,7 +24,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+DEFINES += -DU8X8_USE_PINS
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -38,12 +38,13 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
+CSRCS := $(wildcard u8g2/src/clib/*.c *.c)
+
 INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../spiffs
+INCLUDES += -I u8g2/src/clib
 INCLUDES += -I ../libc
 INCLUDES += -I ../lua
-INCLUDES += -I ../u8g2lib/u8g2/src/clib
+INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
