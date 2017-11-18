@@ -76,6 +76,11 @@ config U8G2_I2C_ST7588_JLX12864
        bool "st7588_i2c_jlx12864"
        default "n"
 
+config U8G2_I2C_UC1601_128X32
+       depends on U8G2_COMM_I2C
+       bool "uc1601_i2c_128X32"
+       default "n"
+
 config U8G2_I2C_UC1604_JLX19264
        depends on U8G2_COMM_I2C
        bool "uc1604_i2c_jlx19264"
@@ -106,11 +111,21 @@ config U8G2_I2C_UC1611_EA_DOGXL240
        bool "uc1611_i2c_ea_dogxl240"
        default "n"
 
+config U8G2_I2C_UC1611_EW50850
+       depends on U8G2_COMM_I2C
+       bool "uc1611_i2c_ew50850"
+       default "n"
+
 
 menuconfig U8G2_COMM_SPI
        bool "SPI"
        select LUA_MODULE_SPI
        default "y"
+
+config U8G2_SPI_IL3820_V2_296X128
+       depends on U8G2_COMM_SPI
+       bool "il3820_v2_296x128"
+       default "n"
 
 config U8G2_SPI_IST3020_ERC19264
        depends on U8G2_COMM_SPI
@@ -272,6 +287,11 @@ config U8G2_SPI_ST7565_ZOLEN_128X64
        bool "st7565_zolen_128x64"
        default "n"
 
+config U8G2_SPI_ST7567_JLX12864
+       depends on U8G2_COMM_SPI
+       bool "st7567_jxl12864"
+       default "n"
+
 config U8G2_SPI_ST7567_PI_132X64
        depends on U8G2_COMM_SPI
        bool "st7567_pi_132x64"
@@ -290,6 +310,21 @@ config U8G2_SPI_ST7920_S_128X64
 config U8G2_SPI_ST7920_S_192X32
        depends on U8G2_COMM_SPI
        bool "st7920_s_192x32"
+       default "n"
+
+config U8G2_SPI_ST75256_JLX172104
+       depends on U8G2_COMM_SPI
+       bool "st75256_jlx172104"
+       default "n"
+
+config U8G2_SPI_ST75256_JLX256128
+       depends on U8G2_COMM_SPI
+       bool "st75256_jlx256128"
+       default "n"
+
+config U8G2_SPI_UC1601_128X32
+       depends on U8G2_COMM_SPI
+       bool "uc1601_128X32"
        default "n"
 
 config U8G2_SPI_UC1604_JLX19264
@@ -320,6 +355,11 @@ config U8G2_SPI_UC1611_EA_DOGM240
 config U8G2_SPI_UC1611_EA_DOGXL240
        depends on U8G2_COMM_SPI
        bool "uc1611_ea_dogxl240"
+       default "n"
+
+config U8G2_SPI_UC1611_EW50850
+       depends on U8G2_COMM_SPI
+       bool "uc1611_ew50850"
        default "n"
 
 config U8G2_SPI_UC1701_EA_DOGS102
