@@ -70,19 +70,34 @@ Checks to see if a string is present in the filter set.
 ```
 
 
+## filter:reset()
+Empties the filter.
+
+#### Syntax
+`filter:reset()`
+
+#### Returns
+Nothing
+
+#### Example
+```
+filter:reset()
+```
+
 ## filter:info()
 Get some status information on the filter.
 
 #### Syntax
-`bits, fns, occupancy = filter:info()`
+`bits, fns, occupancy, fprate = filter:info()`
 
 #### Returns
 - `bits` The number of bits in the filter.
 - `fns` The number of hash functions in use.
 - `occupancy` The number of bits set in the filter. 
+- `fprate` The approximate chance that the next `check` will return `true` when it should return `false`. This is represented as the inverse of the probability -- i.e. as the n in 1-in-n chance. This value is limited to 1,000,000.
 
 #### Example
 ```
-bits, fns, occupancy = filter:info()
+bits, fns, occupancy, fprate = filter:info()
 ```
 

@@ -16,6 +16,7 @@
 typedef struct {
   uint8 fns;
   uint16 size;
+  uint32 occupancy;
   uint32 buf[];
 } bloom_t;
 
@@ -31,20 +32,22 @@ static bool add_or_check(const uint8 *buf, size_t len, bloom_t *filter, bool add
   uint32 bits = filter->size << 5;
   uint8 *h = hash;
   bool prev = true;
+  int hstep = filter->fns > 10 ? 2 : 3;
   for (i = 0; i < filter->fns; i++) {
     uint32 val = (((h[0] << 8) + h[1]) << 8) + h[2];
-    h += 3;
+    h += hstep;
     val = val % bits;
 
     uint32 offset = val >> 5;
     uint32 bit = 1 << (val & 31);
 
     if (!(filter->buf[offset] & bit)) {
+      prev = false;
       if (add) {
         filter->buf[offset] |= bit;
-        prev = false;
+        filter->occupancy++;
       } else {
-        return false;
+        break;
       }
     }
   }
@@ -74,26 +77,51 @@ static int bloom_filter_add(lua_State *L) {
   return 1;
 }
 
+static int bloom_filter_reset(lua_State *L) {
+  bloom_t *filter = (bloom_t *)luaL_checkudata(L, 1, "bloom.filter");
+
+  memset(filter->buf, 0, filter->size << 2);
+  filter->occupancy = 0;
+
+  return 0;
+}
+
 static int bloom_filter_info(lua_State *L) {
   bloom_t *filter = (bloom_t *)luaL_checkudata(L, 1, "bloom.filter");
 
   lua_pushinteger(L, filter->size << 5);
   lua_pushinteger(L, filter->fns);
+  lua_pushinteger(L, filter->occupancy);
 
-  int total = 0;
-  int i;
-  for (i = 0; i < filter->size; i++) {
-    uint32 v = filter->buf[i];
+  // Now calculate the chance that a FP will be returned
+  uint64 prob = 1000000;
+  if (filter->occupancy > 0) {
+    unsigned int ratio = (filter->size << 5) / filter->occupancy;
+    int i;
 
-    while (v) {
-      total++;
-      v &= (v - 1);
+    prob = ratio;
+
+    for (i = 1; i < filter->fns && prob < 1000000; i++) {
+      prob = prob * ratio;
+    }
+
+    if (prob < 1000000) {
+      // try again with some scaling
+      unsigned int ratio256 = (filter->size << 13) / filter->occupancy;
+
+      uint64 prob256 = ratio256;
+
+      for (i = 1; i < filter->fns && prob256 < 256000000; i++) {
+        prob256 = (prob256 * ratio256) >> 8;
+      }
+
+      prob = prob256 >> 8;
     }
   }
 
-  lua_pushinteger(L, total);
+  lua_pushinteger(L, prob > 1000000 ? 1000000 : (int) prob);
 
-  return 3;
+  return 4;
 }
 
 static int bloom_create(lua_State *L) {
@@ -124,11 +152,15 @@ static int bloom_create(lua_State *L) {
   if (fns < 2) {
     fns = 2;
   }
-  if (fns > 10) {
-    fns = 10;
+  if (fns > 15) {
+    fns = 15;
   }
 
   bloom_t *filter = (bloom_t *) lua_newuserdata(L, sizeof(bloom_t) + size);
+  //
+  // Associate its metatable
+  luaL_getmetatable(L, "bloom.filter");
+  lua_setmetatable(L, -2);
 
   memset(filter, 0, sizeof(bloom_t) + size);
   filter->size = size >> 2;
@@ -140,6 +172,7 @@ static int bloom_create(lua_State *L) {
 static const LUA_REG_TYPE bloom_filter_map[] = {
   { LSTRKEY( "add" ),                   LFUNCVAL( bloom_filter_add ) },
   { LSTRKEY( "check" ),                 LFUNCVAL( bloom_filter_check ) },
+  { LSTRKEY( "reset" ),                 LFUNCVAL( bloom_filter_reset ) },
   { LSTRKEY( "info" ),                  LFUNCVAL( bloom_filter_info ) },
   { LSTRKEY( "__index" ),               LROVAL( bloom_filter_map ) },
   { LNILKEY, LNILVAL }
