@@ -303,9 +303,7 @@ static int wifi_setmaxtxpower( lua_State* L )
 {
   unsigned power;
   power = luaL_checkinteger( L, 1 );
-
-  if ( power > 82 )
-    return luaL_error( L, "tx power out of range (0->82)");
+  luaL_argcheck(L, (power > 0 && power < 83), 1, "tx power out of range (0->82)");
 
   system_phy_set_max_tpw( (uint8_t) power);
   return 1;
