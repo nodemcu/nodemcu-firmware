@@ -213,7 +213,7 @@ physical mode after setup
 
 ## wifi.setmaxtxpower()
 
-Sets WiFi maximum tx power.  This setting is not persisted across power cycles, and the documentation does not specify if the setting persists after deep sleep.
+Sets WiFi maximum tx power.  This setting is not persisted across power cycles, and the documentation does not specify if the setting persists after deep sleep.  The default value used is read from flash at boot time as part of the esp8266 init data, and its value is set by the Espressif SDK.
 
 #### Syntax
 `wifi.setmaxtxpower(max_tpw)`
