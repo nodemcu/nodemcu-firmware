@@ -211,6 +211,20 @@ physical mode after setup
 #### See also
 [`wifi.getphymode()`](#wifigetphymode)
 
+## wifi.setmaxtxpower()
+
+Sets WiFi maximum tx power.  This setting is not persisted across power cycles, and the documentation does not specify if the setting persists after deep sleep.  The default value used is read from flash at boot time as part of the esp8266 init data, and its value is set by the Espressif SDK.
+
+#### Syntax
+`wifi.setmaxtxpower(max_tpw)`
+
+#### Parameters
+`max_tpw` maximum value of RF Tx Power, unit: 0.25 dBm, range [0, 82]. 
+
+#### Returns
+`nil`
+
+
 ## wifi.startsmart()
 
 Starts to auto configuration, if success set up SSID and password automatically.
