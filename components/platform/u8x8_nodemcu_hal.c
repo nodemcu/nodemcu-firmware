@@ -28,7 +28,7 @@ uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, 
         memset( (void *)&cfg, 0, sizeof( cfg ) );
         cfg.pin_bit_mask = 1ULL << u8x8->pins[idx];
 
-        if (idx == U8X8_PIN_I2C_CLOCK || idx == U8X8_PIN_I2C_CLOCK) {
+        if (idx == U8X8_PIN_I2C_CLOCK || idx == U8X8_PIN_I2C_DATA) {
           cfg.mode = GPIO_MODE_OUTPUT_OD;
           cfg.pull_up_en = GPIO_PULLUP_ENABLE;
         } else {

@@ -1,4 +1,5 @@
 // Module for binding the u8g2 library
+// Note: This file is intended to be shared between esp8266 and esp32 platform
 
 #include "module.h"
 #include "lauxlib.h"
@@ -10,9 +11,13 @@
 #include "u8g2_displays.h"
 #include "u8g2_fonts.h"
 
+#ifdef ESP_PLATFORM
+// ESP32
 #include "spi_common.h"
 
 #include "sdkconfig.h"
+#endif
+
 #ifndef CONFIG_LUA_MODULE_U8G2
 // ignore unused functions if u8g2 module will be skipped anyhow
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -616,6 +621,7 @@ static int ldisplay_i2c( lua_State *L, display_setup_fn_t setup_fn )
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_i2c, u8x8_gpio_and_delay_nodemcu );
 
   /* prepare overlay data */
@@ -653,24 +659,45 @@ static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
 {
   int stack = 0;
 
+#ifndef ESP_PLATFORM
+  // ESP8266
+  typedef struct {
+    int host;
+  } lspi_host_t;
+  lspi_host_t host_elem;
+  lspi_host_t *host = &host_elem;
+#else
+  // ESP32
   lspi_host_t *host = NULL;
+#endif
   int host_ref = LUA_NOREF;
   int cs = -1;
   int dc = -1;
   int res = -1;
   int rfb_cb_ref = LUA_NOREF;
+  int get_spi_pins;
 
-  if (lua_type( L, ++stack) == LUA_TUSERDATA) {
+
+  if (lua_type( L, ++stack ) == LUA_TUSERDATA) {
     host = (lspi_host_t *)luaL_checkudata( L, stack, "spi.master" );
     /* reference host object to avoid automatic gc */
     lua_pushvalue( L, stack );
     host_ref = luaL_ref( L, LUA_REGISTRYINDEX );
+    get_spi_pins = 1;
+  } else if (lua_type( L, stack ) == LUA_TNUMBER) {
+    host->host = luaL_checkint( L, stack );
+    get_spi_pins = 1;
+  } else {
+    get_spi_pins = 0;
+    stack--;
+  }
 
+  if (get_spi_pins) {
     cs = luaL_checkint( L, ++stack );
     dc = luaL_checkint( L, ++stack );
     res = luaL_optint( L, ++stack, -1 );
-  } else
-    stack--;
+  }
+
   if (lua_isfunction( L, ++stack )) {
     lua_pushvalue( L, stack );
     rfb_cb_ref = luaL_ref( L, LUA_REGISTRYINDEX );
@@ -687,6 +714,7 @@ static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_spi, u8x8_gpio_and_delay_nodemcu );
 
   /* prepare overlay data */
