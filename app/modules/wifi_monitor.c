@@ -2,6 +2,7 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lapi.h"
 #include "platform.h"
 
 #include "c_string.h"
@@ -17,6 +18,8 @@ static int recv_cb;
 static uint8 mon_offset;
 static uint8 mon_value;
 static uint8 mon_mask;
+static task_handle_t tasknumber;
+static bool makepacket;
 
 static int8 variable_start[16] = {
    4,   // assoc req
@@ -42,15 +45,15 @@ typedef struct {
   uint8 buf[];
 } packet_t;
 
+static const LUA_REG_TYPE packet_function_map[];
+
 static void wifi_rx_cb(uint8 *buf, uint16 len) {
-  lua_State *L = lua_getstate();
-
-  struct RxControl *rxc = (struct RxControl *) buf; 
-  management_request_t *mgt = (management_request_t *) (rxc + 1);
-
-  if ((void *) (mgt + 1) > (void *) (buf + len)) {
+  if (len != sizeof(struct sniffer_buf2)) {
     return;
   }
+
+  struct sniffer_buf2 *snb = (struct sniffer_buf2 *) buf;
+  management_request_t *mgt = (management_request_t *) snb->buf;
 
   if (mon_offset > len) {
     return;
@@ -60,13 +63,36 @@ static void wifi_rx_cb(uint8 *buf, uint16 len) {
     return;
   }
 
+  packet_t *packet = (packet_t *) c_malloc(len + sizeof(packet_t));
+  if (packet) {
+    packet->len = len;
+    memcpy(packet->buf, buf, len);
+    if (!task_post_medium(tasknumber, (ETSParam) packet)) {
+      c_free(packet);
+    }
+  }
+}
+
+static void monitor_task(os_param_t param, uint8_t prio) 
+{
+  packet_t *input = (packet_t *) param;
+  (void) prio;
+
+  lua_State *L = lua_getstate();
+
   lua_rawgeti(L, LUA_REGISTRYINDEX, recv_cb);
 
-  packet_t *packet = (packet_t *) lua_newuserdata(L, len + sizeof(packet_t));
-  packet->len = len;
-  memcpy(packet->buf, buf, len);
-  luaL_getmetatable(L, "wifi.packet");
-  lua_setmetatable(L, -2);
+  if (makepacket) {
+    packet_t *packet = (packet_t *) lua_newuserdata(L, input->len + sizeof(packet_t));
+    packet->len = input->len;
+    memcpy(packet->buf, input->buf, input->len);
+    luaL_getmetatable(L, "wifi.packet");
+    lua_setmetatable(L, -2);
+  } else {
+    lua_pushlstring(L, input->buf, input->len);
+  }
+
+  c_free(input);
 
   lua_call(L, 1, 0);
 }
@@ -125,6 +151,85 @@ static void push_hex_string(lua_State *L, uint8 *buf, int len, char *sep) {
 
 static void push_hex_string_colon(lua_State *L, uint8 *buf, int len) {
   push_hex_string(L, buf, len, ":");
+}
+
+static bool push_field_value_string(lua_State *L, management_request_t *mgt, 
+    const uint8 *packet_end, const char *field) {
+
+  if (strcmp(field, "subtype") == 0) {
+    lua_pushinteger(L, mgt->framectrl.Subtype);
+  } else if (strcmp(field, "dstmac") == 0) {
+    push_hex_string_colon(L, mgt->rdaddr, sizeof(mgt->rdaddr));
+  } else if (strcmp(field, "srcmac") == 0) {
+    push_hex_string_colon(L, mgt->tsaddr, sizeof(mgt->rdaddr));
+  } else if (strcmp(field, "bssid") == 0) {
+    push_hex_string_colon(L, mgt->bssid, sizeof(mgt->rdaddr));
+  } else if (strcmp(field, "header") == 0) {
+    int varstart = variable_start[mgt->framectrl.Subtype];
+    if (varstart > 0) {
+      lua_pushlstring(L, (uint8 *) (mgt + 1), varstart);
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
+static bool push_field_value_int(lua_State *L, management_request_t *mgt, 
+    const uint8 *packet_end, int field) {
+
+  int varstart = variable_start[mgt->framectrl.Subtype];
+  if (varstart >= 0) {
+    uint8 *var = (uint8 *) (mgt + 1) + varstart;
+
+    while (var + 2 <= packet_end && var + 2 + var[1] <= packet_end) {
+      if (*var == field) {
+        lua_pushlstring(L, var + 2, var[1]);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+static int packet_map_lookup(lua_State *L) {
+  dbg_printf("Called packet_map_lookup\n");
+  packet_t *packet = luaL_checkudata(L, 1, "wifi.packet");
+  struct RxControl *rxc = (struct RxControl *) packet->buf; 
+  management_request_t *mgt = (management_request_t *) (rxc + 1);
+  const uint8 *packet_end = packet->buf + packet->len;
+
+  if ((void *) (mgt + 1) > (void *) packet_end) {
+    return 0;
+  }
+  if (mgt->framectrl.Type != FRAME_TYPE_MANAGEMENT) {
+    return 0;
+  }
+
+  if (lua_type(L, 2) == LUA_TNUMBER) {
+    int field = luaL_checkinteger(L, 2);
+    if (push_field_value_int(L, mgt, packet_end, field)) {
+      return 1;
+    }
+  } else {
+    const char *field = luaL_checkstring(L, 2);
+    if (push_field_value_string(L, mgt, packet_end, field)) {
+      return 1;
+    }
+
+    // Now search the packet function map
+    const TValue *res = luaR_findentry((void *) packet_function_map, field, 0, NULL);
+    if (res) {
+      luaA_pushobject(L, res);
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 static int packet_management(lua_State *L) {
@@ -224,6 +329,12 @@ static int packet_subhex(lua_State *L) {
 
 static int wifi_monitor_start(lua_State *L) {
   int argno = 1;
+  if (lua_type(L, argno) == LUA_TBOOLEAN) {
+    makepacket = lua_toboolean(L, argno);
+    argno++;
+  } else {
+    makepacket = true;
+  }
   if (lua_type(L, argno) == LUA_TNUMBER) {
     int offset = luaL_checkinteger(L, argno);
     argno++;
@@ -254,8 +365,10 @@ static int wifi_monitor_start(lua_State *L) {
     lua_pushvalue(L, argno);  // copy argument (func) to the top of stack
     recv_cb = luaL_ref(L, LUA_REGISTRYINDEX);
     wifi_set_opmode_current(1);
+    wifi_promiscuous_enable(0);
     wifi_station_disconnect();
     wifi_set_promiscuous_rx_cb(wifi_rx_cb);
+    wifi_set_channel(1);
     wifi_promiscuous_enable(1);
     return 0;
   }
@@ -283,13 +396,17 @@ static int wifi_monitor_stop(lua_State *L) {
   return 0;
 }
 
+static const LUA_REG_TYPE packet_function_map[] = {
+  { LSTRKEY( "raw" ),         LFUNCVAL( packet_getraw ) },
+  { LSTRKEY( "byte" ),        LFUNCVAL( packet_byte ) },
+  { LSTRKEY( "sub" ),         LFUNCVAL( packet_sub ) },
+  { LSTRKEY( "subhex" ),      LFUNCVAL( packet_subhex ) },
+  { LSTRKEY( "management" ),  LFUNCVAL( packet_management ) },
+  { LNILKEY, LNILVAL }
+};
+
 static const LUA_REG_TYPE packet_map[] = {
-  { LSTRKEY( "raw" ),       LFUNCVAL( packet_getraw ) },
-  { LSTRKEY( "byte" ),      LFUNCVAL( packet_byte ) },
-  { LSTRKEY( "sub" ),       LFUNCVAL( packet_sub ) },
-  { LSTRKEY( "subhex" ),    LFUNCVAL( packet_subhex ) },
-  { LSTRKEY( "management" ),LFUNCVAL( packet_management ) },
-  { LSTRKEY( "__index" ),   LROVAL( packet_map ) },
+  { LSTRKEY( "__index" ),     LFUNCVAL( packet_map_lookup ) },
   { LNILKEY, LNILVAL }
 };
 
@@ -304,6 +421,7 @@ const LUA_REG_TYPE wifi_monitor_map[] = {
 int wifi_monitor_init(lua_State *L)
 {
   luaL_rometatable(L, "wifi.packet", (void *)packet_map);
+  tasknumber = task_get_id(monitor_task);
   return 0;
 }
 
