@@ -19,7 +19,6 @@ static uint8 mon_offset;
 static uint8 mon_value;
 static uint8 mon_mask;
 static task_handle_t tasknumber;
-static bool makepacket;
 
 static int8 variable_start[16] = {
    4,   // assoc req
@@ -82,15 +81,11 @@ static void monitor_task(os_param_t param, uint8_t prio)
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, recv_cb);
 
-  if (makepacket) {
-    packet_t *packet = (packet_t *) lua_newuserdata(L, input->len + sizeof(packet_t));
-    packet->len = input->len;
-    memcpy(packet->buf, input->buf, input->len);
-    luaL_getmetatable(L, "wifi.packet");
-    lua_setmetatable(L, -2);
-  } else {
-    lua_pushlstring(L, input->buf, input->len);
-  }
+  packet_t *packet = (packet_t *) lua_newuserdata(L, input->len + sizeof(packet_t));
+  packet->len = input->len;
+  memcpy(packet->buf, input->buf, input->len);
+  luaL_getmetatable(L, "wifi.packet");
+  lua_setmetatable(L, -2);
 
   c_free(input);
 
@@ -197,7 +192,6 @@ static bool push_field_value_int(lua_State *L, management_request_t *mgt,
 }
 
 static int packet_map_lookup(lua_State *L) {
-  dbg_printf("Called packet_map_lookup\n");
   packet_t *packet = luaL_checkudata(L, 1, "wifi.packet");
   struct RxControl *rxc = (struct RxControl *) packet->buf; 
   management_request_t *mgt = (management_request_t *) (rxc + 1);
@@ -329,12 +323,6 @@ static int packet_subhex(lua_State *L) {
 
 static int wifi_monitor_start(lua_State *L) {
   int argno = 1;
-  if (lua_type(L, argno) == LUA_TBOOLEAN) {
-    makepacket = lua_toboolean(L, argno);
-    argno++;
-  } else {
-    makepacket = true;
-  }
   if (lua_type(L, argno) == LUA_TNUMBER) {
     int offset = luaL_checkinteger(L, argno);
     argno++;
@@ -364,9 +352,16 @@ static int wifi_monitor_start(lua_State *L) {
   {
     lua_pushvalue(L, argno);  // copy argument (func) to the top of stack
     recv_cb = luaL_ref(L, LUA_REGISTRYINDEX);
+    // this is very delicate code. If the timing is wrong, then the code crashes
+    // as it appears that the sniffer buffers have not been allocated.
+    wifi_station_set_auto_connect(0);
+    os_delay_us(1000);
     wifi_set_opmode_current(1);
+    os_delay_us(1000);
     wifi_promiscuous_enable(0);
+    os_delay_us(1000);
     wifi_station_disconnect();
+    os_delay_us(1000);
     wifi_set_promiscuous_rx_cb(wifi_rx_cb);
     wifi_set_channel(1);
     wifi_promiscuous_enable(1);
