@@ -12,6 +12,7 @@
 #include "u8g2_fonts.h"
 
 #ifdef ESP_PLATFORM
+// ESP32
 #include "spi_common.h"
 
 #include "sdkconfig.h"
@@ -659,12 +660,14 @@ static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
   int stack = 0;
 
 #ifndef ESP_PLATFORM
+  // ESP8266
   typedef struct {
     int host;
   } lspi_host_t;
   lspi_host_t host_elem;
   lspi_host_t *host = &host_elem;
 #else
+  // ESP32
   lspi_host_t *host = NULL;
 #endif
   int host_ref = LUA_NOREF;
@@ -680,12 +683,12 @@ static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
     /* reference host object to avoid automatic gc */
     lua_pushvalue( L, stack );
     host_ref = luaL_ref( L, LUA_REGISTRYINDEX );
-    get_spi_pins = TRUE;
+    get_spi_pins = 1;
   } else if (lua_type( L, stack ) == LUA_TNUMBER) {
     host->host = luaL_checkint( L, stack );
-    get_spi_pins = TRUE;
+    get_spi_pins = 1;
   } else {
-    get_spi_pins = FALSE;
+    get_spi_pins = 0;
     stack--;
   }
 
