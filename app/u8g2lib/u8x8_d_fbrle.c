@@ -6,8 +6,7 @@
 
 #include "u8x8_nodemcu_hal.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include "c_stdlib.h"
 
 
 static const u8x8_display_info_t u8x8_fbrle_display_info =
@@ -105,7 +104,7 @@ static uint8_t u8x8_d_fbrle(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
       uint8_t *buf = ((u8x8_tile_t *)arg_ptr)->tile_ptr;
 
       struct fbrle_line *fbrle_line;
-      if (!(fbrle_line = (struct fbrle_line *)malloc( fbrle_line_size ))) {
+      if (!(fbrle_line = (struct fbrle_line *)c_malloc( fbrle_line_size ))) {
         break;
       }
 
@@ -148,7 +147,7 @@ static uint8_t u8x8_d_fbrle(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
         }
       }
 
-      free( fbrle_line );
+      c_free( fbrle_line );
     }
     break;
 
