@@ -184,10 +184,19 @@ static int gpio_pulse_build(lua_State *L) {
 
         if (strcmp(str, "delay") == 0) {
           entry->delay = lua_tonumber(L, -1);
+          if (entry->delay < 0 || entry->delay > 1000000) {
+            return luaL_error(L, "delay of %d must be in the range 0 .. 1000000 microseconds", entry->delay);
+          }
         } else if (strcmp(str, "min") == 0) {
           entry->delay_min = lua_tonumber(L, -1);
+          if (entry->delay_min < 0 || entry->delay_min > 1000000) {
+            return luaL_error(L, "delay minimum of %d must be in the range 0 .. 1000000 microseconds", entry->delay_min);
+          }
         } else if (strcmp(str, "max") == 0) {
           entry->delay_max = lua_tonumber(L, -1);
+          if (entry->delay_max < 0 || entry->delay_max > 1000000) {
+            return luaL_error(L, "delay maximum of %d must be in the range 0 .. 1000000 microseconds", entry->delay_max);
+          }
         } else if (strcmp(str, "count") == 0) {
           entry->count = lua_tonumber(L, -1);
         } else if (strcmp(str, "loop") == 0) {
