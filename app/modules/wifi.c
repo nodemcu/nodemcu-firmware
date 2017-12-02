@@ -298,6 +298,17 @@ static int wifi_getphymode( lua_State* L )
   return 1;
 }
 
+// Lua: wifi.setmaxtxpower()
+static int wifi_setmaxtxpower( lua_State* L )
+{
+  unsigned power;
+  power = luaL_checkinteger( L, 1 );
+  luaL_argcheck(L, (power > 0 && power < 83), 1, "tx power out of range (0->82)");
+
+  system_phy_set_max_tpw( (uint8_t) power);
+  return 1;
+}
+
 #ifdef PMSLEEP_ENABLE
 /* Begin WiFi suspend functions*/
 #include "pmSleep.h"
@@ -979,6 +990,7 @@ static int wifi_station_connect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
@@ -993,6 +1005,7 @@ static int wifi_station_disconnect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
@@ -1794,6 +1807,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
+  { LSTRKEY( "setmaxtxpower" ),  LFUNCVAL( wifi_setmaxtxpower ) },
 #ifdef PMSLEEP_ENABLE
   { LSTRKEY( "suspend" ),        LFUNCVAL( wifi_suspend ) },
   { LSTRKEY( "resume" ),         LFUNCVAL( wifi_resume ) },

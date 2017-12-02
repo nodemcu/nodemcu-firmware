@@ -211,6 +211,25 @@ physical mode after setup
 #### See also
 [`wifi.getphymode()`](#wifigetphymode)
 
+## wifi.setmaxtxpower()
+
+Sets WiFi maximum TX power. This setting is not persisted across power cycles, and the Espressif SDK documentation does not specify if the setting persists after deep sleep. The default value used is read from byte 34 of the ESP8266 init data, and its value is hence defined by the manufacturer.
+
+The default value, 82, corresponds to maximum TX power. Lowering this setting could reduce power consumption on battery backed devices.
+
+#### Syntax
+`wifi.setmaxtxpower(max_tpw)`
+
+#### Parameters
+`max_tpw` maximum value of RF Tx Power, unit: 0.25 dBm, range [0, 82]. 
+
+#### Returns
+`nil`
+
+### See also
+[`flash SDK init data`](../flash.md#sdk-init-data)
+
+
 ## wifi.startsmart()
 
 Starts to auto configuration, if success set up SSID and password automatically.
@@ -453,6 +472,7 @@ Sets the WiFi station configuration.
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
+station_cfg.save=false
 wifi.sta.config(station_cfg)
 
 --connect to Access Point (DO save config to flash)
@@ -462,14 +482,14 @@ station_cfg.pwd="password"
 station_cfg.save=true
 wifi.sta.config(station_cfg)
 
---connect to Access Point with specific MAC address  
+--connect to Access Point with specific MAC address (DO save config to flash)
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
 station_cfg.bssid="AA:BB:CC:DD:EE:FF"
 wifi.sta.config(station_cfg)
 
---configure station but don't connect to Access point
+--configure station but don't connect to Access point (DO save config to flash)
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
