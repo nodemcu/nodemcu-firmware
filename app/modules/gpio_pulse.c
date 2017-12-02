@@ -8,6 +8,7 @@
 #include "gpio.h"
 #include "hw_timer.h"
 #include "pin_map.h"
+#include "driver/gpio16.h"
 
 #define TIMER_OWNER 'P'
 
@@ -169,8 +170,8 @@ static int gpio_pulse_build(lua_State *L) {
         int pin = lua_tonumber(L, -2);
         int value = lua_tonumber(L, -1);
 
-        if (pin < 1 || pin >= GPIO_PIN_NUM) {
-          luaL_error(L, "pin number %d must be in range 1 .. %d", pin, GPIO_PIN_NUM - 1);
+        if (pin < 0 || pin >= GPIO_PIN_NUM) {
+          luaL_error(L, "pin number %d must be in range 0 .. %d", pin, GPIO_PIN_NUM - 1);
         }
 
         if (value) {
@@ -269,8 +270,15 @@ static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
 
     pulse_entry_t *entry = active_pulser->entry + active_pulser->entry_pos;
 
+    // Yes, this means that there is more skew on D0 than on other pins....
+    if (entry->gpio_set & 0x10000) {
+      gpio16_output_set(1);
+    }
     GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, entry->gpio_set);
     GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, entry->gpio_clr);
+    if (entry->gpio_clr & 0x10000) {
+      gpio16_output_set(0);
+    }
 
     int16_t stop = active_pulser->stop_pos;
     if (stop == -2 || stop == active_pulser->entry_pos) {
