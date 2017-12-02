@@ -33,192 +33,221 @@ static task_handle_t tasknumber;
 #define SINGLE_IE  5
 #define IS_HEADER  6
 
+#define ANY_FRAME 16
+
 #define IE(id)  0, (id), SINGLE_IE
+
+typedef struct {
+  const char *key;
+  uint8 frametype;
+} typekey_t;
 
 typedef struct {
   const char *name;
   unsigned int start : 12;
   unsigned int length : 12;
-  uint8 opts;
+  unsigned int opts : 3;
+  unsigned int frametype : 5;  // 16 is *any*
 } field_t;
 
 // must be sorted alphabetically
 static const field_t fields[] = {
-  { "aggregation", BITFIELD(7, 3, 1), 0 },
-  { "ampdu_cnt", BITFIELD(9, 0, 8), 0 },
-  { "bssid", BYTEFIELD(28, 6), IS_STRING },
-  { "bssid_hex", BYTEFIELD(28, 6), IS_HEXSTRING },
-  { "bssidmatch0", BITFIELD(3, 6, 1), 0 },
-  { "bssidmatch1", BITFIELD(3, 7, 1), 0 },
-  { "channel", BITFIELD(10, 0, 4), 0 },
-  { "cwb", BITFIELD(4, 7, 1), 0 },
-  { "dmatch0", BITFIELD(3, 4, 1), 0 },
-  { "dmatch1", BITFIELD(3, 5, 1), 0 },
-  { "dstmac", BYTEFIELD(22, 6), IS_STRING },
-  { "dstmac_hex", BYTEFIELD(22, 6), IS_HEXSTRING },
-  { "duration", BYTEFIELD(14, 2), 0 },
-  { "fec_coding", BITFIELD(7, 6, 1), 0 },
-  { "frame", BYTEFIELD(12, 112), IS_STRING },
-  { "frame_hex", BYTEFIELD(12, 112), IS_HEXSTRING },
-  { "fromds", BITFIELD(13, 1, 1), 0 },
-  { "header", BYTEFIELD(12, 0), IS_HEADER },
-  { "ht_length", BITFIELD(5, 0, 16), 0 },
-  { "ie_20_40_bss_coexistence", IE(72)},
-  { "ie_20_40_bss_intolerant_channel_report", IE(73)},
-  { "ie_advertisement_protocol", IE(108)},
-  { "ie_aid", IE(197)},
-  { "ie_antenna", IE(64)},
-  { "ie_ap_channel_report", IE(51)},
-  { "ie_authenticated_mesh_peering_exchange", IE(139)},
-  { "ie_beacon_timing", IE(120)},
-  { "ie_bss_ac_access_delay", IE(68)},
-  { "ie_bss_available_admission_capacity", IE(67)},
-  { "ie_bss_average_access_delay", IE(63)},
-  { "ie_bss_load", IE(11)},
-  { "ie_bss_max_idle_period", IE(90)},
-  { "ie_cf_parameter_set", IE(4)},
-  { "ie_challenge_text", IE(16)},
-  { "ie_channel_switch_announcement", IE(37)},
-  { "ie_channel_switch_timing", IE(104)},
-  { "ie_channel_switch_wrapper", IE(196)},
-  { "ie_channel_usage", IE(97)},
-  { "ie_collocated_interference_report", IE(96)},
-  { "ie_congestion_notification", IE(116)},
-  { "ie_country", IE(7)},
-  { "ie_destination_uri", IE(141)},
-  { "ie_diagnostic_report", IE(81)},
-  { "ie_diagnostic_request", IE(80)},
-  { "ie_dms_request", IE(99)},
-  { "ie_dms_response", IE(100)},
-  { "ie_dse_registered_location", IE(58)},
-  { "ie_dsss_parameter_set", IE(3)},
-  { "ie_edca_parameter_set", IE(12)},
-  { "ie_emergency_alart_identifier", IE(112)},
-  { "ie_erp_information", IE(42)},
-  { "ie_event_report", IE(79)},
-  { "ie_event_request", IE(78)},
-  { "ie_expedited_bandwidth_request", IE(109)},
-  { "ie_extended_bss_load", IE(193)},
-  { "ie_extended_capabilities", IE(127)},
-  { "ie_extended_channel_switch_announcement", IE(60)},
-  { "ie_extended_supported_rates", IE(50)},
-  { "ie_fast_bss_transition", IE(55)},
-  { "ie_fh_parameter_set", IE(2)},
-  { "ie_fms_descriptor", IE(86)},
-  { "ie_fms_request", IE(87)},
-  { "ie_fms_response", IE(88)},
-  { "ie_gann", IE(125)},
-  { "ie_he_capabilities", IE(255)},
-  { "ie_hopping_pattern_parameters", IE(8)},
-  { "ie_hopping_pattern_table", IE(9)},
-  { "ie_ht_capabilities", IE(45)},
-  { "ie_ht_operation", IE(61)},
-  { "ie_ibss_dfs", IE(41)},
-  { "ie_ibss_parameter_set", IE(6)},
-  { "ie_interworking", IE(107)},
-  { "ie_link_identifier", IE(101)},
-  { "ie_location_parameters", IE(82)},
-  { "ie_management_mic", IE(76)},
-  { "ie_mccaop", IE(124)},
-  { "ie_mccaop_advertisement", IE(123)},
-  { "ie_mccaop_advertisement_overview", IE(174)},
-  { "ie_mccaop_setup_reply", IE(122)},
-  { "ie_mccaop_setup_request", IE(121)},
-  { "ie_measurement_pilot_transmission", IE(66)},
-  { "ie_measurement_report", IE(39)},
-  { "ie_measurement_request", IE(38)},
-  { "ie_mesh_awake_window", IE(119)},
-  { "ie_mesh_channel_switch_parameters", IE(118)},
-  { "ie_mesh_configuration", IE(113)},
-  { "ie_mesh_id", IE(114)},
-  { "ie_mesh_link_metric_report", IE(115)},
-  { "ie_mesh_peering_management", IE(117)},
-  { "ie_mic", IE(140)},
-  { "ie_mobility_domain", IE(54)},
-  { "ie_multiple_bssid", IE(71)},
-  { "ie_multiple_bssid_index", IE(85)},
-  { "ie_neighbor_report", IE(52)},
-  { "ie_nontransmitted_bssid_capability", IE(83)},
-  { "ie_operating_mode_notification", IE(199)},
-  { "ie_overlapping_bss_scan_parameters", IE(74)},
-  { "ie_perr", IE(132)},
-  { "ie_power_capability", IE(33)},
-  { "ie_power_constraint", IE(32)},
-  { "ie_prep", IE(131)},
-  { "ie_preq", IE(130)},
-  { "ie_proxy_update", IE(137)},
-  { "ie_proxy_update_confirmation", IE(138)},
-  { "ie_pti_control", IE(105)},
-  { "ie_qos_capability", IE(46)},
-  { "ie_qos_map_set", IE(110)},
-  { "ie_qos_traffic_capability", IE(89)},
-  { "ie_quiet", IE(40)},
-  { "ie_quiet_channel", IE(198)},
-  { "ie_rann", IE(126)},
-  { "ie_rcpi", IE(53)},
-  { "ie_request", IE(10)},
-  { "ie_ric_data", IE(57)},
-  { "ie_ric_descriptor", IE(75)},
-  { "ie_rm_enabled_capacities", IE(70)},
-  { "ie_roaming_consortium", IE(111)},
-  { "ie_rsn", IE(48)},
-  { "ie_rsni", IE(65)},
-  { "ie_schedule", IE(15)},
-  { "ie_secondary_channel_offset", IE(62)},
-  { "ie_ssid", IE(0)},
-  { "ie_ssid_list", IE(84)},
-  { "ie_supported_channels", IE(36)},
-  { "ie_supported_operating_classes", IE(59)},
-  { "ie_supported_rates", IE(1)},
-  { "ie_table", BITFIELD(0, 0, 0), IE_TABLE },
-  { "ie_tclas", IE(14)},
-  { "ie_tclas_processing", IE(44)},
-  { "ie_tfs_request", IE(91)},
-  { "ie_tfs_response", IE(92)},
-  { "ie_tim", IE(5)},
-  { "ie_tim_broadcast_request", IE(94)},
-  { "ie_tim_broadcast_response", IE(95)},
-  { "ie_time_advertisement", IE(69)},
-  { "ie_time_zone", IE(98)},
-  { "ie_timeout_interval", IE(56)},
-  { "ie_tpc_report", IE(35)},
-  { "ie_tpc_request", IE(34)},
-  { "ie_tpu_buffer_status", IE(106)},
-  { "ie_ts_delay", IE(43)},
-  { "ie_tspec", IE(13)},
-  { "ie_uapsd_coexistence", IE(142)},
-  { "ie_vendor_specific", IE(221)},
-  { "ie_vht_capabilities", IE(191)},
-  { "ie_vht_operation", IE(192)},
-  { "ie_vht_transmit_power_envelope", IE(195)},
-  { "ie_wakeup_schedule", IE(102)},
-  { "ie_wide_bandwidth_channel_switch", IE(194)},
-  { "ie_wnm_sleep_mode", IE(93)},
-  { "is_group", BITFIELD(1, 4, 1), 0 },
-  { "legacy_length", BITFIELD(2, 0, 12), 0 },
-  { "mcs", BITFIELD(4, 0, 7), 0 },
-  { "moredata", BITFIELD(13, 5, 1), 0 },
-  { "moreflag", BITFIELD(13, 2, 1), 0 },
-  { "not_counding", BITFIELD(7, 1, 1), 0 },
-  { "number", BYTEFIELD(34, 2), 0 },
-  { "order", BITFIELD(13, 7, 1), 0 },
-  { "protectedframe", BITFIELD(13, 6, 1), 0 },
-  { "protocol", BITFIELD(12, 0, 2), 0 },
-  { "pwrmgmt", BITFIELD(13, 4, 1), 0 },
-  { "radio", BYTEFIELD(0, 12), IS_STRING },
-  { "rate", BITFIELD(1, 0, 4), 0 },
-  { "retry", BITFIELD(13, 3, 1), 0 },
-  { "rssi", BYTEFIELD(0, 1), IS_SIGNED },
-  { "rxend_state", BITFIELD(8, 0, 8), 0 },
-  { "sgi", BITFIELD(7, 7, 1), 0 },
-  { "sig_mode", BITFIELD(1, 6, 2), 0 },
-  { "smoothing", BITFIELD(7, 0, 1), 0 },
-  { "srcmac", BYTEFIELD(16, 6), IS_STRING },
-  { "srcmac_hex", BYTEFIELD(16, 6), IS_HEXSTRING },
-  { "stbc", BITFIELD(7, 4, 2), 0 },
-  { "subtype", BITFIELD(12, 4, 4), 0 },
-  { "tods", BITFIELD(13, 0, 1), 0 },
-  { "type", BITFIELD(12, 2, 2), 0 }
+  { "aggregation", BITFIELD(7, 3, 1), 0, ANY_FRAME},
+  { "ampdu_cnt", BITFIELD(9, 0, 8), 0, ANY_FRAME},
+  { "association_id", BYTEFIELD(40, 2), 0, FRAME_SUBTYPE_ASSOC_RESPONSE},
+  { "association_id", BYTEFIELD(40, 2), 0, FRAME_SUBTYPE_REASSOC_RESPONSE},
+  { "authentication_algorithm", BYTEFIELD(36, 2), 0, FRAME_SUBTYPE_AUTHENTICATION},
+  { "authentication_transaction", BYTEFIELD(38, 2), 0, FRAME_SUBTYPE_AUTHENTICATION},
+  { "beacon_interval", BYTEFIELD(44, 2), 0, FRAME_SUBTYPE_PROBE_RESPONSE},
+  { "beacon_interval", BYTEFIELD(44, 2), 0, FRAME_SUBTYPE_BEACON},
+  { "bssid", BYTEFIELD(28, 6), IS_STRING, ANY_FRAME},
+  { "bssid_hex", BYTEFIELD(28, 6), IS_HEXSTRING, ANY_FRAME},
+  { "bssidmatch0", BITFIELD(3, 6, 1), 0, ANY_FRAME},
+  { "bssidmatch1", BITFIELD(3, 7, 1), 0, ANY_FRAME},
+  { "capability", BYTEFIELD(36, 2), 0, FRAME_SUBTYPE_ASSOC_REQUEST},
+  { "capability", BYTEFIELD(36, 2), 0, FRAME_SUBTYPE_ASSOC_RESPONSE},
+  { "capability", BYTEFIELD(36, 2), 0, FRAME_SUBTYPE_REASSOC_REQUEST},
+  { "capability", BYTEFIELD(36, 2), 0, FRAME_SUBTYPE_REASSOC_RESPONSE},
+  { "capability", BYTEFIELD(46, 2), 0, FRAME_SUBTYPE_PROBE_RESPONSE},
+  { "capability", BYTEFIELD(46, 2), 0, FRAME_SUBTYPE_BEACON},
+  { "channel", BITFIELD(10, 0, 4), 0, ANY_FRAME},
+  { "current_ap", BYTEFIELD(40, 6), IS_STRING, FRAME_SUBTYPE_REASSOC_REQUEST},
+  { "cwb", BITFIELD(4, 7, 1), 0, ANY_FRAME},
+  { "dmatch0", BITFIELD(3, 4, 1), 0, ANY_FRAME},
+  { "dmatch1", BITFIELD(3, 5, 1), 0, ANY_FRAME},
+  { "dstmac", BYTEFIELD(22, 6), IS_STRING, ANY_FRAME},
+  { "dstmac_hex", BYTEFIELD(22, 6), IS_HEXSTRING, ANY_FRAME},
+  { "duration", BYTEFIELD(14, 2), 0, ANY_FRAME},
+  { "fec_coding", BITFIELD(7, 6, 1), 0, ANY_FRAME},
+  { "frame", BYTEFIELD(12, 112), IS_STRING, ANY_FRAME},
+  { "frame_hex", BYTEFIELD(12, 112), IS_HEXSTRING, ANY_FRAME},
+  { "fromds", BITFIELD(13, 1, 1), 0, ANY_FRAME},
+  { "header", BYTEFIELD(12, 0), IS_HEADER, ANY_FRAME},
+  { "ht_length", BITFIELD(5, 0, 16), 0, ANY_FRAME},
+  { "ie_20_40_bss_coexistence", IE(72), ANY_FRAME},
+  { "ie_20_40_bss_intolerant_channel_report", IE(73), ANY_FRAME},
+  { "ie_advertisement_protocol", IE(108), ANY_FRAME},
+  { "ie_aid", IE(197), ANY_FRAME},
+  { "ie_antenna", IE(64), ANY_FRAME},
+  { "ie_ap_channel_report", IE(51), ANY_FRAME},
+  { "ie_authenticated_mesh_peering_exchange", IE(139), ANY_FRAME},
+  { "ie_beacon_timing", IE(120), ANY_FRAME},
+  { "ie_bss_ac_access_delay", IE(68), ANY_FRAME},
+  { "ie_bss_available_admission_capacity", IE(67), ANY_FRAME},
+  { "ie_bss_average_access_delay", IE(63), ANY_FRAME},
+  { "ie_bss_load", IE(11), ANY_FRAME},
+  { "ie_bss_max_idle_period", IE(90), ANY_FRAME},
+  { "ie_cf_parameter_set", IE(4), ANY_FRAME},
+  { "ie_challenge_text", IE(16), ANY_FRAME},
+  { "ie_channel_switch_announcement", IE(37), ANY_FRAME},
+  { "ie_channel_switch_timing", IE(104), ANY_FRAME},
+  { "ie_channel_switch_wrapper", IE(196), ANY_FRAME},
+  { "ie_channel_usage", IE(97), ANY_FRAME},
+  { "ie_collocated_interference_report", IE(96), ANY_FRAME},
+  { "ie_congestion_notification", IE(116), ANY_FRAME},
+  { "ie_country", IE(7), ANY_FRAME},
+  { "ie_destination_uri", IE(141), ANY_FRAME},
+  { "ie_diagnostic_report", IE(81), ANY_FRAME},
+  { "ie_diagnostic_request", IE(80), ANY_FRAME},
+  { "ie_dms_request", IE(99), ANY_FRAME},
+  { "ie_dms_response", IE(100), ANY_FRAME},
+  { "ie_dse_registered_location", IE(58), ANY_FRAME},
+  { "ie_dsss_parameter_set", IE(3), ANY_FRAME},
+  { "ie_edca_parameter_set", IE(12), ANY_FRAME},
+  { "ie_emergency_alart_identifier", IE(112), ANY_FRAME},
+  { "ie_erp_information", IE(42), ANY_FRAME},
+  { "ie_event_report", IE(79), ANY_FRAME},
+  { "ie_event_request", IE(78), ANY_FRAME},
+  { "ie_expedited_bandwidth_request", IE(109), ANY_FRAME},
+  { "ie_extended_bss_load", IE(193), ANY_FRAME},
+  { "ie_extended_capabilities", IE(127), ANY_FRAME},
+  { "ie_extended_channel_switch_announcement", IE(60), ANY_FRAME},
+  { "ie_extended_supported_rates", IE(50), ANY_FRAME},
+  { "ie_fast_bss_transition", IE(55), ANY_FRAME},
+  { "ie_fh_parameter_set", IE(2), ANY_FRAME},
+  { "ie_fms_descriptor", IE(86), ANY_FRAME},
+  { "ie_fms_request", IE(87), ANY_FRAME},
+  { "ie_fms_response", IE(88), ANY_FRAME},
+  { "ie_gann", IE(125), ANY_FRAME},
+  { "ie_he_capabilities", IE(255), ANY_FRAME},
+  { "ie_hopping_pattern_parameters", IE(8), ANY_FRAME},
+  { "ie_hopping_pattern_table", IE(9), ANY_FRAME},
+  { "ie_ht_capabilities", IE(45), ANY_FRAME},
+  { "ie_ht_operation", IE(61), ANY_FRAME},
+  { "ie_ibss_dfs", IE(41), ANY_FRAME},
+  { "ie_ibss_parameter_set", IE(6), ANY_FRAME},
+  { "ie_interworking", IE(107), ANY_FRAME},
+  { "ie_link_identifier", IE(101), ANY_FRAME},
+  { "ie_location_parameters", IE(82), ANY_FRAME},
+  { "ie_management_mic", IE(76), ANY_FRAME},
+  { "ie_mccaop", IE(124), ANY_FRAME},
+  { "ie_mccaop_advertisement", IE(123), ANY_FRAME},
+  { "ie_mccaop_advertisement_overview", IE(174), ANY_FRAME},
+  { "ie_mccaop_setup_reply", IE(122), ANY_FRAME},
+  { "ie_mccaop_setup_request", IE(121), ANY_FRAME},
+  { "ie_measurement_pilot_transmission", IE(66), ANY_FRAME},
+  { "ie_measurement_report", IE(39), ANY_FRAME},
+  { "ie_measurement_request", IE(38), ANY_FRAME},
+  { "ie_mesh_awake_window", IE(119), ANY_FRAME},
+  { "ie_mesh_channel_switch_parameters", IE(118), ANY_FRAME},
+  { "ie_mesh_configuration", IE(113), ANY_FRAME},
+  { "ie_mesh_id", IE(114), ANY_FRAME},
+  { "ie_mesh_link_metric_report", IE(115), ANY_FRAME},
+  { "ie_mesh_peering_management", IE(117), ANY_FRAME},
+  { "ie_mic", IE(140), ANY_FRAME},
+  { "ie_mobility_domain", IE(54), ANY_FRAME},
+  { "ie_multiple_bssid", IE(71), ANY_FRAME},
+  { "ie_multiple_bssid_index", IE(85), ANY_FRAME},
+  { "ie_neighbor_report", IE(52), ANY_FRAME},
+  { "ie_nontransmitted_bssid_capability", IE(83), ANY_FRAME},
+  { "ie_operating_mode_notification", IE(199), ANY_FRAME},
+  { "ie_overlapping_bss_scan_parameters", IE(74), ANY_FRAME},
+  { "ie_perr", IE(132), ANY_FRAME},
+  { "ie_power_capability", IE(33), ANY_FRAME},
+  { "ie_power_constraint", IE(32), ANY_FRAME},
+  { "ie_prep", IE(131), ANY_FRAME},
+  { "ie_preq", IE(130), ANY_FRAME},
+  { "ie_proxy_update", IE(137), ANY_FRAME},
+  { "ie_proxy_update_confirmation", IE(138), ANY_FRAME},
+  { "ie_pti_control", IE(105), ANY_FRAME},
+  { "ie_qos_capability", IE(46), ANY_FRAME},
+  { "ie_qos_map_set", IE(110), ANY_FRAME},
+  { "ie_qos_traffic_capability", IE(89), ANY_FRAME},
+  { "ie_quiet", IE(40), ANY_FRAME},
+  { "ie_quiet_channel", IE(198), ANY_FRAME},
+  { "ie_rann", IE(126), ANY_FRAME},
+  { "ie_rcpi", IE(53), ANY_FRAME},
+  { "ie_request", IE(10), ANY_FRAME},
+  { "ie_ric_data", IE(57), ANY_FRAME},
+  { "ie_ric_descriptor", IE(75), ANY_FRAME},
+  { "ie_rm_enabled_capacities", IE(70), ANY_FRAME},
+  { "ie_roaming_consortium", IE(111), ANY_FRAME},
+  { "ie_rsn", IE(48), ANY_FRAME},
+  { "ie_rsni", IE(65), ANY_FRAME},
+  { "ie_schedule", IE(15), ANY_FRAME},
+  { "ie_secondary_channel_offset", IE(62), ANY_FRAME},
+  { "ie_ssid", IE(0), ANY_FRAME},
+  { "ie_ssid_list", IE(84), ANY_FRAME},
+  { "ie_supported_channels", IE(36), ANY_FRAME},
+  { "ie_supported_operating_classes", IE(59), ANY_FRAME},
+  { "ie_supported_rates", IE(1), ANY_FRAME},
+  { "ie_table", BITFIELD(0, 0, 0), IE_TABLE, ANY_FRAME},
+  { "ie_tclas", IE(14), ANY_FRAME},
+  { "ie_tclas_processing", IE(44), ANY_FRAME},
+  { "ie_tfs_request", IE(91), ANY_FRAME},
+  { "ie_tfs_response", IE(92), ANY_FRAME},
+  { "ie_tim", IE(5), ANY_FRAME},
+  { "ie_tim_broadcast_request", IE(94), ANY_FRAME},
+  { "ie_tim_broadcast_response", IE(95), ANY_FRAME},
+  { "ie_time_advertisement", IE(69), ANY_FRAME},
+  { "ie_time_zone", IE(98), ANY_FRAME},
+  { "ie_timeout_interval", IE(56), ANY_FRAME},
+  { "ie_tpc_report", IE(35), ANY_FRAME},
+  { "ie_tpc_request", IE(34), ANY_FRAME},
+  { "ie_tpu_buffer_status", IE(106), ANY_FRAME},
+  { "ie_ts_delay", IE(43), ANY_FRAME},
+  { "ie_tspec", IE(13), ANY_FRAME},
+  { "ie_uapsd_coexistence", IE(142), ANY_FRAME},
+  { "ie_vendor_specific", IE(221), ANY_FRAME},
+  { "ie_vht_capabilities", IE(191), ANY_FRAME},
+  { "ie_vht_operation", IE(192), ANY_FRAME},
+  { "ie_vht_transmit_power_envelope", IE(195), ANY_FRAME},
+  { "ie_wakeup_schedule", IE(102), ANY_FRAME},
+  { "ie_wide_bandwidth_channel_switch", IE(194), ANY_FRAME},
+  { "ie_wnm_sleep_mode", IE(93), ANY_FRAME},
+  { "is_group", BITFIELD(1, 4, 1), 0, ANY_FRAME},
+  { "legacy_length", BITFIELD(2, 0, 12), 0, ANY_FRAME},
+  { "listen_interval", BYTEFIELD(38, 2), 0, FRAME_SUBTYPE_ASSOC_REQUEST},
+  { "listen_interval", BYTEFIELD(38, 2), 0, FRAME_SUBTYPE_REASSOC_REQUEST},
+  { "mcs", BITFIELD(4, 0, 7), 0, ANY_FRAME},
+  { "moredata", BITFIELD(13, 5, 1), 0, ANY_FRAME},
+  { "moreflag", BITFIELD(13, 2, 1), 0, ANY_FRAME},
+  { "not_counding", BITFIELD(7, 1, 1), 0, ANY_FRAME},
+  { "number", BYTEFIELD(34, 2), 0, ANY_FRAME},
+  { "order", BITFIELD(13, 7, 1), 0, ANY_FRAME},
+  { "protectedframe", BITFIELD(13, 6, 1), 0, ANY_FRAME},
+  { "protocol", BITFIELD(12, 0, 2), 0, ANY_FRAME},
+  { "pwrmgmt", BITFIELD(13, 4, 1), 0, ANY_FRAME},
+  { "radio", BYTEFIELD(0, 12), IS_STRING, ANY_FRAME},
+  { "rate", BITFIELD(1, 0, 4), 0, ANY_FRAME},
+  { "reason", BYTEFIELD(36, 2), 0, FRAME_SUBTYPE_DEAUTHENTICATION},
+  { "retry", BITFIELD(13, 3, 1), 0, ANY_FRAME},
+  { "rssi", BYTEFIELD(0, 1), IS_SIGNED, ANY_FRAME},
+  { "rxend_state", BITFIELD(8, 0, 8), 0, ANY_FRAME},
+  { "sgi", BITFIELD(7, 7, 1), 0, ANY_FRAME},
+  { "sig_mode", BITFIELD(1, 6, 2), 0, ANY_FRAME},
+  { "smoothing", BITFIELD(7, 0, 1), 0, ANY_FRAME},
+  { "srcmac", BYTEFIELD(16, 6), IS_STRING, ANY_FRAME},
+  { "srcmac_hex", BYTEFIELD(16, 6), IS_HEXSTRING, ANY_FRAME},
+  { "status", BYTEFIELD(38, 2), 0, FRAME_SUBTYPE_ASSOC_RESPONSE},
+  { "status", BYTEFIELD(38, 2), 0, FRAME_SUBTYPE_REASSOC_RESPONSE},
+  { "status", BYTEFIELD(40, 2), 0, FRAME_SUBTYPE_AUTHENTICATION},
+  { "stbc", BITFIELD(7, 4, 2), 0, ANY_FRAME},
+  { "subtype", BITFIELD(12, 4, 4), 0, ANY_FRAME},
+  { "timestamp", BYTEFIELD(36, 8), IS_STRING, FRAME_SUBTYPE_PROBE_RESPONSE},
+  { "timestamp", BYTEFIELD(36, 8), IS_STRING, FRAME_SUBTYPE_BEACON},
+  { "tods", BITFIELD(13, 0, 1), 0, ANY_FRAME},
+  { "type", BITFIELD(12, 2, 2), 0, ANY_FRAME}
 };
 
 static int8 variable_start[16] = {
@@ -354,9 +383,11 @@ static void push_hex_string_colon(lua_State *L, const uint8 *buf, int len) {
   push_hex_string(L, buf, len, ":");
 }
 
-static int comparator(const void *key, const void *obj) {
+static int comparator(const void *typekey, const void *obj) {
   field_t *f = (field_t *) obj;
   const char *name = f->name;
+  const typekey_t *tk = (const typekey_t *) typekey;
+  const char *key = tk->key;
 
   if (!((uint32)key & 3) && !((uint32)name & 3)) {
     // Since all strings are 3 characters or more, can do accelerated first comparison
@@ -371,17 +402,30 @@ static int comparator(const void *key, const void *obj) {
     }
   }
 
-  return strcmp((const char *) key, name);
+  int rc = strcmp((const char *) key, name);
+  if (rc) {
+    return rc;
+  }
+
+  if (f->frametype == ANY_FRAME) {
+    return 0;
+  }
+
+  return tk->frametype - f->frametype;
 }
 
 static bool push_field_value_string(lua_State *L, const uint8 *pkt,
     const uint8 *packet_end, const char *field) {
+  const struct RxControl *rxc = (struct RxControl *) pkt; 
+  const management_request_t *mgt = (management_request_t *) (rxc + 1);
 
-  field_t *f = bsearch(field, fields, sizeof(fields) / sizeof(fields[0]), sizeof(fields[0]), comparator);
+  typekey_t tk;
+  tk.key = field;
+  tk.frametype = mgt->framectrl.Subtype;
+
+  field_t *f = bsearch(&tk, fields, sizeof(fields) / sizeof(fields[0]), sizeof(fields[0]), comparator);
 
   if (f) {
-    const struct RxControl *rxc = (struct RxControl *) pkt; 
-    const management_request_t *mgt = (management_request_t *) (rxc + 1);
 
     if (f->opts == SINGLE_IE) {
       int varstart = variable_start[mgt->framectrl.Subtype];
@@ -635,15 +679,16 @@ static int wifi_monitor_start(lua_State *L) {
     // this is very delicate code. If the timing is wrong, then the code crashes
     // as it appears that the sniffer buffers have not been allocated.
     wifi_station_set_auto_connect(0);
-    os_delay_us(1000);
+    os_delay_us(10000);
     wifi_set_opmode_current(1);
-    os_delay_us(1000);
+    os_delay_us(10000);
     wifi_promiscuous_enable(0);
-    os_delay_us(1000);
+    os_delay_us(10000);
     wifi_station_disconnect();
-    os_delay_us(1000);
+    os_delay_us(10000);
     wifi_set_promiscuous_rx_cb(wifi_rx_cb);
     wifi_set_channel(1);
+    os_delay_us(10000);
     wifi_promiscuous_enable(1);
     return 0;
   }
@@ -699,6 +744,21 @@ int wifi_monitor_init(lua_State *L)
 {
   luaL_rometatable(L, "wifi.packet", (void *)packet_map);
   tasknumber = task_get_id(monitor_task);
+#ifdef CHECK_TABLE_IN_ORDER
+    // verify that the table is in order
+    typekey_t tk;
+    tk.key = "";
+    tk.frametype = 0;
+
+    int i;
+    for (i = 0; i < sizeof(fields) / sizeof(fields[0]); i++) {
+      if (comparator(&tk, &fields[i]) >= 0) {
+        dbg_printf("Wrong order: %s,%d should be after %s,%d\n", tk.key, tk.frametype, fields[i].name, fields[i].frametype);
+      }
+      tk.key = fields[i].name;
+      tk.frametype = fields[i].frametype;
+    }
+#endif
   return 0;
 }
 
