@@ -270,7 +270,7 @@ s32_t spiffs_probe(
   s32_t res;
   u32_t paddr;
   spiffs dummy_fs; // create a dummy fs struct just to be able to use macros
-  memcpy(&dummy_fs.cfg, cfg, sizeof(spiffs_config));
+  _SPIFFS_MEMCPY(&dummy_fs.cfg, cfg, sizeof(spiffs_config));
   dummy_fs.block_count = 0;
 
   // Read three magics, as one block may be in an aborted erase state.
@@ -713,8 +713,8 @@ s32_t spiffs_populate_ix_map(spiffs *fs, spiffs_fd *fd, u32_t vec_entry_start, u
   s32_t res;
   spiffs_ix_map *map = fd->ix_map;
   spiffs_ix_map_populate_state state;
-  vec_entry_start = MIN((map->end_spix - map->start_spix + 1) - 1, (s32_t)vec_entry_start);
-  vec_entry_end = MAX((map->end_spix - map->start_spix + 1) - 1, (s32_t)vec_entry_end);
+  vec_entry_start = MIN((u32_t)(map->end_spix - map->start_spix), vec_entry_start);
+  vec_entry_end = MAX((u32_t)(map->end_spix - map->start_spix), vec_entry_end);
   if (vec_entry_start > vec_entry_end) {
     return SPIFFS_ERR_IX_MAP_BAD_RANGE;
   }
@@ -877,8 +877,6 @@ s32_t spiffs_page_delete(
     spiffs *fs,
     spiffs_page_ix pix) {
   s32_t res;
-  spiffs_page_header hdr;
-  hdr.flags = 0xff & ~(SPIFFS_PH_FLAG_DELET | SPIFFS_PH_FLAG_USED);
   // mark deleted entry in source object lookup
   spiffs_obj_id d_obj_id = SPIFFS_OBJ_ID_DELETED;
   res = _spiffs_wr(fs, SPIFFS_OP_T_OBJ_LU | SPIFFS_OP_C_DELE,
@@ -892,11 +890,18 @@ s32_t spiffs_page_delete(
   fs->stats_p_allocated--;
 
   // mark deleted in source page
+  u8_t flags = 0xff;
+#if SPIFFS_NO_BLIND_WRITES
+  res = _spiffs_rd(fs, SPIFFS_OP_T_OBJ_DA | SPIFFS_OP_C_READ,
+      0, SPIFFS_PAGE_TO_PADDR(fs, pix) + offsetof(spiffs_page_header, flags),
+      sizeof(flags), &flags);
+  SPIFFS_CHECK_RES(res);
+#endif
+  flags &= ~(SPIFFS_PH_FLAG_DELET | SPIFFS_PH_FLAG_USED);
   res = _spiffs_wr(fs, SPIFFS_OP_T_OBJ_DA | SPIFFS_OP_C_DELE,
       0,
       SPIFFS_PAGE_TO_PADDR(fs, pix) + offsetof(spiffs_page_header, flags),
-      sizeof(u8_t),
-      (u8_t *)&hdr.flags);
+      sizeof(flags), &flags);
 
   return res;
 }
@@ -942,7 +947,7 @@ s32_t spiffs_object_create(
   strncpy((char*)oix_hdr.name, (const char*)name, SPIFFS_OBJ_NAME_LEN);
 #if SPIFFS_OBJ_META_LEN
   if (meta) {
-    memcpy(oix_hdr.meta, meta, SPIFFS_OBJ_META_LEN);
+    _SPIFFS_MEMCPY(oix_hdr.meta, meta, SPIFFS_OBJ_META_LEN);
   } else {
     memset(oix_hdr.meta, 0xff, SPIFFS_OBJ_META_LEN);
   }
@@ -1006,7 +1011,7 @@ s32_t spiffs_object_update_index_hdr(
   }
 #if SPIFFS_OBJ_META_LEN
   if (meta) {
-    memcpy(objix_hdr->meta, meta, SPIFFS_OBJ_META_LEN);
+    _SPIFFS_MEMCPY(objix_hdr->meta, meta, SPIFFS_OBJ_META_LEN);
   }
 #else
   (void) meta;
@@ -1048,34 +1053,66 @@ void spiffs_cb_object_event(
   spiffs_obj_id obj_id = obj_id_raw & ~SPIFFS_OBJ_ID_IX_FLAG;
   u32_t i;
   spiffs_fd *fds = (spiffs_fd *)fs->fd_space;
+  SPIFFS_DBG("       CALLBACK  %s obj_id:"_SPIPRIid" spix:"_SPIPRIsp" npix:"_SPIPRIpg" nsz:"_SPIPRIi"\n", (const char *[]){"UPD", "NEW", "DEL", "MOV", "HUP","???"}[MIN(ev,5)],
+      obj_id_raw, spix, new_pix, new_size);
   for (i = 0; i < fs->fd_count; i++) {
     spiffs_fd *cur_fd = &fds[i];
-#if SPIFFS_TEMPORAL_FD_CACHE
-    if (cur_fd->score == 0 || (cur_fd->obj_id & ~SPIFFS_OBJ_ID_IX_FLAG) != obj_id) continue;
-#else
-    if (cur_fd->file_nbr == 0 || (cur_fd->obj_id & ~SPIFFS_OBJ_ID_IX_FLAG) != obj_id) continue;
+    if ((cur_fd->obj_id & ~SPIFFS_OBJ_ID_IX_FLAG) != obj_id) continue; // fd not related to updated file
+#if !SPIFFS_TEMPORAL_FD_CACHE
+    if (cur_fd->file_nbr == 0) continue; // fd closed
 #endif
-    if (spix == 0) {
+    if (spix == 0) { // object index header update
       if (ev != SPIFFS_EV_IX_DEL) {
-        SPIFFS_DBG("       callback: setting fd "_SPIPRIfd":"_SPIPRIid" objix_hdr_pix to "_SPIPRIpg", size:"_SPIPRIi"\n", cur_fd->file_nbr, cur_fd->obj_id, new_pix, new_size);
+#if SPIFFS_TEMPORAL_FD_CACHE
+        if (cur_fd->score == 0) continue; // never used fd
+#endif
+        SPIFFS_DBG("       callback: setting fd "_SPIPRIfd":"_SPIPRIid"(fdoffs:"_SPIPRIi" offs:"_SPIPRIi") objix_hdr_pix to "_SPIPRIpg", size:"_SPIPRIi"\n",
+            SPIFFS_FH_OFFS(fs, cur_fd->file_nbr), cur_fd->obj_id, cur_fd->fdoffset, cur_fd->offset, new_pix, new_size);
         cur_fd->objix_hdr_pix = new_pix;
         if (new_size != 0) {
+          // update size and offsets for fds to this file
           cur_fd->size = new_size;
+          u32_t act_new_size = new_size == SPIFFS_UNDEFINED_LEN ? 0 : new_size;
+#if SPIFFS_CACHE_WR
+          if (act_new_size > 0 && cur_fd->cache_page) {
+            act_new_size = MAX(act_new_size, cur_fd->cache_page->offset + cur_fd->cache_page->size);
+          }
+#endif
+          if (cur_fd->offset > act_new_size) {
+            cur_fd->offset = act_new_size;
+          }
+          if (cur_fd->fdoffset > act_new_size) {
+            cur_fd->fdoffset = act_new_size;
+          }
+#if SPIFFS_CACHE_WR
+          if (cur_fd->cache_page && cur_fd->cache_page->offset > act_new_size+1) {
+            SPIFFS_CACHE_DBG("CACHE_DROP: file trunced, dropping cache page "_SPIPRIi", no writeback\n", cur_fd->cache_page->ix);
+            spiffs_cache_fd_release(fs, cur_fd->cache_page);
+          }
+#endif
         }
       } else {
+        // removing file
+#if SPIFFS_CACHE_WR
+        if (cur_fd->file_nbr && cur_fd->cache_page) {
+          SPIFFS_CACHE_DBG("CACHE_DROP: file deleted, dropping cache page "_SPIPRIi", no writeback\n", cur_fd->cache_page->ix);
+          spiffs_cache_fd_release(fs, cur_fd->cache_page);
+        }
+#endif
+        SPIFFS_DBG("       callback: release fd "_SPIPRIfd":"_SPIPRIid" span:"_SPIPRIsp" objix_pix to "_SPIPRIpg"\n", SPIFFS_FH_OFFS(fs, cur_fd->file_nbr), cur_fd->obj_id, spix, new_pix);
         cur_fd->file_nbr = 0;
         cur_fd->obj_id = SPIFFS_OBJ_ID_DELETED;
       }
-    }
+    } // object index header update
     if (cur_fd->cursor_objix_spix == spix) {
       if (ev != SPIFFS_EV_IX_DEL) {
-        SPIFFS_DBG("       callback: setting fd "_SPIPRIfd":"_SPIPRIid" span:"_SPIPRIsp" objix_pix to "_SPIPRIpg"\n", cur_fd->file_nbr, cur_fd->obj_id, spix, new_pix);
+        SPIFFS_DBG("       callback: setting fd "_SPIPRIfd":"_SPIPRIid" span:"_SPIPRIsp" objix_pix to "_SPIPRIpg"\n", SPIFFS_FH_OFFS(fs, cur_fd->file_nbr), cur_fd->obj_id, spix, new_pix);
         cur_fd->cursor_objix_pix = new_pix;
       } else {
         cur_fd->cursor_objix_pix = 0;
       }
     }
-  }
+  } // fd update loop
 
 #if SPIFFS_IX_MAP
 
@@ -1087,7 +1124,7 @@ void spiffs_cb_object_event(
       if (cur_fd->file_nbr == 0 ||
           cur_fd->ix_map == 0 ||
           (cur_fd->obj_id & ~SPIFFS_OBJ_ID_IX_FLAG) != obj_id) continue;
-      SPIFFS_DBG("       callback: map ix update fd "_SPIPRIfd":"_SPIPRIid" span:"_SPIPRIsp"\n", cur_fd->file_nbr, cur_fd->obj_id, spix);
+      SPIFFS_DBG("       callback: map ix update fd "_SPIPRIfd":"_SPIPRIid" span:"_SPIPRIsp"\n", SPIFFS_FH_OFFS(fs, cur_fd->file_nbr), cur_fd->obj_id, spix);
       spiffs_update_ix_map(fs, cur_fd, spix, objix);
     }
   }
@@ -1164,7 +1201,7 @@ s32_t spiffs_object_open_by_page(
 
   SPIFFS_VALIDATE_OBJIX(oix_hdr.p_hdr, fd->obj_id, 0);
 
-  SPIFFS_DBG("open: fd "_SPIPRIfd" is obj id "_SPIPRIid"\n", fd->file_nbr, fd->obj_id);
+  SPIFFS_DBG("open: fd "_SPIPRIfd" is obj id "_SPIPRIid"\n", SPIFFS_FH_OFFS(fs, fd->file_nbr), fd->obj_id);
 
   return res;
 }
@@ -1275,7 +1312,7 @@ s32_t spiffs_object_append(spiffs_fd *fd, u32_t offset, u8_t *data, u32_t len) {
           SPIFFS_CHECK_RES(res);
           // quick "load" of new object index page
           memset(fs->work, 0xff, SPIFFS_CFG_LOG_PAGE_SZ(fs));
-          memcpy(fs->work, &p_hdr, sizeof(spiffs_page_header));
+          _SPIFFS_MEMCPY(fs->work, &p_hdr, sizeof(spiffs_page_header));
           spiffs_cb_object_event(fs, (spiffs_page_object_ix *)fs->work,
               SPIFFS_EV_IX_NEW, fd->obj_id, cur_objix_spix, cur_objix_pix, 0);
           SPIFFS_DBG("append: "_SPIPRIid" create objix page, "_SPIPRIpg":"_SPIPRIsp", written "_SPIPRIi"\n", fd->obj_id
@@ -2222,7 +2259,7 @@ s32_t spiffs_fd_find_new(spiffs *fs, spiffs_fd **fd, const char *name) {
     }
   }
 
-  // find the free fd with least score
+  // find the free fd with least score or name match
   for (i = 0; i < fs->fd_count; i++) {
     spiffs_fd *cur_fd = &fds[i];
     if (cur_fd->file_nbr == 0) {

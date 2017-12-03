@@ -141,6 +141,22 @@
 #define SPIFFS_OBJ_ID_DELETED           ((spiffs_obj_id)0)
 #define SPIFFS_OBJ_ID_FREE              ((spiffs_obj_id)-1)
 
+
+
+#if defined(__GNUC__) || defined(__clang__) || defined(__TI_COMPILER_VERSION__)
+    /* For GCC, clang and TI compilers */
+#define SPIFFS_PACKED __attribute__((packed))
+#elif defined(__ICCARM__) || defined(__CC_ARM)
+    /* For IAR ARM and Keil MDK-ARM compilers */
+#define SPIFFS_PACKED 
+
+#else
+    /* Unknown compiler */
+#define SPIFFS_PACKED 
+#endif
+
+
+
 #if SPIFFS_USE_MAGIC
 #if !SPIFFS_USE_MAGIC_LENGTH
 #define SPIFFS_MAGIC(fs, bix)           \
@@ -241,6 +257,15 @@
 // get data span index for object index span index
 #define SPIFFS_DATA_SPAN_IX_FOR_OBJ_IX_SPAN_IX(fs, spix) \
   ( (spix) == 0 ? 0 : (SPIFFS_OBJ_HDR_IX_LEN(fs) + (((spix)-1) * SPIFFS_OBJ_IX_LEN(fs))) )
+
+#if SPIFFS_FILEHDL_OFFSET
+#define SPIFFS_FH_OFFS(fs, fh)   ((fh) != 0 ? ((fh) + (fs)->cfg.fh_ix_offset) : 0)
+#define SPIFFS_FH_UNOFFS(fs, fh) ((fh) != 0 ? ((fh) - (fs)->cfg.fh_ix_offset) : 0)
+#else
+#define SPIFFS_FH_OFFS(fs, fh)   (fh)
+#define SPIFFS_FH_UNOFFS(fs, fh) (fh)
+#endif
+
 
 #define SPIFFS_OP_T_OBJ_LU    (0<<0)
 #define SPIFFS_OP_T_OBJ_LU2   (1<<0)
@@ -430,7 +455,7 @@ typedef struct {
   spiffs_span_ix cursor_objix_spix;
   // current absolute offset
   u32_t offset;
-  // current file descriptor offset
+  // current file descriptor offset (cached)
   u32_t fdoffset;
   // fd flags
   spiffs_flags flags;
@@ -455,7 +480,7 @@ typedef struct {
 // page header, part of each page except object lookup pages
 // NB: this is always aligned when the data page is an object index,
 // as in this case struct spiffs_page_object_ix is used
-typedef struct __attribute(( packed )) {
+typedef struct SPIFFS_PACKED {
   // object id
   spiffs_obj_id obj_id;
   // object span index
@@ -465,7 +490,7 @@ typedef struct __attribute(( packed )) {
 } spiffs_page_header;
 
 // object index header page header
-typedef struct __attribute(( packed ))
+typedef struct SPIFFS_PACKED
 #if SPIFFS_ALIGNED_OBJECT_INDEX_TABLES
                 __attribute(( aligned(sizeof(spiffs_page_ix)) ))
 #endif
@@ -487,7 +512,7 @@ typedef struct __attribute(( packed ))
 } spiffs_page_object_ix_header;
 
 // object index page header
-typedef struct __attribute(( packed )) {
+typedef struct SPIFFS_PACKED {
  spiffs_page_header p_hdr;
  u8_t _align[4 - ((sizeof(spiffs_page_header)&3)==0 ? 4 : (sizeof(spiffs_page_header)&3))];
 } spiffs_page_object_ix;
@@ -793,5 +818,25 @@ s32_t spiffs_page_consistency_check(
 
 s32_t spiffs_object_index_consistency_check(
     spiffs *fs);
+
+// memcpy macro,
+// checked in test builds, otherwise plain memcpy (unless already defined)
+#ifdef _SPIFFS_TEST
+#define _SPIFFS_MEMCPY(__d, __s, __l) do { \
+    intptr_t __a1 = (intptr_t)((u8_t*)(__s)); \
+    intptr_t __a2 = (intptr_t)((u8_t*)(__s)+(__l)); \
+    intptr_t __b1 = (intptr_t)((u8_t*)(__d)); \
+    intptr_t __b2 = (intptr_t)((u8_t*)(__d)+(__l)); \
+    if (__a1 <= __b2 && __b1 <= __a2) { \
+      printf("FATAL OVERLAP: memcpy from %lx..%lx to %lx..%lx\n", __a1, __a2, __b1, __b2); \
+      ERREXIT(); \
+    } \
+    memcpy((__d),(__s),(__l)); \
+} while (0)
+#else
+#ifndef _SPIFFS_MEMCPY
+#define _SPIFFS_MEMCPY(__d, __s, __l) do{memcpy((__d),(__s),(__l));}while(0)
+#endif
+#endif //_SPIFFS_TEST
 
 #endif /* SPIFFS_NUCLEUS_H_ */
