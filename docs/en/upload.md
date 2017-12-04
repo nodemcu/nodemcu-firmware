@@ -36,6 +36,18 @@ Source: [https://github.com/4refr0nt/luatool](https://github.com/4refr0nt/luatoo
 
 Supported platforms: OS X, Linux, Windows, anything that runs Python
 
+# ChiliPeppr ESP32 Web IDE
+
+> This is a new method via the browser of editing/uploading your Lua code to your ESP32 devices. The workspace has a Serial Port JSON Server that you run locally or remotely on your computer to let your browser talk direct to your serial ports. The Ace editor is embedded which does code highlighting and intellisense for Lua. There is a file browser for your ESP32, a serial port console, restart button, file saving, run, upload/run, and upload all. A pre-compiled binary is available with all modules compiled in so you don't have to compile the firmware on your own. There is also sample code including pure Lua libraries for websockets, joystick control, etc. There is also an XBM image creator for OLED displays that let you cut/paste PNG, JPEG, or GIF images or even drag/drop of animated GIFs to create Lua code.
+
+![ChiliPeppr ESP32 Workspace](https://github.com/chilipeppr/workspace-esp32-lua/raw/master/screenshot.png "ChiliPeppr ESP32 Workspace")
+
+Location: [http://chilipeppr.com/esp32](http://chilipeppr.com)
+
+Source: [https://github.com/chilipeppr/workspace-esp32-lua](https://github.com/chilipeppr/workspace-esp32-lua)
+
+Supported platforms: OS X, Linux, Windows
+
 # Compiling Lua on your PC for Uploading
 
 If you install lua on your development PC or Laptop then you can use the standard Lua
