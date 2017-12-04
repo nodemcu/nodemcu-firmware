@@ -762,4 +762,3 @@ int wifi_monitor_init(lua_State *L)
   return 0;
 }
 
-//NODEMCU_MODULE(WIFI_MONITOR, "wifi_monitor", wifi_monitor_map, wifi_monitor_init);
