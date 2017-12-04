@@ -1,11 +1,11 @@
-# bloom Module
+# Bloom Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
 | 2017-11-13 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [bloom.c](../../../app/modules/bloom.c)|
 
 
-This module implements a bloom filter. This is a probabilistic data structure that is used to test for set membership. There are two operations -- `add` and `check` that allow 
-arbitrary strings to be added to the set or tested for set membership. Since this is a probabilistic dta structure, the answer returned can be incorrect. However,
+This module implements a [Bloom filter](https://en.wikipedia.org/wiki/Bloom_filter). This is a probabilistic data structure that is used to test for set membership. There are two operations -- `add` and `check` that allow 
+arbitrary strings to be added to the set or tested for set membership. Since this is a probabilistic data structure, the answer returned can be incorrect. However,
 if the string *is* a member of the set, then the `check` operation will always return `true`. 
 
 ## bloom.create()
