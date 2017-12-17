@@ -14,6 +14,8 @@
 #include "driver/uart.h"
 #include "driver/sigma_delta.h"
 
+#define INTERRUPT_TYPE_IS_LEVEL(x)   ((x) >= GPIO_PIN_INTR_LOLEVEL)
+
 #ifdef GPIO_INTERRUPT_ENABLE
 static task_handle_t gpio_task_handle;
 
@@ -226,13 +228,25 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
     if (gpio_status&1) {
       int i = pin_num_inv[j];
       if (pin_int_type[i]) {
-        //disable interrupt
-        gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        uint16_t diff = pin_counter[i].seen ^ pin_counter[i].reported;
+
+        pin_counter[i].seen = 0x7fff & (pin_counter[i].seen + 1);
+
+        if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[i])) {
+          //disable interrupt
+          gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        }
         //clear interrupt status
         GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
-        uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
-	task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level);
-	// We re-enable the interrupt when we execute the callback
+
+        if (diff == 0 || diff & 0x8000) {
+          uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
+	  if (!task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level)) {
+            // If we fail to post, then try on the next interrupt
+            pin_counter[i].seen |= 0x8000;
+          }
+          // We re-enable the interrupt when we execute the callback (if level)
+        }
       }
     }
   }
