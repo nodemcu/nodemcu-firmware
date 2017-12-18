@@ -6,14 +6,43 @@
 !!! important
 	The WiFi subsystem is maintained by background tasks that must run periodically. Any function or task that takes longer than 15ms (milliseconds) may cause the WiFi subsystem to crash. To avoid these potential crashes, it is advised that the WiFi subsystem be suspended with [wifi.suspend()](#wifisuspend) prior to the execution of any tasks or functions that exceed this 15ms guideline.
 
+### WiFi modes
+Courtesy: content for this chapter is borrowed/inspired by the [Arduino ESP8266 WiFi documentation](https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html).
+
+Devices that connect to WiFi network are called stations (STA). Connection to Wi-Fi is provided by an access point (AP), that acts as a hub for one or more stations. The access point on the other end is connected to a wired network. An access point is usually integrated with a router to provide access from Wi-Fi network to the internet. Each access point is recognized by a SSID (**S**ervice **S**et **ID**entifier), that essentially is the name of network you select when connecting a device (station) to the WiFi.
+
+Each ESP8266 module can operate as a station, so we can connect it to the WiFi network. It can also operate as a soft access point (soft-AP), to establish its own WiFi network. Therefore, we can connect other stations to such modules. Third, ESP8266 is also able to operate both in station and soft access point mode *at the same time*. This offers the possibility of building e.g. [mesh networks](https://en.wikipedia.org/wiki/Mesh_networking).
+
+#### Station
+Station (STA) mode is used to get the ESP8266 connected to a WiFi network established by an access point.
+
+![ESP8266 operating in station mode](../../img/WiFi-station-mode.png)
+
+#### Soft Access Point
+An access point (AP) is a device that provides access to Wi-Fi network to other devices (stations) and connects them further to a wired network. ESP8266 can provide similar functionality except it does not have interface to a wired network. Such mode of operation is called soft access point (soft-AP). The maximum number of stations connected to the soft-AP is five.
+
+![ESP8266 operating in Soft Access Point mode](../../img/WiFi-softap-mode.png)
+
+The soft-AP mode is often used and an intermediate step before connecting ESP to a WiFi in a station mode. This is when SSID and password to such network is not known upfront. The module first boots in soft-AP mode, so we can connect to it using a laptop or a mobile phone. Then we are able to provide credentials to the target network. Once done ESP is switched to the station mode and can connect to the target WiFi.
+
+Such functionality is provided by the [NodeMCU enduser setup module](../modules/enduser-setup.md).
+
+#### Station + Soft Access Point
+Another handy application of soft-AP mode is to set up [mesh networks](https://en.wikipedia.org/wiki/Mesh_networking). ESP can operate in both soft-AP and Station mode so it can act as a node of a mesh network.
+
+![ESP8266 operating in station AP mode](../../img/WiFi-stationap-mode.png)
+
+
+### Function reference
 
 The NodeMCU WiFi control is spread across several tables:
 
-- `wifi` for overall WiFi configuration
+- [`wifi`](#wifigetchannel) for overall WiFi configuration
 - [`wifi.sta`](#wifista-module) for station mode functions
 - [`wifi.ap`](#wifiap-module) for wireless access point (WAP or simply AP) functions
 - [`wifi.ap.dhcp`](#wifiapdhcp-module) for DHCP server control
 - [`wifi.eventmon`](#wifieventmon-module) for wifi event monitor
+
 
 ## wifi.getchannel()
 
@@ -101,6 +130,9 @@ Configures whether or not WiFi automatically goes to sleep in NULL_MODE. Enabled
 ## wifi.resume()
 
 Wake up WiFi from suspended state or cancel pending wifi suspension.
+
+!!! attention
+    This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 !!! note
 	Wifi resume occurs asynchronously, this means that the resume request will only be processed when control of the processor is passed back to the SDK (after MyResumeFunction() has completed). The resume callback also executes asynchronously and will only execute after wifi has resumed normal operation. 
@@ -208,6 +240,25 @@ physical mode after setup
 #### See also
 [`wifi.getphymode()`](#wifigetphymode)
 
+## wifi.setmaxtxpower()
+
+Sets WiFi maximum TX power. This setting is not persisted across power cycles, and the Espressif SDK documentation does not specify if the setting persists after deep sleep. The default value used is read from byte 34 of the ESP8266 init data, and its value is hence defined by the manufacturer.
+
+The default value, 82, corresponds to maximum TX power. Lowering this setting could reduce power consumption on battery backed devices.
+
+#### Syntax
+`wifi.setmaxtxpower(max_tpw)`
+
+#### Parameters
+`max_tpw` maximum value of RF Tx Power, unit: 0.25 dBm, range [0, 82]. 
+
+#### Returns
+`nil`
+
+### See also
+[`flash SDK init data`](../flash.md#sdk-init-data)
+
+
 ## wifi.startsmart()
 
 Starts to auto configuration, if success set up SSID and password automatically.
@@ -262,6 +313,9 @@ none
 
 ## wifi.suspend()
 Suspend Wifi to reduce current consumption. 
+
+!!! attention
+    This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 !!! note
 	Wifi suspension occurs asynchronously, this means that the suspend request will only be processed when control of the processor is passed back to the SDK (after MySuspendFunction() has completed). The suspend callback also executes asynchronously and will only execute after wifi has been successfully been suspended. 
@@ -447,6 +501,7 @@ Sets the WiFi station configuration.
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
+station_cfg.save=false
 wifi.sta.config(station_cfg)
 
 --connect to Access Point (DO save config to flash)
@@ -456,14 +511,14 @@ station_cfg.pwd="password"
 station_cfg.save=true
 wifi.sta.config(station_cfg)
 
---connect to Access Point with specific MAC address  
+--connect to Access Point with specific MAC address (DO save config to flash)
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
 station_cfg.bssid="AA:BB:CC:DD:EE:FF"
 wifi.sta.config(station_cfg)
 
---configure station but don't connect to Access point
+--configure station but don't connect to Access point (DO save config to flash)
 station_cfg={}
 station_cfg.ssid="NODE-AABBCC"
 station_cfg.pwd="password"
@@ -937,7 +992,9 @@ Sets station hostname.
 `hostname` must only contain letters, numbers and hyphens('-') and be 32 characters or less with first and last character being alphanumeric
 
 #### Returns
-`nil`
+- `true`  Success
+- `false` Failure
+
 
 #### Example
 ```lua
