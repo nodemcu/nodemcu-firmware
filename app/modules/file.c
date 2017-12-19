@@ -477,7 +477,7 @@ static int file_readline( lua_State* L )
 {
   GET_FILE_OBJ;
 
-  return file_g_read(L, LUAL_BUFFERSIZE, '\n', fd);
+  return file_g_read(L, FILE_READ_CHUNK, '\n', fd);
 }
 
 // Lua: write("string")
