@@ -1820,7 +1820,8 @@ This is more efficient than the above approach, but requires you to remember tha
 ## packet.&lt;attribute&gt;
 
 The packet object has many attributes on it. These allow easy access to all the fields, though not an easy way to enumerate them. All integers are unsigned
-except where noted.
+except where noted. Information Elements are only returned if they are completely within the captured frame. This can mean that for some frames, some of the
+information elements can be missing.
 
 |  Attribute name  |  Type  |
 |:--------------------|:-------:|
