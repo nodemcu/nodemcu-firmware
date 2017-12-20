@@ -1819,13 +1819,13 @@ This is more efficient than the above approach, but requires you to remember tha
 
 ## packet.&lt;attribute&gt;
 
-The packet object has many attributes on it. These allow easy access to all the fields, though not an easy way to enumerate them.
+The packet object has many attributes on it. These allow easy access to all the fields, though not an easy way to enumerate them. All integers are unsigned
+except where noted.
 
 |  Attribute name  |  Type  |
 |:--------------------|:-------:|
 | aggregation | Integer |
 | ampdu_cnt | Integer |
-| association_id | Integer |
 | association_id | Integer |
 | authentication_algorithm | Integer |
 | authentication_transaction | Integer |
@@ -1845,10 +1845,10 @@ The packet object has many attributes on it. These allow easy access to all the 
 | dstmac_hex | String |
 | duration | Integer |
 | fec_coding | Integer |
-| frame | String |
+| frame | String (the entire received frame) |
 | frame_hex | String |
 | fromds | Integer |
-| header | Integer |
+| header | String (the fixed part of the management frame) |
 | ht_length | Integer |
 | ie_20_40_bss_coexistence | String |
 | ie_20_40_bss_intolerant_channel_report | String |
@@ -1983,7 +1983,6 @@ The packet object has many attributes on it. These allow easy access to all the 
 | is_group | Integer |
 | legacy_length | Integer |
 | listen_interval | Integer |
-| listen_interval | Integer |
 | mcs | Integer |
 | moredata | Integer |
 | moreflag | Integer |
@@ -1993,11 +1992,11 @@ The packet object has many attributes on it. These allow easy access to all the 
 | protectedframe | Integer |
 | protocol | Integer |
 | pwrmgmt | Integer |
-| radio | String |
+| radio | String (the entire radio header) |
 | rate | Integer |
 | reason | Integer |
 | retry | Integer |
-| rssi | Integer |
+| rssi | Signed Integer |
 | rxend_state | Integer |
 | sgi | Integer |
 | sig_mode | Integer |
