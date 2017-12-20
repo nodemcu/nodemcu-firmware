@@ -2025,29 +2025,29 @@ The Radio Header has been mentioned above as a 12 byte structure. The layout is 
 
 ```
 struct {
-    signed rssi:8;//±íÊ¾¸Ã°üµÄÐÅºÅÇ¿¶È
+    signed rssi:8;//表示该包的信号强度
     unsigned rate:4;
     unsigned is_group:1;
     unsigned:1;
-    unsigned sig_mode:2;//±íÊ¾¸Ã°üÊÇ·ñÊÇ11nµÄ°ü£¬0±íÊ¾·Ç11n£¬·Ç0±íÊ¾11n
-    unsigned legacy_length:12;//Èç¹û²»ÊÇ11nµÄ°ü£¬Ëü±íÊ¾°üµÄ³¤¶È
+    unsigned sig_mode:2;//表示该包是否是11n 的包，0 表示非11n，非0 表示11n
+    unsigned legacy_length:12;//如果不是11n 的包，它表示包的长度
     unsigned damatch0:1;
     unsigned damatch1:1;
     unsigned bssidmatch0:1;
     unsigned bssidmatch1:1;
-    unsigned MCS:7;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾°üµÄµ÷ÖÆ±àÂëÐòÁÐ£¬ÓÐÐ§Öµ£º0-76
-    unsigned CWB:1;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾ÊÇ·ñÎªHT40µÄ°ü
-    unsigned HT_length:16;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾°üµÄ³¤¶È
+    unsigned MCS:7;//如果是11n 的包，它表示包的调制编码序列，有效值：0-76
+    unsigned CWB:1;//如果是11n 的包，它表示是否为HT40 的包
+    unsigned HT_length:16;//如果是11n 的包，它表示包的长度
     unsigned Smoothing:1;
     unsigned Not_Sounding:1;
     unsigned:1;
     unsigned Aggregation:1;
     unsigned STBC:2;
-    unsigned FEC_CODING:1;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾ÊÇ·ñÎªLDPCµÄ°ü
+    unsigned FEC_CODING:1;//如果是11n 的包，它表示是否为LDPC 的包
     unsigned SGI:1;
     unsigned rxend_state:8;
     unsigned ampdu_cnt:8;
-    unsigned channel:4;//±íÊ¾¸Ã°üËùÔÚµÄÐÅµÀ
+    unsigned channel:4;//表示该包所在的信道
     unsigned:12;
 }
 ```
