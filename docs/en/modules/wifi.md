@@ -42,6 +42,7 @@ The NodeMCU WiFi control is spread across several tables:
 - [`wifi.ap`](#wifiap-module) for wireless access point (WAP or simply AP) functions
 - [`wifi.ap.dhcp`](#wifiapdhcp-module) for DHCP server control
 - [`wifi.eventmon`](#wifieventmon-module) for wifi event monitor
+- [`wifi.monitor`](#wifimonitor-module) for wifi monitor mode
 
 
 ## wifi.getchannel()
@@ -1656,11 +1657,11 @@ Any connected ap/station will be disconnected.
 `wifi.monitor.start([filter parameters,] mgmt_frame_callback)`
 
 #### Parameters
-- `mgmt_frame_callback` is a function which is invoked with a single argument which is a `wifi.packet` object which has many methods and attributes.
 - filter parameters. This is a byte offset (1 based) into the underlying data structure, a value to match against, and an optional mask to use for matching.
+  The data structure used for filtering is 12 bytes of radio header, and then the actual frame. The first byte of the frame is therefore numbered 13. The filter
+  values of 13, 0x80 will just extract beacon frames.
+- `mgmt_frame_callback` is a function which is invoked with a single argument which is a `wifi.packet` object which has many methods and attributes.
 
-The data structure used for filtering is 12 bytes of radio header, and then the actual frame. The first byte of the frame is therefore numbered 13. The filter
-values of 13, 0x80 will just extract beacon frames.
 
 #### Returns
 nothing.
@@ -1697,7 +1698,7 @@ nothing.
 
 This object provides access to the raw packet data and also many methods to extract data from the packet in a simple way.
 
-## packet:radio_byte
+## packet:radio_byte()
 
 This is like the `string.byte` method, except that it gives access to the bytes of the radio header.
 
@@ -1711,7 +1712,7 @@ This is like the `string.byte` method, except that it gives access to the bytes 
 0-255 as the value of the byte
 nothing if the offset is not within the radio header.
 
-## packet:frame_byte
+## packet:frame_byte()
 
 This is like the `string.byte` method, except that it gives access to the bytes of the received frame.
 
@@ -1726,7 +1727,7 @@ This is like the `string.byte` method, except that it gives access to the bytes 
 nothing if the offset is not within the received frame.
 
 
-## packet:radio_sub
+## packet:radio_sub()
 
 This is like the `string.sub` method, except that it gives access to the bytes of the radio header.
 
@@ -1739,7 +1740,7 @@ Same rules as for `string.sub` except that it operates on the radio header.
 #### Returns
 A string according to the `string.sub` rules.
 
-## packet:frame_sub
+## packet:frame_sub()
 
 This is like the `string.sub` method, except that it gives access to the bytes of the received frame.
 
@@ -1753,7 +1754,7 @@ Same rules as for `string.sub` except that it operates on the received frame.
 A string according to the `string.sub` rules.
 
 
-## packet:radio_subhex
+## packet:radio_subhex()
 
 This is like the `string.sub` method, except that it gives access to the bytes of the radio header. It also
 converts them into hex efficiently.
@@ -1768,7 +1769,7 @@ Same rules as for `string.sub` except that it operates on the radio header.
 #### Returns
 A string according to the `string.sub` rules, converted into hex with possible inserted spacers.
 
-## packet:frame_sub
+## packet:frame_sub()
 
 This is like the `string.sub` method, except that it gives access to the bytes of the received frame.
 
@@ -1786,7 +1787,8 @@ A string according to the `string.sub` rules, converted into hex with possible i
 ## packet:ie_table()
 
 This returns a table of the information elements from the management frame. The table keys values are the
-information element numbers (0 - 255). Note that IE0 is the SSID.
+information element numbers (0 - 255). Note that IE0 is the SSID. This method is mostly only useful if
+you need to determine which information elements were in the management frame.
 
 #### Syntax
 `packet:ie_table()`
@@ -1815,7 +1817,7 @@ print ("SSID", packet[0])
 
 This is more efficient than the above approach, but requires you to remember that IE0 is the SSID.
 
-## packet.<attribute>
+## packet.&lt;attribute&gt;
 
 The packet object has many attributes on it. These allow easy access to all the fields, though not an easy way to enumerate them.
 
@@ -1830,7 +1832,7 @@ The packet object has many attributes on it. These allow easy access to all the 
 | beacon_interval | Integer |
 | beacon_interval | Integer |
 | bssid | String |
-| bssid_hex | Integer |
+| bssid_hex | String |
 | bssidmatch0 | Integer |
 | bssidmatch1 | Integer |
 | capability | Integer |
@@ -1840,11 +1842,11 @@ The packet object has many attributes on it. These allow easy access to all the 
 | dmatch0 | Integer |
 | dmatch1 | Integer |
 | dstmac | String |
-| dstmac_hex | Integer |
+| dstmac_hex | String |
 | duration | Integer |
 | fec_coding | Integer |
 | frame | String |
-| frame_hex | Integer |
+| frame_hex | String |
 | fromds | Integer |
 | header | Integer |
 | ht_length | Integer |
@@ -2001,7 +2003,7 @@ The packet object has many attributes on it. These allow easy access to all the 
 | sig_mode | Integer |
 | smoothing | Integer |
 | srcmac | String |
-| srcmac_hex | Integer |
+| srcmac_hex | String |
 | status | Integer |
 | stbc | Integer |
 | subtype | Integer |
@@ -2010,7 +2012,42 @@ The packet object has many attributes on it. These allow easy access to all the 
 | type | Integer |
 
 
+If you don't know what some of the attributes are, then you probably need to read the IEEE 802.11 specifications and other supporting material.
+
 #### Example
 ```
 print ("SSID", packet.ie_ssid)
+```
+
+## The Radio Header
+
+The Radio Header has been mentioned above as a 12 byte structure. The layout is shown below. The only comments are in Chinese.
+
+```
+struct {
+    signed rssi:8;//±íÊ¾¸Ã°üµÄÐÅºÅÇ¿¶È
+    unsigned rate:4;
+    unsigned is_group:1;
+    unsigned:1;
+    unsigned sig_mode:2;//±íÊ¾¸Ã°üÊÇ·ñÊÇ11nµÄ°ü£¬0±íÊ¾·Ç11n£¬·Ç0±íÊ¾11n
+    unsigned legacy_length:12;//Èç¹û²»ÊÇ11nµÄ°ü£¬Ëü±íÊ¾°üµÄ³¤¶È
+    unsigned damatch0:1;
+    unsigned damatch1:1;
+    unsigned bssidmatch0:1;
+    unsigned bssidmatch1:1;
+    unsigned MCS:7;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾°üµÄµ÷ÖÆ±àÂëÐòÁÐ£¬ÓÐÐ§Öµ£º0-76
+    unsigned CWB:1;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾ÊÇ·ñÎªHT40µÄ°ü
+    unsigned HT_length:16;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾°üµÄ³¤¶È
+    unsigned Smoothing:1;
+    unsigned Not_Sounding:1;
+    unsigned:1;
+    unsigned Aggregation:1;
+    unsigned STBC:2;
+    unsigned FEC_CODING:1;//Èç¹ûÊÇ11nµÄ°ü£¬Ëü±íÊ¾ÊÇ·ñÎªLDPCµÄ°ü
+    unsigned SGI:1;
+    unsigned rxend_state:8;
+    unsigned ampdu_cnt:8;
+    unsigned channel:4;//±íÊ¾¸Ã°üËùÔÚµÄÐÅµÀ
+    unsigned:12;
+}
 ```
