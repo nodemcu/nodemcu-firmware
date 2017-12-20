@@ -37,6 +37,8 @@ static task_handle_t tasknumber;
 
 #define IE(id)  0, (id), SINGLE_IE
 
+static void (*on_disconnected)(void);
+
 typedef struct {
   const char *key;
   uint8 frametype;
@@ -645,6 +647,45 @@ static int packet_radio_subhex(lua_State *L) {
   return packet_subhex(L, 0, sizeof(struct RxControl));
 }
 
+static void start_actually_monitoring() {
+  wifi_set_channel(1);
+  wifi_promiscuous_enable(1);
+}
+
+static int wifi_event_monitor_handle_event_cb_hook(System_Event_t *evt)
+{
+  if (evt->event == EVENT_STAMODE_DISCONNECTED) {
+    if (on_disconnected) {
+      on_disconnected();
+      on_disconnected = NULL;
+      return 1;    // We did handle the event
+    }
+  }
+  return 0;     // We did not handle the event
+}
+
+// This is a bit ugly as we have to use a bit of the event monitor infrastructure
+#ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
+extern void wifi_event_monitor_register_hook(int (*fn)(System_Event_t*));
+
+static void eventmon_setup() {
+  wifi_event_monitor_register_hook(wifi_event_monitor_handle_event_cb_hook);
+}
+#else
+static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
+{
+  wifi_event_monitor_handle_event_cb_hook(evt);
+}
+
+static void eventmon_setup() {
+  wifi_set_event_handler_cb(wifi_event_monitor_handle_event_cb);
+}
+#endif
+
+static void eventmon_call_on_disconnected(void (*fn)(void)) {
+  on_disconnected = fn;
+}
+
 static int wifi_monitor_start(lua_State *L) {
   int argno = 1;
   if (lua_type(L, argno) == LUA_TNUMBER) {
@@ -676,20 +717,19 @@ static int wifi_monitor_start(lua_State *L) {
   {
     lua_pushvalue(L, argno);  // copy argument (func) to the top of stack
     recv_cb = luaL_ref(L, LUA_REGISTRYINDEX);
-    // this is very delicate code. If the timing is wrong, then the code crashes
-    // as it appears that the sniffer buffers have not been allocated.
+    uint8 connect_status = wifi_station_get_connect_status();
     wifi_station_set_auto_connect(0);
-    os_delay_us(10000);
     wifi_set_opmode_current(1);
-    os_delay_us(10000);
     wifi_promiscuous_enable(0);
-    os_delay_us(10000);
     wifi_station_disconnect();
-    os_delay_us(10000);
     wifi_set_promiscuous_rx_cb(wifi_rx_cb);
-    wifi_set_channel(1);
-    os_delay_us(10000);
-    wifi_promiscuous_enable(1);
+    // Now we have to wait until we get the EVENT_STAMODE_DISCONNECTED event
+    // before we can go further.
+    if (connect_status == STATION_IDLE) {
+      start_actually_monitoring();
+    } else {
+      eventmon_call_on_disconnected(start_actually_monitoring);
+    }
     return 0;
   }
   return luaL_error(L, "Missing callback");
@@ -744,6 +784,8 @@ int wifi_monitor_init(lua_State *L)
 {
   luaL_rometatable(L, "wifi.packet", (void *)packet_map);
   tasknumber = task_get_id(monitor_task);
+  eventmon_setup();
+
 #ifdef CHECK_TABLE_IN_ORDER
     // verify that the table is in order
     typekey_t tk;
