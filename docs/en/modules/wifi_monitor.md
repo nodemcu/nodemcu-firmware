@@ -19,7 +19,7 @@ Any connected ap/station will be disconnected.
 
 #### Parameters
 - filter parameters. This is a byte offset (1 based) into the underlying data structure, a value to match against, and an optional mask to use for matching.
-  The data structure used for filtering is 12 bytes of radio header, and then the actual frame. The first byte of the frame is therefore numbered 13. The filter
+  The data structure used for filtering is 12 bytes of [radio header](#the-radio-header), and then the actual frame. The first byte of the frame is therefore numbered 13. The filter
   values of 13, 0x80 will just extract beacon frames.
 - `mgmt_frame_callback` is a function which is invoked with a single argument which is a `wifi.packet` object which has many methods and attributes.
 
@@ -62,17 +62,17 @@ This object provides access to the raw packet data and also many methods to extr
 
 ## packet:radio_byte()
 
-This is like the `string.byte` method, except that it gives access to the bytes of the radio header.
+This is like the `string.byte` method, except that it gives access to the bytes of the [radio header](#the-radio-header).
 
 #### Syntax
 `packet:radio_byte(n)`
 
 #### Parameters
-- `n` the byte number (1 based) to get from the radio header portion of the packet
+- `n` the byte number (1 based) to get from the [radio header](#the-radio-header) portion of the packet
 
 #### Returns
 0-255 as the value of the byte
-nothing if the offset is not within the radio header.
+nothing if the offset is not within the [radio header](#the-radio-header).
 
 ## packet:frame_byte()
 
@@ -91,13 +91,13 @@ nothing if the offset is not within the received frame.
 
 ## packet:radio_sub()
 
-This is like the `string.sub` method, except that it gives access to the bytes of the radio header.
+This is like the `string.sub` method, except that it gives access to the bytes of the [radio header](#the-radio-header).
 
 #### Syntax
 `packet:radio_sub(start, end)`
 
 #### Parameters
-Same rules as for `string.sub` except that it operates on the radio header.
+Same rules as for `string.sub` except that it operates on the [radio header](#the-radio-header).
 
 #### Returns
 A string according to the `string.sub` rules.
@@ -118,14 +118,14 @@ A string according to the `string.sub` rules.
 
 ## packet:radio_subhex()
 
-This is like the `string.sub` method, except that it gives access to the bytes of the radio header. It also
+This is like the `string.sub` method, except that it gives access to the bytes of the [radio header](#the-radio-header). It also
 converts them into hex efficiently.
 
 #### Syntax
 `packet:radio_subhex(start, end [, seperator])`
 
 #### Parameters
-Same rules as for `string.sub` except that it operates on the radio header.
+Same rules as for `string.sub` except that it operates on the [radio header](#the-radio-header).
 - `seperator` is an optional sting which is placed between the individual hex pairs returned.
 
 #### Returns
@@ -184,6 +184,10 @@ This is more efficient than the above approach, but requires you to remember tha
 The packet object has many attributes on it. These allow easy access to all the fields, though not an easy way to enumerate them. All integers are unsigned
 except where noted. Information Elements are only returned if they are completely within the captured frame. This can mean that for some frames, some of the
 information elements can be missing.
+
+When a string is returned as the value of a field, it can (and often is) be a binary string with embedded nulls. All information elements are returned as strings
+even if they are only one byte long and look like a number in the specification. This is purely to make the interface consistent. Note that even SSIDs can contain
+embedded nulls. 
 
 |  Attribute name  |  Type  |
 |:--------------------|:-------:|
@@ -355,7 +359,7 @@ information elements can be missing.
 | protectedframe | Integer |
 | protocol | Integer |
 | pwrmgmt | Integer |
-| radio | String (the entire radio header) |
+| radio | String (the entire [radio header](#the-radio-header)) |
 | rate | Integer |
 | reason | Integer |
 | retry | Integer |
