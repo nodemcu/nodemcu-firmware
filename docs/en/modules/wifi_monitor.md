@@ -44,7 +44,8 @@ This disables the monitor mode and returns to normal operation. There are no par
 
 ## wifi.monitor.channel()
 
-This sets the channel number to monitor.
+This sets the channel number to monitor. Note that in many applications you will want to step through the channel numbers at regular intervals. Beacon
+frames (in particular) are typically sent every 102 milliseconds, so a switch time of (say) 150 milliseconds seems to work well.
 
 #### Syntax
 `wifi.monitor.channel(channel)`
