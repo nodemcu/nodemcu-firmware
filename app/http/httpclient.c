@@ -215,20 +215,23 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
         ua_len = strlen(ua_header);
     }
 
-	char host_header[32] = "";
+	char * host_header = "";
     int host_len = 0;
     if ( os_strstr( req->headers, "Host:" ) == NULL && os_strstr( req->headers, "host:" ) == NULL)
     {
+        int max_header_len = 9 + strlen(req->hostname);
         if ((req->port == 80)
 #ifdef CLIENT_SSL_ENABLE
             || ((req->port == 443) && ( req->secure ))
 #endif
             )
         {
+            host_header = alloca(max_header_len);
             os_sprintf( host_header, "Host: %s\r\n", req->hostname );
         }
         else
         {
+            host_header = alloca(max_header_len + 6);
             os_sprintf( host_header, "Host: %s:%d\r\n", req->hostname, req->port );
         }
         host_len = strlen(host_header);
