@@ -219,7 +219,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
     int host_len = 0;
     if ( os_strstr( req->headers, "Host:" ) == NULL && os_strstr( req->headers, "host:" ) == NULL)
     {
-        int max_header_len = 9 + strlen(req->hostname);
+        int max_header_len = 9 + strlen(req->hostname); // 9 is fixed size of "Host:[space][cr][lf]\0"
         if ((req->port == 80)
 #ifdef CLIENT_SSL_ENABLE
             || ((req->port == 443) && ( req->secure ))
@@ -231,7 +231,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
         }
         else
         {
-            host_header = alloca(max_header_len + 6);
+            host_header = alloca(max_header_len + 6); // 6 is worst case of ":port" where port is maximum 5 digits
             os_sprintf( host_header, "Host: %s:%d\r\n", req->hostname, req->port );
         }
         host_len = strlen(host_header);
