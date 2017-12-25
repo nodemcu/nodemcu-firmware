@@ -112,14 +112,14 @@ Send an I²C stop condition.
 [i2c.read()](#i2cread)
 
 ## i2c.write()
-Write data to I²C bus. Data items can be multiple numbers, strings or lua tables.
+Write data to I²C bus. Data items can be multiple numbers, strings or Lua tables.
 
 ####Syntax
 `i2c.write(id, data1[, data2[, ..., datan]])`
 
 ####Parameters
 - `id` always 0
-- `data` data can be numbers, string or lua table.
+- `data` data can be numbers, string or Lua table.
 
 #### Returns
 `number` number of bytes written

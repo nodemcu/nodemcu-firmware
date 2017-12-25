@@ -62,7 +62,7 @@ then call it asynchronously a few more times (e.g. using [node.task.post](../mod
 
 #### Example
 ```lua
--- lua transmit radio code using protocol #1
+-- Lua transmit radio code using protocol #1
 -- pulse_length 300 microseconds
 -- repeat 5 times
 -- use pin #7 (GPIO13)

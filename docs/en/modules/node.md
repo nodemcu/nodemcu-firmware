@@ -245,7 +245,7 @@ Redirects the Lua interpreter output to a callback function. Optionally also pri
 function tonet(str)
   sk:send(str)
 end
-node.output(tonet, 1)  -- serial also get the lua output.
+node.output(tonet, 1)  -- serial also get the Lua output.
 ```
 
 ```lua

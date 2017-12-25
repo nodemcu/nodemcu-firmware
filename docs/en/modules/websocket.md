@@ -62,7 +62,7 @@ ws = websocket.createClient()
 ws:close()
 ws:close() -- nothing will happen
 
-ws = nil -- fully dispose the client as lua will now gc it
+ws = nil -- fully dispose the client as Lua will now gc it
 ```
 
 
@@ -137,7 +137,7 @@ ws:on("receive", function(_, msg, opcode)
 end)
 ws:on("close", function(_, status)
   print('connection closed', status)
-  ws = nil -- required to lua gc the websocket client
+  ws = nil -- required to Lua gc the websocket client
 end)
 
 ws:connect('ws://echo.websocket.org')

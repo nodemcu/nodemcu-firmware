@@ -19,11 +19,11 @@ The handling of json null is as follows:
 - Optionally, a single string can be specified in both the encoder and decoder. This string will be used in encoding/decoding to represent json null values. This string should not be used
 anywhere else in your data structures. A suitable value might be `"\0"`.
 
-When encoding a lua object, if a function is found, then it is invoked (with no arguments) and the (single) returned value is encoded in the place of the function.
+When encoding a Lua object, if a function is found, then it is invoked (with no arguments) and the (single) returned value is encoded in the place of the function.
 
 ## sjson.encoder()
 
-This creates an encoder object that can convert a LUA object into a JSON encoded string.
+This creates an encoder object that can convert a Lua object into a JSON encoded string.
 
 ####Syntax
 `sjson.encoder(table [, opts])`
@@ -101,7 +101,7 @@ end
 
 ## sjson.decoder()
 
-This makes a decoder object that can parse a JSON encoded string into a lua object. A metatable can be specified for all the newly created lua tables. This allows
+This makes a decoder object that can parse a JSON encoded string into a Lua object. A metatable can be specified for all the newly created Lua tables. This allows
 you to handle each value as it is inserted into each table (by implementing the `__newindex` method).
 
 ####Syntax
@@ -149,7 +149,7 @@ you only need the `download_url` keys, then the total size is around 600B. This 
 
 ## sjson.decoder:write
 
-This provides more data to be parsed into the lua object.
+This provides more data to be parsed into the Lua object.
 
 ####Syntax
 `decoder:write(string)`
@@ -159,7 +159,7 @@ This provides more data to be parsed into the lua object.
 - `string` the next piece of JSON encoded data
 
 ####Returns
-The constructed lua object or `nil` if the decode is not yet complete.
+The constructed Lua object or `nil` if the decode is not yet complete.
 
 ####Errors
 If a parse error occurrs during this decode, then an error is thrown and the parse is aborted. The object cannot be used again.
@@ -167,7 +167,7 @@ If a parse error occurrs during this decode, then an error is thrown and the par
 
 ## sjson.decoder:result
 
-This gets the decoded lua object, or raises an error if the decode is not yet complete. This can be called multiple times and will return the 
+This gets the decoded Lua object, or raises an error if the decode is not yet complete. This can be called multiple times and will return the 
 same object each time.
 
 ####Syntax
@@ -230,5 +230,5 @@ for k,v in pairs(t) do print(k,v) end
 
 ##Constants
 
-There is one constant -- `sjson.NULL` -- which is used in lua structures to represent the presence of a JSON null.
+There is one constant -- `sjson.NULL` -- which is used in Lua structures to represent the presence of a JSON null.
 
