@@ -39,7 +39,7 @@ Puts the ESP8266 into deep sleep mode, like [`node.dsleep()`](node.md#nodedsleep
 - The time slept will generally be considerably more accurate than with [`node.dsleep()`](node.md#nodedsleep).
 - A sleep time of zero does not mean indefinite sleep, it is interpreted as a zero length sleep instead.
 
-When the sleep timer expires, the platform is rebooted and the lua code is started with the `init.lua` file. The clock is set reasonably accurately.
+When the sleep timer expires, the platform is rebooted and the Lua code is started with the `init.lua` file. The clock is set reasonably accurately.
 
 #### Syntax
 `rtctime.dsleep(microseconds [, option])`
