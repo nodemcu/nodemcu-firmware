@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "node.h"
+#include "coap_peer.h"
 
 #define SYS_TIME_MAX (0xFFFFFFFF / 1000)
 
@@ -16,13 +17,13 @@ extern "C" {
 
 void coap_timer_elapsed(coap_tick_t *diff);
 
-void coap_timer_setup(coap_queue_t ** queue, coap_tick_t t);
+void coap_timer_setup(coap_peer_t * peer, coap_tick_t t);
 
 void coap_timer_stop(void);
 
-void coap_timer_update(coap_queue_t ** queue);
+void coap_timer_update(coap_peer_t * peer);
 
-void coap_timer_start(coap_queue_t ** queue);
+void coap_timer_start(coap_peer_t * peer);
 
 #ifdef __cplusplus
 }

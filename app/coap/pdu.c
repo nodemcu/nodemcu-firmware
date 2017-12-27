@@ -17,21 +17,28 @@ coap_pdu_t * coap_new_pdu(void) {
   }
   pdu->scratch.len = MAX_REQ_SCRATCH_SIZE;
   
+  
   pdu->pkt = (coap_packet_t *)c_zalloc(sizeof(coap_packet_t));
   if(!pdu->pkt){
     NODE_DBG("coap_new_pdu malloc error.\n");
-    c_free(pdu->scratch.p);
+    //c_free(pdu->scratch.p);
     c_free(pdu);
     return NULL;
   }
-  pdu->pkt->content.p = NULL;
-  pdu->pkt->content.len = 0;
 
+  pdu->pkt->content.p = (uint8_t *)c_zalloc(3);
+  if(!pdu->pkt->content.p){
+    NODE_DBG("coap_new_pdu malloc error.\n");
+    c_free(pdu);
+    return NULL;
+  }
+  pdu->pkt->content.len = 3;
+  
   pdu->msg.p = (uint8_t *)c_zalloc(MAX_REQUEST_SIZE+1); // +1 for string '\0'
   if(!pdu->msg.p){
     NODE_DBG("coap_new_pdu malloc error.\n");
     c_free(pdu->pkt);
-    c_free(pdu->scratch.p);
+    //c_free(pdu->scratch.p);
     c_free(pdu);
     return NULL;
   }
@@ -47,6 +54,11 @@ void coap_delete_pdu(coap_pdu_t *pdu){
     c_free(pdu->scratch.p);
     pdu->scratch.p = NULL;
     pdu->scratch.len = 0;
+  }
+
+  if(pdu->pkt->content.p){
+    c_free(pdu->pkt->content.p);
+    pdu->pkt->content.p = NULL;
   }
 
   if(pdu->pkt){

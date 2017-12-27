@@ -99,6 +99,23 @@ coap_queue_t * coap_pop_next( coap_queue_t **queue ) {		// this function is call
   return next;
 }
 
+coap_queue_t * coap_find_node(coap_queue_t *queue, const coap_tid_t id){
+  coap_queue_t *p, *q;
+  if ( !queue ) 
+    return NULL;
+  q = queue;
+  if (q->id == id) {
+    return q;  
+  }
+  while (q && q->id != id) {
+    p = q;
+    q = q->next;
+  }
+  if (q) {
+    return q;
+  }
+}
+
 int coap_remove_node( coap_queue_t **queue, const coap_tid_t id){
   coap_queue_t *p, *q, *node;
   if ( !queue ) 
