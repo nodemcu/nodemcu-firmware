@@ -2,7 +2,12 @@ As with [flashing](flash.md) there are several ways to upload code from your com
 
 Note that the NodeMCU serial interface uses 115200bps at boot time. To change the speed after booting, issue `uart.setup(0,9600,8,0,1,1)`. ESPlorer will do this automatically when changing the speed in the dropdown list. If the device panics and resets at any time, errors will be written to the serial interface at 115200 bps.
 
-# ESPlorer
+# Tools
+Transferring application code to ESP32 is an essential task, one that you'll perform quite frequently. Hence, it does make sense to try a few different uploading tools until you find one you feel comfortable with. [https://frightanic.com/iot/tools-ides-nodemcu/](https://frightanic.com/iot/tools-ides-nodemcu/) lists almost a dozen classical uploaders - in addition to IDEs or IDE-like applications which of course transfer code as well.
+
+The NodeMCU firmware team does not give any recommendations as for which uploader to use nor are there any "NodeMCU approved" tools. The below listed tools are just three, in no particular order, which seem popular and/or reasonably well maintained.
+
+## ESPlorer
 
 > The essential multiplatforms tools for any ESP8266 developer from luatool author’s, including Lua for NodeMCU and MicroPython. Also, all AT commands are supported. Requires Java (Standard Edition - SE ver 7 and above) installed.
 
@@ -12,23 +17,7 @@ Source: [https://github.com/4refr0nt/ESPlorer](https://github.com/4refr0nt/ESPlo
 
 Supported platforms: OS X, Linux, Windows, anything that runs Java
 
-# nodemcu-uploader.py
-
-> A simple tool for uploading files to the filesystem of an ESP8266 running NodeMCU as well as some other useful commands.
-
-Source: [https://github.com/kmpm/nodemcu-uploader](https://github.com/kmpm/nodemcu-uploader)
-
-Supported platforms: OS X, Linux, Windows, anything that runs Python
-
-# NodeMCU Studio
-
-> THIS TOOL IS IN REALLY REALLY REALLY REALLY EARLY STAGE!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-Source: [https://github.com/nodemcu/nodemcu-studio-csharp](https://github.com/nodemcu/nodemcu-studio-csharp)
-
-Supported platforms: Windows
-
-# luatool
+## luatool
 
 > Allow easy uploading of any Lua-based script into the ESP8266 flash memory with NodeMcu firmware
 
@@ -36,17 +25,18 @@ Source: [https://github.com/4refr0nt/luatool](https://github.com/4refr0nt/luatoo
 
 Supported platforms: OS X, Linux, Windows, anything that runs Python
 
-# ChiliPeppr ESP32 Web IDE
+## ChiliPeppr ESP32 Web IDE
 
-> This is a new method via the browser of editing/uploading your Lua code to your ESP32 devices. The workspace has a Serial Port JSON Server that you run locally or remotely on your computer to let your browser talk direct to your serial ports. The Ace editor is embedded which does code highlighting and intellisense for Lua. There is a file browser for your ESP32, a serial port console, restart button, file saving, run, upload/run, and upload all. A pre-compiled binary is available with all modules compiled in so you don't have to compile the firmware on your own. There is also sample code including pure Lua libraries for websockets, joystick control, etc. There is also an XBM image creator for OLED displays that let you cut/paste PNG, JPEG, or GIF images or even drag/drop of animated GIFs to create Lua code.
+> This is a new method via the browser of editing/uploading your Lua code to your ESP32 devices. The workspace has a Serial Port JSON Server that you run locally or remotely on your computer to let your browser talk direct to your serial ports. The Ace editor is embedded which does code highlighting and intellisense for Lua. There is a file browser for your ESP32, a serial port console, restart button, file saving, run, upload/run, and upload all. [...] There is also an XBM image creator for OLED displays that let you cut/paste PNG, JPEG, or GIF images or even drag/drop of animated GIFs to create Lua code.
 
 ![ChiliPeppr ESP32 Workspace](https://github.com/chilipeppr/workspace-esp32-lua/raw/master/screenshot.png "ChiliPeppr ESP32 Workspace")
-
-Location: [http://chilipeppr.com/esp32](http://chilipeppr.com)
 
 Source: [https://github.com/chilipeppr/workspace-esp32-lua](https://github.com/chilipeppr/workspace-esp32-lua)
 
 Supported platforms: OS X, Linux, Windows
+
+Location: [http://chilipeppr.com/esp32](http://chilipeppr.com)
+
 
 # Compiling Lua on your PC for Uploading
 
