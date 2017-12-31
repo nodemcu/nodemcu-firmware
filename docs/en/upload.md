@@ -5,6 +5,10 @@ Note that the NodeMCU serial interface uses 115200bps at boot time. To change th
 # Tools
 Transferring application code to ESP32 is an essential task, one that you'll perform quite frequently. Hence, it does make sense to try a few different uploading tools until you find one you feel comfortable with. [https://frightanic.com/iot/tools-ides-nodemcu/](https://frightanic.com/iot/tools-ides-nodemcu/) lists almost a dozen classical uploaders - in addition to IDEs or IDE-like applications which of course transfer code as well.
 
+!!! note
+
+    Most of the listed tools and IDEs target the ESP8266 and might also work for the ESP32-based firmware. Be prepared to encounter random issues for tools that do not claim to support the ESP32 Lua in their feature list.
+
 The NodeMCU firmware team does not give any recommendations as for which uploader to use nor are there any "NodeMCU approved" tools. The below listed tools are just three, in no particular order, which seem popular and/or reasonably well maintained.
 
 ## ESPlorer
@@ -16,14 +20,6 @@ The NodeMCU firmware team does not give any recommendations as for which uploade
 Source: [https://github.com/4refr0nt/ESPlorer](https://github.com/4refr0nt/ESPlorer)
 
 Supported platforms: OS X, Linux, Windows, anything that runs Java
-
-## luatool
-
-> Allow easy uploading of any Lua-based script into the ESP8266 flash memory with NodeMcu firmware
-
-Source: [https://github.com/4refr0nt/luatool](https://github.com/4refr0nt/luatool)
-
-Supported platforms: OS X, Linux, Windows, anything that runs Python
 
 ## ChiliPeppr ESP32 Web IDE
 
@@ -41,18 +37,17 @@ Location: [http://chilipeppr.com/esp32](http://chilipeppr.com)
 # Compiling Lua on your PC for Uploading
 
 If you install lua on your development PC or Laptop then you can use the standard Lua
-compiler to syntax check any Lua source before downloading it to the ESP8266 module.  However,
+compiler to syntax check any Lua source before downloading it to the ESP32 module.  However,
 the nodemcu compiler output uses different data types (e.g. it supports ROMtables) so the
-compiled output cannot run on the ESP8266.  
+compiled output cannot run on the ESP32.
 
-Compiling source on one platform for use on another (e.g. Intel x38 Window to ESP8266) is 
+Compiling source on one platform for use on another (e.g. Intel x38 Window to ESP32) is 
 known as _cross-compilation_ and the nodemcu firmware supports the compilation of `luac.cross` 
 on \*nix patforms which have Lua 5.1, the Lua filesystem module (lfs), and the essential
 GCC tools.  Simply change directory to the firmware root directoy and run the command:
 
     lua tools/cross-lua.lua
-    
+
 This will generate a `luac.cross` executable in your root directory which can be used to
 compile and to syntax-check Lua source on the Development machine for execution under 
-nodemcu lua on the ESP8266. 
- 
+nodemcu lua on the ESP32.
