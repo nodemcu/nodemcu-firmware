@@ -46,6 +46,7 @@ pages:
         - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'coap': 'en/modules/coap.md'
+        - 'color-utils': 'en/modules/color-utils.md'
         - 'cron': 'en/modules/cron.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'dht': 'en/modules/dht.md'
@@ -97,6 +98,7 @@ pages:
         - 'wps': 'en/modules/wps.md'
         - 'ws2801': 'en/modules/ws2801.md'
         - 'ws2812': 'en/modules/ws2812.md'
+        - 'ws2812-effects': 'en/modules/ws2812-effects.md'
         - 'xpt2046': 'en/modules/xpt2046.md'
 #- Deutsch:
 #    - Home: 'de/index.md'
