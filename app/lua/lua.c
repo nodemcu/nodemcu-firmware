@@ -599,11 +599,12 @@ static bool readline(lua_Load *load){
         {
           /* Get a empty line, then go to get a new line */
           c_puts(load->prmt);
+          continue;
         } else {
           load->done = 1;
           need_dojob = true;
+          break;
         }
-        continue;
       }
 
       /* other control character or not an acsii character */
