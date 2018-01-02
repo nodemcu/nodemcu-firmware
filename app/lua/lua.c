@@ -468,8 +468,11 @@ int lua_main (int argc, char **argv) {
 
 void lua_handle_input (bool force)
 {
-  if (gLoad.L && (force || readline (&gLoad)))
+  while (gLoad.L && (force || readline (&gLoad)))
+  {
     dojob (&gLoad);
+    force = false;
+  }
 }
 
 void donejob(lua_Load *load){
