@@ -6,7 +6,7 @@
 The color_utils module provides some basic color transformations useful for color LEDs. It is used by the WS2812_EFFECTS module.
 
 
-## color\_utils.hsv2grb()
+## color_utils.hsv2grb()
 Convert HSV color to GRB color.
 
 #### Syntax
@@ -59,4 +59,3 @@ The color wheel function makes use of the HSV color space and calculates colors 
 
 #### Returns
 `green`, `red`, `blue` as values between 0 and 255.
-

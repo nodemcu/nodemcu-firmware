@@ -238,7 +238,7 @@ static int ws2812_buffer_fill_lua(lua_State* L) {
   }
 
   ws2812_buffer_fill(buffer, colors);
-    
+
   // Free memory
   luaM_free(L, colors);
 
@@ -294,7 +294,7 @@ int ws2812_buffer_shift(ws2812_buffer * buffer, int shiftValue, unsigned shift_t
   {
     return 0;
   }
-    
+
   uint8_t * tmp_pixels = c_malloc(buffer->colorsPerLed * sizeof(uint8_t) * shift);
   int i,j;
   size_t shift_len, remaining_len;
@@ -346,7 +346,7 @@ static int ws2812_buffer_shift_lua(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   const int shiftValue = luaL_checkinteger(L, 2);
   const unsigned shift_type = luaL_optinteger( L, 3, SHIFT_LOGICAL );
-    
+
   const int pos_start = luaL_optinteger(L, 4, 1);
   const int pos_end = luaL_optinteger(L, 5, -1);
 
@@ -413,24 +413,26 @@ static int ws2812_buffer_mix(lua_State* L) {
     ws2812_buffer *src_buffer = (ws2812_buffer*) luaL_checkudata(L, pos + 1, "ws2812.buffer");
 
     luaL_argcheck(L, src_buffer->size == buffer->size && src_buffer->colorsPerLed == buffer->colorsPerLed, pos + 1, "Buffer not same shape");
-    
+
     source[src].factor = factor;
     source[src].values = src_buffer->values;
   }
 
   size_t i;
   for (i = 0; i < cells; i++) {
-    int val = 0;
+    int32_t val = 0;
     for (src = 0; src < n_sources; src++) {
-      val += ((int)(source[src].values[i] * source[src].factor) >> 8);
+      val += (int32_t)(source[src].values[i] * source[src].factor);
     }
+
+    val >>= 8;
 
     if (val < 0) {
       val = 0;
     } else if (val > 255) {
       val = 255;
     }
-    buffer->values[i] = val;
+    buffer->values[i] = (uint8_t)val;
   }
 
   return 0;
@@ -547,7 +549,7 @@ static int ws2812_buffer_concat(lua_State* L) {
 
   int colorsPerLed = lhs->colorsPerLed;
   int leds = lhs->size + rhs->size;
- 
+
   ws2812_buffer * buffer = allocate_buffer(L, leds, colorsPerLed);
 
   c_memcpy(buffer->values, lhs->values, lhs->colorsPerLed * lhs->size);

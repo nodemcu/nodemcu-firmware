@@ -44,6 +44,7 @@
 
 typedef struct {
   ws2812_buffer *buffer;
+  int buffer_ref;
   uint32_t mode_delay;
   uint32_t counter_mode_call;
   uint32_t counter_mode_step;
@@ -159,6 +160,7 @@ static int ws2812_effects_init(lua_State *L) {
   luaL_argcheck(L, buffer != NULL, 1, "no valid buffer provided");
   // get rid of old state
   if (state != NULL) {
+    luaL_unref(L, LUA_REGISTRYINDEX, state->buffer_ref);
     os_free((void *) state);
   }
   // Allocate memory and set all to zero
@@ -169,6 +171,8 @@ static int ws2812_effects_init(lua_State *L) {
   state->mode_delay = DELAY_DEFAULT;
   state->brightness = BRIGHTNESS_DEFAULT;
   state->buffer = buffer;
+
+  state->buffer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   return 0;
 }
@@ -738,13 +742,9 @@ static uint32_t ws2812_effects_mode_delay()
   uint32_t delay = 10;
   switch (state->effect_type) {
     case WS2812_EFFECT_BLINK:
-      delay = 10 + ((200 * (uint32_t)(SPEED_MAX - state->speed)) / SPEED_MAX);
-    break;
     case WS2812_EFFECT_RAINBOW:
-      delay = 10 + ((200 * (uint32_t)(SPEED_MAX - state->speed)) / SPEED_MAX);
-    break;
     case WS2812_EFFECT_RAINBOW_CYCLE:
-      delay = 10 + ((200 * (uint32_t)(SPEED_MAX - state->speed)) / SPEED_MAX);
+      delay = 10 + ((1000 * (uint32_t)(SPEED_MAX - state->speed)) / SPEED_MAX);
     break;
     case WS2812_EFFECT_FLICKER:
     case WS2812_EFFECT_FIRE_FLICKER:
@@ -760,7 +760,7 @@ static uint32_t ws2812_effects_mode_delay()
     case WS2812_EFFECT_CYCLE:
     case WS2812_EFFECT_COLOR_WIPE:
     case WS2812_EFFECT_RANDOM_DOT:
-    delay = 10 + ((200 * (uint32_t)(SPEED_MAX - state->speed)) / SPEED_MAX);
+      delay = 10 + ((1000 * (uint32_t)(SPEED_MAX - state->speed)) / SPEED_MAX);
     break;
 
   }
@@ -862,19 +862,24 @@ static void ws2812_effects_loop(void *p)
 static int ws2812_effects_set_mode(lua_State* L) {
 
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  const int mode = luaL_checkinteger(L, 1);
-  luaL_argcheck(L, mode >= 0, 1, "must be a valid mode");
 
-  state->effect_type = mode;
+  // opts must be same order as effect type enum
+  static const char * const opts[] = {"static", "blink", "gradient", "gradient_rgb", "random_color", "rainbow",
+    "rainbow_cycle", "flicker", "fire", "fire_soft", "fire_intense", "halloween", "circus_combustus",
+    "larson_scanner", "cycle", "color_wipe", "random_dot", NULL};
+
+  int type = luaL_checkoption(L, 1, NULL, opts);
+
+  state->effect_type = type;
   int effect_param = EFFECT_PARAM_INVALID;
   // check additional int parameter
   // First mandatory parameter
-  int type = lua_type(L, 2);
-  if (type == LUA_TNONE || type == LUA_TNIL)
+  int arg_type = lua_type(L, 2);
+  if (arg_type == LUA_TNONE || arg_type == LUA_TNIL)
   {
     // we don't have a second parameter
   }
-  else if(type == LUA_TNUMBER)
+  else if(arg_type == LUA_TNUMBER)
   {
     effect_param = luaL_optinteger( L, 2, EFFECT_PARAM_INVALID );
   }
@@ -882,7 +887,7 @@ static int ws2812_effects_set_mode(lua_State* L) {
   // initialize the effect
   state->counter_mode_step = 0;
 
-  switch (mode) {
+  switch (state->effect_type) {
     case WS2812_EFFECT_STATIC:
     // fill with currently set color
     ws2812_effects_fill_color();
@@ -892,7 +897,7 @@ static int ws2812_effects_set_mode(lua_State* L) {
     ws2812_effects_mode_blink();
     break;
     case WS2812_EFFECT_GRADIENT:
-    if(type == LUA_TSTRING)
+    if(arg_type == LUA_TSTRING)
     {
       size_t length1;
       const char *buffer1 = lua_tolstring(L, 2, &length1);
@@ -912,7 +917,7 @@ static int ws2812_effects_set_mode(lua_State* L) {
 
     break;
     case WS2812_EFFECT_GRADIENT_RGB:
-    if(type == LUA_TSTRING)
+    if(arg_type == LUA_TSTRING)
     {
       size_t length1;
       const char *buffer1 = lua_tolstring(L, 2, &length1);
@@ -1045,25 +1050,6 @@ static const LUA_REG_TYPE ws2812_effects_map[] =
   { LSTRKEY( "stop" ),              LFUNCVAL( ws2812_effects_stop )},
   { LSTRKEY( "get_delay" ),         LFUNCVAL( ws2812_effects_get_delay )},
   { LSTRKEY( "get_speed" ),         LFUNCVAL( ws2812_effects_get_speed )},
-
-  { LSTRKEY( "STATIC" ),            LNUMVAL( WS2812_EFFECT_STATIC ) },
-  { LSTRKEY( "BLINK" ),             LNUMVAL( WS2812_EFFECT_BLINK ) },
-  { LSTRKEY( "GRADIENT" ),          LNUMVAL( WS2812_EFFECT_GRADIENT ) },
-  { LSTRKEY( "GRADIENT_RGB" ),      LNUMVAL( WS2812_EFFECT_GRADIENT_RGB ) },
-
-  { LSTRKEY( "RANDOM_COLOR" ),      LNUMVAL( WS2812_EFFECT_RANDOM_COLOR ) },
-  { LSTRKEY( "RAINBOW" ),           LNUMVAL( WS2812_EFFECT_RAINBOW ) },
-  { LSTRKEY( "RAINBOW_CYCLE" ),     LNUMVAL( WS2812_EFFECT_RAINBOW_CYCLE ) },
-  { LSTRKEY( "FLICKER" ),           LNUMVAL( WS2812_EFFECT_FLICKER ) },
-  { LSTRKEY( "FIRE" ),              LNUMVAL( WS2812_EFFECT_FIRE_FLICKER ) },
-  { LSTRKEY( "FIRE_SOFT" ),         LNUMVAL( WS2812_EFFECT_FIRE_FLICKER_SOFT ) },
-  { LSTRKEY( "FIRE_INTENSE" ),      LNUMVAL( WS2812_EFFECT_FIRE_FLICKER_INTENSE ) },
-  { LSTRKEY( "HALLOWEEN" ),         LNUMVAL( WS2812_EFFECT_HALLOWEEN ) },
-  { LSTRKEY( "CIRCUS_COMBUSTUS" ),  LNUMVAL( WS2812_EFFECT_CIRCUS_COMBUSTUS ) },
-  { LSTRKEY( "LARSON_SCANNER" ),    LNUMVAL( WS2812_EFFECT_LARSON_SCANNER ) },
-  { LSTRKEY( "COLOR_WIPE" ),        LNUMVAL( WS2812_EFFECT_COLOR_WIPE ) },
-  { LSTRKEY( "RANDOM_DOT" ),        LNUMVAL( WS2812_EFFECT_RANDOM_DOT ) },
-  { LSTRKEY( "CYCLE" ),             LNUMVAL( WS2812_EFFECT_CYCLE ) },
 
   { LSTRKEY( "__index" ), LROVAL( ws2812_effects_map )},
   { LSTRKEY( "__tostring" ), LFUNCVAL( ws2812_effects_tostring )},
