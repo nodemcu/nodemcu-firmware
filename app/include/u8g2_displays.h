@@ -10,7 +10,9 @@
 // Uncomment the U8G2_DISPLAY_TABLE_ENTRY for the device(s) you want to
 // compile into the firmware.
 // Stick to the assignments to *_I2C and *_SPI tables.
-//
+
+#ifndef U8G2_DISPLAY_TABLE_I2C_EXTRA
+
 // I2C based displays go into here:
 //  U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_uc1610_i2c_ea_dogxl160_f, uc1610_i2c_ea_dogxl160) \
 //  U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_ssd1325_i2c_nhd_128x64_f, ssd1325_i2c_nhd_128x64) \
@@ -37,6 +39,17 @@
 
 #define U8G2_DISPLAY_TABLE_I2C \
   U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_ssd1306_i2c_128x64_noname_f, ssd1306_i2c_128x64_noname) \
+
+#else
+
+// I2C displays can be defined in an external file. 
+#define U8G2_DISPLAY_TABLE_I2C \
+   U8G2_DISPLAY_TABLE_I2C_EXTRA
+
+#endif
+
+
+#ifndef U8G2_DISPLAY_TABLE_SPI_EXTRA
 
 // SPI based displays go into here:
 //  U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_ssd1606_172x72_f, ssd1606_172x72) \
@@ -92,6 +105,14 @@
 
 #define U8G2_DISPLAY_TABLE_SPI \
   U8G2_DISPLAY_TABLE_ENTRY(u8g2_Setup_ssd1306_128x64_noname_f, ssd1306_128x64_noname) \
+
+#else
+
+// SPI displays can be defined in an external file. 
+#define U8G2_DISPLAY_TABLE_SPI \
+   U8G2_DISPLAY_TABLE_SPI_EXTRA
+
+#endif
 
 //
 // ***************************************************************************
