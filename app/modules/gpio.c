@@ -228,8 +228,10 @@ static const os_param_t TIMER_OWNER = 0x6770696f; // "gpio"
 static void seroutasync_done (task_param_t arg)
 {
   lua_State *L = lua_getstate();
-  luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
-  serout.delay_table = NULL;
+  if (serout.delay_table) {
+    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    serout.delay_table = NULL;
+  }
   if (serout.lua_done_ref != LUA_NOREF) {
     lua_rawgeti (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
@@ -310,6 +312,7 @@ static int lgpio_serout( lua_State* L )
       }
     } while (serout.repeats--);
     luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    serout.delay_table = NULL;
   }
   return 0;
 }
