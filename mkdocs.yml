@@ -82,6 +82,7 @@ pages:
         - 'sntp': 'en/modules/sntp.md'
         - 'somfy': 'en/modules/somfy.md'
         - 'spi': 'en/modules/spi.md'
+        - 'sqlite3': 'en/modules/sqlite3.md'
         - 'struct': 'en/modules/struct.md'
         - 'switec': 'en/modules/switec.md'
         - 'tcs34725': 'en/modules/tcs34725.md'
