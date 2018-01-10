@@ -1,7 +1,7 @@
 # WiFi.monitor Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2017-12-20 | [Philip](https://github.com/pjsg) | [Philip](https://github.com/pjsg) | [wifi_monitor.c](../../../app/modules/wifi_monitor.c)|
+| 2017-12-20 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [wifi_monitor.c](../../../app/modules/wifi_monitor.c)|
 
 This is an optional module that is only included if `LUA_USE_MODULES_WIFI_MONITOR` is defined in the `user_config.h` file. This module
 provides access to the monitor mode features of the ESP8266 chipset. In particular, it provides access to received WiFi management frames.
