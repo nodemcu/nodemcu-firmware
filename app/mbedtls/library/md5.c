@@ -275,7 +275,7 @@ void mbedtls_md5_update( mbedtls_md5_context *ctx, const unsigned char *input, s
     }
 }
 
-static const unsigned char md5_padding[64] ICACHE_RODATA_ATTR =
+static const unsigned char md5_padding[64] =
 {
  0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -291,9 +291,6 @@ void mbedtls_md5_finish( mbedtls_md5_context *ctx, unsigned char output[16] )
     uint32_t last, padn;
     uint32_t high, low;
     unsigned char msglen[8];
-    unsigned char md5_padding_local[64];
-
-    memcpy(md5_padding_local, md5_padding, 64);
 
     high = ( ctx->total[0] >> 29 )
          | ( ctx->total[1] <<  3 );
@@ -305,7 +302,7 @@ void mbedtls_md5_finish( mbedtls_md5_context *ctx, unsigned char output[16] )
     last = ctx->total[0] & 0x3F;
     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
 
-    mbedtls_md5_update( ctx, md5_padding_local, padn );
+    mbedtls_md5_update( ctx, md5_padding, padn );
     mbedtls_md5_update( ctx, msglen, 8 );
 
     PUT_UINT32_LE( ctx->state[0], output,  0 );

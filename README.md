@@ -38,7 +38,7 @@ end)
 ```lua
 -- connect to WiFi access point
 wifi.setmode(wifi.STATION)
-wifi.sta.config("SSID", "password")
+wifi.sta.config{ssid="SSID", pwd="password"}
 ```
 
 # Documentation

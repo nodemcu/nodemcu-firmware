@@ -11,10 +11,8 @@
 #include "c_limits.h"
 #endif
 
-#define JSONSL_STATE_USER_FIELDS        int lua_object_ref; int used_count;
-#define JSONSL_NO_JPR
-
-#include "jsonsl.c"
+#include "json_config.h"
+#include "jsonsl.h"
 
 #define LUA_SJSONLIBNAME "sjson"
 
@@ -767,6 +765,8 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
           }
           *d = '\0';
           luaL_addstring(&b, value);
+        } else if (*str == '"') {
+          luaL_addstring(&b, "\\\"");
         } else {
           luaL_addchar(&b, *str);
         }

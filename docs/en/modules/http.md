@@ -33,7 +33,7 @@ Executes a HTTP DELETE request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -62,7 +62,7 @@ Executes a HTTP GET request. Note that concurrent requests are not supported.
 #### Parameters
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -89,7 +89,7 @@ Executes a HTTP POST request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -119,7 +119,7 @@ Executes a HTTP PUT request. Note that concurrent requests are not supported.
 - `url` The URL to fetch, including the `http://` or `https://` prefix
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`
@@ -150,7 +150,7 @@ Execute a custom HTTP request for any HTTP method. Note that concurrent requests
 - `method` The HTTP method to use, e.g. "GET", "HEAD", "OPTIONS" etc
 - `headers` Optional additional headers to append, *including \r\n*; may be `nil`
 - `body` The body to post; must already be encoded in the appropriate format, but may be empty
-- `callback` The callback function to be invoked when the response has been received; it is invoked with the arguments `status_code`, `body` and `headers`
+- `callback` The callback function to be invoked when the response has been received or an error occurred; it is invoked with the arguments `status_code`, `body` and `headers`. In case of an error `status_code` is set to -1.
 
 #### Returns
 `nil`

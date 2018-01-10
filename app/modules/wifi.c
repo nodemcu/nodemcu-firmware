@@ -298,6 +298,17 @@ static int wifi_getphymode( lua_State* L )
   return 1;
 }
 
+// Lua: wifi.setmaxtxpower()
+static int wifi_setmaxtxpower( lua_State* L )
+{
+  unsigned power;
+  power = luaL_checkinteger( L, 1 );
+  luaL_argcheck(L, (power > 0 && power < 83), 1, "tx power out of range (0->82)");
+
+  system_phy_set_max_tpw( (uint8_t) power);
+  return 1;
+}
+
 #ifdef PMSLEEP_ENABLE
 /* Begin WiFi suspend functions*/
 #include "pmSleep.h"
@@ -666,13 +677,14 @@ static int wifi_station_getconfig( lua_State* L, bool get_flash_cfg)
         lua_setfield(L, -2, "pwd");
       }
 
-      if(sta_conf.bssid_set==1)
-      {
-        memset(temp, 0, sizeof(temp));
-        c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
-        lua_pushstring( L, temp);
-        lua_setfield(L, -2, "bssid");
-      }
+      lua_pushboolean(L, sta_conf.bssid_set);
+      lua_setfield(L, -2, "bssid_set");
+
+      memset(temp, 0, sizeof(temp));
+      c_sprintf(temp, MACSTR, MAC2STR(sta_conf.bssid));
+      lua_pushstring( L, temp);
+      lua_setfield(L, -2, "bssid");
+
       return 1;
     }
     else
@@ -829,7 +841,7 @@ static int wifi_station_config( lua_State* L )
     }
     else 
     {
-      save_to_flash=false;
+      save_to_flash=true;
     }
     lua_pop(L, 1);
 
@@ -930,61 +942,9 @@ static int wifi_station_config( lua_State* L )
 #endif
 
   }
-  else //to be deprecated
+  else
   {
-    platform_print_deprecation_note("Argument style station configuration is replaced by table style station configuration", "in the next version");
-
-    const char *ssid = luaL_checklstring( L, 1, &sl );
-    luaL_argcheck(L, (sl>=0 && sl<sizeof(sta_conf.ssid)), 1, "length:0-32"); /* Zero-length SSID is valid as a way to clear config */
-
-    memcpy(sta_conf.ssid, ssid, sl);
-
-    const char *password = luaL_checklstring( L, 2, &pl );
-    luaL_argcheck(L, (pl>=0 && pl<=sizeof(sta_conf.password)), 2, "length:0-64"); /* WPA = min 8, WEP = min 5 ASCII characters for a 40-bit key */
-
-    memcpy(sta_conf.password, password, pl);
-
-    if(lua_isnumber(L, 3))
-    {
-      lua_Integer lint=luaL_checkinteger( L, 3 );
-      if ( lint != 0 && lint != 1)
-        return luaL_error( L, "wrong arg type" );
-      auto_connect=(bool)lint;
-    }
-    else if (lua_isstring(L, 3)&& !(lua_isnumber(L, 3)))
-    {
-      lua_pushnil(L);
-      lua_insert(L, 3);
-
-    }
-    else
-    {
-      if(lua_isnil(L, 3))
-        return luaL_error( L, "wrong arg type" );
-      auto_connect=1;
-    }
-
-    if(lua_isnumber(L, 4))
-    {
-      sta_conf.bssid_set = 0;
-      memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-    }
-    else
-    {
-      if (lua_isstring(L, 4))
-      {
-        const char *macaddr = luaL_checklstring( L, 4, &ml );
-        luaL_argcheck(L, ml==sizeof("AA:BB:CC:DD:EE:FF")-1, 1, INVALID_MAC_STR);
-        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-        ets_str2macaddr(sta_conf.bssid, macaddr);
-        sta_conf.bssid_set = 1;
-      }
-      else
-      {
-        sta_conf.bssid_set = 0;
-        memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-      }
-    }
+    return luaL_argerror(L, 1, "config table not found!");
   }
 
 #if defined(WIFI_DEBUG)
@@ -1030,6 +990,7 @@ static int wifi_station_connect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_CONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
@@ -1044,6 +1005,7 @@ static int wifi_station_disconnect4lua( lua_State* L )
   if(lua_isfunction(L, 1)){
     lua_pushnumber(L, EVENT_STAMODE_DISCONNECTED);
     lua_pushvalue(L, 1);
+    lua_remove(L, 1);
     wifi_event_monitor_register(L);
   }
 #endif
@@ -1242,24 +1204,21 @@ static int wifi_sta_gethostname( lua_State* L )
 }
 
 // Used by wifi_sta_sethostname_lua and wifi_change_default_hostname
-static bool wifi_sta_sethostname(const char *hostname, size_t len)
+// This function checks host name to ensure that it follows RFC 952 & RFC 1123 host name standards.
+static bool wifi_sta_checkhostname(const char *hostname, size_t len)
 {
-  //this function follows RFC 952 & RFC 1123 host name standards.
   //the hostname must be 32 chars or less and first and last char must be alphanumeric
-  if (!isalnum(hostname[0]) || !isalnum(hostname[len-1]) || len > 32)
-  {
+  if (len == 0 || len > 32 || !isalnum(hostname[0]) || !isalnum(hostname[len-1])){
     return false;
   }
-
-  for (int i=1; i<len; i++)
-  {
-    //characters in the middle of the host name can be alphanumeric or a hyphen(-) only
-  if (!(isalnum(hostname[i]) || hostname[i]=='-'))
-    {
+  //characters in the middle of the host name must be alphanumeric or a hyphen(-) only
+  for (int i=1; i<len; i++){
+    if (!(isalnum(hostname[i]) || hostname[i]=='-')){
       return false;
     }
   }
-  return wifi_station_set_hostname((char*)hostname);
+
+  return true;
 }
 
 // Lua: wifi.sta.sethostname()
@@ -1267,8 +1226,9 @@ static int wifi_sta_sethostname_lua( lua_State* L )
 {
   size_t len;
   const char *hostname = luaL_checklstring(L, 1, &len);
-  luaL_argcheck(L, wifi_sta_sethostname(hostname, len), 1, "Invalid hostname");
-  return 0;
+  luaL_argcheck(L, wifi_sta_checkhostname(hostname, len), 1, "Invalid hostname");
+  lua_pushboolean(L, wifi_station_set_hostname((char*)hostname));
+  return 1;
 }
 
 // Lua: wifi.sta.sleeptype(type)
@@ -1847,6 +1807,7 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
+  { LSTRKEY( "setmaxtxpower" ),  LFUNCVAL( wifi_setmaxtxpower ) },
 #ifdef PMSLEEP_ENABLE
   { LSTRKEY( "suspend" ),        LFUNCVAL( wifi_suspend ) },
   { LSTRKEY( "resume" ),         LFUNCVAL( wifi_resume ) },
@@ -1862,6 +1823,9 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "ap" ),             LROVAL( wifi_ap_map ) },
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
   { LSTRKEY( "eventmon" ),       LROVAL( wifi_event_monitor_map ) }, //declared in wifi_eventmon.c
+#endif
+#if defined(LUA_USE_MODULES_WIFI_MONITOR)
+  { LSTRKEY( "monitor" ),        LROVAL( wifi_monitor_map ) }, //declared in wifi_monitor.c
 #endif
   { LSTRKEY( "NULLMODE" ),       LNUMVAL( NULL_MODE ) },
   { LSTRKEY( "STATION" ),        LNUMVAL( STATION_MODE ) },
@@ -1898,36 +1862,31 @@ void wifi_change_default_host_name(void)
 {
   uint8 opmode_temp=wifi_get_opmode();
   wifi_set_opmode_current(STATION_MODE);
+  char temp[33] = {0};//32 chars + NULL
+  uint8_t mac[6];
+  wifi_get_macaddr(STATION_IF, mac);
+
 #ifndef WIFI_STA_HOSTNAME
-  char temp[32];
-  uint8_t mac[6];
-  wifi_get_macaddr(STATION_IF, mac);
   c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
-  wifi_sta_sethostname((const char*)temp, strlen(temp));
-
 #elif defined(WIFI_STA_HOSTNAME) && !defined(WIFI_STA_HOSTNAME_APPEND_MAC)
-  if(!wifi_sta_sethostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME)))
-  {
-    char temp[32];
-    uint8_t mac[6];
-    wifi_get_macaddr(STATION_IF, mac);
-    c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
-    wifi_sta_sethostname((const char*)temp, strlen(temp));
+  if(wifi_sta_checkhostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME))){
+    c_sprintf(temp, "%s", WIFI_STA_HOSTNAME);
   }
-
-#elif defined(WIFI_STA_HOSTNAME) && defined(WIFI_STA_HOSTNAME_APPEND_MAC)
-  char temp[32];
-  uint8_t mac[6];
-  wifi_get_macaddr(STATION_IF, mac);
-  c_sprintf(temp, "%s%X%X%X", WIFI_STA_HOSTNAME, (mac)[3], (mac)[4], (mac)[5]);
-  if(!wifi_sta_sethostname(temp, strlen(temp)))
-  {
+  else{
     c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
-    wifi_sta_sethostname((const char*)temp, strlen(temp));
+  }
+#elif defined(WIFI_STA_HOSTNAME) && defined(WIFI_STA_HOSTNAME_APPEND_MAC)
+  if(strlen(WIFI_STA_HOSTNAME) <= 26 && wifi_sta_checkhostname(WIFI_STA_HOSTNAME, strlen(WIFI_STA_HOSTNAME))){
+    c_sprintf(temp, "%s%X%X%X", WIFI_STA_HOSTNAME, (mac)[3], (mac)[4], (mac)[5]);
+  }
+  else{
+    c_sprintf(temp, "NODE-%X%X%X", (mac)[3], (mac)[4], (mac)[5]);
   }
 #endif
-  if(opmode_temp!=wifi_get_opmode())
-  {
+
+  wifi_station_set_hostname((char*)temp);
+
+  if(opmode_temp != wifi_get_opmode()){
     wifi_set_opmode_current(opmode_temp);
   }
 }
@@ -1942,6 +1901,9 @@ int luaopen_wifi( lua_State *L )
   }
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
   wifi_eventmon_init();
+#endif
+#if defined(LUA_USE_MODULES_WIFI_MONITOR)
+  wifi_monitor_init(L);
 #endif
  return 0;
 }
