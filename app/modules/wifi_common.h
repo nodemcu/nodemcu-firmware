@@ -67,4 +67,9 @@ enum wifi_suspension_state
   int wifi_event_monitor_register(lua_State* L);
 #endif
 
+#ifdef LUA_USE_MODULES_WIFI_MONITOR
+  extern const LUA_REG_TYPE wifi_monitor_map[];
+  int wifi_monitor_init(lua_State *L);
+#endif
+
 #endif /* APP_MODULES_WIFI_COMMON_H_ */

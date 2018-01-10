@@ -31,6 +31,14 @@ static evt_queue_t *wifi_event_queue_head; //pointer to beginning of queue
 static evt_queue_t *wifi_event_queue_tail; //pointer to end of queue
 static int wifi_event_cb_ref[EVENT_MAX+1] = { [0 ... EVENT_MAX] = LUA_NOREF}; //holds references to registered Lua callbacks
 
+#ifdef LUA_USE_MODULES_WIFI_MONITOR
+static int (*hook_fn)(System_Event_t *);
+
+void wifi_event_monitor_register_hook(int (*fn)(System_Event_t*)) {
+  hook_fn = fn;
+}
+#endif
+
 // wifi.eventmon.register()
 int wifi_event_monitor_register(lua_State* L)
 {
@@ -57,6 +65,12 @@ int wifi_event_monitor_register(lua_State* L)
 static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
 {
   EVENT_DBG("\n\twifi_event_monitor_handle_event_cb is called\n");
+
+#ifdef LUA_USE_MODULES_WIFI_MONITOR
+  if (hook_fn && hook_fn(evt)) {
+    return;
+  }
+#endif
 
   if((wifi_event_cb_ref[evt->event] != LUA_NOREF) || ((wifi_event_cb_ref[EVENT_MAX] != LUA_NOREF) &&
       !(evt->event == EVENT_STAMODE_CONNECTED || evt->event == EVENT_STAMODE_DISCONNECTED ||
