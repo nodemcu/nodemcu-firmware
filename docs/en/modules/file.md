@@ -150,7 +150,7 @@ Lists all files in the file system.
 none
 
 #### Returns
-a lua table which contains the {file name: file size} pairs
+a Lua table which contains the {file name: file size} pairs
 
 #### Example
 ```lua

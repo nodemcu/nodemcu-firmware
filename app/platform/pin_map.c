@@ -9,6 +9,7 @@ uint8_t  pin_func[GPIO_PIN_NUM];
 #ifdef GPIO_INTERRUPT_ENABLE
 uint8_t  pin_num_inv[GPIO_PIN_NUM_INV];
 uint8_t  pin_int_type[GPIO_PIN_NUM];
+GPIO_INT_COUNTER pin_counter[GPIO_PIN_NUM];
 #endif
 
 typedef struct {

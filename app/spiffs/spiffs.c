@@ -14,7 +14,7 @@ spiffs fs;
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
 #if SPIFFS_CACHE
-static u8_t myspiffs_cache[(LOG_PAGE_SIZE+32)*2];
+static u8_t myspiffs_cache[20 + (LOG_PAGE_SIZE+20)*4];
 #endif
 
 static s32_t my_spiffs_read(u32_t addr, u32_t size, u8_t *dst) {
