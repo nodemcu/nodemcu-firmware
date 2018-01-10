@@ -22,6 +22,7 @@ cat user_config.h
 cd "$TRAVIS_BUILD_DIR"/ld || exit
  # increase irom0_0_seg size for all modules build
  sed -E -i.bak 's@(.*irom0_0_seg *:.*len *=) *[^,]*(.*)@\1 0x200000\2@' nodemcu.ld
+ sed -E -i.bak 's@(.*iram1_0_seg *:.*len *=) *[^,]*(.*)@\1 0x100000\2@' nodemcu.ld
  cat nodemcu.ld
 
 # change to "root" directory no matter where the script was started from
