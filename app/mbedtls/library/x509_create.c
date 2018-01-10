@@ -30,7 +30,7 @@
 #include "mbedtls/x509.h"
 #include "mbedtls/asn1write.h"
 #include "mbedtls/oid.h"
-#include "c_types.h"
+
 #include <string.h>
 
 typedef struct {
@@ -41,7 +41,7 @@ typedef struct {
 
 #define ADD_STRLEN( s )     s, sizeof( s ) - 1
 
-static const x509_attr_descriptor_t x509_attrs[] ICACHE_RODATA_ATTR STORE_ATTR =
+static const x509_attr_descriptor_t x509_attrs[] =
 {
     { ADD_STRLEN( "CN" ),                       MBEDTLS_OID_AT_CN },
     { ADD_STRLEN( "commonName" ),               MBEDTLS_OID_AT_CN },

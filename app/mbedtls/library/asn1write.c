@@ -60,16 +60,43 @@ int mbedtls_asn1_write_len( unsigned char **p, unsigned char *start, size_t len 
         return( 2 );
     }
 
-    if( *p - start < 3 )
-        return( MBEDTLS_ERR_ASN1_BUF_TOO_SMALL );
+    if( len <= 0xFFFF )
+    {
+        if( *p - start < 3 )
+            return( MBEDTLS_ERR_ASN1_BUF_TOO_SMALL );
 
-    // We assume we never have lengths larger than 65535 bytes
-    //
-    *--(*p) = len % 256;
-    *--(*p) = ( len / 256 ) % 256;
-    *--(*p) = 0x82;
+        *--(*p) = ( len       ) & 0xFF;
+        *--(*p) = ( len >>  8 ) & 0xFF;
+        *--(*p) = 0x82;
+        return( 3 );
+    }
 
-    return( 3 );
+    if( len <= 0xFFFFFF )
+    {
+        if( *p - start < 4 )
+            return( MBEDTLS_ERR_ASN1_BUF_TOO_SMALL );
+
+        *--(*p) = ( len       ) & 0xFF;
+        *--(*p) = ( len >>  8 ) & 0xFF;
+        *--(*p) = ( len >> 16 ) & 0xFF;
+        *--(*p) = 0x83;
+        return( 4 );
+    }
+
+    if( len <= 0xFFFFFFFF )
+    {
+        if( *p - start < 5 )
+            return( MBEDTLS_ERR_ASN1_BUF_TOO_SMALL );
+
+        *--(*p) = ( len       ) & 0xFF;
+        *--(*p) = ( len >>  8 ) & 0xFF;
+        *--(*p) = ( len >> 16 ) & 0xFF;
+        *--(*p) = ( len >> 24 ) & 0xFF;
+        *--(*p) = 0x84;
+        return( 5 );
+    }
+
+    return( MBEDTLS_ERR_ASN1_INVALID_LENGTH );
 }
 
 int mbedtls_asn1_write_tag( unsigned char **p, unsigned char *start, unsigned char tag )
@@ -312,7 +339,9 @@ mbedtls_asn1_named_data *mbedtls_asn1_store_named_data( mbedtls_asn1_named_data 
     {
         // Add new entry if not present yet based on OID
         //
-        if( ( cur = mbedtls_calloc( 1, sizeof(mbedtls_asn1_named_data) ) ) == NULL )
+        cur = (mbedtls_asn1_named_data*)mbedtls_calloc( 1,
+                                            sizeof(mbedtls_asn1_named_data) );
+        if( cur == NULL )
             return( NULL );
 
         cur->oid.len = oid_len;

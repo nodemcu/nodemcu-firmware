@@ -33,7 +33,6 @@
 #if defined(MBEDTLS_SHA256_C)
 
 #include "mbedtls/sha256.h"
-#include "c_types.h"
 
 #include <string.h>
 
@@ -42,7 +41,10 @@
 #include "mbedtls/platform.h"
 #else
 #include <stdio.h>
+#include <stdlib.h>
 #define mbedtls_printf printf
+#define mbedtls_calloc    calloc
+#define mbedtls_free       free
 #endif /* MBEDTLS_PLATFORM_C */
 #endif /* MBEDTLS_SELF_TEST */
 
@@ -132,7 +134,7 @@ void mbedtls_sha256_starts( mbedtls_sha256_context *ctx, int is224 )
 }
 
 #if !defined(MBEDTLS_SHA256_PROCESS_ALT)
-static const uint32_t K[] ICACHE_RODATA_ATTR STORE_ATTR =
+static const uint32_t K[] =
 {
     0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
     0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
@@ -274,7 +276,7 @@ void mbedtls_sha256_update( mbedtls_sha256_context *ctx, const unsigned char *in
         memcpy( (void *) (ctx->buffer + left), input, ilen );
 }
 
-static const unsigned char sha256_padding[64] ICACHE_RODATA_ATTR =
+static const unsigned char sha256_padding[64] =
 {
  0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -290,9 +292,6 @@ void mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char output[32
     uint32_t last, padn;
     uint32_t high, low;
     unsigned char msglen[8];
-    unsigned char sha256_padding_local[64];
-
-    memcpy(sha256_padding_local, sha256_padding, 64);
 
     high = ( ctx->total[0] >> 29 )
          | ( ctx->total[1] <<  3 );
@@ -304,7 +303,7 @@ void mbedtls_sha256_finish( mbedtls_sha256_context *ctx, unsigned char output[32
     last = ctx->total[0] & 0x3F;
     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
 
-    mbedtls_sha256_update( ctx, sha256_padding_local, padn );
+    mbedtls_sha256_update( ctx, sha256_padding, padn );
     mbedtls_sha256_update( ctx, msglen, 8 );
 
     PUT_UINT32_BE( ctx->state[0], output,  0 );
@@ -393,9 +392,18 @@ static const unsigned char sha256_test_sum[6][32] =
 int mbedtls_sha256_self_test( int verbose )
 {
     int i, j, k, buflen, ret = 0;
-    unsigned char buf[1024];
+    unsigned char *buf;
     unsigned char sha256sum[32];
     mbedtls_sha256_context ctx;
+
+    buf = mbedtls_calloc( 1024, sizeof(unsigned char) );
+    if( NULL == buf )
+    {
+        if( verbose != 0 )
+            mbedtls_printf( "Buffer allocation failed\n" );
+
+        return( 1 );
+    }
 
     mbedtls_sha256_init( &ctx );
 
@@ -440,6 +448,7 @@ int mbedtls_sha256_self_test( int verbose )
 
 exit:
     mbedtls_sha256_free( &ctx );
+    mbedtls_free( buf );
 
     return( ret );
 }

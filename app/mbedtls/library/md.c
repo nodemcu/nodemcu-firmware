@@ -56,7 +56,7 @@ static void mbedtls_zeroize( void *v, size_t n ) {
 /*
  * Reminder: update profiles in x509_crt.c when adding a new hash!
  */
-static const int supported_digests[] ICACHE_RODATA_ATTR = {
+static const int supported_digests[] = {
 
 #if defined(MBEDTLS_SHA512_C)
         MBEDTLS_MD_SHA512,
@@ -444,7 +444,7 @@ int mbedtls_md_process( mbedtls_md_context_t *ctx, const unsigned char *data )
     return( 0 );
 }
 
-int mbedtls_md_get_size( const mbedtls_md_info_t *md_info )
+unsigned char mbedtls_md_get_size( const mbedtls_md_info_t *md_info )
 {
     if( md_info == NULL )
         return( 0 );
