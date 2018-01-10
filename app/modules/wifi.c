@@ -1824,6 +1824,9 @@ static const LUA_REG_TYPE wifi_map[] =  {
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
   { LSTRKEY( "eventmon" ),       LROVAL( wifi_event_monitor_map ) }, //declared in wifi_eventmon.c
 #endif
+#if defined(LUA_USE_MODULES_WIFI_MONITOR)
+  { LSTRKEY( "monitor" ),        LROVAL( wifi_monitor_map ) }, //declared in wifi_monitor.c
+#endif
   { LSTRKEY( "NULLMODE" ),       LNUMVAL( NULL_MODE ) },
   { LSTRKEY( "STATION" ),        LNUMVAL( STATION_MODE ) },
   { LSTRKEY( "SOFTAP" ),         LNUMVAL( SOFTAP_MODE ) },
@@ -1898,6 +1901,9 @@ int luaopen_wifi( lua_State *L )
   }
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
   wifi_eventmon_init();
+#endif
+#if defined(LUA_USE_MODULES_WIFI_MONITOR)
+  wifi_monitor_init(L);
 #endif
  return 0;
 }
