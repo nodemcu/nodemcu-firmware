@@ -240,7 +240,7 @@ static void md5_process_wrap( void *ctx, const unsigned char *data )
     mbedtls_md5_process( (mbedtls_md5_context *) ctx, data );
 }
 
-const mbedtls_md_info_t mbedtls_md5_info ICACHE_RODATA_ATTR = {
+const mbedtls_md_info_t mbedtls_md5_info = {
     MBEDTLS_MD_MD5,
     "MD5",
     16,
@@ -364,7 +364,7 @@ static void sha1_process_wrap( void *ctx, const unsigned char *data )
     mbedtls_sha1_process( (mbedtls_sha1_context *) ctx, data );
 }
 
-const mbedtls_md_info_t mbedtls_sha1_info ICACHE_RODATA_ATTR = {
+const mbedtls_md_info_t mbedtls_sha1_info = {
     MBEDTLS_MD_SHA1,
     "SHA1",
     20,
@@ -435,7 +435,7 @@ static void sha224_process_wrap( void *ctx, const unsigned char *data )
     mbedtls_sha256_process( (mbedtls_sha256_context *) ctx, data );
 }
 
-const mbedtls_md_info_t mbedtls_sha224_info ICACHE_RODATA_ATTR = {
+const mbedtls_md_info_t mbedtls_sha224_info = {
     MBEDTLS_MD_SHA224,
     "SHA224",
     28,
@@ -461,7 +461,7 @@ static void sha256_wrap( const unsigned char *input, size_t ilen,
     mbedtls_sha256( input, ilen, output, 0 );
 }
 
-const mbedtls_md_info_t mbedtls_sha256_info ICACHE_RODATA_ATTR = {
+const mbedtls_md_info_t mbedtls_sha256_info = {
     MBEDTLS_MD_SHA256,
     "SHA256",
     32,
@@ -529,7 +529,7 @@ static void sha384_process_wrap( void *ctx, const unsigned char *data )
     mbedtls_sha512_process( (mbedtls_sha512_context *) ctx, data );
 }
 
-const mbedtls_md_info_t mbedtls_sha384_info ICACHE_RODATA_ATTR = {
+const mbedtls_md_info_t mbedtls_sha384_info = {
     MBEDTLS_MD_SHA384,
     "SHA384",
     48,
@@ -555,7 +555,7 @@ static void sha512_wrap( const unsigned char *input, size_t ilen,
     mbedtls_sha512( input, ilen, output, 0 );
 }
 
-const mbedtls_md_info_t mbedtls_sha512_info ICACHE_RODATA_ATTR = {
+const mbedtls_md_info_t mbedtls_sha512_info = {
     MBEDTLS_MD_SHA512,
     "SHA512",
     64,
