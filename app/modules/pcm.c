@@ -19,6 +19,9 @@
 #define COND_REF(_cond) _cond ? luaL_ref( L, LUA_REGISTRYINDEX ) : LUA_NOREF
 
 
+// task handles
+task_handle_t pcm_data_vu_task, pcm_data_play_task, pcm_start_play_task;
+
 static void dispatch_callback( lua_State *L, int self_ref, int cb_ref, int returns )
 {
   if (cb_ref != LUA_NOREF) {
@@ -94,7 +97,7 @@ static int pcm_drv_pause( lua_State *L )
   return 0;
 }
 
-static void pcm_start_play_task( task_param_t param, uint8 prio )
+static void pcm_start_play( task_param_t param, uint8 prio )
 {
   lua_State *L = lua_getstate();
   pud_t *pud = (pud_t *)param;
@@ -126,8 +129,8 @@ static int pcm_drv_play( lua_State *L )
   }
 
   // schedule actions for play in separate task since drv:play() might have been called
-  // in the callback fn of pcm_data_play_task() which in turn gets called when starting play...
-  task_post_low( cfg->start_play_task, (os_param_t)pud );
+  // in the callback fn of pcm_data_play() which in turn gets called when starting play...
+  task_post_low( pcm_start_play_task, (os_param_t)pud );
 
   return 0;
 }
@@ -203,10 +206,7 @@ static int pcm_new( lua_State *L )
   cfg->bufs[0].rpos     = cfg->bufs[1].rpos     = 0;
   cfg->bufs[0].empty    = cfg->bufs[1].empty    = TRUE;
 
-  cfg->data_vu_task    = task_get_id( pcm_data_vu_task );
   cfg->vu_freq         = 10;
-  cfg->data_play_task  = task_get_id( pcm_data_play_task );
-  cfg->start_play_task = task_get_id( pcm_start_play_task );
 
   if (driver == PCM_DRIVER_SD) {
     cfg->pin = luaL_checkinteger( L, 2 );
@@ -257,6 +257,10 @@ static const LUA_REG_TYPE pcm_map[] = {
 
 int luaopen_pcm( lua_State *L ) {
   luaL_rometatable( L, "pcm.driver", (void *)pcm_driver_map );  // create metatable
+
+  pcm_data_vu_task    = task_get_id( pcm_data_vu );
+  pcm_data_play_task  = task_get_id( pcm_data_play );
+  pcm_start_play_task = task_get_id( pcm_start_play );
   return 0;
 }
 

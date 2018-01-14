@@ -4,6 +4,7 @@
 #define _PCM_H
 
 
+#include "task/task.h"
 #include "platform.h"
 
 
@@ -63,8 +64,6 @@ typedef struct {
   // buffer selectors
   uint8_t rbuf_idx;   // read by ISR
   uint8_t fbuf_idx;   // fill by data task
-  // task handles
-  task_handle_t data_vu_task, data_play_task, start_play_task;
   // callback fn refs
   int self_ref;
     int cb_data_ref, cb_drained_ref, cb_paused_ref, cb_stopped_ref, cb_vu_ref;
@@ -95,7 +94,10 @@ typedef struct {
 } pud_t;
 
 
-void pcm_data_vu_task( task_param_t param, uint8 prio );
-void pcm_data_play_task( task_param_t param, uint8 prio );
+void pcm_data_vu( task_param_t param, uint8 prio );
+void pcm_data_play( task_param_t param, uint8 prio );
+
+// task handles
+extern task_handle_t pcm_data_vu_task, pcm_data_play_task, pcm_start_play_task;
 
 #endif /* _PCM_H */
