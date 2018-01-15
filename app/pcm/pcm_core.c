@@ -27,7 +27,7 @@ static void dispatch_callback( lua_State *L, int self_ref, int cb_ref, int retur
   }
 }
 
-void pcm_data_vu_task( task_param_t param, uint8 prio )
+void pcm_data_vu( task_param_t param, uint8 prio )
 {
   cfg_t *cfg = (cfg_t *)param;
   lua_State *L = lua_getstate();
@@ -40,7 +40,7 @@ void pcm_data_vu_task( task_param_t param, uint8 prio )
   }
 }
 
-void pcm_data_play_task( task_param_t param, uint8 prio )
+void pcm_data_play( task_param_t param, uint8 prio )
 {
   cfg_t *cfg = (cfg_t *)param;
   pcm_buf_t *buf = &(cfg->bufs[cfg->fbuf_idx]);
@@ -85,7 +85,7 @@ void pcm_data_play_task( task_param_t param, uint8 prio )
         // rerun data callback to get next buffer chunk
         dbg_platform_gpio_write( PLATFORM_GPIO_LOW );
         cfg->fbuf_idx = other_buf;
-        pcm_data_play_task( param, 0 );
+        pcm_data_play( param, 0 );
       }
       // unthrottle ISR
       cfg->isr_throttled = 0;
