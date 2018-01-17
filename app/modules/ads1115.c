@@ -226,7 +226,7 @@ static int ads1115_lua_reset(lua_State *L) {
 }
 
 // Initializes ADC
-// Lua:     ads1115.setup(ADDRESS, CHIP_ID)
+// Lua:     ads1115.setup(ADDRESS, DEVICE_TYPE)
 static int ads1115_lua_setup(lua_State *L) {
     if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
         return luaL_error(L, "wrong arg range");
@@ -267,7 +267,7 @@ static int ads1115_lua_setup(lua_State *L) {
 }
 
 // Change ADC settings
-// Lua:     ads1115.setting(ADDR,GAIN,SAMPLES,CHANNEL,MODE[,CONVERSION_RDY][,COMPARATOR,THRESHOLD_LOW,THRESHOLD_HI[,COMP_MODE])
+// Lua:     ads1115.setting(ADDRESS,GAIN,SAMPLES,CHANNEL,MODE[,CONVERSION_RDY][,COMPARATOR,THRESHOLD_LOW,THRESHOLD_HI[,COMP_MODE])
 static int ads1115_lua_setting(lua_State *L) {
 
     // check variables
@@ -367,7 +367,7 @@ static int ads1115_lua_setting(lua_State *L) {
     uint16_t comparator_mode = ADS1115_CMODE_TRAD;
     // Parse optional parameters
     if (lua_isnumber(L, 6)) {
-        // conversion ready mode
+        // comparator or conversion count
         comp = luaL_checkinteger(L, 6);
         if (!((comp == ADS1115_CQUE_1CONV) || (comp == ADS1115_CQUE_2CONV) || (comp == ADS1115_CQUE_4CONV))) {
             return luaL_error(L, "Invalid argument: conversion ready/comparator mode");
@@ -375,6 +375,7 @@ static int ads1115_lua_setting(lua_State *L) {
         uint16_t threshold_low = 0x7FFF;
         uint16_t threshold_hi = 0x8000;
         if (lua_isnumber(L, 7) && lua_isnumber(L, 8)) {
+            // comparator thresholds
             threshold_low = luaL_checkinteger(L, 7);
             threshold_hi = luaL_checkinteger(L, 8);
             if ((int16_t)threshold_low > (int16_t)threshold_hi) {
@@ -411,7 +412,7 @@ static int ads1115_lua_setting(lua_State *L) {
 }
 
 // Read the conversion register from the ADC
-// Lua:     ads1115.startread(function(volt, voltdec, adc) print(volt,voltdec,adc) end)
+// Lua:     ads1115.startread(ADDRESS, function(volt, voltdec, adc) print(volt,voltdec,adc) end)
 static int ads1115_lua_startread(lua_State *L) {
     // check variables
     if (!lua_isnumber(L, 1)) {
@@ -432,60 +433,56 @@ static int ads1115_lua_startread(lua_State *L) {
          (ads_ctrl->comp == ADS1115_CQUE_4CONV)) &&
         (ads_ctrl->threshold_low == 0x7FFF) &&
         (ads_ctrl->threshold_hi == 0x8000)) {
-        int32_t now = 0;
+        // conversion ready mode
         if (ads_ctrl->mode == ADS1115_MODE_SINGLE) {
             NODE_DBG("ads1115 trigger config: %04x", ads_ctrl->config);
-            now = 0x7FFFFFFF & system_get_time();
             write_reg(addr, ADS1115_POINTER_CONFIG, ads_ctrl->config);
         }
-
-        lua_pushinteger(L, now);
-        return 1;
-    } else {
-
-        luaL_argcheck(L, (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION), 2, "Must be function");
-        lua_pushvalue(L, 2);
-        ads_ctrl->timer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-
-        if (ads_ctrl->mode == ADS1115_MODE_SINGLE) {
-            write_reg(addr, ADS1115_POINTER_CONFIG, ads_ctrl->config);
-        }
-
-        // Start a timer to wait until ADC conversion is done
-        os_timer_disarm(&ads_ctrl->timer);
-        os_timer_setfn(&ads_ctrl->timer, (os_timer_func_t *)ads1115_lua_readoutdone, (void *)ads_ctrl);
-
-        int msec = 1; // ADS1115_DR_1600SPS, ADS1115_DR_2400SPS, ADS1115_DR_3300SPS
-        switch (ads_ctrl->samples_value) {
-            case ADS1115_DR_8SPS:
-                msec = 150;
-                break;
-            case ADS1115_DR_16SPS:
-                msec = 75;
-                break;
-            case ADS1115_DR_32SPS:
-                msec = 35;
-                break;
-            case ADS1115_DR_64SPS:
-                msec = 20;
-                break;
-            case ADS1115_DR_128SPS:
-                msec = 10;
-                break;
-            case ADS1115_DR_250SPS:
-                msec = 5;
-                break;
-            case ADS1115_DR_475SPS:
-            case ADS1115_DR_490SPS:
-                msec = 3;
-                break;
-            case ADS1115_DR_860SPS:
-            case ADS1115_DR_920SPS:
-                msec = 2;
-        }
-        os_timer_arm(&ads_ctrl->timer, msec, 0);
         return 0;
     }
+
+    luaL_argcheck(L, (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION), 2, "Must be function");
+    lua_pushvalue(L, 2);
+    ads_ctrl->timer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    if (ads_ctrl->mode == ADS1115_MODE_SINGLE) {
+        write_reg(addr, ADS1115_POINTER_CONFIG, ads_ctrl->config);
+    }
+
+    // Start a timer to wait until ADC conversion is done
+    os_timer_disarm(&ads_ctrl->timer);
+    os_timer_setfn(&ads_ctrl->timer, (os_timer_func_t *)ads1115_lua_readoutdone, (void *)ads_ctrl);
+
+    int msec = 1; // ADS1115_DR_1600SPS, ADS1115_DR_2400SPS, ADS1115_DR_3300SPS
+    switch (ads_ctrl->samples_value) {
+        case ADS1115_DR_8SPS:
+            msec = 150;
+            break;
+        case ADS1115_DR_16SPS:
+            msec = 75;
+            break;
+        case ADS1115_DR_32SPS:
+            msec = 35;
+            break;
+        case ADS1115_DR_64SPS:
+            msec = 20;
+            break;
+        case ADS1115_DR_128SPS:
+            msec = 10;
+            break;
+        case ADS1115_DR_250SPS:
+            msec = 5;
+            break;
+        case ADS1115_DR_475SPS:
+        case ADS1115_DR_490SPS:
+            msec = 3;
+            break;
+        case ADS1115_DR_860SPS:
+        case ADS1115_DR_920SPS:
+            msec = 2;
+    }
+    os_timer_arm(&ads_ctrl->timer, msec, 0);
+    return 0;
 }
 
 // adc conversion timer callback
@@ -512,7 +509,7 @@ static int ads1115_lua_readoutdone(void * param) {
 }
 
 // Read the conversion register from the ADC
-// Lua:     volt,voltdec,adc = ads1115.read()
+// Lua:     volt,voltdec,adc = ads1115.read(ADDRESS)
 static int ads1115_lua_read(lua_State *L) {
     // check variables
     if (!lua_isnumber(L, 1)) {
@@ -530,7 +527,7 @@ static int ads1115_lua_read(lua_State *L) {
     uint16_t ads1115_conversion = read_reg(addr, ADS1115_POINTER_CONVERSION);
     double ads1115_volt = get_volt(ads_ctrl->gain, ads1115_conversion);
     int ads1115_voltdec = (int)((ads1115_volt - (int)ads1115_volt) * 1000);
-    ads1115_voltdec = ads1115_voltdec>0?ads1115_voltdec:0-ads1115_voltdec;
+    ads1115_voltdec = ads1115_voltdec > 0 ? ads1115_voltdec : 0 - ads1115_voltdec;
 
     lua_pushnumber(L, ads1115_volt);
     lua_pushinteger(L, ads1115_voltdec);
