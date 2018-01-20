@@ -549,7 +549,7 @@ void coap_setup(void)
     message_id = (unsigned short)os_random();      // calculate only once
 }
 
-inline int
+int
 check_token(coap_packet_t *pkt) {
   return pkt->tok.len == the_token.len && c_memcmp(pkt->tok.p, the_token.p, the_token.len) == 0;
 }
