@@ -50,6 +50,7 @@ SUBDIRS= 					\
 	misc					\
 	pm					\
 	sjson					\
+ 	sqlite3					\
 	
 
 endif # } PDIR
@@ -104,6 +105,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	swTimer/libswtimer.a			\
 	misc/libmisc.a				\
 	sjson/libsjson.a			\
+  sqlite3/libsqlite3.a			\
 	
 
 # Inspect the modules library and work out which modules need to be linked.

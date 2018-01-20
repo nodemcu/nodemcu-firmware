@@ -49,7 +49,7 @@
 
 /* Implementation that should never be optimized out by the compiler */
 static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = v; while( n-- ) *p++ = 0;
+    volatile unsigned char *p = (unsigned char*)v; while( n-- ) *p++ = 0;
 }
 
 /*
@@ -307,7 +307,7 @@ void mbedtls_sha1_update( mbedtls_sha1_context *ctx, const unsigned char *input,
         memcpy( (void *) (ctx->buffer + left), input, ilen );
 }
 
-static const unsigned char sha1_padding[64] ICACHE_RODATA_ATTR =
+static const unsigned char sha1_padding[64] =
 {
  0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -323,9 +323,6 @@ void mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
     uint32_t last, padn;
     uint32_t high, low;
     unsigned char msglen[8];
-    unsigned char sha1_padding_local[64];
-
-    memcpy(sha1_padding_local, sha1_padding, 64);
 
     high = ( ctx->total[0] >> 29 )
          | ( ctx->total[1] <<  3 );
@@ -337,7 +334,7 @@ void mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
     last = ctx->total[0] & 0x3F;
     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
 
-    mbedtls_sha1_update( ctx, sha1_padding_local, padn );
+    mbedtls_sha1_update( ctx, sha1_padding, padn );
     mbedtls_sha1_update( ctx, msglen, 8 );
 
     PUT_UINT32_BE( ctx->state[0], output,  0 );

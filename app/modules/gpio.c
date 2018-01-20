@@ -228,8 +228,10 @@ static const os_param_t TIMER_OWNER = 0x6770696f; // "gpio"
 static void seroutasync_done (task_param_t arg)
 {
   lua_State *L = lua_getstate();
-  luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
-  serout.delay_table = NULL;
+  if (serout.delay_table) {
+    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    serout.delay_table = NULL;
+  }
   if (serout.lua_done_ref != LUA_NOREF) {
     lua_rawgeti (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
@@ -310,10 +312,16 @@ static int lgpio_serout( lua_State* L )
       }
     } while (serout.repeats--);
     luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    serout.delay_table = NULL;
   }
   return 0;
 }
 #undef DELAY_TABLE_MAX_LEN
+
+#ifdef LUA_USE_MODULES_GPIO_PULSE
+extern const LUA_REG_TYPE gpio_pulse_map[];
+extern int gpio_pulse_init(lua_State *);
+#endif
 
 // Module function map
 static const LUA_REG_TYPE gpio_map[] = {
@@ -321,6 +329,9 @@ static const LUA_REG_TYPE gpio_map[] = {
   { LSTRKEY( "read" ),   LFUNCVAL( lgpio_read ) },
   { LSTRKEY( "write" ),  LFUNCVAL( lgpio_write ) },
   { LSTRKEY( "serout" ), LFUNCVAL( lgpio_serout ) },
+#ifdef LUA_USE_MODULES_GPIO_PULSE
+  { LSTRKEY( "pulse" ),  LROVAL( gpio_pulse_map ) }, //declared in gpio_pulse.c
+#endif
 #ifdef GPIO_INTERRUPT_ENABLE
   { LSTRKEY( "trig" ),   LFUNCVAL( lgpio_trig ) },
   { LSTRKEY( "INT" ),    LNUMVAL( INTERRUPT ) },
@@ -336,6 +347,9 @@ static const LUA_REG_TYPE gpio_map[] = {
 };
 
 int luaopen_gpio( lua_State *L ) {
+#ifdef LUA_USE_MODULES_GPIO_PULSE
+  gpio_pulse_init(L);
+#endif
 #ifdef GPIO_INTERRUPT_ENABLE
   int i;
   for(i=0;i<GPIO_PIN_NUM;i++){

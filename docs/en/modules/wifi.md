@@ -42,6 +42,7 @@ The NodeMCU WiFi control is spread across several tables:
 - [`wifi.ap`](#wifiap-module) for wireless access point (WAP or simply AP) functions
 - [`wifi.ap.dhcp`](#wifiapdhcp-module) for DHCP server control
 - [`wifi.eventmon`](#wifieventmon-module) for wifi event monitor
+- [`wifi.monitor`](wifi_monitor.md#wifimonitor-module) for wifi monitor mode
 
 
 ## wifi.getchannel()
@@ -1640,3 +1641,4 @@ Table containing disconnect reasons.
 |wifi.eventmon.reason.AUTH_FAIL         |  202  |
 |wifi.eventmon.reason.ASSOC_FAIL        |  203  |
 |wifi.eventmon.reason.HANDSHAKE_TIMEOUT |  204  |
+

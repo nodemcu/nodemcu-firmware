@@ -67,8 +67,8 @@ void mbedtls_ctr_drbg_init( mbedtls_ctr_drbg_context *ctx )
 }
 
 /*
- * Non-public function wrapped by ctr_crbg_init(). Necessary to allow NIST
- * tests to succeed (which require known length fixed entropy)
+ * Non-public function wrapped by mbedtls_ctr_drbg_seed(). Necessary to allow
+ * NIST tests to succeed (which require known length fixed entropy)
  */
 int mbedtls_ctr_drbg_seed_entropy_len(
                    mbedtls_ctr_drbg_context *ctx,
@@ -290,7 +290,8 @@ int mbedtls_ctr_drbg_reseed( mbedtls_ctr_drbg_context *ctx,
     unsigned char seed[MBEDTLS_CTR_DRBG_MAX_SEED_INPUT];
     size_t seedlen = 0;
 
-    if( ctx->entropy_len + len > MBEDTLS_CTR_DRBG_MAX_SEED_INPUT )
+    if( ctx->entropy_len > MBEDTLS_CTR_DRBG_MAX_SEED_INPUT ||
+        len > MBEDTLS_CTR_DRBG_MAX_SEED_INPUT - ctx->entropy_len )
         return( MBEDTLS_ERR_CTR_DRBG_INPUT_TOO_BIG );
 
     memset( seed, 0, MBEDTLS_CTR_DRBG_MAX_SEED_INPUT );
