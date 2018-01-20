@@ -112,12 +112,12 @@ struct myvfs_dir {
 // ---------------------------------------------------------------------------
 // exported helper functions for FatFS
 //
-inline void *ff_memalloc( UINT size )
+void *ff_memalloc( UINT size )
 {
   return c_malloc( size );
 }
 
-inline void ff_memfree( void *mblock )
+void ff_memfree( void *mblock )
 {
   c_free( mblock );
 }
