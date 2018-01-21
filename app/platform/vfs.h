@@ -15,7 +15,7 @@
 // vfs_close - close file descriptor and free memory
 //   fd: file descriptor
 //   Returns: VFS_RES_OK or negative value in case of error
-inline sint32_t vfs_close( int fd ) {
+static sint32_t vfs_close( int fd ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->close( f ) : VFS_RES_ERR;
 }
@@ -25,7 +25,7 @@ inline sint32_t vfs_close( int fd ) {
 //   ptr: destination data buffer
 //   len: requested length
 //   Returns: Number of bytes read, or VFS_RES_ERR in case of error
-inline sint32_t vfs_read( int fd, void *ptr, size_t len ) {
+static sint32_t vfs_read( int fd, void *ptr, size_t len ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->read( f, ptr, len ) : VFS_RES_ERR;
 }
@@ -35,7 +35,7 @@ inline sint32_t vfs_read( int fd, void *ptr, size_t len ) {
 //   ptr: source data buffer
 //   len: requested length
 //   Returns: Number of bytes written, or VFS_RES_ERR in case of error
-inline sint32_t vfs_write( int fd, const void *ptr, size_t len ) {
+static sint32_t vfs_write( int fd, const void *ptr, size_t len ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->write( f, ptr, len ) : VFS_RES_ERR;
 }
@@ -51,7 +51,7 @@ int vfs_ungetc( int c, int fd );
 //           VFS_SEEK_CUR - set pointer to current position + off
 //           VFS_SEEK_END - set pointer to end of file + off
 //   Returns: New position, or VFS_RES_ERR in case of error
-inline sint32_t vfs_lseek( int fd, sint32_t off, int whence ) {
+static sint32_t vfs_lseek( int fd, sint32_t off, int whence ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->lseek( f, off, whence ) : VFS_RES_ERR;
 }
@@ -59,7 +59,7 @@ inline sint32_t vfs_lseek( int fd, sint32_t off, int whence ) {
 // vfs_eof - test for end-of-file
 //   fd: file descriptor
 //   Returns: 0 if not at end, != 0 if end of file
-inline sint32_t vfs_eof( int fd ) {
+static sint32_t vfs_eof( int fd ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->eof( f ) : VFS_RES_ERR;
 }
@@ -67,7 +67,7 @@ inline sint32_t vfs_eof( int fd ) {
 // vfs_tell - get read/write position
 //   fd: file descriptor
 //   Returns: Current position
-inline sint32_t vfs_tell( int fd ) {
+static sint32_t vfs_tell( int fd ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->tell( f ) : VFS_RES_ERR;
 }
@@ -75,7 +75,7 @@ inline sint32_t vfs_tell( int fd ) {
 // vfs_flush - flush write cache to file
 //   fd: file descriptor
 //   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
-inline sint32_t vfs_flush( int fd ) {
+static sint32_t vfs_flush( int fd ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->flush( f ) : VFS_RES_ERR;
 }
@@ -83,7 +83,7 @@ inline sint32_t vfs_flush( int fd ) {
 // vfs_size - get current file size
 //   fd: file descriptor
 //   Returns: File size
-inline uint32_t vfs_size( int fd ) {
+static uint32_t vfs_size( int fd ) {
   vfs_file *f = (vfs_file *)fd;
   return f ? f->fns->size( f ) : 0;
 }
@@ -100,13 +100,13 @@ sint32_t vfs_ferrno( int fd );
 // vfs_closedir - close directory descriptor and free memory
 //   dd: dir descriptor
 //   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
-inline sint32_t vfs_closedir( vfs_dir *dd ) { return dd->fns->close( dd ); }
+static sint32_t vfs_closedir( vfs_dir *dd ) { return dd->fns->close( dd ); }
 
 // vfs_readdir - read next directory item
 //   dd: dir descriptor
 //   buf:  pre-allocated stat structure to be filled in
 //   Returns: VFS_RES_OK if next item found, otherwise VFS_RES_ERR
-inline sint32_t vfs_readdir( vfs_dir *dd, struct vfs_stat *buf ) { return dd->fns->readdir( dd, buf ); }
+static sint32_t vfs_readdir( vfs_dir *dd, struct vfs_stat *buf ) { return dd->fns->readdir( dd, buf ); }
 
 // ---------------------------------------------------------------------------
 // volume functions
@@ -115,7 +115,7 @@ inline sint32_t vfs_readdir( vfs_dir *dd, struct vfs_stat *buf ) { return dd->fn
 // vfs_umount - unmount logical drive and free memory
 //   vol: volume object
 //   Returns: VFS_RES_OK, or VFS_RES_ERR in case of error
-inline sint32_t vfs_umount( vfs_vol *vol ) { return vol->fns->umount( vol ); }
+static sint32_t vfs_umount( vfs_vol *vol ) { return vol->fns->umount( vol ); }
 
 // ---------------------------------------------------------------------------
 // file system functions
