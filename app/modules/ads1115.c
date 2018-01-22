@@ -110,9 +110,10 @@
 static const uint8_t ads1115_i2c_id = 0;
 static const uint8_t general_i2c_addr = 0x00;
 static const uint8_t ads1115_i2c_reset = 0x06;
+static const char metatable_name[] = "ads1115.device";
 
 typedef struct {
-    uint8_t addr;
+    uint8_t i2c_addr;
     uint8_t chip_id;
     uint16_t gain;
     uint16_t samples_value; // sample per second
@@ -124,11 +125,11 @@ typedef struct {
     uint16_t config;
     int timer_ref;
     os_timer_t timer;
-} ads_ctrl_struct_t;
+} ads_ctrl_ud_t;
 
-static ads_ctrl_struct_t * ads_ctrl_table[4];
 
 static int ads1115_lua_readoutdone(void * param);
+static int ads1115_lua_register(lua_State *L, uint8_t chip_id);
 
 static uint8_t write_reg(uint8_t ads_addr, uint8_t reg, uint16_t config) {
     platform_i2c_send_start(ads1115_i2c_id);
@@ -215,7 +216,7 @@ static uint8_t get_value(uint16_t gain, uint16_t channel, int16_t *volt) {
 }
 
 
-// Soft reset of all devices
+// Reset of all devices
 // Lua:     ads1115.reset()
 static int ads1115_lua_reset(lua_State *L) {
     platform_i2c_send_start(ads1115_i2c_id);
@@ -225,36 +226,39 @@ static int ads1115_lua_reset(lua_State *L) {
     return 0;
 }
 
-// Initializes ADC
-// Lua:     ads1115.setup(ADDRESS, DEVICE_TYPE)
-static int ads1115_lua_setup(lua_State *L) {
+// Register an ADS device
+// Lua:     ads1115.ADS1115(I2C_ID, ADDRESS)
+static int ads1115_lua_register_1115(lua_State *L) {
+    return ads1115_lua_register(L, ADS1115_ADS1115);
+}
+
+static int ads1115_lua_register_1015(lua_State *L) {
+    return ads1115_lua_register(L, ADS1115_ADS1015);
+}
+
+static int ads1115_lua_register(lua_State *L, uint8_t chip_id) {
     if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
         return luaL_error(L, "wrong arg range");
     }
-    uint8_t i2c_addr = luaL_checkinteger(L, 1);
+    uint8_t i2c_id = luaL_checkinteger(L, 1);
+    if (i2c_id != 0) {
+        return luaL_error(L, "Invalid argument: i2c_id");
+    }
+    uint8_t i2c_addr = luaL_checkinteger(L, 2);
     if (!IS_I2C_ADDR_VALID(i2c_addr)) {
         return luaL_error(L, "Invalid argument: adddress");
     }
-    uint8_t chip_id = luaL_checkinteger(L, 2);
-    if (chip_id != ADS1115_ADS1015 && chip_id != ADS1115_ADS1115) {
-        return luaL_error(L, "Invalid argument: chip_id");
-    }
-    // check for device on i2c bus
     if (read_reg(i2c_addr, ADS1115_POINTER_CONFIG) != ADS1115_DEFAULT_CONFIG_REG) {
         return luaL_error(L, "found no device");
     }
-    int idx = i2c_addr & 0x03; // 48->0 49->1 4A->2 4B->3
-    ads_ctrl_struct_t * ads_ctrl = ads_ctrl_table[idx];
+    ads_ctrl_ud_t *ads_ctrl = (ads_ctrl_ud_t *)lua_newuserdata(L, sizeof(ads_ctrl_ud_t));
     if (NULL == ads_ctrl) {
-        ads_ctrl = c_malloc(sizeof(ads_ctrl_struct_t));
-        if (NULL == ads_ctrl) {
-            return luaL_error(lua_getstate(), "ads1115 malloc: out of memory");
-        }
-        ads_ctrl_table[idx] = ads_ctrl;
+        return luaL_error(lua_getstate(), "ads1115 malloc: out of memory");
     }
-    memset(ads_ctrl, 0, sizeof(ads_ctrl_struct_t));
+    luaL_getmetatable(L, metatable_name);
+    lua_setmetatable(L, -2);
     ads_ctrl->chip_id = chip_id;
-    ads_ctrl->addr = i2c_addr;
+    ads_ctrl->i2c_addr = i2c_addr;
     ads_ctrl->gain = ADS1115_PGA_6_144V;
     ads_ctrl->samples = ADS1115_DR_128SPS;
     ads_ctrl->samples_value = chip_id == ADS1115_ADS1115 ? 128 : 1600;
@@ -263,33 +267,29 @@ static int ads1115_lua_setup(lua_State *L) {
     ads_ctrl->threshold_low = 0x8000;
     ads_ctrl->threshold_hi = 0x7FFF;
     ads_ctrl->config = 0x8583;
-    return 0;
+    return 1;
 }
 
-// Change ADC settings
-// Lua:     ads1115.setting(ADDRESS,GAIN,SAMPLES,CHANNEL,MODE[,CONVERSION_RDY][,COMPARATOR,THRESHOLD_LOW,THRESHOLD_HI[,COMP_MODE])
+// Change the ADC device settings
+// Lua:     ads1115.device:settings(GAIN,SAMPLES,CHANNEL,MODE[,CONVERSION_RDY][,COMPARATOR,THRESHOLD_LOW,THRESHOLD_HI[,COMP_MODE])
 static int ads1115_lua_setting(lua_State *L) {
-
-    // check variables
-    if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4) || !lua_isnumber(L, 5)) {
+    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
+    // sanity check
+    if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4) || !lua_isnumber(L, 5)) {
         return luaL_error(L, "wrong arg range");
     }
-
-    uint8_t addr = luaL_checkinteger(L, 1);
-    if (!IS_I2C_ADDR_VALID(addr)) {
-        return luaL_error(L, "Invalid argument: adddress");
-    }
-    ads_ctrl_struct_t * ads_ctrl = ads_ctrl_table[addr & 3];
-    if (NULL == ads_ctrl) {
-        return luaL_error(L, "Unitialized device");
-    }
-
+    // gain
     uint16_t gain = luaL_checkinteger(L, 2);
-    if (!((gain == ADS1115_PGA_6_144V) || (gain == ADS1115_PGA_4_096V) || (gain == ADS1115_PGA_2_048V) || (gain == ADS1115_PGA_1_024V) || (gain == ADS1115_PGA_0_512V) || (gain == ADS1115_PGA_0_256V))) {
+    if (!((gain == ADS1115_PGA_6_144V) ||
+          (gain == ADS1115_PGA_4_096V) ||
+          (gain == ADS1115_PGA_2_048V) ||
+          (gain == ADS1115_PGA_1_024V) ||
+          (gain == ADS1115_PGA_0_512V) ||
+          (gain == ADS1115_PGA_0_256V))) {
         return luaL_error(L, "Invalid argument: gain");
     }
     ads_ctrl->gain = gain;
-
+    // samples
     uint16_t samples_value = luaL_checkinteger(L, 3);
     uint16_t samples = 0;
     if (ads_ctrl->chip_id == ADS1115_ADS1115) {
@@ -350,12 +350,12 @@ static int ads1115_lua_setting(lua_State *L) {
     }
     ads_ctrl->samples = samples;
     ads_ctrl->samples_value = samples_value;
-
+    // channel
     uint16_t channel = luaL_checkinteger(L, 4);
     if (!(IS_CHANNEL_VALID(channel))) {
         return luaL_error(L, "Invalid argument: channel");
     }
-
+    // mode
     uint16_t mode = luaL_checkinteger(L, 5);
     if (!((mode == ADS1115_MODE_SINGLE) || (mode == ADS1115_MODE_CONTIN))) {
         return luaL_error(L, "Invalid argument: mode");
@@ -398,8 +398,8 @@ static int ads1115_lua_setting(lua_State *L) {
         ads_ctrl->threshold_hi = threshold_hi;
         NODE_DBG("ads1115 low: %04x\n", threshold_low);
         NODE_DBG("ads1115 hi : %04x\n", threshold_hi);
-        write_reg(addr, ADS1115_POINTER_THRESH_LOW, threshold_low);
-        write_reg(addr, ADS1115_POINTER_THRESH_HI, threshold_hi);
+        write_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_THRESH_LOW, threshold_low);
+        write_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_THRESH_HI, threshold_hi);
     }
     ads_ctrl->comp = comp;
 
@@ -407,26 +407,14 @@ static int ads1115_lua_setting(lua_State *L) {
     ads_ctrl->config = config;
 
     NODE_DBG("ads1115 config: %04x\n", ads_ctrl->config);
-    write_reg(addr, ADS1115_POINTER_CONFIG, config);
+    write_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONFIG, config);
     return 0;
 }
 
-// Read the conversion register from the ADC
-// Lua:     ads1115.startread(ADDRESS, function(volt, voltdec, adc) print(volt,voltdec,adc) end)
+// Read the conversion register from the ADC device
+// Lua:     ads1115.device:startread(function(volt, voltdec, adc) print(volt,voltdec,adc) end)
 static int ads1115_lua_startread(lua_State *L) {
-    // check variables
-    if (!lua_isnumber(L, 1)) {
-        return luaL_error(L, "wrong arg range");
-    }
-    uint8_t addr = luaL_checkinteger(L, 1);
-
-    if (!IS_I2C_ADDR_VALID(addr)) {
-        return luaL_error(L, "Invalid argument: adddress");
-    }
-    ads_ctrl_struct_t * ads_ctrl = ads_ctrl_table[addr & 3];
-    if (NULL == ads_ctrl) {
-        return luaL_error(L, "Unitialized");
-    }
+    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
 
     if (((ads_ctrl->comp == ADS1115_CQUE_1CONV) ||
          (ads_ctrl->comp == ADS1115_CQUE_2CONV) ||
@@ -436,7 +424,7 @@ static int ads1115_lua_startread(lua_State *L) {
         // conversion ready mode
         if (ads_ctrl->mode == ADS1115_MODE_SINGLE) {
             NODE_DBG("ads1115 trigger config: %04x", ads_ctrl->config);
-            write_reg(addr, ADS1115_POINTER_CONFIG, ads_ctrl->config);
+            write_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONFIG, ads_ctrl->config);
         }
         return 0;
     }
@@ -446,7 +434,7 @@ static int ads1115_lua_startread(lua_State *L) {
     ads_ctrl->timer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
     if (ads_ctrl->mode == ADS1115_MODE_SINGLE) {
-        write_reg(addr, ADS1115_POINTER_CONFIG, ads_ctrl->config);
+        write_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONFIG, ads_ctrl->config);
     }
 
     // Start a timer to wait until ADC conversion is done
@@ -487,15 +475,15 @@ static int ads1115_lua_startread(lua_State *L) {
 
 // adc conversion timer callback
 static int ads1115_lua_readoutdone(void * param) {
-    ads_ctrl_struct_t * ads_ctrl = (ads_ctrl_struct_t *)param;
+    ads_ctrl_ud_t * ads_ctrl = (ads_ctrl_ud_t *)param;
 
-    uint16_t ads1115_conversion = read_reg(ads_ctrl->addr, ADS1115_POINTER_CONVERSION);
+    uint16_t ads1115_conversion = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
     double ads1115_volt = get_volt(ads_ctrl->gain, ads1115_conversion);
     int ads1115_voltdec = (int)((ads1115_volt - (int)ads1115_volt) * 1000);
     ads1115_voltdec = ads1115_voltdec > 0 ? ads1115_voltdec : 0 - ads1115_voltdec;
 
     lua_State *L = lua_getstate();
-    os_timer_disarm (&ads_ctrl->timer);
+    os_timer_disarm(&ads_ctrl->timer);
 
     lua_rawgeti(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
     luaL_unref(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
@@ -508,23 +496,12 @@ static int ads1115_lua_readoutdone(void * param) {
     lua_call (L, 3, 0);
 }
 
-// Read the conversion register from the ADC
-// Lua:     volt,voltdec,adc = ads1115.read(ADDRESS)
+// Read the conversion register from the ADC device
+// Lua:     volt,voltdec,adc = ads1115.device:read()
 static int ads1115_lua_read(lua_State *L) {
-    // check variables
-    if (!lua_isnumber(L, 1)) {
-        return luaL_error(L, "wrong arg range");
-    }
-    uint8_t addr = luaL_checkinteger(L, 1);
-    if (!IS_I2C_ADDR_VALID(addr)) {
-        return luaL_error(L, "Invalid argument: adddress");
-    }
-    ads_ctrl_struct_t * ads_ctrl = ads_ctrl_table[addr & 3];
-    if (NULL == ads_ctrl) {
-        return luaL_error(L, "Uninitialized");
-    }
+    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
 
-    uint16_t ads1115_conversion = read_reg(addr, ADS1115_POINTER_CONVERSION);
+    uint16_t ads1115_conversion = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
     double ads1115_volt = get_volt(ads_ctrl->gain, ads1115_conversion);
     int ads1115_voltdec = (int)((ads1115_volt - (int)ads1115_volt) * 1000);
     ads1115_voltdec = ads1115_voltdec > 0 ? ads1115_voltdec : 0 - ads1115_voltdec;
@@ -537,11 +514,10 @@ static int ads1115_lua_read(lua_State *L) {
 }
 
 static const LUA_REG_TYPE ads1115_map[] = {
+
+    {   LSTRKEY( "ads1115" ),       LFUNCVAL(ads1115_lua_register_1115) },
+    {   LSTRKEY( "ads1015" ),       LFUNCVAL(ads1115_lua_register_1015) },
     {   LSTRKEY( "reset" ),         LFUNCVAL(ads1115_lua_reset)     },
-    {   LSTRKEY( "setup" ),         LFUNCVAL(ads1115_lua_setup)     },
-    {   LSTRKEY( "setting" ),       LFUNCVAL(ads1115_lua_setting)   },
-    {   LSTRKEY( "startread" ),     LFUNCVAL(ads1115_lua_startread) },
-    {   LSTRKEY( "read" ),          LFUNCVAL(ads1115_lua_read)      },
     {   LSTRKEY( "ADDR_GND" ),      LNUMVAL(ADS1115_I2C_ADDR_GND)   },
     {   LSTRKEY( "ADDR_VDD" ),      LNUMVAL(ADS1115_I2C_ADDR_VDD)   },
     {   LSTRKEY( "ADDR_SDA" ),      LNUMVAL(ADS1115_I2C_ADDR_SDA)   },
@@ -581,11 +557,23 @@ static const LUA_REG_TYPE ads1115_map[] = {
     {   LSTRKEY( "COMP_1CONV" ),    LNUMVAL(ADS1115_CQUE_1CONV)     },
     {   LSTRKEY( "COMP_2CONV" ),    LNUMVAL(ADS1115_CQUE_2CONV)     },
     {   LSTRKEY( "COMP_4CONV" ),    LNUMVAL(ADS1115_CQUE_4CONV)     },
-    {   LSTRKEY( "ADS1015"),        LNUMVAL(ADS1115_ADS1015)        },
-    {   LSTRKEY( "ADS1115"),        LNUMVAL(ADS1115_ADS1115)        },
     {   LSTRKEY( "CMODE_TRAD"),     LNUMVAL(ADS1115_CMODE_TRAD)     },
     {   LSTRKEY( "CMODE_WINDOW"),   LNUMVAL(ADS1115_CMODE_WINDOW)   },
     {   LNILKEY, LNILVAL                                            }
 };
 
-NODEMCU_MODULE(ADS1115, "ads1115", ads1115_map, NULL);
+static const LUA_REG_TYPE ads1115_instance_map[] = {
+    {   LSTRKEY( "setting" ),       LFUNCVAL(ads1115_lua_setting)   },
+    {   LSTRKEY( "startread" ),     LFUNCVAL(ads1115_lua_startread) },
+    {   LSTRKEY( "read" ),          LFUNCVAL(ads1115_lua_read)      },
+    {   LSTRKEY( "__index" ),       LROVAL(ads1115_instance_map)    },
+    {   LNILKEY, LNILVAL                                            }
+};
+
+
+int luaopen_ads1115(lua_State *L) {
+    luaL_rometatable(L, metatable_name, (void *)ads1115_instance_map);
+    return 0;
+}
+
+NODEMCU_MODULE(ADS1115, "ads1115", ads1115_map, luaopen_ads1115);
