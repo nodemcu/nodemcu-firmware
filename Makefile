@@ -221,12 +221,12 @@ $(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VE
 
 $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@ || { rm -f "$@"; exit 1; }
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused --no-check-certificate http://bbs.espressif.com/download/file.php?id=$(SDK_FILE_ID) -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VER).zip:
 	mkdir -p "$(dir $@)"
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused http://bbs.espressif.com/download/file.php?id=$(SDK_PATCH_ID) -O $@ || { rm -f "$@"; exit 1; }
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused --no-check-certificate http://bbs.espressif.com/download/file.php?id=$(SDK_PATCH_ID) -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_PATCH_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 clean:
