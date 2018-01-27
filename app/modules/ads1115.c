@@ -267,6 +267,7 @@ static int ads1115_lua_register(lua_State *L, uint8_t chip_id) {
     ads_ctrl->threshold_low = 0x8000;
     ads_ctrl->threshold_hi = 0x7FFF;
     ads_ctrl->config = 0x8583;
+    ads_ctrl->timer_ref = LUA_NOREF;
     return 1;
 }
 
@@ -513,6 +514,16 @@ static int ads1115_lua_read(lua_State *L) {
     return 3;
 }
 
+static int ads1115_lua_delete(lua_State *L) {
+    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
+    if (ads_ctrl->timer_ref != LUA_NOREF) {
+        os_timer_disarm(&ads_ctrl->timer);
+        lua_rawgeti(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
+    }
+    return 0;
+}
+
 static const LUA_REG_TYPE ads1115_map[] = {
 
     {   LSTRKEY( "ads1115" ),       LFUNCVAL(ads1115_lua_register_1115) },
@@ -567,6 +578,7 @@ static const LUA_REG_TYPE ads1115_instance_map[] = {
     {   LSTRKEY( "startread" ),     LFUNCVAL(ads1115_lua_startread) },
     {   LSTRKEY( "read" ),          LFUNCVAL(ads1115_lua_read)      },
     {   LSTRKEY( "__index" ),       LROVAL(ads1115_instance_map)    },
+    {   LSTRKEY( "__gc" ),          LFUNCVAL(ads1115_lua_delete)    },
     {   LNILKEY, LNILVAL                                            }
 };
 
