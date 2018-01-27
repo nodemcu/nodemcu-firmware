@@ -111,6 +111,7 @@ static const uint8_t ads1115_i2c_id = 0;
 static const uint8_t general_i2c_addr = 0x00;
 static const uint8_t ads1115_i2c_reset = 0x06;
 static const char metatable_name[] = "ads1115.device";
+static const char unexpected_value[] = "unexpected value";
 
 typedef struct {
     uint8_t i2c_addr;
@@ -182,37 +183,36 @@ static double get_volt(uint16_t gain, uint16_t value) {
     return volt;
 }
 
-// convert threshold in volt to ADC value corresponding to PGA settings
+// validates and convert threshold in volt to ADC value corresponding to PGA settings
+// returns true if valid
 static uint8_t get_value(uint16_t gain, uint16_t channel, int16_t *volt) {
-
     switch (gain) {
         case (ADS1115_PGA_6_144V):
-            if ((*volt >= 6144) || (*volt < -6144) || ((*volt < 0) && (channel >> 14))) return 1;
+            if ((*volt >= 6144) || (*volt < -6144) || ((*volt < 0) && (channel >> 14))) return 0;
             *volt = *volt / 0.1875;
             break;
         case (ADS1115_PGA_4_096V):
-            if ((*volt >= 4096) || (*volt < -4096) || ((*volt < 0) && (channel >> 14))) return 1;
+            if ((*volt >= 4096) || (*volt < -4096) || ((*volt < 0) && (channel >> 14))) return 0;
             *volt = *volt / 0.125;
             break;
         case (ADS1115_PGA_2_048V):
-            if ((*volt >= 2048) || (*volt < -2048) || ((*volt < 0) && (channel >> 14))) return 1;
+            if ((*volt >= 2048) || (*volt < -2048) || ((*volt < 0) && (channel >> 14))) return 0;
             *volt = *volt / 0.0625;
             break;
         case (ADS1115_PGA_1_024V):
-            if ((*volt >= 1024) || (*volt < -1024) || ((*volt < 0) && (channel >> 14))) return 1;
+            if ((*volt >= 1024) || (*volt < -1024) || ((*volt < 0) && (channel >> 14))) return 0;
             *volt = *volt / 0.03125;
             break;
         case (ADS1115_PGA_0_512V):
-            if ((*volt >= 512) || (*volt < -512) || ((*volt < 0) && (channel >> 14))) return 1;
+            if ((*volt >= 512) || (*volt < -512) || ((*volt < 0) && (channel >> 14))) return 0;
             *volt = *volt / 0.015625;
             break;
         case (ADS1115_PGA_0_256V):
-            if ((*volt >= 256) || (*volt < -256) || ((*volt < 0) && (channel >> 14))) return 1;
+            if ((*volt >= 256) || (*volt < -256) || ((*volt < 0) && (channel >> 14))) return 0;
             *volt = *volt / 0.0078125;
             break;
     }
-
-    return 0;
+    return 1;
 }
 
 
@@ -237,23 +237,20 @@ static int ads1115_lua_register_1015(lua_State *L) {
 }
 
 static int ads1115_lua_register(lua_State *L, uint8_t chip_id) {
-    if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
-        return luaL_error(L, "wrong arg range");
-    }
     uint8_t i2c_id = luaL_checkinteger(L, 1);
-    if (i2c_id != 0) {
-        return luaL_error(L, "Invalid argument: i2c_id");
-    }
+    luaL_argcheck(L, 0 == i2c_id, 1, "i2c_id must be 0");
     uint8_t i2c_addr = luaL_checkinteger(L, 2);
-    if (!IS_I2C_ADDR_VALID(i2c_addr)) {
-        return luaL_error(L, "Invalid argument: adddress");
-    }
-    if (read_reg(i2c_addr, ADS1115_POINTER_CONFIG) != ADS1115_DEFAULT_CONFIG_REG) {
+    luaL_argcheck(L, IS_I2C_ADDR_VALID(i2c_addr), 2, unexpected_value);
+    uint16_t config_read = read_reg(i2c_addr, ADS1115_POINTER_CONFIG);
+    if (config_read == 0xFFFF) {
         return luaL_error(L, "found no device");
+    }
+    if (config_read != ADS1115_DEFAULT_CONFIG_REG) {
+        return luaL_error(L, "unexpected config value (%p) please reset device before calling this function", config_read);
     }
     ads_ctrl_ud_t *ads_ctrl = (ads_ctrl_ud_t *)lua_newuserdata(L, sizeof(ads_ctrl_ud_t));
     if (NULL == ads_ctrl) {
-        return luaL_error(lua_getstate(), "ads1115 malloc: out of memory");
+        return luaL_error(L, "ads1115 malloc: out of memory");
     }
     luaL_getmetatable(L, metatable_name);
     lua_setmetatable(L, -2);
@@ -266,7 +263,7 @@ static int ads1115_lua_register(lua_State *L, uint8_t chip_id) {
     ads_ctrl->mode = ADS1115_MODE_SINGLE;
     ads_ctrl->threshold_low = 0x8000;
     ads_ctrl->threshold_hi = 0x7FFF;
-    ads_ctrl->config = 0x8583;
+    ads_ctrl->config = ADS1115_DEFAULT_CONFIG_REG;
     ads_ctrl->timer_ref = LUA_NOREF;
     return 1;
 }
@@ -274,21 +271,16 @@ static int ads1115_lua_register(lua_State *L, uint8_t chip_id) {
 // Change the ADC device settings
 // Lua:     ads1115.device:settings(GAIN,SAMPLES,CHANNEL,MODE[,CONVERSION_RDY][,COMPARATOR,THRESHOLD_LOW,THRESHOLD_HI[,COMP_MODE])
 static int ads1115_lua_setting(lua_State *L) {
-    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
-    // sanity check
-    if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4) || !lua_isnumber(L, 5)) {
-        return luaL_error(L, "wrong arg range");
+    int argc = lua_gettop(L);
+    if (argc != 5 && argc != 6 && argc != 8 && argc != 9) { // user data counts
+        luaL_error(L, "invalid number of arguments to 'setting'");
     }
+    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
     // gain
     uint16_t gain = luaL_checkinteger(L, 2);
-    if (!((gain == ADS1115_PGA_6_144V) ||
-          (gain == ADS1115_PGA_4_096V) ||
-          (gain == ADS1115_PGA_2_048V) ||
-          (gain == ADS1115_PGA_1_024V) ||
-          (gain == ADS1115_PGA_0_512V) ||
-          (gain == ADS1115_PGA_0_256V))) {
-        return luaL_error(L, "Invalid argument: gain");
-    }
+    luaL_argcheck(L, (gain == ADS1115_PGA_6_144V) || (gain == ADS1115_PGA_4_096V) || (gain == ADS1115_PGA_2_048V) ||
+                     (gain == ADS1115_PGA_1_024V) || (gain == ADS1115_PGA_0_512V) || (gain == ADS1115_PGA_0_256V),
+                  2, unexpected_value);
     ads_ctrl->gain = gain;
     // samples
     uint16_t samples_value = luaL_checkinteger(L, 3);
@@ -320,7 +312,7 @@ static int ads1115_lua_setting(lua_State *L) {
                 samples = 0xE0;
                 break;
             default:
-                return luaL_error(L, "Invalid argument: samples");
+                luaL_argerror(L, 3, unexpected_value);
         }
     } else { // ADS1115_ADS1015
         switch(samples_value) {
@@ -346,54 +338,36 @@ static int ads1115_lua_setting(lua_State *L) {
                 samples = 0xC0;
                 break;
             default:
-                return luaL_error(L, "Invalid argument: samples");
+                luaL_argerror(L, 3, unexpected_value);
         }
     }
     ads_ctrl->samples = samples;
     ads_ctrl->samples_value = samples_value;
     // channel
     uint16_t channel = luaL_checkinteger(L, 4);
-    if (!(IS_CHANNEL_VALID(channel))) {
-        return luaL_error(L, "Invalid argument: channel");
-    }
+    luaL_argcheck(L, IS_CHANNEL_VALID(channel), 4, unexpected_value);
     // mode
     uint16_t mode = luaL_checkinteger(L, 5);
-    if (!((mode == ADS1115_MODE_SINGLE) || (mode == ADS1115_MODE_CONTIN))) {
-        return luaL_error(L, "Invalid argument: mode");
-    }
+    luaL_argcheck(L, (mode == ADS1115_MODE_SINGLE) || (mode == ADS1115_MODE_CONTIN), 5, unexpected_value);
     ads_ctrl->mode = mode;
     uint16_t os = mode == ADS1115_MODE_SINGLE ? ADS1115_OS_SINGLE : ADS1115_OS_NON;
 
     uint16_t comp = ADS1115_CQUE_NONE;
-    uint16_t comparator_mode = ADS1115_CMODE_TRAD;
     // Parse optional parameters
-    if (lua_isnumber(L, 6)) {
+    if (argc > 5) {
         // comparator or conversion count
         comp = luaL_checkinteger(L, 6);
-        if (!((comp == ADS1115_CQUE_1CONV) || (comp == ADS1115_CQUE_2CONV) || (comp == ADS1115_CQUE_4CONV))) {
-            return luaL_error(L, "Invalid argument: conversion ready/comparator mode");
-        }
+        luaL_argcheck(L, (comp == ADS1115_CQUE_1CONV) || (comp == ADS1115_CQUE_2CONV) || (comp == ADS1115_CQUE_4CONV),
+                      6, unexpected_value);
         uint16_t threshold_low = 0x7FFF;
         uint16_t threshold_hi = 0x8000;
-        if (lua_isnumber(L, 7) && lua_isnumber(L, 8)) {
+        if (argc > 6) {
             // comparator thresholds
             threshold_low = luaL_checkinteger(L, 7);
             threshold_hi = luaL_checkinteger(L, 8);
-            if ((int16_t)threshold_low > (int16_t)threshold_hi) {
-                return luaL_error(L, "Invalid argument: threshold_low > threshold_hi");
-            }
-            if (get_value(gain, channel, &threshold_low)) {
-                return luaL_error(L, "Invalid argument: threshold_low");
-            }
-            if (get_value(gain, channel, &threshold_hi)) {
-                return luaL_error(L, "Invalid argument: threshold_hi");
-            }
-            if (lua_isnumber(L, 9)) {
-                comparator_mode = luaL_checkinteger(L, 9);
-                if (comparator_mode != ADS1115_CMODE_WINDOW && comparator_mode != ADS1115_CMODE_TRAD) {
-                    return luaL_error(L, "Invalid argument: comparator_mode");
-                }
-            }
+            luaL_argcheck(L, (int16_t)threshold_low <= (int16_t)threshold_hi, 7, "threshold_low > threshold_hi");
+            luaL_argcheck(L, get_value(gain, channel, &threshold_low), 7, unexpected_value);
+            luaL_argcheck(L, get_value(gain, channel, &threshold_hi), 8, unexpected_value);
         }
         ads_ctrl->threshold_low = threshold_low;
         ads_ctrl->threshold_hi = threshold_hi;
@@ -403,6 +377,13 @@ static int ads1115_lua_setting(lua_State *L) {
         write_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_THRESH_HI, threshold_hi);
     }
     ads_ctrl->comp = comp;
+
+    uint16_t comparator_mode = ADS1115_CMODE_TRAD;
+    if (argc == 9) {
+        comparator_mode = luaL_checkinteger(L, 9);
+        luaL_argcheck(L, (comparator_mode == ADS1115_CMODE_WINDOW) || (comparator_mode == ADS1115_CMODE_TRAD),
+                      9, unexpected_value);
+    }
 
     uint16_t config = (os | channel | gain | mode | samples | comparator_mode | ADS1115_CPOL_ACTVLOW | ADS1115_CLAT_NONLAT | comp);
     ads_ctrl->config = config;
@@ -494,7 +475,7 @@ static int ads1115_lua_readoutdone(void * param) {
     lua_pushinteger(L, ads1115_voltdec);
     lua_pushinteger(L, ads1115_conversion);
 
-    lua_call (L, 3, 0);
+    lua_call(L, 3, 0);
 }
 
 // Read the conversion register from the ADC device
