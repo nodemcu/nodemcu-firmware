@@ -105,6 +105,8 @@
 
 #define ADS1115_DEFAULT_CONFIG_REG  (0x8583)    // Config register value after reset
 
+// #define ADS1115_INCLUDE_TEST_FUNCTION
+
 //***************************************************************************
 
 static const uint8_t ads1115_i2c_id = 0;
@@ -155,7 +157,8 @@ static uint16_t read_reg(uint8_t ads_addr, uint8_t reg) {
 }
 
 // convert ADC value to voltage corresponding to PGA settings
-static double get_volt(uint16_t gain, uint16_t value) {
+// returned voltage is in milivolts
+static double get_mvolt(uint16_t gain, uint16_t value) {
 
     double volt = 0;
 
@@ -394,7 +397,7 @@ static int ads1115_lua_setting(lua_State *L) {
 }
 
 // Read the conversion register from the ADC device
-// Lua:     ads1115.device:startread(function(volt, voltdec, adc) print(volt,voltdec,adc) end)
+// Lua:     ads1115.device:startread(function(volt, voltdec, adc, sign) print(volt,voltdec,adc,sign) end)
 static int ads1115_lua_startread(lua_State *L) {
     ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
 
@@ -455,45 +458,69 @@ static int ads1115_lua_startread(lua_State *L) {
     return 0;
 }
 
+static void read_common(ads_ctrl_ud_t * ads_ctrl, uint16_t raw, lua_State *L) {
+    double mvolt = get_mvolt(ads_ctrl->gain, raw);
+#ifdef LUA_NUMBER_INTEGRAL
+    int sign;
+    if (mvolt == 0) {
+        sign = 0;
+    } else if (mvolt > 0) {
+        sign = 1;
+    } else {
+        sign = -1;
+    }
+    int uvolt;
+    if (sign >= 0) {
+        uvolt = (int)((mvolt - (int)mvolt) * 1000 + 0.5);
+    } else {
+        uvolt = -(int)((mvolt - (int)mvolt) * 1000 - 0.5);
+        mvolt = -mvolt;
+    }
+    lua_pushnumber(L, mvolt);
+    lua_pushinteger(L, uvolt);
+    lua_pushinteger(L, raw);
+    lua_pushinteger(L, sign);
+#else
+    lua_pushnumber(L, mvolt);
+    lua_pushnil(L);
+    lua_pushinteger(L, raw);
+    lua_pushnil(L);
+#endif
+}
+
+
 // adc conversion timer callback
 static int ads1115_lua_readoutdone(void * param) {
     ads_ctrl_ud_t * ads_ctrl = (ads_ctrl_ud_t *)param;
-
-    uint16_t ads1115_conversion = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
-    double ads1115_volt = get_volt(ads_ctrl->gain, ads1115_conversion);
-    int ads1115_voltdec = (int)((ads1115_volt - (int)ads1115_volt) * 1000);
-    ads1115_voltdec = ads1115_voltdec > 0 ? ads1115_voltdec : 0 - ads1115_voltdec;
-
+    uint16_t raw = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
     lua_State *L = lua_getstate();
     os_timer_disarm(&ads_ctrl->timer);
-
     lua_rawgeti(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
     luaL_unref(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
     ads_ctrl->timer_ref = LUA_NOREF;
-
-    lua_pushnumber(L, ads1115_volt);
-    lua_pushinteger(L, ads1115_voltdec);
-    lua_pushinteger(L, ads1115_conversion);
-
-    lua_call(L, 3, 0);
+    read_common(ads_ctrl, raw, L);
+    lua_call(L, 4, 0);
 }
 
 // Read the conversion register from the ADC device
-// Lua:     volt,voltdec,adc = ads1115.device:read()
+// Lua:     volt,voltdec,adc,sign = ads1115.device:read()
 static int ads1115_lua_read(lua_State *L) {
     ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
-
-    uint16_t ads1115_conversion = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
-    double ads1115_volt = get_volt(ads_ctrl->gain, ads1115_conversion);
-    int ads1115_voltdec = (int)((ads1115_volt - (int)ads1115_volt) * 1000);
-    ads1115_voltdec = ads1115_voltdec > 0 ? ads1115_voltdec : 0 - ads1115_voltdec;
-
-    lua_pushnumber(L, ads1115_volt);
-    lua_pushinteger(L, ads1115_voltdec);
-    lua_pushinteger(L, ads1115_conversion);
-
-    return 3;
+    uint16_t raw = read_reg(ads_ctrl->i2c_addr, ADS1115_POINTER_CONVERSION);
+    read_common(ads_ctrl, raw, L);
+    return 4;
 }
+
+#ifdef ADS1115_INCLUDE_TEST_FUNCTION
+// this function simulates conversion using raw value provided as argument
+// Lua:  volt,volt_dec,adc,sign = ads1115.test_volt_conversion(-1)
+static int test_volt_conversion(lua_State *L) {
+    ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
+    uint16_t raw = luaL_checkinteger(L, 2);
+    read_common(ads_ctrl, raw, L);
+    return 4;
+}
+#endif
 
 static int ads1115_lua_delete(lua_State *L) {
     ads_ctrl_ud_t *ads_ctrl = luaL_checkudata(L, 1, metatable_name);
@@ -557,6 +584,9 @@ static const LUA_REG_TYPE ads1115_instance_map[] = {
     {   LSTRKEY( "setting" ),       LFUNCVAL(ads1115_lua_setting)   },
     {   LSTRKEY( "startread" ),     LFUNCVAL(ads1115_lua_startread) },
     {   LSTRKEY( "read" ),          LFUNCVAL(ads1115_lua_read)      },
+#ifdef ADS1115_INCLUDE_TEST_FUNCTION
+    {   LSTRKEY( "test_volt_conversion" ), LFUNCVAL(test_volt_conversion)},
+#endif
     {   LSTRKEY( "__index" ),       LROVAL(ads1115_instance_map)    },
     {   LSTRKEY( "__gc" ),          LFUNCVAL(ads1115_lua_delete)    },
     {   LNILKEY, LNILVAL                                            }
