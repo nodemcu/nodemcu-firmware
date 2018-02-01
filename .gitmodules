@@ -8,3 +8,6 @@
 [submodule "components/u8g2/u8g2"]
 	path = components/u8g2/u8g2
 	url = https://github.com/olikraus/U8g2_Arduino.git
+[submodule "components/espmqtt"]
+	path = components/espmqtt
+	url = https://github.com/tuanpmt/espmqtt

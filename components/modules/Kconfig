@@ -180,4 +180,10 @@ config LUA_MODULE_WS2812
   help
       Includes the ws2812 module.
 
+config LUA_MODULE_MQTT
+  bool "MQTT module"
+  default "n"
+  help
+      Includes the MQTT module.
+
 endmenu
