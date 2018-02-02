@@ -1,5 +1,7 @@
 #include "c_types.h"
 
+#include "user_config.h"
+
 #undef MBEDTLS_HAVE_ASM
 #undef MBEDTLS_HAVE_SSE2
 
@@ -288,7 +290,19 @@
 //#define MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO  mbedtls_platform_std_nv_seed_write /**< Default nv_seed_write function to use, can be undefined */
 //#define MBEDTLS_SSL_CACHE_DEFAULT_TIMEOUT       86400 /**< 1 day  */
 //#define MBEDTLS_SSL_CACHE_DEFAULT_MAX_ENTRIES      50 /**< Maximum entries in cache */
-#define MBEDTLS_SSL_MAX_CONTENT_LEN             4096 /**< Maxium fragment length in bytes, determines the size of each of the two internal I/O buffers */
+
+#if 0
+// dynamic buffer sizing with espconn_secure_set_size()
+extern unsigned int max_content_len;
+#define MBEDTLS_SSL_MAX_CONTENT_LEN             max_content_len;
+#else
+// the current mbedtls integration doesn't allow to set the buffer size dynamically:
+//   MBEDTLS_SSL_MAX_FRAGMENT_LENGTH feature and dynamic sizing are mutually exclusive
+//   due to non-constant initializer element in app/mbedtls/library/ssl_tls.c:150 
+// the buffer size is hardcoded here and value is taken from SSL_BUFFER_SIZE (user_config.h)
+#define MBEDTLS_SSL_MAX_CONTENT_LEN             SSL_BUFFER_SIZE /**< Maxium fragment length in bytes, determines the size of each of the two internal I/O buffers */
+#endif
+
 //#define MBEDTLS_SSL_DEFAULT_TICKET_LIFETIME     86400 /**< Lifetime of session tickets (if enabled) */
 //#define MBEDTLS_PSK_MAX_LEN               32 /**< Max size of TLS pre-shared keys, in bytes (default 256 bits) */
 //#define MBEDTLS_SSL_COOKIE_TIMEOUT        60 /**< Default expiration delay of DTLS cookies, in seconds if HAVE_TIME, or in number of cookies issued */
