@@ -224,6 +224,15 @@ uint16_t platform_onewire_crc16( const uint8_t* input, uint16_t len, uint16_t cr
 
 int platform_dht_read( uint8_t gpio_num, uint8_t wakeup_ms, uint8_t *data );
 
+// *****************************************************************************
+// HTU21 platform interface
+#define PLATFORM_HTU21_CRC_ERROR (uint16_t) 1
+#define PLATFORM_HTU21_T_MEASUREMENT_HM    0xE3
+#define PLATFORM_HTU21_RH_MEASUREMENT_HM   0xE5
+
+uint16_t platform_htu21_read( uint8_t reg );
+int32_t platform_htu21_temp_ticks_to_millicelsius( uint32_t ticks );
+int32_t platform_htu21_rh_ticks_to_per_cent_mille( uint32_t ticks );
 
 // *****************************************************************************
 // WS2812 platform interface

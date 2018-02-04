@@ -98,6 +98,12 @@ config LUA_MODULE_GPIO
   help
       Includes the GPIO module (recommended).
 
+config LUA_MODULE_HTU21
+  bool "HTU21D/STH21 module"
+  default "n"
+  help
+      Includes the htu21 module.
+
 config LUA_MODULE_I2C
   bool "I2C module"
   default "y"
