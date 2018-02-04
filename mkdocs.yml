@@ -59,6 +59,7 @@ pages:
         - 'hdc1080': 'en/modules/hdc1080.md'
         - 'hmc5883l': 'en/modules/hmc5883l.md'
         - 'http': 'en/modules/http.md'
+        - 'htu21': 'en/modules/htu21.md'
         - 'hx711' : 'en/modules/hx711.md'
         - 'i2c' : 'en/modules/i2c.md'
         - 'l3g4200d' : 'en/modules/l3g4200d.md'
