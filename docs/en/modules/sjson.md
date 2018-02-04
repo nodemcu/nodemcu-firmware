@@ -21,6 +21,10 @@ anywhere else in your data structures. A suitable value might be `"\0"`.
 
 When encoding a Lua object, if a function is found, then it is invoked (with no arguments) and the (single) returned value is encoded in the place of the function.
 
+!!! note
+
+    All examples below use in-memory JSON or content read from the SPIFFS file system. However, where a streaming implementation really shines is in fetching large JSON structures from the remote resources and extracting values on-the-fly. An elaborate streaming example can be found in the [`/lua_examples`](../../../lua_examples/sjson-streaming.lua) folder.
+
 ## sjson.encoder()
 
 This creates an encoder object that can convert a Lua object into a JSON encoded string.
@@ -53,7 +57,8 @@ A string of up to `size` bytes, or `nil` if the encoding is complete and all dat
 #### Example
 The following example prints out (in 64 byte chunks) a JSON encoded string containing the first 4k of every file in the file system. The total string
 can be bigger than the total amount of memory on the NodeMCU.
-```
+
+```lua
 function files() 
    result = {}
    for k,v in pairs(file.list()) do
@@ -230,5 +235,5 @@ for k,v in pairs(t) do print(k,v) end
 
 ##Constants
 
-There is one constant -- `sjson.NULL` -- which is used in Lua structures to represent the presence of a JSON null.
+There is one constant, `sjson.NULL`, which is used in Lua structures to represent the presence of a JSON null.
 
