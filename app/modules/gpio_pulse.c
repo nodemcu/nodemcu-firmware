@@ -12,12 +12,18 @@
 
 #define TIMER_OWNER 'P'
 
+#define xstr(s) str(s)
+#define str(s) #s
+
+// Maximum delay in microseconds
+#define DELAY_LIMIT 64000000
+
 typedef struct {
   uint32_t gpio_set;
   uint32_t gpio_clr;
-  uint32_t delay;
-  uint32_t delay_min;
-  uint32_t delay_max;
+  int32_t delay;
+  int32_t delay_min;
+  int32_t delay_max;
   uint32_t count;
   uint32_t count_left;
   uint16_t loop;
@@ -30,7 +36,9 @@ typedef struct {
   volatile int16_t stop_pos;  // -1 is stop nowhere, -2 is stop everywhere, otherwise is stop point
   pulse_entry_t *entry;
   volatile uint32_t expected_end_time;
+  volatile uint32_t desired_end_time;
   volatile int32_t next_adjust;
+  volatile int32_t pending_delay;
   volatile int cb_ref;
 } pulse_t;
 
@@ -184,18 +192,18 @@ static int gpio_pulse_build(lua_State *L) {
 
         if (strcmp(str, "delay") == 0) {
           entry->delay = lua_tonumber(L, -1);
-          if (entry->delay < 0 || entry->delay > 1000000) {
-            return luaL_error(L, "delay of %d must be in the range 0 .. 1000000 microseconds", entry->delay);
+          if (entry->delay < 0 || entry->delay > DELAY_LIMIT) {
+            return luaL_error(L, "delay of %d must be in the range 0 .. " xstr(DELAY_LIMIT) " microseconds", entry->delay);
           }
         } else if (strcmp(str, "min") == 0) {
           entry->delay_min = lua_tonumber(L, -1);
-          if (entry->delay_min < 0 || entry->delay_min > 1000000) {
-            return luaL_error(L, "delay minimum of %d must be in the range 0 .. 1000000 microseconds", entry->delay_min);
+          if (entry->delay_min < 0 || entry->delay_min > DELAY_LIMIT) {
+            return luaL_error(L, "delay minimum of %d must be in the range 0 .. " xstr(DELAY_LIMIT) " microseconds", entry->delay_min);
           }
         } else if (strcmp(str, "max") == 0) {
           entry->delay_max = lua_tonumber(L, -1);
-          if (entry->delay_max < 0 || entry->delay_max > 1000000) {
-            return luaL_error(L, "delay maximum of %d must be in the range 0 .. 1000000 microseconds", entry->delay_max);
+          if (entry->delay_max < 0 || entry->delay_max > DELAY_LIMIT) {
+            return luaL_error(L, "delay maximum of %d must be in the range 0 .. " xstr(DELAY_LIMIT) " microseconds", entry->delay_max);
           }
         } else if (strcmp(str, "count") == 0) {
           entry->count = lua_tonumber(L, -1);
@@ -264,7 +272,21 @@ static int gpio_pulse_cancel(lua_State *L) {
 static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
   (void) p;
 
+  uint32_t now = system_get_time();
+
   int delay;
+
+  if (active_pulser) {
+    delay = active_pulser->pending_delay;
+    if (delay > 0) {
+      if (delay > 1200000) {
+        delay = 1000000;
+      }
+      active_pulser->pending_delay -= delay;
+      platform_hw_timer_arm_us(TIMER_OWNER, delay);
+      return;
+    }
+  }
 
   do {
     if (!active_pulser || active_pulser->entry_pos >= active_pulser->entry_count) {
@@ -311,23 +333,38 @@ static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
 
     delay = entry->delay;
 
+    int delay_offset = 0;
+
     if (entry->delay_min != -1) {
       int offset = active_pulser->next_adjust;
       active_pulser->next_adjust = 0;
-      int delay_offset = 0x7fffffff & (system_get_time() - (active_pulser->expected_end_time + offset));
-      delay -= (delay_offset << 1) >> 1;
+      delay_offset = ((0x7fffffff & (now - active_pulser->desired_end_time)) << 1) >> 1;
+      delay -= delay_offset;
+      delay += offset;
+      //dbg_printf("%d(et %d diff %d): Delay was %d us, offset = %d, delay_offset = %d, new delay = %d, range=%d..%d\n", 
+      //           now, active_pulser->desired_end_time, now - active_pulser->desired_end_time, 
+      //           entry->delay, offset, delay_offset, delay, entry->delay_min, entry->delay_max);
       if (delay < entry->delay_min) {
-        active_pulser->next_adjust = entry->delay_min - delay;
+        // we can't delay as little as 'delay', so we need to adjust
+        // the next period as well.
+        active_pulser->next_adjust = (entry->delay - entry->delay_min) + offset;
         delay = entry->delay_min;
       } else if (delay > entry->delay_max) {
-        active_pulser->next_adjust = entry->delay_max - delay;
+        // we can't delay as much as 'delay', so we need to adjust
+        // the next period as well.
+        active_pulser->next_adjust = (entry->delay - entry->delay_max) + offset;
         delay = entry->delay_max;
       }
     }
 
-    active_pulser->expected_end_time += delay;
+    active_pulser->desired_end_time += delay + delay_offset;
+    active_pulser->expected_end_time = system_get_time() + delay;
   } while (delay < 3);
   
+  if (delay > 1200000) {
+    active_pulser->pending_delay = delay - 1000000;
+    delay = 1000000;
+  }
   platform_hw_timer_arm_us(TIMER_OWNER, delay);
 }
 
