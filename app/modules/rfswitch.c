@@ -28,6 +28,8 @@ typedef struct Protocol {
   HighLow one;
   /** @brief if true inverts the high and low logic levels in the HighLow structs */
   bool invertedSignal;
+  int frameStartStop;       // 0=none, 1=START, 2=STOP, 3=BOTH
+  bool invertStartStop;
 } Protocol;
 
 
@@ -51,13 +53,33 @@ typedef struct Protocol {
  * These are combined to form Tri-State bits when sending or receiving codes.
  */
 static const Protocol proto[] = {
-  { 350, {  1, 31 }, {  1,  3 }, {  3,  1 }, false },    // protocol 1
-  { 650, {  1, 10 }, {  1,  2 }, {  2,  1 }, false },    // protocol 2
-  { 100, { 30, 71 }, {  4, 11 }, {  9,  6 }, false },    // protocol 3
-  { 380, {  1,  6 }, {  1,  3 }, {  3,  1 }, false },    // protocol 4
-  { 500, {  6, 14 }, {  1,  2 }, {  2,  1 }, false },    // protocol 5
-  { 450, { 23,  1 }, {  1,  2 }, {  2,  1 }, true }      // protocol 6 (HT6P20B)
+  { 350, {  1, 31 }, {  1,  3 }, {  3,  1 }, false, 0, false },    // protocol 1
+  { 650, {  1, 10 }, {  1,  2 }, {  2,  1 }, false, 0, false },    // protocol 2
+  { 100, { 30, 71 }, {  4, 11 }, {  9,  6 }, false, 0, false },    // protocol 3
+  { 380, {  1,  6 }, {  1,  3 }, {  3,  1 }, false, 0, false },    // protocol 4
+  { 500, {  6, 14 }, {  1,  2 }, {  2,  1 }, false, 0, false },    // protocol 5
+  { 450, { 23,  1 }, {  1,  2 }, {  2,  1 }, true,  0, false }     // protocol 6 (HT6P20B)
 };
+
+Protocol custom = { 350, {  1, 31 }, {  1,  3 }, {  3,  1 }, false, false };  // Defaults to same as protocol 1
+
+/**
+ * Set custom protocol (id=0)
+ */
+static int rfswitch_setcustom( lua_State *L )
+{
+  custom.pulseLength = luaL_checkinteger( L, 1 );
+  custom.syncFactor.high = luaL_checkinteger( L, 2 );
+  custom.syncFactor.low = luaL_checkinteger( L, 3 );
+  custom.zero.high = luaL_checkinteger( L, 4 );
+  custom.zero.low = luaL_checkinteger( L, 5 );
+  custom.one.high = luaL_checkinteger( L, 6 );
+  custom.one.low = luaL_checkinteger( L, 7 );
+  custom.invertedSignal = lua_toboolean( L, 8 );
+  custom.frameStartStop = luaL_optinteger( L, 9, 0 );
+  custom.invertStartStop = lua_toboolean( L, 10  );
+  return 0;
+}
 
 /**
  * Transmit a single high-low pulse.
@@ -76,18 +98,24 @@ void transmit(HighLow pulses, bool invertedSignal, int pulseLength, int pin) {
  */
 void send(unsigned long protocol_id, unsigned long pulse_length, unsigned long repeat, unsigned long pin, unsigned long value, unsigned int length) {
   platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
-  Protocol p = proto[protocol_id-1];
+  Protocol p = custom;
+  if(protocol_id > 0) proto[protocol_id-1];
   for (int nRepeat = 0; nRepeat < repeat; nRepeat++) {
+
+    if((p.frameStartStop & 1) > 0) transmit(p.invertStartStop ? p.one : p.zero, p.invertedSignal, pulse_length, pin);
+
     for (int i = length-1; i >= 0; i--) {
       if (value & (1L << i))
         transmit(p.one, p.invertedSignal, pulse_length, pin);
       else
         transmit(p.zero, p.invertedSignal, pulse_length, pin);
     }
+    if((p.frameStartStop & 2) > 0) transmit(p.invertStartStop ? p.one : p.zero, p.invertedSignal, pulse_length, pin);
+
     transmit(p.syncFactor, p.invertedSignal, pulse_length, pin);
   }
+  platform_gpio_write(pin, 0);      // If we leave gpio 0 high on last transmit, we flood the rf band (so we should always set low this after sending waveforms)
 }
-
 
 static int rfswitch_send( lua_State *L )
 {
@@ -105,6 +133,7 @@ static int rfswitch_send( lua_State *L )
 static const LUA_REG_TYPE rfswitch_map[] =
 {
   { LSTRKEY( "send" ),       LFUNCVAL( rfswitch_send ) },
+  { LSTRKEY( "setcustom" ),  LFUNCVAL( rfswitch_setcustom ) },
   { LNILKEY, LNILVAL }
 };
 
