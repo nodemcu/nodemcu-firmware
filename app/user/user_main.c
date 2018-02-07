@@ -150,8 +150,12 @@ void nodemcu_init(void)
         return;
     }
 
+#if 0
+// espconn_secure_set_size() is not effective
+// see comments for MBEDTLS_SSL_MAX_CONTENT_LEN in user_mbedtls.h
 #if defined ( CLIENT_SSL_ENABLE ) && defined ( SSL_BUFFER_SIZE )
     espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
+#endif
 #endif
 
 #ifdef BUILD_SPIFFS
