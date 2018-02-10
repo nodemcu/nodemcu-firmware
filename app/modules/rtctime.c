@@ -167,6 +167,15 @@ static void do_sleep_opt (lua_State *L, int idx)
   }
 }
 
+// rtctime.adjust_delta (usec)
+static int rtctime_adjust_delta (lua_State *L)
+{
+  uint32_t us = luaL_checknumber (L, 1);
+  lua_pushnumber(L, rtc_time_adjust_delta_by_rate(us));
+  return 1;
+}
+
+
 // rtctime.dsleep (usec, option)
 static int rtctime_dsleep (lua_State *L)
 {
@@ -222,6 +231,7 @@ static int rtctime_epoch2cal (lua_State *L)
 static const LUA_REG_TYPE rtctime_map[] = {
   { LSTRKEY("set"),            LFUNCVAL(rtctime_set) },
   { LSTRKEY("get"),            LFUNCVAL(rtctime_get) },
+  { LSTRKEY("adjust_delta"),   LFUNCVAL(rtctime_adjust_delta) },
   { LSTRKEY("dsleep"),         LFUNCVAL(rtctime_dsleep)  },
   { LSTRKEY("dsleep_aligned"), LFUNCVAL(rtctime_dsleep_aligned) },
   { LSTRKEY("epoch2cal"),      LFUNCVAL(rtctime_epoch2cal) },

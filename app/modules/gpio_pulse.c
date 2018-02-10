@@ -33,6 +33,7 @@ typedef struct {
   uint32_t entry_count;
   volatile uint32_t steps;
   volatile uint16_t entry_pos;
+  volatile uint16_t active_pos;
   volatile int16_t stop_pos;  // -1 is stop nowhere, -2 is stop everywhere, otherwise is stop point
   pulse_entry_t *entry;
   volatile uint32_t expected_end_time;
@@ -49,21 +50,21 @@ static task_handle_t tasknumber;
 static int gpio_pulse_push_state(lua_State *L, pulse_t *pulser) {
   uint32_t now;
   uint32_t expected_end_time;
-  uint32_t entry_pos;
+  uint32_t active_pos;
   uint32_t steps;
   do {
     now = 0x7FFFFFFF & system_get_time();
     expected_end_time = pulser->expected_end_time;
-    entry_pos = pulser->entry_pos;
+    active_pos = pulser->active_pos;
     steps = pulser->steps;
   } while (expected_end_time != pulser->expected_end_time ||
-           entry_pos != pulser->entry_pos ||
+           active_pos != pulser->active_pos ||
            steps != pulser->steps);
 
-  if (entry_pos >= pulser->entry_count) {
+  if (active_pos >= pulser->entry_count) {
     lua_pushnil(L);
   } else {
-    lua_pushinteger(L, entry_pos + 1);    // Lua is 1 offset
+    lua_pushinteger(L, active_pos + 1);    // Lua is 1 offset
   }
   lua_pushinteger(L, steps);
 
@@ -289,6 +290,8 @@ static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
   }
 
   do {
+    active_pulser->active_pos = active_pulser->entry_pos;
+
     if (!active_pulser || active_pulser->entry_pos >= active_pulser->entry_count) {
       if (active_pulser) {
         active_pulser->steps++;
@@ -401,6 +404,7 @@ static int gpio_pulse_start(lua_State *L) {
     pulser->entry[i].count_left = 0;
   }
   pulser->entry_pos = 0;
+  pulser->active_pos = 0;
   pulser->steps = 0;
   pulser->stop_pos = -1;
   pulser->next_adjust = initial_adjust;
