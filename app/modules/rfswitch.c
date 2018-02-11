@@ -99,7 +99,7 @@ void transmit(HighLow pulses, bool invertedSignal, int pulseLength, int pin) {
 void send(unsigned long protocol_id, unsigned long pulse_length, unsigned long repeat, unsigned long pin, unsigned long value, unsigned int length) {
   platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT);
   Protocol p = custom;
-  if(protocol_id > 0) proto[protocol_id-1];
+  if(protocol_id > 0) p = proto[protocol_id-1];
   for (int nRepeat = 0; nRepeat < repeat; nRepeat++) {
 
     if((p.frameStartStop & 1) > 0) transmit(p.invertStartStop ? p.one : p.zero, p.invertedSignal, pulse_length, pin);
