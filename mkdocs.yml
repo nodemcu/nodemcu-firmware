@@ -18,8 +18,6 @@ extra_css:
 extra_javascript:
 - js/extra.js
 
-site_favicon: img/favicon.png
-
 pages:
 - Overview: 'index.md'
 - English:
