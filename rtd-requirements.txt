@@ -1,0 +1,7 @@
+#################################################################
+# This file is configured in RTD -> Admin -> Advanced Settings! #
+#################################################################
+# RTD - MkDocs integration is broken for
+# - MkDocs >= 0.17 due to in-site search failures: https://github.com/rtfd/readthedocs.org/issues/3174
+# - MkDocs >= 0.16 due to stuck fly-out menu: https://groups.google.com/d/msg/mkdocs/v7AVbeB105w/FIlE_n2-AgAJ
+# mkdocs >= 0.16.3, < 0.17
