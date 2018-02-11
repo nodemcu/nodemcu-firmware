@@ -346,3 +346,24 @@ loops.
 pulser:adjust(177)
 ```
 
+## gpio.pulse:update
+
+This can change the contents of a particular step in the output program. This can be used to adjust the delay times, or even the pin changes. This cannot
+be used to remove entries or add new entries.
+
+#### Syntax
+`pulser:update(entrynum, entrytable)`
+
+#### Parameters
+- `entrynum` is the number of the entry in the original pulse sequence definition. The first entry is numbered 1.
+- `entrytable` is a table containing the same keys as for `gpio.pulse.build`
+
+#### Returns
+Nothing
+
+
+ Example
+```lua
+pulser:update(1, { delay=1000 })
+```
+
