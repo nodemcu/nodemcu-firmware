@@ -33,6 +33,7 @@ pages:
     - Support: 'en/support.md'
     - Modules:
         - 'adc':          'en/modules/adc.md'
+        - 'bh1750':       'en/modules/bh1750.md'
         - 'bit':          'en/modules/bit.md'
         - 'bthci':        'en/modules/bthci.md'
         - 'can':          'en/modules/can.md'

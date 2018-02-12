@@ -226,6 +226,28 @@ int platform_dht_read( uint8_t gpio_num, uint8_t wakeup_ms, uint8_t *data );
 
 
 // *****************************************************************************
+// BH1750 platform interface
+#define PLATFORM_BH1750_DEFAULT_SENSITIVITY  69
+
+#define PLATFORM_BH1750_POWER_DOWN  0x00
+#define PLATFORM_BH1750_MIN_SENSITIVITY  31
+#define PLATFORM_BH1750_MAX_SENSITIVITY  254
+
+typedef enum {
+  PLATFORM_BH1750_CONTINUOUS_AUTO = 0,
+  PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE  = 0x10,
+  PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2 = 0x11,
+  PLATFORM_BH1750_CONTINUOUS_LOW_RES_MODE = 0x13,
+  PLATFORM_BH1750_ONE_TIME_HIGH_RES_MODE = 0x20,
+  PLATFORM_BH1750_ONE_TIME_HIGH_RES_MODE_2 = 0x21,
+  PLATFORM_BH1750_ONE_TIME_LOW_RES_MODE = 0x23,
+} platform_bh1750_mode_t;
+
+void platform_bh1750_power_down();
+void platform_bh1750_setup( platform_bh1750_mode_t mode, uint8_t sensitivity );
+uint32_t platform_bh1750_read();
+
+// *****************************************************************************
 // WS2812 platform interface
 
 void platform_ws2812_init( void );

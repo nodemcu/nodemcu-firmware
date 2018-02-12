@@ -54,6 +54,12 @@ config LUA_MODULE_ADC
       Includes the adc module. This module provides access to the
       adc1 hardware.
 
+config LUA_MODULE_BH1750
+  bool "BH1750 module"
+  default "n"
+  help
+      Includes the bh1750 module.
+
 config LUA_MODULE_BIT
   bool "Bit module"
   default "n"
