@@ -41,7 +41,7 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 
 Source: [https://github.com/marcelstoer/nodemcu-pyflasher](https://github.com/marcelstoer/nodemcu-pyflasher)
 
-Supported platforms: anything that runs Python, runnable .exe available for Windows
+Supported platforms: anything that runs Python, runnable .exe available for Windows and .dmg for macOS
 
 Disclaimer: the availability of [NodeMCU PyFlasher was announced on the NodeMCU Facebook page](https://www.facebook.com/NodeMCU/posts/663197460515251) but it is not an official offering of the current NodeMCU firmware team.
 
