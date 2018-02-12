@@ -38,6 +38,7 @@ pages:
         - 'adxl345': 'en/modules/adxl345.md'
         - 'am2320': 'en/modules/am2320.md'
         - 'apa102': 'en/modules/apa102.md'
+        - 'bh1750': 'en/modules/bh1750.md'
         - 'bit': 'en/modules/bit.md'
         - 'bloom' : 'en/modules/bloom.md'
         - 'bme280': 'en/modules/bme280.md'
