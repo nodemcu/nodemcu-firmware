@@ -77,10 +77,6 @@ static int gpio_pulse_push_state(lua_State *L, pulse_t *pulser) {
 static int gpio_pulse_getstate(lua_State *L) {
   pulse_t *pulser = luaL_checkudata(L, 1, "gpio.pulse");
 
-  if (pulser != active_pulser) {
-    return 0;
-  }
-
   return gpio_pulse_push_state(L, pulser);
 }
 

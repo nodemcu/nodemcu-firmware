@@ -273,7 +273,7 @@ loops.
 
 #### Example
 ```lua
-pos, steps, offset, new = pulser:getstate()
+pos, steps, offset, now = pulser:getstate()
 print (pos, steps, offset, now)
 ```
 
