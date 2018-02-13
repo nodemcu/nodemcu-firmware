@@ -41,6 +41,7 @@ pages:
         - 'bit': 'en/modules/bit.md'
         - 'bloom' : 'en/modules/bloom.md'
         - 'bme280': 'en/modules/bme280.md'
+        - 'bme680': 'en/modules/bme680.md'
         - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'coap': 'en/modules/coap.md'
