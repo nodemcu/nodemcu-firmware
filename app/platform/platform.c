@@ -247,6 +247,10 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
           }
           // We re-enable the interrupt when we execute the callback (if level)
         }
+      } else {
+        // this is an unexpected interrupt so shut it off for now
+        gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
       }
     }
   }
