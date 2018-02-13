@@ -1,5 +1,6 @@
 sdk/
 cache/
+.ccache/
 user_config.h
 server-ca.crt
 
