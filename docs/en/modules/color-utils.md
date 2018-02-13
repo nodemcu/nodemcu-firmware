@@ -1,10 +1,9 @@
-# COLOR_UTILS Module
+# color utils Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
 | 2017-12-30 | [Konrad Huebner](https://github.com/skycoders) | [Konrad Huebner](https://github.com/skycoders) | [color_utils.c](../../../app/modules/color_utils.c)|
 
-The color_utils module provides some basic color transformations useful for color LEDs. It is used by the WS2812_EFFECTS module.
-
+This module provides basic color transformations useful for color LEDs. 
 
 ## color_utils.hsv2grb()
 Convert HSV color to GRB color.
@@ -13,9 +12,9 @@ Convert HSV color to GRB color.
 `color_utils.hsv2grb(hue, saturation, value)`
 
 #### Parameters
-- `hue` is the hue value, between 0 and 360.
-- `saturation` is the saturation value, between 0 and 255.
-- `value` is the value value, between 0 and 255.
+- `hue` is the hue value, between 0 and 360
+- `saturation` is the saturation value, between 0 and 255
+- `value` is the value value, between 0 and 255
 
 #### Returns
 `green`, `red`, `blue` as values between 0 and 255
@@ -27,9 +26,9 @@ Convert HSV color to GRB color and explicitly return a white value. This can be 
 `color_utils.hsv2grbw(hue, saturation, value)`
 
 #### Parameters
-- `hue` is the hue value, between 0 and 360.
-- `saturation` is the saturation value, between 0 and 255.
-- `value` is the value value, between 0 and 255.
+- `hue` is the hue value, between 0 and 360
+- `saturation` is the saturation value, between 0 and 255
+- `value` is the value value, between 0 and 255
 
 #### Returns
 `green`, `red`, `blue`, `white` as values between 0 and 255
@@ -41,9 +40,9 @@ Convert GRB color to HSV color.
 `color_utils.grb2hsv(green, red, blue)`
 
 #### Parameters
-- `green` is the green value, between 0 and 255.
-- `red` is the red value, between 0 and 255.
-- `blue` is the blue value, between 0 and 255.
+- `green` is the green value, between 0 and 255
+- `red` is the red value, between 0 and 255
+- `blue` is the blue value, between 0 and 255
 
 #### Returns
 `hue`, `saturation`, `value` as values between 0 and 360, respective 0 and 255
@@ -58,4 +57,4 @@ The color wheel function makes use of the HSV color space and calculates colors 
 - `angle` is the angle on the color circle, between 0 and 359
 
 #### Returns
-`green`, `red`, `blue` as values between 0 and 255.
+`green`, `red`, `blue` as values between 0 and 255

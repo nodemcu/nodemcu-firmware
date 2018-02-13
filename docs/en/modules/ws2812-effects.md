@@ -1,11 +1,15 @@
-# WS2812_EFFECTS Module
+# WS2812 effects Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2017-11-01 | [Konrad Huebner](https://github.com/skycoders) | [ws2812_effects.c](../../../app/modules/ws2812_effects.c)|
+| 2017-11-01 | [Konrad Huebner](https://github.com/skycoders) | [Konrad Huebner](https://github.com/skycoders) | [ws2812_effects.c](../../../app/modules/ws2812_effects.c)|
 
-The ws2812_effects module provides effects based on the ws2812 library. Some effects are inspired by / based on the [WS2812FX Library](https://github.com/kitesurfer1404/WS2812FX) but have been adopted to the specifics of the ws2812 library. The effects library works based on a buffer created through the ws2812 library and performs the operations on this buffer.
+This module provides effects based on the [WS2812 library](ws2812.md). Some effects are inspired by / based on the [WS2812FX Library](https://github.com/kitesurfer1404/WS2812FX) but have been adopted to the specifics of the ws2812 library. The effects library works based on a buffer created through the ws2812 library and performs the operations on this buffer.
 
-ATTENTION: Dual mode is currently not supported for effects.
+Note that dual mode is currently not supported for effects.
+
+!!! caution
+
+    This module depends on the [color utils module](color-utils.md). Things **will** fail if that module is missing in the firmware!
 
 #### Example usage
 ```lua
@@ -60,7 +64,7 @@ Stop the animation effect.
 
 
 ## ws2812_effects.set_brightness()
-Set the brightness
+Set the brightness.
 
 #### Syntax
 `ws2812_effects.set_brightness(brightness)`
@@ -72,7 +76,7 @@ Set the brightness
 `nil`
 
 ## ws2812_effects.set_color()
-Set the color
+Set the color.
 
 #### Syntax
 `ws2812_effects.set_color(g, r, b, [w])`
@@ -87,7 +91,7 @@ Set the color
 `nil`
 
 ## ws2812_effects.set_speed()
-Set the speed
+Set the speed.
 
 #### Syntax
 `ws2812_effects.set_speed(speed)`
@@ -100,7 +104,7 @@ Set the speed
 
 
 ## ws2812_effects.get_speed()
-Get current speed
+Get current speed.
 
 #### Syntax
 `ws2812_effects.get_speed()`
@@ -125,7 +129,7 @@ Set the delay between two effect steps in milliseconds.
 `nil`
 
 ## ws2812_effects.get_delay()
-Get current delay
+Get current delay.
 
 #### Syntax
 `ws2812_effects.get_delay()`
