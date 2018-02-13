@@ -1,4 +1,4 @@
-#ifndef __MODULE_H__
+#if !defined(__MODULE_H_) && !defined(LUA_CROSS_COMPILER)
 #define __MODULE_H__
 
 #include "user_modules.h"

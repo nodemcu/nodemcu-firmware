@@ -12,6 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
+SUBDIRS = luac_cross
 GEN_LIBS = liblua.a
 endif
 

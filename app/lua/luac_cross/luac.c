@@ -11,6 +11,7 @@
 #include C_HEADER_STDIO
 #include C_HEADER_STDLIB
 #include C_HEADER_STRING
+#include <time.h>
 
 #define luac_c
 #define LUA_CORE
@@ -31,17 +32,21 @@
 
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
-static int stripping=0;			/* strip debug information? */
+static int stripping=0;	  /* strip debug information? */
+static int flash=0;	  		/* output flash image */
+static int lookup=0;	  		/* output lookup-style master combination header */
 static char Output[]={ OUTPUT };	/* default output file name */
 static const char* output=Output;	/* actual output file name */
 static const char* progname=PROGNAME;	/* actual program name */
 static DumpTargetInfo target;
 
-static void fatal(const char* message)
+void luac_fatal(const char* message)
 {
  fprintf(stderr,"%s: %s\n",progname,message);
  exit(EXIT_FAILURE);
 }
+#define fatal(s) luac_fatal(s)
+
 
 static void cannot(const char* what)
 {
@@ -61,12 +66,11 @@ static void usage(const char* message)
  "  -        process stdin\n"
  "  -l       list\n"
  "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
+ "  -f       output a flash image file\n"
+ "  -i       generate lookup combination master (default with option -f)\n" 
  "  -p       parse only\n"
  "  -s       strip debug information\n"
  "  -v       show version information\n"
- "  -cci bits       cross-compile with given integer size\n"
- "  -ccn type bits  cross-compile with given lua_Number type and size\n"
- "  -cce endian     cross-compile with given endianness ('big' or 'little')\n"
  "  --       stop handling options\n",
  progname,Output);
  exit(EXIT_FAILURE);
@@ -91,6 +95,13 @@ static int doargs(int argc, char* argv[])
   }
   else if (IS("-"))			/* end of options; use stdin */
    break;
+  else if (IS("-f"))			/* Flash image file */
+  {
+   flash=1;
+   lookup=1;
+  }
+  else if (IS("-i"))			/* lookup */
+   lookup = 1;
   else if (IS("-l"))			/* list */
    ++listing;
   else if (IS("-o"))			/* output file */
@@ -99,42 +110,17 @@ static int doargs(int argc, char* argv[])
    if (output==NULL || *output==0) usage(LUA_QL("-o") " needs argument");
    if (IS("-")) output=NULL;
   }
+
   else if (IS("-p"))			/* parse only */
-   dumping=0;
+   dumping=0;   
   else if (IS("-s"))			/* strip debug information */
    stripping=1;
   else if (IS("-v"))			/* show version */
    ++version;
-  else if (IS("-cci")) /* target integer size */
-  {
-   int s = target.sizeof_int = atoi(argv[++i])/8;
-   if (!(s==1 || s==2 || s==4)) fatal(LUA_QL("-cci") " must be 8, 16 or 32");
-  }
-  else if (IS("-ccn")) /* target lua_Number type and size */
-  {
-   const char *type=argv[++i];
-   if (strcmp(type,"int")==0) target.lua_Number_integral=1;
-   else if (strcmp(type,"float")==0) target.lua_Number_integral=0;
-   else if (strcmp(type,"float_arm")==0)
-   {
-     target.lua_Number_integral=0;
-     target.is_arm_fpa=1;
-   }
-   else fatal(LUA_QL("-ccn") " type must be " LUA_QL("int") " or " LUA_QL("float") " or " LUA_QL("float_arm"));
-   int s = target.sizeof_lua_Number = atoi(argv[++i])/8;
-   if (target.lua_Number_integral && !(s==1 || s==2 || s==4)) fatal(LUA_QL("-ccn") " size must be 8, 16, or 32 for int");
-   if (!target.lua_Number_integral && !(s==4 || s==8)) fatal(LUA_QL("-ccn") " size must be 32 or 64 for float");
-  }
-  else if (IS("-cce")) /* target endianness */
-  {
-   const char *val=argv[++i];
-   if (strcmp(val,"big")==0) target.little_endian=0;
-   else if (strcmp(val,"little")==0) target.little_endian=1;
-   else fatal(LUA_QL("-cce") " must be " LUA_QL("big") " or " LUA_QL("little"));
-  }
   else					/* unknown option */
-   usage(argv[i]);
+  usage(argv[i]);
  }
+
  if (i==argc && (listing || !dumping))
  {
   dumping=0;
@@ -150,30 +136,87 @@ static int doargs(int argc, char* argv[])
 
 #define toproto(L,i) (clvalue(L->top+(i))->l.p)
 
-static const Proto* combine(lua_State* L, int n)
+static TString *corename(lua_State *L, const TString *filename) 
 {
- if (n==1)
+ const char *fn = getstr(filename)+1;
+ const char *s = strrchr(fn, '/');
+ s = s ? s + 1 : fn;
+ while (*s == '.') s++;
+ const char *e = strchr(s, '.');
+ int l = e ? e - s: strlen(s);
+ return l ? luaS_newlstr (L, s, l) : luaS_new(L, fn);
+} 
+/*
+ * If the luac command line includes multiple files or has the -f option 
+ * then luac generates a main function to reference all sub-main prototypes.
+ * This is one of two types:
+ *   Type 0   The standard luac combination main
+ *   Type 1   A lookup wrapper that facilitates indexing into the gernated protos 
+ */
+static const Proto* combine(lua_State* L, int n, int type)
+{
+ if (n==1 && type == 0)
   return toproto(L,-1);
  else
  {
-  int i,pc;
+  int i,pc,stacksize;
+  Instruction *code;
   Proto* f=luaF_newproto(L);
   setptvalue2s(L,L->top,f); incr_top(L);
   f->source=luaS_newliteral(L,"=(" PROGNAME ")");
-  f->maxstacksize=1;
-  pc=2*n+1;
-  f->code=luaM_newvector(L,pc,Instruction);
-  f->sizecode=pc;
   f->p=luaM_newvector(L,n,Proto*);
   f->sizep=n;
+  for (i=0; i<n; i++) f->p[i]=toproto(L,i-n-1);
   pc=0;
-  for (i=0; i<n; i++)
+
+  if (type == 0)
   {
-   f->p[i]=toproto(L,i-n-1);
-   f->code[pc++]=CREATE_ABx(OP_CLOSURE,0,i);
-   f->code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
+  /*
+   * Type 0 is as per the standard luac, which is just a main routine which 
+   * invokes all of the compiled functions sequentially.  This is fine if 
+   * they are self registering modules, but useless otherwise.
+   */
+   stacksize = 1;
+   code=luaM_newvector(L,2*n+1,Instruction);
+   for (i=0; i<n; i++)
+   {
+    code[pc++]=CREATE_ABx(OP_CLOSURE,0,i);
+    code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
+   }
+   code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
   }
-  f->code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
+  else
+  {
+  /*
+   * The Type 1 main() is a lookup which takes a single argument, the name to  
+   * be resolved. If this matches root name of one of the compiled files then
+   * a closure to this file main is returned.  If the name is "list": then the
+   * list of root names is returned, else a nil return.
+   */
+   lua_assert(n<LFIELDS_PER_FLUSH);
+   stacksize = n+2;
+   code=luaM_newvector(L,5*n+3  ,Instruction);
+   f->k=luaM_newvector(L,n+1,TValue);
+   f->sizek=n+1;
+   setnvalue(f->k, (lua_Number) time(NULL));
+   for (i=0; i<n; i++)  
+   {
+    /* if arg1 == FnameA then return function (...) -- funcA -- end end */
+    setsvalue2n(L,f->k+i+1,corename(L, f->p[i]->source));
+    code[pc++]=CREATE_ABC(OP_EQ,0,0,RKASK(i+1)); 
+    code[pc++]=CREATE_ABx(OP_JMP,0,MAXARG_sBx+2);
+    code[pc++]=CREATE_ABx(OP_CLOSURE,1,i);
+    code[pc++]=CREATE_ABC(OP_RETURN,1,2,0);
+   }
+   for (i=0; i<=n; i++) code[pc++]=CREATE_ABx(OP_LOADK,i+1,i);
+   /* should be a block loop */
+   code[pc++]=CREATE_ABC(OP_RETURN,1,2+n,0);
+   code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
+  }
+  f->numparams=1;
+  f->maxstacksize=stacksize;
+  f->code=code;
+  f->sizecode=pc;
   return f;
  }
 }
@@ -189,6 +232,8 @@ struct Smain {
  char** argv;
 };
 
+extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w, void* data, int strip);
+
 static int pmain(lua_State* L)
 {
  struct Smain* s = (struct Smain*)lua_touserdata(L, 1);
@@ -202,14 +247,21 @@ static int pmain(lua_State* L)
   const char* filename=IS("-") ? NULL : argv[i];
   if (luaL_loadfile(L,filename)!=0) fatal(lua_tostring(L,-1));
  }
- f=combine(L,argc);
+ f=combine(L,argc,lookup);
  if (listing) luaU_print(f,listing>1);
  if (dumping)
  {
+  int result;
   FILE* D= (output==NULL) ? stdout : fopen(output,"wb");
   if (D==NULL) cannot("open");
   lua_lock(L);
-  int result=luaU_dump_crosscompile(L,f,writer,D,stripping,target);
+  if (flash) 
+  {
+    result=dumpToFlashImage(L,f,writer, D, stripping);
+  } else
+  {
+    result=luaU_dump_crosscompile(L,f,writer,D,stripping,target);
+  }  
   lua_unlock(L);
   if (result==LUA_ERR_CC_INTOVERFLOW) fatal("value too big or small for target integer type");
   if (result==LUA_ERR_CC_NOTINTEGER) fatal("target lua_Number is integral but fractional value found");

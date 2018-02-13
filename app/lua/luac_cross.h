@@ -56,9 +56,10 @@
 #define c_strrchr strrchr
 #define c_strstr strstr
 double	c_strtod(const char *__n, char **__end_PTR);
-#define c_strtoul strtoul
 #define c_ungetc ungetc
-
+#define c_strtol strtol
+#define c_strtoul strtoul
+#define dbg_printf printf
 #else
 
 #define C_HEADER_ASSERT "c_assert.h"

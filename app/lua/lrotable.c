@@ -18,6 +18,7 @@ extern const luaR_table lua_rotable[];
 
 /* Find a global "read only table" in the constant lua_rotable array */
 void* luaR_findglobal(const char *name, unsigned len) {
+#ifndef LUA_CROSS_COMPILER
   unsigned i;
 
   if (c_strlen(name) > LUA_MAX_ROTABLE_NAME)
@@ -26,6 +27,7 @@ void* luaR_findglobal(const char *name, unsigned len) {
     if (*lua_rotable[i].name != '\0' && c_strlen(lua_rotable[i].name) == len && !c_strncmp(lua_rotable[i].name, name, len)) {
       return (void*)(lua_rotable[i].pentries);
     }
+#endif
   return NULL;
 }
 
