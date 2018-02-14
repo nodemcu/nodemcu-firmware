@@ -142,8 +142,8 @@ static void fill_entry_from_table(lua_State *L, pulse_entry_t *entry) {
   while (lua_next(L, -2)) {
     // stack now contains: -1 => value; -2 => key; -3 => table
     if (lua_type(L, -2) == LUA_TNUMBER) {
-      int pin = lua_tonumber(L, -2);
-      int value = lua_tonumber(L, -1);
+      int pin = luaL_checkint(L, -2);
+      int value = luaL_checkint(L, -1);
 
       if (pin < 0 || pin >= GPIO_PIN_NUM) {
         luaL_error(L, "pin number %d must be in range 0 .. %d", pin, GPIO_PIN_NUM - 1);
@@ -155,27 +155,27 @@ static void fill_entry_from_table(lua_State *L, pulse_entry_t *entry) {
         entry->gpio_clr |= BIT(pin_num[pin]);
       }
     } else {
-      const char *str = lua_tostring(L, -2);
+      const char *str = luaL_checkstring(L, -2);
 
       if (strcmp(str, "delay") == 0) {
-        entry->delay = lua_tonumber(L, -1);
+        entry->delay = luaL_checkint(L, -1);
         if (entry->delay < 0 || entry->delay > DELAY_LIMIT) {
           luaL_error(L, "delay of %d must be in the range 0 .. " xstr(DELAY_LIMIT) " microseconds", entry->delay);
         }
       } else if (strcmp(str, "min") == 0) {
-        entry->delay_min = lua_tonumber(L, -1);
+        entry->delay_min = luaL_checkint(L, -1);
         if (entry->delay_min < 0 || entry->delay_min > DELAY_LIMIT) {
           luaL_error(L, "delay minimum of %d must be in the range 0 .. " xstr(DELAY_LIMIT) " microseconds", entry->delay_min);
         }
       } else if (strcmp(str, "max") == 0) {
-        entry->delay_max = lua_tonumber(L, -1);
+        entry->delay_max = luaL_checkint(L, -1);
         if (entry->delay_max < 0 || entry->delay_max > DELAY_LIMIT) {
           luaL_error(L, "delay maximum of %d must be in the range 0 .. " xstr(DELAY_LIMIT) " microseconds", entry->delay_max);
         }
       } else if (strcmp(str, "count") == 0) {
-        entry->count = lua_tonumber(L, -1);
+        entry->count = luaL_checkint(L, -1);
       } else if (strcmp(str, "loop") == 0) {
-        entry->loop = lua_tonumber(L, -1);
+        entry->loop = luaL_checkint(L, -1);
       } else {
         luaL_error(L, "Unrecognized key found: %s", str);
       }
