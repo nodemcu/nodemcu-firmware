@@ -2,7 +2,8 @@
  * This module, when enabled with the LUA_USE_MODULES_GDBSTUB define causes
  * the gdbstub code to be included and enabled to handle all fatal exceptions.
  * This allows you to use the lx106 gdb to catch the exception and then poke
- * around. You can't continue from an exception (at least not easily). 
+ * around. You can continue from a break, but attempting to continue from an 
+ * exception usually fails. 
  *
  * This should not be included in production builds as any exception will
  * put the nodemcu into a state where it is waiting for serial input and it has
@@ -41,8 +42,8 @@ static int lgdbstub_open(lua_State *L) {
 static const LUA_REG_TYPE gdbstub_map[] = {
   { LSTRKEY( "brk" ),    	LFUNCVAL( lgdbstub_break    ) },
   { LSTRKEY( "gdboutput" ),    	LFUNCVAL( lgdbstub_gdboutput) },
-
+  { LSTRKEY( "open" ),    	LFUNCVAL( lgdbstub_open) },
   { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(GDBSTUB, "gdbstub", gdbstub_map, lgdbstub_open);
+NODEMCU_MODULE(GDBSTUB, "gdbstub", gdbstub_map, NULL);

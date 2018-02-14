@@ -12,11 +12,19 @@
 // This adds the asserts in LUA. It also adds some useful extras to the
 // node module. This is all silent in normal operation and so can be enabled
 // without any harm (except for the code size increase and slight slowdown)
+// Either here for a global change or in the DEFINES variable in the relevant
+// Makefile for ony one subdirectory. If you want to use the remote GDB to 
+// handle breaks and failed assetions then enable DEVELOPMENT_USE GDB 
 //#define DEVELOPMENT_TOOLS
-
+//#define DEVELOPMENT_USE_GDB
 #ifdef DEVELOPMENT_TOOLS
+#if defined(LUA_CROSS_COMPILER) || !defined(DEVELOPMENT_USE_GDB)
 extern void luaL_assertfail(const char *file, int line, const char *message);
 #define lua_assert(x)    ((x) ? (void) 0 : luaL_assertfail(__FILE__, __LINE__, #x))
+#else
+extern void luaL_dbgbreak(void);
+#define lua_assert(x)    ((x) ? (void) 0 : luaL_dbgbreak())
+#endif
 #endif
 
 // This enables lots of debug output and changes the serial bit rate. This
