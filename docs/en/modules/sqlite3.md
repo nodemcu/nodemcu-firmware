@@ -12,3 +12,21 @@ For instruction on how to use this module or further documentation, please, refe
 This module is a stripped down version of SQLite, with every possible OMIT_\* configuration enable. The enabled OMIT_\* directives are available in the module's [Makefile](../../../app/sqlite3/Makefile).
 
 The SQLite3 module vfs layer integration with NodeMCU was developed by me.
+
+**Simple example**
+
+```lua
+db = sqlite3.open_memory()
+
+db:exec[[
+  CREATE TABLE test (id INTEGER PRIMARY KEY, content);
+
+  INSERT INTO test VALUES (NULL, 'Hello, World');
+  INSERT INTO test VALUES (NULL, 'Hello, Lua');
+  INSERT INTO test VALUES (NULL, 'Hello, Sqlite3')
+]]
+
+for row in db:nrows("SELECT * FROM test") do
+  print(row.id, row.content)
+end
+```
