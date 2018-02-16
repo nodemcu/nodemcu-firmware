@@ -210,27 +210,34 @@ This builds the `gpio.pulse` object from the supplied argument -- which is a tab
 #### Parameter
 `table` this is view as an array of instructions. Each instruction is represented by a table as follows:
 
-- All numeric keys are considered to be pin numbers. The values of each are the value to be set onto the respective GPIO line. For example `{ [1] = gpio.HIGH }` would set pin 1 to be high. Note this that is the pin number and *not* the GPIO number. Multiple pins can be
-set at the same time.
+- All numeric keys are considered to be pin numbers. The values of each are the value to be set onto the respective GPIO line. 
+For example `{ [1] = gpio.HIGH }` would set pin 1 to be high. 
+Note this that is the NodeMCU pin number and *not* the ESP8266 GPIO number. Multiple pins can be
+set at the same time. Note that any valid GPIO pin can be used, including pin 0.
 - `delay` specifies the number of microseconds after setting the pin values to wait until moving to the next state. The actual delay may be longer than this value depending on whether interrupts are enabled at the end time. The maximum value is 64,000,000 -- i.e. a bit more than a minute.
 - `min` and `max` can be used to specify (along with `delay`) that this time can be varied. If one time interval overruns, then the extra time will be deducted from a time period which has a `min` or `max` specified. The actual time can also be adjusted with the `:adjust` API below.
-- `count` and `loop` allow simple looping. When a state with `count` and `loop` is completed, the next state is at `loop` (provided that `count` has not decremented to zero). The first state is state 1.
+- `count` and `loop` allow simple looping. When a state with `count` and `loop` is completed, the next state is at `loop` (provided that `count` has not decremented to zero). The first state is state 1. The `loop` is rather like a goto instruction as it specifies the next instruction to be executed.
 
 #### Returns
 `gpio.pulse` object.
 
 #### Example
 ```lua
-gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
-gpio.mode(2,gpio.OUTPUT,gpio.PULLUP)
+gpio.mode(1, gpio.OUTPUT)
+gpio.mode(2, gpio.OUTPUT)
 
 pulser = gpio.pulse.build( {
-  { [1] = gpio.HIGH, [2] = gpio.LOW, delay=100000 },
-  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=100000, loop=1, count=100, min=90000, max=110000 }
+  { [1] = gpio.HIGH, [2] = gpio.LOW, delay=250000 },
+  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=250000, loop=1, count=20 min=240000, max=260000 }
 })
 
-```
+pulser:start(function() print ('done') end)
 
+```
+This will generate a square wave on pins 1 and 2, but they will be exactly out of phase. After 10 seconds, the sequence will end, with pin 2 being high.
+
+Note that you *must* set the pins into output mode (either gpio.OUTPUT or gpio.OPENDRAIN) before starting the output sequence, otherwise
+nothing will appear to happen.
 
 ## gpio.pulse:start
 

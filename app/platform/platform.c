@@ -105,6 +105,8 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
                    GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) |
                    GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE));      //enable open drain;
   }
+
+  GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pnum));
   ETS_GPIO_INTR_ENABLE();
 }
 
