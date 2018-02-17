@@ -200,6 +200,30 @@ RTC clock (that is itself synchronized with NTP).
 !!! Configuration
 This feature is only available if `LUA_USE_MODULES_GPIO_PULSE` is defined at build time.
 
+To make use of this feature, decide on the sort of pulse train that you need to generate -- hopefully it repeats a number of times.
+Decide on the number of GPIO pins that you will be using. Then draw up a chart of what you want to happen, and in what order. Then
+you can construct the table struct that you pass into `gpio.pulse.build`. For example, for the two out of phase square waves, you might do:
+
+Step | Pin 1 | Pin 2 | Duration (usecs) | Next Step
+---:|---|---|---:| --:
+1 | High | Low | 100,000 | 2
+2 | Low | High | 100,000 | *1*
+
+This would (when built and started) just output to Pin 1 and Pin 2 a 5Hz square wave with the pins being out of phase. The frequency will be
+slightly lower than 5Hz as this is software generated and interrupt masking can delay the move to the next step. To get much closer to 5Hz,
+you want to allow the duration of each step to vary slightly. This will then adjust the length of each step so that, overall, the output is
+at 5Hz.
+
+Step | Pin 1 | Pin 2 | Duration (usecs) | Range | Next Step
+---:|---|---|---:|---:| --:
+1 | High | Low | 100,000 | 90,000 - 110,000 | 2
+2 | Low | High | 100,000 | 90,000 - 110,000 | *1*
+
+When turning this into the table structure as described below, you don't need to specify anything
+special when the number of the next step is one more than the current step. When specifying an out of order
+step, you must specify how often you want this to be performed. A very large value can be used for roughly infinite.
+
+
 ## gpio.pulse.build
 
 This builds the `gpio.pulse` object from the supplied argument -- which is a table as described below.
