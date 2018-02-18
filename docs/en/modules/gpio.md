@@ -204,17 +204,19 @@ To make use of this feature, decide on the sort of pulse train that you need to 
 Decide on the number of GPIO pins that you will be using. Then draw up a chart of what you want to happen, and in what order. Then
 you can construct the table struct that you pass into `gpio.pulse.build`. For example, for the two out of phase square waves, you might do:
 
-Step | Pin 1 | Pin 2 | Duration (usecs) | Next Step
+Step | Pin 1 | Pin 2 | Duration (&#956;S) | Next Step
 ---:|---|---|---:| --:
 1 | High | Low | 100,000 | 2
 2 | Low | High | 100,000 | *1*
 
-This would (when built and started) just output to Pin 1 and Pin 2 a 5Hz square wave with the pins being out of phase. The frequency will be
+This would (when built and started) just runs step 1 (by setting the output pins as specified), and then after 100,000&#956;S, it changes to step 2i. This
+alters the output pins
+and then waits for 100,000&#956;S before going back to step 1. This has the effect of outputting to Pin 1 and Pin 2 a 5Hz square wave with the pins being out of phase. The frequency will be
 slightly lower than 5Hz as this is software generated and interrupt masking can delay the move to the next step. To get much closer to 5Hz,
 you want to allow the duration of each step to vary slightly. This will then adjust the length of each step so that, overall, the output is
 at 5Hz.
 
-Step | Pin 1 | Pin 2 | Duration (usecs) | Range | Next Step
+Step | Pin 1 | Pin 2 | Duration (&#956;S) | Range | Next Step
 ---:|---|---|---:|---:| --:
 1 | High | Low | 100,000 | 90,000 - 110,000 | 2
 2 | Low | High | 100,000 | 90,000 - 110,000 | *1*
