@@ -207,7 +207,7 @@ you can construct the table struct that you pass into `gpio.pulse.build`. For ex
 Step | Pin 1 | Pin 2 | Duration (&#956;S) | Next Step
 ---:|---|---|---:| --:
 1 | High | Low | 100,000 | 2
-2 | Low | High | 100,000 | *1*
+2 | Low | High | 100,000 | **1**
 
 This would (when built and started) just runs step 1 (by setting the output pins as specified), and then after 100,000&#956;S, it changes to step 2i. This
 alters the output pins
@@ -217,9 +217,9 @@ you want to allow the duration of each step to vary slightly. This will then adj
 at 5Hz.
 
 Step | Pin 1 | Pin 2 | Duration (&#956;S) | Range | Next Step
----:|---|---|---:|---:| --:
+---:|---|---|---:|:---:| --:
 1 | High | Low | 100,000 | 90,000 - 110,000 | 2
-2 | Low | High | 100,000 | 90,000 - 110,000 | *1*
+2 | Low | High | 100,000 | 90,000 - 110,000 | **1**
 
 When turning this into the table structure as described below, you don't need to specify anything
 special when the number of the next step is one more than the current step. When specifying an out of order
@@ -254,7 +254,7 @@ gpio.mode(2, gpio.OUTPUT)
 
 pulser = gpio.pulse.build( {
   { [1] = gpio.HIGH, [2] = gpio.LOW, delay=250000 },
-  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=250000, loop=1, count=20 min=240000, max=260000 }
+  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=250000, loop=1, count=20, min=240000, max=260000 }
 })
 
 pulser:start(function() print ('done') end)
