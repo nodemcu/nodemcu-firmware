@@ -78,7 +78,7 @@ do{\
 #define mem_malloc(s) ({const char *file = mem_debug_file; pvPortMalloc(s, file, __LINE__);})
 #endif
 #ifndef mem_calloc
-#define mem_calloc(s) ({const char *file = mem_debug_file; pvPortCalloc(s, file, __LINE__);})
+#define mem_calloc(l, s) ({const char *file = mem_debug_file; pvPortCalloc(l, s, file, __LINE__);})
 #endif
 #ifndef mem_realloc
 #define mem_realloc(p, s) ({const char *file = mem_debug_file; pvPortRealloc(p, s, file, __LINE__);})

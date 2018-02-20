@@ -15,6 +15,7 @@
 #include "mem.h"
 #include "lwip/ip_addr.h"
 #include "espconn.h"
+#include "sys/espconn_mbedtls.h"
 #include "lwip/err.h"
 #include "lwip/dns.h"
 

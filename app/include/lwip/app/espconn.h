@@ -1,6 +1,31 @@
+/*
+ * ESPRESSIF MIT License
+ *
+ * Copyright (c) 2016 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
+ *
+ * Permission is hereby granted for use on ESPRESSIF SYSTEMS ESP8266 only, in which case,
+ * it is free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
+ * to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
 #ifndef __ESPCONN_H__
 #define __ESPCONN_H__
 
+#include "lwip/err.h"
 #include "lwip/dns.h"
 #include "os_type.h"
 #include "lwip/app/espconn_buf.h"
@@ -37,8 +62,7 @@ typedef void (* espconn_reconnect_callback)(void *arg, sint8 err);
 #define ESPCONN_NODATA	   -17	 /* No data can be read	     */
 
 #define ESPCONN_HANDSHAKE  -28   /* ssl handshake failed	 */
-#define ESPCONN_RESP_TIMEOUT -29 /* ssl handshake no response*/
-#define ESPCONN_PROTO_MSG  -61   /* ssl application invalid	 */
+#define ESPCONN_SSL_INVALID_DATA  -61   /* ssl application invalid	 */
 
 #define ESPCONN_SSL			0x01
 #define ESPCONN_NORM		0x00
@@ -121,6 +145,7 @@ enum espconn_option{
 	ESPCONN_NODELAY = 0x02,
 	ESPCONN_COPY = 0x04,
 	ESPCONN_KEEPALIVE = 0x08,
+	ESPCONN_MANUALRECV = 0x10,
 	ESPCONN_END
 };
 
@@ -462,6 +487,17 @@ extern sint8 espconn_regist_sentcb(struct espconn *espconn, espconn_sent_callbac
 extern sint8 espconn_regist_write_finish(struct espconn *espconn, espconn_connect_callback write_finish_fn);
 
 /******************************************************************************
+ * FunctionName : espconn_send
+ * Description  : sent data for client or server
+ * Parameters   : espconn -- espconn to set for client or server
+ *                psent -- data to send
+ *                length -- length of data to send
+ * Returns      : none
+*******************************************************************************/
+extern sint8 espconn_send(struct espconn *espconn, uint8 *psent, uint16 length);
+
+
+/******************************************************************************
  * FunctionName : espconn_sent
  * Description  : sent data for client or server
  * Parameters   : espconn -- espconn to set for client or server
@@ -573,7 +609,163 @@ extern sint8 espconn_get_keepalive(struct espconn *espconn, uint8 level, void *o
  *                - ESPCONN_ARG: dns client not initialized or invalid hostname
 *******************************************************************************/
 
-extern sint8 espconn_gethostbyname(struct espconn *pespconn, const char *name, ip_addr_t *addr, dns_found_callback found);
+extern err_t espconn_gethostbyname(struct espconn *pespconn, const char *name, ip_addr_t *addr, dns_found_callback found);
+
+/******************************************************************************
+ * FunctionName : espconn_abort
+ * Description  : Forcely abort with host
+ * Parameters   : espconn -- the espconn used to connect with the host
+ * Returns      : result
+*******************************************************************************/
+
+extern sint8 espconn_abort(struct espconn *espconn);
+
+/******************************************************************************
+ * FunctionName : espconn_encry_connect
+ * Description  : The function given as connection
+ * Parameters   : espconn -- the espconn used to connect with the host
+ * Returns      : none
+*******************************************************************************/
+
+extern sint8 espconn_secure_connect(struct espconn *espconn);
+
+/******************************************************************************
+ * FunctionName : espconn_encry_disconnect
+ * Description  : The function given as the disconnection
+ * Parameters   : espconn -- the espconn used to disconnect with the host
+ * Returns      : none
+*******************************************************************************/
+
+extern sint8 espconn_secure_disconnect(struct espconn *espconn);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_send
+ * Description  : sent data for client or server
+ * Parameters   : espconn -- espconn to set for client or server
+ *                               psent -- data to send
+ *                length -- length of data to send
+ * Returns      : none
+*******************************************************************************/
+
+extern sint8 espconn_secure_send(struct espconn *espconn, uint8 *psent, uint16 length);
+
+/******************************************************************************
+ * FunctionName : espconn_encry_sent
+ * Description  : sent data for client or server
+ * Parameters   : espconn -- espconn to set for client or server
+ *                               psent -- data to send
+ *                length -- length of data to send
+ * Returns      : none
+*******************************************************************************/
+
+extern sint8 espconn_secure_sent(struct espconn *espconn, uint8 *psent, uint16 length);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_set_size
+ * Description  : set the buffer size for client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ *                               size -- buffer size
+ * Returns      : true or false
+*******************************************************************************/
+
+extern bool espconn_secure_set_size(uint8 level, uint16 size);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_get_size
+ * Description  : get buffer size for client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ * Returns      : buffer size for client or server
+*******************************************************************************/
+
+extern sint16 espconn_secure_get_size(uint8 level);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_ca_enable
+ * Description  : enable the certificate authenticate and set the flash sector
+ *                               as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ *                               flash_sector -- flash sector for save certificate
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_ca_enable(uint8 level, uint32 flash_sector );
+
+/******************************************************************************
+ * FunctionName : espconn_secure_ca_disable
+ * Description  : disable the certificate authenticate  as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_ca_disable(uint8 level);
+
+
+/******************************************************************************
+ * FunctionName : espconn_secure_cert_req_enable
+ * Description  : enable the client certificate authenticate and set the flash sector
+ *                               as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ *                               flash_sector -- flash sector for save certificate
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_cert_req_enable(uint8 level, uint32 flash_sector );
+
+/******************************************************************************
+ * FunctionName : espconn_secure_ca_disable
+ * Description  : disable the client certificate authenticate  as client or server
+ * Parameters   : level -- set for client or server
+ *                               1: client,2:server,3:client and server
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_cert_req_disable(uint8 level);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_set_default_certificate
+ * Description  : Load the certificates in memory depending on compile-time
+ *                               and user options.
+ * Parameters   : certificate -- Load the certificate
+ *                               length -- Load the certificate length
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_set_default_certificate(const uint8* certificate, uint16 length);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_set_default_private_key
+ * Description  : Load the key in memory depending on compile-time
+ *                               and user options.
+ * Parameters   : private_key -- Load the key
+ *                               length -- Load the key length
+ * Returns      : result true or false
+*******************************************************************************/
+
+extern bool espconn_secure_set_default_private_key(const uint8* private_key, uint16 length);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_accept
+ * Description  : The function given as the listen
+ * Parameters   : espconn -- the espconn used to listen the connection
+ * Returns      : result
+*******************************************************************************/
+
+extern sint8 espconn_secure_accept(struct espconn *espconn);
+
+/******************************************************************************
+ * FunctionName : espconn_secure_accepts
+ * Description  : delete the secure server host
+ * Parameters   : espconn -- the espconn used to listen the connection
+ * Returns      : result
+*******************************************************************************/
+
+extern sint8 espconn_secure_delete(struct espconn *espconn);
+
 
 /******************************************************************************
  * FunctionName : espconn_igmp_join
@@ -592,6 +784,22 @@ extern sint8 espconn_igmp_join(ip_addr_t *host_ip, ip_addr_t *multicast_ip);
  * Returns      : none
 *******************************************************************************/
 extern sint8 espconn_igmp_leave(ip_addr_t *host_ip, ip_addr_t *multicast_ip);
+
+/******************************************************************************
+ * FunctionName : espconn_recv_hold
+ * Description  : hold tcp receive
+ * Parameters   : espconn -- espconn to hold
+ * Returns      : none
+*******************************************************************************/
+extern sint8 espconn_recv_hold(struct espconn *pespconn);
+
+/******************************************************************************
+ * FunctionName : espconn_recv_unhold
+ * Description  : unhold tcp receive
+ * Parameters   : espconn -- espconn to unhold
+ * Returns      : none
+*******************************************************************************/
+extern sint8 espconn_recv_unhold(struct espconn *pespconn);
 
 /******************************************************************************
  * FunctionName : espconn_mdns_init
