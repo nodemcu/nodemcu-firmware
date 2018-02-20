@@ -291,3 +291,10 @@ firmware image.
 The alternative approach is easier for development, and that is to supply the PEM data as a string value to `tls.cert.verify`. This
 will store the certificate into the flash chip and turn on verification for that certificate. Subsequent boots of the nodemcu can then
 use `tls.cert.verify(true)` and use the stored certificate.
+
+# tls.setDebug function
+
+mbedTLS can be compiled with debug support.  If so, the tls.setDebug
+function is mapped to the `mbedtls_debug_set_threshold` function and
+can be used to enable or disable debugging spew to the console.
+See mbedTLS's documentation for more details.
