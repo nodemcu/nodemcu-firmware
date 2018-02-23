@@ -779,6 +779,10 @@ static inline void rtc_time_prepare(void)
   rtc_time_select_frc2_source();
 }
 
+static int32_t rtc_time_adjust_delta_by_rate(int32_t delta) {
+  return (delta * ((1ull << 32) + (int) rtc_usrate)) >> 32;
+}
+
 static uint64_t rtc_time_adjust_us_by_rate(uint64_t us, int force) {
   uint64_t usoff = us - rtc_usatlastrate; 
   uint64_t usadj = (usoff * ((1ull << 32) + (int) rtc_usrate)) >> 32;

@@ -157,3 +157,30 @@ rtctime.set(1436430589, 0)
 ```
 #### See also
 [`sntp.sync()`](sntp.md#sntpsync)
+
+## rtctime.adjust_delta()
+
+This takes a time interval in 'system clock microseconds' based on the timestamps returned by `tmr.now` and returns 
+an adjusted time interval in 'wall clock microseconds'. The size of the adjustment is typically pretty small as it (roughly) the error in the
+crystal clock rate. This function is useful in some precision timing applications.
+
+#### Syntax
+`rtctime.adjust_delta(microseconds)`
+
+#### Parameters
+- `microseconds` a time interval measured in system clock microseconds.
+
+#### Returns
+The same interval but measured in wall clock microseconds
+
+#### Example
+```lua
+local start = tmr.now()
+-- do something
+local end = tmr.now()
+print ('Duration', rtctime.adjust_delta(end - start))
+
+-- You can also go in the other direction (roughly)
+local one_second = 1000000
+local ticks_in_one_second = one_second - (rtctime.adjust_delta(one_second) - one_second)
+```
