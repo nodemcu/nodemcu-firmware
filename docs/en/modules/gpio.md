@@ -191,7 +191,7 @@ timing control.
 
 The basic idea is to build a `gpio.pulse` object and then control it with methods on that object. Only one `gpio.pulse`
 object can be active at a time. The object is built from an array of tables where each inner table represents
-an action to take and the time to delay before moving to the next action.
+an action to take and the time to delay before moving to the next action. 
 
 One of the uses for this is to generate bipolar impulse for driving clock movements where you want (say) a pulse on Pin 1 on the even
 second, and a pulse on Pin 2 on the odd second. `:getstate` and `:adjust` can be used to keep the pulse synchronized to the
@@ -200,6 +200,32 @@ RTC clock (that is itself synchronized with NTP).
 !!! Attention
 
 	This sub module is disabled by default. Uncomment `LUA_USE_MODULES_GPIO_PULSE` in `app/include/user_modules.h` before building the firmware to enable it.
+
+To make use of this feature, decide on the sort of pulse train that you need to generate -- hopefully it repeats a number of times.
+Decide on the number of GPIO pins that you will be using. Then draw up a chart of what you want to happen, and in what order. Then
+you can construct the table struct that you pass into `gpio.pulse.build`. For example, for the two out of phase square waves, you might do:
+
+Step | Pin 1 | Pin 2 | Duration (&#956;S) | Next Step
+---:|---|---|---:| --:
+1 | High | Low | 100,000 | 2
+2 | Low | High | 100,000 | **1**
+
+This would (when built and started) just runs step 1 (by setting the output pins as specified), and then after 100,000&#956;S, it changes to step 2i. This
+alters the output pins
+and then waits for 100,000&#956;S before going back to step 1. This has the effect of outputting to Pin 1 and Pin 2 a 5Hz square wave with the pins being out of phase. The frequency will be
+slightly lower than 5Hz as this is software generated and interrupt masking can delay the move to the next step. To get much closer to 5Hz,
+you want to allow the duration of each step to vary slightly. This will then adjust the length of each step so that, overall, the output is
+at 5Hz.
+
+Step | Pin 1 | Pin 2 | Duration (&#956;S) | Range | Next Step
+---:|---|---|---:|:---:| --:
+1 | High | Low | 100,000 | 90,000 - 110,000 | 2
+2 | Low | High | 100,000 | 90,000 - 110,000 | **1**
+
+When turning this into the table structure as described below, you don't need to specify anything
+special when the number of the next step is one more than the current step. When specifying an out of order
+step, you must specify how often you want this to be performed. A very large value can be used for roughly infinite.
+
 
 ## gpio.pulse.build
 
@@ -211,27 +237,34 @@ This builds the `gpio.pulse` object from the supplied argument (a table as descr
 #### Parameter
 `table` this is view as an array of instructions. Each instruction is represented by a table as follows:
 
-- All numeric keys are considered to be pin numbers. The values of each are the value to be set onto the respective GPIO line. For example `{ [1] = gpio.HIGH }` would set pin 1 to be high. Note this that is the pin number and *not* the GPIO number. Multiple pins can be
-set at the same time.
-- `delay` specifies the number of microseconds after setting the pin values to wait until moving to the next state. The actual delay may be longer than this value depending on whether interrupts are enabled at the end time.
+- All numeric keys are considered to be pin numbers. The values of each are the value to be set onto the respective GPIO line. 
+For example `{ [1] = gpio.HIGH }` would set pin 1 to be high. 
+Note this that is the NodeMCU pin number and *not* the ESP8266 GPIO number. Multiple pins can be
+set at the same time. Note that any valid GPIO pin can be used, including pin 0.
+- `delay` specifies the number of microseconds after setting the pin values to wait until moving to the next state. The actual delay may be longer than this value depending on whether interrupts are enabled at the end time. The maximum value is 64,000,000 -- i.e. a bit more than a minute.
 - `min` and `max` can be used to specify (along with `delay`) that this time can be varied. If one time interval overruns, then the extra time will be deducted from a time period which has a `min` or `max` specified. The actual time can also be adjusted with the `:adjust` API below.
-- `count` and `loop` allow simple looping. When a state with `count` and `loop` is completed, the next state is at `loop` (provided that `count` has not decremented to zero). The first state is state 1.
+- `count` and `loop` allow simple looping. When a state with `count` and `loop` is completed, the next state is at `loop` (provided that `count` has not decremented to zero). The first state is state 1. The `loop` is rather like a goto instruction as it specifies the next instruction to be executed.
 
 #### Returns
 `gpio.pulse` object.
 
 #### Example
 ```lua
-gpio.mode(1,gpio.OUTPUT,gpio.PULLUP)
-gpio.mode(2,gpio.OUTPUT,gpio.PULLUP)
+gpio.mode(1, gpio.OUTPUT)
+gpio.mode(2, gpio.OUTPUT)
 
 pulser = gpio.pulse.build( {
-  { [1] = gpio.HIGH, [2] = gpio.LOW, delay=100000 },
-  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=100000, loop=1, count=100, min=90000, max=110000 }
+  { [1] = gpio.HIGH, [2] = gpio.LOW, delay=250000 },
+  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=250000, loop=1, count=20, min=240000, max=260000 }
 })
 
-```
+pulser:start(function() print ('done') end)
 
+```
+This will generate a square wave on pins 1 and 2, but they will be exactly out of phase. After 10 seconds, the sequence will end, with pin 2 being high.
+
+Note that you *must* set the pins into output mode (either gpio.OUTPUT or gpio.OPENDRAIN) before starting the output sequence, otherwise
+nothing will appear to happen.
 
 ## gpio.pulse:start
 
@@ -274,7 +307,7 @@ loops.
 
 #### Example
 ```lua
-pos, steps, offset, new = pulser:getstate()
+pos, steps, offset, now = pulser:getstate()
 print (pos, steps, offset, now)
 ```
 
@@ -345,5 +378,26 @@ loops.
 #### Example
 ```lua
 pulser:adjust(177)
+```
+
+## gpio.pulse:update
+
+This can change the contents of a particular step in the output program. This can be used to adjust the delay times, or even the pin changes. This cannot
+be used to remove entries or add new entries.
+
+#### Syntax
+`pulser:update(entrynum, entrytable)`
+
+#### Parameters
+- `entrynum` is the number of the entry in the original pulse sequence definition. The first entry is numbered 1.
+- `entrytable` is a table containing the same keys as for `gpio.pulse.build`
+
+#### Returns
+Nothing
+
+
+ Example
+```lua
+pulser:update(1, { delay=1000 })
 ```
 
