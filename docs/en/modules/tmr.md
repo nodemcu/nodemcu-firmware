@@ -340,6 +340,9 @@ if not mytimer:stop() then print("timer not stopped, not registered?") end
 
 Suspend an armed timer. 
 
+!!! attention
+    This is disabled by default. Modify `ENABLE_TIMER_SUSPEND` in `app/include/user_config.h` to enable it.
+
 * Timers can be suspended at any time after they are armed.
 * If a timer is rearmed with `tmr.start` or `tmr.alarm` any matching suspended timers will be discarded.
 
@@ -371,10 +374,12 @@ tmr.suspend(mytimer)
 
 Suspend all currently armed timers. 
 
+!!! attention
+    This is disabled by default. Modify `ENABLE_TIMER_SUSPEND` in `app/include/user_config.h` to enable it.
+    
 !!! Warning
 	This function suspends ALL active timers, including any active timers started by the NodeMCU subsystem or other modules. this may cause parts of your program to stop functioning properly. 
 	USE THIS FUNCTION AT YOUR OWN RISK!
-
 
 #### Syntax
 `tmr.suspend_all()`

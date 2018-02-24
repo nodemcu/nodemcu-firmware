@@ -34,6 +34,10 @@
 #ifndef SPIFFS_CHECK_DBG
 #define SPIFFS_CHECK_DBG(...) //dbg_printf(__VA_ARGS__)
 #endif
+// Set spiffs debug output call for all api invocations.
+#ifndef SPIFFS_API_DBG
+#define SPIFFS_API_DBG(_f, ...) //printf(_f, ## __VA_ARGS__)
+#endif
 
 // Defines spiffs debug print formatters
 // some general signed number
@@ -301,6 +305,17 @@
 // descriptor.
 #ifndef SPIFFS_IX_MAP
 #define SPIFFS_IX_MAP                         0
+#endif
+
+// By default SPIFFS in some cases relies on the property of NOR flash that bits
+// cannot be set from 0 to 1 by writing and that controllers will ignore such
+// bit changes. This results in fewer reads as SPIFFS can in some cases perform
+// blind writes, with all bits set to 1 and only those it needs reset set to 0.
+// Most of the chips and controllers allow this behavior, so the default is to
+// use this technique. If your controller is one of the rare ones that don't,
+// turn this option on and SPIFFS will perform a read-modify-write instead.
+#ifndef SPIFFS_NO_BLIND_WRITES
+#define SPIFFS_NO_BLIND_WRITES                0
 #endif
 
 // Set SPIFFS_TEST_VISUALISATION to non-zero to enable SPIFFS_vis function

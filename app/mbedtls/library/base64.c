@@ -41,7 +41,7 @@
 #endif /* MBEDTLS_PLATFORM_C */
 #endif /* MBEDTLS_SELF_TEST */
 
-static const unsigned char base64_enc_map[64] ICACHE_RODATA_ATTR =
+static const unsigned char base64_enc_map[64] =
 {
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
     'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
@@ -52,7 +52,7 @@ static const unsigned char base64_enc_map[64] ICACHE_RODATA_ATTR =
     '8', '9', '+', '/'
 };
 
-static const unsigned char base64_dec_map[128] ICACHE_RODATA_ATTR =
+static const unsigned char base64_dec_map[128] =
 {
     127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
     127, 127, 127, 127, 127, 127, 127, 127, 127, 127,
@@ -97,7 +97,7 @@ int mbedtls_base64_encode( unsigned char *dst, size_t dlen, size_t *olen,
 
     n *= 4;
 
-    if( dlen < n + 1 )
+    if( ( dlen < n + 1 ) || ( NULL == dst ) )
     {
         *olen = n + 1;
         return( MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL );
@@ -111,10 +111,10 @@ int mbedtls_base64_encode( unsigned char *dst, size_t dlen, size_t *olen,
         C2 = *src++;
         C3 = *src++;
 
-        *p++ = system_get_data_of_array_8(base64_enc_map, (C1 >> 2) & 0x3F);
-        *p++ = system_get_data_of_array_8(base64_enc_map, (((C1 &  3) << 4) + (C2 >> 4)) & 0x3F);
-        *p++ = system_get_data_of_array_8(base64_enc_map, (((C2 & 15) << 2) + (C3 >> 6)) & 0x3F);
-        *p++ = system_get_data_of_array_8(base64_enc_map, C3 & 0x3F);
+        *p++ = base64_enc_map[(C1 >> 2) & 0x3F];
+        *p++ = base64_enc_map[(((C1 &  3) << 4) + (C2 >> 4)) & 0x3F];
+        *p++ = base64_enc_map[(((C2 & 15) << 2) + (C3 >> 6)) & 0x3F];
+        *p++ = base64_enc_map[C3 & 0x3F];
     }
 
     if( i < slen )
@@ -122,11 +122,11 @@ int mbedtls_base64_encode( unsigned char *dst, size_t dlen, size_t *olen,
         C1 = *src++;
         C2 = ( ( i + 1 ) < slen ) ? *src++ : 0;
 
-        *p++ = system_get_data_of_array_8(base64_enc_map, (C1 >> 2) & 0x3F);
-        *p++ = system_get_data_of_array_8(base64_enc_map, (((C1 & 3) << 4) + (C2 >> 4)) & 0x3F);
+        *p++ = base64_enc_map[(C1 >> 2) & 0x3F];
+        *p++ = base64_enc_map[(((C1 & 3) << 4) + (C2 >> 4)) & 0x3F];
 
         if( ( i + 1 ) < slen )
-             *p++ = system_get_data_of_array_8(base64_enc_map, ((C2 & 15) << 2) & 0x3F);
+             *p++ = base64_enc_map[((C2 & 15) << 2) & 0x3F];
         else *p++ = '=';
 
         *p++ = '=';
@@ -177,10 +177,10 @@ int mbedtls_base64_decode( unsigned char *dst, size_t dlen, size_t *olen,
         if( src[i] == '=' && ++j > 2 )
             return( MBEDTLS_ERR_BASE64_INVALID_CHARACTER );
 
-        if( src[i] > 127 || system_get_data_of_array_8(base64_dec_map, src[i]) == 127 )
+        if( src[i] > 127 || base64_dec_map[src[i]] == 127 )
             return( MBEDTLS_ERR_BASE64_INVALID_CHARACTER );
 
-        if( system_get_data_of_array_8(base64_dec_map, src[i]) < 64 && j != 0 )
+        if( base64_dec_map[src[i]] < 64 && j != 0 )
             return( MBEDTLS_ERR_BASE64_INVALID_CHARACTER );
 
         n++;
@@ -192,7 +192,11 @@ int mbedtls_base64_decode( unsigned char *dst, size_t dlen, size_t *olen,
         return( 0 );
     }
 
-    n = ( ( n * 6 ) + 7 ) >> 3;
+    /* The following expression is to calculate the following formula without
+     * risk of integer overflow in n:
+     *     n = ( ( n * 6 ) + 7 ) >> 3;
+     */
+    n = ( 6 * ( n >> 3 ) ) + ( ( 6 * ( n & 0x7 ) + 7 ) >> 3 );
     n -= j;
 
     if( dst == NULL || dlen < n )
@@ -206,8 +210,8 @@ int mbedtls_base64_decode( unsigned char *dst, size_t dlen, size_t *olen,
         if( *src == '\r' || *src == '\n' || *src == ' ' )
             continue;
 
-        j -= ( system_get_data_of_array_8(base64_dec_map, *src) == 64 );
-        x  = ( x << 6 ) | ( system_get_data_of_array_8(base64_dec_map, *src) & 0x3F );
+        j -= ( base64_dec_map[*src] == 64 );
+        x  = ( x << 6 ) | ( base64_dec_map[*src] & 0x3F );
 
         if( ++n == 4 )
         {

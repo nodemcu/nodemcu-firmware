@@ -16,7 +16,7 @@ The NodeMCU *firmware* is a companion project to the popular [NodeMCU dev kits](
 - Easy to program wireless node and/or access point
 - Based on Lua 5.1.4 (without *debug, os* modules)
 - Asynchronous event-driven programming model
-- 55+ built-in modules
+- more than 65 built-in modules
 - Firmware available with or without floating point support (integer-only uses less memory)
 - Up-to-date documentation at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io)
 
@@ -38,7 +38,7 @@ end)
 ```lua
 -- connect to WiFi access point
 wifi.setmode(wifi.STATION)
-wifi.sta.config("SSID", "password")
+wifi.sta.config{ssid="SSID", pwd="password"}
 ```
 
 # Documentation

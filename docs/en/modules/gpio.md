@@ -71,7 +71,7 @@ gpio.read(0)
 
 Serialize output based on a sequence of delay-times in µs. After each delay, the pin is toggled. After the last cycle and last delay the pin is not toggled.
 
-The function works in two modes: 
+The function works in two modes:
 * synchronous - for sub-50 µs resolution, restricted to max. overall duration,
 * asynchrounous - synchronous operation with less granularity but virtually unrestricted duration.
 
@@ -89,7 +89,7 @@ Note that the synchronous variant (no or nil `callback` parameter) function bloc
 #### Parameters
 - `pin`  pin to use, IO index
 - `start_level` level to start on, either `gpio.HIGH` or `gpio.LOW`
-- `delay_times` an array of delay times in µs between each toggle of the gpio pin. 
+- `delay_times` an array of delay times in µs between each toggle of the gpio pin.
 - `cycle_num` an optional number of times to run through the sequence. (default is 1)
 - `callback` an optional callback function or number, if present the function returns immediately and goes asynchronous.
 
@@ -122,13 +122,18 @@ This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile
 
 #### Parameters
 - `pin` **1-12**, pin to trigger on, IO index. Note that pin 0 does not support interrupts.
-- `type` "up", "down", "both", "low", "high", which represent *rising edge*, *falling edge*, *both 
-edges*, *low level*, and *high level* trigger modes respectivey. If the type is "none" or omitted 
+- `type` "up", "down", "both", "low", "high", which represent *rising edge*, *falling edge*, *both
+edges*, *low level*, and *high level* trigger modes respectivey. If the type is "none" or omitted
 then the callback function is removed and the interrupt is disabled.
-- `callback_function(level, when)` callback function when trigger occurs. The level of the specified pin 
+- `callback_function(level, when, eventcount)` callback function when trigger occurs. The level of the specified pin 
 at the interrupt passed as the first parameter to the callback. The timestamp of the event is passed
 as the second parameter. This is in microseconds and has the same base as for `tmr.now()`. This timestamp
 is grabbed at interrupt level and is more consistent than getting the time in the callback function.
+This timestamp is normally of the first interrupt detected, but, under overload conditions, might be a later one.
+The eventcount is the number of interrupts that were elided for this callback. This works best for edge triggered
+interrupts and enables counting of edges. However, beware
+of switch bounces -- you can get multiple pulses for a single switch closure. Counting
+works best when the edges are digitally generated.
 The previous callback function will be used if the function is omitted.
 
 #### Returns
@@ -177,3 +182,222 @@ gpio.write(pin, gpio.HIGH)
 #### See also
 - [`gpio.mode()`](#gpiomode)
 - [`gpio.read()`](#gpioread)
+
+## gpio.pulse
+
+This covers a set of APIs that allow generation of pulse trains with accurate timing on
+multiple pins. It is similar to the `serout` API, but can handle multiple pins and has better
+timing control.
+
+The basic idea is to build a `gpio.pulse` object and then control it with methods on that object. Only one `gpio.pulse`
+object can be active at a time. The object is built from an array of tables where each inner table represents
+an action to take and the time to delay before moving to the next action. 
+
+One of the uses for this is to generate bipolar impulse for driving clock movements where you want (say) a pulse on Pin 1 on the even
+second, and a pulse on Pin 2 on the odd second. `:getstate` and `:adjust` can be used to keep the pulse synchronized to the
+RTC clock (that is itself synchronized with NTP).
+
+!!! Attention
+
+	This sub module is disabled by default. Uncomment `LUA_USE_MODULES_GPIO_PULSE` in `app/include/user_modules.h` before building the firmware to enable it.
+
+To make use of this feature, decide on the sort of pulse train that you need to generate -- hopefully it repeats a number of times.
+Decide on the number of GPIO pins that you will be using. Then draw up a chart of what you want to happen, and in what order. Then
+you can construct the table struct that you pass into `gpio.pulse.build`. For example, for the two out of phase square waves, you might do:
+
+Step | Pin 1 | Pin 2 | Duration (&#956;S) | Next Step
+---:|---|---|---:| --:
+1 | High | Low | 100,000 | 2
+2 | Low | High | 100,000 | **1**
+
+This would (when built and started) just runs step 1 (by setting the output pins as specified), and then after 100,000&#956;S, it changes to step 2i. This
+alters the output pins
+and then waits for 100,000&#956;S before going back to step 1. This has the effect of outputting to Pin 1 and Pin 2 a 5Hz square wave with the pins being out of phase. The frequency will be
+slightly lower than 5Hz as this is software generated and interrupt masking can delay the move to the next step. To get much closer to 5Hz,
+you want to allow the duration of each step to vary slightly. This will then adjust the length of each step so that, overall, the output is
+at 5Hz.
+
+Step | Pin 1 | Pin 2 | Duration (&#956;S) | Range | Next Step
+---:|---|---|---:|:---:| --:
+1 | High | Low | 100,000 | 90,000 - 110,000 | 2
+2 | Low | High | 100,000 | 90,000 - 110,000 | **1**
+
+When turning this into the table structure as described below, you don't need to specify anything
+special when the number of the next step is one more than the current step. When specifying an out of order
+step, you must specify how often you want this to be performed. A very large value can be used for roughly infinite.
+
+
+## gpio.pulse.build
+
+This builds the `gpio.pulse` object from the supplied argument (a table as described below).
+
+#### Syntax
+`gpio.pulse.build(table)`
+
+#### Parameter
+`table` this is view as an array of instructions. Each instruction is represented by a table as follows:
+
+- All numeric keys are considered to be pin numbers. The values of each are the value to be set onto the respective GPIO line. 
+For example `{ [1] = gpio.HIGH }` would set pin 1 to be high. 
+Note this that is the NodeMCU pin number and *not* the ESP8266 GPIO number. Multiple pins can be
+set at the same time. Note that any valid GPIO pin can be used, including pin 0.
+- `delay` specifies the number of microseconds after setting the pin values to wait until moving to the next state. The actual delay may be longer than this value depending on whether interrupts are enabled at the end time. The maximum value is 64,000,000 -- i.e. a bit more than a minute.
+- `min` and `max` can be used to specify (along with `delay`) that this time can be varied. If one time interval overruns, then the extra time will be deducted from a time period which has a `min` or `max` specified. The actual time can also be adjusted with the `:adjust` API below.
+- `count` and `loop` allow simple looping. When a state with `count` and `loop` is completed, the next state is at `loop` (provided that `count` has not decremented to zero). The first state is state 1. The `loop` is rather like a goto instruction as it specifies the next instruction to be executed.
+
+#### Returns
+`gpio.pulse` object.
+
+#### Example
+```lua
+gpio.mode(1, gpio.OUTPUT)
+gpio.mode(2, gpio.OUTPUT)
+
+pulser = gpio.pulse.build( {
+  { [1] = gpio.HIGH, [2] = gpio.LOW, delay=250000 },
+  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=250000, loop=1, count=20, min=240000, max=260000 }
+})
+
+pulser:start(function() print ('done') end)
+
+```
+This will generate a square wave on pins 1 and 2, but they will be exactly out of phase. After 10 seconds, the sequence will end, with pin 2 being high.
+
+Note that you *must* set the pins into output mode (either gpio.OUTPUT or gpio.OPENDRAIN) before starting the output sequence, otherwise
+nothing will appear to happen.
+
+## gpio.pulse:start
+
+This starts the output operations.
+
+#### Syntax
+`pulser:start([adjust, ] callback)`
+
+#### Parameter
+- `adjust` This is the number of microseconds to add to the next adjustable period. If this value is so large that
+it would push the delay past the `min` or `max`, then the remainder is held over until the next adjustable period.
+- `callback` This callback is executed when the pulses are complete. The callback is invoked with the same four
+parameters that are described as the return values of `gpio.pulse:getstate`.
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+pulser:start(function(pos, steps, offset, now)
+             print (pos, steps, offset, now)
+             end)
+```
+
+## gpio.pulse:getstate
+
+This returns the current state. These four values are also passed into the callback functions.
+
+#### Syntax
+`pulser:getstate()`
+
+#### Returns
+
+- `position` is the index of the currently active state. The first state is state 1. This is `nil` if the output operation is complete.
+- `steps` is the number of states that have been executed (including the current one). This allows monitoring of progress when there are
+loops.
+- `offset` is the time (in microseconds) until the next state transition. This will be negative once the output operation is complete.
+- `now` is the value of the `tmr.now()` function at the instant when the `offset` was calculated.
+
+
+#### Example
+```lua
+pos, steps, offset, now = pulser:getstate()
+print (pos, steps, offset, now)
+```
+
+## gpio.pulse:stop
+
+This stops the output operation at some future time.
+
+#### Syntax
+`pulser:stop([position ,] callback)`
+
+#### Parameters
+
+- `position` is the index to stop at. The stopping happens on entry to this state. If not specified, then stops on the next state transition.
+- `callback` is invoked (with the same arguments as are returned by `:getstate`) when the operation has been stopped.
+
+#### Returns
+`true` if the stop will happen.
+
+
+#### Example
+```lua
+pulser:stop(function(pos, steps, offset, now)
+            print (pos, steps, offset, now)
+            end)
+```
+
+## gpio.pulse:cancel
+
+This stops the output operation immediately.
+
+#### Syntax
+`pulser:cancel()`
+
+#### Returns
+- `position` is the index of the currently active state. The first state is state 1. This is `nil` if the output operation is complete.
+- `steps` is the number of states that have been executed (including the current one). This allows monitoring of progress when there are
+loops.
+- `offset` is the time (in microseconds) until the next state transition. This will be negative once the output operation is complete.
+- `now` is the value of the `tmr.now()` function at the instant when the `offset` was calculated.
+
+
+#### Example
+```lua
+pulser:cancel(function(pos, steps, offset, now)
+              print (pos, steps, offset, now)
+              end)
+```
+
+## gpio.pulse:adjust
+
+This adds (or subtracts) time that will get used in the `min` / `max` delay case. This is useful if you are trying to
+synchronize a particular state to a particular time or external event.
+
+#### Syntax
+`pulser:adjust(offset)`
+
+#### Parameters
+- `offset` is the number of microseconds to be used in subsequent `min` / `max` delays. This overwrites any pending offset.
+
+#### Returns
+- `position` is the index of the currently active state. The first state is state 1. This is `nil` if the output operation is complete.
+- `steps` is the number of states that have been executed (including the current one). This allows monitoring of progress when there are
+loops.
+- `offset` is the time (in microseconds) until the next state transition. This will be negative once the output operation is complete.
+- `now` is the value of the `tmr.now()` function at the instant when the `offset` was calculated.
+
+
+#### Example
+```lua
+pulser:adjust(177)
+```
+
+## gpio.pulse:update
+
+This can change the contents of a particular step in the output program. This can be used to adjust the delay times, or even the pin changes. This cannot
+be used to remove entries or add new entries.
+
+#### Syntax
+`pulser:update(entrynum, entrytable)`
+
+#### Parameters
+- `entrynum` is the number of the entry in the original pulse sequence definition. The first entry is numbered 1.
+- `entrytable` is a table containing the same keys as for `gpio.pulse.build`
+
+#### Returns
+Nothing
+
+
+ Example
+```lua
+pulser:update(1, { delay=1000 })
+```
+

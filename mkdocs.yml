@@ -18,8 +18,6 @@ extra_css:
 extra_javascript:
 - js/extra.js
 
-site_favicon: img/favicon.png
-
 pages:
 - Overview: 'index.md'
 - English:
@@ -41,10 +39,13 @@ pages:
         - 'am2320': 'en/modules/am2320.md'
         - 'apa102': 'en/modules/apa102.md'
         - 'bit': 'en/modules/bit.md'
+        - 'bloom' : 'en/modules/bloom.md'
         - 'bme280': 'en/modules/bme280.md'
+        - 'bme680': 'en/modules/bme680.md'
         - 'bmp085': 'en/modules/bmp085.md'
         - 'cjson': 'en/modules/cjson.md'
         - 'coap': 'en/modules/coap.md'
+        - 'color-utils': 'en/modules/color-utils.md'
         - 'cron': 'en/modules/cron.md'
         - 'crypto': 'en/modules/crypto.md'
         - 'dht': 'en/modules/dht.md'
@@ -81,6 +82,7 @@ pages:
         - 'sntp': 'en/modules/sntp.md'
         - 'somfy': 'en/modules/somfy.md'
         - 'spi': 'en/modules/spi.md'
+        - 'sqlite3': 'en/modules/sqlite3.md'
         - 'struct': 'en/modules/struct.md'
         - 'switec': 'en/modules/switec.md'
         - 'tcs34725': 'en/modules/tcs34725.md'
@@ -93,9 +95,11 @@ pages:
         - 'ucg': 'en/modules/ucg.md'
         - 'websocket': 'en/modules/websocket.md'
         - 'wifi': 'en/modules/wifi.md'
+        - 'wifi.monitor': 'en/modules/wifi_monitor.md'
         - 'wps': 'en/modules/wps.md'
         - 'ws2801': 'en/modules/ws2801.md'
         - 'ws2812': 'en/modules/ws2812.md'
+        - 'ws2812-effects': 'en/modules/ws2812-effects.md'
         - 'xpt2046': 'en/modules/xpt2046.md'
 #- Deutsch:
 #    - Home: 'de/index.md'

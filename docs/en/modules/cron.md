@@ -6,7 +6,7 @@
 [Cron](https://en.wikipedia.org/wiki/Cron)-like scheduler module.
 
 !!! important
-    This module needs RTC time to operate correctly. Do not forget to include the [`rtctime`](rtctime.md) module.
+    This module needs RTC time to operate correctly. Do not forget to include the [`rtctime`](rtctime.md) module **and** initialize it properly.
 
 ## cron.schedule()
 

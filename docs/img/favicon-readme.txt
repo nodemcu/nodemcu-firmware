@@ -1,0 +1,1 @@
+favicon.ico was generated using https://realfavicongenerator.net. favicon_package_v0.16.zip in this folder contains icons and instructions for all sorts of browsers and platforms (incl. mobile variants). However, without modifying the MkDocs theme/template they’re of no use.

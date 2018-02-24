@@ -187,8 +187,9 @@
 #define CPU_BOOTUP_MHZ    52
 
 #ifdef RTC_DEBUG_ENABLED
+#warn this does not really work....
 #define RTC_DBG(...)         do { if (rtc_dbg_enabled == 'R') { dbg_printf(__VA_ARGS__); } } while (0)
-static bool rtc_dbg_enabled;
+static char rtc_dbg_enabled;
 #define RTC_DBG_ENABLED()   rtc_dbg_enabled = 'R'
 #define RTC_DBG_NOT_ENABLED()   rtc_dbg_enabled = 0
 #else
@@ -196,6 +197,8 @@ static bool rtc_dbg_enabled;
 #define RTC_DBG_ENABLED()
 #define RTC_DBG_NOT_ENABLED()
 #endif
+
+#define NOINIT_ATTR __attribute__((section(".noinit")))
 
 // RTCTIME storage
 #define RTC_TIME_MAGIC_POS       (RTC_TIME_BASE+0)
@@ -210,18 +213,18 @@ static bool rtc_dbg_enabled;
 //#define RTC_LASTTODUS_POS        (RTC_TIME_BASE+9)
 #define RTC_USRATE_POS		 (RTC_TIME_BASE+8)
 
-static uint32_t rtc_time_magic;
-static uint64_t rtc_cycleoffset;
-static uint32_t rtc_lastsourceval;
-static uint32_t rtc_sourcecycleunits;
-static uint32_t rtc_calibration;
-static uint32_t rtc_sleeptotalus;
-static uint32_t rtc_sleeptotalcycles;
-static uint64_t rtc_usatlastrate;
-static uint64_t rtc_rateadjustedus;
-static uint32_t rtc_todoffsetus;
-static uint32_t rtc_lasttodus;
-static uint32_t rtc_usrate;
+NOINIT_ATTR uint32_t rtc_time_magic;
+NOINIT_ATTR uint64_t rtc_cycleoffset;
+NOINIT_ATTR uint32_t rtc_lastsourceval;
+NOINIT_ATTR uint32_t rtc_sourcecycleunits;
+NOINIT_ATTR uint32_t rtc_calibration;
+NOINIT_ATTR uint32_t rtc_sleeptotalus;
+NOINIT_ATTR uint32_t rtc_sleeptotalcycles;
+NOINIT_ATTR uint64_t rtc_usatlastrate;
+NOINIT_ATTR uint64_t rtc_rateadjustedus;
+NOINIT_ATTR uint32_t rtc_todoffsetus;
+NOINIT_ATTR uint32_t rtc_lasttodus;
+NOINIT_ATTR uint32_t rtc_usrate;
 
 
 struct rtc_timeval
@@ -503,11 +506,6 @@ extern void rtc_time_enter_deep_sleep_final(void);
 
 static void rtc_time_enter_deep_sleep_us(uint32_t us)
 {
-  if (rtc_time_check_wake_magic())
-    rtc_time_set_sleep_magic();
-  else 
-    bbram_save();
-
   rtc_reg_write(0,0);
   rtc_reg_write(0,rtc_reg_read(0)&0xffffbfff);
   rtc_reg_write(0,rtc_reg_read(0)|0x30);
@@ -532,6 +530,11 @@ static void rtc_time_enter_deep_sleep_us(uint32_t us)
 
   uint32_t cycles=rtc_time_us_to_ticks(us);
   rtc_time_add_sleep_tracking(us,cycles);
+
+  if (rtc_time_check_wake_magic())
+    rtc_time_set_sleep_magic();
+  else 
+    bbram_save();
 
   rtc_reg_write(RTC_TARGET_ADDR,rtc_time_read_raw()+cycles);
   rtc_reg_write(0x9c,17);
@@ -744,17 +747,15 @@ static void rtc_time_register_bootup(void)
     if (reset_reason!=2)  // This was *not* a proper wakeup from a deep sleep. All our time keeping is f*cked!
       rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
     rtc_time_select_ccount_source(CPU_BOOTUP_MHZ,true);
-    rtc_rateadjustedus = rtc_usatlastrate = rtc_time_get_now_us_adjusted();
     rtc_todoffsetus = 0;
+    rtc_rateadjustedus = rtc_usatlastrate = rtc_time_get_now_us_adjusted();
     RTC_DBG_ENABLED();
     return;
   }
 
-  if (rtc_time_check_magic())
-  {
-    // We did not go to sleep properly. All our time keeping is f*cked!
-    rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
-  }
+  // We did not go to sleep properly. All our time keeping is f*cked!
+  rtc_time_reset(erase_calibration); // Possibly keep the calibration, it should still be good
+
   RTC_DBG_ENABLED();
 }
 
@@ -776,6 +777,10 @@ static inline void rtc_time_prepare(void)
 {
   rtc_time_reset(true);
   rtc_time_select_frc2_source();
+}
+
+static int32_t rtc_time_adjust_delta_by_rate(int32_t delta) {
+  return (delta * ((1ull << 32) + (int) rtc_usrate)) >> 32;
 }
 
 static uint64_t rtc_time_adjust_us_by_rate(uint64_t us, int force) {
@@ -856,7 +861,8 @@ static void rtc_time_settimeofday(const struct rtc_timeval* tv)
 
   // calibrate sleep period based on difference between expected time and actual time
   if (sleep_us>0 && sleep_us<0xffffffff &&
-      sleep_cycles>0 && sleep_cycles<0xffffffff)
+      sleep_cycles>0 && sleep_cycles<0xffffffff &&
+      tv->tv_sec)
   {
     uint64_t actual_sleep_us=sleep_us-diff_us;
     uint32_t cali=(actual_sleep_us<<12)/sleep_cycles;
@@ -872,14 +878,15 @@ static void rtc_time_settimeofday(const struct rtc_timeval* tv)
   rtc_usrate = 0;
 
   // Deal with time adjustment if necessary
-  if (diff_us>0) // Time went backwards. Avoid that....
+  if (diff_us>0 && tv->tv_sec) // Time went backwards. Avoid that....
   {
     if (diff_us>0xffffffffULL)
       diff_us=0xffffffffULL;
     now_ntp_us+=diff_us;
-  }
-  else
+  } else {
     diff_us=0;
+  }
+
   rtc_todoffsetus = diff_us;
 
   uint32_t now_s=now_ntp_us/1000000;
