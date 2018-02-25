@@ -314,30 +314,6 @@ static int bme280_lua_setup(lua_State* L) {
 	return 1;
 }
 
-static int bme280_lua_init(lua_State* L) {
-	uint8_t sda;
-	uint8_t scl;
-	uint8_t config;
-	uint8_t ack;
-	uint8_t full_init;
-	
-	platform_print_deprecation_note("bme280.init() is replaced by bme280.setup()", "in the next version");
-
-	if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
-		return luaL_error(L, "wrong arg range");
-	}
-	sda = luaL_checkinteger(L, 1);
-	scl = luaL_checkinteger(L, 2);
-	
-	platform_i2c_setup(bme280_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
-	// remove sda and scl parameters from stack
-	lua_remove(L, 1);
-	lua_remove(L, 1);
-
-	return bme280_lua_setup(L);
-}
-
 static void bme280_readoutdone (void *arg)
 {
 	NODE_DBG("timer out\n");
@@ -495,8 +471,6 @@ static int bme280_lua_dewpoint(lua_State* L) {
 }
 
 static const LUA_REG_TYPE bme280_map[] = {
-        // init() is deprecated
-	{ LSTRKEY( "init" ), LFUNCVAL(bme280_lua_init)},
 	{ LSTRKEY( "setup" ), LFUNCVAL(bme280_lua_setup)},
 	{ LSTRKEY( "temp" ),  LFUNCVAL(bme280_lua_temp)},
 	{ LSTRKEY( "baro" ),  LFUNCVAL(bme280_lua_baro)},

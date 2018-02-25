@@ -16,16 +16,14 @@ LM92 = nil
 package.loaded["lm92"]=nil
 ```
 
-##init()
+##setup()
 ####Description
-Setting the i2c pins and address for lm92.
+Setting the address for lm92.
 
 ####Syntax
-init(sda, scl, address)
+setup(sda, scl, address)
 
 ####Parameters
-sda: 1~12, IO index.<br />
-scl: 1~12, IO index.<br />
 address: 0x48~0x4b, i2c address (depends on tha A0~A1 pins)
 ####Returns
 nil
@@ -38,7 +36,8 @@ gpio2 = 4
 sda = gpio0
 scl = gpio2
 addr = 0x48
-LM92.init(sda, scl,addr)
+i2c.setup(0, sda, scl, i2c.SLOW)  -- call i2c.setup() only once
+LM92.setup(addr)
 ```
 ##getTemperature()
 ####Description
@@ -251,7 +250,8 @@ gpio2 = 4
 sda = gpio0
 scl = gpio2
 addr = 0x48
-LM92.init(sda, scl,addr)
+i2c.setup(0, sda, scl, i2c.SLOW)  -- call i2c.setup() only once
+LM92.setup(addr)
  
 t = LM92.getTemperature()
 print("Got temperature: "..t.." C")
