@@ -478,7 +478,7 @@ Sets the WiFi station configuration.
 			- Items returned in table :
 				- `SSID`: SSID of access point.   (format: string)
 				- `BSSID`: BSSID of access point. (format: string) 
-				- `REASON`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)  
+				- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)  
 		- `authmode_change_cb`: Callback to execute when the access point has changed authorization mode. (Optional)    
 			- Items returned in table :
 			- `old_auth_mode`: Old wifi authorization mode. (format: number)  
@@ -570,7 +570,7 @@ Disconnects from AP in station mode.
 	- Items returned in table :
 		- `SSID`: SSID of access point.   (format: string)
 		- `BSSID`: BSSID of access point. (format: string) 
-		- `REASON`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)  
+		- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)  
 
 #### Returns
 `nil`
