@@ -106,7 +106,6 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
                    GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE));      //enable open drain;
   }
 
-  GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pnum));
   ETS_GPIO_INTR_ENABLE();
 }
 
@@ -155,12 +154,15 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 
     case PLATFORM_GPIO_INPUT:
       GPIO_DIS_OUTPUT(pin_num[pin]);
-      /* run on */
+      set_gpio_no_interrupt(pin, TRUE);
+      break;
     case PLATFORM_GPIO_OUTPUT:
       set_gpio_no_interrupt(pin, TRUE);
+      GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pin_num[pin]));
       break;
     case PLATFORM_GPIO_OPENDRAIN:
       set_gpio_no_interrupt(pin, FALSE);
+      GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pin_num[pin]));
       break;
 
 #ifdef GPIO_INTERRUPT_ENABLE
