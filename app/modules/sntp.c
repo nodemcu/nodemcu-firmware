@@ -132,6 +132,7 @@ typedef struct
 typedef struct {
   int32_t sync_cb_ref;
   int32_t err_cb_ref;
+  int32_t list_ref;
   os_timer_t timer;
 } sntp_repeat_t;
 
@@ -225,6 +226,9 @@ static void sntp_handle_result(lua_State *L) {
   const uint32_t MICROSECONDS = 1000000;
 
   if (state->best.stratum == 0) {
+    // This could be because none of the servers are reachable, or maybe we haven't been able to look 
+    // them up.
+    server_count = 0;      // Reset for next time.
     handle_error(L, NTP_TIMEOUT_ERR, NULL);
     return;
   }
@@ -614,10 +618,11 @@ static int sntp_getoffset(lua_State *L)
 
 static void sntp_dolookups (lua_State *L) {
   // Step through each element of the table, converting it to an address
-  // at the end, start the lookups
-  //
+  // at the end, start the lookups. If we have already looked everything up,
+  // then move straight to sending the packets.
   if (state->list_ref == LUA_NOREF) {
     sntp_dosend(L);
+    return;
   }
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, state->list_ref);
@@ -692,6 +697,8 @@ static char *set_repeat_mode(lua_State *L, bool enable)
     repeat->sync_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->err_cb_ref);
     repeat->err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, state->list_ref);
+    repeat->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     os_timer_setfn(&repeat->timer, on_long_timeout, NULL);
     os_timer_arm(&repeat->timer, 1000 * 1000, 1);
   } else {
@@ -699,6 +706,7 @@ static char *set_repeat_mode(lua_State *L, bool enable)
       os_timer_disarm (&repeat->timer);
       luaL_unref (L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
       luaL_unref (L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
+      luaL_unref (L, LUA_REGISTRYINDEX, repeat->list_ref);
       c_free(repeat);
       repeat = NULL;
     }
@@ -718,8 +726,12 @@ static void on_long_timeout (void *arg)
       state->sync_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       lua_rawgeti(L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
       state->err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      if (server_count == 0) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, repeat->list_ref);
+        state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+      }
       state->is_on_timeout = 1;
-      sntp_dosend (L);
+      sntp_dolookups(L);
     }
   }
 }
