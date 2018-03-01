@@ -849,7 +849,7 @@ static int wifi_station_config( lua_State* L )
 
     lua_State* L_temp = NULL;
 
-    lua_getfield(L, 1, "connect_cb");
+    lua_getfield(L, 1, "connected_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -862,12 +862,12 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "connect_cb:not function");
+        return luaL_argerror(L, 1, "connected_cb:not function");
       }
     }
     lua_pop(L, 1);
 
-    lua_getfield(L, 1, "disconnect_cb");
+    lua_getfield(L, 1, "disconnected_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -880,7 +880,7 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "disconnect_cb:not function");
+        return luaL_argerror(L, 1, "disconnected_cb:not function");
       }
     }
     lua_pop(L, 1);
