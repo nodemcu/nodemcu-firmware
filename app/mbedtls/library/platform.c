@@ -25,13 +25,26 @@
 #include MBEDTLS_CONFIG_FILE
 #endif
 
+// XXX Espressif are hacks sometimes.  This is BS, but is taken from
+// the mbedtls platform.c from their SDK.  Really, this should go
+// somewhere else.  Note that the prototype here for vPortFree differs (!)
+// from the one in sdk-overrides.h.  That's above my pay grade.
+// --nwf;  2018 Feb 18
+extern void *pvPortCalloc(unsigned int count, unsigned int size);
+extern void vPortFree( void *pv );
+
+
 #if defined(MBEDTLS_PLATFORM_C)
 
 #include "mbedtls/platform.h"
 
-extern int ets_snprintf(char *buf, unsigned int size, const char *format, ...);
-extern void *pvPortCalloc(unsigned int count, unsigned int size);
-extern void vPortFree( void *pv );
+#if defined(MBEDTLS_ENTROPY_NV_SEED) && \
+    !defined(MBEDTLS_PLATFORM_NO_STD_FUNCTIONS) && defined(MBEDTLS_FS_IO)
+/* Implementation that should never be optimized out by the compiler */
+static void mbedtls_zeroize( void *v, size_t n ) {
+    volatile unsigned char *p = (unsigned char*)v; while( n-- ) *p++ = 0;
+}
+#endif
 
 #if defined(MBEDTLS_PLATFORM_MEMORY)
 #if !defined(MBEDTLS_PLATFORM_STD_CALLOC)
@@ -232,12 +245,13 @@ int mbedtls_platform_std_nv_seed_read( unsigned char *buf, size_t buf_len )
     size_t n;
 
     if( ( file = fopen( MBEDTLS_PLATFORM_STD_NV_SEED_FILE, "rb" ) ) == NULL )
-        return -1;
+        return( -1 );
 
     if( ( n = fread( buf, 1, buf_len, file ) ) != buf_len )
     {
         fclose( file );
-        return -1;
+        mbedtls_zeroize( buf, buf_len );
+        return( -1 );
     }
 
     fclose( file );
