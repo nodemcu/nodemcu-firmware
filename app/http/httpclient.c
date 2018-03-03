@@ -20,6 +20,7 @@
 #include "limits.h"
 #include "httpclient.h"
 #include "stdlib.h"
+#include "pm/swtimer.h"
 
 #define REDIRECTION_FOLLOW_MAX 20
 
@@ -525,6 +526,8 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		/* Set connection timeout timer */
 		os_timer_disarm( &(req->timeout_timer) );
 		os_timer_setfn( &(req->timeout_timer), (os_timer_func_t *) http_timeout_callback, conn );
+		SWTIMER_REG_CB(http_timeout_callback, SWTIMER_IMMEDIATE);
+		  //http_timeout_callback frees memory used by this function and timer cannot be dropped
 		os_timer_arm( &(req->timeout_timer), req->timeout, false );
 
 #ifdef CLIENT_SSL_ENABLE

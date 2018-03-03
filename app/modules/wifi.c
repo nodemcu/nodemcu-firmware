@@ -311,7 +311,7 @@ static int wifi_setmaxtxpower( lua_State* L )
 
 #ifdef PMSLEEP_ENABLE
 /* Begin WiFi suspend functions*/
-#include "pmSleep.h"
+#include <pm/pmSleep.h>
 
 static int wifi_resume_cb_ref = LUA_NOREF; // Holds resume callback reference
 static int wifi_suspend_cb_ref = LUA_NOREF; // Holds suspend callback reference
@@ -845,7 +845,7 @@ static int wifi_station_config( lua_State* L )
 
     lua_State* L_temp = NULL;
 
-    lua_getfield(L, 1, "connected_cb");
+    lua_getfield(L, 1, "connect_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -858,12 +858,12 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "connected_cb:not function");
+        return luaL_argerror(L, 1, "connect_cb:not function");
       }
     }
     lua_pop(L, 1);
 
-    lua_getfield(L, 1, "disconnected_cb");
+    lua_getfield(L, 1, "disconnect_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -876,7 +876,7 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "disconnected_cb:not function");
+        return luaL_argerror(L, 1, "disconnect_cb:not function");
       }
     }
     lua_pop(L, 1);

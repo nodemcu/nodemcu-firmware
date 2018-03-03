@@ -114,7 +114,7 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #define WIFI_SDK_EVENT_MONITOR_ENABLE
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
 
-////#define ENABLE_TIMER_SUSPEND
+//#define TIMER_SUSPEND_ENABLE
 //#define PMSLEEP_ENABLE
 
 

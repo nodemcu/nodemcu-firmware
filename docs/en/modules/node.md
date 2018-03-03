@@ -339,24 +339,26 @@ Put NodeMCU in light sleep mode to reduce current consumption.
     This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 #### Syntax
-`node.sleep({wake_gpio[, duration, int_type, resume_cb, preserve_mode]})`
+<!---`node.sleep({wake_gpio[, duration, int_type, resume_cb, preserve_mode]})`--->
+`node.sleep({wake_gpio[, int_type, resume_cb, preserve_mode]})`
 
 #### Parameters
-- `duration` Sleep duration in microseconds(μs). If a sleep duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))
-- `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts. 
- - If sleep duration is indefinite, `wake_pin` must be specified
- - Please refer to the [`GPIO module`](gpio.md) for more info on the pin map.
-- `int_type` type of interrupt that you would like to wake on. (Optional, Default: `node.INT_LOW`)
- - valid interrupt modes:
-  - `node.INT_UP`   Rising edge
-  - `node.INT_DOWN` Falling edge
-  - `node.INT_BOTH` Both edges
-  - `node.INT_LOW`  Low level
-  - `node.INT_HIGH` High level
-- `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
-- `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
- - If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
- - If false, discard WiFi mode and leave NodeMCU in `wifi.NULL_MODE`. WiFi mode will be restored to original mode on restart.
+<!--- * `duration` Sleep duration in microseconds(μs). If a sleep duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))--->
+
+* `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts. 
+    <!---* If sleep duration is indefinite, `wake_pin` must be specified--->
+    * Please refer to the [`GPIO module`](gpio.md) for more info on the pin map.
+* `int_type` type of interrupt that you would like to wake on. (Optional, Default: `node.INT_LOW`)
+    * valid interrupt modes:
+        * `node.INT_UP`   Rising edge
+        * `node.INT_DOWN` Falling edge
+        * `node.INT_BOTH` Both edges
+        * `node.INT_LOW`  Low level
+        * `node.INT_HIGH` High level
+* `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
+* `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
+    * If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
+    * If false, discard WiFi mode and leave NodeMCU in `wifi.NULL_MODE`. WiFi mode will be restored to original mode on restart.
 
 #### Returns
 - `nil`
@@ -379,15 +381,15 @@ Put NodeMCU in light sleep mode to reduce current consumption.
  cfg.preserve_mode=false
 
  node.sleep(cfg)
-
+```
+<!---
 --Put NodeMCU in light sleep mode for 10 seconds with resume callback
  cfg={}
  cfg.duration=10*1000*1000
  cfg.resume_cb=function() print("WiFi resume") end
 
  node.sleep(cfg)
-
-```
+--->
 
 #### See also
 - [`wifi.suspend()`](wifi.md#wifisuspend)

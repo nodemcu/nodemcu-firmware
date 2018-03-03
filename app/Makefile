@@ -46,8 +46,6 @@ SUBDIRS= 					\
 	fatfs					\
 	esp-gdbstub				\
 	websocket				\
-	swTimer					\
-	misc					\
 	pm					\
 	sjson					\
  	sqlite3					\
@@ -102,8 +100,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	net/libnodemcu_net.a			\
 	mbedtls/libmbedtls.a      		\
 	modules/libmodules.a			\
-	swTimer/libswtimer.a			\
-	misc/libmisc.a				\
 	sjson/libsjson.a			\
   sqlite3/libsqlite3.a			\
 	
