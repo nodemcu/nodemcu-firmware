@@ -58,30 +58,32 @@ static uint8_t checkCRC(uint16_t ravValue, uint8_t checksum)
   return (uint8_t) remainder;
 }
 
-static uint16_t read_with_crc_check(lua_State *L, uint8_t reg)
+static uint16_t read_with_crc_check(uint32_t i2c_id, uint8_t reg)
 {
   uint16_t rawValue;
   uint8_t checksum;
 
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
-  platform_i2c_send_byte(0, reg);
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+  platform_i2c_send_byte(i2c_id, reg);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
 
-  rawValue = (uint16_t) platform_i2c_recv_byte(0, 1) << 8;
-  rawValue |= platform_i2c_recv_byte(0, 1);
-  checksum = (uint8_t) platform_i2c_recv_byte(0, 0);
+  rawValue = (uint16_t) platform_i2c_recv_byte(i2c_id, 1) << 8;
+  rawValue |= platform_i2c_recv_byte(i2c_id, 1);
+  checksum = (uint8_t) platform_i2c_recv_byte(i2c_id, 0);
 
-  platform_i2c_send_stop(0);
+  platform_i2c_send_stop(i2c_id);
 
   return checkCRC(rawValue, checksum) != 0 ? HTU21_CRC_ERROR : rawValue;
 }
 
 static int htu21_read(lua_State *L)
 {
-  uint16_t rawT = read_with_crc_check(L, HTU21_T_MEASUREMENT_HM);
-  uint16_t rawRH = read_with_crc_check(L, HTU21_RH_MEASUREMENT_HM);
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
+
+  uint16_t rawT = read_with_crc_check(i2c_id, HTU21_T_MEASUREMENT_HM);
+  uint16_t rawRH = read_with_crc_check(i2c_id, HTU21_RH_MEASUREMENT_HM);
 
   if (rawT == HTU21_CRC_ERROR || rawRH == HTU21_CRC_ERROR) {
     luaL_error(L, "htu21 invalid CRC");
