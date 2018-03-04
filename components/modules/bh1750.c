@@ -7,8 +7,9 @@
 
 static int bh1750_setup(lua_State *L)
 {
-  platform_bh1750_mode_t mode = (platform_bh1750_mode_t) luaL_optinteger( L, 1, PLATFORM_BH1750_CONTINUOUS_AUTO );
-  uint8_t sensitivity = (uint8_t) luaL_optinteger( L, 2, PLATFORM_BH1750_DEFAULT_SENSITIVITY );
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
+  platform_bh1750_mode_t mode = (platform_bh1750_mode_t) luaL_optinteger( L, 2, PLATFORM_BH1750_CONTINUOUS_AUTO );
+  uint8_t sensitivity = (uint8_t) luaL_optinteger( L, 3, PLATFORM_BH1750_DEFAULT_SENSITIVITY );
 
   luaL_argcheck( L,
       mode == PLATFORM_BH1750_CONTINUOUS_AUTO ||
@@ -22,20 +23,22 @@ static int bh1750_setup(lua_State *L)
   luaL_argcheck( L, sensitivity >= PLATFORM_BH1750_MIN_SENSITIVITY && sensitivity <= PLATFORM_BH1750_MAX_SENSITIVITY, 2,
                  "invalid sensitivity" );
 
-  platform_bh1750_setup(mode, sensitivity);
-
+  int8_t err = platform_bh1750_setup(i2c_id, mode, sensitivity);
+  luaL_argcheck( L, err == PLATFORM_OK , 1, "invalid i2c_id" );
   return 0;
 }
 
 static int bh1750_power_down(lua_State *L)
 {
-  platform_bh1750_power_down();
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
+  platform_bh1750_power_down(i2c_id);
   return 0;
 }
 
 static int bh1750_read(lua_State *L)
 {
-  lua_pushinteger(L, platform_bh1750_read());
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
+  lua_pushinteger(L, platform_bh1750_read(i2c_id));
   return 1;
 }
 

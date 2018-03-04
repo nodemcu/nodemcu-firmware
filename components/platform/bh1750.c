@@ -9,18 +9,18 @@
 uint16_t platform_bh1750_sensitivity = PLATFORM_BH1750_DEFAULT_SENSITIVITY;
 uint8_t platform_bh1750_mode = PLATFORM_BH1750_CONTINUOUS_AUTO;
 
-static void send_command( uint8_t command )
+static void send_command( uint32_t i2c_id, uint8_t command )
 {
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER, 0);
-  platform_i2c_send_byte(0, command, 0);
-  platform_i2c_send_stop(0);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER, 0);
+  platform_i2c_send_byte(i2c_id, command, 0);
+  platform_i2c_send_stop(i2c_id);
 }
 
-static void set_sensitivity( uint8_t sensitivity )
+static void set_sensitivity( uint32_t i2c_id, uint8_t sensitivity )
 {
-  send_command((uint8_t) (0b01000 << 3) | (sensitivity >> 5));
-  send_command((uint8_t) (0b011 << 5 )  | (uint8_t) (sensitivity & 0b11111));
+  send_command(i2c_id, (uint8_t) (0b01000 << 3) | (sensitivity >> 5));
+  send_command(i2c_id, (uint8_t) (0b011 << 5 )  | (uint8_t) (sensitivity & 0b11111));
 
   if (platform_bh1750_mode == PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2 ||
       platform_bh1750_mode == PLATFORM_BH1750_ONE_TIME_HIGH_RES_MODE_2 ||
@@ -31,44 +31,54 @@ static void set_sensitivity( uint8_t sensitivity )
   }
 }
 
-void platform_bh1750_setup( platform_bh1750_mode_t mode, uint8_t sensitivity )
+int8_t platform_bh1750_setup( uint32_t i2c_id, platform_bh1750_mode_t mode, uint8_t sensitivity )
 {
   platform_bh1750_mode = mode;
 
+  if (platform_i2c_exists(i2c_id) == PLATFORM_ERR)
+    return PLATFORM_ERR;
+
   if (mode == PLATFORM_BH1750_CONTINUOUS_AUTO) {
-    set_sensitivity(PLATFORM_BH1750_MAX_SENSITIVITY);
-    send_command(PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
+    set_sensitivity(i2c_id, PLATFORM_BH1750_MAX_SENSITIVITY);
+    send_command(i2c_id, PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
   } else {
     if (PLATFORM_BH1750_MIN_SENSITIVITY >= 31 && PLATFORM_BH1750_MAX_SENSITIVITY <= 254) {
-      set_sensitivity(sensitivity);
+      set_sensitivity(i2c_id, sensitivity);
     }
-    send_command(mode);
+    send_command(i2c_id, mode);
   }
+
+  return PLATFORM_OK;
 }
 
-void platform_bh1750_power_down()
+int8_t platform_bh1750_power_down(uint32_t i2c_id)
 {
-  send_command(PLATFORM_BH1750_POWER_DOWN);
+  if (platform_i2c_exists(i2c_id) == PLATFORM_ERR)
+    return PLATFORM_ERR;
+
+  send_command(i2c_id, PLATFORM_BH1750_POWER_DOWN);
+
+  return PLATFORM_OK;
 }
 
-uint32_t platform_bh1750_read()
+uint32_t platform_bh1750_read(uint32_t i2c_id)
 {
   uint32_t value;
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER, 0);
-  value = (uint16_t) platform_i2c_recv_byte(0, 1) << 8;
-  value |= platform_i2c_recv_byte(0, 0);
-  platform_i2c_send_stop(0);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER, 0);
+  value = (uint16_t) platform_i2c_recv_byte(i2c_id, 1) << 8;
+  value |= platform_i2c_recv_byte(i2c_id, 0);
+  platform_i2c_send_stop(i2c_id);
 
   uint32_t lux_value = (uint32_t) (value * 57500 / platform_bh1750_sensitivity);
 
   if (platform_bh1750_mode == PLATFORM_BH1750_CONTINUOUS_AUTO) {
     if (lux_value < 7200000 && platform_bh1750_sensitivity == PLATFORM_BH1750_MIN_SENSITIVITY) {
-      set_sensitivity(PLATFORM_BH1750_MAX_SENSITIVITY);
-      send_command(PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
+      set_sensitivity(i2c_id, PLATFORM_BH1750_MAX_SENSITIVITY);
+      send_command(i2c_id, PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
     } else if (lux_value >= 7000000 && platform_bh1750_sensitivity == PLATFORM_BH1750_MAX_SENSITIVITY * 2) {
-      set_sensitivity(PLATFORM_BH1750_MIN_SENSITIVITY);
-      send_command(PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE);
+      set_sensitivity(i2c_id, PLATFORM_BH1750_MIN_SENSITIVITY);
+      send_command(i2c_id, PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE);
     }
   }
 

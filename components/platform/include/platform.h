@@ -243,9 +243,9 @@ typedef enum {
   PLATFORM_BH1750_ONE_TIME_LOW_RES_MODE = 0x23,
 } platform_bh1750_mode_t;
 
-void platform_bh1750_power_down();
-void platform_bh1750_setup( platform_bh1750_mode_t mode, uint8_t sensitivity );
-uint32_t platform_bh1750_read();
+int8_t platform_bh1750_power_down( uint32_t i2c_id );
+int8_t platform_bh1750_setup( uint32_t i2c_id, platform_bh1750_mode_t mode, uint8_t sensitivity );
+uint32_t platform_bh1750_read( uint32_t i2c_id );
 
 // *****************************************************************************
 // WS2812 platform interface
