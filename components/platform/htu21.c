@@ -53,22 +53,25 @@ static uint8_t checkCRC(uint16_t ravValue, uint8_t checksum)
   return (uint8_t) remainder;
 }
 
-uint16_t platform_htu21_read(uint8_t reg)
+uint16_t platform_htu21_read(uint32_t i2c_id, uint8_t reg)
 {
   uint16_t rawValue;
   uint8_t checksum;
 
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER, 0);
-  platform_i2c_send_byte(0, reg, 0);
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER, 0);
+  if (platform_i2c_exists(i2c_id) == PLATFORM_ERR)
+    return PLATFORM_HTU21_ERROR;
 
-  rawValue = (uint16_t) platform_i2c_recv_byte(0, 1) << 8;
-  rawValue |= platform_i2c_recv_byte(0, 1);
-  checksum = (uint8_t) platform_i2c_recv_byte(0, 0);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER, 0);
+  platform_i2c_send_byte(i2c_id, reg, 0);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, HTU21_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER, 0);
+
+  rawValue = (uint16_t) platform_i2c_recv_byte(i2c_id, 1) << 8;
+  rawValue |= platform_i2c_recv_byte(i2c_id, 1);
+  checksum = (uint8_t) platform_i2c_recv_byte(i2c_id, 0);
 
   platform_i2c_send_stop(0);
 
-  return checkCRC(rawValue, checksum) != 0 ? PLATFORM_HTU21_CRC_ERROR : rawValue;
+  return checkCRC(rawValue, checksum) != 0 ? PLATFORM_HTU21_ERROR : rawValue;
 }

@@ -10,7 +10,10 @@ This module provides access to the [HTU21D](https://www.sparkfun.com/products/13
 Samples the sensor then returns temperature and humidity value.
 
 #### Syntax
-`htu21.read()`
+`htu21.read([i2c_id])`
+
+#### Parameters
+- `i2c_id` i2c interface id, defaults to i2c.SW if omitted
 
 #### Returns
 Temperature data in millidegree Celsius and humidity data in per cent mille
@@ -19,7 +22,7 @@ Temperature data in millidegree Celsius and humidity data in per cent mille
 ```lua
 local sda, scl = 1, 2
 i2c.setup(i2c.SW, sda, scl, i2c.SLOW)  -- call i2c.setup() only once
-local temperature, humidity = htu21.read()
+local temperature, humidity = htu21.read(i2c.SW)
 print(temperature / 1000 .. '°C')
 print(humidity / 1000 .. '%')
 ```

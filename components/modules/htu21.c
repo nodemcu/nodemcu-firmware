@@ -7,11 +7,13 @@
 
 static int htu21_read(lua_State *L)
 {
-  uint16_t rawT = platform_htu21_read(PLATFORM_HTU21_T_MEASUREMENT_HM);
-  uint16_t rawRH = platform_htu21_read(PLATFORM_HTU21_RH_MEASUREMENT_HM);
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
 
-  if (rawT == PLATFORM_HTU21_CRC_ERROR || rawRH == PLATFORM_HTU21_CRC_ERROR) {
-    luaL_error(L, "htu21 invalid CRC");
+  uint16_t rawT = platform_htu21_read(i2c_id, PLATFORM_HTU21_T_MEASUREMENT_HM);
+  uint16_t rawRH = platform_htu21_read(i2c_id, PLATFORM_HTU21_RH_MEASUREMENT_HM);
+
+  if (rawT == PLATFORM_HTU21_ERROR || rawRH == PLATFORM_HTU21_ERROR) {
+    luaL_error(L, "htu21 invalid CRC or i2c_id");
   }
 
   lua_pushinteger(L, platform_htu21_temp_ticks_to_millicelsius(rawT));
