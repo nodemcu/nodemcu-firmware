@@ -26,18 +26,18 @@ typedef enum {
 uint16_t platform_bh1750_sensitivity = PLATFORM_BH1750_DEFAULT_SENSITIVITY;
 uint8_t platform_bh1750_mode = PLATFORM_BH1750_CONTINUOUS_AUTO;
 
-static void send_command( uint8_t command )
+static void send_command( uint32_t i2c_id, uint8_t command )
 {
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
-  platform_i2c_send_byte(0, command);
-  platform_i2c_send_stop(0);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+  platform_i2c_send_byte(i2c_id, command);
+  platform_i2c_send_stop(i2c_id);
 }
 
-static void set_sensitivity( uint8_t sensitivity )
+static void set_sensitivity( uint32_t i2c_id, uint8_t sensitivity )
 {
-  send_command((uint8_t) (0b01000 << 3) | (sensitivity >> 5));
-  send_command((uint8_t) (0b011 << 5 )  | (uint8_t) (sensitivity & 0b11111));
+  send_command(i2c_id, (uint8_t) (0b01000 << 3) | (sensitivity >> 5));
+  send_command(i2c_id, (uint8_t) (0b011 << 5 )  | (uint8_t) (sensitivity & 0b11111));
 
   if (platform_bh1750_mode == PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2 ||
       platform_bh1750_mode == PLATFORM_BH1750_ONE_TIME_HIGH_RES_MODE_2 ||
@@ -48,44 +48,44 @@ static void set_sensitivity( uint8_t sensitivity )
   }
 }
 
-static void platform_bh1750_setup( platform_bh1750_mode_t mode, uint8_t sensitivity )
+static void platform_bh1750_setup( uint32_t i2c_id, platform_bh1750_mode_t mode, uint8_t sensitivity )
 {
   platform_bh1750_mode = mode;
 
   if (mode == PLATFORM_BH1750_CONTINUOUS_AUTO) {
-    set_sensitivity(PLATFORM_BH1750_MAX_SENSITIVITY);
-    send_command(PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
+    set_sensitivity(i2c_id, PLATFORM_BH1750_MAX_SENSITIVITY);
+    send_command(i2c_id, PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
   } else {
     if (PLATFORM_BH1750_MIN_SENSITIVITY >= 31 && PLATFORM_BH1750_MAX_SENSITIVITY <= 254) {
-      set_sensitivity(sensitivity);
+      set_sensitivity(i2c_id, sensitivity);
     }
-    send_command(mode);
+    send_command(i2c_id, mode);
   }
 }
 
-static void platform_bh1750_power_down()
+static void platform_bh1750_power_down(uint32_t i2c_id)
 {
-  send_command(PLATFORM_BH1750_POWER_DOWN);
+  send_command(i2c_id, PLATFORM_BH1750_POWER_DOWN);
 }
 
-static uint32_t platform_bh1750_read()
+static uint32_t platform_bh1750_read(uint32_t i2c_id)
 {
   uint32_t value;
-  platform_i2c_send_start(0);
-  platform_i2c_send_address(0, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
-  value = (uint16_t) platform_i2c_recv_byte(0, 1) << 8;
-  value |= platform_i2c_recv_byte(0, 0);
-  platform_i2c_send_stop(0);
+  platform_i2c_send_start(i2c_id);
+  platform_i2c_send_address(i2c_id, BH1750_ADDRESS, PLATFORM_I2C_DIRECTION_RECEIVER);
+  value = (uint16_t) platform_i2c_recv_byte(i2c_id, 1) << 8;
+  value |= platform_i2c_recv_byte(i2c_id, 0);
+  platform_i2c_send_stop(i2c_id);
 
   uint32_t lux_value = (uint32_t) (value * 57500 / platform_bh1750_sensitivity);
 
   if (platform_bh1750_mode == PLATFORM_BH1750_CONTINUOUS_AUTO) {
     if (lux_value < 7200000 && platform_bh1750_sensitivity == PLATFORM_BH1750_MIN_SENSITIVITY) {
-      set_sensitivity(PLATFORM_BH1750_MAX_SENSITIVITY);
-      send_command(PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
+      set_sensitivity(i2c_id, PLATFORM_BH1750_MAX_SENSITIVITY);
+      send_command(i2c_id, PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE_2);
     } else if (lux_value >= 7000000 && platform_bh1750_sensitivity == PLATFORM_BH1750_MAX_SENSITIVITY * 2) {
-      set_sensitivity(PLATFORM_BH1750_MIN_SENSITIVITY);
-      send_command(PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE);
+      set_sensitivity(i2c_id, PLATFORM_BH1750_MIN_SENSITIVITY);
+      send_command(i2c_id, PLATFORM_BH1750_CONTINUOUS_HIGH_RES_MODE);
     }
   }
 
@@ -94,8 +94,9 @@ static uint32_t platform_bh1750_read()
 
 static int bh1750_setup(lua_State *L)
 {
-  platform_bh1750_mode_t mode = (platform_bh1750_mode_t) luaL_optinteger( L, 1, PLATFORM_BH1750_CONTINUOUS_AUTO );
-  uint8_t sensitivity = (uint8_t) luaL_optinteger( L, 2, PLATFORM_BH1750_DEFAULT_SENSITIVITY );
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
+  platform_bh1750_mode_t mode = (platform_bh1750_mode_t) luaL_optinteger( L, 2, PLATFORM_BH1750_CONTINUOUS_AUTO );
+  uint8_t sensitivity = (uint8_t) luaL_optinteger( L, 3, PLATFORM_BH1750_DEFAULT_SENSITIVITY );
 
   luaL_argcheck( L,
                  mode == PLATFORM_BH1750_CONTINUOUS_AUTO ||
@@ -109,20 +110,22 @@ static int bh1750_setup(lua_State *L)
   luaL_argcheck( L, sensitivity >= PLATFORM_BH1750_MIN_SENSITIVITY && sensitivity <= PLATFORM_BH1750_MAX_SENSITIVITY, 2,
                  "invalid sensitivity" );
 
-  platform_bh1750_setup(mode, sensitivity);
+  platform_bh1750_setup(i2c_id, mode, sensitivity);
 
   return 0;
 }
 
 static int bh1750_power_down(lua_State *L)
 {
-  platform_bh1750_power_down();
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
+  platform_bh1750_power_down(i2c_id);
   return 0;
 }
 
 static int bh1750_read(lua_State *L)
 {
-  lua_pushinteger(L, platform_bh1750_read());
+  uint32_t i2c_id = (uint32_t) luaL_optinteger( L, 1, 0 );
+  lua_pushinteger(L, platform_bh1750_read(i2c_id));
   return 1;
 }
 
