@@ -6,9 +6,9 @@
 #define NODE_VERSION_REVISION	0U
 #define NODE_VERSION_INTERNAL   0U
 
-#define NODE_VERSION	"NodeMCU 2.1.0"
+#define NODE_VERSION	"NodeMCU 2.1.0-JL1.0-RfSwitch"
 #ifndef BUILD_DATE
-#define BUILD_DATE	  "unspecified"
+#define BUILD_DATE	  "20171010"
 #endif
 
 extern char SDK_VERSION[];
