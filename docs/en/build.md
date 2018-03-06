@@ -28,8 +28,10 @@ The `make` command initiates the build process, which will start with the config
     GNU make version 4.0 or higher is required for a successful build. Versions 3.8.2 and below will produce an incomplete firmware image.
 
 Updating your clone from upstream needs an additional command to update the submodules as well:
+
 ```
 git pull origin dev-esp32
+git submodule init #only if repo was cloned w/o submodules init
 git submodule update --recursive
 ```
 
