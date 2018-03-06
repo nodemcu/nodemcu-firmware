@@ -5,6 +5,7 @@ server-ca.crt
 sdkconfig
 sdkconfig.old*
 build/
+app/
 components/*/.output/
 
 #ignore Eclipse project files
