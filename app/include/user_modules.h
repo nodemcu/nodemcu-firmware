@@ -86,5 +86,9 @@
 //#define LUA_USE_MODULES_WS2812_EFFECTS
 //#define LUA_USE_MODULES_XPT2046
 
+//debug modules
+//#define LUA_USE_MODULES_SWTMR_DBG //SWTMR timer suspend Debug functions
+
+
 #endif  /* LUA_CROSS_COMPILER */
 #endif	/* __USER_MODULES_H__ */

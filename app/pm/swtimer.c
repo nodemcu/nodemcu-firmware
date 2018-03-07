@@ -51,6 +51,9 @@
 #include "c_types.h"
 
 //#define SWTMR_DEBUG
+#if !defined(SWTMR_DBG) && defined(LUA_USE_MODULES_SWTMR_DBG)
+ #define SWTMR_DEBUG
+#endif
 
 //this section specifies which lua registry to use. LUA_GLOBALSINDEX or LUA_REGISTRYINDEX
 #ifdef SWTMR_DEBUG
@@ -536,7 +539,7 @@ static const LUA_REG_TYPE test_swtimer_debug_map[] = {
     { LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(TIMER_SUSPEND_DEBUG, "timer_suspend_debug", test_swtimer_debug_map, NULL);
+NODEMCU_MODULE(SWTMR_DBG, "SWTMR_DBG", test_swtimer_debug_map, NULL);
 
 #endif
 

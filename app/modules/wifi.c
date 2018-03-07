@@ -393,6 +393,19 @@ static int wifi_resume(lua_State* L)
 }
 
 /* End WiFi suspend functions*/
+#else
+static char *susp_note_str = "\n The option \"pmsleep_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n";
+static char *susp_unavailable_str = "wifi.suspend is unavailable";
+
+static int wifi_suspend(lua_State* L){
+  c_sprintf("%s", susp_note_str);
+  return luaL_error(L, susp_unavailable_str);
+}
+
+static int wifi_resume(lua_State* L){
+  c_sprintf("%s", susp_note_str);
+  return luaL_error(L, susp_unavailable_str);
+}
 #endif
 
 // Lua: wifi.nullmodesleep()
@@ -1790,10 +1803,8 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "setmaxtxpower" ),  LFUNCVAL( wifi_setmaxtxpower ) },
-#ifdef PMSLEEP_ENABLE
   { LSTRKEY( "suspend" ),        LFUNCVAL( wifi_suspend ) },
   { LSTRKEY( "resume" ),         LFUNCVAL( wifi_resume ) },
-#endif
   { LSTRKEY( "nullmodesleep" ),  LFUNCVAL( wifi_null_mode_auto_sleep ) },
 #ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },

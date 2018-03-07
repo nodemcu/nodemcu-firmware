@@ -103,8 +103,7 @@ static int node_sleep( lua_State* L )
   cfg.resume_cb_ptr = &node_sleep_resume_cb;
   pmSleep_suspend(&cfg);
 #else
-  c_printf("\nERROR! Light sleep functionality is unavailable in this firmware build!\n"
-      "To enable light sleep functionality,\nPlease uncomment \"timer_suspend_enable\" in \"app/include/user_config.h\" and rebuild the NodeMCU firmware.\n\n");
+  c_printf("\n The option \"timer_suspend_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n");
   return luaL_error(L, "light sleep is unavailable");
 #endif
   return 0;
