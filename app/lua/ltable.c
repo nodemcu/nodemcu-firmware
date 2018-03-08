@@ -749,12 +749,12 @@ int luaH_getn_ro (void *t) {
   return len;
 }
 
-#if defined(LUA_DEBUG)
+int luaH_isdummy (Node *n) { return n == dummynode; }
 
+#if defined(LUA_DEBUG)
 Node *luaH_mainposition (const Table *t, const TValue *key) {
   return mainposition(t, key);
 }
-
-int luaH_isdummy (Node *n) { return n == dummynode; }
-
 #endif
+
+

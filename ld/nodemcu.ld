@@ -234,11 +234,11 @@ SECTIONS
 
     /* Link-time arrays containing the defs for the included modules */
     . = ALIGN(4);
-    lua_libs = ABSOLUTE(.);
+    lua_libs_base = ABSOLUTE(.);
     /* Allow either empty define or defined-to-1 to include the module */
     KEEP(*(.lua_libs))
     LONG(0) LONG(0) /* Null-terminate the array */
-    lua_rotable = ABSOLUTE(.);
+    lua_rotable_base = ABSOLUTE(.);
     KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
 

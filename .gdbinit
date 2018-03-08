@@ -5,6 +5,15 @@
 # single hardware breakpoint which can be used as an hb or a wa.  You have to 
 # remember to delete the previous one, so the br macro does this for you. 
 #
+file app/.output/eagle/debug/image/eagle.app.v6.out
+#set remotedebug 1
+set remotelogfile gdb_rsp_logfile.txt
+set serial baud 115200
+set remote hardware-breakpoint-limit 1
+set remote hardware-watchpoint-limit 1
+#set debug xtensa 4
+target remote /dev/ttyUSB0
+
 set confirm off
 set print null-stop
 define br 
@@ -13,10 +22,30 @@ define br
 end
 set pagination off
 
+define prTS
+  set $o = &(((TString *)($arg0))->tsv)
+  printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
+  printf "String: hash = 0x%08x, len = %u : %s\n", $o->hash, $o->len, (char *)(&$o[1])
+end
+define prTnodes
+  set $o = (Table *)($arg0)
+  set $n = 1<<($o->lsizenode)
+  set $i = 0
+  while $i < $n
+    set $nd = ($o->node) + $i
+    if $nd->i_key.nk.tt && $nd->i_val.tt
+      if $nd->i_key.nk.tt == 6
+        printf "%4u: %s  %2i\n", $i, $nd->i_key.nk.tt , $nd->i_val.tt      else
+        printf "%4u: %2i  %2i\n", $i, $nd->i_key.nk.tt , $nd->i_val.tt
+      end
+    end
+    set $i = $i +1
+  end
+end
 define prTV
   if $arg0
-    set $type = $arg0.tt
-    set $val  = $arg0.value
+    set $type = ($arg0).tt
+    set $val  = ($arg0).value
 
     if $type == 0
       # NIL
@@ -24,34 +53,33 @@ define prTV
     end
     if $type == 1
        # Boolean
-       printf "Boolean: %u\n", $val->n
+       printf "Boolean: %u\n", $val.n
     end
     if $type == 2
        # ROTable
-       printf "ROTable: %p\n", $val->p
+       printf "ROTable: %p\n", $val.p
     end
     if $type == 3
         # Light Function
-       printf "Light Func: %p\n",p $arg $val->p
+       printf "Light Func: %p\n", $val.p
     end
     if $type == 4
        # Light User Data
-       printf "Light Udata: %p\n", $val->pend
+       printf "Light Udata: %p\n", $val.p
     end
     if $type == 5
        # Number
-       printf "Boolean: %u\n", $val->n
+       printf "Number: %u\n", $val.n
     end
     if $type == 6
-       # TString
-      set $o = &($val.gc->ts.tsv)
-      printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
-      printf "String: hash = 0x%08x, len = %u : %s\n", $o->hash, $o->len, (char *)($ts+1)
+      prTS $arg0
     end
     if $type == 7
       # Table
-      __printComHdr $arg0
-      set $ts = (TString *)$val->p
+      set $o = &($val->gc.h)
+      printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
+      printf "Nodes: %4i %p\n", 2<<($o->lsizenode), $o->nodes
+      printf "Arry:  %4i %p\n", $o->sizearray, $o->array
     end
     if $type == 8
       # Function
@@ -106,6 +134,25 @@ define dumpRAMstrt
   dumpstrt &(L->l_G->strt)
 end
 
+define dumpROstrt
+  dumpstrt &(L->l_G->ROstrt)
+end
+
+define graylist
+  set $n = $arg0
+  while  $n
+    printf "%p %2u %02X\n",$n, $n->gch.tt, $n->gch.marked
+    set $n=$n->gch.next
+  end
+end
+
+define prPC
+ printf "Excuting instruction %i: %08x\n", (pc - cl->p->code)+1-1, i
+end
+
+define prT
+ print *(Table*)($arg0)
+end
 set history save on
 set history size 1000
 

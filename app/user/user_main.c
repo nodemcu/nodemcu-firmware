@@ -240,6 +240,7 @@ user_rf_cal_sector_set(void)
     return rf_cal_sec;
 }
 
+extern void luaN_user_init(void);
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -259,6 +260,10 @@ void user_init(void)
 
 #ifndef NODE_DEBUG
     system_set_os_print(0);
+#endif
+
+#ifdef LUA_FLASH_STORE
+    luaN_user_init();
 #endif
 
     system_init_done_cb(nodemcu_init);

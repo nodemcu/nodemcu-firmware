@@ -17,7 +17,9 @@
 
 #include "platform.h"
 #include "lrodefs.h"
-
+#ifdef LUA_FLASH_STORE
+#include "lflash.h"
+#endif
 #include "c_types.h"
 #include "c_string.h"
 #include "driver/uart.h"
@@ -134,7 +136,6 @@ static int node_chipid( lua_State* L )
 //   lua_pushinteger(L, vdd33);
 //   return 1;
 // }
-
 // Lua: flashid()
 static int node_flashid( lua_State* L )
 {
@@ -574,6 +575,13 @@ static const LUA_REG_TYPE node_task_map[] = {
   { LSTRKEY( "HIGH_PRIORITY" ),   LNUMVAL( TASK_PRIORITY_HIGH ) },
   { LNILKEY, LNILVAL }
 };
+#ifdef LUA_FLASH_STORE
+static const LUA_REG_TYPE node_flash_map[] = {
+  { LSTRKEY( "reload" ),          LFUNCVAL( luaN_reload_reboot ) },
+  { LSTRKEY( "index" ),           LFUNCVAL( luaN_index ) },
+  { LNILKEY, LNILVAL }
+};
+#endif
 
 static const LUA_REG_TYPE node_map[] =
 {
@@ -601,6 +609,9 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "random" ), LFUNCVAL( node_random) },
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
+#endif
+#ifdef LUA_FLASH_STORE
+  { LSTRKEY( "flash") , LROVAL( node_flash_map ) },
 #endif
   { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
   { LSTRKEY( "task" ), LROVAL( node_task_map ) },

@@ -41,7 +41,7 @@ LUA_NUMBER luai_ipow(LUA_NUMBER a, LUA_NUMBER b) {
     LUA_NUMBER c = 1;
     for (;;) {
       if (b & 1)
-	c *= a;
+	      c *= a;
       b = b >> 1;
       if (b == 0)
 	return c;

@@ -18,7 +18,7 @@
 
 #include "lua.h"
 #include "lauxlib.h"
-
+#include "lualib.h"
 #include "ldo.h"
 #include "lfunc.h"
 #include "lmem.h"
@@ -37,6 +37,7 @@ static int flash=0;	  		/* output flash image */
 static int lookup=0;	  		/* output lookup-style master combination header */
 static char Output[]={ OUTPUT };	/* default output file name */
 static const char* output=Output;	/* actual output file name */
+static const char* execute;       /* executed a Lua file */
 static const char* progname=PROGNAME;	/* actual program name */
 static DumpTargetInfo target;
 
@@ -66,6 +67,7 @@ static void usage(const char* message)
  "  -        process stdin\n"
  "  -l       list\n"
  "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
+ "  -e name  execute a lua source file\n"
  "  -f       output a flash image file\n"
  "  -i       generate lookup combination master (default with option -f)\n" 
  "  -p       parse only\n"
@@ -93,8 +95,14 @@ static int doargs(int argc, char* argv[])
    if (version) ++version;
    break;
   }
-  else if (IS("-"))			/* end of options; use stdin */
+  else if (IS("-"))		  	/* end of options; use stdin */
    break;
+  else if (IS("-e"))			/* execute a lua source file file */
+  {
+   execute=argv[++i];
+   if (execute ==NULL || *execute==0 || *execute=='-' ) 
+     usage(LUA_QL("-e") " needs argument");
+  }
   else if (IS("-f"))			/* Flash image file */
   {
    flash=1;
@@ -242,12 +250,25 @@ static int pmain(lua_State* L)
  const Proto* f;
  int i;
  if (!lua_checkstack(L,argc)) fatal("too many input files");
+ if (execute)
+ {
+  if (luaL_loadfile(L,execute)!=0) fatal(lua_tostring(L,-1));
+  luaL_openlibs(L);
+  lua_pushstring(L, execute);
+  if (lua_pcall(L, 1, 1, 0)) fatal(lua_tostring(L,-1));
+  if (!lua_isfunction(L, -1)) 
+  {
+   lua_pop(L,1);
+   if(argc == 0) return 0;
+   execute = NULL;
+  }
+ }
  for (i=0; i<argc; i++)
  {
   const char* filename=IS("-") ? NULL : argv[i];
   if (luaL_loadfile(L,filename)!=0) fatal(lua_tostring(L,-1));
  }
- f=combine(L,argc,lookup);
+ f=combine(L,argc + (execute ? 1: 0), lookup);
  if (listing) luaU_print(f,listing>1);
  if (dumping)
  {
@@ -286,7 +307,7 @@ int main(int argc, char* argv[])
 
  int i=doargs(argc,argv);
  argc-=i; argv+=i;
- if (argc<=0) usage("no input files given");
+ if (argc<=0 && execute==0) usage("no input files given");
  L=lua_open();
  if (L==NULL) fatal("not enough memory for state");
  s.argc=argc;

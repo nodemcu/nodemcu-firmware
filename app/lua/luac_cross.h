@@ -31,6 +31,7 @@
 #define c_freopen freopen
 #define c_getc getc
 #define c_getenv getenv
+#define c_malloc malloc
 #define c_memcmp memcmp
 #define c_memcpy memcpy
 #define c_printf printf

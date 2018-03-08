@@ -25,7 +25,8 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+#DEFINES += -DDEVELOPMENT_TOOLS -DDEVELOPMENT_USE_GDB -DNODE_DEBUG -DBREAK_ON_STARTUP_PIN=1
+#EXTRA_CCFLAGS += -ggdb -O0
 
 #############################################################
 # Recursion Magic - Don't touch this!!

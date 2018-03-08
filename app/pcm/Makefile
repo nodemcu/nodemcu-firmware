@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = pcm.a
+GEN_LIBS = libpcm.a
 endif
 
 STD_CFLAGS=-std=gnu11 -Wimplicit

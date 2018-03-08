@@ -224,7 +224,7 @@ static void createROstrt(lua_State *L, FlashHeader *fh) {
     toFlashAddr(L, *e, fts);                 // add reference to TS to lookup vector
     toFlashAddr(L, fts->next, last);         // and chain to previous entry if any
     fts->tt     = LUA_TSTRING;               // Set as String
-    fts->marked = bitmask(FIXEDBIT);         // Fixed with no Whitebits set
+    fts->marked = bitmask(LFSBIT);           // LFS string with no Whitebits set
     fts->hash   = hash;                      // add hash
     fts->len    = len;                       // and length
     memcpy(flashAlloc(L, ALIGN(len+1)), p, ALIGN(len+1)); // copy string
@@ -262,14 +262,21 @@ static void *resolveTString(lua_State* L, TString *s) {
  *   src     Source of record
  *   returns Address of destination record
  */
+#define TARGET_TV_SIZE (2*sizeof(lua_Number))
 static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
   /* ToS is the string address mapping table */
   if (n == 0)
     return NULL;
-  int i;
+  int i, recsize;
   void *newts;
-  // A bit of a botch because fmt is either "V" or a string of WORDSIZE specifiers */
-  int recsize = fmt[0]=='V' ? 16 : WORDSIZE * strlen(fmt);
+  /* A bit of a botch because fmt is either "V" or a string of WORDSIZE specifiers */
+  /* The size 8 for integer builds and 16 for float ones on both architectures */
+  if (fmt[0]=='V') {
+    lua_assert(fmt[1] == 0);   /* V formats must be singetons */
+    recsize = TARGET_TV_SIZE;
+  } else {
+    recsize = WORDSIZE * strlen(fmt);
+  }
 
   uint *d  = cast(uint *, flashAlloc(L, n * recsize));
   uint *dest = d;
@@ -284,8 +291,8 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
       switch (*p++) {
         case 'A':
           toFlashAddr(L, *d, *cast(void**, s));
-          d++;
           s += FLASH_WORDS(size_t);
+          d++;
           break;
         case 'I':
           *d++ = *s++;
@@ -293,22 +300,23 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
         case 'S':
           newts = resolveTString(L, *cast(TString **, s));
           toFlashAddr(L, *d, newts);
-          d++;
           s += FLASH_WORDS(size_t);
+          d++;
           break;
         case 'V':
-          memcpy(d, s, sizeof(TValue));
+          /* This code has to work for both Integer and Float build variants */
+          memset(d, 0, TARGET_TV_SIZE);
           TValue *sv = cast(TValue *, s);
           if (ttisstring(sv)) {
-            newts = resolveTString(L, rawtsvalue(sv));
-            toFlashAddr(L, *d, newts);
-            d[1] = 0;
-          } else {
+            toFlashAddr(L, *d, resolveTString(L, rawtsvalue(sv)));
+          } else { /* non-collectable types all of size lua_Number */
             lua_assert(!iscollectable(sv));
+            *cast(lua_Number*,d) = *cast(lua_Number*,s);
           }
-          d += FLASH_WORDS(TValue);
+          *cast(int *,cast(lua_Number*,d)+1) = ttype(sv);
           s += FLASH_WORDS(TValue);
-          break;
+          d += TARGET_TV_SIZE/WORDSIZE;
+         break;
         default:
           lua_assert (0);
       }
@@ -334,7 +342,7 @@ static void *functionToFlash(lua_State* L, const Proto* orig) {
   memcpy (&f, orig, sizeof(Proto));
   f.gclist = NULL;
   f.next = NULL;
-  l_setbit(f.marked, FIXEDBIT);
+  l_setbit(f.marked, LFSBIT);   /* OK to set the LFSBIT on a stack-cloned copy */
 
   if (f.sizep) {                /* clone included Protos */
     Proto **p = luaM_newvector(L, f.sizep, Proto *);

@@ -1,0 +1,224 @@
+/*
+** $Id: lflash.c
+** See Copyright Notice in lua.h
+*/
+
+#define lflash_c
+#define LUA_CORE
+#define LUAC_CROSS_FILE
+#include "lua.h"
+
+#ifdef LUA_FLASH_STORE
+#include "lobject.h"
+#include "lauxlib.h"
+#include "lstate.h"
+#include "lfunc.h"
+#include "lflash.h"
+#include "platform.h"
+#include "vfs.h"
+
+#include "c_fcntl.h"
+#include "c_stdio.h"
+#include "c_stdlib.h"
+#include "c_string.h"
+
+/*
+ * Flash memory is a fixed memory addressable block that is serially allocated by the
+ * luac build process and the out image can be downloaded into SPIFSS and loaded into
+ * flash with a node.flash.load() command. See luac_cross/lflashimg.c for the build
+ * process.
+ */
+
+static char    *flashAddr;
+static uint32_t flashAddrPhys;
+static uint32_t flashSector;
+static uint32_t curOffset;
+
+#define ALIGN(s)     (((s)+sizeof(size_t)-1) & ((size_t) (- (signed) sizeof(size_t))))
+#define ALIGN_BITS(s) (((uint32_t)s) & (sizeof(size_t)-1))
+#define ALL_SET      cast(uint32_t, -1)
+#define FLASH_SIZE   LUA_FLASH_STORE
+#define FLASH_PAGE_SIZE INTERNAL_FLASH_SECTOR_SIZE
+#define FLASH_PAGES  (FLASH_SIZE/FLASH_PAGE_SIZE)
+
+#define BREAK_ON_STARTUP_PIN  1  // GPIO 5 or setting to 0 will disable pin startup 
+
+#ifdef NODE_DEBUG
+extern void dbg_printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void dumpStrt(stringtable *tb, const char *type) {
+  int i,j;
+  GCObject *o;
+
+  NODE_DBG("\nDumping %s String table\n\n========================\n", type);
+  NODE_DBG("No of elements: %d\nSize of table: %d\n", tb->nuse, tb->size);
+  for (i=0; i<tb->size; i++)
+    for(o = tb->hash[i], j=0; o; (o=o->gch.next), j++ ) {
+      TString *ts =cast(TString *, o);
+      NODE_DBG("%5d %5d %08x %08x %5d %1s %s\n",  
+               i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len,
+               ts_isreadonly(ts) ? "R" : " ",  getstr(ts));
+    }
+} 
+
+LUA_API void dumpStrings(lua_State *L) {
+  dumpStrt(&G(L)->strt, "RAM");
+  if (G(L)->ROstrt.hash)
+    dumpStrt(&G(L)->ROstrt, "ROM");
+}
+#endif
+
+/* =====================================================================================
+ * The next 4 functions: flashPosition, flashSetPosition, flashBlock and flashErase
+ * wrap writing to flash. The last two are platform dependent.  Also note that any
+ * writes are suppressed if the global writeToFlash is false.  This is used in 
+ * phase I where the pass is used to size the structures in flash.
+ */
+static char *flashPosition(void){
+  return  flashAddr + curOffset;
+}
+
+
+static char *flashSetPosition(uint32_t offset){
+  NODE_DBG("flashSetPosition(%04x)\n", offset);
+  curOffset = offset;
+  return flashPosition();
+}
+
+
+static char *flashBlock(const void* b, size_t size)  {
+  void *cur = flashPosition();
+  NODE_DBG("flashBlock((%04x),%08x,%04x)\n", curOffset,b,size);
+  lua_assert(ALIGN_BITS(b) == 0 && ALIGN_BITS(size) == 0);
+  platform_flash_write(b, flashAddrPhys+curOffset, size);
+  curOffset += size;
+  return cur;
+}
+
+static void flashErase(uint32_t start, uint32_t end){
+  int i;
+  if (start == -1) start = FLASH_PAGES - 1;
+  if (end == -1) end = FLASH_PAGES - 1;
+  NODE_DBG("flashErase(%04x,%04x)\n", flashSector+start, flashSector+end);
+  for (i = start; i<=end; i++)
+    platform_flash_erase_sector( flashSector + i );
+}
+
+
+/* =====================================================================================
+ * Hook in user_main.c to allocate flash memory for the lua flash store
+ */
+void luaN_user_init(void) {
+  curOffset    = 0;
+  flashSector = platform_flash_reserve_section( FLASH_SIZE, &flashAddrPhys );
+  flashAddr   = cast(char *,platform_flash_phys2mapped(flashAddrPhys));
+  NODE_DBG("Flash initialised: %x %08x\n", flashSector, flashAddr); 
+}
+
+
+/*
+ * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
+ */  
+LUAI_FUNC void luaN_init (lua_State *L) {
+  FlashHeader *fh = cast(FlashHeader *, flashAddr);
+  if (fh->flash_sig == FLASH_SIG && 
+      fh->pROhash   != ALL_SET &&
+      fh->mainProto != ALL_SET) {
+    G(L)->ROstrt.hash = cast(GCObject **, fh->pROhash);
+    G(L)->ROstrt.nuse = fh->nROuse ;
+    G(L)->ROstrt.size = fh->nROsize;
+    G(L)->ROpvmain    = cast(Proto *,fh->mainProto);
+  }
+}
+
+#define BYTE_OFFSET(t,f) cast(size_t, &(cast(t *, NULL)->f))
+/*
+ * Rehook address chain to correct Flash byte addressed within the mapped adress space 
+ * Note that on input each 32-bit address field is split into 2×16-bit subfields
+ *  -  the lu_int16 offset of the target address being referenced
+ *  -  the lu_int16 offset of the next address pointer. 
+ */
+
+static int rebuild_core (int fd, uint32_t size, lu_int32 *buf) {
+  int bi;  /* byte offset into memory mapped LFS of current buffer */ 
+  int wNextOffset = BYTE_OFFSET(FlashHeader,mainProto)/sizeof(lu_int32);
+  int wj;  /* word offset into current input buffer */
+  for (bi = 0; bi < size; bi += FLASH_PAGE_SIZE) {
+    int wi   = bi / sizeof(lu_int32);
+    int blen = ((bi + FLASH_PAGE_SIZE) < size) ? FLASH_PAGE_SIZE : size - bi;
+    int wlen = blen / sizeof(lu_int32);
+    if (vfs_read(fd, buf , blen) != blen)
+      return 0;
+
+    for (wj = 0; wj < wlen; wj++) {
+      if ((wi + wj) == wNextOffset) {  /* this word is the next linked address */
+        int wTargetOffset = buf[wj]&0xFFFF;
+        wNextOffset = buf[wj]>>16;
+        lua_assert(!wNextOffset || (wNextOffset>(wi+wj) && wNextOffset<size/sizeof(lu_int32)));
+        buf[wj] = cast(lu_int32, flashAddr + wTargetOffset*sizeof(lu_int32));
+      }
+    }
+    flashBlock(buf, blen);
+  }
+  return size;
+}
+
+
+/*
+ * Library function called by node.flash.load(filename).
+ */
+LUALIB_API int luaN_reload_reboot (lua_State *L) {
+  int fd, status;
+  FlashHeader fh;
+
+  const char *fn = lua_tostring(L, 1);
+  if (!fn || !(fd = vfs_open(fn, "r")))
+    return 0;
+   
+  if (vfs_read(fd, &fh, sizeof(fh)) != sizeof(fh) ||
+      fh.flash_sig != FLASH_SIG)
+    return 0;
+
+  if (vfs_lseek(fd, -1, VFS_SEEK_END) != fh.flash_size-1 ||
+      vfs_lseek(fd, 0, VFS_SEEK_SET) != 0)
+    return 0;
+
+  lu_int32 *buffer = luaM_newvector(L, FLASH_PAGE_SIZE / sizeof(lu_int32), lu_int32);
+
+  /*
+   * This is the point of no return.  We attempt to rebuild the flash.  If there
+   * are any problems them the Flash is going to be corrupt, so the only fallback
+   * is to erase it and reboot with a clean but blank flash.  Otherwise the reboot
+   * will load the new LFS.
+   *
+   * Note that the Lua state is not passed into the lua core because from this 
+   * point on, we make no calls on the Lua RTS.
+   */
+  flashErase(0,-1); 
+  if (rebuild_core(fd, fh.flash_size, buffer) != fh.flash_size)
+    flashErase(0,-1);  
+  /*
+   * Forcing a H/W timeout is the only robust way to insure that other interrupts
+   * and callbacks don't fire and attempt to reference to old LFS context.
+   */
+  while (1) {}
+
+  return 0;
+}
+
+
+/*
+ * Return a C closure pointing to the Flash Index function
+ */
+LUAI_FUNC int luaN_index (lua_State *L) {
+  int i;
+  if(G(L)->ROpvmain) {
+    Closure *cl = luaF_newLclosure(L, 0, hvalue(gt(L)));
+    cl->l.p = G(L)->ROpvmain;
+    lua_settop(L, 1);
+    setclvalue(L, L->top-1, cl);
+    return 1;
+  }
+  return 0;
+}
+
+#endif

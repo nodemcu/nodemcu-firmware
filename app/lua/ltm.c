@@ -14,6 +14,7 @@
 
 #include "lobject.h"
 #include "lstate.h"
+#include "lgc.h"
 #include "lstring.h"
 #include "ltable.h"
 #include "ltm.h"
@@ -39,7 +40,7 @@ void luaT_init (lua_State *L) {
   int i;
   for (i=0; i<TM_N; i++) {
     G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
-    luaS_fix(G(L)->tmname[i]);  /* never collect these names */
+    stringfix(G(L)->tmname[i]);  /* never collect these names */
   }
 }
 

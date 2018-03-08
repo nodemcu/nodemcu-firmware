@@ -94,6 +94,10 @@ typedef struct global_State {
   UpVal uvhead;  /* head of double-linked list of all open upvalues */
   struct Table *mt[NUM_TAGS];  /* metatables for basic types */
   TString *tmname[TM_N];  /* array with tag-method names */
+#if defined(LUA_FLASH_STORE) && !defined(LUA_CROSS_COMPILER)
+  stringtable ROstrt;  /* Flash-based hash table for RO strings */
+  Proto *ROpvmain;   /* Flash-based Proto main */
+#endif
 } global_State;
 
 

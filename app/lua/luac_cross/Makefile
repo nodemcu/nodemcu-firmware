@@ -7,30 +7,29 @@
 .NOTPARALLEL:
 
 CCFLAGS:= -I.. -I../../include -I../../../include -I ../../libc
-LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm
+LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
 
-DEFINES += -DLUA_CROSS_COMPILER
+DEFINES += -DLUA_CROSS_COMPILER -DLUA_OPTIMIZE_MEMORY=2
 
 TARGET = host
 
-ifeq ($(FLAVOR),release)
+ifeq ($(FLAVOR),debug)
+    CCFLAGS        += -O0 -g
+    TARGET_LDFLAGS += -O0 -g
+else
+    FLAVOR         =  release
     CCFLAGS        += -O2
     TARGET_LDFLAGS += -O2
-else
-    FLAVOR         =  debug
-    CCFLAGS        += -O2 -g
-    TARGET_LDFLAGS += -O2 -g
 endif
 
-LUACSRC := luac.c     lflashimg.c loslib.c    print.c
-LUASRC  := lapi.c     lauxlib.c   lbaselib.c  lcode.c    ldblib.c \
-           ldebug.c   ldo.c       ldump.c     lfunc.c    lgc.c \
-           llex.c     lmathlib.c  lmem.c      loadlib.c  lobject.c \
-           lopcodes.c lparser.c   lrotable.c  lstate.c   lstring.c \
-           lstrlib.c  ltable.c    ltablib.c   ltm.c      lundump.c \
-           lvm.c      lzio.c
+LUACSRC := luac.c      lflashimg.c liolib.c    loslib.c    print.c
+LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c \
+           ldo.c       ldump.c     lfunc.c     lgc.c       linit.c     llex.c \
+           lmathlib.c  lmem.c      loadlib.c   lobject.c   lopcodes.c  lparser.c \
+           lrotable.c  lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
+           ltm.c       lundump.c   lvm.c       lzio.c
 LIBCSRC := c_stdlib.c
 
 #
@@ -83,6 +82,3 @@ $(ODIR)/%.d: %.c
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(ODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
-
-#  echo 's,\($*\.o\)[ :]*,$(ODIR)/\1 $@ : ,g'; \ 
-

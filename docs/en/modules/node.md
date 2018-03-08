@@ -173,7 +173,7 @@ system heap size left in bytes (number)
 
 ## node.info()
 
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed.
+Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed, and Lua File Store (LFS) usage statics.
 
 #### Syntax
 `node.info()`
@@ -495,6 +495,37 @@ provides more detailed information on the EGC.
 
 `node.egc.setmode(node.egc.ALWAYS, 4096)  -- This is the default setting at startup.`
 `node.egc.setmode(node.egc.ON_ALLOC_FAILURE) -- This is the fastest activeEGC mode.`
+
+# node.flash module
+
+## node.flash.index()
+
+Returns the function reference for a function in the LFS (Lua Flash Store).
+
+#### Syntax
+`node.flash.index()`
+
+#### Parameters
+None
+
+#### Returns
+-  In the case where the LFS in not loaded, `node.flash.index` evaluates to `nil`
+-  If the LFS is loaded, this returns the index function within the LFS which indexes its contents. This index function can itself to called to interrogate or access the LFS contents:
+   -  In that case where the function is called with the name of a valid module in the LFS, the function is returned in the same way the `load()` and the other Lua load functions do.
+   -  Otherwise the function returns a list of module names in the LFS. Note that the first entry in the list is the Unix datetime of he build.
+
+## node.flash.reload()
+
+Reload the LFS (Lua Flash Store) with the flash image provided. Flash images are generated on the host machine using the `luac.cross`commnad.
+
+#### Syntax
+`node.flash.rebuild(imageName)`
+
+#### Parameters
+`imageName` The of name of a image file in the filesystem to be loaded into the LFS.
+
+#### Returns
+_Not applicable_.  The ESP will load the LFS image and immediately reboot.  Control is not returned to the calling application.
 
 # node.task module
 

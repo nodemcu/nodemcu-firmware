@@ -46,6 +46,13 @@
 
 //#define DEBUG_ALLOCATOR
 #ifdef DEBUG_ALLOCATOR 
+#ifdef LUA_CROSS_COMPILER
+static void break_hook(void)
+#define ASSERT(s) if (!(s)) {break_hook();}
+#else
+#define ASSERT(s) if (!(s)) {asm ("break 0,0" ::);}
+#endif
+
 /*
 ** {======================================================================
 ** Diagnosticd version for realloc. This is enabled only if the
@@ -56,31 +63,72 @@
 ** =======================================================================
 */
 #define this_realloc debug_realloc
-#define ASSERT(s) if (!(s)) {asm ("break 0,0" ::);}
 #define MARK  0x55  /* 01010101 (a nice pattern) */
-#define MARK4 0x55555555
-#define MARKSIZE 4  /* size of marks after each block */
-#define fillmem(mem,size) memset(mem, -MARK, size)
+#define MARKSIZE 2*sizeof(size_t)  /* size of marks after each block */
+#define fillmem(mem,size) memset(mem, ~MARK, size)
 
-typedef struct Memcontrol {  /* memory-allocator control variables */
-  uint32_t numblocks;
-  uint32_t total;
-  uint32_t maxmem;
-  uint32_t memlimit;
-} Memcontrol;
-static Memcontrol mc = {0,0,0,32768};
-
-typedef union MemHeader {
+typedef union MemHeader MemHeader;
+union MemHeader {
   L_Umaxalign a;  /* ensures maximum alignment for Header */
   struct {
     size_t size;
-    int mark;
-  } d;
-} MemHeader;
+    MemHeader *next;
+    size_t mark[2];
+  };
+};
+
+typedef struct Memcontrol {  /* memory-allocator control variables */
+  MemHeader *start;
+  lu_int32 numblocks;
+  lu_int32 total;
+  lu_int32 maxmem;
+  lu_int32 memlimit;
+} Memcontrol;
+static Memcontrol mc = {NULL,0,0,0,32768*64};
+static size_t marker[2] = {0,0};
+
+static void scanBlocks (void) {  
+  MemHeader *p = mc.start;
+  int i;
+  char s,e;
+  for (i=0; p ;i++) {
+    s = memcmp(p->mark, marker, MARKSIZE) ? '<' : ' ';
+    e = memcmp(cast(char *, p+1) + p->size, marker, MARKSIZE) ? '>' : ' ';
+    c_printf("%4u %p %8lu %c %c\n", i, p, p->size, s, e);
+    ASSERT(p->next);
+    p = p->next;
+  }
+}
+
+static int checkBlocks (void) {  
+  MemHeader *p = mc.start;
+  while(p) {
+    if (memcmp(p->mark, marker, MARKSIZE)  ||
+       memcmp(cast(char *, p+1) + p->size, marker, MARKSIZE)) {
+      scanBlocks();
+      return 0;
+    }
+    p = p->next;
+  }
+  return 1;
+}
+
 
 static void freeblock (MemHeader *block) {
   if (block) {
-    size_t size = block->d.size;
+    MemHeader *p = mc.start;
+    MemHeader *next = block->next;
+    size_t size = block->size;
+    ASSERT(checkBlocks());
+    if (p == block) {
+      mc.start = next;
+    } else {
+      while (p->next != block) {
+        ASSERT(p);
+        p = p->next;
+      }
+      p->next = next;
+    }
     fillmem(block, sizeof(MemHeader) + size + MARKSIZE);  /* erase block */
     c_free(block);  /* actually free block */
     mc.numblocks--;  /* update counts */
@@ -88,18 +136,17 @@ static void freeblock (MemHeader *block) {
   }
 }
 
-
 void *debug_realloc (void *b, size_t oldsize, size_t size) {
   MemHeader *block = cast(MemHeader *, b);
-  int i;
+  ASSERT(checkBlocks());
+  if (!marker[0]) memset(marker, MARK, MARKSIZE);
   if (block == NULL) {
     oldsize = 0;
   } else {
     block--;  /* go to real header */
-    ASSERT(block->d.mark == MARK4);
-    ASSERT(oldsize == block->d.size);
-    for (i = 0; i < MARKSIZE; i++)  /* check marks after block */
-      ASSERT  (cast(char *, b)[oldsize + i] == MARK);
+    ASSERT(!memcmp(block->mark, marker, MARKSIZE))
+    ASSERT(oldsize == block->size);
+    ASSERT(!memcmp(cast(char *, b)+oldsize, marker, MARKSIZE));
   }
   if (size == 0) {
     freeblock(block);
@@ -108,7 +155,6 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
     return NULL;  /* fake a memory allocation error */
   else {
     MemHeader *newblock;
-    int i;
     size_t commonsize = (oldsize < size) ? oldsize : size;
     size_t realsize = sizeof(MemHeader) + size + MARKSIZE;
     newblock = cast(MemHeader *, c_malloc(realsize));  /* alloc a new block */
@@ -119,12 +165,14 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
       freeblock(block);  /* erase (and check) old copy */
     }
     /* initialize new part of the block with something weird */
-    fillmem(cast(char *, newblock + 1) + commonsize, size - commonsize);
+    if (size > commonsize)
+      fillmem(cast(char *, newblock + 1) + commonsize, size - commonsize);
     /* initialize marks after block */
-    newblock->d.mark = MARK4; 
-    newblock->d.size = size;
-    for (i = 0; i < MARKSIZE; i++)
-      cast(char *, newblock + 1)[size + i] = MARK;
+    memset(newblock->mark, MARK, MARKSIZE); 
+    newblock->size = size;
+    newblock->next = mc.start;
+    mc.start = newblock;
+    memset(cast(char *, newblock + 1)+ size, MARK, MARKSIZE);
     mc.total += size;
     if (mc.total > mc.maxmem)
       mc.maxmem = mc.total;

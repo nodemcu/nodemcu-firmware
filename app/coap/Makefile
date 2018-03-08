@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = coap.a
+GEN_LIBS = libcoap.a
 endif
 
 #############################################################

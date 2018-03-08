@@ -12,8 +12,9 @@
 // This adds the asserts in LUA. It also adds some useful extras to the
 // node module. This is all silent in normal operation and so can be enabled
 // without any harm (except for the code size increase and slight slowdown)
-// Either here for a global change or in the DEFINES variable in the relevant
-// Makefile for ony one subdirectory. If you want to use the remote GDB to 
+// You can either set these defines here to operate globally or you edit the
+// relevant Makefile setting them in the DEFINES variable is you only want to
+// enable extra debug for specific subdirs.  If you want to use the remote GDB to 
 // handle breaks and failed assetions then enable DEVELOPMENT_USE GDB 
 //#define DEVELOPMENT_TOOLS
 //#define DEVELOPMENT_USE_GDB
@@ -54,6 +55,8 @@ extern void luaL_dbgbreak(void);
 #define NODE_ERR
 #endif	/* NODE_ERROR */
 
+#define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
+
 #define GPIO_INTERRUPT_ENABLE
 #define GPIO_INTERRUPT_HOOK_ENABLE
 // #define GPIO_SAFE_NO_INTR_ENABLE
@@ -86,18 +89,22 @@ extern void luaL_dbgbreak(void);
 // maximum number of open files for SPIFFS
 #define SPIFFS_MAX_OPEN_FILES 4
 
-// Uncomment this next line for fastest startup 
-// It reduces the format time dramatically
-// #define SPIFFS_MAX_FILESYSTEM_SIZE	32768
+// Uncomment this next line for fastest startup and set the FS only to what
+// your application needs.  This reduces the format time dramatically
+//#define SPIFFS_MAX_FILESYSTEM_SIZE       0x10000	
 //
 // You can force the spiffs file system to be at a fixed location
-// #define SPIFFS_FIXED_LOCATION   	0x100000
+//#define SPIFFS_FIXED_LOCATION   	0x100000
 //
 // You can force the SPIFFS file system to end on the next !M boundary
 // (minus the 16k parameter space). THis is useful for certain OTA scenarios
 // #define SPIFFS_SIZE_1M_BOUNDARY
 
-// #define LUA_NUMBER_INTEGRAL
+//#define LUA_NUMBER_INTEGRAL
+
+// If you want to enable Lua Flash Store (LFS) then set the following define to
+// the size of the store.  This can be any multiple of 4kB up to a maximum 256Kb.
+//#define LUA_FLASH_STORE 0x10000
 
 #define READLINE_INTERVAL 80
 #define LUA_TASK_PRIO USER_TASK_PRIO_0
