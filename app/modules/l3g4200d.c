@@ -48,23 +48,6 @@ static int l3g4200d_setup(lua_State* L) {
     return 0;
 }
 
-static int l3g4200d_init(lua_State* L) {
-
-    uint32_t sda;
-    uint32_t scl;
-
-    platform_print_deprecation_note("l3g4200d.init() is replaced by l3g4200d.setup()", "in the next version");
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
-    return l3g4200d_setup(L);
-}
-
 static int l3g4200d_read(lua_State* L) {
 
     uint8_t data[6];
@@ -99,8 +82,6 @@ static int l3g4200d_read(lua_State* L) {
 static const LUA_REG_TYPE l3g4200d_map[] = {
     { LSTRKEY( "read" ),         LFUNCVAL( l3g4200d_read )},
     { LSTRKEY( "setup" ),        LFUNCVAL( l3g4200d_setup )},
-    // init() is deprecated
-    { LSTRKEY( "init" ),         LFUNCVAL( l3g4200d_init )},
     { LNILKEY, LNILVAL}
 };
 

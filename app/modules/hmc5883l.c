@@ -57,23 +57,6 @@ static int hmc5883_setup(lua_State* L) {
     return 0;
 }
 
-static int hmc5883_init(lua_State* L) {
-
-    uint32_t sda;
-    uint32_t scl;
-
-    platform_print_deprecation_note("hmc5883l.init() is replaced by hmc5883l.setup()", "in the next version");
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    luaL_argcheck(L, sda > 0 && scl > 0, 1, "no i2c for D0");
-
-    platform_i2c_setup(hmc5883_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
-    return hmc5883_setup(L);
-}
-
 static int hmc5883_read(lua_State* L) {
 
     uint8_t data[6];
@@ -109,8 +92,6 @@ static int hmc5883_read(lua_State* L) {
 static const LUA_REG_TYPE hmc5883_map[] = {
     { LSTRKEY( "read" ),         LFUNCVAL( hmc5883_read )},
     { LSTRKEY( "setup" ),        LFUNCVAL( hmc5883_setup )},
-    // init() is deprecated
-    { LSTRKEY( "init" ),         LFUNCVAL( hmc5883_init )},
     { LNILKEY, LNILVAL}
 };
 

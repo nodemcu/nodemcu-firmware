@@ -63,28 +63,6 @@ static int bmp085_setup(lua_State* L) {
     return 0;
 }
 
-static int bmp085_init(lua_State* L) {
-    uint32_t sda;
-    uint32_t scl;
-
-    platform_print_deprecation_note("bmp085.init() is replaced by bmp085.setup()", "in the next version");
-
-    if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
-        return luaL_error(L, "wrong arg range");
-    }
-
-    sda = luaL_checkinteger(L, 1);
-    scl = luaL_checkinteger(L, 2);
-
-    if (scl == 0 || sda == 0) {
-        return luaL_error(L, "no i2c for D0");
-    }
-
-    platform_i2c_setup(bmp085_i2c_id, sda, scl, PLATFORM_I2C_SPEED_SLOW);
-
-    return bmp085_setup(L);
-}
-
 static uint32_t bmp085_temperature_raw_b5(void) {
     int16_t t, X1, X2;
 
@@ -196,8 +174,6 @@ static const LUA_REG_TYPE bmp085_map[] = {
     { LSTRKEY( "pressure" ),     LFUNCVAL( bmp085_lua_pressure )},
     { LSTRKEY( "pressure_raw" ), LFUNCVAL( bmp085_lua_pressure_raw )},
     { LSTRKEY( "setup" ),        LFUNCVAL( bmp085_setup )},
-    // init() is deprecated
-    { LSTRKEY( "init" ),         LFUNCVAL( bmp085_init )},
     { LNILKEY, LNILVAL}
 };
 

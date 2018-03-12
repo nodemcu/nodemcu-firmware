@@ -10,7 +10,10 @@ First, require it:
 
 Then, initialize it:
 
-`HDC1000.init(sda, scl, drdyn)`
+```lua
+i2c.setup(0, sda, scl, i2c.SLOW)  -- call i2c.setup() only once
+HDC1000.setup(drdyn)
+```
 
 If you don't want to use the DRDYn pin, set it to false: a 20ms delay will be automatically set after each read request.
 
