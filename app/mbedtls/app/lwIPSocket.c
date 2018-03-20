@@ -302,6 +302,20 @@ static err_t do_accepted(void *arg, struct tcp_pcb *newpcb, err_t err)
     lwIP_netconn *newconn = NULL;
     lwIP_netconn *conn = arg;
     err = ERR_OK;
+
+    //Avoid two TCP connections coming in simultaneously
+    struct  tcp_pcb *pactive_pcb;
+    int active_pcb_num=0;
+    for(pactive_pcb = tcp_active_pcbs; pactive_pcb != NULL; pactive_pcb = pactive_pcb->next){
+    	if (pactive_pcb->state == ESTABLISHED ||pactive_pcb->state == SYN_RCVD){
+    		active_pcb_num++;
+                if (active_pcb_num > MEMP_NUM_TCP_PCB){
+                    ESP_LOG("%s %d active_pcb_number:%d\n",__FILE__, __LINE__,active_pcb_num);
+                    return ERR_MEM;
+                }
+    	}
+    }
+
     lwIP_REQUIRE_ACTION(conn, exit, err = ESP_ARG);
     /* We have to set the callback here even though
      * the new socket is unknown. conn->socket is marked as -1. */
@@ -738,23 +752,30 @@ int lwip_close(int s)
         return -1;
     }
 
-	if (sock->conn->state != NETCONN_STATE_ERROR){
-	    tcp_recv(sock->conn->tcp, NULL);
-	    err = tcp_close(sock->conn->tcp);		
+    /*Do not set callback function when tcp->state is LISTEN.
+    Avoid memory overlap when conn->tcp changes from
+    struct tcp_bcb to struct tcp_pcb_listen after lwip_listen.*/
+    if (sock->conn->tcp->state != LISTEN)
+    {
+        if (sock->conn->state != NETCONN_STATE_ERROR){
+            tcp_recv(sock->conn->tcp, NULL);
+            err = tcp_close(sock->conn->tcp);
 
-	    if (err != ERR_OK)
-	    {
-	        /* closing failed, try again later */
-	        tcp_recv(sock->conn->tcp, recv_tcp);
-	        return -1;
-	    }   
-	}
-	
-	/* closing succeeded */
-	remove_tcp(sock->conn);
-	free_netconn(sock->conn);
-	free_socket(sock);
-	return ERR_OK;
+            if (err != ERR_OK)
+            {
+                /* closing failed, try again later */
+                tcp_recv(sock->conn->tcp, recv_tcp);
+                return -1;
+            }
+        }
+        /* closing succeeded */
+        remove_tcp(sock->conn);
+    } else {
+        tcp_close(sock->conn->tcp);
+    }
+    free_netconn(sock->conn);
+    free_socket(sock);
+    return ERR_OK;
 }
 
 int lwip_write(int s, const void *data, size_t size)

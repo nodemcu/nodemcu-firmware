@@ -576,8 +576,11 @@ static int esp8266_Sleep( sqlite3_vfs * vfs, int microseconds )
 
 static int esp8266_CurrentTime( sqlite3_vfs * vfs, double * result )
 {
-	time_t t = time(NULL);
-	*result = t / 86400.0 + 2440587.5;
+	// This is stubbed out until we have a working RTCTIME solution;
+	// as it stood, this would always have returned the UNIX epoch.
+	// time_t t = time(NULL);
+	// *result = t / 86400.0 + 2440587.5;
+	*result = 2440587.5;
 	dbg_printf("esp8266_CurrentTime: %g\n", *result);
 	return SQLITE_OK;
 }

@@ -441,6 +441,7 @@ sint16 ICACHE_FLASH_ATTR espconn_recv(struct espconn *espconn, void *mem, size_t
 	espconn_msg *pnode = NULL;
 	bool value = false;
 	int bytes_used = 0;
+	struct tcp_pcb *tpcb = NULL;
 	if (espconn == NULL || mem == NULL || len == 0)
 		return ESPCONN_ARG;
 
@@ -454,13 +455,15 @@ sint16 ICACHE_FLASH_ATTR espconn_recv(struct espconn *espconn, void *mem, size_t
 					len = bytes_used;
 				}
 				ringbuf_memcpy_from(mem, pnode->readbuf, len);
-				espconn_recv_unhold(pnode->pespconn);
+				tpcb = pnode->pcommon.pcb;
+				if (tpcb && tpcb->state == ESTABLISHED)
+				    tcp_recved(pnode->pcommon.pcb, len);
 				return len;
 			} else {
 				return ESPCONN_OK;
 			}
 		} else{
-			return ESPCONN_OK;
+			return ESPCONN_MEM;
 		}
 	} else{
 		return ESPCONN_ARG;

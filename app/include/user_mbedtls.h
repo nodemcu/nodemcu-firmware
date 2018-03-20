@@ -5,8 +5,9 @@
 #undef MBEDTLS_HAVE_ASM
 #undef MBEDTLS_HAVE_SSE2
 
-#define MBEDTLS_HAVE_TIME
-#define MBEDTLS_HAVE_TIME_DATE
+// These are disabled until we have a real, working RTC-based gettimeofday
+#undef MBEDTLS_HAVE_TIME
+#undef MBEDTLS_HAVE_TIME_DATE
 
 #define MBEDTLS_PLATFORM_MEMORY
 #undef MBEDTLS_PLATFORM_NO_STD_FUNCTIONS

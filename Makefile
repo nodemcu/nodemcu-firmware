@@ -3,7 +3,7 @@
 .NOTPARALLEL:
 
 # SDK version NodeMCU is locked to
-SDK_VER:=2.1.0
+SDK_VER:=2.2.0
 
 # no patch: SDK_BASE_VER equals SDK_VER and sdk dir depends on sdk_extracted
 SDK_BASE_VER:=$(SDK_VER)
@@ -13,13 +13,13 @@ SDK_DIR_DEPENDS:=sdk_extracted
 #SDK_DIR_DEPENDS:=sdk_patched
 
 SDK_FILE_VER:=$(SDK_BASE_VER)
-SDK_FILE_SHA1:=66a4272894dc1bcec19f5f8bf79fee80f60a021b
+SDK_FILE_SHA1:=8b63f1066d3560ff77f119e8ba30a9c39e7baaad
 #SDK_PATCH_VER:=$(SDK_VER)_patch_20160704
 #SDK_PATCH_SHA1:=388d9e91df74e3b49fca126da482cf822cf1ebf1
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_DIR:=$(TOP_DIR)/sdk/esp_iot_sdk_v$(SDK_VER)
-CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(SDK_DIR)/include
+CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(TOP_DIR)/app/include/lwip/app -I$(SDK_DIR)/include
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
 ifdef DEBUG
@@ -39,6 +39,7 @@ ifeq ($(OS),Windows_NT)
 		# It is xcc
 		AR = xt-ar
 		CC = xt-xcc
+		CXX = xt-xcc
 		NM = xt-nm
 		CPP = xt-cpp
 		OBJCOPY = xt-objcopy
@@ -50,6 +51,7 @@ ifeq ($(OS),Windows_NT)
 		CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 		AR = xtensa-lx106-elf-ar
 		CC = xtensa-lx106-elf-gcc
+		CXX = xtensa-lx106-elf-g++
 		NM = xtensa-lx106-elf-nm
 		CPP = xtensa-lx106-elf-cpp
 		OBJCOPY = xtensa-lx106-elf-objcopy
@@ -77,6 +79,7 @@ else
 	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = $(WRAPCC) xtensa-lx106-elf-gcc
+	CXX = $(WRAPCC) xtensa-lx106-elf-g++
 	NM = xtensa-lx106-elf-nm
 	CPP = $(WRAPCC) xtensa-lx106-elf-gcc -E
 	OBJCOPY = xtensa-lx106-elf-objcopy
@@ -104,6 +107,7 @@ ESPTOOL ?= ../tools/esptool.py
 
 
 CSRCS ?= $(wildcard *.c)
+CXXSRCS ?= $(wildcard *.cpp)
 ASRCs ?= $(wildcard *.s)
 ASRCS ?= $(wildcard *.S)
 SUBDIRS ?= $(patsubst %/,%,$(dir $(filter-out tools/Makefile,$(wildcard */Makefile))))
@@ -112,10 +116,12 @@ ODIR := .output
 OBJODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/obj
 
 OBJS := $(CSRCS:%.c=$(OBJODIR)/%.o) \
+        $(CXXSRCS:%.cpp=$(OBJODIR)/%.o) \
         $(ASRCs:%.s=$(OBJODIR)/%.o) \
         $(ASRCS:%.S=$(OBJODIR)/%.o)
 
 DEPS := $(CSRCS:%.c=$(OBJODIR)/%.d) \
+        $(CXXSCRS:%.cpp=$(OBJODIR)/%.d) \
         $(ASRCs:%.s=$(OBJODIR)/%.d) \
         $(ASRCS:%.S=$(OBJODIR)/%.d)
 
@@ -206,9 +212,11 @@ sdk_patched: sdk_extracted $(TOP_DIR)/sdk/.patched-$(SDK_VER)
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
-	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-$(SDK_VER) && unzip $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK-$(SDK_VER)/lib/* ESP8266_NONOS_SDK-$(SDK_VER)/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK-$(SDK_VER)/include/* ESP8266_NONOS_SDK-$(SDK_VER)/bin/esp_init_data_default.bin)
+	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-$(SDK_VER) && unzip $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK-$(SDK_VER)/lib/* ESP8266_NONOS_SDK-$(SDK_VER)/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK-$(SDK_VER)/include/* ESP8266_NONOS_SDK-$(SDK_VER)/bin/esp_init_data_default_v05.bin)
 	mv $(dir $@)/ESP8266_NONOS_SDK-$(SDK_VER) $(dir $@)/esp_iot_sdk_v$(SDK_VER)
-	rm -f $(SDK_DIR)/lib/liblwip.a
+	rm -f $(SDK_DIR)/lib/liblwip.a $(SDK_DIR)/lib/libssl.a $(SDK_DIR)/lib/libmbedtls.a
+	ar d $(SDK_DIR)/lib/libmain.a time.o
+	ar d $(SDK_DIR)/lib/libc.a lib_a-time.o
 	touch $@
 
 $(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/esp_iot_sdk_v$(SDK_PATCH_VER).zip
@@ -303,6 +311,17 @@ $(OBJODIR)/%.d: %.c
 	@echo DEPEND: $(CC) -M $(CFLAGS) $<
 	@set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+$(OBJODIR)/%.o: %.cpp
+	@mkdir -p $(OBJODIR);
+	$(CXX) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
+
+$(OBJODIR)/%.d: %.cpp
+	@mkdir -p $(OBJODIR);
+	@echo DEPEND: $(CXX) -M $(CFLAGS) $<
+	@set -e; rm -f $@; \
 	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
