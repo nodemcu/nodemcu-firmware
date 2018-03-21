@@ -386,14 +386,13 @@ static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   if (ipaddr == NULL)
   {
     sntp_dbg("DNS Fail!\n");
-    task_post_low(tasknumber, (uint32_t) name);
   }
   else
   {
     serverp[server_count] = *ipaddr;
     server_count++;
-    task_post_low(tasknumber, SNTP_DOLOOKUPS_ID);
   }
+  task_post_low(tasknumber, SNTP_DOLOOKUPS_ID);
 }
 
 
@@ -621,23 +620,32 @@ static void sntp_dolookups (lua_State *L) {
   // at the end, start the lookups. If we have already looked everything up,
   // then move straight to sending the packets.
   if (state->list_ref == LUA_NOREF) {
-    sntp_dosend(L);
+    sntp_dosend();
     return;
   }
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, state->list_ref);
   while (1) {
+    int l;
+
     if (lua_objlen(L, -1) <= state->lookup_pos) {
       // We reached the end
-      sntp_dosend(L);
+      if (server_count == 0) {
+        // Oh dear -- no valid entries -- generate an error
+        // This means that all the arguments are invalid. Just pick the first
+        lua_rawgeti(L, -1, 1);
+        const char *hostname = luaL_checklstring(L, -1, &l);
+        handle_error(L, NTP_DNS_ERR, hostname);
+        lua_pop(L, 1);
+      } else {
+        sntp_dosend();
+      }
       break;
     }
 
     state->lookup_pos++;
 
     lua_rawgeti(L, -1, state->lookup_pos);
-
-    int l;
 
     const char *hostname = luaL_checklstring(L, -1, &l);
     lua_pop(L, 1);
@@ -806,7 +814,7 @@ static int sntp_sync (lua_State *L)
     goto good_ret;
   }
 
-  sntp_dosend (L);
+  sntp_dosend ();
 
 good_ret:
   if (!lua_isnoneornil(L, 4)) {
@@ -837,10 +845,8 @@ static void sntp_task(os_param_t param, uint8_t prio)
     sntp_handle_result(L);
   } else if (param == SNTP_DOLOOKUPS_ID) {
     sntp_dolookups(L);
-  } else if (param >= 0 && param <= NTP_MAX_ERR_ID) {
-    handle_error(L, param, NULL);
   } else {
-    handle_error(L, NTP_DNS_ERR, (const char *) param);
+    handle_error(L, param, NULL);
   }
 }
 
