@@ -76,12 +76,6 @@ static tsl2561Gain_t _tsl2561Gain = TSL2561_GAIN_1X;
 static tsl2561Address_t tsl2561Address = TSL2561_ADDRESS_FLOAT;
 static tsl2561Package_t tsl2561Package = TSL2561_PACKAGE_T_FN_CL;
 
-static void delay_ms(uint16_t ms)
-{
-  while (ms--)
-    os_delay_us(1000);
-}
-
 /**************************************************************************/
 /*! 
  @brief  Writes an 8 bit values over I2C
@@ -236,13 +230,13 @@ tsl2561Error_t tsl2561GetLuminosity(uint16_t *broadband, uint16_t *ir) {
 	// Wait x ms for ADC to complete
 	switch (_tsl2561IntegrationTime) {
 	case TSL2561_INTEGRATIONTIME_13MS:
-		delay_ms(14); //systickDelay(14);
+		os_delay_us(14000); //systickDelay(14);
 		break;
 	case TSL2561_INTEGRATIONTIME_101MS:
-		delay_ms(102); //systickDelay(102);
+		os_delay_us(102000); //systickDelay(102);
 		break;
 	default:
-		delay_ms(404); //systickDelay(404);
+		os_delay_us(404000); //systickDelay(404);
 		break;
 	}
 
