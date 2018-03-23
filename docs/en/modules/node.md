@@ -484,7 +484,7 @@ provides more detailed information on the EGC.
 - `mode`
 	- `node.egc.NOT_ACTIVE` EGC inactive, no collection cycle will be forced in low memory situations
 	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error. 
-	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error.
+	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error. If the given limit is negative, it is interpreted as the desired amount of heap which should be left available. Whenever the free heap (as reported by `node.heap()` falls below the requested limit, the garbage collector will be run.
 	- `node.egc.ALWAYS` Run the garbage collector before each memory allocation. If the allocation fails even after running the garbage collector, the allocator will return with error. This mode is very efficient with regards to memory savings, but it's also the slowest.
 - `level` in the case of `node.egc.ON_MEM_LIMIT`, this specifies the memory limit.
   
@@ -495,6 +495,23 @@ provides more detailed information on the EGC.
 
 `node.egc.setmode(node.egc.ALWAYS, 4096)  -- This is the default setting at startup.`
 `node.egc.setmode(node.egc.ON_ALLOC_FAILURE) -- This is the fastest activeEGC mode.`
+`node.egc.setmode(node.egc.ON_MEM_LIMIT, 30720)  -- Only allow the Lua runtime to allocate at most 30k, collect garbage if limit is about to be hit`
+`node.egc.setmode(node.egc.ON_MEM_LIMIT, -6144)  -- Try to keep at least 6k heap available for non-Lua use (e.g. network buffers)`
+
+
+## node.egc.meminfo()
+
+Returns memory usage information for the Lua runtime.
+
+####Syntax
+`total_allocated, estimated_used = node.egc.meminfo()`
+
+#### Parameters
+None.
+
+#### Returns
+ - `total_allocated` The total number of bytes allocated by the Lua runtime. This is the number which is relevant when using the `node.egc.ON_MEM_LIMIT` option with positive limit values.
+ - `estimated_used` This value shows the estimated usage of the allocated memory.
 
 # node.task module
 

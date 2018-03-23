@@ -462,14 +462,23 @@ static int node_stripdebug (lua_State *L) {
 // See legc.h and lecg.c.
 static int node_egc_setmode(lua_State* L) {
   unsigned mode  = luaL_checkinteger(L, 1);
-  unsigned limit = luaL_optinteger (L, 2, 0);
+  int limit = luaL_optinteger (L, 2, 0);
 
   luaL_argcheck(L, mode <= (EGC_ON_ALLOC_FAILURE | EGC_ON_MEM_LIMIT | EGC_ALWAYS), 1, "invalid mode");
-  luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit>0, 1, "limit must be non-zero");
+  luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit!=0, 1, "limit must be non-zero");
 
   legc_set_mode( L, mode, limit );
   return 0;
 }
+
+// totalallocated, estimatedused = node.egc.meminfo()
+static int node_egc_meminfo(lua_State *L) {
+  global_State *g = G(L);
+  lua_pushinteger(L, g->totalbytes);
+  lua_pushinteger(L, g->estimate);
+  return 2;
+}
+
 //
 // Lua: osprint(true/false)
 // Allows you to turn on the native Espressif SDK printing
@@ -560,6 +569,7 @@ static int node_random (lua_State *L) {
 // Module function map
 
 static const LUA_REG_TYPE node_egc_map[] = {
+  { LSTRKEY( "meminfo" ),           LFUNCVAL( node_egc_meminfo ) },
   { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
   { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
   { LSTRKEY( "ON_ALLOC_FAILURE" ),  LNUMVAL( EGC_ON_ALLOC_FAILURE ) },
