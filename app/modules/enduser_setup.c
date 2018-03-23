@@ -664,6 +664,8 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 
   struct station_config *cnf = luaM_malloc(lua_getstate(), sizeof(struct station_config));
   c_memset(cnf, 0, sizeof(struct station_config));
+  cnf->threshold.rssi = -127;
+  cnf->threshold.authmode = AUTH_OPEN;
 
   int err;
   err  = enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len, sizeof(cnf->ssid));
