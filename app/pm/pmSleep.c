@@ -3,6 +3,8 @@
 #define STRINGIFY_VAL(x) #x
 #define STRINGIFY(x) STRINGIFY_VAL(x)
 
+//TODO: figure out why timed light_sleep doesn't work
+
 //holds duration error string
 //uint32 PMSLEEP_SLEEP_MAX_TIME=FPM_SLEEP_MAX_TIME-1;
 const char *PMSLEEP_DURATION_ERR_STR="duration: 0 or "STRINGIFY(PMSLEEP_SLEEP_MIN_TIME)"-"STRINGIFY(PMSLEEP_SLEEP_MAX_TIME)" us";
@@ -219,9 +221,11 @@ int pmSleep_parse_table_lua( lua_State* L, int table_idx, pmSleep_param_t *cfg, 
         return luaL_argerror( L, table_idx, "wake_pin: must be number" );
       }
     }
-    else if(cfg->sleep_duration == 0){
-      return luaL_argerror( L, table_idx, "wake_pin: must specify pin if sleep duration is indefinite" );
-    }
+    else{
+      return luaL_argerror( L, table_idx, "wake_pin: must specify pin" );
+//    else if(cfg->sleep_duration == 0){
+//      return luaL_argerror( L, table_idx, "wake_pin: must specify pin if sleep duration is indefinite" );
+  }
     lua_pop(L, 1);
 
     lua_getfield(L, table_idx, "int_type");

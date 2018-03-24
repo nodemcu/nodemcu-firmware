@@ -333,16 +333,16 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 
 * NodeMCU can not enter light sleep mode if wifi is suspended.
 * All active timers will be suspended and then resumed when NodeMCU wakes from sleep. 
-* Any previously suspended timers will be resumed when NodeMCU wakes from sleep.
 
 !!! attention
     This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 #### Syntax
-<!---`node.sleep({wake_gpio[, duration, int_type, resume_cb, preserve_mode]})`--->
-`node.sleep({wake_gpio[, int_type, resume_cb, preserve_mode]})`
+<!---`node.sleep({wake_pin[, duration, int_type, resume_cb, preserve_mode]})`--->
+`node.sleep({wake_pin[, int_type, resume_cb, preserve_mode]})`
 
 #### Parameters
+<!--- timed light_sleep currently does not work, the 'duration' parameter is here as a place holder---> 
 <!--- * `duration` Sleep duration in microseconds(μs). If a sleep duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))--->
 
 * `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts. 
