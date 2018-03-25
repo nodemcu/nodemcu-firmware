@@ -192,6 +192,7 @@ static int ds18b20_lua_read(lua_State *L) {
 
 static int ds18b20_read_device(uint8_t *ds18b20_device_rom) {
 	lua_State *L = lua_getstate();
+	int16_t ds18b20_raw_temp;
 
 	if (onewire_crc8(ds18b20_device_rom,7) == ds18b20_device_rom[7]) {
 		
@@ -216,8 +217,9 @@ static int ds18b20_read_device(uint8_t *ds18b20_device_rom) {
 			lua_pushfstring(L, "%d:%d:%d:%d:%d:%d:%d:%d", ds18b20_device_rom[0], ds18b20_device_rom[1], ds18b20_device_rom[2], ds18b20_device_rom[3], ds18b20_device_rom[4], ds18b20_device_rom[5], ds18b20_device_rom[6], ds18b20_device_rom[7]);
 			
 			ds18b20_device_scratchpad_conf = (ds18b20_device_scratchpad[4] >> 5) + 9;
-			ds18b20_device_scratchpad_temp = ((int8_t)(ds18b20_device_scratchpad[1] << 4) + (ds18b20_device_scratchpad[0] >> 4) + ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16));
-			ds18b20_device_scratchpad_temp_dec = ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16 * 1000);
+			ds18b20_raw_temp = ((ds18b20_device_scratchpad[1] << 8) | ds18b20_device_scratchpad[0]);
+			ds18b20_device_scratchpad_temp = (double)ds18b20_raw_temp / 16;
+			ds18b20_device_scratchpad_temp_dec = (ds18b20_raw_temp - (ds18b20_raw_temp / 16 * 16)) * 1000 / 16;
 			
 			if (ds18b20_device_scratchpad_conf >= ds18b20_device_res) {
 				ds18b20_device_res = ds18b20_device_scratchpad_conf;
