@@ -1656,7 +1656,7 @@ static int wifi_ap_listclient( lua_State* L )
 {
   if (wifi_get_opmode() == STATION_MODE)
   {
-    return luaL_error( L, "Can't list client in STATION_MODE mode" );
+    return luaL_error( L, "Can't list clients in STATION mode" );
   }
 
   char temp[64];
@@ -1669,10 +1669,9 @@ static int wifi_ap_listclient( lua_State* L )
   {
     c_sprintf(temp, MACSTR, MAC2STR(station->bssid));
     wifi_add_sprintf_field(L, temp, IPSTR, IP2STR(&station->ip));
-    next_station = STAILQ_NEXT(station, next);
-    c_free(station);
-    station = next_station;
+    station = STAILQ_NEXT(station, next);
   }
+  wifi_softap_free_station_info();
 
   return 1;
 }
