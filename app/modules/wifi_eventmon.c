@@ -59,7 +59,7 @@ static sint32_t event_queue_ref = LUA_NOREF;
 
 static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
 {
-  EVENT_DBG("\n\twifi_event_monitor_handle_event_cb is called\n");
+  EVENT_DBG("was called (Event:%d)", evt->event);
 
 #ifdef LUA_USE_MODULES_WIFI_MONITOR
   if (hook_fn && hook_fn(evt)) {
@@ -154,87 +154,87 @@ static void wifi_event_monitor_process_event_queue(task_param_t param, uint8 pri
   switch (evt->event)
   {
     case EVENT_STAMODE_CONNECTED:
-      EVENT_DBG("\n\tSTAMODE_CONNECTED\n");
+      EVENT_DBG("Event: %d (STAMODE_CONNECTED)", EVENT_STAMODE_CONNECTED);
       wifi_add_sprintf_field(L, "SSID", (char*)evt->event_info.connected.ssid);
       wifi_add_sprintf_field(L, "BSSID", MACSTR, MAC2STR(evt->event_info.connected.bssid));
       wifi_add_int_field(L, "channel", evt->event_info.connected.channel);
-      EVENT_DBG("\tConnected to SSID %s, Channel %d\n",
+      EVENT_DBG("Connected to SSID %s, Channel %d",
           evt->event_info.connected.ssid,
           evt->event_info.connected.channel);
       break;
 
     case EVENT_STAMODE_DISCONNECTED:
-      EVENT_DBG("\n\tSTAMODE_DISCONNECTED\n");
+      EVENT_DBG("Event: %d (STAMODE_DISCONNECTED)", EVENT_STAMODE_DISCONNECTED);
       wifi_add_sprintf_field(L, "SSID", (char*)evt->event_info.disconnected.ssid);
       wifi_add_int_field(L, "reason", evt->event_info.disconnected.reason);
       wifi_add_sprintf_field(L, "BSSID", MACSTR, MAC2STR(evt->event_info.disconnected.bssid));
-      EVENT_DBG("\tDisconnect from SSID %s, reason %d\n",
+      EVENT_DBG("Disconnect from SSID %s, reason %d",
           evt->event_info.disconnected.ssid,
           evt->event_info.disconnected.reason);
       break;
 
     case EVENT_STAMODE_AUTHMODE_CHANGE:
-      EVENT_DBG("\n\tSTAMODE_AUTHMODE_CHANGE\n");
+      EVENT_DBG("Event: %d (STAMODE_AUTHMODE_CHANGE)", EVENT_STAMODE_AUTHMODE_CHANGE);
       wifi_add_int_field(L, "old_auth_mode", evt->event_info.auth_change.old_mode);
       wifi_add_int_field(L, "new_auth_mode", evt->event_info.auth_change.new_mode);
-      EVENT_DBG("\tAuthmode: %u -> %u\n",
+      EVENT_DBG("Authmode: %u -> %u",
           evt->event_info.auth_change.old_mode,
           evt->event_info.auth_change.new_mode);
       break;
 
     case EVENT_STAMODE_GOT_IP:
-      EVENT_DBG("\n\tGOT_IP\n");
+      EVENT_DBG("Event: %d (STAMODE_GOT_IP)", EVENT_STAMODE_GOT_IP);
       wifi_add_sprintf_field(L, "IP", IPSTR, IP2STR(&evt->event_info.got_ip.ip));
       wifi_add_sprintf_field(L, "netmask", IPSTR, IP2STR(&evt->event_info.got_ip.mask));
       wifi_add_sprintf_field(L, "gateway", IPSTR, IP2STR(&evt->event_info.got_ip.gw));
-      EVENT_DBG("\tIP:" IPSTR ",Mask:" IPSTR ",GW:" IPSTR "\n",
+      EVENT_DBG("IP:" IPSTR ",Mask:" IPSTR ",GW:" IPSTR "",
           IP2STR(&evt->event_info.got_ip.ip),
           IP2STR(&evt->event_info.got_ip.mask),
           IP2STR(&evt->event_info.got_ip.gw));
       break;
 
     case EVENT_STAMODE_DHCP_TIMEOUT:
-      EVENT_DBG("\n\tSTAMODE_DHCP_TIMEOUT\n");
+      EVENT_DBG("Event: %d (STAMODE_DHCP_TIMEOUT)", EVENT_STAMODE_DHCP_TIMEOUT);
       break;
 
     case EVENT_SOFTAPMODE_STACONNECTED:
-      EVENT_DBG("\n\tSOFTAPMODE_STACONNECTED\n");
+      EVENT_DBG("Event: %d (SOFTAPMODE_STACONNECTED)", EVENT_SOFTAPMODE_STACONNECTED);
       wifi_add_sprintf_field(L, "MAC", MACSTR, MAC2STR(evt->event_info.sta_connected.mac));
       wifi_add_int_field(L, "AID", evt->event_info.sta_connected.aid);
-      EVENT_DBG("\tStation: " MACSTR "join, AID = %d\n",
+      EVENT_DBG("Station: " MACSTR "join, AID = %d",
           MAC2STR(evt->event_info.sta_connected.mac),
           evt->event_info.sta_connected.aid);
       break;
 
     case EVENT_SOFTAPMODE_STADISCONNECTED:
-      EVENT_DBG("\n\tSOFTAPMODE_STADISCONNECTED\n");
+      EVENT_DBG("Event: %d (SOFTAPMODE_STADISCONNECTED)", EVENT_SOFTAPMODE_STADISCONNECTED);
       wifi_add_sprintf_field(L, "MAC", MACSTR, MAC2STR(evt->event_info.sta_disconnected.mac));
       wifi_add_int_field(L, "AID", evt->event_info.sta_disconnected.aid);
-      EVENT_DBG("\tstation: " MACSTR "leave, AID = %d\n",
+      EVENT_DBG("station: " MACSTR "leave, AID = %d",
           MAC2STR(evt->event_info.sta_disconnected.mac),
           evt->event_info.sta_disconnected.aid);
       break;
 
     case EVENT_SOFTAPMODE_PROBEREQRECVED:
-      EVENT_DBG("\n\tSOFTAPMODE_PROBEREQRECVED\n");
+      EVENT_DBG("Event: %d (SOFTAPMODE_PROBEREQRECVED)", EVENT_SOFTAPMODE_PROBEREQRECVED);
       wifi_add_sprintf_field(L, "MAC", MACSTR, MAC2STR(evt->event_info.ap_probereqrecved.mac));
       wifi_add_int_field(L, "RSSI", evt->event_info.ap_probereqrecved.rssi);
-      EVENT_DBG("Station PROBEREQ: " MACSTR " RSSI = %d\n",
+      EVENT_DBG("Station PROBEREQ: " MACSTR " RSSI = %d",
           MAC2STR(evt->event_info.ap_probereqrecved.mac),
           evt->event_info.ap_probereqrecved.rssi);
       break;
 
     case EVENT_OPMODE_CHANGED:
-      EVENT_DBG("\n\tOPMODE_CHANGED\n");
+      EVENT_DBG("Event: %d (OPMODE_CHANGED)", EVENT_OPMODE_CHANGED);
       wifi_add_int_field(L, "old_mode", evt->event_info.opmode_changed.old_opmode);
       wifi_add_int_field(L, "new_mode", evt->event_info.opmode_changed.new_opmode);
-      EVENT_DBG("\topmode: %u -> %u\n",
+      EVENT_DBG("opmode: %u -> %u",
           evt->event_info.opmode_changed.old_opmode,
           evt->event_info.opmode_changed.new_opmode);
       break;
 
     default://if event is not implemented, return event id
-      EVENT_DBG("\n\tswitch/case default\n");
+      EVENT_DBG("Event: %d (switch/case default)", evt->event);
       wifi_add_sprintf_field(L, "info", "event %u not implemented", evt->event);
       break;
   }
