@@ -347,9 +347,9 @@ Note that there are two methods of saving compiled Lua to SPIFFS:
   - The first is to use `node.compile()` on the `.lua` source file, which generates the equivalent bytecode `.lc` file. This approach strips out all the debug line and variable information.
   - The second is to use `loadfile()` to load the source file into memory, followed by `string.dump()` to convert it in-memory to a serialised load format which can then be written back to a `.lc` file.  The amount of debug saved will depend on the [node.stripdebug()](modules/node.md#nodestripdebug) settings.
 
-The memory footprint of the bytecode created by method (2) is the same as when executing source files directly, but the footprint of bytecode created by method (1) is typically 10% smaller than a dump with the stripdebug level of 2 or 60% smaller than a dump with a  stripdebug level of 0, because the debug information is almost as large as the code itself.
+The memory footprint of the bytecode created by method (3) is the same as when executing source files directly, but the footprint of bytecode created by method (2) is typically 10% smaller than a dump with the stripdebug level of 3 or 60% smaller than a dump with a  stripdebug level of 1, because the debug information is almost as large as the code itself.
 
-In general consider method (1) if you have stable production code that you want to run in as low a RAM footprint as possible.  Yes, method (2) can be used if you are still debugging, but you will probably be changing this code quite frequently, so it is easier to stick with `.lua` files for code that you are still developing.
+In general consider method (2) if you have stable production code that you want to run in as low a RAM footprint as possible.  Yes, method (3) can be used if you are still debugging, but you will probably be changing this code quite frequently, so it is easier to stick with `.lua` files for code that you are still developing.
 
 Note that if you use `require("XXX")` to load your code then this will automatically search for `XXX.lc` then `XXX.lua` so you don't need to include the conditional logic to load the bytecode version if it exists, falling back to the source version otherwise.
 
