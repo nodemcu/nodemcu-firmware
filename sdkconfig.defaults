@@ -11,3 +11,10 @@ CONFIG_LWIP_SO_REUSE=y
 # Decrease the duration of sockets in TIME_WAIT
 # see https://github.com/nodemcu/nodemcu-firmware/issues/1836
 CONFIG_TCP_MSL=5000
+
+# Allow writing to dangerous regions to avoid boot loops when creating filesystem
+# Symptom:
+#   Mounting flash filesystem...
+#   No filesystem partition found, attempting to create it...
+#   abort() was called at PC 0x400ecddd on core 0
+CONFIG_SPI_FLASH_WRITING_DANGEROUS_REGIONS_ALLOWED=y
