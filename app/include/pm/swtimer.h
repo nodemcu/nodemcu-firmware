@@ -15,6 +15,7 @@ void swtmr_cb_register(void* timer_cb_ptr, uint8 suspend_policy);
 #define SWTIMER_IMMEDIATE 2 //fire timer immediately after resume
 #define SWTIMER_DROP      3 //disarm timer, do not resume
 
+#if defined(TIMER_SUSPEND_ENABLE)
 #define SWTIMER_REG_CB(cb_ptr, suspend_policy) do{ \
     static bool cb_ptr##_registered_flag;\
     if(!cb_ptr##_registered_flag){ \
@@ -22,5 +23,8 @@ void swtmr_cb_register(void* timer_cb_ptr, uint8 suspend_policy);
       swtmr_cb_register(cb_ptr, suspend_policy);\
     } \
 }while(0);
+#else
+#define SWTIMER_REG_CB(...)
+#endif
 
 #endif /* APP_INCLUDE_PM_SWTIMER_H_ */
