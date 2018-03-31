@@ -58,6 +58,36 @@ Gets the current WiFi channel.
 #### Returns
 current WiFi channel
 
+## wifi.getcountry()
+
+Get the current country info.
+
+#### Syntax
+`wifi.getcountry()`
+
+#### Parameters
+`nil`
+
+#### Returns
+- `country_info` this table contains the current country info configuration
+	- `country` Country code, 2 character string.
+	- `start_ch` Starting channel. 
+	- `end_ch` Ending channel.
+	- `policy` The policy parameter determines which country info configuration to use, country info given to station by AP or local configuration.
+		- `0` Country policy is auto, NodeMCU will use the country info provided by AP that the station is connected to.
+		- `1` Country policy is manual, NodeMCU will use locally configured country info.
+	
+#### Example
+
+```lua
+for k, v in pairs(wifi.getcountry()) do
+  print(k, v)
+end
+```
+
+#### See also
+[`wifi.setcountry()`](#wifisetcountry)
+
 ## wifi.getdefaultmode()
 
 Gets default WiFi operation mode.
@@ -164,6 +194,48 @@ wifi.resume(function() print("WiFi resume") end)
 - [`wifi.suspend()`](#wifisuspend)
 - [`node.sleep()`](node.md#nodesleep)
 - [`node.dsleep()`](node.md#nodedsleep)
+
+## wifi.setcountry()
+
+Set the current country info.
+
+#### Syntax
+`wifi.setcountry(country_info)`
+
+#### Parameters
+- `country_info` This table contains the country info configuration. (If a blank table is passed to this function, default values will be configured.)
+	- `country` Country code, 2 character string containing the country code (a list of country codes can be found [here](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements)). (Default:"CN")
+	- `start_ch` Starting channel (range:1-14). (Default:1)
+	- `end_ch` Ending channel, must not be less than starting channel (range:1-14). (Default:13)
+	- `policy` The policy parameter determines which country info configuration to use, country info given to station by AP or local configuration. (default:`wifi.COUNTRY_AUTO`)
+		- `wifi.COUNTRY_AUTO` Country policy is auto, NodeMCU will use the country info provided by AP that the station is connected to.
+			- while in stationAP mode, beacon/probe respose will reflect the country info of the AP that the station is connected to.  
+		- `wifi.COUNTRY_MANUAL` Country policy is manual, NodeMCU will use locally configured country info.
+
+#### Returns
+`true` If configuration was sucessful.
+	
+#### Example
+
+```lua
+do
+  country_info={}
+  country_info.country="US"
+  country_info.start_ch=1
+  country_info.end_ch=13
+  country_info.policy=wifi.COUNTRY_AUTO;
+  wifi.setcountry(country_info)
+end  
+
+--compact version
+  wifi.setcountry({country="US", start_ch=1, end_ch=13, policy=wifi.COUNTRY_AUTO})
+
+--Set defaults
+  wifi.setcountry({})
+```
+
+#### See also
+[`wifi.getcountry()`](#wifigetcountry)
 
 ## wifi.setmode()
 
