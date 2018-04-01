@@ -195,11 +195,14 @@ All Lua callbacks are called by C wrapper functions within the NodeMCU libraries
 
 *  If you are running out of memory, then you might not be correctly clearing down Registry entries.  One example is as above where you are setting up timers but not unregistering them.  Another occurs in the following code fragment. The `on()` function passes the socket to the connection callback as it's first argument `sck`.  This is local variable in the callback function, and it also references the same socket as the upvalue `srv`.  So functionally `srv` and `sck` are interchangeable.  So why pass it as an argument?  Normally garbage collecting a socket will automatically unregister any of its callbacks, but if you use a socket as an upvalue in the callback, the socket is now referenced through the Register, and now it won't be GCed because it is referenced.  Catch-22 and a programming error, not a bug. 
 
+# Example of wrong upvalue usage in the callback:
 ```Lua
 srv:on("connection", function(sck, c)
   svr:send(reply)
 end)
 ```
+
+Example of correct callback implementation is in the [net socket documentation](modules/net/#example_5).
 
 *  One way to check the registry is to use the construct `for k,v in pairs(debug.getregistry()) do print (k,v) end` to track the registry size.  If this is growing then you've got a leak.
 
