@@ -18,3 +18,6 @@ CONFIG_TCP_MSL=5000
 #   No filesystem partition found, attempting to create it...
 #   abort() was called at PC 0x400ecddd on core 0
 CONFIG_SPI_FLASH_WRITING_DANGEROUS_REGIONS_ALLOWED=y
+
+# Enable panic handler for task wdt to reset the firmware upon wdt timeout
+CONFIG_TASK_WDT_PANIC=y

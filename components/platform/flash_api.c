@@ -11,6 +11,7 @@
 
 #include "esp_image_format.h"
 #include "esp_flash_data_types.h"
+#include "esp_task_wdt.h"
 
 #define FLASH_HDR_ADDR 0x1000
 
@@ -170,4 +171,18 @@ uint32_t flash_rom_get_speed(void)
     default: break;
   }
   return 0;
+}
+
+esp_err_t flash_erase(size_t sector)
+{
+#ifdef CONFIG_TASK_WDT
+  // re-init the task WDT, simulates feeding for the IDLE task
+#  ifdef CONFIG_TASK_WDT_PANIC
+  esp_task_wdt_init(CONFIG_TASK_WDT_TIMEOUT_S, true);
+#  else
+  esp_task_wdt_init(CONFIG_TASK_WDT_TIMEOUT_S, false);
+#  endif
+#endif
+
+  return spi_flash_erase_sector(sector);
 }

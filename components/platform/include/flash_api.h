@@ -19,7 +19,7 @@ uint32_t flash_rom_get_speed(void);
 #define FLASH_SIZE_16MBYTE  (16 * 1024 * 1024)
 
 #define flash_write spi_flash_write
-#define flash_erase spi_flash_erase_sector
+esp_err_t flash_erase(size_t sector);
 #define flash_read spi_flash_read
 
 #endif // __FLASH_API_H__
