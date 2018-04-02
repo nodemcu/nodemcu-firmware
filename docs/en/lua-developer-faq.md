@@ -198,11 +198,11 @@ All Lua callbacks are called by C wrapper functions within the NodeMCU libraries
 Example of wrong upvalue usage in the callback:
 ```Lua
 srv:on("connection", function(sck, c)
-  svr:send(reply)
+  svr:send(reply) -- should be 'sck' instead of 'srv'
 end)
 ```
 
-Example of correct callback implementation is in the [net socket documentation](modules/net/#example_5).
+Examples of correct callback implementations can be found in the [net socket documentation](modules/net.md#netsocketon).
 
 *  One way to check the registry is to use the construct `for k,v in pairs(debug.getregistry()) do print (k,v) end` to track the registry size.  If this is growing then you've got a leak.
 
