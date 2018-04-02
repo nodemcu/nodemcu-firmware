@@ -104,7 +104,7 @@ static size_t lcron_findindex(lua_State *L, cronent_ud_t *ud) {
   size_t i;
   for (i = 0; i < cronent_count; i++) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_list[i]);
-    eud = lua_touserdata(L, 1);
+    eud = lua_touserdata(L, -1);
     lua_pop(L, 1);
     if (eud == ud) break;
   }
@@ -141,7 +141,7 @@ static int lcron_unschedule(lua_State *L) {
   size_t i = lcron_findindex(L, ud);
   if (i == -1) return 0;
   luaL_unref(L, LUA_REGISTRYINDEX, cronent_list[i]);
-  memmove(cronent_list + i, cronent_list + i + 1, sizeof(int) * cronent_count - i - 1);
+  memmove(cronent_list + i, cronent_list + i + 1, sizeof(int) * (cronent_count - i - 1));
   cronent_count--;
   return 0;
 }
@@ -173,7 +173,7 @@ static void cron_handle_time(uint8_t mon, uint8_t dom, uint8_t dow, uint8_t hour
   desc.min  = (uint64_t)1 << min;
   for (size_t i = 0; i < cronent_count; i++) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_list[i]);
-    cronent_ud_t *ent = lua_touserdata(L, 1);
+    cronent_ud_t *ent = lua_touserdata(L, -1);
     lua_pop(L, 1);
     if ((ent->desc.mon  & desc.mon ) == 0) continue;
     if ((ent->desc.dom  & desc.dom ) == 0) continue;

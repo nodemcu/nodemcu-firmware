@@ -24,23 +24,6 @@ local x,y,z = adxl345.read()
 print(string.format("X = %d, Y = %d, Z = %d", x, y, z))
 ```
 
-## adxl345.init()
-Initializes the module and sets the pin configuration.
-
-!!! attention
-
-    This function is deprecated and will be removed in upcoming releases. Use `adxl345.setup()` instead.
-
-#### Syntax
-`adxl345.init(sda, scl)`
-
-#### Parameters
-- `sda` data pin
-- `scl` clock pin
-
-#### Returns
-`nil`
-
 ## adxl345.setup()
 Initializes the module.
 

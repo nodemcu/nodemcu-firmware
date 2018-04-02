@@ -24,7 +24,7 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 
 `esptool.py --port <serial-port-of-ESP8266> write_flash -fm <mode> 0x00000 <nodemcu-firmware>.bin`
 
-`mode` is `qio` for 512&nbsp;kByte modules and `dio` for >=4&nbsp;MByte modules (`qio` might work as well, YMMV).
+[`mode`](https://github.com/espressif/esptool/#flash-modes) is `qio` for most ESP8266 ESP-01/07 (512&nbsp;kByte modules) and `dio` for most ESP32 and ESP8266 ESP-12 (>=4&nbsp;MByte modules). ESP8285 requires `dout`.
 
 **Gotchas**
 
@@ -34,6 +34,17 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 - In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
 `esptool.py --port <serial-port-of-ESP8266> erase_flash`
 
+### NodeMCU PyFlasher
+> Self-contained [NodeMCU](https://github.com/nodemcu/nodemcu-firmware) flasher with GUI based on [esptool.py](https://github.com/espressif/esptool) and [wxPython](https://www.wxpython.org/).
+
+![NodeMCU PyFlasher](../img/NodeMCU-PyFlasher.png "NodeMCU PyFlasher")
+
+Source: [https://github.com/marcelstoer/nodemcu-pyflasher](https://github.com/marcelstoer/nodemcu-pyflasher)
+
+Supported platforms: anything that runs Python, runnable .exe available for Windows and .dmg for macOS
+
+Disclaimer: the availability of [NodeMCU PyFlasher was announced on the NodeMCU Facebook page](https://www.facebook.com/NodeMCU/posts/663197460515251) but it is not an official offering of the current NodeMCU firmware team.
+
 ### NodeMCU Flasher
 > A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
 
@@ -42,16 +53,6 @@ Source: [https://github.com/nodemcu/nodemcu-flasher](https://github.com/nodemcu/
 Supported platforms: Windows
 
 Note that this tool was created by the initial developers of the NodeMCU firmware. **It hasn't seen updates since September 2015** and is not maintained by the current NodeMCU *firmware* team. Be careful to not accidentally flash the very old default firmware the tool is shipped with.
-
-### NodeMCU PyFlasher
-> Self-contained [NodeMCU](https://github.com/nodemcu/nodemcu-firmware) flasher with GUI based on [esptool.py](https://github.com/espressif/esptool) and [wxPython](https://www.wxpython.org/).
-
-Source: [https://github.com/marcelstoer/nodemcu-pyflasher](https://github.com/marcelstoer/nodemcu-pyflasher)
-
-Supported platforms: anything that runs Python, runnable .exe available for Windows
-
-Disclaimer: the availability of [NodeMCU PyFlasher was announced on the NodeMCU Facebook page](https://www.facebook.com/NodeMCU/posts/663197460515251) but it is not an official offering of the current NodeMCU firmware team.
-
 
 ## Putting Device Into Flash Mode
 
@@ -101,7 +102,7 @@ Espressif refers to this area as "System Param" and it resides in the last four 
 
 The default init data is provided as part of the SDK in the file `esp_init_data_default.bin`. NodeMCU will automatically flash this file to the right place on first boot if the sector appears to be empty.
 
-If you need to customize init data then first download the [Espressif SDK 2.1.0](https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.1.0.zip) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip. 
+If you need to customize init data then first download the [Espressif SDK 2.2.0](https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.2.0.zip) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip. 
 
 - `0x7c000` for 512 kB, modules like most ESP-01, -03, -07 etc.
 - `0xfc000` for 1 MB, modules like ESP8285, PSF-A85, some ESP-01, -03 etc.

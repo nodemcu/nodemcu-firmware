@@ -2,7 +2,8 @@
  * \file ssl_cache.h
  *
  * \brief SSL session cache implementation
- *
+ */
+/*
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
  *  SPDX-License-Identifier: Apache-2.0
  *
@@ -60,7 +61,7 @@ typedef struct mbedtls_ssl_cache_entry mbedtls_ssl_cache_entry;
 struct mbedtls_ssl_cache_entry
 {
 #if defined(MBEDTLS_HAVE_TIME)
-    time_t timestamp;           /*!< entry timestamp    */
+    mbedtls_time_t timestamp;           /*!< entry timestamp    */
 #endif
     mbedtls_ssl_session session;        /*!< entry session      */
 #if defined(MBEDTLS_X509_CRT_PARSE_C)

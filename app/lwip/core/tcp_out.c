@@ -461,6 +461,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       return ERR_MEM;
     }
 
+#if !LWIP_NETIF_TX_SINGLE_PBUF
    /*
      * Phase 2: Chain a new pbuf to the end of pcb->unsent.
      *
@@ -510,6 +511,7 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       pos += seglen;
       queuelen += pbuf_clen(concat_p);
     }
+#endif /* !LWIP_NETIF_TX_SINGLE_PBUF */
   } else {
 #if TCP_OVERSIZE
     LWIP_ASSERT("unsent_oversize mismatch (pcb->unsent is NULL)",
@@ -1336,6 +1338,12 @@ tcp_rexmit(struct tcp_pcb *pcb)
   }
   seg->next = *cur_seg;
   *cur_seg = seg;
+#if TCP_OVERSIZE
+  if (seg->next == NULL) {
+    /* the retransmitted segment is last in unsent, so reset unsent_oversize */
+    pcb->unsent_oversize = 0;
+  }
+#endif /* TCP_OVERSIZE */
 
   ++pcb->nrtx;
 

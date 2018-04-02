@@ -116,7 +116,6 @@ SECTIONS
     /* *libcrypto.a:*(.literal .text) - tested that safe to keep in iROM */
     /* *libdriver.a:*(.literal .text) - not used anywhere in NodeMCU */
     /* *libespnow.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *libmesh.a:*(.literal .text) - not used anywhere in NodeMCU */
     /* *liblwip_536.a:*(.literal .text) - source-based library used instead */
     /* *libpwm.a:*(.literal .text) - our own implementation used instead */
     /* *libwpa.a:*(.literal .text) - tested that safe to keep in iROM */
@@ -207,6 +206,7 @@ SECTIONS
     *(COMMON)
     . = ALIGN (8);
     _bss_end = ABSOLUTE(.);
+    *(.noinit)
     _heap_start = ABSOLUTE(.);
 /*    _stack_sentry = ALIGN(0x8); */
   } >dram0_0_seg :dram0_0_bss_phdr

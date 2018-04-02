@@ -63,7 +63,7 @@ file.close()
 
     If the card doesn't work when calling `file.mount()` for the first time then re-try the command. It's possible that certain cards time out during the first initialization after power-up.
 
-The logical drives are mounted at the root of a unified directory tree where the mount points distinguish between internal flash (`/FLASH`) and the card's paritions (`/SD0` to `/SD3`). Files are accessed via either the absolute hierarchical path or relative to the current working directory. It defaults to `/FLASH` and can be changed with `file.chdir(path)`.
+The logical drives are mounted at the root of a unified directory tree where the mount points distinguish between internal flash (`/FLASH`) and the card's partitions (`/SD0` to `/SD3`). Files are accessed via either the absolute hierarchical path or relative to the current working directory. It defaults to `/FLASH` and can be changed with `file.chdir(path)`.
 
 Subdirectories are supported on FAT volumes only.
 

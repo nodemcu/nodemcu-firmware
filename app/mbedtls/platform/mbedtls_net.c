@@ -24,7 +24,7 @@
 
 #if defined(MBEDTLS_NET_C)
 
-#include "mbedtls/net.h"
+#include "mbedtls/net_sockets.h"
 
 #include <string.h>
 //

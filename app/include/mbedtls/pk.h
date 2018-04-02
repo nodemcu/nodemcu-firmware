@@ -2,7 +2,8 @@
  * \file pk.h
  *
  * \brief Public Key abstraction layer
- *
+ */
+/*
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
  *  SPDX-License-Identifier: Apache-2.0
  *
@@ -63,6 +64,7 @@
 #define MBEDTLS_ERR_PK_UNKNOWN_NAMED_CURVE -0x3A00  /**< Elliptic curve is unsupported (only NIST curves are supported). */
 #define MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE -0x3980  /**< Unavailable feature, e.g. RSA disabled for RSA key. */
 #define MBEDTLS_ERR_PK_SIG_LEN_MISMATCH    -0x3900  /**< The signature is valid but its length is less than expected. */
+#define MBEDTLS_ERR_PK_HW_ACCEL_FAILED     -0x3880  /**< PK hardware accelerator failed. */
 
 #ifdef __cplusplus
 extern "C" {
@@ -496,11 +498,12 @@ int mbedtls_pk_parse_keyfile( mbedtls_pk_context *ctx,
  * \brief           Load and parse a public key
  *
  * \param ctx       key to be initialized
- * \param path      filename to read the private key from
+ * \param path      filename to read the public key from
  *
  * \note            On entry, ctx must be empty, either freshly initialised
- *                  with mbedtls_pk_init() or reset with mbedtls_pk_free(). If you need a
- *                  specific key type, check the result with mbedtls_pk_can_do().
+ *                  with mbedtls_pk_init() or reset with mbedtls_pk_free(). If
+ *                  you need a specific key type, check the result with
+ *                  mbedtls_pk_can_do().
  *
  * \note            The key is also checked for correctness.
  *

@@ -15,8 +15,12 @@
 #include "mem.h"
 #include "lwip/ip_addr.h"
 #include "espconn.h"
+#include "sys/espconn_mbedtls.h"
 #include "lwip/err.h"
 #include "lwip/dns.h"
+
+#include "mbedtls/debug.h"
+#include "user_mbedtls.h"
 
 #ifdef HAVE_SSL_SERVER_CRT
 #include HAVE_SSL_SERVER_CRT
@@ -611,6 +615,13 @@ static int tls_cert_verify(lua_State *L)
   return 1;
 }
 
+#if defined(MBEDTLS_DEBUG_C)
+static int tls_set_debug_threshold(lua_State *L) {
+  mbedtls_debug_set_threshold(luaL_checkint( L, 1 ));
+  return 0;
+}
+#endif
+
 static const LUA_REG_TYPE tls_socket_map[] = {
   { LSTRKEY( "connect" ), LFUNCVAL( tls_socket_connect ) },
   { LSTRKEY( "close" ),   LFUNCVAL( tls_socket_close ) },
@@ -634,6 +645,9 @@ const LUA_REG_TYPE tls_cert_map[] = {
 
 static const LUA_REG_TYPE tls_map[] = {
   { LSTRKEY( "createConnection" ), LFUNCVAL( tls_socket_create ) },
+#if defined(MBEDTLS_DEBUG_C)
+  { LSTRKEY( "setDebug" ),         LFUNCVAL( tls_set_debug_threshold ) },
+#endif
   { LSTRKEY( "cert" ),             LROVAL( tls_cert_map ) },
   { LSTRKEY( "__metatable" ),      LROVAL( tls_map ) },
   { LNILKEY, LNILVAL }

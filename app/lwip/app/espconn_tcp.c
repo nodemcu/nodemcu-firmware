@@ -231,6 +231,10 @@ void ICACHE_FLASH_ATTR espconn_tcp_memp_free(espconn_msg *pmemp)
 	if (pmemp == NULL)
 		return;
 
+	/*Enable block option for fetches the data proactive*/
+    if (espconn_manual_recv_disabled(pmemp))
+        espconn_list_delete(&plink_active, pmemp);
+
 	if (pmemp->espconn_mode == ESPCONN_TCPSERVER_MODE){
 		if (pmemp->pespconn != NULL && pmemp->pespconn->proto.tcp != NULL)
 			os_free(pmemp->pespconn->proto.tcp);
@@ -431,11 +435,13 @@ espconn_Task(os_event_t *events)
 			case SIG_ESPCONN_ERRER:
 				/*remove the node from the client's active connection list*/
 				espconn_list_delete(&plink_active, task_msg);
-				espconn_tcp_reconnect(task_msg);
+			    if (espconn_manual_recv_enabled(task_msg))
+			        espconn_list_delete(&plink_active, task_msg);
 				break;
 			case SIG_ESPCONN_CLOSE:
 				/*remove the node from the client's active connection list*/
-				espconn_list_delete(&plink_active, task_msg);
+			    if (espconn_manual_recv_enabled(task_msg))
+			        espconn_list_delete(&plink_active, task_msg);
 				espconn_tcp_disconnect_successful(task_msg);
 				break;
 			default:
@@ -536,6 +542,66 @@ void ICACHE_FLASH_ATTR espconn_tcp_disconnect(espconn_msg *pdiscon,u8 type)
 	} else{
 		espconn_printf("espconn_tcp_disconnect err.\n");
 	}
+}
+
+/******************************************************************************
+ * FunctionName : espconn_tcp_recv
+ * Description  : Data has been received on this pcb.
+ * Parameters   : arg -- Additional argument to pass to the callback function
+ *                pcb -- The connection pcb which received data
+ *                p -- The received data (or NULL when the connection has been closed!)
+ *                err -- An error code if there has been an error receiving
+ * Returns      : ERR_ABRT: if you have called tcp_abort from within the function!
+*******************************************************************************/
+static err_t ICACHE_FLASH_ATTR
+espconn_tcp_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
+{
+    espconn_msg *precv_cb = arg;
+    struct pbuf *pthis = NULL;
+    uint8_t *ring = NULL;
+    size_t  bytes_used = 0;
+
+    tcp_arg(pcb, arg);
+
+    if (precv_cb->readbuf == NULL) {
+        precv_cb->readbuf = ringbuf_new(TCP_WND);
+        if (precv_cb->readbuf == NULL)
+            return ESPCONN_MEM;
+    }
+
+    if (err == ERR_OK) {
+        precv_cb->pcommon.recv_check = 0;
+        if (p != NULL) {
+            /*store the data to the adapter for application fetches it proactive*/
+            for (pthis = p; pthis != NULL ; pthis = pthis->next) {
+                ring = ringbuf_memcpy_into(precv_cb->readbuf, pthis->payload, pthis->len);
+                if (ring)
+                    pbuf_free(pthis);
+                else
+                    break;
+            }
+            bytes_used = ringbuf_bytes_used(precv_cb->readbuf);
+
+            /*switch the state of espconn for application process*/
+            precv_cb->pespconn->state = ESPCONN_READ;
+            precv_cb->pcommon.pcb = pcb;
+            if (precv_cb->pespconn->recv_callback != NULL) {
+                precv_cb->pespconn->recv_callback(precv_cb->pespconn, NULL, bytes_used);
+            }
+
+            /*switch the state of espconn for next packet copy*/
+            if (pcb->state == ESTABLISHED)
+                precv_cb->pespconn->state = ESPCONN_CONNECT;
+        } else {
+            if (precv_cb->preverse) {
+                espconn_server_close(precv_cb, pcb, 0);
+            } else {
+                espconn_client_close(precv_cb, pcb, 0);
+            }
+        }
+    }
+
+    return ERR_OK;
 }
 
 ///////////////////////////////client function/////////////////////////////////
@@ -932,6 +998,10 @@ espconn_client_connect(void *arg, struct tcp_pcb *tpcb, err_t err)
 		if (pcon->pespconn->proto.tcp->connect_callback != NULL) {
 			pcon->pespconn->proto.tcp->connect_callback(pcon->pespconn);
 		}
+
+		/*Enable block option for fetches the data proactive*/
+        if (espconn_manual_recv_disabled(pcon))
+            tcp_recv(tpcb, espconn_tcp_recv);
 
 		/*Enable keep alive option*/
 		if (espconn_keepalive_disabled(pcon))
@@ -1357,6 +1427,10 @@ espconn_tcp_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 	if (paccept->pespconn->proto.tcp->connect_callback != NULL) {
 		paccept->pespconn->proto.tcp->connect_callback(paccept->pespconn);
 	}
+
+	/*Enable block option for fetches the data proactive*/
+	if (espconn_manual_recv_disabled(paccept))
+	    tcp_recv(pcb, espconn_tcp_recv);
 
 	/*Enable keep alive option*/
 	if (espconn_keepalive_disabled(paccept))

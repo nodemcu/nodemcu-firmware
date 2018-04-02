@@ -14,6 +14,8 @@
 #include "driver/uart.h"
 #include "driver/sigma_delta.h"
 
+#define INTERRUPT_TYPE_IS_LEVEL(x)   ((x) >= GPIO_PIN_INTR_LOLEVEL)
+
 #ifdef GPIO_INTERRUPT_ENABLE
 static task_handle_t gpio_task_handle;
 
@@ -103,6 +105,7 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
                    GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pnum))) |
                    GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE));      //enable open drain;
   }
+
   ETS_GPIO_INTR_ENABLE();
 }
 
@@ -151,12 +154,15 @@ int platform_gpio_mode( unsigned pin, unsigned mode, unsigned pull )
 
     case PLATFORM_GPIO_INPUT:
       GPIO_DIS_OUTPUT(pin_num[pin]);
-      /* run on */
+      set_gpio_no_interrupt(pin, TRUE);
+      break;
     case PLATFORM_GPIO_OUTPUT:
       set_gpio_no_interrupt(pin, TRUE);
+      GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pin_num[pin]));
       break;
     case PLATFORM_GPIO_OPENDRAIN:
       set_gpio_no_interrupt(pin, FALSE);
+      GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, BIT(pin_num[pin]));
       break;
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -226,13 +232,29 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
     if (gpio_status&1) {
       int i = pin_num_inv[j];
       if (pin_int_type[i]) {
-        //disable interrupt
-        gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        uint16_t diff = pin_counter[i].seen ^ pin_counter[i].reported;
+
+        pin_counter[i].seen = 0x7fff & (pin_counter[i].seen + 1);
+
+        if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[i])) {
+          //disable interrupt
+          gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        }
         //clear interrupt status
         GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
-        uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
-	task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level);
-	// We re-enable the interrupt when we execute the callback
+
+        if (diff == 0 || diff & 0x8000) {
+          uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
+	  if (!task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level)) {
+            // If we fail to post, then try on the next interrupt
+            pin_counter[i].seen |= 0x8000;
+          }
+          // We re-enable the interrupt when we execute the callback (if level)
+        }
+      } else {
+        // this is an unexpected interrupt so shut it off for now
+        gpio_pin_intr_state_set(GPIO_ID_PIN(j), GPIO_PIN_INTR_DISABLE);
+        GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
       }
     }
   }

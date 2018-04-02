@@ -28,7 +28,7 @@ The second value returned is the extended reset cause. Values are:
 
 In general, the extended reset cause supercedes the raw code. The raw code is kept for backwards compatibility only. For new applications it is highly recommended to use the extended reset cause instead.
 
-In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, EXCCAUSE, EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
+In case of extended reset cause 3 (exception reset), additional values are returned containing the crash information. These are, in order, [EXCCAUSE](https://arduino-esp8266.readthedocs.io/en/latest/exception_causes.html), EPC1, EPC2, EPC3, EXCVADDR, and DEPC.
 
 #### Syntax
 `node.bootreason()`
@@ -245,7 +245,7 @@ Redirects the Lua interpreter output to a callback function. Optionally also pri
 function tonet(str)
   sk:send(str)
 end
-node.output(tonet, 1)  -- serial also get the lua output.
+node.output(tonet, 1)  -- serial also get the Lua output.
 ```
 
 ```lua
@@ -334,6 +334,9 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 * NodeMCU can not enter light sleep mode if wifi is suspended.
 * All active timers will be suspended and then resumed when NodeMCU wakes from sleep. 
 * Any previously suspended timers will be resumed when NodeMCU wakes from sleep.
+
+!!! attention
+    This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 #### Syntax
 `node.sleep({wake_gpio[, duration, int_type, resume_cb, preserve_mode]})`

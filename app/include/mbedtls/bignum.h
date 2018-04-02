@@ -1,8 +1,9 @@
 /**
  * \file bignum.h
  *
- * \brief  Multi-precision integer library
- *
+ * \brief Multi-precision integer library
+ */
+/*
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
  *  SPDX-License-Identifier: Apache-2.0
  *
@@ -70,7 +71,7 @@
  * Maximum size of MPIs allowed in bits and bytes for user-MPIs.
  * ( Default: 512 bytes => 4096 bits, Maximum tested: 2048 bytes => 16384 bits )
  *
- * Note: Calculations can results temporarily in larger MPIs. So the number
+ * Note: Calculations can temporarily result in larger MPIs. So the number
  * of limbs required (MBEDTLS_MPI_MAX_LIMBS) is higher.
  */
 #define MBEDTLS_MPI_MAX_SIZE                              1024     /**< Maximum number of bytes for usable MPIs. */
@@ -103,36 +104,71 @@
 /*
  * Define the base integer type, architecture-wise.
  *
- * 32-bit integers can be forced on 64-bit arches (eg. for testing purposes)
- * by defining MBEDTLS_HAVE_INT32 and undefining MBEDTLS_HAVE_ASM
+ * 32 or 64-bit integer types can be forced regardless of the underlying
+ * architecture by defining MBEDTLS_HAVE_INT32 or MBEDTLS_HAVE_INT64
+ * respectively and undefining MBEDTLS_HAVE_ASM.
+ *
+ * Double-width integers (e.g. 128-bit in 64-bit architectures) can be
+ * disabled by defining MBEDTLS_NO_UDBL_DIVISION.
  */
-#if ( ! defined(MBEDTLS_HAVE_INT32) && \
-        defined(_MSC_VER) && defined(_M_AMD64) )
-  #define MBEDTLS_HAVE_INT64
-  typedef  int64_t mbedtls_mpi_sint;
-  typedef uint64_t mbedtls_mpi_uint;
-#else
-  #if ( ! defined(MBEDTLS_HAVE_INT32) &&               \
-        defined(__GNUC__) && (                          \
-        defined(__amd64__) || defined(__x86_64__)    || \
-        defined(__ppc64__) || defined(__powerpc64__) || \
-        defined(__ia64__)  || defined(__alpha__)     || \
-        (defined(__sparc__) && defined(__arch64__))  || \
-        defined(__s390x__) || defined(__mips64) ) )
-     #define MBEDTLS_HAVE_INT64
-     typedef  int64_t mbedtls_mpi_sint;
-     typedef uint64_t mbedtls_mpi_uint;
-     /* mbedtls_t_udbl defined as 128-bit unsigned int */
-     typedef unsigned int mbedtls_t_udbl __attribute__((mode(TI)));
-     #define MBEDTLS_HAVE_UDBL
-  #else
-     #define MBEDTLS_HAVE_INT32
-     typedef  int32_t mbedtls_mpi_sint;
-     typedef uint32_t mbedtls_mpi_uint;
-     typedef uint64_t mbedtls_t_udbl;
-     #define MBEDTLS_HAVE_UDBL
-  #endif /* !MBEDTLS_HAVE_INT32 && __GNUC__ && 64-bit platform */
-#endif /* !MBEDTLS_HAVE_INT32 && _MSC_VER && _M_AMD64 */
+#if !defined(MBEDTLS_HAVE_INT32)
+    #if defined(_MSC_VER) && defined(_M_AMD64)
+        /* Always choose 64-bit when using MSC */
+        #if !defined(MBEDTLS_HAVE_INT64)
+            #define MBEDTLS_HAVE_INT64
+        #endif /* !MBEDTLS_HAVE_INT64 */
+        typedef  int64_t mbedtls_mpi_sint;
+        typedef uint64_t mbedtls_mpi_uint;
+    #elif defined(__GNUC__) && (                         \
+        defined(__amd64__) || defined(__x86_64__)     || \
+        defined(__ppc64__) || defined(__powerpc64__)  || \
+        defined(__ia64__)  || defined(__alpha__)      || \
+        ( defined(__sparc__) && defined(__arch64__) ) || \
+        defined(__s390x__) || defined(__mips64) )
+        #if !defined(MBEDTLS_HAVE_INT64)
+            #define MBEDTLS_HAVE_INT64
+        #endif /* MBEDTLS_HAVE_INT64 */
+        typedef  int64_t mbedtls_mpi_sint;
+        typedef uint64_t mbedtls_mpi_uint;
+        #if !defined(MBEDTLS_NO_UDBL_DIVISION)
+            /* mbedtls_t_udbl defined as 128-bit unsigned int */
+            typedef unsigned int mbedtls_t_udbl __attribute__((mode(TI)));
+            #define MBEDTLS_HAVE_UDBL
+        #endif /* !MBEDTLS_NO_UDBL_DIVISION */
+    #elif defined(__ARMCC_VERSION) && defined(__aarch64__)
+        /*
+         * __ARMCC_VERSION is defined for both armcc and armclang and
+         * __aarch64__ is only defined by armclang when compiling 64-bit code
+         */
+        #if !defined(MBEDTLS_HAVE_INT64)
+            #define MBEDTLS_HAVE_INT64
+        #endif /* !MBEDTLS_HAVE_INT64 */
+        typedef  int64_t mbedtls_mpi_sint;
+        typedef uint64_t mbedtls_mpi_uint;
+        #if !defined(MBEDTLS_NO_UDBL_DIVISION)
+            /* mbedtls_t_udbl defined as 128-bit unsigned int */
+            typedef __uint128_t mbedtls_t_udbl;
+            #define MBEDTLS_HAVE_UDBL
+        #endif /* !MBEDTLS_NO_UDBL_DIVISION */
+    #elif defined(MBEDTLS_HAVE_INT64)
+        /* Force 64-bit integers with unknown compiler */
+        typedef  int64_t mbedtls_mpi_sint;
+        typedef uint64_t mbedtls_mpi_uint;
+    #endif
+#endif /* !MBEDTLS_HAVE_INT32 */
+
+#if !defined(MBEDTLS_HAVE_INT64)
+    /* Default to 32-bit compilation */
+    #if !defined(MBEDTLS_HAVE_INT32)
+        #define MBEDTLS_HAVE_INT32
+    #endif /* !MBEDTLS_HAVE_INT32 */
+    typedef  int32_t mbedtls_mpi_sint;
+    typedef uint32_t mbedtls_mpi_uint;
+    #if !defined(MBEDTLS_NO_UDBL_DIVISION)
+        typedef uint64_t mbedtls_t_udbl;
+        #define MBEDTLS_HAVE_UDBL
+    #endif /* !MBEDTLS_NO_UDBL_DIVISION */
+#endif /* !MBEDTLS_HAVE_INT64 */
 
 #ifdef __cplusplus
 extern "C" {
@@ -340,7 +376,7 @@ int mbedtls_mpi_write_string( const mbedtls_mpi *X, int radix,
 
 #if defined(MBEDTLS_FS_IO)
 /**
- * \brief          Read X from an opened file
+ * \brief          Read MPI from a line in an opened file
  *
  * \param X        Destination MPI
  * \param radix    Input numeric base
@@ -349,6 +385,15 @@ int mbedtls_mpi_write_string( const mbedtls_mpi *X, int radix,
  * \return         0 if successful, MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL if
  *                 the file read buffer is too small or a
  *                 MBEDTLS_ERR_MPI_XXX error code
+ *
+ * \note           On success, this function advances the file stream
+ *                 to the end of the current line or to EOF.
+ *
+ *                 The function returns 0 on an empty line.
+ *
+ *                 Leading whitespaces are ignored, as is a
+ *                 '0x' prefix for radix 16.
+ *
  */
 int mbedtls_mpi_read_file( mbedtls_mpi *X, int radix, FILE *fin );
 
@@ -639,6 +684,10 @@ int mbedtls_mpi_exp_mod( mbedtls_mpi *X, const mbedtls_mpi *A, const mbedtls_mpi
  *
  * \return         0 if successful,
  *                 MBEDTLS_ERR_MPI_ALLOC_FAILED if memory allocation failed
+ *
+ * \note           The bytes obtained from the PRNG are interpreted
+ *                 as a big-endian representation of an MPI; this can
+ *                 be relevant in applications like deterministic ECDSA.
  */
 int mbedtls_mpi_fill_random( mbedtls_mpi *X, size_t size,
                      int (*f_rng)(void *, unsigned char *, size_t),
@@ -665,8 +714,8 @@ int mbedtls_mpi_gcd( mbedtls_mpi *G, const mbedtls_mpi *A, const mbedtls_mpi *B 
  *
  * \return         0 if successful,
  *                 MBEDTLS_ERR_MPI_ALLOC_FAILED if memory allocation failed,
- *                 MBEDTLS_ERR_MPI_BAD_INPUT_DATA if N is negative or nil
-                   MBEDTLS_ERR_MPI_NOT_ACCEPTABLE if A has no inverse mod N
+ *                 MBEDTLS_ERR_MPI_BAD_INPUT_DATA if N is <= 1,
+                   MBEDTLS_ERR_MPI_NOT_ACCEPTABLE if A has no inverse mod N.
  */
 int mbedtls_mpi_inv_mod( mbedtls_mpi *X, const mbedtls_mpi *A, const mbedtls_mpi *N );
 

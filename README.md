@@ -1,4 +1,4 @@
-# **NodeMCU 2.1.0** #
+# **NodeMCU 2.2.0** #
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
@@ -7,7 +7,7 @@
 
 ### A Lua based firmware for ESP8266 WiFi SOC
 
-NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/). The firmware is based on the [Espressif NON-OS SDK 2.1.0](https://github.com/espressif/ESP8266_NONOS_SDK/releases/tag/v2.1.0) and uses a file system based on [spiffs](https://github.com/pellepl/spiffs). The code repository consists of 98.1% C-code that glues the thin Lua veneer to the SDK.
+NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/). The firmware is based on the [Espressif NON-OS SDK 2.2.0](https://github.com/espressif/ESP8266_NONOS_SDK/releases/tag/v2.2.0) and uses a file system based on [spiffs](https://github.com/pellepl/spiffs). The code repository consists of 98.1% C-code that glues the thin Lua veneer to the SDK.
 
 The NodeMCU *firmware* is a companion project to the popular [NodeMCU dev kits](https://github.com/nodemcu/nodemcu-devkit-v1.0), ready-made open source development boards with ESP8266-12E chips.
 
@@ -16,7 +16,7 @@ The NodeMCU *firmware* is a companion project to the popular [NodeMCU dev kits](
 - Easy to program wireless node and/or access point
 - Based on Lua 5.1.4 (without *debug, os* modules)
 - Asynchronous event-driven programming model
-- 55+ built-in modules
+- more than 65 built-in modules
 - Firmware available with or without floating point support (integer-only uses less memory)
 - Up-to-date documentation at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io)
 
@@ -38,7 +38,7 @@ end)
 ```lua
 -- connect to WiFi access point
 wifi.setmode(wifi.STATION)
-wifi.sta.config("SSID", "password")
+wifi.sta.config{ssid="SSID", pwd="password"}
 ```
 
 # Documentation

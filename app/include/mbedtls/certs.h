@@ -2,7 +2,8 @@
  * \file certs.h
  *
  * \brief Sample certificates and DHM parameters for testing
- *
+ */
+/*
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
  *  SPDX-License-Identifier: Apache-2.0
  *
@@ -28,8 +29,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#if defined(MBEDTLS_SELF_TEST)
 
 #if defined(MBEDTLS_PEM_PARSE_C)
 /* Concatenation of all CA certificates in PEM format if available */
@@ -92,8 +91,6 @@ extern const char   mbedtls_test_cli_crt_rsa[];
 extern const size_t mbedtls_test_cli_crt_rsa_len;
 extern const char   mbedtls_test_cli_key_rsa[];
 extern const size_t mbedtls_test_cli_key_rsa_len;
-#endif
-
 #endif
 
 #ifdef __cplusplus

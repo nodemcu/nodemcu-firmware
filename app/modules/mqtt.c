@@ -337,6 +337,9 @@ READPACKET:
       } else {
         mud->connState = MQTT_DATA;
         NODE_DBG("MQTT: Connected\r\n");
+        mud->keepalive_sent = 0;
+        luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
+        mud->cb_connect_fail_ref = LUA_NOREF;
         if (mud->mqtt_state.auto_reconnect == RECONNECT_POSSIBLE) {
           mud->mqtt_state.auto_reconnect = RECONNECT_ON;
         }

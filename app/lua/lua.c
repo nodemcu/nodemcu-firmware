@@ -468,8 +468,11 @@ int lua_main (int argc, char **argv) {
 
 void lua_handle_input (bool force)
 {
-  if (gLoad.L && (force || readline (&gLoad)))
+  while (gLoad.L && (force || readline (&gLoad)))
+  {
     dojob (&gLoad);
+    force = false;
+  }
 }
 
 void donejob(lua_Load *load){
@@ -599,11 +602,12 @@ static bool readline(lua_Load *load){
         {
           /* Get a empty line, then go to get a new line */
           c_puts(load->prmt);
+          continue;
         } else {
           load->done = 1;
           need_dojob = true;
+          break;
         }
-        continue;
       }
 
       /* other control character or not an acsii character */

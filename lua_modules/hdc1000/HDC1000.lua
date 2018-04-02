@@ -69,10 +69,9 @@ function M.batteryDead()
 
 end
 
--- initalize i2c
-function M.init(sda, scl, drdyn_pin)
+-- setup i2c
+function M.setup(drdyn_pin)
 	_drdyn_pin = drdyn_pin
-	i2c.setup(id, sda, scl, i2c.SLOW)
 end
 
 function M.config(addr, resolution, heater)

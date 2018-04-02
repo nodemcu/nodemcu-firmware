@@ -16,6 +16,11 @@ Attempts to obtain time synchronization.
 For best results you may want to to call this periodically in order to compensate for internal clock drift. As stated in the [rtctime](rtctime.md) module documentation it's advisable to sync time after deep sleep and it's necessary to sync after module reset (add it to [`init.lua`](../upload.md#initlua) after WiFi initialization).
 Note that either a single server can be provided as an argument (name or address), or a list (table) of servers can be provided. 
 
+If *all* of the supplied host names/addresses are invalid, then the error callback will be called with argument type 1. Otherwise, if
+there is at least one valid name/address, then then sync will be performed.
+
+If any sync operation fails (maybe the device is disconnected from the internet), then all the names will be looked up again. 
+
 #### Syntax
 `sntp.sync([server_ip], [callback], [errcallback], [autorepeat])`
 `sntp.sync({ server1, server2, .. }, [callback], [errcallback], [autorepeat])`

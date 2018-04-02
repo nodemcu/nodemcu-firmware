@@ -26,7 +26,7 @@ time tracking is somewhat worse, but normally within 10ms.
 
 !!! important
 
-This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
+	This module uses RTC memory slots 0-9, inclusive. As soon as [`rtctime.set()`](#rtctimeset) (or [`sntp.sync()`](sntp.md#sntpsync)) has been called these RTC memory slots will be used.
 
 This is a companion module to the [rtcmem](rtcmem.md) and [SNTP](sntp.md) modules.
 
@@ -39,7 +39,7 @@ Puts the ESP8266 into deep sleep mode, like [`node.dsleep()`](node.md#nodedsleep
 - The time slept will generally be considerably more accurate than with [`node.dsleep()`](node.md#nodedsleep).
 - A sleep time of zero does not mean indefinite sleep, it is interpreted as a zero length sleep instead.
 
-When the sleep timer expires, the platform is rebooted and the lua code is started with the `init.lua` file. The clock is set reasonably accurately.
+When the sleep timer expires, the platform is rebooted and the Lua code is started with the `init.lua` file. The clock is set reasonably accurately.
 
 #### Syntax
 `rtctime.dsleep(microseconds [, option])`
@@ -157,3 +157,30 @@ rtctime.set(1436430589, 0)
 ```
 #### See also
 [`sntp.sync()`](sntp.md#sntpsync)
+
+## rtctime.adjust_delta()
+
+This takes a time interval in 'system clock microseconds' based on the timestamps returned by `tmr.now` and returns 
+an adjusted time interval in 'wall clock microseconds'. The size of the adjustment is typically pretty small as it (roughly) the error in the
+crystal clock rate. This function is useful in some precision timing applications.
+
+#### Syntax
+`rtctime.adjust_delta(microseconds)`
+
+#### Parameters
+- `microseconds` a time interval measured in system clock microseconds.
+
+#### Returns
+The same interval but measured in wall clock microseconds
+
+#### Example
+```lua
+local start = tmr.now()
+-- do something
+local end = tmr.now()
+print ('Duration', rtctime.adjust_delta(end - start))
+
+-- You can also go in the other direction (roughly)
+local one_second = 1000000
+local ticks_in_one_second = one_second - (rtctime.adjust_delta(one_second) - one_second)
+```

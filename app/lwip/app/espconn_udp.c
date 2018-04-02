@@ -237,9 +237,10 @@ espconn_udp_sendto(void *arg, uint8 *psent, uint16 length)
 
     if(wifi_get_opmode() == ESPCONN_AP_STA && default_interface == ESPCONN_AP_STA && sta_netif != NULL && ap_netif != NULL)
 	{
-		if(netif_is_up(sta_netif) && netif_is_up(ap_netif) && \
-			ip_addr_isbroadcast(&upcb->remote_ip, sta_netif) && \
-			ip_addr_isbroadcast(&upcb->remote_ip, ap_netif)) {
+		if( netif_is_up(sta_netif) && \
+            netif_is_up(ap_netif) && \
+            ip_addr_isbroadcast(&dst_ip, sta_netif) && \
+            ip_addr_isbroadcast(&dst_ip, ap_netif)) {
 
 		  p_temp = pbuf_alloc(PBUF_TRANSPORT, datalen, PBUF_RAM);
 		  if (pbuf_copy (p_temp,p) != ERR_OK) {
