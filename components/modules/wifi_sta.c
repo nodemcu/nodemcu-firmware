@@ -214,18 +214,18 @@ static int wifi_sta_config (lua_State *L)
   bool auto_conn = luaL_optbool (L, -1, true);
 
   SET_SAVE_MODE(save);
-  esp_err_t err = esp_wifi_set_config (WIFI_IF_STA, &cfg);
+  esp_err_t err = esp_wifi_set_auto_connect (auto_conn);
+  if (err != ESP_OK)
+    return luaL_error (L, "failed to set wifi auto-connect, code %d", err);
+
+  err = esp_wifi_set_config (WIFI_IF_STA, &cfg);
   if (err != ESP_OK)
     return luaL_error (L, "failed to set wifi config, code %d", err);
 
   if (auto_conn)
     err = esp_wifi_connect ();
-  if (err != ESP_OK)
-    return luaL_error (L, "failed to begin connect, code %d", err);
-
-  err = esp_wifi_set_auto_connect (auto_conn);
   return (err == ESP_OK) ?
-    0 : luaL_error (L, "failed to set wifi auto-connect, code %d", err);
+    0 : luaL_error (L, "failed to begin connect, code %d", err);
 }
 
 
