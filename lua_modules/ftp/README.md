@@ -1,6 +1,6 @@
 # FTPServer Module
 
-This is a Lua module to access the SPIFFS file system via FTP protocol. 
+This is a Lua module to access the [SPIFFS file system](../../docs/en/spiffs.md) via FTP protocol. 
 FTP server uses only one specified user and password to authenticate clients.
 All clients need authentication - anonymous access is not supported yet.
 All files have RW access.
