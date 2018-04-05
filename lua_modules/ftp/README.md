@@ -1,8 +1,8 @@
 # FTPServer Module
 
-This is a Lua module for the access to SPIFFS via FTP protocol. 
-FTP server uses only one specified user and password to auth clients.
-All clients need authorization - anonumous do not supported yet.
+This is a Lua module to access the SPIFFS file system via FTP protocol. 
+FTP server uses only one specified user and password to authenticate clients.
+All clients need authentication - anonymous access is not supported yet.
 All files have RW access.
 Directory creation do not supported because SPIFFS do not have that.
 
@@ -40,7 +40,7 @@ require("ftpserver").createServer("test","12345")
 ```
 
 ## closeServer()
-CLoses all server sockets.
+Closes all server sockets.
 
 #### Syntax
 `closeServer()`
