@@ -91,11 +91,11 @@ ftp_srv:listen(21, function(socket)
       end
       c:send("150 Accepted data connection\r\n")
       data_fnc = function(sd)
-        local b=f:read(1024)
         sd:on("sent", function(cd)
+          b=f:read(1024)
           if b then
             sd:send(b)
-            b=f:read(1024)
+            b=nil
           else
             sd:close()
             f:close()
@@ -103,10 +103,9 @@ ftp_srv:listen(21, function(socket)
             c:send("226 Transfer complete.\r\n")
           end
         end)
-        if b then
-          sd:send(b)
-          b=f:read(1024)
-        end
+        local b=f:read(1024)
+        sd:send(b)
+        b=nil
       end
       return
     end
