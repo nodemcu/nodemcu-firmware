@@ -67,7 +67,7 @@ ftp_srv:listen(21, function(socket)
       return c:send("200 S OK\r\n")
     end
     if a1 == "PASV" then
-      local _,ip = socket:getaddr()
+      local _,ip = c:getaddr()
       local _,_,i1,i2,i3,i4 = string.find(ip,"(%d+).(%d+).(%d+).(%d+)")
       return c:send("227 Entering Passive Mode ("..i1..","..i2..","..i3..","..i4..",0,20).\r\n")
     end
@@ -85,7 +85,7 @@ ftp_srv:listen(21, function(socket)
       return
     end
     if a1 == "RETR" then
-      f = file.open(a2:gsub("%/",""),"r")
+      local f = file.open(a2:gsub("%/",""),"r")
       if f == nil then
         return c:send("550 File "..a2.." not found\r\n")
       end
@@ -94,23 +94,23 @@ ftp_srv:listen(21, function(socket)
         sd:on("sent", function(cd)
           b=f:read(1024)
           if b then
-            sd:send(b)
+            cd:send(b)
             b=nil
           else
-            sd:close()
+            cd:close()
             f:close()
             data_fnc = nil
             c:send("226 Transfer complete.\r\n")
           end
         end)
         local b=f:read(1024)
-        sd:send(b)
+        cd:send(b)
         b=nil
       end
       return
     end
     if a1 == "STOR" then
-      f = file.open(a2:gsub("%/",""),"w")
+      local f = file.open(a2:gsub("%/",""),"w")
       if f == nil then
         return c:send("451 Can't open/create "..a2.."\r\n")
       end
