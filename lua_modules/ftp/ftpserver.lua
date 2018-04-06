@@ -3,9 +3,9 @@ local file,net,pairs,print,string,table = file,net,pairs,print,string,table
 local ftp, ftp_data, ftp_srv
 do
 local createServer = function (user, pass)
-local data_fnc = nil
+local data_fnc, data_sock = nil, nil
 ftp_data = net.createServer(net.TCP, 180)
-ftp_data:listen(20, function (s) if data_fnc then data_fnc(s) end end)
+ftp_data:listen(20, function (s) if data_fnc then data_fnc(s) else data_sock = s end end)
 ftp_srv = net.createServer(net.TCP, 180)
 ftp_srv:listen(21, function(socket)
   local s = 0
@@ -82,6 +82,9 @@ ftp_srv:listen(21, function(socket)
         data_fnc = nil
         c:send("226 Transfer complete.\r\n")
       end
+      if data_sock then
+        node.task.post(function() data_fnc(data_sock);data_sock=nil end)
+      end
       return
     end
     if a1 == "RETR" then
@@ -104,8 +107,11 @@ ftp_srv:listen(21, function(socket)
           end
         end)
         local b=f:read(1024)
-        cd:send(b)
+        sd:send(b)
         b=nil
+      end
+      if data_sock then
+        node.task.post(function() data_fnc(data_sock);data_sock=nil end)
       end
       return
     end
@@ -124,6 +130,9 @@ ftp_srv:listen(21, function(socket)
           data_fnc = nil
         end)
         c:send("226 Transfer complete.\r\n")
+      end
+      if data_sock then
+        node.task.post(function() data_fnc(data_sock);data_sock=nil end)
       end
       return
     end
