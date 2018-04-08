@@ -5,7 +5,7 @@ do
 local createServer = function (user, pass)
 local data_fnc, data_sock = nil, nil
 ftp_data = net.createServer(net.TCP, 180)
-ftp_data:listen(20, function (s) if data_fnc then data_fnc(s) else data_sock = s end end)
+ftp_data:listen(1024, function (s) if data_fnc then data_fnc(s) else data_sock = s end end)
 ftp_srv = net.createServer(net.TCP, 180)
 ftp_srv:listen(21, function(socket)
   local s = 0
@@ -18,6 +18,7 @@ ftp_srv:listen(21, function(socket)
       table.insert(a,i)
     end
     local a1,a2 = unpack(a)
+    print(d)
     if a1 == nil or a1 == "" then return end
     if s == 0 and a1 == "USER" then
       if a2 ~= user then
@@ -36,6 +37,9 @@ ftp_srv:listen(21, function(socket)
     if s ~= 2 then
       return c:send("530 Not logged in, authorization required\r\n")
     end
+    if a1 == "SYST" then
+      return c:send("250 UNIX Type: L8\r\n")
+    end
     if a1 == "CDUP" then
       return c:send("250 OK. Current directory is "..cwd.."\r\n")
     end
@@ -43,8 +47,11 @@ ftp_srv:listen(21, function(socket)
       if a2 == "." then
         return c:send("257 \""..cwd.."\" is your current directory\r\n")
       end
-      cwd = a2
-      return c:send("250 OK. Current directory is "..cwd.."\r\n")
+      if a2 == "/" then
+        cwd = a2
+        return c:send("250 OK. Current directory is "..cwd.."\r\n")
+      end
+      return c:send("550 Failed to change directory.\r\n")
     end
     if a1 == "PWD" then
       return c:send("257 \""..cwd.."\" is your current directory\r\n")
@@ -69,14 +76,14 @@ ftp_srv:listen(21, function(socket)
     if a1 == "PASV" then
       local _,ip = c:getaddr()
       local _,_,i1,i2,i3,i4 = string.find(ip,"(%d+).(%d+).(%d+).(%d+)")
-      return c:send("227 Entering Passive Mode ("..i1..","..i2..","..i3..","..i4..",0,20).\r\n")
+      return c:send("227 Entering Passive Mode ("..i1..","..i2..","..i3..","..i4..",4,0).\r\n")
     end
     if a1 == "LIST" or a1 == "NLST" then
       c:send("150 Accepted data connection\r\n")
       data_fnc = function(sd)
         local l = file.list();
         for k,v in pairs(l) do
-          sd:send( a1 == "NLST" and k.."\r\n" or "+r,s"..v..",\t"..k.."\r\n")
+          sd:send( a1 == "NLST" and k.."\r\n" or "-rwxrwxrwx 1 esp esp "..v.." Jan  1  2018 "..k.."\r\n")
         end
         sd:close()
         data_fnc = nil
@@ -151,6 +158,10 @@ ftp_srv:listen(21, function(socket)
       end
       file.remove(a2:gsub("%/",""))
       return c:send("250 Deleted "..a2.."\r\n")
+    end
+    if a1 == "SIZE" then
+      local f = file.stat(a2)
+      return c:send("213 "..(f and f.size or 1).."\r\n")
     end
     if a1 == "NOOP" then
       return c:send("200 OK\r\n")
