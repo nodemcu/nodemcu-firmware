@@ -18,7 +18,6 @@ ftp_srv:listen(21, function(socket)
       table.insert(a,i)
     end
     local a1,a2 = unpack(a)
-    print(d)
     if a1 == nil or a1 == "" then return end
     if s == 0 and a1 == "USER" then
       if a2 ~= user then
