@@ -152,6 +152,8 @@ static int lrotary_setup( lua_State* L )
   DATA *d = data[id];
   memset(d, 0, sizeof(*d));
 
+  d->id = id;
+
   os_timer_setfn(&d->timer, lrotary_timer_done, (void *) d);
   
   int i;
