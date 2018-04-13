@@ -1056,6 +1056,7 @@ mdns_dup_info(const struct nodemcu_mdns_info *info) {
   return result;
 }
 
+#include "pm/swtimer.h"
 /**
  * Initialize the resolver: set up the UDP pcb and configure the default server
  * (NEW IP).
@@ -1130,6 +1131,9 @@ nodemcu_mdns_init(struct nodemcu_mdns_info *info) {
   //MDNS_DBG("About to start timer\n");
   os_timer_disarm(&mdns_timer);
   os_timer_setfn(&mdns_timer, (os_timer_func_t *)mdns_reg,ms_info);
+  SWTIMER_REG_CB(mdns_reg, SWTIMER_RESUME);
+    //the function mdns_reg registers the mdns device on the network
+    //My guess: Since wifi connection is restored after waking from light_sleep, the related timer would have no problem resuming it's normal function.
   os_timer_arm(&mdns_timer, 1000 * 280, 1);
   /* kick off the first one right away */
   mdns_reg_handler_restart();

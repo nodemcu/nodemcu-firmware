@@ -323,11 +323,14 @@ uart_autobaud_timeout(void *timer_arg)
     uart_div_modify(uart_no, divisor);
   }
 }
+#include "pm/swtimer.h"
 
 static void 
 uart_init_autobaud(uint32_t uart_no)
 {
   os_timer_setfn(&autobaud_timer, uart_autobaud_timeout, (void *) uart_no);
+  SWTIMER_REG_CB(uart_autobaud_timeout, SWTIMER_DROP);
+    //if autobaud hasn't done it's thing by the time light sleep triggered, it probably isn't going to happen.
   os_timer_arm(&autobaud_timer, 100, TRUE);
 }
 

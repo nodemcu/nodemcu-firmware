@@ -40,6 +40,8 @@
 #include "../crypto/digests.h"
 #include "../crypto/mech.h"
 
+#include "pm/swtimer.h"
+
 #define PROTOCOL_SECURE "wss://"
 #define PROTOCOL_INSECURE "ws://"
 
@@ -560,6 +562,7 @@ static void ws_initReceiveCallback(void *arg, char *buf, unsigned short len) {
 
   os_timer_disarm(&ws->timeoutTimer);
   os_timer_setfn(&ws->timeoutTimer, (os_timer_func_t *) ws_sendPingTimeout, conn);
+  SWTIMER_REG_CB(ws_sendPingTimeout, SWTIMER_RESUME)
   os_timer_arm(&ws->timeoutTimer, WS_PING_INTERVAL_MS, true);
 
   espconn_regist_recvcb(conn, ws_receiveCallback);
@@ -706,6 +709,7 @@ static void dns_callback(const char *hostname, ip_addr_t *addr, void *arg) {
   // Set connection timeout timer
   os_timer_disarm(&ws->timeoutTimer);
   os_timer_setfn(&ws->timeoutTimer, (os_timer_func_t *) ws_connectTimeout, conn);
+  SWTIMER_REG_CB(ws_connectTimeout, SWTIMER_RESUME)
   os_timer_arm(&ws->timeoutTimer, WS_CONNECT_TIMEOUT_MS, false);
 
   if (ws->isSecure) {
@@ -867,6 +871,7 @@ void ws_close(ws_info *ws) {
 
     os_timer_disarm(&ws->timeoutTimer);
     os_timer_setfn(&ws->timeoutTimer, (os_timer_func_t *) ws_forceCloseTimeout, ws->conn);
+    SWTIMER_REG_CB(ws_forceCloseTimeout, SWTIMER_RESUME);
     os_timer_arm(&ws->timeoutTimer, WS_FORCE_CLOSE_TIMEOUT_MS, false);
   }
 }

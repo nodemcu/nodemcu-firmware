@@ -116,8 +116,8 @@ extern void luaL_assertfail(const char *file, int line, const char *message);
 #define WIFI_SDK_EVENT_MONITOR_ENABLE
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
 
-////#define ENABLE_TIMER_SUSPEND
-//#define PMSLEEP_ENABLE
+//#define PMSLEEP_ENABLE // Enable wifi.suspend() and node.sleep() (NOTE: node.sleep() is dependent on TIMER_SUSPEND_ENABLE)
+//#define TIMER_SUSPEND_ENABLE //Required by node.sleep()
 
 
 #define STRBUF_DEFAULT_INCREMENT 32

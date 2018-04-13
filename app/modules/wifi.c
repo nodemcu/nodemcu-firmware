@@ -429,7 +429,7 @@ static int wifi_setmaxtxpower( lua_State* L )
 
 #ifdef PMSLEEP_ENABLE
 /* Begin WiFi suspend functions*/
-#include "pmSleep.h"
+#include <pm/pmSleep.h>
 
 static int wifi_resume_cb_ref = LUA_NOREF; // Holds resume callback reference
 static int wifi_suspend_cb_ref = LUA_NOREF; // Holds suspend callback reference
@@ -511,6 +511,19 @@ static int wifi_resume(lua_State* L)
 }
 
 /* End WiFi suspend functions*/
+#else
+static char *susp_note_str = "\n The option \"pmsleep_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n";
+static char *susp_unavailable_str = "wifi.suspend is unavailable";
+
+static int wifi_suspend(lua_State* L){
+  c_sprintf("%s", susp_note_str);
+  return luaL_error(L, susp_unavailable_str);
+}
+
+static int wifi_resume(lua_State* L){
+  c_sprintf("%s", susp_note_str);
+  return luaL_error(L, susp_unavailable_str);
+}
 #endif
 
 // Lua: wifi.nullmodesleep()
@@ -963,7 +976,7 @@ static int wifi_station_config( lua_State* L )
 
     lua_State* L_temp = NULL;
 
-    lua_getfield(L, 1, "connected_cb");
+    lua_getfield(L, 1, "connect_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -976,12 +989,12 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "connected_cb:not function");
+        return luaL_argerror(L, 1, "connect_cb:not function");
       }
     }
     lua_pop(L, 1);
 
-    lua_getfield(L, 1, "disconnected_cb");
+    lua_getfield(L, 1, "disconnect_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -994,7 +1007,7 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "disconnected_cb:not function");
+        return luaL_argerror(L, 1, "disconnect_cb:not function");
       }
     }
     lua_pop(L, 1);
@@ -1910,10 +1923,8 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "setmaxtxpower" ),  LFUNCVAL( wifi_setmaxtxpower ) },
-#ifdef PMSLEEP_ENABLE
   { LSTRKEY( "suspend" ),        LFUNCVAL( wifi_suspend ) },
   { LSTRKEY( "resume" ),         LFUNCVAL( wifi_resume ) },
-#endif
   { LSTRKEY( "nullmodesleep" ),  LFUNCVAL( wifi_null_mode_auto_sleep ) },
 #ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },

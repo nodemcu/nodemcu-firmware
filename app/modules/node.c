@@ -76,7 +76,7 @@ static int node_deepsleep( lua_State* L )
 
 
 #ifdef PMSLEEP_ENABLE
-#include "pmSleep.h"
+#include "pm/pmSleep.h"
 
 int node_sleep_resume_cb_ref= LUA_NOREF;
 void node_sleep_resume_cb(void)
@@ -89,6 +89,7 @@ void node_sleep_resume_cb(void)
 // Lua: node.sleep(table)
 static int node_sleep( lua_State* L )
 {
+#ifdef TIMER_SUSPEND_ENABLE
   pmSleep_INIT_CFG(cfg);
   cfg.sleep_mode=LIGHT_SLEEP_T;
 
@@ -101,6 +102,10 @@ static int node_sleep( lua_State* L )
 
   cfg.resume_cb_ptr = &node_sleep_resume_cb;
   pmSleep_suspend(&cfg);
+#else
+  c_printf("\n The option \"timer_suspend_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n");
+  return luaL_error(L, "light sleep is unavailable");
+#endif
   return 0;
 }
 #endif //PMSLEEP_ENABLE

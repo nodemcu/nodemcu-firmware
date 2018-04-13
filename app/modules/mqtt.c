@@ -981,6 +981,7 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   return espconn_status;
 }
 
+#include "pm/swtimer.h"
 // Lua: mqtt:connect( host, port, secure, auto_reconnect, function(client), function(client, connect_return_code) )
 static int mqtt_socket_connect( lua_State* L )
 {
@@ -1114,6 +1115,9 @@ static int mqtt_socket_connect( lua_State* L )
 
   os_timer_disarm(&mud->mqttTimer);
   os_timer_setfn(&mud->mqttTimer, (os_timer_func_t *)mqtt_socket_timer, mud);
+  SWTIMER_REG_CB(mqtt_socket_timer, SWTIMER_RESUME);
+    //I assume that mqtt_socket_timer connects to the mqtt server, but I'm not really sure what impact light_sleep will have on it.
+    //My guess: If in doubt, resume the timer
   // timer started in socket_connect()
 
   if((ipaddr.addr == IPADDR_NONE) && (c_memcmp(domain,"255.255.255.255",16) != 0))
