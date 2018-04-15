@@ -90,3 +90,15 @@ Serial flasher config --->
   Flash SPI mode --->
   Detect flash size when flashing bootloader --->
 ```
+
+### Partition Table
+It is not required to set a custom partition table. Per default the IDF will select `Single factory app, no OTA` and the firmware will create a partition for SPIFFS automatically which fills the remaining flash space.
+
+There is a template partition table available in `components/platform/partitions-2MB.csv` locates the SPIFFS partition at a fixed location. The file can be used as a template for custom partition tables with menuconfig:
+
+```
+Partition Table --->
+  Partition Table (Custom partition table CSV)
+  (components/platform/partitions-2MB.csv) Custom partition CSV file
+  (0x10000) Factory app partition offset
+```
