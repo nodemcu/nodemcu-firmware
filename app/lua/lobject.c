@@ -71,7 +71,7 @@ int luaO_log2 (unsigned int x) {
  /* Use Normalization Shift Amount Unsigned:  0x1=>31 up to 0xffffffff =>0
   * See Xtensa Instruction Set Architecture (ISA) Refman  P 462 */
   asm volatile ("nsau %0, %1;" :"=r"(x) : "r"(x)); 
-  return 32 - x;
+  return 31 - x;
 #endif
 }
 

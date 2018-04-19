@@ -34,7 +34,8 @@ static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
 static int stripping=0;	  /* strip debug information? */
 static int flash=0;	  		/* output flash image */
-static int lookup=0;	  		/* output lookup-style master combination header */
+static lu_int32 address=0;  /* output flash image at absolute location */
+static int lookup=0;			/* output lookup-style master combination header */
 static char Output[]={ OUTPUT };	/* default output file name */
 static const char* output=Output;	/* actual output file name */
 static const char* execute;       /* executed a Lua file */
@@ -69,6 +70,7 @@ static void usage(const char* message)
  "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
  "  -e name  execute a lua source file\n"
  "  -f       output a flash image file\n"
+ "  -a addr  generate an absolute, rather than position independent flash image file\n"
  "  -i       generate lookup combination master (default with option -f)\n" 
  "  -p       parse only\n"
  "  -s       strip debug information\n"
@@ -79,6 +81,8 @@ static void usage(const char* message)
 }
 
 #define	IS(s)	(strcmp(argv[i],s)==0)
+#define IROM0_SEG    0x40210000ul
+#define IROM0_SEGMAX 0x00100000ul
 
 static int doargs(int argc, char* argv[])
 {
@@ -105,8 +109,15 @@ static int doargs(int argc, char* argv[])
   }
   else if (IS("-f"))			/* Flash image file */
   {
-   flash=1;
-   lookup=1;
+   flash=lookup=1;
+  }
+  else if (IS("-a"))			/* Absolue flash image file */
+  {
+   flash=lookup=1;
+   address=strtol(argv[++i],NULL,0);
+   size_t offset = (unsigned) (address -IROM0_SEG);
+   if (offset > IROM0_SEGMAX)
+     usage(LUA_QL("-e") " absolute address must be valid flash address");
   }
   else if (IS("-i"))			/* lookup */
    lookup = 1;
@@ -159,7 +170,7 @@ static TString *corename(lua_State *L, const TString *filename)
  * then luac generates a main function to reference all sub-main prototypes.
  * This is one of two types:
  *   Type 0   The standard luac combination main
- *   Type 1   A lookup wrapper that facilitates indexing into the gernated protos 
+ *   Type 1   A lookup wrapper that facilitates indexing into the generated protos 
  */
 static const Proto* combine(lua_State* L, int n, int type)
 {
@@ -167,64 +178,76 @@ static const Proto* combine(lua_State* L, int n, int type)
   return toproto(L,-1);
  else
  {
-  int i,pc,stacksize;
-  Instruction *code;
+  int i;
+  Instruction *pc;
   Proto* f=luaF_newproto(L);
   setptvalue2s(L,L->top,f); incr_top(L);
   f->source=luaS_newliteral(L,"=(" PROGNAME ")");
   f->p=luaM_newvector(L,n,Proto*);
   f->sizep=n;
-  for (i=0; i<n; i++) f->p[i]=toproto(L,i-n-1);
+  for (i=0; i<n; i++) 
+    f->p[i]=toproto(L,i-n-1);
   pc=0;
 
-  if (type == 0)
-  {
+  if (type == 0) {
   /*
    * Type 0 is as per the standard luac, which is just a main routine which 
    * invokes all of the compiled functions sequentially.  This is fine if 
    * they are self registering modules, but useless otherwise.
    */
-   stacksize = 1;
-   code=luaM_newvector(L,2*n+1,Instruction);
-   for (i=0; i<n; i++)
-   {
-    code[pc++]=CREATE_ABx(OP_CLOSURE,0,i);
-    code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
+   f->numparams    = 0;
+   f->maxstacksize = 1;
+   f->sizecode     = 2*n + 1 ;
+   f->sizek        = 0;
+   f->code         = luaM_newvector(L, f->sizecode , Instruction);
+   f->k            = luaM_newvector(L,f->sizek,TValue);
+
+   for (i=0, pc = f->code; i<n; i++) {
+    *pc++ = CREATE_ABx(OP_CLOSURE,0,i);
+    *pc++ = CREATE_ABC(OP_CALL,0,1,1);
    }
-   code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
-  }
-  else
-  {
+   *pc++ = CREATE_ABC(OP_RETURN,0,1,0);
+  } else {
   /*
    * The Type 1 main() is a lookup which takes a single argument, the name to  
    * be resolved. If this matches root name of one of the compiled files then
-   * a closure to this file main is returned.  If the name is "list": then the
-   * list of root names is returned, else a nil return.
+   * a closure to this file main is returned.  Otherwise the Unixtime of the
+   * compile and the list of root names is returned.
    */
-   lua_assert(n<LFIELDS_PER_FLUSH);
-   stacksize = n+2;
-   code=luaM_newvector(L,5*n+3  ,Instruction);
-   f->k=luaM_newvector(L,n+1,TValue);
-   f->sizek=n+1;
-   setnvalue(f->k, (lua_Number) time(NULL));
-   for (i=0; i<n; i++)  
+   if (n > LFIELDS_PER_FLUSH) {
+#define NO_MOD_ERR_(n) ": Number of modules > " #n
+#define NO_MOD_ERR(n) NO_MOD_ERR_(n)
+    usage(LUA_QL("-f")  NO_MOD_ERR(LFIELDS_PER_FLUSH));
+   }
+   f->numparams    = 1;
+   f->maxstacksize = n + 3;
+   f->sizecode     = 5*n + 5 ;
+   f->sizek        = n + 1;
+   f->sizelocvars  = 0;
+   f->code         = luaM_newvector(L, f->sizecode , Instruction);
+   f->k            = luaM_newvector(L,f->sizek,TValue);
+   for (i=0, pc = f->code; i<n; i++)  
    {
     /* if arg1 == FnameA then return function (...) -- funcA -- end end */
-    setsvalue2n(L,f->k+i+1,corename(L, f->p[i]->source));
-    code[pc++]=CREATE_ABC(OP_EQ,0,0,RKASK(i+1)); 
-    code[pc++]=CREATE_ABx(OP_JMP,0,MAXARG_sBx+2);
-    code[pc++]=CREATE_ABx(OP_CLOSURE,1,i);
-    code[pc++]=CREATE_ABC(OP_RETURN,1,2,0);
+    setsvalue2n(L,f->k+i,corename(L, f->p[i]->source));
+    *pc++ = CREATE_ABC(OP_EQ,0,0,RKASK(i)); 
+    *pc++ = CREATE_ABx(OP_JMP,0,MAXARG_sBx+2);
+    *pc++ = CREATE_ABx(OP_CLOSURE,1,i);
+    *pc++ = CREATE_ABC(OP_RETURN,1,2,0);
    }
-   for (i=0; i<=n; i++) code[pc++]=CREATE_ABx(OP_LOADK,i+1,i);
-   /* should be a block loop */
-   code[pc++]=CREATE_ABC(OP_RETURN,1,2+n,0);
-   code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
+
+   setnvalue(f->k+n, (lua_Number) time(NULL));
+
+   *pc++ = CREATE_ABx(OP_LOADK,1,n);
+   *pc++ = CREATE_ABC(OP_NEWTABLE,2,luaO_int2fb(i),0);   
+   for (i=0; i<n; i++) 
+     *pc++ = CREATE_ABx(OP_LOADK,i+3,i);
+   *pc++ = CREATE_ABC(OP_SETLIST,2,i,1);   
+   *pc++ = CREATE_ABC(OP_RETURN,1,3,0);
+   *pc++ = CREATE_ABC(OP_RETURN,0,1,0);
   }
-  f->numparams=1;
-  f->maxstacksize=stacksize;
-  f->code=code;
-  f->sizecode=pc;
+  lua_assert((pc-f->code) == f->sizecode);
+
   return f;
  }
 }
@@ -240,7 +263,8 @@ struct Smain {
  char** argv;
 };
 
-extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w, void* data, int strip);
+extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w, 
+                              void* data, int strip, lu_int32 address);
 
 static int pmain(lua_State* L)
 {
@@ -278,7 +302,7 @@ static int pmain(lua_State* L)
   lua_lock(L);
   if (flash) 
   {
-    result=dumpToFlashImage(L,f,writer, D, stripping);
+    result=dumpToFlashImage(L,f,writer, D, stripping, address);
   } else
   {
     result=luaU_dump_crosscompile(L,f,writer,D,stripping,target);

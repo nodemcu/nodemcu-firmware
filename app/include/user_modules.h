@@ -1,8 +1,6 @@
 #ifndef __USER_MODULES_H__
 #define __USER_MODULES_H__
 
-
-
 #ifndef LUA_CROSS_COMPILER
 
 // The default configuration is designed to run on all ESP modules including the 512 KB modules like ESP-01 and only
@@ -57,7 +55,7 @@
 //#define LUA_USE_MODULES_SJSON
 //#define LUA_USE_MODULES_SNTP
 //#define LUA_USE_MODULES_SOMFY
-//#define LUA_USE_MODULES_SPI
+#define LUA_USE_MODULES_SPI
 //#define LUA_USE_MODULES_SQLITE3
 //#define LUA_USE_MODULES_STRUCT
 //#define LUA_USE_MODULES_SWITEC

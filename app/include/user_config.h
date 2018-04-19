@@ -1,23 +1,191 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
-// #define FLASH_512K
-// #define FLASH_1M
-// #define FLASH_2M
-// #define FLASH_4M
-// #define FLASH_8M
-// #define FLASH_16M
+// The firmware supports a range of Flash sizes, though 4Mbyte seems to be 
+// currently the most common.  Current builds include a discovery function
+// which is enabled by FLASH_AUTOSIZE, but you can override this by commenting
+// this out and enabling the explicitly size, e.g. FLASH_4M.  Valid sizes are
+// FLASH_512K, FLASH_1M, FLASH_2M, FLASH_4M, FLASH_8M, FLASH_16M.
+  
 #define FLASH_AUTOSIZE
+//#define FLASH_4M
 
-// This adds the asserts in LUA. It also adds some useful extras to the
-// node module. This is all silent in normal operation and so can be enabled
-// without any harm (except for the code size increase and slight slowdown)
-// You can either set these defines here to operate globally or you edit the
-// relevant Makefile setting them in the DEFINES variable is you only want to
-// enable extra debug for specific subdirs.  If you want to use the remote GDB to 
-// handle breaks and failed assetions then enable DEVELOPMENT_USE GDB 
+
+// The firmware now selects a baudrate of 115,200 by default, but the driver also 
+// includes automatic baud rate detection at start-up by default.  If you want to
+// change the default rate then vaild rates are  300, 600, 1200, 2400, 4800, 9600, 
+// 19200, 31250, 38400, 57600, 74880, 115200, 230400, 256000, 460800 [, 921600, 
+// 1843200, 368640].  Note that the last 3 rates are not recommended as these 
+// might be unreliable.
+ 
+#define BIT_RATE_DEFAULT BIT_RATE_115200
+#define BIT_RATE_AUTOBAUD
+
+
+// Three separate build variants are now supported. The main difference is in the
+// processing of numeric data types.  If LUA_NUMBER_INTEGRAL is defined, then
+// all numeric calculations are done in integer, with divide being an integer 
+// operations, and decimal fraction constants are illegal.  Otherwise all
+// numeric operations use floating point, though they are exact for integer
+// expressions < 2^53.  The main advantage of INTEGRAL builds is that the basic
+// internal storage unit, the TValue, is 8 bytes long, rather than the default 
+// on floating point builds of 16 bytes.  We have now also introduced an 
+// experimental option LUA_PACK_TVALUES which reduces the floating point TValues
+// to 12 bytes without any performance impact.
+
+//#define LUA_NUMBER_INTEGRAL
+//#define LUA_PACK_TVALUES
+
+
+// The Lua Flash Store (LFS) allows you to store Lua code in Flash memory and
+// the Lua VMS will execute this code directly from flash without needing any 
+// RAM overhead.  If you want to enable LFS then set the following define to
+// the size of the store that you need.  This can be any multiple of 4kB up to 
+// a maximum 256Kb.
+
+//#define LUA_FLASH_STORE 0x10000
+
+
+// By default Lua executes the file init.lua at start up.  The following
+// define allows you to replace this with an alternative startup.  Warning:
+// you must protect this execution otherwise you will enter a panic loop.
+// The example provided executes the LFS module "_init" at startup or fails
+// through to the interactive prompt.
+// ********* WARNING THIS OPTION ISN'T CURRENTLY WORKING
+//#define LUA_INIT_STRING "local fi=node.flashindex; return pcall(fi and fi'_init')"
+// ********* WARNING THIS OPTION ISN'T CURRENTLY WORKING
+
+
+// NodeMCU supports two file systems: SPIFFS and FATFS, the first is available
+// on all ESP8266 modules.  The latter requires extra H/W so is less common.
+// If you use SPIFFS then there are a number of options which impact the 
+// RAM overhead and performance of the file system.  
+//
+// If you use the spiffsimg tool to create your own FS images on your dev PC
+// then we recommend that you fix the location and size of the FS, allowing
+// some headroom for rebuilding flash images and LFS.  As an alternative to
+// fixing the size of the FS, you can force the SPIFFS file system to end on 
+// the next 1Mb boundary.  This is useful for certain OTA scenarios.  In
+// general, limiting the size of the FS only to what your application needs 
+// gives the fastest start-up and imaging times.
+
+#define BUILD_SPIFFS
+//#define BUILD_FATFS
+
+//#define SPIFFS_FIXED_LOCATION        0x100000
+//#define SPIFFS_MAX_FILESYSTEM_SIZE    0x10000	
+//#define SPIFFS_SIZE_1M_BOUNDARY
+#define SPIFFS_CACHE 1          // Enable if you use you SPIFFS in R/W mode 
+#define SPIFFS_MAX_OPEN_FILES 4 // maximum number of open files for SPIFFS
+#define FS_OBJ_NAME_LEN 31      // maximum length of a filename
+
+
+// The HTTPS stack requires client SSL to be enabled.  The SSL buffer size is
+// used only for espconn-layer secure connections, and is ignored otherwise.  
+// Some HTTPS  applications require a larger buffer size to work.  See
+// https://github.com/nodemcu/nodemcu-firmware/issues/1457 for details.
+// The SHA2 and MD2 libraries are also used by the crypto functions.  The 
+// MD2 function are implemented in the ROM BIOS, and the SHA2 by NodeMCU
+// code, so only enable SHA2 if you need this functionality.
+
+//#define CLIENT_SSL_ENABLE
+//#define MD2_ENABLE
+#define SHA2_ENABLE
+#define SSL_BUFFER_SIZE 5120
+
+
+// GPIO_INTERRUPT_ENABLE needs to be defined if your application uses the
+// gpio.trig() or related GPIO interrupt service routine code.  Likewise the
+// GPIO interrupt hook is requited for a few modules such as rotary.  If you
+// don't require this functionality, then we recommend commenting out these 
+// options which removes any associated runtime overhead. 
+
+#define GPIO_INTERRUPT_ENABLE
+#define GPIO_INTERRUPT_HOOK_ENABLE
+
+
+// If your application uses the light sleep functions and you wish the 
+// firmware to manage timer rescheduling over sleeps (the CPU clock is 
+// suspended so timers get out of sync) then enable the following options
+
+//#define ENABLE_TIMER_SUSPEND
+//#define PMSLEEP_ENABLE
+
+
+// The WiFi module optionally offers an enhanced level of WiFi connection
+// management, using internal timer callbacks.  Whilst many Lua developers
+// prefer to implement equivalent features in Lua, others will prefer the
+// Wifi module to do this for them.  Uncomment the following to enable 
+// this functionality. The event sub-options are ignore if the SMART 
+// functionality is not enabled.
+
+//#define WIFI_SMART_ENABLE
+#define WIFI_SDK_EVENT_MONITOR_ENABLE
+#define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
+
+
+// Whilst the DNS client details can be configured through the WiFi API,
+// the defaults can be exposed temporarily during start-up.  The following
+// WIFI_STA options allow you to configure this in the firmware.  If the
+// WIFI_STA_HOSTNAME is not defined then the hostname will default to 
+// to the last 3 octets (6 hexadecimal digits) of MAC address with the 
+// prefix "NODE-".  If it is defined then the hostname must only contain
+// alphanumeric characters. If you are imaging multiple modules with this
+// firmware then you must also define WIFI_STA_HOSTNAME_APPEND_MAC to 
+// append the last 3 octets of the MAC address.  Note that the total 
+// Hostname MUST be 32 chars or less.
+
+//#define WIFI_STA_HOSTNAME "NodeMCU"
+//#define WIFI_STA_HOSTNAME_APPEND_MAC
+
+
+// If you use the enduser_setup module, then you can also set the default
+// SSID when this module is running in AP mode.
+
+#define ENDUSER_SETUP_AP_SSID "SetupGadget"
+
+
+// The following sections are only relevent for those developers who are 
+// developing modules or core Lua changes and configure how extra diagnostics
+// are enabled in the firmware. These should only be configured if you are
+// building your own custom firmware and have full access to the firmware
+// source code.
+
+// Enabling DEVELOPMENT_TOOLS adds the asserts in LUA and also some useful
+// extras to the node module. These are silent in normal operation and so can
+// be enabled without any harm (except for the code size increase and slight 
+// slowdown). If you want to use the remote GDB to handle breaks and failed 
+// assertions then enable the DEVELOPMENT_USE GDB option.  A supplimentary
+// define DEVELOPMENT_BREAK_ON_STARTUP_PIN allows you to define a GPIO pin, 
+// which if pulled low at start-up will immediately initiate a GDB session.
+
+// The DEVELOP_VERSION option enables lots of debug output, and is normally 
+// only used by hardcore developers.
+
+// These options can be enabled globally here or you can alternatively use 
+// the DEFINES variable in the relevant Makefile to set these on a per
+// directory basis. If you do this then you can also set the corresponding 
+// compile options (-O0 -ggdb) on a per directory as well.
+
 //#define DEVELOPMENT_TOOLS
 //#define DEVELOPMENT_USE_GDB
+//#define DEVELOPMENT_BREAK_ON_STARTUP_PIN 1
+//#define DEVELOP_VERSION
+
+
+// *** Heareafter, there be demons ***
+
+// The remaining options are advanced configuration options and you should only
+// change this if you have tracked the implications through the Firmware sources
+// and understand the these.
+
+#define LUA_TASK_PRIO             USER_TASK_PRIO_0
+#define LUA_PROCESS_LINE_SIG      2
+#define LUA_OPTIMIZE_DEBUG        2
+#define READLINE_INTERVAL        80
+#define STRBUF_DEFAULT_INCREMENT  3
+#define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
+
 #ifdef DEVELOPMENT_TOOLS
 #if defined(LUA_CROSS_COMPILER) || !defined(DEVELOPMENT_USE_GDB)
 extern void luaL_assertfail(const char *file, int line, const char *message);
@@ -28,18 +196,10 @@ extern void luaL_dbgbreak(void);
 #endif
 #endif
 
-// This enables lots of debug output and changes the serial bit rate. This
-// is normally only used by hardcore developers
-// #define DEVELOP_VERSION
 #ifdef DEVELOP_VERSION
 #define NODE_DEBUG
 #define COAP_DEBUG
 #endif /* DEVELOP_VERSION */
-
-#define BIT_RATE_DEFAULT BIT_RATE_115200
-
-// This enables automatic baud rate detection at startup
-#define BIT_RATE_AUTOBAUD
 
 #define NODE_ERROR
 
@@ -55,12 +215,7 @@ extern void luaL_dbgbreak(void);
 #define NODE_ERR
 #endif	/* NODE_ERROR */
 
-#define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
-
-#define GPIO_INTERRUPT_ENABLE
-#define GPIO_INTERRUPT_HOOK_ENABLE
 // #define GPIO_SAFE_NO_INTR_ENABLE
-
 #define ICACHE_STORE_TYPEDEF_ATTR __attribute__((aligned(4),packed))
 #define ICACHE_STORE_ATTR __attribute__((aligned(4)))
 #define ICACHE_RAM_ATTR __attribute__((section(".iram0.text")))
@@ -70,69 +225,5 @@ extern void luaL_dbgbreak(void);
 #define NO_INTR_CODE inline
 #endif
 
-// SSL buffer size used only for espconn-layer secure connections.
-// See https://github.com/nodemcu/nodemcu-firmware/issues/1457 for conversation details.
-#define SSL_BUFFER_SIZE 5120
-
-//#define CLIENT_SSL_ENABLE
-//#define MD2_ENABLE
-#define SHA2_ENABLE
-
-#define BUILD_SPIFFS
-#define SPIFFS_CACHE 1
-
-//#define BUILD_FATFS
-
-// maximum length of a filename
-#define FS_OBJ_NAME_LEN 31
-
-// maximum number of open files for SPIFFS
-#define SPIFFS_MAX_OPEN_FILES 4
-
-// Uncomment this next line for fastest startup and set the FS only to what
-// your application needs.  This reduces the format time dramatically
-//#define SPIFFS_MAX_FILESYSTEM_SIZE       0x10000	
-//
-// You can force the spiffs file system to be at a fixed location
-//#define SPIFFS_FIXED_LOCATION   	0x100000
-//
-// You can force the SPIFFS file system to end on the next !M boundary
-// (minus the 16k parameter space). THis is useful for certain OTA scenarios
-// #define SPIFFS_SIZE_1M_BOUNDARY
-
-//#define LUA_NUMBER_INTEGRAL
-
-// If you want to enable Lua Flash Store (LFS) then set the following define to
-// the size of the store.  This can be any multiple of 4kB up to a maximum 256Kb.
-//#define LUA_FLASH_STORE 0x10000
-
-#define READLINE_INTERVAL 80
-#define LUA_TASK_PRIO USER_TASK_PRIO_0
-#define LUA_PROCESS_LINE_SIG 2
-#define LUA_OPTIMIZE_DEBUG      2
-
-#define ENDUSER_SETUP_AP_SSID "SetupGadget"
-
-/*
- * A valid hostname only contains alphanumeric and hyphen(-) characters, with no hyphens at first or last char
- * if WIFI_STA_HOSTNAME not defined: hostname will default to NODE-xxxxxx (xxxxxx being last 3 octets of MAC address)
- * if WIFI_STA_HOSTNAME defined: hostname must only contain alphanumeric characters
- * if WIFI_STA_HOSTNAME_APPEND_MAC not defined: Hostname MUST be 32 chars or less
- * if WIFI_STA_HOSTNAME_APPEND_MAC defined: Hostname MUST be 26 chars or less, since last 3 octets of MAC address will be appended
- * if defined hostname is invalid: hostname will default to NODE-xxxxxx (xxxxxx being last 3 octets of MAC address)
-*/
-//#define WIFI_STA_HOSTNAME "NodeMCU"
-//#define WIFI_STA_HOSTNAME_APPEND_MAC
-
-//#define WIFI_SMART_ENABLE
-
-#define WIFI_SDK_EVENT_MONITOR_ENABLE
-#define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
-
-////#define ENABLE_TIMER_SUSPEND
-//#define PMSLEEP_ENABLE
-
-
-#define STRBUF_DEFAULT_INCREMENT 32
-
 #endif	/* __USER_CONFIG_H__ */
+

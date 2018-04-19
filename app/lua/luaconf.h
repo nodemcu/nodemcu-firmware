@@ -38,6 +38,11 @@
 #define LUA_WIN
 #endif
 
+
+#if defined(LUA_CROSS_COMPILER)
+#define LUA_USE_LINUX
+#endif
+
 #if defined(LUA_USE_LINUX)
 #define LUA_USE_POSIX
 #define LUA_USE_DLOPEN		/* needs an extra library: -ldl */
@@ -59,7 +64,7 @@
 #if defined(LUA_USE_POSIX)
 #define LUA_USE_MKSTEMP
 #define LUA_USE_ISATTY
-#define LUA_USE_POPEN
+//#define LUA_USE_POPEN
 #define LUA_USE_ULONGJMP
 #endif
 

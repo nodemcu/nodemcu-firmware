@@ -445,7 +445,8 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
   int oldasize = t->sizearray;
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(L, t, nasize);
-  resize_hashpart(L, t, nhsize);
+  if (t->node != dummynode || nhsize>0)
+    resize_hashpart(L, t, nhsize);
   if (nasize < oldasize) {  /* array part must shrink? */
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */

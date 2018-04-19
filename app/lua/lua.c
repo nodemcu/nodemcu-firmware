@@ -237,6 +237,12 @@ static int runargs (lua_State *L, char **argv, int n) {
 }
 
 
+#ifdef LUA_INIT_STRING
+const char lua_init_value[] = LUA_INIT_STRING;
+#else
+const char lua_init_value[] = "@init.lua";
+#endif
+
 static int handle_luainit (lua_State *L) {
   const char *init = c_getenv(LUA_INIT);
   if (init == NULL) return 0;  /* status OK */
@@ -288,9 +294,10 @@ int lua_main (int argc, char **argv) {
   int status;
   struct Smain s;
 
-#if defined(NODE_DEBUG) && defined(DEVELOPMENT_USE_GDB) && BREAK_ON_STARTUP_PIN > 0
-  platform_gpio_mode( BREAK_ON_STARTUP_PIN, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP );
-  lua_assert(platform_gpio_read(BREAK_ON_STARTUP_PIN));  // Break if pin pulled low
+#if defined(NODE_DEBUG) && defined(DEVELOPMENT_USE_GDB) && \
+    defined(DEVELOPMENT_BREAK_ON_STARTUP_PIN) && DEVELOPMENT_BREAK_ON_STARTUP_PIN > 0
+  platform_gpio_mode( DEVELOPMENT_BREAK_ON_STARTUP_PIN, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP );
+  lua_assert(platform_gpio_read(DEVELOPMENT_BREAK_ON_STARTUP_PIN));  // Break if pin pulled low
 #endif
 
   lua_State *L = lua_open();  /* create state */
@@ -324,7 +331,7 @@ int lua_main (int argc, char **argv) {
 
 void lua_handle_input (bool force)
 {
-  if (gLoad.L && (force || readline (&gLoad)))
+  while (gLoad.L && (force || readline (&gLoad)))
     dojob (&gLoad);
 }
 

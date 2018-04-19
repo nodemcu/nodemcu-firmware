@@ -34,6 +34,7 @@ else
 FLASH_FS_LOC := $(shell printf "0x%x" $(FLASH_FS_LOC))
 endif 
 
+LFSSOURCES := $(wildcard $(LUASOURCE)/*.lua)
 
 #############################################################
 # Rules base
@@ -68,9 +69,14 @@ spiffsscript: remove-image LFSimage spiffsimg/spiffsimg
 	@$(foreach f, $(SPIFFSFILES), echo "import $(FSSOURCE)$(f) $(f)" >> ./spiffsimg/spiffs.lst ;)
 	$(foreach sz, $(FLASHSIZE), spiffsimg/spiffsimg -f ../bin/0x%x-$(sz).img  $(FLASH_SW) $(sz) -U $(FLASH_FS_LOC) -r ./spiffsimg/spiffs.lst -d; )
 	@$(foreach sz, $(FLASHSIZE), if [ -r ../bin/spiffs-$(sz).dat ]; then echo Built $$(cat ../bin/spiffs-$(sz).dat)-$(sz).bin; fi; )
-	
-LFSimage: $(LUASOURCE)*.lua
-	../luac.cross -f -o $(FSSOURCE)flash.img $(LUASOURCE)*.lua
+
+ifneq ($(LFSSOURCES),)
+LFSimage: $(LFSSOURCES)
+       ../luac.cross -f -o $(FSSOURCE)flash.img $(LFSSOURCES)
+else
+LFSimage: 
+	rm -f $(FSSOURCE)flash.img
+endif
 
 remove-image:
 	$(foreach sz, $(FLASHSIZE), if [ -r ../bin/spiffs-$(sz).dat ]; then rm -f ../bin/$$(cat ../bin/spiffs-$(sz).dat)-$(sz).bin; fi; )

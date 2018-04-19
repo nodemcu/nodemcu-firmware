@@ -1,6 +1,8 @@
 sdk/
 cache/
 .ccache/
+local/
+luac.cross
 user_config.h
 server-ca.crt
 

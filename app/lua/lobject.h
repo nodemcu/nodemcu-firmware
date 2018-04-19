@@ -77,9 +77,15 @@ typedef union {
 #define TValuefields	Value value; int tt
 #define LUA_TVALUE_NIL {NULL}, LUA_TNIL
 
+#if defined(LUA_PACK_TVALUES) && !defined(LUA_CROSS_COMPILER)
+#pragma pack(4)
+#endif
 typedef struct lua_TValue {
   TValuefields;
 } TValue;
+#if defined(LUA_PACK_TVALUES) && !defined(LUA_CROSS_COMPILER)
+#pragma pack()
+#endif
 
 /* Macros to test type */
 #define ttisnil(o)	(ttype(o) == LUA_TNIL)

@@ -10,7 +10,23 @@
 #include "lstate.h"
 #include "lzio.h"
 
-#define FLASH_SIG          0xfafaaf00
+#ifdef LUA_NUNBER_INTEGRAL
+# define FLASH_SIG_B1 0x02
+#else
+# define FLASH_SIG_B1 0x00
+#endif
+
+#ifdef LUA_PACK_TVALUES
+#ifdef LUA_NUNBER_INTEGRAL
+#error "LUA_PACK_TVALUES is only valid for Floating point builds" 
+#endif
+# define FLASH_SIG_B2 0x04
+#else
+# define FLASH_SIG_B2 0x00
+#endif
+#define FLASH_SIG_ABSOLUTE    0x01
+#define FLASH_SIG_IN_PROGRESS 0x08
+#define FLASH_SIG  (0xfafaaf50 | FLASH_SIG_B2 | FLASH_SIG_B1)
 
 typedef lu_int32 FlashAddr;
 typedef struct {

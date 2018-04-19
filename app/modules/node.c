@@ -575,27 +575,25 @@ static const LUA_REG_TYPE node_task_map[] = {
   { LSTRKEY( "HIGH_PRIORITY" ),   LNUMVAL( TASK_PRIORITY_HIGH ) },
   { LNILKEY, LNILVAL }
 };
-#ifdef LUA_FLASH_STORE
-static const LUA_REG_TYPE node_flash_map[] = {
-  { LSTRKEY( "reload" ),          LFUNCVAL( luaN_reload_reboot ) },
-  { LSTRKEY( "index" ),           LFUNCVAL( luaN_index ) },
-  { LNILKEY, LNILVAL }
-};
-#endif
 
 static const LUA_REG_TYPE node_map[] =
 {
+  { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
+  { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
+  { LSTRKEY( "task" ), LROVAL( node_task_map ) },
+#ifdef LUA_FLASH_STORE
+  { LSTRKEY( "flashreload" ), LFUNCVAL( luaN_reload_reboot ) },
+  { LSTRKEY( "flashindex" ), LFUNCVAL( luaN_index ) },
+#endif
   { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
   { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
 #ifdef PMSLEEP_ENABLE
   { LSTRKEY( "sleep" ), LFUNCVAL( node_sleep ) },
   PMSLEEP_INT_MAP,
 #endif
-  { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
   { LSTRKEY( "chipid" ), LFUNCVAL( node_chipid ) },
   { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
   { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
-  { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
 // Moved to adc module, use adc.readvdd33()
@@ -610,11 +608,7 @@ static const LUA_REG_TYPE node_map[] =
 #ifdef LUA_OPTIMIZE_DEBUG
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
 #endif
-#ifdef LUA_FLASH_STORE
-  { LSTRKEY( "flash") , LROVAL( node_flash_map ) },
-#endif
   { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
-  { LSTRKEY( "task" ), LROVAL( node_task_map ) },
 #ifdef DEVELOPMENT_TOOLS
   { LSTRKEY( "osprint" ), LFUNCVAL( node_osprint ) },
 #endif

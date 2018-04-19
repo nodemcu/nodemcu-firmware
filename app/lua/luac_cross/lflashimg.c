@@ -33,37 +33,42 @@ typedef unsigned int uint;
 /*
  *
  * This dumper is a variant of the standard ldump, in that instead of producing a
- * binary loader format that lundump can load, it produced an image file that can be
+ * binary loader format that lundump can load, it produces an image file that can be
  * directly mapped or copied into addressable memory. The typical application is on
  * small memory IoT devices which support programmable flash storage such as the
  * ESP8266. A 64 Kb LFS image has 16Kb words and will enable all program-related
- * storage to be accessed directly from flash, leaving the RAM for true R/W application
- * data.
+ * storage to be accessed directly from flash, leaving the RAM for true R/W
+ * application data.
  *
- * The start address of the Lua Flash Store (LFS) is build-dependent,. However, by
- * adopting a position independent image format, cross compilation can leave this
- * detail to the on-device image loader. As all objects in the LFS can be treated as
- * multiples of 4-byte words. Although some record field are byte-size and can be byte
- * packed, all other fields are word aligned, and in particular any address references
- * within the LFS are word-aligned and also refer to word-aligned addresses within the
- * LFS.
- *
- * In order to make the LFS position independent, such addresses are stored in a
- * special format, where each PIC address is two 16-bit unsigned offsets:
+ * The start address of the Lua Flash Store (LFS) is build-dependent, and the cross
+ * compiler '-a' option allows the developer to fix the LFS at a defined flash memory
+ * address.  Alternatively and by default the cross compilation adopts a position 
+ * independent image format, which permits the  on-device image loader to load the LFS
+ * image at an appropriate base within the flash address space. As all objects in the
+ * LFS can be treated as multiples of 4-byte words, also all address fields are both 
+ * word aligned, and any address references within the LFS are also word-aligned, 
+ * such addresses are stored in a special format, where each PI address is two 
+ * 16-bit unsigned offsets:
  *
  *   Bits 0-15 is the offset into the LFS that this address refers to
  *   Bits 16-31 is the offset linking to the PIC next address.
  *
  * Hence the LFS can be up to 256Kb in length and the flash loader can use the forward
- * links to chain down from the mainProto address at offet 3 to all image addresses
- * during load and convert them to the corresponding correct absolute memory addresses.
+ * links to chain down PI address from the mainProto address at offet 3 to all image 
+ * addresses during load and convert them to the corresponding correct absolute memory
+ * addresses.  This reloation process is skipped for absolute addressed images (which
+ * are identified by the FLASH_SIG_ABSOLUTE bit setting in the flash signature.
  *
  * The flash image has a standard header detailed in lflash.h
  *
  * Note that luac.cross may be compiled on any little-endian machine with 32 or 64 bit
- * word length so Flash addresses cant be handled as standard C pointers as size_t and
- * int may not have the same size. Hence addresses with the must be declared as the
- * FlashAddr type rather than typed C pointers and must be accessed through macros.
+ * word length so Flash addresses can't be handled as standard C pointers as size_t
+ * and int may not have the same size. Hence addresses with the must be declared as
+ * the FlashAddr type rather than typed C pointers and must be accessed through macros.
+ *
+ * ALso note that image built with a given LUA_PACK_TVALUES / LUA_NUNBER_INTEGRAL
+ * combination must be loaded into a corresponding firmware build.  Hence these
+ * configuration options are also included in the FLash Signature.
  *
  * The Flash image is assembled up by first building the RO stringtable containing
  * all strings used in the compiled proto hierarchy.  This is followed by the Protos.
@@ -103,7 +108,6 @@ extern void __attribute__((noreturn)) luac_fatal(const char* message);
 #define DBG_PRINT(...) ((void)0)
 #endif
 
-#define FLASH_SIG 0xfafaaf00
 /*
  *  Serial allocator.  Throw a luac-style out of memory error is allocaiton fails.
  */
@@ -258,11 +262,16 @@ static void *resolveTString(lua_State* L, TString *s) {
  * In order to simplify repacking of structures from the host format to that target
  * format, this simple copy routine is data-driven by a simple format specifier.
  *   n       Number of consecutive records to be processed
- *   fmt     A string of A,I, S, V specifiers spanning the record.
+ *   fmt     A string of A, I, S, V specifiers spanning the record.
  *   src     Source of record
  *   returns Address of destination record
  */
+#if defined(LUA_PACK_TVALUES)
+#define TARGET_TV_SIZE (sizeof(lua_Number)+sizeof(lu_int32))
+#else
 #define TARGET_TV_SIZE (2*sizeof(lua_Number))
+#endif
+
 static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
   /* ToS is the string address mapping table */
   if (n == 0)
@@ -270,7 +279,8 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
   int i, recsize;
   void *newts;
   /* A bit of a botch because fmt is either "V" or a string of WORDSIZE specifiers */
-  /* The size 8 for integer builds and 16 for float ones on both architectures */
+  /* The size 8 / 12 / 16 bytes for integer builds, packed TV and default TVs resp */
+
   if (fmt[0]=='V') {
     lua_assert(fmt[1] == 0);   /* V formats must be singetons */
     recsize = TARGET_TV_SIZE;
@@ -288,6 +298,7 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
       /* All input address types (A,S,V) are aligned to size_t boundaries */
       if (*p != 'I' && ((size_t)s)&(sizeof(size_t)-1))
         s++;
+
       switch (*p++) {
         case 'A':
           toFlashAddr(L, *d, *cast(void**, s));
@@ -368,33 +379,41 @@ static void *functionToFlash(lua_State* L, const Proto* orig) {
 }
 
 /*
- * Scan through the tagged address to form linked chain.  Do the scan backwards
- * from at last octaword including curOffset, as this makes the 'last' address
- * forward reference for the on-chip LFS loader.
+ * Scan through the tagged addresses.  This operates in one of two modes.
+ *  -  If address is non-zero then the offset is converted back into an absolute
+ *     mapped flash address using the specified address base.
+ *
+ *  -  If the address is zero then form a form linked chain with the upper 16 bits
+ *     the link to the last offset. As the scan is backwards, this 'last' address
+ *     becomes forward reference for the on-chip LFS loader.
  */
-void  linkPICaddresses(void){
+void  linkAddresses(lu_int32 address){
   int i, last = 0;
   for (i = curOffset-1 ; i >= 0; i--) {
     if (flashAddrTag[i]) {
       lua_assert(flashImage[i]<curOffset);
-      flashImage[i] |= last<<16;
-      last = i;
+      if (address) {
+        flashImage[i] = 4*flashImage[i] + address;
+      } else {
+        flashImage[i] |= last<<16;
+        last = i;
+      }
     }
   }
 }
 
 
-uint dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w, void* data, int strip)
-{
+uint dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w, 
+                       void* data, int strip, lu_int32 address) {
 // parameter strip is ignored for now
   lua_newtable(L);
   FlashHeader *fh = cast(FlashHeader *, flashAlloc(L, sizeof(FlashHeader)));
   scanProtoStrings(L, main);
   createROstrt(L,  fh);
   toFlashAddr(L, fh->mainProto, functionToFlash(L, main));
-  fh->flash_sig = FLASH_SIG;
+  fh->flash_sig = FLASH_SIG + (address ? FLASH_SIG_ABSOLUTE : 0);
   fh->flash_size = curOffset*WORDSIZE;
-  linkPICaddresses();
+  linkAddresses(address);
   lua_unlock(L);
   int status = w(L, flashImage, curOffset * sizeof(uint), data);
   lua_lock(L);

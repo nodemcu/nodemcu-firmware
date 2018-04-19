@@ -7,7 +7,7 @@
 .NOTPARALLEL:
 
 CCFLAGS:= -I.. -I../../include -I../../../include -I ../../libc
-LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -Wl,-Map=mapfile
+LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
 
@@ -69,7 +69,9 @@ test :
 clean :
 	$(RM) -r $(ODIR)
 
+ifneq ($(MAKECMDGOALS),clean)
 -include $(DEPS)
+endif
 
 $(ODIR)/%.o: %.c
 	@mkdir -p $(ODIR);
