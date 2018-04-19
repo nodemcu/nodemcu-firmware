@@ -134,6 +134,8 @@ static int ds18b20_lua_setting(lua_State *L) {
 	return 0;
 }
 
+#include "pm/swtimer.h"
+
 // Reads sensor values from all devices
 // Lua: 	ds18b20.read(function(INDEX, ROM, RES, TEMP, TEMP_DEC, PAR) print(INDEX, ROM, RES, TEMP, TEMP_DEC, PAR) end, ROM[, FAMILY])
 static int ds18b20_lua_read(lua_State *L) {
@@ -173,6 +175,9 @@ static int ds18b20_lua_read(lua_State *L) {
 	onewire_write(ds18b20_bus_pin, DS18B20_ROM_SKIP, 0);
 	onewire_write(ds18b20_bus_pin, DS18B20_FUNC_CONVERT, 1);
 	os_timer_setfn(&ds18b20_timer, (os_timer_func_t *)ds18b20_lua_readoutdone, NULL);
+	SWTIMER_REG_CB(ds18b20_lua_readoutdone, SWTIMER_DROP);
+		//The function ds18b20_lua_readoutdone reads the temperature from the sensor(s) after a set amount of time depending on temperature resolution
+	  //MY guess: If this timer manages to get suspended before it fires and the temperature data is time sensitive then resulting data would be invalid and should be discarded
 	
 	switch (ds18b20_device_res) {
 		case (9):

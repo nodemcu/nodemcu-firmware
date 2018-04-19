@@ -319,6 +319,7 @@ static void sntp_handle_result(lua_State *L) {
   }
 }
 
+#include "pm/swtimer.h"
 
 static void sntp_dosend ()
 {
@@ -326,6 +327,9 @@ static void sntp_dosend ()
     if (state->server_pos < 0) {
       os_timer_disarm(&state->timer);
       os_timer_setfn(&state->timer, on_timeout, NULL);
+      SWTIMER_REG_CB(on_timeout, SWTIMER_RESUME);
+        //The function on_timeout calls this function(sntp_dosend) again to handle time sync timeout.
+        //My guess: Since the WiFi connection is restored after waking from light sleep, it would be possible to contact the SNTP server, So why not let it
       state->server_pos = 0;
     } else {
       ++state->server_pos;
@@ -386,14 +390,13 @@ static void sntp_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   if (ipaddr == NULL)
   {
     sntp_dbg("DNS Fail!\n");
-    task_post_low(tasknumber, (uint32_t) name);
   }
   else
   {
     serverp[server_count] = *ipaddr;
     server_count++;
-    task_post_low(tasknumber, SNTP_DOLOOKUPS_ID);
   }
+  task_post_low(tasknumber, SNTP_DOLOOKUPS_ID);
 }
 
 
@@ -621,23 +624,32 @@ static void sntp_dolookups (lua_State *L) {
   // at the end, start the lookups. If we have already looked everything up,
   // then move straight to sending the packets.
   if (state->list_ref == LUA_NOREF) {
-    sntp_dosend(L);
+    sntp_dosend();
     return;
   }
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, state->list_ref);
   while (1) {
+    int l;
+
     if (lua_objlen(L, -1) <= state->lookup_pos) {
       // We reached the end
-      sntp_dosend(L);
+      if (server_count == 0) {
+        // Oh dear -- no valid entries -- generate an error
+        // This means that all the arguments are invalid. Just pick the first
+        lua_rawgeti(L, -1, 1);
+        const char *hostname = luaL_checklstring(L, -1, &l);
+        handle_error(L, NTP_DNS_ERR, hostname);
+        lua_pop(L, 1);
+      } else {
+        sntp_dosend();
+      }
       break;
     }
 
     state->lookup_pos++;
 
     lua_rawgeti(L, -1, state->lookup_pos);
-
-    int l;
 
     const char *hostname = luaL_checklstring(L, -1, &l);
     lua_pop(L, 1);
@@ -700,6 +712,9 @@ static char *set_repeat_mode(lua_State *L, bool enable)
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->list_ref);
     repeat->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     os_timer_setfn(&repeat->timer, on_long_timeout, NULL);
+    SWTIMER_REG_CB(on_long_timeout, SWTIMER_RESUME);
+      //The function on_long_timeout returns errors to the developer
+      //My guess: Error reporting is a good thing, resume the timer.
     os_timer_arm(&repeat->timer, 1000 * 1000, 1);
   } else {
     if (repeat) {
@@ -806,7 +821,7 @@ static int sntp_sync (lua_State *L)
     goto good_ret;
   }
 
-  sntp_dosend (L);
+  sntp_dosend ();
 
 good_ret:
   if (!lua_isnoneornil(L, 4)) {
@@ -837,10 +852,8 @@ static void sntp_task(os_param_t param, uint8_t prio)
     sntp_handle_result(L);
   } else if (param == SNTP_DOLOOKUPS_ID) {
     sntp_dolookups(L);
-  } else if (param >= 0 && param <= NTP_MAX_ERR_ID) {
-    handle_error(L, param, NULL);
   } else {
-    handle_error(L, NTP_DNS_ERR, (const char *) param);
+    handle_error(L, param, NULL);
   }
 }
 

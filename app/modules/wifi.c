@@ -215,6 +215,124 @@ static int wifi_exit_smart( lua_State* L )
 }
 #endif // WIFI_SMART_ENABLE
 
+// Lua: wifi.getcountry()
+static int wifi_getcountry( lua_State* L ){
+
+  wifi_country_t cfg = {0};
+
+
+  if(wifi_get_country(&cfg)){
+    lua_newtable(L);
+
+    lua_pushstring(L, "country");
+    lua_pushstring(L, cfg.cc);
+    lua_rawset(L, -3);
+
+    lua_pushstring(L, "start_ch");
+    lua_pushnumber(L, cfg.schan);
+    lua_rawset(L, -3);
+
+    lua_pushstring(L, "end_ch");
+    lua_pushnumber(L, (cfg.schan + cfg.nchan)-1);
+    lua_rawset(L, -3);
+
+    lua_pushstring(L, "policy");
+    lua_pushnumber(L, cfg.policy);
+    lua_rawset(L, -3);
+
+    return 1;
+  }
+  else{
+    return luaL_error(L, "Unable to get country info");
+  }
+}
+
+// Lua: wifi.setcountry()
+static int wifi_setcountry( lua_State* L ){
+  size_t len;
+  uint8 start_ch;
+  uint8 end_ch;
+  wifi_country_t cfg = {0};
+
+  if(lua_istable(L, 1)){
+    lua_getfield(L, 1, "country");
+    if (!lua_isnil(L, -1)){
+      if( lua_isstring(L, -1) ){
+        const char *country_code = luaL_checklstring( L, -1, &len );
+        luaL_argcheck(L, (len==2 && isalpha(country_code[0]) && isalpha(country_code[1])), 1, "country: country code must be 2 chars");
+        c_memcpy(cfg.cc, country_code, len);
+        if(cfg.cc[0] >= 0x61) cfg.cc[0]=cfg.cc[0]-32; //if lowercase change to uppercase
+        if(cfg.cc[1] >= 0x61) cfg.cc[1]=cfg.cc[1]-32; //if lowercase change to uppercase
+      }
+      else
+        return luaL_argerror( L, 1, "country: must be string" );
+    }
+    else{
+      cfg.cc[0]='C';
+      cfg.cc[1]='N';
+      cfg.cc[2]=0x00;
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "start_ch");
+    if (!lua_isnil(L, -1)){
+      if(lua_isnumber(L, -1)){
+        start_ch = (uint8)luaL_checknumber(L, -1);
+        luaL_argcheck(L, (start_ch >= 1 && start_ch <= 14), 1, "start_ch: Range:1-14");
+        cfg.schan = start_ch;
+      }
+      else
+        luaL_argerror(L, 1, "start_ch: must be a number");
+    }
+    else
+      cfg.schan = 1;
+
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "end_ch");
+    if (!lua_isnil(L, -1)){
+      if(lua_isnumber(L, -1)){
+        end_ch = (uint8)luaL_checknumber(L, -1);
+        luaL_argcheck(L, (end_ch >= 1 && end_ch <= 14), 1, "end_ch: Range:1-14");
+        luaL_argcheck(L, (end_ch >= cfg.schan), 1, "end_ch: can't be less than start_ch");
+        cfg.nchan = (end_ch-cfg.schan)+1; //cfg.nchan must equal total number of channels
+      }
+      else
+        luaL_argerror(L, 1, "end_ch: must be a number");
+    }
+    else
+      cfg.nchan = (13-cfg.schan)+1;
+    lua_pop(L, 1);
+
+    lua_getfield(L, 1, "policy");
+    if (!lua_isnil(L, -1)){
+      if(lua_isnumber(L, -1)){
+        uint8 policy = (uint8)luaL_checknumber(L, -1);
+        luaL_argcheck(L, (policy == WIFI_COUNTRY_POLICY_AUTO || policy == WIFI_COUNTRY_POLICY_MANUAL), 1, "policy: must be 0 or 1");
+        cfg.policy = policy;
+      }
+      else
+        luaL_argerror(L, 1, "policy: must be a number");
+    }
+    else
+      cfg.policy = WIFI_COUNTRY_POLICY_AUTO;
+    lua_pop(L, 1);
+
+    lua_pop(L, 1); //pop table from stack
+
+    bool retval = wifi_set_country(&cfg);
+    WIFI_DBG("\n country_cfg:\tcc:\"%s\"\tschan:%d\tnchan:%d\tpolicy:%d\n", cfg.cc, cfg.schan, cfg.nchan, cfg.policy);
+
+    if (retval==1)
+      lua_pushboolean(L, true);
+    else
+      return luaL_error(L, "Unable to set country info");
+  }
+  else
+    return luaL_argerror(L, 1, "Table not found!");
+  return 1;
+}
+
 // Lua: wifi.setmode(mode, save_to_flash)
 static int wifi_setmode( lua_State* L )
 {
@@ -311,7 +429,7 @@ static int wifi_setmaxtxpower( lua_State* L )
 
 #ifdef PMSLEEP_ENABLE
 /* Begin WiFi suspend functions*/
-#include "pmSleep.h"
+#include <pm/pmSleep.h>
 
 static int wifi_resume_cb_ref = LUA_NOREF; // Holds resume callback reference
 static int wifi_suspend_cb_ref = LUA_NOREF; // Holds suspend callback reference
@@ -393,6 +511,19 @@ static int wifi_resume(lua_State* L)
 }
 
 /* End WiFi suspend functions*/
+#else
+static char *susp_note_str = "\n The option \"pmsleep_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n";
+static char *susp_unavailable_str = "wifi.suspend is unavailable";
+
+static int wifi_suspend(lua_State* L){
+  c_sprintf("%s", susp_note_str);
+  return luaL_error(L, susp_unavailable_str);
+}
+
+static int wifi_resume(lua_State* L){
+  c_sprintf("%s", susp_note_str);
+  return luaL_error(L, susp_unavailable_str);
+}
 #endif
 
 // Lua: wifi.nullmodesleep()
@@ -722,10 +853,7 @@ static int wifi_station_clear_config ( lua_State* L )
   bool auto_connect=true;
   bool save_to_flash=true;
 
-  memset(sta_conf.ssid, 0, sizeof(sta_conf.ssid));
-  memset(sta_conf.password, 0, sizeof(sta_conf.password));
-  memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-  sta_conf.bssid_set=0;
+  memset(&sta_conf, 0, sizeof(sta_conf));
 
   wifi_station_disconnect();
 
@@ -753,10 +881,9 @@ static int wifi_station_config( lua_State* L )
   bool save_to_flash=true;
   size_t sl, pl, ml;
 
-  memset(sta_conf.ssid, 0, sizeof(sta_conf.ssid));
-  memset(sta_conf.password, 0, sizeof(sta_conf.password));
-  memset(sta_conf.bssid, 0, sizeof(sta_conf.bssid));
-  sta_conf.bssid_set=0;
+  memset(&sta_conf, 0, sizeof(sta_conf));
+  sta_conf.threshold.rssi = -127;
+  sta_conf.threshold.authmode = AUTH_OPEN;
 
   if(lua_istable(L, 1))
   {
@@ -849,7 +976,7 @@ static int wifi_station_config( lua_State* L )
 
     lua_State* L_temp = NULL;
 
-    lua_getfield(L, 1, "connected_cb");
+    lua_getfield(L, 1, "connect_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -862,12 +989,12 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "connected_cb:not function");
+        return luaL_argerror(L, 1, "connect_cb:not function");
       }
     }
     lua_pop(L, 1);
 
-    lua_getfield(L, 1, "disconnected_cb");
+    lua_getfield(L, 1, "disconnect_cb");
     if (!lua_isnil(L, -1))
     {
       if (lua_isfunction(L, -1))
@@ -880,7 +1007,7 @@ static int wifi_station_config( lua_State* L )
       }
       else
       {
-        return luaL_argerror(L, 1, "disconnected_cb:not function");
+        return luaL_argerror(L, 1, "disconnect_cb:not function");
       }
     }
     lua_pop(L, 1);
@@ -1032,6 +1159,8 @@ static int wifi_station_listap( lua_State* L )
     return luaL_error( L, "Can't list ap in SOFTAP mode" );
   }
   struct scan_config scan_cfg;
+  memset(&scan_cfg, 0, sizeof(scan_cfg));
+
   getap_output_format=0;
 
   if (lua_type(L, 1)==LUA_TTABLE)
@@ -1061,10 +1190,6 @@ static int wifi_station_listap( lua_State* L )
         return luaL_error( L, "wrong arg type" );
       }
     }
-    else
-    {
-      scan_cfg.ssid=NULL;
-    }
 
     lua_getfield(L, 1, "bssid");
     if (!lua_isnil(L, -1)) /* found? */
@@ -1085,10 +1210,6 @@ static int wifi_station_listap( lua_State* L )
         return luaL_error( L, "wrong arg type" );
       }
     }
-    else
-    {
-      scan_cfg.bssid=NULL;
-    }
 
 
     lua_getfield(L, 1, "channel");
@@ -1107,10 +1228,6 @@ static int wifi_station_listap( lua_State* L )
         return luaL_error( L, "wrong arg type" );
       }
     }
-    else
-    {
-      scan_cfg.channel=0;
-    }
 
     lua_getfield(L, 1, "show_hidden");
     if (!lua_isnil(L, -1)) /* found? */
@@ -1128,10 +1245,6 @@ static int wifi_station_listap( lua_State* L )
       {
         return luaL_error( L, "wrong arg type" );
       }
-    }
-    else
-    {
-      scan_cfg.show_hidden=0;
     }
 
     if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
@@ -1805,13 +1918,13 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "getmode" ),        LFUNCVAL( wifi_getmode ) },
   { LSTRKEY( "getdefaultmode" ), LFUNCVAL( wifi_getdefaultmode ) },
   { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
+  { LSTRKEY( "getcountry" ),     LFUNCVAL( wifi_getcountry ) },
+  { LSTRKEY( "setcountry" ),     LFUNCVAL( wifi_setcountry ) },
   { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
   { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
   { LSTRKEY( "setmaxtxpower" ),  LFUNCVAL( wifi_setmaxtxpower ) },
-#ifdef PMSLEEP_ENABLE
   { LSTRKEY( "suspend" ),        LFUNCVAL( wifi_suspend ) },
   { LSTRKEY( "resume" ),         LFUNCVAL( wifi_resume ) },
-#endif
   { LSTRKEY( "nullmodesleep" ),  LFUNCVAL( wifi_null_mode_auto_sleep ) },
 #ifdef WIFI_SMART_ENABLE 
   { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
@@ -1852,6 +1965,9 @@ static const LUA_REG_TYPE wifi_map[] =  {
   { LSTRKEY( "STA_APNOTFOUND" ), LNUMVAL( STATION_NO_AP_FOUND ) },
   { LSTRKEY( "STA_FAIL" ),       LNUMVAL( STATION_CONNECT_FAIL ) },
   { LSTRKEY( "STA_GOTIP" ),      LNUMVAL( STATION_GOT_IP ) },
+
+  { LSTRKEY( "COUNTRY_AUTO" ),   LNUMVAL( WIFI_COUNTRY_POLICY_AUTO ) },
+  { LSTRKEY( "COUNTRY_MANUAL" ), LNUMVAL( WIFI_COUNTRY_POLICY_MANUAL ) },
 
   { LSTRKEY( "__metatable" ),    LROVAL( wifi_map ) },
   { LNILKEY, LNILVAL }

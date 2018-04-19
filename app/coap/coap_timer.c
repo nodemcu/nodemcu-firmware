@@ -1,6 +1,7 @@
 #include "node.h"
 #include "coap_timer.h"
 #include "os_type.h"
+#include "pm/swtimer.h"
 
 static os_timer_t coap_timer;
 static coap_tick_t basetime = 0;
@@ -48,6 +49,8 @@ void coap_timer_tick(void *arg){
 void coap_timer_setup(coap_queue_t ** queue, coap_tick_t t){
   os_timer_disarm(&coap_timer);
   os_timer_setfn(&coap_timer, (os_timer_func_t *)coap_timer_tick, queue);
+  SWTIMER_REG_CB(coap_timer_tick, SWTIMER_RESUME);
+    //coap_timer_tick processes a queue, my guess is that it is ok to resume the timer from where it left off
   os_timer_arm(&coap_timer, t, 0);   // no repeat
 }
 

@@ -82,6 +82,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	misc/libmisc.a				\
 	$(OPT_SEL_COMPONENTS)
 
+
 # Inspect the modules library and work out which modules need to be linked.
 # For each enabled module, a symbol name of the form XYZ_module_selected is
 # returned. At link time those names are declared undefined, so those (and
@@ -140,6 +141,7 @@ CONFIGURATION_DEFINES =	-D__ets__ 		\
 			-DLWIP_OPEN_SRC 	\
 			-DPBUF_RSV_FOR_WLAN 	\
 			-DEBUF_LWIP		\
+			-DUSE_OPTIMIZE_PRINTF \
 			-DMBEDTLS_USER_CONFIG_FILE=\"user_mbedtls.h\"  \
 
 DEFINES += 					\

@@ -689,11 +689,15 @@ static inline void rtc_time_switch_to_system_clock(void)
 
 static inline void rtc_time_tmrfn(void* arg);
 
+#include "pm/swtimer.h"
+
 static void rtc_time_install_timer(void)
 {
   static ETSTimer tmr;
 
   os_timer_setfn(&tmr,rtc_time_tmrfn,NULL);
+  SWTIMER_REG_CB(rtc_time_tmrfn, SWTIMER_RESUME);
+    //I believe the function rtc_time_tmrfn compensates for drift in the clock and updates rtc time accordingly, This timer should probably be resumed
   os_timer_arm(&tmr,10000,1);
 }
 

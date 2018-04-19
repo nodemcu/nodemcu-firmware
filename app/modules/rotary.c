@@ -129,6 +129,8 @@ int platform_rotary_exists( unsigned int id )
   return (id < ROTARY_CHANNEL_COUNT);
 }
 
+#include "pm/swtimer.h"
+
 // Lua: setup(id, phase_a, phase_b [, press])
 static int lrotary_setup( lua_State* L )
 {
@@ -152,7 +154,14 @@ static int lrotary_setup( lua_State* L )
   DATA *d = data[id];
   memset(d, 0, sizeof(*d));
 
+  d->id = id;
+
   os_timer_setfn(&d->timer, lrotary_timer_done, (void *) d);
+  SWTIMER_REG_CB(lrotary_timer_done, SWTIMER_RESUME);
+    //lrotary_timer_done checks time elapsed since last event
+    //My guess: Since proper functionality relies on some variables to be reset via timer callback and state would be invalid anyway.
+      //It is probably best to resume this timer so it can reset it's state variables
+
   
   int i;
   for (i = 0; i < CALLBACK_COUNT; i++) {

@@ -14,6 +14,7 @@
 #include "mem.h"
 #include "gpio.h"
 #include "user_interface.h"
+#include "pm/swtimer.h"
 
 #include "driver/key.h"
 
@@ -132,9 +133,9 @@ key_50ms_cb(struct single_key_param *single_key)
 LOCAL void
 key_intr_handler(void *arg)
 {
-    struct keys_param *keys = arg;
     uint8 i;
     uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+    struct keys_param *keys = arg;
 
     for (i = 0; i < keys->key_num; i++) {
         if (gpio_status & BIT(keys->single_key[i]->gpio_id)) {
@@ -148,6 +149,8 @@ key_intr_handler(void *arg)
                 // 5s, restart & enter softap mode
                 os_timer_disarm(&keys->single_key[i]->key_5s);
                 os_timer_setfn(&keys->single_key[i]->key_5s, (os_timer_func_t *)key_5s_cb, keys->single_key[i]);
+                SWTIMER_REG_CB(key_5s_cb, SWTIMER_DROP);
+                  // key_5s_cb checks the state of a gpio. After resume, gpio state would be invalid
                 os_timer_arm(&keys->single_key[i]->key_5s, 5000, 0);
                 keys->single_key[i]->key_level = 0;
                 gpio_pin_intr_state_set(GPIO_ID_PIN(keys->single_key[i]->gpio_id), GPIO_PIN_INTR_POSEDGE);
@@ -155,6 +158,8 @@ key_intr_handler(void *arg)
                 // 50ms, check if this is a real key up
                 os_timer_disarm(&keys->single_key[i]->key_50ms);
                 os_timer_setfn(&keys->single_key[i]->key_50ms, (os_timer_func_t *)key_50ms_cb, keys->single_key[i]);
+                SWTIMER_REG_CB(key_50ms_cb, SWTIMER_DROP);
+                  // key_50ms_cb checks the state of a gpio. After resume, gpio state would be invalid
                 os_timer_arm(&keys->single_key[i]->key_50ms, 50, 0);
             }
         }

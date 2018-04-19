@@ -75,7 +75,7 @@ make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL ....
 Identify your firmware builds by editing `app/include/user_version.h`
 
 ```c
-#define NODE_VERSION    "NodeMCU 2.1.0+myname"
+#define NODE_VERSION    "NodeMCU " ESP_SDK_VERSION_STRING "." NODE_VERSION_XSTR(NODE_VERSION_INTERNAL)
 #ifndef BUILD_DATE
 #define BUILD_DATE      "YYYYMMDD"
 #endif
