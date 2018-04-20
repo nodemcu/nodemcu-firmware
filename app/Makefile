@@ -44,8 +44,6 @@ SUBDIRS= 					\
 	net					\
 	fatfs					\
 	esp-gdbstub				\
-	swTimer					\
-	misc					\
 	pm					\
 	$(OPT_SEL_MKTARGETS)
 
@@ -78,8 +76,6 @@ COMPONENTS_eagle.app.v6 = 			\
 	net/libnodemcu_net.a			\
 	mbedtls/libmbedtls.a      		\
 	modules/libmodules.a			\
-	swTimer/libswtimer.a			\
-	misc/libmisc.a				\
 	$(OPT_SEL_COMPONENTS)
 
 
@@ -141,7 +137,7 @@ CONFIGURATION_DEFINES =	-D__ets__ 		\
 			-DLWIP_OPEN_SRC 	\
 			-DPBUF_RSV_FOR_WLAN 	\
 			-DEBUF_LWIP		\
-			-DUSE_OPTIMIZE_PRINTF \
+			-DUSE_OPTIMIZE_PRINTF	\
 			-DMBEDTLS_USER_CONFIG_FILE=\"user_mbedtls.h\"  \
 
 DEFINES += 					\
