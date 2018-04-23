@@ -394,9 +394,8 @@ static void add_to_reg_queue(void* timer_cb_ptr, uint8 suspend_policy){
   tmr_cb_queue_t* queue_temp = c_zalloc(sizeof(tmr_cb_queue_t));
   if(!queue_temp){
     //it's boot time currently and we're already out of memory, something is very wrong...
-    dbg_printf("\n\t%s:out of memory, system halted!\n", __FUNCTION__);
-    while(1)
-      system_soft_wdt_feed();
+    dbg_printf("\n\t%s:out of memory, rebooting.", __FUNCTION__);
+    system_restart();
   }
   queue_temp->tmr_cb_ptr = timer_cb_ptr;
   queue_temp->suspend_policy = suspend_policy;
