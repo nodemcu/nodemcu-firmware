@@ -1,3 +1,9 @@
+#if defined(__GNUC__)
+#pragma GCC diagnostic warning "-Wall"
+#pragma GCC diagnostic warning "-Wextra"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 /* swTimer.c SDK timer suspend API
  *
  * SDK software timer API info:
@@ -57,7 +63,7 @@
 
 //this section specifies which lua registry to use. LUA_GLOBALSINDEX or LUA_REGISTRYINDEX
 #ifdef SWTMR_DEBUG
-#define SWTMR_DBG(fmt, ...) c_printf("\n SWTMR_DBG(%s): "fmt"\n", __FUNCTION__, ##__VA_ARGS__)
+#define SWTMR_DBG(fmt, ...) dbg_printf("\n SWTMR_DBG(%s): "fmt"\n", __FUNCTION__, ##__VA_ARGS__)
 #define L_REGISTRY LUA_GLOBALSINDEX
 #define CB_LIST_STR "timer_cb_ptrs"
 #define SUSP_LIST_STR "suspended_tmr_LL_head"
@@ -83,7 +89,7 @@ typedef struct cb_registry_item{
 
 /*  Internal variables  */
 static tmr_cb_queue_t* register_queue = NULL;
-static task_handle_t cb_register_task_id = NULL; //variable to hold task id for task handler(process_cb_register_queue)
+static task_handle_t cb_register_task_id = 0; //variable to hold task id for task handler(process_cb_register_queue)
 
 /*  Function declarations */
 //void swtmr_cb_register(void* timer_cb_ptr, uint8 resume_policy);
@@ -173,7 +179,7 @@ void swtmr_suspend_timers(){
    */
   while(timer_ptr != NULL){
     os_timer_t* next_timer = (os_timer_t*)0xffffffff;
-    for(int i = 0; i < registered_cb_qty; i++){
+    for(size_t i = 0; i < registered_cb_qty; i++){
       if(timer_ptr->timer_func == cb_reg_array[i]->tmr_cb_ptr){
 
         //current timer will be suspended, next timer's pointer will be needed to continue processing timer_list
@@ -394,7 +400,7 @@ static void add_to_reg_queue(void* timer_cb_ptr, uint8 suspend_policy){
   tmr_cb_queue_t* queue_temp = c_zalloc(sizeof(tmr_cb_queue_t));
   if(!queue_temp){
     //it's boot time currently and we're already out of memory, something is very wrong...
-    c_printf("\n\t%s:out of memory, system halted!\n", __FUNCTION__);
+    dbg_printf("\n\t%s:out of memory, system halted!\n", __FUNCTION__);
     while(1)
       system_soft_wdt_feed();
   }
@@ -476,8 +482,8 @@ int print_timer_list(lua_State* L){
 
 
   os_timer_t* timer_list_ptr = timer_list;
-  c_printf("\n\tCurrent FRC2: %u\n", RTC_REG_READ(FRC2_COUNT_ADDRESS));
-  c_printf("\ttimer_list:\n");
+  dbg_printf("\n\tCurrent FRC2: %u\n", RTC_REG_READ(FRC2_COUNT_ADDRESS));
+  dbg_printf("\ttimer_list:\n");
   while(timer_list_ptr != NULL){
     bool registered_flag = FALSE;
     for(int i=0; i < registered_cb_qty; i++){
@@ -486,7 +492,7 @@ int print_timer_list(lua_State* L){
         break;
       }
     }
-    c_printf("\tptr:%p\tcb:%p\texpire:%8u\tperiod:%8u\tnext:%p\t%s\n",
+    dbg_printf("\tptr:%p\tcb:%p\texpire:%8u\tperiod:%8u\tnext:%p\t%s\n",
         timer_list_ptr, timer_list_ptr->timer_func, timer_list_ptr->timer_expire, timer_list_ptr->timer_period, timer_list_ptr->timer_next, registered_flag ? "Registered" : "");
     timer_list_ptr = timer_list_ptr->timer_next;
   }
@@ -513,9 +519,9 @@ int print_susp_timer_list(lua_State* L){
   }
 
   os_timer_t* susp_timer_list_ptr = lua_touserdata(L, -1);
-  c_printf("\n\tsuspended_timer_list:\n");
+  dbg_printf("\n\tsuspended_timer_list:\n");
   while(susp_timer_list_ptr != NULL){
-    c_printf("\tptr:%p\tcb:%p\texpire:%8u\tperiod:%8u\tnext:%p\n",susp_timer_list_ptr, susp_timer_list_ptr->timer_func, susp_timer_list_ptr->timer_expire, susp_timer_list_ptr->timer_period, susp_timer_list_ptr->timer_next);
+    dbg_printf("\tptr:%p\tcb:%p\texpire:%8u\tperiod:%8u\tnext:%p\n",susp_timer_list_ptr, susp_timer_list_ptr->timer_func, susp_timer_list_ptr->timer_expire, susp_timer_list_ptr->timer_period, susp_timer_list_ptr->timer_next);
     susp_timer_list_ptr = susp_timer_list_ptr->timer_next;
   }
   return 0;
