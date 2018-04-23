@@ -1,9 +1,3 @@
-#if defined(__GNUC__)
-#pragma GCC diagnostic warning "-Wall"
-#pragma GCC diagnostic warning "-Wextra"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
 /* swTimer.c SDK timer suspend API
  *
  * SDK software timer API info:
