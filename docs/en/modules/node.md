@@ -135,7 +135,7 @@ Returns the current theoretical maximum deep sleep duration.
 
 !!! caution
 
-	While it is possible to sleep longer than the theoretical maximum sleep duration, which can be found with `node.dsleepMax()`, it is not recommended to exceed this theoretical maximum. 
+	While it is possible to specify a longer sleep time than the theoretical maximum sleep duration, it is not recommended to exceed this maximum.
 
 
 !!! note
