@@ -87,7 +87,7 @@ dofile("hello.lc")
 
 Enters deep sleep mode, wakes up when timed out.
 
-Theoretical maximum deep sleep duration can be found with [`node.dsleepMax()`](#nodedsleepmax)
+Theoretical maximum deep sleep duration can be found with [`node.dsleepMax()`](#nodedsleepmax). ["Max deep sleep for ESP8266"](https://thingpulse.com/max-deep-sleep-for-esp8266/) claims the realistic maximum be around 3.5h.
  
 !!! caution
 
@@ -135,13 +135,12 @@ Returns the current theoretical maximum deep sleep duration.
 
 !!! caution
 
-	While it is possible to specify a longer sleep time than the theoretical maximum sleep duration, it is not recommended to exceed this maximum.
+	While it is possible to specify a longer sleep time than the theoretical maximum sleep duration, it is not recommended to exceed this maximum. In tests documented at ["Max deep sleep for ESP8266"](https://thingpulse.com/max-deep-sleep-for-esp8266/) the device never woke up again if the specified sleep time was beyond `dsleepMax()`.
 
 
 !!! note
 
-	This theoretical maximum is dependent on ambient temperature.   
-	(lower temp = shorter sleep duration, higher temp = longer sleep duration)
+	This theoretical maximum is dependent on ambient temperature: lower temp = shorter sleep duration, higher temp = longer sleep duration
 
 #### Syntax
 `node.dsleepMax()`
