@@ -87,9 +87,8 @@ dofile("hello.lc")
 
 Enters deep sleep mode, wakes up when timed out.
 
-The maximum sleep time is 4294967295us, ~71 minutes. This is an SDK limitation.
-Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
-
+Theoretical maximum deep sleep duration can be found with [`node.dsleepMax()`](#nodedsleepmax)
+ 
 !!! caution
 
     This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
@@ -107,10 +106,7 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 	- 1, RF_CAL after deep-sleep wake up, there will be large current
 	- 2, no RF_CAL after deep-sleep wake up, there will only be small current
 	- 4, disable RF after deep-sleep wake up, just like modem sleep, there will be the smallest current
- - `instant` number (integer) or `nil`. If present and non-zero, do not use
-    the normal grace time before entering deep sleep.  This is a largely
-    undocumented feature, and is only briefly mentioned in Espressif's
-    [low power solutions](https://espressif.com/sites/default/files/documentation/9b-esp8266_low_power_solutions_en.pdf#page=10) document (chapter 4.5).
+ - `instant` number (integer) or `nil`. If present and non-zero, the chip will enter Deep-sleep immediately and will not wait for the Wi-Fi core to be shutdown.
 
 #### Returns
 `nil`
@@ -131,6 +127,38 @@ node.dsleep(nil,4)
 - [`wifi.suspend()`](wifi.md#wifisuspend)
 - [`wifi.resume()`](wifi.md#wifiresume)
 - [`node.sleep()`](#nodesleep)
+- [`node.dsleepMax()`](#nodedsleepmax)
+
+## node.dsleepMax()
+
+Returns the current theoretical maximum deep sleep duration.
+
+!!! caution
+
+	While it is possible to specify a longer sleep time than the theoretical maximum sleep duration, it is not recommended to exceed this maximum.
+
+
+!!! note
+
+	This theoretical maximum is dependent on ambient temperature.   
+	(lower temp = shorter sleep duration, higher temp = longer sleep duration)
+
+#### Syntax
+`node.dsleepMax()`
+
+#### Parameters
+ none
+ 
+#### Returns
+`max_duration`
+
+#### Example
+```lua
+node.dsleep(node.dsleepMax())
+```
+
+#### See also
+- [`node.dsleep()`](#nodedsleep)
 
 ## node.flashid()
 

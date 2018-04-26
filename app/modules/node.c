@@ -38,10 +38,15 @@ static int node_restart( lua_State* L )
   return 0;
 }
 
+static int dsleepMax( lua_State *L ) {
+  lua_pushnumber(L, (uint64_t)system_rtc_clock_cali_proc()*(0x80000000-1)/(0x1000));
+  return 1;
+}
+
 // Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
-  uint32 us;
+  uint64 us;
   uint8 option;
   //us = luaL_checkinteger( L, 1 );
   // Set deleep option, skip if nil
@@ -592,8 +597,9 @@ static const LUA_REG_TYPE node_task_map[] = {
 
 static const LUA_REG_TYPE node_map[] =
 {
-  { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
-  { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
+  { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
+  { LSTRKEY( "dsleep" ),    LFUNCVAL( node_deepsleep ) },
+  { LSTRKEY( "dsleepMax" ), LFUNCVAL( dsleepMax ) },
 #ifdef PMSLEEP_ENABLE
   { LSTRKEY( "sleep" ), LFUNCVAL( node_sleep ) },
   PMSLEEP_INT_MAP,
