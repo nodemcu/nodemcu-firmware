@@ -512,16 +512,16 @@ static int wifi_resume(lua_State* L)
 
 /* End WiFi suspend functions*/
 #else
-static char *susp_note_str = "\n The option \"pmsleep_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n";
+static char *susp_note_str = "\n The option \"PMSLEEP_ENABLE\" in \"app/include/user_config.h\" was disabled during FW build!\n";
 static char *susp_unavailable_str = "wifi.suspend is unavailable";
 
 static int wifi_suspend(lua_State* L){
-  c_sprintf("%s", susp_note_str);
+  dbg_printf("%s", susp_note_str);
   return luaL_error(L, susp_unavailable_str);
 }
 
 static int wifi_resume(lua_State* L){
-  c_sprintf("%s", susp_note_str);
+  dbg_printf("%s", susp_note_str);
   return luaL_error(L, susp_unavailable_str);
 }
 #endif
