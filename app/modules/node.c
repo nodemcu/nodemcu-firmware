@@ -108,13 +108,18 @@ static int node_sleep( lua_State* L )
   cfg.resume_cb_ptr = &node_sleep_resume_cb;
   pmSleep_suspend(&cfg);
 #else
-  c_printf("\n The option \"timer_suspend_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n");
-  return luaL_error(L, "light sleep is unavailable");
+  dbg_printf("\n The option \"TIMER_SUSPEND_ENABLE\" in \"app/include/user_config.h\" was disabled during FW build!\n");
+  return luaL_error(L, "node.sleep() is unavailable");
 #endif
   return 0;
 }
+#else
+static int node_sleep( lua_State* L )
+{
+  dbg_printf("\n The options \"TIMER_SUSPEND_ENABLE\" and \"PMSLEEP_ENABLE\" in \"app/include/user_config.h\" were disabled during FW build!\n");
+  return luaL_error(L, "node.sleep() is unavailable");
+}
 #endif //PMSLEEP_ENABLE
-
 static int node_info( lua_State* L )
 {
   lua_pushinteger(L, NODE_VERSION_MAJOR);
@@ -600,8 +605,8 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
   { LSTRKEY( "dsleep" ),    LFUNCVAL( node_deepsleep ) },
   { LSTRKEY( "dsleepMax" ), LFUNCVAL( dsleepMax ) },
-#ifdef PMSLEEP_ENABLE
   { LSTRKEY( "sleep" ), LFUNCVAL( node_sleep ) },
+#ifdef PMSLEEP_ENABLE
   PMSLEEP_INT_MAP,
 #endif
   { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
