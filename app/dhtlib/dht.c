@@ -6,6 +6,7 @@
 //     URL: http://arduino.cc/playground/Main/DHTLib
 //
 // HISTORY:
+// 0.1.15 fix dht.read11 for new version of dht11
 // 0.1.14 replace digital read with faster (~3x) code => more robust low MHz machines.
 // 0.1.13 fix negative dht_temperature
 // 0.1.12 support DHT33 and DHT44 initial version
@@ -152,11 +153,11 @@ int dht_read11(uint8_t pin)
 
     // CONVERT AND STORE
     dht_humidity    = dht_bytes[0];  // dht_bytes[1] == 0;
-    dht_temperature = dht_bytes[2];  // dht_bytes[3] == 0;
+    dht_temperature = dht_bytes[2]+dht_bytes[3]*0.1;  // dht_bytes[3] == 0;
 
     // TEST CHECKSUM
     // dht_bytes[1] && dht_bytes[3] both 0
-    uint8_t sum = dht_bytes[0] + dht_bytes[2];
+    uint8_t sum = dht_bytes[0] + dht_bytes[1]+dht_bytes[2]+dht_bytes[3];
     if (dht_bytes[4] != sum) return DHTLIB_ERROR_CHECKSUM;
 
     return DHTLIB_OK;
