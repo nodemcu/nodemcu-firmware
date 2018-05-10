@@ -615,12 +615,6 @@ void mqtt_socket_timer(void *arg)
   if(mud->connState == MQTT_INIT){ // socket connect time out.
     NODE_DBG("Can not connect to broker.\n");
     os_timer_disarm(&mud->mqttTimer);
-#if 0
-    // don't try to disconnect here when connecting times out
-    //   this will leak memory since espconn_disconnect() will refuse to
-    //   disconnect/free pesp_conn as it was never connected
-    // espconn & lwip housekeeping is done on the intended route:
-    //   tcp_err()->espconn_client_err()->espconn_Task()->espconn_tcp_reconnect()->mqtt_socket_reconnected()
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
 #ifdef CLIENT_SSL_ENABLE
     if(mud->secure)
@@ -632,7 +626,6 @@ void mqtt_socket_timer(void *arg)
     {
       espconn_disconnect(mud->pesp_conn);
     }
-#endif
   } else if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT send time out.
     NODE_DBG("sSend MQTT_CONNECT failed.\n");
     mud->connState = MQTT_INIT;
