@@ -185,6 +185,27 @@ none
 #### Returns
 flash size in bytes (integer)
 
+## node.getcpufreq()
+
+Get the current CPU Frequency.
+
+#### Syntax
+`node.getcpufreq()`
+
+#### Parameters
+none
+
+#### Returns
+Current CPU frequency (number)
+
+#### Example
+```lua
+do
+  local cpuFreq = node.getcpufreq()
+  print("The current CPU frequency is "..cpuFreq.." Mhz")
+end
+```
+
 ## node.heap()
 
 Returns the current available heap size in bytes. Note that due to fragmentation, actual allocations of this size may not be possible.

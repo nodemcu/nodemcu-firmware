@@ -386,6 +386,13 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
+// Lua: freq = node.getcpufreq()
+static int node_getcpufreq(lua_State* L)
+{
+  lua_pushinteger(L, system_get_cpu_freq());
+  return 1;
+}
+
 // Lua: code, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ] = bootreason()
 static int node_bootreason (lua_State *L)
 {
@@ -622,6 +629,7 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
   { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
+  { LSTRKEY( "getcpufreq" ), LFUNCVAL( node_getcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
   { LSTRKEY( "random" ), LFUNCVAL( node_random) },
