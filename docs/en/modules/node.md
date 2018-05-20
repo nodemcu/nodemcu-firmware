@@ -202,7 +202,7 @@ Current CPU frequency (number)
 ```lua
 do
   local cpuFreq = node.getcpufreq()
-  print("The current CPU frequency is "..cpuFreq.." Mhz")
+  print("The current CPU frequency is " .. cpuFreq .. " MHz")
 end
 ```
 
