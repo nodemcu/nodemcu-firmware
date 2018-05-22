@@ -1158,8 +1158,9 @@ static int wifi_station_listap( lua_State* L )
   {
     return luaL_error( L, "Can't list ap in SOFTAP mode" );
   }
-  struct scan_config scan_cfg;
-  memset(&scan_cfg, 0, sizeof(scan_cfg));
+  // set safe defaults for scan time, all other members are initialized with 0
+  // source: https://github.com/espressif/ESP8266_NONOS_SDK/issues/103
+  struct scan_config scan_cfg = {.scan_time = {.passive=120, .active = {.max=120, .min=60}}};
 
   getap_output_format=0;
 
