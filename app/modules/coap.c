@@ -1,6 +1,7 @@
 // Module for coapwork
 
 #include "module.h"
+#include <stdio.h>
 #include "lauxlib.h"
 #include "platform.h"
 
@@ -31,6 +32,7 @@ typedef struct lcoap_userdata
 static void coap_received(void *arg, char *pdata, unsigned short len)
 {
   NODE_DBG("coap_received is called.\n");
+  printf("pdata is %s\n",pdata);
   struct espconn *pesp_conn = arg;
   lcoap_userdata *cud = (lcoap_userdata *)pesp_conn->reverse;
 
