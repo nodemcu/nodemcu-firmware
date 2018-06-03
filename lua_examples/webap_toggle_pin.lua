@@ -15,7 +15,7 @@ srv:listen(80,function(conn)
                 _GET[k] = v
             end
         end
-        buf = buf.."<h1> Hello, NodeMcu.</h1><form src=\"/\">Turn PIN1 <select name=\"pin\" onchange=\"form.submit()\">"
+        buf = buf.."<!DOCTYPE html><html><body><h1>Hello, NodeMcu.</h1><form src=\"/\">Turn PIN1 <select name=\"pin\" onchange=\"form.submit()\">"
         local _on,_off = "",""
         if(_GET.pin == "ON")then
               _on = " selected=true"
@@ -24,7 +24,7 @@ srv:listen(80,function(conn)
               _off = " selected=\"true\""
               gpio.write(1, gpio.LOW)
         end
-        buf = buf.."<option".._on..">ON</opton><option".._off..">OFF</option></select></form>"
+        buf = buf.."<option".._on..">ON</option><option".._off..">OFF</option></select></form></body></html>"
         client:send(buf)
     end)
     conn:on("sent", function (c) c:close() end)
