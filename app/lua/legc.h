@@ -11,7 +11,7 @@
 #define EGC_ON_MEM_LIMIT      2   // run EGC when an upper memory limit is hit
 #define EGC_ALWAYS            4   // always run EGC before an allocation
 
-void legc_set_mode(lua_State *L, int mode, unsigned limit);
+void legc_set_mode(lua_State *L, int mode, int limit);
 
 #endif
 

@@ -53,7 +53,7 @@ tmr.softwd(int)
 #include "platform.h"
 #include "c_types.h"
 #include "user_interface.h"
-#include "swTimer/swTimer.h"
+#include "pm/swtimer.h"
 
 #define TIMER_MODE_OFF 3
 #define TIMER_MODE_SINGLE 0
@@ -231,68 +231,23 @@ static int tmr_stop(lua_State* L){
 	return 1;  
 }
 
-#ifdef ENABLE_TIMER_SUSPEND
+#ifdef TIMER_SUSPEND_ENABLE
 
+#define TMR_SUSPEND_REMOVED_MSG "This feature has been removed, we apologize for any inconvenience this may have caused."
 static int tmr_suspend(lua_State* L){
-  timer_t tmr = tmr_get(L, 1);
-
-  if((tmr->mode & TIMER_IDLE_FLAG) == 1){
-    return luaL_error(L, "timer not armed");
-  }
-
-  int retval = swtmr_suspend(&tmr->os);
-
-  if(retval != SWTMR_OK){
-    return luaL_error(L, swtmr_errorcode2str(retval));
-  }
-  else{
-    lua_pushboolean(L, true);
-  }
-
-  return 1;
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
 }
 
 static int tmr_resume(lua_State* L){
-  timer_t tmr = tmr_get(L, 1);
-
-  if(swtmr_suspended_test(&tmr->os) == FALSE){
-    return luaL_error(L, "timer not suspended");
-  }
-
-  int retval = swtmr_resume(&tmr->os);
-
-  if(retval != SWTMR_OK){
-    return luaL_error(L, swtmr_errorcode2str(retval));
-  }
-  else{
-  lua_pushboolean(L, true);
-  }
-  return 1;
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
 }
 
-static int tmr_suspend_all (lua_State *L)
-{
-  sint32 retval = swtmr_suspend(NULL);
-  //  lua_pushnumber(L, swtmr_suspend(NULL));
-  if(retval!=SWTMR_OK){
-    return luaL_error(L, swtmr_errorcode2str(retval));
-  }
-  else{
-    lua_pushboolean(L, true);
-  }
-  return 1;
+static int tmr_suspend_all (lua_State *L){
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
 }
 
-static int tmr_resume_all (lua_State *L)
-{
-  sint32 retval = swtmr_resume(NULL);
-  if(retval!=SWTMR_OK){
-    return luaL_error(L, swtmr_errorcode2str(retval));
-  }
-  else{
-    lua_pushboolean(L, true);
-  }
-  return 1;
+static int tmr_resume_all (lua_State *L){
+  return luaL_error(L, TMR_SUSPEND_REMOVED_MSG);
 }
 
 
@@ -343,12 +298,7 @@ static int tmr_state(lua_State* L){
 
   lua_pushboolean(L, (tmr->mode & TIMER_IDLE_FLAG) == 0);
   lua_pushinteger(L, tmr->mode & (~TIMER_IDLE_FLAG));
-#ifdef ENABLE_TIMER_SUSPEND
-  lua_pushboolean(L, swtmr_suspended_test(&tmr->os));
-#else
-  lua_pushnil(L);
-#endif
-	return 3;
+	return 2;
 }
 
 /*I left the led comments 'couse I don't know
@@ -454,7 +404,7 @@ static const LUA_REG_TYPE tmr_dyn_map[] = {
 	{ LSTRKEY( "unregister" ),  LFUNCVAL( tmr_unregister ) },
 	{ LSTRKEY( "state" ),       LFUNCVAL( tmr_state ) },
 	{ LSTRKEY( "interval" ),    LFUNCVAL( tmr_interval) },
-#ifdef ENABLE_TIMER_SUSPEND
+#ifdef TIMER_SUSPEND_ENABLE
 	{ LSTRKEY( "suspend" ),      LFUNCVAL( tmr_suspend ) },
   { LSTRKEY( "resume" ),       LFUNCVAL( tmr_resume ) },
 #endif
@@ -462,15 +412,6 @@ static const LUA_REG_TYPE tmr_dyn_map[] = {
 	{ LSTRKEY( "__index" ),     LROVAL( tmr_dyn_map ) },
 	{ LNILKEY, LNILVAL }
 };
-
-#if defined(ENABLE_TIMER_SUSPEND) && defined(SWTMR_DEBUG)
-static const LUA_REG_TYPE tmr_dbg_map[] = {
-    { LSTRKEY( "printRegistry" ),        LFUNCVAL( tmr_printRegistry ) },
-    { LSTRKEY( "printSuspended" ),        LFUNCVAL( tmr_printSuspended ) },
-    { LSTRKEY( "printTimerlist" ),        LFUNCVAL( tmr_printTimerlist ) },
-  { LNILKEY, LNILVAL }
-};
-#endif
 
 static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
@@ -482,7 +423,7 @@ static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "alarm" ),        LFUNCVAL( tmr_alarm ) },
 	{ LSTRKEY( "start" ),        LFUNCVAL( tmr_start ) },
   { LSTRKEY( "stop" ),         LFUNCVAL( tmr_stop ) },
-#ifdef ENABLE_TIMER_SUSPEND
+#ifdef TIMER_SUSPEND_ENABLE
   { LSTRKEY( "suspend" ),      LFUNCVAL( tmr_suspend ) },
   { LSTRKEY( "suspend_all" ),  LFUNCVAL( tmr_suspend_all ) },
   { LSTRKEY( "resume" ),       LFUNCVAL( tmr_resume ) },
@@ -492,15 +433,13 @@ static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "state" ),        LFUNCVAL( tmr_state ) },
 	{ LSTRKEY( "interval" ),     LFUNCVAL( tmr_interval ) },
 	{ LSTRKEY( "create" ),       LFUNCVAL( tmr_create ) },
-#if defined(ENABLE_TIMER_SUSPEND) && defined(SWTMR_DEBUG)
-  { LSTRKEY( "debug" ),       LROVAL( tmr_dbg_map ) },
-#endif
 	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
 	{ LSTRKEY( "ALARM_SEMI" ),   LNUMVAL( TIMER_MODE_SEMI ) },
 	{ LSTRKEY( "ALARM_AUTO" ),   LNUMVAL( TIMER_MODE_AUTO ) },
 	{ LNILKEY, LNILVAL }
 };
 
+#include "pm/swtimer.h"
 int luaopen_tmr( lua_State *L ){
 	int i;	
 
@@ -510,16 +449,23 @@ int luaopen_tmr( lua_State *L ){
 		alarm_timers[i].lua_ref = LUA_NOREF;
 		alarm_timers[i].self_ref = LUA_REFNIL;
 		alarm_timers[i].mode = TIMER_MODE_OFF;
-		//improve boot speed by using ets_timer_disarm instead of os_timer_disarm to avoid timer registry maintenance call.
-		ets_timer_disarm(&alarm_timers[i].os);
+		os_timer_disarm(&alarm_timers[i].os);
 	}
 	last_rtc_time=system_get_rtc_time(); // Right now is time 0
 	last_rtc_time_us=0;
 
-  //improve boot speed by using ets_timer_disarm instead of os_timer_disarm to avoid timer registry maintenance call.
-	ets_timer_disarm(&rtc_timer);
+	os_timer_disarm(&rtc_timer);
 	os_timer_setfn(&rtc_timer, rtc_callback, NULL);
 	os_timer_arm(&rtc_timer, 1000, 1);
+
+  SWTIMER_REG_CB(rtc_callback, SWTIMER_RESUME);
+  //The function rtc_callback calls the a function that calibrates the SoftRTC for drift in the esp8266's clock.
+  //My guess: after the duration of light_sleep there's bound to be some drift in the clock, so a calibration is due.
+  SWTIMER_REG_CB(alarm_timer_common, SWTIMER_RESUME);
+  //The function alarm_timer_common handles timers created by the developer via tmr.create().
+  //No reason not to resume the timers, so resume em'.
+
+
 	return 0;
 }
 

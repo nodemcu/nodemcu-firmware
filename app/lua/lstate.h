@@ -82,7 +82,7 @@ typedef struct global_State {
   Mbuffer buff;  /* temporary buffer for string concatentation */
   lu_mem GCthreshold;
   lu_mem totalbytes;  /* number of bytes currently allocated */
-  lu_mem memlimit;  /* maximum number of bytes that can be allocated, 0 = no limit. */
+  l_mem memlimit;  /* maximum number of bytes that can be allocated, 0 = no limit. <0 used with EGC_ON_MEM_LIMIT when free heap falls below -memlimit */
   lu_mem estimate;  /* an estimate of number of bytes actually in use */
   lu_mem gcdept;  /* how much GC is `behind schedule' */
   int gcpause;  /* size of pause between successive GCs */

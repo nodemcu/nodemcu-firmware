@@ -3,6 +3,7 @@
 #include "c_string.h"
 #include "user_interface.h"
 #include "smart.h"
+#include "pm/swtimer.h"
 
 #define ADDR_MAP_NUM 10
 
@@ -500,6 +501,9 @@ void smart_end(){
 
       os_timer_disarm(&smart_timer);
       os_timer_setfn(&smart_timer, (os_timer_func_t *)station_check_connect, (void *)1);
+      SWTIMER_REG_CB(station_check_connect, SWTIMER_RESUME);
+        //the function station_check_connect continues the Smart config process and fires the developers callback upon successful connection to the access point.
+        //If this function manages to get suspended, I think it would be fine to resume the timer.
       os_timer_arm(&smart_timer, STATION_CHECK_TIME, 0);   // no repeat
     }
   }
@@ -672,6 +676,9 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
   wifi_set_promiscuous_rx_cb(detect);
   os_timer_disarm(&smart_timer);
   os_timer_setfn(&smart_timer, (os_timer_func_t *)smart_next_channel, NULL);
+  SWTIMER_REG_CB(smart_next_channel, SWTIMER_RESUME);
+    //smart_next_channel switches the wifi channel
+    //I don't see a problem with resuming this timer
   os_timer_arm(&smart_timer, TIME_OUT_PER_CHANNEL, 0);   // no repeat
 
   if(s){
@@ -717,5 +724,6 @@ void station_check_connect(bool smart){
   }
   os_timer_disarm(&smart_timer);
   os_timer_setfn(&smart_timer, (os_timer_func_t *)station_check_connect, (void *)(int)smart);
+    //this function was already registered in the function smart_end.
   os_timer_arm(&smart_timer, STATION_CHECK_TIME, 0);   // no repeat
 }
