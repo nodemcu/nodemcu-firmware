@@ -1,3 +1,5 @@
+CC  =gcc
+
 SRCS=\
 	main.c \
   ../../app/spiffs/spiffs_cache.c  ../../app/spiffs/spiffs_check.c  ../../app/spiffs/spiffs_gc.c  ../../app/spiffs/spiffs_hydrogen.c  ../../app/spiffs/spiffs_nucleus.c
