@@ -40,10 +40,15 @@ static int node_restart( lua_State* L )
   return 0;
 }
 
+static int dsleepMax( lua_State *L ) {
+  lua_pushnumber(L, (uint64_t)system_rtc_clock_cali_proc()*(0x80000000-1)/(0x1000));
+  return 1;
+}
+
 // Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
-  uint32 us;
+  uint64 us;
   uint8 option;
   //us = luaL_checkinteger( L, 1 );
   // Set deleep option, skip if nil
@@ -105,13 +110,18 @@ static int node_sleep( lua_State* L )
   cfg.resume_cb_ptr = &node_sleep_resume_cb;
   pmSleep_suspend(&cfg);
 #else
-  c_printf("\n The option \"timer_suspend_enable\" in \"app/include/user_config.h\" was disabled during FW build!\n");
-  return luaL_error(L, "light sleep is unavailable");
+  dbg_printf("\n The option \"TIMER_SUSPEND_ENABLE\" in \"app/include/user_config.h\" was disabled during FW build!\n");
+  return luaL_error(L, "node.sleep() is unavailable");
 #endif
   return 0;
 }
+#else
+static int node_sleep( lua_State* L )
+{
+  dbg_printf("\n The options \"TIMER_SUSPEND_ENABLE\" and \"PMSLEEP_ENABLE\" in \"app/include/user_config.h\" were disabled during FW build!\n");
+  return luaL_error(L, "node.sleep() is unavailable");
+}
 #endif //PMSLEEP_ENABLE
-
 static int node_info( lua_State* L )
 {
   lua_pushinteger(L, NODE_VERSION_MAJOR);
@@ -367,6 +377,13 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
+// Lua: freq = node.getcpufreq()
+static int node_getcpufreq(lua_State* L)
+{
+  lua_pushinteger(L, system_get_cpu_freq());
+  return 1;
+}
+
 // Lua: code, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ] = bootreason()
 static int node_bootreason (lua_State *L)
 {
@@ -590,10 +607,11 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "flashreload" ), LFUNCVAL( luaN_reload_reboot ) },
   { LSTRKEY( "flashindex" ), LFUNCVAL( luaN_index ) },
 #endif
-  { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
-  { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
-#ifdef PMSLEEP_ENABLE
+  { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
+  { LSTRKEY( "dsleep" ),    LFUNCVAL( node_deepsleep ) },
+  { LSTRKEY( "dsleepMax" ), LFUNCVAL( dsleepMax ) },
   { LSTRKEY( "sleep" ), LFUNCVAL( node_sleep ) },
+#ifdef PMSLEEP_ENABLE
   PMSLEEP_INT_MAP,
 #endif
   { LSTRKEY( "chipid" ), LFUNCVAL( node_chipid ) },
@@ -607,6 +625,7 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
   { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
+  { LSTRKEY( "getcpufreq" ), LFUNCVAL( node_getcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
   { LSTRKEY( "random" ), LFUNCVAL( node_random) },

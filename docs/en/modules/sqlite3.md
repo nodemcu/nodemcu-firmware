@@ -9,7 +9,7 @@ This module depens on [SQLite3](http://www.sqlite.org/) library developed by Dwa
 
 For instruction on how to use this module or further documentation, please, refer to [LuaSQLite3 Documentation](http://lua.sqlite.org/index.cgi/doc/tip/doc/lsqlite3.wiki).
 
-This module is a stripped down version of SQLite, with every possible OMIT_\* configuration enable. The enabled OMIT_\* directives are available in the module's [Makefile](../../../app/sqlite3/Makefile).
+This module is a stripped down version of SQLite, with every possible OMIT_\* configuration enable. The enabled OMIT_\* directives are available in the module's [config file](../../../app/sqlite3/config_ext.h).
 
 The SQLite3 module vfs layer integration with NodeMCU was developed by me.
 
