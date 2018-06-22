@@ -15,18 +15,6 @@
 #include "c_stdlib.h"
 #include "c_types.h"
 #include "c_string.h"
-
-extern const char lua_init_value[];
-
-const char *c_getenv(const char *__string)
-{
-    if (c_strcmp(__string, "LUA_INIT") == 0)
-    {
-        return lua_init_value;
-    }
-    return NULL;
-}
-
 #include <_ansi.h>
 //#include <reent.h>
 //#include "mprec.h"

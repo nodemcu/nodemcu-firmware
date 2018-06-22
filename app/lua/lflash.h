@@ -10,14 +10,14 @@
 #include "lstate.h"
 #include "lzio.h"
 
-#ifdef LUA_NUNBER_INTEGRAL
+#ifdef LUA_NUMBER_INTEGRAL
 # define FLASH_SIG_B1 0x02
 #else
 # define FLASH_SIG_B1 0x00
 #endif
 
 #ifdef LUA_PACK_TVALUES
-#ifdef LUA_NUNBER_INTEGRAL
+#ifdef LUA_NUMBER_INTEGRAL
 #error "LUA_PACK_TVALUES is only valid for Floating point builds" 
 #endif
 # define FLASH_SIG_B2 0x04
@@ -40,7 +40,6 @@ typedef struct {
   lu_int32  fill2;          /* reserved */
 } FlashHeader;
 
-void luaN_user_init(void);
 LUAI_FUNC void luaN_init (lua_State *L);
 LUAI_FUNC int  luaN_flashSetup (lua_State *L);
 LUAI_FUNC int  luaN_reload_reboot (lua_State *L);

@@ -268,11 +268,8 @@ uint32_t platform_eth_get_elapsed_time(void);
 // *****************************************************************************
 // Internal flash erase/write functions
 
-uint32_t platform_flash_reserve_section( uint32_t regsize, uint32_t *start );
 uint32_t platform_flash_get_first_free_block_address( uint32_t *psect );
 uint32_t platform_flash_get_sector_of_address( uint32_t addr );
-uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
-uint32_t platform_flash_phys2mapped (uint32_t phys_addr);
 uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size );
 uint32_t platform_flash_read( void *to, uint32_t fromaddr, uint32_t size );
 uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t size );
@@ -282,13 +279,14 @@ int platform_flash_erase_sector( uint32_t sector_id );
 
 /**
  * Translated a mapped address to a physical flash address, based on the
- * current flash cache mapping.
+ * current flash cache mapping, and v.v.
  * @param mapped_addr Address to translate (>= INTERNAL_FLASH_MAPPED_ADDRESS)
  * @return the corresponding physical flash address, or -1 if flash cache is
  *  not currently active.
  * @see Cache_Read_Enable.
  */
 uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
+uint32_t platform_flash_phys2mapped (uint32_t phys_addr);
 
 // *****************************************************************************
 // Allocator support

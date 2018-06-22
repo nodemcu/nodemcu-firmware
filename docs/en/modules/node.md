@@ -150,15 +150,19 @@ flash ID (number)
 Returns the function reference for a function in the LFS (Lua Flash Store).
 
 #### Syntax
-`node.flashindex()`
+`node.flashindex(modulename)`
 
 #### Parameters
 `modulename`  The name of the module to be loaded.  If this is `nil` or invalid then an info list is returned
 
 #### Returns
--  In the case where the LFS in not loaded, `node.flashindex` evaluates to `nil`, followed by the flash and mapped base addresss of the LFS  
+-  In the case where the LFS in not loaded, `node.flashindex` evaluates to `nil`, followed by the flash and mapped base addresss of the LFS
 -  If the LFS is loaded and the function is called with the name of a valid module in the LFS, then the function is returned in the same way the `load()` and the other Lua load functions do.
--  Otherwise an extended info list is returned: the Unix time of the LFS build, the flash and mapped base addresses of the LFS and its current length, and an array of the valid module names in the LFS. 
+-  Otherwise an extended info list is returned: the Unix time of the LFS build, the flash and mapped base addresses of the LFS and its current length, and an array of the valid module names in the LFS.
+
+#### Example
+
+The `node.flashindex()` is a low level API call that is normally wrapped using standard Lua code to present a simpler application API.  See the module `_init.lua` in the `lua_examples/lfs` directory for an example of how to do this.
 
 ## node.flashreload()
 

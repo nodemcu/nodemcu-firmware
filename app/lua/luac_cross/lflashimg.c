@@ -155,7 +155,7 @@ static void *fromFashAddr(FlashAddr a) {
  * Add a TS found in the Proto Load to the table at the ToS
  */
 static void addTS(lua_State *L, TString *ts) {
-  lua_assert(ttisstring(&(ts->tsv)));
+  lua_assert(ts->tsv.tt==LUA_TSTRING);
   lua_pushnil(L);
   setsvalue(L, L->top-1, ts);
   lua_pushinteger(L, 1);

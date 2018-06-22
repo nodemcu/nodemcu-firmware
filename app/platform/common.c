@@ -24,7 +24,7 @@ extern char _flash_used_end[];
 
 // Helper function: find the flash sector in which an address resides
 // Return the sector number, as well as the start and end address of the sector
-static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
+static uint32_t flash_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
 {
 #ifdef INTERNAL_FLASH_SECTOR_SIZE
   // All the sectors in the flash have the same size, so just align the address
@@ -53,7 +53,7 @@ static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t
 
 uint32_t platform_flash_get_sector_of_address( uint32_t addr )
 {
-  return flashh_find_sector( addr, NULL, NULL );
+  return flash_find_sector( addr, NULL, NULL );
 }
 
 uint32_t platform_flash_get_num_sectors(void)
@@ -67,54 +67,22 @@ uint32_t platform_flash_get_num_sectors(void)
 #endif // #ifdef INTERNAL_FLASH_SECTOR_SIZE
 }
 
-static uint32_t allocated = 0;
-static uint32_t phys_flash_used_end = 0;  //Phyiscal address of last byte in last flash used sector 
-
-uint32_t platform_flash_reserve_section( uint32_t regsize, uint32_t *start )
-{
-  // Return Flash sector no (and optional flash mapped address of first allocated byte)
-
-  if(phys_flash_used_end == 0) 
-    flashh_find_sector(platform_flash_mapped2phys( (uint32_t)_flash_used_end - 1), NULL, &phys_flash_used_end );
-
-  /* find sector and last byte address of previous allocation */
-  uint32_t end;
-  uint32_t sect = flashh_find_sector( phys_flash_used_end + allocated, NULL, &end );
-  if(start)
-    *start = end + 1;
-
-  /* allocated regions are always sector aligned */ 
-  flashh_find_sector( phys_flash_used_end + allocated + regsize, NULL, &end );
-  allocated = end - phys_flash_used_end;
-
-  NODE_DBG("Flash base: %08x %08x %08x\n", regsize, allocated, phys_flash_used_end);
-  return sect + 1;
-}
-
 uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
 {
   // Round the total used flash size to the closest flash block address
   uint32_t start, end, sect;
   NODE_DBG("_flash_used_end:%08x\n", (uint32_t)_flash_used_end);
-#if 0
   if(_flash_used_end>0){ // find the used sector
-    sect = flashh_find_sector( platform_flash_mapped2phys ( (uint32_t)_flash_used_end - 1), NULL, &end );
-    sect++;
-    start = end + 1;
-  }else{
-    sect = flashh_find_sector( 0, &start, NULL ); // find the first free sector
+    sect = flash_find_sector( platform_flash_mapped2phys ( (uint32_t)_flash_used_end - 1), NULL, &end );
+    if( psect )
+      *psect = sect + 1;
+    return end + 1;
+  } else {
+    sect = flash_find_sector( 0, &start, NULL ); // find the first free sector
+    if( psect )
+      *psect = sect;
+    return start;
   }
-  if(_flash_used_end>0){ // find the used sector
-    uint32_t sta1, sec1;
-    sec1 = platform_flash_reserve_section( 0, &sta1 ); 
-    NODE_DBG("Flash base: %p %p %p %p\n", sect, start, sec1, sta1);
-  }
-#endif
-  sect = _flash_used_end ? platform_flash_reserve_section( 0, &start ) :
-                           flashh_find_sector( 0, &start, NULL );
-  if( psect )
-    *psect = sect;
-  return start;
 }
 
 uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size )

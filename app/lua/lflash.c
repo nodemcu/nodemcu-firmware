@@ -41,7 +41,7 @@ static uint32_t curOffset;
 #define FLASH_PAGE_SIZE INTERNAL_FLASH_SECTOR_SIZE
 #define FLASH_PAGES  (FLASH_SIZE/FLASH_PAGE_SIZE)
 
-#define BREAK_ON_STARTUP_PIN  1  // GPIO 5 or setting to 0 will disable pin startup 
+char flash_region_base[FLASH_SIZE] ICACHE_FLASH_RESERVED_ATTR;
 
 #ifdef NODE_DEBUG
 extern void dbg_printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
@@ -94,6 +94,7 @@ static char *flashBlock(const void* b, size_t size)  {
   return cur;
 }
 
+
 static void flashErase(uint32_t start, uint32_t end){
   int i;
   if (start == -1) start = FLASH_PAGES - 1;
@@ -104,38 +105,41 @@ static void flashErase(uint32_t start, uint32_t end){
 }
 
 
-/* =====================================================================================
- * Hook in user_main.c to allocate flash memory for the lua flash store
- */
-extern void luaL_dbgbreak(void);   //<<<<<<<<<<<<< Temp
-void luaN_user_init(void) {
-  curOffset    = 0;
-  flashSector = platform_flash_reserve_section( FLASH_SIZE, &flashAddrPhys );
-  flashAddr   = cast(char *,platform_flash_phys2mapped(flashAddrPhys));
-  NODE_DBG("Flash initialised: %x %08x\n", flashSector, flashAddr); 
-//  luaL_dbgbreak();      //<<<<<<<<<<<<< Temp
-}
-
-
 /*
  * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
  */  
 LUAI_FUNC void luaN_init (lua_State *L) {
+//  luaL_dbgbreak();
+  curOffset      = 0;
+  flashAddr     = flash_region_base;
+  flashAddrPhys = platform_flash_mapped2phys((uint32_t)flashAddr);
+  flashSector   = platform_flash_get_sector_of_address(flashAddrPhys);
   FlashHeader *fh = cast(FlashHeader *, flashAddr);
+
   /*
    * For the LFS to be valid, its signature has to be correct for this build variant,
    * thr ROhash and main proto fields must be defined and the main proto address 
    * be within the LFS address bounds. (This last check is primarily to detect the
    * direct imaging of an absolute LFS with the wrong base address. 
    */
-  if ((fh->flash_sig & (~FLASH_SIG_ABSOLUTE)) == FLASH_SIG && 
-      fh->pROhash   != ALL_SET &&
-      ((fh->mainProto - cast(FlashAddr, fh)) < fh->flash_size)) {
-    G(L)->ROstrt.hash = cast(GCObject **, fh->pROhash);
-    G(L)->ROstrt.nuse = fh->nROuse ;
-    G(L)->ROstrt.size = fh->nROsize;
-    G(L)->ROpvmain    = cast(Proto *,fh->mainProto);
+
+  if ((fh->flash_sig & (~FLASH_SIG_ABSOLUTE)) != FLASH_SIG ) {
+    NODE_ERR("Flash sig not correct: %p vs %p\n",
+       fh->flash_sig & (~FLASH_SIG_ABSOLUTE), FLASH_SIG); 
+    return;
   }
+
+  if (fh->pROhash == ALL_SET ||
+      ((fh->mainProto - cast(FlashAddr, fh)) >= fh->flash_size)) {
+    NODE_ERR("Flash size check failed: %p vs 0xFFFFFFFF; %p >= %p\n",
+       fh->mainProto - cast(FlashAddr, fh), fh->flash_size);
+    return;
+  }
+ 
+  G(L)->ROstrt.hash = cast(GCObject **, fh->pROhash);
+  G(L)->ROstrt.nuse = fh->nROuse ;
+  G(L)->ROstrt.size = fh->nROsize;
+  G(L)->ROpvmain    = cast(Proto *,fh->mainProto);
 }
 
 #define BYTE_OFFSET(t,f) cast(size_t, &(cast(t *, NULL)->f))

@@ -61,7 +61,7 @@ spiffsimg: spiffsimg/spiffsimg
 	@echo Built spiffsimg in spiffsimg/spiffsimg
 
 spiffsimg/spiffsimg: 
-	@$(MAKE) -C spiffsimg CC=$(HOSTCC)
+	@$(MAKE) -C spiffsimg 
 
 spiffsscript: remove-image LFSimage spiffsimg/spiffsimg
 	rm -f ./spiffsimg/spiffs.lst

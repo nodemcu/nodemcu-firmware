@@ -29,10 +29,8 @@
 
 lua_State *globalL = NULL;
 
-lua_Load gLoad;
-
+static lua_Load gLoad;
 static const char *progname = LUA_PROGNAME;
-
 
 static void l_message (const char *pname, const char *msg) {
 #if defined(LUA_USE_STDIO)
@@ -237,19 +235,16 @@ static int runargs (lua_State *L, char **argv, int n) {
 }
 
 
-#ifdef LUA_INIT_STRING
-const char lua_init_value[] = LUA_INIT_STRING;
-#else
-const char lua_init_value[] = "@init.lua";
+#ifndef LUA_INIT_STRING
+#define LUA_INIT_STRING "@init.lua"
 #endif
 
 static int handle_luainit (lua_State *L) {
-  const char *init = c_getenv(LUA_INIT);
-  if (init == NULL) return 0;  /* status OK */
-  else if (init[0] == '@')
+  const char *init = LUA_INIT_STRING;
+  if (init[0] == '@')
     return dofsfile(L, init+1);
   else
-    return dostring(L, init, "=" LUA_INIT);
+    return dostring(L, init, LUA_INIT);
 }
 
 
@@ -284,7 +279,6 @@ static int pmain (lua_State *L) {
 
 static void dojob(lua_Load *load);
 static bool readline(lua_Load *load);
-char line_buffer[LUA_MAXINPUT];
 
 #ifdef LUA_RPC
 int main (int argc, char **argv) {
@@ -315,24 +309,39 @@ int lua_main (int argc, char **argv) {
   gLoad.L = L;
   gLoad.firstline = 1;
   gLoad.done = 0;
-  gLoad.line = line_buffer;
+  gLoad.line = c_malloc(LUA_MAXINPUT);
   gLoad.len = LUA_MAXINPUT;
   gLoad.line_position = 0;
   gLoad.prmt = get_prompt(L, 1);
 
   dojob(&gLoad);
 
-  NODE_DBG("Heap size::%d.\n",system_get_free_heap_size());
+  NODE_DBG("Heap size:%d.\n",system_get_free_heap_size());
   legc_set_mode( L, EGC_ALWAYS, 4096 );
   // legc_set_mode( L, EGC_ON_MEM_LIMIT, 4096 );
   // lua_close(L);
   return (status || s.status) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+int lua_put_line(const char *s, size_t l) {
+  if (s == NULL || ++l < LUA_MAXINPUT || gLoad.line_position > 0)
+    return 0;
+  c_memcpy(gLoad.line, s, l);
+  gLoad.line[l] = '\0';
+  gLoad.line_position = l;
+  gLoad.done = 1;
+  NODE_DBG("Get command: %s\n", gLoad.line);
+  return 1;
+}
+
 void lua_handle_input (bool force)
 {
-  while (gLoad.L && (force || readline (&gLoad)))
+  while (gLoad.L && (force || readline (&gLoad))) { 
+    NODE_DBG("Handle Input: first=%u, pos=%u, len=%u, actual=%u, line=%s\n", gLoad.firstline,
+              gLoad.line_position, gLoad.len, c_strlen(gLoad.line), gLoad.line);
     dojob (&gLoad);
+    force = false;
+  }
 }
 
 void donejob(lua_Load *load){
@@ -462,11 +471,12 @@ static bool readline(lua_Load *load){
         {
           /* Get a empty line, then go to get a new line */
           c_puts(load->prmt);
+          continue;
         } else {
           load->done = 1;
           need_dojob = true;
+          break;
         }
-        continue;
       }
 
       /* other control character or not an acsii character */

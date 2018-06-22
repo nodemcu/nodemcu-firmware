@@ -65,7 +65,8 @@
 static void removeentry (Node *n) {
   lua_assert(ttisnil(gval(n)));
   if (ttype(gkey(n)) != LUA_TDEADKEY && iscollectable(gkey(n)))
-    lua_assert(!isLFSobject(&((gkey(n))->value.gc->gch)));
+//  The gkey is always in RAM so it can be marked as DEAD even though it
+//  refers to an LFS object.
     setttype(gkey(n), LUA_TDEADKEY);  /* dead key; remove it */
 }
 

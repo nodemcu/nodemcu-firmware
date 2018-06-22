@@ -48,7 +48,7 @@
 //#define DEBUG_ALLOCATOR
 #ifdef DEBUG_ALLOCATOR 
 #ifdef LUA_CROSS_COMPILER
-static void break_hook(void)
+static void break_hook(void) {}
 #define ASSERT(s) if (!(s)) {break_hook();}
 #else
 #define ASSERT(s) if (!(s)) {asm ("break 0,0" ::);}
@@ -186,7 +186,7 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
 /* }====================================================================== */
 #else
 #define this_realloc(p,os,s) c_realloc(p,s)
-#endif
+#endif /* DEBUG_ALLOCATOR */
 
 /*
 ** {======================================================

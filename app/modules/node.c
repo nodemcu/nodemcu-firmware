@@ -169,26 +169,16 @@ static int node_heap( lua_State* L )
   return 1;
 }
 
-extern lua_Load gLoad;
+extern int  lua_put_line(const char *s, size_t l);
 extern bool user_process_input(bool force);
+
 // Lua: input("string")
-static int node_input( lua_State* L )
-{
+static int node_input( lua_State* L ) {
   size_t l = 0;
   const char *s = luaL_checklstring(L, 1, &l);
-  if (s != NULL && l > 0 && l < LUA_MAXINPUT - 1)
-  {
-    lua_Load *load = &gLoad;
-    if (load->line_position == 0) {
-      c_memcpy(load->line, s, l);
-      load->line[l + 1] = '\0';
-      load->line_position = c_strlen(load->line) + 1;
-      load->done = 1;
-      NODE_DBG("Get command:\n");
-      NODE_DBG(load->line); // buggy here
-      NODE_DBG("\nResult(if any):\n");
-      user_process_input(true);
-    }
+  if (lua_put_line(s, l)) {
+    NODE_DBG("Result (if any):\n");
+    user_process_input(true);
   }
   return 0;
 }

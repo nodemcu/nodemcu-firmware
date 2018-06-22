@@ -241,14 +241,17 @@ SECTIONS
     KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
 
-    /* SDK doesn't use libc functions, and are therefore safe to put in flash */
+    /* SDK doesn't use libc functions, and are therefore safe to put in flash */ 
     */libc.a:*.o(.text* .literal*)
     /* end libc functions */
+
+    /* Reserved areas, flash page aligned and last */
+    . = ALIGN(4096);
+    KEEP(*(.irom.reserved .irom.reserved.*))
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr =0xffffffff
-
 }
 
 /* get ROM code address */
