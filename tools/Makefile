@@ -72,7 +72,7 @@ spiffsscript: remove-image LFSimage spiffsimg/spiffsimg
 
 ifneq ($(LFSSOURCES),)
 LFSimage: $(LFSSOURCES)
-       ../luac.cross -f -o $(FSSOURCE)flash.img $(LFSSOURCES)
+	../luac.cross -f -o $(FSSOURCE)flash.img $(LFSSOURCES)
 else
 LFSimage: 
 	rm -f $(FSSOURCE)flash.img
