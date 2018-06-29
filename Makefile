@@ -28,7 +28,7 @@ ifdef DEBUG
   CCFLAGS += -ggdb -O0
   LDFLAGS += -ggdb
 else
-  CCFLAGS += -Os
+  CCFLAGS += -O2
 endif
 
 #############################################################

@@ -14,7 +14,7 @@
 #define LUAR_FINDVALUE        1
 
 /* Externally defined read-only table array */
-extern const luaR_table lua_rotable[];
+extern const luaR_table *lua_rotable;
 
 /* Find a global "read only table" in the constant lua_rotable array */
 void* luaR_findglobal(const char *name, unsigned len) {
@@ -85,7 +85,7 @@ static void luaR_next_helper(lua_State *L, const luaR_entry *pentries, int pos, 
   if (pentries[pos].key.type != LUA_TNIL) {
     /* Found an entry */
     if (pentries[pos].key.type == LUA_TSTRING)
-      setsvalue(L, key, luaS_newro(L, pentries[pos].key.id.strkey))
+      setsvalue(L, key, luaS_new(L, pentries[pos].key.id.strkey))
     else
       setnvalue(key, (lua_Number)pentries[pos].key.id.numkey)
    setobj2s(L, val, &pentries[pos].value);
@@ -127,10 +127,15 @@ void luaR_getcstr(char *dest, const TString *src, size_t maxsize) {
 
 /* Return 1 if the given pointer is a rotable */
 #ifdef LUA_META_ROTABLES
-
+#ifdef LUA_CROSS_COMPILER
+extern char  edata[];
+int luaR_isrotable(void *p) {
+  return (char*)p <= edata;
+}
+#else
 #include "compiler.h"
-
 int luaR_isrotable(void *p) {
   return RODATA_START_ADDRESS <= (char*)p && (char*)p <= RODATA_END_ADDRESS;
 }
+#endif
 #endif

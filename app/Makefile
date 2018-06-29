@@ -20,43 +20,37 @@ FLAVOR = debug
 ifndef PDIR # {
 GEN_IMAGES= eagle.app.v6.out
 GEN_BINS= eagle.app.v6.bin
-SPECIAL_MKTARGETS=$(APP_MKTARGETS)
+OPT_MKTARGETS        := coap crypto dht http mqtt pcm sjson sqlite3 tsl2561 websocket
+OPT_MKLIBTARGETS     := u8g ucg
+SEL_MKTARGETS        := $(shell $(CC) -E -dM include/user_modules.h | sed -n '/^\#define LUA_USE_MODULES_/{s/.\{24\}\(.*\)/\L\1/; p}')
+OPT_SEL_MKLIBTARGETS := $(foreach tgt,$(OPT_MKLIBTARGETS),$(findstring $(tgt), $(SEL_MKTARGETS)))
+OPT_SEL_MKTARGETS    := $(foreach tgt,$(OPT_MKTARGETS),$(findstring $(tgt), $(SEL_MKTARGETS))) \
+                        $(foreach tgt,$(OPT_SEL_MKLIBTARGETS),$(tgt)lib)
+OPT_SEL_COMPONENTS   := $(foreach tgt,$(OPT_SEL_MKTARGETS),$(tgt)/lib$(tgt).a)
+SPECIAL_MKTARGETS    :=$(APP_MKTARGETS)
+
 SUBDIRS= 					\
 	user 					\
 	driver 					\
-	pcm					\
 	mbedtls 				\
 	platform 				\
 	libc 					\
 	lua 					\
 	lwip 					\
-	coap 					\
-	mqtt 					\
 	task 					\
-	u8glib 					\
-	ucglib					\
 	smart 					\
 	modules 				\
 	spiffs 					\
-	crypto 					\
-	dhtlib					\
-	tsl2561					\
 	net					\
-	http					\
 	fatfs					\
 	esp-gdbstub				\
-	websocket				\
 	pm					\
-	sjson					\
- 	sqlite3					\
-	
+	$(OPT_SEL_MKTARGETS)
 
 endif # } PDIR
 
 APPDIR = .
 LDDIR = ../ld
-
-CCFLAGS += -Os
 
 TARGET_LDFLAGS = 				\
 	-nostdlib 				\
@@ -64,45 +58,26 @@ TARGET_LDFLAGS = 				\
 	--longcalls 				\
 	--text-section-literals
 
-ifeq ($(FLAVOR),debug)
-    TARGET_LDFLAGS += -g -Os
-endif
-
-ifeq ($(FLAVOR),release)
-    TARGET_LDFLAGS += -Os
-endif
-
 LD_FILE = $(LDDIR)/nodemcu.ld
 
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
 	driver/libdriver.a 			\
-	pcm/pcm.a				\
 	platform/libplatform.a 			\
 	task/libtask.a 				\
 	libc/liblibc.a 				\
 	lua/liblua.a 				\
 	lwip/liblwip.a 				\
-	coap/coap.a 				\
-	mqtt/mqtt.a 				\
-	u8glib/u8glib.a 			\
-	ucglib/ucglib.a 			\
 	smart/smart.a 				\
 	spiffs/spiffs.a 			\
 	fatfs/libfatfs.a			\
-	crypto/libcrypto.a 			\
-	dhtlib/libdhtlib.a 			\
-	tsl2561/tsl2561lib.a			\
-	http/libhttp.a				\
 	pm/libpm.a				\
-	websocket/libwebsocket.a		\
 	esp-gdbstub/libgdbstub.a		\
 	net/libnodemcu_net.a			\
 	mbedtls/libmbedtls.a      		\
 	modules/libmodules.a			\
-	sjson/libsjson.a			\
-  sqlite3/libsqlite3.a			\
-	
+	$(OPT_SEL_COMPONENTS)
+
 
 # Inspect the modules library and work out which modules need to be linked.
 # For each enabled module, a symbol name of the form XYZ_module_selected is
@@ -162,7 +137,7 @@ CONFIGURATION_DEFINES =	-D__ets__ 		\
 			-DLWIP_OPEN_SRC 	\
 			-DPBUF_RSV_FOR_WLAN 	\
 			-DEBUF_LWIP		\
-			-DUSE_OPTIMIZE_PRINTF \
+			-DUSE_OPTIMIZE_PRINTF	\
 			-DMBEDTLS_USER_CONFIG_FILE=\"user_mbedtls.h\"  \
 
 DEFINES += 					\
@@ -190,7 +165,6 @@ INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
-
 
 .PHONY: FORCE
 FORCE:

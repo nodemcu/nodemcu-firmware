@@ -13,6 +13,7 @@
 
 #include "ldebug.h"
 #include "ldo.h"
+#include "lflash.h"
 #include "lfunc.h"
 #include "lgc.h"
 #include "llex.h"
@@ -72,9 +73,12 @@ static void f_luaopen (lua_State *L, void *ud) {
   sethvalue(L, gt(L), luaH_new(L, 0, 2));  /* table of globals */
   sethvalue(L, registry(L), luaH_new(L, 0, 2));  /* registry */
   luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
+#if defined(LUA_FLASH_STORE) && !defined(LUA_CROSS_COMPILER)
+  luaN_init(L);                   /* optionally map RO string table */
+#endif
   luaT_init(L);
   luaX_init(L);
-  luaS_fix(luaS_newliteral(L, MEMERRMSG));
+  stringfix(luaS_newliteral(L, MEMERRMSG));
   g->GCthreshold = 4*g->totalbytes;
 }
 
@@ -191,6 +195,12 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->memlimit = EGC_INITIAL_MEMLIMIT;
 #else
   g->memlimit = 0;
+#endif
+#if defined(LUA_FLASH_STORE) && !defined(LUA_CROSS_COMPILER)
+  g->ROstrt.size = 0;
+  g->ROstrt.nuse = 0;
+  g->ROstrt.hash = NULL;
+  g->ROpvmain    = NULL;
 #endif
   for (i=0; i<NUM_TAGS; i++) g->mt[i] = NULL;
   if (luaD_rawrunprotected(L, f_luaopen, NULL) != 0) {

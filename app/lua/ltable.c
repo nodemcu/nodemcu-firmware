@@ -445,7 +445,8 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
   int oldasize = t->sizearray;
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(L, t, nasize);
-  resize_hashpart(L, t, nhsize);
+  if (t->node != dummynode || nhsize>0)
+    resize_hashpart(L, t, nhsize);
   if (nasize < oldasize) {  /* array part must shrink? */
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */
@@ -749,12 +750,12 @@ int luaH_getn_ro (void *t) {
   return len;
 }
 
-#if defined(LUA_DEBUG)
+int luaH_isdummy (Node *n) { return n == dummynode; }
 
+#if defined(LUA_DEBUG)
 Node *luaH_mainposition (const Table *t, const TValue *key) {
   return mainposition(t, key);
 }
-
-int luaH_isdummy (Node *n) { return n == dummynode; }
-
 #endif
+
+

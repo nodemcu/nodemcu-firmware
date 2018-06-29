@@ -53,7 +53,8 @@ int luaO_fb2int (int x) {
 
 
 int luaO_log2 (unsigned int x) {
-  static const lu_byte log_2[256] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR = {
+#ifdef LUA_CROSS_COMPILER
+  static const lu_byte log_2[256] = {
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
@@ -65,10 +66,12 @@ int luaO_log2 (unsigned int x) {
   };
   int l = -1;
   while (x >= 256) { l += 8; x >>= 8; }
-#ifdef LUA_CROSS_COMPILER
   return l + log_2[x];
 #else
-  return l + byte_of_aligned_array(log_2,x);
+ /* Use Normalization Shift Amount Unsigned:  0x1=>31 up to 0xffffffff =>0
+  * See Xtensa Instruction Set Architecture (ISA) Refman  P 462 */
+  asm volatile ("nsau %0, %1;" :"=r"(x) : "r"(x)); 
+  return 31 - x;
 #endif
 }
 
@@ -103,7 +106,7 @@ int luaO_str2d (const char *s, lua_Number *result) {
 #if defined(LUA_CROSS_COMPILER) 
     {
     long lres = strtoul(s, &endptr, 16);
-#if LONG_MAX != 2147483647L
+#if INT_MAX != 2147483647L
     if (lres & ~0xffffffffL) 
       *result = cast_num(-1);
     else if (lres & 0x80000000L)

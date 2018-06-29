@@ -34,11 +34,9 @@ LUAI_FUNC int luaH_next (lua_State *L, Table *t, StkId key);
 LUAI_FUNC int luaH_next_ro (lua_State *L, void *t, StkId key);
 LUAI_FUNC int luaH_getn (Table *t);
 LUAI_FUNC int luaH_getn_ro (void *t);
+LUAI_FUNC int luaH_isdummy (Node *n);
 
 #if defined(LUA_DEBUG)
 LUAI_FUNC Node *luaH_mainposition (const Table *t, const TValue *key);
-LUAI_FUNC int luaH_isdummy (Node *n);
 #endif
-
-
 #endif

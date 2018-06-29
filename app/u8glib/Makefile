@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = u8glib.a
+GEN_LIBS = libu8glib.a
 endif
 
 STD_CFLAGS=-std=gnu11 -Wimplicit
