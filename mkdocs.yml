@@ -3,7 +3,7 @@ site_description: Description of the NodeMCU documentation
 repo_url: https://github.com/nodemcu/nodemcu-firmware/
 
 theme: readthedocs
-strict: true
+strict: false # mustn't be true due to https://github.com/rtfd/readthedocs.org/issues/4314 
 
 markdown_extensions:
 #http://pythonhosted.org/Markdown/extensions/admonition.html
