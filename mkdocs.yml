@@ -25,16 +25,16 @@ pages:
     - Building the firmware: 'en/build.md'
     - Flashing the firmware: 'en/flash.md'
     - Uploading code: 'en/upload.md'
+    - Support: 'en/support.md'
     - FAQs:
         - Lua Developer FAQ: 'en/lua-developer-faq.md'
         - Extension Developer FAQ: 'en/extn-developer-faq.md'
         - Hardware FAQ: 'en/hardware-faq.md'
     - Whitepapers:
         - Filesystem on SD card: 'en/sdcard.md'
-        - Internal filesystem notes: 'en/spiffs.md'
-        - Lua Compact Debug(LCD): 'en/lfs.md'
-        - Lua Flash Store(LFS): 'en/lcd.md'
-    - Support: 'en/support.md'
+        - Internal filesystem: 'en/spiffs.md'
+        - Lua Compact Debug(LCD): 'en/lcd.md'
+        - Lua Flash Store(LFS): 'en/lfs.md'
     - Modules:
         - 'adc': 'en/modules/adc.md'
         - 'ads1115' : 'en/modules/ads1115.md'
