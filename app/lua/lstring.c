@@ -80,13 +80,16 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   return ts;
 }
 
-#include "compiler.h"
-static int lua_is_ptr_in_ro_area(const char *p) {
 #ifdef LUA_CROSS_COMPILER
-  return 0;
-#else
-  return p >= RODATA_START_ADDRESS && p <= RODATA_END_ADDRESS;
+#define IN_RO_AREA(p) (0)
+#else /* xtensa tool chain for ESP */
+extern char _irom0_text_start[];
+extern char _irom0_text_end[];
+#define IN_RO_AREA(p) ((p) >= _irom0_text_start && (p) <= _irom0_text_end)
 #endif
+
+int lua_is_ptr_in_ro_area(const char *p) {
+  return IN_RO_AREA(p);
 }
 
 /*

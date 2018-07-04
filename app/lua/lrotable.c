@@ -125,17 +125,22 @@ void luaR_getcstr(char *dest, const TString *src, size_t maxsize) {
   } 
 }
 
-/* Return 1 if the given pointer is a rotable */
-#ifdef LUA_META_ROTABLES
-#ifdef LUA_CROSS_COMPILER
-extern char  edata[];
-int luaR_isrotable(void *p) {
-  return (char*)p <= edata;
-}
-#else
-#include "compiler.h"
-int luaR_isrotable(void *p) {
-  return RODATA_START_ADDRESS <= (char*)p && (char*)p <= RODATA_END_ADDRESS;
-}
+#ifdef LUA_META_ROTABLES  
+/* Set in RO check depending on platform */
+#if defined(LUA_CROSS_COMPILER) && defined(__CYGWIN__)
+extern char __end__[];
+#define IN_RO_AREA(p) ((p) < __end__)
+#elif defined(LUA_CROSS_COMPILER)
+extern char  _edata[];
+#define IN_RO_AREA(p) ((p) < _edata)
+#else  /* xtensa tool chain for ESP target */
+extern char _irom0_text_start[];
+extern char _irom0_text_end[];
+#define IN_RO_AREA(p) ((p) >= _irom0_text_start && (p) <= _irom0_text_end)
 #endif
+
+/* Return 1 if the given pointer is a rotable */
+int luaR_isrotable(void *p) {
+  return IN_RO_AREA((char *)p);
+}
 #endif
