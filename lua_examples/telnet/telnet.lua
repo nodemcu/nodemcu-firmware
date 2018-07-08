@@ -144,7 +144,7 @@ return {
       wifi.sta.config { ssid = ssid, pwd  = pwd, save = false }
     end
     tmr.alarm(0, 500, tmr.ALARM_AUTO, function()
-      if (sta.status() == wifi.STA_GOTIP) then
+      if (wifi.sta.status() == wifi.STA_GOTIP) then
         tmr.unregister(0)
         print("Welcome to NodeMCU world", node.heap(), wifi.sta.getip())
         net.createServer(net.TCP, 180):listen(port or 2323, telnet_listener)
