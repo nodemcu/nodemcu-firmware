@@ -1,5 +1,5 @@
 #include <pm/pmSleep.h>
-#ifdeff  PMSLEEP_ENABLE
+#ifdef  PMSLEEP_ENABLE
 #define STRINGIFY_VAL(x) #x
 #define STRINGIFY(x) STRINGIFY_VAL(x)
 
