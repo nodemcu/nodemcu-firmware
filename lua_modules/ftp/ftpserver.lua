@@ -1,4 +1,4 @@
-o--[[ A simple ftp server
+--[[ A simple ftp server
 
  This is my implementation of a FTP server using Github user Neronix's
  example as inspriration, but as a cleaner Lua implementation that has been
