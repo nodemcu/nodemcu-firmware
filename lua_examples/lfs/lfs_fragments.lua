@@ -7,7 +7,7 @@
 do
   local _,ma,fa=node.flashindex()
   for n,v in pairs{LFS_MAPPED=ma, LFS_BASE=fa, SPIFFS_BASE=sa} do
-    print(('export %s=""0x%x"'):format(n, v))
+    print(('export %s=""0x%x"'):format(n, v)
   end
 end
 --
