@@ -28,7 +28,9 @@ cd "$TRAVIS_BUILD_DIR"/ld || exit
 # change to "root" directory no matter where the script was started from
 cd "$TRAVIS_BUILD_DIR" || exit
 make clean
-make || exit
-./luac.cross -p `find lua_modules -iname "*.lua"` || exit
-./luac.cross -p `find lua_examples -iname "*.lua"`
+make
+
+LUA_FILES=`find lua_modules lua_examples -iname "*.lua"`
+echo checking $LUA_FILES
+./luac.cross -p $LUA_FILES
 )
