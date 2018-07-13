@@ -319,6 +319,7 @@ static void sntp_handle_result(lua_State *L) {
   }
 }
 
+#include "pm/swtimer.h"
 
 static void sntp_dosend ()
 {
@@ -326,6 +327,9 @@ static void sntp_dosend ()
     if (state->server_pos < 0) {
       os_timer_disarm(&state->timer);
       os_timer_setfn(&state->timer, on_timeout, NULL);
+      SWTIMER_REG_CB(on_timeout, SWTIMER_RESUME);
+        //The function on_timeout calls this function(sntp_dosend) again to handle time sync timeout.
+        //My guess: Since the WiFi connection is restored after waking from light sleep, it would be possible to contact the SNTP server, So why not let it
       state->server_pos = 0;
     } else {
       ++state->server_pos;
@@ -708,6 +712,9 @@ static char *set_repeat_mode(lua_State *L, bool enable)
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->list_ref);
     repeat->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     os_timer_setfn(&repeat->timer, on_long_timeout, NULL);
+    SWTIMER_REG_CB(on_long_timeout, SWTIMER_RESUME);
+      //The function on_long_timeout returns errors to the developer
+      //My guess: Error reporting is a good thing, resume the timer.
     os_timer_arm(&repeat->timer, 1000 * 1000, 1);
   } else {
     if (repeat) {

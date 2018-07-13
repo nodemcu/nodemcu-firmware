@@ -87,9 +87,8 @@ dofile("hello.lc")
 
 Enters deep sleep mode, wakes up when timed out.
 
-The maximum sleep time is 4294967295us, ~71 minutes. This is an SDK limitation.
-Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
-
+Theoretical maximum deep sleep duration can be found with [`node.dsleepMax()`](#nodedsleepmax). ["Max deep sleep for ESP8266"](https://thingpulse.com/max-deep-sleep-for-esp8266/) claims the realistic maximum be around 3.5h.
+ 
 !!! caution
 
     This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
@@ -107,10 +106,7 @@ Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
 	- 1, RF_CAL after deep-sleep wake up, there will be large current
 	- 2, no RF_CAL after deep-sleep wake up, there will only be small current
 	- 4, disable RF after deep-sleep wake up, just like modem sleep, there will be the smallest current
- - `instant` number (integer) or `nil`. If present and non-zero, do not use
-    the normal grace time before entering deep sleep.  This is a largely
-    undocumented feature, and is only briefly mentioned in Espressif's
-    [low power solutions](https://espressif.com/sites/default/files/documentation/9b-esp8266_low_power_solutions_en.pdf#page=10) document (chapter 4.5).
+ - `instant` number (integer) or `nil`. If present and non-zero, the chip will enter Deep-sleep immediately and will not wait for the Wi-Fi core to be shutdown.
 
 #### Returns
 `nil`
@@ -131,6 +127,37 @@ node.dsleep(nil,4)
 - [`wifi.suspend()`](wifi.md#wifisuspend)
 - [`wifi.resume()`](wifi.md#wifiresume)
 - [`node.sleep()`](#nodesleep)
+- [`node.dsleepMax()`](#nodedsleepmax)
+
+## node.dsleepMax()
+
+Returns the current theoretical maximum deep sleep duration.
+
+!!! caution
+
+	While it is possible to specify a longer sleep time than the theoretical maximum sleep duration, it is not recommended to exceed this maximum. In tests documented at ["Max deep sleep for ESP8266"](https://thingpulse.com/max-deep-sleep-for-esp8266/) the device never woke up again if the specified sleep time was beyond `dsleepMax()`.
+
+
+!!! note
+
+	This theoretical maximum is dependent on ambient temperature: lower temp = shorter sleep duration, higher temp = longer sleep duration
+
+#### Syntax
+`node.dsleepMax()`
+
+#### Parameters
+ none
+ 
+#### Returns
+`max_duration`
+
+#### Example
+```lua
+node.dsleep(node.dsleepMax())
+```
+
+#### See also
+- [`node.dsleep()`](#nodedsleep)
 
 ## node.flashid()
 
@@ -157,6 +184,27 @@ none
 
 #### Returns
 flash size in bytes (integer)
+
+## node.getcpufreq()
+
+Get the current CPU Frequency.
+
+#### Syntax
+`node.getcpufreq()`
+
+#### Parameters
+none
+
+#### Returns
+Current CPU frequency (number)
+
+#### Example
+```lua
+do
+  local cpuFreq = node.getcpufreq()
+  print("The current CPU frequency is " .. cpuFreq .. " MHz")
+end
+```
 
 ## node.heap()
 
@@ -333,30 +381,32 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 
 * NodeMCU can not enter light sleep mode if wifi is suspended.
 * All active timers will be suspended and then resumed when NodeMCU wakes from sleep. 
-* Any previously suspended timers will be resumed when NodeMCU wakes from sleep.
 
 !!! attention
     This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 #### Syntax
-`node.sleep({wake_gpio[, duration, int_type, resume_cb, preserve_mode]})`
+<!---`node.sleep({wake_pin[, duration, int_type, resume_cb, preserve_mode]})`--->
+`node.sleep({wake_pin[, int_type, resume_cb, preserve_mode]})`
 
 #### Parameters
-- `duration` Sleep duration in microseconds(μs). If a sleep duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))
-- `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts. 
- - If sleep duration is indefinite, `wake_pin` must be specified
- - Please refer to the [`GPIO module`](gpio.md) for more info on the pin map.
-- `int_type` type of interrupt that you would like to wake on. (Optional, Default: `node.INT_LOW`)
- - valid interrupt modes:
-  - `node.INT_UP`   Rising edge
-  - `node.INT_DOWN` Falling edge
-  - `node.INT_BOTH` Both edges
-  - `node.INT_LOW`  Low level
-  - `node.INT_HIGH` High level
-- `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
-- `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
- - If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
- - If false, discard WiFi mode and leave NodeMCU in `wifi.NULL_MODE`. WiFi mode will be restored to original mode on restart.
+<!--- timed light_sleep currently does not work, the 'duration' parameter is here as a place holder---> 
+<!--- * `duration` Sleep duration in microseconds(μs). If a sleep duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))--->
+
+* `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts. 
+    <!---* If sleep duration is indefinite, `wake_pin` must be specified--->
+    * Please refer to the [`GPIO module`](gpio.md) for more info on the pin map.
+* `int_type` type of interrupt that you would like to wake on. (Optional, Default: `node.INT_LOW`)
+    * valid interrupt modes:
+        * `node.INT_UP`   Rising edge
+        * `node.INT_DOWN` Falling edge
+        * `node.INT_BOTH` Both edges
+        * `node.INT_LOW`  Low level
+        * `node.INT_HIGH` High level
+* `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
+* `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
+    * If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
+    * If false, discard WiFi mode and leave NodeMCU in `wifi.NULL_MODE`. WiFi mode will be restored to original mode on restart.
 
 #### Returns
 - `nil`
@@ -379,15 +429,15 @@ Put NodeMCU in light sleep mode to reduce current consumption.
  cfg.preserve_mode=false
 
  node.sleep(cfg)
-
+```
+<!---
 --Put NodeMCU in light sleep mode for 10 seconds with resume callback
  cfg={}
  cfg.duration=10*1000*1000
  cfg.resume_cb=function() print("WiFi resume") end
 
  node.sleep(cfg)
-
-```
+--->
 
 #### See also
 - [`wifi.suspend()`](wifi.md#wifisuspend)
@@ -484,7 +534,7 @@ provides more detailed information on the EGC.
 - `mode`
 	- `node.egc.NOT_ACTIVE` EGC inactive, no collection cycle will be forced in low memory situations
 	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error. 
-	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error.
+	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error. If the given limit is negative, it is interpreted as the desired amount of heap which should be left available. Whenever the free heap (as reported by `node.heap()` falls below the requested limit, the garbage collector will be run.
 	- `node.egc.ALWAYS` Run the garbage collector before each memory allocation. If the allocation fails even after running the garbage collector, the allocator will return with error. This mode is very efficient with regards to memory savings, but it's also the slowest.
 - `level` in the case of `node.egc.ON_MEM_LIMIT`, this specifies the memory limit.
   
@@ -495,6 +545,23 @@ provides more detailed information on the EGC.
 
 `node.egc.setmode(node.egc.ALWAYS, 4096)  -- This is the default setting at startup.`
 `node.egc.setmode(node.egc.ON_ALLOC_FAILURE) -- This is the fastest activeEGC mode.`
+`node.egc.setmode(node.egc.ON_MEM_LIMIT, 30720)  -- Only allow the Lua runtime to allocate at most 30k, collect garbage if limit is about to be hit`
+`node.egc.setmode(node.egc.ON_MEM_LIMIT, -6144)  -- Try to keep at least 6k heap available for non-Lua use (e.g. network buffers)`
+
+
+## node.egc.meminfo()
+
+Returns memory usage information for the Lua runtime.
+
+####Syntax
+`total_allocated, estimated_used = node.egc.meminfo()`
+
+#### Parameters
+None.
+
+#### Returns
+ - `total_allocated` The total number of bytes allocated by the Lua runtime. This is the number which is relevant when using the `node.egc.ON_MEM_LIMIT` option with positive limit values.
+ - `estimated_used` This value shows the estimated usage of the allocated memory.
 
 # node.task module
 

@@ -190,7 +190,7 @@ static void cron_handle_tmr() {
   struct rtc_timeval tv;
   rtctime_gettimeofday(&tv);
   if (tv.tv_sec == 0) { // Wait for RTC time
-    ets_timer_arm_new(&cron_timer, 1000, 0, 1);
+    os_timer_arm(&cron_timer, 1000, 0);
     return;
   }
   time_t t = tv.tv_sec;
@@ -202,7 +202,7 @@ static void cron_handle_tmr() {
     diff += 60000;
     gmtime_r(&t, &tm);
   }
-  ets_timer_arm_new(&cron_timer, diff, 0, 1);
+  os_timer_arm(&cron_timer, diff, 0);
   cron_handle_time(tm.tm_mon + 1, tm.tm_mday, tm.tm_wday, tm.tm_hour, tm.tm_min);
 }
 
@@ -220,11 +220,15 @@ static const LUA_REG_TYPE cron_map[] = {
   { LSTRKEY( "reset" ),      LFUNCVAL( lcron_reset ) },
   { LNILKEY, LNILVAL }
 };
+#include "pm/swtimer.h"
 
 int luaopen_cron( lua_State *L ) {
-  ets_timer_disarm(&cron_timer);
-  ets_timer_setfn(&cron_timer, cron_handle_tmr, 0);
-  ets_timer_arm_new(&cron_timer, 1000, 0, 1);
+  os_timer_disarm(&cron_timer);
+  os_timer_setfn(&cron_timer, cron_handle_tmr, 0);
+  SWTIMER_REG_CB(cron_handle_tmr, SWTIMER_RESTART);
+    //cron_handle_tmr determines when to execute a scheduled cron job
+    //My guess: To be sure to give the other modules required by cron enough time to get to a ready state, restart cron_timer.
+  os_timer_arm(&cron_timer, 1000, 0);
   luaL_rometatable(L, "cron.entry", (void *)cronent_map);
   return 0;
 }

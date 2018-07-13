@@ -212,12 +212,15 @@ static void enduser_setup_connected_callback()
   }
 }
 
-
+#include "pm/swtimer.h"
 static void enduser_setup_check_station_start(void)
 {
   ENDUSER_SETUP_DEBUG("enduser_setup_check_station_start");
 
   os_timer_setfn(&(state->check_station_timer), enduser_setup_check_station, NULL);
+  SWTIMER_REG_CB(enduser_setup_check_station, SWTIMER_RESUME);
+    //The function enduser_setup_check_station checks for a successful connection to the configured AP
+    //My guess: I'm not sure about whether or not user feedback is given via the web interface, but I don't see a problem with letting this timer resume.
   os_timer_arm(&(state->check_station_timer), 3*1000, TRUE);
 }
 
@@ -317,6 +320,9 @@ static void enduser_setup_check_station(void *p)
   if (!manual)
   {
     os_timer_setfn(&(state->shutdown_timer), enduser_setup_stop_callback, NULL);
+    SWTIMER_REG_CB(enduser_setup_stop_callback, SWTIMER_RESUME);
+      //The function enduser_setup_stop_callback frees services and resources used by enduser setup.
+      //My guess: Since it would lead to a memory leak, it's probably best to resume this timer.
     os_timer_arm(&(state->shutdown_timer), 10*1000, FALSE);
   }
 }

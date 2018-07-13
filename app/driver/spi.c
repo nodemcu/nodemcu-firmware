@@ -527,6 +527,7 @@ void spi_slave_init(uint8 spi_no)
 
 
 #ifdef SPI_SLAVE_DEBUG
+#include "pm/swtimer.h"
  /******************************************************************************
  * FunctionName : hspi_master_readwrite_repeat
  * Description  : SPI master test  function for reading and writing esp8266 slave buffer,
@@ -545,6 +546,8 @@ void hspi_master_readwrite_repeat(void)
 	temp++;
 	spi_byte_write_espslave(SPI_HSPI,temp);
        os_timer_setfn(&timer2, (os_timer_func_t *)hspi_master_readwrite_repeat, NULL);
+       SWTIMER_REGISTER_CB_PTR(hspi_master_readwrite_repeat, SWTIMER_RESUME);
+         //hspi_master_readwrite_repeat timer will be resumed on wake up, maybe data will still be in buffer?
        os_timer_arm(&timer2, 500, 0);
 }
 #endif

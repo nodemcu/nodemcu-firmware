@@ -121,7 +121,7 @@ SECTIONS
     /* *libwpa.a:*(.literal .text) - tested that safe to keep in iROM */
     /* *libwps.a:*(.literal .text) - tested that safe to keep in iROM */
 
-    *(.iram.text .iram0.text)
+    *(.iram.text .iram0.text .iram0.text.*)
 
     *(.stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
     

@@ -38,10 +38,15 @@ static int node_restart( lua_State* L )
   return 0;
 }
 
+static int dsleepMax( lua_State *L ) {
+  lua_pushnumber(L, (uint64_t)system_rtc_clock_cali_proc()*(0x80000000-1)/(0x1000));
+  return 1;
+}
+
 // Lua: dsleep( us, option )
 static int node_deepsleep( lua_State* L )
 {
-  uint32 us;
+  uint64 us;
   uint8 option;
   //us = luaL_checkinteger( L, 1 );
   // Set deleep option, skip if nil
@@ -76,7 +81,7 @@ static int node_deepsleep( lua_State* L )
 
 
 #ifdef PMSLEEP_ENABLE
-#include "pmSleep.h"
+#include "pm/pmSleep.h"
 
 int node_sleep_resume_cb_ref= LUA_NOREF;
 void node_sleep_resume_cb(void)
@@ -89,6 +94,7 @@ void node_sleep_resume_cb(void)
 // Lua: node.sleep(table)
 static int node_sleep( lua_State* L )
 {
+#ifdef TIMER_SUSPEND_ENABLE
   pmSleep_INIT_CFG(cfg);
   cfg.sleep_mode=LIGHT_SLEEP_T;
 
@@ -101,10 +107,19 @@ static int node_sleep( lua_State* L )
 
   cfg.resume_cb_ptr = &node_sleep_resume_cb;
   pmSleep_suspend(&cfg);
+#else
+  dbg_printf("\n The option \"TIMER_SUSPEND_ENABLE\" in \"app/include/user_config.h\" was disabled during FW build!\n");
+  return luaL_error(L, "node.sleep() is unavailable");
+#endif
   return 0;
 }
+#else
+static int node_sleep( lua_State* L )
+{
+  dbg_printf("\n The options \"TIMER_SUSPEND_ENABLE\" and \"PMSLEEP_ENABLE\" in \"app/include/user_config.h\" were disabled during FW build!\n");
+  return luaL_error(L, "node.sleep() is unavailable");
+}
 #endif //PMSLEEP_ENABLE
-
 static int node_info( lua_State* L )
 {
   lua_pushinteger(L, NODE_VERSION_MAJOR);
@@ -371,6 +386,13 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
+// Lua: freq = node.getcpufreq()
+static int node_getcpufreq(lua_State* L)
+{
+  lua_pushinteger(L, system_get_cpu_freq());
+  return 1;
+}
+
 // Lua: code, reason [, exccause, epc1, epc2, epc3, excvaddr, depc ] = bootreason()
 static int node_bootreason (lua_State *L)
 {
@@ -462,14 +484,23 @@ static int node_stripdebug (lua_State *L) {
 // See legc.h and lecg.c.
 static int node_egc_setmode(lua_State* L) {
   unsigned mode  = luaL_checkinteger(L, 1);
-  unsigned limit = luaL_optinteger (L, 2, 0);
+  int limit = luaL_optinteger (L, 2, 0);
 
   luaL_argcheck(L, mode <= (EGC_ON_ALLOC_FAILURE | EGC_ON_MEM_LIMIT | EGC_ALWAYS), 1, "invalid mode");
-  luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit>0, 1, "limit must be non-zero");
+  luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit!=0, 1, "limit must be non-zero");
 
   legc_set_mode( L, mode, limit );
   return 0;
 }
+
+// totalallocated, estimatedused = node.egc.meminfo()
+static int node_egc_meminfo(lua_State *L) {
+  global_State *g = G(L);
+  lua_pushinteger(L, g->totalbytes);
+  lua_pushinteger(L, g->estimate);
+  return 2;
+}
+
 //
 // Lua: osprint(true/false)
 // Allows you to turn on the native Espressif SDK printing
@@ -560,6 +591,7 @@ static int node_random (lua_State *L) {
 // Module function map
 
 static const LUA_REG_TYPE node_egc_map[] = {
+  { LSTRKEY( "meminfo" ),           LFUNCVAL( node_egc_meminfo ) },
   { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
   { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
   { LSTRKEY( "ON_ALLOC_FAILURE" ),  LNUMVAL( EGC_ON_ALLOC_FAILURE ) },
@@ -577,10 +609,11 @@ static const LUA_REG_TYPE node_task_map[] = {
 
 static const LUA_REG_TYPE node_map[] =
 {
-  { LSTRKEY( "restart" ), LFUNCVAL( node_restart ) },
-  { LSTRKEY( "dsleep" ), LFUNCVAL( node_deepsleep ) },
-#ifdef PMSLEEP_ENABLE
+  { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
+  { LSTRKEY( "dsleep" ),    LFUNCVAL( node_deepsleep ) },
+  { LSTRKEY( "dsleepMax" ), LFUNCVAL( dsleepMax ) },
   { LSTRKEY( "sleep" ), LFUNCVAL( node_sleep ) },
+#ifdef PMSLEEP_ENABLE
   PMSLEEP_INT_MAP,
 #endif
   { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
@@ -596,6 +629,7 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
   { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
+  { LSTRKEY( "getcpufreq" ), LFUNCVAL( node_getcpufreq) },
   { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
   { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
   { LSTRKEY( "random" ), LFUNCVAL( node_random) },

@@ -134,6 +134,8 @@ static int ds18b20_lua_setting(lua_State *L) {
 	return 0;
 }
 
+#include "pm/swtimer.h"
+
 // Reads sensor values from all devices
 // Lua: 	ds18b20.read(function(INDEX, ROM, RES, TEMP, TEMP_DEC, PAR) print(INDEX, ROM, RES, TEMP, TEMP_DEC, PAR) end, ROM[, FAMILY])
 static int ds18b20_lua_read(lua_State *L) {
@@ -173,6 +175,9 @@ static int ds18b20_lua_read(lua_State *L) {
 	onewire_write(ds18b20_bus_pin, DS18B20_ROM_SKIP, 0);
 	onewire_write(ds18b20_bus_pin, DS18B20_FUNC_CONVERT, 1);
 	os_timer_setfn(&ds18b20_timer, (os_timer_func_t *)ds18b20_lua_readoutdone, NULL);
+	SWTIMER_REG_CB(ds18b20_lua_readoutdone, SWTIMER_DROP);
+		//The function ds18b20_lua_readoutdone reads the temperature from the sensor(s) after a set amount of time depending on temperature resolution
+	  //MY guess: If this timer manages to get suspended before it fires and the temperature data is time sensitive then resulting data would be invalid and should be discarded
 	
 	switch (ds18b20_device_res) {
 		case (9):
@@ -192,6 +197,7 @@ static int ds18b20_lua_read(lua_State *L) {
 
 static int ds18b20_read_device(uint8_t *ds18b20_device_rom) {
 	lua_State *L = lua_getstate();
+	int16_t ds18b20_raw_temp;
 
 	if (onewire_crc8(ds18b20_device_rom,7) == ds18b20_device_rom[7]) {
 		
@@ -216,8 +222,9 @@ static int ds18b20_read_device(uint8_t *ds18b20_device_rom) {
 			lua_pushfstring(L, "%d:%d:%d:%d:%d:%d:%d:%d", ds18b20_device_rom[0], ds18b20_device_rom[1], ds18b20_device_rom[2], ds18b20_device_rom[3], ds18b20_device_rom[4], ds18b20_device_rom[5], ds18b20_device_rom[6], ds18b20_device_rom[7]);
 			
 			ds18b20_device_scratchpad_conf = (ds18b20_device_scratchpad[4] >> 5) + 9;
-			ds18b20_device_scratchpad_temp = ((int8_t)(ds18b20_device_scratchpad[1] << 4) + (ds18b20_device_scratchpad[0] >> 4) + ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16));
-			ds18b20_device_scratchpad_temp_dec = ((double)(ds18b20_device_scratchpad[0] & 0x0F) / 16 * 1000);
+			ds18b20_raw_temp = ((ds18b20_device_scratchpad[1] << 8) | ds18b20_device_scratchpad[0]);
+			ds18b20_device_scratchpad_temp = (double)ds18b20_raw_temp / 16;
+			ds18b20_device_scratchpad_temp_dec = (ds18b20_raw_temp - (ds18b20_raw_temp / 16 * 16)) * 1000 / 16;
 			
 			if (ds18b20_device_scratchpad_conf >= ds18b20_device_res) {
 				ds18b20_device_res = ds18b20_device_scratchpad_conf;
