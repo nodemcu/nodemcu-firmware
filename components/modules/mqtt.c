@@ -147,7 +147,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 }
 
 //typedef void (*task_callback_t)(task_param_t param, task_prio_t prio);
-static void _connected_cb(task_param_t param, task_prio_t prio) 
+static void _connected_cb(task_param_t param, task_prio_t prio)
 {
 	lua_State * L = lua_getstate(); //returns main Lua state
 	if( L == NULL )
@@ -534,13 +534,13 @@ static int mqtt_lwt( lua_State* L )
 	}
 
 	lua_pop( L, n );
-	NODE_DBG("Set LWT topic '%s', qos %d, retain %d, len %d\n", 
+	NODE_DBG("Set LWT topic '%s', qos %d, retain %d, len %d\n",
 			mqtt_cfg->lwt_topic, mqtt_cfg->lwt_qos, mqtt_cfg->lwt_retain, mqtt_cfg->lwt_msg_len);
 	return 0;
 }
 
 //Lua: mqtt:publish(topic, payload, qos, retain[, function(client)])
-static int mqtt_publish( lua_State * L ) 
+static int mqtt_publish( lua_State * L )
 {
 	esp_mqtt_client_handle_t client = get_client( L );
 
@@ -668,31 +668,7 @@ static int mqtt_new( lua_State* L )
 	lua_pushlightuserdata( L, mqtt_cfg );
 	lua_setfield( L, -2, "_settings" );  // set t["_mqtt"] = client
 
-	lua_pushcfunction( L, mqtt_connect );
-	lua_setfield( L, -2, "connect" );  // set t["connect"] = lmqtt_connect
-
-	lua_pushcfunction( L, mqtt_close );
-	lua_setfield( L, -2, "close" );  // set t["close"] = lmqtt_close
-
-	lua_pushcfunction( L, mqtt_lwt );
-	lua_setfield( L, -2, "lwt" );  // set t["lwt"] = lmqtt_lwt
-
-	lua_pushcfunction( L, mqtt_publish );
-	lua_setfield( L, -2, "publish" );  // set t["publish"] = lmqtt_publish
-
-	lua_pushcfunction( L, mqtt_subscribe );
-	lua_setfield( L, -2, "subscribe" );  // set t["subscribe"] = lmqtt_subscribe
-
-	lua_pushcfunction( L, mqtt_unsubscribe );
-	lua_setfield( L, -2, "unsubscribe" );  // set t["unsubscribe"] = lmqtt_unsubscribe
-
-	lua_pushcfunction( L, mqtt_on );
-	lua_setfield( L, -2, "on" );  // set t["on"] = lmqtt_on
-
-	lua_pushcfunction( L, mqtt_delete );
-	lua_setfield( L, -2, "__gc" );  // set t["__gc"] = lmqtt_delete
-
-	lua_pushvalue( L, 1 ); //make a copy of the table
+	luaL_getmetatable( L, "mqtt.mt" );
 	lua_setmetatable( L, -2 );
 
 	hConn  = task_get_id(_connected_cb);
@@ -706,6 +682,19 @@ static int mqtt_new( lua_State* L )
 	return 1; //leave table on top of the stack
 }
 
+static const LUA_REG_TYPE mqtt_metatable_map[] =
+{
+  { LSTRKEY( "connect" ),     LFUNCVAL( mqtt_connect )},
+  { LSTRKEY( "close" ),       LFUNCVAL( mqtt_close )},
+  { LSTRKEY( "lwt" ),         LFUNCVAL( mqtt_lwt )},
+  { LSTRKEY( "publish" ),     LFUNCVAL( mqtt_publish )},
+  { LSTRKEY( "subscribe" ),   LFUNCVAL( mqtt_subscribe )},
+  { LSTRKEY( "unsubscribe" ), LFUNCVAL( mqtt_unsubscribe )},
+  { LSTRKEY( "on" ),          LFUNCVAL( mqtt_on )},
+  { LSTRKEY( "__gc" ),        LFUNCVAL( mqtt_delete )},
+  { LSTRKEY( "__index" ),     LROVAL( mqtt_metatable_map )},
+  { LNILKEY, LNILVAL}
+};
 
 // Module function map
 static const LUA_REG_TYPE mqtt_map[] = {
@@ -713,5 +702,9 @@ static const LUA_REG_TYPE mqtt_map[] = {
 	{ LNILKEY, LNILVAL }
 };
 
-NODEMCU_MODULE(MQTT, "mqtt", mqtt_map, NULL);
+int luaopen_mqtt(lua_State *L) {
+  luaL_rometatable(L, "mqtt.mt", (void *)mqtt_metatable_map);  // create metatable for mqtt
+  return 0;
+}
 
+NODEMCU_MODULE(MQTT, "mqtt", mqtt_map, luaopen_mqtt);
