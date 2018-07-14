@@ -39,7 +39,7 @@ static void lstop (lua_State *L, lua_Debug *ar) {
 
 
 static void laction (int i) {
-  // signal(i, SIG_DFL); 
+  // signal(i, SIG_DFL);
   /* if another SIGINT happens before lstop,
                               terminate process (default action) */
   lua_sethook(globalL, lstop, LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1);
@@ -256,7 +256,7 @@ static void dotty (lua_State *L) {
     }
   }
   lua_settop(L, 0);  /* clear stack */
-  
+
 #if defined(LUA_USE_STDIO)
   fputs("\n", stdout);
   fflush(stdout);
@@ -274,14 +274,14 @@ static int handle_script (lua_State *L, char **argv, int n) {
   int narg = getargs(L, argv, n);  /* collect arguments */
   lua_setglobal(L, "arg");
   fname = argv[n];
-  if (strcmp(fname, "-") == 0 && strcmp(argv[n-1], "--") != 0) 
+  if (strcmp(fname, "-") == 0 && strcmp(argv[n-1], "--") != 0)
     fname = NULL;  /* stdin */
   status = luaL_loadfile(L, fname);
   lua_insert(L, -(narg+1));
   if (status == 0)
     status = docall(L, narg, 0);
   else
-    lua_pop(L, narg);      
+    lua_pop(L, narg);
   return report(L, status);
 }
 #endif
@@ -384,6 +384,7 @@ struct Smain {
 
 
 static int pmain (lua_State *L) {
+  setbuf(stdout, NULL);
   struct Smain *s = (struct Smain *)lua_touserdata(L, 1);
   char **argv = s->argv;
   int script;
@@ -482,7 +483,7 @@ static void dojob(lua_Load *load){
 
   const char *oldprogname = progname;
   progname = NULL;
-  
+
   do{
     if(load->done == 1){
       l = strlen(b);
@@ -543,7 +544,7 @@ static bool readline(lua_Load *load){
   // NODE_DBG("readline() is called.\n");
   bool need_dojob = false;
   char ch;
-  uart_status_t *us = & uart_status[CONSOLE_UART]; 
+  uart_status_t *us = & uart_status[CONSOLE_UART];
   while (console_getc(&ch))
   {
     if(run_input)
@@ -577,7 +578,7 @@ static bool readline(lua_Load *load){
       // else if (ch == 0x04)
       // {
       //   if (load->line_position == 0)
-      //     // No input which makes lua interpreter close 
+      //     // No input which makes lua interpreter close
       //     donejob(load);
       //   else
       //     continue;
@@ -608,7 +609,7 @@ static bool readline(lua_Load *load){
       // {
       //   continue;
       // }
-      
+
       /* echo */
       if(uart0_echo) putchar(ch);
 
@@ -634,7 +635,7 @@ static bool readline(lua_Load *load){
 
     ch = 0;
   }
-  
+
   if( (load->line_position > 0) && (!run_input) && (us->need_len==0) && (us->end_char<0) )
   {
     uart_on_data_cb(CONSOLE_UART, load->line, load->line_position);
