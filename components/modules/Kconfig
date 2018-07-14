@@ -110,6 +110,12 @@ config LUA_MODULE_LEDC
   help
       Includes the LEDC module.
 
+config LUA_MODULE_MQTT
+  bool "MQTT module"
+  default "n"
+  help
+      Includes the MQTT module.
+
 config LUA_MODULE_NET
   bool "Net module"
   default "y"
@@ -179,11 +185,5 @@ config LUA_MODULE_WS2812
   default "n"
   help
       Includes the ws2812 module.
-
-config LUA_MODULE_MQTT
-  bool "MQTT module"
-  default "n"
-  help
-      Includes the MQTT module.
 
 endmenu
