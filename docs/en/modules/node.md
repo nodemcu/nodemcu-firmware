@@ -66,10 +66,13 @@ reported as a string now. E.g. `"0x1818fe346a88"`.
 Compiles a Lua text file into Lua bytecode, and saves it as .lc file.
 
 #### Syntax
-`node.compile("file.lua")`
+`node.compile("file.lua", false)`
 
 #### Parameters
-`filename` name of Lua text file
+- `filename` name of Lua text file
+- `strip` whether or not to strip debug symbols
+  - `true` debug symbols **will** be stripped
+  - `false` debug symbols **will not** be stripped (Default)
 
 #### Returns
 `nil`
