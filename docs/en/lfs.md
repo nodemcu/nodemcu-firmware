@@ -4,24 +4,30 @@
 
 LFS is a way how to execute your Lua code out of ESP8266 flash memory so more RAM is available for variables and data structures. This way large Lua files can be run on ESP8266. There would not be enough RAM to execute such files in a "normal" (out of SPIFFS) way.
 
+The tutorial assumes that you are able to build a nodemcu-firmware on a Windows 10 host.
+
 This is a simple step-by-step how to use the LFS feature:
 1. Get and flash LFS enabled firmware
 
-    Either you get it from https://nodemcu-build.com/. In the section "LFS options (currently just for dev)" choose the size of the LFS partition (64 KB should be fine). SPIFFS default settings should be fine.
+    Either you get it from [NodeMCU Build](https://nodemcu-build.com/). In the section "LFS options (currently just for dev)" choose the size of the LFS partition (64 KB should be fine). SPIFFS default settings should be fine.
     
-    Another possibility is to compile own firmware and enable LFS in [user_config.h](../../app/include/user_config.h), setting `#define LUA_FLASH_STORE 0x10000`.
-    
+    Another possibility is to compile own firmware and enable LFS in [user_config.h](../../app/include/user_config.h), setting `#define LUA_FLASH_STORE 0x10000`. This file includes explanation of how to configure LFS in its comments.
+
+    For details see section [Selecting the firmware](###Selecting-the-firmware) of the LFS documentation.
+
     Flash the firmware to ESP8266.
 
 2. Select Lua files to be run from LFS
 
-    Nice example is to run telnet and ftp client from LFS. Put the following files in 1 directory:
+    The easest way is to maintain Lua files of your project in its own directory tree on your host. Project files will be compiled by `luac.cross` to build the LFS image in next step.
+    
+    Nice example is to run telnet and ftp client from LFS. In order to do this put the following files in 1 directory:
     * [lua_examples/lfs/_init.lua](../../lua_examples/lfs/_init.lua)
     * [lua_examples/lfs/dummy_strings.lua](../../lua_examples/lfs/dummy_strings.lua)
     * [lua_examples/telnet/telnet.lua](../../lua_examples/telnet/telnet.lua)
-    * [lua_modules/ftp/ftpserver.lua](../../lua_modules/ftp/ftpserver.lua)
-    
- 3. Compile the LFS image
+    * [lua_modules/ftp/ftpserver.lua](../../lua_modules/ftp/ftpserver.lua)    
+  
+ 3. Build the LFS image
  
      Windows 10 users can use the Windows Subsystem for Linux. From the directory with Lua files from the previous section run `bash` and execute the command (adjust the path as needed):
      ```bash
@@ -35,7 +41,9 @@ This is a simple step-by-step how to use the LFS feature:
      
   4. Upload the LFS image
   
-      This can be done with [ESPlorer](https://github.com/4refr0nt/ESPlorer) tool with "Upload..." (or by other means).
+      Now it's time to upload the generate LFS image file (`luasc.out`) as a normal SPIFFS file. Several tools can be used to upload the files from host to SPIFFS.
+      
+      One way is to use the [ESPlorer](https://github.com/4refr0nt/ESPlorer) tool, button "Upload...".
       
   5. Flash the LFS image to LFS partition
       
@@ -43,6 +51,7 @@ This is a simple step-by-step how to use the LFS feature:
       ```Lua
       node.flashreload("luac.out")
       ```
+      The firmware will reboot the ESP8266 and modules will be available after reboot.
 
   6. Adjust the `init.lua` file
   
