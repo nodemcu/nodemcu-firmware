@@ -41,7 +41,7 @@ This is a simple step-by-step how to use the LFS feature:
      
   4. Upload the LFS image
   
-      Now it's time to upload the generate LFS image file (`luasc.out`) as a normal SPIFFS file. Several tools can be used to upload the files from host to SPIFFS.
+      Now it's time to upload the generate LFS image file (`luac.out`) as a normal SPIFFS file. Several tools can be used to upload the files from host to SPIFFS.
       
       One way is to use the [ESPlorer](https://github.com/4refr0nt/ESPlorer) tool, button "Upload...".
       
@@ -54,6 +54,8 @@ This is a simple step-by-step how to use the LFS feature:
       The firmware will reboot the ESP8266 and modules will be available after reboot.
 
   6. Adjust the `init.lua` file
+  
+      `init.lua` is the file that is first executed by the NodeMCU firmware. Usually it setups the wifi connection and executes the main Lua file.
   
       Add the following lines:
       
