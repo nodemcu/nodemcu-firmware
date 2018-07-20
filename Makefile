@@ -3,20 +3,20 @@
 .NOTPARALLEL:
 
 # SDK base version, as released by Espressif
-SDK_BASE_VER:=2.2.0
+SDK_BASE_VER:=2.2.1
 
 # no patch: SDK_VER equals SDK_BASE_VER and sdk dir depends on sdk_extracted
-#SDK_VER:=$(SDK_BASE_VER)
-#SDK_DIR_DEPENDS:=sdk_extracted
+SDK_VER:=$(SDK_BASE_VER)
+SDK_DIR_DEPENDS:=sdk_extracted
 
 # with patch: SDK_VER differs from SDK_BASE_VER and sdk dir depends on sdk_patched
-SDK_PATCH_VER:=f8f27ce
-SDK_VER:=$(SDK_BASE_VER)-$(SDK_PATCH_VER)
-SDK_DIR_DEPENDS:=sdk_patched
+#SDK_PATCH_VER:=f8f27ce
+#SDK_VER:=$(SDK_BASE_VER)-$(SDK_PATCH_VER)
+#SDK_DIR_DEPENDS:=sdk_patched
 
 SDK_FILE_VER:=$(SDK_BASE_VER)
-SDK_FILE_SHA1:=8b63f1066d3560ff77f119e8ba30a9c39e7baaad
-SDK_PATCH_SHA1:=0bc21ec77b08488f04d3e1c9d161b711d07201a8
+SDK_FILE_SHA1:=48f2242d5895823709f222bf0fffce9d525996c8
+# SDK_PATCH_SHA1:=0bc21ec77b08488f04d3e1c9d161b711d07201a8
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_REL_DIR=sdk/esp_iot_sdk_v$(SDK_VER)
