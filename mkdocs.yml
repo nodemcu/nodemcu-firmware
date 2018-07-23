@@ -33,8 +33,8 @@ pages:
     - Whitepapers:
         - Filesystem on SD card: 'en/sdcard.md'
         - Internal filesystem: 'en/spiffs.md'
-        - Lua Compact Debug(LCD): 'en/lcd.md'
-        - Lua Flash Store(LFS): 'en/lfs.md'
+        - Lua Compact Debug (LCD): 'en/lcd.md'
+        - Lua Flash Store (LFS): 'en/lfs.md'
     - Modules:
         - 'adc': 'en/modules/adc.md'
         - 'ads1115' : 'en/modules/ads1115.md'
