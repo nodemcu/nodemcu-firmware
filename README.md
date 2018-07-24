@@ -7,9 +7,9 @@
 
 ### A Lua based firmware for ESP8266 WiFi SOC
 
-NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/). The firmware is based on the [Espressif NON-OS SDK 2.2.1](https://github.com/espressif/ESP8266_NONOS_SDK/releases/tag/v2.2.1) and uses a file system based on [spiffs](https://github.com/pellepl/spiffs). The code repository consists of 98.1% C-code that glues the thin Lua veneer to the SDK.
+NodeMCU is an open source [Lua](https://www.lua.org/) based firmware for the [ESP8266 WiFi SOC from Espressif](http://espressif.com/en/products/esp8266/) and uses an on-module flash-based [SPIFFS](https://github.com/pellepl/spiffs) file system. NodeMCU is implemented in C and is layered on the [Espressif NON-OS SDK](https://github.com/espressif/ESP8266_NONOS_SDK).
 
-The NodeMCU *firmware* is a companion project to the popular [NodeMCU dev kits](https://github.com/nodemcu/nodemcu-devkit-v1.0), ready-made open source development boards with ESP8266-12E chips.
+The firmware was initially developed as is a companion project to the popular ESP8266-based [NodeMCU development modules]((https://github.com/nodemcu/nodemcu-devkit-v1.0)), but the project is now community-supported, and the firmware can now be run on _any_ ESP module.
 
 # Summary
 
