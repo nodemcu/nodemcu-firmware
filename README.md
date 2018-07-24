@@ -14,11 +14,14 @@ The firmware was initially developed as is a companion project to the popular ES
 # Summary
 
 - Easy to program wireless node and/or access point
-- Based on Lua 5.1.4 (without *debug, os* modules)
+- Based on Lua 5.1.4 (without `debug` & `os` modules)
 - Asynchronous event-driven programming model
-- more than 65 built-in modules
+- more than **65 built-in modules**
 - Firmware available with or without floating point support (integer-only uses less memory)
 - Up-to-date documentation at [https://nodemcu.readthedocs.io](https://nodemcu.readthedocs.io)
+
+### LFS support
+In July 2018 support for a Lua Flash Store (LFS) was introduced. LFS  allows Lua code and its associated constant data to be executed directly out of flash-memory; just as the firmware itself is executed. This now enables NodeMCU developers to create **Lua applications with up to 256Kb** Lua code and read-only constants executing out of flash. All of the RAM is available for read-write data!
 
 # Programming Model
 
