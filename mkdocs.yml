@@ -93,7 +93,7 @@ pages:
         - 'tm1829': 'en/modules/tm1829.md'
         - 'tmr': 'en/modules/tmr.md'
         - 'tsl2561': 'en/modules/tsl2561.md'
-        - 'u8g': 'en/modules/u8g.md'
+        - 'u8g2': 'en/modules/u8g2.md'
         - 'uart': 'en/modules/uart.md'
         - 'ucg': 'en/modules/ucg.md'
         - 'websocket': 'en/modules/websocket.md'
