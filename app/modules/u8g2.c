@@ -1,6 +1,12 @@
 // Module for binding the u8g2 library
 // Note: This file is intended to be shared between esp8266 and esp32 platform
 
+// Do not use the code from u8g2 submodule and skip the complete source here
+// if the u8g2 module is not selected.
+// Reason: The whole u8g2 submodule code tree might not even exist in this case.
+#include "user_modules.h"
+#if defined(LUA_USE_MODULES_U8G2) || defined(ESP_PLATFORM)
+
 #include "module.h"
 #include "lauxlib.h"
 
@@ -806,3 +812,5 @@ int luaopen_u8g2( lua_State *L ) {
 }
 
 NODEMCU_MODULE(U8G2, "u8g2", lu8g2_map, luaopen_u8g2);
+
+#endif /* defined(LUA_USE_MODULES_U8G2) || defined(ESP_PLATFORM) */

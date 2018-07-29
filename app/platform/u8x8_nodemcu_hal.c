@@ -1,4 +1,10 @@
 
+// Do not use the code from u8g2 submodule and skip the complete source here
+// if the u8g2 module is not selected.
+// Reason: The whole u8g2 submodule code tree might not even exist in this case.
+#include "user_modules.h"
+#ifdef LUA_USE_MODULES_U8G2
+
 #include <string.h>
 #include "c_stdlib.h"
 
@@ -281,3 +287,5 @@ uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 
   return 1;
 }
+
+#endif /* LUA_USE_MODULES_U8G2 */
