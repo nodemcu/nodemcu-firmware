@@ -47,10 +47,10 @@ $ESPTOOL --port $USB --baud 460800  write_flash -fm dio 0x100000 \
 -- delay or a GPIO pin during development, so that you as developer can break into 
 -- the boot sequence if there is a problem with the _init bootstrap that is causing
 -- a panic loop.  Here is one example of how you might do this.  You have a second
--- to inject tmr.stop(0) into UART0.  Extend this dealy if your reactions can't 
--- meet this.
+-- to inject tmr.stop(0) into UART0.  Extend this delay if needed.
 --
--- You also want to do autoload the LFS, for example by adding the following:
+-- This example will also attempt to automatically load the LFS block from a SPIFFS
+-- file named 'flash.img'.
 --
 if node.flashindex() == nil then 
   node.flashreload('flash.img') 

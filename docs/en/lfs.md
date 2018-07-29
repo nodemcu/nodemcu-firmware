@@ -22,7 +22,7 @@ For details see section [Selecting the firmware](#selecting-the-firmware) of the
 
 The easiest way is to maintain Lua files of your project in its own directory tree on your host. Project files will be compiled by `luac.cross` to build the LFS image in next step.
     
-A nice example is to run Telnet and FTP servers from LFS. In order to do this put the following files in 1 directory:
+A nice example is to run Telnet and FTP servers from LFS. In order to do this put the following files in one directory:
 	
 * [lua_examples/lfs/_init.lua](../../lua_examples/lfs/_init.lua)
 * [lua_examples/lfs/dummy_strings.lua](../../lua_examples/lfs/dummy_strings.lua)
@@ -63,7 +63,7 @@ The firmware will reboot the ESP8266 and modules will be available after reboot.
 
 ### Adjust the `init.lua` file
 
-`init.lua` is the file that is first executed by the NodeMCU firmware. Usually it setups the wifi connection and executes the main Lua file.
+`init.lua` is the file that is first executed by the NodeMCU firmware. Usually it sets up the wifi connection and executes the main Lua file.
   
 Add the following lines:
 ```lua
@@ -74,6 +74,8 @@ require("telnet"):open()
 -- Start FTP serer
 require("ftpserver").createServer('user', 'password')
 ```
+
+See [lua_examples/lfs/lfs_fragments.lua](../../lua_examples/lfs/lfs_fragments.lua) for another example.
 
 ## Background
 
@@ -177,18 +179,22 @@ do
     local fn, ba = index(module)
     return ba and "Module not in LFS" or fn
   end
-  package.loaders[3] = loader_flash
+  table.insert(package.loaders, loader_flash)
 
 end
 ```
 
+This code is also conveniently packaged in [lua_examples/lfs/_init.lua](../../lua_examples/lfs/_init.lua).
+
 Once this has been executed, if you have a function module `func1` in LFS, then `LFS.func1(x,y,z)` just works as you would expect.  The LFS properties `_time`, `_config` and `_list` can be used to access the other LFS metadata that you need.
 
-Of course, if you use Lua modules to build your application then `require "some_module"` will automatically path in and load your modules from LFS.  Note that SPIFFS is still ahead of LFS in this search list, so if you have a dev version in SPIFFS, say, then this will be loaded first. However, if you want to want to swap this search order so that the LFS is searched first, then set `package.loaders[1] = loader_flash` in your `_init` code.  If you need to swap the search order temporarily for development or debugging, then do this after you've run the `_init` code:
+Of course, if you use Lua modules to build your application then `require "some_module"` will automatically path in and load your modules from LFS.  Note that SPIFFS is still ahead of LFS in this search list, so if you have a dev version in SPIFFS, say, then this will be loaded first. However, if you want to want to swap this search order so that the LFS is searched first, then run `table.insert(package.loaders,2,loader_flash)` in your `_init` code.  If you need to swap the search order temporarily for development or debugging, then do this after you've run the `_init` code:
 
 ```Lua
-do local pl = package.loaders; pl[1],pl[3] = pl[3],pl[1]; end
+do local pl = package.loaders; pl[2],pl[5] = pl[5],pl[2]; end
 ```
+
+(The indexes 2 and 5 come from the value of the `loaders` array in [app/lua/loadlib.c](../../app/lua/loadlib.c)).
 
 Whilst LFS is primarily used to store compiled modules, it also includes its own string table and any strings loaded into this can be used in your Lua application without taking any space in RAM. Hence, you might also want to preload any other frequently used strings into LFS as this will both save RAM use and reduced the Lua-custom Garbage Collector (**LGC**) overheads.
 
@@ -202,18 +208,8 @@ do
 end
 ```
 
-If you then create a file, say `LFS_dummy_strings.lua`, and put these `local preload` lines in it, and include this file in your `luac.cross -f`, then the cross compiler will generate a ROM string table that includes all strings referenced in this dummy module. You never need to call this module; just it's inclusion in the LFS build is enough to add the strings to the ROM table. Once in the ROM table, then you can use them subsequently in your application without incurring any RAM or LGC overhead. The following example is a useful starting point, but if needed then you can add to this
-for your application.
-
-```Lua
-local preload = "?.lc;?.lua", "@init.lua", "_G", "_LOADED", "_LOADLIB", "__add",
-"__call", "__concat", "__div", "__eq", "__gc", "__index", "__le", "__len", "__lt",
-"__mod", "__mode", "__mul", "__newindex", "__pow", "__sub", "__tostring", "__unm",
-"collectgarbage", "cpath", "debug", "file", "file.obj", "file.vol", "flash",
-"getstrings", "index", "ipairs", "list", "loaded", "loader", "loaders", "loadlib",
-"module", "net.tcpserver", "net.tcpsocket", "net.udpsocket", "newproxy", "package",
-"pairs", "path", "preload", "reload", "require", "seeall", "wdclr"
-```
+If you then create a file, say `LFS_dummy_strings.lua`, and put these `local preload` lines in it, and include this file in your `luac.cross -f`, then the cross compiler will generate a ROM string table that includes all strings referenced in this dummy module. You never need to call this module; just it's inclusion in the LFS build is enough to add the strings to the ROM table. Once in the ROM table, then you can use them subsequently in your application without incurring any RAM or LGC overhead.
+A useful starting point may be found in [lua_examples/lfs/dummy_strings.lua](../../lua_examples/lfs/dummy_strings.lua).
 
 ## Technical Issues
 
@@ -281,7 +277,7 @@ The deep cross-copy of the `Proto` hierarchy is also complicated because current
 
 With this patch, the `luac.cross` build has been moved into the overall application hierarchy and is now simply a part of the NodeMCU make. The old Lua script has been removed from the `tools` directory, together with the need to have Lua preinstalled on the host.
 
-The LFS image is by default position independent, so is independent of the actual NodeMCU target image. You just have to copy it to the target file system and execute a `reload` to copy this to the correct location, relocating all address to the correct base. (See `app/lua/lflash.c` for the details.) This process is fast.  However, -a `luac.cross -a` also allows absolute address images to be built for direct flashing into the LFS store during provisioning.
+The LFS image is by default position independent, so is independent of the actual NodeMCU target image. You just have to copy it to the target file system and execute a `reload` to copy this to the correct location, relocating all address to the correct base. (See `app/lua/lflash.c` for the details.) This process is fast.  However, `luac.cross -a` also allows absolute address images to be built for direct flashing into the LFS store during provisioning.
 
 ### Impact of the Lua Garbage Collector
 
@@ -294,7 +290,7 @@ section provides further detail on how this was achieved.
 
 The **mark** phase walks collectable objects by a recursive walk starting at at the LGC roots. (This is referred to as _traverse_.) Any object that is visited in this walk has its colour flipped from *white* to *grey* to denote that it is in use, and it is relinked into a grey list. The grey list is iteratively processed, removing one grey object at a time. Such objects can reference other objects (e.g. a table has many keys and values which can also be collectable objects), so each one is then also traversed and all objects reachable from it are marked, as above. After an object has been traversed, it's turned from grey to black. The LGC will walks all RW collectable objects, traversing the dependents of each in turn.  As RW objects can now refer to RO ones, the traverse routines has additinal tests to skip trying to mark any RO LFS references.
 
-The white flavour is flipped just before entering the **sweep** phase. This phase then loops over all collectable objects. Any objects found with previous white are no longer in user, and so can be freed. The 'current' white are kept; this prevents any new objected created during a paused sweep from being accidentally collected before being marked, but this means that it takes two sweeps to free all unused objects. There are other subtleties introduced in this 3-colour algorithm such as barriers and back-tracking to maintain integrity of the LGC, and these also needed extra rules to handle RO GCObjects correclty, but detailed explanation of these is really outside the scope of this paper.
+The white flavour is flipped just before entering the **sweep** phase. This phase then loops over all collectable objects. Any objects found with previous white are no longer in use, and so can be freed. The 'current' white are kept; this prevents any new objects created during a paused sweep from being accidentally collected before being marked, but this means that it takes two sweeps to free all unused objects. There are other subtleties introduced in this 3-colour algorithm such as barriers and back-tracking to maintain integrity of the LGC, and these also needed extra rules to handle RO GCObjects correclty, but detailed explanation of these is really outside the scope of this paper.
 
 As well as standard collectable GCOobjets:
 
