@@ -227,8 +227,8 @@ $(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_PATCH_VER).patch
 
 $(TOP_DIR)/sdk/.pruned-$(SDK_VER):
 	rm -f $(SDK_DIR)/lib/liblwip.a $(SDK_DIR)/lib/libssl.a $(SDK_DIR)/lib/libmbedtls.a
-	ar d $(SDK_DIR)/lib/libmain.a time.o
-	ar d $(SDK_DIR)/lib/libc.a lib_a-time.o
+	$(AR) d $(SDK_DIR)/lib/libmain.a time.o
+	$(AR) d $(SDK_DIR)/lib/libc.a lib_a-time.o
 	touch $@
 
 $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip:
