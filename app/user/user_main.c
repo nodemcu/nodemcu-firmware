@@ -129,8 +129,7 @@ bool user_process_input(bool force) {
     return task_post_low(input_sig, force);
 }
 
-void nodemcu_init(void)
-{
+void nodemcu_init(void) {
     NODE_ERR("\n");
     // Initialize platform first for lua modules.
     if( platform_init() != PLATFORM_OK )
@@ -139,11 +138,13 @@ void nodemcu_init(void)
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
-
-    if( flash_detect_size_byte() != flash_rom_get_size_byte() ) {
-        NODE_ERR("Self adjust flash size.\n");
+    uint32_t size_detected = flash_detect_size_byte();
+    uint32_t size_from_rom = flash_rom_get_size_byte();
+    if( size_detected != size_from_rom ) {
+        NODE_ERR("Self adjust flash size. 0x%x (ROM) -> 0x%x (Detected)\n", 
+                 size_from_rom, size_detected);
         // Fit hardware real flash size.
-        flash_rom_set_size_byte(flash_detect_size_byte());
+        flash_rom_set_size_byte(size_detected);
 
         system_restart ();
         // Don't post the start_lua task, we're about to reboot...
@@ -260,6 +261,5 @@ void user_init(void)
 #ifndef NODE_DEBUG
     system_set_os_print(0);
 #endif
-
     system_init_done_cb(nodemcu_init);
 }

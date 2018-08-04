@@ -17,7 +17,9 @@
 
 #include "platform.h"
 #include "lrodefs.h"
-
+#ifdef LUA_FLASH_STORE
+#include "lflash.h"
+#endif
 #include "c_types.h"
 #include "c_string.h"
 #include "driver/uart.h"
@@ -149,7 +151,6 @@ static int node_chipid( lua_State* L )
 //   lua_pushinteger(L, vdd33);
 //   return 1;
 // }
-
 // Lua: flashid()
 static int node_flashid( lua_State* L )
 {
@@ -178,26 +179,16 @@ static int node_heap( lua_State* L )
   return 1;
 }
 
-extern lua_Load gLoad;
+extern int  lua_put_line(const char *s, size_t l);
 extern bool user_process_input(bool force);
+
 // Lua: input("string")
-static int node_input( lua_State* L )
-{
+static int node_input( lua_State* L ) {
   size_t l = 0;
   const char *s = luaL_checklstring(L, 1, &l);
-  if (s != NULL && l > 0 && l < LUA_MAXINPUT - 1)
-  {
-    lua_Load *load = &gLoad;
-    if (load->line_position == 0) {
-      c_memcpy(load->line, s, l);
-      load->line[l + 1] = '\0';
-      load->line_position = c_strlen(load->line) + 1;
-      load->done = 1;
-      NODE_DBG("Get command:\n");
-      NODE_DBG(load->line); // buggy here
-      NODE_DBG("\nResult(if any):\n");
-      user_process_input(true);
-    }
+  if (lua_put_line(s, l)) {
+    NODE_DBG("Result (if any):\n");
+    user_process_input(true);
   }
   return 0;
 }
@@ -609,6 +600,13 @@ static const LUA_REG_TYPE node_task_map[] = {
 
 static const LUA_REG_TYPE node_map[] =
 {
+  { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
+  { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
+  { LSTRKEY( "task" ), LROVAL( node_task_map ) },
+#ifdef LUA_FLASH_STORE
+  { LSTRKEY( "flashreload" ), LFUNCVAL( luaN_reload_reboot ) },
+  { LSTRKEY( "flashindex" ), LFUNCVAL( luaN_index ) },
+#endif
   { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
   { LSTRKEY( "dsleep" ),    LFUNCVAL( node_deepsleep ) },
   { LSTRKEY( "dsleepMax" ), LFUNCVAL( dsleepMax ) },
@@ -616,11 +614,9 @@ static const LUA_REG_TYPE node_map[] =
 #ifdef PMSLEEP_ENABLE
   PMSLEEP_INT_MAP,
 #endif
-  { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
   { LSTRKEY( "chipid" ), LFUNCVAL( node_chipid ) },
   { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
   { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
-  { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
 // Moved to adc module, use adc.readvdd33()
@@ -637,7 +633,6 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
 #endif
   { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
-  { LSTRKEY( "task" ), LROVAL( node_task_map ) },
 #ifdef DEVELOPMENT_TOOLS
   { LSTRKEY( "osprint" ), LFUNCVAL( node_osprint ) },
 #endif

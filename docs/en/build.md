@@ -11,6 +11,13 @@ Occasional NodeMCU firmware hackers don't need full control over the complete to
 ### Linux Build Environment
 NodeMCU firmware developers commit or contribute to the project on GitHub and might want to build their own full fledged build environment with the complete tool chain. There is a [post in the esp8266.com Wiki](http://www.esp8266.com/wiki/doku.php?id=toolchain#how_to_setup_a_vm_to_host_your_toolchain) that describes this.
 
+### git
+If you decide to build with either the Docker image or the native environment then use git to clone the firmware sources instead of downloading the zip file from GitHub. Only cloning with git will retrieve the referenced submodules:
+```
+git clone --recurse-submodules -b <branch> https://github.com/nodemcu/nodemcu-firmware.git
+```
+Omitting the optional `-b <branch>` will clone master.
+
 ## Build Options
 
 The following sections explain some of the options you have if you want to build your own NodeMCU firmware.
@@ -24,7 +31,6 @@ Edit `app/include/user_modules.h` and comment-out the `#define` statement for mo
 ...
 #define LUA_USE_MODULES_MQTT
 // #define LUA_USE_MODULES_COAP
-// #define LUA_USE_MODULES_U8G
 ...
 ```
 
@@ -81,8 +87,8 @@ Identify your firmware builds by editing `app/include/user_version.h`
 #endif
 ```
 
-### u8g Module Configuration
-Display drivers and embedded fonts are compiled into the firmware image based on the settings in `app/include/u8g_config.h`. See the [`u8g` documentation](modules/u8g.md#displays) for details.
+### u8g2 Module Configuration
+Display drivers and embedded fonts are compiled into the firmware image based on the settings in `app/include/u8g2_displays.h` and `app/include/u8g2_fonts.h`. See the [`u8g2` documentation](modules/u8g2.md#displays) for details.
 
 ### ucg Module Configuration
 Display drivers and embedded fonts are compiled into the firmware image based on the settings in `app/include/ucg_config.h`. See the [`ucg` documentation](modules/ucg.md#displays) for details.

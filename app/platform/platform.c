@@ -879,7 +879,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_write: r=%d at %08X\n", ( int )r, ( unsigned )toaddr);
+    NODE_ERR( "ERROR in flash_write: r=%d at %p\n", r, toaddr);
     return 0;
   }
 }
@@ -917,26 +917,35 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
-    NODE_ERR( "ERROR in flash_read: r=%d at %08X\n", ( int )r, ( unsigned )fromaddr);
+    NODE_ERR( "ERROR in flash_read: r=%d at %p\n", r, fromaddr);
     return 0;
   }
 }
 
 int platform_flash_erase_sector( uint32_t sector_id )
 {
+  NODE_DBG( "flash_erase_sector(%u)\n", sector_id);
   system_soft_wdt_feed ();
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
 
-uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)
-{
+static uint32_t flash_map_meg_offset (void) {
   uint32_t cache_ctrl = READ_PERI_REG(CACHE_FLASH_CTRL_REG);
   if (!(cache_ctrl & CACHE_FLASH_ACTIVE))
     return -1;
-  bool b0 = (cache_ctrl & CACHE_FLASH_MAPPED0) ? 1 : 0;
-  bool b1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 1 : 0;
-  uint32_t meg = (b1 << 1) | b0;
-  return mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg * 0x100000;
+  uint32_t m0 = (cache_ctrl & CACHE_FLASH_MAPPED0) ? 0x100000 : 0;
+  uint32_t m1 = (cache_ctrl & CACHE_FLASH_MAPPED1) ? 0x200000 : 0;
+  return m0 + m1;
+}
+
+uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)  {
+  uint32_t meg = flash_map_meg_offset();
+  return (meg&1) ? -1 : mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg ;
+}
+
+uint32_t platform_flash_phys2mapped (uint32_t phys_addr) {
+  uint32_t meg = flash_map_meg_offset();
+  return (meg&1) ? -1 : phys_addr + INTERNAL_FLASH_MAPPED_ADDRESS - meg;
 }
 
 void* platform_print_deprecation_note( const char *msg, const char *time_frame)

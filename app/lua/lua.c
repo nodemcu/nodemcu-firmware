@@ -13,6 +13,7 @@
 #include "user_version.h"
 #include "driver/readline.h"
 #include "driver/uart.h"
+#include "platform.h"
 
 #define lua_c
 
@@ -21,53 +22,15 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "legc.h"
-
+#ifdef LUA_FLASH_STORE
+#include "lflash.h"
+#endif
 #include "os_type.h"
 
 lua_State *globalL = NULL;
 
-lua_Load gLoad;
-
+static lua_Load gLoad;
 static const char *progname = LUA_PROGNAME;
-
-#if 0
-static void lstop (lua_State *L, lua_Debug *ar) {
-  (void)ar;  /* unused arg. */
-  lua_sethook(L, NULL, 0, 0);
-  luaL_error(L, "interrupted!");
-}
-
-
-static void laction (int i) {
-  // signal(i, SIG_DFL); 
-  /* if another SIGINT happens before lstop,
-                              terminate process (default action) */
-  lua_sethook(globalL, lstop, LUA_MASKCALL | LUA_MASKRET | LUA_MASKCOUNT, 1);
-}
-
-
-static void print_usage (void) {
-#if defined(LUA_USE_STDIO)
-  c_fprintf(c_stderr,
-#else
-  luai_writestringerror(
-#endif
-  "usage: %s [options] [script [args]].\n"
-  "Available options are:\n"
-  "  -e stat  execute string " LUA_QL("stat") "\n"
-  "  -l name  require library " LUA_QL("name") "\n"
-  "  -m limit set memory limit. (units are in Kbytes)\n"
-  "  -i       enter interactive mode after executing " LUA_QL("script") "\n"
-  "  -v       show version information\n"
-  "  --       stop handling options\n"
-  "  -        execute stdin and stop handling options\n"
-  ,
-  progname);
-#if defined(LUA_USE_STDIO)
-  c_fflush(c_stderr);
-#endif
-}
-#endif
 
 static void l_message (const char *pname, const char *msg) {
 #if defined(LUA_USE_STDIO)
@@ -154,17 +117,11 @@ static int getargs (lua_State *L, char **argv, int n) {
   return narg;
 }
 
-#if 0
-static int dofile (lua_State *L, const char *name) {
-  int status = luaL_loadfile(L, name) || docall(L, 0, 1);
-  return report(L, status);
-}
-#else
 static int dofsfile (lua_State *L, const char *name) {
   int status = luaL_loadfsfile(L, name) || docall(L, 0, 1);
   return report(L, status);
 }
-#endif
+
 
 static int dostring (lua_State *L, const char *s, const char *name) {
   int status = luaL_loadbuffer(L, s, c_strlen(s), name) || docall(L, 0, 1);
@@ -201,92 +158,6 @@ static int incomplete (lua_State *L, int status) {
   return 0;  /* else... */
 }
 
-#if 0
-static int pushline (lua_State *L, int firstline) {
-  char buffer[LUA_MAXINPUT];
-  char *b = buffer;
-  size_t l;
-  const char *prmt = get_prompt(L, firstline);
-  if (lua_readline(L, b, prmt) == 0)
-    return 0;  /* no input */
-  l = c_strlen(b);
-  if (l > 0 && b[l-1] == '\n')  /* line ends with newline? */
-    b[l-1] = '\0';  /* remove it */
-  if (firstline && b[0] == '=')  /* first line starts with `=' ? */
-    lua_pushfstring(L, "return %s", b+1);  /* change it to `return' */
-  else
-    lua_pushstring(L, b);
-  lua_freeline(L, b);
-  return 1;
-}
-
-
-static int loadline (lua_State *L) {
-  int status;
-  lua_settop(L, 0);
-  if (!pushline(L, 1))
-    return -1;  /* no input */
-  for (;;) {  /* repeat until gets a complete line */
-    status = luaL_loadbuffer(L, lua_tostring(L, 1), lua_strlen(L, 1), "=stdin");
-    if (!incomplete(L, status)) break;  /* cannot try to add lines? */
-    if (!pushline(L, 0))  /* no more input? */
-      return -1;
-    lua_pushliteral(L, "\n");  /* add a new line... */
-    lua_insert(L, -2);  /* ...between the two lines */
-    lua_concat(L, 3);  /* join them */
-  }
-  lua_saveline(L, 1);
-  lua_remove(L, 1);  /* remove line */
-  return status;
-}
-
-
-static void dotty (lua_State *L) {
-  int status;
-  const char *oldprogname = progname;
-  progname = NULL;
-  while ((status = loadline(L)) != -1) {
-    if (status == 0) status = docall(L, 0, 0);
-    report(L, status);
-    if (status == 0 && lua_gettop(L) > 0) {  /* any result to print? */
-      lua_getglobal(L, "print");
-      lua_insert(L, 1);
-      if (lua_pcall(L, lua_gettop(L)-1, 0, 0) != 0)
-        l_message(progname, lua_pushfstring(L,
-                               "error calling " LUA_QL("print") " (%s)",
-                               lua_tostring(L, -1)));
-    }
-  }
-  lua_settop(L, 0);  /* clear stack */
-  
-#if defined(LUA_USE_STDIO)
-  c_fputs("\n", c_stdout);
-  c_fflush(c_stdout);
-#else
-  luai_writeline();
-#endif
-
-  progname = oldprogname;
-}
-
-
-static int handle_script (lua_State *L, char **argv, int n) {
-  int status;
-  const char *fname;
-  int narg = getargs(L, argv, n);  /* collect arguments */
-  lua_setglobal(L, "arg");
-  fname = argv[n];
-  if (c_strcmp(fname, "-") == 0 && c_strcmp(argv[n-1], "--") != 0) 
-    fname = NULL;  /* stdin */
-  status = luaL_loadfile(L, fname);
-  lua_insert(L, -(narg+1));
-  if (status == 0)
-    status = docall(L, narg, 0);
-  else
-    lua_pop(L, narg);      
-  return report(L, status);
-}
-#endif
 
 /* check that argument has no extra characters at the end */
 #define notail(x)	{if ((x)[2] != '\0') return -1;}
@@ -364,17 +235,16 @@ static int runargs (lua_State *L, char **argv, int n) {
 }
 
 
-static int handle_luainit (lua_State *L) {
-  const char *init = c_getenv(LUA_INIT);
-  if (init == NULL) return 0;  /* status OK */
-  else if (init[0] == '@')
-#if 0
-    return dofile(L, init+1);
-#else
-    return dofsfile(L, init+1);
+#ifndef LUA_INIT_STRING
+#define LUA_INIT_STRING "@init.lua"
 #endif
+
+static int handle_luainit (lua_State *L) {
+  const char *init = LUA_INIT_STRING;
+  if (init[0] == '@')
+    return dofsfile(L, init+1);
   else
-    return dostring(L, init, "=" LUA_INIT);
+    return dostring(L, init, LUA_INIT);
 }
 
 
@@ -397,40 +267,18 @@ static int pmain (lua_State *L) {
   lua_gc(L, LUA_GCRESTART, 0);
   print_version(L);
   s->status = handle_luainit(L);
-#if 0
-  if (s->status != 0) return 0;
-#endif
   script = collectargs(argv, &has_i, &has_v, &has_e);
   if (script < 0) {  /* invalid args? */
-#if 0
-    print_usage();
-#endif
     s->status = 1;
     return 0;
   }
-  // if (has_v) print_version();
   s->status = runargs(L, argv, (script > 0) ? script : s->argc);
   if (s->status != 0) return 0;
-#if 0
-  if (script)
-    s->status = handle_script(L, argv, script);
-  if (s->status != 0) return 0;
-  if (has_i)
-    dotty(L);
-  else if (script == 0 && !has_e && !has_v) {
-    if (lua_stdin_is_tty()) {
-      print_version();
-      dotty(L);
-    }
-    else dofile(L, NULL);  /* executes stdin as a file */
-  }
-#endif
   return 0;
 }
 
 static void dojob(lua_Load *load);
 static bool readline(lua_Load *load);
-char line_buffer[LUA_MAXINPUT];
 
 #ifdef LUA_RPC
 int main (int argc, char **argv) {
@@ -439,6 +287,13 @@ int lua_main (int argc, char **argv) {
 #endif
   int status;
   struct Smain s;
+
+#if defined(NODE_DEBUG) && defined(DEVELOPMENT_USE_GDB) && \
+    defined(DEVELOPMENT_BREAK_ON_STARTUP_PIN) && DEVELOPMENT_BREAK_ON_STARTUP_PIN > 0
+  platform_gpio_mode( DEVELOPMENT_BREAK_ON_STARTUP_PIN, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP );
+  lua_assert(platform_gpio_read(DEVELOPMENT_BREAK_ON_STARTUP_PIN));  // Break if pin pulled low
+#endif
+
   lua_State *L = lua_open();  /* create state */
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");
@@ -446,30 +301,44 @@ int lua_main (int argc, char **argv) {
   }
   s.argc = argc;
   s.argv = argv;
+
   status = lua_cpcall(L, &pmain, &s);
+
   report(L, status);
 
   gLoad.L = L;
   gLoad.firstline = 1;
   gLoad.done = 0;
-  gLoad.line = line_buffer;
+  gLoad.line = c_malloc(LUA_MAXINPUT);
   gLoad.len = LUA_MAXINPUT;
   gLoad.line_position = 0;
   gLoad.prmt = get_prompt(L, 1);
 
   dojob(&gLoad);
 
-  NODE_DBG("Heap size::%d.\n",system_get_free_heap_size());
+  NODE_DBG("Heap size:%d.\n",system_get_free_heap_size());
   legc_set_mode( L, EGC_ALWAYS, 4096 );
   // legc_set_mode( L, EGC_ON_MEM_LIMIT, 4096 );
   // lua_close(L);
   return (status || s.status) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+int lua_put_line(const char *s, size_t l) {
+  if (s == NULL || ++l < LUA_MAXINPUT || gLoad.line_position > 0)
+    return 0;
+  c_memcpy(gLoad.line, s, l);
+  gLoad.line[l] = '\0';
+  gLoad.line_position = l;
+  gLoad.done = 1;
+  NODE_DBG("Get command: %s\n", gLoad.line);
+  return 1;
+}
+
 void lua_handle_input (bool force)
 {
-  while (gLoad.L && (force || readline (&gLoad)))
-  {
+  while (gLoad.L && (force || readline (&gLoad))) { 
+    NODE_DBG("Handle Input: first=%u, pos=%u, len=%u, actual=%u, line=%s\n", gLoad.firstline,
+              gLoad.line_position, gLoad.len, c_strlen(gLoad.line), gLoad.line);
     dojob (&gLoad);
     force = false;
   }

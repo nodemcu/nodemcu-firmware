@@ -279,13 +279,14 @@ int platform_flash_erase_sector( uint32_t sector_id );
 
 /**
  * Translated a mapped address to a physical flash address, based on the
- * current flash cache mapping.
+ * current flash cache mapping, and v.v.
  * @param mapped_addr Address to translate (>= INTERNAL_FLASH_MAPPED_ADDRESS)
  * @return the corresponding physical flash address, or -1 if flash cache is
  *  not currently active.
  * @see Cache_Read_Enable.
  */
 uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
+uint32_t platform_flash_phys2mapped (uint32_t phys_addr);
 
 // *****************************************************************************
 // Allocator support

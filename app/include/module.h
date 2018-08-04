@@ -38,8 +38,11 @@
 #define MODULE_PASTE_(x,y) x##y
 #define MODULE_EXPAND_PASTE_(x,y) MODULE_PASTE_(x,y)
 
-#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(s)))
-
+#ifdef LUA_CROSS_COMPILER
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".rodata1." #s)))
+#else
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
+#endif
 /* For the ROM table, we name the variable according to ( | denotes concat):
  *   cfgname | _module_selected | LUA_USE_MODULES_##cfgname
  * where the LUA_USE_MODULES_XYZ macro is first expanded to yield either
@@ -51,20 +54,20 @@
  * to be linked in.
  */
 #define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
-  const LOCK_IN_SECTION(".lua_libs") \
+  const LOCK_IN_SECTION(libs) \
     luaL_Reg MODULE_PASTE_(lua_lib_,cfgname) = { luaname, initfunc }; \
-  const LOCK_IN_SECTION(".lua_rotable") \
+  const LOCK_IN_SECTION(rotable) \
     luaR_table MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
     = { luaname, map }
 
 
 /* System module registration support, not using LUA_USE_MODULES_XYZ. */
 #define BUILTIN_LIB_INIT(name, luaname, initfunc) \
-  const LOCK_IN_SECTION(".lua_libs") \
+  const LOCK_IN_SECTION(libs) \
     luaL_Reg MODULE_PASTE_(lua_lib_,name) = { luaname, initfunc }
 
 #define BUILTIN_LIB(name, luaname, map) \
-  const LOCK_IN_SECTION(".lua_rotable") \
+  const LOCK_IN_SECTION(rotable) \
     luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map }
 
 #if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)

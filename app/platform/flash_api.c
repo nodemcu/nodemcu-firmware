@@ -116,10 +116,11 @@ bool flash_rom_set_size_type(uint8_t size)
     uint8_t data[SPI_FLASH_SEC_SIZE] ICACHE_STORE_ATTR;
     if (SPI_FLASH_RESULT_OK == spi_flash_read(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
     {
-        ((SPIFlashInfo *)(&data[0]))->size = size;
+        NODE_DBG("\nflash_rom_set_size_type(%u), was %u\n", size, ((SPIFlashInfo *)data)->size );
+        ((SPIFlashInfo *)data)->size = size;
         if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector(0 * SPI_FLASH_SEC_SIZE))
         {
-            NODE_DBG("\nERASE SUCCESS\n");
+            NODE_DBG("\nSECTOR 0 ERASE SUCCESS\n");
         }
         if (SPI_FLASH_RESULT_OK == spi_flash_write(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
         {
@@ -266,6 +267,7 @@ bool flash_rom_set_speed(uint32_t speed)
     if (SPI_FLASH_RESULT_OK == spi_flash_read(0, (uint32 *)data, SPI_FLASH_SEC_SIZE))
     {
         ((SPIFlashInfo *)(&data[0]))->speed = speed_type;
+        NODE_DBG("\nflash_rom_set_speed(%u), was %u\n", speed_type, ((SPIFlashInfo *)(&data[0]))->speed );
         if (SPI_FLASH_RESULT_OK == spi_flash_erase_sector(0 * SPI_FLASH_SEC_SIZE))
         {
             NODE_DBG("\nERASE SUCCESS\n");
