@@ -172,6 +172,40 @@ none
 #### Returns
 flash ID (number)
 
+## node.flashindex()
+
+Returns the function reference for a function in the LFS (Lua Flash Store).
+
+#### Syntax
+`node.flashindex(modulename)`
+
+#### Parameters
+`modulename`  The name of the module to be loaded.  If this is `nil` or invalid then an info list is returned
+
+#### Returns
+-  In the case where the LFS in not loaded, `node.flashindex` evaluates to `nil`, followed by the flash and mapped base addresss of the LFS
+-  If the LFS is loaded and the function is called with the name of a valid module in the LFS, then the function is returned in the same way the `load()` and the other Lua load functions do.
+-  Otherwise an extended info list is returned: the Unix time of the LFS build, the flash and mapped base addresses of the LFS and its current length, and an array of the valid module names in the LFS.
+
+#### Example
+
+The `node.flashindex()` is a low level API call that is normally wrapped using standard Lua code to present a simpler application API.  See the module `_init.lua` in the `lua_examples/lfs` directory for an example of how to do this.
+
+## node.flashreload()
+
+Reload the LFS (Lua Flash Store) with the flash image provided. Flash images are generated on the host machine using the `luac.cross`commnad.
+
+#### Syntax
+`node.flashreload(imageName)`
+
+#### Parameters
+`imageName` The of name of a image file in the filesystem to be loaded into the LFS.
+
+#### Returns
+If the LFS image has the incorrect signature or size, then `false` is returned.
+In the case of the `imagename` being a valid LFS image, this is then loaded into flash.  The ESP is then immediately rebooted so control is not returned to the calling application. 
+
+
 ## node.flashsize()
 
 Returns the flash chip size in bytes. On 4MB modules like ESP-12 the return value is 4194304 = 4096KB.
@@ -221,7 +255,7 @@ system heap size left in bytes (number)
 
 ## node.info()
 
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed.
+Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed, and Lua File Store (LFS) usage statics.
 
 #### Syntax
 `node.info()`

@@ -326,7 +326,7 @@ const LUA_REG_TYPE math_map[] = {
   {LSTRKEY("randomseed"), LFUNCVAL(math_randomseed)},
   {LSTRKEY("sqrt"),  LFUNCVAL(math_sqrt)},
 #if LUA_OPTIMIZE_MEMORY > 0
-  {LSTRKEY("huge"),  LNUMVAL(LONG_MAX)},
+  {LSTRKEY("huge"),  LNUMVAL(INT_MAX)},
 #endif
 #else
   {LSTRKEY("abs"),   LFUNCVAL(math_abs)},
@@ -374,7 +374,7 @@ const LUA_REG_TYPE math_map[] = {
 */
 
 #if defined LUA_NUMBER_INTEGRAL
-# include "c_limits.h"		/* for LONG_MAX */
+# include "c_limits.h"		/* for INT_MAX */
 #endif
 
 LUALIB_API int luaopen_math (lua_State *L) {
@@ -383,7 +383,7 @@ LUALIB_API int luaopen_math (lua_State *L) {
 #else
   luaL_register(L, LUA_MATHLIBNAME, math_map);
 # if defined LUA_NUMBER_INTEGRAL
-  lua_pushnumber(L, LONG_MAX);
+  lua_pushnumber(L, INT_MAX);
   lua_setfield(L, -2, "huge");
 # else
   lua_pushnumber(L, PI);

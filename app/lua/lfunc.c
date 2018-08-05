@@ -146,7 +146,7 @@ void luaF_freeproto (lua_State *L, Proto *f) {
   luaM_freearray(L, f->k, f->sizek, TValue);
   luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
   luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
-  if (!proto_is_readonly(f)) {
+  if (!proto_isreadonly(f)) {
     luaM_freearray(L, f->code, f->sizecode, Instruction);
 #ifdef LUA_OPTIMIZE_DEBUG
     if (f->packedlineinfo) {

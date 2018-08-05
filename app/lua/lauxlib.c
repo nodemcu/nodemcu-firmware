@@ -45,6 +45,149 @@
 #define LUA_USECCLOSURES          0
 #define LUA_USELIGHTFUNCTIONS     1
 
+//#define DEBUG_ALLOCATOR
+#ifdef DEBUG_ALLOCATOR 
+#ifdef LUA_CROSS_COMPILER
+static void break_hook(void) {}
+#define ASSERT(s) if (!(s)) {break_hook();}
+#else
+#define ASSERT(s) if (!(s)) {asm ("break 0,0" ::);}
+#endif
+
+/*
+** {======================================================================
+** Diagnosticd version for realloc. This is enabled only if the
+** DEBUG_ALLOCATOR is defined.  It is a cutdown version of the allocator
+** used in the Lua Test Suite -- a compromise between the ability catch
+** most alloc/free errors and overruns and working within the RAM limits
+** of the ESP8266 architecture.  ONLY FOR HEAVY HACKERS
+** =======================================================================
+*/
+#define this_realloc debug_realloc
+#define MARK  0x55  /* 01010101 (a nice pattern) */
+#define MARKSIZE 2*sizeof(size_t)  /* size of marks after each block */
+#define fillmem(mem,size) memset(mem, ~MARK, size)
+
+typedef union MemHeader MemHeader;
+union MemHeader {
+  L_Umaxalign a;  /* ensures maximum alignment for Header */
+  struct {
+    size_t size;
+    MemHeader *next;
+    size_t mark[2];
+  };
+};
+
+typedef struct Memcontrol {  /* memory-allocator control variables */
+  MemHeader *start;
+  lu_int32 numblocks;
+  lu_int32 total;
+  lu_int32 maxmem;
+  lu_int32 memlimit;
+} Memcontrol;
+static Memcontrol mc = {NULL,0,0,0,32768*64};
+static size_t marker[2] = {0,0};
+
+static void scanBlocks (void) {  
+  MemHeader *p = mc.start;
+  int i;
+  char s,e;
+  for (i=0; p ;i++) {
+    s = memcmp(p->mark, marker, MARKSIZE) ? '<' : ' ';
+    e = memcmp(cast(char *, p+1) + p->size, marker, MARKSIZE) ? '>' : ' ';
+    c_printf("%4u %p %8lu %c %c\n", i, p, p->size, s, e);
+    ASSERT(p->next);
+    p = p->next;
+  }
+}
+
+static int checkBlocks (void) {  
+  MemHeader *p = mc.start;
+  while(p) {
+    if (memcmp(p->mark, marker, MARKSIZE)  ||
+       memcmp(cast(char *, p+1) + p->size, marker, MARKSIZE)) {
+      scanBlocks();
+      return 0;
+    }
+    p = p->next;
+  }
+  return 1;
+}
+
+
+static void freeblock (MemHeader *block) {
+  if (block) {
+    MemHeader *p = mc.start;
+    MemHeader *next = block->next;
+    size_t size = block->size;
+    ASSERT(checkBlocks());
+    if (p == block) {
+      mc.start = next;
+    } else {
+      while (p->next != block) {
+        ASSERT(p);
+        p = p->next;
+      }
+      p->next = next;
+    }
+    fillmem(block, sizeof(MemHeader) + size + MARKSIZE);  /* erase block */
+    c_free(block);  /* actually free block */
+    mc.numblocks--;  /* update counts */
+    mc.total -= size;
+  }
+}
+
+void *debug_realloc (void *b, size_t oldsize, size_t size) {
+  MemHeader *block = cast(MemHeader *, b);
+  ASSERT(checkBlocks());
+  if (!marker[0]) memset(marker, MARK, MARKSIZE);
+  if (block == NULL) {
+    oldsize = 0;
+  } else {
+    block--;  /* go to real header */
+    ASSERT(!memcmp(block->mark, marker, MARKSIZE))
+    ASSERT(oldsize == block->size);
+    ASSERT(!memcmp(cast(char *, b)+oldsize, marker, MARKSIZE));
+  }
+  if (size == 0) {
+    freeblock(block);
+    return NULL;
+  } else if (size > oldsize && mc.total+size-oldsize > mc.memlimit)
+    return NULL;  /* fake a memory allocation error */
+  else {
+    MemHeader *newblock;
+    size_t commonsize = (oldsize < size) ? oldsize : size;
+    size_t realsize = sizeof(MemHeader) + size + MARKSIZE;
+    newblock = cast(MemHeader *, c_malloc(realsize));  /* alloc a new block */
+    if (newblock == NULL) 
+      return NULL;  /* really out of memory? */
+    if (block) {
+      memcpy(newblock + 1, block + 1, commonsize);  /* copy old contents */
+      freeblock(block);  /* erase (and check) old copy */
+    }
+    /* initialize new part of the block with something weird */
+    if (size > commonsize)
+      fillmem(cast(char *, newblock + 1) + commonsize, size - commonsize);
+    /* initialize marks after block */
+    memset(newblock->mark, MARK, MARKSIZE); 
+    newblock->size = size;
+    newblock->next = mc.start;
+    mc.start = newblock;
+    memset(cast(char *, newblock + 1)+ size, MARK, MARKSIZE);
+    mc.total += size;
+    if (mc.total > mc.maxmem)
+      mc.maxmem = mc.total;
+    mc.numblocks++;
+    return (newblock + 1);
+  }
+}
+
+
+/* }====================================================================== */
+#else
+#define this_realloc(p,os,s) c_realloc(p,s)
+#endif /* DEBUG_ALLOCATOR */
+
 /*
 ** {======================================================
 ** Error-report functions
@@ -633,8 +776,9 @@ LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
     lf.f = c_freopen(filename, "rb", lf.f);  /* reopen in binary mode */
     if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
     /* skip eventual `#!...' */
-   while ((c = c_getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) ;
-    lf.extraline = 0;
+   while ((c = c_getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) {}
+
+   lf.extraline = 0;
   }
   c_ungetc(c, lf.f);
   status = lua_load(L, getF, &lf, lua_tostring(L, -1));
@@ -787,8 +931,12 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   void *nptr;
 
   if (nsize == 0) {
+#ifdef DEBUG_ALLOCATOR 
+    return (void *)this_realloc(ptr, osize, nsize);
+#else
     c_free(ptr);
     return NULL;
+#endif
   }
   if (L != NULL && (mode & EGC_ALWAYS)) /* always collect memory if requested */
     luaC_fullgc(L);
@@ -804,17 +952,44 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     if(G(L)->memlimit > 0 && (mode & EGC_ON_MEM_LIMIT) && l_check_memlimit(L, nsize - osize))
       return NULL;
   }
-  nptr = (void *)c_realloc(ptr, nsize);
+  nptr = (void *)this_realloc(ptr, osize, nsize);
   if (nptr == NULL && L != NULL && (mode & EGC_ON_ALLOC_FAILURE)) {
     luaC_fullgc(L); /* emergency full collection. */
-    nptr = (void *)c_realloc(ptr, nsize); /* try allocation again */
+    nptr = (void *)this_realloc(ptr, osize, nsize); /* try allocation again */
   }
   return nptr;
 }
 
 LUALIB_API void luaL_assertfail(const char *file, int line, const char *message) {
   dbg_printf("ASSERT@%s(%d): %s\n", file, line, message); 
+#if defined(LUA_CROSS_COMPILER)
+  exit(1);
+#endif
 }
+
+#ifdef DEVELOPMENT_USE_GDB
+/*
+ *  This is a simple stub used by lua_assert() if DEVELOPMENT_USE_GDB is defined.
+ *  Instead of crashing out with an assert error, this hook starts the GDB remote
+ *  stub if not already running and then issues a break.  The rationale here is 
+ *  that when testing the developer migght be using screen/PuTTY to work ineractively
+ *  with the Lua Interpreter via UART0.  However if an assert triggers, then there 
+ * is the option to exit the interactive session and start the Xtensa remote GDB 
+ * which will then sync up with the remote GDB client to allow forensics of the error. 
+ */
+extern void gdbstub_init(void);
+
+LUALIB_API void luaL_dbgbreak(void) {
+  static int repeat_entry = 0;
+  if  (repeat_entry == 0) {
+    dbg_printf("Start up the gdb stub if not already started\n");
+    gdbstub_init();
+    repeat_entry = 1;
+  }
+  asm("break 0,0" ::);
+}
+#endif
+
 
 static int panic (lua_State *L) {
   (void)L;  /* to avoid warnings */
