@@ -53,9 +53,9 @@ ECHO := echo
 
 BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
 ifeq ($(BUILD_TYPE),0)
-IMAGE  := ../../../luac.cross.float
+IMAGE  := ../../../luac.cross
 else
-IMAGE  := ../../../luac.cross.integer
+IMAGE  := ../../../luac.cross.int
 endif
 
 .PHONY: test clean all

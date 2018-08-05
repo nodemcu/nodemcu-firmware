@@ -32,5 +32,5 @@ make
 
 LUA_FILES=`find lua_modules lua_examples -iname "*.lua"`
 echo checking $LUA_FILES
-./luac.cross.float -p $LUA_FILES
+./luac.cross -p $LUA_FILES
 )

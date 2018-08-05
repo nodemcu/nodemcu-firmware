@@ -38,9 +38,9 @@ LFSSOURCES := $(wildcard $(LUASOURCE)/*.lua)
 
 BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
 ifeq ($(BUILD_TYPE),0)
-LUAC_CROSS := ../luac.cross.float
+LUAC_CROSS := ../luac.cross
 else
-LUAC_CROSS := ../luac.cross.integer
+LUAC_CROSS := ../luac.cross.int
 endif
 
 #############################################################
@@ -93,7 +93,4 @@ remove-image:
 spiffsclean: remove-image
 	rm -f ./spiffsimg/spiffsimg
 	rm -f ./spiffsimg/spiffs.lst
-
-#PDIR := ../$(PDIR)
-#sinclude $(PDIR)Makefile
 
