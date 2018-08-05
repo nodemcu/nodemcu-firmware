@@ -12,7 +12,7 @@ This module is not for casual use -- it requires an understanding of IEEE802.11 
 
 This registers a callback function to be called whenever a management frame is received. Note that this can be at quite a high rate, so some limited
 filtering is provided before the callback is invoked. Only the first 110 bytes or so of the frame are returned -- this is an SDK restriction.
-Any connected ap/station will be disconnected.
+Any connected AP/station will be disconnected. Calling this function sets the channel back to 1.
 
 #### Syntax
 `wifi.monitor.start([filter parameters,] mgmt_frame_callback)`
@@ -29,10 +29,10 @@ nothing.
 
 #### Example
 ```
-wifi.monitor.channel(6)
 wifi.monitor.start(13, 0x80, function(pkt)
     print ('Beacon: ' .. pkt.bssid_hex .. " '" .. pkt[0] .. "' ch " .. pkt[3]:byte(1))
 end)
+wifi.monitor.channel(6)
 ```
 
 ## wifi.monitor.stop()
@@ -46,6 +46,7 @@ This disables the monitor mode and returns to normal operation. There are no par
 
 This sets the channel number to monitor. Note that in many applications you will want to step through the channel numbers at regular intervals. Beacon
 frames (in particular) are typically sent every 102 milliseconds, so a switch time of (say) 150 milliseconds seems to work well.
+Note that this function should be called after starting to monitor, since `wifi.monitor.start` resets the channel back to 1.
 
 #### Syntax
 `wifi.monitor.channel(channel)`
