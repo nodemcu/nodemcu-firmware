@@ -174,7 +174,7 @@ flash ID (number)
 
 ## node.flashindex()
 
-Returns the function reference for a function in the LFS (Lua Flash Store).
+Returns the function reference for a function in the [LFS (Lua Flash Store)](../lfs.md).
 
 #### Syntax
 `node.flashindex(modulename)`
@@ -193,7 +193,7 @@ The `node.flashindex()` is a low level API call that is normally wrapped using s
 
 ## node.flashreload()
 
-Reload the LFS (Lua Flash Store) with the flash image provided. Flash images are generated on the host machine using the `luac.cross`commnad.
+Reload the [LFS (Lua Flash Store)](../lfs.md) with the flash image provided. Flash images are generated on the host machine using the `luac.cross`commnad.
 
 #### Syntax
 `node.flashreload(imageName)`
