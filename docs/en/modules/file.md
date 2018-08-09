@@ -144,13 +144,17 @@ print("\nFile system info:\nTotal : "..total.." (k)Bytes\nUsed : "..used.." (k)B
 Lists all files in the file system.
 
 #### Syntax
-`file.list()`
+`file.list([pattern])`
 
 #### Parameters
 none
 
 #### Returns
-a Lua table which contains the {file name: file size} pairs
+a Lua table which contains all {file name: file size} pairs, if no pattern
+given.  If a pattern is given, only those file names matching the pattern
+(interpreted as a traditional [Lua pattern](https://www.lua.org/pil/20.2.html),
+not, say, a UNIX shell glob) will be included in the resulting table.
+`file.list` will throw any errors encountered during pattern matching.
 
 #### Example
 ```lua
