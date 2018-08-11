@@ -21,7 +21,7 @@
                gives you the parameter to use in the luac.cross -a option.
 
   LFS._list    This returns a table of the LFS modules, hence
-                 print(table.concat(LFS._list),'\n')
+                 print(table.concat(LFS._list,'\n'))
                gives you a single column listing of all modules in the LFS.
 
 ---------------------------------------------------------------------------------]]               
@@ -62,17 +62,14 @@ G.LFS = setmetatable(lfs_t,lfs_t)
   have jean.lc or jean.lua in SPIFFS, then this SPIFFS version will get loaded into 
   RAM instead of using. (Useful, for development).
 
-  Note that if you want LFS to take a higher priority than SPIFFS, the use the [2]
-  slot for loaders.  If you want to reverse these in your init.lua or interactively
-  for debugging, then use
+  See docs/en/lfs.md and the 'loaders' array in app/lua/loadlib.c for more details.
 
-  do local pl = package.loaders; pl[2],pl[4] = pl[4],pl[2]; end
 ---------------------------------------------------------------------------------]]
 
-package.loaders[4] = function(module) -- loader_flash
+table.insert(package.loaders,function(module) -- loader_flash
   local fn, ba = index(module)
   return ba and "Module not in LFS" or fn 
-end
+end)
 
 --[[-------------------------------------------------------------------------------
   You can add any other initialisation here, for example a couple of the globals
