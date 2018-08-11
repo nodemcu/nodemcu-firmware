@@ -2,8 +2,8 @@
 # Options
 #
 
-FSSOURCE ?= ../local/fs/
-LUASOURCE ?= ../local/lua/
+FSSOURCE ?= ../local/fs
+LUASOURCE ?= ../local/lua
 FLASHSIZE ?= 4mb 32mb 8mb
 FLASH_SW = -S
 SUBDIRS = 
@@ -14,7 +14,7 @@ OBJDUMP = $(or $(shell which objdump),xtensa-lx106-elf-objdump)
 # Get the files to pack into the spiffs image
 #
 
-SPIFFSFILES ?= $(patsubst $(FSSOURCE)%,%,$(shell find $(FSSOURCE) -name '*' '!' -name .gitignore ))
+SPIFFSFILES ?= $(patsubst $(FSSOURCE)/%,%,$(shell find $(FSSOURCE)/ -name '*' '!' -name .gitignore ))
 
 #################################################################
 # Get the filesize of /bin/0x10000.bin and SPIFFS sizing
@@ -35,6 +35,13 @@ FLASH_FS_LOC := $(shell printf "0x%x" $(FLASH_FS_LOC))
 endif 
 
 LFSSOURCES := $(wildcard $(LUASOURCE)/*.lua)
+
+BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
+ifeq ($(BUILD_TYPE),0)
+LUAC_CROSS := ../luac.cross
+else
+LUAC_CROSS := ../luac.cross.int
+endif
 
 #############################################################
 # Rules base
@@ -72,7 +79,7 @@ spiffsscript: remove-image LFSimage spiffsimg/spiffsimg
 
 ifneq ($(LFSSOURCES),)
 LFSimage: $(LFSSOURCES)
-	../luac.cross -f -o $(FSSOURCE)flash.img $(LFSSOURCES)
+	$(LUAC_CROSS) -f -o $(FSSOURCE)flash.img $(LFSSOURCES)
 else
 LFSimage: 
 	rm -f $(FSSOURCE)flash.img
