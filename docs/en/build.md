@@ -11,8 +11,8 @@ Occasional NodeMCU firmware hackers don't need full control over the complete to
 ### Linux Build Environment
 NodeMCU firmware developers commit or contribute to the project on GitHub and might want to build their own full fledged build environment with the complete tool chain. There is a [post in the esp8266.com Wiki](http://www.esp8266.com/wiki/doku.php?id=toolchain#how_to_setup_a_vm_to_host_your_toolchain) that describes this.
 
-### git
-If you decide to build with either the Docker image or the native environment then use git to clone the firmware sources instead of downloading the zip file from GitHub. Only cloning with git will retrieve the referenced submodules:
+### Git
+If you decide to build with either the Docker image or the native environment then use Git to clone the firmware sources instead of downloading the ZIP file from GitHub. Only cloning with Git will retrieve the referenced submodules:
 ```
 git clone --recurse-submodules -b <branch> https://github.com/nodemcu/nodemcu-firmware.git
 ```
@@ -49,6 +49,9 @@ To enable runtime debug messages to serial console edit `app/include/user_config
 ```c
 #define DEVELOP_VERSION
 ```
+
+### LFS
+LFS is turned off by default. See the [LFS documentation](./lfs.md) for supported config options (e.g. how to enable it).
 
 ### Set UART Bit Rate
 The initial baud rate at boot time is 115200bps. You can change this by
