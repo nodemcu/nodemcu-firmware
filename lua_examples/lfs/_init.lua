@@ -66,10 +66,10 @@ G.LFS = setmetatable(lfs_t,lfs_t)
 
 ---------------------------------------------------------------------------------]]
 
-table.insert(package.loaders,function(module) -- loader_flash
+package.loaders[3] = function(module) -- loader_flash
   local fn, ba = index(module)
   return ba and "Module not in LFS" or fn 
-end)
+end
 
 --[[-------------------------------------------------------------------------------
   You can add any other initialisation here, for example a couple of the globals
