@@ -73,16 +73,16 @@ spiffsimg/spiffsimg:
 spiffsscript: remove-image LFSimage spiffsimg/spiffsimg
 	rm -f ./spiffsimg/spiffs.lst
 	@echo "" >> ./spiffsimg/spiffs.lst
-	@$(foreach f, $(SPIFFSFILES), echo "import $(FSSOURCE)$(f) $(f)" >> ./spiffsimg/spiffs.lst ;)
+	@$(foreach f, $(SPIFFSFILES), echo "import $(FSSOURCE)/$(f) $(f)" >> ./spiffsimg/spiffs.lst ;)
 	$(foreach sz, $(FLASHSIZE), spiffsimg/spiffsimg -f ../bin/0x%x-$(sz).img  $(FLASH_SW) $(sz) -U $(FLASH_FS_LOC) -r ./spiffsimg/spiffs.lst -d; )
 	@$(foreach sz, $(FLASHSIZE), if [ -r ../bin/spiffs-$(sz).dat ]; then echo Built $$(cat ../bin/spiffs-$(sz).dat)-$(sz).bin; fi; )
 
 ifneq ($(LFSSOURCES),)
 LFSimage: $(LFSSOURCES)
-	$(LUAC_CROSS) -f -o $(FSSOURCE)flash.img $(LFSSOURCES)
+	$(LUAC_CROSS) -f -o $(FSSOURCE)/LFS.img $(LFSSOURCES)
 else
 LFSimage: 
-	rm -f $(FSSOURCE)flash.img
+	rm -f $(FSSOURCE)/LFS.img
 endif
 
 remove-image:
