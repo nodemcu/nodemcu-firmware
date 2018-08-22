@@ -39,7 +39,7 @@ firstRec = function (sck,rec)
   print(rec:sub(1, i+1))
   if size > 0 then
     sck:on("receive",subsRec)
-    file.open('lfs.img', 'w')
+    file.open(image, 'w')
     subsRec(sck, rec:sub(i+4))
   else
     sck:on("receive", nil)
@@ -64,13 +64,11 @@ finalise = function(sck)
   sck:on("receive", nil)
   sck:close()
   local s = file.stat(image)
-  if (size == s.size) then
+  if (s and size == s.size) then
     wifi.setmode(wifi.NULLMODE)
     collectgarbage();collectgarbage()
-    if s and s.size == size then
       -- run as separate task to maximise RAM available
-      node.task.post(function() node.flashreload(image) end)
-    end
+    node.task.post(function() node.flashreload(image) end)
   else
     print"Invalid save of image file"
   end
