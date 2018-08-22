@@ -147,7 +147,7 @@ static const LUA_REG_TYPE i2c_map[] = {
   { LSTRKEY( "address" ),     LFUNCVAL( i2c_address ) },
   { LSTRKEY( "write" ),       LFUNCVAL( i2c_write ) },
   { LSTRKEY( "read" ),        LFUNCVAL( i2c_read ) },
- //{ LSTRKEY( "FAST" ),       LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
+  { LSTRKEY( "FAST" ),        LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
   { LSTRKEY( "SLOW" ),        LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
   { LSTRKEY( "TRANSMITTER" ), LNUMVAL( PLATFORM_I2C_DIRECTION_TRANSMITTER ) },
   { LSTRKEY( "RECEIVER" ),    LNUMVAL( PLATFORM_I2C_DIRECTION_RECEIVER ) },

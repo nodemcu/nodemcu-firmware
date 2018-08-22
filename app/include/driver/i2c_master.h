@@ -53,7 +53,7 @@
 #define I2C_MASTER_SDA_LOW_SCL_LOW()  \
     gpio_output_set(0, 1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 0)
 
-void i2c_master_gpio_init(uint8 sda, uint8 scl);
+uint32 i2c_master_gpio_init(uint8 sda, uint8 scl, uint32 speed);
 void i2c_master_init(void);
 
 #define i2c_master_wait    os_delay_us

@@ -60,7 +60,7 @@ reg = read_reg(0x77, 0xAA)
 print(string.byte(reg))
 ```
 
-####See also
+#### See also
 [i2c.write()](#i2cwrite)
 
 ## i2c.setup()
@@ -69,16 +69,26 @@ Initialize the I²C module.
 #### Syntax
 `i2c.setup(id, pinSDA, pinSCL, speed)`
 
-####Parameters
+#### Parameters
 - `id` always 0
 - `pinSDA` 1~12, IO index
 - `pinSCL` 1~12, IO index
-- `speed` only `i2c.SLOW` supported
+- `speed` `i2c.SLOW`, `i2c.FAST` or any clock frequency in range of 20000-400000 Hz.
 
 #### Returns
 `speed` the selected speed
 
-####See also
+#### Example
+```lua
+id  = 0
+sda = 1
+scl = 2
+
+-- initialize i2c, set pin1 as sda, set pin2 as scl
+speed = i2c.setup(id, sda, scl, i2c.FAST)
+print("i2c speed: ", speed)
+```
+#### See also
 [i2c.read()](#i2cread)
 
 ## i2c.start()
@@ -93,7 +103,7 @@ Send an I²C start condition.
 #### Returns
 `nil`
 
-####See also
+#### See also
 [i2c.read()](#i2cread)
 
 ## i2c.stop()
@@ -102,22 +112,22 @@ Send an I²C stop condition.
 #### Syntax
 `i2c.stop(id)`
 
-####Parameters
+#### Parameters
 `id` always 0
 
 #### Returns
 `nil`
 
-####See also
+#### See also
 [i2c.read()](#i2cread)
 
 ## i2c.write()
 Write data to I²C bus. Data items can be multiple numbers, strings or Lua tables.
 
-####Syntax
+#### Syntax
 `i2c.write(id, data1[, data2[, ..., datan]])`
 
-####Parameters
+#### Parameters
 - `id` always 0
 - `data` data can be numbers, string or Lua table.
 

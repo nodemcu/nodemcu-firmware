@@ -735,8 +735,7 @@ uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t spe
   platform_gpio_mode(sda, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);   // inside this func call platform_pwm_close
   platform_gpio_mode(scl, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);    // disable gpio interrupt first
 
-  i2c_master_gpio_init(sda, scl);
-  return PLATFORM_I2C_SPEED_SLOW;
+  return i2c_master_gpio_init(sda, scl, speed);
 }
 
 void platform_i2c_send_start( unsigned id ){
