@@ -93,6 +93,7 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
  *  #define DHCP_GLOBAL_XID_HEADER "stdlib.h"
  *  #define DHCP_GLOBAL_XID rand()
  */
+#define DHCP_GLOBAL_XID os_random()
 #ifdef DHCP_GLOBAL_XID_HEADER
 #include DHCP_GLOBAL_XID_HEADER /* include optional starting XID generation prototypes */
 #endif
@@ -1718,7 +1719,11 @@ dhcp_create_msg(struct netif *netif, struct dhcp *dhcp, u8_t message_type)
   if (message_type != DHCP_REQUEST) {
   	/* reuse transaction identifier in retransmissions */
   	if (dhcp->tries == 0) {
+#ifndef DHCP_GLOBAL_XID
       	xid++;
+#else
+        xid = DHCP_GLOBAL_XID;
+#endif
   	}
   	dhcp->xid = xid;
   }

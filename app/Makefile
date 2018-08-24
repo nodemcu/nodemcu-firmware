@@ -92,7 +92,6 @@ LINKFLAGS_eagle.app.v6 = 			\
 	-T$(LD_FILE) 				\
 	-Wl,@../ld/defsym.rom			\
 	-Wl,--no-check-sections 		\
-	-Wl,--wrap=_xtos_set_exception_handler	\
 	-Wl,-static 				\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
 	-Wl,--start-group 			\

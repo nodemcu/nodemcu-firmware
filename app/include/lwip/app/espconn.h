@@ -802,6 +802,14 @@ extern sint8 espconn_recv_hold(struct espconn *pespconn);
 extern sint8 espconn_recv_unhold(struct espconn *pespconn);
 
 /******************************************************************************
+ * FunctionName : espconn_recved_len
+ * Description  : get TCP readable data bytes
+ * Parameters   : espconn -- espconn to unhold
+ * Returns      : result
+*******************************************************************************/
+extern sint16 espconn_recved_len(struct espconn *espconn);
+
+/******************************************************************************
  * FunctionName : espconn_mdns_init
  * Description  : register a device with mdns
  * Parameters   : ipAddr -- the ip address of device

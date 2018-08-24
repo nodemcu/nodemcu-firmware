@@ -16,7 +16,6 @@
 #include "vfs.h"
 #include "flash_api.h"
 #include "user_interface.h"
-#include "user_exceptions.h"
 #include "user_modules.h"
 
 #include "ets_sys.h"
@@ -24,6 +23,7 @@
 #include "task/task.h"
 #include "mem.h"
 #include "espconn.h"
+#include "sections.h"
 
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
@@ -51,9 +51,6 @@ __asm__(
  */
 void TEXT_SECTION_ATTR user_start_trampoline (void)
 {
-   __real__xtos_set_exception_handler (
-     EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
-
 #ifdef LUA_USE_MODULES_RTCTIME
   // Note: Keep this as close to call_user_start() as possible, since it
   // is where the cpu clock actually gets bumped to 80MHz.
@@ -162,7 +159,7 @@ void nodemcu_init(void) {
 #ifdef BUILD_SPIFFS
     if (!vfs_mount("/FLASH", 0)) {
         // Failed to mount -- try reformat
-	dbg_printf("Formatting file system. Please wait...\n");
+        dbg_printf("Formatting file system. Please wait...\n");
         if (!vfs_format()) {
             NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
             NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
@@ -187,59 +184,75 @@ void user_rf_pre_init(void)
 }
 #endif
 
-/******************************************************************************
- * FunctionName : user_rf_cal_sector_set
- * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
- *                We add this function to force users to set rf cal sector, since
- *                we don't know which sector is free in user's application.
- *                sector map for last several sectors : ABCCC
- *                A : rf cal
- *                B : rf init data
- *                C : sdk parameters
- * Parameters   : none
- * Returns      : rf cal sector
-*******************************************************************************/
-uint32
-user_rf_cal_sector_set(void)
+#define EAGLE_FLASH_BIN_ADDR      (SYSTEM_PARTITION_CUSTOMER_BEGIN + 1)
+#define EAGLE_IROM0TEXT_BIN_ADDR  (SYSTEM_PARTITION_CUSTOMER_BEGIN + 2)
+static const partition_item_t pt_template[] ICACHE_RODATA_ATTR STORE_ATTR = {
+    { EAGLE_FLASH_BIN_ADDR,     0x00000, 0x10000},
+    { EAGLE_IROM0TEXT_BIN_ADDR, 0x10000, 0},
+    { SYSTEM_PARTITION_RF_CAL, 0, 0x1000},
+    { SYSTEM_PARTITION_PHY_DATA, 0, 0x1000},
+    { SYSTEM_PARTITION_SYSTEM_PARAMETER, 0, 0x3000},
+};
+
+void ICACHE_FLASH_ATTR user_pre_init(void)
 {
+    partition_item_t pt[sizeof(pt_template)/sizeof(pt_template[0])];
+    memcpy(pt, pt_template, sizeof(pt_template));
+
+    pt[1].size = platform_flash_get_first_free_block_address(NULL)
+               - pt[0].size;
+
     enum flash_size_map size_map = system_get_flash_size_map();
-    uint32 rf_cal_sec = 0;
-
     switch (size_map) {
-        case FLASH_SIZE_4M_MAP_256_256:
-            rf_cal_sec = 128 - 5;
+        case FLASH_SIZE_8M_MAP_512_512: // 2
+            pt[2].addr = 0xfb000;
+            pt[3].addr = 0xfc000;
+            pt[4].addr = 0xfd000;
+            break;
+        case FLASH_SIZE_16M_MAP_512_512: // 3
+        case FLASH_SIZE_16M_MAP_1024_1024: // 5
+            pt[2].addr = 0x1fb000;
+            pt[3].addr = 0x1fc000;
+            pt[4].addr = 0x1fd000;
+            break;
+        case FLASH_SIZE_32M_MAP_512_512: // 4
+        case FLASH_SIZE_32M_MAP_1024_1024: // 6
+        case FLASH_SIZE_32M_MAP_2048_2048: // 7
+            pt[2].addr = 0x3fb000;
+            pt[3].addr = 0x3fc000;
+            pt[4].addr = 0x3fd000;
+            break;
+        case FLASH_SIZE_64M_MAP_1024_1024: // 8
+            // XXX No examples given in docs; best guess
+            pt[2].addr = 0x7fb000;
+            pt[3].addr = 0x7fc000;
+            pt[4].addr = 0x7fd000;
+            break;
+        case FLASH_SIZE_128M_MAP_1024_1024:  // 9
+            // XXX No examples given in docs; best guess
+            pt[2].addr = 0xffb000;
+            pt[3].addr = 0xffc000;
+            pt[4].addr = 0xffd000;
             break;
 
-        case FLASH_SIZE_8M_MAP_512_512:
-            rf_cal_sec = 256 - 5;
-            break;
-
-        case FLASH_SIZE_16M_MAP_512_512:
-        case FLASH_SIZE_16M_MAP_1024_1024:
-            rf_cal_sec = 512 - 5;
-            break;
-
-        case FLASH_SIZE_32M_MAP_512_512:
-        case FLASH_SIZE_32M_MAP_1024_1024:
-        case FLASH_SIZE_32M_MAP_2048_2048:
-            rf_cal_sec = 1024 - 5;
-            break;
-
-        case FLASH_SIZE_64M_MAP_1024_1024:
-            rf_cal_sec = 2048 - 5;
-            break;
-
-        case FLASH_SIZE_128M_MAP_1024_1024:
-            rf_cal_sec = 4096 - 5;
-            break;
-
+        case FLASH_SIZE_4M_MAP_256_256: /* 0: Too small */
+        case FLASH_SIZE_2M:             /* 1: Way too small */
         default:
-            rf_cal_sec = 0;
-            break;
+            os_printf("Cannot construct partition table!");
+            while(1);
     }
 
-    return rf_cal_sec;
+    if(!system_partition_table_regist(pt, sizeof(pt)/sizeof(pt[0]),size_map)) {
+        os_printf("system_partition_table_regist fail\r\n");
+        while(1);
+    }
 }
+
+uint32 ICACHE_RAM_ATTR user_iram_memory_is_enabled(void)
+{
+    return 0;
+}
+
 
 /******************************************************************************
  * FunctionName : user_init
@@ -249,6 +262,7 @@ user_rf_cal_sector_set(void)
 *******************************************************************************/
 void user_init(void)
 {
+
 #ifdef LUA_USE_MODULES_RTCTIME
     rtctime_late_startup ();
 #endif
