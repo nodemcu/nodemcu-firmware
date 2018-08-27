@@ -55,7 +55,7 @@ local function telnet_listener(socket)
  -- debug("entering sendLine")  
     if not s then return end
 
-	  if fifo2l + fifo1l == 0 then -- both FIFOs empty, so clear down s
+      if fifo2l + fifo1l == 0 then -- both FIFOs empty, so clear down s
         s = nil     
      -- debug("Q cleared")        
         return
@@ -125,13 +125,13 @@ local function telnet_listener(socket)
     node.input(line)
   end
 
-  local function discontect(s)
+  local function disconnect(s)
     fifo1, fifo1l, fifo2, fifo2l, s = {}, 0, {}, 0, nil
     node.output(nil)
   end
 
   socket:on("receive",       receiveLine)
-  socket:on("disconnection", discontect)
+  socket:on("disconnection", disconnect)
   socket:on("sent",          sendLine)
   node.output(queueLine, 0)
 end

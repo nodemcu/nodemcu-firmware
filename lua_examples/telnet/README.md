@@ -25,8 +25,8 @@ string span multiple packets. However, you must flush the buffer if necessary.
 
 -  The overall buffering strategy needs to be reasonably memory efficient and avoid
 hitting the GC too hard, so where practical avoid aggregating small strings to more 
-than 256 chars (as NodeMCU handles \<256 using stack buffers), and avoid serial a
-ggregation such as buf = buf .. str as this hammers the GC.
+than 256 chars (as NodeMCU handles \<256 using stack buffers), and avoid serial
+aggregation such as buf = buf .. str as this hammers the GC.
  
 So this server adopts a simple buffering scheme using a two level FIFO. The 
 `node.output` CB adds records to the 1st level FIFO until the #recs is \> 32 or the 
