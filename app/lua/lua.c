@@ -324,7 +324,7 @@ int lua_main (int argc, char **argv) {
 }
 
 int lua_put_line(const char *s, size_t l) {
-  if (s == NULL || ++l < LUA_MAXINPUT || gLoad.line_position > 0)
+  if (s == NULL || ++l > LUA_MAXINPUT || gLoad.line_position > 0)
     return 0;
   c_memcpy(gLoad.line, s, l);
   gLoad.line[l] = '\0';
