@@ -44,10 +44,8 @@ void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
 {
   /* If this is not EXCCAUSE_LOAD_STORE_ERROR you're doing it wrong! */
   (void)cause;
-
-  uint32_t epc1 = ef->epc;
-  uint32_t excvaddr;
-  uint32_t insn;
+  uint32_t excvaddr, insn;
+  
   asm (
     "rsr   %0, EXCVADDR;"    /* read out the faulting address */
     "movi  a4, ~3;"          /* prepare a mask for the EPC */
@@ -57,50 +55,37 @@ void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
     "ssa8l %2;"              /* set up shift register for src op */
     "src   %1, a6, a5;"      /* right shift to get faulting instruction */
     :"=r"(excvaddr), "=r"(insn)
-    :"r"(epc1)
+    :"r"(ef->epc)
     :"a4", "a5", "a6"
   );
-
-  uint32_t valmask = 0;
-  uint32_t what = insn & LOAD_MASK;
-
-  if (what == L8UI_MATCH)
-    valmask = 0xffu;
-  else if (what == L16UI_MATCH || what == L16SI_MATCH)
-    valmask = 0xffffu;
-  else
-  {
-die:
-    /* Turns out we couldn't fix this, so try and chain to the handler
-     * that was set. (This is typically a remote GDB break). If none 
-     * then trigger a system break instead and hang if the break doesn't 
-     * get handled. This is effectively what would happen if the default 
-     * handler was installed. */
-    if (load_store_handler) {
-      load_store_handler(ef, cause);
-      return;
+ 
+  if ((insn & 0x0000f0u) != 0x10u) {
+    uint32_t val = ((*(uint32_t *)(excvaddr & ~0x3))>>((excvaddr & 0x3) * 8));
+    uint8_t regno = (insn & 0x0000f0u) >> 4;
+    if (regno) regno--;
+  
+    if        ((insn & 0xf00fu) == 0x0002u) {        /* L8UI */
+      val = (uint8_t) val;      
+    } else if ((insn & 0x700fu) == 0x1002u) {        /* L16UI or L16SI */
+      val = (uint16_t) val;
+      if      ((insn & 0x8000u) && (val & 0x8000))   /* L16SI and negative value */
+        val |= 0xffff0000u;
     }
-     asm ("break 1, 1");
-    while (1) {}
+    ef->a_reg[regno] = val;  /* carry out the load */
+    ef->epc += 3;            /* resume at following instruction */
+    return;            
   }
-
-  /* Load, shift and mask down to correct size */
-  uint32_t val = (*(uint32_t *)(excvaddr & ~0x3));
-  val >>= (excvaddr & 0x3) * 8;
-  val &= valmask;
-
-  /* Sign-extend for L16SI, if applicable */
-  if (what == L16SI_MATCH && (val & 0x8000))
-    val |= 0xffff0000;
-
-  int regno = (insn & 0x0000f0u) >> 4;
-  if (regno == 1)
-    goto die;              /* we can't support loading into a1, just die */
-  else if (regno != 0)
-    --regno;               /* account for skipped a1 in exception_frame */
-
-  ef->a_reg[regno] = val;  /* carry out the load */
-  ef->epc += 3;            /* resume at following instruction */
+  /* Turns out we couldn't fix this, so try and chain to the handler
+   * that was set. (This is typically a remote GDB break). If none 
+   * then trigger a system break instead and hang if the break doesn't 
+   * get handled. This is effectively what would happen if the default 
+   * handler was installed. */
+  if (load_store_handler) {
+    load_store_handler(ef, cause);
+  } else {
+    asm ("break 1, 1");
+    while (1) {}
+  }   
 }
 
 

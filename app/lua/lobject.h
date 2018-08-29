@@ -47,6 +47,18 @@ typedef union GCObject GCObject;
 */
 #define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked
 
+#ifdef __XTENSA__
+/* force assess to tt and marked fields through 32-access */
+/* tt = .... B...   marked = .... .B.. */
+#define GET_BYTE_FN(name,wo,bo) \
+static inline lu_byte get ## name(void *o) { \
+  lu_byte res;  /* extract named field */ \
+  asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
+  return res; }  
+#else
+#define GET_BYTE_FN(name,wo,bo) \
+static inline lu_byte get ## name(void *o) { return ((GCheader *)o)->name; }
+#endif
 
 /*
 ** Common header in struct form
@@ -54,6 +66,9 @@ typedef union GCObject GCObject;
 typedef struct GCheader {
   CommonHeader;
 } GCheader;
+
+GET_BYTE_FN(tt,4,0)
+GET_BYTE_FN(marked,4,8)
 
 #if defined(LUA_PACK_VALUE) || defined(ELUA_ENDIAN_BIG) || defined(ELUA_ENDIAN_SMALL)
 # error "NodeMCU does not support the eLua LUA_PACK_VALUE and ELUA_ENDIAN defines"
@@ -212,7 +227,6 @@ typedef struct lua_TValue {
 #define setttype(obj, stt) ((void) (obj)->value, (obj)->tt = (stt))
 
 #define iscollectable(o)	(ttype(o) >= LUA_TSTRING)
-
 
 
 typedef TValue *StkId;  /* index to stack elements */
