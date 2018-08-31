@@ -34,31 +34,32 @@
 #define LUA_TUPVAL	(LAST_TAG+2)
 #define LUA_TDEADKEY	(LAST_TAG+3)
 
+#ifdef __XTENSA__
+/*
+** force aligned access to critical fields in Flash-based structures
+** wo is the offset of aligned word in bytes 0,4,8,..
+** bo is the field within the word in bits 0..31 
+*/
+#define GET_BYTE_FN(name,t,wo,bo) \
+static inline lu_byte get ## name(void *o) { \
+  lu_byte res;  /* extract named field */ \
+  asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
+  return res; }  
+#else
+#define GET_BYTE_FN(name,t,wo,bo) \
+static inline lu_byte get ## name(void *o) { return ((t *)o)->name; }
+#endif
 
 /*
 ** Union of all collectable objects
 */
 typedef union GCObject GCObject;
 
-
 /*
 ** Common Header for all collectable objects (in macro form, to be
 ** included in other objects)
 */
 #define CommonHeader	GCObject *next; lu_byte tt; lu_byte marked
-
-#ifdef __XTENSA__
-/* force assess to tt and marked fields through 32-access */
-/* tt = .... B...   marked = .... .B.. */
-#define GET_BYTE_FN(name,wo,bo) \
-static inline lu_byte get ## name(void *o) { \
-  lu_byte res;  /* extract named field */ \
-  asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
-  return res; }  
-#else
-#define GET_BYTE_FN(name,wo,bo) \
-static inline lu_byte get ## name(void *o) { return ((GCheader *)o)->name; }
-#endif
 
 /*
 ** Common header in struct form
@@ -67,13 +68,17 @@ typedef struct GCheader {
   CommonHeader;
 } GCheader;
 
-GET_BYTE_FN(tt,4,0)
-GET_BYTE_FN(marked,4,8)
+/*
+** Word aligned inline access functions for the CommonHeader tt and marked fields.
+** Note that these MUST be consistent with the CommonHeader definition above.  Arg 
+** 3 is a word offset (4 bytes in this case) and arg 4 the bit offset in the word.
+*/
+GET_BYTE_FN(tt,GCheader,4,0)
+GET_BYTE_FN(marked,GCheader,4,8)
 
 #if defined(LUA_PACK_VALUE) || defined(ELUA_ENDIAN_BIG) || defined(ELUA_ENDIAN_SMALL)
 # error "NodeMCU does not support the eLua LUA_PACK_VALUE and ELUA_ENDIAN defines"
 #endif
-
 
 /*
 ** Union of all Lua values

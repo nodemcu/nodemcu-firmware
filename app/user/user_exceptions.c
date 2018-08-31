@@ -33,61 +33,69 @@
 
 #include "user_exceptions.h"
 
-#define LOAD_MASK   0x00f00fu
-#define L8UI_MATCH  0x000002u
-#define L16UI_MATCH 0x001002u
-#define L16SI_MATCH 0x009002u
-
 static exception_handler_fn load_store_handler;
 
 void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
 {
-  /* If this is not EXCCAUSE_LOAD_STORE_ERROR you're doing it wrong! */
-  (void)cause;
-  uint32_t excvaddr, insn;
-  
+  uint32_t val, insn;
+  (void)cause;  /* If this is not EXCCAUSE_LOAD_STORE_ERROR you're doing it wrong! */
+    
   asm (
-    "rsr   %0, EXCVADDR;"    /* read out the faulting address */
-    "movi  a4, ~3;"          /* prepare a mask for the EPC */
-    "and   a4, a4, %2;"      /* apply mask for 32bit aligned base */
-    "l32i  a5, a4, 0;"       /* load part 1 */
-    "l32i  a6, a4, 4;"       /* load part 2 */
-    "ssa8l %2;"              /* set up shift register for src op */
-    "src   %1, a6, a5;"      /* right shift to get faulting instruction */
-    :"=r"(excvaddr), "=r"(insn)
-    :"r"(ef->epc)
-    :"a4", "a5", "a6"
-  );
- 
-  if ((insn & 0x0000f0u) != 0x10u) {
-    uint32_t val = ((*(uint32_t *)(excvaddr & ~0x3))>>((excvaddr & 0x3) * 8));
-    uint8_t regno = (insn & 0x0000f0u) >> 4;
-    if (regno) regno--;
-  
-    if        ((insn & 0xf00fu) == 0x0002u) {        /* L8UI */
-      val = (uint8_t) val;      
-    } else if ((insn & 0x700fu) == 0x1002u) {        /* L16UI or L16SI */
-      val = (uint16_t) val;
-      if      ((insn & 0x8000u) && (val & 0x8000))   /* L16SI and negative value */
-        val |= 0xffff0000u;
-    }
-    ef->a_reg[regno] = val;  /* carry out the load */
-    ef->epc += 3;            /* resume at following instruction */
-    return;            
-  }
-  /* Turns out we couldn't fix this, so try and chain to the handler
-   * that was set. (This is typically a remote GDB break). If none 
-   * then trigger a system break instead and hang if the break doesn't 
-   * get handled. This is effectively what would happen if the default 
-   * handler was installed. */
-  if (load_store_handler) {
-    load_store_handler(ef, cause);
-  } else {
-    asm ("break 1, 1");
-    while (1) {}
-  }   
-}
+    /*
+     * Move the aligned content of the exception addr to val
+     */
+    "rsr     a6, EXCVADDR;"    /* read out the faulting address */
+    "movi    a5, ~3;"          /* prepare a mask for the EPC */
+    "and     a5, a5, a6;"      /* apply mask for 32bit aligned base */
+    "l32i    a5, a5, 0;"       /* load aligned value */
+    "ssa8l   a6;"              /* set up shift register for value */
+    "srl     %[val], a5;"      /* shift left to align value */
+                               /* we are done with a6 = EXCVADDR */
+   /*
+    *  Move the aligned instruction to insn
+    */  
+    "movi    a5, ~3;"          /* prepare a mask for the insn */    
+    "and     a6, a5, %[epc];"  /* apply mask for 32bit aligned base */
+    "l32i    a5, a6, 0;"       /* load part 1 */
+    "l32i    a6, a6, 4;"       /* load part 2 */
+    "ssa8l   %[epc];"          /* set up shift register for src op */
+    "src     %[op], a6, a5;"   /* right shift to get faulting instruction */
+    :[val]"=r"(val), [op]"=r"(insn)
+    :[epc]"r"(ef->epc)
+    :"a5", "a6"
+  ); 
 
+/* These instructions have the format 0xADSBII where AB = opcode and D = dest reg */
+  uint32_t regno = (insn>>4)&0x0f;                           /* pick out nibble D*/
+  uint32_t opcode = (uint8_t) (((insn>>12)<<4)|(insn&0xf));  /* and nibbles AB */
+#define L8UI  0x02u
+#define L16UI 0x12u
+#define L16SI 0x92u
+
+  if (opcode == L8UI) {                       /* L8UI */
+    val = (uint8_t) val;
+  } else {
+    val = (uint16_t) val;                     /* assume L16SI or L16UI */ 
+    if (opcode == L16SI) {
+      val = (unsigned)((int)((sint16_t)val)); /* force signed 16->32 bit */
+    } else if (opcode != L16UI) {
+   /*
+    * Anything other than L8UI, L16SI or L16UI then chain to the next handler
+    * if set (typically a remote GDB break). Otherwise execute the default action
+    * which is to trigger a system break and hang if the break doesn't get handled
+    */
+      if (load_store_handler) {
+        load_store_handler(NULL, 0 /* ef ,  cause */);
+        return;
+      } else {
+        asm ("break 1, 1");
+        while (1) {}
+      }
+    }
+  }   
+  ef->a_reg[regno ? regno-1: regno] = val; /* carry out the load */
+  ef->epc += 3;                            /* resume at following instruction */
+}
 
 /**
  * The SDK's user_main function installs a debugging handler regardless
