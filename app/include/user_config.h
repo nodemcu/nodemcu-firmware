@@ -156,6 +156,13 @@
 #define ENDUSER_SETUP_AP_SSID "SetupGadget"
 
 
+// For compatibility reasons you can switch to old version of I2C software driver.
+// It does not support changing speed, have only one bus id = 0, does not support GPIO16
+// and have clock speed less than Standard(slow) mode 100kHz.
+
+#define I2C_MASTER_OLD_VERSION
+
+
 // The following sections are only relevent for those developers who are
 // developing modules or core Lua changes and configure how extra diagnostics
 // are enabled in the firmware. These should only be configured if you are

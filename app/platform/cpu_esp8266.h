@@ -15,7 +15,7 @@
 #define NUM_PWM               GPIO_PIN_NUM
 #define NUM_ADC               1
 #define NUM_CAN               0
-#define NUM_I2C               1
+#define NUM_I2C               10
 #define NUM_OW                GPIO_PIN_NUM
 #define NUM_TMR               7
 

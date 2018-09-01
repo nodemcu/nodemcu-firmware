@@ -15,8 +15,8 @@ static int i2c_setup( lua_State *L )
   MOD_CHECK_ID( gpio, sda );
   MOD_CHECK_ID( gpio, scl );
 
-  if(scl==0 || sda==0)
-    return luaL_error( L, "no i2c for D0" );
+  if(sda==0)
+    return luaL_error( L, "i2c SDA on D0 is not supported" );
 
   s32 speed = ( s32 )luaL_checkinteger( L, 4 );
   if (speed <= 0)
@@ -31,7 +31,10 @@ static int i2c_start( lua_State *L )
   unsigned id = luaL_checkinteger( L, 1 );
 
   MOD_CHECK_ID( i2c, id );
-  platform_i2c_send_start( id );
+  if (platform_i2c_configured( id ) )
+      platform_i2c_send_start( id );
+  else
+      luaL_error( L, "i2c %d is not configured", id );
   return 0;
 }
 
@@ -147,6 +150,7 @@ static const LUA_REG_TYPE i2c_map[] = {
   { LSTRKEY( "address" ),     LFUNCVAL( i2c_address ) },
   { LSTRKEY( "write" ),       LFUNCVAL( i2c_write ) },
   { LSTRKEY( "read" ),        LFUNCVAL( i2c_read ) },
+  { LSTRKEY( "FASTPLUS" ),    LNUMVAL( PLATFORM_I2C_SPEED_FASTPLUS ) },
   { LSTRKEY( "FAST" ),        LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
   { LSTRKEY( "SLOW" ),        LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
   { LSTRKEY( "TRANSMITTER" ), LNUMVAL( PLATFORM_I2C_DIRECTION_TRANSMITTER ) },
