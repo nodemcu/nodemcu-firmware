@@ -110,8 +110,8 @@
 // firmware to manage timer rescheduling over sleeps (the CPU clock is
 // suspended so timers get out of sync) then enable the following options
 
-//#define ENABLE_TIMER_SUSPEND
-//#define PMSLEEP_ENABLE
+#define ENABLE_TIMER_SUSPEND
+#define PMSLEEP_ENABLE
 
 
 // The WiFi module optionally offers an enhanced level of WiFi connection
