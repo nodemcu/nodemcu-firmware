@@ -8,7 +8,7 @@ This FAQ does not aim to help you to learn to program or even how to program in 
 
 ## What has changed since the first version of this FAQ?
 
-The [NodeMCU company](http://NodeMCU.com/index_en.html) was set up by [Zeroday](zeroday@nodemcu.com) to develop and to market a set of Lua firmware-based development boards which employ the Espressif ESP8266 SoC. The initial development of the firmware was done by Zeroday and a colleague, Vowstar, in-house with the firmware being first open-sourced on Github in late 2014. In mid-2015, Zeroday decided to open the firmware development to a wider group of community developers, so the core group of developers now comprises 6 community developers (including this author), and we are also supported by another dozen or so active contributors, and two NodeMCU originators.
+The [NodeMCU company](http://NodeMCU.com/index_en.html) was set up by [Zeroday](mailto:zeroday@nodemcu.com) to develop and to market a set of Lua firmware-based development boards which employ the Espressif ESP8266 SoC. The initial development of the firmware was done by Zeroday and a colleague, Vowstar, in-house with the firmware being first open-sourced on Github in late 2014. In mid-2015, Zeroday decided to open the firmware development to a wider group of community developers, so the core group of developers now comprises 6 community developers (including this author), and we are also supported by another dozen or so active contributors, and two NodeMCU originators.
  
 This larger active team has allowed us to address most of the outstanding issues present at the first version of this FAQ. These include:
 
