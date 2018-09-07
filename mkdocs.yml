@@ -19,7 +19,7 @@ extra_css:
 extra_javascript:
 - js/extra.js
 
-nav:
+pages:
 - Overview: 'index.md'
 - English:
     - Home: 'en/index.md'
