@@ -24,7 +24,7 @@ extern char _flash_used_end[];
 
 // Helper function: find the flash sector in which an address resides
 // Return the sector number, as well as the start and end address of the sector
-static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
+static uint32_t flash_find_sector( uint32_t address, uint32_t *pstart, uint32_t *pend )
 {
 #ifdef INTERNAL_FLASH_SECTOR_SIZE
   // All the sectors in the flash have the same size, so just align the address
@@ -53,7 +53,7 @@ static uint32_t flashh_find_sector( uint32_t address, uint32_t *pstart, uint32_t
 
 uint32_t platform_flash_get_sector_of_address( uint32_t addr )
 {
-  return flashh_find_sector( addr, NULL, NULL );
+  return flash_find_sector( addr, NULL, NULL );
 }
 
 uint32_t platform_flash_get_num_sectors(void)
@@ -73,12 +73,12 @@ uint32_t platform_flash_get_first_free_block_address( uint32_t *psect )
   uint32_t start, end, sect;
   NODE_DBG("_flash_used_end:%08x\n", (uint32_t)_flash_used_end);
   if(_flash_used_end>0){ // find the used sector
-    sect = flashh_find_sector( platform_flash_mapped2phys ( (uint32_t)_flash_used_end - 1), NULL, &end );
+    sect = flash_find_sector( platform_flash_mapped2phys ( (uint32_t)_flash_used_end - 1), NULL, &end );
     if( psect )
       *psect = sect + 1;
     return end + 1;
-  }else{
-    sect = flashh_find_sector( 0, &start, NULL ); // find the first free sector
+  } else {
+    sect = flash_find_sector( 0, &start, NULL ); // find the first free sector
     if( psect )
       *psect = sect;
     return start;

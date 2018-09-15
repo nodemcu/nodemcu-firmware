@@ -12,7 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = tsl2561lib.a
+GEN_LIBS = libtsl2561.a
 endif
 
 STD_CFLAGS=-std=gnu11 -Wimplicit

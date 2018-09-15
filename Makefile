@@ -3,20 +3,20 @@
 .NOTPARALLEL:
 
 # SDK base version, as released by Espressif
-SDK_BASE_VER:=2.2.0
+SDK_BASE_VER:=2.2.1
 
 # no patch: SDK_VER equals SDK_BASE_VER and sdk dir depends on sdk_extracted
-#SDK_VER:=$(SDK_BASE_VER)
-#SDK_DIR_DEPENDS:=sdk_extracted
+SDK_VER:=$(SDK_BASE_VER)
+SDK_DIR_DEPENDS:=sdk_extracted
 
 # with patch: SDK_VER differs from SDK_BASE_VER and sdk dir depends on sdk_patched
-SDK_PATCH_VER:=f8f27ce
-SDK_VER:=$(SDK_BASE_VER)-$(SDK_PATCH_VER)
-SDK_DIR_DEPENDS:=sdk_patched
+#SDK_PATCH_VER:=f8f27ce
+#SDK_VER:=$(SDK_BASE_VER)-$(SDK_PATCH_VER)
+#SDK_DIR_DEPENDS:=sdk_patched
 
 SDK_FILE_VER:=$(SDK_BASE_VER)
-SDK_FILE_SHA1:=8b63f1066d3560ff77f119e8ba30a9c39e7baaad
-SDK_PATCH_SHA1:=0bc21ec77b08488f04d3e1c9d161b711d07201a8
+SDK_FILE_SHA1:=48f2242d5895823709f222bf0fffce9d525996c8
+# SDK_PATCH_SHA1:=0bc21ec77b08488f04d3e1c9d161b711d07201a8
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_REL_DIR=sdk/esp_iot_sdk_v$(SDK_VER)
@@ -28,7 +28,7 @@ ifdef DEBUG
   CCFLAGS += -ggdb -O0
   LDFLAGS += -ggdb
 else
-  CCFLAGS += -Os
+  CCFLAGS += -O2
 endif
 
 #############################################################
@@ -227,8 +227,8 @@ $(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_PATCH_VER).patch
 
 $(TOP_DIR)/sdk/.pruned-$(SDK_VER):
 	rm -f $(SDK_DIR)/lib/liblwip.a $(SDK_DIR)/lib/libssl.a $(SDK_DIR)/lib/libmbedtls.a
-	ar d $(SDK_DIR)/lib/libmain.a time.o
-	ar d $(SDK_DIR)/lib/libc.a lib_a-time.o
+	$(AR) d $(SDK_DIR)/lib/libmain.a time.o
+	$(AR) d $(SDK_DIR)/lib/libc.a lib_a-time.o
 	touch $@
 
 $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip:
@@ -308,11 +308,11 @@ endif
 
 
 $(OBJODIR)/%.o: %.c
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
 
 $(OBJODIR)/%.d: %.c
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	@echo DEPEND: $(CC) -M $(CFLAGS) $<
 	@set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
@@ -331,22 +331,22 @@ $(OBJODIR)/%.d: %.cpp
 	rm -f $@.$$$$
 
 $(OBJODIR)/%.o: %.s
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(OBJODIR)/%.d: %.s
-	@mkdir -p $(OBJODIR); \
+	@mkdir -p $(dir $@); \
 	set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 $(OBJODIR)/%.o: %.S
-	@mkdir -p $(OBJODIR);
+	@mkdir -p $(dir $@);
 	$(CC) $(CFLAGS) -D__ASSEMBLER__ -o $@ -c $<
 
 $(OBJODIR)/%.d: %.S
-	@mkdir -p $(OBJODIR); \
+	@mkdir -p $(dir $@); \
 	set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \

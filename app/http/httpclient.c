@@ -414,7 +414,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 						  body = body + 4;
 					}
 
-					if ( os_strstr( req->buffer, "Transfer-Encoding: chunked" ) )
+					if ( os_strstr( req->buffer, "Transfer-Encoding: chunked" ) || os_strstr( req->buffer, "transfer-encoding: chunked" ) )
 					{
 						int	body_size = req->buffer_size - (body - req->buffer);
 						char	chunked_decode_buffer[body_size];

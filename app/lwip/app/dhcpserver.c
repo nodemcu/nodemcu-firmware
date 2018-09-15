@@ -689,6 +689,7 @@ static void ICACHE_FLASH_ATTR handle_dhcp(void *arg,
             	 os_printf("dhcps: handle_dhcp-> DHCPD_STATE_ACK\n");
 #endif			
 	             send_ack(pmsg_dhcps, malloc_len);
+		     wifi_softap_set_station_info(pmsg_dhcps->chaddr, &client_address.addr);
 	             break;
 	        case DHCPS_STATE_NAK://4
 #if DHCPS_DEBUG            
@@ -1199,7 +1200,6 @@ uint32 ICACHE_FLASH_ATTR wifi_softap_dhcps_client_update(u8 *bssid, struct ip_ad
             node_insert_to_list(&plist,pback_node);
         }
     }
-    wifi_softap_set_station_info(bssid, &pdhcps_pool->ip);
 
     return pdhcps_pool->ip.addr;
 }

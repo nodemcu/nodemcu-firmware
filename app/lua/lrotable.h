@@ -4,32 +4,16 @@
 #define lrotable_h
 
 #include "lua.h"
-#include "llimits.h"
-#include "lobject.h"
 #include "luaconf.h"
+#include "lobject.h"
+#include "llimits.h"
 
 /* Macros one can use to define rotable entries */
-#ifndef LUA_PACK_VALUE
 #define LRO_FUNCVAL(v)  {{.p = v}, LUA_TLIGHTFUNCTION}
 #define LRO_LUDATA(v)   {{.p = v}, LUA_TLIGHTUSERDATA}
 #define LRO_NUMVAL(v)   {{.n = v}, LUA_TNUMBER}
 #define LRO_ROVAL(v)    {{.p = (void*)v}, LUA_TROTABLE}
 #define LRO_NILVAL      {{.p = NULL}, LUA_TNIL}
-#else // #ifndef LUA_PACK_VALUE
-#define LRO_NUMVAL(v)   {.value.n = v}
-#ifdef ELUA_ENDIAN_LITTLE
-#define LRO_FUNCVAL(v)  {{(int)v, add_sig(LUA_TLIGHTFUNCTION)}}
-#define LRO_LUDATA(v)   {{(int)v, add_sig(LUA_TLIGHTUSERDATA)}}
-#define LRO_ROVAL(v)    {{(int)v, add_sig(LUA_TROTABLE)}}
-#define LRO_NILVAL      {{0, add_sig(LUA_TNIL)}}
-#else // #ifdef ELUA_ENDIAN_LITTLE
-#define LRO_FUNCVAL(v)  {{add_sig(LUA_TLIGHTFUNCTION), (int)v}}
-#define LRO_LUDATA(v)   {{add_sig(LUA_TLIGHTUSERDATA), (int)v}}
-#define LRO_ROVAL(v)    {{add_sig(LUA_TROTABLE), (int)v}}
-#define LRO_NILVAL      {{add_sig(LUA_TNIL), 0}}
-#endif // #ifdef ELUA_ENDIAN_LITTLE
-#endif // #ifndef LUA_PACK_VALUE
-
 #define LRO_STRKEY(k)   {LUA_TSTRING, {.strkey = k}}
 #define LRO_NUMKEY(k)   {LUA_TNUMBER, {.numkey = k}}
 #define LRO_NILKEY      {LUA_TNIL, {.strkey=NULL}}

@@ -43,6 +43,7 @@ INCLUDES += -I ./
 INCLUDES += -I ../spiffs
 INCLUDES += -I ../libc
 INCLUDES += -I ../lua
+INCLUDES += -I ../u8g2lib/u8g2/src/clib
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

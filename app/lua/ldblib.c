@@ -17,6 +17,8 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lrotable.h"
+#include "lstring.h"
+#include "lflash.h"
 #include "user_modules.h"
 
 
@@ -25,6 +27,39 @@ static int db_getregistry (lua_State *L) {
   lua_pushvalue(L, LUA_REGISTRYINDEX);
   return 1;
 }
+
+static int db_getstrings (lua_State *L) {
+  size_t i,n;
+  stringtable *tb;
+  GCObject *o;
+#if defined(LUA_FLASH_STORE) && !defined(LUA_CROSS_COMPILER)
+  const char *opt = lua_tolstring (L, 1, &n);
+  if (n==3 && memcmp(opt, "ROM", 4) == 0) {
+    if (G(L)->ROstrt.hash == NULL)
+      return 0;
+    tb = &G(L)->ROstrt;
+  } 
+  else 
+#endif
+  tb = &G(L)->strt;
+  lua_settop(L, 0);
+  lua_createtable(L, tb->nuse, 0);          /* create table the same size as the strt */
+  for (i=0, n=1; i<tb->size; i++) {
+    for(o = tb->hash[i]; o; o=o->gch.next) {
+      TString *ts =cast(TString *, o);
+      lua_pushnil(L);
+      setsvalue2s(L, L->top-1, ts);
+      lua_rawseti(L, -2, n++);             /* enumerate the strt, adding elements */
+    }
+  }
+  lua_getfield(L, LUA_GLOBALSINDEX, "table");
+  lua_getfield(L, -1, "sort");             /* look up table.sort function */
+  lua_replace(L, -2);                      /* dump the table table */
+  lua_pushvalue(L, -2);                    /* duplicate the strt_copy ref */ 
+  lua_call(L, 1, 0);                       /* table.sort(strt_copy) */
+  return 1;
+}
+
 
 #ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
 
@@ -395,6 +430,7 @@ const LUA_REG_TYPE dblib[] = {
   {LSTRKEY("getlocal"), LFUNCVAL(db_getlocal)},
 #endif
   {LSTRKEY("getregistry"), LFUNCVAL(db_getregistry)},
+  {LSTRKEY("getstrings"), LFUNCVAL(db_getstrings)},
 #ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
   {LSTRKEY("getmetatable"), LFUNCVAL(db_getmetatable)},
   {LSTRKEY("getupvalue"), LFUNCVAL(db_getupvalue)},

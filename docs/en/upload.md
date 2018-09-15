@@ -118,19 +118,9 @@ wifi.sta.config({ssid=SSID, pwd=PASSWORD})
 
 ## Compiling Lua on your PC for Uploading
 
-If you install `lua` on your development PC or Laptop then you can use the standard Lua
-compiler to syntax check any Lua source before downloading it to the ESP8266 module.  However,
-the NodeMCU compiler output uses different data types (e.g. it supports ROMtables) so the
-compiled output cannot run on the ESP8266.  
+If you install Lua on your development PC or Laptop, then you can use a standard `lua` environment to develop PC applications and also use the standard `luac` compiler to syntax check _any_ Lua source code. However because of architectural differences between the ESP8266 chipset with its SDK and a standard PC CPU, the system APIs are different and the binary output from the standard PC `luac` cannot be run on the ESP8266.  
 
-Compiling source on one platform for use on another (e.g. Intel x38 Window to ESP8266) is 
-known as _cross-compilation_ and the NodeMCU firmware supports the compilation of `luac.cross` 
-on \*nix patforms which have Lua 5.1, the Lua filesystem module (lfs), and the essential
-GCC tools. Simply change directory to the firmware root directoy and run the command:
+To address this issue,  the standard NodeMCU make now generates a host executable `lua.cross` (or `lua.cross.int` for integer builds) as well as the firmware binary itself.  Compiling source on one platform for use on another is known as _cross-compilation_ and this `luac.cross` compiler allows you to compile Lua source files on your PC for downloading onto ESP8266 in a binary format.
 
-    lua tools/cross-lua.lua
-    
-This will generate a `luac.cross` executable in your root directory which can be used to
-compile and to syntax-check Lua source on the Development machine for execution under 
-NodeMCU Lua on the ESP8266. 
- 
+The firmware also includes API calls to allow Lua sources to be compiled on ESP, but this mode of compilation is limited by the RAM heap available. Host cross compilation bypasses this ESP compile limit entirely and allows you to use larger modules within your code.  In the case of LFS compiles,  this code is stored in flash memory on the ESP, and so has no RAM overhead; the only limit is the size of the allocated LFS region.
+

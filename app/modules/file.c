@@ -214,18 +214,53 @@ static int file_open( lua_State* L )
 static int file_list( lua_State* L )
 {
   vfs_dir  *dir;
+  const char *pattern;
+  struct vfs_stat stat;
+  int pcres;
 
-  if (dir = vfs_opendir("")) {
-    lua_newtable( L );
-    struct vfs_stat stat;
-    while (vfs_readdir(dir, &stat) == VFS_RES_OK) {
-      lua_pushinteger(L, stat.size);
-      lua_setfield(L, -2, stat.name);
-    }
-    vfs_closedir(dir);
-    return 1;
+  lua_settop(L, 1);
+  pattern = luaL_optstring(L, 1, NULL);   /* Pattern (arg) or nil (not) at 1 */
+
+  dir = vfs_opendir("");
+  if (dir == NULL) {
+    return 0;
   }
-  return 0;
+
+  lua_newtable( L );                      /* Table at 2 */
+
+  if (pattern) {
+    /* 
+     * We know that pattern is a string, and so the "match" method will always
+     * exist.  No need to check return value here
+     */
+    luaL_getmetafield( L, 1, "match" );  /* Function at 3 */
+  }
+
+  while (vfs_readdir(dir, &stat) == VFS_RES_OK) {
+    if (pattern) {
+      lua_settop( L, 3 );                 /* Ensure nothing else on stack */
+
+      /* Construct and pcall(string.match,name,pattern) */
+      lua_pushvalue( L, 3 );
+      lua_pushstring( L, stat.name );
+      lua_pushvalue( L, 1 );
+      pcres = lua_pcall( L, 2, 1, 0 );
+      if (pcres != 0) {
+        vfs_closedir(dir);
+        lua_error( L );
+      }
+      if (lua_isnil( L, -1 )) {
+        continue;
+      }
+    }
+    lua_pushinteger( L, stat.size );
+    lua_setfield( L, 2, stat.name );
+  }
+
+  /* Shed everything back to Table */
+  lua_settop( L, 2 );
+  vfs_closedir(dir);
+  return 1;
 }
 
 static int get_file_obj( lua_State *L, int *argpos )

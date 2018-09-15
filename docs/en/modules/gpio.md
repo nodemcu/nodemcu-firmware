@@ -224,7 +224,22 @@ Step | Pin 1 | Pin 2 | Duration (&#956;S) | Range | Next Step
 
 When turning this into the table structure as described below, you don't need to specify anything
 special when the number of the next step is one more than the current step. When specifying an out of order
-step, you must specify how often you want this to be performed. A very large value can be used for roughly infinite.
+step, you must specify how often you want this to be performed. The number of iterations can be up to around 4,000,000,000 (actually any value that fits into
+an unisgned 32 bit integer). If this isn't enough repeats, then loops can be nested as below:
+
+```
+{
+  { [1] = gpio.HIGH, [2] = gpio.LOW, delay=500 },
+  { [1] = gpio.LOW, [2] = gpio.HIGH, delay=500, loop=1, count=1000000000, min=400, max=600 },
+  { loop=1, count=1000000000 }
+}
+```
+
+The loop/count in step 2 will cause 1,000,000,000 pulses to be output (at 1kHz). This is around 11 days. At this point, it will continue onto step 3 which triggers the
+11 days of 1kHz. THis process will repeat for 1,000,000,000 times (which is roughly 30 Million years). 
+
+The looping model is that associated with each loop there is a hidden variable which starts at the `count` value and decrements on each iteration until it gets to zero
+when it then proceeds to the next step. If control reaches that loop again, then the hidden variable is reset to the value of `count` again.
 
 
 ## gpio.pulse.build
@@ -243,7 +258,7 @@ Note this that is the NodeMCU pin number and *not* the ESP8266 GPIO number. Mult
 set at the same time. Note that any valid GPIO pin can be used, including pin 0.
 - `delay` specifies the number of microseconds after setting the pin values to wait until moving to the next state. The actual delay may be longer than this value depending on whether interrupts are enabled at the end time. The maximum value is 64,000,000 -- i.e. a bit more than a minute.
 - `min` and `max` can be used to specify (along with `delay`) that this time can be varied. If one time interval overruns, then the extra time will be deducted from a time period which has a `min` or `max` specified. The actual time can also be adjusted with the `:adjust` API below.
-- `count` and `loop` allow simple looping. When a state with `count` and `loop` is completed, the next state is at `loop` (provided that `count` has not decremented to zero). The first state is state 1. The `loop` is rather like a goto instruction as it specifies the next instruction to be executed.
+- `count` and `loop` allow simple looping. When a state with `count` and `loop` is completed, the next state is at `loop` (provided that `count` has not decremented to zero). The count is implemented as an unsigned 32 bit integer -- i.e. it has a range up to around 4,000,000,000. The first state is state 1. The `loop` is rather like a goto instruction as it specifies the next instruction to be executed.
 
 #### Returns
 `gpio.pulse` object.
@@ -383,7 +398,7 @@ pulser:adjust(177)
 ## gpio.pulse:update
 
 This can change the contents of a particular step in the output program. This can be used to adjust the delay times, or even the pin changes. This cannot
-be used to remove entries or add new entries.
+be used to remove entries or add new entries. Changing the `count` will change the initial value, but not change the current decrementing value;
 
 #### Syntax
 `pulser:update(entrynum, entrytable)`
@@ -396,7 +411,7 @@ be used to remove entries or add new entries.
 Nothing
 
 
- Example
+#### Example
 ```lua
 pulser:update(1, { delay=1000 })
 ```

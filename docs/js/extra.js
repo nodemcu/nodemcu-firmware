@@ -1,4 +1,5 @@
 var nodemcu = nodemcu || {};
+
 (function () {
   'use strict';
   //var languageCodeToNameMap = {en: 'English', de: 'Deutsch'};
@@ -112,7 +113,7 @@ var nodemcu = nodemcu || {};
    * replaces the relative path with an absolute path based on the selected branch.
    */
   function replaceRelativeLinksWithStaticGitHubUrl() {
-    var relativePath = "../../../..";
+    var relativePath = isOnRtd() ? "../../../.." : "../../..";
     var gitHubPath = "https://github.com/nodemcu/nodemcu-firmware/tree/" + determineSelectedBranch();
     var gitHubLinks = $("a[href^='" + relativePath + "']").each(function (index) {
       var url = $(this).attr('href');
@@ -148,7 +149,7 @@ var nodemcu = nodemcu || {};
    */
   function determineSelectedLanguageCode() {
     var selectedLanguageCode, path = window.location.pathname;
-    if (window.location.origin.indexOf('readthedocs') > -1) {
+    if (isOnRtd()) {
       // path is like /en/<branch>/<lang>/build/ -> extract 'lang'
       // split[0] is an '' because the path starts with the separator
       selectedLanguageCode = path.split('/')[3];
@@ -171,7 +172,7 @@ var nodemcu = nodemcu || {};
    */
   function determineSelectedBranch() {
     var branch = 'dev', path = window.location.pathname;
-    if (window.location.origin.indexOf('readthedocs') > -1) {
+    if (isOnRtd()) {
       // path is like /en/<branch>/<lang>/build/ -> extract 'lang'
       // split[0] is an '' because the path starts with the separator
       var thirdPathSegment = path.split('/')[2];
@@ -191,5 +192,9 @@ var nodemcu = nodemcu || {};
       }
     }
     return values;
+  }
+
+  function isOnRtd() {
+    return window.location.origin.indexOf('readthedocs') > -1;
   }
 }());
