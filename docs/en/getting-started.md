@@ -2,11 +2,12 @@
 
 The basic process to get started with NodeMCU consists of the following three steps.
 
-1. [Build the firmware](build.md) with the modules you need; do that once.
-1. [Flash the firmware](flash.md) to the chip; do that once.
-1. [Upload code](upload.md) to the device; every time the application changes.
+1.  [Build the firmware](build.md) with the modules you need
+1.  [Flash the firmware](flash.md) to the chip
+1.  [Upload code](upload.md) to the device.
 
-And then, once your application outgrows the limited heap, you will want to use the [Lua Flash Store, LFS](lfs.md). That will require a different firmware and a different way of uploading the, now compiled & bundled, Lua files. 
+You will typically do steps 1 and 2 only once, but then repeat step 3 as you develop your application. If your application outgrows the limited on-chip RAM then you can use the [Lua Flash Store](lfs.md) (LFS) to move your Lua code into flash memory, freeing a lot more RAM for variable data. This is why it is a good idea to enable LFS for step 1 if you are developing a larger application. As documented below there is a different approach to uploading Lua code. 
+ 
 
 !!! caution
 	There's more than one way to skin a cat. For each of the tasks you have a number of choices with regards to tooling. The colored boxes represent an opinionated path to start your journey - the quickest way to success so to speak. Feel free to follow the links above to get more detailed information.
@@ -115,7 +116,7 @@ And then, once your application outgrows the limited heap, you will want to use 
 
 **How to read this**
 
-Use case: you're just starting with NodeMCU and your OS of choice is Windows (and you save using LFS for later). The blue boxes in the 'Windows' column are your guideline. You:
+Use case: you're just starting with NodeMCU and your OS of choice is Windows (and you are not using LFS), then the blue boxes in the 'Windows' column are your guideline. You:
 
 - build the firmware on the cloud builder
 - download and run the NodeMCU PyFlasher to transfer the firmware to the device
@@ -123,19 +124,19 @@ Use case: you're just starting with NodeMCU and your OS of choice is Windows (an
 
 **Missing tools?**
 
-We reduced the number of tools mentioned here to the bare minimum. The intention is to get you programming Lua on ESP8266 as quickly as possible. See [https://frightanic.com/iot/tools-ides-nodemcu/](https://frightanic.com/iot/tools-ides-nodemcu/) for lots of other options.
+Our intention is to introduce you to programming in Lua on the ESP8266 as quickly as possible, so we have kept the number of tools mentioned here to a minimum; [frightanic.com: Tools and IDEs](https://frightanic.com/iot/tools-ides-nodemcu/) discusses other tools and options.
 
 !!! caution
 	The below chapters are not meant to be followed one-by-one. Pick a task from the matrix above and it will take you to the relevant chapter.
 
 ## Cloud Builder
 
-The cloud builder at [https://nodemcu-build.com](https://nodemcu-build.com) allows to pick NodeMCU branch, modules and a few other config options (e.g. SSL yes/no). After the build is completed you will receive an email with two links to download your custom firmware: 
+The cloud builder at [https://nodemcu-build.com](https://nodemcu-build.com) allows to pick NodeMCU branch, modules and a few other configuration options (e.g. SSL yes/no). After the build is completed you will receive an email with two links to download your custom firmware: 
 
 - one for NodeMCU with floating support
 - one for NodeMCU *without* floating support i.e. an integer-only binary
 
-The integer version uses negligibly less memory. It's recommended to use the float version.
+We recommend using the floating point build, even though the integer variant uses less RAM for storing variables, as there is little runtime difference between the two variants. Furthermore, the floating point variant handles non-integer values properly and this greatly simplifies numeric calculations.
 
 For everything else the cloud builder GUI is self-explanatory. Hence, no need for further explanations here.
 
@@ -153,7 +154,7 @@ _Note that this service is not maintained by the NodeMCU team. It's run by a Nod
 
 [Self-contained NodeMCU flasher](https://github.com/marcelstoer/nodemcu-pyflasher) with GUI based on Python, esptool.py (see below) and wxPython. A runnable .exe is available for Windows and a .dmg for macOS.
 
-**No installation required on Windows and macOS!** Instructions how to run it on other platforms available on project site.
+**No installation required on Windows and macOS!** Instructions how to run it on other platforms are available on the project site.
 
 ![](https://github.com/marcelstoer/nodemcu-pyflasher/raw/master/images/gui.png)
 
@@ -174,9 +175,11 @@ _Note that this tool is not an official NodeMCU offering. It's maintained by a N
 1. Install [either Python 2.7 or Python >=3.4](https://www.python.org/downloads/) on your system if it's not available yet.
 1. Connect USB cable to device and computer.
 1. `$ pip install esptool` (also installs pySerial)
-1. `$ esptool.py --port <serial-port-of-ESP8266> write_flash -fm <flash-mode> 0x00000 <nodemcu-firmware>.bin`
+1. `$ esptool.py --port <serial-port-of-ESP8266> --baud <baud-rate> write_flash -fm <flash-mode> 0x00000 <nodemcu-firmware>.bin`
 
 [`flash-mode`](https://github.com/espressif/esptool/#flash-modes) is `qio` for most ESP8266 ESP-01/07 (512&nbsp;kByte modules) and `dio` for most ESP32 and ESP8266 ESP-12 (>=4&nbsp;MByte modules). ESP8285 requires `dout`.
+
+The [default baud rate](https://github.com/espressif/esptool#baud-rate) is 115200. Most hardware configurations should work with 230400 dependent on OS, driver, and module. NodeMCU and WeMos modules are usually ok with 921600.
 
 More details available on esptool.py GitHub repo.
 
@@ -184,7 +187,7 @@ More details available on esptool.py GitHub repo.
 
 ## ESPlorer
 
-TBD
+TBD [https://github.com/4refr0nt/ESPlorer](https://github.com/4refr0nt/ESPlorer)
 
 [↑ back to matrix](#task-os-selector)
 
@@ -206,11 +209,13 @@ Quick start:
 1. Upload a Lua file `$ nodemcu-tool upload --port=/dev/ttyUSB0 helloworld.lua`
 1. Run it `$ nodemcu-tool run helloworld.lua`
 
+Note that you may need to use the `sudo` prefix to install the tool at step 2, and also possibly add the `–unsafe-perm` flag after the install command.
+
 [↑ back to matrix](#task-os-selector)
 
 ## Docker
 
-The [Docker NodeMCU build image](https://github.com/marcelstoer/docker-nodemcu-build) is the easiest method to build NodeMCU related artifacts locally on your preferred platform.
+The [Docker NodeMCU build image](https://github.com/marcelstoer/docker-nodemcu-build) is the easiest method to build NodeMCU related components locally on your preferred platform.
 
 Offering:
 
@@ -226,17 +231,17 @@ Detailed instructions available in the image's README. As for available config o
 
 [↑ back to matrix](#task-os-selector)
 
-_Note that this image is not an official NodeMCU offering. It's maintained by a NodeMCU team member as an individual, though._
+_Note that this Docker image is not an official NodeMCU offering. It's maintained by a NodeMCU team member as an individual, though._
 
 ## Build `luac.cross`
 
 A local copy of `luac.cross` is only needed if you want to compile the Lua files into an LFS image yourself and you are _not_ using Docker.
 
 ### Windows
-Windows 10 users can install and use the Windows Subsystem for Linux (WSL). Alternatively all Windows users can [install Cygwin](https://www.cygwin.com/install.html). (You will only need the Cygwin core). Either way, you will need a copy of the `luac.cross` compiler:
+Windows 10 users can install and use the Windows Subsystem for Linux (WSL). Alternatively all Windows users can [install Cygwin](https://www.cygwin.com/install.html) (only Cygwin core + **gcc-core** + **gnu make**). Either way, you will need a copy of the `luac.cross` compiler:
 
 -  You can either download this from Terry's fileserver.  The [ELF variant](http://files.ellisons.org.uk/esp8266/luac.cross) is used for all recent Linux and WSL flavours, or the [cygwin binary](http://files.ellisons.org.uk/esp8266/luac.cross.cygwin)) for the Cygwin environment.
--  Or you can compile it yourself by downloading the current NodeMCU sources (this [ZIPfile](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)); edit the `app/includes/user_config.h` file and then `cd` to the `app/lua/luac_cross` and run make to build the compiler in the NodeMCU firmware root directory.  Note that the `luac.cross` make only needs the host toolchain which is installed by default in WSL, but in Cygwin you will need to tick the _gcc-core_ + _gnu make_ options during setup.
+-  Or you can compile it yourself by downloading the current NodeMCU sources (this [ZIPfile](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)); edit the `app/includes/user_config.h` file and then `cd` to the `app/lua/luac_cross` and run make to build the compiler in the NodeMCU firmware root directory.  Note that the `luac.cross` make only needs the host toolchain which is installed by default.
 
 ### macOS
 
