@@ -10,8 +10,9 @@ The Lua Flash Store (**LFS**) patch modifies the Lua RTS to support a modified H
 
 Unfortunately, the ESP architecture provides very restricted write operations to flash memory (writing to NAND flash involves bulk erasing complete 4Kb memory pages, before overwriting each erased page with any new content).  Whilst it is possible to develop a R/W file system within this constraint (as SPIFFS demonstrates), this makes impractical to modify Lua code pages on the fly. Hence the LFS patch works within a reflash-and-restart paradigm for reloading the LFS, and does this by adding two API new calls: one to reflash the LFS and restart the processor, and one to access LFS stored functions.  The patch also addresses all of the technical issues 'under the hood' to make this magic happen.
 
-The remainder of this paper is split into two parts. The first provides an overview for Lua developers wanting to use LFS effectively at an application programming level, and as most of our developers use a Windows platform, it gives a quick start for these developers before covering some of application issues in more detail.  The second part is for those who want to understand a little of how this magic happens, and gives more details on the technical issues that were addressed in order to implement the patch.
+The remainder of this paper is for those who want to understand a little of how this magic happens, and gives more details on the technical issues that were addressed in order to implement the patch.
 
+If you're just interested in learning how to quickly get started with LFS then please read the respective chapters in the [Getting Started](./getting-started.md) overview.
 
 ## Using LFS
 
