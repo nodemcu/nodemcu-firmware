@@ -10,66 +10,11 @@ The Lua Flash Store (**LFS**) patch modifies the Lua RTS to support a modified H
 
 Unfortunately, the ESP architecture provides very restricted write operations to flash memory (writing to NAND flash involves bulk erasing complete 4Kb memory pages, before overwriting each erased page with any new content).  Whilst it is possible to develop a R/W file system within this constraint (as SPIFFS demonstrates), this makes impractical to modify Lua code pages on the fly. Hence the LFS patch works within a reflash-and-restart paradigm for reloading the LFS, and does this by adding two API new calls: one to reflash the LFS and restart the processor, and one to access LFS stored functions.  The patch also addresses all of the technical issues 'under the hood' to make this magic happen.
 
-The remainder of this paper is split into two parts. The first provides an overview for Lua developers wanting to use LFS effectively at an application programming level, and as most of our developers use a Windows platform, it gives a quick start for these developers before covering some of application issues in more detail.  The second part is for those who want to understand a little of how this magic happens, and gives more details on the technical issues that were addressed in order to implement the patch.
+The remainder of this paper is for those who want to understand a little of how this magic happens, and gives more details on the technical issues that were addressed in order to implement the patch.
 
+If you're just interested in learning how to quickly get started with LFS then please read the respective chapters in the [Getting Started](./getting-started.md) overview.
 
 ## Using LFS
-
-### A Quick Start for Windows Developers
-
-This is a simple step-by-step guide for ESP8266 Lua developers who want to start to use `luac.cross` on a Windows development environment.
-
-#### Get and flash LFS enabled firmware
-
-Use the [NodeMCU Build](https://nodemcu-build.com/) service to build the firmware.  In the "LFS options" section choose the size of the LFS partition (64 KB should be fine). The SPIFFS default settings will be fine.  See section [selecting the firmware](#selecting-the-firmware) for further details.  Once you have received the build confirmation email and downloaded the flash image, you can then [flash the firmware](flash.md) to your ESP8266.
-
-#### Build or download your local copy of `luac.cross`
-
-Windows 10 users can install and use the Windows Subsystem for Linux (WSL).  Alternatively all Windows users can [install Cygwin](https://www.cygwin.com/install.html). (You will only need the Cygwin core). Either way, you will need a copy of the `luac.cross` compiler:
--  You can either download this from my fileserver.  The [ELF variant](http://files.ellisons.org.uk/esp8266/luac.cross) is used for all recent Linux and WSL flavours, or the [cygwin binary](http://files.ellisons.org.uk/esp8266/luac.cross.cygwin)) for the Cygwin environment.
--  Or you can compile it yourself by downloading the current NodeMCU sources (this [ZIPfile](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)); edit the `app/includes/user_config.h` file and the `cd` to the `app/lua/luac_cross` and run make to build the compiler in the NodeMCU firmware root directory.  Note that the `luac.cross` make only needs the host toolchain which is installed by default in WSL, but in Cygwin you will need to tick the _gcc-core_ + _gnu make_ options during setup.
-
-#### Select Lua files to be run from LFS
-
-The easiest approach is to maintain all the Lua files for your project in a single directory on your host. (These files will be compiled by `luac.cross` to build the LFS image in next step.)
-    
-For example to run the Telnet and FTP servers from LFS, put the following files in your project directory:
-	
-* [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua).  LFS helper routines and functions.
-* [lua_examples/lfs/dummy_strings.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/dummy_strings.lua).  Moving common strings into LFS.
-* [lua_examples/telnet/telnet.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/telnet/telnet.lua).  A simple **telnet** server.
-* [lua_modules/ftp/ftpserver.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_modules/ftp/ftpserver.lua).  A simple **FTP** server.
-
-You should always include the first two modules, but the remaining files would normally be replaced by your own project files.  Also remember that these are examples and that you are entirely free to modify or to replace them for your own application needs.
-
-#### Compile the LFS image
-
-You will do this from within the WSL or Cygwin command window, both of which use the `bash` shell; do a `cd` to the project directory, and execute the command:
-	
-```bash
-luac.cross -o lfs.img -f *.lua
-```
-
-You will need to adjust the `img` and `lua` paths according to their location, and ensure that `luac.cross` is in your `$PATH` search list.  For example if you are using WSL and your project files are in `D:\myproject` then the Lua path would be `/mnt/d/myproject/*.lua` (For cygwin replace `mnt` by `cygwin`).  This will create the `lfs.img` file if there are no Lua compile errors (again specify an explicit directory path if needed).
-
-You might also want to add a simple one-line script file to your ~/bin directory to wrap this command up.
-
-#### Upload the LFS image and flash it to the LFS region
-
-Now upload the compiled LFS image file (`lfs.img` in this case) as a normal SPIFFS file. Several tools are available to upload the files from host to SPIFFS, including [ESPlorer](https://github.com/4refr0nt/ESPlorer).  There is also a new example, [HTTP_OTA.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/HTTP_OTA.lua), in `lua_examples` that can retrieve images from a standard web service.
-  
-Once the LFS image file is on SPIFFS, you can execute the [node.flashreload()](/en/dev/en/modules/node/#nodeflashreload) command and the loader will then load it into flash and immediately restart the ESP module with the new LFS loaded, if the image file is valid.  However, the call will return with an error _if_ the file is found to be invalid, so your reflash code should include logic to handle such an error return.
-
-#### Edit your `init.lua` file
-
-`init.lua` is the file that is first executed by the NodeMCU firmware. Usually it setups the WiFi connection and executes the main Lua application.  Assuming that you have included the `_init` file discussed above, then executing this will add a simple API for LFS module access:
-
--  Individual functions can be executed directly, e.g. `LFS.myfunc(a,b)`
--  LFS is now in the require path, so `require 'myModule'` works as expected.
-
-Do a protected call of this `_init` code: `pcall(node.flashindex("_init"))` and check the error status.  See [Programming Techniques and Approachs](#programming-techniques-and-approachs) below for a more detailed description. 
-
-The remainder of this section describes how to use LFS in further detail.
 
 ### Selecting the firmware
 
