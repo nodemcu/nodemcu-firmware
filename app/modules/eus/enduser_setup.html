@@ -160,6 +160,8 @@
 				</div>
 				<input id=ssid type=text autocorrect=off autocapitalize=none placeholder='Wi-Fi Name' />
 				<input id=wifi_password type=text autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
+				<input id=TwitterAPI type=text autocorrect=off autocapitalize=none autocomplete=off placeholder='Twitter API Handler' />
+				<input id=TwitterMessage type=text autocorrect=off autocapitalize=none autocomplete=off placeholder='Twitter Message' />
 				<button id=submit type=button>Save</button>
 			</div>
 			<div id=f2>
@@ -242,7 +244,11 @@
 		}
 		function submit() {
 			submitted = true;
-			var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value);
+			var json, config = {};
+			config.twitterAPI = $('#TwitterAPI').value;
+			config.twitterMessage = $('#TwitterMessage').value;
+			json = JSON.stringify(config);
+			var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value) + '&config=' + encodeURIComponent(json);
 			clearTimeout(rs);
 			fetch(url, 'GET', newSt, 2);
 			cur('#f3');
