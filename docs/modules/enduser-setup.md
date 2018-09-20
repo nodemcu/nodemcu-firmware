@@ -21,6 +21,31 @@ the appropriate `Content-Encoding` header to the response.
 
 *Note: If gzipped, the file can also be named `enduser_setup.html.gz` for semantic purposes. Gzip encoding is determined by the file's contents, not the filename.*
 
+### Additional configuration parameters
+
+You can also add some additional inputs in the `enduser_setup.html` (as long as you keep those needed for the wifi setup). The additional data will be written in a `eus_params.lua`
+file in the root filesystem of the ESP8266, which you can then load in your own code. In this case, the data will be saved as a set of variables with the name being the input name, 
+and the value being a string representing what you put in the form.
+
+For instance, if your HTML contains 2 additional inputs:
+
+```html
+<input id=timeout_delay type=text placeholder="Delay in seconds" />
+<input id=device_name type=text placeholder="Unique device name" />
+```
+
+Then the `eus_params.lua` file will contain the following:
+
+```lua
+-- those wifi_* are the base parameters that are saved anyway
+wifi_ssid="ssid"
+wifi_password="password"
+-- your own parameters:
+timeout_delay="xxx"
+device_name="yyy"
+```
+---
+
 The following HTTP endpoints exist:
 
 |Endpoint|Description|
@@ -30,8 +55,8 @@ The following HTTP endpoints exist:
 |/generate_204|Returns a HTTP 204 status (expected by certain Android clients during Wi-Fi connectivity checks)|
 |/status|Returns plaintext status description, used by the web page|
 |/status.json|Returns a JSON payload containing the ESP8266's chip id in hexadecimal format and the status code: 0=Idle, 1=Connecting, 2=Wrong Password, 3=Network not Found, 4=Failed, 5=Success|
-|/setwifi|Endpoint intended for services to use for setting the wifi credentials. Identical to `/update` except returns the same payload as `/status.json` instead of redirecting to `/`.|
-|/update|Form submission target. Example: `http://example.com/update?wifi_ssid=foobar&wifi_password=CorrectHorseBatteryStaple`. Must be a GET request. Will redirect to `/` when complete. |
+|/setwifi|Endpoint intended for services to use for setting the wifi credentials. Identical to `/update` except must be used as a form POST and returns the same payload as `/status.json` instead of redirecting to `/`.|
+|/update|Form submission target. Example: `http://example.com/update?wifi_ssid=foobar&wifi_password=CorrectHorseBatteryStaple`. Must be a GET request. Will redirect to `/` when complete. Note: won't update the eus_params.lua file. |
 
 
 ## enduser_setup.manual()
