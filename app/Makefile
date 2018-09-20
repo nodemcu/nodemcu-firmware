@@ -45,6 +45,7 @@ SUBDIRS= 					\
 	fatfs					\
 	esp-gdbstub				\
 	pm					\
+	uzlib					\
 	$(OPT_SEL_MKTARGETS)
 
 endif # } PDIR
@@ -76,6 +77,8 @@ COMPONENTS_eagle.app.v6 = 			\
 	net/libnodemcu_net.a			\
 	mbedtls/libmbedtls.a      		\
 	modules/libmodules.a			\
+	smart/smart.a 				\
+	uzlib/libuzlib.a 			\
 	$(OPT_SEL_COMPONENTS)
 
 
