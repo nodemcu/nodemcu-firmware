@@ -158,9 +158,12 @@
 					<span id=arrow>&#x25bc;</span>
 					<select id=aplist name=aplist></select>
 				</div>
-				<input id=ssid type=text autocorrect=off autocapitalize=none placeholder='Wi-Fi Name' />
-				<input id=wifi_password type=text autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
-				<button id=submit type=button>Save</button>
+				<form action="/setwifi" method="POST">
+					<input name=wifi_ssid type=text autocorrect=off autocapitalize=none placeholder='Wi-Fi Name' />
+					<input name=wifi_password type=text autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
+					<!-- You can add inputs here and have them pop up in your lua code through the file eus_params.lua -->
+					<input type="submit" value="Save"/>
+				</form>
 			</div>
 			<div id=f2>
 				<h1>Success!</h1>
@@ -242,6 +245,8 @@
 		}
 		function submit() {
 			submitted = true;
+			var json, config = {};
+			json = JSON.stringify(config);
 			var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value);
 			clearTimeout(rs);
 			fetch(url, 'GET', newSt, 2);
@@ -310,7 +315,7 @@
 		  $('#aplist').onchange = function () {
 			  $('#ssid').value = $('#aplist').value;
 		  };
-		  $('#submit').onclick = submit;
+		  //$('#submit').onclick = submit;
 		  $('#bk2').onclick = function () {
 			  cur('#f1')
 		  }
