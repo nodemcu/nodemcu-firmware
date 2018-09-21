@@ -93,6 +93,7 @@ static const char http_html_filename[] = "enduser_setup.html";
 static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nConnection:close\r\nContent-Type:text/html\r\n"; /* Note single \r\n here! */
 static const char http_header_204[] = "HTTP/1.1 204 No Content\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_302_trying[] = "HTTP/1.1 302 Moved\r\nLocation: /?trying=true\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_400[] = "HTTP/1.1 400 Bad request\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_405[] = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
@@ -1117,7 +1118,8 @@ static err_t enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, 
             body += 4; // length of the double CRLF found above
             enduser_setup_write_file_with_extra_configuration_data(body, bodylength);
           }
-          enduser_setup_serve_status_as_json(http_client);
+          // redirect user to the base page with the trying flag
+          enduser_setup_http_serve_header(http_client, http_header_302_trying, LITLEN(http_header_302_trying));
           break;
         }
         case 1:
@@ -1339,7 +1341,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
 
   if (c_strncmp(data, "GET ", 4) == 0)
   {
-    if (c_strncmp(data + 4, "/ ", 2) == 0)
+    if (c_strncmp(data + 4, "/ ", 2) == 0 || c_strncmp(data + 4, "/?", 2) == 0)
     {
       if (enduser_setup_http_serve_html(http_client) != 0)
       {

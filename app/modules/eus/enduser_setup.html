@@ -153,12 +153,12 @@
 			<div id=deviceId></div>
 			<div id=f1>
 				<h3>Connect device to your Wi-Fi</h3>
-				<button id=networks type=button class=utility></button>
-				<div id=dropdown>
-					<span id=arrow>&#x25bc;</span>
-					<select id=aplist name=aplist></select>
-				</div>
 				<form action="/setwifi" method="POST">
+					<button id=networks type=button class=utility></button>
+					<div id=dropdown>
+						<span id=arrow>&#x25bc;</span>
+						<select id=aplist name=aplist></select>
+					</div>
 					<input name=wifi_ssid type=text autocorrect=off autocapitalize=none placeholder='Wi-Fi Name' />
 					<input name=wifi_password type=text autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
 					<!-- You can add inputs here and have them pop up in your lua code through the file eus_params.lua -->
@@ -243,15 +243,6 @@
 				}
 			}
 		}
-		function submit() {
-			submitted = true;
-			var json, config = {};
-			json = JSON.stringify(config);
-			var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value);
-			clearTimeout(rs);
-			fetch(url, 'GET', newSt, 2);
-			cur('#f3');
-		}
 		function fetch(url, method, callback, time_out) {
 			var xhr = new XMLHttpRequest();
 			xhr.onloadend = function () {
@@ -310,16 +301,18 @@
 				fetch('/aplist?n=' + Math.random(), 'GET', gotAp, 10);
 		}
 		window.onload = function() {
-		  ab.innerText = 'Scan for Networks';
-		  ab.onclick = refrAp;
-		  $('#aplist').onchange = function () {
-			  $('#ssid').value = $('#aplist').value;
-		  };
-		  //$('#submit').onclick = submit;
-		  $('#bk2').onclick = function () {
-			  cur('#f1')
-		  }
-		  rs = to(refr, 0.5);
+			let params = new URLSearchParams(window.location.search);
+			let trying = params.get('trying');
+			ab.innerText = 'Scan for Networks';
+			ab.onclick = refrAp;
+			$('#aplist').onchange = function () {
+				$('#ssid').value = $('#aplist').value;
+			};
+			$('#bk2').onclick = function () {
+				cur('#f1')
+			}
+			rs = to(refr, 0.5);
+			if( trying ) cur("#f3");
 		}
   </script>
 </body>
