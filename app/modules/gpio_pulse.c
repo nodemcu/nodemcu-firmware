@@ -10,7 +10,7 @@
 #include "pin_map.h"
 #include "driver/gpio16.h"
 
-#define TIMER_OWNER 'P'
+#define TIMER_OWNER (('P' << 8) + 'U')
 
 #define xstr(s) str(s)
 #define str(s) #s
