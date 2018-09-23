@@ -434,7 +434,7 @@ static int gpio_pulse_start(lua_State *L) {
   pulser->next_adjust = initial_adjust;
 
   // Now start things up
-  if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
+  if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, FALSE)) {
     // Failed to init the timer
     luaL_error(L, "Unable to initialize timer");
   }

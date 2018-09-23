@@ -25,6 +25,10 @@
 
 #include "hw_timer.h"
 
+//#define DEBUG_HW_TIMER
+//#undef NODE_DBG
+//#define NODE_DBG dbg_printf
+
 #define FRC1_ENABLE_TIMER  BIT7
 #define FRC1_AUTO_LOAD  BIT6
 
@@ -45,22 +49,27 @@ typedef struct _timer_user {
   bool autoload;
   int32_t delay;
   int32_t autoload_delay;
+  uint32_t expected_interrupt_time;
   os_param_t owner;
   os_param_t callback_arg;
   void (* user_hw_timer_cb)(os_param_t);
+#ifdef DEBUG_HW_TIMER
   int cb_count;
+#endif
 } timer_user;
 
 static timer_user *active;
 static timer_user *inactive;
 static uint8_t lock_count;
 static uint8_t timer_running;
+static uint32_t time_next_expiry;
+static int32_t last_timer_load;
 
 #define LOCK()   do { ets_intr_lock(); lock_count++; } while (0)
 #define UNLOCK()   if (--lock_count == 0) ets_intr_unlock()
 
-#if 0
-void hw_timer_debug() {
+#ifdef DEBUG_HW_TIMER
+void ICACHE_RAM_ATTR hw_timer_debug() {
   dbg_printf("timer_running=%d\n", timer_running);
   timer_user *tu;
   for (tu = active; tu; tu = tu->next) {
@@ -70,20 +79,48 @@ void hw_timer_debug() {
 }
 #endif
 
-static void adjust_root() {
-  // Can only ge called with interrupts disabled
-  // change the initial active delay so that relative stuff still works
-  if (active && timer_running) {
-    int32_t time_left = (RTC_REG_READ(FRC1_COUNT_ADDRESS)) & ((1 << 23) - 1);
-    if (time_left > active->delay) {
-      // We have missed the interrupt
-      time_left -= 1 << 23;
-    }
-    active->delay = time_left;
+static void ICACHE_RAM_ATTR set_timer(int delay, const char *caller) {
+  if (delay < 1) {
+    delay = 1;
   }
+  int32_t time_left = (RTC_REG_READ(FRC1_COUNT_ADDRESS)) & ((1 << 23) - 1);
+  RTC_REG_WRITE(FRC1_LOAD_ADDRESS, delay);
+
+  if (time_left > last_timer_load) {
+    // We have missed the interrupt
+    time_left -= 1 << 23;
+  }
+  NODE_DBG("%s(%x): time_next=%d, left=%d (load=%d), delay=%d  => %d\n", caller, active->owner, time_next_expiry, time_left, last_timer_load, delay, time_next_expiry - time_left + delay);
+  time_next_expiry = time_next_expiry - time_left + delay;
+  last_timer_load = delay;
+
+  timer_running = 1;
 }
 
-static timer_user *find_tu(os_param_t owner) {
+static void ICACHE_RAM_ATTR adjust_root() {
+  // Can only ge called with interrupts disabled
+  // change the initial active delay so that relative stuff still works
+  // Also, set the last_timer_load to be now
+  int32_t time_left = (RTC_REG_READ(FRC1_COUNT_ADDRESS)) & ((1 << 23) - 1);
+  if (time_left > last_timer_load) {
+    // We have missed the interrupt
+    time_left -= 1 << 23;
+  }
+
+  if (active && timer_running) {
+    active->delay = time_left;
+  }
+
+  if (active) {
+    NODE_DBG("adjust(%x): time_left=%d (last_load=%d)\n", active->owner, time_left, last_timer_load);
+  } else {
+    NODE_DBG("adjust: time_left=%d (last_load=%d)\n", time_left, last_timer_load);
+  }
+
+  last_timer_load = time_left;
+}
+
+static timer_user * ICACHE_RAM_ATTR find_tu(os_param_t owner) {
   // Try the inactive chain first
   timer_user **p;
 
@@ -113,7 +150,7 @@ static timer_user *find_tu(os_param_t owner) {
   return NULL;
 }
 
-static timer_user *find_tu_and_remove(os_param_t owner) {
+static timer_user * ICACHE_RAM_ATTR find_tu_and_remove(os_param_t owner) {
   // Try the inactive chain first
   timer_user **p;
 
@@ -151,8 +188,7 @@ static timer_user *find_tu_and_remove(os_param_t owner) {
       result->next = NULL;
 
       if (need_to_reset) {
-        RTC_REG_WRITE(FRC1_LOAD_ADDRESS, active->delay);
-        timer_running = 1;
+        set_timer(active->delay, "find_tu");
       }
 
       UNLOCK();
@@ -164,10 +200,13 @@ static timer_user *find_tu_and_remove(os_param_t owner) {
   return NULL;
 }
 
-static void insert_active_tu(timer_user *tu) {
+static void ICACHE_RAM_ATTR insert_active_tu(timer_user *tu) {
   timer_user **p;
 
   LOCK();
+
+  tu->expected_interrupt_time = time_next_expiry - last_timer_load + tu->delay;
+
   for (p = &active; *p; p = &((*p)->next)) {
     if ((*p)->delay >= tu->delay) {
       break;
@@ -181,10 +220,9 @@ static void insert_active_tu(timer_user *tu) {
   tu->next = *p;
   *p = tu;
 
-  if (*p == active) {
+  if (tu == active) {
     // We have a new leader
-    RTC_REG_WRITE(FRC1_LOAD_ADDRESS, active->delay > 0 ? active->delay : 1);
-    timer_running = 1;
+    set_timer(active->delay, "insert_active");
   }
   UNLOCK();
 }
@@ -206,6 +244,8 @@ bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks(os_param_t owner, uint32_t tick
 
   tu->delay = ticks;
   tu->autoload_delay = ticks;
+
+  NODE_DBG("arm(%x): ticks=%d\n", owner, ticks);
 
   LOCK();
   adjust_root();
@@ -249,6 +289,7 @@ bool platform_hw_timer_set_func(os_param_t owner, void (* user_hw_timer_cb_set)(
   }
   tu->callback_arg = arg;
   tu->user_hw_timer_cb = user_hw_timer_cb_set;
+  NODE_DBG("set-CB(%x): %x, %x\n", tu->owner, tu->user_hw_timer_cb, tu->callback_arg);
   return true;
 }
 
@@ -264,7 +305,8 @@ static void ICACHE_RAM_ATTR hw_timer_isr_cb(void *arg)
     timer_user *fired = active;
     active = fired->next;
     if (fired->autoload) {
-      fired->delay = fired->autoload_delay;
+      fired->expected_interrupt_time += fired->autoload_delay;
+      fired->delay = fired->expected_interrupt_time - (time_next_expiry - last_timer_load);
       insert_active_tu(fired);
       if (active->delay <= 0) {
         keep_going = true;
@@ -280,13 +322,15 @@ static void ICACHE_RAM_ATTR hw_timer_isr_cb(void *arg)
       }
     }
     if (fired->user_hw_timer_cb) {
+#ifdef DEBUG_HW_TIMER
       fired->cb_count++;
+#endif
+      NODE_DBG("CB(%x): %x, %x\n", fired->owner, fired->user_hw_timer_cb, fired->callback_arg);
       (*(fired->user_hw_timer_cb))(fired->callback_arg);
     }
   }
   if (active && !timer_running) {
-    RTC_REG_WRITE(FRC1_LOAD_ADDRESS, active->delay);
-    timer_running = 1;
+    set_timer(active->delay, "isr");
   }
 }
 
@@ -300,13 +344,24 @@ static void ICACHE_RAM_ATTR hw_timer_nmi_cb(void)
 * Description  : figure out how long since th last timer interrupt
 * Parameters   : os_param_t owner
 * Returns      : the number of ticks
-* This is actually the last timer interrupt and not the interrupt for your
-* timer. This may cause problems.
 *******************************************************************************/
 uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner)
 {
-  return 0;
-  //return (- RTC_REG_READ(FRC1_COUNT_ADDRESS)) & ((1 << 23) - 1);
+  timer_user *tu = find_tu(owner);
+  if (!tu) {
+    return 0;
+  }
+
+  LOCK();
+  adjust_root();
+  UNLOCK();
+  int ret = (time_next_expiry - last_timer_load) - tu->expected_interrupt_time;
+
+  if (ret < 0) {
+    NODE_DBG("delay ticks = %d, last_timer_load=%d, tu->expected_int=%d, next_exp=%d\n", ret, last_timer_load, tu->expected_interrupt_time, time_next_expiry);
+  }
+
+  return ret < 0 ? 0 : ret;
 }
 
 /******************************************************************************
