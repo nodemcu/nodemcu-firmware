@@ -7,13 +7,13 @@
 *
 * Modification history:
 *     2014/5/1, v1.0 create this file.
-*     
+*
 * Adapted for NodeMCU 2016
-* 
+*
 * The owner parameter should be a unique value per module using this API
-* It could be a pointer to a bit of data or code 
-* e.g.   #define OWNER    ((os_param_t) module_init)   
-* where module_init is a function. For builtin modules, it might be 
+* It could be a pointer to a bit of data or code
+* e.g.   #define OWNER    ((os_param_t) module_init)
+* where module_init is a function. For builtin modules, it might be
 * a small numeric value that is known not to clash.
 *******************************************************************************/
 #include "platform.h"
@@ -44,10 +44,14 @@ typedef enum {			//timer interrupt mode
     TM_EDGE_INT   = 0,	//edge interrupt
 } TIMER_INT_MODE;
 
+/*
+ * This represents a single user of the timer functionality. It is keyed by the owner
+ * field.
+ */
 typedef struct _timer_user {
   struct _timer_user *next;
   bool autoload;
-  int32_t delay;
+  int32_t delay; // once on the active list, this is difference in delay from the preceding element
   int32_t autoload_delay;
   uint32_t expected_interrupt_time;
   os_param_t owner;
@@ -58,15 +62,37 @@ typedef struct _timer_user {
 #endif
 } timer_user;
 
+/*
+ * There are two lists of timer_user blocks. The active list are those which are waiting
+ * for timeouts to happen, and the inactive list contains idle blocks. Unfortunately
+ * there isn't a way to clean up the inactive blocks as some modules call the
+ * close method from interrupt level.
+ */
 static timer_user *active;
 static timer_user *inactive;
+
+/*
+ * There are a fair number of places when interrupts need to be disabled as many of
+ * the methods can be called from interrupt level. The lock/unlock calls support
+ * multiple LOCKs and then the same number of UNLOCKs are required to re-enable
+ * interrupts. This is imolemeted by counting the number of times that lock is called.
+ */
 static uint8_t lock_count;
 static uint8_t timer_running;
+
 static uint32_t time_next_expiry;
 static int32_t last_timer_load;
 
 #define LOCK()   do { ets_intr_lock(); lock_count++; } while (0)
 #define UNLOCK()   if (--lock_count == 0) ets_intr_unlock()
+
+/*
+ * To start a timer, you write to FRCI_LOAD_ADDRESS, and that starts the counting
+ * down. When it reaches zero, the interrupt fires -- but the counting continues.
+ * The counter is 23 bits wide. The current value of the counter can be read
+ * at FRC1_COUNT_ADDRESS. The unit is 200ns, and so it takes somewhat over a second
+ * to wrap the counter.
+ */
 
 #ifdef DEBUG_HW_TIMER
 void ICACHE_RAM_ATTR hw_timer_debug() {
@@ -119,7 +145,10 @@ static void ICACHE_RAM_ATTR adjust_root() {
 
   last_timer_load = time_left;
 }
-
+/*
+ * Find the timer_user block for this owner. This just returns
+ * a pointer to the block, or NULL.
+ */
 static timer_user * ICACHE_RAM_ATTR find_tu(os_param_t owner) {
   // Try the inactive chain first
   timer_user **p;
@@ -150,6 +179,12 @@ static timer_user * ICACHE_RAM_ATTR find_tu(os_param_t owner) {
   return NULL;
 }
 
+/*
+ * Find the timer_user block for this owner. This just returns
+ * a pointer to the block, or NULL. If it finds the block, then it is
+ * removed from whichever chain it is on. Note that this may require
+ * triggering a timer.
+ */
 static timer_user * ICACHE_RAM_ATTR find_tu_and_remove(os_param_t owner) {
   // Try the inactive chain first
   timer_user **p;
@@ -200,6 +235,10 @@ static timer_user * ICACHE_RAM_ATTR find_tu_and_remove(os_param_t owner) {
   return NULL;
 }
 
+/*
+ * This inserts a timer_user block into the active chain. This is a sightly
+ * complex process as it can involve triggering a timer load.
+ */
 static void ICACHE_RAM_ATTR insert_active_tu(timer_user *tu) {
   timer_user **p;
 
@@ -293,6 +332,13 @@ bool platform_hw_timer_set_func(os_param_t owner, void (* user_hw_timer_cb_set)(
   return true;
 }
 
+/*
+ * This is the timer ISR. It has to find the timer that was running and trigger the callback
+ * for that timer. By this stage, the next timer may have expired as well, and so the process
+ * iterates. Note that if there is an autoload timer, then it should be restarted immediately.
+ * Also, the callbacks typically do re-arm the timer, so we have to be careful not to
+ * assume that nothing changes during the callback.
+ */
 static void ICACHE_RAM_ATTR hw_timer_isr_cb(void *arg)
 {
   bool keep_going = true;
