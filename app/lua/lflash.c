@@ -76,7 +76,6 @@ struct OUTPUT {
   int     (*fullBlkCB) (void);
   int       flashLen;
   int       flagsLen;
-  int       flagsEst;
   int       flagsNdx;
   uint32_t *flags;
   const char *error;
@@ -96,7 +95,7 @@ void dumpStrt(stringtable *tb, const char *type) {
       NODE_DBG("%5d %5d %08x %08x %5d %1s %s\n",
                i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len,
                ts_isreadonly(ts) ? "R" : " ",  getstr(ts));
---    }
+    }
 }
 
 LUA_API void dumpStrings(lua_State *L) {
@@ -145,25 +144,25 @@ static void flashErase(uint32_t start, uint32_t end){
 
 /* =====================================================================================
  * luaN_init(), luaN_reload_reboot() and luaN_index() are exported via lflash.h.
- * The first is the startup hook used in lstate.c and the last two are 
- * implementations of the node.flash API calls. 
+ * The first is the startup hook used in lstate.c and the last two are
+ * implementations of the node.flash API calls.
  */
 
 /*
  * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
  */
 LUAI_FUNC void luaN_init (lua_State *L) {
-  curOffset      = 0;
-  flashAddr     = flash_region_base;
-  flashAddrPhys = platform_flash_mapped2phys((uint32_t)flashAddr);
-  flashSector   = platform_flash_get_sector_of_address(flashAddrPhys);
+  curOffset       = 0;
+  flashAddr       = flash_region_base;
+  flashAddrPhys   = platform_flash_mapped2phys((uint32_t)flashAddr);
+  flashSector     = platform_flash_get_sector_of_address(flashAddrPhys);
   FlashHeader *fh = cast(FlashHeader *, flashAddr);
 
   /*
-   * For the LFS to be valid, its signature has to be correct for this build variant,
-   * thr ROhash and main proto fields must be defined and the main proto address
-   * be within the LFS address bounds. (This last check is primarily to detect the
-   * direct imaging of an absolute LFS with the wrong base address.
+   * For the LFS to be valid, its signature has to be correct for this build
+   * variant, the ROhash and main proto fields must be defined and the main proto
+   * address be within the LFS address bounds. (This last check is primarily to
+   * detect the direct imaging of an absolute LFS with the wrong base address.
    */
 
   if (fh->flash_sig == 0 || fh->flash_sig == ~0 ) {
@@ -190,64 +189,66 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   G(L)->ROpvmain    = cast(Proto *,fh->mainProto);
 }
 
-extern void software_reset(void);
+//extern void software_reset(void);
 static int loadLFS (lua_State *L);
 static int loadLFSgc (lua_State *L);
 static int procFirstPass (void);
 
 /*
- * Library function called by node.flash.load(filename).
+ * Library function called by node.flashreload(filename).
  */
 LUALIB_API int luaN_reload_reboot (lua_State *L) {
-//  luaL_dbgbreak();
+  // luaL_dbgbreak();
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
  /*
   * Do a protected call of loadLFS.
   *
   * -  This will normally rewrite the LFS and reboot, with no return.
-  * -  If an error occurs then it is sent to the UART.  
+  * -  If an error occurs then it is sent to the UART.
   * -  If this occured in the 1st pass, the previous LFS is unchanged so it is
   *    safe to return to the calling Lua.
   * -  If in the 1st pass, then the ESP is rebooted.
   */
   status = lua_cpcall(L, &loadLFS, cast(void *,fn));
 
-  if (!out || out->fullBlkCB == procFirstPass) { 
-   /* 
-    * Never entered the 2nd pass, so it is safe to return the error.  Note 
-    * that I've to some trouble to ensure that all dynamically allocated
+  if (!out || out->fullBlkCB == procFirstPass) {
+   /*
+    * Never entered the 2nd pass, so it is safe to return the error.  Note
+    * that I've gone to some trouble to ensure that all dynamically allocated
     * working areas have been freed, so that we have no memory leaks.
     */
-    if (status == LUA_ERRMEM) 
+    if (status == LUA_ERRMEM)
       msg = "Memory allocation error";
     else if (out && out->error)
       msg = out->error;
     else
       msg = "Unknown Error";
+
    /* We can clean up and return error */
     lua_cpcall(L, &loadLFSgc, NULL);
     lua_settop(L, 0);
-    lua_pushstring(L, msg);    
+    lua_pushstring(L, msg);
     return 1;
   }
-  
+
   if (status == 0) {
     /* Successful LFS rewrite */
     msg = "LFS region updated.  Restarting.";
-  } else { 
+  } else {
     /* We have errored during the second pass so clear the LFS and reboot */
-    if (status == LUA_ERRMEM) 
+    if (status == LUA_ERRMEM)
       msg = "Memory allocation error";
-    else if (out->error) 
+    else if (out->error)
       msg = out->error;
     else
-      msg = "Unknown Error";    
- 
+      msg = "Unknown Error";
+
     flashErase(0,-1);
   }
   NODE_ERR(msg);
-  software_reset();
+ 
+  while (1) {}  // Force WDT as the ROM software_reset() doesn't seem to work
   return 0;
 }
 
@@ -300,21 +301,21 @@ LUAI_FUNC int luaN_index (lua_State *L) {
 }
 /* =====================================================================================
  * The following routines use my uzlib which was based on pfalcon's inflate and
- * deflate routines.  The standard NodeMCU make also makes two host tools uz_zip 
+ * deflate routines.  The standard NodeMCU make also makes two host tools uz_zip
  * and uz_unzip which also use these and luac.cross uses the deflate. As discussed
  * below, The main action routine loadLFS() calls uzlib_inflate() to do the actual
  * stream inflation but uses three supplied CBs to abstract input and output
  * stream handling.
  *
- * ESP8266 RAM limitations and heap fragmentation are a key implementation 
- * constraint and hence these routines use a number of ~2K buffers (11) as 
+ * ESP8266 RAM limitations and heap fragmentation are a key implementation
+ * constraint and hence these routines use a number of ~2K buffers (11) as
  * working storage.
  *
  * The inflate is done twice, in order to limit storage use and avoid forward /
  * backward reference issues.  However this has a major advantage that the LFS
  * is scanned with the headers, CRC, etc. validated BEFORE the write to flash
- * is started, so the only real chance of failure during the second pass 
- * write is if a power fail occurs during the pass. 
+ * is started, so the only real chance of failure during the second pass
+ * write is if a power fail occurs during the pass.
  */
 
 static void flash_error(const char *err) {
@@ -337,7 +338,7 @@ static void flash_error(const char *err) {
  *
  *  Note that put_byte() also triggers secondary CBs to do further processing.
  */
-uint8_t get_byte (void) {
+static uint8_t get_byte (void) {
   if (--in->left < 0) {
     /* Read next input block */
     int remaining = in->len - in->bytesRead;
@@ -345,7 +346,7 @@ uint8_t get_byte (void) {
 
     if (vfs_read(in->fd, in->block, wanted) != wanted)
       flash_error("read error on LFS image file");
-      
+
     system_soft_wdt_feed();
 
     in->bytesRead += wanted;
@@ -356,7 +357,7 @@ uint8_t get_byte (void) {
 }
 
 
-void put_byte (uint8_t value) {
+static void put_byte (uint8_t value) {
   int offset = out->ndx % WRITE_BLOCKSIZE;  /* counts from 0 */
 
   out->block[0]->byte[offset++] = value;
@@ -373,7 +374,7 @@ void put_byte (uint8_t value) {
 }
 
 
-uint8_t recall_byte (uint offset) {
+static uint8_t recall_byte (uint offset) {
   if(offset > DICTIONARY_WINDOW || offset >= out->ndx)
     flash_error("invalid dictionary offset on inflate");
   /* ndx starts at 1. Need relative to 0 */
@@ -405,16 +406,16 @@ int procFirstPass (void) {
     if ((fh->flash_sig & FLASH_FORMAT_MASK) != FLASH_FORMAT_VERSION)
       flash_error("Incorrect LFS header version");
     if ((fh->flash_sig & FLASH_SIG_B2_MASK) != FLASH_SIG_B2)
-      flash_error("Incorrect LFS build type");    
+      flash_error("Incorrect LFS build type");
     if ((fh->flash_sig & ~FLASH_SIG_ABSOLUTE) != FLASH_SIG)
       flash_error("incorrect LFS header signature");
     if (fh->flash_size > FLASH_SIZE)
       flash_error("LFS Image too big for configured LFS region");
     if ((fh->flash_size & 0x3) ||
          fh->flash_size > FLASH_SIZE ||
-         out->flagsLen > out->flagsEst ||
          out->flagsLen != 1 + (out->flashLen/WORDSIZE - 1) / BITS_PER_WORD)
       flash_error("LFS length mismatch");
+    out->flags = luaM_newvector(out->L, out->flagsLen, uint);
   }
 
   /* update running CRC */
@@ -435,17 +436,17 @@ int procFirstPass (void) {
 int procSecondPass (void) {
  /*
   * The length rules are different for the second pass since this only processes
-  * upto the flashLen and not the full image.  This also works in word units. 
-  * (We've already validated these are word multiples.)  
+  * upto the flashLen and not the full image.  This also works in word units.
+  * (We've already validated these are word multiples.)
   */
   int i, len = (out->ndx > out->flashLen) ?
-                  (out->flashLen % WRITE_BLOCKSIZE) / WORDSIZE : 
+                  (out->flashLen % WRITE_BLOCKSIZE) / WORDSIZE :
                   WRITE_BLOCKSIZE / WORDSIZE;
   uint32_t *buf = (uint32_t *) out->buffer.byte, flags;
  /*
-  * Relocate all the addresses tagged in out->flags.  This can't be done in 
+  * Relocate all the addresses tagged in out->flags.  This can't be done in
   * place because the out->blocks are still in use as dictionary content so
-  * first copy the block to a working buffer and do the relocation in this. 
+  * first copy the block to a working buffer and do the relocation in this.
   */
   memcpy(out->buffer.byte, out->block[0]->byte, WRITE_BLOCKSIZE);
   for (i=0; i<len; i++,flags>>=1 ) {
@@ -454,8 +455,8 @@ int procSecondPass (void) {
     if (flags&1)
       buf[i] = WORDSIZE*buf[i] + cast(uint32_t, flashAddr);
   }
- /* 
-  * On first block, set the flash_sig has the in progress bit set and this 
+ /*
+  * On first block, set the flash_sig has the in progress bit set and this
   * is not cleared until end.
   */
   if (out->ndx <= WRITE_BLOCKSIZE)
@@ -481,7 +482,7 @@ static int loadLFS (lua_State *L) {
   uint32_t crc;
 
   /* Allocate and zero in and out structures */
-  
+
   in = NULL; out = NULL;
   in  = luaM_new(L, struct INPUT);
   memset(in, 0, sizeof(*in));
@@ -489,6 +490,7 @@ static int loadLFS (lua_State *L) {
   memset(out, 0, sizeof(*out));
   out->L         = L;
   out->fullBlkCB = procFirstPass;
+  out->crc       = ~0;
 
   /* Open LFS image/ file, read unpacked length from last 4 byte and rewind */
   if (!(in->fd = vfs_open(fn, "r")))
@@ -500,20 +502,12 @@ static int loadLFS (lua_State *L) {
     flash_error("read error on LFS image file");
   vfs_lseek(in->fd, 0, VFS_SEEK_SET);
 
-  /* Allocate the out buffers which depend on the unpacked length */
-  n = (out->len > DICTIONARY_WINDOW) ? WRITE_BLOCKS :
-                                       1 + (out->len-1) % WRITE_BLOCKSIZE;
-  for(i = WRITE_BLOCKS - n + 1;  i <= WRITE_BLOCKS; i++)
-    out->block[i<n ? i : 0] = luaM_new(L, outBlock);
-                                       /* simple upper bound for alloc which */
-  out->flagsEst =  2+(out->len/132);   /* might be a couple of words too long */
-  out->flags     = luaM_newvector(L, out->flagsEst, uint32_t);
-
-  /* other out setup */
-  out->crc       = ~0;
-  
+  /* Allocate the out buffers */
+  for(i = 0;  i <= WRITE_BLOCKS; i++)
+    out->block[i] = luaM_new(L, outBlock);
+ 
   /* first inflate pass */
-  if (uzlib_inflate (get_byte, put_byte, recall_byte, 
+  if (uzlib_inflate (get_byte, put_byte, recall_byte,
                      in->len, &crc, &in->inflate_state) < 0)
     flash_error("read error on LFS image file");
 
@@ -532,8 +526,8 @@ static int loadLFS (lua_State *L) {
   vfs_lseek(in->fd, 0, VFS_SEEK_SET);
   flashErase(0,(out->flashLen - 1)/FLASH_PAGE_SIZE);
   flashSetPosition(0);
- 
-  if (uzlib_inflate(get_byte, put_byte, recall_byte, 
+
+  if (uzlib_inflate(get_byte, put_byte, recall_byte,
                     in->len, &crc, &in->inflate_state) != UZLIB_OK)
   if (res < 0) {
     const char *err[] = {"Data_error during decompression",
@@ -553,7 +547,7 @@ static int loadLFSgc (lua_State *L) {
       if (out->block[i])
         luaM_free(L, out->block[i]);
     if (out->flags)
-      luaM_freearray(L, out->flags, out->flagsEst, uint32_t);
+      luaM_freearray(L, out->flags, out->flagsLen, uint32_t);
     luaM_free(L, out);
   }
   if (in) {

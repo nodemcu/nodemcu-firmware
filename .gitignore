@@ -1,10 +1,13 @@
+.gdb_history
 sdk/
 cache/
 .ccache/
 local/
-luac.cross
 user_config.h
 server-ca.crt
+luac.cross
+uz_unzip
+uz_zip
 
 #ignore Eclipse project files
 .cproject
