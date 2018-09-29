@@ -15,7 +15,8 @@
 #else
 # define FLASH_SIG_B1 0x00
 #endif
-
+#define FLASH_FORMAT_VERSION (1 << 8)
+#define FLASH_FORMAT_MASK    0xF00
 #ifdef LUA_PACK_TVALUES
 #ifdef LUA_NUMBER_INTEGRAL
 #error "LUA_PACK_TVALUES is only valid for Floating point builds" 
@@ -24,9 +25,10 @@
 #else
 # define FLASH_SIG_B2 0x00
 #endif
+# define FLASH_SIG_B2_MASK 0x04
 #define FLASH_SIG_ABSOLUTE    0x01
 #define FLASH_SIG_IN_PROGRESS 0x08
-#define FLASH_SIG  (0xfafaaf50 | FLASH_SIG_B2 | FLASH_SIG_B1)
+#define FLASH_SIG  (0xfafaa050 | FLASH_FORMAT_VERSION |FLASH_SIG_B2 | FLASH_SIG_B1)
 
 typedef lu_int32 FlashAddr;
 typedef struct {

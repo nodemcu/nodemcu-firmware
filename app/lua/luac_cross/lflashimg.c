@@ -1,4 +1,4 @@
-/*
+/***--
 ** lflashimg.c
 ** Dump a compiled Proto hiearchy to a RO (FLash) image file
 ** See Copyright Notice in lua.h
@@ -19,6 +19,7 @@
 #undef LUA_FLASH_STORE
 #define LUA_FLASH_STORE
 #include "lflash.h"
+#include "uzlib.h"
 
 //#define LOCAL_DEBUG
 
@@ -46,18 +47,18 @@ typedef unsigned int uint;
  * independent image format, which permits the  on-device image loader to load the LFS
  * image at an appropriate base within the flash address space. As all objects in the
  * LFS can be treated as multiples of 4-byte words, also all address fields are both 
- * word aligned, and any address references within the LFS are also word-aligned, 
- * such addresses are stored in a special format, where each PI address is two 
- * 16-bit unsigned offsets:
+ * word aligned, and any address references within the LFS are also word-aligned.
  *
- *   Bits 0-15 is the offset into the LFS that this address refers to
- *   Bits 16-31 is the offset linking to the PIC next address.
+ * This version adds gzip compression of the generated LFS image for more efficient
+ * over-the-air (OTA) transfer, so the method of tagging address words has been 
+ * replaced by a scheme which achieves better compression: an additional bitmap
+ * has been added to the image, with each bit corresponding to a word in the image 
+ * and set if the corresponding work is an address.  The addresses are stored as
+ * signed relative word offsets.
  *
- * Hence the LFS can be up to 256Kb in length and the flash loader can use the forward
- * links to chain down PI address from the mainProto address at offet 3 to all image 
- * addresses during load and convert them to the corresponding correct absolute memory
- * addresses.  This reloation process is skipped for absolute addressed images (which
- * are identified by the FLASH_SIG_ABSOLUTE bit setting in the flash signature.
+ * The unloader is documented in lflash.c  Note that his relocation process is 
+ * skipped for absolute addressed images (which are identified by the 
+ * FLASH_SIG_ABSOLUTE bit setting in the flash signature).
  *
  * The flash image has a standard header detailed in lflash.h
  *
@@ -66,7 +67,7 @@ typedef unsigned int uint;
  * and int may not have the same size. Hence addresses with the must be declared as
  * the FlashAddr type rather than typed C pointers and must be accessed through macros.
  *
- * ALso note that image built with a given LUA_PACK_TVALUES / LUA_NUNBER_INTEGRAL
+ * Also note that image built with a given LUA_PACK_TVALUES / LUA_NUNBER_INTEGRAL
  * combination must be loaded into a corresponding firmware build.  Hence these
  * configuration options are also included in the FLash Signature.
  *
@@ -96,8 +97,19 @@ typedef struct flashts {       /* This is the fixed 32-bit equivalent of TString
 #endif
 
 static uint curOffset = 0;
-static uint flashImage[LUA_MAX_FLASH_SIZE];
-static unsigned char flashAddrTag[LUA_MAX_FLASH_SIZE/WORDSIZE];
+
+/*
+ * The flashAddrTag is a bit array, one bit per flashImage word denoting
+ * whether the corresponding word is a relative address.  The defines
+ * are access methods for this bit array.
+ */ 
+static uint flashImage[LUA_MAX_FLASH_SIZE + LUA_MAX_FLASH_SIZE/32];
+static uint *flashAddrTag = flashImage + LUA_MAX_FLASH_SIZE;
+
+#define _TW(v) (v)>>5
+#define _TB(v) (1<<((v)&0x1F))
+#define setFlashAddrTag(v) flashAddrTag[_TW(v)] |= _TB(v)
+#define getFlashAddrTag(v) ((flashAddrTag[_TW(v)]&_TB(v)) != 0) 
 
 #define fatal luac_fatal
 extern void __attribute__((noreturn)) luac_fatal(const char* message);
@@ -115,7 +127,7 @@ static void *flashAlloc(lua_State* L, size_t n) {
   void *p = (void *)(flashImage + curOffset);
   curOffset += ALIGN(n)>>WORDSHIFT;
   if (curOffset > LUA_MAX_FLASH_SIZE) {
-    fatal("Out of Flash memmory");
+    fatal("Out of Flash memory");
   }
   return p;
 }
@@ -128,8 +140,8 @@ static void *flashAlloc(lua_State* L, size_t n) {
 #define toFlashAddr(l, pd, s) _toFlashAddr(l, &(pd), s)
 static void _toFlashAddr(lua_State* L, FlashAddr *a, void *p) {
   uint doffset = cast(char *, a) - cast(char *,flashImage);
-  lua_assert(!(doffset & (WORDSIZE-1)));
-  doffset >>= WORDSHIFT;
+  lua_assert(!(doffset & (WORDSIZE-1)));  // check word aligned
+  doffset >>= WORDSHIFT;                  // and convert to a word offset
   lua_assert(doffset <= curOffset);
   if (p) {
     uint poffset = cast(char *, p) - cast(char *,flashImage);
@@ -137,10 +149,8 @@ static void _toFlashAddr(lua_State* L, FlashAddr *a, void *p) {
     poffset >>= WORDSHIFT;
     lua_assert(poffset <= curOffset);
     flashImage[doffset] = poffset;     // Set the pointer to the offset
-    flashAddrTag[doffset] = 1;         // And tag as an address
-  } else {                             // Special case for NULL pointer
-    flashImage[doffset] = 0;
-  }
+    setFlashAddrTag(doffset);          // And tag as an address
+  } /* else leave clear */             // Special case for NULL pointer
 }
 
 /*
@@ -231,7 +241,7 @@ static void createROstrt(lua_State *L, FlashHeader *fh) {
     fts->marked = bitmask(LFSBIT);           // LFS string with no Whitebits set
     fts->hash   = hash;                      // add hash
     fts->len    = len;                       // and length
-    memcpy(flashAlloc(L, ALIGN(len+1)), p, ALIGN(len+1)); // copy string
+    memcpy(flashAlloc(L, len+1), p, len+1);  // copy string
                                              // include the trailing null char
     lua_pop(L, 1);                           // Junk the value
     lua_pushvalue(L, -1);                    // Dup the key as rawset dumps its copy
@@ -308,6 +318,9 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
         case 'I':
           *d++ = *s++;
           break;
+        case 'H':
+          *d++ = (*s++) & 0;
+          break;
         case 'S':
           newts = resolveTString(L, *cast(TString **, s));
           toFlashAddr(L, *d, newts);
@@ -318,11 +331,15 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
           /* This code has to work for both Integer and Float build variants */
           memset(d, 0, TARGET_TV_SIZE);
           TValue *sv = cast(TValue *, s);
+          /* The value is 0, 4 or 8 bytes depending on type */
           if (ttisstring(sv)) {
             toFlashAddr(L, *d, resolveTString(L, rawtsvalue(sv)));
-          } else { /* non-collectable types all of size lua_Number */
-            lua_assert(!iscollectable(sv));
+          } else if (ttisnumber(sv)) {
             *cast(lua_Number*,d) = *cast(lua_Number*,s);
+          } else if (!ttisnil(sv)){
+            /* all other types are 4 byte */
+            lua_assert(!iscollectable(sv));
+            *cast(uint *,d) = *cast(uint *,s);
           }
           *cast(int *,cast(lua_Number*,d)+1) = ttype(sv);
           s += FLASH_WORDS(TValue);
@@ -338,9 +355,9 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
 
 /* The debug optimised version has a different Proto layout */
 #ifdef LUA_OPTIMIZE_DEBUG
-#define PROTO_COPY_MASK  "AIAAAAAASIIIIIIIAI"
+#define PROTO_COPY_MASK  "AHAAAAAASIIIIIIIAI"
 #else
-#define PROTO_COPY_MASK  "AIAAAAAASIIIIIIIIAI"
+#define PROTO_COPY_MASK  "AHAAAAAASIIIIIIIIAI"
 #endif
 
 /*
@@ -378,44 +395,52 @@ static void *functionToFlash(lua_State* L, const Proto* orig) {
   return cast(void *, flashCopy(L, 1, PROTO_COPY_MASK, &f));
 }
 
-/*
- * Scan through the tagged addresses.  This operates in one of two modes.
- *  -  If address is non-zero then the offset is converted back into an absolute
- *     mapped flash address using the specified address base.
- *
- *  -  If the address is zero then form a form linked chain with the upper 16 bits
- *     the link to the last offset. As the scan is backwards, this 'last' address
- *     becomes forward reference for the on-chip LFS loader.
- */
-void  linkAddresses(lu_int32 address){
-  int i, last = 0;
-  for (i = curOffset-1 ; i >= 0; i--) {
-    if (flashAddrTag[i]) {
-      lua_assert(flashImage[i]<curOffset);
-      if (address) {
-        flashImage[i] = 4*flashImage[i] + address;
-      } else {
-        flashImage[i] |= last<<16;
-        last = i;
-      }
-    }
-  }
-}
-
-
 uint dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w, 
-                       void* data, int strip, lu_int32 address) {
+                       void* data, int strip, 
+                       lu_int32 address, lu_int32 maxSize) {
 // parameter strip is ignored for now
-  lua_newtable(L);
   FlashHeader *fh = cast(FlashHeader *, flashAlloc(L, sizeof(FlashHeader)));
+  int i, status;
+  lua_newtable(L);
   scanProtoStrings(L, main);
   createROstrt(L,  fh);
   toFlashAddr(L, fh->mainProto, functionToFlash(L, main));
+  
   fh->flash_sig = FLASH_SIG + (address ? FLASH_SIG_ABSOLUTE : 0);
   fh->flash_size = curOffset*WORDSIZE;
-  linkAddresses(address);
-  lua_unlock(L);
-  int status = w(L, flashImage, curOffset * sizeof(uint), data);
+  if (fh->flash_size>maxSize) {
+    fatal ("The image is too large for specfied LFS size");
+  }
+  if (address) {  /* in absolute mode convert addresses to mapped address */
+    for (i = 0 ; i < curOffset; i++)
+      if (getFlashAddrTag(i)) 
+        flashImage[i] = 4*flashImage[i] + address;
+    lua_unlock(L);
+    status = w(L, flashImage, fh->flash_size, data);
+  } else { /* compressed PI mode */
+   /*
+    * In image mode, shift the relocation bitmap down directly above
+    * the used flashimage.  This consolidated array is then gzipped.
+    */
+    uint oLen;
+    uint8_t *oBuf;
+    
+    int bmLen = sizeof(uint)*((curOffset+31)/32);      /* 32 flags to a word */
+    memmove(flashImage+curOffset, flashAddrTag, bmLen);
+    status = uzlib_compress (&oBuf, &oLen, 
+                             (const uint8_t *)flashImage, bmLen+fh->flash_size);
+    if (status != UZLIB_OK) {
+      luac_fatal("Out of memory during image compression");
+    }
+    lua_unlock(L);
+ #if 0
+    status = w(L, flashImage, bmLen+fh->flash_size, data);  
+ #else
+    status = w(L, oBuf, oLen, data);    
+    free(oBuf); 
+ #endif
+       
+  }
   lua_lock(L);
   return status;
 }

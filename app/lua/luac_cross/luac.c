@@ -35,6 +35,7 @@ static int dumping=1;			/* dump bytecodes? */
 static int stripping=0;	  /* strip debug information? */
 static int flash=0;	  		/* output flash image */
 static lu_int32 address=0;  /* output flash image at absolute location */
+static lu_int32 maxSize=0x40000;  /* maximuum uncompressed image size */
 static int lookup=0;			/* output lookup-style master combination header */
 static char Output[]={ OUTPUT };	/* default output file name */
 static const char* output=Output;	/* actual output file name */
@@ -72,6 +73,7 @@ static void usage(const char* message)
  "  -f       output a flash image file\n"
  "  -a addr  generate an absolute, rather than position independent flash image file\n"
  "  -i       generate lookup combination master (default with option -f)\n" 
+ "  -m size  maximum LFS image in bytes\n"
  "  -p       parse only\n"
  "  -s       strip debug information\n"
  "  -v       show version information\n"
@@ -123,6 +125,13 @@ static int doargs(int argc, char* argv[])
    lookup = 1;
   else if (IS("-l"))			/* list */
    ++listing;
+  else if (IS("-m"))			/* specify a maximum image size */
+  {
+   flash=lookup=1;
+   maxSize=strtol(argv[++i],NULL,0);
+   if (maxSize & 0xFFF)
+     usage(LUA_QL("-e") " maximum size must be a multiple of 4,096");
+  }
   else if (IS("-o"))			/* output file */
   {
    output=argv[++i];
@@ -264,7 +273,8 @@ struct Smain {
 };
 
 extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w, 
-                              void* data, int strip, lu_int32 address);
+                              void* data, int strip, 
+                              lu_int32 address, lu_int32 maxSize);
 
 static int pmain(lua_State* L)
 {
@@ -302,7 +312,7 @@ static int pmain(lua_State* L)
   lua_lock(L);
   if (flash) 
   {
-    result=dumpToFlashImage(L,f,writer, D, stripping, address);
+    result=dumpToFlashImage(L,f,writer, D, stripping, address, maxSize);
   } else
   {
     result=luaU_dump_crosscompile(L,f,writer,D,stripping,target);

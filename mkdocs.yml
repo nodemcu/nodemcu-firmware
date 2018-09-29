@@ -26,6 +26,7 @@ pages:
     - Building the firmware: 'en/build.md'
     - Flashing the firmware: 'en/flash.md'
     - Uploading code: 'en/upload.md'
+    - Compiling code: 'en/compiling.md'
     - Support: 'en/support.md'
 - FAQs:
     - Lua Developer FAQ: 'en/lua-developer-faq.md'

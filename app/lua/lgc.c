@@ -43,7 +43,7 @@
 #define stringmark(s)	if (!isLFSobject(&(s)->tsv)) {reset2bits((s)->tsv.marked, WHITE0BIT, WHITE1BIT);}
 
 
-#define isfinalized(u)		testbit((u)->marked, FINALIZEDBIT)
+#define isfinalized(u)		testbit(getmarked(u), FINALIZEDBIT)
 #define markfinalized(u)	l_setbit((u)->marked, FINALIZEDBIT)
 
 
@@ -73,12 +73,12 @@ static void removeentry (Node *n) {
 
 static void reallymarkobject (global_State *g, GCObject *o) {
   /* don't mark LFS Protos (or strings) */
-  if (o->gch.tt == LUA_TPROTO && isLFSobject(&(o->gch)))
+  if (gettt(&o->gch) == LUA_TPROTO && isLFSobject(&(o->gch)))
     return;
 
   lua_assert(iswhite(o) && !isdead(g, o));
   white2gray(o);
-  switch (o->gch.tt) {
+  switch (gettt(&o->gch)) {
     case LUA_TSTRING: {
       return;
     }
@@ -295,7 +295,7 @@ static l_mem propagatemark (global_State *g) {
   GCObject *o = g->gray;
   lua_assert(isgray(o));
   gray2black(o);
-  switch (o->gch.tt) {
+  switch (gettt(&o->gch)) {
     case LUA_TTABLE: {
       Table *h = gco2h(o);
       g->gray = h->gclist;
@@ -400,7 +400,7 @@ static void cleartable (GCObject *l) {
 
 
 static void freeobj (lua_State *L, GCObject *o) {
-  switch (o->gch.tt) {
+  switch (gettt(&o->gch)) {
     case LUA_TPROTO:
       lua_assert(!isLFSobject(&(o->gch)));
       luaF_freeproto(L, gco2p(o));
