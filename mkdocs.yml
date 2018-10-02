@@ -41,6 +41,7 @@ pages:
         - 'gpio':         'en/modules/gpio.md'
         - 'i2c':          'en/modules/i2c.md'
         - 'ledc':         'en/modules/ledc.md'
+        - 'mqtt':         'en/modules/mqtt.md'
         - 'net':          'en/modules/net.md'
         - 'node':         'en/modules/node.md'
         - 'ow (1-Wire)':  'en/modules/ow.md'
