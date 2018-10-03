@@ -6,6 +6,7 @@
 
 #include "c_stdlib.h"
 
+#define USE_PIN_LIST
 #include "ucg.h"
 
 #include "ucg_config.h"
