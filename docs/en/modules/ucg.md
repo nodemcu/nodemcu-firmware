@@ -5,15 +5,17 @@
 
 Ucglib is a graphics library developed at [olikraus/ucglib](https://github.com/olikraus/ucglib) with support for color TFT displays. The NodeMCU firmware supports a subset of these:
 
+- HX8352C
 - ILI9163
 - ILI9341
+- ILI9486
 - PCF8833
 - SEPS225
 - SSD1331
 - SSD1351
 - ST7735
 
-This integration is based on [v1.3.3](https://github.com/olikraus/Ucglib_Arduino/releases/tag/v1.3.3).
+This integration is based on [v1.5.2](https://github.com/olikraus/Ucglib_Arduino/releases/tag/v1.5.2).
 
 ## Overview
 
@@ -74,8 +76,10 @@ They'll be available as `ucg.<font_name>` in Lua.
 
 Initialize a display via Hardware SPI.
 
+- `hx8352c_18x240x400_hw_spi()`
 - `ili9163_18x128x128_hw_spi()`
 - `ili9341_18x240x320_hw_spi()`
+- `ili9486_18x320x480_hw_spi()`
 - `pcf8833_16x132x132_hw_spi()`
 - `seps225_16x128x128_uvis_hw_spi()`
 - `ssd1351_18x128x128_hw_spi()`

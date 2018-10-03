@@ -1,5 +1,11 @@
 // Module for Ucglib
 
+// Do not use the code from ucg submodule and skip the complete source here
+// if the ucg module is not selected.
+// Reason: The whole ucg submodule code tree might not even exist in this case.
+#include "user_modules.h"
+#if defined(LUA_USE_MODULES_UCG)
+
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
@@ -964,3 +970,5 @@ int luaopen_ucg( lua_State *L )
 }
 
 NODEMCU_MODULE(UCG, "ucg", lucg_map, luaopen_ucg);
+
+#endif /* defined(LUA_USE_MODULES_UCG) */
