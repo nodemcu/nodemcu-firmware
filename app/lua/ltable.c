@@ -580,7 +580,7 @@ const TValue *luaH_getnum (Table *t, int key) {
 
 /* same thing for rotables */
 const TValue *luaH_getnum_ro (void *t, int key) {
-  const TValue *res = luaR_findentry(t, NULL, key, NULL);
+  const TValue *res = luaR_findentryN(t, key, NULL);
   return res ? res : luaO_nilobject;
 }
 
@@ -599,14 +599,10 @@ const TValue *luaH_getstr (Table *t, TString *key) {
 }
 
 /* same thing for rotables */
-const TValue *luaH_getstr_ro (void *t, TString *key) {
-  char keyname[LUA_MAX_ROTABLE_NAME + 1];
-  const TValue *res;  
-  if (!t)
+const TValue *luaH_getstr_ro (void *t, TString *key) {  
+  if (!t || key->tsv.len>LUA_MAX_ROTABLE_NAME)
     return luaO_nilobject;
-  luaR_getcstr(keyname, key, LUA_MAX_ROTABLE_NAME);   
-  res = luaR_findentry(t, keyname, 0, NULL);
-  return res ? res : luaO_nilobject;
+  return luaR_findentry(t, key, NULL);
 }
 
 
@@ -745,7 +741,7 @@ int luaH_getn (Table *t) {
 int luaH_getn_ro (void *t) {
   int i = 1, len=0;
   
-  while(luaR_findentry(t, NULL, i ++, NULL))
+  while(luaR_findentryN(t, i ++, NULL))
     len ++;
   return len;
 }

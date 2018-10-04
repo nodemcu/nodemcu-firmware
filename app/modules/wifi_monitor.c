@@ -570,9 +570,9 @@ static int packet_map_lookup(lua_State *L) {
     }
 
     // Now search the packet function map
-    const TValue *res = luaR_findentry((void *) packet_function_map, field, 0, NULL);
-    if (res) {
-      luaA_pushobject(L, res);
+    lua_pushrotable(L, (void *)packet_function_map);
+    lua_getfield(L, -1, field);
+    if (!lua_isnil(L, -1)) {
       return 1;
     }
   }

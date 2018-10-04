@@ -16,7 +16,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
 #include "lstring.h"
 #include "lflash.h"
 #include "user_modules.h"

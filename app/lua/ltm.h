@@ -9,7 +9,7 @@
 
 
 #include "lobject.h"
-
+#include "lrotable.h"
 
 /*
 * WARNING: if you change the order of this enumeration,
