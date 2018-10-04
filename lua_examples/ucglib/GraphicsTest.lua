@@ -1,19 +1,16 @@
 -- setup SPI and connect display
 function init_spi_display()
-    -- Hardware SPI CLK  = GPIO14
-    -- Hardware SPI MOSI = GPIO13
-    -- Hardware SPI MISO = GPIO12 (not used)
-    -- CS, D/C, and RES can be assigned freely to available GPIOs
-    local cs  = 8 -- GPIO15, pull-down 10k to GND
-    local dc  = 4 -- GPIO2
-    local res = 0 -- GPIO16
+  -- pins can be assigned freely to available GPIOs
+  local sclk = 19
+  local mosi = 23
+  local cs   = 22
+  local dc   = 16
+  local res  = 17
 
-    spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
+  local bus = spi.master(spi.HSPI, {sclk=sclk, mosi=mosi})
 
-    -- initialize the matching driver for your display
-    -- see app/include/ucg_config.h
-    --disp = ucg.ili9341_18x240x320_hw_spi(cs, dc, res)
-    disp = ucg.st7735_18x128x160_hw_spi(cs, dc, res)
+  --disp = ucg.ili9341_18x240x320_hw_spi(bus, cs, dc, res)
+  disp = ucg.st7735_18x128x160_hw_spi(bus, cs, dc, res)
 end
 
 
@@ -49,11 +46,6 @@ function lcg_rnd()
     return z
 end
 
-
-function millis()
-    local usec = tmr.now()
-    return usec/1000
-end
 
 function set_clip_range()
     local x, y, w, h
@@ -118,6 +110,12 @@ disp:begin(ucg.FONT_MODE_TRANSPARENT)
 disp:setFont(ucg.font_ncenR14_hr)
 disp:clearScreen()
 
+milli = 0
+function millis()
+   milli = milli + 30
+   return milli
+end
 
-tmr.register(0, 3000, tmr.ALARM_AUTO, function() loop() end)
-tmr.start(0)
+t = tmr.create()
+t:register(5000, tmr.ALARM_AUTO, function() loop() end)
+t:start()

@@ -33,7 +33,6 @@ function M.run()
             bit.rshift(lcg_rnd() * (disp:getHeight()-20), 8) + 20
         )
 
-        tmr.wdclr()
     end
 
     print("...done")

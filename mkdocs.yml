@@ -52,5 +52,6 @@ pages:
         - 'tmr':          'en/modules/tmr.md'
         - 'u8g2':         'en/modules/u8g2.md'
         - 'uart':         'en/modules/uart.md'
+        - 'ucg':          'en/modules/ucg.md'
         - 'wifi':         'en/modules/wifi.md'
         - 'ws2812':       'en/modules/ws2812.md'

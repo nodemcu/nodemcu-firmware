@@ -11,3 +11,6 @@
 [submodule "components/espmqtt"]
 	path = components/espmqtt
 	url = https://github.com/tuanpmt/espmqtt
+[submodule "components/ucg/ucg"]
+	path = components/ucg/ucg
+	url = https://github.com/olikraus/Ucglib_Arduino.git
