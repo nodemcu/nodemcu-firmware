@@ -437,9 +437,6 @@ int lua_main (int argc, char **argv) {
 #endif
   int status;
   struct Smain s;
-
-  setvbuf(stdout, NULL, _IONBF, 0);
-
   lua_State *L = lua_open();  /* create state */
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");
