@@ -235,9 +235,6 @@ sntp.sync(server_ip,
   end)
 ```
 
-#### See also
-[`rtctime.epoch2cal()`](rtctime.md#rtctimepoch2cal)
-
 ## file.open()
 
 Opens a file for access, potentially creating it (for write modes).
