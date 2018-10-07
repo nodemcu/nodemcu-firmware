@@ -175,6 +175,15 @@ config LUA_MODULE_U8G2
 
 source "$PROJECT_PATH/components/u8g2/u8g2.kconfig"
 
+config LUA_MODULE_UCG
+  bool "UCG module"
+  default "n"
+  select LUA_MODULE_SPI
+  help
+      Includes the ucg module.
+
+source "$PROJECT_PATH/components/ucg/ucg.kconfig"
+
 config LUA_MODULE_WIFI
   bool "WiFi module"
   default "y"

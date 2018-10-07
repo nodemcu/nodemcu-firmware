@@ -5,7 +5,7 @@ NodeMCU is an [eLua](http://www.eluaproject.net/) based firmware for the [ESP32]
 Support for the new [ESP32 WiFi/BlueTooth SOC from Espressif](http://www.espressif.com/en/products/hardware/esp32/overview) is under way.
 
 ## Up-To-Date Documentation
-At the moment the only up-to-date documentation maintained by the current NodeMCU team is in [English](en/index.md). It is part of the source code repository (`/docs` subfolder) and kept in sync with the code.
+At the moment the only up-to-date documentation maintained by the current NodeMCU team is in English. It is part of the source code repository (`/docs` subfolder) and kept in sync with the code.
 
 We encourage you to help transferring the outdated translations (see below) into the repository.
 

@@ -2,7 +2,8 @@ site_name: NodeMCU Documentation
 site_description: Description of the NodeMCU documentation
 repo_url: https://github.com/nodemcu/nodemcu-firmware/
 
-theme: readthedocs
+theme:
+  name: "readthedocs"
 strict: true
 
 markdown_extensions:
@@ -17,8 +18,6 @@ extra_css:
 - css/extra.css
 extra_javascript:
 - js/extra.js
-
-site_favicon: img/favicon.png
 
 pages:
 - Overview: 'index.md'
@@ -37,6 +36,7 @@ pages:
         - 'bthci':        'en/modules/bthci.md'
         - 'can':          'en/modules/can.md'
         - 'dht':          'en/modules/dht.md'
+        - 'encoder':      'en/modules/encoder.md'
         - 'file':         'en/modules/file.md'
         - 'gpio':         'en/modules/gpio.md'
         - 'i2c':          'en/modules/i2c.md'
@@ -51,7 +51,7 @@ pages:
         - 'struct':       'en/modules/struct.md'
         - 'tmr':          'en/modules/tmr.md'
         - 'u8g2':         'en/modules/u8g2.md'
-        - 'u8g2 Display': 'en/modules/u8g2_disp.md'
         - 'uart':         'en/modules/uart.md'
+        - 'ucg':          'en/modules/ucg.md'
         - 'wifi':         'en/modules/wifi.md'
         - 'ws2812':       'en/modules/ws2812.md'

@@ -5,7 +5,7 @@
 
 The tmr module allows access to simple timers. It is aimed at setting up regularly occurring tasks and timing out operations.
 
-What the tmr module is *not* however, is a time keeping module. While all timeouts are expressed in milliseconds, the accuracy is limited and compounding errors would lead to rather inaccurate time keeping. Consider using the [rtctime](rtctime.md) module for "wall clock" time.
+What the tmr module is *not* however, is a time keeping module. While all timeouts are expressed in milliseconds, the accuracy is limited and compounding errors would lead to rather inaccurate time keeping. A module for "wall clock" time is not yet available.
 
 !!! note
 
