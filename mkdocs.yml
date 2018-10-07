@@ -51,7 +51,6 @@ pages:
         - 'struct':       'en/modules/struct.md'
         - 'tmr':          'en/modules/tmr.md'
         - 'u8g2':         'en/modules/u8g2.md'
-        - 'u8g2 Display': 'en/modules/u8g2_disp.md'
         - 'uart':         'en/modules/uart.md'
         - 'wifi':         'en/modules/wifi.md'
         - 'ws2812':       'en/modules/ws2812.md'
