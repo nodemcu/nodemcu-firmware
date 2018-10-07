@@ -165,6 +165,7 @@ void app_main (void)
 #endif
 
   console_init (&cfg, input_task);
+  setvbuf(stdout, NULL, _IONBF, 0);
 
   nodemcu_init ();
 
