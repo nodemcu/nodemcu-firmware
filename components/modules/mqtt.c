@@ -487,14 +487,14 @@ static int mqtt_connect( lua_State* L )
 	mqtt_cfg->config.disable_auto_reconnect = (reconnect == 0);
 	mqtt_cfg->config.transport = secure ? MQTT_TRANSPORT_OVER_SSL : MQTT_TRANSPORT_OVER_TCP;
 
-  esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg->config);
+	esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg->config);
 	if( client == NULL )
 	{
 		luaL_error( L, "MQTT library failed to start" );
 		return 0;
 	}
 
-  esp_mqtt_client_start(client);
+	esp_mqtt_client_start(client);
 
 	lua_pushlightuserdata( L, client );
 	lua_setfield( L, -2, "_client" ); //and store a reference in the MQTT table
