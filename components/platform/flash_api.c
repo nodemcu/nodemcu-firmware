@@ -12,7 +12,7 @@
 #include "platform_wdt.h"
 
 #include "esp_image_format.h"
-#include "esp_flash_data_types.h"
+#include "esp_flash_partitions.h"
 
 #define FLASH_HDR_ADDR 0x1000
 
@@ -47,7 +47,7 @@ static uint32_t __attribute__((section(".iram1"))) flash_detect_size_byte(void)
   uint8_t data_orig[DETECT_SZ] PLATFORM_ALIGNMENT = {0};
   uint8_t data_new[DETECT_SZ] PLATFORM_ALIGNMENT = {0};
   // Ensure we read something which isn't just 0xff...
-  const uint32_t offs = ESP_PARTITION_TABLE_ADDR;
+  const uint32_t offs = ESP_PARTITION_TABLE_OFFSET;
   // Detect read failure or wrap-around on flash read to find end of flash
   if (ESP_OK == spi_flash_read (offs, (uint32_t *)data_orig, DETECT_SZ))
   {

@@ -36,6 +36,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "esp_flash_data_types.h"
+#include "esp_flash_partitions.h"
 #include "esp_spi_flash.h"
 
 static inline bool possible_idx (uint8_t idx)
@@ -51,7 +52,7 @@ bool platform_partition_info (uint8_t idx, platform_partition_t *info)
 
   esp_partition_info_t pi;
   esp_err_t err = spi_flash_read (
-    ESP_PARTITION_TABLE_ADDR + idx * sizeof(pi), (uint32_t *)&pi, sizeof (pi));
+    ESP_PARTITION_TABLE_OFFSET + idx * sizeof(pi), (uint32_t *)&pi, sizeof (pi));
   if (err != ESP_OK)
     return false;
 
@@ -75,7 +76,7 @@ bool platform_partition_add (const platform_partition_t *info)
   if (!part_table)
     return false;
   esp_err_t err = spi_flash_read (
-    ESP_PARTITION_TABLE_ADDR, (uint32_t *)part_table, SPI_FLASH_SEC_SIZE);
+    ESP_PARTITION_TABLE_OFFSET, (uint32_t *)part_table, SPI_FLASH_SEC_SIZE);
   if (err != ESP_OK)
     goto out;
 
@@ -95,10 +96,10 @@ bool platform_partition_add (const platform_partition_t *info)
     memcpy (slot->label, info->label, sizeof (slot->label));
     slot->flags = 0;
     err = spi_flash_erase_sector (
-      ESP_PARTITION_TABLE_ADDR / SPI_FLASH_SEC_SIZE);
+      ESP_PARTITION_TABLE_OFFSET / SPI_FLASH_SEC_SIZE);
     if (err == ESP_OK)
       err = spi_flash_write (
-        ESP_PARTITION_TABLE_ADDR, (uint32_t *)part_table, SPI_FLASH_SEC_SIZE);
+        ESP_PARTITION_TABLE_OFFSET, (uint32_t *)part_table, SPI_FLASH_SEC_SIZE);
   }
 
 out:

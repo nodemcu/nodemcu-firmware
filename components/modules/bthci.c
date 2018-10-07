@@ -38,7 +38,7 @@
 #include "lauxlib.h"
 #include "task/task.h"
 #include "platform.h"
-#include "bt.h"
+#include "esp_bt.h"
 #include <stdlib.h>
 #include <string.h>
 

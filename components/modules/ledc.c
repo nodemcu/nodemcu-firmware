@@ -21,8 +21,8 @@ static int lledc_new_channel( lua_State *L )
   ledc_timer_config_t ledc_timer;
 
   lua_getfield(L, t, "bits");
-  ledc_timer.bit_num = luaL_optint (L, -1, LEDC_TIMER_13_BIT);
-  if(ledc_timer.bit_num < LEDC_TIMER_10_BIT || ledc_timer.bit_num > LEDC_TIMER_15_BIT)
+  ledc_timer.duty_resolution = luaL_optint (L, -1, LEDC_TIMER_13_BIT);
+  if(ledc_timer.duty_resolution < LEDC_TIMER_10_BIT || ledc_timer.duty_resolution > LEDC_TIMER_15_BIT)
     return luaL_error (L, "bits field out of range");
 
   lua_getfield(L, t, "frequency");
