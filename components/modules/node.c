@@ -175,6 +175,7 @@ static int node_compile( lua_State* L )
   int file_fd = 0;
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
+  int stripping = lua_toboolean( L, 2 );
   const char *basename = vfs_basename( fname );
   luaL_argcheck(L, strlen(basename) <= CONFIG_FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
@@ -196,8 +197,6 @@ static int node_compile( lua_State* L )
   }
 
   f = toproto(L, -1);
-
-  int stripping = 1;      /* strip debug information? */
 
   file_fd = vfs_open(output, "w+");
   if (!file_fd)
