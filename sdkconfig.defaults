@@ -22,8 +22,7 @@ CONFIG_SPI_FLASH_WRITING_DANGEROUS_REGIONS_ALLOWED=y
 # Enable panic handler for task wdt to reset the firmware upon wdt timeout
 CONFIG_TASK_WDT_PANIC=y
 
-# Disable the MQTT client from esp-idf, we have our own implementation atm
-CONFIG_MQTT_PROTOCOL_311=n
+# Disable advanced features by default
 CONFIG_MQTT_TRANSPORT_SSL=n
 CONFIG_MQTT_TRANSPORT_WEBSOCKET=n
 CONFIG_MQTT_USE_CUSTOM_CONFIG=n

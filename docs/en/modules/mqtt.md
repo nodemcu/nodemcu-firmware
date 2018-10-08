@@ -1,10 +1,12 @@
 # MQTT Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2015-01-23 | [Stephen Robinson](https://github.com/esar/contiki-mqtt), [Tuan PM](https://github.com/tuanpmt/esp_mqtt) | [Vowstar](https://github.com/vowstar) | [mqtt.c](../../../app/modules/mqtt.c)|
+| 2018-10-08 | [Tuan PM](https://github.com/tuanpmt/esp_mqtt), [Espressif](https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/protocols/mqtt.html) | | [mqtt.c](../../../components/modules/mqtt.c)|
 
+The client supports version 3.1 and 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/MQTT) protocol. Make sure that the correct version is set with `make menuconfig` -> "Component config" -> "ESP-MQTT Configurations" -> "Enable MQTT protocol 3.1.1".
 
-The client adheres to version 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/MQTT) protocol. Make sure that your broker supports and is correctly configured for version 3.1.1. The client is backwards incompatible with brokers running MQTT 3.1.
+!!! note "Unsupported transport modes"
+    Even though the MQTT configuration offers the transport modes Websocket and Websocket Secure, they are currently not supported by the `mqtt` module.
 
 ## mqtt.Client()
 
