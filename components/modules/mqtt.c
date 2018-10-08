@@ -8,6 +8,24 @@
 #include "mqtt_client.h"
 #include <string.h>
 
+#define MQTT_MAX_HOST_LEN           64
+#define MQTT_MAX_CLIENT_LEN         32
+#define MQTT_MAX_USERNAME_LEN       32
+#define MQTT_MAX_PASSWORD_LEN       65
+#define MQTT_MAX_LWT_TOPIC          32
+#define MQTT_MAX_LWT_MSG            128
+
+typedef struct {
+	esp_mqtt_client_config_t config;
+	char host[MQTT_MAX_HOST_LEN];
+	char uri[MQTT_MAX_HOST_LEN];
+	char client_id[MQTT_MAX_CLIENT_LEN];
+	char username[MQTT_MAX_USERNAME_LEN];
+	char password[MQTT_MAX_PASSWORD_LEN];
+	char lwt_topic[MQTT_MAX_LWT_TOPIC];
+	char lwt_msg[MQTT_MAX_LWT_MSG];
+} esp_mqtt_lua_client_config_t;
+
 task_handle_t hConn;
 task_handle_t hOff;
 task_handle_t hPub;
@@ -41,7 +59,7 @@ static esp_mqtt_client_handle_t get_client( lua_State * L )
 
 // locate the C mqtt_settings pointer and leave the
 // Lua instance on the top of the stack
-static esp_mqtt_client_config_t * get_settings( lua_State * L )
+static esp_mqtt_lua_client_config_t * get_settings( lua_State * L )
 {
 	if( !lua_istable( L, 1 ) )
 	{
@@ -56,7 +74,7 @@ static esp_mqtt_client_config_t * get_settings( lua_State * L )
 		return 0; //never reached
 	}
 
-	esp_mqtt_client_config_t * settings = (esp_mqtt_client_config_t *) lua_touserdata( L, -1 );
+	esp_mqtt_lua_client_config_t * settings = (esp_mqtt_lua_client_config_t *) lua_touserdata( L, -1 );
 	lua_pop( L, 1 ); // just pop the _mqtt field
 	return settings;
 }
@@ -421,7 +439,7 @@ static int mqtt_on(lua_State *L)
 // Lua: mqtt:connect(host[, port[, secure[, autoreconnect]]][, function(client)[, function(client, reason)]])
 static int mqtt_connect( lua_State* L )
 {
-	esp_mqtt_client_config_t * mqtt_cfg = get_settings( L );
+	esp_mqtt_lua_client_config_t * mqtt_cfg = get_settings( L );
 
 	int secure = 0;
 	int reconnect = 0;
@@ -464,19 +482,19 @@ static int mqtt_connect( lua_State* L )
 	lua_pop( L, n - 2 ); //pop parameters
 
 	strncpy(mqtt_cfg->host, host, MQTT_MAX_HOST_LEN );
-	mqtt_cfg->port = port;
+	mqtt_cfg->config.port = port;
 
-	mqtt_cfg->disable_auto_reconnect = (reconnect == 0);
-	mqtt_cfg->transport = secure ? MQTT_TRANSPORT_OVER_SSL : MQTT_TRANSPORT_OVER_TCP;
+	mqtt_cfg->config.disable_auto_reconnect = (reconnect == 0);
+	mqtt_cfg->config.transport = secure ? MQTT_TRANSPORT_OVER_SSL : MQTT_TRANSPORT_OVER_TCP;
 
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(mqtt_cfg);
+	esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg->config);
 	if( client == NULL )
 	{
 		luaL_error( L, "MQTT library failed to start" );
 		return 0;
 	}
 
-    esp_mqtt_client_start(client);
+	esp_mqtt_client_start(client);
 
 	lua_pushlightuserdata( L, client );
 	lua_setfield( L, -2, "_client" ); //and store a reference in the MQTT table
@@ -514,28 +532,28 @@ static int mqtt_close( lua_State* L )
 // Lua: mqtt:lwt(topic, message[, qos[, retain]])
 static int mqtt_lwt( lua_State* L )
 {
-	esp_mqtt_client_config_t * mqtt_cfg = get_settings( L );
+	esp_mqtt_lua_client_config_t * mqtt_cfg = get_settings( L );
 
 	strncpy( mqtt_cfg->lwt_topic, luaL_checkstring( L, 2 ), MQTT_MAX_LWT_TOPIC );
 	strncpy( mqtt_cfg->lwt_msg, luaL_checkstring( L, 3 ), MQTT_MAX_LWT_MSG );
-	mqtt_cfg->lwt_msg_len = strlen( mqtt_cfg->lwt_msg );
+	mqtt_cfg->config.lwt_msg_len = strlen( mqtt_cfg->lwt_msg );
 
 	int n = 4;
 	if( lua_isnumber( L, n ) )
 	{
-		mqtt_cfg->lwt_qos = lua_tonumber( L, n );
+		mqtt_cfg->config.lwt_qos = lua_tonumber( L, n );
 		n++;
 	}
 
 	if( lua_isnumber( L, n ) )
 	{
-		mqtt_cfg->lwt_retain = lua_tonumber( L, n );
+		mqtt_cfg->config.lwt_retain = lua_tonumber( L, n );
 		n++;
 	}
 
 	lua_pop( L, n );
 	NODE_DBG("Set LWT topic '%s', qos %d, retain %d, len %d\n",
-			mqtt_cfg->lwt_topic, mqtt_cfg->lwt_qos, mqtt_cfg->lwt_retain, mqtt_cfg->lwt_msg_len);
+			mqtt_cfg->lwt_topic, mqtt_cfg->config.lwt_qos, mqtt_cfg->config.lwt_retain, mqtt_cfg->lwt_msg_len);
 	return 0;
 }
 
@@ -613,7 +631,7 @@ static int mqtt_unsubscribe( lua_State* L )
 
 static int mqtt_delete( lua_State* L )
 {
-	esp_mqtt_client_config_t * settings = get_settings( L );
+	esp_mqtt_lua_client_config_t * settings = get_settings( L );
 	if( settings != NULL )
 		free( settings );
 
@@ -634,13 +652,20 @@ static int mqtt_new( lua_State* L )
 	clientid = luaL_checkstring( L, 1 );
 	NODE_DBG("MQTT client id %s\n", clientid);
 
-	esp_mqtt_client_config_t * mqtt_cfg = (esp_mqtt_client_config_t *) malloc(sizeof(esp_mqtt_client_config_t));
-	memset(mqtt_cfg, 0, sizeof(esp_mqtt_client_config_t));
+	esp_mqtt_lua_client_config_t * mqtt_cfg = (esp_mqtt_lua_client_config_t *) malloc(sizeof(esp_mqtt_lua_client_config_t));
+	memset(mqtt_cfg, 0, sizeof(esp_mqtt_lua_client_config_t));
+	mqtt_cfg->config.host = mqtt_cfg->host;
+	mqtt_cfg->config.uri = mqtt_cfg->uri;
+	mqtt_cfg->config.client_id = mqtt_cfg->client_id;
+	mqtt_cfg->config.username = mqtt_cfg->username;
+	mqtt_cfg->config.password = mqtt_cfg->password;
+	mqtt_cfg->config.lwt_topic = mqtt_cfg->lwt_topic;
+	mqtt_cfg->config.lwt_msg = mqtt_cfg->lwt_msg;
 
-	mqtt_cfg->event_handle = mqtt_event_handler;
+	mqtt_cfg->config.event_handle = mqtt_event_handler;
 
 	strncpy(mqtt_cfg->client_id, clientid, MQTT_MAX_CLIENT_LEN);
-	mqtt_cfg->keepalive = luaL_checkinteger( L, 2 );
+	mqtt_cfg->config.keepalive = luaL_checkinteger( L, 2 );
 
 	int n = 2;
 	if( lua_isstring(L, 3) )
@@ -657,7 +682,7 @@ static int mqtt_new( lua_State* L )
 
 	if( lua_isnumber(L, 5) )
 	{
-		mqtt_cfg->disable_clean_session = (luaL_checknumber( L, 5 ) == 0);
+		mqtt_cfg->config.disable_clean_session = (luaL_checknumber( L, 5 ) == 0);
 		n++;
 	}
 	lua_pop( L, n ); //remove parameters
