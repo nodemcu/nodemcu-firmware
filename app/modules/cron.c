@@ -32,18 +32,23 @@ static size_t cronent_count = 0;
 
 static uint64_t lcron_parsepart(lua_State *L, char *str, char **end, uint8_t min, uint8_t max) {
   uint64_t res = 0;
+
+  /* Gobble whitespace before potential stars; no strtol on that path */
+  while (*str != '\0' && (*str == ' ' || *str == '\t')) {
+    str++;
+  }
+
   if (str[0] == '*') {
     uint32_t each = 1;
     *end = str + 1;
     if (str[1] == '/') {
       each = strtol(str + 2, end, 10);
-      if (end != 0)
       if (each == 0 || each >= max - min) {
         return luaL_error(L, "invalid spec (each %d)", each);
       }
     }
     for (int i = 0; i <= (max - min); i++) {
-      if (((min + i) % each) == 0) res |= (uint64_t)1 << i;
+      if ((i % each) == 0) res |= (uint64_t)1 << i;
     }
   } else {
     uint32_t val;
@@ -63,14 +68,17 @@ static uint64_t lcron_parsepart(lua_State *L, char *str, char **end, uint8_t min
 static int lcron_parsedesc(lua_State *L, char *str, struct cronent_desc *desc) {
   char *s = str;
   desc->min = lcron_parsepart(L, s, &s, 0, 59);
-  if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
+  if (*s != ' ' && *s != '\t') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   desc->hour = lcron_parsepart(L, s + 1, &s, 0, 23);
-  if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
+  if (*s != ' ' && *s != '\t') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   desc->dom = lcron_parsepart(L, s + 1, &s, 1, 31);
-  if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
+  if (*s != ' ' && *s != '\t') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   desc->mon = lcron_parsepart(L, s + 1, &s, 1, 12);
-  if (*s != ' ') return luaL_error(L, "invalid spec (separator @%d)", s - str);
+  if (*s != ' ' && *s != '\t') return luaL_error(L, "invalid spec (separator @%d)", s - str);
   desc->dow = lcron_parsepart(L, s + 1, &s, 0, 6);
+  while (*s != '\0' && (*s == ' ' || *s == '\t')) {
+    s++;
+  }
   if (*s != 0) return luaL_error(L, "invalid spec (trailing @%d)", s - str);
   return 0;
 }
