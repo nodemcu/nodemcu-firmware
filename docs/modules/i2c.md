@@ -14,16 +14,26 @@ This module supports:
  - Standard(Slow, 100kHz), Fast(400kHz) and FastPlus(1MHz) modes or an arbitrary clock speed
  - Clock stretching (slow slave device can tell the master to wait)
  - Sharing SDA line over multiple I²C buses to save available pins
- - GPIO16 pin can be used as SCL pin, but it does not support clock stretching and selected bus will be limited to FAST speed.
+ - GPIO16 pin can be used as SCL pin, but selected bus will be limited to not more than FAST speed.
 
 You have to call `i2c.setup` on a given I²C bus at least once before communicating to any device connected to that bus, otherwise you will get an error.
 
-I²C bus designed to work in open-drain mode, so it needs pull-up resistors 1k - 10k on SDA and SCL lines. Though most devices have internal pull-up resistors and they will work without external resistors.
+I²C bus designed to work in open-drain mode, so it needs pull-up resistors 1k - 10k on SDA and SCL lines. Though many peripheral modules have pull-up resistors onboard and will work without additional external resistors.
 
 Hint for using many identical devices with same address: initialize many I²C buses calling `i2c.setup` with different bus numbers and pins. SCL pins should be different, SDA can be shared on one pin.
 
-Note that historically many drivers and modules assumed that only a single I²C bus with id 0 is available, so is always safer to start with id 0 as first bus in your code.
+Note that historically many drivers and modules assumed that only a single I²C bus with id 0 is available, so it is always safer to start with id 0 as first bus in your code.
 If your device driver functions do not have I²C bus id as an input parameter and/or not built with Lua OOP principles then most probably device will only be accessible through bus id 0 and must be connected to its pins.
+
+To enable new driver comment line `#define I2C_MASTER_OLD_VERSION` in `user_config.h`
+
+To enable support for GPIO16 (D0) uncomment line `#define I2C_MASTER_GPIO16_ENABLED` in `user_config.h`
+
+GPIO16 pin have very strong pullup resistor - about 100 Ohm, and that may lead to communication errors when slave device wants to stretch SCL clock but unable to hold it low. If that happens, try setting lower I²C speed.
+
+!!! caution
+
+    If your module reboots when trying to use GPIO16 pin, then it is wired to RESET pin to support deep sleep mode and you cannot use GPIO16 for I²C bus or other purposes.
 
 ## i2c.address()
 Setup I²C address and read/write mode for the next transfer.
@@ -61,11 +71,11 @@ id  = 0
 sda = 1
 scl = 2
 
--- initialize i2c, set pin1 as sda, set pin2 as scl
-i2c.setup(id, sda, scl, i2c.SLOW)
+-- initialize i2c, set pin 1 as sda, set pin 2 as scl
+i2c.setup(id, sda, scl, i2c.FAST)
 
 -- user defined function: read from reg_addr content of dev_addr
-function read_reg(dev_addr, reg_addr)
+function read_reg(id, dev_addr, reg_addr)
     i2c.start(id)
     i2c.address(id, dev_addr, i2c.TRANSMITTER)
     i2c.write(id, reg_addr)
@@ -78,7 +88,7 @@ function read_reg(dev_addr, reg_addr)
 end
 
 -- get content of register 0xAA of device 0x77
-reg = read_reg(0x77, 0xAA)
+reg = read_reg(id, 0x77, 0xAA)
 print(string.byte(reg))
 ```
 
@@ -86,7 +96,7 @@ print(string.byte(reg))
 [i2c.write()](#i2cwrite)
 
 ## i2c.setup()
-Initialize the I²C module with the selected bus number, pins and speed.
+Initialize the I²C bus with the selected bus number, pins and speed.
 
 #### Syntax
 `i2c.setup(id, pinSDA, pinSCL, speed)`
@@ -94,7 +104,7 @@ Initialize the I²C module with the selected bus number, pins and speed.
 #### Parameters
 - `id` 0~9, bus number
 - `pinSDA` 1~12, IO index
-- `pinSCL` 1~12, IO index
+- `pinSCL` 0~12, IO index
 - `speed` `i2c.SLOW`, `i2c.FAST`, `i2c.FASTPLUS` or any clock frequency in range of 25000-1000000 Hz.
 FASTPLUS mode requires setting CPU frequency to 160MHz with function node.setcpufreq(node.CPU160MHZ), otherwise speed won't be much faster than in FAST mode.
 
@@ -118,6 +128,7 @@ i2c1 = {
 -- initialize i2c bus 0
 i2c0.speed = i2c.setup(i2c0.id, i2c0.sda, i2c0.scl, i2c0.speed)
 -- initialize i2c bus 1 with shared SDA on pin 1
+node.setcpufreq(node.CPU160MHZ) -- to support FASTPLUS speed
 i2c1.speed = i2c.setup(i2c1.id, i2c1.sda, i2c1.scl, i2c1.speed)
 print("i2c bus 0 speed: ", i2c0.speed, "i2c bus 1 speed: ", i2c1.speed)
 ```
@@ -169,7 +180,30 @@ Write data to I²C bus. Data items can be multiple numbers, strings or Lua table
 
 #### Example
 ```lua
-i2c.write(0, "hello", "world")
+id  = 0
+sda = 1
+scl = 2
+
+-- initialize i2c, set pin 1 as sda, set pin 2 as scl
+i2c.setup(id, sda, scl, i2c.FAST)
+
+-- user defined function: write some data to device
+-- with address dev_addr starting from reg_addr
+function write_reg(id, dev_addr, reg_addr, data)
+    i2c.start(id)
+    i2c.address(id, dev_addr, i2c.TRANSMITTER)
+    i2c.write(id, reg_addr)
+    c = i2c.write(id, data)
+    i2c.stop(id)
+    return c
+end
+-- set register with address 0x45 of device 0x77 with value 1
+count = write_reg(id, 0x77, 0x45, 1)
+print(count, " bytes written")
+
+-- write text into i2c EEPROM starting with memory address 0
+count = write_reg(id, 0x50, 0, "Sample")
+print(count, " bytes written")
 ```
 
 #### See also

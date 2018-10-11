@@ -757,8 +757,9 @@ int platform_i2c_send_address( unsigned id, uint16_t address, int direction ){
            PLATFORM_I2C_DIRECTION_RECEIVER == 1 ) ) {
     direction = ( direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ) ? 0 : 1;
   }
-
-  i2c_master_writeByte(id, (uint8_t) ((address << 1) | direction ));
+  i2c_master_writeByte(id,
+    (uint8_t) ((address << 1) + (direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ? 0 : 1))
+  );
   // Low-level returns nack (0=acked); we return ack (1=acked).
   return ! i2c_master_getAck(id);
 }
