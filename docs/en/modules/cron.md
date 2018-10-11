@@ -7,6 +7,9 @@
 
 !!! important
     This module needs RTC time to operate correctly. Do not forget to include the [`rtctime`](rtctime.md) module **and** initialize it properly.
+    
+!!! important
+    The cron expression has to be in GMT/UTC!
 
 ## cron.schedule()
 
