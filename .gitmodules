@@ -1,3 +1,6 @@
 [submodule "app/u8g2lib/u8g2"]
 	path = app/u8g2lib/u8g2
 	url = https://github.com/olikraus/U8g2_Arduino.git
+[submodule "tools/toolchains"]
+	path = tools/toolchains
+	url = https://github.com/jmattsson/nodemcu-prebuilt-toolchains.git

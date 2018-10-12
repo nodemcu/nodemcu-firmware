@@ -78,6 +78,7 @@ else
 	else
 		ESPPORT = $(COMPORT)
 	endif
+	export PATH := $(PATH):$(TOP_DIR)/tools/toolchains/esp8266/bin/
 	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = $(WRAPCC) xtensa-lx106-elf-gcc
