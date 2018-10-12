@@ -88,7 +88,7 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
       if ((pentry[j].key.type == LUA_TSTRING) &&
         !c_strcmp(pentry[j].key.id.strkey, strkey)) {
         if (ppos)
-          *ppos = i;
+          *ppos = j;
         return &pentry[j].value;
       }
     }
@@ -98,7 +98,7 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
      * is included so a "on\0" has a mask of 0xFFFFFF and "a\0" has 0xFFFF.
      */
     unsigned name4 = *(unsigned *)strkey;
-    unsigned l     = key ? key->tsv.len : sizeof("__metatable"-1);
+    unsigned l     = key ? key->tsv.len : sizeof("__metatable")-1;
     unsigned mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
     for(;pentry->key.type != LUA_TNIL; i++, pentry++) {
       if ((pentry->key.type == LUA_TSTRING) &&

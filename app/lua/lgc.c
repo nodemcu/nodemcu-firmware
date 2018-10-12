@@ -168,10 +168,14 @@ static int traversetable (global_State *g, Table *h) {
   int i;
   int weakkey = 0;
   int weakvalue = 0;
-  const TValue *mode;
-  if (h->metatable && !luaR_isrotable(h->metatable))
-    markobject(g, h->metatable);
-  mode = gfasttm(g, h->metatable, TM_MODE);
+  const TValue *mode = luaO_nilobject;
+
+  if (h->metatable) {
+    if (!luaR_isrotable(h->metatable))
+      markobject(g, h->metatable);
+    mode = gfasttm(g, h->metatable, TM_MODE);
+  }
+    
   if (mode && ttisstring(mode)) {  /* is there a weak mode? */
     weakkey = (c_strchr(svalue(mode), 'k') != NULL);
     weakvalue = (c_strchr(svalue(mode), 'v') != NULL);

@@ -60,15 +60,6 @@
     luaR_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
     = {LSTRKEY(luaname), LROVAL(map)}
 
-/* System module registration support, not using LUA_USE_MODULES_XYZ. */
-#define BUILTIN_LIB_INIT(name, luaname, initfunc) \
-  const LOCK_IN_SECTION(libs) \
-    luaL_Reg MODULE_PASTE_(lua_lib_,name) = { luaname, initfunc }
-
-#define BUILTIN_LIB(name, luaname, map) \
-  const LOCK_IN_SECTION(rotable) \
-    luaR_entry MODULE_PASTE_(lua_rotable_,name) = {LSTRKEY(luaname), LROVAL(map)}
-
 #if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
 # error "NodeMCU modules must be built with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)"
 #endif

@@ -16,7 +16,7 @@
 #include C_HEADER_STDLIB
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
+#include "lrodefs.h"
 
 
 
@@ -463,50 +463,61 @@ static int luaB_newproxy (lua_State *L) {
 }
 
 #include "lrodefs.h"
-#ifdef LUA_CROSS_COMPILER
-#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".rodata1." #s)))
-#else
-#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
-#endif
-#define LUA_BASE_DECL(n) \
-  LOCK_IN_SECTION(rotable) luaR_entry lua_rotable_ ## n 
-#define LUA_BASELIB_FUNC(n,p) LUA_BASE_DECL(n) = {LSTRKEY(#n), LFUNCVAL(p)}
 
-#if defined(LUA_CROSS_COMPILER) && defined(LUA_DEBUG_BUILD)
-LUA_BASE_DECL(start_list) = {LNILKEY, LNILVAL};
+extern const luaR_entry lua_rotable_base[];
+
+/*
+ * ESP builds use specific linker directives to marshal all ROTable declarations
+ * into a single ROTable in the PSECT ".lua_rotable".  
+ *
+ * This is not practical on Posix builds using a standard link so for cross
+ * compiler builds, separate ROTables are used for the base functions and library
+ * ROTables, with the latter chained from the former using its __index meta-method.
+ * In this case all library ROTables are defined in linit.c.
+ */
+#ifdef LUA_CROSS_COMPILER
+#define BASE_ROTABLE    base_func_map
+#define LOCK_IN_ROTABLE
+static const LUA_REG_TYPE base_func_meta[] = {
+  LROT_TABENTRY(__index, lua_rotable_base),     
+  LROT_END};
+#else
+#define BASE_ROTABLE    lua_rotable_base
+#define LOCK_IN_ROTABLE __attribute__((used,unused,section(".lua_rotable")))
 #endif
-LUA_BASELIB_FUNC(assert,         luaB_assert);
-LUA_BASELIB_FUNC(collectgarbage, luaB_collectgarbage);
-LUA_BASELIB_FUNC(dofile,         luaB_dofile);
-LUA_BASELIB_FUNC(error,          luaB_error);
-LUA_BASELIB_FUNC(gcinfo,         luaB_gcinfo);
-LUA_BASELIB_FUNC(getfenv,        luaB_getfenv);
-LUA_BASELIB_FUNC(getmetatable,   luaB_getmetatable);
-LUA_BASELIB_FUNC(loadfile,       luaB_loadfile);
-LUA_BASELIB_FUNC(load,           luaB_load);
-LUA_BASELIB_FUNC(loadstring,     luaB_loadstring);
-LUA_BASELIB_FUNC(next,           luaB_next);
-LUA_BASELIB_FUNC(pcall,          luaB_pcall);
-LUA_BASELIB_FUNC(print,          luaB_print);
-LUA_BASELIB_FUNC(rawequal,       luaB_rawequal);
-LUA_BASELIB_FUNC(rawget,         luaB_rawget);
-LUA_BASELIB_FUNC(rawset,         luaB_rawset);
-LUA_BASELIB_FUNC(select,         luaB_select);
-LUA_BASELIB_FUNC(setfenv,        luaB_setfenv);
-LUA_BASELIB_FUNC(setmetatable,   luaB_setmetatable);
-LUA_BASELIB_FUNC(tonumber,       luaB_tonumber);
-LUA_BASELIB_FUNC(tostring,       luaB_tostring);
-LUA_BASELIB_FUNC(type,           luaB_type);
-LUA_BASELIB_FUNC(unpack,         luaB_unpack);
-LUA_BASELIB_FUNC(xpcall,         luaB_xpcall);
-#if defined(LUA_CROSS_COMPILER) && !defined(LUA_DEBUG_BUILD)
-LUA_BASE_DECL(start_list) = {LNILKEY, LNILVAL};
+
+static const LUA_REG_TYPE LOCK_IN_ROTABLE base_func_map[] = {
+  LROT_FUNCENTRY(assert,         luaB_assert),     
+  LROT_FUNCENTRY(collectgarbage, luaB_collectgarbage),     
+  LROT_FUNCENTRY(dofile,         luaB_dofile),     
+  LROT_FUNCENTRY(error,          luaB_error),     
+  LROT_FUNCENTRY(gcinfo,         luaB_gcinfo),     
+  LROT_FUNCENTRY(getfenv,        luaB_getfenv),     
+  LROT_FUNCENTRY(getmetatable,   luaB_getmetatable),     
+  LROT_FUNCENTRY(loadfile,       luaB_loadfile),     
+  LROT_FUNCENTRY(load,           luaB_load),     
+  LROT_FUNCENTRY(loadstring,     luaB_loadstring),     
+  LROT_FUNCENTRY(next,           luaB_next),     
+  LROT_FUNCENTRY(pcall,          luaB_pcall),     
+  LROT_FUNCENTRY(print,          luaB_print),     
+  LROT_FUNCENTRY(rawequal,       luaB_rawequal),     
+  LROT_FUNCENTRY(rawget,         luaB_rawget),     
+  LROT_FUNCENTRY(rawset,         luaB_rawset),     
+  LROT_FUNCENTRY(select,         luaB_select),     
+  LROT_FUNCENTRY(setfenv,        luaB_setfenv),     
+  LROT_FUNCENTRY(setmetatable,   luaB_setmetatable),     
+  LROT_FUNCENTRY(tonumber,       luaB_tonumber),     
+  LROT_FUNCENTRY(tostring,       luaB_tostring),     
+  LROT_FUNCENTRY(type,           luaB_type),     
+  LROT_FUNCENTRY(unpack,         luaB_unpack),     
+  LROT_FUNCENTRY(xpcall,         luaB_xpcall)     
+#ifdef LUA_CROSS_COMPILER
+ ,LROT_TABENTRY(__metatable,     base_func_meta),   
+  LROT_END
 #endif
+};
 
 static const luaL_Reg base_funcs[] = {
-#if LUA_OPTIMIZE_MEMORY != 2
-# error "NodeMCU Lua must be built with LTR enabled and LUA_OPTIMIZE_MEMORY=2"
-#endif
   {NULL, NULL}
 };
 
@@ -641,7 +652,6 @@ static int luaB_corunning (lua_State *L) {
 
 #undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
 const LUA_REG_TYPE co_funcs[] = {
   {LSTRKEY("create"), LFUNCVAL(luaB_cocreate)},
   {LSTRKEY("resume"), LFUNCVAL(luaB_coresume)},
@@ -662,7 +672,6 @@ static void auxopen (lua_State *L, const char *name,
   lua_setfield(L, -2, name);
 }
 
-extern const luaR_entry *lua_rotable;
 static void base_open (lua_State *L) {
   /* set global _G */
   lua_pushvalue(L, LUA_GLOBALSINDEX);
@@ -672,7 +681,7 @@ static void base_open (lua_State *L) {
 #if LUA_OPTIMIZE_MEMORY > 0
   lua_pushvalue(L, -1);
   lua_setmetatable(L, -2);
-  lua_pushrotable(L, (void *)lua_rotable);
+  lua_pushrotable(L, (void *)BASE_ROTABLE);
   lua_setglobal(L, "__index");
 #endif
   lua_pushliteral(L, LUA_VERSION);

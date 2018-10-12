@@ -15,71 +15,69 @@
 #include "lauxlib.h"
 #include "luaconf.h"
 #include "module.h"
+
+#if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
+# error "NodeMCU modules must be built with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)"
+#endif
+
 extern const luaR_entry strlib[], tab_funcs[],  dblib[], 
                         co_funcs[], math_map[], syslib[];
-#if defined(LUA_CROSS_COMPILER)
-BUILTIN_LIB_INIT( start_list,  NULL,               NULL);
-#if !defined(LUA_DEBUG_BUILD)
-const LOCK_IN_SECTION(rotable) luaR_entry lua_rotable_end_list =  {LNILKEY, LNILVAL};
-#endif
-#endif
-BUILTIN_LIB_INIT( LOADLIB,   LUA_LOADLIBNAME,   luaopen_package);
-BUILTIN_LIB_INIT( STRING,    LUA_STRLIBNAME,    luaopen_string);
-BUILTIN_LIB_INIT( TABLE,     LUA_TABLIBNAME,    luaopen_table);
-BUILTIN_LIB_INIT( DBG,       LUA_DBLIBNAME,     luaopen_debug);
+extern const luaR_entry syslib[], io_funcs[];  // Only used on cross-compile builds
 
-BUILTIN_LIB(      STRING,    LUA_STRLIBNAME,    strlib);
-BUILTIN_LIB(      TABLE,     LUA_TABLIBNAME,    tab_funcs);
-BUILTIN_LIB(      DBG,       LUA_DBLIBNAME,     dblib);
-BUILTIN_LIB(      CO,        LUA_COLIBNAME,     co_funcs);
-BUILTIN_LIB(      MATH,      LUA_MATHLIBNAME,   math_map);
-
-#if defined(LUA_CROSS_COMPILER)
-extern const luaR_entry syslib[], io_funcs[];
-BUILTIN_LIB(      OS,        LUA_OSLIBNAME,     syslib);
-BUILTIN_LIB_INIT( IO,        LUA_IOLIBNAME,     luaopen_io);
-#if defined(LUA_DEBUG_BUILD)
-const LOCK_IN_SECTION(rotable) luaR_entry lua_rotable_end_list =  {LNILKEY, LNILVAL};
-#endif
-BUILTIN_LIB_INIT( end_list,  NULL,               NULL);
-#endif
-
-#if defined(LUA_CROSS_COMPILER)
 /*
- * These base addresses are internal to this module for cross compile builds
- * This also exploits feature of the GCC code generator that the variables are
- * emitted in either normal OR reverse order within PSECT.  A bit of a cludge,
- * but exploiting these characteristics and ditto of the GNU linker is simpler
- * than replacing the default ld setup.
+ * The NodeMCU Lua initalisation has been adapted to use linker-based module 
+ * registration.  This uses a PSECT naming convention to allow the lib and rotab
+ * entries to be collected by the linker into consoliated tables.  The linker
+ * defines lua_libs_base and lua_rotable_base.
+ *
+ * This is not practical on Posix builds which use a standard loader declaration
+ * so for cross compiler builds, separate ROTables are used for the base functions
+ * and library ROTables, with the latter chained from the former using its __index 
+ * meta-method. In this case all library ROTables are defined here, avoiding the
+ * need for linker magic is avoided on host builds. 
  */
-extern const luaR_entry lua_rotable_start_list;  // Declared in lbaselib.c
 
-#if defined(LUA_DEBUG_BUILD)
-const        luaL_Reg   *lua_libs    = &lua_lib_start_list+1;
-#else
-const        luaL_Reg   *lua_libs    = &lua_lib_end_list+1;
-#endif
-const        luaR_entry *lua_rotable = &lua_rotable_start_list+1;
-
-#else /* Xtensa build */
-/*
- * These base addresses are Xtensa toolchain linker constants for Firmware builds 
- */ 
+#if defined(LUA_CROSS_COMPILER)
+#define LUA_ROTABLES lua_rotable_base
+#define LUA_LIBS     lua_libs_base
+#else /* declare Xtensa toolchain linker defined constants */ 
 extern const luaL_Reg    lua_libs_base[];
 extern const luaR_entry  lua_rotable_base[];
-const        luaL_Reg   *lua_libs    = lua_libs_base;
-const        luaR_entry *lua_rotable = lua_rotable_base;
+#define LUA_ROTABLES lua_rotable_core
+#define LUA_LIBS     lua_libs_core
 #endif
+             
+static const LOCK_IN_SECTION(libs) luaL_reg LUA_LIBS[] = {
+  {"",              luaopen_base},
+  {LUA_LOADLIBNAME, luaopen_package},
+  {LUA_STRLIBNAME,  luaopen_string},
+  {LUA_TABLIBNAME,  luaopen_table},
+  {LUA_DBLIBNAME,   luaopen_debug}
+#if defined(LUA_CROSS_COMPILER)
+ ,{LUA_IOLIBNAME,   luaopen_io},
+  {NULL,            NULL}
+#endif
+};
+
+#define ENTRY(n,t)  {LSTRKEY(n), LRO_ROVAL(t)}
+
+const LOCK_IN_SECTION(rotable) ROTable LUA_ROTABLES[] = {
+  ENTRY("ROM",           LUA_ROTABLES),
+  ENTRY(LUA_STRLIBNAME,  strlib),
+  ENTRY(LUA_TABLIBNAME,  tab_funcs),
+  ENTRY(LUA_DBLIBNAME,   dblib),
+  ENTRY(LUA_COLIBNAME,   co_funcs),
+  ENTRY(LUA_MATHLIBNAME, math_map)
+#if defined(LUA_CROSS_COMPILER)
+ ,ENTRY(LUA_OSLIBNAME,   syslib),
+  LROT_END
+#endif
+  };
 
 void luaL_openlibs (lua_State *L) {
-  const luaL_Reg *lib = lua_libs;
+  const luaL_Reg *lib = lua_libs_base;
 
-  /* Always open Base first */
-  lua_pushcfunction(L, luaopen_base);
-  lua_pushliteral(L, "");
-  lua_call(L, 1, 0);
-
-  /* Now loop round and open other libraries */
+  /* loop round and open libraries */
   for (; lib->name; lib++) {
     if (lib->func) {
       lua_pushcfunction(L, lib->func);
