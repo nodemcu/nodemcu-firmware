@@ -18,7 +18,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
 
 #define IO_INPUT	1
 #define IO_OUTPUT	2
@@ -28,7 +27,11 @@
 #define LUA_IO_SETFIELD(f)  lua_rawseti(L, LUA_REGISTRYINDEX,(int)(liolib_keys[f]))
 
 /* "Pseudo-random" keys for the registry */
-static const size_t liolib_keys[] = {(size_t)&luaL_callmeta, (size_t)&luaL_typerror, (size_t)&luaL_argerror};
+static const size_t liolib_keys[] = {
+  (size_t)&luaL_callmeta, 
+  (size_t)&luaL_typerror, 
+  (size_t)&luaL_argerror
+ };
 
 static const char *const fnames[] = {"input", "output"};
 
@@ -452,20 +455,6 @@ const LUA_REG_TYPE iolib_funcs[] = {
   {LNILKEY, LNILVAL}
 };
 
-/* Note that IO objects use a RAM metatable created to allow extensibility */
-
-static int io_index(lua_State *L)
-{
-  return luaR_findfunction(L, iolib_funcs);
-}
-
-const luaL_Reg iolib[] = {
-  {"__index", io_index},
-  {NULL, NULL}
-};
-
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
 const LUA_REG_TYPE flib[] = {
   {LSTRKEY("close"),      LFUNCVAL(io_close)},
@@ -481,6 +470,7 @@ const LUA_REG_TYPE flib[] = {
   {LNILKEY, LNILVAL}
 };
 
+static const luaL_Reg io_base[] = {{NULL, NULL}};
 
 static void createstdfile (lua_State *L, FILE *f, int k, const char *fname) {
   *newfile(L) = f;
@@ -490,14 +480,18 @@ static void createstdfile (lua_State *L, FILE *f, int k, const char *fname) {
   lua_setfield(L, -2, fname);
 }
 
-LUALIB_API int luaopen_io (lua_State *L) {
-  luaL_rometatable(L, LUA_FILEHANDLE, (void*)flib);  /* create metatable for file handles */
-  luaL_register_light(L, LUA_IOLIBNAME, iolib);
+LUALIB_API int luaopen_io(lua_State *L) {
+  luaL_rometatable(L, LUA_FILEHANDLE, (void*) flib);  /* create metatable for file handles */
+  luaL_register_light(L, LUA_IOLIBNAME, io_base);
   lua_pushvalue(L, -1);
   lua_setmetatable(L, -2);
+  lua_pushliteral(L, "__index");  
+  lua_pushrotable(L, (void *)iolib_funcs);
+  lua_rawset(L, -3);
+
   /* create (and set) default files */
   createstdfile(L, stdin, IO_INPUT, "stdin");
   createstdfile(L, stdout, IO_OUTPUT, "stdout");
-  createstdfile(L, stderr, 0, "stderr");
+  createstdfile(L, stderr, IO_STDERR, "stderr");
   return 1;
 }

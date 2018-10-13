@@ -9,77 +9,139 @@
 #include "lobject.h"
 #include "lapi.h"
 
-/* Local defines */
-#define LUAR_FINDFUNCTION     0
-#define LUAR_FINDVALUE        1
+#define ALIGNED_STRING (__attribute__((aligned(4))) char *)
+#define LA_LINES 16
+#define LA_SLOTS 4
+//#define COLLECT_STATS
 
-/* Externally defined read-only table array */
-extern const luaR_table *lua_rotable;
+/*
+ * All keyed ROtable access passes through luaR_findentry().  ROTables
+ * are simply a list of <key><TValue value> pairs.  The existing algo
+ * did a linear scan of this vector of pairs looking for a match.
+ *
+ * A N×M lookaside cache has been added, with a simple hash on the key's
+ * TString addr and the ROTable addr to identify one of N lines.  Each
+ * line has M slots which are scanned. This is all done in RAM and is
+ * perhaps 20x faster than the corresponding random Flash accesses which
+ * will cause flash faults.
+ *
+ * If a match is found and the table addresses match, then this entry is
+ * probed first. In practice the hit-rate here is over 99% so the code
+ * rarely fails back to doing the linear scan in ROM.
+ *
+ * Note that this hash does a couple of prime multiples and a modulus 2^X
+ * with is all evaluated in H/W, and adequately randomizes the lookup.
+ */
+#define HASH(a,b) (519*((size_t)(a)>>4) + 17*((size_t)(b)>>4))
 
-/* Find a global "read only table" in the constant lua_rotable array */
-void* luaR_findglobal(const char *name, unsigned len) {
-  unsigned i;
+static struct {
+  unsigned hash;
+  unsigned addr:24;
+  unsigned ndx:8;
+} cache[LA_LINES][LA_SLOTS];
 
-  if (c_strlen(name) > LUA_MAX_ROTABLE_NAME)
-    return NULL;
-  for (i=0; lua_rotable[i].name; i ++)
-    if (*lua_rotable[i].name != '\0' && c_strlen(lua_rotable[i].name) == len && !c_strncmp(lua_rotable[i].name, name, len)) {
-      return (void*)(lua_rotable[i].pentries);
+#ifdef COLLECT_STATS
+unsigned cache_stats[3];
+#define COUNT(i) cache_stats[i]++
+#else
+#define COUNT(i)
+#endif
+
+static int lookup_cache(unsigned hash, ROTable *rotable) {
+  int i = (hash>>2) & (LA_LINES-1), j;
+
+  for (j = 0; j<LA_SLOTS; j++) {
+    if (cache[i][j].hash == hash &&
+        ((size_t)rotable & 0xffffffu) == cache[i][j].addr) {
+      COUNT(0);
+      return cache[i][j].ndx;
     }
+  }
+  COUNT(1);
+  return -1;
+}
+
+static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
+  int i = (hash)>>2 & (LA_LINES-1), j;
+  COUNT(2);
+  if (ndx>0xffu)
+    return;
+  for (j = LA_SLOTS-1; j>0; j--)
+    cache[i][j] = cache[i][j-1];
+  cache[i][0].hash = hash;
+  cache[i][0].addr = (size_t) rotable;
+  cache[i][0].ndx  = ndx;
+}
+/*
+ * Find a string key entry in a rotable and return it.  Note that this internally
+ * uses a null key to denote a metatable search.
+ */
+const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
+  const luaR_entry *pentry = rotable;
+  const char *strkey = key ? getstr(key) : ALIGNED_STRING "__metatable" ;
+  size_t      hash   = HASH(rotable, key);
+  unsigned    i      = 0;
+  int         j      = lookup_cache(hash, rotable);
+
+  if (pentry) {
+    if (j >= 0){
+      if ((pentry[j].key.type == LUA_TSTRING) &&
+        !c_strcmp(pentry[j].key.id.strkey, strkey)) {
+        if (ppos)
+          *ppos = j;
+        return &pentry[j].value;
+      }
+    }
+    /*
+     * The invariants for 1st word comparison are deferred to here since they
+     * aren't needed if there is a cache hit. Note that the termination null
+     * is included so a "on\0" has a mask of 0xFFFFFF and "a\0" has 0xFFFF.
+     */
+    unsigned name4 = *(unsigned *)strkey;
+    unsigned l     = key ? key->tsv.len : sizeof("__metatable")-1;
+    unsigned mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
+    for(;pentry->key.type != LUA_TNIL; i++, pentry++) {
+      if ((pentry->key.type == LUA_TSTRING) &&
+          ((*(unsigned *)pentry->key.id.strkey ^ name4) & mask4) == 0 &&
+          !c_strcmp(pentry->key.id.strkey, strkey)) {
+        if (ppos)
+          *ppos = i;
+        if (j==-1) {
+          update_cache(hash, rotable, pentry - rotable);
+        } else if (j != (pentry - rotable)) {
+          j = 0;
+        }
+        return &pentry->value;
+      }
+    }
+  }
+  return luaO_nilobject;
+}
+
+const TValue* luaR_findentryN(ROTable *rotable, luaR_numkey numkey, unsigned *ppos) {
+  unsigned i = 0;
+  const luaR_entry *pentry = rotable;
+  if (pentry) {
+    for ( ;pentry->key.type != LUA_TNIL; i++, pentry++) {
+      if (pentry->key.type == LUA_TNUMBER && (luaR_numkey) pentry->key.id.numkey == numkey) {
+        if (ppos)
+          *ppos = i;
+        return &pentry->value;
+      }
+    }
+  }
   return NULL;
 }
 
-/* Find an entry in a rotable and return it */
-static const TValue* luaR_auxfind(const luaR_entry *pentry, const char *strkey, luaR_numkey numkey, unsigned *ppos) {
-  const TValue *res = NULL;
-  unsigned i = 0;
-  
-  if (pentry == NULL)
-    return NULL;  
-  while(pentry->key.type != LUA_TNIL) {
-    if ((strkey && (pentry->key.type == LUA_TSTRING) && (!c_strcmp(pentry->key.id.strkey, strkey))) || 
-        (!strkey && (pentry->key.type == LUA_TNUMBER) && ((luaR_numkey)pentry->key.id.numkey == numkey))) {
-      res = &pentry->value;
-      break;
-    }
-    i ++; pentry ++;
-  }
-  if (res && ppos)
-    *ppos = i;   
-  return res;
-}
-
-int luaR_findfunction(lua_State *L, const luaR_entry *ptable) {
-  const TValue *res = NULL;
-  const char *key = luaL_checkstring(L, 2);
-    
-  res = luaR_auxfind(ptable, key, 0, NULL);  
-  if (res && ttislightfunction(res)) {
-    luaA_pushobject(L, res);
-    return 1;
-  }
-  else
-    return 0;
-}
-
-/* Find an entry in a rotable and return its type 
-   If "strkey" is not NULL, the function will look for a string key,
-   otherwise it will look for a number key */
-const TValue* luaR_findentry(void *data, const char *strkey, luaR_numkey numkey, unsigned *ppos) {
-  return luaR_auxfind((const luaR_entry*)data, strkey, numkey, ppos);
-}
 
 /* Find the metatable of a given table */
-void* luaR_getmeta(void *data) {
-#ifdef LUA_META_ROTABLES
-  const TValue *res = luaR_auxfind((const luaR_entry*)data, "__metatable", 0, NULL);
+void* luaR_getmeta(ROTable *rotable) {
+  const TValue *res = luaR_findentry(rotable, NULL, NULL);
   return res && ttisrotable(res) ? rvalue(res) : NULL;
-#else
-  return NULL;
-#endif
 }
 
-static void luaR_next_helper(lua_State *L, const luaR_entry *pentries, int pos, TValue *key, TValue *val) {
+static void luaR_next_helper(lua_State *L, ROTable *pentries, int pos,
+                             TValue *key, TValue *val) {
   setnilvalue(key);
   setnilvalue(val);
   if (pentries[pos].key.type != LUA_TNIL) {
@@ -91,56 +153,24 @@ static void luaR_next_helper(lua_State *L, const luaR_entry *pentries, int pos, 
    setobj2s(L, val, &pentries[pos].value);
   }
 }
+
+
 /* next (used for iteration) */
-void luaR_next(lua_State *L, void *data, TValue *key, TValue *val) {
-  const luaR_entry* pentries = (const luaR_entry*)data;
-  char strkey[LUA_MAX_ROTABLE_NAME + 1], *pstrkey = NULL;
-  luaR_numkey numkey = 0;
+void luaR_next(lua_State *L, ROTable *rotable, TValue *key, TValue *val) {
   unsigned keypos;
-  
+
   /* Special case: if key is nil, return the first element of the rotable */
-  if (ttisnil(key)) 
-    luaR_next_helper(L, pentries, 0, key, val);
+  if (ttisnil(key))
+    luaR_next_helper(L, rotable, 0, key, val);
   else if (ttisstring(key) || ttisnumber(key)) {
-    /* Find the previoud key again */  
+    /* Find the previous key again */
     if (ttisstring(key)) {
-      luaR_getcstr(strkey, rawtsvalue(key), LUA_MAX_ROTABLE_NAME);          
-      pstrkey = strkey;
-    } else   
-      numkey = (luaR_numkey)nvalue(key);
-    luaR_findentry(data, pstrkey, numkey, &keypos);
+      luaR_findentry(rotable, rawtsvalue(key), &keypos);
+    } else {
+      luaR_findentryN(rotable, (luaR_numkey)nvalue(key), &keypos);
+    }
     /* Advance to next key */
-    keypos ++;    
-    luaR_next_helper(L, pentries, keypos, key, val);
+    keypos ++;
+    luaR_next_helper(L, rotable, keypos, key, val);
   }
 }
-
-/* Convert a Lua string to a C string */
-void luaR_getcstr(char *dest, const TString *src, size_t maxsize) {
-  if (src->tsv.len+1 > maxsize)
-    dest[0] = '\0';
-  else {
-    c_memcpy(dest, getstr(src), src->tsv.len);
-    dest[src->tsv.len] = '\0';
-  } 
-}
-
-#ifdef LUA_META_ROTABLES  
-/* Set in RO check depending on platform */
-#if defined(LUA_CROSS_COMPILER) && defined(__CYGWIN__)
-extern char __end__[];
-#define IN_RO_AREA(p) ((p) < __end__)
-#elif defined(LUA_CROSS_COMPILER)
-extern char  _edata[];
-#define IN_RO_AREA(p) ((p) < _edata)
-#else  /* xtensa tool chain for ESP target */
-extern char _irom0_text_start[];
-extern char _irom0_text_end[];
-#define IN_RO_AREA(p) ((p) >= _irom0_text_start && (p) <= _irom0_text_end)
-#endif
-
-/* Return 1 if the given pointer is a rotable */
-int luaR_isrotable(void *p) {
-  return IN_RO_AREA((char *)p);
-}
-#endif

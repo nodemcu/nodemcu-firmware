@@ -38,5 +38,10 @@
   return 1
 #endif
 
+#define LROT_TABENTRY(n,t)  {LSTRKEY(#n), LRO_ROVAL(t)}
+#define LROT_FUNCENTRY(n,f) {LSTRKEY(#n), LRO_FUNCVAL(f)}
+#define LROT_NUMENTRY(n,x)  {LSTRKEY(#n), LRO_NUMVAL(x)}
+#define LROT_END            {LNILKEY, LNILVAL}
+
 #endif /* lrodefs_h */
 

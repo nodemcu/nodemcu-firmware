@@ -24,7 +24,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
 
 /* prefix for open functions in C libraries */
 #define LUA_POF		"luaopen_"
@@ -474,10 +473,11 @@ static int ll_require (lua_State *L) {
     return 1;  /* package is already loaded */
   }
   /* Is this a readonly table? */
-  void *res = luaR_findglobal(name, c_strlen(name));
-  if (res) {
-    lua_pushrotable(L, res);
+  lua_getfield(L, LUA_GLOBALSINDEX, name);
+  if(lua_isrotable(L,-1)) {
     return 1;
+  } else {
+    lua_pop(L, 1);
   }
   /* else must load it; iterate over available loaders */
   lua_getfield(L, LUA_ENVIRONINDEX, "loaders");
@@ -563,8 +563,13 @@ static void modinit (lua_State *L, const char *modname) {
 
 static int ll_module (lua_State *L) {
   const char *modname = luaL_checkstring(L, 1);
-  if (luaR_findglobal(modname, c_strlen(modname)))
+  /* Is this a readonly table? */
+  lua_getfield(L, LUA_GLOBALSINDEX, modname);
+  if(lua_isrotable(L,-1)) {
     return 0;
+  } else {
+    lua_pop(L, 1);
+  }
   int loaded = lua_gettop(L) + 1;  /* index of _LOADED table */
   lua_getfield(L, LUA_REGISTRYINDEX, "_LOADED");
   lua_getfield(L, loaded, modname);  /* get _LOADED[modname] */

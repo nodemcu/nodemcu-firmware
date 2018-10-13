@@ -14,7 +14,11 @@
 #define LRO_NUMVAL(v)   {{.n = v}, LUA_TNUMBER}
 #define LRO_ROVAL(v)    {{.p = (void*)v}, LUA_TROTABLE}
 #define LRO_NILVAL      {{.p = NULL}, LUA_TNIL}
+#ifdef LUA_CROSS_COMPILER
 #define LRO_STRKEY(k)   {LUA_TSTRING, {.strkey = k}}
+#else
+#define LRO_STRKEY(k)   {LUA_TSTRING, {.strkey = (STORE_ATTR char *) k}}
+#endif
 #define LRO_NUMKEY(k)   {LUA_TNUMBER, {.numkey = k}}
 #define LRO_NILKEY      {LUA_TNIL, {.strkey=NULL}}
 
@@ -25,40 +29,58 @@
 typedef int luaR_numkey;
 
 /* The next structure defines the type of a key */
-typedef struct
-{
+typedef struct {
   int type;
-  union
-  {
+  union {
     const char*   strkey;
     luaR_numkey   numkey;
   } id;
 } luaR_key;
 
 /* An entry in the read only table */
-typedef struct
-{
+typedef struct luaR_entry {
   const luaR_key key;
   const TValue value;
 } luaR_entry;
 
-/* A rotable */
-typedef struct
-{
-  const char *name;
-  const luaR_entry *pentries;
-} luaR_table;
+/*
+ * The current ROTable implmentation is a vector of luaR_entry terminated by a
+ * nil record.  The convention is to use ROtable * to refer to the entire vector 
+ * as a logical ROTable.
+ */
+typedef const struct luaR_entry ROTable;
 
-void* luaR_findglobal(const char *key, unsigned len);
-int luaR_findfunction(lua_State *L, const luaR_entry *ptable);
-const TValue* luaR_findentry(void *data, const char *strkey, luaR_numkey numkey, unsigned *ppos);
-void luaR_getcstr(char *dest, const TString *src, size_t maxsize);
-void luaR_next(lua_State *L, void *data, TValue *key, TValue *val);
-void* luaR_getmeta(void *data);
-#ifdef LUA_META_ROTABLES
+const TValue* luaR_findentry(ROTable *tab, TString *key, unsigned *ppos);
+const TValue* luaR_findentryN(ROTable *tab, luaR_numkey numkey, unsigned *ppos);
+void luaR_next(lua_State *L, ROTable *tab, TValue *key, TValue *val);
+void* luaR_getmeta(ROTable *tab);
 int luaR_isrotable(void *p);
+
+/*
+ * Set inRO check depending on platform. Note that this implementation needs 
+ * to work on both the host (luac.cross) and ESP targets.  The luac.cross 
+ * VM is used for the -e option, and is primarily used to be able to debug 
+ * VM changes on the more developer-friendly hot gdb environment.
+ */
+#if defined(LUA_CROSS_COMPILER)
+
+#if defined(__CYGWIN__)
+#define _RODATA_END __end__
 #else
-#define luaR_isrotable(p)     (0)
+#define _RODATA_END _edata
+#endif 
+extern const char _RODATA_END[];
+#define IN_RODATA_AREA(p) (((const char *)(p)) < _RODATA_END)
+
+#else  /* xtensa tool chain for ESP target */
+
+extern const char _irom0_text_start[];
+extern const char _irom0_text_end[];
+#define IN_RODATA_AREA(p) (((const char *)(p)) >= _irom0_text_start && ((const char *)(p)) <= _irom0_text_end)
+
 #endif
+
+/* Return 1 if the given pointer is a rotable */
+#define luaR_isrotable(p) IN_RODATA_AREA(p)
 
 #endif

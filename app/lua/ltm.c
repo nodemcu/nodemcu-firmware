@@ -50,14 +50,22 @@ void luaT_init (lua_State *L) {
 ** tag methods
 */
 const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
-  const TValue *tm = luaR_isrotable(events) ? luaH_getstr_ro(events, ename) : luaH_getstr(events, ename); 
+  const TValue *tm;
   lua_assert(event <= TM_EQ);
-  if (ttisnil(tm)) {  /* no tag method? */
-    if (!luaR_isrotable(events))
+
+  if (luaR_isrotable(events)) {
+    tm =  luaH_getstr_ro(events, ename); 
+    if (ttisnil(tm)) {  /* no tag method? */
+      return NULL;
+    }
+  } else {
+    tm = luaH_getstr(events, ename); 
+    if (ttisnil(tm)) {  /* no tag method? */
       events->flags |= cast_byte(1u<<event);  /* cache this fact */
-    return NULL;
-  }
-  else return tm;
+      return NULL;
+    }
+  } 
+  return tm;
 }
 
 
