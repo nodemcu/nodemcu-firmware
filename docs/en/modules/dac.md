@@ -11,7 +11,7 @@ Each DAC is assigned to a dedicated GPIO:
 
 The DACs are 8-bit, thus the output values are restricted to the range from 0 to 255.
 
-## dac.disablee()
+## dac.disable()
 Disables DAC output on the related GPIO.
 
 #### Syntax
