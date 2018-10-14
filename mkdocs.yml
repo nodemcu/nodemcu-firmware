@@ -35,6 +35,7 @@ pages:
         - 'bit':          'en/modules/bit.md'
         - 'bthci':        'en/modules/bthci.md'
         - 'can':          'en/modules/can.md'
+        - 'dac':          'en/modules/dac.md'
         - 'dht':          'en/modules/dht.md'
         - 'encoder':      'en/modules/encoder.md'
         - 'file':         'en/modules/file.md'
