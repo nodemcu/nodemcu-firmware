@@ -1,5 +1,7 @@
 // Module for interfacing with i2s hardware
 
+#include <string.h>
+
 #include "module.h"
 #include "lauxlib.h"
 #include "lmem.h"
@@ -19,55 +21,101 @@
 #define I2S_CHECK_ID(id)   if(id >= MAX_I2C_NUM) luaL_error( L, "i2s not exists" )
 
 typedef struct {
-  xTaskHandle taskHandle;
-  QueueHandle_t *event_queue;
-  int event_cb;
-} i2s_status_t;
+  int ref;
+  const char *data;
+  size_t len;
+} i2s_tx_data_t;
 
 typedef struct {
-  i2s_event_t event;
-  i2s_status_t* status;
-} i2s_event_post_type;
+  struct {
+    xTaskHandle taskHandle;
+    QueueHandle_t queue;
+  } tx;
+  struct {
+    xTaskHandle taskHandle;
+    QueueHandle_t queue;
+  } rx;
+  int cb;
+  int i2s_bits_per_sample, data_bits_per_sample;
+} i2s_status_t;
 
-static task_handle_t i2s_event_task_id;
+static task_handle_t i2s_tx_task_id, i2s_rx_task_id, i2s_disposal_task_id;
 
 static i2s_status_t i2s_status[MAX_I2C_NUM];
 
 // LUA
-static void i2s_event_task( task_param_t param, task_prio_t prio ) {
-  i2s_event_post_type *post = (i2s_event_post_type *)param;
+static void i2s_tx_task( task_param_t param, task_prio_t prio ) {
+  int i2s_id = (int)param;
+  i2s_status_t *is = &i2s_status[i2s_id];
 
-  lua_State *L = lua_getstate();
-  int event_cb = post->status->event_cb;
-  if(event_cb == LUA_NOREF) {
-    free( post );
-    return;
+  if (is->cb != LUA_NOREF) {
+    lua_State *L = lua_getstate();
+    lua_rawgeti(L, LUA_REGISTRYINDEX, is->cb);
+    lua_pushinteger( L, i2s_id );
+    lua_pushstring( L, "tx" );
+    lua_call( L, 2, 0 );
   }
-  lua_rawgeti(L, LUA_REGISTRYINDEX, event_cb);
-  if(post->event.type == I2S_EVENT_TX_DONE) 
-    lua_pushstring(L, "sent");
-  else if(post->event.type == I2S_EVENT_RX_DONE) 
-    lua_pushstring(L, "data");
-  else
-    lua_pushstring(L, "error");
-  lua_pushinteger(L, post->event.size);
-  free( post );
-  lua_call(L, 2, 0);
+}
+
+static void i2s_rx_task( task_param_t param, task_prio_t prio ) {
+  int i2s_id = (int)param;
+  i2s_status_t *is = &i2s_status[i2s_id];
+
+  if (is->cb != LUA_NOREF) {
+    lua_State *L = lua_getstate();
+    lua_rawgeti(L, LUA_REGISTRYINDEX, is->cb);
+    lua_pushinteger( L, i2s_id );
+    lua_pushstring( L, "rx" );
+    lua_call( L, 2, 0 );
+  }
+}
+
+static void i2s_disposal_task( task_param_t param, task_prio_t prio ) {
+  lua_State *L = lua_getstate();
+  int ref = (int)param;
+
+  luaL_unref( L, LUA_REGISTRYINDEX, ref );
 }
 
 // RTOS
-static void task_I2S( void *pvParameters ){
-  i2s_status_t* is = (i2s_status_t*)pvParameters;
-  
-  i2s_event_t event;
+static void task_I2S_rx( void *pvParameters ) {
+  int i2s_id = (int)pvParameters;
+  i2s_status_t *is = &i2s_status[i2s_id];
 
-  for (;;){
-    if( xQueueReceive( is->event_queue, &event, 3 * portTICK_PERIOD_MS ) == pdTRUE ){
-      i2s_event_post_type *post = (i2s_event_post_type *)malloc( sizeof( i2s_event_post_type ) );
-      post->status = is;
-      memcpy(&(post->event), &event, sizeof(i2s_event_t));
-      task_post_high( i2s_event_task_id, (task_param_t)post );
+  i2s_event_t i2s_event;
+
+  for (;;) {
+    // process I2S RX events
+    xQueueReceive( is->rx.queue, &i2s_event, portMAX_DELAY );
+    if (i2s_event.type == I2S_EVENT_RX_DONE) {
+      task_post_high( i2s_rx_task_id, i2s_id );
     }
+  }
+}
+
+static void task_I2S_tx( void *pvParameters ) {
+  int i2s_id = (int)pvParameters;
+  i2s_status_t *is = &i2s_status[i2s_id];
+
+  i2s_tx_data_t tx_data;
+
+  for (;;) {
+    // request new TX data
+    task_post_high( i2s_tx_task_id, i2s_id );
+
+    // get TX data from Lua task
+    xQueueReceive( is->tx.queue, &tx_data, portMAX_DELAY );
+
+    // write TX data to I2S, note that this call might block
+    size_t dummy;
+    if (is->data_bits_per_sample == is->i2s_bits_per_sample) {
+      i2s_write( i2s_id, tx_data.data, tx_data.len, &dummy, portMAX_DELAY );
+    } else {
+      i2s_write_expand( i2s_id, tx_data.data, tx_data.len, is->data_bits_per_sample, is->i2s_bits_per_sample, &dummy, portMAX_DELAY );
+    }
+
+    // notify Lua to dispose object
+    task_post_low( i2s_disposal_task_id, tx_data.ref );
   }
 }
 
@@ -76,49 +124,108 @@ static int node_i2s_start( lua_State *L )
 {
   int i2s_id = luaL_checkinteger( L, 1 );
   I2S_CHECK_ID( i2s_id );
-  
+  i2s_status_t *is = &i2s_status[i2s_id];
+
+  int top = lua_gettop( L );
+
   luaL_checkanytable (L, 2);
 
   i2s_config_t i2s_config;
+  memset( &i2s_config, 0, sizeof( i2s_config ) );
   i2s_pin_config_t pin_config;
-  
+  memset( &pin_config, 0, sizeof( pin_config ) );
+
   lua_getfield (L, 2, "mode");
   i2s_config.mode = luaL_optint(L, -1, I2S_MODE_MASTER | I2S_MODE_TX);
+  //
   lua_getfield (L, 2, "rate");
   i2s_config.sample_rate = luaL_optint(L, -1, 44100);
+  //
   lua_getfield (L, 2, "bits");
-  i2s_config.bits_per_sample = 16;
+  is->data_bits_per_sample   = luaL_optint(L, -1, 16);
+  is->i2s_bits_per_sample    = is->data_bits_per_sample < I2S_BITS_PER_SAMPLE_16BIT ? I2S_BITS_PER_SAMPLE_16BIT : is->data_bits_per_sample;
+  i2s_config.bits_per_sample = is->i2s_bits_per_sample;
+  //
   lua_getfield (L, 2, "channel");
   i2s_config.channel_format = luaL_optint(L, -1, I2S_CHANNEL_FMT_RIGHT_LEFT);
+  //
   lua_getfield (L, 2, "format");
   i2s_config.communication_format = luaL_optint(L, -1, I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB);
+  //
   lua_getfield (L, 2, "buffer_count");
   i2s_config.dma_buf_count = luaL_optint(L, -1, 2);
+  //
   lua_getfield (L, 2, "buffer_len");
   i2s_config.dma_buf_len = luaL_optint(L, -1, i2s_config.sample_rate / 100);
-  i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL2;
-  
+  //
+  i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM;
+  //
   lua_getfield (L, 2, "bck_pin");
   pin_config.bck_io_num = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
+  //
   lua_getfield (L, 2, "ws_pin");
   pin_config.ws_io_num = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
+  //
   lua_getfield (L, 2, "data_out_pin");
   pin_config.data_out_num  = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
+  //
   lua_getfield (L, 2, "data_in_pin");
   pin_config.data_in_num = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
-  
-  lua_settop(L, 3);
-  i2s_status[i2s_id].event_cb = luaL_ref(L, LUA_REGISTRYINDEX);
+  //
+  lua_getfield(L, 2, "dac_mode");
+  i2s_dac_mode_t dac_mode = luaL_optint(L, -1, I2S_DAC_CHANNEL_DISABLE);
+  //
+  lua_getfield(L, 2, "adc1_channel");
+  adc1_channel_t adc1_channel = luaL_optint(L, -1, ADC1_CHANNEL_MAX);
 
-  esp_err_t err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_buf_count, &i2s_status[i2s_id].event_queue);
-  if(err != ESP_OK)
+  // handle optional callback functions TX and RX
+  lua_settop( L, top );
+  if (lua_isfunction( L, 3 )) {
+    lua_pushvalue( L, 3 );
+    is->cb = luaL_ref( L, LUA_REGISTRYINDEX );
+  } else {
+    is->cb = LUA_NOREF;
+  }
+
+  esp_err_t err;
+  if (i2s_config.mode & I2S_MODE_RX) {
+    err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_buf_count, &is->rx.queue);
+  } else {
+    err = i2s_driver_install(i2s_id, &i2s_config, i2s_config.dma_buf_count, NULL);
+  }
+  if (err != ESP_OK)
     luaL_error( L, "i2s can not start" );
-  i2s_set_pin(i2s_id, &pin_config);
 
-  char pcName[5];
-  snprintf( pcName, 5, "I2S%d", i2s_id );
-  pcName[4] = '\0';
-  xTaskCreate(task_I2S, pcName, 2048, &i2s_status[i2s_id], ESP_TASK_MAIN_PRIO + 1, &i2s_status[i2s_id].taskHandle);
+  if (dac_mode != I2S_DAC_CHANNEL_DISABLE) {
+    if (i2s_set_dac_mode( dac_mode ) != ESP_OK)
+      luaL_error( L, "error setting dac mode" );
+  }
+  if (adc1_channel != ADC1_CHANNEL_MAX) {
+    if (i2s_set_adc_mode( ADC_UNIT_1, adc1_channel ) != ESP_OK)
+      luaL_error( L, "error setting adc1 mode" );
+  }
+
+  if (i2s_set_pin(i2s_id, &pin_config) != ESP_OK)
+    luaL_error( L, "error setting pins" );
+
+
+  if (i2s_config.mode & I2S_MODE_TX) {
+    // prepare TX task
+    char pcName[8];
+    snprintf( pcName, 8, "I2S_tx_%d", i2s_id );
+    pcName[7] = '\0';
+    if ((is->tx.queue = xQueueCreate( 2, sizeof( i2s_tx_data_t ) )) == NULL)
+      return luaL_error( L, "cannot create queue" );
+    xTaskCreate(task_I2S_tx, pcName, 2048, (void *)i2s_id, ESP_TASK_MAIN_PRIO + 1, &is->tx.taskHandle);
+  }
+
+  if (i2s_config.mode & I2S_MODE_RX) {
+    // prepare RX task
+    char pcName[8];
+    snprintf( pcName, 8, "I2S_rx_%d", i2s_id );
+    pcName[7] = '\0';
+    xTaskCreate(task_I2S_rx, pcName, 1024, (void *)i2s_id, ESP_TASK_MAIN_PRIO + 1, &is->rx.taskHandle);
+  }
 
   return 0;
 }
@@ -128,20 +235,30 @@ static int node_i2s_stop( lua_State *L )
 {
   int i2s_id = luaL_checkinteger( L, 1 );
   I2S_CHECK_ID( i2s_id );
-  
+  i2s_status_t *is = &i2s_status[i2s_id];
+
   i2s_driver_uninstall(i2s_id);
-  i2s_status[i2s_id].event_queue = NULL;
-  
-  if(i2s_status[i2s_id].taskHandle != NULL) {
-    vTaskDelete(i2s_status[i2s_id].taskHandle);
-    i2s_status[i2s_id].taskHandle = NULL;
+
+  if (is->tx.taskHandle != NULL) {
+    vTaskDelete( is->tx.taskHandle );
+    is->tx.taskHandle = NULL;
   }
-  
-  if(i2s_status[i2s_id].event_cb != LUA_NOREF)  {
-    luaL_unref(L, LUA_REGISTRYINDEX, i2s_status[i2s_id].event_cb);
-    i2s_status[i2s_id].event_cb = LUA_NOREF;
+  if (is->tx.queue != NULL) {
+    vQueueDelete( is->tx.queue );
+    is->tx.queue = NULL;
   }
-  
+
+  if (is->rx.taskHandle != NULL) {
+    vTaskDelete( is->rx.taskHandle );
+    is->rx.taskHandle = NULL;
+  }
+  // the rx queue is created and destroyed by the I2S driver
+
+  if (is->cb != LUA_NOREF) {
+    luaL_unref( L, LUA_REGISTRYINDEX, is->cb );
+    is->cb = LUA_NOREF;
+  }
+
   return 0;
 }
 
@@ -150,80 +267,86 @@ static int node_i2s_read( lua_State *L )
 {
   int i2s_id = luaL_checkinteger( L, 1 );
   I2S_CHECK_ID( i2s_id );
-  
+
   size_t bytes = luaL_checkinteger( L, 2 );
-  int wait_ms = luaL_optint(L, 3, 0);
+  //int wait_ms = luaL_optint(L, 3, 0);
   char * data = luaM_malloc( L, bytes );
-  size_t read = i2s_read_bytes(i2s_id, data, bytes, wait_ms / portTICK_RATE_MS);
-  lua_pushlstring(L, data, read); 
+  size_t read = 0;
+  //read = i2s_read_bytes(i2s_id, data, bytes, wait_ms / portTICK_RATE_MS);
+  lua_pushlstring(L, data, read);
   luaM_free(L, data);
-  
+
   return 1;
 }
 
-// Lua: write( i2s_id, data[, wait_ms] )
+// Lua: write( i2s_id, data )
 static int node_i2s_write( lua_State *L )
 {
-  int i2s_id = luaL_checkinteger( L, 1 );
-  I2S_CHECK_ID( i2s_id );
-  
-  size_t bytes;
-  char *data;
-  if( lua_istable( L, 2 ) ) {
-    bytes = lua_objlen( L, 2 );
-    data = (char *)luaM_malloc( L, bytes );
-    for( int i = 0; i < bytes; i ++ ) {
-      lua_rawgeti( L, 2, i + 1 );
-      data[i] = (uint8_t)luaL_checkinteger( L, -1 );
-    }
-  } else {
-        data = (char *) luaL_checklstring(L, 2, &bytes);
-  }
-  int wait_ms = luaL_optint(L, 3, 0);
-  size_t wrote = i2s_write_bytes(i2s_id, data, bytes, wait_ms / portTICK_RATE_MS);
-  if( lua_istable( L, 2 ) )
-    luaM_free(L, data);
-  lua_pushinteger( L, ( lua_Integer ) wrote );
+  int stack = 0;
 
-  return 1;
+  int i2s_id = luaL_checkinteger( L, ++stack );
+  I2S_CHECK_ID( i2s_id );
+
+  i2s_tx_data_t tx_data;
+  tx_data.data = (const char *)luaL_checklstring( L, ++stack, &tx_data.len );
+  lua_pushvalue( L, stack );
+  tx_data.ref = luaL_ref( L, LUA_REGISTRYINDEX );
+
+  // post this to the TX task
+  xQueueSendToBack( i2s_status[i2s_id].tx.queue, &tx_data, portMAX_DELAY );
+
+  return 0;
 }
 
 // Module function map
 static const LUA_REG_TYPE i2s_map[] =
 {
-  { LSTRKEY( "start" ),       LFUNCVAL( node_i2s_start ) },
-  { LSTRKEY( "stop" ),        LFUNCVAL( node_i2s_stop ) },
-  { LSTRKEY( "read" ),        LFUNCVAL( node_i2s_read ) },
-  { LSTRKEY( "write" ),       LFUNCVAL( node_i2s_write ) },
-  { LSTRKEY( "FORMAT_I2S" ),  LNUMVAL( I2S_COMM_FORMAT_I2S  ) },
-  { LSTRKEY( "FORMAT_I2S_MSB" ),  LNUMVAL( I2S_COMM_FORMAT_I2S_MSB ) },
-  { LSTRKEY( "FORMAT_I2S_LSB" ),  LNUMVAL( I2S_COMM_FORMAT_I2S_LSB ) },
-  { LSTRKEY( "FORMAT_PCM" ),  LNUMVAL( I2S_COMM_FORMAT_PCM ) },
-  { LSTRKEY( "FORMAT_PCM_SHORT" ),  LNUMVAL( I2S_COMM_FORMAT_PCM_SHORT ) },
+  { LSTRKEY( "start" ), LFUNCVAL( node_i2s_start ) },
+  { LSTRKEY( "stop" ),  LFUNCVAL( node_i2s_stop ) },
+  { LSTRKEY( "read" ),  LFUNCVAL( node_i2s_read ) },
+  { LSTRKEY( "write" ), LFUNCVAL( node_i2s_write ) },
+
+  { LSTRKEY( "FORMAT_I2S" ),       LNUMVAL( I2S_COMM_FORMAT_I2S  ) },
+  { LSTRKEY( "FORMAT_I2S_MSB" ),   LNUMVAL( I2S_COMM_FORMAT_I2S_MSB ) },
+  { LSTRKEY( "FORMAT_I2S_LSB" ),   LNUMVAL( I2S_COMM_FORMAT_I2S_LSB ) },
+  { LSTRKEY( "FORMAT_PCM" ),       LNUMVAL( I2S_COMM_FORMAT_PCM ) },
+  { LSTRKEY( "FORMAT_PCM_SHORT" ), LNUMVAL( I2S_COMM_FORMAT_PCM_SHORT ) },
   { LSTRKEY( "FORMAT_PCM_LONG" ),  LNUMVAL( I2S_COMM_FORMAT_PCM_LONG ) },
-  
+
   { LSTRKEY( "CHANNEL_RIGHT_LEFT" ), LNUMVAL( I2S_CHANNEL_FMT_RIGHT_LEFT ) },
-  { LSTRKEY( "CHANNEL_ALL_LEFT" ), LNUMVAL( I2S_CHANNEL_FMT_ALL_LEFT ) },
-  { LSTRKEY( "CHANNEL_ONLY_LEFT" ), LNUMVAL( I2S_CHANNEL_FMT_ONLY_LEFT ) },
-  { LSTRKEY( "CHANNEL_ALL_RIGHT" ), LNUMVAL( I2S_CHANNEL_FMT_ALL_RIGHT ) },
+  { LSTRKEY( "CHANNEL_ALL_LEFT" ),   LNUMVAL( I2S_CHANNEL_FMT_ALL_LEFT ) },
+  { LSTRKEY( "CHANNEL_ONLY_LEFT" ),  LNUMVAL( I2S_CHANNEL_FMT_ONLY_LEFT ) },
+  { LSTRKEY( "CHANNEL_ALL_RIGHT" ),  LNUMVAL( I2S_CHANNEL_FMT_ALL_RIGHT ) },
   { LSTRKEY( "CHANNEL_ONLY_RIGHT" ), LNUMVAL( I2S_CHANNEL_FMT_ONLY_RIGHT ) },
-  
-  { LSTRKEY( "MODE_MASTER" ), LNUMVAL( I2S_MODE_MASTER ) },
-  { LSTRKEY( "MODE_SLAVE" ), LNUMVAL( I2S_MODE_SLAVE ) },
-  { LSTRKEY( "MODE_TX" ), LNUMVAL( I2S_MODE_TX ) },
-  { LSTRKEY( "MODE_RX" ), LNUMVAL( I2S_MODE_RX ) },
+
+  { LSTRKEY( "MODE_MASTER" ),       LNUMVAL( I2S_MODE_MASTER ) },
+  { LSTRKEY( "MODE_SLAVE" ),        LNUMVAL( I2S_MODE_SLAVE ) },
+  { LSTRKEY( "MODE_TX" ),           LNUMVAL( I2S_MODE_TX ) },
+  { LSTRKEY( "MODE_RX" ),           LNUMVAL( I2S_MODE_RX ) },
   { LSTRKEY( "MODE_DAC_BUILT_IN" ), LNUMVAL( I2S_MODE_DAC_BUILT_IN ) },
+  { LSTRKEY( "MODE_ADC_BUILT_IN" ), LNUMVAL( I2S_MODE_ADC_BUILT_IN ) },
+  { LSTRKEY( "MODE_PDM" ),          LNUMVAL( I2S_MODE_PDM ) },
+
+  { LSTRKEY( "DAC_CHANNEL_DISABLE" ), LNUMVAL( I2S_DAC_CHANNEL_DISABLE ) },
+  { LSTRKEY( "DAC_CHANNEL_RIGHT" ),   LNUMVAL( I2S_DAC_CHANNEL_RIGHT_EN ) },
+  { LSTRKEY( "DAC_CHANNEL_LEFT" ),    LNUMVAL( I2S_DAC_CHANNEL_LEFT_EN ) },
+  { LSTRKEY( "DAC_CHANNEL_BOTH" ),    LNUMVAL( I2S_DAC_CHANNEL_BOTH_EN ) },
 
   { LNILKEY, LNILVAL }
 };
 
 int luaopen_i2s( lua_State *L ) {
   for(int i2s_id = 0; i2s_id < MAX_I2C_NUM; i2s_id++) {
-    i2s_status[i2s_id].event_queue = NULL;
-    i2s_status[i2s_id].taskHandle = NULL;
-    i2s_status[i2s_id].event_cb = LUA_NOREF;
+    i2s_status_t *is = &i2s_status[i2s_id];
+    is->tx.queue = NULL;
+    is->tx.taskHandle = NULL;
+    is->rx.queue = NULL;
+    is->rx.taskHandle = NULL;
+    is->cb = LUA_NOREF;
   }
-  i2s_event_task_id = task_get_id( i2s_event_task );
+  i2s_tx_task_id = task_get_id( i2s_tx_task );
+  i2s_rx_task_id = task_get_id( i2s_rx_task );
+  i2s_disposal_task_id = task_get_id( i2s_disposal_task );
   return 0;
 }
 
