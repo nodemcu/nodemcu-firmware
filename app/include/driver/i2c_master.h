@@ -17,5 +17,6 @@ void i2c_master_send_nack(uint16 id);
 
 uint8 i2c_master_get_pinSDA(uint16 id);
 uint8 i2c_master_get_pinSCL(uint16 id);
+uint32 i2c_master_get_speed(uint16 id);
 
 #endif //__I2C_MASTER_H__

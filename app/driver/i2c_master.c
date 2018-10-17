@@ -37,8 +37,12 @@
 
 #include "driver/i2c_master.h"
 
-//used only by old driver
-#define i2c_master_wait os_delay_us
+
+#ifndef I2C_MASTER_OLD_VERSION
+/******************************************************************************
+* NEW driver
+* Enabled if I2C_MASTER_OLD_VERSION is not defined in user_config.h
+*******************************************************************************/
 
 // enable use GPIO16 (D0) pin as SCL line. ~450 kHz maximum frequency
 #ifdef I2C_MASTER_GPIO16_ENABLED
@@ -136,31 +140,6 @@ static inline void i2c_master_wait_gpio_SCL_high(uint16 id)
 LOCAL void ICACHE_FLASH_ATTR
 i2c_master_setDC(uint16 id, uint8 SDA, uint8 SCL)
 {
-#ifdef I2C_MASTER_OLD_VERSION
-    // intentionally not optimized to keep timings of old version accurate
-    uint8 sclLevel;
-
-    SDA	&= 0x01;
-    SCL	&= 0x01;
-    i2c[id]->last_SDA = SDA;
-    i2c[id]->last_SCL = SCL;
-
-    if ((0 == SDA) && (0 == SCL)) {
-        gpio_output_set(0, 1<<i2c[id]->pin_SDA | 1<<i2c[id]->pin_SCL, 1<<i2c[id]->pin_SDA | 1<<i2c[id]->pin_SCL, 0);
-    } else if ((0 == SDA) && (1 == SCL)) {
-        gpio_output_set(1<<i2c[id]->pin_SCL, 1<<i2c[id]->pin_SDA, 1<<i2c[id]->pin_SDA | 1<<i2c[id]->pin_SCL, 0);
-    } else if ((1 == SDA) && (0 == SCL)) {
-        gpio_output_set(1<<i2c[id]->pin_SDA, 1<<i2c[id]->pin_SCL, 1<<i2c[id]->pin_SDA | 1<<i2c[id]->pin_SCL, 0);
-    } else {
-        gpio_output_set(1<<i2c[id]->pin_SDA | 1<<i2c[id]->pin_SCL, 0, 1<<i2c[id]->pin_SDA | 1<<i2c[id]->pin_SCL, 0);
-    }
-    if(1 == SCL) {
-        do {
-            sclLevel = GPIO_INPUT_GET(GPIO_ID_PIN(i2c[id]->pin_SCL));
-        } while(0 == sclLevel);
-    }
-    i2c_master_wait(5);
-#else
     uint32 this_SDA_SCL_set_mask;
     uint32 this_SDA_SCL_clear_mask;
     i2c[id]->last_SDA = SDA;
@@ -194,8 +173,6 @@ i2c_master_setDC(uint16 id, uint8 SDA, uint8 SCL)
             asm volatile("nop;nop;nop;"); // empty CPU cycles to maintain equal times for low and high state
         }
     }
-
-#endif
 }
 
 /******************************************************************************
@@ -209,9 +186,6 @@ static inline uint8 ICACHE_FLASH_ATTR
 i2c_master_getDC(uint16 id)
 {
     uint8 sda_out;
-#ifdef I2C_MASTER_OLD_VERSION
-    sda_out = GPIO_INPUT_GET(GPIO_ID_PIN(i2c[id]->pin_SDA));
-#else
     uint32 gpio_in_mask;
     //instead of: gpio_in_mask = gpio_input_get();
     asm volatile("l16ui %[gpio_in_mask], %[gpio_in_addr], 0;" //read gpio state
@@ -220,7 +194,6 @@ i2c_master_getDC(uint16 id)
                  :[gpio_in_addr] "r" (PERIPHS_GPIO_BASEADDR + GPIO_IN_ADDRESS)
     );
     sda_out = (gpio_in_mask >> i2c[id]->pin_SDA) & 1;
-#endif
     return sda_out;
 }
 
@@ -252,7 +225,7 @@ i2c_master_get_pin_SCL(uint16 id){
  * Parameters   : bus id
  * Returns      : i2c speed
 *******************************************************************************/
-uint16 ICACHE_FLASH_ATTR
+uint32 ICACHE_FLASH_ATTR
 i2c_master_get_speed(uint16 id){
     return (NULL == i2c[id]) ? 0 : i2c[id]->speed;
 }
@@ -325,11 +298,6 @@ i2c_master_gpio_init(uint16 id, uint8 sda, uint8 scl, uint32 speed)
     if(i2c[id]->speed < MIN_SPEED){
         i2c[id]->speed = MIN_SPEED;
     }
-
-#ifdef I2C_MASTER_OLD_VERSION
-    i2c[id]->speed = 100000; //dummy speed for backward compatibility
-#endif
-
     i2c_master_set_DC_delay(id); // recalibrate clock
 
     ETS_GPIO_INTR_DISABLE(); //disable gpio interrupts
@@ -389,9 +357,6 @@ i2c_master_start(uint16 id)
 void ICACHE_FLASH_ATTR
 i2c_master_stop(uint16 id)
 {
-#ifdef I2C_MASTER_OLD_VERSION
-    i2c_master_wait(5);
-#endif
     i2c_master_setDC(id, 0, i2c[id]->last_SCL);
     i2c_master_setDC(id, 0, 1);
     i2c_master_setDC(id, 1, 1);
@@ -409,9 +374,6 @@ i2c_master_setAck(uint16 id, uint8 level)
     i2c_master_setDC(id, i2c[id]->last_SDA, 0);
     i2c_master_setDC(id, level, 0);
     i2c_master_setDC(id, level, 1);
-#ifdef I2C_MASTER_OLD_VERSION
-    i2c_master_wait(3);
-#endif
     i2c_master_setDC(id, level, 0);
     i2c_master_setDC(id, 1, 0);
 }
@@ -486,19 +448,6 @@ i2c_master_readByte(uint16 id)
     uint8 k;
     sint8 i;
 
-#ifdef I2C_MASTER_OLD_VERSION
-    i2c_master_wait(5);
-    i2c_master_setDC(id, i2c[id]->last_SDA, 0);
-    for (i = 7; i >= 0; i--) {
-        i2c_master_setDC(id, 1, 0);
-        i2c_master_setDC(id, 1, 1);
-        k = i2c_master_getDC(id);
-        k <<= i;
-        retVal |= k;
-    }
-    i2c_master_wait(3);
-    i2c_master_setDC(id, 1, 0);
-#else
     i2c_master_setDC(id, i2c[id]->last_SDA, 0);
     i2c_master_setDC(id, 1, 0);
     for (i = 7; i >= 0; i--) {
@@ -508,7 +457,6 @@ i2c_master_readByte(uint16 id)
         k <<= i;
         retVal |= k;
     }
-#endif
     return retVal;
 }
 
@@ -524,27 +472,6 @@ i2c_master_writeByte(uint16 id, uint8 wrdata)
     uint8 dat;
     sint8 i;
 
-#ifdef I2C_MASTER_OLD_VERSION
-    i2c_master_wait(5);
-
-    i2c_master_setDC(id, i2c[id]->last_SDA, 0);
-    i2c_master_wait(5);
-
-    for (i = 7; i >= 0; i--) {
-        dat = wrdata >> i;
-        i2c_master_setDC(id, dat, 0);
-        i2c_master_wait(5);
-        i2c_master_setDC(id, dat, 1);
-        i2c_master_wait(5);
-
-        if (i == 0) {
-            i2c_master_wait(3);   ////
-        }
-
-        i2c_master_setDC(id, dat, 0);
-        i2c_master_wait(5);
-    }
-#else
     i2c_master_setDC(id, i2c[id]->last_SDA, 0);
     for (i = 7; i >= 0; i--) {
         dat = (wrdata >> i) & 1;
@@ -552,5 +479,364 @@ i2c_master_writeByte(uint16 id, uint8 wrdata)
         i2c_master_setDC(id, dat, 1);
     }
     i2c_master_setDC(id, dat, 0);
-#endif
 }
+
+
+
+#else // if defined I2C_MASTER_OLD_VERSION
+/******************************************************************************
+* OLD driver
+* Enabled when I2C_MASTER_OLD_VERSION is defined in user_config.h
+*******************************************************************************/
+
+#define I2C_MASTER_SDA_MUX (pin_mux[sda])
+#define I2C_MASTER_SCL_MUX (pin_mux[scl])
+#define I2C_MASTER_SDA_GPIO (pinSDA)
+#define I2C_MASTER_SCL_GPIO (pinSCL)
+#define I2C_MASTER_SDA_FUNC (pin_func[sda])
+#define I2C_MASTER_SCL_FUNC (pin_func[scl])
+#define I2C_MASTER_SDA_HIGH_SCL_HIGH()  \
+    gpio_output_set(1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 0, 1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 0)
+#define I2C_MASTER_SDA_HIGH_SCL_LOW()  \
+    gpio_output_set(1<<I2C_MASTER_SDA_GPIO, 1<<I2C_MASTER_SCL_GPIO, 1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 0)
+#define I2C_MASTER_SDA_LOW_SCL_HIGH()  \
+    gpio_output_set(1<<I2C_MASTER_SCL_GPIO, 1<<I2C_MASTER_SDA_GPIO, 1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 0)
+#define I2C_MASTER_SDA_LOW_SCL_LOW()  \
+    gpio_output_set(0, 1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 1<<I2C_MASTER_SDA_GPIO | 1<<I2C_MASTER_SCL_GPIO, 0)
+#define i2c_master_wait    os_delay_us
+#define I2C_MASTER_SPEED 100000
+#define I2C_MASTER_BUS_ID 0
+
+LOCAL uint8 m_nLastSDA;
+LOCAL uint8 m_nLastSCL;
+
+LOCAL uint8 pinSDA = 2;
+LOCAL uint8 pinSCL = 15;
+
+/******************************************************************************
+ * FunctionName : i2c_master_setDC
+ * Description  : Internal used function -
+ *                    set i2c SDA and SCL bit value for half clk cycle
+ * Parameters   : uint8 SDA, uint8 SCL
+ * Returns      : NONE
+*******************************************************************************/
+LOCAL void ICACHE_FLASH_ATTR
+i2c_master_setDC(uint8 SDA, uint8 SCL)
+{
+    uint8 sclLevel;
+
+    SDA	&= 0x01;
+    SCL	&= 0x01;
+    m_nLastSDA = SDA;
+    m_nLastSCL = SCL;
+
+    if ((0 == SDA) && (0 == SCL)) {
+        I2C_MASTER_SDA_LOW_SCL_LOW();
+    } else if ((0 == SDA) && (1 == SCL)) {
+        I2C_MASTER_SDA_LOW_SCL_HIGH();
+    } else if ((1 == SDA) && (0 == SCL)) {
+        I2C_MASTER_SDA_HIGH_SCL_LOW();
+    } else {
+        I2C_MASTER_SDA_HIGH_SCL_HIGH();
+    }
+    if(1 == SCL) {
+        do {
+            sclLevel = GPIO_INPUT_GET(GPIO_ID_PIN(I2C_MASTER_SCL_GPIO));
+        } while(sclLevel == 0);
+    }
+    i2c_master_wait(5);
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_getDC
+ * Description  : Internal used function -
+ *                    get i2c SDA bit value
+ * Parameters   : NONE
+ * Returns      : uint8 - SDA bit value
+*******************************************************************************/
+LOCAL uint8 ICACHE_FLASH_ATTR
+i2c_master_getDC()
+{
+    uint8 sda_out;
+    sda_out = GPIO_INPUT_GET(GPIO_ID_PIN(I2C_MASTER_SDA_GPIO));
+    return sda_out;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_init
+ * Description  : initilize I2C bus to enable i2c operations
+ * Parameters   : bus id
+ * Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+i2c_master_init(uint16 id)
+{
+    uint8 i;
+
+    i2c_master_setDC(1, 0);
+
+    // when SCL = 0, toggle SDA to clear up
+    i2c_master_setDC(0, 0) ;
+    i2c_master_setDC(1, 0) ;
+
+    // set data_cnt to max value
+    for (i = 0; i < 28; i++) {
+        i2c_master_setDC(1, 0);
+        i2c_master_setDC(1, 1);
+    }
+
+    // reset all
+    i2c_master_stop(I2C_MASTER_BUS_ID);
+    return;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_get_pin_SDA
+ * Description  : returns SDA pin number
+ * Parameters   : bus id
+ * Returns      : SDA pin number
+*******************************************************************************/
+uint8 ICACHE_FLASH_ATTR
+i2c_master_get_pinSDA(uint16 id){
+    return pinSDA;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_get_pin_SCL
+ * Description  : returns SCL pin number
+ * Parameters   : bus id
+ * Returns      : SCL pin number
+*******************************************************************************/
+uint8 ICACHE_FLASH_ATTR
+i2c_master_get_pinSCL(uint16 id){
+    return pinSCL;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_get_speed
+ * Description  : returns configured bus speed
+ * Parameters   : bus id
+ * Returns      : i2c speed
+*******************************************************************************/
+uint32 ICACHE_FLASH_ATTR
+i2c_master_get_speed(uint16 id){
+    return I2C_MASTER_SPEED;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_configured
+ * Description  : checks if i2c bus is configured
+ * Parameters   : bus id
+ * Returns      : boolean value, true if configured
+*******************************************************************************/
+bool ICACHE_FLASH_ATTR
+i2c_master_configured(uint16 id){
+    return true;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_gpio_init
+ * Description  : config SDA and SCL gpio to open-drain output mode,
+ *                mux and gpio num defined in i2c_master.h
+ * Parameters   : bus id, uint8 sda, uint8 scl, uint32 speed 
+ * Returns      : configured speed
+*******************************************************************************/
+uint32 ICACHE_FLASH_ATTR
+i2c_master_gpio_init(uint16 id, uint8 sda, uint8 scl, uint32 speed)
+{
+    pinSDA = pin_num[sda];
+    pinSCL = pin_num[scl];
+
+    ETS_GPIO_INTR_DISABLE() ;
+//    ETS_INTR_LOCK();
+
+    PIN_FUNC_SELECT(I2C_MASTER_SDA_MUX, I2C_MASTER_SDA_FUNC);
+    PIN_FUNC_SELECT(I2C_MASTER_SCL_MUX, I2C_MASTER_SCL_FUNC);
+
+    GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(I2C_MASTER_SDA_GPIO)), GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(I2C_MASTER_SDA_GPIO))) | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE)); //open drain;
+    GPIO_REG_WRITE(GPIO_ENABLE_ADDRESS, GPIO_REG_READ(GPIO_ENABLE_ADDRESS) | (1 << I2C_MASTER_SDA_GPIO));
+    GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(I2C_MASTER_SCL_GPIO)), GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(I2C_MASTER_SCL_GPIO))) | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE)); //open drain;
+    GPIO_REG_WRITE(GPIO_ENABLE_ADDRESS, GPIO_REG_READ(GPIO_ENABLE_ADDRESS) | (1 << I2C_MASTER_SCL_GPIO));
+
+    I2C_MASTER_SDA_HIGH_SCL_HIGH();
+
+    ETS_GPIO_INTR_ENABLE() ;
+//    ETS_INTR_UNLOCK();
+
+    i2c_master_init(I2C_MASTER_BUS_ID);
+
+    return I2C_MASTER_SPEED;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_start
+ * Description  : set i2c to send state
+ * Parameters   : bus id
+ * Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+i2c_master_start(uint16 id)
+{
+    i2c_master_setDC(1, m_nLastSCL);
+    i2c_master_setDC(1, 1);
+    i2c_master_setDC(0, 1);
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_stop
+ * Description  : set i2c to stop sending state
+ * Parameters   : bus id
+ * Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+i2c_master_stop(uint16 id)
+{
+    i2c_master_wait(5);
+
+    i2c_master_setDC(0, m_nLastSCL);
+    i2c_master_setDC(0, 1);
+    i2c_master_setDC(1, 1);
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_setAck
+ * Description  : set ack to i2c bus as level value
+ * Parameters   : bus id, uint8 level - 0 or 1
+ * Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+i2c_master_setAck(uint16 id, uint8 level)
+{
+    i2c_master_setDC(m_nLastSDA, 0);
+    i2c_master_setDC(level, 0);
+    i2c_master_setDC(level, 1);
+    i2c_master_wait(3);
+    i2c_master_setDC(level, 0);
+    i2c_master_setDC(1, 0);
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_getAck
+ * Description  : confirm if peer send ack
+ * Parameters   : bus id
+ * Returns      : uint8 - ack value, 0 or 1
+*******************************************************************************/
+uint8 ICACHE_FLASH_ATTR
+i2c_master_getAck(uint16 id)
+{
+    uint8 retVal;
+    i2c_master_setDC(m_nLastSDA, 0);
+    i2c_master_setDC(1, 0);
+    i2c_master_setDC(1, 1);
+
+    retVal = i2c_master_getDC();
+    i2c_master_wait(5);
+    i2c_master_setDC(1, 0);
+
+    return retVal;
+}
+
+/******************************************************************************
+* FunctionName : i2c_master_checkAck
+* Description  : get dev response
+* Parameters   : bus id
+* Returns      : true : get ack ; false : get nack
+*******************************************************************************/
+bool ICACHE_FLASH_ATTR
+i2c_master_checkAck(uint16 id)
+{
+    if(i2c_master_getAck(I2C_MASTER_BUS_ID)){
+        return FALSE;
+    }else{
+        return TRUE;
+    }
+}
+
+/******************************************************************************
+* FunctionName : i2c_master_send_ack
+* Description  : response ack
+* Parameters   : bus id
+* Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+i2c_master_send_ack(uint16 id)
+{
+    i2c_master_setAck(I2C_MASTER_BUS_ID, 0x0);
+}
+/******************************************************************************
+* FunctionName : i2c_master_send_nack
+* Description  : response nack
+* Parameters   : bus id
+* Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+i2c_master_send_nack(uint16 id)
+{
+    i2c_master_setAck(I2C_MASTER_BUS_ID, 0x1);
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_readByte
+ * Description  : read Byte from i2c bus
+ * Parameters   : bus id
+ * Returns      : uint8 - readed value
+*******************************************************************************/
+uint8 ICACHE_FLASH_ATTR
+i2c_master_readByte(uint16 id)
+{
+    uint8 retVal = 0;
+    uint8 k, i;
+
+    i2c_master_wait(5);
+    i2c_master_setDC(m_nLastSDA, 0);
+
+    for (i = 0; i < 8; i++) {
+        i2c_master_wait(5);
+        i2c_master_setDC(1, 0);
+        i2c_master_setDC(1, 1);
+
+        k = i2c_master_getDC();
+        i2c_master_wait(5);
+
+        if (i == 7) {
+            i2c_master_wait(3);   ////
+        }
+
+        k <<= (7 - i);
+        retVal |= k;
+    }
+
+    i2c_master_setDC(1, 0);
+
+    return retVal;
+}
+
+/******************************************************************************
+ * FunctionName : i2c_master_writeByte
+ * Description  : write wrdata value(one byte) into i2c
+ * Parameters   : bus id, uint8 wrdata - write value
+ * Returns      : NONE
+*******************************************************************************/
+void ICACHE_FLASH_ATTR
+i2c_master_writeByte(uint16 id, uint8 wrdata)
+{
+    uint8 dat;
+    sint8 i;
+
+    i2c_master_wait(5);
+
+    i2c_master_setDC(m_nLastSDA, 0);
+
+    for (i = 7; i >= 0; i--) {
+        dat = wrdata >> i;
+        i2c_master_setDC(dat, 0);
+        i2c_master_setDC(dat, 1);
+
+        if (i == 0) {
+            i2c_master_wait(3);   ////
+        }
+
+        i2c_master_setDC(dat, 0);
+    }
+}
+#endif
