@@ -158,7 +158,7 @@ static int node_i2s_start( lua_State *L )
   lua_getfield (L, 2, "buffer_len");
   i2s_config.dma_buf_len = luaL_optint(L, -1, i2s_config.sample_rate / 100);
   //
-  i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM;
+  i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
   //
   lua_getfield (L, 2, "bck_pin");
   pin_config.bck_io_num = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
@@ -269,10 +269,10 @@ static int node_i2s_read( lua_State *L )
   I2S_CHECK_ID( i2s_id );
 
   size_t bytes = luaL_checkinteger( L, 2 );
-  //int wait_ms = luaL_optint(L, 3, 0);
+  int wait_ms = luaL_optint(L, 3, 0);
   char * data = luaM_malloc( L, bytes );
-  size_t read = 0;
-  //read = i2s_read_bytes(i2s_id, data, bytes, wait_ms / portTICK_RATE_MS);
+  size_t read;
+  i2s_read(i2s_id, data, bytes, &read, wait_ms / portTICK_RATE_MS);
   lua_pushlstring(L, data, read);
   luaM_free(L, data);
 
