@@ -9,6 +9,7 @@
 #include "c_stdlib.h"
 
 #include "platform.h"
+#include "cpu_esp8266.h"
 
 #define U8X8_USE_PINS
 #include "u8x8_nodemcu_hal.h"
@@ -133,11 +134,11 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
  
   switch(msg) {
   case U8X8_MSG_BYTE_SEND:
-    if (hal->id == 0) {
+    if (hal->id < NUM_I2C) {
       data = (uint8_t *)arg_ptr;
       
       while( arg_int > 0 ) {
-        platform_i2c_send_byte( 0, *data );
+        platform_i2c_send_byte( hal->id, *data );
         data++;
         arg_int--;
       }
@@ -164,9 +165,9 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
     break;
 
   case U8X8_MSG_BYTE_START_TRANSFER:
-    if (hal->id == 0) {
-      platform_i2c_send_start( 0 );
-      platform_i2c_send_address( 0, u8x8_GetI2CAddress(u8x8), PLATFORM_I2C_DIRECTION_TRANSMITTER );
+    if (hal->id < NUM_I2C) {
+      platform_i2c_send_start( hal->id );
+      platform_i2c_send_address( hal->id, u8x8_GetI2CAddress(u8x8), PLATFORM_I2C_DIRECTION_TRANSMITTER );
 
     } else {
       // invalid id
@@ -175,8 +176,8 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
     break;
 
   case U8X8_MSG_BYTE_END_TRANSFER:
-    if (hal->id == 0) {
-      platform_i2c_send_stop( 0 );
+    if (hal->id < NUM_I2C) {
+      platform_i2c_send_stop( hal->id );
 
     } else {
       // invalid id
