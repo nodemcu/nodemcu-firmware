@@ -9,7 +9,6 @@
 #include "c_stdlib.h"
 
 #include "platform.h"
-#include "cpu_esp8266.h"
 
 #define U8X8_USE_PINS
 #include "u8x8_nodemcu_hal.h"
