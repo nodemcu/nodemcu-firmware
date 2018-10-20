@@ -678,8 +678,11 @@ int net_hold( lua_State *L ) {
     return luaL_error(L, "invalid user data");
   if (!ud->client.hold && ud->netconn)
   {
-    ud->client.hold = 1;
-    ud->client.num_held = 0;
+    if (ud->client.hold == 0)
+    {
+      ud->client.hold = 1;
+      ud->client.num_held = 0;
+    }
   }
   return 0;
 }
@@ -691,8 +694,12 @@ int net_unhold( lua_State *L ) {
     return luaL_error(L, "invalid user data");
   if (ud->client.hold && ud->netconn)
   {
-    ud->client.hold = 0;
-    netconn_recved(ud->netconn, ud->client.num_held);
+    if (ud->client.hold != 0)
+    {
+      ud->client.hold = 0;
+      netconn_recved(ud->netconn, ud->client.num_held);
+      ud->client.num_held = 0;
+    }
   }
   return 0;
 }
@@ -1130,7 +1137,6 @@ static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
 
     if (ud->type == TYPE_TCP_CLIENT) {
       if (ud->client.hold) {
-        netconn_recved(ud->netconn, 0);
         ud->client.num_held += len;
       } else {
         netconn_recved(ud->netconn, len);
