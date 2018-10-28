@@ -31,6 +31,27 @@ mytimer:start()
 mytimer = nil
 ```
 
+## tmr.now()
+
+Returns the system counter, which counts in microseconds starting at 0 when the device is booted. If using integer-only 32-bit Lua, the timer will wrap back to 0 after about 35 minutes, which is vital to consider if you use this function to [debounce or throttle GPIO input](https://github.com/hackhitchin/esp8266-co-uk/issues/2).
+
+When not using integer-only Lua, the timer will not wrap unless the uptime reaches 285 years.
+
+#### Syntax
+`tmr.now()`
+
+#### Parameters
+none
+
+#### Returns
+the current value of the system counter
+
+#### Example
+```lua
+print(tmr.now())
+print(tmr.now())
+```
+
 # tmr Object
 ## tmr.obj:alarm()
 
