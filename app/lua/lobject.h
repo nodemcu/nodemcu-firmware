@@ -405,6 +405,7 @@ typedef struct Table {
   int sizearray;  /* size of `array' array */
 } Table;
 
+typedef const struct luaR_entry ROTable;
 
 /*
 ** `module' operation for hashing (size is always a power of 2)

@@ -24,7 +24,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-DEFINES += -DU8X8_USE_PINS
+DEFINES += -DU8X8_USE_PINS -DU8G2_USE_LARGE_FONTS
 
 #############################################################
 # Recursion Magic - Don't touch this!!

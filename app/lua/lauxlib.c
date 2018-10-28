@@ -25,8 +25,6 @@
 #define lauxlib_c
 #define LUA_LIB
 
-#include "lrotable.h"
-
 #include "lauxlib.h"
 #include "lgc.h"
 #include "ldo.h"
@@ -555,14 +553,7 @@ LUALIB_API const char *luaL_findtable (lua_State *L, int idx,
     if (e == NULL) e = fname + c_strlen(fname);
     lua_pushlstring(L, fname, e - fname);
     lua_rawget(L, -2);
-    if (lua_isnil(L, -1)) {
-      /* If looking for a global variable, check the rotables too */
-      void *ptable = luaR_findglobal(fname, e - fname);
-      if (ptable) {
-        lua_pop(L, 1);
-        lua_pushrotable(L, ptable);
-      }
-    }
+
     if (lua_isnil(L, -1)) {  /* no such field? */
       lua_pop(L, 1);  /* remove this nil */
       lua_createtable(L, 0, (*e == '.' ? 1 : szhint)); /* new table for field */

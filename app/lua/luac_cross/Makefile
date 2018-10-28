@@ -18,6 +18,7 @@ TARGET = host
 ifeq ($(FLAVOR),debug)
     CCFLAGS        += -O0 -g
     TARGET_LDFLAGS += -O0 -g
+    DEFINES        += -DLUA_DEBUG_BUILD
 else
     FLAVOR         =  release
     CCFLAGS        += -O2

@@ -131,20 +131,20 @@ int main(int argc, char *argv[]) {
   assert(sizeof(unsigned int) == 4);
 
   /* allocate and zero the in and out Blocks */
-  assert(in  = uz_malloc(sizeof(*in)));
-  assert(out = uz_malloc(sizeof(*out)));
+  assert((in  = uz_malloc(sizeof(*in))) != NULL);
+  assert((out = uz_malloc(sizeof(*out))) != NULL);
 
   memset(in, 0, sizeof(*in));
   memset(out, 0, sizeof(*out));
 
   /* open input files and probe end to read the expanded length */
-  assert((in->fin = fopen(inFile, "rb")));
+  assert((in->fin = fopen(inFile, "rb")) != NULL);
   fseek(in->fin, -4, SEEK_END);
   assert(fread((uchar*)&(out->len), 1, 4, in->fin) == 4);
   in->len = ftell(in->fin);
   fseek(in->fin, 0, SEEK_SET);
   
-  assert((out->fout = fopen(outFile, "wb")));
+  assert((out->fout = fopen(outFile, "wb")) != NULL);
 
   printf ("Inflating in=%s out=%s\n", inFile, outFile);
 
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
   n = (out->len > DICTIONARY_WINDOW) ? WRITE_BLOCKS : 
                                       1 + (out->len-1) / WRITE_BLOCKSIZE;
   for(i = WRITE_BLOCKS - n + 1;  i <= WRITE_BLOCKS; i++)
-    assert(out->block[i % WRITE_BLOCKS] = uz_malloc(sizeof(outBlock)));
+    assert((out->block[i % WRITE_BLOCKS] = uz_malloc(sizeof(outBlock))) != NULL);
   
   out->breakNdx  = (out->len < WRITE_BLOCKSIZE) ? out->len : WRITE_BLOCKSIZE;
   out->fullBlkCB = processOutRec;
