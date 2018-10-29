@@ -5,6 +5,11 @@
 
 #include "esp_http_client.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_task.h"
+#include "task/task.h"
+
 #include <esp_log.h>
 #define TAG "http"
 
@@ -36,6 +41,9 @@ typedef struct
   list_item *headers;
   int status_code;
   bool connected;
+  TaskHandle_t perform_rtos_task;
+  int request_cb_ref;
+  bool ack_perform_task;
 } lhttp_context_t;
 
 struct list_item
@@ -60,6 +68,42 @@ typedef struct
 
 static const char http_context_mt[] = "http.context";
 
+static task_handle_t lhttp_request_task_id, lhttp_event_task_id;
+#define ASYNC_GUARD(ctx) \
+  if (ctx->perform_rtos_task) { \
+    return luaL_error(L, "asynchronous mode active");    \
+  }
+
+static void perform_rtos_task( void *pvParameters ) {
+  lhttp_context_t *context = (lhttp_context_t *)pvParameters;
+
+  ulTaskNotifyTake(pdTRUE, 0);  // ensure that notification counter is reset
+  esp_http_client_perform(context->client);
+  task_post_low(lhttp_request_task_id, (task_param_t)context);
+  vTaskSuspend(NULL);
+}
+
+static void lhttp_request_task( task_param_t param, task_prio_t prio )
+{
+  lhttp_context_t *context = (lhttp_context_t *)param;
+
+  // the rtos task for esp_http_client_perform suspended, reap it
+  vTaskDelete(context->perform_rtos_task);
+  context->perform_rtos_task = NULL;
+
+  lua_State *L = lua_getstate();
+  if (context->request_cb_ref != LUA_NOREF) {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, context->request_cb_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, context->context_ref);
+    lua_call(L, 1, 0);
+
+    luaL_unref(L, LUA_REGISTRYINDEX, context->request_cb_ref);
+    context->request_cb_ref = LUA_NOREF;
+  }
+  luaL_unref(L, LUA_REGISTRYINDEX, context->context_ref);
+  context->context_ref = LUA_NOREF;
+}
+
 static int context_close(lua_State *L)
 {
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
@@ -80,6 +124,8 @@ static int context_cleanup(lua_State *L)
   context->context_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, context->post_data_ref);
   context->post_data_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, context->request_cb_ref);
+  context->request_cb_ref = LUA_NOREF;
   list_item *hdr = context->headers;
   while (hdr) {
     list_item *next = hdr->next;
@@ -106,6 +152,8 @@ static lhttp_context_t *context_new(lua_State *L)
     context->callback_ref[i] = LUA_NOREF;
   }
   context->connected = false;
+  context->perform_rtos_task = NULL;
+  context->request_cb_ref = LUA_NOREF;
   luaL_getmetatable(L, http_context_mt);
   lua_setmetatable(L, -2);
   return context;
@@ -113,6 +161,7 @@ static lhttp_context_t *context_new(lua_State *L)
 
 static int make_callback(lhttp_context_t *context, int id, void *data, size_t data_len);
 
+// note: this function is called both in synchronous mode and in asynchronous mode
 static esp_err_t http_event_cb(esp_http_client_event_t *evt)
 {
   // ESP_LOGI(TAG, "http_event_cb %d", evt->event_id);
@@ -163,6 +212,35 @@ static esp_err_t http_event_cb(esp_http_client_event_t *evt)
   return ESP_OK;
 }
 
+static void lhttp_event_task( task_param_t param, task_prio_t prio )
+{
+  esp_http_client_event_t *evt = (esp_http_client_event_t *)param;
+  lhttp_context_t *context = (lhttp_context_t *)evt->user_data;
+
+  context->ack_perform_task = true;
+  http_event_cb(evt);
+  if (context->perform_rtos_task && context->ack_perform_task) {
+    xTaskNotifyGive(context->perform_rtos_task);
+  }
+}
+
+static esp_err_t http_event_handler(esp_http_client_event_t *evt)
+{
+  lhttp_context_t *context = (lhttp_context_t *)evt->user_data;
+
+  if (!context->perform_rtos_task) {
+    // synchronous mode
+    return http_event_cb(evt);
+  } else {
+    // asynchronous mode: we're called from perform_rtos_task context
+    // 1. post to Lua task
+    task_post_high(lhttp_event_task_id, (task_param_t)evt);
+    // 2. wait for ack from Lua land
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    return ESP_OK;
+  }
+}
+
 static int make_callback(lhttp_context_t *context, int id, void *data, size_t data_len)
 {
   lua_State *L = lua_getstate();
@@ -206,12 +284,18 @@ static int make_callback(lhttp_context_t *context, int id, void *data, size_t da
       break;
   }
   if (lua_type(L, 1) == LUA_TFUNCTION) {
-    int err = lua_pcall(L, lua_gettop(L) - 1, 0, 0);
+    int err = lua_pcall(L, lua_gettop(L) - 1, 1, 0);
     if (err) {
       const char *msg = lua_type(L, -1) == LUA_TSTRING ? lua_tostring(L, -1) : "<?>";
       ESP_LOGW(TAG, "Error returned from callback for HTTP event %d: %s", id, msg);
-      lua_pop(L, 1);
+      lua_pop(L, 2);
       return ESP_FAIL;
+    } else {
+      if (lua_isboolean(L, -1) && lua_toboolean(L, -1) == 1) {
+        // true returned: do not ack perform task
+        context->ack_perform_task = false;
+      }
+      lua_pop(L, 1);
     }
   } else {
     lua_settop(L, 0);
@@ -259,9 +343,10 @@ static int http_lapi_createConnection(lua_State *L)
 
   esp_http_client_config_t config = {
     .url = url,
-    .event_handler = http_event_cb,
+    .event_handler = http_event_handler,
     .method = HTTP_METHOD_GET,
     .is_async = false,
+    .buffer_size = 2048,
     .user_data = context,
   };
   context->client = esp_http_client_init(&config);
@@ -279,6 +364,7 @@ static int http_lapi_on(lua_State *L)
 {
   lua_settop(L, 3);
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
+  ASYNC_GUARD(context);
   int callback_idx = luaL_checkoption(L, 2, NULL, CALLBACK_NAME);
   luaL_unref(L, LUA_REGISTRYINDEX, context->callback_ref[callback_idx]); // In case of duplicate calls
   int ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -290,16 +376,34 @@ static int http_lapi_on(lua_State *L)
   return 1; // Return context, for chained calls
 }
 
-// context:request()
+// context:request([request_done_cb])
 static int http_lapi_request(lua_State *L)
 {
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
+  ASYNC_GUARD(context);
 
   // context now owns itself for the duration of the connection, if it isn't already
   if (context->context_ref == LUA_NOREF) {
     lua_pushvalue(L, 1);
     context->context_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
+
+  if (lua_isfunction(L, 2)) {
+    // request completion callback provided -> asynchronous mode
+    lua_pushvalue(L, 2);
+    luaL_unref(L, LUA_REGISTRYINDEX, context->request_cb_ref);
+    context->request_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+    if (xTaskCreate(perform_rtos_task,
+                    "perform_task",
+                    2048,
+                    (void *)context,
+                    ESP_TASK_MAIN_PRIO + 1,
+                    &context->perform_rtos_task) != pdPASS)
+      return luaL_error(L, "cannot create rtos task");
+
+    return 0;
+  } else {
 
   esp_err_t err = esp_http_client_perform(context->client);
   // Note, the above call invalidates the Lua stack
@@ -319,6 +423,7 @@ static int http_lapi_request(lua_State *L)
   luaL_unref(L, LUA_REGISTRYINDEX, ref);
 
   return 1;
+  }
 }
 
 // connection:seturl(url)
@@ -326,6 +431,7 @@ static int http_lapi_seturl(lua_State *L)
 {
   lua_settop(L, 2);
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
+  ASYNC_GUARD(context);
   esp_err_t err = esp_http_client_set_url(context->client, luaL_checkstring(L, 2));
   if (err) {
     return luaL_error(L, "esp_http_client_set_url returned %d", err);
@@ -338,6 +444,7 @@ static int http_lapi_setmethod(lua_State *L)
 {
   lua_settop(L, 2);
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
+  ASYNC_GUARD(context);
   int method = luaL_checkint(L, 2);
   if (method < 0 || method >= HTTP_METHOD_MAX) {
     return luaL_error(L, "Bad HTTP method %d", method);
@@ -351,6 +458,7 @@ static int http_lapi_setheader(lua_State *L)
 {
   lua_settop(L, 3);
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
+  ASYNC_GUARD(context);
   const char *name = luaL_checkstring(L, 2);
   const char *value = luaL_optstring(L, 3, NULL);
   esp_http_client_set_header(context->client, name, value);
@@ -362,6 +470,7 @@ static int http_lapi_setpostdata(lua_State *L)
 {
   lua_settop(L, 2);
   lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
+  ASYNC_GUARD(context);
 
   esp_http_client_set_method(context->client, HTTP_METHOD_POST);
 
@@ -370,6 +479,18 @@ static int http_lapi_setpostdata(lua_State *L)
   esp_http_client_set_post_field(context->client, postdata, (int)postdata_sz);
   luaL_unref(L, LUA_REGISTRYINDEX, context->post_data_ref);
   context->post_data_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  return 0;
+}
+
+// context:ack()
+static int http_lapi_ack(lua_State *L)
+{
+  lhttp_context_t *context = (lhttp_context_t *)luaL_checkudata(L, 1, http_context_mt);
+  if (!context->perform_rtos_task)
+    return luaL_error(L, "not in asynchronous mode");
+
+  xTaskNotifyGive(context->perform_rtos_task);
+
   return 0;
 }
 
@@ -511,6 +632,7 @@ static const LUA_REG_TYPE http_context_map[] = {
   { LSTRKEY("seturl"), LFUNCVAL(http_lapi_seturl) },
   { LSTRKEY("setpostdata"), LFUNCVAL(http_lapi_setpostdata) },
   { LSTRKEY("close"), LFUNCVAL(context_close) },
+  { LSTRKEY("ack"), LFUNCVAL(http_lapi_ack) },
   { LSTRKEY("__gc"), LFUNCVAL(context_cleanup) },
   { LSTRKEY("__index"), LROVAL(http_context_map) },
   { LNILKEY, LNILVAL }
@@ -519,6 +641,8 @@ static const LUA_REG_TYPE http_context_map[] = {
 static int luaopen_http(lua_State *L)
 {
   luaL_rometatable(L, http_context_mt, (void *)http_context_map);
+  lhttp_request_task_id = task_get_id(lhttp_request_task);
+  lhttp_event_task_id = task_get_id(lhttp_event_task);
   return 0;
 }
 
