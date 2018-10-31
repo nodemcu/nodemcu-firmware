@@ -279,6 +279,23 @@ static int node_osprint (lua_State *L)
 }
 
 
+static int node_uptime(lua_State *L)
+{
+  uint64_t now = esp_timer_get_time();
+#ifdef LUA_NUMBER_INTEGRAL
+  lua_pushinteger(L, (lua_Integer)(now & 0x7FFFFFFF));
+  lua_pushinteger(L, (lua_Integer)((now >> 31) & 0x7FFFFFFF));
+#else
+  // The largest double that doesn't lose whole-number precision is 2^53, so the
+  // mask we apply is (2^53)-1 which is 0x1FFFFFFFFFFFFF. In practice this is
+  // long enough the timer should never wrap, but it interesting nonetheless.
+  lua_pushnumber(L, (lua_Number)(now & 0x1FFFFFFFFFFFFFull));
+  lua_pushinteger(L, (lua_Integer)(now >> 53));
+#endif
+  return 2;
+}
+
+
 static const LUA_REG_TYPE node_egc_map[] = {
   { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
   { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
@@ -300,16 +317,17 @@ static const LUA_REG_TYPE node_task_map[] = {
 
 static const LUA_REG_TYPE node_map[] =
 {
-  { LSTRKEY( "chipid" ),	LFUNCVAL( node_chipid )	},
-  { LSTRKEY( "compile" ),	LFUNCVAL( node_compile )	},
-  { LSTRKEY( "dsleep" ),    LFUNCVAL( node_dsleep ) 	},
-  { LSTRKEY( "egc" ),		LROVAL( node_egc_map )  	},
-  { LSTRKEY( "heap" ),      LFUNCVAL( node_heap )   	},
-  { LSTRKEY( "input" ),		LFUNCVAL( node_input )		},
-  { LSTRKEY( "osprint" ),   LFUNCVAL( node_osprint )    },
-  { LSTRKEY( "restart" ),   LFUNCVAL( node_restart )	},
-  { LSTRKEY( "stripdebug"), LFUNCVAL( node_stripdebug )	},
-  { LSTRKEY( "task" ),      LROVAL( node_task_map ) 	},
+  { LSTRKEY( "chipid" ),    LFUNCVAL( node_chipid ) },
+  { LSTRKEY( "compile" ),   LFUNCVAL( node_compile ) },
+  { LSTRKEY( "dsleep" ),    LFUNCVAL( node_dsleep ) },
+  { LSTRKEY( "egc" ),       LROVAL( node_egc_map ) },
+  { LSTRKEY( "heap" ),      LFUNCVAL( node_heap )  },
+  { LSTRKEY( "input" ),     LFUNCVAL( node_input ) },
+  { LSTRKEY( "osprint" ),   LFUNCVAL( node_osprint ) },
+  { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
+  { LSTRKEY( "stripdebug"), LFUNCVAL( node_stripdebug ) },
+  { LSTRKEY( "task" ),      LROVAL( node_task_map ) },
+  { LSTRKEY( "uptime" ),    LFUNCVAL( node_uptime ) },
   { LNILKEY, LNILVAL }
 };
 

@@ -62,20 +62,6 @@ static void alarm_timer_task(task_param_t param, task_prio_t prio)
   lua_call(L, 1, 0);
 }
 
-static int tmr_now(lua_State *L)
-{
-  uint64_t now = esp_timer_get_time();
-#ifdef LUA_NUMBER_INTEGRAL
-  lua_pushinteger(L, (lua_Integer)(now & 0x7FFFFFFF));
-#else
-  // The largest double that doesn't lose whole-number precision is 2^53, so the
-  // mask we apply is (2^53)-1 which is 0x1FFFFFFFFFFFFF. In practice this is
-  // long enough the timer should never wrap, but it interesting nonetheless.
-  lua_pushnumber(L, (lua_Number)(now & 0x1FFFFFFFFFFFFFull));
-#endif
-  return 1; 
-}
-
 static tmr_t tmr_get( lua_State *L, int stack )
 {
   return (tmr_t)luaL_checkudata(L, stack, "tmr.timer");
@@ -263,7 +249,6 @@ static const LUA_REG_TYPE tmr_dyn_map[] = {
 };
 
 static const LUA_REG_TYPE tmr_map[] = {
-  { LSTRKEY( "now" ),          LFUNCVAL( tmr_now ) },
   { LSTRKEY( "create" ),       LFUNCVAL( tmr_create ) },
   { LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
   { LSTRKEY( "ALARM_SEMI" ),   LNUMVAL( TIMER_MODE_SEMI ) },
