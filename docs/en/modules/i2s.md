@@ -11,6 +11,39 @@ The I2S module provides access to the in-built two I2S controllers.
 !!! note "ADC mode configuration"
     Only ADC1 is available for ADC built-in mode.
 
+
+## i2s.mute()
+Mute the I2S channel. The hardware buffer is instantly filled with silence.
+
+#### Syntax
+`i2s.mute(i2s_num)
+
+#### Parameters
+- `i2s_num` I2S peripheral 0 or 1
+
+#### Returns
+`nil`
+
+An error is thrown in case of invalid parameters or if the i2s driver failed.
+
+
+## i2s.read()
+Read data from I2S receive buffer.
+
+#### Syntax
+`i2s.read(i2s_num, size[, wait_ms])`
+
+#### Parameters
+- `i2s_num` I2S peripheral 0 or 1
+- `size` Bytes to read
+- `wait_ms` Millisecond to wait if data is not ready. Optional, defaults to 0 (not to wait) when omitted.
+
+#### Returns
+Data read from data-in pin. If data is not ready in `wait_ms` millisecond, less than `size` bytes can be returned.
+
+An error is thrown in case of invalid parameters or if the i2s driver failed.
+
+
 ## i2s.start()
 Configuration and start I2S bus.
 
@@ -65,7 +98,7 @@ i2s.start(i2s_num, cfg, cb)
 #### Returns
 `nil`
 
-An error is thrown in case of invalid parameters or if the channel failed.
+An error is thrown in case of invalid parameters or if the i2s driver failed.
 
 
 ## i2s.stop()
@@ -80,22 +113,7 @@ Stop I2S bus.
 #### Returns
 `nil`
 
-An error is thrown in case of invalid parameters or if the channel failed.
-
-
-## i2s.read()
-Read data from I2S receive buffer.
-
-#### Syntax
-`i2s.read(i2s_num, size[, wait_ms])`
-
-#### Parameters
-- `i2s_num` I2S peripheral 0 or 1
-- `size` Bytes to read
-- `wait_ms` Millisecond to wait if data is not ready. Optional, defaults to 0 (not to wait) when omitted.
-
-#### Returns
-Data read from data-in pin. If data is not ready in `wait_ms` millisecond, less than `size` bytes can be returned.
+An error is thrown in case of invalid parameters or if the i2s driver failed.
 
 
 ## i2s.write()

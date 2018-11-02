@@ -272,7 +272,9 @@ static int node_i2s_read( lua_State *L )
   int wait_ms = luaL_optint(L, 3, 0);
   char * data = luaM_malloc( L, bytes );
   size_t read;
-  i2s_read(i2s_id, data, bytes, &read, wait_ms / portTICK_RATE_MS);
+  if (i2s_read(i2s_id, data, bytes, &read, wait_ms / portTICK_RATE_MS) != ESP_OK)
+    return luaL_error( L, "I2S driver error" );
+
   lua_pushlstring(L, data, read);
   luaM_free(L, data);
 
@@ -298,6 +300,21 @@ static int node_i2s_write( lua_State *L )
   return 0;
 }
 
+// Lua: mute( i2s_id )
+static int node_i2s_mute( lua_State *L )
+{
+  int stack = 0;
+
+  int i2s_id = luaL_checkinteger( L, ++stack );
+  I2S_CHECK_ID( i2s_id );
+
+  if (i2s_zero_dma_buffer( i2s_id ) != ESP_OK)
+    return luaL_error( L, "I2S driver error" );
+
+  return 0;
+}
+
+
 // Module function map
 static const LUA_REG_TYPE i2s_map[] =
 {
@@ -305,6 +322,7 @@ static const LUA_REG_TYPE i2s_map[] =
   { LSTRKEY( "stop" ),  LFUNCVAL( node_i2s_stop ) },
   { LSTRKEY( "read" ),  LFUNCVAL( node_i2s_read ) },
   { LSTRKEY( "write" ), LFUNCVAL( node_i2s_write ) },
+  { LSTRKEY( "mute" ),  LFUNCVAL( node_i2s_mute ) },
 
   { LSTRKEY( "FORMAT_I2S" ),       LNUMVAL( I2S_COMM_FORMAT_I2S  ) },
   { LSTRKEY( "FORMAT_I2S_MSB" ),   LNUMVAL( I2S_COMM_FORMAT_I2S_MSB ) },
