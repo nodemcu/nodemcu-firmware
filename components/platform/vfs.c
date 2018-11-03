@@ -139,7 +139,7 @@ vfs_dir *vfs_opendir( const char *name )
   return NULL;
 }
 
-vfs_item *vfs_stat( const char *name )
+int32_t vfs_stat( const char *name, struct vfs_stat *buf )
 {
   vfs_fs_fns *fs_fns;
   const char *normname = normalize_path( name );
@@ -147,19 +147,19 @@ vfs_item *vfs_stat( const char *name )
 
 #ifdef CONFIG_BUILD_SPIFFS
   if ((fs_fns = myspiffs_realm( normname, &outname, false ))) {
-    return fs_fns->stat( outname );
+       return fs_fns->stat( outname, buf );
   }
 #endif
 
 #ifdef CONFIG_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
-    vfs_item *r = fs_fns->stat( outname );
+       vfs_item *r = fs_fns->stat( outname, buf );
     free( outname );
     return r;
   }
 #endif
 
-  return NULL;
+  return VFS_RES_ERR;
 }
 
 int32_t vfs_remove( const char *name )

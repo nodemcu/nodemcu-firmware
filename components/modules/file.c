@@ -211,14 +211,13 @@ static int file_open( lua_State* L )
 static int file_list( lua_State* L )
 {
   vfs_dir  *dir;
-  vfs_item *item;
 
   if ((dir = vfs_opendir(""))) {
     lua_newtable( L );
-    while ((item = vfs_readdir(dir))) {
-      lua_pushinteger(L, vfs_item_size(item));
-      lua_setfield(L, -2, vfs_item_name(item));
-      vfs_closeitem(item);
+    struct vfs_stat stat;
+    while (vfs_readdir(dir, &stat) == VFS_RES_OK) {
+      lua_pushinteger(L, stat.size);
+      lua_setfield(L, -2, stat.name);
     }
     vfs_closedir(dir);
     return 1;
@@ -267,11 +266,8 @@ static int file_exists( lua_State* L )
   const char *basename = vfs_basename( fname );
   luaL_argcheck(L, strlen(basename) <= CONFIG_FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
-  vfs_item *stat = vfs_stat((char *)fname);
-
-  lua_pushboolean(L, stat ? 1 : 0);
-
-  if (stat) vfs_closeitem(stat);
+  struct vfs_stat stat;
+  lua_pushboolean(L, vfs_stat((char *)fname, &stat) == VFS_RES_OK ? 1 : 0);
 
   return 1;
 }
@@ -319,6 +315,68 @@ static int file_rename( lua_State* L )
   } else {
     lua_pushboolean(L, 0);
   }
+  return 1;
+}
+
+// Lua: stat(filename)
+static int file_stat( lua_State* L )
+{
+  size_t len;
+  const char *fname = luaL_checklstring( L, 1, &len );    
+  luaL_argcheck( L, strlen(fname) <= CONFIG_FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid" );
+
+  struct vfs_stat stat;
+  if (vfs_stat( (char *)fname, &stat ) != VFS_RES_OK) {
+    lua_pushnil( L );
+    return 1;
+  }
+
+  lua_createtable( L, 0, 7 );
+
+  lua_pushinteger( L, stat.size );
+  lua_setfield( L, -2, "size" );
+
+  lua_pushstring( L, stat.name );
+  lua_setfield( L, -2, "name" );
+
+  lua_pushboolean( L, stat.is_dir );
+  lua_setfield( L, -2, "is_dir" );
+
+  lua_pushboolean( L, stat.is_rdonly );
+  lua_setfield( L, -2, "is_rdonly" );
+
+  lua_pushboolean( L, stat.is_hidden );
+  lua_setfield( L, -2, "is_hidden" );
+
+  lua_pushboolean( L, stat.is_sys );
+  lua_setfield( L, -2, "is_sys" );
+
+  lua_pushboolean( L, stat.is_arch );
+  lua_setfield( L, -2, "is_arch" );
+
+  // time stamp as sub-table
+  lua_createtable( L, 0, 6 );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.year : FILE_TIMEDEF_YEAR );
+  lua_setfield( L, -2, "year" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.mon : FILE_TIMEDEF_MON );
+  lua_setfield( L, -2, "mon" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.day : FILE_TIMEDEF_DAY );
+  lua_setfield( L, -2, "day" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.hour : FILE_TIMEDEF_HOUR );
+  lua_setfield( L, -2, "hour" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.min : FILE_TIMEDEF_MIN );
+  lua_setfield( L, -2, "min" );
+
+  lua_pushinteger( L, stat.tm_valid ? stat.tm.sec : FILE_TIMEDEF_SEC );
+  lua_setfield( L, -2, "sec" );
+
+  lua_setfield( L, -2, "time" );
+
   return 1;
 }
 
@@ -527,6 +585,7 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
   { LSTRKEY( "on" ),        LFUNCVAL( file_on ) },
+  { LSTRKEY( "stat" ),      LFUNCVAL( file_stat ) },
 #ifdef CONFIG_BUILD_FATFS
   { LSTRKEY( "chdir" ),     LFUNCVAL( file_chdir ) },
 #endif
