@@ -211,7 +211,7 @@ end
 Executes a single HTTP POST request and closes the connection. If a `callback` is specifed then the function operates in asynchronous mode, otherwise it is synchronous.
 
 #### Syntax
-`http.post(url, headers, body[, callback])`
+`http.post(url, options, body[, callback])`
 
 #### Parameters
 - `url` The URL to fetch, including the `http://` or `https://` prefix
