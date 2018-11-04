@@ -97,6 +97,12 @@ config FS_OBJ_NAME_LEN
   help
     Maximum name of filesystem objects (files, directories).
 
+config SPIFFS_MAX_OPEN_FILES
+  int "Maximum number of open files for SPIFFS"
+  default 4
+  help
+    Maximum number of open files for SPIFFS
+
 # I don't think we can deal without SPIFFS at this point, so always on for now
 config BUILD_SPIFFS
   bool
