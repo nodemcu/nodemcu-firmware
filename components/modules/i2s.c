@@ -104,7 +104,9 @@ static void task_I2S_tx( void *pvParameters ) {
     task_post_high( i2s_tx_task_id, i2s_id );
 
     // get TX data from Lua task
-    xQueueReceive( is->tx.queue, &tx_data, portMAX_DELAY );
+    // just peek the item to keep it in the queue so that node_i2s_stop can find and unref it if
+    // this task was deleted before posting i2s_disposal_task
+    xQueuePeek( is->tx.queue, &tx_data, portMAX_DELAY );
 
     // write TX data to I2S, note that this call might block
     size_t dummy;
@@ -116,6 +118,8 @@ static void task_I2S_tx( void *pvParameters ) {
 
     // notify Lua to dispose object
     task_post_low( i2s_disposal_task_id, tx_data.ref );
+    // tx data is going to be unref'ed, so finally remove it from the queue
+    xQueueReceive( is->tx.queue, &tx_data, portMAX_DELAY );
   }
 }
 
@@ -237,13 +241,17 @@ static int node_i2s_stop( lua_State *L )
   I2S_CHECK_ID( i2s_id );
   i2s_status_t *is = &i2s_status[i2s_id];
 
-  i2s_driver_uninstall(i2s_id);
-
   if (is->tx.taskHandle != NULL) {
     vTaskDelete( is->tx.taskHandle );
     is->tx.taskHandle = NULL;
   }
   if (is->tx.queue != NULL) {
+    // unlink pending tx jobs from the queue
+    while (uxQueueMessagesWaiting( is->tx.queue ) > 0) {
+      i2s_tx_data_t tx_data;
+      xQueueReceive( is->tx.queue, &tx_data, portMAX_DELAY );
+      luaL_unref( L, LUA_REGISTRYINDEX, tx_data.ref );
+    }
     vQueueDelete( is->tx.queue );
     is->tx.queue = NULL;
   }
@@ -252,7 +260,9 @@ static int node_i2s_stop( lua_State *L )
     vTaskDelete( is->rx.taskHandle );
     is->rx.taskHandle = NULL;
   }
+
   // the rx queue is created and destroyed by the I2S driver
+  i2s_driver_uninstall(i2s_id);
 
   if (is->cb != LUA_NOREF) {
     luaL_unref( L, LUA_REGISTRYINDEX, is->cb );
