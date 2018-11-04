@@ -157,13 +157,13 @@
 
 
 // I2C software driver partially supports use of GPIO16 (D0) pin for SCL line.
-// GPIO16 does not support open-drain mode, and have drive current about 40mA,
+// GPIO16 does not support open-drain mode and works in push-pull mode,
 // so clock stretching will not be possible, because circuit in slave device that
 // supposed to drive SCL low during stretching will not be capable to hold SCL low.
 // Also I2C speed will be limited to no more than 400000 Hz (FAST mode).
 // This define is does not have an effect on an old driver (see I2C_MASTER_OLD_VERSION).
 
-//#define I2C_MASTER_GPIO16_ENABLED
+//#define I2C_MASTER_GPIO16_ENABLE
 
 // For compatibility reasons you can switch to old version of I2C software driver.
 // It does not support changing speed, have only one bus id = 0, does not support GPIO16
