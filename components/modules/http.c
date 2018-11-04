@@ -295,13 +295,14 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
 {
   lhttp_context_t *context = (lhttp_context_t *)evt->user_data;
 
-  if (context_flag(context, Async)) {
+  if (context->perform_rtos_task) {
     // asynchronous mode: we're called from perform_rtos_task context
     // 1. post to Lua task
     task_post_high(lhttp_event_task_id, (task_param_t)evt);
     // 2. wait for ack from Lua land
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     if (context_flag(context, ShouldCloseInRtosTask)) {
+      context_clearflag(context, ShouldCloseInRtosTask);
       esp_http_client_close(context->client);
       return ESP_FAIL;
     } else {
