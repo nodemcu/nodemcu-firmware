@@ -301,6 +301,7 @@ static int db_gethook (lua_State *L) {
 }
 
 
+#if defined(LUA_CROSS_COMPILER)
 static int db_debug (lua_State *L) {
   for (;;) {
     char buffer[LUA_MAXINPUT];
@@ -325,6 +326,7 @@ static int db_debug (lua_State *L) {
     lua_settop(L, 0);  /* remove eventual returns */
   }
 }
+#endif // defined(LUA_CROSS_COMPILER)
 #endif
 
 #define LEVELS1	12	/* size of the first part of the stack */
@@ -387,7 +389,9 @@ static int db_errorfb (lua_State *L) {
 #include "lrodefs.h"
 const LUA_REG_TYPE dblib[] = {
 #ifndef CONFIG_LUA_BUILTIN_DEBUG_MINIMAL
+#if defined(LUA_CROSS_COMPILER)
   {LSTRKEY("debug"), LFUNCVAL(db_debug)},
+#endif // defined(LUA_CROSS_COMPILER)
   {LSTRKEY("getfenv"), LFUNCVAL(db_getfenv)},
   {LSTRKEY("gethook"), LFUNCVAL(db_gethook)},
   {LSTRKEY("getinfo"), LFUNCVAL(db_getinfo)},
