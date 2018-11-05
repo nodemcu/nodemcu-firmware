@@ -43,8 +43,12 @@
 * NEW driver
 * Enabled if I2C_MASTER_OLD_VERSION is not defined in user_config.h
 *******************************************************************************/
+// Supports multiple i2c buses
+// I2C speed in range 25kHz - 550kHz (25kHz - 1MHz if CPU at 160MHz)
+// If GPIO16 is used as SCL then speed is limited to 25kHz - 400kHz
+// Speed is defined for every bus separately
 
-// enable use GPIO16 (D0) pin as SCL line. ~450 kHz maximum frequency
+// enable use GPIO16 (D0) pin as SCL line
 #ifdef I2C_MASTER_GPIO16_ENABLE
 #define IS_PIN16(n) ((n)==16)
 // CPU_CYCLES_BETWEEN_DELAYS describes how much cpu cycles code runs 
@@ -195,16 +199,7 @@ i2c_master_setDC(uint16 id, uint8 SDA, uint8 SCL)
 static inline uint8 ICACHE_FLASH_ATTR
 i2c_master_getDC(uint16 id)
 {
-    uint8 sda_out;
-    uint32 gpio_in_mask;
-    //instead of: gpio_in_mask = gpio_input_get();
-    asm volatile("l16ui %[gpio_in_mask], %[gpio_in_addr], 0;" //read gpio state
-                 "memw;"                         //wait for read completion
-                 :[gpio_in_mask] "=r" (gpio_in_mask)
-                 :[gpio_in_addr] "r" (PERIPHS_GPIO_BASEADDR + GPIO_IN_ADDRESS)
-    );
-    sda_out = (gpio_in_mask >> i2c[id]->pin_SDA) & 1;
-    return sda_out;
+    return (READ_PERI_REG(PERIPHS_GPIO_BASEADDR + GPIO_IN_ADDRESS) >> i2c[id]->pin_SDA) & 1;
 }
 
 /******************************************************************************
@@ -299,7 +294,13 @@ i2c_master_setup(uint16 id, uint8 sda, uint8 scl, uint32 speed)
 
     ETS_GPIO_INTR_ENABLE(); //enable gpio interrupts
 
+    if (! (gpio_input_get() ^ i2c[id]->pin_SCL_mask)){ //SCL is in low state, bus failure
+      return 0;
+    }
     i2c_master_init(id);
+    if (! (gpio_input_get() ^ i2c[id]->pin_SDA_mask)){ //SDA is in low state, bus failure
+      return 0;
+    }
     return i2c[id]->speed;
 }
 
@@ -344,6 +345,7 @@ i2c_master_readByte(uint16 id, sint16 ack)
     uint8 retVal = 0;
     uint8 k;
     sint8 i;
+    //invert and clamp ACK to 0/1, because ACK == 1 for i2c means SDA in low state
     uint8 ackLevel = (ack ? 0 : 1);
     
     i2c_master_setDC(id, i2c[id]->last_SDA, 0);
@@ -351,15 +353,13 @@ i2c_master_readByte(uint16 id, sint16 ack)
     for (i = 7; i >= 0; i--) {
         i2c_master_setDC(id, 1, 1);
         k = i2c_master_getDC(id);
-        i2c_master_setDC(id, 1, 0);
+        i2c_master_setDC(id, 1, 0); // unnecessary in last iteration
         k <<= i;
         retVal |= k;
     }
     // set ACK
-    i2c_master_setDC(id, i2c[id]->last_SDA, 0);
     i2c_master_setDC(id, ackLevel, 0);
     i2c_master_setDC(id, ackLevel, 1);
-    i2c_master_setDC(id, ackLevel, 0);
     i2c_master_setDC(id, 1, 0);
     return retVal;
 }
@@ -383,9 +383,7 @@ i2c_master_writeByte(uint16 id, uint8 wrdata)
         i2c_master_setDC(id, dat, 0);
         i2c_master_setDC(id, dat, 1);
     }
-    i2c_master_setDC(id, dat, 0);
     //get ACK
-    //i2c_master_setDC(id, i2c[id]->last_SDA, 0);
     i2c_master_setDC(id, 1, 0);
     i2c_master_setDC(id, 1, 1);
     retVal = i2c_master_getDC(id);
