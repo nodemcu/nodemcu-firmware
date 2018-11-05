@@ -11,3 +11,6 @@
 [submodule "components/ucg/ucg"]
 	path = components/ucg/ucg
 	url = https://github.com/olikraus/Ucglib_Arduino.git
+[submodule "components/qrcodegen/qrcodegen"]
+	path = components/qrcodegen/qrcodegen
+	url = https://github.com/nayuki/QR-Code-generator.git
