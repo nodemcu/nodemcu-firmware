@@ -147,6 +147,13 @@ config LUA_MODULE_OW
   help
       Includes the 1-Wire (ow) module (recommended).
 
+config LUA_MODULE_QRCODEGEN
+  bool "QR Code Generator module"
+  default "n"
+  help
+      Includes the QR Code Generator from
+      https://www.nayuki.io/page/qr-code-generator-library
+
 config LUA_MODULE_SDMMC
   bool "SD-MMC module"
   default "n"
