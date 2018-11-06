@@ -2,6 +2,8 @@
 #
 .NOTPARALLEL:
 
+TOOLCHAIN_VERSION:=20181105.0
+
 # SDK base version, as released by Espressif
 SDK_BASE_VER:=2.2.1
 
@@ -47,7 +49,7 @@ ifeq ($(OS),Windows_NT)
 		OBJCOPY = xt-objcopy
 		#MAKE = xt-make
 		CCFLAGS += --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
-	else 
+	else
 		# It is gcc, may be cygwin
 		# Can we use -fdata-sections?
 		CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
@@ -78,6 +80,7 @@ else
 	else
 		ESPPORT = $(COMPORT)
 	endif
+	export PATH := $(PATH):$(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/esp8266/bin/
 	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = $(WRAPCC) xtensa-lx106-elf-gcc
@@ -145,9 +148,9 @@ endif
 endif
 
 #
-# Note: 
+# Note:
 # https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
-# If you add global optimize options like "-O2" here 
+# If you add global optimize options like "-O2" here
 # they will override "-Os" defined above.
 # "-Os" should be used to reduce code size
 #
@@ -161,7 +164,7 @@ CCFLAGS += 			\
 	-nostdlib       \
 	-mlongcalls	\
 	-mtext-section-literals
-#	-Wall			
+#	-Wall
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
@@ -191,7 +194,7 @@ DEP_LIBS_$(1) = $$(foreach lib,$$(filter %.a,$$(COMPONENTS_$(1))),$$(dir $$(lib)
 DEP_OBJS_$(1) = $$(foreach obj,$$(filter %.o,$$(COMPONENTS_$(1))),$$(dir $$(obj))$$(OBJODIR)/$$(notdir $$(obj)))
 $$(IMAGEODIR)/$(1).out: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_$(1))
 	@mkdir -p $$(IMAGEODIR)
-	$$(CC) $$(LDFLAGS) $$(if $$(LINKFLAGS_$(1)),$$(LINKFLAGS_$(1)),$$(LINKFLAGS_DEFAULT) $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1))) -o $$@ 
+	$$(CC) $$(LDFLAGS) $$(if $$(LINKFLAGS_$(1)),$$(LINKFLAGS_$(1)),$$(LINKFLAGS_DEFAULT) $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1))) -o $$@
 endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
@@ -204,15 +207,31 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 # Should be done in top-level makefile only
 #
 
-all:	sdk_pruned pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+all: toolchain sdk_pruned pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
 .PHONY: sdk_extracted
 .PHONY: sdk_patched
 .PHONY: sdk_pruned
+.PHONY: toolchain
 
 sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER)
 sdk_patched: sdk_extracted $(TOP_DIR)/sdk/.patched-$(SDK_VER)
 sdk_pruned: $(SDK_DIR_DEPENDS) $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
+
+ifeq ($(OS),Windows_NT)
+toolchain:
+else
+toolchain: $(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/esp8266/bin/xtensa-lx106-elf-gcc
+
+$(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/esp8266/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(TOOLCHAIN_VERSION).tar.xz
+	mkdir -p $(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/
+	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/
+	touch $@
+
+$(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(TOOLCHAIN_VERSION).tar.xz:
+	mkdir -p $(TOP_DIR)/tools/toolchains
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
+endif
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
