@@ -20,7 +20,7 @@ FLAVOR = debug
 ifndef PDIR # {
 GEN_IMAGES= eagle.app.v6.out
 GEN_BINS= eagle.app.v6.bin
-OPT_MKTARGETS        := coap crypto dht http mqtt pcm sjson sqlite3 tsl2561 websocket mpu6050
+OPT_MKTARGETS        := coap crypto dht http mqtt pcm sjson sqlite3 tsl2561 websocket mpu6050 imufilters/mahony
 OPT_MKLIBTARGETS     := u8g2 ucg
 SEL_MKTARGETS        := $(shell $(CC) -E -dM include/user_modules.h | sed -n '/^\#define LUA_USE_MODULES_/{s/.\{24\}\(.*\)/\L\1/; p}')
 OPT_SEL_MKLIBTARGETS := $(foreach tgt,$(OPT_MKLIBTARGETS),$(findstring $(tgt), $(SEL_MKTARGETS)))
@@ -47,6 +47,7 @@ SUBDIRS= 					\
 	pm					\
 	uzlib					\
 	mpu6050                 \
+	imufilters/mahony       \
 	$(OPT_SEL_MKTARGETS)
 
 endif # } PDIR
@@ -81,6 +82,7 @@ COMPONENTS_eagle.app.v6 = 			\
 	smart/smart.a 				\
 	uzlib/libuzlib.a 			\
 	mpu6050/libmpu6050.a        \
+	imufilters/mahony/libmahony.a \
 	$(OPT_SEL_COMPONENTS)
 
 
