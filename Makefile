@@ -2,7 +2,7 @@
 #
 .NOTPARALLEL:
 
-TOOLCHAIN_VERSION:=20181105.0
+TOOLCHAIN_VERSION:=20181106.0
 
 # SDK base version, as released by Espressif
 SDK_BASE_VER:=2.2.1
@@ -75,12 +75,13 @@ ifeq ($(OS),Windows_NT)
 else
 # We are under other system, may be Linux. Assume using gcc.
 	# Can we use -fdata-sections?
+	PLATFORM:=linux-x86_64
 	ifndef COMPORT
 		ESPPORT = /dev/ttyUSB0
 	else
 		ESPPORT = $(COMPORT)
 	endif
-	export PATH := $(PATH):$(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/esp8266/bin/
+	export PATH := $(PATH):$(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/
 	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
 	AR = xtensa-lx106-elf-ar
 	CC = $(WRAPCC) xtensa-lx106-elf-gcc
@@ -221,16 +222,16 @@ sdk_pruned: $(SDK_DIR_DEPENDS) $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
 ifeq ($(OS),Windows_NT)
 toolchain:
 else
-toolchain: $(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/esp8266/bin/xtensa-lx106-elf-gcc
+toolchain: $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc
 
-$(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/esp8266/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(TOOLCHAIN_VERSION).tar.xz
-	mkdir -p $(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/
-	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/$(TOOLCHAIN_VERSION)/
+$(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
+	mkdir -p $(TOP_DIR)/tools/toolchains/
+	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/
 	touch $@
 
-$(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(TOOLCHAIN_VERSION).tar.xz:
+$(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz:
 	mkdir -p $(TOP_DIR)/tools/toolchains
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
 endif
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip
