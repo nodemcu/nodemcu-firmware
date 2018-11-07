@@ -224,13 +224,13 @@ toolchain:
 else
 toolchain: $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc
 
-$(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
+$(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
 	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/
 	touch $@
 
-$(TOP_DIR)/tools/toolchains/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz:
-	mkdir -p $(TOP_DIR)/tools/toolchains
+$(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz:
+	mkdir -p $(TOP_DIR)/cache
 	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
 endif
 
