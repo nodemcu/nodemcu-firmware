@@ -12,10 +12,10 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-GEN_LIBS = libmodules.a
+GEN_LIBS = libmpu6050.a
 endif
 
-STD_CFLAGS=-std=gnu11 -Wimplicit
+STD_CFLAGS=
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -41,23 +41,6 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ./
 INCLUDES += -I ../libc
-INCLUDES += -I ../coap
-INCLUDES += -I ../mqtt
-INCLUDES += -I ../u8g2lib/u8g2/src/clib
-INCLUDES += -I ../ucglib/ucg/src/clib
-INCLUDES += -I ../lua
-INCLUDES += -I ../pcm
-INCLUDES += -I ../platform
-INCLUDES += -I ../spiffs
-INCLUDES += -I ../smart
-INCLUDES += -I ../dht
-INCLUDES += -I ../fatfs
-INCLUDES += -I ../http
-INCLUDES += -I ../sjson
-INCLUDES += -I ../websocket
-INCLUDES += -I ../pm
-INCLUDES += -I ../sqlite3
-INCLUDES += -I ../mpu6050
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
