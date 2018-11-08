@@ -160,6 +160,12 @@ config LUA_MODULE_SIGMA_DELTA
       Includes the sigma_delta module. This module provides access to the
       sigma-delta hardware.
 
+config LUA_MODULE_SODIUM
+  bool "Sodium module"
+  default "n"
+  help
+      Includes the libsodium crypto module.
+
 config LUA_MODULE_SPI
   bool "SPI module"
   default "n"
