@@ -5,7 +5,7 @@
 
 HTTP *client* module that provides an interface to do GET/POST/PUT/DELETE over HTTP and HTTPS, as well as customized requests. It can support large requests with an API similar to that of the `net` module. Multiple concurrent HTTP requests are supported. Both synchronous and asynchronous modes are supported.
 
-For each operation it is possible to provide custom HTTP headers or override standard headers. By default the `Host` header is deduced from the URL and `User-Agent` is `ESP32 HTTP Client/1.0`. Requests are always sent as `HTTP/1.1`. Keep-alive is supported (unless using the one-shot APIs) by default, disable by adding a `Connection: close` header or by explicitly closing the connection once complete.
+For each operation it is possible to provide custom HTTP headers or override standard headers. By default the `Host` header is deduced from the URL and `User-Agent` is `NodeMCU (ESP32)`. Requests are always sent as `HTTP/1.1`. Keep-alive is supported (unless using the one-shot APIs) by default, disable by adding a `Connection: close` header or by explicitly closing the connection once complete.
 
 HTTP redirects (HTTP status 300-308) are followed automatically up to a limit of 10 to avoid redirect loops. This behavior may be customized by setting the `max_redirects` option.
 
