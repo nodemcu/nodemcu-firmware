@@ -162,6 +162,15 @@ None
 ## connection:close()
 Closes the connection if it is still open. Note this does not reset any configured URL or callbacks on the connection object, it just closes the underlying TCP/IP socket. If called from within a callback, this aborts the connection, but the connection object must not be reused until the `complete` callback occurs (waiting until after `request()` returns is also allowed, if the request was synchronous). In the case of a connection in asynchronous mode, will error if called from outside of a callback while a request is ongoing, _unless_ the last callback returned `http.DELAYACK` _and_ `connection:ack()` has not yet been called. In such a situation, `connection:ack()` must still be called, after the call to `connection:close()`. An asynchronous connection that is still open but not ongoing (ie the `complete` callback has taken place) may be closed without restriction. 
 
+#### Syntax
+`connection:close()`
+
+#### Parameters
+None
+
+#### Returns
+`nil`
+
 # One shot HTTP APIs
 These APIs are wrappers around the connection object based APIs above. They allow simpler code to be written for one-off requests where complex connection object management is not required. Note however that they buffer the incoming data and therefore are limited by free memory in how large a request they can handle. The EGC can also artificially limit this - try setting `node.egc.setmode(node.egc.ON_ALLOC_FAILURE)` for more optimal memory management behavior. If however there is physically not enough RAM to buffer the entire request, then the connection object based APIs must be used instead so each individual `data` callback can be processed separately.
 
