@@ -81,7 +81,7 @@ function test_keepalive()
     assertEquals(connected, false)
     assertEquals(seenConnect, false) -- You don't get another connect callback
     assert(seenHeaders) -- But you do get new headers
-    assertEquals(seenData, '{\n  "user-agent": "ESP32 HTTP Client/1.0"\n}\n')
+    assertEquals(seenData, '{\n  "user-agent": "NodeMCU (ESP32)"\n}\n')
     assertEquals(seenFinish, 200)
     c:close()
 end

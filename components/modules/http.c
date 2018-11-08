@@ -76,6 +76,7 @@ typedef struct
 } lhttp_event;
 
 static const char http_context_mt[] = "http.context";
+static const char http_default_user_agent[] = "NodeMCU (ESP32)";
 #define DELAY_ACK (-99) // Chosen not to conflict with any other esp_err_t
 #define HTTP_REQUEST_COMPLETE (-1)
 
@@ -507,6 +508,9 @@ static int http_lapi_createConnection(lua_State *L)
   if (!context->client) {
     return luaL_error(L, "esp_http_client_init failed");
   }
+
+  // override the default user agent with our own default
+  esp_http_client_set_header(context->client, "User-Agent", http_default_user_agent);
 
   if (lua_istable(L, -1)) {
     lua_getfield(L, -1, "headers");
