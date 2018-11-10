@@ -30,3 +30,6 @@ CONFIG_MQTT_USE_CUSTOM_CONFIG=n
 # Disable esp-idf's bluetooth component by default.
 # The bthci module is also disabled and will enable bt when selected
 CONFIG_BT_ENABLED=n
+
+# Set "Release" code optimization level for -Os
+CONFIG_OPTIMIZATION_LEVEL_RELEASE=y
