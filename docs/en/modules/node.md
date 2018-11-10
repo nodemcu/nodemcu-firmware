@@ -407,6 +407,33 @@ Nothing
 node.osprint(true)
 ```
 
+## node.uptime()
+
+Returns the value of the system counter, which counts in microseconds starting at 0 when the device is booted. Because a 32-bit signed integer can only fit 35 minutes' worth of microseconds before wrapping, when using integer-only 32-bit Lua this API returns 2 results, the first being the bottom 31 bits of the counter, and the second being the next 31 bits (ie bits 31 through 62 of the underlying 64-bit counter).
+
+Therefore the first result will wrap back to 0 after about 35 minutes (2^31 microseconds), at which point the second result will increment by one. It is important to consider both values, or otherwise handle the first result wrapping, when for example using this function to [debounce or throttle GPIO input](https://github.com/hackhitchin/esp8266-co-uk/issues/2).
+
+When using floating-point Lua, hundreds of years of microseconds can fit in a single value with no loss of precision. In such configurations, the first result will be the bottom 53 bits of the system counter as a floating-point number, and the second result will be the top 11 bits, which in practice will always be zero unless the system counter exceeds 285 years.
+
+#### Syntax
+`node.uptime()`
+
+#### Parameters
+none
+
+#### Returns
+Two results `lowbits, highbits`. The first is the time in microseconds since boot or the last time the counter wrapped, and the second is the number of times the counter has wrapped. Depending on whether Lua was compiled with floating-point support or not determines when the counter wraps.
+
+#### Example
+```lua
+print(node.uptime())
+print(node.uptime())
+
+lowbits, highbits = node.uptime()
+print(lowbits, "microseconds have elapsed since the uptime last wrapped")
+print(string.format("Uptime has wrapped %d times", highbits))
+```
+
 # node.egc module
 
 ## node.egc.setmode()
