@@ -129,13 +129,23 @@ static int l_crypto_box_seal_open(lua_State *L)
   return 1;
 }
 
-static const LUA_REG_TYPE sodium_map[] = {
-  { LSTRKEY("randombytes_random"), LFUNCVAL(l_randombytes_random) },
-  { LSTRKEY("randombytes_uniform"), LFUNCVAL(l_randombytes_uniform) },
-  { LSTRKEY("randombytes_buf"), LFUNCVAL(l_randombytes_buf) },
+static const LUA_REG_TYPE random_map[] = {
+  { LSTRKEY("random"), LFUNCVAL(l_randombytes_random) },
+  { LSTRKEY("uniform"), LFUNCVAL(l_randombytes_uniform) },
+  { LSTRKEY("buf"), LFUNCVAL(l_randombytes_buf) },
+  { LNILKEY, LNILVAL }
+};
+
+static const LUA_REG_TYPE crypto_box_map[] = {
   { LSTRKEY("crypto_box_keypair"), LFUNCVAL(l_crypto_box_keypair) },
   { LSTRKEY("crypto_box_seal"), LFUNCVAL(l_crypto_box_seal) },
   { LSTRKEY("crypto_box_seal_open"), LFUNCVAL(l_crypto_box_seal_open) },
+  { LNILKEY, LNILVAL }
+};
+
+static const LUA_REG_TYPE sodium_map[] = {
+  { LSTRKEY("random"), LROVAL(random_map) },
+  { LSTRKEY("crypto_box"), LROVAL(crypto_box_map) },
   { LNILKEY, LNILVAL }
 };
 
