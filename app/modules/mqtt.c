@@ -17,7 +17,7 @@
 
 #include "user_interface.h"
 
-#define MQTT_BUF_SIZE 1024
+#define MQTT_BUF_SIZE 1460
 #define MQTT_DEFAULT_KEEPALIVE 60
 #define MQTT_MAX_CLIENT_LEN   64
 #define MQTT_MAX_USER_LEN     64
