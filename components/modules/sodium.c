@@ -137,9 +137,9 @@ static const LUA_REG_TYPE random_map[] = {
 };
 
 static const LUA_REG_TYPE crypto_box_map[] = {
-  { LSTRKEY("crypto_box_keypair"), LFUNCVAL(l_crypto_box_keypair) },
-  { LSTRKEY("crypto_box_seal"), LFUNCVAL(l_crypto_box_seal) },
-  { LSTRKEY("crypto_box_seal_open"), LFUNCVAL(l_crypto_box_seal_open) },
+  { LSTRKEY("keypair"), LFUNCVAL(l_crypto_box_keypair) },
+  { LSTRKEY("seal"), LFUNCVAL(l_crypto_box_seal) },
+  { LSTRKEY("seal_open"), LFUNCVAL(l_crypto_box_seal_open) },
   { LNILKEY, LNILVAL }
 };
 
