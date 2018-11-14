@@ -1,4 +1,5 @@
 #include "module.h"
+#include "common.h"
 #include "lauxlib.h"
 #include "lmem.h"
 #include <string.h>
@@ -406,55 +407,12 @@ static void set_headers(lua_State *L, int headers_idx, esp_http_client_handle_t 
   }
 }
 
-// Similar to luaL_argcheck() but using the options table rather than a raw index
-static bool get_option(lua_State *L, const char *name, int required_type)
-{
-  if (!lua_istable(L, -1)) {
-    return false;
-  }
-
-  lua_getfield(L, -1, name);
-  int type = lua_type(L, -1);
-  if (type == LUA_TNIL) {
-    // Option not present
-    lua_pop(L, 1);
-    return false;
-  }
-  if (type != required_type) {
-    luaL_error(L, "Bad option '%s' to createConnection (%s expected, got %s)",
-      name, lua_typename(L, required_type), lua_typename(L, type));
-  }
-  return true;
-}
-
-static int check_optint(lua_State *L, const char *name, int default_val)
-{
-  if (get_option(L, name, LUA_TNUMBER)) {
-    int result = lua_tointeger(L, -1);
-    lua_pop(L, 1);
-    return result;
-  } else {
-    return default_val;
-  }
-}
-
-static bool check_optbool(lua_State *L, const char *name, bool default_val)
-{
-  if (get_option(L, name, LUA_TBOOLEAN)) {
-    int result = lua_toboolean(L, -1);
-    lua_pop(L, 1);
-    return !!result;
-  } else {
-    return default_val;
-  }
-}
-
 // Options assumed to be on top of stack
 static void parse_options(lua_State *L, lhttp_context_t *context, esp_http_client_config_t *config)
 {
-  config->timeout_ms = check_optint(L, "timeout", 10*1000); // Same default as old http module
-  config->buffer_size = check_optint(L, "bufsz", DEFAULT_HTTP_BUF_SIZE);
-  int redirects = check_optint(L, "max_redirects", -1); // -1 means "not specified" here
+  config->timeout_ms = opt_checkint(L, "timeout", 10*1000); // Same default as old http module
+  config->buffer_size = opt_checkint(L, "bufsz", DEFAULT_HTTP_BUF_SIZE);
+  int redirects = opt_checkint(L, "max_redirects", -1); // -1 means "not specified" here
   if (redirects == 0) {
     config->disable_auto_redirect = true;
   } else if (redirects > 0) {
@@ -463,9 +421,9 @@ static void parse_options(lua_State *L, lhttp_context_t *context, esp_http_clien
   // Note, config->is_async is always set to false regardless of what we set
   // the Async flag to, because of how we configure the tasks we always want
   // esp_http_client_perform to run in its 'is_async=false' mode.
-  context_setflagbool(context, Async, check_optbool(L, "async", false));
+  context_setflagbool(context, Async, opt_checkbool(L, "async", false));
 
-  if (get_option(L, "cert", LUA_TSTRING)) {
+  if (opt_get(L, "cert", LUA_TSTRING)) {
     const char *cert = lua_tostring(L, -1);
     context_setref(L, context, CertRef);
     config->cert_pem = cert;
