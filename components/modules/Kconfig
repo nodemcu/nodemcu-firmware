@@ -105,6 +105,12 @@ config LUA_MODULE_GPIO
   help
       Includes the GPIO module (recommended).
 
+config LUA_MODULE_HTTP
+  bool "HTTP module"
+  default "y"
+  help
+      Includes the HTTP module (recommended).
+
 config LUA_MODULE_I2C
   bool "I2C module"
   default "y"
