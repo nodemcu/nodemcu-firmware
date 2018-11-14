@@ -1,26 +1,30 @@
 #include "module.h"
 #include "lauxlib.h"
+#include "common.h"
 #include "lmem.h"
 
 #include "qrcodegen.h"
 
-// qrcodegen.encodeText(text, minVer, maxVer, ecl, mask, boostEcl)
+// qrcodegen.encodeText(text, [{minver=int, maxver=int, ecl=int, mask=int, boostecl=bool}])
 // all params except text are optional
 static int encodeText(lua_State *L)
 {
+  lua_settop(L, 2);
   const char *text = luaL_checkstring(L, 1);
 
-  int min_ver = luaL_optint(L, 2, 1);
-  luaL_argcheck(L, min_ver >= qrcodegen_VERSION_MIN && min_ver <= qrcodegen_VERSION_MAX,
-                2, "minVer must be 1-40");
+  int min_ver = opt_checkint_range(L, "minver", qrcodegen_VERSION_MIN, 
+                                   qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX);
 
-  int max_ver = luaL_optint(L, 3, 40);
-  luaL_argcheck(L, max_ver >= min_ver && max_ver <= qrcodegen_VERSION_MAX,
-                3, "maxVer must be 1-40");
+  int max_ver = opt_checkint_range(L, "maxver", qrcodegen_VERSION_MAX,
+                                   min_ver, qrcodegen_VERSION_MAX);
 
-  int ecl = luaL_optint(L, 4, qrcodegen_Ecc_LOW);
-  int mask = luaL_optint(L, 5, qrcodegen_Mask_AUTO);
-  bool boost = lua_toboolean(L, 6);
+  int ecl = opt_checkint_range(L, "ecl", qrcodegen_Ecc_LOW,
+                               qrcodegen_Ecc_LOW, qrcodegen_Ecc_HIGH);
+
+  int mask = opt_checkint_range(L, "mask", qrcodegen_Mask_AUTO,
+                                qrcodegen_Mask_AUTO, qrcodegen_Mask_7);
+
+  bool boost = opt_checkbool(L, "boostecl", false);
 
   const size_t buf_len = qrcodegen_BUFFER_LEN_FOR_VERSION(max_ver);
   uint8_t *result = (uint8_t *)luaM_malloc(L, buf_len * 2); 
