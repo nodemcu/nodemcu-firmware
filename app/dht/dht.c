@@ -151,12 +151,12 @@ int dht_read11(uint8_t pin)
     }
 
     // CONVERT AND STORE
-    dht_humidity    = dht_bytes[0];  // dht_bytes[1] == 0;
-    dht_temperature = dht_bytes[2];  // dht_bytes[3] == 0;
+    dht_humidity = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[0], dht_bytes[1]) / 256.0;
+    dht_temperature = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[2], dht_bytes[3]) / 256.0;
 
     // TEST CHECKSUM
     // dht_bytes[1] && dht_bytes[3] both 0
-    uint8_t sum = dht_bytes[0] + dht_bytes[2];
+    uint8_t sum = dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3];
     if (dht_bytes[4] != sum) return DHTLIB_ERROR_CHECKSUM;
 
     return DHTLIB_OK;
