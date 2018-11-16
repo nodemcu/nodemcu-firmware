@@ -50,6 +50,15 @@ int platform_gpio_output_exists( unsigned gpio );
 
 #define UART_BUFFER_SIZE    512
 
+enum 
+{
+	PLATFORM_UART_MODE_UART = 0x0,
+	PLATFORM_UART_MODE_RS485_COLLISION_DETECT = 0x1,
+	PLATFORM_UART_MODE_RS485_APP_CONTROL = 0x2,
+	PLATFORM_UART_MODE_HALF_DUPLEX = 0x3,
+	PLATFORM_UART_MODE_IRDA = 0x4
+};
+
 // Parity
 enum
 {
@@ -107,6 +116,7 @@ typedef struct {
 // The platform UART functions
 static inline int platform_uart_exists( unsigned id ) { return id < NUM_UART; }
 uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int parity, int stopbits, uart_pins_t* pins );
+void platform_uart_setmode(unsigned id, unsigned mode);
 void platform_uart_send_multi( unsigned id, const char *data, size_t len );
 void platform_uart_send( unsigned id, uint8_t data );
 void platform_uart_flush( unsigned id );

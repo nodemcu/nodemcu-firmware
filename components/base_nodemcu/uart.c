@@ -172,6 +172,20 @@ static int uart_setup( lua_State* L )
   return 1;
 }
 
+static int uart_setmode(lua_State* L)
+{
+	unsigned id, mode;
+	uint32_t res;
+	
+	id = luaL_checkinteger( L, 1 );
+	MOD_CHECK_ID( uart, id );
+	mode = luaL_checkinteger( L, 2 );
+	
+	platform_uart_setmode(id, mode);
+	
+	return 1;
+}
+
 // Lua: write( id, string1, [string2], ..., [stringn] )
 static int uart_write( lua_State* L )
 {
@@ -231,6 +245,7 @@ static const LUA_REG_TYPE uart_map[] =  {
   { LSTRKEY( "start" ), LFUNCVAL( uart_start ) },
   { LSTRKEY( "stop" ), LFUNCVAL( uart_stop ) },
   { LSTRKEY( "on" ),    LFUNCVAL( uart_on ) },
+  { LSTRKEY( "setmode" ), LFUNCVAL( uart_setmode ) },
   { LSTRKEY( "STOPBITS_1" ),   LNUMVAL( PLATFORM_UART_STOPBITS_1 ) },
   { LSTRKEY( "STOPBITS_1_5" ), LNUMVAL( PLATFORM_UART_STOPBITS_1_5 ) },
   { LSTRKEY( "STOPBITS_2" ),   LNUMVAL( PLATFORM_UART_STOPBITS_2 ) },
@@ -240,6 +255,11 @@ static const LUA_REG_TYPE uart_map[] =  {
   { LSTRKEY( "FLOWCTRL_NONE" ),   LNUMVAL( PLATFORM_UART_FLOW_NONE ) },
   { LSTRKEY( "FLOWCTRL_CTS" ),   LNUMVAL( PLATFORM_UART_FLOW_CTS ) },
   { LSTRKEY( "FLOWCTRL_RTS" ),   LNUMVAL( PLATFORM_UART_FLOW_RTS ) },
+  { LSTRKEY( "MODE_UART" ),   LNUMVAL( PLATFORM_UART_MODE_UART ) },
+  { LSTRKEY( "MODE_RS485_COLLISION_DETECT" ),   LNUMVAL( PLATFORM_UART_MODE_RS485_COLLISION_DETECT ) },
+  { LSTRKEY( "MODE_RS485_APP_CONTROL" ),   LNUMVAL( PLATFORM_UART_MODE_RS485_APP_CONTROL ) },
+  { LSTRKEY( "MODE_RS485_HALF_DUPLEX" ),   LNUMVAL( PLATFORM_UART_MODE_HALF_DUPLEX ) },
+  { LSTRKEY( "MODE_IRDA" ),   LNUMVAL( PLATFORM_UART_MODE_IRDA ) },
   { LNILKEY, LNILVAL }
 };
 
