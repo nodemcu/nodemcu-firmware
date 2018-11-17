@@ -51,6 +51,7 @@ pages:
         - 'qrcodegen':    'en/modules/qrcodegen.md'
         - 'sdmmc':        'en/modules/sdmmc.md'
         - 'sigma delta':  'en/modules/sigma-delta.md'
+        - 'sjson':        'en/modules/sjson.md'
         - 'sodium':       'en/modules/sodium.md'
         - 'spi':          'en/modules/spi.md'
         - 'struct':       'en/modules/struct.md'
