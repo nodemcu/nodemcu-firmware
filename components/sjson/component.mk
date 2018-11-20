@@ -1,4 +1,2 @@
 COMPONENT_ADD_INCLUDEDIRS:=.
-
-#CFLAGS+= -Wno-error=char-subscripts
-CFLAGS+= -Wno-char-subscripts
+CFLAGS+=-imacros json_config.h
