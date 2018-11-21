@@ -183,7 +183,7 @@ static int uart_setmode(lua_State* L)
 	
 	platform_uart_setmode(id, mode);
 	
-	return 1;
+	return 0;
 }
 
 // Lua: write( id, string1, [string2], ..., [stringn] )

@@ -131,6 +131,26 @@ Stop the UART. You should not call `stop()` on the console uart.
 `nil`
 
 
+## uart.setmode()
+
+Set UART controllers communication mode
+
+#### Syntax
+
+`uart.setmode(id, mode)`
+
+#### Parameters
+- `id` uart id
+- `mode` value should be one of
+    - `uart.MODE_UART` default UART mode, is set after uart.setup() call
+    - `uart.MODE_RS485_COLLISION_DETECT` receiver must be always enabled, transmitter is automatically switched using RTS pin, collision is detected by UART hardware (note: no event is generated on collision, limitation of esp-idf)
+    - `uart.MODE_RS485_APP_CONTROL` receiver/transmitter control is left to the application
+    - `uart.MODE_RS485_HALF_DUPLEX` receiver/transmitter are controlled by RTS pin
+    - `uart.MODE_IRDA`
+    
+#### Returns
+`nil`
+
 ## uart.write()
 
 Write string or byte to the UART.
