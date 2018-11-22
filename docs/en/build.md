@@ -92,7 +92,7 @@ Serial flasher config --->
 ```
 
 ### Partition Table
-IDF's default partition table `Single factory app, no OTA` does not provide enough room for a firmware including large modules like e.g. `http` or `sodium`. To enable full feature sets, NodeMCU uses a custom partition table from `components/platform/partitions.csv`.
+IDF's default partition table `Single factory app, no OTA` does not provide enough room for a firmware including large modules like e.g. `http` or `sodium`. To enable full feature sets, NodeMCU uses a custom partition table from `components/platform/partitions.csv` which allocates ~1.5&nbsp;MB for the firmware image. During first boot, the firmware creates an additional partition for SPIFFS in the remaining flash space.
 
 For 2MB flash modules an alternative partition table available as `components/platform/partitions-2MB.csv`. It restricts the SPIFFS partition to  ~448&nbsp;kB and can be used with menuconfig:
 
