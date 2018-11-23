@@ -958,12 +958,12 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 #endif
 }
 
-#ifdef DEVELOPMENT_USE_GDB
+#if defined(DEVELOPMENT_USE_GDB) && !defined(LUA_CROSS_COMPILER)
 /*
  *  This is a simple stub used by lua_assert() if DEVELOPMENT_USE_GDB is defined.
  *  Instead of crashing out with an assert error, this hook starts the GDB remote
  *  stub if not already running and then issues a break.  The rationale here is 
- *  that when testing the developer migght be using screen/PuTTY to work ineractively
+ *  that when testing the developer might be using screen/PuTTY to work interactively
  *  with the Lua Interpreter via UART0.  However if an assert triggers, then there 
  * is the option to exit the interactive session and start the Xtensa remote GDB 
  * which will then sync up with the remote GDB client to allow forensics of the error. 
