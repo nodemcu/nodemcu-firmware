@@ -11,7 +11,7 @@ The client adheres to version 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/
 Creates a MQTT client.
 
 #### Syntax
-`mqtt.Client(clientid, keepalive[, username, password, cleansession])`
+`mqtt.Client(clientid, keepalive[, username, password, cleansession, max_message_length])`
 
 #### Parameters
 - `clientid` client ID
@@ -19,9 +19,30 @@ Creates a MQTT client.
 - `username` user name
 - `password` user password
 - `cleansession` 0/1 for `false`/`true`. Default is 1 (`true`).
+- `max_message_length`, how large messages to accept. Default is 1024.
 
 #### Returns
 MQTT client
+
+#### Notes
+
+According to MQTT specification the max PUBLISH length is 256Mb. This is too large for NodeMCU to realistically handle. To avoid
+an out-of-memory situation, there is a limit on how big messages to accept. This is controlled by the `max_message_length` parameter.
+In practice, this only affects incoming PUBLISH messages since all regular control packets are small.
+The default 1024 was chosen as this was the implicit limit in NodeMCU 2.2.1 and older (where this was not handled at all).
+
+Any message *larger* than `max_message_length` will be (partially) delivered to the `overflow` callback, if defined. The rest
+of the message will be discarded. Any following messages should be handled properly.
+
+If raising this, heap memory will be used o buffer the received message data between each incoming TCP packet.
+A single allocation for the full message will be performed when the first TCP packet is received, to avoid fragmentation.
+If allocation fails, the MQTT session will be disconnected.
+
+Note that allocation may occur even if the message is not larger than the configured max! For example, the broker may send
+multiple smaller messages in quick succession, which could go into the same TCP packet. If the last message does not fit into
+the TCP packet (or an intermediate router fragments it), a heap buffer will be allocated to hold the incomplete message
+while waiting for the next TCP packet.
+
 
 #### Example
 ```lua
@@ -45,6 +66,11 @@ m:on("message", function(client, topic, data)
   if data ~= nil then
     print(data)
   end
+end)
+
+-- on publish overflow receive event
+m:on("overflow", function(client, topic, data)
+  print(topic .. " partial overflowed message: " .. data )
 end)
 
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
@@ -180,7 +206,7 @@ Registers a callback function for an event.
 `mqtt:on(event, function(client[, topic[, message]]))`
 
 #### Parameters
-- `event` can be "connect", "message" or "offline"
+- `event` can be "connect", "message", "offline" or "overflow"
 - `function(client[, topic[, message]])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
 
 #### Returns

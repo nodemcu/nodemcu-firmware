@@ -46,16 +46,31 @@ typedef struct mqtt_event_data_t
 #define RECONNECT_POSSIBLE 1
 #define RECONNECT_ON    2
 
+typedef enum {
+    MQTT_RECV_NORMAL,
+    MQTT_RECV_BUFFERING_SHORT,
+    MQTT_RECV_BUFFERING,
+    MQTT_RECV_SKIPPING,
+} tReceiveState;
+
 typedef struct mqtt_state_t
 {
   uint16_t port;
   uint8_t auto_reconnect;   // 0 is not auto_reconnect. 1 is auto reconnect, but never connected. 2 is auto reconnect, but once connected
   mqtt_connect_info_t* connect_info;
-  uint16_t message_length;
-  uint16_t message_length_read;
   mqtt_connection_t mqtt_connection;
   msg_queue_t* pending_msg_q;
+
+  uint8_t * recv_buffer; // heap buffer for multi-packet rx
+  uint8_t * recv_buffer_wp; // write pointer in multi-packet rx
+  union {
+      uint16_t recv_buffer_size; // size of recv_buffer
+      uint32_t recv_buffer_skip; // number of bytes left to skip, in skipping state
+  };
+  tReceiveState recv_buffer_state;
+
 } mqtt_state_t;
+
 
 typedef struct lmqtt_userdata
 {
@@ -65,6 +80,7 @@ typedef struct lmqtt_userdata
   int cb_connect_fail_ref;
   int cb_disconnect_ref;
   int cb_message_ref;
+  int cb_overflow_ref;
   int cb_suback_ref;
   int cb_unsuback_ref;
   int cb_puback_ref;
@@ -80,6 +96,9 @@ typedef struct lmqtt_userdata
   ETSTimer mqttTimer;
   tConnState connState;
 }lmqtt_userdata;
+
+// How large MQTT messages to accept by default
+#define DEFAULT_MAX_MESSAGE_LENGTH 1024
 
 static sint8 socket_connect(struct espconn *pesp_conn);
 static void mqtt_socket_reconnected(void *arg, sint8_t err);
@@ -109,6 +128,13 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
       call_back = true;
     }
   }
+
+  if(mud->mqtt_state.recv_buffer) {
+    c_free(mud->mqtt_state.recv_buffer);
+    mud->mqtt_state.recv_buffer = NULL;
+  }
+  mud->mqtt_state.recv_buffer_size = 0;
+  mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
 
   if(mud->mqtt_state.auto_reconnect == RECONNECT_ON) {
     mud->pesp_conn->reverse = mud;
@@ -178,9 +204,9 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
   NODE_DBG("leave mqtt_socket_reconnected.\n");
 }
 
-static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, int length)
+static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, uint16_t length, uint8_t is_overflow)
 {
-  NODE_DBG("enter deliver_publish.\n");
+  NODE_DBG("enter deliver_publish (len=%d, overflow=%d).\n", length, is_overflow);
   if(mud == NULL)
     return;
   mqtt_event_data_t event_data;
@@ -191,13 +217,15 @@ static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, int length)
   event_data.data_length = length;
   event_data.data = mqtt_get_publish_data(message, &event_data.data_length);
 
-  if(mud->cb_message_ref == LUA_NOREF)
+  int cb_ref = !is_overflow ? mud->cb_message_ref : mud->cb_overflow_ref;
+
+  if(cb_ref == LUA_NOREF)
     return;
   if(mud->self_ref == LUA_NOREF)
     return;
   lua_State *L = lua_getstate();
   if(event_data.topic && (event_data.topic_length > 0)){
-    lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, cb_ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
     lua_pushlstring(L, event_data.topic, event_data.topic_length);
   } else {
@@ -265,14 +293,15 @@ static sint8 mqtt_send_if_possible(struct espconn *pesp_conn)
 
 static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
 {
-  NODE_DBG("enter mqtt_socket_received.\n");
+  NODE_DBG("enter mqtt_socket_received (rxlen=%u).\n", len);
 
   uint8_t msg_type;
   uint8_t msg_qos;
   uint16_t msg_id;
-  int length = (int)len;
-  // uint8_t in_buffer[MQTT_BUF_SIZE];
   uint8_t *in_buffer = (uint8_t *)pdata;
+  uint16_t in_buffer_length = len;
+  uint8_t *continuation_buffer = NULL;
+  uint8_t *temp_pdata = NULL;
 
   struct espconn *pesp_conn = arg;
   if(pesp_conn == NULL)
@@ -281,11 +310,109 @@ static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
   if(mud == NULL)
     return;
 
-READPACKET:
-  if(length > MQTT_BUF_SIZE || length <= 0)
-          return;
+  switch(mud->mqtt_state.recv_buffer_state) {
+    case MQTT_RECV_NORMAL:
+      // No previous buffer.
+      break;
+    case MQTT_RECV_BUFFERING_SHORT:
+      // Last buffer had so few byte that we could not determine message length.
+      // Store in a local heap buffer and operate on this, as if was the regular pdata buffer.
+      // Avoids having to repeat message size/overflow logic.
+      temp_pdata = c_zalloc(mud->mqtt_state.recv_buffer_size + len);
+      if(temp_pdata == NULL) {
+        NODE_DBG("MQTT[buffering-short]: Failed to allocate %u bytes, disconnecting...\n", mud->mqtt_state.recv_buffer_size + len);
+#ifdef CLIENT_SSL_ENABLE
+        if (mud->secure) {
+              espconn_secure_disconnect(pesp_conn);
+            } else
+#endif
+        {
+          espconn_disconnect(pesp_conn);
+        }
+        return;
+      }
 
-  // c_memcpy(in_buffer, pdata, length);
+      NODE_DBG("MQTT[buffering-short]: Continuing with %u + %u bytes\n", mud->mqtt_state.recv_buffer_size, len);
+      memcpy(temp_pdata, mud->mqtt_state.recv_buffer, mud->mqtt_state.recv_buffer_size);
+      memcpy(temp_pdata + mud->mqtt_state.recv_buffer_size, pdata, len);
+      c_free(mud->mqtt_state.recv_buffer);
+      mud->mqtt_state.recv_buffer = NULL;
+      mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
+
+      in_buffer = temp_pdata;
+      in_buffer_length = mud->mqtt_state.recv_buffer_size + len;
+      break;
+
+    case MQTT_RECV_BUFFERING: {
+      // safe cast: we never allow longer buffer.
+      uint16_t current_length = (uint16_t) (mud->mqtt_state.recv_buffer_wp - mud->mqtt_state.recv_buffer);
+
+      NODE_DBG("MQTT[buffering]: appending %u bytes to previous recv buffer (%u out of wanted %u)\n",
+               in_buffer_length,
+               current_length,
+               mud->mqtt_state.recv_buffer_size);
+
+      // Copy from rx buffer to heap buffer. Smallest of [remainder of pending message] and [all of buffer]
+      uint16_t copy_length = LWIP_MIN(mud->mqtt_state.recv_buffer_size - current_length, in_buffer_length);
+      memcpy(mud->mqtt_state.recv_buffer_wp, pdata, copy_length);
+      mud->mqtt_state.recv_buffer_wp += copy_length;
+
+      in_buffer_length = (uint16_t) (mud->mqtt_state.recv_buffer_wp - mud->mqtt_state.recv_buffer);
+      if (in_buffer_length < mud->mqtt_state.recv_buffer_size) {
+        NODE_DBG("MQTT[buffering]: need %u more bytes, waiting for next rx.\n",
+                 mud->mqtt_state.recv_buffer_size - in_buffer_length
+                 );
+        goto RX_PACKET_FINISHED;
+      }
+
+      NODE_DBG("MQTT[buffering]: Full message received (%u). remainding bytes=%u\n",
+               mud->mqtt_state.recv_buffer_size,
+               len - copy_length);
+
+      // Point continuation_buffer to any additional data in pdata.
+      // May become 0 bytes, but used to trigger free!
+      continuation_buffer = pdata + copy_length;
+      len -= copy_length; // borrow len instead of having another variable..
+
+      in_buffer = mud->mqtt_state.recv_buffer;
+      // in_buffer_length was set above
+      mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
+
+      break;
+    }
+    case MQTT_RECV_SKIPPING:
+      // Last rx had a message which was too large to process, skip it.
+      if(mud->mqtt_state.recv_buffer_skip > in_buffer_length) {
+        NODE_DBG("MQTT[skipping]: skip=%u. Skipping full RX buffer (%u).\n",
+                 mud->mqtt_state.recv_buffer_skip,
+                 in_buffer_length
+            );
+        mud->mqtt_state.recv_buffer_skip -= in_buffer_length;
+        goto RX_PACKET_FINISHED;
+      }
+
+      NODE_DBG("MQTT[skipping]: skip=%u. Skipping partial RX buffer, continuing at %u\n",
+               mud->mqtt_state.recv_buffer_skip,
+               in_buffer_length
+      );
+
+      in_buffer += mud->mqtt_state.recv_buffer_skip;
+      in_buffer_length -= mud->mqtt_state.recv_buffer_skip;
+
+      mud->mqtt_state.recv_buffer_skip = 0;
+      mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
+      break;
+  }
+
+READPACKET:
+  if(in_buffer_length <= 0)
+    goto RX_PACKET_FINISHED;
+
+  // MQTT publish message can in theory be 256Mb, while we do not support it we need to be
+  // able to do math on it.
+  int32_t message_length;
+
+  // temp buffer for control messages
   uint8_t temp_buffer[MQTT_BUF_SIZE];
   mqtt_msg_init(&mud->mqtt_state.mqtt_connection, temp_buffer, MQTT_BUF_SIZE);
   mqtt_message_t *temp_msg = NULL;
@@ -355,19 +482,81 @@ READPACKET:
       break;
 
     case MQTT_DATA:
-      mud->mqtt_state.message_length_read = length;
-      mud->mqtt_state.message_length = mqtt_get_total_length(in_buffer, mud->mqtt_state.message_length_read);
+      message_length = mqtt_get_total_length(in_buffer, in_buffer_length);
       msg_type = mqtt_get_type(in_buffer);
       msg_qos = mqtt_get_qos(in_buffer);
-      msg_id = mqtt_get_id(in_buffer, mud->mqtt_state.message_length);
+      msg_id = mqtt_get_id(in_buffer, in_buffer_length);
+
+      NODE_DBG("MQTT_DATA: msg length: %u, buffer length: %u\r\n",
+           message_length,
+           in_buffer_length);
+
+      if(message_length > mud->connect_info.max_message_length) {
+        // The pending message length is larger than we was configured to allow
+        NODE_DBG("MQTT: msg too long: total=%u, deliver=%u\r\n", message_length, in_buffer_length);
+        if (msg_type == MQTT_MSG_TYPE_PUBLISH) {
+          // In practice we should never get any other types..
+          deliver_publish(mud, in_buffer, in_buffer_length, 1);
+        }
+
+        if (message_length > in_buffer_length) {
+          // Ignore bytes in subsequent packet(s) too.
+          NODE_DBG("MQTT: skipping into next rx\n");
+          mud->mqtt_state.recv_buffer_state = MQTT_RECV_SKIPPING;
+          mud->mqtt_state.recv_buffer_skip = (uint32_t)message_length - in_buffer_length;
+          break;
+        } else {
+          NODE_DBG("MQTT: Skipping message\n");
+          mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
+          goto RX_MESSAGE_PROCESSED;
+        }
+      } else {
+        if (message_length == -1 || message_length > in_buffer_length) {
+          // Partial message in buffer, need to store on heap until next RX. Allocate size for full message directly,
+          // instead of potential reallocs, to avoid fragmentation.
+          // If message_length is indicated as -1, we do not have enough data to determine the length properly.
+          // Just put what we have on heap, and place in state BUFFERING_SHORT.
+          NODE_DBG("MQTT: Partial message received (%u of %d). Buffering\r\n",
+              in_buffer_length,
+              message_length);
+
+          // although message_length is 32bit, it should never go above 16bit since
+          // max_message_length is 16bit.
+          uint16_t alloc_size = message_length > 0 ? (uint16_t)message_length : in_buffer_length;
+
+          mud->mqtt_state.recv_buffer = c_zalloc(alloc_size);
+          if (mud->mqtt_state.recv_buffer == NULL) {
+            NODE_DBG("MQTT: Failed to allocate %u bytes, disconnecting...\n", alloc_size);
+#ifdef CLIENT_SSL_ENABLE
+            if (mud->secure) {
+              espconn_secure_disconnect(pesp_conn);
+            } else
+#endif
+            {
+              espconn_disconnect(pesp_conn);
+            }
+            return;
+          }
+
+          memcpy(mud->mqtt_state.recv_buffer, in_buffer, in_buffer_length);
+          mud->mqtt_state.recv_buffer_wp = mud->mqtt_state.recv_buffer + in_buffer_length;
+          mud->mqtt_state.recv_buffer_state = message_length > 0 ? MQTT_RECV_BUFFERING : MQTT_RECV_BUFFERING_SHORT;
+          mud->mqtt_state.recv_buffer_size = alloc_size;
+
+          NODE_DBG("MQTT: Wait for next recv\n");
+          break;
+        }
+      }
 
       msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
+      NODE_DBG("MQTT_DATA: type: %d, qos: %d, msg_id: %d, pending_id: %d, msg length: %u, buffer length: %u\r\n",
+               msg_type,
+               msg_qos,
+               msg_id,
+               (pending_msg)?pending_msg->msg_id:0,
+               message_length,
+               in_buffer_length);
 
-      NODE_DBG("MQTT_DATA: type: %d, qos: %d, msg_id: %d, pending_id: %d\r\n",
-            msg_type,
-            msg_qos,
-            msg_id,
-            (pending_msg)?pending_msg->msg_id:0);
       switch(msg_type)
       {
         case MQTT_MSG_TYPE_SUBACK:
@@ -411,7 +600,7 @@ READPACKET:
           if(msg_qos == 1 || msg_qos == 2){
             NODE_DBG("MQTT: Queue response QoS: %d\r\n", msg_qos);
           }
-          deliver_publish(mud, in_buffer, mud->mqtt_state.message_length);
+          deliver_publish(mud, in_buffer, (uint16_t)message_length, 0);
           break;
         case MQTT_MSG_TYPE_PUBACK:
           if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_PUBLISH && pending_msg->msg_id == msg_id){
@@ -472,28 +661,40 @@ READPACKET:
           NODE_DBG("MQTT: PINGRESP received\r\n");
           break;
       }
-      // NOTE: this is done down here and not in the switch case above
-      // because the PSOCK_READBUF_LEN() won't work inside a switch
-      // statement due to the way protothreads resume.
-      if(msg_type == MQTT_MSG_TYPE_PUBLISH)
-      {
 
-        length = mud->mqtt_state.message_length_read;
+RX_MESSAGE_PROCESSED:
+      if(continuation_buffer != NULL) {
+        NODE_DBG("MQTT[buffering]: buffered message finished. Continuing with rest of rx buffer (%u)\n",
+                 len);
+        c_free(mud->mqtt_state.recv_buffer);
+        mud->mqtt_state.recv_buffer = NULL;
 
-        if(mud->mqtt_state.message_length < mud->mqtt_state.message_length_read)
-        {
-            length -= mud->mqtt_state.message_length;
-            in_buffer += mud->mqtt_state.message_length;
-
-            NODE_DBG("Get another published message\r\n");
-            goto READPACKET;
-        }
+        in_buffer = continuation_buffer;
+        in_buffer_length = len;
+        continuation_buffer = NULL;
+      }else{
+        // Message have been fully processed (or ignored). Move pointer ahead
+        // and continue with next message, if any.
+        in_buffer_length -= message_length;
+        in_buffer += message_length;
       }
+
+      if(in_buffer_length > 0)
+      {
+        NODE_DBG("Get another published message\r\n");
+        goto READPACKET;
+      }
+
       break;
   }
 
+RX_PACKET_FINISHED:
+  if(temp_pdata != NULL) {
+    c_free(temp_pdata);
+  }
+
   mqtt_send_if_possible(pesp_conn);
-  NODE_DBG("leave mqtt_socket_received.\n");
+  NODE_DBG("leave mqtt_socket_received\n");
   return;
 }
 
@@ -580,7 +781,7 @@ static void mqtt_socket_connected(void *arg)
   mud->keep_alive_tick = 0;
 
   mud->connState = MQTT_CONNECT_SENDING;
-  NODE_DBG("leave mqtt_socket_connected.\n");
+  NODE_DBG("leave mqtt_socket_connectet, heap = %u.\n", system_get_free_heap_size());
   return;
 }
 
@@ -686,7 +887,7 @@ void mqtt_socket_timer(void *arg)
   NODE_DBG("leave mqtt_socket_timer.\n");
 }
 
-// Lua: mqtt.Client(clientid, keepalive, user, pass, clean_session)
+// Lua: mqtt.Client(clientid, keepalive, user, pass, clean_session, max_message_length)
 static int mqtt_socket_client( lua_State* L )
 {
   NODE_DBG("enter mqtt_socket_client.\n");
@@ -703,6 +904,7 @@ static int mqtt_socket_client( lua_State* L )
   int keepalive = 0;
   int stack = 1;
   int clean_session = 1;
+  int max_message_length = 0;
   int top = lua_gettop(L);
 
   // create a object
@@ -715,6 +917,7 @@ static int mqtt_socket_client( lua_State* L )
   mud->cb_disconnect_ref = LUA_NOREF;
 
   mud->cb_message_ref = LUA_NOREF;
+  mud->cb_overflow_ref = LUA_NOREF;
   mud->cb_suback_ref = LUA_NOREF;
   mud->cb_unsuback_ref = LUA_NOREF;
   mud->cb_puback_ref = LUA_NOREF;
@@ -767,6 +970,16 @@ static int mqtt_socket_client( lua_State* L )
     clean_session = 1;
   }
 
+  if(lua_isnumber( L, stack ))
+  {
+      max_message_length = luaL_checkinteger( L, stack);
+      stack++;
+  }
+
+  if(max_message_length == 0) {
+    max_message_length = DEFAULT_MAX_MESSAGE_LENGTH;
+  }
+
   // TODO: check the zalloc result.
   mud->connect_info.client_id = (uint8_t *)c_zalloc(idl+1);
   mud->connect_info.username = (uint8_t *)c_zalloc(unl + 1);
@@ -784,7 +997,7 @@ static int mqtt_socket_client( lua_State* L )
       c_free(mud->connect_info.password);
       mud->connect_info.password = NULL;
     }
-        return luaL_error(L, "not enough memory");
+    return luaL_error(L, "not enough memory");
   }
 
   c_memcpy(mud->connect_info.client_id, clientId, idl);
@@ -800,11 +1013,15 @@ static int mqtt_socket_client( lua_State* L )
   mud->connect_info.will_qos = 0;
   mud->connect_info.will_retain = 0;
   mud->connect_info.keepalive = keepalive;
+  mud->connect_info.max_message_length = max_message_length;
 
   mud->mqtt_state.pending_msg_q = NULL;
   mud->mqtt_state.auto_reconnect = RECONNECT_OFF;
   mud->mqtt_state.port = 1883;
   mud->mqtt_state.connect_info = &mud->connect_info;
+  mud->mqtt_state.recv_buffer = NULL;
+  mud->mqtt_state.recv_buffer_size = 0;
+  mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
 
   NODE_DBG("leave mqtt_socket_client.\n");
   return 1;
@@ -852,6 +1069,13 @@ static int mqtt_delete( lua_State* L )
   }
   // ----
 
+  //--------- alloc-ed in mqtt_socket_received()
+  if(mud->mqtt_state.recv_buffer) {
+    c_free(mud->mqtt_state.recv_buffer);
+    mud->mqtt_state.recv_buffer = NULL;
+  }
+  // ----
+
   //--------- alloc-ed in mqtt_socket_client()
   if(mud->connect_info.client_id){
     c_free(mud->connect_info.client_id);
@@ -876,6 +1100,8 @@ static int mqtt_delete( lua_State* L )
   mud->cb_disconnect_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
   mud->cb_message_ref = LUA_NOREF;
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_overflow_ref);
+  mud->cb_overflow_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
   mud->cb_suback_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref);
@@ -918,7 +1144,7 @@ static sint8 socket_connect(struct espconn *pesp_conn)
 
   os_timer_arm(&mud->mqttTimer, 1000, 1);
 
-  NODE_DBG("leave socket_connect, heap = %u.\n", system_get_free_heap_size());
+  NODE_DBG("leave socket_connect\n");
 
   return espconn_status;
 }
@@ -1225,6 +1451,9 @@ static int mqtt_socket_on( lua_State* L )
   }else if( sl == 7 && c_strcmp(method, "message") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_message_ref);
     mud->cb_message_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }else if( sl == 8 && c_strcmp(method, "overflow") == 0){
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_overflow_ref);
+    mud->cb_overflow_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else{
     lua_pop(L, 1);
     return luaL_error( L, "method not supported" );
