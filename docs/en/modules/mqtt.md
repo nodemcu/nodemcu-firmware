@@ -34,14 +34,17 @@ The default 1024 was chosen as this was the implicit limit in NodeMCU 2.2.1 and 
 Any message *larger* than `max_message_length` will be (partially) delivered to the `overflow` callback, if defined. The rest
 of the message will be discarded. Any following messages should be handled properly.
 
-If raising this, heap memory will be used o buffer the received message data between each incoming TCP packet.
-A single allocation for the full message will be performed when the first TCP packet is received, to avoid fragmentation.
+Heap memory will be used to buffer any message which spans more than a single TCP packet. A single allocation for the full
+message will be performed when the message header is first seen, to avoid heap fragmentation.
 If allocation fails, the MQTT session will be disconnected.
 
-Note that allocation may occur even if the message is not larger than the configured max! For example, the broker may send
-multiple smaller messages in quick succession, which could go into the same TCP packet. If the last message does not fit into
-the TCP packet (or an intermediate router fragments it), a heap buffer will be allocated to hold the incomplete message
-while waiting for the next TCP packet.
+Note that heap allocation may occur even if the message is not larger than the configured max! For example, the broker may send
+multiple smaller messages in quick succession, which could go into the same TCP packet. If the last message in the TCP packet
+did not fit fully, a heap buffer will be allocated to hold the incomplete message while waiting for the next TCP packet.
+
+The typical maximum size for a message to fit into a single TCP packet is 1460 bytes, but this depends on the network's MTU
+configuration, any packet fragmentation, and as described above, multiple messages in the same TCP packet.
+
 
 
 #### Example
