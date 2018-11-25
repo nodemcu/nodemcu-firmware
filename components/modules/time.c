@@ -25,7 +25,7 @@ void inline time_tmToTable(lua_State *L, struct tm *date)
   ADD_TABLE_ITEM (L, "hour", date->tm_hour);
   ADD_TABLE_ITEM (L, "min",  date->tm_min);
   ADD_TABLE_ITEM (L, "sec",  date->tm_sec);
-  ADD_TABLE_ITEM (L, "dst",  date.tm_isdst);
+  ADD_TABLE_ITEM (L, "dst",  date->tm_isdst);
 }
 
 static int time_get(lua_State *L)
@@ -66,8 +66,7 @@ static int time_getLocal(lua_State *L)
 
 static int time_setTimezone(lua_State *L)
 {
-  size_t l;
-  const char *timezone = luaL_checklstring(L, 1, &l);
+  const char *timezone = luaL_checkstring(L, 1);
   
   setenv("TZ", timezone, 1);
   tzset();
@@ -78,7 +77,7 @@ static int time_setTimezone(lua_State *L)
 static int time_initNTP(lua_State *L)
 {
   size_t l;
-  const char *server = luaL_checklstring(L, 1, "pool.ntp.org", &l);
+  const char *server = luaL_optlstring (L, 1, "pool.ntp.org", &l);
   
   sntp_setoperatingmode(SNTP_OPMODE_POLL);
   sntp_setservername(0, server);
@@ -111,7 +110,7 @@ static int time_epoch2cal(lua_State *L)
   date = gmtime (&now);
 
   /* construct Lua table */
-  time_tmToTable(L, &date);
+  time_tmToTable(L, date);
 
   return 1;
 }
