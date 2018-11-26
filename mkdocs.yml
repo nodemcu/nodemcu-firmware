@@ -55,6 +55,7 @@ pages:
         - 'sodium':       'en/modules/sodium.md'
         - 'spi':          'en/modules/spi.md'
         - 'struct':       'en/modules/struct.md'
+        - 'time':         'en/modules/time.md'
         - 'tmr':          'en/modules/tmr.md'
         - 'u8g2':         'en/modules/u8g2.md'
         - 'uart':         'en/modules/uart.md'
