@@ -129,6 +129,26 @@ spi.setup(1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 8, 8)
 gpio.mode(8, gpio.INPUT, gpio.PULLUP)
 ```
 
+## spi.set_clock_div()
+Set the SPI clock divider.
+
+#### Syntax
+`old_div = spi.set_clock_div(id, clock_div)`
+
+#### Parameters
+- `id` SPI ID number: 0 for SPI, 1 for HSPI
+- `clock_div` SPI clock divider, f(SPI) = 80 MHz / `clock_div`, 1 .. n
+
+#### Returns
+Number: Old clock divider
+
+#### Example
+```lua
+old_div = spi.set_clock_div(1, 84) --drop to slow clock for slow device
+spi.send(1, 0x0B, 0xFF)
+spi.set_clock_div(1, old_div)
+```
+
 ## Low Level Hardware Functions
 The low level functions provide a hardware-centric API for application
 scenarios that need to excercise more complex SPI transactions. The
