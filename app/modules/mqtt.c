@@ -491,61 +491,87 @@ READPACKET:
            message_length,
            in_buffer_length);
 
-      if(message_length > mud->connect_info.max_message_length) {
+      if (message_length > mud->connect_info.max_message_length) {
         // The pending message length is larger than we was configured to allow
-        NODE_DBG("MQTT: msg too long: total=%u, deliver=%u\r\n", message_length, in_buffer_length);
-        if (msg_type == MQTT_MSG_TYPE_PUBLISH) {
-          // In practice we should never get any other types..
-          deliver_publish(mud, in_buffer, in_buffer_length, 1);
-        }
-
-        if (message_length > in_buffer_length) {
-          // Ignore bytes in subsequent packet(s) too.
-          NODE_DBG("MQTT: skipping into next rx\n");
-          mud->mqtt_state.recv_buffer_state = MQTT_RECV_SKIPPING;
-          mud->mqtt_state.recv_buffer_skip = (uint32_t)message_length - in_buffer_length;
-          break;
+        if(msg_qos > 0 && msg_id == 0) {
+          NODE_DBG("MQTT: msg too long, but not enough data to get msg_id: total=%u, deliver=%u\r\n", message_length, in_buffer_length);
+          // qos requested, but too short buffer to get a packet ID.
+          // Trigger the "short buffer" mode
+          message_length = -1;
+          // Drop through to partial message handling below.
         } else {
-          NODE_DBG("MQTT: Skipping message\n");
-          mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
-          goto RX_MESSAGE_PROCESSED;
-        }
-      } else {
-        if (message_length == -1 || message_length > in_buffer_length) {
-          // Partial message in buffer, need to store on heap until next RX. Allocate size for full message directly,
-          // instead of potential reallocs, to avoid fragmentation.
-          // If message_length is indicated as -1, we do not have enough data to determine the length properly.
-          // Just put what we have on heap, and place in state BUFFERING_SHORT.
-          NODE_DBG("MQTT: Partial message received (%u of %d). Buffering\r\n",
-              in_buffer_length,
-              message_length);
+          NODE_DBG("MQTT: msg too long: total=%u, deliver=%u\r\n", message_length, in_buffer_length);
+          if (msg_type == MQTT_MSG_TYPE_PUBLISH) {
+            // In practice we should never get any other types..
+            deliver_publish(mud, in_buffer, in_buffer_length, 1);
 
-          // although message_length is 32bit, it should never go above 16bit since
-          // max_message_length is 16bit.
-          uint16_t alloc_size = message_length > 0 ? (uint16_t)message_length : in_buffer_length;
-
-          mud->mqtt_state.recv_buffer = c_zalloc(alloc_size);
-          if (mud->mqtt_state.recv_buffer == NULL) {
-            NODE_DBG("MQTT: Failed to allocate %u bytes, disconnecting...\n", alloc_size);
-#ifdef CLIENT_SSL_ENABLE
-            if (mud->secure) {
-              espconn_secure_disconnect(pesp_conn);
-            } else
-#endif
-            {
-              espconn_disconnect(pesp_conn);
+            // If qos specified, we should ACK it.
+            // In theory it might be wrong to ack it before we received all TCP packets, but this avoids
+            // buffering and special code to handle this corner-case. Server will most likely have
+            // written all to OS socket anyway, and not be aware that we "should" not have received it all yet.
+            if(msg_qos == 1){
+              temp_msg = mqtt_msg_puback(&mud->mqtt_state.mqtt_connection, msg_id);
+              msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
+                          msg_id, MQTT_MSG_TYPE_PUBACK, (int)mqtt_get_qos(temp_msg->data) );
             }
-            return;
+            else if(msg_qos == 2){
+              temp_msg = mqtt_msg_pubrec(&mud->mqtt_state.mqtt_connection, msg_id);
+              msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg,
+                          msg_id, MQTT_MSG_TYPE_PUBREC, (int)mqtt_get_qos(temp_msg->data) );
+            }
+            if(msg_qos == 1 || msg_qos == 2){
+              NODE_DBG("MQTT: Queue response QoS: %d\r\n", msg_qos);
+            }
           }
 
-          memcpy(mud->mqtt_state.recv_buffer, in_buffer, in_buffer_length);
-          mud->mqtt_state.recv_buffer_wp = mud->mqtt_state.recv_buffer + in_buffer_length;
-          mud->mqtt_state.recv_buffer_state = message_length > 0 ? MQTT_RECV_BUFFERING : MQTT_RECV_BUFFERING_SHORT;
-          mud->mqtt_state.recv_buffer_size = alloc_size;
-
-          NODE_DBG("MQTT: Wait for next recv\n");
-          break;
+          if (message_length > in_buffer_length) {
+            // Ignore bytes in subsequent packet(s) too.
+            NODE_DBG("MQTT: skipping into next rx\n");
+            mud->mqtt_state.recv_buffer_state = MQTT_RECV_SKIPPING;
+            mud->mqtt_state.recv_buffer_skip = (uint32_t) message_length - in_buffer_length;
+            break;
+          } else {
+            NODE_DBG("MQTT: Skipping message\n");
+            mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
+            goto RX_MESSAGE_PROCESSED;
+          }
         }
+      }
+
+      if (message_length == -1 || message_length > in_buffer_length) {
+        // Partial message in buffer, need to store on heap until next RX. Allocate size for full message directly,
+        // instead of potential reallocs, to avoid fragmentation.
+        // If message_length is indicated as -1, we do not have enough data to determine the length properly.
+        // Just put what we have on heap, and place in state BUFFERING_SHORT.
+        NODE_DBG("MQTT: Partial message received (%u of %d). Buffering\r\n",
+            in_buffer_length,
+            message_length);
+
+        // although message_length is 32bit, it should never go above 16bit since
+        // max_message_length is 16bit.
+        uint16_t alloc_size = message_length > 0 ? (uint16_t)message_length : in_buffer_length;
+
+        mud->mqtt_state.recv_buffer = c_zalloc(alloc_size);
+        if (mud->mqtt_state.recv_buffer == NULL) {
+          NODE_DBG("MQTT: Failed to allocate %u bytes, disconnecting...\n", alloc_size);
+#ifdef CLIENT_SSL_ENABLE
+          if (mud->secure) {
+            espconn_secure_disconnect(pesp_conn);
+          } else
+#endif
+          {
+            espconn_disconnect(pesp_conn);
+          }
+          return;
+        }
+
+        memcpy(mud->mqtt_state.recv_buffer, in_buffer, in_buffer_length);
+        mud->mqtt_state.recv_buffer_wp = mud->mqtt_state.recv_buffer + in_buffer_length;
+        mud->mqtt_state.recv_buffer_state = message_length > 0 ? MQTT_RECV_BUFFERING : MQTT_RECV_BUFFERING_SHORT;
+        mud->mqtt_state.recv_buffer_size = alloc_size;
+
+        NODE_DBG("MQTT: Wait for next recv\n");
+        break;
       }
 
       msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
