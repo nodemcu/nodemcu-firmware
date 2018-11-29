@@ -44,6 +44,16 @@ wifi_password="password"
 timeout_delay="xxx"
 device_name="yyy"
 ```
+
+### How to use the eus_params.lua file
+
+Simply include the file by using the `dofile` function:
+```lua
+dofile('eus_params.lua')
+-- now use the parameters as a global var
+print("Wifi device_name: " .. device_name)
+```
+
 ---
 
 The following HTTP endpoints exist:
