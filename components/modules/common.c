@@ -49,17 +49,17 @@ int opt_checkint(lua_State *L, const char *name, int default_val)
 
 int opt_checkint_range(lua_State *L, const char *name, int default_val, int min_val, int max_val)
 {
+  int result = default_val;
+
   if (opt_get(L, name, LUA_TNUMBER)) {
-    int result = lua_tointeger(L, -1);
+    result = lua_tointeger(L, -1);
     lua_pop(L, 1);
-    if (!(result >= min_val && result <= max_val)) {
-      const char* msg = lua_pushfstring(L, "must be in range %d-%d", min_val, max_val);
-      opt_error(L, name, msg);
-    }
-    return result;
-  } else {
-    return default_val;
   }
+  if (!(result >= min_val && result <= max_val)) {
+    const char* msg = lua_pushfstring(L, "must be in range %d-%d", min_val, max_val);
+    opt_error(L, name, msg);
+  }
+  return result;
 }
 
 bool opt_checkbool(lua_State *L, const char *name, bool default_val)
