@@ -183,6 +183,11 @@
 		var ab = $('#networks'), ap = $('#aplist');
 		var stopAll = false, ra, rs, submitted = false;
 
+		$.urlParam = function (name) {
+			var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+			if (results == null) { return null;}
+			else { return decodeURI(results[1]) || 0;}
+		}
 		function show(f, y) {
 			if (y == null) y = f;
 			$(f).style.display = y == f ? 'block' : 'none';
@@ -301,8 +306,7 @@
 				fetch('/aplist?n=' + Math.random(), 'GET', gotAp, 10);
 		}
 		window.onload = function() {
-			let params = new URLSearchParams(window.location.search);
-			let trying = params.get('trying');
+			let trying = $.urlParam('trying');
 			ab.innerText = 'Scan for Networks';
 			ab.onclick = refrAp;
 			$('#aplist').onchange = function () {
