@@ -72,3 +72,14 @@ bool opt_checkbool(lua_State *L, const char *name, bool default_val)
     return default_val;
   }
 }
+
+const char *opt_checklstring(lua_State *L, const char *name, const char *default_val, size_t *l)
+{
+  if (opt_get(L, name, LUA_TSTRING)) {
+    const char *result = lua_tolstring(L, -1, l);
+    lua_pop(L, 1);
+    return result;
+  } else {
+    return default_val;
+  }
+}
