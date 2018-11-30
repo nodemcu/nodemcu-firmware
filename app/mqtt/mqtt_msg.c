@@ -126,12 +126,16 @@ void mqtt_msg_init(mqtt_connection_t* connection, uint8_t* buffer, uint16_t buff
   connection->buffer_length = buffer_length;
 }
 
-int mqtt_get_total_length(uint8_t* buffer, uint16_t length)
+// Returns total length of message, or -1 if not enough bytes are available
+int32_t mqtt_get_total_length(uint8_t* buffer, uint16_t buffer_length)
 {
   int i;
   int totlen = 0;
 
-  for(i = 1; i < length; ++i)
+  if(buffer_length == 1)
+    return -1;
+
+  for(i = 1; i < buffer_length; ++i)
   {
     totlen += (buffer[i] & 0x7f) << (7 * (i - 1));
     if((buffer[i] & 0x80) == 0)
@@ -139,19 +143,23 @@ int mqtt_get_total_length(uint8_t* buffer, uint16_t length)
       ++i;
       break;
     }
+
+    if(i == buffer_length)
+      return -1;
   }
+
   totlen += i;
 
   return totlen;
 }
 
-const char* mqtt_get_publish_topic(uint8_t* buffer, uint16_t* length)
+const char* mqtt_get_publish_topic(uint8_t* buffer, uint16_t* buffer_length)
 {
   int i;
   int totlen = 0;
   int topiclen;
 
-  for(i = 1; i < *length; ++i)
+  for(i = 1; i < *buffer_length; ++i)
   {
     totlen += (buffer[i] & 0x7f) << (7 * (i -1));
     if((buffer[i] & 0x80) == 0)
@@ -162,25 +170,25 @@ const char* mqtt_get_publish_topic(uint8_t* buffer, uint16_t* length)
   }
   totlen += i;
 
-  if(i + 2 > *length)
+  if(i + 2 > *buffer_length)
     return NULL;
   topiclen = buffer[i++] << 8;
   topiclen |= buffer[i++];
 
-  if(i + topiclen > *length)
+  if(i + topiclen > *buffer_length)
     return NULL;
 
-  *length = topiclen;
+  *buffer_length = topiclen;
   return (const char*)(buffer + i);
 }
 
-const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
+const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* buffer_length)
 {
   int i;
   int totlen = 0;
   int topiclen;
 
-  for(i = 1; i < *length; ++i)
+  for(i = 1; i < *buffer_length; ++i)
   {
     totlen += (buffer[i] & 0x7f) << (7 * (i - 1));
     if((buffer[i] & 0x80) == 0)
@@ -191,20 +199,20 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
   }
   totlen += i;
 
-  if(i + 2 > *length)
+  if(i + 2 > *buffer_length)
     return NULL;
   topiclen = buffer[i++] << 8;
   topiclen |= buffer[i++];
 
-  if(i + topiclen > *length){
-	*length = 0;
+  if(i + topiclen > *buffer_length){
+	*buffer_length = 0;
     return NULL;
   }
   i += topiclen;
 
   if(mqtt_get_qos(buffer) > 0)
   {
-    if(i + 2 > *length)
+    if(i + 2 > *buffer_length)
       return NULL;
     i += 2;
   }
@@ -212,16 +220,16 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
   if(totlen < i)
     return NULL;
 
-  if(totlen <= *length)
-    *length = totlen - i;
+  if(totlen <= *buffer_length)
+    *buffer_length = totlen - i;
   else
-    *length = *length - i;
+    *buffer_length = *buffer_length - i;
   return (const char*)(buffer + i);
 }
 
-uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
+uint16_t mqtt_get_id(uint8_t* buffer, uint16_t buffer_length)
 {
-  if(length < 1)
+  if(buffer_length < 1)
     return 0;
 
   switch(mqtt_get_type(buffer))
@@ -234,7 +242,7 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
       if(mqtt_get_qos(buffer) <= 0)
         return 0;
 
-      for(i = 1; i < length; ++i)
+      for(i = 1; i < buffer_length; ++i)
       {
         if((buffer[i] & 0x80) == 0)
         {
@@ -243,16 +251,16 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
         }
       }
 
-      if(i + 2 > length)
+      if(i + 2 > buffer_length)
         return 0;
       topiclen = buffer[i++] << 8;
       topiclen |= buffer[i++];
 
-      if(i + topiclen > length)
+      if(i + topiclen > buffer_length)
         return 0;
       i += topiclen;
 
-      if(i + 2 > length)
+      if(i + 2 > buffer_length)
         return 0;
 
       return (buffer[i] << 8) | buffer[i + 1];
@@ -267,7 +275,7 @@ uint16_t mqtt_get_id(uint8_t* buffer, uint16_t length)
     {
       // This requires the remaining length to be encoded in 1 byte,
       // which it should be.
-      if(length >= 4 && (buffer[1] & 0x80) == 0)
+      if(buffer_length >= 4 && (buffer[1] & 0x80) == 0)
         return (buffer[2] << 8) | buffer[3];
       else
         return 0;
