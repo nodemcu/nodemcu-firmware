@@ -32,7 +32,7 @@ In practice, this only affects incoming PUBLISH messages since all regular contr
 The default 1024 was chosen as this was the implicit limit in NodeMCU 2.2.1 and older (where this was not handled at all).
 
 Note that "message length" refers to the full MQTT message size, including fixed & variable headers, topic name, packet ID (if applicable),
-and payload. For exact details, please see the MQTT specification.
+and payload. For exact details, please see [the MQTT specification](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718037).
 
 Any message *larger* than `max_message_length` will be (partially) delivered to the `overflow` callback, if defined. The rest
 of the message will be discarded. Any subsequent messages should be handled as expected.
