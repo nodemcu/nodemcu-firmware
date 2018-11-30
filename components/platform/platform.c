@@ -76,7 +76,6 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
     }
     
     free(post->data);
-    free(post);
   } else {
     char *err;
     switch(post->type) {
@@ -92,6 +91,7 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
     }
     uart_on_error_cb(id, err, strlen(err));
   }
+  free(post);
 }
 
 static void task_uart( void *pvParameters ){
@@ -130,6 +130,7 @@ static void task_uart( void *pvParameters ){
           }
           post->id = id;
           post->type = PLATFORM_UART_EVENT_BREAK;
+		  break;
         case UART_FIFO_OVF:
         case UART_BUFFER_FULL:
         case UART_PARITY_ERR:
@@ -242,6 +243,26 @@ uint32_t platform_uart_setup( unsigned id, uint32_t baud, int databits, int pari
   }
 }
 
+void platform_uart_setmode(unsigned id, unsigned mode)
+{
+	uart_mode_t uartMode;
+	
+	switch(mode)
+	{
+		case PLATFORM_UART_MODE_IRDA:
+			uartMode = UART_MODE_IRDA; break;
+		case PLATFORM_UART_MODE_RS485_COLLISION_DETECT:
+			uartMode = UART_MODE_RS485_COLLISION_DETECT; break;
+		case PLATFORM_UART_MODE_RS485_APP_CONTROL:
+			uartMode = UART_MODE_RS485_APP_CTRL; break;
+		case PLATFORM_UART_MODE_HALF_DUPLEX:
+			uartMode = UART_MODE_RS485_HALF_DUPLEX; break;
+		case PLATFORM_UART_MODE_UART:
+		default:
+			uartMode = UART_MODE_UART; break;
+	}
+	uart_set_mode(id, uartMode);
+}
 
 void platform_uart_send_multi( unsigned id, const char *data, size_t len )
 {
