@@ -20,6 +20,17 @@ int opt_checkint_range(lua_State *L, const char *name, int default_val, int min_
 */
 bool opt_checkbool(lua_State *L, const char *name, bool default_val);
 
+/* Fetch an optional string from a table on the top of the stack. If the
+   option name is not present or the table is nil, returns default_val. Errors
+   if the key name is present in the table but is not a string.
+
+   Note that l is updated with the string length only when the option name
+   resolves to a string. It is not updated when default_val is returned since
+   it is not possible to determine the length of default_val in case it contains
+   embedded \0.
+*/
+const char *opt_checklstring(lua_State *L, const char *name, const char *default_val, size_t *l);
+
 /* Like luaL_argerror() but producing a more suitable error message */
 int opt_error(lua_State *L, const char* name, const char *extramsg);
 
