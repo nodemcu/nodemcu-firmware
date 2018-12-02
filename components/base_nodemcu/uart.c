@@ -174,16 +174,15 @@ static int uart_setup( lua_State* L )
 
 static int uart_setmode(lua_State* L)
 {
-	unsigned id, mode;
-	uint32_t res;
+  unsigned id, mode;
 	
-	id = luaL_checkinteger( L, 1 );
-	MOD_CHECK_ID( uart, id );
-	mode = luaL_checkinteger( L, 2 );
-	
-	platform_uart_setmode(id, mode);
-	
-	return 0;
+  id = luaL_checkinteger( L, 1 );
+  MOD_CHECK_ID( uart, id );
+  mode = luaL_checkinteger( L, 2 );
+
+  platform_uart_setmode(id, mode);
+
+  return 0;
 }
 
 // Lua: write( id, string1, [string2], ..., [stringn] )
