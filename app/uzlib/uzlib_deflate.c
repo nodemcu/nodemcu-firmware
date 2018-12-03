@@ -201,7 +201,7 @@ static void genCodeRecs (const codeRecord *rec, ushort len,
   for (i = start; i < start+len; i++, c++) {
     if (*c == 0xFF)
       b++, c++;
-    m +=!(*c & 0x80) ? *c & 0x7F : 2 << *c;
+    m += (*c & 0x80) ? 2 << (*c & 0x1F) : *c;
     *p++ = (codeRecord) {i, b, last + 1, (last = m)};
   }
 }
