@@ -59,6 +59,7 @@ IMAGE  := ../../../luac.cross
 all: $(DEPS) $(IMAGE)
 
 $(IMAGE) : $(OBJS)
+	$(summary) HOSTLD $@
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 test :
@@ -76,11 +77,12 @@ endif
 
 $(ODIR)/%.o: %.c
 	@mkdir -p $(ODIR);
+	$(summary) HOSTCC $(CURDIR)/$<
 	$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
 
 $(ODIR)/%.d: %.c
 	@mkdir -p $(ODIR);
-	@echo DEPEND: $(CC) -M $(CFLAGS) $<
+	$(summary) DEPEND: HOSTCC $(CURDIR)/$<
 	@set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(ODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
