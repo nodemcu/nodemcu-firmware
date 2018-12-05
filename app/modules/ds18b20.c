@@ -67,6 +67,9 @@ static int ds18b20_lua_readoutdone(void);
 // Setup onewire bus for DS18B20 temperature sensors
 // Lua: ds18b20.setup(OW_BUS_PIN)
 static int ds18b20_lua_setup(lua_State *L) {
+
+	platform_print_deprecation_note("ds18b20 C module superseded by Lua implementation", "soon");
+
 	// check ow bus pin value
 	if (!lua_isnumber(L, 1) || lua_isnumber(L, 1) == 0) {
 		return luaL_error(L, "wrong 1-wire pin");
