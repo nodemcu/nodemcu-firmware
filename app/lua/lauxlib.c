@@ -25,8 +25,6 @@
 #define lauxlib_c
 #define LUA_LIB
 
-#include "lrotable.h"
-
 #include "lauxlib.h"
 #include "lgc.h"
 #include "ldo.h"
@@ -555,14 +553,7 @@ LUALIB_API const char *luaL_findtable (lua_State *L, int idx,
     if (e == NULL) e = fname + c_strlen(fname);
     lua_pushlstring(L, fname, e - fname);
     lua_rawget(L, -2);
-    if (lua_isnil(L, -1)) {
-      /* If looking for a global variable, check the rotables too */
-      void *ptable = luaR_findglobal(fname, e - fname);
-      if (ptable) {
-        lua_pop(L, 1);
-        lua_pushrotable(L, ptable);
-      }
-    }
+
     if (lua_isnil(L, -1)) {  /* no such field? */
       lua_pop(L, 1);  /* remove this nil */
       lua_createtable(L, 0, (*e == '.' ? 1 : szhint)); /* new table for field */
@@ -967,12 +958,12 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 #endif
 }
 
-#ifdef DEVELOPMENT_USE_GDB
+#if defined(DEVELOPMENT_USE_GDB) && !defined(LUA_CROSS_COMPILER)
 /*
  *  This is a simple stub used by lua_assert() if DEVELOPMENT_USE_GDB is defined.
  *  Instead of crashing out with an assert error, this hook starts the GDB remote
  *  stub if not already running and then issues a break.  The rationale here is 
- *  that when testing the developer migght be using screen/PuTTY to work ineractively
+ *  that when testing the developer might be using screen/PuTTY to work interactively
  *  with the Lua Interpreter via UART0.  However if an assert triggers, then there 
  * is the option to exit the interactive session and start the Xtensa remote GDB 
  * which will then sync up with the remote GDB client to allow forensics of the error. 

@@ -15,7 +15,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
 
 /* macro to `unsign' a character */
 #define uchar(c)        ((unsigned char)(c))

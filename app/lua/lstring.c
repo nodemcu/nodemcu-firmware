@@ -80,16 +80,12 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   return ts;
 }
 
-#ifdef LUA_CROSS_COMPILER
-#define IN_RO_AREA(p) (0)
-#else /* xtensa tool chain for ESP */
-extern char _irom0_text_start[];
-extern char _irom0_text_end[];
-#define IN_RO_AREA(p) ((p) >= _irom0_text_start && (p) <= _irom0_text_end)
+static int lua_is_ptr_in_ro_area(const char *p) {
+#ifdef LUA_CROSS_COMPILER 
+  return 0;         // TStrings are never in RO in luac.cross
+#else
+  return IN_RODATA_AREA(p);
 #endif
-
-int lua_is_ptr_in_ro_area(const char *p) {
-  return IN_RO_AREA(p);
 }
 
 /*

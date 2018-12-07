@@ -46,6 +46,7 @@ INCLUDES += -I ../spiffs
 INCLUDES += -I ../libc
 INCLUDES += -I ../modules
 INCLUDES += -I ../platform
+INCLUDES += -I ../uzlib
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

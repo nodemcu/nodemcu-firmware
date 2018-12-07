@@ -199,11 +199,10 @@ Reload the [LFS (Lua Flash Store)](../lfs.md) with the flash image provided. Fla
 `node.flashreload(imageName)`
 
 #### Parameters
-`imageName` The of name of a image file in the filesystem to be loaded into the LFS.
+`imageName` The name of a image file in the filesystem to be loaded into the LFS.
 
 #### Returns
-If the LFS image has the incorrect signature or size, then `false` is returned.
-In the case of the `imagename` being a valid LFS image, this is then loaded into flash.  The ESP is then immediately rebooted so control is not returned to the calling application. 
+`Error message`  LFS images are now gzip compressed.  In the case of the `imagename` being a valid LFS image, this is expanded and loaded into flash.  The ESP is then immediately rebooted, _so control is not returned to the calling Lua application_ in the case of a successful reload.  This reload process internally makes two passes through the LFS image file; and on the first it validates the file and header formats and detects any errors.  If any is detected then an error string is returned.
 
 
 ## node.flashsize()

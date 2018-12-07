@@ -1,4 +1,3 @@
-sudo: false
 language: cpp
 addons:
   apt:
@@ -8,9 +7,6 @@ addons:
 cache:
   - directories:
     - cache
-install:
-- tar -Jxvf tools/esp-open-sdk.tar.xz
-- export PATH=$PATH:$PWD/esp-open-sdk/xtensa-lx106-elf/bin
 script:
 - export BUILD_DATE=$(date +%Y%m%d)
 - make EXTRA_CCFLAGS="-DBUILD_DATE='\"'$BUILD_DATE'\"'" all

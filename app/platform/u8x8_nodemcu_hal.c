@@ -13,6 +13,42 @@
 #define U8X8_USE_PINS
 #include "u8x8_nodemcu_hal.h"
 
+// static variables containing info about the i2c link
+// TODO: move to user space in u8x8_t once available
+typedef struct {
+  uint8_t id;
+} hal_i2c_t;
+
+// static variables containing info about the spi link
+// TODO: move to user space in u8x8_t once available
+typedef struct {
+  uint8_t host;
+  //spi_device_handle_t device;
+  uint8_t last_dc;
+  struct {
+    uint8_t *data;
+    size_t size, used;
+  } buffer;
+} hal_spi_t;
+
+
+static void flush_buffer_spi( hal_spi_t *hal )
+{
+  if (hal->buffer.data && hal->buffer.used > 0) {
+    platform_spi_blkwrite( hal->host, hal->buffer.used, hal->buffer.data );
+
+    hal->buffer.used = 0;
+  }
+}
+
+static void force_flush_buffer(u8x8_t *u8x8)
+{
+  // spi hal has a buffer that can be flushed
+  if (u8x8->byte_cb == u8x8_byte_nodemcu_spi) {
+    hal_spi_t *hal = ((u8g2_nodemcu_t *)u8x8)->hal;
+    flush_buffer_spi( hal );
+  }
+}
 
 uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
@@ -35,24 +71,30 @@ uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, 
     break;
 
   case U8X8_MSG_DELAY_NANO:           // delay arg_int * 1 nano second
+    force_flush_buffer(u8x8);
     os_delay_us( 1 );
     break;    
 
   case U8X8_MSG_DELAY_100NANO:        // delay arg_int * 100 nano seconds
+    force_flush_buffer(u8x8);
     temp = arg_int * 100;
     temp /= 1000;
     os_delay_us( temp > 0 ? temp : 1 );
     break;
 
   case U8X8_MSG_DELAY_10MICRO:        // delay arg_int * 10 micro seconds
+    force_flush_buffer(u8x8);
     os_delay_us( arg_int * 10 );
     break;
 
   case U8X8_MSG_DELAY_MILLI:          // delay arg_int * 1 milli second
+    force_flush_buffer(u8x8);
     os_delay_us( arg_int * 1000 );
+    system_soft_wdt_feed();
     break;
 
   case U8X8_MSG_DELAY_I2C:                // arg_int is the I2C speed in 100KHz, e.g. 4 = 400 KHz
+    force_flush_buffer(u8x8);
     temp = 5000 / arg_int;                // arg_int=1: delay by 5us, arg_int = 4: delay by 1.25us
     temp /= 1000;
     os_delay_us( temp > 0 ? temp : 1 );
@@ -119,12 +161,6 @@ uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, 
 }
 
 
-// static variables containing info about the i2c link
-// TODO: move to user space in u8x8_t once available
-typedef struct {
-  uint8_t id;
-} hal_i2c_t;
-
 uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
   uint8_t *data;
@@ -132,11 +168,11 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
  
   switch(msg) {
   case U8X8_MSG_BYTE_SEND:
-    if (hal->id == 0) {
+    if (hal->id < NUM_I2C) {
       data = (uint8_t *)arg_ptr;
       
       while( arg_int > 0 ) {
-        platform_i2c_send_byte( 0, *data );
+        platform_i2c_send_byte( hal->id, *data );
         data++;
         arg_int--;
       }
@@ -163,9 +199,9 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
     break;
 
   case U8X8_MSG_BYTE_START_TRANSFER:
-    if (hal->id == 0) {
-      platform_i2c_send_start( 0 );
-      platform_i2c_send_address( 0, u8x8_GetI2CAddress(u8x8), PLATFORM_I2C_DIRECTION_TRANSMITTER );
+    if (hal->id < NUM_I2C) {
+      platform_i2c_send_start( hal->id );
+      platform_i2c_send_address( hal->id, u8x8_GetI2CAddress(u8x8), PLATFORM_I2C_DIRECTION_TRANSMITTER );
 
     } else {
       // invalid id
@@ -174,8 +210,8 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
     break;
 
   case U8X8_MSG_BYTE_END_TRANSFER:
-    if (hal->id == 0) {
-      platform_i2c_send_stop( 0 );
+    if (hal->id < NUM_I2C) {
+      platform_i2c_send_stop( hal->id );
 
     } else {
       // invalid id
@@ -190,27 +226,6 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
   return 1;
 }
 
-
-// static variables containing info about the spi link
-// TODO: move to user space in u8x8_t once available
-typedef struct {
-  uint8_t host;
-  //spi_device_handle_t device;
-  uint8_t last_dc;
-  struct {
-    uint8_t *data;
-    size_t size, used;
-  } buffer;
-} hal_spi_t;
-
-static void flush_buffer_spi( hal_spi_t *hal )
-{
-  if (hal->buffer.used > 0) {
-    platform_spi_blkwrite( hal->host, hal->buffer.used, hal->buffer.data );
-
-    hal->buffer.used = 0;
-  }
-}
 
 uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
@@ -228,6 +243,7 @@ uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
         return 0;
       hal->host = host;
       ((u8g2_nodemcu_t *)u8x8)->hal = hal;
+      hal->buffer.data = NULL;
 
       hal->last_dc = 0;
     }
@@ -279,6 +295,7 @@ uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
     u8x8_gpio_SetCS( u8x8, u8x8->display_info->chip_disable_level );
 
     c_free( hal->buffer.data );
+    hal->buffer.data = NULL;
     break;
 
   default:

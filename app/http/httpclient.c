@@ -210,7 +210,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 
 	char ua_header[32] = "";
     int ua_len = 0;
-    if (os_strstr( req->headers, "User-Agent:" ) == NULL && os_strstr( req->headers, "user-agent:" ) == NULL)
+    if (strcasestr( req->headers, "User-Agent:" ) == NULL )
     {
         os_sprintf( ua_header, "User-Agent: %s\r\n", "ESP8266" );
         ua_len = strlen(ua_header);
@@ -218,7 +218,7 @@ static void ICACHE_FLASH_ATTR http_connect_callback( void * arg )
 
 	char * host_header = "";
     int host_len = 0;
-    if ( os_strstr( req->headers, "Host:" ) == NULL && os_strstr( req->headers, "host:" ) == NULL)
+    if ( strcasestr( req->headers, "Host:" ) == NULL )
     {
         int max_header_len = 9 + strlen(req->hostname); // 9 is fixed size of "Host:[space][cr][lf]\0"
         if ((req->port == 80)
@@ -328,10 +328,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			{
 				http_status	= atoi( req->buffer + strlen( version_1_0 ) );
 
-				char *locationOffset = (char *) os_strstr( req->buffer, "Location:" );
-				if ( locationOffset == NULL ) {
-					locationOffset = (char *) os_strstr( req->buffer, "location:" );
-				}
+				char *locationOffset = (char *) strcasestr( req->buffer, "Location:" );
 
 				if ( locationOffset != NULL && http_status >= 300 && http_status <= 308 ) {
 					if (req->redirect_follow_count < REDIRECTION_FOLLOW_MAX) {
@@ -414,7 +411,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 						  body = body + 4;
 					}
 
-					if ( os_strstr( req->buffer, "Transfer-Encoding: chunked" ) || os_strstr( req->buffer, "transfer-encoding: chunked" ) )
+					if ( strcasestr( req->buffer, "Transfer-Encoding: chunked" ) )
 					{
 						int	body_size = req->buffer_size - (body - req->buffer);
 						char	chunked_decode_buffer[body_size];

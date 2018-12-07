@@ -378,22 +378,6 @@ static int tmr_create( lua_State *L ) {
 }
 
 
-#if defined(ENABLE_TIMER_SUSPEND) && defined(SWTMR_DEBUG)
-static void tmr_printRegistry(lua_State* L){
-  swtmr_print_registry();
-}
-
-static void tmr_printSuspended(lua_State* L){
-  swtmr_print_suspended();
-}
-
-static void tmr_printTimerlist(lua_State* L){
-  swtmr_print_timer_list();
-}
-
-
-#endif
-
 // Module function map
 
 static const LUA_REG_TYPE tmr_dyn_map[] = {

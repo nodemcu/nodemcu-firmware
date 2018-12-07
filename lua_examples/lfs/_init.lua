@@ -77,4 +77,25 @@ end
 ---------------------------------------------------------------------------------]]
  
 G.module       = nil    -- disable Lua 5.0 style modules to save RAM
-package.seeall = nil 
+package.seeall = nil
+
+--[[-------------------------------------------------------------------------------
+  These replaces the builtins loadfile & dofile with ones which preferentially 
+  loads the corresponding module from LFS if present.  Flipping the search order
+  is an exercise left to the reader.-
+---------------------------------------------------------------------------------]]
+
+local lf, df = loadfile, dofile
+G.loadfile = function(n)
+  local mod, ext = n:match("(.*)%.(l[uc]a?)");
+  local fn, ba   = index(mod)
+  if ba or (ext ~= 'lc' and ext ~= 'lua') then return lf(n) else return fn end
+end
+
+G.dofile = function(n)
+  local mod, ext = n:match("(.*)%.(l[uc]a?)");
+  local fn, ba   = index(mod)
+  if ba or (ext ~= 'lc' and ext ~= 'lua') then return df(n) else return fn() end
+end
+
+

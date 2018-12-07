@@ -20,7 +20,7 @@ FLAVOR = debug
 ifndef PDIR # {
 GEN_IMAGES= eagle.app.v6.out
 GEN_BINS= eagle.app.v6.bin
-OPT_MKTARGETS        := coap crypto dht http mqtt pcm sjson sqlite3 tsl2561 websocket
+OPT_MKTARGETS        := coap dht http mqtt pcm sjson sqlite3 tsl2561 websocket
 OPT_MKLIBTARGETS     := u8g2 ucg
 SEL_MKTARGETS        := $(shell $(CC) -E -dM include/user_modules.h | sed -n '/^\#define LUA_USE_MODULES_/{s/.\{24\}\(.*\)/\L\1/; p}')
 OPT_SEL_MKLIBTARGETS := $(foreach tgt,$(OPT_MKLIBTARGETS),$(findstring $(tgt), $(SEL_MKTARGETS)))
@@ -31,6 +31,7 @@ SPECIAL_MKTARGETS    :=$(APP_MKTARGETS)
 
 SUBDIRS= 					\
 	user 					\
+	crypto					\
 	driver 					\
 	mbedtls 				\
 	platform 				\
@@ -45,6 +46,7 @@ SUBDIRS= 					\
 	fatfs					\
 	esp-gdbstub				\
 	pm					\
+	uzlib					\
 	$(OPT_SEL_MKTARGETS)
 
 endif # } PDIR
@@ -62,6 +64,7 @@ LD_FILE = $(LDDIR)/nodemcu.ld
 
 COMPONENTS_eagle.app.v6 = 			\
 	user/libuser.a 				\
+	crypto/libcrypto.a			\
 	driver/libdriver.a 			\
 	platform/libplatform.a 			\
 	task/libtask.a 				\
@@ -76,6 +79,8 @@ COMPONENTS_eagle.app.v6 = 			\
 	net/libnodemcu_net.a			\
 	mbedtls/libmbedtls.a      		\
 	modules/libmodules.a			\
+	smart/smart.a 				\
+	uzlib/libuzlib.a 			\
 	$(OPT_SEL_COMPONENTS)
 
 

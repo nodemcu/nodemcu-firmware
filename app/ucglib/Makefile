@@ -24,7 +24,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+DEFINES += -DUSE_PIN_LIST
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -38,7 +38,10 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
+CSRCS := $(wildcard ucg/src/clib/*.c *.c)
+
 INCLUDES := $(INCLUDES) -I $(PDIR)include
+INCLUDES += -I ucg/src/clib
 INCLUDES += -I ./
 INCLUDES += -I ../libc
 PDIR := ../$(PDIR)

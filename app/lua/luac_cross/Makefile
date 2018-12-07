@@ -1,12 +1,12 @@
 # 
-# This Make file is called from the core Makefile hierarchy which is a hierarchical
-# make which uses parent callbacks to implement inheritance.  However if luac_cross
-# build stands outside this it uses the host toolchain to implement a separate
+# This Make file is called from the core Makefile hierarchy with is a hierarchical
+# make wwhich uses parent callbacks to implement inheritance.  However is luac_cross
+# build stands outside this and uses the host toolchain to implement a separate
 # host build of the luac.cross image. 
 #
 .NOTPARALLEL:
 
-CCFLAGS:= -I.. -I../../include -I../../../include -I ../../libc
+CCFLAGS:= -I.. -I../../include -I../../libc -I../../uzlib
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
@@ -18,6 +18,7 @@ TARGET = host
 ifeq ($(FLAVOR),debug)
     CCFLAGS        += -O0 -g
     TARGET_LDFLAGS += -O0 -g
+    DEFINES        += -DLUA_DEBUG_BUILD
 else
     FLAVOR         =  release
     CCFLAGS        += -O2
@@ -31,13 +32,13 @@ LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c 
            lrotable.c  lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
            ltm.c       lundump.c   lvm.c       lzio.c
 LIBCSRC := c_stdlib.c
+UZSRC   := uzlib_deflate.c crc32.c
 
 #
 # This relies on the files being unique on the vpath
 #
-SRC      := $(LUACSRC) $(LUASRC) $(LIBCSRC)
-vpath %.c .:..:../../libc
-
+SRC      := $(LUACSRC) $(LUASRC) $(LIBCSRC) $(UZSRC)
+vpath %.c .:..:../../libc:../../uzlib
 
 ODIR   := .output/$(TARGET)/$(FLAVOR)/obj
 
@@ -51,12 +52,7 @@ CC := $(WRAPCC) gcc
 
 ECHO := echo
 
-BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
-ifeq ($(BUILD_TYPE),0)
 IMAGE  := ../../../luac.cross
-else
-IMAGE  := ../../../luac.cross.int
-endif
 
 .PHONY: test clean all
 
@@ -70,7 +66,6 @@ test :
 	@echo SRC: $(SRC)
 	@echo OBJS: $(OBJS)
 	@echo DEPS: $(DEPS)
-	@echo IMAGE: $(IMAGE)
 
 clean :
 	$(RM) -r $(ODIR)

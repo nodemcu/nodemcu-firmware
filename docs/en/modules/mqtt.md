@@ -11,7 +11,7 @@ The client adheres to version 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/
 Creates a MQTT client.
 
 #### Syntax
-`mqtt.Client(clientid, keepalive[, username, password, cleansession])`
+`mqtt.Client(clientid, keepalive[, username, password, cleansession, max_message_length])`
 
 #### Parameters
 - `clientid` client ID
@@ -19,9 +19,37 @@ Creates a MQTT client.
 - `username` user name
 - `password` user password
 - `cleansession` 0/1 for `false`/`true`. Default is 1 (`true`).
+- `max_message_length`, how large messages to accept. Default is 1024.
 
 #### Returns
 MQTT client
+
+#### Notes
+
+According to MQTT specification the max PUBLISH length is 256Mb. This is too large for NodeMCU to realistically handle. To avoid
+an out-of-memory situation, there is a limit on how big messages to accept. This is controlled by the `max_message_length` parameter.
+In practice, this only affects incoming PUBLISH messages since all regular control packets are small.
+The default 1024 was chosen as this was the implicit limit in NodeMCU 2.2.1 and older (where this was not handled at all).
+
+Note that "message length" refers to the full MQTT message size, including fixed & variable headers, topic name, packet ID (if applicable),
+and payload. For exact details, please see [the MQTT specification](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html#_Toc398718037).
+
+Any message *larger* than `max_message_length` will be (partially) delivered to the `overflow` callback, if defined. The rest
+of the message will be discarded. Any subsequent messages should be handled as expected.
+Discarded messages will still be ACK'ed if QoS level 1 or 2 was requested, even if the application stack cannot handle them.
+
+Heap memory will be used to buffer any message which spans more than a single TCP packet. A single allocation for the full
+message will be performed when the message header is first seen, to avoid heap fragmentation.
+If allocation fails, the MQTT session will be disconnected.
+Naturally, messages larger than `max_message_length` will not be stored.
+
+Note that heap allocation may occur even if the individual messages are not larger than the configured max! For example,
+the broker may send multiple smaller messages in quick succession, which could go into the same TCP packet. If the last message
+in the TCP packet did not fit fully, a heap buffer will be allocated to hold the incomplete message while waiting for the next TCP packet.
+
+The typical maximum size for a message to fit into a single TCP packet is 1460 bytes, but this depends on the network's MTU
+configuration, any packet fragmentation, and as described above, multiple messages in the same TCP packet.
+
 
 #### Example
 ```lua
@@ -45,6 +73,11 @@ m:on("message", function(client, topic, data)
   if data ~= nil then
     print(data)
   end
+end)
+
+-- on publish overflow receive event
+m:on("overflow", function(client, topic, data)
+  print(topic .. " partial overflowed message: " .. data )
 end)
 
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
@@ -180,7 +213,7 @@ Registers a callback function for an event.
 `mqtt:on(event, function(client[, topic[, message]]))`
 
 #### Parameters
-- `event` can be "connect", "message" or "offline"
+- `event` can be "connect", "message", "offline" or "overflow"
 - `function(client[, topic[, message]])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
 
 #### Returns

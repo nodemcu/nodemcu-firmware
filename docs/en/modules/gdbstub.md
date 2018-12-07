@@ -16,6 +16,12 @@ At this point, you can just poke around and see what happened, but you cannot co
 
 In order to do interactive debugging, add a call to `gdbstub.brk()` in your Lua code. This will trigger a break instruction and will trap into gdb as above. However, continuation is supported from a break instruction and so you can single step, set breakpoints, etc. Note that the lx106 processor as configured by Espressif only supports a single hardware breakpoint. This means that you can only put a single breakpoint in flash code. You can single step as much as you like. 
 
+## gdbstub.open()
+Runs gdbstub initialization routine. It has to be run only once in code. 
+
+#### Syntax
+`gdbstub.open()`
+
 ## gdbstub.brk()
 Enters gdb by executing a `break 0,0` instruction.
 
@@ -40,6 +46,7 @@ function entergdb()
   print("Active")
 end
 
+gdbstub.open()
 entergdb()
 ```
 

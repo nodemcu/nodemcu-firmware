@@ -587,7 +587,7 @@ static int file_mount( lua_State *L )
 
   if (vol->vol = vfs_mount( ldrv, num )) {
     /* set its metatable */
-    luaL_getmetatable(L, "vfs.vol");
+    luaL_getmetatable(L, "file.vol");
     lua_setmetatable(L, -2);
     return 1;
   } else {
