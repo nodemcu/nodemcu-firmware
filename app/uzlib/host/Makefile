@@ -47,9 +47,11 @@ IMAGES :=  $(ROOT)/uz_zip $(ROOT)/uz_unzip
 all: $(IMAGES)
 
 $(ROOT)/uz_zip : $(ODIR)/uz_zip.o $(ODIR)/crc32.o $(ODIR)/uzlib_deflate.o
+	$(summary) HOSTLD $@
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 $(ROOT)/uz_unzip : $(ODIR)/uz_unzip.o $(ODIR)/crc32.o $(ODIR)/uzlib_inflate.o
+	$(summary) HOSTLD $@
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 test :
@@ -63,5 +65,6 @@ clean :
 
 $(ODIR)/%.o: %.c
 	@mkdir -p $(ODIR);
+	$(summary) HOSTCC $(CURDIR)/$<
 	$(CC) $(CFLAGS) -o $@ -c $<
 
