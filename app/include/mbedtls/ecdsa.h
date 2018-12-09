@@ -272,8 +272,8 @@ int mbedtls_ecdsa_write_signature_det( mbedtls_ecdsa_context *ctx,
  *
  * \return          \c 0 on success,
  *                  #MBEDTLS_ERR_ECP_BAD_INPUT_DATA if signature is invalid,
- *                  #MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH if the signature is
- *                  valid but its actual length is less than \p siglen,
+ *                  #MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH if there is a valid
+ *                  signature in sig but its length is less than \p siglen,
  *                  or an \c MBEDTLS_ERR_ECP_XXX or \c MBEDTLS_ERR_MPI_XXX
  *                  error code on failure for any other reason.
  *

@@ -43,7 +43,7 @@
 #define MBEDTLS_CIPHER_MODE_WITH_PADDING
 #endif
 
-#if defined(MBEDTLS_ARC4_C)
+#if defined(MBEDTLS_ARC4_C) || defined(MBEDTLS_CIPHER_NULL_CIPHER)
 #define MBEDTLS_CIPHER_MODE_STREAM
 #endif
 

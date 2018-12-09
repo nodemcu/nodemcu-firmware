@@ -355,7 +355,7 @@ static void ssl_write_supported_point_formats_ext( mbedtls_ssl_context *ssl,
 
     *olen = 6;
 }
-#endif /* MBEDTLS_ECDH_C || MBEDTLS_ECDSA_C || 
+#endif /* MBEDTLS_ECDH_C || MBEDTLS_ECDSA_C ||
           MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED */
 
 #if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
@@ -717,6 +717,49 @@ static int ssl_generate_random( mbedtls_ssl_context *ssl )
     return( 0 );
 }
 
+/**
+ * \brief           Validate cipher suite against config in SSL context.
+ *
+ * \param suite_info    cipher suite to validate
+ * \param ssl           SSL context
+ * \param min_minor_ver Minimal minor version to accept a cipher suite
+ * \param max_minor_ver Maximal minor version to accept a cipher suite
+ *
+ * \return          0 if valid, else 1
+ */
+static int ssl_validate_ciphersuite( const mbedtls_ssl_ciphersuite_t * suite_info,
+                                     const mbedtls_ssl_context * ssl,
+                                     int min_minor_ver, int max_minor_ver )
+{
+    (void) ssl;
+    if( suite_info == NULL )
+        return( 1 );
+
+    if( suite_info->min_minor_ver > max_minor_ver ||
+            suite_info->max_minor_ver < min_minor_ver )
+        return( 1 );
+
+#if defined(MBEDTLS_SSL_PROTO_DTLS)
+    if( ssl->conf->transport == MBEDTLS_SSL_TRANSPORT_DATAGRAM &&
+            ( suite_info->flags & MBEDTLS_CIPHERSUITE_NODTLS ) )
+        return( 1 );
+#endif
+
+#if defined(MBEDTLS_ARC4_C)
+    if( ssl->conf->arc4_disabled == MBEDTLS_SSL_ARC4_DISABLED &&
+            suite_info->cipher == MBEDTLS_CIPHER_ARC4_128 )
+        return( 1 );
+#endif
+
+#if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
+    if( suite_info->key_exchange == MBEDTLS_KEY_EXCHANGE_ECJPAKE &&
+            mbedtls_ecjpake_check( &ssl->handshake->ecjpake_ctx ) != 0 )
+        return( 1 );
+#endif
+
+    return( 0 );
+}
+
 static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
 {
     int ret;
@@ -726,6 +769,10 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
     unsigned char offer_compress;
     const int *ciphersuites;
     const mbedtls_ssl_ciphersuite_t *ciphersuite_info;
+#if defined(MBEDTLS_ECDH_C) || defined(MBEDTLS_ECDSA_C) || \
+    defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
+    int uses_ec = 0;
+#endif
 
     MBEDTLS_SSL_DEBUG_MSG( 2, ( "=> write client hello" ) );
 
@@ -869,38 +916,25 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
     {
         ciphersuite_info = mbedtls_ssl_ciphersuite_from_id( ciphersuites[i] );
 
-        if( ciphersuite_info == NULL )
+        if( ssl_validate_ciphersuite( ciphersuite_info, ssl,
+                                      ssl->conf->min_minor_ver,
+                                      ssl->conf->max_minor_ver ) != 0 )
             continue;
-
-        if( ciphersuite_info->min_minor_ver > ssl->conf->max_minor_ver ||
-            ciphersuite_info->max_minor_ver < ssl->conf->min_minor_ver )
-            continue;
-
-#if defined(MBEDTLS_SSL_PROTO_DTLS)
-        if( ssl->conf->transport == MBEDTLS_SSL_TRANSPORT_DATAGRAM &&
-            ( ciphersuite_info->flags & MBEDTLS_CIPHERSUITE_NODTLS ) )
-            continue;
-#endif
-
-#if defined(MBEDTLS_ARC4_C)
-        if( ssl->conf->arc4_disabled == MBEDTLS_SSL_ARC4_DISABLED &&
-            ciphersuite_info->cipher == MBEDTLS_CIPHER_ARC4_128 )
-            continue;
-#endif
-
-#if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
-        if( ciphersuite_info->key_exchange == MBEDTLS_KEY_EXCHANGE_ECJPAKE &&
-            mbedtls_ecjpake_check( &ssl->handshake->ecjpake_ctx ) != 0 )
-            continue;
-#endif
 
         MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, add ciphersuite: %04x",
                                     ciphersuites[i] ) );
+
+#if defined(MBEDTLS_ECDH_C) || defined(MBEDTLS_ECDSA_C) || \
+    defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
+        uses_ec |= mbedtls_ssl_ciphersuite_uses_ec( ciphersuite_info );
+#endif
 
         n++;
         *p++ = (unsigned char)( ciphersuites[i] >> 8 );
         *p++ = (unsigned char)( ciphersuites[i]      );
     }
+
+    MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, got %d ciphersuites (excluding SCSVs)", n ) );
 
     /*
      * Add TLS_EMPTY_RENEGOTIATION_INFO_SCSV
@@ -909,6 +943,7 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
     if( ssl->renego_status == MBEDTLS_SSL_INITIAL_HANDSHAKE )
 #endif
     {
+        MBEDTLS_SSL_DEBUG_MSG( 3, ( "adding EMPTY_RENEGOTIATION_INFO_SCSV" ) );
         *p++ = (unsigned char)( MBEDTLS_SSL_EMPTY_RENEGOTIATION_INFO >> 8 );
         *p++ = (unsigned char)( MBEDTLS_SSL_EMPTY_RENEGOTIATION_INFO      );
         n++;
@@ -928,8 +963,6 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
     *q++ = (unsigned char)( n >> 7 );
     *q++ = (unsigned char)( n << 1 );
 
-    MBEDTLS_SSL_DEBUG_MSG( 3, ( "client hello, got %d ciphersuites", n ) );
-
 #if defined(MBEDTLS_ZLIB_SUPPORT)
     offer_compress = 1;
 #else
@@ -937,7 +970,7 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
 #endif
 
     /*
-     * We don't support compression with DTLS right now: is many records come
+     * We don't support compression with DTLS right now: if many records come
      * in the same datagram, uncompressing one could overwrite the next one.
      * We don't want to add complexity for handling that case unless there is
      * an actual need for it.
@@ -989,11 +1022,14 @@ static int ssl_write_client_hello( mbedtls_ssl_context *ssl )
 
 #if defined(MBEDTLS_ECDH_C) || defined(MBEDTLS_ECDSA_C) || \
     defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
-    ssl_write_supported_elliptic_curves_ext( ssl, p + 2 + ext_len, &olen );
-    ext_len += olen;
+    if( uses_ec )
+    {
+        ssl_write_supported_elliptic_curves_ext( ssl, p + 2 + ext_len, &olen );
+        ext_len += olen;
 
-    ssl_write_supported_point_formats_ext( ssl, p + 2 + ext_len, &olen );
-    ext_len += olen;
+        ssl_write_supported_point_formats_ext( ssl, p + 2 + ext_len, &olen );
+        ext_len += olen;
+    }
 #endif
 
 #if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
@@ -1226,14 +1262,14 @@ static int ssl_parse_supported_point_formats_ext( mbedtls_ssl_context *ssl,
     size_t list_size;
     const unsigned char *p;
 
-    list_size = buf[0];
-    if( list_size + 1 != len )
+    if( len == 0 || (size_t)( buf[0] + 1 ) != len )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server hello message" ) );
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
                                         MBEDTLS_SSL_ALERT_MSG_DECODE_ERROR );
         return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_HELLO );
     }
+    list_size = buf[0];
 
     p = buf + 1;
     while( list_size > 0 )
@@ -1260,7 +1296,7 @@ static int ssl_parse_supported_point_formats_ext( mbedtls_ssl_context *ssl,
                                     MBEDTLS_SSL_ALERT_MSG_HANDSHAKE_FAILURE );
     return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_HELLO );
 }
-#endif /* MBEDTLS_ECDH_C || MBEDTLS_ECDSA_C || 
+#endif /* MBEDTLS_ECDH_C || MBEDTLS_ECDSA_C ||
           MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED */
 
 #if defined(MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED)
@@ -1689,22 +1725,9 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, chosen ciphersuite: %04x", i ) );
     MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, compress alg.: %d", buf[37 + n] ) );
 
-    suite_info = mbedtls_ssl_ciphersuite_from_id( ssl->session_negotiate->ciphersuite );
-    if( suite_info == NULL
-#if defined(MBEDTLS_ARC4_C)
-            || ( ssl->conf->arc4_disabled &&
-                suite_info->cipher == MBEDTLS_CIPHER_ARC4_128 )
-#endif
-        )
-    {
-        MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server hello message" ) );
-        mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                                        MBEDTLS_SSL_ALERT_MSG_ILLEGAL_PARAMETER );
-        return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_HELLO );
-    }
-
-    MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, chosen ciphersuite: %s", suite_info->name ) );
-
+    /*
+     * Perform cipher suite validation in same way as in ssl_write_client_hello.
+     */
     i = 0;
     while( 1 )
     {
@@ -1722,6 +1745,17 @@ static int ssl_parse_server_hello( mbedtls_ssl_context *ssl )
             break;
         }
     }
+
+    suite_info = mbedtls_ssl_ciphersuite_from_id( ssl->session_negotiate->ciphersuite );
+    if( ssl_validate_ciphersuite( suite_info, ssl, ssl->minor_ver, ssl->minor_ver ) != 0 )
+    {
+        MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server hello message" ) );
+        mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
+                                        MBEDTLS_SSL_ALERT_MSG_ILLEGAL_PARAMETER );
+        return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_HELLO );
+    }
+
+    MBEDTLS_SSL_DEBUG_MSG( 3, ( "server hello, chosen ciphersuite: %s", suite_info->name ) );
 
     if( comp != MBEDTLS_SSL_COMPRESS_NULL
 #if defined(MBEDTLS_ZLIB_SUPPORT)
@@ -2057,10 +2091,16 @@ static int ssl_parse_server_psk_hint( mbedtls_ssl_context *ssl,
      *
      * opaque psk_identity_hint<0..2^16-1>;
      */
+    if( end - (*p) < 2 )
+    {
+        MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server key exchange message "
+                                    "(psk_identity_hint length)" ) );
+        return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_KEY_EXCHANGE );
+    }
     len = (*p)[0] << 8 | (*p)[1];
     *p += 2;
 
-    if( (*p) + len > end )
+    if( end - (*p) < (int) len )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server key exchange message "
                                     "(psk_identity_hint length)" ) );
@@ -2478,10 +2518,17 @@ static int ssl_parse_server_key_exchange( mbedtls_ssl_context *ssl )
         /*
          * Read signature
          */
+        if( p > end - 2 )
+        {
+            MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server key exchange message" ) );
+            mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
+                                            MBEDTLS_SSL_ALERT_MSG_DECODE_ERROR );
+            return( MBEDTLS_ERR_SSL_BAD_HS_SERVER_KEY_EXCHANGE );
+        }
         sig_len = ( p[0] << 8 ) | p[1];
         p += 2;
 
-        if( end != p + sig_len )
+        if( p != end - sig_len )
         {
             MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad server key exchange message" ) );
             mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
@@ -2658,10 +2705,27 @@ static int ssl_parse_certificate_request( mbedtls_ssl_context *ssl )
     buf = ssl->in_msg;
 
     /* certificate_types */
+    if( ssl->in_hslen <= mbedtls_ssl_hs_hdr_len( ssl ) )
+    {
+        MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad certificate request message" ) );
+        mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
+                                        MBEDTLS_SSL_ALERT_MSG_DECODE_ERROR );
+        return( MBEDTLS_ERR_SSL_BAD_HS_CERTIFICATE_REQUEST );
+    }
     cert_type_len = buf[mbedtls_ssl_hs_hdr_len( ssl )];
     n = cert_type_len;
 
-    if( ssl->in_hslen < mbedtls_ssl_hs_hdr_len( ssl ) + 2 + n )
+    /*
+     * In the subsequent code there are two paths that read from buf:
+     *     * the length of the signature algorithms field (if minor version of
+     *       SSL is 3),
+     *     * distinguished name length otherwise.
+     * Both reach at most the index:
+     *    ...hdr_len + 2 + n,
+     * therefore the buffer length at this point must be greater than that
+     * regardless of the actual code path.
+     */
+    if( ssl->in_hslen <= mbedtls_ssl_hs_hdr_len( ssl ) + 2 + n )
     {
         MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad certificate request message" ) );
         mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
@@ -2676,9 +2740,32 @@ static int ssl_parse_certificate_request( mbedtls_ssl_context *ssl )
         size_t sig_alg_len = ( ( buf[mbedtls_ssl_hs_hdr_len( ssl ) + 1 + n] <<  8 )
                              | ( buf[mbedtls_ssl_hs_hdr_len( ssl ) + 2 + n]       ) );
 #if defined(MBEDTLS_DEBUG_C)
-        unsigned char* sig_alg = buf + mbedtls_ssl_hs_hdr_len( ssl ) + 3 + n;
+        unsigned char* sig_alg;
         size_t i;
+#endif
 
+        /*
+         * The furthest access in buf is in the loop few lines below:
+         *     sig_alg[i + 1],
+         * where:
+         *     sig_alg = buf + ...hdr_len + 3 + n,
+         *     max(i) = sig_alg_len - 1.
+         * Therefore the furthest access is:
+         *     buf[...hdr_len + 3 + n + sig_alg_len - 1 + 1],
+         * which reduces to:
+         *     buf[...hdr_len + 3 + n + sig_alg_len],
+         * which is one less than we need the buf to be.
+         */
+        if( ssl->in_hslen <= mbedtls_ssl_hs_hdr_len( ssl ) + 3 + n + sig_alg_len )
+        {
+            MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad certificate request message" ) );
+            mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
+                                            MBEDTLS_SSL_ALERT_MSG_DECODE_ERROR );
+            return( MBEDTLS_ERR_SSL_BAD_HS_CERTIFICATE_REQUEST );
+        }
+
+#if defined(MBEDTLS_DEBUG_C)
+        sig_alg = buf + mbedtls_ssl_hs_hdr_len( ssl ) + 3 + n;
         for( i = 0; i < sig_alg_len; i += 2 )
         {
             MBEDTLS_SSL_DEBUG_MSG( 3, ( "Supported Signature Algorithm found: %d"
@@ -2687,14 +2774,6 @@ static int ssl_parse_certificate_request( mbedtls_ssl_context *ssl )
 #endif
 
         n += 2 + sig_alg_len;
-
-        if( ssl->in_hslen < mbedtls_ssl_hs_hdr_len( ssl ) + 2 + n )
-        {
-            MBEDTLS_SSL_DEBUG_MSG( 1, ( "bad certificate request message" ) );
-            mbedtls_ssl_send_alert_message( ssl, MBEDTLS_SSL_ALERT_LEVEL_FATAL,
-                                            MBEDTLS_SSL_ALERT_MSG_DECODE_ERROR );
-            return( MBEDTLS_ERR_SSL_BAD_HS_CERTIFICATE_REQUEST );
-        }
     }
 #endif /* MBEDTLS_SSL_PROTO_TLS1_2 */
 
@@ -3248,8 +3327,8 @@ static int ssl_parse_new_session_ticket( mbedtls_ssl_context *ssl )
 
     msg = ssl->in_msg + mbedtls_ssl_hs_hdr_len( ssl );
 
-    lifetime = ( msg[0] << 24 ) | ( msg[1] << 16 ) |
-               ( msg[2] <<  8 ) | ( msg[3]       );
+    lifetime = ( ((uint32_t) msg[0]) << 24 ) | ( msg[1] << 16 ) |
+               ( msg[2] << 8 ) | ( msg[3] );
 
     ticket_len = ( msg[4] << 8 ) | ( msg[5] );
 

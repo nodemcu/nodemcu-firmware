@@ -70,15 +70,6 @@
 #include <time.h>
 #endif
 
-#if defined(MBEDTLS_FS_IO)
-#include <stdio.h>
-#if !defined(_WIN32)
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#endif
-#endif
-
 #define CHECK(code) if( ( ret = code ) != 0 ){ return( ret ); }
 #define CHECK_RANGE(min, max, val) if( val < min || val > max ){ return( ret ); }
 
