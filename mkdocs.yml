@@ -4,7 +4,7 @@ repo_url: https://github.com/nodemcu/nodemcu-firmware/
 
 theme:
   name: "readthedocs"
-strict: true
+strict: false #Allows to build and test documentation in local enviroment where some links are unreachable
 
 markdown_extensions:
 #http://pythonhosted.org/Markdown/extensions/admonition.html
@@ -12,7 +12,7 @@ markdown_extensions:
 - toc:
     permalink: True
 
-#requird due to https://github.com/rtfd/readthedocs.org/issues/1313
+#required due to https://github.com/rtfd/readthedocs.org/issues/1313
 #see http://mkdocs.readthedocs.org/en/latest/user-guide/styling-your-docs/#customising-a-theme
 extra_css:
 - css/extra.css
@@ -37,10 +37,21 @@ pages:
     - Internal filesystem: 'en/spiffs.md'
     - Lua Compact Debug (LCD): 'en/lcd.md'
     - Lua Flash Store (LFS): 'en/lfs.md'
-- Modules:
+- Lua Modules:
+    - 'bh1750': 'en/lua-modules/bh1750.md'
+    - 'ds18b20': 'en/lua-modules/ds18b20.md'
+    - 'ds3231': 'en/lua-modules/ds3231.md'
+    - 'ftpserver': 'en/lua-modules/ftpserver.md'
+    - 'hdc1000': 'en/lua-modules/hdc1000.md'
+    - 'imap': 'en/lua-modules/imap.md'
+    - 'lm92': 'en/lua-modules/lm92.md'
+    - 'mcp23008': 'en/lua-modules/mcp23008.md'
+    - 'redis': 'en/lua-modules/redis.md'
+    - 'yeelink': 'en/lua-modules/yeelink.md'
+- C Modules:
     - 'adc': 'en/modules/adc.md'
-    - 'ads1115' : 'en/modules/ads1115.md'
-    - 'adxl345': 'en/modules/adxl345.md'
+    - 'ads1115': 'en/modules/ads1115.md'
+    - 'adxl345' : 'en/modules/adxl345.md'
     - 'am2320': 'en/modules/am2320.md'
     - 'apa102': 'en/modules/apa102.md'
     - 'bit': 'en/modules/bit.md'
