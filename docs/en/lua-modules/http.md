@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-01-19 | [Vladimir Dronnikov](https://github.com/dvv) | [Vladimir Dronnikov](https://github.com/dvv) | [http.lua](../../../lua_modules/http/http.lua) |
 
-This Lua module provides simple callback implementation of [HTTP 1.1](https://www.w3.org/Protocols/rfc2616/rfc2616.html) server.
+This Lua module provides a simple callback implementation of a [HTTP 1.1](https://www.w3.org/Protocols/rfc2616/rfc2616.html) server.
 
 ### Require
 ```lua
@@ -30,9 +30,9 @@ Function to start HTTP 1.1 server.
 `net.server` sub module.
 
 #### Notes
-Callback function have 2 arguments : `req` (request) and `res` (response). The first object holds values:
+Callback function has 2 arguments : `req` (request) and `res` (response). The first object holds values:
 
-- `conn`: nte.socket sub module
+- `conn`: net.server sub module
 - `method`: Request method like `POST` or `GET`
 - `url`: Request URL
 - `onheader`: value to setup handler function for HTTP headers

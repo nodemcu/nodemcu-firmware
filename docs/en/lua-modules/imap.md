@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-03-12 | [AllAboutEE](https://github.com/AllAboutEE) | [AllAboutEE](https://github.com/AllAboutEE) | [imap.lua](../../../lua_modules/email/imap.lua) |
 
-This Lua module provides simple implementation of [IMAP 4rev1](http://www.faqs.org/rfcs/rfc2060.html) protocol that can be used to read e-mails.
+This Lua module provides a simple implementation of an [IMAP 4rev1](http://www.faqs.org/rfcs/rfc2060.html) protocol that can be used to read e-mails.
 
 
 ### Require

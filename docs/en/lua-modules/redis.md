@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-02-06 | [Vladimir Dronnikov](https://github.com/dvv) | [Vladimir Dronnikov](https://github.com/dvv) | [redis.lua](../../../lua_modules/redis/redis.lua) |
 
-This Lua module provides simple implementation of [Redis](https://redis.io/) client.
+This Lua module provides a simple implementation of a [Redis](https://redis.io/) client.
 
 ### Require
 ```lua

@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-04-14 | [Martin Han](https://github.com/MarsTechHAN) | [Martin Han](https://github.com/MarsTechHAN) | [yeelink_lib.lua](../../../lua_modules/yeelink/yeelink_lib.lua) |
 
-This Lua module provifes simple implementation of [Yeelink](http://www.yeelink.net/) client.
+This Lua module provides a simple implementation of an [Yeelink](http://www.yeelink.net/) client.
 
 ### Require
 ```lua
