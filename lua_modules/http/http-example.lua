@@ -4,7 +4,7 @@
 -- LICENCE: http://opensource.org/licenses/MIT
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 ------------------------------------------------------------------------------
-require("http").createServer(80, function(req, res)
+require("httpserver").createServer(80, function(req, res)
   -- analyse method and url
   print("+R", req.method, req.url, node.heap())
   -- setup handler of headers, if any

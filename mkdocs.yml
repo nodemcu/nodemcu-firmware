@@ -43,6 +43,7 @@ pages:
     - 'ds3231': 'en/lua-modules/ds3231.md'
     - 'ftpserver': 'en/lua-modules/ftpserver.md'
     - 'hdc1000': 'en/lua-modules/hdc1000.md'
+    - 'httpserver': 'en/lua-modules/httpserver.md'
     - 'imap': 'en/lua-modules/imap.md'
     - 'lm92': 'en/lua-modules/lm92.md'
     - 'mcp23008': 'en/lua-modules/mcp23008.md'
