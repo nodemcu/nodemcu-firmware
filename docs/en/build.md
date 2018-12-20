@@ -10,6 +10,10 @@ Not available yet.
 ### Docker Image
 Occasional NodeMCU firmware hackers don't need full control over the complete tool chain. They might not want to setup a Linux VM with the build environment. Docker to the rescue. Give [Docker NodeMCU build](https://hub.docker.com/r/marcelstoer/nodemcu-build/) a try.
 
+!!! caution
+
+    Take note that you need to clone the repository including Git submodules just as described below for the Linux environment. 
+
 ### Linux Build Environment
 NodeMCU firmware developers commit or contribute to the project on GitHub and might want to build their own full fledged build environment with the complete tool chain.
 
