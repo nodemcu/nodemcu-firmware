@@ -604,7 +604,7 @@ wifi.sta.config(station_cfg)
 - [`wifi.sta.clearconfig()`](#wifistaclearconfig)
 - [`wifi.sta.connect()`](#wifistaconnect)
 - [`wifi.sta.disconnect()`](#wifistadisconnect)
-- [`wifi.sta.apinfo()`](#wifistaapinfo)
+- [`wifi.sta.getapinfo()`](#wifistagetapinfo)
 
 ## wifi.sta.connect()
 
@@ -768,8 +768,8 @@ print("the index of the currently selected AP is: "..wifi.sta.getapindex())
 
 #### See also
 - [`wifi.sta.getapindex()`](#wifistagetapindex)
-- [`wifi.sta.apinfo()`](#wifistaapinfo)
-- [`wifi.sta.apchange()`](#wifistaapchange)
+- [`wifi.sta.getapinfo()`](#wifistagetapinfo)
+- [`wifi.sta.changeap()`](#wifistachangeap)
 
 ## wifi.sta.getapinfo()
 
