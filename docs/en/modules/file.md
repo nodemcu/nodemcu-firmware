@@ -397,7 +397,7 @@ end
 
 !!! Attention
 
-    It is recommended to use only one single model within the application. Concurrent use of both models can yield unpredictable behavior: Closing the default file from basic model will also close the correspoding file object. Closing a file from object model will also close the default file if they are the same file.
+    It is recommended to use only one single model within the application. Concurrent use of both models can yield unpredictable behavior: Closing the default file from basic model will also close the corresponding file object. Closing a file from object model will also close the default file if they are the same file.
 
 !!! Note
 

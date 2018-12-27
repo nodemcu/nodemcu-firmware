@@ -14,7 +14,7 @@ NodeMCU firmware developers commit or contribute to the project on GitHub and mi
 make
 ```
 
-The default build setup reduces output verbosity to a minimum. The verbositiy level can be increased by setting the `V` environment variable to 1, e.g. with
+The default build setup reduces output verbosity to a minimum. The verbosity level can be increased by setting the `V` environment variable to 1, e.g. with
 ```
 V=1 make
 ```

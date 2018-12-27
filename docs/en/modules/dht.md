@@ -1,7 +1,7 @@
 # DHT Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2015-06-17 | [RobTillaart](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib) | [Vowstar](https://github.com/vowstar) | [dhtlib](../../../app/dhtlib/)|
+| 2015-06-17 | [RobTillaart](https://github.com/RobTillaart/Arduino/tree/master/libraries/DHTlib) | [Vowstar](https://github.com/vowstar) | [dhtlib](../../../app/dht/)|
 
 ## Constants
 Constants for various functions.

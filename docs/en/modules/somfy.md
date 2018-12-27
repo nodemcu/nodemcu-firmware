@@ -26,7 +26,7 @@ Builds an frame defined by Somfy protocol and sends it to the RF transmitter.
 - `repeat_count` how many times the command is repeated
 - `call_back` a function to be called after the command is transmitted. Allows chaining commands to set the blinds to a defined position.
 
-My original remote is [TELIS 4 MODULIS RTS](https://www.somfy.co.uk/products/1810765/telis-4-modulis-rts). This remote is working with the additional info - additional 56 bits that follow data (shortening the Inter-frame gap). It seems that the scrumbling alhorithm has not been revealed yet.
+My original remote is [TELIS 4 MODULIS RTS](https://www.somfy.co.uk/products/1810765/telis-4-modulis-rts). This remote is working with the additional info - additional 56 bits that follow data (shortening the Inter-frame gap). It seems that the scrambling algorithm has not been revealed yet.
 
 When I send the `somfy.DOWN` command, repeating the frame twice (which seems to be the standard for a short button press), i.e. `repeat_count` equal to 2, the blinds go only 1 step down. This corresponds to the movement of the wheel on the original remote. The down button on the original remote sends also `somfy.DOWN` command but the additional info is different and this makes the blinds go full down. Fortunately it seems that repeating the frame 16 times makes the blinds go fully down.
 

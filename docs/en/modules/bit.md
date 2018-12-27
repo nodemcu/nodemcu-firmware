@@ -148,7 +148,7 @@ Test if a given bit is cleared.
 - `position` bit position to test
 
 #### Returns
-true if the bit at the given position is 0, false othewise
+true if the bit at the given position is 0, false otherwise
 
 ### Example
 ```lua

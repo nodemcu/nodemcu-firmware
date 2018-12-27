@@ -151,7 +151,7 @@ spi.set_clock_div(1, old_div)
 
 ## Low Level Hardware Functions
 The low level functions provide a hardware-centric API for application
-scenarios that need to excercise more complex SPI transactions. The
+scenarios that need to exercise more complex SPI transactions. The
 programming model is built up around the HW send and receive buffers and SPI
 transactions are initiated with full control over the hardware features.
 

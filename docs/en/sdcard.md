@@ -69,4 +69,4 @@ Subdirectories are supported on FAT volumes only.
 
 ## Multiple partitions / multiple cards
 
-The mapping from logical volumes (eg. `/SD0`) to partitions on an SD card is defined in [`fatfs_config.h`](../../app/include/fatfs_config.h). More volumes can be added to the `VolToPart` array with any combination of physical drive number (aka SS/CS pin) and partition number. Their names have to be added to `_VOLUME_STRS` in [`ffconf.h`](../../app/fatfs/ffconf.h) as well.
+The mapping from logical volumes (eg. `/SD0`) to partitions on an SD card is defined in [`fatfs_config.h`](../../app/include/fatfs_config.h). More volumes can be added to the `VolToPart` array with any combination of physical drive number (aka SS/CS pin) and partition number. Their names have to be added to `_VOLUME_STRS` in [`ffconf.h`](../../../app/fatfs/ffconf.h) as well.

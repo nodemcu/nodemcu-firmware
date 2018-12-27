@@ -111,7 +111,7 @@ If you need to customize init data then first download the [Espressif SDK 2.2.0]
 - `0x7fc000` for 8 MB
 - `0xffc000` for 16 MB, modules like WeMos D1 mini pro
 
-See "4.1 Non-FOTA Flash Map" and "6.3 RF Initialization Configuration" of the [ESP8266 Getting Started Guide](https://espressif.com/en/support/explore/get-started/esp8266/getting-started-guide) for details on init data addresses and customization.
+See "4.1 Non-FOTA Flash Map" and "6.3 RF Initialization Configuration" of the [ESP8266 Getting Started Guide](https://www.espressif.com/sites/default/files/documentation/2a-esp8266-sdk_getting_started_guide_en.pdf) for details on init data addresses and customization.
 
 ## Determine flash size
 

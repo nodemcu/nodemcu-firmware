@@ -48,13 +48,13 @@ The NodeMCU firmware supports a subset of these:
 - SSD1351
 - ST7735
 
-This integration is based on [v1.5.2](https://github.com/olikraus/Ucglib_Arduino/releases/tag/v1.5.2).
+This integration is based on version [1.5.2](https://github.com/olikraus/Ucglib_Arduino/releases/tag/1.5.2).
 
 ## Overview
 
 ### SPI Connection
 
-The HSPI module is used ([more information](http://d.av.id.au/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
+The HSPI module is used ([more information](spi)), so certain pins are fixed:
 
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13

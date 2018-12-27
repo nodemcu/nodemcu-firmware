@@ -44,7 +44,7 @@ This is passed to the success callback and contains useful information about the
 
 - `offset_s` This is an optional field and contains the number of seconds that the clock was adjusted. This is only present for large (many second) adjustments. Typically, this is only present on the initial sync call.
 - `offset_us` This is an optional field (but one of `offset_s` and `offset_us` will always be present). This contains the number of microseconds that the clock was adjusted. 
-- `delay_us` This is the round trip delay to the server in microseconds. Thie setting uncertainty is somewhat less than this value.
+- `delay_us` This is the round trip delay to the server in microseconds. This setting uncertainty is somewhat less than this value.
 - `stratum` This is the stratum of the server. 
 - `leap` This contains the leap bits from the NTP protocol. 0 means that no leap second is pending, 1 is a pending extra leap second at the end of the UTC month, and 2 is a pending leap second removal at the end of the UTC month.
 
@@ -85,7 +85,7 @@ nil
 ## sntp.getoffset
 
 Gets the offset between the rtc clock and the NTP time. This value should be subtracted from the rtc time to get the NTP time -- which
-corresponds to wall clock time. If the offset returned has changed from the pervious call, then there has been a leap second inbetween.
+corresponds to wall clock time. If the offset returned has changed from the previous call, then there has been a leap second inbetween.
 
 #### Syntax
 `offset = sntp.getoffset()`
