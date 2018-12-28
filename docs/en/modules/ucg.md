@@ -54,7 +54,7 @@ This integration is based on version [1.5.2](https://github.com/olikraus/Ucglib_
 
 ### SPI Connection
 
-The HSPI module is used ([more information](spi)), so certain pins are fixed:
+The HSPI module is used ([more information](https://web.archive.org/web/20180425221055/http://d.av.id.au:80/blog/esp8266-hardware-spi-hspi-general-info-and-pinout/)), so certain pins are fixed:
 
 * HSPI CLK  = GPIO14
 * HSPI MOSI = GPIO13
