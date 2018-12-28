@@ -48,13 +48,13 @@ mode is enabled by specifying the `-f`option.
 
 `luac.cross` supports two separate image formats:
 
--  **Compact relocatable**. This is selected by the `-f` option. Here the compiler compresses the compiled binary so that image is small for downloading over Wifi/WAN (e.g. a full 64Kb LFS image is compressed down to a 22Kb file.) The LVM processes such image in two passes with the integrity of the image validated on the first, and the LFS itself gets upated on the second.  The LVM also checks that the image will fit in the allocated LFS region before loading, but you can also use the `-m` option to throw a compile error if the image is too large, for example `-m 0x10000` will raise an error if the image will not load into a 64Kb regions.
+-  **Compact relocatable**. This is selected by the `-f` option. Here the compiler compresses the compiled binary so that image is small for downloading over Wifi/WAN (e.g. a full 64Kb LFS image is compressed down to a 22Kb file.) The LVM processes such image in two passes with the integrity of the image validated on the first, and the LFS itself gets updated on the second.  The LVM also checks that the image will fit in the allocated LFS region before loading, but you can also use the `-m` option to throw a compile error if the image is too large, for example `-m 0x10000` will raise an error if the image will not load into a 64Kb regions.
 
 -  **Absolute**. This is selected by the `-a <baseAddr>` option. Here the compiler fixes all addresses relative to the base address specified. This allows an LFS absolute image to be loaded directly into the ESP flash using a tool such as  `esptool.py`. 
 
 These two modes target two separate use cases: the compact relocatable format 
 facilitates simple OTA updates to an LFS based Lua application; the absolute format
-facilitates factory installation of LFS based applicaitons.
+facilitates factory installation of LFS based applications.
 
 Also note that the `app/lua/luac_cross` make and Makefile can be executed to build
 just the `luac.cross` image.  You must first ensure that the following options in

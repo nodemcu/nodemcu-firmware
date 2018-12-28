@@ -4,7 +4,7 @@
 | 2015-01-16 | [Ibrahim Abd Elkader](https://github.com/iabdalkader) |              [Arnim Läuger](https://github.com/devsaurus) | [spi.c](../../../app/modules/spi.c)|
 
 All transactions for sending and receiving are most-significant-bit first and least-significant last.
-For technical details of the underlying hardware refer to [metalphreak's ESP8266 HSPI articles](http://d.av.id.au/blog/tag/hspi/).
+For technical details of the underlying hardware refer to [metalphreak's ESP8266 HSPI articles](https://web.archive.org/web/20180425205107/http://d.av.id.au:80/blog/tag/hspi/).
 
 !!! note
 
@@ -151,7 +151,7 @@ spi.set_clock_div(1, old_div)
 
 ## Low Level Hardware Functions
 The low level functions provide a hardware-centric API for application
-scenarios that need to excercise more complex SPI transactions. The
+scenarios that need to exercise more complex SPI transactions. The
 programming model is built up around the HW send and receive buffers and SPI
 transactions are initiated with full control over the hardware features.
 

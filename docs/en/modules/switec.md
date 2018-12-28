@@ -11,7 +11,7 @@ can mount two needles from the same axis.
 
 These motors run off 5V (some may work off 3.3V). They draw under 20mA and are designed to be
 driven directly from MCU pins. Since the nodemcu runs at 3.3V, a level translator is required.
-An octal translator like the [74LVC4245A](http://www.nxp.com/products/discretes-and-logic/logic/voltage-level-translators/octal-dual-supply-translating-transceiver-3-state-based-on-pip-74lvc4245a:74LVC4245A) can perfom this translation. It also includes all the
+An octal translator like the [74LVC4245A](https://www.ti.com/lit/ds/symlink/sn74lvc4245a.pdf) can perform this translation. It also includes all the
 protection diodes required. 
 
 These motors can be driven off three pins, with `pin2` and `pin3` being the same GPIO pin. 
@@ -32,7 +32,7 @@ This module does not enforce any range limiting.
 
 ## switec.setup()
 Initialize the nodemcu to talk to a switec X.27 or compatible instrument stepper motor. The default
-slew rate is set so that it should work for most motors. Some motors can run at 600 degress per second. 
+slew rate is set so that it should work for most motors. Some motors can run at 600 degrees per second. 
 
 #### Syntax
 `switec.setup(channel, pin1, pin2, pin3, pin4 [, maxDegPerSec])`

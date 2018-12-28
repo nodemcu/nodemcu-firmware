@@ -51,7 +51,7 @@ Decrypts previously encrypted data.
   - `algo` the name of a supported encryption algorithm to use
   - `key` the encryption key as a string; for AES encryption this *MUST* be 16 bytes long
   - `cipher` the cipher text to decrypt (as obtained from `crypto.encrypt()`)
-  - `iv` the initilization vector, if using AES-CBC; defaults to all-zero if not given
+  - `iv` the initialization vector, if using AES-CBC; defaults to all-zero if not given
 
 #### Returns
 The decrypted string.
@@ -143,7 +143,7 @@ Compute a [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication
 - `key` key to use for signing, may be a binary string
 
 #### Returns
-A binary string containing the HMAC signature. Use [`crypto.toHex()`](#cryptotohex	) to obtain the textual version.
+A binary string containing the HMAC signature. Use [`crypto.toHex()`](#cryptotohex) to obtain the textual version.
 
 #### Example
 ```lua

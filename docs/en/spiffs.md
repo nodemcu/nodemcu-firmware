@@ -73,7 +73,7 @@ f    880 http/favicon.ico
 # Technical Details
 
 The SPIFFS configuration is 4k sectors (the only size supported by the SDK) and 8k blocks. 256 byte pages. Magic is enabled and magic_len is also enabled. This allows the firmware to find the start of the filesystem (and also the size).
-One of the goals is to make the filsystem more persistent across reflashing of the firmware. However, there are still cases
+One of the goals is to make the filesystem more persistent across reflashing of the firmware. However, there are still cases
 where spiffs detects a filesystem and uses it when it isn't valid. If you are getting weirdness with the filesystem, then just reformat it.
 
 There are two significant sizes of flash -- the 512K and 4M (or bigger). 
