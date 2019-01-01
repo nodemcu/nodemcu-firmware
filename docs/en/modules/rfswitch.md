@@ -19,7 +19,7 @@ This module uses some code from the [original rc-switch Arduino lib](https://git
 You can read more about connection [here](https://alexbloggt.com/wp-content/uploads/2015/10/nodemcu_433_transmitter.png).
 
 ### Selecting proper protocol
-This module supports **transmitting** data using 6 different protocols
+This module supports **transmitting** data using 6 different protocols, or a custom defined protocol (id=0)
 and you should use one most suitable for your needs. **Receiving** data is not supported yet. So, you cannot listen radio air and get protocol details using Lua.
 
 The easiest way to get the correct protocol is to connect the radio receiver to your ESP8266 or [Arduino](https://github.com/sui77/rc-switch/wiki/HowTo_Receive),
@@ -48,7 +48,7 @@ Transmit data using the radio module.
 `rfswitch.send(protocol_id, pulse_length, repeat, pin, value, length)`
 
 #### Parameters
-- `protocol_id` positive integer value, from 1-6
+- `protocol_id` positive integer value, from 0-6
 - `pulse_length` length of one pulse in microseconds, usually from 100 to 650
 - `repeat` repeat value, usually from 1 to 5. This is a synchronous task. Setting the repeat count to a large value will cause problems.
 The recommended limit is about 1-4. If you need more,
@@ -69,4 +69,35 @@ then call it asynchronously a few more times (e.g. using [node.task.post](../mod
 -- value to send is 560777
 -- value length is 24 bits (3 bytes)
 rfswitch.send(1, 300, 5, 7, 560777, 24)
+```
+
+## rfswitch.setcustom()
+Defines a custom protocol definition (protocol_id = 0)
+
+#### Syntax
+`rfswitch.send(pulse_length, syncfactor_high, syncfactor_low, zero_high, zero_low, one_high, one_low, inverted_signal, frame_startstop, invert_startstop)`
+
+#### Parameters
+- `pulse_length` length of one pulse in microseconds, usually from 100 to 650 (NOT USED as actually defined in send function - here for completion)
+- `syncfactor_high,syncfactor_low` sync bit {1,31} means 1 high pulse and 31 low pulses
+- `zero_high,zero_low` waveform for a data bit of value "0", {1, 3} means 1 high pulse and 3 low pulses, total length (1+3)*pulselength
+- `one_high,one_low` waveform for a data bit of value "1", as above
+- `inverted_signal` inverts the high/low logic levels of zero and one waveforms
+- `frame_startstop` inserts a start and or stop bit (0=none, 1=start, 2=stop, 3=start&stop)
+- `invert_startstop` inverts start/stop bit as waveform zero or one (default is zero)
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+-- lua transmit radio code using protocol #0
+-- pulse_length 300 microseconds
+-- repeat 10 times
+-- use pin #6 (GPIO12)
+-- value to send is OxF3EE1B78
+-- value length is 32 bits (4 bytes)
+-- Protocol 0 defined has start and stop bits
+rfswitch.setcustom(850, 0,32, 1,3, 3,1, false, 3)
+rfswitch.send(0, 300, 10, 6, OxF3EE1B78, 32)
 ```
