@@ -50,34 +50,29 @@ static int crypto_new_hash(lua_State* L) {
     if (strcmp("SHA1", algo) != 0) {
         luaL_error(L, "Unsupported algorithm: %s", algo);  // returns
     }
-    printf("before ud\n");
     /* create a userdatum to store a hashing context address*/
     mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)lua_newuserdata(L, sizeof(mbedtls_sha1_context*));
     /* set its metatable */
     luaL_getmetatable(L, SHA1_METATABLE);
     lua_setmetatable(L, -2);
 
-    printf("before malloc\n");
     *ppctx = (mbedtls_sha1_context*)luaM_malloc(L, sizeof(mbedtls_sha1_context));
     if (*ppctx == NULL) {
         luaL_error(L, "Out of memory allocating context");
     }
-    printf("before sha init\n");
     mbedtls_sha1_init(*ppctx);
-    printf("before starts\n");
-    if (!mbedtls_sha1_starts_ret(*ppctx)) {
+    if (mbedtls_sha1_starts_ret(*ppctx) != 0) {
         luaL_error(L, "Error starting sha1 context");
     }
-    printf("before return\n");
     return 1;
 }
 
 static int crypto_sha1_update(lua_State* L) {
-    mbedtls_sha1_context* pctx = (mbedtls_sha1_context*)luaL_checkudata(L, 1, SHA1_METATABLE);
+    mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)luaL_checkudata(L, 1, SHA1_METATABLE);
     size_t size;
     const unsigned char* input = (const unsigned char*)luaL_checklstring(L, 2, &size);
 
-    if (!mbedtls_sha1_update_ret(pctx, input, size)) {
+    if (mbedtls_sha1_update_ret(*ppctx, input, size) != 0) {
         luaL_error(L, "Error updating hash");
     }
 
@@ -85,9 +80,9 @@ static int crypto_sha1_update(lua_State* L) {
 }
 
 static int crypto_sha1_finalize(lua_State* L) {
-    mbedtls_sha1_context* pctx = (mbedtls_sha1_context*)luaL_checkudata(L, 1, SHA1_METATABLE);
+    mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)luaL_checkudata(L, 1, SHA1_METATABLE);
     unsigned char output[20];
-    if (!mbedtls_sha1_finish_ret(pctx, output)) {
+    if (mbedtls_sha1_finish_ret(*ppctx, output) != 0) {
         luaL_error(L, "Error finalizing hash");
     }
     lua_pushlstring(L, (const char*)output, 20);
@@ -95,38 +90,53 @@ static int crypto_sha1_finalize(lua_State* L) {
 }
 
 static int crypto_sha1_gc(lua_State* L) {
-    mbedtls_sha1_context* pctx = (mbedtls_sha1_context*)luaL_checkudata(L, 1, SHA1_METATABLE);
-    if (!pctx)
+    mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)luaL_checkudata(L, 1, SHA1_METATABLE);
+    if (!*ppctx)
         return 0;
 
-    mbedtls_sha1_free(pctx);
-    luaM_free(L, pctx);
+    mbedtls_sha1_free(*ppctx);
+    luaM_free(L, *ppctx);
     return 0;
 }
 
-int luaopen_crypto(lua_State* L) {
-    luaL_newmetatable(L, SHA1_METATABLE);
-
-    /* set its __gc field */
-    lua_pushstring(L, "__gc");
-    lua_pushcfunction(L, crypto_sha1_gc);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "update");
-    lua_pushcfunction(L, crypto_sha1_update);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "finalize");
-    lua_pushcfunction(L, crypto_sha1_finalize);
-    lua_settable(L, -3);
-
-    return 0;
+const char crypto_hexbytes[] = "0123456789abcdef";
+/**
+  * encoded = crypto.toHex(raw)
+  *
+  *	Encodes raw binary string as hex string.
+  */
+static int crypto_hex_encode(lua_State* L) {
+    size_t len;
+    const char* msg = luaL_checklstring(L, 1, &len);
+    char* out = (char*)luaM_malloc(L, len * 2);
+    int i, j = 0;
+    for (i = 0; i < len; i++) {
+        out[j++] = crypto_hexbytes[msg[i] >> 4];
+        out[j++] = crypto_hexbytes[msg[i] & 0x0F];
+    }
+    lua_pushlstring(L, out, len * 2);
+    luaM_free(L, out);
+    return 1;
 }
+
+static const LUA_REG_TYPE crypto_sha1_hasher_map[] = {
+    {LSTRKEY("update"), LFUNCVAL(crypto_sha1_update)},
+    {LSTRKEY("finalize"), LFUNCVAL(crypto_sha1_finalize)},
+    {LSTRKEY("__gc"), LFUNCVAL(crypto_sha1_gc)},
+    {LSTRKEY("__index"), LROVAL(crypto_sha1_hasher_map)},
+    {LNILKEY, LNILVAL}};
 
 static const LUA_REG_TYPE crypto_map[] = {
     {LSTRKEY("test"), LFUNCVAL(crypto_test)},
     {LSTRKEY("sha1test"), LFUNCVAL(crypto_sha1test)},
     {LSTRKEY("new_hash"), LFUNCVAL(crypto_new_hash)},
+    {LSTRKEY("toHex"), LFUNCVAL(crypto_hex_encode)},
     {LNILKEY, LNILVAL}};
+
+int luaopen_crypto(lua_State* L) {
+    luaL_rometatable(L, SHA1_METATABLE, (void*)crypto_sha1_hasher_map);  // create metatable for crypto.hash
+
+    return 0;
+}
 
 NODEMCU_MODULE(CRYPTO, "crypto", crypto_map, luaopen_crypto);
