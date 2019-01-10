@@ -4,6 +4,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "mbedtls/sha1.h"
+#include "mbedtls/sha256.h"
 #include "module.h"
 
 #define SHA1_METATABLE "crypto.sha1hasher"
@@ -45,34 +46,89 @@ exit:
     return 1;
 }
 
+typedef void (*hash_init_t)(void* ctx);
+typedef int (*hash_starts_ret_t)(void* ctx);
+typedef int (*hash_update_ret_t)(void* ctx, const unsigned char* input, size_t ilen);
+typedef int (*hash_finish_ret_t)(void* ctx, unsigned char* output);
+typedef void (*hash_free_t)(void* ctx);
+
+typedef struct {
+    const char* name;
+    const size_t size;
+    const size_t context_size;
+    const hash_init_t init;
+    const hash_starts_ret_t starts;
+    const hash_update_ret_t update;
+    const hash_finish_ret_t finish;
+    const hash_free_t free;
+} algo_info_t;
+
+typedef struct {
+    void* mbedtls_context;
+    const algo_info_t* ainfo;
+} hash_context_t;
+
+#define NUM_ALGORITHMS 2
+static const algo_info_t algorithms[NUM_ALGORITHMS] = {
+    {
+        "SHA1",
+        20,
+        sizeof(mbedtls_sha1_context),
+        (hash_init_t)mbedtls_sha1_init,
+        (hash_starts_ret_t)mbedtls_sha1_starts_ret,
+        (hash_update_ret_t)mbedtls_sha1_update_ret,
+        (hash_finish_ret_t)mbedtls_sha1_finish_ret,
+        (hash_free_t)mbedtls_sha1_free,
+    },
+    {
+        "SHA256",
+        32,
+        sizeof(mbedtls_sha256_context),
+        (hash_init_t)mbedtls_sha256_init,
+        (hash_starts_ret_t)mbedtls_sha256_starts_ret,
+        (hash_update_ret_t)mbedtls_sha256_update_ret,
+        (hash_finish_ret_t)mbedtls_sha256_finish_ret,
+        (hash_free_t)mbedtls_sha256_free,
+    },
+};
+
 static int crypto_new_hash(lua_State* L) {
     const char* algo = luaL_checkstring(L, 1);
-    if (strcmp("SHA1", algo) != 0) {
+    const algo_info_t* ainfo = NULL;
+
+    for (int i = 0; i < NUM_ALGORITHMS; i++) {
+        if (strcmp(algo, algorithms[i].name) == 0) {
+            ainfo = &algorithms[i];
+            break;
+        }
+    }
+
+    if (ainfo == NULL) {
         luaL_error(L, "Unsupported algorithm: %s", algo);  // returns
     }
-    /* create a userdatum to store a hashing context address*/
-    mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)lua_newuserdata(L, sizeof(mbedtls_sha1_context*));
-    /* set its metatable */
+
+    hash_context_t* phctx = (hash_context_t*)lua_newuserdata(L, sizeof(hash_context_t));
     luaL_getmetatable(L, SHA1_METATABLE);
     lua_setmetatable(L, -2);
-
-    *ppctx = (mbedtls_sha1_context*)luaM_malloc(L, sizeof(mbedtls_sha1_context));
-    if (*ppctx == NULL) {
+    phctx->ainfo = ainfo;
+    phctx->mbedtls_context = luaM_malloc(L, ainfo->context_size);
+    if (phctx->mbedtls_context == NULL) {
         luaL_error(L, "Out of memory allocating context");
     }
-    mbedtls_sha1_init(*ppctx);
-    if (mbedtls_sha1_starts_ret(*ppctx) != 0) {
-        luaL_error(L, "Error starting sha1 context");
+
+    ainfo->init(phctx->mbedtls_context);
+    if (ainfo->starts(phctx->mbedtls_context) != 0) {
+        luaL_error(L, "Error starting context");
     }
     return 1;
 }
 
 static int crypto_sha1_update(lua_State* L) {
-    mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)luaL_checkudata(L, 1, SHA1_METATABLE);
+    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, SHA1_METATABLE);
     size_t size;
     const unsigned char* input = (const unsigned char*)luaL_checklstring(L, 2, &size);
 
-    if (mbedtls_sha1_update_ret(*ppctx, input, size) != 0) {
+    if (phctx->ainfo->update(phctx->mbedtls_context, input, size) != 0) {
         luaL_error(L, "Error updating hash");
     }
 
@@ -80,22 +136,22 @@ static int crypto_sha1_update(lua_State* L) {
 }
 
 static int crypto_sha1_finalize(lua_State* L) {
-    mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)luaL_checkudata(L, 1, SHA1_METATABLE);
-    unsigned char output[20];
-    if (mbedtls_sha1_finish_ret(*ppctx, output) != 0) {
+    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, SHA1_METATABLE);
+    unsigned char output[phctx->ainfo->size];
+    if (phctx->ainfo->finish(phctx->mbedtls_context, output) != 0) {
         luaL_error(L, "Error finalizing hash");
     }
-    lua_pushlstring(L, (const char*)output, 20);
+    lua_pushlstring(L, (const char*)output, phctx->ainfo->size);
     return 1;
 }
 
 static int crypto_sha1_gc(lua_State* L) {
-    mbedtls_sha1_context** ppctx = (mbedtls_sha1_context**)luaL_checkudata(L, 1, SHA1_METATABLE);
-    if (!*ppctx)
+    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, SHA1_METATABLE);
+    if (phctx->mbedtls_context == NULL)
         return 0;
 
-    mbedtls_sha1_free(*ppctx);
-    luaM_free(L, *ppctx);
+    phctx->ainfo->free(phctx->mbedtls_context);
+    luaM_free(L, phctx->mbedtls_context);
     return 0;
 }
 
