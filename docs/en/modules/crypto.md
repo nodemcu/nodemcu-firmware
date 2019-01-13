@@ -14,7 +14,7 @@ This is work in progress, for now only a number of hashing functions are availab
 * SHA384
 * MD5
 
-All are enabled by default. To disable algorithms you don't need, find the "Crypto module hashing algorithms" under the NodeMCU modules section in menuconfig.
+All except MD5 are enabled by default. To disable algorithms you don't need, find the "Crypto module hashing algorithms" under the NodeMCU modules section in menuconfig.
 
 ## crypto.new_hash()
 

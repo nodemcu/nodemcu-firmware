@@ -81,6 +81,8 @@ config LUA_MODULE_CRYPTO
       Includes the crypto module.
 
 menu "Crypto module hashing algorithms"
+  depends on LUA_MODULE_CRYPTO
+
   config CRYPTO_HASH_SHA1
     bool "SHA1"
     default "y"
@@ -98,7 +100,7 @@ menu "Crypto module hashing algorithms"
       Includes the SHA256 and SHA384 hashing algorithms
   config CRYPTO_HASH_MD5
     bool "MD5"
-    default "y"
+    default "n"
     help
       Includes the MD5 hashing algorithm
 endmenu
