@@ -43,7 +43,7 @@ var nodemcu = nodemcu || {};
    * replaces the relative path with an absolute path based on the selected branch.
    */
   function replaceRelativeLinksWithStaticGitHubUrl() {
-    var relativePath = "../../../..";
+    var relativePath = "../../..";
     var gitHubPath = "https://github.com/nodemcu/nodemcu-firmware/tree/" + determineSelectedBranch();
     var gitHubLinks = $("a[href^='" + relativePath + "']").each(function (index) {
       var url = $(this).attr('href');
