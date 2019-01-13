@@ -1,50 +1,15 @@
-#define MBEDTLS_SHA1_ALT
 #include <limits.h>
 #include <string.h>
 #include "lauxlib.h"
 #include "lmem.h"
+#include "mbedtls/md5.h"
 #include "mbedtls/sha1.h"
 #include "mbedtls/sha256.h"
+#include "mbedtls/sha512.h"
 #include "module.h"
+#include "platform.h"
 
-#define SHA1_METATABLE "crypto.sha1hasher"
-
-static int crypto_test(lua_State* L) {
-    lua_Integer v = luaL_checkinteger(L, 1);
-
-    lua_pushinteger(L, v * 2);
-    return 1;
-}
-
-static int crypto_sha1test(lua_State* L) {
-    size_t size;
-    const unsigned char* input = (const unsigned char*)luaL_checklstring(L, 1, &size);
-    unsigned char output[20];
-    int ret;
-
-    mbedtls_sha1_context* ctx = (mbedtls_sha1_context*)luaM_malloc(L, sizeof(mbedtls_sha1_context));
-
-    mbedtls_sha1_init(ctx);
-
-    if ((ret = mbedtls_sha1_starts_ret(ctx)) != 0)
-        goto fail;
-
-    if ((ret = mbedtls_sha1_update_ret(ctx, input, size)) != 0)
-        goto fail;
-
-    if ((ret = mbedtls_sha1_finish_ret(ctx, output)) != 0)
-        goto fail;
-
-    lua_pushlstring(L, (const char*)output, 20);
-    goto exit;
-fail:
-    lua_pushnil(L);
-exit:
-    mbedtls_sha1_free(ctx);
-    luaM_free(L, ctx);
-
-    return 1;
-}
+#define HASH_METATABLE "crypto.sha1hasher"
 
 typedef void (*hash_init_t)(void* ctx);
 typedef int (*hash_starts_ret_t)(void* ctx);
@@ -68,8 +33,26 @@ typedef struct {
     const algo_info_t* ainfo;
 } hash_context_t;
 
-#define NUM_ALGORITHMS 2
-static const algo_info_t algorithms[NUM_ALGORITHMS] = {
+#ifdef CONFIG_CRYPTO_HASH_SHA256
+static int sha256_starts_ret(mbedtls_sha256_context* ctx) {
+    return mbedtls_sha256_starts_ret(ctx, false);
+}
+static int sha224_starts_ret(mbedtls_sha256_context* ctx) {
+    return mbedtls_sha256_starts_ret(ctx, true);
+}
+#endif
+
+#ifdef CONFIG_CRYPTO_HASH_SHA512
+static int sha512_starts_ret(mbedtls_sha512_context* ctx) {
+    return mbedtls_sha512_starts_ret(ctx, false);
+}
+static int sha384_starts_ret(mbedtls_sha512_context* ctx) {
+    return mbedtls_sha512_starts_ret(ctx, true);
+}
+#endif
+
+static const algo_info_t algorithms[] = {
+#ifdef CONFIG_CRYPTO_HASH_SHA1
     {
         "SHA1",
         20,
@@ -80,24 +63,73 @@ static const algo_info_t algorithms[NUM_ALGORITHMS] = {
         (hash_finish_ret_t)mbedtls_sha1_finish_ret,
         (hash_free_t)mbedtls_sha1_free,
     },
+#endif
+#ifdef CONFIG_CRYPTO_HASH_SHA256
     {
         "SHA256",
         32,
         sizeof(mbedtls_sha256_context),
         (hash_init_t)mbedtls_sha256_init,
-        (hash_starts_ret_t)mbedtls_sha256_starts_ret,
+        (hash_starts_ret_t)sha256_starts_ret,
         (hash_update_ret_t)mbedtls_sha256_update_ret,
         (hash_finish_ret_t)mbedtls_sha256_finish_ret,
         (hash_free_t)mbedtls_sha256_free,
     },
+    {
+        "SHA224",
+        32,
+        sizeof(mbedtls_sha256_context),
+        (hash_init_t)mbedtls_sha256_init,
+        (hash_starts_ret_t)sha224_starts_ret,
+        (hash_update_ret_t)mbedtls_sha256_update_ret,
+        (hash_finish_ret_t)mbedtls_sha256_finish_ret,
+        (hash_free_t)mbedtls_sha256_free,
+    },
+#endif
+#ifdef CONFIG_CRYPTO_HASH_SHA512
+    {
+        "SHA512",
+        64,
+        sizeof(mbedtls_sha512_context),
+        (hash_init_t)mbedtls_sha512_init,
+        (hash_starts_ret_t)sha512_starts_ret,
+        (hash_update_ret_t)mbedtls_sha512_update_ret,
+        (hash_finish_ret_t)mbedtls_sha512_finish_ret,
+        (hash_free_t)mbedtls_sha512_free,
+    },
+    {
+        "SHA384",
+        64,
+        sizeof(mbedtls_sha512_context),
+        (hash_init_t)mbedtls_sha512_init,
+        (hash_starts_ret_t)sha384_starts_ret,
+        (hash_update_ret_t)mbedtls_sha512_update_ret,
+        (hash_finish_ret_t)mbedtls_sha512_finish_ret,
+        (hash_free_t)mbedtls_sha512_free,
+    },
+#endif
+#ifdef CONFIG_CRYPTO_HASH_MD5
+    {
+        "MD5",
+        16,
+        sizeof(mbedtls_md5_context),
+        (hash_init_t)mbedtls_md5_init,
+        (hash_starts_ret_t)mbedtls_md5_starts_ret,
+        (hash_update_ret_t)mbedtls_md5_update_ret,
+        (hash_finish_ret_t)mbedtls_md5_finish_ret,
+        (hash_free_t)mbedtls_md5_free,
+    },
+#endif
 };
+
+const int NUM_ALGORITHMS = sizeof(algorithms) / sizeof(algo_info_t);
 
 static int crypto_new_hash(lua_State* L) {
     const char* algo = luaL_checkstring(L, 1);
     const algo_info_t* ainfo = NULL;
 
     for (int i = 0; i < NUM_ALGORITHMS; i++) {
-        if (strcmp(algo, algorithms[i].name) == 0) {
+        if (strcasecmp(algo, algorithms[i].name) == 0) {
             ainfo = &algorithms[i];
             break;
         }
@@ -108,7 +140,7 @@ static int crypto_new_hash(lua_State* L) {
     }
 
     hash_context_t* phctx = (hash_context_t*)lua_newuserdata(L, sizeof(hash_context_t));
-    luaL_getmetatable(L, SHA1_METATABLE);
+    luaL_getmetatable(L, HASH_METATABLE);
     lua_setmetatable(L, -2);
     phctx->ainfo = ainfo;
     phctx->mbedtls_context = luaM_malloc(L, ainfo->context_size);
@@ -123,8 +155,8 @@ static int crypto_new_hash(lua_State* L) {
     return 1;
 }
 
-static int crypto_sha1_update(lua_State* L) {
-    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, SHA1_METATABLE);
+static int crypto_hash_update(lua_State* L) {
+    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, HASH_METATABLE);
     size_t size;
     const unsigned char* input = (const unsigned char*)luaL_checklstring(L, 2, &size);
 
@@ -135,8 +167,8 @@ static int crypto_sha1_update(lua_State* L) {
     return 0;  // no return value
 }
 
-static int crypto_sha1_finalize(lua_State* L) {
-    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, SHA1_METATABLE);
+static int crypto_hash_finalize(lua_State* L) {
+    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, HASH_METATABLE);
     unsigned char output[phctx->ainfo->size];
     if (phctx->ainfo->finish(phctx->mbedtls_context, output) != 0) {
         luaL_error(L, "Error finalizing hash");
@@ -145,8 +177,8 @@ static int crypto_sha1_finalize(lua_State* L) {
     return 1;
 }
 
-static int crypto_sha1_gc(lua_State* L) {
-    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, SHA1_METATABLE);
+static int crypto_hash_gc(lua_State* L) {
+    hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, HASH_METATABLE);
     if (phctx->mbedtls_context == NULL)
         return 0;
 
@@ -175,22 +207,20 @@ static int crypto_hex_encode(lua_State* L) {
     return 1;
 }
 
-static const LUA_REG_TYPE crypto_sha1_hasher_map[] = {
-    {LSTRKEY("update"), LFUNCVAL(crypto_sha1_update)},
-    {LSTRKEY("finalize"), LFUNCVAL(crypto_sha1_finalize)},
-    {LSTRKEY("__gc"), LFUNCVAL(crypto_sha1_gc)},
-    {LSTRKEY("__index"), LROVAL(crypto_sha1_hasher_map)},
+static const LUA_REG_TYPE crypto_hasher_map[] = {
+    {LSTRKEY("update"), LFUNCVAL(crypto_hash_update)},
+    {LSTRKEY("finalize"), LFUNCVAL(crypto_hash_finalize)},
+    {LSTRKEY("__gc"), LFUNCVAL(crypto_hash_gc)},
+    {LSTRKEY("__index"), LROVAL(crypto_hasher_map)},
     {LNILKEY, LNILVAL}};
 
 static const LUA_REG_TYPE crypto_map[] = {
-    {LSTRKEY("test"), LFUNCVAL(crypto_test)},
-    {LSTRKEY("sha1test"), LFUNCVAL(crypto_sha1test)},
     {LSTRKEY("new_hash"), LFUNCVAL(crypto_new_hash)},
     {LSTRKEY("toHex"), LFUNCVAL(crypto_hex_encode)},
     {LNILKEY, LNILVAL}};
 
 int luaopen_crypto(lua_State* L) {
-    luaL_rometatable(L, SHA1_METATABLE, (void*)crypto_sha1_hasher_map);  // create metatable for crypto.hash
+    luaL_rometatable(L, HASH_METATABLE, (void*)crypto_hasher_map);  // create metatable for crypto.hash
 
     return 0;
 }
