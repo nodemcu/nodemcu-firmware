@@ -93,7 +93,8 @@
 //#define CLIENT_SSL_ENABLE
 //#define MD2_ENABLE
 #define SHA2_ENABLE
-#define SSL_BUFFER_SIZE 5120
+#define SSL_BUFFER_SIZE 4096
+#define SSL_MAX_FRAGMENT_LENGTH_CODE	MBEDTLS_SSL_MAX_FRAG_LEN_4096
 
 
 // GPIO_INTERRUPT_ENABLE needs to be defined if your application uses the

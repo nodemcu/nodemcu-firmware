@@ -296,6 +296,9 @@ static pmbedtls_msg mbedtls_msg_new(void)
 			mbedtls_ssl_config_init(&msg->conf);		
 			mbedtls_ctr_drbg_init(&msg->ctr_drbg);
 			mbedtls_entropy_init(&msg->entropy);
+#if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH) && defined(SSL_MAX_FRAGMENT_LENGTH_CODE)
+			mbedtls_ssl_conf_max_frag_len(&msg->conf, SSL_MAX_FRAGMENT_LENGTH_CODE);
+#endif
 		} else{
 			os_free(msg);
 			msg = NULL;
