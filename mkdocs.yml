@@ -4,7 +4,7 @@ repo_url: https://github.com/nodemcu/nodemcu-firmware/
 
 theme:
   name: "readthedocs"
-strict: true
+strict: false
 
 markdown_extensions:
 #http://pythonhosted.org/Markdown/extensions/admonition.html
@@ -21,44 +21,45 @@ extra_javascript:
 
 pages:
 - Overview: 'index.md'
-- English:
-    - Building the firmware: 'en/build.md'
-    - Flashing the firmware: 'en/flash.md'
-    - Filesystem on SD card: 'en/sdcard.md'
-    - Uploading code: 'en/upload.md'
-    - FAQs:
-        - Lua Developer FAQ: 'en/lua-developer-faq.md'
-        - Extension Developer FAQ: 'en/extn-developer-faq.md'
-    - Support: 'en/support.md'
-    - Modules:
-        - 'adc':          'en/modules/adc.md'
-        - 'bit':          'en/modules/bit.md'
-        - 'bthci':        'en/modules/bthci.md'
-        - 'can':          'en/modules/can.md'
-        - 'dac':          'en/modules/dac.md'
-        - 'dht':          'en/modules/dht.md'
-        - 'encoder':      'en/modules/encoder.md'
-        - 'file':         'en/modules/file.md'
-        - 'gpio':         'en/modules/gpio.md'
-        - 'http':         'en/modules/http.md'
-        - 'i2c':          'en/modules/i2c.md'
-        - 'i2s':          'en/modules/i2s.md'
-        - 'ledc':         'en/modules/ledc.md'
-        - 'mqtt':         'en/modules/mqtt.md'
-        - 'net':          'en/modules/net.md'
-        - 'node':         'en/modules/node.md'
-        - 'ow (1-Wire)':  'en/modules/ow.md'
-        - 'qrcodegen':    'en/modules/qrcodegen.md'
-        - 'sdmmc':        'en/modules/sdmmc.md'
-        - 'sigma delta':  'en/modules/sigma-delta.md'
-        - 'sjson':        'en/modules/sjson.md'
-        - 'sodium':       'en/modules/sodium.md'
-        - 'spi':          'en/modules/spi.md'
-        - 'struct':       'en/modules/struct.md'
-        - 'time':         'en/modules/time.md'
-        - 'tmr':          'en/modules/tmr.md'
-        - 'u8g2':         'en/modules/u8g2.md'
-        - 'uart':         'en/modules/uart.md'
-        - 'ucg':          'en/modules/ucg.md'
-        - 'wifi':         'en/modules/wifi.md'
-        - 'ws2812':       'en/modules/ws2812.md'
+- Basics:
+    - Building the firmware: 'build.md'
+    - Flashing the firmware: 'flash.md'
+    - Uploading code: 'upload.md'
+    - Support: 'support.md'
+- FAQs:
+    - Lua Developer FAQ: 'lua-developer-faq.md'
+    - Extension Developer FAQ: 'extn-developer-faq.md'
+- Whitepapers:
+    - Filesystem on SD card: 'sdcard.md'
+- Lua Modules:
+    - 'adc':          'modules/adc.md'
+    - 'bit':          'modules/bit.md'
+    - 'bthci':        'modules/bthci.md'
+    - 'can':          'modules/can.md'
+    - 'dac':          'modules/dac.md'
+    - 'dht':          'modules/dht.md'
+    - 'encoder':      'modules/encoder.md'
+    - 'file':         'modules/file.md'
+    - 'gpio':         'modules/gpio.md'
+    - 'http':         'modules/http.md'
+    - 'i2c':          'modules/i2c.md'
+    - 'i2s':          'modules/i2s.md'
+    - 'ledc':         'modules/ledc.md'
+    - 'mqtt':         'modules/mqtt.md'
+    - 'net':          'modules/net.md'
+    - 'node':         'modules/node.md'
+    - 'ow (1-Wire)':  'modules/ow.md'
+    - 'qrcodegen':    'modules/qrcodegen.md'
+    - 'sdmmc':        'modules/sdmmc.md'
+    - 'sigma delta':  'modules/sigma-delta.md'
+    - 'sjson':        'modules/sjson.md'
+    - 'sodium':       'modules/sodium.md'
+    - 'spi':          'modules/spi.md'
+    - 'struct':       'modules/struct.md'
+    - 'time':         'modules/time.md'
+    - 'tmr':          'modules/tmr.md'
+    - 'u8g2':         'modules/u8g2.md'
+    - 'uart':         'modules/uart.md'
+    - 'ucg':          'modules/ucg.md'
+    - 'wifi':         'modules/wifi.md'
+    - 'ws2812':       'modules/ws2812.md'
