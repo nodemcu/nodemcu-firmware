@@ -12,11 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-
-UP_EXTRACT_DIR = ..
 GEN_LIBS = libfatfs.a
-COMPONENTS_libfatfs = option/liboption.a
-
 endif
 
 ifndef FATFS_INC_DIR

@@ -1,4 +1,3 @@
-
 #define f_chdir    fatfslib_f_chdir
 #define f_chdrive  fatfslib_f_chdrive
 #define f_chmod    fatfslib_f_chmod
