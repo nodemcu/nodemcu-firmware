@@ -226,7 +226,7 @@ static int crypto_hash_gc(lua_State* L) {
     phctx->ainfo->free(phctx->mbedtls_context);
 
     // free the memory allocated to store the mbedtls context:
-    luaM_free(L, phctx->mbedtls_context);
+    luaM_freemem(L, phctx->mbedtls_context, phctx->ainfo->context_size);
     return 0;
 }
 
@@ -236,14 +236,15 @@ static int crypto_toHex(lua_State* L) {
     const char crypto_hexbytes[] = "0123456789abcdef";
     size_t len;
     const char* msg = luaL_checklstring(L, 1, &len);
-    char* out = (char*)luaM_malloc(L, len * 2);
+    size_t hexLen = len * 2;
+    char* out = (char*)luaM_malloc(L, hexLen);
     int i, j = 0;
     for (i = 0; i < len; i++) {
         out[j++] = crypto_hexbytes[msg[i] >> 4];
         out[j++] = crypto_hexbytes[msg[i] & 0x0F];
     }
-    lua_pushlstring(L, out, len * 2);
-    luaM_free(L, out);
+    lua_pushlstring(L, out, hexLen);
+    luaM_freemem(L, out, hexLen);
     return 1;
 }
 
