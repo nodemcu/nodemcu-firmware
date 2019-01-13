@@ -31,7 +31,7 @@ pages:
     - Extension Developer FAQ: 'extn-developer-faq.md'
 - Whitepapers:
     - Filesystem on SD card: 'sdcard.md'
-- Lua Modules:
+- C Modules:
     - 'adc':          'modules/adc.md'
     - 'bit':          'modules/bit.md'
     - 'bthci':        'modules/bthci.md'
