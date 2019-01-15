@@ -266,7 +266,7 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
         if( use_ret == -(MBEDTLS_ERR_ECP_INVALID_KEY) )
             mbedtls_snprintf( buf, buflen, "ECP - Invalid private or public key" );
         if( use_ret == -(MBEDTLS_ERR_ECP_SIG_LEN_MISMATCH) )
-            mbedtls_snprintf( buf, buflen, "ECP - Signature is valid but shorter than the user-supplied length" );
+            mbedtls_snprintf( buf, buflen, "ECP - The buffer contains a valid signature followed by more data" );
         if( use_ret == -(MBEDTLS_ERR_ECP_HW_ACCEL_FAILED) )
             mbedtls_snprintf( buf, buflen, "ECP - ECP hardware accelerator failed" );
 #endif /* MBEDTLS_ECP_C */
@@ -333,7 +333,7 @@ void mbedtls_strerror( int ret, char *buf, size_t buflen )
         if( use_ret == -(MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE) )
             mbedtls_snprintf( buf, buflen, "PK - Unavailable feature, e.g. RSA disabled for RSA key" );
         if( use_ret == -(MBEDTLS_ERR_PK_SIG_LEN_MISMATCH) )
-            mbedtls_snprintf( buf, buflen, "PK - The signature is valid but its length is less than expected" );
+            mbedtls_snprintf( buf, buflen, "PK - The buffer contains a valid signature followed by more data" );
         if( use_ret == -(MBEDTLS_ERR_PK_HW_ACCEL_FAILED) )
             mbedtls_snprintf( buf, buflen, "PK - PK hardware accelerator failed" );
 #endif /* MBEDTLS_PK_C */
