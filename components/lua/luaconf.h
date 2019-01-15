@@ -702,8 +702,18 @@ union luai_Cast { double l_d; long l_l; };
 
 /* this option always works, but may be slow */
 #else
-#define lua_number2int(i,d)	((i)=(int)(d))
-#define lua_number2integer(i,d)	((i)=(lua_Integer)(d))
+
+#ifdef LUA_NUMBER_INTEGRAL
+
+#define lua_number2int(i, d) ((i) = (int)(d))
+#define lua_number2integer(i, d) ((i) = (lua_Integer)(d))
+
+#else // for floating-point builds, cast to a larger integer first to avoid undefined behavior on overflows.
+
+#define lua_number2int(i, d) ((i) = (int)(long long)(d))
+#define lua_number2integer(i, d) ((i) = (lua_Integer)(long long)(d))
+
+#endif // LUA_NUMBER_INTEGRAL
 
 #endif
 
