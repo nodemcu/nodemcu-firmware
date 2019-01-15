@@ -192,7 +192,13 @@
 #define MBEDTLS_CIPHER_C
 #define MBEDTLS_CMAC_C
 #define MBEDTLS_CTR_DRBG_C
-#undef MBEDTLS_DEBUG_C
+
+#ifdef DEVELOP_VERSION
+# define MBEDTLS_DEBUG_C
+#else
+# undef MBEDTLS_DEBUG_C
+#endif
+
 #undef MBEDTLS_DES_C
 #define MBEDTLS_DHM_C
 #define MBEDTLS_ECDH_C
