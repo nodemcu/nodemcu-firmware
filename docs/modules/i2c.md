@@ -1,7 +1,7 @@
 # I²C Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [i2c.c](../../app/modules/i2c.c)|
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [i2c.c](../../components/modules/i2c.c)|
 
 This module supports different interfaces for communicating via I²C protocol. All interfaces can be assigned to arbitrary GPIOs for SCL and SDA and can be operated concurrently.
 

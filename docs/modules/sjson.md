@@ -1,7 +1,7 @@
 # SJSON Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2017-02-01 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [sjson](../../app/modules/sjson.c) |
+| 2017-02-01 | [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [sjson](../../components/modules/sjson.c) |
 
 The JSON support module. Allows encoding and decoding to/from JSON.
 

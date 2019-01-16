@@ -1,7 +1,7 @@
 # Timer Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2014-12-12 | [Zeroday](https://github.com/funshine) |              [dnc40085](https://github.com/dnc40085) | [tmr.c](../../app/modules/tmr.c)|
+| 2014-12-12 | [Zeroday](https://github.com/funshine) |              [dnc40085](https://github.com/dnc40085) | [tmr.c](../../components/modules/tmr.c)|
 
 The tmr module allows access to simple timers. It is aimed at setting up regularly occurring tasks and timing out operations.
 

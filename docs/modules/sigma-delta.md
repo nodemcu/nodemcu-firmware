@@ -1,7 +1,7 @@
 # Sigma-delta Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2017-01-13 | [Arnim Läuger](https://github.com/devsaurus) | [Arnim Läuger](https://github.com/devsaurus) | [sigma_delta.c](../../app/modules/sigma_delta.c)|
+| 2017-01-13 | [Arnim Läuger](https://github.com/devsaurus) | [Arnim Läuger](https://github.com/devsaurus) | [sigma_delta.c](../../components/modules/sigma_delta.c)|
 
 This module provides access to the [sigma-delta](https://en.wikipedia.org/wiki/Delta-sigma_modulation) component. It's a hardware signal generator that can be routed to any of the output GPIOs.
 

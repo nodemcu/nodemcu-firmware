@@ -1,7 +1,7 @@
 # Struct Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2015-02-13 | [Roberto Ierusalimschy](http://www.inf.puc-rio.br/~roberto/struct/), [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [struct.c](../../app/modules/struct.c)|
+| 2015-02-13 | [Roberto Ierusalimschy](http://www.inf.puc-rio.br/~roberto/struct/), [Philip Gladstone](https://github.com/pjsg) | [Philip Gladstone](https://github.com/pjsg) | [struct.c](../../components/modules/struct.c)|
 
 This module offers basic facilities to convert Lua values to and from C structs. Its main functions are `struct.pack`, which packs multiple Lua values into a struct-like string; and `struct.unpack`, which unpacks multiple Lua values from a given struct-like string.
 

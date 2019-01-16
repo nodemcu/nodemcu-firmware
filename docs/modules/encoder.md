@@ -1,7 +1,7 @@
 # encoder Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2016-02-26 | [Terry Ellison](https://github.com/TerryE) | [Terry Ellison](https://github.com/TerryE) | [encoder.c](../../app/modules/encoder.c)|
+| 2016-02-26 | [Terry Ellison](https://github.com/TerryE) | [Terry Ellison](https://github.com/TerryE) | [encoder.c](../../components/modules/encoder.c)|
 
 The encoder modules provides various functions for encoding and decoding byte data.
 
