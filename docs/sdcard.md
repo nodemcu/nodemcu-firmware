@@ -10,7 +10,7 @@ Work is in progress to extend the `file` API with support for the missing featur
 
 ## Enabling FatFs
 
-The FAT file system is implemented by [Chan's FatFs](http://elm-chan.org/fsw/ff/00index_e.html) version [R0.12a](http://elm-chan.org/fsw/ff/ff12a.zip). It's disabled by default to save memory space and has to be enabled before compiling the firmware:
+The FAT file system is implemented by [Chan's FatFs](http://elm-chan.org/fsw/ff/00index_e.html) version [R0.13c](http://elm-chan.org/fsw/ff/ff13c.zip). It's disabled by default to save memory space and has to be enabled before compiling the firmware:
 
 Enable "Support for FAT filesystems" in Comoponent config ---> Platform config and enable the sdmmc module for low-level control.
 

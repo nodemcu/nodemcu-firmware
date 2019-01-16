@@ -153,7 +153,7 @@ int32_t vfs_stat( const char *name, struct vfs_stat *buf )
 
 #ifdef CONFIG_BUILD_FATFS
   if ((fs_fns = myfatfs_realm( normname, &outname, false ))) {
-       vfs_item *r = fs_fns->stat( outname, buf );
+       int32_t r = fs_fns->stat( outname, buf );
     free( outname );
     return r;
   }

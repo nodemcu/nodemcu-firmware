@@ -147,7 +147,7 @@ Write one or more sectors.
 
 #### Parameters
 - `start_sec` first sector to write to
-- `data` string of data to write, must be multiple fo sector size (512&nbsp;bytes)
+- `data` string of data to write, must be multiple of sector size (512&nbsp;bytes)
 
 #### Returns
 `nil`
