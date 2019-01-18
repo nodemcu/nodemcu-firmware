@@ -35,24 +35,5 @@ hashobj = crypto.new_hash("SHA1")
 hashobj:update("FirstString"))
 hashobj:update("SecondString"))
 digest = hashobj:finalize()
-print(crypto.toHex(digest))
-```
-
-## crypto.toHex()
-
-Provides an ASCII hex representation of a (binary) Lua string. Each byte in the input string is represented as two hex characters in the output.
-
-#### Syntax
-`hexstr = crypto.toHex(binary)`
-
-#### Parameters
-`binary` input string to get hex representation for
-
-#### Returns
-An ASCII hex string.
-
-#### Example
-```lua
-print(crypto.toHex("\001\002\003"))
--- prints 010203
+print(encoder.toHex(digest))
 ```

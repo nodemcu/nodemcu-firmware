@@ -230,24 +230,6 @@ static int crypto_hash_gc(lua_State* L) {
     return 0;
 }
 
-// crypto_hex_encode (LUA: crypto.toHex(data) takes a binary string
-// and returns its hexadecimal representation as a string
-static int crypto_toHex(lua_State* L) {
-    const char crypto_hexbytes[] = "0123456789abcdef";
-    size_t len;
-    const char* msg = luaL_checklstring(L, 1, &len);
-    size_t hexLen = len * 2;
-    char* out = (char*)luaM_malloc(L, hexLen);
-    int i, j = 0;
-    for (i = 0; i < len; i++) {
-        out[j++] = crypto_hexbytes[msg[i] >> 4];
-        out[j++] = crypto_hexbytes[msg[i] & 0x0F];
-    }
-    lua_pushlstring(L, out, hexLen);
-    luaM_freemem(L, out, hexLen);
-    return 1;
-}
-
 // The following table defines methods of the hasher object
 static const LUA_REG_TYPE crypto_hasher_map[] = {
     {LSTRKEY("update"), LFUNCVAL(crypto_hash_update)},
@@ -259,7 +241,6 @@ static const LUA_REG_TYPE crypto_hasher_map[] = {
 // This table defines the functions of the crypto module:
 static const LUA_REG_TYPE crypto_map[] = {
     {LSTRKEY("new_hash"), LFUNCVAL(crypto_new_hash)},
-    {LSTRKEY("toHex"), LFUNCVAL(crypto_toHex)},
     {LNILKEY, LNILVAL}};
 
 // luaopen_crypto is the crypto module initialization function
