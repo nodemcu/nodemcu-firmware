@@ -16,7 +16,8 @@ static uint8 *toBase64 ( lua_State* L, const uint8 *msg, size_t *len){
   if (!n)  // handle empty string case 
     return NULL;
 
-  uint8 * q, *out = (uint8 *)luaM_malloc(L, (n + 2) / 3 * 4);
+  int buf_size = (n + 2) / 3 * 4; // estimated encoded size
+  uint8 * q, *out = (uint8 *)luaM_malloc(L, buf_size);
   uint8 bytes64[sizeof(b64)];
   c_memcpy(bytes64, b64, sizeof(b64));   //Avoid lots of flash unaligned fetches
   
@@ -30,6 +31,7 @@ static uint8 *toBase64 ( lua_State* L, const uint8 *msg, size_t *len){
     *q++ = (i + 2 < n) ? bytes64[(c & 63)] : BASE64_PADDING;
   }
   *len = q - out;
+  out = luaM_realloc_(L, out, buf_size, *len); //reallocate to actual encoded length
   return out;
 }
 
@@ -55,7 +57,8 @@ static uint8 *fromBase64 ( lua_State* L, const uint8 *enc_msg, size_t *len){
  for (i = 0; i < n - pad; i++) if (!ISBASE64(enc_msg[i])) luaL_error (L, "Invalid base64 string");
   unbytes64[BASE64_PADDING] = 0;
 
-  msg = q = (uint8 *) luaM_malloc(L, 1+ (3 * n / 4)); 
+  int buf_size=1+ (3 * n / 4); // estimate decoded length
+  msg = q = (uint8 *) luaM_malloc(L, buf_size); 
   for (i = 0, p = enc_msg; i<blocks; i++)  {
     uint8 a = unbytes64[*p++]; 
     uint8 b = unbytes64[*p++]; 
@@ -73,6 +76,7 @@ static uint8 *fromBase64 ( lua_State* L, const uint8 *enc_msg, size_t *len){
     if (pad == 1) *q++ = (b << 4) | (unbytes64[*p] >> 2);
   }
   *len = q - msg;
+  msg = luaM_realloc_(L, msg, buf_size, *len); //reallocate to actual decoded length
   return msg;
 }
 
@@ -82,23 +86,25 @@ static inline uint8 to_hex_nibble(uint8 b) {
     
 static uint8 *toHex ( lua_State* L, const uint8 *msg, size_t *len){
   int i, n = *len;
-  uint8 *q, *out = (uint8 *)luaM_malloc(L, n * 2);
+  *len <<= 1;
+  uint8 *q, *out = (uint8 *)luaM_malloc(L, *len);
   for (i = 0, q = out; i < n; i++) {
     *q++ = to_hex_nibble(msg[i] >> 4);
     *q++ = to_hex_nibble(msg[i] & 0xf);
   }
-  *len = 2*n; 
   return out;
 }
 
 static uint8 *fromHex ( lua_State* L, const uint8 *msg, size_t *len){
   int i, n = *len;
   const uint8 *p;
-  uint8 b, *q, *out = (uint8 *)luaM_malloc(L, n * 2);
-  uint8 c;
   
   if (n &1)
     luaL_error (L, "Invalid hex string");
+  
+  *len >>= 1;
+  uint8 b, *q, *out = (uint8 *)luaM_malloc(L, *len);
+  uint8 c = 0;
  
   for (i = 0, p = msg, q = out; i < n; i++) {
      if (*p >= '0' && *p <= '9') {
@@ -108,6 +114,7 @@ static uint8 *fromHex ( lua_State* L, const uint8 *msg, size_t *len){
      } else if (*p >= 'A' && *p <= 'F') {
        b = *p++ - ('A' - 10);
      } else {
+       luaM_freearray(L, out, *len, uint8);
        luaL_error (L, "Invalid hex string");
      }
      if ((i&1) == 0) {
@@ -116,7 +123,6 @@ static uint8 *fromHex ( lua_State* L, const uint8 *msg, size_t *len){
        *q++ = c+ b;
      }    
   }
-  *len = n>>1; 
   return out;
 }
 
@@ -125,14 +131,13 @@ static uint8 *fromHex ( lua_State* L, const uint8 *msg, size_t *len){
 // Where input string maybe empty, but not nil
 // Hence these all call the do_func wrapper
 static int do_func (lua_State *L, uint8 * (*conv_func)(lua_State *, const uint8 *, size_t *)) {
-  size_t l;
-  const uint8 *input = luaL_checklstring(L, 1, &l);
-//  luaL_argcheck(L, l>0, 1, "input string empty");
-  uint8 *output = conv_func(L, input, &l);
+  size_t len;
+  const uint8 *input = luaL_checklstring(L, 1, &len);
+  uint8 *output = conv_func(L, input, &len);
   
   if (output) {
-    lua_pushlstring(L, output, l);
-    luaM_free(L, output);
+    lua_pushlstring(L, output, len);
+    luaM_freearray(L, output, len, uint8);
   } else {
     lua_pushstring(L, "");
   }
