@@ -78,5 +78,5 @@ Decoded string of hex representation.
 
 #### Example
 ```lua
-print(encoder.fromHex("6a6a6a")))
+print(encoder.fromHex("6a6a6a"))
 ```
