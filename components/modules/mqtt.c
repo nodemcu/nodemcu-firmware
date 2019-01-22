@@ -553,7 +553,7 @@ static int mqtt_lwt( lua_State* L )
 
 	lua_pop( L, n );
 	NODE_DBG("Set LWT topic '%s', qos %d, retain %d, len %d\n",
-			mqtt_cfg->lwt_topic, mqtt_cfg->config.lwt_qos, mqtt_cfg->config.lwt_retain, mqtt_cfg->lwt_msg_len);
+			mqtt_cfg->lwt_topic, mqtt_cfg->config.lwt_qos, mqtt_cfg->config.lwt_retain, mqtt_cfg->config.lwt_msg_len);
 	return 0;
 }
 
