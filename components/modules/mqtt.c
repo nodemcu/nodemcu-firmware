@@ -446,6 +446,9 @@ static int mqtt_connect( lua_State* L )
 	const char * host = luaL_checkstring( L, 2 );
 	int port = 1883;
 	int n = 3;
+	const char * cert_pem = NULL;
+	const char * client_cert_pem = NULL;
+	const char * client_key_pem = NULL;
 
 	if( lua_isnumber( L, n ) )
 	{
@@ -462,6 +465,24 @@ static int mqtt_connect( lua_State* L )
 	if( lua_isnumber( L, n ) )
 	{
 		reconnect = !!luaL_checkinteger( L, n );
+		n++;
+	}
+
+	if( lua_isstring( L, n ) )
+	{
+		cert_pem = luaL_checkstring( L, n );
+		n++;
+	}
+
+	if( lua_isstring( L, n ) )
+	{
+		client_cert_pem = luaL_checkstring( L, n );
+		n++;
+	}
+	
+	if( lua_isstring( L, n ) )
+	{
+		client_key_pem  = luaL_checkstring( L, n );
 		n++;
 	}
 
@@ -482,6 +503,9 @@ static int mqtt_connect( lua_State* L )
 	lua_pop( L, n - 2 ); //pop parameters
 
 	strncpy(mqtt_cfg->host, host, MQTT_MAX_HOST_LEN );
+	if(cert_pem) mqtt_cfg->config.cert_pem = cert_pem;
+	if(client_cert_pem) mqtt_cfg->config.client_cert_pem = client_cert_pem;
+	if(client_key_pem) mqtt_cfg->config.client_key_pem = client_key_pem;
 	mqtt_cfg->config.port = port;
 
 	mqtt_cfg->config.disable_auto_reconnect = (reconnect == 0);
