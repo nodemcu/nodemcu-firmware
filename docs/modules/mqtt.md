@@ -92,13 +92,16 @@ none
 Connects to the broker specified by the given host, port, and secure options.
 
 #### Syntax
-`mqtt:connect(host[, port[, secure[, autoreconnect]]][, function(client)[, function(client, reason)]])`
+`mqtt:connect(host[, port[, secure[, autoreconnect]]][, caCert[, clientCert, clientKey]][, function(client)[, function(client, reason)]])`
 
 #### Parameters
 - `host` host, domain or IP (string)
 - `port` broker port (number), default 1883
 - `secure` 0/1 for `false`/`true`, default 0. Take note of constraints documented in the [net module](net.md).
 - `autoreconnect` 0/1 for `false`/`true`, default 0. This option is *deprecated*.
+- `caCert` CA certificate to verify the server, to be used with secure=1
+- `clientCert` client certificate for client authentication, to be used with secure=1, must be used together with `clientKey`
+- `clientKey` client private key for client authentication, to be used with secure=1, must be used together with `clientCert`
 - `function(client)` callback function for when the connection was established
 - `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
 
