@@ -1,3 +1,6 @@
+
+summary ?= @true
+
 CC  =gcc
 
 SRCS=\
