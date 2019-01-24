@@ -38,5 +38,7 @@
 #include <stdbool.h>
 
 bool luaL_optbool (lua_State *L, int idx, bool def);
+int luaL_weak_ref(lua_State* L);
+void luaL_push_weak_ref(lua_State* L, int ref);
 
 #endif

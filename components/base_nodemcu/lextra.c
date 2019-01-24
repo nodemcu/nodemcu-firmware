@@ -31,6 +31,7 @@
  * @author Johny Mattsson <jmattsson@dius.com.au>
  */
 #include "lextra.h"
+#include "lauxlib.h"
 
 bool luaL_optbool (lua_State *L, int idx, bool def)
 {
@@ -38,4 +39,40 @@ bool luaL_optbool (lua_State *L, int idx, bool def)
     return lua_toboolean (L, idx);
   else
     return def;
+}
+
+
+static int weak_mt_ref = LUA_NOREF;
+
+int luaL_weak_ref(lua_State* L)
+{
+    lua_newtable(L); // new_table={}
+
+    if (weak_mt_ref == LUA_NOREF) {
+      lua_newtable(L); // metatable={}            
+      lua_pushliteral(L, "__mode");
+      lua_pushliteral(L, "v");
+      lua_rawset(L, -3); // metatable._mode='v'
+      lua_pushvalue(L, -1);
+      weak_mt_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    } else {
+      lua_rawgeti(L, LUA_REGISTRYINDEX, weak_mt_ref);
+    }
+    lua_setmetatable(L, -2); // setmetatable(new_table,metatable)
+
+    lua_pushvalue(L,-2); // push the previous top of stack
+    lua_rawseti(L,-2,1); // new_table[1]=original value on top of the stack
+
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX); // this pops the new_table
+    lua_pop(L,1); // pop the ref
+    return ref;
+}
+
+void luaL_push_weak_ref(lua_State* L, int ref){
+    if (ref <= 0){
+        luaL_error(L, "invalid weak ref");
+    }
+    lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
+    lua_rawgeti(L, -1, 1);
+    lua_remove(L,-2);
 }
