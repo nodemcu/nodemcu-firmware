@@ -1,7 +1,7 @@
 // Module for interfacing with an MQTT broker
 #define CONFIG_NODE_DEBUG 1
 #include "lauxlib.h"
-#include "lextra.h"
+#include "lnodeaux.h"
 #include "lmem.h"
 #include "module.h"
 #include "platform.h"

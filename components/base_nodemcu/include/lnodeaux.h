@@ -1,6 +1,6 @@
 /*
- * Copyright 2016 Dius Computing Pty Ltd. All rights reserved.
- *
+ * Copyright (c) 2019 the NodeMCU authors. All rights reserved
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -28,14 +28,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @author Johny Mattsson <jmattsson@dius.com.au>
+  * @author Javier Peletier <jm@epiclabs.io>
  */
-#include "lextra.h"
 
-bool luaL_optbool (lua_State *L, int idx, bool def)
-{
-  if (lua_isboolean (L, idx))
-    return lua_toboolean (L, idx);
-  else
-    return def;
-}
+#ifndef _NODEMCU_LNODEAUX_H_
+#define _NODEMCU_LNODEAUX_H_
+
+#include "lua.h"
+
+// lua_ref_t represents a reference to a lua object in the registry
+typedef int lua_ref_t;
+
+bool luaL_optbool(lua_State* L, int idx, bool def);
+
+//luaL_weak_ref pops an item from the stack and returns a weak reference to it
+lua_ref_t luaL_weak_ref(lua_State* L);
+
+//luaL_push_weak takes a weak reference and pushes the original item on the stack
+void luaL_push_weak_ref(lua_State* L, lua_ref_t ref);
+
+// alloc_string creates a dynamically-allocated string copying it
+// from a lua stack position
+char* alloc_string(lua_State* L, int idx, int max_length);
+
+// free_string deallocates memory of a string allocated with alloc_string
+void free_string(lua_State* L, char* st);
+
+// unset_ref unpins a reference to a lua object in the registry
+void unset_ref(lua_State* L, lua_ref_t* ref);
+
+// set_ref pins a reference to a lua object, provided a registry
+// or stack position
+void set_ref(lua_State* L, int idx, lua_ref_t* ref);
+
+#endif
