@@ -17,7 +17,7 @@
 #define MQTT_MAX_LWT_TOPIC          32
 #define MQTT_MAX_LWT_MSG            128
 
-typedef struct {
+struct mqtt_context {
 	esp_mqtt_client_handle_t client;
 	char* client_id;
 	char* username;
@@ -42,8 +42,10 @@ typedef struct {
 		};
 		int event_cb[3];
 	};
+	struct mqtt_context ** pcontext;
+};
 
-} mqtt_context_t;
+typedef struct mqtt_context mqtt_context_t;
 
 const char *const eventnames[] = {"connect", "message", "offline", NULL};
 
@@ -137,7 +139,13 @@ static void event_free(esp_mqtt_event_handle_t ev)
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 {
-	if ((mqtt_context_t*)event->user_context)
+	mqtt_context_t** pcontext = (mqtt_context_t **) event->user_context;
+	NODE_DBG("event_handler: mqtt_context*: %p\n", *pcontext);
+
+	if (*pcontext == NULL) {
+		NODE_DBG("caught stray event: %d\n", event->event_id);
+		return ESP_OK;
+	}
 
 	NODE_DBG("mqtt_event_handler: %d\n",event->event_id);
     switch (event->event_id) {
@@ -178,7 +186,7 @@ static void _connected_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t) param;
-	mqtt_context_t* mqtt_context = (mqtt_context_t *) event->user_context;
+	mqtt_context_t* mqtt_context = *(mqtt_context_t **) event->user_context;
 
 	NODE_DBG("CB:connect: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
 	event_free(event);
@@ -186,7 +194,11 @@ static void _connected_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	int top = lua_gettop(L);
-	lua_checkstack(L, 2);
+	lua_checkstack(L, 3);
+
+	// pin our object by putting a reference on the stack,
+	// so it can't be garbage collected during user callback execution.
+	luaL_push_weak_ref(L, mqtt_context->selfref); 
 
 	if(mqtt_context->connect_ok_cb > 0)
 	{
@@ -224,24 +236,28 @@ static void _disconnected_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t) param;
-	mqtt_context_t* mqtt_context = (mqtt_context_t *) event->user_context;
-
+	mqtt_context_t* mqtt_context = *(mqtt_context_t **) event->user_context;
 	NODE_DBG("CB:disconnect: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
+
+	event_free(event);
 
 	if(mqtt_context->client == NULL) {
 		NODE_DBG("MQTT Client was NULL on a disconnect event\n");
 	}
 
-	esp_mqtt_client_destroy(mqtt_context->client);
-	mqtt_context->client = NULL;
+ 	esp_mqtt_client_destroy(mqtt_context->client);
+	mqtt_context->client = NULL; 
 
-	event_free(event);
 	if (mqtt_context->selfref <= 0)
 		return;
 
 	int top = lua_gettop(L);
-	lua_checkstack(L, 3);
-
+	lua_checkstack(L, 4);
+	
+	// pin our object by putting a reference on the stack,
+	// so it can't be garbage collected during user callback execution.
+	luaL_push_weak_ref(L, mqtt_context->selfref); 
+	
 	if(mqtt_context->connect_nok_cb > 0)
 	{
 		lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->connect_nok_cb);
@@ -257,8 +273,8 @@ static void _disconnected_cb(task_param_t param, task_prio_t prio)
 		unset_ref(L, &mqtt_context->connect_ok_cb);
 		unset_ref(L, &mqtt_context->connect_nok_cb);
 	}
-	lua_settop(L, top);
-	
+
+
 	// now we check for the standard offline callback registered with 'mqtt:on()'
 	if( mqtt_context->offline_cb > 0)
 	{
@@ -269,7 +285,9 @@ static void _disconnected_cb(task_param_t param, task_prio_t prio)
 		if( res != 0 ) 
 			NODE_DBG("CB:disconnect: Error when calling offline callback - (%d) %s\n", res, luaL_checkstring( L, -1 ) );
 	}
+
 	lua_settop(L, top);
+	NODE_DBG("CB:disconnect exit\n");
 }
 
 static void _subscribe_cb(task_param_t param, task_prio_t prio)
@@ -279,7 +297,7 @@ static void _subscribe_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t) param;
-	mqtt_context_t* mqtt_context = (mqtt_context_t *) event->user_context;
+	mqtt_context_t* mqtt_context = *(mqtt_context_t **) event->user_context;
 
 	NODE_DBG("CB:subscribe: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
 	event_free(event);
@@ -288,7 +306,11 @@ static void _subscribe_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	int top = lua_gettop(L);
-	lua_checkstack(L, 2);
+	lua_checkstack(L, 3);
+
+	// pin our object by putting a reference on the stack,
+	// so it can't be garbage collected during user callback execution.
+	luaL_push_weak_ref(L, mqtt_context->selfref); 
 
 	if( mqtt_context->subscribe_ok_cb > 0) {
 		NODE_DBG("CB:subscribe: calling registered one-shot subscribe callback\n");
@@ -312,7 +334,7 @@ static void _publish_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t) param;
-	mqtt_context_t* mqtt_context = (mqtt_context_t *) event->user_context;
+	mqtt_context_t* mqtt_context = *(mqtt_context_t **) event->user_context;
 
 	NODE_DBG("CB:publish: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
 	event_free(event);
@@ -321,7 +343,11 @@ static void _publish_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	int top = lua_gettop(L);
-	lua_checkstack(L, 2);
+	lua_checkstack(L, 3);
+
+	// pin our object by putting a reference on the stack,
+	// so it can't be garbage collected during user callback execution.
+	luaL_push_weak_ref(L, mqtt_context->selfref); 	
 
 	if( mqtt_context->publish_ok_cb > 0) {
 		NODE_DBG("CB:publish: calling registered one-shot publish callback\n");
@@ -343,7 +369,7 @@ static void _unsubscribe_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t) param;
-	mqtt_context_t* mqtt_context = (mqtt_context_t *) event->user_context;
+	mqtt_context_t* mqtt_context = *(mqtt_context_t **) event->user_context;
 
 	NODE_DBG("CB:unsubscribe: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
 	event_free(event);
@@ -352,7 +378,11 @@ static void _unsubscribe_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	int top = lua_gettop(L);
-	lua_checkstack(L, 2);
+	lua_checkstack(L, 3);
+
+	// pin our object by putting a reference on the stack,
+	// so it can't be garbage collected during user callback execution.
+	luaL_push_weak_ref(L, mqtt_context->selfref); 
 
 	if( mqtt_context->unsubscribe_ok_cb > 0) {
 		NODE_DBG("CB:unsubscribe: calling registered one-shot unsubscribe callback\n");
@@ -374,7 +404,7 @@ static void _data_cb(task_param_t param, task_prio_t prio)
 		return;
 
 	esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t) param;
-	mqtt_context_t* mqtt_context = (mqtt_context_t *) event->user_context;
+	mqtt_context_t* mqtt_context = *(mqtt_context_t **) event->user_context;
 
 	NODE_DBG("CB:data: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
 	
@@ -384,16 +414,20 @@ static void _data_cb(task_param_t param, task_prio_t prio)
 	}
 
 	int top = lua_gettop(L);
-	lua_checkstack(L, 4);
+	lua_checkstack(L, 5);
+
+	// pin our object by putting a reference on the stack,
+	// so it can't be garbage collected during user callback execution.
+	luaL_push_weak_ref(L, mqtt_context->selfref); 
 
 	if( mqtt_context->message_cb > 0) {
 		lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->message_cb);
 		int numArg = 2;
 		luaL_push_weak_ref(L, mqtt_context->selfref);
-		lua_pushstring( L, event->topic );
+		lua_pushlstring( L, event->topic, event->topic_len);
 		if( event->data != NULL )
 		{
-			lua_pushstring( L, event->data );
+			lua_pushlstring(L, event->data, event->data_len);
 			numArg++;
 		}
 		int res = lua_pcall( L, numArg, 0, 0 ); //call the messagecallback
@@ -472,7 +506,9 @@ static int mqtt_connect( lua_State* L )
 		n++;
 	}
 
-	config.user_context = mqtt_context;
+	NODE_DBG("connect: mqtt_context*: %p\n", mqtt_context);
+	
+	config.user_context = mqtt_context->pcontext;
 	config.event_handle = mqtt_event_handler;
 	config.client_id = mqtt_context->client_id;
 	config.lwt_msg = mqtt_context->lwt_msg;
@@ -519,6 +555,10 @@ static int mqtt_close( lua_State* L )
 static int mqtt_lwt( lua_State* L )
 {
 	mqtt_context_t * mqtt_context = (mqtt_context_t*)luaL_checkudata(L, 1, "mqtt.mt");
+	
+	free_string(L, mqtt_context->lwt_topic);
+	free_string(L, mqtt_context->lwt_msg);
+
 	mqtt_context->lwt_topic = alloc_string(L, 2, MQTT_MAX_LWT_TOPIC);
 	mqtt_context->lwt_msg = alloc_string(L, 3, MQTT_MAX_LWT_MSG);
 
@@ -546,6 +586,7 @@ static int mqtt_publish( lua_State * L )
 {
 	mqtt_context_t * mqtt_context = (mqtt_context_t*)luaL_checkudata(L, 1, "mqtt.mt");
 	esp_mqtt_client_handle_t client = mqtt_context->client;
+
 	if (client == NULL){
 		lua_pushboolean(L, false); // return false (error)
 		return 1;
@@ -553,7 +594,7 @@ static int mqtt_publish( lua_State * L )
 
 	const char * topic = luaL_checkstring( L, 2 );
 	size_t data_size;
-	const char * data  = luaL_checklstring(L, 3,&data_size);
+	const char * data  = luaL_checklstring(L, 3, &data_size);
 	int qos            = luaL_checkint( L, 4 );
 	int retain         = luaL_checkint( L, 5 );
 
@@ -575,6 +616,7 @@ static int mqtt_subscribe( lua_State* L )
 {
 	mqtt_context_t * mqtt_context = (mqtt_context_t*)luaL_checkudata(L, 1, "mqtt.mt");
 	esp_mqtt_client_handle_t client = mqtt_context->client;
+
 	if (client == NULL){
 		lua_pushboolean(L, false); // return false (error)
 		return 1;
@@ -587,8 +629,10 @@ static int mqtt_subscribe( lua_State* L )
 		set_ref(L, 4, &mqtt_context->subscribe_ok_cb);
 
 	NODE_DBG("MQTT subscribe client %p, topic %s\n", client, topic);
+
 	esp_err_t err = esp_mqtt_client_subscribe(client, topic, qos);
 	lua_pushboolean(L, err == ESP_OK);
+	
 	return 1;
 }
 
@@ -598,6 +642,7 @@ static int mqtt_unsubscribe( lua_State* L )
 {
 	mqtt_context_t * mqtt_context = (mqtt_context_t*)luaL_checkudata(L, 1, "mqtt.mt");
 	esp_mqtt_client_handle_t client = mqtt_context->client;
+
 	if (client == NULL){
 		lua_pushboolean(L, false); // return false (error)
 		return 1;
@@ -608,21 +653,28 @@ static int mqtt_unsubscribe( lua_State* L )
 		set_ref(L, 3, &mqtt_context->unsubscribe_ok_cb);
 
 	NODE_DBG("MQTT unsubscribe client %p, topic %s\n", client, topic);
-	esp_err_t err = esp_mqtt_client_unsubscribe(client, topic);
 
+	esp_err_t err = esp_mqtt_client_unsubscribe(client, topic);
 	lua_pushboolean(L, err == ESP_OK);
+
 	return 1;
 }
 
 static int mqtt_delete( lua_State* L )
 {
+	NODE_DBG("mqtt_delete\n");
 	mqtt_context_t * mqtt_context = (mqtt_context_t*)luaL_checkudata(L, 1, "mqtt.mt");
 
 	if( mqtt_context->client != NULL )
 	{
-		NODE_DBG("stopping MQTT client %p\n", mqtt_context->client);
-		esp_mqtt_client_destroy( mqtt_context->client );
+		NODE_DBG("stopping MQTT client %p; *mqtt_context->pcontext=%p\n", mqtt_context->client, *(mqtt_context->pcontext));
+		*(mqtt_context->pcontext) = NULL;
+		esp_mqtt_client_destroy(mqtt_context->client);
+		NODE_DBG("after destroy. *mqtt_context->pcontext=%p\n", *(mqtt_context->pcontext));
 	}
+
+	NODE_DBG("freeing up mem\n");
+	luaM_freemem(L, mqtt_context->pcontext, sizeof(mqtt_context_t*));
 
 	unset_ref(L, &mqtt_context->connect_ok_cb);
 	unset_ref(L, &mqtt_context->connect_nok_cb);
@@ -642,6 +694,8 @@ static int mqtt_delete( lua_State* L )
 	free_string(L, mqtt_context->lwt_msg);
 	free_string(L, mqtt_context->lwt_topic);
 	
+	NODE_DBG("MQTT client garbage collected\n");
+
 	return 0;
 }
 
@@ -663,6 +717,9 @@ static int mqtt_new( lua_State* L )
 	lua_pushvalue(L, -1);
 	mqtt_context->selfref = luaL_weak_ref(L);
 
+	mqtt_context->pcontext = luaM_malloc(L, sizeof(mqtt_context_t*));
+	*(mqtt_context->pcontext) = mqtt_context;
+	
 	mqtt_context->client_id = alloc_string(L, 1, MQTT_MAX_CLIENT_LEN);
 	NODE_DBG("MQTT client id %s\n", mqtt_context->client_id);
 
