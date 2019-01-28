@@ -1,7 +1,7 @@
 // Module for interfacing with an MQTT broker
 #include "lauxlib.h"
-#include "lnodeaux.h"
 #include "lmem.h"
+#include "lnodeaux.h"
 #include "module.h"
 #include "platform.h"
 #include "task/task.h"
@@ -54,7 +54,7 @@ const char* const eventnames[] = {"connect", "message", "offline", NULL};
 
 typedef struct mqtt_context mqtt_context_t;
 
-// rtos task handlers for the different events
+// nodemcu task handlers for the different events
 task_handle_t connected_task_id = 0;
 task_handle_t disconnected_task_id = 0;
 task_handle_t publish_task_id = 0;
@@ -679,8 +679,10 @@ static int mqtt_delete(lua_State* L) {
     if (mqtt_context->client != NULL) {
         NODE_DBG("stopping MQTT client %p; *mqtt_context->pcontext=%p\n", mqtt_context->client, *(mqtt_context->pcontext));
         *(mqtt_context->pcontext) = NULL;  // unlink mqtt_client's user_context to this object
-                                           // destroy the client. This is a blocking call. If a connection request was ongoing this will block and
-                                           // a disconnect callback could be fired.
+
+        // destroy the client. This is a blocking call.
+        // If a connection request was ongoing this will block and
+        // a disconnect callback could be fired.
         esp_mqtt_client_destroy(mqtt_context->client);
     }
 
@@ -748,7 +750,7 @@ static int mqtt_new(lua_State* L) {
     luaL_getmetatable(L, MQTT_METATABLE);
     lua_setmetatable(L, -2);
 
-    if (connected_task_id == 0) {  // if this is the first time, create rtos tasks for every event type
+    if (connected_task_id == 0) {  // if this is the first time, create nodemcu tasks for every event type
         connected_task_id = task_get_id(task_connected);
         disconnected_task_id = task_get_id(task_disconnected);
         publish_task_id = task_get_id(task_publish);

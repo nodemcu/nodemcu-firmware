@@ -46,7 +46,7 @@ lua_ref_t luaX_weak_ref(lua_State* L);
 //luaL_push_weak takes a weak reference and pushes the original item on the stack
 void luaX_push_weak_ref(lua_State* L, lua_ref_t ref);
 
-// luaX_alloc_string creates a dynamically-allocated string copying it
+// luaX_alloc_string creates a dynamically-allocated null-terminated string copying it
 // from a lua stack position
 char* luaX_alloc_string(lua_State* L, int idx, int max_length);
 

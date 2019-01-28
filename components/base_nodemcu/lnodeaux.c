@@ -28,7 +28,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @author Johny Mattsson <jmattsson@dius.com.au>
  * @author Javier Peletier <jm@epiclabs.io>
  */
 #include "lnodeaux.h"
@@ -77,7 +76,7 @@ void luaX_push_weak_ref(lua_State* L, lua_ref_t ref) {
     // Retrieved item remains on top, as output of this function.
 }
 
-// luaX_alloc_string creates a dynamically-allocated string copying it
+// luaX_alloc_string creates a dynamically-allocated null-terminated string copying it
 // from a lua stack position
 char* luaX_alloc_string(lua_State* L, int idx, int max_length) {
     const char* lua_st = luaL_checkstring(L, idx);  //retrieve string from lua
