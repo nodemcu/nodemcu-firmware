@@ -1,5 +1,4 @@
 // Module for interfacing with an MQTT broker
-#define CONFIG_NODE_DEBUG 1
 #include "lauxlib.h"
 #include "lnodeaux.h"
 #include "lmem.h"
@@ -416,7 +415,6 @@ static void task_data_received(task_param_t param, task_prio_t prio) {
     mqtt_context_t* mqtt_context = *(mqtt_context_t**)event->user_context;
 
     NODE_DBG("CB:data: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
-    event_free(event);  // free the event copy memory
 
     if (mqtt_context->self <= 0) {  // if this reference is unset something weird is happening
         NODE_DBG("CB:data: Received event on a collected object\n");
