@@ -28,7 +28,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
-  * @author Javier Peletier <jm@epiclabs.io>
+ * @author Javier Peletier <jm@epiclabs.io>
+ * @brief This library exports useful functions to handle lua registry refs and strings
  */
 
 #ifndef _NODEMCU_LNODEAUX_H_
@@ -39,26 +40,24 @@
 // lua_ref_t represents a reference to a lua object in the registry
 typedef int lua_ref_t;
 
-bool luaL_optbool(lua_State* L, int idx, bool def);
-
-//luaL_weak_ref pops an item from the stack and returns a weak reference to it
-lua_ref_t luaL_weak_ref(lua_State* L);
+//luaX_weak_ref pops an item from the stack and returns a weak reference to it
+lua_ref_t luaX_weak_ref(lua_State* L);
 
 //luaL_push_weak takes a weak reference and pushes the original item on the stack
-void luaL_push_weak_ref(lua_State* L, lua_ref_t ref);
+void luaX_push_weak_ref(lua_State* L, lua_ref_t ref);
 
-// alloc_string creates a dynamically-allocated string copying it
+// luaX_alloc_string creates a dynamically-allocated string copying it
 // from a lua stack position
-char* alloc_string(lua_State* L, int idx, int max_length);
+char* luaX_alloc_string(lua_State* L, int idx, int max_length);
 
-// free_string deallocates memory of a string allocated with alloc_string
-void free_string(lua_State* L, char* st);
+// luaX_free_string deallocates memory of a string allocated with luaX_alloc_string
+void luaX_free_string(lua_State* L, char* st);
 
-// unset_ref unpins a reference to a lua object in the registry
-void unset_ref(lua_State* L, lua_ref_t* ref);
+// luaX_unset_ref unpins a reference to a lua object in the registry
+void luaX_unset_ref(lua_State* L, lua_ref_t* ref);
 
-// set_ref pins a reference to a lua object, provided a registry
+// luaX_set_ref pins a reference to a lua object, provided a registry
 // or stack position
-void set_ref(lua_State* L, int idx, lua_ref_t* ref);
+void luaX_set_ref(lua_State* L, int idx, lua_ref_t* ref);
 
 #endif

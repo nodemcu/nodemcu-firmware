@@ -182,12 +182,12 @@ static void task_connected(task_param_t param, task_prio_t prio) {
 
     // pin our object by putting a reference on the stack,
     // so it can't be garbage collected during user callback execution.
-    luaL_push_weak_ref(L, mqtt_context->self);
+    luaX_push_weak_ref(L, mqtt_context->self);
 
     // if the user set a one-shot connected callback, execute it:
     if (mqtt_context->connected_ok_cb > 0) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->connected_ok_cb);  // push the callback function reference to the stack
-        luaL_push_weak_ref(L, mqtt_context->self);                         // push a reference to the client (first parameter)
+        luaX_push_weak_ref(L, mqtt_context->self);                         // push a reference to the client (first parameter)
 
         NODE_DBG("CB:connect: calling registered one-shot connect callback\n");
         int res = lua_pcall(L, 1, 0, 0);  //call the connect callback: function(client)
@@ -195,8 +195,8 @@ static void task_connected(task_param_t param, task_prio_t prio) {
             NODE_DBG("CB:connect: Error when calling one-shot connect callback - (%d) %s\n", res, luaL_checkstring(L, -1));
 
         //after connecting ok, we clear _both_ the one-shot callbacks:
-        unset_ref(L, &mqtt_context->connected_ok_cb);
-        unset_ref(L, &mqtt_context->connected_nok_cb);
+        luaX_unset_ref(L, &mqtt_context->connected_ok_cb);
+        luaX_unset_ref(L, &mqtt_context->connected_nok_cb);
     }
     lua_settop(L, top);
 
@@ -204,7 +204,7 @@ static void task_connected(task_param_t param, task_prio_t prio) {
     if (mqtt_context->on_connect_cb > 0) {
         NODE_DBG("CB:connect: calling registered standard connect callback\n");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->on_connect_cb);  // push the callback function reference to the stack
-        luaL_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
+        luaX_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
         int res = lua_pcall(L, 1, 0, 0);                                 //call the connect callback: function(client)
         if (res != 0)
             NODE_DBG("CB:connect: Error when calling connect callback - (%d) %s\n", res, luaL_checkstring(L, -1));
@@ -246,12 +246,12 @@ static void task_disconnected(task_param_t param, task_prio_t prio) {
 
     // pin our object by putting a reference on the stack,
     // so it can't be garbage collected during user callback execution.
-    luaL_push_weak_ref(L, mqtt_context->self);
+    luaX_push_weak_ref(L, mqtt_context->self);
 
     // if the user set a one-shot connect error callback, execute it:
     if (mqtt_context->connected_nok_cb > 0) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->connected_nok_cb);  // push the callback function reference to the stack
-        luaL_push_weak_ref(L, mqtt_context->self);                          // push a reference to the client (first parameter)
+        luaX_push_weak_ref(L, mqtt_context->self);                          // push a reference to the client (first parameter)
         lua_pushinteger(L, -6);                                             // esp sdk mqtt lib does not provide reason codes. Push "-6" to be backward compatible with ESP8266 API
 
         NODE_DBG("CB:disconnect: calling registered one-shot disconnect callback\n");
@@ -260,15 +260,15 @@ static void task_disconnected(task_param_t param, task_prio_t prio) {
             NODE_DBG("CB:disconnect: Error when calling one-shot disconnect callback - (%d) %s\n", res, luaL_checkstring(L, -1));
 
         //after connecting ok, we clear _both_ the one-shot callbacks
-        unset_ref(L, &mqtt_context->connected_ok_cb);
-        unset_ref(L, &mqtt_context->connected_nok_cb);
+        luaX_unset_ref(L, &mqtt_context->connected_ok_cb);
+        luaX_unset_ref(L, &mqtt_context->connected_nok_cb);
     }
 
     // now we check for the standard offline callback registered with 'mqtt:on()'
     if (mqtt_context->on_offline_cb > 0) {
         NODE_DBG("CB:disconnect: calling registered standard on_offline_cb callback\n");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->on_offline_cb);  // push the callback function reference to the stack
-        luaL_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
+        luaX_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
         int res = lua_pcall(L, 1, 0, 0);                                 //call the offline callback: function(client)
         if (res != 0)
             NODE_DBG("CB:disconnect: Error when calling offline callback - (%d) %s\n", res, luaL_checkstring(L, -1));
@@ -302,18 +302,18 @@ static void task_subscribe(task_param_t param, task_prio_t prio) {
 
     // pin our object by putting a reference on the stack,
     // so it can't be garbage collected during user callback execution.
-    luaL_push_weak_ref(L, mqtt_context->self);
+    luaX_push_weak_ref(L, mqtt_context->self);
 
     // if there is a subscribe one-shot callback, execute it:
     if (mqtt_context->subscribed_ok_cb > 0) {
         NODE_DBG("CB:subscribe: calling registered one-shot subscribe callback\n");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->subscribed_ok_cb);  // push the function reference on the stack
-        luaL_push_weak_ref(L, mqtt_context->self);                          // push the client object on the stack
+        luaX_push_weak_ref(L, mqtt_context->self);                          // push the client object on the stack
         int res = lua_pcall(L, 1, 0, 0);                                    //call the connect callback with one parameter: function(client)
         if (res != 0)
             NODE_DBG("CB:subscribe: Error when calling one-shot subscribe callback - (%d) %s\n", res, luaL_checkstring(L, -1));
 
-        unset_ref(L, &mqtt_context->subscribed_ok_cb);  // forget the callback since it is one-shot
+        luaX_unset_ref(L, &mqtt_context->subscribed_ok_cb);  // forget the callback since it is one-shot
     }
 
     lua_settop(L, top);  //leave stack as it was
@@ -346,18 +346,18 @@ static void task_publish(task_param_t param, task_prio_t prio) {
 
     // pin our object by putting a reference on the stack,
     // so it can't be garbage collected during user callback execution.
-    luaL_push_weak_ref(L, mqtt_context->self);
+    luaX_push_weak_ref(L, mqtt_context->self);
 
     // if there is a one-shot callback set, execute it:
     if (mqtt_context->published_ok_cb > 0) {
         NODE_DBG("CB:publish: calling registered one-shot publish callback\n");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->published_ok_cb);  // push the callback function reference to the stack
-        luaL_push_weak_ref(L, mqtt_context->self);                         // push the client reference to the stack
+        luaX_push_weak_ref(L, mqtt_context->self);                         // push the client reference to the stack
         int res = lua_pcall(L, 1, 0, 0);                                   //call the connect callback with 1 parameter: function(client)
         if (res != 0)
             NODE_DBG("CB:publish: Error when calling one-shot publish callback - (%d) %s\n", res, luaL_checkstring(L, -1));
 
-        unset_ref(L, &mqtt_context->published_ok_cb);  // forget this callback since it is one-shot
+        luaX_unset_ref(L, &mqtt_context->published_ok_cb);  // forget this callback since it is one-shot
     }
     lua_settop(L, top);
 }
@@ -387,18 +387,18 @@ static void task_unsubscribe(task_param_t param, task_prio_t prio) {
 
     // pin our object by putting a reference on the stack,
     // so it can't be garbage collected during user callback execution.
-    luaL_push_weak_ref(L, mqtt_context->self);
+    luaX_push_weak_ref(L, mqtt_context->self);
 
     // if there is a one-shot callback set, execute it:
     if (mqtt_context->unsubscribed_ok_cb > 0) {
         NODE_DBG("CB:unsubscribe: calling registered one-shot unsubscribe callback\n");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->unsubscribed_ok_cb);  // push callback function reference on the stack
-        luaL_push_weak_ref(L, mqtt_context->self);                            // push a reference to the client
+        luaX_push_weak_ref(L, mqtt_context->self);                            // push a reference to the client
         int res = lua_pcall(L, 1, 0, 0);                                      //call the connect callback with one parameter: function(client)
         if (res != 0)
             NODE_DBG("CB:unsubscribe: Error when calling one-shot unsubscribe callback - (%d) %s\n", res, luaL_checkstring(L, -1));
 
-        unset_ref(L, &mqtt_context->unsubscribed_ok_cb);  // forget callback as it is one-shot
+        luaX_unset_ref(L, &mqtt_context->unsubscribed_ok_cb);  // forget callback as it is one-shot
     }
     lua_settop(L, top);
 }
@@ -428,12 +428,12 @@ static void task_data_received(task_param_t param, task_prio_t prio) {
 
     // pin our object by putting a reference on the stack,
     // so it can't be garbage collected during user callback execution.
-    luaL_push_weak_ref(L, mqtt_context->self);
+    luaX_push_weak_ref(L, mqtt_context->self);
 
     if (mqtt_context->on_message_cb > 0) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->on_message_cb);
         int numArg = 2;
-        luaL_push_weak_ref(L, mqtt_context->self);
+        luaX_push_weak_ref(L, mqtt_context->self);
         lua_pushlstring(L, event->topic, event->topic_len);
         if (event->data != NULL) {
             lua_pushlstring(L, event->data, event->data_len);
@@ -457,7 +457,7 @@ static int mqtt_on(lua_State* L) {
 
     mqtt_context_t* mqtt_context = (mqtt_context_t*)luaL_checkudata(L, 1, MQTT_METATABLE);  //retrieve the mqtt_context
 
-    set_ref(L, 3, &mqtt_context->event_cb[event]);  // set the callback reference
+    luaX_set_ref(L, 3, &mqtt_context->event_cb[event]);  // set the callback reference
 
     return 0;
 }
@@ -501,12 +501,12 @@ static int mqtt_connect(lua_State* L) {
     }
 
     if (lua_isfunction(L, n)) {
-        set_ref(L, n, &mqtt_context->connected_ok_cb);
+        luaX_set_ref(L, n, &mqtt_context->connected_ok_cb);
         n++;
     }
 
     if (lua_isfunction(L, n)) {
-        set_ref(L, n, &mqtt_context->connected_nok_cb);
+        luaX_set_ref(L, n, &mqtt_context->connected_nok_cb);
         n++;
     }
 
@@ -568,13 +568,13 @@ static int mqtt_lwt(lua_State* L) {
     mqtt_context_t* mqtt_context = (mqtt_context_t*)luaL_checkudata(L, 1, MQTT_METATABLE);
 
     // free previous topic and messasge, if any.
-    free_string(L, mqtt_context->lwt_topic);
-    free_string(L, mqtt_context->lwt_msg);
+    luaX_free_string(L, mqtt_context->lwt_topic);
+    luaX_free_string(L, mqtt_context->lwt_msg);
 
     // save a copy of topic and message to pass to the client
     // when connecting
-    mqtt_context->lwt_topic = alloc_string(L, 2, MQTT_MAX_LWT_TOPIC);
-    mqtt_context->lwt_msg = alloc_string(L, 3, MQTT_MAX_LWT_MSG);
+    mqtt_context->lwt_topic = luaX_alloc_string(L, 2, MQTT_MAX_LWT_TOPIC);
+    mqtt_context->lwt_msg = luaX_alloc_string(L, 3, MQTT_MAX_LWT_MSG);
 
     //process optional parameters
     int n = 4;
@@ -612,7 +612,7 @@ static int mqtt_publish(lua_State* L) {
     int retain = luaL_checkint(L, 5);
 
     if (lua_isfunction(L, 6)) {  // set one-shot on publish callback
-        set_ref(L, 6, &mqtt_context->published_ok_cb);
+        luaX_set_ref(L, 6, &mqtt_context->published_ok_cb);
     }
 
     NODE_DBG("MQTT publish client %p, topic %s, %d bytes\n", client, topic, data_size);
@@ -638,7 +638,7 @@ static int mqtt_subscribe(lua_State* L) {
     int qos = luaL_checkint(L, 3);
 
     if (lua_isfunction(L, 4))  // if a callback is provided, set it.
-        set_ref(L, 4, &mqtt_context->subscribed_ok_cb);
+        luaX_set_ref(L, 4, &mqtt_context->subscribed_ok_cb);
 
     NODE_DBG("MQTT subscribe client %p, topic %s\n", client, topic);
 
@@ -663,7 +663,7 @@ static int mqtt_unsubscribe(lua_State* L) {
 
     const char* topic = luaL_checkstring(L, 2);
     if (lua_isfunction(L, 3))
-        set_ref(L, 3, &mqtt_context->unsubscribed_ok_cb);
+        luaX_set_ref(L, 3, &mqtt_context->unsubscribed_ok_cb);
 
     NODE_DBG("MQTT unsubscribe client %p, topic %s\n", client, topic);
 
@@ -691,15 +691,15 @@ static int mqtt_delete(lua_State* L) {
 
     // forget all callbacks
     for (int i = 0; i < sizeof(mqtt_context->event_cb) / sizeof(lua_ref_t); i++) {
-        unset_ref(L, &mqtt_context->event_cb[i]);
+        luaX_unset_ref(L, &mqtt_context->event_cb[i]);
     }
 
     // free all dynamic strings
-    free_string(L, mqtt_context->client_id);
-    free_string(L, mqtt_context->username);
-    free_string(L, mqtt_context->password);
-    free_string(L, mqtt_context->lwt_msg);
-    free_string(L, mqtt_context->lwt_topic);
+    luaX_free_string(L, mqtt_context->client_id);
+    luaX_free_string(L, mqtt_context->username);
+    luaX_free_string(L, mqtt_context->password);
+    luaX_free_string(L, mqtt_context->lwt_msg);
+    luaX_free_string(L, mqtt_context->lwt_topic);
 
     NODE_DBG("MQTT client garbage collected\n");
     return 0;
@@ -719,26 +719,26 @@ static int mqtt_new(lua_State* L) {
 
     // keep a weak reference to our userdata object so we can pass it as a parameter to user callbacks
     lua_pushvalue(L, -1);
-    mqtt_context->self = luaL_weak_ref(L);
+    mqtt_context->self = luaX_weak_ref(L);
 
     // allocate a pointer that will be used to link the mqtt client user context to this lua userdata object
     mqtt_context->pcontext = luaM_malloc(L, sizeof(mqtt_context_t*));
     *(mqtt_context->pcontext) = mqtt_context;  //set it to point to this lua userdata object
 
     // store the parameters passed:
-    mqtt_context->client_id = alloc_string(L, 1, MQTT_MAX_CLIENT_LEN);
+    mqtt_context->client_id = luaX_alloc_string(L, 1, MQTT_MAX_CLIENT_LEN);
     NODE_DBG("MQTT client id %s\n", mqtt_context->client_id);
 
     mqtt_context->keepalive = luaL_checkinteger(L, 2);
 
     int n = 2;
     if (lua_isstring(L, 3)) {
-        mqtt_context->username = alloc_string(L, 3, MQTT_MAX_USERNAME_LEN);
+        mqtt_context->username = luaX_alloc_string(L, 3, MQTT_MAX_USERNAME_LEN);
         n++;
     }
 
     if (lua_isstring(L, 4)) {
-        mqtt_context->password = alloc_string(L, 4, MQTT_MAX_PASSWORD_LEN);
+        mqtt_context->password = luaX_alloc_string(L, 4, MQTT_MAX_PASSWORD_LEN);
         n++;
     }
 

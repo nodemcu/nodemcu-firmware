@@ -39,9 +39,9 @@
 // reference to the weak references metatable
 static lua_ref_t weak_mt_ref = LUA_NOREF;
 
-// luaL_weak_ref pops an item from the stack and returns a weak reference to it
+// luaX_weak_ref pops an item from the stack and returns a weak reference to it
 // inspired by https://stackoverflow.com/a/19340846
-lua_ref_t luaL_weak_ref(lua_State* L) {
+lua_ref_t luaX_weak_ref(lua_State* L) {
     lua_newtable(L);  // push a table on the stack that will serve as proxy of our item
 
     // Initialize weak metatable if this is the first call
@@ -67,7 +67,7 @@ lua_ref_t luaL_weak_ref(lua_State* L) {
 }
 
 //luaL_push_weak takes a weak reference and pushes the original item on the stack
-void luaL_push_weak_ref(lua_State* L, lua_ref_t ref) {
+void luaX_push_weak_ref(lua_State* L, lua_ref_t ref) {
     if (ref <= 0) {
         luaL_error(L, "invalid weak ref");
     }
@@ -77,9 +77,9 @@ void luaL_push_weak_ref(lua_State* L, lua_ref_t ref) {
     // Retrieved item remains on top, as output of this function.
 }
 
-// alloc_string creates a dynamically-allocated string copying it
+// luaX_alloc_string creates a dynamically-allocated string copying it
 // from a lua stack position
-char* alloc_string(lua_State* L, int idx, int max_length) {
+char* luaX_alloc_string(lua_State* L, int idx, int max_length) {
     const char* lua_st = luaL_checkstring(L, idx);  //retrieve string from lua
                                                     // measure the string and limit it to max_length
     int len = strlen(lua_st);
@@ -97,22 +97,22 @@ char* alloc_string(lua_State* L, int idx, int max_length) {
     return st;
 }
 
-// free_string deallocates memory of a string allocated with alloc_string
-void free_string(lua_State* L, char* st) {
+// luaX_free_string deallocates memory of a string allocated with luaX_alloc_string
+void luaX_free_string(lua_State* L, char* st) {
     if (st)
         luaM_freearray(L, st, strlen(st) + 1, char);
 }
 
-// unset_ref unpins a reference to a lua object in the registry
-void unset_ref(lua_State* L, lua_ref_t* ref) {
+// luaX_unset_ref unpins a reference to a lua object in the registry
+void luaX_unset_ref(lua_State* L, lua_ref_t* ref) {
     luaL_unref(L, LUA_REGISTRYINDEX, *ref);
     *ref = LUA_NOREF;
 }
 
-// set_ref pins a reference to a lua object, provided a registry
+// luaX_set_ref pins a reference to a lua object, provided a registry
 // or stack position
-void set_ref(lua_State* L, int idx, lua_ref_t* ref) {
-    unset_ref(L, ref);                      // make sure we free previous reference
+void luaX_set_ref(lua_State* L, int idx, lua_ref_t* ref) {
+    luaX_unset_ref(L, ref);                      // make sure we free previous reference
     lua_pushvalue(L, idx);                  // push on the stack the referenced index
     *ref = luaL_ref(L, LUA_REGISTRYINDEX);  // set the reference (pops 1 value)
 }
