@@ -1,4 +1,5 @@
 // Module for interfacing with an MQTT broker
+#include "esp_log.h"
 #include "lauxlib.h"
 #include "lmem.h"
 #include "lnodeaux.h"
@@ -16,6 +17,7 @@
 #define MQTT_MAX_LWT_TOPIC 32
 #define MQTT_MAX_LWT_MSG 128
 #define MQTT_METATABLE "mqtt.mt"
+#define TAG "MQTT"
 
 // mqtt_context struct contains information to wrap a esp_mqtt client in lua
 typedef struct {
@@ -62,7 +64,7 @@ task_handle_t event_handler_task_id = 0;
 static esp_mqtt_event_handle_t event_clone(esp_mqtt_event_handle_t ev) {
     // allocate memory for the copy
     esp_mqtt_event_handle_t ev1 = (esp_mqtt_event_handle_t)malloc(sizeof(esp_mqtt_event_t));
-    NODE_DBG("event_clone():malloc: event %p, msg %d\n", ev, ev->msg_id);
+    ESP_LOGD(TAG, "event_clone(): event %p, event id %d, msg %d", ev, ev->event_id, ev->msg_id);
 
     // make a shallow copy:
     *ev1 = *ev;
@@ -73,7 +75,7 @@ static esp_mqtt_event_handle_t event_clone(esp_mqtt_event_handle_t ev) {
             ev1->data = malloc(ev->data_len + 1);  // null-terminate the data, useful for debugging
             memcpy(ev1->data, ev->data, ev->data_len);
             ev1->data[ev1->data_len] = '\0';
-            NODE_DBG("event_clone():malloc: event %p, msg %d, data %p, num %d\n", ev1, ev1->msg_id, ev1->data, ev1->data_len);
+            ESP_LOGD(TAG, "event_clone():malloc: event %p, msg %d, data %p, num %d", ev1, ev1->msg_id, ev1->data, ev1->data_len);
         } else {
             ev1->data = NULL;
         }
@@ -85,7 +87,7 @@ static esp_mqtt_event_handle_t event_clone(esp_mqtt_event_handle_t ev) {
             ev1->topic = malloc(ev->topic_len + 1);  // null-terminate the data, useful for debugging
             memcpy(ev1->topic, ev->topic, ev->topic_len);
             ev1->topic[ev1->topic_len] = '\0';
-            NODE_DBG("event_clone():malloc: event %p, msg %d, topic %p, num %d\n", ev1, ev1->msg_id, ev1->topic, ev1->topic_len);
+            ESP_LOGD(TAG, "event_clone():malloc: event %p, msg %d, topic %p, num %d", ev1, ev1->msg_id, ev1->topic, ev1->topic_len);
         } else {
             ev1->topic = NULL;
         }
@@ -96,11 +98,11 @@ static esp_mqtt_event_handle_t event_clone(esp_mqtt_event_handle_t ev) {
 // event_free deallocates all the memory associated with a cloned event
 static void event_free(esp_mqtt_event_handle_t ev) {
     if (ev->data != NULL) {
-        NODE_DBG("event_free():free: event %p, msg %d, data %p\n", ev, ev->msg_id, ev->data);
+        ESP_LOGD(TAG, "event_free():free: event %p, msg %d, data %p", ev, ev->msg_id, ev->data);
         free(ev->data);
     }
     if (ev->topic != NULL) {
-        NODE_DBG("event_free():free: event %p, msg %d, topic %p\n", ev, ev->msg_id, ev->topic);
+        ESP_LOGD(TAG, "event_free():free: event %p, msg %d, topic %p", ev, ev->msg_id, ev->topic);
         free(ev->topic);
     }
     free(ev);
@@ -108,17 +110,15 @@ static void event_free(esp_mqtt_event_handle_t ev) {
 
 // event_connected is run when the mqtt client connected
 static void event_connected(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt_event_handle_t event) {
-    NODE_DBG("CB:connect: state %p, settings %p, stack top %d\n", L, event->client, lua_gettop(L));
-
     // if the user set a one-shot connected callback, execute it:
     if (luaX_valid_ref(mqtt_context->connected_ok_cb)) {
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->connected_ok_cb);  // push the callback function reference to the stack
         luaX_push_weak_ref(L, mqtt_context->self);                         // push a reference to the client (first parameter)
 
-        NODE_DBG("CB:connect: calling registered one-shot connect callback\n");
+        ESP_LOGD(TAG, "CB:connect: calling registered one-shot connect callback");
         int res = lua_pcall(L, 1, 0, 0);  //call the connect callback: function(client)
         if (res != 0)
-            NODE_DBG("CB:connect: Error when calling one-shot connect callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+            ESP_LOGD(TAG, "CB:connect: Error when calling one-shot connect callback - (%d) %s", res, luaL_checkstring(L, -1));
 
         //after connecting ok, we clear _both_ the one-shot callbacks:
         luaX_unset_ref(L, &mqtt_context->connected_ok_cb);
@@ -127,19 +127,19 @@ static void event_connected(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt
 
     // now we check for the standard connect callback registered with 'mqtt:on()'
     if (luaX_valid_ref(mqtt_context->on_connect_cb)) {
-        NODE_DBG("CB:connect: calling registered standard connect callback\n");
+        ESP_LOGD(TAG, "CB:connect: calling registered standard connect callback");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->on_connect_cb);  // push the callback function reference to the stack
         luaX_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
         int res = lua_pcall(L, 1, 0, 0);                                 //call the connect callback: function(client)
         if (res != 0)
-            NODE_DBG("CB:connect: Error when calling connect callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+            ESP_LOGD(TAG, "CB:connect: Error when calling connect callback - (%d) %s", res, luaL_checkstring(L, -1));
     }
 }
 
 // event_disconnected is run after a connection to the MQTT broker breaks.
 static void event_disconnected(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt_event_handle_t event) {
     if (mqtt_context->client == NULL) {
-        NODE_DBG("MQTT Client was NULL on a disconnect event\n");
+        ESP_LOGD(TAG, "MQTT Client was NULL on a disconnect event");
     }
 
     // destroy the wrapped mqtt_client object
@@ -152,10 +152,10 @@ static void event_disconnected(lua_State* L, mqtt_context_t* mqtt_context, esp_m
         luaX_push_weak_ref(L, mqtt_context->self);                          // push a reference to the client (first parameter)
         lua_pushinteger(L, -6);                                             // esp sdk mqtt lib does not provide reason codes. Push "-6" to be backward compatible with ESP8266 API
 
-        NODE_DBG("CB:disconnect: calling registered one-shot disconnect callback\n");
+        ESP_LOGD(TAG, "CB:disconnect: calling registered one-shot disconnect callback");
         int res = lua_pcall(L, 2, 0, 0);  //call the disconnect callback with 2 parameters: function(client, reason)
         if (res != 0)
-            NODE_DBG("CB:disconnect: Error when calling one-shot disconnect callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+            ESP_LOGD(TAG, "CB:disconnect: Error when calling one-shot disconnect callback - (%d) %s", res, luaL_checkstring(L, -1));
 
         //after connecting ok, we clear _both_ the one-shot callbacks
         luaX_unset_ref(L, &mqtt_context->connected_ok_cb);
@@ -164,12 +164,12 @@ static void event_disconnected(lua_State* L, mqtt_context_t* mqtt_context, esp_m
 
     // now we check for the standard offline callback registered with 'mqtt:on()'
     if (luaX_valid_ref(mqtt_context->on_offline_cb)) {
-        NODE_DBG("CB:disconnect: calling registered standard on_offline_cb callback\n");
+        ESP_LOGD(TAG, "CB:disconnect: calling registered standard on_offline_cb callback");
         lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->on_offline_cb);  // push the callback function reference to the stack
         luaX_push_weak_ref(L, mqtt_context->self);                       // push a reference to the client (first parameter)
         int res = lua_pcall(L, 1, 0, 0);                                 //call the offline callback: function(client)
         if (res != 0)
-            NODE_DBG("CB:disconnect: Error when calling offline callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+            ESP_LOGD(TAG, "CB:disconnect: Error when calling offline callback - (%d) %s", res, luaL_checkstring(L, -1));
     }
 }
 
@@ -177,12 +177,12 @@ static void event_disconnected(lua_State* L, mqtt_context_t* mqtt_context, esp_m
 static void event_subscribed(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt_event_handle_t event) {
     if (!luaX_valid_ref(mqtt_context->subscribed_ok_cb)) return;
 
-    NODE_DBG("CB:subscribe: calling registered one-shot subscribe callback\n");
+    ESP_LOGD(TAG, "CB:subscribe: calling registered one-shot subscribe callback");
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->subscribed_ok_cb);  // push the function reference on the stack
     luaX_push_weak_ref(L, mqtt_context->self);                          // push the client object on the stack
     int res = lua_pcall(L, 1, 0, 0);                                    //call the connect callback with one parameter: function(client)
     if (res != 0)
-        NODE_DBG("CB:subscribe: Error when calling one-shot subscribe callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+        ESP_LOGD(TAG, "CB:subscribe: Error when calling one-shot subscribe callback - (%d) %s", res, luaL_checkstring(L, -1));
 
     luaX_unset_ref(L, &mqtt_context->subscribed_ok_cb);  // forget the callback since it is one-shot
 }
@@ -191,12 +191,12 @@ static void event_subscribed(lua_State* L, mqtt_context_t* mqtt_context, esp_mqt
 static void event_published(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt_event_handle_t event) {
     if (!luaX_valid_ref(mqtt_context->published_ok_cb)) return;
 
-    NODE_DBG("CB:publish: calling registered one-shot publish callback\n");
+    ESP_LOGD(TAG, "CB:publish: calling registered one-shot publish callback");
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->published_ok_cb);  // push the callback function reference to the stack
     luaX_push_weak_ref(L, mqtt_context->self);                         // push the client reference to the stack
     int res = lua_pcall(L, 1, 0, 0);                                   //call the connect callback with 1 parameter: function(client)
     if (res != 0)
-        NODE_DBG("CB:publish: Error when calling one-shot publish callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+        ESP_LOGD(TAG, "CB:publish: Error when calling one-shot publish callback - (%d) %s", res, luaL_checkstring(L, -1));
 
     luaX_unset_ref(L, &mqtt_context->published_ok_cb);  // forget this callback since it is one-shot
 }
@@ -205,12 +205,12 @@ static void event_published(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt
 static void event_unsubscribed(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt_event_handle_t event) {
     if (!luaX_valid_ref(mqtt_context->unsubscribed_ok_cb)) return;
 
-    NODE_DBG("CB:unsubscribe: calling registered one-shot unsubscribe callback\n");
+    ESP_LOGD(TAG, "CB:unsubscribe: calling registered one-shot unsubscribe callback");
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->unsubscribed_ok_cb);  // push callback function reference on the stack
     luaX_push_weak_ref(L, mqtt_context->self);                            // push a reference to the client
     int res = lua_pcall(L, 1, 0, 0);                                      //call the connect callback with one parameter: function(client)
     if (res != 0)
-        NODE_DBG("CB:unsubscribe: Error when calling one-shot unsubscribe callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+        ESP_LOGD(TAG, "CB:unsubscribe: Error when calling one-shot unsubscribe callback - (%d) %s", res, luaL_checkstring(L, -1));
 
     luaX_unset_ref(L, &mqtt_context->unsubscribed_ok_cb);  // forget callback as it is one-shot
 }
@@ -229,7 +229,7 @@ static void event_data_received(lua_State* L, mqtt_context_t* mqtt_context, esp_
     }
     int res = lua_pcall(L, numArg, 0, 0);  //call the messagecallback
     if (res != 0)
-        NODE_DBG("CB:data: Error when calling message callback - (%d) %s\n", res, luaL_checkstring(L, -1));
+        ESP_LOGD(TAG, "CB:data: Error when calling message callback - (%d) %s", res, luaL_checkstring(L, -1));
 }
 
 // event_task_handler takes a nodemcu task message and dispatches it to the appropriate event_xxx callback above.
@@ -242,15 +242,16 @@ static void event_task_handler(task_param_t param, task_prio_t prio) {
 
     // Check if this event is about an object that is in the process of garbage collection:
     if (!luaX_valid_ref(mqtt_context->self)) {
-        NODE_DBG("caught stray event: %d\n", event->event_id);  // this can happen if the userdata object is dereferenced while attempting to connect
-        goto task_handler_end;                                  // free resources and abort
+        ESP_LOGW(TAG, "caught stray event: %d", event->event_id);  // this can happen if the userdata object is dereferenced while attempting to connect
+        goto task_handler_end;                                       // free resources and abort
     }
 
     lua_State* L = lua_getstate();  //returns main Lua state
     if (L == NULL) {
         goto task_handler_end;  // free resources and abort
     }
-    NODE_DBG("event_task_handler: state %p, settings %p, stack top %d\n", L, mqtt_context, lua_gettop(L));
+
+    ESP_LOGD(TAG, "event_task_handler: event_id: %d state %p, settings %p, stack top %d", event->event_id, L, mqtt_context, lua_gettop(L));
 
     event_handler_t eventhandler = NULL;
 
@@ -362,7 +363,7 @@ static int mqtt_connect(lua_State* L) {
         n++;
     }
 
-    NODE_DBG("connect: mqtt_context*: %p\n", mqtt_context);
+    ESP_LOGD(TAG, "connect: mqtt_context*: %p", mqtt_context);
 
     config.user_context = mqtt_context;        // store a pointer to our context in the mqtt client user context field
                                                // this will be useful to identify to which instance events belong to
@@ -405,7 +406,7 @@ static int mqtt_close(lua_State* L) {
     if (mqtt_context->client == NULL)
         return 0;
 
-    NODE_DBG("Closing MQTT client %p\n", mqtt_context->client);
+    ESP_LOGD(TAG, "Closing MQTT client %p", mqtt_context->client);
 
     esp_mqtt_client_destroy(mqtt_context->client);
     mqtt_context->client = NULL;
@@ -440,7 +441,7 @@ static int mqtt_lwt(lua_State* L) {
         n++;
     }
 
-    NODE_DBG("Set LWT topic '%s', qos %d, retain %d\n",
+    ESP_LOGD(TAG, "Set LWT topic '%s', qos %d, retain %d",
              mqtt_context->lwt_topic, mqtt_context->lwt_qos, mqtt_context->lwt_retain);
     return 0;
 }
@@ -467,7 +468,7 @@ static int mqtt_publish(lua_State* L) {
         luaX_set_ref(L, 6, &mqtt_context->published_ok_cb);
     }
 
-    NODE_DBG("MQTT publish client %p, topic %s, %d bytes\n", client, topic, data_size);
+    ESP_LOGD(TAG, "MQTT publish client %p, topic %s, %d bytes", client, topic, data_size);
     int msg_id = esp_mqtt_client_publish(client, topic, data, data_size, qos, retain);
 
     lua_pushboolean(L, msg_id >= 0);  // if msg_id < 0 there was an error.
@@ -492,7 +493,7 @@ static int mqtt_subscribe(lua_State* L) {
     if (lua_isfunction(L, 4))  // if a callback is provided, set it.
         luaX_set_ref(L, 4, &mqtt_context->subscribed_ok_cb);
 
-    NODE_DBG("MQTT subscribe client %p, topic %s\n", client, topic);
+    ESP_LOGD(TAG, "MQTT subscribe client %p, topic %s", client, topic);
 
     esp_err_t err = esp_mqtt_client_subscribe(client, topic, qos);
     lua_pushboolean(L, err == ESP_OK);
@@ -517,7 +518,7 @@ static int mqtt_unsubscribe(lua_State* L) {
     if (lua_isfunction(L, 3))
         luaX_set_ref(L, 3, &mqtt_context->unsubscribed_ok_cb);
 
-    NODE_DBG("MQTT unsubscribe client %p, topic %s\n", client, topic);
+    ESP_LOGD(TAG, "MQTT unsubscribe client %p, topic %s", client, topic);
 
     esp_err_t err = esp_mqtt_client_unsubscribe(client, topic);
     lua_pushboolean(L, err == ESP_OK);
@@ -536,7 +537,7 @@ static int mqtt_delete(lua_State* L) {
 
     // if there is a client active, shut it down.
     if (mqtt_context->client != NULL) {
-        NODE_DBG("stopping MQTT client %p;\n", mqtt_context);
+        ESP_LOGD(TAG, "stopping MQTT client %p;", mqtt_context);
         // destroy the client. This is a blocking call.
         // If a connection request was ongoing this will block and
         // a disconnect callback could be fired before coming back here.
@@ -550,7 +551,7 @@ static int mqtt_delete(lua_State* L) {
     luaX_free_string(L, mqtt_context->lwt_msg);
     luaX_free_string(L, mqtt_context->lwt_topic);
 
-    NODE_DBG("MQTT client garbage collected\n");
+    ESP_LOGD(TAG, "MQTT client garbage collected");
     return 0;
 }
 
@@ -572,7 +573,7 @@ static int mqtt_new(lua_State* L) {
 
     // store the parameters passed:
     mqtt_context->client_id = luaX_alloc_string(L, 1, MQTT_MAX_CLIENT_LEN);
-    NODE_DBG("MQTT client id %s\n", mqtt_context->client_id);
+    ESP_LOGD(TAG, "MQTT client id %s", mqtt_context->client_id);
 
     mqtt_context->keepalive = luaL_checkinteger(L, 2);
 
