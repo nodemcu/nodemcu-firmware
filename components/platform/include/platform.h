@@ -122,6 +122,7 @@ void platform_uart_send( unsigned id, uint8_t data );
 void platform_uart_flush( unsigned id );
 int platform_uart_start( unsigned id );
 void platform_uart_stop( unsigned id );
+int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp);
 
 
 // *****************************************************************************

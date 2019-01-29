@@ -336,6 +336,43 @@ void platform_uart_stop( unsigned id )
   }
 }
 
+int platform_uart_get_config(unsigned id, uint32_t *baudp, uint32_t *databitsp, uint32_t *parityp, uint32_t *stopbitsp) {
+    int err;
+
+    err = uart_get_baudrate(id, baudp);
+    if (err != ESP_OK) return -1;
+    *baudp &= 0xFFFFFFFE; // round down
+
+    uint32_t databits;
+    err = uart_get_word_length(id, &databits);
+    if (err != ESP_OK) return -1;
+
+    switch (databits) {
+        case UART_DATA_5_BITS:
+            *databitsp = 5;
+            break;
+        case UART_DATA_6_BITS:
+            *databitsp = 6;
+            break;
+        case UART_DATA_7_BITS:
+            *databitsp = 7;
+            break;
+        case UART_DATA_8_BITS:
+            *databitsp = 8;
+            break;
+        default:
+            return -1;
+    }
+
+    err = uart_get_parity(id, parityp);
+    if (err != ESP_OK) return -1;
+
+    err = uart_get_stop_bits(id, stopbitsp);
+    if (err != ESP_OK) return -1;
+
+    return 0;
+}
+
 // *****************************************************************************
 // Sigma-Delta platform interface
 
