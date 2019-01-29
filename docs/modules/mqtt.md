@@ -1,6 +1,7 @@
 # MQTT Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
+| 2019-01-28 | [Javier Peletier](https://github.com/jpeletier) | | [mqtt.c](../../components/modules/mqtt.c)|
 | 2018-10-08 | [Tuan PM](https://github.com/tuanpmt/esp_mqtt), [Espressif](https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/protocols/mqtt.html) | | [mqtt.c](../../components/modules/mqtt.c)|
 
 The client supports version 3.1 and 3.1.1 of the [MQTT](https://en.wikipedia.org/wiki/MQTT) protocol. Make sure that the correct version is set with `make menuconfig` -> "Component config" -> "ESP-MQTT Configurations" -> "Enable MQTT protocol 3.1.1".
