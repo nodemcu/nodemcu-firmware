@@ -60,4 +60,9 @@ void luaX_unset_ref(lua_State* L, lua_ref_t* ref);
 // or stack position
 void luaX_set_ref(lua_State* L, int idx, lua_ref_t* ref);
 
+// luaX_valid_ref returns true if the reference is set.
+inline bool luaX_valid_ref(lua_ref_t ref) {
+    return ref > 0;
+}
+
 #endif
