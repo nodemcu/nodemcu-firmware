@@ -237,6 +237,24 @@ static int uart_start( lua_State* L )
   return 1;
 }
 
+static int uart_getconfig(lua_State* L) {
+    uint32_t id, baud, databits, parity, stopbits;
+
+    id = luaL_checkinteger(L, 1);
+    MOD_CHECK_ID(uart, id);
+
+    int err = platform_uart_get_config(id, &baud, &databits, &parity, &stopbits);
+    if (err) {
+      luaL_error(L, "Error reading UART config");
+    }
+
+    lua_pushinteger(L, baud);
+    lua_pushinteger(L, databits);
+    lua_pushinteger(L, parity);
+    lua_pushinteger(L, stopbits);
+    return 4;
+}
+
 // Module function map
 static const LUA_REG_TYPE uart_map[] =  {
   { LSTRKEY( "setup" ), LFUNCVAL( uart_setup ) },
@@ -245,6 +263,7 @@ static const LUA_REG_TYPE uart_map[] =  {
   { LSTRKEY( "stop" ), LFUNCVAL( uart_stop ) },
   { LSTRKEY( "on" ),    LFUNCVAL( uart_on ) },
   { LSTRKEY( "setmode" ), LFUNCVAL( uart_setmode ) },
+  { LSTRKEY( "getconfig" ), LFUNCVAL( uart_getconfig ) },
   { LSTRKEY( "STOPBITS_1" ),   LNUMVAL( PLATFORM_UART_STOPBITS_1 ) },
   { LSTRKEY( "STOPBITS_1_5" ), LNUMVAL( PLATFORM_UART_STOPBITS_1_5 ) },
   { LSTRKEY( "STOPBITS_2" ),   LNUMVAL( PLATFORM_UART_STOPBITS_2 ) },

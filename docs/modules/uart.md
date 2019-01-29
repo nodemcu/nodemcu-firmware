@@ -105,6 +105,30 @@ uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1, 1)
 uart.setup(2, 115200, 8, uart.PARITY_NONE, uart.STOPBITS_1, {tx = 16, rx = 17})
 ```
 
+## uart.getconfig()
+
+Returns the current configuration parameters of the UART. 
+
+#### Syntax
+`uart.getconfig(id)`
+
+#### Parameters
+- `id` UART id (0 or 1).
+
+#### Returns
+Four values as follows:
+
+- `baud` one of 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 74880, 115200, 230400, 256000, 460800, 921600, 1843200, 3686400
+- `databits` one of 5, 6, 7, 8
+- `parity` `uart.PARITY_NONE`, `uart.PARITY_ODD`, or `uart.PARITY_EVEN`
+- `stopbits` `uart.STOPBITS_1`, `uart.STOPBITS_1_5`, or `uart.STOPBITS_2`
+
+#### Example
+```lua
+print (uart.getconfig(0))
+-- prints 9600 8 0 1   for 9600, 8N1
+```
+
 ## uart.start()
 Start the UART. You do not need to call `start()` on the console uart.
 
