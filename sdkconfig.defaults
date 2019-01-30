@@ -1,6 +1,9 @@
 # set custom partition table for 1.5MB firmware
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="components/platform/partitions.csv"
 CONFIG_PARTITION_TABLE_FILENAME="components/platform/partitions.csv"
+CONFIG_PARTITION_TABLE_SINGLE_APP=n
+CONFIG_PARTITION_TABLE_TWO_OTA=n
+CONFIG_PARTITION_TABLE_CUSTOM=y
 
 # Don't warn about undefined variables
 CONFIG_MAKE_WARN_UNDEFINED_VARIABLES=n
