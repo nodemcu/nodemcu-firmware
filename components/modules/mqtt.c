@@ -180,11 +180,10 @@ static void event_subscribed(lua_State* L, mqtt_context_t* mqtt_context, esp_mqt
     ESP_LOGD(TAG, "CB:subscribe: calling registered one-shot subscribe callback");
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->subscribed_ok_cb);  // push the function reference on the stack
     luaX_push_weak_ref(L, mqtt_context->self);                          // push the client object on the stack
+    luaX_unset_ref(L, &mqtt_context->subscribed_ok_cb);                 // forget the callback since it is one-shot
     int res = lua_pcall(L, 1, 0, 0);                                    //call the connect callback with one parameter: function(client)
     if (res != 0)
         ESP_LOGD(TAG, "CB:subscribe: Error when calling one-shot subscribe callback - (%d) %s", res, luaL_checkstring(L, -1));
-
-    luaX_unset_ref(L, &mqtt_context->subscribed_ok_cb);  // forget the callback since it is one-shot
 }
 
 //event_published is called when a publish operation completes
@@ -194,11 +193,10 @@ static void event_published(lua_State* L, mqtt_context_t* mqtt_context, esp_mqtt
     ESP_LOGD(TAG, "CB:publish: calling registered one-shot publish callback");
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->published_ok_cb);  // push the callback function reference to the stack
     luaX_push_weak_ref(L, mqtt_context->self);                         // push the client reference to the stack
+    luaX_unset_ref(L, &mqtt_context->published_ok_cb);                 // forget this callback since it is one-shot
     int res = lua_pcall(L, 1, 0, 0);                                   //call the connect callback with 1 parameter: function(client)
     if (res != 0)
         ESP_LOGD(TAG, "CB:publish: Error when calling one-shot publish callback - (%d) %s", res, luaL_checkstring(L, -1));
-
-    luaX_unset_ref(L, &mqtt_context->published_ok_cb);  // forget this callback since it is one-shot
 }
 
 // event_unsubscribed is called when a subscription is successful
@@ -208,11 +206,10 @@ static void event_unsubscribed(lua_State* L, mqtt_context_t* mqtt_context, esp_m
     ESP_LOGD(TAG, "CB:unsubscribe: calling registered one-shot unsubscribe callback");
     lua_rawgeti(L, LUA_REGISTRYINDEX, mqtt_context->unsubscribed_ok_cb);  // push callback function reference on the stack
     luaX_push_weak_ref(L, mqtt_context->self);                            // push a reference to the client
+    luaX_unset_ref(L, &mqtt_context->unsubscribed_ok_cb);                 // forget callback as it is one-shot
     int res = lua_pcall(L, 1, 0, 0);                                      //call the connect callback with one parameter: function(client)
     if (res != 0)
         ESP_LOGD(TAG, "CB:unsubscribe: Error when calling one-shot unsubscribe callback - (%d) %s", res, luaL_checkstring(L, -1));
-
-    luaX_unset_ref(L, &mqtt_context->unsubscribed_ok_cb);  // forget callback as it is one-shot
 }
 
 //event_data_received is called when data is received on a subscribed topic
@@ -243,7 +240,7 @@ static void event_task_handler(task_param_t param, task_prio_t prio) {
     // Check if this event is about an object that is in the process of garbage collection:
     if (!luaX_valid_ref(mqtt_context->self)) {
         ESP_LOGW(TAG, "caught stray event: %d", event->event_id);  // this can happen if the userdata object is dereferenced while attempting to connect
-        goto task_handler_end;                                       // free resources and abort
+        goto task_handler_end;                                     // free resources and abort
     }
 
     lua_State* L = lua_getstate();  //returns main Lua state
