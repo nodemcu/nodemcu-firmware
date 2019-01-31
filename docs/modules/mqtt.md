@@ -203,7 +203,6 @@ Publishes a message.
 - `retain` retain flag
 - `function(client)` optional callback fired when PUBACK received.  NOTE: When calling publish() more than once, the last callback function defined will be called for ALL publish commands.
   
-
 #### Returns
 `true` on success, `false` otherwise
 
@@ -213,12 +212,10 @@ Subscribes to one or several topics.
 
 #### Syntax
 `mqtt:subscribe(topic, qos[, function(client)])`
-`mqtt:subscribe(table[, function(client)])`
 
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `qos` QoS subscription level, default 0
-- `table` array of 'topic, qos' pairs to subscribe to
 - `function(client)` optional callback fired when subscription(s) succeeded.  NOTE: When calling subscribe() more than once, the last callback function defined will be called for ALL subscribe commands.
 
 #### Returns
@@ -228,14 +225,11 @@ Subscribes to one or several topics.
 ```lua
 -- subscribe topic with qos = 0
 m:subscribe("/topic",0, function(conn) print("subscribe success") end)
-
--- or subscribe multiple topic (topic/0, qos = 0; topic/1, qos = 1; topic2 , qos = 2)
-m:subscribe({["topic/0"]=0,["topic/1"]=1,topic2=2}, function(conn) print("subscribe success") end)
 ```
 
 !!! caution
 
-    Rather than calling `subscribe` multiple times you should use the multiple topics syntax shown in the above example if you want to subscribe to more than one topic at once.
+    Rather than calling `subscribe` multiple times in a row, you should call the next `subscribe` from within the callback of the previous. A generic example is provided in [mqtt_helpers.lua](../../lua_examples/mqtt/mqtt_helpers.lua).
 
 ## mqtt.client:unsubscribe()
 
@@ -243,18 +237,14 @@ Unsubscribes from one or several topics.
 
 #### Syntax
 `mqtt:unsubscribe(topic[, function(client)])`
-`mqtt:unsubscribe(table[, function(client)])`
 
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
-- `table` array of 'topic, anything' pairs to unsubscribe from
 - `function(client)` optional callback fired when unsubscription(s) succeeded.  NOTE: When calling unsubscribe() more than once, the last callback function defined will be called for ALL unsubscribe commands.
 
 !!! caution
 
-    The `mqtt:unsubscribe(table,...)` function is unimplented at this time as
-	the underlying MQTT library does not natively support this model.  You must
-	subscribe and unsubsribe from topic individually.
+    Rather than calling `unsubscribe` multiple times in a row, you should call the next `unsubscribe` from within the callback of the previous. A generic example is provided in [mqtt_helpers.lua](../../lua_examples/mqtt/mqtt_helpers.lua).
 
 #### Returns
 `true` on success, `false` otherwise
@@ -263,7 +253,4 @@ Unsubscribes from one or several topics.
 ```lua
 -- unsubscribe topic
 m:unsubscribe("/topic", function(conn) print("unsubscribe success") end)
-
--- or unsubscribe multiple topic (topic/0; topic/1; topic2)
-m:unsubscribe({["topic/0"]=0,["topic/1"]=0,topic2="anything"}, function(conn) print("unsubscribe success") end)
 ```
