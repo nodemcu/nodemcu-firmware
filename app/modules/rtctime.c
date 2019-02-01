@@ -46,10 +46,10 @@ void __attribute__((noreturn)) TEXT_SECTION_ATTR rtc_time_enter_deep_sleep_final
 
 void rtctime_early_startup (void)
 {
-  Cache_Read_Enable (0, 0, 1);
+//  Cache_Read_Enable (0, 0, 1);
   rtc_time_register_bootup ();
   rtc_time_switch_clocks ();
-  Cache_Read_Disable ();
+//  Cache_Read_Disable ();
 }
 
 void rtctime_late_startup (void)

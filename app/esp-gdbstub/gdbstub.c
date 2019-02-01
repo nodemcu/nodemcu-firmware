@@ -659,12 +659,23 @@ static void ATTR_GDBFN gdb_semihost_putchar1(char c) {
 }
 
 #if !GDBSTUB_FREERTOS
-//The OS-less SDK uses the Xtensa HAL to handle exceptions. We can use those functions to catch any
-//fatal exceptions and invoke the debugger when this happens.
+/* The non-OS SDK uses the Xtensa HAL to handle exceptions, and the SDK now establishes exception
+ * handlers for EXCCAUSE errors: ILLEGAL, INSTR_ERROR, LOAD_STORE_ERROR, PRIVILEGED, UNALIGNED, 
+ * LOAD_PROHIBITED and STORE_PROHIBITED.  These handlers are established in SDK/app_main.c.  
+ * LOAD_STORE_ERROR is handled by SDK/user_exceptions.o:load_non_32_wide_handler() which is a
+ * fork of our version. The remaining are handled by a static function at 
+ * SDK:app+main.c:offset 0x0348.  
+ *
+ * Our SDK 2 load_non_32_wide_handler chained into the gdb stub handler if the error was anything 
+ * other than a L8UI, L16SI or L16UI at a flash mapped address.  However in this current 
+ * implementation, we have left the Espressif handler in place and handle the other errors with
+ * the debugger.  This means that the debugger will not capture other load store errors.  I 
+ * might revise this.
+ */
 static void ATTR_GDBINIT install_exceptions() {
 	int i;
-	int exno[]={EXCCAUSE_ILLEGAL, EXCCAUSE_SYSCALL, EXCCAUSE_INSTR_ERROR, EXCCAUSE_LOAD_STORE_ERROR,
-			EXCCAUSE_DIVIDE_BY_ZERO, EXCCAUSE_UNALIGNED, EXCCAUSE_INSTR_DATA_ERROR, EXCCAUSE_LOAD_STORE_DATA_ERROR,
+	const int exno[]={EXCCAUSE_ILLEGAL, EXCCAUSE_SYSCALL, EXCCAUSE_INSTR_ERROR, /* EXCCAUSE_LOAD_STORE_ERROR, */
+			EXCCAUSE_DIVIDE_BY_ZERO, EXCCAUSE_UNALIGNED, EXCCAUSE_INSTR_DATA_ERROR, EXCCAUSE_LOAD_STORE_DATA_ERROR, 
 			EXCCAUSE_INSTR_ADDR_ERROR, EXCCAUSE_LOAD_STORE_ADDR_ERROR, EXCCAUSE_INSTR_PROHIBITED,
 			EXCCAUSE_LOAD_PROHIBITED, EXCCAUSE_STORE_PROHIBITED};
 	for (i=0; i<(sizeof(exno)/sizeof(exno[0])); i++) {

@@ -948,6 +948,15 @@ uint32_t platform_flash_phys2mapped (uint32_t phys_addr) {
   return (meg&1) ? -1 : phys_addr + INTERNAL_FLASH_MAPPED_ADDRESS - meg;
 }
 
+uint32_t platform_flash_get_partition (uint32_t part_id, uint32_t *addr)  {
+  partition_item_t pt = {0,0,0};
+  system_partition_get_item(SYSTEM_PARTITION_CUSTOMER_BEGIN + part_id, &pt);
+  if (addr) {
+    *addr = pt.addr;
+  }
+  return  pt.type == 0 ? 0 : pt.size;
+}
+
 void* platform_print_deprecation_note( const char *msg, const char *time_frame)
 {
   c_printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );

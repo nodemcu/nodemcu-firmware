@@ -7,8 +7,8 @@
 // this out and enabling the explicitly size, e.g. FLASH_4M.  Valid sizes are
 // FLASH_512K, FLASH_1M, FLASH_2M, FLASH_4M, FLASH_8M, FLASH_16M.
 
-#define FLASH_AUTOSIZE
-//#define FLASH_4M
+//#define FLASH_AUTOSIZE
+#define FLASH_4M
 
 
 // The firmware now selects a baudrate of 115,200 by default, but the driver
@@ -43,9 +43,9 @@
 // the Lua VMS will execute this code directly from flash without needing any
 // RAM overhead.  If you want to enable LFS then set the following define to
 // the size of the store that you need.  This can be any multiple of 4kB up to
-// a maximum 256Kb.
+// a maximum 256Kb.  A size of zero disables this functionality.
 
-//#define LUA_FLASH_STORE 0x10000
+#define LUA_FLASH_STORE 0x0
 
 
 // By default Lua executes the file init.lua at start up.  The following
@@ -189,6 +189,26 @@
 // The remaining options are advanced configuration options and you should only
 // change this if you have tracked the implications through the Firmware sources
 // and understand the these.
+
+#define NODEMCU_EAGLEROM_PARTITION        1
+#define NODEMCU_IROM0TEXT_PARTITION       2
+#define NODEMCU_LFS0_PARTITION            3
+#define NODEMCU_LFS1_PARTITION            4
+#define NODEMCU_TLSCERT_PARTITION         5
+#define NODEMCU_SPIFFS0_PARTITION         6
+#define NODEMCU_SPIFFS1_PARTITION         7
+
+#ifndef LUA_FLASH_STORE
+#define LUA_FLASH_STORE 0x0
+#endif
+
+#ifndef SPIFFS_FIXED_LOCATION
+#define SPIFFS_FIXED_LOCATION 0x0
+#endif
+
+#ifndef SPIFFS_MAX_FILESYSTEM_SIZE	
+#define SPIFFS_MAX_FILESYSTEM_SIZE 0x0	
+#endif
 
 #define LUA_TASK_PRIO             USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG      2

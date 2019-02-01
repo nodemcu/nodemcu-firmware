@@ -5,20 +5,14 @@
 TOOLCHAIN_VERSION:=20181106.0
 
 # SDK base version, as released by Espressif
-SDK_BASE_VER:=2.2.1
-
-# no patch: SDK_VER equals SDK_BASE_VER and sdk dir depends on sdk_extracted
+SDK_BASE_VER:=3.0
 SDK_VER:=$(SDK_BASE_VER)
 SDK_DIR_DEPENDS:=sdk_extracted
 
-# with patch: SDK_VER differs from SDK_BASE_VER and sdk dir depends on sdk_patched
-#SDK_PATCH_VER:=f8f27ce
-#SDK_VER:=$(SDK_BASE_VER)-$(SDK_PATCH_VER)
-#SDK_DIR_DEPENDS:=sdk_patched
-
 SDK_FILE_VER:=$(SDK_BASE_VER)
-SDK_FILE_SHA1:=48f2242d5895823709f222bf0fffce9d525996c8
-# SDK_PATCH_SHA1:=0bc21ec77b08488f04d3e1c9d161b711d07201a8
+SDK_FILE_SHA1:=029fc23fe87e03c9852de636490b2d7b9e07f01a
+ESPTOOL_VER:=2.6
+
 # Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 SDK_REL_DIR=sdk/esp_iot_sdk_v$(SDK_VER)
@@ -109,6 +103,7 @@ else
 	CPP = $(WRAPCC) xtensa-lx106-elf-gcc -E
 	OBJCOPY = xtensa-lx106-elf-objcopy
 	FIRMWAREDIR = ../bin/
+  WGET = wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
 # LINUX
@@ -128,8 +123,12 @@ else
     endif
 endif
 #############################################################
-ESPTOOL ?= ../tools/esptool.py
 
+GITHUB_TOOLCHAIN = https://github.com/jmattsson/esp-toolchains
+GITHUB_SDK       = https://github.com/espressif/ESP8266_NONOS_SDK
+GITHUB_ESPTOOL   = https://github.com/espressif/esptool
+
+ESPTOOL ?= $(TOP_DIR)/tools/toolchains/esptool.py
 
 CSRCS ?= $(wildcard *.c)
 CXXSRCS ?= $(wildcard *.cpp)
@@ -234,18 +233,16 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 all: toolchain sdk_pruned pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
 .PHONY: sdk_extracted
-.PHONY: sdk_patched
 .PHONY: sdk_pruned
 .PHONY: toolchain
 
 sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER)
-sdk_patched: sdk_extracted $(TOP_DIR)/sdk/.patched-$(SDK_VER)
 sdk_pruned: $(SDK_DIR_DEPENDS) $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
 
 ifeq ($(OS),Windows_NT)
 toolchain:
 else
-toolchain: $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc
+toolchain: $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc $(TOP_DIR)/tools/toolchains/esptool.py
 
 $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
@@ -256,20 +253,32 @@ $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-
 $(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz:
 	mkdir -p $(TOP_DIR)/cache
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
+	$(WGET) $(GITHUB_TOOLCHAIN)/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ \
+	|| { rm -f "$@"; exit 1; }
 endif
+
+$(TOP_DIR)/tools/toolchains/esptool.py: $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz
+	mkdir -p $(TOP_DIR)/tools/toolchains/
+	tar -C $(TOP_DIR)/tools/toolchains/ -xzf $< --strip-components=1 esptool-$(ESPTOOL_VER)/esptool.py
+	chmod +x $@
+	touch $@
+
+$(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz:
+	mkdir -p $(TOP_DIR)/cache/esptool/
+	$(WGET) $(GITHUB_ESPTOOL)/archive/v$(ESPTOOL_VER).tar.gz -O $@ || { rm -f "$@"; exit 1; }
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
 	$(summary) UNZIP $(patsubst $(TOP_DIR)/%,%,$<)
-	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-$(SDK_BASE_VER) && unzip $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK-$(SDK_BASE_VER)/lib/* ESP8266_NONOS_SDK-$(SDK_BASE_VER)/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK-$(SDK_BASE_VER)/include/* ESP8266_NONOS_SDK-$(SDK_BASE_VER)/bin/esp_init_data_default_v05.bin)
+	(cd "$(dir $@)" && \
+	 rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-$(SDK_BASE_VER) && \
+	 unzip $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip \
+	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/lib/*' \
+	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/ld/*.v6.ld' \
+	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/include/*' \
+	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/bin/esp_init_data_default_v05.bin' \
+	)
 	mv $(dir $@)/ESP8266_NONOS_SDK-$(SDK_BASE_VER) $(dir $@)/esp_iot_sdk_v$(SDK_BASE_VER)
-	touch $@
-
-$(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_PATCH_VER).patch
-	mv $(dir $@)/esp_iot_sdk_v$(SDK_BASE_VER) $(dir $@)/esp_iot_sdk_v$(SDK_VER)
-	$(summary) APPLY $(patsubst $(TOP_DIR)/%,%,$<)
-	git apply --verbose -p1 --exclude='*VERSION' --exclude='*bin/at*' --directory=$(SDK_REL_DIR) $<
 	touch $@
 
 $(TOP_DIR)/sdk/.pruned-$(SDK_VER):
@@ -282,14 +291,8 @@ $(TOP_DIR)/sdk/.pruned-$(SDK_VER):
 $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/espressif/ESP8266_NONOS_SDK/archive/v$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
+	$(WGET) $(GITHUB_SDK)/archive/v$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
-
-$(TOP_DIR)/cache/$(SDK_PATCH_VER).patch:
-	mkdir -p "$(dir $@)"
-	$(summary) WGET $(SDK_PATCH_VER).patch
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused "https://github.com/espressif/ESP8266_NONOS_SDK/compare/v$(SDK_BASE_VER)...$(SDK_PATCH_VER).patch" -O $@ || { rm -f "$@"; exit 1; }
-	(echo "$(SDK_PATCH_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)

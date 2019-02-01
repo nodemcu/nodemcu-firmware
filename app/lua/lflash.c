@@ -8,7 +8,6 @@
 #define LUAC_CROSS_FILE
 #include "lua.h"
 
-#ifdef LUA_FLASH_STORE
 #include "lobject.h"
 #include "lauxlib.h"
 #include "lstate.h"
@@ -31,6 +30,7 @@
  */
 
 static char    *flashAddr;
+static uint32_t flashSize;
 static uint32_t flashAddrPhys;
 static uint32_t flashSector;
 static uint32_t curOffset;
@@ -38,9 +38,8 @@ static uint32_t curOffset;
 #define ALIGN(s)      (((s)+sizeof(size_t)-1) & ((size_t) (- (signed) sizeof(size_t))))
 #define ALIGN_BITS(s) (((uint32_t)s) & (sizeof(size_t)-1))
 #define ALL_SET       (~0)
-#define FLASH_SIZE    LUA_FLASH_STORE
 #define FLASH_PAGE_SIZE INTERNAL_FLASH_SECTOR_SIZE
-#define FLASH_PAGES   (FLASH_SIZE/FLASH_PAGE_SIZE)
+#define FLASH_PAGES   (flashSize/FLASH_PAGE_SIZE)
 #define READ_BLOCKSIZE      1024
 #define WRITE_BLOCKSIZE     2048
 #define DICTIONARY_WINDOW  16384
@@ -48,8 +47,6 @@ static uint32_t curOffset;
 #define BITS_PER_WORD         32
 #define WRITE_BLOCKS       ((DICTIONARY_WINDOW/WRITE_BLOCKSIZE)+1)
 #define WRITE_BLOCK_WORDS  (WRITE_BLOCKSIZE/WORDSIZE)
-
-char flash_region_base[FLASH_SIZE] ICACHE_FLASH_RESERVED_ATTR;
 
 struct INPUT {
   int      fd;
@@ -152,11 +149,15 @@ static void flashErase(uint32_t start, uint32_t end){
  * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
  */
 LUAI_FUNC void luaN_init (lua_State *L) {
-  curOffset       = 0;
-  flashAddr       = flash_region_base;
-  flashAddrPhys   = platform_flash_mapped2phys((uint32_t)flashAddr);
+  
+  flashSize = platform_flash_get_partition (NODEMCU_LFS0_PARTITION, &flashAddrPhys);
+  if (flashSize == 0) {
+    return;   // Nothing to do if the size is zero
+  }
+  flashAddr       = cast(char *, platform_flash_phys2mapped(flashAddrPhys));
   flashSector     = platform_flash_get_sector_of_address(flashAddrPhys);
   FlashHeader *fh = cast(FlashHeader *, flashAddr);
+  curOffset       = 0;
 
   /*
    * For the LFS to be valid, its signature has to be correct for this build
@@ -187,6 +188,7 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   G(L)->ROstrt.nuse = fh->nROuse ;
   G(L)->ROstrt.size = fh->nROsize;
   G(L)->ROpvmain    = cast(Proto *,fh->mainProto);
+  G(L)->LFSsize     = flashSize;
 }
 
 //extern void software_reset(void);
@@ -201,6 +203,13 @@ LUALIB_API int luaN_reload_reboot (lua_State *L) {
   // luaL_dbgbreak();
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
+
+  if (G(L)->LFSsize == 0) {
+    lua_pushstring(L, "No LFS partition allocated");
+    return 1;
+  }
+
+
  /*
   * Do a protected call of loadLFS.
   *
@@ -264,13 +273,17 @@ LUAI_FUNC int luaN_index (lua_State *L) {
   int i;
   int n = lua_gettop(L);
 
-  /* Return nil + the LFS base address if the LFS isn't loaded */
-  if(!(G(L)->ROpvmain)) {
+  /* Return nil + the LFS base address if the LFS size > 0 and it isn't loaded */
+  if (!(G(L)->ROpvmain)) {
     lua_settop(L, 0);
     lua_pushnil(L);
-    lua_pushinteger(L, (lua_Integer) flashAddr);
-    lua_pushinteger(L, flashAddrPhys);
-    return 3;
+    if (G(L)->LFSsize) {
+      lua_pushinteger(L, (lua_Integer) flashAddr);
+      lua_pushinteger(L, flashAddrPhys);
+      return 3;
+    } else {
+      return 1;
+    }
   }
 
   /* Push the LClosure of the LFS index function */
@@ -409,10 +422,10 @@ int procFirstPass (void) {
       flash_error("Incorrect LFS build type");
     if ((fh->flash_sig & ~FLASH_SIG_ABSOLUTE) != FLASH_SIG)
       flash_error("incorrect LFS header signature");
-    if (fh->flash_size > FLASH_SIZE)
+    if (fh->flash_size > flashSize)
       flash_error("LFS Image too big for configured LFS region");
     if ((fh->flash_size & 0x3) ||
-         fh->flash_size > FLASH_SIZE ||
+         fh->flash_size > flashSize ||
          out->flagsLen != 1 + (out->flashLen/WORDSIZE - 1) / BITS_PER_WORD)
       flash_error("LFS length mismatch");
     out->flags = luaM_newvector(out->L, out->flagsLen, uint);
@@ -557,4 +570,3 @@ static int loadLFSgc (lua_State *L) {
   }
   return 0;
 }
-#endif

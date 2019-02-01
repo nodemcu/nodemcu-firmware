@@ -62,7 +62,6 @@ just the `luac.cross` image.  You must first ensure that the following options i
 
 ```c
 //#define LUA_NUMBER_INTEGRAL       // uncomment if you want an integer build
-//#define LUA_FLASH_STORE 0x10000   // uncomment if you LFS support
 ```
 
 Developers have successfully built this on Linux (including docker builds), MacOS, Win10/WSL and WinX/Cygwin.

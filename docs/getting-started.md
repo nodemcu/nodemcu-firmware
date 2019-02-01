@@ -226,7 +226,7 @@ Detailed instructions available in the image's README. As for available config o
 
 ### For LFS
 
-1. In `app/include/user_config.h` uncomment `#define LUA_FLASH_STORE 0x10000` and adjust the size if necessary.
+1. In `app/include/user_config.h` edit the line `#define LUA_FLASH_STORE 0x0` and adjust the size to that needed.  Note that this must be a multiple of 4Kb.
 2. Build as you would otherwise build with this image (i.e. see its README)
 
 [↑ back to matrix](#task-os-selector)
