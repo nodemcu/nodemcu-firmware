@@ -109,27 +109,6 @@ Connect to a remote server.
 #### See also
 [`tls.socket:on()`](#tlssocketon)
 
-## tls.socket:dns()
-
-Provides DNS resolution for a hostname.
-
-#### Syntax
-`dns(domain, function(tls.socket, ip))`
-
-#### Parameters
-- `domain` domain name
-- `function(tls.socket, ip)` callback function. The first parameter is the socket, the second parameter is the IP address as a string.
-
-#### Returns
-`nil`
-
-#### Example
-```lua
-sk = tls.createConnection()
-sk:dns("google.com", function(conn, ip) print(ip) end)
-sk = nil
-```
-
 ## tls.socket:getpeer()
 
 Retrieve port and ip of peer.
@@ -168,10 +147,11 @@ Register callback functions for specific events.
 `on(event, function())`
 
 #### Parameters
-- `event` string, which can be "connection", "reconnection", "disconnection", "receive" or "sent"
+- `event` string, which can be "dns", "connection", "reconnection", "disconnection", "receive" or "sent"
 - `function(tls.socket[, string])` callback function. The first parameter is the socket.
 If event is "receive", the second parameter is the received data as string.
 If event is "reconnection", the second parameter is the reason of connection error (string).
+If event is "dns", the second parameter will be either `nil` or a string rendering of the resolved address.
 
 #### Returns
 `nil`

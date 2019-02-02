@@ -338,16 +338,7 @@ static int tls_socket_unhold( lua_State *L ) {
 
   return 0;
 }
-static int tls_socket_dns( lua_State *L ) {
-  tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
 
-  return 0;
-}
 static int tls_socket_getpeer( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
   luaL_argcheck(L, ud, 1, "TLS socket expected");
@@ -629,7 +620,6 @@ static const LUA_REG_TYPE tls_socket_map[] = {
   { LSTRKEY( "send" ),    LFUNCVAL( tls_socket_send ) },
   { LSTRKEY( "hold" ),    LFUNCVAL( tls_socket_hold ) },
   { LSTRKEY( "unhold" ),  LFUNCVAL( tls_socket_unhold ) },
-  { LSTRKEY( "dns" ),     LFUNCVAL( tls_socket_dns ) },
   { LSTRKEY( "getpeer" ), LFUNCVAL( tls_socket_getpeer ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( tls_socket_delete ) },
   { LSTRKEY( "__index" ), LROVAL( tls_socket_map ) },
