@@ -224,7 +224,15 @@ int lspi_master( lua_State *L )
                  stack,
                  "invalid host" );
 
-  luaL_checktype( L, ++stack, LUA_TTABLE );
+  if (lua_type( L, ++stack ) != LUA_TTABLE) {
+    // no configuration table provided
+    // assume that host is already initialized and just provide the object
+    lspi_host_t *ud = (lspi_host_t *)lua_newuserdata( L, sizeof( lspi_host_t ) );
+    luaL_getmetatable( L, UD_HOST_STR );
+    lua_setmetatable( L, -2 );
+    ud->host = host;
+    return 1;
+  }
 
   spi_bus_config_t config;
   memset( &config, 0, sizeof( config ) );

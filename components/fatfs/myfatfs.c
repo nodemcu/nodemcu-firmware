@@ -348,7 +348,7 @@ static vfs_vol *myfatfs_mount( const char *name, int num )
 
   // num argument specifies the physical driver
   if (num >= 0) {
-    for (int i = 0; i < NUM_LOGICAL_DRIVES; i++) {
+    for (int i = 0; i < FF_VOLUMES; i++) {
       if (0 == strncmp( name, volstr[i], strlen( volstr[i] ) )) {
         VolToPart[i].pd = num;
       }

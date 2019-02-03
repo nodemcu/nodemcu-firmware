@@ -17,7 +17,7 @@ The host signals can be mapped to any suitable GPIO pins.
 Initializes a bus in master mode and returns a bus master object.
 
 #### Syntax
-`spi.master(host, config[, dma])`
+`spi.master(host[, config[, dma]])`
 
 #### Parameters
 - `host` id, one of
@@ -33,6 +33,10 @@ Initializes a bus in master mode and returns a bus master object.
 - `dma` set DMA channel (1 or 2) or disable DMA (0), defaults to 1 if omitted.
   Enabling DMA allows sending and receiving an unlimited amount of bytes but has restrictions in halfduplex mode (see [`spi.master:device()`](#spimasterdevice)).
   Disabling DMA limits a transaction to 32&nbsp;bytes max.
+
+!!! not
+
+    Omitting the `config` table returns an SPI bus master object without further initialization. This enables sharing the same SPI host with `sdmmc` in SD-SPI mode. First call `sdmmc.init(sdmmc.VSPI, ...)`, then `spi.master(spi.VSPI)`.
 
 #### Returns
 SPI bus master object
