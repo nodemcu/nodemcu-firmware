@@ -26,113 +26,28 @@ would exceed 256 bytes. Once over this threashold, the contents of the FIFO are
 concatenated into a 2nd level FIFO entry of upto 256 bytes, and the 1st level FIFO
 cleared down to any residue.
 
-The sender dumps the 2nd level FIFO aggregating records up to 1024 bytes and once this
-is empty dumps an aggrate of the 1st level.
-
 ]]
 local node, table, tmr, wifi, uwrite,     tostring = 
       node, table, tmr, wifi, uart.write, tostring
 
 local function telnet_listener(socket) 
-  local insert,       remove,       concat,       heap,      gc   = 
-        table.insert, table.remove, table.concat, node.heap, collectgarbage
-  local fifo1, fifo1l, fifo2, fifo2l = {}, 0, {}, 0                  
-  local s -- s is a copy of the TCP socket if and only if sending is in progress
-
-  local wdclr, cnt = tmr.wdclr, 0
-  local function debug(fmt, ...)
-    if (...) then fmt = fmt:format(...) end
-    uwrite(0, "\r\nDBG: ",fmt,"\r\n" )
-    cnt = cnt + 1
-    if cnt % 10 then wdclr() end
-  end
-
-  local function flushGarbage()
-    if heap() < 13440 then gc() end
-  end
-
-  local function sendLine()
- -- debug("entering sendLine")  
-    if not s then return end
-
-    if fifo2l + fifo1l == 0 then -- both FIFOs empty, so clear down s
-        s = nil     
-     -- debug("Q cleared")        
-        return
-    end
-
-    flushGarbage()
-  
-    if #fifo2 < 4 then -- Flush FIFO1 into FIFO2
-      insert(fifo2,concat(fifo1))
-   -- debug("flushing %u bytes / %u recs of FIFO1 into FIFO2[%u]", fifo1l, #fifo1, #fifo2) 
-      fifo2l, fifo1, fifo1l = fifo2l + fifo1l, {}, 0
-    end
-
-    -- send out first 4 FIFO2 recs (or all if #fifo2<5)  
-    local rec =  remove(fifo2,1)        .. (remove(fifo2,1) or '') ..
-                (remove(fifo2,1) or '') .. (remove(fifo2,1) or '')
-    fifo2l = fifo2l - #rec
-
-    flushGarbage()
-    s:send(rec)
- -- debug( "sending %u bytes (%u buffers remain)\r\n%s ", #rec, #fifo2, rec)
-  end
-  local F1_SIZE = 256
-  local function queueLine(str)
-    -- Note that this algo does work for strings longer than 256 but it is sub-optimal
-    -- as it does string splitting, but this isn't really an issue IMO, as in practice 
-    -- fields of this size are very infrequent.
- 
- -- debug("entering queueLine(l=%u)", #str)  
-
-    while #str > 0 do  -- this is because str might be longer than the packet size!
-      local k, l = F1_SIZE - fifo1l, #str
-      local chunk
-
-      -- Is it time to batch up and flush FIFO1 into a new FIFO2 entry? Note that it's
-      -- not worth splitting a string to squeeze the last ounce out of a buffer size.
-
-   -- debug("#fifo1 = %u, k = %u, l = %u", #fifo1, k, l) 
-      if #fifo1 >= 32 or (k < l and k < 16) then 
-        insert(fifo2, concat(fifo1))
-     -- debug("flushing %u bytes / %u recs of FIFO1 into FIFO2[%u]", fifo1l, #fifo1, #fifo2) 
-        fifo2l, fifo1, fifo1l, k = fifo2l + fifo1l, {}, 0, F1_SIZE
-      end
-
-      if l > k+16 then -- also tolerate a size overrun of 16 bytes to avoid a split 
-        chunk, str = str:sub(1,k), str:sub(k+1)
-      else
-        chunk, str = str, ''
-      end
-  
-   -- debug("pushing %u bytes into FIFO1[l=%u], %u bytes remaining", #chunk, fifo1l, #str) 
-      insert(fifo1, chunk)
-      fifo1l = fifo1l + #chunk
-    end
-
-    if not s and socket then
-      s = socket
-      sendLine()      
-    else
-      flushGarbage()
-    end
-
-  end
+  local queueLine = (require "fifosock")(socket)
 
   local function receiveLine(s, line)
- -- debug( "received: %s", line) 
     node.input(line)
   end
 
   local function disconnect(s)
-    fifo1, fifo1l, fifo2, fifo2l, s = {}, 0, {}, 0, nil
+    socket:on("disconnection", nil)
+    socket:on("reconnection", nil)
+    socket:on("connection", nil)
+    socket:on("receive", nil)
+    socket:on("sent", nil)
     node.output(nil)
   end
 
   socket:on("receive",       receiveLine)
   socket:on("disconnection", disconnect)
-  socket:on("sent",          sendLine)
   node.output(queueLine, 0)
   print(("Welcome to NodeMCU world (%d mem free, %s)"):format(node.heap(), wifi.sta.getip()))
 end
