@@ -1,5 +1,5 @@
 --
--- If you have the LFS _init loaded then you invoke the provision by 
+-- If you have the LFS _init loaded then you invoke the provision by
 -- executing LFS.HTTP_OTA('your server','directory','image name').  Note
 -- that is unencrypted and unsigned. But the loader does validate that
 -- the image file is a valid and complete LFS image before loading.
@@ -9,9 +9,9 @@ local host, dir, image = ...
 
 local doRequest, firstRec, subsRec, finalise
 local n, total, size = 0, 0
-  
+
 doRequest = function(sk,hostIP)
-  if hostIP then 
+  if hostIP then
     local con = net.createConnection(net.TCP,0)
     con:connect(80,hostIP)
     -- Note that the current dev version can only accept uncompressed LFS images
@@ -22,7 +22,7 @@ doRequest = function(sk,hostIP)
         "Accept: application/octet-stream",
         "Accept-Encoding: identity",
         "Host: "..host,
-        "Connection: close", 
+        "Connection: close",
         "", "", }, "\r\n")
         print(request)
         sck:send(request)
@@ -46,7 +46,7 @@ firstRec = function (sck,rec)
     sck:close()
     print("GET failed")
   end
-end 
+end
 
 subsRec = function(sck,rec)
   total, n = total + #rec, n + 1

@@ -23,7 +23,7 @@ endif
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += -DGDBSTUB_REDIRECT_CONSOLE_OUTPUT 
+#DEFINES += -DGDBSTUB_REDIRECT_CONSOLE_OUTPUT
 
 #############################################################
 # Recursion Magic - Don't touch this!!

@@ -7,13 +7,13 @@
 *
 * Modification history:
 *     2014/5/1, v1.0 create this file.
-*     
+*
 * Adapted for NodeMCU 2016
-* 
+*
 * The owner parameter should be a unique value per module using this API
-* It could be a pointer to a bit of data or code 
-* e.g.   #define OWNER    ((os_param_t) module_init)   
-* where module_init is a function. For builtin modules, it might be 
+* It could be a pointer to a bit of data or code
+* e.g.   #define OWNER    ((os_param_t) module_init)
+* where module_init is a function. For builtin modules, it might be
 * a small numeric value that is known not to clash.
 *******************************************************************************/
 #include "ets_sys.h"

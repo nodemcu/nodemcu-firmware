@@ -11,22 +11,22 @@
 -- upvals
 local crypto, file, json,  net, node, table, tmr, wifi =
       crypto, file, sjson, net, node, table, tmr, wifi
-local error, pcall   = error, pcall 
+local error, pcall   = error, pcall
 local loadfile, gc   = loadfile, collectgarbage
-local concat, unpack = table.concat, unpack or table.unpack 
+local concat, unpack = table.concat, unpack or table.unpack
 
 local self = {post = node.task.post, prefix = "luaOTA/", conf = {}}
 
-self.log     = (DEBUG == true) and print or function() end 
-self.modname = ...  
+self.log     = (DEBUG == true) and print or function() end
+self.modname = ...
 
 --------------------------------------------------------------------------------------
 -- Utility Functions
 
 setmetatable( self, {__index=function(self, func) --upval: loadfile
-    -- The only __index calls in in LuaOTA are dynamically loaded functions. 
-    -- The convention is that functions starting with "_" are treated as 
-    -- call-once / ephemeral; the rest are registered in self 
+    -- The only __index calls in in LuaOTA are dynamically loaded functions.
+    -- The convention is that functions starting with "_" are treated as
+    -- call-once / ephemeral; the rest are registered in self
     func = self.prefix .. func
     local f,msg = loadfile( func..".lc")
     if msg then f, msg = loadfile(func..".lua") end
@@ -48,19 +48,19 @@ function self.startApp(arg) --upval: gc, self, tmr, wifi
   local appMod    = self.config.app   or "luaOTA.default"
   local appMethod = self.config.entry or "entry"
   if not arg then arg =  "General timeout on provisioning" end
-  self.post(function() --upval: appMod, appMethod, arg 
+  self.post(function() --upval: appMod, appMethod, arg
               require(appMod)[appMethod](arg)
             end)
-end 
+end
 
 function self.socket_send(socket, rec, opt_buffer)
   return socket:send(self.sign(rec) .. (opt_buffer or ''))
 end
 
 self.post(function() -- upval: self
-            -- This config check is to prevent a double execution if the 
-            -- user invokes with "require 'luaOTA/check':_init( etc>)" form  
-            if not rawget(self, "config") then self:_init() end 
+            -- This config check is to prevent a double execution if the
+            -- user invokes with "require 'luaOTA/check':_init( etc>)" form
+            if not rawget(self, "config") then self:_init() end
           end)
 
 return self

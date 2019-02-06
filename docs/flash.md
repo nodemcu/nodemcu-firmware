@@ -93,7 +93,7 @@ Espressif refers to this area as "System Param" and it resides in the last four 
 
 The default init data is provided as part of the SDK in the file `esp_init_data_default.bin`. NodeMCU will automatically flash this file to the right place on first boot if the sector appears to be empty.
 
-If you need to customize init data then first download the [Espressif SDK 2.2.0](https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.2.0.zip) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip. 
+If you need to customize init data then first download the [Espressif SDK 2.2.0](https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.2.0.zip) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip.
 
 - `0x7c000` for 512 kB, modules like most ESP-01, -03, -07 etc.
 - `0xfc000` for 1 MB, modules like ESP8285, PSF-A85, some ESP-01, -03 etc.

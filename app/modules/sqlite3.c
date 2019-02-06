@@ -1432,7 +1432,7 @@ static int db_update_hook(lua_State *L) {
 ** callback function:
 ** Params: userdata
 ** Returned value: Return false or nil to continue the COMMIT operation normally.
-**  return true (non false, non nil), then the COMMIT is converted into a ROLLBACK. 
+**  return true (non false, non nil), then the COMMIT is converted into a ROLLBACK.
 */
 static int db_commit_hook_callback(void *user) {
     sdb *db = (sdb*)user;
@@ -2167,7 +2167,7 @@ static int lsqlite_open_memory(lua_State *L) {
 }
 
 /* From: Wolfgang Oertl
-When using lsqlite3 in a multithreaded environment, each thread has a separate Lua 
+When using lsqlite3 in a multithreaded environment, each thread has a separate Lua
 environment, but full userdata structures can't be passed from one thread to another.
 This is possible with lightuserdata, however. See: db_get_ptr().
 */

@@ -75,7 +75,7 @@ static void websocketclient_onCloseCallback(ws_info *ws, int errorCode) {
     luaL_error(L, "Client websocket is nil.\n");
     return;
   }
-  ws_data *data = (ws_data *) ws->reservedData;  
+  ws_data *data = (ws_data *) ws->reservedData;
 
   if (data->onClose != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->onClose); // load the callback function
@@ -119,7 +119,7 @@ static int websocket_createClient(lua_State *L) {
 static int websocketclient_on(lua_State *L) {
   NODE_DBG("websocketclient_on\n");
 
-  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
+  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -170,7 +170,7 @@ static int websocketclient_on(lua_State *L) {
 static int websocketclient_connect(lua_State *L) {
   NODE_DBG("websocketclient_connect is called.\n");
 
-  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
+  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -242,7 +242,7 @@ static int websocketclient_config(lua_State *L) {
 static int websocketclient_send(lua_State *L) {
   NODE_DBG("websocketclient_send is called.\n");
 
-  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
+  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
 
   ws_data *data = (ws_data *) ws->reservedData;
 
@@ -265,7 +265,7 @@ static int websocketclient_send(lua_State *L) {
 
 static int websocketclient_close(lua_State *L) {
   NODE_DBG("websocketclient_close.\n");
-  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
+  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
 
   ws_close(ws);
   return 0;
@@ -274,7 +274,7 @@ static int websocketclient_close(lua_State *L) {
 static int websocketclient_gc(lua_State *L) {
   NODE_DBG("websocketclient_gc\n");
 
-  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);  
+  ws_info *ws = (ws_info *) luaL_checkudata(L, 1, METATABLE_WSCLIENT);
 
   ws->extraHeaders = realloc_headers(ws->extraHeaders, 0);
 

@@ -1,13 +1,13 @@
 ---
 -- Working Example: https://www.youtube.com/watch?v=PDxTR_KJLhc
--- IMPORTANT: run node.compile("imap.lua") after uploading this script 
+-- IMPORTANT: run node.compile("imap.lua") after uploading this script
 -- to create a compiled module. Then run file.remove("imap.lua")
 -- @name imap
--- @description An IMAP 4rev1 module that can be used to read email. 
+-- @description An IMAP 4rev1 module that can be used to read email.
 -- Tested on NodeMCU 0.9.5 build 20150213.
 -- @date March 12, 2015
--- @author Miguel 
---  GitHub: https://github.com/AllAboutEE 
+-- @author Miguel
+--  GitHub: https://github.com/AllAboutEE
 --  YouTube: https://www.youtube.com/user/AllAboutEE
 --  Website: http://AllAboutEE.com
 --
@@ -15,11 +15,11 @@
 -- "How to test an IMAP server by using telnet" http://www.anta.net/misc/telnet-troubleshooting/imap.shtml
 -- "RFC 2060 - Internet Message Access Protocol - Version 4rev1" http://www.faqs.org/rfcs/rfc2060.html
 -------------------------------------------------------------------------------------------------------------
-local moduleName = ... 
+local moduleName = ...
 local M = {}
-_G[moduleName] = M 
+_G[moduleName] = M
 
-local USERNAME = "" 
+local USERNAME = ""
 local PASSWORD = ""
 
 local SERVER = ""
@@ -44,7 +44,7 @@ end
 
 ---
 -- @name display
--- @description A generic IMAP response processing function. 
+-- @description A generic IMAP response processing function.
 -- Can disply the IMAP response if DEBUG is set to true.
 -- Sets the reponse processed variable to true when the string "complete"
 -- is found in the IMAP reply/response
@@ -55,7 +55,7 @@ local function display(socket, response)
         print(response)
     end
 
-    -- Some IMAP responses are long enough that they will cause the display 
+    -- Some IMAP responses are long enough that they will cause the display
     -- function to be called several times. One thing is certain, IMAP will replay with
     -- "<tag> OK <command> complete" when it's done sending data back.
     if(string.match(response,'complete') ~= nil) then
@@ -64,7 +64,7 @@ local function display(socket, response)
 
 end
 
---- 
+---
 -- @name config
 -- @description Initiates the IMAP settings
 function M.config(username,password,tag,debug)
@@ -78,7 +78,7 @@ end
 -- @name login
 -- @descrpiton Logs into a new email session
 function M.login(socket)
-    response_processed = false -- we are sending a new command 
+    response_processed = false -- we are sending a new command
                                -- which means that the response for it has not been processed
     socket:send(TAG .. " LOGIN " .. USERNAME .. " " .. PASSWORD .. "\r\n")
     socket:on("receive",display)
@@ -92,7 +92,7 @@ function M.get_most_recent_num()
 end
 
 ---
--- @name set_most_recent_num 
+-- @name set_most_recent_num
 -- @description Gets the most recent email number from the EXAMINE command.
 -- i.e. if EXAMINE returns "* 4 EXISTS" this means that there are 4 emails,
 -- so the latest/newest will be identified by the number 4
@@ -105,7 +105,7 @@ local function set_most_recent_num(socket,response)
     local _, _, num = string.find(response,"([0-9]+) EXISTS(\.)") -- the _ and _ keep the index of the string found
                                                                   -- but we don't care about that.
 
-    if(num~=nil) then 
+    if(num~=nil) then
         most_recent_num = num
     end
 
@@ -133,7 +133,7 @@ end
 
 ---
 -- @name set_header
--- @description Records the IMAP header field response in a variable 
+-- @description Records the IMAP header field response in a variable
 -- so that it may be read later
 local function set_header(socket,response)
     if(DEBUG) then
@@ -162,14 +162,14 @@ end
 
 ---
 -- @name get_body
--- @return The last email read's body 
+-- @return The last email read's body
 function M.get_body()
     return body
 end
 
 ---
 -- @name set_body
--- @description Records the IMAP body response in a variable 
+-- @description Records the IMAP body response in a variable
 -- so that it may be read later
 local function set_body(socket,response)
 

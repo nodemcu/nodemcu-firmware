@@ -57,7 +57,7 @@
 
 #else
 
-// I2C displays can be defined in an external file. 
+// I2C displays can be defined in an external file.
 #define U8G2_DISPLAY_TABLE_I2C \
    U8G2_DISPLAY_TABLE_I2C_EXTRA
 
@@ -150,7 +150,7 @@
 
 #else
 
-// SPI displays can be defined in an external file. 
+// SPI displays can be defined in an external file.
 #define U8G2_DISPLAY_TABLE_SPI \
    U8G2_DISPLAY_TABLE_SPI_EXTRA
 

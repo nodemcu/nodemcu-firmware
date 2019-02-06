@@ -16,7 +16,7 @@ coap_pdu_t * coap_new_pdu(void) {
     return NULL;
   }
   pdu->scratch.len = MAX_REQ_SCRATCH_SIZE;
-  
+
   pdu->pkt = (coap_packet_t *)c_zalloc(sizeof(coap_packet_t));
   if(!pdu->pkt){
     NODE_DBG("coap_new_pdu malloc error.\n");

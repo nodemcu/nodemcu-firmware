@@ -320,16 +320,16 @@ srv = net.createConnection(net.TCP, 0)
 srv:on("receive", function(sck, c) print(c) end)
 -- Wait for connection before sending.
 srv:on("connection", function(sck, c)
-  -- 'Connection: close' rather than 'Connection: keep-alive' to have server 
-  -- initiate a close of the connection after final response (frees memory 
-  -- earlier here), https://tools.ietf.org/html/rfc7230#section-6.6 
+  -- 'Connection: close' rather than 'Connection: keep-alive' to have server
+  -- initiate a close of the connection after final response (frees memory
+  -- earlier here), https://tools.ietf.org/html/rfc7230#section-6.6
   sck:send("GET /get HTTP/1.1\r\nHost: httpbin.org\r\nConnection: close\r\nAccept: */*\r\n\r\n")
 end)
 srv:connect(80,"httpbin.org")
 ```
 !!! note
     The `receive` event is fired for every network frame! Hence, if the data sent to the device exceeds 1460 bytes (derived from [Ethernet frame size](https://en.wikipedia.org/wiki/Ethernet_frame)) it will fire more than once. There may be other situations where incoming data is split across multiple frames (e.g. HTTP POST with `multipart/form-data`). You need to manually buffer the data and find means to determine if all data was received.
-    
+
 ```lua
 local buffer = nil
 
@@ -342,7 +342,7 @@ srv:on("receive", function(sck, c)
 end)
 -- throttling could be implemented using socket:hold()
 -- example: https://github.com/nodemcu/nodemcu-firmware/blob/master/lua_examples/pcm/play_network.lua#L83
-```    
+```
 
 #### See also
 - [`net.createServer()`](#netcreateserver)
@@ -405,11 +405,11 @@ end)
 If you do not or can not keep all the data you send back in memory at one time (remember that `response` is an aggregation) you may use explicit callbacks instead of building up a table like so:
 
 ```lua
-sck:send(header, function() 
+sck:send(header, function()
   local data1 = "some large chunk of dynamically loaded data"
   sck:send(data1, function()
     local data2 = "even more dynamically loaded data"
-    sck:send(data2, function(sk) 
+    sck:send(data2, function(sk)
       sk:close()
     end)
   end)
@@ -601,7 +601,7 @@ Sets the IP of the DNS server used to resolve hostnames. Default: resolver1.open
 
 #### Parameters
 - `dns_ip_addr` IP address of a DNS server
-- `dns_index` which DNS server to set (range 0~1). Hence, it supports max. 2 servers. 
+- `dns_index` which DNS server to set (range 0~1). Hence, it supports max. 2 servers.
 
 #### Returns
 `nil`

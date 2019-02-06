@@ -46,9 +46,9 @@ The savedRegs struct:
 */
 
 /*
-This is the debugging exception routine; it's called by the debugging vector 
+This is the debugging exception routine; it's called by the debugging vector
 
-We arrive here with all regs intact except for a2. The old contents of A2 are saved 
+We arrive here with all regs intact except for a2. The old contents of A2 are saved
 into the DEBUG_EXCSAVE special function register. EPC is the original PC.
 */
 gdbstub_debug_exception_entry:
@@ -170,7 +170,7 @@ DebugExceptionExit:
 FreeRTOS exception handling code. For some reason or another, we can't just hook the main exception vector: it
 seems FreeRTOS uses that for something else too (interrupts). FreeRTOS has its own fatal exception handler, and we
 hook that. Unfortunately, that one is called from a few different places (eg directly in the DoubleExceptionVector)
-so the precise location of the original register values are somewhat of a mystery when we arrive here... 
+so the precise location of the original register values are somewhat of a mystery when we arrive here...
 
 As a 'solution', we'll just decode the most common case of the user_fatal_exception_handler being called from
 the user exception handler vector:
@@ -350,14 +350,14 @@ gdbstub_set_hw_watchpoint:
 	bany	a6, a5, return_w_error
 	//Set watchpoint
 	wsr		a2, DBREAKA
-	
+
 	//Combine type and mask
 	movi	a6, 0x3F
 	and		a3, a3, a6
 	slli	a4, a4, 30
 	or		a3, a3, a4
 	wsr		a3, DBREAKC
-	
+
 //	movi	a2, 1
 	mov		a2, a3
 	isync

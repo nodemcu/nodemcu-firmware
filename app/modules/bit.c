@@ -29,7 +29,7 @@ typedef size_t lua_UInteger;
    ARITHMETIC_SHIFT does not truncate its left-hand operand, so that
    the sign bits are not removed and right shift work properly.
    */
-  
+
 #define MONADIC(name, op)                                       \
   static int bit_ ## name(lua_State *L) {                       \
     lua_pushinteger(L, op TOBIT(L, 1));                         \
@@ -80,7 +80,7 @@ static int bit_isset( lua_State* L )
 {
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned pos = ( unsigned )luaL_checkinteger( L, 2 );
-  
+
   lua_pushboolean( L, val & ( 1 << pos ) ? 1 : 0 );
   return 1;
 }
@@ -90,17 +90,17 @@ static int bit_isclear( lua_State* L )
 {
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned pos = ( unsigned )luaL_checkinteger( L, 2 );
-  
+
   lua_pushboolean( L, val & ( 1 << pos ) ? 0 : 1 );
   return 1;
 }
 
 // Lua: res = set( value, pos1, pos2, ... )
 static int bit_set( lua_State* L )
-{ 
+{
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned total = lua_gettop( L ), i;
-  
+
   for( i = 2; i <= total; i ++ )
     val |= 1 << ( unsigned )luaL_checkinteger( L, i );
   lua_pushinteger( L, ( lua_Integer )val );
@@ -112,11 +112,11 @@ static int bit_clear( lua_State* L )
 {
   lua_UInteger val = ( lua_UInteger )luaL_checkinteger( L, 1 );
   unsigned total = lua_gettop( L ), i;
-  
+
   for( i = 2; i <= total; i ++ )
     val &= ~( 1 << ( unsigned )luaL_checkinteger( L, i ) );
   lua_pushinteger( L, ( lua_Integer )val );
-  return 1; 
+  return 1;
 }
 
 static const LUA_REG_TYPE bit_map[] = {

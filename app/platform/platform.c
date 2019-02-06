@@ -309,7 +309,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
   }
 
   // This must be the register new hook / delete old hook
-  
+
   if (delete_slot < 0) {
     if (bits & oh.all_bits) {
       return 0;   // Attempt to hook already hooked bits

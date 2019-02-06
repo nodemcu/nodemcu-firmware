@@ -148,11 +148,11 @@
 #define SPIFFS_PACKED __attribute__((packed))
 #elif defined(__ICCARM__) || defined(__CC_ARM)
     /* For IAR ARM and Keil MDK-ARM compilers */
-#define SPIFFS_PACKED 
+#define SPIFFS_PACKED
 
 #else
     /* Unknown compiler */
-#define SPIFFS_PACKED 
+#define SPIFFS_PACKED
 #endif
 
 

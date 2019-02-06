@@ -24,8 +24,8 @@ typedef struct
     uint8_t ver;                /* CoAP version number */
     uint8_t t;                  /* CoAP Message Type */
     uint8_t tkl;                /* Token length: indicates length of the Token field */
-    uint8_t code;               /* CoAP status code. Can be request (0.xx), success reponse (2.xx), 
-                                 * client error response (4.xx), or rever error response (5.xx) 
+    uint8_t code;               /* CoAP status code. Can be request (0.xx), success reponse (2.xx),
+                                 * client error response (4.xx), or rever error response (5.xx)
                                  * For possible values, see http://tools.ietf.org/html/rfc7252#section-12.1 */
     uint8_t id[2];
 } coap_header_t;
@@ -164,14 +164,14 @@ struct coap_luser_entry{
 
 struct coap_endpoint_t{
     coap_method_t method;               /* (i.e. POST, PUT or GET) */
-    coap_endpoint_func handler;         /* callback function which handles this 
-                                         * type of endpoint (and calls 
+    coap_endpoint_func handler;         /* callback function which handles this
+                                         * type of endpoint (and calls
                                          * coap_make_response() at some point) */
-    const coap_endpoint_path_t *path;   /* path towards a resource (i.e. foo/bar/) */ 
+    const coap_endpoint_path_t *path;   /* path towards a resource (i.e. foo/bar/) */
     const char *core_attr;              /* the 'ct' attribute, as defined in RFC7252, section 7.2.1.:
-                                         * "The Content-Format code "ct" attribute 
-                                         * provides a hint about the 
-                                         * Content-Formats this resource returns." 
+                                         * "The Content-Format code "ct" attribute
+                                         * provides a hint about the
+                                         * Content-Formats this resource returns."
                                          * (Section 12.3. lists possible ct values.) */
 	coap_luser_entry *user_entry;
 };

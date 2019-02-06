@@ -15,7 +15,7 @@ Provide a [Minimal, Complete, and Verifiable example](http://stackoverflow.com/h
 Which branch are you on? If you know the Git revision then add it here as well.
 
 ### Hardware
-Describe which ESP8266 device you use and document any special hardware setup 
+Describe which ESP8266 device you use and document any special hardware setup
 required to reproduce the problem.
 
 8<------------------------ END BUG REPORT -------------------------------------

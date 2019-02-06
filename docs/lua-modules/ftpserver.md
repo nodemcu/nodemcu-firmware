@@ -8,7 +8,7 @@ This Lua module implementation provides a basic FTP server for the ESP8266. It h
 It provides a limited subset of FTP commands that enable such clients to transfer files to and from the ESP's file system. Only one server can be started at any one time, but this server can support multiple connected sessions (some FTP clients use multiple sessions and so require this feature).
 
 !!! warning
-	This module is too big to load by standard `require` function or compile on ESP8266 using `node.compile()`. The only option to load and use it is to use [LFS](../lfs.md). 
+	This module is too big to load by standard `require` function or compile on ESP8266 using `node.compile()`. The only option to load and use it is to use [LFS](../lfs.md).
 
 ### Limitations
 -  FTP over SSH or TLS is not currently supported so transfer is unencrypted.
@@ -18,7 +18,7 @@ It provides a limited subset of FTP commands that enable such clients to transfe
 -  Only PASV mode is supported as the `net` module does not allow static allocation of outbound sockets.
 
 ### Notes
-The coding style adopted here is more similar to best practice for normal (PC) module implementations, as using LFS permits a bias towards clarity of coding over brevity. It includes extra logic to handle some of the edge case issues more robustly. It also uses a standard forward reference coding pattern to allow the code to be laid out in main routine, subroutine order. 
+The coding style adopted here is more similar to best practice for normal (PC) module implementations, as using LFS permits a bias towards clarity of coding over brevity. It includes extra logic to handle some of the edge case issues more robustly. It also uses a standard forward reference coding pattern to allow the code to be laid out in main routine, subroutine order.
 
 Most FTP clients are capable of higher transfer rates than the ESP SPIFFS write throughput, so the server uses TCP flow control to limit upload rates to the ESP.
 
@@ -27,7 +27,7 @@ The following FTP commands are supported:
 -  with no parameter: CDUP, NOOP, PASV, PWD, QUIT, SYST
 -  with one parameter: CWD, DELE, MODE, PASS, PORT, RNFR, RNTO, SIZE, TYPE, USER
 -  xfer commands: LIST, NLST, RETR, STOR
-   
+
 This implementation is by [Terry Ellison](https://github.com/TerryE), but I wish to acknowledge the inspiration and hard work by [Neronix](https://github.com/NeiroNx) that made this possible.
 
 ## createServer()
@@ -49,7 +49,7 @@ Create the FTP server on the standard ports 20 and 21.  The global variable `FTP
 require("ftpserver").createServer('user', 'password')
 ```
 
-## open() 
+## open()
 Wrapper to createServer() which also connects to the WiFi channel.
 
 #### Syntax

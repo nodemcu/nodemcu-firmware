@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright 2015 Espressif Systems
  *
- * Description: A stub to make the ESP8266 debuggable by GDB over the serial 
+ * Description: A stub to make the ESP8266 debuggable by GDB over the serial
  * port.
  *
  * License: ESPRESSIF MIT License
@@ -267,7 +267,7 @@ static int ATTR_GDBFN validWrAddr(int p) {
 	return 0;
 }
 
-/* 
+/*
 Register file in the format lx106 gdb port expects it.
 Inspired by gdb/regformats/reg-xtensa.dat from
 https://github.com/jcmvbkbc/crosstool-NG/blob/lx106-g%2B%2B/overlays/xtensa_lx106.tar
@@ -470,7 +470,7 @@ static int ATTR_GDBFN gdbHandleCommand(unsigned char *cmd, int len) {
 
 //Lower layer: grab a command packet and check the checksum
 //Calls gdbHandleCommand on the packet if the checksum is OK
-//Returns ST_OK on success, ST_ERR when checksum fails, a 
+//Returns ST_OK on success, ST_ERR when checksum fails, a
 //character if it is received instead of the GDB packet
 //start char.
 static int ATTR_GDBFN gdbReadCommand() {
@@ -580,7 +580,7 @@ void ATTR_GDBFN gdbstub_handle_debug_exception() {
 	while(gdbReadCommand()!=ST_CONT);
 	if ((gdbstub_savedRegs.reason&0x84)==0x4) {
 		//We stopped due to a watchpoint. We can't re-execute the current instruction
-		//because it will happily re-trigger the same watchpoint, so we emulate it 
+		//because it will happily re-trigger the same watchpoint, so we emulate it
 		//while we're still in debugger space.
 		emulLdSt();
 	} else if ((gdbstub_savedRegs.reason&0x88)==0x8) {
@@ -659,12 +659,12 @@ static void ATTR_GDBFN gdb_semihost_putchar1(char c) {
 }
 
 #if !GDBSTUB_FREERTOS
-//The OS-less SDK uses the Xtensa HAL to handle exceptions. We can use those functions to catch any 
+//The OS-less SDK uses the Xtensa HAL to handle exceptions. We can use those functions to catch any
 //fatal exceptions and invoke the debugger when this happens.
 static void ATTR_GDBINIT install_exceptions() {
 	int i;
 	int exno[]={EXCCAUSE_ILLEGAL, EXCCAUSE_SYSCALL, EXCCAUSE_INSTR_ERROR, EXCCAUSE_LOAD_STORE_ERROR,
-			EXCCAUSE_DIVIDE_BY_ZERO, EXCCAUSE_UNALIGNED, EXCCAUSE_INSTR_DATA_ERROR, EXCCAUSE_LOAD_STORE_DATA_ERROR, 
+			EXCCAUSE_DIVIDE_BY_ZERO, EXCCAUSE_UNALIGNED, EXCCAUSE_INSTR_DATA_ERROR, EXCCAUSE_LOAD_STORE_DATA_ERROR,
 			EXCCAUSE_INSTR_ADDR_ERROR, EXCCAUSE_LOAD_STORE_ADDR_ERROR, EXCCAUSE_INSTR_PROHIBITED,
 			EXCCAUSE_LOAD_PROHIBITED, EXCCAUSE_STORE_PROHIBITED};
 	for (i=0; i<(sizeof(exno)/sizeof(exno[0])); i++) {
@@ -708,9 +708,9 @@ static void ATTR_GDBFN uart_hdlr(void *arg, void *frame) {
 		//Copy registers the Xtensa HAL did save to gdbstub_savedRegs
 		os_memcpy(&gdbstub_savedRegs, frame, 19*4);
 		gdbstub_savedRegs.a1=(uint32_t)frame+EXCEPTION_GDB_SP_OFFSET;
-	
+
 		gdbstub_savedRegs.reason=0xff; //mark as user break reason
-	
+
 		ets_wdt_disable();
 		sendReason();
 		xthal_set_intenable(0);
@@ -749,9 +749,9 @@ void ATTR_GDBFN gdbstub_handle_uart_int(struct XTensa_rtos_int_frame_s *frame) {
 		for (x=2; x<16; x++) gdbstub_savedRegs.a[x-2]=frame->a[x];
 
 //		gdbstub_savedRegs.a1=(uint32_t)frame+EXCEPTION_GDB_SP_OFFSET;
-	
+
 		gdbstub_savedRegs.reason=0xff; //mark as user break reason
-	
+
 //		ets_wdt_disable();
 		sendReason();
 		while(gdbReadCommand()!=ST_CONT);

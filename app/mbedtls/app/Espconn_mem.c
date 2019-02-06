@@ -25,13 +25,13 @@ void *espconn_memcpy(void *dst, const void *src, size_t size, char *file, int li
 {
 	char *psrc = NULL;
 	char *pdst = NULL;
-	
+
 	if(NULL == dst || NULL == src)
 	{
 		return NULL;
 	}
 	//os_printf("%s %d %p %p %d\n",file, line, dst, src, size);
-	if((src < dst) && (char *)src + size > (char *)dst) 
+	if((src < dst) && (char *)src + size > (char *)dst)
 	{
 		psrc = (char *)src + size - 1;
 		pdst = (char *)dst + size - 1;
@@ -49,7 +49,7 @@ void *espconn_memcpy(void *dst, const void *src, size_t size, char *file, int li
 			*pdst++ = *psrc++;
 		}
 	}
-	
+
 	return dst;
 
 }

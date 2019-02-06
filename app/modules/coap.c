@@ -105,7 +105,7 @@ static int coap_create( lua_State* L, const char* mt )
   pesp_conn->reverse = cud;
 
   NODE_DBG("coap_create is called.\n");
-  return 1;  
+  return 1;
 }
 
 // Lua: server:delete()
@@ -138,7 +138,7 @@ static int coap_delete( lua_State* L, const char* mt )
   }
 
   NODE_DBG("coap_delete is called.\n");
-  return 0;  
+  return 0;
 }
 
 // Lua: server:listen( port, ip )
@@ -187,7 +187,7 @@ static int coap_start( lua_State* L, const char* mt )
 
   NODE_DBG("Coap Server started on port: %d\n", port);
   NODE_DBG("coap_start is called.\n");
-  return 0;  
+  return 0;
 }
 
 // Lua: server:close()
@@ -215,14 +215,14 @@ static int coap_close( lua_State* L, const char* mt )
   }
 
   NODE_DBG("coap_close is called.\n");
-  return 0;  
+  return 0;
 }
 
 // Lua: server/client:on( "method", function(s) )
 static int coap_on( lua_State* L, const char* mt )
 {
   NODE_DBG("coap_on is called.\n");
-  return 0;  
+  return 0;
 }
 
 static void coap_response_handler(void *arg, char *pdata, unsigned short len)
@@ -405,8 +405,8 @@ static int coap_request( lua_State* L, coap_method_t m )
     if( ESPCONN_OK != con){
       NODE_DBG("Connect to host. code:%d\n", con);
       // coap_delete_pdu(pdu);
-    } 
-    // else 
+    }
+    // else
     {
       coap_tid_t tid = COAP_INVALID_TID;
       if (pdu->pkt->hdr.t == COAP_TYPE_CON){
@@ -425,7 +425,7 @@ static int coap_request( lua_State* L, coap_method_t m )
     c_free((void *)uri);
 
   NODE_DBG("coap_request is called.\n");
-  return 0;  
+  return 0;
 }
 
 extern coap_luser_entry *variable_entry;
@@ -459,13 +459,13 @@ static int coap_regist( lua_State* L, const char* mt, int isvar )
       return luaL_error(L, "not enough memory");
     h->next = NULL;
     h->name = NULL;
-  }  
+  }
 
   h->name = name;
   h->content_type = content_type;
 
   NODE_DBG("coap_regist is called.\n");
-  return 0;  
+  return 0;
 }
 
 // Lua: s = coap.createServer(function(conn))
@@ -576,7 +576,7 @@ static const LUA_REG_TYPE coap_client_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-static const LUA_REG_TYPE coap_map[] = 
+static const LUA_REG_TYPE coap_map[] =
 {
   { LSTRKEY( "Server" ),      LFUNCVAL( coap_createServer ) },
   { LSTRKEY( "Client" ),      LFUNCVAL( coap_createClient ) },
@@ -595,8 +595,8 @@ static const LUA_REG_TYPE coap_map[] =
 int luaopen_coap( lua_State *L )
 {
   endpoint_setup();
-  luaL_rometatable(L, "coap_server", (void *)coap_server_map);  // create metatable for coap_server 
-  luaL_rometatable(L, "coap_client", (void *)coap_client_map);  // create metatable for coap_client  
+  luaL_rometatable(L, "coap_server", (void *)coap_server_map);  // create metatable for coap_server
+  luaL_rometatable(L, "coap_client", (void *)coap_client_map);  // create metatable for coap_client
   return 0;
 }
 

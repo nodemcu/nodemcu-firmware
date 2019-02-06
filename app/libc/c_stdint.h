@@ -261,7 +261,7 @@ typedef unsigned       __int64 uintmax_t;
       using ::std::uintptr_t;
       using ::std::intmax_t;
       using ::std::uintmax_t;
-    #endif 
+    #endif
   #endif /* __cplusplus */
 #endif
 

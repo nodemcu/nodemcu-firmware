@@ -307,7 +307,7 @@ extern unsigned int max_content_len;
 #else
 // the current mbedtls integration doesn't allow to set the buffer size dynamically:
 //   MBEDTLS_SSL_MAX_FRAGMENT_LENGTH feature and dynamic sizing are mutually exclusive
-//   due to non-constant initializer element in app/mbedtls/library/ssl_tls.c:150 
+//   due to non-constant initializer element in app/mbedtls/library/ssl_tls.c:150
 // the buffer size is hardcoded here and value is taken from SSL_BUFFER_SIZE (user_config.h)
 #define MBEDTLS_SSL_MAX_CONTENT_LEN             SSL_BUFFER_SIZE /**< Maxium fragment length in bytes, determines the size of each of the two internal I/O buffers */
 #endif

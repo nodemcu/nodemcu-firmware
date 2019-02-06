@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*! 
+/*!
     @file     tsl2561.h
     @author   K. Townsend (microBuilder.eu) / Adapted for nodeMCU by Michael Lucas (Aeprox @github)
 

@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
- * All rights reserved. 
- * 
- * Redistribution and use in source and binary forms, with or without modification, 
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice,
@@ -11,21 +11,21 @@
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission. 
+ *    derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED 
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  *
  * This file is part of the lwIP TCP/IP stack.
- * 
+ *
  * Author: Adam Dunkels <adam@sics.se>
  *
  */
@@ -174,7 +174,7 @@ struct tcp_pcb {
 
   /* ports are in host byte order */
   u16_t remote_port;
-  
+
   u8_t flags;
 #define TF_ACK_DELAY   ((u8_t)0x01U)   /* Delayed ACK. */
 #define TF_ACK_NOW     ((u8_t)0x02U)   /* Immediate ACK. */
@@ -196,12 +196,12 @@ struct tcp_pcb {
   /* Timers */
   u32_t tmr;
   u8_t polltmr, pollinterval;
-  
+
   /* Retransmission timer. */
   s16_t rtime;
-  
+
   u16_t mss;   /* maximum segment size */
-  
+
   /* RTT (round trip time) estimation variables */
   u32_t rttest; /* RTT estimate in 500ms ticks */
   u32_t rtseq;  /* sequence number being timed */
@@ -213,9 +213,9 @@ struct tcp_pcb {
   /* fast retransmit/recovery */
   u32_t lastack; /* Highest acknowledged seqno. */
   u8_t dupacks;
-  
+
   /* congestion avoidance/control variables */
-  u16_t cwnd;  
+  u16_t cwnd;
   u16_t ssthresh;
 
   /* sender variables */
@@ -226,7 +226,7 @@ struct tcp_pcb {
   u32_t snd_lbb;       /* Sequence number of next byte to be buffered. */
 
   u16_t acked;
-  
+
   u16_t snd_buf;   /* Available buffer space for sending (in bytes). */
 #define TCP_SNDQUEUELEN_OVERFLOW (0xffff-3)
   u16_t snd_queuelen; /* Available buffer space for sending (in tcp_segs). */
@@ -234,12 +234,12 @@ struct tcp_pcb {
 #if TCP_OVERSIZE
   /* Extra bytes available at the end of the last pbuf in unsent. */
   u16_t unsent_oversize;
-#endif /* TCP_OVERSIZE */ 
+#endif /* TCP_OVERSIZE */
 
   /* These are ordered by sequence number: */
   struct tcp_seg *unsent;   /* Unsent (queued) segments. */
   struct tcp_seg *unacked;  /* Sent but unacknowledged segments. */
-#if TCP_QUEUE_OOSEQ  
+#if TCP_QUEUE_OOSEQ
   struct tcp_seg *ooseq;    /* Received out of sequence segments. */
 #endif /* TCP_QUEUE_OOSEQ */
 
@@ -269,7 +269,7 @@ struct tcp_pcb {
   u32_t keep_intvl;
   u32_t keep_cnt;
 #endif /* LWIP_TCP_KEEPALIVE */
-  
+
   /* Persist timer counter */
   u32_t persist_cnt;
   /* Persist timer back-off */
@@ -279,7 +279,7 @@ struct tcp_pcb {
   u8_t keep_cnt_sent;
 };
 
-struct tcp_pcb_listen {  
+struct tcp_pcb_listen {
 /* Common members of all PCB types */
   IP_PCB;
 /* Protocol specific PCB members */

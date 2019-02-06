@@ -232,7 +232,7 @@ Controls the vertificate verification process when the Nodemcu makes a secure co
 - `pemdata` A string containing the CA certificate to use for verification.
 
 #### Returns
-`true` if it worked. 
+`true` if it worked.
 
 Can throw a number of errors if invalid data is supplied.
 
@@ -278,10 +278,10 @@ http.get("https://letsencrypt.org/", nil, function (code, resp) print(code, resp
 
 #### Notes
 The certificate needed for verification is stored in the flash chip. The `tls.cert.verify` call with `true`
-enables verification against the value stored in the flash. 
+enables verification against the value stored in the flash.
 
 The certificate can be loaded into the flash chip in two ways -- one at firmware build time, and the other at initial boot
-of the firmware. In order to load the certificate at build time, just place a file containing the CA certificate (in PEM format) 
+of the firmware. In order to load the certificate at build time, just place a file containing the CA certificate (in PEM format)
 at `server-ca.crt` in the root of the nodemcu-firmware build tree. The build scripts will incorporate this into the resulting
 firmware image.
 

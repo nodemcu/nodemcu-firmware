@@ -13,7 +13,7 @@
 #include "osapi.h"
 #include "lwip/err.h"
 #include "lwip/ip_addr.h"
-#include "lwip/dns.h" 
+#include "lwip/dns.h"
 #include "lwip/igmp.h"
 #include "lwip/tcp.h"
 #include "lwip/udp.h"

@@ -17,9 +17,9 @@ yeelink.init(23333,23333,"You api-key",function()  --Step3: Register the callbac
 
   print("Yeelink Init OK...")
   tmr.alarm(1,60000,1,function()   --Step4: Have fun~ (Update your data)
-  
+
     dht.read(4)
     yeelink.update(dht.getTemperature())
-    
+
   end)
 end)

@@ -7,7 +7,7 @@ class Cert(object):
         self.len = len(buff)
         self.buff = buff
         pass
-    
+
     def __str__(self):
         out_str = ['\0']*32
         for i in range(len(self.name)):

@@ -278,7 +278,7 @@ static const LUA_REG_TYPE http_map[] = {
 
   { LSTRKEY( "OK" ),              LNUMVAL( 0 ) },
   { LSTRKEY( "ERROR" ),           LNUMVAL( HTTP_STATUS_GENERIC_ERROR ) },
-  
+
   { LNILKEY, LNILVAL }
 };
 

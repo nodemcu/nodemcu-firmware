@@ -130,7 +130,7 @@ espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
 
     struct netif *sta_netif = (struct netif *)eagle_lwip_getif(0x00);
     struct netif *ap_netif =  (struct netif *)eagle_lwip_getif(0x01);
-		
+
     if(wifi_get_opmode() == ESPCONN_AP_STA && default_interface == ESPCONN_AP_STA && sta_netif != NULL && ap_netif != NULL)
     {
     	if(netif_is_up(sta_netif) && netif_is_up(ap_netif) && \
