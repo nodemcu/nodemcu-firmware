@@ -4,7 +4,7 @@
 | 2015-06-30 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson) | [Johny Mattsson](https://github.com/jmattsson) | [sntp.c](../../app/modules/sntp.c)|
 
 The SNTP module implements a [Simple Network Time Procotol](https://en.wikipedia.org/wiki/Network_Time_Protocol#SNTP) client. This includes support for the "anycast" [NTP](https://en.wikipedia.org/wiki/Network_Time_Protocol) mode where, if supported by the NTP server(s) in your network, it is not necessary to even know the IP address of the NTP server.
-By default, this will use the servers 0.nodemcu.pool.ntp.org through 3.nodemcu.pool.ntp.org. These servers will be adequate for nearly all usages.
+By default, this will use DHCP or the servers 0.nodemcu.pool.ntp.org through 3.nodemcu.pool.ntp.org otherwise. These servers will be adequate for nearly all usages.
 
 When compiled together with the [rtctime](rtctime.md) module it also offers seamless integration with it, potentially reducing the process of obtaining NTP synchronization to a simple `sntp.sync()` call without any arguments.
 
@@ -26,7 +26,7 @@ If any sync operation fails (maybe the device is disconnected from the internet)
 `sntp.sync({ server1, server2, .. }, [callback], [errcallback], [autorepeat])`
 
 #### Parameters
-- `server_ip` if non-`nil`, that server is used. If `nil`, then the last contacted server is used. If there is no previous server, then the pool ntp servers are used. If the anycast server was used, then the first responding server will be saved.
+- `server_ip` if non-`nil`, that server is used. If `nil`, then the last contacted server is used. If there is no previous server, then the DHCP will be use otherwise pool ntp servers are used. If the anycast server was used, then the first responding server will be saved.
 - `server1`, `server2` these are either the ip address or dns name of one or more servers to try.
 - `callback` if provided it will be invoked on a successful synchronization, with four parameters: seconds, microseconds, server and info. Note that when the [rtctime](rtctime.md) module is available, there is no need to explicitly call [`rtctime.set()`](rtctime.md#rtctimeset) - this module takes care of doing so internally automatically, for best accuracy. The info parameter is a table of (semi) interesting values. These are described below.
 - `errcallback` failure callback with two parameters. The first is an integer describing the type of error. The module automatically performs a number of retries before giving up and reporting the error. The second is a string containing supplementary information (if any). Error codes:
@@ -50,7 +50,7 @@ This is passed to the success callback and contains useful information about the
 
 #### Example
 ```lua
--- Use the nodemcu specific pool servers and keep the time synced forever (this has the autorepeat flag set).
+-- Use the nodemcu specific pool servers (or DHCP if offered) and keep the time synced forever (this has the autorepeat flag set).
 sntp.sync(nil, nil, nil, 1)
 ```
 ```lua
