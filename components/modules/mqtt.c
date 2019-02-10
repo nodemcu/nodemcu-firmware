@@ -6,6 +6,7 @@
 #include "module.h"
 #include "platform.h"
 #include "task/task.h"
+#include "common.h"
 
 #include <string.h>
 #include "mqtt_client.h"
@@ -42,8 +43,11 @@ typedef struct {
             lua_ref_t subscribed_ok_cb;
             lua_ref_t unsubscribed_ok_cb;
             lua_ref_t self;
+            lua_ref_t cert_pem;
+            lua_ref_t client_cert_pem;
+            lua_ref_t client_key_pem;
         };
-        lua_ref_t lua_refs[9];
+        lua_ref_t lua_refs[12];
     };
 } mqtt_context_t;
 
@@ -334,6 +338,10 @@ static int mqtt_connect(lua_State* L) {
     int reconnect = 0;
     int port = 1883;
     int n = 3;
+    const char * cert_pem = NULL;
+    const char * client_cert_pem = NULL;
+    const char * client_key_pem = NULL;
+
 
     if (lua_isnumber(L, n)) {
         port = luaL_checknumber(L, n);
@@ -343,6 +351,30 @@ static int mqtt_connect(lua_State* L) {
     if (lua_isnumber(L, n)) {
         secure = !!luaL_checkinteger(L, n);
         n++;
+
+    } else {
+        if (lua_istable(L, n)) {
+            secure = true;
+            lua_getfield(L, n, "ca_cert");
+            if ((cert_pem = luaL_optstring(L, -1, NULL)) != NULL) {
+                luaX_set_ref(L, -1, &mqtt_context->cert_pem);
+            }
+            lua_pop(L, 1);
+            //
+            lua_getfield(L, n, "client_cert");
+            if ((client_cert_pem = luaL_optstring(L, -1, NULL)) != NULL) {
+                luaX_set_ref(L, -1, &mqtt_context->client_cert_pem);
+            }
+            lua_pop(L, 1);
+            //
+            lua_getfield(L, n, "client_key");
+            if ((client_key_pem = luaL_optstring(L, -1, NULL)) != NULL) {
+                luaX_set_ref(L, -1, &mqtt_context->client_key_pem);
+            }
+            lua_pop(L, 1);
+            //
+            n++;
+        }
     }
 
     if (lua_isnumber(L, n)) {
@@ -377,6 +409,9 @@ static int mqtt_connect(lua_State* L) {
     config.port = port;
     config.disable_auto_reconnect = (reconnect == 0);
     config.transport = secure ? MQTT_TRANSPORT_OVER_SSL : MQTT_TRANSPORT_OVER_TCP;
+    config.cert_pem = cert_pem;
+    config.client_cert_pem = client_cert_pem;
+    config.client_key_pem = client_key_pem;
 
     // create a mqtt client instance
     mqtt_context->client = esp_mqtt_client_init(&config);

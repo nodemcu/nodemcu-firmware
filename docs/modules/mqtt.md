@@ -98,7 +98,12 @@ Connects to the broker specified by the given host, port, and secure options.
 #### Parameters
 - `host` host, domain or IP (string)
 - `port` broker port (number), default 1883
-- `secure` 0/1 for `false`/`true`, default 0. Take note of constraints documented in the [net module](net.md).
+- `secure` either an interger with 0/1 for `false`/`true` (default 0),
+    or a table with optional entries
+    - `ca_cert` CA certificate data in PEM format for server verify with SSL
+    - `client_cert` client certificate data in PEM format for SSL mutual authentication
+    - `client_key` client private key data in PEM format for SSL mutual authentication
+    Note that *both* `client_cert` and `client_key` have to be provided for mutual authentication.
 - `autoreconnect` 0/1 for `false`/`true`, default 0. This option is *deprecated*.
 - `function(client)` callback function for when the connection was established
 - `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
