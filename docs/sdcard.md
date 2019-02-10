@@ -23,7 +23,11 @@ Refer to the [`sdmmc` module documentation](modules/sdmmc.md).
 Before mounting the volume(s) on the SD card, you need to initialize the SDMMC interface from Lua.
 
 ```lua
+-- for SDMMC mode:
 card = sdmmc.init(sdmmc.HS2, {width = sdmmc.W1BIT})
+
+-- for SD SPI mode:
+card = sdmmc.init(sdmmc.VSPI, {sck_pin = 18, mosi_pin = 23, miso_pin = 19, cs_pin = 22})
 
 -- then mount the sd
 -- note: the card initialization process during `card:mount()` will set spi divider temporarily to 200 (400 kHz)

@@ -5,11 +5,19 @@
 
 !!! note
 
-    MMC cards are not yet supported due to missing functionality in the IDF driver.
+    MMC cards are not yet supported on HS1/HS2 interfaces due to missing functionality in the IDF driver. Use the SD SPI mode on HSPI/VSPI instead.
 
 ## SD Card connection
 
-The SD card is operated in SDMMC mode, thus the card has to be wired to the ESP pins of the HS1_* or HS2_* interfaces. There are several naming schemes used on different adapters - the following list shows alternative terms:
+!!! caution
+
+    The adapter does not require level shifters since SD and ESP are supposed to be powered with the same voltage. If your specific model contains level shifters then make sure that both sides can be operated at 3V3.
+
+![1:1 micro-sd adapter](../img/micro_sd-small.jpg "1:1 micro-sd adapter")
+
+### SDMMC Mode
+
+If the SD card is operated in SDMMC mode, then the card has to be wired to the ESP pins of the HS1_* or HS2_* interfaces. There are several naming schemes used on different adapters - the following list shows alternative terms:
 
 | SD mode name  | SPI mode name   | ESP32 HS1 I/F                  | ESP32 HS2 I/F             |
 | :---          | :---            | :---                           | :---                      |
@@ -32,11 +40,24 @@ Connections to `CLK`, `CMD`, and `DAT0` are mandatory and enable basic operation
 
     Connecting DAT0 to GPIO2 can block firmware flashing depending on the electrical configuration at this pin. Disconnect GPIO2 from the card adapter during flashing if unsure.
 
-!!! caution
+### SD SPI Mode
 
-    The adapter does not require level shifters since SD and ESP are supposed to be powered with the same voltage. If your specific model contains level shifters then make sure that both sides can be operated at 3V3.
+In SD SPI mode the SD or MMC card is operated by the SPI host interfaces (HSPI or VSPI). Both hosts can be assigned to any GPIO pins.
 
-![1:1 micro-sd adapter](../img/micro_sd-small.jpg "1:1 micro-sd adapter")
+| SPI mode name   | ESP32 HSPI, VSPI I/F |
+| :---            | :---                 |
+| `CK, SCLK`      | Any GPIO             |
+| `DI, MOSI`      | Any GPIO             |
+| `DO, MISO`      | Any GPIO             |
+| n/a             | n/a                  |
+| n/a             | n/a                  |
+| `CS, SS`        | Any GPIO             |
+| n/a             | n/a                  |
+| n/a             | n/a                  |
+| n/a             | n/a                  |
+| n/a             | n/a                  |
+| `VCC, VDD`      | 3V3 supply           |
+| `VSS, GND`      | common ground        |
 
 ## sdmmc.init()
 Initialize the SDMMC and probe the attached SD card.
@@ -44,7 +65,7 @@ Initialize the SDMMC and probe the attached SD card.
 #### Syntax
 `sdmmc.init(slot[, cfg])`
 
-#### Parameters
+#### Parameters SDMMC Mode
 - `slot` SDMMC slot, one of `sdmmc.HS1` or `sdmmc.HS2`
 - `cfg` optional table containing slot configuration:
     - `cd_pin` card detect pin, none if omitted
@@ -54,6 +75,17 @@ Initialize the SDMMC and probe the attached SD card.
         - `sdmmc.W1BIT`
         - `sdmmc.W4BIT`
         - `sdmmc.W8BIT`, not supported yet
+
+#### Parameters SD SPI Mode
+- `slot` SD SPI slot, one of `sdmmc.HSPI` or `sdmmc.VSPI`
+- `cfg` mandatory table containing slot configuration:
+    - `sck_pin` SPI SCK pin, mandatory
+    - `mosi_pin`, SPI MOSI pin, mandatory
+    - `miso_pin`, SPI MISO pin, mandatory
+    - `cs_pin`, SPI CS pin, mandatory
+    - `cd_pin` card detect pin, none if omitted
+    - `wp_pin` write-protcet pin, none if omitted
+    - `fmax` maximum communication frequency, defaults to 20&nbsp; if omitted
 
 #### Returns
 Card object.

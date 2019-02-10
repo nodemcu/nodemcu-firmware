@@ -12,7 +12,7 @@
 #include "sdmmc_cmd.h"
 
 // defined in components/modules/sdmmc.c
-extern sdmmc_card_t lsdmmc_card[2];
+extern sdmmc_card_t *lsdmmc_card[];
 
 
 static DSTATUS m_status = STA_NOINIT;
@@ -60,7 +60,7 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-  if (sdmmc_read_sectors( &(lsdmmc_card[pdrv]), buff, sector, count ) == ESP_OK)
+  if (sdmmc_read_sectors( lsdmmc_card[pdrv], buff, sector, count ) == ESP_OK)
     return RES_OK;
 
   return RES_ERROR;
@@ -80,7 +80,7 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-  if (sdmmc_write_sectors( &(lsdmmc_card[pdrv]), buff, sector, count ) == ESP_OK)
+  if (sdmmc_write_sectors( lsdmmc_card[pdrv], buff, sector, count ) == ESP_OK)
     return RES_OK;
 
   return RES_ERROR;
