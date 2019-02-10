@@ -6,7 +6,6 @@
 #include "module.h"
 #include "platform.h"
 #include "task/task.h"
-#include "common.h"
 
 #include <string.h>
 #include "mqtt_client.h"
