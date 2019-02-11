@@ -33,14 +33,14 @@ static int16_t besttwoavg( int16_t x , int16_t y , int16_t z ) {
 
   if ( da <= db && da <= dc ) reta = (x + y) >> 1;
   else if ( db <= da && db <= dc ) reta = (x + z) >> 1;
-  else reta = (y + z) >> 1;   
+  else reta = (y + z) >> 1;
 
   return reta;
 }
 
 // Checks if the irq_pin is down
-static int isTouching() { 
-  return (platform_gpio_read(_irq_pin) == 0); 
+static int isTouching() {
+  return (platform_gpio_read(_irq_pin) == 0);
 }
 
 // transfer 16 bits from the touch display - returns the recived uint16_t
@@ -81,7 +81,7 @@ static void getRaw(uint16_t *vi, uint16_t *vj) {
   platform_spi_send_recv(1, 8 , 0);  // Maintain 16-clocks/conversion; _readLoop always ends after issuing a control int
   platform_spi_send_recv(1, 8 , CTRL_HI_Y | CTRL_LO_SER);
   transfer16(0);  // Flush last read, just to be sure
-  
+
   platform_gpio_write(_cs_pin, PLATFORM_GPIO_HIGH);
 
   // Clear interrupt status
@@ -127,14 +127,14 @@ static int xpt2046_init( lua_State* L ) {
   _width   = luaL_checkinteger( L, 4 );
   // set pins correct
   platform_gpio_mode(_cs_pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
-  
+
   setCalibration(
     /*vi1=*/((int32_t)CAL_MARGIN) * ADC_MAX / _width,
     /*vj1=*/((int32_t)CAL_MARGIN) * ADC_MAX / _height,
     /*vi2=*/((int32_t)_width - CAL_MARGIN) * ADC_MAX / _width,
     /*vj2=*/((int32_t)_height - CAL_MARGIN) * ADC_MAX / _height
   );
-  
+
   // assume spi was inited before with a clockDiv of >=16
   // as higher spi clock speed produced inaccurate results
 
@@ -146,7 +146,7 @@ static int xpt2046_init( lua_State* L ) {
   platform_spi_send_recv(1, 8, CTRL_HI_Y | CTRL_LO_SER);
   transfer16(0); // Flush, just to be sure
 
-  platform_gpio_write(_cs_pin, PLATFORM_GPIO_HIGH);  
+  platform_gpio_write(_cs_pin, PLATFORM_GPIO_HIGH);
   return 0;
 }
 

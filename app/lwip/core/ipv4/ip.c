@@ -1,7 +1,7 @@
 /**
  * @file
  * This is the IPv4 layer implementation for incoming and outgoing IP traffic.
- * 
+ *
  * @see ip_frag.c
  *
  */
@@ -171,7 +171,7 @@ ip_router(ip_addr_t *dest, ip_addr_t *source){
 	/* iterate through netifs */
   	for(netif = netif_list; netif != NULL; netif = netif->next) {
 	    /* network mask matches? */
-		
+
 		if (netif_is_up(netif)) {
 	      if (ip_addr_netcmp(dest, &(netif->ip_addr), &(netif->netmask))) {
 	        /* return netif on which to forward IP packet */
@@ -285,7 +285,7 @@ return_noroute:
  * forwarded (using ip_forward). The IP checksum is always checked.
  *
  * Finally, the packet is sent to the upper layer protocol input function.
- * 
+ *
  * @param p the received IP packet (p->payload points to IP header)
  * @param inp the netif on which this packet was received
  * @return ERR_OK if the packet was processed (could return ERR_* if it wasn't

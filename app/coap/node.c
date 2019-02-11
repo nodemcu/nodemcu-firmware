@@ -101,7 +101,7 @@ coap_queue_t * coap_pop_next( coap_queue_t **queue ) {		// this function is call
 
 int coap_remove_node( coap_queue_t **queue, const coap_tid_t id){
   coap_queue_t *p, *q, *node;
-  if ( !queue ) 
+  if ( !queue )
     return 0;
   if ( !*queue )  // if empty
     return 0;

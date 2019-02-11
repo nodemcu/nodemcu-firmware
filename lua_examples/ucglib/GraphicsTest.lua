@@ -67,7 +67,7 @@ function set_clip_range()
     h = h + 25
     x = bit.rshift(lcg_rnd() * (disp:getWidth() - w), 8)
     y = bit.rshift(lcg_rnd() * (disp:getHeight() - h), 8)
-  
+
     disp:setClipRange(x, y, w, h)
 end
 

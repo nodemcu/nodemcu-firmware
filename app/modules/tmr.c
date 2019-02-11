@@ -132,14 +132,14 @@ static int tmr_delay( lua_State* L ){
 		os_delay_us(us);
 		system_soft_wdt_feed ();
 	}
-	return 0; 
+	return 0;
 }
 
 // Lua: tmr.now() , return system timer in us
 static int tmr_now(lua_State* L){
 	uint32_t now = 0x7FFFFFFF & system_get_time();
 	lua_pushinteger(L, now);
-	return 1; 
+	return 1;
 }
 
 static timer_t tmr_get( lua_State *L, int stack ) {
@@ -171,7 +171,7 @@ static int tmr_register(lua_State* L){
 	tmr->mode = mode|TIMER_IDLE_FLAG;
 	tmr->interval = interval;
 	os_timer_setfn(&tmr->os, alarm_timer_common, tmr);
-	return 0;  
+	return 0;
 }
 
 // Lua: tmr.start( id / ref )
@@ -217,7 +217,7 @@ static int tmr_stop(lua_State* L){
 	}else{
 		lua_pushboolean(L, 0);
 	}
-	return 1;  
+	return 1;
 }
 
 #ifdef TIMER_SUSPEND_ENABLE
@@ -256,7 +256,7 @@ static int tmr_unregister(lua_State* L){
 	if(tmr->lua_ref != LUA_NOREF)
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 	tmr->lua_ref = LUA_NOREF;
-	tmr->mode = TIMER_MODE_OFF; 
+	tmr->mode = TIMER_MODE_OFF;
 	return 0;
 }
 
@@ -266,7 +266,7 @@ static int tmr_interval(lua_State* L){
 
 	uint32_t interval = luaL_checkinteger(L, 2);
 	luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
-	if(tmr->mode != TIMER_MODE_OFF){	
+	if(tmr->mode != TIMER_MODE_OFF){
 		tmr->interval = interval;
 		if(!(tmr->mode&TIMER_IDLE_FLAG)){
 			os_timer_disarm(&tmr->os);
@@ -298,7 +298,7 @@ why they are here*/
 static int tmr_wdclr( lua_State* L ){
 	system_soft_wdt_feed ();
 	// update_key_led();
-	return 0;  
+	return 0;
 }
 
 //system_rtc_clock_cali_proc() returns
@@ -344,13 +344,13 @@ void rtc_callback(void *arg){
 static int tmr_time( lua_State* L ){
 	uint64_t us=rtc_timer_update(false);
 	lua_pushinteger(L, us/1000000);
-	return 1; 
+	return 1;
 }
 
 // Lua: tmr.softwd( value )
 static int tmr_softwd( lua_State* L ){
 	soft_watchdog = luaL_checkinteger(L, 1);
-	return 0; 
+	return 0;
 }
 
 // Lua: tmr.create()

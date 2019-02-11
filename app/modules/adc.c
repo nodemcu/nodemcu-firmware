@@ -14,7 +14,7 @@ static int adc_sample( lua_State* L )
   MOD_CHECK_ID( adc, id );
   unsigned val = 0xFFFF & system_adc_read();
   lua_pushinteger( L, val );
-  return 1; 
+  return 1;
 }
 
 // Lua: readvdd33()

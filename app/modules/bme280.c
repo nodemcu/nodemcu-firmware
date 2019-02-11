@@ -1,8 +1,8 @@
 // ***************************************************************************
 // BMP280 module for ESP8266 with nodeMCU
-// 
+//
 // Written by Lukas Voborsky, @voborsky
-// 
+//
 // MIT license, http://opensource.org/licenses/MIT
 // ***************************************************************************
 
@@ -154,56 +154,56 @@ static uint8_t r8u(uint8_t reg) {
 	return ret[0];
 }
 
-// Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.  
-// t_fine carries fine temperature as global value 
+// Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.
+// t_fine carries fine temperature as global value
 static BME280_S32_t bme280_compensate_T(BME280_S32_t adc_T) {
-	BME280_S32_t var1, var2, T; 
-	var1  = ((((adc_T>>3) - ((BME280_S32_t)bme280_data.dig_T1<<1))) * ((BME280_S32_t)bme280_data.dig_T2)) >> 11; 
-	var2  = (((((adc_T>>4) - ((BME280_S32_t)bme280_data.dig_T1)) * ((adc_T>>4) - ((BME280_S32_t)bme280_data.dig_T1))) >> 12) *  
-		((BME280_S32_t)bme280_data.dig_T3)) >> 14; 
-	bme280_t_fine = var1 + var2; 
-	T  = (bme280_t_fine * 5 + 128) >> 8; 
-	return T; 
+	BME280_S32_t var1, var2, T;
+	var1  = ((((adc_T>>3) - ((BME280_S32_t)bme280_data.dig_T1<<1))) * ((BME280_S32_t)bme280_data.dig_T2)) >> 11;
+	var2  = (((((adc_T>>4) - ((BME280_S32_t)bme280_data.dig_T1)) * ((adc_T>>4) - ((BME280_S32_t)bme280_data.dig_T1))) >> 12) *
+		((BME280_S32_t)bme280_data.dig_T3)) >> 14;
+	bme280_t_fine = var1 + var2;
+	T  = (bme280_t_fine * 5 + 128) >> 8;
+	return T;
 }
 
-// Returns pressure in Pa as unsigned 32 bit integer in Q24.8 format (24 integer bits and 8 fractional bits). 
-// Output value of “24674867” represents 24674867/256 = 96386.2 Pa = 963.862 hPa 
+// Returns pressure in Pa as unsigned 32 bit integer in Q24.8 format (24 integer bits and 8 fractional bits).
+// Output value of “24674867” represents 24674867/256 = 96386.2 Pa = 963.862 hPa
 static BME280_U32_t bme280_compensate_P(BME280_S32_t adc_P) {
-	BME280_S64_t var1, var2, p; 
-	var1 = ((BME280_S64_t)bme280_t_fine) - 128000; 
-	var2 = var1 * var1 * (BME280_S64_t)bme280_data.dig_P6; 
-	var2 = var2 + ((var1*(BME280_S64_t)bme280_data.dig_P5)<<17); 
-	var2 = var2 + (((BME280_S64_t)bme280_data.dig_P4)<<35); 
-	var1 = ((var1 * var1 * (BME280_S64_t)bme280_data.dig_P3)>>8) + ((var1 * (BME280_S64_t)bme280_data.dig_P2)<<12); 
-	var1 = (((((BME280_S64_t)1)<<47)+var1))*((BME280_S64_t)bme280_data.dig_P1)>>33; 
-	if (var1 == 0) { 
-		return 0; // avoid exception caused by division by zero 
-	} 
-	p = 1048576-adc_P; 
-	p = (((p<<31)-var2)*3125)/var1; 
-	var1 = (((BME280_S64_t)bme280_data.dig_P9) * (p>>13) * (p>>13)) >> 25; 
-	var2 = (((BME280_S64_t)bme280_data.dig_P8) * p) >> 19; 
-	p = ((p + var1 + var2) >> 8) + (((BME280_S64_t)bme280_data.dig_P7)<<4); 
+	BME280_S64_t var1, var2, p;
+	var1 = ((BME280_S64_t)bme280_t_fine) - 128000;
+	var2 = var1 * var1 * (BME280_S64_t)bme280_data.dig_P6;
+	var2 = var2 + ((var1*(BME280_S64_t)bme280_data.dig_P5)<<17);
+	var2 = var2 + (((BME280_S64_t)bme280_data.dig_P4)<<35);
+	var1 = ((var1 * var1 * (BME280_S64_t)bme280_data.dig_P3)>>8) + ((var1 * (BME280_S64_t)bme280_data.dig_P2)<<12);
+	var1 = (((((BME280_S64_t)1)<<47)+var1))*((BME280_S64_t)bme280_data.dig_P1)>>33;
+	if (var1 == 0) {
+		return 0; // avoid exception caused by division by zero
+	}
+	p = 1048576-adc_P;
+	p = (((p<<31)-var2)*3125)/var1;
+	var1 = (((BME280_S64_t)bme280_data.dig_P9) * (p>>13) * (p>>13)) >> 25;
+	var2 = (((BME280_S64_t)bme280_data.dig_P8) * p) >> 19;
+	p = ((p + var1 + var2) >> 8) + (((BME280_S64_t)bme280_data.dig_P7)<<4);
 	p = (p * 10) >> 8;
-	return (BME280_U32_t)p; 
-} 
- 
-// Returns humidity in %RH as unsigned 32 bit integer in Q22.10 format (22 integer and 10 fractional bits). 
-// Output value of “47445” represents 47445/1024 = 46.333 %RH 
-static BME280_U32_t bme280_compensate_H(BME280_S32_t adc_H) {
-	BME280_S32_t v_x1_u32r; 
+	return (BME280_U32_t)p;
+}
 
-	v_x1_u32r = (bme280_t_fine - ((BME280_S32_t)76800)); 
-	v_x1_u32r = (((((adc_H << 14) - (((BME280_S32_t)bme280_data.dig_H4) << 20) - (((BME280_S32_t)bme280_data.dig_H5) * v_x1_u32r)) + 
-		((BME280_S32_t)16384)) >> 15) * (((((((v_x1_u32r * ((BME280_S32_t)bme280_data.dig_H6)) >> 10) * (((v_x1_u32r * 
-		((BME280_S32_t)bme280_data.dig_H3)) >> 11) + ((BME280_S32_t)32768))) >> 10) + ((BME280_S32_t)2097152)) * 
-		((BME280_S32_t)bme280_data.dig_H2) + 8192) >> 14)); 
-	v_x1_u32r = (v_x1_u32r - (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) * ((BME280_S32_t)bme280_data.dig_H1)) >> 4)); 
-	v_x1_u32r = (v_x1_u32r < 0 ? 0 : v_x1_u32r);  
-	v_x1_u32r = (v_x1_u32r > 419430400 ? 419430400 : v_x1_u32r);   
+// Returns humidity in %RH as unsigned 32 bit integer in Q22.10 format (22 integer and 10 fractional bits).
+// Output value of “47445” represents 47445/1024 = 46.333 %RH
+static BME280_U32_t bme280_compensate_H(BME280_S32_t adc_H) {
+	BME280_S32_t v_x1_u32r;
+
+	v_x1_u32r = (bme280_t_fine - ((BME280_S32_t)76800));
+	v_x1_u32r = (((((adc_H << 14) - (((BME280_S32_t)bme280_data.dig_H4) << 20) - (((BME280_S32_t)bme280_data.dig_H5) * v_x1_u32r)) +
+		((BME280_S32_t)16384)) >> 15) * (((((((v_x1_u32r * ((BME280_S32_t)bme280_data.dig_H6)) >> 10) * (((v_x1_u32r *
+		((BME280_S32_t)bme280_data.dig_H3)) >> 11) + ((BME280_S32_t)32768))) >> 10) + ((BME280_S32_t)2097152)) *
+		((BME280_S32_t)bme280_data.dig_H2) + 8192) >> 14));
+	v_x1_u32r = (v_x1_u32r - (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) * ((BME280_S32_t)bme280_data.dig_H1)) >> 4));
+	v_x1_u32r = (v_x1_u32r < 0 ? 0 : v_x1_u32r);
+	v_x1_u32r = (v_x1_u32r > 419430400 ? 419430400 : v_x1_u32r);
 	v_x1_u32r = v_x1_u32r>>12;
-	return (BME280_U32_t)((v_x1_u32r * 1000)>>10); 
-} 
+	return (BME280_U32_t)((v_x1_u32r * 1000)>>10);
+}
 
 static double ln(double x) {
 	double y = (x-1)/(x+1);
@@ -238,14 +238,14 @@ static int bme280_lua_setup(lua_State* L) {
 	bme280_mode = (!lua_isnumber(L, 4)?BME280_NORMAL_MODE:(luaL_checkinteger(L, 4)&bit2)) // 4-th parameter: power mode
 		| ((!lua_isnumber(L, 2)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 2)&bit3)) << 2) // 2-nd parameter: pressure oversampling
 		| ((!lua_isnumber(L, 1)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 1)&bit3)) << 5); // 1-st parameter: temperature oversampling
-		
+
 	bme280_ossh = (!lua_isnumber(L, 3))?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 3)&bit3); // 3-rd parameter: humidity oversampling
-	
+
 	config = ((!lua_isnumber(L, 5)?BME280_STANDBY_TIME_20_MS:(luaL_checkinteger(L, 5)&bit3))<< 5) // 5-th parameter: inactive duration in normal mode
 		| ((!lua_isnumber(L, 6)?BME280_FILTER_COEFF_16:(luaL_checkinteger(L, 6)&bit3)) << 2); // 6-th parameter: IIR filter
 	full_init = !lua_isnumber(L, 7)?1:lua_tointeger(L, 7); // 7-th parameter: init the chip too
 	NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme280_mode, bme280_ossh, config);
-	
+
 	bme280_i2c_addr = BME280_I2C_ADDRESS1;
 	platform_i2c_send_start(bme280_i2c_id);
 	ack = platform_i2c_send_address(bme280_i2c_id, bme280_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
@@ -265,7 +265,7 @@ static int bme280_lua_setup(lua_State* L) {
 	uint8_t chipid = r8u(BME280_REGISTER_CHIPID);
 	NODE_DBG("chip_id: %x\n", chipid);
 	bme280_isbme = (chipid == 0x60);
-	
+
 #define r16uLE_buf(reg)	(uint16_t)((reg[1] << 8) | reg[0])
 #define r16sLE_buf(reg)	 (int16_t)(r16uLE_buf(reg))
 	uint8_t	buf[18], *reg;
@@ -289,7 +289,7 @@ static int bme280_lua_setup(lua_State* L) {
 	bme280_data.dig_P8 = r16sLE_buf(reg); reg+=2;
 	bme280_data.dig_P9 = r16sLE_buf(reg);
 	// NODE_DBG("dig_P: %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", bme280_data.dig_P1, bme280_data.dig_P2, bme280_data.dig_P3, bme280_data.dig_P4, bme280_data.dig_P5, bme280_data.dig_P6, bme280_data.dig_P7, bme280_data.dig_P8, bme280_data.dig_P9);
-	
+
 	if (full_init) w8u(BME280_REGISTER_CONFIG, config);
 	if (bme280_isbme) {
 		bme280_data.dig_H1 = r8u(BME280_REGISTER_DIG_H1);
@@ -310,7 +310,7 @@ static int bme280_lua_setup(lua_State* L) {
 #undef r16uLE_buf
 #undef r16sLE_buf
 	if (full_init) w8u(BME280_REGISTER_CONTROL, bme280_mode);
-	
+
 	return 1;
 }
 
@@ -326,12 +326,12 @@ static void bme280_readoutdone (void *arg)
 
 static int bme280_lua_startreadout(lua_State* L) {
 	uint32_t delay;
-	
+
 	if (lua_isnumber(L, 1)) {
 		delay = luaL_checkinteger(L, 1);
 		if (!delay) {delay = BME280_SAMPLING_DELAY;} // if delay is 0 then set the default delay
 	}
-	
+
 	if (!lua_isnoneornil(L, 2)) {
 		lua_pushvalue(L, 2);
 		lua_connected_readout_ref = luaL_ref(L, LUA_REGISTRYINDEX);

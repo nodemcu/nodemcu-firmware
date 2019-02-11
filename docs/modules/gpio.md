@@ -125,7 +125,7 @@ This function is not available if GPIO_INTERRUPT_ENABLE was undefined at compile
 - `type` "up", "down", "both", "low", "high", which represent *rising edge*, *falling edge*, *both
 edges*, *low level*, and *high level* trigger modes respectivey. If the type is "none" or omitted
 then the callback function is removed and the interrupt is disabled.
-- `callback_function(level, when, eventcount)` callback function when trigger occurs. The level of the specified pin 
+- `callback_function(level, when, eventcount)` callback function when trigger occurs. The level of the specified pin
 at the interrupt passed as the first parameter to the callback. The timestamp of the event is passed
 as the second parameter. This is in microseconds and has the same base as for `tmr.now()`. This timestamp
 is grabbed at interrupt level and is more consistent than getting the time in the callback function.
@@ -191,7 +191,7 @@ timing control.
 
 The basic idea is to build a `gpio.pulse` object and then control it with methods on that object. Only one `gpio.pulse`
 object can be active at a time. The object is built from an array of tables where each inner table represents
-an action to take and the time to delay before moving to the next action. 
+an action to take and the time to delay before moving to the next action.
 
 One of the uses for this is to generate bipolar impulse for driving clock movements where you want (say) a pulse on Pin 1 on the even
 second, and a pulse on Pin 2 on the odd second. `:getstate` and `:adjust` can be used to keep the pulse synchronized to the
@@ -236,7 +236,7 @@ an unisgned 32 bit integer). If this isn't enough repeats, then loops can be nes
 ```
 
 The loop/count in step 2 will cause 1,000,000,000 pulses to be output (at 1kHz). This is around 11 days. At this point, it will continue onto step 3 which triggers the
-11 days of 1kHz. THis process will repeat for 1,000,000,000 times (which is roughly 30 Million years). 
+11 days of 1kHz. THis process will repeat for 1,000,000,000 times (which is roughly 30 Million years).
 
 The looping model is that associated with each loop there is a hidden variable which starts at the `count` value and decrements on each iteration until it gets to zero
 when it then proceeds to the next step. If control reaches that loop again, then the hidden variable is reset to the value of `count` again.
@@ -252,8 +252,8 @@ This builds the `gpio.pulse` object from the supplied argument (a table as descr
 #### Parameter
 `table` this is view as an array of instructions. Each instruction is represented by a table as follows:
 
-- All numeric keys are considered to be pin numbers. The values of each are the value to be set onto the respective GPIO line. 
-For example `{ [1] = gpio.HIGH }` would set pin 1 to be high. 
+- All numeric keys are considered to be pin numbers. The values of each are the value to be set onto the respective GPIO line.
+For example `{ [1] = gpio.HIGH }` would set pin 1 to be high.
 Note this that is the NodeMCU pin number and *not* the ESP8266 GPIO number. Multiple pins can be
 set at the same time. Note that any valid GPIO pin can be used, including pin 0.
 - `delay` specifies the number of microseconds after setting the pin values to wait until moving to the next state. The actual delay may be longer than this value depending on whether interrupts are enabled at the end time. The maximum value is 64,000,000 -- i.e. a bit more than a minute.

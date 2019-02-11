@@ -1,7 +1,7 @@
 As with [flashing](flash.md) there are several ways to upload code from your computer to the device.
 
 !!! note
-	
+
 	The NodeMCU serial interface uses 115'200bps at boot time. To change the speed after booting, issue `uart.setup(0,9600,8,0,1,1)`. If the device panics and resets at any time, errors will be written to the serial interface at 115'200 bps.
 
 ## Tools
@@ -56,32 +56,32 @@ function startup()
     end
 end
 
--- Define WiFi station event callbacks 
-wifi_connect_event = function(T) 
+-- Define WiFi station event callbacks
+wifi_connect_event = function(T)
   print("Connection to AP("..T.SSID..") established!")
   print("Waiting for IP address...")
-  if disconnect_ct ~= nil then disconnect_ct = nil end  
+  if disconnect_ct ~= nil then disconnect_ct = nil end
 end
 
-wifi_got_ip_event = function(T) 
+wifi_got_ip_event = function(T)
   -- Note: Having an IP address does not mean there is internet access!
-  -- Internet connectivity can be determined with net.dns.resolve().    
+  -- Internet connectivity can be determined with net.dns.resolve().
   print("Wifi connection is ready! IP address is: "..T.IP)
   print("Startup will resume momentarily, you have 3 seconds to abort.")
-  print("Waiting...") 
+  print("Waiting...")
   tmr.create():alarm(3000, tmr.ALARM_SINGLE, startup)
 end
 
 wifi_disconnect_event = function(T)
-  if T.reason == wifi.eventmon.reason.ASSOC_LEAVE then 
+  if T.reason == wifi.eventmon.reason.ASSOC_LEAVE then
     --the station has disassociated from a previously connected AP
-    return 
+    return
   end
   -- total_tries: how many times the station will attempt to connect to the AP. Should consider AP reboot duration.
   local total_tries = 75
   print("\nWiFi connection to AP("..T.SSID..") has failed!")
 
-  --There are many possible disconnect reasons, the following iterates through 
+  --There are many possible disconnect reasons, the following iterates through
   --the list and returns the string corresponding to the disconnect reason.
   for key,val in pairs(wifi.eventmon.reason) do
     if val == T.reason then
@@ -90,17 +90,17 @@ wifi_disconnect_event = function(T)
     end
   end
 
-  if disconnect_ct == nil then 
-    disconnect_ct = 1 
+  if disconnect_ct == nil then
+    disconnect_ct = 1
   else
-    disconnect_ct = disconnect_ct + 1 
+    disconnect_ct = disconnect_ct + 1
   end
-  if disconnect_ct < total_tries then 
+  if disconnect_ct < total_tries then
     print("Retrying connection...(attempt "..(disconnect_ct+1).." of "..total_tries..")")
   else
     wifi.sta.disconnect()
     print("Aborting connection to AP!")
-    disconnect_ct = nil  
+    disconnect_ct = nil
   end
 end
 
@@ -118,7 +118,7 @@ wifi.sta.config({ssid=SSID, pwd=PASSWORD})
 
 ## Compiling Lua on your PC for Uploading
 
-If you install Lua on your development PC or Laptop, then you can use a standard `lua` environment to develop PC applications and also use the standard `luac` compiler to syntax check _any_ Lua source code. However because of architectural differences between the ESP8266 chipset with its SDK and a standard PC CPU, the system APIs are different and the binary output from the standard PC `luac` cannot be run on the ESP8266.  
+If you install Lua on your development PC or Laptop, then you can use a standard `lua` environment to develop PC applications and also use the standard `luac` compiler to syntax check _any_ Lua source code. However because of architectural differences between the ESP8266 chipset with its SDK and a standard PC CPU, the system APIs are different and the binary output from the standard PC `luac` cannot be run on the ESP8266.
 
 To address this issue,  the standard NodeMCU make now generates a host executable `lua.cross` (or `lua.cross.int` for integer builds) as well as the firmware binary itself.  Compiling source on one platform for use on another is known as _cross-compilation_ and this `luac.cross` compiler allows you to compile Lua source files on your PC for downloading onto ESP8266 in a binary format.
 

@@ -29,14 +29,14 @@ void coap_timer_tick(void *arg){
     node->retransmit_cnt++;
     node->t = node->timeout << node->retransmit_cnt;
 
-    NODE_DBG("** retransmission #%d of transaction %d\n", 
+    NODE_DBG("** retransmission #%d of transaction %d\n",
         node->retransmit_cnt, (((uint16_t)(node->pdu->pkt->hdr.id[0]))<<8)+node->pdu->pkt->hdr.id[1]);
     node->id = coap_send(node->pconn, node->pdu);
     if (COAP_INVALID_TID == node->id) {
       NODE_DBG("retransmission: error sending pdu\n");
       coap_delete_node(node);
     } else {
-      coap_insert_node(queue, node);    
+      coap_insert_node(queue, node);
     }
   } else {
     /* And finally delete the node */

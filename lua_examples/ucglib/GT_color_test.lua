@@ -11,7 +11,7 @@ function M.run()
     local c, x
     mx = disp:getWidth() / 2
     --my = disp:getHeight() / 2
-  
+
     disp:setColor(0, 0, 0, 0)
     disp:drawBox(0, 0, disp:getWidth(), disp:getHeight())
 

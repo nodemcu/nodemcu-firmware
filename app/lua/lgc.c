@@ -175,7 +175,7 @@ static int traversetable (global_State *g, Table *h) {
       markobject(g, h->metatable);
     mode = gfasttm(g, h->metatable, TM_MODE);
   }
-    
+
   if (mode && ttisstring(mode)) {  /* is there a weak mode? */
     weakkey = (c_strchr(svalue(mode), 'k') != NULL);
     weakvalue = (c_strchr(svalue(mode), 'v') != NULL);

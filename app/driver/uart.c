@@ -307,7 +307,7 @@ uart0_rx_intr_handler(void *para)
     }
 }
 
-static void 
+static void
 uart_autobaud_timeout(void *timer_arg)
 {
   uint32_t uart_no = (uint32_t) timer_arg;
@@ -325,7 +325,7 @@ uart_autobaud_timeout(void *timer_arg)
 }
 #include "pm/swtimer.h"
 
-static void 
+static void
 uart_init_autobaud(uint32_t uart_no)
 {
   os_timer_setfn(&autobaud_timer, uart_autobaud_timeout, (void *) uart_no);
@@ -334,7 +334,7 @@ uart_init_autobaud(uint32_t uart_no)
   os_timer_arm(&autobaud_timer, 100, TRUE);
 }
 
-static void 
+static void
 uart_stop_autobaud()
 {
   os_timer_disarm(&autobaud_timer);

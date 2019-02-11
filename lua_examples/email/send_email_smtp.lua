@@ -78,7 +78,7 @@ function do_next()
                 "To: \"".. mail_to .. "\"<".. mail_to..">\r\n"..
                 "Subject: ".. email_subject .. "\r\n\r\n"  ..
                 email_body,"\r\n.\r\n","")
-                
+
                 smtp_socket:send(message.."\r\n.\r\n")
             elseif(count==8) then
                count = count+1
@@ -91,7 +91,7 @@ end
 
 -- The connectted() function is executed when the SMTP socket is connected to the SMTP server.
 -- This function will create a timer to call the do_next function which will send the SMTP commands
--- in sequence, one by one, every 5000 seconds. 
+-- in sequence, one by one, every 5000 seconds.
 -- You can change the time to be smaller if that works for you, I used 5000ms just because.
 function connected(sck)
     tmr.alarm(0,5000,1,do_next)

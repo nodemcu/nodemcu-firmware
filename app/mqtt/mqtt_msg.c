@@ -440,7 +440,7 @@ mqtt_message_t* mqtt_msg_subscribe_fini(mqtt_connection_t* connection)
 mqtt_message_t* mqtt_msg_subscribe(mqtt_connection_t* connection, const char* topic, int qos, uint16_t* message_id)
 {
   mqtt_message_t* result;
-  
+
   result = mqtt_msg_subscribe_init(connection, message_id);
   if (result->length != 0) {
     result = mqtt_msg_subscribe_topic(connection, topic, qos);
@@ -476,7 +476,7 @@ mqtt_message_t* mqtt_msg_unsubscribe_fini(mqtt_connection_t* connection)
 mqtt_message_t* mqtt_msg_unsubscribe(mqtt_connection_t* connection, const char* topic, uint16_t* message_id)
 {
   mqtt_message_t* result;
-  
+
   result = mqtt_msg_unsubscribe_init(connection, message_id);
   if (result->length != 0) {
     result = mqtt_msg_unsubscribe_topic(connection, topic);

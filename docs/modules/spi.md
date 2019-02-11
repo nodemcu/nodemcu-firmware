@@ -108,7 +108,7 @@ Calling `spi.setup()` will route the HSPI signals to the related pins, overridin
 	- `spi.MASTER`
 	- `spi.SLAVE` - **not supported currently**
 - `cpol` clock polarity selection
-	- `spi.CPOL_LOW` 
+	- `spi.CPOL_LOW`
 	- `spi.CPOL_HIGH`
 - `cpha` clock phase selection
 	- `spi.CPHA_LOW`

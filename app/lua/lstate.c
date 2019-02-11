@@ -35,7 +35,7 @@ typedef struct LG {
   lua_State l;
   global_State g;
 } LG;
-  
+
 
 
 static void stack_init (lua_State *L1, lua_State *L) {
@@ -224,7 +224,7 @@ extern lua_State *luaL_newstate (void);
 static lua_State *lua_crtstate;
 
 lua_State *lua_open(void) {
-  lua_crtstate = luaL_newstate(); 
+  lua_crtstate = luaL_newstate();
   return lua_crtstate;
 }
 
@@ -232,12 +232,12 @@ lua_State *lua_getstate(void) {
   return lua_crtstate;
 }
 LUA_API void lua_close (lua_State *L) {
-#ifndef LUA_CROSS_COMPILER  
+#ifndef LUA_CROSS_COMPILER
   lua_sethook( L, NULL, 0, 0 );
   lua_crtstate = NULL;
   lua_pushnil( L );
 //  lua_rawseti( L, LUA_REGISTRYINDEX, LUA_INT_HANDLER_KEY );
-#endif  
+#endif
   L = G(L)->mainthread;  /* only the main thread can be closed */
   lua_lock(L);
   luaF_close(L, L->stack);  /* close all upvalues for this thread */

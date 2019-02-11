@@ -78,7 +78,7 @@ the firmware to lock onto that baud rate (between 1200 and 230400).
 
 ### Integer build
 By default a build will be generated supporting floating-point variables.
-To reduce memory size an integer build can be created.  You can change this 
+To reduce memory size an integer build can be created.  You can change this
 either by uncommenting `LUA_NUMBER_INTEGRAL` in `app/include/user_config.h`:
 
 ```c

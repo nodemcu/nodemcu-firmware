@@ -9,7 +9,7 @@ Please note that nested tables can require a lot of memory to encode. To catch o
 
 This code using the streaming json library [jsonsl](https://github.com/mnunberg/jsonsl) to do the parsing of the string.
 
-This module can be used in two ways. The simpler way is to use it as a direct drop-in for cjson (you can just do `_G.cjson = sjson`). 
+This module can be used in two ways. The simpler way is to use it as a direct drop-in for cjson (you can just do `_G.cjson = sjson`).
 The more advanced approach is to use the streaming interface. This allows encoding and decoding of significantly larger objects.
 
 The handling of json null is as follows:
@@ -59,7 +59,7 @@ The following example prints out (in 64 byte chunks) a JSON encoded string conta
 can be bigger than the total amount of memory on the NodeMCU.
 
 ```lua
-function files() 
+function files()
    result = {}
    for k,v in pairs(file.list()) do
      result[k] = function() return file.open(k):read(4096) end
@@ -128,7 +128,7 @@ There are two principal methods that are invoked in the metatable (if it is pres
 - `__newindex` this is the standard method invoked whenever a new table element is created.
 - `checkpath` this is invoked (if defined) whenever a new table is created. It is invoked with two arguments:
     - `table` this is the newly created table
-    - `path` this is a list of the keys from the root. 
+    - `path` this is a list of the keys from the root.
     It must return `true` if this object is wanted in the result, or `false` otherwise.
 
 For example, when decoding `{ "foo": [1, 2, []] }` the checkpath will be invoked as follows:
@@ -141,7 +141,7 @@ When the `checkpath` method is called, the metatable has already be associated w
 if desired. For example, if you are decoding `{ "foo": { "bar": [1,2,3,4], "cat": [5] } }` and, for some reason, you did not want to capture the
 value of the `"bar"` key, then there are various ways to do this:
 
-* In the `__newindex` metamethod, just check for the value of the key and skip the `rawset` if the key is `"bar"`. This only works if you want to skip all the 
+* In the `__newindex` metamethod, just check for the value of the key and skip the `rawset` if the key is `"bar"`. This only works if you want to skip all the
 `"bar"` keys.
 
 * In the `checkpath` method, if the path is `["foo"]`, then return `false`.
@@ -149,8 +149,8 @@ value of the `"bar"` key, then there are various ways to do this:
 * Use the following `checkpath`:  `checkpath=function(tab, path) tab['__json_path'] = path return true end` This will save the path in each constructed object. Now the `__newindex` method can perform more sophisticated filtering.
 
 The reason for being able to filter is that it enables processing of very large JSON responses on a memory constrained platform. Many APIs return lots of information
-which would exceed the memory budget of the platform. For example, `https://api.github.com/repos/nodemcu/nodemcu-firmware/contents` is over 13kB, and yet, if 
-you only need the `download_url` keys, then the total size is around 600B. This can be handled with a simple `__newindex` method. 
+which would exceed the memory budget of the platform. For example, `https://api.github.com/repos/nodemcu/nodemcu-firmware/contents` is over 13kB, and yet, if
+you only need the `download_url` keys, then the total size is around 600B. This can be handled with a simple `__newindex` method.
 
 ## sjson.decoder:write
 
@@ -172,7 +172,7 @@ If a parse error occurrs during this decode, then an error is thrown and the par
 
 ## sjson.decoder:result
 
-This gets the decoded Lua object, or raises an error if the decode is not yet complete. This can be called multiple times and will return the 
+This gets the decoded Lua object, or raises an error if the decode is not yet complete. This can be called multiple times and will return the
 same object each time.
 
 ####Syntax
@@ -199,7 +199,7 @@ altogether if desired.
 
 ```
 local decoder = sjson.decoder({metatable=
-        {__newindex=function(t,k,v) print("Setting '" .. k .. "' = '" .. tostring(v) .."'") 
+        {__newindex=function(t,k,v) print("Setting '" .. k .. "' = '" .. tostring(v) .."'")
                                     rawset(t,k,v) end}})
 
 decoder:write('[1, 2, {"foo":"bar"}]')

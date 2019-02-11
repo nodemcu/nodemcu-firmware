@@ -34,13 +34,13 @@ static void *smart_succeed_arg = NULL;
 
 void smart_end();
 int smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
-  if(len == 0) 
+  if(len == 0)
     return 0;
   uint16_t dst_len = len/NIBBLE_PER_BYTE;
   uint16_t byte_num = 0, bit_num = 0;
   int i = 0, res = 1; // assume ok.
   c_memset(dst,0,dst_len);
-  
+
   if(NIBBLE_PER_BYTE==1){
     for(i=0;i<len;i++){
       byte_num = (i) / 8;
@@ -82,7 +82,7 @@ int smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
   for(i=len-2;i>0;i--){
     bool forward = ( ((nibble[i]&0xF)^((i+1)&0xF)) == (nibble[i+1]>>4) );
     bool back = ( ((nibble[i-1]&0xF)^(i&0xF)) == (nibble[i]>>4) );
-    if(!forward || !back){ 
+    if(!forward || !back){
     // wrong forward, or wrong back, replace i-1, i and i+1, until get right back, forward
       NODE_DBG("check: wf %d:%02x %02x %02x\n",i,nibble[i-1],nibble[i], nibble[i+1]);
       byte_num = (i-1) / 8;
@@ -100,7 +100,7 @@ int smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
       nibble[i+1] = 0;
       got[byte_num] &= ~(0x1 << bit_num);  // clear the bit
       res = 0;
-      return res; // once there is error, 
+      return res; // once there is error,
     }
 
     if((i%NIBBLE_PER_BYTE) == 0) { // i == even
@@ -123,7 +123,7 @@ int smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
       nibble[i*NIBBLE_PER_BYTE+1] = 0;  // reset lo-nibble
       got[byte_num] &= ~(0x3 << bit_num);  // clear the bit
       res = 0;  // not ok
-    } 
+    }
   }
   return res;
 }
@@ -161,14 +161,14 @@ void detect(uint8 *arg, uint16 len){
         if ( len - am[i]->base_len == am[i]->flag[0]) // store new source-dest adress pair to the map until flag[0] is got
         {
           // BSSID, SA, DA, store the SA, DA
-          c_memcpy(am[i]->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH);  
+          c_memcpy(am[i]->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH);
           am[i]->flag_match_num++;    // =1
           am[i]->cur_base_seq = seq;  // assume the first seq is found
           am[i]->base_seq_valid = 1;
           // NODE_DBG("Smart: new addr pair found\n");
         }
         break;    // break any way for the next packet to come
-      } 
+      }
       else if(0 == c_memcmp(am[i]->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH)){   // source-dest adress pair match
         if(am[i]->base_seq_valid == 0){
           if ( len - am[i]->base_len == am[i]->flag[0]) { // found the new flag[0]
@@ -181,7 +181,7 @@ void detect(uint8 *arg, uint16 len){
         }
 
         // base seq number is valid, cal the delta
-        if(seq >= am[i]->cur_base_seq){    
+        if(seq >= am[i]->cur_base_seq){
           seq_delta = seq - am[i]->cur_base_seq;
         } else {
           seq_delta = SEQ_MAX - am[i]->cur_base_seq + seq;
@@ -197,7 +197,7 @@ void detect(uint8 *arg, uint16 len){
             am[i]->base_seq_valid = 0;  // the seq number is not valid
           }
           break;  // break any way for the next packet to come
-        } 
+        }
 
         // delta is out of range, need to find the next flag[0] to start again
         if (seq_delta>=FLAG_NUM){
@@ -233,7 +233,7 @@ void detect(uint8 *arg, uint16 len){
         break;
       } // non-match source-dest adress pair, continue to next pair in the map.
     } // for loop
-    // break out, or loop done. 
+    // break out, or loop done.
     goto end;
   } else {  // cur_base_seq is ref to SSID_FLAG when patern is alread found
     if(0 != c_memcmp(matched->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH)){ // source-dest adress pair not match, ignore it
@@ -244,7 +244,7 @@ void detect(uint8 *arg, uint16 len){
       if (len - matched->base_len == SSID_FLAG){
         matched->cur_base_seq = seq;
         matched->base_seq_valid = 1;
-      } 
+      }
       goto end;
     }
 
@@ -264,10 +264,10 @@ void detect(uint8 *arg, uint16 len){
         matched->base_seq_valid = 0;  // the seq number is not valid
       }
       goto end;  // exit for the next packet to come
-    } 
+    }
 
     if ( seq_delta > (SEP_NUM + 1)*(1+NIBBLE_PER_BYTE*matched->ssid_len) +\
-      1 + (SEP_NUM + 1)*(1+NIBBLE_PER_BYTE*matched->pwd_len) ){ 
+      1 + (SEP_NUM + 1)*(1+NIBBLE_PER_BYTE*matched->pwd_len) ){
     // delta out of the range
       if (len - matched->base_len == SSID_FLAG){
         matched->cur_base_seq = seq;
@@ -277,7 +277,7 @@ void detect(uint8 *arg, uint16 len){
       }
       goto end;
     }
-        
+
     // delta in the range
     if (seq_delta==1){
       int16_t ssid_len = len - matched->base_len - L_FLAG;
@@ -291,11 +291,11 @@ void detect(uint8 *arg, uint16 len){
       if (ssid_len != matched->ssid_len){  // ssid_len not match
         matched->base_seq_valid = 0;
         // note: not match, save the new one or old one? for now save the new one.
-        matched->ssid_len = ssid_len;  
+        matched->ssid_len = ssid_len;
         NODE_DBG("Smart: ssid_len not match\n");
-      } 
+      }
       goto end; // to the next packet
-    } 
+    }
 
     if( (SEP_NUM==2)&&(seq_delta==2 || seq_delta==3) ) {
       if (len - matched->base_len != matched->flag[seq_delta-2+SEP_1_INDEX]){  // SEP not match
@@ -312,7 +312,7 @@ void detect(uint8 *arg, uint16 len){
       }
       goto end; // to the next packet
     }
-        
+
     if (seq_delta==(SEP_NUM + 1)*(1+NIBBLE_PER_BYTE*matched->ssid_len) + 1 + 1){
       int16_t pwd_len = len - matched->base_len - L_FLAG;
       if ( matched->pwd_len == 0){
@@ -327,15 +327,15 @@ void detect(uint8 *arg, uint16 len){
         // note: not match, save the new one or old one? for now save the new one.
         matched->pwd_len = pwd_len; // reset pwd_len to 0
         NODE_DBG("Smart: pwd_len not match\n");
-      } 
-      goto end;      
-    } 
+      }
+      goto end;
+    }
 
     if (seq_delta <= (SEP_NUM + 1)*(1+NIBBLE_PER_BYTE*matched->ssid_len) ){   // in the ssid zone
       uint16_t it = (seq_delta-1-SEP_NUM-1) / (SEP_NUM + 1);  // the number of ssid nibble: 0~31 or 0~63
       uint16_t m = (seq_delta-1-SEP_NUM-1) % (SEP_NUM + 1); // 0~2
       switch(m){
-        case 0: // the ssid hi/lo-nibble itself    
+        case 0: // the ssid hi/lo-nibble itself
           c = (int16_t)(len - matched->base_len - C_FLAG);
           if (c>255 || c<0){
             matched->base_seq_valid = 0;
@@ -347,7 +347,7 @@ void detect(uint8 *arg, uint16 len){
           if( (got_ssid[byte_num] & (0x1 << bit_num)) == 0){
             got_ssid[byte_num] |= 0x1 << bit_num; // set the bit
             ssid_nibble[it] = c;
-          }           
+          }
           break;
         case 1: // seperator 1
         case 2: // seperator 2
@@ -376,7 +376,7 @@ void detect(uint8 *arg, uint16 len){
           if( (got_password[byte_num] & (0x1 << bit_num)) == 0){
             got_password[byte_num] |= 0x1 << bit_num; // set the bit
             password_nibble[it] = c;
-          } 
+          }
           break;
         case 1: // seperator 1
         case 2: // seperator 2
@@ -464,18 +464,18 @@ void reset_map(smart_addr_map **am, size_t num){
     if(SEP_1_INDEX==2){
       am[i]->flag[0] = SSID_FLAG;
       am[i]->flag[1] = 0; // skip this flag
-      am[i]->flag[2] = SEP_1;     
-      am[i]->flag[3] = SEP_2;      
+      am[i]->flag[2] = SEP_1;
+      am[i]->flag[3] = SEP_2;
     }
   }
 }
 
 void smart_enable(void){
-  wifi_promiscuous_enable(1); 
+  wifi_promiscuous_enable(1);
 }
 
 void smart_disable(void){
-  wifi_promiscuous_enable(0); 
+  wifi_promiscuous_enable(0);
 }
 
 void smart_end(){
@@ -489,7 +489,7 @@ void smart_end(){
   } else {
     wifi_set_opmode(STATION_MODE);
   }
-  
+
   mode = wifi_get_opmode();
 
   if(sta_conf && alldone){
@@ -515,7 +515,7 @@ void smart_end(){
       am[i] = NULL;
     }
     matched = NULL;
-  }  
+  }
 
   if(sta_conf){
     c_free(sta_conf);

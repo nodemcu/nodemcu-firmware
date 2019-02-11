@@ -48,7 +48,7 @@
 
 
 #define hashpow2(t,n)      (gnode(t, lmod((n), sizenode(t))))
-  
+
 #define hashstr(t,str)  hashpow2(t, (str)->tsv.hash)
 #define hashboolean(t,p)        hashpow2(t, p)
 
@@ -330,7 +330,7 @@ static Node *find_prev_node(Node *mp, Node *next) {
 ** first, check whether the moving node's main position is free. If not, check whether
 ** colliding node is in its main position or not: if it is not, move colliding
 ** node to an empty place and put moving node in its main position; otherwise
-** (colliding node is in its main position), moving node goes to an empty position. 
+** (colliding node is in its main position), moving node goes to an empty position.
 */
 static int move_node (lua_State *L, Table *t, Node *node) {
   Node *mp = mainposition(t, key2tval(node));
@@ -520,11 +520,11 @@ void luaH_free (lua_State *L, Table *t) {
 
 
 /*
-** inserts a new key into a hash table; first, check whether key's main 
-** position is free. If not, check whether colliding node is in its main 
-** position or not: if it is not, move colliding node to an empty place and 
-** put new key in its main position; otherwise (colliding node is in its main 
-** position), new key goes to an empty position. 
+** inserts a new key into a hash table; first, check whether key's main
+** position is free. If not, check whether colliding node is in its main
+** position or not: if it is not, move colliding node to an empty place and
+** put new key in its main position; otherwise (colliding node is in its main
+** position), new key goes to an empty position.
 */
 static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
   Node *mp = mainposition(t, key);
@@ -599,7 +599,7 @@ const TValue *luaH_getstr (Table *t, TString *key) {
 }
 
 /* same thing for rotables */
-const TValue *luaH_getstr_ro (void *t, TString *key) {  
+const TValue *luaH_getstr_ro (void *t, TString *key) {
   if (!t || key->tsv.len>LUA_MAX_ROTABLE_NAME)
     return luaO_nilobject;
   return luaR_findentry(t, key, NULL);
@@ -740,7 +740,7 @@ int luaH_getn (Table *t) {
 /* same thing for rotables */
 int luaH_getn_ro (void *t) {
   int i = 1, len=0;
-  
+
   while(luaR_findentryN(t, i ++, NULL))
     len ++;
   return len;

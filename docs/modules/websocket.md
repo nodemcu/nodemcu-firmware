@@ -9,7 +9,7 @@ The implementation supports fragmented messages, automatically responds to ping 
 
 **SSL/TLS support**
 
-Take note of constraints documented in the [net module](net.md). 
+Take note of constraints documented in the [net module](net.md).
 
 
 ## websocket.createClient()

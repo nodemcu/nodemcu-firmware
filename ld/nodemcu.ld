@@ -102,7 +102,7 @@ SECTIONS
     *(.entry.text)
     *(.init.literal)
     *(.init)
-    
+
     /* SDK libraries that used in bootup process, interruption handling
      * and other ways where flash cache (iROM) is unavailable: */
     *libmain.a:*(.literal .literal.* .text .text.*)
@@ -110,7 +110,7 @@ SECTIONS
     *libphy.a:*(.literal .text)
     *libpp.a:*(.literal .text)
     *libgcc.a:*(.literal .text)
-    
+
     /* Following SDK libraries have .text sections, but not included in iRAM: */
     /* *libat.a:*(.literal .text) - not used anywhere in NodeMCU */
     /* *libcrypto.a:*(.literal .text) - tested that safe to keep in iROM */
@@ -124,7 +124,7 @@ SECTIONS
     *(.iram.text .iram0.text .iram0.text.*)
 
     *(.stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
-    
+
     *(.fini.literal)
     *(.fini)
     *(.gnu.version)
@@ -241,7 +241,7 @@ SECTIONS
     KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
 
-    /* SDK doesn't use libc functions, and are therefore safe to put in flash */ 
+    /* SDK doesn't use libc functions, and are therefore safe to put in flash */
     */libc.a:*.o(.text* .literal*)
     /* end libc functions */
 

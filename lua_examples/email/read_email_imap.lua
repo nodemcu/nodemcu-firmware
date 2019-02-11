@@ -1,14 +1,14 @@
 ---
 -- Working Example: https://www.youtube.com/watch?v=PDxTR_KJLhc
 -- @author Miguel (AllAboutEE.com)
--- @description This example will read the first email in your inbox using IMAP and 
+-- @description This example will read the first email in your inbox using IMAP and
 -- display it through serial. The email server must provided unecrypted access. The code
 -- was tested with an AOL and Time Warner cable email accounts (GMail and other services who do
 -- not support no SSL access will not work).
 
 require("imap")
 
-local IMAP_USERNAME = "email@domain.com" 
+local IMAP_USERNAME = "email@domain.com"
 local IMAP_PASSWORD = "password"
 
 -- find out your unencrypted imap server and port
@@ -37,7 +37,7 @@ local imap_socket = net.createConnection(net.TCP,0)
 
 ---
 -- @name setup
--- @description A call back function used to begin reading email 
+-- @description A call back function used to begin reading email
 -- upon sucessfull connection to the IMAP server
 function setup(sck)
     -- Set the email user name and password, IMAP tag, and if debugging output is needed
@@ -89,7 +89,7 @@ function do_next()
             body = imap.get_body() -- store the BODY response in body
             imap.logout(imap_socket) -- Logout of the email account
             count = count + 1
-        else 
+        else
             -- display the email contents
 
             -- create patterns to strip away IMAP protocl text from actual message
@@ -107,7 +107,7 @@ function do_next()
             body = string.gsub(body,pattern1,"")
             body = string.gsub(body,pattern2,"")
             print("Message: " .. body)
-            
+
             tmr.stop(0) -- Stop the timer alarm
             imap_socket:close() -- close the IMAP socket
             collectgarbage() -- clean up

@@ -110,7 +110,7 @@ typedef struct
   uint8_t server_index;   // index into server table
   uint8_t lookup_pos;
   bool is_on_timeout;
-  uint32_t kodbits;     // Only for up to 32 servers (more than enough) 
+  uint32_t kodbits;     // Only for up to 32 servers (more than enough)
   int16_t server_pos;
   int16_t last_server_pos;
   int list_ref;
@@ -226,7 +226,7 @@ static void sntp_handle_result(lua_State *L) {
   const uint32_t MICROSECONDS = 1000000;
 
   if (state->best.stratum == 0) {
-    // This could be because none of the servers are reachable, or maybe we haven't been able to look 
+    // This could be because none of the servers are reachable, or maybe we haven't been able to look
     // them up.
     server_count = 0;      // Reset for next time.
     handle_error(L, NTP_TIMEOUT_ERR, NULL);
@@ -841,7 +841,7 @@ error:
   return luaL_error (L, errmsg);
 }
 
-static void sntp_task(os_param_t param, uint8_t prio) 
+static void sntp_task(os_param_t param, uint8_t prio)
 {
   (void) param;
   (void) prio;

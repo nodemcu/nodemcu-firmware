@@ -88,7 +88,7 @@ dofile("hello.lc")
 Enters deep sleep mode, wakes up when timed out.
 
 Theoretical maximum deep sleep duration can be found with [`node.dsleepMax()`](#nodedsleepmax). ["Max deep sleep for ESP8266"](https://thingpulse.com/max-deep-sleep-for-esp8266/) claims the realistic maximum be around 3.5h.
- 
+
 !!! caution
 
     This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
@@ -147,7 +147,7 @@ Returns the current theoretical maximum deep sleep duration.
 
 #### Parameters
  none
- 
+
 #### Returns
 `max_duration`
 
@@ -410,10 +410,10 @@ node.setcpufreq(node.CPU80MHZ)
 
 ## node.sleep()
 
-Put NodeMCU in light sleep mode to reduce current consumption. 
+Put NodeMCU in light sleep mode to reduce current consumption.
 
 * NodeMCU can not enter light sleep mode if wifi is suspended.
-* All active timers will be suspended and then resumed when NodeMCU wakes from sleep. 
+* All active timers will be suspended and then resumed when NodeMCU wakes from sleep.
 
 !!! attention
     This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
@@ -423,10 +423,10 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 `node.sleep({wake_pin[, int_type, resume_cb, preserve_mode]})`
 
 #### Parameters
-<!--- timed light_sleep currently does not work, the 'duration' parameter is here as a place holder---> 
+<!--- timed light_sleep currently does not work, the 'duration' parameter is here as a place holder--->
 <!--- * `duration` Sleep duration in microseconds(μs). If a sleep duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))--->
 
-* `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts. 
+* `wake_pin` 1-12, pin to attach wake interrupt to. Note that pin 0(GPIO 16) does not support interrupts.
     <!---* If sleep duration is indefinite, `wake_pin` must be specified--->
     * Please refer to the [`GPIO module`](gpio.md) for more info on the pin map.
 * `int_type` type of interrupt that you would like to wake on. (Optional, Default: `node.INT_LOW`)
@@ -437,7 +437,7 @@ Put NodeMCU in light sleep mode to reduce current consumption.
         * `node.INT_LOW`  Low level
         * `node.INT_HIGH` High level
 * `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
-* `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
+* `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)
     * If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
     * If false, discard WiFi mode and leave NodeMCU in `wifi.NULL_MODE`. WiFi mode will be restored to original mode on restart.
 
@@ -529,10 +529,10 @@ node.osprint(true)
 ## node.random()
 
 This behaves like math.random except that it uses true random numbers derived from the ESP8266 hardware. It returns uniformly distributed
-numbers in the required range. It also takes care to get large ranges correct. 
+numbers in the required range. It also takes care to get large ranges correct.
 
-It can be called in three ways. Without arguments in the floating point build of NodeMCU, it returns a random real number with uniform distribution in the interval [0,1). 
-When called with only one argument, an integer n, it returns an integer random number x such that 1 <= x <= n. For instance, you can simulate the result of a die with random(6). 
+It can be called in three ways. Without arguments in the floating point build of NodeMCU, it returns a random real number with uniform distribution in the interval [0,1).
+When called with only one argument, an integer n, it returns an integer random number x such that 1 <= x <= n. For instance, you can simulate the result of a die with random(6).
 Finally, random can be called with two integer arguments, l and u, to get a pseudo-random integer x such that l <= x <= u.
 
 #### Syntax
@@ -566,11 +566,11 @@ provides more detailed information on the EGC.
 #### Parameters
 - `mode`
 	- `node.egc.NOT_ACTIVE` EGC inactive, no collection cycle will be forced in low memory situations
-	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error. 
+	- `node.egc.ON_ALLOC_FAILURE` Try to allocate a new block of memory, and run the garbage collector if the allocation fails. If the allocation fails even after running the garbage collector, the allocator will return with error.
 	- `node.egc.ON_MEM_LIMIT` Run the garbage collector when the memory used by the Lua script goes beyond an upper `limit`. If the upper limit can't be satisfied even after running the garbage collector, the allocator will return with error. If the given limit is negative, it is interpreted as the desired amount of heap which should be left available. Whenever the free heap (as reported by `node.heap()` falls below the requested limit, the garbage collector will be run.
 	- `node.egc.ALWAYS` Run the garbage collector before each memory allocation. If the allocation fails even after running the garbage collector, the allocator will return with error. This mode is very efficient with regards to memory savings, but it's also the slowest.
 - `level` in the case of `node.egc.ON_MEM_LIMIT`, this specifies the memory limit.
-  
+
 #### Returns
 `nil`
 
@@ -600,11 +600,11 @@ None.
 
 ## node.task.post()
 
-Enable a Lua callback or task to post another task request. Note that as per the 
-example multiple tasks can be posted in any task, but the highest priority is 
+Enable a Lua callback or task to post another task request. Note that as per the
+example multiple tasks can be posted in any task, but the highest priority is
 always delivered first.
 
-If the task queue is full then a queue full error is raised.  
+If the task queue is full then a queue full error is raised.
 
 ####Syntax
 `node.task.post([task_priority], function)`
@@ -614,7 +614,7 @@ If the task queue is full then a queue full error is raised.
 	- `node.task.LOW_PRIORITY` = 0
 	- `node.task.MEDIUM_PRIORITY` = 1
 	- `node.task.HIGH_PRIORITY` = 2
-- `function` a callback function to be executed when the task is run. 
+- `function` a callback function to be executed when the task is run.
 
 If the priority is omitted then  this defaults  to `node.task.MEDIUM_PRIORITY`
 
@@ -623,12 +623,12 @@ If the priority is omitted then  this defaults  to `node.task.MEDIUM_PRIORITY`
 
 #### Example
 ```lua
-for i = node.task.LOW_PRIORITY, node.task.HIGH_PRIORITY do 
+for i = node.task.LOW_PRIORITY, node.task.HIGH_PRIORITY do
   node.task.post(i,function(p2)
     print("priority is "..p2)
-  end) 
-end      
-``` 
+  end)
+end
+```
 prints
 ```
 priority is 2

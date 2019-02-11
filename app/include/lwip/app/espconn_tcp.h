@@ -36,7 +36,7 @@ extern void espconn_tcp_disconnect(espconn_msg *pdiscon,u8 type);
 
 /******************************************************************************
  * FunctionName : espconn_tcp_client
- * Description  : Initialize the client: set up a connect PCB and bind it to 
+ * Description  : Initialize the client: set up a connect PCB and bind it to
  *                the defined port
  * Parameters   : espconn -- the espconn used to build client
  * Returns      : none
@@ -46,7 +46,7 @@ extern sint8 espconn_tcp_client(struct espconn* espconn);
 
 /******************************************************************************
  * FunctionName : espconn_tcp_server
- * Description  : Initialize the server: set up a listening PCB and bind it to 
+ * Description  : Initialize the server: set up a listening PCB and bind it to
  *                the defined port
  * Parameters   : espconn -- the espconn used to build server
  * Returns      : none

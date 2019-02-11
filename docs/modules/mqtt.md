@@ -60,7 +60,7 @@ m = mqtt.Client("clientid", 120)
 m = mqtt.Client("clientid", 120, "user", "password")
 
 -- setup Last Will and Testament (optional)
--- Broker will publish a message with qos = 0, retain = 0, data = "offline" 
+-- Broker will publish a message with qos = 0, retain = 0, data = "offline"
 -- to topic "/lwt" if client don't send keepalive packet
 m:lwt("/lwt", "offline", 0, 0)
 
@@ -68,8 +68,8 @@ m:on("connect", function(client) print ("connected") end)
 m:on("offline", function(client) print ("offline") end)
 
 -- on publish message receive event
-m:on("message", function(client, topic, data) 
-  print(topic .. ":" ) 
+m:on("message", function(client, topic, data)
+  print(topic .. ":" )
   if data ~= nil then
     print(data)
   end
@@ -145,7 +145,7 @@ is lost for any reason.
 In order to acheive a consistent connection, handle errors in the error callback. For example:
 
 ```
-function handle_mqtt_error(client, reason) 
+function handle_mqtt_error(client, reason)
   tmr.create():alarm(10 * 1000, tmr.ALARM_SINGLE, do_mqtt_connect)
 end
 
@@ -232,7 +232,7 @@ Publishes a message.
 - `qos` QoS level
 - `retain` retain flag
 - `function(client)` optional callback fired when PUBACK received.  NOTE: When calling publish() more than once, the last callback function defined will be called for ALL publish commands.
-  
+
 
 #### Returns
 `true` on success, `false` otherwise

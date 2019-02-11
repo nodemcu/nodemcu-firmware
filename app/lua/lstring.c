@@ -81,7 +81,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 }
 
 static int lua_is_ptr_in_ro_area(const char *p) {
-#ifdef LUA_CROSS_COMPILER 
+#ifdef LUA_CROSS_COMPILER
   return 0;         // TStrings are never in RO in luac.cross
 #else
   return IN_RODATA_AREA(p);
@@ -90,7 +90,7 @@ static int lua_is_ptr_in_ro_area(const char *p) {
 
 /*
  * The string algorithm has been modified to be LFS-friendly. The previous eLua
- * algo used the address of the string was in flash and the string was >4 bytes 
+ * algo used the address of the string was in flash and the string was >4 bytes
  * This creates miminal savings and prevents the use of LFS based strings
  */
 
@@ -119,7 +119,7 @@ LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
    */
   if (G(L)->ROstrt.hash) {
     for (o = G(L)->ROstrt.hash[lmod(h, G(L)->ROstrt.size)];
-         o != NULL; 
+         o != NULL;
          o = o->gch.next) {
       TString *ts = rawgco2ts(o);
       if (ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0)) {

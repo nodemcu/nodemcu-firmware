@@ -7,17 +7,17 @@ This module provides a simple way of configuring ESP8266 chips without using a s
 
 ![enduser setup config dialog](../img/enduser-setup.jpg "enduser setup config dialog")
 
-After running [`enduser_setup.start()`](#enduser_setupstart), a wireless network named "SetupGadget_XXXXXX" will start (this prefix can be overridden in `user_config.h` by defining 
+After running [`enduser_setup.start()`](#enduser_setupstart), a wireless network named "SetupGadget_XXXXXX" will start (this prefix can be overridden in `user_config.h` by defining
 `ENDUSER_SETUP_AP_SSID`). Connect to that SSID and then navigate to the root
-of any website (e.g., `http://example.com/` will work, but do not use `.local` domains because it will fail on iOS). A web page similar to the picture above will load, allowing the 
+of any website (e.g., `http://example.com/` will work, but do not use `.local` domains because it will fail on iOS). A web page similar to the picture above will load, allowing the
 end user to provide their Wi-Fi information.
 
 After an IP address has been successfully obtained, then this module will stop as if [`enduser_setup.stop()`](#enduser_setupstop) had been called. There is a 10-second delay before
 teardown to allow connected clients to obtain a last status message while the SoftAP is still active.
 
-Alternative HTML can be served by placing a file called `enduser_setup.html` on the filesystem. Everything needed by the web page must be included in this one file. This file will be kept 
-in RAM, so keep it as small as possible. The file can be gzip'd ahead of time to reduce the size (i.e., using `gzip -n` or `zopfli`), and when served, the End User Setup module will add 
-the appropriate `Content-Encoding` header to the response. 
+Alternative HTML can be served by placing a file called `enduser_setup.html` on the filesystem. Everything needed by the web page must be included in this one file. This file will be kept
+in RAM, so keep it as small as possible. The file can be gzip'd ahead of time to reduce the size (i.e., using `gzip -n` or `zopfli`), and when served, the End User Setup module will add
+the appropriate `Content-Encoding` header to the response.
 
 *Note: If gzipped, the file can also be named `enduser_setup.html.gz` for semantic purposes. Gzip encoding is determined by the file's contents, not the filename.*
 
@@ -67,7 +67,7 @@ enduser_setup.start(
 
 ## enduser_setup.start()
 
-Starts the captive portal. 
+Starts the captive portal.
 
 *Note: Calling start() while EUS is already running is an error, and will result in stop() to be invoked to shut down EUS.*
 

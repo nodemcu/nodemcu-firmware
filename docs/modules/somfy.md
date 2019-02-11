@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2016-09-27 | [vsky279](https://github.com/vsky279) | [vsky279](https://github.com/vsky279) | [somfy.c](../../app/modules/somfy.c)|
 
-This module provides a simple interface to control Somfy blinds via an RF transmitter (433.42 MHz). It is based on [Nickduino Somfy Remote Arduino skecth](https://github.com/Nickduino/Somfy_Remote). 
+This module provides a simple interface to control Somfy blinds via an RF transmitter (433.42 MHz). It is based on [Nickduino Somfy Remote Arduino skecth](https://github.com/Nickduino/Somfy_Remote).
 
 The hardware used is the standard 433 MHz RF transmitter. Unfortunately these chips are usually transmitting at he frequency of 433.92MHz so the crystal resonator should be replaced with the 433.42 MHz resonator though some reporting that it is working even with the original crystal.
 
@@ -30,7 +30,7 @@ My original remote is [TELIS 4 MODULIS RTS](https://www.somfy.co.uk/products/181
 
 When I send the `somfy.DOWN` command, repeating the frame twice (which seems to be the standard for a short button press), i.e. `repeat_count` equal to 2, the blinds go only 1 step down. This corresponds to the movement of the wheel on the original remote. The down button on the original remote sends also `somfy.DOWN` command but the additional info is different and this makes the blinds go full down. Fortunately it seems that repeating the frame 16 times makes the blinds go fully down.
 
-#### Returns  
+#### Returns
 nil
 
 #### Example

@@ -11,7 +11,7 @@ do
   end
 end
 --
--- This will print out 3 hex constants: the absolute address used in the 
+-- This will print out 3 hex constants: the absolute address used in the
 -- 'luac.cross -a' options and the flash adresses of the LFS and SPIFFS.
 --
 --[[  So you would need these commands to image your ESP module:
@@ -25,7 +25,7 @@ $ESPTOOL --port $USB erase_flash   # Do this is you are having load funnies
 $ESPTOOL --port $USB --baud 460800  write_flash -fm dio 0x00000 \
   $BIN/0x00000.bin 0x10000 $BIN/0x10000.bin
 #
-# Now restart your module and use whatever your intective tool is to do the above 
+# Now restart your module and use whatever your intective tool is to do the above
 # cmds, so if this outputs 0x4027b000, -0x7b000, 0x100000 then you can do
 #
 $NODEMCU/luac.cross -a 0x4027b000 -o $BIN/0x7b000-flash.img $SRC/*.lua
@@ -42,9 +42,9 @@ $ESPTOOL --port $USB --baud 460800  write_flash -fm dio 0x100000 \
 --
 -- File: init.lua
 --
--- With the previous example you still need an init.lua to bootstrap the _init 
--- module in LFS.  Here is an example.  It's a good idea either to use a timer 
--- delay or a GPIO pin during development, so that you as developer can break into 
+-- With the previous example you still need an init.lua to bootstrap the _init
+-- module in LFS.  Here is an example.  It's a good idea either to use a timer
+-- delay or a GPIO pin during development, so that you as developer can break into
 -- the boot sequence if there is a problem with the _init bootstrap that is causing
 -- a panic loop.  Here is one example of how you might do this.  You have a second
 -- to inject tmr.stop(0) into UART0.  Extend this delay if needed.
@@ -52,11 +52,11 @@ $ESPTOOL --port $USB --baud 460800  write_flash -fm dio 0x100000 \
 -- This example will also attempt to automatically load the LFS block from a SPIFFS
 -- file named 'flash.img'.
 --
-if node.flashindex() == nil then 
-  node.flashreload('flash.img') 
+if node.flashindex() == nil then
+  node.flashreload('flash.img')
 end
 
-tmr.alarm(0, 1000, tmr.ALARM_SINGLE, 
+tmr.alarm(0, 1000, tmr.ALARM_SINGLE,
   function()
     local fi=node.flashindex; return pcall(fi and fi'_init')
   end)

@@ -21,24 +21,24 @@ t:enable_debug()
 file.remove("ds18b20_save.lc") -- remove saved addresses
 print("=============================================", node.heap())
 print("first call, no addresses in flash, search is performed")
-t:read_temp(readout, pin, t.C) 
+t:read_temp(readout, pin, t.C)
 
-tmr.create():alarm(2000, tmr.ALARM_SINGLE, function() 
+tmr.create():alarm(2000, tmr.ALARM_SINGLE, function()
     print("=============================================", node.heap())
     print("second readout, no new search, found addresses are used")
-    t:read_temp(readout, pin) 
+    t:read_temp(readout, pin)
 
-tmr.create():alarm(2000, tmr.ALARM_SINGLE, function() 
+tmr.create():alarm(2000, tmr.ALARM_SINGLE, function()
     print("=============================================", node.heap())
     print("force search again")
-    t:read_temp(readout, pin, nil, true) 
+    t:read_temp(readout, pin, nil, true)
 
-tmr.create():alarm(2000, tmr.ALARM_SINGLE, function() 
+tmr.create():alarm(2000, tmr.ALARM_SINGLE, function()
     print("=============================================", node.heap())
     print("save search results")
     t:read_temp(readout, pin, nil, false, true)
 
-tmr.create():alarm(2000, tmr.ALARM_SINGLE, function() 
+tmr.create():alarm(2000, tmr.ALARM_SINGLE, function()
     print("=============================================", node.heap())
     print("use saved addresses")
     t.sens={}

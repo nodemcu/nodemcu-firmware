@@ -2,18 +2,18 @@
 -- File: LFS_dummy_strings.lua
 --[[
   luac.cross -f generates a ROM string table which is part of the compiled LFS
-  image. This table includes all strings referenced in the loaded modules. 
+  image. This table includes all strings referenced in the loaded modules.
 
   If you want to preload other string constants, then one way to achieve this is
   to include a dummy module in the LFS that references the strings that you want
   to load. You never need to call this module; it's inclusion in the LFS image is
   enough to add the strings to the ROM table. Your application can use any strings
   in the ROM table without incuring any RAM or Lua Garbage Collector (LGC)
-  overhead. 
+  overhead.
 
   The local preload example is a useful starting point. However, if you call the
-  following code in your application during testing, then this will provide a 
-  listing of the current RAM string table.  
+  following code in your application during testing, then this will provide a
+  listing of the current RAM string table.
 
 do
   local a=debug.getstrings'RAM'
@@ -33,5 +33,5 @@ local preload = "?.lc;?.lua", "/\n;\n?\n!\n-", "@init.lua", "_G", "_LOADED",
 "file.obj", "file.vol", "flash", "getstrings", "index", "ipairs", "list", "loaded",
 "loader", "loaders", "loadlib", "module", "net.tcpserver", "net.tcpsocket",
 "net.udpsocket", "newproxy", "package", "pairs", "path", "preload", "reload",
-"require", "seeall", "wdclr", "not enough memory", "sjson.decoder","sjson.encoder", 
+"require", "seeall", "wdclr", "not enough memory", "sjson.decoder","sjson.encoder",
 "tmr.timer"

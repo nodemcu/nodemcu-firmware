@@ -84,7 +84,7 @@ static int l_uart_on( lua_State* L )
     lua_pop(L, 1);
     return luaL_error( L, "method not supported" );
   }
-  return 0; 
+  return 0;
 }
 
 bool uart0_echo = true;
@@ -93,7 +93,7 @@ static int l_uart_setup( lua_State* L )
 {
   uint32_t id, databits, parity, stopbits, echo = 1;
   uint32_t baud, res;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
 
@@ -119,7 +119,7 @@ static int l_uart_getconfig( lua_State* L )
 {
   uint32_t id, databits, parity, stopbits;
   uint32_t baud;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
 
@@ -136,7 +136,7 @@ static int l_uart_getconfig( lua_State* L )
 static int l_uart_alt( lua_State* L )
 {
   unsigned set;
-  
+
   set = luaL_checkinteger( L, 1 );
 
   platform_uart_alt( set );
@@ -150,7 +150,7 @@ static int l_uart_write( lua_State* L )
   const char* buf;
   size_t len, i;
   int total = lua_gettop( L ), s;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( uart, id );
   for( s = 2; s <= total; s ++ )

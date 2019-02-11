@@ -1,19 +1,19 @@
-# 
+#
 # This Make file is called from the core Makefile hierarchy with is a hierarchical
 # make wwhich uses parent callbacks to implement inheritance.  However is luac_cross
 # build stands outside this and uses the host toolchain to implement a separate
-# host build of the luac.cross image. 
+# host build of the luac.cross image.
 #
 .NOTPARALLEL:
 
 summary ?= @true
 
-CCFLAGS:= -I.. 
+CCFLAGS:= -I..
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
 
-#DEFINES += 
+#DEFINES +=
 
 TARGET = host
 

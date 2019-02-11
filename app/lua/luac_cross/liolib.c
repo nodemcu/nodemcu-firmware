@@ -28,8 +28,8 @@
 
 /* "Pseudo-random" keys for the registry */
 static const size_t liolib_keys[] = {
-  (size_t)&luaL_callmeta, 
-  (size_t)&luaL_typerror, 
+  (size_t)&luaL_callmeta,
+  (size_t)&luaL_typerror,
   (size_t)&luaL_argerror
  };
 
@@ -485,7 +485,7 @@ LUALIB_API int luaopen_io(lua_State *L) {
   luaL_register_light(L, LUA_IOLIBNAME, io_base);
   lua_pushvalue(L, -1);
   lua_setmetatable(L, -2);
-  lua_pushliteral(L, "__index");  
+  lua_pushliteral(L, "__index");
   lua_pushrotable(L, (void *)iolib_funcs);
   lua_rawset(L, -3);
 

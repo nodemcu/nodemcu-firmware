@@ -10,7 +10,7 @@ after platform boot. This will cause a switch to the correct baud rate once a fe
 
 !!! important
 	Although there are two UARTs(0 and 1) available to NodeMCU, **UART 1 is not capable of receiving data and is therefore transmit only**.
-	
+
 ## uart.alt()
 Change UART pin assignment.
 
@@ -32,8 +32,8 @@ Sets the callback function to handle UART events.
 
 Currently only the "data" event is supported.
 
-!!! note 
-	Due to limitations of the ESP8266, only UART 0 is capable of receiving data.  
+!!! note
+	Due to limitations of the ESP8266, only UART 0 is capable of receiving data.
 
 #### Syntax
 `uart.on(method, [number/end_char], [function], [run_input])`
@@ -102,7 +102,7 @@ uart.setup(0, 9600, 8, uart.PARITY_NONE, uart.STOPBITS_1, 1)
 
 ## uart.getconfig()
 
-Returns the current configuration parameters of the UART. 
+Returns the current configuration parameters of the UART.
 
 #### Syntax
 `uart.getconfig(id)`

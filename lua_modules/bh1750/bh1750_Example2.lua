@@ -24,7 +24,7 @@ tmr.alarm(0, 60000, 1, function()
         PostData = "[{\"Name\":\"T\",\"Value\":\"" ..(l / 100).."."..(l % 100).."\"}]"
         --创建一个TCP连接 Create a TCP Connection
         socket=net.createConnection(net.TCP, 0)
-        --域名解析IP地址并赋值  DNS...it 
+        --域名解析IP地址并赋值  DNS...it
         socket:dns("www.lewei50.com", function(conn, ip)
                 ServerIP = ip
                 print("Connection IP:" .. ServerIP)

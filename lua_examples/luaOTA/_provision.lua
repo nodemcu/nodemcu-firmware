@@ -1,12 +1,12 @@
 --SAFETRIM
 -- function _provision(self,socket,first_rec)
- 
+
 local self, socket, first_rec = ...
 local crypto, file, json, node, table = crypto, file, sjson,   node, table
 local stripdebug, gc = node.stripdebug, collectgarbage
 
 local buf = {}
-gc(); gc() 
+gc(); gc()
 
 local function getbuf()  -- upval: buf, table
   if #buf > 0 then return table.remove(buf, 1) end -- else return nil
@@ -14,8 +14,8 @@ end
 
 -- Process a provisioning request record
 local function receiveRec(socket, rec)  -- upval: self, buf, crypto
-  -- Note that for 2nd and subsequent responses, we assme that the service has 
-  -- "authenticated" itself, so any protocol errors are fatal and lkely to 
+  -- Note that for 2nd and subsequent responses, we assme that the service has
+  -- "authenticated" itself, so any protocol errors are fatal and lkely to
   -- cause a repeating boot, throw any protocol errors are thrown.
   local buf, config, file, log = buf, self.config, file, self.log
   local cmdlen = (rec:find('\n',1, true) or 0) - 1
@@ -70,7 +70,7 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
         if s then
           resp.lcsize=#code
           print("Updated ".. name)
-        else 
+        else
           msg = "file write failed"
         end
      end
@@ -87,15 +87,15 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
         end
         file.close()
       end
-   
+
       if s then
         print("Updated ".. name)
-      else 
+      else
         file.remove(name)
         resp.s = "write failed"
       end
       buf = {}
-   
+
     elseif action == "ul" then
       if file.open(cmd.name, "r") then
         file.seek("set", cmd.offset)
@@ -120,6 +120,6 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
 end
 
 -- Replace the receive CB by the provisioning version and then tailcall this to
--- process this first record. 
+-- process this first record.
 socket:on("receive", receiveRec)
 return receiveRec(socket, first_rec)

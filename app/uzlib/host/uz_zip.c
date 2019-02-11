@@ -23,11 +23,11 @@ int main (int argc, char **argv) {
       (iLen = ftell(fin)) <= 0  || fseek(fin, 0, SEEK_SET))
     return 1;
   if ((fout = fopen(out, "wb")) == NULL ||
-      (iBuf = (uint8_t *) uz_malloc(iLen)) == NULL ||     
-      fread(iBuf, 1, iLen, fin) != iLen) 
+      (iBuf = (uint8_t *) uz_malloc(iLen)) == NULL ||
+      fread(iBuf, 1, iLen, fin) != iLen)
     return 1;
- 
-  if (uzlib_compress (&oBuf, &oLen, iBuf, iLen) == UZLIB_OK && 
+
+  if (uzlib_compress (&oBuf, &oLen, iBuf, iLen) == UZLIB_OK &&
       oLen == fwrite(oBuf, oLen, 1, fout))
     status = UZLIB_OK;
   uz_free(iBuf);

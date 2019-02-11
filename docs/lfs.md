@@ -25,7 +25,7 @@ However, most Lua developers seem to prefer the convenience of our [Cloud Build 
 Variable | Option
 ---------|------------
 LFS size | (none, 32, 64, 96 or 128Kb) The default is none. The default is none, in which case LFS is disabled. Selecting a numeric value enables LFS with the LFS region sized at this value.
-SPIFFS base | If you have a 4Mb flash module then I suggest you choose the 1024Kb option as this will preserve the SPIFFS even if you reflash with a larger firmware image; otherwise leave this at the default 0. 
+SPIFFS base | If you have a 4Mb flash module then I suggest you choose the 1024Kb option as this will preserve the SPIFFS even if you reflash with a larger firmware image; otherwise leave this at the default 0.
 SPIFFS size | (default or various multiples of 64Kb) Choose the size that you need.  Larger FS require more time to format on first boot.
 
 You must choose an explicit (non-default) LFS size to enable the use of LFS.  Most developers find it more useful to work with a fixed SPIFFS size matched to their application requirements.
@@ -44,7 +44,7 @@ Most Lua developers seem to start with the [ESPlorer](https://github.com/4refr0n
 
 -  If you use a fixed SPIFFS image (I find 128Kb is enough for most of my applications) and are developing on a UART-attached ESP module, then you can also recompile any LC files and LFS image, then rebuild a SPIFFS file system image before loading it onto the ESP using `esptool.py`; if you script this you will find that this cycle takes less than a minute. You can either embed the LFS.img in the SPIFFS.  You can also use the `luac.cross -a` option to build an absolute address format image that you can directly flash into the LFS region within the firmware.
 
--  If you only need to update the Lua components, then you can work over-the-air (OTA).  For example see my 
+-  If you only need to update the Lua components, then you can work over-the-air (OTA).  For example see my
 [HTTP_OTA.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/HTTP_OTA.lua), which pulls a new LFS image from a webservice and reloads it into the LFS region.  This only takes seconds, so I often use this in preference to UART-attached loading.
 
 -  Another option would be to include the FTP and Telnet modules in the base LFS image and to use telnet and FTP to update your system.  (Given that a 64Kb LFS can store thousands of lines of Lua, doing this isn't much of an issue.)
@@ -93,7 +93,7 @@ You can then create a file, say `LFS_dummy_strings.lua`, and insert these `local
 A useful starting point may be found in [lua_examples/lfs/dummy_strings.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/dummy_strings.lua); this saves about 4Kb of RAM by moving a lot of common compiler and Lua VM strings into ROM.
 
 Another good use of this technique is when you have resources such as CSS, HTML and JS fragments that you want to output over the internet.  Instead of having lots of small resource files, you can just use string assignments in an LFS module and this will keep these constants in LFS instead.
- 
+
 
 ## Technical issues
 
@@ -114,7 +114,7 @@ Any RO resources that are relocated to a flash address space:
 -  Must not be collected. Also RW references to RO resources must be robustly handled by the LGC.
 -  Cannot reference to any volatile RW data elements (though RW resources can refer to RO resources).
 
-All strings in Lua are [interned](https://en.wikipedia.org/wiki/String_interning), so that only one copy of any string is kept in memory, and most string manipulation uses the address of this single copy as a unique reference. This uniqueness and the LGC of strings is facilitated by using a global string table that is hooked into the Lua global state.  Within standard Lua VM, any new string is first resolved against RAM string table, so that only the string-misses are added to the string table. 
+All strings in Lua are [interned](https://en.wikipedia.org/wiki/String_interning), so that only one copy of any string is kept in memory, and most string manipulation uses the address of this single copy as a unique reference. This uniqueness and the LGC of strings is facilitated by using a global string table that is hooked into the Lua global state.  Within standard Lua VM, any new string is first resolved against RAM string table, so that only the string-misses are added to the string table.
 
 The LFS patch adds a second RO string table in flash and this contains all strings used in the LFS Protos. Maintaining integrity across the two string tables is simple and low-cost, with LFS resolution process extended across both the RAM and ROM string tables. Hence any strings already in the ROM string table already have a unique string reference avoiding the need to add an additional entry in the RAM table. This both significantly reduces the size of the RAM string table, and removes a lot of strings from the LCG scanning.
 
@@ -163,7 +163,7 @@ The deep cross-copy of the compiled `Proto` hierarchy is also complicated becaus
 
 This patch moves the `luac.cross` build into the overall application make hierarchy and so it is now simply a part of the NodeMCU make. The old Lua script has been removed from the `tools` directory, together with the need to have Lua pre-installed on the host.
 
-The LFS image is by default position independent, so is independent of the actual NodeMCU target image. You just have to copy it to the target file system and execute a `flashreload` and this copies the image from SPIFSS to the correct flash location, relocating all address to the correct base. (See `app/lua/lflash.c` for the details.)  This process is fast.  
+The LFS image is by default position independent, so is independent of the actual NodeMCU target image. You just have to copy it to the target file system and execute a `flashreload` and this copies the image from SPIFSS to the correct flash location, relocating all address to the correct base. (See `app/lua/lflash.c` for the details.)  This process is fast.
 
 A `luac.cross -a` option also allows absolute address images to be built for direct flashing the LFS store onto the module during provisioning.
 
@@ -171,14 +171,14 @@ A `luac.cross -a` option also allows absolute address images to be built for dir
 
 The LGC applies to what the Lua VM classifies as collectable objects (strings, tables, functions, userdata, threads -- known collectively as `GCObjects`). A simple two "colour" LGC was used in previous Lua versions, but Lua 5.1 introduced the Dijkstra's 3-colour (*white*, *grey*, *black*) variant that enabled the LGC to operate in an incremental mode. This permits smaller LGC steps interspersed by LGC pause, and is very useful for larger scale Lua implementations. Whilst this is probably not really needed for IoT devices, NodeMCU follows this standard Lua 5.1 implementation, albeit with the `elua` EGC changes.
 
-In fact, two *white* flavours are used to support incremental working (so this 3-colour algorithm really uses 4). All newly allocated collectable objects are marked as the current *white*, and a link in `GCObject` header enables scanning through all such Lua objects. Collectable objects can be referenced directly or indirectly via one of the Lua application's *roots*: the global environment, the Lua registry and the stack. 
+In fact, two *white* flavours are used to support incremental working (so this 3-colour algorithm really uses 4). All newly allocated collectable objects are marked as the current *white*, and a link in `GCObject` header enables scanning through all such Lua objects. Collectable objects can be referenced directly or indirectly via one of the Lua application's *roots*: the global environment, the Lua registry and the stack.
 
-The standard LGC algorithm is quite complex and assumes that all GCObjects are RW so that a flag byte within each object can be updated during the mark and sweep processing. LFS introduces GCObjects that are stored in RO memory and are therefore truly RO.   
+The standard LGC algorithm is quite complex and assumes that all GCObjects are RW so that a flag byte within each object can be updated during the mark and sweep processing. LFS introduces GCObjects that are stored in RO memory and are therefore truly RO.
 The LFS patch therefore modifies the LGC processing to avoid such updates to GCObjects in RO memory, whilst still maintaining overall object integrity, as any attempt to update their content during LGC will result in the firmware crashing with a memory exception; the remainder of this section provides further detail on how this was achieved.  The LGC operates two broad phases: **mark** and **sweep**
 
 -  The **mark** phase walks collectable objects by a recursive walk starting at at the LGC roots. (This is referred to as _traverse_.) Any object that is visited in this walk has its colour flipped from *white* to *grey* to denote that it is in use, and it is relinked into a grey list. The grey list is iteratively processed, removing one grey object at a time. Such objects can reference other objects (e.g. a table has many keys and values which can also be collectable objects), so each one is then also traversed and all objects reachable from it are marked, as above. After an object has been traversed, it's turned from grey to black. The LGC will walks all RW collectable objects, traversing the dependents of each in turn.  As RW objects can now refer to RO ones, the traverse routines has additional tests to skip trying to mark any RO LFS references.
 
--  The white flavour is flipped just before entering the **sweep** phase. This phase then loops over all collectable objects. Any objects found with previous white are no longer in use, and so can be freed. The 'current' white are kept; this prevents any new objects created during a paused sweep from being accidentally collected before being marked, but this means that it takes two sweeps to free all unused objects. There are other subtleties introduced in this 3-colour algorithm such as barriers and back-tracking to maintain integrity of the LGC, and these also needed extra rules to handle RO GCObjects correclty, but detailed explanation of these is really outside the scope of this paper. 
+-  The white flavour is flipped just before entering the **sweep** phase. This phase then loops over all collectable objects. Any objects found with previous white are no longer in use, and so can be freed. The 'current' white are kept; this prevents any new objects created during a paused sweep from being accidentally collected before being marked, but this means that it takes two sweeps to free all unused objects. There are other subtleties introduced in this 3-colour algorithm such as barriers and back-tracking to maintain integrity of the LGC, and these also needed extra rules to handle RO GCObjects correclty, but detailed explanation of these is really outside the scope of this paper.
 
 As well as standard collectable GCOobjets:
 
@@ -194,7 +194,7 @@ As far as the LGC algorithm is concerned, encountering any _flash_ object in a s
 
 ### General comments
 
-- **Reboot implementation**. Whilst the application initiated LFS reload might seem an overhead, it typically only adds a few seconds per reboot. 
+- **Reboot implementation**. Whilst the application initiated LFS reload might seem an overhead, it typically only adds a few seconds per reboot.
 
 - **LGC reduction**. Since the cost of LGC is directly related to the size of the LGC sweep lists, moving RO resources into LFS memory removes them from the LGC scope and therefore reduces LGC runtime accordingly.
 

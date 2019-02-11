@@ -37,8 +37,8 @@ static int db_getstrings (lua_State *L) {
     if (G(L)->ROstrt.hash == NULL)
       return 0;
     tb = &G(L)->ROstrt;
-  } 
-  else 
+  }
+  else
 #endif
   tb = &G(L)->strt;
   lua_settop(L, 0);
@@ -54,7 +54,7 @@ static int db_getstrings (lua_State *L) {
   lua_getfield(L, LUA_GLOBALSINDEX, "table");
   lua_getfield(L, -1, "sort");             /* look up table.sort function */
   lua_replace(L, -2);                      /* dump the table table */
-  lua_pushvalue(L, -2);                    /* duplicate the strt_copy ref */ 
+  lua_pushvalue(L, -2);                    /* duplicate the strt_copy ref */
   lua_call(L, 1, 0);                       /* table.sort(strt_copy) */
   return 1;
 }
@@ -176,7 +176,7 @@ static int db_getinfo (lua_State *L) {
     treatstackoption(L, L1, "func");
   return 1;  /* return table */
 }
-    
+
 
 static int db_getlocal (lua_State *L) {
   int arg;

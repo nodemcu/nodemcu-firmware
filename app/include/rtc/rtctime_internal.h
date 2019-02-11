@@ -34,7 +34,7 @@
 
 /*
  * It is vital that this file is only included once in the entire
- * system. 
+ * system.
  */
 
 #ifndef _RTCTIME_INTERNAL_H_
@@ -533,7 +533,7 @@ static void rtc_time_enter_deep_sleep_us(uint32_t us)
 
   if (rtc_time_check_wake_magic())
     rtc_time_set_sleep_magic();
-  else 
+  else
     bbram_save();
 
   rtc_reg_write(RTC_TARGET_ADDR,rtc_time_read_raw()+cycles);
@@ -788,7 +788,7 @@ static int32_t rtc_time_adjust_delta_by_rate(int32_t delta) {
 }
 
 static uint64_t rtc_time_adjust_us_by_rate(uint64_t us, int force) {
-  uint64_t usoff = us - rtc_usatlastrate; 
+  uint64_t usoff = us - rtc_usatlastrate;
   uint64_t usadj = (usoff * ((1ull << 32) + (int) rtc_usrate)) >> 32;
   usadj = usadj + rtc_rateadjustedus;
 

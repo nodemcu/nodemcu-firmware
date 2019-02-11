@@ -8,7 +8,7 @@
 #define _C_LOCALE_H_
 
 #include <locale.h>
-  
+
 #if 0
 #ifndef NULL
 #define NULL    0

@@ -41,9 +41,9 @@ int16_t ucg_com_nodemcu_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uint8_t *d
         /* "data" is a pointer to ucg_com_info_t structure with the following information: */
         /*	((ucg_com_info_t *)data)->serial_clk_speed value in nanoseconds */
         /*	((ucg_com_info_t *)data)->parallel_clk_speed value in nanoseconds */
-      
+
         /* setup pins */
-    
+
         // we assume that the SPI interface was already initialized
         // just care for the /CS and D/C pins
         //platform_gpio_write( ucg->pin_list[0], value );
@@ -51,10 +51,10 @@ int16_t ucg_com_nodemcu_hw_spi(ucg_t *ucg, int16_t msg, uint16_t arg, uint8_t *d
         if ( ucg->pin_list[UCG_PIN_RST] != UCG_PIN_VAL_NONE )
             platform_gpio_mode( ucg->pin_list[UCG_PIN_RST], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
         platform_gpio_mode( ucg->pin_list[UCG_PIN_CD], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
-      
+
         if ( ucg->pin_list[UCG_PIN_CS] != UCG_PIN_VAL_NONE )
             platform_gpio_mode( ucg->pin_list[UCG_PIN_CS], PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_FLOAT );
-      
+
         break;
 
     case UCG_COM_MSG_POWER_DOWN:

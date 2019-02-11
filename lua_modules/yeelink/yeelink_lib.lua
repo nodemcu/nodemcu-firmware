@@ -34,7 +34,7 @@ if wifi.sta.getip() == nil then
     tmr.alarm(1,1000,1,function ()
         if wifi.sta.getip() ~= nil then
             tmr.stop(1)
-            sk:dns("api.yeelink.net",function(conn,ip) 
+            sk:dns("api.yeelink.net",function(conn,ip)
             dns=ip
             print("DNS YEELINK OK... IP: "..dns)
             end)
@@ -42,7 +42,7 @@ if wifi.sta.getip() == nil then
     end)
 end
 
-sk:dns("api.yeelink.net",function(conn,ip) 
+sk:dns("api.yeelink.net",function(conn,ip)
 
 dns=ip
 
@@ -74,8 +74,8 @@ end
 --========Check the DNS Status===========
 --if DNS success, return the address(string)
 --if DNS fail(or processing), return nil
--- 
--- 
+--
+--
 --========================================
 function  M.getDNS()
 
@@ -96,11 +96,11 @@ function M.update(_datapoint)
 
     datapoint = tostring(_datapoint)
 
-    sk:on("connection", function(conn) 
+    sk:on("connection", function(conn)
 
-        print("connect OK...") 
+        print("connect OK...")
 
-    
+
     local a=[[{"value":]]
     local b=[[}]]
 
@@ -116,10 +116,10 @@ function M.update(_datapoint)
 
     end)
 
-    sk:on("receive", function(sck, content) 
-    
+    sk:on("receive", function(sck, content)
+
     if debug then
-    print("\r\n"..content.."\r\n") 
+    print("\r\n"..content.."\r\n")
     else
     print("Date Receive")
     end
