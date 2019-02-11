@@ -568,7 +568,6 @@ int uzlib_compress (uchar **dest, uint *destLen, const uchar *src, uint srcLen) 
     status = UZLIB_OK;
   }
 
-  FREE(dynamicTables);
   for (i=0; i<20;i++) DBG_PRINT("count %u = %u\n",i,debugCounts[i]);
 
   if (status == UZLIB_OK) {
@@ -580,6 +579,8 @@ int uzlib_compress (uchar **dest, uint *destLen, const uchar *src, uint srcLen) 
     *destLen = 0;
     FREE(oBuf->buffer);
   }
+
+  FREE(dynamicTables);
 
   return status;
 }
