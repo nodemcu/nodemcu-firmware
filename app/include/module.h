@@ -39,7 +39,19 @@
 #define MODULE_EXPAND_PASTE_(x,y) MODULE_PASTE_(x,y)
 
 #ifdef LUA_CROSS_COMPILER
+#ifdef _MSC_VER
+//on msvc it is necessary to go through more pre-processor hoops to get the
+//section name built; string merging does not happen in the _declspecs.
+//NOTE: linker magic is invoked via the magical '$' character. Caveat editor.
+#define __TOKIFY(s) .rodata1$##s
+#define __TOTOK(s) __TOKIFY(s)
+#define __STRINGIFY(x) #x
+#define __TOSTRING(x) __STRINGIFY(x)
+#define __ROSECNAME(s) __TOSTRING(__TOTOK(s))
+#define LOCK_IN_SECTION(s) __declspec ( allocate( __ROSECNAME(s) ) )
+#else
 #define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".rodata1." #s)))
+#endif
 #else
 #define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
 #endif

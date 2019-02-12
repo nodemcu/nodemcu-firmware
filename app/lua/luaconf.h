@@ -40,7 +40,10 @@
 
 
 #if defined(LUA_CROSS_COMPILER)
+#ifdef _MSC_VER
+#else
 #define LUA_USE_LINUX
+#endif
 #endif
 
 #if defined(LUA_USE_LINUX)
@@ -264,7 +267,7 @@
 #include <io.h>
 #ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
-else
+#else
 #include "c_stdio.h"
 #endif
 
@@ -631,7 +634,11 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
   #define lua_str2number(s,p) c_strtoll((s), (p), 10)
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #else
+#ifdef _MSC_VER	//what's wrong with stdlib strtod?
+#define lua_str2number(s,p)	strtod((s), (p))
+#else
 #define lua_str2number(s,p)	c_strtod((s), (p))
+#endif
 #endif // #if defined LUA_NUMBER_INTEGRAL
 
 /*

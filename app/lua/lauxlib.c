@@ -8,6 +8,9 @@
 
 #include "lua.h"
 #include C_HEADER_CTYPE
+#ifdef _MSC_VER	//msvc #defines errno, which interferes with our #include macro
+#undef errno
+#endif
 #include C_HEADER_ERRNO
 #include C_HEADER_STDIO
 #include C_HEADER_STDLIB

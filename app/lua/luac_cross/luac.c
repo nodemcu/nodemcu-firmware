@@ -272,6 +272,9 @@ struct Smain {
  char** argv;
 };
 
+#ifdef _MSC_VER
+typedef unsigned int uint;
+#endif
 extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w,
                               void* data, int strip,
                               lu_int32 address, lu_int32 maxSize);

@@ -27,7 +27,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 extern int dbg_break(void);
+#ifdef _MSC_VER	//msvc requires old name for longjmp
+#define UZLIB_THROW(v) {dbg_break();longjmp(unwindAddr, (v));}
+#else
 #define UZLIB_THROW(v) {dbg_break();_longjmp(unwindAddr, (v));}
+#endif
 #define UZLIB_SETJMP _setjmp
 #define uz_malloc malloc
 #define uz_free free

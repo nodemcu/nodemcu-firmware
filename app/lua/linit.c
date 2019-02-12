@@ -46,7 +46,21 @@ extern const luaR_entry  lua_rotable_base[];
 #define LUA_ROTABLES lua_rotable_core
 #define LUA_LIBS     lua_libs_core
 #endif
+             
+#ifdef _MSC_VER
+//MSVC requires us to declare these sections before we refer to them
+#pragma section(__ROSECNAME(A), read)
+#pragma section(__ROSECNAME(zzzzzzzz), read)
+#pragma section(__ROSECNAME(libs), read)
+#pragma section(__ROSECNAME(rotable), read)
 
+//These help us to find the beginning and ending of the RO data.  NOTE:  linker
+//magic is used; the section names are lexically sorted, so 'a' and 'z' are
+//important to keep the other sections lexically between these two dummy
+//variables.  Check your mapfile output if you need to fiddle with this stuff.
+const LOCK_IN_SECTION(A) int _ro_start = 0;
+const LOCK_IN_SECTION(zzzzzzzz) int _ro_end = 0;
+#endif
 static const LOCK_IN_SECTION(libs) luaL_reg LUA_LIBS[] = {
   {"",              luaopen_base},
   {LUA_LOADLIBNAME, luaopen_package},

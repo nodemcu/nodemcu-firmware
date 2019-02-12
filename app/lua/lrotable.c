@@ -9,7 +9,11 @@
 #include "lobject.h"
 #include "lapi.h"
 
+#ifdef _MSC_VER
+#define ALIGNED_STRING (__declspec( align( 4 ) ) char*)
+#else
 #define ALIGNED_STRING (__attribute__((aligned(4))) char *)
+#endif
 #define LA_LINES 16
 #define LA_SLOTS 4
 //#define COLLECT_STATS
