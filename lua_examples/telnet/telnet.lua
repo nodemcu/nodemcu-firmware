@@ -55,7 +55,7 @@ local function telnet_listener(socket)
  -- debug("entering sendLine")  
     if not s then return end
 
-      if fifo2l + fifo1l == 0 then -- both FIFOs empty, so clear down s
+    if fifo2l + fifo1l == 0 then -- both FIFOs empty, so clear down s
         s = nil     
      -- debug("Q cleared")        
         return
@@ -67,7 +67,7 @@ local function telnet_listener(socket)
       insert(fifo2,concat(fifo1))
    -- debug("flushing %u bytes / %u recs of FIFO1 into FIFO2[%u]", fifo1l, #fifo1, #fifo2) 
       fifo2l, fifo1, fifo1l = fifo2l + fifo1l, {}, 0
-	  end
+    end
 
     -- send out first 4 FIFO2 recs (or all if #fifo2<5)  
     local rec =  remove(fifo2,1)        .. (remove(fifo2,1) or '') ..
@@ -134,6 +134,7 @@ local function telnet_listener(socket)
   socket:on("disconnection", disconnect)
   socket:on("sent",          sendLine)
   node.output(queueLine, 0)
+  print(("Welcome to NodeMCU world (%d mem free, %s)"):format(node.heap(), wifi.sta.getip()))
 end
 
 local listenerSocket
@@ -143,11 +144,13 @@ return {
       wifi.setmode(wifi.STATION, false)
       wifi.sta.config { ssid = ssid, pwd  = pwd, save = false }
     end
-    tmr.alarm(0, 500, tmr.ALARM_AUTO, function()
+    local t = tmr.create()
+    t:alarm(500, tmr.ALARM_AUTO, function()
       if (wifi.sta.status() == wifi.STA_GOTIP) then
-        tmr.unregister(0)
-        print("Welcome to NodeMCU world", node.heap(), wifi.sta.getip())
-        net.createServer(net.TCP, 180):listen(port or 2323, telnet_listener)
+        t:unregister()
+        t=nil
+        print(("Telnet server started (%d mem free, %s)"):format(node.heap(), wifi.sta.getip()))
+        net.createServer(net.TCP, 180):listen(port or 23, telnet_listener)
       else
         uwrite(0,".")
       end
