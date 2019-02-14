@@ -9,7 +9,7 @@
 #define SDK_PWM2_PERIOD_COMPAT_MODE 0
 #endif
 #ifndef PWM2_MAX_CHANNELS
-#define PWM2_MAX_CHANNELS 2
+#define PWM2_MAX_CHANNELS 13
 #endif
 #define PWM2_DEBUG 0
 #define PWM2_USE_NMI 0

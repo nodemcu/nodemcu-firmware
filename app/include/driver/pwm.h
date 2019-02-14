@@ -1,7 +1,7 @@
 #ifndef __PWM_H__
 #define __PWM_H__
 
-#define PWM_CHANNEL 13
+#define PWM_CHANNEL 6
 
 struct pwm_single_param {
 	uint16 gpio_set;
