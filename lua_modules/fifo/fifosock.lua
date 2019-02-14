@@ -120,7 +120,15 @@ return function(sock)
     else insert(fsmall, s) ; lsmall = lsmall + #s
     end
 
-    -- if it happened that we corked the transmission above, uncork now
-    if corked then sendnext() end
+    -- if it happened that we corked the transmission above...
+    --   if we queued a good amount of data, go ahead and start transmitting;
+    --   otherwise, wait a tick and hopefully we will queue more in the interim
+    --   before transmitting.
+    if corked then
+      if #fbig <= COALIMIT
+       then tmr.create():alarm(1, tmr.ALARM_SINGLE, sendnext)
+       else sendnext()
+      end
+    end
   end
 end

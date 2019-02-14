@@ -8,6 +8,19 @@ local verbose = 0
 local vprint = (verbose > 0) and print or function() end
 
 --
+-- Mock up enough of the nodemcu tmr structure, but pretend that nothing
+-- happens between ticks.  This won't exercise the optimistic corking logic,
+-- but that's probably fine.
+--
+tmr = {}
+tmr.ALARM_SINGLE = 0
+function tmr.create()
+  local r = {}
+  function r:alarm(_i, _t, cb) vprint("TMR") cb() end
+  return r
+end
+
+--
 -- Mock up enough of the nodemcu net.socket type; have it log all the sends
 -- into this "outs" array so that we can later check against it.
 --
