@@ -11,10 +11,10 @@
 #define NODE_VERSION_STR(x)	#x
 #define NODE_VERSION_XSTR(x)	NODE_VERSION_STR(x)
 
-#define NODE_VERSION		"NodeMCU " ESP_SDK_VERSION_STRING "." NODE_VERSION_XSTR(NODE_VERSION_INTERNAL) " built with Docker provided by frightanic.com\n\tbranch: pwm2\n\tcommit: 27e9e6c085aaac8b7e78b7c1d9cd5afe39428ba0\n\tSSL: false\n\tBuild type: float\n\tLFS: disabled\n\tmodules: adc,bit,dht,file,gpio,i2c,mqtt,net,node,ow,spi,tmr,uart,wifi\n"
+#define NODE_VERSION		"NodeMCU " ESP_SDK_VERSION_STRING "." NODE_VERSION_XSTR(NODE_VERSION_INTERNAL)
 
 #ifndef BUILD_DATE
-#define BUILD_DATE		"created on 2019-02-14 14:15\n"
+#define BUILD_DATE		"unspecified"
 #endif
 
 extern char SDK_VERSION[];
