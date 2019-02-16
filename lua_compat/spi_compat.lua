@@ -97,7 +97,8 @@ return function (pin_sclk, pin_mosi, pin_miso, pin_cs)
   M.CPHA_HIGH = 1
   M.HALFDUPLEX = 0
   M.FULLDUPLEX = 1
-
+  M.DATABITS_8 = 8
+  
   _pin_sclk = pin_sclk
   _pin_mosi = pin_mosi
   _pin_miso = pin_miso
