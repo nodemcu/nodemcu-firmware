@@ -79,7 +79,7 @@ do
   ------------------------------------------------------------------------------
   local http_handler = function(handler)
     return function(conn)
-      local csend = (require "fifosock")(conn)
+      local csend = (require "fifosock").wrap(conn)
       local cfini = function()
         conn:on("receive", nil)
         conn:on("disconnection", nil)
@@ -89,6 +89,7 @@ do
       local buf = ""
       local method, url
       local ondisconnect = function(conn)
+	conn.on("sent", nil)
         collectgarbage("collect")
       end
       -- header parser

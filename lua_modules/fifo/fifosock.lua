@@ -15,11 +15,9 @@ local concat = table.concat
 local insert = table.insert
 local gc     = collectgarbage
 
-local fifo = require "fifo"
-
-return function(sock)
+local function wrap(sock)
   -- the two fifos
-  local fsmall, lsmall, fbig = {}, 0, fifo.new()
+  local fsmall, lsmall, fbig = {}, 0, (require "fifo").new()
 
   -- ssend last aggregation string and aggregate count
   local ssla, sslan = nil, 0
@@ -132,3 +130,5 @@ return function(sock)
     end
   end
 end
+
+return { wrap = wrap }
