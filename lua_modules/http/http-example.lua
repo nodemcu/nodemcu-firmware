@@ -9,7 +9,7 @@ require("httpserver").createServer(80, function(req, res)
   print("+R", req.method, req.url, node.heap())
   -- setup handler of headers, if any
   req.onheader = function(self, name, value)
-    -- print("+H", name, value)
+    print("+H", name, value)
     -- E.g. look for "content-type" header,
     --   setup body parser to particular format
     -- if name == "content-type" then
@@ -23,13 +23,11 @@ require("httpserver").createServer(80, function(req, res)
   -- setup handler of body, if any
   req.ondata = function(self, chunk)
     print("+B", chunk and #chunk, node.heap())
-    -- request ended?
     if not chunk then
       -- reply
-      --res:finish("")
       res:send(nil, 200)
       res:send_header("Connection", "close")
-      res:send("Hello, world!")
+      res:send("Hello, world!\n")
       res:finish()
     end
   end

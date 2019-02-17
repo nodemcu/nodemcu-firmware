@@ -41,6 +41,8 @@ pages:
     - 'bh1750': 'lua-modules/bh1750.md'
     - 'ds18b20': 'lua-modules/ds18b20.md'
     - 'ds3231': 'lua-modules/ds3231.md'
+    - 'fifo' : 'lua-modules/fifo.md'
+    - 'fifosock' : 'lua-modules/fifosock.md'
     - 'ftpserver': 'lua-modules/ftpserver.md'
     - 'hdc1000': 'lua-modules/hdc1000.md'
     - 'httpserver': 'lua-modules/httpserver.md'

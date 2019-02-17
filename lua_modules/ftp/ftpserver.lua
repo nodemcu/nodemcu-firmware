@@ -59,9 +59,11 @@ function FTP.open(user, pass, ssid, pwd, dbgFlag) -- upval: FTP (, wifi, tmr, pr
     wifi.setmode(wifi.STATION, false)
     wifi.sta.config { ssid = ssid, pwd  = pwd, save = false }
   end
-  tmr.alarm(0, 500, tmr.ALARM_AUTO, function()
+  local t = tmr.create()
+  t:alarm(500, tmr.ALARM_AUTO, function()
     if (wifi.sta.status() == wifi.STA_GOTIP) then
-      tmr.unregister(0)
+      t:unregister()
+      t=nil
       print("Welcome to NodeMCU world", node.heap(), wifi.sta.getip())
       return FTP.createServer(user, pass, dbgFlag)
     else

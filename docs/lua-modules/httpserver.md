@@ -32,7 +32,8 @@ Function to start HTTP server.
 #### Notes
 Callback function has 2 arguments: `req` (request) and `res` (response). The first object holds values:
 
-- `conn`: `net.socket` sub module
+- `conn`: `net.socket` sub module.  **DO NOT** call `:on` or `:send` on this
+  object.
 - `method`: Request method that was used (e.g.`POST` or `GET`)
 - `url`: Requested URL
 - `onheader`: value to setup handler function for HTTP headers like `content-type`. Handler function has 3 parameters:

@@ -67,7 +67,7 @@ Wrapper to createServer() which also connects to the WiFi channel.
 
 #### Example
 ```Lua
-require("ftpserver").open('myWifi', 'wifiPassword', 'user', 'password')
+require("ftpserver").open('user', 'password', 'myWifi', 'wifiPassword')
 ```
 
 ## close()
