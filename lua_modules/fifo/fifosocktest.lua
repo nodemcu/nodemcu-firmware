@@ -33,7 +33,7 @@ local fakesock = {
 local function sent() vprint("SENT") fakesock.cb() end
 
 -- And wrap a fifosock around this fake socket
-local fsend = require "fifosock" (fakesock)
+local fsend = (require "fifosock").wrap(fakesock)
 
 -- Verify that the next unconsumed output is as indicated
 local function fcheck(x)

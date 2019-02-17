@@ -31,7 +31,7 @@ local node, table, tmr, wifi, uwrite,     tostring =
       node, table, tmr, wifi, uart.write, tostring
 
 local function telnet_listener(socket) 
-  local queueLine = (require "fifosock")(socket)
+  local queueLine = (require "fifosock").wrap(socket)
 
   local function receiveLine(s, line)
     node.input(line)

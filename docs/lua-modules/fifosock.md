@@ -3,23 +3,35 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2019-02-10 | [TerryE](https://github.com/TerryE) | [nwf](https://github.com/nwf) | [fifosock.lua](../../lua_modules/fifo/fifosock.lua) |
 
-This module provides a convenient, efficient wrapper around the `net.socket`
-`send` method.  It ensures in-order transmission while striving to minimize
-memory footprint and packet count by coalescing queued strings.  It also serves
-as a detailed, worked example of the `fifo` module.
+This module provides a moderately convenient, efficient wrapper around the
+`net.socket` `send` method.  It ensures in-order transmission while striving to
+minimize memory footprint and packet count by coalescing queued strings.  It
+also serves as a detailed, worked example of the `fifo` module.
 
 ## Use
 ```lua
-ssend = (require "fifosock")(sock)
-
+ssend = (require "fifosock").wrap(sock)
 ssend("hello, ") ssend("world\n")
+
+-- when finished
+ssend = nil
+sock:on("sent", nil)
 ```
 
 Once the `sock`et has been wrapped, one should use only the resulting `ssend`
 function in lieu of `sock:send`, and one should not change the
-`sock:on("sent")` callback.
+`sock:on("sent")` callback for the duration of the connection.
 
-### Advanced Use
+Use of this module creates a circular reference through the Lua registry: the
+socket points at the fifosock wrapper, which points back at the socket.  As
+such, it is vitally important to break this cycle when the socket has outlived
+its use.  **The usual garbage collection will not be able to reclaim abandoned
+wrapped sockets**.  The user of `fifosock` must, when disposing of the socket,
+unwire the wrapper, by calling `sock:on("sent", nil)` and should drop all
+references to `ssend`; a convenient place to do this is in the
+`sock:on("disconnect")` callback.
+
+## Advanced Use
 
 In addition to passing strings representing part of the stream to be sent, it
 is possible to pass the resulting `ssend` function *functions*.  These
