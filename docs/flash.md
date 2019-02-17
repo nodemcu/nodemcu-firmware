@@ -37,7 +37,7 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 ### NodeMCU PyFlasher
 > Self-contained [NodeMCU](https://github.com/nodemcu/nodemcu-firmware) flasher with GUI based on [esptool.py](https://github.com/espressif/esptool) and [wxPython](https://www.wxpython.org/).
 
-![NodeMCU PyFlasher](img/NodeMCU-PyFlasher.png "NodeMCU PyFlasher")
+![NodeMCU PyFlasher](https://github.com/marcelstoer/nodemcu-pyflasher/raw/master/images/gui.png "NodeMCU PyFlasher")
 
 Source: [https://github.com/marcelstoer/nodemcu-pyflasher](https://github.com/marcelstoer/nodemcu-pyflasher)
 
