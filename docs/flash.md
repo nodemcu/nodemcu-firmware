@@ -33,14 +33,16 @@ Run the following command to flash an *aggregated* binary as is produced for exa
 - In some uncommon cases, the [SDK init data](#sdk-init-data) may be invalid and NodeMCU may fail to boot. The easiest solution is to fully erase the chip before flashing:
 `esptool.py --port <serial-port-of-ESP8266> erase_flash`
 
-### NodeMCU Flasher
-> A firmware Flash tool for NodeMCU...We are working on next version and will use QT framework. It will be cross platform and open-source.
+### NodeMCU PyFlasher
+> Self-contained [NodeMCU](https://github.com/nodemcu/nodemcu-firmware) flasher with GUI based on [esptool.py](https://github.com/espressif/esptool) and [wxPython](https://www.wxpython.org/).
 
-Source: [https://github.com/nodemcu/nodemcu-flasher](https://github.com/nodemcu/nodemcu-flasher)
+![NodeMCU PyFlasher](https://github.com/marcelstoer/nodemcu-pyflasher/raw/master/images/gui.png "NodeMCU PyFlasher")
 
-Supported platforms: Windows
+Source: [https://github.com/marcelstoer/nodemcu-pyflasher](https://github.com/marcelstoer/nodemcu-pyflasher)
 
-Note that this tool was created by the initial developers of the NodeMCU firmware. It hasn't seen updates since September 2015 and is not maintained by the current NodeMCU *firmware* team. Be careful to not accidentally flash the very old default firmware the tool is shipped with.
+Supported platforms: anything that runs Python, runnable `.exe` available for Windows and `.dmg` for macOS
+
+Disclaimer: the availability of [NodeMCU PyFlasher was announced on the NodeMCU Facebook page](https://www.facebook.com/NodeMCU/posts/663197460515251) but it is not an official offering of the current NodeMCU firmware team.
 
 ## Putting Device Into Flash Mode
 
