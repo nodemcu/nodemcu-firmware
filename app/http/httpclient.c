@@ -171,7 +171,7 @@ static void ICACHE_FLASH_ATTR http_send_callback( void * arg )
 	{
 		HTTPCLIENT_DEBUG( "All sent" );
 	}
-	else  
+	else
 	{
 		/* The headers were sent, now send the contents. */
 		HTTPCLIENT_DEBUG( "Sending request body" );
@@ -324,7 +324,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 			{
 				HTTPCLIENT_ERR( "Invalid version in %s", req->buffer );
 			}
-			else  
+			else
 			{
 				http_status	= atoi( req->buffer + strlen( version_1_0 ) );
 
@@ -470,7 +470,7 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 	else
 #endif
 		result = espconn_disconnect( conn );
-		
+
 	if (result == ESPCONN_OK || result == ESPCONN_INPROGRESS)
 		return;
 	else
@@ -478,7 +478,7 @@ static void ICACHE_FLASH_ATTR http_timeout_callback( void *arg )
 		/* not connected; execute the callback ourselves. */
 		HTTPCLIENT_DEBUG( "manually Calling disconnect callback due to error %d", result );
 		http_disconnect_callback( arg );
-	}		
+	}
 }
 
 
@@ -502,7 +502,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		}
 		http_free_req( req );
 	}
-	else  
+	else
 	{
 		HTTPCLIENT_DEBUG( "DNS found %s " IPSTR, hostname, IP2STR( addr ) );
 
@@ -531,8 +531,8 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		if ( req->secure )
 		{
 			espconn_secure_connect( conn );
-		} 
-		else 
+		}
+		else
 #endif
 		{
 			espconn_connect( conn );
@@ -575,7 +575,7 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 		/* Already in the local names table (or hostname was an IP address), execute the callback ourselves. */
 		http_dns_callback( hostname, &addr, req );
 	}
-	else  
+	else
 	{
 		if ( error == ESPCONN_ARG )
 		{
@@ -614,8 +614,8 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 		port	= 443;
 		secure	= true;
 		url	+= strlen( "https://" );        /* Get rid of the protocol. */
-	} 
-	else 
+	}
+	else
 	{
 		HTTPCLIENT_ERR( "URL is not HTTP or HTTPS %s", url );
 		return;
@@ -643,7 +643,7 @@ void ICACHE_FLASH_ATTR http_request( const char * url, const char * method, cons
 		os_memcpy( hostname, url, path - url );
 		hostname[path - url] = '\0';
 	}
-	else  
+	else
 	{
 		port = atoi( colon + 1 );
 		if ( port == 0 )

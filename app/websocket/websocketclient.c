@@ -82,7 +82,7 @@ static char *cryptoSha1(char *data, unsigned int len) {
   SHA1_CTX ctx;
   SHA1Init(&ctx);
   SHA1Update(&ctx, data, len);
-  
+
   uint8_t *digest = (uint8_t *) c_zalloc(20);
   SHA1Final(digest, &ctx);
   return (char *) digest; // Requires free
@@ -188,7 +188,7 @@ static void ws_closeSentCallback(void *arg) {
 static void ws_sendFrame(struct espconn *conn, int opCode, const char *data, unsigned short len) {
   NODE_DBG("ws_sendFrame %d %d\n", opCode, len);
   ws_info *ws = (ws_info *) conn->reverse;
-  
+
   if (ws->connectionState == 4) {
     NODE_DBG("already in closing state\n");
     return;
@@ -243,7 +243,7 @@ static void ws_sendFrame(struct espconn *conn, int opCode, const char *data, uns
   // Apply mask to encode payload
   int i;
   for (i = 0; i < len; i++) {
-    b[bufOffset + i] ^= b[bufOffset - 4 + i % 4]; 
+    b[bufOffset + i] ^= b[bufOffset - 4 + i % 4];
   }
   bufOffset += len;
 
@@ -819,7 +819,7 @@ void ws_connect(ws_info *ws, const char *url) {
   conn->proto.tcp = (esp_tcp *) c_zalloc(sizeof(esp_tcp));
   conn->proto.tcp->local_port = espconn_port();
   conn->proto.tcp->remote_port = ws->port;
-  
+
   conn->reverse = ws;
   ws->conn = conn;
 

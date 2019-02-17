@@ -71,12 +71,12 @@ Get the current country info.
 #### Returns
 - `country_info` this table contains the current country info configuration
 	- `country` Country code, 2 character string.
-	- `start_ch` Starting channel. 
+	- `start_ch` Starting channel.
 	- `end_ch` Ending channel.
 	- `policy` The policy parameter determines which country info configuration to use, country info given to station by AP or local configuration.
 		- `0` Country policy is auto, NodeMCU will use the country info provided by AP that the station is connected to.
 		- `1` Country policy is manual, NodeMCU will use locally configured country info.
-	
+
 #### Example
 
 ```lua
@@ -166,13 +166,13 @@ Wake up WiFi from suspended state or cancel pending wifi suspension.
     This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 !!! note
-	Wifi resume occurs asynchronously, this means that the resume request will only be processed when control of the processor is passed back to the SDK (after MyResumeFunction() has completed). The resume callback also executes asynchronously and will only execute after wifi has resumed normal operation. 
+	Wifi resume occurs asynchronously, this means that the resume request will only be processed when control of the processor is passed back to the SDK (after MyResumeFunction() has completed). The resume callback also executes asynchronously and will only execute after wifi has resumed normal operation.
 
 #### Syntax
 `wifi.resume([resume_cb])`
 
 #### Parameters
-- `resume_cb` Callback to execute when WiFi wakes from suspension. 
+- `resume_cb` Callback to execute when WiFi wakes from suspension.
  !!! note "Note:"
 
     Any previously provided callbacks will be replaced!
@@ -209,12 +209,12 @@ Set the current country info.
 	- `end_ch` Ending channel, must not be less than starting channel (range:1-14). (Default:13)
 	- `policy` The policy parameter determines which country info configuration to use, country info given to station by AP or local configuration. (default:`wifi.COUNTRY_AUTO`)
 		- `wifi.COUNTRY_AUTO` Country policy is auto, NodeMCU will use the country info provided by AP that the station is connected to.
-			- while in stationAP mode, beacon/probe respose will reflect the country info of the AP that the station is connected to.  
+			- while in stationAP mode, beacon/probe respose will reflect the country info of the AP that the station is connected to.
 		- `wifi.COUNTRY_MANUAL` Country policy is manual, NodeMCU will use locally configured country info.
 
 #### Returns
 `true` If configuration was sucessful.
-	
+
 #### Example
 
 ```lua
@@ -225,7 +225,7 @@ do
   country_info.end_ch=13
   country_info.policy=wifi.COUNTRY_AUTO;
   wifi.setcountry(country_info)
-end  
+end
 
 --compact version
   wifi.setcountry({country="US", start_ch=1, end_ch=13, policy=wifi.COUNTRY_AUTO})
@@ -323,7 +323,7 @@ The default value, 82, corresponds to maximum TX power. Lowering this setting co
 `wifi.setmaxtxpower(max_tpw)`
 
 #### Parameters
-`max_tpw` maximum value of RF Tx Power, unit: 0.25 dBm, range [0, 82]. 
+`max_tpw` maximum value of RF Tx Power, unit: 0.25 dBm, range [0, 82].
 
 #### Returns
 `nil`
@@ -385,13 +385,13 @@ none
 [`wifi.startsmart()`](#wifistartsmart)
 
 ## wifi.suspend()
-Suspend Wifi to reduce current consumption. 
+Suspend Wifi to reduce current consumption.
 
 !!! attention
     This is disabled by default. Modify `PMSLEEP_ENABLE` in `app/include/user_config.h` to enable it.
 
 !!! note
-	Wifi suspension occurs asynchronously, this means that the suspend request will only be processed when control of the processor is passed back to the SDK (after MySuspendFunction() has completed). The suspend callback also executes asynchronously and will only execute after wifi has been successfully been suspended. 
+	Wifi suspension occurs asynchronously, this means that the suspend request will only be processed when control of the processor is passed back to the SDK (after MySuspendFunction() has completed). The suspend callback also executes asynchronously and will only execute after wifi has been successfully been suspended.
 
 
 #### Syntax
@@ -401,7 +401,7 @@ Suspend Wifi to reduce current consumption.
 - `duration` Suspend duration in microseconds(μs). If a suspend duration of `0` is specified, suspension will be indefinite (Range: 0 or 50000 - 268435454 μs (0:4:28.000454))
 - `suspend_cb` Callback to execute when WiFi is suspended. (Optional)
 - `resume_cb` Callback to execute when WiFi wakes from suspension. (Optional)
-- `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)  
+- `preserve_mode` preserve current WiFi mode through node sleep. (Optional, Default: true)
  - If true, Station and StationAP modes will automatically reconnect to previously configured Access Point when NodeMCU resumes.
  - If false, discard WiFi mode and leave NodeMCU in [`wifi.NULL_MODE`](#wifigetmode). WiFi mode will be restored to original mode on restart.
 
@@ -494,7 +494,7 @@ wifi.sta.changeap(4)
 
 ## wifi.sta.clearconfig()
 
-Clears the currently saved WiFi station configuration, erasing it from the flash. May be useful for certain factory-reset 
+Clears the currently saved WiFi station configuration, erasing it from the flash. May be useful for certain factory-reset
 scenarios when a full [`node.restore()`](node.md#noderestore) is not desired, or to prepare for using
 [End-User Setup](enduser-setup) so that the SoftAP is able to lock onto a single hardware radio channel.
 
@@ -536,11 +536,11 @@ Sets the WiFi station configuration.
 			- "DE:C1:A5:51:F1:ED"
 			- "AC-1D-1C-B1-0B-22"
 			- "DE AD BE EF 7A C0"
-	- `save` Save station configuration to flash. 
+	- `save` Save station configuration to flash.
 		- `true` configuration **will** be retained through power cycle.  (Default).
 		- `false` configuration **will not** be retained through power cycle.
 	- Event callbacks will only be available if `WIFI_SDK_EVENT_MONITOR_ENABLE` is uncommented in `user_config.h`
-		- Please note: To ensure all station events are handled at boot time, all relevant callbacks must be registered as early as possible in `init.lua` with either `wifi.sta.config()` or `wifi.eventmon.register()`.     
+		- Please note: To ensure all station events are handled at boot time, all relevant callbacks must be registered as early as possible in `init.lua` with either `wifi.sta.config()` or `wifi.eventmon.register()`.
 		- `connected_cb`: Callback to execute when station is connected to an access point. (Optional)
 			- Items returned in table :
 				- `SSID`: SSID of access point.  (format: string)
@@ -549,19 +549,19 @@ Sets the WiFi station configuration.
 		- `disconnected_cb`: Callback to execute when station is disconnected from an access point. (Optional)
 			- Items returned in table :
 				- `SSID`: SSID of access point.   (format: string)
-				- `BSSID`: BSSID of access point. (format: string) 
-				- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)  
-		- `authmode_change_cb`: Callback to execute when the access point has changed authorization mode. (Optional)    
+				- `BSSID`: BSSID of access point. (format: string)
+				- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)
+		- `authmode_change_cb`: Callback to execute when the access point has changed authorization mode. (Optional)
 			- Items returned in table :
-			- `old_auth_mode`: Old wifi authorization mode. (format: number)  
+			- `old_auth_mode`: Old wifi authorization mode. (format: number)
 			- `new_auth_mode`: New wifi authorization mode. (format: number)
 		- `got_ip_cb`: Callback to execute when the station received an IP address from the access point. (Optional)
 			- Items returned in table :
 				- `IP`: The IP address assigned to the station.  (format: string)
 				- `netmask`: Subnet mask.  (format: string)
-				- `gateway`: The IP address of the access point the station is connected to. (format: string)  
+				- `gateway`: The IP address of the access point the station is connected to. (format: string)
 		- `dhcp_timeout_cb`: Station DHCP request has timed out. (Optional)
-			- Blank table is returned.  
+			- Blank table is returned.
 
 #### Returns
 - `true`  Success
@@ -641,8 +641,8 @@ Disconnects from AP in station mode.
 - `disconnected_cb`: Callback to execute when station is disconnected from an access point. (Optional)
 	- Items returned in table :
 		- `SSID`: SSID of access point.   (format: string)
-		- `BSSID`: BSSID of access point. (format: string) 
-		- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)  
+		- `BSSID`: BSSID of access point. (format: string)
+		- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below. (format: number)
 
 #### Returns
 `nil`
@@ -789,7 +789,7 @@ Get information of APs cached by ESP8266 station.
 	- `qty` quantity of APs returned
 	- `1-5` index of AP. (the index corresponds to index used by [`wifi.sta.changeap()`](#wifistachangeap) and [`wifi.sta.getapindex()`](#wifistagetapindex))
 	- `ssid`  ssid of Access Point
-	- `pwd` password for Access Point, `nil` if no password was configured 
+	- `pwd` password for Access Point, `nil` if no password was configured
 	- `bssid` MAC address of Access Point
 	  - `nil` will be returned if no MAC address was configured during station configuration.
 
@@ -814,7 +814,7 @@ do
   local x=wifi.sta.getapinfo()
   local y=wifi.sta.getapindex()
   print("\n Number of APs stored in flash:", x.qty)
-  print(string.format("  %-6s %-32s %-64s %-18s", "index:", "SSID:", "Password:", "BSSID:")) 
+  print(string.format("  %-6s %-32s %-64s %-18s", "index:", "SSID:", "Password:", "BSSID:"))
   for i=1, (x.qty), 1 do
     print(string.format(" %s%-6d %-32s %-64s %-18s",(i==y and ">" or " "), i, x[i].ssid, x[i].pwd and x[i].pwd or type(nil), x[i].bssid and x[i].bssid or type(nil)))
   end
@@ -861,10 +861,10 @@ If `return_table` is `true`:
 
 - `config_table`
 	- `ssid` ssid of Access Point.
-	- `pwd` password to Access Point, `nil` if no password was configured 
-	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`. 
+	- `pwd` password to Access Point, `nil` if no password was configured
+	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`.
 	- `bssid` If a connection has been made to the configured AP this field will contain the AP's MAC address. Otherwise "ff:ff:ff:ff:ff:ff" will be returned.
- 
+
 
 If `return_table` is `false`:
 
@@ -911,7 +911,7 @@ If `return_table` is `true`:
 - `config_table`
 	- `ssid` ssid of Access Point.
 	- `pwd` password to Access Point, `nil` if no password was configured
-	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`. 
+	- `bssid_set` will return `true` if the station was configured specifically to connect to the AP with the matching `bssid`.
 	- `bssid` If a connection has been made to the configured AP this field will contain the AP's MAC address. Otherwise "ff:ff:ff:ff:ff:ff" will be returned.
 
 If `return_table` is `false`:
@@ -1017,7 +1017,7 @@ none
 
 #### Returns
 - If station is connected to an access point, `rssi` is returned.
-- If station is not connected to an access point, `nil` is returned.  
+- If station is not connected to an access point, `nil` is returned.
 
 #### Example
 ```lua
@@ -1031,7 +1031,7 @@ Set Maximum number of Access Points to store in flash.
  - This value is written to flash
 
 !!! Attention
-	New setting will not take effect until restart. 
+	New setting will not take effect until restart.
 
 !!! Note
 	If 5 Access Points are stored and AP limit is set to 4, the AP at index 5 will remain until [`node.restore()`](node.md#noderestore) is called or AP limit is set to 5 and AP is overwritten.
@@ -1183,19 +1183,19 @@ Sets SSID and password in AP mode. Be sure to make the password at least 8 chara
 		- `true` configuration **will** be retained through power cycle. (Default)
 		- `false` configuration **will not** be retained through power cycle.
 	- Event callbacks will only be available if `WIFI_SDK_EVENT_MONITOR_ENABLE` is uncommented in `user_config.h`
-		- Please note: To ensure all SoftAP events are handled at boot time, all relevant callbacks must be registered as early as possible in `init.lua` with either `wifi.ap.config()` or `wifi.eventmon.register()`.     
+		- Please note: To ensure all SoftAP events are handled at boot time, all relevant callbacks must be registered as early as possible in `init.lua` with either `wifi.ap.config()` or `wifi.eventmon.register()`.
  		- `staconnected_cb`: Callback executed when a new client has connected to the access point. (Optional)
 			- Items returned in table :
-				- `MAC`: MAC address of client that has connected.  
-				- `AID`: SDK provides no details concerning this return value.  
-		- `stadisconnected_cb`: Callback executed when a client has disconnected from the access point. (Optional)  
+				- `MAC`: MAC address of client that has connected.
+				- `AID`: SDK provides no details concerning this return value.
+		- `stadisconnected_cb`: Callback executed when a client has disconnected from the access point. (Optional)
 			- Items returned in table :
-				- `MAC`: MAC address of client that has disconnected.  
-				- `AID`: SDK provides no details concerning this return value.  
+				- `MAC`: MAC address of client that has disconnected.
+				- `AID`: SDK provides no details concerning this return value.
 		- `probereq_cb`: Callback executed when a probe request was received. (Optional)
 			- Items returned in table :
-				- `MAC`: MAC address of the client that is probing the access point.  
-				- `RSSI`: Received Signal Strength Indicator of client.  
+				- `MAC`: MAC address of the client that is probing the access point.
+				- `RSSI`: Received Signal Strength Indicator of client.
 
 #### Returns
 - `true`  Success
@@ -1243,7 +1243,7 @@ end)
 ```
 
 #### See also
-[`wifi.eventmon.register()`](#wifieventmonregister)  
+[`wifi.eventmon.register()`](#wifieventmonregister)
 [`wifi.eventmon.reason()`](#wifieventmonreason)
 
 ## wifi.ap.getbroadcast()
@@ -1551,54 +1551,54 @@ Register/unregister callbacks for WiFi event monitor.
 wifi.eventmon.register(Event[, function(T)])
 
 #### Parameters
-Event: WiFi event you would like to set a callback for.  
+Event: WiFi event you would like to set a callback for.
 
-- Valid WiFi events:  
- 	- wifi.eventmon.STA_CONNECTED  
-	- wifi.eventmon.STA_DISCONNECTED  
-	- wifi.eventmon.STA_AUTHMODE_CHANGE  
-	- wifi.eventmon.STA_GOT_IP  
-	- wifi.eventmon.STA_DHCP_TIMEOUT  
-	- wifi.eventmon.AP_STACONNECTED  
-	- wifi.eventmon.AP_STADISCONNECTED  
-	- wifi.eventmon.AP_PROBEREQRECVED  
+- Valid WiFi events:
+ 	- wifi.eventmon.STA_CONNECTED
+	- wifi.eventmon.STA_DISCONNECTED
+	- wifi.eventmon.STA_AUTHMODE_CHANGE
+	- wifi.eventmon.STA_GOT_IP
+	- wifi.eventmon.STA_DHCP_TIMEOUT
+	- wifi.eventmon.AP_STACONNECTED
+	- wifi.eventmon.AP_STADISCONNECTED
+	- wifi.eventmon.AP_PROBEREQRECVED
 
 #### Returns
-Function:  
+Function:
 `nil`
 
-Callback:  
-T: Table returned by event.  
+Callback:
+T: Table returned by event.
 
-- `wifi.eventmon.STA_CONNECTED` Station is connected to access point.  
-	- `SSID`: SSID of access point.  
-	- `BSSID`: BSSID of access point.  
-	- `channel`: The channel the access point is on.  
-- `wifi.eventmon.STA_DISCONNECTED`: Station was disconnected from access point.  
-	- `SSID`: SSID of access point.  
-	- `BSSID`: BSSID of access point.  
-	- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below.  
-- `wifi.eventmon.STA_AUTHMODE_CHANGE`: Access point has changed authorization mode.    
-	- `old_auth_mode`: Old wifi authorization mode.  
-	- `new_auth_mode`: New wifi authorization mode.  
-- `wifi.eventmon.STA_GOT_IP`: Station got an IP address.  
-	- `IP`: The IP address assigned to the station.  
-	- `netmask`: Subnet mask.  
-	- `gateway`: The IP address of the access point the station is connected to.  
-- `wifi.eventmon.STA_DHCP_TIMEOUT`: Station DHCP request has timed out.  
-	- Blank table is returned.  
-- `wifi.eventmon.AP_STACONNECTED`: A new client has connected to the access point.  
-	- `MAC`: MAC address of client that has connected.  
-	- `AID`: SDK provides no details concerning this return value.  
-- `wifi.eventmon.AP_STADISCONNECTED`: A client has disconnected from the access point.  
-	- `MAC`: MAC address of client that has disconnected.  
-	- `AID`: SDK provides no details concerning this return value.  
-- `wifi.eventmon.AP_PROBEREQRECVED`: A probe request was received.  
-	- `MAC`: MAC address of the client that is probing the access point.  
-	- `RSSI`: Received Signal Strength Indicator of client.  
-- `wifi.eventmon.WIFI_MODE_CHANGE`: WiFi mode has changed.    
-	- `old_auth_mode`: Old WiFi mode.  
-	- `new_auth_mode`: New WiFi mode.  
+- `wifi.eventmon.STA_CONNECTED` Station is connected to access point.
+	- `SSID`: SSID of access point.
+	- `BSSID`: BSSID of access point.
+	- `channel`: The channel the access point is on.
+- `wifi.eventmon.STA_DISCONNECTED`: Station was disconnected from access point.
+	- `SSID`: SSID of access point.
+	- `BSSID`: BSSID of access point.
+	- `reason`: See [wifi.eventmon.reason](#wifieventmonreason) below.
+- `wifi.eventmon.STA_AUTHMODE_CHANGE`: Access point has changed authorization mode.
+	- `old_auth_mode`: Old wifi authorization mode.
+	- `new_auth_mode`: New wifi authorization mode.
+- `wifi.eventmon.STA_GOT_IP`: Station got an IP address.
+	- `IP`: The IP address assigned to the station.
+	- `netmask`: Subnet mask.
+	- `gateway`: The IP address of the access point the station is connected to.
+- `wifi.eventmon.STA_DHCP_TIMEOUT`: Station DHCP request has timed out.
+	- Blank table is returned.
+- `wifi.eventmon.AP_STACONNECTED`: A new client has connected to the access point.
+	- `MAC`: MAC address of client that has connected.
+	- `AID`: SDK provides no details concerning this return value.
+- `wifi.eventmon.AP_STADISCONNECTED`: A client has disconnected from the access point.
+	- `MAC`: MAC address of client that has disconnected.
+	- `AID`: SDK provides no details concerning this return value.
+- `wifi.eventmon.AP_PROBEREQRECVED`: A probe request was received.
+	- `MAC`: MAC address of the client that is probing the access point.
+	- `RSSI`: Received Signal Strength Indicator of client.
+- `wifi.eventmon.WIFI_MODE_CHANGE`: WiFi mode has changed.
+	- `old_auth_mode`: Old WiFi mode.
+	- `new_auth_mode`: New WiFi mode.
 
 #### Example
 
@@ -1655,18 +1655,18 @@ Unregister callbacks for WiFi event monitor.
 wifi.eventmon.unregister(Event)
 
 #### Parameters
-Event: WiFi event you would like to set a callback for.  
+Event: WiFi event you would like to set a callback for.
 
 - Valid WiFi events:
-	- wifi.eventmon.STA_CONNECTED  
-	- wifi.eventmon.STA_DISCONNECTED  
-	- wifi.eventmon.STA_AUTHMODE_CHANGE  
-	- wifi.eventmon.STA_GOT_IP  
-	- wifi.eventmon.STA_DHCP_TIMEOUT  
-	- wifi.eventmon.AP_STACONNECTED  
-	- wifi.eventmon.AP_STADISCONNECTED  
-	- wifi.eventmon.AP_PROBEREQRECVED  
-	- wifi.eventmon.WIFI_MODE_CHANGED  
+	- wifi.eventmon.STA_CONNECTED
+	- wifi.eventmon.STA_DISCONNECTED
+	- wifi.eventmon.STA_AUTHMODE_CHANGE
+	- wifi.eventmon.STA_GOT_IP
+	- wifi.eventmon.STA_DHCP_TIMEOUT
+	- wifi.eventmon.AP_STACONNECTED
+	- wifi.eventmon.AP_STADISCONNECTED
+	- wifi.eventmon.AP_PROBEREQRECVED
+	- wifi.eventmon.WIFI_MODE_CHANGED
 
 #### Returns
 `nil`
@@ -1686,7 +1686,7 @@ Table containing disconnect reasons.
 |  Disconnect reason  |  value  |
 |:--------------------|:-------:|
 |wifi.eventmon.reason.UNSPECIFIED   |  1  |
-|wifi.eventmon.reason.AUTH_EXPIRE   |  2  |				
+|wifi.eventmon.reason.AUTH_EXPIRE   |  2  |
 |wifi.eventmon.reason.AUTH_LEAVE    |  3  |
 |wifi.eventmon.reason.ASSOC_EXPIRE  |  4  |
 |wifi.eventmon.reason.ASSOC_TOOMANY |  5  |

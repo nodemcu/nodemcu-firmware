@@ -17,7 +17,7 @@ extern "C" {
 #define DEST_ADDR	16
 #define ADDR_LENGTH	6
 #define ADDR_MATCH_START (SOURCE_ADDR)
-#define ADDR_MATCH_LENGTH (ADDR_LENGTH*2)	
+#define ADDR_MATCH_LENGTH (ADDR_LENGTH*2)
 
 #define SEQ_ADDR	22
 #define SEQ_LEN		2
@@ -54,12 +54,12 @@ extern "C" {
 #define PWD_NIBBLE_MAX (64*NIBBLE_PER_BYTE)
 #define SSID_BIT_MAX (SSID_NIBBLE_MAX/8)
 #define PWD_BIT_MAX (PWD_NIBBLE_MAX/8)
-	
+
 #define TIME_OUT_PER_CHANNEL	(30*1000)
 
 #define STATION_CHECK_TIME	(2*1000)
 
-struct RxControl{ 
+struct RxControl{
 	signed rssi:8;//表示该包的信号强度
     unsigned rate:4;
     unsigned is_group:1;
@@ -97,7 +97,7 @@ struct _my_addr_map {
 	uint8 addr[ADDR_LENGTH*3];
 	uint8_t addr_len;
 	uint16_t base_len;
-	int16_t flag[FLAG_NUM];		
+	int16_t flag[FLAG_NUM];
 	// flag[0]: SEP_1, flag[1]: SEP_2, flag[1]: SSID_FLAG.    SEP followed by SSID_FLAG formed flag[]
 	// if flag[i]==0, means skip this flag match, eg. SSID_FLAG, 0, SEP_1, SEP_2
 	uint8_t flag_match_num;

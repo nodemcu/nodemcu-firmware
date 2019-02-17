@@ -1,7 +1,7 @@
 -------------------------------------------------------
 
--- This library was written for the Texas Instruments 
--- HDC1000 temperature and humidity sensor. 
+-- This library was written for the Texas Instruments
+-- HDC1000 temperature and humidity sensor.
 -- It should work for the HDC1008 too.
 -- Written by Francesco Truzzi (francesco@truzzi.me)
 -- Released under GNU GPL v2.0 license.

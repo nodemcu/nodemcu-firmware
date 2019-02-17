@@ -55,7 +55,7 @@ The `stripdebug([level[, function]])` call is processed as follows:
 
 -  If both arguments are omitted then the function returns the current default strip level.
 
--  If the function parameter is omitted, then the level is used as the default setting for future compiles.  The level must be 1-3 corresponding to the above debug optimization settings.  Hence if `stripdebug(3)` is included in **init.lua**, then all debug information will be stripped out of subsequently compiled functions. 
+-  If the function parameter is omitted, then the level is used as the default setting for future compiles.  The level must be 1-3 corresponding to the above debug optimization settings.  Hence if `stripdebug(3)` is included in **init.lua**, then all debug information will be stripped out of subsequently compiled functions.
 
 -  The function parameter if present is parsed in the same way as the function argument in `setfenv()` (except that the integer 0 level is not permitted, and this function tree corresponding to this scope is walked to implement this debug optimization level.
 
@@ -92,7 +92,7 @@ In use there is little noticeable difference other than the code size during dev
 
 ### How to enable LCD
 
-Enabling LCD is simple: all you need is a patched version and define `LUA_OPTIMIZE_DEBUG` at the default level that you want in `app/include/user_config.h` and do a normal make. 
+Enabling LCD is simple: all you need is a patched version and define `LUA_OPTIMIZE_DEBUG` at the default level that you want in `app/include/user_config.h` and do a normal make.
 
 Without this define enabled, the unpatched version is generated.
 

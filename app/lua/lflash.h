@@ -19,7 +19,7 @@
 #define FLASH_FORMAT_MASK    0xF00
 #ifdef LUA_PACK_TVALUES
 #ifdef LUA_NUMBER_INTEGRAL
-#error "LUA_PACK_TVALUES is only valid for Floating point builds" 
+#error "LUA_PACK_TVALUES is only valid for Floating point builds"
 #endif
 # define FLASH_SIG_B2 0x04
 #else

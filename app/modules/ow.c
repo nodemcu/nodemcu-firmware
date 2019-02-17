@@ -9,7 +9,7 @@
 static int ow_setup( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
-  
+
   if(id==0)
     return luaL_error( L, "no 1-wire for D0" );
 
@@ -210,7 +210,7 @@ static int ow_search( lua_State *L )
     lua_pop(L,1);
     lua_pushnil(L);
   }
-  return 1; 
+  return 1;
 }
 #endif
 

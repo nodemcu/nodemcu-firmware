@@ -3,15 +3,15 @@
 -- MCP23008 Datasheet: http://ww1.microchip.com/downloads/en/DeviceDoc/21919e.pdf
 -- Tested on NodeMCU 0.9.5 build 20150213.
 -- @date March 02, 2015
--- @author Miguel 
---  GitHub: https://github.com/AllAboutEE 
+-- @author Miguel
+--  GitHub: https://github.com/AllAboutEE
 --  YouTube: https://www.youtube.com/user/AllAboutEE
 --  Website: http://AllAboutEE.com
 --------------------------------------------------------------------------------
 
-local moduleName = ... 
+local moduleName = ...
 local M = {}
-_G[moduleName] = M 
+_G[moduleName] = M
 
 -- Constant device address.
 local MCP23008_ADDRESS = 0x20
@@ -84,10 +84,10 @@ end
 
 ---
 --! @name begin
---! @description Sets the MCP23008 device address's last three bits. 
---  Note: The address is defined as binary 0100[A2][A1][A0] where 
---  A2, A1, and A0 are defined by the connection of the pins, 
---  e.g. if the pins are connected all to GND then the paramter address 
+--! @description Sets the MCP23008 device address's last three bits.
+--  Note: The address is defined as binary 0100[A2][A1][A0] where
+--  A2, A1, and A0 are defined by the connection of the pins,
+--  e.g. if the pins are connected all to GND then the paramter address
 --  will need to be 0x0.
 -- @param address The 3 least significant bits (LSB) of the address
 -- @param pinSDA The pin to use for SDA
@@ -140,8 +140,8 @@ end
 
 ---
 -- @name writeGPPU The byte to write to the GPPU
--- @description Writes a byte of data to the 
--- PULL-UP RESISTOR CONFIGURATION (GPPU)REGISTER 
+-- @description Writes a byte of data to the
+-- PULL-UP RESISTOR CONFIGURATION (GPPU)REGISTER
 -- @param databyte the value to write to the GPPU register.
 -- each bit in this byte is assigned to an individual GPIO pin
 -- @return void

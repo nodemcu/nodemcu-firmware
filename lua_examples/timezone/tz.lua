@@ -36,13 +36,13 @@ function load(t)
   if magic == "TZif" then
       local lens = z:read(24)
       local ttisgmt_count, ttisdstcnt, leapcnt, timecnt, typecnt, charcnt = struct.unpack("> LLLLLL", lens)
-    
+
       local times = z:read(4 * timecnt)
       local typeindex = z:read(timecnt)
       local ttinfos = z:read(6 * typecnt)
-    
+
       z:close()
-      
+
       local offset = 1
       local tt
       for i = 1, timecnt do
@@ -54,7 +54,7 @@ function load(t)
         end
         tstart = tt
       end
-      
+
       local tindex = struct.unpack("B", typeindex, offset + 1)
       toffset = struct.unpack(">l", ttinfos, tindex * 6 + 1)
   else

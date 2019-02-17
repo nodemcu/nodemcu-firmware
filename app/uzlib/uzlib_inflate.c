@@ -110,7 +110,7 @@ struct uzlib_data {
   int  bFinal;
   uint curLen;
   uint checksum;
-};        
+};
 
 /*
  * Note on changes to layout, naming, etc.  This module combines extracts
@@ -164,13 +164,13 @@ static int getbit (UZLIB_DATA *d) {
 /* read a num bit value from a stream and add base */
 static uint read_bits (UZLIB_DATA *d, int num, int base) {
  /* This is an optimised version which doesn't call getbit num times */
-  if (!num) 
+  if (!num)
     return base;
-    
-  uint i, n = (((uint)-1)<<num); 
+
+  uint i, n = (((uint)-1)<<num);
   for (i = d->bitcount; i < num; i +=8)
     d->tag |= ((uint)d->get_byte()) << i;
-  
+
   n = d->tag & ~n;
   d->tag >>= num;
   d->bitcount = i - num;
@@ -596,7 +596,7 @@ int uzlib_inflate (
 
   if (res == UZLIB_DONE) {
     d->checksum = get_le_uint32(d);
-    (void) get_le_uint32(d);         /* already got length so ignore */ 
+    (void) get_le_uint32(d);         /* already got length so ignore */
   }
 
   UZLIB_THROW(res);

@@ -298,7 +298,7 @@ else
 ** CHANGE it if you need longer lines.
 */
 #define LUA_MAXINPUT	256
-               
+
 
 /*
 @@ lua_readline defines how to show a prompt and then read a line from
@@ -558,7 +558,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 @@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
 ** Attention: This value should probably not be set higher than 1K.
 ** The size has direct impact on the C stack size needed be auxlib functions.
-** For example: If set to 4K a call to string.gsub will need more than 
+** For example: If set to 4K a call to string.gsub will need more than
 ** 5k C stack space.
 */
 #define LUAL_BUFFERSIZE		256
@@ -579,10 +579,10 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 
 /* Define LUA_NUMBER_INTEGRAL to produce a system that uses no
    floating point operations by changing the type of Lua numbers from
-   double to long.  It implements division and modulus so that 
+   double to long.  It implements division and modulus so that
 
-   x == (x / y) * y + x % y.  
-   
+   x == (x / y) * y + x % y.
+
    The exponentiation function returns zero for negative exponents.
    Defining LUA_NUMBER_INTEGRAL also removes the difftime function,
    and the math module should not be used.  The string.format function

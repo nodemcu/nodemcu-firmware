@@ -13,7 +13,7 @@ static const u8x8_display_info_t u8x8_fbrle_display_info =
 {
   /* chip_enable_level = */ 0,
   /* chip_disable_level = */ 1,
-  
+
   /* post_chip_enable_wait_ns = */ 0,
   /* pre_chip_disable_wait_ns = */ 0,
   /* reset_pulse_width_ms = */ 0,
@@ -77,7 +77,7 @@ static uint8_t u8x8_d_fbrle(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
   case U8X8_MSG_DISPLAY_REFRESH:
     ext_u8g2->overlay.fb_update_ongoing = 0;
     break;
-    
+
   case U8X8_MSG_DISPLAY_DRAW_TILE:
     if (ext_u8g2->overlay.fb_update_ongoing == 0) {
       // tell rfb callback that a new framebuffer starts

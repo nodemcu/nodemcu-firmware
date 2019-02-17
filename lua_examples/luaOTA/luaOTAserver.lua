@@ -6,10 +6,10 @@
 -- See luaOTA.md for description
 --------------------------------------------------------------------------------
 
---[[ luaOTAserver.lua - an example provisioning server 
+--[[ luaOTAserver.lua - an example provisioning server
 
-  This module implements an example server-side implementation of LuaOTA provisioning 
-  system for ESPs used the SPI Flash FS (SPIFFS) on development and production modules. 
+  This module implements an example server-side implementation of LuaOTA provisioning
+  system for ESPs used the SPI Flash FS (SPIFFS) on development and production modules.
 
   This implementation is a simple TCP listener which can have one active provisioning
   client executing the luaOTA module at a time.  It will synchronise the client's FS
@@ -40,9 +40,9 @@ local concat = table.concat
 local load   = loadstring or load
 local format = string.format
 -- use string % operators as a synomyn for string.format
-getmetatable("").__mod = 
+getmetatable("").__mod =
    function(a, b)
-      return not b and a or 
+      return not b and a or
        (type(b) == "table" and format(a, unpack(b)) or format(a, b))
       end
 
@@ -56,18 +56,18 @@ local function main ()
   local server     = assert(socket.bind("*", ESPport))
   local ip, port   = server:getsockname()
 
-  print("Lua OTA service listening on  %s:%u\n After connecting, the ESP timeout is %u s" 
+  print("Lua OTA service listening on  %s:%u\n After connecting, the ESP timeout is %u s"
      % {ip, port, ESPtimeout})
 
   -- Main loop forever waiting for ESP clients then processing each request ------------
 
 
   while true do
-    local esp = server:accept()           -- wait for ESP connection 
+    local esp = server:accept()           -- wait for ESP connection
     esp:settimeout(ESPtimeout)            -- set session timeout
-    -- receive the opening request 
+    -- receive the opening request
     local config = receive_and_parse(esp)
-    if config and config.a == "HI" then 
+    if config and config.a == "HI" then
       print ("Processing provision check from ESP-"..config.id)
       local inventory, fingerprint = get_inventory(src_dir, config.id)
       -- Process the ESP request
@@ -77,7 +77,7 @@ local function main ()
       else
         local status, msg = pcall(provision, esp, config, inventory, fingerprint)
         if not status then print (msg) end
-  
+
     end
     end
     pcall(esp.close, esp)
@@ -88,8 +88,8 @@ end
 -- Local Function Implementations ------------------------------------------------------
 
 local function get_hmac_md5(key)
-  if key:len() > 64 then 
-    key = md5.sum(key) 
+  if key:len() > 64 then
+    key = md5.sum(key)
   elseif key:len() < 64 then
     key = key .. ('\0'):rep(64-key:len())
   end
@@ -105,8 +105,8 @@ get_inventory = function(dir, cpuid)
     error("Cannot open directory, aborting %s" % arg[0], 0)
   end
 
-  -- Load the CPU's (or the default) inventory 
-  local invtype, inventory = "custom", read_file("%s/ESP-%s.json" % {dir, cpuid})  
+  -- Load the CPU's (or the default) inventory
+  local invtype, inventory = "custom", read_file("%s/ESP-%s.json" % {dir, cpuid})
   if not inventory then
     invtype, inventory = "default", read_file(dir .. "/default.json")
   end
@@ -129,15 +129,15 @@ get_inventory = function(dir, cpuid)
 
     assert(fa, "File %s is required but not in sources directory" % name)
     fp[#fp+1] = name .. ":" .. fa.modification
-    f[i] = {name = name, mtime = fa.modification, 
+    f[i] = {name = name, mtime = fa.modification,
             size = fa.size, content = read_file(fullname) }
     assert (f[i].size == #(f[i].content or ''), "File %s unreadable" % name )
   end
 
   assert(#f == #fp, "Aborting provisioning die to missing fies",0)
-  assert(type(inventory.secret) == "string", 
+  assert(type(inventory.secret) == "string",
          "Aborting, config must contain a shared secret")
-  hmac = get_hmac_md5(inventory.secret) 
+  hmac = get_hmac_md5(inventory.secret)
   return inventory, md5.sumhexa(concat(fp,":"))
 end
 
@@ -145,15 +145,15 @@ end
 -- Encode a response buff, add a signature and any optional buffer
 ------------------------------------------------------------------
 send_command = function(esp, resp, buffer)
-  if type(buffer) == "string" then 
-    resp.data = #buffer 
-  else 
+  if type(buffer) == "string" then
+    resp.data = #buffer
+  else
     buffer = ''
   end
   local rec = json.encode(resp)
   rec = rec .. hmac(rec):sub(-6) .."\n"
 -- print("requesting ", rec:sub(1,-2), #(buffer or ''))
-  esp:send(rec .. buffer)  
+  esp:send(rec .. buffer)
 end
 
 
@@ -173,10 +173,10 @@ receive_and_parse = function(esp)
   end
 end
 
-      
+
 provision = function(esp, config, inventory, fingerprint)
 
-  if type(config.files) ~= "table" then config.files = {} end 
+  if type(config.files) ~= "table" then config.files = {} end
   local cf = config.files
 
   for _, f in ipairs(inventory.files) do
@@ -190,7 +190,7 @@ provision = function(esp, config, inventory, fingerprint)
           -- if the source is tagged with SAFETRIM then its safe to remove "--"
           -- comments, leading and trailing whitespace.  Not as good as LuaSrcDiet,
           -- but this simple source compression algo preserves line numbering in
-          -- the generated lc files, which helps debugging. 
+          -- the generated lc files, which helps debugging.
           content = content:gsub("\n[ \t]+","\n")
           content = content:gsub("[ \t]+\n","\n")
           content = content:gsub("%-%-[^\n]*","")
@@ -201,7 +201,7 @@ provision = function(esp, config, inventory, fingerprint)
         action = "dl"
       end
       print ("Sending file ".. name)
-    
+
       for i = 1, size, 1024 do
         if i+1023 < size then
           cmd = {a = "pu", data = 1024}
@@ -209,11 +209,11 @@ provision = function(esp, config, inventory, fingerprint)
         else
           cmd = {a = action, data = size - i + 1, name = name}
           buf = content:sub(i)
-        end 
+        end
         send_command(esp, cmd, buf)
         local resp = receive_and_parse(esp)
         assert(resp and resp.s == "OK", "Command to ESP failed")
-        if resp.lcsize then 
+        if resp.lcsize then
           print("Compiled file size %s bytes" % resp.lcsize)
         end
       end
@@ -243,7 +243,7 @@ end
 ----------------------------------
 save_file = function(fname, data)
   local file = io.open(fname, "wb")
-  file:write(data) 
+  file:write(data)
   file:close()
 end
 

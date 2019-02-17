@@ -14,10 +14,10 @@ target remote /dev/ttyUSB0
 
 At this point, you can just poke around and see what happened, but you cannot continue execution.
 
-In order to do interactive debugging, add a call to `gdbstub.brk()` in your Lua code. This will trigger a break instruction and will trap into gdb as above. However, continuation is supported from a break instruction and so you can single step, set breakpoints, etc. Note that the lx106 processor as configured by Espressif only supports a single hardware breakpoint. This means that you can only put a single breakpoint in flash code. You can single step as much as you like. 
+In order to do interactive debugging, add a call to `gdbstub.brk()` in your Lua code. This will trigger a break instruction and will trap into gdb as above. However, continuation is supported from a break instruction and so you can single step, set breakpoints, etc. Note that the lx106 processor as configured by Espressif only supports a single hardware breakpoint. This means that you can only put a single breakpoint in flash code. You can single step as much as you like.
 
 ## gdbstub.open()
-Runs gdbstub initialization routine. It has to be run only once in code. 
+Runs gdbstub initialization routine. It has to be run only once in code.
 
 #### Syntax
 `gdbstub.open()`
@@ -29,7 +29,7 @@ Enters gdb by executing a `break 0,0` instruction.
 `gdbstub.brk()`
 
 ## gdbstub.gdboutput()
-Controls whether system output is encapsulated in gdb remote debugging protocol. This turns out not to be as useful as you would hope - mostly because you can't send input to the NodeMCU board. Also because you really only should make this call *after* you get gdb running and connected to the NodeMCU. The example below first does the break and then switches to redirect the output. This works (but you are unable to send any more console input). 
+Controls whether system output is encapsulated in gdb remote debugging protocol. This turns out not to be as useful as you would hope - mostly because you can't send input to the NodeMCU board. Also because you really only should make this call *after* you get gdb running and connected to the NodeMCU. The example below first does the break and then switches to redirect the output. This works (but you are unable to send any more console input).
 
 #### Syntax
 `gdbstub.gdboutput(enable)`

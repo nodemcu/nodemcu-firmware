@@ -170,7 +170,7 @@ else
           present = ow.reset(pin)
           ow.select(pin, addr)
           ow.write(pin,0xBE,1)
-          print("P="..present)  
+          print("P="..present)
           data = nil
           data = string.char(ow.read(pin))
           for i = 1, 8 do
@@ -184,7 +184,7 @@ else
              t1 = t / 10000
              t2 = t % 10000
              print("Temperature="..t1.."."..t2.."Centigrade")
-          end                   
+          end
           tmr.wdclr()
         until false
     else
@@ -247,7 +247,7 @@ Writes a byte. If `power` is 1 then the wire is held high at the end for parasit
 
 #### Parameters
 - `pin` 1~12, I/O index
-- `v` byte to be written to slave device 
+- `v` byte to be written to slave device
 - `power` 1 for wire being held high for parasitically powered devices
 
 #### Returns

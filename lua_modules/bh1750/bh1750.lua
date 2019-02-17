@@ -6,7 +6,7 @@
 --
 -- MIT license, http://opensource.org/licenses/MIT
 -- ***************************************************************************
-local moduleName = ... 
+local moduleName = ...
 local M = {}
 _G[moduleName] = M
     --I2C slave address of GY-30

@@ -1,6 +1,6 @@
 /*
  * Module for interfacing with Switec instrument steppers (and
- * similar devices). These are the steppers that are used in automotive 
+ * similar devices). These are the steppers that are used in automotive
  * instrument panels and the like. Run off 5 volts at low current.
  *
  * Code inspired by:
@@ -25,13 +25,13 @@
 static int stopped_callback[SWITEC_CHANNEL_COUNT] = { LUA_NOREF, LUA_NOREF, LUA_NOREF };
 static task_handle_t tasknumber;
 
-static void callback_free(lua_State* L, unsigned int id) 
+static void callback_free(lua_State* L, unsigned int id)
 {
   luaL_unref(L, LUA_REGISTRYINDEX, stopped_callback[id]);
   stopped_callback[id] = LUA_NOREF;
 }
 
-static void callback_set(lua_State* L, unsigned int id, int argNumber) 
+static void callback_set(lua_State* L, unsigned int id, int argNumber)
 {
   if (lua_type(L, argNumber) == LUA_TFUNCTION || lua_type(L, argNumber) == LUA_TLIGHTFUNCTION) {
     lua_pushvalue(L, argNumber);  // copy argument (func) to the top of stack
@@ -40,7 +40,7 @@ static void callback_set(lua_State* L, unsigned int id, int argNumber)
   }
 }
 
-static void callback_execute(lua_State* L, unsigned int id) 
+static void callback_execute(lua_State* L, unsigned int id)
 {
   if (stopped_callback[id] != LUA_NOREF) {
     int callback = stopped_callback[id];
@@ -60,7 +60,7 @@ int platform_switec_exists( unsigned int id )
 static int lswitec_setup( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   int pin[4];
@@ -88,21 +88,21 @@ static int lswitec_setup( lua_State* L )
   if (switec_setup(id, pin, deg_per_sec, tasknumber)) {
     return luaL_error(L, "Unable to setup stepper.");
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: close( id )
 static int lswitec_close( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   callback_free(L, id);
   if (switec_close( id )) {
     return luaL_error( L, "Unable to close stepper." );
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: reset( id )
@@ -114,14 +114,14 @@ static int lswitec_reset( lua_State* L )
   if (switec_reset( id )) {
     return luaL_error( L, "Unable to reset stepper." );
   }
-  return 0;  
+  return 0;
 }
 
 // Lua: moveto( id, pos [, cb] )
 static int lswitec_moveto( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   int pos;
@@ -143,7 +143,7 @@ static int lswitec_moveto( lua_State* L )
 static int lswitec_getpos( lua_State* L )
 {
   unsigned int id;
-  
+
   id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( switec, id );
   int32_t pos;
@@ -177,7 +177,7 @@ static int lswitec_dequeue(lua_State* L)
   return 0;
 }
 
-static void lswitec_task(os_param_t param, uint8_t prio) 
+static void lswitec_task(os_param_t param, uint8_t prio)
 {
   (void) param;
   (void) prio;

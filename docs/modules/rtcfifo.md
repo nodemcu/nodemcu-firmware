@@ -142,7 +142,7 @@ Note that if the timestamp delta is too large compared to the previous sample st
 ####Example
 ```lua
 -- Obtain a sample value from somewhere
-local sample = ... 
+local sample = ...
 -- Store sample with no scaling, under the name "foo"
 rtcfifo.put(rtctime.get(), sample, 0, "foo")
 ```

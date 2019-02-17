@@ -20,7 +20,7 @@ local _play_cb
 
 
 -- ****************************************************************************
--- PCM 
+-- PCM
 local function stop_stream(cb)
   _drv:stop()
   if _conn then

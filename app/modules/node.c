@@ -503,7 +503,7 @@ static int node_osprint( lua_State* L )
     system_set_os_print(0);
   }
 
-  return 0;  
+  return 0;
 }
 
 int node_random_range(int l, int u) {
@@ -570,7 +570,7 @@ static int node_random (lua_State *L) {
       u = luaL_checkint(L, 2);
       break;
     }
-    default: 
+    default:
       return luaL_error(L, "wrong number of arguments");
   }
   luaL_argcheck(L, l<=u, 2, "interval is empty");

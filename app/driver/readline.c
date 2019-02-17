@@ -20,7 +20,7 @@ bool uart_getc(char *c){
     ETS_INTR_LOCK();
     *c = (char)*(pRxBuff->pReadPos);
     if (pRxBuff->pReadPos == (pRxBuff->pRcvMsgBuff + RX_BUFF_SIZE)) {
-        pRxBuff->pReadPos = pRxBuff->pRcvMsgBuff ; 
+        pRxBuff->pReadPos = pRxBuff->pRcvMsgBuff ;
     } else {
         pRxBuff->pReadPos++;
     }
@@ -73,7 +73,7 @@ start:
                 else
                     continue;
             }
-            
+
             /* end of line */
             if (ch == '\r' || ch == '\n')
             {

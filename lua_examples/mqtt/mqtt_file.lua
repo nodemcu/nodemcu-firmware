@@ -33,8 +33,8 @@ end
 m_dis["/topic1"]=topic1func
 -- Lua: mqtt.Client(clientid, keepalive, user, pass)
 m=mqtt.Client()
-m:on("connect",function(m) 
-	print("connection "..node.heap()) 
+m:on("connect",function(m)
+	print("connection "..node.heap())
 	m:subscribe("/topic1",0,function(m) print("sub done") end)
 	end )
 m:on("offline", function(conn)

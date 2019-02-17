@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   mqtt_msg.h
  * Author: Minh Tuan
  *

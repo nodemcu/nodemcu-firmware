@@ -32,7 +32,7 @@
 
 #if 0
 #define espconn_printf(fmt, args...) os_printf(fmt,## args)
-#else 
+#else
 #define espconn_printf(fmt, args...)
 #endif
 
@@ -468,7 +468,7 @@ extern sint8 espconn_regist_time(struct espconn *espconn, uint32 interval, uint8
  * Description  : Used to specify the function that should be called when data
  * 				  has been successfully delivered to the remote host.
  * Parameters   : struct espconn *espconn -- espconn to set the sent callback
- * 				  espconn_sent_callback sent_cb -- sent callback function to 
+ * 				  espconn_sent_callback sent_cb -- sent callback function to
  * 				  call for this espconn when data is successfully sent
  * Returns      : none
 *******************************************************************************/
@@ -510,10 +510,10 @@ extern sint8 espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length);
 
 /******************************************************************************
  * FunctionName : espconn_regist_connectcb
- * Description  : used to specify the function that should be called when 
- * 				  connects to host. 
- * Parameters   : espconn -- espconn to set the connect callback 
- * 				  connect_cb -- connected callback function to call when connected 
+ * Description  : used to specify the function that should be called when
+ * 				  connects to host.
+ * Parameters   : espconn -- espconn to set the connect callback
+ * 				  connect_cb -- connected callback function to call when connected
  * Returns      : none
 *******************************************************************************/
 
@@ -521,9 +521,9 @@ extern sint8 espconn_regist_connectcb(struct espconn *espconn, espconn_connect_c
 
 /******************************************************************************
  * FunctionName : espconn_regist_recvcb
- * Description  : used to specify the function that should be called when recv 
+ * Description  : used to specify the function that should be called when recv
  * 				  data from host.
- * Parameters   : espconn -- espconn to set the recv callback 
+ * Parameters   : espconn -- espconn to set the recv callback
  * 				  recv_cb -- recv callback function to call when recv data
  * Returns      : none
 *******************************************************************************/
@@ -532,10 +532,10 @@ extern sint8 espconn_regist_recvcb(struct espconn *espconn, espconn_recv_callbac
 
 /******************************************************************************
  * FunctionName : espconn_regist_reconcb
- * Description  : used to specify the function that should be called when connection 
+ * Description  : used to specify the function that should be called when connection
  * 				  because of err disconnect.
- * Parameters   : espconn -- espconn to set the err callback 
- * 				  recon_cb -- err callback function to call when err 
+ * Parameters   : espconn -- espconn to set the err callback
+ * 				  recon_cb -- err callback function to call when err
  * Returns      : none
 *******************************************************************************/
 
@@ -596,7 +596,7 @@ extern sint8 espconn_get_keepalive(struct espconn *espconn, uint8 level, void *o
  * Description  : Resolve a hostname (string) into an IP address.
  * Parameters   : pespconn -- espconn to resolve a hostname
  *                hostname -- the hostname that is to be queried
- *                addr -- pointer to a ip_addr_t where to store the address if 
+ *                addr -- pointer to a ip_addr_t where to store the address if
  *                        it is already cached in the dns_table (only valid if
  *                        ESPCONN_OK is returned!)
  *                found -- a callback function to be called on success, failure

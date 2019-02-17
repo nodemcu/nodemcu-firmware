@@ -20,7 +20,7 @@ package.loaded["httpserver"] = nil
 Function to start HTTP server.
 
 #### Syntax
-`httpserver.createServer(port, handler(req, res))` 
+`httpserver.createServer(port, handler(req, res))`
 
 #### Parameters
 - `port`: Port number for HTTP server. Most HTTP servers listen at port 80.
@@ -40,8 +40,8 @@ Callback function has 2 arguments: `req` (request) and `res` (response). The fir
 
 	- `self`: `req` object
 	- `name`: Header name
-	- `value`: Header value 
-	
+	- `value`: Header value
+
 - `ondata`: value to setup handler function HTTP data. Handler function has 2 parameters:
 	- `self`: `req` object
 	- `chunk`: Request data

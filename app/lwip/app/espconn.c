@@ -370,7 +370,7 @@ espconn_sent(struct espconn *espconn, uint8 *psent, uint16 length)
 	espconn_msg *pnode = NULL;
 	bool value = false;
 	err_t error = ESPCONN_OK;
-	
+
     if (espconn == NULL || psent == NULL || length == 0) {
         return ESPCONN_ARG;
     }
@@ -1315,7 +1315,7 @@ espconn_port(void)
  * Description  : Resolve a hostname (string) into an IP address.
  * Parameters   : pespconn -- espconn to resolve a hostname
  *                hostname -- the hostname that is to be queried
- *                addr -- pointer to a ip_addr_t where to store the address if 
+ *                addr -- pointer to a ip_addr_t where to store the address if
  *                        it is already cached in the dns_table (only valid if
  *                        ESPCONN_OK is returned!)
  *                found -- a callback function to be called on success, failure

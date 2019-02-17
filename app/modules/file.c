@@ -135,7 +135,7 @@ static int file_close( lua_State* L )
       // mark as closed
       ud->fd = 0;
   }
-  return 0;  
+  return 0;
 }
 
 static int file_obj_free( lua_State *L )
@@ -207,7 +207,7 @@ static int file_open( lua_State* L )
     lua_pushvalue( L, -1 );
     file_fd_ref = luaL_ref( L, LUA_REGISTRYINDEX );
   }
-  return 1; 
+  return 1;
 }
 
 // Lua: list()
@@ -229,7 +229,7 @@ static int file_list( lua_State* L )
   lua_newtable( L );                      /* Table at 2 */
 
   if (pattern) {
-    /* 
+    /*
      * We know that pattern is a string, and so the "match" method will always
      * exist.  No need to check return value here
      */
@@ -300,7 +300,7 @@ static int file_seek (lua_State *L)
 static int file_exists( lua_State* L )
 {
   size_t len;
-  const char *fname = luaL_checklstring( L, 1, &len );    
+  const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
   luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
 
@@ -314,7 +314,7 @@ static int file_exists( lua_State* L )
 static int file_remove( lua_State* L )
 {
   size_t len;
-  const char *fname = luaL_checklstring( L, 1, &len );    
+  const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
   luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
   vfs_remove((char *)fname);
@@ -343,8 +343,8 @@ static int file_rename( lua_State* L )
   const char *oldname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( oldname );
   luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(oldname) == len, 1, "filename invalid");
-  
-  const char *newname = luaL_checklstring( L, 2, &len );  
+
+  const char *newname = luaL_checklstring( L, 2, &len );
   basename = vfs_basename( newname );
   luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(newname) == len, 2, "filename invalid");
 
@@ -360,7 +360,7 @@ static int file_rename( lua_State* L )
 static int file_stat( lua_State* L )
 {
   size_t len;
-  const char *fname = luaL_checklstring( L, 1, &len );    
+  const char *fname = luaL_checklstring( L, 1, &len );
   luaL_argcheck( L, c_strlen(fname) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid" );
 
   struct vfs_stat stat;
@@ -483,7 +483,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 // Lua: read()
 // file.read() will read all byte in file
 // file.read(10) will read 10 byte from file, or EOF is reached.
-// file.read('q') will read until 'q' or EOF is reached. 
+// file.read('q') will read until 'q' or EOF is reached.
 static int file_read( lua_State* L )
 {
   unsigned need_len = FILE_READ_CHUNK;
@@ -660,7 +660,7 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
   { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
   { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
-  { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
+  { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
   { LSTRKEY( "on" ),        LFUNCVAL( file_on ) },
   { LSTRKEY( "stat" ),      LFUNCVAL( file_stat ) },

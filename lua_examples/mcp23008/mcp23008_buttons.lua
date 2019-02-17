@@ -1,15 +1,15 @@
 ---
 -- @description Shows how to read 8 GPIO pins/buttons via I2C with the MCP23008 I/O expander.
--- Tested on NodeMCU 0.9.5 build 20150213. 
+-- Tested on NodeMCU 0.9.5 build 20150213.
 -- @circuit
---  Connect GPIO0 of the ESP8266-01 module to the SCL pin of the MCP23008. 
+--  Connect GPIO0 of the ESP8266-01 module to the SCL pin of the MCP23008.
 --  Connect GPIO2 of the ESP8266-01 module to the SDA pin of the MCP23008.
 --  Use 3.3V for VCC.
 --  Connect switches or buttons to the GPIOs of the MCP23008 and GND.
 --  Connect two 4.7k pull-up resistors on SDA and SCL
 --  We will enable the internal pull up resistors for the GPIOS of the MCP23008.
 -- @author Miguel (AllAboutEE)
---      GitHub: https://github.com/AllAboutEE 
+--      GitHub: https://github.com/AllAboutEE
 --      YouTube: https://www.youtube.com/user/AllAboutEE
 --      Website: http://AllAboutEE.com
 ---------------------------------------------------------------------------------------------

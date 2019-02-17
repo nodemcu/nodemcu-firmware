@@ -167,7 +167,7 @@ A table with all the information elements in it.
 print ("SSID", packet:ie_table()[0])
 ```
 
-Note that this is possibly the worst way of getting the SSID. 
+Note that this is possibly the worst way of getting the SSID.
 
 #### Alternative
 
@@ -188,7 +188,7 @@ information elements can be missing.
 
 When a string is returned as the value of a field, it can (and often is) be a binary string with embedded nulls. All information elements are returned as strings
 even if they are only one byte long and look like a number in the specification. This is purely to make the interface consistent. Note that even SSIDs can contain
-embedded nulls. 
+embedded nulls.
 
 |  Attribute name  |  Type  |
 |:--------------------|:-------:|

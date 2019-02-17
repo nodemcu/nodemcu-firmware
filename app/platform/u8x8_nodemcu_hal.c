@@ -73,7 +73,7 @@ uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, 
   case U8X8_MSG_DELAY_NANO:           // delay arg_int * 1 nano second
     force_flush_buffer(u8x8);
     os_delay_us( 1 );
-    break;    
+    break;
 
   case U8X8_MSG_DELAY_100NANO:        // delay arg_int * 100 nano seconds
     force_flush_buffer(u8x8);
@@ -165,12 +165,12 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 {
   uint8_t *data;
   hal_i2c_t *hal = ((u8g2_nodemcu_t *)u8x8)->hal;
- 
+
   switch(msg) {
   case U8X8_MSG_BYTE_SEND:
     if (hal->id < NUM_I2C) {
       data = (uint8_t *)arg_ptr;
-      
+
       while( arg_int > 0 ) {
         platform_i2c_send_byte( hal->id, *data );
         data++;
@@ -230,7 +230,7 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
   hal_spi_t *hal = ((u8g2_nodemcu_t *)u8x8)->hal;
- 
+
   switch(msg) {
   case U8X8_MSG_BYTE_INIT:
     {

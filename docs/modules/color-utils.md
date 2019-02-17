@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2017-12-30 | [Konrad Huebner](https://github.com/skycoders) | [Konrad Huebner](https://github.com/skycoders) | [color_utils.c](../../app/modules/color_utils.c)|
 
-This module provides basic color transformations useful for color LEDs. 
+This module provides basic color transformations useful for color LEDs.
 
 ## color_utils.hsv2grb()
 Convert HSV color to GRB color.

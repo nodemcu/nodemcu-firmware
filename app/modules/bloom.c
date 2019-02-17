@@ -185,7 +185,7 @@ static const LUA_REG_TYPE bloom_map[] = {
 };
 
 LUALIB_API int bloom_open(lua_State *L) {
-  luaL_rometatable(L, "bloom.filter", (void *)bloom_filter_map);  
+  luaL_rometatable(L, "bloom.filter", (void *)bloom_filter_map);
   return 1;
 }
 

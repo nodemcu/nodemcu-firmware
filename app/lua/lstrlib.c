@@ -633,7 +633,7 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
     lua_pushlstring(L, s, e - s);  /* keep original text */
   }
   else if (!lua_isstring(L, -1))
-    luaL_error(L, "invalid replacement value (a %s)", luaL_typename(L, -1)); 
+    luaL_error(L, "invalid replacement value (a %s)", luaL_typename(L, -1));
   luaL_addvalue(b);  /* add result to accumulator */
 }
 
@@ -786,7 +786,7 @@ static int str_format (lua_State *L) {
           c_sprintf(buff, form, (unsigned LUA_INTFRM_T)luaL_checknumber(L, arg));
           break;
         }
-#if !defined LUA_NUMBER_INTEGRAL        
+#if !defined LUA_NUMBER_INTEGRAL
         case 'e':  case 'E': case 'f':
         case 'g': case 'G': {
           c_sprintf(buff, form, (double)luaL_checknumber(L, arg));
@@ -884,7 +884,7 @@ LUALIB_API int luaopen_string (lua_State *L) {
   lua_pushrotable(L, (void*)strlib);
   lua_setmetatable(L, -2);
   lua_pop(L,1);
-  return 0;  
+  return 0;
 #endif
 }
 

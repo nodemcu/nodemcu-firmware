@@ -70,7 +70,7 @@ Start WiFi WPS function. WPS must be enabled prior calling this function.
     end
     wps.disable()
   end)
-  
+
   --Full example
   do
     -- Register wifi station event callbacks
@@ -84,10 +84,10 @@ Start WiFi WPS function. WPS must be enabled prior calling this function.
     end)
 
     wifi.setmode(wifi.STATION)
-  
-    wps_retry_func = function() 
+
+    wps_retry_func = function()
       if wps_retry_count == nil then wps_retry_count = 0 end
-      if wps_retry_count < 3 then 
+      if wps_retry_count < 3 then
         wps.disable()
         wps.enable()
         wps_retry_count = wps_retry_count + 1
@@ -101,7 +101,7 @@ Start WiFi WPS function. WPS must be enabled prior calling this function.
         wps_cb = nil
       end
     end
-  
+
     wps_cb = function(status)
       if status == wps.SUCCESS then
         wps.disable()
@@ -138,5 +138,5 @@ Start WiFi WPS function. WPS must be enabled prior calling this function.
     wps.enable()
     wps.start(wps_cb)
   end
-  
+
 ```

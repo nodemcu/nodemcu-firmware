@@ -37,7 +37,7 @@ typedef struct
   ucg_nodemcu_t ucg;
 
   ucg_dev_fnptr dev_cb;
-  ucg_dev_fnptr ext_cb;  
+  ucg_dev_fnptr ext_cb;
 
   // For Print() function
   ucg_int_t tx, ty;
@@ -741,7 +741,7 @@ static const LUA_REG_TYPE lucg_display_map[] =
   { LNILKEY, LNILVAL }
 };
 
-static const LUA_REG_TYPE lucg_map[] = 
+static const LUA_REG_TYPE lucg_map[] =
 {
 #undef UCG_DISPLAY_TABLE_ENTRY
 #define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) { LSTRKEY( #binding ), LFUNCVAL ( l ## binding ) },

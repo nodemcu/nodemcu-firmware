@@ -486,7 +486,7 @@ static const char *append_pem_blob(const char *pem, const char *type, uint8_t **
   return NULL;
 }
 
-static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_memory, int flash_offset, const char **types, const char **names) 
+static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_memory, int flash_offset, const char **types, const char **names)
 {
   uint8_t  *buffer = luaM_malloc(L, INTERNAL_FLASH_SECTOR_SIZE);
   uint8_t  *buffer_base = buffer;

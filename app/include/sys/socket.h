@@ -111,7 +111,7 @@ typedef enum{
   do {	\
 		mbedtls_parse_thread(s, event, error); \
   }while(0)
-  
+
 typedef enum{
 	ENTCONN_EVENT_NONE = 0,
 	NETCONN_EVENT_ESTABLISHED = 1,

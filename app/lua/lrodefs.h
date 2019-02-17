@@ -15,7 +15,7 @@
 #undef LNILVAL
 #undef LREGISTER
 
-#if LUA_OPTIMIZE_MEMORY >=1 
+#if LUA_OPTIMIZE_MEMORY >=1
 #define LUA_REG_TYPE                luaR_entry
 #define LSTRKEY                     LRO_STRKEY
 #define LNUMKEY                     LRO_NUMKEY

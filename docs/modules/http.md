@@ -7,7 +7,7 @@ Basic HTTP *client* module that provides an interface to do GET/POST/PUT/DELETE 
 
 !!! attention
 
-    It is **not** possible to execute concurrent HTTP requests using this module. 
+    It is **not** possible to execute concurrent HTTP requests using this module.
 
 Each request method takes a callback which is invoked when the response has been received from the server. The first argument is the status code, which is either a regular HTTP status code, or -1 to denote a DNS, connection or out-of-memory failure, or a timeout (currently at 60 seconds).
 
@@ -20,7 +20,7 @@ to make it easy to access. If there are multiple headers of the same name, then 
 
 **SSL/TLS support**
 
-Take note of constraints documented in the [net module](net.md). 
+Take note of constraints documented in the [net module](net.md).
 
 ## http.delete()
 
@@ -157,7 +157,7 @@ Execute a custom HTTP request for any HTTP method. Note that concurrent requests
 
 #### Example
 ```lua
-http.request("http://httpbin.org", "HEAD", "", "", 
+http.request("http://httpbin.org", "HEAD", "", "",
   function(code, data)
     if (code < 0) then
       print("HTTP request failed")

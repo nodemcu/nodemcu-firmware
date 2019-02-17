@@ -2,8 +2,8 @@
  * This module, when enabled with the LUA_USE_MODULES_GDBSTUB define causes
  * the gdbstub code to be included and enabled to handle all fatal exceptions.
  * This allows you to use the lx106 gdb to catch the exception and then poke
- * around. You can continue from a break, but attempting to continue from an 
- * exception usually fails. 
+ * around. You can continue from a break, but attempting to continue from an
+ * exception usually fails.
  *
  * This should not be included in production builds as any exception will
  * put the nodemcu into a state where it is waiting for serial input and it has

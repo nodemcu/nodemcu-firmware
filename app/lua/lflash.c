@@ -247,7 +247,7 @@ LUALIB_API int luaN_reload_reboot (lua_State *L) {
     flashErase(0,-1);
   }
   NODE_ERR(msg);
- 
+
   while (1) {}  // Force WDT as the ROM software_reset() doesn't seem to work
   return 0;
 }
@@ -505,7 +505,7 @@ static int loadLFS (lua_State *L) {
   /* Allocate the out buffers */
   for(i = 0;  i <= WRITE_BLOCKS; i++)
     out->block[i] = luaM_new(L, outBlock);
- 
+
   /* first inflate pass */
   if (uzlib_inflate (get_byte, put_byte, recall_byte,
                      in->len, &crc, &in->inflate_state) < 0)

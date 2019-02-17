@@ -9,7 +9,7 @@ This FAQ does not aim to help you to learn to program or even how to program in 
 ## What has changed since the first version of this FAQ?
 
 The [NodeMCU company](https://www.nodemcu.com/index_en.html) was set up by [Zeroday](https://github.com/nodemcu) to develop and to market a set of Lua firmware-based development boards which employ the Espressif ESP8266 SoC. The initial development of the firmware was done by Zeroday and a colleague, Vowstar, in-house with the firmware being first open-sourced on Github in late 2014. In mid-2015, Zeroday decided to open the firmware development to a wider group of community developers, so the core group of developers now comprises 6 community developers (including this author), and we are also supported by another dozen or so active contributors, and two NodeMCU originators.
- 
+
 This larger active team has allowed us to address most of the outstanding issues present at the first version of this FAQ. These include:
 
 -  For some time the project was locked into an old SDK version, but we now regularly rebaseline to the current SDK version.
@@ -36,7 +36,7 @@ The NodeMCU firmware implements Lua 5.1 over the Espressif SDK for its ESP8266 S
 - The [Lua User's Wiki](http://lua-users.org/wiki/) gives useful example source and relevant discussion. In particular, its [Lua Learning Lua](http://lua-users.org/wiki/LearningLua) section is a good place to start learning Lua.
 - The best book to learn Lua is *Programming in Lua- by Roberto Ierusalimschy, one of the creators of Lua. It's first edition is available free [online](http://www.lua.org/pil/contents.html) . The second edition was aimed at Lua 5.1, but is out of print. The third edition is still in print and available in paperback. It contains a lot more material and clearly identifies Lua 5.1 vs Lua 5.2 differences. **This third edition is widely available for purchase and probably the best value for money**. References of the format [PiL **n.m**] refer to section **n.m** in this edition.
 - The Espressif ESP8266 architecture is closed source, but the Espressif SDK itself is continually being updated so the best way to get the documentation for this is to [google Espressif IoT SDK Programming Guide](https://www.google.co.uk/search?q=Espressif+IoT+SDK+Programming+Guide) or to look at the Espressif [downloads forum](https://bbs.espressif.com/viewforum.php?f=27).
- 
+
 ### How is NodeMCU Lua different to standard Lua?
 
 Whilst the Lua standard distribution includes a stand-alone Lua interpreter, Lua itself is primarily an *extension language* that makes no assumptions about a "main" program: Lua works embedded in a host application to provide a powerful, lightweight scripting language for use within the application. This host application can then invoke functions to execute a piece of Lua code, can write and read Lua variables, and can register C functions to be called by Lua code. Through the use of C functions, Lua can be augmented to cope with a wide range of different domains, thus creating customized programming languages sharing a syntactical framework.
@@ -72,13 +72,13 @@ The firmware has a wide range of libraries available to support common hardware 
 
 There are also further tailoring options available, for example you can choose to have a firmware build which uses 32-bit integer arithmetic instead of floating point. Our integer builds have a smaller Flash footprint and execute faster, but working in integer also has a number of pitfalls, so our general recommendation is to use floating point builds.
 
-Unlike Arduino or ESP8266 development, where each application change requires the flashing of a new copy of the firmware, in the case of Lua the firmware is normally flashed once, and all application development is done by updating files on the SPIFFS file system. In this respect, Lua development on the ESP8266 is far more like developing applications on a more traditional PC. The firmware will only be reflashed if the developer wants to add or update one or more of the hardware-related libraries. 
+Unlike Arduino or ESP8266 development, where each application change requires the flashing of a new copy of the firmware, in the case of Lua the firmware is normally flashed once, and all application development is done by updating files on the SPIFFS file system. In this respect, Lua development on the ESP8266 is far more like developing applications on a more traditional PC. The firmware will only be reflashed if the developer wants to add or update one or more of the hardware-related libraries.
 
 Those developers who are used to dealing in MB or GB of RAM and file systems can easily run out of memory resources, but with care and using some of the techniques discussed below can go a long way to mitigate this.
 
 The ESP8266 runs the SDK over the native hardware, so there is no underlying operating system to capture errors and to provide graceful failure modes. Hence system or application errors can easily "PANIC" the system causing it to reboot. Error handling has been kept simple to save on the limited code space, and this exacerbates this tendency. Running out of a system resource such as RAM will invariably cause a messy failure and system reboot.
 
-Note that in the 3 years since the firmware was first developed, Espressif has developed and released a new RTOS alternative to the non-OS SDK, and and the latest version of the SDK API reference recommends using RTOS. Unfortunately, the richer RTOS has a significantly larger RAM footprint. Whilst our port to the ESP-32 (with its significantly larger RAM) uses the [ESP-IDF](https://github.com/espressif/esp-idf) which is based on RTOS, the ESP8266 RTOS versions don't have enough free RAM for a RTOS-based NodeMCU firmware build to have sufficient free RAM to write usable applications. 
+Note that in the 3 years since the firmware was first developed, Espressif has developed and released a new RTOS alternative to the non-OS SDK, and and the latest version of the SDK API reference recommends using RTOS. Unfortunately, the richer RTOS has a significantly larger RAM footprint. Whilst our port to the ESP-32 (with its significantly larger RAM) uses the [ESP-IDF](https://github.com/espressif/esp-idf) which is based on RTOS, the ESP8266 RTOS versions don't have enough free RAM for a RTOS-based NodeMCU firmware build to have sufficient free RAM to write usable applications.
 
 There is currently no `debug` library support. So you have to use 1980s-style "binary-chop" to locate errors and use print statement diagnostics though the system's UART interface. (This omission was largely because of the Flash memory footprint of this library, but there is no reason in principle why we couldn't make this library available in the near future as a custom build option).
 
@@ -86,7 +86,7 @@ The LTR implementation means that you can't extend standard libraries as easily 
 
 There are standard libraries to provide access to the various hardware options supported by the hardware: WiFi, GPIO, One-wire, I²C, SPI, ADC, PWM, UART, etc.
 
-The runtime system runs in interactive-mode. In this mode it first executes any `init.lua` script. It then "listens" to the serial port for input Lua chunks, and executes them once syntactically complete. 
+The runtime system runs in interactive-mode. In this mode it first executes any `init.lua` script. It then "listens" to the serial port for input Lua chunks, and executes them once syntactically complete.
 
 There is no batch support, although automated embedded processing is normally achieved by setting up the necessary event triggers in the [`init.lua`](../upload/#initlua) script.
 
@@ -97,7 +97,7 @@ Non-Lua processing (e.g. network functions) will usually only take place once th
 ```lua
 node.restart(); for i = 1, 20 do print("not quite yet -- ",i); end
 ```
-    
+
 You, therefore, **have to** implement ESP8266 Lua applications using an event driven approach. You have to understand which SDK API requests schedule asynchronous processing, and which define event actions through Lua callbacks. Yes, such an event-driven approach makes it difficult to develop procedurally structured applications, but it is well suited to developing the sorts of application that you will typically want to implement on an IoT device.
 
 ### So how does the SDK event / tasking system work in Lua?
@@ -116,11 +116,11 @@ In essence, the NodeMCU firmware is a C application which exploits the ability o
 - By default, the Lua runtime also 'listens' to UART 0, the serial port, in interactive mode and will execute any Lua commands input through this serial port. Using the serial port in this way is the most common method of developing and debugging Lua applications on the ESP8266/
 - The Lua libraries provide a set of functions for declaring application functions (written in Lua) as callbacks (which are stored in the [Lua registry](#so-how-is-the-lua-registry-used-and-why-is-this-important)) to associate application tasks with specific hardware and timer events. These are also non-preemptive at an applications level. The Lua libraries work in consort with the SDK to queue pending events and invoke any registered Lua callback routines, which then run to completion uninterrupted. For example the Lua [`mytimer:alarm(interval, repeat, callback)`](modules/tmr/#tmralarm) calls a function in the `tmr` library which registers a C function for this alarm using the SDK, and when this C alarm callback function is called it then in turn invokes the Lua callback.
 - Excessively long-running Lua functions (or Lua code chunks executed at the interactive prompt through UART 0) can cause other system functions and services to timeout, or to allocate scarce RAM resources to buffer queued data, which can then trigger either the watchdog timer or memory exhaustion, both of which will ultimately cause the system to reboot.
-- Just like their C counterparts, Lua tasks initiated by timer, network, GPIO and other callbacks run non pre-emptively to completion before the next task can run, and this includes SDK tasks. Printing to the default serial port is done by the Lua runtime libraries, but SDK services including even a reboot request are run as individual tasks. This is why in the previous example printout out twenty copies of "not quite yet --" before completing and return control the SDK which then allows the reboot to occur. 
+- Just like their C counterparts, Lua tasks initiated by timer, network, GPIO and other callbacks run non pre-emptively to completion before the next task can run, and this includes SDK tasks. Printing to the default serial port is done by the Lua runtime libraries, but SDK services including even a reboot request are run as individual tasks. This is why in the previous example printout out twenty copies of "not quite yet --" before completing and return control the SDK which then allows the reboot to occur.
 
-This event-driven approach is very different to a conventional procedural applications written in Lua, and different from how you develop C sketches and applications for the Arduino architectures. _There is little point in constructing poll loops in your NodeMCU Lua code since almost always the event that you are polling will not be delivered by the SDK until after your Lua code returns control to the SDK._  The most robust and efficient approach to coding ESP8266 Lua applications is to embrace this event model paradigm, and to decompose your application into atomic tasks that are threaded by events which themselves initiate callback functions. Each event task is established by a callback in an API call in an earlier task. 
+This event-driven approach is very different to a conventional procedural applications written in Lua, and different from how you develop C sketches and applications for the Arduino architectures. _There is little point in constructing poll loops in your NodeMCU Lua code since almost always the event that you are polling will not be delivered by the SDK until after your Lua code returns control to the SDK._  The most robust and efficient approach to coding ESP8266 Lua applications is to embrace this event model paradigm, and to decompose your application into atomic tasks that are threaded by events which themselves initiate callback functions. Each event task is established by a callback in an API call in an earlier task.
 
-Understanding how the system executes your code can help you structure it better and improve both performance and memory usage. 
+Understanding how the system executes your code can help you structure it better and improve both performance and memory usage.
 
 - _If you are not using timers and other callback, then you are using the wrong approach._
 
@@ -135,7 +135,7 @@ SDK Callbacks include:
 | Lua Module | Functions which define or remove callbacks |
 |------------|--------------------------------------------|
 | tmr        | `register([id,] interval, mode, function())` |
-| node       | `task.post([task_priority], function)`, `output(function(str), serial_debug)` | 
+| node       | `task.post([task_priority], function)`, `output(function(str), serial_debug)` |
 | wifi       | `startsmart(chan, function())`, `sta.getap(function(table))` |
 | net.server | `sk:listen(port,[ip],function(socket))`  |
 | net        | `sk:on(event, function(socket, [, data]))`, `sk:send(string, function(sent))`, `sk:dns(domain, function(socket,ip))` |
@@ -147,7 +147,7 @@ For a comprehensive list refer to the module documentation on this site.
 
 ### So what are the different ways of declaring variables and how is NodeMCU different here?
 
-The following is all standard Lua and is explained in detail in PiL etc., but it is worth summarising here because understanding this is of particular importance in the NodeMCU environment. 
+The following is all standard Lua and is explained in detail in PiL etc., but it is worth summarising here because understanding this is of particular importance in the NodeMCU environment.
 
 All variables in Lua can be classed as globals, locals or upvalues. But by default any variable that is referenced and not previously declared as `local` is **global** and this variable will persist in the global table until it is explicitly deleted. If you want to see what global variables are in scope then try
 
@@ -159,7 +159,7 @@ Local variables are 'lexically scoped', and you may declare any variables as loc
 
 Lua variable can be assigned two broad types of data: **values** such as numbers, booleans, and strings and **references** such as functions, tables and userdata. You can see the difference here  when you assign the contents of a variable `a` to `b`. In the case of a value then it is simply copied into `b`. In the case of a reference, both `a` and `b` now refer to the *same object*, and no copying of content takes place. This process of referencing can have some counter-intuitive consequences. For example, in the following code by the time it exists, the variable `tmr2func` is out of scope. However a reference to the function has now been stored in the Lua registry by the alarm API call, so it and any upvalues that it uses will persist until it is eventually entirely dereferenced (e.g. by `tmr2:unregister()`).
 
-```Lua 
+```Lua
 do
   local tmr2func = function() ds.convert_T(true); tmr1:start() end
   tmr2:alarm(300000, tmr.ALARM_AUTO, tmr2func)
@@ -168,7 +168,7 @@ end
 
 You need to understand the difference between when a function is compiled, when it is bound as a closure and when it is invoked at runtime. The closure is normally bound once pretty much immediately after compile, but this isn't necessarily the case. Consider the following example from my MCP23008 module below.
 
-```Lua 
+```Lua
 -- Bind the read and write functions for commonly accessed registers
 for reg, regAddr in pairs {
   IODOR = 0x00,
@@ -183,7 +183,7 @@ for reg, regAddr in pairs {
     return read(MCP23008addr, regAddr)
   end
 end
-``` 
+```
 
 This loop is compiled once when the module is required.  The opcode vectors for the read and write functions are created during the compile, along with a header which defines how many upvalues and locals are used by each function. However, these two functions are then bound _four_ times as different functions (e.g. `mcp23008.writeIODOR()`) and each closure inherits its own copies of the upvalues it uses so the `regAddr` for this function is `0x00`). The upvalue list is created when the closure is created and through some Lua magic, even if the outer routine that initially declared them is no longer in scope and has been GCed (Garbage Collected), the Lua RTS ensures that any upvalue will still persist whilst the closure persists.
 
@@ -191,30 +191,30 @@ On the other hand the storage for any locals is allocated each time the routine 
 
 The Lua runtime uses hashed key access internally to retrieve keyed data from a table. On the other hand locals and upvalues are stored as a contiguous vector and are accessed directly by an index, which is a lot faster. In NodeMCU Lua accesses to Firmware-based tables is particularly slow, which is why you will often see statements like the following at the beginning of modules. *Using locals and upvalues this way is both a lot faster at runtime and generates less bytecode instructions for their access.*
 
-```Lua 
+```Lua
 local i2c = i2c
 local i2c_start, i2c_stop, i2c_address, i2c_read, i2c_write, i2c_TRANSMITTER, i2c_RECEIVER =
 i2c.start, i2c.stop, i2c.address, i2c.read, i2c.write, i2c.TRANSMITTER, i2c.RECEIVER
-``` 
+```
 
 ### So how is context passed between Lua event tasks?
 
-It is important to understand that a single Lua function is associated with / bound to any event callback task. This function is executed from within the relevant NodeMCU library C code using a `lua_call()`. Even system initialisation which executes the `dofile("init.lua")` is really a special case of this. Each function can invoke other functions and so on, but it must ultimately return control to the C library code which then returns control the SDK, terminating the task. 
+It is important to understand that a single Lua function is associated with / bound to any event callback task. This function is executed from within the relevant NodeMCU library C code using a `lua_call()`. Even system initialisation which executes the `dofile("init.lua")` is really a special case of this. Each function can invoke other functions and so on, but it must ultimately return control to the C library code which then returns control the SDK, terminating the task.
 
-By their very nature Lua `local` variables only exist within the context of an executing Lua function, and so locals are unreferenced on exit and any local data (unless also a reference type such as a function, table, or user data which is also referenced elsewhere) can therefore be garbage collected between these `lua_call()` actions. 
+By their very nature Lua `local` variables only exist within the context of an executing Lua function, and so locals are unreferenced on exit and any local data (unless also a reference type such as a function, table, or user data which is also referenced elsewhere) can therefore be garbage collected between these `lua_call()` actions.
 
 So context can only be passed between event routines by one of the following mechanisms:
 
 - **Globals** are by nature globally accessible. Any global will persist until explicitly dereferenced by assigning `nil` to it. Globals can be readily enumerated, e.g. by a `for k,v in pairs(_G) do`, so their use is transparent.
 - The **File system** is a special case of persistent global, so there is no reason in principle why it and the files it contains can't be used to pass context. However the ESP8266 file system uses flash memory and even with the SPIFFS file system still has a limited write cycle lifetime, so it is best to avoid using the file system to store frequently changing content except as a mechanism of last resort.
-- The **Lua Registry**. This is a normally hidden table used by the library modules to store callback functions and other Lua data types. The GC treats the registry as in scope and hence any content referenced in the registry will not be garbage collected. 
+- The **Lua Registry**. This is a normally hidden table used by the library modules to store callback functions and other Lua data types. The GC treats the registry as in scope and hence any content referenced in the registry will not be garbage collected.
 - **Upvalues**. These are a standard feature of Lua as described above that is fully implemented in NodeMCU. When a function is declared within an outer function, all of the local variables within the outer scope are available to the inner function. Ierusalimschy's paper, [Closures in Lua](http://www.cs.tufts.edu/~nr/cs257/archive/roberto-ierusalimschy/closures-draft.pdf), gives a lot more detail for those that want to dig deeper.
 
 ### So how is the Lua Registry used and why is this important?
 
 All Lua callbacks are called by C wrapper functions within the NodeMCU libraries that are themselves callbacks that have been activated by the SDK as a result of a given event. Such C wrapper functions themselves frequently need to store state for passing between calls or to other wrapper C functions. The Lua registry is a special Lua table which is used for this purpose, except that it is hidden from direct Lua access, but using a standard Lua table for this store enables standard garbage collection algorithms to operate on its content. Any content that needs to be saved is created with a unique key. The upvalues for functions that are global or referenced in the Lua Registry will persist between event routines, and hence any upvalues used by them will also persist and can be used for passing context.
 
-If you are running out of memory, then you might not be correctly clearing down Registry entries. One example is as above where you are setting up timers but not unregistering them. Another occurs in the following code fragment. The `on()` function passes the socket to the connection callback as it's first argument `sck`. This is local variable in the callback function, and it also references the same socket as the upvalue `srv`. So functionally `srv` and `sck` are interchangeable. So why pass it as an argument?  Normally garbage collecting a socket will automatically unregister any of its callbacks, but if you use a socket as an upvalue in the callback, the socket is now referenced through the Register, and now it won't be GCed because it is referenced. Catch-22 and a programming error, not a bug. 
+If you are running out of memory, then you might not be correctly clearing down Registry entries. One example is as above where you are setting up timers but not unregistering them. Another occurs in the following code fragment. The `on()` function passes the socket to the connection callback as it's first argument `sck`. This is local variable in the callback function, and it also references the same socket as the upvalue `srv`. So functionally `srv` and `sck` are interchangeable. So why pass it as an argument?  Normally garbage collecting a socket will automatically unregister any of its callbacks, but if you use a socket as an upvalue in the callback, the socket is now referenced through the Register, and now it won't be GCed because it is referenced. Catch-22 and a programming error, not a bug.
 
 Example of wrong upvalue usage in the callback:
 
@@ -231,15 +231,15 @@ One way to check the registry is to use the construct `for k,v in pairs(debug.ge
 ### How do I track globals
 
 - See the Unofficial Lua FAQ: [Detecting Undefined Variables](http://lua-users.org/wiki/DetectingUndefinedVariables).
-- My approach is to avoid using them unless I have a _very_ good reason to justify this. I track them statically by running a `luac -p -l XXX.lua | grep GLOBAL` filter on any new modules and replace any accidental globals by local or upvalued local declarations. 
+- My approach is to avoid using them unless I have a _very_ good reason to justify this. I track them statically by running a `luac -p -l XXX.lua | grep GLOBAL` filter on any new modules and replace any accidental globals by local or upvalued local declarations.
 - On NodeMCU, _G's metatable is _G, so you can create any globals that you need and then 'close the barn door' by assigning
 `_G.__newindex=function(g,k,v) error ("attempting to set global "..k.." to "..v) end` and any attempt to create new globals with now throw an error and give you a traceback of where this has happened.
 
 ### Why is it importance to understand how upvalues are implemented when programming for the ESP8266?
 
-The use of upvalues is a core Lua feature. This is explained in detail in PiL. Any Lua routines defined within an outer scope my use them. This can include routines directly or indirectly referenced in the globals table, **_G**, or in the Lua Registry. 
+The use of upvalues is a core Lua feature. This is explained in detail in PiL. Any Lua routines defined within an outer scope my use them. This can include routines directly or indirectly referenced in the globals table, **_G**, or in the Lua Registry.
 
-The number of upvalues associated with a given routine is calculated during compile and a stack vector is allocated for them when the closure is bound to hold these references. Each upvalues is classed as open or closed. All upvalues are initially open which means that the upvalue references back to the outer function's register set. However, upvalues must be able to outlive the scope of the outer routine where they are declared as a local variable. The runtime VM does this by adding extra checks when executing a function return to scan any defined closures within its scope for back references and allocate memory to hold the upvalue and points the upvalue's reference to this. This is known as a closed upvalue. 
+The number of upvalues associated with a given routine is calculated during compile and a stack vector is allocated for them when the closure is bound to hold these references. Each upvalues is classed as open or closed. All upvalues are initially open which means that the upvalue references back to the outer function's register set. However, upvalues must be able to outlive the scope of the outer routine where they are declared as a local variable. The runtime VM does this by adding extra checks when executing a function return to scan any defined closures within its scope for back references and allocate memory to hold the upvalue and points the upvalue's reference to this. This is known as a closed upvalue.
 
 This processing is a mature part of the Lua 5.x runtime system, and for normal Lua applications development this "behind-the-scenes" magic ensures that upvalues just work as any programmer might expect. Sufficient garbage collector metadata is also stored so that these hidden values will be garbage collected correctly *when properly dereferenced*.
 
@@ -271,9 +271,9 @@ Building an application on the ESP8266 is a bit like threading pearls onto a nec
 
 ### When and why should I avoid using tmr.delay()?
 
-If you are used coding in a procedural paradigm then it is understandable that you consider using [`tmr.delay()`](modules/tmr.md#tmrdelay) to time sequence your application. However as discussed in the previous section, with NodeMCU Lua you are coding in an event-driven paradigm. 
+If you are used coding in a procedural paradigm then it is understandable that you consider using [`tmr.delay()`](modules/tmr.md#tmrdelay) to time sequence your application. However as discussed in the previous section, with NodeMCU Lua you are coding in an event-driven paradigm.
 
-If you look at the `app/modules/tmr.c` code for this function, then you will see that it executes a low level  `ets_delay_us(delay)`. This function isn't part of the NodeMCU code or the SDK; it's actually part of the xtensa-lx106 boot ROM, and is a simple timing loop which polls against the internal CPU clock. `tmr.delay()` is really intended to be used where you need to have more precise timing control on an external hardware I/O (e.g. lifting a GPIO pin high for 20  μSec). It does this with interrupts enabled, because so there is no guarantee that the delay will be as requested, and the Lua RTS itself may inject operations such as GC, so if you do this level of precise control then you should encode your application as a C library. 
+If you look at the `app/modules/tmr.c` code for this function, then you will see that it executes a low level  `ets_delay_us(delay)`. This function isn't part of the NodeMCU code or the SDK; it's actually part of the xtensa-lx106 boot ROM, and is a simple timing loop which polls against the internal CPU clock. `tmr.delay()` is really intended to be used where you need to have more precise timing control on an external hardware I/O (e.g. lifting a GPIO pin high for 20  μSec). It does this with interrupts enabled, because so there is no guarantee that the delay will be as requested, and the Lua RTS itself may inject operations such as GC, so if you do this level of precise control then you should encode your application as a C library.
 
 It will achieve no functional purpose in pretty much every other usecase, as any other system code-based activity will be blocked from execution; at worst it will break your application and create hard-to-diagnose timeout errors. We therefore deprecate its general use.
 
@@ -301,7 +301,7 @@ You can also build `luac.cross` on your development host if you have Lua locally
 
 ### How do I minimise the footprint of an application?
 
-Perhaps the simplest aspect of reducing the footprint of an application is to get its scope correct. The ESP8266 is an IoT device and not a general purpose system. It is typically used to attach real-world monitors, controls, etc. to an intranet and is therefore designed to implement functions that have limited scope. We commonly come across developers who are trying to treat the ESP8266 as a general purpose device and can't understand why their application can't run. 
+Perhaps the simplest aspect of reducing the footprint of an application is to get its scope correct. The ESP8266 is an IoT device and not a general purpose system. It is typically used to attach real-world monitors, controls, etc. to an intranet and is therefore designed to implement functions that have limited scope. We commonly come across developers who are trying to treat the ESP8266 as a general purpose device and can't understand why their application can't run.
 
 The simplest and safest way to use IoT devices is to control them through a dedicated general purpose system on the same network. This could be a low cost system such as a [RaspberryPi (RPi)](https://www.raspberrypi.org/) server, running your custom code or an open source home automation (HA) application. Such systems have orders of magnitude more capacity than the ESP8266, for example the RPi has 2GB RAM and its SD card can be up to 32GB in capacity, and it can support the full range of USB-attached disk drives and other devices. It also runs a fully featured Linux OS, and has a rich selection of applications pre configured for it. There are plenty of alternative systems available in this under $50 price range, as well as proprietary HA systems which can cost 10-50 times more.
 
@@ -315,7 +315,7 @@ _If you are trying to implement a user-interface or HTTP webserver in your ESP82
 - However if you do this then you will also find it extremely difficult to debug or maintain your application.
 - A good compromise is to use a tool such as [LuaSrcDiet](http://luaforge.net/projects/luasrcdiet/), which you can use to compact production code for downloading to the ESP8266:
   - Keep a master repository of your code on your PC or a cloud-based versioning repository such as [GitHub](https://github.com/)
-  - Lay it out and comment it for ease of maintenance and debugging 
+  - Lay it out and comment it for ease of maintenance and debugging
   - Use a package such as [Esplorer](https://github.com/4refr0nt/ESPlorer) to download modules that you are debugging and to test them.
   - Once the code is tested and stable, then compress it using LuaSrcDiet before downloading to the ESP8266. Doing this will reduce the code footprint on the SPIFFS by 2-3x. Also note that LuaSrcDiet has a mode which achieves perhaps 95% of the possible code compaction but which still preserves line numbering. This means that any line number-based error messages will still be usable.
 -  Standard Lua compiled code includes a lot of debug information which almost doubles its RAM size. [node.stripdebug()](modules/node.md#nodestripdebug) can be used to change this default setting either to increase the debug information for a given module or to remove line number information to save a little more space. Using `node.compile()` to pre-compile any production code will remove all compiled code including error line info and so is not recommended except for stable production code where line numbers are not needed.
@@ -350,14 +350,14 @@ end
 
 return M
 ```
-This approach ensures that the module can be fully dereferenced on completion. OK, in this case, this also means that the module has to be reloaded on each TCP connection to port 80; however, loading a compiled module from SPIFFS only takes a few mSec, so surely this is an acceptable overhead if it enables you to break down your application into RAM-sized chunks. Note that `require()` will automatically search for `connector.lc` followed by `connector.lua`, so the code will work for both source and compiled variants. 
+This approach ensures that the module can be fully dereferenced on completion. OK, in this case, this also means that the module has to be reloaded on each TCP connection to port 80; however, loading a compiled module from SPIFFS only takes a few mSec, so surely this is an acceptable overhead if it enables you to break down your application into RAM-sized chunks. Note that `require()` will automatically search for `connector.lc` followed by `connector.lua`, so the code will work for both source and compiled variants.
 - Whilst the general practice is for a module to return a table, [PiL 15.1] suggests that it is sometimes appropriate to return a single function instead as this avoids the memory overhead of an additional table. This pattern would look as follows:
 
 ```lua
 local s = net.createServer(net.TCP)
 s:listen(80, function(c) require("connector")(c) end)
 ```
-  
+
 ```lua
 local module = _ -- this is a situation where using an upvalue is essential!
 return function(csocket)
@@ -421,7 +421,7 @@ Functions have fixed overheads, so in general the more that you group your appli
 
 ### What other resources are available?
 
-Install `lua` and `luac` on your development PC. This is freely available for Windows, Mac and Linux distributions, but we strongly suggest that you use Lua 5.1 to maintain source compatibility with ESP8266 code. This will allow you not only to unit test some modules on your PC in a rich development environment, but you can also use `luac` to generate a bytecode listing of your code and to validate new code syntactically before downloading to the ESP8266. This will also allow you to develop server-side applications and embedded applications in a common language. 
+Install `lua` and `luac` on your development PC. This is freely available for Windows, Mac and Linux distributions, but we strongly suggest that you use Lua 5.1 to maintain source compatibility with ESP8266 code. This will allow you not only to unit test some modules on your PC in a rich development environment, but you can also use `luac` to generate a bytecode listing of your code and to validate new code syntactically before downloading to the ESP8266. This will also allow you to develop server-side applications and embedded applications in a common language.
 
 ## Firmware and Lua app development
 

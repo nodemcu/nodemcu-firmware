@@ -54,14 +54,14 @@ unsigned int max_content_len = ESPCONN_SECURE_DEFAULT_SIZE;
 *******************************************************************************/
 sint8 ICACHE_FLASH_ATTR
 espconn_secure_connect(struct espconn *espconn)
-{	
+{
 	struct ip_addr ipaddr;
 	struct ip_info ipinfo;
 	uint8 connect_status = 0;
 	uint16 current_size = 0;
 	if (espconn == NULL || espconn ->type != ESPCONN_TCP)
 		return ESPCONN_ARG;
-	
+
 	if (wifi_get_opmode() == ESPCONN_STA){
 		wifi_get_ip_info(STA_NETIF, &ipinfo);
 		if (ipinfo.ip.addr == 0) {
@@ -122,7 +122,7 @@ espconn_secure_disconnect(struct espconn *espconn)
 	if (value){
 		if (pnode->pespconn->state == ESPCONN_CLOSE)
 			return ESPCONN_INPROGRESS;
-		
+
 		espconn_ssl_disconnect(pnode);
 		return ESPCONN_OK;
 	}
@@ -193,7 +193,7 @@ espconn_secure_accept(struct espconn *espconn)
 bool ICACHE_FLASH_ATTR espconn_secure_set_size(uint8 level, uint16 size)
 {
 	size = (size < 4096) ? 4096 : size;
-	
+
 	if (level >= ESPCONN_MAX || level <= ESPCONN_IDLE)
 		return false;
 
@@ -379,7 +379,7 @@ sint8 ICACHE_FLASH_ATTR espconn_secure_delete(struct espconn *espconn)
 {
 	sint8 error = ESPCONN_OK;
 	error = espconn_ssl_delete(espconn);
-	
+
 	return error;
 }
 
@@ -390,8 +390,8 @@ bool espconn_secure_obj_load(int obj_type, uint32 flash_sector, uint16 length)
 
 	if (obj_type != ESPCONN_PK && obj_type != ESPCONN_CERT_OWN)
 		return false;
-	
-	return mbedtls_load_default_obj(flash_sector, obj_type, NULL, length);	
+
+	return mbedtls_load_default_obj(flash_sector, obj_type, NULL, length);
 }
 
 #endif

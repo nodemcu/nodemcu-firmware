@@ -1,7 +1,7 @@
 //
 // This module allows performance monitoring by looking at
 // the PC at regular intervals and building a histogram
-// 
+//
 // perf.start(start, end, nbins[, pc offset on stack])
 // perf.stop()  -> total sample, samples outside range, table { addr -> count , .. }
 

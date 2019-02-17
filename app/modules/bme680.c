@@ -1,6 +1,6 @@
 // ***************************************************************************
 // Port of BMP680 module for ESP8266 with nodeMCU
-// 
+//
 // Written by Lukas Voborsky, @voborsky
 // ***************************************************************************
 
@@ -31,7 +31,7 @@ static uint8 os_hum = 0; // stores humidity oversampling settings
 static uint16_t heatr_dur;
 static int8_t amb_temp = 23; //DEFAULT_AMBIENT_TEMP;
 
-static uint32_t bme680_h = 0; 
+static uint32_t bme680_h = 0;
 static double bme680_hc = 1.0;
 
 // return 0 if good
@@ -263,7 +263,7 @@ uint16_t calc_dur()
 	uint32_t tph_dur; /* Calculate in us */
 
 	/* TPH measurement duration */
-  
+
 	tph_dur = ((uint32_t) (os_temp + os_pres + os_hum) * UINT32_C(1963));
 	tph_dur += UINT32_C(477 * 4); /* TPH switching duration */
 	tph_dur += UINT32_C(477 * 5); /* Gas measurement duration */
@@ -329,7 +329,7 @@ static int bme680_lua_setup(lua_State* L) {
 	r8u_n(BME680_COEFF_ADDR1, BME680_COEFF_ADDR1_LEN, buff);
   r8u_n(BME680_COEFF_ADDR2, BME680_COEFF_ADDR2_LEN, &buff[BME680_COEFF_ADDR1_LEN]);
 
-	reg = buff + 1; 
+	reg = buff + 1;
 	bme680_data.par_t2 = r16sLE_buf(reg); reg+=2; // #define BME680_T3_REG		(3)
 	bme680_data.par_t3 = (int8_t) reg[0]; reg+=2; // #define BME680_P1_LSB_REG	(5)
 	bme680_data.par_p1 = r16uLE_buf(reg); reg+=2; // #define BME680_P2_LSB_REG	(7)
@@ -354,21 +354,21 @@ static int bme680_lua_setup(lua_State* L) {
   bme680_data.par_t1 = r16uLE_buf(reg); reg+=2; // #define BME680_GH2_LSB_REG	(35)
   bme680_data.par_gh2 = r16sLE_buf(reg); reg+=2; // #define BME680_GH1_REG		(37)
 	bme680_data.par_gh1 = reg[0]; reg++; // #define BME680_GH3_REG		(38)
-	bme680_data.par_gh3 = reg[0]; 
+	bme680_data.par_gh3 = reg[0];
 #undef r16uLE_buf
 #undef r16sLE_buf
-  
+
   /* Other coefficients */
   bme680_data.res_heat_range = ((r8u(BME680_ADDR_RES_HEAT_RANGE_ADDR) & BME680_RHRANGE_MSK) / 16);
   bme680_data.res_heat_val = (int8_t) r8u(BME680_ADDR_RES_HEAT_VAL_ADDR);
   bme680_data.range_sw_err = ((int8_t) r8u(BME680_ADDR_RANGE_SW_ERR_ADDR) & (int8_t) BME680_RSERROR_MSK) / 16;
-    
+
   NODE_DBG("par_T: %d\t%d\t%d\n", bme680_data.par_t1, bme680_data.par_t2, bme680_data.par_t3);
   NODE_DBG("par_P: %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", bme680_data.par_p1, bme680_data.par_p2, bme680_data.par_p3, bme680_data.par_p4, bme680_data.par_p5, bme680_data.par_p6, bme680_data.par_p7, bme680_data.par_p8, bme680_data.par_p9, bme680_data.par_p10);
   NODE_DBG("par_H: %d\t%d\t%d\t%d\t%d\t%d\t%d\n", bme680_data.par_h1, bme680_data.par_h2, bme680_data.par_h3, bme680_data.par_h4, bme680_data.par_h5, bme680_data.par_h6, bme680_data.par_h7);
   NODE_DBG("par_GH: %d\t%d\t%d\n", bme680_data.par_gh1, bme680_data.par_gh2, bme680_data.par_gh3);
   NODE_DBG("res_heat_range, res_heat_val, range_sw_err: %d\t%d\t%d\n", bme680_data.res_heat_range, bme680_data.res_heat_val, bme680_data.range_sw_err);
-	
+
   uint8_t full_init = !lua_isnumber(L, 7)?1:lua_tointeger(L, 7); // 7-th parameter: init the chip too
   if (full_init) {
     uint8_t filter;
@@ -380,22 +380,22 @@ static int bme680_lua_setup(lua_State* L) {
     os_temp = (!lua_isnumber(L, 1)?BME680_OS_2X:(luaL_checkinteger(L, 1)&bit3)); // 1-st parameter: temperature oversampling
     os_pres = (!lua_isnumber(L, 2)?BME680_OS_16X:(luaL_checkinteger(L, 2)&bit3)); // 2-nd parameter: pressure oversampling
     os_hum = (!lua_isnumber(L, 3))?BME680_OS_1X:(luaL_checkinteger(L, 3)&bit3);
-    bme680_mode = BME680_SLEEP_MODE | (os_pres << 2) | (os_temp << 5); 
+    bme680_mode = BME680_SLEEP_MODE | (os_pres << 2) | (os_temp << 5);
     os_hum = os_hum; // 3-rd parameter: humidity oversampling
-       
+
     filter = ((!lua_isnumber(L, 6)?BME680_FILTER_SIZE_31:(luaL_checkinteger(L, 6)&bit3)) << 2); // 6-th parameter: IIR filter
-  
+
     NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme680_mode, os_hum, filter);
-    
+
     heatr_dur = (!lua_isnumber(L, 5)?DEFAULT_HEATER_DUR:(luaL_checkinteger(L, 5))); // 5-th parameter: heater duration
     w8u(BME680_GAS_WAIT0_ADDR, calc_heater_dur(heatr_dur));
     w8u(BME680_RES_HEAT0_ADDR, calc_heater_res((!lua_isnumber(L, 4)?DEFAULT_HEATER_TEMP:(luaL_checkinteger(L, 4))))); // 4-th parameter: heater temperature
-  
+
     w8u(BME680_CONF_ODR_FILT_ADDR, BME680_SET_BITS_POS_0(r8u(BME680_CONF_ODR_FILT_ADDR), BME680_FILTER, filter)); // #define BME680_CONF_ODR_FILT_ADDR		UINT8_C(0x75)
-    
-    // set heater on 
+
+    // set heater on
     w8u(BME680_CONF_HEAT_CTRL_ADDR, BME680_SET_BITS_POS_0(r8u(BME680_CONF_HEAT_CTRL_ADDR), BME680_HCTRL, 1));
-    
+
     w8u(BME680_CONF_T_P_MODE_ADDR, bme680_mode);
     w8u(BME680_CONF_OS_H_ADDR, BME680_SET_BITS_POS_0(r8u(BME680_CONF_OS_H_ADDR), BME680_OSH, os_hum));
     w8u(BME680_CONF_ODR_RUN_GAS_NBC_ADDR, 1 << 4 | 0 & bit3);
@@ -417,12 +417,12 @@ static void bme280_readoutdone (void *arg)
 
 static int bme680_lua_startreadout(lua_State* L) {
 	uint32_t delay;
-	
+
 	if (lua_isnumber(L, 1)) {
 		delay = luaL_checkinteger(L, 1);
 		if (!delay) {delay = calc_dur();} // if delay is 0 then set the default delay
 	}
-	
+
 	if (!lua_isnoneornil(L, 2)) {
 		lua_pushvalue(L, 2);
 		lua_connected_readout_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -432,7 +432,7 @@ static int bme680_lua_startreadout(lua_State* L) {
 
   w8u(BME680_CONF_OS_H_ADDR, os_hum);
   w8u(BME680_CONF_T_P_MODE_ADDR, (bme680_mode & 0xFC) | BME680_FORCED_MODE);
-  
+
 	NODE_DBG("control old: %x, control: %x, delay: %d\n", bme680_mode, (bme680_mode & 0xFC) | BME680_FORCED_MODE, delay);
 
 	if (lua_connected_readout_ref != LUA_NOREF) {
@@ -455,7 +455,7 @@ static int bme680_lua_read(lua_State* L) {
 	uint16_t adc_hum;
 	uint16_t adc_gas_res;
   uint8_t status;
-  
+
 	uint32_t qfe;
 	uint8_t calc_qnh = lua_isnumber(L, 1);
 
@@ -468,9 +468,9 @@ static int bme680_lua_read(lua_State* L) {
   adc_temp = (uint32_t) (((uint32_t) buff[5] * 4096) | ((uint32_t) buff[6] * 16) | ((uint32_t) buff[7] / 16));
   adc_hum = (uint16_t) (((uint32_t) buff[8] * 256) | (uint32_t) buff[9]);
   adc_gas_res = (uint16_t) ((uint32_t) buff[13] * 4 | (((uint32_t) buff[14]) / 64));
-  
+
   gas_range = buff[14] & BME680_GAS_RANGE_MSK;
- 
+
   status |= buff[14] & BME680_GASM_VALID_MSK;
   status |= buff[14] & BME680_HEAT_STAB_MSK;
   NODE_DBG("status, new_data, gas_range, gasm_valid: 0x%x, 0x%x, 0x%x, 0x%x\n", status, status & BME680_NEW_DATA_MSK, buff[14] & BME680_GAS_RANGE_MSK, buff[14] & BME680_GASM_VALID_MSK);

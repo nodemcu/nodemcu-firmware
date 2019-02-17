@@ -14,7 +14,7 @@
 
 //
 // mdns.close()
-// 
+//
 static int mdns_close(lua_State *L)
 {
   nodemcu_mdns_close();
@@ -29,7 +29,7 @@ static int mdns_register(lua_State *L)
   struct nodemcu_mdns_info info;
 
   memset(&info, 0, sizeof(info));
-  
+
   info.host_name = luaL_checkstring(L, 1);
   info.service_name = "http";
   info.service_port = 80;
@@ -73,7 +73,7 @@ static int mdns_register(lua_State *L)
 
   // Close up the old session (if any). This cannot fail
   // so no chance of losing the memory in 'result'
-  
+
   mdns_close(L);
 
   // Save the result as it appears that nodemcu_mdns_init needs

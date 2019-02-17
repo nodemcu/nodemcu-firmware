@@ -35,7 +35,7 @@
  *	@(#)printf.c	8.1 (Berkeley) 6/11/93
  */
 
-// This version uses almost no stack, and does not suffer from buffer 
+// This version uses almost no stack, and does not suffer from buffer
 // overflows. The downside is that it does not implement a wide range
 // of formatting characters.
 
@@ -157,7 +157,7 @@ kprintn(void (*put)(const char), uint32_t ul, int base, int width, char padchar)
 	do {
 		*p++ = "0123456789abcdef"[ul % base];
 	} while (ul /= base);
-        
+
         while (p - buf < width--) {
           put(padchar);
         }

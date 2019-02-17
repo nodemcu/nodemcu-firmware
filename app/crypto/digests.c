@@ -140,7 +140,7 @@ int ICACHE_FLASH_ATTR crypto_fhash (const digest_mech_info_t *mi,
   uint8_t* buffer = (uint8_t*)os_malloc (mi->block_size);
   if (!buffer)
     return ENOMEM;
-  
+
   int read_len = 0;
   do {
     read_len = read(readarg, buffer, mi->block_size);

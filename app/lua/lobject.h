@@ -23,7 +23,7 @@
 
 #define NUM_TAGS	(LAST_TAG+1)
 
-#define READONLYMASK    (1<<7)      /* denormalised bitmask for READONLYBIT and */    
+#define READONLYMASK    (1<<7)      /* denormalised bitmask for READONLYBIT and */
 #ifdef LUA_FLASH_STORE
 #define LFSMASK         (1<<6)      /* LFSBIT to avoid include proliferation */
 #endif
@@ -38,13 +38,13 @@
 /*
 ** force aligned access to critical fields in Flash-based structures
 ** wo is the offset of aligned word in bytes 0,4,8,..
-** bo is the field within the word in bits 0..31 
+** bo is the field within the word in bits 0..31
 */
 #define GET_BYTE_FN(name,t,wo,bo) \
 static inline lu_byte get ## name(void *o) { \
   lu_byte res;  /* extract named field */ \
   asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
-  return res; }  
+  return res; }
 #else
 #define GET_BYTE_FN(name,t,wo,bo) \
 static inline lu_byte get ## name(void *o) { return ((t *)o)->name; }
@@ -70,7 +70,7 @@ typedef struct GCheader {
 
 /*
 ** Word aligned inline access functions for the CommonHeader tt and marked fields.
-** Note that these MUST be consistent with the CommonHeader definition above.  Arg 
+** Note that these MUST be consistent with the CommonHeader definition above.  Arg
 ** 3 is a word offset (4 bytes in this case) and arg 4 the bit offset in the word.
 */
 GET_BYTE_FN(tt,GCheader,4,0)
@@ -249,7 +249,7 @@ typedef union TString {
   } tsv;
 } TString;
 
-#ifdef LUA_CROSS_COMPILER 
+#ifdef LUA_CROSS_COMPILER
 #define isreadonly(o) (0)
 #else
 #define isreadonly(o) ((o).marked & READONLYMASK)
