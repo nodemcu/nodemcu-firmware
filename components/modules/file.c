@@ -2,6 +2,7 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lnodeaux.h"
 #include "lmem.h"
 #include "platform.h"
 
@@ -140,7 +141,6 @@ static int file_obj_free( lua_State *L )
   if (ud->fd) {
     // close file if it's still open
     vfs_close(ud->fd);
-    ud->fd = 0;
   }
 
   return 0;
@@ -419,15 +419,22 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
     i = n;
   }
 
+  int err = 0;
+
   if (i == 0 || n == VFS_RES_ERR) {
     lua_pushnil(L);
   } else {
     vfs_lseek(fd, -(n - i), VFS_SEEK_CUR);
-    lua_pushlstring(L, p, i);
+    err = luaX_pushlstring(L, p, i); // On error it will return nonzero and leave a message on top of the stack.
   }
 
   if (heap_mem) {
     luaM_freearray(L, heap_mem, bufsize, char);
+  }
+
+  if (err){
+    lua_error(L); // luaX_pushlstring failed and the error message is on top of the stack. Throw it.
+    // never returns
   }
 
   return 1;

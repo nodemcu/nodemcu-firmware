@@ -65,4 +65,9 @@ inline bool luaX_valid_ref(lua_ref_t ref) {
     return ref > 0;
 }
 
+// luaX_pushlstring is the same as lua_pushlstring except it will return nonzero in case of error
+// (instead of throwing an exception and never returning) and will put the error message on the top of the stack.
+int luaX_pushlstring(lua_State* L, const char* s, size_t l);
+ 
+
 #endif

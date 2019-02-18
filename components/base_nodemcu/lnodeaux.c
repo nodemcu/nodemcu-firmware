@@ -111,7 +111,30 @@ void luaX_unset_ref(lua_State* L, lua_ref_t* ref) {
 // luaX_set_ref pins a reference to a lua object, provided a registry
 // or stack position
 void luaX_set_ref(lua_State* L, int idx, lua_ref_t* ref) {
-    luaX_unset_ref(L, ref);                      // make sure we free previous reference
+    luaX_unset_ref(L, ref);                 // make sure we free previous reference
     lua_pushvalue(L, idx);                  // push on the stack the referenced index
     *ref = luaL_ref(L, LUA_REGISTRYINDEX);  // set the reference (pops 1 value)
+}
+
+// pushlstring_t is a helper struct to provide a protected lua_pushlstring call
+typedef struct {
+    const char* s;
+    size_t l;
+} pushlstring_t;
+
+// safe_pushlstring is a private function meant to be called in protected mode.
+static int safe_pushlstring(lua_State* L) {
+     pushlstring_t *ps = (pushlstring_t*)lua_touserdata(L,-1);
+     lua_pushlstring(L, ps->s, ps->l);
+     return 1;
+}
+
+// luaX_pushlstring is the same as lua_pushlstring except it will return nonzero in case of error
+// (instead of throwing an exception and never returning) and will put the error message on the top of the stack.
+int luaX_pushlstring(lua_State* L, const char* s, size_t l) {
+    lua_pushcfunction(L, &safe_pushlstring);
+    pushlstring_t* ps =(pushlstring_t*) lua_newuserdata(L, sizeof(pushlstring_t));
+    ps->s = s;
+    ps->l = l;
+    return lua_pcall(L, 1, 1, 0);
 }
