@@ -1,4 +1,4 @@
-Below you'll find all necessary information to flash a NodeMCU firmware binary to ESP8266 or ESP8285. Note that this is a reference documentation and not a tutorial with fancy screen shots. Turn to your favorite search engine for those. Make sure you follow a recent tutorial rather than one that is several months old!
+Below you'll find all necessary information to flash a NodeMCU firmware binary to ESP8266 or ESP8285. Note that this is a reference documentation and not a tutorial with fancy screen shots. Turn to the respective tool documentation for those.
 
 !!! attention
 
