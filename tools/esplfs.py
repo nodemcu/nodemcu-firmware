@@ -2,10 +2,10 @@
 #
 # ESP8266 LFS Loader Utility
 #
-# Copyright (C) 2019 Terry Ellison, NodeMCU Firmware Community Project. drawing 
-# heavily from and including content from esptool.py with full acknowledgement 
-# under GPL 2.0, with said content: Copyright (C) 2014-2016 Fredrik Ahlberg, Angus 
-# Gratton, Espressif Systems  (Shanghai) PTE LTD, other contributors as noted. 
+# Copyright (C) 2019 Terry Ellison, NodeMCU Firmware Community Project. drawing
+# heavily from and including content from esptool.py with full acknowledgement
+# under GPL 2.0, with said content: Copyright (C) 2014-2016 Fredrik Ahlberg, Angus
+# Gratton, Espressif Systems  (Shanghai) PTE LTD, other contributors as noted.
 # https://github.com/espressif/esptool
 #
 # This program is free software; you can redistribute it and/or modify it under
@@ -20,39 +20,28 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 # Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import io
 import os
 import sys
 sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/toolchains/'))
 import esptool
 
+import io
 import tempfile
 import shutil
 
 from pprint import pprint
 
-from esptool import ESPLoader, ESP8266ROM
 import argparse
 import gzip
-import base64
-import binascii
 import copy
-import hashlib
 import inspect
-import shlex
 import struct
-import time
 import string
 
-
-MAX_UINT32 = 0xffffffff
-MAX_UINT24 = 0xffffff
-
+__version__     = '1.0'
 ROM0_Seg        =   0x010000
 FLASH_PAGESIZE  =   0x001000
 FLASH_BASE_ADDR = 0x40200000
-__version__     = '1.0'
-
 PARTITION_TYPES = {
        4: 'RF_CAL',
        5: 'PHY_DATA',
@@ -64,26 +53,36 @@ PARTITION_TYPES = {
      105: 'TLSCERT',
      106: 'SPIFFS0',
      107: 'SPIFFS1'}
- 
+
 MAX_PT_SIZE = 20*3
+FLASH_SIG          = 0xfafaa150
+FLASH_SIG_MASK     = 0xfffffff0
+FLASH_SIG_ABSOLUTE = 0x00000001
+WORDSIZE           = 4
+WORDBITS           = 32
+
 PACK_INT    = struct.Struct("<I")
 
 def load_PT(data, args):
-    print('data len= %u' % len(data))
-    pt = [PACK_INT.unpack_from(data,4*i)[0] for i in range(0, MAX_PT_SIZE)]
+    """
+    Load the Flash copy of the Partition Table from the first segment of the IROM0
+    segment, that is at 0x10000.  If nececessary the LFS partition is then correctly
+    positioned and adjusted according to the optional start and len arguments.
 
+    The (possibly) updated PT is then returned with the LFS sizing.
+    """
+    pt = [PACK_INT.unpack_from(data,4*i)[0] for i in range(0, MAX_PT_SIZE)]
     n, flash_used_end, rewrite = 0, 0, False
     LFSaddr, LFSsize = None, None
 
     pt_map = dict()
-    for i in range(0,60,3):
-        pType = pt[i];
-        if pType == 0:
+    for i in range(0,MAX_PT_SIZE,3):
+        if pt[i] == 0:
             n = i // 3
-            flash_used_end = pt[i+1]
             break
-        else:
-            pt_map[PARTITION_TYPES[pType]] = i
+
+    flash_used_end = pt[3*n+1]
+    pt_map = {PARTITION_TYPES[pt[i]]: i for i in range(0, 3*n, 3)}
 
     if not ('IROM0TEXT' in pt_map and 'LFS0' in pt_map):
         raise FatalError("Partition table must contain IROM0 and LFS segments")
@@ -98,10 +97,10 @@ def load_PT(data, args):
         pt[j+1] = args.start
     elif pt[j+1] == 0:
         pt[j+1] = pt[i+1] + pt[i+2]
- 
+
     if args.len is not None and pt[j+2] != args.len:
         pt[j+2] = args.len
- 
+
     LFSaddr, LFSsize = pt[j+1], pt[j+2]
     print ('\nDump of Partition Table\n')
 
@@ -112,27 +111,30 @@ def load_PT(data, args):
 
     return odata, LFSaddr, LFSsize
 
-
-FLASH_SIG          = 0xfafaa150
-FLASH_SIG_MASK     = 0xfffffff0
-FLASH_SIG_ABSOLUTE = 0x00000001
-WORDSIZE           = 4
-WORDBITS           = 32
-
 def relocate_lfs(data, addr, size):
+    """
+    The unpacked LFS image comprises the relocatable image itself, followed by a bit
+    map (one bit per word) flagging if the corresponding word of the image needs
+    relocating.  The image and bitmap are enumerated with any addresses being
+    relocated by the LFS base address.  (Note that the PIC format of addresses is word
+    aligned and so first needs scaling by the wordsize.)
+    """
     addr += FLASH_BASE_ADDR
-    w = [PACK_INT.unpack_from(data,WORDSIZE*i)[0] for i in range(0, len(data) // WORDSIZE)]
+    w = [PACK_INT.unpack_from(data,WORDSIZE*i)[0] \
+            for i in range(0, len(data) // WORDSIZE)]
     flash_sig, flash_size = w[0], w[1]
-    flags_size = 1 + (flash_size - 1) // WORDBITS
-    print('%08x'%flash_sig)
-    assert ((flash_sig & FLASH_SIG_MASK) == FLASH_SIG and 
-            (flash_sig & FLASH_SIG_ABSOLUTE) == 0 and
-            flash_size <= size and 
-            flash_size % WORDSIZE == 0 and
-            len(data) == flash_size + flags_size)
 
-    flags,j = w[flash_size // WORDSIZE:], 0
-    image = w[0:flash_size // WORDSIZE]
+    assert ((flash_sig & FLASH_SIG_MASK) == FLASH_SIG and
+            (flash_sig & FLASH_SIG_ABSOLUTE) == 0 and
+             flash_size % WORDSIZE == 0)
+
+    flash_size //= WORDSIZE
+    flags_size = (flash_size + WORDBITS - 1) // WORDBITS
+
+    assert (WORDSIZE*flash_size <= size and
+            len(data) == WORDSIZE*(flash_size + flags_size))
+
+    image,flags,j    = w[0:flash_size], w[flash_size:], 0
 
     for i in range(0,len(image)):
         if i % WORDBITS == 0:
@@ -152,15 +154,17 @@ def main():
 
     print('esplfs v%s' % __version__)
 
+    # ---------- process the arguments ---------- #
+
     a = argparse.ArgumentParser(
-        description='esplfs.py v%s - ESP8266 NodeMCU LFS Loader Utility' % __version__, 
+        description='esplfs.py v%s - ESP8266 NodeMCU LFS Loader Utility' % __version__,
         prog='esplfs')
     a.add_argument('--port', '-p', help='Serial port device')
     a.add_argument('--baud', '-b',  type=arg_auto_int,
         help='Serial port baud rate used when flashing/reading')
-    a.add_argument('--start', '-s', type=arg_auto_int, 
+    a.add_argument('--start', '-s', type=arg_auto_int,
         help='(Overwrite) Start of LFS partition')
-    a.add_argument('--len', '-l',  type=arg_auto_int, 
+    a.add_argument('--len', '-l',  type=arg_auto_int,
         help='(Overwrite) length of LFS partition')
     a.add_argument('filename', help='filename of LFS image', metavar='LFSimg')
 
@@ -168,7 +172,9 @@ def main():
 
     base = [] if arg.port is None else ['--port',arg.port]
     if arg.baud is not None: base.extend(['--baud',arg.baud])
-    
+
+    # ---------- Use esptool to read the PT, then process ---------- #
+
     tmpdir = tempfile.mkdtemp()
     pt_file = tmpdir + '/pt.dmp'
     espargs = base+['--after', 'no_reset', 'read_flash', '--no-progress',
@@ -178,7 +184,9 @@ def main():
     with open(pt_file,"rb") as f:
         data = f.read()
     odata, LFSaddr, LFSsize = load_PT(data, arg)
-    
+
+    # ---------- If the PT has changed then use esptool to rewrite it ---------- #
+
     if odata != data:
         print("PT updated")
         pt_file = tmpdir + '/opt.dmp'
@@ -187,13 +195,15 @@ def main():
         espargs = base+['--after', 'no_reset', 'write_flash', '--no-progress',
                         str(ROM0_Seg), pt_file]
         esptool.main(espargs)
-        sys.exit()
+
+    # ---------- Read and relocate the LFS image ---------- #
 
     with gzip.open(arg.filename) as f:
         lfs = f.read()
 
-    print('LFS len = %u' % len(lfs)) 
     lfs = relocate_lfs(lfs, LFSaddr, LFSsize)
+
+    # ---------- Write to a temp file and use esptool to write it to flash ---------- #
 
     img_file = tmpdir + '/lfs.img'
     espargs = base + ['write_flash', str(LFSaddr), img_file]
@@ -201,15 +211,16 @@ def main():
         f.write(lfs)
     esptool.main(espargs)
 
-#    shutil.rmtree(tmpdir)
- 
-def _main():
-##    try:
-        main()
-##    except:
-##        print('\nA fatal error occurred')
-##        sys.exit(2)
+    # ---------- Clean up temp directory ---------- #
 
+    shutil.rmtree(tmpdir)
+
+def _main():
+#    try:
+        main()
+#    except:
+#        print('\nA fatal error occurred')
+#        sys.exit(2)
 
 if __name__ == '__main__':
     _main()
