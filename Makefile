@@ -82,6 +82,9 @@ ifeq ($(OS),Windows_NT)
 	else
 		ESPPORT = $(COMPORT)
 	endif
+	ifndef BAUDRATE
+		BAUDRATE=115200
+	endif
     ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
 # ->AMD64
     endif
@@ -299,8 +302,9 @@ clobber: $(SPECIAL_CLOBBER)
 
 flash:
 	@echo "use one of the following targets to flash the firmware"
-	@echo "  make flash512k - for ESP with 512kB flash size"
-	@echo "  make flash4m   - for ESP with   4MB flash size"
+	@echo "  make flash512k     - for ESP with 512kB flash size"
+	@echo "  make flash1m-dout  - for ESP with   1MB flash size and flash mode = dout (Sonoff, ESP8285)"
+	@echo "  make flash4m       - for ESP with   4MB flash size"
 
 flash512k:
 	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" flashinternal
@@ -308,11 +312,15 @@ flash512k:
 flash4m:
 	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" flashinternal
 
+flash1m-dout:
+	$(MAKE) -e FLASHOPTIONS="-fm dout -fs 8m -ff 40m" flashinternal
+
+
 flashinternal:
 ifndef PDIR
 	$(MAKE) -C ./app flashinternal
 else
-	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) --port $(ESPPORT) --baud $(BAUDRATE) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
 .subdirs:
