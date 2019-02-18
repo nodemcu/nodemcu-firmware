@@ -1,8 +1,8 @@
 # I²C Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [i2c.c](../../../app/modules/i2c.c)|
-| 2018-08-30 | [Natalia Sorokina](https://github.com/sonaux) |  | [i2c_master.c](../../../app/driver/i2c_master.c)|
+| 2014-12-22 | [Zeroday](https://github.com/funshine) | [Zeroday](https://github.com/funshine) | [i2c.c](../../app/modules/i2c.c)|
+| 2018-08-30 | [Natalia Sorokina](https://github.com/sonaux) |  | [i2c_master.c](../../app/driver/i2c_master.c)|
 
 I²C (I2C, IIC) is a serial 2-wire bus for communicating with various devices. Also known as SMBus or TWI, though SMBus have some additions to the I2C protocol.
 ESP8266 chip does not have hardware I²C, so module uses software I²C driver.
@@ -15,14 +15,14 @@ This module supports:
  - Clock stretching (slow slave device can tell the master to wait)
  - Sharing SDA line over multiple I²C buses to save available pins
  - GPIO16 pin can be used as SCL pin, but selected bus will be limited to not more than FAST speed.
-  
+
  HIGH-speed mode (3.5MHz clock) and 10-bit addressing scheme is not supported.
 
 You have to call `i2c.setup` on a given I²C bus at least once before communicating to any device connected to that bus, otherwise you will get an error.
 
 I²C bus designed to work in open-drain mode, so it needs pull-up resistors 1k - 10k on SDA and SCL lines. Though many peripheral modules have pull-up resistors onboard and will work without additional external resistors.
 
-Hint for using many identical devices with same address: 
+Hint for using many identical devices with same address:
 Many devices allow to choose between 2 I²C addresses via pin or soldered 0 Ohm resistor.
 If address change is not an option or you need to use more than 2 similar devices, you can use different I²C buses.
 Initialize them once by calling `i2c.setup` with different bus numbers and pins, then refer to each device by bus id and device address.
