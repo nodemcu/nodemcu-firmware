@@ -22,8 +22,16 @@
 #define MQTT_MAX_CLIENT_LEN   64
 #define MQTT_MAX_USER_LEN     64
 #define MQTT_MAX_PASS_LEN     64
-#define MQTT_SEND_TIMEOUT			5
-#define MQTT_CONNECT_TIMEOUT  5
+#define MQTT_SEND_TIMEOUT     5
+
+  /*
+   * This timeout needs to be long enough for a typical TCP connect()
+   * *and* the TLS handshake, if any.  Most network stacks seem to wait
+   * tens of seconds for connect(), and TLS can take a good deal of time
+   * and several round trips.  Because this matters only rarely, it may
+   * as well be set pretty high.
+   */
+#define MQTT_CONNECT_TIMEOUT  60
 
 typedef enum {
   MQTT_INIT,
