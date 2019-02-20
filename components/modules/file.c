@@ -2,6 +2,7 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include "lnodeaux.h"
 #include "lmem.h"
 #include "platform.h"
 
@@ -140,7 +141,6 @@ static int file_obj_free( lua_State *L )
   if (ud->fd) {
     // close file if it's still open
     vfs_close(ud->fd);
-    ud->fd = 0;
   }
 
   return 0;
@@ -383,12 +383,7 @@ static int file_stat( lua_State* L )
 // g_read()
 static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 {
-  static char *heap_mem = NULL;
-  // free leftover memory
-  if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
-  }
+  char *heap_mem = NULL;
 
   if(n <= 0)
     n = FILE_READ_CHUNK;
@@ -396,19 +391,19 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
   if(end_char < 0 || end_char >255)
     end_char = EOF;
 
-
   if(!fd)
     return luaL_error(L, "open a file first");
 
   char *p;
   int i;
+  size_t bufsize = n;
 
   if (n > LUAL_BUFFERSIZE) {
     // get buffer from heap
-    p = heap_mem = luaM_malloc(L, n);
+    p = heap_mem = luaM_malloc(L, bufsize);
   } else {
     // small chunks go onto the stack
-    p = alloca(n);
+    p = alloca(bufsize);
   }
 
   n = vfs_read(fd, p, n);
@@ -424,21 +419,24 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
     i = n;
   }
 
+  int err = 0;
+
   if (i == 0 || n == VFS_RES_ERR) {
-    if (heap_mem) {
-      luaM_free(L, heap_mem);
-      heap_mem = NULL;
-    }
     lua_pushnil(L);
-    return 1;
+  } else {
+    vfs_lseek(fd, -(n - i), VFS_SEEK_CUR);
+    err = luaX_pushlstring(L, p, i); // On error it will return nonzero and leave a message on top of the stack.
   }
 
-  vfs_lseek(fd, -(n - i), VFS_SEEK_CUR);
-  lua_pushlstring(L, p, i);
   if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
+    luaM_freearray(L, heap_mem, bufsize, char);
   }
+
+  if (err){
+    lua_error(L); // luaX_pushlstring failed and the error message is on top of the stack. Throw it.
+    // never returns
+  }
+
   return 1;
 }
 
