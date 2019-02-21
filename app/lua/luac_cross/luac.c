@@ -168,6 +168,7 @@ static TString *corename(lua_State *L, const TString *filename)
 {
  const char *fn = getstr(filename)+1;
  const char *s = strrchr(fn, '/');
+ if (!s) s = strrchr(fn, '\\');
  s = s ? s + 1 : fn;
  while (*s == '.') s++;
  const char *e = strchr(s, '.');

@@ -46,7 +46,7 @@ extern const luaR_entry  lua_rotable_base[];
 #define LUA_ROTABLES lua_rotable_core
 #define LUA_LIBS     lua_libs_core
 #endif
-             
+
 #ifdef _MSC_VER
 //MSVC requires us to declare these sections before we refer to them
 #pragma section(__ROSECNAME(A), read)
