@@ -66,7 +66,7 @@ int luaR_isrotable(void *p);
 
 #if defined(_MSC_VER)
 //msvc build uses these dummy vars to locate the beginning and ending addresses of the RO data
-extern cons char _ro_start[], _ro_end[];
+extern const char _ro_start[], _ro_end[];
 #define IN_RODATA_AREA(p) (((const char*)(p)) >= _ro_start && ((const char *)(p)) <= _ro_end)
 #else /* one of the POSIX variants */
 #if defined(__CYGWIN__)

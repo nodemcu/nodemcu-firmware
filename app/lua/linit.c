@@ -58,8 +58,8 @@ extern const luaR_entry  lua_rotable_base[];
 //magic is used; the section names are lexically sorted, so 'a' and 'z' are
 //important to keep the other sections lexically between these two dummy
 //variables.  Check your mapfile output if you need to fiddle with this stuff.
-const LOCK_IN_SECTION(A) int _ro_start = 0;
-const LOCK_IN_SECTION(zzzzzzzz) int _ro_end = 0;
+const LOCK_IN_SECTION(A) char _ro_start[1] = {0};
+const LOCK_IN_SECTION(zzzzzzzz) char _ro_end[1] = {0};
 #endif
 static const LOCK_IN_SECTION(libs) luaL_reg LUA_LIBS[] = {
   {"",              luaopen_base},
