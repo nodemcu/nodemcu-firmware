@@ -112,7 +112,11 @@ static uint *flashAddrTag = flashImage + LUA_MAX_FLASH_SIZE;
 #define getFlashAddrTag(v) ((flashAddrTag[_TW(v)]&_TB(v)) != 0)
 
 #define fatal luac_fatal
+#ifdef _MSC_VER
+extern void __declspec( noreturn ) luac_fatal( const char* message );
+#else
 extern void __attribute__((noreturn)) luac_fatal(const char* message);
+#endif
 
 #ifdef LOCAL_DEBUG
 #define DBG_PRINT(...) printf(__VA_ARGS__)

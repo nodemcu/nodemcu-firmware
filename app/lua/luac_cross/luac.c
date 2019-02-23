@@ -168,6 +168,7 @@ static TString *corename(lua_State *L, const TString *filename)
 {
  const char *fn = getstr(filename)+1;
  const char *s = strrchr(fn, '/');
+ if (!s) s = strrchr(fn, '\\');
  s = s ? s + 1 : fn;
  while (*s == '.') s++;
  const char *e = strchr(s, '.');
@@ -272,6 +273,9 @@ struct Smain {
  char** argv;
 };
 
+#if defined(_MSC_VER) || defined(__MINGW32__)
+typedef unsigned int uint;
+#endif
 extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w,
                               void* data, int strip,
                               lu_int32 address, lu_int32 maxSize);

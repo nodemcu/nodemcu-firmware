@@ -64,13 +64,21 @@ int luaR_isrotable(void *p);
  */
 #if defined(LUA_CROSS_COMPILER)
 
+#if defined(_MSC_VER)
+//msvc build uses these dummy vars to locate the beginning and ending addresses of the RO data
+extern cons char _ro_start[], _ro_end[];
+#define IN_RODATA_AREA(p) (((const char*)(p)) >= _ro_start && ((const char *)(p)) <= _ro_end)
+#else /* one of the POSIX variants */
 #if defined(__CYGWIN__)
 #define _RODATA_END __end__
+#elif defined(__MINGW32__)
+#define _RODATA_END end
 #else
 #define _RODATA_END _edata
 #endif
 extern const char _RODATA_END[];
 #define IN_RODATA_AREA(p) (((const char *)(p)) < _RODATA_END)
+#endif /* defined(_MSC_VER) */
 
 #else  /* xtensa tool chain for ESP target */
 
@@ -78,7 +86,7 @@ extern const char _irom0_text_start[];
 extern const char _irom0_text_end[];
 #define IN_RODATA_AREA(p) (((const char *)(p)) >= _irom0_text_start && ((const char *)(p)) <= _irom0_text_end)
 
-#endif
+#endif /* defined(LUA_CROSS_COMPILER) */
 
 /* Return 1 if the given pointer is a rotable */
 #define luaR_isrotable(p) IN_RODATA_AREA(p)

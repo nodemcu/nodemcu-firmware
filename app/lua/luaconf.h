@@ -39,7 +39,7 @@
 #endif
 
 
-#if defined(LUA_CROSS_COMPILER)
+#if defined(LUA_CROSS_COMPILER) && !defined(_MSC_VER) && !defined(__MINGW32__)
 #define LUA_USE_LINUX
 #endif
 
@@ -264,7 +264,7 @@
 #include <io.h>
 #ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
-else
+#else
 #include "c_stdio.h"
 #endif
 
@@ -631,7 +631,11 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
   #define lua_str2number(s,p) c_strtoll((s), (p), 10)
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #else
+#ifdef _MSC_VER	//what's wrong with stdlib strtod?
+#define lua_str2number(s,p)	strtod((s), (p))
+#else
 #define lua_str2number(s,p)	c_strtod((s), (p))
+#endif
 #endif // #if defined LUA_NUMBER_INTEGRAL
 
 /*
@@ -760,18 +764,18 @@ union luai_Cast { double l_d; long l_l; };
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
 
-#elif defined(LUA_USE_ULONGJMP)
-/* in Unix, try _longjmp/_setjmp (more efficient) */
-#define LUAI_THROW(L,c)	_longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (_setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf	jmp_buf
-
 #else
-/* default handling with long jumps */
-#define LUAI_THROW(L,c)	longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (setjmp((c)->b) == 0) { a }
+#if defined(LUA_USE_ULONGJMP)
+/* in Unix, try _longjmp/_setjmp (more efficient) */
+#define LONGJMP(a,b) _longjmp(a,b)
+#define SETJMP(a) _setjmp(a)
+#else
+#define LONGJMP(a,b) longjmp(a,b)
+#define SETJMP(a) setjmp(a)
+#endif
+#define LUAI_THROW(L,c)	LONGJMP((c)->b, 1)
+#define LUAI_TRY(L,c,a)	if (SETJMP((c)->b) == 0) { a }
 #define luai_jmpbuf	jmp_buf
-
 #endif
 
 
