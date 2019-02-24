@@ -5,10 +5,26 @@ ifeq ($(IDF_PATH),)
 THIS_MK_FILE:=$(notdir $(lastword $(MAKEFILE_LIST)))
 THIS_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 IDF_PATH=$(THIS_DIR)/sdk/esp32-esp-idf
-all:
-%:
+
+TOOLCHAIN_VERSION:=20181106.0
+PLATFORM:=linux-x86_64
+
+all: toolchain
+%: toolchain
 	@echo Setting IDF_PATH and re-invoking...
-	@env IDF_PATH=$(IDF_PATH) PATH=$(PATH):$(THIS_DIR)/tools/toolchains/esp32/bin/ $(MAKE) -f $(THIS_MK_FILE) $@
+	@env IDF_PATH=$(IDF_PATH) PATH=$(PATH):$(THIS_DIR)/tools/toolchains/esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin $(MAKE) -f $(THIS_MK_FILE) $@
+
+toolchain: $(THIS_DIR)/tools/toolchains/esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-esp32-elf-gcc
+	@echo Checking pre-compiled toolchain
+
+$(THIS_DIR)/tools/toolchains/esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-esp32-elf-gcc: $(THIS_DIR)/cache/toolchain-esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
+	mkdir -p $(THIS_DIR)/tools/toolchains/
+	tar -xJf $< -C $(THIS_DIR)/tools/toolchains/
+	touch $@
+
+$(THIS_DIR)/cache/toolchain-esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz:
+	mkdir -p $(THIS_DIR)/cache
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
 
 else
 
