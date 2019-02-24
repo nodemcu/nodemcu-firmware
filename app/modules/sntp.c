@@ -38,6 +38,8 @@
 #include "os_type.h"
 #include "osapi.h"
 #include "lwip/udp.h"
+#include "lwip/inet.h"
+#include "lwip/dhcp.h"
 #include "c_stdlib.h"
 #include "user_modules.h"
 #include "lwip/dns.h"
@@ -47,6 +49,8 @@
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
+
+struct netif * eagle_lwip_getif(uint8 index);
 
 #define max(a,b) ((a < b) ? b : a)
 
@@ -805,15 +809,23 @@ static int sntp_sync (lua_State *L)
       server_count++;
     }
   } else if (server_count == 0) {
-    // default to ntp pool
     lua_newtable(L);
-    int i;
-    for (i = 0; i < 4; i++) {
-      lua_pushnumber(L, i + 1);
-      char buf[64];
-      c_sprintf(buf, "%d.nodemcu.pool.ntp.org", i);
-      lua_pushstring(L, buf);
-      lua_settable(L, -3);
+    struct netif *iface = (struct netif *)eagle_lwip_getif(0x00);
+    if (iface->dhcp && iface->dhcp->offered_ntp_addr.addr) {
+		ip_addr_t ntp_addr = iface->dhcp->offered_ntp_addr;
+        lua_pushnumber(L, 1);
+        lua_pushstring(L, inet_ntoa(ntp_addr));
+        lua_settable(L, -3);
+    } else {
+      // default to ntp pool
+      int i;
+      for (i = 0; i < 4; i++) {
+        lua_pushnumber(L, i + 1);
+        char buf[64];
+        c_sprintf(buf, "%d.nodemcu.pool.ntp.org", i);
+        lua_pushstring(L, buf);
+        lua_settable(L, -3);
+      }
     }
     luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
     state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
