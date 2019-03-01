@@ -149,7 +149,7 @@ static void flashErase(uint32_t start, uint32_t end){
  * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
  */
 LUAI_FUNC void luaN_init (lua_State *L) {
-  
+
   flashSize = platform_flash_get_partition (NODEMCU_LFS0_PARTITION, &flashAddrPhys);
   if (flashSize == 0) {
     return;   // Nothing to do if the size is zero

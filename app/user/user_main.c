@@ -72,35 +72,35 @@ enum partition {iram0=0, rf_call, phy_data, sys_parm, irom0, lfs, spiffs};
 /*
  * The non-OS SDK prolog has been fundamentally revised in V3.  See SDK EN document
  * Partition Table.md for further discussion. This version of user_main.c is a
- * complete rework aligned to V3, with the redundant pre-V3 features removed.  
- * 
+ * complete rework aligned to V3, with the redundant pre-V3 features removed.
+ *
  * SDK V3 significantly reduced the RAM footprint required by the SDK and introduces
- * the use of a partition table (PT) to control flash allocation. The NodeMCU uses 
+ * the use of a partition table (PT) to control flash allocation. The NodeMCU uses
  * this PT for overall allocation of its flash resources.  A constant copy PT is
  * maintained at the start of IROM0 (flash offset 0x10000) to facilitate it
  * modification either in the firmware binary or in the flash itself. This is Flash
  * PT used during startup to create the live PT in RAM that is used by the SDK.
- * 
+ *
  * Note that user_pre_init() runs with Icache enabled -- that is the IROM0 partition
- * is already mapped the address space at 0x40210000 and so that most SDK services 
- * are available, such as system_get_flash_size_map() which returns the valid flash 
- * size (including the 8Mb and 16Mb variants).   
+ * is already mapped the address space at 0x40210000 and so that most SDK services
+ * are available, such as system_get_flash_size_map() which returns the valid flash
+ * size (including the 8Mb and 16Mb variants).
  */
 static int setup_partition_table(partition_item_t *pt, uint32_t *n) {
 
 // Flash size lookup is SIZE_256K*2^N where N is as follows (see SDK/user_interface.h)
     static char flash_size_scaler[] =
   /*   0   1   2   3   4   5   6   7   8   9  */
-  /*  ½M  ¼M  1M  2M  4M  2M  4M  4M  8M 16M  */  
+  /*  ½M  ¼M  1M  2M  4M  2M  4M  4M  8M 16M  */
    "\001\000\002\003\004\003\004\004\005\006";
     enum flash_size_map fs_size_code = system_get_flash_size_map();
     uint32_t flash_size = SIZE_256K << flash_size_scaler[fs_size_code];
-    uint32_t first_free_flash_addr = partition_init_table[PTABLE_SIZE].addr  
+    uint32_t first_free_flash_addr = partition_init_table[PTABLE_SIZE].addr
                                      - (uint32_t) FLASH_BASE_ADDR;
     int i,j;
-   
+
     os_memcpy(pt, partition_init_table, PTABLE_SIZE * sizeof(*pt));
-    
+
 
     if (flash_size < SIZE_1024K) {
         os_printf("Flash size (%u) too small to support NodeMCU\n", flash_size);
@@ -124,19 +124,19 @@ static int setup_partition_table(partition_item_t *pt, uint32_t *n) {
     }
 
 //  Check that the phys data partition has been initialised and if not then do this
-//  now to prevent the SDK halting on a "rf_cal[0] !=0x05,is 0xFF" error. 
+//  now to prevent the SDK halting on a "rf_cal[0] !=0x05,is 0xFF" error.
     uint32_t init_data_hdr = 0xffffffff, data_addr = pt[phy_data].addr;
     int status = spi_flash_read(data_addr, &init_data_hdr, sizeof (uint32_t));
     if (status == SPI_FLASH_RESULT_OK && *(char *)&init_data_hdr != 0x05) {
         uint32_t idata[INIT_DATA_SIZE];
-        os_printf("Writing Init Data to 0x%08x\n",data_addr); 
+        os_printf("Writing Init Data to 0x%08x\n",data_addr);
         spi_flash_erase_sector(data_addr/SPI_FLASH_SEC_SIZE);
         os_memcpy(idata, init_data, sizeof(idata));
         spi_flash_write(data_addr, idata, sizeof(idata));
         os_delay_us(1000);
     }
 
-// Check partitions are page aligned and remove and any zero-length partitions. 
+// Check partitions are page aligned and remove and any zero-length partitions.
 // This must be done last as this might break the enum partition ordering.
     for (i = 0, j = 0; i < PTABLE_SIZE; i++) {
         const partition_item_t *p = pt + i;
@@ -264,15 +264,15 @@ void user_init(void)
 }
 
 /*
- * The SDK now establishes exception handlers for EXCCAUSE errors: ILLEGAL, 
- * INSTR_ERROR, LOAD_STORE_ERROR, PRIVILEGED, UNALIGNED, LOAD_PROHIBITED, 
- * STORE_PROHIBITED.  These handlers are established in SDK/app_main.c.  
+ * The SDK now establishes exception handlers for EXCCAUSE errors: ILLEGAL,
+ * INSTR_ERROR, LOAD_STORE_ERROR, PRIVILEGED, UNALIGNED, LOAD_PROHIBITED,
+ * STORE_PROHIBITED.  These handlers are established in SDK/app_main.c.
  * LOAD_STORE_ERROR is handled by SDK/user_exceptions.o:load_non_32_wide_handler()
  * which is a fork of our version. The remaining are handled by a static function
  * at SDK:app+main.c:offset 0x0348.
  *
 void __real__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn);
-void __wrap__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn) {  
+void __wrap__xtos_set_exception_handler (uint32_t cause, exception_handler_fn fn) {
     os_printf("Exception handler %x  %x\n", cause, fn);
     __real__xtos_set_exception_handler (cause, fn);
 }

@@ -4,18 +4,18 @@
 
 /*
  * With the intoduction of a unified FatFS and SPIFFS support (#1397), the SPIFFS
- * interface is now abstracted through a uses a single SPIFFS entry point 
+ * interface is now abstracted through a uses a single SPIFFS entry point
  * myspiffs_realm() which returns a vfs_fs_fns object (as does myfatfs_realm()).
  * All other functions and data are static.
  *
  * Non-OS SDK V3.0 introduces a flash partition table (PT) and SPIFFS has now been
  * updated to support this:
  *   -  SPIFFS limits search to the specifed SPIFFS0 address and size.
- *   -  Any headroom / offset from other partitions is reflected in the PT allocations. 
- *   -  Unforced mounts will attempt to mount any valid SPIFSS found in this range 
+ *   -  Any headroom / offset from other partitions is reflected in the PT allocations.
+ *   -  Unforced mounts will attempt to mount any valid SPIFSS found in this range
  *      (NodeMCU uses the SPIFFS_USE_MAGIC setting to make existing FS discoverable).
- *   -  Subject to the following, no offset or FS search is done.  The FS is assumed 
- *      to be at the first valid location at the start of the partition. 
+ *   -  Subject to the following, no offset or FS search is done.  The FS is assumed
+ *      to be at the first valid location at the start of the partition.
  *   -  If a new SPIFFS needs to be formatted:
  *      - A small block size will be used if the PT size is <68K
  *      - The start is block aligned or 1Mb aligned if the partion spans a 1Mb boundary
@@ -29,7 +29,7 @@ static spiffs fs;
 #define LOG_BLOCK_SIZE_SMALL_FS	(INTERNAL_FLASH_SECTOR_SIZE)
 #define MIN_BLOCKS_FS		4
 #define MASK_1MB (0x100000-1)
-  
+
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
 #if SPIFFS_CACHE
@@ -144,29 +144,9 @@ static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
     return TRUE;
   }
   // No existing file system -- set up for a format
-<<<<<<< HEAD
-  if (INTERNAL_FLASH_SIZE >= 700000) {
-    myspiffs_set_cfg(cfg, 0x10000, 0x10000, TRUE);
-#ifndef SPIFFS_MAX_FILESYSTEM_SIZE
-    if (cfg->phys_size < 400000) {
-      // Don't waste so much in alignment
-      myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, LOG_BLOCK_SIZE * 4, TRUE);
-    }
-#endif
-  } else {
-    myspiffs_set_cfg(cfg, LOG_BLOCK_SIZE, 0, TRUE);
-  }
 
-#ifdef SPIFFS_MAX_FILESYSTEM_SIZE
-  if (cfg->phys_size > SPIFFS_MAX_FILESYSTEM_SIZE) {
-    cfg->phys_size = (SPIFFS_MAX_FILESYSTEM_SIZE) & ~(cfg->log_block_size - 1);
-  }
-#endif
-
-=======
-  if (cfg->phys_size >= 0xB0000) 
+  if (cfg->phys_size >= 0xB0000)
     myspiffs_set_cfg(cfg, align, TRUE);
->>>>>>> Baseline SDK version
   return FALSE;
 }
 

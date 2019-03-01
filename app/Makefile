@@ -115,8 +115,8 @@ LINKFLAGS_eagle.app.v6 = 			\
 	$(DEP_LIBS_eagle.app.v6) 		\
 	-Wl,--end-group 			\
 	-lm
-#	-Wl,--cref 					
-#	-Wl,--wrap=_xtos_set_exception_handler  
+#	-Wl,--cref
+#	-Wl,--wrap=_xtos_set_exception_handler
 
 DEPENDS_eagle.app.v6 = 				\
                 $(LD_FILE) 			\
