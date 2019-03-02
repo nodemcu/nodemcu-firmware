@@ -10,9 +10,10 @@
 #include "ff.h"
 #include "fatfs_config.h"
 
+
 static FRESULT last_result = FR_OK;
 
-static const char* const volstr[_VOLUMES] = {_VOLUME_STRS};
+static const char* const volstr[FF_VOLUMES] = {FF_VOLUME_STRS};
 
 static int is_current_drive = false;
 
@@ -141,7 +142,7 @@ DWORD get_fattime( void )
             tm.hour << 11 | tm.min << 5 | tm.sec;
   } else {
     // default time stamp derived from ffconf.h
-    stamp = ((DWORD)(_NORTC_YEAR - 1980) << 25 | (DWORD)_NORTC_MON << 21 | (DWORD)_NORTC_MDAY << 16);
+    stamp = ((DWORD)(FF_NORTC_YEAR - 1980) << 25 | (DWORD)FF_NORTC_MON << 21 | (DWORD)FF_NORTC_MDAY << 16);
   }
 
   return stamp;
@@ -347,7 +348,7 @@ static vfs_vol *myfatfs_mount( const char *name, int num )
 
   // num argument specifies the physical driver
   if (num >= 0) {
-    for (int i = 0; i < NUM_LOGICAL_DRIVES; i++) {
+    for (int i = 0; i < FF_VOLUMES; i++) {
       if (0 == strncmp( name, volstr[i], strlen( volstr[i] ) )) {
         VolToPart[i].pd = num;
       }
@@ -476,8 +477,8 @@ static int32_t  myfatfs_fsinfo( uint32_t *total, uint32_t *used )
 
   if ((last_result = f_getfree( "", &free_clusters, &fatfs )) == FR_OK) {
     // provide information in kByte since uint32_t would clip to 4 GByte
-    *total = (fatfs->n_fatent * fatfs->csize) / (1024 / _MAX_SS);
-    *used  = *total - (free_clusters * fatfs->csize) / (1024 / _MAX_SS);
+    *total = (fatfs->n_fatent * fatfs->csize) / (1024 / FF_MAX_SS);
+    *used  = *total - (free_clusters * fatfs->csize) / (1024 / FF_MAX_SS);
   }
 
   return last_result == FR_OK ? VFS_RES_OK : VFS_RES_ERR;
@@ -517,7 +518,7 @@ vfs_fs_fns *myfatfs_realm( const char *inname, char **outname, int set_current_d
     char *oname;
 
     // logical drive is specified, check if it's one of ours
-    for (int i = 0; i < _VOLUMES; i++) {
+    for (int i = 0; i < FF_VOLUMES; i++) {
       size_t volstr_len = strlen( volstr[i] );
       if (0 == strncmp( &(inname[1]), volstr[i], volstr_len )) {
         oname = strdup( inname );

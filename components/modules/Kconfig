@@ -74,6 +74,38 @@ config LUA_MODULE_CAN
   help
       Includes the can module.
 
+config LUA_MODULE_CRYPTO
+  bool "Crypto module"
+  default "n"
+  help
+      Includes the crypto module.
+
+menu "Crypto module hashing algorithms"
+  depends on LUA_MODULE_CRYPTO
+
+  config CRYPTO_HASH_SHA1
+    bool "SHA1"
+    default "y"
+    help
+      Includes the SHA1 hashing algorithm
+  config CRYPTO_HASH_SHA256
+    bool "SHA256 and SHA224"
+    default "y"
+    help
+      Includes the SHA256 and SHA224 hashing algorithms
+  config CRYPTO_HASH_SHA512
+    bool "SHA512 and SHA384"
+    default "y"
+    help
+      Includes the SHA256 and SHA384 hashing algorithms
+  config CRYPTO_HASH_MD5
+    bool "MD5"
+    default "n"
+    help
+      Includes the MD5 hashing algorithm
+endmenu
+
+
 config LUA_MODULE_DAC
   bool "DAC module"
   default "n"
@@ -172,6 +204,12 @@ config LUA_MODULE_SIGMA_DELTA
   help
       Includes the sigma_delta module. This module provides access to the
       sigma-delta hardware.
+	  
+config LUA_MODULE_SJSON
+  bool "SJSON module"
+  default "n"
+  help
+      Includes the sjson module.
 
 config LUA_MODULE_SODIUM
   bool "Sodium module"
@@ -226,5 +264,11 @@ config LUA_MODULE_WS2812
   default "n"
   help
       Includes the ws2812 module.
+	  
+config LUA_MODULE_TIME
+  bool "time module"
+  default "n"
+  help
+      Includes the time module.
 
 endmenu

@@ -12,6 +12,8 @@
 
 #include "spi_common.h"
 
+#include "common.h"
+
 #define SPI_MASTER_TAG "spi.master"
 
 #define UD_HOST_STR "spi.master"
@@ -49,10 +51,6 @@ typedef struct {
 
 #define GET_UD_DEVICE \
   lspi_device_t *ud = (lspi_device_t *)luaL_checkudata( L, 1, UD_DEVICE_STR );
-
-#define CONFIG_TRANS_FROM_FIELD(field) \
-  lua_getfield( L, stack, #field ); \
-  trans.field = luaL_optint( L, -1, 0 );
 
 static int lspi_device_free( lua_State *L )
 {
@@ -97,20 +95,21 @@ static int lspi_device_transfer( lua_State *L )
     const char * const options[] = {"std", "dio", "qio"};
     const uint32_t options_flags[] = {0, SPI_TRANS_MODE_DIO, SPI_TRANS_MODE_QIO};
 
-    CONFIG_TRANS_FROM_FIELD(cmd);
-    CONFIG_TRANS_FROM_FIELD(addr);
+    // temporarily copy option table to top of stack for opt_ functions
+    lua_pushvalue( L, stack );
     //
-    lua_getfield( L, stack, "rxlen" );
-    rx_len = luaL_optint( L, -1, 0 );
+    trans.cmd  = opt_checkint( L, "cmd", 0 );
+    trans.addr = opt_checkint( L, "addr", 0 );
     //
-    lua_getfield( L, stack, "addr_mode" );
-    trans.flags |= luaL_optbool( L, -1, false ) ? SPI_TRANS_MODE_DIOQIO_ADDR : 0;
+    rx_len = opt_checkint( L, "rxlen", 0 );
+    //
+    trans.flags |= opt_checkbool( L, "addr_mode", false ) ? SPI_TRANS_MODE_DIOQIO_ADDR : 0;
     //
     lua_getfield( L, stack, "mode" );
     trans.flags |= options_flags[ luaL_checkoption( L, -1, options[0], options ) ];
     //
-    lua_getfield( L, stack, "txdata" );
-    data = luaL_optlstring( L, -1, "", &data_len );
+    data_len = 0;
+    data = opt_checklstring( L, "txdata", "", &data_len );
 
     lua_settop( L, stack );
   }
@@ -194,15 +193,12 @@ static const LUA_REG_TYPE lspi_device_map[] = {
   lspi_host_t *ud = (lspi_host_t *)luaL_checkudata( L, 1, UD_HOST_STR );
 //
 #define CONFIG_BUS_PIN_FROM_FIELD(pin) \
-  lua_getfield( L, stack, #pin ); \
-  config.pin ## _io_num = luaL_optint( L, -1, -1 );
+  config.pin ## _io_num = opt_checkint( L, #pin, -1 );
 //
 #define CONFIG_DEVICE_FROM_INT_FIELD(field) \
-  lua_getfield( L, stack, #field ); \
-  config.field = luaL_optint( L, -1, 0 );
+  config.field = opt_checkint( L, #field, 0 );
 #define CONFIG_DEVICE_FROM_BOOL_FIELD(field, mask) \
-  lua_getfield( L, stack, #field ); \
-  config.flags |= luaL_optbool( L, -1, false ) ? mask : 0;
+  config.flags |= opt_checkbool( L, #field, false ) ? mask : 0;
 
 static int lspi_host_free( lua_State *L )
 {
@@ -220,6 +216,7 @@ static int lspi_host_free( lua_State *L )
 int lspi_master( lua_State *L )
 {
   int stack = 0;
+  int top = lua_gettop( L );
 
   int host = luaL_checkint( L, ++stack );
   luaL_argcheck( L,
@@ -227,17 +224,27 @@ int lspi_master( lua_State *L )
                  stack,
                  "invalid host" );
 
-  luaL_checktype( L, ++stack, LUA_TTABLE );
+  if (lua_type( L, ++stack ) != LUA_TTABLE) {
+    // no configuration table provided
+    // assume that host is already initialized and just provide the object
+    lspi_host_t *ud = (lspi_host_t *)lua_newuserdata( L, sizeof( lspi_host_t ) );
+    luaL_getmetatable( L, UD_HOST_STR );
+    lua_setmetatable( L, -2 );
+    ud->host = host;
+    return 1;
+  }
 
   spi_bus_config_t config;
   memset( &config, 0, sizeof( config ) );
-  //
+
+  // temporarily copy option table to top of stack for opt_ functions
+  lua_pushvalue( L, stack );
   CONFIG_BUS_PIN_FROM_FIELD(sclk);
   CONFIG_BUS_PIN_FROM_FIELD(mosi);
   CONFIG_BUS_PIN_FROM_FIELD(miso);
   CONFIG_BUS_PIN_FROM_FIELD(quadwp);
   CONFIG_BUS_PIN_FROM_FIELD(quadhd);
-  lua_pop( L, 5 );
+  lua_settop( L, top );
 
   int use_dma = luaL_optint( L, ++stack, 1 );
   luaL_argcheck( L, use_dma >= 0 && use_dma <= 2, stack, "out of range" );
@@ -267,21 +274,16 @@ static int lspi_host_device( lua_State *L )
   spi_device_interface_config_t config;
   memset( &config, 0, sizeof( config ) );
 
+  // temporarily copy option table to top of stack for opt_ functions
+  lua_pushvalue( L, stack );
+
   // mandatory fields
-  lua_getfield( L, stack, "cs" );
-  config.spics_io_num = luaL_optint( L, -1, -1 );
+  config.mode = (uint8_t)opt_checkint_range( L, "mode", -1, 0, 3 );
   //
-  lua_getfield( L, stack, "mode" );
-  int mode = luaL_optint( L, -1, -1 );
-  luaL_argcheck( L, mode >= 0, stack, "mode setting missing" );
-  config.mode = (uint8_t)mode;
-  //
-  lua_getfield( L, stack, "freq" );
-  int freq = luaL_optint( L, -1, -1 );
-  luaL_argcheck( L, freq >= 0, stack, "freq setting missing" );
-  config.clock_speed_hz = freq;
+  config.clock_speed_hz = opt_checkint_range( L, "freq", -1, 0, SPI_MASTER_FREQ_80M );
   //
   // optional fields
+  config.spics_io_num = opt_checkint( L, "cs", -1 );
   CONFIG_DEVICE_FROM_INT_FIELD(command_bits);
   CONFIG_DEVICE_FROM_INT_FIELD(address_bits);
   CONFIG_DEVICE_FROM_INT_FIELD(dummy_bits);

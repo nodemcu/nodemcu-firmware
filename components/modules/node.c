@@ -9,6 +9,8 @@
 #include "esp_log.h"
 #include "soc/efuse_reg.h"
 #include "ldebug.h"
+#include "esp_vfs.h"
+#include "lnodeaux.h"
 
 // Lua: node.chipid()
 static int node_chipid( lua_State *L )
@@ -73,6 +75,79 @@ static int node_input( lua_State* L )
   return 0;
 }
 
+// The implementation of node.output implies replacing stdout with a virtual write-only file of
+// which we can capture fwrite calls.
+// When there is any write to the replaced stdout, our function redir_write will be called.
+// we can then invoke the lua callback.
+
+static FILE *oldstdout;              // keep the old stdout, e.g., the uart0
+lua_ref_t output_redir = LUA_NOREF;  // this will hold the Lua callback
+int serial_debug = 0;                // whether or not to write also to uart
+const char *VFS_REDIR = "/redir";    // virtual filesystem mount point
+
+// redir_write will be called everytime any code writes to stdout when
+// redirection is active
+ssize_t redir_write(int fd, const void *data, size_t size) {
+    if (serial_debug)  // if serial_debug is nonzero, write to uart
+        fwrite(data, sizeof(char), size, oldstdout);
+
+    if (output_redir != LUA_NOREF) {  // prepare lua call
+        lua_State *L = lua_getstate();
+        lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir);  // push function reference
+        lua_pushlstring(L, (char *)data, size);           // push data
+        lua_pcall(L, 1, 0, 0);                            // invoke callback
+    }
+    return size;
+}
+
+// redir_open is called when fopen() is called on /redir/xxx
+int redir_open(const char *path, int flags, int mode) {
+    return 79;  // since we only have one "file", just return some fd number to make the VFS system happy
+}
+
+// Lua: node.output(func, serial_debug)
+static int node_output(lua_State *L) {
+    if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
+        if (output_redir == LUA_NOREF) {
+            // create an instance of a virtual filesystem so we can use fopen
+            esp_vfs_t redir_fs = {
+                .flags = ESP_VFS_FLAG_DEFAULT,
+                .write = &redir_write,
+                .open = &redir_open,
+                .fstat = NULL,
+                .close = NULL,
+                .read = NULL,
+            };
+            // register this filesystem under the `/redir` namespace
+            ESP_ERROR_CHECK(esp_vfs_register(VFS_REDIR, &redir_fs, NULL));
+            oldstdout = stdout;              // save the previous stdout
+            stdout = fopen(VFS_REDIR, "w");  // open the new one for writing
+        } else {
+            luaX_unset_ref(L, &output_redir);  // dereference previous callback
+        }
+        luaX_set_ref(L, 1, &output_redir);  // set the callback
+    } else {
+        if (output_redir != LUA_NOREF) {
+            fclose(stdout);                                  // close the redirected stdout
+            stdout = oldstdout;                              // restore original stdout
+            ESP_ERROR_CHECK(esp_vfs_unregister(VFS_REDIR));  // unregister redir filesystem
+            luaX_unset_ref(L, &output_redir);                // forget callback
+        }
+        serial_debug = 1;
+        return 0;
+    }
+
+    // second parameter indicates whether output will also be sent to old stdout
+    if (lua_isnumber(L, 2)) {
+        serial_debug = lua_tointeger(L, 2);
+        if (serial_debug != 0)
+            serial_debug = 1;
+    } else {
+        serial_debug = 1;  // default to 1
+    }
+
+    return 0;
+}
 
 /* node.stripdebug([level[, function]]). 
  * level:    1 don't discard debug
@@ -323,6 +398,7 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "egc" ),       LROVAL( node_egc_map ) },
   { LSTRKEY( "heap" ),      LFUNCVAL( node_heap )  },
   { LSTRKEY( "input" ),     LFUNCVAL( node_input ) },
+  { LSTRKEY( "output" ),     LFUNCVAL( node_output ) },
   { LSTRKEY( "osprint" ),   LFUNCVAL( node_osprint ) },
   { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
   { LSTRKEY( "stripdebug"), LFUNCVAL( node_stripdebug ) },

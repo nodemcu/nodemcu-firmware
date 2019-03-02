@@ -17,6 +17,8 @@
 
 #include "driver/i2s.h"
 
+#include "common.h"
+
 #define MAX_I2C_NUM 2
 #define I2S_CHECK_ID(id)   if(id >= MAX_I2C_NUM) luaL_error( L, "i2s not exists" )
 
@@ -139,48 +141,29 @@ static int node_i2s_start( lua_State *L )
   i2s_pin_config_t pin_config;
   memset( &pin_config, 0, sizeof( pin_config ) );
 
-  lua_getfield (L, 2, "mode");
-  i2s_config.mode = luaL_optint(L, -1, I2S_MODE_MASTER | I2S_MODE_TX);
+  // temporarily copy option table to top of stack for opt_ functions
+  lua_pushvalue(L, 2);
+  i2s_config.mode = opt_checkint(L, "mode", I2S_MODE_MASTER | I2S_MODE_TX);
+  i2s_config.sample_rate = opt_checkint_range(L, "rate", 44100, 1000, MAX_INT);
   //
-  lua_getfield (L, 2, "rate");
-  i2s_config.sample_rate = luaL_optint(L, -1, 44100);
-  //
-  lua_getfield (L, 2, "bits");
-  is->data_bits_per_sample   = luaL_optint(L, -1, 16);
+  is->data_bits_per_sample   = opt_checkint(L, "bits", 16);
   is->i2s_bits_per_sample    = is->data_bits_per_sample < I2S_BITS_PER_SAMPLE_16BIT ? I2S_BITS_PER_SAMPLE_16BIT : is->data_bits_per_sample;
   i2s_config.bits_per_sample = is->i2s_bits_per_sample;
   //
-  lua_getfield (L, 2, "channel");
-  i2s_config.channel_format = luaL_optint(L, -1, I2S_CHANNEL_FMT_RIGHT_LEFT);
-  //
-  lua_getfield (L, 2, "format");
-  i2s_config.communication_format = luaL_optint(L, -1, I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB);
-  //
-  lua_getfield (L, 2, "buffer_count");
-  i2s_config.dma_buf_count = luaL_optint(L, -1, 2);
-  //
-  lua_getfield (L, 2, "buffer_len");
-  i2s_config.dma_buf_len = luaL_optint(L, -1, i2s_config.sample_rate / 100);
-  //
+  i2s_config.channel_format = opt_checkint(L, "channel", I2S_CHANNEL_FMT_RIGHT_LEFT);
+  i2s_config.communication_format = opt_checkint(L, "format", I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB);
+  i2s_config.dma_buf_count = opt_checkint_range(L, "buffer_count", 2, 2, 128);
+  i2s_config.dma_buf_len = opt_checkint_range(L, "buffer_len", i2s_config.sample_rate / 100, 8, 1024);
   i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
   //
-  lua_getfield (L, 2, "bck_pin");
-  pin_config.bck_io_num = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
+  pin_config.bck_io_num = opt_checkint(L, "bck_pin", I2S_PIN_NO_CHANGE);
+  pin_config.ws_io_num = opt_checkint(L, "ws_pin", I2S_PIN_NO_CHANGE);
+  pin_config.data_out_num  = opt_checkint(L, "data_out_pin", I2S_PIN_NO_CHANGE);
+  pin_config.data_in_num = opt_checkint(L, "data_in_pin", I2S_PIN_NO_CHANGE);
   //
-  lua_getfield (L, 2, "ws_pin");
-  pin_config.ws_io_num = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
+  i2s_dac_mode_t dac_mode = opt_checkint_range(L, "dac_mode", I2S_DAC_CHANNEL_DISABLE, 0, I2S_DAC_CHANNEL_MAX-1);
   //
-  lua_getfield (L, 2, "data_out_pin");
-  pin_config.data_out_num  = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
-  //
-  lua_getfield (L, 2, "data_in_pin");
-  pin_config.data_in_num = luaL_optint(L, -1, I2S_PIN_NO_CHANGE);
-  //
-  lua_getfield(L, 2, "dac_mode");
-  i2s_dac_mode_t dac_mode = luaL_optint(L, -1, I2S_DAC_CHANNEL_DISABLE);
-  //
-  lua_getfield(L, 2, "adc1_channel");
-  adc1_channel_t adc1_channel = luaL_optint(L, -1, ADC1_CHANNEL_MAX);
+  adc1_channel_t adc1_channel = opt_checkint_range(L, "adc1_channel", ADC1_CHANNEL_MAX, ADC1_CHANNEL_0, ADC1_CHANNEL_MAX);
 
   // handle optional callback functions TX and RX
   lua_settop( L, top );
@@ -278,7 +261,7 @@ static int node_i2s_read( lua_State *L )
   int i2s_id = luaL_checkinteger( L, 1 );
   I2S_CHECK_ID( i2s_id );
 
-  size_t bytes = luaL_checkinteger( L, 2 );
+  const size_t bytes = luaL_checkinteger( L, 2 );
   int wait_ms = luaL_optint(L, 3, 0);
   char * data = luaM_malloc( L, bytes );
   size_t read;
@@ -286,7 +269,7 @@ static int node_i2s_read( lua_State *L )
     return luaL_error( L, "I2S driver error" );
 
   lua_pushlstring(L, data, read);
-  luaM_free(L, data);
+  luaM_freemem(L, data, bytes);
 
   return 1;
 }
