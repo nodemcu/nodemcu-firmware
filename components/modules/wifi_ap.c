@@ -180,11 +180,17 @@ static int wifi_ap_sethostname(lua_State *L)
 {
 	
 	size_t l;
+	esp_err_t err;
 	const char *hostname = luaL_checklstring(L, 1, &l);
 	
-	tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, hostname);
+	err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, hostname);
 	
-	return 0;
+	if (err != ESP_OK)
+		return luaL_error (L, "failed to set hostname, code %d", err);
+
+    lua_pushboolean (L, err==ESP_OK);
+	
+	return 1;
 }
 
 static int wifi_ap_config (lua_State *L)

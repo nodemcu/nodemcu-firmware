@@ -378,6 +378,57 @@ wifi.sta.scan({ hidden = 1 }, function(err,arr)
 end)
 ```
 
+## wifi.sta.setip()
+
+Sets IP address, netmask, gateway, dns address in station mode.
+
+Options set by this function are not saved to flash.
+
+#### Syntax
+`wifi.sta.setip(cfg)`
+
+#### Parameters
+- `cfg` table to hold configuration:
+    - `ip` device ip address.
+    - `netmask` network netmask.
+    - `gateway` gateway address.
+    - `dns` name server address.
+
+#### Returns 
+`nil`
+
+#### Example
+```lua
+  cfg={}
+  cfg.ip=192.168.0.10
+  cfg.netmask=255.255.255.0
+  cfg.gateway=192.168.0.1
+  cfg.dns=8.8.8.8
+  wifi.sta.setip(cfg)
+```
+
+## wifi.sta.sethostname
+
+Sets station hostname
+
+Must be called before `wifi.sta.connect()`
+
+Options set by this function are not saved to flash.
+
+#### Syntax
+`wifi.sta.sethostname(hostname)`
+
+#### Returns 
+true if success, false otherwise
+
+#### Parameters
+`hostname` must only contain letters, numbers and hyphens('-') and be 32 characters or less with first and last character being alphanumeric
+
+#### Example
+```lua
+  wifi.sta.sethostname("ESP32")
+```
+
 # wifi.ap Module
 
 ## wifi.ap.config()
@@ -460,3 +511,52 @@ None
 
 #### Returns
 MAC address as string e.g. "18:fe:34:a2:d7:34"
+
+## wifi.ap.setip()
+
+Sets IP address, netmask, gateway, dns address in AccessPoint mode.
+
+Options set by this function are not saved to flash.
+
+#### Syntax
+`wifi.ap.setip(cfg)`
+
+#### Parameters
+- `cfg` table to hold configuration:
+    - `ip` device ip address.
+    - `netmask` network netmask.
+    - `gateway` gateway address.
+    - `dns` name server address, which will be provided to clients over DHCP. (Optional)
+
+#### Returns 
+`nil`
+
+#### Example
+```lua
+  cfg={}
+  cfg.ip=192.168.0.10
+  cfg.netmask=255.255.255.0
+  cfg.gateway=192.168.0.1
+  cfg.dns=8.8.8.8
+  wifi.ap.setip(cfg)
+```
+
+## wifi.ap.sethostname
+
+Sets AccessPoint hostname.
+
+Options set by this function are not saved to flash.
+
+#### Syntax
+`wifi.ap.sethostname(hostname)`
+
+#### Returns 
+true if success, false otherwise
+
+#### Parameters
+`hostname` must only contain letters, numbers and hyphens('-') and be 32 characters or less with first and last character being alphanumeric
+
+#### Example
+```lua
+  wifi.ap.sethostname("ESP32")
+```
