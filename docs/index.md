@@ -21,9 +21,13 @@ srv:listen(80, function(conn)
 end)
 ```
 ```lua
--- connect to WiFi access point
+-- connect to WiFi access point (DO NOT save config to flash)
 wifi.setmode(wifi.STATION)
-wifi.sta.config("SSID", "password")
+station_cfg={}
+station_cfg.ssid = "SSID"
+station_cfg.pwd = "password"
+station_cfg.save = false
+wifi.sta.config(station_cfg)
 ```
 
 ```lua
