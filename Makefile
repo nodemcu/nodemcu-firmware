@@ -48,6 +48,9 @@ export summary := @echo
 MAKEFLAGS += --silent -w
 endif  # $(V)==1
 
+ifndef BAUDRATE
+	BAUDRATE=115200
+endif
 
 #############################################################
 # Select compile
@@ -81,9 +84,6 @@ ifeq ($(OS),Windows_NT)
 		ESPPORT = com1
 	else
 		ESPPORT = $(COMPORT)
-	endif
-	ifndef BAUDRATE
-		BAUDRATE=115200
 	endif
     ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
 # ->AMD64
