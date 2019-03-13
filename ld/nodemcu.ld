@@ -235,10 +235,10 @@ SECTIONS
     _irom0_text_start = ABSOLUTE(.);
     *(.irom0.ptable)
     . = ALIGN(0x1000);
-   *(.servercert.flash)
+    *(.servercert.flash)
     *(.clientcert.flash)
     . = ALIGN(0x1000);
-   *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
+    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal .text .literal.* .text.*)
     *(.rodata*)
     *(.sdk.version)

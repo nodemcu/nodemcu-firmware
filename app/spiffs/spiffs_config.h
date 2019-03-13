@@ -165,7 +165,7 @@
 // Lower value generates more read/writes. No meaning having it bigger
 // than logical page size.
 #ifndef SPIFFS_COPY_BUFFER_STACK
-#define SPIFFS_COPY_BUFFER_STACK        (64)
+#define SPIFFS_COPY_BUFFER_STACK        (256)
 #endif
 
 // Enable this to have an identifiable spiffs filesystem. This will look for

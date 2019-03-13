@@ -16,9 +16,6 @@
  *      (NodeMCU uses the SPIFFS_USE_MAGIC setting to make existing FS discoverable).
  *   -  Subject to the following, no offset or FS search is done.  The FS is assumed
  *      to be at the first valid location at the start of the partition.
- *   -  If a new SPIFFS needs to be formatted:
- *      - A small block size will be used if the PT size is <68K
- *      - The start is block aligned or 1Mb aligned if the partion spans a 1Mb boundary
  */
 #include "spiffs_nucleus.h"
 
@@ -29,6 +26,7 @@ static spiffs fs;
 #define LOG_BLOCK_SIZE_SMALL_FS	(INTERNAL_FLASH_SECTOR_SIZE)
 #define MIN_BLOCKS_FS		4
 #define MASK_1MB (0x100000-1)
+#define ALIGN (0x2000)
 
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
@@ -61,98 +59,64 @@ void myspiffs_check_callback(spiffs_check_type type, spiffs_check_report report,
 }
 
 /*******************
-The W25Q32BV array is organized into 16,384 programmable pages of 256-bytes each. Up to 256 bytes can be programmed at a time. 
-Pages can be erased in groups of 16 (4KB sector erase), groups of 128 (32KB block erase), groups of 256 (64KB block erase) or 
-the entire chip (chip erase). The W25Q32BV has 1,024 erasable sectors and 64 erasable blocks respectively. 
-The small 4KB sectors allow for greater flexibility in applications that require data and parameter storage. 
+ * Note that the W25Q32BV array is organized into 16,384 programmable pages of 256-bytes 
+ * each. Up to 256 bytes can be programmed at a time.  Pages can be erased in groups of 
+ * 16 (4KB sector erase), groups of 128 (32KB block erase), groups of 256 (64KB block 
+ * erase) or the entire chip (chip erase). The W25Q32BV has 1,024 erasable sectors and 
+ * 64 erasable blocks respectively. The small 4KB sectors allow for greater flexibility 
+ * in applications that require data and parameter storage. 
+ *
+ * Returns  TRUE if FS was found.
+ */
+static bool myspiffs_set_cfg(spiffs_config *cfg, bool force_create) {
+  uint32 pt_start, pt_size, pt_end;
 
-********************/
-
-static bool myspiffs_set_location(spiffs_config *cfg, int align, int block_size) {
-  uint32 pt_start, pt_size, pt_next;
   pt_size = platform_flash_get_partition (NODEMCU_SPIFFS0_PARTITION, &pt_start);
-  pt_next = pt_start + pt_size;
-NODE_DBG("myspiffs set location: %x  %x  %x  %x  %x  %x\n", pt_start, pt_size, pt_next, align, block_size);
-
-  if (pt_size < 0x10000 || (pt_start & MASK_1MB) == (pt_next & MASK_1MB)){
-    // Partion doesn't span 1Mb boundary so use normal alignment algo
-    cfg->phys_addr = (pt_start + align - 1) & ~(align - 1);
-  } else {
-    // Large partition spans 1Mb boundary so align start to 1Mb boundary
-    cfg->phys_addr = (pt_start + MASK_1MB) & ~MASK_1MB;
-  }
-  cfg->phys_size = (pt_next & ~(align - 1)) - cfg->phys_addr;
-
-NODE_DBG("myspiffs loc: %x  %x  %x  %x  %x  %x\n", pt_start, pt_size, pt_next, cfg->phys_addr, cfg->phys_size,  block_size);
-  if ((int) cfg->phys_size < 0) {
+  if (pt_size == 0) {
     return FALSE;
   }
-  cfg->log_block_size = block_size;
-
-  return (cfg->phys_size / block_size) >= MIN_BLOCKS_FS;
-}
-
-/*
- * Returns  TRUE if FS was found
- * align must be a power of two
- */
-static bool myspiffs_set_cfg_block(spiffs_config *cfg, int align, int block_size, bool force_create) {
-  cfg->phys_erase_block = INTERNAL_FLASH_SECTOR_SIZE; // according to datasheet
-  cfg->log_page_size = LOG_PAGE_SIZE; // as we said
+  pt_end = pt_start + pt_size;
 
   cfg->hal_read_f = my_spiffs_read;
   cfg->hal_write_f = my_spiffs_write;
   cfg->hal_erase_f = my_spiffs_erase;
-
-  if (!myspiffs_set_location(cfg, align, block_size)) {
+  cfg->phys_erase_block = INTERNAL_FLASH_SECTOR_SIZE;
+  cfg->log_page_size = LOG_PAGE_SIZE;
+  cfg->phys_addr = (pt_start + ALIGN - 1) & ~(ALIGN - 1);
+  cfg->phys_size = (pt_end & ~(ALIGN - 1)) - cfg->phys_addr;
+  
+  if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE_SMALL_FS) {
     return FALSE;
+  } else if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE_SMALL_FS) {
+    cfg->log_block_size = LOG_BLOCK_SIZE_SMALL_FS;
+  } else  {
+    cfg->log_block_size = LOG_BLOCK_SIZE;
   }
 
 #ifdef SPIFFS_USE_MAGIC_LENGTH
-  if (force_create) {
-    return TRUE;
-  }
-  int size = SPIFFS_probe_fs(cfg);
+  if (!force_create) {
+    int size = SPIFFS_probe_fs(cfg);
 
-  if (size > 0 && size < cfg->phys_size) {
-    NODE_DBG("Overriding size:%x\n",size);
-    cfg->phys_size = size;
+    if (size > 0 && size < cfg->phys_size) {
+      NODE_DBG("Overriding size:%x\n",size);
+      cfg->phys_size = size;
+    }
+    if (size <= 0) {
+      return FALSE;
+    }
   }
-  if (size > 0) {
-    return TRUE;
-  }
-  return FALSE;
-#else
-  return TRUE;
 #endif
+
+  NODE_DBG("myspiffs set cfg block: %x  %x  %x  %x  %x  %x\n", pt_start, pt_end,
+           cfg->phys_size, cfg->phys_addr, cfg->phys_size, cfg->log_block_size);
+
+  return TRUE;
 }
 
-static bool myspiffs_set_cfg(spiffs_config *cfg, int align, bool force_create) {
-  if (force_create) {
-    return myspiffs_set_cfg_block(cfg, align, LOG_BLOCK_SIZE         , TRUE) ||
-           myspiffs_set_cfg_block(cfg, align, LOG_BLOCK_SIZE_SMALL_FS, TRUE);
-  }
 
-  return myspiffs_set_cfg_block(cfg, align, LOG_BLOCK_SIZE_SMALL_FS, FALSE) ||
-         myspiffs_set_cfg_block(cfg, align, LOG_BLOCK_SIZE         , FALSE);
-}
-
-static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
-  int i;
-  int align = cfg->phys_size >= 0xB0000 ? 0x10000 : LOG_BLOCK_SIZE;
-  if (!force_create && myspiffs_set_cfg(cfg, align, FALSE)) {
-    return TRUE;
-  }
-  // No existing file system -- set up for a format
-
-  if (cfg->phys_size >= 0xB0000)
-    myspiffs_set_cfg(cfg, align, TRUE);
-  return FALSE;
-}
-
-static bool myspiffs_mount_internal(bool force_mount) {
+static bool myspiffs_mount(bool force_mount) {
   spiffs_config cfg;
-  if (!myspiffs_find_cfg(&cfg, force_mount) && !force_mount) {
+  if (!myspiffs_set_cfg(&cfg, force_mount) && !force_mount) {
     return FALSE;
   }
 
@@ -175,10 +139,6 @@ static bool myspiffs_mount_internal(bool force_mount) {
   return res == SPIFFS_OK;
 }
 
-bool myspiffs_mount() {
-  return myspiffs_mount_internal(FALSE);
-}
-
 void myspiffs_unmount() {
   SPIFFS_unmount(&fs);
 }
@@ -188,7 +148,7 @@ void myspiffs_unmount() {
 int myspiffs_format( void )
 {
   SPIFFS_unmount(&fs);
-  myspiffs_mount_internal(TRUE);
+  myspiffs_mount(TRUE);
   SPIFFS_unmount(&fs);
 
   NODE_DBG("Formatting: size 0x%x, addr 0x%x\n", fs.cfg.phys_size, fs.cfg.phys_addr);
@@ -197,7 +157,7 @@ int myspiffs_format( void )
     return 0;
   }
 
-  return myspiffs_mount();
+  return myspiffs_mount(FALSE);
 }
 
 #if 0
@@ -541,7 +501,7 @@ static sint32_t myspiffs_vfs_fscfg( uint32_t *phys_addr, uint32_t *phys_size ) {
 
 static vfs_vol  *myspiffs_vfs_mount( const char *name, int num ) {
   // volume descriptor not supported, just return TRUE / FALSE
-  return myspiffs_mount() ? (vfs_vol *)1 : NULL;
+  return myspiffs_mount(FALSE) ? (vfs_vol *)1 : NULL;
 }
 
 static sint32_t myspiffs_vfs_format( void ) {

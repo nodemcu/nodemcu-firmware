@@ -3,7 +3,7 @@
 ** See Copyright Notice in lua.h
 */
 
-#if defined(LUA_FLASH_STORE) && !defined(lflash_h)
+#ifndef lflash_h
 #define lflash_h
 
 #include "lobject.h"

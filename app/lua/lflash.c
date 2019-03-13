@@ -154,6 +154,7 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   if (flashSize == 0) {
     return;   // Nothing to do if the size is zero
   }
+  G(L)->LFSsize   = flashSize;
   flashAddr       = cast(char *, platform_flash_phys2mapped(flashAddrPhys));
   flashSector     = platform_flash_get_sector_of_address(flashAddrPhys);
   FlashHeader *fh = cast(FlashHeader *, flashAddr);
@@ -188,7 +189,6 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   G(L)->ROstrt.nuse = fh->nROuse ;
   G(L)->ROstrt.size = fh->nROsize;
   G(L)->ROpvmain    = cast(Proto *,fh->mainProto);
-  G(L)->LFSsize     = flashSize;
 }
 
 //extern void software_reset(void);
@@ -280,7 +280,8 @@ LUAI_FUNC int luaN_index (lua_State *L) {
     if (G(L)->LFSsize) {
       lua_pushinteger(L, (lua_Integer) flashAddr);
       lua_pushinteger(L, flashAddrPhys);
-      return 3;
+      lua_pushinteger(L, G(L)->LFSsize);
+      return 4;
     } else {
       return 1;
     }

@@ -33,7 +33,7 @@ static int db_getstrings (lua_State *L) {
   GCObject *o;
 #ifndef LUA_CROSS_COMPILER
   const char *opt = lua_tolstring (L, 1, &n);
-  if (n==3lfls && c_memcmp(opt, "ROM", 4) == 0) {
+  if (n==3 && c_memcmp(opt, "ROM", 4) == 0) {
     if (G(L)->ROstrt.hash == NULL)
       return 0;
     tb = &G(L)->ROstrt;

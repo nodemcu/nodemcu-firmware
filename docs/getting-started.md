@@ -238,24 +238,25 @@ _Note that this Docker image is not an official NodeMCU offering. It's maintaine
 A local copy of `luac.cross` is only needed if you want to compile the Lua files into an LFS image yourself and you are _not_ using Docker.
 
 ### Windows
-Windows 10 users can install and use the Windows Subsystem for Linux (WSL). Alternatively all Windows users can [install Cygwin](https://www.cygwin.com/install.html) (only Cygwin core + **gcc-core** + **gnu make**). Either way, you will need a copy of the `luac.cross` compiler:
-
--  You can either download this from Terry's fileserver.  The [ELF variant](http://files.ellisons.org.uk/esp8266/luac.cross) is used for all recent Linux and WSL flavours, or the [cygwin binary](http://files.ellisons.org.uk/esp8266/luac.cross.cygwin)) for the Cygwin environment.
--  Or you can compile it yourself by downloading the current NodeMCU sources (this [ZIPfile](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)); edit the `app/includes/user_config.h` file and then `cd` to the `app/lua/luac_cross` and run make to build the compiler in the NodeMCU firmware root directory.  Note that the `luac.cross` make only needs the host toolchain which is installed by default.
-
-### macOS
-
-TBD
-
-1. `$ cd app/lua/luac_cross`
-2. `$ make`
+Windows users can compile a local copy of the `luac.cross` executable for use on a development PC.  To this you need:
+-  To download the current NodeMCU sources (this [dev ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/dev.zip) or [master ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)) and unpack into a local folder, say `C:\nodemcu-firmware`; choose the master / dev versions to match the firmware version that you want to use.  If you want an Integer buld then edit the `app/includes/user_config.h` file to select this. 
+-  Choose a preferred toolchain to build your `luac.cross` executable.  You have a number of options here:
+   -  If you are a Windows 10 user with the Windows Subsystem for Linux (WSL) already installed, then this is a Linux environment so you can follow the [Linux build instructions](#Linux) below.
+   -  A less resource intensive option which works on all Windows OS variants is to use Cygwin or MinGW, which are varaint ports of the [GNU Compiler Collection](https://gcc.gnu.org/) to Windows and which can both compile to native Windows executables.  In the case of Cygwin, [install Cygwin](https://www.cygwin.com/install.html) (selecting the Cygwin core + **gcc-core** + **gnu make** in the install menu). In the case of MinGW you again only need a very basic C build environment so [install the MINGW](http://mingw.org/wiki/InstallationHOWTOforMinGW); you only need the core GCC and mingw32-make.  Both both these create a **Cmd** prompt which paths in the relevant GCC toolchain. Switch to the `app/lua/luac_cross` and run make to build the compiler in the NodeMCU firmware root directory.  You do this by rning `make` in Cygwin and `mingw32-make -f mingw32-Makefile.mak` in MinGW.
+   -  If you can C development experience on the PC and a version of the MS Visual Studio on your PC then you can also simply build the image using the supplied MS project file.
+-  Once you have a built `luac.cross` executable, then you can use this to compile Lua code into an LFS image.  You might wish to move this out of the nodemcu-firmware hierarchy, since this folder hierarchy is no longer required and can be trashed. 
 
 ### Linux
 
-TBD
+-  Ensure that you have a "build essential" GCC toolchain installed.
+-  Download the current NodeMCU sources (this [dev ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/dev.zip) or [master ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)) and unpack into a local folder; choose the master / dev versions to match the firmware version that you want to use.  If you want an Integer buld then edit the `app/includes/user_config.h` file to select this.
+-  Change directory to the `app/lua/luac_cross` sub-folder
+-  Run `make` to build the executable.
+-  Once you have a built `luac.cross` executable, then you can use this to compile Lua code into an LFS image.  You might wish to move this out of the nodemcu-firmware hierarchy, since this folder hierarchy is no longer required and can be trashed.
 
-1. `$ cd app/lua/luac_cross`
-2. `$ make`
+### macOS
+
+As for [Linux](#linux)
 
 [↑ back to matrix](#task-os-selector)
 

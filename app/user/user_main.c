@@ -62,29 +62,35 @@ const partition_item_t partition_init_table[] IROM_PTABLE_ATTR = {
     { SYSTEM_PARTITION_SYSTEM_PARAMETER,         0x0D000,      0x3000},
     { PARTITION(NODEMCU_IROM0TEXT_PARTITION),    0x10000,      0x0000},
     { PARTITION(NODEMCU_LFS0_PARTITION),             0x0, LUA_FLASH_STORE},
-    { PARTITION(NODEMCU_SPIFFS0_PARTITION), SPIFFS_FIXED_LOCATION, SPIFFS_MAX_FILESYSTEM_SIZE},
+    { PARTITION(NODEMCU_SPIFFS0_PARTITION),          0x0, SPIFFS_MAX_FILESYSTEM_SIZE},
     {0,(uint32_t) &_irom0_text_end,0}
 };
 // The following enum must maintain the partition table order
 enum partition {iram0=0, rf_call, phy_data, sys_parm, irom0, lfs, spiffs};
 #define PTABLE_SIZE ((sizeof(partition_init_table)/sizeof(partition_item_t))-1)
-
+#define PT_CHUNK 0x8000
+#define PT_ALIGN(n) ((n + (PT_CHUNK-1)) & (~((PT_CHUNK-1))))
 /*
  * The non-OS SDK prolog has been fundamentally revised in V3.  See SDK EN document
  * Partition Table.md for further discussion. This version of user_main.c is a
  * complete rework aligned to V3, with the redundant pre-V3 features removed.
  *
- * SDK V3 significantly reduced the RAM footprint required by the SDK and introduces
+ * SDK V3 significantly reduces the RAM footprint required by the SDK and introduces
  * the use of a partition table (PT) to control flash allocation. The NodeMCU uses
  * this PT for overall allocation of its flash resources.  A constant copy PT is
- * maintained at the start of IROM0 (flash offset 0x10000) to facilitate it
- * modification either in the firmware binary or in the flash itself. This is Flash
- * PT used during startup to create the live PT in RAM that is used by the SDK.
+ * maintained at the start of IROM0 (flash offset 0x10000) -- see partition_init_table
+ * declaration above -- to facilitate its modification either in the firmware binary
+ * or in the flash itself. This is Flash PT used during startup to create the live PT
+ * in RAM that is used by the SDK.
  *
  * Note that user_pre_init() runs with Icache enabled -- that is the IROM0 partition
  * is already mapped the address space at 0x40210000 and so that most SDK services
  * are available, such as system_get_flash_size_map() which returns the valid flash
  * size (including the 8Mb and 16Mb variants).
+ *
+ * We will be separately releasing a host PC-base python tool to configure the PT,
+ * etc.,  but the following code will initialise the PT to sensible defaults even if
+ * this tool isn't used.
  */
 static int setup_partition_table(partition_item_t *pt, uint32_t *n) {
 
@@ -110,17 +116,26 @@ static int setup_partition_table(partition_item_t *pt, uint32_t *n) {
     }
 
 // Calculate the runtime sized partitions
+// The iram0, rf_call, phy_data, sys_parm partitions are as-is.
     if (pt[irom0].size == 0) {
-        pt[irom0].size    = first_free_flash_addr - pt[irom0].addr;
+        pt[irom0].size = first_free_flash_addr - pt[irom0].addr;
     }
     if (pt[lfs].addr == 0) {
-        pt[lfs].addr      = pt[irom0].addr + pt[irom0].size;
+        pt[lfs].addr = PT_ALIGN(pt[irom0].addr + pt[irom0].size);
+        os_printf("LFS base: %08X\n", pt[lfs].addr);
+    }
+    if (pt[lfs].size == 0) {
+        pt[lfs].size = 0x10000;
+        os_printf("LFS size: %08X\n", pt[lfs].size);
     }
     if (pt[spiffs].addr == 0) {
-        pt[spiffs].addr = pt[lfs].addr        + pt[lfs].size;
+        pt[spiffs].addr = PT_ALIGN(pt[lfs].addr + pt[lfs].size);
+        os_printf("SPIFFS base: %08X\n", pt[spiffs].addr);
     }
-    if (pt[spiffs].size == 0) {
-      pt[sys_parm].size = flash_size          - pt[sys_parm].addr;
+
+    if (pt[spiffs].size == SPIFFS_MAX_FILESYSTEM_SIZE) {
+      pt[spiffs].size = flash_size - pt[spiffs].addr;
+        os_printf("SPIFFS size: %08X\n", pt[spiffs].size);
     }
 
 //  Check that the phys data partition has been initialised and if not then do this

@@ -75,15 +75,22 @@ def load_PT(data, args):
     n, flash_used_end, rewrite = 0, 0, False
     LFSaddr, LFSsize = None, None
 
+    # The partition table format is a set of 3*uint32 fields (type, addr, size), 
+    # with the last slot being an end marker (0,size,0) where size is the size of 
+    # the firmware image.
+
     pt_map = dict()
     for i in range(0,MAX_PT_SIZE,3):
         if pt[i] == 0:
             n = i // 3
             break
+        elif pt[i] in PARTITION_TYPES:
+            pt_map[PARTITION_TYPES[pt[i]]] = i       
+        else:
+            raise FatalError("Unknown partition type: %u" % pt[i]) 
 
     flash_used_end = pt[3*n+1]
-    pt_map = {PARTITION_TYPES[pt[i]]: i for i in range(0, 3*n, 3)}
-
+ 
     if not ('IROM0TEXT' in pt_map and 'LFS0' in pt_map):
         raise FatalError("Partition table must contain IROM0 and LFS segments")
 
