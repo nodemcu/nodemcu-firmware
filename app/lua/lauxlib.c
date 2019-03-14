@@ -726,17 +726,59 @@ typedef struct LoadF {
 } LoadF;
 
 
-static const char *getF (lua_State *L, void *ud, size_t *size) {
-  LoadF *lf = (LoadF *)ud;
-  (void)L;
-  if (lf->extraline) {
-    lf->extraline = 0;
-    *size = 1;
-    return "\n";
-  }
-  if (c_feof(lf->f)) return NULL;
-  *size = c_fread(lf->buff, 1, sizeof(lf->buff), lf->f);
-  return (*size > 0) ? lf->buff : NULL;
+static const char *getF(lua_State *L, void *ud, size_t *size) {
+	LoadF *lf = (LoadF *)ud;
+	(void)L;
+	if (lf->extraline) {
+		lf->extraline = 0;
+		*size = 1;
+		return "\n";
+	}
+	if (c_feof(lf->f)) return NULL;
+	*size = c_fread(lf->buff, 1, sizeof(lf->buff), lf->f);
+	return (*size > 0) ? lf->buff : NULL;
+}
+
+typedef struct LoadR {
+	FILE *f;
+	char buff[LUAL_BUFFERSIZE];
+	int state;
+} LoadR;
+
+
+static const char *getR(lua_State *L, void *ud, size_t *size) {
+	LoadR *lf = (LoadR *)ud;
+	(void)L;
+	if (lf->state == 0)
+	{
+		lf->state++;
+		char* pre = "return [=====[";
+		*size = strlen(pre);
+		return pre;
+	}
+
+	if (lf->state == 1)
+	{
+		if (!c_feof(lf->f))
+		{
+			*size = c_fread(lf->buff, 1, sizeof(lf->buff), lf->f);
+			if (*size > 0)
+			{
+				return lf->buff;
+			}
+		}
+		lf->state++;
+	}
+
+	if (lf->state == 2)
+	{
+		lf->state++;
+		char* post = "]=====]";
+		*size = strlen(post);
+		return post;
+	}
+
+	return NULL;
 }
 
 
@@ -749,45 +791,71 @@ static int errfile (lua_State *L, const char *what, int fnameindex) {
 }
 
 
-LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
-  LoadF lf;
-  int status, readstatus;
-  int c;
-  int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
-  lf.extraline = 0;
-  if (filename == NULL) {
-    lua_pushliteral(L, "=stdin");
-    lf.f = c_stdin;
-  }
-  else {
-    lua_pushfstring(L, "@%s", filename);
-    lf.f = c_fopen(filename, "r");
-    if (lf.f == NULL) return errfile(L, "open", fnameindex);
-  }
-  c = c_getc(lf.f);
-  if (c == '#') {  /* Unix exec. file? */
-    lf.extraline = 1;
-    while ((c = c_getc(lf.f)) != EOF && c != '\n') ;  /* skip first line */
-    if (c == '\n') c = c_getc(lf.f);
-  }
-  if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
-    lf.f = c_freopen(filename, "rb", lf.f);  /* reopen in binary mode */
-    if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
-    /* skip eventual `#!...' */
-   while ((c = c_getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) {}
+LUALIB_API int luaL_loadfile(lua_State *L, const char *filename) {
+	LoadF lf;
+	int status, readstatus;
+	int c;
+	int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
+	lf.extraline = 0;
+	if (filename == NULL) {
+		lua_pushliteral(L, "=stdin");
+		lf.f = c_stdin;
+	}
+	else {
+		lua_pushfstring(L, "@%s", filename);
+		lf.f = c_fopen(filename, "r");
+		if (lf.f == NULL) return errfile(L, "open", fnameindex);
+	}
+	c = c_getc(lf.f);
+	if (c == '#') {  /* Unix exec. file? */
+		lf.extraline = 1;
+		while ((c = c_getc(lf.f)) != EOF && c != '\n');  /* skip first line */
+		if (c == '\n') c = c_getc(lf.f);
+	}
+	if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
+		lf.f = c_freopen(filename, "rb", lf.f);  /* reopen in binary mode */
+		if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
+		/* skip eventual `#!...' */
+		while ((c = c_getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) {}
 
-   lf.extraline = 0;
-  }
-  c_ungetc(c, lf.f);
-  status = lua_load(L, getF, &lf, lua_tostring(L, -1));
-  readstatus = c_ferror(lf.f);
-  if (filename) c_fclose(lf.f);  /* close file (even in case of errors) */
-  if (readstatus) {
-    lua_settop(L, fnameindex);  /* ignore results from `lua_load' */
-    return errfile(L, "read", fnameindex);
-  }
-  lua_remove(L, fnameindex);
-  return status;
+		lf.extraline = 0;
+	}
+	c_ungetc(c, lf.f);
+	status = lua_load(L, getF, &lf, lua_tostring(L, -1));
+	readstatus = c_ferror(lf.f);
+	if (filename) c_fclose(lf.f);  /* close file (even in case of errors) */
+	if (readstatus) {
+		lua_settop(L, fnameindex);  /* ignore results from `lua_load' */
+		return errfile(L, "read", fnameindex);
+	}
+	lua_remove(L, fnameindex);
+	return status;
+}
+
+
+LUALIB_API int luaL_loadressourcefile(lua_State *L, const char *filename) {
+	LoadR lf;
+	int status, readstatus;
+	int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
+	if (filename == NULL) {
+		lua_pushliteral(L, "=stdin");
+		lf.f = c_stdin;
+	}
+	else {
+		lua_pushfstring(L, "@%s", filename);
+		lf.f = c_fopen(filename, "rb");
+		if (lf.f == NULL) return errfile(L, "open", fnameindex);
+	}
+	lf.state = 0;
+	status = lua_load(L, getR, &lf, lua_tostring(L, -1));
+	readstatus = c_ferror(lf.f);
+	if (filename) c_fclose(lf.f);  /* close file (even in case of errors) */
+	if (readstatus) {
+		lua_settop(L, fnameindex);  /* ignore results from `lua_load' */
+		return errfile(L, "read", fnameindex);
+	}
+	lua_remove(L, fnameindex);
+	return status;
 }
 
 #else

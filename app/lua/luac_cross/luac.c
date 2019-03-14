@@ -286,6 +286,7 @@ static int pmain(lua_State* L)
  int argc=s->argc;
  char** argv=s->argv;
  const Proto* f;
+ int resourcecount = 0;
  int i;
  if (!lua_checkstack(L,argc)) fatal("too many input files");
  if (execute)
@@ -303,10 +304,24 @@ static int pmain(lua_State* L)
  }
  for (i=0; i<argc; i++)
  {
-  const char* filename=IS("-") ? NULL : argv[i];
-  if (luaL_loadfile(L,filename)!=0) fatal(lua_tostring(L,-1));
+  const char* filename = IS("-") ? NULL : argv[i];
+
+  if (IS("-r"))
+  {
+	  resourcecount++;
+  }
+  else
+  {
+	  if (resourcecount)
+	  {
+		  if (luaL_loadressourcefile(L, filename) != 0) fatal(lua_tostring(L, -1));
+	  }
+	  else {
+		  if (luaL_loadfile(L, filename) != 0) fatal(lua_tostring(L, -1));
+	  }
+  }
  }
- f=combine(L,argc + (execute ? 1: 0), lookup);
+ f=combine(L,argc - resourcecount + (execute ? 1: 0), lookup);
  if (listing) luaU_print(f,listing>1);
  if (dumping)
  {
