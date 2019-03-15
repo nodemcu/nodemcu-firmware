@@ -278,7 +278,7 @@ function m.decodeFrame(frame)
   -- expecting more raw data without a frame header, i.e. happens if 
   -- the TCP packet is > 1024
   if m.lenExpected > 0 then
-    print("Websocket expecting " .. m.lenExpected .. " more chars of data")
+    -- print("Websocket expecting " .. m.lenExpected .. " more chars of data")
   else 
     -- done with data. do callback 
     m.lenExpected = 0 
