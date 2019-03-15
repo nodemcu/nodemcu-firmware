@@ -129,7 +129,7 @@ function m.connect(wsurl, callbackOnConnected)
         port = 80
         path = "/"
       else
-        print("Could not parse websocket URL?", m.wsUrl)
+        error("Could not parse websocket URL?", m.wsUrl)
       end
       
     end
@@ -259,7 +259,7 @@ function m.decodeFrame(frame)
       data = string.sub(data, 3) -- remove first 2 bytes
       
     elseif plen == 127 then 
-      -- print("Websocket lib does not support longer payloads yet")
+      error("Websocket lib does not support longer payloads yet")
       -- return
       data = string.sub(data, 5) -- remove first 4 bytes
     end
