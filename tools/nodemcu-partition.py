@@ -97,16 +97,26 @@ def load_PT(data, args):
     i = pt_map['IROM0TEXT']
     if pt[i+2] == 0:
         pt[i+2] = (flash_used_end - FLASH_BASE_ADDR) - pt[i+1]
-        rewrite = True
 
     j = pt_map['LFS0']
-    if args.start is not None and pt[j+1] != args.start:
-        pt[j+1] = args.start
+    if args.la is not None: 
+        pt[j+1] = args.la
     elif pt[j+1] == 0:
         pt[j+1] = pt[i+1] + pt[i+2]
 
-    if args.len is not None and pt[j+2] != args.len:
-        pt[j+2] = args.len
+    if args.ls is not None:
+        pt[j+2] = args.ls
+    elif pt[j+2] == 0:
+        pt[j+2] = 0x10000
+
+    k = pt_map['SPIFFS0']
+    if args.sa is not None: 
+        pt[k+1] = args.sa
+    elif pt[k+1] == 0:
+        pt[k+1] = pt[j+1] + pt[j+2]
+
+    if args.ss is not None:
+        pt[k+2] = args.ss
 
     LFSaddr, LFSsize = pt[j+1], pt[j+2]
     print ('\nDump of Partition Table\n')
@@ -114,9 +124,7 @@ def load_PT(data, args):
     for i in range(0,3*n,3):
         print ('%-18s  0x%06x  0x%06x' % (PARTITION_TYPES[pt[i]], pt[i+1], pt[i+2]))
 
-    odata = ''.join([PACK_INT.pack(pt[i]) for i in range(0,3*n)]) + data[3*4*n:]
-
-    return odata, LFSaddr, LFSsize
+    return pt, pt_map, n
 
 def relocate_lfs(data, addr, size):
     """
@@ -157,9 +165,15 @@ def relocate_lfs(data, addr, size):
 def main():
 
     def arg_auto_int(x):
-        return int(x, 0)
+        ux = x.upper()
+        if "MB" in ux:
+            return int(ux[:ux.index("MB")]) * 1024 * 1024
+        elif "KB" in ux:
+            return int(ux[:ux.index("KB")]) * 1024
+        else:
+            return int(ux, 0)
 
-    print('esplfs v%s' % __version__)
+    print('nodemcu-partition V%s' % __version__)
 
     # ---------- process the arguments ---------- #
 
@@ -169,20 +183,35 @@ def main():
     a.add_argument('--port', '-p', help='Serial port device')
     a.add_argument('--baud', '-b',  type=arg_auto_int,
         help='Serial port baud rate used when flashing/reading')
-    a.add_argument('--start', '-s', type=arg_auto_int,
-        help='(Overwrite) Start of LFS partition')
-    a.add_argument('--len', '-l',  type=arg_auto_int,
+    a.add_argument('--lfs-addr', '-la', dest="la", type=arg_auto_int,
+        help='(Overwrite) start address of LFS partition')
+    a.add_argument('--lfs-size', '-ls', dest="ls", type=arg_auto_int,
         help='(Overwrite) length of LFS partition')
-    a.add_argument('filename', help='filename of LFS image', metavar='LFSimg')
+    a.add_argument('--lfs-file', '-lf', dest="lf", help='LFS image file')
+    a.add_argument('--spiffs-addr', '-sa', dest="sa", type=arg_auto_int,
+        help='(Overwrite) start address of SPIFFS partition')
+    a.add_argument('--spiffs-size', '-ss', dest="ss", type=arg_auto_int,
+        help='(Overwrite) length of SPIFFS partition')
+    a.add_argument('--spiffs-file', '-sf', dest="sf", help='SPIFFS image file')
 
     arg = a.parse_args()
+
+    if arg.lf is not None:
+        if not os.path.exists(arg.lf):
+            raise FatalError("LFS image %s does not exist" % arg.lf)
+
+    if arg.sf is not None:
+        if not os.path.exists(arg.sf):
+           raise FatalError("LFS image %s does not exist" % arg.sf)
+
+    pprint(arg)
 
     base = [] if arg.port is None else ['--port',arg.port]
     if arg.baud is not None: base.extend(['--baud',arg.baud])
 
-    # ---------- Use esptool to read the PT, then process ---------- #
+    # ---------- Use esptool to read the PT ---------- #
 
-    tmpdir = tempfile.mkdtemp()
+    tmpdir  = tempfile.mkdtemp()
     pt_file = tmpdir + '/pt.dmp'
     espargs = base+['--after', 'no_reset', 'read_flash', '--no-progress',
                     str(ROM0_Seg), str(FLASH_PAGESIZE), pt_file]
@@ -190,7 +219,12 @@ def main():
 
     with open(pt_file,"rb") as f:
         data = f.read()
-    odata, LFSaddr, LFSsize = load_PT(data, arg)
+
+    pt, pt_map, n = load_PT(data, arg)
+    n = n+1
+
+    odata = ''.join([PACK_INT.pack(pt[i]) for i in range(0,3*n)]) + \
+            "\xFF" * len(data[3*4*n:])
 
     # ---------- If the PT has changed then use esptool to rewrite it ---------- #
 
@@ -203,31 +237,42 @@ def main():
                         str(ROM0_Seg), pt_file]
         esptool.main(espargs)
 
-    # ---------- Read and relocate the LFS image ---------- #
+    if arg.lf is not None:
+        i     = pt_map['LFS0']
+        la,ls = pt[i+1], pt[i+2]
 
-    with gzip.open(arg.filename) as f:
-        lfs = f.read()
+        # ---------- Read and relocate the LFS image ---------- #
+    
+        with gzip.open(arg.lf) as f:
+            lfs = f.read()
+            lfs = relocate_lfs(lfs, la, ls)
 
-    lfs = relocate_lfs(lfs, LFSaddr, LFSsize)
+        # ---------- Write to a temp file and use esptool to write it to flash ---------- #
 
-    # ---------- Write to a temp file and use esptool to write it to flash ---------- #
+        img_file = tmpdir + '/lfs.img'
+        espargs = base + ['write_flash', str(la), img_file]
+        with open(img_file,"wb") as f:
+            f.write(lfs)
+        esptool.main(espargs)
 
-    img_file = tmpdir + '/lfs.img'
-    espargs = base + ['write_flash', str(LFSaddr), img_file]
-    with open(img_file,"wb") as f:
-        f.write(lfs)
-    esptool.main(espargs)
+    if arg.sf is not None:
+        sa = pt[pt_map['SPIFFS0']+1]
+
+        # ---------- Write to a temp file and use esptool to write it to flash ---------- #
+
+        spiffs_file = arg.sf
+        espargs = base + ['', str(sa), spiffs_file]
+        esptool.main(espargs)
 
     # ---------- Clean up temp directory ---------- #
+
+    espargs = base + ['--after', 'hard_reset', 'flash_id']
+    esptool.main(espargs)
 
     shutil.rmtree(tmpdir)
 
 def _main():
-#    try:
         main()
-#    except:
-#        print('\nA fatal error occurred')
-#        sys.exit(2)
 
 if __name__ == '__main__':
     _main()
