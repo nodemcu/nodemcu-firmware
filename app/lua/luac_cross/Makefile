@@ -1,7 +1,7 @@
 #
-# This Make file is called from the core Makefile hierarchy with is a hierarchical
-# make wwhich uses parent callbacks to implement inheritance.  However is luac_cross
-# build stands outside this and uses the host toolchain to implement a separate
+# This Makefile is called from the core Makefile hierarchy which is a hierarchical
+# make which uses parent callbacks to implement inheritance.  However if luac_cross
+# build stands outside this, it uses the host toolchain to implement a separate
 # host build of the luac.cross image.
 #
 .NOTPARALLEL:
@@ -54,7 +54,12 @@ CC := $(WRAPCC) gcc
 
 ECHO := echo
 
-IMAGE  := ../../../luac.cross
+BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
+ifeq ($(BUILD_TYPE),0)
+IMAGE := ../../../luac.cross
+else
+IMAGE := ../../../luac.cross.int
+endif
 
 .PHONY: test clean all
 
@@ -69,6 +74,7 @@ test :
 	@echo SRC: $(SRC)
 	@echo OBJS: $(OBJS)
 	@echo DEPS: $(DEPS)
+	@echo IMAGE: $(IMAGE)
 
 clean :
 	$(RM) -r $(ODIR)
