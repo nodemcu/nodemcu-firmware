@@ -8,12 +8,7 @@
 #include "mqtt_client.h"
 #include <string.h>
 
-#define MQTT_MAX_HOST_LEN           64
-#define MQTT_MAX_CLIENT_LEN         32
-#define MQTT_MAX_USERNAME_LEN       32
-#define MQTT_MAX_PASSWORD_LEN       65
-#define MQTT_MAX_LWT_TOPIC          32
-#define MQTT_MAX_LWT_MSG            128
+#define MQTT_MAX_LWT_TOPIC          64		// overwrite setting in mqtt_config.h (espressifs sdk)
 
 typedef struct {
 	esp_mqtt_client_config_t config;
@@ -246,6 +241,10 @@ static void _disconnected_cb(task_param_t param, task_prio_t prio)
 		lua_pushnil(L);
 		lua_setfield(L, 1, "_connect_nok");
 	}
+	else
+	{
+		lua_pop( L, 1 );
+	}
 
 	// now we check for the standard connect callback registered with 'mqtt:on()'
 	lua_getfield( L, -1, "_on_offline" );
@@ -289,9 +288,6 @@ static void _subscribe_cb(task_param_t param, task_prio_t prio)
 		int res = lua_pcall( L, 1, 0, 0 ); //call the disconnect callback
 		if( res != 0 )
 			NODE_DBG("CB:subscribe: Error when calling one-shot subscribe callback - (%d) %s\n", res, luaL_checkstring( L, -1 ) );
-
-		lua_pushnil(L);
-		lua_setfield(L, 1, "_subscribe_ok");
 	}
 	lua_settop(L, top);
 	event_free(event);
@@ -322,9 +318,6 @@ static void _publish_cb(task_param_t param, task_prio_t prio)
 		int res = lua_pcall( L, 1, 0, 0 ); //call the disconnect callback
 		if( res != 0 )
 			NODE_DBG("CB:publish: Error when calling one-shot publish callback - (%d) %s\n", res, luaL_checkstring( L, -1 ) );
-
-		lua_pushnil(L);
-		lua_setfield(L, 1, "_publish_ok");
 	}
 	lua_settop(L, top);
 	event_free(event);
@@ -353,9 +346,6 @@ static void _unsubscribe_cb(task_param_t param, task_prio_t prio)
 		int res = lua_pcall( L, 1, 0, 0 ); //call the disconnect callback
 		if( res != 0 )
 			NODE_DBG("CB:unsubscribe: Error when calling one-shot unsubscribe callback - (%d) %s\n", res, luaL_checkstring( L, -1 ) );
-
-		lua_pushnil(L);
-		lua_setfield(L, 1, "_unsubscribe_ok");
 	}
 	lua_settop(L, top);
 	event_free(event);
@@ -499,8 +489,8 @@ static int mqtt_connect( lua_State* L )
 	lua_pushlightuserdata( L, client );
 	lua_setfield( L, -2, "_client" ); //and store a reference in the MQTT table
 
-	char id[32];
-	snprintf( id, 32, "mqtt_%p", client);
+	char id[64];
+	snprintf( id, 64, "mqtt_%p", client);
 	NODE_DBG("Store MQTT table in _G stack pos %d\n", lua_gettop(L));
 	lua_pushvalue( L, 1 ); //make a copy of the table
 	lua_setglobal( L, id);
@@ -553,13 +543,15 @@ static int mqtt_lwt( lua_State* L )
 
 	lua_pop( L, n );
 	NODE_DBG("Set LWT topic '%s', qos %d, retain %d, len %d\n",
-			mqtt_cfg->lwt_topic, mqtt_cfg->config.lwt_qos, mqtt_cfg->config.lwt_retain, mqtt_cfg->lwt_msg_len);
+			mqtt_cfg->lwt_topic, mqtt_cfg->config.lwt_qos, mqtt_cfg->config.lwt_retain, mqtt_cfg->config.lwt_msg_len);
 	return 0;
 }
 
 //Lua: mqtt:publish(topic, payload, qos, retain[, function(client)])
 static int mqtt_publish( lua_State * L )
 {
+	NODE_DBG( "MQTT publish:\n" );
+
 	esp_mqtt_client_handle_t client = get_client( L );
 
 	int top = lua_gettop(L);
@@ -569,16 +561,20 @@ static int mqtt_publish( lua_State * L )
 	int qos            = luaL_checkint( L, 4 );
 	int retain         = luaL_checkint( L, 5 );
 
-	int n = 6;
-	if( lua_isfunction( L, n ) )
+	if( lua_isfunction( L, 6 ) )
 	{
-		lua_pushvalue( L, n );
-		lua_setfield(L, 1, "_publish_ok");  // set _G["_cb_connect_nok"] = fn()
-		n++;
+		NODE_DBG("MQTT publish: set _publish_ok to function\n");
+		lua_pushvalue( L, 6 );
 	}
+	else
+	{
+		NODE_DBG("MQTT publish: nil _publish_ok\n");
+		lua_pushnil(L);
+	}
+	lua_setfield(L, 1, "_publish_ok");  // set _G["_cb_connect_nok"] = fn()
 
 	lua_settop(L, top );
-	NODE_DBG("MQTT publish client %p, topic %s, %d bytes\n", client, topic, strlen(data));
+	NODE_DBG("MQTT publish client %p, topic %s, %d bytes, qos %d, retain %d\n", client, topic, strlen(data), qos, retain);
 	esp_mqtt_client_publish(client, topic, data, strlen(data), qos, retain);
 	return 0;
 }
@@ -595,9 +591,15 @@ static int mqtt_subscribe( lua_State* L )
 
 	if( lua_isfunction( L, 4 ) )
 	{
+		NODE_DBG("MQTT subscribe: set _subscribe_ok to function\n");
 		lua_pushvalue( L, 4 );
-		lua_setfield(L, 1, "_subscribe_ok");  // set _G["_cb_connect_nok"] = fn()
 	}
+	else
+	{
+		NODE_DBG("MQTT subscribe: nil _subscribe_ok\n");
+		lua_pushnil(L);
+	}
+	lua_setfield(L, 1, "_subscribe_ok");  // set _G["_cb_connect_nok"] = fn()
 
 	lua_settop(L, top );
 	NODE_DBG("MQTT subscribe client %p, topic %s\n", client, topic);
@@ -613,19 +615,22 @@ static int mqtt_unsubscribe( lua_State* L )
 	int top = lua_gettop(L);
 
 	const char * topic = luaL_checkstring( L, 2 );
-	int n = 3;
-	if( lua_isfunction( L, n ) )
+
+	if( lua_isfunction( L, 3 ) )
 	{
-		lua_pushvalue( L, n );
-		lua_setfield(L, 1, "_unsubscribe_ok");  // set _G["_cb_connect_nok"] = fn()
-		n++;
+		NODE_DBG("MQTT unsubscribe: set _unsubscribe_ok to function\n");
+		lua_pushvalue( L, 3 );
 	}
+	else
+	{
+		NODE_DBG("MQTT unsubscribe: nil _unsubscribe_ok\n");
+		lua_pushnil(L);
+	}
+	lua_setfield(L, 1, "_unsubscribe_ok");  // set _G["_cb_connect_nok"] = fn()
 
 	lua_settop(L, top );
 	NODE_DBG("MQTT unsubscribe client %p, topic %s\n", client, topic);
 	esp_mqtt_client_unsubscribe(client, topic);
-	return 0;
-
 	return 0;
 }
 
