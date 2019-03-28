@@ -125,7 +125,7 @@ extern void __attribute__((noreturn)) luac_fatal(const char* message);
 #endif
 
 /*
- *  Serial allocator.  Throw a luac-style out of memory error is allocaiton fails.
+ *  Serial allocator.  Throw a luac-style out of memory error if allocaiton fails.
  */
 static void *flashAlloc(lua_State* L, size_t n) {
   void *p = (void *)(flashImage + curOffset);

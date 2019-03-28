@@ -64,13 +64,14 @@ static void usage(const char* message)
  else
   fprintf(stderr,"%s: %s\n",progname,message);
  fprintf(stderr,
- "usage: %s [options] [filenames].\n"
+ "usage: %s [options] [filenames].[-r] [resourceFilenames]\n"
  "Available options are:\n"
  "  -        process stdin\n"
- "  -l       list\n"
+ "  -l       list lua commands\n"
  "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
  "  -e name  execute a lua source file\n"
  "  -f       output a flash image file\n"
+ "  -r       add files as resources to LFS image. Access via LFS.getresource(\"filename\")\n"
  "  -a addr  generate an absolute, rather than position independent flash image file\n"
  "  -i       generate lookup combination master (default with option -f)\n"
  "  -m size  maximum LFS image in bytes\n"
@@ -93,7 +94,9 @@ static int doargs(int argc, char* argv[])
  if (argv[0]!=NULL && *argv[0]!=0) progname=argv[0];
  for (i=1; i<argc; i++)
  {
-  if (*argv[i]!='-')			/* end of options; keep it */
+  if (*argv[i] != '-')			/* end of options; keep it */
+   break;
+  else if (IS("-r"))			/* end of options; keep it (only resource files, no code)*/
    break;
   else if (IS("--"))			/* end of options; skip it */
   {
@@ -287,6 +290,7 @@ static int pmain(lua_State* L)
  char** argv=s->argv;
  const Proto* f;
  int resourcecount = 0;
+ int hasresource = 0;
  int i;
  if (!lua_checkstack(L,argc)) fatal("too many input files");
  if (execute)
@@ -308,20 +312,21 @@ static int pmain(lua_State* L)
 
   if (IS("-r"))
   {
-	  resourcecount++;
+   resourcecount = -1;
+   hasresource = 1;
+   break;
   }
-  else
-  {
-	  if (resourcecount)
-	  {
-		  if (luaL_loadressourcefile(L, filename) != 0) fatal(lua_tostring(L, -1));
-	  }
-	  else {
-		  if (luaL_loadfile(L, filename) != 0) fatal(lua_tostring(L, -1));
-	  }
-  }
+
+  if (luaL_loadfile(L, filename) != 0) fatal(lua_tostring(L, -1));
  }
- f=combine(L,argc - resourcecount + (execute ? 1: 0), lookup);
+
+ resourcecount = resourcecount + argc - i;
+ if (hasresource)
+ {
+  if (luaL_loadresourcefiles(L, resourcecount, argv + i + 1) != 0) fatal(lua_tostring(L, -1));
+ }
+
+ f=combine(L,argc - (hasresource ? resourcecount : 0) + (execute ? 1: 0), lookup);
  if (listing) luaU_print(f,listing>1);
  if (dumping)
  {

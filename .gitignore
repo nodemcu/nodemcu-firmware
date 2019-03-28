@@ -3,6 +3,8 @@ sdk/
 cache/
 .ccache/
 local/
+luac.cross
+luac.cross.int
 user_config.h
 server-ca.crt
 luac.cross
@@ -14,3 +16,6 @@ tools/toolchains/
 .cproject
 .project
 .settings/
+
+#ignore VisualStudio files
+.vs/
