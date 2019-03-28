@@ -2,7 +2,7 @@
 
 set -e
 
-echo "Running ci build for windows msbuild"
+echo "Running ci build for windows msbuild (just hosttools)"
 (
   cd "$TRAVIS_BUILD_DIR"/msvc || exit
   export PATH=$MSBUILD_PATH:$PATH
