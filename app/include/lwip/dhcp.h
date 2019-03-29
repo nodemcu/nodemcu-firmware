@@ -53,7 +53,6 @@ struct dhcp
   ip_addr_t offered_ip_addr;
   ip_addr_t offered_sn_mask;
   ip_addr_t offered_gw_addr;
- 
   ip_addr_t offered_ntp_addr;
 
   u32_t offered_t0_lease; /* lease period (in seconds) */
