@@ -753,6 +753,15 @@ typedef struct LoadR {
  int readstatus;
 } LoadR;
 
+static const char* basename(const char* filename)
+{
+ filename++;	// skip the @
+ const char *s = strrchr(filename, '/');
+ if (!s) s = strrchr(filename, '\\');
+ s = s ? s + 1 : filename;
+ while (*s == '.') s++;
+ return s;
+}
 
 static const char *getR(lua_State *L, void *ud, size_t *size) {
  LoadR *lf = (LoadR *)ud;
@@ -766,7 +775,7 @@ static const char *getR(lua_State *L, void *ud, size_t *size) {
   lf->filename = IS(lf->argv[lf->i], "-") ? NULL : lf->argv[lf->i];
 
   if (lf->filename == NULL) {
-   lua_pushliteral(L, "=stdin");
+   lf->filename = "=stdin";
    lf->f = c_stdin;
   }
   else {
@@ -790,7 +799,7 @@ static const char *getR(lua_State *L, void *ud, size_t *size) {
  if (lf->state == 11)
  {
   lf->state++;
-  char* pre = lf->filename;
+  char* pre = basename(lf->filename);
   *size = strlen(pre);
   return pre;
  }
