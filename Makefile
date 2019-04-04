@@ -33,6 +33,25 @@ else
   CCFLAGS += -O2
 endif
 
+#Handling of V=1/VERBOSE=1 flag
+#
+# if V=1, $(summary) does nothing
+# if V is unset or not 1, $(summary) echoes a summary
+VERBOSE ?=
+V ?= $(VERBOSE)
+ifeq ("$(V)","1")
+export summary := @true
+else
+export summary := @echo
+
+# disable echoing of commands, directory names
+MAKEFLAGS += --silent -w
+endif  # $(V)==1
+
+ifndef BAUDRATE
+	BAUDRATE=115200
+endif
+
 #############################################################
 # Select compile
 #
@@ -186,6 +205,7 @@ $$(LIBODIR)/$(1).a: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_$(1)
 	@mkdir -p $$(LIBODIR)
 	$$(if $$(filter %.a,$$?),mkdir -p $$(EXTRACT_DIR)_$(1))
 	$$(if $$(filter %.a,$$?),cd $$(EXTRACT_DIR)_$(1); $$(foreach lib,$$(filter %.a,$$?),$$(AR) xo $$(UP_EXTRACT_DIR)/$$(lib);))
+	$(summary) AR $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
 	$$(AR) ru $$@ $$(filter %.o,$$?) $$(if $$(filter %.a,$$?),$$(EXTRACT_DIR)_$(1)/*.o)
 	$$(if $$(filter %.a,$$?),$$(RM) -r $$(EXTRACT_DIR)_$(1))
 endef
@@ -195,12 +215,15 @@ DEP_LIBS_$(1) = $$(foreach lib,$$(filter %.a,$$(COMPONENTS_$(1))),$$(dir $$(lib)
 DEP_OBJS_$(1) = $$(foreach obj,$$(filter %.o,$$(COMPONENTS_$(1))),$$(dir $$(obj))$$(OBJODIR)/$$(notdir $$(obj)))
 $$(IMAGEODIR)/$(1).out: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_$(1))
 	@mkdir -p $$(IMAGEODIR)
+	$(summary) LD $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$$@
 	$$(CC) $$(LDFLAGS) $$(if $$(LINKFLAGS_$(1)),$$(LINKFLAGS_$(1)),$$(LINKFLAGS_DEFAULT) $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1))) -o $$@
 endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
+	$(summary) NM $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$@
 	@$(NM) $< | grep -w U && { echo "Firmware has undefined (but unused) symbols!"; exit 1; } || true
+	$(summary) ESPTOOL $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$< $(FIRMWAREDIR)
 	$(ESPTOOL) elf2image --flash_mode dio --flash_freq 40m $< -o $(FIRMWAREDIR)
 
 #############################################################
@@ -226,38 +249,45 @@ toolchain: $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/
 
 $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
+	$(summary) EXTRACT $(patsubst $(TOP_DIR)/%,%,$<)
 	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/
 	touch $@
 
 $(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz:
 	mkdir -p $(TOP_DIR)/cache
+	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
 	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
 endif
 
 $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
+	$(summary) UNZIP $(patsubst $(TOP_DIR)/%,%,$<)
 	(cd "$(dir $@)" && rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-$(SDK_BASE_VER) && unzip $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip ESP8266_NONOS_SDK-$(SDK_BASE_VER)/lib/* ESP8266_NONOS_SDK-$(SDK_BASE_VER)/ld/eagle.rom.addr.v6.ld ESP8266_NONOS_SDK-$(SDK_BASE_VER)/include/* ESP8266_NONOS_SDK-$(SDK_BASE_VER)/bin/esp_init_data_default_v05.bin)
 	mv $(dir $@)/ESP8266_NONOS_SDK-$(SDK_BASE_VER) $(dir $@)/esp_iot_sdk_v$(SDK_BASE_VER)
 	touch $@
 
 $(TOP_DIR)/sdk/.patched-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_PATCH_VER).patch
 	mv $(dir $@)/esp_iot_sdk_v$(SDK_BASE_VER) $(dir $@)/esp_iot_sdk_v$(SDK_VER)
+	$(summary) APPLY $(patsubst $(TOP_DIR)/%,%,$<)
 	git apply --verbose -p1 --exclude='*VERSION' --exclude='*bin/at*' --directory=$(SDK_REL_DIR) $<
 	touch $@
 
 $(TOP_DIR)/sdk/.pruned-$(SDK_VER):
 	rm -f $(SDK_DIR)/lib/liblwip.a $(SDK_DIR)/lib/libssl.a $(SDK_DIR)/lib/libmbedtls.a
+	$(summary) PRUNE libmain.a libc.a
 	$(AR) d $(SDK_DIR)/lib/libmain.a time.o
 	$(AR) d $(SDK_DIR)/lib/libc.a lib_a-time.o
 	touch $@
 
 $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
+	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
 	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/espressif/ESP8266_NONOS_SDK/archive/v$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 $(TOP_DIR)/cache/$(SDK_PATCH_VER).patch:
 	mkdir -p "$(dir $@)"
+	$(summary) WGET $(SDK_PATCH_VER).patch
 	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused "https://github.com/espressif/ESP8266_NONOS_SDK/compare/v$(SDK_BASE_VER)...$(SDK_PATCH_VER).patch" -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_PATCH_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
@@ -272,8 +302,9 @@ clobber: $(SPECIAL_CLOBBER)
 
 flash:
 	@echo "use one of the following targets to flash the firmware"
-	@echo "  make flash512k - for ESP with 512kB flash size"
-	@echo "  make flash4m   - for ESP with   4MB flash size"
+	@echo "  make flash512k     - for ESP with 512kB flash size"
+	@echo "  make flash1m-dout  - for ESP with   1MB flash size and flash mode = dout (Sonoff, ESP8285)"
+	@echo "  make flash4m       - for ESP with   4MB flash size"
 
 flash512k:
 	$(MAKE) -e FLASHOPTIONS="-fm qio -fs  4m -ff 40m" flashinternal
@@ -281,11 +312,15 @@ flash512k:
 flash4m:
 	$(MAKE) -e FLASHOPTIONS="-fm dio -fs 32m -ff 40m" flashinternal
 
+flash1m-dout:
+	$(MAKE) -e FLASHOPTIONS="-fm dout -fs 8m -ff 40m" flashinternal
+
+
 flashinternal:
 ifndef PDIR
 	$(MAKE) -C ./app flashinternal
 else
-	$(ESPTOOL) --port $(ESPPORT) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) --port $(ESPPORT) --baud $(BAUDRATE) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
 
 .subdirs:
@@ -318,6 +353,7 @@ ifneq ($(wildcard $(TOP_DIR)/server-ca.crt),)
 pre_build: $(TOP_DIR)/app/modules/server-ca.crt.h
 
 $(TOP_DIR)/app/modules/server-ca.crt.h: $(TOP_DIR)/server-ca.crt
+	$(summary) MKCERT $(patsubst $(TOP_DIR)/%,%,$<)
 	python $(TOP_DIR)/tools/make_server_cert.py $(TOP_DIR)/server-ca.crt > $(TOP_DIR)/app/modules/server-ca.crt.h
 
 DEFINES += -DHAVE_SSL_SERVER_CRT=\"server-ca.crt.h\"
@@ -326,14 +362,14 @@ pre_build:
 	@-rm -f $(TOP_DIR)/app/modules/server-ca.crt.h
 endif
 
-
 $(OBJODIR)/%.o: %.c
 	@mkdir -p $(dir $@);
+	$(summary) CC $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
 	$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
 
 $(OBJODIR)/%.d: %.c
 	@mkdir -p $(dir $@);
-	@echo DEPEND: $(CC) -M $(CFLAGS) $<
+	$(summary) DEPEND: CC $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
 	@set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
@@ -341,17 +377,19 @@ $(OBJODIR)/%.d: %.c
 
 $(OBJODIR)/%.o: %.cpp
 	@mkdir -p $(OBJODIR);
+	$(summary) CXX $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
 	$(CXX) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
 
 $(OBJODIR)/%.d: %.cpp
 	@mkdir -p $(OBJODIR);
-	@echo DEPEND: $(CXX) -M $(CFLAGS) $<
+	$(summary) DEPEND: CXX $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
 	@set -e; rm -f $@; \
 	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 $(OBJODIR)/%.o: %.s
 	@mkdir -p $(dir $@);
+	$(summary) CC $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(OBJODIR)/%.d: %.s
@@ -363,6 +401,7 @@ $(OBJODIR)/%.d: %.s
 
 $(OBJODIR)/%.o: %.S
 	@mkdir -p $(dir $@);
+	$(summary) CC $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
 	$(CC) $(CFLAGS) -D__ASSEMBLER__ -o $@ -c $<
 
 $(OBJODIR)/%.d: %.S

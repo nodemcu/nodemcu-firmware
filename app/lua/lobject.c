@@ -70,7 +70,7 @@ int luaO_log2 (unsigned int x) {
 #else
  /* Use Normalization Shift Amount Unsigned:  0x1=>31 up to 0xffffffff =>0
   * See Xtensa Instruction Set Architecture (ISA) Refman  P 462 */
-  asm volatile ("nsau %0, %1;" :"=r"(x) : "r"(x)); 
+  asm volatile ("nsau %0, %1;" :"=r"(x) : "r"(x));
   return 31 - x;
 #endif
 }
@@ -103,11 +103,11 @@ int luaO_str2d (const char *s, lua_Number *result) {
   *result = lua_str2number(s, &endptr);
   if (endptr == s) return 0;  /* conversion failed */
   if (*endptr == 'x' || *endptr == 'X')  /* maybe an hexadecimal constant? */
-#if defined(LUA_CROSS_COMPILER) 
+#if defined(LUA_CROSS_COMPILER)
     {
     long lres = strtoul(s, &endptr, 16);
 #if INT_MAX != 2147483647L
-    if (lres & ~0xffffffffL) 
+    if (lres & ~0xffffffffL)
       *result = cast_num(-1);
     else if (lres & 0x80000000L)
       *result = cast_num(lres | ~0x7fffffffL);

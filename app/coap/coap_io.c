@@ -64,7 +64,7 @@ coap_tid_t coap_send_confirmed(struct espconn *pesp_conn, coap_pdu_t *pdu) {
    */
   coap_timer_stop();
   coap_timer_update(&gQueue);
-  node->t = node->timeout;  
+  node->t = node->timeout;
   coap_insert_node(&gQueue, node);
   coap_timer_start(&gQueue);
   return node->id;

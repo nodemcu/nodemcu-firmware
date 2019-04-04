@@ -65,7 +65,7 @@ static void enable_pin_mux(int pin) {
 
 /* Lua: ws2801.init(pin_clk, pin_data)
  * Sets up the GPIO pins
- * 
+ *
  * ws2801.init(0, 2) uses GPIO0 as clock and GPIO2 as data.
  * This is the default behavior.
  */

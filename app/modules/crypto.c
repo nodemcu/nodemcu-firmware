@@ -46,12 +46,12 @@ static int crypto_sha1( lua_State* L )
 
 #ifdef LUA_USE_MODULES_ENCODER
 static int call_encoder( lua_State* L, const char *function ) {
-  if (lua_gettop(L) != 1) { 
+  if (lua_gettop(L) != 1) {
     luaL_error(L, "%s must have one argument", function);
   }
   lua_getfield(L, LUA_GLOBALSINDEX, "encoder");
   if (!lua_istable(L, -1) && !lua_isrotable(L, -1)) { // also need table just in case encoder has been overloaded
-    luaL_error(L, "Cannot find encoder.%s", function); 
+    luaL_error(L, "Cannot find encoder.%s", function);
   }
   lua_getfield(L, -1, function);
   lua_insert(L, 1);    //move function below the argument
@@ -60,11 +60,11 @@ static int call_encoder( lua_State* L, const char *function ) {
   return 1;
 }
 
-static int crypto_base64_encode (lua_State* L) { 
-  return call_encoder(L, "toBase64"); 
+static int crypto_base64_encode (lua_State* L) {
+  return call_encoder(L, "toBase64");
 }
-static int crypto_hex_encode (lua_State* L) { 
-  return call_encoder(L, "toHex"); 
+static int crypto_hex_encode (lua_State* L) {
+  return call_encoder(L, "toHex");
 }
 #else
 static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

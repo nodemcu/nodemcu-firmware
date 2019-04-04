@@ -338,16 +338,7 @@ static int tls_socket_unhold( lua_State *L ) {
 
   return 0;
 }
-static int tls_socket_dns( lua_State *L ) {
-  tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
 
-  return 0;
-}
 static int tls_socket_getpeer( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
   luaL_argcheck(L, ud, 1, "TLS socket expected");
@@ -495,7 +486,7 @@ static const char *append_pem_blob(const char *pem, const char *type, uint8_t **
   return NULL;
 }
 
-static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_memory, int flash_offset, const char **types, const char **names) 
+static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_memory, int flash_offset, const char **types, const char **names)
 {
   uint8_t  *buffer = luaM_malloc(L, INTERNAL_FLASH_SECTOR_SIZE);
   uint8_t  *buffer_base = buffer;
@@ -629,7 +620,6 @@ static const LUA_REG_TYPE tls_socket_map[] = {
   { LSTRKEY( "send" ),    LFUNCVAL( tls_socket_send ) },
   { LSTRKEY( "hold" ),    LFUNCVAL( tls_socket_hold ) },
   { LSTRKEY( "unhold" ),  LFUNCVAL( tls_socket_unhold ) },
-  { LSTRKEY( "dns" ),     LFUNCVAL( tls_socket_dns ) },
   { LSTRKEY( "getpeer" ), LFUNCVAL( tls_socket_getpeer ) },
   { LSTRKEY( "__gc" ),    LFUNCVAL( tls_socket_delete ) },
   { LSTRKEY( "__index" ), LROVAL( tls_socket_map ) },
@@ -655,7 +645,6 @@ static const LUA_REG_TYPE tls_map[] = {
 
 int luaopen_tls( lua_State *L ) {
   luaL_rometatable(L, "tls.socket", (void *)tls_socket_map);  // create metatable for net.server
-  espconn_secure_set_size(ESPCONN_CLIENT, 4096);
   return 0;
 }
 

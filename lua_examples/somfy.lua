@@ -70,7 +70,7 @@ function writeconfig()
 
 --print("Config: "..sjson.encode(config))
 --print("Config saved: "..sjson.encode(config))
- 
+
     local count = 0
     for _ in pairs(config_saved) do count = count + 1 end
     if count == 0 then
@@ -137,9 +137,9 @@ if #config == 0 then -- somfy.cfg does not exist
     config = sjson.decode([[{"window1":{"rc":1,"address":123},"window2":{"rc":1,"address":124}}]])
     config_saved = deepcopy(config)
 end
-down('window1', 
-    wait, {60000, 
-    up, {'window1', 
-    wait, {9000, 
+down('window1',
+    wait, {60000,
+    up, {'window1',
+    wait, {9000,
     downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1'
 }}}}}}}}}})

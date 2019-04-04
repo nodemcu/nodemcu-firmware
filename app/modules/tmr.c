@@ -16,7 +16,7 @@ tmr.delay() -- not changed
 tmr.alarm() -- not changed
 tmr.stop()  -- changed, see below. use tmr.unregister for old functionality
 
-tmr.register(id, interval, mode, function)
+tmr.register(ref, interval, mode, function)
 	bind function with timer and set the interval in ms
 	the mode can be:
 		tmr.ALARM_SINGLE for a single run alarm
@@ -24,20 +24,20 @@ tmr.register(id, interval, mode, function)
 		tmr.ALARM_AUTO for a repating alarm
 	tmr.register does NOT start the timer
 	tmr.alarm is a tmr.register & tmr.start macro
-tmr.unregister(id)
+tmr.unregister(ref)
 	stop alarm, unbind function and clean up memory
 	not needed for ALARM_SINGLE, as it unregisters itself
-tmr.start(id)
+tmr.start(ref)
 	ret: bool
 	start a alarm, returns true on success
-tmr.stop(id)
+tmr.stop(ref)
 	ret: bool
 	stops a alarm, returns true on success
 	this call dose not free any memory, to do so use tmr.unregister
 	stopped alarms can be started with start
-tmr.interval(id, interval)
+tmr.interval(ref, interval)
 	set alarm interval, running alarm will be restarted
-tmr.state(id)
+tmr.state(ref)
 	ret: (bool, int) or nil
 	returns alarm status (true=started/false=stopped) and mode
 	nil if timer is unregistered
@@ -73,7 +73,8 @@ static const char* MAX_TIMEOUT_ERR_STR = "Range: 1-"STRINGIFY(MAX_TIMEOUT_DEF);
 
 typedef struct{
 	os_timer_t os;
-	sint32_t lua_ref, self_ref;
+	sint32_t lua_ref;	/* Reference to the callback function */
+	sint32_t self_ref;	/* Reference to this structure as userdata */
 	uint32_t interval;
 	uint8_t mode;
 }timer_struct_t;
@@ -93,7 +94,6 @@ static uint32_t last_rtc_time=0;
 static uint64_t last_rtc_time_us=0;
 
 static sint32_t soft_watchdog  = -1;
-static timer_struct_t alarm_timers[NUM_TMR];
 static os_timer_t rtc_timer;
 
 static void alarm_timer_common(void* arg){
@@ -102,12 +102,7 @@ static void alarm_timer_common(void* arg){
 	if(tmr->lua_ref == LUA_NOREF)
 		return;
 	lua_rawgeti(L, LUA_REGISTRYINDEX, tmr->lua_ref);
-	if (tmr->self_ref == LUA_REFNIL) {
-		uint32_t id = tmr - alarm_timers;
-		lua_pushinteger(L, id);
-	} else {
-		lua_rawgeti(L, LUA_REGISTRYINDEX, tmr->self_ref);
-	}
+	lua_rawgeti(L, LUA_REGISTRYINDEX, tmr->self_ref);
 	//if the timer was set to single run we clean up after it
 	if(tmr->mode == TIMER_MODE_SINGLE){
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
@@ -137,30 +132,24 @@ static int tmr_delay( lua_State* L ){
 		os_delay_us(us);
 		system_soft_wdt_feed ();
 	}
-	return 0; 
+	return 0;
 }
 
 // Lua: tmr.now() , return system timer in us
 static int tmr_now(lua_State* L){
 	uint32_t now = 0x7FFFFFFF & system_get_time();
 	lua_pushinteger(L, now);
-	return 1; 
+	return 1;
 }
 
 static timer_t tmr_get( lua_State *L, int stack ) {
-	// Deprecated: static 0-6 timers control by index.
-	luaL_argcheck(L, (lua_isuserdata(L, stack) || lua_isnumber(L, stack)), 1, "timer object or numerical ID expected");
-	if (lua_isuserdata(L, stack)) {
-		return (timer_t)luaL_checkudata(L, stack, "tmr.timer");
-	} else {
-		uint32_t id = luaL_checkinteger(L, 1);
-		luaL_argcheck(L, platform_tmr_exists(id), 1, "invalid timer index");
-		return &alarm_timers[id];
-	}
-	return 0;
+	timer_t t = (timer_t)luaL_checkudata(L, stack, "tmr.timer");
+	if (t == NULL)
+		return (timer_t)luaL_error(L, "timer object expected");
+	return t;
 }
 
-// Lua: tmr.register( id / ref, interval, mode, function )
+// Lua: tmr.register( ref, interval, mode, function )
 static int tmr_register(lua_State* L){
 	timer_t tmr = tmr_get(L, 1);
 
@@ -182,7 +171,7 @@ static int tmr_register(lua_State* L){
 	tmr->mode = mode|TIMER_IDLE_FLAG;
 	tmr->interval = interval;
 	os_timer_setfn(&tmr->os, alarm_timer_common, tmr);
-	return 0;  
+	return 0;
 }
 
 // Lua: tmr.start( id / ref )
@@ -228,7 +217,7 @@ static int tmr_stop(lua_State* L){
 	}else{
 		lua_pushboolean(L, 0);
 	}
-	return 1;  
+	return 1;
 }
 
 #ifdef TIMER_SUSPEND_ENABLE
@@ -267,7 +256,7 @@ static int tmr_unregister(lua_State* L){
 	if(tmr->lua_ref != LUA_NOREF)
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->lua_ref);
 	tmr->lua_ref = LUA_NOREF;
-	tmr->mode = TIMER_MODE_OFF; 
+	tmr->mode = TIMER_MODE_OFF;
 	return 0;
 }
 
@@ -277,7 +266,7 @@ static int tmr_interval(lua_State* L){
 
 	uint32_t interval = luaL_checkinteger(L, 2);
 	luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
-	if(tmr->mode != TIMER_MODE_OFF){	
+	if(tmr->mode != TIMER_MODE_OFF){
 		tmr->interval = interval;
 		if(!(tmr->mode&TIMER_IDLE_FLAG)){
 			os_timer_disarm(&tmr->os);
@@ -309,7 +298,7 @@ why they are here*/
 static int tmr_wdclr( lua_State* L ){
 	system_soft_wdt_feed ();
 	// update_key_led();
-	return 0;  
+	return 0;
 }
 
 //system_rtc_clock_cali_proc() returns
@@ -355,13 +344,13 @@ void rtc_callback(void *arg){
 static int tmr_time( lua_State* L ){
 	uint64_t us=rtc_timer_update(false);
 	lua_pushinteger(L, us/1000000);
-	return 1; 
+	return 1;
 }
 
 // Lua: tmr.softwd( value )
 static int tmr_softwd( lua_State* L ){
 	soft_watchdog = luaL_checkinteger(L, 1);
-	return 0; 
+	return 0;
 }
 
 // Lua: tmr.create()
@@ -389,8 +378,8 @@ static const LUA_REG_TYPE tmr_dyn_map[] = {
 	{ LSTRKEY( "state" ),       LFUNCVAL( tmr_state ) },
 	{ LSTRKEY( "interval" ),    LFUNCVAL( tmr_interval) },
 #ifdef TIMER_SUSPEND_ENABLE
-	{ LSTRKEY( "suspend" ),      LFUNCVAL( tmr_suspend ) },
-  { LSTRKEY( "resume" ),       LFUNCVAL( tmr_resume ) },
+	{ LSTRKEY( "suspend" ),     LFUNCVAL( tmr_suspend ) },
+	{ LSTRKEY( "resume" ),      LFUNCVAL( tmr_resume ) },
 #endif
 	{ LSTRKEY( "__gc" ),        LFUNCVAL( tmr_unregister ) },
 	{ LSTRKEY( "__index" ),     LROVAL( tmr_dyn_map ) },
@@ -403,19 +392,10 @@ static const LUA_REG_TYPE tmr_map[] = {
 	{ LSTRKEY( "wdclr" ),        LFUNCVAL( tmr_wdclr ) },
 	{ LSTRKEY( "softwd" ),       LFUNCVAL( tmr_softwd ) },
 	{ LSTRKEY( "time" ),         LFUNCVAL( tmr_time ) },
-	{ LSTRKEY( "register" ),     LFUNCVAL( tmr_register ) },
-	{ LSTRKEY( "alarm" ),        LFUNCVAL( tmr_alarm ) },
-	{ LSTRKEY( "start" ),        LFUNCVAL( tmr_start ) },
-  { LSTRKEY( "stop" ),         LFUNCVAL( tmr_stop ) },
 #ifdef TIMER_SUSPEND_ENABLE
-  { LSTRKEY( "suspend" ),      LFUNCVAL( tmr_suspend ) },
-  { LSTRKEY( "suspend_all" ),  LFUNCVAL( tmr_suspend_all ) },
-  { LSTRKEY( "resume" ),       LFUNCVAL( tmr_resume ) },
-  { LSTRKEY( "resume_all" ),   LFUNCVAL( tmr_resume_all ) },
+	{ LSTRKEY( "suspend_all" ),  LFUNCVAL( tmr_suspend_all ) },
+	{ LSTRKEY( "resume_all" ),   LFUNCVAL( tmr_resume_all ) },
 #endif
-	{ LSTRKEY( "unregister" ),   LFUNCVAL( tmr_unregister ) },
-	{ LSTRKEY( "state" ),        LFUNCVAL( tmr_state ) },
-	{ LSTRKEY( "interval" ),     LFUNCVAL( tmr_interval ) },
 	{ LSTRKEY( "create" ),       LFUNCVAL( tmr_create ) },
 	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
 	{ LSTRKEY( "ALARM_SEMI" ),   LNUMVAL( TIMER_MODE_SEMI ) },
@@ -425,16 +405,8 @@ static const LUA_REG_TYPE tmr_map[] = {
 
 #include "pm/swtimer.h"
 int luaopen_tmr( lua_State *L ){
-	int i;	
-
 	luaL_rometatable(L, "tmr.timer", (void *)tmr_dyn_map);
 
-	for(i=0; i<NUM_TMR; i++){
-		alarm_timers[i].lua_ref = LUA_NOREF;
-		alarm_timers[i].self_ref = LUA_REFNIL;
-		alarm_timers[i].mode = TIMER_MODE_OFF;
-		os_timer_disarm(&alarm_timers[i].os);
-	}
 	last_rtc_time=system_get_rtc_time(); // Right now is time 0
 	last_rtc_time_us=0;
 

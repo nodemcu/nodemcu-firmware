@@ -1,10 +1,10 @@
 /************************************************************************
  * NodeMCU unzip wrapper code for uzlib_inflate
  *
- * Note that whilst it would be more straightforward to implement a 
+ * Note that whilst it would be more straightforward to implement a
  * simple in memory approach, this utility adopts the same streaming
  * callback architecture as app/lua/lflash.c to enable this code to be
- * tested in a pure host development environment   
+ * tested in a pure host development environment
  */
 #include <string.h>
 #include <stdio.h>
@@ -22,7 +22,7 @@
 typedef uint8_t  uchar;
 typedef uint16_t ushort;
 typedef uint32_t uint;
-  
+
 struct INPUT {
   FILE    *fin;
   int      len;
@@ -49,12 +49,12 @@ struct OUTPUT {
 
 
 /*
- * uzlib_inflate does a stream inflate on an RFC 1951 encoded data stream. 
+ * uzlib_inflate does a stream inflate on an RFC 1951 encoded data stream.
  * It uses three application-specific CBs passed in the call to do the work:
  *
  * -  get_byte()     CB to return next byte in input stream
  * -  put_byte()     CB to output byte to output buffer
- * -  recall_byte()  CB to output byte to retrieve a historic byte from 
+ * -  recall_byte()  CB to output byte to retrieve a historic byte from
  *                   the output buffer.
  *
  *  Note that put_byte() also triggers secondary CBs to do further processing.
@@ -65,13 +65,13 @@ uint8_t get_byte (void) {
     /* Read next input block */
     int remaining = in->len - in->bytesRead;
     int wanted    = remaining >= READ_BLOCKSIZE ? READ_BLOCKSIZE : remaining;
- 
+
     if (fread(in->block, 1, wanted, in->fin) != wanted)
       UZLIB_THROW(UZLIB_DATA_ERROR);
-     
+
     in->bytesRead += wanted;
     in->inPtr      = in->block;
-    in->left       = wanted-1;  
+    in->left       = wanted-1;
   }
   return *in->inPtr++;
 }
@@ -79,10 +79,10 @@ uint8_t get_byte (void) {
 
 void put_byte (uint8_t value) {
   int offset = out->ndx % WRITE_BLOCKSIZE;  /* counts from 0 */
- 
+
   out->block[0]->byte[offset++] = value;
   out->ndx++;
-  
+
   if (offset == WRITE_BLOCKSIZE || out->ndx == out->len) {
     if (out->fullBlkCB)
       out->fullBlkCB();
@@ -97,7 +97,7 @@ void put_byte (uint8_t value) {
 uint8_t recall_byte (uint offset) {
   if(offset > DICTIONARY_WINDOW || offset >= out->ndx)
     UZLIB_THROW(UZLIB_DICT_ERROR);
-  /* ndx starts at 1. Need relative to 0 */ 
+  /* ndx starts at 1. Need relative to 0 */
   uint n   = out->ndx - offset;
   uint pos = n % WRITE_BLOCKSIZE;
   uint blockNo = out->ndx / WRITE_BLOCKSIZE - n  / WRITE_BLOCKSIZE;
@@ -110,7 +110,7 @@ int processOutRec (void) {
                                            WRITE_BLOCKSIZE;
   if (fwrite(out->block[0], 1, len, out->fout) != len)
     UZLIB_THROW(UZLIB_DATA_ERROR);
-  
+
   out->crc = uzlib_crc32(out->block[0], len, out->crc);
 
   out->written += len;
@@ -118,7 +118,7 @@ int processOutRec (void) {
     fclose(out->fout);
     out->fullBlkCB = NULL;
   }
-  return 1; 
+  return 1;
 }
 
 
@@ -143,24 +143,24 @@ int main(int argc, char *argv[]) {
   assert(fread((uchar*)&(out->len), 1, 4, in->fin) == 4);
   in->len = ftell(in->fin);
   fseek(in->fin, 0, SEEK_SET);
-  
+
   assert((out->fout = fopen(outFile, "wb")) != NULL);
 
   printf ("Inflating in=%s out=%s\n", inFile, outFile);
 
   /* Allocate the out buffers (number depends on the unpacked length) */
-  n = (out->len > DICTIONARY_WINDOW) ? WRITE_BLOCKS : 
+  n = (out->len > DICTIONARY_WINDOW) ? WRITE_BLOCKS :
                                       1 + (out->len-1) / WRITE_BLOCKSIZE;
   for(i = WRITE_BLOCKS - n + 1;  i <= WRITE_BLOCKS; i++)
     assert((out->block[i % WRITE_BLOCKS] = uz_malloc(sizeof(outBlock))) != NULL);
-  
+
   out->breakNdx  = (out->len < WRITE_BLOCKSIZE) ? out->len : WRITE_BLOCKSIZE;
   out->fullBlkCB = processOutRec;
   out->crc       = ~0;
-  
+
   /* Call inflate to do the business */
   res = uzlib_inflate (get_byte, put_byte, recall_byte, in->len, &crc, &cxt_not_used);
-  
+
   if (res > 0 && crc != ~out->crc)
     res = UZLIB_CHKSUM_ERROR;
 

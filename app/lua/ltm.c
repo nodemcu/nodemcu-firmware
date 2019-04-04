@@ -54,17 +54,17 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename) {
   lua_assert(event <= TM_EQ);
 
   if (luaR_isrotable(events)) {
-    tm =  luaH_getstr_ro(events, ename); 
+    tm =  luaH_getstr_ro(events, ename);
     if (ttisnil(tm)) {  /* no tag method? */
       return NULL;
     }
   } else {
-    tm = luaH_getstr(events, ename); 
+    tm = luaH_getstr(events, ename);
     if (ttisnil(tm)) {  /* no tag method? */
       events->flags |= cast_byte(1u<<event);  /* cache this fact */
       return NULL;
     }
-  } 
+  }
   return tm;
 }
 

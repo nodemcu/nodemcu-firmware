@@ -264,7 +264,7 @@ mdns_compare_name(unsigned char *query, unsigned char *response, unsigned char *
 	return 0;
 }
 
-static int 
+static int
 mdns_namelen(u8_t *p, unsigned int maxlen) {
   u8_t *orig = p;
 
@@ -654,7 +654,7 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 		*query++ = '\0';
 
 		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer + sizeof_mdns_service
-		
+
 		*query++ = 0xc0 + (hostname_offset >> 8);
 		*query++ = hostname_offset & 0xff;
 
@@ -667,9 +667,9 @@ mdns_send_service(struct nodemcu_mdns_info *info, u16_t id, struct ip_addr *dst_
 
 		/* resize the query */
 		query = query + SIZEOF_DNS_ANSWER;
-		
-		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer 
-		
+
+		// increment by strlen(service_name) + 1 + 7 + sizeof_dns_answer
+
 
 		/* fill the payload of the mDNS message */
 		/* set the local IP address */
@@ -770,7 +770,7 @@ static char *append_nsec_record(char *query, u32_t actual_rr, int max_ttl) {
  * but the name exists
  */
 
-static void 
+static void
 mdns_send_no_rr(struct mdns_hdr *req, const char *name, u32_t actual_rr, struct ip_addr *dst_addr, u16_t dst_port) {
   int max_ttl = dst_addr ? 10 : 7200;
   struct pbuf *p;
@@ -786,7 +786,7 @@ mdns_send_no_rr(struct mdns_hdr *req, const char *name, u32_t actual_rr, struct 
     hdr->numextrarr = htons(1);
     char *query = (char*) hdr + SIZEOF_DNS_HDR;
     char *query_end = (char *) p->payload + p->tot_len;
-    // Now copy over the dns name 
+    // Now copy over the dns name
     int len = strlen(name);
 
     if (query_end - query >= len + SIZEOF_DNS_QUERY + 15) {
@@ -806,7 +806,7 @@ mdns_send_no_rr(struct mdns_hdr *req, const char *name, u32_t actual_rr, struct 
  * This sends a single A record and the NSEC record as additional
  */
 
-static void 
+static void
 mdns_send_a_rr(struct mdns_hdr *req, const char *name, struct ip_addr *dst_addr, u16_t dst_port) {
   int max_ttl = dst_addr ? 10 : 7200;
   struct pbuf *p;
@@ -823,7 +823,7 @@ mdns_send_a_rr(struct mdns_hdr *req, const char *name, struct ip_addr *dst_addr,
     hdr->numextrarr = htons(1);
     char *query = (char*) hdr + SIZEOF_DNS_HDR;
     char *query_end = (char *) p->payload + p->tot_len;
-    // Now copy over the dns name 
+    // Now copy over the dns name
     int len = strlen(name) + 1;
 
     if (query_end - query >= len + SIZEOF_DNS_QUERY + 4 + 2 + 4 + 15) {
@@ -1060,7 +1060,7 @@ mdns_dup_info(const struct nodemcu_mdns_info *info) {
 /**
  * Initialize the resolver: set up the UDP pcb and configure the default server
  * (NEW IP).
- * 
+ *
  * returns TRUE if it worked, FALSE if it failed.
  */
 bool ICACHE_FLASH_ATTR

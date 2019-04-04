@@ -5,7 +5,7 @@ typedef signed int ptrdiff_t;
 
 #if !defined(offsetof)
 #define offsetof(s, m)   (size_t)&(((s *)0)->m)
-#endif 
+#endif
 
 #if !defined(__size_t)
   #define __size_t 1

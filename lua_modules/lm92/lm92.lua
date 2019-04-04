@@ -3,7 +3,7 @@
 --
 -- Written by Levente Tamas <levente.tamas@navicron.com>
 --
--- modify by Garberoglio Leonardo <leogarberoglio@gmail.com> 
+-- modify by Garberoglio Leonardo <leogarberoglio@gmail.com>
 --
 -- GNU LGPL, see https://www.gnu.org/copyleft/lesser.html
 -- ******************************************************
@@ -38,7 +38,7 @@ local function read_reg(reg_addr, len)
 	end
 	i2c.stop(id)
 	return ret
-end 
+end
 
 --write reg with data table
 local function write_reg(reg_addr, data)
@@ -47,7 +47,7 @@ local function write_reg(reg_addr, data)
 	i2c.write(id, reg_addr)
 	i2c.write(id, data)
 	i2c.stop(id)
-end 
+end
 
 --write comparison reg with 2 bytes
 local function write_comp_reg(reg_addr, msb, lsb)
@@ -55,9 +55,9 @@ local function write_comp_reg(reg_addr, msb, lsb)
     i2c.address(id, address, i2c.TRANSMITTER)
     i2c.write(id, reg_addr)
     i2c.write(id, msb)
-    i2c.write(id, lsb)  
+    i2c.write(id, lsb)
     i2c.stop(id)
-end 
+end
 -- initialize i2c
 -- a: i2c addr 0x48|A1<<1|A0 (A0-A1: chip pins)
 function M.setup(a)
@@ -70,7 +70,7 @@ function M.setup(a)
 			print("device not found")
 			return nil
 		end
-  else 
+  else
      print("wrong i2c address") return nil
   end
 end

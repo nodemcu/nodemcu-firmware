@@ -72,7 +72,7 @@ static void usage(const char* message)
  "  -e name  execute a lua source file\n"
  "  -f       output a flash image file\n"
  "  -a addr  generate an absolute, rather than position independent flash image file\n"
- "  -i       generate lookup combination master (default with option -f)\n" 
+ "  -i       generate lookup combination master (default with option -f)\n"
  "  -m size  maximum LFS image in bytes\n"
  "  -p       parse only\n"
  "  -s       strip debug information\n"
@@ -106,7 +106,7 @@ static int doargs(int argc, char* argv[])
   else if (IS("-e"))			/* execute a lua source file file */
   {
    execute=argv[++i];
-   if (execute ==NULL || *execute==0 || *execute=='-' ) 
+   if (execute ==NULL || *execute==0 || *execute=='-' )
      usage(LUA_QL("-e") " needs argument");
   }
   else if (IS("-f"))			/* Flash image file */
@@ -140,7 +140,7 @@ static int doargs(int argc, char* argv[])
   }
 
   else if (IS("-p"))			/* parse only */
-   dumping=0;   
+   dumping=0;
   else if (IS("-s"))			/* strip debug information */
    stripping=1;
   else if (IS("-v"))			/* show version */
@@ -164,22 +164,23 @@ static int doargs(int argc, char* argv[])
 
 #define toproto(L,i) (clvalue(L->top+(i))->l.p)
 
-static TString *corename(lua_State *L, const TString *filename) 
+static TString *corename(lua_State *L, const TString *filename)
 {
  const char *fn = getstr(filename)+1;
  const char *s = strrchr(fn, '/');
+ if (!s) s = strrchr(fn, '\\');
  s = s ? s + 1 : fn;
  while (*s == '.') s++;
  const char *e = strchr(s, '.');
  int l = e ? e - s: strlen(s);
  return l ? luaS_newlstr (L, s, l) : luaS_new(L, fn);
-} 
+}
 /*
- * If the luac command line includes multiple files or has the -f option 
+ * If the luac command line includes multiple files or has the -f option
  * then luac generates a main function to reference all sub-main prototypes.
  * This is one of two types:
  *   Type 0   The standard luac combination main
- *   Type 1   A lookup wrapper that facilitates indexing into the generated protos 
+ *   Type 1   A lookup wrapper that facilitates indexing into the generated protos
  */
 static const Proto* combine(lua_State* L, int n, int type)
 {
@@ -194,14 +195,14 @@ static const Proto* combine(lua_State* L, int n, int type)
   f->source=luaS_newliteral(L,"=(" PROGNAME ")");
   f->p=luaM_newvector(L,n,Proto*);
   f->sizep=n;
-  for (i=0; i<n; i++) 
+  for (i=0; i<n; i++)
     f->p[i]=toproto(L,i-n-1);
   pc=0;
 
   if (type == 0) {
   /*
-   * Type 0 is as per the standard luac, which is just a main routine which 
-   * invokes all of the compiled functions sequentially.  This is fine if 
+   * Type 0 is as per the standard luac, which is just a main routine which
+   * invokes all of the compiled functions sequentially.  This is fine if
    * they are self registering modules, but useless otherwise.
    */
    f->numparams    = 0;
@@ -218,7 +219,7 @@ static const Proto* combine(lua_State* L, int n, int type)
    *pc++ = CREATE_ABC(OP_RETURN,0,1,0);
   } else {
   /*
-   * The Type 1 main() is a lookup which takes a single argument, the name to  
+   * The Type 1 main() is a lookup which takes a single argument, the name to
    * be resolved. If this matches root name of one of the compiled files then
    * a closure to this file main is returned.  Otherwise the Unixtime of the
    * compile and the list of root names is returned.
@@ -235,11 +236,11 @@ static const Proto* combine(lua_State* L, int n, int type)
    f->sizelocvars  = 0;
    f->code         = luaM_newvector(L, f->sizecode , Instruction);
    f->k            = luaM_newvector(L,f->sizek,TValue);
-   for (i=0, pc = f->code; i<n; i++)  
+   for (i=0, pc = f->code; i<n; i++)
    {
     /* if arg1 == FnameA then return function (...) -- funcA -- end end */
     setsvalue2n(L,f->k+i,corename(L, f->p[i]->source));
-    *pc++ = CREATE_ABC(OP_EQ,0,0,RKASK(i)); 
+    *pc++ = CREATE_ABC(OP_EQ,0,0,RKASK(i));
     *pc++ = CREATE_ABx(OP_JMP,0,MAXARG_sBx+2);
     *pc++ = CREATE_ABx(OP_CLOSURE,1,i);
     *pc++ = CREATE_ABC(OP_RETURN,1,2,0);
@@ -248,10 +249,10 @@ static const Proto* combine(lua_State* L, int n, int type)
    setnvalue(f->k+n, (lua_Number) time(NULL));
 
    *pc++ = CREATE_ABx(OP_LOADK,1,n);
-   *pc++ = CREATE_ABC(OP_NEWTABLE,2,luaO_int2fb(i),0);   
-   for (i=0; i<n; i++) 
+   *pc++ = CREATE_ABC(OP_NEWTABLE,2,luaO_int2fb(i),0);
+   for (i=0; i<n; i++)
      *pc++ = CREATE_ABx(OP_LOADK,i+3,i);
-   *pc++ = CREATE_ABC(OP_SETLIST,2,i,1);   
+   *pc++ = CREATE_ABC(OP_SETLIST,2,i,1);
    *pc++ = CREATE_ABC(OP_RETURN,1,3,0);
    *pc++ = CREATE_ABC(OP_RETURN,0,1,0);
   }
@@ -272,8 +273,11 @@ struct Smain {
  char** argv;
 };
 
-extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w, 
-                              void* data, int strip, 
+#if defined(_MSC_VER) || defined(__MINGW32__)
+typedef unsigned int uint;
+#endif
+extern uint dumpToFlashImage (lua_State* L,const Proto *main, lua_Writer w,
+                              void* data, int strip,
                               lu_int32 address, lu_int32 maxSize);
 
 static int pmain(lua_State* L)
@@ -290,7 +294,7 @@ static int pmain(lua_State* L)
   luaL_openlibs(L);
   lua_pushstring(L, execute);
   if (lua_pcall(L, 1, 1, 0)) fatal(lua_tostring(L,-1));
-  if (!lua_isfunction(L, -1)) 
+  if (!lua_isfunction(L, -1))
   {
    lua_pop(L,1);
    if(argc == 0) return 0;
@@ -310,13 +314,13 @@ static int pmain(lua_State* L)
   FILE* D= (output==NULL) ? stdout : fopen(output,"wb");
   if (D==NULL) cannot("open");
   lua_lock(L);
-  if (flash) 
+  if (flash)
   {
     result=dumpToFlashImage(L,f,writer, D, stripping, address, maxSize);
   } else
   {
     result=luaU_dump_crosscompile(L,f,writer,D,stripping,target);
-  }  
+  }
   lua_unlock(L);
   if (result==LUA_ERR_CC_INTOVERFLOW) fatal("value too big or small for target integer type");
   if (result==LUA_ERR_CC_NOTINTEGER) fatal("target lua_Number is integral but fractional value found");
@@ -330,7 +334,7 @@ int main(int argc, char* argv[])
 {
  lua_State* L;
  struct Smain s;
- 
+
  int test=1;
  target.little_endian=*(char*)&test;
  target.sizeof_int=sizeof(int);

@@ -1,0 +1,237 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="app">
+      <UniqueIdentifier>{4d57c826-be1b-40a4-afb4-e4bd4a62ef06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\lua">
+      <UniqueIdentifier>{4a6a3fe9-6e73-4ac0-a7c8-eb7cff0094cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\uzlib">
+      <UniqueIdentifier>{df9c7976-ea6e-497b-aa10-c94220b331ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\lua\luac_cross">
+      <UniqueIdentifier>{016730a9-1aa4-4f7b-a5cf-3e566e37f2b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\include">
+      <UniqueIdentifier>{439d70e8-0091-42d2-919f-7e710de3867c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\app\uzlib\crc32.c">
+      <Filter>app\uzlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\uzlib\uzlib_deflate.c">
+      <Filter>app\uzlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\luac_cross\lflashimg.c">
+      <Filter>app\lua\luac_cross</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\luac_cross\liolib.c">
+      <Filter>app\lua\luac_cross</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\luac_cross\loslib.c">
+      <Filter>app\lua\luac_cross</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\luac_cross\luac.c">
+      <Filter>app\lua\luac_cross</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\luac_cross\print.c">
+      <Filter>app\lua\luac_cross</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lapi.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lauxlib.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lbaselib.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lcode.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\ldblib.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\ldebug.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\ldo.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\ldump.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lfunc.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lgc.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\linit.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\llex.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lmathlib.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lmem.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\loadlib.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lobject.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lopcodes.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lparser.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lrotable.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lstate.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lstring.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lstrlib.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\ltable.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\ltablib.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\ltm.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lundump.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lvm.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\lua\lzio.c">
+      <Filter>app\lua</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\app\uzlib\uzlib.h">
+      <Filter>app\uzlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lapi.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lauxlib.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lcode.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\ldebug.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\ldo.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lfunc.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lgc.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\llex.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\llimits.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lmem.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lobject.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lopcodes.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lparser.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lrodefs.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lrotable.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lstate.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lstring.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\ltable.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\ltm.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\luac_cross.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\luaconf.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lundump.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lvm.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lzio.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lua.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lualib.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\lflash.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\lua\legc.h">
+      <Filter>app\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\include\module.h">
+      <Filter>app\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\include\user_config.h">
+      <Filter>app\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\include\user_modules.h">
+      <Filter>app\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

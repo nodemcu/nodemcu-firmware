@@ -8,7 +8,14 @@
 
 #include "lua.h"
 #include C_HEADER_CTYPE
+#ifdef __MINGW__
+#include <errno.h>
+#else
+#ifdef _MSC_VER	//msvc #defines errno, which interferes with our #include macro
+#undef errno
+#endif
 #include C_HEADER_ERRNO
+#endif
 #include C_HEADER_STDIO
 #include C_HEADER_STDLIB
 #include C_HEADER_STRING
@@ -44,7 +51,7 @@
 #define LUA_USELIGHTFUNCTIONS     1
 
 //#define DEBUG_ALLOCATOR
-#ifdef DEBUG_ALLOCATOR 
+#ifdef DEBUG_ALLOCATOR
 #ifdef LUA_CROSS_COMPILER
 static void break_hook(void) {}
 #define ASSERT(s) if (!(s)) {break_hook();}
@@ -86,7 +93,7 @@ typedef struct Memcontrol {  /* memory-allocator control variables */
 static Memcontrol mc = {NULL,0,0,0,32768*64};
 static size_t marker[2] = {0,0};
 
-static void scanBlocks (void) {  
+static void scanBlocks (void) {
   MemHeader *p = mc.start;
   int i;
   char s,e;
@@ -99,7 +106,7 @@ static void scanBlocks (void) {
   }
 }
 
-static int checkBlocks (void) {  
+static int checkBlocks (void) {
   MemHeader *p = mc.start;
   while(p) {
     if (memcmp(p->mark, marker, MARKSIZE)  ||
@@ -157,7 +164,7 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
     size_t commonsize = (oldsize < size) ? oldsize : size;
     size_t realsize = sizeof(MemHeader) + size + MARKSIZE;
     newblock = cast(MemHeader *, c_malloc(realsize));  /* alloc a new block */
-    if (newblock == NULL) 
+    if (newblock == NULL)
       return NULL;  /* really out of memory? */
     if (block) {
       memcpy(newblock + 1, block + 1, commonsize);  /* copy old contents */
@@ -167,7 +174,7 @@ void *debug_realloc (void *b, size_t oldsize, size_t size) {
     if (size > commonsize)
       fillmem(cast(char *, newblock + 1) + commonsize, size - commonsize);
     /* initialize marks after block */
-    memset(newblock->mark, MARK, MARKSIZE); 
+    memset(newblock->mark, MARK, MARKSIZE);
     newblock->size = size;
     newblock->next = mc.start;
     mc.start = newblock;
@@ -315,7 +322,7 @@ LUALIB_API void luaL_checkanyfunction (lua_State *L, int narg) {
   if (lua_type(L, narg) != LUA_TFUNCTION && lua_type(L, narg) != LUA_TLIGHTFUNCTION) {
     const char *msg = lua_pushfstring(L, "function or lightfunction expected, got %s",
                                       luaL_typename(L, narg));
-    luaL_argerror(L, narg, msg);    
+    luaL_argerror(L, narg, msg);
   }
 }
 
@@ -323,7 +330,7 @@ LUALIB_API void luaL_checkanytable (lua_State *L, int narg) {
   if (lua_type(L, narg) != LUA_TTABLE && lua_type(L, narg) != LUA_TROTABLE) {
     const char *msg = lua_pushfstring(L, "table or rotable expected, got %s",
                                       luaL_typename(L, narg));
-    luaL_argerror(L, narg, msg);    
+    luaL_argerror(L, narg, msg);
   }
 }
 
@@ -412,11 +419,11 @@ LUALIB_API void (luaL_register) (lua_State *L, const char *libname,
 
 LUALIB_API void (luaL_register_light) (lua_State *L, const char *libname,
                                 const luaL_Reg *l) {
-#if LUA_OPTIMIZE_MEMORY > 0                              
+#if LUA_OPTIMIZE_MEMORY > 0
   luaI_openlib(L, libname, l, 0, LUA_USELIGHTFUNCTIONS);
 #else
   luaI_openlib(L, libname, l, 0, LUA_USECCLOSURES);
-#endif  
+#endif
 }
 
 static int libsize (const luaL_Reg *l) {
@@ -922,7 +929,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   void *nptr;
 
   if (nsize == 0) {
-#ifdef DEBUG_ALLOCATOR 
+#ifdef DEBUG_ALLOCATOR
     return (void *)this_realloc(ptr, osize, nsize);
 #else
     c_free(ptr);
@@ -952,7 +959,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
 }
 
 LUALIB_API void luaL_assertfail(const char *file, int line, const char *message) {
-  dbg_printf("ASSERT@%s(%d): %s\n", file, line, message); 
+  dbg_printf("ASSERT@%s(%d): %s\n", file, line, message);
 #if defined(LUA_CROSS_COMPILER)
   exit(1);
 #endif
@@ -962,11 +969,11 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 /*
  *  This is a simple stub used by lua_assert() if DEVELOPMENT_USE_GDB is defined.
  *  Instead of crashing out with an assert error, this hook starts the GDB remote
- *  stub if not already running and then issues a break.  The rationale here is 
+ *  stub if not already running and then issues a break.  The rationale here is
  *  that when testing the developer might be using screen/PuTTY to work interactively
- *  with the Lua Interpreter via UART0.  However if an assert triggers, then there 
- * is the option to exit the interactive session and start the Xtensa remote GDB 
- * which will then sync up with the remote GDB client to allow forensics of the error. 
+ *  with the Lua Interpreter via UART0.  However if an assert triggers, then there
+ * is the option to exit the interactive session and start the Xtensa remote GDB
+ * which will then sync up with the remote GDB client to allow forensics of the error.
  */
 extern void gdbstub_init(void);
 

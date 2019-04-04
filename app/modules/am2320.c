@@ -115,7 +115,7 @@ static int am2320_read(lua_State* L)
 	uint16_t rh;
 	uint16_t temp;
     } nfo;
- 
+
     ret = _read(am2320_i2c_id, &nfo, sizeof(nfo)-2, 0x00);
     if(ret)
         return luaL_error(L, "transmission error");

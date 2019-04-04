@@ -6,7 +6,7 @@ FSSOURCE ?= ../local/fs
 LUASOURCE ?= ../local/lua
 FLASHSIZE ?= 4mb 32mb 8mb
 FLASH_SW = -S
-SUBDIRS = 
+SUBDIRS =
 
 OBJDUMP = $(or $(shell which objdump),xtensa-lx106-elf-objdump)
 
@@ -25,14 +25,14 @@ FLASH_FS_SIZE := $(shell $(CC) -E -dM - <../app/include/user_config.h | grep SPI
 ifneq ($(strip $(FLASH_FS_SIZE)),)
 FLASHSIZE = $(shell printf "0x%x" $(FLASH_FS_SIZE))
 FLASH_SW = -c
-endif 
+endif
 
 FLASH_FS_LOC := $(shell $(CC) -E -dM - <../app/include/user_config.h | grep SPIFFS_FIXED_LOCATION| cut -d ' ' -f 3)
 ifeq ($(strip $(FLASH_FS_LOC)),)
 FLASH_FS_LOC := $(shell printf "0x%x" $$((0x$(shell $(OBJDUMP) -t ../app/.output/eagle/debug/image/eagle.app.v6.out |grep " _flash_used_end" |cut -f1 -d" ") - 0x40200000)))
-else 
+else
 FLASH_FS_LOC := $(shell printf "0x%x" $(FLASH_FS_LOC))
-endif 
+endif
 
 LFSSOURCES := $(wildcard $(LUASOURCE)/*.lua)
 
@@ -58,7 +58,7 @@ TEST:
 	@echo $(FLASH_FS_LOC)
 	@echo $(FLASH_USED_END)
 
-spiffsimg/spiffsimg: 
+spiffsimg/spiffsimg:
 
 .PHONY: spiffsimg
 
@@ -67,8 +67,8 @@ spiffsimg/spiffsimg:
 spiffsimg: spiffsimg/spiffsimg
 	@echo Built spiffsimg in spiffsimg/spiffsimg
 
-spiffsimg/spiffsimg: 
-	@$(MAKE) -C spiffsimg 
+spiffsimg/spiffsimg:
+	@$(MAKE) -C spiffsimg
 
 spiffsscript: remove-image LFSimage spiffsimg/spiffsimg
 	rm -f ./spiffsimg/spiffs.lst
@@ -81,7 +81,7 @@ ifneq ($(LFSSOURCES),)
 LFSimage: $(LFSSOURCES)
 	$(LUAC_CROSS) -f -o $(FSSOURCE)/LFS.img $(LFSSOURCES)
 else
-LFSimage: 
+LFSimage:
 	rm -f $(FSSOURCE)/LFS.img
 endif
 

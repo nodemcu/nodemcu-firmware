@@ -22,8 +22,16 @@
 #define MQTT_MAX_CLIENT_LEN   64
 #define MQTT_MAX_USER_LEN     64
 #define MQTT_MAX_PASS_LEN     64
-#define MQTT_SEND_TIMEOUT			5
-#define MQTT_CONNECT_TIMEOUT  5
+#define MQTT_SEND_TIMEOUT     5
+
+  /*
+   * This timeout needs to be long enough for a typical TCP connect()
+   * *and* the TLS handshake, if any.  Most network stacks seem to wait
+   * tens of seconds for connect(), and TLS can take a good deal of time
+   * and several round trips.  Because this matters only rarely, it may
+   * as well be set pretty high.
+   */
+#define MQTT_CONNECT_TIMEOUT  60
 
 typedef enum {
   MQTT_INIT,
@@ -1328,10 +1336,8 @@ static int mqtt_socket_connect( lua_State* L )
 
   if ( (stack<=top) && lua_isnumber(L, stack) )
   {
+    platform_print_deprecation_note("autoreconnect is deprecated", "in the next version");
     auto_reconnect = lua_tointeger(L, stack);
-    if ( auto_reconnect == RECONNECT_POSSIBLE ) {
-      platform_print_deprecation_note("autoreconnect == 1 is deprecated", "in the next version");
-    }
     stack++;
     if ( auto_reconnect != RECONNECT_OFF && auto_reconnect != RECONNECT_POSSIBLE ){
       auto_reconnect = RECONNECT_OFF; // default to 0

@@ -301,6 +301,22 @@ static int spi_transaction( lua_State *L )
   return 0;
 }
 
+// Lua: old_div = spi.set_clock_div( id, new_div )
+static int spi_set_clock_div( lua_State *L )
+{
+  int id = luaL_checkinteger( L, 1 );
+
+  MOD_CHECK_ID( spi, id );
+
+  u32 clk_div = luaL_checkinteger( L, 2 );
+
+  u32 old_div = spi_set_clkdiv(id, clk_div);
+
+  lua_pushinteger( L, old_div );
+
+  return 1;
+}
+
 
 // Module function map
 static const LUA_REG_TYPE spi_map[] = {
@@ -310,6 +326,7 @@ static const LUA_REG_TYPE spi_map[] = {
   { LSTRKEY( "set_mosi" ),    LFUNCVAL( spi_set_mosi ) },
   { LSTRKEY( "get_miso" ),    LFUNCVAL( spi_get_miso ) },
   { LSTRKEY( "transaction" ), LFUNCVAL( spi_transaction ) },
+  { LSTRKEY( "set_clock_div" ), LFUNCVAL( spi_set_clock_div ) },
   { LSTRKEY( "MASTER" ),      LNUMVAL( PLATFORM_SPI_MASTER ) },
   { LSTRKEY( "SLAVE" ),       LNUMVAL( PLATFORM_SPI_SLAVE) },
   { LSTRKEY( "CPHA_LOW" ),    LNUMVAL( PLATFORM_SPI_CPHA_LOW) },

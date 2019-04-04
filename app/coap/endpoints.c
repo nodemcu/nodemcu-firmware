@@ -141,7 +141,7 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
                                     NODE_DBG("\n");
                                     lua_settop(L, n);
                                     return coap_make_response(scratch, outpkt, ret, len, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
-                                } 
+                                }
                             } else {
                                 lua_settop(L, n);
                                 return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
@@ -157,7 +157,7 @@ static int handle_post_function(const coap_endpoint_t *ep, coap_rw_buffer_t *scr
             goto end;
         }
     }
-    NODE_DBG("none match.\n");    
+    NODE_DBG("none match.\n");
 end:
     return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
 }
@@ -226,7 +226,7 @@ void build_well_known_rsp(char *rsp, uint16_t rsplen)
                 c_strncat(rsp, ",", len);
                 len--;
             }
-        
+
             c_strncat(rsp, "<", len);
             len--;
 
@@ -250,7 +250,7 @@ void build_well_known_rsp(char *rsp, uint16_t rsplen)
                     c_strncat(rsp, ",", len);
                     len--;
                 }
-            
+
                 c_strncat(rsp, "<", len);
                 len--;
 
@@ -272,7 +272,7 @@ void build_well_known_rsp(char *rsp, uint16_t rsplen)
                 len -= 2;
 
                 c_strncat(rsp, ep->core_attr, len);
-                len -= c_strlen(ep->core_attr);  
+                len -= c_strlen(ep->core_attr);
 
                 h = h->next;
             }

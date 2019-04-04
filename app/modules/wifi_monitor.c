@@ -304,7 +304,7 @@ static void wifi_rx_cb(uint8 *buf, uint16 len) {
   }
 }
 
-static void monitor_task(os_param_t param, uint8_t prio) 
+static void monitor_task(os_param_t param, uint8_t prio)
 {
   packet_t *input = (packet_t *) param;
   (void) prio;
@@ -377,7 +377,7 @@ static void push_hex_string(lua_State *L, const uint8 *buf, int len, char *sep) 
     hex[2] = 0;
     luaL_addstring(&b, hex);
   }
-  
+
   luaL_pushresult(&b);
 }
 
@@ -418,7 +418,7 @@ static int comparator(const void *typekey, const void *obj) {
 
 static bool push_field_value_string(lua_State *L, const uint8 *pkt,
     const uint8 *packet_end, const char *field) {
-  const struct RxControl *rxc = (struct RxControl *) pkt; 
+  const struct RxControl *rxc = (struct RxControl *) pkt;
   const management_request_t *mgt = (management_request_t *) (rxc + 1);
 
   typekey_t tk;
@@ -526,7 +526,7 @@ static bool push_field_value_string(lua_State *L, const uint8 *pkt,
   return false;
 }
 
-static bool push_field_value_int(lua_State *L, management_request_t *mgt, 
+static bool push_field_value_int(lua_State *L, management_request_t *mgt,
     const uint8 *packet_end, int field) {
 
   int varstart = variable_start[mgt->framectrl.Subtype];
@@ -547,7 +547,7 @@ static bool push_field_value_int(lua_State *L, management_request_t *mgt,
 
 static int packet_map_lookup(lua_State *L) {
   packet_t *packet = luaL_checkudata(L, 1, "wifi.packet");
-  struct RxControl *rxc = (struct RxControl *) packet->buf; 
+  struct RxControl *rxc = (struct RxControl *) packet->buf;
   management_request_t *mgt = (management_request_t *) (rxc + 1);
   const uint8 *packet_end = packet->buf + packet->len;
 
@@ -630,7 +630,7 @@ static int packet_subhex(lua_State *L, int buf_offset, int buf_length) {
       hex[2] = 0;
       luaL_addstring(&b, hex);
     }
-    
+
     luaL_pushresult(&b);
   } else {
     lua_pushliteral(L, "");

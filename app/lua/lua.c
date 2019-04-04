@@ -336,7 +336,7 @@ int lua_put_line(const char *s, size_t l) {
 
 void lua_handle_input (bool force)
 {
-  while (gLoad.L && (force || readline (&gLoad))) { 
+  while (gLoad.L && (force || readline (&gLoad))) {
     NODE_DBG("Handle Input: first=%u, pos=%u, len=%u, actual=%u, line=%s\n", gLoad.firstline,
               gLoad.line_position, gLoad.len, c_strlen(gLoad.line), gLoad.line);
     dojob (&gLoad);
@@ -356,7 +356,7 @@ static void dojob(lua_Load *load){
 
   const char *oldprogname = progname;
   progname = NULL;
-  
+
   do{
     if(load->done == 1){
       l = c_strlen(b);
@@ -453,7 +453,7 @@ static bool readline(lua_Load *load){
       // else if (ch == 0x04)
       // {
       //   if (load->line_position == 0)
-      //     // No input which makes lua interpreter close 
+      //     // No input which makes lua interpreter close
       //     donejob(load);
       //   else
       //     continue;
@@ -484,7 +484,7 @@ static bool readline(lua_Load *load){
       // {
       //   continue;
       // }
-      
+
       /* echo */
       if(uart0_echo) uart_putc(ch);
 
@@ -510,7 +510,7 @@ static bool readline(lua_Load *load){
 
     ch = 0;
   }
-  
+
   if( (load->line_position > 0) && (!run_input) && (need_len==0) && (end_char<0) )
   {
     uart_on_data_cb(load->line, load->line_position);

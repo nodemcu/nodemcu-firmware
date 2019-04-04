@@ -7,19 +7,19 @@
  me to bias towards clarity of coding over brevity. It includes extra logic
  to handle some of the edge case issues more robustly. It also uses a
  standard forward reference coding pattern to allow the code to be laid out
- in main routine, subroutine order. 
+ in main routine, subroutine order.
 
- The app will only call one FTP.open() or FTP.createServer() at any time, 
- with any multiple calls requected, so FTP is a singleton static object. 
- However there is nothing to stop multiple clients connecting to the FTP 
- listener at the same time, and indeed some FTP clients do use multiple 
- connections, so this server can accept and create multiple CON objects. 
+ The app will only call one FTP.open() or FTP.createServer() at any time,
+ with any multiple calls requected, so FTP is a singleton static object.
+ However there is nothing to stop multiple clients connecting to the FTP
+ listener at the same time, and indeed some FTP clients do use multiple
+ connections, so this server can accept and create multiple CON objects.
  Each CON object can also have a single DATA connection.
 
- Note that FTP also exposes a number of really private properties (which 
+ Note that FTP also exposes a number of really private properties (which
  could be stores in local / upvals) as FTP properties for debug purposes.
 ]]
-local file,net,wifi,node,string,table,tmr,pairs,print,pcall, tostring = 
+local file,net,wifi,node,string,table,tmr,pairs,print,pcall, tostring =
       file,net,wifi,node,string,table,tmr,pairs,print,pcall, tostring
 local post = node.task.post
 local FTP, cnt = {client = {}}, 0
@@ -33,13 +33,13 @@ local processDataCmds   -- function(cxt, cmd, arg)
 local dataServer        -- function(cxt, n)
 local ftpDataOpen       -- function(dataSocket)
 
--- Note these routines all used hoisted locals such as table and debug as 
+-- Note these routines all used hoisted locals such as table and debug as
 -- upvals for performance (ROTable lookup is slow on NodeMCU Lua), but
 -- data upvals (e.g. FTP) are explicitly list is -- "upval:" comments.
 
 -- Note that the space between debug and the arglist is there for a reason
--- so that a simple global edit "   debug(" -> "-- debug(" or v.v. to 
--- toggle debug compiled into the module.  
+-- so that a simple global edit "   debug(" -> "-- debug(" or v.v. to
+-- toggle debug compiled into the module.
 
 local function debug (fmt, ...) -- upval: cnt (, print, node, tmr)
   if not FTP.debug then return end
@@ -50,7 +50,7 @@ local function debug (fmt, ...) -- upval: cnt (, print, node, tmr)
 end
 
 --------------------------- Set up the FTP object ----------------------------
---       FTP has three static methods: open, createServer and close 
+--       FTP has three static methods: open, createServer and close
 ------------------------------------------------------------------------------
 
 -- optional wrapper around createServer() which also starts the wifi session
@@ -59,9 +59,11 @@ function FTP.open(user, pass, ssid, pwd, dbgFlag) -- upval: FTP (, wifi, tmr, pr
     wifi.setmode(wifi.STATION, false)
     wifi.sta.config { ssid = ssid, pwd  = pwd, save = false }
   end
-  tmr.alarm(0, 500, tmr.ALARM_AUTO, function()
+  local t = tmr.create()
+  t:alarm(500, tmr.ALARM_AUTO, function()
     if (wifi.sta.status() == wifi.STA_GOTIP) then
-      tmr.unregister(0)
+      t:unregister()
+      t=nil
       print("Welcome to NodeMCU world", node.heap(), wifi.sta.getip())
       return FTP.createServer(user, pass, dbgFlag)
     else
@@ -80,9 +82,9 @@ function FTP.createServer(user, pass, dbgFlag)  -- upval: FTP (, debug, tostring
   FTP.server:listen(21, function(sock) -- upval: FTP (, debug, pcall, type, processCommand)
       -- since a server can have multiple connections, each connection
       -- has a CNX table to store connection-wide globals.
-      local client = FTP.client      
+      local client = FTP.client
       local CNX; CNX = {
-        validUser = false, 
+        validUser = false,
         cmdSocket = sock,
         send      = function(rec, cb) -- upval: CNX (,debug)
          -- debug("Sending: %s", rec)
@@ -105,11 +107,11 @@ function FTP.createServer(user, pass, dbgFlag)  -- upval: FTP (, debug, tostring
      -- debug("Authorising: %s", data)
         local cmd, arg = data:match('([A-Za-z]+) *([^\r\n]*)')
         local msg =  "530 Not logged in, authorization required"
-        cmd = cmd:upper() 
+        cmd = cmd:upper()
 
         if   cmd == 'USER' then
           CNX.validUser = (arg == FTP.user)
-          msg = CNX.validUser and  
+          msg = CNX.validUser and
                  "331 OK. Password required" or
                  "530 user not found"
 
@@ -131,7 +133,7 @@ function FTP.createServer(user, pass, dbgFlag)  -- upval: FTP (, debug, tostring
 
         return CNX.send(msg)
       end
- 
+
     local port,ip = sock:getpeer()
  -- debug("Connection accepted: (userdata) %s client %s:%u", tostring(sock), ip, port)
     sock:on("receive",       validateUser)
@@ -160,17 +162,17 @@ function FTP.close() -- upval: FTP (, debug, post, tostring)
       FTP,_G.FTP = nil, nil -- the upval FTP can only be zeroed once FTP.client is cleared.
     end
   end
- 
+
   if svr then rollupClients(FTP.client, svr) end
   package.loaded.ftpserver=nil
 end -- FTP.close()
 
 
 ----------------------------- Process Command --------------------------------
--- This splits the valid commands into one of three categories: 
+-- This splits the valid commands into one of three categories:
 --   *  bare commands (which take no arg)
---   *  simple commands (which take) a single arg; and 
---   *  data commands which initiate data transfer to or from the client and 
+--   *  simple commands (which take) a single arg; and
+--   *  data commands which initiate data transfer to or from the client and
 --      hence need to use CBs.
 --
 -- Find strings are used do this lookup and minimise long if chains.
@@ -182,9 +184,9 @@ processCommand = function(cxt, sock, data) -- upvals: (, debug, processBareCmds,
   local cmd, arg = data:match('([a-zA-Z]+) *(.*)')
   cmd = cmd:upper()
   local _cmd_ = '_'..cmd..'_'
-  
+
   if ('_CDUP_NOOP_PASV_PWD_QUIT_SYST_'):find(_cmd_) then
-    processBareCmds(cxt, cmd) 
+    processBareCmds(cxt, cmd)
   elseif ('_CWD_DELE_MODE_PORT_RNFR_RNTO_SIZE_TYPE_'):find(_cmd_) then
     processSimpleCmds(cxt, cmd, arg)
   elseif ('_LIST_NLST_RETR_STOR_'):find(_cmd_) then
@@ -210,15 +212,15 @@ processBareCmds = function(cxt, cmd) -- upval: (dataServer)
     -- This FTP implementation ONLY supports PASV mode, and the passive port
     -- listener is opened on receipt of the PASV command.  If any data xfer
     -- commands return an error if the PASV command hasn't been received.
-    -- Note the listener service is closed on receipt of the next PASV or 
-    -- quit.    
+    -- Note the listener service is closed on receipt of the next PASV or
+    -- quit.
     local ip, port, pphi, pplo, i1, i2, i3, i4, _
     _,ip = cxt.cmdSocket:getaddr()
     port = 2121
     pplo = port % 256
     pphi = (port-pplo)/256
     i1,i2,i3,i4 = ip:match("(%d+).(%d+).(%d+).(%d+)")
-    dataServer(cxt, port) 
+    dataServer(cxt, port)
     return send(
        ('227 Entering Passive Mode(%d,%d,%d,%d,%d,%d)'):format(
          i1,i2,i3,i4,pphi,pplo))
@@ -228,16 +230,16 @@ processBareCmds = function(cxt, cmd) -- upval: (dataServer)
 
   elseif cmd == 'QUIT' then
     send("221 Goodbye", function() cxt.close(cxt.cmdSocket) end)
-    return 
+    return
 
   elseif cmd == 'SYST' then
 --  return send("215 UNKNOWN")
     return send("215 UNIX Type: L8") -- must be Unix so ls is parsed correctly
 
   else
-    error('Oops.  Missed '..cmd)    
+    error('Oops.  Missed '..cmd)
   end
-end -- processBareCmds(cmd, send) 
+end -- processBareCmds(cmd, send)
 
 ------------------------- Process Simple Commands ----------------------------
 local from  -- needs to persist between simple commands
@@ -262,11 +264,11 @@ processSimpleCmds = function(cxt, cmd, arg)  -- upval: from (, file, tostring, d
       return send("200 TYPE is now 8-bit binary")
     else
       return send("504 Unknown TYPE")
-    end 
+    end
   end
 
   -- The remaining commands take a filename as an arg. Strip off leading / and ./
-  arg = arg:gsub('^%.?/',''):gsub('^%.?/','') 
+  arg = arg:gsub('^%.?/',''):gsub('^%.?/','')
   debug("Filename is %s",arg)
 
   if cmd == 'CWD' then
@@ -277,7 +279,7 @@ processSimpleCmds = function(cxt, cmd, arg)  -- upval: from (, file, tostring, d
 
   elseif cmd == 'DELE' then
     if file.exists(arg) then
-      file.remove(arg) 
+      file.remove(arg)
       if not file.exists(arg) then return send("250 Deleted "..arg) end
     end
     return send("550 Requested action not taken")
@@ -295,11 +297,11 @@ processSimpleCmds = function(cxt, cmd, arg)  -- upval: from (, file, tostring, d
                             "550 Requested action not taken")
   elseif cmd == "SIZE" then
     local st = file.stat(arg)
-    return send(st and ("213 "..st.size) or 
+    return send(st and ("213 "..st.size) or
                        "550 Could not get file size.")
 
   else
-    error('Oops.  Missed '..cmd)    
+    error('Oops.  Missed '..cmd)
   end
 end -- processSimpleCmds(cmd, arg, send)
 
@@ -316,12 +318,12 @@ processDataCmds = function(cxt, cmd, arg)  -- upval: FTP (, pairs, file, tostrin
 
   cxt.getData, cxt.setData = nil, nil
 
-  arg = arg:gsub('^%.?/',''):gsub('^%.?/','') 
+  arg = arg:gsub('^%.?/',''):gsub('^%.?/','')
 
-  if cmd == "LIST" or cmd == "NLST" then  
-    -- There are 
+  if cmd == "LIST" or cmd == "NLST" then
+    -- There are
     local fileSize, nameList, pattern = file.list(), {}, '.'
- 
+
     arg = arg:gsub('^-[a-z]* *', '') -- ignore any Unix style command parameters
     arg = arg:gsub('^/','')  -- ignore any leading /
 
@@ -330,26 +332,26 @@ processDataCmds = function(cxt, cmd, arg)  -- upval: FTP (, pairs, file, tostrin
     end
 
     for k,v in pairs(fileSize) do
-      if k:match(pattern) then 
-        nameList[#nameList+1] = k 
+      if k:match(pattern) then
+        nameList[#nameList+1] = k
       else
         fileSize[k] = nil
       end
     end
     table.sort(nameList)
- 
+
     function cxt.getData() -- upval: cmd, fileSize, nameList (, table)
       local list, user, v = {}, FTP.user
       for i = 1,10 do
         if #nameList == 0 then break end
         local f = table.remove(nameList, 1)
-        list[#list+1] = (cmd == "LIST") and    
+        list[#list+1] = (cmd == "LIST") and
           ("-rw-r--r-- 1 %s %s %6u Jan  1 00:00 %s\r\n"):format(user, user, fileSize[f], f) or
           (f.."\r\n")
       end
       return table.concat(list)
     end
-  
+
   elseif cmd == "RETR" then
     local f = file.open(arg, "r")
     if f then -- define a getter to read the file
@@ -377,7 +379,7 @@ processDataCmds = function(cxt, cmd, arg)  -- upval: FTP (, pairs, file, tostrin
 
   send((cxt.getData or cxt.setData) and "150 Accepted data connection" or
                                         "451 Can't open/create "..arg)
-  if cxt.getData and cxt.dataSocket then 
+  if cxt.getData and cxt.dataSocket then
     debug ("poking sender to initiate first xfer")
     post(function() cxt.sender(cxt.dataSocket) end)
   end
@@ -387,17 +389,17 @@ end -- processDataCmds(cmd, arg, send)
 
 ----------------------------- Data Port Routines -----------------------------
 -- These are used to manage the data transfer over the data port.  This is
--- set up lazily either by a PASV or by the first LIST NLST RETR or STOR 
+-- set up lazily either by a PASV or by the first LIST NLST RETR or STOR
 -- command that uses it.  These also provide a sendData / receiveData cb to
 -- handle the actual xfer. Also note that the sending process can be primed in
 --
 ----------------   Open a new data server and port ---------------------------
 dataServer = function(cxt, n) -- upval: (pcall, net, ftpDataOpen, debug, tostring)
   local dataServer = cxt.dataServer
-  if dataServer then -- close any existing listener 
-    pcall(dataServer.close, dataServer) 
+  if dataServer then -- close any existing listener
+    pcall(dataServer.close, dataServer)
   end
-  if n then 
+  if n then
     -- Open a new listener if needed. Note that this is only used to establish
     -- a single connection, so ftpDataOpen closes the server socket
     cxt.dataServer = net.createServer(net.TCP, 300)
@@ -421,7 +423,7 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
 
   cxt.dataServer:close()
   cxt.dataServer = nil
-    
+
   local function cleardown(skt,type) -- upval: cxt (, debug, tostring, post, pcall)
     type = type==1 and "disconnection" or "reconnection"
     local which = cxt.setData and "setData" or (cxt.getData and cxt.getData or "neither")
@@ -429,7 +431,7 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
 
     if cxt.setData then
       cxt.fileClose()
-      cxt.setData = nil    
+      cxt.setData = nil
       cxt.send("226 Transfer complete.")
     else
       cxt.getData, cxt.sender = nil, nil
@@ -451,12 +453,12 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
 
     if not on_hold then
       -- Cludge to stop the client flooding the ESP SPIFFS on an upload of a
-      -- large file. As soon as a record arrives assert a flow control hold.  
+      -- large file. As soon as a record arrives assert a flow control hold.
       -- This can take up to 5 packets to come into effect at which point the
       -- low priority unhold task is executed releasing the flow again.
    -- debug("Issuing hold on data socket %s", tostring(skt))
       skt:hold(); on_hold = true
-      post(node.task.LOW_PRIORITY, 
+      post(node.task.LOW_PRIORITY,
            function() -- upval: skt, on_hold (, debug, tostring))
           -- debug("Issuing unhold on data socket %s", tostring(skt))
              pcall(skt.unhold, skt); on_hold = false
@@ -482,7 +484,7 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
    -- debug("Send of data completed")
       skt:close()
       cxt.send("226 Transfer complete.")
-      cxt.getData, cxt.dataSocket = nil, nil  
+      cxt.getData, cxt.dataSocket = nil, nil
     end
   end
 
@@ -494,7 +496,7 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
   if cxt.getData then cxt.sender(cxt.dataSocket) end
 
 end -- ftpDataOpen(socket)
-  
+
 ------------------------------------------------ -----------------------------
 
 return FTP

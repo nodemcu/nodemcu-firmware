@@ -9,7 +9,11 @@
 #include "lobject.h"
 #include "lapi.h"
 
+#ifdef _MSC_VER
+#define ALIGNED_STRING (__declspec( align( 4 ) ) char*)
+#else
 #define ALIGNED_STRING (__attribute__((aligned(4))) char *)
+#endif
 #define LA_LINES 16
 #define LA_SLOTS 4
 //#define COLLECT_STATS
@@ -82,6 +86,7 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
   size_t      hash   = HASH(rotable, key);
   unsigned    i      = 0;
   int         j      = lookup_cache(hash, rotable);
+  unsigned    l      = key ? key->tsv.len : sizeof("__metatable")-1;
 
   if (pentry) {
     if (j >= 0){
@@ -97,9 +102,9 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
      * aren't needed if there is a cache hit. Note that the termination null
      * is included so a "on\0" has a mask of 0xFFFFFF and "a\0" has 0xFFFF.
      */
-    unsigned name4 = *(unsigned *)strkey;
-    unsigned l     = key ? key->tsv.len : sizeof("__metatable")-1;
-    unsigned mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
+    unsigned name4, mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
+    c_memcpy(&name4, strkey, sizeof(name4));
+
     for(;pentry->key.type != LUA_TNIL; i++, pentry++) {
       if ((pentry->key.type == LUA_TSTRING) &&
           ((*(unsigned *)pentry->key.id.strkey ^ name4) & mask4) == 0 &&

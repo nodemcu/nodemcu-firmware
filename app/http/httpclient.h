@@ -44,7 +44,7 @@ static const char log_prefix[] = "HTTP client: ";
 /*
  * Timeout of http request.
  */
-#define HTTP_REQUEST_TIMEOUT_MS    (10000)
+#define HTTP_REQUEST_TIMEOUT_MS    (60000)
 
 /*
  * "full_response" is a string containing all response headers and the response body.

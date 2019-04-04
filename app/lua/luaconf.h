@@ -39,7 +39,7 @@
 #endif
 
 
-#if defined(LUA_CROSS_COMPILER)
+#if defined(LUA_CROSS_COMPILER) && !defined(_MSC_VER) && !defined(__MINGW32__)
 #define LUA_USE_LINUX
 #endif
 
@@ -264,7 +264,7 @@
 #include <io.h>
 #ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
-else
+#else
 #include "c_stdio.h"
 #endif
 
@@ -298,7 +298,7 @@ else
 ** CHANGE it if you need longer lines.
 */
 #define LUA_MAXINPUT	256
-               
+
 
 /*
 @@ lua_readline defines how to show a prompt and then read a line from
@@ -558,7 +558,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 @@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
 ** Attention: This value should probably not be set higher than 1K.
 ** The size has direct impact on the C stack size needed be auxlib functions.
-** For example: If set to 4K a call to string.gsub will need more than 
+** For example: If set to 4K a call to string.gsub will need more than
 ** 5k C stack space.
 */
 #define LUAL_BUFFERSIZE		256
@@ -579,10 +579,10 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 
 /* Define LUA_NUMBER_INTEGRAL to produce a system that uses no
    floating point operations by changing the type of Lua numbers from
-   double to long.  It implements division and modulus so that 
+   double to long.  It implements division and modulus so that
 
-   x == (x / y) * y + x % y.  
-   
+   x == (x / y) * y + x % y.
+
    The exponentiation function returns zero for negative exponents.
    Defining LUA_NUMBER_INTEGRAL also removes the difftime function,
    and the math module should not be used.  The string.format function
@@ -631,7 +631,11 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
   #define lua_str2number(s,p) c_strtoll((s), (p), 10)
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #else
+#ifdef _MSC_VER	//what's wrong with stdlib strtod?
+#define lua_str2number(s,p)	strtod((s), (p))
+#else
 #define lua_str2number(s,p)	c_strtod((s), (p))
+#endif
 #endif // #if defined LUA_NUMBER_INTEGRAL
 
 /*
@@ -717,8 +721,18 @@ union luai_Cast { double l_d; long l_l; };
 
 /* this option always works, but may be slow */
 #else
-#define lua_number2int(i,d)	((i)=(int)(d))
-#define lua_number2integer(i,d)	((i)=(lua_Integer)(d))
+
+#ifdef LUA_NUMBER_INTEGRAL
+
+#define lua_number2int(i, d) ((i) = (int)(d))
+#define lua_number2integer(i, d) ((i) = (lua_Integer)(d))
+
+#else // for floating-point builds, cast to a larger integer first to avoid undefined behavior on overflows.
+
+#define lua_number2int(i, d) ((i) = (int)(long long)(d))
+#define lua_number2integer(i, d) ((i) = (lua_Integer)(long long)(d))
+
+#endif // LUA_NUMBER_INTEGRAL
 
 #endif
 
@@ -750,18 +764,18 @@ union luai_Cast { double l_d; long l_l; };
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
 
-#elif defined(LUA_USE_ULONGJMP)
-/* in Unix, try _longjmp/_setjmp (more efficient) */
-#define LUAI_THROW(L,c)	_longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (_setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf	jmp_buf
-
 #else
-/* default handling with long jumps */
-#define LUAI_THROW(L,c)	longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (setjmp((c)->b) == 0) { a }
+#if defined(LUA_USE_ULONGJMP)
+/* in Unix, try _longjmp/_setjmp (more efficient) */
+#define LONGJMP(a,b) _longjmp(a,b)
+#define SETJMP(a) _setjmp(a)
+#else
+#define LONGJMP(a,b) longjmp(a,b)
+#define SETJMP(a) setjmp(a)
+#endif
+#define LUAI_THROW(L,c)	LONGJMP((c)->b, 1)
+#define LUAI_TRY(L,c,a)	if (SETJMP((c)->b) == 0) { a }
 #define luai_jmpbuf	jmp_buf
-
 #endif
 
 

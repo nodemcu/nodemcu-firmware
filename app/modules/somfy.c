@@ -1,11 +1,11 @@
 // ***************************************************************************
 // Somfy module for ESP8266 with NodeMCU
-// 
+//
 // Written by Lukas Voborsky, @voborsky
 // based on https://github.com/Nickduino/Somfy_Remote
 // Somfy protocol description: https://pushstack.wordpress.com/somfy-rts-protocol/
 // and discussion: https://forum.arduino.cc/index.php?topic=208346.0
-// 
+//
 // MIT license, http://opensource.org/licenses/MIT
 // ***************************************************************************
 
@@ -115,7 +115,7 @@ static void ICACHE_RAM_ATTR sendCommand(os_param_t p) {
             // delayMicroseconds(89565);
             break;
         case 2:
-            signalindex++; 
+            signalindex++;
             // no break means go directly to step 3
             // a "useless" step to allow repeating the hardware sync w/o the silence after wake-up pulse
         case 3:
@@ -162,7 +162,7 @@ static void ICACHE_RAM_ATTR sendCommand(os_param_t p) {
             else {
                 DIRECT_WRITE_LOW(pin);
             }
-            
+
             if (subindex<56) {
                 subindex++;
                 signalindex--;
@@ -219,7 +219,7 @@ static int somfy_lua_sendcommand(lua_State* L) { // pin, remote, command, rollin
     platform_gpio_mode(pin, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_PULLUP);
 
     buildFrame(frame, remote, cmd, code);
-    
+
     if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
         // Failed to init the timer
         luaL_error(L, "Unable to initialize timer");

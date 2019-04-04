@@ -10,7 +10,7 @@ spiffs fs;
 #define LOG_BLOCK_SIZE		(INTERNAL_FLASH_SECTOR_SIZE * 2)
 #define LOG_BLOCK_SIZE_SMALL_FS	(INTERNAL_FLASH_SECTOR_SIZE)
 #define MIN_BLOCKS_FS		4
-  
+
 static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
 #if SPIFFS_CACHE
@@ -34,7 +34,7 @@ static s32_t my_spiffs_erase(u32_t addr, u32_t size) {
     if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
       return SPIFFS_ERR_INTERNAL;
   return SPIFFS_OK;
-} 
+}
 
 void myspiffs_check_callback(spiffs_check_type type, spiffs_check_report report, u32_t arg1, u32_t arg2){
   // if(SPIFFS_CHECK_PROGRESS == report) return;
@@ -64,7 +64,7 @@ static bool myspiffs_set_location(spiffs_config *cfg, int align, int offset, int
   if ((int) cfg->phys_size < 0) {
     return FALSE;
   }
-  cfg->log_block_size = block_size; 
+  cfg->log_block_size = block_size;
 
   return (cfg->phys_size / block_size) >= MIN_BLOCKS_FS;
 }
@@ -160,7 +160,7 @@ static bool myspiffs_find_cfg(spiffs_config *cfg, bool force_create) {
     cfg->phys_size = (SPIFFS_MAX_FILESYSTEM_SIZE) & ~(cfg->log_block_size - 1);
   }
 #endif
-  
+
   return FALSE;
 }
 
@@ -219,10 +219,10 @@ void test_spiffs() {
   char buf[12];
 
   // Surely, I've mounted spiffs before entering here
-  
+
   spiffs_file fd = SPIFFS_open(&fs, "my_file", SPIFFS_CREAT | SPIFFS_TRUNC | SPIFFS_RDWR, 0);
   if (SPIFFS_write(&fs, fd, (u8_t *)"Hello world", 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));
-  SPIFFS_close(&fs, fd); 
+  SPIFFS_close(&fs, fd);
 
   fd = SPIFFS_open(&fs, "my_file", SPIFFS_RDWR, 0);
   if (SPIFFS_read(&fs, fd, (u8_t *)buf, 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));

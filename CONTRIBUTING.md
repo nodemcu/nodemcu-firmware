@@ -65,7 +65,7 @@ Avoid intermediate merge commits. [Rebase](https://www.atlassian.com/git/tutoria
 
 This is just one way of doing things. If you're proficient in Git matters you're free to choose your own. If you want to read more then the [GitHub chapter in the Git book](http://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project#The-GitHub-Flow) is a way to start. [GitHub's own documentation](https://help.github.com/categories/collaborating-with-issues-and-pull-requests/) contains a wealth of information as well.
 
-As a Windows or Mac user you could also resort to [GitHub Desktop](https://desktop.github.com/). It's a mature GUI application that supports most of the tasks outlined above. 
+As a Windows or Mac user you could also resort to [GitHub Desktop](https://desktop.github.com/). It's a mature GUI application that supports most of the tasks outlined above.
 
 ### Keeping your fork in sync
 You need to sync your fork with the NodeMCU upstream repository from time to time, latest before you rebase (see flow above).

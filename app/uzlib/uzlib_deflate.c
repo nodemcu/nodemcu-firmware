@@ -292,7 +292,7 @@ void outBytes(void *bytes, int nBytes) {
   /* flush this first, if necessary */
   oBuf->nBits = oBuf->bits  = 0;
   for (i = 0; i < nBytes; i++) {
-    DBG_PRINT("%02x-", *((uchar*)bytes+i));  
+    DBG_PRINT("%02x-", *((uchar*)bytes+i));
     oBuf->buffer[oBuf->len++] = *((uchar*)bytes+i);
   }
 }
@@ -511,8 +511,8 @@ void uzlibCompressBlock(const uchar *src, uint srcLen) {
       }
     }
   }
-  
-  if (lastOffset) {                     /* flush cached match if any */ 
+
+  if (lastOffset) {                     /* flush cached match if any */
     copy(lastOffset, lastLen);
     DBG_PRINT("dic: %6x %6x %6x\n", i, lastLen, lastOffset);
     i += lastLen - 1;
@@ -568,7 +568,6 @@ int uzlib_compress (uchar **dest, uint *destLen, const uchar *src, uint srcLen) 
     status = UZLIB_OK;
   }
 
-  FREE(dynamicTables);
   for (i=0; i<20;i++) DBG_PRINT("count %u = %u\n",i,debugCounts[i]);
 
   if (status == UZLIB_OK) {
@@ -580,6 +579,8 @@ int uzlib_compress (uchar **dest, uint *destLen, const uchar *src, uint srcLen) 
     *destLen = 0;
     FREE(oBuf->buffer);
   }
+
+  FREE(dynamicTables);
 
   return status;
 }

@@ -64,7 +64,7 @@ typedef struct{
 #endif
 	pmbedtls_session	psession;
 	mbedtls_net_context fd;
-	mbedtls_net_context listen_fd;	
+	mbedtls_net_context listen_fd;
 	mbedtls_ctr_drbg_context ctr_drbg;
 	mbedtls_ssl_context ssl;
 	mbedtls_ssl_config conf;
@@ -135,7 +135,7 @@ enum {
 
 #define ESPCONN_SECURE_MAX_SIZE 8192
 #define ESPCONN_SECURE_DEFAULT_HEAP 0x3800
-#define ESPCONN_SECURE_DEFAULT_SIZE 0x0800
+#define ESPCONN_SECURE_DEFAULT_SIZE SSL_BUFFER_SIZE
 #define ESPCONN_HANDSHAKE_TIMEOUT 0x3C
 #define ESPCONN_INVALID_TYPE	0xFFFFFFFF
 #define MBEDTLS_SSL_PLAIN_ADD	TCP_MSS

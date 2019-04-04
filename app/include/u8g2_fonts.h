@@ -18,7 +18,7 @@
 
 #else
 //
-// The font table can be defined in an external file. 
+// The font table can be defined in an external file.
 #define U8G2_FONT_TABLE \
   U8G2_FONT_TABLE_EXTRA
 

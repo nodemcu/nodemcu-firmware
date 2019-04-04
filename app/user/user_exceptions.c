@@ -39,7 +39,7 @@ void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
 {
   uint32_t val, insn;
   (void)cause;  /* If this is not EXCCAUSE_LOAD_STORE_ERROR you're doing it wrong! */
-    
+
   asm (
     /*
      * Move the aligned content of the exception addr to val
@@ -53,8 +53,8 @@ void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
                                /* we are done with a6 = EXCVADDR */
    /*
     *  Move the aligned instruction to insn
-    */  
-    "movi    a5, ~3;"          /* prepare a mask for the insn */    
+    */
+    "movi    a5, ~3;"          /* prepare a mask for the insn */
     "and     a6, a5, %[epc];"  /* apply mask for 32bit aligned base */
     "l32i    a5, a6, 0;"       /* load part 1 */
     "l32i    a6, a6, 4;"       /* load part 2 */
@@ -63,7 +63,7 @@ void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
     :[val]"=r"(val), [op]"=r"(insn)
     :[epc]"r"(ef->epc)
     :"a5", "a6"
-  ); 
+  );
 
 /* These instructions have the format 0xADSBII where AB = opcode and D = dest reg */
   uint32_t regno = (insn>>4)&0x0f;                           /* pick out nibble D*/
@@ -75,7 +75,7 @@ void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
   if (opcode == L8UI) {                       /* L8UI */
     val = (uint8_t) val;
   } else {
-    val = (uint16_t) val;                     /* assume L16SI or L16UI */ 
+    val = (uint16_t) val;                     /* assume L16SI or L16UI */
     if (opcode == L16SI) {
       val = (unsigned)((int)((sint16_t)val)); /* force signed 16->32 bit */
     } else if (opcode != L16UI) {
@@ -92,7 +92,7 @@ void load_non_32_wide_handler (struct exception_frame *ef, uint32_t cause)
         while (1) {}
       }
     }
-  }   
+  }
   ef->a_reg[regno ? regno-1: regno] = val; /* carry out the load */
   ef->epc += 3;                            /* resume at following instruction */
 }

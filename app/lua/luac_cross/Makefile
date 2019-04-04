@@ -1,10 +1,12 @@
-# 
-# This Make file is called from the core Makefile hierarchy with is a hierarchical
-# make wwhich uses parent callbacks to implement inheritance.  However is luac_cross
-# build stands outside this and uses the host toolchain to implement a separate
-# host build of the luac.cross image. 
+#
+# This Makefile is called from the core Makefile hierarchy which is a hierarchical
+# make which uses parent callbacks to implement inheritance.  However if luac_cross
+# build stands outside this, it uses the host toolchain to implement a separate
+# host build of the luac.cross image.
 #
 .NOTPARALLEL:
+
+summary ?= @true
 
 CCFLAGS:= -I.. -I../../include -I../../libc -I../../uzlib
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
@@ -52,13 +54,19 @@ CC := $(WRAPCC) gcc
 
 ECHO := echo
 
-IMAGE  := ../../../luac.cross
+BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
+ifeq ($(BUILD_TYPE),0)
+IMAGE := ../../../luac.cross
+else
+IMAGE := ../../../luac.cross.int
+endif
 
 .PHONY: test clean all
 
 all: $(DEPS) $(IMAGE)
 
 $(IMAGE) : $(OBJS)
+	$(summary) HOSTLD $@
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
 test :
@@ -66,6 +74,7 @@ test :
 	@echo SRC: $(SRC)
 	@echo OBJS: $(OBJS)
 	@echo DEPS: $(DEPS)
+	@echo IMAGE: $(IMAGE)
 
 clean :
 	$(RM) -r $(ODIR)
@@ -76,11 +85,12 @@ endif
 
 $(ODIR)/%.o: %.c
 	@mkdir -p $(ODIR);
+	$(summary) HOSTCC $(CURDIR)/$<
 	$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
 
 $(ODIR)/%.d: %.c
 	@mkdir -p $(ODIR);
-	@echo DEPEND: $(CC) -M $(CFLAGS) $<
+	$(summary) DEPEND: HOSTCC $(CURDIR)/$<
 	@set -e; rm -f $@; \
 	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\.o\)[ :]*,$(ODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \

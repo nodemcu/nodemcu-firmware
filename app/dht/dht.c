@@ -156,7 +156,7 @@ int dht_read11(uint8_t pin)
 
     // TEST CHECKSUM
     // dht_bytes[1] && dht_bytes[3] both 0
-    uint8_t sum = dht_bytes[0] + dht_bytes[2];
+    uint8_t sum = dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3];
     if (dht_bytes[4] != sum) return DHTLIB_ERROR_CHECKSUM;
 
     return DHTLIB_OK;

@@ -3,7 +3,7 @@
 This is a simple module that parses timezone files as found on unix systems. It is oriented around converting the current time. It can convert other times, but it is
 rather less efficient as it maintains only a single cached entry in memory.
 
-On my linux system, these files can be found in `/usr/share/zoneinfo`. 
+On my linux system, these files can be found in `/usr/share/zoneinfo`.
 
 
 ## tz.setzone()

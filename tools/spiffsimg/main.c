@@ -143,7 +143,7 @@ static void import (char *src, char *dst)
     if (SPIFFS_write (&fs, fh, buff, n) < 0)
       die ("spiffs_write");
 
-  if (SPIFFS_close (&fs, fh) < 0) 
+  if (SPIFFS_close (&fs, fh) < 0)
     die("spiffs_close");
   close (fd);
 }
@@ -199,7 +199,7 @@ void syntax (void)
   exit (1);
 }
 
-static size_t getsize(const char *s) 
+static size_t getsize(const char *s)
 {
   char *end = 0;
   size_t val = strtoul(s, &end, 0);

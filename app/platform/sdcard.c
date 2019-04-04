@@ -1,4 +1,3 @@
-
 #include "platform.h"
 #include "driver/spi.h"
 #include "c_types.h"

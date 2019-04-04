@@ -141,7 +141,7 @@ void nodemcu_init(void) {
     uint32_t size_detected = flash_detect_size_byte();
     uint32_t size_from_rom = flash_rom_get_size_byte();
     if( size_detected != size_from_rom ) {
-        NODE_ERR("Self adjust flash size. 0x%x (ROM) -> 0x%x (Detected)\n", 
+        NODE_ERR("Self adjust flash size. 0x%x (ROM) -> 0x%x (Detected)\n",
                  size_from_rom, size_detected);
         // Fit hardware real flash size.
         flash_rom_set_size_byte(size_detected);
@@ -150,14 +150,6 @@ void nodemcu_init(void) {
         // Don't post the start_lua task, we're about to reboot...
         return;
     }
-
-#if 0
-// espconn_secure_set_size() is not effective
-// see comments for MBEDTLS_SSL_MAX_CONTENT_LEN in user_mbedtls.h
-#if defined ( CLIENT_SSL_ENABLE ) && defined ( SSL_BUFFER_SIZE )
-    espconn_secure_set_size(ESPCONN_CLIENT, SSL_BUFFER_SIZE);
-#endif
-#endif
 
 #ifdef BUILD_SPIFFS
     if (!vfs_mount("/FLASH", 0)) {

@@ -213,7 +213,7 @@ LUA_API void lua_replace (lua_State *L, int idx) {
     if (!func)
       luaG_runerror(L, "attempt to set environment on lightfunction");
     else {
-      api_check(L, ttistable(L->top - 1)); 
+      api_check(L, ttistable(L->top - 1));
       func->c.env = hvalue(L->top - 1);
       luaC_barrier(L, func, L->top - 1);
     }
@@ -411,7 +411,7 @@ LUA_API const void *lua_topointer (lua_State *L, int idx) {
     case LUA_TUSERDATA:
     case LUA_TLIGHTUSERDATA:
       return lua_touserdata(L, idx);
-    case LUA_TROTABLE: 
+    case LUA_TROTABLE:
       return rvalue(o);
     case LUA_TLIGHTFUNCTION:
       return fvalue(o);
@@ -585,7 +585,7 @@ LUA_API void lua_rawget (lua_State *L, int idx) {
   t = index2adr(L, idx);
   api_check(L, ttistable(t) || ttisrotable(t));
   res = ttistable(t) ? luaH_get(hvalue(t), L->top - 1) : luaH_get_ro(rvalue(t), L->top - 1);
-  setobj2s(L, L->top - 1, res);    
+  setobj2s(L, L->top - 1, res);
   lua_unlock(L);
 }
 
@@ -625,7 +625,7 @@ LUA_API int lua_getmetatable (lua_State *L, int objindex) {
       break;
     case LUA_TROTABLE:
       mt = (Table*)luaR_getmeta(rvalue(obj));
-      break; 
+      break;
     default:
       mt = G(L)->mt[ttype(obj)];
       break;
@@ -813,7 +813,7 @@ LUA_API int lua_setfenv (lua_State *L, int idx) {
 
 #define checkresults(L,na,nr) \
      api_check(L, (nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)))
-	
+
 
 LUA_API void lua_call (lua_State *L, int nargs, int nresults) {
   StkId func;

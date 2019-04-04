@@ -25,7 +25,7 @@ endif
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-DEFINES += 
+DEFINES +=
 #CCFLAGS += --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
 
 #############################################################

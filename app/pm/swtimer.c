@@ -157,7 +157,7 @@ void swtmr_suspend_timers(){
 
   //the cb_list table is no longer needed, pop it from the stack
   lua_pop(L, 1);
-  
+
   volatile uint32 frc2_count = RTC_REG_READ(FRC2_COUNT_ADDRESS);
 
   os_timer_t* timer_ptr = timer_list;
@@ -193,7 +193,7 @@ void swtmr_suspend_timers(){
         }
 
         //remove the timer from timer_list so we don't have to.
-        os_timer_disarm(timer_ptr); 
+        os_timer_disarm(timer_ptr);
 
         timer_ptr->timer_next = NULL;
 
@@ -256,7 +256,7 @@ void swtmr_suspend_timers(){
 
 void swtmr_resume_timers(){
   lua_State* L = lua_getstate();
-  
+
   //get swtimer table
   push_swtmr_registry_key(L);
   lua_rawget(L, L_REGISTRY);
@@ -264,7 +264,7 @@ void swtmr_resume_timers(){
   //get suspended_timer_list lightuserdata
   lua_pushstring(L, SUSP_LIST_STR);
   lua_rawget(L, -2);
-  
+
   //check for existence of swtimer table and the suspended_timer_list pointer userdata, return if not found
   if(!lua_istable(L, -2) || !lua_isuserdata(L, -1)){
     // not necessarily an error maybe there are legitimately no timers to resume
@@ -279,7 +279,7 @@ void swtmr_resume_timers(){
   lua_pushstring(L, SUSP_LIST_STR);
   lua_pushnil(L);
   lua_rawset(L, -3);
-  
+
 
   lua_pop(L, 1); //pop swtimer table from stack
 

@@ -1,17 +1,19 @@
-# 
+#
 # This Make file is called from the core Makefile hierarchy with is a hierarchical
 # make wwhich uses parent callbacks to implement inheritance.  However is luac_cross
 # build stands outside this and uses the host toolchain to implement a separate
-# host build of the luac.cross image. 
+# host build of the luac.cross image.
 #
 .NOTPARALLEL:
 
-CCFLAGS:= -I.. 
+summary ?= @true
+
+CCFLAGS:= -I..
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
 
-#DEFINES += 
+#DEFINES +=
 
 TARGET = host
 
@@ -37,7 +39,7 @@ CFLAGS = $(CCFLAGS) $(DEFINES)  $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
 
 ROOT = ../../..
-CC := gcc
+CC := $(WRAPCC) gcc
 
 ECHO := echo
 
@@ -47,9 +49,11 @@ IMAGES :=  $(ROOT)/uz_zip $(ROOT)/uz_unzip
 all: $(IMAGES)
 
 $(ROOT)/uz_zip : $(ODIR)/uz_zip.o $(ODIR)/crc32.o $(ODIR)/uzlib_deflate.o
+	$(summary) HOSTLD $@
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 $(ROOT)/uz_unzip : $(ODIR)/uz_unzip.o $(ODIR)/crc32.o $(ODIR)/uzlib_inflate.o
+	$(summary) HOSTLD $@
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 test :
@@ -63,5 +67,6 @@ clean :
 
 $(ODIR)/%.o: %.c
 	@mkdir -p $(ODIR);
+	$(summary) HOSTCC $(CURDIR)/$<
 	$(CC) $(CFLAGS) -o $@ -c $<
 

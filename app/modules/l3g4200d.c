@@ -63,7 +63,7 @@ static int l3g4200d_read(lua_State* L) {
     for (i=0; i<5; i++) {
 	data[i] = platform_i2c_recv_byte(i2c_id, 1);
     }
-    
+
     data[5] = platform_i2c_recv_byte(i2c_id, 0);
 
     platform_i2c_send_stop(i2c_id);

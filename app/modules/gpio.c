@@ -58,7 +58,7 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
 
     while (needs_callback)  {
       // Note that the interrupt level only modifies 'seen' and
-      // the base level only modifies 'reported'. 
+      // the base level only modifies 'reported'.
 
       // Do the actual callback
       lua_rawgeti(L, LUA_REGISTRYINDEX, gpio_cb_ref[pin]);
@@ -77,7 +77,7 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
       }
 
       lua_call(L, 3, 0);
-    } 
+    }
 
     if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
       // Level triggered -- re-enable the callback
@@ -105,7 +105,7 @@ static int lgpio_trig( lua_State* L )
     gpio_cb_ref[pin] = LUA_NOREF;
 
   } else if (lua_gettop(L)==2 && old_pin_ref != LUA_NOREF) {
-    // keep the old one if no callback 
+    // keep the old one if no callback
     old_pin_ref = LUA_NOREF;
 
   } else if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
@@ -154,7 +154,7 @@ static int lgpio_mode( lua_State* L )
 
 NODE_DBG("pin,mode,pullup= %d %d %d\n",pin,mode,pullup);
 NODE_DBG("Pin data at mode: %d %08x, %d %d %d, %08x\n",
-          pin, pin_mux[pin], pin_num[pin], pin_func[pin], 
+          pin, pin_mux[pin], pin_num[pin], pin_func[pin],
 #ifdef GPIO_INTERRUPT_ENABLE
           pin_int_type[pin], gpio_cb_ref[pin]
 #else
@@ -303,7 +303,7 @@ static int lgpio_serout( lua_State* L )
     serout.index = 0;
     seroutasync_cb(0);
   } else { // sync version for sub-50 µs resolution & total duration < 15 mSec
-    do { 
+    do {
       for( serout.index = 0;serout.index < serout.tablelen; serout.index++ ){
         NODE_DBG("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", serout.repeats, serout.index, serout.level, serout.pin, serout.tablelen, serout.delay_table[serout.index], system_get_time()); // timings is delayed for short timings when debug output is enabled
         GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[serout.pin]), serout.level);

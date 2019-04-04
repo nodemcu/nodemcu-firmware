@@ -3,7 +3,7 @@
 
 
 // don't redefine the PARTITION type
-#ifndef _FATFS
+#ifndef FF_DEFINED
 typedef struct {
 	BYTE pd;	/* Physical drive number */
 	BYTE pt;	/* Partition: 0:Auto detect, 1-4:Forced partition) */

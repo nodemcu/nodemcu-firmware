@@ -7,10 +7,10 @@
 local modname = ...
 
 -- Used modules and functions
-local table, string, ow, tmr, print, type, tostring, pcall, ipairs = 
+local table, string, ow, tmr, print, type, tostring, pcall, ipairs =
       table, string, ow, tmr, print, type, tostring, pcall, ipairs
 -- Local functions
-local ow_setup, ow_search, ow_select, ow_read, ow_read_bytes, ow_write, ow_crc8, ow_reset, ow_reset_search, ow_skip, ow_depower = 
+local ow_setup, ow_search, ow_select, ow_read, ow_read_bytes, ow_write, ow_crc8, ow_reset, ow_reset_search, ow_skip, ow_depower =
       ow.setup, ow.search, ow.select, ow.read, ow.read_bytes, ow.write, ow.crc8, ow.reset, ow.reset_search, ow.skip, ow.depower
 local node_task_post, node_task_LOW_PRIORITY = node.task.post, node.task.LOW_PRIORITY
 local string_char, string_dump = string.char, string.dump
@@ -44,7 +44,7 @@ local function to_string(addr, esc)
   if type(addr) == 'string' and #addr == 8 then
     return ( esc == true and
              '"\\%u\\%u\\%u\\%u\\%u\\%u\\%u\\%u"' or
-             '%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X '):format(addr:byte(1,8)) 
+             '%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X '):format(addr:byte(1,8))
   else
     return tostring(addr)
   end
@@ -65,21 +65,21 @@ local function readout(self)
       local t=(data:byte(1)+data:byte(2)*256)
       -- t is actually signed so process the sign bit and adjust for fractional bits
       -- the DS18B20 family has 4 fractional bits and the DS18S20s, 1 fractional bit
-      t = ((t <= 32767) and t or t - 65536) * 
-          ((addr:byte(1) == DS18B20FAMILY) and 625 or 5000) 
-      
+      t = ((t <= 32767) and t or t - 65536) *
+          ((addr:byte(1) == DS18B20FAMILY) and 625 or 5000)
+
       if 1/2 == 0 then
         -- integer version
         if unit == 'F' then
           t = (t * 18)/10 + 320000
         elseif unit == 'K' then
           t = t + 2731500
-        end      
+        end
         local sgn = t<0 and -1 or 1
         local tA = sgn*t
         local tH=tA/10000
         local tL=(tA%10000)/1000 + ((tA%1000)/100 >= 5 and 1 or 0)
-              
+
         if tH and (t~=850000) then
           temp[addr]=(sgn<0 and "-" or "")..tH.."."..tL
           debugPrint(to_string(addr),(sgn<0 and "-" or "")..tH.."."..tL)
@@ -94,7 +94,7 @@ local function readout(self)
             t = t * 18/10 + 32
           elseif unit == 'K' then
             t = t + 27315/100
-          end      
+          end
           self.temp[addr]=t
           debugPrint(to_string(addr), t)
           status[i] = 2
@@ -104,12 +104,12 @@ local function readout(self)
     end
     next = next or status[i] == 0
   end
-  if next then 
+  if next then
     node_task_post(node_task_LOW_PRIORITY, function() return conversion(self) end)
   else
     --sens = {}
     if cb then
-      node_task_post(node_task_LOW_PRIORITY, function() return cb(temp) end) 
+      node_task_post(node_task_LOW_PRIORITY, function() return cb(temp) end)
     end
   end
 end
@@ -144,20 +144,20 @@ local function _search(self, lcb, lpin, search, save)
   self.temp = {}
   if search then self.sens = {}; status = {} end
   local temp = self.temp
-  local sens = self.sens 
+  local sens = self.sens
   pin = lpin or pin
-  
+
   local addr
   if not search and #sens == 0 then
     -- load addreses if available
     debugPrint ("geting addreses from flash")
     local s,check,a = pcall(dofile, "ds18b20_save.lc")
-    if s and check == "ds18b20" then 
+    if s and check == "ds18b20" then
       for i = 1, #a do sens[i] = a[i] end
     end
     debugPrint (#sens, "addreses found")
   end
-  
+
   ow_setup(pin)
   if search or #sens == 0 then
     ow_reset_search(pin)
@@ -188,13 +188,13 @@ local function _search(self, lcb, lpin, search, save)
       -- save sensor addreses
       if save then
         debugPrint ("saving addreses to flash")
-        
+
         local addr_list = {}
-        for i =1, #sens do 
+        for i =1, #sens do
           local s = sens[i]
           addr_list[i] = to_string(s:sub(1,8), true)..('.."\\%u"'):format(s:byte(9))
         end
-        local save_statement = 'return "ds18b20", {' .. table_concat(addr_list, ',') .. '}'        
+        local save_statement = 'return "ds18b20", {' .. table_concat(addr_list, ',') .. '}'
         debugPrint (save_statement)
         local save_file = file_open("ds18b20_save.lc","w")
         save_file:write(string_dump(loadstring(save_statement)))
@@ -211,7 +211,7 @@ local function read_temp(self, lcb, lpin, lunit, force_search, save_search)
   cb, unit = lcb, lunit or unit
   _search(self, function() return conversion(self) end, lpin, force_search, save_search)
 end
- 
+
  -- Set module name as parameter of require and return module table
 local M = {
   sens = {},

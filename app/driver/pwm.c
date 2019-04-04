@@ -49,7 +49,7 @@ LOCAL uint8 *pwm_channel;
 // Toggle flips between 1 and 0 when we make updates so that the interrupt code
 // cn switch cleanly between the two states. The cinterrupt handler uses either
 // the pwm_single_toggle[0] or pwm_single_toggle[1]
-// pwm_toggle indicates which state should be used on the *next* timer interrupt 
+// pwm_toggle indicates which state should be used on the *next* timer interrupt
 // freq boundary.
 LOCAL uint8 pwm_toggle = 1;
 LOCAL volatile uint8 pwm_current_toggle = 1;
@@ -326,7 +326,7 @@ pwm_tim1_intr_handler(os_param_t p)
   int offset = 0;
 
   while (1) {
-    if (pwm_current_channel >= (*pwm_channel - 1)) {      
+    if (pwm_current_channel >= (*pwm_channel - 1)) {
       pwm_single = pwm_single_toggle[pwm_toggle];
       pwm_channel = &pwm_channel_toggle[pwm_toggle];
       pwm_current_toggle = pwm_toggle;
@@ -388,7 +388,7 @@ pwm_init(uint16 freq, uint16 *duty)
     // GPIO_OUTPUT_SET(GPIO_ID_PIN(PWM_0_OUT_IO_NUM), 0);
     // GPIO_OUTPUT_SET(GPIO_ID_PIN(PWM_1_OUT_IO_NUM), 0);
     // GPIO_OUTPUT_SET(GPIO_ID_PIN(PWM_2_OUT_IO_NUM), 0);
-    
+
     for (i = 0; i < PWM_CHANNEL; i++) {
         // pwm_gpio |= (1 << pwm_out_io_num[i]);
         pwm_gpio = 0;

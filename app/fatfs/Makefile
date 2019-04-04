@@ -12,11 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-
-UP_EXTRACT_DIR = ..
 GEN_LIBS = libfatfs.a
-COMPONENTS_libfatfs = option/liboption.a
-
 endif
 
 ifndef FATFS_INC_DIR
@@ -32,7 +28,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit -imacros $(FATFS_INC_DIR)fatfs_prefix_lib.h
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += 
+#DEFINES +=
 
 #############################################################
 # Recursion Magic - Don't touch this!!

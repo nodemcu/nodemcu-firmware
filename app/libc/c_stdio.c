@@ -69,7 +69,7 @@ int c_stderr = 1001;
 
 /*
  * Copyright (c) 2000-2002 Opsycon AB  (www.opsycon.se)
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -119,7 +119,7 @@ strichr(char *p, int c)
 
 /*
  * Copyright (c) 2000-2002 Opsycon AB  (www.opsycon.se)
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -193,7 +193,7 @@ str_fmt(char *p, int size, int fmt)
 
 /*
  * Copyright (c) 2000-2002 Opsycon AB  (www.opsycon.se)
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -239,7 +239,7 @@ strtoupper(char *p)
 
 /*
  * Copyright (c) 2000-2002 Opsycon AB  (www.opsycon.se)
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -367,7 +367,7 @@ _atob (u_quad_t *vp, char *p, int base)
 }
 
 /*
- *  atob(vp,p,base) 
+ *  atob(vp,p,base)
  *      converts p to binary result in vp, rtn 1 on success
  */
 int
@@ -386,7 +386,7 @@ atob(u_int32_t *vp, char *p, int base)
 
 
 /*
- *  llatob(vp,p,base) 
+ *  llatob(vp,p,base)
  *      converts p to binary result in vp, rtn 1 on success
  */
 int
@@ -399,7 +399,7 @@ llatob(u_quad_t *vp, char *p, int base)
 
 
 /*
- *  char *btoa(dst,value,base) 
+ *  char *btoa(dst,value,base)
  *      converts value to ascii, result in dst
  */
 char *
@@ -445,7 +445,7 @@ btoa(char *dst, u_int value, int base)
 }
 
 /*
- *  char *btoa(dst,value,base) 
+ *  char *btoa(dst,value,base)
  *      converts value to ascii, result in dst
  */
 char *
@@ -491,8 +491,8 @@ llbtoa(char *dst, u_quad_t value, int base)
 }
 
 /*
- *  gethex(vp,p,n) 
- *      convert n hex digits from p to binary, result in vp, 
+ *  gethex(vp,p,n)
+ *      convert n hex digits from p to binary, result in vp,
  *      rtn 1 on success
  */
 int
@@ -525,7 +525,7 @@ gethex(int32_t *vp, char *p, int n)
 
 /*
  * Copyright (c) 2000-2002 Opsycon AB  (www.opsycon.se)
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -565,7 +565,7 @@ gethex(int32_t *vp, char *p, int n)
 /*
  *  int vsprintf(d,s,ap)
  */
-int 
+int
 vsprintf (char *d, const char *s, va_list ap)
 {
     const char *t;
@@ -703,7 +703,7 @@ void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec);
     }
     *d = 0;
     return (d - dst);
-} 
+}
 
 #ifdef FLOATINGPT
 /*
@@ -761,7 +761,7 @@ extern double modf(double, double *);
 
 static int cvt (rtype arg, int prec, char *signp, int fmtch,
         char *startp, char *endp);
-static char *c_round (double fract, int *exp, char *start, char *end, 
+static char *c_round (double fract, int *exp, char *start, char *end,
             char ch, char *signp);
 static char *exponent(char *p, int exp, int fmtch);
 
@@ -801,7 +801,7 @@ void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec)
     if( !_finite(arg) ) {
         if( _isNan(arg) )
             strcpy (dbuf, "NaN");
-        else if( arg < 0) 
+        else if( arg < 0)
             strcpy (dbuf, "-Infinity");
         else
             strcpy (dbuf, "Infinity");

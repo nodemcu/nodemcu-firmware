@@ -45,7 +45,7 @@ typedef struct luaR_entry {
 
 /*
  * The current ROTable implmentation is a vector of luaR_entry terminated by a
- * nil record.  The convention is to use ROtable * to refer to the entire vector 
+ * nil record.  The convention is to use ROtable * to refer to the entire vector
  * as a logical ROTable.
  */
 typedef const struct luaR_entry ROTable;
@@ -57,20 +57,28 @@ void* luaR_getmeta(ROTable *tab);
 int luaR_isrotable(void *p);
 
 /*
- * Set inRO check depending on platform. Note that this implementation needs 
- * to work on both the host (luac.cross) and ESP targets.  The luac.cross 
- * VM is used for the -e option, and is primarily used to be able to debug 
+ * Set inRO check depending on platform. Note that this implementation needs
+ * to work on both the host (luac.cross) and ESP targets.  The luac.cross
+ * VM is used for the -e option, and is primarily used to be able to debug
  * VM changes on the more developer-friendly hot gdb environment.
  */
 #if defined(LUA_CROSS_COMPILER)
 
+#if defined(_MSC_VER)
+//msvc build uses these dummy vars to locate the beginning and ending addresses of the RO data
+extern const char _ro_start[], _ro_end[];
+#define IN_RODATA_AREA(p) (((const char*)(p)) >= _ro_start && ((const char *)(p)) <= _ro_end)
+#else /* one of the POSIX variants */
 #if defined(__CYGWIN__)
 #define _RODATA_END __end__
+#elif defined(__MINGW32__)
+#define _RODATA_END end
 #else
 #define _RODATA_END _edata
-#endif 
+#endif
 extern const char _RODATA_END[];
 #define IN_RODATA_AREA(p) (((const char *)(p)) < _RODATA_END)
+#endif /* defined(_MSC_VER) */
 
 #else  /* xtensa tool chain for ESP target */
 
@@ -78,7 +86,7 @@ extern const char _irom0_text_start[];
 extern const char _irom0_text_end[];
 #define IN_RODATA_AREA(p) (((const char *)(p)) >= _irom0_text_start && ((const char *)(p)) <= _irom0_text_end)
 
-#endif
+#endif /* defined(LUA_CROSS_COMPILER) */
 
 /* Return 1 if the given pointer is a rotable */
 #define luaR_isrotable(p) IN_RODATA_AREA(p)
