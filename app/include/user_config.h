@@ -156,6 +156,22 @@
 #define ENDUSER_SETUP_AP_SSID "SetupGadget"
 
 
+// I2C software driver partially supports use of GPIO16 (D0) pin for SCL line.
+// GPIO16 does not support open-drain mode and works in push-pull mode,
+// so clock stretching will not be possible, because circuit in slave device that
+// supposed to drive SCL low during stretching will not be capable to hold SCL low.
+// Also I2C speed will be limited to no more than 400000 Hz (FAST mode).
+// This define is does not have an effect on an old driver (see I2C_MASTER_OLD_VERSION).
+
+//#define I2C_MASTER_GPIO16_ENABLE
+
+// For compatibility reasons you can switch to old version of I2C software driver.
+// It does not support changing speed, have only one bus id = 0, does not support GPIO16
+// and works only in Standard(slow) mode with clock speed around 50kHz.
+
+#define I2C_MASTER_OLD_VERSION
+
+
 // The following sections are only relevent for those developers who are
 // developing modules or core Lua changes and configure how extra diagnostics
 // are enabled in the firmware. These should only be configured if you are

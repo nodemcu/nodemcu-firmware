@@ -235,7 +235,8 @@ void platform_sigma_delta_set_target( uint8_t target );
 enum
 {
   PLATFORM_I2C_SPEED_SLOW = 100000,
-  PLATFORM_I2C_SPEED_FAST = 400000
+  PLATFORM_I2C_SPEED_FAST = 400000,
+  PLATFORM_I2C_SPEED_FASTPLUS = 1000000
 };
 
 // I2C direction
@@ -251,6 +252,7 @@ static inline int platform_i2c_exists( unsigned id ) { return id < NUM_I2C; }
 static inline int platform_i2c_exists( unsigned id ) { return 0; }
 #endif
 uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t speed );
+bool platform_i2c_configured( unsigned id );
 void platform_i2c_send_start( unsigned id );
 void platform_i2c_send_stop( unsigned id );
 int platform_i2c_send_address( unsigned id, uint16_t address, int direction );
