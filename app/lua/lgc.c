@@ -28,10 +28,6 @@
 #define GCSWEEPCOST	10
 #define GCFINALIZECOST	100
 
-#if READONLYMASK != (1<<READONLYBIT) || (defined(LUA_FLASH_STORE) && LFSMASK  != (1<<LFSBIT))
-#error "lgc.h and object.h out of sync on READONLYMASK / LFSMASK"
-#endif
-
 #define maskmarks	cast_byte(~(bitmask(BLACKBIT)|WHITEBITS))
 
 #define makewhite(g,x)	\

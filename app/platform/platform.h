@@ -289,6 +289,7 @@ int platform_flash_erase_sector( uint32_t sector_id );
  */
 uint32_t platform_flash_mapped2phys (uint32_t mapped_addr);
 uint32_t platform_flash_phys2mapped (uint32_t phys_addr);
+uint32_t platform_flash_get_partition (uint32_t part_id, uint32_t *addr);
 
 // *****************************************************************************
 // Allocator support

@@ -7,8 +7,8 @@
 // this out and enabling the explicitly size, e.g. FLASH_4M.  Valid sizes are
 // FLASH_512K, FLASH_1M, FLASH_2M, FLASH_4M, FLASH_8M, FLASH_16M.
 
-#define FLASH_AUTOSIZE
-//#define FLASH_4M
+//#define FLASH_AUTOSIZE
+#define FLASH_4M
 
 
 // The firmware now selects a baudrate of 115,200 by default, but the driver
@@ -41,11 +41,8 @@
 
 // The Lua Flash Store (LFS) allows you to store Lua code in Flash memory and
 // the Lua VMS will execute this code directly from flash without needing any
-// RAM overhead.  If you want to enable LFS then set the following define to
-// the size of the store that you need.  This can be any multiple of 4kB up to
-// a maximum 256Kb.
-
-//#define LUA_FLASH_STORE 0x10000
+// RAM overhead.  Note that you should now configure LFS directly in the 
+// System Partition Table and not at build time.
 
 
 // By default Lua executes the file init.lua at start up.  The following
@@ -71,10 +68,10 @@
 // general, limiting the size of the FS only to what your application needs
 // gives the fastest start-up and imaging times.
 
+// Note that you should now configure SPIFFS size and position directly in the 
+// System Partition Table and not at build time.
+
 #define BUILD_SPIFFS
-//#define SPIFFS_FIXED_LOCATION        0x100000
-//#define SPIFFS_MAX_FILESYSTEM_SIZE    0x20000
-//#define SPIFFS_SIZE_1M_BOUNDARY
 #define SPIFFS_CACHE 1          // Enable if you use you SPIFFS in R/W mode
 #define SPIFFS_MAX_OPEN_FILES 4 // maximum number of open files for SPIFFS
 #define FS_OBJ_NAME_LEN 31      // maximum length of a filename
@@ -205,6 +202,19 @@
 // The remaining options are advanced configuration options and you should only
 // change this if you have tracked the implications through the Firmware sources
 // and understand the these.
+
+#define NODEMCU_EAGLEROM_PARTITION        1
+#define NODEMCU_IROM0TEXT_PARTITION       2
+#define NODEMCU_LFS0_PARTITION            3
+#define NODEMCU_LFS1_PARTITION            4
+#define NODEMCU_TLSCERT_PARTITION         5
+#define NODEMCU_SPIFFS0_PARTITION         6
+#define NODEMCU_SPIFFS1_PARTITION         7
+
+#define LUA_FLASH_STORE                   0x0
+#define SPIFFS_FIXED_LOCATION             0x0
+#define SPIFFS_MAX_FILESYSTEM_SIZE        (~0x0)
+//#define SPIFFS_SIZE_1M_BOUNDARY
 
 #define LUA_TASK_PRIO             USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG      2

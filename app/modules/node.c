@@ -17,9 +17,7 @@
 
 #include "platform.h"
 #include "lrodefs.h"
-#ifdef LUA_FLASH_STORE
 #include "lflash.h"
-#endif
 #include "c_types.h"
 #include "c_string.h"
 #include "driver/uart.h"
@@ -162,10 +160,6 @@ static int node_flashid( lua_State* L )
 // Lua: flashsize()
 static int node_flashsize( lua_State* L )
 {
-  if (lua_type(L, 1) == LUA_TNUMBER)
-  {
-    flash_rom_set_size_byte(luaL_checkinteger(L, 1));
-  }
   uint32_t sz = flash_rom_get_size_byte();
   lua_pushinteger( L, sz );
   return 1;
@@ -603,10 +597,8 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
   { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
   { LSTRKEY( "task" ), LROVAL( node_task_map ) },
-#ifdef LUA_FLASH_STORE
   { LSTRKEY( "flashreload" ), LFUNCVAL( luaN_reload_reboot ) },
   { LSTRKEY( "flashindex" ), LFUNCVAL( luaN_index ) },
-#endif
   { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
   { LSTRKEY( "dsleep" ),    LFUNCVAL( node_deepsleep ) },
   { LSTRKEY( "dsleepMax" ), LFUNCVAL( dsleepMax ) },

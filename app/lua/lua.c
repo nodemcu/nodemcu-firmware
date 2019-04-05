@@ -22,9 +22,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "legc.h"
-#ifdef LUA_FLASH_STORE
 #include "lflash.h"
-#endif
 #include "os_type.h"
 
 lua_State *globalL = NULL;

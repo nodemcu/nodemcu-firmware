@@ -33,11 +33,14 @@ sint32_t vfs_get_rtc( vfs_time *tm )
 
 static int dir_level = 1;
 
+
+#if ! LDRV_TRAVERSAL
+
+#define normalize_path(p) (p)
+
+#else
 static const char *normalize_path( const char *path )
 {
-#if ! LDRV_TRAVERSAL
-  return path;
-#else
   const char *temp = path;
   size_t len;
 
@@ -63,8 +66,8 @@ static const char *normalize_path( const char *path )
     // path traverses via root
     return temp;
   }
-#endif
 }
+#endif
 
 
 // ---------------------------------------------------------------------------

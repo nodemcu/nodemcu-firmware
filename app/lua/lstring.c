@@ -112,7 +112,7 @@ LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
       return ts;
     }
   }
-#if defined(LUA_FLASH_STORE) && !defined(LUA_CROSS_COMPILER)
+#ifndef LUA_CROSS_COMPILER
   /*
    * The RAM strt is searched first since RAM access is faster tham Flash access.
    * If a miss, then search the RO string table.

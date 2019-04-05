@@ -28,12 +28,12 @@ static int db_getregistry (lua_State *L) {
 }
 
 static int db_getstrings (lua_State *L) {
-  size_t i,n;
+  size_t i,n=0;
   stringtable *tb;
   GCObject *o;
-#if defined(LUA_FLASH_STORE) && !defined(LUA_CROSS_COMPILER)
+#ifndef LUA_CROSS_COMPILER
   const char *opt = lua_tolstring (L, 1, &n);
-  if (n==3 && memcmp(opt, "ROM", 4) == 0) {
+  if (n==3 && c_memcmp(opt, "ROM", 4) == 0) {
     if (G(L)->ROstrt.hash == NULL)
       return 0;
     tb = &G(L)->ROstrt;

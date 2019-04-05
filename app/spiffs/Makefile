@@ -23,6 +23,7 @@ endif
 #   for a subtree within the makefile rooted therein
 #
 DEFINES += -Dprintf=c_printf
+#DEFINES += -DDEVELOPMENT_TOOLS -DNODE_DEBUG -DSPIFFS_API_DBG=NODE_DBG
 
 #############################################################
 # Recursion Magic - Don't touch this!!

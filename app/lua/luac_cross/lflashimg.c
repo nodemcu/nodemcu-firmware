@@ -16,8 +16,6 @@
 #define LUA_CORE
 #include "lobject.h"
 #include "lstring.h"
-#undef LUA_FLASH_STORE
-#define LUA_FLASH_STORE
 #include "lflash.h"
 #include "uzlib.h"
 
