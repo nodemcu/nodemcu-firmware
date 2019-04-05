@@ -75,22 +75,21 @@ static const char* bytes64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx
   */
 static int crypto_base64_encode( lua_State* L )
 {
-  int len;
+  int len, i;
   const char* msg = luaL_checklstring(L, 1, &len);
-  int blen = (len + 2) / 3 * 4;
-  char* out = (char*)c_malloc(blen);
-  int j = 0, i;
+  luaL_Buffer out;
+
+  luaL_buffinit(L, &out);
   for (i = 0; i < len; i += 3) {
     int a = msg[i];
     int b = (i + 1 < len) ? msg[i + 1] : 0;
     int c = (i + 2 < len) ? msg[i + 2] : 0;
-    out[j++] = bytes64[a >> 2];
-    out[j++] = bytes64[((a & 3) << 4) | (b >> 4)];
-    out[j++] = (i + 1 < len) ? bytes64[((b & 15) << 2) | (c >> 6)] : 61;
-    out[j++] = (i + 2 < len) ? bytes64[(c & 63)] : 61;
+    luaL_addchar(&out, bytes64[a >> 2]);
+    luaL_addchar(&out, bytes64[((a & 3) << 4) | (b >> 4)]);
+    luaL_addchar(&out, (i + 1 < len) ? bytes64[((b & 15) << 2) | (c >> 6)] : 61);
+    luaL_addchar(&out, (i + 2 < len) ? bytes64[(c & 63)] : 61);
   }
-  lua_pushlstring(L, out, j);
-  c_free(out);
+  luaL_pushresult(&out);
   return 1;
 }
 
@@ -101,16 +100,16 @@ static int crypto_base64_encode( lua_State* L )
   */
 static int crypto_hex_encode( lua_State* L)
 {
-  int len;
+  int len, i;
   const char* msg = luaL_checklstring(L, 1, &len);
-  char* out = (char*)c_malloc(len * 2);
-  int i, j = 0;
+  luaL_Buffer out;
+
+  luaL_buffinit(L, &out);
   for (i = 0; i < len; i++) {
-    out[j++] = crypto_hexbytes[msg[i] >> 4];
-    out[j++] = crypto_hexbytes[msg[i] & 0xf];
+    luaL_addchar(&out, crypto_hexbytes[msg[i] >> 4]);
+    luaL_addchar(&out, crypto_hexbytes[msg[i] & 0xf]);
   }
-  lua_pushlstring(L, out, len*2);
-  c_free(out);
+  luaL_pushresult(&out);
   return 1;
 }
 #endif
@@ -121,22 +120,20 @@ static int crypto_hex_encode( lua_State* L)
   */
 static int crypto_mask( lua_State* L )
 {
-  int len, mask_len;
+  int len, mask_len, i;
   const char* msg = luaL_checklstring(L, 1, &len);
   const char* mask = luaL_checklstring(L, 2, &mask_len);
+  luaL_Buffer b;
 
   if(mask_len <= 0)
     return luaL_error(L, "invalid argument: mask");
 
-  int i;
-  char* copy = (char*)c_malloc(len);
-
+  luaL_buffinit(L, &b);
   for (i = 0; i < len; i++) {
-    copy[i] = msg[i] ^ mask[i % mask_len];
+    luaL_addchar(&b, msg[i] ^ mask[i % mask_len]);
   }
-  lua_pushlstring(L, copy, len);
-  c_free(copy);
 
+  luaL_pushresult(&b);
   return 1;
 }
 
@@ -175,29 +172,35 @@ static int crypto_lhash (lua_State *L)
 
 static int crypto_new_hash_hmac (lua_State *L, int what)
 {
+  /* get pointer to relevant hash_mechs table entry in app/crypto/digest.c */
   const digest_mech_info_t *mi = crypto_digest_mech (luaL_checkstring (L, 1));
   if (!mi)
     return bad_mech (L);
 
-  size_t len = 0;
-  const char *key = 0;
-  uint8_t *k_opad = 0;
+  size_t len = 0, k_opad_len = 0, udlen;
+  const char *key = NULL;
+  uint8_t *k_opad = NULL;
+
   if (what == WANT_HMAC)
   {
     key = luaL_checklstring (L, 2, &len);
-    k_opad = luaM_malloc (L, mi->block_size);
+    k_opad_len = mi->block_size;
   }
-  void *ctx = luaM_malloc (L, mi->ctx_size);
 
+  // create a userdatum with specific metatable.  This comprises the ud header, 
+  // the encrypto context block, and an optional HMAC block
+  udlen = sizeof(digest_user_datum_t) + mi->ctx_size + k_opad_len;
+  digest_user_datum_t *dudat = (digest_user_datum_t *)lua_newuserdata(L, udlen);
+  void *ctx = (char *)(dudat + 1);
   mi->create (ctx);
-
-  if (what == WANT_HMAC)
-    crypto_hmac_begin (ctx, mi, key, len, k_opad);
-
-  // create a userdataum with specific metatable
-  digest_user_datum_t *dudat = (digest_user_datum_t *)lua_newuserdata(L, sizeof(digest_user_datum_t));
+  
   luaL_getmetatable(L, "crypto.hash");
   lua_setmetatable(L, -2);
+
+  if (what == WANT_HMAC) {
+    k_opad = (char *)ctx + mi->ctx_size; 
+    crypto_hmac_begin (ctx, mi, key, len, k_opad);
+  }
 
   // Set pointers to the mechanics and CTX
   dudat->mech_info = mi;
@@ -261,23 +264,6 @@ static int crypto_hash_finalize (lua_State *L)
   lua_pushlstring (L, digest, sizeof (digest));
   return 1;
 }
-
-/* Frees memory for the user datum and CTX hash state */
-static int crypto_hash_gcdelete (lua_State *L)
-{
-  NODE_DBG("enter crypto_hash_delete.\n");
-  digest_user_datum_t *dudat;
-
-  dudat = (digest_user_datum_t *)luaL_checkudata(L, 1, "crypto.hash");
-
-  // luaM_free() uses type info to obtain original size, so have to delve
-  // one level deeper and explicitly pass the size due to void*
-  luaM_realloc_ (L, dudat->ctx, dudat->mech_info->ctx_size, 0);
-  luaM_free (L, dudat->k_opad);
-
-  return 0;
-}
-
 
 static sint32_t vfs_read_wrap (int fd, void *ptr, size_t len)
 {
@@ -356,40 +342,31 @@ static const crypto_mech_t *get_mech (lua_State *L, int idx)
 static int crypto_encdec (lua_State *L, bool enc)
 {
   const crypto_mech_t *mech = get_mech (L, 1);
-  size_t klen;
-  const char *key = luaL_checklstring (L, 2, &klen);
-  size_t dlen;
-  const char *data = luaL_checklstring (L, 3, &dlen);
+  size_t klen, dlen, ivlen, bs = mech->block_size;
 
-  size_t ivlen;
+  const char *key = luaL_checklstring (L, 2, &klen);
+  const char *data = luaL_checklstring (L, 3, &dlen);
   const char *iv = luaL_optlstring (L, 4, "", &ivlen);
 
-  size_t bs = mech->block_size;
   size_t outlen = ((dlen + bs -1) / bs) * bs;
-  char *buf = (char *)os_zalloc (outlen);
-  if (!buf)
-    return luaL_error (L, "crypto init failed");
 
-  crypto_op_t op =
-  {
+  char *buf = luaM_newvector(L, outlen, char);
+
+  crypto_op_t op = {
     key, klen,
     iv, ivlen,
     data, dlen,
     buf, outlen,
     enc ? OP_ENCRYPT : OP_DECRYPT
   };
-  if (!mech->run (&op))
-  {
-    os_free (buf);
-    return luaL_error (L, "crypto op failed");
-  }
-  else
-  {
-    lua_pushlstring (L, buf, outlen);
-    // note: if lua_pushlstring runs out of memory, we leak buf :(
-    os_free (buf);
-    return 1;
-  }
+
+  int status = mech->run (&op);
+
+  lua_pushlstring (L, buf, outlen);  /* discarded on error but what the hell */
+  luaM_freearray(L, buf, outlen, char);
+
+  return status ? 1 : luaL_error (L, "crypto op failed");
+
 }
 
 static int lcrypto_encrypt (lua_State *L)
@@ -406,7 +383,6 @@ static int lcrypto_decrypt (lua_State *L)
 static const LUA_REG_TYPE crypto_hash_map[] = {
   { LSTRKEY( "update" ),  LFUNCVAL( crypto_hash_update ) },
   { LSTRKEY( "finalize" ),   LFUNCVAL( crypto_hash_finalize ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( crypto_hash_gcdelete ) },
   { LSTRKEY( "__index" ), LROVAL( crypto_hash_map ) },
   { LNILKEY, LNILVAL }
 };
