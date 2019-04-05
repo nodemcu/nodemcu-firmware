@@ -39,6 +39,7 @@ import struct
 import string
 
 __version__     = '1.0'
+__program__     = 'nodemcu-partition.py'
 ROM0_Seg        =   0x010000
 FLASH_PAGESIZE  =   0x001000
 FLASH_BASE_ADDR = 0x40200000
@@ -62,6 +63,14 @@ WORDSIZE           = 4
 WORDBITS           = 32
 
 PACK_INT    = struct.Struct("<I")
+
+class FatalError(RuntimeError):
+    def __init__(self, message):
+        RuntimeError.__init__(self, message)
+
+    def WithResult(message, result):
+        message += " (result was %s)" % hexify(result)
+        return FatalError(message)
 
 def load_PT(data, args):
     """
@@ -173,12 +182,13 @@ def main():
         else:
             return int(ux, 0)
 
-    print('nodemcu-partition V%s' % __version__)
+    print('%s V%s' %(__program__, __version__))
 
     # ---------- process the arguments ---------- #
 
     a = argparse.ArgumentParser(
-        description='esplfs.py v%s - ESP8266 NodeMCU LFS Loader Utility' % __version__,
+        description='%s V%s - ESP8266 NodeMCU Loader Utility' % 
+                     (__program__, __version__),
         prog='esplfs')
     a.add_argument('--port', '-p', help='Serial port device')
     a.add_argument('--baud', '-b',  type=arg_auto_int,
@@ -202,9 +212,7 @@ def main():
 
     if arg.sf is not None:
         if not os.path.exists(arg.sf):
-           raise FatalError("LFS image %s does not exist" % arg.sf)
-
-    pprint(arg)
+           raise FatalError("SPIFFS image %s does not exist" % arg.sf)
 
     base = [] if arg.port is None else ['--port',arg.port]
     if arg.baud is not None: base.extend(['--baud',arg.baud])
