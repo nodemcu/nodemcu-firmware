@@ -8,3 +8,4 @@ echo "Running ci build for windows msbuild (supports only hosttools)"
   export PATH=$MSBUILD_PATH:$PATH
   msbuild.exe hosttools.sln
 )
+
