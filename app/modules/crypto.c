@@ -172,7 +172,8 @@ static int crypto_lhash (lua_State *L)
 
 static int crypto_new_hash_hmac (lua_State *L, int what)
 {
-  /* get pointer to relevant hash_mechs table entry in app/crypto/digest.c */
+  // get pointer to relevant hash_mechs table entry in app/crypto/digest.c.  Note that
+  // the size of the table needed is dependent on the the digest type
   const digest_mech_info_t *mi = crypto_digest_mech (luaL_checkstring (L, 1));
   if (!mi)
     return bad_mech (L);
@@ -182,22 +183,24 @@ static int crypto_new_hash_hmac (lua_State *L, int what)
   uint8_t *k_opad = NULL;
 
   if (what == WANT_HMAC)
-  {
+  { // The key and k_opad are only used for HMAC; these default to NULLs for HASH
     key = luaL_checklstring (L, 2, &len);
     k_opad_len = mi->block_size;
   }
 
   // create a userdatum with specific metatable.  This comprises the ud header, 
-  // the encrypto context block, and an optional HMAC block
+  // the encrypto context block, and an optional HMAC block as a single allocation
+  // unit
   udlen = sizeof(digest_user_datum_t) + mi->ctx_size + k_opad_len;
   digest_user_datum_t *dudat = (digest_user_datum_t *)lua_newuserdata(L, udlen);
-  void *ctx = (char *)(dudat + 1);
-  mi->create (ctx);
-  
-  luaL_getmetatable(L, "crypto.hash");
+  luaL_getmetatable(L, "crypto.hash");  // and set its metatable to the crypto.hash table
   lua_setmetatable(L, -2);
 
+  void *ctx = dudat + 1;  // The context block immediately follows the digest_user_datum
+  mi->create (ctx);
+  
   if (what == WANT_HMAC) {
+    // The k_opad block immediately follows the context block
     k_opad = (char *)ctx + mi->ctx_size; 
     crypto_hmac_begin (ctx, mi, key, len, k_opad);
   }
