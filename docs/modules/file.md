@@ -139,6 +139,27 @@ remaining, used, total=file.fsinfo()
 print("\nFile system info:\nTotal : "..total.." (k)Bytes\nUsed : "..used.." (k)Bytes\nRemain: "..remaining.." (k)Bytes\n")
 ```
 
+## file.getcontents()
+
+Open and read the contents of a file.
+
+#### Syntax
+`file.getcontents(filename)`
+
+#### Parameters
+- `filename` file to be opened and read
+
+#### Returns
+file contents if the file exists. `nil` if the file does not exist.
+
+#### Example (basic model)
+```lua
+print(file.getcontents('welcome.txt'))
+```
+#### See also
+- [`file.putcontents()`](#fileputcontents)
+
+
 ## file.list()
 
 Lists all files in the file system.
@@ -307,6 +328,31 @@ Renames a file. If a file is currently open, it will be closed first.
 -- rename file 'temp.lua' to 'init.lua'.
 file.rename("temp.lua","init.lua")
 ```
+
+## file.putcontents()
+
+Open and read the contents of a file.
+
+#### Syntax
+`file.putcontents(filename, contents)`
+
+#### Parameters
+- `filename` file to be created
+- `contents` to be written to the file
+
+#### Returns
+`true` if the write is ok, `nil` on error
+
+#### Example (basic model)
+```lua
+file.putcontents('welcome.txt', [[
+  Hello to new user
+  -----------------
+]])
+```
+#### See also
+- [`file.getcontents()`](#filegetcontents)
+
 
 ## file.stat()
 

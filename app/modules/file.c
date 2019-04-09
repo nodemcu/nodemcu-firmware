@@ -421,67 +421,42 @@ static int file_stat( lua_State* L )
 // g_read()
 static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 {
-  static char *heap_mem = NULL;
-  // free leftover memory
-  if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
-  }
-
-  if(n <= 0)
-    n = FILE_READ_CHUNK;
-
-  if(end_char < 0 || end_char >255)
-    end_char = EOF;
-
+  int i, j;
+  luaL_Buffer b;
+  char p[LUAL_BUFFERSIZE/2];
 
   if(!fd)
     return luaL_error(L, "open a file first");
 
-  char *p;
-  int i;
+  luaL_buffinit(L, &b);
 
-  if (n > LUAL_BUFFERSIZE) {
-    // get buffer from heap
-    p = heap_mem = luaM_malloc(L, n);
-  } else {
-    // small chunks go onto the stack
-    p = alloca(n);
-  }
+  for (j = 0; j < n; j += sizeof(p)) {
+    int nwanted = (j <= n - sizeof(p)) ? sizeof(p) : n - j;
+    int nread   = vfs_read(fd, p, nwanted);
 
-  n = vfs_read(fd, p, n);
-  // bypass search if no end character provided
-  if (n > 0 && end_char != EOF) {
-    for (i = 0; i < n; ++i)
-      if (p[i] == end_char)
-      {
-        ++i;
+    if (nread == VFS_RES_ERR || nread == 0) {
+      lua_pushnil(L);     
+      return 1;
+    }
+
+    for (i = 0; i < nread; ++i) {
+      luaL_addchar(&b, p[i]);
+      if (p[i] == end_char) {
+        vfs_lseek(fd, -nread + j + i + 1, VFS_SEEK_CUR); //reposition after end char found
+        nread = 0;   // force break on outer loop
         break;
       }
-  } else {
-    i = n;
-  }
-
-  if (i == 0 || n == VFS_RES_ERR) {
-    if (heap_mem) {
-      luaM_free(L, heap_mem);
-      heap_mem = NULL;
     }
-    lua_pushnil(L);
-    return 1;
-  }
 
-  vfs_lseek(fd, -(n - i), VFS_SEEK_CUR);
-  lua_pushlstring(L, p, i);
-  if (heap_mem) {
-    luaM_free(L, heap_mem);
-    heap_mem = NULL;
+    if (nread < nwanted)
+      break;
   }
+  luaL_pushresult(&b);
   return 1;
 }
 
 // Lua: read()
-// file.read() will read all byte in file
+// file.read() will read FILE_READ_CHUNK bytes, or EOF is reached.
 // file.read(10) will read 10 byte from file, or EOF is reached.
 // file.read('q') will read until 'q' or EOF is reached.
 static int file_read( lua_State* L )
@@ -514,6 +489,28 @@ static int file_readline( lua_State* L )
   GET_FILE_OBJ;
 
   return file_g_read(L, FILE_READ_CHUNK, '\n', fd);
+}
+
+// Lua: getfile(filename)
+static int file_getfile( lua_State* L )
+{
+  // Warning this code C calls other file_* routines to avoid duplication code.  These
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to 
+  // align these
+  int ret_cnt = 0;
+  lua_settop(L ,1);
+  // Stack [1] = FD
+  file_open(L); 
+  // Stack [1] = filename; [2] = FD or nil
+  if (!lua_isnil(L, -1)) {
+    lua_remove(L, 1);  // dump filename, so [1] = FD
+    file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
+    ret_cnt = file_g_read(L, LUAI_MAXINT32, EOF, ud->fd); 
+    // Stack [1] = FD; [2] = contents if ret_cnt = 1; 
+    file_close(L);     // leaves Stack unchanged if [1] = FD 
+    lua_remove(L, 1);  // Dump FD leaving contents as [1] / ToS
+  }
+  return ret_cnt;
 }
 
 // Lua: write("string")
@@ -552,6 +549,34 @@ static int file_writeline( lua_State* L )
   }
   else{
     lua_pushnil(L);
+  }
+  return 1;
+}
+
+// Lua: getfile(filename)
+static int file_putfile( lua_State* L )
+{
+  // Warning this code C calls other file_* routines to avoid duplication code.  These
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to 
+  // align these
+  int ret_cnt = 0;
+  lua_settop(L, 2);
+  lua_pushvalue(L, 2); //dup contents onto the ToS [3]
+  lua_pushliteral(L, "w+");
+  lua_replace(L, 2);
+  // Stack [1] = filename; [2] "w+" [3] contents; 
+  file_open(L); 
+  // Stack [1] = filename; [2] "w+" [3] contents; [4] FD or nil 
+
+  if (!lua_isnil(L, -1)) {
+    lua_remove(L, 2);  //dump "w+" attribute literal
+    lua_replace(L, 1);
+    // Stack [1] = FD; [2] contents 
+    file_write(L);
+    // Stack [1] = FD; [2] contents; [3] result status 
+    lua_remove(L, 2);  //dump contents
+    file_close(L);
+    lua_remove(L, 1); // Dump FD leaving status as ToS
   }
   return 1;
 }
@@ -661,6 +686,8 @@ static const LUA_REG_TYPE file_map[] = {
   { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
   { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
   { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },
+  { LSTRKEY( "getcontents" ), LFUNCVAL( file_getfile ) },
+  { LSTRKEY( "putcontents" ), LFUNCVAL( file_putfile ) },
   { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
   { LSTRKEY( "on" ),        LFUNCVAL( file_on ) },
   { LSTRKEY( "stat" ),      LFUNCVAL( file_stat ) },
