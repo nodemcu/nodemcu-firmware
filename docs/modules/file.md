@@ -308,30 +308,9 @@ file.remove("foo.lua")
 #### See also
 [`file.open()`](#fileopen)
 
-## file.rename()
-
-Renames a file. If a file is currently open, it will be closed first.
-
-#### Syntax
-`file.rename(oldname, newname)`
-
-#### Parameters
-- `oldname` old file name
-- `newname` new file name
-
-#### Returns
-`true` on success, `false` on error.
-
-#### Example
-
-```lua
--- rename file 'temp.lua' to 'init.lua'.
-file.rename("temp.lua","init.lua")
-```
-
 ## file.putcontents()
 
-Open and read the contents of a file.
+Open and write the contents of a file.
 
 #### Syntax
 `file.putcontents(filename, contents)`
@@ -353,6 +332,26 @@ file.putcontents('welcome.txt', [[
 #### See also
 - [`file.getcontents()`](#filegetcontents)
 
+## file.rename()
+
+Renames a file. If a file is currently open, it will be closed first.
+
+#### Syntax
+`file.rename(oldname, newname)`
+
+#### Parameters
+- `oldname` old file name
+- `newname` new file name
+
+#### Returns
+`true` on success, `false` on error.
+
+#### Example
+
+```lua
+-- rename file 'temp.lua' to 'init.lua'.
+file.rename("temp.lua","init.lua")
+```
 
 ## file.stat()
 
