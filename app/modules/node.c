@@ -571,7 +571,25 @@ static int node_random (lua_State *L) {
   lua_pushnumber(L, node_random_range(l, u));  /* int between `l' and `u' */
   return 1;
 }
-
+#ifdef DEVELOPMENT_TOOLS
+// Lua: rec = node.readrcr(id) 
+static int node_readrcr (lua_State *L) {
+  int id  = luaL_checkinteger(L, 1);
+  char *data;
+  int n = platform_rcr_read(id, (void **)&data);
+  if (n == ~0) return 0;
+  lua_pushlstring(L, data, n);
+  return 1;
+}
+// Lua: n = node.writercr(id,rec) 
+static int node_writercr (lua_State *L) {
+  int id = luaL_checkinteger(L, 1),l;
+  const char *data = lua_tolstring(L, 2, &l);
+  int n = platform_rcr_write(id, data, l);
+  lua_pushinteger(L, n);
+  return 1;
+}
+#endif
 
 // Module function map
 
@@ -605,6 +623,10 @@ static const LUA_REG_TYPE node_map[] =
   { LSTRKEY( "sleep" ), LFUNCVAL( node_sleep ) },
 #ifdef PMSLEEP_ENABLE
   PMSLEEP_INT_MAP,
+#endif
+#ifdef DEVELOPMENT_TOOLS
+  { LSTRKEY( "readrcr" ), LFUNCVAL( node_readrcr ) },
+  { LSTRKEY( "writercr" ), LFUNCVAL( node_writercr ) },
 #endif
   { LSTRKEY( "chipid" ), LFUNCVAL( node_chipid ) },
   { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },

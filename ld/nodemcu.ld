@@ -233,7 +233,7 @@ SECTIONS
   .irom0.text : ALIGN(0x1000)
   {
     _irom0_text_start = ABSOLUTE(.);
-    *(.irom0.ptable)
+    KEEP(*(.irom0.ptable))
     . = ALIGN(0x1000);
     *(.servercert.flash)
     *(.clientcert.flash)

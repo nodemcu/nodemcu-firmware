@@ -15,6 +15,7 @@
 
 #define c_memcmp os_memcmp
 #define c_memcpy os_memcpy
+#define c_memmove os_memmove
 #define c_memset os_memset
 
 #define c_strcat os_strcat
