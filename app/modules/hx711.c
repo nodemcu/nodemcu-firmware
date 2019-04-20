@@ -275,7 +275,7 @@ static int hx711_read(lua_State* L) {
   uint32_t mode = luaL_optinteger(L, 1, 0);
 
   if (mode > 2) {
-    return luaL_error( L, 1, "Mode value out of range" );
+    return luaL_argerror( L, 1, "Mode value out of range" );
   }
 
 #ifdef GPIO_INTERRUPT_ENABLE
