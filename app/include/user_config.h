@@ -166,7 +166,7 @@
 // It does not support changing speed, have only one bus id = 0, does not support GPIO16
 // and works only in Standard(slow) mode with clock speed around 50kHz.
 
-#define I2C_MASTER_OLD_VERSION
+//#define I2C_MASTER_OLD_VERSION
 
 
 // The following sections are only relevent for those developers who are
