@@ -7,6 +7,7 @@ sdkconfig.old*
 build/
 app/
 components/*/.output/
+tools/toolchains
 
 #ignore Eclipse project files
 .cproject
