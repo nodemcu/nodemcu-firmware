@@ -1,11 +1,5 @@
-sudo: required # due to manual install of make 4.1
-dist: trusty # due to the make 4.1 not installable on precise
+dist: xenial
 language: cpp
-# we need at least GNU Make 4.0, which isn't available in trusty, so grab it
-# manually from xenial
-before_install:
-- wget http://mirrors.kernel.org/ubuntu/pool/main/m/make-dfsg/make_4.1-6_amd64.deb
-- sudo dpkg -i make_4.1-6_amd64.deb
 addons:
   apt:
     packages:
