@@ -271,4 +271,10 @@ config LUA_MODULE_TIME
   help
       Includes the time module.
 
+config LUA_MODULE_PULSECNT
+  bool "Pulse counter module"
+  default "n"
+  help
+      Includes the pulse counter module.
+
 endmenu
