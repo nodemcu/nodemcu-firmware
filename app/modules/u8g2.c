@@ -11,6 +11,7 @@
 #include "lauxlib.h"
 
 #define U8X8_USE_PINS
+#define U8X8_WITH_USER_PTR
 #include "u8g2.h"
 #include "u8x8_nodemcu_hal.h"
 
@@ -638,11 +639,11 @@ static int ldisplay_i2c( lua_State *L, display_setup_fn_t setup_fn )
   u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
   ud->font_ref = LUA_NOREF;
   ud->host_ref = LUA_NOREF;
-  /* the i2c driver id is forwarded in the hal member */
-  ext_u8g2->hal = id >= 0 ? (void *)id : NULL;
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  /* the i2c driver id is forwarded in the user pointer */
+  u8x8->user_ptr = id >= 0 ? (void *)id : NULL;
 
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_i2c, u8x8_gpio_and_delay_nodemcu );
 
@@ -731,11 +732,11 @@ static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
   u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
   ud->font_ref = LUA_NOREF;
   ud->host_ref = host_ref;
-  /* the spi host id is forwarded in the hal member */
-  ext_u8g2->hal = host ? (void *)(host->host) : NULL;
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  /* the spi host id is forwarded in the user pointer */
+  u8x8->user_ptr = host ? (void *)(host->host) : NULL;
 
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_spi, u8x8_gpio_and_delay_nodemcu );
 

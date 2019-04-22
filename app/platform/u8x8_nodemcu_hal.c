@@ -11,6 +11,7 @@
 #include "platform.h"
 
 #define U8X8_USE_PINS
+#define U8X8_WITH_USER_PTR
 #include "u8x8_nodemcu_hal.h"
 
 // static variables containing info about the i2c link
@@ -45,7 +46,7 @@ static void force_flush_buffer(u8x8_t *u8x8)
 {
   // spi hal has a buffer that can be flushed
   if (u8x8->byte_cb == u8x8_byte_nodemcu_spi) {
-    hal_spi_t *hal = ((u8g2_nodemcu_t *)u8x8)->hal;
+    hal_spi_t *hal = u8x8->user_ptr;
     flush_buffer_spi( hal );
   }
 }
@@ -164,7 +165,7 @@ uint8_t u8x8_gpio_and_delay_nodemcu(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, 
 uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
   uint8_t *data;
-  hal_i2c_t *hal = ((u8g2_nodemcu_t *)u8x8)->hal;
+  hal_i2c_t *hal = u8x8->user_ptr;
 
   switch(msg) {
   case U8X8_MSG_BYTE_SEND:
@@ -186,12 +187,12 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 
   case U8X8_MSG_BYTE_INIT:
     {
-      // the hal member initially contains the i2c id
+      // the user pointer initially contains the i2c id
       int id = (int)hal;
       if (!(hal = c_malloc( sizeof ( hal_i2c_t ) )))
         return 0;
       hal->id = id;
-      ((u8g2_nodemcu_t *)u8x8)->hal = hal;
+      u8x8->user_ptr = hal;
     }
     break;
 
@@ -229,7 +230,7 @@ uint8_t u8x8_byte_nodemcu_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 
 uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
-  hal_spi_t *hal = ((u8g2_nodemcu_t *)u8x8)->hal;
+  hal_spi_t *hal = u8x8->user_ptr;
 
   switch(msg) {
   case U8X8_MSG_BYTE_INIT:
@@ -237,12 +238,12 @@ uint8_t u8x8_byte_nodemcu_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
       /* disable chipselect */
       u8x8_gpio_SetCS( u8x8, u8x8->display_info->chip_disable_level );
 
-      // the hal member initially contains the spi host id
+      // the user pointer initially contains the spi host id
       int host = (int)hal;
       if (!(hal = c_malloc( sizeof ( hal_spi_t ) )))
         return 0;
       hal->host = host;
-      ((u8g2_nodemcu_t *)u8x8)->hal = hal;
+      u8x8->user_ptr = hal;
       hal->buffer.data = NULL;
 
       hal->last_dc = 0;
