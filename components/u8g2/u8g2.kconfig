@@ -41,6 +41,11 @@ config U8G2_I2C_SH1108_160X160
        bool "sh1108_i2c_160x160"
        default "n"
 
+config U8G2_I2C_SSD0323_OS128064
+       depends on U8G2_COMM_I2C
+       bool "ssd0323_i2c_os128064"
+       default "n"
+
 config U8G2_I2C_SSD1305_128X32_NONAME
        depends on U8G2_COMM_I2C
        bool "ssd1305_i2c_128x32_noname"
@@ -84,6 +89,16 @@ config U8G2_I2C_SSD1309_128X64_NONAME0
 config U8G2_I2C_SSD1309_128X64_NONAME2
        depends on U8G2_COMM_I2C
        bool "ssd1309_i2c_128x64_noname2"
+       default "n"
+
+config U8G2_I2C_SSD1318_128X96
+       depends on U8G2_COMM_I2C
+       bool "ssd1318_i2c_128x96"
+       default "n"
+
+config U8G2_I2C_SSD1318_128X96_XCP
+       depends on U8G2_COMM_I2C
+       bool "ssd1318_i2c_128x96_xcp"
        default "n"
 
 config U8G2_I2C_SSD1325_NHD_128X64
@@ -297,6 +312,11 @@ config U8G2_SPI_SH1122_256X64
        bool "sh1122_256x64"
        default "n"
 
+config U8G2_SPI_SSD0323_OS128064
+       depends on U8G2_COMM_SPI
+       bool "ssd0323_os128064"
+       default "n"
+
 config U8G2_SPI_SSD1305_128X32_NONAME
        depends on U8G2_COMM_SPI
        bool "ssd1305_128x32_noname"
@@ -340,6 +360,16 @@ config U8G2_SPI_SSD1309_128X64_NONAME0
 config U8G2_SPI_SSD1309_128X64_NONAME2
        depends on U8G2_COMM_SPI
        bool "ssd1309_128x64_noname2"
+       default "n"
+
+config U8G2_SPI_SSD1318_128X96
+       depends on U8G2_COMM_SPI
+       bool "ssd1318_128x96"
+       default "n"
+
+config U8G2_SPI_SSD1318_128X96_XCP
+       depends on U8G2_COMM_SPI
+       bool "ssd1318_128x96_xcp"
        default "n"
 
 config U8G2_SPI_SSD1322_NHD_128X64
@@ -392,6 +422,16 @@ config U8G2_SPI_SSD1607_200X200
        bool "ssd1607_200x200"
        default "n"
 
+config U8G2_SPI_SSD1607_GD_200X200
+       depends on U8G2_COMM_SPI
+       bool "ssd1607_gd_200x200"
+       default "n"
+
+config U8G2_SPI_SSD1607_WS_200X200
+       depends on U8G2_COMM_SPI
+       bool "ssd1607_ws_200x200"
+       default "n"
+
 config U8G2_SPI_ST7565_64128N
        depends on U8G2_COMM_SPI
        bool "st7565_64128n"
@@ -410,6 +450,11 @@ config U8G2_SPI_ST7565_EA_DOGM132
 config U8G2_SPI_ST7565_ERC12864
        depends on U8G2_COMM_SPI
        bool "st7565_erc12864"
+       default "n"
+
+config U8G2_SPI_ST7565_ERC12864_ALT
+       depends on U8G2_COMM_SPI
+       bool "st7565_erc12864_alt"
        default "n"
 
 config U8G2_SPI_ST7565_LM6059
