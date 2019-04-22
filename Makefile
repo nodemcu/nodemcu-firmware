@@ -17,7 +17,7 @@ all: | $(ESP32_GCC)
 %: | $(ESP32_GCC)
 	@echo Setting IDF_PATH and re-invoking...
 	@env IDF_PATH=$(IDF_PATH) PATH=$(PATH):$(ESP32_BIN) $(MAKE) -f $(THIS_MK_FILE) $@
-	@if [[ "$@" == "clean" ]]; then rm -rf $(THIS_DIR)/tools/toolchains/esp32-*; fi
+	@if test "$@" = "clean"; then rm -rf $(THIS_DIR)/tools/toolchains/esp32-*; fi
 
 $(ESP32_GCC): $(ESP32_TOOLCHAIN_DL)
 	@echo Uncompressing toolchain
