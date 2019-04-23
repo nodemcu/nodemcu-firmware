@@ -34,7 +34,7 @@ static uint8 input_sig_flag = 0;
 
 /* Contents of esp_init_data_default.bin */
 extern const uint32_t init_data[], init_data_end[];
-#define INIT_DATA_SIZE (init_data_end - init_data)
+#define INIT_DATA_SIZE ((init_data_end - init_data)*sizeof(uint32_t))
 __asm__(
   ".align 4\n"
   "init_data: .incbin \"" ESP_INIT_DATA_DEFAULT "\"\n"
@@ -161,8 +161,7 @@ void user_pre_init(void) {
     }
 
     // Now register the partition and return
-//  for (i=0;i<n;i++) 
-//      os_printf("P%d: %3d %06x %06x\n", i, pt[i].type, pt[i].addr, pt[i].size);
+// for (i=0;i<n;i++) os_printf("P%d: %3d %06x %06x\n", i, pt[i].type, pt[i].addr, pt[i].size);
     if( fs_size_code > 1 && system_partition_table_regist(pt, n, fs_size_code)) {
         return;
     }

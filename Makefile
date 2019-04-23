@@ -2,21 +2,32 @@
 #
 .NOTPARALLEL:
 
-TOOLCHAIN_VERSION:=20181106.0
-
-# SDK base version, as released by Espressif
-SDK_BASE_VER:=3.0
-SDK_VER:=$(SDK_BASE_VER)
-SDK_DIR_DEPENDS:=sdk_extracted
-
-SDK_FILE_VER:=$(SDK_BASE_VER)
-SDK_FILE_SHA1:=029fc23fe87e03c9852de636490b2d7b9e07f01a
-ESPTOOL_VER:=2.6
-
-# Ensure we search "our" SDK before the tool-chain's SDK (if any)
 TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-SDK_REL_DIR=sdk/esp_iot_sdk_v$(SDK_VER)
-SDK_DIR:=$(TOP_DIR)/$(SDK_REL_DIR)
+
+# SDK base version, as released by Espressif depends on the RELEASE flag
+#
+# RELEASE = lastest pulls the latest V3.0.0 branch version as at the issue of this make
+# otherwise it pulls the labelled version in the SDK version's release directory
+#
+ifeq ("$(RELEASE)","latest")
+  export RELEASE:=$(RELEASE)
+  SDK_VER        := 3.0.0-dev-190412
+  SDK_COMMIT_SHA1:= 39ec2d4573eb77fda73f6afcf6dd1b3c41e74fcd
+  SDK_FILE_SHA1  := 44f7724490739536526fc4298d6fcc2fa2d29471
+  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_COMMIT_SHA1)
+  SDK_FILE_VER   := $(SDK_COMMIT_SHA1)
+else
+  SDK_VER        := 3.0
+  SDK_FILE_SHA1  := 029fc23fe87e03c9852de636490b2d7b9e07f01a
+  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_VER)
+  SDK_FILE_VER   := v$(SDK_VER)
+endif
+SDK_REL_DIR      := sdk/esp_iot_sdk_v$(SDK_VER)
+SDK_DIR          := $(TOP_DIR)/$(SDK_REL_DIR)
+
+ESPTOOL_VER := 2.6
+
+# Ensure that the Espresif SDK is searched before the tool-chain's SDK (if any)
 CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(TOP_DIR)/app/include/lwip/app -I$(SDK_DIR)/include
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
@@ -27,19 +38,18 @@ else
   CCFLAGS += -O2
 endif
 
-#Handling of V=1/VERBOSE=1 flag
+# Handling of V=1/VERBOSE=1 flag
 #
 # if V=1, $(summary) does nothing
 # if V is unset or not 1, $(summary) echoes a summary
 VERBOSE ?=
 V ?= $(VERBOSE)
 ifeq ("$(V)","1")
-export summary := @true
+  export summary := @true
 else
-export summary := @echo
-
-# disable echoing of commands, directory names
-MAKEFLAGS += --silent -w
+  export summary := @echo
+  # disable echoing of commands, directory names
+  MAKEFLAGS += --silent -w
 endif  # $(V)==1
 
 ifndef BAUDRATE
@@ -49,9 +59,24 @@ endif
 #############################################################
 # Select compile
 #
-ifeq ($(OS),Windows_NT)
-# WIN32
-# We are under windows.
+#  ** HEALTH WARNING ** This section is largely legacy directives left over from 
+#  an Espressif template.  As far as I (TerrryE) know, we've only used the Linux
+#  Path. I have successfully build AMD and Intel (both x86, AMD64) and RPi ARM6
+#  all under Ubuntu.  Our docker container runs on Windows in an Ubuntu VM.
+#  Johny Mattson maintains a prebuild AMD64 xtensa cross-compile gcc v4.8.5
+#  toolchain which is compatible with the non-OS SDK and can be used on any recent 
+#  Ubuntu version including the Docker and Travis build environments.
+#
+#  You have the option to build your own toolchain and specify a TOOLCHAIN_ROOT
+#  environment variable (see https://github.com/pfalcon/esp-open-sdk).  If your
+#  architecture is compatable then you can omit this variable and the make will
+#  download and use this prebuilt toolchain.
+#
+#  If any developers wish to develop, test and support alternative environments 
+#  then please raise a GitHub issue on this work.
+#
+ifeq (,$(findstring linux,$(MAKE_HOST)))
+  #------------ BEGIN UNTESTED ------------ We are not under Linux, e.g.under windows.
 	ifeq ($(XTENSA_CORE),lx106)
 		# It is xcc
 		AR = xt-ar
@@ -85,58 +110,55 @@ ifeq ($(OS),Windows_NT)
     ifeq ($(PROCESSOR_ARCHITECTURE),x86)
 # ->IA32
     endif
+  #---------------- END UNTESTED ---------------- We are under windows.
 else
-# We are under other system, may be Linux. Assume using gcc.
-	# Can we use -fdata-sections?
-	PLATFORM:=linux-x86_64
+  # We are under other system, may be Linux. Assume using gcc.
+
+  UNAME_S := $(shell uname -s)
+  UNAME_P := $(shell uname -p)
+  ifeq ($(MAKE_HOST),x86_64-pc-linux-gnu)
+    ifndef TOOLCHAIN_ROOT
+      TOOLCHAIN_VERSION = 20181106.0
+      GCCTOOLCHAIN      = esp8266-linux-x86_64-$(TOOLCHAIN_VERSION)
+      TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/$(GCCTOOLCHAIN)
+      GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
+      export PATH:=$(PATH):$(TOOLCHAIN_ROOT)/bin
+  	endif
+	endif
+	
 	ifndef COMPORT
 		ESPPORT = /dev/ttyUSB0
 	else
 		ESPPORT = $(COMPORT)
 	endif
-	export PATH := $(PATH):$(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/
+
 	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
-	AR = xtensa-lx106-elf-ar
-	CC = $(WRAPCC) xtensa-lx106-elf-gcc
-	CXX = $(WRAPCC) xtensa-lx106-elf-g++
-	NM = xtensa-lx106-elf-nm
-	CPP = $(WRAPCC) xtensa-lx106-elf-gcc -E
+	AR      = xtensa-lx106-elf-ar
+	CC      = $(WRAPCC) xtensa-lx106-elf-gcc
+	CXX     = $(WRAPCC) xtensa-lx106-elf-g++
+	NM      = xtensa-lx106-elf-nm
+	CPP     = $(WRAPCC) xtensa-lx106-elf-gcc -E
 	OBJCOPY = xtensa-lx106-elf-objcopy
 	FIRMWAREDIR = ../bin/
   WGET = wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused
-    UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Linux)
-# LINUX
-    endif
-    ifeq ($(UNAME_S),Darwin)
-# OSX
-    endif
-    UNAME_P := $(shell uname -p)
-    ifeq ($(UNAME_P),x86_64)
-# ->AMD64
-    endif
-    ifneq ($(filter %86,$(UNAME_P)),)
-# ->IA32
-    endif
-    ifneq ($(filter arm%,$(UNAME_P)),)
-# ->ARM
-    endif
 endif
 #############################################################
 
-GITHUB_TOOLCHAIN = https://github.com/jmattsson/esp-toolchains
 GITHUB_SDK       = https://github.com/espressif/ESP8266_NONOS_SDK
 GITHUB_ESPTOOL   = https://github.com/espressif/esptool
 
 ESPTOOL ?= $(TOP_DIR)/tools/toolchains/esptool.py
 
-CSRCS ?= $(wildcard *.c)
-CXXSRCS ?= $(wildcard *.cpp)
-ASRCs ?= $(wildcard *.s)
-ASRCS ?= $(wildcard *.S)
 SUBDIRS ?= $(patsubst %/,%,$(dir $(filter-out tools/Makefile,$(wildcard */Makefile))))
 
-ODIR := .output
+ODIR    := .output
+
+ifdef TARGET
+CSRCS   ?= $(wildcard *.c)
+CXXSRCS ?= $(wildcard *.cpp)
+ASRCs   ?= $(wildcard *.s)
+ASRCS   ?= $(wildcard *.S)
+
 OBJODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/obj
 
 OBJS := $(CSRCS:%.c=$(OBJODIR)/%.o) \
@@ -159,19 +181,19 @@ BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
 ifndef PDIR
-ifneq ($(wildcard $(TOP_DIR)/local/fs/*),)
-SPECIAL_MKTARGETS += spiffs-image
-else
-SPECIAL_MKTARGETS += spiffs-image-remove
+  ifneq ($(wildcard $(TOP_DIR)/local/fs/*),)
+    SPECIAL_MKTARGETS += spiffs-image
+  else
+    SPECIAL_MKTARGETS += spiffs-image-remove
+  endif
 endif
-endif
-
+endif   # TARGET
 #
 # Note:
 # https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
-# If you add global optimize options like "-O2" here
-# they will override "-Os" defined above.
-# "-Os" should be used to reduce code size
+# If you add global optimize options then they will override "-Os" defined above.
+# Note that "-Os" should NOT be used to reduce code size because of the runtime
+# impact of the extra non-aligned exception burdon.
 #
 CCFLAGS += 			\
 	-g			\
@@ -192,6 +214,8 @@ DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
 #############################################################
 # Functions
 #
+
+ifdef TARGET
 
 define ShortcutRule
 $(1): .subdirs $(2)/$(1)
@@ -225,39 +249,46 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	$(summary) ESPTOOL $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$< $(FIRMWAREDIR)
 	$(ESPTOOL) elf2image --flash_mode dio --flash_freq 40m $< -o $(FIRMWAREDIR)
 
+endif # TARGET
 #############################################################
 # Rules base
 # Should be done in top-level makefile only
 #
 
-all: toolchain sdk_pruned pre_build .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+ifndef TARGET
+all: toolchain sdk_pruned pre_build .subdirs
+else
+all: .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+endif
 
 .PHONY: sdk_extracted
 .PHONY: sdk_pruned
 .PHONY: toolchain
 
-sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER)
-sdk_pruned: $(SDK_DIR_DEPENDS) $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
+sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_VER)
+sdk_pruned: sdk_extracted $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
 
-ifeq ($(OS),Windows_NT)
-toolchain:
-else
-toolchain: $(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc $(TOP_DIR)/tools/toolchains/esptool.py
+ifdef GITHUB_TOOLCHAIN
+        TOOLCHAIN_ROOT := $(TOP_DIR)/tools/toolchains/esp8266-linux-x86_64-$(TOOLCHAIN_VERSION)
 
-$(TOP_DIR)/tools/toolchains/esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
+toolchain: $(TOOLCHAIN_ROOT)/bin/xtensa-lx106-elf-gcc $(ESPTOOL)
+
+$(TOOLCHAIN_ROOT)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/cache/toolchain-$(GCCTOOLCHAIN).tar.xz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
 	$(summary) EXTRACT $(patsubst $(TOP_DIR)/%,%,$<)
 	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/
 	touch $@
 
-$(TOP_DIR)/cache/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz:
+$(TOP_DIR)/cache/toolchain-$(GCCTOOLCHAIN).tar.xz:
 	mkdir -p $(TOP_DIR)/cache
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
-	$(WGET) $(GITHUB_TOOLCHAIN)/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp8266-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ \
+	$(WGET) $(GITHUB_TOOLCHAIN)/releases/download/$(GCCTOOLCHAIN)/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz -O $@ \
 	|| { rm -f "$@"; exit 1; }
+else
+toolchain: $(ESPTOOL)
 endif
 
-$(TOP_DIR)/tools/toolchains/esptool.py: $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz
+$(ESPTOOL): $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
 	tar -C $(TOP_DIR)/tools/toolchains/ -xzf $< --strip-components=1 esptool-$(ESPTOOL_VER)/esptool.py
 	chmod +x $@
@@ -267,31 +298,32 @@ $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz:
 	mkdir -p $(TOP_DIR)/cache/esptool/
 	$(WGET) $(GITHUB_ESPTOOL)/archive/v$(ESPTOOL_VER).tar.gz -O $@ || { rm -f "$@"; exit 1; }
 
-$(TOP_DIR)/sdk/.extracted-$(SDK_BASE_VER): $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip
+$(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
 	$(summary) UNZIP $(patsubst $(TOP_DIR)/%,%,$<)
 	(cd "$(dir $@)" && \
-	 rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-$(SDK_BASE_VER) && \
-	 unzip $(TOP_DIR)/cache/v$(SDK_FILE_VER).zip \
-	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/lib/*' \
-	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/ld/*.v6.ld' \
-	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/include/*' \
-	       'ESP8266_NONOS_SDK-$(SDK_BASE_VER)/bin/esp_init_data_default_v05.bin' \
+	 rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-* && \
+	 unzip $(TOP_DIR)/cache/$(SDK_FILE_VER).zip \
+	       '$(SDK_ZIP_ROOT)/lib/*' \
+	       '$(SDK_ZIP_ROOT)/ld/*.v6.ld' \
+	       '$(SDK_ZIP_ROOT)/include/*' \
+	       '$(SDK_ZIP_ROOT)/bin/esp_init_data_default_v05.bin' \
 	)
-	mv $(dir $@)/ESP8266_NONOS_SDK-$(SDK_BASE_VER) $(dir $@)/esp_iot_sdk_v$(SDK_BASE_VER)
+	mv $(dir $@)/$(SDK_ZIP_ROOT) $(dir $@)/esp_iot_sdk_v$(SDK_VER)
 	touch $@
 
 $(TOP_DIR)/sdk/.pruned-$(SDK_VER):
 	rm -f $(SDK_DIR)/lib/liblwip.a $(SDK_DIR)/lib/libssl.a $(SDK_DIR)/lib/libmbedtls.a
 	$(summary) PRUNE libmain.a libc.a
+	echo $(PATH)
 	$(AR) d $(SDK_DIR)/lib/libmain.a time.o
 	$(AR) d $(SDK_DIR)/lib/libc.a lib_a-time.o
 	touch $@
 
-$(TOP_DIR)/cache/v$(SDK_FILE_VER).zip:
+$(TOP_DIR)/cache/$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
-	$(WGET) $(GITHUB_SDK)/archive/v$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
+	$(WGET) $(GITHUB_SDK)/archive/$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
 	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
 
 clean:
@@ -329,15 +361,12 @@ endif
 .subdirs:
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
 
-#.subdirs:
-#	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d))
-
 ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),clobber)
-ifdef DEPS
-sinclude $(DEPS)
-endif
-endif
+  ifneq ($(MAKECMDGOALS),clobber)
+    ifdef DEPS
+      sinclude $(DEPS)
+    endif
+  endif
 endif
 
 .PHONY: spiffs-image-remove
@@ -365,6 +394,7 @@ pre_build:
 	@-rm -f $(TOP_DIR)/app/modules/server-ca.crt.h
 endif
 
+ifdef TARGET
 $(OBJODIR)/%.o: %.c
 	@mkdir -p $(dir $@);
 	$(summary) CC $(patsubst $(TOP_DIR)/%,%,$(CURDIR))/$<
@@ -424,6 +454,7 @@ $(foreach lib,$(GEN_LIBS),$(eval $(call MakeLibrary,$(basename $(lib)))))
 
 $(foreach image,$(GEN_IMAGES),$(eval $(call MakeImage,$(basename $(image)))))
 
+endif # TARGET
 #############################################################
 # Recursion Magic - Don't touch this!!
 #

@@ -127,6 +127,16 @@ def load_PT(data, args):
     PTrec,recs = unpack_RCR(data)
     flash_size = fs.args if args.fs is not None else DEFAULT_FLASH_SIZE
 
+    # The partition table format is a set of 3*uint32 fields (type, addr, size),
+    # with the optional last slot being an end marker (0,size,0) where size is
+    # of the firmware image.
+
+    if PTrec[-3] == 0:             # Pick out the ROM size and remove the marker
+        defaultIROM0size = PTrec[-2] - FLASH_BASE_ADDR
+        del PTrec[-3:]
+    else:
+        defaultIROM0size = None
+
     # The SDK objects to zero-length partitions so if the developer sets the
     # size of the LFS and/or the SPIFFS partition to 0 then this is removed.
     # If it is subsequently set back to non-zero then it needs to be reinserted.
@@ -135,20 +145,12 @@ def load_PT(data, args):
     # we adopt a more flexible partiton allocation policy.  *** BOTCH WARNING ***
 
     for i in range (0, len(PTrec), 3):
-        if PTrec[i] == IROM0TEXT and \
-            not (len(PTrec) > i+3 in PTrec and PTrec[i+3] == LFS):
+        if PTrec[i] == IROM0TEXT and args.ls is not None and \
+            (len(PTrec) == i+3  or PTrec[i+3] != LFS):
             PTrec[i+3:i+3] = [LFS, 0, 0]
             break
     if PTrec[-3] != SPIFFS:
         PTrec.extend([SPIFFS, 0, 0])
-
-    # The partition table format is a set of 3*uint32 fields (type, addr, size),
-    # with the optional last slot being an end marker (0,size,0) where size is
-    # of the firmware image.
-
-    if PTrec[-3] == 0:             # Pick out the ROM size and remove the marker
-        defaultIROM0size = PTrec[-2] - FLASH_BASE_ADDR
-        del PTrec[-3:]
 
     lastEnd, newPT, map = 0,[], dict()
     print "  Partition          Start   Size \n  ------------------ ------ ------"
@@ -277,12 +279,12 @@ def main():
     a = argparse.ArgumentParser(
         description='%s V%s - ESP8266 NodeMCU Loader Utility' %
                      (__program__, __version__),
-        prog='esplfs')
+        prog=__program__)
     a.add_argument('--port', '-p', help='Serial port device')
     a.add_argument('--baud', '-b',  type=arg_auto_int,
         help='Serial port baud rate used when flashing/reading')
     a.add_argument('--flash_size', '-fs', dest="fs", type=arg_auto_int,
-        help='(Overwrite) start address of LFS partition')
+        help='Flash size used in SPIFFS allocation (Default 4MB)')
     a.add_argument('--lfs_addr', '-la', dest="la", type=arg_auto_int,
         help='(Overwrite) start address of LFS partition')
     a.add_argument('--lfs_size', '-ls', dest="ls", type=arg_auto_int,
@@ -369,8 +371,8 @@ def main():
 
     # ---------- Clean up temp directory ---------- #
 
-    espargs = base + ['--after', 'hard_reset', 'flash_id']
-    esptool.main(espargs)
+#    espargs = base + ['--after', 'hard_reset', 'flash_id']
+#    esptool.main(espargs)
 
     shutil.rmtree(tmpdir)
 
