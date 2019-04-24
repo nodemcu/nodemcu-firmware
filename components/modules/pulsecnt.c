@@ -43,12 +43,14 @@ typedef struct{
   bool is_debug;
   int ch0_pulse_gpio_num; // needs to be signed to support PCNT_PIN_NOT_USED of -1
   int ch0_ctrl_gpio_num; // needs to be signed to support PCNT_PIN_NOT_USED of -1
+  bool ch0_is_defined;
   uint8_t ch0_pos_mode;
   uint8_t ch0_neg_mode;
   uint8_t ch0_lctrl_mode;
   uint8_t ch0_hctrl_mode;
   int16_t ch0_counter_l_lim;
   int16_t ch0_counter_h_lim;
+  bool ch1_is_defined;
   uint8_t ch1_pulse_gpio_num;
   uint8_t ch1_ctrl_gpio_num;
   uint8_t ch1_pos_mode;
@@ -62,10 +64,6 @@ typedef struct{
   uint32_t counter;
 } pulsecnt_struct_t;
 typedef pulsecnt_struct_t *pulsecnt_t;
-
-// we will keep an array of 8 pointers to our pulsecnt_struct_t that has our lua obj, callback, etc.
-// Lazy init in the config method to save on memory until needed
-// static int *pulsecnt_cb_refs = NULL; // Lazy init
 
 // array of 8 pulsecnt_struct_t pointers so we can reference by unit number
 // this array gets filled in as we define pulsecnt_struct_t's during the create() method
@@ -97,60 +95,28 @@ static void IRAM_ATTR pulsecnt_intr_handler(void *arg)
             // on lua_open we set pulsecnt_task_id as a method which gets called
             // by Lua after task_post_high with reference to this self object and then we can steal the 
             // callback_ref and then it gets called by lua_call where we get to add our args
-            // task_post_low(pulsecnt_task_id, (evt.unit) | ( (evt.status) << 8) );
             task_post_high(pulsecnt_task_id, (evt.status << 8) | evt.unit );
-            // task_post_low(pulsecnt_task_id, (evt.status << 8) | evt.unit );
-            // task_post_low(pulsecnt_task_id, &evt );
-
-            // xQueueSendFromISR(pcnt_evt_queue, &evt, &HPTaskAwoken);
-            // if (HPTaskAwoken == pdTRUE) {
-            //     portYIELD_FROM_ISR();
-            // }
         }
     }
 }
 
-
-
-/**
- * Type by which software timers are referenced.  For example, a call to
- * xTimerCreate() returns an TimerHandle_t variable that can then be used to
- * reference the subject timer in calls to other software timer API functions
- * (for example, xTimerStart(), xTimerReset(), etc.).
- */
-// typedef void * PulsecntHandle_t;
-
-// static void pulsecnt_callback(PulsecntHandle_t xPulsecnt)
-// {
-//   pulsecnt_t pcnt = (pulsecnt_t)pvTimerGetTimerID(xPulsecnt);
-
-//   task_post_high(pulsecnt_task_id, (task_param_t)pcnt);
-// }
-
 /*
-This method gets called from the IRAM interuppt method via Lua's task queue. That let's the interrupt 
+This method gets called from the IRAM interuppt method via Lua's task queue. That lets the interrupt 
 run clean while this method gets called at a lower priority to not break the IRAM interrupt high priority.
 We will do the actual callback here for the user with the fully decoded state of the pulse count.
+The format of the callback to your Lua code is:
+  function onPulseCnt(unit, isThr0, isThr1, isLLim, isHLim, isZero)
 */
 static void pulsecnt_task(task_param_t param, task_prio_t prio)
 {
   (void)prio;
-  // pcnt_evt_t evt = (pcnt_evt_t)param;
-  // pcnt_evt_t evt = (evt)param;
-  // uint32_t gpio = (uint32_t)param & 0xffu;
-  // int level = ((int)param) & 0x100u;
-  // uint32_t unit = 0; // (uint32_t)param & 0xffu;
-  // int status = ((int)param);
 
   // we bit packed the unit number and status into 1 int in the IRAM interrupt so need to unpack here
   uint32_t unit = (uint32_t)param & 0xffu;
   int status = ((uint32_t)param >> 8);
-
-  // uint32_t unit = evt.unit;
-  // int status = evt.status;
   
-  int16_t cur_count, evt_count = 0;
-  pcnt_get_counter_value(unit, &cur_count);
+  // int16_t cur_count, evt_count = 0;
+  // pcnt_get_counter_value(unit, &cur_count);
 
   // try to get the pulsecnt_struct_t from the pulsecnt_selfs array 
   pulsecnt_t pc = pulsecnt_selfs[unit];
@@ -162,29 +128,59 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
   bool l_lim = false;
   bool h_lim = false;
   bool zero = false;
+  // char evt_str[20];  // "-32768 or 32768" is 15 chars long and is the max string len
+  // bool is_multi_lim = false;
 
   /*0: positive value to zero; 1: negative value to zero; 2: counter value negative ; 3: counter value positive*/
-  uint8_t moving_to = status & 0x00000003u; // get first two bits
+  // uint8_t moving_to = status & 0x00000003u; // get first two bits
 
   if (status & PCNT_STATUS_THRES1_M) {
       // printf("THRES1 EVT\n");
       thr1 = true;
-      evt_count = pc->thresh1;
+      // evt_count = pc->thresh1;
   }
   if (status & PCNT_STATUS_THRES0_M) {
       // printf("THRES0 EVT\n");
       thr0 = true;
-      evt_count = pc->thresh0;
+      // evt_count = pc->thresh0;
   }
   if (status & PCNT_STATUS_L_LIM_M) {
       // printf("L_LIM EVT\n");
       l_lim = true;
-      evt_count = pc->ch0_counter_l_lim;
+      /*
+      // see if there is a ch0 and ch1 limit. if so then pass back string. otherwise pass back just one int.
+      if (pc->ch0_is_defined && pc->ch1_is_defined) {
+        // we need to pass back both because it's indeterminate which limit triggered this and there is 
+        // no way to know from the ESP32 API 
+        is_multi_lim = true;
+        sprintf(evt_str, "%d or %d", pc->ch0_counter_l_lim, pc->ch1_counter_l_lim);
+      } else if (pc->ch0_is_defined) {
+        // we have a ch0 item, so use its val
+        evt_count = pc->ch0_counter_l_lim;
+      } else if (pc->ch1_is_defined) {
+        // we have a ch1 item, so use its val
+        evt_count = pc->ch1_counter_l_lim;
+      }
+      */
   }
   if (status & PCNT_STATUS_H_LIM_M) {
       // printf("H_LIM EVT\n");
       h_lim = true;
-      evt_count = pc->ch0_counter_h_lim;
+      /*
+      // see if there is a ch0 and ch1 limit. if so then pass back string. otherwise pass back just one int.
+      if (pc->ch0_is_defined && pc->ch1_is_defined) {
+        // we need to pass back both because it's indeterminate which limit triggered this and there is 
+        // no way to know from the ESP32 API 
+        is_multi_lim = true;
+        sprintf(evt_str, "%d or %d", pc->ch0_counter_h_lim, pc->ch1_counter_h_lim);
+      } else if (pc->ch0_is_defined) {
+        // we have a ch0 item, so use its val
+        evt_count = pc->ch0_counter_h_lim;
+      } else if (pc->ch1_is_defined) {
+        // we have a ch1 item, so use its val
+        evt_count = pc->ch1_counter_h_lim;
+      }
+      */
   }
   if (status & PCNT_STATUS_ZERO_M) {
       // printf("ZERO EVT\n");
@@ -194,29 +190,31 @@ static void pulsecnt_task(task_param_t param, task_prio_t prio)
 
   // at the start of turning on the pulse counter you get a stat=255 which is like a 
   // 1st time callback saying it's alive 
-  if (status == 255) {
-    evt_count = -1;
-  }
+  // if (status == 255) {
+  //   evt_count = -1;
+  // }
 
   lua_State *L = lua_getstate ();
-  // if (pulsecnt_cb_refs[unit] != LUA_NOREF)
   if (pc->cb_ref != LUA_NOREF)
   {
     // lua_rawgeti (L, LUA_REGISTRYINDEX, pulsecnt_cb_refs[unit]);
     lua_rawgeti (L, LUA_REGISTRYINDEX, pc->cb_ref);
     lua_pushinteger (L, unit);
-    lua_pushinteger (L, evt_count);
-    lua_pushinteger (L, cur_count);
+    // if (is_multi_lim) {
+    //   lua_pushstring(L, evt_str);
+    // } else {
+    //   lua_pushinteger (L, evt_count);
+    // }
+    // lua_pushinteger (L, cur_count);
     lua_pushboolean (L, thr0);
     lua_pushboolean (L, thr1);
     lua_pushboolean (L, l_lim);
     lua_pushboolean (L, h_lim);
     lua_pushboolean (L, zero);
-    lua_pushinteger (L, moving_to);
-    lua_pushinteger (L, status);
-    lua_call (L, 10, 0);
+    // lua_pushinteger (L, moving_to);
+    // lua_pushinteger (L, status);
+    lua_call (L, 6, 0);
   } else {
-    // ESP_LOGI("pulsecnt", "Could not find cb for unit %d with ptr %d", unit, pulsecnt_cb_refs[unit]);
     if (pc->is_debug) ESP_LOGI("pulsecnt", "Could not find cb for unit %d with ptr %d", unit, pc->cb_ref);
   }
 }
@@ -229,6 +227,7 @@ static pulsecnt_t pulsecnt_get( lua_State *L, int stack )
 
 // Lua: pc:setFilter(clkCyclesToIgnore)
 // Example: pc:setFilter(100) -- Ignore any signal shorter than 100 clock cycles. 80Mhz clock.
+// You can ignore from 0 to 1023 clock cycles
 static int pulsecnt_set_filter( lua_State *L ) {
   int stack = 0;
 
@@ -249,6 +248,7 @@ static int pulsecnt_set_filter( lua_State *L ) {
 
 // Lua: pc:setThres(thresh0_val, thresh1_val)
 // Example: pc:setThres(-5, 5)
+// When you set the threshold, the pulse counter will be reset and the callback will be attached.
 static int pulsecnt_set_thres( lua_State *L ) {
   int stack = 0;
 
@@ -281,9 +281,12 @@ static int pulsecnt_set_thres( lua_State *L ) {
   pcnt_counter_pause(pc->unit);
   pcnt_counter_clear(pc->unit);
 
-  /* Register ISR handler and enable interrupts for PCNT unit */
-  pcnt_isr_register(pulsecnt_intr_handler, NULL, 0, &user_isr_handle);
-  pcnt_intr_enable(pc->unit);
+  // check if there's a callback otherwise don't trigger interrupt, instead they may just be polling
+  if (pc->cb_ref != LUA_NOREF) {
+    /* Register ISR handler and enable interrupts for PCNT unit */
+    pcnt_isr_register(pulsecnt_intr_handler, NULL, 0, &user_isr_handle);
+    pcnt_intr_enable(pc->unit);
+  }
 
   /* Everything is set up, now go to counting */
   pcnt_counter_resume(pc->unit);
@@ -297,7 +300,50 @@ static int pulsecnt_set_thres( lua_State *L ) {
 // Lua: pc:rawSetEventVal(enumEventItem, val)
 // enumEventItem can be pulsecnt.PCNT_EVT_L_LIM, PCNT_EVT_H_LIM, PCNT_EVT_THRES_0, PCNT_EVT_THRES_1, PCNT_EVT_ZERO
 // Example: pc:rawSetEventVal(pulsecnt.PCNT_EVT_THRES_1, 100)
+// The pulse counter is not cleared using this method so you can make the change on-the-fly, however, in practice
+// it appears the pulse counter module does not pay attention to on-the-fly changes for the threshold value.
 static int pulsecnt_set_event_value( lua_State *L ) {
+  int stack = 0;
+
+  // when we're called from an object the stack index 1 has our self ref 
+  pulsecnt_t pc = pulsecnt_get(L, ++stack);
+
+
+  // Get enum -- first arg after self arg
+  int enumEventItem = luaL_checkinteger(L, ++stack);
+  luaL_argcheck(L, enumEventItem >= -1 && enumEventItem <= 15, stack, "The enumEventItem number allows -1 to 15");
+
+  // Get val -- 2nd arg after self arg
+  int val = luaL_checkinteger(L, ++stack);
+  luaL_argcheck(L, val >= -32768 && val <= 32767, stack, "The val number allows -32768 to 32767");
+
+  /* Set value for this unit */
+  pcnt_set_event_value(pc->unit, enumEventItem, val);
+
+  // store it so we have it during callback and reset event or ESP32 won't accept in new val
+  if (enumEventItem == PCNT_EVT_THRES_0) {
+    pc->thresh0 = val;
+    pcnt_event_enable(pc->unit, PCNT_EVT_THRES_0);
+  } else if (enumEventItem == PCNT_EVT_THRES_1) {
+    pc->thresh1 = val;
+    pcnt_event_enable(pc->unit, PCNT_EVT_THRES_1);
+  }
+  
+  // check if there's a callback otherwise don't trigger interrupt, instead they may just be polling
+  if (pc->cb_ref != LUA_NOREF) {
+    // even though we likely have the interrupt enabled, this re-reads the vals we just set?
+    pcnt_intr_enable(pc->unit);
+  }
+
+  if (pc->is_debug) ESP_LOGI("pulsecnt", "Set enumEventItem %d for unit %d with val %d", enumEventItem, pc->unit, val);
+
+  return 0;
+}
+
+// Lua: retVal = pc:rawGetEventVal(enumEventItem)
+// enumEventItem can be pulsecnt.PCNT_EVT_L_LIM, PCNT_EVT_H_LIM, PCNT_EVT_THRES_0, PCNT_EVT_THRES_1, PCNT_EVT_ZERO
+// Example: retVal = pc:rawGetEventVal(pulsecnt.PCNT_EVT_THRES_1)
+static int pulsecnt_get_event_value( lua_State *L ) {
   int stack = 0;
 
   // when we're called from an object the stack index 1 has our self ref 
@@ -307,25 +353,18 @@ static int pulsecnt_set_event_value( lua_State *L ) {
   int enumEventItem = luaL_checkinteger(L, ++stack);
   luaL_argcheck(L, enumEventItem >= -1 && enumEventItem <= 15, stack, "The enumEventItem number allows -1 to 15");
 
-  // Get val -- first arg after self arg
-  int val = luaL_checkinteger(L, ++stack);
-  luaL_argcheck(L, val >= -32768 && val <= 32767, stack, "The val number allows -32768 to 32767");
-
-  // store it so we have it during callback
-  if (enumEventItem == PCNT_EVT_THRES_0) {
-    pc->thresh0 = val;
-  } else if (enumEventItem == PCNT_EVT_THRES_1) {
-    pc->thresh1 = val;
-  }
-
   /* Set threshold 0 and 1 values and enable events to watch */
-  pcnt_set_event_value(pc->unit, enumEventItem, val);
+  // pcnt_get_event_value(pcnt_unit_tunit, pcnt_evt_type_tevt_type, int16_t *value)
+  int16_t val;
+  pcnt_get_event_value(pc->unit, enumEventItem, &val);
   
-  if (pc->is_debug) ESP_LOGI("pulsecnt", "Setup enumEventItem %d for unit %d with val %d", enumEventItem, pc->unit, val);
+  if (pc->is_debug) ESP_LOGI("pulsecnt", "Get enumEventItem %d for unit %d with val %d", enumEventItem, pc->unit, val);
 
-  return 0;
+  lua_pushinteger (L, val);
+  return 1;
 }
 
+// TODO: Not implemented yet.
 // Lua example call:
 // pc:config({
 //   ch0: {
@@ -392,25 +431,6 @@ static int pulsecnt_channel_config( lua_State *L, uint8_t channel ) {
     pc->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
-  // we need to redundantly store the callbacks in an array so we have a reference to them
-  // for when we get a callback
-  // DEPRECATED: since we now store the higher level pc object in an array 
-  /*
-  if (!pulsecnt_cb_refs)
-  {
-    pulsecnt_cb_refs = luaM_newvector (L, 8, int); // set 8 slots since only 8 units are avail on ESP32
-    for (unsigned i = 0; i < 8; ++i)
-      pulsecnt_cb_refs[i] = LUA_NOREF;
-  }
-
-  // now set our pulsecnt_cb_refs for this unit 
-  pulsecnt_cb_refs[pc->unit] = pc->cb_ref;
-  ESP_LOGI("pulsecnt", "Setup cb for unit %d with ptr %d", pc->unit, pc->cb_ref);
-  // for (unsigned i = 0; i < 8; ++i) {
-  //     ESP_LOGI("pulsecnt", "cb for unit %d with ptr %d", i, pulsecnt_cb_refs[i] );
-  // }
-  */
-
   // Get pulse_gpio_num -- first arg after self arg
   int pulse_gpio_num = luaL_checkinteger(L, ++stack);
   luaL_argcheck(L, pulse_gpio_num >= -1 && pulse_gpio_num <= 40, stack, "The pulse_gpio_num number allows -1 to 40");
@@ -444,6 +464,7 @@ static int pulsecnt_channel_config( lua_State *L, uint8_t channel ) {
   luaL_argcheck(L, counter_h_lim >= -32768 && counter_h_lim <= 32767, stack, "The counter_h_lim number allows -32768 to 32767");
 
   if (channel == 0) {
+    pc->ch0_is_defined = true;
     pc->ch0_pulse_gpio_num = pulse_gpio_num;
     pc->ch0_ctrl_gpio_num = ctrl_gpio_num;
     pc->ch0_pos_mode = pos_mode;
@@ -453,6 +474,7 @@ static int pulsecnt_channel_config( lua_State *L, uint8_t channel ) {
     pc->ch0_counter_l_lim = counter_l_lim;
     pc->ch0_counter_h_lim = counter_h_lim;
   } else {
+    pc->ch1_is_defined = true;
     pc->ch1_pulse_gpio_num = pulse_gpio_num;
     pc->ch1_ctrl_gpio_num = ctrl_gpio_num;
     pc->ch1_pos_mode = pos_mode;
@@ -489,34 +511,24 @@ static int pulsecnt_channel_config( lua_State *L, uint8_t channel ) {
   /* Initialize PCNT unit */
   pcnt_unit_config(&pcnt_config);
 
+  /* Enable events on zero, maximum and minimum limit values */
+  pcnt_event_enable(pc->unit, PCNT_EVT_ZERO);
+  pcnt_event_enable(pc->unit, PCNT_EVT_H_LIM);
+  pcnt_event_enable(pc->unit, PCNT_EVT_L_LIM);
+
+  /* Initialize PCNT's counter */
+  pcnt_counter_pause(pc->unit);
+  pcnt_counter_clear(pc->unit);
+
+  /* Register ISR handler and enable interrupts for PCNT unit */
+  pcnt_isr_register(pulsecnt_intr_handler, NULL, 0, &user_isr_handle);
+  pcnt_intr_enable(pc->unit);
+
+  /* Everything is set up, now go to counting */
+  pcnt_counter_resume(pc->unit);
+
   if (pc->is_debug) ESP_LOGI("pulsecnt", "Channel %d config for unit %d, gpio: %d, ctrl_gpio: %d, chn: %d, pos_mode: %d, neg_mode: %d, lctrl_mode: %d, hctrl_mode: %d, counter_l_lim: %d, counter_h_lim: %d", channel, pc->unit, pulse_gpio_num, ctrl_gpio_num, PCNT_CHANNEL_0, pos_mode, neg_mode, lctrl_mode, hctrl_mode, counter_l_lim, counter_h_lim );
   
-  /* Configure and enable the input filter */
-  // pcnt_set_filter_value(PCNT_TEST_UNIT, 100);
-  // pcnt_filter_enable(PCNT_TEST_UNIT);
-
-  /* Set threshold 0 and 1 values and enable events to watch */
-  // pcnt_set_event_value(ud->unit, PCNT_EVT_THRES_1, PCNT_THRESH1_VAL);
-  // pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_THRES_1);
-  // pcnt_set_event_value(PCNT_TEST_UNIT, PCNT_EVT_THRES_0, PCNT_THRESH0_VAL);
-  // pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_THRES_0);
-  // /* Enable events on zero, maximum and minimum limit values */
-  // pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_ZERO);
-  // pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_H_LIM);
-  // pcnt_event_enable(PCNT_TEST_UNIT, PCNT_EVT_L_LIM);
-
-  // /* Initialize PCNT's counter */
-  // pcnt_counter_pause(PCNT_TEST_UNIT);
-  // pcnt_counter_clear(PCNT_TEST_UNIT);
-
-  // /* Register ISR handler and enable interrupts for PCNT unit */
-  // pcnt_isr_register(pulsecnt_intr_handler, NULL, 0, &user_isr_handle);
-  // pcnt_intr_enable(PCNT_TEST_UNIT);
-
-  // /* Everything is set up, now go to counting */
-  // pcnt_counter_resume(PCNT_TEST_UNIT);
-
-
   return 0;
 }
 
@@ -555,8 +567,6 @@ static int pulsecnt_create( lua_State *L ) {
   pc->is_debug = false;
   pc->counter = 99;
   pc->unit = unit; // default to 0
-  // ud->mode = TIMER_MODE_OFF;
-  // ud->pcnt = NULL;
 
   //get the lua function reference
   luaL_unref(L, LUA_REGISTRYINDEX, pc->cb_ref);
@@ -579,7 +589,9 @@ static int pulsecnt_create( lua_State *L ) {
   return 1;
 }
 
-// Lua: pulsecnt:testCb( self )
+// Lua: pulsecnt:testCb( )
+// This tests the callback where you can mimic in your code a sample callback as 
+// part of your debugging process. Make sure to set your callback during the create() call.
 static int pulsecnt_testCb(lua_State* L)
 {
   // return 0;
@@ -607,7 +619,8 @@ static int pulsecnt_testCb(lua_State* L)
   return 0;
 }
 
-// Lua: pulsecnt:getCnt( self,)
+// Lua: pulsecnt:getCnt( )
+// Get's the pulse counter for a unit.
 static int pulsecnt_getCnt(lua_State* L)
 {
   pulsecnt_t pc = pulsecnt_get(L, 1);
@@ -621,7 +634,8 @@ static int pulsecnt_getCnt(lua_State* L)
   return 1;
 }
 
-// Lua: pulsecnt:clear( self,)
+// Lua: pulsecnt:clear( )
+// Clear the pulse counter, i.e. set it back to 0.
 static int pulsecnt_clear(lua_State* L)
 {
   pulsecnt_t pc = pulsecnt_get(L, 1);
@@ -639,23 +653,14 @@ static int pulsecnt_unregister(lua_State* L){
   pulsecnt_t pc = pulsecnt_get(L, 1);
 
   lua_pushinteger(L, pc->unit);
-  // if (tmr->self_ref != LUA_REFNIL) {
-  //   luaL_unref(L, LUA_REGISTRYINDEX, tmr->self_ref);
-  //   tmr->self_ref = LUA_NOREF;
-  // }
+  if (pc->self_ref != LUA_REFNIL) {
+    luaL_unref(L, LUA_REGISTRYINDEX, pc->self_ref);
+    pc->self_ref = LUA_NOREF;
+  }
 
-  // if(!(tmr->mode & TIMER_IDLE_FLAG) && tmr->mode != TIMER_MODE_OFF) {
-  //   if (tmr->timer) {
-  //     xTimerStop(tmr->timer, portMAX_DELAY);
-  //   }
-  // }
-  // if (tmr->timer) {
-  //   xTimerDelete(tmr->timer, portMAX_DELAY);
-  // }
-  // tmr->timer = NULL;
-  // luaL_unref(L, LUA_REGISTRYINDEX, tmr->cb_ref);
-  // tmr->cb_ref = LUA_NOREF;
-  // tmr->mode = TIMER_MODE_OFF; 
+  luaL_unref(L, LUA_REGISTRYINDEX, pc->cb_ref);
+  pc->cb_ref = LUA_NOREF;
+
   return 0;
 }
 
@@ -671,7 +676,8 @@ static const LUA_REG_TYPE pulsecnt_dyn_map[] =
   { LSTRKEY( "setThres" ),    LFUNCVAL( pulsecnt_set_thres )},
   { LSTRKEY( "setFilter" ),    LFUNCVAL( pulsecnt_set_filter )},
   { LSTRKEY( "rawSetEventVal" ),    LFUNCVAL( pulsecnt_set_event_value )},
-  // { LSTRKEY( "__gc" ),        LFUNCVAL( pulsecnt_unregister ) },
+  { LSTRKEY( "rawGetEventVal" ),    LFUNCVAL( pulsecnt_get_event_value )},
+  
   // { LSTRKEY( "__tostring" ), LFUNCVAL( pulsecnt_tostring )},
   { LSTRKEY( "__gc" ),        LFUNCVAL( pulsecnt_unregister ) },
   { LSTRKEY( "__index" ),     LROVAL( pulsecnt_dyn_map ) },
