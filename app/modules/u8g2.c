@@ -541,6 +541,14 @@ static int lu8g2_setPowerSave( lua_State *L )
   return 0;
 }
 
+static int lu8g2_updateDisplay( lua_State *L )
+{
+  GET_U8G2();
+
+  u8g2_UpdateDisplay( u8g2 );
+
+}
+
 static int lu8g2_updateDisplayArea( lua_State *L )
 {
   GET_U8G2();
@@ -597,6 +605,7 @@ static const LUA_REG_TYPE lu8g2_display_map[] = {
   { LSTRKEY( "setFontRefHeightExtendedText" ), LFUNCVAL( lu8g2_setFontRefHeightExtendedText ) },
   { LSTRKEY( "setFontRefHeightText" ),         LFUNCVAL( lu8g2_setFontRefHeightText ) },
   { LSTRKEY( "setPowerSave" ),       LFUNCVAL( lu8g2_setPowerSave ) },
+  { LSTRKEY( "updateDispla" ),       LFUNCVAL( lu8g2_updateDisplay ) },
   { LSTRKEY( "updateDisplayArea" ),            LFUNCVAL( lu8g2_updateDisplayArea ) },
   //{ LSTRKEY( "__gc" ),    LFUNCVAL( lu8g2_display_free ) },
   { LSTRKEY( "__index" ), LROVAL( lu8g2_display_map ) },
