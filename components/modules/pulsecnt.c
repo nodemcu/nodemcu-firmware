@@ -418,6 +418,7 @@ static int pulsecnt_config(lua_State *L) {
   return 0;
 }
 
+// This is called internally, not from Lua
 static int pulsecnt_channel_config( lua_State *L, uint8_t channel ) {
 
   int stack = 0;
@@ -512,18 +513,21 @@ static int pulsecnt_channel_config( lua_State *L, uint8_t channel ) {
   pcnt_unit_config(&pcnt_config);
 
   /* Enable events on zero, maximum and minimum limit values */
-  pcnt_event_enable(pc->unit, PCNT_EVT_ZERO);
-  pcnt_event_enable(pc->unit, PCNT_EVT_H_LIM);
-  pcnt_event_enable(pc->unit, PCNT_EVT_L_LIM);
+  if (pc->cb_ref != LUA_NOREF) { // if they didn't give callback, don't setup pcnt_isr_register
+    pcnt_event_enable(pc->unit, PCNT_EVT_ZERO);
+    pcnt_event_enable(pc->unit, PCNT_EVT_H_LIM);
+    pcnt_event_enable(pc->unit, PCNT_EVT_L_LIM);
+  }
 
   /* Initialize PCNT's counter */
   pcnt_counter_pause(pc->unit);
   pcnt_counter_clear(pc->unit);
 
   /* Register ISR handler and enable interrupts for PCNT unit */
-  pcnt_isr_register(pulsecnt_intr_handler, NULL, 0, &user_isr_handle);
-  pcnt_intr_enable(pc->unit);
-
+  if (pc->cb_ref != LUA_NOREF) { // if they didn't give callback, don't setup pcnt_isr_register
+    pcnt_isr_register(pulsecnt_intr_handler, NULL, 0, &user_isr_handle);
+    pcnt_intr_enable(pc->unit);
+  }
   /* Everything is set up, now go to counting */
   pcnt_counter_resume(pc->unit);
 
@@ -554,7 +558,14 @@ static int pulsecnt_create( lua_State *L ) {
 
   // Get callback method -- 2nd arg
   ++stack;
-  luaL_argcheck(L, lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION, stack, "Must be function");
+  // See if they even gave us a callback
+  bool isCallback = true;
+  if lua_isnoneornil(L, stack) {
+    // user did not provide a callback. that's ok. just don't give them one.
+    isCallback = false;
+  } else {
+    luaL_argcheck(L, lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION, stack, "Must be function");
+  }
 
   // ok, we have our unit number which is required. good. now create our object 
   pulsecnt_t pc = (pulsecnt_t)lua_newuserdata(L, sizeof(pulsecnt_struct_t));
@@ -569,9 +580,11 @@ static int pulsecnt_create( lua_State *L ) {
   pc->unit = unit; // default to 0
 
   //get the lua function reference
-  luaL_unref(L, LUA_REGISTRYINDEX, pc->cb_ref);
-  lua_pushvalue(L, stack);
-  pc->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  if (isCallback) {
+    luaL_unref(L, LUA_REGISTRYINDEX, pc->cb_ref);
+    lua_pushvalue(L, stack);
+    pc->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
 
   // store in our global static pulsecnt_selfs array for later reference during callback
   // where we only know the unit number 
