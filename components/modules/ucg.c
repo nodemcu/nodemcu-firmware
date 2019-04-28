@@ -19,8 +19,8 @@
 #include "sdkconfig.h"
 #endif
 
-#ifndef CONFIG_LUA_MODULE_U8G2
-// ignore unused functions if u8g2 module will be skipped anyhow
+#ifndef CONFIG_LUA_MODULE_UCG
+// ignore unused functions if ucg module will be skipped anyhow
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
