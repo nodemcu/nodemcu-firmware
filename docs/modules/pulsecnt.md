@@ -5,11 +5,10 @@
 
 The pulsecnt library handles sophisticated and automatic pulse counting using the built-in hardware on ESP32.
 The pulsecnt library gives you a means to not rely on GPIO triggers to do your pulse counting and instead offload the work to independent hardware. You gain the ability to count pulses up to 80Mhz (speed of APB clock).
-You can get a callback to Lua when different counting thresholds are reached, or when upper or lower counting limits are hit. You can count pulses on all GPIO ports, however from testing the SENSOR_VP port does not appear to be
-capable of counting pulses although the documentation does not state this as a limitation. There is also a way to provide
+You can get a callback to Lua when different counting thresholds are reached, or when upper or lower counting limits are hit. You can count pulses on all GPIO ports. There is also a way to provide
 a control GPIO for ignoring or decrementing pulses when the control signal is high or low.
 
-[Youtube video of examples using the pulsecnt](http://youtube.com) library including push buttons, stepper motor step counting, and hall effect sensor counting.
+[Youtube video of examples using the pulsecnt](https://youtu.be/vk5QZnWdlAA) library including push button counting, stepper motor step counting, and hall effect sensor counting.
 
 ## pulsecnt.create()
 
@@ -189,8 +188,8 @@ Configure channel 0 of the pulse counter object you created from the create() me
 `pulsecntObj:chan0Config(pulse_gpio_num, ctrl_gpio_num, pos_mode, neg_mode, lctrl_mode, hctrl_mode, counter_l_lim, counter_h_lim)`
 
 ### Parameters
-- `pulse_gpio_num` Required. Any GPIO pin can be used (although SENS_VP pin has been found to not work)
-- `ctrl_gpio_num` Required (although you can specify pulsecnt.PIN_NOT_USED to ignore). Any GPIO pin can be used. If you are trying to use a pin you use as gpio.OUT in other parts of your code, you can instead configure the pin as gpio.IN and toggle gpio.PULL_UP or gpio.PULL_DOWN to achieve your gpio.OUT task while still enabling the pulse counter to successfully read the pin state.
+- `pulse_gpio_num` Required. Any GPIO pin can be used.
+- `ctrl_gpio_num` Required (although you can specify pulsecnt.PIN_NOT_USED to ignore). Any GPIO pin can be used. If you are trying to use a pin you use as gpio.OUT in other parts of your code, you can instead configure the pin as gpio.IN_OUT and write high or low to it to achieve your gpio.OUT task while still enabling the pulse counter to successfully read the pin state. 
 - `pos_mode` Required. Positive rising edge count mode, i.e. count the pulse when the rising edge occurs.
   -    pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
   -    pulsecnt.PCNT_COUNT_INC = 1 Counter mode: Increase counter value. 
@@ -221,7 +220,7 @@ Configure channel 1 of the pulse counter object you created from the create() me
 `pulsecntObj:chan1Config(pulse_gpio_num, ctrl_gpio_num, pos_mode, neg_mode, lctrl_mode, hctrl_mode, counter_l_lim, counter_h_lim)`
 
 ### Parameters
-- `pulse_gpio_num` Required. Any GPIO pin can be used (although SENS_VP pin has been found to not work)
+- `pulse_gpio_num` Required. Any GPIO pin can be used.
 - `ctrl_gpio_num` Required (although you can specify pulsecnt.PIN_NOT_USED to ignore). Any GPIO pin can be used. If you are trying to use a pin you use as gpio.OUT in other parts of your code, you can instead configure the pin as gpio.IN and toggle gpio.PULL_UP or gpio.PULL_DOWN to achieve your gpio.OUT task while still enabling the pulse counter to successfully read the pin state.
 - `pos_mode` Required. Positive rising edge count mode, i.e. count the pulse when the rising edge occurs.
   -    pulsecnt.PCNT_COUNT_DIS = 0 Counter mode: Inhibit counter (counter value will not change in this condition). 
