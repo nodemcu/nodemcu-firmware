@@ -547,6 +547,7 @@ static int lu8g2_updateDisplay( lua_State *L )
 
   u8g2_UpdateDisplay( u8g2 );
 
+  return 0;
 }
 
 static int lu8g2_updateDisplayArea( lua_State *L )
