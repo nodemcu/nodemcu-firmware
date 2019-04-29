@@ -51,8 +51,8 @@ typedef struct{
   int16_t ch0_counter_l_lim;
   int16_t ch0_counter_h_lim;
   bool ch1_is_defined;
-  uint8_t ch1_pulse_gpio_num;
-  uint8_t ch1_ctrl_gpio_num;
+  int ch1_pulse_gpio_num; // needs to be signed to support PCNT_PIN_NOT_USED of -1
+  int ch1_ctrl_gpio_num; // needs to be signed to support PCNT_PIN_NOT_USED of -1
   uint8_t ch1_pos_mode;
   uint8_t ch1_neg_mode;
   uint8_t ch1_lctrl_mode;
