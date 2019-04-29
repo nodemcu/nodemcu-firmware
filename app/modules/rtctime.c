@@ -228,14 +228,14 @@ static int rtctime_epoch2cal (lua_State *L)
 }
 
 // Module function map
-static const LUA_REG_TYPE rtctime_map[] = {
-  { LSTRKEY("set"),            LFUNCVAL(rtctime_set) },
-  { LSTRKEY("get"),            LFUNCVAL(rtctime_get) },
-  { LSTRKEY("adjust_delta"),   LFUNCVAL(rtctime_adjust_delta) },
-  { LSTRKEY("dsleep"),         LFUNCVAL(rtctime_dsleep)  },
-  { LSTRKEY("dsleep_aligned"), LFUNCVAL(rtctime_dsleep_aligned) },
-  { LSTRKEY("epoch2cal"),      LFUNCVAL(rtctime_epoch2cal) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(rtctime)
+  LROT_FUNCENTRY( set, rtctime_set )
+  LROT_FUNCENTRY( get, rtctime_get )
+  LROT_FUNCENTRY( adjust_delta, rtctime_adjust_delta )
+  LROT_FUNCENTRY( dsleep, rtctime_dsleep )
+  LROT_FUNCENTRY( dsleep_aligned, rtctime_dsleep_aligned )
+  LROT_FUNCENTRY( epoch2cal, rtctime_epoch2cal )
+LROT_END( rtctime, NULL, 0 )
 
-NODEMCU_MODULE(RTCTIME, "rtctime", rtctime_map, NULL);
+
+NODEMCU_MODULE(RTCTIME, "rtctime", rtctime, NULL);

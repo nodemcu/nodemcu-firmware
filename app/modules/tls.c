@@ -31,7 +31,7 @@ __attribute__((section(".servercert.flash"))) unsigned char tls_server_cert_area
 __attribute__((section(".clientcert.flash"))) unsigned char tls_client_cert_area[INTERNAL_FLASH_SECTOR_SIZE];
 
 extern int tls_socket_create( lua_State *L );
-extern const LUA_REG_TYPE tls_cert_map[];
+LROT_EXTERN(tls_cert)
 
 typedef struct {
   struct espconn *pesp_conn;
@@ -613,40 +613,40 @@ static int tls_set_debug_threshold(lua_State *L) {
 }
 #endif
 
-static const LUA_REG_TYPE tls_socket_map[] = {
-  { LSTRKEY( "connect" ), LFUNCVAL( tls_socket_connect ) },
-  { LSTRKEY( "close" ),   LFUNCVAL( tls_socket_close ) },
-  { LSTRKEY( "on" ),      LFUNCVAL( tls_socket_on ) },
-  { LSTRKEY( "send" ),    LFUNCVAL( tls_socket_send ) },
-  { LSTRKEY( "hold" ),    LFUNCVAL( tls_socket_hold ) },
-  { LSTRKEY( "unhold" ),  LFUNCVAL( tls_socket_unhold ) },
-  { LSTRKEY( "getpeer" ), LFUNCVAL( tls_socket_getpeer ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( tls_socket_delete ) },
-  { LSTRKEY( "__index" ), LROVAL( tls_socket_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(tls_socket)
+  LROT_FUNCENTRY( connect, tls_socket_connect )
+  LROT_FUNCENTRY( close, tls_socket_close )
+  LROT_FUNCENTRY( on, tls_socket_on )
+  LROT_FUNCENTRY( send, tls_socket_send )
+  LROT_FUNCENTRY( hold, tls_socket_hold )
+  LROT_FUNCENTRY( unhold, tls_socket_unhold )
+  LROT_FUNCENTRY( getpeer, tls_socket_getpeer )
+  LROT_FUNCENTRY( __gc, tls_socket_delete )
+  LROT_TABENTRY( __index, tls_socket )
+LROT_END( tls_socket, tls_socket, 0 )
 
-const LUA_REG_TYPE tls_cert_map[] = {
-  { LSTRKEY( "verify" ),           LFUNCVAL( tls_cert_verify ) },
-  { LSTRKEY( "auth" ),             LFUNCVAL( tls_cert_auth ) },
-  { LSTRKEY( "__index" ),          LROVAL( tls_cert_map ) },
-  { LNILKEY, LNILVAL }
-};
 
-static const LUA_REG_TYPE tls_map[] = {
-  { LSTRKEY( "createConnection" ), LFUNCVAL( tls_socket_create ) },
+LROT_PUBLIC_BEGIN(tls_cert)
+  LROT_FUNCENTRY( verify, tls_cert_verify )
+  LROT_FUNCENTRY( auth, tls_cert_auth )
+  LROT_TABENTRY( __index, tls_cert )
+LROT_END( tls_cert, tls_cert, 0 )
+
+
+LROT_BEGIN(tls)
+  LROT_FUNCENTRY( createConnection, tls_socket_create )
 #if defined(MBEDTLS_DEBUG_C)
-  { LSTRKEY( "setDebug" ),         LFUNCVAL( tls_set_debug_threshold ) },
+  LROT_FUNCENTRY( setDebug, tls_set_debug_threshold )
 #endif
-  { LSTRKEY( "cert" ),             LROVAL( tls_cert_map ) },
-  { LSTRKEY( "__metatable" ),      LROVAL( tls_map ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_TABENTRY( cert, tls_cert )
+  LROT_TABENTRY( __metatable, tls )
+LROT_END( tls, tls, 0 )
+
 
 int luaopen_tls( lua_State *L ) {
-  luaL_rometatable(L, "tls.socket", (void *)tls_socket_map);  // create metatable for net.server
+  luaL_rometatable(L, "tls.socket", LROT_TABLEREF(tls_socket));
   return 0;
 }
 
-NODEMCU_MODULE(TLS, "tls", tls_map, luaopen_tls);
+NODEMCU_MODULE(TLS, "tls", tls, luaopen_tls);
 #endif

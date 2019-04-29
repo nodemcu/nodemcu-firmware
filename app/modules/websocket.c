@@ -307,28 +307,26 @@ static int websocketclient_gc(lua_State *L) {
   return 0;
 }
 
-static const LUA_REG_TYPE websocket_map[] =
-{
-  { LSTRKEY("createClient"), LFUNCVAL(websocket_createClient) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(websocket)
+  LROT_FUNCENTRY( createClient, websocket_createClient )
+LROT_END( websocket, NULL, 0 )
 
-static const LUA_REG_TYPE websocketclient_map[] =
-{
-  { LSTRKEY("on"), LFUNCVAL(websocketclient_on) },
-  { LSTRKEY("config"), LFUNCVAL(websocketclient_config) },
-  { LSTRKEY("connect"), LFUNCVAL(websocketclient_connect) },
-  { LSTRKEY("send"), LFUNCVAL(websocketclient_send) },
-  { LSTRKEY("close"), LFUNCVAL(websocketclient_close) },
-  { LSTRKEY("__gc" ), LFUNCVAL(websocketclient_gc) },
-  { LSTRKEY("__index"), LROVAL(websocketclient_map) },
-  { LNILKEY, LNILVAL }
-};
+
+LROT_BEGIN(websocketclient)
+  LROT_FUNCENTRY( on, websocketclient_on )
+  LROT_FUNCENTRY( config, websocketclient_config )
+  LROT_FUNCENTRY( connect, websocketclient_connect )
+  LROT_FUNCENTRY( send, websocketclient_send )
+  LROT_FUNCENTRY( close, websocketclient_close )
+  LROT_FUNCENTRY( __gc, websocketclient_gc )
+  LROT_TABENTRY( __index, websocketclient )
+LROT_END( websocketclient, websocketclient, LROT_MASK_GC_INDEX )
+
 
 int loadWebsocketModule(lua_State *L) {
-  luaL_rometatable(L, METATABLE_WSCLIENT, (void *) websocketclient_map);
+  luaL_rometatable(L, METATABLE_WSCLIENT, LROT_TABLEREF( websocketclient));
 
   return 0;
 }
 
-NODEMCU_MODULE(WEBSOCKET, "websocket", websocket_map, loadWebsocketModule);
+NODEMCU_MODULE(WEBSOCKET, "websocket", websocket, loadWebsocketModule);

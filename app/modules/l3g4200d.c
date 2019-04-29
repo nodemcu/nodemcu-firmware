@@ -79,10 +79,10 @@ static int l3g4200d_read(lua_State* L) {
     return 3;
 }
 
-static const LUA_REG_TYPE l3g4200d_map[] = {
-    { LSTRKEY( "read" ),         LFUNCVAL( l3g4200d_read )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( l3g4200d_setup )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(l3g4200d)
+  LROT_FUNCENTRY( read, l3g4200d_read )
+  LROT_FUNCENTRY( setup, l3g4200d_setup )
+LROT_END( l3g4200d, NULL, 0 )
 
-NODEMCU_MODULE(L3G4200D, "l3g4200d", l3g4200d_map, NULL);
+
+NODEMCU_MODULE(L3G4200D, "l3g4200d", l3g4200d, NULL);

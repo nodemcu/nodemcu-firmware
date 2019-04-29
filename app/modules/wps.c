@@ -52,22 +52,22 @@ static int ICACHE_FLASH_ATTR wps_start(lua_State* L)
 }
 
 // Module function map
-const LUA_REG_TYPE wps_map[] = {
-  { LSTRKEY( "disable" ),  LFUNCVAL( wps_disable ) },
-  { LSTRKEY( "enable" ),   LFUNCVAL( wps_enable ) },
-  { LSTRKEY( "start" ),    LFUNCVAL( wps_start ) },
-  { LSTRKEY( "SUCCESS" ),  LNUMVAL( WPS_CB_ST_SUCCESS ) },
-  { LSTRKEY( "FAILED" ),   LNUMVAL( WPS_CB_ST_FAILED ) },
-  { LSTRKEY( "TIMEOUT" ),  LNUMVAL( WPS_CB_ST_TIMEOUT ) },
-  { LSTRKEY( "WEP" ),      LNUMVAL( WPS_CB_ST_WEP ) },
-  { LSTRKEY( "SCAN_ERR" ), LNUMVAL( 4 ) }, // WPS_CB_ST_SCAN_ERR
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(wps)
+  LROT_FUNCENTRY( disable, wps_disable )
+  LROT_FUNCENTRY( enable, wps_enable )
+  LROT_FUNCENTRY( start, wps_start )
+  LROT_NUMENTRY( SUCCESS, WPS_CB_ST_SUCCESS )
+  LROT_NUMENTRY( FAILED, WPS_CB_ST_FAILED )
+  LROT_NUMENTRY( TIMEOUT, WPS_CB_ST_TIMEOUT )
+  LROT_NUMENTRY( WEP, WPS_CB_ST_WEP )
+  LROT_NUMENTRY( SCAN_ERR, 4 )
+LROT_END( wps, NULL, 0 )
+
 
 int luaopen_wps( lua_State *L )
 {
   return 0;
 }
 
-NODEMCU_MODULE(WPS, "wps", wps_map, luaopen_wps);
+NODEMCU_MODULE(WPS, "wps", wps, luaopen_wps);
 

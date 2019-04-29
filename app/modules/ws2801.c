@@ -122,11 +122,10 @@ static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
     return 0;
 }
 
-static const LUA_REG_TYPE ws2801_map[] =
-{
-    { LSTRKEY( "write" ), LFUNCVAL( ws2801_writergb )},
-    { LSTRKEY( "init" ), LFUNCVAL( ws2801_init_lua )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(ws2801)
+  LROT_FUNCENTRY( write, ws2801_writergb )
+  LROT_FUNCENTRY( init, ws2801_init_lua )
+LROT_END( ws2801, NULL, 0 )
 
-NODEMCU_MODULE(WS2801, "ws2801", ws2801_map, NULL);
+
+NODEMCU_MODULE(WS2801, "ws2801", ws2801, NULL);

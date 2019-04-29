@@ -88,10 +88,10 @@ static int mdns_register(lua_State *L)
 }
 
 // Module function map
-static const LUA_REG_TYPE mdns_map[] = {
-  { LSTRKEY("register"),  LFUNCVAL(mdns_register)  },
-  { LSTRKEY("close"),     LFUNCVAL(mdns_close)     },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(mdns)
+  LROT_FUNCENTRY( register, mdns_register )
+  LROT_FUNCENTRY( close, mdns_close )
+LROT_END( mdns, NULL, 0 )
 
-NODEMCU_MODULE(MDNS, "mdns", mdns_map, NULL);
+
+NODEMCU_MODULE(MDNS, "mdns", mdns, NULL);

@@ -16,7 +16,6 @@
 #include "lundump.h"
 
 #include "platform.h"
-#include "lrodefs.h"
 #include "lflash.h"
 #include "c_types.h"
 #include "c_string.h"
@@ -575,63 +574,62 @@ static int node_random (lua_State *L) {
 
 // Module function map
 
-static const LUA_REG_TYPE node_egc_map[] = {
-  { LSTRKEY( "meminfo" ),           LFUNCVAL( node_egc_meminfo ) },
-  { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
-  { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
-  { LSTRKEY( "ON_ALLOC_FAILURE" ),  LNUMVAL( EGC_ON_ALLOC_FAILURE ) },
-  { LSTRKEY( "ON_MEM_LIMIT" ),      LNUMVAL( EGC_ON_MEM_LIMIT ) },
-  { LSTRKEY( "ALWAYS" ),            LNUMVAL( EGC_ALWAYS ) },
-  { LNILKEY, LNILVAL }
-};
-static const LUA_REG_TYPE node_task_map[] = {
-  { LSTRKEY( "post" ),            LFUNCVAL( node_task_post ) },
-  { LSTRKEY( "LOW_PRIORITY" ),    LNUMVAL( TASK_PRIORITY_LOW ) },
-  { LSTRKEY( "MEDIUM_PRIORITY" ), LNUMVAL( TASK_PRIORITY_MEDIUM ) },
-  { LSTRKEY( "HIGH_PRIORITY" ),   LNUMVAL( TASK_PRIORITY_HIGH ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(node_egc)
+  LROT_FUNCENTRY( meminfo, node_egc_meminfo )
+  LROT_FUNCENTRY( setmode, node_egc_setmode )
+  LROT_NUMENTRY( NOT_ACTIVE, EGC_NOT_ACTIVE )
+  LROT_NUMENTRY( ON_ALLOC_FAILURE, EGC_ON_ALLOC_FAILURE )
+  LROT_NUMENTRY( ON_MEM_LIMIT, EGC_ON_MEM_LIMIT )
+  LROT_NUMENTRY( ALWAYS, EGC_ALWAYS )
+LROT_END( node_egc, NULL, 0 )
 
-static const LUA_REG_TYPE node_map[] =
-{
-  { LSTRKEY( "heap" ), LFUNCVAL( node_heap ) },
-  { LSTRKEY( "info" ), LFUNCVAL( node_info ) },
-  { LSTRKEY( "task" ), LROVAL( node_task_map ) },
-  { LSTRKEY( "flashreload" ), LFUNCVAL( luaN_reload_reboot ) },
-  { LSTRKEY( "flashindex" ), LFUNCVAL( luaN_index ) },
-  { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
-  { LSTRKEY( "dsleep" ),    LFUNCVAL( node_deepsleep ) },
-  { LSTRKEY( "dsleepMax" ), LFUNCVAL( dsleepMax ) },
-  { LSTRKEY( "sleep" ), LFUNCVAL( node_sleep ) },
+LROT_BEGIN(node_task)
+  LROT_FUNCENTRY( post, node_task_post )
+  LROT_NUMENTRY( LOW_PRIORITY, TASK_PRIORITY_LOW )
+  LROT_NUMENTRY( MEDIUM_PRIORITY, TASK_PRIORITY_MEDIUM )
+  LROT_NUMENTRY( HIGH_PRIORITY, TASK_PRIORITY_HIGH )
+LROT_END( node_task, NULL, 0 )
+
+
+LROT_BEGIN(node)
+  LROT_FUNCENTRY( heap, node_heap )
+  LROT_FUNCENTRY( info, node_info )
+  LROT_TABENTRY( task, node_task )
+  LROT_FUNCENTRY( flashreload, luaN_reload_reboot )
+  LROT_FUNCENTRY( flashindex, luaN_index )
+  LROT_FUNCENTRY( restart, node_restart )
+  LROT_FUNCENTRY( dsleep, node_deepsleep )
+  LROT_FUNCENTRY( dsleepMax, dsleepMax )
+  LROT_FUNCENTRY( sleep, node_sleep )
 #ifdef PMSLEEP_ENABLE
   PMSLEEP_INT_MAP,
 #endif
-  { LSTRKEY( "chipid" ), LFUNCVAL( node_chipid ) },
-  { LSTRKEY( "flashid" ), LFUNCVAL( node_flashid ) },
-  { LSTRKEY( "flashsize" ), LFUNCVAL( node_flashsize) },
-  { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
-  { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
+  LROT_FUNCENTRY( chipid, node_chipid )
+  LROT_FUNCENTRY( flashid, node_flashid )
+  LROT_FUNCENTRY( flashsize, node_flashsize )
+  LROT_FUNCENTRY( input, node_input )
+  LROT_FUNCENTRY( output, node_output )
 // Moved to adc module, use adc.readvdd33()
-// { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
-  { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
-  { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
-  { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
-  { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
-  { LSTRKEY( "getcpufreq" ), LFUNCVAL( node_getcpufreq) },
-  { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
-  { LSTRKEY( "restore" ), LFUNCVAL( node_restore) },
-  { LSTRKEY( "random" ), LFUNCVAL( node_random) },
+//  LROT_FUNCENTRY( readvdd33, node_readvdd33 )
+  LROT_FUNCENTRY( compile, node_compile )
+  LROT_NUMENTRY( CPU80MHZ, CPU80MHZ )
+  LROT_NUMENTRY( CPU160MHZ, CPU160MHZ )
+  LROT_FUNCENTRY( setcpufreq, node_setcpufreq )
+  LROT_FUNCENTRY( getcpufreq, node_getcpufreq )
+  LROT_FUNCENTRY( bootreason, node_bootreason )
+  LROT_FUNCENTRY( restore, node_restore )
+  LROT_FUNCENTRY( random, node_random )
 #ifdef LUA_OPTIMIZE_DEBUG
-  { LSTRKEY( "stripdebug" ), LFUNCVAL( node_stripdebug ) },
+  LROT_FUNCENTRY( stripdebug, node_stripdebug )
 #endif
-  { LSTRKEY( "egc" ),  LROVAL( node_egc_map ) },
+  LROT_TABENTRY( egc, node_egc )
 #ifdef DEVELOPMENT_TOOLS
-  { LSTRKEY( "osprint" ), LFUNCVAL( node_osprint ) },
+  LROT_FUNCENTRY( osprint, node_osprint )
 #endif
 
 // Combined to dsleep(us, option)
-// { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
-  { LNILKEY, LNILVAL }
-};
+//  LROT_FUNCENTRY( dsleepsetoption, node_deepsleep_setoption )
+LROT_END( node, NULL, 0 )
 
-NODEMCU_MODULE(NODE, "node", node_map, NULL);
+
+NODEMCU_MODULE(NODE, "node", node, NULL);

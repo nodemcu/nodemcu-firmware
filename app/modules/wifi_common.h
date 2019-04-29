@@ -58,13 +58,13 @@ enum wifi_suspension_state{
 
 
 #ifdef WIFI_SDK_EVENT_MONITOR_ENABLE
-  extern const LUA_REG_TYPE wifi_event_monitor_map[];
+  LROT_EXTERN(wifi_event_monitor);
   void wifi_eventmon_init();
   int wifi_event_monitor_register(lua_State* L);
 #endif
 
 #ifdef LUA_USE_MODULES_WIFI_MONITOR
-  extern const LUA_REG_TYPE wifi_monitor_map[];
+  LROT_EXTERN(wifi_monitor);
   int wifi_monitor_init(lua_State *L);
 #endif
 

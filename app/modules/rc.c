@@ -81,14 +81,14 @@ static int ICACHE_FLASH_ATTR rc_send(lua_State* L) {
 }
 
 // Module function map
-static const LUA_REG_TYPE rc_map[] = {
-  { LSTRKEY( "send" ), LFUNCVAL( rc_send )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(rc)
+  LROT_FUNCENTRY( send, rc_send )
+LROT_END( rc, NULL, 0 )
+
 
 int luaopen_rc(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
   return 0;
 }
 
-NODEMCU_MODULE(RC, "rc", rc_map, luaopen_rc);
+NODEMCU_MODULE(RC, "rc", rc, luaopen_rc);
