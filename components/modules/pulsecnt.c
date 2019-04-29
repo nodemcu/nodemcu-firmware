@@ -69,6 +69,7 @@ typedef pulsecnt_struct_t *pulsecnt_t;
 // this array gets filled in as we define pulsecnt_struct_t's during the create() method
 static pulsecnt_t pulsecnt_selfs[8];
 
+// Task ID to get ISR interrupt back into Lua callback
 static task_handle_t pulsecnt_task_id;
 
 /* Decode what PCNT's unit originated an interrupt
