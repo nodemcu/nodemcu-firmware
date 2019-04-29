@@ -119,8 +119,8 @@ else
   ifeq ($(MAKE_HOST),x86_64-pc-linux-gnu)
     ifndef TOOLCHAIN_ROOT
       TOOLCHAIN_VERSION = 20181106.0
-      GCCTOOLCHAIN      = esp8266-linux-x86_64-$(TOOLCHAIN_VERSION)
-      TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/$(GCCTOOLCHAIN)
+      GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
+      TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
       GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
       export PATH:=$(PATH):$(TOOLCHAIN_ROOT)/bin
   	endif
@@ -271,15 +271,15 @@ sdk_pruned: sdk_extracted $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
 ifdef GITHUB_TOOLCHAIN
         TOOLCHAIN_ROOT := $(TOP_DIR)/tools/toolchains/esp8266-linux-x86_64-$(TOOLCHAIN_VERSION)
 
-toolchain: $(TOOLCHAIN_ROOT)/bin/xtensa-lx106-elf-gcc $(ESPTOOL)
+toolchain: $(TOOLCHAIN_ROOT)/bin $(ESPTOOL)
 
-$(TOOLCHAIN_ROOT)/bin/xtensa-lx106-elf-gcc: $(TOP_DIR)/cache/toolchain-$(GCCTOOLCHAIN).tar.xz
+$(TOOLCHAIN_ROOT)/bin: $(TOP_DIR)/cache/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
 	$(summary) EXTRACT $(patsubst $(TOP_DIR)/%,%,$<)
 	tar -xJf $< -C $(TOP_DIR)/tools/toolchains/
 	touch $@
 
-$(TOP_DIR)/cache/toolchain-$(GCCTOOLCHAIN).tar.xz:
+$(TOP_DIR)/cache/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz:
 	mkdir -p $(TOP_DIR)/cache
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
 	$(WGET) $(GITHUB_TOOLCHAIN)/releases/download/$(GCCTOOLCHAIN)/toolchain-esp8266-$(GCCTOOLCHAIN).tar.xz -O $@ \
@@ -287,6 +287,12 @@ $(TOP_DIR)/cache/toolchain-$(GCCTOOLCHAIN).tar.xz:
 else
 toolchain: $(ESPTOOL)
 endif
+#      TOOLCHAIN_VERSION = 20181106.0
+#      GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
+#      TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/$(GCCTOOLCHAIN)
+#      GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
+#https://github.com/jmattsson/esp-toolchains/releases/download/linux-x86_64-20181106.0/toolchain-esp8266-linux-x86_64-20181106.0.tar.xz
+#https://github.com/jmattsson/esp-toolchains/releases/download/esp8266-linux-x86_64-20181106.0/toolchain-esp8266-linux-x86_64-20181106.0.tar.xz
 
 $(ESPTOOL): $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz
 	mkdir -p $(TOP_DIR)/tools/toolchains/
@@ -312,7 +318,7 @@ $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 	mv $(dir $@)/$(SDK_ZIP_ROOT) $(dir $@)/esp_iot_sdk_v$(SDK_VER)
 	touch $@
 
-$(TOP_DIR)/sdk/.pruned-$(SDK_VER):
+$(TOP_DIR)/sdk/.pruned-$(SDK_VER): $(TOOLCHAIN_ROOT)/bin
 	rm -f $(SDK_DIR)/lib/liblwip.a $(SDK_DIR)/lib/libssl.a $(SDK_DIR)/lib/libmbedtls.a
 	$(summary) PRUNE libmain.a libc.a
 	echo $(PATH)
