@@ -331,7 +331,7 @@ pcnt:clear() -- set counter back to zero
 
 ## pulsecntObj:getCnt()
 
-Clear the counter. Sets it back to zero.
+Get the current pulse counter.
 
 ### Syntax
 `pulsecntObj:getCnt()`
