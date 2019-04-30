@@ -78,14 +78,15 @@ endif
 #
 
 ifndef $(OS)
-  ifneq (,$(findstring linux,$(MAKE_HOST)))
-    export OS := linux
+  # Assume Windows if MAKE_HOST contains "indows" and Linux otherwise
+  ifneq (,$(findstring indows,$(MAKE_HOST)))
+    OS := windows
   else
-    export OS := windows
+    OS := linux
   endif
 endif
 
-ifneq ($(OS),linux)
+ifneq (,$(findstring indows,$(OS)))
   #------------ BEGIN UNTESTED ------------ We are not under Linux, e.g.under windows.
 	ifeq ($(XTENSA_CORE),lx106)
 		# It is xcc
