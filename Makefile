@@ -269,7 +269,7 @@ sdk_extracted: $(TOP_DIR)/sdk/.extracted-$(SDK_VER)
 sdk_pruned: sdk_extracted toolchain $(TOP_DIR)/sdk/.pruned-$(SDK_VER)
 
 ifdef GITHUB_TOOLCHAIN
-        TOOLCHAIN_ROOT := $(TOP_DIR)/tools/toolchains/esp8266-linux-x86_64-$(TOOLCHAIN_VERSION)
+  TOOLCHAIN_ROOT := $(TOP_DIR)/tools/toolchains/esp8266-linux-x86_64-$(TOOLCHAIN_VERSION)
 
 toolchain: $(TOOLCHAIN_ROOT)/bin $(ESPTOOL)
 
@@ -301,6 +301,7 @@ $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz:
 $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
 	$(summary) UNZIP $(patsubst $(TOP_DIR)/%,%,$<)
+	$(summary) HOST $(MAKE_HOST)
 	(cd "$(dir $@)" && \
 	 rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-* && \
 	 unzip $(TOP_DIR)/cache/$(SDK_FILE_VER).zip \
