@@ -38,6 +38,7 @@ else
   CCFLAGS += -O2
 endif
 
+
 # Handling of V=1/VERBOSE=1 flag
 #
 # if V=1, $(summary) does nothing
@@ -75,7 +76,16 @@ endif
 #  If any developers wish to develop, test and support alternative environments 
 #  then please raise a GitHub issue on this work.
 #
-ifeq (,$(findstring linux,$(MAKE_HOST)))
+
+ifndef $(OS)
+  ifneq (,$(findstring linux,$(MAKE_HOST)))
+    export OS := linux
+  else
+    export OS := windows
+  endif
+endif
+
+ifneq ($(OS),linux)
   #------------ BEGIN UNTESTED ------------ We are not under Linux, e.g.under windows.
 	ifeq ($(XTENSA_CORE),lx106)
 		# It is xcc
@@ -116,7 +126,7 @@ else
 
   UNAME_S := $(shell uname -s)
   UNAME_P := $(shell uname -p)
-  ifeq ($(MAKE_HOST),x86_64-pc-linux-gnu)
+  ifeq ($(OS),linux)
     ifndef TOOLCHAIN_ROOT
       TOOLCHAIN_VERSION = 20181106.0
       GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
@@ -142,7 +152,6 @@ else
 	FIRMWAREDIR = ../bin/
   WGET = wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused
 endif
-#############################################################
 
 GITHUB_SDK       = https://github.com/espressif/ESP8266_NONOS_SDK
 GITHUB_ESPTOOL   = https://github.com/espressif/esptool
@@ -301,7 +310,6 @@ $(TOP_DIR)/cache/esptool/v$(ESPTOOL_VER).tar.gz:
 $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 	mkdir -p "$(dir $@)"
 	$(summary) UNZIP $(patsubst $(TOP_DIR)/%,%,$<)
-	$(summary) HOST $(MAKE_HOST)
 	(cd "$(dir $@)" && \
 	 rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-* && \
 	 unzip $(TOP_DIR)/cache/$(SDK_FILE_VER).zip \
