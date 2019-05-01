@@ -572,7 +572,7 @@ static int node_random (lua_State *L) {
 }
 
 #ifdef DEVELOPMENT_TOOLS
-// Lua: rec = node.readrcr(id) 
+// Lua: rec = node.readrcr(id)
 static int node_readrcr (lua_State *L) {
   int id  = luaL_checkinteger(L, 1);
   char *data;
@@ -581,7 +581,7 @@ static int node_readrcr (lua_State *L) {
   lua_pushlstring(L, data, n);
   return 1;
 }
-// Lua: n = node.writercr(id,rec) 
+// Lua: n = node.writercr(id,rec)
 static int node_writercr (lua_State *L) {
   int id = luaL_checkinteger(L, 1),l;
   const char *data = lua_tolstring(L, 2, &l);
@@ -601,17 +601,17 @@ static const LUA_REG_TYPE pt_map[] = {
   { LNILKEY, LNILVAL }
 };
 
-// Lua: ptinfo = node.getpartitiontable() 
+// Lua: ptinfo = node.getpartitiontable()
 static int node_getpartitiontable (lua_State *L) {
   uint32_t param[max_pt] = {0};
   param[lfs_size]    = platform_flash_get_partition(NODEMCU_LFS0_PARTITION, param + lfs_addr);
   param[spiffs_size] = platform_flash_get_partition(NODEMCU_SPIFFS0_PARTITION, param + spiffs_addr);
 
   lua_settop(L, 0);
-  lua_createtable (L, 0, max_pt);                   /* at index 1 */ 
+  lua_createtable (L, 0, max_pt);                   /* at index 1 */
   lua_pushrotable(L, (void*)pt_map);                /* at index 2 */
   lua_pushnil(L);                                   /* first key at index 3 */
-  while (lua_next(L, 2) != 0) {                     /* key at index 3, and v at index 4 */     
+  while (lua_next(L, 2) != 0) {                     /* key at index 3, and v at index 4 */
     lua_pushvalue(L, 3);                            /* dup key to index 5 */
     lua_pushinteger(L, param[lua_tointeger(L, 4)]); /* param [v] at index 6 */
     lua_rawset(L, 1);
@@ -639,7 +639,7 @@ static void delete_partition(partition_item_t *p, int n) {
 #define LFS_PARTITION    (SYSTEM_PARTITION_CUSTOMER_BEGIN + NODEMCU_LFS0_PARTITION)
 #define SPIFFS_PARTITION (SYSTEM_PARTITION_CUSTOMER_BEGIN + NODEMCU_SPIFFS0_PARTITION)
 
-// Lua: node.setpartitiontable(pt_settings) 
+// Lua: node.setpartitiontable(pt_settings)
 static int node_setpartitiontable (lua_State *L) {
   partition_item_t *rcr_pt = NULL, *pt;
   uint32_t flash_size = flash_rom_get_size_byte();
@@ -650,7 +650,7 @@ static int node_setpartitiontable (lua_State *L) {
 
   luaL_argcheck(L, lua_istable(L, 1), 1, "must be table");
   lua_settop(L, 1);
-  /* convert input table into 4 option array */ 
+  /* convert input table into 4 option array */
   lua_pushrotable(L, (void*)pt_map);  /* at index 2 */
   lua_pushnil(L);                   /* first key at index 3 */
   while (lua_next(L, 1) != 0) {
@@ -659,7 +659,7 @@ static int node_setpartitiontable (lua_State *L) {
     lua_pushvalue(L, 3);  /* dup key to index 5 */
     lua_rawget(L, 2);     /* lookup in pt_map */
     luaL_argcheck(L, !lua_isnil(L, -1), 1, "invalid partition setting");
-    param[lua_tointeger(L, 5)] = lua_tointeger(L, 4); 
+    param[lua_tointeger(L, 5)] = lua_tointeger(L, 4);
     /* removes 'value'; keeps 'key' for next iteration */
     lua_pop(L, 2);  /* discard value and lookup */
   }
@@ -701,11 +701,11 @@ static int node_setpartitiontable (lua_State *L) {
       }
       if (param[spiffs_size] != SKIP) {
         // BOTCH: - at the moment the firmware doesn't boot if the SPIFFS partition
-        //          is deleted so the minimum SPIFFS size is 64Kb   
+        //          is deleted so the minimum SPIFFS size is 64Kb
         p->size = param[spiffs_size] > 0x10000 ? param[spiffs_size] : 0x10000;
-      } 
+      }
       if (p->size == SKIP) {
-        if (p->addr < 0) { 
+        if (p->addr < 0) {
           // This allocate all the remaining flash to SPIFFS
           p->addr = last;
           p->size = flash_size - last;
@@ -722,20 +722,20 @@ static int node_setpartitiontable (lua_State *L) {
 
     if (p->size == 0) {
       // Delete 0-sized partitions as the SDK barfs on these
-      delete_partition(p, n-i-1);    
+      delete_partition(p, n-i-1);
       n--; i--;
     } else {
-      // Do consistency tests on the partition       
+      // Do consistency tests on the partition
       if (p->addr & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
         p->size & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
-        p->addr < last || 
+        p->addr < last ||
         p->addr + p->size > flash_size) {
         luaL_error(L, "value out of range");
       }
     }
   }
-//  for (i = 0; i < n; i ++) 
-//    dbg_printf("Partition %d: %04x %06x %06x\n", i, pt[i].type, pt[i].addr, pt[i].size);   
+//  for (i = 0; i < n; i ++)
+//    dbg_printf("Partition %d: %04x %06x %06x\n", i, pt[i].type, pt[i].addr, pt[i].size);
     platform_rcr_write(PLATFORM_RCR_PT, pt, n*sizeof(partition_item_t));
     while(1); // Trigger WDT; the new PT will be loaded on reboot
 

@@ -66,7 +66,7 @@ extern const char _irom0_text_start[], _irom0_text_end[], _flash_used_end[];
 #define PTABLE_SIZE    7   /** THIS MUST BE MATCHED TO NO OF PT ENTRIES BELOW **/
 struct defaultpt {
   platform_rcr_t hdr;
-  partition_item_t pt[PTABLE_SIZE+1]; // the +! is for the endmarker 
+  partition_item_t pt[PTABLE_SIZE+1]; // the +! is for the endmarker
   };
 #define PT_LEN (NUM_PARTITIONS*sizeof(partition_item_t))
 /*
@@ -126,7 +126,7 @@ void user_pre_init(void) {
   // is where the cpu clock actually gets bumped to 80MHz.
     rtctime_early_startup ();
 #endif
-    partition_item_t *rcr_pt = NULL, *pt; 
+    partition_item_t *rcr_pt = NULL, *pt;
     enum flash_size_map fs_size_code = system_get_flash_size_map();
 // Flash size lookup is SIZE_256K*2^N where N is as follows (see SDK/user_interface.h)
                                      /*   0   1   2   3   4   5   6   7   8   9  */
@@ -151,7 +151,7 @@ void user_pre_init(void) {
     }
     os_memcpy(pt, rcr_pt, i);
 
-    if (pt[n-1].type == 0) {  
+    if (pt[n-1].type == 0) {
         // If the last PT entry is a {0,XX,0} end marker, then we need first time setup
         n = first_time_setup(pt, n-1, flash_size); // return n because setup might shrink the PT
     }
@@ -208,7 +208,7 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
     /*
     * Scan down the PT adjusting and 0 entries to sensible defaults.  Also delete any
     * zero-sized partitions (as the SDK barfs on these).
-    */ 
+    */
     for (i = 0, j = 0; i < n; i ++) {
         partition_item_t *p = pt + i;
         switch (p->type) {
@@ -231,7 +231,7 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
             break;
 
           case NODEMCU_PARTITION_SPIFFS:
-            if (p->size == ~0x0 && p->addr == 0) { 
+            if (p->size == ~0x0 && p->addr == 0) {
                 // This allocate all the remaining flash to SPIFFS
                 p->addr = last;
                 p->size = flash_size - last;
@@ -249,10 +249,10 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
             // Delete 0-sized partitions as the SDK barfs on these
             newn--;
         } else {
-            // Do consistency tests on the partition       
+            // Do consistency tests on the partition
             if (p->addr & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
                 p->size & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
-                p->addr < last || 
+                p->addr < last ||
                 p->addr + p->size > flash_size) {
                 os_printf("Partition %u invalid alignment\n", i);
                 while(1) {/*system_soft_wdt_feed ();*/}

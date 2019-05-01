@@ -41,7 +41,7 @@
 
 // The Lua Flash Store (LFS) allows you to store Lua code in Flash memory and
 // the Lua VMS will execute this code directly from flash without needing any
-// RAM overhead.  You can now configure LFS directly in the System Partition 
+// RAM overhead.  You can now configure LFS directly in the System Partition
 // Table insted of at compile time. However for backwards compatibility setting
 // LUA_FLASH_STORE defines the default partition size if the NodeMCU partition
 // tool is not used.
@@ -71,7 +71,7 @@
 // general, limiting the size of the FS only to what your application needs
 // gives the fastest start-up and imaging times.
 
-// You can now configure SPIFFS size and position directly in the System 
+// You can now configure SPIFFS size and position directly in the System
 // Partition Table.  However backwards compatibility SPIFFS_MAX_FILESYSTEM_SIZE
 // can be set and this defines the default SPIFFS partition size if the NodeMCU
 // partition tool is not used. The value (~0x0) means the maximum size remaining.
