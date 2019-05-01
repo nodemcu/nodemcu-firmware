@@ -11,6 +11,7 @@
 #include "lauxlib.h"
 
 #define U8X8_USE_PINS
+#define U8X8_WITH_USER_PTR
 #include "u8g2.h"
 #include "u8x8_nodemcu_hal.h"
 
@@ -540,6 +541,30 @@ static int lu8g2_setPowerSave( lua_State *L )
   return 0;
 }
 
+static int lu8g2_updateDisplay( lua_State *L )
+{
+  GET_U8G2();
+
+  u8g2_UpdateDisplay( u8g2 );
+
+  return 0;
+}
+
+static int lu8g2_updateDisplayArea( lua_State *L )
+{
+  GET_U8G2();
+  int stack = 1;
+
+  int x = luaL_checkint( L, ++stack );
+  int y = luaL_checkint( L, ++stack );
+  int w = luaL_checkint( L, ++stack );
+  int h = luaL_checkint( L, ++stack );
+
+  u8g2_UpdateDisplayArea( u8g2, x, y, w, h );
+
+  return 0;
+}
+
 
 LROT_BEGIN(lu8g2_display)
   LROT_FUNCENTRY( clearBuffer, lu8g2_clearBuffer )
@@ -581,10 +606,11 @@ LROT_BEGIN(lu8g2_display)
   LROT_FUNCENTRY( setFontRefHeightExtendedText, lu8g2_setFontRefHeightExtendedText )
   LROT_FUNCENTRY( setFontRefHeightText, lu8g2_setFontRefHeightText )
   LROT_FUNCENTRY( setPowerSave, lu8g2_setPowerSave )
+  LROT_FUNCENTRY( updateDispla, lu8g2_updateDisplay )
+  LROT_FUNCENTRY( updateDisplayArea, lu8g2_updateDisplayArea )
   //  LROT_FUNCENTRY( __gc, lu8g2_display_free )
   LROT_TABENTRY( __index, lu8g2_display )
 LROT_END( lu8g2_display, lu8g2_display, LROT_MASK_GC_INDEX )
-
 
 
 uint8_t u8x8_d_overlay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
@@ -622,11 +648,11 @@ static int ldisplay_i2c( lua_State *L, display_setup_fn_t setup_fn )
   u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
   ud->font_ref = LUA_NOREF;
   ud->host_ref = LUA_NOREF;
-  /* the i2c driver id is forwarded in the hal member */
-  ext_u8g2->hal = id >= 0 ? (void *)id : NULL;
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  /* the i2c driver id is forwarded in the user pointer */
+  u8x8->user_ptr = id >= 0 ? (void *)id : NULL;
 
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_i2c, u8x8_gpio_and_delay_nodemcu );
 
@@ -715,11 +741,11 @@ static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
   u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
   ud->font_ref = LUA_NOREF;
   ud->host_ref = host_ref;
-  /* the spi host id is forwarded in the hal member */
-  ext_u8g2->hal = host ? (void *)(host->host) : NULL;
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  /* the spi host id is forwarded in the user pointer */
+  u8x8->user_ptr = host ? (void *)(host->host) : NULL;
 
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_spi, u8x8_gpio_and_delay_nodemcu );
 

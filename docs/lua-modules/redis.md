@@ -22,21 +22,25 @@ Function used to connect to Redis server.
 `redis.connect(host, [port])`
 
 #### Parameters
-- `host`: Redis host name or address
-- `port`: Redis database port. Default value is 6379.
+- `host` Redis host name or address
+- `port` Redis database port. Default value is 6379.
 
 #### Returns
 Object with rest of the functions.
 
-## subscribe()
+!!! important
+
+    You need to start calling this `connect()` function to obtain a Redis object. All other functions are invoked on this object. Note the difference between `redis.connect()` (single dot) and `redis:subscribe()` (colon).
+
+## redis:subscribe()
 Subscribe to a Redis channel.
 
 #### Syntax
 `redis:subscribe(channel, handler)`
 
 #### Parameters
-- `channel`: Channel name
-- `handler`: Handler function that will be called on new message in subscribed channel
+- `channel` Channel name
+- `handler` Handler function that will be called on new message in subscribed channel
 
 #### Returns
 `nil`
@@ -48,8 +52,8 @@ Publish a message to a Redis channel.
 `redis:publish(channel, message)`
 
 #### Parameters
-- `channel`: Channel name
-- `message`: Message to publish
+- `channel` Channel name
+- `message` Message to publish
 
 #### Returns
 `nil`
@@ -61,12 +65,12 @@ Unsubscribes from a channel.
 `redis:unsubscribe(channel)`
 
 #### Parameters
-- `channel`: Channel name to unsubscribe from
+- `channel` Channel name to unsubscribe from
 
 #### Returns
 `nil`
 
-#### redis:close()
+## redis:close()
 Function to close connection to Redis server.
 
 #### Syntax
@@ -78,9 +82,11 @@ None
 #### Returns
 `nil`
 
-#### Example
+## Example
 ```lua
 local redis = dofile("redis.lua").connect(host, port)
-redis:publish("chan1", foo")
-redis:subscribe("chan1", function(channel, msg) print(channel, msg) end)
+redis:publish("chan1", "foo")
+redis:subscribe("chan1", function(channel, msg) 
+	print(channel, msg)
+end)
 ```

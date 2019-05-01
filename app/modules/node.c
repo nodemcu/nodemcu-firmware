@@ -1,5 +1,4 @@
 // Module for interfacing with system
-
 #include "module.h"
 #include "lauxlib.h"
 
@@ -571,6 +570,177 @@ static int node_random (lua_State *L) {
   return 1;
 }
 
+#ifdef DEVELOPMENT_TOOLS
+// Lua: rec = node.readrcr(id)
+static int node_readrcr (lua_State *L) {
+  int id  = luaL_checkinteger(L, 1);
+  char *data;
+  int n = platform_rcr_read(id, (void **)&data);
+  if (n == ~0) return 0;
+  lua_pushlstring(L, data, n);
+  return 1;
+}
+// Lua: n = node.writercr(id,rec)
+static int node_writercr (lua_State *L) {
+  int id = luaL_checkinteger(L, 1),l;
+  const char *data = lua_tolstring(L, 2, &l);
+  int n = platform_rcr_write(id, data, l);
+  lua_pushinteger(L, n);
+  return 1;
+}
+#endif
+
+typedef enum pt_t { lfs_addr=0, lfs_size, spiffs_addr, spiffs_size, max_pt} pt_t;
+
+static const LUA_REG_TYPE pt_map[] = {
+  { LSTRKEY( "lfs_addr" ),    LNUMVAL( lfs_addr ) },
+  { LSTRKEY( "lfs_size" ),    LNUMVAL( lfs_size ) },
+  { LSTRKEY( "spiffs_addr" ), LNUMVAL( spiffs_addr ) },
+  { LSTRKEY( "spiffs_size" ), LNUMVAL( spiffs_size ) },
+  { LNILKEY, LNILVAL }
+};
+
+// Lua: ptinfo = node.getpartitiontable()
+static int node_getpartitiontable (lua_State *L) {
+  uint32_t param[max_pt] = {0};
+  param[lfs_size]    = platform_flash_get_partition(NODEMCU_LFS0_PARTITION, param + lfs_addr);
+  param[spiffs_size] = platform_flash_get_partition(NODEMCU_SPIFFS0_PARTITION, param + spiffs_addr);
+
+  lua_settop(L, 0);
+  lua_createtable (L, 0, max_pt);                   /* at index 1 */
+  lua_pushrotable(L, (void*)pt_map);                /* at index 2 */
+  lua_pushnil(L);                                   /* first key at index 3 */
+  while (lua_next(L, 2) != 0) {                     /* key at index 3, and v at index 4 */
+    lua_pushvalue(L, 3);                            /* dup key to index 5 */
+    lua_pushinteger(L, param[lua_tointeger(L, 4)]); /* param [v] at index 6 */
+    lua_rawset(L, 1);
+    lua_pop(L, 1);                                  /* discard v */
+  }
+  lua_pop(L, 1);                                    /* discard pt_map reference */
+  return 1;
+}
+
+static void insert_partition(partition_item_t *p, int n, uint32_t type, uint32_t addr) {
+  if (n>0)
+    c_memmove(p+1, p, n*sizeof(partition_item_t)); /* overlapped so must be move not cpy */
+  p->type = type;
+  p->addr = addr;
+  p->size = 0;
+}
+
+static void delete_partition(partition_item_t *p, int n) {
+  if (n>0)
+    c_memmove(p, p+1, n*sizeof(partition_item_t)); /* overlapped so must be move not cpy */
+}
+
+#define SKIP (~0)
+#define IROM0_PARTITION  (SYSTEM_PARTITION_CUSTOMER_BEGIN + NODEMCU_IROM0TEXT_PARTITION)
+#define LFS_PARTITION    (SYSTEM_PARTITION_CUSTOMER_BEGIN + NODEMCU_LFS0_PARTITION)
+#define SPIFFS_PARTITION (SYSTEM_PARTITION_CUSTOMER_BEGIN + NODEMCU_SPIFFS0_PARTITION)
+
+// Lua: node.setpartitiontable(pt_settings)
+static int node_setpartitiontable (lua_State *L) {
+  partition_item_t *rcr_pt = NULL, *pt;
+  uint32_t flash_size = flash_rom_get_size_byte();
+  uint32_t i = platform_rcr_read(PLATFORM_RCR_PT, (void **) &rcr_pt);
+  uint32_t last = 0;
+  uint32_t n = i / sizeof(partition_item_t);
+  uint32_t param[max_pt] = {SKIP, SKIP, SKIP, SKIP};
+
+  luaL_argcheck(L, lua_istable(L, 1), 1, "must be table");
+  lua_settop(L, 1);
+  /* convert input table into 4 option array */
+  lua_pushrotable(L, (void*)pt_map);  /* at index 2 */
+  lua_pushnil(L);                   /* first key at index 3 */
+  while (lua_next(L, 1) != 0) {
+    /* 'key' (at index 3) and 'value' (at index 4) */
+    luaL_argcheck(L, lua_isstring(L, 3) && lua_isnumber(L, 4), 1, "invalid partition setting");
+    lua_pushvalue(L, 3);  /* dup key to index 5 */
+    lua_rawget(L, 2);     /* lookup in pt_map */
+    luaL_argcheck(L, !lua_isnil(L, -1), 1, "invalid partition setting");
+    param[lua_tointeger(L, 5)] = lua_tointeger(L, 4);
+    /* removes 'value'; keeps 'key' for next iteration */
+    lua_pop(L, 2);  /* discard value and lookup */
+  }
+ /*
+  * Allocate a scratch Partition Table as userdata on the Lua stack, and copy the
+  * current Flash PT into this for manipulation
+  */
+  lua_newuserdata(L, (n+2)*sizeof(partition_item_t));
+  pt = lua_touserdata (L, -1);
+  c_memcpy(pt, rcr_pt, n*sizeof(partition_item_t));
+  pt[n].type = 0; pt[n+1].type = 0;
+
+  for (i = 0; i < n; i ++) {
+    partition_item_t *p = pt + i;
+
+    if (p->type == IROM0_PARTITION && p[1].type != LFS_PARTITION) {
+      // if the LFS partition is not following IROM0 then slot a blank one in
+      insert_partition(p + 1, n-i-1, LFS_PARTITION, p->addr + p->size);
+      n++;
+
+    } else if (p->type == LFS_PARTITION) {
+      if (p[1].type != SPIFFS_PARTITION) {
+        // if the SPIFFS partition is not following LFS then slot a blank one in
+        insert_partition(p + 1, n-i-1, SPIFFS_PARTITION, 0);
+        n++;
+      }
+      // update the LFS options if set
+      if (param[lfs_addr] != SKIP) {
+        p->addr = param[lfs_addr];
+      }
+      if (param[lfs_size] != SKIP) {
+        p->size = param[lfs_size];
+      }
+    } else if (p->type == SPIFFS_PARTITION) {
+      // update the SPIFFS options if set
+      if (param[spiffs_addr] != SKIP) {
+        p->addr = param[spiffs_addr];
+        p->size = SKIP;
+      }
+      if (param[spiffs_size] != SKIP) {
+        // BOTCH: - at the moment the firmware doesn't boot if the SPIFFS partition
+        //          is deleted so the minimum SPIFFS size is 64Kb
+        p->size = param[spiffs_size] > 0x10000 ? param[spiffs_size] : 0x10000;
+      }
+      if (p->size == SKIP) {
+        if (p->addr < 0) {
+          // This allocate all the remaining flash to SPIFFS
+          p->addr = last;
+          p->size = flash_size - last;
+        } else {
+          p->size = flash_size - p->addr;
+        }
+      } else if (/* size is specified && */ p->addr == 0) {
+        // if the is addr not specified then start SPIFFS at 1Mb
+        // boundary if the size will fit otherwise make it consecutive
+        // to the previous partition.
+        p->addr = (p->size <= flash_size - 0x100000) ? 0x100000 : last;
+      }
+    }
+
+    if (p->size == 0) {
+      // Delete 0-sized partitions as the SDK barfs on these
+      delete_partition(p, n-i-1);
+      n--; i--;
+    } else {
+      // Do consistency tests on the partition
+      if (p->addr & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
+        p->size & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
+        p->addr < last ||
+        p->addr + p->size > flash_size) {
+        luaL_error(L, "value out of range");
+      }
+    }
+  }
+//  for (i = 0; i < n; i ++)
+//    dbg_printf("Partition %d: %04x %06x %06x\n", i, pt[i].type, pt[i].addr, pt[i].size);
+    platform_rcr_write(PLATFORM_RCR_PT, pt, n*sizeof(partition_item_t));
+    while(1); // Trigger WDT; the new PT will be loaded on reboot
+
+  return 0;
+}
+
 
 // Module function map
 
@@ -604,6 +774,10 @@ LROT_BEGIN(node)
 #ifdef PMSLEEP_ENABLE
   PMSLEEP_INT_MAP,
 #endif
+#ifdef DEVELOPMENT_TOOLS
+  LROT_FUNCENTRY( readrcr, node_readrcr )
+  LROT_FUNCENTRY( writercr, node_writercr )
+#endif
   LROT_FUNCENTRY( chipid, node_chipid )
   LROT_FUNCENTRY( flashid, node_flashid )
   LROT_FUNCENTRY( flashsize, node_flashsize )
@@ -626,6 +800,8 @@ LROT_BEGIN(node)
 #ifdef DEVELOPMENT_TOOLS
   LROT_FUNCENTRY( osprint, node_osprint )
 #endif
+  { LSTRKEY( "getpartitiontable" ), LFUNCVAL( node_getpartitiontable ) },
+  { LSTRKEY( "setpartitiontable" ), LFUNCVAL( node_setpartitiontable ) },
 
 // Combined to dsleep(us, option)
 //  LROT_FUNCENTRY( dsleepsetoption, node_deepsleep_setoption )
