@@ -239,6 +239,24 @@ do
 end
 ```
 
+## node.getpartitiontable()
+
+Get the current LFS and SPIFFS partition information.
+
+#### Syntax
+`node.getpartitiontable()`
+
+#### Parameters
+none
+
+#### Returns
+An array containing entries for `lfs_addr`, `lfs_size`, `spiffs_addr` and `spiffs_size`. The address values are offsets relative to the startof the Flash memory.
+
+#### Example
+```lua
+print("The LFS size is " .. node.getpartitiontable().lfs_size)
+```
+
 ## node.heap()
 
 Returns the current available heap size in bytes. Note that due to fragmentation, actual allocations of this size may not be possible.
@@ -405,6 +423,31 @@ target CPU frequency (number)
 #### Example
 ```lua
 node.setcpufreq(node.CPU80MHZ)
+```
+
+## node.setpartitiontable()
+
+Sets the current LFS and / or SPIFFS partition information.
+
+#### Syntax
+`node.setpartitiontable(partition_info)`
+
+!!! note
+	This function is typically only used once during initial provisioning after first flashing the firmware.  It does some consistency checks to validate the specified parameters, and it then reboots the ESP module to load the new partition table. If the LFS or SPIFFS regions have changed then you will need to reload LFS, reformat the SPIFSS and reload its contents.
+
+#### Parameters
+An array containing one or more of the following enties. The address values are byte offsets relative to the startof the Flash memory. The size values are in bytes. Note that these parameters must be a multiple of 8Kb to align to Flash page boundaries.
+-  `lfs_addr`.  The base address of the LFS region.
+-  `lfs_size`.  The size of the LFS region.
+-  `spiffs_addr`. The base address of the SPIFFS region.
+-  `spiffs_size`. The size of the SPIFFS region.
+
+#### Returns
+Not applicable.  The ESP module will be rebooted for a valid new set, or a Lua error will be thown if inconsistencies are detected.
+
+#### Example
+```lua
+node.setpartitiontable{lfs_size = 0x20000, spiffs_addr = 0x120000, spiffs_size = 0x20000}
 ```
 
 

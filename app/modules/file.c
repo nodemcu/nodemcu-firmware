@@ -435,7 +435,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
     int nread   = vfs_read(fd, p, nwanted);
 
     if (nread == VFS_RES_ERR || nread == 0) {
-      lua_pushnil(L);     
+      lua_pushnil(L);
       return 1;
     }
 
@@ -495,19 +495,19 @@ static int file_readline( lua_State* L )
 static int file_getfile( lua_State* L )
 {
   // Warning this code C calls other file_* routines to avoid duplication code.  These
-  // use Lua stack addressing of arguments, so this does Lua stack maniplation to 
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
   // align these
   int ret_cnt = 0;
   lua_settop(L ,1);
   // Stack [1] = FD
-  file_open(L); 
+  file_open(L);
   // Stack [1] = filename; [2] = FD or nil
   if (!lua_isnil(L, -1)) {
     lua_remove(L, 1);  // dump filename, so [1] = FD
     file_fd_ud *ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
-    ret_cnt = file_g_read(L, LUAI_MAXINT32, EOF, ud->fd); 
-    // Stack [1] = FD; [2] = contents if ret_cnt = 1; 
-    file_close(L);     // leaves Stack unchanged if [1] = FD 
+    ret_cnt = file_g_read(L, LUAI_MAXINT32, EOF, ud->fd);
+    // Stack [1] = FD; [2] = contents if ret_cnt = 1;
+    file_close(L);     // leaves Stack unchanged if [1] = FD
     lua_remove(L, 1);  // Dump FD leaving contents as [1] / ToS
   }
   return ret_cnt;
@@ -557,23 +557,23 @@ static int file_writeline( lua_State* L )
 static int file_putfile( lua_State* L )
 {
   // Warning this code C calls other file_* routines to avoid duplication code.  These
-  // use Lua stack addressing of arguments, so this does Lua stack maniplation to 
+  // use Lua stack addressing of arguments, so this does Lua stack maniplation to
   // align these
   int ret_cnt = 0;
   lua_settop(L, 2);
   lua_pushvalue(L, 2); //dup contents onto the ToS [3]
   lua_pushliteral(L, "w+");
   lua_replace(L, 2);
-  // Stack [1] = filename; [2] "w+" [3] contents; 
-  file_open(L); 
-  // Stack [1] = filename; [2] "w+" [3] contents; [4] FD or nil 
+  // Stack [1] = filename; [2] "w+" [3] contents;
+  file_open(L);
+  // Stack [1] = filename; [2] "w+" [3] contents; [4] FD or nil
 
   if (!lua_isnil(L, -1)) {
     lua_remove(L, 2);  //dump "w+" attribute literal
     lua_replace(L, 1);
-    // Stack [1] = FD; [2] contents 
+    // Stack [1] = FD; [2] contents
     file_write(L);
-    // Stack [1] = FD; [2] contents; [3] result status 
+    // Stack [1] = FD; [2] contents; [3] result status
     lua_remove(L, 2);  //dump contents
     file_close(L);
     lua_remove(L, 1); // Dump FD leaving status as ToS

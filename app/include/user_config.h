@@ -41,9 +41,12 @@
 
 // The Lua Flash Store (LFS) allows you to store Lua code in Flash memory and
 // the Lua VMS will execute this code directly from flash without needing any
-// RAM overhead.  Note that you should now configure LFS directly in the 
-// System Partition Table and not at build time.
+// RAM overhead.  You can now configure LFS directly in the System Partition
+// Table insted of at compile time. However for backwards compatibility setting
+// LUA_FLASH_STORE defines the default partition size if the NodeMCU partition
+// tool is not used.
 
+//#define LUA_FLASH_STORE                   0x10000
 
 // By default Lua executes the file init.lua at start up.  The following
 // define allows you to replace this with an alternative startup.  Warning:
@@ -68,11 +71,14 @@
 // general, limiting the size of the FS only to what your application needs
 // gives the fastest start-up and imaging times.
 
-// Note that you should now configure SPIFFS size and position directly in the 
-// System Partition Table and not at build time.
+// You can now configure SPIFFS size and position directly in the System
+// Partition Table.  However backwards compatibility SPIFFS_MAX_FILESYSTEM_SIZE
+// can be set and this defines the default SPIFFS partition size if the NodeMCU
+// partition tool is not used. The value (~0x0) means the maximum size remaining.
 
 #define BUILD_SPIFFS
 #define SPIFFS_CACHE 1          // Enable if you use you SPIFFS in R/W mode
+//#define SPIFFS_MAX_FILESYSTEM_SIZE 0x20000
 #define SPIFFS_MAX_OPEN_FILES 4 // maximum number of open files for SPIFFS
 #define FS_OBJ_NAME_LEN 31      // maximum length of a filename
 
@@ -211,9 +217,14 @@
 #define NODEMCU_SPIFFS0_PARTITION         6
 #define NODEMCU_SPIFFS1_PARTITION         7
 
-#define LUA_FLASH_STORE                   0x0
+#ifndef LUA_FLASH_STORE
+#  define LUA_FLASH_STORE                 0x0
+#endif
+
 #define SPIFFS_FIXED_LOCATION             0x0
-#define SPIFFS_MAX_FILESYSTEM_SIZE        (~0x0)
+#ifndef SPIFFS_MAX_FILESYSTEM_SIZE
+#  define SPIFFS_MAX_FILESYSTEM_SIZE      0xFFFFFFFF
+#endif
 //#define SPIFFS_SIZE_1M_BOUNDARY
 
 #define LUA_TASK_PRIO             USER_TASK_PRIO_0
