@@ -383,34 +383,34 @@ static int lcrypto_decrypt (lua_State *L)
 }
 
 // Hash function map
-static const LUA_REG_TYPE crypto_hash_map[] = {
-  { LSTRKEY( "update" ),  LFUNCVAL( crypto_hash_update ) },
-  { LSTRKEY( "finalize" ),   LFUNCVAL( crypto_hash_finalize ) },
-  { LSTRKEY( "__index" ), LROVAL( crypto_hash_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(crypto_hash)
+  LROT_FUNCENTRY( update, crypto_hash_update )
+  LROT_FUNCENTRY( finalize, crypto_hash_finalize )
+  LROT_TABENTRY( __index, crypto_hash )
+LROT_END( crypto_hash, crypto_hash, LROT_MASK_INDEX )
+
 
 
 // Module function map
-static const LUA_REG_TYPE crypto_map[] = {
-  { LSTRKEY( "sha1" ),     LFUNCVAL( crypto_sha1 ) },
-  { LSTRKEY( "toBase64" ), LFUNCVAL( crypto_base64_encode ) },
-  { LSTRKEY( "toHex" ),    LFUNCVAL( crypto_hex_encode ) },
-  { LSTRKEY( "mask" ),     LFUNCVAL( crypto_mask ) },
-  { LSTRKEY( "hash"   ),   LFUNCVAL( crypto_lhash ) },
-  { LSTRKEY( "fhash"  ),   LFUNCVAL( crypto_flhash ) },
-  { LSTRKEY( "new_hash"   ),   LFUNCVAL( crypto_new_hash ) },
-  { LSTRKEY( "hmac"   ),   LFUNCVAL( crypto_lhmac ) },
-  { LSTRKEY( "new_hmac"   ),   LFUNCVAL( crypto_new_hmac ) },
-  { LSTRKEY( "encrypt" ),  LFUNCVAL( lcrypto_encrypt ) },
-  { LSTRKEY( "decrypt" ),  LFUNCVAL( lcrypto_decrypt ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(crypto)
+  LROT_FUNCENTRY( sha1, crypto_sha1 )
+  LROT_FUNCENTRY( toBase64, crypto_base64_encode )
+  LROT_FUNCENTRY( toHex, crypto_hex_encode )
+  LROT_FUNCENTRY( mask, crypto_mask )
+  LROT_FUNCENTRY( hash, crypto_lhash )
+  LROT_FUNCENTRY( fhash, crypto_flhash )
+  LROT_FUNCENTRY( new_hash, crypto_new_hash )
+  LROT_FUNCENTRY( hmac, crypto_lhmac )
+  LROT_FUNCENTRY( new_hmac, crypto_new_hmac )
+  LROT_FUNCENTRY( encrypt, lcrypto_encrypt )
+  LROT_FUNCENTRY( decrypt, lcrypto_decrypt )
+LROT_END( crypto, NULL, 0 )
+
 
 int luaopen_crypto ( lua_State *L )
 {
-  luaL_rometatable(L, "crypto.hash", (void *)crypto_hash_map);  // create metatable for crypto.hash
+  luaL_rometatable(L, "crypto.hash", LROT_TABLEREF(crypto_hash));
   return 0;
 }
 
-NODEMCU_MODULE(CRYPTO, "crypto", crypto_map, luaopen_crypto);
+NODEMCU_MODULE(CRYPTO, "crypto", crypto, luaopen_crypto);

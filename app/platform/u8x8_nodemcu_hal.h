@@ -8,7 +8,6 @@
 // extend standard u8g2_t struct with info that's needed in the communication callbacks
 typedef struct {
   u8g2_t u8g2;
-  void *hal;
 
   // elements for the overlay display driver
   struct {

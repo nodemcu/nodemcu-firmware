@@ -530,15 +530,15 @@ int resume_timers_lua(lua_State* L){
   return 0;
 }
 
-static const LUA_REG_TYPE test_swtimer_debug_map[] = {
-    { LSTRKEY( "timer_list" ),   LFUNCVAL( print_timer_list ) },
-    { LSTRKEY( "susp_timer_list" ),   LFUNCVAL( print_susp_timer_list ) },
-    { LSTRKEY( "suspend" ),      LFUNCVAL( suspend_timers_lua ) },
-    { LSTRKEY( "resume" ),      LFUNCVAL( resume_timers_lua ) },
-    { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(test_swtimer_debug)
+  LROT_FUNCENTRY( timer_list, print_timer_list )
+  LROT_FUNCENTRY( susp_timer_list, print_susp_timer_list )
+  LROT_FUNCENTRY( suspend, suspend_timers_lua )
+  LROT_FUNCENTRY( resume, resume_timers_lua )
+LROT_END( test_swtimer_debug, NULL, 0 )
 
-NODEMCU_MODULE(SWTMR_DBG, "SWTMR_DBG", test_swtimer_debug_map, NULL);
+
+NODEMCU_MODULE(SWTMR_DBG, "SWTMR_DBG", test_swtimer_debug, NULL);
 
 #endif
 

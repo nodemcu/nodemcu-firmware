@@ -369,43 +369,43 @@ static int tmr_create( lua_State *L ) {
 
 // Module function map
 
-static const LUA_REG_TYPE tmr_dyn_map[] = {
-	{ LSTRKEY( "register" ),    LFUNCVAL( tmr_register ) },
-	{ LSTRKEY( "alarm" ),       LFUNCVAL( tmr_alarm ) },
-	{ LSTRKEY( "start" ),       LFUNCVAL( tmr_start ) },
-	{ LSTRKEY( "stop" ),        LFUNCVAL( tmr_stop ) },
-	{ LSTRKEY( "unregister" ),  LFUNCVAL( tmr_unregister ) },
-	{ LSTRKEY( "state" ),       LFUNCVAL( tmr_state ) },
-	{ LSTRKEY( "interval" ),    LFUNCVAL( tmr_interval) },
+LROT_BEGIN(tmr_dyn)
+  LROT_FUNCENTRY( register, tmr_register )
+  LROT_FUNCENTRY( alarm, tmr_alarm )
+  LROT_FUNCENTRY( start, tmr_start )
+  LROT_FUNCENTRY( stop, tmr_stop )
+  LROT_FUNCENTRY( unregister, tmr_unregister )
+  LROT_FUNCENTRY( state, tmr_state )
+  LROT_FUNCENTRY( interval, tmr_interval )
 #ifdef TIMER_SUSPEND_ENABLE
-	{ LSTRKEY( "suspend" ),     LFUNCVAL( tmr_suspend ) },
-	{ LSTRKEY( "resume" ),      LFUNCVAL( tmr_resume ) },
+  LROT_FUNCENTRY( suspend, tmr_suspend )
+  LROT_FUNCENTRY( resume, tmr_resume )
 #endif
-	{ LSTRKEY( "__gc" ),        LFUNCVAL( tmr_unregister ) },
-	{ LSTRKEY( "__index" ),     LROVAL( tmr_dyn_map ) },
-	{ LNILKEY, LNILVAL }
-};
+  LROT_FUNCENTRY( __gc, tmr_unregister )
+  LROT_TABENTRY( __index, tmr_dyn )
+LROT_END( tmr_dyn, tmr_dyn, LROT_MASK_GC_INDEX )
 
-static const LUA_REG_TYPE tmr_map[] = {
-	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
-	{ LSTRKEY( "now" ),          LFUNCVAL( tmr_now ) },
-	{ LSTRKEY( "wdclr" ),        LFUNCVAL( tmr_wdclr ) },
-	{ LSTRKEY( "softwd" ),       LFUNCVAL( tmr_softwd ) },
-	{ LSTRKEY( "time" ),         LFUNCVAL( tmr_time ) },
+
+LROT_BEGIN(tmr)
+  LROT_FUNCENTRY( delay, tmr_delay )
+  LROT_FUNCENTRY( now, tmr_now )
+  LROT_FUNCENTRY( wdclr, tmr_wdclr )
+  LROT_FUNCENTRY( softwd, tmr_softwd )
+  LROT_FUNCENTRY( time, tmr_time )
 #ifdef TIMER_SUSPEND_ENABLE
-	{ LSTRKEY( "suspend_all" ),  LFUNCVAL( tmr_suspend_all ) },
-	{ LSTRKEY( "resume_all" ),   LFUNCVAL( tmr_resume_all ) },
+  LROT_FUNCENTRY( suspend_all, tmr_suspend_all )
+  LROT_FUNCENTRY( resume_all, tmr_resume_all )
 #endif
-	{ LSTRKEY( "create" ),       LFUNCVAL( tmr_create ) },
-	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
-	{ LSTRKEY( "ALARM_SEMI" ),   LNUMVAL( TIMER_MODE_SEMI ) },
-	{ LSTRKEY( "ALARM_AUTO" ),   LNUMVAL( TIMER_MODE_AUTO ) },
-	{ LNILKEY, LNILVAL }
-};
+  LROT_FUNCENTRY( create, tmr_create )
+  LROT_NUMENTRY( ALARM_SINGLE, TIMER_MODE_SINGLE )
+  LROT_NUMENTRY( ALARM_SEMI, TIMER_MODE_SEMI )
+  LROT_NUMENTRY( ALARM_AUTO, TIMER_MODE_AUTO )
+LROT_END( tmr, NULL, 0 )
+
 
 #include "pm/swtimer.h"
 int luaopen_tmr( lua_State *L ){
-	luaL_rometatable(L, "tmr.timer", (void *)tmr_dyn_map);
+	luaL_rometatable(L, "tmr.timer", LROT_TABLEREF(tmr_dyn));
 
 	last_rtc_time=system_get_rtc_time(); // Right now is time 0
 	last_rtc_time_us=0;
@@ -425,4 +425,4 @@ int luaopen_tmr( lua_State *L ){
 	return 0;
 }
 
-NODEMCU_MODULE(TMR, "tmr", tmr_map, luaopen_tmr);
+NODEMCU_MODULE(TMR, "tmr", tmr, luaopen_tmr);

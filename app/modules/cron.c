@@ -224,20 +224,20 @@ static void cron_handle_tmr() {
   cron_handle_time(tm.tm_mon + 1, tm.tm_mday, tm.tm_wday, tm.tm_hour, tm.tm_min);
 }
 
-static const LUA_REG_TYPE cronent_map[] = {
-  { LSTRKEY( "schedule" ),   LFUNCVAL( lcron_schedule ) },
-  { LSTRKEY( "handler" ),    LFUNCVAL( lcron_handler ) },
-  { LSTRKEY( "unschedule" ), LFUNCVAL( lcron_unschedule ) },
-  { LSTRKEY( "__gc" ),       LFUNCVAL( lcron_delete ) },
-  { LSTRKEY( "__index" ),    LROVAL( cronent_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(cronent)
+  LROT_FUNCENTRY( schedule, lcron_schedule )
+  LROT_FUNCENTRY( handler, lcron_handler )
+  LROT_FUNCENTRY( unschedule, lcron_unschedule )
+  LROT_FUNCENTRY( __gc, lcron_delete )
+  LROT_TABENTRY( __index, cronent )
+LROT_END( cronent, cronent, LROT_MASK_GC_INDEX )
 
-static const LUA_REG_TYPE cron_map[] = {
-  { LSTRKEY( "schedule" ),   LFUNCVAL( lcron_create ) },
-  { LSTRKEY( "reset" ),      LFUNCVAL( lcron_reset ) },
-  { LNILKEY, LNILVAL }
-};
+
+LROT_BEGIN(cron)
+  LROT_FUNCENTRY( schedule, lcron_create )
+  LROT_FUNCENTRY( reset, lcron_reset )
+LROT_END( cron, NULL, 0 )
+
 #include "pm/swtimer.h"
 
 int luaopen_cron( lua_State *L ) {
@@ -247,8 +247,8 @@ int luaopen_cron( lua_State *L ) {
     //cron_handle_tmr determines when to execute a scheduled cron job
     //My guess: To be sure to give the other modules required by cron enough time to get to a ready state, restart cron_timer.
   os_timer_arm(&cron_timer, 1000, 0);
-  luaL_rometatable(L, "cron.entry", (void *)cronent_map);
+  luaL_rometatable(L, "cron.entry", LROT_TABLEREF(cronent));
   return 0;
 }
 
-NODEMCU_MODULE(CRON, "cron", cron_map, luaopen_cron);
+NODEMCU_MODULE(CRON, "cron", cron, luaopen_cron);

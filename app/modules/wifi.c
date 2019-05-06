@@ -1864,114 +1864,114 @@ static int wifi_ap_dhcp_stop( lua_State* L )
 
 
 // Module function map
-static const LUA_REG_TYPE wifi_station_map[] = {
-  { LSTRKEY( "autoconnect" ),      LFUNCVAL( wifi_station_setauto ) },
-  { LSTRKEY( "changeap" ),         LFUNCVAL( wifi_station_change_ap ) },
-  { LSTRKEY( "clearconfig"),       LFUNCVAL( wifi_station_clear_config ) },
-  { LSTRKEY( "config" ),           LFUNCVAL( wifi_station_config ) },
-  { LSTRKEY( "connect" ),          LFUNCVAL( wifi_station_connect4lua ) },
-  { LSTRKEY( "disconnect" ),       LFUNCVAL( wifi_station_disconnect4lua ) },
-  { LSTRKEY( "getap" ),            LFUNCVAL( wifi_station_listap ) },
-  { LSTRKEY( "getapindex" ),       LFUNCVAL( wifi_station_get_ap_index ) },
-  { LSTRKEY( "getapinfo" ),        LFUNCVAL( wifi_station_get_ap_info4lua ) },
-  { LSTRKEY( "getbroadcast" ),     LFUNCVAL( wifi_station_getbroadcast) },
-  { LSTRKEY( "getconfig" ),        LFUNCVAL( wifi_station_getconfig_current ) },
-  { LSTRKEY( "getdefaultconfig" ), LFUNCVAL( wifi_station_getconfig_default ) },
-  { LSTRKEY( "gethostname" ),      LFUNCVAL( wifi_sta_gethostname ) },
-  { LSTRKEY( "getip" ),            LFUNCVAL( wifi_station_getip ) },
-  { LSTRKEY( "getmac" ),           LFUNCVAL( wifi_station_getmac ) },
-  { LSTRKEY( "getrssi" ),          LFUNCVAL( wifi_station_getrssi ) },
-  { LSTRKEY( "setaplimit" ),       LFUNCVAL( wifi_station_ap_number_set4lua ) },
-  { LSTRKEY( "sethostname" ),      LFUNCVAL( wifi_sta_sethostname_lua ) },
-  { LSTRKEY( "setip" ),            LFUNCVAL( wifi_station_setip ) },
-  { LSTRKEY( "setmac" ),           LFUNCVAL( wifi_station_setmac ) },
-  { LSTRKEY( "sleeptype" ),        LFUNCVAL( wifi_station_sleeptype ) },
-  { LSTRKEY( "status" ),           LFUNCVAL( wifi_station_status ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(wifi_station)
+  LROT_FUNCENTRY( autoconnect, wifi_station_setauto )
+  LROT_FUNCENTRY( changeap, wifi_station_change_ap )
+  LROT_FUNCENTRY( clearconfig, wifi_station_clear_config )
+  LROT_FUNCENTRY( config, wifi_station_config )
+  LROT_FUNCENTRY( connect, wifi_station_connect4lua )
+  LROT_FUNCENTRY( disconnect, wifi_station_disconnect4lua )
+  LROT_FUNCENTRY( getap, wifi_station_listap )
+  LROT_FUNCENTRY( getapindex, wifi_station_get_ap_index )
+  LROT_FUNCENTRY( getapinfo, wifi_station_get_ap_info4lua )
+  LROT_FUNCENTRY( getbroadcast, wifi_station_getbroadcast )
+  LROT_FUNCENTRY( getconfig, wifi_station_getconfig_current )
+  LROT_FUNCENTRY( getdefaultconfig, wifi_station_getconfig_default )
+  LROT_FUNCENTRY( gethostname, wifi_sta_gethostname )
+  LROT_FUNCENTRY( getip, wifi_station_getip )
+  LROT_FUNCENTRY( getmac, wifi_station_getmac )
+  LROT_FUNCENTRY( getrssi, wifi_station_getrssi )
+  LROT_FUNCENTRY( setaplimit, wifi_station_ap_number_set4lua )
+  LROT_FUNCENTRY( sethostname, wifi_sta_sethostname_lua )
+  LROT_FUNCENTRY( setip, wifi_station_setip )
+  LROT_FUNCENTRY( setmac, wifi_station_setmac )
+  LROT_FUNCENTRY( sleeptype, wifi_station_sleeptype )
+  LROT_FUNCENTRY( status, wifi_station_status )
+LROT_END( wifi_station, wifi_station, 0 )
 
-static const LUA_REG_TYPE wifi_ap_dhcp_map[] = {
-  { LSTRKEY( "config" ),  LFUNCVAL( wifi_ap_dhcp_config ) },
-  { LSTRKEY( "start" ),   LFUNCVAL( wifi_ap_dhcp_start ) },
-  { LSTRKEY( "stop" ),    LFUNCVAL( wifi_ap_dhcp_stop ) },
-  { LNILKEY, LNILVAL }
-};
 
-static const LUA_REG_TYPE wifi_ap_map[] = {
-  { LSTRKEY( "config" ),              LFUNCVAL( wifi_ap_config ) },
-  { LSTRKEY( "deauth" ),              LFUNCVAL( wifi_ap_deauth ) },
-  { LSTRKEY( "getip" ),               LFUNCVAL( wifi_ap_getip ) },
-  { LSTRKEY( "setip" ),               LFUNCVAL( wifi_ap_setip ) },
-  { LSTRKEY( "getbroadcast" ),        LFUNCVAL( wifi_ap_getbroadcast) },
-  { LSTRKEY( "getmac" ),              LFUNCVAL( wifi_ap_getmac ) },
-  { LSTRKEY( "setmac" ),              LFUNCVAL( wifi_ap_setmac ) },
-  { LSTRKEY( "getclient" ),           LFUNCVAL( wifi_ap_listclient ) },
-  { LSTRKEY( "getconfig" ),           LFUNCVAL( wifi_ap_getconfig_current ) },
-  { LSTRKEY( "getdefaultconfig" ),    LFUNCVAL( wifi_ap_getconfig_default ) },
-  { LSTRKEY( "dhcp" ),                LROVAL( wifi_ap_dhcp_map ) },
-//{ LSTRKEY( "__metatable" ),         LROVAL( wifi_ap_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(wifi_ap_dhcp)
+  LROT_FUNCENTRY( config, wifi_ap_dhcp_config )
+  LROT_FUNCENTRY( start, wifi_ap_dhcp_start )
+  LROT_FUNCENTRY( stop, wifi_ap_dhcp_stop )
+LROT_END( wifi_ap_dhcp, wifi_ap_dhcp, 0 )
 
-static const LUA_REG_TYPE wifi_map[] =  {
-  { LSTRKEY( "setmode" ),        LFUNCVAL( wifi_setmode ) },
-  { LSTRKEY( "getmode" ),        LFUNCVAL( wifi_getmode ) },
-  { LSTRKEY( "getdefaultmode" ), LFUNCVAL( wifi_getdefaultmode ) },
-  { LSTRKEY( "getchannel" ),     LFUNCVAL( wifi_getchannel ) },
-  { LSTRKEY( "getcountry" ),     LFUNCVAL( wifi_getcountry ) },
-  { LSTRKEY( "setcountry" ),     LFUNCVAL( wifi_setcountry ) },
-  { LSTRKEY( "setphymode" ),     LFUNCVAL( wifi_setphymode ) },
-  { LSTRKEY( "getphymode" ),     LFUNCVAL( wifi_getphymode ) },
-  { LSTRKEY( "setmaxtxpower" ),  LFUNCVAL( wifi_setmaxtxpower ) },
-  { LSTRKEY( "suspend" ),        LFUNCVAL( wifi_suspend ) },
-  { LSTRKEY( "resume" ),         LFUNCVAL( wifi_resume ) },
-  { LSTRKEY( "nullmodesleep" ),  LFUNCVAL( wifi_null_mode_auto_sleep ) },
+
+LROT_BEGIN(wifi_ap)
+  LROT_FUNCENTRY( config, wifi_ap_config )
+  LROT_FUNCENTRY( deauth, wifi_ap_deauth )
+  LROT_FUNCENTRY( getip, wifi_ap_getip )
+  LROT_FUNCENTRY( setip, wifi_ap_setip )
+  LROT_FUNCENTRY( getbroadcast, wifi_ap_getbroadcast )
+  LROT_FUNCENTRY( getmac, wifi_ap_getmac )
+  LROT_FUNCENTRY( setmac, wifi_ap_setmac )
+  LROT_FUNCENTRY( getclient, wifi_ap_listclient )
+  LROT_FUNCENTRY( getconfig, wifi_ap_getconfig_current )
+  LROT_FUNCENTRY( getdefaultconfig, wifi_ap_getconfig_default )
+  LROT_TABENTRY( dhcp, wifi_ap_dhcp )
+//  LROT_TABENTRY( __metatable, wifi_ap )
+LROT_END( wifi_ap, wifi_ap, 0 )
+
+
+LROT_BEGIN(wifi)
+  LROT_FUNCENTRY( setmode, wifi_setmode )
+  LROT_FUNCENTRY( getmode, wifi_getmode )
+  LROT_FUNCENTRY( getdefaultmode, wifi_getdefaultmode )
+  LROT_FUNCENTRY( getchannel, wifi_getchannel )
+  LROT_FUNCENTRY( getcountry, wifi_getcountry )
+  LROT_FUNCENTRY( setcountry, wifi_setcountry )
+  LROT_FUNCENTRY( setphymode, wifi_setphymode )
+  LROT_FUNCENTRY( getphymode, wifi_getphymode )
+  LROT_FUNCENTRY( setmaxtxpower, wifi_setmaxtxpower )
+  LROT_FUNCENTRY( suspend, wifi_suspend )
+  LROT_FUNCENTRY( resume, wifi_resume )
+  LROT_FUNCENTRY( nullmodesleep, wifi_null_mode_auto_sleep )
 #ifdef WIFI_SMART_ENABLE
-  { LSTRKEY( "startsmart" ),     LFUNCVAL( wifi_start_smart ) },
-  { LSTRKEY( "stopsmart" ),      LFUNCVAL( wifi_exit_smart ) },
+  LROT_FUNCENTRY( startsmart, wifi_start_smart )
+  LROT_FUNCENTRY( stopsmart, wifi_exit_smart )
 #endif
-  { LSTRKEY( "sleeptype" ),      LFUNCVAL( wifi_station_sleeptype ) },
+  LROT_FUNCENTRY( sleeptype, wifi_station_sleeptype )
 
-  { LSTRKEY( "sta" ),            LROVAL( wifi_station_map ) },
-  { LSTRKEY( "ap" ),             LROVAL( wifi_ap_map ) },
+  LROT_TABENTRY( sta, wifi_station )
+  LROT_TABENTRY( ap, wifi_ap )
 #if defined(WIFI_SDK_EVENT_MONITOR_ENABLE)
-  { LSTRKEY( "eventmon" ),       LROVAL( wifi_event_monitor_map ) }, //declared in wifi_eventmon.c
+  LROT_TABENTRY( eventmon, wifi_event_monitor )
 #endif
 #if defined(LUA_USE_MODULES_WIFI_MONITOR)
-  { LSTRKEY( "monitor" ),        LROVAL( wifi_monitor_map ) }, //declared in wifi_monitor.c
+  LROT_TABENTRY( monitor, wifi_monitor )
 #endif
-  { LSTRKEY( "NULLMODE" ),       LNUMVAL( NULL_MODE ) },
-  { LSTRKEY( "STATION" ),        LNUMVAL( STATION_MODE ) },
-  { LSTRKEY( "SOFTAP" ),         LNUMVAL( SOFTAP_MODE ) },
-  { LSTRKEY( "STATIONAP" ),      LNUMVAL( STATIONAP_MODE ) },
+  LROT_NUMENTRY( NULLMODE, NULL_MODE )
+  LROT_NUMENTRY( STATION, STATION_MODE )
+  LROT_NUMENTRY( SOFTAP, SOFTAP_MODE )
+  LROT_NUMENTRY( STATIONAP, STATIONAP_MODE )
 
-  { LSTRKEY( "PHYMODE_B" ),      LNUMVAL( PHY_MODE_11B ) },
-  { LSTRKEY( "PHYMODE_G" ),      LNUMVAL( PHY_MODE_11G ) },
-  { LSTRKEY( "PHYMODE_N" ),      LNUMVAL( PHY_MODE_11N ) },
+  LROT_NUMENTRY( PHYMODE_B, PHY_MODE_11B )
+  LROT_NUMENTRY( PHYMODE_G, PHY_MODE_11G )
+  LROT_NUMENTRY( PHYMODE_N, PHY_MODE_11N )
 
-  { LSTRKEY( "NONE_SLEEP" ),     LNUMVAL( NONE_SLEEP_T ) },
-  { LSTRKEY( "LIGHT_SLEEP" ),    LNUMVAL( LIGHT_SLEEP_T ) },
-  { LSTRKEY( "MODEM_SLEEP" ),    LNUMVAL( MODEM_SLEEP_T ) },
+  LROT_NUMENTRY( NONE_SLEEP, NONE_SLEEP_T )
+  LROT_NUMENTRY( LIGHT_SLEEP, LIGHT_SLEEP_T )
+  LROT_NUMENTRY( MODEM_SLEEP, MODEM_SLEEP_T )
 
-  { LSTRKEY( "OPEN" ),           LNUMVAL( AUTH_OPEN ) },
-//{ LSTRKEY( "WEP" ),            LNUMVAL( AUTH_WEP ) },
-  { LSTRKEY( "WPA_PSK" ),        LNUMVAL( AUTH_WPA_PSK ) },
-  { LSTRKEY( "WPA2_PSK" ),       LNUMVAL( AUTH_WPA2_PSK ) },
-  { LSTRKEY( "WPA_WPA2_PSK" ),   LNUMVAL( AUTH_WPA_WPA2_PSK ) },
+  LROT_NUMENTRY( OPEN, AUTH_OPEN )
+//  LROT_NUMENTRY( WEP, AUTH_WEP )
+  LROT_NUMENTRY( WPA_PSK, AUTH_WPA_PSK )
+  LROT_NUMENTRY( WPA2_PSK, AUTH_WPA2_PSK )
+  LROT_NUMENTRY( WPA_WPA2_PSK, AUTH_WPA_WPA2_PSK )
 
-  { LSTRKEY( "STA_IDLE" ),       LNUMVAL( STATION_IDLE ) },
-  { LSTRKEY( "STA_CONNECTING" ), LNUMVAL( STATION_CONNECTING ) },
-  { LSTRKEY( "STA_WRONGPWD" ),   LNUMVAL( STATION_WRONG_PASSWORD ) },
-  { LSTRKEY( "STA_APNOTFOUND" ), LNUMVAL( STATION_NO_AP_FOUND ) },
-  { LSTRKEY( "STA_FAIL" ),       LNUMVAL( STATION_CONNECT_FAIL ) },
-  { LSTRKEY( "STA_GOTIP" ),      LNUMVAL( STATION_GOT_IP ) },
+  LROT_NUMENTRY( STA_IDLE, STATION_IDLE )
+  LROT_NUMENTRY( STA_CONNECTING, STATION_CONNECTING )
+  LROT_NUMENTRY( STA_WRONGPWD, STATION_WRONG_PASSWORD )
+  LROT_NUMENTRY( STA_APNOTFOUND, STATION_NO_AP_FOUND )
+  LROT_NUMENTRY( STA_FAIL, STATION_CONNECT_FAIL )
+  LROT_NUMENTRY( STA_GOTIP, STATION_GOT_IP )
 
-  { LSTRKEY( "COUNTRY_AUTO" ),   LNUMVAL( WIFI_COUNTRY_POLICY_AUTO ) },
-  { LSTRKEY( "COUNTRY_MANUAL" ), LNUMVAL( WIFI_COUNTRY_POLICY_MANUAL ) },
+  LROT_NUMENTRY( COUNTRY_AUTO, WIFI_COUNTRY_POLICY_AUTO )
+  LROT_NUMENTRY( COUNTRY_MANUAL, WIFI_COUNTRY_POLICY_MANUAL )
 
-  { LSTRKEY( "__metatable" ),    LROVAL( wifi_map ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_TABENTRY( __metatable, wifi )
+LROT_END( wifi, wifi, 0 )
+
 
 // Used by user_rf_pre_init(user_main.c)
 void wifi_change_default_host_name(void)
@@ -2024,4 +2024,4 @@ int luaopen_wifi( lua_State *L )
  return 0;
 }
 
-NODEMCU_MODULE(WIFI, "wifi", wifi_map, luaopen_wifi);
+NODEMCU_MODULE(WIFI, "wifi", wifi, luaopen_wifi);

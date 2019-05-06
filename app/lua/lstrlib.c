@@ -15,10 +15,10 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lrotable.h"
 
 /* macro to `unsign' a character */
 #define uchar(c)        ((unsigned char)(c))
-
 
 
 static int str_len (lua_State *L) {
@@ -576,7 +576,7 @@ static int gmatch (lua_State *L) {
   return 1;
 }
 
-#if LUA_OPTIMIZE_MEMORY == 0 || !defined(LUA_COMPAT_GFIND)
+#ifndef LUA_COMPAT_GFIND
 static int gfind_nodef (lua_State *L) {
   return luaL_error(L, LUA_QL("string.gfind") " was renamed to "
                        LUA_QL("string.gmatch"));
@@ -824,67 +824,37 @@ static int str_format (lua_State *L) {
   return 1;
 }
 
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE strlib[] = {
-  {LSTRKEY("byte"), LFUNCVAL(str_byte)},
-  {LSTRKEY("char"), LFUNCVAL(str_char)},
-  {LSTRKEY("dump"), LFUNCVAL(str_dump)},
-  {LSTRKEY("find"), LFUNCVAL(str_find)},
-  {LSTRKEY("format"), LFUNCVAL(str_format)},
-#if LUA_OPTIMIZE_MEMORY > 0 && defined(LUA_COMPAT_GFIND)
-  {LSTRKEY("gfind"), LFUNCVAL(gmatch)},
+LROT_PUBLIC_BEGIN(strlib)
+  LROT_FUNCENTRY( byte, str_byte )
+  LROT_FUNCENTRY( char, str_char )
+  LROT_FUNCENTRY( dump, str_dump )
+  LROT_FUNCENTRY( find, str_find )
+  LROT_FUNCENTRY( format, str_format )
+#ifdef LUA_COMPAT_GFIND
+  LROT_FUNCENTRY( gfind, gmatch )
 #else
-  {LSTRKEY("gfind"), LFUNCVAL(gfind_nodef)},
+  LROT_FUNCENTRY( gfind, gfind_nodef )
 #endif
-  {LSTRKEY("gmatch"), LFUNCVAL(gmatch)},
-  {LSTRKEY("gsub"), LFUNCVAL(str_gsub)},
-  {LSTRKEY("len"), LFUNCVAL(str_len)},
-  {LSTRKEY("lower"), LFUNCVAL(str_lower)},
-  {LSTRKEY("match"), LFUNCVAL(str_match)},
-  {LSTRKEY("rep"), LFUNCVAL(str_rep)},
-  {LSTRKEY("reverse"), LFUNCVAL(str_reverse)},
-  {LSTRKEY("sub"), LFUNCVAL(str_sub)},
-  {LSTRKEY("upper"), LFUNCVAL(str_upper)},
-#if LUA_OPTIMIZE_MEMORY > 0
-  {LSTRKEY("__index"), LROVAL(strlib)},
-#endif
-  {LNILKEY, LNILVAL}
-};
-
-
-#if LUA_OPTIMIZE_MEMORY != 2
-static void createmetatable (lua_State *L) {
-  lua_createtable(L, 0, 1);  /* create metatable for strings */
-  lua_pushliteral(L, "");  /* dummy string */
-  lua_pushvalue(L, -2);
-  lua_setmetatable(L, -2);  /* set string metatable */
-  lua_pop(L, 1);  /* pop dummy string */
-  lua_pushvalue(L, -2);  /* string library... */
-  lua_setfield(L, -2, "__index");  /* ...is the __index metamethod */
-  lua_pop(L, 1);  /* pop metatable */
-}
-#endif
+  LROT_FUNCENTRY( gmatch, gmatch )
+  LROT_FUNCENTRY( gsub, str_gsub )
+  LROT_FUNCENTRY( len, str_len )
+  LROT_FUNCENTRY( lower, str_lower )
+  LROT_FUNCENTRY( match, str_match )
+  LROT_FUNCENTRY( rep, str_rep )
+  LROT_FUNCENTRY( reverse, str_reverse )
+  LROT_FUNCENTRY( sub, str_sub )
+  LROT_FUNCENTRY( upper, str_upper )
+  LROT_TABENTRY( __index, strlib )
+LROT_END(strlib, NULL, 0)  // OR DO WE NEED LRTO_MASK_INDEX    **TODO** 
 
 /*
 ** Open string library
 */
 LUALIB_API int luaopen_string (lua_State *L) {
-#if LUA_OPTIMIZE_MEMORY == 0
-  luaL_register(L, LUA_STRLIBNAME, strlib);
-#if defined(LUA_COMPAT_GFIND)
-  lua_getfield(L, -1, "gmatch");
-  lua_setfield(L, -2, "gfind");
-#endif
-  createmetatable(L);
-  return 1;
-#else
   lua_pushliteral(L,"");
-  lua_pushrotable(L, (void*)strlib);
+  lua_pushrotable(L, LROT_TABLEREF(strlib));
   lua_setmetatable(L, -2);
   lua_pop(L,1);
   return 0;
-#endif
 }
 
