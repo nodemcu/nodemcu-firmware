@@ -431,7 +431,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
   luaL_buffinit(L, &b);
 
   for (j = 0; j < n; j += sizeof(p)) {
-    int nwanted = (j <= n - sizeof(p)) ? sizeof(p) : n - j;
+    int nwanted = (n - j >= sizeof(p)) ? sizeof(p) : n - j;
     int nread   = vfs_read(fd, p, nwanted);
 
     if (nread == VFS_RES_ERR || nread == 0) {
@@ -456,7 +456,7 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
 }
 
 // Lua: read()
-// file.read() will read FILE_READ_CHUNK bytes, or EOF is reached.
+// file.read() will read FILE _CHUNK bytes, or EOF is reached.
 // file.read(10) will read 10 byte from file, or EOF is reached.
 // file.read('q') will read until 'q' or EOF is reached.
 static int file_read( lua_State* L )
