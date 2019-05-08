@@ -97,6 +97,10 @@ where the parameters to the `_init` method are:
 -  `ssid` and `spwd`.  The SSID of the Wifi service to connect to, together with its
 password.
 -  `server` and `port`.  The name or IP address and port of the provisioning server.
+-  `app`. The filename of the module which will be `required` after provisioning is
+complete. Defaults to LuaOTA/default. 
+-  `entry`. The method that will be called on the module indicated by `app`. Defaults
+to `init`
 -  `secret`.  A site-specific secret shared with the provisioning server for MD5-based
 signing of the protocol messages.
 -  `leave`.  If true the STA service is left connected otherwise the wifi is shutdown
@@ -128,6 +132,12 @@ It can be easily be used as the basis of one for your specific project needs.
 Note that even though this file is included in the `luaOTA` subdirectory within Lua
 examples, this is designed to run on the host and should not be included in the
 ESP SPIFFS.
+
+The example server expects a repository directory, which is expected to contain 
+the to-be-provisioned files (.lua files, .lc files...). Additionally, it expects
+a .json file for every ESP that is to be provisioned, containing the "secret" 
+as well as the relevant filenames. This file should be called 'ESP-xxxxxxxx.json',
+with 'xxxxxxxx' replaced with the ChipID.
 
 ## Implementation Notes
 
