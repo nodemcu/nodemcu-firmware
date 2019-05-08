@@ -419,11 +419,7 @@ LUALIB_API void (luaL_register) (lua_State *L, const char *libname,
 
 LUALIB_API void (luaL_register_light) (lua_State *L, const char *libname,
                                 const luaL_Reg *l) {
-#if LUA_OPTIMIZE_MEMORY > 0
   luaI_openlib(L, libname, l, 0, LUA_USELIGHTFUNCTIONS);
-#else
-  luaI_openlib(L, libname, l, 0, LUA_USECCLOSURES);
-#endif
 }
 
 static int libsize (const luaL_Reg *l) {

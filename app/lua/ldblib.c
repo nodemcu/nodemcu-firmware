@@ -18,9 +18,9 @@
 #include "lualib.h"
 #include "lstring.h"
 #include "lflash.h"
+#include "lrotable.h"
+
 #include "user_modules.h"
-
-
 
 static int db_getregistry (lua_State *L) {
   lua_pushvalue(L, LUA_REGISTRYINDEX);
@@ -417,32 +417,28 @@ static int db_errorfb (lua_State *L) {
   return 1;
 }
 
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE dblib[] = {
+LROT_PUBLIC_BEGIN(dblib)
 #ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
-  {LSTRKEY("debug"), LFUNCVAL(db_debug)},
-  {LSTRKEY("getfenv"), LFUNCVAL(db_getfenv)},
-  {LSTRKEY("gethook"), LFUNCVAL(db_gethook)},
-  {LSTRKEY("getinfo"), LFUNCVAL(db_getinfo)},
-  {LSTRKEY("getlocal"), LFUNCVAL(db_getlocal)},
+  LROT_FUNCENTRY( debug, db_debug )
+  LROT_FUNCENTRY( getfenv, db_getfenv )
+  LROT_FUNCENTRY( gethook, db_gethook )
+  LROT_FUNCENTRY( getinfo, db_getinfo )
+  LROT_FUNCENTRY( getlocal, db_getlocal )
 #endif
-  {LSTRKEY("getregistry"), LFUNCVAL(db_getregistry)},
-  {LSTRKEY("getstrings"), LFUNCVAL(db_getstrings)},
+  LROT_FUNCENTRY( getregistry, db_getregistry )
+  LROT_FUNCENTRY( getstrings, db_getstrings )
 #ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
-  {LSTRKEY("getmetatable"), LFUNCVAL(db_getmetatable)},
-  {LSTRKEY("getupvalue"), LFUNCVAL(db_getupvalue)},
-  {LSTRKEY("setfenv"), LFUNCVAL(db_setfenv)},
-  {LSTRKEY("sethook"), LFUNCVAL(db_sethook)},
-  {LSTRKEY("setlocal"), LFUNCVAL(db_setlocal)},
-  {LSTRKEY("setmetatable"), LFUNCVAL(db_setmetatable)},
-  {LSTRKEY("setupvalue"), LFUNCVAL(db_setupvalue)},
+  LROT_FUNCENTRY( getmetatable, db_getmetatable )
+  LROT_FUNCENTRY( getupvalue, db_getupvalue )
+  LROT_FUNCENTRY( setfenv, db_setfenv )
+  LROT_FUNCENTRY( sethook, db_sethook )
+  LROT_FUNCENTRY( setlocal, db_setlocal )
+  LROT_FUNCENTRY( setmetatable, db_setmetatable )
+  LROT_FUNCENTRY( setupvalue, db_setupvalue )
 #endif
-  {LSTRKEY("traceback"), LFUNCVAL(db_errorfb)},
-  {LNILKEY, LNILVAL}
-};
+  LROT_FUNCENTRY( traceback, db_errorfb )
+LROT_END(dblib, NULL, 0)
 
 LUALIB_API int luaopen_debug (lua_State *L) {
-  LREGISTER(L, LUA_DBLIBNAME, dblib);
+  return 0;
 }

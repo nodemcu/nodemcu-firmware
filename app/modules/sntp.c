@@ -869,13 +869,13 @@ static int sntp_open(lua_State *L)
 
 
 // Module function map
-static const LUA_REG_TYPE sntp_map[] = {
-  { LSTRKEY("sync"),  LFUNCVAL(sntp_sync)  },
+LROT_BEGIN(sntp)
+  LROT_FUNCENTRY( sync, sntp_sync )
 #ifdef LUA_USE_MODULES_RTCTIME
-  { LSTRKEY("setoffset"),  LFUNCVAL(sntp_setoffset)  },
-  { LSTRKEY("getoffset"),  LFUNCVAL(sntp_getoffset)  },
+  LROT_FUNCENTRY( setoffset, sntp_setoffset )
+  LROT_FUNCENTRY( getoffset, sntp_getoffset )
 #endif
-  { LNILKEY, LNILVAL }
-};
+LROT_END( sntp, NULL, 0 )
 
-NODEMCU_MODULE(SNTP, "sntp", sntp_map, sntp_open);
+
+NODEMCU_MODULE(SNTP, "sntp", sntp, sntp_open);

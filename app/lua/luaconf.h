@@ -910,8 +910,8 @@ union luai_Cast { double l_d; long l_l; };
 ** without modifying the main part of the file.
 */
 
-#if LUA_OPTIMIZE_MEMORY == 2 && defined(LUA_USE_POPEN)
-#error "Pipes not supported in aggresive optimization mode (LUA_OPTIMIZE_MEMORY=2)"
+#if defined(LUA_USE_POPEN)
+#error "Pipes not supported NodeMCU firmware"
 #endif
 
 #endif

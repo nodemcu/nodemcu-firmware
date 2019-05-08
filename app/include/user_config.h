@@ -244,7 +244,7 @@ extern void luaL_dbgbreak(void);
 #endif
 #endif
 
-#if !defined(LUA_NUMBER_INTEGRAL) && defined (LUA_DWORD_ALIGNED_TVALUES)
+#if !defined(LUA_NUMBER_INTEGRAL) && !defined (LUA_DWORD_ALIGNED_TVALUES)
   #define LUA_PACK_TVALUES
 #else
   #undef LUA_PACK_TVALUES

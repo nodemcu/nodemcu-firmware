@@ -128,16 +128,16 @@ int lpwm_open( lua_State *L ) {
 }
 
 // Module function map
-static const LUA_REG_TYPE pwm_map[] = {
-  { LSTRKEY( "setup" ),    LFUNCVAL( lpwm_setup ) },
-  { LSTRKEY( "close" ),    LFUNCVAL( lpwm_close ) },
-  { LSTRKEY( "start" ),    LFUNCVAL( lpwm_start ) },
-  { LSTRKEY( "stop" ),     LFUNCVAL( lpwm_stop ) },
-  { LSTRKEY( "setclock" ), LFUNCVAL( lpwm_setclock ) },
-  { LSTRKEY( "getclock" ), LFUNCVAL( lpwm_getclock ) },
-  { LSTRKEY( "setduty" ),  LFUNCVAL( lpwm_setduty ) },
-  { LSTRKEY( "getduty" ),  LFUNCVAL( lpwm_getduty ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(pwm)
+  LROT_FUNCENTRY( setup, lpwm_setup )
+  LROT_FUNCENTRY( close, lpwm_close )
+  LROT_FUNCENTRY( start, lpwm_start )
+  LROT_FUNCENTRY( stop, lpwm_stop )
+  LROT_FUNCENTRY( setclock, lpwm_setclock )
+  LROT_FUNCENTRY( getclock, lpwm_getclock )
+  LROT_FUNCENTRY( setduty, lpwm_setduty )
+  LROT_FUNCENTRY( getduty, lpwm_getduty )
+LROT_END( pwm, NULL, 0 )
 
-NODEMCU_MODULE(PWM, "pwm", pwm_map, lpwm_open);
+
+NODEMCU_MODULE(PWM, "pwm", pwm, lpwm_open);

@@ -269,17 +269,17 @@ static int http_lapi_get( lua_State *L )
 }
 
 // Module function map
-static const LUA_REG_TYPE http_map[] = {
-  { LSTRKEY( "request" ),         LFUNCVAL( http_lapi_request ) },
-  { LSTRKEY( "post" ),            LFUNCVAL( http_lapi_post ) },
-  { LSTRKEY( "put" ),             LFUNCVAL( http_lapi_put ) },
-  { LSTRKEY( "delete" ),          LFUNCVAL( http_lapi_delete ) },
-  { LSTRKEY( "get" ),             LFUNCVAL( http_lapi_get ) },
+LROT_BEGIN(http)
+  LROT_FUNCENTRY( request, http_lapi_request )
+  LROT_FUNCENTRY( post, http_lapi_post )
+  LROT_FUNCENTRY( put, http_lapi_put )
+  LROT_FUNCENTRY( delete, http_lapi_delete )
+  LROT_FUNCENTRY( get, http_lapi_get )
 
-  { LSTRKEY( "OK" ),              LNUMVAL( 0 ) },
-  { LSTRKEY( "ERROR" ),           LNUMVAL( HTTP_STATUS_GENERIC_ERROR ) },
+  LROT_NUMENTRY( OK, 0 )
+  LROT_NUMENTRY( ERROR, HTTP_STATUS_GENERIC_ERROR )
 
-  { LNILKEY, LNILVAL }
-};
+LROT_END( http, NULL, 0 )
 
-NODEMCU_MODULE(HTTP, "http", http_map, NULL);
+
+NODEMCU_MODULE(HTTP, "http", http, NULL);
