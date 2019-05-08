@@ -9,8 +9,8 @@
 --------------------------------------------------------------------------------
 
 -- upvals
-local crypto, file, json,  net, node, table, tmr, wifi =
-      crypto, file, sjson, net, node, table, tmr, wifi
+local crypto, file, json,  net, node, table, wifi =
+      crypto, file, sjson, net, node, table, wifi
 local error, pcall   = error, pcall
 local loadfile, gc   = loadfile, collectgarbage
 local concat, unpack = table.concat, unpack or table.unpack
@@ -19,7 +19,11 @@ local self = {post = node.task.post, prefix = "luaOTA/", conf = {}}
 
 self.log     = (DEBUG == true) and print or function() end
 self.modname = ...
+self.timer   = tmr.create()
 
+_G["stopOTA"] = function()
+  self.timer:stop()
+end
 --------------------------------------------------------------------------------------
 -- Utility Functions
 
@@ -40,9 +44,9 @@ function self.sign(arg)  --upval: crypto, json, self
   return arg .. crypto.toHex(crypto.hmac("MD5", arg, self.secret):sub(-3)) .. '\n'
 end
 
-function self.startApp(arg) --upval: gc, self, tmr, wifi
+function self.startApp(arg) --upval: gc, self, wifi
   gc();gc()
-  tmr.unregister(0)
+  self.timer.unregister()
   self.socket = nil
   if not self.config.leave then wifi.setmode(wifi.NULLMODE,false) end
   local appMod    = self.config.app   or "luaOTA.default"

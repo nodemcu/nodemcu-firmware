@@ -31,7 +31,7 @@ call which invokes the `luaOTA` module by a `require "luaOTA.check"` statement.
 
 The `config.json` file which provides the minimum configuration parameters to connect to
 the WiFi and provisioning server, however these can by overridden through the UART by
-first doing a `tmr.stop(0)` and then a manual initialisation as described in the
+first doing a `abortOTA()` and then a manual initialisation as described in the
 [init.lua](#initlua) section below.
 
 `luaOTA` configures the wifi and connects to the required sid in STA mode using the
@@ -90,7 +90,7 @@ require "LuaOTA.check"
 however if the configuration is incomplete then this can be aborted as manual process
 by entering the manual command through the UART
 ```Lua
-tmr.stop(0); require "luaOTA.check":_init {ssid ="SOMESID" --[[etc. ]]}
+abortOTA(); require "luaOTA.check":_init {ssid ="SOMESID" --[[etc. ]]}
 ```
 where the parameters to the `_init` method are:
 
@@ -166,11 +166,6 @@ called using the object form self:someFunc() to get the context as a parameter.
 -  This coding also makes a lot of use of tailcalls (See PiL 6.3) to keep the stack size
    to a minimum.
 
--  The update process uses a master timer in `tmr` slot 0.  The index form is used here
-in preference to the object form because of the reduced memory footprint. This also
-allows the developer to abort the process early in the boot sequence by issuing a
-`tmr.stop(0)` through UART0.
-
 -  The command protocol is unencrypted and uses JSON encoding, but all exchanges are
 signed by a 6 char signature taken extracted from a MD5 based digest across the JSON
 string. Any command which fails the signature causes the update to be aborted. Commands
@@ -215,7 +210,7 @@ function using an object constructor `self:self:somefunction()`, but where the f
 can have a self argument then the alternative is to use an upvalue binding.  See the
 `tmr` alarm call at the end of `_init.lua` as an example:
 ```Lua
-  tmr.alarm(0, 500, tmr.ALARM_AUTO, self:_doTick())
+  self.timer:alarm( 500, tmr.ALARM_AUTO, self:_doTick())
 ```
 -  The `self:_doTick()` is evaluated before the alarm API call.  This autoloads
 `luaOTA/_doTick.lc` which stores `self` as a local and returns a function which takes
