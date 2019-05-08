@@ -17,7 +17,7 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
   -- Note that for 2nd and subsequent responses, we assme that the service has
   -- "authenticated" itself, so any protocol errors are fatal and lkely to
   -- cause a repeating boot, throw any protocol errors are thrown.
-  local buf, config, file, log = buf, self.config, file, self.log
+  local config, file, log = self.config, file, self.log
   local cmdlen = (rec:find('\n',1, true) or 0) - 1
   local cmd,hash = rec:sub(1,cmdlen-6), rec:sub(cmdlen-5,cmdlen)
   if cmdlen < 16 or
@@ -89,9 +89,9 @@ local function receiveRec(socket, rec)  -- upval: self, buf, crypto
       end
 
       if s then
-        print("Updated ".. name)
+        print("Updated ".. cmd.name)
       else
-        file.remove(name)
+        file.remove(cmd.name)
         resp.s = "write failed"
       end
       buf = {}
