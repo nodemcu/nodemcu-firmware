@@ -690,89 +690,87 @@ UCG_DISPLAY_TABLE
 
 
 // Module function map
-static const LUA_REG_TYPE lucg_display_map[] =
-{
-  { LSTRKEY( "begin" ),              LFUNCVAL( lucg_begin ) },
-  { LSTRKEY( "clearScreen" ),        LFUNCVAL( lucg_clearScreen ) },
-  { LSTRKEY( "draw90Line" ),         LFUNCVAL( lucg_draw90Line ) },
-  { LSTRKEY( "drawBox" ),            LFUNCVAL( lucg_drawBox ) },
-  { LSTRKEY( "drawCircle" ),         LFUNCVAL( lucg_drawCircle ) },
-  { LSTRKEY( "drawDisc" ),           LFUNCVAL( lucg_drawDisc ) },
-  { LSTRKEY( "drawFrame" ),          LFUNCVAL( lucg_drawFrame ) },
-  { LSTRKEY( "drawGlyph" ),          LFUNCVAL( lucg_drawGlyph ) },
-  { LSTRKEY( "drawGradientBox" ),    LFUNCVAL( lucg_drawGradientBox ) },
-  { LSTRKEY( "drawGradientLine" ),   LFUNCVAL( lucg_drawGradientLine ) },
-  { LSTRKEY( "drawHLine" ),          LFUNCVAL( lucg_drawHLine ) },
-  { LSTRKEY( "drawLine" ),           LFUNCVAL( lucg_drawLine ) },
-  { LSTRKEY( "drawPixel" ),          LFUNCVAL( lucg_drawPixel ) },
-  { LSTRKEY( "drawRBox" ),           LFUNCVAL( lucg_drawRBox ) },
-  { LSTRKEY( "drawRFrame" ),         LFUNCVAL( lucg_drawRFrame ) },
-  { LSTRKEY( "drawString" ),         LFUNCVAL( lucg_drawString ) },
-  { LSTRKEY( "drawTetragon" ),       LFUNCVAL( lucg_drawTetragon ) },
-  { LSTRKEY( "drawTriangle" ),       LFUNCVAL( lucg_drawTriangle ) },
-  { LSTRKEY( "drawVLine" ),          LFUNCVAL( lucg_drawVLine ) },
-  { LSTRKEY( "getFontAscent" ),      LFUNCVAL( lucg_getFontAscent ) },
-  { LSTRKEY( "getFontDescent" ),     LFUNCVAL( lucg_getFontDescent ) },
-  { LSTRKEY( "getHeight" ),          LFUNCVAL( lucg_getHeight ) },
-  { LSTRKEY( "getStrWidth" ),        LFUNCVAL( lucg_getStrWidth ) },
-  { LSTRKEY( "getWidth" ),           LFUNCVAL( lucg_getWidth ) },
-  { LSTRKEY( "print" ),              LFUNCVAL( lucg_print ) },
-  { LSTRKEY( "setClipRange" ),       LFUNCVAL( lucg_setClipRange ) },
-  { LSTRKEY( "setColor" ),           LFUNCVAL( lucg_setColor ) },
-  { LSTRKEY( "setFont" ),            LFUNCVAL( lucg_setFont ) },
-  { LSTRKEY( "setFontMode" ),        LFUNCVAL( lucg_setFontMode ) },
-  { LSTRKEY( "setFontPosBaseline" ), LFUNCVAL( lucg_setFontPosBaseline ) },
-  { LSTRKEY( "setFontPosBottom" ),   LFUNCVAL( lucg_setFontPosBottom ) },
-  { LSTRKEY( "setFontPosCenter" ),   LFUNCVAL( lucg_setFontPosCenter ) },
-  { LSTRKEY( "setFontPosTop" ),      LFUNCVAL( lucg_setFontPosTop ) },
-  { LSTRKEY( "setMaxClipRange" ),    LFUNCVAL( lucg_setMaxClipRange ) },
-  { LSTRKEY( "setPrintDir" ),        LFUNCVAL( lucg_setPrintDir ) },
-  { LSTRKEY( "setPrintPos" ),        LFUNCVAL( lucg_setPrintPos ) },
-  { LSTRKEY( "setRotate90" ),        LFUNCVAL( lucg_setRotate90 ) },
-  { LSTRKEY( "setRotate180" ),       LFUNCVAL( lucg_setRotate180 ) },
-  { LSTRKEY( "setRotate270" ),       LFUNCVAL( lucg_setRotate270 ) },
-  { LSTRKEY( "setScale2x2" ),        LFUNCVAL( lucg_setScale2x2 ) },
-  { LSTRKEY( "undoClipRange" ),      LFUNCVAL( lucg_setMaxClipRange ) },
-  { LSTRKEY( "undoRotate" ),         LFUNCVAL( lucg_undoRotate ) },
-  { LSTRKEY( "undoScale" ),          LFUNCVAL( lucg_undoScale ) },
+LROT_BEGIN(lucg_display)
+  LROT_FUNCENTRY( begin, lucg_begin )
+  LROT_FUNCENTRY( clearScreen, lucg_clearScreen )
+  LROT_FUNCENTRY( draw90Line, lucg_draw90Line )
+  LROT_FUNCENTRY( drawBox, lucg_drawBox )
+  LROT_FUNCENTRY( drawCircle, lucg_drawCircle )
+  LROT_FUNCENTRY( drawDisc, lucg_drawDisc )
+  LROT_FUNCENTRY( drawFrame, lucg_drawFrame )
+  LROT_FUNCENTRY( drawGlyph, lucg_drawGlyph )
+  LROT_FUNCENTRY( drawGradientBox, lucg_drawGradientBox )
+  LROT_FUNCENTRY( drawGradientLine, lucg_drawGradientLine )
+  LROT_FUNCENTRY( drawHLine, lucg_drawHLine )
+  LROT_FUNCENTRY( drawLine, lucg_drawLine )
+  LROT_FUNCENTRY( drawPixel, lucg_drawPixel )
+  LROT_FUNCENTRY( drawRBox, lucg_drawRBox )
+  LROT_FUNCENTRY( drawRFrame, lucg_drawRFrame )
+  LROT_FUNCENTRY( drawString, lucg_drawString )
+  LROT_FUNCENTRY( drawTetragon, lucg_drawTetragon )
+  LROT_FUNCENTRY( drawTriangle, lucg_drawTriangle )
+  LROT_FUNCENTRY( drawVLine, lucg_drawVLine )
+  LROT_FUNCENTRY( getFontAscent, lucg_getFontAscent )
+  LROT_FUNCENTRY( getFontDescent, lucg_getFontDescent )
+  LROT_FUNCENTRY( getHeight, lucg_getHeight )
+  LROT_FUNCENTRY( getStrWidth, lucg_getStrWidth )
+  LROT_FUNCENTRY( getWidth, lucg_getWidth )
+  LROT_FUNCENTRY( print, lucg_print )
+  LROT_FUNCENTRY( setClipRange, lucg_setClipRange )
+  LROT_FUNCENTRY( setColor, lucg_setColor )
+  LROT_FUNCENTRY( setFont, lucg_setFont )
+  LROT_FUNCENTRY( setFontMode, lucg_setFontMode )
+  LROT_FUNCENTRY( setFontPosBaseline, lucg_setFontPosBaseline )
+  LROT_FUNCENTRY( setFontPosBottom, lucg_setFontPosBottom )
+  LROT_FUNCENTRY( setFontPosCenter, lucg_setFontPosCenter )
+  LROT_FUNCENTRY( setFontPosTop, lucg_setFontPosTop )
+  LROT_FUNCENTRY( setMaxClipRange, lucg_setMaxClipRange )
+  LROT_FUNCENTRY( setPrintDir, lucg_setPrintDir )
+  LROT_FUNCENTRY( setPrintPos, lucg_setPrintPos )
+  LROT_FUNCENTRY( setRotate90, lucg_setRotate90 )
+  LROT_FUNCENTRY( setRotate180, lucg_setRotate180 )
+  LROT_FUNCENTRY( setRotate270, lucg_setRotate270 )
+  LROT_FUNCENTRY( setScale2x2, lucg_setScale2x2 )
+  LROT_FUNCENTRY( undoClipRange, lucg_setMaxClipRange )
+  LROT_FUNCENTRY( undoRotate, lucg_undoRotate )
+  LROT_FUNCENTRY( undoScale, lucg_undoScale )
 
-  { LSTRKEY( "__gc" ),  LFUNCVAL( lucg_close_display ) },
-  { LSTRKEY( "__index" ), LROVAL ( lucg_display_map ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_FUNCENTRY( __gc, lucg_close_display )
+  LROT_TABENTRY( __index, lucg_display )
+LROT_END( lucg_display, lucg_display, 0 )
 
-static const LUA_REG_TYPE lucg_map[] =
-{
+
+LROT_BEGIN(lucg)
 #undef UCG_DISPLAY_TABLE_ENTRY
-#define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) { LSTRKEY( #binding ), LFUNCVAL ( l ## binding ) },
+#define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) LROT_FUNCENTRY(binding,l ## binding)
   UCG_DISPLAY_TABLE
 
   // Register fonts
 #undef UCG_FONT_TABLE_ENTRY
-#define UCG_FONT_TABLE_ENTRY(font) { LSTRKEY( #font ), LUDATA( (void *)(ucg_ ## font) ) },
+#define UCG_FONT_TABLE_ENTRY(font) LROT_LUDENTRY(font, ucg_ ## font )
   UCG_FONT_TABLE
 
   // Font modes
-  { LSTRKEY( "FONT_MODE_TRANSPARENT" ), LNUMVAL( UCG_FONT_MODE_TRANSPARENT ) },
-  { LSTRKEY( "FONT_MODE_SOLID" ),       LNUMVAL( UCG_FONT_MODE_SOLID ) },
+  LROT_NUMENTRY( FONT_MODE_TRANSPARENT, UCG_FONT_MODE_TRANSPARENT )
+  LROT_NUMENTRY( FONT_MODE_SOLID, UCG_FONT_MODE_SOLID )
 
   // Options for circle/ disc drawing
-  { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( UCG_DRAW_UPPER_RIGHT ) },
-  { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( UCG_DRAW_UPPER_LEFT ) },
-  { LSTRKEY( "DRAW_LOWER_RIGHT" ), LNUMVAL( UCG_DRAW_LOWER_RIGHT ) },
-  { LSTRKEY( "DRAW_LOWER_LEFT" ),  LNUMVAL( UCG_DRAW_LOWER_LEFT ) },
-  { LSTRKEY( "DRAW_ALL" ),         LNUMVAL( UCG_DRAW_ALL ) },
+  LROT_NUMENTRY( DRAW_UPPER_RIGHT, UCG_DRAW_UPPER_RIGHT )
+  LROT_NUMENTRY( DRAW_UPPER_LEFT, UCG_DRAW_UPPER_LEFT )
+  LROT_NUMENTRY( DRAW_LOWER_RIGHT, UCG_DRAW_LOWER_RIGHT )
+  LROT_NUMENTRY( DRAW_LOWER_LEFT, UCG_DRAW_LOWER_LEFT )
+  LROT_NUMENTRY( DRAW_ALL, UCG_DRAW_ALL )
 
-  { LSTRKEY( "__metatable" ), LROVAL( lucg_map ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_TABENTRY( __metatable, lucg )
+LROT_END( lucg, lucg, 0 )
+
 
 int luaopen_ucg( lua_State *L )
 {
-    luaL_rometatable(L, "ucg.display", (void *)lucg_display_map);  // create metatable
+    luaL_rometatable(L, "ucg.display", LROT_TABLEREF(lucg_display));
     return 0;
 }
 
-NODEMCU_MODULE(UCG, "ucg", lucg_map, luaopen_ucg);
+NODEMCU_MODULE(UCG, "ucg", lucg, luaopen_ucg);
 
 #endif /* LUA_USE_MODULES_UCG */

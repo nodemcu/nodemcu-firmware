@@ -7,6 +7,7 @@
 #include "luaconf.h"
 #include "lobject.h"
 #include "llimits.h"
+#include "lrotable.h"
 
 /* Macros one can use to define rotable entries */
 #define LRO_FUNCVAL(v)  {{.p = v}, LUA_TLIGHTFUNCTION}
@@ -14,13 +15,28 @@
 #define LRO_NUMVAL(v)   {{.n = v}, LUA_TNUMBER}
 #define LRO_ROVAL(v)    {{.p = (void*)v}, LUA_TROTABLE}
 #define LRO_NILVAL      {{.p = NULL}, LUA_TNIL}
+
 #ifdef LUA_CROSS_COMPILER
-#define LRO_STRKEY(k)   {LUA_TSTRING, {.strkey = k}}
+#define LRO_STRKEY(k)   k
 #else
-#define LRO_STRKEY(k)   {LUA_TSTRING, {.strkey = (STORE_ATTR char *) k}}
+#define LRO_STRKEY(k)   ((STORE_ATTR char *) k)
 #endif
-#define LRO_NUMKEY(k)   {LUA_TNUMBER, {.numkey = k}}
-#define LRO_NILKEY      {LUA_TNIL, {.strkey=NULL}}
+
+#define LROT_TABLE(t)        static const LUA_REG_TYPE t ## _map[];
+#define LROT_PUBLIC_TABLE(t) const LUA_REG_TYPE t ## _map[];
+#define LROT_TABLEREF(t)     ((void *) t ## _map)
+#define LROT_BEGIN(t)        static const LUA_REG_TYPE t ## _map [] = {
+#define LROT_PUBLIC_BEGIN(t) const LUA_REG_TYPE t ## _map[] = {
+#define LROT_EXTERN(t)       extern const LUA_REG_TYPE t ## _map[]
+#define LROT_TABENTRY(n,t)   {LRO_STRKEY(#n), LRO_ROVAL(t ## _map)},
+#define LROT_FUNCENTRY(n,f)  {LRO_STRKEY(#n), LRO_FUNCVAL(f)},
+#define LROT_NUMENTRY(n,x)   {LRO_STRKEY(#n), LRO_NUMVAL(x)},
+#define LROT_LUDENTRY(n,x)   {LRO_STRKEY(#n), LRO_LUDATA((void *) x)},
+#define LROT_END(t,mt, f)    {NULL, LRO_NILVAL} };
+#define LROT_BREAK(t)         };
+
+#define LUA_REG_TYPE              luaR_entry
+#define LREGISTER(L, name, table) return 0
 
 /* Maximum length of a rotable name and of a string key*/
 #define LUA_MAX_ROTABLE_NAME      32
@@ -28,18 +44,9 @@
 /* Type of a numeric key in a rotable */
 typedef int luaR_numkey;
 
-/* The next structure defines the type of a key */
-typedef struct {
-  int type;
-  union {
-    const char*   strkey;
-    luaR_numkey   numkey;
-  } id;
-} luaR_key;
-
 /* An entry in the read only table */
 typedef struct luaR_entry {
-  const luaR_key key;
+  const char *key;
   const TValue value;
 } luaR_entry;
 

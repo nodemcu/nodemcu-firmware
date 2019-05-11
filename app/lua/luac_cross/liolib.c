@@ -12,12 +12,12 @@
 
 #define liolib_c
 #define LUA_LIB
-#define LUA_OPTIMIZE_MEMORY  2
 
 #include "lua.h"
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lrotable.h"
 
 #define IO_INPUT	1
 #define IO_OUTPUT	2
@@ -439,36 +439,31 @@ static int f_flush (lua_State *L) {
   return pushresult(L, fflush(tofile(L)) == 0, NULL);
 }
 
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE iolib_funcs[] = {
-  {LSTRKEY("close"),   LFUNCVAL(io_close)},
-  {LSTRKEY("flush"),   LFUNCVAL(io_flush)},
-  {LSTRKEY("input"),   LFUNCVAL(io_input)},
-  {LSTRKEY("lines"),   LFUNCVAL(io_lines)},
-  {LSTRKEY("open"),    LFUNCVAL(io_open)},
-  {LSTRKEY("output"),  LFUNCVAL(io_output)},
-  {LSTRKEY("read"),    LFUNCVAL(io_read)},
-  {LSTRKEY("type"),    LFUNCVAL(io_type)},
-  {LSTRKEY("write"),   LFUNCVAL(io_write)},
-  {LSTRKEY("__index"), LROVAL(iolib_funcs)},
-  {LNILKEY, LNILVAL}
-};
+LROT_PUBLIC_BEGIN(iolib)
+  LROT_FUNCENTRY( close, io_close )
+  LROT_FUNCENTRY( flush, io_flush )
+  LROT_FUNCENTRY( input, io_input )
+  LROT_FUNCENTRY( lines, io_lines )
+  LROT_FUNCENTRY( open, io_open )
+  LROT_FUNCENTRY( output, io_output )
+  LROT_FUNCENTRY( read, io_read )
+  LROT_FUNCENTRY( type, io_type )
+  LROT_FUNCENTRY( write, io_write )
+  LROT_TABENTRY( __index, iolib )
+LROT_END(iolib, NULL, 0)
 
-#include "lrodefs.h"
-const LUA_REG_TYPE flib[] = {
-  {LSTRKEY("close"),      LFUNCVAL(io_close)},
-  {LSTRKEY("flush"),      LFUNCVAL(f_flush)},
-  {LSTRKEY("lines"),      LFUNCVAL(f_lines)},
-  {LSTRKEY("read"),       LFUNCVAL(f_read)},
-  {LSTRKEY("seek"),       LFUNCVAL(f_seek)},
-  {LSTRKEY("setvbuf"),    LFUNCVAL(f_setvbuf)},
-  {LSTRKEY("write"),      LFUNCVAL(f_write)},
-  {LSTRKEY("__gc"),       LFUNCVAL(io_gc)},
-  {LSTRKEY("__tostring"), LFUNCVAL(io_tostring)},
-  {LSTRKEY("__index"),    LROVAL(flib)},
-  {LNILKEY, LNILVAL}
-};
+LROT_BEGIN(flib)
+  LROT_FUNCENTRY( close, io_close )
+  LROT_FUNCENTRY( flush, f_flush )
+  LROT_FUNCENTRY( lines, f_lines )
+  LROT_FUNCENTRY( read, f_read )
+  LROT_FUNCENTRY( seek, f_seek )
+  LROT_FUNCENTRY( setvbuf, f_setvbuf )
+  LROT_FUNCENTRY( write, f_write )
+  LROT_FUNCENTRY( __gc, io_gc )
+  LROT_FUNCENTRY( __tostring, io_tostring )
+  LROT_TABENTRY( __index, flib )
+LROT_END(flib, NULL, LROT_MASK_GC_INDEX)
 
 static const luaL_Reg io_base[] = {{NULL, NULL}};
 
@@ -481,12 +476,12 @@ static void createstdfile (lua_State *L, FILE *f, int k, const char *fname) {
 }
 
 LUALIB_API int luaopen_io(lua_State *L) {
-  luaL_rometatable(L, LUA_FILEHANDLE, (void*) flib);  /* create metatable for file handles */
+  luaL_rometatable(L, LUA_FILEHANDLE, LROT_TABLEREF(flib));  /* create metatable for file handles */
   luaL_register_light(L, LUA_IOLIBNAME, io_base);
   lua_pushvalue(L, -1);
   lua_setmetatable(L, -2);
   lua_pushliteral(L, "__index");
-  lua_pushrotable(L, (void *)iolib_funcs);
+  lua_pushrotable(L, LROT_TABLEREF(iolib));
   lua_rawset(L, -3);
 
   /* create (and set) default files */

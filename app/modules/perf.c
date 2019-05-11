@@ -135,10 +135,10 @@ static int perf_stop(lua_State *L)
   return 4;
 }
 
-static const LUA_REG_TYPE perf_map[] = {
-  { LSTRKEY( "start" ),   LFUNCVAL( perf_start ) },
-  { LSTRKEY( "stop" ),    LFUNCVAL( perf_stop ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(perf)
+  LROT_FUNCENTRY( start, perf_start )
+  LROT_FUNCENTRY( stop, perf_stop )
+LROT_END( perf, NULL, 0 )
 
-NODEMCU_MODULE(PERF, "perf", perf_map, NULL);
+
+NODEMCU_MODULE(PERF, "perf", perf, NULL);

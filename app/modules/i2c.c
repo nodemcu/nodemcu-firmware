@@ -146,19 +146,19 @@ static int i2c_read( lua_State *L )
 }
 
 // Module function map
-static const LUA_REG_TYPE i2c_map[] = {
-  { LSTRKEY( "setup" ),       LFUNCVAL( i2c_setup ) },
-  { LSTRKEY( "start" ),       LFUNCVAL( i2c_start ) },
-  { LSTRKEY( "stop" ),        LFUNCVAL( i2c_stop ) },
-  { LSTRKEY( "address" ),     LFUNCVAL( i2c_address ) },
-  { LSTRKEY( "write" ),       LFUNCVAL( i2c_write ) },
-  { LSTRKEY( "read" ),        LFUNCVAL( i2c_read ) },
-  { LSTRKEY( "FASTPLUS" ),    LNUMVAL( PLATFORM_I2C_SPEED_FASTPLUS ) },
-  { LSTRKEY( "FAST" ),        LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
-  { LSTRKEY( "SLOW" ),        LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
-  { LSTRKEY( "TRANSMITTER" ), LNUMVAL( PLATFORM_I2C_DIRECTION_TRANSMITTER ) },
-  { LSTRKEY( "RECEIVER" ),    LNUMVAL( PLATFORM_I2C_DIRECTION_RECEIVER ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(i2c)
+  LROT_FUNCENTRY( setup, i2c_setup )
+  LROT_FUNCENTRY( start, i2c_start )
+  LROT_FUNCENTRY( stop, i2c_stop )
+  LROT_FUNCENTRY( address, i2c_address )
+  LROT_FUNCENTRY( write, i2c_write )
+  LROT_FUNCENTRY( read, i2c_read )
+  LROT_NUMENTRY( FASTPLUS, PLATFORM_I2C_SPEED_FASTPLUS )
+  LROT_NUMENTRY( FAST, PLATFORM_I2C_SPEED_FAST )
+  LROT_NUMENTRY( SLOW, PLATFORM_I2C_SPEED_SLOW )
+  LROT_NUMENTRY( TRANSMITTER, PLATFORM_I2C_DIRECTION_TRANSMITTER )
+  LROT_NUMENTRY( RECEIVER, PLATFORM_I2C_DIRECTION_RECEIVER )
+LROT_END( i2c, NULL, 0 )
 
-NODEMCU_MODULE(I2C, "i2c", i2c_map, NULL);
+
+NODEMCU_MODULE(I2C, "i2c", i2c, NULL);

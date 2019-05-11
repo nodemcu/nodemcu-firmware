@@ -100,15 +100,14 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
   return 0;
 }
 
-static const LUA_REG_TYPE tm1829_map[] =
-{
-  { LSTRKEY( "write" ), LFUNCVAL( tm1829_write) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(tm1829)
+  LROT_FUNCENTRY( write, tm1829_write )
+LROT_END( tm1829, NULL, 0 )
+
 
 int luaopen_tm1829(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
   return 0;
 }
 
-NODEMCU_MODULE(TM1829, "tm1829", tm1829_map, luaopen_tm1829);
+NODEMCU_MODULE(TM1829, "tm1829", tm1829, luaopen_tm1829);

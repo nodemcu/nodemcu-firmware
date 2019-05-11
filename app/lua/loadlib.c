@@ -24,6 +24,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lrotable.h"
 
 /* prefix for open functions in C libraries */
 #define LUA_POF		"luaopen_"
@@ -361,7 +362,9 @@ static const char * findfile (lua_State *L, const char *name,
                                            const char *pname) {
   const char *path;
   name = luaL_gsub(L, name, ".", LUA_DIRSEP);
-  lua_getfield(L, LUA_ENVIRONINDEX, pname);
+  lua_getfield(L, LUA_GLOBALSINDEX, "package");
+  lua_getfield(L, -1, pname);
+  lua_remove(L, -2);
   path = lua_tostring(L, -1);
   if (path == NULL)
     luaL_error(L, LUA_QL("package.%s") " must be a string", pname);
@@ -447,7 +450,9 @@ static int loader_Croot (lua_State *L) {
 
 static int loader_preload (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
-  lua_getfield(L, LUA_ENVIRONINDEX, "preload");
+  lua_getfield(L, LUA_GLOBALSINDEX, "package");
+  lua_getfield(L, -1, "preload");
+  lua_remove(L, -2);
   if (!lua_istable(L, -1))
     luaL_error(L, LUA_QL("package.preload") " must be a table");
   lua_getfield(L, -1, name);
@@ -480,7 +485,9 @@ static int ll_require (lua_State *L) {
     lua_pop(L, 1);
   }
   /* else must load it; iterate over available loaders */
-  lua_getfield(L, LUA_ENVIRONINDEX, "loaders");
+  lua_getfield(L, LUA_GLOBALSINDEX, "package");
+  lua_getfield(L, -1, "loaders");
+  lua_remove(L, -2);
   if (!lua_istable(L, -1))
     luaL_error(L, LUA_QL("package.loaders") " must be a table");
   lua_pushliteral(L, "");  /* error message accumulator */
@@ -650,34 +657,20 @@ static const luaL_Reg ll_funcs[] = {
 static const lua_CFunction loaders[] =
   {loader_preload, loader_Lua, loader_C, loader_Croot, NULL};
 
-#if LUA_OPTIMIZE_MEMORY > 0
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE lmt[] = {
-  {LRO_STRKEY("__gc"), LRO_FUNCVAL(gctm)},
-  {LRO_NILKEY, LRO_NILVAL}
-};
-#endif
+LROT_PUBLIC_BEGIN(lmt)
+  LROT_FUNCENTRY(__gc,gctm)
+LROT_END(lmt,lmt, LROT_MASK_GC)
 
 LUALIB_API int luaopen_package (lua_State *L) {
   int i;
   /* create new type _LOADLIB */
-#if LUA_OPTIMIZE_MEMORY == 0
-  luaL_newmetatable(L, "_LOADLIB");
-  lua_pushlightfunction(L, gctm);
-  lua_setfield(L, -2, "__gc");
-#else
-  luaL_rometatable(L, "_LOADLIB", (void*)lmt);
-#endif
+  luaL_rometatable(L, "_LOADLIB",LROT_TABLEREF(lmt));
   /* create `package' table */
   luaL_register_light(L, LUA_LOADLIBNAME, pk_funcs);
 #if defined(LUA_COMPAT_LOADLIB)
   lua_getfield(L, -1, "loadlib");
   lua_setfield(L, LUA_GLOBALSINDEX, "loadlib");
 #endif
-  lua_pushvalue(L, -1);
-  lua_replace(L, LUA_ENVIRONINDEX);
   /* create `loaders' table */
   lua_createtable(L, sizeof(loaders)/sizeof(loaders[0]) - 1, 0);
   /* fill it with pre-defined loaders */

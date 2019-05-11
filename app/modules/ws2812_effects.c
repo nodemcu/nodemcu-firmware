@@ -1038,23 +1038,22 @@ static int ws2812_effects_tostring(lua_State* L) {
   return 1;
 }
 
-static const LUA_REG_TYPE ws2812_effects_map[] =
-{
-  { LSTRKEY( "init" ),              LFUNCVAL( ws2812_effects_init )},
-  { LSTRKEY( "set_brightness" ),    LFUNCVAL( ws2812_effects_set_brightness )},
-  { LSTRKEY( "set_color" ),         LFUNCVAL( ws2812_effects_set_color )},
-  { LSTRKEY( "set_speed" ),         LFUNCVAL( ws2812_effects_set_speed )},
-  { LSTRKEY( "set_delay" ),         LFUNCVAL( ws2812_effects_set_delay )},
-  { LSTRKEY( "set_mode" ),          LFUNCVAL( ws2812_effects_set_mode )},
-  { LSTRKEY( "start" ),             LFUNCVAL( ws2812_effects_start )},
-  { LSTRKEY( "stop" ),              LFUNCVAL( ws2812_effects_stop )},
-  { LSTRKEY( "get_delay" ),         LFUNCVAL( ws2812_effects_get_delay )},
-  { LSTRKEY( "get_speed" ),         LFUNCVAL( ws2812_effects_get_speed )},
+LROT_BEGIN(ws2812_effects)
+  LROT_FUNCENTRY( init, ws2812_effects_init )
+  LROT_FUNCENTRY( set_brightness, ws2812_effects_set_brightness )
+  LROT_FUNCENTRY( set_color, ws2812_effects_set_color )
+  LROT_FUNCENTRY( set_speed, ws2812_effects_set_speed )
+  LROT_FUNCENTRY( set_delay, ws2812_effects_set_delay )
+  LROT_FUNCENTRY( set_mode, ws2812_effects_set_mode )
+  LROT_FUNCENTRY( start, ws2812_effects_start )
+  LROT_FUNCENTRY( stop, ws2812_effects_stop )
+  LROT_FUNCENTRY( get_delay, ws2812_effects_get_delay )
+  LROT_FUNCENTRY( get_speed, ws2812_effects_get_speed )
 
-  { LSTRKEY( "__index" ), LROVAL( ws2812_effects_map )},
-  { LSTRKEY( "__tostring" ), LFUNCVAL( ws2812_effects_tostring )},
-  { LNILKEY, LNILVAL}
-};
+  LROT_TABENTRY( __index, ws2812_effects )
+  LROT_FUNCENTRY( __tostring, ws2812_effects_tostring )
+LROT_END( ws2812_effects, ws2812_effects, LROT_MASK_INDEX )
 
 
-NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects_map, NULL);
+
+NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects, NULL);
