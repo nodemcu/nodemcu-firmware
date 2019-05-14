@@ -55,7 +55,7 @@ When using different frequencies, one has to pay close attention at their greate
 This module is using soft-interrupt TIMER1 FRC1 to generate PWM signal. Since its interrupts can be masked, as some part of OS are doing it, it is possible to impact quality of generated PWM impulse. As a general principle, one should not expect high precision signal with this module.
 Also note that interrupt masking is dependent on other activities happening within the ESP besides pwm2 module.
 
-Additionally this timer is used by other modules like pwm, pcm, ws2812 and etc. This requires exclusive lock on the timer in order to ensure support for high end frequencies. Because of that simultenious use of other modules would not be possible.
+Additionally this timer is used by other modules like pwm, pcm, ws2812 and etc. This requires exclusive lock on the timer in order to ensure support for high end frequencies. Because of that simultaneous use of other modules would not be possible.
 
 ## Troubleshooting watchdog timeouts
 
