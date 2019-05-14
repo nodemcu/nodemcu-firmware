@@ -1,19 +1,19 @@
 // Module for interfacing with PWM
 
 #include <stdlib.h>
-#include "module.h"
-#include "lauxlib.h"
-#include "platform.h"
 #include "c_types.h"
-#include "pin_map.h"
-#include "mem.h"
 #include "hw_timer.h"
+#include "lauxlib.h"
+#include "mem.h"
+#include "module.h"
+#include "pin_map.h"
+#include "platform.h"
 
 #define PWM2_TMR_MAGIC_80MHZ 16
 #define PWM2_TMR_MAGIC_160MHZ 32
 
-#define luaL_argcheck2(L, cond,numarg,extramsg)	\
-		if (!(cond)) return luaL_argerror(L, (numarg), (extramsg))
+#define luaL_argcheck2(L, cond, numarg, extramsg) \
+  if (!(cond)) return luaL_argerror(L, (numarg), (extramsg))
 
 //############################
 // global type definitions
@@ -71,9 +71,13 @@ static uint8_t getCpuTimerTicksDivisor() {
 }
 
 static uint32_t findGCD(uint32_t n1, uint32_t n2) {
-  if (n2 == 0)
-    return n1;
-  return findGCD(n2, n1 % n2);
+  uint32_t n3;
+  while (n2 != 0) {
+    n3 = n1;
+    n1 = n2;
+    n2 = n3 % n2;
+  }
+  return n1;
 }
 
 static uint32_t findGreatesCommonDividerForTimerTicks(uint32_t newTimerTicks, uint32_t oldTimerTicks) {
@@ -350,7 +354,7 @@ static int lpwm2_start(lua_State *L) {
   if (moduleData->setupData.isStarted) {
     return 0;
   }
-  if (!platform_hw_timer_init_exclusive(FRC1_SOURCE, TRUE, timerInterruptHandler, (os_param_t)&moduleData->interruptData, (void(*)(void))NULL)) {
+  if (!platform_hw_timer_init_exclusive(FRC1_SOURCE, TRUE, timerInterruptHandler, (os_param_t)&moduleData->interruptData, (void (*)(void))NULL)) {
     return luaL_error(L, "pwm2: currently platform timer1 is being used by another module.\n");
   }
   configureAllPinsAsGpioOutput(moduleData);
@@ -488,16 +492,16 @@ static int lpwm2_start(lua_State *L) {
 
 // Module function map
 LROT_BEGIN(pwm2)
-  LROT_FUNCENTRY( setup_pin_hz, lpwm2_setup_pin_hz)
-  LROT_FUNCENTRY( setup_pin_sec, lpwm2_setup_pin_sec)
-  LROT_FUNCENTRY( release_pin, lpwm2_release_pin)
-  LROT_FUNCENTRY( print_setup, lpwm2_print_setup)
-  LROT_FUNCENTRY( start, lpwm2_start)
-  LROT_FUNCENTRY( stop, lpwm2_stop)
-  LROT_FUNCENTRY( set_duty, lpwm2_set_duty)
-  // LROT_FUNCENTRY( time_it, lpwm2_timeit)
-  // LROT_FUNCENTRY( test_tmr_manual, lpwm2_timing_frc1_manual_load_overhead)
-  // LROT_FUNCENTRY( test_tmr_auto, lpwm2_timing_frc1_auto_load_overhead)
-LROT_END( pwm2, NULL, 0 )
+LROT_FUNCENTRY(setup_pin_hz, lpwm2_setup_pin_hz)
+LROT_FUNCENTRY(setup_pin_sec, lpwm2_setup_pin_sec)
+LROT_FUNCENTRY(release_pin, lpwm2_release_pin)
+LROT_FUNCENTRY(print_setup, lpwm2_print_setup)
+LROT_FUNCENTRY(start, lpwm2_start)
+LROT_FUNCENTRY(stop, lpwm2_stop)
+LROT_FUNCENTRY(set_duty, lpwm2_set_duty)
+// LROT_FUNCENTRY( time_it, lpwm2_timeit)
+// LROT_FUNCENTRY( test_tmr_manual, lpwm2_timing_frc1_manual_load_overhead)
+// LROT_FUNCENTRY( test_tmr_auto, lpwm2_timing_frc1_auto_load_overhead)
+LROT_END(pwm2, NULL, 0)
 
 NODEMCU_MODULE(PWM2, "pwm2", pwm2, lpwm2_open);
