@@ -40,7 +40,7 @@ In order to allow for better tunning, I've added an optional frequencyDivisor ar
 
 ESP's TIMER1 FRC1 is operating at fixed, own frequency of 5MHz. Therefore the precision of individual interrupt is 200ns. But OS interrupt handler itself has internal overhead, which for auto-loaded interrupts is about 80CPUTicks. With PWM2 own interrupt handler overhead of 162CPUTicks + 12CPUTicks per used pin, one can expect effective interrupt frequency from 242kHz for 1pin to 175kHz for 12 pins using CPU80MHz. Using CPU160MHz these figures almost double but not exactly.
 
-Because TIMER1 frequency is 1/16 of CPU frequency, frequency precision is lost when converting from CPU to TIMER ticks. One can inspect exact values via [pwm.print_setup()](#print_setup). Value of `interruptTimerCPUTicks` represents desired interrupt period in CPUTicks. And `interruptTimerTicks` represents actually used interrupt period as TIMER1 ticks (1/16 of CPU).
+Because TIMER1 frequency is 1/16 of CPU frequency, frequency precision is lost when converting from CPU to TIMER ticks. One can inspect exact values via [pwm.get_timer_data()](#get_timer_data). Value of `interruptTimerCPUTicks` represents desired interrupt period in CPUTicks. And `interruptTimerTicks` represents actually used interrupt period as TIMER1 ticks (1/16 of CPU).
 
 ## Working with multiple frequencies
 
@@ -48,7 +48,7 @@ When working with multiple pins, this module auto-discovers what would be the ri
 
 When using same frequency for many pins, tunning frequency of single pin is enough to ensure precision.
 
-When using different frequencies, one has to pay close attention at their greates common divisor when expressed as CPU ticks. For example, mixing 100kHz with period 2 and 0.5Hz with period 2 results in underlying interrupt period of 800CPU ticks. But changing to 100kHz+1 will easily result to divisor of 1. This is clearly non-working combination. For the moment best would be to [pwm.print_setup()](#print_setup) and observe how `interruptTimerCPUTicks` and `interruptTimerTicks` change with given input.
+When using different frequencies, one has to pay close attention at their greates common divisor when expressed as CPU ticks. For example, mixing 100kHz with period 2 and 0.5Hz with period 2 results in underlying interrupt period of 800CPU ticks. But changing to 100kHz+1 will easily result to divisor of 1. This is clearly non-working combination. For the moment best would be to [pwm.get_timer_data()](#get_timer_data) and observe how `interruptTimerCPUTicks` and `interruptTimerTicks` change with given input.
 
 ## Understanding timer use
 
@@ -63,7 +63,7 @@ Watchdog interrupt typically will occur if choosen frequency (and period) is too
 
 Another reason for watchdog interrupt to occur is due to mixing otherwise not very compatible frequencies when multiple pins are used. Desired frequencies when are converted to CPU ticks and then their greatest common divisor is found, are converted to TIMER1 ticks. Any of these steps imposes risk of incomatibility. For example frequency of 120kHz with period 2 results in period of 333CPU ticks, which if combined with even-resulting frequency like 1Hz with period of 2, will lead to common divisor of 1, which is clearly a non-working setup.
 
-Both cases best are anlyzed using [pwm.print_setup()](#print_setup) wathcing values of `interruptTimerCPUTicks` and `interruptTimerTicks`. For `interruptTimerCPUTicks` and CPU80MHz anything below 400 for 12 pins or 250 for 1 pin would be cause for special attention. For CPU160MHz these values can drop almost double.
+Both cases best are anlyzed using [pwm.get_timer_data()](#get_timer_data) wathcing values of `interruptTimerCPUTicks` and `interruptTimerTicks`. For `interruptTimerCPUTicks` and CPU80MHz anything below 400 for 12 pins or 250 for 1 pin would be cause for special attention. For CPU160MHz these values can drop almost double.
 
 ## pwm2.setup_pin_hz()
 Assigns PWM frequency expressed as Hz to given pin.
@@ -88,7 +88,7 @@ This method is suitable for setting up frequencies in the range of >=1Hz.
 [pwm.release_pin()](#release_pin)
 [understanding frequencies](#understand-frequencies)
 [working with multiple frequencies](#working-with-multiple-frequencies)
-[pwm.print_setup()](#print_setup)
+[pwm.get_timer_data()](#get_timer_data)
 
 ## pwm2.setup_pin_sec()
 Assigns PWM frequency expressed as one impulse per second(s) to given pin.
@@ -113,7 +113,7 @@ This method is suitable for setting up frequencies in the range of 0<1Hz but exp
 [pwm.release_pin()](#release_pin)
 [understanding frequencies](#understand-frequencies)
 [working with multiple frequencies](#working-with-multiple-frequencies)
-[pwm.print_setup()](#print_setup)
+[pwm.get_timer_data()](#get_timer_data)
 
 ## pwm.start()
 Starts PWM for all setup pins.
@@ -185,18 +185,53 @@ Releases given pin from previously done setup. This method is applicable when PW
 [pwm.setup_pin_sec()](#setup_pin_sec)
 [pwm.stop()](#stop)
 
-## pwm.print_setup()
-Prints internal data structures. This method is usefull for people troubleshooting frequency side effects.
+## pwm.get_timer_data()
+Prints internal data structures related to the timer. This method is usefull for people troubleshooting frequency side effects.
 
 #### Syntax
-`pwm.print_setup()`
+`pwm.get_timer_data()`
 
 #### Parameters
 `nil`
 
 #### Returns
-`nil`
+`isStarted` bool, if true PWM2 has been started
+`interruptTimerCPUTicks` int, desired timer interrupt period in CPU ticks
+`interruptTimerTicks` int, actual timer interrupt period in timer ticks
+
+#### Example
+```
+isStarted, interruptTimerCPUTicks, interruptTimerTicks = pwm2.get_timer_data()
+```
 
 #### See also
 [pwm.setup_pin_hz()](#setup_pin_hz)
 [pwm.setup_pin_sec()](#setup_pin_sec)
+[pwm.get_pin_data()](#get_pin_data)
+
+## pwm.get_pin_data()
+Prints internal data structures related to given GPIO pin. This method is usefull for people troubleshooting frequency side effects.
+
+#### Syntax
+`pwm.get_pin_data(pin)`
+
+#### Parameters
+`pin` 1~12, IO index
+
+#### Returns
+`duty` int, assigned duty
+`pulseResolutions` int, assigned pulse periods
+`divisableFrequency` int, assigned frequency
+`frequencyDivisor` int, assigned frequency divisor
+`resolutionCPUTicks` int, calculated one pulse period in CPU ticks
+`resolutionInterruptCounterMultiplier` int, how many timer interrupts constitute one pulse period
+
+#### Example
+```
+duty, pulseResolutions, divisableFrequency, frequencyDivisor, resolutionCPUTicks, resolutionInterruptCounterMultiplier = pwm2.get_pin_data(4)
+```
+
+#### See also
+[pwm.setup_pin_hz()](#setup_pin_hz)
+[pwm.setup_pin_sec()](#setup_pin_sec)
+[pwm.get_timer_data()](#get_timer_data)

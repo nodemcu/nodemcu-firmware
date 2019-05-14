@@ -2,11 +2,11 @@
 
 #include <stdlib.h>
 #include "c_types.h"
-#include "hw_timer.h"
 #include "lauxlib.h"
 #include "mem.h"
 #include "module.h"
 #include "pin_map.h"
+#include "hw_timer.h"
 #include "platform.h"
 
 #define PWM2_TMR_MAGIC_80MHZ 16
@@ -192,36 +192,55 @@ static int lpwm2_open(lua_State *L) {
   return 0;
 }
 
-static int lpwm2_print_setup(lua_State *L) {
-  ets_printf("pwm2 : isStarted %u\n", moduleData->setupData.isStarted);
-  ets_printf("pwm2 : interruptTimerCPUTicks %u\n", moduleData->setupData.interruptTimerCPUTicks);
-  ets_printf("pwm2 : interruptTimerTicks %u\n", moduleData->setupData.interruptTimerTicks);
-  ets_printf("pin, duty, pulse, resolutionAsCPU, resolutionIntrCntMultiplier, divisableFreq, freqDivisor\n");
-  for (int i = 1; i < GPIO_PIN_NUM; i++) {
-    if (isPinSetup(moduleData, i)) {
-      ets_printf("%u, %u, %u, %u, %u, %u, %u\n",
-                 i,
-                 moduleData->setupData.pin[i].duty,
-                 moduleData->setupData.pin[i].pulseResolutions,
-                 moduleData->setupData.pin[i].resolutionCPUTicks,
-                 moduleData->setupData.pin[i].resolutionInterruptCounterMultiplier,
-                 moduleData->setupData.pin[i].divisableFrequency,
-                 moduleData->setupData.pin[i].frequencyDivisor);
-    }
-  }
-  ets_printf("pwm2 : enabledGpioMask %X\n", moduleData->interruptData.enabledGpioMask);
-  ets_printf("pin, pulseAsInterruptCnt, pinOffWhenIntrCnt, currentintrCnt, gpioMask\n");
-  for (int i = 1; i < GPIO_PIN_NUM; i++) {
-    if (isPinSetup(moduleData, i)) {
-      ets_printf("%u, %u, %u, %u, %X\n",
-                 i,
-                 moduleData->interruptData.pin[i].pulseInterruptCcounter,
-                 moduleData->interruptData.pin[i].offInterruptCounter,
-                 moduleData->interruptData.pin[i].currentInterruptCounter,
-                 moduleData->interruptData.pin[i].gpioMask);
-    }
-  }
+static int lpwm2_get_timer_data(lua_State *L) {
+  lua_pushboolean(L, moduleData->setupData.isStarted);
+  lua_pushinteger(L, moduleData->setupData.interruptTimerCPUTicks);
+  lua_pushinteger(L, moduleData->setupData.interruptTimerTicks);
+  return 0;
 }
+
+static int lpwm2_get_pin_data(lua_State *L) {
+  const uint8 pin = luaL_checkinteger(L, 1);
+  luaL_argcheck2(L, pin > 0 && pin <= GPIO_PIN_NUM, 1, "invalid pin number");
+  lua_pushinteger(L, moduleData->setupData.pin[pin].duty);
+  lua_pushinteger(L, moduleData->setupData.pin[pin].pulseResolutions);
+  lua_pushinteger(L, moduleData->setupData.pin[pin].divisableFrequency);
+  lua_pushinteger(L, moduleData->setupData.pin[pin].frequencyDivisor);
+  lua_pushinteger(L, moduleData->setupData.pin[pin].resolutionCPUTicks);
+  lua_pushinteger(L, moduleData->setupData.pin[pin].resolutionInterruptCounterMultiplier);
+  return 0;
+}
+
+// static int lpwm2_print_setup(lua_State *L) {
+//   ets_printf("pwm2 : isStarted %u\n", moduleData->setupData.isStarted);
+//   ets_printf("pwm2 : interruptTimerCPUTicks %u\n", moduleData->setupData.interruptTimerCPUTicks);
+//   ets_printf("pwm2 : interruptTimerTicks %u\n", moduleData->setupData.interruptTimerTicks);
+//   ets_printf("pin, duty, pulse, resolutionAsCPU, resolutionIntrCntMultiplier, divisableFreq, freqDivisor\n");
+//   for (int i = 1; i < GPIO_PIN_NUM; i++) {
+//     if (isPinSetup(moduleData, i)) {
+//       ets_printf("%u, %u, %u, %u, %u, %u, %u\n",
+//                  i,
+//                  moduleData->setupData.pin[i].duty,
+//                  moduleData->setupData.pin[i].pulseResolutions,
+//                  moduleData->setupData.pin[i].resolutionCPUTicks,
+//                  moduleData->setupData.pin[i].resolutionInterruptCounterMultiplier,
+//                  moduleData->setupData.pin[i].divisableFrequency,
+//                  moduleData->setupData.pin[i].frequencyDivisor);
+//     }
+//   }
+//   ets_printf("pwm2 : enabledGpioMask %X\n", moduleData->interruptData.enabledGpioMask);
+//   ets_printf("pin, pulseAsInterruptCnt, pinOffWhenIntrCnt, currentintrCnt, gpioMask\n");
+//   for (int i = 1; i < GPIO_PIN_NUM; i++) {
+//     if (isPinSetup(moduleData, i)) {
+//       ets_printf("%u, %u, %u, %u, %X\n",
+//                  i,
+//                  moduleData->interruptData.pin[i].pulseInterruptCcounter,
+//                  moduleData->interruptData.pin[i].offInterruptCounter,
+//                  moduleData->interruptData.pin[i].currentInterruptCounter,
+//                  moduleData->interruptData.pin[i].gpioMask);
+//     }
+//   }
+// }
 
 static uint64_t enduserFreqToCPUTicks(const uint64_t divisableFreq, const uint64_t freqDivisor, const uint64_t resolution) {
   return (getCPUTicksPerSec() / (freqDivisor * resolution)) * divisableFreq;
@@ -495,10 +514,12 @@ LROT_BEGIN(pwm2)
 LROT_FUNCENTRY(setup_pin_hz, lpwm2_setup_pin_hz)
 LROT_FUNCENTRY(setup_pin_sec, lpwm2_setup_pin_sec)
 LROT_FUNCENTRY(release_pin, lpwm2_release_pin)
-LROT_FUNCENTRY(print_setup, lpwm2_print_setup)
 LROT_FUNCENTRY(start, lpwm2_start)
 LROT_FUNCENTRY(stop, lpwm2_stop)
 LROT_FUNCENTRY(set_duty, lpwm2_set_duty)
+LROT_FUNCENTRY(get_timer_data, lpwm2_get_timer_data)
+LROT_FUNCENTRY(get_pin_data, lpwm2_get_pin_data)
+// LROT_FUNCENTRY(print_setup, lpwm2_print_setup)
 // LROT_FUNCENTRY( time_it, lpwm2_timeit)
 // LROT_FUNCENTRY( test_tmr_manual, lpwm2_timing_frc1_manual_load_overhead)
 // LROT_FUNCENTRY( test_tmr_auto, lpwm2_timing_frc1_auto_load_overhead)
