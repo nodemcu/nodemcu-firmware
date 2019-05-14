@@ -41,10 +41,10 @@ static int rtcmem_write32 (lua_State *L)
 
 
 // Module function map
-static const LUA_REG_TYPE rtcmem_map[] = {
-  { LSTRKEY("read32"),  LFUNCVAL(rtcmem_read32)  },
-  { LSTRKEY("write32"), LFUNCVAL(rtcmem_write32) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(rtcmem)
+  LROT_FUNCENTRY( read32, rtcmem_read32 )
+  LROT_FUNCENTRY( write32, rtcmem_write32 )
+LROT_END( rtcmem, NULL, 0 )
 
-NODEMCU_MODULE(RTCMEM, "rtcmem", rtcmem_map, NULL);
+
+NODEMCU_MODULE(RTCMEM, "rtcmem", rtcmem, NULL);

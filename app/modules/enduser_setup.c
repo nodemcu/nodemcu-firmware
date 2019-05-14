@@ -1784,11 +1784,11 @@ static int enduser_setup_stop(lua_State* L)
 }
 
 
-static const LUA_REG_TYPE enduser_setup_map[] = {
-  { LSTRKEY( "manual" ), LFUNCVAL( enduser_setup_manual )},
-  { LSTRKEY( "start" ), LFUNCVAL( enduser_setup_start )},
-  { LSTRKEY( "stop" ),  LFUNCVAL( enduser_setup_stop  )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(enduser_setup)
+  LROT_FUNCENTRY( manual, enduser_setup_manual )
+  LROT_FUNCENTRY( start, enduser_setup_start )
+  LROT_FUNCENTRY( stop, enduser_setup_stop )
+LROT_END( enduser_setup, NULL, 0 )
 
-NODEMCU_MODULE(ENDUSER_SETUP, "enduser_setup", enduser_setup_map, NULL);
+
+NODEMCU_MODULE(ENDUSER_SETUP, "enduser_setup", enduser_setup, NULL);

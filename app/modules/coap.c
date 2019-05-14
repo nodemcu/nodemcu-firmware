@@ -556,48 +556,47 @@ static int coap_client_delete( lua_State* L )
 }
 
 // Module function map
-static const LUA_REG_TYPE coap_server_map[] = {
-  { LSTRKEY( "listen" ),  LFUNCVAL( coap_server_listen ) },
-  { LSTRKEY( "close" ),   LFUNCVAL( coap_server_close ) },
-  { LSTRKEY( "var" ),     LFUNCVAL( coap_server_var ) },
-  { LSTRKEY( "func" ),    LFUNCVAL( coap_server_func ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( coap_server_delete ) },
-  { LSTRKEY( "__index" ), LROVAL( coap_server_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(coap_server)
+  LROT_FUNCENTRY( listen, coap_server_listen )
+  LROT_FUNCENTRY( close, coap_server_close )
+  LROT_FUNCENTRY( var, coap_server_var )
+  LROT_FUNCENTRY( func, coap_server_func )
+  LROT_FUNCENTRY( __gc, coap_server_delete )
+  LROT_TABENTRY( __index, coap_server )
+LROT_END( coap_server, coap_server, 0 )
 
-static const LUA_REG_TYPE coap_client_map[] = {
-  { LSTRKEY( "get" ),     LFUNCVAL( coap_client_get ) },
-  { LSTRKEY( "post" ),    LFUNCVAL( coap_client_post ) },
-  { LSTRKEY( "put" ),     LFUNCVAL( coap_client_put ) },
-  { LSTRKEY( "delete" ),  LFUNCVAL( coap_client_delete ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( coap_client_gcdelete ) },
-  { LSTRKEY( "__index" ), LROVAL( coap_client_map ) },
-  { LNILKEY, LNILVAL }
-};
 
-static const LUA_REG_TYPE coap_map[] =
-{
-  { LSTRKEY( "Server" ),      LFUNCVAL( coap_createServer ) },
-  { LSTRKEY( "Client" ),      LFUNCVAL( coap_createClient ) },
-  { LSTRKEY( "CON" ),         LNUMVAL( COAP_TYPE_CON ) },
-  { LSTRKEY( "NON" ),         LNUMVAL( COAP_TYPE_NONCON ) },
-  { LSTRKEY( "TEXT_PLAIN"),   LNUMVAL( COAP_CONTENTTYPE_TEXT_PLAIN ) },
-  { LSTRKEY( "LINKFORMAT"),   LNUMVAL( COAP_CONTENTTYPE_APPLICATION_LINKFORMAT ) },
-  { LSTRKEY( "XML"),          LNUMVAL( COAP_CONTENTTYPE_APPLICATION_XML ) },
-  { LSTRKEY( "OCTET_STREAM"), LNUMVAL( COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM ) },
-  { LSTRKEY( "EXI"),          LNUMVAL( COAP_CONTENTTYPE_APPLICATION_EXI ) },
-  { LSTRKEY( "JSON"),         LNUMVAL( COAP_CONTENTTYPE_APPLICATION_JSON) },
-  { LSTRKEY( "__metatable" ), LROVAL( coap_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(coap_client)
+  LROT_FUNCENTRY( get, coap_client_get )
+  LROT_FUNCENTRY( post, coap_client_post )
+  LROT_FUNCENTRY( put, coap_client_put )
+  LROT_FUNCENTRY( delete, coap_client_delete )
+  LROT_FUNCENTRY( __gc, coap_client_gcdelete )
+  LROT_TABENTRY( __index, coap_client )
+LROT_END( coap_client, coap_client, 0 )
+
+
+LROT_BEGIN(coap)
+  LROT_FUNCENTRY( Server, coap_createServer )
+  LROT_FUNCENTRY( Client, coap_createClient )
+  LROT_NUMENTRY( CON, COAP_TYPE_CON )
+  LROT_NUMENTRY( NON, COAP_TYPE_NONCON )
+  LROT_NUMENTRY( TEXT_PLAIN, COAP_CONTENTTYPE_TEXT_PLAIN )
+  LROT_NUMENTRY( LINKFORMAT, COAP_CONTENTTYPE_APPLICATION_LINKFORMAT )
+  LROT_NUMENTRY( XML, COAP_CONTENTTYPE_APPLICATION_XML )
+  LROT_NUMENTRY( OCTET_STREAM, COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM )
+  LROT_NUMENTRY( EXI, COAP_CONTENTTYPE_APPLICATION_EXI )
+  LROT_NUMENTRY( JSON, COAP_CONTENTTYPE_APPLICATION_JSON )
+  LROT_TABENTRY( __metatable, coap )
+LROT_END( coap, coap, 0 )
+
 
 int luaopen_coap( lua_State *L )
 {
   endpoint_setup();
-  luaL_rometatable(L, "coap_server", (void *)coap_server_map);  // create metatable for coap_server
-  luaL_rometatable(L, "coap_client", (void *)coap_client_map);  // create metatable for coap_client
+  luaL_rometatable(L, "coap_server", LROT_TABLEREF(coap_server));
+  luaL_rometatable(L, "coap_client", LROT_TABLEREF(coap_client));
   return 0;
 }
 
-NODEMCU_MODULE(COAP, "coap", coap_map, luaopen_coap);
+NODEMCU_MODULE(COAP, "coap", coap, luaopen_coap);

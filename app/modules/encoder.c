@@ -153,12 +153,12 @@ static int do_func (lua_State *L, uint8 * (*conv_func)(lua_State *, const uint8 
   DECLARE_FUNCTION(toHex);
 
 // Module function map
-static const LUA_REG_TYPE encoder_map[] = {
-  { LSTRKEY("fromBase64"), LFUNCVAL(encoder_fromBase64)  },
-  { LSTRKEY("toBase64"),   LFUNCVAL(encoder_toBase64) },
-  { LSTRKEY("fromHex"),    LFUNCVAL(encoder_fromHex)  },
-  { LSTRKEY("toHex"),      LFUNCVAL(encoder_toHex) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(encoder)
+  LROT_FUNCENTRY( fromBase64, encoder_fromBase64 )
+  LROT_FUNCENTRY( toBase64, encoder_toBase64 )
+  LROT_FUNCENTRY( fromHex, encoder_fromHex )
+  LROT_FUNCENTRY( toHex, encoder_toHex )
+LROT_END( encoder, NULL, 0 )
 
-NODEMCU_MODULE(ENCODER, "encoder", encoder_map, NULL);
+
+NODEMCU_MODULE(ENCODER, "encoder", encoder, NULL);

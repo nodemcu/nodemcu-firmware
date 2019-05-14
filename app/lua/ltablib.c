@@ -13,6 +13,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lrotable.h"
 
 
 #define aux_getn(L,n)	(luaL_checktype(L, n, LUA_TTABLE), luaL_getn(L, n))
@@ -265,22 +266,18 @@ static int sort (lua_State *L) {
 /* }====================================================== */
 
 
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE tab_funcs[] = {
-  {LSTRKEY("concat"), LFUNCVAL(tconcat)},
-  {LSTRKEY("foreach"), LFUNCVAL(foreach)},
-  {LSTRKEY("foreachi"), LFUNCVAL(foreachi)},
-  {LSTRKEY("getn"), LFUNCVAL(getn)},
-  {LSTRKEY("maxn"), LFUNCVAL(maxn)},
-  {LSTRKEY("insert"), LFUNCVAL(tinsert)},
-  {LSTRKEY("remove"), LFUNCVAL(tremove)},
-  {LSTRKEY("setn"), LFUNCVAL(setn)},
-  {LSTRKEY("sort"), LFUNCVAL(sort)},
-  {LNILKEY, LNILVAL}
-};
+LROT_PUBLIC_BEGIN(tab_funcs)
+  LROT_FUNCENTRY( concat, tconcat )
+  LROT_FUNCENTRY( foreach, foreach )
+  LROT_FUNCENTRY( foreachi, foreachi )
+  LROT_FUNCENTRY( getn, getn )
+  LROT_FUNCENTRY( maxn, maxn )
+  LROT_FUNCENTRY( insert, tinsert )
+  LROT_FUNCENTRY( remove, tremove )
+  LROT_FUNCENTRY( setn, setn )
+  LROT_FUNCENTRY( sort, sort )
+LROT_END(tab_funcs, NULL, 0)
 
 LUALIB_API int luaopen_table (lua_State *L) {
-  LREGISTER(L, LUA_TABLIBNAME, tab_funcs);
+  return 1;
 }

@@ -1873,43 +1873,43 @@ static int mqtt_socket_lwt( lua_State* L )
 }
 
 // Module function map
-static const LUA_REG_TYPE mqtt_socket_map[] = {
-  { LSTRKEY( "connect" ),   LFUNCVAL( mqtt_socket_connect ) },
-  { LSTRKEY( "close" ),     LFUNCVAL( mqtt_socket_close ) },
-  { LSTRKEY( "publish" ),   LFUNCVAL( mqtt_socket_publish ) },
-  { LSTRKEY( "subscribe" ), LFUNCVAL( mqtt_socket_subscribe ) },
-  { LSTRKEY( "unsubscribe" ), LFUNCVAL( mqtt_socket_unsubscribe ) },
-  { LSTRKEY( "lwt" ),       LFUNCVAL( mqtt_socket_lwt ) },
-  { LSTRKEY( "on" ),        LFUNCVAL( mqtt_socket_on ) },
-  { LSTRKEY( "__gc" ),      LFUNCVAL( mqtt_delete ) },
-  { LSTRKEY( "__index" ),   LROVAL( mqtt_socket_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(mqtt_socket)
+  LROT_FUNCENTRY( connect, mqtt_socket_connect )
+  LROT_FUNCENTRY( close, mqtt_socket_close )
+  LROT_FUNCENTRY( publish, mqtt_socket_publish )
+  LROT_FUNCENTRY( subscribe, mqtt_socket_subscribe )
+  LROT_FUNCENTRY( unsubscribe, mqtt_socket_unsubscribe )
+  LROT_FUNCENTRY( lwt, mqtt_socket_lwt )
+  LROT_FUNCENTRY( on, mqtt_socket_on )
+  LROT_FUNCENTRY( __gc, mqtt_delete )
+  LROT_TABENTRY( __index, mqtt_socket )
+LROT_END( mqtt_socket, mqtt_socket, 0 )
 
 
-static const LUA_REG_TYPE mqtt_map[] = {
-  { LSTRKEY( "Client" ),                                LFUNCVAL( mqtt_socket_client ) },
 
-  { LSTRKEY( "CONN_FAIL_SERVER_NOT_FOUND" ),            LNUMVAL( MQTT_CONN_FAIL_SERVER_NOT_FOUND ) },
-  { LSTRKEY( "CONN_FAIL_NOT_A_CONNACK_MSG" ),           LNUMVAL( MQTT_CONN_FAIL_NOT_A_CONNACK_MSG ) },
-  { LSTRKEY( "CONN_FAIL_DNS" ),                         LNUMVAL( MQTT_CONN_FAIL_DNS ) },
-  { LSTRKEY( "CONN_FAIL_TIMEOUT_RECEIVING" ),           LNUMVAL( MQTT_CONN_FAIL_TIMEOUT_RECEIVING ) },
-  { LSTRKEY( "CONN_FAIL_TIMEOUT_SENDING" ),             LNUMVAL( MQTT_CONN_FAIL_TIMEOUT_SENDING ) },
-  { LSTRKEY( "CONNACK_ACCEPTED" ),                      LNUMVAL( MQTT_CONNACK_ACCEPTED ) },
-  { LSTRKEY( "CONNACK_REFUSED_PROTOCOL_VER" ),          LNUMVAL( MQTT_CONNACK_REFUSED_PROTOCOL_VER ) },
-  { LSTRKEY( "CONNACK_REFUSED_ID_REJECTED" ),           LNUMVAL( MQTT_CONNACK_REFUSED_ID_REJECTED ) },
-  { LSTRKEY( "CONNACK_REFUSED_SERVER_UNAVAILABLE" ),    LNUMVAL( MQTT_CONNACK_REFUSED_SERVER_UNAVAILABLE ) },
-  { LSTRKEY( "CONNACK_REFUSED_BAD_USER_OR_PASS" ),      LNUMVAL( MQTT_CONNACK_REFUSED_BAD_USER_OR_PASS ) },
-  { LSTRKEY( "CONNACK_REFUSED_NOT_AUTHORIZED" ),        LNUMVAL( MQTT_CONNACK_REFUSED_NOT_AUTHORIZED ) },
+LROT_BEGIN(mqtt)
+  LROT_FUNCENTRY( Client, mqtt_socket_client )
 
-  { LSTRKEY( "__metatable" ),                           LROVAL( mqtt_map ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_NUMENTRY( CONN_FAIL_SERVER_NOT_FOUND, MQTT_CONN_FAIL_SERVER_NOT_FOUND )
+  LROT_NUMENTRY( CONN_FAIL_NOT_A_CONNACK_MSG, MQTT_CONN_FAIL_NOT_A_CONNACK_MSG )
+  LROT_NUMENTRY( CONN_FAIL_DNS, MQTT_CONN_FAIL_DNS )
+  LROT_NUMENTRY( CONN_FAIL_TIMEOUT_RECEIVING, MQTT_CONN_FAIL_TIMEOUT_RECEIVING )
+  LROT_NUMENTRY( CONN_FAIL_TIMEOUT_SENDING, MQTT_CONN_FAIL_TIMEOUT_SENDING )
+  LROT_NUMENTRY( CONNACK_ACCEPTED, MQTT_CONNACK_ACCEPTED )
+  LROT_NUMENTRY( CONNACK_REFUSED_PROTOCOL_VER, MQTT_CONNACK_REFUSED_PROTOCOL_VER )
+  LROT_NUMENTRY( CONNACK_REFUSED_ID_REJECTED, MQTT_CONNACK_REFUSED_ID_REJECTED )
+  LROT_NUMENTRY( CONNACK_REFUSED_SERVER_UNAVAILABLE, MQTT_CONNACK_REFUSED_SERVER_UNAVAILABLE )
+  LROT_NUMENTRY( CONNACK_REFUSED_BAD_USER_OR_PASS, MQTT_CONNACK_REFUSED_BAD_USER_OR_PASS )
+  LROT_NUMENTRY( CONNACK_REFUSED_NOT_AUTHORIZED, MQTT_CONNACK_REFUSED_NOT_AUTHORIZED )
+
+  LROT_TABENTRY( __metatable, mqtt )
+LROT_END( mqtt, mqtt, 0 )
+
 
 int luaopen_mqtt( lua_State *L )
 {
-  luaL_rometatable(L, "mqtt.socket", (void *)mqtt_socket_map);  // create metatable for mqtt.socket
+  luaL_rometatable(L, "mqtt.socket", LROT_TABLEREF(mqtt_socket));
   return 0;
 }
 
-NODEMCU_MODULE(MQTT, "mqtt", mqtt_map, luaopen_mqtt);
+NODEMCU_MODULE(MQTT, "mqtt", mqtt, luaopen_mqtt);

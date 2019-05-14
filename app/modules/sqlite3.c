@@ -25,6 +25,7 @@
 * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     *
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                *
 ************************************************************************/
+#if 0
 #define LSQLITE_VERSION "0.9.4"
 #define LSQLITE_OMIT_UPDATE_HOOK 1
 #define SQLITE_OMIT_PROGRESS_CALLBACK 1
@@ -2429,3 +2430,4 @@ LUALIB_API int luaopen_lsqlite3(lua_State *L) {
 }
 
 NODEMCU_MODULE(SQLITE3, "sqlite3", sqlitelib, luaopen_lsqlite3);
+#endif

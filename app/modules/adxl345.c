@@ -76,10 +76,10 @@ static int adxl345_read(lua_State* L) {
     return 3;
 }
 
-static const LUA_REG_TYPE adxl345_map[] = {
-    { LSTRKEY( "read" ),         LFUNCVAL( adxl345_read )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( adxl345_setup )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(adxl345)
+  LROT_FUNCENTRY( read, adxl345_read )
+  LROT_FUNCENTRY( setup, adxl345_setup )
+LROT_END( adxl345, NULL, 0 )
 
-NODEMCU_MODULE(ADXL345, "adxl345", adxl345_map, NULL);
+
+NODEMCU_MODULE(ADXL345, "adxl345", adxl345, NULL);

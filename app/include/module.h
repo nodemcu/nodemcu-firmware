@@ -2,7 +2,7 @@
 #define __MODULE_H__
 
 #include "user_modules.h"
-#include "lrodefs.h"
+#include "lrotable.h"
 
 /* Registering a module within NodeMCU is really easy these days!
  *
@@ -18,11 +18,11 @@
  *
  * Then simply put a line like this at the bottom of your module file:
  *
- *   NODEMCU_MODULE(MYNAME, "myname", myname_map, luaopen_myname);
+ *   NODEMCU_MODULE(MYNAME, "myname", myname, luaopen_myname);
  *
  * or perhaps
  *
- *   NODEMCU_MODULE(MYNAME, "myname", myname_map, NULL);
+ *   NODEMCU_MODULE(MYNAME, "myname", myname, NULL);
  *
  * if you don't need an init function.
  *
@@ -67,13 +67,8 @@
  */
 #define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
   const LOCK_IN_SECTION(libs) \
-    luaL_Reg MODULE_PASTE_(lua_lib_,cfgname) = { luaname, initfunc }; \
+    luaR_entry MODULE_PASTE_(lua_lib_,cfgname) = { luaname, LRO_FUNCVAL(initfunc) }; \
   const LOCK_IN_SECTION(rotable) \
     luaR_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
-    = {LSTRKEY(luaname), LROVAL(map)}
-
-#if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
-# error "NodeMCU modules must be built with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)"
-#endif
-
+    = {luaname, LRO_ROVAL(map ## _map)}
 #endif

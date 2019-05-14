@@ -14,7 +14,7 @@
 #else
 #define ALIGNED_STRING (__attribute__((aligned(4))) char *)
 #endif
-#define LA_LINES 16
+#define LA_LINES 32
 #define LA_SLOTS 4
 //#define COLLECT_STATS
 
@@ -36,7 +36,7 @@
  * Note that this hash does a couple of prime multiples and a modulus 2^X
  * with is all evaluated in H/W, and adequately randomizes the lookup.
  */
-#define HASH(a,b) (519*((size_t)(a)>>4) + 17*((size_t)(b)>>4))
+#define HASH(a,b) ((((519*(size_t)(a)))>>4) + ((b) ? (b)->tsv.hash: 0))
 
 static struct {
   unsigned hash;
@@ -83,19 +83,18 @@ static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
 const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
   const luaR_entry *pentry = rotable;
   const char *strkey = key ? getstr(key) : ALIGNED_STRING "__metatable" ;
-  size_t      hash   = HASH(rotable, key);
+  unsigned   hash    = HASH(rotable, key);
+
   unsigned    i      = 0;
   int         j      = lookup_cache(hash, rotable);
   unsigned    l      = key ? key->tsv.len : sizeof("__metatable")-1;
 
   if (pentry) {
-    if (j >= 0){
-      if ((pentry[j].key.type == LUA_TSTRING) &&
-        !c_strcmp(pentry[j].key.id.strkey, strkey)) {
-        if (ppos)
-          *ppos = j;
-        return &pentry[j].value;
-      }
+    if (j >= 0 && !c_strcmp(pentry[j].key, strkey)) {
+      if (ppos)
+        *ppos = j;
+//dbg_printf("%3d hit  %p %s\n", (hash>>2) & (LA_LINES-1), rotable, strkey);
+      return &pentry[j].value;
     }
     /*
      * The invariants for 1st word comparison are deferred to here since they
@@ -105,39 +104,21 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
     unsigned name4, mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
     c_memcpy(&name4, strkey, sizeof(name4));
 
-    for(;pentry->key.type != LUA_TNIL; i++, pentry++) {
-      if ((pentry->key.type == LUA_TSTRING) &&
-          ((*(unsigned *)pentry->key.id.strkey ^ name4) & mask4) == 0 &&
-          !c_strcmp(pentry->key.id.strkey, strkey)) {
+    for(;pentry->key != NULL; i++, pentry++) {
+      if (((*(unsigned *)pentry->key ^ name4) & mask4) == 0 &&
+          !c_strcmp(pentry->key, strkey)) {
+//dbg_printf("%p %s hit after %d probes \n", rotable, strkey, (int)(rotable-pentry));
         if (ppos)
           *ppos = i;
-        if (j==-1) {
-          update_cache(hash, rotable, pentry - rotable);
-        } else if (j != (pentry - rotable)) {
-          j = 0;
-        }
-        return &pentry->value;
+        update_cache(hash, rotable, pentry - rotable);
+//dbg_printf("%3d %3d  %p %s\n", (hash>>2) & (LA_LINES-1), (int)(pentry-rotable), rotable, strkey);
+       return &pentry->value;
       }
     }
   }
+//dbg_printf("%p %s miss after %d probes \n", rotable, strkey, (int)(rotable-pentry));
   return luaO_nilobject;
 }
-
-const TValue* luaR_findentryN(ROTable *rotable, luaR_numkey numkey, unsigned *ppos) {
-  unsigned i = 0;
-  const luaR_entry *pentry = rotable;
-  if (pentry) {
-    for ( ;pentry->key.type != LUA_TNIL; i++, pentry++) {
-      if (pentry->key.type == LUA_TNUMBER && (luaR_numkey) pentry->key.id.numkey == numkey) {
-        if (ppos)
-          *ppos = i;
-        return &pentry->value;
-      }
-    }
-  }
-  return NULL;
-}
-
 
 /* Find the metatable of a given table */
 void* luaR_getmeta(ROTable *rotable) {
@@ -147,15 +128,13 @@ void* luaR_getmeta(ROTable *rotable) {
 
 static void luaR_next_helper(lua_State *L, ROTable *pentries, int pos,
                              TValue *key, TValue *val) {
-  setnilvalue(key);
-  setnilvalue(val);
-  if (pentries[pos].key.type != LUA_TNIL) {
+  if (pentries[pos].key) {
     /* Found an entry */
-    if (pentries[pos].key.type == LUA_TSTRING)
-      setsvalue(L, key, luaS_new(L, pentries[pos].key.id.strkey))
-    else
-      setnvalue(key, (lua_Number)pentries[pos].key.id.numkey)
-   setobj2s(L, val, &pentries[pos].value);
+    setsvalue(L, key, luaS_new(L, pentries[pos].key));
+    setobj2s(L, val, &pentries[pos].value);
+  } else {
+    setnilvalue(key);
+    setnilvalue(val);
   }
 }
 
@@ -167,12 +146,10 @@ void luaR_next(lua_State *L, ROTable *rotable, TValue *key, TValue *val) {
   /* Special case: if key is nil, return the first element of the rotable */
   if (ttisnil(key))
     luaR_next_helper(L, rotable, 0, key, val);
-  else if (ttisstring(key) || ttisnumber(key)) {
+  else if (ttisstring(key)) {
     /* Find the previous key again */
     if (ttisstring(key)) {
       luaR_findentry(rotable, rawtsvalue(key), &keypos);
-    } else {
-      luaR_findentryN(rotable, (luaR_numkey)nvalue(key), &keypos);
     }
     /* Advance to next key */
     keypos ++;
