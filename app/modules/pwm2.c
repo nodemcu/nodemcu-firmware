@@ -487,17 +487,17 @@ static int lpwm2_start(lua_State *L) {
 // }
 
 // Module function map
-static const LUA_REG_TYPE pwm2_map[] = {
-    {LSTRKEY("setup_pin_hz"), LFUNCVAL(lpwm2_setup_pin_hz)},
-    {LSTRKEY("setup_pin_sec"), LFUNCVAL(lpwm2_setup_pin_sec)},
-    {LSTRKEY("release_pin"), LFUNCVAL(lpwm2_release_pin)},
-    {LSTRKEY("print_setup"), LFUNCVAL(lpwm2_print_setup)},
-    {LSTRKEY("start"), LFUNCVAL(lpwm2_start)},
-    {LSTRKEY("stop"), LFUNCVAL(lpwm2_stop)},
-    {LSTRKEY("set_duty"), LFUNCVAL(lpwm2_set_duty)},
-    // {LSTRKEY("time_it"), LFUNCVAL(lpwm2_timeit)},
-    // {LSTRKEY("test_tmr_manual"), LFUNCVAL(lpwm2_timing_frc1_manual_load_overhead)},
-    // {LSTRKEY("test_tmr_auto"), LFUNCVAL(lpwm2_timing_frc1_auto_load_overhead)},
-    {LNILKEY, LNILVAL}};
+LROT_BEGIN(pwm2)
+  LROT_FUNCENTRY( setup_pin_hz, lpwm2_setup_pin_hz)
+  LROT_FUNCENTRY( setup_pin_sec, lpwm2_setup_pin_sec)
+  LROT_FUNCENTRY( release_pin, lpwm2_release_pin)
+  LROT_FUNCENTRY( print_setup, lpwm2_print_setup)
+  LROT_FUNCENTRY( start, lpwm2_start)
+  LROT_FUNCENTRY( stop, lpwm2_stop)
+  LROT_FUNCENTRY( set_duty, lpwm2_set_duty)
+  // LROT_FUNCENTRY( time_it, lpwm2_timeit)
+  // LROT_FUNCENTRY( test_tmr_manual, lpwm2_timing_frc1_manual_load_overhead)
+  // LROT_FUNCENTRY( test_tmr_auto, lpwm2_timing_frc1_auto_load_overhead)
+LROT_END( pwm2, NULL, 0 )
 
-NODEMCU_MODULE(PWM2, "pwm2", pwm2_map, lpwm2_open);
+NODEMCU_MODULE(PWM2, "pwm2", pwm2, lpwm2_open);
