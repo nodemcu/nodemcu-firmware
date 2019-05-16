@@ -38,11 +38,13 @@
  */
 #define HASH(a,b) ((((519*(size_t)(a)))>>4) + ((b) ? (b)->tsv.hash: 0))
 
-static struct {
+typedef struct {
   unsigned hash;
   unsigned addr:24;
   unsigned ndx:8;
-} cache[LA_LINES][LA_SLOTS];
+} cache_line_t;
+
+static cache_line_t IRAM_DATA_ATTR cache[LA_LINES][LA_SLOTS];
 
 #ifdef COLLECT_STATS
 unsigned cache_stats[3];
@@ -55,10 +57,10 @@ static int lookup_cache(unsigned hash, ROTable *rotable) {
   int i = (hash>>2) & (LA_LINES-1), j;
 
   for (j = 0; j<LA_SLOTS; j++) {
-    if (cache[i][j].hash == hash &&
-        ((size_t)rotable & 0xffffffu) == cache[i][j].addr) {
+    cache_line_t cl = cache[i][j];
+    if (cl.hash == hash && ((size_t)rotable & 0xffffffu) == cl.addr) {
       COUNT(0);
-      return cache[i][j].ndx;
+      return cl.ndx;
     }
   }
   COUNT(1);
@@ -67,14 +69,13 @@ static int lookup_cache(unsigned hash, ROTable *rotable) {
 
 static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
   int i = (hash)>>2 & (LA_LINES-1), j;
+  cache_line_t cl = {hash, (size_t) rotable, ndx};
   COUNT(2);
   if (ndx>0xffu)
     return;
   for (j = LA_SLOTS-1; j>0; j--)
     cache[i][j] = cache[i][j-1];
-  cache[i][0].hash = hash;
-  cache[i][0].addr = (size_t) rotable;
-  cache[i][0].ndx  = ndx;
+  cache[i][0] = cl;
 }
 /*
  * Find a string key entry in a rotable and return it.  Note that this internally

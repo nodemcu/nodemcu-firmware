@@ -278,6 +278,8 @@ extern void luaL_dbgbreak(void);
 #define ICACHE_FLASH_RESERVED_ATTR \
   __attribute__((section(".irom.reserved." __FILE__ "." ICACHE_STRING(__LINE__)),\
                  used,unused,aligned(INTERNAL_FLASH_SECTOR_SIZE)))
+#define IRAM_DATA_ATTR \
+  __attribute__((section(".iram0.data." __FILE__ "." ICACHE_STRING(__LINE__))))
 
 #ifdef  GPIO_SAFE_NO_INTR_ENABLE
 #define NO_INTR_CODE ICACHE_RAM_ATTR __attribute__ ((noinline))

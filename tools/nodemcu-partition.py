@@ -22,7 +22,8 @@
 
 import os
 import sys
-sys.path.append(os.path.realpath(os.path.dirname(__file__) + '/toolchains/'))
+print os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/toolchains/')
 import esptool
 
 import io
