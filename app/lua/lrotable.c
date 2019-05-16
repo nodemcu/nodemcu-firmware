@@ -83,7 +83,6 @@ static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
   cl.addr = (size_t) rotable;  // code using them.
   cl.ndx  = ndx;
 #endif
-
   COUNT(2);
   if (ndx>0xffu)
     return;
