@@ -14,6 +14,12 @@
 #else
 #define ALIGNED_STRING (__attribute__((aligned(4))) char *)
 #endif
+
+#ifdef LUA_CROSS_COMPILER
+#undef IRAM_DATA_ATTR
+#define IRAM_DATA_ATTR
+#endif
+
 #define LA_LINES 32
 #define LA_SLOTS 4
 //#define COLLECT_STATS
@@ -36,7 +42,7 @@
  * Note that this hash does a couple of prime multiples and a modulus 2^X
  * with is all evaluated in H/W, and adequately randomizes the lookup.
  */
-#define HASH(a,b) ((((519*(size_t)(a)))>>4) + ((b) ? (b)->tsv.hash: 0))
+#define HASH(a,b) (unsigned)((((519*(size_t)(a)))>>4) + ((b) ? (b)->tsv.hash: 0))
 
 typedef struct {
   unsigned hash;
