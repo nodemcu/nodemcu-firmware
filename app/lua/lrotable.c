@@ -75,7 +75,15 @@ static int lookup_cache(unsigned hash, ROTable *rotable) {
 
 static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
   int i = (hash)>>2 & (LA_LINES-1), j;
+#ifndef _MSC_VER
   cache_line_t cl = {hash, (size_t) rotable, ndx};
+#else
+  cache_line_t cl;             // MSC doesn't allow non-scalar initialisers, which
+  cl.hash = hash;              // is a pity because xtensa gcc generates optimum   
+  cl.addr = (size_t) rotable;  // code using them.
+  cl.ndx  = ndx;
+#endif
+
   COUNT(2);
   if (ndx>0xffu)
     return;
