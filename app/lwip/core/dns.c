@@ -222,7 +222,7 @@ static void dns_check_entries(void);
 /* DNS variables */
 static struct udp_pcb        *dns_pcb;
 static u8_t                   dns_seqno;
-static struct dns_table_entry dns_table[DNS_TABLE_SIZE];
+static struct dns_table_entry IRAM_DATA_ATTR dns_table[DNS_TABLE_SIZE];
 static ip_addr_t              dns_servers[DNS_MAX_SERVERS];
 /** Contiguous buffer for processing responses */
 //static u8_t                   dns_payload_buffer[LWIP_MEM_ALIGN_BUFFER(DNS_MSG_SIZE)];
