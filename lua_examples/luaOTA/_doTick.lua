@@ -1,4 +1,4 @@
-tmr.stop(0)--SAFETRIM
+if (self.timer) then self.timer:stop() end--SAFETRIM
 -- function _doTick(self)
 
   -- Upvals
@@ -32,7 +32,7 @@ tmr.stop(0)--SAFETRIM
     -- some resources that are no longer needed and set backstop timer for general
     -- timeout.  This also dereferences the previous doTick cb so it can now be GCed.
     collectgarbage()
-    tmr.alarm(0, 30000, tmr.ALARM_SINGLE, self.startApp)
+    self.timer:alarm(0, 30000, tmr.ALARM_SINGLE, self.startApp)
     return self:_provision(socket,rec)
   end
 
@@ -67,7 +67,7 @@ tmr.stop(0)--SAFETRIM
       return self.startApp("OK: Timeout on waiting for wifi station setup")
 
     elseif (tick_count == 26) then        -- wait up to 2.5 secs for TCP response
-      tmr.unregister(0)
+      self.timer:unregister()
       pcall(conn.close, conn)
       self.socket=nil
       return startApp("OK: Timeout on waiting for provision service response")
