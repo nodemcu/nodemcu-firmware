@@ -9,18 +9,23 @@ TOP_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 # RELEASE = lastest pulls the latest V3.0.0 branch version as at the issue of this make
 # otherwise it pulls the labelled version in the SDK version's release directory
 #
-ifeq ("$(RELEASE)","latest")
-  export RELEASE:=$(RELEASE)
-  SDK_VER        := 3.0.0-dev-190412
-  SDK_COMMIT_SHA1:= 39ec2d4573eb77fda73f6afcf6dd1b3c41e74fcd
-  SDK_FILE_SHA1  := 44f7724490739536526fc4298d6fcc2fa2d29471
-  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_COMMIT_SHA1)
-  SDK_FILE_VER   := $(SDK_COMMIT_SHA1)
-else
-  SDK_VER        := 3.0
-  SDK_FILE_SHA1  := 029fc23fe87e03c9852de636490b2d7b9e07f01a
+ifeq ("$(RELEASE)","latest-3.0")
+  SDK_VER        := 3.0.0
+  SDK_FILE_SHA1  := NA
+  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-release-v$(SDK_VER)
+  SDK_FILE_VER   := release/v$(SDK_VER)
+else ifeq ("$(RELEASE)","master")
+  SDK_VER        := master
+  SDK_FILE_SHA1  := NA
   SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_VER)
-  SDK_FILE_VER   := v$(SDK_VER)
+  SDK_FILE_VER   := $(SDK_VER)
+else
+# SDK_VER        := 3.0
+# SDK_FILE_VER   := v$(SDK_VER)
+  SDK_FILE_VER   := e4434aa730e78c63040ace360493aef420ec267c
+  SDK_VER        := 3.0-e4434aa
+  SDK_FILE_SHA1  := ac6528a6a206d3d4c220e4035ced423eb314cfbf
+  SDK_ZIP_ROOT   := ESP8266_NONOS_SDK-$(SDK_FILE_VER)
 endif
 SDK_REL_DIR      := sdk/esp_iot_sdk_v$(SDK_VER)
 SDK_DIR          := $(TOP_DIR)/$(SDK_REL_DIR)
@@ -314,10 +319,10 @@ $(TOP_DIR)/sdk/.extracted-$(SDK_VER): $(TOP_DIR)/cache/$(SDK_FILE_VER).zip
 	(cd "$(dir $@)" && \
 	 rm -fr esp_iot_sdk_v$(SDK_VER) ESP8266_NONOS_SDK-* && \
 	 unzip $(TOP_DIR)/cache/$(SDK_FILE_VER).zip \
-	       '$(SDK_ZIP_ROOT)/lib/*' \
-	       '$(SDK_ZIP_ROOT)/ld/*.v6.ld' \
-	       '$(SDK_ZIP_ROOT)/include/*' \
-	       '$(SDK_ZIP_ROOT)/bin/esp_init_data_default_v05.bin' \
+	       '*/lib/*' \
+	       '*/ld/*.v6.ld' \
+	       '*/include/*' \
+	       '*/bin/esp_init_data_default_v05.bin' \
 	)
 	mv $(dir $@)/$(SDK_ZIP_ROOT) $(dir $@)/esp_iot_sdk_v$(SDK_VER)
 	touch $@
@@ -334,7 +339,7 @@ $(TOP_DIR)/cache/$(SDK_FILE_VER).zip:
 	mkdir -p "$(dir $@)"
 	$(summary) WGET $(patsubst $(TOP_DIR)/%,%,$@)
 	$(WGET) $(GITHUB_SDK)/archive/$(SDK_FILE_VER).zip -O $@ || { rm -f "$@"; exit 1; }
-	(echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c -) || { rm -f "$@"; exit 1; }
+	if test "$(SDK_FILE_SHA1)" != "NA"; then echo "$(SDK_FILE_SHA1)  $@" | sha1sum -c - || { rm -f "$@"; exit 1; }; fi
 
 clean:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)

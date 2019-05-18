@@ -28,10 +28,10 @@ static spiffs fs;
 #define MASK_1MB (0x100000-1)
 #define ALIGN (0x2000)
 
-static u8_t spiffs_work_buf[LOG_PAGE_SIZE*2];
+static u8_t IRAM_DATA_ATTR spiffs_work_buf[LOG_PAGE_SIZE*2];
 static u8_t spiffs_fds[sizeof(spiffs_fd) * SPIFFS_MAX_OPEN_FILES];
 #if SPIFFS_CACHE
-static u8_t myspiffs_cache[20 + (LOG_PAGE_SIZE+20)*4];
+static u8_t IRAM_DATA_ATTR myspiffs_cache[20 + (LOG_PAGE_SIZE+20)*4];
 #endif
 
 static s32_t my_spiffs_read(u32_t addr, u32_t size, u8_t *dst) {

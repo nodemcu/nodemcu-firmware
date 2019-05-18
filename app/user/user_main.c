@@ -144,7 +144,7 @@ void user_pre_init(void) {
         os_printf("system SPI FI size:%u, Flash size: %u\n", fs_size_code, flash_size );
     }
 
-    pt = os_malloc(i);  // We will work on and register a RAM copy of the PT
+    pt = os_malloc_iram(i);  // We will work on and register a copy of the PT in iRAM
     // Return if anything is amiss; The SDK will halt if the PT hasn't been registered
     if ( !rcr_pt || !pt || n * sizeof(partition_item_t) != i) {
         return;
