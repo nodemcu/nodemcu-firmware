@@ -65,6 +65,18 @@ Another reason for watchdog interrupt to occur is due to mixing otherwise not ve
 
 Both cases best are anlyzed using [pwm.get_timer_data()](#get_timer_data) wathcing values of `interruptTimerCPUTicks` and `interruptTimerTicks`. For `interruptTimerCPUTicks` and CPU80MHz anything below 400 for 12 pins or 250 for 1 pin would be cause for special attention. For CPU160MHz these values can drop almost double.
 
+## Differences with PWM module
+
+PWM and PWM2 are modules doing similar job and have much in common. 
+Here are few PWM2 highlights compared to PWM module:
+- PWM2 is using TIMER1 in exclusively, which allows for better quality PWM signal given CPU is not starving
+- PWM2 can generate PWM with frequency close to 200kHz with CPU80 and 400kHz with CPU160
+- PWM2 supports CPU160
+- PWM2 supports virtually all GPIO ports at the same time
+Unline PWM2, PWM can:
+- generate PWM pulse with a little bit bigger duty cycle
+- can be used at the same time with some other modules like gpio.pulse
+
 ## pwm2.setup_pin_hz()
 Assigns PWM frequency expressed as Hz to given pin.
 This method is suitable for setting up frequencies in the range of >=1Hz.
@@ -219,6 +231,7 @@ Prints internal data structures related to given GPIO pin. This method is useful
 `pin` 1~12, IO index
 
 #### Returns
+`isPinSetup` bool, if 1 pin is setup
 `duty` int, assigned duty
 `pulseResolutions` int, assigned pulse periods
 `divisableFrequency` int, assigned frequency
@@ -228,7 +241,7 @@ Prints internal data structures related to given GPIO pin. This method is useful
 
 #### Example
 ```
-duty, pulseResolutions, divisableFrequency, frequencyDivisor, resolutionCPUTicks, resolutionInterruptCounterMultiplier = pwm2.get_pin_data(4)
+isPinSetup, duty, pulseResolutions, divisableFrequency, frequencyDivisor, resolutionCPUTicks, resolutionInterruptCounterMultiplier = pwm2.get_pin_data(4)
 ```
 
 #### See also
