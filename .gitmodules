@@ -4,3 +4,6 @@
 [submodule "app/ucglib/ucg"]
         path = app/ucglib/ucg
         url = https://github.com/olikraus/Ucglib_Arduino.git
+[submodule "app/modules/sdm"]
+	path = app/modules/sdm
+	url = https://gitlab.com/matsievskiysv/sdm

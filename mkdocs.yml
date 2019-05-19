@@ -95,6 +95,7 @@ pages:
     - 'rtcfifo': 'modules/rtcfifo.md'
     - 'rtcmem': 'modules/rtcmem.md'
     - 'rtctime': 'modules/rtctime.md'
+    - 'sdm' :  'modules/sdm.md'
     - 'si7021' : 'modules/si7021.md'
     - 'sigma delta': 'modules/sigma-delta.md'
     - 'sjson': 'modules/sjson.md'
