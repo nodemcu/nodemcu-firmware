@@ -918,11 +918,6 @@ static int l_check_memlimit(lua_State *L, size_t needbytes) {
   return (g->totalbytes >= limit) ? 1 : 0;
 }
 
-#ifndef LUA_CROSS_COMPILER
-#define REALLOC(p,o,n) (void *) this_realloc(p,o,n)
-#else
-#define REALLOC(p,o,n) (void *) (ptr? this_realloc(p,o,n) : c_malloc(n))
-#endif
 
 static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   lua_State *L = (lua_State *)ud;
@@ -951,11 +946,10 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     if(G(L)->memlimit > 0 && (mode & EGC_ON_MEM_LIMIT) && l_check_memlimit(L, nsize - osize))
       return NULL;
   }
-  nptr = REALLOC(ptr, osize, nsize);
+  nptr = (void *)this_realloc(ptr, osize, nsize);
   if (nptr == NULL && L != NULL && (mode & EGC_ON_ALLOC_FAILURE)) {
-    dbg_printf("Emergency full collection\n");  /**** DEBUG ***/
     luaC_fullgc(L); /* emergency full collection. */
-    nptr = REALLOC(ptr, osize, nsize); /* try allocation again */
+    nptr = (void *)this_realloc(ptr, osize, nsize); /* try allocation again */
   }
   return nptr;
 }

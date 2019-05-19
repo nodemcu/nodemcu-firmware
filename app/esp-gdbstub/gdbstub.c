@@ -107,7 +107,7 @@ extern void xthal_set_intenable(int);
 #define OBUFLEN 32
 
 //The asm stub saves the Xtensa registers here when a debugging exception happens.
-struct XTensa_exception_frame_s IRAM_DATA_ATTR gdbstub_savedRegs;
+struct XTensa_exception_frame_s gdbstub_savedRegs;
 #if GDBSTUB_USE_OWN_STACK
 //This is the debugging exception stack.
 int exceptionStack[256];
