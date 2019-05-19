@@ -11,3 +11,6 @@
 [submodule "components/qrcodegen/qrcodegen"]
 	path = components/qrcodegen/qrcodegen
 	url = https://github.com/nayuki/QR-Code-generator.git
+[submodule "components/sdm"]
+	path = components/sdm
+	url = https://gitlab.com/matsievskiysv/sdm
