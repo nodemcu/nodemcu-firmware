@@ -15,11 +15,6 @@
 #define ALIGNED_STRING (__attribute__((aligned(4))) char *)
 #endif
 
-#ifdef LUA_CROSS_COMPILER
-#undef IRAM_DATA_ATTR
-#define IRAM_DATA_ATTR
-#endif
-
 #define LA_LINES 32
 #define LA_SLOTS 4
 //#define COLLECT_STATS
@@ -50,7 +45,7 @@ typedef struct {
   unsigned ndx:8;
 } cache_line_t;
 
-static cache_line_t IRAM_DATA_ATTR cache[LA_LINES][LA_SLOTS];
+static cache_line_t cache [LA_LINES][LA_SLOTS];
 
 #ifdef COLLECT_STATS
 unsigned cache_stats[3];

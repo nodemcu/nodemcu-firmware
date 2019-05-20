@@ -177,7 +177,7 @@ struct dns_table_entry {
   u8_t  seqno;
   u8_t  err;
   u32_t ttl;
-  char name[DNS_MAX_NAME_LENGTH];
+  char *name;
   ip_addr_t ipaddr;
   /* pointer to callback on DNS query done */
   dns_found_callback found;
@@ -222,7 +222,7 @@ static void dns_check_entries(void);
 /* DNS variables */
 static struct udp_pcb        *dns_pcb;
 static u8_t                   dns_seqno;
-static struct dns_table_entry IRAM_DATA_ATTR dns_table[DNS_TABLE_SIZE];
+static struct dns_table_entry dns_table[DNS_TABLE_SIZE];
 static ip_addr_t              dns_servers[DNS_MAX_SERVERS];
 /** Contiguous buffer for processing responses */
 //static u8_t                   dns_payload_buffer[LWIP_MEM_ALIGN_BUFFER(DNS_MSG_SIZE)];
@@ -924,11 +924,14 @@ dns_enqueue(const char *name, dns_found_callback found, void *callback_arg)
   LWIP_DEBUGF(DNS_DEBUG, ("dns_enqueue: \"%s\": use DNS entry %"U16_F"\n", name, (u16_t)(i)));
 
   /* fill the entry */
+  namelen = LWIP_MIN(os_strlen(name), DNS_MAX_NAME_LENGTH-1);
+  if ((pEntry->name = (char *) mem_realloc(pEntry->name, namelen+1)) == NULL) {
+    return ERR_MEM;
+  }
   pEntry->state = DNS_STATE_NEW;
   pEntry->seqno = dns_seqno++;
   pEntry->found = found;
   pEntry->arg   = callback_arg;
-  namelen = LWIP_MIN(os_strlen(name), DNS_MAX_NAME_LENGTH-1);
   MEMCPY(pEntry->name, name, namelen);
   pEntry->name[namelen] = 0;
 
