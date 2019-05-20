@@ -112,6 +112,7 @@ SECTIONS
     *libphy.a:*(     .literal .literal.* .text .text.*)
     *libpp.a:*(      .literal .literal.* .text .text.*)
     *libgcc.a:*(     .literal .literal.* .text .text.*)
+    *libnet80211.a:*(.literal            .text        )
    /*
     * The following SDK libraries have .literal and .text sections, but are
     * either not used in NodeMCU or are safe to execute out of in iROM: 
