@@ -27,7 +27,7 @@ static int lpwm2_get_timer_data(lua_State *L) {
   lua_pushboolean(L, pwm2_get_module_data()->setupData.isStarted);
   lua_pushinteger(L, pwm2_get_module_data()->setupData.interruptTimerCPUTicks);
   lua_pushinteger(L, pwm2_get_module_data()->setupData.interruptTimerTicks);
-  return 0;
+  return 3;
 }
 
 static int lpwm2_get_pin_data(lua_State *L) {
@@ -40,7 +40,7 @@ static int lpwm2_get_pin_data(lua_State *L) {
   lua_pushinteger(L, pwm2_get_module_data()->setupData.pin[pin].frequencyDivisor);
   lua_pushinteger(L, pwm2_get_module_data()->setupData.pin[pin].resolutionCPUTicks);
   lua_pushinteger(L, pwm2_get_module_data()->setupData.pin[pin].resolutionInterruptCounterMultiplier);
-  return 0;
+  return 7;
 }
 
 static int lpwm2_setup_pin_common(lua_State *L, const bool isFreqHz) {
