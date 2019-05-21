@@ -15,7 +15,7 @@
 #undef LNILVAL
 #undef LREGISTER
 
-#if (MIN_OPT_LEVEL > 0) && (LUA_OPTIMIZE_MEMORY >= MIN_OPT_LEVEL)
+#if LUA_OPTIMIZE_MEMORY >=1
 #define LUA_REG_TYPE                luaR_entry
 #define LSTRKEY                     LRO_STRKEY
 #define LNUMKEY                     LRO_NUMKEY
@@ -25,8 +25,7 @@
 #define LNUMVAL                     LRO_NUMVAL
 #define LROVAL                      LRO_ROVAL
 #define LNILVAL                     LRO_NILVAL
-#define LREGISTER(L, name, table)\
-  return 0
+#define LREGISTER(L, name, table) return 0
 #else
 #define LUA_REG_TYPE                luaL_reg
 #define LSTRKEY(x)                  x
@@ -36,6 +35,20 @@
 #define LREGISTER(L, name, table)\
   luaL_register(L, name, table);\
   return 1
+#endif
+
+#if 0
+#define LROT_TABLE(t)        static const LUA_REG_TYPE t ## _map[];
+#define LROT_TABLEREF(t)     ((void *) t ## _map)
+#define LROT_BEGIN(t)        static const LUA_REG_TYPE t ## _map [] = {
+#define LROT_PUBLIC_BEGIN(t) const LUA_REG_TYPE t ## _map[] = {
+#define LROT_EXTERN(t)       extern const LUA_REG_TYPE t ## _map[]
+#define LROT_TABENTRY(n,t)   {LRO_STRKEY(#n), LRO_ROVAL(t ## _map)},
+#define LROT_FUNCENTRY(n,f)  {LRO_STRKEY(#n), LRO_FUNCVAL(f)},
+#define LROT_NUMENTRY(n,x)   {LRO_STRKEY(#n), LRO_NUMVAL(x)},
+#define LROT_LUDENTRY(n,x)   {LRO_STRKEY(#n), LRO_LUDATA((void *) x)},
+#define LROT_END(t,mt, f)    {LRO_NILKEY, LRO_NILVAL} };
+#define LREGISTER(L, name, table) return 0
 #endif
 
 #endif /* lrodefs_h */

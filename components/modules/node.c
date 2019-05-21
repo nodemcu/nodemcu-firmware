@@ -371,40 +371,37 @@ static int node_uptime(lua_State *L)
 }
 
 
-static const LUA_REG_TYPE node_egc_map[] = {
-  { LSTRKEY( "setmode" ),           LFUNCVAL( node_egc_setmode ) },
-  { LSTRKEY( "NOT_ACTIVE" ),        LNUMVAL( EGC_NOT_ACTIVE ) },
-  { LSTRKEY( "ON_ALLOC_FAILURE" ),  LNUMVAL( EGC_ON_ALLOC_FAILURE ) },
-  { LSTRKEY( "ON_MEM_LIMIT" ),      LNUMVAL( EGC_ON_MEM_LIMIT ) },
-  { LSTRKEY( "ALWAYS" ),            LNUMVAL( EGC_ALWAYS ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(node_egc)
+  LROT_FUNCENTRY( setmode,           node_egc_setmode )
+  LROT_NUMENTRY ( NOT_ACTIVE,        EGC_NOT_ACTIVE )
+  LROT_NUMENTRY ( ON_ALLOC_FAILURE,  EGC_ON_ALLOC_FAILURE )
+  LROT_NUMENTRY ( ON_MEM_LIMIT,      EGC_ON_MEM_LIMIT )
+  LROT_NUMENTRY ( ALWAYS,            EGC_ALWAYS )
+LROT_END(node_egc, NULL, 0)
 
 
-static const LUA_REG_TYPE node_task_map[] = {
-  { LSTRKEY( "post" ),            LFUNCVAL( node_task_post ) },
-  { LSTRKEY( "LOW_PRIORITY" ),    LNUMVAL( TASK_PRIORITY_LOW ) },
-  { LSTRKEY( "MEDIUM_PRIORITY" ), LNUMVAL( TASK_PRIORITY_MEDIUM ) },
-  { LSTRKEY( "HIGH_PRIORITY" ),   LNUMVAL( TASK_PRIORITY_HIGH ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(node_task)
+  LROT_FUNCENTRY( post,            node_task_post )
+  LROT_NUMENTRY ( LOW_PRIORITY,    TASK_PRIORITY_LOW )
+  LROT_NUMENTRY ( MEDIUM_PRIORITY, TASK_PRIORITY_MEDIUM )
+  LROT_NUMENTRY ( HIGH_PRIORITY,   TASK_PRIORITY_HIGH )
+LROT_END(node_task, NULL, 0)
 
 
-static const LUA_REG_TYPE node_map[] =
-{
-  { LSTRKEY( "chipid" ),    LFUNCVAL( node_chipid ) },
-  { LSTRKEY( "compile" ),   LFUNCVAL( node_compile ) },
-  { LSTRKEY( "dsleep" ),    LFUNCVAL( node_dsleep ) },
-  { LSTRKEY( "egc" ),       LROVAL( node_egc_map ) },
-  { LSTRKEY( "heap" ),      LFUNCVAL( node_heap )  },
-  { LSTRKEY( "input" ),     LFUNCVAL( node_input ) },
-  { LSTRKEY( "output" ),     LFUNCVAL( node_output ) },
-  { LSTRKEY( "osprint" ),   LFUNCVAL( node_osprint ) },
-  { LSTRKEY( "restart" ),   LFUNCVAL( node_restart ) },
-  { LSTRKEY( "stripdebug"), LFUNCVAL( node_stripdebug ) },
-  { LSTRKEY( "task" ),      LROVAL( node_task_map ) },
-  { LSTRKEY( "uptime" ),    LFUNCVAL( node_uptime ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(node)
+  LROT_FUNCENTRY( chipid,     node_chipid )
+  LROT_FUNCENTRY( compile,    node_compile )
+  LROT_FUNCENTRY( dsleep,     node_dsleep )
+  LROT_TABENTRY ( egc,        node_egc )
+  LROT_FUNCENTRY( heap,       node_heap )
+  LROT_FUNCENTRY( input,      node_input )
+  LROT_FUNCENTRY( output,     node_output )
+  LROT_FUNCENTRY( osprint,    node_osprint )
+  LROT_FUNCENTRY( restart,    node_restart )
+  LROT_FUNCENTRY( stripdebug, node_stripdebug )
+  LROT_TABENTRY ( task,       node_task )
+  LROT_FUNCENTRY( uptime,     node_uptime )
+LROT_END(node, NULL, 0)
 
-NODEMCU_MODULE(NODE, "node", node_map, NULL);
+
+NODEMCU_MODULE(NODE, "node", node, NULL);

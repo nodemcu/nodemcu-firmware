@@ -10,7 +10,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "lcode.h"
 #include "ldebug.h"
@@ -916,12 +916,11 @@ static int block_follow (int token) {
 static void block (LexState *ls) {
   /* block -> chunk */
   FuncState *fs = ls->fs;
-  BlockCnt *pbl = (BlockCnt*)luaM_malloc(ls->L,sizeof(BlockCnt));
-  enterblock(fs, pbl, 0);
+  BlockCnt bl;
+  enterblock(fs, &bl, 0);
   chunk(ls);
-  lua_assert(pbl->breaklist == NO_JUMP);
+  lua_assert(bl.breaklist == NO_JUMP);
   leaveblock(fs);
-  luaM_free(ls->L,pbl);
 }
 
 
@@ -1081,13 +1080,13 @@ static int exp1 (LexState *ls) {
 
 static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
   /* forbody -> DO block */
-  BlockCnt *pbl = (BlockCnt*)luaM_malloc(ls->L,sizeof(BlockCnt));
+  BlockCnt bl;
   FuncState *fs = ls->fs;
   int prep, endfor;
   adjustlocalvars(ls, 3);  /* control variables */
   checknext(ls, TK_DO);
   prep = isnum ? luaK_codeAsBx(fs, OP_FORPREP, base, NO_JUMP) : luaK_jump(fs);
-  enterblock(fs, pbl, 0);  /* scope for declared variables */
+  enterblock(fs, &bl, 0);  /* scope for declared variables */
   adjustlocalvars(ls, nvars);
   luaK_reserveregs(fs, nvars);
   block(ls);
@@ -1097,7 +1096,6 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
                      luaK_codeABC(fs, OP_TFORLOOP, base, 0, nvars);
   luaK_fixline(fs, line);  /* pretend that `OP_FOR' starts the loop */
   luaK_patchlist(fs, (isnum ? endfor : luaK_jump(fs)), prep + 1);
-  luaM_free(ls->L,pbl);
 }
 
 

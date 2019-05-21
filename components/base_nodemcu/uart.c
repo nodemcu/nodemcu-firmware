@@ -256,30 +256,29 @@ static int uart_getconfig(lua_State* L) {
 }
 
 // Module function map
-static const LUA_REG_TYPE uart_map[] =  {
-  { LSTRKEY( "setup" ), LFUNCVAL( uart_setup ) },
-  { LSTRKEY( "write" ), LFUNCVAL( uart_write ) },
-  { LSTRKEY( "start" ), LFUNCVAL( uart_start ) },
-  { LSTRKEY( "stop" ), LFUNCVAL( uart_stop ) },
-  { LSTRKEY( "on" ),    LFUNCVAL( uart_on ) },
-  { LSTRKEY( "setmode" ), LFUNCVAL( uart_setmode ) },
-  { LSTRKEY( "getconfig" ), LFUNCVAL( uart_getconfig ) },
-  { LSTRKEY( "STOPBITS_1" ),   LNUMVAL( PLATFORM_UART_STOPBITS_1 ) },
-  { LSTRKEY( "STOPBITS_1_5" ), LNUMVAL( PLATFORM_UART_STOPBITS_1_5 ) },
-  { LSTRKEY( "STOPBITS_2" ),   LNUMVAL( PLATFORM_UART_STOPBITS_2 ) },
-  { LSTRKEY( "PARITY_NONE" ),  LNUMVAL( PLATFORM_UART_PARITY_NONE ) },
-  { LSTRKEY( "PARITY_EVEN" ),  LNUMVAL( PLATFORM_UART_PARITY_EVEN ) },
-  { LSTRKEY( "PARITY_ODD" ),   LNUMVAL( PLATFORM_UART_PARITY_ODD ) },
-  { LSTRKEY( "FLOWCTRL_NONE" ),   LNUMVAL( PLATFORM_UART_FLOW_NONE ) },
-  { LSTRKEY( "FLOWCTRL_CTS" ),   LNUMVAL( PLATFORM_UART_FLOW_CTS ) },
-  { LSTRKEY( "FLOWCTRL_RTS" ),   LNUMVAL( PLATFORM_UART_FLOW_RTS ) },
-  { LSTRKEY( "MODE_UART" ),   LNUMVAL( PLATFORM_UART_MODE_UART ) },
-  { LSTRKEY( "MODE_RS485_COLLISION_DETECT" ),   LNUMVAL( PLATFORM_UART_MODE_RS485_COLLISION_DETECT ) },
-  { LSTRKEY( "MODE_RS485_APP_CONTROL" ),   LNUMVAL( PLATFORM_UART_MODE_RS485_APP_CONTROL ) },
-  { LSTRKEY( "MODE_RS485_HALF_DUPLEX" ),   LNUMVAL( PLATFORM_UART_MODE_HALF_DUPLEX ) },
-  { LSTRKEY( "MODE_IRDA" ),   LNUMVAL( PLATFORM_UART_MODE_IRDA ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(uart)
+  LROT_FUNCENTRY( setup,                      uart_setup )
+  LROT_FUNCENTRY( write,                      uart_write )
+  LROT_FUNCENTRY( start,                      uart_start )
+  LROT_FUNCENTRY( stop,                       uart_stop )
+  LROT_FUNCENTRY( on,                         uart_on )
+  LROT_FUNCENTRY( setmode,                    uart_setmode )
+  LROT_FUNCENTRY( getconfig,                  uart_getconfig )
+  LROT_NUMENTRY( STOPBITS_1,                  PLATFORM_UART_STOPBITS_1 )
+  LROT_NUMENTRY( STOPBITS_1_5,                PLATFORM_UART_STOPBITS_1_5 )
+  LROT_NUMENTRY( STOPBITS_2,                  PLATFORM_UART_STOPBITS_2 )
+  LROT_NUMENTRY( PARITY_NONE,                 PLATFORM_UART_PARITY_NONE )
+  LROT_NUMENTRY( PARITY_EVEN,                 PLATFORM_UART_PARITY_EVEN )
+  LROT_NUMENTRY( PARITY_ODD,                  PLATFORM_UART_PARITY_ODD )
+  LROT_NUMENTRY( FLOWCTRL_NONE,               PLATFORM_UART_FLOW_NONE )
+  LROT_NUMENTRY( FLOWCTRL_CTS,                PLATFORM_UART_FLOW_CTS )
+  LROT_NUMENTRY( FLOWCTRL_RTS,                PLATFORM_UART_FLOW_RTS )
+  LROT_NUMENTRY( MODE_UART, 	              PLATFORM_UART_MODE_UART )
+  LROT_NUMENTRY( MODE_RS485_COLLISION_DETECT, PLATFORM_UART_MODE_RS485_COLLISION_DETECT )
+  LROT_NUMENTRY( MODE_RS485_APP_CONTROL,      PLATFORM_UART_MODE_RS485_APP_CONTROL )
+  LROT_NUMENTRY( MODE_RS485_HALF_DUPLEX,      PLATFORM_UART_MODE_HALF_DUPLEX )
+  LROT_NUMENTRY( MODE_IRDA, 		      PLATFORM_UART_MODE_IRDA )
+LROT_END(uart, NULL, 0)
 
 int luaopen_uart( lua_State *L ) {
   uart_status_t *us;
@@ -293,4 +292,4 @@ int luaopen_uart( lua_State *L ) {
   return 0;
 }
 
-NODEMCU_MODULE(UART, "uart", uart_map, luaopen_uart);
+NODEMCU_MODULE(UART, "uart", uart, luaopen_uart);

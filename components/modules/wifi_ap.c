@@ -125,72 +125,69 @@ void wifi_ap_init (void)
 
 static int wifi_ap_setip(lua_State *L)
 {
-	tcpip_adapter_ip_info_t ipInfo;
-	ip_addr_t  dns;
-	uint8_t opt;
-	size_t len;
-	const char *str;
-	
-	luaL_checkanytable (L, 1);
-	
-	//memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
-	
-	lua_getfield (L, 1, "ip");
-	str = luaL_checklstring (L, -1, &len);
-	if(!ipaddr_aton(str, &ipInfo.ip))
-	{
-		return luaL_error(L, "Could not parse IP address, aborting");
-	}
-	
-	lua_getfield (L, 1, "gateway");
-	str = luaL_checklstring (L, -1, &len);
-	if(!ipaddr_aton(str, &ipInfo.gw))
-	{
-		return luaL_error(L, "Could not parse Gateway address, aborting");
-	}
-	
-	lua_getfield (L, 1, "netmask");
-	str = luaL_checklstring (L, -1, &len);
-	if(!ipaddr_aton(str, &ipInfo.netmask))
-	{
-		return luaL_error(L, "Could not parse Netmask, aborting");
-	}
-	
-	ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
-	
-	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
-	
-	lua_getfield (L, 1, "dns");
-	str = luaL_optlstring(L, -1, "", &len);
-	if(ipaddr_aton(str, &dns))
-	{
-		
-		opt = 1;
-		dhcps_dns_setserver(&dns);
-		tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, DOMAIN_NAME_SERVER, &opt, sizeof(opt));
-		
-	}
-	
-	ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
-	
-	return 0;
+  tcpip_adapter_ip_info_t ipInfo;
+  ip_addr_t  dns;
+  uint8_t opt;
+  size_t len;
+  const char *str;
+
+  luaL_checkanytable (L, 1);
+
+  //memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
+
+  lua_getfield (L, 1, "ip");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipInfo.ip))
+  {
+    return luaL_error(L, "Could not parse IP address, aborting");
+  }
+
+  lua_getfield (L, 1, "gateway");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipInfo.gw))
+  {
+    return luaL_error(L, "Could not parse Gateway address, aborting");
+  }
+
+  lua_getfield (L, 1, "netmask");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipInfo.netmask))
+  {
+    return luaL_error(L, "Could not parse Netmask, aborting");
+  }
+
+  ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
+
+  tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ipInfo);
+
+  lua_getfield (L, 1, "dns");
+  str = luaL_optlstring(L, -1, "", &len);
+  if(ipaddr_aton(str, &dns))
+  {
+    opt = 1;
+    dhcps_dns_setserver(&dns);
+    tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, DOMAIN_NAME_SERVER, &opt, sizeof(opt));
+  }
+
+  ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
+
+  return 0;
 }
 
 static int wifi_ap_sethostname(lua_State *L)
 {
-	
-	size_t l;
-	esp_err_t err;
-	const char *hostname = luaL_checklstring(L, 1, &l);
-	
-	err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, hostname);
-	
-	if (err != ESP_OK)
-		return luaL_error (L, "failed to set hostname, code %d", err);
+  size_t l;
+  esp_err_t err;
+  const char *hostname = luaL_checklstring(L, 1, &l);
 
-    lua_pushboolean (L, err==ESP_OK);
-	
-	return 1;
+  err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, hostname);
+
+  if (err != ESP_OK)
+    return luaL_error (L, "failed to set hostname, code %d", err);
+
+  lua_pushboolean (L, err==ESP_OK);
+
+  return 1;
 }
 
 static int wifi_ap_config (lua_State *L)
@@ -232,7 +229,7 @@ static int wifi_ap_config (lua_State *L)
 
   lua_getfield (L, 1, "beacon");
   cfg.ap.beacon_interval = luaL_optint (L, -1, DEFAULT_AP_BEACON);
-  
+
   SET_SAVE_MODE(save);
   esp_err_t err = esp_wifi_set_config (WIFI_IF_AP, &cfg);
   return (err == ESP_OK) ?
@@ -250,13 +247,10 @@ static int wifi_ap_on (lua_State *L)
 }
 
 
-const LUA_REG_TYPE wifi_ap_map[] =
-{
-  { LSTRKEY( "setip" ),      		  LFUNCVAL( wifi_ap_setip )         },
-  { LSTRKEY( "sethostname" ), 		  LFUNCVAL( wifi_ap_sethostname )   },
-  { LSTRKEY( "config" ),              LFUNCVAL( wifi_ap_config )        },
-  { LSTRKEY( "on" ),                  LFUNCVAL( wifi_ap_on )            },
-  { LSTRKEY( "getmac" ),              LFUNCVAL( wifi_ap_getmac )        },
-
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(wifi_ap)
+  LROT_FUNCENTRY( setip,               wifi_ap_setip )
+  LROT_FUNCENTRY( sethostname,         wifi_ap_sethostname )
+  LROT_FUNCENTRY( config,              wifi_ap_config )
+  LROT_FUNCENTRY( on,                  wifi_ap_on )
+  LROT_FUNCENTRY( getmac,              wifi_ap_getmac )
+LROT_END(wifi_ap, NULL, 0)

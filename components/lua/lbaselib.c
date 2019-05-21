@@ -11,9 +11,9 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDIO
-#include C_HEADER_STRING
-#include C_HEADER_STDLIB
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lrotable.h"
@@ -462,73 +462,59 @@ static int luaB_newproxy (lua_State *L) {
   return 1;
 }
 
-#define LUA_BASELIB_FUNCLIST\
-  {LSTRKEY("assert"), LFUNCVAL(luaB_assert)},\
-  {LSTRKEY("collectgarbage"), LFUNCVAL(luaB_collectgarbage)},\
-  {LSTRKEY("dofile"), LFUNCVAL(luaB_dofile)},\
-  {LSTRKEY("error"), LFUNCVAL(luaB_error)},\
-  {LSTRKEY("gcinfo"), LFUNCVAL(luaB_gcinfo)},\
-  {LSTRKEY("getfenv"), LFUNCVAL(luaB_getfenv)},\
-  {LSTRKEY("getmetatable"), LFUNCVAL(luaB_getmetatable)},\
-  {LSTRKEY("loadfile"), LFUNCVAL(luaB_loadfile)},\
-  {LSTRKEY("load"), LFUNCVAL(luaB_load)},\
-  {LSTRKEY("loadstring"), LFUNCVAL(luaB_loadstring)},\
-  {LSTRKEY("next"), LFUNCVAL(luaB_next)},\
-  {LSTRKEY("pcall"), LFUNCVAL(luaB_pcall)},\
-  {LSTRKEY("print"), LFUNCVAL(luaB_print)},\
-  {LSTRKEY("rawequal"), LFUNCVAL(luaB_rawequal)},\
-  {LSTRKEY("rawget"), LFUNCVAL(luaB_rawget)},\
-  {LSTRKEY("rawset"), LFUNCVAL(luaB_rawset)},\
-  {LSTRKEY("select"), LFUNCVAL(luaB_select)},\
-  {LSTRKEY("setfenv"), LFUNCVAL(luaB_setfenv)},\
-  {LSTRKEY("setmetatable"), LFUNCVAL(luaB_setmetatable)},\
-  {LSTRKEY("tonumber"), LFUNCVAL(luaB_tonumber)},\
-  {LSTRKEY("tostring"), LFUNCVAL(luaB_tostring)},\
-  {LSTRKEY("type"), LFUNCVAL(luaB_type)},\
-  {LSTRKEY("unpack"), LFUNCVAL(luaB_unpack)},\
-  {LSTRKEY("xpcall"), LFUNCVAL(luaB_xpcall)}
-  
-#if LUA_OPTIMIZE_MEMORY == 2
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 2
-#include "lrodefs.h"
-const LUA_REG_TYPE base_funcs_list[] = {
-  LUA_BASELIB_FUNCLIST,
-  {LNILKEY, LNILVAL}
-};
-#endif
+#include "lrotable.h"
 
+LROT_EXTERN(lua_rotable_base);
 
-static int luaB_index(lua_State *L) {
-#if LUA_OPTIMIZE_MEMORY == 2
-  int fres;
-  if ((fres = luaR_findfunction(L, base_funcs_list)) != 0)
-    return fres;
-#endif  
-  const char *keyname = luaL_checkstring(L, 2);
-  if (!strcmp(keyname, "_VERSION")) {
-    lua_pushliteral(L, LUA_VERSION);
-    return 1;
-  }
-  void *res = luaR_findglobal(keyname, strlen(keyname));
-  if (!res)
-    return 0;
-  else {
-    lua_pushrotable(L, res);
-    return 1;
-  }
-}
+/*
+ * Separate ROTables are used for the base functions and library ROTables, with
+ * the base functions ROTable declared below.  The library ROTable is chained
+ * from this using its __index meta-method.
+ *
+ * ESP builds use specific linker directives to marshal all the ROTable entries
+ * for the library modules into a single ROTable in the PSECT ".lua_rotable".
+ * This is not practical on Posix builds using a standard GNU link, so the
+ * equivalent ROTable for the core libraries defined in linit.c for the cross-
+ * compiler build.
+ */
 
-static const luaL_Reg base_funcs[] = {
-#if LUA_OPTIMIZE_MEMORY != 2
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 0
-#include "lrodefs.h"
-  LUA_BASELIB_FUNCLIST,
-#endif
-  {"__index", luaB_index},
-  {NULL, NULL}
-};
+LROT_EXTERN(lua_rotables);
+
+LROT_PUBLIC_BEGIN(base_func_meta)
+  LROT_TABENTRY( __index, lua_rotables )
+LROT_END(base_func, base_func_meta, LROT_MASK_INDEX)
+
+LROT_PUBLIC_BEGIN(base_func)
+  LROT_FUNCENTRY(assert,         luaB_assert)
+  LROT_FUNCENTRY(collectgarbage, luaB_collectgarbage)
+  LROT_FUNCENTRY(dofile,         luaB_dofile)
+  LROT_FUNCENTRY(error,          luaB_error)
+  LROT_FUNCENTRY(gcinfo,         luaB_gcinfo)
+  LROT_FUNCENTRY(getfenv,        luaB_getfenv)
+  LROT_FUNCENTRY(getmetatable,   luaB_getmetatable)
+  LROT_FUNCENTRY(loadfile,       luaB_loadfile)
+  LROT_FUNCENTRY(load,           luaB_load)
+  LROT_FUNCENTRY(loadstring,     luaB_loadstring)
+  LROT_FUNCENTRY(next,           luaB_next)
+  LROT_FUNCENTRY(pcall,          luaB_pcall)
+  LROT_FUNCENTRY(print,          luaB_print)
+  LROT_FUNCENTRY(rawequal,       luaB_rawequal)
+  LROT_FUNCENTRY(rawget,         luaB_rawget)
+  LROT_FUNCENTRY(rawset,         luaB_rawset)
+  LROT_FUNCENTRY(select,         luaB_select)
+  LROT_FUNCENTRY(setfenv,        luaB_setfenv)
+  LROT_FUNCENTRY(setmetatable,   luaB_setmetatable)
+  LROT_FUNCENTRY(tonumber,       luaB_tonumber)
+  LROT_FUNCENTRY(tostring,       luaB_tostring)
+  LROT_FUNCENTRY(type,           luaB_type)
+  LROT_FUNCENTRY(unpack,         luaB_unpack)
+  LROT_FUNCENTRY(xpcall,         luaB_xpcall)
+  LROT_TABENTRY(__metatable,     base_func_meta)
+LROT_END(base_func, base_func_meta, LROT_MASK_INDEX)
+
+LROT_BEGIN(G_meta)
+  LROT_TABENTRY( __index, base_func )
+LROT_END(G_meta, NULL, 0)
 
 
 /*
@@ -659,18 +645,14 @@ static int luaB_corunning (lua_State *L) {
   return 1;
 }
 
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE co_funcs[] = {
-  {LSTRKEY("create"), LFUNCVAL(luaB_cocreate)},
-  {LSTRKEY("resume"), LFUNCVAL(luaB_coresume)},
-  {LSTRKEY("running"), LFUNCVAL(luaB_corunning)},
-  {LSTRKEY("status"), LFUNCVAL(luaB_costatus)},
-  {LSTRKEY("wrap"), LFUNCVAL(luaB_cowrap)},
-  {LSTRKEY("yield"), LFUNCVAL(luaB_yield)},
-  {LNILKEY, LNILVAL}
-};
+LROT_PUBLIC_BEGIN(co_funcs)
+  LROT_FUNCENTRY( create, luaB_cocreate )
+  LROT_FUNCENTRY( resume, luaB_coresume )
+  LROT_FUNCENTRY( running, luaB_corunning )
+  LROT_FUNCENTRY( status, luaB_costatus )
+  LROT_FUNCENTRY( wrap, luaB_cowrap )
+  LROT_FUNCENTRY( yield, luaB_yield )
+LROT_END (co_funcs, NULL, 0)
 
 /* }====================================================== */
 
@@ -682,20 +664,18 @@ static void auxopen (lua_State *L, const char *name,
   lua_setfield(L, -2, name);
 }
 
-
 static void base_open (lua_State *L) {
   /* set global _G */
   lua_pushvalue(L, LUA_GLOBALSINDEX);
   lua_setglobal(L, "_G");
+
   /* open lib into global table */
-  luaL_register_light(L, "_G", base_funcs);
-#if LUA_OPTIMIZE_MEMORY > 0
-  lua_pushvalue(L, -1);
-  lua_setmetatable(L, -2);  
-#else
+  luaL_register_light(L, "_G", &((luaL_Reg) {0}));
+  lua_pushrotable(L, LROT_TABLEREF(G_meta));
+  lua_setmetatable(L, LUA_GLOBALSINDEX);
+
   lua_pushliteral(L, LUA_VERSION);
   lua_setglobal(L, "_VERSION");  /* set global _VERSION */
-#endif
   /* `ipairs' and `pairs' need auxliliary functions as upvalues */
   auxopen(L, "ipairs", luaB_ipairs, ipairsaux);
   auxopen(L, "pairs", luaB_pairs, luaB_next);
@@ -712,10 +692,5 @@ static void base_open (lua_State *L) {
 
 LUALIB_API int luaopen_base (lua_State *L) {
   base_open(L);
-#if LUA_OPTIMIZE_MEMORY == 0
-  luaL_register(L, LUA_COLIBNAME, co_funcs);
-  return 2;
-#else
   return 1;
-#endif
 }

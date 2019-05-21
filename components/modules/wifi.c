@@ -111,34 +111,31 @@ static int wifi_init (lua_State *L)
 extern const LUA_REG_TYPE wifi_sta_map[];
 extern const LUA_REG_TYPE wifi_ap_map[];
 
-static const LUA_REG_TYPE wifi_map[] =
-{
-  { LSTRKEY( "getchannel"),   LFUNCVAL( wifi_getchannel )     },
-  { LSTRKEY( "getmode" ),     LFUNCVAL( wifi_getmode )        },
-  { LSTRKEY( "mode" ),        LFUNCVAL( wifi_mode )           },
-  { LSTRKEY( "start" ),       LFUNCVAL( wifi_start )          },
-  { LSTRKEY( "stop" ),        LFUNCVAL( wifi_stop )           },
+LROT_BEGIN(wifi)
+  LROT_FUNCENTRY( getchannel,                 wifi_getchannel )
+  LROT_FUNCENTRY( getmode,                    wifi_getmode )
+  LROT_FUNCENTRY( mode,                       wifi_mode )
+  LROT_FUNCENTRY( start,                      wifi_start )
+  LROT_FUNCENTRY( stop,                       wifi_stop )
 
-  { LSTRKEY( "sta" ),         LROVAL( wifi_sta_map )          },
-  { LSTRKEY( "ap" ),          LROVAL( wifi_ap_map )           },
+  LROT_TABENTRY ( sta,                        wifi_sta )
+  LROT_TABENTRY ( ap,                         wifi_ap )
 
 
-  { LSTRKEY( "NULLMODE" ),    LNUMVAL( WIFI_MODE_NULL )       },
-  { LSTRKEY( "STATION" ),     LNUMVAL( WIFI_MODE_STA )        },
-  { LSTRKEY( "SOFTAP" ),      LNUMVAL( WIFI_MODE_AP )         },
-  { LSTRKEY( "STATIONAP" ),   LNUMVAL( WIFI_MODE_APSTA )      },
+  LROT_NUMENTRY ( NULLMODE,                   WIFI_MODE_NULL )
+  LROT_NUMENTRY ( STATION,                    WIFI_MODE_STA )
+  LROT_NUMENTRY ( SOFTAP,                     WIFI_MODE_AP )
+  LROT_NUMENTRY ( STATIONAP,                  WIFI_MODE_APSTA )
 
-  { LSTRKEY( "AUTH_OPEN" ),           LNUMVAL( WIFI_AUTH_OPEN )         },
-  { LSTRKEY( "AUTH_WEP" ),            LNUMVAL( WIFI_AUTH_WEP )          },
-  { LSTRKEY( "AUTH_WPA_PSK" ),        LNUMVAL( WIFI_AUTH_WPA_PSK )      },
-  { LSTRKEY( "AUTH_WPA2_PSK" ),       LNUMVAL( WIFI_AUTH_WPA2_PSK )     },
-  { LSTRKEY( "AUTH_WPA_WPA2_PSK" ),   LNUMVAL( WIFI_AUTH_WPA_WPA2_PSK ) },
+  LROT_NUMENTRY ( AUTH_OPEN,                  WIFI_AUTH_OPEN )
+  LROT_NUMENTRY ( AUTH_WEP,                   WIFI_AUTH_WEP )
+  LROT_NUMENTRY ( AUTH_WPA_PSK,               WIFI_AUTH_WPA_PSK )
+  LROT_NUMENTRY ( AUTH_WPA2_PSK,              WIFI_AUTH_WPA2_PSK )
+  LROT_NUMENTRY ( AUTH_WPA_WPA2_PSK,          WIFI_AUTH_WPA_WPA2_PSK )
 
-  { LSTRKEY( STR_WIFI_SECOND_CHAN_NONE ),  LNUMVAL( WIFI_SECOND_CHAN_NONE )  },
-  { LSTRKEY( STR_WIFI_SECOND_CHAN_ABOVE ), LNUMVAL( WIFI_SECOND_CHAN_ABOVE )  },
-  { LSTRKEY( STR_WIFI_SECOND_CHAN_BELOW ), LNUMVAL( WIFI_SECOND_CHAN_BELOW )  },
+  LROT_NUMENTRY ( STR_WIFI_SECOND_CHAN_NONE,  WIFI_SECOND_CHAN_NONE )
+  LROT_NUMENTRY ( STR_WIFI_SECOND_CHAN_ABOVE, WIFI_SECOND_CHAN_ABOVE )
+  LROT_NUMENTRY ( STR_WIFI_SECOND_CHAN_BELOW, WIFI_SECOND_CHAN_BELOW )
+LROT_END(wifi, NULL, 0)
 
-  { LNILKEY, LNILVAL }
-};
-
-NODEMCU_MODULE(WIFI, "wifi", wifi_map, wifi_init);
+NODEMCU_MODULE(WIFI, "wifi", wifi, wifi_init);

@@ -9,7 +9,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "lobject.h"
 #include "lstate.h"
@@ -47,7 +47,7 @@ static void DumpChar(int y, DumpState* D)
 
 static void Align4(DumpState *D)
 {
- while(D->wrote&3)
+ while(D->wrote&3 && D->status==0)
   DumpChar(0,D);
 }
 

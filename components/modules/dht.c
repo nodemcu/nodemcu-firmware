@@ -91,13 +91,12 @@ static int ldht_read2x( lua_State *L )
 }
 
 
-static const LUA_REG_TYPE dht_map[] = {
-  { LSTRKEY( "read11" ),         LFUNCVAL( ldht_read11 ) },
-  { LSTRKEY( "read2x" ),         LFUNCVAL( ldht_read2x ) },
-  { LSTRKEY( "OK" ),             LNUMVAL( LDHT_OK ) },
-  { LSTRKEY( "ERROR_CHECKSUM" ), LNUMVAL( LDHT_ERROR_CHECKSUM ) },
-  { LSTRKEY( "ERROR_TIMEOUT" ),  LNUMVAL( LDHT_ERROR_TIMEOUT ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(dht)
+  LROT_FUNCENTRY( read11,         ldht_read11 )
+  LROT_FUNCENTRY( read2x,         ldht_read2x )
+  LROT_NUMENTRY ( OK,             LDHT_OK )
+  LROT_NUMENTRY ( ERROR_CHECKSUM, LDHT_ERROR_CHECKSUM )
+  LROT_NUMENTRY ( ERROR_TIMEOUT,  LDHT_ERROR_TIMEOUT )
+LROT_END(dht, NULL, 0)
 
-NODEMCU_MODULE(DHT, "dht", dht_map, NULL);
+NODEMCU_MODULE(DHT, "dht", dht, NULL);

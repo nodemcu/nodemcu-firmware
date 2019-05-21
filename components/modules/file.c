@@ -549,50 +549,47 @@ static int file_chdir( lua_State *L )
 }
 #endif
 
-static const LUA_REG_TYPE file_obj_map[] =
-{
-  { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
-  { LSTRKEY( "read" ),      LFUNCVAL( file_read ) },
-  { LSTRKEY( "readline" ),  LFUNCVAL( file_readline ) },
-  { LSTRKEY( "write" ),     LFUNCVAL( file_write ) },
-  { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
-  { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
-  { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
-  { LSTRKEY( "__gc" ),      LFUNCVAL( file_obj_free ) },
-  { LSTRKEY( "__index" ),   LROVAL( file_obj_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(file_obj)
+  LROT_FUNCENTRY( close,     file_close )
+  LROT_FUNCENTRY( read,      file_read )
+  LROT_FUNCENTRY( readline,  file_readline )
+  LROT_FUNCENTRY( write,     file_write )
+  LROT_FUNCENTRY( writeline, file_writeline )
+  LROT_FUNCENTRY( seek,      file_seek )
+  LROT_FUNCENTRY( flush,     file_flush )
+  LROT_FUNCENTRY( __gc,      file_obj_free )
+  LROT_TABENTRY ( __index,   file_obj )
+LROT_END(file_obj, NULL, 0)
 
 // Module function map
-static const LUA_REG_TYPE file_map[] = {
-  { LSTRKEY( "list" ),      LFUNCVAL( file_list ) },
-  { LSTRKEY( "open" ),      LFUNCVAL( file_open ) },
-  { LSTRKEY( "close" ),     LFUNCVAL( file_close ) },
-  { LSTRKEY( "write" ),     LFUNCVAL( file_write ) },
-  { LSTRKEY( "writeline" ), LFUNCVAL( file_writeline ) },
-  { LSTRKEY( "read" ),      LFUNCVAL( file_read ) },
-  { LSTRKEY( "readline" ),  LFUNCVAL( file_readline ) },
+LROT_BEGIN(file)
+  LROT_FUNCENTRY( list,      file_list )
+  LROT_FUNCENTRY( open,      file_open )
+  LROT_FUNCENTRY( close,     file_close )
+  LROT_FUNCENTRY( write,     file_write )
+  LROT_FUNCENTRY( writeline, file_writeline )
+  LROT_FUNCENTRY( read,      file_read )
+  LROT_FUNCENTRY( readline,  file_readline )
 #ifdef CONFIG_BUILD_SPIFFS
-  { LSTRKEY( "format" ),    LFUNCVAL( file_format ) },
-  { LSTRKEY( "fscfg" ),     LFUNCVAL( file_fscfg ) },
+  LROT_FUNCENTRY( format,    file_format )
+  LROT_FUNCENTRY( fscfg,     file_fscfg )
 #endif
-  { LSTRKEY( "remove" ),    LFUNCVAL( file_remove ) },
-  { LSTRKEY( "seek" ),      LFUNCVAL( file_seek ) },
-  { LSTRKEY( "flush" ),     LFUNCVAL( file_flush ) },
-  { LSTRKEY( "rename" ),    LFUNCVAL( file_rename ) },
-  { LSTRKEY( "exists" ),    LFUNCVAL( file_exists ) },  
-  { LSTRKEY( "fsinfo" ),    LFUNCVAL( file_fsinfo ) },
-  { LSTRKEY( "on" ),        LFUNCVAL( file_on ) },
-  { LSTRKEY( "stat" ),      LFUNCVAL( file_stat ) },
+  LROT_FUNCENTRY( remove,    file_remove )
+  LROT_FUNCENTRY( seek,      file_seek )
+  LROT_FUNCENTRY( flush,     file_flush )
+  LROT_FUNCENTRY( rename,    file_rename )
+  LROT_FUNCENTRY( exists,    file_exists )
+  LROT_FUNCENTRY( fsinfo,    file_fsinfo )
+  LROT_FUNCENTRY( on,        file_on )
+  LROT_FUNCENTRY( stat,      file_stat )
 #ifdef CONFIG_BUILD_FATFS
-  { LSTRKEY( "chdir" ),     LFUNCVAL( file_chdir ) },
+  LROT_FUNCENTRY( chdir,     file_chdir )
 #endif
-  { LNILKEY, LNILVAL }
-};
+LROT_END(file, NULL, 0)
 
 int luaopen_file( lua_State *L ) {
   luaL_rometatable( L, "file.obj",  (void *)file_obj_map );
   return 0;
 }
 
-NODEMCU_MODULE(FILE, "file", file_map, luaopen_file);
+NODEMCU_MODULE(FILE, "file", file, luaopen_file);

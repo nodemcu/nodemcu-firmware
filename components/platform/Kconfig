@@ -108,6 +108,12 @@ config BUILD_SPIFFS
   bool
   default "y"
 
+config LUA_FLASH_STORE
+  hex "LUA Flash Store size"
+  default 0x0
+  help
+    LUA Flash Store size. Set to zero to disable.
+
 config BUILD_FATFS
   bool "Support for FAT filesystems"
   default "n"

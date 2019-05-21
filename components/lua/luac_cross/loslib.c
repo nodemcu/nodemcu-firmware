@@ -7,11 +7,11 @@
 #define LUAC_CROSS_FILE
 
 #include "luac_cross.h"
-#include C_HEADER_ERRNO
-#include C_HEADER_LOCALE
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
-#include C_HEADER_TIME
+#include <errno.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #define loslib_c
 #define LUA_LIB
@@ -218,7 +218,7 @@ static int os_setlocale (lua_State *L) {
 
 
 static int os_exit (lua_State *L) {
-  c_exit(luaL_optint(L, 1, EXIT_SUCCESS));
+  exit(luaL_optint(L, 1, EXIT_SUCCESS));
 }
 
 #undef MIN_OPT_LEVEL
