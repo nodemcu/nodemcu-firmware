@@ -447,7 +447,7 @@ static int wifi_sta_scan (lua_State *L)
 }
 
 
-LROT_BEGIN(wifi_sta)
+LROT_PUBLIC_BEGIN(wifi_sta)
   LROT_FUNCENTRY( setip,       wifi_sta_setip )
   LROT_FUNCENTRY( sethostname, wifi_sta_sethostname )
   LROT_FUNCENTRY( config,      wifi_sta_config )

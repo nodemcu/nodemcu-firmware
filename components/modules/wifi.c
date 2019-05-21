@@ -108,8 +108,8 @@ static int wifi_init (lua_State *L)
 }
 
 
-extern const LUA_REG_TYPE wifi_sta_map[];
-extern const LUA_REG_TYPE wifi_ap_map[];
+LROT_EXTERN(wifi_sta);
+LROT_EXTERN(wifi_ap);
 
 LROT_BEGIN(wifi)
   LROT_FUNCENTRY( getchannel,                 wifi_getchannel )

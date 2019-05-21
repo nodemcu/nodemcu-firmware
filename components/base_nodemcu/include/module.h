@@ -59,7 +59,7 @@
  * an empty string (or 1) if the module has been enabled, or the literal
  * CONFIG_LUA_MODULE_XYZ in the case it hasn't. Thus, the name of the variable
  * ends up looking either like XYZ_module_enabled, or if not enabled,
- * XYZ_module_enabledLUA_USE_MODULES_XYZ.  This forms the basis for
+ * XYZ_module_enabledCONFIG_LUA_MODULE_XYZ.  This forms the basis for
  * letting the build system detect automatically (via nm) which modules need
  * to be linked in.
  */
@@ -67,6 +67,6 @@
   const LOCK_IN_SECTION(libs) \
     luaR_entry MODULE_PASTE_(lua_lib_,cfgname) = { luaname, LRO_FUNCVAL(initfunc) }; \
   const LOCK_IN_SECTION(rotable) \
-    luaR_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
+    luaR_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(CONFIG_LUA_MODULE_,cfgname))) \
     = {luaname, LRO_ROVAL(map ## _map)}
 #endif

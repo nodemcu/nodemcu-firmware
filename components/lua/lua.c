@@ -25,7 +25,7 @@
 
 lua_State *globalL = NULL;
 
-static lua_Load gLoad;
+lua_Load gLoad;
 static const char *progname = LUA_PROGNAME;
 
 static void l_message (const char *pname, const char *msg) {

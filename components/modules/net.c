@@ -14,7 +14,7 @@
 #include "lwip/api.h"
 #include "lwip/err.h"
 #include "lwip/ip_addr.h"
-#include "lwip/dns.h" 
+#include "lwip/dns.h"
 #include "lwip/tcp.h"
 
 
@@ -1197,7 +1197,7 @@ static void handle_net_event (task_param_t param, task_prio_t prio)
 
 // --- Tables
 
-extern const LUA_REG_TYPE tls_cert_map[];
+LROT_EXTERN(tls_cert);
 
 // Module function map
 LROT_BEGIN(net_tcpserver)

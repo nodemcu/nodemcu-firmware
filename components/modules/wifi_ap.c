@@ -247,7 +247,7 @@ static int wifi_ap_on (lua_State *L)
 }
 
 
-LROT_BEGIN(wifi_ap)
+LROT_PUBLIC_BEGIN(wifi_ap)
   LROT_FUNCENTRY( setip,               wifi_ap_setip )
   LROT_FUNCENTRY( sethostname,         wifi_ap_sethostname )
   LROT_FUNCENTRY( config,              wifi_ap_config )

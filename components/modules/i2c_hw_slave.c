@@ -318,7 +318,7 @@ static int li2c_slave_on( lua_State *L )
 }
 
 
-const LUA_REG_TYPE li2c_slave_map [] = {
+LROT_PUBLIC_BEGIN(li2c_slave)
   LROT_FUNCENTRY( on,    li2c_slave_on )
   LROT_FUNCENTRY( setup, li2c_slave_setup )
   LROT_FUNCENTRY( send,  li2c_slave_send )

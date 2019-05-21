@@ -107,7 +107,7 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
     for(;pentry->key != NULL; i++, pentry++) {
       if (((*(unsigned *)pentry->key ^ name4) & mask4) == 0 &&
           !strcmp(pentry->key, strkey)) {
-//printf("%p %s hit after %d probes \n", rotable, strkey, (int)(rotable-pentry));
+//printf("%p %s hit after %d probes \n", rotable, strkey, (int)(pentry-rotable));
         if (ppos)
           *ppos = i;
         update_cache(hash, rotable, pentry - rotable);
@@ -116,7 +116,7 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
       }
     }
   }
-//printf("%p %s miss after %d probes \n", rotable, strkey, (int)(rotable-pentry));
+//printf("%p %s miss after %d probes \n", rotable, strkey, (int)(pentry-rotable));
   return luaO_nilobject;
 }
 

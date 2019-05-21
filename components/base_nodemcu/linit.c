@@ -61,8 +61,6 @@ const LOCK_IN_SECTION(A) char _ro_start[1] = {0};
 const LOCK_IN_SECTION(zzzzzzzz) char _ro_end[1] = {0};
 #endif
 
-LROT_PUBLIC_TABLE(lua_rotables)
-
 LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(rotable) lua_rotables)
   LROT_TABENTRY( string, strlib )
   LROT_TABENTRY( table, tab_funcs )
