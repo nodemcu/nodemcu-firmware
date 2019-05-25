@@ -118,9 +118,12 @@ static int lpwm2_stop(lua_State *L) {
 
 static int lpwm2_start(lua_State *L) {
   if (!pwm2_start()) {
-    return luaL_error(L, "pwm2: currently platform timer1 is being used by another module.\n");
+    luaL_error(L, "pwm2: currently platform timer1 is being used by another module.\n");
+    lua_pushboolean(L, false);
+  } else {
+    lua_pushboolean(L, true);
   }
-  return 0;
+  return 1;
 }
 
 // Module function map

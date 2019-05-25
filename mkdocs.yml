@@ -88,6 +88,7 @@ pages:
     - 'pcm' : 'modules/pcm.md'
     - 'perf': 'modules/perf.md'
     - 'pwm' : 'modules/pwm.md'
+    - 'pwm2' : 'modules/pwm2.md'
     - 'rc' : 'modules/rc.md'
     - 'rfswitch' : 'modules/rfswitch.md'
     - 'rotary' : 'modules/rotary.md'
