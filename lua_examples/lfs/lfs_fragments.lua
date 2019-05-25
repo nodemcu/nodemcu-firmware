@@ -56,8 +56,11 @@ if node.flashindex() == nil then
   node.flashreload('flash.img')
 end
 
-tmr.alarm(0, 1000, tmr.ALARM_SINGLE,
-  function()
-    local fi=node.flashindex; return pcall(fi and fi'_init')
-  end)
+local initTimer = tmr.create()
+initTimer:register(1000, tmr.ALARM_SINGLE,
+    function()
+        local fi=node.flashindex; return pcall(fi and fi'_init')
+    end
+    )
+initTimer:start()
 
