@@ -30,5 +30,13 @@ bool ICACHE_RAM_ATTR platform_hw_timer_close(os_param_t owner);
 
 uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner);
 
+bool platform_hw_timer_init_exclusive(FRC1_TIMER_SOURCE_TYPE source_type, bool autoload, void (* frc1_timer_cb)(os_param_t), os_param_t arg, void (*nmi_timer_cb)(void) );
+
+bool ICACHE_RAM_ATTR platform_hw_timer_close_exclusive();
+
+bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks_exclusive(uint32_t ticks);
+
+bool ICACHE_RAM_ATTR platform_hw_timer_arm_us_exclusive(uint32_t microseconds);
+
 #endif
 
