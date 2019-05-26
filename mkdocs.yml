@@ -57,6 +57,7 @@ pages:
     - 'adxl345' : 'modules/adxl345.md'
     - 'am2320': 'modules/am2320.md'
     - 'apa102': 'modules/apa102.md'
+    - 'benchmark': 'modules/benchmark.md'
     - 'bit': 'modules/bit.md'
     - 'bloom' : 'modules/bloom.md'
     - 'bme280': 'modules/bme280.md'
