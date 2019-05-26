@@ -1,4 +1,4 @@
-# PWM Module
+# Benchmark Module
 
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
