@@ -53,7 +53,7 @@ benchmark.frc1_autoload_shared(10, false,
     end
 ```
 
-Credits to https://sub.nanona.fi/esp8266/timing-and-ticks.html for inspiring some of the tests and setting up the standard for the rest.
+Credits to [https://sub.nanona.fi/esp8266/timing-and-ticks.html](https://sub.nanona.fi/esp8266/timing-and-ticks.html) for inspiring some of the tests and setting up the standard for the rest.
 
 ## benchmark.set_repetitions()
 
