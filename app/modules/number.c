@@ -50,13 +50,13 @@ static void __toByte(lua_State *L, void *point, size_t length)
     }
 
 #define SIZETOBYTENAME(TYPE) TYPE##ToByte
-#define TOBYTE(TYPE, isInteger)                                                               \
-    static int SIZETOBYTENAME(TYPE)(lua_State * L)                                            \
-    {                                                                                         \
-        const TYPE numberTemp = isInteger ? luaL_checkinteger(L, 1) : luaL_checknumber(L, 1); \
-        __toByte(L, (void *)&numberTemp, sizeof(TYPE));                                       \
-                                                                                              \
-        return sizeof(TYPE);                                                                  \
+#define TOBYTE(TYPE)                                          \
+    static int SIZETOBYTENAME(TYPE)(lua_State * L)            \
+    {                                                         \
+        const TYPE numberTemp = (TYPE)luaL_checknumber(L, 1); \
+        __toByte(L, (void *)&numberTemp, sizeof(TYPE));       \
+                                                              \
+        return sizeof(TYPE);                                  \
     }
 
 //////////////////////
@@ -69,37 +69,39 @@ TONUMBER(int16)
 TONUMBER(int32)
 TONUMBER(int64)
 //////////////////////
-TOBYTE(float, false)
-TOBYTE(double, false)
-TOBYTE(uint16, true)
-TOBYTE(uint32, true)
-TOBYTE(uint64, true)
-TOBYTE(int16, true)
-TOBYTE(int32, true)
-TOBYTE(int64, true)
+TOBYTE(float)
+TOBYTE(double)
+TOBYTE(uint16)
+TOBYTE(uint32)
+TOBYTE(uint64)
+TOBYTE(int16)
+TOBYTE(int32)
+TOBYTE(int64)
 //////////////////////
 
-#define LROT_TONUMBER(NAME, TYPE) LROT_FUNCENTRY(from##NAME##BytesToNumber, SIZETONUMBERNAME(TYPE))
-#define LROT_TOBYTE(NAME, TYPE) LROT_FUNCENTRY(from##NAME##ToBytes, SIZETOBYTENAME(TYPE))
+#define LROT_FUNCENTRY_TONUMBER(NAME, TYPE) \
+    LROT_FUNCENTRY(from##NAME##BytesToNumber, SIZETONUMBERNAME(TYPE))
+#define LROT_FUNCENTRY_TOBYTE(NAME, TYPE) \
+    LROT_FUNCENTRY(from##NAME##ToBytes, SIZETOBYTENAME(TYPE))
 
 LROT_BEGIN(number)
-LROT_TONUMBER(Float, float)
-LROT_TONUMBER(Double, double)
-LROT_TONUMBER(Uint16, uint16)
-LROT_TONUMBER(Uint32, uint32)
-LROT_TONUMBER(Uint64, uint64)
-LROT_TONUMBER(Int16, int16)
-LROT_TONUMBER(Int32, int32)
-LROT_TONUMBER(Int64, int64)
+LROT_FUNCENTRY_TONUMBER(Float, float)
+LROT_FUNCENTRY_TONUMBER(Double, double)
+LROT_FUNCENTRY_TONUMBER(Uint16, uint16)
+LROT_FUNCENTRY_TONUMBER(Uint32, uint32)
+LROT_FUNCENTRY_TONUMBER(Uint64, uint64)
+LROT_FUNCENTRY_TONUMBER(Int16, int16)
+LROT_FUNCENTRY_TONUMBER(Int32, int32)
+LROT_FUNCENTRY_TONUMBER(Int64, int64)
 /////////////////////
-LROT_TOBYTE(Float, float)
-LROT_TOBYTE(Double, double)
-LROT_TOBYTE(Uint16, uint16)
-LROT_TOBYTE(Uint32, uint32)
-LROT_TOBYTE(Uint64, uint64)
-LROT_TOBYTE(Int16, int16)
-LROT_TOBYTE(Int32, int32)
-LROT_TOBYTE(Int64, int64)
+LROT_FUNCENTRY_TOBYTE(Float, float)
+LROT_FUNCENTRY_TOBYTE(Double, double)
+LROT_FUNCENTRY_TOBYTE(Uint16, uint16)
+LROT_FUNCENTRY_TOBYTE(Uint32, uint32)
+LROT_FUNCENTRY_TOBYTE(Uint64, uint64)
+LROT_FUNCENTRY_TOBYTE(Int16, int16)
+LROT_FUNCENTRY_TOBYTE(Int32, int32)
+LROT_FUNCENTRY_TOBYTE(Int64, int64)
 LROT_END(number, NULL, 0)
 
 NODEMCU_MODULE(NUMBER, "number", number, NULL);
