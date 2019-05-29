@@ -25,6 +25,7 @@
 //#define LUA_USE_MODULES_ENCODER
 //#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
 #define LUA_USE_MODULES_FILE
+#define LUA_USE_MODULES_FLOAT
 //#define LUA_USE_MODULES_GDBSTUB
 #define LUA_USE_MODULES_GPIO
 //#define LUA_USE_MODULES_GPIO_PULSE
@@ -79,6 +80,5 @@
 //debug modules
 //#define LUA_USE_MODULES_SWTMR_DBG //SWTMR timer suspend Debug functions
 
-
-#endif  /* LUA_CROSS_COMPILER */
-#endif	/* __USER_MODULES_H__ */
+#endif /* LUA_CROSS_COMPILER */
+#endif /* __USER_MODULES_H__ */
