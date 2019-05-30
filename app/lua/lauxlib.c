@@ -662,6 +662,22 @@ LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
   }
 }
 
+LUALIB_API void luaL_addrawvalue (luaL_Buffer *B) {
+  lua_State *L = B->L;
+  unsigned char bytes = lua_tonumber(L, -1);
+
+  if (1 <= bufffree(B)) {  /* fit into buffer? */
+    *(B->p) = bytes & 0xff;
+    B->p ++;
+    lua_pop(L, 1);  /* remove from stack */
+  }
+  else {
+    if (emptybuffer(B))
+      lua_insert(L, -2);  /* put buffer before new value */
+    B->lvl++;  /* add new value into B stack */
+    adjuststack(B);
+  }
+}
 
 LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
   B->L = L;

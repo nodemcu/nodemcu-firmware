@@ -140,6 +140,17 @@ static void addfield (lua_State *L, luaL_Buffer *b, int i) {
   luaL_addvalue(b);
 }
 
+static void addbytefield (lua_State *L, luaL_Buffer *b, int i) {
+  lua_rawgeti(L, 1, i);
+  if (!lua_isstring(L, -1))
+    luaL_error(L, "invalid value (%s) at index %d in table for "
+                  LUA_QL("serial"), luaL_typename(L, -1), i);
+  if(lua_isnumber(L, -1))
+    luaL_addrawvalue(b);
+  else
+    luaL_addvalue(b);
+}
+
 
 static int tconcat (lua_State *L) {
   luaL_Buffer b;
@@ -156,6 +167,25 @@ static int tconcat (lua_State *L) {
   }
   if (i == last)  /* add last value (if interval was not empty) */
     addfield(L, &b, i);
+  luaL_pushresult(&b);
+  return 1;
+}
+
+static int tserial (lua_State *L) {
+  luaL_Buffer b;
+  size_t lsep;
+  int i, last;
+  const char *sep = luaL_optlstring(L, 2, "", &lsep);
+  luaL_checktype(L, 1, LUA_TTABLE);
+  i = luaL_optint(L, 3, 1);
+  last = luaL_opt(L, luaL_checkint, 4, luaL_getn(L, 1));
+  luaL_buffinit(L, &b);
+  for (; i < last; i++) {
+    addbytefield(L, &b, i);
+    luaL_addlstring(&b, sep, lsep);
+  }
+  if (i == last)  /* add last value (if interval was not empty) */
+    addbytefield(L, &b, i);
   luaL_pushresult(&b);
   return 1;
 }
@@ -275,6 +305,7 @@ LROT_PUBLIC_BEGIN(tab_funcs)
   LROT_FUNCENTRY( insert, tinsert )
   LROT_FUNCENTRY( remove, tremove )
   LROT_FUNCENTRY( setn, setn )
+  LROT_FUNCENTRY( serial, tserial )
   LROT_FUNCENTRY( sort, sort )
 LROT_END(tab_funcs, NULL, 0)
 
