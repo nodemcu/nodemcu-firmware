@@ -24,6 +24,7 @@
  * ****************************************************************************/
 
 #include "platform.h"
+#include "platform_rmt.h"
 
 #include "driver/rmt.h"
 #include "driver/gpio.h"
@@ -79,7 +80,7 @@ static ws2812_chain_t ws2812_chains[RMT_CHANNEL_MAX];
 static intr_handle_t ws2812_intr_handle;
 
 
-static void IRAM_ATTR ws2812_fill_memory_encoded( rmt_channel_t channel, const uint8_t *data, size_t len, size_t tx_offset )
+static void ws2812_fill_memory_encoded( rmt_channel_t channel, const uint8_t *data, size_t len, size_t tx_offset )
 {
   for (size_t idx = 0; idx < len; idx++) {
     uint8_t byte = data[idx];
@@ -93,7 +94,7 @@ static void IRAM_ATTR ws2812_fill_memory_encoded( rmt_channel_t channel, const u
 }
 
 
-static void IRAM_ATTR ws2812_isr(void *arg)
+static void ws2812_isr(void *arg)
 {
   uint32_t intr_st = RMT.int_st.val;
 
@@ -195,7 +196,7 @@ int platform_ws2812_send( void )
         res = PLATFORM_ERR;
         break;
       }
-      if (rmt_driver_install( channel, 0, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED ) != ESP_OK) {
+      if (rmt_driver_install( channel, 0, PLATFORM_RMT_INTR_FLAGS ) != ESP_OK) {
         res = PLATFORM_ERR;
         break;
       }
@@ -204,7 +205,7 @@ int platform_ws2812_send( void )
 
 
   // hook-in our shared ISR
-  esp_intr_alloc( ETS_RMT_INTR_SOURCE, ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_SHARED, ws2812_isr, NULL, &ws2812_intr_handle );
+  esp_intr_alloc( ETS_RMT_INTR_SOURCE, PLATFORM_RMT_INTR_FLAGS, ws2812_isr, NULL, &ws2812_intr_handle );
 
 
   // start selected channels one by one
