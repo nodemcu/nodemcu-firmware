@@ -585,7 +585,7 @@ LROT_BEGIN(ads1115_instance)
 #ifdef ADS1115_INCLUDE_TEST_FUNCTION
   LROT_FUNCENTRY( test_volt_conversion, test_volt_conversion )
 #endif
-  LROT_TABENTRY( "__index", ads1115_instance )
+  LROT_TABENTRY( __index, ads1115_instance )
   LROT_FUNCENTRY( __gc, ads1115_lua_delete )
 LROT_END(ads1115_instance, ads1115_instance, LROT_MASK_GC_INDEX )
 
