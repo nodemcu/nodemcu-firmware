@@ -149,6 +149,7 @@ static void MpuCalcOffset(int times)
         gyro->X = AVERAGE2(gyro->X, d->Gyro.X);
         gyro->Y = AVERAGE2(gyro->Y, d->Gyro.Y);
         gyro->Z = AVERAGE2(gyro->Z, d->Gyro.Z);
+        system_soft_wdt_feed(); // feed the dog
     }
 }
 
