@@ -128,7 +128,6 @@ static void ICACHE_RAM_ATTR hx711_data_available() {
   }
 }
 
-#ifdef HX711_STATUS
 static uint32_t ICACHE_RAM_ATTR hx711_interrupt(uint32_t ret_gpio_status)
 {
   // This function really is running at interrupt level with everything
@@ -262,7 +261,6 @@ static void hx711_task(os_param_t param, uint8_t prio)
     lua_call(L, 3, 0);
   }
 }
-#endif
 #endif
 
 #define HX711_MAX_WAIT 1000000
