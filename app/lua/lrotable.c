@@ -14,6 +14,7 @@
 #else
 #define ALIGNED_STRING (__attribute__((aligned(4))) char *)
 #endif
+
 #define LA_LINES 32
 #define LA_SLOTS 4
 //#define COLLECT_STATS
@@ -36,13 +37,15 @@
  * Note that this hash does a couple of prime multiples and a modulus 2^X
  * with is all evaluated in H/W, and adequately randomizes the lookup.
  */
-#define HASH(a,b) ((((519*(size_t)(a)))>>4) + ((b) ? (b)->tsv.hash: 0))
+#define HASH(a,b) (unsigned)((((519*(size_t)(a)))>>4) + ((b) ? (b)->tsv.hash: 0))
 
-static struct {
+typedef struct {
   unsigned hash;
   unsigned addr:24;
   unsigned ndx:8;
-} cache[LA_LINES][LA_SLOTS];
+} cache_line_t;
+
+static cache_line_t cache [LA_LINES][LA_SLOTS];
 
 #ifdef COLLECT_STATS
 unsigned cache_stats[3];
@@ -55,10 +58,10 @@ static int lookup_cache(unsigned hash, ROTable *rotable) {
   int i = (hash>>2) & (LA_LINES-1), j;
 
   for (j = 0; j<LA_SLOTS; j++) {
-    if (cache[i][j].hash == hash &&
-        ((size_t)rotable & 0xffffffu) == cache[i][j].addr) {
+    cache_line_t cl = cache[i][j];
+    if (cl.hash == hash && ((size_t)rotable & 0xffffffu) == cl.addr) {
       COUNT(0);
-      return cache[i][j].ndx;
+      return cl.ndx;
     }
   }
   COUNT(1);
@@ -67,14 +70,21 @@ static int lookup_cache(unsigned hash, ROTable *rotable) {
 
 static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
   int i = (hash)>>2 & (LA_LINES-1), j;
+#ifndef _MSC_VER
+  cache_line_t cl = {hash, (size_t) rotable, ndx};
+#else
+  cache_line_t cl;             // MSC doesn't allow non-scalar initialisers, which
+  cl.hash = hash;              // is a pity because xtensa gcc generates optimum   
+  cl.addr = (size_t) rotable;  // code using them.
+  cl.ndx  = ndx;
+#endif
+
   COUNT(2);
   if (ndx>0xffu)
     return;
   for (j = LA_SLOTS-1; j>0; j--)
     cache[i][j] = cache[i][j-1];
-  cache[i][0].hash = hash;
-  cache[i][0].addr = (size_t) rotable;
-  cache[i][0].ndx  = ndx;
+  cache[i][0] = cl;
 }
 /*
  * Find a string key entry in a rotable and return it.  Note that this internally

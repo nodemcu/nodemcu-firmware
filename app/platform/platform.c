@@ -923,7 +923,6 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 int platform_flash_erase_sector( uint32_t sector_id )
 {
   NODE_DBG( "flash_erase_sector(%u)\n", sector_id);
-  system_soft_wdt_feed ();
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
 

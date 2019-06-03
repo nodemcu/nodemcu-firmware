@@ -44,12 +44,18 @@ static s32_t my_spiffs_write(u32_t addr, u32_t size, u8_t *src) {
   return SPIFFS_OK;
 }
 
+static int erase_cnt = -1;  // If set to >=0 then erasing gives a ... feedback
 static s32_t my_spiffs_erase(u32_t addr, u32_t size) {
   u32_t sect_first = platform_flash_get_sector_of_address(addr);
   u32_t sect_last = sect_first;
-  while( sect_first <= sect_last )
-    if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR )
+  while( sect_first <= sect_last ) {
+    if (erase_cnt >= 0 && (erase_cnt++ & 0xF) == 0) {
+      dbg_printf(".");
+    }
+    if( platform_flash_erase_sector( sect_first ++ ) == PLATFORM_ERR ) {
       return SPIFFS_ERR_INTERNAL;
+    }
+  }
   return SPIFFS_OK;
 }
 
@@ -152,31 +158,12 @@ int myspiffs_format( void )
   SPIFFS_unmount(&fs);
 
   NODE_DBG("Formatting: size 0x%x, addr 0x%x\n", fs.cfg.phys_size, fs.cfg.phys_addr);
+  erase_cnt = 0;
+  int status = SPIFFS_format(&fs);
+  erase_cnt = -1;
 
-  if (SPIFFS_format(&fs) < 0) {
-    return 0;
-  }
-
-  return myspiffs_mount(FALSE);
+  return status < 0 ? 0 : myspiffs_mount(FALSE);
 }
-
-#if 0
-void test_spiffs() {
-  char buf[12];
-
-  // Surely, I've mounted spiffs before entering here
-
-  spiffs_file fd = SPIFFS_open(&fs, "my_file", SPIFFS_CREAT | SPIFFS_TRUNC | SPIFFS_RDWR, 0);
-  if (SPIFFS_write(&fs, fd, (u8_t *)"Hello world", 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));
-  SPIFFS_close(&fs, fd);
-
-  fd = SPIFFS_open(&fs, "my_file", SPIFFS_RDWR, 0);
-  if (SPIFFS_read(&fs, fd, (u8_t *)buf, 12) < 0) NODE_DBG("errno %i\n", SPIFFS_errno(&fs));
-  SPIFFS_close(&fs, fd);
-
-  NODE_DBG("--> %s <--\n", buf);
-}
-#endif
 
 
 // ***************************************************************************

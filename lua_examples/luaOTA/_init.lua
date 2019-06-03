@@ -45,5 +45,5 @@
 
   package.loaded[self.modname] = nil
   self.modname=nil
-  tmr.alarm(0, 500, tmr.ALARM_AUTO, self:_doTick())
+  self.timer:alarm( 500, tmr.ALARM_AUTO, self:_doTick())
 -- end

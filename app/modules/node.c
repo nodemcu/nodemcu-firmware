@@ -771,7 +771,7 @@ LROT_BEGIN(node)
   LROT_FUNCENTRY( dsleepMax, dsleepMax )
   LROT_FUNCENTRY( sleep, node_sleep )
 #ifdef PMSLEEP_ENABLE
-  PMSLEEP_INT_MAP,
+  PMSLEEP_INT_MAP
 #endif
 #ifdef DEVELOPMENT_TOOLS
   LROT_FUNCENTRY( readrcr, node_readrcr )

@@ -92,6 +92,7 @@ static const struct defaultpt rompt IROM_PTABLE_ATTR USED_ATTR  = {
 
 static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flash_size);
 static void phy_data_setup (partition_item_t *pt, uint32_t n);
+extern void _ResetHandler(void);
 
 /*
  * The non-OS SDK prolog has been fundamentally revised in V3.  See SDK EN document
@@ -144,7 +145,7 @@ void user_pre_init(void) {
         os_printf("system SPI FI size:%u, Flash size: %u\n", fs_size_code, flash_size );
     }
 
-    pt = os_malloc(i);  // We will work on and register a RAM copy of the PT
+    pt = os_malloc_iram(i);  // We will work on and register a copy of the PT in iRAM
     // Return if anything is amiss; The SDK will halt if the PT hasn't been registered
     if ( !rcr_pt || !pt || n * sizeof(partition_item_t) != i) {
         return;
@@ -166,7 +167,7 @@ void user_pre_init(void) {
         return;
     }
     os_printf("Invalid system partition table\n");
-    while(1); // Trigger WDT}
+    while (1) {};  
 }
 
 /*
@@ -266,7 +267,8 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
     }
 
     platform_rcr_write(PLATFORM_RCR_PT, pt, newn*sizeof(partition_item_t));
-    while(1); // Trigger WDT; the new PT will be loaded on reboot
+    ets_delay_us(5000);
+    _ResetHandler(); // Trigger reset; the new PT will be loaded on reboot
 }
 
 uint32 ICACHE_RAM_ATTR user_iram_memory_is_enabled(void) {
@@ -305,18 +307,6 @@ void nodemcu_init(void) {
         NODE_DBG("Can not init platform for modules.\n");
         return;
     }
-
-#ifdef BUILD_SPIFFS
-    if (!vfs_mount("/FLASH", 0)) {
-        // Failed to mount -- try reformat
-        dbg_printf("Formatting file system. Please wait...\n");
-        if (!vfs_format()) {
-            NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
-            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
-        }
-    }
-#endif
-
     if (!task_post_low(task_get_id(start_lua),'s'))
       NODE_ERR("Failed to post the start_lua task!\n");
 }

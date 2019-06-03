@@ -703,6 +703,14 @@ LROT_END( file, NULL, 0 )
 
 
 int luaopen_file( lua_State *L ) {
+  if (!vfs_mount("/FLASH", 0)) {
+      // Failed to mount -- try reformat
+      dbg_printf("Formatting file system. Please wait...\n");
+      if (!vfs_format()) {
+          NODE_ERR( "\n*** ERROR ***: unable to format. FS might be compromised.\n" );
+          NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+      }
+  }
   luaL_rometatable( L, "file.vol",  LROT_TABLEREF(file_vol));
   luaL_rometatable( L, "file.obj",  LROT_TABLEREF(file_obj));
   return 0;

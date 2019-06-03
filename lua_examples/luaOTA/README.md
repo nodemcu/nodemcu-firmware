@@ -31,7 +31,7 @@ call which invokes the `luaOTA` module by a `require "luaOTA.check"` statement.
 
 The `config.json` file which provides the minimum configuration parameters to connect to
 the WiFi and provisioning server, however these can by overridden through the UART by
-first doing a `tmr.stop(0)` and then a manual initialisation as described in the
+first doing a `abortOTA()` and then a manual initialisation as described in the
 [init.lua](#initlua) section below.
 
 `luaOTA` configures the wifi and connects to the required sid in STA mode using the
@@ -90,13 +90,17 @@ require "LuaOTA.check"
 however if the configuration is incomplete then this can be aborted as manual process
 by entering the manual command through the UART
 ```Lua
-tmr.stop(0); require "luaOTA.check":_init {ssid ="SOMESID" --[[etc. ]]}
+abortOTA(); require "luaOTA.check":_init {ssid ="SOMESID" --[[etc. ]]}
 ```
 where the parameters to the `_init` method are:
 
 -  `ssid` and `spwd`.  The SSID of the Wifi service to connect to, together with its
 password.
 -  `server` and `port`.  The name or IP address and port of the provisioning server.
+-  `app`. The filename of the module which will be `required` after provisioning is
+complete. Defaults to LuaOTA/default. 
+-  `entry`. The method that will be called on the module indicated by `app`. Defaults
+to `init`
 -  `secret`.  A site-specific secret shared with the provisioning server for MD5-based
 signing of the protocol messages.
 -  `leave`.  If true the STA service is left connected otherwise the wifi is shutdown
@@ -129,6 +133,12 @@ Note that even though this file is included in the `luaOTA` subdirectory within 
 examples, this is designed to run on the host and should not be included in the
 ESP SPIFFS.
 
+The example server expects a repository directory, which is expected to contain 
+the to-be-provisioned files (.lua files, .lc files...). Additionally, it expects
+a .json file for every ESP that is to be provisioned, containing the "secret" 
+as well as the relevant filenames. This file should be called 'ESP-xxxxxxxx.json',
+with 'xxxxxxxx' replaced with the ChipID.
+
 ## Implementation Notes
 
 -  The NodeMCu build must include the following modules: `wifi`, `net`, `file`, `tmr`,
@@ -155,11 +165,6 @@ called using the object form self:someFunc() to get the context as a parameter.
 
 -  This coding also makes a lot of use of tailcalls (See PiL 6.3) to keep the stack size
    to a minimum.
-
--  The update process uses a master timer in `tmr` slot 0.  The index form is used here
-in preference to the object form because of the reduced memory footprint. This also
-allows the developer to abort the process early in the boot sequence by issuing a
-`tmr.stop(0)` through UART0.
 
 -  The command protocol is unencrypted and uses JSON encoding, but all exchanges are
 signed by a 6 char signature taken extracted from a MD5 based digest across the JSON
@@ -205,7 +210,7 @@ function using an object constructor `self:self:somefunction()`, but where the f
 can have a self argument then the alternative is to use an upvalue binding.  See the
 `tmr` alarm call at the end of `_init.lua` as an example:
 ```Lua
-  tmr.alarm(0, 500, tmr.ALARM_AUTO, self:_doTick())
+  self.timer:alarm( 500, tmr.ALARM_AUTO, self:_doTick())
 ```
 -  The `self:_doTick()` is evaluated before the alarm API call.  This autoloads
 `luaOTA/_doTick.lc` which stores `self` as a local and returns a function which takes

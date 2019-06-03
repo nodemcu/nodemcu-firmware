@@ -104,26 +104,23 @@ SECTIONS
     *(.entry.text)
     *(.init.literal)
     *(.init)
-
-    /* SDK libraries that used in bootup process, interruption handling
-     * and other ways where flash cache (iROM) is unavailable: */
-    *libmain.a:*(.literal .literal.* .text .text.*)
-    *libnet80211.a:*(.literal .text)
-    *libphy.a:*(.literal .text)
-    *libpp.a:*(.literal .text)
-    *libgcc.a:*(.literal .text)
-
-    /* Following SDK libraries have .text sections, but not included in iRAM: */
-    /* *libat.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *libcrypto.a:*(.literal .text) - tested that safe to keep in iROM */
-    /* *libdriver.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *libespnow.a:*(.literal .text) - not used anywhere in NodeMCU */
-    /* *liblwip_536.a:*(.literal .text) - source-based library used instead */
-    /* *libpwm.a:*(.literal .text) - our own implementation used instead */
-    /* *libwpa.a:*(.literal .text) - tested that safe to keep in iROM */
-    /* *libwps.a:*(.literal .text) - tested that safe to keep in iROM */
-
+   /*
+    * SDK libraries that used in bootup process, interruption handling
+    * and other ways where flash cache (iROM) is unavailable:
+    */
+    *libmain.a:*(    .literal .literal.* .text .text.*)
+    *libphy.a:*(     .literal .literal.* .text .text.*)
+    *libpp.a:*(      .literal .literal.* .text .text.*)
+    *libgcc.a:*(     .literal .literal.* .text .text.*)
+    *libnet80211.a:*(.literal            .text        )
+   /*
+    * The following SDK libraries have .literal and .text sections, but are
+    * either not used in NodeMCU or are safe to execute out of in iROM: 
+    *   libat.a libcrypto.a libdriver.a libnet80211.a libespnow.a
+    *   liblwip_536.a ibpwm.a libwpa.a ibwps.a
+    */
     *(.iram.text .iram0.text .iram0.text.*)
+    *(.iram0.data.*)
 
     *(.stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
 
@@ -259,7 +256,6 @@ SECTIONS
 
     /* Reserved areas, flash page aligned and last */
     . = ALIGN(4096);
-    KEEP(*(.irom.reserved .irom.reserved.*))
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
