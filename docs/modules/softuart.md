@@ -27,7 +27,7 @@ Creates new SoftUART instance. Note that rx pin cannot be shared between instanc
 
 #### Example
 ```lua
--- Create new software UART with baudrate of 9600, D1 as Tx pin and D2 as Rx pin
+-- Create new software UART with baudrate of 9600, D2 as Tx pin and D3 as Rx pin
 s = softuart.setup(9600, 2, 3)
 ```
 
@@ -50,7 +50,7 @@ Sets up the callback function to receive data.
 
 #### Example
 ```lua
--- Create new software UART with baudrate of 9600, D1 as Tx pin and D2 as Rx pin
+-- Create new software UART with baudrate of 9600, D2 as Tx pin and D3 as Rx pin
 s = softuart.setup(9600, 2, 3)
 s:on("data", 10, function(data)
   print("Lua handler called!")
@@ -72,7 +72,7 @@ Transmits a byte or sequence of them.
 
 #### Example
 ```lua
--- Create new software UART with baudrate of 9600, D1 as Tx pin and D2 as Rx pin
+-- Create new software UART with baudrate of 9600, D2 as Tx pin and D3 as Rx pin
 s = softuart.setup(9600, 2, 3)
 s:write("Hello!")
 ```

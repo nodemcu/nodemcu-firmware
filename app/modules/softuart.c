@@ -39,7 +39,7 @@ softuart_t * softuart_gpio_instances[SOFTUART_GPIO_COUNT] = {NULL};
 static int softuart_rx_cb_ref[SOFTUART_GPIO_COUNT];
 // Task for receiving data
 static task_handle_t uart_recieve_task = NULL;
-// Recieving buffer for callback usage
+// Receiving buffer for callback usage
 static char softuart_rx_buffer[SOFTUART_MAX_RX_BUFF];
 
 static inline int32_t asm_ccount(void) {
@@ -386,20 +386,18 @@ static int softuart_gcdelete(lua_State *L)
 }
 
 // Port function map
-static const LUA_REG_TYPE softuart_port_map[] = {
-		{ LSTRKEY( "on" ), 				LFUNCVAL( softuart_on) },
-		{ LSTRKEY( "write" ), 		LFUNCVAL( softuart_write) },
-		{ LSTRKEY( "__gc" ),    		LFUNCVAL( softuart_gcdelete ) },
-		{ LSTRKEY( "__index" ), 		LROVAL( softuart_port_map ) },
-		{ LNILKEY, LNILVAL }
-};
+LROT_BEGIN(softuart_port)
+	LROT_FUNCENTRY( on, softuart_on)
+	LROT_TABENTRY( __index, softuart_port)
+	LROT_FUNCENTRY( write, softuart_write)
+	LROT_FUNCENTRY( __gc, softuart_gcdelete)
+LROT_END(ads1115, softuart_port, LROT_MASK_GC_INDEX)
 
 // Module function map
-static const LUA_REG_TYPE softuart_map[] = {
-		{ LSTRKEY( "setup" ),     		LFUNCVAL( softuart_setup ) },
-		{ LSTRKEY( "__metatable" ),		LROVAL( softuart_port_map ) },
-		{ LNILKEY, LNILVAL }
-};
+LROT_BEGIN(softuart)
+	LROT_FUNCENTRY( setup, softuart_setup)
+	LROT_TABENTRY(__metatable, softuart_port)
+LROT_END(softuart, NULL, 0 )
 
 static int luaopen_softuart(lua_State *L)
 {
@@ -411,4 +409,4 @@ static int luaopen_softuart(lua_State *L)
 	return 0;
 }
 
-NODEMCU_MODULE(SOFTUART, "softuart", softuart_map, luaopen_softuart);
+NODEMCU_MODULE(SOFTUART, "softuart", softuart, luaopen_softuart);
