@@ -17,7 +17,8 @@ static uint8_t pin_clk_pin;
 #ifdef GPIO_INTERRUPT_ENABLE
 static task_handle_t tasknumber;
 
-#define HX711_STATUS
+// HX711_STATUS can be defined to enable the hx711.status() function to get debug info
+#undef HX711_STATUS
 #define BUFFERS 2
 
 typedef struct {
