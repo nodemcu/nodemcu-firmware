@@ -68,6 +68,7 @@ static void usage(const char* message)
  "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
  "  -e name  execute a lua source file\n"
  "  -f       output a flash image file\n"
+ "  -a addr  generate an absolute, rather than position independent flash image file\n"
  "  -i       generate lookup combination master (default with option -f)\n"
  "  -m size  maximum LFS image in bytes\n"
  "  -p       parse only\n"
@@ -106,6 +107,11 @@ static int doargs(int argc, char* argv[])
   else if (IS("-f"))			/* Flash image file */
   {
    flash=lookup=1;
+  }
+  else if (IS("-a"))			/* Absolue flash image file */
+  {
+   flash=lookup=1;
+   address=strtol(argv[++i],NULL,0);
   }
   else if (IS("-i"))			/* lookup */
    lookup = 1;
