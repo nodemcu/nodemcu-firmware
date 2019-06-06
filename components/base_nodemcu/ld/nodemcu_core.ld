@@ -11,9 +11,15 @@ SECTIONS {
     esp_event_cb_table = ABSOLUTE(.);
     KEEP(*(.esp_event_cb_table))
     LONG(0) LONG(0) /* Null-terminate the array */
-    /* Reserved areas, flash page aligned and last */
-    . = ALIGN(4096);
-    KEEP(*(.irom.reserved .irom.reserved.*))
   }
 }
 INSERT BEFORE .flash.text
+
+SECTIONS {
+  .flash.lfs : ALIGN(4096)
+  {
+    /* Reserved areas, flash page aligned */
+    KEEP(*(.irom.reserved .irom.reserved.*))
+  }
+}
+INSERT AFTER .flash.text

@@ -108,11 +108,12 @@ config BUILD_SPIFFS
   bool
   default "y"
 
-config LUA_FLASH_STORE
-  hex "LUA Flash Store size"
+config LUA_EMBEDDED_FLASH_STORE
+  hex "Embedded LUA Flash Store size"
   default 0x0
   help
-    LUA Flash Store size. Set to zero to disable.
+    Embedded LUA Flash Store size. Set to zero to use an LFS partition instead
+    of embedding the LFS within the ESP firmware itself.
 
 config BUILD_FATFS
   bool "Support for FAT filesystems"

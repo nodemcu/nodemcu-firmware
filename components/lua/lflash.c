@@ -31,7 +31,7 @@
  * process.
  */
 
-static char    *flashAddr;
+static const char *flashAddr;
 static uint32_t flashSize;
 static uint32_t flashAddrPhys;
 static uint32_t flashSector;
@@ -80,6 +80,12 @@ struct OUTPUT {
   const char *error;
 } *out;
 
+
+#if CONFIG_LUA_EMBEDDED_FLASH_STORE
+static __attribute__((aligned(4),section(".irom.reserved"))) const char lua_flash_store_reserved[CONFIG_LUA_EMBEDDED_FLASH_STORE];
+#endif
+
+
 #ifdef NODE_DEBUG
 extern void printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void dumpStrt(stringtable *tb, const char *type) {
@@ -110,20 +116,20 @@ LUA_API void dumpStrings(lua_State *L) {
  * writes are suppressed if the global writeToFlash is false.  This is used in
  * phase I where the pass is used to size the structures in flash.
  */
-static char *flashPosition(void){
+static const char *flashPosition(void){
   return  flashAddr + curOffset;
 }
 
 
-static char *flashSetPosition(uint32_t offset){
+static const char *flashSetPosition(uint32_t offset){
   NODE_DBG("flashSetPosition(%04x)\n", offset);
   curOffset = offset;
   return flashPosition();
 }
 
 
-static char *flashBlock(const void* b, size_t size)  {
-  void *cur = flashPosition();
+static const char *flashBlock(const void* b, size_t size)  {
+  const void *cur = flashPosition();
   NODE_DBG("flashBlock((%04x),%08x,%04x)\n", curOffset,b,size);
   lua_assert(ALIGN_BITS(b) == 0 && ALIGN_BITS(size) == 0);
   platform_flash_write(b, flashAddrPhys+curOffset, size);
@@ -151,7 +157,13 @@ static void flashErase(uint32_t start, uint32_t end){
  * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
  */
 LUAI_FUNC void luaN_init (lua_State *L) {
-  // TODO: support more than one LFS partition?
+#if CONFIG_LUA_EMBEDDED_FLASH_STORE
+  flashSize = CONFIG_LUA_EMBEDDED_FLASH_STORE;
+  flashAddr = lua_flash_store_reserved;
+  flashAddrPhys = spi_flash_cache2phys(lua_flash_store_reserved);
+  if (flashAddrPhys == SPI_FLASH_CACHE2PHYS_FAIL)
+    return;
+#else
   const esp_partition_t *part = esp_partition_find_first(
     PLATFORM_PARTITION_TYPE_NODEMCU,
     PLATFORM_PARTITION_SUBTYPE_NODEMCU_LFS,
@@ -161,8 +173,9 @@ LUAI_FUNC void luaN_init (lua_State *L) {
 
   flashSize = part->size; // in bytes
   flashAddrPhys = part->address;
-  G(L)->LFSsize   = flashSize;
   flashAddr       = cast(char *, flashAddrPhys);
+#endif
+  G(L)->LFSsize   = flashSize;
   flashSector     = platform_flash_get_sector_of_address(flashAddrPhys);
 
   FlashHeader *fh = cast(FlashHeader *, flashAddr);
