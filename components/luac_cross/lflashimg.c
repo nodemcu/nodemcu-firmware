@@ -109,11 +109,10 @@ static uint *flashAddrTag = flashImage + LUA_MAX_FLASH_SIZE;
 #define setFlashAddrTag(v) flashAddrTag[_TW(v)] |= _TB(v)
 #define getFlashAddrTag(v) ((flashAddrTag[_TW(v)]&_TB(v)) != 0)
 
-#define fatal luac_fatal
 #ifdef _MSC_VER
-extern void __declspec( noreturn ) luac_fatal( const char* message );
+extern void __declspec( noreturn ) fatal( const char* message );
 #else
-extern void __attribute__((noreturn)) luac_fatal(const char* message);
+extern void __attribute__((noreturn)) fatal(const char* message);
 #endif
 
 #ifdef LOCAL_DEBUG
@@ -432,7 +431,7 @@ uint dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w,
     status = uzlib_compress (&oBuf, &oLen,
                              (const uint8_t *)flashImage, bmLen+fh->flash_size);
     if (status != UZLIB_OK) {
-      luac_fatal("Out of memory during image compression");
+      fatal("Out of memory during image compression");
     }
     lua_unlock(L);
  #if 0

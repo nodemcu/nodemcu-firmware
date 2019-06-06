@@ -223,28 +223,29 @@ static int os_exit (lua_State *L) {
 
 #undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE syslib[] = {
-  {LSTRKEY("clock"),     LFUNCVAL(os_clock)},
-  {LSTRKEY("date"),      LFUNCVAL(os_date)},
+#include "lrotable.h"
+LROT_PUBLIC_BEGIN(oslib)
+  LROT_FUNCENTRY(clock,     os_clock)
+  LROT_FUNCENTRY(date,      os_date)
 #if !defined LUA_NUMBER_INTEGRAL
-  {LSTRKEY("difftime"),  LFUNCVAL(os_difftime)},
+  LROT_FUNCENTRY(difftime,  os_difftime)
 #endif
-  {LSTRKEY("execute"),   LFUNCVAL(os_execute)},
-  {LSTRKEY("exit"),      LFUNCVAL(os_exit)},
-  {LSTRKEY("getenv"),    LFUNCVAL(os_getenv)},
-  {LSTRKEY("remove"),    LFUNCVAL(os_remove)},
-  {LSTRKEY("rename"),    LFUNCVAL(os_rename)},
-  {LSTRKEY("setlocale"), LFUNCVAL(os_setlocale)},
-  {LSTRKEY("time"),      LFUNCVAL(os_time)},
-  {LSTRKEY("tmpname"),   LFUNCVAL(os_tmpname)},
-  {LNILKEY, LNILVAL}
-};
+  LROT_FUNCENTRY(execute,   os_execute)
+  LROT_FUNCENTRY(exit,      os_exit)
+  LROT_FUNCENTRY(getenv,    os_getenv)
+  LROT_FUNCENTRY(remove,    os_remove)
+  LROT_FUNCENTRY(rename,    os_rename)
+  LROT_FUNCENTRY(setlocale, os_setlocale)
+  LROT_FUNCENTRY(time,      os_time)
+  LROT_FUNCENTRY(tmpname,   os_tmpname)
+LROT_END(oslib, NULL, 0)
+
 
 /* }====================================================== */
 
 
 
 LUALIB_API int luaopen_os (lua_State *L) {
-  LREGISTER(L, LUA_OSLIBNAME, syslib);
+  //LREGISTER(L, LUA_OSLIBNAME, oslib); // <------------- ???
+  return 0;
 }
