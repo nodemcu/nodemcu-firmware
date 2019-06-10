@@ -117,6 +117,6 @@ Connecting...
 Manufacturer: e0
 Device: 4016
 ```
-The chip ID can then be looked up in [https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h](https://code.coreboot.org/p/flashrom/source/tree/HEAD/trunk/flashchips.h). This leads to a manufacturer name and a chip model name/number e.g. `AMIC_A25LQ032`. That information can then be fed into your favorite search engine to find chip descriptions and data sheets.
+The chip ID can then be looked up in [https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h](https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h). This leads to a manufacturer name and a chip model name/number e.g. `AMIC_A25LQ032`. That information can then be fed into your favorite search engine to find chip descriptions and data sheets.
 
 By convention the last two or three digits in the module name denote the capacity in megabits. So, `A25LQ032` in the example above is a 32Mb(=4MB) module.

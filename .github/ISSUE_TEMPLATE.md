@@ -1,5 +1,5 @@
 Make sure you read and understand http://nodemcu.readthedocs.io/en/dev/en/support/.
-Use one of the two templates below and delete the rest.
+Use one of the two templates below and **DELETE THE REST**.
 
 8<------------------------ BUG REPORT -----------------------------------------
 ### Expected behavior
