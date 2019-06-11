@@ -11,6 +11,7 @@
 #include "ldebug.h"
 #include "esp_vfs.h"
 #include "lnodeaux.h"
+#include "lflash.h"
 
 // Lua: node.chipid()
 static int node_chipid( lua_State *L )
@@ -393,6 +394,8 @@ LROT_BEGIN(node)
   LROT_FUNCENTRY( compile,    node_compile )
   LROT_FUNCENTRY( dsleep,     node_dsleep )
   LROT_TABENTRY ( egc,        node_egc )
+  LROT_FUNCENTRY( flashreload,luaN_reload_reboot )
+  LROT_FUNCENTRY( flashindex, luaN_index )
   LROT_FUNCENTRY( heap,       node_heap )
   LROT_FUNCENTRY( input,      node_input )
   LROT_FUNCENTRY( output,     node_output )
