@@ -12,6 +12,10 @@ SECTIONS {
     esp_event_cb_table = ABSOLUTE(.);
     KEEP(*(.esp_event_cb_table))
     LONG(0) LONG(0) /* Null-terminate the array */
+
+    . = ALIGN(4096);
+    lua_flash_store_reserved = ABSOLUTE(.);
+    KEEP(*(.lfs.reserved))
   }
 }
 INSERT BEFORE .flash.text

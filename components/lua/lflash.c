@@ -81,8 +81,8 @@ struct OUTPUT {
 } *out;
 
 
-#if CONFIG_LUA_EMBEDDED_FLASH_STORE
-static __attribute__((aligned(4),section(".irom.reserved"))) const char lua_flash_store_reserved[CONFIG_LUA_EMBEDDED_FLASH_STORE];
+#if CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
+  extern const char lua_flash_store_reserved[0];
 #endif
 
 
