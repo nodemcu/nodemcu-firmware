@@ -33,3 +33,5 @@ script:
 - LUA_FILES=`find lua_modules lua_examples -iname "*.lua"`
 - echo checking $LUA_FILES
 - $LUACC -p $LUA_FILES
+#- if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck.sh; fi
+
