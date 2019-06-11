@@ -5,6 +5,9 @@
 
 This Lua module provides a simple callback implementation of a [HTTP 1.1](https://www.w3.org/Protocols/rfc2616/rfc2616.html) server.
 
+!!!note
+	copy this file to the nodemcu by yourself
+
 ### Require
 ```lua
 httpserver = require("httpserver")
@@ -42,14 +45,21 @@ Callback function has 2 arguments: `req` (request) and `res` (response). The fir
 	- `name`: Header name
 	- `value`: Header value
 
-- `ondata`: value to setup handler function HTTP data. Handler function has 2 parameters:
+- `ondata`: value to setup handler function HTTP data. Handler function has 3 parameters:
 	- `self`: `req` object
 	- `chunk`: Request data
+	- `last`: set true while the last chunk
 
-The second object holds functions:
+The second object holds functions:  
 
-- `send(self, data, [response_code])`: Function to send data to client. `self` is `req` object, `data` is data to send and `response_code` is HTTP response code like `200` or `404` (for example)
-- `send_header(self, header_name, header_data)`: Function to send HTTP headers to client. `self` is `req` object, `header_name` is HTTP header name and `header_data` is HTTP header data for client.
-- `finish([data])`: Function to finalize connection, optionally sending data. `data` is optional data to send on connection finalizing.
+- `send_header(header)`: header must be a table like `{status = 200, headers = {connection = "close"}}`. If the status omit,  header.status will be set 200. Built-in 4 status code: 
+
+	- `200 OK`
+	- `304 Not Modified`
+	- `404 Not Found`
+	- `500 Internal Server Error`
+
+- `send(data)`: Function to send the data to client. if `data` is nil will close connection. **so, `send()` is always on the last.**
+
 
 Full example can be found in [http-example.lua](../../lua_modules/http/http-example.lua)
