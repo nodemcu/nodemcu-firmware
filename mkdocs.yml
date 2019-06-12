@@ -50,6 +50,7 @@ pages:
     - 'net':          'modules/net.md'
     - 'node':         'modules/node.md'
     - 'ow (1-Wire)':  'modules/ow.md'
+    - 'pulsecnt':     'modules/pulsecnt.md'
     - 'qrcodegen':    'modules/qrcodegen.md'
     - 'sdmmc':        'modules/sdmmc.md'
     - 'sigma delta':  'modules/sigma-delta.md'
