@@ -13,3 +13,4 @@ tools/toolchains
 .cproject
 .project
 .settings/
+.vscode/**
