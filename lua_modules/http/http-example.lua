@@ -4,6 +4,8 @@
 -- LICENCE: http://opensource.org/licenses/MIT
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 ------------------------------------------------------------------------------
+html = {"<h1>", "hello nodemcu", "</h1>"}
+
 require("httpserver").createServer(80, function(req, res)
   -- analyse method and url
   print("+R", req.method, req.url, node.heap())
@@ -21,17 +23,16 @@ require("httpserver").createServer(80, function(req, res)
     -- end
   end
   -- setup handler of body, if any
-  req.ondata = function(self, chunk)
+  req.ondata = function(self, chunk, last)
     print("+B", chunk and #chunk, node.heap())
-    if not chunk then
+    if last then
       -- reply
-      res:send(nil, 200)
-      res:send_header("Connection", "close")
-      res:send("Hello, world!\n")
-      res:finish()
+      local headers = {}
+      headers.Connection = "close"
+      headers["Content-Type"] = "text/html; charset=utf-8"
+      res.send_header({headers = headers})
+      for i = 1, #html do res.send(html[i]) end
+      res.send() -- don't forget this line
     end
   end
-  -- or just do something not waiting till body (if any) comes
-  --res:finish("Hello, world!")
-  --res:finish("Salut, monde!")
 end)
