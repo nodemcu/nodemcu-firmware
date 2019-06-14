@@ -23,54 +23,49 @@ do
   -- response methods
   ------------------------------------------------------------------------------
   local make_res = function(csend, cfini)
-   local send = function(self, data, status)
-    -- TODO: req.send should take care of response headers!
-    if self.send_header then
-      csend("HTTP/1.1 ")
-      csend(tostring(status or 200))
-      -- TODO: real HTTP status code/name table
-      csend(" OK\r\n")
-      -- we use chunked transfer encoding, to not deal with Content-Length:
-      --   response header
-      self:send_header("Transfer-Encoding", "chunked")
-      -- TODO: send standard response headers, such as Server:, Date:
+   -- send("hello world\r\n") will send the data
+    -- send() will close connection
+    local send = function(data)
+      if data then
+        -- chunked transfer encoding
+        csend(("%X\r\n"):format(#data))
+        csend(data)
+        csend("\r\n")
+      else
+        -- finalize chunked transfer encoding
+        csend("0\r\n\r\n")
+        -- close connection
+        cfini()
+      end
     end
-    if data then
-      -- NB: no headers allowed after response body started
-      if self.send_header then
-        self.send_header = nil
-        -- end response headers
+    local send_header = function(header)
+      if type(header) ~= "table" then
+        print("httpserver.lua: header need a table! eg: {status = 200, headers = {Connection = \"close\"}}")
+        return
+      end
+      if type(header.headers) ~= "table" then
+        print("httpserver.lua: header.headers need a table!")
+        return
+      end
+      -- status
+      local check = status_code[header.status]
+      if check == nil then check = 200 else check = header.status end
+      csend(("HTTP/1.1 %s\r\n"):format(status_code[check]))
+      csend("Transfer-Encoding: chunked\r\n")
+      -- header
+      for k, v in pairs(header.headers) do
+        csend(k)
+        csend(": ")
+        csend(v)
         csend("\r\n")
       end
-      -- chunked transfer encoding
-      csend(("%X\r\n"):format(#data))
-      csend(data)
       csend("\r\n")
     end
-   end
-   local send_header = function(self, name, value)
-    -- NB: quite a naive implementation
-    csend(name)
-    csend(": ")
-    csend(value)
-    csend("\r\n")
-   end
-   -- finalize request, optionally sending data
-   local finish = function(self, data, status)
-    -- NB: res.send takes care of response headers
-    if data then
-      self:send(data, status)
-    end
-    -- finalize chunked transfer encoding
-    csend("0\r\n\r\n")
-    -- close connection
-    cfini()
-   end
-   --
+
     local res = { }
     res.send_header = send_header
     res.send = send
-    res.finish = finish
+    -- res.finish = finish -- no need, use send()
     return res
   end
 
