@@ -48,7 +48,8 @@ do
       csend("\r\n")
     end
    end
-   local send_header = function(self, name, value) -- luacheck: ignore
+
+   local send_header = function(_, name, value)
     -- NB: quite a naive implementation
     csend(name)
     csend(": ")
@@ -80,21 +81,28 @@ do
   local http_handler = function(handler)
     return function(conn)
       local csend = (require "fifosock").wrap(conn)
-      local cfini = function()
-        conn:on("receive", nil)
-        conn:on("disconnection", nil)
-        csend(function() conn:on("sent", nil) conn:close() end)
-      end
+
       local req, res
       local buf = ""
       local method, url
+
+      local cfini = function()
+        conn:on("receive", nil)
+        conn:on("disconnection", nil)
+        csend(function()
+          conn:on("sent", nil)
+          conn:close()
+        end)
+      end
+
       local ondisconnect = function(connection)
         connection:on("sent", nil)
         collectgarbage("collect")
       end
       -- header parser
       local cnt_len = 0
-      local onheader = function(connection, k, v) -- luacheck: ignore
+
+      local onheader = function(_, k, v)
         -- TODO: look for Content-Type: header
         -- to help parse body
         -- parse content length to know body length
@@ -109,9 +117,10 @@ do
           req:onheader(k, v)
         end
       end
+
       -- body data handler
       local body_len = 0
-      local ondata = function(connection, chunk) -- luacheck: ignore
+      local ondata = function(_, chunk)
         -- feed request data to request handler
         if not req or not req.ondata then return end
         req:ondata(chunk)
@@ -123,6 +132,7 @@ do
           req:ondata()
         end
       end
+
       local onreceive = function(connection, chunk)
         -- merge chunks in buffer
         if buf then
@@ -139,9 +149,11 @@ do
           buf = buf:sub(e + 2)
           -- method, url?
           if not method then
-            local i, _ -- luacheck: ignore
-            -- NB: just version 1.1 assumed
-            _, i, method, url = line:find("^([A-Z]+) (.-) HTTP/1.1$")
+            do
+              local _
+              -- NB: just version 1.1 assumed
+              _, _, method, url = line:find("^([A-Z]+) (.-) HTTP/1.1$")
+            end
             if method then
               -- make request and response objects
               req = make_req(connection, method, url)
@@ -160,18 +172,19 @@ do
             end
           -- headers end
           else
+            -- NB: we explicitly reassign receive handler so that
+            --   next received chunks go directly to body handler
+            connection:on("receive", ondata)
             -- NB: we feed the rest of the buffer as starting chunk of body
             ondata(connection, buf)
             -- buffer no longer needed
             buf = nil
-            -- NB: we explicitly reassign receive handler so that
-            --   next received chunks go directly to body handler
-            connection:on("receive", ondata)
             -- parser done
             break
           end
         end
       end
+
       conn:on("receive", onreceive)
       conn:on("disconnection", ondisconnect)
     end
