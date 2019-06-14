@@ -116,13 +116,12 @@ do
       local ondata = function(conn, chunk)
         -- feed request data to request handler
         if not req or not req.ondata then return end
-        req:ondata(chunk)
-        -- NB: once length of seen chunks equals Content-Length:
-        --   onend(conn) is called
         body_len = body_len + #chunk
-        -- print("-B", #chunk, body_len, cnt_len, node.heap())
         if body_len >= cnt_len then
-          req:ondata()
+          -- last chunk
+          req:ondata(chunk, true)
+        else
+          req:ondata(chunk, false)
         end
       end
       local onreceive = function(conn, chunk)
