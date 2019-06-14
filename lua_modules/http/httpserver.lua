@@ -7,6 +7,14 @@
 local collectgarbage, tonumber, tostring = collectgarbage, tonumber, tostring
 
 local http
+
+-- add some status code
+local status_code = {}
+status_code[200] = "200 OK"
+status_code[304] = "304 Not Modified"
+status_code[404] = "404 Not Found"
+status_code[500] = "500 Internal Server Error"
+
 do
   ------------------------------------------------------------------------------
   -- request methods
