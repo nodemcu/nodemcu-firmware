@@ -6,8 +6,8 @@ The basic process to get started with NodeMCU consists of the following three st
 1.  [Flash the firmware](flash.md) to the chip
 1.  [Upload code](upload.md) to the device.
 
-You will typically do steps 1 and 2 only once, but then repeat step 3 as you develop your application. If your application outgrows the limited on-chip RAM then you can use the [Lua Flash Store](lfs.md) (LFS) to move your Lua code into flash memory, freeing a lot more RAM for variable data. This is why it is a good idea to enable LFS for step 1 if you are developing a larger application. As documented below there is a different approach to uploading Lua code.
-
+You will typically do steps 1 and 2 only once, but then repeat step 3 as you develop your application. If your application outgrows the limited on-chip RAM then you can use the [Lua Flash Store](lfs.md) (LFS) to move your Lua code into flash memory, freeing a lot more RAM for variable data. This is why it is a good idea to enable LFS for step 1 if you are developing a larger application. As documented below there is a different approach to uploading Lua code. 
+ 
 
 !!! caution
 	There's more than one way to skin a cat. For each of the tasks you have a number of choices with regards to tooling. The colored boxes represent an opinionated path to start your journey - the quickest way to success so to speak. Feel free to follow the links above to get more detailed information.
@@ -48,7 +48,7 @@ You will typically do steps 1 and 2 only once, but then repeat step 3 as you dev
     <td><a href="#esptoolpy">esptool.py</a></td>
     <td><a href="#esptoolpy">esptool.py</a></td>
     <td class="select"><a href="#esptoolpy">esptool.py</a></td>
-  </tr>
+  </tr>  
   <tr>
     <th rowspan="2">Upload code</th>
     <td class="select"><a href="#esplorer">ESPlorer (Java)</a></td>
@@ -59,7 +59,7 @@ You will typically do steps 1 and 2 only once, but then repeat step 3 as you dev
     <td><a href="#nodemcu-tool">NodeMCU-Tool (Node.js)</a></td>
     <td class="select"><a href="#nodemcu-tool">NodeMCU-Tool (Node.js)</a></td>
     <td class="select"><a href="#nodemcu-tool">NodeMCU-Tool (Node.js)</a></td>
-  </tr>
+  </tr> 
   <t>
     <th colspan="4">LFS tasks below</th>
   </tr>
@@ -111,7 +111,7 @@ You will typically do steps 1 and 2 only once, but then repeat step 3 as you dev
     <td class="select"><a href="#upload-lfs-image">generic</a></td>
     <td class="select"><a href="#upload-lfs-image">generic</a></td>
     <td class="select"><a href="#upload-lfs-image">generic</a></td>
-  </tr>
+  </tr>  
 </table>
 
 **How to read this**
@@ -131,7 +131,7 @@ Our intention is to introduce you to programming in Lua on the ESP8266 as quickl
 
 ## Cloud Builder
 
-The cloud builder at [https://nodemcu-build.com](https://nodemcu-build.com) allows to pick NodeMCU branch, modules and a few other configuration options (e.g. SSL yes/no). After the build is completed you will receive an email with two links to download your custom firmware:
+The cloud builder at [https://nodemcu-build.com](https://nodemcu-build.com) allows to pick NodeMCU branch, modules and a few other configuration options (e.g. SSL yes/no). After the build is completed you will receive an email with two links to download your custom firmware: 
 
 - one for NodeMCU with floating support
 - one for NodeMCU *without* floating support i.e. an integer-only binary
@@ -248,7 +248,7 @@ Windows 10 users can install and use the Windows Subsystem for Linux (WSL). Alte
 TBD
 
 1. `$ cd app/lua/luac_cross`
-2. `$ make`
+2. `$ make` 
 
 ### Linux
 
@@ -264,9 +264,9 @@ TBD
 ### Select Lua files to be run from LFS
 
 The easiest approach is to maintain all the Lua files for your project in a single directory on your host. (These files will be compiled by `luac.cross` to build the LFS image in next step.)
-
+    
 For example to run the Telnet and FTP servers from LFS, put the following files in your project directory:
-
+	
 * [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua).  LFS helper routines and functions.
 * [lua_examples/lfs/dummy_strings.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/dummy_strings.lua).  Moving common strings into LFS.
 * [lua_examples/telnet/telnet.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/telnet/telnet.lua).  A simple **telnet** server.
@@ -313,7 +313,7 @@ You might also want to add a simple one-line script file to your `~/bin` directo
 ## Upload LFS image
 
 The compiled LFS image file (e.g. `lfs.img`) is uploaded as a regular file to the device file system (SPIFFS). You do this just like with Lua files with e.g. [ESPlorer](#esplorer) or [NodeMCU-Tool](#nodemcu-tool). There is also a new example, [HTTP_OTA.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/HTTP_OTA.lua), in `lua_examples` that can retrieve images from a standard web service.
-
+  
 Once the LFS image file is on SPIFFS, you can execute the [node.flashreload()](../modules/node/#nodeflashreload) command and the loader will then load it into flash and immediately restart the ESP module with the new LFS loaded, if the image file is valid. However, the call will return with an error _if_ the file is found to be invalid, so your reflash code should include logic to handle such an error return.
 
 ### Edit your `init.lua` file
@@ -323,6 +323,48 @@ Once the LFS image file is on SPIFFS, you can execute the [node.flashreload()](.
 -  Individual functions can be executed directly, e.g. `LFS.myfunc(a,b)`
 -  LFS is now in the require path, so `require 'myModule'` works as expected.
 
-Do a protected call of this `_init` code: `pcall(node.flashindex("_init"))` and check the error status.  See [Programming Techniques and Approachs](lfs.md#programming-techniques-and-approachs) in the LFS whitepaper for a more detailed description.
+Do a protected call of this `_init` code: `pcall(node.flashindex("_init"))` and check the error status.  See [Programming Techniques and Approachs](lfs.md#programming-techniques-and-approachs) in the LFS whitepaper for a more detailed description. 
+
+### Minimal LFS example
+
+Below is a brief overview of building and running the simplest LFS-based system possible.
+
+To use LFS, start with a version of NodeMCU with LUA_FLASH_STORE set in app/include/user_config.h, and load it on the esp8266 in the usual way (whatever that is for your set up).
+
+Then build an LFS file system. This can be done in several ways, as discussed above; one of the easiest is to use "luac.cross -f -o lfs.img *lua" on the host machine.  The file [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua) should definitely be included in the image, since it's the easiest way of registering the LFS modules.  The lfs.img file can then be downloaded to the esp8266 just like any other file.
+
+The next step is to tell the esp8266 that the LFS file system exists.  This is done with eg.  [node.flashreload("lfs.img")](../modules/node/#nodeflashreload), which will trigger a reset, followed by [node.flashindex("_init")()](../modules/node/#nodeflashindex) to register the modules; logging into the esp8266 and running the following commands gives an overview of the command sequence, given a main.lua file consisting of the line print("LFS main() module")
+
+```
+>
+> node.flashreload("lfs.img")
+-- flashreload() triggers a reset here.
+> print(LFS)
+nil
+> node.flashindex("_init")()
+-- LFS is now initialised.
+> print(LFS)
+table: 3fff06e0
+-- List the modules in the LFS.
+> print(LFS._list)
+table: 3fff0728
+> for k,v in pairs(LFS._list)  do print(k,v) end
+1    dummy_strings
+2    _init
+3    main
+-- Call the LFS main() module.
+> LFS.main()
+LFS main() module
+> 
+```
+
+Note that no error correction has been used, since the commands are intended to be entered at a terminal, and errors will become obvious.
+
+After that, it's a question of setting up the ESP8266 boot process to check for the existence of an LFS image and run whichever module is required.  Once the LFS module table has been registered by running [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua) , running an LFS module is simple a matter of eg: LFS.main()
+
+[node.flashreload()](../modules/node/#nodeflashreload) need only be rerun if the LFS image is updated; ater it has loaded the LFS image into flash memory the original file (in SPIFFS) is no longer used, and can be deleted.
+
+Once LFS is known to work, then modules such as lua_examples/lfs/dummy_strings.lua can usefully be added, together of course with effective error checking.
 
 [↑ back to matrix](#task-os-selector)
+
