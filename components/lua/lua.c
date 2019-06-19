@@ -118,6 +118,34 @@ static int dofsfile (lua_State *L, const char *name) {
   return report(L, status);
 }
 
+static int dolfsfile (lua_State *L, const char *name) {
+  int status = 1;
+  const char *code_fmt = "if node.flashindex('_%s') then node.flashindex('_%s')() end";
+  char *module_name = strdup(name);
+  unsigned name_len = strlen(name);
+  unsigned code_length = strlen(code_fmt) + name_len*2 + 1;
+  char *code_buf = malloc(code_length);
+
+  if (code_buf && module_name) {
+    char *dot = strrchr(module_name, '.');
+    if (dot) {
+      if (strstr(module_name, ".lua") == dot)
+        *dot = 0;
+    }
+    snprintf(code_buf, code_length, code_fmt, module_name, module_name);
+    status = luaL_dostring(L, code_buf);
+    if (status)
+      lua_pushfstring(L, "Failed to load _%s from LFS", module_name);
+  } else {
+    lua_pushstring(L, "Failed to allocate memory");
+  }
+
+  if (module_name)
+    free(module_name);
+  if (code_buf)
+    free(code_buf);
+  return report(L, status);
+}
 
 static int dostring (lua_State *L, const char *s, const char *name) {
   int status = luaL_loadbuffer(L, s, strlen(s), name) || docall(L, 0, 1);
@@ -237,9 +265,14 @@ static int runargs (lua_State *L, char **argv, int n) {
 
 static int handle_luainit (lua_State *L) {
   const char *init = LUA_INIT_STRING;
-  if (init[0] == '@')
+  if (init[0] == '@') {
+  #if CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
+    int status = dolfsfile(L, init+1);
+    if (status == 0)
+      return status;
+  #endif
     return dofsfile(L, init+1);
-  else
+  } else
     return dostring(L, init, LUA_INIT);
 }
 
