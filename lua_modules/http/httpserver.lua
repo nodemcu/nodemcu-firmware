@@ -86,16 +86,16 @@ do
       local buf = ""
       local method, url
       local csend = (require "fifosock").wrap(conn)
-      local cfini = function()
-        conn:on("receive", nil)
-        conn:on("disconnection", nil)
-        csend(function() conn:on("sent", nil) conn:close() res = nil req = nil end)
-      end
       local ondisconnect = function(conn)
         conn:on("sent", nil)
         res = nil
         req = nil
         collectgarbage("collect")
+      end
+      local cfini = function()
+        conn:on("receive", nil)
+        conn:on("disconnection", nil)
+        csend(function() ondisconnect(conn) conn:close() end)
       end
       -- header parser
       local cnt_len = 0
