@@ -56,9 +56,8 @@ do
         return
       end
       -- status
-      local check = status_code[header.status]
-      if check == nil then check = 200 else check = header.status end
-      csend(("HTTP/1.1 %s\r\n"):format(status_code[check]))
+      header.status = header.status or 200
+      csend(("HTTP/1.1 %s\r\n"):format(status_code[tonumber(header.status)]))
       csend("Transfer-Encoding: chunked\r\n")
       -- header
       for k, v in pairs(header.headers) do
