@@ -120,7 +120,7 @@ static int dofsfile (lua_State *L, const char *name) {
 
 static int dolfsfile (lua_State *L, const char *name) {
   int status = 1;
-  const char *code_fmt = "if node.flashindex('_%s') then node.flashindex('_%s')() end";
+  const char *code_fmt = "if node.flashindex('%s') then node.flashindex('%s')() end";
   char *module_name = strdup(name);
   unsigned name_len = strlen(name);
   unsigned code_length = strlen(code_fmt) + name_len*2 + 1;
@@ -135,7 +135,7 @@ static int dolfsfile (lua_State *L, const char *name) {
     snprintf(code_buf, code_length, code_fmt, module_name, module_name);
     status = luaL_dostring(L, code_buf);
     if (status)
-      lua_pushfstring(L, "Failed to load _%s from LFS", module_name);
+      lua_pushfstring(L, "Failed to load %s from LFS", module_name);
   } else {
     lua_pushstring(L, "Failed to allocate memory");
   }
