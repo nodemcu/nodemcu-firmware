@@ -92,7 +92,7 @@ do
         csend(function() conn:on("sent", nil) conn:close() res = nil req = nil end)
       end
       local ondisconnect = function(conn)
-        conn.on("sent", nil)
+        conn:on("sent", nil)
         res = nil
         req = nil
         collectgarbage("collect")
