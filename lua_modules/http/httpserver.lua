@@ -32,7 +32,7 @@ do
   ------------------------------------------------------------------------------
   local make_res = function(csend, cfini)
    -- send("hello world\r\n") will send the data
-    -- send() will close connection
+    -- send(nil) will close connection
     local send = function(data)
       if data then
         -- chunked transfer encoding
@@ -73,7 +73,6 @@ do
     local res = { }
     res.send_header = send_header
     res.send = send
-    -- res.finish = finish -- no need, use send()
     return res
   end
 
