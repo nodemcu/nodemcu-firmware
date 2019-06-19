@@ -116,25 +116,17 @@ LUA_API void dumpStrings(lua_State *L) {
  * writes are suppressed if the global writeToFlash is false.  This is used in
  * phase I where the pass is used to size the structures in flash.
  */
-static const char *flashPosition(void){
-  return  flashAddr + curOffset;
-}
-
-
-static const char *flashSetPosition(uint32_t offset){
+static void flashSetPosition(uint32_t offset){
   NODE_DBG("flashSetPosition(%04x)\n", offset);
   curOffset = offset;
-  return flashPosition();
 }
 
 
-static const char *flashBlock(const void* b, size_t size)  {
-  const void *cur = flashPosition();
-  NODE_DBG("flashBlock((%04x),%08x,%04x)\n", curOffset,b,size);
+static void flashBlock(const void* b, size_t size)  {
+  NODE_DBG("flashBlock((%04x),%08x,%04x)\n", curOffset,(unsigned int)b,size);
   lua_assert(ALIGN_BITS(b) == 0 && ALIGN_BITS(size) == 0);
   platform_flash_write(b, flashAddrPhys+curOffset, size);
   curOffset += size;
-  return cur;
 }
 
 
@@ -161,8 +153,10 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   flashSize = CONFIG_LUA_EMBEDDED_FLASH_STORE;
   flashAddr = lua_flash_store_reserved;
   flashAddrPhys = spi_flash_cache2phys(lua_flash_store_reserved);
-  if (flashAddrPhys == SPI_FLASH_CACHE2PHYS_FAIL)
+  if (flashAddrPhys == SPI_FLASH_CACHE2PHYS_FAIL) {
+    NODE_ERR("spi_flash_cache2phys failed\n");
     return;
+  }
 #else
   const esp_partition_t *part = esp_partition_find_first(
     PLATFORM_PARTITION_TYPE_NODEMCU,
@@ -221,6 +215,12 @@ static int procFirstPass (void);
  * Library function called by node.flashreload(filename).
  */
 LUALIB_API int luaN_reload_reboot (lua_State *L) {
+#if CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
+  // Updating the LFS section is disabled for now because any changes to the
+  // image requires updating its checksum to prevent boot failure.
+  lua_pushstring(L, "Not allowed to write to LFS section");
+  return 1;
+#else
   // luaL_dbgbreak();
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
@@ -280,6 +280,7 @@ LUALIB_API int luaN_reload_reboot (lua_State *L) {
 
   while (1) {}  // Force WDT as the ROM software_reset() doesn't seem to work
   return 0;
+#endif // CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
 }
 
 
@@ -487,7 +488,7 @@ int procSecondPass (void) {
     if ((i&31)==0)
       flags = out->flags[out->flagsNdx++];
     if (flags&1)
-      buf[i] = WORDSIZE*buf[i] + cast(uint32_t, flashAddr);
+      buf[i] = WORDSIZE*buf[i] + cast(uint32_t, flashAddrPhys);
   }
  /*
   * On first block, set the flash_sig has the in progress bit set and this
