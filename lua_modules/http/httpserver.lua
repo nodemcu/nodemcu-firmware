@@ -48,11 +48,11 @@ do
     end
     local send_header = function(header)
       if type(header) ~= "table" then
-        print("httpserver.lua: header need a table! eg: {status = 200, headers = {Connection = \"close\"}}")
+        error("httpserver.lua: header need a table! eg: {status = 200, headers = {Connection = \"close\"}}")
         return
       end
       if type(header.headers) ~= "table" then
-        print("httpserver.lua: header.headers need a table!")
+        error("httpserver.lua: header.headers need a table!")
         return
       end
       -- status
