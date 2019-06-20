@@ -1,7 +1,8 @@
 # Espressif ESP32 Partition Table for 2MB flash
 # Name,  Type, SubType, Offset,  Size
-nvs,      data, nvs,     0x9000,  0x6000
-phy_init, data, phy,     0xf000,  0x1000
-factory,  app,  factory, 0x10000, 0x180000
-# 0xC2 => NodeMCU, 0x0 => Spiffs
-nodemcuspiffs,  0xC2, 0x0,      , 0x70000
+nvs,           data, nvs,      0x9000,   0x6000
+phy_init,      data, phy,      0xf000,   0x1000
+factory,       app,  factory, 0x10000, 0x180000
+# Type 0xC2 => NodeMCU. SubTypes: 0x00 = SPIFFS, 0x01 = LFS
+lfs,           0xC2, 0x01,          ,   0x10000
+nodemcuspiffs, 0xC2, 0x00,          ,   0x70000

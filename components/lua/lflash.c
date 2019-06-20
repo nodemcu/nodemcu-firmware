@@ -81,7 +81,7 @@ struct OUTPUT {
 } *out;
 
 
-#if CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
+#ifdef CONFIG_LUA_EMBEDDED_FLASH_STORE
   extern const char lua_flash_store_reserved[0];
 #endif
 
@@ -110,6 +110,7 @@ LUA_API void dumpStrings(lua_State *L) {
 }
 #endif
 
+#ifndef CONFIG_LUA_EMBEDDED_FLASH_STORE
 /* =====================================================================================
  * The next 4 functions: flashPosition, flashSetPosition, flashBlock and flashErase
  * wrap writing to flash. The last two are platform dependent.  Also note that any
@@ -139,6 +140,11 @@ static void flashErase(uint32_t start, uint32_t end){
     platform_flash_erase_sector( flashSector + i );
 }
 
+static int loadLFS (lua_State *L);
+static int loadLFSgc (lua_State *L);
+static int procFirstPass (void);
+#endif
+
 /* =====================================================================================
  * luaN_init(), luaN_reload_reboot() and luaN_index() are exported via lflash.h.
  * The first is the startup hook used in lstate.c and the last two are
@@ -149,7 +155,7 @@ static void flashErase(uint32_t start, uint32_t end){
  * Hook in lstate.c:f_luaopen() to set up ROstrt and ROpvmain if needed
  */
 LUAI_FUNC void luaN_init (lua_State *L) {
-#if CONFIG_LUA_EMBEDDED_FLASH_STORE
+#ifdef CONFIG_LUA_EMBEDDED_FLASH_STORE
   flashSize = CONFIG_LUA_EMBEDDED_FLASH_STORE;
   flashAddr = lua_flash_store_reserved;
   flashAddrPhys = spi_flash_cache2phys(lua_flash_store_reserved);
@@ -165,9 +171,19 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   if (!part)
     return; // Nothing to do if the size is zero
 
-  flashSize = part->size; // in bytes
-  flashAddrPhys = part->address;
-  flashAddr       = cast(char *, flashAddrPhys);
+  flashSize       = part->size; // in bytes
+  flashAddrPhys   = part->address;
+  flashAddr       = spi_flash_phys2cache(flashAddrPhys, SPI_FLASH_MMAP_DATA);
+  if (!flashAddr) {
+    spi_flash_mmap_handle_t ignored;
+    esp_err_t err = spi_flash_mmap(
+      flashAddrPhys, flashSize, SPI_FLASH_MMAP_DATA,
+      cast(const void **, &flashAddr), &ignored);
+    if (err != ESP_OK) {
+      NODE_ERR("Unable to access LFS partition - is it 64kB aligned as it needs to be?\n");
+      return;
+    }
+  }
 #endif
   G(L)->LFSsize   = flashSize;
   flashSector     = platform_flash_get_sector_of_address(flashAddrPhys);
@@ -195,7 +211,7 @@ LUAI_FUNC void luaN_init (lua_State *L) {
 
   if (fh->pROhash == ALL_SET ||
       ((fh->mainProto - cast(FlashAddr, fh)) >= fh->flash_size)) {
-    NODE_ERR("Flash size check failed: %u vs 0xFFFFFFFF; size: %u\n",
+    NODE_ERR("Flash size check failed: %x vs 0xFFFFFFFF; size: %u\n",
        fh->mainProto - cast(FlashAddr, fh), fh->flash_size);
     return;
   }
@@ -206,16 +222,11 @@ LUAI_FUNC void luaN_init (lua_State *L) {
   G(L)->ROpvmain    = cast(Proto *,fh->mainProto);
 }
 
-//extern void software_reset(void);
-static int loadLFS (lua_State *L);
-static int loadLFSgc (lua_State *L);
-static int procFirstPass (void);
-
 /*
  * Library function called by node.flashreload(filename).
  */
 LUALIB_API int luaN_reload_reboot (lua_State *L) {
-#if CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
+#ifdef CONFIG_LUA_EMBEDDED_FLASH_STORE
   // Updating the LFS section is disabled for now because any changes to the
   // image requires updating its checksum to prevent boot failure.
   lua_pushstring(L, "Not allowed to write to LFS section");
@@ -276,11 +287,11 @@ LUALIB_API int luaN_reload_reboot (lua_State *L) {
 
     flashErase(0,-1);
   }
-  NODE_ERR(msg);
+  NODE_ERR("%s\n", msg);
 
-  while (1) {}  // Force WDT as the ROM software_reset() doesn't seem to work
+  esp_restart();
   return 0;
-#endif // CONFIG_LUA_EMBEDDED_FLASH_STORE > 0
+#endif // CONFIG_LUA_EMBEDDED_FLASH_STORE
 }
 
 
@@ -334,6 +345,8 @@ LUAI_FUNC int luaN_index (lua_State *L) {
   lua_insert(L, 4);
   return 5;
 }
+
+#ifndef CONFIG_LUA_EMBEDDED_FLASH_STORE
 /* =====================================================================================
  * The following routines use my uzlib which was based on pfalcon's inflate and
  * deflate routines.  The standard NodeMCU make also makes two host tools uz_zip
@@ -488,7 +501,7 @@ int procSecondPass (void) {
     if ((i&31)==0)
       flags = out->flags[out->flagsNdx++];
     if (flags&1)
-      buf[i] = WORDSIZE*buf[i] + cast(uint32_t, flashAddrPhys);
+      buf[i] = WORDSIZE*buf[i] + cast(uint32_t, flashAddr); // mapped, not phys
   }
  /*
   * On first block, set the flash_sig has the in progress bit set and this
@@ -566,10 +579,10 @@ static int loadLFS (lua_State *L) {
 
   res = uzlib_inflate(get_byte, put_byte, recall_byte,
     in->len, &crc, &in->inflate_state);
-  if (res != UZLIB_OK) {
+  if (res < 0) { // UZLIB_OK == 0, UZLIB_DONE == 1
     const char *err[] = {"Data_error during decompression",
                          "Chksum_error during decompression",
-                         "Dictionary error during decompression"
+                         "Dictionary error during decompression",
                          "Memory_error during decompression"};
     flash_error(err[UZLIB_DATA_ERROR - res]);
   }
@@ -594,3 +607,4 @@ static int loadLFSgc (lua_State *L) {
   }
   return 0;
 }
+#endif

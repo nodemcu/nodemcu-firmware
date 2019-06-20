@@ -17,7 +17,7 @@ fi
 
 LFS_ADDR_SIZE=`grep -E "\.lfs\.reserved[ ]+0x[0-9a-f]+[ ]+0x[0-9a-z]+" ${MAP_FILE} | tr -s ' '`
 if [ -z "${LFS_ADDR_SIZE}" ]; then
-	echo "Error: LFS segment not found"
+	echo "Error: LFS segment not found. Use 'make clean; make' perhaps?"
 	exit 1
 fi
 
