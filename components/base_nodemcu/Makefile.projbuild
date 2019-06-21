@@ -1,0 +1,8 @@
+BASE_NODEMCU_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
+BASE_NODEMCU_BUILD_DIR:=$(BUILD_DIR_BASE)/base_nodemcu
+
+$(BUILD_DIR_BASE)/$(PROJECT_NAME).elf: $(BASE_NODEMCU_BUILD_DIR)/ld_patched
+
+$(BASE_NODEMCU_BUILD_DIR)/ld_patched: $(BUILD_DIR_BASE)/esp32/esp32.project.ld
+	"$(BASE_NODEMCU_DIR)/add_rodata_ld.sh" "$<" "$(BASE_NODEMCU_DIR)/ld/nodemcu_rodata.ld"
+	touch $@
