@@ -330,7 +330,7 @@ Do a protected call of this `_init` code: `pcall(node.flashindex("_init"))` and 
 
 Below is a brief overview of building and running the simplest LFS-based system possible.
 
-To use LFS, start with a version of NodeMCU with LUA_FLASH_STORE set in app/include/user_config.h, and load it on the ESP8266 in the usual way (whatever that is for your set up).
+To use LFS, start with a version of NodeMCU with `LUA_FLASH_STORE` set in `app/include/user_config.h`, and load it on the ESP8266 in the usual way (whatever that is for your set up).
 
 Then build an LFS file system. This can be done in several ways, as discussed above; one of the easiest is to use `luac.cross -f -o lfs.img *lua` on the host machine.  The file [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua) should definitely be included in the image, since it's the easiest way of registering the LFS modules.  The `lfs.img` file can then be downloaded to the ESP8266 just like any other file.
 
@@ -361,9 +361,9 @@ LFS main() module
 
 Note that no error correction has been used, since the commands are intended to be entered at a terminal, and errors will become obvious.
 
-After that, it's a question of setting up the ESP8266 boot process to check for the existence of an LFS image and run whichever module is required.  Once the LFS module table has been registered by running [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua) , running an LFS module is simple a matter of eg: LFS.main()
+Then you should set up the ESP8266 boot process to check for the existence of an LFS image and run whichever module is required.  Once the LFS module table has been registered by running [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua) , running an LFS module is simple a matter of eg: `LFS.main()`.
 
-[node.flashreload()](../modules/node/#nodeflashreload) need only be rerun if the LFS image is updated; ater it has loaded the LFS image into flash memory the original file (in SPIFFS) is no longer used, and can be deleted.
+[node.flashreload()](../modules/node/#nodeflashreload) need only be rerun if the LFS image is updated; after it has loaded the LFS image into flash memory the original file (in SPIFFS) is no longer used, and can be deleted.
 
 Once LFS is known to work, then modules such as [lua_examples/lfs/dummy_strings.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/dummy_strings.lua) can usefully be added, together of course with effective error checking.
 
