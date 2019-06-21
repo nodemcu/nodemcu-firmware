@@ -165,65 +165,70 @@ static void do_connect (const system_event_t *evt)
 // --- Lua API functions ----------------------------------------------------
 static int wifi_sta_setip(lua_State *L)
 {
-	tcpip_adapter_ip_info_t ipInfo;
-	tcpip_adapter_dns_info_t dnsinfo;
-	size_t len;
-	const char *str;
+  tcpip_adapter_ip_info_t ipInfo;
+  tcpip_adapter_dns_info_t dnsinfo;
+  size_t len;
+  const char *str;
 	
-	luaL_checkanytable (L, 1);
+  ip_addr_t ipAddr;
+  ipAddr.type = IPADDR_TYPE_V4;
+
+  luaL_checkanytable (L, 1);
 	
-	//memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
+  //memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
 	
-	lua_getfield (L, 1, "ip");
-	str = luaL_checklstring (L, -1, &len);
-	if(!ipaddr_aton(str, &ipInfo.ip))
-	{
-		return luaL_error(L, "Could not parse IP address, aborting");
-	}
+  lua_getfield (L, 1, "ip");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipAddr))
+  {
+    return luaL_error(L, "Could not parse IP address, aborting");
+  }
+  ipInfo.ip = ipAddr.u_addr.ip4;
 	
-	lua_getfield (L, 1, "netmask");
-	str = luaL_checklstring (L, -1, &len);
-	if(!ipaddr_aton(str, &ipInfo.netmask))
-	{
-		return luaL_error(L, "Could not parse Netmask, aborting");
-	}
+  lua_getfield (L, 1, "netmask");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipAddr))
+  {
+    return luaL_error(L, "Could not parse Netmask, aborting");
+  }
+  ipInfo.netmask = ipAddr.u_addr.ip4;
 	
-	lua_getfield (L, 1, "gateway");
-	str = luaL_checklstring (L, -1, &len);
-	if(!ipaddr_aton(str, &ipInfo.gw))
-	{
-		return luaL_error(L, "Could not parse Gateway address, aborting");
-	}
+  lua_getfield (L, 1, "gateway");
+  str = luaL_checklstring (L, -1, &len);
+  if(!ipaddr_aton(str, &ipAddr))
+  {
+    return luaL_error(L, "Could not parse Gateway address, aborting");
+  }
+  ipInfo.gw = ipAddr.u_addr.ip4;
 	
-	lua_getfield (L, 1, "dns");
-	str = luaL_optlstring(L, -1, str, &len);
-	if(!ipaddr_aton(str, &dnsinfo.ip))
-	{
-		return luaL_error(L, "Could not parse DNS address, aborting");
-	}
+  lua_getfield (L, 1, "dns");
+  str = luaL_optlstring(L, -1, str, &len);
+  if(!ipaddr_aton(str, &dnsinfo.ip))
+  {
+    return luaL_error(L, "Could not parse DNS address, aborting");
+  }
 	
-	ESP_ERROR_CHECK(tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA));
-	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo);
-	tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA, TCPIP_ADAPTER_DNS_MAIN, &dnsinfo);
+  ESP_ERROR_CHECK(tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA));
+  tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo);
+  tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA, TCPIP_ADAPTER_DNS_MAIN, &dnsinfo);
 	
-	return 0;
+  return 0;
 }
 
 static int wifi_sta_sethostname(lua_State *L)
 {
-	
-	size_t l;
-	esp_err_t err;
-	const char *hostname = luaL_checklstring(L, 1, &l);
-	
-	err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname);
-	
-	if (err != ESP_OK)
-		return luaL_error (L, "failed to set hostname, code %d", err);
+  size_t l;
+  esp_err_t err;
+  const char *hostname = luaL_checklstring(L, 1, &l);
 
-    lua_pushboolean (L, err==ESP_OK);
-	
-	return 1;
+  err = tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname);
+
+  if (err != ESP_OK)
+    return luaL_error (L, "failed to set hostname, code %d", err);
+
+  lua_pushboolean (L, err==ESP_OK);
+
+  return 1;
 }
 
 static int wifi_sta_config (lua_State *L)
