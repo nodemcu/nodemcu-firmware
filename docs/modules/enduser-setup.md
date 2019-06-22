@@ -1,4 +1,4 @@
-# enduser setup Module
+# enduser setup Module aka Captive Portal aka WiFi Manager
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-09-02 | [Robert Foss](https://github.com/robertfoss) | [Robert Foss](https://github.com/robertfoss) | [enduser_setup.c](../../app/modules/enduser_setup.c)|
