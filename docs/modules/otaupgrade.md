@@ -1,4 +1,4 @@
-# BT HCI Module
+# OTA Upgrade module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
 | 2019-06-24 | [DiUS](https://github.com/DiUS), [Johny Mattsson](https://github.com/jmattsson) | [Johny Mattsson](https://github.com/jmattsson) | [otaupgrade.c](../../components/modules/otaupgrade.c)|
