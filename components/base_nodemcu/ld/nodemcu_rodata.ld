@@ -1,6 +1,6 @@
-SECTIONS {
-  .flash.rodata :
-  {
+
+    /* ----- Begin NodeMCU link-time arrays ------- */
+
     . = ALIGN(4);
     /* Link-time arrays containing the defs for the included modules */
     lua_libs_map = ABSOLUTE(.);
@@ -13,9 +13,5 @@ SECTIONS {
     KEEP(*(.esp_event_cb_table))
     LONG(0) LONG(0) /* Null-terminate the array */
 
-    . = ALIGN(4096);
-    lua_flash_store_reserved = ABSOLUTE(.);
-    KEEP(*(.lfs.reserved))
-  }
-}
-INSERT BEFORE .flash.text
+    /* ----- End NodeMCU link-time arrays ------- */
+

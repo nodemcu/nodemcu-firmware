@@ -170,30 +170,36 @@ static int wifi_sta_setip(lua_State *L)
   size_t len;
   const char *str;
 
+  ip_addr_t ipAddr;
+  ipAddr.type = IPADDR_TYPE_V4;
+
   luaL_checkanytable (L, 1);
 
   //memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
 
   lua_getfield (L, 1, "ip");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipInfo.ip))
+  if(!ipaddr_aton(str, &ipAddr))
   {
     return luaL_error(L, "Could not parse IP address, aborting");
   }
+  ipInfo.ip = ipAddr.u_addr.ip4;
 
   lua_getfield (L, 1, "netmask");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipInfo.netmask))
+  if(!ipaddr_aton(str, &ipAddr))
   {
     return luaL_error(L, "Could not parse Netmask, aborting");
   }
+  ipInfo.netmask = ipAddr.u_addr.ip4;
 
   lua_getfield (L, 1, "gateway");
   str = luaL_checklstring (L, -1, &len);
-  if(!ipaddr_aton(str, &ipInfo.gw))
+  if(!ipaddr_aton(str, &ipAddr))
   {
     return luaL_error(L, "Could not parse Gateway address, aborting");
   }
+  ipInfo.gw = ipAddr.u_addr.ip4;
 
   lua_getfield (L, 1, "dns");
   str = luaL_optlstring(L, -1, str, &len);
