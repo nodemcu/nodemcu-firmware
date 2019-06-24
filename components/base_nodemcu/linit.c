@@ -16,7 +16,8 @@
 #include "luaconf.h"
 #include "module.h"
 #include "lstate.h"
-//#include "sdkconfig.h"
+#include <assert.h>
+#include <stdalign.h>
 
 LROT_EXTERN(strlib);
 LROT_EXTERN(tab_funcs);
@@ -112,3 +113,8 @@ void luaL_openlibs (lua_State *L) {
   }
   lua_pop(L, 1);  //cleanup stack
 }
+
+#ifndef LUA_CROSS_COMPILER
+_Static_assert(_Alignof(luaR_entry) == 8, "Unexpected alignment of module registration - update the linker script snippets to match!");
+_Static_assert(sizeof(luaR_entry) == 24, "Unexpect size of array member - update the linker script snippets to match!");
+#endif
