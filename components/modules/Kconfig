@@ -185,6 +185,14 @@ config LUA_MODULE_OW
   help
       Includes the 1-Wire (ow) module (recommended).
 
+config LUA_MODULE_OTAUPGRADE
+  bool "Over-The-Air upgrade module"
+  default "n"
+  help
+      Includes the over-the-air firmware upgrade module. Use of this requires
+      a partition table with at least two OTA partitions, plus the OTA data
+      partition. See the IDF documentation for details.
+
 config LUA_MODULE_QRCODEGEN
   bool "QR Code Generator module"
   default "n"
@@ -266,7 +274,7 @@ config LUA_MODULE_WS2812
       Includes the ws2812 module.
 	  
 config LUA_MODULE_TIME
-  bool "time module"
+  bool "Time module"
   default "n"
   help
       Includes the time module.
