@@ -20,6 +20,15 @@ is it marked as bootable. This makes the system resilient to incomplete
 upgrades, be it due to power-loss, interrupted downloads, or other such
 things.
 
+An example partition table for OTA might look like:
+```
+# Name,  Type, SubType, Offset,  Size
+nvs,      data, nvs,     0x9000,  0x5000
+otadata,  data, ota,     0xe000,  0x2000
+ota_0,    app,  ota_0,  0x10000,0x130000
+ota_1,    app,  ota_1, 0x140000,0x130000
+```
+
 Depending on whether the installed boot loader has been built with or
 without rollback support, the upgrade process has four or three steps.
 Without rollback support, the steps are:
