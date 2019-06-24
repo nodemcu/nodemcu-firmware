@@ -115,6 +115,11 @@ void luaL_openlibs (lua_State *L) {
 }
 
 #ifndef LUA_CROSS_COMPILER
-_Static_assert(_Alignof(luaR_entry) == 8, "Unexpected alignment of module registration - update the linker script snippets to match!");
-_Static_assert(sizeof(luaR_entry) == 24, "Unexpect size of array member - update the linker script snippets to match!");
+# ifdef LUA_NUMBER_INTEGRAL
+#  define COMPARE <=
+# else
+#  define COMPARE ==
+# endif
+_Static_assert(_Alignof(luaR_entry) COMPARE 8, "Unexpected alignment of module registration - update the linker script snippets to match!");
+_Static_assert(sizeof(luaR_entry) COMPARE 24, "Unexpect size of array member - update the linker script snippets to match!");
 #endif
