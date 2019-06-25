@@ -125,6 +125,12 @@ config LUA_MODULE_ENCODER
       Includes the encoder module. This provides hex and base64 encoding and
       decoding functionality.
 
+config LUA_MODULE_ETH
+  bool "Ethernet module"
+  default "n"
+  help
+      Includes the ethernet module.
+
 config LUA_MODULE_FILE
   bool "File module"
   default "y"
