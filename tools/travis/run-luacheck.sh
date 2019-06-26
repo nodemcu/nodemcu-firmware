@@ -2,8 +2,6 @@
 
 set -e
 
-LUA_FILES_TO_CHECK=`find lua_modules lua_examples -iname "*.lua"`
-
 echo "Installing Lua 5.3, LuaRocks and Luacheck"
 (
   cd "$TRAVIS_BUILD_DIR" || exit
@@ -11,7 +9,9 @@ echo "Installing Lua 5.3, LuaRocks and Luacheck"
   cache/localua/bin/luarocks install luacheck || exit
 )
 
-echo Static analysys of $LUA_FILES_TO_CHECK
 (
-  cache/localua/bin/luacheck --config luacheck_config.lua $LUA_FILES_TO_CHECK || exit
+  echo "Static analysys of:"
+  find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 echo
 )
+
+(find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 cache/localua/bin/luacheck --config tools/luacheck_config.lua) || exit
