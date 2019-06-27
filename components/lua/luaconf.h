@@ -333,8 +333,8 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** avoids including 'stdio.h' everywhere.)
 */
 #if !defined(LUA_USE_STDIO)
-#define luai_writestring(s, l)  puts(s)
-#define luai_writeline()        puts("\n")
+#define luai_writestring(s, l)  fwrite(s, 1, l, stdout)
+#define luai_writeline()        puts("")
 #endif // defined(LUA_USE_STDIO)
 
 /*
