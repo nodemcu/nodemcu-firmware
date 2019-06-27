@@ -22,7 +22,7 @@
      * over in nodemcu_esp_event.h! */
     . = ALIGN(4);
     esp_event_cb_table = ABSOLUTE(.);
-    KEEP(*(.esp_event_cb_table))
+    KEEP(*(.lua_esp_event_cb_table))
     LONG(0) LONG(0) /* Null-terminate the array, 8 bytes */
 
     /* ----- End NodeMCU link-time arrays ------- */

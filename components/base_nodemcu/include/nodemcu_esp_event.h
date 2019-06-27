@@ -68,7 +68,7 @@ typedef struct {
 extern nodemcu_esp_event_reg_t esp_event_cb_table;
 
 #define NODEMCU_ESP_EVENT(evcode, func) \
-  static const LOCK_IN_SECTION(".esp_event_cb_table") \
+  static const LOCK_IN_SECTION(esp_event_cb_table) \
     nodemcu_esp_event_reg_t MODULE_PASTE_(func,evcode) = { evcode, func };
 
 _Static_assert(_Alignof(nodemcu_esp_event_reg_t) == 4, "Unexpected alignment of event registration - update linker script snippets to match!");
