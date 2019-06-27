@@ -128,7 +128,13 @@ static int node_info( lua_State* L )
   lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
   lua_pushinteger(L, flash_rom_get_mode());
   lua_pushinteger(L, flash_rom_get_speed());
-  return 8;
+  lua_pushstring(L, BUILDINFO_BRANCH);
+  lua_pushstring(L, BUILDINFO_COMMIT_ID);
+  lua_pushboolean(L, BUILDINFO_SSL);
+  lua_pushstring(L, BUILDINFO_LFS);
+  lua_pushstring(L, BUILDINFO_MODULES);
+  lua_pushstring(L, BUILDINFO_BUILD_TYPE);
+  return 14;
 }
 
 // Lua: chipid()
