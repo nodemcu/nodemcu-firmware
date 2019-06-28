@@ -54,9 +54,7 @@ dofile('eus_params.lua')
 print("Wifi device_name: " .. device_name)
 ```
 
----
-
-The following HTTP endpoints exist:
+### HTTP endpoints:
 
 |Path|Method|Description|
 |----|------|-----------|
@@ -68,6 +66,9 @@ The following HTTP endpoints exist:
 |/setwifi|POST|HTML form post for setting the WiFi credentials. Expects HTTP content type `application/x-www-form-urlencoded`. Supports sending and storing additinal configuration parameters (as input fields). Returns the same payload as `/status.json` instead of redirecting to `/`. See also: `/update`.|
 |/update|GET|Data submission target. Example: `http://example.com/update?wifi_ssid=foobar&wifi_password=CorrectHorseBatteryStaple`. Will redirect to `/` when complete. Note that will NOT update the `eus_params.lua` file i.e. it does NOT support sending arbitrary parameters. See also: `/setwifi`. |
 
+Module functions are described below.
+
+---
 
 ## enduser_setup.manual()
 
