@@ -97,7 +97,7 @@ enduser_setup.start(
   function(err, str)
     print("enduser_setup: Err #" .. err .. ": " .. str)
   end
-);
+)
 ```
 
 ## enduser_setup.start()
@@ -127,7 +127,7 @@ enduser_setup.start(
     print("enduser_setup: Err #" .. err .. ": " .. str)
   end,
   print -- Lua print function can serve as the debug callback
-);
+)
 ```
 
 ## enduser_setup.stop()
