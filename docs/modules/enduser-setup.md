@@ -27,11 +27,11 @@ You can also add some additional inputs in the `enduser_setup.html` (as long as 
 file in the root filesystem of the ESP8266, which you can then load in your own code. In this case, the data will be saved as a set of variables with the name being the input name, 
 and the value being a string representing what you put in the form.
 
-For instance, if your HTML contains 2 additional inputs:
+For instance, if your HTML contains two additional inputs:
 
 ```html
-<input id=timeout_delay type=text placeholder="Delay in seconds" />
-<input id=device_name type=text placeholder="Unique device name" />
+<input name=timeout_delay type=text placeholder="Delay in seconds" />
+<input name=device_name type=text placeholder="Unique device name" />
 ```
 
 Then the `eus_params.lua` file will contain the following:
@@ -58,15 +58,15 @@ print("Wifi device_name: " .. device_name)
 
 The following HTTP endpoints exist:
 
-|Endpoint|Description|
-|--------|-----------|
-|/|Returns HTML for the web page. Will return the contents of `enduser_setup.html` if it exists on the filesystem, otherwise will return a page embedded into the firmware image.|
-|/aplist|Forces the ESP8266 to perform a site survey across all channels, reporting access points that it can find. Return payload is a JSON array: `[{"ssid":"foobar","rssi":-36,"chan":3}]`|
-|/generate_204|Returns a HTTP 204 status (expected by certain Android clients during Wi-Fi connectivity checks)|
-|/status|Returns plaintext status description, used by the web page|
-|/status.json|Returns a JSON payload containing the ESP8266's chip id in hexadecimal format and the status code: 0=Idle, 1=Connecting, 2=Wrong Password, 3=Network not Found, 4=Failed, 5=Success|
-|/setwifi|Endpoint intended for services to use for setting the wifi credentials. Identical to `/update` except must be used as a form POST and returns the same payload as `/status.json` instead of redirecting to `/`.|
-|/update|Form submission target. Example: `http://example.com/update?wifi_ssid=foobar&wifi_password=CorrectHorseBatteryStaple`. Must be a GET request. Will redirect to `/` when complete. Note: won't update the eus_params.lua file. |
+|Path|Method|Description|
+|----|------|-----------|
+|/|GET|Returns HTML for the web page. Will return the contents of `enduser_setup.html` if it exists on the filesystem, otherwise will return a page embedded into the firmware image.|
+|/aplist|GET|Forces the ESP8266 to perform a site survey across all channels, reporting access points that it can find. Return payload is a JSON array: `[{"ssid":"foobar","rssi":-36,"chan":3}]`|
+|/generate_204|GET|Returns a HTTP 204 status (expected by certain Android clients during Wi-Fi connectivity checks)|
+|/status|GET|Returns plaintext status description, used by the web page|
+|/status.json|GET|Returns a JSON payload containing the ESP8266's chip id in hexadecimal format and the status code: 0=Idle, 1=Connecting, 2=Wrong Password, 3=Network not Found, 4=Failed, 5=Success|
+|/setwifi|POST|HTML form post for setting the WiFi credentials. Expects HTTP content type `application/x-www-form-urlencoded`. Supports sending and storing additinal configuration parameters (as input fields). Returns the same payload as `/status.json` instead of redirecting to `/`. See also: `/update`.|
+|/update|GET|Data submission target. Example: `http://example.com/update?wifi_ssid=foobar&wifi_password=CorrectHorseBatteryStaple`. Will redirect to `/` when complete. Note that will NOT update the `eus_params.lua` file i.e. it does NOT support sending arbitrary parameters. See also: `/setwifi`. |
 
 
 ## enduser_setup.manual()
@@ -92,7 +92,7 @@ wifi.ap.config({ssid="MyPersonalSSID", auth=wifi.OPEN})
 enduser_setup.manual(true)
 enduser_setup.start(
   function()
-    print("Connected to wifi as:" .. wifi.sta.getip())
+    print("Connected to WiFi as:" .. wifi.sta.getip())
   end,
   function(err, str)
     print("enduser_setup: Err #" .. err .. ": " .. str)
@@ -121,7 +121,7 @@ Starts the captive portal.
 ```lua
 enduser_setup.start(
   function()
-    print("Connected to wifi as:" .. wifi.sta.getip())
+    print("Connected to WiFi as:" .. wifi.sta.getip())
   end,
   function(err, str)
     print("enduser_setup: Err #" .. err .. ": " .. str)
