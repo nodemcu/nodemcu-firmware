@@ -8,7 +8,10 @@ support, enabling new application firmware to be applied and booted into.
 
 This module is not concerned with where the new application comes from.
 The choice of download source and method (e.g. https, tftp) is left to
-the user.
+the user, as is the trigger to start an upgrade. A common approach is
+to have the device periodically check in with a central server and
+compare a provided version number with the currently running version,
+and if necessary kick off an upgrade.
 
 In order to use the `otaupgrade` module, there must exist at least two
 OTA partitions (type `app`, subtype `ota_0` / `ota_1`), as well as the
@@ -30,8 +33,8 @@ ota_1,    app,  ota_1, 0x140000,0x130000
 ```
 
 Depending on whether the installed boot loader has been built with or
-without rollback support, the upgrade process has four or three steps.
-Without rollback support, the steps are:
+without rollback support, the upgrade process itself has four or three
+steps. Without rollback support, the steps are:
 
 - `otaupgrade.commence()`
 - feed the new application image into `otaupgrade.write(data)` in chunks
@@ -44,10 +47,66 @@ whatever metric(s) the user chooses):
 - `otaupgrade.accept()` to mark this image as valid, and allow it to be
   booted into again.
 
+If a new firmware is not `accept()`ed before the device reboots, the
+boot loader will switch back to the previous firmware version (provided
+said boot loader is built with rollback support). A common test before
+marking a new firmware as valid is to ensure the upgrade server can be
+reached, on the basis that as long as the firmware can be remotely
+upgraded, it's "good enough" to accept.
+
+# otaupgrade.info()
+
+The boot info and application state and version info can be queried with
+this function. Typically it will be used to check the version of the
+running application, to compare against a "desired" version in order
+to decide whether an upgrade is required.
+
+#### Parameters
+None.
+
+#### Returns
+A list of three values:
+- the name of the partition of the running application
+- the name of the partition currently marked for boot next (typically the
+  same as the running application, but after `otaupgrade.complete()` it
+  may point to a new application partition.
+- a table whose keys are the names of OTA partitions and corresponding
+  values are tables containing:
+  - `state` one of `new`, `testing`, `valid`, `invalid`, `aborted` or
+    possibly `undefined`. The values `invalid` and `aborted` largely
+    mean the same things. See the IDF documentation for specifics.
+    A partition in `testing` state needs to call `otaupgrade.accept()`
+    if it wishes to become `valid`.
+  - `name` the application name, typically "NodeMCU"
+  - `date` the build date
+  - `time` the build time
+  - `version` the build version, as set by the *PROJECT_VER* variable
+    during build
+  - `secure_version` the secure version number, if secure boot is enabled
+  - `idf_version` the IDF version
+
+#### Example
+```lua
+boot_part, next_part, info = otaupgrade.info()
+print("Booted: "..boot_part)
+print("  Next: "..next_part)
+for p,t in pairs(info) do
+  print("@ "..p..":")
+  for k,v in pairs(t) do
+    print("    "..k..": "..v)
+  end
+end
+print("Running version: "..info[boot_part].version)
+```
+
 # otaupgrade.commence()
 
 Wipes the spare application partition and prepares to receive the new
 application firmware.
+
+If rollback support is enabled, note that the running application must
+first be marked valid/accepted before it is possible to commence a
+new OTA upgrade.
 
 #### Syntax
 `otaupgrade.commence()`
@@ -99,6 +158,39 @@ firmware right away.
 A Lua error may be raised if the image does not pass validation, or no data
 has been written to the image at all.
 
+#### Example
+```lua
+-- Quick, dirty and totally insecure "push upgrade" for development use.
+-- Use netcat to push a new firmware to a device:
+--   nc -q 1 your-device-ip 9999 < build/NodeMCU.bin
+--
+osv = net.createServer()
+osv:listen(9999, function(conn)
+  print('Commencing OTA upgrade')
+  local status, err = pcall(otaupgrade.commence)
+  if err then
+    print(err)
+    conn:send(err)
+    conn:close()
+  end
+  conn:on('receive', function(sck, data)
+    status, err = pcall(function() otaupgrade.write(data) end)
+    if err then
+      print(err)
+      conn:send(err)
+      conn:close()
+    end
+  end)
+  conn:on('disconnection', function()
+    print('EOF, completing OTA')
+    status, err = pcall(function() otaupgrade.complete(1) end)
+    if err then
+      print(err)
+    end
+  end)
+end)
+
+```
 
 # otaupgrade.accept()
 
@@ -121,9 +213,8 @@ None.
 
 # otaupgrade.rollback()
 
-If the installed boot loader is built with rollback support, a new
-firmware may decide that it is not performing as expected, and request
-an explicit rollback to the previous version. If the call to this
+A new firmware may decide that it is not performing as expected, and
+request an explicit rollback to the previous version. If the call to this
 function succeeds, the system will reboot without returning from the
 call.
 
@@ -139,47 +230,3 @@ None.
 #### Returns
 Never. Either the system is rebooted, or a Lua error is raised (e.g. due
 to there being no other firmware to roll back to).
-
-
-# otaupgrade.info()
-
-The boot info and application state and version info can be queried with
-this function. Typically it will be used to check the version of the
-running application.
-
-#### Parameters
-None.
-
-#### Returns
-A list of three values:
-- the name of the partition of the running application
-- the name of the partition currently marked for boot next (typically the
-  same as the running application, but after `otaupgrade.complete()` it
-  may point to a new application partition.
-- a table with entries for each OTA partition, containing:
-  - `state` one of `new`, `testing`, `valid`, `invalid`, `aborted` or
-    possibly `undefined`. The values `invalid` and `aborted` largely
-    mean the same things. See the IDF documentation for specifics.
-    A partition in `testing` state needs to call `otaupgrade.accept()`
-    if it wishes to become `valid`.
-  - `name` the application name, typically "NodeMCU"
-  - `date` the build date
-  - `time` the build time
-  - `version` the build version, as set by the *PROJECT_VER* variable
-    during build
-  - `secure_version` the secure version number, if secure boot is enabled
-  - `idf_version` the IDF version
-
-#### Example
-```lua
-boot_part, next_part, info = otaupgrade.info()
-print("Booted: "..boot_part)
-print("  Next: "..next_part)
-for p,t in pairs(info) do
-  print("@ "..p..":")
-  for k,v in pairs(t) do
-    print("    "..k..": "..v)
-  end
-end
-print("Running version: "..info[boot_part].version)
-```
