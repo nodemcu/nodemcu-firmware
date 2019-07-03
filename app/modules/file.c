@@ -126,15 +126,16 @@ static int file_close( lua_State* L )
     ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
   }
 
-  // unref default file descriptor
-  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
-  file_fd_ref = LUA_NOREF;
-
   if(ud->fd){
       vfs_close(ud->fd);
       // mark as closed
       ud->fd = 0;
   }
+
+  // unref default file descriptor
+  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
+  file_fd_ref = LUA_NOREF;
+
   return 0;
 }
 
