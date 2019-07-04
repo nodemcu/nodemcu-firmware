@@ -236,9 +236,9 @@ static int leth_init( lua_State *L )
   eth_phy_t phy = opt_checkint_range( L, "phy", -1, 0, ETH_PHY_MAX );
   eth_phy_base_t phy_addr = opt_checkint_range( L, "addr", -1, 0, PHY31 );
   eth_clock_mode_t clock_mode = opt_checkint_range( L, "clock_mode", -1, 0, ETH_CLOCK_GPIO17_OUT );
-  module_config.pin_power  = opt_checkint( L, "power", -1 );
-  module_config.pin_mdc    = opt_checkint( L, "mdc",   -1 );
-  module_config.pin_mdio   = opt_checkint( L, "mdio",  -1 );
+  module_config.pin_power  = opt_checkint_range( L, "power", -1, -1, GPIO_NUM_MAX-1 ); // optional
+  module_config.pin_mdc    = opt_checkint_range( L, "mdc",   -1, GPIO_NUM_0, GPIO_NUM_MAX-1 );
+  module_config.pin_mdio   = opt_checkint_range( L, "mdio",  -1, GPIO_NUM_0, GPIO_NUM_MAX-1 );
 
   lua_settop( L, top );
 
@@ -268,7 +268,10 @@ static int leth_init( lua_State *L )
   config.tcpip_input = tcpip_adapter_eth_input;
   config.clock_mode = clock_mode;
 
-  config.phy_power_enable = phy_device_power_enable_via_gpio;
+  if (module_config.pin_power >= GPIO_NUM_0) {
+    // power pin is optional
+    config.phy_power_enable = phy_device_power_enable_via_gpio;
+  }
 
   if (esp_eth_init( &config ) != ESP_OK) {
     luaL_error( L, "esp_eth_init failed" );

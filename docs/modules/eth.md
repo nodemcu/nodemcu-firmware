@@ -65,7 +65,7 @@ eth.init(cfg)
         - `eth.PHY_IP101`
         - `eth.PHY_LAN8720`
         - `eth.PHY_TLK110`
-    - `power` power enable pin
+    - `power` power enable pin, optional
 
 #### Returns
 `nil`
