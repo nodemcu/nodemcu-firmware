@@ -755,12 +755,20 @@ static int enduser_setup_write_file_with_extra_configuration_data(char *form_bod
     return 1;
   }
 
-  // write all key pairs as KEY="VALUE"\n
+  // write all key pairs as KEY="VALUE"\n into a Lua table, example:
+  // local p = {}
+  // p.wifi_ssid="ssid"
+  // p.wifi_password="password"
+  // p.device_name="foo-node"
+  // return p
+  vfs_write(p_file, "local p = {}\n", 13);
   int idx = 0;
   for( idx = 0; idx < kp->keypairs_nb*2; idx=idx+2){
     char* to_write = kp->keypairs[idx];
     size_t length = c_strlen(to_write);
     
+    vfs_write(p_file, "p.", 2);
+
     vfs_write(p_file, to_write, length);
 
     vfs_write(p_file, "=\"", 2);
@@ -771,6 +779,7 @@ static int enduser_setup_write_file_with_extra_configuration_data(char *form_bod
 
     vfs_write(p_file, "\"\n", 2);
   }
+  vfs_write(p_file, "return p\n", 9);
 
   vfs_close(p_file);
   enduser_setup_free_keypairs(kp);

@@ -38,20 +38,22 @@ Then the `eus_params.lua` file will contain the following:
 
 ```lua
 -- those wifi_* are the base parameters that are saved anyway
-wifi_ssid="ssid"
-wifi_password="password"
+local p = {}
+p.wifi_ssid="ssid"
+p.wifi_password="password"
 -- your own parameters:
-timeout_delay="xxx"
-device_name="yyy"
+p.timeout_delay="xxx"
+p.device_name="yyy"
+return p
 ```
 
 ### How to use the eus_params.lua file
 
 Simply include the file by using the `dofile` function:
 ```lua
-dofile('eus_params.lua')
--- now use the parameters as a global var
-print("Wifi device_name: " .. device_name)
+p = dofile('eus_params.lua')
+-- now use the parameters in the Lua table
+print("Wifi device_name: " .. p.device_name)
 ```
 
 ### HTTP endpoints:
