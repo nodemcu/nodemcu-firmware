@@ -130,11 +130,14 @@ static int node_info( lua_State* L )
   lua_pushinteger(L, flash_rom_get_speed());
   lua_pushstring(L, BUILDINFO_BRANCH);
   lua_pushstring(L, BUILDINFO_COMMIT_ID);
+  lua_pushstring(L, BUILDINFO_RELEASE);
+  lua_pushnumber(L, BUILDINFO_RELEASE_DTS);
   lua_pushboolean(L, BUILDINFO_SSL);
   lua_pushstring(L, BUILDINFO_LFS);
   lua_pushstring(L, BUILDINFO_MODULES);
   lua_pushstring(L, BUILDINFO_BUILD_TYPE);
-  return 14;
+  
+  return 16;
 }
 
 // Lua: chipid()
