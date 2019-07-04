@@ -34,8 +34,8 @@ Hasher object with `update` and `finalize` functions available.
 #### Example
 ```lua
 hashobj = crypto.new_hash("SHA1")
-hashobj:update("FirstString"))
-hashobj:update("SecondString"))
+hashobj:update("FirstString")
+hashobj:update("SecondString")
 digest = hashobj:finalize()
 print(encoder.toHex(digest))
 ```
@@ -64,8 +64,8 @@ Hasher object with `update` and `finalize` functions available.
 #### Example
 ```lua
 hmac = crypto.new_hmac("SHA1", "top s3cr3t key")
-hmac:update("Some data"))
-hmac:update("... more data"))
+hmac:update("Some data")
+hmac:update("... more data")
 signature = hmac:finalize()
 print(encoder.toHex(signature))
 ```
