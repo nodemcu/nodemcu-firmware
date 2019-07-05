@@ -761,7 +761,7 @@ static int enduser_setup_write_file_with_extra_configuration_data(char *form_bod
   // p.wifi_password="password"
   // p.device_name="foo-node"
   // return p
-  vfs_write(p_file, "local p = {}\n", 13);
+  vfs_write(p_file, "local p={}\n", 11);
   int idx = 0;
   for( idx = 0; idx < kp->keypairs_nb*2; idx=idx+2){
     char* to_write = kp->keypairs[idx];
