@@ -1446,6 +1446,15 @@ static int mqtt_socket_on( lua_State* L )
   }else if( sl == 8 && c_strcmp(method, "overflow") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_overflow_ref);
     mud->cb_overflow_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }else if( sl == 6 && c_strcmp(method, "puback") == 0){
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+    mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }else if( sl == 6 && c_strcmp(method, "suback") == 0){
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
+    mud->cb_suback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }else if( sl == 8 && c_strcmp(method, "unsuback") == 0){
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref);
+    mud->cb_unsuback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else{
     lua_pop(L, 1);
     return luaL_error( L, "method not supported" );

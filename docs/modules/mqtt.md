@@ -208,7 +208,7 @@ Registers a callback function for an event.
 `mqtt:on(event, function(client[, topic[, message]]))`
 
 #### Parameters
-- `event` can be "connect", "message", "offline" or "overflow"
+- `event` can be "connect", "suback", "unsuback", "puback", "message", "overflow", or "offline"
 - `function(client[, topic[, message]])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
 
 #### Returns
@@ -226,8 +226,13 @@ Publishes a message.
 - `message` the message to publish, (buffer or string)
 - `qos` QoS level
 - `retain` retain flag
-- `function(client)` optional callback fired when PUBACK received.  NOTE: When calling publish() more than once, the last callback function defined will be called for ALL publish commands.
+- `function(client)` optional callback fired when PUBACK received.
 
+#### Notes
+
+When calling publish() more than once, the last callback function defined will
+be called for ALL publish commands.  This callback argument also aliases with
+the "puback" callback for `:on()`.
 
 #### Returns
 `true` on success, `false` otherwise
@@ -244,7 +249,13 @@ Subscribes to one or several topics.
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `qos` QoS subscription level, default 0
 - `table` array of 'topic, qos' pairs to subscribe to
-- `function(client)` optional callback fired when subscription(s) succeeded.  NOTE: When calling subscribe() more than once, the last callback function defined will be called for ALL subscribe commands.
+- `function(client)` optional callback fired when subscription(s) succeeded.
+
+#### Notes
+
+When calling subscribe() more than once, the last callback function defined
+will be called for ALL subscribe commands. This callback argument also aliases
+with the "suback" callback for `:on()`.
 
 #### Returns
 `true` on success, `false` otherwise
@@ -273,7 +284,13 @@ Unsubscribes from one or several topics.
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `table` array of 'topic, anything' pairs to unsubscribe from
-- `function(client)` optional callback fired when unsubscription(s) succeeded.  NOTE: When calling unsubscribe() more than once, the last callback function defined will be called for ALL unsubscribe commands.
+- `function(client)` optional callback fired when unsubscription(s) succeeded.
+
+#### Notes
+
+When calling subscribe() more than once, the last callback function defined
+will be called for ALL subscribe commands. This callback argument also aliases
+with the "unsuback" callback for `:on()`.
 
 #### Returns
 `true` on success, `false` otherwise
