@@ -1315,13 +1315,15 @@ static int mqtt_socket_connect( lua_State* L )
     pesp_conn->proto.tcp->local_port = espconn_port();
   mud->mqtt_state.port = port;
 
-  if ( (stack<=top) && lua_isnumber(L, stack) )
+  if ( (stack<=top) && (lua_isnumber(L, stack) || lua_isboolean(L, stack)) )
   {
-    secure = lua_tointeger(L, stack);
-    stack++;
-    if ( secure != 0 && secure != 1 ){
-      secure = 0; // default to 0
+    if (lua_isnumber(L, stack)) {
+      platform_print_deprecation_note("mqtt.connect secure parameter as integer","in the future");
+      secure = !!lua_tointeger(L, stack);
+    } else {
+      secure = lua_toboolean(L, stack);
     }
+    stack++;
   } else {
     secure = 0; // default to 0
   }

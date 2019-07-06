@@ -128,7 +128,7 @@ Connects to the broker specified by the given host, port, and secure options.
 #### Parameters
 - `host` host, domain or IP (string)
 - `port` broker port (number), default 1883
-- `secure` 0/1 for `false`/`true`, default 0. Take note of constraints documented in the [net module](net.md).
+- `secure` boolean: if `true`, use TLS. Take note of constraints documented in the [net module](net.md).
 - `autoreconnect` 0/1 for `false`/`true`, default 0. This option is *deprecated*.
 - `function(client)` callback function for when the connection was established
 - `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
@@ -163,6 +163,10 @@ This is the description of how the `autoreconnect` functionality may (or may not
 > very first connection fails, then no reconnect attempt is made, and the error is signalled through the callback (if any). The first connection
 > is considered a success if the client connects to a server and gets back a good response packet in response to its MQTT connection request.
 > This implies (for example) that the username and password are correct.
+
+Previously, we instructed an application to pass either the *integer* 0 or
+*integer* 1 for `secure`.  Now, this will trigger a deprecation warning; please
+use the *boolean* `false` or `true` instead.
 
 #### Connection failure callback reason codes:
 
