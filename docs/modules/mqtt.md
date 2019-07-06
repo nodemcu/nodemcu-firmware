@@ -123,13 +123,12 @@ none
 Connects to the broker specified by the given host, port, and secure options.
 
 #### Syntax
-`mqtt:connect(host[, port[, secure[, autoreconnect]]][, function(client)[, function(client, reason)]])`
+`mqtt:connect(host[, port[, secure]][, function(client)[, function(client, reason)]])`
 
 #### Parameters
 - `host` host, domain or IP (string)
 - `port` broker port (number), default 1883
 - `secure` boolean: if `true`, use TLS. Take note of constraints documented in the [net module](net.md).
-- `autoreconnect` 0/1 for `false`/`true`, default 0. This option is *deprecated*.
 - `function(client)` callback function for when the connection was established
 - `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
 
@@ -138,11 +137,8 @@ Connects to the broker specified by the given host, port, and secure options.
 
 #### Notes
 
-Don't use `autoreconnect`. Let me repeat that, don't use `autoreconnect`. You should handle the errors explicitly and appropriately for
-your application. In particular, the default for `cleansession` above is `true`, so all subscriptions are destroyed when the connection
-is lost for any reason.
-
-In order to acheive a consistent connection, handle errors in the error callback. For example:
+An application should watch for connection failures and handle errors in the error callback,
+in order to achieve a reliable connection to the server.  For example:
 
 ```
 function handle_mqtt_error(client, reason)
@@ -156,13 +152,8 @@ end
 
 In reality, the connected function should do something useful!
 
-This is the description of how the `autoreconnect` functionality may (or may not) work.
-
-> When `autoreconnect` is set, then the connection will be re-established when it breaks. No error indication will be given (but all the
-> subscriptions may be lost if `cleansession` is true). However, if the
-> very first connection fails, then no reconnect attempt is made, and the error is signalled through the callback (if any). The first connection
-> is considered a success if the client connects to a server and gets back a good response packet in response to its MQTT connection request.
-> This implies (for example) that the username and password are correct.
+The two callbacks to `:connect()` alias with the "connect" and "offline"
+callbacks available through `:on()`.
 
 Previously, we instructed an application to pass either the *integer* 0 or
 *integer* 1 for `secure`.  Now, this will trigger a deprecation warning; please
