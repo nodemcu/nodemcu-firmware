@@ -6,19 +6,17 @@
 --
 -- MIT license, http://opensource.org/licenses/MIT
 -- ***************************************************************************
-tmr.alarm(0, 10000, 1, function()
+local bh1750 = require("bh1750")
 
-    SDA_PIN = 6 -- sda pin, GPIO12
-    SCL_PIN = 5 -- scl pin, GPIO14
+local sda = 6 -- sda pin, GPIO12
+local scl = 5 -- scl pin, GPIO14
 
-    bh1750 = require("bh1750")
-    bh1750.init(SDA_PIN, SCL_PIN)
-    bh1750.read(OSS)
-    l = bh1750.getlux()
-    print("lux: "..(l / 100).."."..(l % 100).." lx")
+do
+  bh1750.init(sda, scl)
 
-    -- release module
-    bh1750 = nil
-    package.loaded["bh1750"]=nil
-
-end)
+  tmr.create():alarm(10000, tmr.ALARM_AUTO, function()
+      bh1750.read()
+      local l = bh1750.getlux()
+      print("lux: "..(l / 100).."."..(l % 100).." lx")
+  end)
+end

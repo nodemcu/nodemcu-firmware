@@ -1,3 +1,4 @@
+-- luacheck: globals self
 if (self.timer) then self.timer:stop() end--SAFETRIM
 -- function _doTick(self)
 
