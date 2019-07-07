@@ -200,12 +200,17 @@ stds.nodemcu_libs = {
     },
     file = {
       fields = {
+        chdir = empty,
         close = empty,
         exists = empty,
         flush = empty,
+        format = empty,
+        fscfg = empty,
         fsinfo = empty,
         getcontents = empty,
         list = empty,
+        mount = empty,
+        n = empty,
         on = empty,
         open = empty,
         putcontents = empty,
@@ -393,7 +398,10 @@ stds.nodemcu_libs = {
         },
         task = {
           fields = {
-            post = empty
+            post = empty,
+            LOW_PRIORITY = empty,
+            MEDIUM_PRIORITY = empty,
+            HIGH_PRIORITY = empty
           }
         }
       }
@@ -574,6 +582,13 @@ stds.nodemcu_libs = {
         set_mosi = empty,
         setup = empty,
         transaction = empty
+      }
+    },
+    struct = {
+      fields = {
+        pack = empty,
+        size = empty,
+        unpack = empty
       }
     },
     switec = {
@@ -876,7 +891,8 @@ stds.nodemcu_libs = {
     },
     pack = empty,
     unpack  = empty,
-    size = empty
+    size = empty,
+    package = {fields = {seeall = read_write}}
   }
 }
 
