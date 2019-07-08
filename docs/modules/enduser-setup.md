@@ -3,29 +3,43 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2015-09-02 | [Robert Foss](https://github.com/robertfoss) | [Robert Foss](https://github.com/robertfoss) | [enduser_setup.c](../../app/modules/enduser_setup.c)|
 
-This module provides a simple way of configuring ESP8266 chips without using a serial interface or pre-programming WiFi credentials onto the chip.
+This module provides a simple way of configuring ESP8266 chips without using a
+serial interface or pre-programming WiFi credentials onto the chip.
 
-![enduser setup config dialog](../img/enduser-setup.jpg "enduser setup config dialog")
+After running [`enduser_setup.start()`](#enduser_setupstart), a wireless 
+network named "SetupGadget_XXXXXX" will starting. This prefix can be overridden
+in `user_config.h` by defining `ENDUSER_SETUP_AP_SSID`. Connect to that SSID 
+and then navigate to the root of any website or to 192.168.4.1. 
+`http://example.com/` will work, but do not use `.local` domains because it 
+will fail on iOS. A web page similar to the one depicted below will load, 
+allowing the end user to provide their Wi-Fi credentials.
 
-After running [`enduser_setup.start()`](#enduser_setupstart), a wireless network named "SetupGadget_XXXXXX" will start (this prefix can be overridden in `user_config.h` by defining
-`ENDUSER_SETUP_AP_SSID`). Connect to that SSID and then navigate to the root
-of any website (e.g., `http://example.com/` will work, but do not use `.local` domains because it will fail on iOS). A web page similar to the picture above will load, allowing the
-end user to provide their Wi-Fi information.
+![enduser setup config dialog](../img/enduser-setup-captive-portal.png "enduser setup config dialog")
 
-After an IP address has been successfully obtained, then this module will stop as if [`enduser_setup.stop()`](#enduser_setupstop) had been called. There is a 10-second delay before
-teardown to allow connected clients to obtain a last status message while the SoftAP is still active.
+After an IP address has been successfully obtained, then this module will stop
+as if [`enduser_setup.stop()`](#enduser_setupstop) had been called. There is a
+10-second delay before teardown to allow connected clients to obtain a last 
+status message while the SoftAP is still active.
 
-Alternative HTML can be served by placing a file called `enduser_setup.html` on the filesystem. Everything needed by the web page must be included in this one file. This file will be kept
-in RAM, so keep it as small as possible. The file can be gzip'd ahead of time to reduce the size (i.e., using `gzip -n` or `zopfli`), and when served, the End User Setup module will add
-the appropriate `Content-Encoding` header to the response.
+Alternative HTML can be served by placing a file called `enduser_setup.html` on
+the filesystem. Everything needed by the web page must be included in this one
+file. This file will be kept in RAM, so keep it as small as possible. The file
+can be gzip'd ahead of time to reduce the size (i.e., using `gzip -n` or
+`zopfli`), and when served, the End User Setup module will add the appropriate
+`Content-Encoding` header to the response.
 
-*Note: If gzipped, the file can also be named `enduser_setup.html.gz` for semantic purposes. Gzip encoding is determined by the file's contents, not the filename.*
+*Note: If gzipped, the file can also be named `enduser_setup.html.gz` for 
+semantic purposes. GZIP encoding is determined by the file's contents, not the
+filename.*
 
 ### Additional configuration parameters
 
-You can also add some additional inputs in the `enduser_setup.html` (as long as you keep those needed for the wifi setup). The additional data will be written in a `eus_params.lua`
-file in the root filesystem of the ESP8266, which you can then load in your own code. In this case, the data will be saved as a set of variables with the name being the input name, 
-and the value being a string representing what you put in the form.
+You can also add some additional inputs in the `enduser_setup.html` (as long as
+you keep those needed for the WiFi setup). The additional data will be written
+in a `eus_params.lua` file in the root filesystem of the ESP8266, which you can
+then load in your own code. In this case, the data will be saved as a set of
+variables with the name being the input name, and the value being a string
+representing what you put in the form.
 
 For instance, if your HTML contains two additional inputs:
 
@@ -70,20 +84,26 @@ print("Wifi device_name: " .. p.device_name)
 
 Module functions are described below.
 
----
+
 
 ## enduser_setup.manual()
 
 Controls whether manual AP configuration is used.
 
-By default the `enduser_setup` module automatically configures an open access point when starting, and stops it when the device has been successfully joined to a WiFi network. If manual mode has been enabled, neither of this is done. The device must be manually configured for `wifi.SOFTAP` mode prior to calling `enduser_setup.start()`. Additionally, the portal is not stopped after the device has successfully joined to a WiFi network.
+By default the `enduser_setup` module automatically configures an open access
+point when starting, and stops it when the device has been successfully joined
+to a WiFi network. If manual mode has been enabled, neither of this is done.
+The device must be manually configured for `wifi.SOFTAP` mode prior to calling 
+`enduser_setup.start()`. Additionally, the portal is not stopped after the 
+device has successfully joined to a WiFi network.
 
 
 #### Syntax
 `enduser_setup.manual([on_off])`
 
 #### Parameters
-  - `on_off` a boolean value indicating whether to use manual mode; if not given, the function only returns the current setting.
+  - `on_off` a boolean value indicating whether to use manual mode; if not 
+  given, the function only returns the current setting.
 
 #### Returns
 The current setting, true if manual mode is enabled, false if it is not.
