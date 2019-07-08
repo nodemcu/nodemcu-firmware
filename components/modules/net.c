@@ -1105,32 +1105,31 @@ static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
   uint16_t len;
 
   err_t err = netconn_recv(ud->netconn, &p);
-  if (err != ERR_OK) {
+  if (err != ERR_OK || !p) {
     lwip_lua_checkerr(L, err);
     return;
   }
-  if (p) {
+  netbuf_first(p);
+  do {
     netbuf_data(p, (void **)&payload, &len);
-  } else {
-    len = 0;
-  }
 
-  if (len > 0 && ud->client.cb_receive_ref != LUA_NOREF){
-    lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_receive_ref);
-    int num_args = 2;
-    lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
-    lua_pushlstring(L, payload, len);
-    if (ud->type == TYPE_UDP_SOCKET) {
-      num_args += 2;
-      char iptmp[IP_STR_SZ];
-      ip_addr_t *addr = netbuf_fromaddr(p);
-      uint16_t port = netbuf_fromport(p);
-      ipstr (iptmp, addr);
-      lua_pushinteger(L, port);
-      lua_pushstring(L, iptmp);
+    if (ud->client.cb_receive_ref != LUA_NOREF){
+      lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_receive_ref);
+      int num_args = 2;
+      lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
+      lua_pushlstring(L, payload, len);
+      if (ud->type == TYPE_UDP_SOCKET) {
+        num_args += 2;
+        char iptmp[IP_STR_SZ];
+        ip_addr_t *addr = netbuf_fromaddr(p);
+        uint16_t port = netbuf_fromport(p);
+        ipstr (iptmp, addr);
+        lua_pushinteger(L, port);
+        lua_pushstring(L, iptmp);
+      }
+      lua_call(L, num_args, 0);
     }
-    lua_call(L, num_args, 0);
-  }
+  } while (netbuf_next(p) != -1);
 
   if (p) {
     netbuf_delete(p);
