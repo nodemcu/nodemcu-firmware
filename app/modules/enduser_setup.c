@@ -93,6 +93,7 @@ static const char http_html_filename[] = "enduser_setup.html";
 static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nConnection:close\r\nContent-Type:text/html\r\n"; /* Note single \r\n here! */
 static const char http_header_204[] = "HTTP/1.1 204 No Content\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_302_trying[] = "HTTP/1.1 302 Moved\r\nLocation: /?trying=true\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_400[] = "HTTP/1.1 400 Bad request\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_405[] = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
@@ -101,8 +102,8 @@ static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Le
 static const char http_header_content_len_fmt[] = "Content-length:%5d\r\n\r\n";
 static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n";
 
-/* Externally defined: static const char http_html_backup[] = ... */
-#include "eus/http_html_backup.def"
+/* Externally defined: static const char enduser_setup_html_default[] = ... */
+#include "enduser_setup/enduser_setup.html.gz.def.h"
 
 typedef struct scan_listener
 {
@@ -398,9 +399,9 @@ static err_t close_once_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 /**
  * Search String
  *
- * Search string for first occurance of any char in srch_str.
+ * Search string for first occurence of any char in srch_str.
  *
- * @return -1 iff no occurance of char was found.
+ * @return -1 if no occurence of char was found.
  */
 static int enduser_setup_srch_str(const char *str, const char *srch_str)
 {
@@ -418,9 +419,9 @@ static int enduser_setup_srch_str(const char *str, const char *srch_str)
 /**
  * Load HTTP Payload
  *
- * @return - 0 iff payload loaded successfully
- *           1 iff backup html was loaded
- *           2 iff out of memory
+ * @return - 0 if payload loaded successfully
+ *           1 if default html was loaded
+ *           2 if out of memory
  */
 static int enduser_setup_http_load_payload(void)
 {
@@ -466,16 +467,16 @@ static int enduser_setup_http_load_payload(void)
 
   if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
   {
-    ENDUSER_SETUP_DEBUG("Unable to load file enduser_setup.html, loading backup HTML...");
+    ENDUSER_SETUP_DEBUG("Unable to load file enduser_setup.html, loading default HTML...");
 
-    c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(http_html_backup));
+    c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(enduser_setup_html_default));
     cl_len = c_strlen(cl_hdr);
-    int html_len = LITLEN(http_html_backup);
+    int html_len = LITLEN(enduser_setup_html_default);
 
-    if (http_html_backup[0] == 0x1f && http_html_backup[1] == 0x8b)
+    if (enduser_setup_html_default[0] == 0x1f && enduser_setup_html_default[1] == 0x8b)
     {
         ce_len = c_strlen(http_html_gzip_contentencoding);
-        html_len = http_html_backup_len; /* Defined in eus/http_html_backup.def by xxd -i */
+        html_len = enduser_setup_html_default_len; /* Defined in enduser_setup/enduser_setup.html.gz.def.h by xxd -i */
         ENDUSER_SETUP_DEBUG("Content is gzipped");
     }
 
@@ -499,7 +500,7 @@ static int enduser_setup_http_load_payload(void)
 
     c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
     offset += cl_len;
-    c_memcpy(&(state->http_payload_data[offset]), &(http_html_backup), sizeof(http_html_backup));
+    c_memcpy(&(state->http_payload_data[offset]), &(enduser_setup_html_default), sizeof(enduser_setup_html_default));
 
     return 1;
   }
@@ -548,7 +549,7 @@ static int enduser_setup_http_load_payload(void)
  *
  * Parse escaped and form encoded data of request.
  *
- * @return - return 0 iff the HTTP parameter is decoded into a valid string.
+ * @return - return 0 if the HTTP parameter is decoded into a valid string.
  */
 static int enduser_setup_http_urldecode(char *dst, const char *src, int src_len, int dst_len)
 {
@@ -631,13 +632,167 @@ static void do_station_cfg (task_param_t param, uint8_t prio)
   luaM_free(lua_getstate(), cnf);
 }
 
+/**
+ * Count the number of occurences of a character in a string
+ * 
+ * return the number of times the character was encountered in the string
+ */
+static int count_char_occurence(const char *input, const char char_to_count) {
+  const char *current = input;
+  int occur = 0;
+    while (*current != 0) {
+        if (*current == char_to_count) occur++;
+    current++;
+  }
+  return occur;
+}
+
+/* structure used to store the key/value pairs that we find in a HTTP POST body */
+struct keypairs_t {
+  char **keypairs;
+  int keypairs_nb;
+};
+
+static void enduser_setup_free_keypairs(struct keypairs_t *kp) {
+    if (kp == NULL) return;
+  
+    if (kp->keypairs != NULL) {
+        for (int i = 0; i < kp->keypairs_nb * 2; i++) {
+      os_free(kp->keypairs[i]);
+    }
+  }
+  os_free(kp->keypairs);
+  os_free(kp);
+}
+
+static struct keypairs_t * enduser_setup_alloc_keypairs(int kp_number ){
+    struct keypairs_t *kp = os_malloc(sizeof(struct keypairs_t));
+    os_memset(kp, 0, sizeof(struct keypairs_t));
+
+    kp->keypairs = os_malloc(kp_number * 2 * sizeof(char *));
+    kp->keypairs_nb = kp_number;
+    return kp;
+}
+
+/**
+ * Parses a form-urlencoded body into a struct keypairs_t, which contains an array of key,values strings and the size of the array.
+ */
+static struct keypairs_t *enduser_setup_get_keypairs_from_form(char *form_body, int form_length) {
+  int keypair_nb = count_char_occurence(form_body, '&') + 1;
+  int equal_nb = count_char_occurence(form_body, '=');
+  
+  if (keypair_nb == 1 && equal_nb == 0) {
+    ENDUSER_SETUP_DEBUG("No keypair in form body");
+    return NULL;
+  }
+
+  struct keypairs_t *kp = enduser_setup_alloc_keypairs(keypair_nb);
+
+  int current_idx = 0;
+  int err;
+
+  char *body_copy = os_malloc(form_length+1);
+  os_bzero(body_copy, form_length+1);
+  os_memcpy(body_copy, form_body, form_length);
+  char *tok = strtok(body_copy, "=");
+  
+  char last_tok = '=';
+  while (tok) {
+    size_t len = strlen(tok);
+    kp->keypairs[current_idx] = os_malloc(len + 1);
+    err = enduser_setup_http_urldecode(kp->keypairs[current_idx], tok, len, len + 1);
+    if (err) {
+      ENDUSER_SETUP_DEBUG("Unable to decode parameter");
+      enduser_setup_free_keypairs(kp);
+      os_free(body_copy);
+      return NULL;
+    }
+
+    current_idx++;
+    if (current_idx > keypair_nb*2) {
+      ENDUSER_SETUP_DEBUG("Too many keypairs!");
+      enduser_setup_free_keypairs(kp);
+      os_free(body_copy);
+      return NULL;
+    }
+
+    if (last_tok == '=') {
+      tok = strtok(NULL, "&"); // now search for the '&'
+      last_tok='&';
+    } else {
+      tok = strtok(NULL, "="); // search for the next '='
+      last_tok='=';
+    }
+  }
+  os_free(body_copy);
+  return kp;
+}
+
+
+/**
+ * This function saves the form data received when the configuration is sent to the ESP into a eus_params.lua file
+ */
+static int enduser_setup_write_file_with_extra_configuration_data(char *form_body, int form_length) {
+  ENDUSER_SETUP_DEBUG("enduser: write data from posted form");
+  ENDUSER_SETUP_DEBUG(form_body);
+
+  // We will save the form data into a file in the LUA format: KEY="VALUE", so that configuration data is available for load in the lua code.
+  // As input, we have a string as such: "key1=value1&key2=value2&key3=value%203" (urlencoded), the number of '&' tells us how many keypairs there are (the count + 1)
+ 
+  struct keypairs_t *kp = enduser_setup_get_keypairs_from_form(form_body, form_length);
+  if (kp == NULL || kp->keypairs_nb == 0) {
+    ENDUSER_SETUP_DEBUG("enduser: No extra configuration.");
+    if (kp != NULL) enduser_setup_free_keypairs(kp);
+    return 1;
+  }
+
+  // Now that we have the keys and the values, let's save them in a lua file
+  int p_file = vfs_open("eus_params.lua", "w");
+  if (p_file == 0)
+  {
+    ENDUSER_SETUP_DEBUG("Can't open file in write mode!");
+    enduser_setup_free_keypairs(kp);
+    return 1;
+  }
+
+  // write all key pairs as KEY="VALUE"\n into a Lua table, example:
+  // local p = {}
+  // p.wifi_ssid="ssid"
+  // p.wifi_password="password"
+  // p.device_name="foo-node"
+  // return p
+  vfs_write(p_file, "local p={}\n", 11);
+  int idx = 0;
+  for( idx = 0; idx < kp->keypairs_nb*2; idx=idx+2){
+    char* to_write = kp->keypairs[idx];
+    size_t length = c_strlen(to_write);
+    
+    vfs_write(p_file, "p.", 2);
+
+    vfs_write(p_file, to_write, length);
+
+    vfs_write(p_file, "=\"", 2);
+    
+    to_write = kp->keypairs[idx+1];
+    length = c_strlen(to_write);
+    vfs_write(p_file, to_write, length);
+
+    vfs_write(p_file, "\"\n", 2);
+  }
+  vfs_write(p_file, "return p\n", 9);
+
+  vfs_close(p_file);
+  enduser_setup_free_keypairs(kp);
+  // TODO: we could call back in the LUA with an associative table setup, but this is MVP2...
+  return 0;
+}
 
 /**
  * Handle HTTP Credentials
  *
- * @return - return 0 iff credentials are found and handled successfully
- *           return 1 iff credentials aren't found
- *           return 2 iff an error occured
+ * @return - return 0 if credentials are found and handled successfully
+ *           return 1 if credentials aren't found
+ *           return 2 if an error occured
  */
 static int enduser_setup_http_handle_credentials(char *data, unsigned short data_len)
 {
@@ -682,7 +837,6 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
     return 1;
   }
 
-
   ENDUSER_SETUP_DEBUG("");
   ENDUSER_SETUP_DEBUG("WiFi Credentials Stored");
   ENDUSER_SETUP_DEBUG("-----------------------");
@@ -702,7 +856,7 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 /**
  * Serve HTML
  *
- * @return - return 0 iff html was served successfully
+ * @return - return 0 if html was served successfully
  */
 static int enduser_setup_http_serve_header(struct tcp_pcb *http_client, const char *header, uint32_t header_len)
 {
@@ -763,7 +917,7 @@ static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 /**
  * Serve HTML
  *
- * @return - return 0 iff html was served successfully
+ * @return - return 0 if html was served successfully
  */
 static int enduser_setup_http_serve_html(struct tcp_pcb *http_client)
 {
@@ -954,6 +1108,37 @@ static void enduser_setup_handle_OPTIONS (struct tcp_pcb *http_client, char *dat
   }
   enduser_setup_http_serve_header (http_client, others, c_strlen(others));
   return;
+}
+
+
+static err_t enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, size_t data_len)
+{
+    ENDUSER_SETUP_DEBUG("Handling POST");
+    if (c_strncmp(data + 5, "/setwifi ", 9) == 0) // User clicked the submit button
+    {
+      switch (enduser_setup_http_handle_credentials(data, data_len))
+      {
+        case 0: {
+          // all went fine, extract all the form data into a file
+          char* body=strstr(data, "\r\n\r\n");
+          char *content_length_str = strstr(data, "Content-Length: ");
+          if( body != NULL && content_length_str != NULL){
+            int bodylength = c_atoi(content_length_str + 16);
+            body += 4; // length of the double CRLF found above
+            enduser_setup_write_file_with_extra_configuration_data(body, bodylength);
+          }
+          // redirect user to the base page with the trying flag
+          enduser_setup_http_serve_header(http_client, http_header_302_trying, LITLEN(http_header_302_trying));
+          break;
+        }
+        case 1:
+          enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
+          break;
+        default:
+          ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+          break;
+      }
+    }  
 }
 
 
@@ -1165,7 +1350,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
 
   if (c_strncmp(data, "GET ", 4) == 0)
   {
-    if (c_strncmp(data + 4, "/ ", 2) == 0)
+    if (c_strncmp(data + 4, "/ ", 2) == 0 || c_strncmp(data + 4, "/?", 2) == 0)
     {
       if (enduser_setup_http_serve_html(http_client) != 0)
       {
@@ -1237,21 +1422,6 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
           break;
       }
     }
-    else if (c_strncmp(data + 4, "/setwifi?", 9) == 0)
-    {
-      switch (enduser_setup_http_handle_credentials(data, data_len))
-      {
-        case 0:
-          enduser_setup_serve_status_as_json(http_client);
-          break;
-        case 1:
-          enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
-          break;
-        default:
-          ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
-          break;
-      }
-    }
     else if (c_strncmp(data + 4, "/generate_204", 13) == 0)
     {
       /* Convince Android devices that they have internet access to avoid pesky dialogues. */
@@ -1267,6 +1437,10 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   {
      enduser_setup_handle_OPTIONS(http_client, data, data_len);
   }
+  else if (c_strncmp(data, "POST ", 5) == 0)
+  {
+    enduser_setup_handle_POST(http_client, data, data_len);
+  }
   else /* not GET or OPTIONS */
   {
     enduser_setup_http_serve_header(http_client, http_header_405, LITLEN(http_header_405));
@@ -1278,6 +1452,7 @@ free_out:
   os_free (data);
   return ret;
 }
+
 
 static err_t enduser_setup_http_connectcb(void *arg, struct tcp_pcb *pcb, err_t err)
 {
@@ -1332,7 +1507,7 @@ static int enduser_setup_http_start(void)
   int err = enduser_setup_http_load_payload();
   if (err == 1)
   {
-    ENDUSER_SETUP_DEBUG("enduser_setup_http_start info. Loaded backup HTML.");
+    ENDUSER_SETUP_DEBUG("enduser_setup_http_start info. Loaded default HTML.");
   }
   else if (err == 2)
   {
