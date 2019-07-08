@@ -102,8 +102,8 @@ static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Le
 static const char http_header_content_len_fmt[] = "Content-length:%5d\r\n\r\n";
 static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n";
 
-/* Externally defined: static const char http_html_backup[] = ... */
-#include "eus/http_html_backup.def"
+/* Externally defined: static const char enduser_setup_html_default[] = ... */
+#include "eus/enduser_setup.html.gz.def.h"
 
 typedef struct scan_listener
 {
@@ -420,7 +420,7 @@ static int enduser_setup_srch_str(const char *str, const char *srch_str)
  * Load HTTP Payload
  *
  * @return - 0 if payload loaded successfully
- *           1 if backup html was loaded
+ *           1 if default html was loaded
  *           2 if out of memory
  */
 static int enduser_setup_http_load_payload(void)
@@ -467,16 +467,16 @@ static int enduser_setup_http_load_payload(void)
 
   if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
   {
-    ENDUSER_SETUP_DEBUG("Unable to load file enduser_setup.html, loading backup HTML...");
+    ENDUSER_SETUP_DEBUG("Unable to load file enduser_setup.html, loading default HTML...");
 
-    c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(http_html_backup));
+    c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(enduser_setup_html_default));
     cl_len = c_strlen(cl_hdr);
-    int html_len = LITLEN(http_html_backup);
+    int html_len = LITLEN(enduser_setup_html_default);
 
-    if (http_html_backup[0] == 0x1f && http_html_backup[1] == 0x8b)
+    if (enduser_setup_html_default[0] == 0x1f && enduser_setup_html_default[1] == 0x8b)
     {
         ce_len = c_strlen(http_html_gzip_contentencoding);
-        html_len = http_html_backup_len; /* Defined in eus/http_html_backup.def by xxd -i */
+        html_len = enduser_setup_html_default_len; /* Defined in eus/enduser_setup.html.gz.def.h by xxd -i */
         ENDUSER_SETUP_DEBUG("Content is gzipped");
     }
 
@@ -500,7 +500,7 @@ static int enduser_setup_http_load_payload(void)
 
     c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
     offset += cl_len;
-    c_memcpy(&(state->http_payload_data[offset]), &(http_html_backup), sizeof(http_html_backup));
+    c_memcpy(&(state->http_payload_data[offset]), &(enduser_setup_html_default), sizeof(enduser_setup_html_default));
 
     return 1;
   }
@@ -1507,7 +1507,7 @@ static int enduser_setup_http_start(void)
   int err = enduser_setup_http_load_payload();
   if (err == 1)
   {
-    ENDUSER_SETUP_DEBUG("enduser_setup_http_start info. Loaded backup HTML.");
+    ENDUSER_SETUP_DEBUG("enduser_setup_http_start info. Loaded default HTML.");
   }
   else if (err == 2)
   {
