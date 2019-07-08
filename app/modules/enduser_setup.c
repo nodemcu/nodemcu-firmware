@@ -103,7 +103,7 @@ static const char http_header_content_len_fmt[] = "Content-length:%5d\r\n\r\n";
 static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n";
 
 /* Externally defined: static const char enduser_setup_html_default[] = ... */
-#include "eus/enduser_setup.html.gz.def.h"
+#include "enduser_setup/enduser_setup.html.gz.def.h"
 
 typedef struct scan_listener
 {
@@ -476,7 +476,7 @@ static int enduser_setup_http_load_payload(void)
     if (enduser_setup_html_default[0] == 0x1f && enduser_setup_html_default[1] == 0x8b)
     {
         ce_len = c_strlen(http_html_gzip_contentencoding);
-        html_len = enduser_setup_html_default_len; /* Defined in eus/enduser_setup.html.gz.def.h by xxd -i */
+        html_len = enduser_setup_html_default_len; /* Defined in enduser_setup/enduser_setup.html.gz.def.h by xxd -i */
         ENDUSER_SETUP_DEBUG("Content is gzipped");
     }
 
