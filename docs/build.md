@@ -37,6 +37,9 @@ git submodule init #only if repo was cloned w/o submodules init
 git submodule update --recursive
 ```
 
+Here is a video walk through by John Lauer (ChiliPeppr) of building the firmware in Linux from scratch with a fresh install of Ubuntu 19 so you can see all of the dependencies needed to get your build completed and flashed to your ESP32 device.
+[![Video walk through for Linux Build Environment](https://img.youtube.com/vi/x6CGECsioYg/0.jpg)](https://www.youtube.com/watch?v=x6CGECsioYg "Video walk through for Linux Build Environment")
+
 ## Build Options
 
 All configuration options are accessed from the file `sdkconfig`. It's advisable to set it up with the interactive `make menuconfig` - on a fresh checkout you're prompted to run through it by default.
