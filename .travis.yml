@@ -5,7 +5,6 @@ addons:
     packages:
     - python-serial
     - gperf
-    - gcc-multilib
 # note that we clobber $PATH completely, to get rid of /opt/python* stuff so
 # we can use the system python and python-serial, rather than messing around
 # with pip all over the place

@@ -4,7 +4,7 @@ ifeq ($V,)
  Q:=@
 endif
 
-LUAC_CFLAGS:= -m32 -I$(COMPONENT_PATH)/../uzlib -I$(COMPONENT_PATH)/../lua -I$(BUILD_DIR_BASE)/include -I$(COMPONENT_PATH)/../base_nodemcu/include -O2 -g -Wall -Wextra
+LUAC_CFLAGS:= -I$(COMPONENT_PATH)/../uzlib -I$(COMPONENT_PATH)/../lua -I$(BUILD_DIR_BASE)/include -I$(COMPONENT_PATH)/../base_nodemcu/include -O2 -g -Wall -Wextra
 LUAC_LDFLAGS:= -ldl -lm
 
 LUAC_DEFINES += -DLUA_CROSS_COMPILER -DLUA_USE_STDIO
