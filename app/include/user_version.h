@@ -2,7 +2,7 @@
 #define __USER_VERSION_H__
 
 #include "version.h"	/* ESP firmware header */
-#include "/tmp/buildinfo.h"
+#include <buildinfo.h>
 
 #define NODE_VERSION_MAJOR	ESP_SDK_VERSION_MAJOR
 #define NODE_VERSION_MINOR	ESP_SDK_VERSION_MINOR
