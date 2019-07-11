@@ -2,145 +2,51 @@
 #include <string.h>
 #include "lauxlib.h"
 #include "lmem.h"
-#include "mbedtls/md5.h"
-#include "mbedtls/sha1.h"
-#include "mbedtls/sha256.h"
-#include "mbedtls/sha512.h"
+#include "mbedtls/md.h"
 #include "module.h"
 #include "platform.h"
 
 #define HASH_METATABLE "crypto.hasher"
 
-// The following function typedefs aim to generalize mbedtls functions
-// so that we can use the same code independent of what hashing algorithm
-typedef void (*hash_init_t)(void* ctx);
-typedef int (*hash_starts_ret_t)(void* ctx);
-typedef int (*hash_update_ret_t)(void* ctx, const unsigned char* input, size_t ilen);
-typedef int (*hash_finish_ret_t)(void* ctx, unsigned char* output);
-typedef void (*hash_free_t)(void* ctx);
-
-// algo_info_t describes a hashing algorithm and the mbedtls functions
-// for initializing, hashing data, finalizing and freeing resources.
+// algo_info_t describes a hashing algorithm and output size
 typedef struct {
     const char* name;
     const size_t size;
-    const size_t context_size;
-    const hash_init_t init;
-    const hash_starts_ret_t starts;
-    const hash_update_ret_t update;
-    const hash_finish_ret_t finish;
-    const hash_free_t free;
+    const mbedtls_md_type_t type;
 } algo_info_t;
 
 // hash_context_t contains information about an ongoing hash operation
 typedef struct {
-    void* mbedtls_context;
+    mbedtls_md_context_t mbedtls_context;
     const algo_info_t* ainfo;
+    bool hmac_mode;
 } hash_context_t;
-
-// if SHA256+SHA224 are enabled, the following two functions
-// allow to call mbedtls appropriately depending on the algorithm
-#ifdef CONFIG_CRYPTO_HASH_SHA256
-static int sha256_starts_ret(mbedtls_sha256_context* ctx) {
-    return mbedtls_sha256_starts_ret(ctx, false);  // false=SHA256
-}
-static int sha224_starts_ret(mbedtls_sha256_context* ctx) {
-    return mbedtls_sha256_starts_ret(ctx, true);  // true=SHA224
-}
-#endif
-
-// if SHA512+SHA384 are enabled, the following two functions
-// allow to call mbedtls appropriately depending on the algorithm
-#ifdef CONFIG_CRYPTO_HASH_SHA512
-static int sha512_starts_ret(mbedtls_sha512_context* ctx) {
-    return mbedtls_sha512_starts_ret(ctx, false);  // false=SHA512
-}
-static int sha384_starts_ret(mbedtls_sha512_context* ctx) {
-    return mbedtls_sha512_starts_ret(ctx, true);  // true=SHA384
-}
-#endif
 
 // the constant algorithms array below contains a table of functions and other
 // information about each enabled hashing algorithm
 static const algo_info_t algorithms[] = {
-#ifdef CONFIG_CRYPTO_HASH_SHA1
-    {
-        "SHA1",
-        20,
-        sizeof(mbedtls_sha1_context),
-        (hash_init_t)mbedtls_sha1_init,
-        (hash_starts_ret_t)mbedtls_sha1_starts_ret,
-        (hash_update_ret_t)mbedtls_sha1_update_ret,
-        (hash_finish_ret_t)mbedtls_sha1_finish_ret,
-        (hash_free_t)mbedtls_sha1_free,
-    },
-#endif
-#ifdef CONFIG_CRYPTO_HASH_SHA256
-    {
-        "SHA256",
-        32,
-        sizeof(mbedtls_sha256_context),
-        (hash_init_t)mbedtls_sha256_init,
-        (hash_starts_ret_t)sha256_starts_ret,
-        (hash_update_ret_t)mbedtls_sha256_update_ret,
-        (hash_finish_ret_t)mbedtls_sha256_finish_ret,
-        (hash_free_t)mbedtls_sha256_free,
-    },
-    {
-        "SHA224",
-        32,
-        sizeof(mbedtls_sha256_context),
-        (hash_init_t)mbedtls_sha256_init,
-        (hash_starts_ret_t)sha224_starts_ret,
-        (hash_update_ret_t)mbedtls_sha256_update_ret,
-        (hash_finish_ret_t)mbedtls_sha256_finish_ret,
-        (hash_free_t)mbedtls_sha256_free,
-    },
-#endif
-#ifdef CONFIG_CRYPTO_HASH_SHA512
-    {
-        "SHA512",
-        64,
-        sizeof(mbedtls_sha512_context),
-        (hash_init_t)mbedtls_sha512_init,
-        (hash_starts_ret_t)sha512_starts_ret,
-        (hash_update_ret_t)mbedtls_sha512_update_ret,
-        (hash_finish_ret_t)mbedtls_sha512_finish_ret,
-        (hash_free_t)mbedtls_sha512_free,
-    },
-    {
-        "SHA384",
-        64,
-        sizeof(mbedtls_sha512_context),
-        (hash_init_t)mbedtls_sha512_init,
-        (hash_starts_ret_t)sha384_starts_ret,
-        (hash_update_ret_t)mbedtls_sha512_update_ret,
-        (hash_finish_ret_t)mbedtls_sha512_finish_ret,
-        (hash_free_t)mbedtls_sha512_free,
-    },
-#endif
-#ifdef CONFIG_CRYPTO_HASH_MD5
-    {
-        "MD5",
-        16,
-        sizeof(mbedtls_md5_context),
-        (hash_init_t)mbedtls_md5_init,
-        (hash_starts_ret_t)mbedtls_md5_starts_ret,
-        (hash_update_ret_t)mbedtls_md5_update_ret,
-        (hash_finish_ret_t)mbedtls_md5_finish_ret,
-        (hash_free_t)mbedtls_md5_free,
-    },
-#endif
+    { "MD5",       16, MBEDTLS_MD_MD5    },
+    { "RIPEMD160", 20, MBEDTLS_MD_RIPEMD160 },
+    { "SHA1",      20, MBEDTLS_MD_SHA1   },
+    { "SHA224",    32, MBEDTLS_MD_SHA224 },
+    { "SHA256",    32, MBEDTLS_MD_SHA256 },
+    { "SHA384",    64, MBEDTLS_MD_SHA384 },
+    { "SHA512",    64, MBEDTLS_MD_SHA512 },
 };
+
 
 //NUM_ALGORITHMS contains the actual number of enabled algorithms
 const int NUM_ALGORITHMS = sizeof(algorithms) / sizeof(algo_info_t);
 
 // crypto_new_hash (LUA: hasher = crypto.new_hash(algo)) allocates
 // a hashing context for the requested algorithm
-static int crypto_new_hash(lua_State* L) {
-    const char* algo = luaL_checkstring(L, 1);
-    const algo_info_t* ainfo = NULL;
+static int crypto_new_hash_or_hmac(lua_State* L, bool is_hmac) {
+    const algo_info_t *ainfo = NULL;
+    const char *algo = luaL_checkstring(L, 1);
+    const unsigned char *key = NULL;
+    size_t key_len = 0;
+    if (is_hmac)
+        key = (const unsigned char *)luaL_checklstring(L, 2, &key_len);
 
     for (int i = 0; i < NUM_ALGORITHMS; i++) {
         if (strcasecmp(algo, algorithms[i].name) == 0) {
@@ -150,7 +56,7 @@ static int crypto_new_hash(lua_State* L) {
     }
 
     if (ainfo == NULL) {
-        luaL_error(L, "Unsupported algorithm: %s", algo);  // returns
+        return luaL_error(L, "Unsupported algorithm: %s", algo);
     }
 
     // Instantiate a hasher object as a Lua userdata object
@@ -161,18 +67,34 @@ static int crypto_new_hash(lua_State* L) {
     luaL_getmetatable(L, HASH_METATABLE);
     lua_setmetatable(L, -2);
 
-    phctx->ainfo = ainfo;                                          // save a pointer to the algorithm function table and information
-    phctx->mbedtls_context = luaM_malloc(L, ainfo->context_size);  // make some space for the mbedtls context
-    if (phctx->mbedtls_context == NULL) {
-        luaL_error(L, "Out of memory allocating context");
-    }
+    phctx->ainfo = ainfo;
+    phctx->hmac_mode = is_hmac;
 
-    ainfo->init(phctx->mbedtls_context);  // initialize the hashing function
-    if (ainfo->starts(phctx->mbedtls_context) != 0) {
-        luaL_error(L, "Error starting context");
-    }
+    mbedtls_md_init(&phctx->mbedtls_context);
+    int err =
+        mbedtls_md_setup(
+            &phctx->mbedtls_context,
+            mbedtls_md_info_from_type(phctx->ainfo->type),
+            is_hmac);
+    if (phctx->hmac_mode)
+        err |= mbedtls_md_hmac_starts(&phctx->mbedtls_context, key, key_len);
+    else
+        err |= mbedtls_md_starts(&phctx->mbedtls_context);
+    if (err != 0)
+        return luaL_error(L, "Error starting context");
+
     return 1;  // one object returned, the hasher userdata object.
 }
+
+static int crypto_new_hash(lua_State* L) {
+  return crypto_new_hash_or_hmac(L, false);
+}
+
+static int crypto_new_hmac(lua_State* L)
+{
+  return crypto_new_hash_or_hmac(L, true);
+}
+
 
 // crypto_hash_update (LUA: hasher:update(data)) submits data
 // to be hashed.
@@ -184,10 +106,15 @@ static int crypto_hash_update(lua_State* L) {
     // retrieve the input string:
     const unsigned char* input = (const unsigned char*)luaL_checklstring(L, 2, &size);
 
+    int err = 0;
     // call the update hashing function:
-    if (phctx->ainfo->update(phctx->mbedtls_context, input, size) != 0) {
+    if (phctx->hmac_mode)
+        err = mbedtls_md_hmac_update(&phctx->mbedtls_context, input, size);
+    else
+        err = mbedtls_md_update(&phctx->mbedtls_context, input, size);
+
+    if (err != 0)
         luaL_error(L, "Error updating hash");
-    }
 
     return 0;  // no return value
 }
@@ -201,10 +128,14 @@ static int crypto_hash_finalize(lua_State* L) {
     // reserve some space to retrieve the output hash, according to the current algorithm
     unsigned char output[phctx->ainfo->size];
 
+    int err = 0;
     // call the hash finish function to retrieve the result
-    if (phctx->ainfo->finish(phctx->mbedtls_context, output) != 0) {
+    if (phctx->hmac_mode)
+      err = mbedtls_md_hmac_finish(&phctx->mbedtls_context, output);
+    else
+      err = mbedtls_md_finish(&phctx->mbedtls_context, output);
+    if (err != 0)
         luaL_error(L, "Error finalizing hash");
-    }
 
     // pack the output into a lua string
     lua_pushlstring(L, (const char*)output, phctx->ainfo->size);
@@ -217,16 +148,7 @@ static int crypto_hash_finalize(lua_State* L) {
 static int crypto_hash_gc(lua_State* L) {
     // retrieve the hashing context:
     hash_context_t* phctx = (hash_context_t*)luaL_checkudata(L, 1, HASH_METATABLE);
-
-    // if the mbedtls context is NULL, it means allocation failed in new_hash(), so nothing to do.
-    if (phctx->mbedtls_context == NULL)
-        return 0;
-
-    // free mbedtls-related resources for this hash operation:
-    phctx->ainfo->free(phctx->mbedtls_context);
-
-    // free the memory allocated to store the mbedtls context:
-    luaM_freemem(L, phctx->mbedtls_context, phctx->ainfo->context_size);
+    mbedtls_md_free(&phctx->mbedtls_context);
     return 0;
 }
 
@@ -241,6 +163,7 @@ LROT_END(crypto_hasher, NULL, 0)
 // This table defines the functions of the crypto module:
 LROT_BEGIN(crypto)
     LROT_FUNCENTRY(new_hash, crypto_new_hash)
+    LROT_FUNCENTRY(new_hmac, crypto_new_hmac)
 LROT_END(crypto, NULL, 0)
 
 // luaopen_crypto is the crypto module initialization function

@@ -49,6 +49,7 @@ pages:
     - 'mqtt':         'modules/mqtt.md'
     - 'net':          'modules/net.md'
     - 'node':         'modules/node.md'
+    - 'ota':          'modules/otaupgrade.md'
     - 'ow (1-Wire)':  'modules/ow.md'
     - 'pulsecnt':     'modules/pulsecnt.md'
     - 'qrcodegen':    'modules/qrcodegen.md'

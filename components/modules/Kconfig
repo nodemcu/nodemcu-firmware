@@ -80,32 +80,6 @@ config LUA_MODULE_CRYPTO
   help
       Includes the crypto module.
 
-menu "Crypto module hashing algorithms"
-  depends on LUA_MODULE_CRYPTO
-
-  config CRYPTO_HASH_SHA1
-    bool "SHA1"
-    default "y"
-    help
-      Includes the SHA1 hashing algorithm
-  config CRYPTO_HASH_SHA256
-    bool "SHA256 and SHA224"
-    default "y"
-    help
-      Includes the SHA256 and SHA224 hashing algorithms
-  config CRYPTO_HASH_SHA512
-    bool "SHA512 and SHA384"
-    default "y"
-    help
-      Includes the SHA256 and SHA384 hashing algorithms
-  config CRYPTO_HASH_MD5
-    bool "MD5"
-    default "n"
-    help
-      Includes the MD5 hashing algorithm
-endmenu
-
-
 config LUA_MODULE_DAC
   bool "DAC module"
   default "n"
@@ -184,6 +158,14 @@ config LUA_MODULE_OW
   default "y"
   help
       Includes the 1-Wire (ow) module (recommended).
+
+config LUA_MODULE_OTAUPGRADE
+  bool "Over-The-Air upgrade module"
+  default "n"
+  help
+      Includes the over-the-air firmware upgrade module. Use of this requires
+      a partition table with at least two OTA partitions, plus the OTA data
+      partition. See the IDF documentation for details.
 
 config LUA_MODULE_QRCODEGEN
   bool "QR Code Generator module"
@@ -266,7 +248,7 @@ config LUA_MODULE_WS2812
       Includes the ws2812 module.
 	  
 config LUA_MODULE_TIME
-  bool "time module"
+  bool "Time module"
   default "n"
   help
       Includes the time module.
