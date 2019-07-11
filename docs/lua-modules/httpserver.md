@@ -54,7 +54,7 @@ Callback function has 2 arguments: `req` (request) and `res` (response). The fir
 The second object holds functions:
 
 - `send(data)`: Function to send data to client. `data` is data to send if the `data` is `nil` will close the connection
-and `response_code` is HTTP response code like `200` or `404` (for example)
+
 - `send_header(header)`: Function to send the response header. `header` must be a table. likes `{status = 200, headers={Connection = "close"}}`. status will be set 200 if the status omitted. the built-in code is `200, 304, 404, 500`
 
 Full example can be found in [http-example.lua](../../lua_modules/http/http-example.lua)
