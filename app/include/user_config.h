@@ -46,7 +46,7 @@
 // LUA_FLASH_STORE defines the default partition size if the NodeMCU partition
 // tool is not used.
 
-//#define LUA_FLASH_STORE                   0x10000
+#define LUA_FLASH_STORE                   0x40000
 
 // By default Lua executes the file init.lua at start up.  The following
 // define allows you to replace this with an alternative startup.  Warning:
@@ -135,7 +135,7 @@
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
 
 //  Enable use of the WiFi.monitor sub-module
-//#define LUA_USE_MODULES_WIFI_MONITOR
+#define LUA_USE_MODULES_WIFI_MONITOR
 
 
 // Whilst the DNS client details can be configured through the WiFi API,
