@@ -131,7 +131,7 @@ static int node_info( lua_State* L )
   lua_pushstring(L, BUILDINFO_BRANCH);
   lua_pushstring(L, BUILDINFO_COMMIT_ID);
   lua_pushstring(L, BUILDINFO_RELEASE);
-  lua_pushnumber(L, BUILDINFO_RELEASE_DTS);
+  lua_pushstring(L, BUILDINFO_RELEASE_DTS);
   lua_pushboolean(L, BUILDINFO_SSL);
   lua_pushstring(L, BUILDINFO_LFS);
   lua_pushstring(L, BUILDINFO_MODULES);

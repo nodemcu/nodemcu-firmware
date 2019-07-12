@@ -13,6 +13,8 @@
 #define NODE_VERSION_XSTR(x)	NODE_VERSION_STR(x)
 
 # define NODE_VERSION		"NodeMCU " ESP_SDK_VERSION_STRING "." NODE_VERSION_XSTR(NODE_VERSION_INTERNAL) " " NODE_VERSION_LONG
+// Leave the space after # in the line above. It busts replacement of NODE_VERSION in the docker build which is not needed anymore with this PR.
+// Can be removed when the script is adapted
 
 #ifndef BUILD_DATE
 #define BUILD_DATE		"unspecified"
