@@ -59,14 +59,14 @@ echo "#define BUILDINFO_MODULES \""$MODULES"\"" >> $TEMPFILE
 cat >> $TEMPFILE << EndOfMessage2
 #define NODE_VERSION_LONG \\
 	"$USER_PROLOG_LINE" \\
-	"\tbranch: '" BUILDINFO_BRANCH "'\n" \\
-	"\tcommit: '" BUILDINFO_COMMIT_ID "'\n" \\
-	"\trelease: '" BUILDINFO_RELEASE "'\n" \\
-	"\trelease DTS: '" BUILDINFO_RELEASE_DTS_STR "'\n" \\
-	"\tSSL: '" BUILDINFO_SSL_STR "'\n" \\
-	"\tBuild type: '" BUILDINFO_BUILD_TYPE "'\n" \\
-	"\tLFS: '" BUILDINFO_LFS "'\n" \\
-	"\tmodules: '" BUILDINFO_MODULES "'\n"
+	"\tbranch: " BUILDINFO_BRANCH "\n" \\
+	"\tcommit: " BUILDINFO_COMMIT_ID "\n" \\
+	"\trelease: " BUILDINFO_RELEASE "\n" \\
+	"\trelease DTS: " BUILDINFO_RELEASE_DTS_STR "\n" \\
+	"\tSSL: " BUILDINFO_SSL_STR "\n" \\
+	"\tBuild type: " BUILDINFO_BUILD_TYPE "\n" \\
+	"\tLFS: " BUILDINFO_LFS "\n" \\
+	"\tmodules: " BUILDINFO_MODULES "\n"
 	
 EndOfMessage2
 
