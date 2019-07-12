@@ -9,19 +9,19 @@
 local moduleName = ...
 local M = {}
 _G[moduleName] = M
---I2C slave address of GY-30
-local GY_30_address = 0x23
--- i2c interface ID
-local id = 0
---LUX
-local l
---CMD
-local CMD = 0x10
-local init = false
---Make it more faster
-local i2c = i2c
-function M.init(sda, scl)
-    i2c.setup(id, sda, scl, i2c.SLOW)
+    --I2C slave address of GY-30
+    local GY_30_address = 0x23
+    -- i2c interface ID
+    local id = 0
+    --LUX
+    local l
+    --CMD
+    local CMD = 0x10
+    local init = false
+    --Make it more faster
+    local i2c = i2c
+    function M.init(sda, scl)
+        i2c.setup(id, sda, scl, i2c.SLOW)
     --print("i2c ok..")
     init = true
 end

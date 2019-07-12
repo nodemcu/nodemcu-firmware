@@ -593,17 +593,6 @@ dhcp_handle_ack(struct netif *netif)
     n++;
   }
 #endif /* LWIP_DNS */
-/*
-  if (dhcp_option_given(dhcp, DHCP_OPTION_IDX_NTP)) {
-    ip4_addr_set_u32(&dhcp->offered_ntp_addr, htonl(dhcp_get_option_value(dhcp, DHCP_OPTION_IDX_NTP)));
-    char buf[64];
-    c_sprintf(buf, "%d.%d.%d.%d", IP2STR(&dhcp->offered_ntp_addr));
-    platform_print_deprecation_note("found NTP ip", buf);
-  }
-  else
-  {
-    platform_print_deprecation_note("found NO NTP ip", "never");
-  }*/
 }
 
 /** Set a statically allocated struct dhcp to work with.
