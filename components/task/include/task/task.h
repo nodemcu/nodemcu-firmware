@@ -29,8 +29,10 @@ bool task_post(task_prio_t priority, task_handle_t handle, task_param_t param);
 
 typedef void (*task_callback_t)(task_param_t param, task_prio_t prio);
 
-bool task_init_handler(task_prio_t priority, uint8 qlen);
 task_handle_t task_get_id(task_callback_t t);
+
+/* Init, must be called before any posting happens */
+void task_init (void);
 
 /* RTOS loop to pump task messages until infinity */
 void task_pump_messages (void);
