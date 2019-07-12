@@ -40,6 +40,11 @@ cat > $TEMPFILE << EndOfMessage
 #define __BUILDINFO_H__
 EndOfMessage
 
+if [ -n "$USER_PROLOG" ]; then
+  USER_PROLOG_LINE="$USER_PROLOG"\\n
+fi
+
+echo "#define USER_PROLOG \""$USER_PROLOG"\"" >> $TEMPFILE
 echo "#define BUILDINFO_BRANCH \""$BRANCH"\"" >> $TEMPFILE
 echo "#define BUILDINFO_COMMIT_ID \""$COMMIT_ID"\"" >> $TEMPFILE
 echo "#define BUILDINFO_RELEASE \""$RELEASE"\"" >> $TEMPFILE
@@ -52,8 +57,8 @@ echo "#define BUILDINFO_LFS \""$LFS"\"" >> $TEMPFILE
 echo "#define BUILDINFO_MODULES \""$MODULES"\"" >> $TEMPFILE
 
 cat >> $TEMPFILE << EndOfMessage2
-
 #define NODE_VERSION_LONG \\
+	"$USER_PROLOG_LINE" \\
 	"\tbranch: '" BUILDINFO_BRANCH "'\n" \\
 	"\tcommit: '" BUILDINFO_COMMIT_ID "'\n" \\
 	"\trelease: '" BUILDINFO_RELEASE "'\n" \\
