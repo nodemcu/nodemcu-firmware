@@ -7,7 +7,10 @@ BUILD_DATE="$(date "+%Y-%m-%d %H:%M")"
 COMMIT_ID="$(git rev-parse HEAD)"
 BRANCH="$(git rev-parse --abbrev-ref HEAD | sed -r 's/[\/\\]+/_/g')"
 RELEASE="$(git describe --tags --long | sed -r 's/(.*)-(.*)-.*/\1 +\2/g' | sed 's/ +0$//')"
-RELEASE_DTS=0$(git show -s --format=%cd --date=format:"%Y%m%d%H%M" HEAD)
+RELEASE_DTS=$(git show -s --format=%cd --date=format:"%Y%m%d%H%M" HEAD)
+if [ -z "$RELEASE_DTS"]; then
+  RELEASE_DTS=0
+fi
 
 # figure out whether SSL is enabled in user_config.h
 if grep -Eq "^#define CLIENT_SSL_ENABLE" $USER_CONFIG_H; then
