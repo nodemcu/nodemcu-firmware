@@ -11,18 +11,18 @@ RELEASE_DTS=0$(git show -s --format=%cd --date=format:"%Y%m%d%H%M" HEAD)
 
 # figure out whether SSL is enabled in user_config.h
 if grep -Eq "^#define CLIENT_SSL_ENABLE" $USER_CONFIG_H; then
-    SSL="true"
-  else
-    SSL="false"
-  fi
+  SSL="true"
+else
+  SSL="false"
+fi
 
 # figure out whether LFS configuration in user_config.h
 LFS=$(grep "^#define LUA_FLASH_STORE" $USER_CONFIG_H | tr -d '\r' | cut -d ' ' -f 3-)
 if [ -z "$LFS" ]; then
-    LFS="disabled"
+  LFS="disabled"
 else
-    LFS="Size: ${LFS}"
-  fi
+  LFS="Size: ${LFS}"
+fi
 
 # figure out whether Int build is enabled in user_config.h
 if grep -Eq "^#define LUA_NUMBER_INTEGRAL" $USER_CONFIG_H; then
@@ -58,16 +58,16 @@ echo "#define BUILDINFO_MODULES \""$MODULES"\"" >> $TEMPFILE
 
 cat >> $TEMPFILE << EndOfMessage2
 #define NODE_VERSION_LONG \\
-	"$USER_PROLOG_LINE" \\
-	"\tbranch: " BUILDINFO_BRANCH "\n" \\
-	"\tcommit: " BUILDINFO_COMMIT_ID "\n" \\
-	"\trelease: " BUILDINFO_RELEASE "\n" \\
-	"\trelease DTS: " BUILDINFO_RELEASE_DTS_STR "\n" \\
-	"\tSSL: " BUILDINFO_SSL_STR "\n" \\
-	"\tBuild type: " BUILDINFO_BUILD_TYPE "\n" \\
-	"\tLFS: " BUILDINFO_LFS "\n" \\
-	"\tmodules: " BUILDINFO_MODULES "\n"
-	
+  "$USER_PROLOG_LINE" \\
+  "\tbranch: " BUILDINFO_BRANCH "\n" \\
+  "\tcommit: " BUILDINFO_COMMIT_ID "\n" \\
+  "\trelease: " BUILDINFO_RELEASE "\n" \\
+  "\trelease DTS: " BUILDINFO_RELEASE_DTS_STR "\n" \\
+  "\tSSL: " BUILDINFO_SSL_STR "\n" \\
+  "\tBuild type: " BUILDINFO_BUILD_TYPE "\n" \\
+  "\tLFS: " BUILDINFO_LFS "\n" \\
+  "\tmodules: " BUILDINFO_MODULES "\n"
+
 EndOfMessage2
 
 echo "#endif	/* __BUILDINFO_H__ */" >> $TEMPFILE
