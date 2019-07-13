@@ -272,7 +272,7 @@ system heap size left in bytes (number)
 
 ## node.info()
 
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed, and Lua File Store (LFS) usage statics.
+Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed, branch, git commit_id, release, release_dts, ssl, lfs info, modules and the build_type.
 
 #### Syntax
 `node.info()`
@@ -289,6 +289,15 @@ none
  - `flashsize` (number)
  - `flashmode` (number)
  - `flashspeed` (number)
+ - `branch` (string)
+ - `git commit_id` (string)
+ - `release` (string) Release name +additional commits   e.g. "2.0.0-master_20170202 +403" 
+ - `release_dts` (string) in an ordering format. e.g. "201908111200"
+ - `ssl` (boolean)
+ - `lfs info` (string) "disabled" or "Size: {whatever is in user_config.h}"
+ - `modules` (string) comma separated list
+ - `build_type` (string) `integer` or `float`
+
 
 #### Example
 ```lua
