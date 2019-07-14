@@ -146,6 +146,8 @@ void nodemcu_init(void)
 
 void app_main (void)
 {
+  task_init();
+
   esp_event_queue =
     xQueueCreate (CONFIG_SYSTEM_EVENT_QUEUE_SIZE, sizeof (system_event_t));
   esp_event_task = task_get_id (handle_esp_event);
