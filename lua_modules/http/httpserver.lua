@@ -57,7 +57,7 @@ do
       end
       -- status
       header.status = header.status or 200
-      csend(("HTTP/1.1 %s\r\n"):format(status_code[tonumber(header.status)]))
+      csend(("HTTP/1.1 %s\r\n"):format(status_code[tonumber(header.status)] or header.status))
       csend("Transfer-Encoding: chunked\r\n")
       -- header
       for k, v in pairs(header.headers) do
