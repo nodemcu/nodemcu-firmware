@@ -425,6 +425,7 @@ static int ws2812_buffer_mix(lua_State* L) {
       val += (int32_t)(source[src].values[i] * source[src].factor);
     }
 
+	val += 128;	// rounding istead of floor
     val >>= 8;
 
     if (val < 0) {
