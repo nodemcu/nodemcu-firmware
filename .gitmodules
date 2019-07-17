@@ -1,6 +1,3 @@
-[submodule "toolchains"]
-	path = tools/toolchains
-	url = https://github.com/jmattsson/nodemcu-prebuilt-toolchains.git
 [submodule "sdk/esp32-esp-idf"]
 	path = sdk/esp32-esp-idf
 	url = https://github.com/espressif/esp-idf.git

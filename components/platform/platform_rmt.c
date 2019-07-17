@@ -1,6 +1,6 @@
 
-#include "platform.h"
 #include <string.h>
+#include "platform_rmt.h"
 
 #include "driver/rmt.h"
 

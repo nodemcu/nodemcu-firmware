@@ -237,7 +237,7 @@ headers = {
   ["Content-Type"] = "application/json",
 }
 body = '{"hello":"world"}'
-http.post("http://httpbin.org/post", headers, body,
+http.post("http://httpbin.org/post", { headers = headers }, body,
   function(code, data)
     if (code < 0) then
       print("HTTP request failed")
