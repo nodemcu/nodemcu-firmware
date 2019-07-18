@@ -53,14 +53,13 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
   us = & uart_status[id];
   xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
-    need_len = us->need_len;
-    end_char = us->end_char;
-
     for(size_t p = 0; p < post->size; p++) {
       ch = post->data[p];
       us->line_buffer[us->line_position] = ch;
       us->line_position++;
 
+      need_len = us->need_len;
+      end_char = us->end_char;
       size_t max_wanted =
         (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
       bool at_end = (us->line_position >= max_wanted);
