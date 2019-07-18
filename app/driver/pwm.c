@@ -20,7 +20,7 @@
 #include "driver/pwm.h"
 
 // #define PWM_DBG os_printf
-#define PWM_DBG
+#define PWM_DBG( ... )
 
 // Enabling the next line will cause the interrupt handler to toggle
 // this output pin during processing so that the timing is obvious
@@ -253,7 +253,7 @@ pwm_set_freq(uint16 freq, uint8 channel)
 
     pwm.period = PWM_1S / pwm.freq;
 }
-
+#if 0
 /******************************************************************************
  * FunctionName : pwm_set_freq_duty
  * Description  : set pwm frequency and each channel's duty
@@ -274,7 +274,7 @@ pwm_set_freq_duty(uint16 freq, uint16 *duty)
             pwm_set_duty(duty[i], pwm_out_io_num[i]);
     }
 }
-
+#endif
 /******************************************************************************
  * FunctionName : pwm_get_duty
  * Description  : get duty of each channel

@@ -19,8 +19,6 @@
 #include "lrotable.h"
 
 
-
-
 /*
 ** If your system does not support `stdout', you can just remove this function.
 ** If you need, you can define your own `print' function, following this
@@ -40,20 +38,11 @@ static int luaB_print (lua_State *L) {
     if (s == NULL)
       return luaL_error(L, LUA_QL("tostring") " must return a string to "
                            LUA_QL("print"));
-#if defined(LUA_USE_STDIO)
-    if (i>1) fputs("\t", c_stdout);
-    fputs(s, c_stdout);
-#else
-    if (i>1)  luai_writestring("\t", 1);
-    luai_writestring(s, strlen(s));
-#endif
+    if (i>1) puts("\t");
+    puts(s);
     lua_pop(L, 1);  /* pop result */
   }
-#if defined(LUA_USE_STDIO)
-  fputs("\n", c_stdout);
-#else
-  luai_writeline();
-#endif
+  puts("\n");
   return 0;
 }
 
@@ -296,7 +285,7 @@ static int luaB_loadfile (lua_State *L) {
 #ifdef LUA_CROSS_COMPILER
   return load_aux(L, luaL_loadfile(L, fname));
 #else
-  return load_aux(L, luaL_loadfsfile(L, fname));
+  return load_aux(L, luaL_loadfile(L, fname));
 #endif
 }
 
@@ -343,7 +332,7 @@ static int luaB_dofile (lua_State *L) {
 #ifdef LUA_CROSS_COMPILER
   if (luaL_loadfile(L, fname) != 0) lua_error(L);
 #else
-  if (luaL_loadfsfile(L, fname) != 0) lua_error(L);
+  if (luaL_loadfile(L, fname) != 0) lua_error(L);
 #endif
   lua_call(L, 0, LUA_MULTRET);
   return lua_gettop(L) - n;

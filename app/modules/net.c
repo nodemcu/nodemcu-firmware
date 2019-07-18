@@ -736,6 +736,14 @@ int net_getaddr( lua_State *L ) {
   lua_pushstring(L, addr_str);
   return 2;
 }
+#if 0
+static void dbg_print_ud(const char *title, lnet_userdata *ud) {
+  int i;
+  dbg_printf("%s: Userdata %p:", title, ud);
+  for (i=0; i<(sizeof(*ud)/sizeof(uint32_t)); i++) 
+    dbg_printf( "  0x%08x", ((uint32_t *)ud)[i]);
+  dbg_printf("\n");
+#endif
 
 // Lua: client/server/socket:close()
 int net_close( lua_State *L ) {
@@ -764,11 +772,14 @@ int net_close( lua_State *L ) {
   }
   if (ud->type == TYPE_TCP_SERVER ||
      (ud->pcb == NULL && ud->client.wait_dns == 0)) {
-    lua_gc(L, LUA_GCSTOP, 0);
+//    lua_gc(L, LUA_GCSTOP, 0);
     luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
     ud->self_ref = LUA_NOREF;
-    lua_gc(L, LUA_GCRESTART, 0);
+//    lua_gc(L, LUA_GCRESTART, 0);
   }
+#if 0
+  dbg_print_ud("close exit", ud);
+#endif
   return 0;
 }
 
@@ -813,10 +824,13 @@ int net_delete( lua_State *L ) {
       ud->server.cb_accept_ref = LUA_NOREF;
       break;
   }
-  lua_gc(L, LUA_GCSTOP, 0);
+//  lua_gc(L, LUA_GCSTOP, 0);
   luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
   ud->self_ref = LUA_NOREF;
-  lua_gc(L, LUA_GCRESTART, 0);
+//  lua_gc(L, LUA_GCRESTART, 0);
+#if 0
+  dbg_print_ud("delete end", ud);
+#endif
   return 0;
 }
 

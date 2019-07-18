@@ -79,7 +79,7 @@ LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
 #ifdef LUA_CROSS_COMPILER
 LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
 #else
-LUALIB_API int (luaL_loadfsfile) (lua_State *L, const char *filename);
+LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
 #endif
 LUALIB_API int (luaL_loadbuffer) (lua_State *L, const char *buff, size_t sz,
                                   const char *name);
@@ -119,7 +119,7 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 	(luaL_loadfile(L, fn) || lua_pcall(L, 0, LUA_MULTRET, 0))
 #else
 #define luaL_dofile(L, fn) \
-  (luaL_loadfsfile(L, fn) || lua_pcall(L, 0, LUA_MULTRET, 0))
+  (luaL_loadfile(L, fn) || lua_pcall(L, 0, LUA_MULTRET, 0))
 #endif
 
 #define luaL_dostring(L, s) \
