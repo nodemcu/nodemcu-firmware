@@ -98,6 +98,7 @@ typedef struct global_State {
   stringtable ROstrt;  /* Flash-based hash table for RO strings */
   Proto *ROpvmain;   /* Flash-based Proto main */
   int LFSsize;  /* Size of Lua Flash Store */
+  int error_reporter; /* Registry Index of error reporter task */
 #endif
 } global_State;
 

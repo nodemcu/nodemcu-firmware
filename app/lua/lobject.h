@@ -113,7 +113,7 @@ typedef struct lua_TValue {
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
 #define ttisrotable(o) (ttype(o) == LUA_TROTABLE)
 #define ttislightfunction(o)  (ttype(o) == LUA_TLIGHTFUNCTION)
-
+#define ttisanyfunction(o)  (ttisfunction(o) || ttislightfunction(o))
 
 /* Macros to access values */
 

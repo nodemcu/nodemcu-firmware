@@ -263,14 +263,14 @@ extern void dbg_printf(const char *fmt, ...);
 #ifdef NODE_DEBUG
 #define NODE_DBG dbg_printf
 #else
-#define NODE_DBG
+#define NODE_DBG( ... )
 #endif	/* NODE_DEBUG */
 
 #define NODE_ERROR
 #ifdef NODE_ERROR
 #define NODE_ERR dbg_printf
 #else
-#define NODE_ERR
+#define NODE_ERR( ... )
 #endif	/* NODE_ERROR */
 
 // #define GPIO_SAFE_NO_INTR_ENABLE

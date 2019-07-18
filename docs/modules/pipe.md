@@ -11,14 +11,14 @@ task to another.
 Create a pipe.
 
 #### Syntax
-`pobj = pipe.create()`
+`pobj = pipe.create([CB_function],[task_priority])`
 
 #### Parameters
-None
+- `CB_function` optional reader callback which is called through the `ǹode.task.post()` when the pipe is written to.  If the CB returns a boolean, then the reposting action is forced: it is reposted if true and not if false. If the return is nil or omitted then the deault is to repost if a pipe write has occured since the last call.
+-  `task_priority` See `ǹode.task.post()`
 
 #### Returns
 A pipe resource.
-
 
 ## pobj:read()
 

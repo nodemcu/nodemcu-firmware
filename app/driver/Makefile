@@ -15,7 +15,7 @@ ifndef PDIR
 GEN_LIBS = libdriver.a
 endif
 
-STD_CFLAGS=-std=gnu11 -Wimplicit
+STD_CFLAGS=-std=gnu11 -Wimplicit -Wall
 
 #############################################################
 # Configuration i.e. compile options etc.

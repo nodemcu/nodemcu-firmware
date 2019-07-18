@@ -5,6 +5,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
+#include "task/task.h"
 #include "user_interface.h"
 #include <stdint.h>
 #include <string.h>
