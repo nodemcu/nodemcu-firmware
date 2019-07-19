@@ -9,7 +9,6 @@
 #include "ip_fmt.h"
 #include "common.h"
 
-// example specific includes
 #include "driver/gpio.h"
 
 // phy includes
@@ -95,18 +94,18 @@ static const event_desc_t events[] =
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 static int event_cb[ARRAY_LEN(events)];
 
-static int eth_event_idx_by_id( const event_desc_t *table, unsigned n, system_event_id_t id )
+static int eth_event_idx_by_id( system_event_id_t id )
 {
-  for (unsigned i = 0; i < n; ++i)
-    if (table[i].event_id == id)
+  for (unsigned i = 0; i < ARRAY_LEN(events); ++i)
+    if (events[i].event_id == id)
       return i;
   return -1;
 }
 
-static int eth_event_idx_by_name( const event_desc_t *table, unsigned n, const char *name )
+static int eth_event_idx_by_name( const char *name )
 {
-  for (unsigned i = 0; i < n; ++i)
-    if (strcmp( table[i].name, name ) == 0)
+  for (unsigned i = 0; i < ARRAY_LEN(events); ++i)
+    if (strcmp( events[i].name, name ) == 0)
       return i;
   return -1;
 }
@@ -122,6 +121,8 @@ static void eth_got_ip( lua_State *L, const system_event_t *evt )
     luaL_error( L, "error from tcpip_adapter_get_ip_info!" );
   }
 
+  // on_event() has prepared a table on top of stack. fill it with cb-specific fields:
+  //   ip, netmask, gw
   char ipstr[IP_STR_SZ] = { 0 };
   ip4str( ipstr, &ip_info.ip );
   lua_pushstring( L, ipstr );
@@ -138,16 +139,19 @@ static void eth_got_ip( lua_State *L, const system_event_t *evt )
 
 static void on_event( const system_event_t *evt )
 {
-  int idx = eth_event_idx_by_id( events, ARRAY_LEN(events), evt->event_id );
+  int idx = eth_event_idx_by_id( evt->event_id );
   if (idx < 0 || event_cb[idx] == LUA_NOREF)
     return;
 
   lua_State *L = lua_getstate();
+  int top = lua_gettop( L );
   lua_rawgeti( L, LUA_REGISTRYINDEX, event_cb[idx] );
   lua_pushstring( L, events[idx].name );
   lua_createtable( L, 0, 5 );
   events[idx].fill_cb_arg( L, evt );
-  lua_call( L, 2, 0 );
+  lua_pcall( L, 2, 0, 0 );
+
+  lua_settop( L, top );
 }
 
 NODEMCU_ESP_EVENT(SYSTEM_EVENT_ETH_START,           on_event);
@@ -213,7 +217,7 @@ static int leth_on( lua_State *L )
   }
   lua_settop( L, 2 );
 
-  int idx = eth_event_idx_by_name( events, ARRAY_LEN(events), event_name );
+  int idx = eth_event_idx_by_name( event_name );
   if (idx < 0)
     return luaL_error( L, "unknown event: %s", event_name );
 
