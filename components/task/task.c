@@ -55,7 +55,7 @@ task_handle_t task_get_id(task_callback_t t) {
 }
 
 
-bool task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
+bool IRAM_ATTR task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
 {
   if (priority >= TASK_PRIORITY_COUNT ||
       (handle & TASK_HANDLE_MASK) != TASK_HANDLE_MONIKER)
