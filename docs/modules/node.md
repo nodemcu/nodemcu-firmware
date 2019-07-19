@@ -276,38 +276,67 @@ system heap size left in bytes (number)
 
 ## node.info()
 
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed, branch, git commit_id, release, release_dts, ssl, lfs info, modules and the build_type.
+Returns information about hardware, software version and build configuration.
+
 
 #### Syntax
-`node.info()`
+`node.info([kind])`
 
 #### Parameters
-none
+`kind` kind of information (optional, if ommited return legacy information). May be one of `"hw"`, `"sw_version"`, `"build_config"`.
 
 #### Returns
- - `majorVer` (number)
- - `minorVer` (number)
- - `devVer` (number)
- - `chipid` (number)
- - `flashid` (number)
- - `flashsize` (number)
- - `flashmode` (number)
- - `flashspeed` (number)
- - `branch` (string)
- - `git commit_id` (string)
- - `release` (string) Release name +additional commits   e.g. "2.0.0-master_20170202 +403" 
- - `release_dts` (string) in an ordering format. e.g. "201908111200"
- - `ssl` (boolean)
- - `lfs info` (string) "disabled" or "Size: {whatever is in user_config.h}"
- - `modules` (string) comma separated list
- - `build_type` (string) `integer` or `float`
+ if a `kind` is given the return value will be a table containing the following elements:
+ - for `kind` = `"hw"`
+   - `chip_id` (number)
+   - `flash_id` (number)
+   - `flash_size` (number)
+   - `flash_mode` (number)  QIO = 0, QOUT = 1, DIO = 2, DOUT = 15.
+   - `flash_speed` (number)
+ - for `kind` = `"sw_version"`
+   - `git_branch` (string)
+   - `git_commit_id` (string)
+   - `git_release` (string) Release name +additional commits   e.g. "2.0.0-master_20170202 +403" 
+   - `git_commit_dts` (string) in an ordering format. e.g. "201908111200"
+   - `node_verion_major` (number)
+   - `node_verion_minor` (number)
+   - `node_verion_revision` (number)
+ - for `kind` = `"build_config"`
+   - `ssl` (boolean)
+   - `lfs_size` (number) as defined at build time
+   - `modules` (string) comma separated list
+   - `number_type` (string) `integer` or `float`
 
+!!! attention
+
+This interface is deprecated and will be removed in one of the next releases. Use the above calls instead.
+
+ - for no `kind` given: --deprecated
+   - `majorVer` (number)
+   - `minorVer` (number)
+   - `devVer` (number)
+   - `chipid` (number)
+   - `flashid` (number)
+   - `flashsize` (number)
+   - `flashmode` (number)
+   - `flashspeed` (number)
 
 #### Example
 ```lua
 majorVer, minorVer, devVer, chipid, flashid, flashsize, flashmode, flashspeed = node.info()
 print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
 ```
+
+```lua
+for k,v in pairs(node.info("build_config")) do
+print (k,v)
+end
+```
+
+```lua
+print(node.info("sw_version").git_release)
+```
+
 
 ## node.input()
 

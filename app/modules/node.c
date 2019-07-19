@@ -120,24 +120,87 @@ static int node_sleep( lua_State* L )
 #endif //PMSLEEP_ENABLE
 static int node_info( lua_State* L )
 {
-  lua_pushinteger(L, NODE_VERSION_MAJOR);
-  lua_pushinteger(L, NODE_VERSION_MINOR);
-  lua_pushinteger(L, NODE_VERSION_REVISION);
-  lua_pushinteger(L, system_get_chip_id());   // chip id
-  lua_pushinteger(L, spi_flash_get_id());     // flash id
-  lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
-  lua_pushinteger(L, flash_rom_get_mode());
-  lua_pushinteger(L, flash_rom_get_speed());
-  lua_pushstring(L, BUILDINFO_BRANCH);
-  lua_pushstring(L, BUILDINFO_COMMIT_ID);
-  lua_pushstring(L, BUILDINFO_RELEASE);
-  lua_pushstring(L, BUILDINFO_RELEASE_DTS);
-  lua_pushboolean(L, BUILDINFO_SSL);
-  lua_pushstring(L, BUILDINFO_LFS);
-  lua_pushstring(L, BUILDINFO_MODULES);
-  lua_pushstring(L, BUILDINFO_BUILD_TYPE);
-  
-  return 16;
+  const char* options[] = {"hw", "sw_version", "build_config", "legacy", NULL};
+  int option = luaL_checkoption (L, 1, options[3], options);
+
+  switch (option) {
+    case 0: { // hw
+      lua_createtable (L, 0, 5);
+      int table_index = lua_gettop(L);
+      lua_pushliteral(L, "chip_id");
+      lua_pushinteger(L, system_get_chip_id());   // chip id
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "flash_id");
+      lua_pushinteger(L, spi_flash_get_id());     // flash id
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "flash_size");
+      lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "flash_mode");
+      lua_pushinteger(L, flash_rom_get_mode());
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "flash_speed");
+      lua_pushinteger(L, flash_rom_get_speed());
+      lua_settable(L, table_index);
+      return 1;
+    }
+    case 1: { // sw_version
+      lua_createtable (L, 0, 7);
+      int table_index = lua_gettop(L);
+      lua_pushliteral(L, "node_version_major");
+      lua_pushinteger(L, NODE_VERSION_MAJOR);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "node_version_minor");
+      lua_pushinteger(L, NODE_VERSION_MINOR);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "node_version_revision");
+      lua_pushinteger(L, NODE_VERSION_REVISION);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "git_branch");
+      lua_pushstring(L, BUILDINFO_BRANCH);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "git_commit_id");
+      lua_pushstring(L, BUILDINFO_COMMIT_ID);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "git_release");
+      lua_pushstring(L, BUILDINFO_RELEASE);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "git_commit_dts");
+      lua_pushstring(L, BUILDINFO_RELEASE_DTS);
+      lua_settable(L, table_index);
+      return 1;
+    }
+    case 2: { // build_config
+      lua_createtable (L, 0, 4);
+      int table_index = lua_gettop(L);
+      lua_pushliteral(L, "ssl");
+      lua_pushboolean(L, BUILDINFO_SSL);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "lfs_size");
+      lua_pushnumber(L, BUILDINFO_LFS);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "modules");
+      lua_pushstring(L, BUILDINFO_MODULES);
+      lua_settable(L, table_index);
+      lua_pushliteral(L, "number_type");
+      lua_pushstring(L, BUILDINFO_BUILD_TYPE);
+      lua_settable(L, table_index);
+      return 1;
+    }
+    default:
+    {
+      platform_print_deprecation_note("node.info() without parameter", "in the next version");
+      lua_pushinteger(L, NODE_VERSION_MAJOR);
+      lua_pushinteger(L, NODE_VERSION_MINOR);
+      lua_pushinteger(L, NODE_VERSION_REVISION);
+      lua_pushinteger(L, system_get_chip_id());   // chip id
+      lua_pushinteger(L, spi_flash_get_id());     // flash id
+      lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
+      lua_pushinteger(L, flash_rom_get_mode());
+      lua_pushinteger(L, flash_rom_get_speed());
+      return 8;
+    }
+  }
 }
 
 // Lua: chipid()
