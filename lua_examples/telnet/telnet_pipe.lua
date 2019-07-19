@@ -1,16 +1,17 @@
 --[[  A telnet server   T. Ellison,  June 2019
 
-This version of the telnet server demonstrates the use of the new stdin and stout 
-pipes, which is a C implementation of the Lua fifosock concept moved into the 
+This version of the telnet server demonstrates the use of the new stdin and stout
+pipes, which is a C implementation of the Lua fifosock concept moved into the
 Lua core.  These two pipes are referenced in the Lua registry.
 
 ]]
+--luacheck: no unused args
 
 local M = {}
 local modname = ...
-local function telnet_session(socket) 
+local function telnet_session(socket)
   local node = node
-  local stdout, sending
+  local stdout
 
   local function output_CB(opipe)   -- upval: socket
     stdout = opipe
@@ -31,8 +32,8 @@ local function telnet_session(socket)
 
   node.output(output_CB, 0)
   socket:on("receive", function(_,rec) node.input(rec) end)
-  socket:on("sent", onsent_CB) 
-  socket:on("disconnection", disconnect_CB) 
+  socket:on("sent", onsent_CB)
+  socket:on("disconnection", disconnect_CB)
   print(("Welcome to NodeMCU world (%d mem free, %s)"):format(
         node.heap(), wifi.sta.getip()))
 end

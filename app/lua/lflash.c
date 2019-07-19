@@ -121,7 +121,7 @@ static char *flashSetPosition(uint32_t offset){
 
 static char *flashBlock(const void* b, size_t size)  {
   void *cur = flashPosition();
-  NODE_DBG("flashBlock((%04x),%08x,%04x)\n", curOffset,b,size);
+  NODE_DBG("flashBlock((%04x),%p,%04x)\n", curOffset,b,size);
   lua_assert(ALIGN_BITS(b) == 0 && ALIGN_BITS(size) == 0);
   platform_flash_write(b, flashAddrPhys+curOffset, size);
   curOffset += size;
@@ -451,7 +451,8 @@ void procSecondPass (void) {
   int i, len = (out->ndx > out->flashLen) ?
                   (out->flashLen % WRITE_BLOCKSIZE) / WORDSIZE :
                   WRITE_BLOCKSIZE / WORDSIZE;
-  uint32_t *buf = (uint32_t *) out->buffer.byte, flags = 0;
+  uint32_t *buf = (uint32_t *) out->buffer.byte;
+  uint32_t  flags = 0;
  /*
   * Relocate all the addresses tagged in out->flags.  This can't be done in
   * place because the out->blocks are still in use as dictionary content so
