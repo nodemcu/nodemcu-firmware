@@ -6,6 +6,5 @@ extern void input_setup(int bufsize, const char *prompt);
 extern void input_setup_receive(uart_cb_t uart_on_data_cb, int data_len, char end_char, bool run_input);
 extern void input_setecho (bool flag);
 extern void input_setprompt (const char *prompt);
-extern void input_process_arm(void);
 
 #endif /* READLINE_APP_H */

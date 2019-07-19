@@ -165,31 +165,7 @@ uart_tx_one_char(uint8 uart, uint8 TxChar)
     WRITE_PERI_REG(UART_FIFO(uart) , TxChar);
     return OK;
 }
-#if 0
-/******************************************************************************
- * FunctionName : uart1_write_char
- * Description  : Internal used function
- *                Do some special deal while tx char is '\r' or '\n'
- * Parameters   : char c - character to tx
- * Returns      : NONE
-*******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR
-uart1_write_char(char c)
-{
-  if (c == '\n')
-  {
-    uart_tx_one_char(UART1, '\r');
-    uart_tx_one_char(UART1, '\n');
-  }
-  else if (c == '\r')
-  {
-  }
-  else
-  {
-    uart_tx_one_char(UART1, c);
-  }
-}
-#endif
+
 /******************************************************************************
  * FunctionName : uart0_tx_buffer
  * Description  : use uart0 to transfer buffer

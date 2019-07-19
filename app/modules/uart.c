@@ -31,7 +31,7 @@ static int l_uart_on( lua_State* L )
   if (lua_type( L, stack ) == LUA_TNUMBER)
   {
     data_len = luaL_checkinteger( L, stack );
-    luaL_argcheck(L, data_len >= 0 && data_len <= LUA_MAXINPUT, stack, "wrong arg range");
+    luaL_argcheck(L, data_len >= 0 && data_len < LUA_MAXINPUT, stack, "wrong arg range");
     stack++;
   }
   else if (lua_isstring(L, stack))

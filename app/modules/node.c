@@ -271,7 +271,7 @@ static int node_output( lua_State* L )
     lua_pushlightfunction(L, &pipe_create);
     lua_insert(L, 1); 
     lua_pushinteger(L, LUA_TASK_MEDIUM);
-    lua_call(L, 2, 1);             /* T[1] = pipe.create(dojob, low_priority) */
+    lua_call(L, 2, 1);             /* T[1] = pipe.create(CB, medium_priority) */
   } else {    // remove the stdout pipe
     lua_pop(L,1);
     lua_pushnil(L);                                             /* T[1] = nil */

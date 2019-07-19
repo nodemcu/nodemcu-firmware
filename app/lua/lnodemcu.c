@@ -22,12 +22,6 @@
 #include "platform.h"
 
 extern int debug_errorfb (lua_State *L);
-#if 0
-extern int pipe_create(lua_State *L);
-extern int pipe_read(lua_State *L);
-extern int pipe_unread(lua_State *L);
-extern int pipe_write(lua_State *L);
-#endif
 /*
 ** Error Reporting Task.  We can't pass a string parameter to the error reporter
 ** directly through the task interface the call is wrapped in a C closure with
@@ -62,13 +56,15 @@ int luaN_traceback (lua_State *L) {
 ** an error handler which will catch any error and then post this to the 
 ** registered reporter function as a separate follow-on task.
 */
-int luaN_call (lua_State *L, int narg, int res, int doGC) { // [-narg, +0, v]
+int luaN_call (lua_State *L, int narg, int nres, int doGC) { // [-narg, +0, v]
   int status;
   int base = lua_gettop(L) - narg;
   lua_pushcfunction(L, luaN_traceback);
   lua_insert(L, base);                                      /* put under args */
-  status = lua_pcall(L, narg, (res < 0 ? LUA_MULTRET : res), base);
+  status = lua_pcall(L, narg, (nres < 0 ? LUA_MULTRET : nres), base);
   lua_remove(L, base);                           /* remove traceback function */
+  if (status && nres >=0)
+    lua_settop(L, base + nres);                 /* balance the stack on error */ 
   /* force a complete garbage collection if requested */
   if (doGC) 
     lua_gc(L, LUA_GCCOLLECT, 0);
