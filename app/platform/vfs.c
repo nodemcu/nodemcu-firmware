@@ -419,13 +419,13 @@ void vfs_clearerr( const char *name )
 
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( normname, &outname, FALSE )) {
-    //fs_fns->clearerr( );
+    fs_fns->clearerrx( );
   }
 #endif
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    fs_fns->clearerr( );
+    fs_fns->clearerrx( );
     free( outname );
   }
 #endif

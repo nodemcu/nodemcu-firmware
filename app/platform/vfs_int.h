@@ -109,7 +109,7 @@ struct vfs_fs_fns {
   int32_t  (*chdrive)( const char * );
   int32_t  (*chdir)( const char * );
   int32_t  (*ferrno)( void );
-  void     (*clearerr)( void );
+  void     (*clearerrx)( void );
 };
 typedef const struct vfs_fs_fns vfs_fs_fns;
 
