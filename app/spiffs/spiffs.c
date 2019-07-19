@@ -223,7 +223,7 @@ static vfs_fs_fns myspiffs_fs_fns = {
   .chdrive  = NULL,
   .chdir    = NULL,
   .ferrno   = myspiffs_vfs_errno,
-  .clearerr = myspiffs_vfs_clearerr
+  .clearerrx= myspiffs_vfs_clearerr
 };
 
 static vfs_file_fns myspiffs_file_fns = {

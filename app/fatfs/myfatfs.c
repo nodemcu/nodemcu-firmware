@@ -63,7 +63,7 @@ static vfs_fs_fns myfatfs_fs_fns = {
   .chdrive  = myfatfs_chdrive,
   .chdir    = myfatfs_chdir,
   .ferrno   = myfatfs_errno,
-  .clearerr = myfatfs_clearerr
+  .clearerrx= myfatfs_clearerr
 };
 
 static vfs_file_fns myfatfs_file_fns = {
