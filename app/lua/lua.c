@@ -5,10 +5,9 @@
 */
 
 
-// #include "c_signal.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
 #include "user_version.h"
 #include "driver/readline.h"
@@ -32,9 +31,9 @@ static const char *progname = LUA_PROGNAME;
 
 static void l_message (const char *pname, const char *msg) {
 #if defined(LUA_USE_STDIO)
-  if (pname) c_fprintf(c_stderr, "%s: ", pname);
-  c_fprintf(c_stderr, "%s\n", msg);
-  c_fflush(c_stderr);
+  if (pname) fprintf(c_stderr, "%s: ", pname);
+  fprintf(c_stderr, "%s\n", msg);
+  fflush(c_stderr);
 #else
   if (pname) luai_writestringerror("%s: ", pname);
   luai_writestringerror("%s\n", msg);
@@ -122,7 +121,7 @@ static int dofsfile (lua_State *L, const char *name) {
 
 
 static int dostring (lua_State *L, const char *s, const char *name) {
-  int status = luaL_loadbuffer(L, s, c_strlen(s), name) || docall(L, 0, 1);
+  int status = luaL_loadbuffer(L, s, strlen(s), name) || docall(L, 0, 1);
   return report(L, status);
 }
 
@@ -148,7 +147,7 @@ static int incomplete (lua_State *L, int status) {
     size_t lmsg;
     const char *msg = lua_tolstring(L, -1, &lmsg);
     const char *tp = msg + lmsg - (sizeof(LUA_QL("<eof>")) - 1);
-    if (c_strstr(msg, LUA_QL("<eof>")) == tp) {
+    if (strstr(msg, LUA_QL("<eof>")) == tp) {
       lua_pop(L, 1);
       return 1;
     }
@@ -214,7 +213,7 @@ static int runargs (lua_State *L, char **argv, int n) {
         int memlimit=0;
         if (*limit == '\0') limit = argv[++i];
         lua_assert(limit != NULL);
-        memlimit = c_atoi(limit);
+        memlimit = atoi(limit);
         lua_gc(L, LUA_GCSETMEMLIMIT, memlimit);
         break;
       }
@@ -307,7 +306,7 @@ int lua_main (int argc, char **argv) {
   gLoad.L = L;
   gLoad.firstline = 1;
   gLoad.done = 0;
-  gLoad.line = c_malloc(LUA_MAXINPUT);
+  gLoad.line = malloc(LUA_MAXINPUT);
   gLoad.len = LUA_MAXINPUT;
   gLoad.line_position = 0;
   gLoad.prmt = get_prompt(L, 1);
@@ -324,7 +323,7 @@ int lua_main (int argc, char **argv) {
 int lua_put_line(const char *s, size_t l) {
   if (s == NULL || ++l > LUA_MAXINPUT || gLoad.line_position > 0)
     return 0;
-  c_memcpy(gLoad.line, s, l);
+  memcpy(gLoad.line, s, l);
   gLoad.line[l] = '\0';
   gLoad.line_position = l;
   gLoad.done = 1;
@@ -336,7 +335,7 @@ void lua_handle_input (bool force)
 {
   while (gLoad.L && (force || readline (&gLoad))) {
     NODE_DBG("Handle Input: first=%u, pos=%u, len=%u, actual=%u, line=%s\n", gLoad.firstline,
-              gLoad.line_position, gLoad.len, c_strlen(gLoad.line), gLoad.line);
+              gLoad.line_position, gLoad.len, strlen(gLoad.line), gLoad.line);
     dojob (&gLoad);
     force = false;
   }
@@ -357,7 +356,7 @@ static void dojob(lua_Load *load){
 
   do{
     if(load->done == 1){
-      l = c_strlen(b);
+      l = strlen(b);
       if (l > 0 && b[l-1] == '\n')  /* line ends with newline? */
         b[l-1] = '\0';  /* remove it */
       if (load->firstline && b[0] == '=')  /* first line starts with `=' ? */
@@ -401,8 +400,8 @@ static void dojob(lua_Load *load){
 
   load->done = 0;
   load->line_position = 0;
-  c_memset(load->line, 0, load->len);
-  c_puts(load->prmt);
+  memset(load->line, 0, load->len);
+  puts(load->prmt);
 }
 
 #ifndef uart_putc
@@ -468,7 +467,7 @@ static bool readline(lua_Load *load){
         if (load->line_position == 0)
         {
           /* Get a empty line, then go to get a new line */
-          c_puts(load->prmt);
+          puts(load->prmt);
           continue;
         } else {
           load->done = 1;

@@ -11,16 +11,10 @@
 #ifdef LUAC_CROSS_FILE
 #include "luac_cross.h"
 #endif
-#ifdef LUA_CROSS_COMPILER
-#include <stdarg.h>
-#include <stddef.h>
-#include <ctype.h>
-#else
-#include "c_stdarg.h"
-#include "c_stddef.h"
-#include "c_types.h"
-#include <ctype.h>
-#endif
+#include <stdint.h>
+#include "stdarg.h"
+#include "stddef.h"
+#include "ctype.h"
 
 #include "luaconf.h"
 

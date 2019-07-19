@@ -9,7 +9,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "lfunc.h"
 #include "lgc.h"
@@ -150,7 +150,7 @@ void luaF_freeproto (lua_State *L, Proto *f) {
     luaM_freearray(L, f->code, f->sizecode, Instruction);
 #ifdef LUA_OPTIMIZE_DEBUG
     if (f->packedlineinfo) {
-      luaM_freearray(L, f->packedlineinfo, c_strlen(cast(char *, f->packedlineinfo))+1, unsigned char);
+      luaM_freearray(L, f->packedlineinfo, strlen(cast(char *, f->packedlineinfo))+1, unsigned char);
     }
 #else
     luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);

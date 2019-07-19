@@ -8,11 +8,7 @@
 #ifndef lobject_h
 #define lobject_h
 
-#ifdef LUA_CROSS_COMPILER
 #include <stdarg.h>
-#else
-#include "c_stdarg.h"
-#endif
 
 #include "llimits.h"
 #include "lua.h"

@@ -12,20 +12,19 @@
 #define UZLIB_INFLATE_H
 
 #include <setjmp.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#define uz_malloc malloc
+#define uz_free free
 
 #if defined(__XTENSA__)
 
-#include "c_stdint.h"
 #include "mem.h"
 #define UZLIB_THROW(v) longjmp(unwindAddr, (v))
 #define UZLIB_SETJMP setjmp
-#define uz_malloc os_malloc
-#define uz_free os_free
 
 #else  /* Host */
-
-#include <stdint.h>
-#include <stdlib.h>
 
 extern int dbg_break(void);
 #if defined(_MSC_VER) || defined(__MINGW32__) //msvc requires old name for longjmp
@@ -35,9 +34,6 @@ extern int dbg_break(void);
 #define UZLIB_THROW(v) {dbg_break();_longjmp(unwindAddr, (v));}
 #define UZLIB_SETJMP(n) _setjmp(n)
 #endif
-
-#define uz_malloc malloc
-#define uz_free free
 
 #endif /* defined(__XTENSA__) */
 

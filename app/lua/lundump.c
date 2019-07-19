@@ -9,7 +9,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -309,7 +309,7 @@ static void LoadHeader(LoadState* S)
  S->numsize=h[10]=s[10]; /* length of lua_Number */
  S->toflt=(s[11]>intck); /* check if conversion from int lua_Number to flt is needed */
  if(S->toflt) s[11]=h[11];
- IF (c_memcmp(h,s,LUAC_HEADERSIZE)!=0, "bad header");
+ IF (memcmp(h,s,LUAC_HEADERSIZE)!=0, "bad header");
 }
 
 /*
@@ -338,7 +338,7 @@ Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
 void luaU_header (char* h)
 {
  int x=1;
- c_memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
+ memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
  h+=sizeof(LUA_SIGNATURE)-1;
  *h++=(char)LUAC_VERSION;
  *h++=(char)LUAC_FORMAT;

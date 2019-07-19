@@ -6,6 +6,7 @@
 
 #include "module.h"
 #include "lauxlib.h"
+#include <string.h>
 #include "c_types.h"
 #include "../crypto/sha2.h"
 

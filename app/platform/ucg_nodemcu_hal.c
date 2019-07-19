@@ -5,7 +5,7 @@
 #ifdef LUA_USE_MODULES_UCG
 
 #include <string.h>
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 #include "platform.h"
 

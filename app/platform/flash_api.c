@@ -6,7 +6,8 @@
 #include "user_config.h"
 #include "flash_api.h"
 #include "spi_flash.h"
-#include "c_stdio.h"
+#include <stdio.h>
+#include <string.h>
 
 uint32_t flash_detect_size_byte(void)
 {
@@ -25,7 +26,7 @@ uint32_t flash_detect_size_byte(void)
         dummy_size = FLASH_SIZE_256KBYTE;
         while ((dummy_size < FLASH_SIZE_16MBYTE) &&
                 (SPI_FLASH_RESULT_OK == flash_read(dummy_size, (uint32 *)data_new, FLASH_BUFFER_SIZE_DETECT)) &&
-                (0 != os_memcmp(data_orig, data_new, FLASH_BUFFER_SIZE_DETECT))
+                (0 != memcmp(data_orig, data_new, FLASH_BUFFER_SIZE_DETECT))
               )
         {
             dummy_size *= 2;

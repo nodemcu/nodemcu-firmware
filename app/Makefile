@@ -90,31 +90,33 @@ COMPONENTS_eagle.app.v6 = 			\
 # only those) modules are pulled in.
 SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
 
-LINKFLAGS_eagle.app.v6 = 			\
-	-Wl,--gc-sections 			\
-	-Wl,-Map=mapfile 			\
+LINKFLAGS_eagle.app.v6 = 	\
+	-Wl,--gc-sections 		\
+	-Wl,-Map=mapfile 		\
 	-nostdlib 				\
-	-T$(LD_FILE) 				\
-	-Wl,@../ld/defsym.rom			\
-	-Wl,--no-check-sections 		\
-	-Wl,-static 				\
+	-T$(LD_FILE) 			\
+	-Wl,@../ld/defsym.rom	\
+	-Wl,--no-check-sections	\
+	-Wl,-static 			\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
-	-Wl,--start-group 			\
+	-Wl,--start-group 		\
 	-lmain 					\
-	-lc 					\
+	$(DEP_LIBS_eagle.app.v6)\
+	-Wl,--end-group 		\
+	-Wl,--start-group 		\
 	-lgcc 					\
 	-lhal 					\
 	-lphy 					\
 	-lpp 					\
 	-lnet80211 				\
+	-lsmartconfig 			\
 	-lwpa 					\
 	-lwpa2					\
-	-lsmartconfig 				\
 	-lcrypto				\
 	-lwps					\
-	$(DEP_LIBS_eagle.app.v6) 		\
-	-Wl,--end-group 			\
-	-lm
+	-lc 					\
+	-lm						\
+	-Wl,--end-group
 #	-Wl,--cref
 #	-Wl,--wrap=_xtos_set_exception_handler
 

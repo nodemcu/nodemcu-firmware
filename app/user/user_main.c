@@ -10,9 +10,9 @@
 *******************************************************************************/
 #include "lua.h"
 #include "platform.h"
-#include "c_string.h"
-#include "c_stdlib.h"
-#include "c_stdio.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "vfs.h"
 #include "flash_api.h"
 #include "user_interface.h"

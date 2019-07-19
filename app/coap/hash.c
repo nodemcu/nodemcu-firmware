@@ -1,5 +1,5 @@
 #include "hash.h"
-#include "c_string.h"
+#include <string.h>
 /* Caution: When changing this, update COAP_DEFAULT_WKC_HASHKEY
  * accordingly (see int coap_hash_path());
  */
@@ -20,7 +20,7 @@ void coap_hash(const unsigned char *s, unsigned int len, coap_key_t h) {
 
 void coap_transaction_id(const uint32_t ip, const uint32_t port, const coap_packet_t *pkt, coap_tid_t *id) {
   coap_key_t h;
-  c_memset(h, 0, sizeof(coap_key_t));
+  memset(h, 0, sizeof(coap_key_t));
 
   /* Compare the transport address. */
   coap_hash((const unsigned char *)&(port), sizeof(port), h);

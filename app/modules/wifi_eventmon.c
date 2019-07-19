@@ -4,8 +4,8 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 #include "c_types.h"
 #include "user_interface.h"
@@ -82,7 +82,7 @@ static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
     lua_rawgeti(L, LUA_REGISTRYINDEX, event_queue_ref);
 
     System_Event_t* evt_tmp = lua_newuserdata(L, sizeof(System_Event_t));
-    c_memcpy(evt_tmp, evt, sizeof(System_Event_t)); //copy event data to new struct
+    memcpy(evt_tmp, evt, sizeof(System_Event_t)); //copy event data to new struct
     sint32_t evt_ud_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     size_t queue_len = lua_objlen(L, -1);
 

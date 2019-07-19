@@ -7,7 +7,7 @@
 #include "platform.h"
 #include "user_interface.h"
 #include "c_types.h"
-#include "c_string.h"
+#include <string.h>
 #include "gpio.h"
 #include "hw_timer.h"
 

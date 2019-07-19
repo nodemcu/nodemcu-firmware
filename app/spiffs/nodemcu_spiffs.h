@@ -2,11 +2,10 @@
 #define _NODEMCU_SPIFFS_H
 
 #ifndef NODEMCU_SPIFFS_NO_INCLUDE
-#include "c_stdint.h"
-#include "c_stddef.h"
-#include "c_stdio.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
 #include "user_interface.h"
-typedef uint32_t intptr_t;
 #endif
 
 // Turn off stats

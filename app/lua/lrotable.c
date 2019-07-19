@@ -2,7 +2,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 #include "lrotable.h"
 #include "lauxlib.h"
 #include "lstring.h"
@@ -100,7 +100,7 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
   unsigned    l      = key ? key->tsv.len : sizeof("__metatable")-1;
 
   if (pentry) {
-    if (j >= 0 && !c_strcmp(pentry[j].key, strkey)) {
+    if (j >= 0 && !strcmp(pentry[j].key, strkey)) {
       if (ppos)
         *ppos = j;
 //dbg_printf("%3d hit  %p %s\n", (hash>>2) & (LA_LINES-1), rotable, strkey);
@@ -112,11 +112,11 @@ const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
      * is included so a "on\0" has a mask of 0xFFFFFF and "a\0" has 0xFFFF.
      */
     unsigned name4, mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
-    c_memcpy(&name4, strkey, sizeof(name4));
+    memcpy(&name4, strkey, sizeof(name4));
 
     for(;pentry->key != NULL; i++, pentry++) {
       if (((*(unsigned *)pentry->key ^ name4) & mask4) == 0 &&
-          !c_strcmp(pentry->key, strkey)) {
+          !strcmp(pentry->key, strkey)) {
 //dbg_printf("%p %s hit after %d probes \n", rotable, strkey, (int)(rotable-pentry));
         if (ppos)
           *ppos = i;
