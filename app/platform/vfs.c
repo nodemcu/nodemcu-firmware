@@ -6,6 +6,8 @@
 
 #define LDRV_TRAVERSAL 0
 
+// This interferes with our clearerr member in our ops struct
+#undef clearerr
 
 // ---------------------------------------------------------------------------
 // RTC system interface
@@ -419,13 +421,13 @@ void vfs_clearerr( const char *name )
 
 #ifdef BUILD_SPIFFS
   if (fs_fns = myspiffs_realm( normname, &outname, FALSE )) {
-    fs_fns->clearerrx( );
+    fs_fns->clearerr ( );
   }
 #endif
 
 #ifdef BUILD_FATFS
   if (fs_fns = myfatfs_realm( normname, &outname, FALSE )) {
-    fs_fns->clearerrx( );
+    fs_fns->clearerr ( );
     free( outname );
   }
 #endif
