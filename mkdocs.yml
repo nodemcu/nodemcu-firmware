@@ -40,6 +40,7 @@ pages:
     - 'dac':          'modules/dac.md'
     - 'dht':          'modules/dht.md'
     - 'encoder':      'modules/encoder.md'
+    - 'eth':          'modules/eth.md'
     - 'file':         'modules/file.md'
     - 'gpio':         'modules/gpio.md'
     - 'http':         'modules/http.md'
