@@ -17,10 +17,10 @@
 #include "vfs.h"
 #include "uzlib.h"
 
-#include "c_fcntl.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*
  * Flash memory is a fixed memory addressable block that is serially allocated by the
@@ -388,13 +388,13 @@ static void put_byte (uint8_t value) {
 }
 
 
-static uint8_t recall_byte (uint offset) {
+static uint8_t recall_byte (unsigned offset) {
   if(offset > DICTIONARY_WINDOW || offset >= out->ndx)
     flash_error("invalid dictionary offset on inflate");
   /* ndx starts at 1. Need relative to 0 */
-  uint n   = out->ndx - offset;
-  uint pos = n % WRITE_BLOCKSIZE;
-  uint blockNo = out->ndx / WRITE_BLOCKSIZE - n  / WRITE_BLOCKSIZE;
+  unsigned n   = out->ndx - offset;
+  unsigned pos = n % WRITE_BLOCKSIZE;
+  unsigned blockNo = out->ndx / WRITE_BLOCKSIZE - n  / WRITE_BLOCKSIZE;
   return out->block[blockNo]->byte[pos];
 }
 
@@ -429,7 +429,7 @@ int procFirstPass (void) {
          fh->flash_size > flashSize ||
          out->flagsLen != 1 + (out->flashLen/WORDSIZE - 1) / BITS_PER_WORD)
       flash_error("LFS length mismatch");
-    out->flags = luaM_newvector(out->L, out->flagsLen, uint);
+    out->flags = luaM_newvector(out->L, out->flagsLen, unsigned);
   }
 
   /* update running CRC */
@@ -512,7 +512,7 @@ static int loadLFS (lua_State *L) {
   in->len = vfs_size(in->fd);
   if (in->len <= 200 ||        /* size of an empty luac output */
       vfs_lseek(in->fd, in->len-4, VFS_SEEK_SET) != in->len-4 ||
-      vfs_read(in->fd, &out->len, sizeof(uint)) != sizeof(uint))
+      vfs_read(in->fd, &out->len, sizeof(unsigned)) != sizeof(unsigned))
     flash_error("read error on LFS image file");
   vfs_lseek(in->fd, 0, VFS_SEEK_SET);
 

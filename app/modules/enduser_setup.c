@@ -38,9 +38,9 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_stdio.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "ctype.h"
 #include "user_interface.h"
 #include "espconn.h"
@@ -248,7 +248,7 @@ static void enduser_setup_check_station(void *p)
 
   (void)p;
   struct ip_info ip;
-  c_memset(&ip, 0, sizeof(struct ip_info));
+  memset(&ip, 0, sizeof(struct ip_info));
 
   wifi_get_ip_info(STATION_IF, &ip);
 
@@ -266,7 +266,7 @@ static void enduser_setup_check_station(void *p)
     /* No IP Address yet, so check the reported status */
     uint8_t curr_status = wifi_station_get_connect_status();
     char buf[20];
-    c_sprintf(buf, "status=%d,chan=%d", curr_status, currChan);
+    sprintf(buf, "status=%d,chan=%d", curr_status, currChan);
     ENDUSER_SETUP_DEBUG(buf);
 
     if (curr_status == 2 || curr_status == 3 || curr_status == 4)
@@ -290,7 +290,7 @@ static void enduser_setup_check_station(void *p)
    return;
   }
 
-  c_sprintf (ipaddr, "%d.%d.%d.%d", IP2STR(&ip.ip.addr));
+  sprintf (ipaddr, "%d.%d.%d.%d", IP2STR(&ip.ip.addr));
 
   state->success = 1;
   state->lastStationStatus = 5; /*  We have an IP Address, so the status is 5 (as of SDK 1.5.1) */
@@ -298,7 +298,7 @@ static void enduser_setup_check_station(void *p)
 
 #if ENDUSER_SETUP_DEBUG_ENABLE
   char debuginfo[100];
-  c_sprintf(debuginfo, "AP_CHAN: %d, STA_CHAN: %d", state->softAPchannel, currChan);
+  sprintf(debuginfo, "AP_CHAN: %d, STA_CHAN: %d", state->softAPchannel, currChan);
   ENDUSER_SETUP_DEBUG(debuginfo);
 #endif
 
@@ -462,27 +462,27 @@ static int enduser_setup_http_load_payload(void)
   char cl_hdr[30];
   size_t ce_len = 0;
 
-  c_sprintf(cl_hdr, http_header_content_len_fmt, file_len);
-  size_t cl_len = c_strlen(cl_hdr);
+  sprintf(cl_hdr, http_header_content_len_fmt, file_len);
+  size_t cl_len = strlen(cl_hdr);
 
   if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
   {
     ENDUSER_SETUP_DEBUG("Unable to load file enduser_setup.html, loading default HTML...");
 
-    c_sprintf(cl_hdr, http_header_content_len_fmt, sizeof(enduser_setup_html_default));
-    cl_len = c_strlen(cl_hdr);
+    sprintf(cl_hdr, http_header_content_len_fmt, sizeof(enduser_setup_html_default));
+    cl_len = strlen(cl_hdr);
     int html_len = LITLEN(enduser_setup_html_default);
 
     if (enduser_setup_html_default[0] == 0x1f && enduser_setup_html_default[1] == 0x8b)
     {
-        ce_len = c_strlen(http_html_gzip_contentencoding);
+        ce_len = strlen(http_html_gzip_contentencoding);
         html_len = enduser_setup_html_default_len; /* Defined in enduser_setup/enduser_setup.html.gz.def.h by xxd -i */
         ENDUSER_SETUP_DEBUG("Content is gzipped");
     }
 
     int payload_len = LITLEN(http_header_200) + cl_len + ce_len + html_len;
     state->http_payload_len = payload_len;
-    state->http_payload_data = (char *) c_malloc(payload_len);
+    state->http_payload_data = (char *) malloc(payload_len);
 
     if (state->http_payload_data == NULL)
     {
@@ -490,17 +490,17 @@ static int enduser_setup_http_load_payload(void)
     }
 
     int offset = 0;
-    c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
+    memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
     offset += LITLEN(http_header_200);
 
     if (ce_len > 0)
     {
-        offset += c_sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);
+        offset += sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);
     }
 
-    c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
+    memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
     offset += cl_len;
-    c_memcpy(&(state->http_payload_data[offset]), &(enduser_setup_html_default), sizeof(enduser_setup_html_default));
+    memcpy(&(state->http_payload_data[offset]), &(enduser_setup_html_default), sizeof(enduser_setup_html_default));
 
     return 1;
   }
@@ -510,13 +510,13 @@ static int enduser_setup_http_load_payload(void)
 
   if (magic[0] == 0x1f && magic[1] == 0x8b)
   {
-    ce_len = c_strlen(http_html_gzip_contentencoding);
+    ce_len = strlen(http_html_gzip_contentencoding);
     ENDUSER_SETUP_DEBUG("Content is gzipped");
   }
 
   int payload_len = LITLEN(http_header_200) + cl_len + ce_len + file_len;
   state->http_payload_len = payload_len;
-  state->http_payload_data = (char *) c_malloc(payload_len);
+  state->http_payload_data = (char *) malloc(payload_len);
 
   if (state->http_payload_data == NULL)
   {
@@ -527,15 +527,15 @@ static int enduser_setup_http_load_payload(void)
 
   int offset = 0;
 
-  c_memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
+  memcpy(&(state->http_payload_data[offset]), &(http_header_200), LITLEN(http_header_200));
   offset += LITLEN(http_header_200);
 
   if (ce_len > 0)
   {
-    offset += c_sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);
+    offset += sprintf(state->http_payload_data + offset, http_html_gzip_contentencoding, ce_len);
   }
 
-  c_memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
+  memcpy(&(state->http_payload_data[offset]), &(cl_hdr), cl_len);
   offset += cl_len;
   vfs_read(f, &(state->http_payload_data[offset]), file_len);
   vfs_close(f);
@@ -658,18 +658,18 @@ static void enduser_setup_free_keypairs(struct keypairs_t *kp) {
   
     if (kp->keypairs != NULL) {
         for (int i = 0; i < kp->keypairs_nb * 2; i++) {
-      os_free(kp->keypairs[i]);
+      free(kp->keypairs[i]);
     }
   }
-  os_free(kp->keypairs);
-  os_free(kp);
+  free(kp->keypairs);
+  free(kp);
 }
 
 static struct keypairs_t * enduser_setup_alloc_keypairs(int kp_number ){
-    struct keypairs_t *kp = os_malloc(sizeof(struct keypairs_t));
+    struct keypairs_t *kp = malloc(sizeof(struct keypairs_t));
     os_memset(kp, 0, sizeof(struct keypairs_t));
 
-    kp->keypairs = os_malloc(kp_number * 2 * sizeof(char *));
+    kp->keypairs = malloc(kp_number * 2 * sizeof(char *));
     kp->keypairs_nb = kp_number;
     return kp;
 }
@@ -691,7 +691,7 @@ static struct keypairs_t *enduser_setup_get_keypairs_from_form(char *form_body, 
   int current_idx = 0;
   int err;
 
-  char *body_copy = os_malloc(form_length+1);
+  char *body_copy = malloc(form_length+1);
   os_bzero(body_copy, form_length+1);
   os_memcpy(body_copy, form_body, form_length);
   char *tok = strtok(body_copy, "=");
@@ -699,12 +699,12 @@ static struct keypairs_t *enduser_setup_get_keypairs_from_form(char *form_body, 
   char last_tok = '=';
   while (tok) {
     size_t len = strlen(tok);
-    kp->keypairs[current_idx] = os_malloc(len + 1);
+    kp->keypairs[current_idx] = malloc(len + 1);
     err = enduser_setup_http_urldecode(kp->keypairs[current_idx], tok, len, len + 1);
     if (err) {
       ENDUSER_SETUP_DEBUG("Unable to decode parameter");
       enduser_setup_free_keypairs(kp);
-      os_free(body_copy);
+      free(body_copy);
       return NULL;
     }
 
@@ -712,7 +712,7 @@ static struct keypairs_t *enduser_setup_get_keypairs_from_form(char *form_body, 
     if (current_idx > keypair_nb*2) {
       ENDUSER_SETUP_DEBUG("Too many keypairs!");
       enduser_setup_free_keypairs(kp);
-      os_free(body_copy);
+      free(body_copy);
       return NULL;
     }
 
@@ -724,7 +724,7 @@ static struct keypairs_t *enduser_setup_get_keypairs_from_form(char *form_body, 
       last_tok='=';
     }
   }
-  os_free(body_copy);
+  free(body_copy);
   return kp;
 }
 
@@ -765,7 +765,7 @@ static int enduser_setup_write_file_with_extra_configuration_data(char *form_bod
   int idx = 0;
   for( idx = 0; idx < kp->keypairs_nb*2; idx=idx+2){
     char* to_write = kp->keypairs[idx];
-    size_t length = c_strlen(to_write);
+    size_t length = strlen(to_write);
     
     vfs_write(p_file, "p.", 2);
 
@@ -774,7 +774,7 @@ static int enduser_setup_write_file_with_extra_configuration_data(char *form_bod
     vfs_write(p_file, "=\"", 2);
     
     to_write = kp->keypairs[idx+1];
-    length = c_strlen(to_write);
+    length = strlen(to_write);
     vfs_write(p_file, to_write, length);
 
     vfs_write(p_file, "\"\n", 2);
@@ -824,14 +824,14 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
 
 
   struct station_config *cnf = luaM_malloc(lua_getstate(), sizeof(struct station_config));
-  c_memset(cnf, 0, sizeof(struct station_config));
+  memset(cnf, 0, sizeof(struct station_config));
   cnf->threshold.rssi = -127;
   cnf->threshold.authmode = AUTH_OPEN;
 
   int err;
   err  = enduser_setup_http_urldecode(cnf->ssid, name_str_start, name_str_len, sizeof(cnf->ssid));
   err |= enduser_setup_http_urldecode(cnf->password, pwd_str_start, pwd_str_len, sizeof(cnf->password));
-  if (err != 0 || c_strlen(cnf->ssid) == 0)
+  if (err != 0 || strlen(cnf->ssid) == 0)
   {
     ENDUSER_SETUP_DEBUG("Unable to decode HTTP parameter to valid password or SSID");
     return 1;
@@ -990,21 +990,21 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
         ip_addr[0] = '\0';
         if (curr_state == STATION_GOT_IP)
         {
-          c_sprintf (ip_addr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
+          sprintf (ip_addr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
         }
 
-        int state_len = c_strlen(s);
-        int ip_len = c_strlen(ip_addr);
-        int ssid_len = c_strlen(config.ssid);
+        int state_len = strlen(s);
+        int ip_len = strlen(ip_addr);
+        int ssid_len = strlen(config.ssid);
         int status_len = state_len + ssid_len + ip_len + 1;
         char status_buf[status_len];
         memset(status_buf, 0, status_len);
-        status_len = c_sprintf(status_buf, s, config.ssid, ip_addr);
+        status_len = sprintf(status_buf, s, config.ssid, ip_addr);
 
         int buf_len = sizeof(fmt) + status_len + 10; /* 10 = (9+1), 1 byte is '\0' and 9 are reserved for length field */
         char buf[buf_len];
         memset(buf, 0, buf_len);
-        int output_len = c_sprintf(buf, fmt, status_len, status_buf);
+        int output_len = sprintf(buf, fmt, status_len, status_buf);
 
         enduser_setup_http_serve_header(conn, buf, output_len);
       }
@@ -1014,11 +1014,11 @@ static void enduser_setup_serve_status(struct tcp_pcb *conn)
       default:
       {
         const char *s = states[curr_state];
-        int status_len = c_strlen(s);
+        int status_len = strlen(s);
         int buf_len = sizeof(fmt) + status_len + 10; /* 10 = (9+1), 1 byte is '\0' and 9 are reserved for length field */
         char buf[buf_len];
         memset(buf, 0, buf_len);
-        int output_len = c_sprintf(buf, fmt, status_len, s);
+        int output_len = sprintf(buf, fmt, status_len, s);
 
         enduser_setup_http_serve_header(conn, buf, output_len);
       }
@@ -1048,13 +1048,13 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
     /* If IP address not yet available, get now */
     if (strlen(ipaddr) == 0)
     {
-      c_sprintf(ipaddr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
+      sprintf(ipaddr, "%d.%d.%d.%d", IP2STR(&ip_info.ip.addr));
     }
-    c_sprintf(json_payload, "{\"deviceid\":\"%s\", \"status\":%d}", ipaddr, curr_status);
+    sprintf(json_payload, "{\"deviceid\":\"%s\", \"status\":%d}", ipaddr, curr_status);
   }
   else
   {
-    c_sprintf(json_payload, "{\"deviceid\":\"%06X\", \"status\":%d}", system_get_chip_id(), curr_status);
+    sprintf(json_payload, "{\"deviceid\":\"%06X\", \"status\":%d}", system_get_chip_id(), curr_status);
   }
 
   const char fmt[] =
@@ -1067,9 +1067,9 @@ static void enduser_setup_serve_status_as_json (struct tcp_pcb *http_client)
     "\r\n"
     "%s";
 
-  int len = c_strlen(json_payload);
-  char buf[c_strlen(fmt) + NUMLEN(len) + len - 4];
-  len = c_sprintf (buf, fmt, len, json_payload);
+  int len = strlen(json_payload);
+  char buf[strlen(fmt) + NUMLEN(len) + len - 4];
+  len = sprintf (buf, fmt, len, json_payload);
   enduser_setup_http_serve_header (http_client, buf, len);
 }
 
@@ -1098,15 +1098,15 @@ static void enduser_setup_handle_OPTIONS (struct tcp_pcb *http_client, char *dat
 
   int type = 0;
 
-  if (c_strncmp(data, "GET ", 4) == 0)
+  if (strncmp(data, "GET ", 4) == 0)
   {
-    if (c_strncmp(data + 4, "/aplist", 7) == 0 || c_strncmp(data + 4, "/setwifi?", 9) == 0 || c_strncmp(data + 4, "/status.json", 12) == 0)
+    if (strncmp(data + 4, "/aplist", 7) == 0 || strncmp(data + 4, "/setwifi?", 9) == 0 || strncmp(data + 4, "/status.json", 12) == 0)
     {
-      enduser_setup_http_serve_header (http_client, json, c_strlen(json));
+      enduser_setup_http_serve_header (http_client, json, strlen(json));
       return;
    }
   }
-  enduser_setup_http_serve_header (http_client, others, c_strlen(others));
+  enduser_setup_http_serve_header (http_client, others, strlen(others));
   return;
 }
 
@@ -1114,7 +1114,7 @@ static void enduser_setup_handle_OPTIONS (struct tcp_pcb *http_client, char *dat
 static err_t enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, size_t data_len)
 {
     ENDUSER_SETUP_DEBUG("Handling POST");
-    if (c_strncmp(data + 5, "/setwifi ", 9) == 0) // User clicked the submit button
+    if (strncmp(data + 5, "/setwifi ", 9) == 0) // User clicked the submit button
     {
       switch (enduser_setup_http_handle_credentials(data, data_len))
       {
@@ -1123,7 +1123,7 @@ static err_t enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, 
           char* body=strstr(data, "\r\n\r\n");
           char *content_length_str = strstr(data, "Content-Length: ");
           if( body != NULL && content_length_str != NULL){
-            int bodylength = c_atoi(content_length_str + 16);
+            int bodylength = atoi(content_length_str + 16);
             body += 4; // length of the double CRLF found above
             enduser_setup_write_file_with_extra_configuration_data(body, bodylength);
           }
@@ -1157,7 +1157,7 @@ static void free_scan_listeners (void)
   while (l)
   {
     next = l->next;
-    c_free (l);
+    free (l);
     l = next;
   }
   state->scan_listeners = 0;
@@ -1177,7 +1177,7 @@ static void remove_scan_listener (scan_listener_t *l)
       if (*sl == l)
       {
         *sl = l->next;
-        c_free (l);
+        free (l);
         /* No early exit to guard against multi-entry on list */
       }
       else
@@ -1256,7 +1256,7 @@ static void on_scan_done (void *arg, STATUS status)
     /* To be able to safely escape a pathological SSID, we need 2*32 bytes */
     const size_t max_entry_sz = 27 + 2*32 + 6; /* {"ssid":"","rssi":,"chan":} */
     const size_t alloc_sz = hdr_sz + num_nets * max_entry_sz + 3;
-    char *http = os_zalloc (alloc_sz);
+    char *http = calloc (1, alloc_sz);
     if (!http)
     {
       goto serve_500;
@@ -1282,26 +1282,26 @@ static void on_scan_done (void *arg, STATUS status)
       strcpy (p, entry_mid);
       p += sizeof (entry_mid) -1;
 
-      p += c_sprintf (p, "%d", wn->rssi);
+      p += sprintf (p, "%d", wn->rssi);
 
       const char entry_chan[] = ",\"chan\":";
       strcpy (p, entry_chan);
       p += sizeof (entry_chan) -1;
 
-      p += c_sprintf (p, "%d", wn->channel);
+      p += sprintf (p, "%d", wn->channel);
 
       *p++ = '}';
     }
     *p++ = ']';
 
     size_t body_sz = (p - http) - hdr_sz;
-    c_sprintf (http, header_fmt, body_sz);
+    sprintf (http, header_fmt, body_sz);
     http[hdr_sz] = '['; /* Rewrite the \0 with the correct start of body */
 
     notify_scan_listeners (http, hdr_sz + body_sz);
     ENDUSER_SETUP_DEBUG(http + hdr_sz);
 
-    c_free (http);
+    free (http);
     return;
   }
 
@@ -1334,7 +1334,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     return ERR_OK;
   }
 
-  char *data = os_zalloc (p->tot_len + 1);
+  char *data = calloc (1, p->tot_len + 1);
   if (!data)
     return ERR_MEM;
 
@@ -1348,9 +1348,9 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   ENDUSER_SETUP_DEBUG(data);
 #endif
 
-  if (c_strncmp(data, "GET ", 4) == 0)
+  if (strncmp(data, "GET ", 4) == 0)
   {
-    if (c_strncmp(data + 4, "/ ", 2) == 0 || c_strncmp(data + 4, "/?", 2) == 0)
+    if (strncmp(data + 4, "/ ", 2) == 0 || strncmp(data + 4, "/?", 2) == 0)
     {
       if (enduser_setup_http_serve_html(http_client) != 0)
       {
@@ -1361,12 +1361,12 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
         goto free_out; /* streaming now in progress */
       }
     }
-    else if (c_strncmp(data + 4, "/aplist", 7) == 0)
+    else if (strncmp(data + 4, "/aplist", 7) == 0)
     {
       /* Don't do an AP Scan while station is trying to connect to Wi-Fi */
       if (state->connecting == 0)
       {
-        scan_listener_t *l = os_malloc (sizeof (scan_listener_t));
+        scan_listener_t *l = malloc (sizeof (scan_listener_t));
         if (!l)
         {
           ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
@@ -1398,16 +1398,16 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
         enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));
       }
     }
-    else if (c_strncmp(data + 4, "/status.json", 12) == 0)
+    else if (strncmp(data + 4, "/status.json", 12) == 0)
     {
     enduser_setup_serve_status_as_json(http_client);
     }
-    else if (c_strncmp(data + 4, "/status", 7) == 0)
+    else if (strncmp(data + 4, "/status", 7) == 0)
     {
       enduser_setup_serve_status(http_client);
     }
 
-    else if (c_strncmp(data + 4, "/update?", 8) == 0)
+    else if (strncmp(data + 4, "/update?", 8) == 0)
     {
       switch (enduser_setup_http_handle_credentials(data, data_len))
       {
@@ -1422,7 +1422,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
           break;
       }
     }
-    else if (c_strncmp(data + 4, "/generate_204", 13) == 0)
+    else if (strncmp(data + 4, "/generate_204", 13) == 0)
     {
       /* Convince Android devices that they have internet access to avoid pesky dialogues. */
       enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));
@@ -1433,11 +1433,11 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
       enduser_setup_http_serve_header(http_client, http_header_404, LITLEN(http_header_404));
     }
   }
-  else if (c_strncmp(data, "OPTIONS ", 8) == 0)
+  else if (strncmp(data, "OPTIONS ", 8) == 0)
   {
      enduser_setup_handle_OPTIONS(http_client, data, data_len);
   }
-  else if (c_strncmp(data, "POST ", 5) == 0)
+  else if (strncmp(data, "POST ", 5) == 0)
   {
     enduser_setup_handle_POST(http_client, data, data_len);
   }
@@ -1449,7 +1449,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   deferred_close (http_client);
 
 free_out:
-  os_free (data);
+  free (data);
   return ret;
 }
 
@@ -1542,20 +1542,20 @@ static void enduser_setup_ap_start(void)
   ENDUSER_SETUP_DEBUG("enduser_setup_ap_start");
 
   struct softap_config cnf;
-  c_memset(&(cnf), 0, sizeof(struct softap_config));
+  memset(&(cnf), 0, sizeof(struct softap_config));
 
 #ifndef ENDUSER_SETUP_AP_SSID
   #define ENDUSER_SETUP_AP_SSID "SetupGadget"
 #endif
 
   char ssid[] = ENDUSER_SETUP_AP_SSID;
-  int ssid_name_len = c_strlen(ssid);
-  c_memcpy(&(cnf.ssid), ssid, ssid_name_len);
+  int ssid_name_len = strlen(ssid);
+  memcpy(&(cnf.ssid), ssid, ssid_name_len);
 
   uint8_t mac[6];
   wifi_get_macaddr(SOFTAP_IF, mac);
   cnf.ssid[ssid_name_len] = '_';
-  c_sprintf(cnf.ssid + ssid_name_len + 1, "%02X%02X%02X", mac[3], mac[4], mac[5]);
+  sprintf(cnf.ssid + ssid_name_len + 1, "%02X%02X%02X", mac[3], mac[4], mac[5]);
   cnf.ssid_len = ssid_name_len + 7;
   cnf.channel = state == NULL? 1 : state->softAPchannel;
   cnf.authmode = AUTH_OPEN;
@@ -1567,7 +1567,7 @@ static void enduser_setup_ap_start(void)
 
 #if ENDUSER_SETUP_DEBUG_ENABLE
   char debuginfo[100];
-  c_sprintf(debuginfo, "SSID: %s, CHAN: %d", cnf.ssid, cnf.channel);
+  sprintf(debuginfo, "SSID: %s, CHAN: %d", cnf.ssid, cnf.channel);
   ENDUSER_SETUP_DEBUG(debuginfo);
 #endif
 }
@@ -1614,15 +1614,15 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   struct espconn *callback_espconn = arg;
   struct ip_info ip_info;
 
-  uint32_t qname_len = c_strlen(&(recv_data[12])) + 1; /* \0=1byte */
+  uint32_t qname_len = strlen(&(recv_data[12])) + 1; /* \0=1byte */
   uint32_t dns_reply_static_len = (uint32_t) sizeof(dns_header) + (uint32_t) sizeof(dns_body) + 2 + 4; /* dns_id=2bytes, ip=4bytes */
   uint32_t dns_reply_len = dns_reply_static_len + qname_len;
 
 #if ENDUSER_SETUP_DEBUG_ENABLE
-  char *qname = c_malloc(qname_len + 12);
+  char *qname = malloc(qname_len + 12);
   if (qname != NULL)
   {
-    c_sprintf(qname, "DNS QUERY = %s", &(recv_data[12]));
+    sprintf(qname, "DNS QUERY = %s", &(recv_data[12]));
 
     uint32_t p;
     int i, j;
@@ -1639,7 +1639,7 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
     }
     qname[i-1]='\0';
     ENDUSER_SETUP_DEBUG(qname);
-    c_free(qname);
+    free(qname);
   }
 #endif
 
@@ -1656,22 +1656,22 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
   }
 
 
-  char *dns_reply = (char *) c_malloc(dns_reply_len);
+  char *dns_reply = (char *) malloc(dns_reply_len);
   if (dns_reply == NULL)
   {
     ENDUSER_SETUP_ERROR_VOID("dns_recv_callback failed. Failed to allocate memory.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
   }
 
   uint32_t insert_byte = 0;
-  c_memcpy(&(dns_reply[insert_byte]), recv_data, 2);
+  memcpy(&(dns_reply[insert_byte]), recv_data, 2);
   insert_byte += 2;
-  c_memcpy(&(dns_reply[insert_byte]), dns_header, sizeof(dns_header));
+  memcpy(&(dns_reply[insert_byte]), dns_header, sizeof(dns_header));
   insert_byte += (uint32_t) sizeof(dns_header);
-  c_memcpy(&(dns_reply[insert_byte]), &(recv_data[12]), qname_len);
+  memcpy(&(dns_reply[insert_byte]), &(recv_data[12]), qname_len);
   insert_byte += qname_len;
-  c_memcpy(&(dns_reply[insert_byte]), dns_body, sizeof(dns_body));
+  memcpy(&(dns_reply[insert_byte]), dns_body, sizeof(dns_body));
   insert_byte += (uint32_t) sizeof(dns_body);
-  c_memcpy(&(dns_reply[insert_byte]), &(ip_info.ip), 4);
+  memcpy(&(dns_reply[insert_byte]), &(ip_info.ip), 4);
 
   /* SDK 1.4.0 changed behaviour, for UDP server need to look up remote ip/port */
   remot_info *pr = 0;
@@ -1684,7 +1684,7 @@ static void enduser_setup_dns_recv_callback(void *arg, char *recv_data, unsigned
 
   int8_t err;
   err = espconn_send(callback_espconn, dns_reply, dns_reply_len);
-  c_free(dns_reply);
+  free(dns_reply);
   if (err == ESPCONN_MEM)
   {
     ENDUSER_SETUP_ERROR_VOID("dns_recv_callback failed. Failed to allocate memory for send.", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
@@ -1725,16 +1725,16 @@ static void enduser_setup_free(void)
   {
     if (state->espconn_dns_udp->proto.udp != NULL)
     {
-      c_free(state->espconn_dns_udp->proto.udp);
+      free(state->espconn_dns_udp->proto.udp);
     }
-    c_free(state->espconn_dns_udp);
+    free(state->espconn_dns_udp);
   }
 
-  c_free(state->http_payload_data);
+  free(state->http_payload_data);
 
   free_scan_listeners ();
 
-  c_free(state);
+  free(state);
   state = NULL;
 }
 
@@ -1747,20 +1747,20 @@ static int enduser_setup_dns_start(void)
   {
     ENDUSER_SETUP_ERROR("dns_start failed. Appears to already be started (espconn_dns_udp != NULL).", ENDUSER_SETUP_ERR_ALREADY_INITIALIZED, ENDUSER_SETUP_ERR_FATAL);
   }
-  state->espconn_dns_udp = (struct espconn *) c_malloc(sizeof(struct espconn));
+  state->espconn_dns_udp = (struct espconn *) malloc(sizeof(struct espconn));
   if (state->espconn_dns_udp == NULL)
   {
     ENDUSER_SETUP_ERROR("dns_start failed. Memory allocation failed (espconn_dns_udp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  esp_udp *esp_udp_data = (esp_udp *) c_malloc(sizeof(esp_udp));
+  esp_udp *esp_udp_data = (esp_udp *) malloc(sizeof(esp_udp));
   if (esp_udp_data == NULL)
   {
     ENDUSER_SETUP_ERROR("dns_start failed. Memory allocation failed (esp_udp == NULL).", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_FATAL);
   }
 
-  c_memset(state->espconn_dns_udp, 0, sizeof(struct espconn));
-  c_memset(esp_udp_data, 0, sizeof(esp_udp));
+  memset(state->espconn_dns_udp, 0, sizeof(struct espconn));
+  memset(esp_udp_data, 0, sizeof(esp_udp));
   state->espconn_dns_udp->proto.udp = esp_udp_data;
   state->espconn_dns_udp->type = ESPCONN_UDP;
   state->espconn_dns_udp->state = ESPCONN_NONE;
@@ -1816,7 +1816,7 @@ static int enduser_setup_init(lua_State *L)
   }
   else
   {
-    state = (enduser_setup_state_t *) os_zalloc(sizeof(enduser_setup_state_t));
+    state = (enduser_setup_state_t *) calloc(1, sizeof(enduser_setup_state_t));
 
     if (state == NULL)
     {
@@ -1824,7 +1824,7 @@ static int enduser_setup_init(lua_State *L)
     }
     else
     {
-      c_memset(state, 0, sizeof(enduser_setup_state_t));
+      memset(state, 0, sizeof(enduser_setup_state_t));
 
       state->lua_connected_cb_ref = LUA_NOREF;
       state->lua_err_cb_ref = LUA_NOREF;

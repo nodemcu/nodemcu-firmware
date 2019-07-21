@@ -4,8 +4,8 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
 #include "c_types.h"
 #include "mem.h"
@@ -36,13 +36,13 @@ static void coap_received(void *arg, char *pdata, unsigned short len)
 
   // static uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
   uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
-  c_memset(buf, 0, sizeof(buf)); // wipe prev data
+  memset(buf, 0, sizeof(buf)); // wipe prev data
 
   if (len > MAX_MESSAGE_SIZE) {
     NODE_DBG("Request Entity Too Large.\n"); // NOTE: should response 4.13 to client...
     return;
   }
-  // c_memcpy(buf, pdata, len);
+  // memcpy(buf, pdata, len);
 
   size_t rsplen = coap_server_respond(pdata, len, buf, MAX_MESSAGE_SIZE+1);
 
@@ -52,11 +52,11 @@ static void coap_received(void *arg, char *pdata, unsigned short len)
     return;
   pesp_conn->proto.udp->remote_port = pr->remote_port;
   os_memmove (pesp_conn->proto.udp->remote_ip, pr->remote_ip, 4);
-  // The remot_info apparently should *not* be os_free()d, fyi
+  // The remot_info apparently should *not* be free()d, fyi
 
   espconn_sent(pesp_conn, (unsigned char *)buf, rsplen);
 
-  // c_memset(buf, 0, sizeof(buf));
+  // memset(buf, 0, sizeof(buf));
 }
 
 static void coap_sent(void *arg)
@@ -83,7 +83,7 @@ static int coap_create( lua_State* L, const char* mt )
   lua_setmetatable(L, -2);
 
   // create the espconn struct
-  pesp_conn = (struct espconn *)c_zalloc(sizeof(struct espconn));
+  pesp_conn = (struct espconn *)calloc(1,sizeof(struct espconn));
   if(!pesp_conn)
     return luaL_error(L, "not enough memory");
 
@@ -93,9 +93,9 @@ static int coap_create( lua_State* L, const char* mt )
   pesp_conn->proto.tcp = NULL;
   pesp_conn->proto.udp = NULL;
 
-  pesp_conn->proto.udp = (esp_udp *)c_zalloc(sizeof(esp_udp));
+  pesp_conn->proto.udp = (esp_udp *)calloc(1,sizeof(esp_udp));
   if(!pesp_conn->proto.udp){
-    c_free(pesp_conn);
+    free(pesp_conn);
     cud->pesp_conn = pesp_conn = NULL;
     return luaL_error(L, "not enough memory");
   }
@@ -131,9 +131,9 @@ static int coap_delete( lua_State* L, const char* mt )
   {
     if(cud->pesp_conn->proto.udp->remote_port || cud->pesp_conn->proto.udp->local_port)
       espconn_delete(cud->pesp_conn);
-    c_free(cud->pesp_conn->proto.udp);
+    free(cud->pesp_conn->proto.udp);
     cud->pesp_conn->proto.udp = NULL;
-    c_free(cud->pesp_conn);
+    free(cud->pesp_conn);
     cud->pesp_conn = NULL;
   }
 
@@ -170,7 +170,7 @@ static int coap_start( lua_State* L, const char* mt )
       ip = "0.0.0.0";
     }
     ipaddr.addr = ipaddr_addr(ip);
-    c_memcpy(pesp_conn->proto.udp->local_ip, &ipaddr.addr, 4);
+    memcpy(pesp_conn->proto.udp->local_ip, &ipaddr.addr, 4);
     NODE_DBG("UDP ip is set: ");
     NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
     NODE_DBG("\n");
@@ -235,7 +235,7 @@ static void coap_response_handler(void *arg, char *pdata, unsigned short len)
   pkt.content.len = 0;
   // static uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
   uint8_t buf[MAX_MESSAGE_SIZE+1] = {0}; // +1 for string '\0'
-  c_memset(buf, 0, sizeof(buf)); // wipe prev data
+  memset(buf, 0, sizeof(buf)); // wipe prev data
 
   int rc;
   if( len > MAX_MESSAGE_SIZE )
@@ -243,7 +243,7 @@ static void coap_response_handler(void *arg, char *pdata, unsigned short len)
     NODE_DBG("Request Entity Too Large.\n"); // NOTE: should response 4.13 to client...
     return;
   }
-  c_memcpy(buf, pdata, len);
+  memcpy(buf, pdata, len);
 
   if (0 != (rc = coap_parse(&pkt, buf, len))){
     NODE_DBG("Bad packet rc=%d\n", rc);
@@ -271,7 +271,7 @@ static void coap_response_handler(void *arg, char *pdata, unsigned short len)
     uint32_t ip = 0, port = 0;
     coap_tid_t id = COAP_INVALID_TID;
 
-    c_memcpy(&ip, pesp_conn->proto.udp->remote_ip, sizeof(ip));
+    memcpy(&ip, pesp_conn->proto.udp->remote_ip, sizeof(ip));
     port = pesp_conn->proto.udp->remote_port;
 
     coap_transaction_id(ip, port, &pkt, &id);
@@ -303,7 +303,7 @@ end:
     if(pesp_conn->proto.udp->remote_port || pesp_conn->proto.udp->local_port)
       espconn_delete(pesp_conn);
   }
-  // c_memset(buf, 0, sizeof(buf));
+  // memset(buf, 0, sizeof(buf));
 }
 
 // Lua: client:request( [CON], uri, [payload] )
@@ -354,7 +354,7 @@ static int coap_request( lua_State* L, coap_method_t m )
   pesp_conn->proto.udp->local_port = espconn_port();
 
   if(uri->host.length){
-    c_memcpy(host, uri->host.s, uri->host.length);
+    memcpy(host, uri->host.s, uri->host.length);
     host[uri->host.length] = '\0';
 
     ipaddr.addr = ipaddr_addr(host);
@@ -362,7 +362,7 @@ static int coap_request( lua_State* L, coap_method_t m )
     NODE_DBG(host);
     NODE_DBG("\n");
 
-    c_memcpy(pesp_conn->proto.udp->remote_ip, &ipaddr.addr, 4);
+    memcpy(pesp_conn->proto.udp->remote_ip, &ipaddr.addr, 4);
     NODE_DBG("UDP ip is set: ");
     NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
     NODE_DBG("\n");
@@ -371,7 +371,7 @@ static int coap_request( lua_State* L, coap_method_t m )
   coap_pdu_t *pdu = coap_new_pdu();   // should call coap_delete_pdu() somewhere
   if(!pdu){
     if(uri)
-      c_free(uri);
+      free(uri);
     return luaL_error (L, "alloc fail");
   }
 
@@ -422,7 +422,7 @@ static int coap_request( lua_State* L, coap_method_t m )
   }
 
   if(uri)
-    c_free((void *)uri);
+    free((void *)uri);
 
   NODE_DBG("coap_request is called.\n");
   return 0;
@@ -447,13 +447,13 @@ static int coap_regist( lua_State* L, const char* mt, int isvar )
     h = function_entry;
 
   while(NULL!=h->next){  // goto the end of the list
-    if(h->name!= NULL && c_strcmp(h->name, name)==0)  // key exist, override it
+    if(h->name!= NULL && strcmp(h->name, name)==0)  // key exist, override it
       break;
     h = h->next;
   }
 
-  if(h->name==NULL || c_strcmp(h->name, name)!=0){   // not exists. make a new one.
-    h->next = (coap_luser_entry *)c_zalloc(sizeof(coap_luser_entry));
+  if(h->name==NULL || strcmp(h->name, name)!=0){   // not exists. make a new one.
+    h->next = (coap_luser_entry *)calloc(1,sizeof(coap_luser_entry));
     h = h->next;
     if(h == NULL)
       return luaL_error(L, "not enough memory");

@@ -8,7 +8,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "osapi.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 
 //***************************************************************************

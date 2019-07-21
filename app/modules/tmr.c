@@ -78,7 +78,7 @@ typedef struct{
 	uint32_t interval;
 	uint8_t mode;
 }timer_struct_t;
-typedef timer_struct_t* timer_t;
+typedef timer_struct_t* tmr_t;
 
 // The previous implementation extended the rtc counter to 64 bits, and then
 // applied rtc2sec with the current calibration value to that 64 bit value.
@@ -97,7 +97,7 @@ static sint32_t soft_watchdog  = -1;
 static os_timer_t rtc_timer;
 
 static void alarm_timer_common(void* arg){
-	timer_t tmr = (timer_t)arg;
+	tmr_t tmr = (tmr_t)arg;
 	lua_State* L = lua_getstate();
 	if(tmr->lua_ref == LUA_NOREF)
 		return;
@@ -142,16 +142,16 @@ static int tmr_now(lua_State* L){
 	return 1;
 }
 
-static timer_t tmr_get( lua_State *L, int stack ) {
-	timer_t t = (timer_t)luaL_checkudata(L, stack, "tmr.timer");
+static tmr_t tmr_get( lua_State *L, int stack ) {
+	tmr_t t = (tmr_t)luaL_checkudata(L, stack, "tmr.timer");
 	if (t == NULL)
-		return (timer_t)luaL_error(L, "timer object expected");
+		return (tmr_t)luaL_error(L, "timer object expected");
 	return t;
 }
 
 // Lua: tmr.register( ref, interval, mode, function )
 static int tmr_register(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	uint32_t interval = luaL_checkinteger(L, 2);
 	uint8_t mode = luaL_checkinteger(L, 3);
@@ -176,7 +176,7 @@ static int tmr_register(lua_State* L){
 
 // Lua: tmr.start( id / ref )
 static int tmr_start(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if (tmr->self_ref == LUA_NOREF) {
 		lua_pushvalue(L, 1);
@@ -202,7 +202,7 @@ static int tmr_alarm(lua_State* L){
 
 // Lua: tmr.stop( id / ref )
 static int tmr_stop(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if (tmr->self_ref != LUA_REFNIL) {
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->self_ref);
@@ -244,7 +244,7 @@ static int tmr_resume_all (lua_State *L){
 
 // Lua: tmr.unregister( id / ref )
 static int tmr_unregister(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if (tmr->self_ref != LUA_REFNIL) {
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->self_ref);
@@ -262,7 +262,7 @@ static int tmr_unregister(lua_State* L){
 
 // Lua: tmr.interval( id / ref, interval )
 static int tmr_interval(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	uint32_t interval = luaL_checkinteger(L, 2);
 	luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
@@ -278,7 +278,7 @@ static int tmr_interval(lua_State* L){
 
 // Lua: tmr.state( id / ref )
 static int tmr_state(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if(tmr->mode == TIMER_MODE_OFF){
 		lua_pushnil(L);
@@ -355,7 +355,7 @@ static int tmr_softwd( lua_State* L ){
 
 // Lua: tmr.create()
 static int tmr_create( lua_State *L ) {
-	timer_t ud = (timer_t)lua_newuserdata(L, sizeof(timer_struct_t));
+	tmr_t ud = (tmr_t)lua_newuserdata(L, sizeof(timer_struct_t));
 	if (!ud) return luaL_error(L, "not enough memory");
 	luaL_getmetatable(L, "tmr.timer");
 	lua_setmetatable(L, -2);

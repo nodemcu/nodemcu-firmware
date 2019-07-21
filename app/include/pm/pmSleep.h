@@ -6,7 +6,7 @@
 #include "gpio.h"
 #include "platform.h"
 #include "task/task.h"
-#include "c_string.h"
+#include <string.h>
 
 #if defined(DEVELOP_VERSION)
 #define PMSLEEP_DEBUG

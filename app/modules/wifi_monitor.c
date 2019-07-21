@@ -5,8 +5,8 @@
 #include "lapi.h"
 #include "platform.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "ctype.h"
 
 #include "c_types.h"
@@ -294,12 +294,12 @@ static void wifi_rx_cb(uint8 *buf, uint16 len) {
     return;
   }
 
-  packet_t *packet = (packet_t *) c_malloc(len + sizeof(packet_t));
+  packet_t *packet = (packet_t *) malloc(len + sizeof(packet_t));
   if (packet) {
     packet->len = len;
     memcpy(packet->buf, buf, len);
     if (!task_post_medium(tasknumber, (ETSParam) packet)) {
-      c_free(packet);
+      free(packet);
     }
   }
 }
@@ -320,11 +320,11 @@ static void monitor_task(os_param_t param, uint8_t prio)
     luaL_getmetatable(L, "wifi.packet");
     lua_setmetatable(L, -2);
 
-    c_free(input);
+    free(input);
 
     lua_call(L, 1, 0);
   } else {
-    c_free(input);
+    free(input);
   }
 }
 

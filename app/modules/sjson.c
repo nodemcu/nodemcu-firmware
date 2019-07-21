@@ -6,9 +6,9 @@
 
 #ifndef LOCAL_LUA
 #include "module.h"
-#include "c_string.h"
-#include "c_math.h"
-#include "c_limits.h"
+#include <string.h>
+#include <math.h>
+#include <limits.h>
 #endif
 
 #include "json_config.h"

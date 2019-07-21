@@ -24,7 +24,7 @@
  * Rework of original driver: Natalia Sorokina <sonaux@gmail.com>, 2018
  */
 
-#include "../libc/c_stdlib.h"
+#include <stdlib.h>
 #include "ets_sys.h"
 #include "osapi.h"
 #include "gpio.h"

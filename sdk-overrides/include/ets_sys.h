@@ -3,7 +3,7 @@
 
 #include_next "ets_sys.h"
 
-#include "../libc/c_stdarg.h"
+#include <stdarg.h>
 
 int ets_sprintf(char *str, const char *format, ...)  __attribute__ ((format (printf, 2, 3)));
 

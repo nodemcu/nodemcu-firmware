@@ -25,15 +25,6 @@
 #include MBEDTLS_CONFIG_FILE
 #endif
 
-// XXX Espressif are hacks sometimes.  This is BS, but is taken from
-// the mbedtls platform.c from their SDK.  Really, this should go
-// somewhere else.  Note that the prototype here for vPortFree differs (!)
-// from the one in sdk-overrides.h.  That's above my pay grade.
-// --nwf;  2018 Feb 18
-extern void *pvPortCalloc(unsigned int count, unsigned int size);
-extern void vPortFree( void *pv );
-
-
 #if defined(MBEDTLS_PLATFORM_C)
 
 #include "mbedtls/platform.h"

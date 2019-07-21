@@ -2,8 +2,8 @@
 
 #include "platform.h"
 #include "common.h"
-#include "c_string.h"
-#include "c_stdio.h"
+#include <string.h>
+#include <stdio.h>
 
 void cmn_platform_init(void)
 {
@@ -102,7 +102,7 @@ uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size 
   {
     rest = toaddr & blkmask;
     temp = toaddr & ~blkmask; // this is the actual aligned address
-    // c_memcpy( tmpdata, ( const void* )temp, blksize );
+    // memcpy( tmpdata, ( const void* )temp, blksize );
     platform_s_flash_read( tmpdata, temp, blksize );
     for( i = rest; size && ( i < blksize ); i ++, size --, pfrom ++ )
       tmpdata[ i ] = *pfrom;
@@ -125,7 +125,7 @@ uint32_t platform_flash_write( const void *from, uint32_t toaddr, uint32_t size 
   // And the final part of a block if needed
   if( rest )
   {
-    // c_memcpy( tmpdata, ( const void* )toaddr, blksize );
+    // memcpy( tmpdata, ( const void* )toaddr, blksize );
     platform_s_flash_read( tmpdata, toaddr, blksize );
     for( i = 0; size && ( i < rest ); i ++, size --, pfrom ++ )
       tmpdata[ i ] = *pfrom;

@@ -38,12 +38,11 @@ LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c 
            lmathlib.c  lmem.c      loadlib.c   lobject.c   lopcodes.c  lparser.c \
            lrotable.c  lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
            ltm.c       lundump.c   lvm.c       lzio.c
-LIBCSRC := c_stdlib.c
 UZSRC   := uzlib_deflate.c crc32.c
 #
 # This relies on the files being unique on the vpath
 #
-SRC      := $(LUACSRC) $(LUASRC) $(LIBCSRC) $(UZSRC)
+SRC      := $(LUACSRC) $(LUASRC) $(UZSRC)
 
 vpath %.c .:..:../../libc:../../uzlib
 

@@ -22,7 +22,6 @@ endif
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-DEFINES += -Dprintf=c_printf
 #DEFINES += -DDEVELOPMENT_TOOLS -DNODE_DEBUG -DSPIFFS_API_DBG=NODE_DBG
 
 #############################################################

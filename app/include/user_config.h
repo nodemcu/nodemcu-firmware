@@ -255,6 +255,11 @@ extern void luaL_dbgbreak(void);
 #define COAP_DEBUG
 #endif /* DEVELOP_VERSION */
 
+
+#if !defined(LUA_CROSS_COMPILER) && !defined(dbg_printf)
+extern void dbg_printf(const char *fmt, ...);
+#endif
+
 #ifdef NODE_DEBUG
 #define NODE_DBG dbg_printf
 #else

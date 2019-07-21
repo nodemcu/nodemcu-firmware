@@ -17,7 +17,7 @@
 #include "platform.h"
 #include "lflash.h"
 #include "c_types.h"
-#include "c_string.h"
+#include <string.h>
 #include "driver/uart.h"
 #include "user_interface.h"
 #include "flash_api.h"
@@ -189,7 +189,7 @@ static int output_redir_ref = LUA_NOREF;
 static int serial_debug = 1;
 void output_redirect(const char *str) {
   lua_State *L = lua_getstate();
-  // if(c_strlen(str)>=TX_BUFF_SIZE){
+  // if(strlen(str)>=TX_BUFF_SIZE){
   //   NODE_ERR("output too long.\n");
   //   return;
   // }
@@ -260,18 +260,18 @@ static int node_compile( lua_State* L )
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
   char *output = luaM_malloc( L, len+1 );
-  c_strcpy(output, fname);
+  strcpy(output, fname);
   // check here that filename end with ".lua".
-  if (len < 4 || (c_strcmp( output + len - 4, ".lua") != 0) ) {
+  if (len < 4 || (strcmp( output + len - 4, ".lua") != 0) ) {
     luaM_free( L, output );
     return luaL_error(L, "not a .lua file");
   }
 
-  output[c_strlen(output) - 2] = 'c';
-  output[c_strlen(output) - 1] = '\0';
+  output[strlen(output) - 2] = 'c';
+  output[strlen(output) - 1] = '\0';
   NODE_DBG(output);
   NODE_DBG("\n");
   if (luaL_loadfsfile(L, fname) != 0) {
@@ -622,7 +622,7 @@ static int node_getpartitiontable (lua_State *L) {
 
 static void insert_partition(partition_item_t *p, int n, uint32_t type, uint32_t addr) {
   if (n>0)
-    c_memmove(p+1, p, n*sizeof(partition_item_t)); /* overlapped so must be move not cpy */
+    memmove(p+1, p, n*sizeof(partition_item_t)); /* overlapped so must be move not cpy */
   p->type = type;
   p->addr = addr;
   p->size = 0;
@@ -630,7 +630,7 @@ static void insert_partition(partition_item_t *p, int n, uint32_t type, uint32_t
 
 static void delete_partition(partition_item_t *p, int n) {
   if (n>0)
-    c_memmove(p, p+1, n*sizeof(partition_item_t)); /* overlapped so must be move not cpy */
+    memmove(p, p+1, n*sizeof(partition_item_t)); /* overlapped so must be move not cpy */
 }
 
 #define SKIP (~0)
@@ -668,7 +668,7 @@ static int node_setpartitiontable (lua_State *L) {
   */
   lua_newuserdata(L, (n+2)*sizeof(partition_item_t));
   pt = lua_touserdata (L, -1);
-  c_memcpy(pt, rcr_pt, n*sizeof(partition_item_t));
+  memcpy(pt, rcr_pt, n*sizeof(partition_item_t));
   pt[n].type = 0; pt[n+1].type = 0;
 
   for (i = 0; i < n; i ++) {

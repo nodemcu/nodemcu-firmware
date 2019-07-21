@@ -1,11 +1,11 @@
 // Module for cryptography
 
-#include <c_errno.h>
+#include <errno.h>
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "c_types.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 #include "vfs.h"
 #include "../crypto/digests.h"
 #include "../crypto/mech.h"

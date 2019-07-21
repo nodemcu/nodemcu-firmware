@@ -7,9 +7,9 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
-#include "c_math.h"
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
 static const uint32_t hdc1080_i2c_id = 0;
 static const uint8_t hdc1080_i2c_addr = 0x40;

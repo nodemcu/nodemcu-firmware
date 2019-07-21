@@ -1,5 +1,5 @@
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "lualib.h"
 #include "lauxlib.h"
 #include "lrotable.h"

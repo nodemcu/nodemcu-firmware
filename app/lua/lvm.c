@@ -10,9 +10,9 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDIO
-#include C_HEADER_STRING
-#include C_HEADER_MATH
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -252,10 +252,10 @@ static int l_strcmp (const TString *ls, const TString *rs) {
   const char *r = getstr(rs);
   size_t lr = rs->tsv.len;
   for (;;) {
-    int temp = c_strcoll(l, r);
+    int temp = strcoll(l, r);
     if (temp != 0) return temp;
     else {  /* strings are equal up to a `\0' */
-      size_t len = c_strlen(l);  /* index of first `\0' in both strings */
+      size_t len = strlen(l);  /* index of first `\0' in both strings */
       if (len == lr)  /* r is finished? */
         return (len == ll) ? 0 : 1;
       else if (len == ll)  /* l is finished? */
@@ -363,7 +363,7 @@ void luaV_concat (lua_State *L, int total, int last) {
       tl = 0;
       for (i=n; i>0; i--) {  /* concat all strings */
         size_t l = tsvalue(top-i)->len;
-        c_memcpy(buffer+tl, svalue(top-i), l);
+        memcpy(buffer+tl, svalue(top-i), l);
         tl += l;
       }
       setsvalue2s(L, top-n, luaS_newlstr(L, buffer, tl));

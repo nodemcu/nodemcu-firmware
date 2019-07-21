@@ -38,7 +38,7 @@
 #include "os_type.h"
 #include "osapi.h"
 #include "lwip/udp.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 #include "user_modules.h"
 #include "lwip/dns.h"
 #include "task/task.h"
@@ -180,18 +180,18 @@ static void cleanup (lua_State *L)
   luaL_unref (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
   luaL_unref (L, LUA_REGISTRYINDEX, state->err_cb_ref);
   luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
-  os_free (state);
+  free (state);
   state = 0;
 }
 
 static ip_addr_t* get_free_server() {
-  ip_addr_t* temp = (ip_addr_t *) c_malloc((server_count + 1) * sizeof(ip_addr_t));
+  ip_addr_t* temp = (ip_addr_t *) malloc((server_count + 1) * sizeof(ip_addr_t));
 
   if (server_count > 0) {
     memcpy(temp, serverp, server_count * sizeof(ip_addr_t));
   }
   if (serverp) {
-    c_free(serverp);
+    free(serverp);
   }
   serverp = temp;
 
@@ -671,7 +671,7 @@ static void sntp_dolookups (lua_State *L) {
 }
 
 static char *state_init(lua_State *L) {
-  state = (sntp_state_t *)c_malloc (sizeof (sntp_state_t));
+  state = (sntp_state_t *)malloc (sizeof (sntp_state_t));
   if (!state)
     return ("out of memory");
 
@@ -700,7 +700,7 @@ static char *set_repeat_mode(lua_State *L, bool enable)
 {
   if (enable) {
     set_repeat_mode(L, FALSE);
-    repeat = (sntp_repeat_t *) c_malloc(sizeof(sntp_repeat_t));
+    repeat = (sntp_repeat_t *) malloc(sizeof(sntp_repeat_t));
     if (!repeat) {
       return "no memory";
     }
@@ -722,7 +722,7 @@ static char *set_repeat_mode(lua_State *L, bool enable)
       luaL_unref (L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
       luaL_unref (L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
       luaL_unref (L, LUA_REGISTRYINDEX, repeat->list_ref);
-      c_free(repeat);
+      free(repeat);
       repeat = NULL;
     }
   }
@@ -811,7 +811,7 @@ static int sntp_sync (lua_State *L)
     for (i = 0; i < 4; i++) {
       lua_pushnumber(L, i + 1);
       char buf[64];
-      c_sprintf(buf, "%d.nodemcu.pool.ntp.org", i);
+      sprintf(buf, "%d.nodemcu.pool.ntp.org", i);
       lua_pushstring(L, buf);
       lua_settable(L, -3);
     }
@@ -835,7 +835,7 @@ error:
   {
     if (state->pcb)
       udp_remove (state->pcb);
-    c_free (state);
+    free (state);
     state = 0;
   }
   return luaL_error (L, errmsg);
