@@ -60,7 +60,7 @@ static int db_getstrings (lua_State *L) {
 }
 
 
-#ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
+#ifndef CONFIG_LUA_BUILTIN_DEBUG_MINIMAL
 
 static int db_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
@@ -420,7 +420,7 @@ static int db_errorfb (lua_State *L) {
 }
 
 LROT_PUBLIC_BEGIN(dblib)
-#ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
+#ifndef CONFIG_LUA_BUILTIN_DEBUG_MINIMAL
 #if defined(LUA_CROSS_COMPILER)
   LROT_FUNCENTRY( debug, db_debug )
 #endif
@@ -431,7 +431,7 @@ LROT_PUBLIC_BEGIN(dblib)
 #endif
   LROT_FUNCENTRY( getregistry, db_getregistry )
   LROT_FUNCENTRY( getstrings, db_getstrings )
-#ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
+#ifndef CONFIG_LUA_BUILTIN_DEBUG_MINIMAL
   LROT_FUNCENTRY( getmetatable, db_getmetatable )
   LROT_FUNCENTRY( getupvalue, db_getupvalue )
   LROT_FUNCENTRY( setfenv, db_setfenv )

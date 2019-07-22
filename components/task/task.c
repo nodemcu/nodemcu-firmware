@@ -13,7 +13,6 @@
 #define TASK_HANDLE_MASK    0xFFF80000
 #define TASK_HANDLE_UNMASK  (~TASK_HANDLE_MASK)
 #define TASK_HANDLE_ALLOCATION_BRICK 4   // must be a power of 2
-#define TASK_DEFAULT_QUEUE_LEN 8
 
 #define CHECK(p,v,msg) if (!(p)) { NODE_DBG ( msg ); return (v); }
 
@@ -40,33 +39,7 @@ static task_callback_t *task_func;
 static int task_count;
 
 
-/*
- * Initialise the task handle callback for a given priority.  This doesn't need
- * to be called explicitly as the get_id function will call this lazily.
- */
-bool task_init_handler(task_prio_t priority, uint8 qlen) {
-  if (priority >= TASK_PRIORITY_COUNT)
-    return false;
-
-  if (task_Q[priority] == NULL)
-  {
-    task_Q[priority] = xQueueCreate (qlen, sizeof (task_event_t));
-    return task_Q[priority] != NULL;
-  }
-  else
-    return false;
-}
-
-
 task_handle_t task_get_id(task_callback_t t) {
-  /* Initialise any uninitialised Qs with the default Q len */
-  for (task_prio_t p = TASK_PRIORITY_LOW; p != TASK_PRIORITY_COUNT; ++p)
-  {
-    if (!task_Q[p]) {
-      CHECK(task_init_handler( p, TASK_DEFAULT_QUEUE_LEN ), 0, "Task initialisation failed");
-    }
-  }
-
   if ( (task_count & (TASK_HANDLE_ALLOCATION_BRICK - 1)) == 0 ) {
     /* With a brick size of 4 this branch is taken at 0, 4, 8 ... and the new size is +4 */
     task_func =(task_callback_t *)realloc(
@@ -82,18 +55,16 @@ task_handle_t task_get_id(task_callback_t t) {
 }
 
 
-bool task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
+bool IRAM_ATTR task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
 {
   if (priority >= TASK_PRIORITY_COUNT ||
-      !task_Q[priority] ||
       (handle & TASK_HANDLE_MASK) != TASK_HANDLE_MONIKER)
     return false;
 
   task_event_t ev = { handle, param };
   bool res = pdPASS == xQueueSendToBackFromISR (task_Q[priority], &ev, NULL);
 
-  if (pending) /* only need to raise semaphore if it's been initialised */
-    xSemaphoreGiveFromISR (pending, NULL);
+  xSemaphoreGiveFromISR (pending, NULL);
 
   return res;
 }
@@ -129,9 +100,30 @@ static void dispatch (task_event_t *e, uint8_t prio) {
 }
 
 
+void task_init (void)
+{
+  pending = xSemaphoreCreateBinary ();
+
+  // Due to the nature of the RTOS, if we ever fail to do a task_post, we're
+  // up the proverbial creek without a paddle. Each queue slot only costs us
+  // 8 bytes, so it's a worthwhile trade-off to reserve a bit of RAM for this
+  // purpose. Trying to work around the issue in the places which post ends
+  // up being *at least* as bad, so better take the hit where the benefit
+  // is shared. That said, we let the user have the final say.
+  const size_t q_mem = CONFIG_NODEMCU_TASK_SLOT_MEMORY;
+
+  // Rather than blindly sizing everything the same, we try to be a little
+  // bit aware of the typical uses of the queues.
+  const size_t slice = q_mem / (10 * sizeof(task_event_t));
+  static const int qlens[] = { 1 * slice, 5 * slice, 4 * slice };
+
+  for (task_prio_t p = TASK_PRIORITY_LOW; p != TASK_PRIORITY_COUNT; ++p)
+    task_Q[p] = xQueueCreate (qlens[p], sizeof (task_event_t));
+}
+
+
 void task_pump_messages (void)
 {
-  vSemaphoreCreateBinary (pending);
   for (;;)
   {
     task_event_t ev;

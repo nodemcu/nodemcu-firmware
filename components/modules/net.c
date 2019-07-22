@@ -16,7 +16,10 @@
 #include "lwip/ip_addr.h"
 #include "lwip/dns.h"
 #include "lwip/tcp.h"
+#include "lwip/inet.h"
+#include "lwip/igmp.h"
 
+#include <esp_log.h>
 
 // Some LWIP macros cause complaints with ptr NULL checks, so shut them off :(
 #pragma GCC diagnostic ignored "-Waddress"
@@ -27,9 +30,7 @@ typedef enum net_type {
   TYPE_UDP_SOCKET
 } net_type;
 
-typedef const char net_table_name[14];
-
-static const net_table_name NET_TABLES[] = {
+static const char *NET_TABLES[] = {
   "net.tcpserver",
   "net.tcpsocket",
   "net.udpsocket"
@@ -40,6 +41,96 @@ static const net_table_name NET_TABLES[] = {
 
 #define TYPE_TCP TYPE_TCP_CLIENT
 #define TYPE_UDP TYPE_UDP_SOCKET
+
+
+static task_handle_t net_handler;
+static task_handle_t dns_handler;
+
+typedef enum {
+  EVT_SENT, EVT_RECV, EVT_ZEROREAD, EVT_CONNECTED, EVT_ERR
+} bounce_event_t;
+
+typedef struct netconn_bounce_event {
+  struct netconn *netconn;
+  bounce_event_t event;
+  err_t err;
+  uint16_t len;
+} netconn_bounce_event_t;
+
+
+struct lnet_userdata;
+
+typedef struct dns_event {
+  ip_addr_t resolved_ip;
+  enum { DNS_STATIC, DNS_SOCKET } invoker;
+  union {
+    int cb_ref;
+    struct lnet_userdata *ud;
+  };
+} dns_event_t;
+
+
+// --- lwIP callbacks -----------------------------------------------------
+
+// Caution - these run in a different RTOS thread!
+
+static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt, u16_t len)
+{
+  if (!netconn) return;
+
+  switch (evt)
+  {
+    case NETCONN_EVT_SENDPLUS:
+    case NETCONN_EVT_RCVPLUS:
+    case NETCONN_EVT_ERROR: break;
+    default: return; // we don't care about minus events
+  }
+
+  netconn_bounce_event_t *nbe = malloc(sizeof(netconn_bounce_event_t));
+  if (!nbe)
+  {
+    ESP_LOGE("net", "out of memory - lost event notification!");
+    return;
+  }
+
+  nbe->netconn = netconn;
+  nbe->len = len;
+  nbe->err = ERR_OK;
+  task_prio_t prio = TASK_PRIORITY_MEDIUM;
+  switch (evt)
+  {
+    case NETCONN_EVT_SENDPLUS:
+      nbe->event = (len == 0) ? EVT_CONNECTED : EVT_SENT; break;
+    case NETCONN_EVT_RCVPLUS:
+      nbe->event = (len == 0) ? EVT_ZEROREAD : EVT_RECV;
+      prio = TASK_PRIORITY_HIGH;
+      break;
+    case NETCONN_EVT_ERROR:
+      nbe->event = EVT_ERR;
+      nbe->err = netconn_err(netconn); // is this safe in this thread?
+      break;
+    default: break; // impossible
+  }
+  if (!task_post(prio, net_handler, (task_param_t)nbe))
+    ESP_LOGE("net", "out of task post slots - lost data!");
+}
+
+
+// This one may *also* run in the LVM thread
+static void net_dns_cb(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
+  dns_event_t *ev = (dns_event_t *)callback_arg;
+
+  ev->resolved_ip = ipaddr ? *ipaddr : ip_addr_any;
+
+  if (!task_post_medium(dns_handler, (task_param_t)ev))
+  {
+    ESP_LOGE("net", "out of task post slots - lost DNS response for %s", name);
+    // And we also leaked the ev here :(
+  }
+}
+
+
+// --- active list (out of reach of the lwIP thread) ---------------------
 
 typedef struct lnet_userdata {
   enum net_type type;
@@ -67,35 +158,56 @@ typedef struct lnet_userdata {
       int cb_reconnect_ref;
     } client;
   };
+
+  struct lnet_userdata *next;
 } lnet_userdata;
 
-
-// --- Event handling
-
-typedef struct {
-  enum {
-    DNSFOUND,
-    DNSSTATIC,
-    CONNECTED,
-    ACCEPT,
-    RECVDATA,
-    SENTDATA,
-    ERR
-  } event;
-  union {
-    lnet_userdata *ud;
-    int cb_ref;
-  };
-  union {
-    ip_addr_t resolved_ip;
-    int       err;
-  };
-} lnet_event;
-
-static task_handle_t net_event;
+static lnet_userdata *active;
 
 
-// --- LWIP errors
+static void add_userdata_to_active(lnet_userdata *ud)
+{
+  ud->next = active;
+  active = ud;
+}
+
+
+static void remove_userdata_from_active(lnet_userdata *ud)
+{
+  if (!ud)
+    return;
+  for (lnet_userdata **i = &active; *i; i = &(*i)->next)
+  {
+    if (*i == ud)
+    {
+      *i = ud->next;
+      return;
+    }
+  }
+}
+
+
+static lnet_userdata *userdata_from_netconn(struct netconn *nc)
+{
+  for (lnet_userdata *i = active; i; i = i->next)
+    if (i->netconn == nc)
+      return i;
+  return NULL;
+}
+
+
+// --- Forward declarations ----------------------------------------------
+
+static void lsent_cb (lua_State *L, lnet_userdata *ud);
+static void lrecv_cb (lua_State *L, lnet_userdata *ud);
+static void laccept_cb (lua_State *L, lnet_userdata *ud);
+static void lconnected_cb (lua_State *L, lnet_userdata *ud);
+static void lerr_cb (lua_State *L, lnet_userdata *ud, err_t err);
+static void ldnsstatic_cb (lua_State *L, int cb_ref, ip_addr_t *addr);
+static void ldnsfound_cb (lua_State *L, lnet_userdata *ud, ip_addr_t *addr);
+
+
+// --- Helper functions --------------------------------------------------
 
 int lwip_lua_checkerr (lua_State *L, err_t err) {
   switch (err) {
@@ -119,12 +231,12 @@ int lwip_lua_checkerr (lua_State *L, err_t err) {
   }
 }
 
-// --- Create
 
 lnet_userdata *net_create( lua_State *L, enum net_type type ) {
   const char *mt = NET_TABLES[type];
   lnet_userdata *ud = (lnet_userdata *)lua_newuserdata(L, sizeof(lnet_userdata));
   if (!ud) return NULL;
+
   luaL_getmetatable(L, mt);
   lua_setmetatable(L, -2);
 
@@ -151,211 +263,100 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
       ud->server.cb_accept_ref = LUA_NOREF;
       break;
   }
+
+  add_userdata_to_active(ud);
+
   return ud;
 }
 
-// --- LWIP callbacks and task_post helpers
 
-static bool post_net_err (lnet_userdata *ud, err_t err) {
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
-  if (!ev)
-    return false;
-  ev->event = ERR;
-  ev->ud = ud;
-  ev->err = err;
-  if (!task_post_medium (net_event, (task_param_t)ev)) {
-    free (ev);
-    return false;
-  }
-  return true;
-}
+// --- LVM thread task handlers -----------------------------------------
 
-
-static bool post_net_connected (lnet_userdata *ud) {
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
-  if (!ev)
-    return false;
-  ev->event = CONNECTED;
-  ev->ud = ud;
-  if (!task_post_medium (net_event, (task_param_t)ev)) {
-    free (ev);
-    return false;
-  }
-  return true;
-}
-
-
-static bool post_net_dns (lnet_userdata *ud, const char *name, const ip_addr_t *ipaddr)
+void handle_net_event(task_param_t param, task_prio_t prio)
 {
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
-  if (!ev || !ipaddr)
-    return false;
-  ev->event = DNSFOUND;
-  ev->ud = ud;
-  ev->resolved_ip = *ipaddr;
-  if (!task_post_medium (net_event, (task_param_t)ev)) {
-    free (ev);
-    return false;
-  }
-  return true;
-}
+  (void)prio;
+  netconn_bounce_event_t *pnbe = (netconn_bounce_event_t *)param;
+  netconn_bounce_event_t nbe = *pnbe;
+  free(pnbe); // free before we can hit any luaL_error()s
 
-static void net_dns_cb(const char *name, const ip_addr_t *ipaddr, void *arg) {
-  ip_addr_t addr;
-  if (ipaddr != NULL) addr = *ipaddr;
-  else addr = ip_addr_any;
-  lnet_userdata *ud = (lnet_userdata*)arg;
-  if (!ud) return;
+  lnet_userdata *ud = userdata_from_netconn(nbe.netconn);
+  if (!ud)
+    return;
 
-  post_net_dns (ud, name, &addr);
-}
-
-
-static bool post_net_recv (lnet_userdata *ud)
-{
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
-  if (!ev)
-    return false;
-
-  ev->event = RECVDATA;
-  ev->ud = ud;
-
-  if (!task_post_high (net_event, (task_param_t)ev))
+  if (nbe.event == EVT_ERR)
   {
-    free (ev);
-    return false;
-  }
-  return true;
-}
-
-
-static bool post_net_sent (lnet_userdata *ud) {
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
-  if (!ev)
-    return false;
-  ev->event = SENTDATA;
-  ev->ud = ud;
-  if (!task_post_medium (net_event, (task_param_t)ev)) {
-    free (ev);
-    return false;
-  }
-  return true;
-}
-
-
-static bool post_net_accept (lnet_userdata *ud) {
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
-  if (!ev)
-    return false;
-  ev->event = ACCEPT;
-  ev->ud = ud;
-  if (!task_post_medium (net_event, (task_param_t)ev)) {
-    free (ev);
-    return false;
-  }
-  return true;
-}
-
-
-static void lnet_netconn_callback(struct netconn *netconn, enum netconn_evt evt, u16_t len)
-{
-  if (!netconn) return;
-
-  SYS_ARCH_DECL_PROTECT(lev);
-
-  SYS_ARCH_PROTECT(lev);
-  if (netconn->socket < 0) {
-    if (evt == NETCONN_EVT_RCVPLUS && len > 0) {
-      // data received before userdata was set up, note receive event
-      netconn->socket--;
-    }
-
-    SYS_ARCH_UNPROTECT(lev);
+    lerr_cb(lua_getstate(), ud, nbe.err);
     return;
   }
-  SYS_ARCH_UNPROTECT(lev);
 
-  lnet_userdata *ud = (lnet_userdata *)netconn->socket;
-  if (!ud || !ud->netconn) return;
-
-  // if a previous event or the user triggered to close the connection then
-  // skip further event processing, we might run the cbs in Lua task on outdated userdata
-  if (ud->closing) return;
-
-  if (ud->type == TYPE_TCP_CLIENT || ud->type == TYPE_UDP_SOCKET) {
-
-    switch (evt) {
-    case NETCONN_EVT_SENDPLUS:
-      if (ud->type == TYPE_TCP_CLIENT && ud->client.connecting) {
-        // connection established, trigger Lua callback
-        ud->client.connecting = false;
-        post_net_connected(ud);
-      } else if (len > 0) {
-        // we're potentially called back from netconn several times for a single send job
-        // keep track of them in num_send and postpone the Lua callback until all data is sent
-        ud->client.num_send -= len;
-        if (ud->client.num_send == 0) {
-          // all data sent, trigger Lua callback
-          post_net_sent(ud);
+  if (ud->type == TYPE_TCP_CLIENT || ud->type == TYPE_UDP_SOCKET)
+  {
+    switch (nbe.event)
+    {
+      case EVT_CONNECTED:
+        if (ud->type == TYPE_TCP_CLIENT && ud->client.connecting)
+        {
+          ud->client.connecting = false;
+          lconnected_cb(lua_getstate(), ud);
         }
-      }
-      break;
-
-    case NETCONN_EVT_ERROR:
-      post_net_err(ud, netconn_err(ud->netconn));
-      ud->closing = true;
-      break;
-
-    case NETCONN_EVT_RCVPLUS:
-      if (len > 0) {
-        // data received, collect it in Lua callback
-        post_net_recv(ud);
-      } else {
-        // signals closed connection from peer
-        post_net_err(ud, 0);
+        break;
+      case EVT_SENT:
+        ud->client.num_send -= nbe.len;
+        if (ud->client.num_send == 0) // all data sent, trigger Lua callback
+          lsent_cb(lua_getstate(), ud);
+        break;
+      case EVT_RECV:
+        if (nbe.len > 0)
+          lrecv_cb(lua_getstate(), ud);
+        break;
+      case EVT_ZEROREAD: // fall-through
+      case EVT_ERR:
         ud->closing = true;
-      }
-      break;
-
-    default:
-      break;
+        lerr_cb(lua_getstate(), ud, nbe.err);
+        break;
     }
-
-  } else if (ud->type == TYPE_TCP_SERVER) {
-
-    switch (evt) {
-    case NETCONN_EVT_RCVPLUS:
-      // new connection available from netconn_listen()
-      if (ud->netconn &&
-          ud->server.cb_accept_ref != LUA_NOREF) {
-        post_net_accept(ud);
-      }
-      break;
-
-    case NETCONN_EVT_ERROR:
-      post_net_err(ud, netconn_err(ud->netconn));
-      ud->closing = true;
-      break;
-
-    default:
-      break;
+  }
+  else if (ud->type == TYPE_TCP_SERVER)
+  {
+    switch (nbe.event)
+    {
+      case EVT_ZEROREAD: // new connection
+        laccept_cb (lua_getstate(), ud);
+        break;
+      case EVT_ERR:
+        ud->closing = true;
+        lerr_cb(lua_getstate(), ud, nbe.err);
+        break;
+      default: break;
     }
-
   }
 }
 
 
-// workaround for https://github.com/espressif/esp-idf/issues/784
-#include "lwip/priv/api_msg.h"
-#define NETCONN_DELETE(conn) \
-  if (netconn_delete(conn) == ERR_OK) netconn_free(conn);
-#define NETCONN_CLOSE(conn) netconn_close_wa(conn)
-static err_t netconn_close_wa(struct netconn *conn) {
-  err_t err = netconn_close(conn);
-  if (err == ERR_OK) {
-    netconn_delete(conn);
-    netconn_free(conn);
+void handle_dns_event(task_param_t param, task_prio_t prio)
+{
+  (void)prio;
+  dns_event_t *pev = (dns_event_t *)param;
+  dns_event_t ev = *pev;
+
+  lua_State *L = lua_getstate();
+  luaM_free(L, pev); // free before we can hit any luaL_error()s
+
+  switch (ev.invoker)
+  {
+    case DNS_STATIC:
+      ldnsstatic_cb(L, ev.cb_ref, &ev.resolved_ip);
+      break;
+    case DNS_SOCKET:
+      ldnsfound_cb(L, ev.ud, &ev.resolved_ip);
   }
+}
+
+
+static err_t netconn_close_and_delete(struct netconn *conn) {
+  err_t err = netconn_close(conn);
+  if (err == ERR_OK)
+    netconn_delete(conn);
 
   return err;
 }
@@ -363,16 +364,14 @@ static err_t netconn_close_wa(struct netconn *conn) {
 
 // --- Lua API - create
 
-extern int tls_socket_create( lua_State *L );
-
 // Lua: net.createUDPSocket()
-int net_createUDPSocket( lua_State *L ) {
+static int net_createUDPSocket( lua_State *L ) {
   net_create(L, TYPE_UDP_SOCKET);
   return 1;
 }
 
 // Lua: net.createServer(type, timeout)
-int net_createServer( lua_State *L ) {
+static int net_createServer( lua_State *L ) {
   int type, timeout;
 
   type = luaL_optlong(L, 1, TYPE_TCP);
@@ -387,7 +386,7 @@ int net_createServer( lua_State *L ) {
 }
 
 // Lua: net.createConnection(type, secure)
-int net_createConnection( lua_State *L ) {
+static int net_createConnection( lua_State *L ) {
   int type, secure;
 
   type = luaL_optlong(L, 1, TYPE_TCP);
@@ -396,11 +395,7 @@ int net_createConnection( lua_State *L ) {
   if (type == TYPE_UDP) return net_createUDPSocket( L );
   if (type != TYPE_TCP) return luaL_error(L, "invalid type");
   if (secure) {
-#ifdef CLIENT_SSL_ENABLE
-    return tls_socket_create( L );
-#else
-    return luaL_error(L, "secure connections not enabled");
-#endif
+    return luaL_error(L, "secure connections not yet supported");
   }
   net_create(L, TYPE_TCP_CLIENT);
   return 1;
@@ -408,7 +403,7 @@ int net_createConnection( lua_State *L ) {
 
 // --- Get & check userdata
 
-lnet_userdata *net_get_udata_s( lua_State *L, int stack ) {
+static lnet_userdata *net_get_udata_s( lua_State *L, int stack ) {
   if (!lua_isuserdata(L, stack)) return NULL;
   lnet_userdata *ud = (lnet_userdata *)lua_touserdata(L, stack);
   switch (ud->type) {
@@ -424,10 +419,51 @@ lnet_userdata *net_get_udata_s( lua_State *L, int stack ) {
 }
 #define net_get_udata(L) net_get_udata_s(L, 1)
 
+
+static int lnet_socket_resolve_dns(lua_State *L, lnet_userdata *ud, const char * domain, bool close_on_err)
+{
+  ud->client.wait_dns ++;
+  int unref = 0;
+  if (ud->self_ref == LUA_NOREF) {
+    unref = 1;
+    lua_pushvalue(L, 1);
+    ud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }
+
+  dns_event_t *ev = luaM_new(L, dns_event_t);
+  if (!ev)
+    return luaL_error (L, "out of memory");
+
+  ev->invoker = DNS_SOCKET;
+  ev->ud = ud;
+
+  err_t err = dns_gethostbyname(domain, &ev->resolved_ip, net_dns_cb, ev);
+  if (err == ERR_OK)
+    net_dns_cb(domain, &ev->resolved_ip, ev);
+  else if (err != ERR_INPROGRESS)
+  {
+    luaM_free(L, ev);
+    ud->client.wait_dns --;
+    if (unref) {
+      luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+      ud->self_ref = LUA_NOREF;
+    }
+    if (close_on_err)
+    {
+      ud->closing = true;
+      if (netconn_close_and_delete(ud->netconn) == ERR_OK)
+        ud->netconn = NULL;
+    }
+    return lwip_lua_checkerr(L, err);
+  }
+  return 0;
+}
+
+
 // --- Lua API
 
 // Lua: server:listen(port, addr, function(c)), socket:listen(port, addr)
-int net_listen( lua_State *L ) {
+static int net_listen( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type == TYPE_TCP_CLIENT)
     return luaL_error(L, "invalid user data");
@@ -460,7 +496,6 @@ int net_listen( lua_State *L ) {
       ud->netconn = netconn_new_with_callback(NETCONN_TCP, lnet_netconn_callback);
       if (!ud->netconn)
         return luaL_error(L, "cannot allocate netconn");
-      ud->netconn->socket = (int)ud;
       netconn_set_nonblocking(ud->netconn, 1);
       netconn_set_noautorecved(ud->netconn, 1);
 
@@ -473,7 +508,6 @@ int net_listen( lua_State *L ) {
       ud->netconn = netconn_new_with_callback(NETCONN_UDP, lnet_netconn_callback);
       if (!ud->netconn)
         return luaL_error(L, "cannot allocate netconn");
-      ud->netconn->socket = (int)ud;
       netconn_set_nonblocking(ud->netconn, 1);
       netconn_set_noautorecved(ud->netconn, 1);
 
@@ -485,11 +519,11 @@ int net_listen( lua_State *L ) {
     ud->closing = true;
     switch (ud->type) {
       case TYPE_TCP_SERVER:
-        if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
+        if (netconn_close_and_delete(ud->netconn) == ERR_OK)
           ud->netconn = NULL;
         break;
       case TYPE_UDP_SOCKET:
-        if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
+        if (netconn_close_and_delete(ud->netconn) == ERR_OK)
           ud->netconn = NULL;
         break;
       default: break;
@@ -504,7 +538,7 @@ int net_listen( lua_State *L ) {
 }
 
 // Lua: client:connect(port, addr)
-int net_connect( lua_State *L ) {
+static int net_connect( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type != TYPE_TCP_CLIENT)
     return luaL_error(L, "invalid user data");
@@ -522,39 +556,15 @@ int net_connect( lua_State *L ) {
   ud->netconn = netconn_new_with_callback(NETCONN_TCP, lnet_netconn_callback);
   if (!ud->netconn)
     return luaL_error(L, "cannot allocate netconn");
-  ud->netconn->socket = (int)ud;
   netconn_set_nonblocking(ud->netconn, 1);
   netconn_set_noautorecved(ud->netconn, 1);
   ud->port = port;
 
-  ip_addr_t addr;
-  ud->client.wait_dns ++;
-  int unref = 0;
-  if (ud->self_ref == LUA_NOREF) {
-    unref = 1;
-    lua_pushvalue(L, 1);
-    ud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  err_t err = dns_gethostbyname(domain, &addr, net_dns_cb, ud);
-  if (err == ERR_OK) {
-    net_dns_cb(domain, &addr, ud);
-  } else if (err != ERR_INPROGRESS) {
-    ud->client.wait_dns --;
-    if (unref) {
-      luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
-      ud->self_ref = LUA_NOREF;
-    }
-    ud->closing = true;
-    if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
-      ud->netconn = NULL;
-    return lwip_lua_checkerr(L, err);
-  }
-  return 0;
+  return lnet_socket_resolve_dns(L, ud, domain, true);
 }
 
 // Lua: client/socket:on(name, callback)
-int net_on( lua_State *L ) {
+static int net_on( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type == TYPE_TCP_SERVER)
     return luaL_error(L, "invalid user data");
@@ -595,7 +605,7 @@ int net_on( lua_State *L ) {
 }
 
 // Lua: client:send(data, function(c)), socket:send(port, ip, data, function(s))
-int net_send( lua_State *L ) {
+static int net_send( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type == TYPE_TCP_SERVER)
     return luaL_error(L, "invalid user data");
@@ -625,11 +635,10 @@ int net_send( lua_State *L ) {
     ud->netconn = netconn_new_with_callback(NETCONN_UDP, lnet_netconn_callback);
     if (!ud->netconn)
       return luaL_error(L, "cannot allocate netconn");
-    ud->netconn->socket = (int)ud;
     err_t err = netconn_bind(ud->netconn, IP_ADDR_ANY, 0);
     if (err != ERR_OK) {
       ud->closing = true;
-      if (NETCONN_CLOSE(ud->netconn) == ERR_OK)
+      if (netconn_close_and_delete(ud->netconn) == ERR_OK)
         ud->netconn = NULL;
       return lwip_lua_checkerr(L, err);
     }
@@ -672,7 +681,7 @@ int net_send( lua_State *L ) {
 }
 
 // Lua: client:hold()
-int net_hold( lua_State *L ) {
+static int net_hold( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type != TYPE_TCP_CLIENT)
     return luaL_error(L, "invalid user data");
@@ -688,7 +697,7 @@ int net_hold( lua_State *L ) {
 }
 
 // Lua: client:unhold()
-int net_unhold( lua_State *L ) {
+static int net_unhold( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type != TYPE_TCP_CLIENT)
     return luaL_error(L, "invalid user data");
@@ -705,7 +714,7 @@ int net_unhold( lua_State *L ) {
 }
 
 // Lua: client/socket:dns(domain, callback(socket, addr))
-int net_dns( lua_State *L ) {
+static int net_dns( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type == TYPE_TCP_SERVER)
     return luaL_error(L, "invalid user data");
@@ -720,30 +729,12 @@ int net_dns( lua_State *L ) {
   }
   if (ud->client.cb_dns_ref == LUA_NOREF)
     return luaL_error(L, "no callback specified");
-  ud->client.wait_dns ++;
-  int unref = 0;
-  if (ud->self_ref == LUA_NOREF) {
-    unref = 1;
-    lua_pushvalue(L, 1);
-    ud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-  ip_addr_t addr;
-  err_t err = dns_gethostbyname(domain, &addr, net_dns_cb, ud);
-  if (err == ERR_OK) {
-    net_dns_cb(domain, &addr, ud);
-  } else if (err != ERR_INPROGRESS) {
-    ud->client.wait_dns --;
-    if (unref) {
-      luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
-      ud->self_ref = LUA_NOREF;
-    }
-    return lwip_lua_checkerr(L, err);
-  }
-  return 0;
+
+  return lnet_socket_resolve_dns(L, ud, domain, false);
 }
 
 // Lua: client:getpeer()
-int net_getpeer( lua_State *L ) {
+static int net_getpeer( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud || ud->type != TYPE_TCP_CLIENT)
     return luaL_error(L, "invalid user data");
@@ -770,7 +761,7 @@ int net_getpeer( lua_State *L ) {
 }
 
 // Lua: client/server/socket:getaddr()
-int net_getaddr( lua_State *L ) {
+static int net_getaddr( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud) return luaL_error(L, "invalid user data");
   if (!ud->netconn) {
@@ -801,7 +792,7 @@ int net_getaddr( lua_State *L ) {
 }
 
 // Lua: client/server/socket:close()
-int net_close( lua_State *L ) {
+static int net_close( lua_State *L ) {
   err_t err = ERR_OK;
   lnet_userdata *ud = net_get_udata(L);
   if (!ud) return luaL_error(L, "invalid user data");
@@ -811,7 +802,7 @@ int net_close( lua_State *L ) {
       case TYPE_TCP_SERVER:
       case TYPE_UDP_SOCKET:
         ud->closing = true;
-        err = NETCONN_CLOSE(ud->netconn);
+        err = netconn_close_and_delete(ud->netconn);
         if (err == ERR_OK)
           ud->netconn = NULL;
         break;
@@ -830,7 +821,7 @@ int net_close( lua_State *L ) {
   return lwip_lua_checkerr(L, err);
 }
 
-int net_delete( lua_State *L ) {
+static int net_delete( lua_State *L ) {
   lnet_userdata *ud = net_get_udata(L);
   if (!ud) return luaL_error(L, "no user data");
   if (ud->netconn) {
@@ -839,7 +830,7 @@ int net_delete( lua_State *L ) {
       case TYPE_TCP_SERVER:
       case TYPE_UDP_SOCKET:
         ud->closing = true;
-        NETCONN_DELETE(ud->netconn);
+        netconn_delete(ud->netconn);
         ud->netconn = NULL;
         break;
       default: break;
@@ -869,6 +860,7 @@ int net_delete( lua_State *L ) {
   lua_gc(L, LUA_GCSTOP, 0);
   luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
   ud->self_ref = LUA_NOREF;
+  remove_userdata_from_active(ud);
   lua_gc(L, LUA_GCRESTART, 0);
   return 0;
 }
@@ -909,11 +901,13 @@ static int net_multicastJoinLeave( lua_State *L, int join) {
 	  return 0;
 }
 
+
 // Lua: net.multicastJoin(ifip, multicastip)
 // if ifip "" or "any" all interfaces are affected
 static int net_multicastJoin( lua_State* L ) {
 	return net_multicastJoinLeave(L,1);
 }
+
 
 // Lua: net.multicastLeave(ifip, multicastip)
 // if ifip "" or "any" all interfaces are affected
@@ -921,50 +915,39 @@ static int net_multicastLeave( lua_State* L ) {
 	return net_multicastJoinLeave(L,0);
 }
 
-// --- DNS
 
-static void net_dns_static_cb(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
-  lnet_event *ev = (lnet_event *)callback_arg;
+// --- DNS ---------------------------------------------------------------
 
-  ev->resolved_ip = ipaddr ? *ipaddr : ip_addr_any;
-
-  if (!task_post_medium (net_event, (task_param_t)ev))
-    free (ev);
-}
 
 // Lua: net.dns.resolve( domain, function(ip) )
 static int net_dns_static( lua_State* L ) {
   size_t dl;
   const char* domain = luaL_checklstring(L, 1, &dl);
   if (!domain && dl > 128) {
-    return luaL_error(L, "wrong domain");
+    return luaL_error(L, "domain name too long");
   }
 
-  // Note: this will be free'd using regular free(), so can't luaM_malloc()
-  lnet_event *ev = (lnet_event *)malloc (sizeof (lnet_event));
+  luaL_checkanyfunction(L, 2);
+  lua_settop(L, 2);
+
+  dns_event_t *ev = luaM_new(L, dns_event_t);
   if (!ev)
     return luaL_error (L, "out of memory");
 
-  ev->event = DNSSTATIC;
-
-  luaL_checkanyfunction(L, 2);
-  lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
   ev->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  ev->invoker = DNS_STATIC;
 
-  err_t err = dns_gethostbyname(
-    domain, &ev->resolved_ip, net_dns_static_cb, ev);
-  if (err == ERR_OK) {
-    net_dns_static_cb(domain, &ev->resolved_ip, ev);
-    return 0;
-  } else if (err == ERR_INPROGRESS) {
-    return 0;
-  } else {
-    int e = lwip_lua_checkerr(L, err);
-    free(ev);
-    return e;
+  err_t err = dns_gethostbyname(domain, &ev->resolved_ip, net_dns_cb, ev);
+  if (err == ERR_OK)
+    net_dns_cb(domain, &ev->resolved_ip, ev);
+  else if (err != ERR_INPROGRESS)
+  {
+    luaM_free(L, ev);
+    lwip_lua_checkerr(L, err);
   }
   return 0;
 }
+
 
 // Lua: s = net.dns.setdnsserver(ip_addr, [index])
 static int net_setdnsserver( lua_State* L ) {
@@ -984,6 +967,7 @@ static int net_setdnsserver( lua_State* L ) {
 
   return 0;
 }
+
 
 // Lua: s = net.dns.getdnsserver([index])
 static int net_getdnsserver( lua_State* L ) {
@@ -1007,7 +991,8 @@ static int net_getdnsserver( lua_State* L ) {
   return 1;
 }
 
-// --- Lua event dispatch
+
+// --- Lua event dispatch -----------------------------------------------
 
 static void ldnsfound_cb (lua_State *L, lnet_userdata *ud, ip_addr_t *addr) {
   if (ud->self_ref != LUA_NOREF && ud->client.cb_dns_ref != LUA_NOREF) {
@@ -1034,6 +1019,7 @@ static void ldnsfound_cb (lua_State *L, lnet_userdata *ud, ip_addr_t *addr) {
   }
 }
 
+
 static void ldnsstatic_cb (lua_State *L, int cb_ref, ip_addr_t *addr) {
   if (cb_ref == LUA_NOREF)
     return;
@@ -1051,6 +1037,7 @@ static void ldnsstatic_cb (lua_State *L, int cb_ref, ip_addr_t *addr) {
   lua_call(L, 1, 0);
 }
 
+
 static void lconnected_cb (lua_State *L, lnet_userdata *ud) {
   if (ud->self_ref != LUA_NOREF && ud->client.cb_connect_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_connect_ref);
@@ -1059,43 +1046,6 @@ static void lconnected_cb (lua_State *L, lnet_userdata *ud) {
   }
 }
 
-static void laccept_cb (lua_State *L, lnet_userdata *ud) {
-  if (!ud || !ud->netconn) return;
-
-  SYS_ARCH_DECL_PROTECT(lev);
-  lua_rawgeti(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
-
-  lnet_userdata *nud = net_create(L, TYPE_TCP_CLIENT);
-  lua_pushvalue(L, -1);
-  nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-
-  int recvevent = 0;
-  struct netconn *newconn;
-  err_t err = netconn_accept(ud->netconn, &newconn);
-  if (err == ERR_OK) {
-    nud->netconn = newconn;
-
-    SYS_ARCH_PROTECT(lev);
-    // take buffered receive events
-    recvevent = (int)(-1 - newconn->socket);
-    nud->netconn->socket = (int)nud;
-    SYS_ARCH_UNPROTECT(lev);
-
-    netconn_set_nonblocking(nud->netconn, 1);
-    netconn_set_noautorecved(nud->netconn, 1);
-    nud->netconn->pcb.tcp->so_options |= SOF_KEEPALIVE;
-    nud->netconn->pcb.tcp->keep_idle = ud->server.timeout * 1000;
-    nud->netconn->pcb.tcp->keep_cnt = 1;
-  } else
-    luaL_error(L, "cannot accept new server socket connection");
-
-  lua_call(L, 1, 0);
-
-  while (recvevent-- > 0) {
-    // kick receive callback in case of pending events
-    post_net_recv(nud);
-  }
-}
 
 static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
   if (!ud || !ud->netconn) return;
@@ -1105,32 +1055,32 @@ static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
   uint16_t len;
 
   err_t err = netconn_recv(ud->netconn, &p);
-  if (err != ERR_OK) {
+  if (err != ERR_OK || !p) {
     lwip_lua_checkerr(L, err);
     return;
   }
-  if (p) {
-    netbuf_data(p, (void **)&payload, &len);
-  } else {
-    len = 0;
-  }
 
-  if (len > 0 && ud->client.cb_receive_ref != LUA_NOREF){
-    lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_receive_ref);
-    int num_args = 2;
-    lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
-    lua_pushlstring(L, payload, len);
-    if (ud->type == TYPE_UDP_SOCKET) {
-      num_args += 2;
-      char iptmp[IP_STR_SZ];
-      ip_addr_t *addr = netbuf_fromaddr(p);
-      uint16_t port = netbuf_fromport(p);
-      ipstr (iptmp, addr);
-      lua_pushinteger(L, port);
-      lua_pushstring(L, iptmp);
+  netbuf_first(p);
+  do {
+    netbuf_data(p, (void **)&payload, &len);
+
+    if (ud->client.cb_receive_ref != LUA_NOREF){
+      lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_receive_ref);
+      int num_args = 2;
+      lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
+      lua_pushlstring(L, payload, len);
+      if (ud->type == TYPE_UDP_SOCKET) {
+        num_args += 2;
+        char iptmp[IP_STR_SZ];
+        ip_addr_t *addr = netbuf_fromaddr(p);
+        uint16_t port = netbuf_fromport(p);
+        ipstr (iptmp, addr);
+        lua_pushinteger(L, port);
+        lua_pushstring(L, iptmp);
+      }
+      lua_call(L, num_args, 0);
     }
-    lua_call(L, num_args, 0);
-  }
+  } while (netbuf_next(p) != -1);
 
   if (p) {
     netbuf_delete(p);
@@ -1145,6 +1095,31 @@ static void lrecv_cb (lua_State *L, lnet_userdata *ud) {
   }
 }
 
+
+static void laccept_cb (lua_State *L, lnet_userdata *ud) {
+  if (!ud || !ud->netconn) return;
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
+
+  lnet_userdata *nud = net_create(L, TYPE_TCP_CLIENT);
+  lua_pushvalue(L, -1);
+  nud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  struct netconn *newconn;
+  err_t err = netconn_accept(ud->netconn, &newconn);
+  if (err == ERR_OK) {
+    nud->netconn = newconn;
+    netconn_set_nonblocking(nud->netconn, 1);
+    netconn_set_noautorecved(nud->netconn, 1);
+    nud->netconn->pcb.tcp->so_options |= SOF_KEEPALIVE;
+    nud->netconn->pcb.tcp->keep_idle = ud->server.timeout * 1000;
+    nud->netconn->pcb.tcp->keep_cnt = 1;
+  } else
+    luaL_error(L, "cannot accept new server socket connection");
+  lua_call(L, 1, 0);
+}
+
+
 static void lsent_cb (lua_State *L, lnet_userdata *ud) {
   if (ud->client.cb_sent_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
@@ -1152,6 +1127,7 @@ static void lsent_cb (lua_State *L, lnet_userdata *ud) {
     lua_call(L, 1, 0);
   }
 }
+
 
 static void lerr_cb (lua_State *L, lnet_userdata *ud, err_t err)
 {
@@ -1175,29 +1151,8 @@ static void lerr_cb (lua_State *L, lnet_userdata *ud, err_t err)
   }
 }
 
-static void handle_net_event (task_param_t param, task_prio_t prio)
-{
-  lnet_event *ev = (lnet_event *)param;
-  (void)prio;
-
-  lua_State *L = lua_getstate();
-  switch (ev->event)
-  {
-    case DNSFOUND:  ldnsfound_cb (L, ev->ud, &ev->resolved_ip);      break;
-    case DNSSTATIC: ldnsstatic_cb (L, ev->cb_ref, &ev->resolved_ip); break;
-    case CONNECTED: lconnected_cb (L, ev->ud);                       break;
-    case ACCEPT:    laccept_cb (L, ev->ud);                          break;
-    case RECVDATA:  lrecv_cb (L, ev->ud);                            break;
-    case SENTDATA:  lsent_cb (L, ev->ud);                            break;
-    case ERR:       lerr_cb (L, ev->ud, ev->err);                    break;
-  }
-
-  free (ev);
-}
 
 // --- Tables
-
-LROT_EXTERN(tls_cert);
 
 // Module function map
 LROT_BEGIN(net_tcpserver)
@@ -1246,9 +1201,6 @@ LROT_BEGIN(net)
   LROT_FUNCENTRY( multicastJoin,    net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave,   net_multicastLeave )
   LROT_TABENTRY ( dns,              net_dns )
-#ifdef CLIENT_SSL_ENABLE
-  LROT_TABENTRY ( cert,             tls_cert )
-#endif
   LROT_NUMENTRY ( TCP,              TYPE_TCP )
   LROT_NUMENTRY ( UDP,              TYPE_UDP )
   LROT_TABENTRY ( __metatable,      net )
@@ -1261,7 +1213,8 @@ int luaopen_net( lua_State *L ) {
   luaL_rometatable(L, NET_TABLE_TCP_CLIENT, (void *)net_tcpsocket_map);
   luaL_rometatable(L, NET_TABLE_UDP_SOCKET, (void *)net_udpsocket_map);
 
-  net_event = task_get_id (handle_net_event);
+  net_handler = task_get_id(handle_net_event);
+  dns_handler = task_get_id(handle_dns_event);
 
   return 0;
 }
