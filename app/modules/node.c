@@ -127,64 +127,48 @@ static int node_info( lua_State* L )
     case 0: { // hw
       lua_createtable (L, 0, 5);
       int table_index = lua_gettop(L);
-      lua_pushliteral(L, "chip_id");
       lua_pushinteger(L, system_get_chip_id());   // chip id
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "flash_id");
+      lua_setfield(L, table_index, "chip_id");
       lua_pushinteger(L, spi_flash_get_id());     // flash id
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "flash_size");
+      lua_setfield(L, table_index, "flash_id");
       lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "flash_mode");
+      lua_setfield(L, table_index, "flash_size");
       lua_pushinteger(L, flash_rom_get_mode());
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "flash_speed");
+      lua_setfield(L, table_index, "flash_mode");
       lua_pushinteger(L, flash_rom_get_speed());
-      lua_settable(L, table_index);
+      lua_setfield(L, table_index, "flash_speed");
       return 1;
     }
     case 1: { // sw_version
       lua_createtable (L, 0, 7);
       int table_index = lua_gettop(L);
-      lua_pushliteral(L, "node_version_major");
       lua_pushinteger(L, NODE_VERSION_MAJOR);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "node_version_minor");
+      lua_setfield(L, table_index, "node_version_major");
       lua_pushinteger(L, NODE_VERSION_MINOR);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "node_version_revision");
+      lua_setfield(L, table_index, "node_version_minor");
       lua_pushinteger(L, NODE_VERSION_REVISION);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "git_branch");
+      lua_setfield(L, table_index, "node_version_revision");
       lua_pushstring(L, BUILDINFO_BRANCH);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "git_commit_id");
+      lua_setfield(L, table_index, "git_branch");
       lua_pushstring(L, BUILDINFO_COMMIT_ID);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "git_release");
+      lua_setfield(L, table_index, "git_commit_id");
       lua_pushstring(L, BUILDINFO_RELEASE);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "git_commit_dts");
+      lua_setfield(L, table_index, "git_release");
       lua_pushstring(L, BUILDINFO_RELEASE_DTS);
-      lua_settable(L, table_index);
+      lua_setfield(L, table_index, "git_commit_dts");
       return 1;
     }
     case 2: { // build_config
       lua_createtable (L, 0, 4);
       int table_index = lua_gettop(L);
-      lua_pushliteral(L, "ssl");
       lua_pushboolean(L, BUILDINFO_SSL);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "lfs_size");
+      lua_setfield(L, table_index, "ssl");
       lua_pushnumber(L, BUILDINFO_LFS);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "modules");
+      lua_setfield(L, table_index, "lfs_size");
       lua_pushstring(L, BUILDINFO_MODULES);
-      lua_settable(L, table_index);
-      lua_pushliteral(L, "number_type");
+      lua_setfield(L, table_index, "modules");
       lua_pushstring(L, BUILDINFO_BUILD_TYPE);
-      lua_settable(L, table_index);
+      lua_setfield(L, table_index, "number_type");
       return 1;
     }
     default:
