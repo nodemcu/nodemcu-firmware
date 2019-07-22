@@ -48,8 +48,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
 
 //#define SWTMR_DEBUG
 #if !defined(SWTMR_DBG) && defined(LUA_USE_MODULES_SWTMR_DBG)

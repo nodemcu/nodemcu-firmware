@@ -1,5 +1,6 @@
 #include "user_config.h"
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
 #include <stdlib.h>
 
 #include "coap.h"

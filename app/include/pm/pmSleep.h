@@ -1,7 +1,7 @@
 #ifndef __FPM_SLEEP_H__
 #define __FPM_SLEEP_H__
 #include "user_interface.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "lauxlib.h"
 #include "gpio.h"
 #include "platform.h"

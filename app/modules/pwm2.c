@@ -7,7 +7,7 @@
 
 // Module for interfacing with PWM2 driver
 
-#include "c_types.h"
+#include <stdint.h>
 #include "lauxlib.h"
 #include "module.h"
 #include "driver/pwm2.h"

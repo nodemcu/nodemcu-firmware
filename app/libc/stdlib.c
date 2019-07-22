@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdint.h>
 
 #ifdef LUA_CROSS_COMPILER
 #define ICACHE_RODATA_ATTR

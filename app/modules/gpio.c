@@ -6,7 +6,7 @@
 #include "lmem.h"
 #include "platform.h"
 #include "user_interface.h"
-#include "c_types.h"
+#include <stdint.h>
 #include <string.h>
 #include "gpio.h"
 #include "hw_timer.h"

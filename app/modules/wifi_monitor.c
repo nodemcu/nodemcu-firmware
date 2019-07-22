@@ -6,10 +6,10 @@
 #include "platform.h"
 
 #include <string.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include "ctype.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include "user_interface.h"
 #include "wifi_common.h"
 #include "sys/network_80211.h"

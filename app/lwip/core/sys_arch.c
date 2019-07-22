@@ -2,7 +2,7 @@
  * copyright (c) 2010 - 2011 espressif system
  */
 
-#include "c_types.h"
+#include <stdint.h>
 #include "ets_sys.h"
 #include "osapi.h"
 #include "os_type.h"

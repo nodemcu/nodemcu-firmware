@@ -8,9 +8,9 @@
 **/
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
-#include "c_types.h"
+#include <stdint.h>
 #include <osapi.h>
 #include <vfs.h>
 #include <time.h>

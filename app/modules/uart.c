@@ -4,7 +4,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include <string.h>
 #include "rom.h"
 

@@ -2,7 +2,7 @@
 #define _OVERRIDE_STDLIB_H_
 
 #include_next "stdlib.h"
-
+#include <stdbool.h>
 #include "mem.h"
 
 #define free          os_free

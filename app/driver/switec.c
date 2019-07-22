@@ -14,7 +14,8 @@
  */
 
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "driver/switec.h"

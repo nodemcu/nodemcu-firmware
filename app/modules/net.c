@@ -7,9 +7,9 @@
 
 #include <string.h>
 #include <strings.h>
-#include <stdlib.h>
+#include <stddef.h>
 
-#include "c_types.h"
+#include <stdint.h>
 #include "mem.h"
 #include "osapi.h"
 #include "lwip/err.h"

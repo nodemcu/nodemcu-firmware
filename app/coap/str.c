@@ -7,7 +7,7 @@
  */
 
 #include <stdlib.h>
-#include "c_types.h"
+#include <stddef.h>
 
 #include "str.h"
 

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <alloca.h>
 
-#include "c_types.h"
+#include <stdint.h>
 #include "lwip/ip_addr.h"
 #include "nodemcu_mdns.h"
 #include "user_interface.h"

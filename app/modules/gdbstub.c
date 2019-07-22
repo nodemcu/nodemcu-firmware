@@ -17,7 +17,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "user_interface.h"
 #include "../esp-gdbstub/gdbstub.h"
 

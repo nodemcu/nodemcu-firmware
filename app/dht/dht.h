@@ -17,7 +17,7 @@
 // #else
 // #include <Arduino.h>
 // #endif
-#include "c_types.h"
+#include <stdint.h>
 
 #define DHT_LIB_VERSION "0.1.14"
 

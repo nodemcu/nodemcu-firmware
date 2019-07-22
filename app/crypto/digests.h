@@ -1,12 +1,13 @@
 #ifndef _CRYPTO_DIGESTS_H_
 #define _CRYPTO_DIGESTS_H_
 
-#include <c_types.h>
+#include <stdint.h>
+#include <stddef.h>
 
 typedef void (*create_ctx_fn)(void *ctx);
 typedef void (*update_ctx_fn)(void *ctx, const uint8_t *msg, int len);
 typedef void (*finalize_ctx_fn)(uint8_t *digest, void *ctx);
-typedef sint32_t ( *read_fn )(int fd, void *ptr, size_t len);
+typedef int32_t ( *read_fn )(int fd, void *ptr, size_t len);
 
 /**
  * Description of a message digest mechanism.

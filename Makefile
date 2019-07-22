@@ -33,7 +33,9 @@ SDK_DIR          := $(TOP_DIR)/$(SDK_REL_DIR)
 ESPTOOL_VER := 2.6
 
 # Ensure that the Espresif SDK is searched before the tool-chain's SDK (if any)
-CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(TOP_DIR)/app/include/lwip/app -I$(SDK_DIR)/include
+# Also, prevent the SDK's c_types.h from being included from anywhere, by
+# predefining its include-guard.
+CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(TOP_DIR)/app/include/lwip/app -I$(SDK_DIR)/include -D_C_TYPES_H_
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
 ifdef DEBUG

@@ -1,6 +1,10 @@
 #ifndef SDK_OVERRIDES_INCLUDE_ETS_SYS_H_
 #define SDK_OVERRIDES_INCLUDE_ETS_SYS_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
 #include_next "ets_sys.h"
 
 #include <stdarg.h>
