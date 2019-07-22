@@ -81,10 +81,8 @@ COMPONENTS_eagle.app.v6 = 		\
 	uzlib/libuzlib.a 			\
 	$(OPT_SEL_COMPONENTS)
 # Ensure that the Espresif SDK is searched before the tool-chain's SDK (if any)
-CCFLAGS := $(CCFLAGS)	-I $(PDIR)../sdk-overrides/include \
-						-I $(PDIR)include/lwip/app	 
-EXTRA_CCFLAGS := $(EXTRA_CCFLAGS) -I $(PDIR) -I $(PDIR)libc -I $(PDIR)lua -I $(PDIR)platform
- 
+CCFLAGS := -I $(PDIR) -I $(PDIR)libc -I $(PDIR)lua -I $(PDIR)platform
+
 # Inspect the modules library and work out which modules need to be linked.
 # For each enabled module, a symbol name of the form XYZ_module_selected is
 # returned. At link time those names are declared undefined, so those (and
