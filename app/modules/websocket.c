@@ -17,7 +17,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#include "websocketclient.h"
+#include "websocket/websocketclient.h"
 
 #define METATABLE_WSCLIENT "websocket.client"
 

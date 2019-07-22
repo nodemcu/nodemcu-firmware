@@ -25,6 +25,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   for a subtree within the makefile rooted therein
 #
 #DEFINES +=
+CONFIGURATION_DEFINES += -DMBEDTLS_USER_CONFIG_FILE=\"user_mbedtls.h\"
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -38,25 +39,8 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../libc
-INCLUDES += -I ../coap
-INCLUDES += -I ../mqtt
-INCLUDES += -I ../u8g2lib/u8g2/src/clib
-INCLUDES += -I ../ucglib/ucg/src/clib
-INCLUDES += -I ../lua
-INCLUDES += -I ../pcm
-INCLUDES += -I ../platform
-INCLUDES += -I ../spiffs
-INCLUDES += -I ../smart
-INCLUDES += -I ../dht
-INCLUDES += -I ../fatfs
-INCLUDES += -I ../http
-INCLUDES += -I ../sjson
-INCLUDES += -I ../websocket
-INCLUDES += -I ../pm
-INCLUDES += -I ../sqlite3
+INCLUDES +=  -I ../u8g2lib/u8g2/src/clib -I ../ucglib/ucg/src/clib
+
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

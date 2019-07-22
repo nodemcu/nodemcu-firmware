@@ -40,11 +40,7 @@ DEFINES += -DU8X8_USE_PINS -DU8G2_USE_LARGE_FONTS -DU8X8_WITH_USER_PTR
 
 CSRCS := $(wildcard u8g2/src/clib/*.c *.c)
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I u8g2/src/clib
-INCLUDES += -I ../libc
-INCLUDES += -I ../lua
-INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

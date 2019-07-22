@@ -38,9 +38,6 @@ STD_CFLAGS=  -std=gnu11 -Wimplicit -Wno-undef -include config_ext.h
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../libc
-INCLUDES += -I ../platform
+INCLUDES += -I .
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

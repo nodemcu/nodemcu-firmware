@@ -29,14 +29,16 @@ else
 endif
 SDK_REL_DIR      := sdk/esp_iot_sdk_v$(SDK_VER)
 SDK_DIR          := $(TOP_DIR)/$(SDK_REL_DIR)
+APP_DIR          := $(TOP_DIR)/app 
 
 ESPTOOL_VER := 2.6
 
-# Ensure that the Espresif SDK is searched before the tool-chain's SDK (if any)
-# Also, prevent the SDK's c_types.h from being included from anywhere, by
-# predefining its include-guard.
-CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(TOP_DIR)/app/include/lwip/app -I$(SDK_DIR)/include -D_C_TYPES_H_
-LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
+# Ensure that the Espresif SDK is search before application paths and also prevent
+# the SDK's c_types.h from being included from anywhere, by predefining its include-guard.
+
+CCFLAGS :=  $(CCFLAGS) -I $(SDK_DIR)/include -D_C_TYPES_H_
+
+LDFLAGS := -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
 ifdef DEBUG
   CCFLAGS += -ggdb -O0
@@ -370,7 +372,7 @@ flash1m-dout:
 
 flashinternal:
 ifndef PDIR
-	$(MAKE) -C ./app flashinternal
+	$(MAKE) -C $(APP_DIR) flashinternal
 else
 	$(ESPTOOL) --port $(ESPPORT) --baud $(BAUDRATE) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
@@ -399,16 +401,16 @@ spiffs-image: bin/0x10000.bin
 .PHONY: pre_build
 
 ifneq ($(wildcard $(TOP_DIR)/server-ca.crt),)
-pre_build: $(TOP_DIR)/app/modules/server-ca.crt.h
+pre_build: $(APP_DIR)/modules/server-ca.crt.h
 
-$(TOP_DIR)/app/modules/server-ca.crt.h: $(TOP_DIR)/server-ca.crt
+$(APP_DIR)/modules/server-ca.crt.h: $(TOP_DIR)/server-ca.crt
 	$(summary) MKCERT $(patsubst $(TOP_DIR)/%,%,$<)
-	python $(TOP_DIR)/tools/make_server_cert.py $(TOP_DIR)/server-ca.crt > $(TOP_DIR)/app/modules/server-ca.crt.h
+	python $(TOP_DIR)/tools/make_server_cert.py $(TOP_DIR)/server-ca.crt > $(APP_DIR)/modules/server-ca.crt.h
 
 DEFINES += -DHAVE_SSL_SERVER_CRT=\"server-ca.crt.h\"
 else
 pre_build:
-	@-rm -f $(TOP_DIR)/app/modules/server-ca.crt.h
+	@-rm -f $(APP_DIR)/modules/server-ca.crt.h
 endif
 
 ifdef TARGET
@@ -484,6 +486,5 @@ endif # TARGET
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

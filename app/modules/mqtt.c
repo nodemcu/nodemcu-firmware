@@ -12,8 +12,8 @@
 #include "lwip/ip_addr.h"
 #include "espconn.h"
 
-#include "mqtt_msg.h"
-#include "msg_queue.h"
+#include "mqtt/mqtt_msg.h"
+#include "mqtt/msg_queue.h"
 
 #include "user_interface.h"
 

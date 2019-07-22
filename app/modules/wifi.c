@@ -16,8 +16,8 @@
 
 
 #ifdef WIFI_SMART_ENABLE
-#include "smart.h"
-#include "smartconfig.h"
+#include "smart/smart.h"
+#include "smart/smartconfig.h"
 
 static int wifi_smart_succeed = LUA_NOREF;
 #endif
