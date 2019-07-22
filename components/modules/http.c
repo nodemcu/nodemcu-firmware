@@ -778,32 +778,30 @@ static int http_lapi_post(lua_State *L)
   return make_oneshot_request(L, 4); // 4 = callback idx
 }
 
-static const LUA_REG_TYPE http_map[] = {
-  { LSTRKEY("createConnection"), LFUNCVAL(http_lapi_createConnection) },
-  { LSTRKEY("GET"), LNUMVAL(HTTP_METHOD_GET) },
-  { LSTRKEY("POST"), LNUMVAL(HTTP_METHOD_POST) },
-  { LSTRKEY("DELETE"), LNUMVAL(HTTP_METHOD_DELETE) },
-  { LSTRKEY("HEAD"), LNUMVAL(HTTP_METHOD_HEAD) },
-  { LSTRKEY("DELAYACK"), LNUMVAL(DELAY_ACK) },
-  { LSTRKEY("ACKNOW"), LNUMVAL(0) }, // Doesn't really matter what this is
-  { LSTRKEY("get"), LFUNCVAL(http_lapi_get) },
-  { LSTRKEY("post"), LFUNCVAL(http_lapi_post) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(http)
+  LROT_FUNCENTRY(createConnection, http_lapi_createConnection)
+  LROT_NUMENTRY (GET,              HTTP_METHOD_GET)
+  LROT_NUMENTRY (POST,             HTTP_METHOD_POST)
+  LROT_NUMENTRY (DELETE,           HTTP_METHOD_DELETE)
+  LROT_NUMENTRY (HEAD,             HTTP_METHOD_HEAD)
+  LROT_NUMENTRY (DELAYACK,         DELAY_ACK)
+  LROT_NUMENTRY (ACKNOW,           0) // Doesn't really matter what this is
+  LROT_FUNCENTRY(get,              http_lapi_get)
+  LROT_FUNCENTRY(post,             http_lapi_post)
+LROT_END(http, NULL, 0)
 
-static const LUA_REG_TYPE http_context_map[] = {
-  { LSTRKEY("on"), LFUNCVAL(http_lapi_on) },
-  { LSTRKEY("request"), LFUNCVAL(http_lapi_request) },
-  { LSTRKEY("setmethod"), LFUNCVAL(http_lapi_setmethod) },
-  { LSTRKEY("setheader"), LFUNCVAL(http_lapi_setheader) },
-  { LSTRKEY("seturl"), LFUNCVAL(http_lapi_seturl) },
-  { LSTRKEY("setpostdata"), LFUNCVAL(http_lapi_setpostdata) },
-  { LSTRKEY("close"), LFUNCVAL(context_close) },
-  { LSTRKEY("ack"), LFUNCVAL(http_lapi_ack) },
-  { LSTRKEY("__gc"), LFUNCVAL(context_gc) },
-  { LSTRKEY("__index"), LROVAL(http_context_map) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(http_context)
+  LROT_FUNCENTRY(on,          http_lapi_on)
+  LROT_FUNCENTRY(request,     http_lapi_request)
+  LROT_FUNCENTRY(setmethod,   http_lapi_setmethod)
+  LROT_FUNCENTRY(setheader,   http_lapi_setheader)
+  LROT_FUNCENTRY(seturl,      http_lapi_seturl)
+  LROT_FUNCENTRY(setpostdata, http_lapi_setpostdata)
+  LROT_FUNCENTRY(close,       context_close)
+  LROT_FUNCENTRY(ack,         http_lapi_ack)
+  LROT_FUNCENTRY(__gc,        context_gc)
+  LROT_TABENTRY (__index,     http_context)
+LROT_END(http_context, NULL, 0)
 
 static int luaopen_http(lua_State *L)
 {
@@ -813,4 +811,4 @@ static int luaopen_http(lua_State *L)
   return 0;
 }
 
-NODEMCU_MODULE(HTTP, "http", http_map, luaopen_http);
+NODEMCU_MODULE(HTTP, "http", http, luaopen_http);

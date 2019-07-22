@@ -4,35 +4,38 @@
 #define lrotable_h
 
 #include "lua.h"
-#include "llimits.h"
-#include "lobject.h"
 #include "luaconf.h"
+#include "lobject.h"
+#include "llimits.h"
 
 /* Macros one can use to define rotable entries */
-#ifndef LUA_PACK_VALUE
 #define LRO_FUNCVAL(v)  {{.p = v}, LUA_TLIGHTFUNCTION}
 #define LRO_LUDATA(v)   {{.p = v}, LUA_TLIGHTUSERDATA}
 #define LRO_NUMVAL(v)   {{.n = v}, LUA_TNUMBER}
 #define LRO_ROVAL(v)    {{.p = (void*)v}, LUA_TROTABLE}
 #define LRO_NILVAL      {{.p = NULL}, LUA_TNIL}
-#else // #ifndef LUA_PACK_VALUE
-#define LRO_NUMVAL(v)   {.value.n = v}
-#ifdef ELUA_ENDIAN_LITTLE
-#define LRO_FUNCVAL(v)  {{(int)v, add_sig(LUA_TLIGHTFUNCTION)}}
-#define LRO_LUDATA(v)   {{(int)v, add_sig(LUA_TLIGHTUSERDATA)}}
-#define LRO_ROVAL(v)    {{(int)v, add_sig(LUA_TROTABLE)}}
-#define LRO_NILVAL      {{0, add_sig(LUA_TNIL)}}
-#else // #ifdef ELUA_ENDIAN_LITTLE
-#define LRO_FUNCVAL(v)  {{add_sig(LUA_TLIGHTFUNCTION), (int)v}}
-#define LRO_LUDATA(v)   {{add_sig(LUA_TLIGHTUSERDATA), (int)v}}
-#define LRO_ROVAL(v)    {{add_sig(LUA_TROTABLE), (int)v}}
-#define LRO_NILVAL      {{add_sig(LUA_TNIL), 0}}
-#endif // #ifdef ELUA_ENDIAN_LITTLE
-#endif // #ifndef LUA_PACK_VALUE
 
-#define LRO_STRKEY(k)   {LUA_TSTRING, {.strkey = k}}
-#define LRO_NUMKEY(k)   {LUA_TNUMBER, {.numkey = k}}
-#define LRO_NILKEY      {LUA_TNIL, {.strkey=NULL}}
+#ifdef LUA_CROSS_COMPILER
+#define LRO_STRKEY(k)   k
+#else
+#define LRO_STRKEY(k)   ((__attribute__((aligned(4))) char *) k)
+#endif
+
+#define LROT_TABLE(t)        static const LUA_REG_TYPE t ## _map[];
+#define LROT_PUBLIC_TABLE(t) const LUA_REG_TYPE t ## _map[];
+#define LROT_TABLEREF(t)     ((void *) t ## _map)
+#define LROT_BEGIN(t)        static const LUA_REG_TYPE t ## _map [] = {
+#define LROT_PUBLIC_BEGIN(t) const LUA_REG_TYPE t ## _map[] = {
+#define LROT_EXTERN(t)       extern const LUA_REG_TYPE t ## _map[]
+#define LROT_TABENTRY(n,t)   {LRO_STRKEY(#n), LRO_ROVAL(t ## _map)},
+#define LROT_FUNCENTRY(n,f)  {LRO_STRKEY(#n), LRO_FUNCVAL(f)},
+#define LROT_NUMENTRY(n,x)   {LRO_STRKEY(#n), LRO_NUMVAL(x)},
+#define LROT_LUDENTRY(n,x)   {LRO_STRKEY(#n), LRO_LUDATA((void *) x)},
+#define LROT_END(t,mt, f)    {NULL, LRO_NILVAL} };
+#define LROT_BREAK(t)         };
+
+#define LUA_REG_TYPE              luaR_entry
+#define LREGISTER(L, name, table) return 0
 
 /* Maximum length of a rotable name and of a string key*/
 #define LUA_MAX_ROTABLE_NAME      32
@@ -40,41 +43,57 @@
 /* Type of a numeric key in a rotable */
 typedef int luaR_numkey;
 
-/* The next structure defines the type of a key */
-typedef struct
-{
-  int type;
-  union
-  {
-    const char*   strkey;
-    luaR_numkey   numkey;
-  } id;
-} luaR_key;
-
 /* An entry in the read only table */
-typedef struct
-{
-  const luaR_key key;
+typedef struct luaR_entry {
+  const char *key;
   const TValue value;
 } luaR_entry;
 
-/* A rotable */
-typedef struct
-{
-  const char *name;
-  const luaR_entry *pentries;
-} luaR_table;
+/*
+ * The current ROTable implmentation is a vector of luaR_entry terminated by a
+ * nil record.  The convention is to use ROtable * to refer to the entire vector
+ * as a logical ROTable.
+ */
+typedef const struct luaR_entry ROTable;
 
-void* luaR_findglobal(const char *key, unsigned len);
-int luaR_findfunction(lua_State *L, const luaR_entry *ptable);
-const TValue* luaR_findentry(void *data, const char *strkey, luaR_numkey numkey, unsigned *ppos);
-void luaR_getcstr(char *dest, const TString *src, size_t maxsize);
-void luaR_next(lua_State *L, void *data, TValue *key, TValue *val);
-void* luaR_getmeta(void *data);
-#ifdef LUA_META_ROTABLES
+const TValue* luaR_findentry(ROTable *tab, TString *key, unsigned *ppos);
+const TValue* luaR_findentryN(ROTable *tab, luaR_numkey numkey, unsigned *ppos);
+void luaR_next(lua_State *L, ROTable *tab, TValue *key, TValue *val);
+void* luaR_getmeta(ROTable *tab);
 int luaR_isrotable(void *p);
+
+/*
+ * Set inRO check depending on platform. Note that this implementation needs
+ * to work on both the host (luac.cross) and ESP targets.  The luac.cross
+ * VM is used for the -e option, and is primarily used to be able to debug
+ * VM changes on the more developer-friendly hot gdb environment.
+ */
+#if defined(LUA_CROSS_COMPILER)
+
+#if defined(_MSC_VER)
+//msvc build uses these dummy vars to locate the beginning and ending addresses of the RO data
+extern const char _ro_start[], _ro_end[];
+#define IN_RODATA_AREA(p) (((const char*)(p)) >= _ro_start && ((const char *)(p)) <= _ro_end)
+#else /* one of the POSIX variants */
+#if defined(__CYGWIN__)
+#define _RODATA_END __end__
+#elif defined(__MINGW32__)
+#define _RODATA_END end
 #else
-#define luaR_isrotable(p)     (0)
+#define _RODATA_END _edata
 #endif
+extern const char _RODATA_END[];
+#define IN_RODATA_AREA(p) (((const char *)(p)) < _RODATA_END)
+#endif /* defined(_MSC_VER) */
+
+#else  /* xtensa tool chain for ESP32 target */
+
+#include "compiler.h"
+#define IN_RODATA_AREA(p)  (((const char *)p) >= RODATA_START_ADDRESS && ((const char *)p) <= RODATA_END_ADDRESS)
+
+#endif /* defined(LUA_CROSS_COMPILER) */
+
+/* Return 1 if the given pointer is a rotable */
+#define luaR_isrotable(p) IN_RODATA_AREA(p)
 
 #endif

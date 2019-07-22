@@ -170,11 +170,9 @@ static int wifi_ap_setip(lua_State *L)
   str = luaL_optlstring(L, -1, "", &len);
   if(ipaddr_aton(str, &dns))
   {
-
     opt = 1;
     dhcps_dns_setserver(&dns);
     tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, DOMAIN_NAME_SERVER, &opt, sizeof(opt));
-
   }
 
   ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
@@ -237,7 +235,7 @@ static int wifi_ap_config (lua_State *L)
 
   lua_getfield (L, 1, "beacon");
   cfg.ap.beacon_interval = luaL_optint (L, -1, DEFAULT_AP_BEACON);
-  
+
   SET_SAVE_MODE(save);
   esp_err_t err = esp_wifi_set_config (WIFI_IF_AP, &cfg);
   return (err == ESP_OK) ?
@@ -255,13 +253,10 @@ static int wifi_ap_on (lua_State *L)
 }
 
 
-const LUA_REG_TYPE wifi_ap_map[] =
-{
-  { LSTRKEY( "setip" ),      		  LFUNCVAL( wifi_ap_setip )         },
-  { LSTRKEY( "sethostname" ), 		  LFUNCVAL( wifi_ap_sethostname )   },
-  { LSTRKEY( "config" ),              LFUNCVAL( wifi_ap_config )        },
-  { LSTRKEY( "on" ),                  LFUNCVAL( wifi_ap_on )            },
-  { LSTRKEY( "getmac" ),              LFUNCVAL( wifi_ap_getmac )        },
-
-  { LNILKEY, LNILVAL }
-};
+LROT_PUBLIC_BEGIN(wifi_ap)
+  LROT_FUNCENTRY( setip,               wifi_ap_setip )
+  LROT_FUNCENTRY( sethostname,         wifi_ap_sethostname )
+  LROT_FUNCENTRY( config,              wifi_ap_config )
+  LROT_FUNCENTRY( on,                  wifi_ap_on )
+  LROT_FUNCENTRY( getmac,              wifi_ap_getmac )
+LROT_END(wifi_ap, NULL, 0)

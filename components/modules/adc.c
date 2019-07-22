@@ -60,18 +60,16 @@ static int read_hall_sensor( lua_State *L )
 }
 
 // Module function map
-static const LUA_REG_TYPE adc_map[] =
-{
-  { LSTRKEY( "setwidth" ),       LFUNCVAL( adc_set_width ) },
-  { LSTRKEY( "setup" ),       LFUNCVAL( adc_setup ) },
-  { LSTRKEY( "read" ),        LFUNCVAL( adc_read ) },
-  { LSTRKEY( "read_hall_sensor" ),        LFUNCVAL( read_hall_sensor ) },
-  { LSTRKEY( "ATTEN_0db" ),   LNUMVAL( PLATFORM_ADC_ATTEN_0db ) },
-  { LSTRKEY( "ATTEN_2_5db" ), LNUMVAL( PLATFORM_ADC_ATTEN_2_5db ) },
-  { LSTRKEY( "ATTEN_6db" ),   LNUMVAL( PLATFORM_ADC_ATTEN_6db ) },
-  { LSTRKEY( "ATTEN_11db" ),  LNUMVAL( PLATFORM_ADC_ATTEN_11db ) },
-  { LSTRKEY( "ADC1" ),  LNUMVAL( 1 ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(adc)
+  LROT_FUNCENTRY( setwidth,         adc_set_width )
+  LROT_FUNCENTRY( setup,            adc_setup )
+  LROT_FUNCENTRY( read,             adc_read )
+  LROT_FUNCENTRY( read_hall_sensor, read_hall_sensor )
+  LROT_NUMENTRY ( ATTEN_0db,        PLATFORM_ADC_ATTEN_0db )
+  LROT_NUMENTRY ( ATTEN_2_5db,      PLATFORM_ADC_ATTEN_2_5db )
+  LROT_NUMENTRY ( ATTEN_6db,        PLATFORM_ADC_ATTEN_6db )
+  LROT_NUMENTRY ( ATTEN_11db,       PLATFORM_ADC_ATTEN_11db )
+  LROT_NUMENTRY ( ADC1,             1 )
+LROT_END(adc, NULL, 0)
 
-NODEMCU_MODULE(ADC, "adc", adc_map, NULL);
+NODEMCU_MODULE(ADC, "adc", adc, NULL);

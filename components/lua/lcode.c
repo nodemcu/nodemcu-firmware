@@ -10,7 +10,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDLIB
+#include <stdlib.h>
 
 #include "lcode.h"
 #include "ldebug.h"

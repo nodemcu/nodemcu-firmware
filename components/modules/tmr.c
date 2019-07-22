@@ -235,26 +235,24 @@ static int tmr_create( lua_State *L ) {
 
 // Module function map
 
-static const LUA_REG_TYPE tmr_dyn_map[] = {
-  { LSTRKEY( "register" ),    LFUNCVAL( tmr_register ) },
-  { LSTRKEY( "alarm" ),       LFUNCVAL( tmr_alarm ) },
-  { LSTRKEY( "start" ),       LFUNCVAL( tmr_start ) },
-  { LSTRKEY( "stop" ),        LFUNCVAL( tmr_stop ) },
-  { LSTRKEY( "unregister" ),  LFUNCVAL( tmr_unregister ) },
-  { LSTRKEY( "interval" ),    LFUNCVAL( tmr_interval) },
-  { LSTRKEY( "state" ),       LFUNCVAL( tmr_state ) },
-  { LSTRKEY( "__gc" ),        LFUNCVAL( tmr_unregister ) },
-  { LSTRKEY( "__index" ),     LROVAL( tmr_dyn_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(tmr_dyn)
+  LROT_FUNCENTRY( register,    tmr_register )
+  LROT_FUNCENTRY( alarm,       tmr_alarm )
+  LROT_FUNCENTRY( start,       tmr_start )
+  LROT_FUNCENTRY( stop,        tmr_stop )
+  LROT_FUNCENTRY( unregister,  tmr_unregister )
+  LROT_FUNCENTRY( interval,    tmr_interval)
+  LROT_FUNCENTRY( state,       tmr_state )
+  LROT_FUNCENTRY( __gc,        tmr_unregister )
+  LROT_TABENTRY ( __index,     tmr_dyn )
+LROT_END(tmr_dyn, NULL, 0)
 
-static const LUA_REG_TYPE tmr_map[] = {
-  { LSTRKEY( "create" ),       LFUNCVAL( tmr_create ) },
-  { LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
-  { LSTRKEY( "ALARM_SEMI" ),   LNUMVAL( TIMER_MODE_SEMI ) },
-  { LSTRKEY( "ALARM_AUTO" ),   LNUMVAL( TIMER_MODE_AUTO ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(tmr)
+  LROT_FUNCENTRY( create,       tmr_create )
+  LROT_NUMENTRY ( ALARM_SINGLE, TIMER_MODE_SINGLE )
+  LROT_NUMENTRY ( ALARM_SEMI,   TIMER_MODE_SEMI )
+  LROT_NUMENTRY ( ALARM_AUTO,   TIMER_MODE_AUTO )
+LROT_END(tmr, NULL, 0)
 
 static int luaopen_tmr( lua_State *L ){
   luaL_rometatable(L, "tmr.timer", (void *)tmr_dyn_map);
@@ -264,4 +262,4 @@ static int luaopen_tmr( lua_State *L ){
   return 0;
 }
 
-NODEMCU_MODULE(TMR, "tmr", tmr_map, luaopen_tmr);
+NODEMCU_MODULE(TMR, "tmr", tmr, luaopen_tmr);

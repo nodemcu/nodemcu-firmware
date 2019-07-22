@@ -56,16 +56,15 @@ static int getPixel(lua_State *L)
   return 1;
 }
 
-static const LUA_REG_TYPE qrcodegen_map[] = {
-  { LSTRKEY("encodeText"), LFUNCVAL(encodeText) },
-  { LSTRKEY("getSize"), LFUNCVAL(getSize) },
-  { LSTRKEY("getPixel"), LFUNCVAL(getPixel) },
-  { LSTRKEY("LOW"), LNUMVAL(qrcodegen_Ecc_LOW) },
-  { LSTRKEY("MEDIUM"), LNUMVAL(qrcodegen_Ecc_MEDIUM) },
-  { LSTRKEY("QUARTILE"), LNUMVAL(qrcodegen_Ecc_QUARTILE) },
-  { LSTRKEY("HIGH"), LNUMVAL(qrcodegen_Ecc_HIGH) },
-  { LSTRKEY("AUTO"), LNUMVAL(qrcodegen_Mask_AUTO) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(qrcodegen)
+  LROT_FUNCENTRY(encodeText, encodeText)
+  LROT_FUNCENTRY(getSize,    getSize)
+  LROT_FUNCENTRY(getPixel,   getPixel)
+  LROT_NUMENTRY(LOW,         qrcodegen_Ecc_LOW)
+  LROT_NUMENTRY(MEDIUM,      qrcodegen_Ecc_MEDIUM)
+  LROT_NUMENTRY(QUARTILE,    qrcodegen_Ecc_QUARTILE)
+  LROT_NUMENTRY(HIGH,        qrcodegen_Ecc_HIGH)
+  LROT_NUMENTRY(AUTO,        qrcodegen_Mask_AUTO)
+LROT_END(qrcodegen, NULL, 0)
 
-NODEMCU_MODULE(QRCODEGEN, "qrcodegen", qrcodegen_map, NULL);
+NODEMCU_MODULE(QRCODEGEN, "qrcodegen", qrcodegen, NULL);

@@ -7,18 +7,17 @@
 #include "driver/spi_common.h"
 
 
-static const LUA_REG_TYPE lspi_map[] = {
-  { LSTRKEY( "master" ), LFUNCVAL( lspi_master ) },
-//  { LSTRKEY( "slave" ),  LFUNCVAL( lspi_slave ) },
-  { LSTRKEY( "SPI" ),    LNUMVAL( SPI_HOST ) },
-  { LSTRKEY( "HSPI" ),   LNUMVAL( HSPI_HOST ) },
-  { LSTRKEY( "VSPI" ),   LNUMVAL( VSPI_HOST ) },
-  {LNILKEY, LNILVAL}
-};
+LROT_BEGIN(lspi)
+  LROT_FUNCENTRY( master, lspi_master )
+//  LROT_FUNCENTRY( slave,  lspi_slave )
+  LROT_NUMENTRY( SPI,    SPI_HOST )
+  LROT_NUMENTRY( HSPI,   HSPI_HOST )
+  LROT_NUMENTRY( VSPI,   VSPI_HOST )
+LROT_END(lspi, NULL, 0)
 
 int luaopen_spi( lua_State *L ) {
   luaopen_spi_master( L );
   return 0;
 }
 
-NODEMCU_MODULE(SPI, "spi", lspi_map, luaopen_spi);
+NODEMCU_MODULE(SPI, "spi", lspi, luaopen_spi);

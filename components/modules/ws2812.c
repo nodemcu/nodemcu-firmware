@@ -497,35 +497,31 @@ static int ws2812_buffer_tostring(lua_State* L) {
   return 1;
 }
 
-static const LUA_REG_TYPE ws2812_buffer_map[] =
-{
-  { LSTRKEY( "dump" ),    LFUNCVAL( ws2812_buffer_dump )},
-  { LSTRKEY( "fade" ),    LFUNCVAL( ws2812_buffer_fade )},
-  { LSTRKEY( "fill" ),    LFUNCVAL( ws2812_buffer_fill )},
-  { LSTRKEY( "get" ),     LFUNCVAL( ws2812_buffer_get )},
-  { LSTRKEY( "replace" ), LFUNCVAL( ws2812_buffer_replace )},
-  { LSTRKEY( "mix" ),     LFUNCVAL( ws2812_buffer_mix )},
-  { LSTRKEY( "power" ),   LFUNCVAL( ws2812_buffer_power )},
-  { LSTRKEY( "set" ),     LFUNCVAL( ws2812_buffer_set )},
-  { LSTRKEY( "shift" ),   LFUNCVAL( ws2812_buffer_shift )},
-  { LSTRKEY( "size" ),    LFUNCVAL( ws2812_buffer_size )},
-  { LSTRKEY( "sub" ),     LFUNCVAL( ws2812_buffer_sub )},
-  { LSTRKEY( "__concat" ),LFUNCVAL( ws2812_buffer_concat )},
-  { LSTRKEY( "__index" ), LROVAL( ws2812_buffer_map )},
-  { LSTRKEY( "__tostring" ), LFUNCVAL( ws2812_buffer_tostring )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(ws2812_buffer)
+  LROT_FUNCENTRY( dump,       ws2812_buffer_dump )
+  LROT_FUNCENTRY( fade,       ws2812_buffer_fade )
+  LROT_FUNCENTRY( fill,       ws2812_buffer_fill )
+  LROT_FUNCENTRY( get,        ws2812_buffer_get )
+  LROT_FUNCENTRY( replace,    ws2812_buffer_replace )
+  LROT_FUNCENTRY( mix,        ws2812_buffer_mix )
+  LROT_FUNCENTRY( power,      ws2812_buffer_power )
+  LROT_FUNCENTRY( set,        ws2812_buffer_set )
+  LROT_FUNCENTRY( shift,      ws2812_buffer_shift )
+  LROT_FUNCENTRY( size,       ws2812_buffer_size )
+  LROT_FUNCENTRY( sub,        ws2812_buffer_sub )
+  LROT_FUNCENTRY( __concat,   ws2812_buffer_concat )
+  LROT_TABENTRY ( __index,    ws2812_buffer )
+  LROT_FUNCENTRY( __tostring, ws2812_buffer_tostring )
+LROT_END(ws2812_buffer, NULL, 0)
 
-static const LUA_REG_TYPE ws2812_map[] =
-{
-  { LSTRKEY( "newBuffer" ),      LFUNCVAL( ws2812_new_buffer )},
-  { LSTRKEY( "write" ),          LFUNCVAL( ws2812_write )},
-  { LSTRKEY( "FADE_IN" ),        LNUMVAL( FADE_IN ) },
-  { LSTRKEY( "FADE_OUT" ),       LNUMVAL( FADE_OUT ) },
-  { LSTRKEY( "SHIFT_LOGICAL" ),  LNUMVAL( SHIFT_LOGICAL ) },
-  { LSTRKEY( "SHIFT_CIRCULAR" ), LNUMVAL( SHIFT_CIRCULAR ) },
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(ws2812)
+  LROT_FUNCENTRY( newBuffer,      ws2812_new_buffer )
+  LROT_FUNCENTRY( write,          ws2812_write )
+  LROT_NUMENTRY ( FADE_IN,        FADE_IN )
+  LROT_NUMENTRY ( FADE_OUT,       FADE_OUT )
+  LROT_NUMENTRY ( SHIFT_LOGICAL,  SHIFT_LOGICAL )
+  LROT_NUMENTRY ( SHIFT_CIRCULAR, SHIFT_CIRCULAR )
+LROT_END(ws2812, NULL, 0)
 
 int luaopen_ws2812(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
@@ -533,4 +529,4 @@ int luaopen_ws2812(lua_State *L) {
   return 0;
 }
 
-NODEMCU_MODULE(WS2812, "ws2812", ws2812_map, luaopen_ws2812);
+NODEMCU_MODULE(WS2812, "ws2812", ws2812, luaopen_ws2812);

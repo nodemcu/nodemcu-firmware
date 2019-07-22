@@ -536,46 +536,38 @@ static int lbthci_rawhci (lua_State *L)
 }
 
 
-static const LUA_REG_TYPE bthci_adv_map[] =
-{
-  { LSTRKEY( "enable" ),    LFUNCVAL( lbthci_adv_enable )   },
-  { LSTRKEY( "setdata" ),   LFUNCVAL( lbthci_adv_setdata )  },
-  { LSTRKEY( "setparams" ),  LFUNCVAL( lbthci_adv_setparams ) },
+LROT_BEGIN(bthci_adv)
+  LROT_FUNCENTRY( enable,        lbthci_adv_enable )
+  LROT_FUNCENTRY( setdata,       lbthci_adv_setdata )
+  LROT_FUNCENTRY( setparams,     lbthci_adv_setparams )
 
   // Advertising types
-  { LSTRKEY( "CONN_UNDIR"),    LNUMVAL( ADV_IND )                },
-  { LSTRKEY( "CONN_DIR_HI"),   LNUMVAL( ADV_DIRECT_IND_HI_DUTY ) },
-  { LSTRKEY( "SCAN_UNDIR"),    LNUMVAL( ADV_SCAN_IND )           },
-  { LSTRKEY( "NONCONN_UNDIR"), LNUMVAL( ADV_NONCONN_IND )        },
-  { LSTRKEY( "CONN_DIR_LO"),   LNUMVAL( ADV_DIRECT_IND_LO_DUTY ) },
+  LROT_NUMENTRY ( CONN_UNDIR,    ADV_IND )
+  LROT_NUMENTRY ( CONN_DIR_HI,   ADV_DIRECT_IND_HI_DUTY )
+  LROT_NUMENTRY ( SCAN_UNDIR,    ADV_SCAN_IND )
+  LROT_NUMENTRY ( NONCONN_UNDIR, ADV_NONCONN_IND )
+  LROT_NUMENTRY ( CONN_DIR_LO,   ADV_DIRECT_IND_LO_DUTY )
 
-  { LSTRKEY( "CHAN_37" ),      LNUMVAL( ADV_CHAN_37 )            },
-  { LSTRKEY( "CHAN_38" ),      LNUMVAL( ADV_CHAN_38 )            },
-  { LSTRKEY( "CHAN_39" ),      LNUMVAL( ADV_CHAN_39 )            },
-  { LSTRKEY( "CHAN_ALL" ),     LNUMVAL( ADV_CHAN_ALL )           },
-
-  { LNILKEY, LNILVAL }
-};
+  LROT_NUMENTRY ( CHAN_37,       ADV_CHAN_37 )
+  LROT_NUMENTRY ( CHAN_38,       ADV_CHAN_38 )
+  LROT_NUMENTRY ( CHAN_39,       ADV_CHAN_39 )
+  LROT_NUMENTRY ( CHAN_ALL,      ADV_CHAN_ALL )
+LROT_END(bthci_adv, NULL, 0)
 
 
-static const LUA_REG_TYPE bthci_scan_map[] =
-{
-  { LSTRKEY( "enable" ),       LFUNCVAL( lbthci_scan )           },
-  { LSTRKEY( "setparams"  ),   LFUNCVAL( lbthci_scan_setparams ) },
-  { LSTRKEY( "on" ),           LFUNCVAL( lbthci_scan_on )        },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(bthci_scan)
+  LROT_FUNCENTRY( enable,    lbthci_scan )
+  LROT_FUNCENTRY( setparams, lbthci_scan_setparams )
+  LROT_FUNCENTRY( on,        lbthci_scan_on )
+LROT_END(bthci_scan, NULL, 0)
 
 
-static const LUA_REG_TYPE bthci_map[] =
-{
-  { LSTRKEY( "rawhci" ),  LFUNCVAL( lbthci_rawhci )   },
-  { LSTRKEY( "reset" ),   LFUNCVAL( lbthci_reset )    },
-  { LSTRKEY( "adv" ),     LROVAL( bthci_adv_map )    },
-  { LSTRKEY( "scan" ),    LROVAL( bthci_scan_map )   },
+LROT_BEGIN(bthci)
+  LROT_FUNCENTRY( rawhci, lbthci_rawhci )
+  LROT_FUNCENTRY( reset,  lbthci_reset )
+  LROT_TABENTRY ( adv,    bthci_adv )
+  LROT_TABENTRY ( scan,   bthci_scan )
+LROT_END(bthci, NULL, 0)
 
-  { LNILKEY, LNILVAL }
-};
-
-NODEMCU_MODULE(BTHCI, "bthci", bthci_map, lbthci_init);
+NODEMCU_MODULE(BTHCI, "bthci", bthci, lbthci_init);
 #endif

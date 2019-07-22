@@ -10,6 +10,7 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include "sdkconfig.h"
 
 /*
 ** ==================================================================
@@ -30,6 +31,11 @@
 
 #if !defined(LUA_ANSI) && defined(_WIN32)
 #define LUA_WIN
+#endif
+
+
+#if defined(LUA_CROSS_COMPILER) && !defined(_MSC_VER) && !defined(__MINGW32__)
+#define LUA_USE_LINUX
 #endif
 
 #if defined(LUA_USE_LINUX)
@@ -53,7 +59,7 @@
 #if defined(LUA_USE_POSIX)
 #define LUA_USE_MKSTEMP
 #define LUA_USE_ISATTY
-#define LUA_USE_POPEN
+//#define LUA_USE_POPEN
 #define LUA_USE_ULONGJMP
 #endif
 
@@ -161,7 +167,7 @@
 #define LUA_INTEGER ptrdiff_t
 #else
   #if !defined LUA_INTEGRAL_LONGLONG
-  #define LUA_INTEGER	long
+  #define LUA_INTEGER	int
   #else
   #define LUA_INTEGER long long
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
@@ -251,11 +257,7 @@
 #define lua_stdin_is_tty()	isatty(0)
 #elif defined(LUA_WIN)
 #include <io.h>
-#ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
-else
-#include <stdio.h>
-#endif
 
 #define lua_stdin_is_tty()	_isatty(_fileno(stdin))
 #else
@@ -481,7 +483,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 /* 16-bit ints */
 #define LUAI_UINT32	unsigned long
 #define LUAI_INT32	long
-#define LUAI_MAXINT32	LONG_MAX
+#define LUAI_MAXINT32	INT_MAX
 #define LUAI_UMEM	unsigned long
 #define LUAI_MEM	long
 #endif
@@ -547,10 +549,10 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 @@ LUAL_BUFFERSIZE is the buffer size used by the lauxlib buffer system.
 ** Attention: This value should probably not be set higher than 1K.
 ** The size has direct impact on the C stack size needed be auxlib functions.
-** For example: If set to 4K a call to string.gsub will need more than 
+** For example: If set to 4K a call to string.gsub will need more than
 ** 5k C stack space.
 */
-#define LUAL_BUFFERSIZE		1024
+#define LUAL_BUFFERSIZE		256
 
 /* }================================================================== */
 
@@ -568,10 +570,10 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 
 /* Define LUA_NUMBER_INTEGRAL to produce a system that uses no
    floating point operations by changing the type of Lua numbers from
-   double to long.  It implements division and modulus so that 
+   double to long.  It implements division and modulus so that
 
-   x == (x / y) * y + x % y.  
-   
+   x == (x / y) * y + x % y.
+
    The exponentiation function returns zero for negative exponents.
    Defining LUA_NUMBER_INTEGRAL also removes the difftime function,
    and the math module should not be used.  The string.format function
@@ -601,8 +603,8 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 */
 #if defined LUA_NUMBER_INTEGRAL
   #if !defined LUA_INTEGRAL_LONGLONG
-  #define LUA_NUMBER_SCAN		"%ld"
-  #define LUA_NUMBER_FMT		"%ld"
+  #define LUA_NUMBER_SCAN		"%d"
+  #define LUA_NUMBER_FMT		"%d"
   #else
   #define LUA_NUMBER_SCAN   "%lld"
   #define LUA_NUMBER_FMT    "%lld"
@@ -745,18 +747,18 @@ union luai_Cast { double l_d; long l_l; };
 	{ if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf	int  /* dummy variable */
 
-#elif defined(LUA_USE_ULONGJMP)
-/* in Unix, try _longjmp/_setjmp (more efficient) */
-#define LUAI_THROW(L,c)	_longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (_setjmp((c)->b) == 0) { a }
-#define luai_jmpbuf	jmp_buf
-
 #else
-/* default handling with long jumps */
-#define LUAI_THROW(L,c)	longjmp((c)->b, 1)
-#define LUAI_TRY(L,c,a)	if (setjmp((c)->b) == 0) { a }
+#if defined(LUA_USE_ULONGJMP)
+/* in Unix, try _longjmp/_setjmp (more efficient) */
+#define LONGJMP(a,b) _longjmp(a,b)
+#define SETJMP(a) _setjmp(a)
+#else
+#define LONGJMP(a,b) longjmp(a,b)
+#define SETJMP(a) setjmp(a)
+#endif
+#define LUAI_THROW(L,c)	LONGJMP((c)->b, 1)
+#define LUAI_TRY(L,c,a)	if (SETJMP((c)->b) == 0) { a }
 #define luai_jmpbuf	jmp_buf
-
 #endif
 
 
@@ -891,15 +893,8 @@ union luai_Cast { double l_d; long l_l; };
 ** without modifying the main part of the file.
 */
 
-/* If you define the next macro you'll get the ability to set rotables as
-   metatables for tables/userdata/types (but the VM might run slower)
-*/
-#if (LUA_OPTIMIZE_MEMORY == 2) && !defined(LUA_CROSS_COMPILER)
-#define LUA_META_ROTABLES 
-#endif
-
-#if LUA_OPTIMIZE_MEMORY == 2 && defined(LUA_USE_POPEN)
-#error "Pipes not supported in aggresive optimization mode (LUA_OPTIMIZE_MEMORY=2)"
+#if defined(LUA_USE_POPEN)
+#error "Pipes not supported NodeMCU firmware"
 #endif
 
 #endif

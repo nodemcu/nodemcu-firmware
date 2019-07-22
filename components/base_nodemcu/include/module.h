@@ -1,8 +1,8 @@
 #ifndef __MODULE_H__
 #define __MODULE_H__
 
-#include "lrodefs.h"
 #include "sdkconfig.h"
+#include "lrotable.h"
 
 /* Registering a module within NodeMCU is really easy these days!
  *
@@ -36,37 +36,37 @@
 #define MODULE_PASTE_(x,y) x##y
 #define MODULE_EXPAND_PASTE_(x,y) MODULE_PASTE_(x,y)
 
-#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(s)))
-
+#ifdef LUA_CROSS_COMPILER
+#ifdef _MSC_VER
+//on msvc it is necessary to go through more pre-processor hoops to get the
+//section name built; string merging does not happen in the _declspecs.
+//NOTE: linker magic is invoked via the magical '$' character. Caveat editor.
+#define __TOKIFY(s) .rodata1$##s
+#define __TOTOK(s) __TOKIFY(s)
+#define __STRINGIFY(x) #x
+#define __TOSTRING(x) __STRINGIFY(x)
+#define __ROSECNAME(s) __TOSTRING(__TOTOK(s))
+#define LOCK_IN_SECTION(s) __declspec ( allocate( __ROSECNAME(s) ) )
+#else
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".rodata1." #s)))
+#endif
+#else
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
+#endif
 /* For the ROM table, we name the variable according to ( | denotes concat):
  *   cfgname | _module_selected | CONFIG_LUA_MODULE_##cfgname
  * where the CONFIG_LUA_MODULE_XYZ macro is first expanded to yield either
  * an empty string (or 1) if the module has been enabled, or the literal
  * CONFIG_LUA_MODULE_XYZ in the case it hasn't. Thus, the name of the variable
  * ends up looking either like XYZ_module_enabled, or if not enabled,
- * XYZ_module_enabledLUA_USE_MODULES_XYZ.  This forms the basis for
+ * XYZ_module_enabledCONFIG_LUA_MODULE_XYZ.  This forms the basis for
  * letting the build system detect automatically (via nm) which modules need
  * to be linked in.
  */
 #define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
-  const LOCK_IN_SECTION(".lua_libs") \
-    luaL_Reg MODULE_PASTE_(lua_lib_,cfgname) = { luaname, initfunc }; \
-  const LOCK_IN_SECTION(".lua_rotable") \
-    luaR_table MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(CONFIG_LUA_MODULE_,cfgname))) \
-    = { luaname, map }
-
-
-/* System module registration support, not using CONFIG_LUA_MODULE_XYZ. */
-#define BUILTIN_LIB_INIT(name, luaname, initfunc) \
-  const LOCK_IN_SECTION(".lua_libs") \
-    luaL_Reg MODULE_PASTE_(lua_lib_,name) = { luaname, initfunc }
-
-#define BUILTIN_LIB(name, luaname, map) \
-  const LOCK_IN_SECTION(".lua_rotable") \
-    luaR_table MODULE_PASTE_(lua_rotable_,name) = { luaname, map }
-
-#if !defined(LUA_CROSS_COMPILER) && !(MIN_OPT_LEVEL==2 && LUA_OPTIMIZE_MEMORY==2)
-# error "NodeMCU modules must be built with LTR enabled (MIN_OPT_LEVEL=2 and LUA_OPTIMIZE_MEMORY=2)"
-#endif
-
+  const LOCK_IN_SECTION(libs) \
+    luaR_entry MODULE_PASTE_(lua_lib_,cfgname) = { luaname, LRO_FUNCVAL(initfunc) }; \
+  const LOCK_IN_SECTION(rotable) \
+    luaR_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(CONFIG_LUA_MODULE_,cfgname))) \
+    = {luaname, LRO_ROVAL(map ## _map)}
 #endif

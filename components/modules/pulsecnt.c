@@ -678,47 +678,42 @@ static int pulsecnt_unregister(lua_State* L){
   return 0;
 }
 
-static const LUA_REG_TYPE pulsecnt_dyn_map[] =
-{
-  { LSTRKEY( "getCnt" ),    LFUNCVAL( pulsecnt_getCnt )},
-  { LSTRKEY( "clear" ),    LFUNCVAL( pulsecnt_clear )},
-  { LSTRKEY( "testCb" ),    LFUNCVAL( pulsecnt_testCb )},
-  { LSTRKEY( "chan0Config" ),    LFUNCVAL( pulsecnt_channel0_config )},
-  { LSTRKEY( "chan1Config" ),    LFUNCVAL( pulsecnt_channel1_config )},
-  { LSTRKEY( "config" ),    LFUNCVAL( pulsecnt_config )},
-  
-  { LSTRKEY( "setThres" ),    LFUNCVAL( pulsecnt_set_thres )},
-  { LSTRKEY( "setFilter" ),    LFUNCVAL( pulsecnt_set_filter )},
-  { LSTRKEY( "rawSetEventVal" ),    LFUNCVAL( pulsecnt_set_event_value )},
-  { LSTRKEY( "rawGetEventVal" ),    LFUNCVAL( pulsecnt_get_event_value )},
-  
-  // { LSTRKEY( "__tostring" ), LFUNCVAL( pulsecnt_tostring )},
-  { LSTRKEY( "__gc" ),        LFUNCVAL( pulsecnt_unregister ) },
-  { LSTRKEY( "__index" ),     LROVAL( pulsecnt_dyn_map ) },
+LROT_BEGIN(pulsecnt_dyn)
+  LROT_FUNCENTRY( getCnt,         pulsecnt_getCnt )
+  LROT_FUNCENTRY( clear,          pulsecnt_clear )
+  LROT_FUNCENTRY( testCb,         pulsecnt_testCb )
+  LROT_FUNCENTRY( chan0Config,    pulsecnt_channel0_config )
+  LROT_FUNCENTRY( chan1Config,    pulsecnt_channel1_config )
+  LROT_FUNCENTRY( config,         pulsecnt_config )
 
-  { LNILKEY, LNILVAL}
-};
+  LROT_FUNCENTRY( setThres,       pulsecnt_set_thres )
+  LROT_FUNCENTRY( setFilter,      pulsecnt_set_filter )
+  LROT_FUNCENTRY( rawSetEventVal, pulsecnt_set_event_value )
+  LROT_FUNCENTRY( rawGetEventVal, pulsecnt_get_event_value )
 
-static const LUA_REG_TYPE pulsecnt_map[] =
-{
-  { LSTRKEY( "create" ),              LFUNCVAL( pulsecnt_create )},
-  { LSTRKEY( "PCNT_MODE_KEEP" ),      LNUMVAL( 0 ) }, /*pcnt_ctrl_mode_t.PCNT_MODE_KEEP*/
-  { LSTRKEY( "PCNT_MODE_REVERSE" ),  LNUMVAL( 1 ) }, /*pcnt_ctrl_mode_t.PCNT_MODE_REVERSE*/
-  { LSTRKEY( "PCNT_MODE_DISABLE" ),  LNUMVAL( 2 ) }, /*pcnt_ctrl_mode_t.PCNT_MODE_DISABLE*/
-  { LSTRKEY( "PCNT_COUNT_DIS" ),     LNUMVAL( 0 ) }, /*pcnt_count_mode_t.PCNT_COUNT_DIS*/
-  { LSTRKEY( "PCNT_COUNT_INC" ),     LNUMVAL( 1 ) }, /*pcnt_count_mode_t.PCNT_COUNT_INC*/
-  { LSTRKEY( "PCNT_COUNT_DEC" ),     LNUMVAL( 2 ) }, /*pcnt_count_mode_t.PCNT_COUNT_DEC*/
-  // { LSTRKEY( "PCNT_COUNT_MAX " ), LNUMVAL( pcnt_count_mode_t.PCNT_COUNT_MAX  ) },
-  { LSTRKEY( "PCNT_H_LIM_VAL" ),     LNUMVAL( 32767  ) },
-  { LSTRKEY( "PCNT_L_LIM_VAL" ),     LNUMVAL( -32768  ) },
-  { LSTRKEY( "PCNT_EVT_L_LIM" ),     LNUMVAL( 0  ) },
-  { LSTRKEY( "PCNT_EVT_H_LIM" ),     LNUMVAL( 1  ) },
-  { LSTRKEY( "PCNT_EVT_THRES_0" ),     LNUMVAL( 2  ) },
-  { LSTRKEY( "PCNT_EVT_THRES_1" ),     LNUMVAL( 3  ) },
-  { LSTRKEY( "PCNT_EVT_ZERO" ),     LNUMVAL( 4  ) },
-  { LSTRKEY( "PCNT_PIN_NOT_USED" ),  LNUMVAL( -1 ) }, /*PCNT_PIN_NOT_USED*/
-  { LNILKEY, LNILVAL}
-};
+  // LROT_FUNCENTRY( __tostring,     pulsecnt_tostring )
+  LROT_FUNCENTRY( __gc,           pulsecnt_unregister )
+  LROT_TABENTRY ( __index,        pulsecnt_dyn )
+LROT_END(pulsecnt_dyn, NULL, 0)
+
+LROT_BEGIN(pulsecnt)
+  LROT_FUNCENTRY( create,            pulsecnt_create )
+  LROT_NUMENTRY ( PCNT_MODE_KEEP,    0 ) /*pcnt_ctrl_mode_t.PCNT_MODE_KEEP*/
+  LROT_NUMENTRY ( PCNT_MODE_REVERSE, 1 ) /*pcnt_ctrl_mode_t.PCNT_MODE_REVERSE*/
+  LROT_NUMENTRY ( PCNT_MODE_DISABLE, 2 ) /*pcnt_ctrl_mode_t.PCNT_MODE_DISABLE*/
+  LROT_NUMENTRY ( PCNT_COUNT_DIS,    0 ) /*pcnt_count_mode_t.PCNT_COUNT_DIS*/
+  LROT_NUMENTRY ( PCNT_COUNT_INC,    1 ) /*pcnt_count_mode_t.PCNT_COUNT_INC*/
+  LROT_NUMENTRY ( PCNT_COUNT_DEC,    2 ) /*pcnt_count_mode_t.PCNT_COUNT_DEC*/
+  // LROT_NUMENTRY ( PCNT_COUNT_MAX ,   pcnt_count_mode_t.PCNT_COUNT_MAX )
+  LROT_NUMENTRY ( PCNT_H_LIM_VAL,    32767 )
+  LROT_NUMENTRY ( PCNT_L_LIM_VAL,    -32768 )
+  LROT_NUMENTRY ( PCNT_EVT_L_LIM,    0 )
+  LROT_NUMENTRY ( PCNT_EVT_H_LIM,    1 )
+  LROT_NUMENTRY ( PCNT_EVT_THRES_0,  2 )
+  LROT_NUMENTRY ( PCNT_EVT_THRES_1,  3 )
+  LROT_NUMENTRY ( PCNT_EVT_ZERO,     4 )
+  LROT_NUMENTRY ( PCNT_PIN_NOT_USED, -1 ) /*PCNT_PIN_NOT_USED*/
+LROT_END(pulsecnt, NULL, 0)
 
 int luaopen_pulsecnt(lua_State *L) {
 
@@ -729,4 +724,4 @@ int luaopen_pulsecnt(lua_State *L) {
   return 0;
 }
 
-NODEMCU_MODULE(PULSECNT, "pulsecnt", pulsecnt_map, luaopen_pulsecnt);
+NODEMCU_MODULE(PULSECNT, "pulsecnt", pulsecnt, luaopen_pulsecnt);

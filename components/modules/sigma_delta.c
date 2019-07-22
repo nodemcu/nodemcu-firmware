@@ -77,14 +77,12 @@ static int sigma_delta_setduty( lua_State *L )
 
 
 // Module function map
-static const LUA_REG_TYPE sigma_delta_map[] =
-{
-  { LSTRKEY( "setup" ),       LFUNCVAL( sigma_delta_setup ) },
-  { LSTRKEY( "close" ),       LFUNCVAL( sigma_delta_close ) },
-  //{ LSTRKEY( "setpwmduty" ),  LFUNCVAL( sigma_delta_setpwmduty ) },
-  { LSTRKEY( "setprescale" ), LFUNCVAL( sigma_delta_setprescale ) },
-  { LSTRKEY( "setduty" ),     LFUNCVAL( sigma_delta_setduty ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(sigma_delta)
+  LROT_FUNCENTRY( setup,       sigma_delta_setup )
+  LROT_FUNCENTRY( close,       sigma_delta_close )
+  //LROT_FUNCENTRY( setpwmduty,  sigma_delta_setpwmduty )
+  LROT_FUNCENTRY( setprescale, sigma_delta_setprescale )
+  LROT_FUNCENTRY( setduty,     sigma_delta_setduty )
+LROT_END(sigma_delta, NULL, 0)
 
-NODEMCU_MODULE(SIGMA_DELTA, "sigma_delta", sigma_delta_map, NULL);
+NODEMCU_MODULE(SIGMA_DELTA, "sigma_delta", sigma_delta, NULL);

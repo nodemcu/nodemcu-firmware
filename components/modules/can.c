@@ -148,16 +148,14 @@ static int can_send( lua_State *L )
 }
 
 // Module function map
-static const LUA_REG_TYPE can_map[] =
-{
-  { LSTRKEY( "setup" ),       LFUNCVAL( can_setup ) },
-  { LSTRKEY( "start" ),       LFUNCVAL( can_start ) },
-  { LSTRKEY( "stop" ),        LFUNCVAL( can_stop ) },
-  { LSTRKEY( "send" ),        LFUNCVAL( can_send ) },
-  { LSTRKEY( "STANDARD_FRAME" ),     LNUMVAL( 0 ) },
-  { LSTRKEY( "EXTENDED_FRAME" ),     LNUMVAL( 1 ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(can)
+  LROT_FUNCENTRY( setup,          can_setup )
+  LROT_FUNCENTRY( start,          can_start )
+  LROT_FUNCENTRY( stop,           can_stop )
+  LROT_FUNCENTRY( send,           can_send )
+  LROT_NUMENTRY ( STANDARD_FRAME, 0 )
+  LROT_NUMENTRY ( EXTENDED_FRAME, 1 )
+LROT_END(can, NULL, 0)
 
 int luaopen_can( lua_State *L ) {
   can_data_task_id = task_get_id( can_data_task ); // reset CAN after sw reset
@@ -165,4 +163,4 @@ int luaopen_can( lua_State *L ) {
   return 0;
 }
 
-NODEMCU_MODULE(CAN, "can", can_map, luaopen_can);
+NODEMCU_MODULE(CAN, "can", can, luaopen_can);

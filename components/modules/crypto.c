@@ -153,18 +153,18 @@ static int crypto_hash_gc(lua_State* L) {
 }
 
 // The following table defines methods of the hasher object
-static const LUA_REG_TYPE crypto_hasher_map[] = {
-    {LSTRKEY("update"), LFUNCVAL(crypto_hash_update)},
-    {LSTRKEY("finalize"), LFUNCVAL(crypto_hash_finalize)},
-    {LSTRKEY("__gc"), LFUNCVAL(crypto_hash_gc)},
-    {LSTRKEY("__index"), LROVAL(crypto_hasher_map)},
-    {LNILKEY, LNILVAL}};
+LROT_BEGIN(crypto_hasher)
+    LROT_FUNCENTRY(update,   crypto_hash_update)
+    LROT_FUNCENTRY(finalize, crypto_hash_finalize)
+    LROT_FUNCENTRY(__gc,     crypto_hash_gc)
+    LROT_TABENTRY(__index,   crypto_hasher)
+LROT_END(crypto_hasher, NULL, 0)
 
 // This table defines the functions of the crypto module:
-static const LUA_REG_TYPE crypto_map[] = {
-    {LSTRKEY("new_hash"), LFUNCVAL(crypto_new_hash)},
-    {LSTRKEY("new_hmac"), LFUNCVAL(crypto_new_hmac)},
-    {LNILKEY, LNILVAL}};
+LROT_BEGIN(crypto)
+    LROT_FUNCENTRY(new_hash, crypto_new_hash)
+    LROT_FUNCENTRY(new_hmac, crypto_new_hmac)
+LROT_END(crypto, NULL, 0)
 
 // luaopen_crypto is the crypto module initialization function
 int luaopen_crypto(lua_State* L) {
@@ -174,4 +174,4 @@ int luaopen_crypto(lua_State* L) {
 }
 
 // define the crypto NodeMCU module
-NODEMCU_MODULE(CRYPTO, "crypto", crypto_map, luaopen_crypto);
+NODEMCU_MODULE(CRYPTO, "crypto", crypto, luaopen_crypto);

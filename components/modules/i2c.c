@@ -202,25 +202,24 @@ static int i2c_read( lua_State *L )
   }
 }
 
-static const LUA_REG_TYPE i2c_map[] = {
-  { LSTRKEY( "setup" ),       LFUNCVAL( i2c_setup ) },
-  { LSTRKEY( "start" ),       LFUNCVAL( i2c_start ) },
-  { LSTRKEY( "stop" ),        LFUNCVAL( i2c_stop ) },
-  { LSTRKEY( "address" ),     LFUNCVAL( i2c_address ) },
-  { LSTRKEY( "write" ),       LFUNCVAL( i2c_write ) },
-  { LSTRKEY( "read" ),        LFUNCVAL( i2c_read ) },
-  { LSTRKEY( "transfer" ),    LFUNCVAL( li2c_hw_master_transfer ) },
-  { LSTRKEY( "slave"),        LROVAL( li2c_slave_map ) },
-  { LSTRKEY( "FASTPLUS" ),    LNUMVAL( PLATFORM_I2C_SPEED_FASTPLUS ) },
-  { LSTRKEY( "FAST" ),        LNUMVAL( PLATFORM_I2C_SPEED_FAST ) },
-  { LSTRKEY( "SLOW" ),        LNUMVAL( PLATFORM_I2C_SPEED_SLOW ) },
-  { LSTRKEY( "TRANSMITTER" ), LNUMVAL( PLATFORM_I2C_DIRECTION_TRANSMITTER ) },
-  { LSTRKEY( "RECEIVER" ),    LNUMVAL( PLATFORM_I2C_DIRECTION_RECEIVER ) },
-  { LSTRKEY( "SW" ),          LNUMVAL( I2C_ID_SW ) },
-  { LSTRKEY( "HW0" ),         LNUMVAL( I2C_ID_HW0 ) },
-  { LSTRKEY( "HW1" ),         LNUMVAL( I2C_ID_HW1 ) },
-  {LNILKEY, LNILVAL}
-};
+LROT_BEGIN(i2c)
+  LROT_FUNCENTRY( setup,       i2c_setup )
+  LROT_FUNCENTRY( start,       i2c_start )
+  LROT_FUNCENTRY( stop,        i2c_stop )
+  LROT_FUNCENTRY( address,     i2c_address )
+  LROT_FUNCENTRY( write,       i2c_write )
+  LROT_FUNCENTRY( read,        i2c_read )
+  LROT_FUNCENTRY( transfer,    li2c_hw_master_transfer )
+  LROT_TABENTRY ( slave,       li2c_slave )
+  LROT_NUMENTRY ( FASTPLUS,    PLATFORM_I2C_SPEED_FASTPLUS )
+  LROT_NUMENTRY ( FAST,        PLATFORM_I2C_SPEED_FAST )
+  LROT_NUMENTRY ( SLOW,        PLATFORM_I2C_SPEED_SLOW )
+  LROT_NUMENTRY ( TRANSMITTER, PLATFORM_I2C_DIRECTION_TRANSMITTER )
+  LROT_NUMENTRY ( RECEIVER,    PLATFORM_I2C_DIRECTION_RECEIVER )
+  LROT_NUMENTRY ( SW,          I2C_ID_SW )
+  LROT_NUMENTRY ( HW0,         I2C_ID_HW0 )
+  LROT_NUMENTRY ( HW1,         I2C_ID_HW1 )
+LROT_END(i2c, NULL, 0)
 
 
 int luaopen_i2c( lua_State *L ) {
@@ -230,4 +229,4 @@ int luaopen_i2c( lua_State *L ) {
 }
 
 
-NODEMCU_MODULE(I2C, "i2c", i2c_map, luaopen_i2c);
+NODEMCU_MODULE(I2C, "i2c", i2c, luaopen_i2c);
