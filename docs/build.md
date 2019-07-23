@@ -17,6 +17,18 @@ Occasional NodeMCU firmware hackers don't need full control over the complete to
 ### Linux Build Environment
 NodeMCU firmware developers commit or contribute to the project on GitHub and might want to build their own full fledged build environment with the complete tool chain.
 
+#### Build environment dependencies, tools and libraries:
+
+#### Ubuntu:
+
+```bash
+sudo apt-get install -y gperf python-pip python-dev flex bison build-essential libssl-dev libffi-dev libncurses5-dev libncursesw5-dev libreadline-dev
+```
+
+
+
+#### Setting up the repository
+
 Run the following command for a new checkout from scratch. This will fetch the nodemcu repo, checkout the `dev-esp32` branch and finally pull all submodules:
 
 ```
