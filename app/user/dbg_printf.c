@@ -39,6 +39,7 @@
 // overflows. The downside is that it does not implement a wide range
 // of formatting characters.
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stddef.h>

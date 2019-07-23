@@ -37,11 +37,6 @@ DEFINES += -include memcompat.h -include json_config.h
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ./include
-INCLUDES += -I ../include
-INCLUDES += -I ../../include
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "pcm.h"
-#include "pcm_drv.h"
+#include "pcm/pcm.h"
+#include "pcm/pcm_drv.h"
 
 
 #define GET_PUD() pud_t *pud = (pud_t *)luaL_checkudata(L, 1, "pcm.driver"); \

@@ -11,8 +11,8 @@
 #include <limits.h>
 #endif
 
-#include "json_config.h"
-#include "jsonsl.h"
+#include "sjson/json_config.h"
+#include "sjson/jsonsl.h"
 
 #define LUA_SJSONLIBNAME "sjson"
 

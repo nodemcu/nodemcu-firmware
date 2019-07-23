@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 #include "user_interface.h"
-#include "smart.h"
+#include "smart/smart.h"
 #include "smartconfig.h"
 #include "user_config.h"
 

@@ -13,12 +13,12 @@
 #include "espconn.h"
 #include "driver/uart.h"
 
-#include "coap.h"
-#include "uri.h"
-#include "node.h"
-#include "coap_timer.h"
-#include "coap_io.h"
-#include "coap_server.h"
+#include "coap/coap.h"
+#include "coap/uri.h"
+#include "coap/node.h"
+#include "coap/coap_timer.h"
+#include "coap/coap_io.h"
+#include "coap/coap_server.h"
 
 coap_queue_t *gQueue = NULL;
 

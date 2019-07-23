@@ -53,7 +53,7 @@ CC := $(WRAPCC) gcc
 
 ECHO := echo
 
-BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
+BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
 ifeq ($(BUILD_TYPE),0)
 IMAGE := ../../../luac.cross
 else

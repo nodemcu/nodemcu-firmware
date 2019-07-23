@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#define USE_OPTIMIZE_PRINTF
 
 #include_next "osapi.h"
 
