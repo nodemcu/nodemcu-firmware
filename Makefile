@@ -36,7 +36,7 @@ ESPTOOL_VER := 2.6
 # Ensure that the Espresif SDK is search before application paths and also prevent
 # the SDK's c_types.h from being included from anywhere, by predefining its include-guard.
 
-CCFLAGS :=  $(CCFLAGS) -I $(SDK_DIR)/include -D_C_TYPES_H_
+CCFLAGS :=  $(CCFLAGS) -I $(PDIR)sdk-overrides/include -I $(SDK_DIR)/include -D_C_TYPES_H_
 LDFLAGS := -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
 ifdef DEBUG
@@ -222,7 +222,7 @@ CCFLAGS += 			\
 	-fno-inline-functions	\
 	-nostdlib       \
 	-mlongcalls	\
-	-mtext-section-literals
+	-mtext-section-literals \
 #	-Wall
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)

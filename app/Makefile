@@ -80,8 +80,6 @@ COMPONENTS_eagle.app.v6 = 		\
 	smart/smart.a 				\
 	uzlib/libuzlib.a 			\
 	$(OPT_SEL_COMPONENTS)
-# Ensure that the Espresif SDK is searched before the tool-chain's SDK (if any)
-CCFLAGS := -I $(PDIR) -I $(PDIR)libc -I $(PDIR)lua -I $(PDIR)platform
 
 # Inspect the modules library and work out which modules need to be linked.
 # For each enabled module, a symbol name of the form XYZ_module_selected is
@@ -154,8 +152,8 @@ DDEFINES += 						\
 #
 # Required for each makefile to inherit from the parent
 #
-
-INCLUDES := -I $(PDIR) $(INCLUDES) -I $(PDIR)include 
+INCLUDES := -I $(PDIR)libc -I $(PDIR)lua -I $(PDIR)platform \
+            $(INCLUDES) -I $(PDIR) -I $(PDIR)include 
 PDIR := ../$(PDIR)
 
 sinclude $(PDIR)Makefile
