@@ -224,6 +224,12 @@ config LUA_MODULE_TMR
   help
       Includes the timer module (recommended).
 
+config LUA_MODULE_TOUCH
+  bool "Touch module"
+  default "y"
+  help
+      Includes the touch module.
+
 config LUA_MODULE_U8G2
   bool "U8G2 module"
   default "n"
