@@ -3,6 +3,7 @@
  * vowstar@gmail.com
  * 2015-12-29
 *******************************************************************************/
+#include <string.h>
 #include <stdlib.h>
 #include "module.h"
 #include "lauxlib.h"
