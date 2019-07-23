@@ -3,9 +3,9 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
+#include <stdint.h>
 #include "cpu_esp8266.h"
 
-#include "c_types.h"
 #include "driver/pwm.h"
 #include "driver/uart.h"
 #include "task/task.h"

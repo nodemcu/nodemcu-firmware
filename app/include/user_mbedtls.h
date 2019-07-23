@@ -1,4 +1,5 @@
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
 
 #include "user_config.h"
 

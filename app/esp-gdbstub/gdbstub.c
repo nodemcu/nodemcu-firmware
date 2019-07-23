@@ -10,7 +10,6 @@
 #include "gdbstub.h"
 #include "ets_sys.h"
 #include "eagle_soc.h"
-#include "c_types.h"
 #include "gpio.h"
 #include "xtensa/corebits.h"
 #include "driver/uart.h"

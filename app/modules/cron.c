@@ -4,12 +4,12 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "user_interface.h"
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
 #include <string.h>
 #include "ets_sys.h"
 #include "time.h"
 #include "rtc/rtctime.h"
-#include "stdlib.h"
 #include "mem.h"
 
 struct cronent_desc {

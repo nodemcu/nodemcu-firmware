@@ -4,8 +4,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
-#include <stdlib.h>
+#include <stdint.h>
+#include <stddef.h>
 #include "vfs.h"
 #include "../crypto/digests.h"
 #include "../crypto/mech.h"

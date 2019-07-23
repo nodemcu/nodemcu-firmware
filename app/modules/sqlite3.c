@@ -30,7 +30,7 @@
 #define LSQLITE_OMIT_UPDATE_HOOK 1
 #define SQLITE_OMIT_PROGRESS_CALLBACK 1
 
-#include <c_stdlib.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 

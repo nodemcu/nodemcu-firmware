@@ -38,7 +38,7 @@
  * relevant functions and expose these instead, through the rtctime.c module.
  */
 
-#include <c_types.h>
+#include <stdint.h>
 #include "sections.h"
 
 #ifndef _RTCTIME_INTERNAL_H_

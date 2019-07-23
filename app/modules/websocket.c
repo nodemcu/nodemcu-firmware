@@ -13,9 +13,9 @@
 #include "platform.h"
 #include "module.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 #include "websocketclient.h"
 

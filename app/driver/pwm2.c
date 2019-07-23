@@ -5,8 +5,8 @@
  * Nikolay Fiykov
  */
 
-#include <stdlib.h>
-#include "c_types.h"
+#include <stddef.h>
+#include <stdint.h>
 #include "mem.h"
 #include "pin_map.h"
 #include "platform.h"

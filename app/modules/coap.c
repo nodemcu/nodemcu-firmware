@@ -5,9 +5,9 @@
 #include "platform.h"
 
 #include <string.h>
-#include <stdlib.h>
+#include <stddef.h>
 
-#include "c_types.h"
+#include <stdint.h>
 #include "mem.h"
 #include "lwip/ip_addr.h"
 #include "espconn.h"

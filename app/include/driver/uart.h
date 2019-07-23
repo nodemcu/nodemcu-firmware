@@ -3,7 +3,7 @@
 
 #include "uart_register.h"
 #include "eagle_soc.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "os_type.h"
 
 #define RX_BUFF_SIZE    0x100

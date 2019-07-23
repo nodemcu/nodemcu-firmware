@@ -16,7 +16,7 @@
 
 #include "platform.h"
 #include "lflash.h"
-#include "c_types.h"
+#include <stdint.h>
 #include <string.h>
 #include "driver/uart.h"
 #include "user_interface.h"

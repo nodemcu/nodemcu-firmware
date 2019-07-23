@@ -7,10 +7,10 @@
 #define LUAC_CROSS_FILE
 
 #include "luac_cross.h"
-#include C_HEADER_CTYPE
-#include C_HEADER_STDIO
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define lflashimg_c
 #define LUA_CORE

@@ -5,9 +5,9 @@
 #include "platform.h"
 
 #include <string.h>
-#include <stdlib.h>
+#include <stddef.h>
 
-#include "c_types.h"
+#include <stdint.h>
 #include "user_interface.h"
 #include "smart.h"
 #include "smartconfig.h"

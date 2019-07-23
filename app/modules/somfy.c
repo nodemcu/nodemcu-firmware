@@ -11,6 +11,7 @@
 
 //#define NODE_DEBUG
 
+#include <stdint.h>
 #include "os_type.h"
 #include "osapi.h"
 #include "sections.h"

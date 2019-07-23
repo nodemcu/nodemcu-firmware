@@ -9,10 +9,10 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include "user_interface.h"
 #include "driver/rotary.h"
-#include <stdlib.h>
 
 #define MASK(x)		(1 << ROTARY_ ## x ## _INDEX)
 

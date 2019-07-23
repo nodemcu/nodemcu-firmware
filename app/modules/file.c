@@ -5,7 +5,7 @@
 #include "lmem.h"
 #include "platform.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include "vfs.h"
 #include <string.h>
 

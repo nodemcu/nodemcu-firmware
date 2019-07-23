@@ -11,7 +11,7 @@
  */
 
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "driver/rotary.h"

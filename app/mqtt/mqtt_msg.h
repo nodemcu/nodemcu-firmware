@@ -7,7 +7,7 @@
 
 #ifndef MQTT_MSG_H
 #define	MQTT_MSG_H
-#include "c_types.h"
+#include <stdint.h>
 #ifdef	__cplusplus
 extern "C" {
 #endif
