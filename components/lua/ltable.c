@@ -23,8 +23,8 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_MATH
-#include C_HEADER_STRING
+#include <math.h>
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -105,8 +105,9 @@ static Node *mainposition (const Table *t, const TValue *key) {
       return hashstr(t, rawtsvalue(key));
     case LUA_TBOOLEAN:
       return hashboolean(t, bvalue(key));
-    case LUA_TLIGHTUSERDATA:
     case LUA_TROTABLE:
+      return hashpointer(t, rvalue(key));
+    case LUA_TLIGHTUSERDATA:
     case LUA_TLIGHTFUNCTION:
       return hashpointer(t, pvalue(key));
     default:
@@ -444,7 +445,8 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
   int oldasize = t->sizearray;
   if (nasize > oldasize)  /* array part must grow? */
     setarrayvector(L, t, nasize);
-  resize_hashpart(L, t, nhsize);
+  if (t->node != dummynode || nhsize>0)
+    resize_hashpart(L, t, nhsize);
   if (nasize < oldasize) {  /* array part must shrink? */
     t->sizearray = nasize;
     /* re-insert elements from vanishing slice */
@@ -518,11 +520,11 @@ void luaH_free (lua_State *L, Table *t) {
 
 
 /*
-** inserts a new key into a hash table; first, check whether key's main 
-** position is free. If not, check whether colliding node is in its main 
-** position or not: if it is not, move colliding node to an empty place and 
-** put new key in its main position; otherwise (colliding node is in its main 
-** position), new key goes to an empty position. 
+** inserts a new key into a hash table; first, check whether key's main
+** position is free. If not, check whether colliding node is in its main
+** position or not: if it is not, move colliding node to an empty place and
+** put new key in its main position; otherwise (colliding node is in its main
+** position), new key goes to an empty position.
 */
 static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
   Node *mp = mainposition(t, key);
@@ -578,7 +580,7 @@ const TValue *luaH_getnum (Table *t, int key) {
 
 /* same thing for rotables */
 const TValue *luaH_getnum_ro (void *t, int key) {
-  const TValue *res = luaR_findentry(t, NULL, key, NULL);
+  const TValue *res = NULL;  // integer values not supported: luaR_findentryN(t, key, NULL);
   return res ? res : luaO_nilobject;
 }
 
@@ -598,13 +600,9 @@ const TValue *luaH_getstr (Table *t, TString *key) {
 
 /* same thing for rotables */
 const TValue *luaH_getstr_ro (void *t, TString *key) {
-  char keyname[LUA_MAX_ROTABLE_NAME + 1];
-  const TValue *res;  
-  if (!t)
+  if (!t || key->tsv.len>LUA_MAX_ROTABLE_NAME)
     return luaO_nilobject;
-  luaR_getcstr(keyname, key, LUA_MAX_ROTABLE_NAME);   
-  res = luaR_findentry(t, keyname, 0, NULL);
-  return res ? res : luaO_nilobject;
+  return luaR_findentry(t, key, NULL);
 }
 
 
@@ -741,19 +739,15 @@ int luaH_getn (Table *t) {
 
 /* same thing for rotables */
 int luaH_getn_ro (void *t) {
-  int i = 1, len=0;
-  
-  while(luaR_findentry(t, NULL, i ++, NULL))
-    len ++;
-  return len;
-}
-
-#if defined(LUA_DEBUG)
-
-Node *luaH_mainposition (const Table *t, const TValue *key) {
-  return mainposition(t, key);
+  return 0;  // Integer Keys are not currently supported for ROTables
 }
 
 int luaH_isdummy (Node *n) { return n == dummynode; }
 
+#if defined(LUA_DEBUG)
+Node *luaH_mainposition (const Table *t, const TValue *key) {
+  return mainposition(t, key);
+}
 #endif
+
+

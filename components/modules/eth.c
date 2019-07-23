@@ -264,7 +264,6 @@ static int leth_init( lua_State *L )
   default:
     // prevented by opt_checkint_range
     break;
-      
   };
 
   config.phy_addr = phy_addr;
@@ -287,30 +286,21 @@ static int leth_init( lua_State *L )
   return 0;
 }
 
+LROT_BEGIN(eth)
+  LROT_FUNCENTRY( init,       leth_init )
+  LROT_FUNCENTRY( on,         leth_on )
+  LROT_FUNCENTRY( get_speed,  leth_get_speed )
+  LROT_FUNCENTRY( get_mac,    leth_get_mac )
+  LROT_FUNCENTRY( set_mac,    leth_set_mac )
 
-static const LUA_REG_TYPE eth_map[] =
-{
-  { LSTRKEY( "init"      ), LFUNCVAL( leth_init      ) },
-  { LSTRKEY( "on"        ), LFUNCVAL( leth_on        ) },
-  { LSTRKEY( "get_speed" ), LFUNCVAL( leth_get_speed ) },
-  { LSTRKEY( "get_mac"   ), LFUNCVAL( leth_get_mac   ) },
-  { LSTRKEY( "set_mac"   ), LFUNCVAL( leth_set_mac   ) },
+  LROT_NUMENTRY( PHY_LAN8720, ETH_PHY_LAN8720 )
+  LROT_NUMENTRY( PHY_TLK110,  ETH_PHY_TLK110 )
+  LROT_NUMENTRY( PHY_IP101,   ETH_PHY_IP101 )
 
-  { LSTRKEY( "PHY_LAN8720" ), LNUMVAL( ETH_PHY_LAN8720 ) },
-  { LSTRKEY( "PHY_TLK110"  ), LNUMVAL( ETH_PHY_TLK110  ) },
-  { LSTRKEY( "PHY_IP101"   ), LNUMVAL( ETH_PHY_IP101   ) },
+  LROT_NUMENTRY( CLOCK_GPIO0_IN,    ETH_CLOCK_GPIO0_IN )
+  LROT_NUMENTRY( CLOCK_GPIO0_OUT,   ETH_CLOCK_GPIO0_OUT )
+  LROT_NUMENTRY( CLOCK_GPIO16_OUT,  ETH_CLOCK_GPIO16_OUT )
+  LROT_NUMENTRY( CLOCK_GPIO17_OUT,  ETH_CLOCK_GPIO17_OUT )
+LROT_END(eth, NULL, 0)
 
-  { LSTRKEY( "CLOCK_GPIO0_IN"   ), LNUMVAL( ETH_CLOCK_GPIO0_IN   ) },
-  { LSTRKEY( "CLOCK_GPIO0_OUT"  ), LNUMVAL( ETH_CLOCK_GPIO0_OUT  ) },
-  { LSTRKEY( "CLOCK_GPIO16_OUT" ), LNUMVAL( ETH_CLOCK_GPIO16_OUT ) },
-  { LSTRKEY( "CLOCK_GPIO17_OUT" ), LNUMVAL( ETH_CLOCK_GPIO17_OUT ) },
-
-  { LNILKEY, LNILVAL }
-};
-
-static int eth_init( lua_State *L )
-{
-  return 1;
-}
-
-NODEMCU_MODULE(ETH, "eth", eth_map, eth_init);
+NODEMCU_MODULE(ETH, "eth", eth, NULL);

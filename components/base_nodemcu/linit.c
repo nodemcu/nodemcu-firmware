@@ -15,64 +15,111 @@
 #include "lauxlib.h"
 #include "luaconf.h"
 #include "module.h"
-#include "sdkconfig.h"
+#include "lstate.h"
+#include <assert.h>
+#include <stdalign.h>
 
-BUILTIN_LIB_INIT( BASE,      "",                 luaopen_base);
-BUILTIN_LIB_INIT( LOADLIB,   LUA_LOADLIBNAME,    luaopen_package);
+LROT_EXTERN(strlib);
+LROT_EXTERN(tab_funcs);
+LROT_EXTERN(dblib);
+LROT_EXTERN(co_funcs);
+LROT_EXTERN(math);
+#if defined(LUA_CROSS_COMPILER)
+LROT_EXTERN(oslib);
+//LROT_EXTERN(iolib);
+#endif
+/*
+ * The NodeMCU Lua initalisation has been adapted to use linker-based module
+ * registration.  This uses a PSECT naming convention to allow the ROTable and
+ * initialisation function entries to be collected by the linker into two
+ * consoliated ROTables.  This significantly simplifies adding new modules and
+ * configuring builds with a small subset of the total modules.
+ *
+ * This linker-based approach is not practical for cross compiler builds which
+ * must link on a range of platforms, and where we don't have control of PSECT
+ * placement.   However unlike the target builds, the  luac.cross builds only
+ * used a small and fixed list of libraries and so in this case the table can
+ * be defined in this source file, so in this case all library ROTables are
+ * defined here, avoiding the need for linker magic is avoided on host builds.
+ *
+ * Note that a separate ROTable is defined in lbaselib.c for the base functions
+ * and there is a metatable index cascade from _G to this base function table to
+ * the master rotables table.  In the target build, the linker marshals the
+ * table, hence the LROT_BREAK() macros which don't 0 terminate the lists.
+ */
 
-#if defined(LUA_USE_BUILTIN_IO)
-BUILTIN_LIB_INIT( IO,        LUA_IOLIBNAME,      luaopen_io);
+#ifdef _MSC_VER
+//MSVC requires us to declare these sections before we refer to them
+#pragma section(__ROSECNAME(A), read)
+#pragma section(__ROSECNAME(zzzzzzzz), read)
+#pragma section(__ROSECNAME(libs), read)
+#pragma section(__ROSECNAME(rotable), read)
+//These help us to find the beginning and ending of the RO data.  NOTE:  linker
+//magic is used; the section names are lexically sorted, so 'a' and 'z' are
+//important to keep the other sections lexically between these two dummy
+//variables.  Check your mapfile output if you need to fiddle with this stuff.
+const LOCK_IN_SECTION(A) char _ro_start[1] = {0};
+const LOCK_IN_SECTION(zzzzzzzz) char _ro_end[1] = {0};
 #endif
 
-#if defined (CONFIG_LUA_BUILTIN_STRING)
-extern const luaR_entry strlib[];
-BUILTIN_LIB_INIT( STRING,    LUA_STRLIBNAME,     luaopen_string);
-BUILTIN_LIB(      STRING,    LUA_STRLIBNAME,     strlib);
-#endif
-
-#if defined(CONFIG_LUA_BUILTIN_TABLE)
-extern const luaR_entry tab_funcs[];
-BUILTIN_LIB_INIT( TABLE,     LUA_TABLIBNAME,     luaopen_table);
-BUILTIN_LIB(      TABLE,     LUA_TABLIBNAME,     tab_funcs);
-#endif
-
-#if defined(CONFIG_LUA_BUILTIN_DEBUG)
-extern const luaR_entry dblib[];
-BUILTIN_LIB_INIT( DBG,       LUA_DBLIBNAME,      luaopen_debug);
-BUILTIN_LIB(      DBG,       LUA_DBLIBNAME,      dblib);
-#endif
-
-#if defined(LUA_USE_BUILTIN_OS)
-extern const luaR_entry syslib[];
-BUILTIN_LIB(      OS,        LUA_OSLIBNAME,     syslib);
-#endif
-
-#if defined(CONFIG_LUA_BUILTIN_COROUTINE)
-extern const luaR_entry co_funcs[];
-BUILTIN_LIB(      CO,        LUA_COLIBNAME,     co_funcs);
-#endif
-
-#if defined(CONFIG_LUA_BUILTIN_MATH)
-extern const luaR_entry math_map[];
-BUILTIN_LIB(      MATH,      LUA_MATHLIBNAME,   math_map);
-#endif
-
+LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(rotable) lua_rotables)
+  LROT_TABENTRY( string, strlib )
+  LROT_TABENTRY( table, tab_funcs )
+  LROT_TABENTRY( debug, dblib)
+  LROT_TABENTRY( coroutine, co_funcs )
+  LROT_TABENTRY( math, math )
+  LROT_TABENTRY( ROM, lua_rotables )
 #ifdef LUA_CROSS_COMPILER
-const luaL_Reg lua_libs[] = {{NULL, NULL}};
-const luaR_table lua_rotable[] = {{NULL, NULL}};
-#else 
-extern const luaL_Reg lua_libs[];
+  LROT_TABENTRY( os, oslib )
+  //LROT_TABENTRY( io, iolib )
+LROT_END(lua_rotables, NULL, 0)
+#else
+LROT_BREAK(lua_rotables)
+#endif
+
+LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(libs) lua_libs)
+  LROT_FUNCENTRY( _, luaopen_base )
+  LROT_FUNCENTRY( package, luaopen_package )
+  LROT_FUNCENTRY( string, luaopen_string )
+  LROT_FUNCENTRY( table, luaopen_table )
+  LROT_FUNCENTRY( debug, luaopen_debug )
+#ifndef LUA_CROSS_COMPILER
+LROT_BREAK(lua_rotables)
+#else
+  LROT_FUNCENTRY( io, luaopen_io )
+LROT_END( lua_libs, NULL, 0)
+#endif
+
+#ifndef LUA_CROSS_COMPILER
+extern void luaL_dbgbreak(void);
 #endif
 
 void luaL_openlibs (lua_State *L) {
-  const luaL_Reg *lib = lua_libs;
-  for (; lib->name; lib++) {
-    if (lib->func)
-    {
-      lua_pushcfunction(L, lib->func);
-      lua_pushstring(L, lib->name);
-      lua_call(L, 1, 0);
+
+  lua_pushrotable(L, LROT_TABLEREF(lua_libs));
+  lua_pushnil(L);  /* first key */
+  /* loop round and open libraries */
+#ifndef LUA_CROSS_COMPILER
+// luaL_dbgbreak();  // This is a test point for debugging library start ups
+#endif
+  while (lua_next(L, -2) != 0) {
+    if (lua_islightfunction(L,-1) &&
+        fvalue(L->top-1)) { // only process function entries
+      lua_pushvalue(L, -2);
+      lua_call(L, 1, 0);  // call luaopen_XXX(libname)
+    } else {
+      lua_pop(L, 1);
     }
   }
+  lua_pop(L, 1);  //cleanup stack
 }
 
+#ifndef LUA_CROSS_COMPILER
+# ifdef LUA_NUMBER_INTEGRAL
+#  define COMPARE <=
+# else
+#  define COMPARE ==
+# endif
+_Static_assert(_Alignof(luaR_entry) COMPARE 8, "Unexpected alignment of module registration - update the linker script snippets to match!");
+_Static_assert(sizeof(luaR_entry) COMPARE 24, "Unexpect size of array member - update the linker script snippets to match!");
+#endif

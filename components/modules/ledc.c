@@ -231,66 +231,61 @@ static int lledc_set_fade( lua_State *L ) {
 }
 
 // Module function map
-static const LUA_REG_TYPE ledc_channel_map[] =
-{
-  { LSTRKEY( "getduty" ),         LFUNCVAL( lledc_get_duty ) },
-  { LSTRKEY( "setduty" ),         LFUNCVAL( lledc_set_duty ) },
-  { LSTRKEY( "getfreq" ),         LFUNCVAL( lledc_get_freq ) },
-  { LSTRKEY( "setfreq" ),         LFUNCVAL( lledc_set_freq ) },
+LROT_BEGIN(ledc_channel)
+  LROT_FUNCENTRY( getduty,         lledc_get_duty )
+  LROT_FUNCENTRY( setduty,         lledc_set_duty )
+  LROT_FUNCENTRY( getfreq,         lledc_get_freq )
+  LROT_FUNCENTRY( setfreq,         lledc_set_freq )
 
-  { LSTRKEY( "stop" ),            LFUNCVAL( lledc_stop ) },
-  { LSTRKEY( "reset" ),           LFUNCVAL( lledc_timer_rst ) },
-  { LSTRKEY( "pause" ),           LFUNCVAL( lledc_timer_pause ) },
-  { LSTRKEY( "resume" ),          LFUNCVAL( lledc_timer_resume ) },
+  LROT_FUNCENTRY( stop,            lledc_stop )
+  LROT_FUNCENTRY( reset,           lledc_timer_rst )
+  LROT_FUNCENTRY( pause,           lledc_timer_pause )
+  LROT_FUNCENTRY( resume,          lledc_timer_resume )
 
-  { LSTRKEY( "fadewithtime" ),    LFUNCVAL( lledc_set_fade_with_time ) },
-  { LSTRKEY( "fadewithstep" ),    LFUNCVAL( lledc_set_fade_with_step ) },
-  { LSTRKEY( "fade" ),            LFUNCVAL( lledc_set_fade ) },
+  LROT_FUNCENTRY( fadewithtime,    lledc_set_fade_with_time )
+  LROT_FUNCENTRY( fadewithstep,    lledc_set_fade_with_step )
+  LROT_FUNCENTRY( fade,            lledc_set_fade )
 
-  { LSTRKEY( "__index" ),         LROVAL( ledc_channel_map )},
+  LROT_TABENTRY ( __index,         ledc_channel )
+LROT_END(ledc_channel, NULL, 0)
 
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(ledc)
+  LROT_FUNCENTRY( newChannel,      lledc_new_channel )
 
-static const LUA_REG_TYPE ledc_map[] =
-{
-  { LSTRKEY( "newChannel" ),      LFUNCVAL( lledc_new_channel ) },
+  LROT_NUMENTRY ( HIGH_SPEED,      LEDC_HIGH_SPEED_MODE )
+  LROT_NUMENTRY ( LOW_SPEED,       LEDC_LOW_SPEED_MODE )
 
-  { LSTRKEY( "HIGH_SPEED"),       LNUMVAL( LEDC_HIGH_SPEED_MODE ) },
-  { LSTRKEY( "LOW_SPEED"),        LNUMVAL( LEDC_LOW_SPEED_MODE ) },
+  LROT_NUMENTRY ( TIMER_0,         LEDC_TIMER_0 )
+  LROT_NUMENTRY ( TIMER_1,         LEDC_TIMER_1 )
+  LROT_NUMENTRY ( TIMER_2,         LEDC_TIMER_2 )
+  LROT_NUMENTRY ( TIMER_10_BIT,    LEDC_TIMER_10_BIT )
+  LROT_NUMENTRY ( TIMER_11_BIT,    LEDC_TIMER_11_BIT )
+  LROT_NUMENTRY ( TIMER_12_BIT,    LEDC_TIMER_12_BIT )
+  LROT_NUMENTRY ( TIMER_13_BIT,    LEDC_TIMER_13_BIT )
+  LROT_NUMENTRY ( TIMER_14_BIT,    LEDC_TIMER_14_BIT )
+  LROT_NUMENTRY ( TIMER_15_BIT,    LEDC_TIMER_15_BIT )
 
-  { LSTRKEY( "TIMER_0"),          LNUMVAL( LEDC_TIMER_0 ) },
-  { LSTRKEY( "TIMER_1"),          LNUMVAL( LEDC_TIMER_1 ) },
-  { LSTRKEY( "TIMER_2"),          LNUMVAL( LEDC_TIMER_2 ) },
-  { LSTRKEY( "TIMER_10_BIT"),     LNUMVAL( LEDC_TIMER_10_BIT ) },
-  { LSTRKEY( "TIMER_11_BIT"),     LNUMVAL( LEDC_TIMER_11_BIT ) },
-  { LSTRKEY( "TIMER_12_BIT"),     LNUMVAL( LEDC_TIMER_12_BIT ) },
-  { LSTRKEY( "TIMER_13_BIT"),     LNUMVAL( LEDC_TIMER_13_BIT ) },
-  { LSTRKEY( "TIMER_14_BIT"),     LNUMVAL( LEDC_TIMER_14_BIT ) },
-  { LSTRKEY( "TIMER_15_BIT"),     LNUMVAL( LEDC_TIMER_15_BIT ) },
+  LROT_NUMENTRY ( CHANNEL_0,       LEDC_CHANNEL_0 )
+  LROT_NUMENTRY ( CHANNEL_1,       LEDC_CHANNEL_1 )
+  LROT_NUMENTRY ( CHANNEL_2,       LEDC_CHANNEL_2 )
+  LROT_NUMENTRY ( CHANNEL_3,       LEDC_CHANNEL_3 )
+  LROT_NUMENTRY ( CHANNEL_4,       LEDC_CHANNEL_4 )
+  LROT_NUMENTRY ( CHANNEL_5,       LEDC_CHANNEL_5 )
+  LROT_NUMENTRY ( CHANNEL_6,       LEDC_CHANNEL_6 )
+  LROT_NUMENTRY ( CHANNEL_7,       LEDC_CHANNEL_7 )
 
-  { LSTRKEY( "CHANNEL_0"),        LNUMVAL( LEDC_CHANNEL_0 ) },
-  { LSTRKEY( "CHANNEL_1"),        LNUMVAL( LEDC_CHANNEL_1 ) },
-  { LSTRKEY( "CHANNEL_2"),        LNUMVAL( LEDC_CHANNEL_2 ) },
-  { LSTRKEY( "CHANNEL_3"),        LNUMVAL( LEDC_CHANNEL_3 ) },
-  { LSTRKEY( "CHANNEL_4"),        LNUMVAL( LEDC_CHANNEL_4 ) },
-  { LSTRKEY( "CHANNEL_5"),        LNUMVAL( LEDC_CHANNEL_5 ) },
-  { LSTRKEY( "CHANNEL_6"),        LNUMVAL( LEDC_CHANNEL_6 ) },
-  { LSTRKEY( "CHANNEL_7"),        LNUMVAL( LEDC_CHANNEL_7 ) },
+  LROT_NUMENTRY ( IDLE_LOW,        0 )
+  LROT_NUMENTRY ( IDLE_HIGH,       1 )
 
-  { LSTRKEY( "IDLE_LOW"),         LNUMVAL( 0 ) },
-  { LSTRKEY( "IDLE_HIGH"),        LNUMVAL( 1 ) },
-
-  { LSTRKEY( "FADE_NO_WAIT"),     LNUMVAL( LEDC_FADE_NO_WAIT ) },
-  { LSTRKEY( "FADE_WAIT_DONE"),   LNUMVAL( LEDC_FADE_WAIT_DONE ) },
-  { LSTRKEY( "FADE_DECREASE"),    LNUMVAL( LEDC_DUTY_DIR_DECREASE ) },
-  { LSTRKEY( "FADE_INCREASE"),    LNUMVAL( LEDC_DUTY_DIR_INCREASE ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_NUMENTRY ( FADE_NO_WAIT,    LEDC_FADE_NO_WAIT )
+  LROT_NUMENTRY ( FADE_WAIT_DONE,  LEDC_FADE_WAIT_DONE )
+  LROT_NUMENTRY ( FADE_DECREASE,   LEDC_DUTY_DIR_DECREASE )
+  LROT_NUMENTRY ( FADE_INCREASE,   LEDC_DUTY_DIR_INCREASE )
+LROT_END(ledc, NULL, 0)
 
 int luaopen_ledc(lua_State *L) {
   luaL_rometatable(L, "ledc.channel", (void *)ledc_channel_map);  // create metatable for ledc.channel
   return 0;
 }
 
-NODEMCU_MODULE(LEDC, "ledc", ledc_map, luaopen_ledc);
+NODEMCU_MODULE(LEDC, "ledc", ledc, luaopen_ledc);

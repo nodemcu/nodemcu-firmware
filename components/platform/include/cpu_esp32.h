@@ -2,6 +2,7 @@
 #define _CPU_ESP32_H_
 
 #include "sdkconfig.h"
+#include "esp_spi_flash.h"
 
 #define NUM_UART 3
 

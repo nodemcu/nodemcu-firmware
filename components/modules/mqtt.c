@@ -635,27 +635,26 @@ static int mqtt_new(lua_State* L) {
 }
 
 // map client methods to functions:
-static const LUA_REG_TYPE mqtt_metatable_map[] =
-    {
-        {LSTRKEY("connect"), LFUNCVAL(mqtt_connect)},
-        {LSTRKEY("close"), LFUNCVAL(mqtt_close)},
-        {LSTRKEY("lwt"), LFUNCVAL(mqtt_lwt)},
-        {LSTRKEY("publish"), LFUNCVAL(mqtt_publish)},
-        {LSTRKEY("subscribe"), LFUNCVAL(mqtt_subscribe)},
-        {LSTRKEY("unsubscribe"), LFUNCVAL(mqtt_unsubscribe)},
-        {LSTRKEY("on"), LFUNCVAL(mqtt_on)},
-        {LSTRKEY("__gc"), LFUNCVAL(mqtt_delete)},
-        {LSTRKEY("__index"), LROVAL(mqtt_metatable_map)},
-        {LNILKEY, LNILVAL}};
+LROT_BEGIN(mqtt_metatable)
+  LROT_FUNCENTRY(connect, mqtt_connect)
+  LROT_FUNCENTRY(close, mqtt_close)
+  LROT_FUNCENTRY(lwt, mqtt_lwt)
+  LROT_FUNCENTRY(publish, mqtt_publish)
+  LROT_FUNCENTRY(subscribe, mqtt_subscribe)
+  LROT_FUNCENTRY(unsubscribe, mqtt_unsubscribe)
+  LROT_FUNCENTRY(on, mqtt_on)
+  LROT_FUNCENTRY(__gc, mqtt_delete)
+  LROT_TABENTRY(__index, mqtt_metatable)
+LROT_END(mqtt_metatable, NULL, 0)
 
 // Module function map
-static const LUA_REG_TYPE mqtt_map[] = {
-    {LSTRKEY("Client"), LFUNCVAL(mqtt_new)},
-    {LNILKEY, LNILVAL}};
+LROT_BEGIN(mqtt)
+  LROT_FUNCENTRY(Client, mqtt_new)
+LROT_END(mqtt, NULL, 0)
 
 int luaopen_mqtt(lua_State* L) {
     luaL_rometatable(L, MQTT_METATABLE, (void*)mqtt_metatable_map);  // create metatable for mqtt
     return 0;
 }
 
-NODEMCU_MODULE(MQTT, "mqtt", mqtt_map, luaopen_mqtt);
+NODEMCU_MODULE(MQTT, "mqtt", mqtt, luaopen_mqtt);

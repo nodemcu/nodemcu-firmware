@@ -169,14 +169,14 @@ static int wifi_sta_setip(lua_State *L)
   tcpip_adapter_dns_info_t dnsinfo;
   size_t len;
   const char *str;
-	
+
   ip_addr_t ipAddr;
   ipAddr.type = IPADDR_TYPE_V4;
 
   luaL_checkanytable (L, 1);
-	
+
   //memset(&ipInfo, 0, sizeof(tcpip_adapter_ip_info_t));
-	
+
   lua_getfield (L, 1, "ip");
   str = luaL_checklstring (L, -1, &len);
   if(!ipaddr_aton(str, &ipAddr))
@@ -184,7 +184,7 @@ static int wifi_sta_setip(lua_State *L)
     return luaL_error(L, "Could not parse IP address, aborting");
   }
   ipInfo.ip = ipAddr.u_addr.ip4;
-	
+
   lua_getfield (L, 1, "netmask");
   str = luaL_checklstring (L, -1, &len);
   if(!ipaddr_aton(str, &ipAddr))
@@ -192,7 +192,7 @@ static int wifi_sta_setip(lua_State *L)
     return luaL_error(L, "Could not parse Netmask, aborting");
   }
   ipInfo.netmask = ipAddr.u_addr.ip4;
-	
+
   lua_getfield (L, 1, "gateway");
   str = luaL_checklstring (L, -1, &len);
   if(!ipaddr_aton(str, &ipAddr))
@@ -200,18 +200,18 @@ static int wifi_sta_setip(lua_State *L)
     return luaL_error(L, "Could not parse Gateway address, aborting");
   }
   ipInfo.gw = ipAddr.u_addr.ip4;
-	
+
   lua_getfield (L, 1, "dns");
   str = luaL_optlstring(L, -1, str, &len);
   if(!ipaddr_aton(str, &dnsinfo.ip))
   {
     return luaL_error(L, "Could not parse DNS address, aborting");
   }
-	
+
   ESP_ERROR_CHECK(tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA));
   tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &ipInfo);
   tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA, TCPIP_ADAPTER_DNS_MAIN, &dnsinfo);
-	
+
   return 0;
 }
 
@@ -453,19 +453,17 @@ static int wifi_sta_scan (lua_State *L)
 }
 
 
-const LUA_REG_TYPE wifi_sta_map[] = {
-  { LSTRKEY( "setip" ),       LFUNCVAL( wifi_sta_setip )      },
-  { LSTRKEY( "sethostname" ), LFUNCVAL( wifi_sta_sethostname )},
-  { LSTRKEY( "config" ),      LFUNCVAL( wifi_sta_config )     },
-  { LSTRKEY( "connect" ),     LFUNCVAL( wifi_sta_connect )    },
-  { LSTRKEY( "disconnect" ),  LFUNCVAL( wifi_sta_disconnect ) },
-  { LSTRKEY( "getconfig" ),   LFUNCVAL( wifi_sta_getconfig )  },
-  { LSTRKEY( "getmac" ),      LFUNCVAL( wifi_sta_getmac )     },
-  { LSTRKEY( "on" ),          LFUNCVAL( wifi_sta_on )         },
-  { LSTRKEY( "scan" ),        LFUNCVAL( wifi_sta_scan )       },
-
-  { LNILKEY, LNILVAL }
-};
+LROT_PUBLIC_BEGIN(wifi_sta)
+  LROT_FUNCENTRY( setip,       wifi_sta_setip )
+  LROT_FUNCENTRY( sethostname, wifi_sta_sethostname )
+  LROT_FUNCENTRY( config,      wifi_sta_config )
+  LROT_FUNCENTRY( connect,     wifi_sta_connect )
+  LROT_FUNCENTRY( disconnect,  wifi_sta_disconnect )
+  LROT_FUNCENTRY( getconfig,   wifi_sta_getconfig )
+  LROT_FUNCENTRY( getmac,      wifi_sta_getmac )
+  LROT_FUNCENTRY( on,          wifi_sta_on )
+  LROT_FUNCENTRY( scan,        wifi_sta_scan )
+LROT_END(wifi_sta, NULL, 0)
 
 
 // Currently no auto-connect, so do that in response to events

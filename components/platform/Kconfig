@@ -108,6 +108,32 @@ config BUILD_SPIFFS
   bool
   default "y"
 
+config LUA_EMBED_LFS
+  bool "Embed LFS as part of the NodeMCU firmware"
+  default "n"
+  help
+    The LFS (Lua Flash Store) normally has its own partition entry, and can
+    can be replaced at will. Optionally, the LFS can instead be permanently
+    embedded into the NodeMCU firmware image itself. This can be useful for
+    scenarios where over-the-air firmware upgrades are needed to also
+    bundle Lua code. The major downside is that once embedded, the LFS can
+    no longer be changed, as doing so would break the firmware checksums
+    and signatures and leave the system unable to boot.
+
+    The default option is to not embed the LFS, in which case LFS is
+    looked for in a partition of type 0xC2 and subtype 0x01.
+
+    To embed LFS data into firmware, use:
+      ./tools/embed_lfs.sh /path/to/file1.lua /path/to/file2.lua ...
+
+config LUA_EMBEDDED_FLASH_STORE
+  hex "Embedded LUA Flash Store size"
+  default 0x0
+  depends on LUA_EMBED_LFS
+  help
+    Embedded LUA Flash Store size. Set to zero to use an LFS partition instead
+    of embedding the LFS within the NodeMCU firmware itself.
+
 config BUILD_FATFS
   bool "Support for FAT filesystems"
   default "n"

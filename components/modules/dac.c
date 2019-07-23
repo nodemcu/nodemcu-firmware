@@ -52,16 +52,12 @@ static int ldac_write( lua_State *L )
 
 
 // Module function map
-static const LUA_REG_TYPE dac_map[] =
-{
-  { LSTRKEY( "enable" ),  LFUNCVAL( ldac_enable ) },
-  { LSTRKEY( "disable" ), LFUNCVAL( ldac_disable ) },
-  { LSTRKEY( "write" ),   LFUNCVAL( ldac_write ) },
+LROT_BEGIN(dac)
+  LROT_FUNCENTRY( enable,    ldac_enable )
+  LROT_FUNCENTRY( disable,   ldac_disable )
+  LROT_FUNCENTRY( write,     ldac_write )
+  LROT_NUMENTRY ( CHANNEL_1, DAC_CHANNEL_1 )
+  LROT_NUMENTRY ( CHANNEL_2, DAC_CHANNEL_2 )
+LROT_END(dac, NULL, 0)
 
-  { LSTRKEY( "CHANNEL_1" ), LNUMVAL( DAC_CHANNEL_1 ) },
-  { LSTRKEY( "CHANNEL_2" ), LNUMVAL( DAC_CHANNEL_2 ) },
-
-  { LNILKEY, LNILVAL }
-};
-
-NODEMCU_MODULE(DAC, "dac", dac_map, NULL);
+NODEMCU_MODULE(DAC, "dac", dac, NULL);

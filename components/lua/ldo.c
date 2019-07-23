@@ -11,7 +11,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -106,7 +106,7 @@ void luaD_throw (lua_State *L, int errcode) {
       lua_unlock(L);
       G(L)->panic(L);
     }
-    // c_exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -144,8 +144,11 @@ static void correctstack (lua_State *L, TValue *oldstack) {
 void luaD_reallocstack (lua_State *L, int newsize) {
   TValue *oldstack = L->stack;
   int realsize = newsize + 1 + EXTRA_STACK;
+  int block_status = is_block_gc(L);
   lua_assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK - 1);
+  set_block_gc(L);       /* The GC MUST be blocked during stack reallocaiton */
   luaM_reallocvector(L, L->stack, L->stacksize, realsize, TValue);
+  if (!block_status) unset_block_gc(L);  /* Honour the previous block status */
   L->stacksize = realsize;
   L->stack_last = L->stack+newsize;
   correctstack(L, oldstack);

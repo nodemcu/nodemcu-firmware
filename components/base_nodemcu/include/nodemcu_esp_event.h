@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Dius Computing Pty Ltd. All rights reserved.
+ * Copyright 2016-2019 Dius Computing Pty Ltd. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,6 +36,8 @@
 
 #include "esp_event.h"
 #include "module.h"
+#include <assert.h>
+#include <stdalign.h>
 
 /**
  * Similarly to how a NodeMCU module is registered, a module can register
@@ -66,7 +68,10 @@ typedef struct {
 extern nodemcu_esp_event_reg_t esp_event_cb_table;
 
 #define NODEMCU_ESP_EVENT(evcode, func) \
-  static const LOCK_IN_SECTION(".esp_event_cb_table") \
+  static const LOCK_IN_SECTION(esp_event_cb_table) \
     nodemcu_esp_event_reg_t MODULE_PASTE_(func,evcode) = { evcode, func };
+
+_Static_assert(_Alignof(nodemcu_esp_event_reg_t) == 4, "Unexpected alignment of event registration - update linker script snippets to match!");
+_Static_assert(sizeof(nodemcu_esp_event_reg_t) == 8, "Unexpected size of array member - update the linker script snippets to match!");
 
 #endif

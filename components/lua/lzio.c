@@ -10,7 +10,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "llimits.h"
 #include "lmem.h"

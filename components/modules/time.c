@@ -143,17 +143,16 @@ static int time_cal2epoc(lua_State *L)
   return 1;
 }
 
-static const LUA_REG_TYPE time_map[] = {
-  { LSTRKEY("set"),              LFUNCVAL(time_set) },
-  { LSTRKEY("get"),              LFUNCVAL(time_get) },
-  { LSTRKEY("getlocal"),         LFUNCVAL(time_getLocal) },
-  { LSTRKEY("settimezone"),      LFUNCVAL(time_setTimezone) },
-  { LSTRKEY("initntp"),          LFUNCVAL(time_initNTP)  },
-  { LSTRKEY("ntpenabled"),       LFUNCVAL(time_ntpEnabled) },
-  { LSTRKEY("ntpstop"),          LFUNCVAL(time_ntpStop) },
-  { LSTRKEY("epoch2cal"),        LFUNCVAL(time_epoch2cal) },
-  { LSTRKEY("cal2epoch"),        LFUNCVAL(time_cal2epoc) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(time)
+  LROT_FUNCENTRY(set,         time_set)
+  LROT_FUNCENTRY(get,         time_get)
+  LROT_FUNCENTRY(getlocal,    time_getLocal)
+  LROT_FUNCENTRY(settimezone, time_setTimezone)
+  LROT_FUNCENTRY(initntp,     time_initNTP)
+  LROT_FUNCENTRY(ntpenabled,  time_ntpEnabled)
+  LROT_FUNCENTRY(ntpstop,     time_ntpStop)
+  LROT_FUNCENTRY(epoch2cal,   time_epoch2cal)
+  LROT_FUNCENTRY(cal2epoch,   time_cal2epoc)
+LROT_END(time, NULL, 0)
 
-NODEMCU_MODULE(TIME, "time", time_map, NULL);
+NODEMCU_MODULE(TIME, "time", time, NULL);

@@ -239,15 +239,13 @@ next:
 }
 
 
-static const LUA_REG_TYPE otaupgrade_map[] =
-{
-  { LSTRKEY( "commence" ), LFUNCVAL( lotaupgrade_commence ) },
-  { LSTRKEY( "write" ),    LFUNCVAL( lotaupgrade_write) },
-  { LSTRKEY( "complete" ), LFUNCVAL( lotaupgrade_complete) },
-  { LSTRKEY( "accept" ),   LFUNCVAL( lotaupgrade_accept) },
-  { LSTRKEY( "rollback" ), LFUNCVAL( lotaupgrade_rollback) },
-  { LSTRKEY( "info" ),     LFUNCVAL( lotaupgrade_info) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(otaupgrade)
+  LROT_FUNCENTRY( commence,   lotaupgrade_commence )
+  LROT_FUNCENTRY( write,      lotaupgrade_write    )
+  LROT_FUNCENTRY( complete,   lotaupgrade_complete )
+  LROT_FUNCENTRY( accept,     lotaupgrade_accept   )
+  LROT_FUNCENTRY( rollback,   lotaupgrade_rollback )
+  LROT_FUNCENTRY( info,       lotaupgrade_info     )
+LROT_END(otaupgrade, 0, NULL)
 
-NODEMCU_MODULE(OTAUPGRADE, "otaupgrade", otaupgrade_map, NULL);
+NODEMCU_MODULE(OTAUPGRADE, "otaupgrade", otaupgrade, NULL);

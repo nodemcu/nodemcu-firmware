@@ -318,12 +318,11 @@ static int li2c_slave_on( lua_State *L )
 }
 
 
-const LUA_REG_TYPE li2c_slave_map[] = {
-  { LSTRKEY( "on" ),    LFUNCVAL( li2c_slave_on ) },
-  { LSTRKEY( "setup" ), LFUNCVAL( li2c_slave_setup ) },
-  { LSTRKEY( "send" ),  LFUNCVAL( li2c_slave_send ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_PUBLIC_BEGIN(li2c_slave)
+  LROT_FUNCENTRY( on,    li2c_slave_on )
+  LROT_FUNCENTRY( setup, li2c_slave_setup )
+  LROT_FUNCENTRY( send,  li2c_slave_send )
+LROT_END(li2c_slave, NULL, 0)
 
 
 void li2c_hw_slave_init( lua_State *L )

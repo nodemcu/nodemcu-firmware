@@ -10,12 +10,14 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDIO
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lstring.h"
+#include "lflash.h"
 #include "lrotable.h"
 #include "sdkconfig.h"
 
@@ -24,6 +26,39 @@ static int db_getregistry (lua_State *L) {
   lua_pushvalue(L, LUA_REGISTRYINDEX);
   return 1;
 }
+
+static int db_getstrings (lua_State *L) {
+  size_t i,n=0;
+  stringtable *tb;
+  GCObject *o;
+#ifndef LUA_CROSS_COMPILER
+  const char *opt = lua_tolstring (L, 1, &n);
+  if (n==3 && memcmp(opt, "ROM", 4) == 0) {
+    if (G(L)->ROstrt.hash == NULL)
+      return 0;
+    tb = &G(L)->ROstrt;
+  }
+  else
+#endif
+  tb = &G(L)->strt;
+  lua_settop(L, 0);
+  lua_createtable(L, tb->nuse, 0);          /* create table the same size as the strt */
+  for (i=0, n=1; i<tb->size; i++) {
+    for(o = tb->hash[i]; o; o=o->gch.next) {
+      TString *ts =cast(TString *, o);
+      lua_pushnil(L);
+      setsvalue2s(L, L->top-1, ts);
+      lua_rawseti(L, -2, n++);             /* enumerate the strt, adding elements */
+    }
+  }
+  lua_getfield(L, LUA_GLOBALSINDEX, "table");
+  lua_getfield(L, -1, "sort");             /* look up table.sort function */
+  lua_replace(L, -2);                      /* dump the table table */
+  lua_pushvalue(L, -2);                    /* duplicate the strt_copy ref */
+  lua_call(L, 1, 0);                       /* table.sort(strt_copy) */
+  return 1;
+}
+
 
 #ifndef CONFIG_LUA_BUILTIN_DEBUG_MINIMAL
 
@@ -384,33 +419,30 @@ static int db_errorfb (lua_State *L) {
   return 1;
 }
 
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE dblib[] = {
+LROT_PUBLIC_BEGIN(dblib)
 #ifndef CONFIG_LUA_BUILTIN_DEBUG_MINIMAL
 #if defined(LUA_CROSS_COMPILER)
-  {LSTRKEY("debug"), LFUNCVAL(db_debug)},
-#endif // defined(LUA_CROSS_COMPILER)
-  {LSTRKEY("getfenv"), LFUNCVAL(db_getfenv)},
-  {LSTRKEY("gethook"), LFUNCVAL(db_gethook)},
-  {LSTRKEY("getinfo"), LFUNCVAL(db_getinfo)},
-  {LSTRKEY("getlocal"), LFUNCVAL(db_getlocal)},
+  LROT_FUNCENTRY( debug, db_debug )
 #endif
-  {LSTRKEY("getregistry"), LFUNCVAL(db_getregistry)},
+  LROT_FUNCENTRY( getfenv, db_getfenv )
+  LROT_FUNCENTRY( gethook, db_gethook )
+  LROT_FUNCENTRY( getinfo, db_getinfo )
+  LROT_FUNCENTRY( getlocal, db_getlocal )
+#endif
+  LROT_FUNCENTRY( getregistry, db_getregistry )
+  LROT_FUNCENTRY( getstrings, db_getstrings )
 #ifndef CONFIG_LUA_BUILTIN_DEBUG_MINIMAL
-  {LSTRKEY("getmetatable"), LFUNCVAL(db_getmetatable)},
-  {LSTRKEY("getupvalue"), LFUNCVAL(db_getupvalue)},
-  {LSTRKEY("setfenv"), LFUNCVAL(db_setfenv)},
-  {LSTRKEY("sethook"), LFUNCVAL(db_sethook)},
-  {LSTRKEY("setlocal"), LFUNCVAL(db_setlocal)},
-  {LSTRKEY("setmetatable"), LFUNCVAL(db_setmetatable)},
-  {LSTRKEY("setupvalue"), LFUNCVAL(db_setupvalue)},
+  LROT_FUNCENTRY( getmetatable, db_getmetatable )
+  LROT_FUNCENTRY( getupvalue, db_getupvalue )
+  LROT_FUNCENTRY( setfenv, db_setfenv )
+  LROT_FUNCENTRY( sethook, db_sethook )
+  LROT_FUNCENTRY( setlocal, db_setlocal )
+  LROT_FUNCENTRY( setmetatable, db_setmetatable )
+  LROT_FUNCENTRY( setupvalue, db_setupvalue )
 #endif
-  {LSTRKEY("traceback"), LFUNCVAL(db_errorfb)},
-  {LNILKEY, LNILVAL}
-};
+  LROT_FUNCENTRY( traceback, db_errorfb )
+LROT_END(dblib, NULL, 0)
 
 LUALIB_API int luaopen_debug (lua_State *L) {
-  LREGISTER(L, LUA_DBLIBNAME, dblib);
+  return 0;
 }

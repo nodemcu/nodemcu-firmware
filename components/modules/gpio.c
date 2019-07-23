@@ -231,32 +231,29 @@ static int nodemcu_gpio_init (lua_State *L)
 }
 
 
-static const LUA_REG_TYPE lgpio_map[] =
-{
-  { LSTRKEY( "config" ),            LFUNCVAL( lgpio_config )          },
-  { LSTRKEY( "read"   ),            LFUNCVAL( lgpio_read )            },
-  { LSTRKEY( "trig" ),              LFUNCVAL( lgpio_trig )            },
-  { LSTRKEY( "wakeup" ),            LFUNCVAL( lgpio_wakeup )          },
-  { LSTRKEY( "write"  ),            LFUNCVAL( lgpio_write )           },
+LROT_BEGIN(lgpio)
+  LROT_FUNCENTRY( config,       lgpio_config )
+  LROT_FUNCENTRY( read,         lgpio_read )
+  LROT_FUNCENTRY( trig,         lgpio_trig )
+  LROT_FUNCENTRY( wakeup,       lgpio_wakeup )
+  LROT_FUNCENTRY( write,        lgpio_write )
 
 
-  { LSTRKEY( "OUT" ),               LNUMVAL( GPIO_MODE_OUTPUT )       },
-  { LSTRKEY( "IN" ),                LNUMVAL( GPIO_MODE_INPUT )        },
-  { LSTRKEY( "IN_OUT" ),            LNUMVAL( GPIO_MODE_INPUT_OUTPUT ) },
+  LROT_NUMENTRY ( OUT,          GPIO_MODE_OUTPUT )
+  LROT_NUMENTRY ( IN,           GPIO_MODE_INPUT )
+  LROT_NUMENTRY ( IN_OUT,       GPIO_MODE_INPUT_OUTPUT )
 
-  { LSTRKEY( "FLOATING"),           LNUMVAL( 0 )                      },
-  { LSTRKEY( "PULL_UP" ),           LNUMVAL( PULL_UP )                },
-  { LSTRKEY( "PULL_DOWN" ),         LNUMVAL( PULL_DOWN )              },
-  { LSTRKEY( "PULL_UP_DOWN"),       LNUMVAL( PULL_UP | PULL_DOWN )    },
+  LROT_NUMENTRY ( FLOATING,     0 )
+  LROT_NUMENTRY ( PULL_UP,      PULL_UP )
+  LROT_NUMENTRY ( PULL_DOWN,    PULL_DOWN )
+  LROT_NUMENTRY ( PULL_UP_DOWN, PULL_UP | PULL_DOWN )
 
-  { LSTRKEY( "INTR_NONE" ),         LNUMVAL( GPIO_INTR_DISABLE )      },
-  { LSTRKEY( "INTR_UP" ),           LNUMVAL( GPIO_INTR_POSEDGE )      },
-  { LSTRKEY( "INTR_DOWN" ),         LNUMVAL( GPIO_INTR_NEGEDGE )      },
-  { LSTRKEY( "INTR_UP_DOWN" ),      LNUMVAL( GPIO_INTR_ANYEDGE )      },
-  { LSTRKEY( "INTR_LOW" ),          LNUMVAL( GPIO_INTR_LOW_LEVEL )    },
-  { LSTRKEY( "INTR_HIGH" ),         LNUMVAL( GPIO_INTR_HIGH_LEVEL )   },
+  LROT_NUMENTRY ( INTR_NONE,    GPIO_INTR_DISABLE )
+  LROT_NUMENTRY ( INTR_UP,      GPIO_INTR_POSEDGE )
+  LROT_NUMENTRY ( INTR_DOWN,    GPIO_INTR_NEGEDGE )
+  LROT_NUMENTRY ( INTR_UP_DOWN, GPIO_INTR_ANYEDGE )
+  LROT_NUMENTRY ( INTR_LOW,     GPIO_INTR_LOW_LEVEL )
+  LROT_NUMENTRY ( INTR_HIGH,    GPIO_INTR_HIGH_LEVEL )
+LROT_END(lgpio, NULL, 0)
 
-  { LNILKEY, LNILVAL }
-};
-
-NODEMCU_MODULE(GPIO, "gpio", lgpio_map, nodemcu_gpio_init);
+NODEMCU_MODULE(GPIO, "gpio", lgpio, nodemcu_gpio_init);

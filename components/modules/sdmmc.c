@@ -327,30 +327,28 @@ static int lsdmmc_umount( lua_State *L )
   return luaL_error( L, err_msg );
 }
 
-static const LUA_REG_TYPE sdmmc_card_map[] = {
-  { LSTRKEY( "read" ),     LFUNCVAL( lsdmmc_read ) },
-  { LSTRKEY( "write" ),    LFUNCVAL( lsdmmc_write ) },
-  { LSTRKEY( "get_info" ), LFUNCVAL( lsdmmc_get_info ) },
-  { LSTRKEY( "mount" ),    LFUNCVAL( lsdmmc_mount ) },
-  { LSTRKEY( "umount" ),   LFUNCVAL( lsdmmc_umount ) },
-  { LSTRKEY( "__index" ),  LROVAL( sdmmc_card_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(sdmmc_card)
+  LROT_FUNCENTRY( read,     lsdmmc_read )
+  LROT_FUNCENTRY( write,    lsdmmc_write )
+  LROT_FUNCENTRY( get_info, lsdmmc_get_info )
+  LROT_FUNCENTRY( mount,    lsdmmc_mount )
+  LROT_FUNCENTRY( umount,   lsdmmc_umount )
+  LROT_TABENTRY( __index,   sdmmc_card )
+LROT_END(sdmmc_card, NULL, 0)
 
-static const LUA_REG_TYPE sdmmc_map[] = {
-  { LSTRKEY( "init" ),  LFUNCVAL( lsdmmc_init ) },
-  { LSTRKEY( "HS1" ),   LNUMVAL( SDMMC_HOST_SLOT_0 ) },
-  { LSTRKEY( "HS2" ),   LNUMVAL( SDMMC_HOST_SLOT_1 ) },
-  { LSTRKEY( "HSPI" ),  LNUMVAL( LSDMMC_HOST_HSPI ) },
-  { LSTRKEY( "VSPI" ),  LNUMVAL( LSDMMC_HOST_VSPI ) },
-  { LSTRKEY( "W1BIT" ), LNUMVAL( SDMMC_HOST_FLAG_1BIT ) },
-  { LSTRKEY( "W4BIT" ), LNUMVAL( SDMMC_HOST_FLAG_1BIT |
-                                 SDMMC_HOST_FLAG_4BIT ) },
-  { LSTRKEY( "W8BIT" ), LNUMVAL( SDMMC_HOST_FLAG_1BIT |
-                                 SDMMC_HOST_FLAG_4BIT |
-                                 SDMMC_HOST_FLAG_8BIT ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(sdmmc)
+  LROT_FUNCENTRY( init,  lsdmmc_init )
+  LROT_NUMENTRY(  HS1,   SDMMC_HOST_SLOT_0 )
+  LROT_NUMENTRY(  HS2,   SDMMC_HOST_SLOT_1 )
+  LROT_NUMENTRY(  HSPI,  LSDMMC_HOST_HSPI )
+  LROT_NUMENTRY(  VSPI,  LSDMMC_HOST_VSPI )
+  LROT_NUMENTRY(  W1BIT, SDMMC_HOST_FLAG_1BIT )
+  LROT_NUMENTRY(  W4BIT, SDMMC_HOST_FLAG_1BIT |
+                         SDMMC_HOST_FLAG_4BIT )
+  LROT_NUMENTRY(  W8BIT, SDMMC_HOST_FLAG_1BIT |
+                         SDMMC_HOST_FLAG_4BIT |
+                         SDMMC_HOST_FLAG_8BIT )
+LROT_END(sdmmc, NULL, 0)
 
 static int luaopen_sdmmc( lua_State *L )
 {
@@ -364,4 +362,4 @@ static int luaopen_sdmmc( lua_State *L )
   return 0;
 }
 
-NODEMCU_MODULE(SDMMC, "sdmmc", sdmmc_map, luaopen_sdmmc);
+NODEMCU_MODULE(SDMMC, "sdmmc", sdmmc, luaopen_sdmmc);

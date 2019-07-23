@@ -10,9 +10,9 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_CTYPE
-#include C_HEADER_LOCALE
-#include C_HEADER_STRING
+#include <ctype.h>
+#include <locale.h>
+#include <string.h>
 
 #include "ldo.h"
 #include "llex.h"
