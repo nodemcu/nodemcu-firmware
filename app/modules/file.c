@@ -585,7 +585,7 @@ static int file_putfile( lua_State* L )
 // Lua: fsinfo()
 static int file_fsinfo( lua_State* L )
 {
-  u32_t total, used;
+  uint32_t total, used;
   if (vfs_fsinfo("", &total, &used)) {
     return luaL_error(L, "file system failed");
   }

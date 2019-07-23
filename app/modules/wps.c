@@ -4,6 +4,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "user_interface.h"
 
 static int wps_callback_ref;
 

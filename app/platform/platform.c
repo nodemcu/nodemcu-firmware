@@ -1124,7 +1124,7 @@ static void platform_task_dispatch (os_event_t *e) {
 static int task_init_handler (void) {
   int p, qlen = TASK_DEFAULT_QUEUE_LEN;
   for (p = 0; p < TASK_PRIORITY_COUNT; p++){
-    TQB.task_Q[p] = (os_event_t *) c_malloc( sizeof(os_event_t)*qlen );
+    TQB.task_Q[p] = (os_event_t *) malloc( sizeof(os_event_t)*qlen );
     if (TQB.task_Q[p]) {
       os_memset(TQB.task_Q[p], 0, sizeof(os_event_t)*qlen);
       system_os_task(platform_task_dispatch, p, TQB.task_Q[p], TASK_DEFAULT_QUEUE_LEN);
@@ -1146,7 +1146,7 @@ static int task_init_handler (void) {
  */ 
 platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
   if ( (TQB.task_count & (TH_ALLOCATION_BRICK - 1)) == 0 ) {
-    TQB.task_func = (platform_task_callback_t *) os_realloc(
+    TQB.task_func = (platform_task_callback_t *) realloc(
         TQB.task_func,
         sizeof(platform_task_callback_t) * (TQB.task_count+TH_ALLOCATION_BRICK));
     if (!TQB.task_func) {

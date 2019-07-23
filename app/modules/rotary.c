@@ -9,6 +9,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "task/task.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include "user_interface.h"

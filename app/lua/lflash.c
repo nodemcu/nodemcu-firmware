@@ -14,6 +14,7 @@
 #include "lfunc.h"
 #include "lflash.h"
 #include "platform.h"
+#include "user_interface.h"
 #include "vfs.h"
 #include "uzlib.h"
 
