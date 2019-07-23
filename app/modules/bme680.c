@@ -9,6 +9,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "user_interface.h"
 #include <math.h>
 
 #include "bme680_defs.h"

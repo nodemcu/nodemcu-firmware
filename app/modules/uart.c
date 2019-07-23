@@ -45,7 +45,7 @@ static int l_uart_on( lua_State* L )
     }
   }
 
-  if (lua_anyfunction(L, stack)) {
+  if (lua_isanyfunction(L, stack)) {
     if (lua_isnumber(L, stack+1) && lua_tointeger(L, stack+1) == 0) {
       run_input = false;
     }
