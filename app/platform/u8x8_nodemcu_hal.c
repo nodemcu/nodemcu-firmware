@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "platform.h"
+#include "user_interface.h"
 
 #define U8X8_USE_PINS
 #define U8X8_WITH_USER_PTR

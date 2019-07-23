@@ -277,7 +277,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
 #define lua_isrotable(L,n)	(lua_type(L, (n)) == LUA_TROTABLE)
 #define lua_isanytable(L,n)	(lua_istable(L,n) || lua_isrotable(L,n))
-#define lua_islightuserdata(L,n) (lua_type(L, (n) == LUA_TLIGHTUSERDATA)
+#define lua_islightuserdata(L,n) (lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
