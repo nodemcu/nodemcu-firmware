@@ -7,8 +7,8 @@
 #include "lauxlib.h"
 #include "task/task.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 
 #define SOFTUART_MAX_RX_BUFF 128
 #define SOFTUART_GPIO_COUNT 13
@@ -225,9 +225,9 @@ static int softuart_setup(lua_State *L)
 	}
 
 	suart = (softuart_userdata*)lua_newuserdata(L, sizeof(softuart_userdata));
-	suart->softuart = c_zalloc(sizeof(softuart_t));
+	suart->softuart = malloc(sizeof(softuart_t));
 	if (!suart->softuart) {
-		c_free(suart->softuart);
+		free(suart->softuart);
 		suart->softuart = NULL;
 		return luaL_error(L, "Not enough memory");
 	}
@@ -311,7 +311,7 @@ static int softuart_on(lua_State *L)
 		lua_pushnil(L);
 	}
 
-    if (name_len == 4 && c_strcmp(method, "data") == 0) {
+    if (name_len == 4 && strcmp(method, "data") == 0) {
 
     	if(suart->softuart->pin_rx == 0xFF) {
     		return luaL_error(L, "Rx pin was not declared");
@@ -381,7 +381,7 @@ static int softuart_gcdelete(lua_State *L)
 	softuart_gpio_instances[suart->softuart->pin_rx] = NULL;
 	luaL_unref(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[suart->softuart->pin_rx]);
 	softuart_rx_cb_ref[suart->softuart->pin_rx] = LUA_NOREF;
-	c_free(suart->softuart);
+	free(suart->softuart);
 	return 0;
 }
 
