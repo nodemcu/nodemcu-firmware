@@ -16,7 +16,7 @@ but any subsequent callbacks will, of course, execute in the default thread.
 Interaction between the coroutine and the parent is through yield and resume 
 statements, and since the order of SDK tasks is indeterminate, the application 
 must take care to handle any ordering issues.  This particular example uses
-the `node.task.post()` API withi the `taskYield()`function to resume itself, 
+the `node.task.post()` API with the `taskYield()`function to resume itself, 
 so the running code can simple call `taskYield()` at regular points in the 
 processing to spilt the work into separate SDK tasks.
 
@@ -24,17 +24,35 @@ A similar approach could be based on timer or on a socket or pipe CB.  If you
 want to develop such a variant then start by reviewing the source and understanding
 what it does. 
 
-## Use
-```Lua
-do
-  local function longRunningFunc(yield, ...)
-  -- <content of function to be split into tasks>
-  end
-  require "cohelper".exec(longRunningFunc, params)
-end
+### Require
+```lua
+local cohelper = require("cohelper")
+-- or linked directly with the  `exec()` method
+require("cohelper").exec(func, <params>)
 ```
 
-## Full Example
+### Release
+
+Not required.  All resoruces are release on completion of the `exec()` method
+
+## `cohelper.exec()`
+Execute a function which is wrapper by a coroutine handler.
+
+#### Syntax
+`require("cohelper").exec(func, <params>)`
+
+#### Parameters
+- `func`: Port number for HTTP server. Most HTTP servers listen at port 80.
+- `<params>`: list of 0 or more parameters used to initialise func.  the number and types must be matched to the funct declaration  
+
+#### Returns
+Return result of first yield.
+
+#### Notes
+1.  The coroutine function `func()` has 1+_n_ arguments The first is the supplied task yield function. Calling this yield function within `func()` will temporarily break execution and cause an SDK reschedule which migh allow other executinng tasks to be executed before is resumed. The remaining arguments are passed to the `func()` on first call.
+2.  The current implementation passes a single integer parameter across `resume()` /   `yield()` interface.  This acts to count the number of yields that occur.  Depending on your appplication requirements, you might wish to amend this.
+
+### Full Example
 
 Here is a function which recursively walks the globals environment, the ROM table
 and the Registry. Without coroutining, this walk terminate with a PANIC following

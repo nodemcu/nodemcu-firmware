@@ -21,7 +21,7 @@ end
 return { exec = function(func, ...) -- upval: modname
   package.loaded[modname] = nil
   local co = coroutine.create(func)
-  coroutine.resume(co, taskYieldFactory(co), ... )
+  return coroutine.resume(co, taskYieldFactory(co), ... )
 end }
 
 
