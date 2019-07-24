@@ -20,6 +20,7 @@ addons:
     packages:
     - python-serial
     - srecord
+    - luarocks
 cache:
   - directories:
     - cache
