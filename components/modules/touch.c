@@ -105,7 +105,7 @@ static void touch_task(task_param_t param, task_prio_t prio)
 {
   (void)prio;
 
-  // if (tp->is_debug) ESP_LOGI(TAG, "Got interrupt param: %d", param);
+  //   if (touch_self != NULL && touch_self->is_debug) ESP_LOGI(TAG, "Got interrupt param: %d", param);
 
   // Now see which touch_selfs has cb_refs
   // For now just call all of them
@@ -113,13 +113,13 @@ static void touch_task(task_param_t param, task_prio_t prio)
 
   // old approach was to allow 10 objects. for now we are allowing 1, so go right to it.
   // for (int i = 0; i < touch_selfs_last_index; i++) {
-  touch_t tself = touch_self;
 
   // see if there's any self and a callback on self, if so, do the callback
-  if (tself != NULL) {
-    if (tself->cb_ref != LUA_NOREF) {
+  if (touch_self != NULL) {
+    if (touch_self->cb_ref != LUA_NOREF) {
       // we have a callback
-      lua_rawgeti (L, LUA_REGISTRYINDEX, tself->cb_ref);
+      lua_rawgeti (L, LUA_REGISTRYINDEX, touch_self->cb_ref);
+      char* funcName = lua_tostring(L, -1);
 
       // create a table in c (it will be at the top of the stack)
       lua_newtable(L);
@@ -129,13 +129,20 @@ static void touch_task(task_param_t param, task_prio_t prio)
         if ((param >> i) & 0x01) {
           // s_pad_activated[i] = true;
           l_pushtableintkeybool(L, i, true);
+          //   if (touch_self->is_debug) ESP_LOGI(TAG, "Pushed key %d, bool %d", i, true);
+
         } else {
-          // l_pushtableintkeybool(L, i, false);
+          // don't push false values for now to reduce memory usage
+          //   l_pushtableintkeybool(L, i, false);
+          //   if (touch_self->is_debug) ESP_LOGI(TAG, "Pushed key %d, bool %d", i, false);
         }
       }
 
       // call the cb_ref with one argument
-      lua_pcall(L, 1, 0, 0);
+      /* do the call (1 argument, 0 results) */
+      if (lua_pcall(L, 1, 0, 0) != 0) {
+        ESP_LOGI(TAG, "error running callback function `f': %s", funcName);
+      }
     }
   }
 

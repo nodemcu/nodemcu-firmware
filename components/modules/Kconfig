@@ -173,6 +173,12 @@ config LUA_MODULE_OTAUPGRADE
       a partition table with at least two OTA partitions, plus the OTA data
       partition. See the IDF documentation for details.
 
+config LUA_MODULE_PULSECNT
+  bool "Pulse counter module"
+  default "n"
+  help
+      Includes the pulse counter module to use ESP32's built-in pulse counting hardware.
+
 config LUA_MODULE_QRCODEGEN
   bool "QR Code Generator module"
   default "n"
@@ -228,7 +234,7 @@ config LUA_MODULE_TOUCH
   bool "Touch module"
   default "y"
   help
-      Includes the touch module.
+      Includes the touch module to use ESP32's built-in touch sensor hardware.
 
 config LUA_MODULE_U8G2
   bool "U8G2 module"
@@ -264,11 +270,5 @@ config LUA_MODULE_TIME
   default "n"
   help
       Includes the time module.
-
-config LUA_MODULE_PULSECNT
-  bool "Pulse counter module"
-  default "n"
-  help
-      Includes the pulse counter module.
 
 endmenu
