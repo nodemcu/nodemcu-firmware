@@ -408,7 +408,7 @@ static int enduser_setup_srch_str(const char *str, const char *srch_str)
   char *found = strpbrk (str, srch_str);
   if (!found)
   {
-    return -1;
+    return strlen(str);
   }
   else
   {
