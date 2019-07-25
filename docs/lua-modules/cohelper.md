@@ -3,26 +3,27 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2019-07-24 | [TerryE](https://github.com/TerryE) | [TerryE](https://github.com/TerryE)  | [cohelper.lua](../../lua_modules/cohelper/cohelper.lua) |
 
-This module provides a simple wrapper around long running functions to allow 
+This module provides a simple wrapper around long running functions to allow
 these to execute within the SDK and its advised limit of 15 mSec per individual
-task execution.  It does this by exploiting the standard Lua coroutine 
+task execution.  It does this by exploiting the standard Lua coroutine
 functionality as described in the [Lua RM §2.11](https://www.lua.org/manual/5.1/manual.html#2.11) and [PiL Chapter 9](https://www.lua.org/pil/9.html).
 
 The NodeMCU Lua VM fully supports the standard coroutine functionality. Any
 interactive or callback tasks are executed in the default thread, and the coroutine
-itself runs in a second Lua thread. The coroutine can call any library functions,
-but any subsequent callbacks will, of course, execute in the default thread.
+itself runs in a second separate Lua stack. The coroutine can call any library
+functions, but any subsequent callbacks will, of course, execute in the default
+stack.
 
-Interaction between the coroutine and the parent is through yield and resume 
-statements, and since the order of SDK tasks is indeterminate, the application 
+Interaction between the coroutine and the parent is through yield and resume
+statements, and since the order of SDK tasks is indeterminate, the application
 must take care to handle any ordering issues.  This particular example uses
-the `node.task.post()` API with the `taskYield()`function to resume itself, 
-so the running code can simple call `taskYield()` at regular points in the 
-processing to spilt the work into separate SDK tasks.
+the `node.task.post()` API with the `taskYield()`function to resume itself,
+so the running code can call `taskYield()` at regular points in the processing
+to spilt the work into separate SDK tasks.
 
-A similar approach could be based on timer or on a socket or pipe CB.  If you 
+A similar approach could be based on timer or on a socket or pipe CB.  If you
 want to develop such a variant then start by reviewing the source and understanding
-what it does. 
+what it does.
 
 ### Require
 ```lua
@@ -33,17 +34,17 @@ require("cohelper").exec(func, <params>)
 
 ### Release
 
-Not required.  All resoruces are release on completion of the `exec()` method
+Not required.  All resources are released on completion of the `exec()` method.
 
 ## `cohelper.exec()`
-Execute a function which is wrapper by a coroutine handler.
+Execute a function which is wrapped by a coroutine handler.
 
 #### Syntax
 `require("cohelper").exec(func, <params>)`
 
 #### Parameters
-- `func`: Port number for HTTP server. Most HTTP servers listen at port 80.
-- `<params>`: list of 0 or more parameters used to initialise func.  the number and types must be matched to the funct declaration  
+- `func`: Lua function to be executed as a coroutine.
+- `<params>`: list of 0 or more parameters used to initialise func.  the number and types must be matched to the funct declaration
 
 #### Returns
 Return result of first yield.
