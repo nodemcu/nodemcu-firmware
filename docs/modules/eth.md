@@ -74,12 +74,20 @@ An error is thrown in case of invalid parameters or if the ethernet driver faile
 
 #### Example
 ```lua
+-- Initialize ESP32-GATEWAY
 eth.init({phy  = eth.PHY_LAN8720,
           addr = 0,
           clock_mode = eth.CLOCK_GPIO17_OUT,
           power = 5,
           mdc   = 23,
           mdio  = 18})
+
+-- Initialize wESP32
+eth.init({phy  = eth.PHY_LAN8720,
+          addr = 0,
+          clock_mode = eth.CLOCK_GPIO0_IN,
+          mdc   = 16,
+          mdio  = 17})
 ```
 
 
