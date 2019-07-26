@@ -646,6 +646,8 @@ static int file_vol_umount( lua_State *L )
 
 
 LROT_BEGIN(file_obj)
+  LROT_FUNCENTRY( __gc, file_obj_free )
+  LROT_TABENTRY(  __index, file_obj )
   LROT_FUNCENTRY( close, file_close )
   LROT_FUNCENTRY( read, file_read )
   LROT_FUNCENTRY( readline, file_readline )
@@ -653,29 +655,13 @@ LROT_BEGIN(file_obj)
   LROT_FUNCENTRY( writeline, file_writeline )
   LROT_FUNCENTRY( seek, file_seek )
   LROT_FUNCENTRY( flush, file_flush )
-  LROT_FUNCENTRY( __gc, file_obj_free )
-  LROT_TABENTRY( __index, file_obj )
-LROT_END( file_obj, file_obj, LROT_MASK_GC_INDEX )
+LROT_END( file_obj, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_BEGIN(file_vol)
-  LROT_FUNCENTRY( umount, file_vol_umount )
-  //  LROT_FUNCENTRY( getfree, file_vol_getfree )
-  //  LROT_FUNCENTRY( getlabel, file_vol_getlabel )
-  //  LROT_FUNCENTRY( __gc, file_vol_free )
   LROT_TABENTRY( __index, file_vol )
-LROT_END( file_vol, file_vol, LROT_MASK_GC_INDEX )
-
-#ifdef BUILD_SPIFFS
-#define LROT_FUNCENTRY_S(n,f) LROT_FUNCENTRY(n,f)
-#else
-#define LROT_FUNCENTRY_S(n,f) 
-#endif
-#ifdef BUILD_FATFS
-#define LROT_FUNCENTRY_F(n,f) LROT_FUNCENTRY(n,f)
-#else
-#define LROT_FUNCENTRY_F(n,f) 
-#endif
+  LROT_FUNCENTRY( umount, file_vol_umount )
+LROT_END( file_vol, NULL, LROT_MASK_INDEX )
 
 // Module function map
 LROT_BEGIN(file)
@@ -686,8 +672,10 @@ LROT_BEGIN(file)
   LROT_FUNCENTRY( writeline, file_writeline )
   LROT_FUNCENTRY( read, file_read )
   LROT_FUNCENTRY( readline, file_readline )
-  LROT_FUNCENTRY_S( format, file_format )
-  LROT_FUNCENTRY_S( fscfg, file_fscfg )
+#ifdef BUILD_SPIFFS
+  LROT_FUNCENTRY( format, file_format )
+  LROT_FUNCENTRY( fscfg, file_fscfg )
+#endif
   LROT_FUNCENTRY( remove, file_remove )
   LROT_FUNCENTRY( seek, file_seek )
   LROT_FUNCENTRY( flush, file_flush )
@@ -698,8 +686,10 @@ LROT_BEGIN(file)
   LROT_FUNCENTRY( fsinfo, file_fsinfo )
   LROT_FUNCENTRY( on, file_on )
   LROT_FUNCENTRY( stat, file_stat )
-  LROT_FUNCENTRY_F( mount, file_mount )
-  LROT_FUNCENTRY_F( chdir, file_chdir )
+#ifdef BUILD_FATFS
+  LROT_FUNCENTRY( mount, file_mount )
+  LROT_FUNCENTRY( chdir, file_chdir )
+#endif
 LROT_END( file, NULL, 0 )
 
 

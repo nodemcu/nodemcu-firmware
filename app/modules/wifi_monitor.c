@@ -764,12 +764,12 @@ LROT_BEGIN(packet_function)
   LROT_FUNCENTRY( frame_sub, packet_frame_sub )
   LROT_FUNCENTRY( radio_subhex, packet_radio_subhex )
   LROT_FUNCENTRY( frame_subhex, packet_frame_subhex )
-LROT_END( packet_function, packet_function, LROT_MASK_INDEX )
+LROT_END( packet_function, NULL, 0 )
 
 
 LROT_BEGIN(packet)
   LROT_FUNCENTRY( __index, packet_map_lookup )
-LROT_END( packet, packet, LROT_MASK_INDEX )
+LROT_END( packet, NULL, LROT_MASK_INDEX )
 
 
 // Module function map

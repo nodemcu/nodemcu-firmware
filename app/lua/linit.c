@@ -83,15 +83,11 @@ LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(libs) lua_libs)
   LROT_FUNCENTRY( string, luaopen_string )
   LROT_FUNCENTRY( table, luaopen_table )
   LROT_FUNCENTRY( debug, luaopen_debug )
-#ifndef LUA_CROSS_COMPILER
-LROT_BREAK(lua_rotables)
-#else
+#ifdef LUA_CROSS_COMPILER
   LROT_FUNCENTRY( io, luaopen_io )
-LROT_END( lua_libs, NULL, 0)
-#endif
-
-#ifndef LUA_CROSS_COMPILER
-extern void luaL_dbgbreak(void);
+LROT_END(lua_libs, NULL, 0)
+#else
+LROT_BREAK(lua_libs)
 #endif
 
 void luaL_openlibs (lua_State *L) {
@@ -99,9 +95,6 @@ void luaL_openlibs (lua_State *L) {
   lua_pushrotable(L, LROT_TABLEREF(lua_libs));
   lua_pushnil(L);  /* first key */
   /* loop round and open libraries */
-#ifndef LUA_CROSS_COMPILER
-// luaL_dbgbreak();  // This is a test point for debugging library start ups
-#endif
   while (lua_next(L, -2) != 0) {
     if (lua_islightfunction(L,-1) &&
         fvalue(L->top-1)) { // only process function entries

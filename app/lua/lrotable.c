@@ -7,6 +7,7 @@
 #include "lauxlib.h"
 #include "lstring.h"
 #include "lobject.h"
+#include "ltm.h"
 #include "lapi.h"
 
 #ifdef _MSC_VER
@@ -47,92 +48,81 @@ typedef struct {
 
 static cache_line_t cache [LA_LINES][LA_SLOTS];
 
-#ifdef COLLECT_STATS
-unsigned cache_stats[3];
-#define COUNT(i) cache_stats[i]++
-#else
-#define COUNT(i)
-#endif
-
-static int lookup_cache(unsigned hash, ROTable *rotable) {
-  int i = (hash>>2) & (LA_LINES-1), j;
-
-  for (j = 0; j<LA_SLOTS; j++) {
-    cache_line_t cl = cache[i][j];
-    if (cl.hash == hash && ((size_t)rotable & 0xffffffu) == cl.addr) {
-      COUNT(0);
-      return cl.ndx;
-    }
-  }
-  COUNT(1);
-  return -1;
-}
-
-static void update_cache(unsigned hash, ROTable *rotable, unsigned ndx) {
-  int i = (hash)>>2 & (LA_LINES-1), j;
-#ifndef _MSC_VER
-  cache_line_t cl = {hash, (size_t) rotable, ndx};
-#else
-  cache_line_t cl;             // MSC doesn't allow non-scalar initialisers, which
-  cl.hash = hash;              // is a pity because xtensa gcc generates optimum   
-  cl.addr = (size_t) rotable;  // code using them.
-  cl.ndx  = ndx;
-#endif
-
-  COUNT(2);
-  if (ndx>0xffu)
-    return;
-  for (j = LA_SLOTS-1; j>0; j--)
-    cache[i][j] = cache[i][j-1];
-  cache[i][0] = cl;
-}
 /*
  * Find a string key entry in a rotable and return it.  Note that this internally
  * uses a null key to denote a metatable search.
  */
 const TValue* luaR_findentry(ROTable *rotable, TString *key, unsigned *ppos) {
   const luaR_entry *pentry = rotable;
-  const char *strkey = key ? getstr(key) : ALIGNED_STRING "__metatable" ;
+  const char *strkey = getstr(key);
   unsigned   hash    = HASH(rotable, key);
+  cache_line_t *cl = &cache[(hash>>2) & (LA_LINES-1)][0];
+  int i, j;
+  int l = key->tsv.len;
 
-  unsigned    i      = 0;
-  int         j      = lookup_cache(hash, rotable);
-  unsigned    l      = key ? key->tsv.len : sizeof("__metatable")-1;
+  if (!pentry)
+    return luaO_nilobject;
 
-  if (pentry) {
-    if (j >= 0 && !strcmp(pentry[j].key, strkey)) {
-      if (ppos)
-        *ppos = j;
-//dbg_printf("%3d hit  %p %s\n", (hash>>2) & (LA_LINES-1), rotable, strkey);
-      return &pentry[j].value;
-    }
-    /*
-     * The invariants for 1st word comparison are deferred to here since they
-     * aren't needed if there is a cache hit. Note that the termination null
-     * is included so a "on\0" has a mask of 0xFFFFFF and "a\0" has 0xFFFF.
-     */
-    unsigned name4, mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
-    memcpy(&name4, strkey, sizeof(name4));
-
-    for(;pentry->key != NULL; i++, pentry++) {
-      if (((*(unsigned *)pentry->key ^ name4) & mask4) == 0 &&
-          !strcmp(pentry->key, strkey)) {
-//dbg_printf("%p %s hit after %d probes \n", rotable, strkey, (int)(rotable-pentry));
+  /* scan the ROTable lookaside cache and return if hit found */
+  for (i=0; i<LA_SLOTS; i++) {
+    if (cl[i].hash == hash && ((size_t)rotable & 0xffffffu) == cl[i].addr) {
+      int j = cl[i].ndx;
+      if (strcmp(pentry[j].key, strkey) == 0) {
         if (ppos)
-          *ppos = i;
-        update_cache(hash, rotable, pentry - rotable);
-//dbg_printf("%3d %3d  %p %s\n", (hash>>2) & (LA_LINES-1), (int)(pentry-rotable), rotable, strkey);
-       return &pentry->value;
+          *ppos = j;
+        return &pentry[j].value;
       }
     }
   }
-//dbg_printf("%p %s miss after %d probes \n", rotable, strkey, (int)(rotable-pentry));
-  return luaO_nilobject;
+
+  lu_int32 name4 = *(lu_int32 *) strkey;
+  memcpy(&name4, strkey, sizeof(name4));
+ /*
+  * A lot of search misses are metavalues, but tables typically only have at
+  * most a couple of them, so these are always put at the front of the table
+  * in ascending order and the metavalue scan short circuits using a straight
+  * strcmp()
+  */
+  if (*(char*)&name4  == '_') {
+    for(j=-1; pentry->key; pentry++) {
+      j = strcmp(pentry->key, strkey);
+      if (j>=0)
+        break;
+    }
+  } else {
+ /*
+  * Ordinary (non-meta) keys can be unsorted.  This is for legacy
+  * compatiblity, plus misses are pretty rare in this case.
+  */   
+    lu_int32 mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
+    for(j=1; pentry->key ; pentry++) {
+      if (((*(lu_int32 *)pentry->key ^ name4) & mask4) != 0)
+        continue;
+      j = strcmp(pentry->key, strkey);
+      if (j==0)
+        break;
+    }
+  }
+  if (j)
+    return luaO_nilobject;
+  if (ppos)
+    *ppos = pentry - rotable;
+  /* In the case of a hit, update the lookaside cache */
+  for (j = LA_SLOTS-1; j>0; j--)
+    cl[j] = cl[j-1];
+  cl->hash = hash;
+  cl->addr = (size_t) rotable;
+  cl->ndx  = pentry - rotable;
+  return &pentry->value;
 }
 
 /* Find the metatable of a given table */
 void* luaR_getmeta(ROTable *rotable) {
-  const TValue *res = luaR_findentry(rotable, NULL, NULL);
+  static TString *TS__metatable = NULL;
+  if (TS__metatable == NULL) {
+    TS__metatable = G(lua_getstate())->tmname[TM_METATABLE];
+  }
+  const TValue *res = luaR_findentry(rotable, TS__metatable, NULL);
   return res && ttisrotable(res) ? rvalue(res) : NULL;
 }
 

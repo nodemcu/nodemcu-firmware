@@ -246,7 +246,7 @@ SECTIONS
     /* Allow either empty define or defined-to-1 to include the module */
     KEEP(*(.lua_libs))
     LONG(0) LONG(0) /* Null-terminate the array */
-    lua_rotable_base = ABSOLUTE(.);
+    lua_rotable_base_map = ABSOLUTE(.);
     KEEP(*(.lua_rotable))
     LONG(0) LONG(0) /* Null-terminate the array */
 

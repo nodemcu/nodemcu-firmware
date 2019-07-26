@@ -225,12 +225,12 @@ static void cron_handle_tmr() {
 }
 
 LROT_BEGIN(cronent)
+  LROT_FUNCENTRY( __gc, lcron_delete )
+  LROT_TABENTRY(  __index, cronent )
   LROT_FUNCENTRY( schedule, lcron_schedule )
   LROT_FUNCENTRY( handler, lcron_handler )
   LROT_FUNCENTRY( unschedule, lcron_unschedule )
-  LROT_FUNCENTRY( __gc, lcron_delete )
-  LROT_TABENTRY( __index, cronent )
-LROT_END( cronent, cronent, LROT_MASK_GC_INDEX )
+LROT_END( cronent, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_BEGIN(cron)

@@ -440,6 +440,7 @@ static int f_flush (lua_State *L) {
 }
 
 LROT_PUBLIC_BEGIN(iolib)
+  LROT_TABENTRY( __index, iolib )
   LROT_FUNCENTRY( close, io_close )
   LROT_FUNCENTRY( flush, io_flush )
   LROT_FUNCENTRY( input, io_input )
@@ -449,10 +450,12 @@ LROT_PUBLIC_BEGIN(iolib)
   LROT_FUNCENTRY( read, io_read )
   LROT_FUNCENTRY( type, io_type )
   LROT_FUNCENTRY( write, io_write )
-  LROT_TABENTRY( __index, iolib )
-LROT_END(iolib, NULL, 0)
+LROT_END(iolib, NULL, LROT_MASK_GC_INDEX)
 
 LROT_BEGIN(flib)
+  LROT_FUNCENTRY( __gc, io_gc )
+  LROT_TABENTRY(  __index, flib )
+  LROT_FUNCENTRY( __tostring, io_tostring )
   LROT_FUNCENTRY( close, io_close )
   LROT_FUNCENTRY( flush, f_flush )
   LROT_FUNCENTRY( lines, f_lines )
@@ -460,9 +463,6 @@ LROT_BEGIN(flib)
   LROT_FUNCENTRY( seek, f_seek )
   LROT_FUNCENTRY( setvbuf, f_setvbuf )
   LROT_FUNCENTRY( write, f_write )
-  LROT_FUNCENTRY( __gc, io_gc )
-  LROT_FUNCENTRY( __tostring, io_tostring )
-  LROT_TABENTRY( __index, flib )
 LROT_END(flib, NULL, LROT_MASK_GC_INDEX)
 
 static const luaL_Reg io_base[] = {{NULL, NULL}};

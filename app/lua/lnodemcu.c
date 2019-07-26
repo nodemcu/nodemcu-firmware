@@ -31,13 +31,13 @@ static int report_traceback (lua_State *L) {
 // **Temp**  lua_rawgeti(L, LUA_REGISTRYINDEX, G(L)->error_reporter);
   lua_getglobal(L, "print");
   lua_pushvalue(L, lua_upvalueindex(1));
-  lua_call(L, 1, 0);  /* Using an error handler would cause an infinite loop! */ 
+  lua_call(L, 1, 0);  /* Using an error handler would cause an infinite loop! */
   return 0;
 }
 
 /*
 ** Catch all error handler for CB calls.  This uses debug.traceback() to
-** generate a full Lua traceback.  
+** generate a full Lua traceback.
 */
 int luaN_traceback (lua_State *L) {
   if (lua_isstring(L, 1)) {
@@ -47,13 +47,13 @@ int luaN_traceback (lua_State *L) {
     lua_call(L, 2, 1);      /* call debug.traceback and return it as a string */
     lua_pushcclosure(L, report_traceback, 1);     /* report with str as upval */
     luaN_posttask(L, LUA_TASK_HIGH);
-  } 
+  }
   return 0;
 }
 
 /*
 ** Use in CBs and other C functions to call a Lua function. This includes
-** an error handler which will catch any error and then post this to the 
+** an error handler which will catch any error and then post this to the
 ** registered reporter function as a separate follow-on task.
 */
 int luaN_call (lua_State *L, int narg, int nres, int doGC) { // [-narg, +0, v]
@@ -64,9 +64,9 @@ int luaN_call (lua_State *L, int narg, int nres, int doGC) { // [-narg, +0, v]
   status = lua_pcall(L, narg, (nres < 0 ? LUA_MULTRET : nres), base);
   lua_remove(L, base);                           /* remove traceback function */
   if (status && nres >=0)
-    lua_settop(L, base + nres);                 /* balance the stack on error */ 
+    lua_settop(L, base + nres);                 /* balance the stack on error */
   /* force a complete garbage collection if requested */
-  if (doGC) 
+  if (doGC)
     lua_gc(L, LUA_GCCOLLECT, 0);
   return status;
 }

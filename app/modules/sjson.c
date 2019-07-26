@@ -993,18 +993,18 @@ static int sjson_encoder_destructor(lua_State *L) {
 }
 
 LROT_BEGIN(sjson_encoder)
-  LROT_FUNCENTRY( read, sjson_encoder_read )
   LROT_FUNCENTRY( __gc, sjson_encoder_destructor )
-  LROT_TABENTRY( __index, sjson_encoder )
-LROT_END( sjson_encoder, sjson_encoder, LROT_MASK_GC_INDEX )
+  LROT_TABENTRY(  __index, sjson_encoder )
+  LROT_FUNCENTRY( read, sjson_encoder_read )
+LROT_END( sjson_encoder, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_BEGIN(sjson_decoder)
+  LROT_FUNCENTRY( __gc, sjson_decoder_destructor )
+  LROT_TABENTRY(  __index, sjson_decoder )
   LROT_FUNCENTRY( write, sjson_decoder_write )
   LROT_FUNCENTRY( result, sjson_decoder_result )
-  LROT_FUNCENTRY( __gc, sjson_decoder_destructor )
-  LROT_TABENTRY( __index, sjson_decoder )
-LROT_END( sjson_decoder, sjson_decoder, LROT_MASK_GC_INDEX )
+LROT_END( sjson_decoder, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_BEGIN(sjson)
@@ -1012,7 +1012,6 @@ LROT_BEGIN(sjson)
   LROT_FUNCENTRY( decode, sjson_decode )
   LROT_FUNCENTRY( encoder, sjson_encoder )
   LROT_FUNCENTRY( decoder, sjson_decoder )
-  LROT_LUDENTRY( NULL, 0 )
 LROT_END( sjson, NULL, 0 )
 
 LUALIB_API int luaopen_sjson (lua_State *L) {

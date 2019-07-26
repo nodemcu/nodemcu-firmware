@@ -740,7 +740,7 @@ int net_getaddr( lua_State *L ) {
 static void dbg_print_ud(const char *title, lnet_userdata *ud) {
   int i;
   dbg_printf("%s: Userdata %p:", title, ud);
-  for (i=0; i<(sizeof(*ud)/sizeof(uint32_t)); i++) 
+  for (i=0; i<(sizeof(*ud)/sizeof(uint32_t)); i++)
     dbg_printf( "  0x%08x", ((uint32_t *)ud)[i]);
   dbg_printf("\n");
 #endif
@@ -988,15 +988,17 @@ LROT_EXTERN(tls_cert);
 
 // Module function map
 LROT_BEGIN(net_tcpserver)
+  LROT_FUNCENTRY( __gc, net_delete )
+  LROT_TABENTRY(  __index, net_tcpserver )
   LROT_FUNCENTRY( listen, net_listen )
   LROT_FUNCENTRY( getaddr, net_getaddr )
   LROT_FUNCENTRY( close, net_close )
-  LROT_FUNCENTRY( __gc, net_delete )
-  LROT_TABENTRY( __index, net_tcpserver )
-LROT_END( net_tcpserver, net_tcpserver, 0 )
+LROT_END( net_tcpserver, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_BEGIN(net_tcpsocket)
+  LROT_FUNCENTRY( __gc, net_delete )
+  LROT_TABENTRY(  __index, net_tcpsocket )
   LROT_FUNCENTRY( connect, net_connect )
   LROT_FUNCENTRY( close, net_close )
   LROT_FUNCENTRY( on, net_on )
@@ -1007,12 +1009,12 @@ LROT_BEGIN(net_tcpsocket)
   LROT_FUNCENTRY( ttl, net_ttl )
   LROT_FUNCENTRY( getpeer, net_getpeer )
   LROT_FUNCENTRY( getaddr, net_getaddr )
-  LROT_FUNCENTRY( __gc, net_delete )
-  LROT_TABENTRY( __index, net_tcpsocket )
-LROT_END( net_tcpsocket, net_tcpsocket, 0 )
+LROT_END( net_tcpsocket, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_BEGIN(net_udpsocket)
+  LROT_FUNCENTRY( __gc, net_delete )
+  LROT_TABENTRY(  __index, net_udpsocket )
   LROT_FUNCENTRY( listen, net_listen )
   LROT_FUNCENTRY( close, net_close )
   LROT_FUNCENTRY( on, net_on )
@@ -1020,16 +1022,14 @@ LROT_BEGIN(net_udpsocket)
   LROT_FUNCENTRY( dns, net_dns )
   LROT_FUNCENTRY( ttl, net_ttl )
   LROT_FUNCENTRY( getaddr, net_getaddr )
-  LROT_FUNCENTRY( __gc, net_delete )
-  LROT_TABENTRY( __index, net_udpsocket )
-LROT_END( net_udpsocket, net_udpsocket, 0 )
+LROT_END( net_udpsocket, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_BEGIN(net_dns)
   LROT_FUNCENTRY( setdnsserver, net_setdnsserver )
   LROT_FUNCENTRY( getdnsserver, net_getdnsserver )
   LROT_FUNCENTRY( resolve, net_dns_static )
-LROT_END( net_dns, net_dns, 0 )
+LROT_END( net_dns, NULL, 0 )
 
 
 LROT_BEGIN(net)
@@ -1044,8 +1044,7 @@ LROT_BEGIN(net)
 #endif
   LROT_NUMENTRY( TCP, TYPE_TCP )
   LROT_NUMENTRY( UDP, TYPE_UDP )
-  LROT_TABENTRY( __metatable, net )
-LROT_END( net, net, 0 )
+LROT_END( net, NULL, 0 )
 
 
 int luaopen_net( lua_State *L ) {

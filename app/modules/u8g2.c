@@ -567,6 +567,7 @@ static int lu8g2_updateDisplayArea( lua_State *L )
 
 
 LROT_BEGIN(lu8g2_display)
+  LROT_TABENTRY(  __index, lu8g2_display )
   LROT_FUNCENTRY( clearBuffer, lu8g2_clearBuffer )
   LROT_FUNCENTRY( drawBox, lu8g2_drawBox )
   LROT_FUNCENTRY( drawCircle, lu8g2_drawCircle )
@@ -608,9 +609,7 @@ LROT_BEGIN(lu8g2_display)
   LROT_FUNCENTRY( setPowerSave, lu8g2_setPowerSave )
   LROT_FUNCENTRY( updateDispla, lu8g2_updateDisplay )
   LROT_FUNCENTRY( updateDisplayArea, lu8g2_updateDisplayArea )
-  //  LROT_FUNCENTRY( __gc, lu8g2_display_free )
-  LROT_TABENTRY( __index, lu8g2_display )
-LROT_END( lu8g2_display, lu8g2_display, LROT_MASK_GC_INDEX )
+LROT_END( lu8g2_display, NULL, LROT_MASK_INDEX )
 
 
 uint8_t u8x8_d_overlay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);

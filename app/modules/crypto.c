@@ -188,7 +188,7 @@ static int crypto_new_hash_hmac (lua_State *L, int what)
     k_opad_len = mi->block_size;
   }
 
-  // create a userdatum with specific metatable.  This comprises the ud header, 
+  // create a userdatum with specific metatable.  This comprises the ud header,
   // the encrypto context block, and an optional HMAC block as a single allocation
   // unit
   udlen = sizeof(digest_user_datum_t) + mi->ctx_size + k_opad_len;
@@ -198,10 +198,10 @@ static int crypto_new_hash_hmac (lua_State *L, int what)
 
   void *ctx = dudat + 1;  // The context block immediately follows the digest_user_datum
   mi->create (ctx);
-  
+
   if (what == WANT_HMAC) {
     // The k_opad block immediately follows the context block
-    k_opad = (char *)ctx + mi->ctx_size; 
+    k_opad = (char *)ctx + mi->ctx_size;
     crypto_hmac_begin (ctx, mi, key, len, k_opad);
   }
 
@@ -384,10 +384,10 @@ static int lcrypto_decrypt (lua_State *L)
 
 // Hash function map
 LROT_BEGIN(crypto_hash)
+  LROT_TABENTRY( __index, crypto_hash )
   LROT_FUNCENTRY( update, crypto_hash_update )
   LROT_FUNCENTRY( finalize, crypto_hash_finalize )
-  LROT_TABENTRY( __index, crypto_hash )
-LROT_END( crypto_hash, crypto_hash, LROT_MASK_INDEX )
+LROT_END( crypto_hash, NULL, LROT_MASK_INDEX )
 
 
 

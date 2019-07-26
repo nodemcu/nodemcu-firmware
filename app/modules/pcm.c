@@ -230,14 +230,14 @@ static int pcm_new( lua_State *L )
 
 
 LROT_BEGIN(pcm_driver)
+  LROT_FUNCENTRY( __gc, pcm_drv_free )
+  LROT_TABENTRY(  __index, pcm_driver )
   LROT_FUNCENTRY( play, pcm_drv_play )
   LROT_FUNCENTRY( pause, pcm_drv_pause )
   LROT_FUNCENTRY( stop, pcm_drv_stop )
   LROT_FUNCENTRY( close, pcm_drv_close )
   LROT_FUNCENTRY( on, pcm_drv_on )
-  LROT_FUNCENTRY( __gc, pcm_drv_free )
-  LROT_TABENTRY( __index, pcm_driver )
-LROT_END( pcm_driver, pcm_driver, LROT_MASK_GC_INDEX )
+LROT_END( pcm_driver, NULL, LROT_MASK_GC_INDEX )
 
 
 // Module function map

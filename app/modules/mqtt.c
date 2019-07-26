@@ -1843,6 +1843,8 @@ static int mqtt_socket_lwt( lua_State* L )
 
 // Module function map
 LROT_BEGIN(mqtt_socket)
+  LROT_FUNCENTRY( __gc, mqtt_delete )
+  LROT_TABENTRY(  __index, mqtt_socket )
   LROT_FUNCENTRY( connect, mqtt_socket_connect )
   LROT_FUNCENTRY( close, mqtt_socket_close )
   LROT_FUNCENTRY( publish, mqtt_socket_publish )
@@ -1850,15 +1852,12 @@ LROT_BEGIN(mqtt_socket)
   LROT_FUNCENTRY( unsubscribe, mqtt_socket_unsubscribe )
   LROT_FUNCENTRY( lwt, mqtt_socket_lwt )
   LROT_FUNCENTRY( on, mqtt_socket_on )
-  LROT_FUNCENTRY( __gc, mqtt_delete )
-  LROT_TABENTRY( __index, mqtt_socket )
-LROT_END( mqtt_socket, mqtt_socket, 0 )
+LROT_END( mqtt_socket, NULL, LROT_MASK_GC_INDEX )
 
 
 
 LROT_BEGIN(mqtt)
   LROT_FUNCENTRY( Client, mqtt_socket_client )
-
   LROT_NUMENTRY( CONN_FAIL_SERVER_NOT_FOUND, MQTT_CONN_FAIL_SERVER_NOT_FOUND )
   LROT_NUMENTRY( CONN_FAIL_NOT_A_CONNACK_MSG, MQTT_CONN_FAIL_NOT_A_CONNACK_MSG )
   LROT_NUMENTRY( CONN_FAIL_DNS, MQTT_CONN_FAIL_DNS )
@@ -1870,9 +1869,7 @@ LROT_BEGIN(mqtt)
   LROT_NUMENTRY( CONNACK_REFUSED_SERVER_UNAVAILABLE, MQTT_CONNACK_REFUSED_SERVER_UNAVAILABLE )
   LROT_NUMENTRY( CONNACK_REFUSED_BAD_USER_OR_PASS, MQTT_CONNACK_REFUSED_BAD_USER_OR_PASS )
   LROT_NUMENTRY( CONNACK_REFUSED_NOT_AUTHORIZED, MQTT_CONNACK_REFUSED_NOT_AUTHORIZED )
-
-  LROT_TABENTRY( __metatable, mqtt )
-LROT_END( mqtt, mqtt, 0 )
+LROT_END( mqtt, NULL, 0 )
 
 
 int luaopen_mqtt( lua_State *L )

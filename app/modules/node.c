@@ -176,7 +176,7 @@ static int node_input( lua_State* L ) {
   luaL_checkstring(L, 1);
   lua_getfield(L, LUA_REGISTRYINDEX, "stdin");
   lua_rawgeti(L, -1, 1);             /* get the pipe_write func from stdin[1] */
-  lua_insert(L, -2);                           /* and move above the pipe ref */ 
+  lua_insert(L, -2);                           /* and move above the pipe ref */
   lua_pushvalue(L, 1);
   lua_call(L, 2, 0);                                     /* stdin:write(line) */
   return 0;
@@ -194,7 +194,7 @@ void output_redirect(const char *str) {
       uart0_sendStr(str);
     }
     lua_rawgeti(L, -1, 1);          /* get the pipe_write func from stdout[1] */
-    lua_insert(L, -2);                         /* and move above the pipe ref */ 
+    lua_insert(L, -2);                         /* and move above the pipe ref */
     lua_pushstring(L, str);
     lua_call(L, 2, 0);                               /* Reg.stdout:write(str) */
 
@@ -213,7 +213,7 @@ static int node_output( lua_State* L )
   lua_settop(L, 1);
   if (lua_isanyfunction(L, 1)) {
     lua_pushlightfunction(L, &pipe_create);
-    lua_insert(L, 1); 
+    lua_insert(L, 1);
     lua_pushinteger(L, LUA_TASK_MEDIUM);
     lua_call(L, 2, 1);             /* T[1] = pipe.create(CB, medium_priority) */
   } else {    // remove the stdout pipe
@@ -222,7 +222,7 @@ static int node_output( lua_State* L )
     serial_debug = 1;
   }
   lua_pushliteral(L, "stdout");
-  lua_insert(L, 1); 
+  lua_insert(L, 1);
   lua_rawset(L, LUA_REGISTRYINDEX);               /* Reg.stdout = nil or pipe */
   return 0;
 }

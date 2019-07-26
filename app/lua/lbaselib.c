@@ -453,27 +453,30 @@ static int luaB_newproxy (lua_State *L) {
 
 #include "lrotable.h"
 
-LROT_EXTERN(lua_rotable_base);
-
 /*
- * Separate ROTables are used for the base functions and library ROTables, with
- * the base functions ROTable declared below.  The library ROTable is chained
- * from this using its __index meta-method.
- *
  * ESP builds use specific linker directives to marshal all the ROTable entries
  * for the library modules into a single ROTable in the PSECT ".lua_rotable".
- * This is not practical on Posix builds using a standard GNU link, so the
- * equivalent ROTable for the core libraries defined in linit.c for the cross-
- * compiler build.
+ *
+ * This is not easily achieveable on host luac.cross builds which must use a
+ * standard GNU link or MSVC, so the equivalent ROTable for the core libraries
+ * is defined in linit.c and separate ROTables are used for the base functions
+ * and library ROTables; the base functions ROTable is declared below, with
+ * the library ROTable chained from this using its __index meta-method.
  */
-
+#ifdef LUA_CROSS_COMPILER
+#define BASE_REF LROT_TABLEREF(base_func)
 LROT_EXTERN(lua_rotables);
-
 LROT_PUBLIC_BEGIN(base_func_meta)
   LROT_TABENTRY( __index, lua_rotables )
-LROT_END(base_func, base_func_meta, LROT_MASK_INDEX)
+LROT_END(base_func_meta, NULL, LROT_MASK_INDEX)
 
 LROT_PUBLIC_BEGIN(base_func)
+  LROT_METATABENTRY( base_func_meta )
+#else
+#define BASE_REF LROT_TABLEREF(lua_rotable_base)
+LROT_EXTERN(lua_rotable_base);
+LROT_PUBLIC_BEGIN(LOCK_IN_SECTION(rotable) base_func)
+#endif
   LROT_FUNCENTRY(assert,         luaB_assert)
   LROT_FUNCENTRY(collectgarbage, luaB_collectgarbage)
   LROT_FUNCENTRY(dofile,         luaB_dofile)
@@ -498,12 +501,11 @@ LROT_PUBLIC_BEGIN(base_func)
   LROT_FUNCENTRY(type,           luaB_type)
   LROT_FUNCENTRY(unpack,         luaB_unpack)
   LROT_FUNCENTRY(xpcall,         luaB_xpcall)
-  LROT_TABENTRY(__metatable,     base_func_meta)
+#ifdef LUA_CROSS_COMPILER
 LROT_END(base_func, base_func_meta, LROT_MASK_INDEX)
-
-LROT_BEGIN(G_meta)
-  LROT_TABENTRY( __index, base_func )
-LROT_END(G_meta, NULL, 0)
+#else
+LROT_BREAK(base_func)
+#endif
 
 
 /*
@@ -641,7 +643,7 @@ LROT_PUBLIC_BEGIN(co_funcs)
   LROT_FUNCENTRY( status, luaB_costatus )
   LROT_FUNCENTRY( wrap, luaB_cowrap )
   LROT_FUNCENTRY( yield, luaB_yield )
-LROT_END (co_funcs, NULL, 0)
+LROT_END(co_funcs, NULL, 0)
 
 /* }====================================================== */
 
@@ -652,7 +654,7 @@ static void auxopen (lua_State *L, const char *name,
   lua_pushcclosure(L, f, 1);
   lua_setfield(L, -2, name);
 }
-
+extern void luaL_dbgbreak(void);
 static void base_open (lua_State *L) {
   /* set global _G */
   lua_pushvalue(L, LUA_GLOBALSINDEX);
@@ -660,8 +662,11 @@ static void base_open (lua_State *L) {
 
   /* open lib into global table */
   luaL_register_light(L, "_G", &((luaL_Reg) {0}));
-  lua_pushrotable(L, LROT_TABLEREF(G_meta));
+
+  lua_pushvalue(L, LUA_GLOBALSINDEX);
   lua_setmetatable(L, LUA_GLOBALSINDEX);
+  lua_pushrotable(L, BASE_REF);
+  lua_setfield(L, LUA_GLOBALSINDEX, "__index");
 
   lua_pushliteral(L, LUA_VERSION);
   lua_setglobal(L, "_VERSION");  /* set global _VERSION */

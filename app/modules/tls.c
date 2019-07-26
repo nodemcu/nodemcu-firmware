@@ -614,6 +614,8 @@ static int tls_set_debug_threshold(lua_State *L) {
 #endif
 
 LROT_BEGIN(tls_socket)
+  LROT_FUNCENTRY( __gc, tls_socket_delete )
+  LROT_TABENTRY(  __index, tls_socket )
   LROT_FUNCENTRY( connect, tls_socket_connect )
   LROT_FUNCENTRY( close, tls_socket_close )
   LROT_FUNCENTRY( on, tls_socket_on )
@@ -621,16 +623,14 @@ LROT_BEGIN(tls_socket)
   LROT_FUNCENTRY( hold, tls_socket_hold )
   LROT_FUNCENTRY( unhold, tls_socket_unhold )
   LROT_FUNCENTRY( getpeer, tls_socket_getpeer )
-  LROT_FUNCENTRY( __gc, tls_socket_delete )
-  LROT_TABENTRY( __index, tls_socket )
-LROT_END( tls_socket, tls_socket, 0 )
+LROT_END( tls_socket, NULL, LROT_MASK_GC_INDEX )
 
 
 LROT_PUBLIC_BEGIN(tls_cert)
+  LROT_TABENTRY( __index, tls_cert )
   LROT_FUNCENTRY( verify, tls_cert_verify )
   LROT_FUNCENTRY( auth, tls_cert_auth )
-  LROT_TABENTRY( __index, tls_cert )
-LROT_END( tls_cert, tls_cert, 0 )
+LROT_END( tls_cert, NULL, LROT_MASK_INDEX )
 
 
 LROT_BEGIN(tls)
@@ -639,8 +639,7 @@ LROT_BEGIN(tls)
   LROT_FUNCENTRY( setDebug, tls_set_debug_threshold )
 #endif
   LROT_TABENTRY( cert, tls_cert )
-  LROT_TABENTRY( __metatable, tls )
-LROT_END( tls, tls, 0 )
+LROT_END( tls, NULL, 0 )
 
 
 int luaopen_tls( lua_State *L ) {

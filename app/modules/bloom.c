@@ -171,12 +171,12 @@ static int bloom_create(lua_State *L) {
 }
 
 LROT_BEGIN(bloom_filter)
+  LROT_TABENTRY( __index, bloom_filter )
   LROT_FUNCENTRY( add, bloom_filter_add )
   LROT_FUNCENTRY( check, bloom_filter_check )
   LROT_FUNCENTRY( reset, bloom_filter_reset )
   LROT_FUNCENTRY( info, bloom_filter_info )
-  LROT_TABENTRY( __index, bloom_filter )
-LROT_END( bloom_filter, bloom_filter, LROT_MASK_INDEX )
+LROT_END( bloom_filter, NULL, LROT_MASK_INDEX )
 
 
 // Module function map

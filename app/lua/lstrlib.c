@@ -825,6 +825,7 @@ static int str_format (lua_State *L) {
 }
 
 LROT_PUBLIC_BEGIN(strlib)
+  LROT_TABENTRY( __index, strlib )
   LROT_FUNCENTRY( byte, str_byte )
   LROT_FUNCENTRY( char, str_char )
   LROT_FUNCENTRY( dump, str_dump )
@@ -844,8 +845,7 @@ LROT_PUBLIC_BEGIN(strlib)
   LROT_FUNCENTRY( reverse, str_reverse )
   LROT_FUNCENTRY( sub, str_sub )
   LROT_FUNCENTRY( upper, str_upper )
-  LROT_TABENTRY( __index, strlib )
-LROT_END(strlib, NULL, 0)  // OR DO WE NEED LRTO_MASK_INDEX    **TODO** 
+LROT_END(strlib, NULL, LRTO_MASK_INDEX)
 
 /*
 ** Open string library

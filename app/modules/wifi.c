@@ -1887,14 +1887,14 @@ LROT_BEGIN(wifi_station)
   LROT_FUNCENTRY( setmac, wifi_station_setmac )
   LROT_FUNCENTRY( sleeptype, wifi_station_sleeptype )
   LROT_FUNCENTRY( status, wifi_station_status )
-LROT_END( wifi_station, wifi_station, 0 )
+LROT_END( wifi_station, NULL, 0 )
 
 
 LROT_BEGIN(wifi_ap_dhcp)
   LROT_FUNCENTRY( config, wifi_ap_dhcp_config )
   LROT_FUNCENTRY( start, wifi_ap_dhcp_start )
   LROT_FUNCENTRY( stop, wifi_ap_dhcp_stop )
-LROT_END( wifi_ap_dhcp, wifi_ap_dhcp, 0 )
+LROT_END( wifi_ap_dhcp, NULL, 0 )
 
 
 LROT_BEGIN(wifi_ap)
@@ -1909,8 +1909,7 @@ LROT_BEGIN(wifi_ap)
   LROT_FUNCENTRY( getconfig, wifi_ap_getconfig_current )
   LROT_FUNCENTRY( getdefaultconfig, wifi_ap_getconfig_default )
   LROT_TABENTRY( dhcp, wifi_ap_dhcp )
-//  LROT_TABENTRY( __metatable, wifi_ap )
-LROT_END( wifi_ap, wifi_ap, 0 )
+LROT_END( wifi_ap, NULL, 0 )
 
 
 LROT_BEGIN(wifi)
@@ -1968,9 +1967,7 @@ LROT_BEGIN(wifi)
 
   LROT_NUMENTRY( COUNTRY_AUTO, WIFI_COUNTRY_POLICY_AUTO )
   LROT_NUMENTRY( COUNTRY_MANUAL, WIFI_COUNTRY_POLICY_MANUAL )
-
-  LROT_TABENTRY( __metatable, wifi )
-LROT_END( wifi, wifi, 0 )
+LROT_END( wifi, NULL, 0 )
 
 
 // Used by user_rf_pre_init(user_main.c)

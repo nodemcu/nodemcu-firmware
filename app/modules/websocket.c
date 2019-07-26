@@ -313,14 +313,14 @@ LROT_END( websocket, NULL, 0 )
 
 
 LROT_BEGIN(websocketclient)
+  LROT_FUNCENTRY( __gc, websocketclient_gc )
+  LROT_TABENTRY(  __index, websocketclient )
   LROT_FUNCENTRY( on, websocketclient_on )
   LROT_FUNCENTRY( config, websocketclient_config )
   LROT_FUNCENTRY( connect, websocketclient_connect )
   LROT_FUNCENTRY( send, websocketclient_send )
   LROT_FUNCENTRY( close, websocketclient_close )
-  LROT_FUNCENTRY( __gc, websocketclient_gc )
-  LROT_TABENTRY( __index, websocketclient )
-LROT_END( websocketclient, websocketclient, LROT_MASK_GC_INDEX )
+LROT_END( websocketclient, NULL, LROT_MASK_GC_INDEX )
 
 
 int loadWebsocketModule(lua_State *L) {

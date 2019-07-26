@@ -165,7 +165,7 @@ void user_pre_init(void) {
         return;
     }
     os_printf("Invalid system partition table\n");
-    while (1) {};  
+    while (1) {};
 }
 
 /*

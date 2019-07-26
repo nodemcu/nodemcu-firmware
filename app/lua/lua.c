@@ -2,7 +2,7 @@
 ** NodeMCU Lua 5.1 main initiator and comand interpreter
 ** See Copyright Notice in lua.h
 **
-** Note this is largely a backport of some new Lua 5.3 version but 
+** Note this is largely a backport of some new Lua 5.3 version but
 ** with API changes for Lua 5.1 compatability
 */
 
@@ -82,7 +82,7 @@ static int docall (lua_State *L, int narg, int clear) {
 }
 
 static void print_version (lua_State *L) {
-  lua_pushliteral (L, "\n" NODE_VERSION " build " BUILD_DATE 
+  lua_pushliteral (L, "\n" NODE_VERSION " build " BUILD_DATE
                       " powered by " LUA_RELEASE " on SDK ");
   lua_pushstring (L, SDK_VERSION);
   lua_concat (L, 2);
@@ -246,7 +246,7 @@ static int pmain (lua_State *L) {
   input_setup(LUA_MAXINPUT, get_prompt(L, 1));
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
   print_version(L);
-
+//*DEBUG*/luaL_dbgbreak();
   /* and last of all, kick off application initialisation */
   if (init[0] == '@')
     dofile(L, init+1);
@@ -296,6 +296,6 @@ void lua_input_string (const char *line, int len) {
   lua_pushlstring(L, line, len);
 
 //const char*b = lua_tostring(L, -1);
-//dbg_printf("Pushing (%u): %s", len, b); 
+//dbg_printf("Pushing (%u): %s", len, b);
   lua_call(L, 2, 0);                                     /* stdin:write(line) */
 }

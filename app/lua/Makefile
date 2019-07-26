@@ -25,7 +25,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit -Wall
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-#DEFINES += -DDEVELOPMENT_TOOLS -DDEVELOPMENT_USE_GDB -DDEVELOPMENT_BREAK_ON_STARTUP_PIN=1
+DEFINES += -DDEVELOPMENT_TOOLS -DDEVELOPMENT_USE_GDB -DDEVELOPMENT_BREAK_ON_STARTUP_PIN=1
 #EXTRA_CCFLAGS += -ggdb -O0
 
 #############################################################

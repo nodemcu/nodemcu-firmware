@@ -7,7 +7,27 @@
 #include "luaconf.h"
 #include "lobject.h"
 #include "llimits.h"
-#include "lrotable.h"
+#include "ltm.h"
+
+#ifdef LUA_CROSS_COMPILER
+#ifdef _MSC_VER
+/*
+ * On MSVC it is necessary to go through more pre-processor hoops to get the
+ * section name built; string merging does not happen in the _declspecs.
+ * NOTE: linker magic is invoked via the magical '$' character. Caveat editor.
+ */
+#define __TOKIFY(s) .rodata1$##s
+#define __TOTOK(s) __TOKIFY(s)
+#define __STRINGIFY(x) #x
+#define __TOSTRING(x) __STRINGIFY(x)
+#define __ROSECNAME(s) __TOSTRING(__TOTOK(s))
+#define LOCK_IN_SECTION(s) __declspec ( allocate( __ROSECNAME(s) ) )
+#else
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".rodata1." #s)))
+#endif
+#else
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
+#endif
 
 /* Macros one can use to define rotable entries */
 #define LRO_FUNCVAL(v)  {{.p = v}, LUA_TLIGHTFUNCTION}
@@ -29,11 +49,16 @@
 #define LROT_PUBLIC_BEGIN(t) const LUA_REG_TYPE t ## _map[] = {
 #define LROT_EXTERN(t)       extern const LUA_REG_TYPE t ## _map[]
 #define LROT_TABENTRY(n,t)   {LRO_STRKEY(#n), LRO_ROVAL(t ## _map)},
+#define LROT_METATABENTRY(t) LROT_TABENTRY(__metatable, t)
 #define LROT_FUNCENTRY(n,f)  {LRO_STRKEY(#n), LRO_FUNCVAL(f)},
 #define LROT_NUMENTRY(n,x)   {LRO_STRKEY(#n), LRO_NUMVAL(x)},
 #define LROT_LUDENTRY(n,x)   {LRO_STRKEY(#n), LRO_LUDATA((void *) x)},
 #define LROT_END(t,mt, f)    {NULL, LRO_NILVAL} };
-#define LROT_BREAK(t)         };
+#define LROT_BREAK(t)        };
+
+#define LROT_MASK_GC         (~(1<<TM_GC))
+#define LROT_MASK_GC_INDEX   (~(1<<TM_GC | 1<<TM_INDEX))
+#define LROT_MASK_INDEX      (~((1<<TM_INDEX))
 
 #define LUA_REG_TYPE              luaR_entry
 #define LREGISTER(L, name, table) return 0

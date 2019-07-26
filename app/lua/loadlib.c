@@ -658,8 +658,8 @@ static const lua_CFunction loaders[] =
   {loader_preload, loader_Lua, loader_C, loader_Croot, NULL};
 
 LROT_PUBLIC_BEGIN(lmt)
-  LROT_FUNCENTRY(__gc,gctm)
-LROT_END(lmt,lmt, LROT_MASK_GC)
+  LROT_FUNCENTRY( __gc, gctm )
+LROT_END(lmt, NULL, LROT_MASK_GC)
 
 LUALIB_API int luaopen_package (lua_State *L) {
   int i;
