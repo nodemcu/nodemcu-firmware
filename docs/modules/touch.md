@@ -3,22 +3,17 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2019-07-20 | [ChiliPeppr](https://github.com/chilipeppr) | John Lauer | [touch.c](../../components/modules/touch.c)|
 
-The touch sensor module enables you to easily interact with ESP32's built-in 10 touch sensors. 
-The touch pad sensing process is under the control of a hardware-implemented finite-state 
-machine (FSM) which is initiated by software (polling mode) or a dedicated hardware timer (interrupt mode).
-By using the interrupt mode you can offload the sensing away from the main CPU. There are several examples
-in the docs below on how to implement your code.
+The touch sensor module enables you to easily interact with ESP32's built-in 10 touch sensors. The touch pad sensing process is under the control of a hardware-implemented finite-state machine (FSM) which is initiated by software (polling mode) or a dedicated hardware timer (interrupt mode). By using the interrupt mode you can offload the sensing away from the main CPU. There are several examples in the docs below on how to implement your code.
 
 For further information please refer to the ESP-IDF docs for Touch Sensor
 https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/touch_pad.html
-
-<!-- [Youtube video of examples using the touch sensor module](https://youtu.be/vk5QZnWdlAA) including ... -->
 
 Click the YouTube video below for a tutorial on how to use this touch library.
 
 [![YouTube Touch Tutorial](../img/touch_tutorial.jpg "Walkthrough video")](https://youtu.be/vk5QZnWdlAA)
 
 The touch sensors are on the following GPIO pins
+
 | Touch Pad Number | GPIO |   | Touch Pad Number | GPIO | 
 | :--------------- | :--- | -  | :--------------- | :--- |
 | 0 | GPIO4 |    | 5 | GPIO12 |
@@ -27,16 +22,26 @@ The touch sensors are on the following GPIO pins
 | 3 | GPIO15 |   | 8 | GPIO33 |
 | 4 | GPIO13 |   | 9 | GPIO32 |
 
+### Example Lua Code
+
+Example code showing how to configure 8 pads.
+- Main run file [touch_8pads_showlist_test.lua](../../lua_examples/touch/touch_8pads_showlist_test.lua)
+- Library [touch_8pads_showlist.lua](../../lua_examples/touch/touch_8pads_showlist.lua)
+
+Example code showing how to use 5 touch pads to jog a stepper motor at different frequencies depending on which pad is touched:
+- Main run file [touchjog_main.lua](../../lua_examples/touch/touchjog_main.lua)
+- Library [touchjog_touch.lua](../../lua_examples/touch/touchjog_touch.lua)
+- Library [touchjog_jog.lua](../../lua_examples/touch/touchjog_jog.lua)
+- Library [touchjog_jog_drv8825.lua](../../lua_examples/touch/touchjog_jog_drv8825.lua)
+
 ## touch.create()
 
-Create the touch sensor object. You must call this method first. Only one touch object may be created
-since most settings on the touch driver are global in nature such as threshold trigger mode, interrupt callbacks, and
-reference voltages.
+Create the touch sensor object. You must call this method first. Only one touch object may be created since most settings on the touch driver are global in nature such as threshold trigger mode, interrupt callbacks, and reference voltages.
 
 ### Syntax
 ```lua
 tp = touch.create({
-  pad = 0 || {0,1,2,3,4,5,6,7,8,9},
+  pad = 0 || {0,1,2,3,4,5,6,7,8,9}, -- 0=GPIO4, 1=GPIO0, 2=GPIO2, 3=GPIO15, 4=GPIO13, 5=GPIO12, 6=GPIO14, 7=GPIO27, 8=GPIO33, 9=GPIO32
   cb = yourFunc, -- Callback on interrupt
   intrInitAtStart = true || false, -- Turn on/off interrupt at start.
   thres = 0..65536, -- All pads set to this thres. 
@@ -53,14 +58,13 @@ tp = touch.create({
 List of values for configuration table:
 
 - `pad` Required. padNum || {table of padNums}. Specify one pad like `pad = 4`, or provide a table list of pads. For example use `pad = {0,1,2,3,4,5,6,7,8,9}` to specify all pads. Pads allowed are 0=GPIO4, 1=GPIO0, 2=GPIO2, 3=GPIO15, 4=GPIO13, 5=GPIO12, 6=GPIO14, 7=GPIO27, 8=GPIO33, 9=GPIO32.
-- `cb` Optional. Your Lua method that gets called on touch event. `myfunction(pads)` will be called where `pads` is a table of pads that were touched. The key is the pad number while the value is true, i.e. `pads = {[2]=true, [3]=true}` if pad 2 and 3 were both touched at the same time. When you specify a callback, interrupt mode is automatically turned on. You can specify `intrInitAtState = false` to manually turn on the interrupt later. If no
-callback is provided or nil is specified, then polling mode is active where you must call tp:read() to get the touch pad values.
+- `cb` Optional. Your Lua method that gets called on touch event. `myfunction(pads)` will be called where `pads` is a table of pads that were touched. The key is the pad number while the value is true, i.e. `pads = {[2]=true, [3]=true}` if pad 2 and 3 were both touched at the same time. When you specify a callback, interrupt mode is automatically turned on. You can specify `intrInitAtState = false` to manually turn on the interrupt later. If no callback is provided or nil is specified, then polling mode is active where you must call `tp:read()` to get the touch pad values.
 - `intrInitAtStart` Optional. Defaults to true. Turn on interrupt at start. Set to false to if you want to configure the touch sensors first and then manually turn on interrupts later with `tp:intrEnable()`.
 - `thres` Optional. Defaults to 0. Range is 0 to 65536. Provide a threshold value to be set on all pads specified in the `pad` parameter. Typically you will set thresholds per pad since pad size/shape/wire legnth influences the counter value per pad and thus your threshold is usually differnt per pad. You can set thres later per pad with `tp:setThres(padNum, thres)`.
 - `thresTrigger` Optional. Defaults to touch.TOUCH_TRIGGER_BELOW.
   - touch.TOUCH_TRIGGER_BELOW
   - touch.TOUCH_TRIGGER_ABOVE
-- `filterMs` Optional. Range is 0 to 4294967295 ms. Used in polling mode only (if you provide a callback polling mode is disabled). Will filter noise for this many ms to give more consistent counter results. When filterMs is specified you will receive a 2nd return value in the `raw, filter = tp:read()` call with the filtered values in a Lua table.
+- `filterMs` Optional. Range is 0 to 4294967295 milliseconds. Used in polling mode only (if you provide a callback polling mode is disabled). Will filter noise for this many ms to give more consistent counter results. When filterMs is specified you will receive a 2nd return value in the `raw, filter = tp:read()` call with the filtered values in a Lua table.
 - `lvolt` Optional. Low reference voltage 
   - touch.TOUCH_LVOLT_0V4
   - touch.TOUCH_LVOLT_0V5
@@ -284,7 +288,7 @@ m.config()
 
 ## touchObj:read()
 
-Read the touch sensor counter values for all pads configured in touch.create() method.
+Read the touch sensor counter values for all pads configured in `touch.create()` method.
 
 ### Syntax
 `raw, filter = tp:read()`
@@ -307,6 +311,7 @@ end
 
 ### Example 2 - Raw / Filter
 ```lua
+-- You get a filter Lua table if you specified filterMs in touch.create()
 raw, filter = tp:read()
 print("Pad", "Raw", "Filt")
 print("---", "---", "----")
@@ -317,7 +322,7 @@ end
 
 ## touchObj:setThres(padNum, thresVal)
 
-Set touch sensor interrupt threshold per pad. The threshold only matters if you are in interrupt mode, which only activates if you specify a callback in the touch.create() configuration.
+Set touch sensor interrupt threshold per pad. The threshold only matters if you are in interrupt mode, which only activates if you specify a callback in the `touch.create()` configuration.
 
 ### Syntax
 `tp:setThres(padNum, thresVal)`
@@ -331,12 +336,13 @@ Set touch sensor interrupt threshold per pad. The threshold only matters if you 
 
 ### Example 1
 ```lua
--- Set threshold for pad 2 where baseline counter is around 800, so trigger at 400
-tp:setThres(2, 400)
+-- Set threshold for pad 2 where baseline counter is around 800 and 
+-- when touched is around 200, so trigger at mid-point around 500
+tp:setThres(2, 500)
 ```
 ### Example 2
 ```lua
--- Configure by reading baseline, then setting threshold to % below base
+-- Configure by reading baseline, then setting threshold to 30% below base
 local raw = tp:read()
 print("Pad", "Base", "Thres")
 for key,value in pairs(raw) do 
@@ -353,7 +359,7 @@ tp:intrEnable()
 
 ## touchObj:setTriggerMode()
 
-Set the trigger mode globally for all touch pads. The trigger mode only matters in terrupt mode where you can tell the hardware to give you an interrupt if the counter on the pad falss above or below the threshold you specify. 
+Set the trigger mode globally for all touch pads. The trigger mode only matters in interrupt mode where you can tell the hardware to give you an interrupt if the counter on the pad falls above or below the threshold you specify. 
 
 ### Syntax
 `tp:setTriggerMode(mode)`
@@ -374,6 +380,11 @@ tp:setTriggerMode(touch.TOUCH_TRIGGER_BELOW)
 
 ### Example 2
 ```lua
+-- Configure touch hardware to callback on TOUCH_TRIGGER_BELOW during touch.create()
+-- Then on first callback swap to TOUCH_TRIGGER_ABOVE when detecting touch
+-- Then will get 2nd callback on untouch due to mode change
+-- This only works with 1 pad since trigger mode is global for all pads
+
 padState = 0 -- Set start padState
 
 function onTouch(pads)
@@ -401,7 +412,7 @@ end
 
 ## touchObj:intrEnable()
 
-Enable interrupt on the touch sensor hardware. You can specify intrInitAtStart=false during touch.create() and thus you would want to call this later on after configuring your pad thresholds.
+Enable interrupt on the touch sensor hardware. You can specify `intrInitAtStart=false` during `touch.create()` and thus you would want to call this method later on after configuring your pad thresholds.
 
 ### Syntax
 `tp:intrEnable()`
