@@ -18,6 +18,7 @@
 #include "lwip/igmp.h"
 #include "lwip/tcp.h"
 #include "lwip/udp.h"
+#include "lwip/dhcp.h"
 
 #if defined(CLIENT_SSL_ENABLE) && defined(LUA_USE_MODULES_NET) && defined(LUA_USE_MODULES_TLS)
 #define TLS_MODULE_PRESENT
@@ -966,6 +967,62 @@ static int net_getdnsserver( lua_State* L ) {
   return 1;
 }
 
+#pragma mark - netif info
+
+/*
+ * XXX This is internal to Espressif's SDK, but it's called from several places
+ * in the NodeMCU tree.  It would be nicer if there were a LwIP export for this
+ * rather than this not-so-secret symbol.
+ */
+extern struct netif *eagle_lwip_getif(uint8);
+
+static void
+push_ipaddr(lua_State *L, ip_addr_t *addr) {
+  char temp[20];
+  ssize_t ipl = ets_snprintf(temp, sizeof temp, IPSTR, IP2STR(&addr->addr));
+  lua_assert (ipl >= 0 && ipl < 20);
+  lua_pushlstring( L, temp, ipl );
+}
+
+static void
+field_from_ipaddr(lua_State *L, const char * field_name, ip_addr_t* addr) {
+  if ( ip_addr_isany(addr) ) {
+    lua_pushnil(L);
+  } else {
+    push_ipaddr(L, addr);
+  }
+  lua_setfield(L, -2, field_name);
+}
+
+static int net_if_info( lua_State* L ) {
+  int ifidx = luaL_optint(L, 1, 0);
+
+  struct netif * nif = eagle_lwip_getif(ifidx);
+  if (nif == NULL) {
+    return luaL_error( L, "unknown network interface index %d", ifidx);
+  }
+
+  lua_createtable(L, 0,
+     4 + (nif->dhcp == NULL ? 0 : 1));
+
+  lua_pushlstring(L, nif->hwaddr, nif->hwaddr_len);
+  lua_setfield(L, -2, "hwaddr");
+
+  field_from_ipaddr(L, "ip"     , &nif->ip_addr);
+  field_from_ipaddr(L, "netmask", &nif->netmask);
+  field_from_ipaddr(L, "gateway", &nif->gw);
+
+  if (nif->dhcp != NULL) {
+    lua_createtable(L, 0, 3);
+    field_from_ipaddr(L, "server_ip" , &nif->dhcp->server_ip_addr  );
+    field_from_ipaddr(L, "client_ip" , &nif->dhcp->offered_ip_addr );
+    field_from_ipaddr(L, "ntp_server", &nif->dhcp->offered_ntp_addr);
+  }
+  lua_setfield(L, -2, "dhcp");
+
+  return 1;
+}
+
 #pragma mark - Tables
 
 #ifdef TLS_MODULE_PRESENT
@@ -1017,6 +1074,9 @@ LROT_BEGIN(net_dns)
   LROT_FUNCENTRY( resolve, net_dns_static )
 LROT_END( net_dns, net_dns, 0 )
 
+LROT_BEGIN(net_if)
+  LROT_FUNCENTRY( info, net_if_info )
+LROT_END(net_if, net_if, 0)
 
 LROT_BEGIN(net)
   LROT_FUNCENTRY( createServer, net_createServer )
@@ -1025,6 +1085,7 @@ LROT_BEGIN(net)
   LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
   LROT_TABENTRY( dns, net_dns )
+  LROT_TABENTRY( if, net_if )
 #ifdef TLS_MODULE_PRESENT
   LROT_TABENTRY( cert, tls_cert )
 #endif
