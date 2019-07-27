@@ -104,7 +104,7 @@ create_new_element(jsonsl_t jsn,
       } else {
         // object, so
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-        luaL_unref(data->L, data->hkey_ref);
+        luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
         data->hkey_ref = LUA_NOREF;
         DBG_PRINTF("Adding hash element\n");
       }
@@ -247,7 +247,7 @@ cleanup_closing_element(jsonsl_t jsn,
       } else {
         // object, so
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-        luaL_unref(data->L, data->hkey_ref);
+        luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
         data->hkey_ref = LUA_NOREF;
       }
       push_string(data, state);
@@ -278,7 +278,7 @@ cleanup_closing_element(jsonsl_t jsn,
         } else {
           // object, so
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-          luaL_unref(data->L, data->hkey_ref);
+          luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
           data->hkey_ref = LUA_NOREF;
         }
         lua_pushvalue(data->L, -3);
@@ -289,7 +289,7 @@ cleanup_closing_element(jsonsl_t jsn,
       break;
    case JSONSL_T_OBJECT:
    case JSONSL_T_LIST:
-      luaL_unref(data->L, state->lua_object_ref);
+      luaL_unref(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
       state->lua_object_ref = LUA_NOREF;
       if (data->pos_ref != LUA_NOREF) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
@@ -611,9 +611,9 @@ static void enc_pop_stack(lua_State *L, ENC_DATA *data) {
   }
   ENC_DATA_STATE *state = &data->stack[data->level];
 
-  luaL_unref(L, state->lua_object_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, state->lua_object_ref);
   state->lua_object_ref = LUA_NOREF;
-  luaL_unref(L, state->lua_key_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, state->lua_key_ref);
   state->lua_key_ref = LUA_REFNIL;
   data->level--;
 }
@@ -846,7 +846,7 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
       if (lua_next(L, -2)) {
         // save the key
         if (state->offset & 1) {
-          luaL_unref(L, state->lua_key_ref);
+          luaL_unref(L, LUA_REGISTRYINDEX, state->lua_key_ref);
           state->lua_key_ref = LUA_NOREF;
           // Duplicate the key
           lua_pushvalue(L, -2);
@@ -920,7 +920,7 @@ static int sjson_encoder_read_int(lua_State *L, ENC_DATA *data, int readsize) {
       readsize -= amnt;
 
       if (data->offset == len) {
-        luaL_unref(L, data->current_str_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, data->current_str_ref);
         data->current_str_ref = LUA_NOREF;
       }
     }
