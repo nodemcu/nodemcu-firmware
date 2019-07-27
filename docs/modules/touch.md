@@ -8,7 +8,7 @@ The touch sensor module enables you to easily interact with ESP32's built-in 10 
 For further information please refer to the ESP-IDF docs for Touch Sensor
 https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/touch_pad.html
 
-Click the YouTube video below for a tutorial on how to use this touch library.
+Click the YouTube video below for a tutorial on how to use this touch library including sample touch sensors, how to set your touch counter thresholds, and what the touch counters look like in the touched/untouched state of a sensor pad.
 
 [![YouTube Touch Tutorial](../img/touch_tutorial.jpg "Walkthrough video")](https://youtu.be/6BxNFh3GaRA)
 
