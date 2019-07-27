@@ -10,7 +10,7 @@ https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/
 
 Click the YouTube video below for a tutorial on how to use this touch library.
 
-[![YouTube Touch Tutorial](../img/touch_tutorial.jpg "Walkthrough video")](https://youtu.be/vk5QZnWdlAA)
+[![YouTube Touch Tutorial](../img/touch_tutorial.jpg "Walkthrough video")](https://youtu.be/6BxNFh3GaRA)
 
 The touch sensors are on the following GPIO pins
 
