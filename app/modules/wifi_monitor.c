@@ -713,7 +713,7 @@ static int wifi_monitor_start(lua_State *L) {
     mon_value = 0x00;
     mon_mask = 0x0C;
   }
-  if (lua_type(L, argno) == LUA_TFUNCTION || lua_type(L, argno) == LUA_TLIGHTFUNCTION)
+  if (lua_isanyfunction(L, argno))
   {
     lua_pushvalue(L, argno);  // copy argument (func) to the top of stack
     recv_cb = luaL_ref(L, LUA_REGISTRYINDEX);

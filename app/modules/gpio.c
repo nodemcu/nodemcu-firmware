@@ -109,7 +109,7 @@ static int lgpio_trig( lua_State* L )
     // keep the old one if no callback
     old_pin_ref = LUA_NOREF;
 
-  } else if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
+  } else if (lua_isanyfunction(L, 3)) {
     // set up the new callback if present
     lua_pushvalue(L, 3);
     gpio_cb_ref[pin] = luaL_ref(L, LUA_REGISTRYINDEX);

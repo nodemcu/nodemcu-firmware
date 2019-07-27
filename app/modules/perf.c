@@ -84,7 +84,7 @@ static int perf_start(lua_State *L)
   d->bucket_count = bins;
 
   if (data) {
-    lua_unref(L, data->ref);
+    luaL_unref(L, data->ref);
   }
 
   data = d;
@@ -93,7 +93,7 @@ static int perf_start(lua_State *L)
   if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, TRUE)) {
     // Failed to init the timer
     data = NULL;
-    lua_unref(L, d->ref);
+    luaL_unref(L, d->ref);
     luaL_error(L, "Unable to initialize timer");
   }
 
@@ -130,7 +130,7 @@ static int perf_stop(lua_State *L)
 
   lua_pushnumber(L, 1 << d->bucket_shift);
 
-  lua_unref(L, d->ref);
+  luaL_unref(L, d->ref);
 
   return 4;
 }

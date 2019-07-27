@@ -90,11 +90,12 @@ static buffer_t *checkPipeTable (lua_State *L, int tbl, int flags) {
       return ud;                            /* and return ptr to buffer_t rec */
     }
   }
-  luaL_typerror(L, tbl, "pipe table");
+  luaL_argerror(L, tbl, "pipe table");
   return NULL;                               /* NORETURN avoid compiler error */
 }
 
 static buffer_t *checkPipeUD (lua_State *L, int ndx) {            // [-0, +0, v]
+  luaL_checktype (L, ndx, LUA_TTABLE);                   /* NORETURN on error */
   buffer_t *ud = lua_touserdata(L, ndx);
   if (ud && lua_getmetatable(L, ndx)) {          /* Get UD and its metatable? */
     lua_pushrotable(L, LROT_TABLEREF(pipe_meta));   /* push correct metatable */
@@ -103,9 +104,6 @@ static buffer_t *checkPipeUD (lua_State *L, int ndx) {            // [-0, +0, v]
       return ud;                            /* and return ptr to buffer_t rec */
     }
   }
-  if (!lua_istable(L,ndx))
-    luaL_typerror(L, ndx, "pipeUD");                        /* NORETURN error */
-  return NULL;                                         /* keep compiler happy */
 }
 
 static buffer_t *newPipeUD(lua_State *L, int ndx, int n) {   // [-0,+0,-]
@@ -249,7 +247,7 @@ int pipe_create(lua_State *L) {
 
 // len = #pipeobj[i]
 static int pipe__len (lua_State *L) {
-   if (lua_type(L, 1) == LUA_TTABLE) {
+   if (lua_istable(L, 1)) {
     lua_pushinteger(L, lua_objlen(L, 1));
   } else {
     buffer_t *ud = checkPipeUD(L, 1);

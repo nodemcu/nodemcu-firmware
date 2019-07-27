@@ -128,7 +128,7 @@ static int http_lapi_request( lua_State *L )
     body = luaL_checklstring(L, 4, &length);
   }
 
-  if (lua_type(L, 5) == LUA_TFUNCTION || lua_type(L, 5) == LUA_TLIGHTFUNCTION) {
+  if (lua_isanyfunction(L, 5)) {
     lua_pushvalue(L, 5);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -161,7 +161,7 @@ static int http_lapi_post( lua_State *L )
     body = luaL_checklstring(L, 3, &length);
   }
 
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
+  if (lua_isanyfunction(L, 4)) {
     lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
@@ -195,7 +195,7 @@ static int http_lapi_put( lua_State *L )
     body = luaL_checklstring(L, 3, &length);
   }
 
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
+  if (lua_isanyfunction(L, 4)) {
     lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
@@ -229,7 +229,7 @@ static int http_lapi_delete( lua_State *L )
     body = luaL_checklstring(L, 3, &length);
   }
 
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
+  if (lua_isanyfunction(L, 4)) {
     lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
@@ -258,7 +258,7 @@ static int http_lapi_get( lua_State *L )
     headers = luaL_checklstring(L, 2, &length);
   }
 
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
+  if (lua_isanyfunction(L, 3)) {
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);

@@ -42,7 +42,7 @@ static int ICACHE_FLASH_ATTR wps_start(lua_State* L)
 
   wps_callback_ref = LUA_NOREF;
 
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  if (lua_isanyfunction(L, 1))
     wps_callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   else
     return luaL_error (L, "Argument not a function");

@@ -88,8 +88,7 @@ static int file_on(lua_State *L)
   case ON_RTC:
     luaL_unref(L, LUA_REGISTRYINDEX, rtc_cb_ref);
 
-    if ((lua_type(L, 2) == LUA_TFUNCTION) ||
-        (lua_type(L, 2) == LUA_TLIGHTFUNCTION)) {
+    if (lua_isanyfunction(L, 2)) {
       lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
       rtc_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       vfs_register_rtc_cb(file_rtc_cb);

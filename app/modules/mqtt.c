@@ -1310,7 +1310,7 @@ static int mqtt_socket_connect( lua_State* L )
 #endif
 
   // call back function when a connection is obtained, tcp only
-  if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
+  if ((stack<=top) && (lua_isanyfunction(L, stack))){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -1319,7 +1319,7 @@ static int mqtt_socket_connect( lua_State* L )
   stack++;
 
   // call back function when a connection fails
-  if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
+  if ((stack<=top) && (lua_isanyfunction(L, stack))){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
     mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -1549,8 +1549,8 @@ static int mqtt_socket_unsubscribe( lua_State* L ) {
     temp_msg = mqtt_msg_unsubscribe( &mud->mqtt_state.mqtt_connection, topic, &msg_id );
   }
 
-  if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
-    lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
+  if (lua_isanyfunction(L, stack)) {    // TODO: this will overwrite the previous one.
+    lua_pushvalue( L, stack );          // copy argument (func) to the top of stack
     luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref );
     mud->cb_unsuback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
   }
@@ -1664,7 +1664,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
     stack++;
   }
 
-  if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
+  if (lua_isanyfunction(L, stack)) {    // TODO: this will overwrite the previous one.
     lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
     luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
     mud->cb_suback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
@@ -1739,7 +1739,7 @@ static int mqtt_socket_publish( lua_State* L )
                        qos, retain,
                        &msg_id);
 
-  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
+  if (lua_isanyfunction(L, stack)){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
     mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);

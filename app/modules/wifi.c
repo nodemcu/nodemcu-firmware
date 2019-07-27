@@ -151,7 +151,7 @@ static int wifi_start_smart( lua_State* L )
   }
 
   // luaL_checkanyfunction(L, stack);
-  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)
+  if (lua_isanyfunction(L, stack))
   {
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     if(wifi_smart_succeed != LUA_NOREF)
@@ -184,7 +184,7 @@ static int wifi_start_smart( lua_State* L )
     stack++;
   }
 
-  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)
+  if (lua_isanyfunction(L, stack))
   {
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     register_lua_cb(L, &wifi_smart_succeed);
@@ -343,10 +343,7 @@ static int wifi_setmode( lua_State* L )
 
   if(!lua_isnoneornil(L, 2))
   {
-    if(!lua_isboolean(L, 2))
-    {
-      luaL_typerror(L, 2, lua_typename(L, LUA_TBOOLEAN));
-    }
+    luaL_checktype (L, 2, LUA_TBOOLEAN);
     save_to_flash=lua_toboolean(L, 2);
   }
 
@@ -441,7 +438,7 @@ void wifi_pmSleep_suspend_CB(void)
   {
     lua_State* L = lua_getstate(); // Get main Lua thread pointer
     lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // Push suspend callback onto stack
-    lua_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
+    luaL_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
     wifi_suspend_cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
     lua_call(L, 0, 0); // Execute suspend callback
   }
@@ -1248,7 +1245,7 @@ static int wifi_station_listap( lua_State* L )
       }
     }
 
-    if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+    if (lua_isanyfunction(L, 2))
     {
       lua_pushnil(L);
       lua_insert(L, 2);
@@ -1260,7 +1257,7 @@ static int wifi_station_listap( lua_State* L )
     lua_pushnil(L);
     lua_insert(L, 1);
   }
-  else if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  else if (lua_isanyfunction(L, 1))
   {
     lua_pushnil(L);
     lua_insert(L, 1);
@@ -1269,7 +1266,7 @@ static int wifi_station_listap( lua_State* L )
   }
   else if(lua_isnil(L, 1))
   {
-    if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+    if (lua_isanyfunction(L, 2))
     {
       lua_pushnil(L);
       lua_insert(L, 2);
@@ -1288,7 +1285,7 @@ static int wifi_station_listap( lua_State* L )
       return luaL_error( L, "wrong arg type" );
   }
   NODE_DBG("Use alternate output format: %d\n", getap_output_format);
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION)
+  if (lua_isanyfunction(L, 3))
   {
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     register_lua_cb(L, &wifi_scan_succeed);
@@ -1508,10 +1505,7 @@ static int wifi_ap_getconfig_default(lua_State *L)
 // Lua: wifi.ap.config(table)
 static int wifi_ap_config( lua_State* L )
 {
-  if (!lua_istable(L, 1))
-  {
-    return luaL_typerror(L, 1, lua_typename(L, LUA_TTABLE));
-  }
+  luaL_checktype(L, 1,  LUA_TTABLE);
 
   struct softap_config config;
   bool save_to_flash=true;

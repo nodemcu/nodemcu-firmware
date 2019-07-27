@@ -42,7 +42,7 @@ int wifi_event_monitor_register(lua_State* L)
   }
   else
   {
-    if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION) //check if 2nd item on stack is a function
+    if (lua_isanyfunction(L, 2)) //check if 2nd item on stack is a function
     {
       lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
       register_lua_cb(L, &wifi_event_cb_ref[id]);  //pop function from top of the stack, register it in the LUA_REGISTRY, then assign lua_ref to wifi_event_cb_ref[id]

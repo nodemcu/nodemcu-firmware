@@ -414,7 +414,7 @@ static int ads1115_lua_startread(lua_State *L) {
         return 0;
     }
 
-    luaL_argcheck(L, (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION), 2, "Must be function");
+    luaL_argcheck(L, lua_isanyfunction(L, 2), 2, "Must be function");
     lua_pushvalue(L, 2);
     ads_ctrl->timer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 

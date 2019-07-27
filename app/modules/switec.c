@@ -33,7 +33,7 @@ static void callback_free(lua_State* L, unsigned int id)
 
 static void callback_set(lua_State* L, unsigned int id, int argNumber)
 {
-  if (lua_type(L, argNumber) == LUA_TFUNCTION || lua_type(L, argNumber) == LUA_TLIGHTFUNCTION) {
+  if (lua_isanyfunction(L, argNumber)) {
     lua_pushvalue(L, argNumber);  // copy argument (func) to the top of stack
     callback_free(L, id);
     stopped_callback[id] = luaL_ref(L, LUA_REGISTRYINDEX);

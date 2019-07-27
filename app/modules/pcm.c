@@ -146,8 +146,7 @@ static int pcm_drv_on( lua_State *L )
 
   event = luaL_checklstring( L, 2, &len );
 
-  if ((lua_type( L, 3 ) == LUA_TFUNCTION) ||
-      (lua_type( L, 3 ) == LUA_TLIGHTFUNCTION)) {
+  if (lua_isanyfunction(L, 3)) {
     lua_pushvalue( L, 3 );  // copy argument (func) to the top of stack
     is_func = TRUE;
   }

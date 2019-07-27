@@ -80,7 +80,7 @@ static void callback_free(lua_State* L, unsigned int id, int mask)
 
 static int callback_setOne(lua_State* L, int *cb_ptr, int arg_number)
 {
-  if (lua_type(L, arg_number) == LUA_TFUNCTION || lua_type(L, arg_number) == LUA_TLIGHTFUNCTION) {
+  if (lua_isanyfunction(L, arg_number)) {
     lua_pushvalue(L, arg_number);  // copy argument (func) to the top of stack
     callback_free_one(L, cb_ptr);
     *cb_ptr = luaL_ref(L, LUA_REGISTRYINDEX);

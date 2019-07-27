@@ -202,7 +202,7 @@ uint8_t tcs34725Enable(lua_State* L)
 {
 	dbg_printf("Enable begun\n");
 
-	if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
+	if (lua_isanyfunction(L, 1)) {
 		if (cb_tcs_en != LUA_NOREF) {
 			luaL_unref(L, LUA_REGISTRYINDEX, cb_tcs_en);
 		}

@@ -124,9 +124,7 @@ static int websocketclient_on(lua_State *L) {
   ws_data *data = (ws_data *) ws->reservedData;
 
   int handle = luaL_checkoption(L, 2, NULL, (const char * const[]){ "connection", "receive", "close", NULL });
-  if (lua_type(L, 3) != LUA_TNIL && lua_type(L, 3) != LUA_TFUNCTION && lua_type(L, 3) != LUA_TLIGHTFUNCTION) {
-    return luaL_typerror(L, 3, "function or nil");
-  }
+  luaL_argcheck(L, lua_isnil(L,3) || lua_isanyfunction(L, 3), 3, "function or nil");
 
   switch (handle) {
     case 0:
@@ -135,7 +133,7 @@ static int websocketclient_on(lua_State *L) {
       luaL_unref(L, LUA_REGISTRYINDEX, data->onConnection);
       data->onConnection = LUA_NOREF;
 
-      if (lua_type(L, 3) != LUA_TNIL) {
+      if (!lua_isnil(L,3)) {
         lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
         data->onConnection = luaL_ref(L, LUA_REGISTRYINDEX);
       }
@@ -146,7 +144,7 @@ static int websocketclient_on(lua_State *L) {
       luaL_unref(L, LUA_REGISTRYINDEX, data->onReceive);
       data->onReceive = LUA_NOREF;
 
-      if (lua_type(L, 3) != LUA_TNIL) {
+      if (!lua_isnil(L,3)) {
         lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
         data->onReceive = luaL_ref(L, LUA_REGISTRYINDEX);
       }
@@ -157,7 +155,7 @@ static int websocketclient_on(lua_State *L) {
       luaL_unref(L, LUA_REGISTRYINDEX, data->onClose);
       data->onClose = LUA_NOREF;
 
-      if (lua_type(L, 3) != LUA_TNIL) {
+      if (!lua_isnil(L,3)) {
         lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
         data->onClose = luaL_ref(L, LUA_REGISTRYINDEX);
       }

@@ -140,7 +140,7 @@ static int lcron_schedule(lua_State *L) {
     }
     cronent_list = newlist;
     lua_pushvalue(L, 1);
-    cronent_list[cronent_count++] = lua_ref(L, LUA_REGISTRYINDEX);
+    cronent_list[cronent_count++] = luaL_ref(L, LUA_REGISTRYINDEX);
   }
   return 0;
 }
