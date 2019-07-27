@@ -3,8 +3,8 @@
 USER_MODULES_H=app/include/user_modules.h
 
 COMMIT_ID="$(git rev-parse HEAD)"
-BRANCH="$(git rev-parse --abbrev-ref HEAD | sed -r 's/[\/\\]+/_/g')"
-RELEASE="$(git describe --tags --long | sed -r 's/(.*)-(.*)-.*/\1 +\2/g' | sed 's/ +0$//')"
+BRANCH="$(git rev-parse --abbrev-ref HEAD | sed -E 's/[\/\\]+/_/g')"
+RELEASE="$(git describe --tags --long | sed -E 's/(.*)-(.*)-.*/\1 +\2/g' | sed 's/ +0$//')"
 RELEASE_DTS=$(TZ=UTC git show --quiet --date=format-local:"%Y%m%d%H%M" --format="%cd" HEAD)
 
 MODULES=$(awk '/^[ \t]*#define LUA_USE_MODULES/{modules=modules sep tolower(substr($2,17));sep=","}END{if(length(modules)==0)modules="-";print modules}' $USER_MODULES_H | tr -d '\r')
