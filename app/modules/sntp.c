@@ -627,7 +627,7 @@ static void sntp_dolookups (lua_State *L) {
   // Step through each element of the table, converting it to an address
   // at the end, start the lookups. If we have already looked everything up,
   // then move straight to sending the packets.
-  if (state->list_ref == LUA_NOREF) {
+  if ((state->list_ref == LUA_NOREF) || (state->list_ref == LUA_REFNIL)) {
     sntp_dosend();
     return;
   }
@@ -702,8 +702,16 @@ static char *state_init(lua_State *L) {
 
 static char *set_repeat_mode(lua_State *L, bool enable)
 {
+  if (repeat) {
+    os_timer_disarm (&repeat->timer);
+    luaL_unref (L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
+    luaL_unref (L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
+    luaL_unref (L, LUA_REGISTRYINDEX, repeat->list_ref);
+    free(repeat);
+    repeat = NULL;
+  }
+
   if (enable) {
-    set_repeat_mode(L, FALSE);
     repeat = (sntp_repeat_t *) malloc(sizeof(sntp_repeat_t));
     if (!repeat) {
       return "no memory";
@@ -720,16 +728,8 @@ static char *set_repeat_mode(lua_State *L, bool enable)
       //The function on_long_timeout returns errors to the developer
       //My guess: Error reporting is a good thing, resume the timer.
     os_timer_arm(&repeat->timer, 1000 * 1000, 1);
-  } else {
-    if (repeat) {
-      os_timer_disarm (&repeat->timer);
-      luaL_unref (L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
-      luaL_unref (L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
-      luaL_unref (L, LUA_REGISTRYINDEX, repeat->list_ref);
-      free(repeat);
-      repeat = NULL;
-    }
   }
+
   return NULL;
 }
 
@@ -791,22 +791,17 @@ static int sntp_sync (lua_State *L)
     if (lua_istable(L, 1)) {
       // Save a reference to the table
       lua_pushvalue(L, 1);
-      luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
-      state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-      sntp_dolookups(L);
-      goto good_ret;
     } else {
       size_t l;
       const char *hostname = luaL_checklstring(L, 1, &l);
       if (l>128 || hostname == NULL)
         sync_err("need <128 hostname");
-      err_t err = dns_gethostbyname(hostname, get_free_server(), sntp_dns_found, state);
-      if (err == ERR_INPROGRESS) {
-        goto good_ret;
-      } else if (err == ERR_ARG)
-        sync_err("bad hostname");
 
-      server_count++;
+      /* Construct a singleton table containing the one server */
+      lua_newtable(L);
+      lua_pushnumber(L, 1);
+      lua_pushstring(L, hostname);
+      lua_settable(L, -3);
     }
   } else if (server_count == 0) {
     lua_newtable(L);
@@ -827,15 +822,12 @@ static int sntp_sync (lua_State *L)
         lua_settable(L, -3);
       }
     }
-    luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
-    state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    sntp_dolookups(L);
-    goto good_ret;
   }
 
-  sntp_dosend ();
+  luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
+  state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  sntp_dolookups(L);
 
-good_ret:
   if (!lua_isnoneornil(L, 4)) {
     set_repeat_mode(L, 1);
   }
