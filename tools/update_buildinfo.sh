@@ -54,7 +54,7 @@ cat > $TEMPFILE << EndOfMessage
   "\trelease: " BUILDINFO_RELEASE "\n" \\
   "\trelease DTS: " BUILDINFO_RELEASE_DTS "\n" \\
   "\tSSL: " BUILDINFO_SSL_STR "\n" \\
-  "\tBuild type: " BUILDINFO_BUILD_TYPE "\n" \\
+  "\tbuild type: " BUILDINFO_BUILD_TYPE "\n" \\
   "\tLFS: " BUILDINFO_TO_STR(BUILDINFO_LFS) "\n" \\
   "\tmodules: " BUILDINFO_MODULES "\n"
 
