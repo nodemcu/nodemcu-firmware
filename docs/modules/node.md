@@ -280,20 +280,20 @@ Returns information about hardware, software version and build configuration.
 
 
 #### Syntax
-`node.info([kind])`
+`node.info([group])`
 
 #### Parameters
-`kind` kind of information (optional, if ommited return legacy information). May be one of `"hw"`, `"sw_version"`, `"build_config"`.
+`group` group of information (optional, if ommited return legacy information). May be one of `"hw"`, `"sw_version"`, `"build_config"`.
 
 #### Returns
- if a `kind` is given the return value will be a table containing the following elements:
- - for `kind` = `"hw"`
+ if a `group` is given the return value will be a table containing the following elements:
+ - for `group` = `"hw"`
    - `chip_id` (number)
    - `flash_id` (number)
    - `flash_size` (number)
    - `flash_mode` (number)  QIO = 0, QOUT = 1, DIO = 2, DOUT = 15.
    - `flash_speed` (number)
- - for `kind` = `"sw_version"`
+ - for `group` = `"sw_version"`
    - `git_branch` (string)
    - `git_commit_id` (string)
    - `git_release` (string) Release name +additional commits   e.g. "2.0.0-master_20170202 +403" 
@@ -301,7 +301,7 @@ Returns information about hardware, software version and build configuration.
    - `node_verion_major` (number)
    - `node_verion_minor` (number)
    - `node_verion_revision` (number)
- - for `kind` = `"build_config"`
+ - for `group` = `"build_config"`
    - `ssl` (boolean)
    - `lfs_size` (number) as defined at build time
    - `modules` (string) comma separated list
@@ -311,7 +311,7 @@ Returns information about hardware, software version and build configuration.
 
 This interface is deprecated and will be removed in one of the next releases. Use the above calls instead.
 
- - for no `kind` given: --deprecated
+ - for no `group` given: --deprecated
    - `majorVer` (number)
    - `minorVer` (number)
    - `devVer` (number)

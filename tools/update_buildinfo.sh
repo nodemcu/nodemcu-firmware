@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
 USER_MODULES_H=app/include/user_modules.h
-USER_CONFIG_H=app/include/user_config.h
 
-BUILD_DATE="$(date "+%Y-%m-%d %H:%M")"
 COMMIT_ID="$(git rev-parse HEAD)"
 BRANCH="$(git rev-parse --abbrev-ref HEAD | sed -r 's/[\/\\]+/_/g')"
 RELEASE="$(git describe --tags --long | sed -r 's/(.*)-(.*)-.*/\1 +\2/g' | sed 's/ +0$//')"
@@ -42,18 +40,15 @@ cat > $TEMPFILE << EndOfMessage
 #define BUILDINFO_BUILD_TYPE "float"
 #endif
 
-EndOfMessage
+#define USER_PROLOG "$USER_PROLOG"
+#define BUILDINFO_BRANCH "$BRANCH"
+#define BUILDINFO_COMMIT_ID "$COMMIT_ID"
+#define BUILDINFO_RELEASE "$RELEASE"
+#define BUILDINFO_RELEASE_DTS "$RELEASE_DTS"
+#define BUILDINFO_MODULES "$MODULES"
 
-echo "#define USER_PROLOG \""$USER_PROLOG"\"" >> $TEMPFILE
-echo "#define BUILDINFO_BRANCH \""$BRANCH"\"" >> $TEMPFILE
-echo "#define BUILDINFO_COMMIT_ID \""$COMMIT_ID"\"" >> $TEMPFILE
-echo "#define BUILDINFO_RELEASE \""$RELEASE"\"" >> $TEMPFILE
-echo "#define BUILDINFO_RELEASE_DTS \""$RELEASE_DTS"\"" >> $TEMPFILE
-echo "#define BUILDINFO_MODULES \""$MODULES"\"" >> $TEMPFILE
-
-cat >> $TEMPFILE << EndOfMessage2
 #define NODE_VERSION_LONG \\
-  "$USER_PROLOG \n" \\
+  USER_PROLOG "\n" \\
   "\tbranch: " BUILDINFO_BRANCH "\n" \\
   "\tcommit: " BUILDINFO_COMMIT_ID "\n" \\
   "\trelease: " BUILDINFO_RELEASE "\n" \\
@@ -63,7 +58,7 @@ cat >> $TEMPFILE << EndOfMessage2
   "\tLFS: " BUILDINFO_TO_STR(BUILDINFO_LFS) "\n" \\
   "\tmodules: " BUILDINFO_MODULES "\n"
 
-EndOfMessage2
+EndOfMessage
 
 echo "#endif	/* __BUILDINFO_H__ */" >> $TEMPFILE
 
