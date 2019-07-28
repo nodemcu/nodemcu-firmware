@@ -397,15 +397,16 @@ static err_t close_once_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 /* ------------------------------------------------------------------------- */
 
 /**
- * Search String
+ * Get length of param
  *
- * Search string for first occurence of any char in srch_str.
+ * Search string for first occurence of deliemiter '&' or ' '.
+ * if found that terminates the param, if not end of string does.
  *
  * @return -1 if no occurence of char was found.
  */
-static int enduser_setup_srch_str(const char *str, const char *srch_str)
+static int enduser_setup_get_len(const char *str)
 {
-  char *found = strpbrk (str, srch_str);
+  char *found = strpbrk (str, "& ");
   if (!found)
   {
     return strlen(str);
@@ -468,6 +469,11 @@ static int enduser_setup_http_load_payload(void)
   if (!f || err == VFS_RES_ERR || err2 == VFS_RES_ERR)
   {
     ENDUSER_SETUP_DEBUG("Unable to load file enduser_setup.html, loading default HTML...");
+
+    if (f)
+    {
+      vfs_close(f);
+    }
 
     sprintf(cl_hdr, http_header_content_len_fmt, sizeof(enduser_setup_html_default));
     cl_len = strlen(cl_hdr);
@@ -801,8 +807,8 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   state->success = 0;
   state->lastStationStatus = 0;
 
-  char *name_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_ssid="));
-  char *pwd_str = (char *) ((uint32_t)strstr(&(data[6]), "wifi_password="));
+  char *name_str = strstr(data, "wifi_ssid=");
+  char *pwd_str = strstr(data, "wifi_password=");
   if (name_str == NULL || pwd_str == NULL)
   {
     ENDUSER_SETUP_DEBUG("Password or SSID string not found");
@@ -814,13 +820,8 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   char *name_str_start = name_str + name_field_len;
   char *pwd_str_start = pwd_str + pwd_field_len;
 
-  int name_str_len = enduser_setup_srch_str(name_str_start, "& ");
-  int pwd_str_len = enduser_setup_srch_str(pwd_str_start, "& ");
-  if (name_str_len == -1 || pwd_str_len == -1)
-  {
-    ENDUSER_SETUP_DEBUG("Password or SSID HTTP paramter divider not found");
-    return 1;
-  }
+  int name_str_len = enduser_setup_get_len(name_str_start);
+  int pwd_str_len = enduser_setup_get_len(pwd_str_start);
 
 
   struct station_config *cnf = luaM_malloc(lua_getstate(), sizeof(struct station_config));
@@ -1111,22 +1112,25 @@ static void enduser_setup_handle_OPTIONS (struct tcp_pcb *http_client, char *dat
 }
 
 
-static err_t enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, size_t data_len)
+static void enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, size_t data_len)
 {
     ENDUSER_SETUP_DEBUG("Handling POST");
     if (strncmp(data + 5, "/setwifi ", 9) == 0) // User clicked the submit button
     {
-      switch (enduser_setup_http_handle_credentials(data, data_len))
+      char* body=strstr(data, "\r\n\r\n");
+      char *content_length_str = strstr(data, "Content-Length: ");
+      if( body == NULL || content_length_str == NULL)
+      {
+        enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
+        return;
+      }
+      int bodylength = atoi(content_length_str + 16);
+      body += 4; // length of the double CRLF found above
+      switch (enduser_setup_http_handle_credentials(body, bodylength))
       {
         case 0: {
           // all went fine, extract all the form data into a file
-          char* body=strstr(data, "\r\n\r\n");
-          char *content_length_str = strstr(data, "Content-Length: ");
-          if( body != NULL && content_length_str != NULL){
-            int bodylength = atoi(content_length_str + 16);
-            body += 4; // length of the double CRLF found above
             enduser_setup_write_file_with_extra_configuration_data(body, bodylength);
-          }
           // redirect user to the base page with the trying flag
           enduser_setup_http_serve_header(http_client, http_header_302_trying, LITLEN(http_header_302_trying));
           break;
@@ -1135,10 +1139,10 @@ static err_t enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, 
           enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
           break;
         default:
-          ENDUSER_SETUP_ERROR("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+          ENDUSER_SETUP_ERROR_VOID("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
           break;
       }
-    }  
+    }
 }
 
 
