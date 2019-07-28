@@ -4,7 +4,7 @@
 -- LICENCE: http://opensource.org/licenses/MIT
 -- Vladimir Dronnikov <dronnikov@gmail.com>
 ------------------------------------------------------------------------------
-local collectgarbage, tonumber, tostring = collectgarbage, tonumber, tostring
+local collectgarbage, tonumber = collectgarbage, tonumber
 
 local http
 
@@ -97,7 +97,7 @@ do
       end
       -- header parser
       local cnt_len = 0
-      local onheader = function(conn, k, v)
+      local onheader = function(k, v)
         -- TODO: look for Content-Type: header
         -- to help parse body
         -- parse content length to know body length
@@ -114,7 +114,7 @@ do
       end
       -- body data handler
       local body_len = 0
-      local ondata = function(conn, chunk)
+      local ondata = function(chunk)
         -- feed request data to request handler
         if not req or not req.ondata then return end
         body_len = body_len + #chunk
@@ -141,9 +141,9 @@ do
           buf = buf:sub(e + 2)
           -- method, url?
           if not method then
-            local i
             -- NB: just version 1.1 assumed
-            _, i, method, url = line:find("^([A-Z]+) (.-) HTTP/1.1$")
+            -- luacheck: push ignore
+            _, _, method, url = line:find("^([A-Z]+) (.-) HTTP/1.1$")
             if method then
               -- make request and response objects
               req = make_req(conn, method, url)
@@ -158,12 +158,12 @@ do
             -- header seems ok?
             if k then
               k = k:lower()
-              onheader(conn, k, v)
+              onheader(k, v)
             end
           -- headers end
           else
             -- NB: we feed the rest of the buffer as starting chunk of body
-            ondata(conn, buf)
+            ondata(buf)
             -- buffer no longer needed
             buf = nil
             -- NB: we explicitly reassign receive handler so that
