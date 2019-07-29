@@ -144,6 +144,7 @@ do
             -- NB: just version 1.1 assumed
             -- luacheck: push ignore
             _, _, method, url = line:find("^([A-Z]+) (.-) HTTP/1.1$")
+            -- luacheck: pop
             if method then
               -- make request and response objects
               req = make_req(conn, method, url)
