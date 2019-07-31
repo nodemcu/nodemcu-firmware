@@ -397,14 +397,20 @@ static err_t close_once_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 /* ------------------------------------------------------------------------- */
 
 /**
- * Get length of param
+ * Get length of param value
+ * 
+ * This is being called with a fragment of the parameters passed in the 
+ * URL for GET requests or part of the body of a POST request.
+ * The string will look like one of these
+ * "SecretPassword HTTP/1.1"
+ * "SecretPassword&wifi_ssid=..."
+ * "SecretPassword"
+ * The string is searched for the first occurence of deliemiter '&' or ' '.
+ * If found return the length up to that position.
+ * If not found return the length of the string.
  *
- * Search string for first occurence of deliemiter '&' or ' '.
- * if found that terminates the param, if not end of string does.
- *
- * @return -1 if no occurence of char was found.
  */
-static int enduser_setup_get_len(const char *str)
+static int enduser_setup_get_lenth_of_param_value(const char *str)
 {
   char *found = strpbrk (str, "& ");
   if (!found)
@@ -820,8 +826,8 @@ static int enduser_setup_http_handle_credentials(char *data, unsigned short data
   char *name_str_start = name_str + name_field_len;
   char *pwd_str_start = pwd_str + pwd_field_len;
 
-  int name_str_len = enduser_setup_get_len(name_str_start);
-  int pwd_str_len = enduser_setup_get_len(pwd_str_start);
+  int name_str_len = enduser_setup_get_lenth_of_param_value(name_str_start);
+  int pwd_str_len = enduser_setup_get_lenth_of_param_value(pwd_str_start);
 
 
   struct station_config *cnf = luaM_malloc(lua_getstate(), sizeof(struct station_config));
