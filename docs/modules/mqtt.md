@@ -132,6 +132,11 @@ Connects to the broker specified by the given host, port, and secure options.
 - `function(client)` callback function for when the connection was established
 - `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
 
+!!! attention
+
+    Secure (`https`) connections come with quite a few limitations.  Please see
+    the warnings in the [tls module](tls.md)'s documentation.
+
 #### Returns
 `true` on success, `false` otherwise
 
