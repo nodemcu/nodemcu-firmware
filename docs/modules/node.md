@@ -283,43 +283,44 @@ Returns information about hardware, software version and build configuration.
 `node.info([group])`
 
 #### Parameters
-`group` group of information (optional, if ommited return legacy information). May be one of `"hw"`, `"sw_version"`, `"build_config"`.
+`group` A designator for a group of properties. May be one of `"hw"`, `"sw_version"`, `"build_config"`. It is currently optional; if omitted the legacy structure is returned. However, not providing any value is deprecated.
 
 #### Returns
- if a `group` is given the return value will be a table containing the following elements:
- - for `group` = `"hw"`
-   - `chip_id` (number)
-   - `flash_id` (number)
-   - `flash_size` (number)
-   - `flash_mode` (number)  QIO = 0, QOUT = 1, DIO = 2, DOUT = 15.
-   - `flash_speed` (number)
- - for `group` = `"sw_version"`
-   - `git_branch` (string)
-   - `git_commit_id` (string)
-   - `git_release` (string) Release name +additional commits   e.g. "2.0.0-master_20170202 +403" 
-   - `git_commit_dts` (string) in an ordering format. e.g. "201908111200"
-   - `node_verion_major` (number)
-   - `node_verion_minor` (number)
-   - `node_verion_revision` (number)
- - for `group` = `"build_config"`
-   - `ssl` (boolean)
-   - `lfs_size` (number) as defined at build time
-   - `modules` (string) comma separated list
-   - `number_type` (string) `integer` or `float`
+If a `group` is given the return value will be a table containing the following elements:
+
+- for `group` = `"hw"`
+	- `chip_id` (number)
+	- `flash_id` (number)
+	- `flash_size` (number)
+	- `flash_mode` (number) 0 = QIO, 1 = QOUT, 2 = DIO, 15 = DOUT.
+	- `flash_speed` (number)
+- for `group` = `"sw_version"`
+	- `git_branch` (string)
+	- `git_commit_id` (string)
+	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403" 
+	- `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
+	- `node_verion_major` (number)
+	- `node_verion_minor` (number)
+	- `node_verion_revision` (number)
+- for `group` = `"build_config"`
+	- `ssl` (boolean)
+	- `lfs_size` (number) as defined at build time
+	- `modules` (string) comma separated list
+	- `number_type` (string) `integer` or `float`
 
 !!! attention
 
-This interface is deprecated and will be removed in one of the next releases. Use the above calls instead.
+	Not providing a `group` is deprecated and support for that will be removed in one of the next releases.
 
- - for no `group` given: --deprecated
-   - `majorVer` (number)
-   - `minorVer` (number)
-   - `devVer` (number)
-   - `chipid` (number)
-   - `flashid` (number)
-   - `flashsize` (number)
-   - `flashmode` (number)
-   - `flashspeed` (number)
+- for `group` = `nil`
+	- `majorVer` (number)
+	- `minorVer` (number)
+	- `devVer` (number)
+	- `chipid` (number)
+	- `flashid` (number)
+	- `flashsize` (number)
+	- `flashmode` (number)
+	- `flashspeed` (number)
 
 #### Example
 ```lua
@@ -329,7 +330,7 @@ print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
 
 ```lua
 for k,v in pairs(node.info("build_config")) do
-print (k,v)
+  print (k,v)
 end
 ```
 
