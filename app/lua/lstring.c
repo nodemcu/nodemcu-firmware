@@ -11,7 +11,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "lmem.h"
 #include "lobject.h"
@@ -67,7 +67,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
   ts->tsv.marked = luaC_white(G(L));
   ts->tsv.tt = LUA_TSTRING;
   if (!readonly) {
-    c_memcpy(ts+1, str, l*sizeof(char));
+    memcpy(ts+1, str, l*sizeof(char));
     ((char *)(ts+1))[l] = '\0';  /* ending 0 */
   } else {
     *(char **)(ts+1) = (char *)str;
@@ -106,7 +106,7 @@ LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
        o != NULL;
        o = o->gch.next) {
     TString *ts = rawgco2ts(o);
-    if (ts->tsv.len == l && (c_memcmp(str, getstr(ts), l) == 0)) {
+    if (ts->tsv.len == l && (memcmp(str, getstr(ts), l) == 0)) {
       /* string may be dead */
       if (isdead(G(L), o)) changewhite(o);
       return ts;
@@ -131,7 +131,7 @@ LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   /* New additions to the RAM strt are tagged as readonly if the string address
    * is in the CTEXT segment (target only, not luac.cross) */
   int readonly = (lua_is_ptr_in_ro_area(str) && l+1 > sizeof(char**) &&
-                  l == c_strlen(str) ? LUAS_READONLY_STRING : LUAS_REGULAR_STRING);
+                  l == strlen(str) ? LUAS_READONLY_STRING : LUAS_REGULAR_STRING);
   return newlstr(L, str, l, h, readonly);  /* not found */
 }
 

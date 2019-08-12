@@ -2,9 +2,9 @@
 
 #include "platform.h"
 #include "common.h"
-#include "c_stdio.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "llimits.h"
 #include "gpio.h"
 #include "user_interface.h"
@@ -320,7 +320,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
   }
 
   // These return NULL if the count = 0 so only error check if > 0)
-  nh.entry = c_malloc( nh.count * sizeof(*(nh.entry)) );
+  nh.entry = malloc( nh.count * sizeof(*(nh.entry)) );
   if (nh.count && !(nh.entry)) {
     return 0;  // Allocation failure
   }
@@ -345,7 +345,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
   platform_gpio_hook = nh;
   ETS_GPIO_INTR_ENABLE();
 
-  c_free(oh.entry);
+  free(oh.entry);
   return 1;
 }
 #endif // GPIO_INTERRUPT_HOOK_ENABLE
@@ -865,15 +865,15 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
   if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_MAPPED_ADDRESS)) {
-    apbuf = (uint32_t *)c_malloc(size);
+    apbuf = (uint32_t *)malloc(size);
     if(!apbuf)
       return 0;
-    c_memcpy(apbuf, from, size);
+    memcpy(apbuf, from, size);
   }
   system_soft_wdt_feed ();
   r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
   if(apbuf)
-    c_free(apbuf);
+    free(apbuf);
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
@@ -903,10 +903,10 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
     r = flash_read(fromaddr, to2, size2);
     if(SPI_FLASH_RESULT_OK == r)
     {
-      c_memmove(to,to2,size2);  // This is overlapped so must be memmove and not memcpy
+      memmove(to,to2,size2);  // This is overlapped so must be memmove and not memcpy
       char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
       r=flash_read(fromaddr+size2,(uint32*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
-      c_memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
+      memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
     }
   }
   else
@@ -1022,7 +1022,7 @@ uint32_t platform_rcr_write (uint8_t rec_id, const void *inrec, uint8_t n) {
     rec[0] = 0; rec[nwords] = 0;
     ((platform_rcr_t *) rec)->id = rec_id;
     ((platform_rcr_t *) rec)->len = nwords;
-    c_memcpy(rec+1, inrec, n);  // let memcpy handle 0 and odd byte cases
+    memcpy(rec+1, inrec, n);  // let memcpy handle 0 and odd byte cases
 
     // find previous copy if any and exit if the replacement is the same value
     uint8_t np = platform_rcr_read (rec_id, (void **) &prev);
@@ -1063,19 +1063,19 @@ uint32_t platform_rcr_write (uint8_t rec_id, const void *inrec, uint8_t n) {
             }
             if (pass == 2) memcpy(buf + l, rec, reclen);
             l += nwords + 1;
-            if (pass == 1) buf = c_malloc(l * WORDSIZE);
+            if (pass == 1) buf = malloc(l * WORDSIZE);
 
             if (l >= FLASH_SECTOR_WORDS || !buf)
                 return ~0;
         }
         platform_flash_erase_sector(flash_addr/INTERNAL_FLASH_SECTOR_SIZE);
         platform_s_flash_write(buf, flash_addr, l*WORDSIZE);
-        c_free(buf);
+        free(buf);
     }
     return nwords*WORDSIZE;
 }
 
 void* platform_print_deprecation_note( const char *msg, const char *time_frame)
 {
-  c_printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
+  printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
 }

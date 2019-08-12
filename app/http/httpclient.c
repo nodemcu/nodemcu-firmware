@@ -13,7 +13,7 @@
  */
 
 #include "osapi.h"
-#include "../libc/c_stdio.h"
+#include <stdio.h>
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"

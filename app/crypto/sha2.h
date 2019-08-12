@@ -1,7 +1,8 @@
 #ifndef __SHA2_H__
 #define __SHA2_H__
 
-#include <c_types.h>
+#include <stdint.h>
+#include <stddef.h>
 
 /**************************************************************************
  * SHA256/384/512 declarations

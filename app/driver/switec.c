@@ -14,9 +14,10 @@
  */
 
 #include "platform.h"
-#include "c_types.h"
-#include "../libc/c_stdlib.h"
-#include "../libc/c_stdio.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "driver/switec.h"
 #include "ets_sys.h"
 #include "os_type.h"
@@ -101,7 +102,7 @@ int switec_close(uint32_t channel)
   gpio_output_set(0, 0, 0, d->mask);
 
   data[channel] = NULL;
-  c_free(d);
+  free(d);
 
   // See if there are any other channels active
   for (channel = 0; channel < sizeof(data)/sizeof(data[0]); channel++) {
@@ -259,7 +260,7 @@ int switec_setup(uint32_t channel, int *pin, int max_deg_per_sec, task_handle_t 
     }
   }
 
-  DATA *d = (DATA *) c_zalloc(sizeof(DATA));
+  DATA *d = (DATA *) calloc(1, sizeof(DATA));
   if (!d) {
     return -1;
   }
@@ -269,7 +270,7 @@ int switec_setup(uint32_t channel, int *pin, int max_deg_per_sec, task_handle_t 
     // no autoreload
     if (!platform_hw_timer_init(TIMER_OWNER, FRC1_SOURCE, FALSE)) {
       // Failed to get the timer
-      c_free(d);
+      free(d);
       return -1;
     }
   }
@@ -299,12 +300,12 @@ int switec_setup(uint32_t channel, int *pin, int max_deg_per_sec, task_handle_t 
 
 #ifdef SWITEC_DEBUG
   for (i = 0; i < 4; i++) {
-    c_printf("pin[%d]=%d\n", i, pin[i]);
+    printf("pin[%d]=%d\n", i, pin[i]);
   }
 
-  c_printf("Mask=0x%x\n", d->mask);
+  printf("Mask=0x%x\n", d->mask);
   for (i = 0; i < N_STATES; i++) {
-    c_printf("pinstate[%d]=0x%x\n", i, d->pinstate[i]);
+    printf("pinstate[%d]=0x%x\n", i, d->pinstate[i]);
   }
 #endif
 

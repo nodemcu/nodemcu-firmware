@@ -2,6 +2,9 @@
 #define __CPU_ESP8266_H__
 
 #ifndef NO_CPU_ESP8266_INCLUDE
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include "os_type.h"
 #include "spi_flash.h"
 #include "pin_map.h"

@@ -8,10 +8,10 @@
 #include "platform.h"
 #include "lmem.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stddef.h>
 
-#include "c_types.h"
+#include <stdint.h>
 #include "mem.h"
 #include "lwip/ip_addr.h"
 #include "espconn.h"
@@ -77,10 +77,10 @@ static void tls_socket_cleanup(tls_socket_ud *ud) {
   if (ud->pesp_conn) {
     espconn_secure_disconnect(ud->pesp_conn);
     if (ud->pesp_conn->proto.tcp) {
-      c_free(ud->pesp_conn->proto.tcp);
+      free(ud->pesp_conn->proto.tcp);
       ud->pesp_conn->proto.tcp = NULL;
     }
-    c_free(ud->pesp_conn);
+    free(ud->pesp_conn);
     ud->pesp_conn = NULL;
   }
   lua_State *L = lua_getstate();
@@ -167,7 +167,7 @@ static void tls_socket_dns_cb( const char* domain, const ip_addr_t *ip_addr, tls
       lua_pushnil(L);
     } else {
       char tmp[20];
-      c_sprintf(tmp, IPSTR, IP2STR(&addr.addr));
+      sprintf(tmp, IPSTR, IP2STR(&addr.addr));
       lua_pushstring(L, tmp);
     }
     lua_call(L, 2, 0);
@@ -205,13 +205,13 @@ static int tls_socket_connect( lua_State *L ) {
   if (domain == NULL)
     return luaL_error(L, "invalid domain");
 
-  ud->pesp_conn = (struct espconn*)c_zalloc(sizeof(struct espconn));
+  ud->pesp_conn = (struct espconn*)calloc(1,sizeof(struct espconn));
   if(!ud->pesp_conn)
     return luaL_error(L, "not enough memory");
   ud->pesp_conn->proto.udp = NULL;
-  ud->pesp_conn->proto.tcp = (esp_tcp *)c_zalloc(sizeof(esp_tcp));
+  ud->pesp_conn->proto.tcp = (esp_tcp *)calloc(1,sizeof(esp_tcp));
   if(!ud->pesp_conn->proto.tcp){
-    c_free(ud->pesp_conn);
+    free(ud->pesp_conn);
     ud->pesp_conn = NULL;
     return luaL_error(L, "not enough memory");
   }
@@ -349,7 +349,7 @@ static int tls_socket_getpeer( lua_State *L ) {
 
   if(ud->pesp_conn && ud->pesp_conn->proto.tcp->remote_port != 0){
     char temp[20] = {0};
-    c_sprintf(temp, IPSTR, IP2STR( &(ud->pesp_conn->proto.tcp->remote_ip) ) );
+    sprintf(temp, IPSTR, IP2STR( &(ud->pesp_conn->proto.tcp->remote_ip) ) );
     lua_pushstring( L, temp );
     lua_pushinteger( L, ud->pesp_conn->proto.tcp->remote_port );
   } else {
@@ -382,10 +382,10 @@ static int tls_socket_delete( lua_State *L ) {
   if (ud->pesp_conn) {
     espconn_secure_disconnect(ud->pesp_conn);
     if (ud->pesp_conn->proto.tcp) {
-      c_free(ud->pesp_conn->proto.tcp);
+      free(ud->pesp_conn->proto.tcp);
       ud->pesp_conn->proto.tcp = NULL;
     }
-    c_free(ud->pesp_conn);
+    free(ud->pesp_conn);
     ud->pesp_conn = NULL;
   }
 
@@ -507,7 +507,7 @@ static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_m
   memset(buffer, 0xff, buffer_limit - buffer);
 
   // Lets see if it matches what is already there....
-  if (c_memcmp(buffer_base, flash_memory, INTERNAL_FLASH_SECTOR_SIZE) != 0) {
+  if (memcmp(buffer_base, flash_memory, INTERNAL_FLASH_SECTOR_SIZE) != 0) {
     // Starts being dangerous
     if (platform_flash_erase_sector(flash_offset / INTERNAL_FLASH_SECTOR_SIZE) != PLATFORM_OK) {
       luaM_free(L, buffer_base);

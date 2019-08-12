@@ -250,12 +250,16 @@ Get the current LFS and SPIFFS partition information.
 none
 
 #### Returns
-An array containing entries for `lfs_addr`, `lfs_size`, `spiffs_addr` and `spiffs_size`. The address values are offsets relative to the startof the Flash memory.
+An array containing entries for `lfs_addr`, `lfs_size`, `spiffs_addr` and `spiffs_size`. The address values are offsets relative to the start of the Flash memory.
 
 #### Example
 ```lua
 print("The LFS size is " .. node.getpartitiontable().lfs_size)
 ```
+
+#### See also
+[`node.setpartitiontable()`](#nodesetpartitiontable)
+
 
 ## node.heap()
 
@@ -272,29 +276,68 @@ system heap size left in bytes (number)
 
 ## node.info()
 
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed, and Lua File Store (LFS) usage statics.
+Returns information about hardware, software version and build configuration.
+
 
 #### Syntax
-`node.info()`
+`node.info([group])`
 
 #### Parameters
-none
+`group` A designator for a group of properties. May be one of `"hw"`, `"sw_version"`, `"build_config"`. It is currently optional; if omitted the legacy structure is returned. However, not providing any value is deprecated.
 
 #### Returns
- - `majorVer` (number)
- - `minorVer` (number)
- - `devVer` (number)
- - `chipid` (number)
- - `flashid` (number)
- - `flashsize` (number)
- - `flashmode` (number)
- - `flashspeed` (number)
+If a `group` is given the return value will be a table containing the following elements:
+
+- for `group` = `"hw"`
+	- `chip_id` (number)
+	- `flash_id` (number)
+	- `flash_size` (number)
+	- `flash_mode` (number) 0 = QIO, 1 = QOUT, 2 = DIO, 15 = DOUT.
+	- `flash_speed` (number)
+- for `group` = `"sw_version"`
+	- `git_branch` (string)
+	- `git_commit_id` (string)
+	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403" 
+	- `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
+	- `node_verion_major` (number)
+	- `node_verion_minor` (number)
+	- `node_verion_revision` (number)
+- for `group` = `"build_config"`
+	- `ssl` (boolean)
+	- `lfs_size` (number) as defined at build time
+	- `modules` (string) comma separated list
+	- `number_type` (string) `integer` or `float`
+
+!!! attention
+
+	Not providing a `group` is deprecated and support for that will be removed in one of the next releases.
+
+- for `group` = `nil`
+	- `majorVer` (number)
+	- `minorVer` (number)
+	- `devVer` (number)
+	- `chipid` (number)
+	- `flashid` (number)
+	- `flashsize` (number)
+	- `flashmode` (number)
+	- `flashspeed` (number)
 
 #### Example
 ```lua
 majorVer, minorVer, devVer, chipid, flashid, flashsize, flashmode, flashspeed = node.info()
 print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
 ```
+
+```lua
+for k,v in pairs(node.info("build_config")) do
+  print (k,v)
+end
+```
+
+```lua
+print(node.info("sw_version").git_release)
+```
+
 
 ## node.input()
 
@@ -436,7 +479,7 @@ Sets the current LFS and / or SPIFFS partition information.
 	This function is typically only used once during initial provisioning after first flashing the firmware.  It does some consistency checks to validate the specified parameters, and it then reboots the ESP module to load the new partition table. If the LFS or SPIFFS regions have changed then you will need to reload LFS, reformat the SPIFSS and reload its contents.
 
 #### Parameters
-An array containing one or more of the following enties. The address values are byte offsets relative to the startof the Flash memory. The size values are in bytes. Note that these parameters must be a multiple of 8Kb to align to Flash page boundaries.
+An array containing one or more of the following enties. The address values are byte offsets relative to the start of the Flash memory. The size values are in bytes. Note that these parameters must be a multiple of 8Kb to align to Flash page boundaries.
 -  `lfs_addr`.  The base address of the LFS region.
 -  `lfs_size`.  The size of the LFS region.
 -  `spiffs_addr`. The base address of the SPIFFS region.
@@ -449,6 +492,10 @@ Not applicable.  The ESP module will be rebooted for a valid new set, or a Lua e
 ```lua
 node.setpartitiontable{lfs_size = 0x20000, spiffs_addr = 0x120000, spiffs_size = 0x20000}
 ```
+
+#### See also
+[`node.getpartitiontable()`](#nodegetpartitiontable)
+
 
 
 ## node.sleep()

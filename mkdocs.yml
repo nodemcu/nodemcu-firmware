@@ -70,7 +70,7 @@ pages:
     - 'crypto': 'modules/crypto.md'
     - 'dht': 'modules/dht.md'
     - 'encoder': 'modules/encoder.md'
-    - 'enduser setup': 'modules/enduser-setup.md'
+    - 'enduser setup / captive portal / WiFi manager': 'modules/enduser-setup.md'
     - 'file': 'modules/file.md'
     - 'gdbstub': 'modules/gdbstub.md'
     - 'gpio': 'modules/gpio.md'

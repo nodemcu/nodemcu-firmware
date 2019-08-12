@@ -4,8 +4,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
 static uint8_t data_pin;
 static uint8_t clk_pin;

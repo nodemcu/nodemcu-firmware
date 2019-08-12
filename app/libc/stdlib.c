@@ -1,23 +1,14 @@
-//#include "user_interface.h"
 #include "user_config.h"
-
-#ifdef LUA_CROSS_COMPILER
 
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdint.h>
+
+#ifdef LUA_CROSS_COMPILER
 #define ICACHE_RODATA_ATTR
 #define TRUE  1
 #define FALSE 0
-
-#else
-
-#include "c_stdlib.h"
-#include "c_types.h"
-#include "c_string.h"
-#include <_ansi.h>
-//#include <reent.h>
-//#include "mprec.h"
 #endif
 double powersOf10[] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =   /* Table giving binary powers of 10.  Entry */
 {
@@ -32,7 +23,7 @@ double powersOf10[] ICACHE_STORE_ATTR ICACHE_RODATA_ATTR =   /* Table giving bin
     1.0e256
 };
 
-double c_strtod(const char *string, char **endPtr)
+double strtod(const char *string, char **endPtr)
 {
     int maxExponent = 511;  /* Largest possible base 10 exponent.  Any
                  * exponent larger than this will already
@@ -256,10 +247,3 @@ done:
     }
     return fraction;
 }
-
-// long c_strtol(const char *__n, char **__end_PTR, int __base){
-// }
-// unsigned long c_strtoul(const char *__n, char **__end_PTR, int __base){
-// }
-// long long c_strtoll(const char *__n, char **__end_PTR, int __base){
-// }

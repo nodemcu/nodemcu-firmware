@@ -370,7 +370,7 @@ void pmSleep_suspend(pmSleep_param_t *cfg){
 
     wifi_fpm_set_wakeup_cb(resume_cb); // Set resume C callback
 
-    c_memcpy(&current_config, cfg, sizeof(pmSleep_param_t));
+    memcpy(&current_config, cfg, sizeof(pmSleep_param_t));
     PMSLEEP_DBG("sleep duration is %d", current_config.sleep_duration);
 
     os_timer_disarm(&null_mode_check_timer);

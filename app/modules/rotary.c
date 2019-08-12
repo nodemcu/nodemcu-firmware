@@ -9,10 +9,10 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include "user_interface.h"
 #include "driver/rotary.h"
-#include "../libc/c_stdlib.h"
 
 #define MASK(x)		(1 << ROTARY_ ## x ## _INDEX)
 
@@ -145,7 +145,7 @@ static int lrotary_setup( lua_State* L )
   callback_free(L, id, ROTARY_ALL);
 
   if (!data[id]) {
-    data[id] = (DATA *) c_zalloc(sizeof(DATA));
+    data[id] = (DATA *) calloc(1, sizeof(DATA));
     if (!data[id]) {
       return -1;
     }
@@ -211,7 +211,7 @@ static int lrotary_close( lua_State* L )
   DATA *d = data[id];
   if (d) {
     data[id] = NULL;
-    c_free(d);
+    free(d);
   }
 
   if (rotary_close( id )) {

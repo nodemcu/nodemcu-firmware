@@ -5,7 +5,7 @@
 #include "platform.h"
 #include "hw_timer.h"
 #include "task/task.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
 
 #include "pcm.h"
 

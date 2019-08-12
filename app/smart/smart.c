@@ -1,6 +1,6 @@
-#include "c_stdio.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
 #include "smart.h"
 #include "pm/swtimer.h"
@@ -39,7 +39,7 @@ int smart_check(uint8_t *nibble, uint16_t len, uint8_t *dst, uint8_t *got){
   uint16_t dst_len = len/NIBBLE_PER_BYTE;
   uint16_t byte_num = 0, bit_num = 0;
   int i = 0, res = 1; // assume ok.
-  c_memset(dst,0,dst_len);
+  memset(dst,0,dst_len);
 
   if(NIBBLE_PER_BYTE==1){
     for(i=0;i<len;i++){
@@ -161,7 +161,7 @@ void detect(uint8 *arg, uint16 len){
         if ( len - am[i]->base_len == am[i]->flag[0]) // store new source-dest adress pair to the map until flag[0] is got
         {
           // BSSID, SA, DA, store the SA, DA
-          c_memcpy(am[i]->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH);
+          memcpy(am[i]->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH);
           am[i]->flag_match_num++;    // =1
           am[i]->cur_base_seq = seq;  // assume the first seq is found
           am[i]->base_seq_valid = 1;
@@ -169,7 +169,7 @@ void detect(uint8 *arg, uint16 len){
         }
         break;    // break any way for the next packet to come
       }
-      else if(0 == c_memcmp(am[i]->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH)){   // source-dest adress pair match
+      else if(0 == memcmp(am[i]->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH)){   // source-dest adress pair match
         if(am[i]->base_seq_valid == 0){
           if ( len - am[i]->base_len == am[i]->flag[0]) { // found the new flag[0]
             // here flag_match_num is already = 1
@@ -236,7 +236,7 @@ void detect(uint8 *arg, uint16 len){
     // break out, or loop done.
     goto end;
   } else {  // cur_base_seq is ref to SSID_FLAG when patern is alread found
-    if(0 != c_memcmp(matched->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH)){ // source-dest adress pair not match, ignore it
+    if(0 != memcmp(matched->addr, &buf[ADDR_MATCH_START], ADDR_MATCH_LENGTH)){ // source-dest adress pair not match, ignore it
       return;
     }
     if (matched->base_seq_valid == 0){  // SSID_FLAG seq invalid, need to find the next valid seq number
@@ -455,7 +455,7 @@ void reset_map(smart_addr_map **am, size_t num){
     am[i]->base_seq_valid = 0;
     am[i]->ssid_len = 0;
     am[i]->pwd_len = 0;
-    c_memset(am[i]->addr, 0, ADDR_MATCH_LENGTH);
+    memset(am[i]->addr, 0, ADDR_MATCH_LENGTH);
     if(SEP_1_INDEX==0){
       am[i]->flag[0] = SEP_1;
       am[i]->flag[1] = SEP_2;
@@ -511,34 +511,34 @@ void smart_end(){
   for (i = 0; i < ADDR_MAP_NUM; ++i)
   {
     if(am[i]){
-      c_free(am[i]);
+      free(am[i]);
       am[i] = NULL;
     }
     matched = NULL;
   }
 
   if(sta_conf){
-    c_free(sta_conf);
+    free(sta_conf);
     sta_conf = NULL;
   }
 
   if(got_password){
-    c_free(got_password);
+    free(got_password);
     got_password = NULL;
   }
 
   if(got_ssid){
-    c_free(got_ssid);
+    free(got_ssid);
     got_ssid = NULL;
   }
 
   if(password_nibble){
-    c_free(password_nibble);
+    free(password_nibble);
     password_nibble = NULL;
   }
 
   if(ssid_nibble){
-    c_free(ssid_nibble);
+    free(ssid_nibble);
     ssid_nibble = NULL;
   }
   // system_restart();   // restart to enable the mode
@@ -583,14 +583,14 @@ void smart_next_channel(){
   NODE_ERR("switch to channel %d\n", cur_channel);
   wifi_set_channel(cur_channel);
   reset_map(am, ADDR_MAP_NUM);
-  c_memset(sta_conf->ssid, 0, sizeof(sta_conf->ssid));
-  c_memset(sta_conf->password, 0, sizeof(sta_conf->password));
+  memset(sta_conf->ssid, 0, sizeof(sta_conf->ssid));
+  memset(sta_conf->password, 0, sizeof(sta_conf->password));
 
-  c_memset(got_ssid, 0, SSID_BIT_MAX);
-  c_memset(got_password, 0, PWD_BIT_MAX);
+  memset(got_ssid, 0, SSID_BIT_MAX);
+  memset(got_password, 0, PWD_BIT_MAX);
 
-  c_memset(ssid_nibble, 0, SSID_NIBBLE_MAX);
-  c_memset(password_nibble, 0, PWD_NIBBLE_MAX);
+  memset(ssid_nibble, 0, SSID_NIBBLE_MAX);
+  memset(password_nibble, 0, PWD_NIBBLE_MAX);
 
   os_timer_disarm(&smart_timer);
   os_timer_arm(&smart_timer, TIME_OUT_PER_CHANNEL, 0);   // no repeat
@@ -604,7 +604,7 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
   for (i = 0; i < ADDR_MAP_NUM; ++i)
   {
     if(!am[i]){
-      am[i] = (smart_addr_map*)c_zalloc(sizeof(smart_addr_map));
+      am[i] = (smart_addr_map*)calloc(1,sizeof(smart_addr_map));
       if(!am[i]){
         NODE_DBG("smart_begin map no memory\n");
         smart_end();
@@ -613,7 +613,7 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
     }
   }
   if(!sta_conf){
-    sta_conf = (struct station_config *)c_zalloc(sizeof(struct station_config));
+    sta_conf = (struct station_config *)calloc(1,sizeof(struct station_config));
     if(!sta_conf){
       NODE_DBG("smart_begin sta_conf no memory\n");
       smart_end();
@@ -622,7 +622,7 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
   }
 
   if(!ssid_nibble){
-    ssid_nibble = (uint8_t *)c_zalloc(SSID_NIBBLE_MAX);
+    ssid_nibble = (uint8_t *)calloc(1,SSID_NIBBLE_MAX);
     if(!ssid_nibble){
       NODE_DBG("smart_begin sta_conf no memory\n");
       smart_end();
@@ -631,7 +631,7 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
   }
 
   if(!password_nibble){
-    password_nibble = (uint8_t *)c_zalloc(PWD_NIBBLE_MAX);
+    password_nibble = (uint8_t *)calloc(1,PWD_NIBBLE_MAX);
     if(!password_nibble){
       NODE_DBG("smart_begin sta_conf no memory\n");
       smart_end();
@@ -640,7 +640,7 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
   }
 
   if(!got_ssid){
-    got_ssid = (uint8_t *)c_zalloc(SSID_BIT_MAX);
+    got_ssid = (uint8_t *)calloc(1,SSID_BIT_MAX);
     if(!got_ssid){
       NODE_DBG("smart_begin sta_conf no memory\n");
       smart_end();
@@ -649,7 +649,7 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
   }
 
   if(!got_password){
-    got_password = (uint8_t *)c_zalloc(PWD_BIT_MAX);
+    got_password = (uint8_t *)calloc(1,PWD_BIT_MAX);
     if(!got_password){
       NODE_DBG("smart_begin sta_conf no memory\n");
       smart_end();
@@ -657,14 +657,14 @@ void smart_begin(int chnl, smart_succeed s, void *arg){
     }
   }
   reset_map(am, ADDR_MAP_NUM);
-  // c_memset(sta_conf->ssid, 0, sizeof(sta_conf->ssid));
-  // c_memset(sta_conf->password, 0, sizeof(sta_conf->password));
+  // memset(sta_conf->ssid, 0, sizeof(sta_conf->ssid));
+  // memset(sta_conf->password, 0, sizeof(sta_conf->password));
 
-  // c_memset(got_ssid, 0, SSID_BIT_MAX);
-  // c_memset(got_password, 0, PWD_BIT_MAX);
+  // memset(got_ssid, 0, SSID_BIT_MAX);
+  // memset(got_password, 0, PWD_BIT_MAX);
 
-  // c_memset(ssid_nibble, 0, SSID_NIBBLE_MAX);
-  // c_memset(password_nibble, 0, PWD_NIBBLE_MAX);
+  // memset(ssid_nibble, 0, SSID_NIBBLE_MAX);
+  // memset(password_nibble, 0, PWD_NIBBLE_MAX);
   mode = wifi_get_opmode();
   if( (STATION_MODE == mode) || (mode == STATIONAP_MODE) ){
     wifi_station_set_auto_connect(false);

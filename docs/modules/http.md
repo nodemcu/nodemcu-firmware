@@ -20,7 +20,10 @@ to make it easy to access. If there are multiple headers of the same name, then 
 
 **SSL/TLS support**
 
-Take note of constraints documented in the [net module](net.md).
+!!! attention
+
+    Secure (`https`) connections come with quite a few limitations.  Please see
+    the warnings in the [tls module](tls.md)'s documentation.
 
 ## http.delete()
 

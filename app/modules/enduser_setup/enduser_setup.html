@@ -153,14 +153,17 @@
 			<div id=deviceId></div>
 			<div id=f1>
 				<h3>Connect device to your Wi-Fi</h3>
-				<button id=networks type=button class=utility></button>
-				<div id=dropdown>
-					<span id=arrow>&#x25bc;</span>
-					<select id=aplist name=aplist></select>
-				</div>
-				<input id=ssid type=text autocorrect=off autocapitalize=none placeholder='Wi-Fi Name' />
-				<input id=wifi_password type=text autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
-				<button id=submit type=button>Save</button>
+				<form action="/setwifi" method="POST">
+					<button id=networks type=button class=utility></button>
+					<div id=dropdown>
+						<span id=arrow>&#x25bc;</span>
+						<select id=aplist name=aplist></select>
+					</div>
+					<input id=ssid name=wifi_ssid type=text autocorrect=off autocapitalize=none placeholder='Wi-Fi Name' />
+					<input name=wifi_password type=password autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
+					<!-- You can add inputs here and have them pop up in your lua code through the file eus_params.lua -->
+					<input type="submit" value="Save"/>
+				</form>
 			</div>
 			<div id=f2>
 				<h1>Success!</h1>
@@ -180,6 +183,11 @@
 		var ab = $('#networks'), ap = $('#aplist');
 		var stopAll = false, ra, rs, submitted = false;
 
+		$.urlParam = function (name) {
+			var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+			if (results == null) { return null;}
+			else { return decodeURI(results[1]) || 0;}
+		}
 		function show(f, y) {
 			if (y == null) y = f;
 			$(f).style.display = y == f ? 'block' : 'none';
@@ -240,13 +248,6 @@
 				}
 			}
 		}
-		function submit() {
-			submitted = true;
-			var url = '/setwifi?wifi_ssid=' + encodeURIComponent($('#ssid').value) + '&wifi_password=' + encodeURIComponent($('#wifi_password').value);
-			clearTimeout(rs);
-			fetch(url, 'GET', newSt, 2);
-			cur('#f3');
-		}
 		function fetch(url, method, callback, time_out) {
 			var xhr = new XMLHttpRequest();
 			xhr.onloadend = function () {
@@ -305,16 +306,17 @@
 				fetch('/aplist?n=' + Math.random(), 'GET', gotAp, 10);
 		}
 		window.onload = function() {
-		  ab.innerText = 'Scan for Networks';
-		  ab.onclick = refrAp;
-		  $('#aplist').onchange = function () {
-			  $('#ssid').value = $('#aplist').value;
-		  };
-		  $('#submit').onclick = submit;
-		  $('#bk2').onclick = function () {
-			  cur('#f1')
-		  }
-		  rs = to(refr, 0.5);
+			let trying = $.urlParam('trying');
+			ab.innerText = 'Scan for Networks';
+			ab.onclick = refrAp;
+			$('#aplist').onchange = function () {
+				$('#ssid').value = $('#aplist').value;
+			};
+			$('#bk2').onclick = function () {
+				cur('#f1')
+			}
+			rs = to(refr, 0.5);
+			if( trying ) cur("#f3");
 		}
   </script>
 </body>

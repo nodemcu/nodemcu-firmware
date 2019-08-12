@@ -40,10 +40,7 @@ DEFINES += -DUSE_PIN_LIST
 
 CSRCS := $(wildcard ucg/src/clib/*.c *.c)
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I ucg/src/clib
-INCLUDES += -I ./
-INCLUDES += -I ../libc
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

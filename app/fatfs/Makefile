@@ -42,11 +42,6 @@ STD_CFLAGS=-std=gnu11 -Wimplicit -imacros $(FATFS_INC_DIR)fatfs_prefix_lib.h
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../platform
-INCLUDES += -I ../libc
-INCLUDES += -I ../lua
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

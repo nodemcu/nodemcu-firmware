@@ -5,9 +5,9 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_math.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "user_interface.h"
 #include "osapi.h"
 

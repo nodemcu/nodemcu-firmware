@@ -2,7 +2,7 @@
 #include "os_type.h"
 #include "osapi.h"
 #include "driver/uart.h"
-#include "c_types.h"
+#include <stdint.h>
 
 LOCAL os_timer_t readline_timer;
 

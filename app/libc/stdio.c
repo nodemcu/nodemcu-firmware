@@ -1,60 +1,27 @@
-#include "c_stdio.h"
-// #include "driver/uart.h"
+#include <stdio.h>
 
 int c_stdin = 999;
 int c_stdout = 1000;
 int c_stderr = 1001;
 
-// FILE *c_fopen(const char *_name, const char *_type){
-// }
-// FILE *c_freopen(const char *_name, const char *_type, FILE *_f){
-// }
-// FILE *c_tmpfile(void){
-// }
-
-// int    c_putchar(int c){
-// }
-
-// int    c_printf(const char *c, ...){
-// }
-
-// int c_sprintf(char *c, const char *s, ...){
-// }
-
-// int    c_fprintf(FILE *f, const char *s, ...){
-// }
-// int    c_fscanf(FILE *f, const char *s, ...){
-// }
-// int    c_fclose(FILE *f){
-// }
-// int    c_fflush(FILE *f){
-// }
-// int    c_setvbuf(FILE *f, char *c, int d, size_t t){
-// }
-// void c_clearerr(FILE *f){
-// }
-// int    c_fseek(FILE *f, long l, int d){
-// }
-// long c_ftell( FILE *f){
-// }
-// int    c_fputs(const char *c, FILE *f){
-// }
-// char *c_fgets(char *c, int d, FILE *f){
-// }
-// int    c_ungetc(int d, FILE *f){
-// }
-// size_t c_fread(void *p, size_t _size, size_t _n, FILE *f){
-// }
-// size_t c_fwrite(const void *p, size_t _size, size_t _n, FILE *f){
-// }
-// int    c_feof(FILE *f){
-// }
-// int    c_ferror(FILE *f){
-// }
-// int    c_getc(FILE *f){
-// }
-
 #if defined( LUA_NUMBER_INTEGRAL )
+
+#include <stdarg.h>
+
+int sprintf(char *s, const char *fmt, ...)
+{
+    int n;
+    va_list arg;
+    va_start(arg, fmt);
+    n = ets_vsprintf(s, fmt, arg);
+    va_end(arg);
+    return n;
+}
+
+int vsprintf (char *d, const char *s, va_list ap)
+{
+  return ets_vsprintf(d, s, ap);
+}
 
 #else
 
@@ -97,8 +64,7 @@ int c_stderr = 1001;
  * SUCH DAMAGE.
  *
  */
-//#include <string.h>
-#include "c_string.h"
+#include <string.h>
 
 char *
 strichr(char *p, int c)
@@ -147,8 +113,7 @@ strichr(char *p, int c)
  * SUCH DAMAGE.
  *
  */
-//#include <string.h>
-#include "c_string.h"
+#include <string.h>
 
 #define FMT_RJUST 0
 #define FMT_LJUST 1
@@ -221,10 +186,8 @@ str_fmt(char *p, int size, int fmt)
  * SUCH DAMAGE.
  *
  */
-//#include <string.h>
-//#include <ctype.h>
-#include "c_string.h"
-#include "c_ctype.h"
+#include <string.h>
+#include <ctype.h>
 
 void
 strtoupper(char *p)
@@ -269,10 +232,9 @@ strtoupper(char *p)
  */
 
 //#include <sys/types.h>
-//#include <string.h>
+#include <string.h>
+#include <stdint.h>
 //#include <pmon.h>
-#include "c_string.h"
-typedef unsigned int u_int32_t;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
 typedef int32_t register_t;
@@ -371,7 +333,7 @@ _atob (u_quad_t *vp, char *p, int base)
  *      converts p to binary result in vp, rtn 1 on success
  */
 int
-atob(u_int32_t *vp, char *p, int base)
+atob(uint32_t *vp, char *p, int base)
 {
     u_quad_t v;
 
@@ -554,13 +516,10 @@ gethex(int32_t *vp, char *p, int n)
  *
  */
 //#include <stdio.h>
-//#include <stdarg.h>
-//#include <string.h>
-//#include <ctype.h>
 //#include <pmon.h>
-#include "c_stdarg.h"
-#include "c_string.h"
-#include "c_ctype.h"
+#include <stdarg.h>
+#include <string.h>
+#include <ctype.h>
 
 /*
  *  int vsprintf(d,s,ap)
@@ -1091,10 +1050,9 @@ exponent(char *p, int exp, int fmtch)
     }
     return (p);
 }
-#endif /* FLOATINGPT */
 
 
-int c_sprintf(char *s, const char *fmt, ...)
+int sprintf(char *s, const char *fmt, ...)
 {
     int n;
     va_list arg;
@@ -1103,5 +1061,7 @@ int c_sprintf(char *s, const char *fmt, ...)
     va_end(arg);
     return n;
 }
+
+#endif /* FLOATINGPT */
 
 #endif

@@ -24,7 +24,7 @@
  * Rework of original driver: Natalia Sorokina <sonaux@gmail.com>, 2018
  */
 
-#include "../libc/c_stdlib.h"
+#include <stdlib.h>
 #include "ets_sys.h"
 #include "osapi.h"
 #include "gpio.h"
@@ -252,7 +252,7 @@ uint32 ICACHE_FLASH_ATTR
 i2c_master_setup(uint16 id, uint8 sda, uint8 scl, uint32 speed)
 {
     if(NULL == i2c[id]){
-        i2c[id] = (i2c_master_state_t*) c_malloc(sizeof(i2c_master_state_t));
+        i2c[id] = (i2c_master_state_t*) malloc(sizeof(i2c_master_state_t));
     }
     if(NULL == i2c[id]){  // if malloc failed
         return 0;

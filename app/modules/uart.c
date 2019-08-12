@@ -4,8 +4,8 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_types.h"
-#include "c_string.h"
+#include <stdint.h>
+#include <string.h>
 #include "rom.h"
 
 static int uart_receive_rf = LUA_NOREF;
@@ -67,7 +67,7 @@ static int l_uart_on( lua_State* L )
   } else {
     lua_pushnil(L);
   }
-  if(sl == 4 && c_strcmp(method, "data") == 0){
+  if(sl == 4 && strcmp(method, "data") == 0){
     run_input = true;
     if(uart_receive_rf != LUA_NOREF){
       luaL_unref(L, LUA_REGISTRYINDEX, uart_receive_rf);

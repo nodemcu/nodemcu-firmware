@@ -93,12 +93,14 @@ make EXTRA_CCFLAGS="-DLUA_NUMBER_INTEGRAL ....
 ```
 
 ### Tag Your Build
-Identify your firmware builds by editing `app/include/user_version.h`
+Identify your firmware builds by setting the environment variable `USER_PROLOG`.
+You may also edit `app/include/user_version.h`. The variable `USER_PROLOG` will be included in `NODE_VERSION_LONG`.
 
 ```c
-#define NODE_VERSION    "NodeMCU " ESP_SDK_VERSION_STRING "." NODE_VERSION_XSTR(NODE_VERSION_INTERNAL)
+#define NODE_VERSION    "NodeMCU " ESP_SDK_VERSION_STRING "." NODE_VERSION_XSTR(NODE_VERSION_INTERNAL) " " NODE_VERSION_LONG
+
 #ifndef BUILD_DATE
-#define BUILD_DATE      "YYYYMMDD"
+#define BUILD_DATE      "unspecified"
 #endif
 ```
 

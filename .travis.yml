@@ -30,6 +30,7 @@ script:
 - if [ "$OS" = "windows" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/ci-build-windows-ms.sh; fi
 - if [ "$OS" = "linux" -a "$TRAVIS_PULL_REQUEST" != "false" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/pr-build.sh; fi
 - cd "$TRAVIS_BUILD_DIR"
-- LUA_FILES=`find lua_modules lua_examples -iname "*.lua"`
-- echo checking $LUA_FILES
-- $LUACC -p $LUA_FILES
+- echo "checking:"
+- find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 echo
+- find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 $LUACC -p
+# - if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck.sh || true ; fi

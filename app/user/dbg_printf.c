@@ -39,9 +39,10 @@
 // overflows. The downside is that it does not implement a wide range
 // of formatting characters.
 
-#include <c_stdlib.h>
-#include <c_types.h>
-#include <c_stdarg.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include "driver/uart.h"
 
 static void kprintn (void (*)(const char), uint32_t, int, int, char);

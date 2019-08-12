@@ -6,6 +6,7 @@ local/
 user_config.h
 server-ca.crt
 luac.cross
+luac.cross.int
 uz_unzip
 uz_zip
 tools/toolchains/
@@ -15,3 +16,6 @@ tools/toolchains/
 .project
 .settings/
 .vscode
+
+#ignore temp file for build infos
+buildinfo.h

@@ -123,26 +123,27 @@ none
 Connects to the broker specified by the given host, port, and secure options.
 
 #### Syntax
-`mqtt:connect(host[, port[, secure[, autoreconnect]]][, function(client)[, function(client, reason)]])`
+`mqtt:connect(host[, port[, secure]][, function(client)[, function(client, reason)]])`
 
 #### Parameters
 - `host` host, domain or IP (string)
 - `port` broker port (number), default 1883
-- `secure` 0/1 for `false`/`true`, default 0. Take note of constraints documented in the [net module](net.md).
-- `autoreconnect` 0/1 for `false`/`true`, default 0. This option is *deprecated*.
+- `secure` boolean: if `true`, use TLS. Take note of constraints documented in the [net module](net.md).
 - `function(client)` callback function for when the connection was established
 - `function(client, reason)` callback function for when the connection could not be established. No further callbacks should be called.
+
+!!! attention
+
+    Secure (`https`) connections come with quite a few limitations.  Please see
+    the warnings in the [tls module](tls.md)'s documentation.
 
 #### Returns
 `true` on success, `false` otherwise
 
 #### Notes
 
-Don't use `autoreconnect`. Let me repeat that, don't use `autoreconnect`. You should handle the errors explicitly and appropriately for
-your application. In particular, the default for `cleansession` above is `true`, so all subscriptions are destroyed when the connection
-is lost for any reason.
-
-In order to acheive a consistent connection, handle errors in the error callback. For example:
+An application should watch for connection failures and handle errors in the error callback,
+in order to achieve a reliable connection to the server.  For example:
 
 ```
 function handle_mqtt_error(client, reason)
@@ -156,13 +157,12 @@ end
 
 In reality, the connected function should do something useful!
 
-This is the description of how the `autoreconnect` functionality may (or may not) work.
+The two callbacks to `:connect()` alias with the "connect" and "offline"
+callbacks available through `:on()`.
 
-> When `autoreconnect` is set, then the connection will be re-established when it breaks. No error indication will be given (but all the
-> subscriptions may be lost if `cleansession` is true). However, if the
-> very first connection fails, then no reconnect attempt is made, and the error is signalled through the callback (if any). The first connection
-> is considered a success if the client connects to a server and gets back a good response packet in response to its MQTT connection request.
-> This implies (for example) that the username and password are correct.
+Previously, we instructed an application to pass either the *integer* 0 or
+*integer* 1 for `secure`.  Now, this will trigger a deprecation warning; please
+use the *boolean* `false` or `true` instead.
 
 #### Connection failure callback reason codes:
 
@@ -213,7 +213,7 @@ Registers a callback function for an event.
 `mqtt:on(event, function(client[, topic[, message]]))`
 
 #### Parameters
-- `event` can be "connect", "message", "offline" or "overflow"
+- `event` can be "connect", "suback", "unsuback", "puback", "message", "overflow", or "offline"
 - `function(client[, topic[, message]])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
 
 #### Returns
@@ -231,8 +231,13 @@ Publishes a message.
 - `message` the message to publish, (buffer or string)
 - `qos` QoS level
 - `retain` retain flag
-- `function(client)` optional callback fired when PUBACK received.  NOTE: When calling publish() more than once, the last callback function defined will be called for ALL publish commands.
+- `function(client)` optional callback fired when PUBACK received.
 
+#### Notes
+
+When calling publish() more than once, the last callback function defined will
+be called for ALL publish commands.  This callback argument also aliases with
+the "puback" callback for `:on()`.
 
 #### Returns
 `true` on success, `false` otherwise
@@ -249,7 +254,13 @@ Subscribes to one or several topics.
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `qos` QoS subscription level, default 0
 - `table` array of 'topic, qos' pairs to subscribe to
-- `function(client)` optional callback fired when subscription(s) succeeded.  NOTE: When calling subscribe() more than once, the last callback function defined will be called for ALL subscribe commands.
+- `function(client)` optional callback fired when subscription(s) succeeded.
+
+#### Notes
+
+When calling subscribe() more than once, the last callback function defined
+will be called for ALL subscribe commands. This callback argument also aliases
+with the "suback" callback for `:on()`.
 
 #### Returns
 `true` on success, `false` otherwise
@@ -278,7 +289,13 @@ Unsubscribes from one or several topics.
 #### Parameters
 - `topic` a [topic string](http://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices)
 - `table` array of 'topic, anything' pairs to unsubscribe from
-- `function(client)` optional callback fired when unsubscription(s) succeeded.  NOTE: When calling unsubscribe() more than once, the last callback function defined will be called for ALL unsubscribe commands.
+- `function(client)` optional callback fired when unsubscription(s) succeeded.
+
+#### Notes
+
+When calling subscribe() more than once, the last callback function defined
+will be called for ALL subscribe commands. This callback argument also aliases
+with the "unsuback" callback for `:on()`.
 
 #### Returns
 `true` on success, `false` otherwise

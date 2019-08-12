@@ -2,9 +2,9 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_math.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "user_interface.h"
 #include "driver/uart.h"
 #include "osapi.h"
@@ -17,8 +17,6 @@
 
 #define DEFAULT_MODE 0
 #define DEFAULT_COLOR 0xFF0000
-
-#define UINT32_MAX 4294967295U
 
 #define SPEED_MIN 0
 #define SPEED_MAX 255
@@ -161,11 +159,11 @@ static int ws2812_effects_init(lua_State *L) {
   // get rid of old state
   if (state != NULL) {
     luaL_unref(L, LUA_REGISTRYINDEX, state->buffer_ref);
-    os_free((void *) state);
+    free((void *) state);
   }
   // Allocate memory and set all to zero
   size_t size = sizeof(ws2812_effects) + buffer->colorsPerLed*sizeof(uint8_t);
-  state = (ws2812_effects *) os_zalloc(size);
+  state = (ws2812_effects *) calloc(1,size);
   // initialize
   state->speed = SPEED_DEFAULT;
   state->mode_delay = DELAY_DEFAULT;
@@ -307,7 +305,7 @@ static int ws2812_effects_mode_blink() {
   else {
     // off
     ws2812_buffer * buffer = state->buffer;
-    c_memset(&buffer->values[0], 0, buffer->size * buffer->colorsPerLed);
+    memset(&buffer->values[0], 0, buffer->size * buffer->colorsPerLed);
   }
   return 0;
 }

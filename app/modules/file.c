@@ -5,9 +5,9 @@
 #include "lmem.h"
 #include "platform.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include "vfs.h"
-#include "c_string.h"
+#include <string.h>
 
 #include <alloca.h>
 
@@ -126,15 +126,16 @@ static int file_close( lua_State* L )
     ud = (file_fd_ud *)luaL_checkudata(L, 1, "file.obj");
   }
 
-  // unref default file descriptor
-  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
-  file_fd_ref = LUA_NOREF;
-
   if(ud->fd){
       vfs_close(ud->fd);
       // mark as closed
       ud->fd = 0;
   }
+
+  // unref default file descriptor
+  luaL_unref( L, LUA_REGISTRYINDEX, file_fd_ref );
+  file_fd_ref = LUA_NOREF;
+
   return 0;
 }
 
@@ -189,7 +190,7 @@ static int file_open( lua_State* L )
 
   const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
   const char *mode = luaL_optstring(L, 2, "r");
 
@@ -302,7 +303,7 @@ static int file_exists( lua_State* L )
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
 
   struct vfs_stat stat;
   lua_pushboolean(L, vfs_stat((char *)fname, &stat) == VFS_RES_OK ? 1 : 0);
@@ -316,7 +317,7 @@ static int file_remove( lua_State* L )
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( fname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid");
   vfs_remove((char *)fname);
   return 0;
 }
@@ -342,11 +343,11 @@ static int file_rename( lua_State* L )
 
   const char *oldname = luaL_checklstring( L, 1, &len );
   const char *basename = vfs_basename( oldname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(oldname) == len, 1, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(oldname) == len, 1, "filename invalid");
 
   const char *newname = luaL_checklstring( L, 2, &len );
   basename = vfs_basename( newname );
-  luaL_argcheck(L, c_strlen(basename) <= FS_OBJ_NAME_LEN && c_strlen(newname) == len, 2, "filename invalid");
+  luaL_argcheck(L, strlen(basename) <= FS_OBJ_NAME_LEN && strlen(newname) == len, 2, "filename invalid");
 
   if(0 <= vfs_rename( oldname, newname )){
     lua_pushboolean(L, 1);
@@ -361,7 +362,7 @@ static int file_stat( lua_State* L )
 {
   size_t len;
   const char *fname = luaL_checklstring( L, 1, &len );
-  luaL_argcheck( L, c_strlen(fname) <= FS_OBJ_NAME_LEN && c_strlen(fname) == len, 1, "filename invalid" );
+  luaL_argcheck( L, strlen(fname) <= FS_OBJ_NAME_LEN && strlen(fname) == len, 1, "filename invalid" );
 
   struct vfs_stat stat;
   if (vfs_stat( (char *)fname, &stat ) != VFS_RES_OK) {

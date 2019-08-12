@@ -10,9 +10,9 @@
 *******************************************************************************/
 #include "lua.h"
 #include "platform.h"
-#include "c_string.h"
-#include "c_stdlib.h"
-#include "c_stdio.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "vfs.h"
 #include "flash_api.h"
 #include "user_interface.h"
@@ -103,7 +103,7 @@ extern void _ResetHandler(void);
  * the use of a partition table (PT) to control flash allocation. The NodeMCU uses
  * this PT for overall allocation of its flash resources. The non_OS SDK calls the
  * user_pre_init() entry to do all of this startup configuration.  Note that this
- * runs with Icache enabled -- that is the IROM0 partition is already mapped the
+ * runs with Icache enabled -- that is the IROM0 partition is already mapped to the
  * address space at 0x40210000 and so that most SDK services are available, such
  * as system_get_flash_size_map() which returns the valid flash size (including the
  * 8Mb and 16Mb variants).

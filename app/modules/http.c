@@ -3,12 +3,12 @@
  * vowstar@gmail.com
  * 2015-12-29
 *******************************************************************************/
-#include <c_stdlib.h>
+#include <stdlib.h>
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "cpu_esp8266.h"
-#include "httpclient.h"
+#include "http/httpclient.h"
 
 static int http_callback_registry  = LUA_NOREF;
 
@@ -92,7 +92,7 @@ static void http_callback( char * response, int http_status, char ** full_respon
     }
 
     if (full_response_p && *full_response_p) {
-      c_free(*full_response_p);
+      free(*full_response_p);
       *full_response_p = NULL;
     }
 
