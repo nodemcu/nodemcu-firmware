@@ -6,7 +6,7 @@
  */
 
 #include <stdlib.h>
-#include "c_types.h"
+#include <stdint.h>
 #include "lauxlib.h"
 #include "mem.h"
 #include "module.h"
