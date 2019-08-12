@@ -74,12 +74,20 @@ An error is thrown in case of invalid parameters or if the ethernet driver faile
 
 #### Example
 ```lua
+-- Initialize ESP32-GATEWAY
 eth.init({phy  = eth.PHY_LAN8720,
           addr = 0,
           clock_mode = eth.CLOCK_GPIO17_OUT,
           power = 5,
           mdc   = 23,
           mdio  = 18})
+
+-- Initialize wESP32
+eth.init({phy  = eth.PHY_LAN8720,
+          addr = 0,
+          clock_mode = eth.CLOCK_GPIO0_IN,
+          mdc   = 16,
+          mdio  = 17})
 ```
 
 
@@ -110,6 +118,25 @@ Event information provided for each event is as follows:
     - `ip`: the IP address assigned
     - `netmask`: the IP netmask
     - `gw`: the gateway ("0.0.0.0" if no gateway)
+
+#### Example
+```lua
+function ev(event, info)
+    print("event", event)
+    if event == "got_ip" then
+        print("ip:"..info.ip..", nm:"..info.netmask..", gw:"..info.gw)
+    elseif event == "connected" then
+        print("speed:", eth.get_speed())
+        print("mac:", eth.get_mac())
+    end
+end
+
+eth.on("connected", ev)
+eth.on("disconnected", ev)
+eth.on("start", ev)
+eth.on("stop", ev)
+eth.on("got_ip", ev)
+```
 
 
 ## eth.set_mac()

@@ -26,7 +26,8 @@ typedef enum {
 
 static struct {
   const eth_config_t *eth_config;
-  gpio_num_t pin_power, pin_mdc, pin_mdio;
+  int pin_power;
+  gpio_num_t pin_mdc, pin_mdio;
 } module_config;
 
 
