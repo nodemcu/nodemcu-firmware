@@ -28,6 +28,7 @@ print(benchmark.gpio_read_pin())
 print(benchmark.gpio_pull_updown())
 print(benchmark.gpio_status_read())
 print(benchmark.gpio_status_write())
+print(benchmark.adc_read())
 print(benchmark.system_get_time())
 print(benchmark.system_get_rtc_time())
 print(benchmark.system_get_cpufreq())
@@ -263,6 +264,22 @@ See [external documentation](https://sub.nanona.fi/esp8266/timing-and-ticks.html
 ### Syntax
 
 `benchmark.gpio_status_write()`
+
+### Parameters
+
+`nil`
+
+### Returns
+
+- `cpuTicks` int, CPU ticks needed to perform the operation
+
+## benchmark.adc_read()
+
+Times reading of analog input (ADC) using `system_adc_read()` function.
+
+### Syntax
+
+`benchmark.adc_read()`
 
 ### Parameters
 

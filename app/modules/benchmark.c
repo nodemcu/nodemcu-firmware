@@ -124,6 +124,10 @@ static void __NOINLINE __timing_gpio_status_write() {
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, 0);
 }
 
+static void __NOINLINE __timing_adc_read() {
+  system_adc_read();
+}
+
 static void __NOINLINE __timing_system_get_time() {
   __dummy_val = system_get_time();
 }
@@ -277,6 +281,11 @@ static int lbench_gpio_status_read(lua_State *L) {
 
 static int lbench_gpio_status_write(lua_State *L) {
   lua_pushnumber(L, (double)__measure(__timing_gpio_status_write));
+  return 1;
+}
+
+static int lbench_adc_read(lua_State *L) {
+  lua_pushnumber(L, (double)__measure(__timing_adc_read));
   return 1;
 }
 
@@ -478,6 +487,7 @@ LROT_FUNCENTRY(gpio_read_pin, lbench_gpio_read_pin)
 LROT_FUNCENTRY(gpio_pull_updown, lbench_gpio_pull_updown)
 LROT_FUNCENTRY(gpio_status_read, lbench_gpio_status_read)
 LROT_FUNCENTRY(gpio_status_write, lbench_gpio_status_write)
+LROT_FUNCENTRY(adc_read, lbench_adc_read)
 LROT_FUNCENTRY(system_get_time, lbench_system_get_time)
 LROT_FUNCENTRY(system_get_rtc_time, lbench_system_get_rtc_time)
 LROT_FUNCENTRY(system_get_cpufreq, lbench_system_get_cpufreq)
