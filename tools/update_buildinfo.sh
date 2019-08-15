@@ -6,6 +6,7 @@ COMMIT_ID="$(git rev-parse HEAD)"
 BRANCH="$(git rev-parse --abbrev-ref HEAD | sed -E 's/[\/\\]+/_/g')"
 RELEASE="$(git describe --tags --long | sed -E 's/(.*)-(.*)-.*/\1 +\2/g' | sed 's/ +0$//')"
 RELEASE_DTS=$(TZ=UTC git show --quiet --date=format-local:"%Y%m%d%H%M" --format="%cd" HEAD)
+BUILD_DATE="$(date "+%Y-%m-%d %H:%M")"
 
 MODULES=$(awk '/^[ \t]*#define LUA_USE_MODULES/{modules=modules sep tolower(substr($2,17));sep=","}END{if(length(modules)==0)modules="-";print modules}' $USER_MODULES_H | tr -d '\r')
 
@@ -46,6 +47,7 @@ cat > $TEMPFILE << EndOfMessage
 #define BUILDINFO_RELEASE "$RELEASE"
 #define BUILDINFO_RELEASE_DTS "$RELEASE_DTS"
 #define BUILDINFO_MODULES "$MODULES"
+#define BUILDINFO_BUILD_DATE "$BUILD_DATE"
 
 #define NODE_VERSION_LONG \\
   USER_PROLOG "\n" \\
