@@ -18,6 +18,7 @@ CONDITIONS OF ANY KIND, either express or implied.
 */
 
 #include "module.h"
+#include "common.h"
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
@@ -39,8 +40,8 @@ typedef struct {
   int32_t cb_ref; // If a callback is provided, then we are using the ISR, otherwise we are just letting them poll
   bool is_initted;
   bool is_debug;
-  bool touch_pads[10]; // TOUCH_PAD_MAX=10. Array of bools representing what touch pads are in this object
-  uint16_t thres[10]; // Threshold values for each pad
+  bool touch_pads[TOUCH_PAD_MAX]; // TOUCH_PAD_MAX=10. Array of bools representing what touch pads are in this object
+  uint16_t thres[TOUCH_PAD_MAX]; // Threshold values for each pad
   uint32_t filterMs;
   touch_high_volt_t hvolt;
   touch_low_volt_t lvolt;
@@ -119,7 +120,7 @@ static void touch_task(task_param_t param, task_prio_t prio)
     if (touch_self->cb_ref != LUA_NOREF) {
       // we have a callback
       lua_rawgeti (L, LUA_REGISTRYINDEX, touch_self->cb_ref);
-      char* funcName = lua_tostring(L, -1);
+      const char* funcName = lua_tostring(L, -1);
 
       // create a table in c (it will be at the top of the stack)
       lua_newtable(L);
@@ -174,39 +175,36 @@ static int touch_create( lua_State *L ) {
   }
 
   // Presume we'll get a good create, so go ahead and make our touch_t object 
-  touch_struct_t tpObj = {.cb_ref=LUA_NOREF, .is_initted=false};
+  touch_struct_t tpObj = {.cb_ref=LUA_NOREF, .is_initted=false, .is_debug=false};
   touch_t tp = &tpObj;
 
-  // Now go through our table that was passed in with our parameters
-  luaL_checkstack(L, 5, "out of mem");
-  int i = 1;
+  // const int top = lua_gettop(L);
+  luaL_checkanytable (L, 1);
 
-  // checks to make sure we got a table
-  luaL_checkanytable(L, i);
+  tp->is_debug = opt_checkbool(L, "isDebug", false);
+  tp->filterMs = opt_checkint(L, "filterMs", 0);
+  tp->lvolt = opt_checkint_range(L, "lvolt", TOUCH_LVOLT_KEEP, TOUCH_LVOLT_KEEP, TOUCH_LVOLT_MAX);
+  tp->hvolt = opt_checkint_range(L, "hvolt", TOUCH_HVOLT_KEEP, TOUCH_HVOLT_KEEP, TOUCH_HVOLT_MAX);
+  tp->atten = opt_checkint_range(L, "atten", TOUCH_HVOLT_ATTEN_KEEP, TOUCH_HVOLT_ATTEN_KEEP, TOUCH_HVOLT_ATTEN_MAX);
+  tp->slope = opt_checkint_range(L, "slope", TOUCH_PAD_SLOPE_0, TOUCH_PAD_SLOPE_0, TOUCH_PAD_SLOPE_MAX);
+  tp->is_intr = opt_checkbool(L, "intrInitAtStart", true);
+  tp->thresTrigger = opt_checkint_range(L, "thresTrigger", TOUCH_TRIGGER_BELOW, TOUCH_TRIGGER_BELOW, TOUCH_TRIGGER_MAX);
 
-  // get the field isDebug so we know whether to show config info or not during init
-  tp->is_debug = false;
-  lua_getfield(L, i, "isDebug");
-  int type = lua_type(L, -1);
-  if (type == LUA_TBOOLEAN) {
-    bool is_debug = lua_toboolean(L, -1);
-    tp->is_debug = is_debug;
-    if (tp->is_debug) ESP_LOGI(TAG, "isDebug specified. Set to %d", is_debug );
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No isDebug specified. Set to false." );
-  }
+  if (tp->is_debug) ESP_LOGI(TAG, "isDebug: %d, filterMs: %d, lvolt: %d, hvolt: %d, atten: %d, slope: %d, intrInitAtStart: %d, thresTrigger: %d", 
+    tp->is_debug, tp->filterMs, tp->lvolt, tp->hvolt, tp->atten, tp->slope, tp->is_intr, tp->thresTrigger);
 
   // get the field pad. this can be passed in as int or table of ints. pad = 0 || {0,1,2,3,4,5,6,7,8,9}
-  lua_getfield(L, i, "pad");
-  type = lua_type(L, -1);
+  lua_getfield(L, 1, "pad");
+  int type = lua_type(L, -1);
   if (type == LUA_TNUMBER) {
     int touch_pad_num = lua_tointeger(L, -1);
     luaL_argcheck(L, touch_pad_num >= 0 && touch_pad_num <= 9, -1, "The touch_pad_num allows 0 to 9");
+    // opt_check(L, cond, name, extramsg)
     tp->touch_pads[touch_pad_num] = true;
     if (tp->is_debug) ESP_LOGI(TAG, "Set pad %d", touch_pad_num );
   }
-  else if (type == LUA_TTABLE)
-  {
+  else if (type == LUA_TTABLE) {
+  // else if (opt_get(L, "pad", LUA_TTABLE)) {
     lua_pushnil (L);
     while (lua_next(L, -2) != 0)
     {
@@ -223,124 +221,19 @@ static int touch_create( lua_State *L ) {
 
   // See if they even gave us a callback
   bool isCallback = true;
-  lua_getfield(L, i, "cb");
+  lua_getfield(L, 1, "cb");
   if lua_isnoneornil(L, -1) {
     // user did not provide a callback. that's ok. just don't give them one.
     isCallback = false;
+    if (tp->is_debug) ESP_LOGI(TAG, "No callback provided. Not turning on interrupt." );
   } else {
-    luaL_argcheck(L, lua_type(L, -1) == LUA_TFUNCTION || lua_type(L, -1) == LUA_TLIGHTFUNCTION, -1, "Must be function");
-  }
-  //get the lua function reference
-  if (isCallback) {
+    luaL_argcheck(L, lua_type(L, -1) == LUA_TFUNCTION || lua_type(L, -1) == LUA_TLIGHTFUNCTION, -1, "Cb must be function");
+    
+    //get the lua function reference
     luaL_unref(L, LUA_REGISTRYINDEX, tp->cb_ref);
     lua_pushvalue(L, -1);
     tp->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }
-
-  // get the field thres. TODO: this can be passed in as int or table of pad_num with int for each for thres.
-  lua_getfield(L, i, "thres");
-  type = lua_type(L, -1);
-  if (type == LUA_TNUMBER) {
-    int thres = lua_tointeger(L, -1);
-    luaL_argcheck(L, thres >= 0 && thres <= 65536, -1, "The thres allows 0 to 65536");
-    for(int idx = 0; idx < 10; idx++) {
-      tp->thres[idx] = (uint16_t)thres;
-      // touch_pad_set_thresh(idx, thres);
-      // if (tp->is_debug) ESP_LOGI(TAG, "Stored thres for pad %d to %d", idx, thres );
-    }
-    
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No thres specified, using default" );
-  }
-
-  // get the field filterMs. 
-  tp->filterMs = 0; // 0 means don't use filter mode
-  lua_getfield(L, i, "filterMs");
-  type = lua_type(L, -1);
-  if (type == LUA_TNUMBER) {
-    int filterMs = lua_tointeger(L, -1);
-    // luaL_argcheck(L, filterMs >= 0 && filterMs <= 4294967295, -1, "The thres allows 0 to 4294967295");
-    tp->filterMs = filterMs;
-    
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No filter specified" );
-  }
-
-  // get the field lvolt. 
-  tp->lvolt = TOUCH_LVOLT_KEEP;
-  lua_getfield(L, i, "lvolt");
-  type = lua_type(L, -1);
-  if (type == LUA_TNUMBER) {
-    int lvolt = lua_tointeger(L, -1);
-    luaL_argcheck(L, lvolt >= -1 && lvolt <= 4, -1, "The lvolt allows -1 to 4");
-    tp->lvolt = lvolt;
-    
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No lvolt specified" );
-  }
-
-  // get the field hvolt. 
-  tp->hvolt = TOUCH_HVOLT_KEEP;
-  lua_getfield(L, i, "hvolt");
-  type = lua_type(L, -1);
-  if (type == LUA_TNUMBER) {
-    int hvolt = lua_tointeger(L, -1);
-    luaL_argcheck(L, hvolt >= -1 && hvolt <= 4, -1, "The hvolt allows -1 to 4");
-    tp->hvolt = hvolt;
-    
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No hvolt specified" );
-  }
-
-  // get the field atten. 
-  tp->atten = TOUCH_HVOLT_ATTEN_KEEP;
-  lua_getfield(L, i, "atten");
-  type = lua_type(L, -1);
-  if (type == LUA_TNUMBER) {
-    int atten = lua_tointeger(L, -1);
-    luaL_argcheck(L, atten >= -1 && atten <= 4, -1, "The atten allows -1 to 4");
-    tp->atten = atten;
-    
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No atten specified" );
-  }
-
-  // get the field slope. 
-  tp->slope = TOUCH_PAD_SLOPE_MAX;
-  lua_getfield(L, i, "slope");
-  type = lua_type(L, -1);
-  if (type == LUA_TNUMBER) {
-    int slope = lua_tointeger(L, -1);
-    luaL_argcheck(L, slope >= -1 && slope <= 8, -1, "The slope allows 0 to 8");
-    tp->slope = slope;
-    
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No slope specified" );
-  }
-
-  // get the field intrInitAtStart. 
-  tp->is_intr = true;
-  lua_getfield(L, i, "intrInitAtStart");
-  type = lua_type(L, -1);
-  if (type == LUA_TBOOLEAN) {
-    bool is_intr = lua_toboolean(L, -1);
-    tp->is_intr = is_intr;
-    if (tp->is_debug) ESP_LOGI(TAG, "intrInitAtStart specified. Set to %d", is_intr );
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No intrInitAtStart specified. Set to true." );
-  }
-
-  // get the field thresTrigger
-  tp->thresTrigger = TOUCH_TRIGGER_BELOW;
-  lua_getfield(L, i, "thresTrigger");
-  type = lua_type(L, -1);
-  if (type == LUA_TNUMBER) {
-    int thresTrigger = lua_tointeger(L, -1);
-    luaL_argcheck(L, thresTrigger >= 0 && thresTrigger <= 1, -1, "The thresTrigger allows 0 or 1");
-    tp->thresTrigger = thresTrigger;
-    if (tp->is_debug) ESP_LOGI(TAG, "thresTrigger specified. Set to %d", thresTrigger );
-  } else {
-    if (tp->is_debug) ESP_LOGI(TAG, "No thresTrigger specified. Set to TOUCH_TRIGGER_BELOW." );
+    if (tp->is_debug) ESP_LOGI(TAG, "Cb good." );
   }
 
   // Init
@@ -461,9 +354,7 @@ static int touch_create( lua_State *L ) {
   }
 
   // We need to store this in self_refs so we have a way to look for the cb_ref from the IRAM interrupt
-  touch_self = tp2; // old approach using 10 objects. s[touch_selfs_last_index] = tp2;
-  // tp2->selfs_index = touch_selfs_last_index;
-  // touch_selfs_last_index++;
+  touch_self = tp2; 
 
   return 1;
 }

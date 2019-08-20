@@ -232,7 +232,7 @@ config LUA_MODULE_TMR
 
 config LUA_MODULE_TOUCH
   bool "Touch module"
-  default "y"
+  default "n"
   help
       Includes the touch module to use ESP32's built-in touch sensor hardware.
 
