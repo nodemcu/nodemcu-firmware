@@ -48,15 +48,6 @@ static espconn_msg *plink_server = NULL;
 static pmbedtls_parame def_certificate = NULL;
 static pmbedtls_parame def_private_key = NULL;
 
-#if defined(ESP8266_PLATFORM)
-#define MBEDTLS_SSL_OUTBUFFER_LEN  ( MBEDTLS_SSL_PLAIN_ADD               \
-                        + MBEDTLS_SSL_COMPRESSION_ADD               \
-                        + 29 /* counter + header + IV */    \
-                        + MBEDTLS_SSL_MAC_ADD                       \
-                        + MBEDTLS_SSL_PADDING_ADD                   \
-                        )
-#endif
-
 /* Implementation that should never be optimized out by the compiler */
 static void mbedtls_zeroize( void *v, size_t n ) {
     volatile unsigned char *p = v; while( n-- ) *p++ = 0;
@@ -201,36 +192,6 @@ exit:
 	return ret;
 }
 
-#if defined(ESP8266_PLATFORM)
-static pmbedtls_finished mbedtls_finished_new(int len)
-{
-    pmbedtls_finished finished = (pmbedtls_finished)os_zalloc(sizeof(mbedtls_finished));
-    if (finished)
-    {
-        finished->finished_len = len;
-        finished->finished_buf = (uint8*)os_zalloc(finished->finished_len + 1);
-        if (finished->finished_buf)
-        {
-
-        }
-        else
-        {
-            os_free(finished);
-            finished = NULL;
-        }
-    }
-    return finished;
-}
-
-static void mbedtls_finished_free(pmbedtls_finished *pfinished)
-{
-    lwIP_ASSERT(pfinished);
-    lwIP_ASSERT(*pfinished);
-    os_free((*pfinished)->finished_buf);
-    os_free(*pfinished);
-    *pfinished = NULL;
-}
-#endif
 static pmbedtls_espconn mbedtls_espconn_new(void)
 {
 	pmbedtls_espconn mbedtls_conn = NULL;
@@ -315,14 +276,6 @@ static void mbedtls_msg_server_step(pmbedtls_msg msg)
 	if (msg->psession){
 		mbedtls_session_free(&msg->psession);
 	}
-#if defined(ESP8266_PLATFORM)
-    if (msg->quiet && msg->ssl.out_buf)
-    {
-        mbedtls_zeroize(msg->ssl.out_buf, MBEDTLS_SSL_OUTBUFFER_LEN);
-        os_free(msg->ssl.out_buf);
-        msg->ssl.out_buf = NULL;
-    }
-#endif
 	mbedtls_entropy_free(&msg->entropy);
 	mbedtls_ssl_free(&msg->ssl);
 	mbedtls_ssl_config_free(&msg->conf);
@@ -349,16 +302,6 @@ static void mbedtls_msg_free(pmbedtls_msg *msg)
 	if ((*msg)->psession){
 		mbedtls_session_free(&((*msg)->psession));
 	}
-#if defined(ESP8266_PLATFORM)
-    if ((*msg)->quiet && (*msg)->ssl.out_buf)
-    {
-        mbedtls_zeroize((*msg)->ssl.out_buf, MBEDTLS_SSL_OUTBUFFER_LEN);
-        os_free((*msg)->ssl.out_buf);
-        (*msg)->ssl.out_buf = NULL;
-    }
-    if((*msg)->pfinished != NULL)
-        mbedtls_finished_free(&(*msg)->pfinished);
-#endif
 	mbedtls_entropy_free(&(*msg)->entropy);
 	mbedtls_ssl_free(&(*msg)->ssl);
 	mbedtls_ssl_config_free(&(*msg)->conf);
@@ -469,51 +412,6 @@ exit:
 	return;
 }
 
-#if defined(ESP8266_PLATFORM)
-int mbedtls_write_finished(mbedtls_ssl_context *ssl)
-{
-    lwIP_ASSERT(ssl);
-    lwIP_ASSERT(ssl->p_bio);
-    int ret = ERR_OK;
-    int fd = ((mbedtls_net_context *) ssl->p_bio)->fd;
-    espconn_msg *Threadmsg = mbedtls_msg_find(fd);
-    lwIP_REQUIRE_ACTION(Threadmsg, exit, ret = ERR_MEM);
-    pmbedtls_msg TLSmsg = Threadmsg->pssl;
-    lwIP_REQUIRE_ACTION(TLSmsg, exit, ret = ERR_MEM);
-    TLSmsg->pfinished = mbedtls_finished_new(ssl->out_msglen + 29);
-    lwIP_REQUIRE_ACTION(TLSmsg->pfinished, exit, ret = ERR_MEM);
-    os_memcpy(TLSmsg->pfinished->finished_buf, ssl->out_ctr, TLSmsg->pfinished->finished_len);
-exit:
-    return ret;
-}
-
-static int mbedtls_hanshake_finished(mbedtls_msg *msg)
-{
-    lwIP_ASSERT(msg);
-    int ret = ERR_OK;
-    const size_t len = MBEDTLS_SSL_OUTBUFFER_LEN;
-
-	mbedtls_ssl_context *ssl = &msg->ssl;
-    lwIP_REQUIRE_ACTION(ssl, exit, ret = ERR_MEM);
-
-	pmbedtls_finished finished = msg->pfinished;
-    lwIP_REQUIRE_ACTION(finished, exit, ret = ERR_MEM);
-
-	ssl->out_buf = (unsigned char*)os_zalloc(len);
-	lwIP_REQUIRE_ACTION(ssl->out_buf, exit, ret = MBEDTLS_ERR_SSL_ALLOC_FAILED);
-
-    ssl->out_ctr = ssl->out_buf;
-    ssl->out_hdr = ssl->out_buf +  8;
-    ssl->out_len = ssl->out_buf + 11;
-    ssl->out_iv  = ssl->out_buf + 13;
-    ssl->out_msg = ssl->out_buf + 29;
-    os_memcpy(ssl->out_ctr, finished->finished_buf, finished->finished_len);
-    mbedtls_finished_free(&msg->pfinished);
-
-exit:
-    return ret;
-}
-#endif
 static void mbedtls_handshake_succ(mbedtls_ssl_context *ssl)
 {
 	lwIP_ASSERT(ssl);
@@ -932,9 +830,6 @@ int __attribute__((weak)) mbedtls_parse_internal(int socket, sint8 error)
 //				mbedtls_keep_alive(TLSmsg->fd.fd, 0, SSL_KEEP_IDLE, SSL_KEEP_INTVL, SSL_KEEP_CNT);
 				mbedtls_session_free(&TLSmsg->psession);
 				mbedtls_handshake_succ(&TLSmsg->ssl);
-#if defined(ESP8266_PLATFORM)
-                mbedtls_hanshake_finished(TLSmsg);
-#endif
 				system_restoreclock();
 
 				TLSmsg->SentFnFlag = true;

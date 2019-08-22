@@ -42,13 +42,6 @@ typedef struct{
 	int record_len;
 }mbedtls_record;
 
-#if defined(ESP8266_PLATFORM)
-typedef struct{
-	uint8*	finished_buf;
-	int 	finished_len;
-}mbedtls_finished, *pmbedtls_finished;
-#endif
-
 typedef struct{
 //	mbedtls_entropy_context entropy;
 	mbedtls_x509_crt cacert;
@@ -59,9 +52,6 @@ typedef struct{
 typedef struct{
 	bool quiet;
 	mbedtls_record		record;
-#if defined(ESP8266_PLATFORM)
-	pmbedtls_finished	pfinished;
-#endif
 	pmbedtls_session	psession;
 	mbedtls_net_context fd;
 	mbedtls_net_context listen_fd;
