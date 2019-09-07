@@ -15,7 +15,7 @@
 #if defined(PMSLEEP_DEBUG)
   #define PMSLEEP_DBG(fmt, ...) dbg_printf("\tPMSLEEP(%s):"fmt"\n", __FUNCTION__, ##__VA_ARGS__)
 #else
-  #define PMSLEEP_DBG(...) //c_printf(__VA_ARGS__)
+  #define PMSLEEP_DBG(...) //printf(__VA_ARGS__)
 #endif
 
 #if defined(NODE_ERROR)

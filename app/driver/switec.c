@@ -18,13 +18,13 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "task/task.h"
 #include "driver/switec.h"
 #include "ets_sys.h"
 #include "os_type.h"
 #include "osapi.h"
 #include "hw_timer.h"
 #include "user_interface.h"
-#include "task/task.h"
 
 #define N_STATES 6
 //

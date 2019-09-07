@@ -15,7 +15,6 @@ static uint32_t spi_clkdiv[2];
 *******************************************************************************/
 void spi_lcd_mode_init(uint8 spi_no)
 {
-	uint32 regvalue;
 	if(spi_no>1) 		return; //handle invalid input number
 	//bit9 of PERIPHS_IO_MUX should be cleared when HSPI clock doesn't equal CPU clock
 	//bit8 of PERIPHS_IO_MUX should be cleared when SPI clock doesn't equal CPU clock
@@ -112,8 +111,6 @@ uint32_t spi_set_clkdiv(uint8 spi_no, uint32_t clock_div)
 *******************************************************************************/
 void spi_master_init(uint8 spi_no, unsigned cpol, unsigned cpha, uint32_t clock_div)
 {
-	uint32 regvalue;
-
 	if(spi_no>1) 		return; //handle invalid input number
 
 	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_RD_BYTE_ORDER|SPI_WR_BYTE_ORDER);
@@ -258,7 +255,7 @@ void spi_mast_set_mosi(uint8 spi_no, uint16 offset, uint8 bitlen, uint32 data)
     }
 
     shift = 64 - (offset & 0x1f) - bitlen;
-    spi_buf.dword &= ~((1ULL << bitlen)-1 << shift);
+    spi_buf.dword &= ~(((1ULL << bitlen)-1) << shift);
     spi_buf.dword |= (uint64)data << shift;
 
     if (wn < 15) {
@@ -344,7 +341,7 @@ void spi_mast_transaction(uint8 spi_no, uint8 cmd_bitlen, uint16 cmd_data, uint8
         uint16 cmd = cmd_data << (16 - cmd_bitlen); // align to MSB
         cmd = (cmd >> 8) | (cmd << 8);              // swap byte order
         WRITE_PERI_REG(SPI_USER2(spi_no),
-                       ((cmd_bitlen - 1 & SPI_USR_COMMAND_BITLEN) << SPI_USR_COMMAND_BITLEN_S) |
+                       (((cmd_bitlen - 1) & SPI_USR_COMMAND_BITLEN) << SPI_USR_COMMAND_BITLEN_S) |
                        (cmd & SPI_USR_COMMAND_VALUE));
         SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_USR_COMMAND);
     }
@@ -387,8 +384,6 @@ void spi_mast_transaction(uint8 spi_no, uint8 cmd_bitlen, uint16 cmd_data, uint8
 *******************************************************************************/
 void spi_byte_write_espslave(uint8 spi_no,uint8 data)
  {
-	uint32 regvalue;
-
 	if(spi_no>1) 		return; //handle invalid input number
 
 	while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
@@ -413,8 +408,6 @@ void spi_byte_write_espslave(uint8 spi_no,uint8 data)
 *******************************************************************************/
   void spi_byte_read_espslave(uint8 spi_no,uint8 *data)
  {
-	uint32 regvalue;
-
 	if(spi_no>1) 		return; //handle invalid input number
 
 	while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);
@@ -440,7 +433,7 @@ void spi_byte_write_espslave(uint8 spi_no,uint8 data)
 *******************************************************************************/
 void spi_slave_init(uint8 spi_no)
 {
-    uint32 regvalue;
+//  uint32 regvalue;
     if(spi_no>1)
         return; //handle invalid input number
 
@@ -565,7 +558,6 @@ void hspi_master_readwrite_repeat(void)
 #include "mem.h"
 static uint8 spi_data[32] = {0};
 static uint8 idx = 0;
-static uint8 spi_flg = 0;
 #define SPI_MISO
 #define SPI_QUEUE_LEN 8
 os_event_t * spiQueue;
@@ -596,9 +588,8 @@ void ICACHE_FLASH_ATTR
 
 void spi_slave_isr_handler(void *para)
 {
-	uint32 regvalue,calvalue;
-    	static uint8 state =0;
-	uint32 recv_data,send_data;
+	uint32 regvalue;
+	uint32 recv_data;
 
 	if(READ_PERI_REG(0x3ff00020)&BIT4){
         //following 3 lines is to clear isr signal

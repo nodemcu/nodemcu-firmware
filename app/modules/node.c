@@ -227,69 +227,59 @@ static int node_heap( lua_State* L )
   return 1;
 }
 
-extern int  lua_put_line(const char *s, size_t l);
-extern bool user_process_input(bool force);
-
 // Lua: input("string")
 static int node_input( lua_State* L ) {
-  size_t l = 0;
-  const char *s = luaL_checklstring(L, 1, &l);
-  if (lua_put_line(s, l)) {
-    NODE_DBG("Result (if any):\n");
-    user_process_input(true);
-  }
+  luaL_checkstring(L, 1);
+  lua_getfield(L, LUA_REGISTRYINDEX, "stdin");
+  lua_rawgeti(L, -1, 1);             /* get the pipe_write func from stdin[1] */
+  lua_insert(L, -2);                           /* and move above the pipe ref */ 
+  lua_pushvalue(L, 1);
+  lua_call(L, 2, 0);                                     /* stdin:write(line) */
   return 0;
 }
 
-static int output_redir_ref = LUA_NOREF;
 static int serial_debug = 1;
+
 void output_redirect(const char *str) {
   lua_State *L = lua_getstate();
-  // if(strlen(str)>=TX_BUFF_SIZE){
-  //   NODE_ERR("output too long.\n");
-  //   return;
-  // }
+  int n = lua_gettop(L);
+  lua_pushliteral(L, "stdout");
+  lua_rawget(L, LUA_REGISTRYINDEX);                       /* fetch reg.stdout */
+  if (lua_istable(L, -1)) { /* reg.stdout is pipe */
+    if (serial_debug) {
+      uart0_sendStr(str);
+    }
+    lua_rawgeti(L, -1, 1);          /* get the pipe_write func from stdout[1] */
+    lua_insert(L, -2);                         /* and move above the pipe ref */ 
+    lua_pushstring(L, str);
+    lua_call(L, 2, 0);                               /* Reg.stdout:write(str) */
 
-  if (output_redir_ref == LUA_NOREF) {
+  } else { /* reg.stdout == nil */
     uart0_sendStr(str);
-    return;
   }
-
-  if (serial_debug != 0) {
-    uart0_sendStr(str);
-  }
-
-  lua_rawgeti(L, LUA_REGISTRYINDEX, output_redir_ref);
-  lua_pushstring(L, str);
-  lua_call(L, 1, 0);   // this call back function should never user output.
+  lua_settop(L, n);         /* Make sure all code paths leave stack unchanged */
 }
+
+extern int pipe_create(lua_State *L);
 
 // Lua: output(function(c), debug)
 static int node_output( lua_State* L )
 {
-  // luaL_checkanyfunction(L, 1);
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION) {
-    lua_pushvalue(L, 1);  // copy argument (func) to the top of stack
-    if (output_redir_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, output_redir_ref);
-    output_redir_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else {    // unref the key press function
-    if (output_redir_ref != LUA_NOREF)
-      luaL_unref(L, LUA_REGISTRYINDEX, output_redir_ref);
-    output_redir_ref = LUA_NOREF;
+  serial_debug = (lua_isnumber(L, 2) && lua_tointeger(L, 2) == 0) ? 0 : 1;
+  lua_settop(L, 1);
+  if (lua_isanyfunction(L, 1)) {
+    lua_pushlightfunction(L, &pipe_create);
+    lua_insert(L, 1); 
+    lua_pushinteger(L, LUA_TASK_MEDIUM);
+    lua_call(L, 2, 1);             /* T[1] = pipe.create(CB, medium_priority) */
+  } else {    // remove the stdout pipe
+    lua_pop(L,1);
+    lua_pushnil(L);                                             /* T[1] = nil */
     serial_debug = 1;
-    return 0;
   }
-
-  if ( lua_isnumber(L, 2) )
-  {
-    serial_debug = lua_tointeger(L, 2);
-    if (serial_debug != 0)
-      serial_debug = 1;
-  } else {
-    serial_debug = 1; // default to 1
-  }
-
+  lua_pushliteral(L, "stdout");
+  lua_insert(L, 1); 
+  lua_rawset(L, LUA_REGISTRYINDEX);               /* Reg.stdout = nil or pipe */
   return 0;
 }
 
@@ -330,7 +320,7 @@ static int node_compile( lua_State* L )
   output[strlen(output) - 1] = '\0';
   NODE_DBG(output);
   NODE_DBG("\n");
-  if (luaL_loadfsfile(L, fname) != 0) {
+  if (luaL_loadfile(L, fname) != 0) {
     luaM_free( L, output );
     return luaL_error(L, lua_tostring(L, -1));
   }
@@ -371,39 +361,19 @@ static int node_compile( lua_State* L )
   return 0;
 }
 
-// Task callback handler for node.task.post()
-static task_handle_t do_node_task_handle;
-static void do_node_task (task_param_t task_fn_ref, uint8_t prio)
-{
-  lua_State* L = lua_getstate();
-  lua_rawgeti(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
-  luaL_unref(L, LUA_REGISTRYINDEX, (int)task_fn_ref);
-  lua_pushinteger(L, prio);
-  lua_call(L, 1, 0);
-}
-
 // Lua: node.task.post([priority],task_cb) -- schedule a task for execution next
 static int node_task_post( lua_State* L )
 {
-  int n = 1, Ltype = lua_type(L, 1);
+  int n=1;
   unsigned priority = TASK_PRIORITY_MEDIUM;
-  if (Ltype == LUA_TNUMBER) {
+  if (lua_type(L, 1) == LUA_TNUMBER) {
     priority = (unsigned) luaL_checkint(L, 1);
     luaL_argcheck(L, priority <= TASK_PRIORITY_HIGH, 1, "invalid  priority");
-    Ltype = lua_type(L, ++n);
+    n++;
   }
-  luaL_argcheck(L, Ltype == LUA_TFUNCTION || Ltype == LUA_TLIGHTFUNCTION, n, "invalid function");
-  lua_pushvalue(L, n);
-
-  int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-
-  if (!do_node_task_handle)  // bind the task handle to do_node_task on 1st call
-    do_node_task_handle = task_get_id(do_node_task);
-
-  if(!task_post(priority, do_node_task_handle, (task_param_t)task_fn_ref)) {
-    luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
-    luaL_error(L, "Task queue overflow. Task not posted");
-  }
+  luaL_checkanyfunction(L, n);
+  lua_settop(L, n);
+  (void) luaN_posttask(L, priority);
   return 0;
 }
 

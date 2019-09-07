@@ -20,6 +20,7 @@
 
 #include "ets_sys.h"
 #include "driver/uart.h"
+#include "driver/input.h"
 #include "task/task.h"
 #include "mem.h"
 #include "espconn.h"
@@ -28,9 +29,6 @@
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
-
-static task_handle_t input_sig;
-static uint8 input_sig_flag = 0;
 
 /* Contents of esp_init_data_default.bin */
 extern const uint32_t init_data[], init_data_end[];
@@ -275,40 +273,11 @@ uint32 ICACHE_RAM_ATTR user_iram_memory_is_enabled(void) {
     return FALSE;  // NodeMCU runs like a dog if iRAM is enabled
 }
 
-// +================== New task interface ==================+
-static void start_lua(task_param_t param, uint8 priority) {
-  char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
-  NODE_DBG("Task task_lua started.\n");
-  lua_main( 2, lua_argv );
-  // Only enable UART interrupts once we've successfully started up,
-  // otherwise the task queue might fill up with input events and prevent
-  // the start_lua task from being posted.
-  ETS_UART_INTR_ENABLE();
-}
-
-static void handle_input(task_param_t flag, uint8 priority) {
-  (void)priority;
-  if (flag & 0x8000) {
-    input_sig_flag = flag & 0x4000 ? 1 : 0;
-  }
-  lua_handle_input (flag & 0x01);
-}
-
-bool user_process_input(bool force) {
-    return task_post_low(input_sig, force);
-}
-
 void nodemcu_init(void) {
-    NODE_ERR("\n");
-    // Initialize platform first for lua modules.
-    if( platform_init() != PLATFORM_OK )
-    {
-        // This should never happen
-        NODE_DBG("Can not init platform for modules.\n");
-        return;
-    }
-    if (!task_post_low(task_get_id(start_lua),'s'))
-      NODE_ERR("Failed to post the start_lua task!\n");
+   NODE_DBG("Task task_lua starting.\n");
+   // Call the Lua bootstrap startup directly.  This uses the task interface
+   // internally to carry out the main lua libraries initialisation.
+   lua_main();
 }
 
 #ifdef LUA_USE_MODULES_WIFI
@@ -328,18 +297,17 @@ void user_rf_pre_init(void)
  * Parameters   : none
  * Returns      : none
 *******************************************************************************/
-void user_init(void)
-{
-
+void user_init(void) {
 #ifdef LUA_USE_MODULES_RTCTIME
     rtctime_late_startup ();
 #endif
-
+    if( platform_init() != PLATFORM_OK ) {
+        // This should never happen
+        NODE_DBG("Can not init platform for modules.\n");
+        return;
+    }
     UartBautRate br = BIT_RATE_DEFAULT;
-
-    input_sig = task_get_id(handle_input);
-    uart_init (br, br, input_sig, &input_sig_flag);
-
+    uart_init (br, br);
 #ifndef NODE_DEBUG
     system_set_os_print(0);
 #endif
