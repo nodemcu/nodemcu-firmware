@@ -6,6 +6,7 @@
 #include "rtc/rtctime.h"
 #define RTCTIME_SLEEP_ALIGNED rtctime_deep_sleep_until_aligned_us
 #include "rtc/rtcfifo.h"
+#include <string.h>
 
 // rtcfifo.prepare ([{sensor_count=n, interval_us=m, storage_begin=x, storage_end=y}])
 static int rtcfifo_prepare (lua_State *L)
@@ -165,18 +166,18 @@ static int rtcfifo_dsleep_until_sample (lua_State *L)
 #endif
 
 // Module function map
-static const LUA_REG_TYPE rtcfifo_map[] = {
-  { LSTRKEY("prepare"),             LFUNCVAL(rtcfifo_prepare) },
-  { LSTRKEY("ready"),               LFUNCVAL(rtcfifo_ready) },
-  { LSTRKEY("put"),                 LFUNCVAL(rtcfifo_put) },
-  { LSTRKEY("pop"),                 LFUNCVAL(rtcfifo_pop) },
-  { LSTRKEY("peek"),                LFUNCVAL(rtcfifo_peek) },
-  { LSTRKEY("drop"),                LFUNCVAL(rtcfifo_drop) },
-  { LSTRKEY("count"),               LFUNCVAL(rtcfifo_count) },
+LROT_BEGIN(rtcfifo)
+  LROT_FUNCENTRY( prepare, rtcfifo_prepare )
+  LROT_FUNCENTRY( ready, rtcfifo_ready )
+  LROT_FUNCENTRY( put, rtcfifo_put )
+  LROT_FUNCENTRY( pop, rtcfifo_pop )
+  LROT_FUNCENTRY( peek, rtcfifo_peek )
+  LROT_FUNCENTRY( drop, rtcfifo_drop )
+  LROT_FUNCENTRY( count, rtcfifo_count )
 #ifdef LUA_USE_MODULES_RTCTIME
-  { LSTRKEY("dsleep_until_sample"), LFUNCVAL(rtcfifo_dsleep_until_sample) },
+  LROT_FUNCENTRY( dsleep_until_sample, rtcfifo_dsleep_until_sample )
 #endif
-  { LNILKEY, LNILVAL }
-};
+LROT_END( rtcfifo, NULL, 0 )
 
-NODEMCU_MODULE(RTCFIFO, "rtcfifo", rtcfifo_map, NULL);
+
+NODEMCU_MODULE(RTCFIFO, "rtcfifo", rtcfifo, NULL);

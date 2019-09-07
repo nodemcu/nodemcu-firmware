@@ -3,7 +3,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "lmem.h"
-#include "c_string.h"
+#include <string.h>
 #define BASE64_INVALID '\xff'
 #define BASE64_PADDING '='
 #define ISBASE64(c) (unbytes64[c] != BASE64_INVALID)
@@ -19,7 +19,7 @@ static uint8 *toBase64 ( lua_State* L, const uint8 *msg, size_t *len){
   int buf_size = (n + 2) / 3 * 4; // estimated encoded size
   uint8 * q, *out = (uint8 *)luaM_malloc(L, buf_size);
   uint8 bytes64[sizeof(b64)];
-  c_memcpy(bytes64, b64, sizeof(b64));   //Avoid lots of flash unaligned fetches
+  memcpy(bytes64, b64, sizeof(b64));   //Avoid lots of flash unaligned fetches
 
   for (i = 0, q = out; i < n; i += 3) {
     int a = msg[i];
@@ -46,7 +46,7 @@ static uint8 *fromBase64 ( lua_State* L, const uint8 *enc_msg, size_t *len){
   if (n & 3)
     luaL_error (L, "Invalid base64 string");
 
-  c_memset(unbytes64, BASE64_INVALID, sizeof(unbytes64));
+  memset(unbytes64, BASE64_INVALID, sizeof(unbytes64));
   for (i = 0; i < sizeof(b64)-1; i++) unbytes64[b64[i]] = i;  // sequential so no exceptions
 
   if (enc_msg[n-1] == BASE64_PADDING) {
@@ -153,12 +153,12 @@ static int do_func (lua_State *L, uint8 * (*conv_func)(lua_State *, const uint8 
   DECLARE_FUNCTION(toHex);
 
 // Module function map
-static const LUA_REG_TYPE encoder_map[] = {
-  { LSTRKEY("fromBase64"), LFUNCVAL(encoder_fromBase64)  },
-  { LSTRKEY("toBase64"),   LFUNCVAL(encoder_toBase64) },
-  { LSTRKEY("fromHex"),    LFUNCVAL(encoder_fromHex)  },
-  { LSTRKEY("toHex"),      LFUNCVAL(encoder_toHex) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(encoder)
+  LROT_FUNCENTRY( fromBase64, encoder_fromBase64 )
+  LROT_FUNCENTRY( toBase64, encoder_toBase64 )
+  LROT_FUNCENTRY( fromHex, encoder_fromHex )
+  LROT_FUNCENTRY( toHex, encoder_toHex )
+LROT_END( encoder, NULL, 0 )
 
-NODEMCU_MODULE(ENCODER, "encoder", encoder_map, NULL);
+
+NODEMCU_MODULE(ENCODER, "encoder", encoder, NULL);

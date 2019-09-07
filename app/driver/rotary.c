@@ -11,9 +11,9 @@
  */
 
 #include "platform.h"
-#include "c_types.h"
-#include "../libc/c_stdlib.h"
-#include "../libc/c_stdio.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "driver/rotary.h"
 #include "user_interface.h"
 #include "task/task.h"
@@ -87,7 +87,7 @@ int rotary_close(uint32_t channel)
   rotary_clear_pin(d->phase_b_pin);
   rotary_clear_pin(d->press_pin);
 
-  c_free(d);
+  free(d);
 
   set_gpio_bits();
 
@@ -207,7 +207,7 @@ int rotary_setup(uint32_t channel, int phase_a, int phase_b, int press, task_han
     }
   }
 
-  DATA *d = (DATA *) c_zalloc(sizeof(DATA));
+  DATA *d = (DATA *) calloc(1, sizeof(DATA));
   if (!d) {
     return -1;
   }

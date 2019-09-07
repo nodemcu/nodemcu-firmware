@@ -8,12 +8,12 @@
 
 summary ?= @true
 
-CCFLAGS:= -I.. -I../../include -I../../libc -I../../uzlib
+CCFLAGS:= -I.. -I../../include -I../../uzlib
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
 
-DEFINES += -DLUA_CROSS_COMPILER -DLUA_OPTIMIZE_MEMORY=2
+DEFINES += -DLUA_CROSS_COMPILER
 
 TARGET = host
 
@@ -33,13 +33,12 @@ LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c 
            lmathlib.c  lmem.c      loadlib.c   lobject.c   lopcodes.c  lparser.c \
            lrotable.c  lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
            ltm.c       lundump.c   lvm.c       lzio.c
-LIBCSRC := c_stdlib.c
 UZSRC   := uzlib_deflate.c crc32.c
 
 #
 # This relies on the files being unique on the vpath
 #
-SRC      := $(LUACSRC) $(LUASRC) $(LIBCSRC) $(UZSRC)
+SRC      := $(LUACSRC) $(LUASRC) $(UZSRC)
 vpath %.c .:..:../../libc:../../uzlib
 
 ODIR   := .output/$(TARGET)/$(FLAVOR)/obj
@@ -54,7 +53,7 @@ CC := $(WRAPCC) gcc
 
 ECHO := echo
 
-BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../../app/include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
+BUILD_TYPE := $(shell $(CC) $(EXTRA_CCFLAGS) -E -dM - <../../include/user_config.h | grep LUA_NUMBER_INTEGRAL | wc -l)
 ifeq ($(BUILD_TYPE),0)
 IMAGE := ../../../luac.cross
 else

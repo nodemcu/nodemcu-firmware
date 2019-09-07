@@ -37,18 +37,19 @@
  * Once there are no more suspended timers, the function returns
  *
  *
- */#include "module.h"
+ */
+#include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
 
 #include "user_interface.h"
 #include "user_modules.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
-#include "ctype.h"
-
-#include "c_types.h"
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <stdint.h>
+#include <stddef.h>
 
 //#define SWTMR_DEBUG
 #if !defined(SWTMR_DBG) && defined(LUA_USE_MODULES_SWTMR_DBG)
@@ -138,7 +139,7 @@ void swtmr_suspend_timers(){
   size_t registered_cb_qty = lua_objlen(L, -1);
 
   //allocate a temporary array to hold the list of callback pointers
-  cb_registry_item_t** cb_reg_array = c_zalloc(sizeof(cb_registry_item_t*)*registered_cb_qty);
+  cb_registry_item_t** cb_reg_array = calloc(1,sizeof(cb_registry_item_t*)*registered_cb_qty);
   if(!cb_reg_array){
     luaL_error(L, "%s: unable to suspend timers, out of memory!", __func__);
     return;
@@ -242,7 +243,7 @@ void swtmr_suspend_timers(){
   }
 
   //tmr_cb_ptr_array is no longer needed.
-  c_free(cb_reg_array);
+  free(cb_reg_array);
 
   //add suspended_timer_list pointer to swtimer table.
   lua_pushstring(L, SUSP_LIST_STR);
@@ -391,7 +392,7 @@ void swtmr_cb_register(void* timer_cb_ptr, uint8 suspend_policy){
 static void add_to_reg_queue(void* timer_cb_ptr, uint8 suspend_policy){
   if(!timer_cb_ptr)
     return;
-  tmr_cb_queue_t* queue_temp = c_zalloc(sizeof(tmr_cb_queue_t));
+  tmr_cb_queue_t* queue_temp = calloc(1,sizeof(tmr_cb_queue_t));
   if(!queue_temp){
     //it's boot time currently and we're already out of memory, something is very wrong...
     dbg_printf("\n\t%s:out of memory, rebooting.", __FUNCTION__);
@@ -430,7 +431,7 @@ static void process_cb_register_queue(task_param_t param, uint8 priority)
     void* cb_ptr_tmp = register_queue_ptr->tmr_cb_ptr;
     swtmr_cb_register(cb_ptr_tmp, register_queue_ptr->suspend_policy);
     register_queue = register_queue->next;
-    c_free(register_queue_ptr);
+    free(register_queue_ptr);
   }
   return;
 }
@@ -457,7 +458,7 @@ int print_timer_list(lua_State* L){
    }
    lua_pop(L, 1);
    size_t registered_cb_qty = lua_objlen(L, -1);
-   cb_registry_item_t** cb_reg_array = c_zalloc(sizeof(cb_registry_item_t*)*registered_cb_qty);
+   cb_registry_item_t** cb_reg_array = calloc(1,sizeof(cb_registry_item_t*)*registered_cb_qty);
    if(!cb_reg_array){
      luaL_error(L, "%s: unable to suspend timers, out of memory!", __func__);
      return 0;
@@ -490,7 +491,7 @@ int print_timer_list(lua_State* L){
     timer_list_ptr = timer_list_ptr->timer_next;
   }
 
-  c_free(cb_reg_array);
+  free(cb_reg_array);
   lua_pop(L, 1);
 
   return 0;
@@ -530,15 +531,15 @@ int resume_timers_lua(lua_State* L){
   return 0;
 }
 
-static const LUA_REG_TYPE test_swtimer_debug_map[] = {
-    { LSTRKEY( "timer_list" ),   LFUNCVAL( print_timer_list ) },
-    { LSTRKEY( "susp_timer_list" ),   LFUNCVAL( print_susp_timer_list ) },
-    { LSTRKEY( "suspend" ),      LFUNCVAL( suspend_timers_lua ) },
-    { LSTRKEY( "resume" ),      LFUNCVAL( resume_timers_lua ) },
-    { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(test_swtimer_debug)
+  LROT_FUNCENTRY( timer_list, print_timer_list )
+  LROT_FUNCENTRY( susp_timer_list, print_susp_timer_list )
+  LROT_FUNCENTRY( suspend, suspend_timers_lua )
+  LROT_FUNCENTRY( resume, resume_timers_lua )
+LROT_END( test_swtimer_debug, NULL, 0 )
 
-NODEMCU_MODULE(SWTMR_DBG, "SWTMR_DBG", test_swtimer_debug_map, NULL);
+
+NODEMCU_MODULE(SWTMR_DBG, "SWTMR_DBG", test_swtimer_debug, NULL);
 
 #endif
 

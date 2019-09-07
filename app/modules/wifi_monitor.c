@@ -5,11 +5,11 @@
 #include "lapi.h"
 #include "platform.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stddef.h>
 #include "ctype.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include "user_interface.h"
 #include "wifi_common.h"
 #include "sys/network_80211.h"
@@ -276,7 +276,7 @@ typedef struct {
   uint8 buf[];
 } packet_t;
 
-static const LUA_REG_TYPE packet_function_map[];
+LROT_TABLE(packet_function)
 
 static void wifi_rx_cb(uint8 *buf, uint16 len) {
   if (len != sizeof(struct sniffer_buf2)) {
@@ -294,12 +294,12 @@ static void wifi_rx_cb(uint8 *buf, uint16 len) {
     return;
   }
 
-  packet_t *packet = (packet_t *) c_malloc(len + sizeof(packet_t));
+  packet_t *packet = (packet_t *) malloc(len + sizeof(packet_t));
   if (packet) {
     packet->len = len;
     memcpy(packet->buf, buf, len);
     if (!task_post_medium(tasknumber, (ETSParam) packet)) {
-      c_free(packet);
+      free(packet);
     }
   }
 }
@@ -320,11 +320,11 @@ static void monitor_task(os_param_t param, uint8_t prio)
     luaL_getmetatable(L, "wifi.packet");
     lua_setmetatable(L, -2);
 
-    c_free(input);
+    free(input);
 
     lua_call(L, 1, 0);
   } else {
-    c_free(input);
+    free(input);
   }
 }
 
@@ -570,7 +570,7 @@ static int packet_map_lookup(lua_State *L) {
     }
 
     // Now search the packet function map
-    lua_pushrotable(L, (void *)packet_function_map);
+    lua_pushrotable(L, LROT_TABLEREF(packet_function));
     lua_getfield(L, -1, field);
     if (!lua_isnil(L, -1)) {
       return 1;
@@ -757,32 +757,32 @@ static int wifi_monitor_stop(lua_State *L) {
   return 0;
 }
 
-static const LUA_REG_TYPE packet_function_map[] = {
-  { LSTRKEY( "radio_byte" ),        LFUNCVAL( packet_radio_byte ) },
-  { LSTRKEY( "frame_byte" ),        LFUNCVAL( packet_frame_byte ) },
-  { LSTRKEY( "radio_sub" ),         LFUNCVAL( packet_radio_sub ) },
-  { LSTRKEY( "frame_sub" ),         LFUNCVAL( packet_frame_sub ) },
-  { LSTRKEY( "radio_subhex" ),      LFUNCVAL( packet_radio_subhex ) },
-  { LSTRKEY( "frame_subhex" ),      LFUNCVAL( packet_frame_subhex ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(packet_function)
+  LROT_FUNCENTRY( radio_byte, packet_radio_byte )
+  LROT_FUNCENTRY( frame_byte, packet_frame_byte )
+  LROT_FUNCENTRY( radio_sub, packet_radio_sub )
+  LROT_FUNCENTRY( frame_sub, packet_frame_sub )
+  LROT_FUNCENTRY( radio_subhex, packet_radio_subhex )
+  LROT_FUNCENTRY( frame_subhex, packet_frame_subhex )
+LROT_END( packet_function, packet_function, LROT_MASK_INDEX )
 
-static const LUA_REG_TYPE packet_map[] = {
-  { LSTRKEY( "__index" ),     LFUNCVAL( packet_map_lookup ) },
-  { LNILKEY, LNILVAL }
-};
+
+LROT_BEGIN(packet)
+  LROT_FUNCENTRY( __index, packet_map_lookup )
+LROT_END( packet, packet, LROT_MASK_INDEX )
+
 
 // Module function map
-const LUA_REG_TYPE wifi_monitor_map[] = {
-  { LSTRKEY( "start" ),      LFUNCVAL( wifi_monitor_start ) },
-  { LSTRKEY( "stop" ),       LFUNCVAL( wifi_monitor_stop ) },
-  { LSTRKEY( "channel" ),    LFUNCVAL( wifi_monitor_channel ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_PUBLIC_BEGIN(wifi_monitor)
+  LROT_FUNCENTRY( start, wifi_monitor_start )
+  LROT_FUNCENTRY( stop, wifi_monitor_stop )
+  LROT_FUNCENTRY( channel, wifi_monitor_channel )
+LROT_END( wifi_monitor, NULL, 0 )
+
 
 int wifi_monitor_init(lua_State *L)
 {
-  luaL_rometatable(L, "wifi.packet", (void *)packet_map);
+  luaL_rometatable(L, "wifi.packet", LROT_TABLEREF(packet));
   tasknumber = task_get_id(monitor_task);
   eventmon_setup();
 

@@ -17,7 +17,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "user_interface.h"
 #include "../esp-gdbstub/gdbstub.h"
 
@@ -39,11 +39,11 @@ static int lgdbstub_open(lua_State *L) {
 }
 
 // Module function map
-static const LUA_REG_TYPE gdbstub_map[] = {
-  { LSTRKEY( "brk" ),    	LFUNCVAL( lgdbstub_break    ) },
-  { LSTRKEY( "gdboutput" ),    	LFUNCVAL( lgdbstub_gdboutput) },
-  { LSTRKEY( "open" ),    	LFUNCVAL( lgdbstub_open) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(gdbstub)
+  LROT_FUNCENTRY( brk, lgdbstub_break )
+  LROT_FUNCENTRY( gdboutput, lgdbstub_gdboutput )
+  LROT_FUNCENTRY( open, lgdbstub_open )
+LROT_END( gdbstub, NULL, 0 )
 
-NODEMCU_MODULE(GDBSTUB, "gdbstub", gdbstub_map, NULL);
+
+NODEMCU_MODULE(GDBSTUB, "gdbstub", gdbstub, NULL);

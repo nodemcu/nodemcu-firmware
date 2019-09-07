@@ -119,7 +119,8 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #define DHCP_OPTION_IDX_T2          5
 #define DHCP_OPTION_IDX_SUBNET_MASK 6
 #define DHCP_OPTION_IDX_ROUTER      7
-#define DHCP_OPTION_IDX_DNS_SERVER	8
+#define DHCP_OPTION_IDX_NTP         8
+#define DHCP_OPTION_IDX_DNS_SERVER  9
 #define DHCP_OPTION_IDX_MAX         (DHCP_OPTION_IDX_DNS_SERVER + DNS_MAX_SERVERS)
 
 /** Holds the decoded option values, only valid while in dhcp_recv.
@@ -292,19 +293,20 @@ dhcp_select(struct netif *netif)
     dhcp_option(dhcp, DHCP_OPTION_SERVER_ID, 4);
     dhcp_option_long(dhcp, ntohl(ip4_addr_get_u32(&dhcp->server_ip_addr)));
 
-    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 12/*num options*/);
+    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 13/*num options*/);
     dhcp_option_byte(dhcp, DHCP_OPTION_SUBNET_MASK);
     dhcp_option_byte(dhcp, DHCP_OPTION_ROUTER);
     dhcp_option_byte(dhcp, DHCP_OPTION_BROADCAST);
     dhcp_option_byte(dhcp, DHCP_OPTION_DNS_SERVER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NTP);
     dhcp_option_byte(dhcp, DHCP_OPTION_DOMAIN_NAME);
-        dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINS);
-        dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINT);
-        dhcp_option_byte(dhcp, DHCP_OPTION_NB_TIS);
-        dhcp_option_byte(dhcp, DHCP_OPTION_PRD);
-        dhcp_option_byte(dhcp, DHCP_OPTION_STATIC_ROUTER);
-        dhcp_option_byte(dhcp, DHCP_OPTION_CLASSLESS_STATIC_ROUTER);
-        dhcp_option_byte(dhcp, DHCP_OPTION_VSN);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINS);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINT);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NB_TIS);
+    dhcp_option_byte(dhcp, DHCP_OPTION_PRD);
+    dhcp_option_byte(dhcp, DHCP_OPTION_STATIC_ROUTER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_CLASSLESS_STATIC_ROUTER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_VSN);
 
 #if LWIP_NETIF_HOSTNAME
     if (netif->hostname != NULL) {
@@ -383,7 +385,7 @@ dhcp_fine_tmr()
     if (netif->dhcp != NULL) {
       /*add DHCP retries processing by LiuHan*/
       if (DHCP_MAXRTX != 0) {
-    	  if (netif->dhcp->tries >= DHCP_MAXRTX){
+	  if (netif->dhcp->tries >= DHCP_MAXRTX){
 			  os_printf("DHCP timeout\n");
 			  if (netif->dhcp_event != NULL)
 				  netif->dhcp_event();
@@ -536,6 +538,7 @@ dhcp_handle_ack(struct netif *netif)
 #if LWIP_DHCP_BOOTP_FILE
   ip_addr_set_zero(&dhcp->offered_si_addr);
 #endif /* LWIP_DHCP_BOOTP_FILE */
+  ip_addr_set_zero(&dhcp->offered_ntp_addr);
 
   /* lease time given? */
   if (dhcp_option_given(dhcp, DHCP_OPTION_IDX_LEASE_TIME)) {
@@ -593,6 +596,10 @@ dhcp_handle_ack(struct netif *netif)
     n++;
   }
 #endif /* LWIP_DNS */
+
+  if (dhcp_option_given(dhcp, DHCP_OPTION_IDX_NTP)) {
+    ip4_addr_set_u32(&dhcp->offered_ntp_addr, htonl(dhcp_get_option_value(dhcp, DHCP_OPTION_IDX_NTP)));
+  }
 }
 
 /** Set a statically allocated struct dhcp to work with.
@@ -915,19 +922,20 @@ dhcp_discover(struct netif *netif)
       }
     }
 #endif /* LWIP_NETIF_HOSTNAME */
-    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 12/*num options*/);
+    dhcp_option(dhcp, DHCP_OPTION_PARAMETER_REQUEST_LIST, 13/*num options*/);
     dhcp_option_byte(dhcp, DHCP_OPTION_SUBNET_MASK);
     dhcp_option_byte(dhcp, DHCP_OPTION_ROUTER);
     dhcp_option_byte(dhcp, DHCP_OPTION_BROADCAST);
     dhcp_option_byte(dhcp, DHCP_OPTION_DNS_SERVER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NTP);
     dhcp_option_byte(dhcp, DHCP_OPTION_DOMAIN_NAME);
-            dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINS);
-            dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINT);
-            dhcp_option_byte(dhcp, DHCP_OPTION_NB_TIS);
-            dhcp_option_byte(dhcp, DHCP_OPTION_PRD);
-            dhcp_option_byte(dhcp, DHCP_OPTION_STATIC_ROUTER);
-            dhcp_option_byte(dhcp, DHCP_OPTION_CLASSLESS_STATIC_ROUTER);
-            dhcp_option_byte(dhcp, DHCP_OPTION_VSN);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINS);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NB_TINT);
+    dhcp_option_byte(dhcp, DHCP_OPTION_NB_TIS);
+    dhcp_option_byte(dhcp, DHCP_OPTION_PRD);
+    dhcp_option_byte(dhcp, DHCP_OPTION_STATIC_ROUTER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_CLASSLESS_STATIC_ROUTER);
+    dhcp_option_byte(dhcp, DHCP_OPTION_VSN);
 
     dhcp_option_trailer(dhcp);
 
@@ -1253,6 +1261,7 @@ dhcp_release(struct netif *netif)
 #if LWIP_DHCP_BOOTP_FILE
   ip_addr_set_zero(&dhcp->offered_si_addr);
 #endif /* LWIP_DHCP_BOOTP_FILE */
+  ip_addr_set_zero(&dhcp->offered_ntp_addr);
   dhcp->offered_t0_lease = dhcp->offered_t1_renew = dhcp->offered_t2_rebind = 0;
 
   /* create and initialize the DHCP message header */
@@ -1463,6 +1472,10 @@ again:
         LWIP_ASSERT("len >= decode_len", len >= decode_len);
         decode_idx = DHCP_OPTION_IDX_DNS_SERVER;
         break;
+      case(DHCP_OPTION_NTP):
+        LWIP_ASSERT("len == 4", len == 4);
+        decode_idx = DHCP_OPTION_IDX_NTP;
+	break;
       case(DHCP_OPTION_LEASE_TIME):
         LWIP_ASSERT("len == 4", len == 4);
         decode_idx = DHCP_OPTION_IDX_LEASE_TIME;

@@ -124,8 +124,8 @@ Userdata object with `update` and `finalize` functions available.
 #### Example
 ```lua
 hashobj = crypto.new_hash("SHA1")
-hashobj:update("FirstString"))
-hashobj:update("SecondString"))
+hashobj:update("FirstString")
+hashobj:update("SecondString")
 digest = hashobj:finalize()
 print(crypto.toHex(digest))
 ```
@@ -167,8 +167,8 @@ Userdata object with `update` and `finalize` functions available.
 #### Example
 ```lua
 hmacobj = crypto.new_hmac("SHA1", "s3kr3t")
-hmacobj:update("FirstString"))
-hmacobj:update("SecondString"))
+hmacobj:update("FirstString")
+hmacobj:update("SecondString")
 digest = hmacobj:finalize()
 print(crypto.toHex(digest))
 ```

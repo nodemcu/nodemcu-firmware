@@ -33,7 +33,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /**************************************************************************/
-#include "c_types.h"
+#include <stdint.h>
 
 #ifndef _TSL2561_H_
 #define _TSL2561_H_

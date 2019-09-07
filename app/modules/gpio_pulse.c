@@ -3,8 +3,8 @@
 #include "lmem.h"
 #include "platform.h"
 #include "user_interface.h"
-#include "c_types.h"
-#include "c_string.h"
+#include <stdint.h>
+#include <string.h>
 #include "gpio.h"
 #include "hw_timer.h"
 #include "pin_map.h"
@@ -467,31 +467,30 @@ static void gpio_pulse_task(os_param_t param, uint8_t prio)
   }
 }
 
-static const LUA_REG_TYPE pulse_map[] = {
-  { LSTRKEY( "getstate" ),            LFUNCVAL( gpio_pulse_getstate ) },
-  { LSTRKEY( "stop" ),                LFUNCVAL( gpio_pulse_stop ) },
-  { LSTRKEY( "cancel" ),              LFUNCVAL( gpio_pulse_cancel ) },
-  { LSTRKEY( "start" ),               LFUNCVAL( gpio_pulse_start ) },
-  { LSTRKEY( "adjust" ),              LFUNCVAL( gpio_pulse_adjust ) },
-  { LSTRKEY( "update" ),              LFUNCVAL( gpio_pulse_update ) },
-  { LSTRKEY( "__gc" ),                LFUNCVAL( gpio_pulse_delete ) },
-  { LSTRKEY( "__index" ),             LROVAL( pulse_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(pulse)
+  LROT_FUNCENTRY( getstate, gpio_pulse_getstate )
+  LROT_FUNCENTRY( stop, gpio_pulse_stop )
+  LROT_FUNCENTRY( cancel, gpio_pulse_cancel )
+  LROT_FUNCENTRY( start, gpio_pulse_start )
+  LROT_FUNCENTRY( adjust, gpio_pulse_adjust )
+  LROT_FUNCENTRY( update, gpio_pulse_update )
+  LROT_FUNCENTRY( __gc, gpio_pulse_delete )
+  LROT_TABENTRY( __index, pulse )
+LROT_END( pulse, pulse, LROT_MASK_GC_INDEX )
 
-const LUA_REG_TYPE gpio_pulse_map[] =
-{
-  { LSTRKEY( "build" ),               LFUNCVAL( gpio_pulse_build ) },
-  { LSTRKEY( "__index" ),             LROVAL( gpio_pulse_map ) },
-  { LNILKEY, LNILVAL }
-};
+
+LROT_PUBLIC_BEGIN(gpio_pulse)
+  LROT_FUNCENTRY( build, gpio_pulse_build )
+  LROT_TABENTRY( __index, gpio_pulse )
+LROT_END( gpio_pulse, gpio_pulse, LROT_MASK_INDEX )
+
 
 int gpio_pulse_init(lua_State *L)
 {
-  luaL_rometatable(L, "gpio.pulse", (void *)pulse_map);
+  luaL_rometatable(L, "gpio.pulse", LROT_TABLEREF(pulse));
   tasknumber = task_get_id(gpio_pulse_task);
   return 0;
 }
 
-//NODEMCU_MODULE(GPIOPULSE, "gpiopulse", gpio_pulse_map, gpio_pulse_init);
+NODEMCU_MODULE(GPIOPULSE, "gpiopulse", gpio_pulse, gpio_pulse_init);
 

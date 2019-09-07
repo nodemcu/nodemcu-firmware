@@ -22,7 +22,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_math.h"
+#include <math.h>
 
 // #define TCS34725_ADDRESS					(0x29<<1)
 #define TCS34725_ADDRESS					(0x29)
@@ -342,14 +342,14 @@ uint8_t tcs34725GetRawData(lua_State* L)
 }
 
 
-static const LUA_REG_TYPE tcs34725_map[] = {
-	{ LSTRKEY( "setup" ), LFUNCVAL(tcs34725Setup)},
-	{ LSTRKEY( "enable" ),  LFUNCVAL(tcs34725Enable)},
-	{ LSTRKEY( "disable" ),  LFUNCVAL(tcs34725Disable)},
-	{ LSTRKEY( "raw" ),  LFUNCVAL(tcs34725GetRawData)},
-	{ LSTRKEY( "setGain" ),  LFUNCVAL(tcs34725LuaSetGain)},
-	{ LSTRKEY( "setIntegrationTime" ),  LFUNCVAL(tcs34725LuaSetIntegrationTime)},
-	{ LNILKEY, LNILVAL}
-};
+LROT_BEGIN(tcs34725)
+  LROT_FUNCENTRY( setup, tcs34725Setup )
+  LROT_FUNCENTRY( enable, tcs34725Enable )
+  LROT_FUNCENTRY( disable, tcs34725Disable )
+  LROT_FUNCENTRY( raw, tcs34725GetRawData )
+  LROT_FUNCENTRY( setGain, tcs34725LuaSetGain )
+  LROT_FUNCENTRY( setIntegrationTime, tcs34725LuaSetIntegrationTime )
+LROT_END( tcs34725, NULL, 0 )
 
-NODEMCU_MODULE(TCS34725, "tcs34725", tcs34725_map, NULL);
+
+NODEMCU_MODULE(TCS34725, "tcs34725", tcs34725, NULL);

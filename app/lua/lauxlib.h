@@ -8,15 +8,9 @@
 #ifndef lauxlib_h
 #define lauxlib_h
 
-
 #include "lua.h"
 
-#ifdef LUA_CROSS_COMPILER
 #include <stdio.h>
-#else
-#include "c_stdio.h"
-#endif
-
 
 #if defined(LUA_COMPAT_GETN)
 LUALIB_API int (luaL_getn) (lua_State *L, int t);

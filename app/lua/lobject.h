@@ -8,11 +8,7 @@
 #ifndef lobject_h
 #define lobject_h
 
-#ifdef LUA_CROSS_COMPILER
 #include <stdarg.h>
-#else
-#include "c_stdarg.h"
-#endif
 
 #include "llimits.h"
 #include "lua.h"
@@ -24,9 +20,7 @@
 #define NUM_TAGS	(LAST_TAG+1)
 
 #define READONLYMASK    (1<<7)      /* denormalised bitmask for READONLYBIT and */
-#ifdef LUA_FLASH_STORE
 #define LFSMASK         (1<<6)      /* LFSBIT to avoid include proliferation */
-#endif
 /*
 ** Extra tags for non-values
 */

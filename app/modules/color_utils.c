@@ -2,9 +2,9 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_math.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "user_interface.h"
 #include "osapi.h"
 
@@ -234,13 +234,12 @@ static int cu_grb2hsv(lua_State *L) {
 }
 
 
-static const LUA_REG_TYPE color_utils_map[] =
-{
-  { LSTRKEY( "hsv2grb" ),       LFUNCVAL( cu_hsv2grb )},
-  { LSTRKEY( "hsv2grbw" ),      LFUNCVAL( cu_hsv2grbw )},
-  { LSTRKEY( "colorWheel" ),    LFUNCVAL( cu_color_wheel )},
-  { LSTRKEY( "grb2hsv" ),       LFUNCVAL( cu_grb2hsv )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(color_utils)
+  LROT_FUNCENTRY( hsv2grb, cu_hsv2grb )
+  LROT_FUNCENTRY( hsv2grbw, cu_hsv2grbw )
+  LROT_FUNCENTRY( colorWheel, cu_color_wheel )
+  LROT_FUNCENTRY( grb2hsv, cu_grb2hsv )
+LROT_END( color_utils, NULL, 0 )
 
-NODEMCU_MODULE(COLOR_UTILS, "color_utils", color_utils_map, NULL);
+
+NODEMCU_MODULE(COLOR_UTILS, "color_utils", color_utils, NULL);

@@ -4,7 +4,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 #include "cpu_esp8266.h"
-#include "dht.h"
+#include "dht/dht.h"
 
 #define NUM_DHT GPIO_PIN_NUM
 
@@ -99,14 +99,14 @@ static int dht_lapi_readxx( lua_State *L )
 // }
 
 // Module function map
-static const LUA_REG_TYPE dht_map[] = {
-  { LSTRKEY( "read" ),           LFUNCVAL( dht_lapi_read ) },
-  { LSTRKEY( "read11" ),         LFUNCVAL( dht_lapi_read11 ) },
-  { LSTRKEY( "readxx" ),         LFUNCVAL( dht_lapi_readxx ) },
-  { LSTRKEY( "OK" ),             LNUMVAL( DHTLIB_OK ) },
-  { LSTRKEY( "ERROR_CHECKSUM" ), LNUMVAL( DHTLIB_ERROR_CHECKSUM ) },
-  { LSTRKEY( "ERROR_TIMEOUT" ),  LNUMVAL( DHTLIB_ERROR_TIMEOUT ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(dht)
+  LROT_FUNCENTRY( read, dht_lapi_read )
+  LROT_FUNCENTRY( read11, dht_lapi_read11 )
+  LROT_FUNCENTRY( readxx, dht_lapi_readxx )
+  LROT_NUMENTRY( OK, DHTLIB_OK )
+  LROT_NUMENTRY( ERROR_CHECKSUM, DHTLIB_ERROR_CHECKSUM )
+  LROT_NUMENTRY( ERROR_TIMEOUT, DHTLIB_ERROR_TIMEOUT )
+LROT_END( dht, NULL, 0 )
 
-NODEMCU_MODULE(DHT, "dht", dht_map, NULL);
+
+NODEMCU_MODULE(DHT, "dht", dht, NULL);

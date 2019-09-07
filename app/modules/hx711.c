@@ -4,8 +4,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
 static uint8_t data_pin;
 static uint8_t clk_pin;
@@ -66,15 +66,15 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
 }
 
 // Module function map
-static const LUA_REG_TYPE hx711_map[] = {
-  { LSTRKEY( "init" ), LFUNCVAL( hx711_init )},
-  { LSTRKEY( "read" ), LFUNCVAL( hx711_read )},
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(hx711)
+  LROT_FUNCENTRY( init, hx711_init )
+  LROT_FUNCENTRY( read, hx711_read )
+LROT_END( hx711, NULL, 0 )
+
 
 int luaopen_hx711(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
   return 0;
 }
 
-NODEMCU_MODULE(HX711, "hx711", hx711_map, luaopen_hx711);
+NODEMCU_MODULE(HX711, "hx711", hx711, luaopen_hx711);

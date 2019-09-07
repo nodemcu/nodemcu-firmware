@@ -4,7 +4,7 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_types.h"
+#include <stdint.h>
 #include "user_interface.h"
 
 // Lua: read(id) , return system adc
@@ -61,13 +61,13 @@ static int adc_init107( lua_State *L )
 }
 
 // Module function map
-static const LUA_REG_TYPE adc_map[] = {
-  { LSTRKEY( "read" ),      LFUNCVAL( adc_sample ) },
-  { LSTRKEY( "readvdd33" ), LFUNCVAL( adc_readvdd33 ) },
-  { LSTRKEY( "force_init_mode" ), LFUNCVAL( adc_init107 ) },
-  { LSTRKEY( "INIT_ADC" ),  LNUMVAL( 0x00 ) },
-  { LSTRKEY( "INIT_VDD33" ),LNUMVAL( 0xff ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(adc)
+  LROT_FUNCENTRY( read, adc_sample )
+  LROT_FUNCENTRY( readvdd33, adc_readvdd33 )
+  LROT_FUNCENTRY( force_init_mode, adc_init107 )
+  LROT_NUMENTRY( INIT_ADC, 0x00 )
+  LROT_NUMENTRY( INIT_VDD33, 0xff )
+LROT_END( adc, NULL, 0 )
 
-NODEMCU_MODULE(ADC, "adc", adc_map, NULL);
+
+NODEMCU_MODULE(ADC, "adc", adc, NULL);

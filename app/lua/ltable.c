@@ -23,8 +23,8 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_MATH
-#include C_HEADER_STRING
+#include <math.h>
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -86,7 +86,7 @@ static Node *hashnum (const Table *t, lua_Number n) {
   int i;
   if (luai_numeq(n, 0))  /* avoid problems with -0 */
     return gnode(t, 0);
-  c_memcpy(a, &n, sizeof(a));
+  memcpy(a, &n, sizeof(a));
   for (i = 1; i < numints; i++) a[0] += a[i];
   return hashmod(t, a[0]);
 }
@@ -580,7 +580,7 @@ const TValue *luaH_getnum (Table *t, int key) {
 
 /* same thing for rotables */
 const TValue *luaH_getnum_ro (void *t, int key) {
-  const TValue *res = luaR_findentryN(t, key, NULL);
+  const TValue *res = NULL;  // integer values not supported: luaR_findentryN(t, key, NULL);
   return res ? res : luaO_nilobject;
 }
 
@@ -739,11 +739,7 @@ int luaH_getn (Table *t) {
 
 /* same thing for rotables */
 int luaH_getn_ro (void *t) {
-  int i = 1, len=0;
-
-  while(luaR_findentryN(t, i ++, NULL))
-    len ++;
-  return len;
+  return 0;  // Integer Keys are not currently supported for ROTables
 }
 
 int luaH_isdummy (Node *n) { return n == dummynode; }

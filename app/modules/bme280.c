@@ -11,7 +11,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_math.h"
+#include <math.h>
 
 /****************************************************/
 /**\name	registers definition  */
@@ -470,17 +470,17 @@ static int bme280_lua_dewpoint(lua_State* L) {
 	return 1;
 }
 
-static const LUA_REG_TYPE bme280_map[] = {
-	{ LSTRKEY( "setup" ), LFUNCVAL(bme280_lua_setup)},
-	{ LSTRKEY( "temp" ),  LFUNCVAL(bme280_lua_temp)},
-	{ LSTRKEY( "baro" ),  LFUNCVAL(bme280_lua_baro)},
-	{ LSTRKEY( "humi" ),  LFUNCVAL(bme280_lua_humi)},
-	{ LSTRKEY( "startreadout" ),  LFUNCVAL(bme280_lua_startreadout)},
-	{ LSTRKEY( "qfe2qnh" ),  LFUNCVAL(bme280_lua_qfe2qnh)},
-	{ LSTRKEY( "altitude" ),  LFUNCVAL(bme280_lua_altitude)},
-	{ LSTRKEY( "dewpoint" ),  LFUNCVAL(bme280_lua_dewpoint)},
-	{ LSTRKEY( "read" ),  LFUNCVAL(bme280_lua_read)},
-	{ LNILKEY, LNILVAL}
-};
+LROT_BEGIN(bme280)
+  LROT_FUNCENTRY( setup, bme280_lua_setup )
+  LROT_FUNCENTRY( temp, bme280_lua_temp )
+  LROT_FUNCENTRY( baro, bme280_lua_baro )
+  LROT_FUNCENTRY( humi, bme280_lua_humi )
+  LROT_FUNCENTRY( startreadout, bme280_lua_startreadout )
+  LROT_FUNCENTRY( qfe2qnh, bme280_lua_qfe2qnh )
+  LROT_FUNCENTRY( altitude, bme280_lua_altitude )
+  LROT_FUNCENTRY( dewpoint, bme280_lua_dewpoint )
+  LROT_FUNCENTRY( read, bme280_lua_read )
+LROT_END( bme280, NULL, 0 )
 
-NODEMCU_MODULE(BME280, "bme280", bme280_map, NULL);
+
+NODEMCU_MODULE(BME280, "bme280", bme280, NULL);

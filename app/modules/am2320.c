@@ -129,10 +129,10 @@ static int am2320_read(lua_State* L)
     return 2;
 }
 
-static const LUA_REG_TYPE am2320_map[] = {
-    { LSTRKEY( "read" ),  LFUNCVAL( am2320_read )},
-    { LSTRKEY( "setup" ), LFUNCVAL( am2320_setup )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(am2320)
+  LROT_FUNCENTRY( read, am2320_read )
+  LROT_FUNCENTRY( setup, am2320_setup )
+LROT_END( am2320, NULL, 0 )
 
-NODEMCU_MODULE(AM2320, "am2320", am2320_map, NULL);
+
+NODEMCU_MODULE(AM2320, "am2320", am2320, NULL);

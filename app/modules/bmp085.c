@@ -1,8 +1,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 
 static const uint32_t bmp085_i2c_id = 0;
 static const uint8_t bmp085_i2c_addr = 0x77;
@@ -169,12 +169,12 @@ static int bmp085_lua_pressure(lua_State* L) {
     return 1;
 }
 
-static const LUA_REG_TYPE bmp085_map[] = {
-    { LSTRKEY( "temperature" ),  LFUNCVAL( bmp085_lua_temperature )},
-    { LSTRKEY( "pressure" ),     LFUNCVAL( bmp085_lua_pressure )},
-    { LSTRKEY( "pressure_raw" ), LFUNCVAL( bmp085_lua_pressure_raw )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( bmp085_setup )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(bmp085)
+  LROT_FUNCENTRY( temperature, bmp085_lua_temperature )
+  LROT_FUNCENTRY( pressure, bmp085_lua_pressure )
+  LROT_FUNCENTRY( pressure_raw, bmp085_lua_pressure_raw )
+  LROT_FUNCENTRY( setup, bmp085_setup )
+LROT_END( bmp085, NULL, 0 )
 
-NODEMCU_MODULE(BMP085, "bmp085", bmp085_map, NULL);
+
+NODEMCU_MODULE(BMP085, "bmp085", bmp085, NULL);

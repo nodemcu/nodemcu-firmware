@@ -36,10 +36,6 @@ endif
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../libc
-INCLUDES += -I ../lua
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

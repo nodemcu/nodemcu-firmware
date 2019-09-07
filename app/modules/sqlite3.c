@@ -25,12 +25,13 @@
 * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     *
 * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                *
 ************************************************************************/
+#if 0
 #define LSQLITE_VERSION "0.9.4"
 #define LSQLITE_OMIT_UPDATE_HOOK 1
 #define SQLITE_OMIT_PROGRESS_CALLBACK 1
 
-#include <c_stdlib.h>
-#include <c_string.h>
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #define LUA_LIB
@@ -58,7 +59,7 @@
 #endif
 #endif
 
-#include "sqlite3.h"
+#include "sqlite3/sqlite3.h"
 
 /* compile time features */
 #if !defined(SQLITE_OMIT_PROGRESS_CALLBACK)
@@ -272,7 +273,7 @@ static int dbvm_tostring(lua_State *L) {
     if (svm->vm == NULL)
         strcpy(buff, "closed");
     else
-        c_sprintf(buff, "%p", svm);
+        sprintf(buff, "%p", svm);
     lua_pushfstring(L, "sqlite virtual machine (%s)", buff);
     return 1;
 }
@@ -742,7 +743,7 @@ static int cleanupdb(lua_State *L, sdb *db) {
         luaL_unref(L, LUA_REGISTRYINDEX, func->fn_step);
         luaL_unref(L, LUA_REGISTRYINDEX, func->fn_finalize);
         luaL_unref(L, LUA_REGISTRYINDEX, func->udata);
-        c_free(func);
+        free(func);
         func = func_next;
     }
     db->func = NULL;
@@ -799,7 +800,7 @@ static int lcontext_tostring(lua_State *L) {
     if (ctx->ctx == NULL)
         strcpy(buff, "closed");
     else
-        c_sprintf(buff, "%p", ctx->ctx);
+        sprintf(buff, "%p", ctx->ctx);
     lua_pushfstring(L, "sqlite function context (%s)", buff);
     return 1;
 }
@@ -1155,7 +1156,7 @@ static int db_register_function(lua_State *L, int aggregate) {
     if (aggregate) luaL_checktype(L, 5, LUA_TFUNCTION);
 
     /* maybe an alternative way to allocate memory should be used/avoided */
-    func = (sdb_func*)c_malloc(sizeof(sdb_func));
+    func = (sdb_func*)malloc(sizeof(sdb_func));
     if (func == NULL) {
         luaL_error(L, "out of memory");
     }
@@ -1193,7 +1194,7 @@ static int db_register_function(lua_State *L, int aggregate) {
     }
     else {
         /* free allocated memory */
-        c_free(func);
+        free(func);
     }
 
     lua_pushboolean(L, result == SQLITE_OK ? 1 : 0);
@@ -1231,7 +1232,7 @@ static int collwrapper(scc *co,int l1,const void *p1,
 static void collfree(scc *co) {
     if (co) {
         luaL_unref(co->L,LUA_REGISTRYINDEX,co->ref);
-        c_free(co);
+        free(co);
     }
 }
 
@@ -1245,7 +1246,7 @@ static int db_create_collation(lua_State *L) {
     else if (!lua_isnil(L,3))
         luaL_error(L,"create_collation: function or nil expected");
     if (collfunc != NULL) {
-        co=(scc *)c_malloc(sizeof(scc)); /* userdata is a no-no as it
+        co=(scc *)malloc(sizeof(scc)); /* userdata is a no-no as it
                                           will be garbage-collected */
         if (co) {
             co->L=L;
@@ -2036,7 +2037,7 @@ static int db_tostring(lua_State *L) {
     if (db->db == NULL)
         strcpy(buff, "closed");
     else
-        c_sprintf(buff, "%p", lua_touserdata(L, 1));
+        sprintf(buff, "%p", lua_touserdata(L, 1));
     lua_pushfstring(L, "sqlite database (%s)", buff);
     return 1;
 }
@@ -2429,3 +2430,4 @@ LUALIB_API int luaopen_lsqlite3(lua_State *L) {
 }
 
 NODEMCU_MODULE(SQLITE3, "sqlite3", sqlitelib, luaopen_lsqlite3);
+#endif

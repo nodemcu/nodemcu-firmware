@@ -24,7 +24,7 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-DEFINES += -DU8X8_USE_PINS -DU8G2_USE_LARGE_FONTS
+DEFINES += -DU8X8_USE_PINS -DU8G2_USE_LARGE_FONTS -DU8X8_WITH_USER_PTR
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -40,11 +40,7 @@ DEFINES += -DU8X8_USE_PINS -DU8G2_USE_LARGE_FONTS
 
 CSRCS := $(wildcard u8g2/src/clib/*.c *.c)
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
 INCLUDES += -I u8g2/src/clib
-INCLUDES += -I ../libc
-INCLUDES += -I ../lua
-INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

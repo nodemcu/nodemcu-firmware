@@ -51,7 +51,7 @@ tmr.softwd(int)
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "user_interface.h"
 #include "pm/swtimer.h"
 
@@ -78,7 +78,7 @@ typedef struct{
 	uint32_t interval;
 	uint8_t mode;
 }timer_struct_t;
-typedef timer_struct_t* timer_t;
+typedef timer_struct_t* tmr_t;
 
 // The previous implementation extended the rtc counter to 64 bits, and then
 // applied rtc2sec with the current calibration value to that 64 bit value.
@@ -97,7 +97,7 @@ static sint32_t soft_watchdog  = -1;
 static os_timer_t rtc_timer;
 
 static void alarm_timer_common(void* arg){
-	timer_t tmr = (timer_t)arg;
+	tmr_t tmr = (tmr_t)arg;
 	lua_State* L = lua_getstate();
 	if(tmr->lua_ref == LUA_NOREF)
 		return;
@@ -142,16 +142,16 @@ static int tmr_now(lua_State* L){
 	return 1;
 }
 
-static timer_t tmr_get( lua_State *L, int stack ) {
-	timer_t t = (timer_t)luaL_checkudata(L, stack, "tmr.timer");
+static tmr_t tmr_get( lua_State *L, int stack ) {
+	tmr_t t = (tmr_t)luaL_checkudata(L, stack, "tmr.timer");
 	if (t == NULL)
-		return (timer_t)luaL_error(L, "timer object expected");
+		return (tmr_t)luaL_error(L, "timer object expected");
 	return t;
 }
 
 // Lua: tmr.register( ref, interval, mode, function )
 static int tmr_register(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	uint32_t interval = luaL_checkinteger(L, 2);
 	uint8_t mode = luaL_checkinteger(L, 3);
@@ -176,7 +176,7 @@ static int tmr_register(lua_State* L){
 
 // Lua: tmr.start( id / ref )
 static int tmr_start(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if (tmr->self_ref == LUA_NOREF) {
 		lua_pushvalue(L, 1);
@@ -202,7 +202,7 @@ static int tmr_alarm(lua_State* L){
 
 // Lua: tmr.stop( id / ref )
 static int tmr_stop(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if (tmr->self_ref != LUA_REFNIL) {
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->self_ref);
@@ -244,7 +244,7 @@ static int tmr_resume_all (lua_State *L){
 
 // Lua: tmr.unregister( id / ref )
 static int tmr_unregister(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if (tmr->self_ref != LUA_REFNIL) {
 		luaL_unref(L, LUA_REGISTRYINDEX, tmr->self_ref);
@@ -262,7 +262,7 @@ static int tmr_unregister(lua_State* L){
 
 // Lua: tmr.interval( id / ref, interval )
 static int tmr_interval(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	uint32_t interval = luaL_checkinteger(L, 2);
 	luaL_argcheck(L, (interval > 0 && interval <= MAX_TIMEOUT), 2, MAX_TIMEOUT_ERR_STR);
@@ -278,7 +278,7 @@ static int tmr_interval(lua_State* L){
 
 // Lua: tmr.state( id / ref )
 static int tmr_state(lua_State* L){
-	timer_t tmr = tmr_get(L, 1);
+	tmr_t tmr = tmr_get(L, 1);
 
 	if(tmr->mode == TIMER_MODE_OFF){
 		lua_pushnil(L);
@@ -355,7 +355,7 @@ static int tmr_softwd( lua_State* L ){
 
 // Lua: tmr.create()
 static int tmr_create( lua_State *L ) {
-	timer_t ud = (timer_t)lua_newuserdata(L, sizeof(timer_struct_t));
+	tmr_t ud = (tmr_t)lua_newuserdata(L, sizeof(timer_struct_t));
 	if (!ud) return luaL_error(L, "not enough memory");
 	luaL_getmetatable(L, "tmr.timer");
 	lua_setmetatable(L, -2);
@@ -369,43 +369,43 @@ static int tmr_create( lua_State *L ) {
 
 // Module function map
 
-static const LUA_REG_TYPE tmr_dyn_map[] = {
-	{ LSTRKEY( "register" ),    LFUNCVAL( tmr_register ) },
-	{ LSTRKEY( "alarm" ),       LFUNCVAL( tmr_alarm ) },
-	{ LSTRKEY( "start" ),       LFUNCVAL( tmr_start ) },
-	{ LSTRKEY( "stop" ),        LFUNCVAL( tmr_stop ) },
-	{ LSTRKEY( "unregister" ),  LFUNCVAL( tmr_unregister ) },
-	{ LSTRKEY( "state" ),       LFUNCVAL( tmr_state ) },
-	{ LSTRKEY( "interval" ),    LFUNCVAL( tmr_interval) },
+LROT_BEGIN(tmr_dyn)
+  LROT_FUNCENTRY( register, tmr_register )
+  LROT_FUNCENTRY( alarm, tmr_alarm )
+  LROT_FUNCENTRY( start, tmr_start )
+  LROT_FUNCENTRY( stop, tmr_stop )
+  LROT_FUNCENTRY( unregister, tmr_unregister )
+  LROT_FUNCENTRY( state, tmr_state )
+  LROT_FUNCENTRY( interval, tmr_interval )
 #ifdef TIMER_SUSPEND_ENABLE
-	{ LSTRKEY( "suspend" ),     LFUNCVAL( tmr_suspend ) },
-	{ LSTRKEY( "resume" ),      LFUNCVAL( tmr_resume ) },
+  LROT_FUNCENTRY( suspend, tmr_suspend )
+  LROT_FUNCENTRY( resume, tmr_resume )
 #endif
-	{ LSTRKEY( "__gc" ),        LFUNCVAL( tmr_unregister ) },
-	{ LSTRKEY( "__index" ),     LROVAL( tmr_dyn_map ) },
-	{ LNILKEY, LNILVAL }
-};
+  LROT_FUNCENTRY( __gc, tmr_unregister )
+  LROT_TABENTRY( __index, tmr_dyn )
+LROT_END( tmr_dyn, tmr_dyn, LROT_MASK_GC_INDEX )
 
-static const LUA_REG_TYPE tmr_map[] = {
-	{ LSTRKEY( "delay" ),        LFUNCVAL( tmr_delay ) },
-	{ LSTRKEY( "now" ),          LFUNCVAL( tmr_now ) },
-	{ LSTRKEY( "wdclr" ),        LFUNCVAL( tmr_wdclr ) },
-	{ LSTRKEY( "softwd" ),       LFUNCVAL( tmr_softwd ) },
-	{ LSTRKEY( "time" ),         LFUNCVAL( tmr_time ) },
+
+LROT_BEGIN(tmr)
+  LROT_FUNCENTRY( delay, tmr_delay )
+  LROT_FUNCENTRY( now, tmr_now )
+  LROT_FUNCENTRY( wdclr, tmr_wdclr )
+  LROT_FUNCENTRY( softwd, tmr_softwd )
+  LROT_FUNCENTRY( time, tmr_time )
 #ifdef TIMER_SUSPEND_ENABLE
-	{ LSTRKEY( "suspend_all" ),  LFUNCVAL( tmr_suspend_all ) },
-	{ LSTRKEY( "resume_all" ),   LFUNCVAL( tmr_resume_all ) },
+  LROT_FUNCENTRY( suspend_all, tmr_suspend_all )
+  LROT_FUNCENTRY( resume_all, tmr_resume_all )
 #endif
-	{ LSTRKEY( "create" ),       LFUNCVAL( tmr_create ) },
-	{ LSTRKEY( "ALARM_SINGLE" ), LNUMVAL( TIMER_MODE_SINGLE ) },
-	{ LSTRKEY( "ALARM_SEMI" ),   LNUMVAL( TIMER_MODE_SEMI ) },
-	{ LSTRKEY( "ALARM_AUTO" ),   LNUMVAL( TIMER_MODE_AUTO ) },
-	{ LNILKEY, LNILVAL }
-};
+  LROT_FUNCENTRY( create, tmr_create )
+  LROT_NUMENTRY( ALARM_SINGLE, TIMER_MODE_SINGLE )
+  LROT_NUMENTRY( ALARM_SEMI, TIMER_MODE_SEMI )
+  LROT_NUMENTRY( ALARM_AUTO, TIMER_MODE_AUTO )
+LROT_END( tmr, NULL, 0 )
+
 
 #include "pm/swtimer.h"
 int luaopen_tmr( lua_State *L ){
-	luaL_rometatable(L, "tmr.timer", (void *)tmr_dyn_map);
+	luaL_rometatable(L, "tmr.timer", LROT_TABLEREF(tmr_dyn));
 
 	last_rtc_time=system_get_rtc_time(); // Right now is time 0
 	last_rtc_time_us=0;
@@ -425,4 +425,4 @@ int luaopen_tmr( lua_State *L ){
 	return 0;
 }
 
-NODEMCU_MODULE(TMR, "tmr", tmr_map, luaopen_tmr);
+NODEMCU_MODULE(TMR, "tmr", tmr, luaopen_tmr);

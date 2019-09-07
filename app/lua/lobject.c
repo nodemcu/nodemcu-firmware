@@ -10,9 +10,9 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDIO
-#include C_HEADER_STRING
-#include C_HEADER_STDLIB
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "ldo.h"
 #include "lmem.h"
@@ -116,7 +116,7 @@ int luaO_str2d (const char *s, lua_Number *result) {
       *result = cast_num(lres);
     }
 #else
-    *result = cast_num(c_strtoul(s, &endptr, 16));
+    *result = cast_num(strtoul(s, &endptr, 16));
 #endif
   if (*endptr == '\0') return 1;  /* most common case */
   while (isspace(cast(unsigned char, *endptr))) endptr++;
@@ -137,7 +137,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
   int n = 1;
   pushstr(L, "");
   for (;;) {
-    const char *e = c_strchr(fmt, '%');
+    const char *e = strchr(fmt, '%');
     if (e == NULL) break;
     setsvalue2s(L, L->top, luaS_newlstr(L, fmt, e-fmt));
     incr_top(L);
@@ -167,7 +167,7 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp) {
       }
       case 'p': {
         char buff[4*sizeof(void *) + 8]; /* should be enough space for a `%p' */
-        c_sprintf(buff, "%p", va_arg(argp, void *));
+        sprintf(buff, "%p", va_arg(argp, void *));
         pushstr(L, buff);
         break;
       }
@@ -206,7 +206,7 @@ const char *luaO_pushfstring (lua_State *L, const char *fmt, ...) {
 
 void luaO_chunkid (char *out, const char *source, size_t bufflen) {
   if (*source == '=') {
-    c_strncpy(out, source+1, bufflen);  /* remove first char */
+    strncpy(out, source+1, bufflen);  /* remove first char */
     out[bufflen-1] = '\0';  /* ensures null termination */
   }
   else {  /* out = "source", or "...source" */
@@ -214,26 +214,26 @@ void luaO_chunkid (char *out, const char *source, size_t bufflen) {
       size_t l;
       source++;  /* skip the `@' */
       bufflen -= sizeof(" '...' ");
-      l = c_strlen(source);
-      c_strcpy(out, "");
+      l = strlen(source);
+      strcpy(out, "");
       if (l > bufflen) {
         source += (l-bufflen);  /* get last part of file name */
-        c_strcat(out, "...");
+        strcat(out, "...");
       }
-      c_strcat(out, source);
+      strcat(out, source);
     }
     else {  /* out = [string "string"] */
-      size_t len = c_strcspn(source, "\n\r");  /* stop at first newline */
+      size_t len = strcspn(source, "\n\r");  /* stop at first newline */
       bufflen -= sizeof(" [string \"...\"] ");
       if (len > bufflen) len = bufflen;
-      c_strcpy(out, "[string \"");
+      strcpy(out, "[string \"");
       if (source[len] != '\0') {  /* must truncate? */
-        c_strncat(out, source, len);
-        c_strcat(out, "...");
+        strncat(out, source, len);
+        strcat(out, "...");
       }
       else
-        c_strcat(out, source);
-      c_strcat(out, "\"]");
+        strcat(out, source);
+      strcat(out, "\"]");
     }
   }
 }

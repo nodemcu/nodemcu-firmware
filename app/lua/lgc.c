@@ -9,7 +9,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -27,10 +27,6 @@
 #define GCSWEEPMAX	40
 #define GCSWEEPCOST	10
 #define GCFINALIZECOST	100
-
-#if READONLYMASK != (1<<READONLYBIT) || (defined(LUA_FLASH_STORE) && LFSMASK  != (1<<LFSBIT))
-#error "lgc.h and object.h out of sync on READONLYMASK / LFSMASK"
-#endif
 
 #define maskmarks	cast_byte(~(bitmask(BLACKBIT)|WHITEBITS))
 
@@ -177,8 +173,8 @@ static int traversetable (global_State *g, Table *h) {
   }
 
   if (mode && ttisstring(mode)) {  /* is there a weak mode? */
-    weakkey = (c_strchr(svalue(mode), 'k') != NULL);
-    weakvalue = (c_strchr(svalue(mode), 'v') != NULL);
+    weakkey = (strchr(svalue(mode), 'k') != NULL);
+    weakvalue = (strchr(svalue(mode), 'v') != NULL);
     if (weakkey || weakvalue) {  /* is really weak? */
       h->marked &= ~(KEYWEAK | VALUEWEAK);  /* clear bits */
       h->marked |= cast_byte((weakkey << KEYWEAKBIT) |
@@ -337,7 +333,7 @@ static l_mem propagatemark (global_State *g) {
                              (proto_isreadonly(p) ? 0 : sizeof(Instruction) * p->sizecode +
 #ifdef LUA_OPTIMIZE_DEBUG
                                                          (p->packedlineinfo ?
-                                                            c_strlen(cast(char *, p->packedlineinfo))+1 :
+                                                            strlen(cast(char *, p->packedlineinfo))+1 :
                                                             0));
 #else
                                                          sizeof(int) * p->sizelineinfo);

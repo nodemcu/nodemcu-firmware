@@ -2,9 +2,9 @@
 
 #include "platform.h"
 #include "common.h"
-#include "c_stdio.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "llimits.h"
 #include "gpio.h"
 #include "user_interface.h"
@@ -320,7 +320,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
   }
 
   // These return NULL if the count = 0 so only error check if > 0)
-  nh.entry = c_malloc( nh.count * sizeof(*(nh.entry)) );
+  nh.entry = malloc( nh.count * sizeof(*(nh.entry)) );
   if (nh.count && !(nh.entry)) {
     return 0;  // Allocation failure
   }
@@ -345,7 +345,7 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
   platform_gpio_hook = nh;
   ETS_GPIO_INTR_ENABLE();
 
-  c_free(oh.entry);
+  free(oh.entry);
   return 1;
 }
 #endif // GPIO_INTERRUPT_HOOK_ENABLE
@@ -735,16 +735,19 @@ uint32_t platform_i2c_setup( unsigned id, uint8_t sda, uint8_t scl, uint32_t spe
   platform_gpio_mode(sda, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);   // inside this func call platform_pwm_close
   platform_gpio_mode(scl, PLATFORM_GPIO_INPUT, PLATFORM_GPIO_PULLUP);    // disable gpio interrupt first
 
-  i2c_master_gpio_init(sda, scl);
-  return PLATFORM_I2C_SPEED_SLOW;
+  return i2c_master_setup(id, sda, scl, speed);
+}
+
+bool platform_i2c_configured( unsigned id ){
+  return i2c_master_configured(id);
 }
 
 void platform_i2c_send_start( unsigned id ){
-  i2c_master_start();
+  i2c_master_start(id);
 }
 
 void platform_i2c_send_stop( unsigned id ){
-  i2c_master_stop();
+  i2c_master_stop(id);
 }
 
 int platform_i2c_send_address( unsigned id, uint16_t address, int direction ){
@@ -754,22 +757,17 @@ int platform_i2c_send_address( unsigned id, uint16_t address, int direction ){
            PLATFORM_I2C_DIRECTION_RECEIVER == 1 ) ) {
     direction = ( direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ) ? 0 : 1;
   }
-
-  i2c_master_writeByte( (uint8_t) ((address << 1) | direction ));
-  // Low-level returns nack (0=acked); we return ack (1=acked).
-  return ! i2c_master_getAck();
+  return i2c_master_writeByte(id,
+    (uint8_t) ((address << 1) + (direction == PLATFORM_I2C_DIRECTION_TRANSMITTER ? 0 : 1))
+  );
 }
 
-int platform_i2c_send_byte( unsigned id, uint8_t data ){
-  i2c_master_writeByte(data);
-  // Low-level returns nack (0=acked); we return ack (1=acked).
-  return ! i2c_master_getAck();
+int platform_i2c_send_byte(unsigned id, uint8_t data ){
+  return i2c_master_writeByte(id, data);
 }
 
 int platform_i2c_recv_byte( unsigned id, int ack ){
-  uint8_t r = i2c_master_readByte();
-  i2c_master_setAck( !ack );
-  return r;
+  return i2c_master_readByte(id, ack);
 }
 
 // *****************************************************************************
@@ -867,15 +865,15 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
   uint32_t *apbuf = NULL;
   uint32_t fromaddr = (uint32_t)from;
   if( (fromaddr & blkmask ) || (fromaddr >= INTERNAL_FLASH_MAPPED_ADDRESS)) {
-    apbuf = (uint32_t *)c_malloc(size);
+    apbuf = (uint32_t *)malloc(size);
     if(!apbuf)
       return 0;
-    c_memcpy(apbuf, from, size);
+    memcpy(apbuf, from, size);
   }
   system_soft_wdt_feed ();
   r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
   if(apbuf)
-    c_free(apbuf);
+    free(apbuf);
   if(SPI_FLASH_RESULT_OK == r)
     return size;
   else{
@@ -905,10 +903,10 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
     r = flash_read(fromaddr, to2, size2);
     if(SPI_FLASH_RESULT_OK == r)
     {
-      os_memmove(to,to2,size2);
+      memmove(to,to2,size2);  // This is overlapped so must be memmove and not memcpy
       char back[ INTERNAL_FLASH_READ_UNIT_SIZE ] __attribute__ ((aligned(INTERNAL_FLASH_READ_UNIT_SIZE)));
       r=flash_read(fromaddr+size2,(uint32*)back,INTERNAL_FLASH_READ_UNIT_SIZE);
-      os_memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
+      memcpy((uint8_t*)to+size2,back,INTERNAL_FLASH_READ_UNIT_SIZE);
     }
   }
   else
@@ -925,7 +923,6 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
 int platform_flash_erase_sector( uint32_t sector_id )
 {
   NODE_DBG( "flash_erase_sector(%u)\n", sector_id);
-  system_soft_wdt_feed ();
   return flash_erase( sector_id ) == SPI_FLASH_RESULT_OK ? PLATFORM_OK : PLATFORM_ERR;
 }
 
@@ -938,7 +935,7 @@ static uint32_t flash_map_meg_offset (void) {
   return m0 + m1;
 }
 
-uint32_t platform_flash_mapped2phys (uint32_t mapped_addr)  {
+uint32_t platform_flash_mapped2phys (uint32_t mapped_addr) {
   uint32_t meg = flash_map_meg_offset();
   return (meg&1) ? -1 : mapped_addr - INTERNAL_FLASH_MAPPED_ADDRESS + meg ;
 }
@@ -948,7 +945,137 @@ uint32_t platform_flash_phys2mapped (uint32_t phys_addr) {
   return (meg&1) ? -1 : phys_addr + INTERNAL_FLASH_MAPPED_ADDRESS - meg;
 }
 
+uint32_t platform_flash_get_partition (uint32_t part_id, uint32_t *addr) {
+  partition_item_t pt = {0,0,0};
+  system_partition_get_item(SYSTEM_PARTITION_CUSTOMER_BEGIN + part_id, &pt);
+  if (addr) {
+    *addr = pt.addr;
+  }
+  return  pt.type == 0 ? 0 : pt.size;
+}
+/*
+ * The Reboot Config Records are stored in the 4K flash page at offset 0x10000 (in
+ * the linker section .irom0.ptable) and is used for configuration changes that
+ * persist across reboots. This page contains a sequence of records, each of which
+ * is word-aligned and comprises a header and body of length 0-64 words.  The 4-byte
+ * header comprises a length, a RCR id, and two zero fill bytes.  These are written
+ * using flash NAND writing rules, so any unused area (all 0xFF) can be overwritten
+ * by a new record without needing to erase the RCR page.  Ditto any existing
+ * record can be marked as deleted by over-writing the header with the id set to
+ * PLATFORM_RCR_DELETED (0x0).  Note that the last word is not used additions so a
+ * scan for PLATFORM_RCR_FREE will always terminate.
+ *
+ * The number of updates is extremely low, so it is unlikely (but possible) that
+ * the page might fill with the churn of new RCRs, so in this case the write function
+ * compacts the page by eliminating all deleted records.  This does require a flash
+ * sector erase.
+ *
+ * NOTE THAT THIS ALGO ISN'T 100% ROBUST, eg. a powerfail between the erase and the
+ * wite-back will leave the page unitialised; ditto a powerfail between the record
+ * appned and old deletion will leave two records.  However this is better than the
+ * general integrity of SPIFFS, for example and the vulnerable window is typically
+ * less than 1 mSec every configuration change.
+ */
+extern uint32_t _irom0_text_start[];
+#define RCR_WORD(i) (_irom0_text_start[i])
+#define WORDSIZE sizeof(uint32_t)
+#define FLASH_SECTOR_WORDS (INTERNAL_FLASH_SECTOR_SIZE/WORDSIZE)
+
+uint32_t platform_rcr_read (uint8_t rec_id, void **rec) {
+//DEBUG os_printf("platform_rcr_read(%d,%08x)\n",rec_id,rec);
+    platform_rcr_t *rcr = (platform_rcr_t *) &RCR_WORD(0);
+    uint32_t i = 0;
+   /*
+    * Chain down the RCR page looking for a record that matches the record
+    * ID. If found return the size of the record and optionally its address.
+    */
+   while (1) {
+        // copy RCR header into RAM to avoid unaligned exceptions
+        platform_rcr_t r = (platform_rcr_t) RCR_WORD(i);
+        if (r.id == rec_id) {
+            if (rec) *rec = &RCR_WORD(i+1);
+            return r.len * WORDSIZE;
+        } else if (r.id == PLATFORM_RCR_FREE) {
+            break;
+        }
+        i += 1 + r.len;
+    }
+    return ~0;
+}
+
+/*
+ * Chain down the RCR page and look for an existing record that matches the record
+ * ID and the first free record.  If there is enough room, then append the new
+ * record and mark any previous record as deleted.  If the page is full then GC,
+ * erase the page and rewrite with the GCed content.
+ */
+#define MAXREC 65
+uint32_t platform_rcr_write (uint8_t rec_id, const void *inrec, uint8_t n) {
+    uint32_t nwords = (n+WORDSIZE-1) / WORDSIZE;
+    uint32_t reclen = (nwords+1)*WORDSIZE;
+    uint32_t *prev=NULL, *new = NULL;
+
+    // make local stack copy of inrec including header and any trailing fill bytes
+    uint32_t rec[MAXREC];
+    if (nwords >= MAXREC)
+        return ~0;
+    rec[0] = 0; rec[nwords] = 0;
+    ((platform_rcr_t *) rec)->id = rec_id;
+    ((platform_rcr_t *) rec)->len = nwords;
+    memcpy(rec+1, inrec, n);  // let memcpy handle 0 and odd byte cases
+
+    // find previous copy if any and exit if the replacement is the same value
+    uint8_t np = platform_rcr_read (rec_id, (void **) &prev);
+    if (prev && !os_memcmp(prev-1, rec, reclen))
+        return n;
+
+    // find next free slot
+    platform_rcr_read (PLATFORM_RCR_FREE, (void **) &new);
+    uint32_t nfree = &RCR_WORD(FLASH_SECTOR_WORDS) - new;
+
+    // Is there enough room to fit the rec in the RCR page?
+    if (nwords < nfree) {  // Note inequality needed to leave at least one all set word
+        uint32_t addr = platform_flash_mapped2phys((uint32_t)&new[-1]);
+        platform_s_flash_write(rec, addr, reclen);
+
+        if (prev) { // If a previous exists, then overwrite the hdr as DELETED
+            platform_rcr_t rcr = {0};
+            addr = platform_flash_mapped2phys((uint32_t)&prev[-1]);
+            rcr.id = PLATFORM_RCR_DELETED; rcr.len = np/WORDSIZE;
+            platform_s_flash_write(&rcr, addr, WORDSIZE);
+        }
+
+    } else {
+        platform_rcr_t *rcr = (platform_rcr_t *) &RCR_WORD(0), newrcr = {0};
+        uint32_t flash_addr = platform_flash_mapped2phys((uint32_t)&RCR_WORD(0));
+        uint32_t *buf, i, l, pass;
+
+        for (pass = 1; pass <= 2; pass++)  {
+            for (i = 0, l = 0; i < FLASH_SECTOR_WORDS - nfree; ) {
+                platform_rcr_t r = rcr[i]; // again avoid unaligned exceptions
+                if (r.id == PLATFORM_RCR_FREE)
+                    break;
+                if (r.id != PLATFORM_RCR_DELETED && r.id != rec_id) {
+                    if (pass == 2) memcpy(buf + l, rcr + i, (r.len + 1)*WORDSIZE);
+                    l += r.len + 1;
+                }
+                i += r.len + 1;
+            }
+            if (pass == 2) memcpy(buf + l, rec, reclen);
+            l += nwords + 1;
+            if (pass == 1) buf = malloc(l * WORDSIZE);
+
+            if (l >= FLASH_SECTOR_WORDS || !buf)
+                return ~0;
+        }
+        platform_flash_erase_sector(flash_addr/INTERNAL_FLASH_SECTOR_SIZE);
+        platform_s_flash_write(buf, flash_addr, l*WORDSIZE);
+        free(buf);
+    }
+    return nwords*WORDSIZE;
+}
+
 void* platform_print_deprecation_note( const char *msg, const char *time_frame)
 {
-  c_printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
+  printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
 }

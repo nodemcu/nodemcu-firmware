@@ -5,10 +5,11 @@
 #include "platform.h"
 #include "lmem.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <strings.h>
+#include <stddef.h>
 
-#include "c_types.h"
+#include <stdint.h>
 #include "mem.h"
 #include "osapi.h"
 #include "lwip/err.h"
@@ -875,14 +876,14 @@ static void net_dns_static_cb(const char *name, ip_addr_t *ipaddr, void *callbac
     addr = *ipaddr;
   else addr.addr = 0xFFFFFFFF;
   int cb_ref = ((int*)callback_arg)[0];
-  c_free(callback_arg);
+  free(callback_arg);
   lua_State *L = lua_getstate();
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, cb_ref);
   lua_pushnil(L);
   if (addr.addr != 0xFFFFFFFF) {
     char iptmp[20];
-    size_t ipl = c_sprintf(iptmp, IPSTR, IP2STR(&addr.addr));
+    size_t ipl = sprintf(iptmp, IPSTR, IP2STR(&addr.addr));
     lua_pushlstring(L, iptmp, ipl);
   } else {
     lua_pushnil(L);
@@ -906,7 +907,7 @@ static int net_dns_static( lua_State* L ) {
   if (cbref == LUA_NOREF) {
     return luaL_error(L, "wrong callback");
   }
-  int *cbref_ptr = c_zalloc(sizeof(int));
+  int *cbref_ptr = calloc(1, sizeof(int));
   cbref_ptr[0] = cbref;
   ip_addr_t addr;
   err_t err = dns_gethostbyname(domain, &addr, net_dns_static_cb, cbref_ptr);
@@ -917,7 +918,7 @@ static int net_dns_static( lua_State* L ) {
     return 0;
   } else {
     int e = lwip_lua_checkerr(L, err);
-    c_free(cbref_ptr);
+    free(cbref_ptr);
     return e;
   }
   return 0;
@@ -958,7 +959,7 @@ static int net_getdnsserver( lua_State* L ) {
     lua_pushnil( L );
   } else {
     char temp[20] = {0};
-    c_sprintf(temp, IPSTR, IP2STR( &ipaddr.addr ) );
+    sprintf(temp, IPSTR, IP2STR( &ipaddr.addr ) );
     lua_pushstring( L, temp );
   }
 
@@ -968,79 +969,79 @@ static int net_getdnsserver( lua_State* L ) {
 #pragma mark - Tables
 
 #ifdef TLS_MODULE_PRESENT
-extern const LUA_REG_TYPE tls_cert_map[];
+LROT_EXTERN(tls_cert);
 #endif
 
 // Module function map
-static const LUA_REG_TYPE net_tcpserver_map[] = {
-  { LSTRKEY( "listen" ),  LFUNCVAL( net_listen ) },
-  { LSTRKEY( "getaddr" ), LFUNCVAL( net_getaddr ) },
-  { LSTRKEY( "close" ),   LFUNCVAL( net_close ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( net_delete ) },
-  { LSTRKEY( "__index" ), LROVAL( net_tcpserver_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(net_tcpserver)
+  LROT_FUNCENTRY( listen, net_listen )
+  LROT_FUNCENTRY( getaddr, net_getaddr )
+  LROT_FUNCENTRY( close, net_close )
+  LROT_FUNCENTRY( __gc, net_delete )
+  LROT_TABENTRY( __index, net_tcpserver )
+LROT_END( net_tcpserver, net_tcpserver, 0 )
 
-static const LUA_REG_TYPE net_tcpsocket_map[] = {
-  { LSTRKEY( "connect" ), LFUNCVAL( net_connect ) },
-  { LSTRKEY( "close" ),   LFUNCVAL( net_close ) },
-  { LSTRKEY( "on" ),      LFUNCVAL( net_on ) },
-  { LSTRKEY( "send" ),    LFUNCVAL( net_send ) },
-  { LSTRKEY( "hold" ),    LFUNCVAL( net_hold ) },
-  { LSTRKEY( "unhold" ),  LFUNCVAL( net_unhold ) },
-  { LSTRKEY( "dns" ),     LFUNCVAL( net_dns ) },
-  { LSTRKEY( "ttl" ),     LFUNCVAL( net_ttl ) },
-  { LSTRKEY( "getpeer" ), LFUNCVAL( net_getpeer ) },
-  { LSTRKEY( "getaddr" ), LFUNCVAL( net_getaddr ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( net_delete ) },
-  { LSTRKEY( "__index" ), LROVAL( net_tcpsocket_map ) },
-  { LNILKEY, LNILVAL }
-};
 
-static const LUA_REG_TYPE net_udpsocket_map[] = {
-  { LSTRKEY( "listen" ),  LFUNCVAL( net_listen ) },
-  { LSTRKEY( "close" ),   LFUNCVAL( net_close ) },
-  { LSTRKEY( "on" ),      LFUNCVAL( net_on ) },
-  { LSTRKEY( "send" ),    LFUNCVAL( net_send ) },
-  { LSTRKEY( "dns" ),     LFUNCVAL( net_dns ) },
-  { LSTRKEY( "ttl" ),     LFUNCVAL( net_ttl ) },
-  { LSTRKEY( "getaddr" ), LFUNCVAL( net_getaddr ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( net_delete ) },
-  { LSTRKEY( "__index" ), LROVAL( net_udpsocket_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(net_tcpsocket)
+  LROT_FUNCENTRY( connect, net_connect )
+  LROT_FUNCENTRY( close, net_close )
+  LROT_FUNCENTRY( on, net_on )
+  LROT_FUNCENTRY( send, net_send )
+  LROT_FUNCENTRY( hold, net_hold )
+  LROT_FUNCENTRY( unhold, net_unhold )
+  LROT_FUNCENTRY( dns, net_dns )
+  LROT_FUNCENTRY( ttl, net_ttl )
+  LROT_FUNCENTRY( getpeer, net_getpeer )
+  LROT_FUNCENTRY( getaddr, net_getaddr )
+  LROT_FUNCENTRY( __gc, net_delete )
+  LROT_TABENTRY( __index, net_tcpsocket )
+LROT_END( net_tcpsocket, net_tcpsocket, 0 )
 
-static const LUA_REG_TYPE net_dns_map[] = {
-  { LSTRKEY( "setdnsserver" ), LFUNCVAL( net_setdnsserver ) },
-  { LSTRKEY( "getdnsserver" ), LFUNCVAL( net_getdnsserver ) },
-  { LSTRKEY( "resolve" ),      LFUNCVAL( net_dns_static ) },
-  { LNILKEY, LNILVAL }
-};
 
-static const LUA_REG_TYPE net_map[] = {
-  { LSTRKEY( "createServer" ),     LFUNCVAL( net_createServer ) },
-  { LSTRKEY( "createConnection" ), LFUNCVAL( net_createConnection ) },
-  { LSTRKEY( "createUDPSocket" ),  LFUNCVAL( net_createUDPSocket ) },
-  { LSTRKEY( "multicastJoin"),     LFUNCVAL( net_multicastJoin ) },
-  { LSTRKEY( "multicastLeave"),    LFUNCVAL( net_multicastLeave ) },
-  { LSTRKEY( "dns" ),              LROVAL( net_dns_map ) },
+LROT_BEGIN(net_udpsocket)
+  LROT_FUNCENTRY( listen, net_listen )
+  LROT_FUNCENTRY( close, net_close )
+  LROT_FUNCENTRY( on, net_on )
+  LROT_FUNCENTRY( send, net_send )
+  LROT_FUNCENTRY( dns, net_dns )
+  LROT_FUNCENTRY( ttl, net_ttl )
+  LROT_FUNCENTRY( getaddr, net_getaddr )
+  LROT_FUNCENTRY( __gc, net_delete )
+  LROT_TABENTRY( __index, net_udpsocket )
+LROT_END( net_udpsocket, net_udpsocket, 0 )
+
+
+LROT_BEGIN(net_dns)
+  LROT_FUNCENTRY( setdnsserver, net_setdnsserver )
+  LROT_FUNCENTRY( getdnsserver, net_getdnsserver )
+  LROT_FUNCENTRY( resolve, net_dns_static )
+LROT_END( net_dns, net_dns, 0 )
+
+
+LROT_BEGIN(net)
+  LROT_FUNCENTRY( createServer, net_createServer )
+  LROT_FUNCENTRY( createConnection, net_createConnection )
+  LROT_FUNCENTRY( createUDPSocket, net_createUDPSocket )
+  LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
+  LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
+  LROT_TABENTRY( dns, net_dns )
 #ifdef TLS_MODULE_PRESENT
-  { LSTRKEY( "cert" ),             LROVAL( tls_cert_map ) },
+  LROT_TABENTRY( cert, tls_cert )
 #endif
-  { LSTRKEY( "TCP" ),              LNUMVAL( TYPE_TCP ) },
-  { LSTRKEY( "UDP" ),              LNUMVAL( TYPE_UDP ) },
-  { LSTRKEY( "__metatable" ),      LROVAL( net_map ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_NUMENTRY( TCP, TYPE_TCP )
+  LROT_NUMENTRY( UDP, TYPE_UDP )
+  LROT_TABENTRY( __metatable, net )
+LROT_END( net, net, 0 )
+
 
 int luaopen_net( lua_State *L ) {
   igmp_init();
 
-  luaL_rometatable(L, NET_TABLE_TCP_SERVER, (void *)net_tcpserver_map);
-  luaL_rometatable(L, NET_TABLE_TCP_CLIENT, (void *)net_tcpsocket_map);
-  luaL_rometatable(L, NET_TABLE_UDP_SOCKET, (void *)net_udpsocket_map);
+  luaL_rometatable(L, NET_TABLE_TCP_SERVER, LROT_TABLEREF(net_tcpserver));
+  luaL_rometatable(L, NET_TABLE_TCP_CLIENT, LROT_TABLEREF(net_tcpsocket));
+  luaL_rometatable(L, NET_TABLE_UDP_SOCKET, LROT_TABLEREF(net_udpsocket));
 
   return 0;
 }
 
-NODEMCU_MODULE(NET, "net", net_map, luaopen_net);
+NODEMCU_MODULE(NET, "net", net, luaopen_net);

@@ -101,7 +101,7 @@
 #define isfixedstack(x)	testbit((x)->marked, FIXEDSTACKBIT)
 #define fixedstack(x)	l_setbit((x)->marked, FIXEDSTACKBIT)
 #define unfixedstack(x)	resetbit((x)->marked, FIXEDSTACKBIT)
-#ifdef LUA_FLASH_STORE
+#ifndef LUA_CROSS_COMPILER
 #define isLFSobject(x)  testbit(getmarked(x), LFSBIT)
 #define stringfix(s)    if (!test2bits(getmarked(&(s)->tsv), FIXEDBIT, LFSBIT)) {l_setbit((s)->tsv.marked, FIXEDBIT);}
 #else

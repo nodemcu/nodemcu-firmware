@@ -6,7 +6,7 @@
 
 
 #include "module.h"
-#include "c_limits.h"
+#include <limits.h>
 
 #include "lauxlib.h"
 
@@ -119,20 +119,20 @@ static int bit_clear( lua_State* L )
   return 1;
 }
 
-static const LUA_REG_TYPE bit_map[] = {
-  { LSTRKEY( "bnot" ),    LFUNCVAL( bit_bnot ) },
-  { LSTRKEY( "band" ),    LFUNCVAL( bit_band ) },
-  { LSTRKEY( "bor" ),     LFUNCVAL( bit_bor ) },
-  { LSTRKEY( "bxor" ),    LFUNCVAL( bit_bxor ) },
-  { LSTRKEY( "lshift" ),  LFUNCVAL( bit_lshift ) },
-  { LSTRKEY( "rshift" ),  LFUNCVAL( bit_rshift ) },
-  { LSTRKEY( "arshift" ), LFUNCVAL( bit_arshift ) },
-  { LSTRKEY( "bit" ),     LFUNCVAL( bit_bit ) },
-  { LSTRKEY( "set" ),     LFUNCVAL( bit_set ) },
-  { LSTRKEY( "clear" ),   LFUNCVAL( bit_clear ) },
-  { LSTRKEY( "isset" ),   LFUNCVAL( bit_isset ) },
-  { LSTRKEY( "isclear" ), LFUNCVAL( bit_isclear ) },
-  { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(bit)
+  LROT_FUNCENTRY( bnot, bit_bnot )
+  LROT_FUNCENTRY( band, bit_band )
+  LROT_FUNCENTRY( bor, bit_bor )
+  LROT_FUNCENTRY( bxor, bit_bxor )
+  LROT_FUNCENTRY( lshift, bit_lshift )
+  LROT_FUNCENTRY( rshift, bit_rshift )
+  LROT_FUNCENTRY( arshift, bit_arshift )
+  LROT_FUNCENTRY( bit, bit_bit )
+  LROT_FUNCENTRY( set, bit_set )
+  LROT_FUNCENTRY( clear, bit_clear )
+  LROT_FUNCENTRY( isset, bit_isset )
+  LROT_FUNCENTRY( isclear, bit_isclear )
+LROT_END( bit, NULL, 0 )
 
-NODEMCU_MODULE(BIT, "bit", bit_map, NULL);
+
+NODEMCU_MODULE(BIT, "bit", bit, NULL);

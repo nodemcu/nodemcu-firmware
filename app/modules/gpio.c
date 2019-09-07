@@ -6,8 +6,8 @@
 #include "lmem.h"
 #include "platform.h"
 #include "user_interface.h"
-#include "c_types.h"
-#include "c_string.h"
+#include <stdint.h>
+#include <string.h>
 #include "gpio.h"
 #include "hw_timer.h"
 
@@ -319,32 +319,32 @@ static int lgpio_serout( lua_State* L )
 #undef DELAY_TABLE_MAX_LEN
 
 #ifdef LUA_USE_MODULES_GPIO_PULSE
-extern const LUA_REG_TYPE gpio_pulse_map[];
+LROT_EXTERN(gpio_pulse);
 extern int gpio_pulse_init(lua_State *);
 #endif
 
 // Module function map
-static const LUA_REG_TYPE gpio_map[] = {
-  { LSTRKEY( "mode" ),   LFUNCVAL( lgpio_mode ) },
-  { LSTRKEY( "read" ),   LFUNCVAL( lgpio_read ) },
-  { LSTRKEY( "write" ),  LFUNCVAL( lgpio_write ) },
-  { LSTRKEY( "serout" ), LFUNCVAL( lgpio_serout ) },
+LROT_BEGIN(gpio)
+  LROT_FUNCENTRY( mode, lgpio_mode )
+  LROT_FUNCENTRY( read, lgpio_read )
+  LROT_FUNCENTRY( write, lgpio_write )
+  LROT_FUNCENTRY( serout, lgpio_serout )
 #ifdef LUA_USE_MODULES_GPIO_PULSE
-  { LSTRKEY( "pulse" ),  LROVAL( gpio_pulse_map ) }, //declared in gpio_pulse.c
+  LROT_TABENTRY( pulse, gpio_pulse )
 #endif
 #ifdef GPIO_INTERRUPT_ENABLE
-  { LSTRKEY( "trig" ),   LFUNCVAL( lgpio_trig ) },
-  { LSTRKEY( "INT" ),    LNUMVAL( INTERRUPT ) },
+  LROT_FUNCENTRY( trig, lgpio_trig )
+  LROT_NUMENTRY( INT, INTERRUPT )
 #endif
-  { LSTRKEY( "OUTPUT" ),    LNUMVAL( OUTPUT ) },
-  { LSTRKEY( "OPENDRAIN" ), LNUMVAL( OPENDRAIN ) },
-  { LSTRKEY( "INPUT" ),     LNUMVAL( INPUT ) },
-  { LSTRKEY( "HIGH" ),      LNUMVAL( HIGH ) },
-  { LSTRKEY( "LOW" ),       LNUMVAL( LOW ) },
-  { LSTRKEY( "FLOAT" ),     LNUMVAL( FLOAT ) },
-  { LSTRKEY( "PULLUP" ),    LNUMVAL( PULLUP ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_NUMENTRY( OUTPUT, OUTPUT )
+  LROT_NUMENTRY( OPENDRAIN, OPENDRAIN )
+  LROT_NUMENTRY( INPUT, INPUT )
+  LROT_NUMENTRY( HIGH, HIGH )
+  LROT_NUMENTRY( LOW, LOW )
+  LROT_NUMENTRY( FLOAT, FLOAT )
+  LROT_NUMENTRY( PULLUP, PULLUP )
+LROT_END( gpio, NULL, 0 )
+
 
 int luaopen_gpio( lua_State *L ) {
 #ifdef LUA_USE_MODULES_GPIO_PULSE
@@ -362,4 +362,4 @@ int luaopen_gpio( lua_State *L ) {
   return 0;
 }
 
-NODEMCU_MODULE(GPIO, "gpio", gpio_map, luaopen_gpio);
+NODEMCU_MODULE(GPIO, "gpio", gpio, luaopen_gpio);

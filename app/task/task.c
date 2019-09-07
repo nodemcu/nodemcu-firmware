@@ -3,7 +3,7 @@
  */
 #include "task/task.h"
 #include "mem.h"
-#include "c_stdio.h"
+#include <stdio.h>
 
 #define TASK_HANDLE_MONIKER 0x68680000
 #define TASK_HANDLE_MASK    0xFFF80000

@@ -226,7 +226,7 @@ Detailed instructions available in the image's README. As for available config o
 
 ### For LFS
 
-1. In `app/include/user_config.h` uncomment `#define LUA_FLASH_STORE 0x10000` and adjust the size if necessary.
+1. In `app/include/user_config.h` edit the line `#define LUA_FLASH_STORE 0x0` and adjust the size to that needed.  Note that this must be a multiple of 4Kb.
 2. Build as you would otherwise build with this image (i.e. see its README)
 
 [↑ back to matrix](#task-os-selector)
@@ -238,24 +238,25 @@ _Note that this Docker image is not an official NodeMCU offering. It's maintaine
 A local copy of `luac.cross` is only needed if you want to compile the Lua files into an LFS image yourself and you are _not_ using Docker.
 
 ### Windows
-Windows 10 users can install and use the Windows Subsystem for Linux (WSL). Alternatively all Windows users can [install Cygwin](https://www.cygwin.com/install.html) (only Cygwin core + **gcc-core** + **gnu make**). Either way, you will need a copy of the `luac.cross` compiler:
-
--  You can either download this from Terry's fileserver.  The [ELF variant](http://files.ellisons.org.uk/esp8266/luac.cross) is used for all recent Linux and WSL flavours, or the [cygwin binary](http://files.ellisons.org.uk/esp8266/luac.cross.cygwin)) for the Cygwin environment.
--  Or you can compile it yourself by downloading the current NodeMCU sources (this [ZIPfile](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)); edit the `app/includes/user_config.h` file and then `cd` to the `app/lua/luac_cross` and run make to build the compiler in the NodeMCU firmware root directory.  Note that the `luac.cross` make only needs the host toolchain which is installed by default.
-
-### macOS
-
-TBD
-
-1. `$ cd app/lua/luac_cross`
-2. `$ make`
+Windows users can compile a local copy of the `luac.cross` executable for use on a development PC.  To this you need:
+-  To download the current NodeMCU sources (this [dev ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/dev.zip) or [master ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)) and unpack into a local folder, say `C:\nodemcu-firmware`; choose the master / dev versions to match the firmware version that you want to use.  If you want an Integer buld then edit the `app/includes/user_config.h` file to select this. 
+-  Choose a preferred toolchain to build your `luac.cross` executable.  You have a number of options here:
+   -  If you are a Windows 10 user with the Windows Subsystem for Linux (WSL) already installed, then this is a Linux environment so you can follow the [Linux build instructions](#Linux) below.
+   -  A less resource intensive option which works on all Windows OS variants is to use Cygwin or MinGW, which are varaint ports of the [GNU Compiler Collection](https://gcc.gnu.org/) to Windows and which can both compile to native Windows executables.  In the case of Cygwin, [install Cygwin](https://www.cygwin.com/install.html) (selecting the Cygwin core + **gcc-core** + **gnu make** in the install menu). In the case of MinGW you again only need a very basic C build environment so [install the MINGW](http://mingw.org/wiki/InstallationHOWTOforMinGW); you only need the core GCC and mingw32-make.  Both both these create a **Cmd** prompt which paths in the relevant GCC toolchain. Switch to the `app/lua/luac_cross` and run make to build the compiler in the NodeMCU firmware root directory.  You do this by rning `make` in Cygwin and `mingw32-make -f mingw32-Makefile.mak` in MinGW.
+   -  If you can C development experience on the PC and a version of the MS Visual Studio on your PC then you can also simply build the image using the supplied MS project file.
+-  Once you have a built `luac.cross` executable, then you can use this to compile Lua code into an LFS image.  You might wish to move this out of the nodemcu-firmware hierarchy, since this folder hierarchy is no longer required and can be trashed. 
 
 ### Linux
 
-TBD
+-  Ensure that you have a "build essential" GCC toolchain installed.
+-  Download the current NodeMCU sources (this [dev ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/dev.zip) or [master ZIP file](https://github.com/nodemcu/nodemcu-firmware/archive/master.zip)) and unpack into a local folder; choose the master / dev versions to match the firmware version that you want to use.  If you want an Integer buld then edit the `app/includes/user_config.h` file to select this.
+-  Change directory to the `app/lua/luac_cross` sub-folder
+-  Run `make` to build the executable.
+-  Once you have a built `luac.cross` executable, then you can use this to compile Lua code into an LFS image.  You might wish to move this out of the nodemcu-firmware hierarchy, since this folder hierarchy is no longer required and can be trashed.
 
-1. `$ cd app/lua/luac_cross`
-2. `$ make`
+### macOS
+
+As for [Linux](#linux)
 
 [↑ back to matrix](#task-os-selector)
 
@@ -324,5 +325,46 @@ Once the LFS image file is on SPIFFS, you can execute the [node.flashreload()](.
 -  LFS is now in the require path, so `require 'myModule'` works as expected.
 
 Do a protected call of this `_init` code: `pcall(node.flashindex("_init"))` and check the error status.  See [Programming Techniques and Approachs](lfs.md#programming-techniques-and-approachs) in the LFS whitepaper for a more detailed description.
+
+### Minimal LFS example
+
+Below is a brief overview of building and running the simplest LFS-based system possible.
+
+To use LFS, start with a version of NodeMCU with `LUA_FLASH_STORE` set in `app/include/user_config.h`, and load it on the ESP8266 in the usual way (whatever that is for your set up).
+
+Then build an LFS file system. This can be done in several ways, as discussed above; one of the easiest is to use `luac.cross -f -o lfs.img *lua` on the host machine.  The file [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua) should definitely be included in the image, since it's the easiest way of registering the LFS modules.  The `lfs.img` file can then be downloaded to the ESP8266 just like any other file.
+
+The next step is to tell the ESP8266 that the LFS file system exists.  This is done with eg.  [node.flashreload("lfs.img")](../modules/node/#nodeflashreload), which will trigger a reset, followed by [node.flashindex("_init")()](../modules/node/#nodeflashindex) to register the modules; logging into the esp8266 and running the following commands gives an overview of the command sequence, given a main.lua file consisting of the line `print("LFS main() module")`
+
+```
+>
+> node.flashreload("lfs.img")
+-- flashreload() triggers a reset here.
+> print(LFS)
+nil
+> node.flashindex("_init")()
+-- LFS is now initialised.
+> print(LFS)
+table: 3fff06e0
+-- List the modules in the LFS.
+> print(LFS._list)
+table: 3fff0728
+> for k,v in pairs(LFS._list)  do print(k,v) end
+1    dummy_strings
+2    _init
+3    main
+-- Call the LFS main() module.
+> LFS.main()
+LFS main() module
+> 
+```
+
+Note that no error correction has been used, since the commands are intended to be entered at a terminal, and errors will become obvious.
+
+Then you should set up the ESP8266 boot process to check for the existence of an LFS image and run whichever module is required.  Once the LFS module table has been registered by running [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua) , running an LFS module is simple a matter of eg: `LFS.main()`.
+
+[node.flashreload()](../modules/node/#nodeflashreload) need only be rerun if the LFS image is updated; after it has loaded the LFS image into flash memory the original file (in SPIFFS) is no longer used, and can be deleted.
+
+Once LFS is known to work, then modules such as [lua_examples/lfs/dummy_strings.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/dummy_strings.lua) can usefully be added, together of course with effective error checking.
 
 [↑ back to matrix](#task-os-selector)

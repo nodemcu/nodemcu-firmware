@@ -9,10 +9,10 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include "user_interface.h"
 #include "driver/rotary.h"
-#include "../libc/c_stdlib.h"
 
 #define MASK(x)		(1 << ROTARY_ ## x ## _INDEX)
 
@@ -145,7 +145,7 @@ static int lrotary_setup( lua_State* L )
   callback_free(L, id, ROTARY_ALL);
 
   if (!data[id]) {
-    data[id] = (DATA *) c_zalloc(sizeof(DATA));
+    data[id] = (DATA *) calloc(1, sizeof(DATA));
     if (!data[id]) {
       return -1;
     }
@@ -211,7 +211,7 @@ static int lrotary_close( lua_State* L )
   DATA *d = data[id];
   if (d) {
     data[id] = NULL;
-    c_free(d);
+    free(d);
   }
 
   if (rotary_close( id )) {
@@ -395,20 +395,20 @@ static int rotary_open(lua_State *L)
 }
 
 // Module function map
-static const LUA_REG_TYPE rotary_map[] = {
-  { LSTRKEY( "setup" ),    LFUNCVAL( lrotary_setup ) },
-  { LSTRKEY( "close" ),    LFUNCVAL( lrotary_close ) },
-  { LSTRKEY( "on" ),       LFUNCVAL( lrotary_on    ) },
-  { LSTRKEY( "getpos" ),   LFUNCVAL( lrotary_getpos) },
-  { LSTRKEY( "TURN" ),     LNUMVAL( MASK(TURN)    ) },
-  { LSTRKEY( "PRESS" ),    LNUMVAL( MASK(PRESS)   ) },
-  { LSTRKEY( "RELEASE" ),  LNUMVAL( MASK(RELEASE) ) },
-  { LSTRKEY( "LONGPRESS" ),LNUMVAL( MASK(LONGPRESS) ) },
-  { LSTRKEY( "CLICK" ),    LNUMVAL( MASK(CLICK)   ) },
-  { LSTRKEY( "DBLCLICK" ), LNUMVAL( MASK(DBLCLICK)) },
-  { LSTRKEY( "ALL" ),      LNUMVAL( ROTARY_ALL     ) },
+LROT_BEGIN(rotary)
+  LROT_FUNCENTRY( setup, lrotary_setup )
+  LROT_FUNCENTRY( close, lrotary_close )
+  LROT_FUNCENTRY( on, lrotary_on )
+  LROT_FUNCENTRY( getpos, lrotary_getpos )
+  LROT_NUMENTRY( TURN, MASK(TURN) )
+  LROT_NUMENTRY( PRESS, MASK(PRESS) )
+  LROT_NUMENTRY( RELEASE, MASK(RELEASE) )
+  LROT_NUMENTRY( LONGPRESS, MASK(LONGPRESS) )
+  LROT_NUMENTRY( CLICK, MASK(CLICK) )
+  LROT_NUMENTRY( DBLCLICK, MASK(DBLCLICK) )
+  LROT_NUMENTRY( ALL, ROTARY_ALL )
 
-  { LNILKEY, LNILVAL }
-};
+LROT_END( rotary, NULL, 0 )
 
-NODEMCU_MODULE(ROTARY, "rotary", rotary_map, rotary_open);
+
+NODEMCU_MODULE(ROTARY, "rotary", rotary, rotary_open);

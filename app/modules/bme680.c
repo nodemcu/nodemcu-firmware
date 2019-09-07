@@ -9,7 +9,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_math.h"
+#include <math.h>
 
 #include "bme680_defs.h"
 
@@ -534,14 +534,14 @@ static int bme680_lua_dewpoint(lua_State* L) {
 	return 1;
 }
 
-static const LUA_REG_TYPE bme680_map[] = {
-	{ LSTRKEY( "setup" ), LFUNCVAL(bme680_lua_setup)},
-	{ LSTRKEY( "startreadout" ),  LFUNCVAL(bme680_lua_startreadout)},
-	{ LSTRKEY( "qfe2qnh" ),  LFUNCVAL(bme680_lua_qfe2qnh)},
-	{ LSTRKEY( "altitude" ),  LFUNCVAL(bme680_lua_altitude)},
-	{ LSTRKEY( "dewpoint" ),  LFUNCVAL(bme680_lua_dewpoint)},
-	{ LSTRKEY( "read" ),  LFUNCVAL(bme680_lua_read)},
-	{ LNILKEY, LNILVAL}
-};
+LROT_BEGIN(bme680)
+  LROT_FUNCENTRY( setup, bme680_lua_setup )
+  LROT_FUNCENTRY( startreadout, bme680_lua_startreadout )
+  LROT_FUNCENTRY( qfe2qnh, bme680_lua_qfe2qnh )
+  LROT_FUNCENTRY( altitude, bme680_lua_altitude )
+  LROT_FUNCENTRY( dewpoint, bme680_lua_dewpoint )
+  LROT_FUNCENTRY( read, bme680_lua_read )
+LROT_END( bme680, NULL, 0 )
 
-NODEMCU_MODULE(BME680, "bme680", bme680_map, NULL);
+
+NODEMCU_MODULE(BME680, "bme680", bme680, NULL);

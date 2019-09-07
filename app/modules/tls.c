@@ -8,10 +8,10 @@
 #include "platform.h"
 #include "lmem.h"
 
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stddef.h>
 
-#include "c_types.h"
+#include <stdint.h>
 #include "mem.h"
 #include "lwip/ip_addr.h"
 #include "espconn.h"
@@ -31,7 +31,7 @@ __attribute__((section(".servercert.flash"))) unsigned char tls_server_cert_area
 __attribute__((section(".clientcert.flash"))) unsigned char tls_client_cert_area[INTERNAL_FLASH_SECTOR_SIZE];
 
 extern int tls_socket_create( lua_State *L );
-extern const LUA_REG_TYPE tls_cert_map[];
+LROT_EXTERN(tls_cert);
 
 typedef struct {
   struct espconn *pesp_conn;
@@ -77,10 +77,10 @@ static void tls_socket_cleanup(tls_socket_ud *ud) {
   if (ud->pesp_conn) {
     espconn_secure_disconnect(ud->pesp_conn);
     if (ud->pesp_conn->proto.tcp) {
-      c_free(ud->pesp_conn->proto.tcp);
+      free(ud->pesp_conn->proto.tcp);
       ud->pesp_conn->proto.tcp = NULL;
     }
-    c_free(ud->pesp_conn);
+    free(ud->pesp_conn);
     ud->pesp_conn = NULL;
   }
   lua_State *L = lua_getstate();
@@ -167,7 +167,7 @@ static void tls_socket_dns_cb( const char* domain, const ip_addr_t *ip_addr, tls
       lua_pushnil(L);
     } else {
       char tmp[20];
-      c_sprintf(tmp, IPSTR, IP2STR(&addr.addr));
+      sprintf(tmp, IPSTR, IP2STR(&addr.addr));
       lua_pushstring(L, tmp);
     }
     lua_call(L, 2, 0);
@@ -205,13 +205,13 @@ static int tls_socket_connect( lua_State *L ) {
   if (domain == NULL)
     return luaL_error(L, "invalid domain");
 
-  ud->pesp_conn = (struct espconn*)c_zalloc(sizeof(struct espconn));
+  ud->pesp_conn = (struct espconn*)calloc(1,sizeof(struct espconn));
   if(!ud->pesp_conn)
     return luaL_error(L, "not enough memory");
   ud->pesp_conn->proto.udp = NULL;
-  ud->pesp_conn->proto.tcp = (esp_tcp *)c_zalloc(sizeof(esp_tcp));
+  ud->pesp_conn->proto.tcp = (esp_tcp *)calloc(1,sizeof(esp_tcp));
   if(!ud->pesp_conn->proto.tcp){
-    c_free(ud->pesp_conn);
+    free(ud->pesp_conn);
     ud->pesp_conn = NULL;
     return luaL_error(L, "not enough memory");
   }
@@ -349,7 +349,7 @@ static int tls_socket_getpeer( lua_State *L ) {
 
   if(ud->pesp_conn && ud->pesp_conn->proto.tcp->remote_port != 0){
     char temp[20] = {0};
-    c_sprintf(temp, IPSTR, IP2STR( &(ud->pesp_conn->proto.tcp->remote_ip) ) );
+    sprintf(temp, IPSTR, IP2STR( &(ud->pesp_conn->proto.tcp->remote_ip) ) );
     lua_pushstring( L, temp );
     lua_pushinteger( L, ud->pesp_conn->proto.tcp->remote_port );
   } else {
@@ -382,10 +382,10 @@ static int tls_socket_delete( lua_State *L ) {
   if (ud->pesp_conn) {
     espconn_secure_disconnect(ud->pesp_conn);
     if (ud->pesp_conn->proto.tcp) {
-      c_free(ud->pesp_conn->proto.tcp);
+      free(ud->pesp_conn->proto.tcp);
       ud->pesp_conn->proto.tcp = NULL;
     }
-    c_free(ud->pesp_conn);
+    free(ud->pesp_conn);
     ud->pesp_conn = NULL;
   }
 
@@ -507,7 +507,7 @@ static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_m
   memset(buffer, 0xff, buffer_limit - buffer);
 
   // Lets see if it matches what is already there....
-  if (c_memcmp(buffer_base, flash_memory, INTERNAL_FLASH_SECTOR_SIZE) != 0) {
+  if (memcmp(buffer_base, flash_memory, INTERNAL_FLASH_SECTOR_SIZE) != 0) {
     // Starts being dangerous
     if (platform_flash_erase_sector(flash_offset / INTERNAL_FLASH_SECTOR_SIZE) != PLATFORM_OK) {
       luaM_free(L, buffer_base);
@@ -613,40 +613,40 @@ static int tls_set_debug_threshold(lua_State *L) {
 }
 #endif
 
-static const LUA_REG_TYPE tls_socket_map[] = {
-  { LSTRKEY( "connect" ), LFUNCVAL( tls_socket_connect ) },
-  { LSTRKEY( "close" ),   LFUNCVAL( tls_socket_close ) },
-  { LSTRKEY( "on" ),      LFUNCVAL( tls_socket_on ) },
-  { LSTRKEY( "send" ),    LFUNCVAL( tls_socket_send ) },
-  { LSTRKEY( "hold" ),    LFUNCVAL( tls_socket_hold ) },
-  { LSTRKEY( "unhold" ),  LFUNCVAL( tls_socket_unhold ) },
-  { LSTRKEY( "getpeer" ), LFUNCVAL( tls_socket_getpeer ) },
-  { LSTRKEY( "__gc" ),    LFUNCVAL( tls_socket_delete ) },
-  { LSTRKEY( "__index" ), LROVAL( tls_socket_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(tls_socket)
+  LROT_FUNCENTRY( connect, tls_socket_connect )
+  LROT_FUNCENTRY( close, tls_socket_close )
+  LROT_FUNCENTRY( on, tls_socket_on )
+  LROT_FUNCENTRY( send, tls_socket_send )
+  LROT_FUNCENTRY( hold, tls_socket_hold )
+  LROT_FUNCENTRY( unhold, tls_socket_unhold )
+  LROT_FUNCENTRY( getpeer, tls_socket_getpeer )
+  LROT_FUNCENTRY( __gc, tls_socket_delete )
+  LROT_TABENTRY( __index, tls_socket )
+LROT_END( tls_socket, tls_socket, 0 )
 
-const LUA_REG_TYPE tls_cert_map[] = {
-  { LSTRKEY( "verify" ),           LFUNCVAL( tls_cert_verify ) },
-  { LSTRKEY( "auth" ),             LFUNCVAL( tls_cert_auth ) },
-  { LSTRKEY( "__index" ),          LROVAL( tls_cert_map ) },
-  { LNILKEY, LNILVAL }
-};
 
-static const LUA_REG_TYPE tls_map[] = {
-  { LSTRKEY( "createConnection" ), LFUNCVAL( tls_socket_create ) },
+LROT_PUBLIC_BEGIN(tls_cert)
+  LROT_FUNCENTRY( verify, tls_cert_verify )
+  LROT_FUNCENTRY( auth, tls_cert_auth )
+  LROT_TABENTRY( __index, tls_cert )
+LROT_END( tls_cert, tls_cert, 0 )
+
+
+LROT_BEGIN(tls)
+  LROT_FUNCENTRY( createConnection, tls_socket_create )
 #if defined(MBEDTLS_DEBUG_C)
-  { LSTRKEY( "setDebug" ),         LFUNCVAL( tls_set_debug_threshold ) },
+  LROT_FUNCENTRY( setDebug, tls_set_debug_threshold )
 #endif
-  { LSTRKEY( "cert" ),             LROVAL( tls_cert_map ) },
-  { LSTRKEY( "__metatable" ),      LROVAL( tls_map ) },
-  { LNILKEY, LNILVAL }
-};
+  LROT_TABENTRY( cert, tls_cert )
+  LROT_TABENTRY( __metatable, tls )
+LROT_END( tls, tls, 0 )
+
 
 int luaopen_tls( lua_State *L ) {
-  luaL_rometatable(L, "tls.socket", (void *)tls_socket_map);  // create metatable for net.server
+  luaL_rometatable(L, "tls.socket", LROT_TABLEREF(tls_socket));
   return 0;
 }
 
-NODEMCU_MODULE(TLS, "tls", tls_map, luaopen_tls);
+NODEMCU_MODULE(TLS, "tls", tls, luaopen_tls);
 #endif

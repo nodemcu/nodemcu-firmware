@@ -203,15 +203,15 @@ static int xpt2046_getPositionAvg( lua_State* L ) {
 }
 
 // Module function map
-static const LUA_REG_TYPE xpt2046_map[] = {
-  { LSTRKEY( "isTouched"),      LFUNCVAL(xpt2046_isTouched)  },
-  { LSTRKEY( "getRaw"   ),      LFUNCVAL(xpt2046_getRaw)     },
-  { LSTRKEY( "getPosition"),    LFUNCVAL(xpt2046_getPosition)},
-  { LSTRKEY( "getPositionAvg"), LFUNCVAL(xpt2046_getPositionAvg)},
-  { LSTRKEY( "setCalibration"), LFUNCVAL(xpt2046_setCalibration)},
-  { LSTRKEY( "init"    ),       LFUNCVAL(xpt2046_init)      },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(xpt2046)
+  LROT_FUNCENTRY( isTouched, xpt2046_isTouched )
+  LROT_FUNCENTRY( getRaw, xpt2046_getRaw )
+  LROT_FUNCENTRY( getPosition, xpt2046_getPosition )
+  LROT_FUNCENTRY( getPositionAvg, xpt2046_getPositionAvg )
+  LROT_FUNCENTRY( setCalibration, xpt2046_setCalibration )
+  LROT_FUNCENTRY( init, xpt2046_init )
+LROT_END( xpt2046, NULL, 0 )
 
 
-NODEMCU_MODULE(XPT2046, "xpt2046", xpt2046_map, NULL);
+
+NODEMCU_MODULE(XPT2046, "xpt2046", xpt2046, NULL);

@@ -22,7 +22,6 @@
 //#define LUA_USE_MODULES_CRON
 //#define LUA_USE_MODULES_CRYPTO
 #define LUA_USE_MODULES_DHT
-//#define LUA_USE_MODULES_DS18B20
 //#define LUA_USE_MODULES_ENCODER
 //#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
 #define LUA_USE_MODULES_FILE
@@ -43,7 +42,9 @@
 #define LUA_USE_MODULES_OW
 //#define LUA_USE_MODULES_PCM
 //#define LUA_USE_MODULES_PERF
+//#define LUA_USE_MODULES_PIPE
 //#define LUA_USE_MODULES_PWM
+//#define LUA_USE_MODULES_PWM2
 //#define LUA_USE_MODULES_RC
 //#define LUA_USE_MODULES_RFSWITCH
 //#define LUA_USE_MODULES_ROTARY

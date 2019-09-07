@@ -17,8 +17,8 @@
 * a small numeric value that is known not to clash.
 *******************************************************************************/
 #include "platform.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include "ets_sys.h"
 #include "os_type.h"
 #include "osapi.h"
@@ -85,6 +85,15 @@ static int32_t last_timer_load;
 
 #define LOCK()   do { ets_intr_lock(); lock_count++; } while (0)
 #define UNLOCK()   if (--lock_count == 0) ets_intr_unlock()
+
+/*
+ * It is possible to reserve the timer exclusively, for one module alone.
+ * This way the interrupt overhead is minimal.
+ * Drawback is that no other module can use the timer at same time.
+ * If flag if true, indicates someone reserved the timer exclusively.
+ * Unline shared used (default), only one client can reserve exclusively.
+ */
+static bool reserved_exclusively = false;
 
 /*
  * To start a timer, you write to FRCI_LOAD_ADDRESS, and that starts the counting
@@ -275,6 +284,8 @@ static void ICACHE_RAM_ATTR insert_active_tu(timer_user *tu) {
 *******************************************************************************/
 bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks(os_param_t owner, uint32_t ticks)
 {
+  if (reserved_exclusively) return false;
+
   timer_user *tu = find_tu_and_remove(owner);
 
   if (!tu) {
@@ -322,6 +333,8 @@ bool ICACHE_RAM_ATTR platform_hw_timer_arm_us(os_param_t owner, uint32_t microse
 *******************************************************************************/
 bool platform_hw_timer_set_func(os_param_t owner, void (* user_hw_timer_cb_set)(os_param_t), os_param_t arg)
 {
+  if (reserved_exclusively) return false;
+
   timer_user *tu = find_tu(owner);
   if (!tu) {
     return false;
@@ -393,6 +406,8 @@ static void ICACHE_RAM_ATTR hw_timer_nmi_cb(void)
 *******************************************************************************/
 uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner)
 {
+  if (reserved_exclusively) return 0;
+
   timer_user *tu = find_tu(owner);
   if (!tu) {
     return 0;
@@ -412,7 +427,7 @@ uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner)
 
 /******************************************************************************
 * FunctionName : platform_hw_timer_init
-* Description  : initialize the hardware isr timer
+* Description  : initialize the hardware isr timer for shared use i.e. multiple owners.
 * Parameters   : os_param_t owner
 * FRC1_TIMER_SOURCE_TYPE source_type:
 *                         FRC1_SOURCE,    timer use frc1 isr as isr source.
@@ -424,10 +439,12 @@ uint32_t ICACHE_RAM_ATTR platform_hw_timer_get_delay_ticks(os_param_t owner)
 *******************************************************************************/
 bool platform_hw_timer_init(os_param_t owner, FRC1_TIMER_SOURCE_TYPE source_type, bool autoload)
 {
+  if (reserved_exclusively) return false;
+
   timer_user *tu = find_tu_and_remove(owner);
 
   if (!tu) {
-    tu = (timer_user *) c_malloc(sizeof(*tu));
+    tu = (timer_user *) malloc(sizeof(*tu));
     if (!tu) {
       return false;
     }
@@ -456,19 +473,25 @@ bool platform_hw_timer_init(os_param_t owner, FRC1_TIMER_SOURCE_TYPE source_type
 
 /******************************************************************************
 * FunctionName : platform_hw_timer_close
-* Description  : ends use of the hardware isr timer
-* Parameters   : os_param_t owner
+* Description  : ends use of the hardware isr timer.
+* Parameters   : os_param_t owner.
 * Returns      : true if it worked
 *******************************************************************************/
 bool ICACHE_RAM_ATTR platform_hw_timer_close(os_param_t owner)
 {
+  if (reserved_exclusively) return false;
+
   timer_user *tu = find_tu_and_remove(owner);
 
   if (tu) {
-    LOCK();
-    tu->next = inactive;
-    inactive = tu;
-    UNLOCK();
+    if (tu == inactive) {
+      inactive == NULL;
+    } else {
+      LOCK();
+      tu->next = inactive;
+      inactive = tu;
+      UNLOCK();
+    }
   }
 
   // This will never actually run....
@@ -484,3 +507,91 @@ bool ICACHE_RAM_ATTR platform_hw_timer_close(os_param_t owner)
   return true;
 }
 
+/******************************************************************************
+* FunctionName : platform_hw_timer_init_exclusive
+* Description  : initialize the hardware isr timer for exclusive use by the caller.
+* Parameters   : FRC1_TIMER_SOURCE_TYPE source_type:
+*                         FRC1_SOURCE,    timer use frc1 isr as isr source.
+*                         NMI_SOURCE,     timer use nmi isr as isr source.
+* bool autoload:
+*                         0,  not autoload,
+*                         1,  autoload mode,
+* void (* frc1_timer_cb)(os_param_t): timer callback function when FRC1_SOURCE is being used
+*	os_param_t arg                    : argument passed to frc1_timer_cb or NULL
+* void (* nmi_timer_cb)(void)       : timer callback function when NMI_SOURCE is being used
+* Returns      : true if it worked, false if the timer is already served for shared or exclusive use
+*******************************************************************************/
+bool platform_hw_timer_init_exclusive(
+  FRC1_TIMER_SOURCE_TYPE source_type,
+  bool autoload,
+  void (* frc1_timer_cb)(os_param_t),
+  os_param_t arg,
+  void (*nmi_timer_cb)(void)
+  )
+{
+  if (active || inactive) return false;
+  if (reserved_exclusively) return false;
+  reserved_exclusively = true;
+
+  RTC_REG_WRITE(FRC1_CTRL_ADDRESS, (autoload ? FRC1_AUTO_LOAD : 0) | DIVIDED_BY_16 | FRC1_ENABLE_TIMER | TM_EDGE_INT);
+
+  if (source_type == NMI_SOURCE) {
+    ETS_FRC_TIMER1_NMI_INTR_ATTACH(nmi_timer_cb);
+  } else {
+    ETS_FRC_TIMER1_INTR_ATTACH((void (*)(void *))frc1_timer_cb, (void*)arg);
+  }
+
+  TM1_EDGE_INT_ENABLE();
+  ETS_FRC1_INTR_ENABLE();
+
+  return true;
+}
+
+/******************************************************************************
+* FunctionName : platform_hw_timer_close_exclusive
+* Description  : ends use of the hardware isr timer in exclusive mode.
+* Parameters   :
+* Returns      : true if it worked
+*******************************************************************************/
+bool ICACHE_RAM_ATTR platform_hw_timer_close_exclusive()
+{
+  if (!reserved_exclusively) return true;
+  reserved_exclusively = false;
+
+  /* Set no reload mode */
+  RTC_REG_WRITE(FRC1_CTRL_ADDRESS, DIVIDED_BY_16 | TM_EDGE_INT);
+
+  TM1_EDGE_INT_DISABLE();
+  ETS_FRC1_INTR_DISABLE();
+
+  return true;
+}
+
+/******************************************************************************
+* FunctionName : platform_hw_timer_arm_ticks_exclusive
+* Description  : set a trigger timer delay for this timer.
+* Parameters   : uint32 ticks :
+* Returns      : true if it worked
+*******************************************************************************/
+bool ICACHE_RAM_ATTR platform_hw_timer_arm_ticks_exclusive(uint32_t ticks)
+{
+  RTC_REG_WRITE(FRC1_LOAD_ADDRESS, ticks);
+  return true;
+}
+
+/******************************************************************************
+* FunctionName : platform_hw_timer_arm_us_exclusive
+* Description  : set a trigger timer delay for this timer.
+* Parameters   : uint32 microseconds :
+* in autoload mode
+*                         50 ~ 0x7fffff;  for FRC1 source.
+*                         100 ~ 0x7fffff;  for NMI source.
+* in non autoload mode:
+*                         10 ~ 0x7fffff;
+* Returns      : true if it worked
+*******************************************************************************/
+bool ICACHE_RAM_ATTR platform_hw_timer_arm_us_exclusive(uint32_t microseconds)
+{
+  RTC_REG_WRITE(FRC1_LOAD_ADDRESS, US_TO_RTC_TIMER_TICKS(microseconds));
+  return true;
+}

@@ -11,6 +11,7 @@
 #include "lauxlib.h"
 
 #define U8X8_USE_PINS
+#define U8X8_WITH_USER_PTR
 #include "u8g2.h"
 #include "u8x8_nodemcu_hal.h"
 
@@ -540,51 +541,76 @@ static int lu8g2_setPowerSave( lua_State *L )
   return 0;
 }
 
+static int lu8g2_updateDisplay( lua_State *L )
+{
+  GET_U8G2();
 
-static const LUA_REG_TYPE lu8g2_display_map[] = {
-  { LSTRKEY( "clearBuffer" ),        LFUNCVAL( lu8g2_clearBuffer ) },
-  { LSTRKEY( "drawBox" ),            LFUNCVAL( lu8g2_drawBox ) },
-  { LSTRKEY( "drawCircle" ),         LFUNCVAL( lu8g2_drawCircle ) },
-  { LSTRKEY( "drawDisc" ),           LFUNCVAL( lu8g2_drawDisc ) },
-  { LSTRKEY( "drawEllipse" ),        LFUNCVAL( lu8g2_drawEllipse ) },
-  { LSTRKEY( "drawFilledEllipse" ),  LFUNCVAL( lu8g2_drawFilledEllipse ) },
-  { LSTRKEY( "drawFrame" ),          LFUNCVAL( lu8g2_drawFrame ) },
-  { LSTRKEY( "drawGlyph" ),          LFUNCVAL( lu8g2_drawGlyph ) },
-  { LSTRKEY( "drawHLine" ),          LFUNCVAL( lu8g2_drawHLine ) },
-  { LSTRKEY( "drawLine" ),           LFUNCVAL( lu8g2_drawLine ) },
-  { LSTRKEY( "drawPixel" ),          LFUNCVAL( lu8g2_drawPixel ) },
-  { LSTRKEY( "drawRBox" ),           LFUNCVAL( lu8g2_drawRBox ) },
-  { LSTRKEY( "drawRFrame" ),         LFUNCVAL( lu8g2_drawRFrame ) },
-  { LSTRKEY( "drawStr" ),            LFUNCVAL( lu8g2_drawStr ) },
-  { LSTRKEY( "drawTriangle" ),       LFUNCVAL( lu8g2_drawTriangle ) },
-  { LSTRKEY( "drawUTF8" ),           LFUNCVAL( lu8g2_drawUTF8 ) },
-  { LSTRKEY( "drawVLine" ),          LFUNCVAL( lu8g2_drawVLine ) },
-  { LSTRKEY( "drawXBM" ),            LFUNCVAL( lu8g2_drawXBM ) },
-  { LSTRKEY( "getAscent" ),          LFUNCVAL( lu8g2_getAscent ) },
-  { LSTRKEY( "getDescent" ),         LFUNCVAL( lu8g2_getDescent ) },
-  { LSTRKEY( "getStrWidth" ),        LFUNCVAL( lu8g2_getStrWidth ) },
-  { LSTRKEY( "getUTF8Width" ),       LFUNCVAL( lu8g2_getUTF8Width ) },
-  { LSTRKEY( "sendBuffer" ),         LFUNCVAL( lu8g2_sendBuffer ) },
-  { LSTRKEY( "setBitmapMode" ),      LFUNCVAL( lu8g2_setBitmapMode ) },
-  { LSTRKEY( "setContrast" ),        LFUNCVAL( lu8g2_setContrast ) },
-  { LSTRKEY( "setDisplayRotation" ), LFUNCVAL( lu8g2_setDisplayRotation ) },
-  { LSTRKEY( "setDrawColor" ),       LFUNCVAL( lu8g2_setDrawColor ) },
-  { LSTRKEY( "setFlipMode" ),        LFUNCVAL( lu8g2_setFlipMode ) },
-  { LSTRKEY( "setFont" ),            LFUNCVAL( lu8g2_setFont ) },
-  { LSTRKEY( "setFontDirection" ),   LFUNCVAL( lu8g2_setFontDirection ) },
-  { LSTRKEY( "setFontMode" ),        LFUNCVAL( lu8g2_setFontMode ) },
-  { LSTRKEY( "setFontPosBaseline" ), LFUNCVAL( lu8g2_setFontPosBaseline ) },
-  { LSTRKEY( "setFontPosBottom" ),   LFUNCVAL( lu8g2_setFontPosBottom ) },
-  { LSTRKEY( "setFontPosTop" ),      LFUNCVAL( lu8g2_setFontPosTop ) },
-  { LSTRKEY( "setFontPosCenter" ),   LFUNCVAL( lu8g2_setFontPosCenter ) },
-  { LSTRKEY( "setFontRefHeightAll" ),          LFUNCVAL( lu8g2_setFontRefHeightAll ) },
-  { LSTRKEY( "setFontRefHeightExtendedText" ), LFUNCVAL( lu8g2_setFontRefHeightExtendedText ) },
-  { LSTRKEY( "setFontRefHeightText" ),         LFUNCVAL( lu8g2_setFontRefHeightText ) },
-  { LSTRKEY( "setPowerSave" ),       LFUNCVAL( lu8g2_setPowerSave ) },
-  //{ LSTRKEY( "__gc" ),    LFUNCVAL( lu8g2_display_free ) },
-  { LSTRKEY( "__index" ), LROVAL( lu8g2_display_map ) },
-  {LNILKEY, LNILVAL}
-};
+  u8g2_UpdateDisplay( u8g2 );
+
+  return 0;
+}
+
+static int lu8g2_updateDisplayArea( lua_State *L )
+{
+  GET_U8G2();
+  int stack = 1;
+
+  int x = luaL_checkint( L, ++stack );
+  int y = luaL_checkint( L, ++stack );
+  int w = luaL_checkint( L, ++stack );
+  int h = luaL_checkint( L, ++stack );
+
+  u8g2_UpdateDisplayArea( u8g2, x, y, w, h );
+
+  return 0;
+}
+
+
+LROT_BEGIN(lu8g2_display)
+  LROT_FUNCENTRY( clearBuffer, lu8g2_clearBuffer )
+  LROT_FUNCENTRY( drawBox, lu8g2_drawBox )
+  LROT_FUNCENTRY( drawCircle, lu8g2_drawCircle )
+  LROT_FUNCENTRY( drawDisc, lu8g2_drawDisc )
+  LROT_FUNCENTRY( drawEllipse, lu8g2_drawEllipse )
+  LROT_FUNCENTRY( drawFilledEllipse, lu8g2_drawFilledEllipse )
+  LROT_FUNCENTRY( drawFrame, lu8g2_drawFrame )
+  LROT_FUNCENTRY( drawGlyph, lu8g2_drawGlyph )
+  LROT_FUNCENTRY( drawHLine, lu8g2_drawHLine )
+  LROT_FUNCENTRY( drawLine, lu8g2_drawLine )
+  LROT_FUNCENTRY( drawPixel, lu8g2_drawPixel )
+  LROT_FUNCENTRY( drawRBox, lu8g2_drawRBox )
+  LROT_FUNCENTRY( drawRFrame, lu8g2_drawRFrame )
+  LROT_FUNCENTRY( drawStr, lu8g2_drawStr )
+  LROT_FUNCENTRY( drawTriangle, lu8g2_drawTriangle )
+  LROT_FUNCENTRY( drawUTF8, lu8g2_drawUTF8 )
+  LROT_FUNCENTRY( drawVLine, lu8g2_drawVLine )
+  LROT_FUNCENTRY( drawXBM, lu8g2_drawXBM )
+  LROT_FUNCENTRY( getAscent, lu8g2_getAscent )
+  LROT_FUNCENTRY( getDescent, lu8g2_getDescent )
+  LROT_FUNCENTRY( getStrWidth, lu8g2_getStrWidth )
+  LROT_FUNCENTRY( getUTF8Width, lu8g2_getUTF8Width )
+  LROT_FUNCENTRY( sendBuffer, lu8g2_sendBuffer )
+  LROT_FUNCENTRY( setBitmapMode, lu8g2_setBitmapMode )
+  LROT_FUNCENTRY( setContrast, lu8g2_setContrast )
+  LROT_FUNCENTRY( setDisplayRotation, lu8g2_setDisplayRotation )
+  LROT_FUNCENTRY( setDrawColor, lu8g2_setDrawColor )
+  LROT_FUNCENTRY( setFlipMode, lu8g2_setFlipMode )
+  LROT_FUNCENTRY( setFont, lu8g2_setFont )
+  LROT_FUNCENTRY( setFontDirection, lu8g2_setFontDirection )
+  LROT_FUNCENTRY( setFontMode, lu8g2_setFontMode )
+  LROT_FUNCENTRY( setFontPosBaseline, lu8g2_setFontPosBaseline )
+  LROT_FUNCENTRY( setFontPosBottom, lu8g2_setFontPosBottom )
+  LROT_FUNCENTRY( setFontPosTop, lu8g2_setFontPosTop )
+  LROT_FUNCENTRY( setFontPosCenter, lu8g2_setFontPosCenter )
+  LROT_FUNCENTRY( setFontRefHeightAll, lu8g2_setFontRefHeightAll )
+  LROT_FUNCENTRY( setFontRefHeightExtendedText, lu8g2_setFontRefHeightExtendedText )
+  LROT_FUNCENTRY( setFontRefHeightText, lu8g2_setFontRefHeightText )
+  LROT_FUNCENTRY( setPowerSave, lu8g2_setPowerSave )
+  LROT_FUNCENTRY( updateDispla, lu8g2_updateDisplay )
+  LROT_FUNCENTRY( updateDisplayArea, lu8g2_updateDisplayArea )
+  //  LROT_FUNCENTRY( __gc, lu8g2_display_free )
+  LROT_TABENTRY( __index, lu8g2_display )
+LROT_END( lu8g2_display, lu8g2_display, LROT_MASK_GC_INDEX )
 
 
 uint8_t u8x8_d_overlay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr);
@@ -622,11 +648,11 @@ static int ldisplay_i2c( lua_State *L, display_setup_fn_t setup_fn )
   u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
   ud->font_ref = LUA_NOREF;
   ud->host_ref = LUA_NOREF;
-  /* the i2c driver id is forwarded in the hal member */
-  ext_u8g2->hal = id >= 0 ? (void *)id : NULL;
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  /* the i2c driver id is forwarded in the user pointer */
+  u8x8->user_ptr = id >= 0 ? (void *)id : NULL;
 
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_i2c, u8x8_gpio_and_delay_nodemcu );
 
@@ -715,11 +741,11 @@ static int ldisplay_spi( lua_State *L, display_setup_fn_t setup_fn )
   u8g2_nodemcu_t *ext_u8g2 = &(ud->u8g2);
   ud->font_ref = LUA_NOREF;
   ud->host_ref = host_ref;
-  /* the spi host id is forwarded in the hal member */
-  ext_u8g2->hal = host ? (void *)(host->host) : NULL;
 
   u8g2_t *u8g2 = (u8g2_t *)ext_u8g2;
   u8x8_t *u8x8 = (u8x8_t *)u8g2;
+  /* the spi host id is forwarded in the user pointer */
+  u8x8->user_ptr = host ? (void *)(host->host) : NULL;
 
   setup_fn( u8g2, U8G2_R0, u8x8_byte_nodemcu_spi, u8x8_gpio_and_delay_nodemcu );
 
@@ -781,36 +807,33 @@ U8G2_DISPLAY_TABLE_SPI
 
 #undef U8G2_FONT_TABLE_ENTRY
 #undef U8G2_DISPLAY_TABLE_ENTRY
-#define U8G2_DISPLAY_TABLE_ENTRY(function, binding) \
-  { LSTRKEY( #binding ),           LFUNCVAL( l ## binding ) },
-
-static const LUA_REG_TYPE lu8g2_map[] = {
+#define U8G2_DISPLAY_TABLE_ENTRY(function, binding) LROT_FUNCENTRY(binding,l ## binding)
+LROT_BEGIN(lu8g2)
   U8G2_DISPLAY_TABLE_I2C
   U8G2_DISPLAY_TABLE_SPI
   //
   // Register fonts
-#define U8G2_FONT_TABLE_ENTRY(font) \
-  { LSTRKEY( #font ),              LUDATA( (void *)(u8g2_ ## font) ) },
+#define U8G2_FONT_TABLE_ENTRY(font) LROT_LUDENTRY(font, u8g2_ ## font)
   U8G2_FONT_TABLE
   //
-  { LSTRKEY( "DRAW_UPPER_RIGHT" ), LNUMVAL( U8G2_DRAW_UPPER_RIGHT ) },
-  { LSTRKEY( "DRAW_UPPER_LEFT" ),  LNUMVAL( U8G2_DRAW_UPPER_LEFT ) },
-  { LSTRKEY( "DRAW_LOWER_RIGHT" ), LNUMVAL( U8G2_DRAW_LOWER_RIGHT ) },
-  { LSTRKEY( "DRAW_LOWER_LEFT" ),  LNUMVAL( U8G2_DRAW_LOWER_LEFT ) },
-  { LSTRKEY( "DRAW_ALL" ),         LNUMVAL( U8G2_DRAW_ALL ) },
-  { LSTRKEY( "R0" ),               LUDATA( (void *)U8G2_R0 ) },
-  { LSTRKEY( "R1" ),               LUDATA( (void *)U8G2_R1 ) },
-  { LSTRKEY( "R2" ),               LUDATA( (void *)U8G2_R2 ) },
-  { LSTRKEY( "R3" ),               LUDATA( (void *)U8G2_R3 ) },
-  { LSTRKEY( "MIRROR" ),           LUDATA( (void *)U8G2_MIRROR ) },
-  {LNILKEY, LNILVAL}
-};
+  LROT_NUMENTRY( DRAW_UPPER_RIGHT, U8G2_DRAW_UPPER_RIGHT )
+  LROT_NUMENTRY( DRAW_UPPER_LEFT, U8G2_DRAW_UPPER_LEFT )
+  LROT_NUMENTRY( DRAW_LOWER_RIGHT, U8G2_DRAW_LOWER_RIGHT )
+  LROT_NUMENTRY( DRAW_LOWER_LEFT, U8G2_DRAW_LOWER_LEFT )
+  LROT_NUMENTRY( DRAW_ALL, U8G2_DRAW_ALL )
+  LROT_LUDENTRY( R0, U8G2_R0 )
+  LROT_LUDENTRY( R1, U8G2_R1 )
+  LROT_LUDENTRY( R2, U8G2_R2 )
+  LROT_LUDENTRY( R3, U8G2_R3 )
+  LROT_LUDENTRY( MIRROR, U8G2_MIRROR )
+LROT_END( lu8g2, NULL, 0 )
+
 
 int luaopen_u8g2( lua_State *L ) {
-  luaL_rometatable(L, "u8g2.display", (void *)lu8g2_display_map);
+  luaL_rometatable(L, "u8g2.display", LROT_TABLEREF(lu8g2_display));
   return 0;
 }
 
-NODEMCU_MODULE(U8G2, "u8g2", lu8g2_map, luaopen_u8g2);
+NODEMCU_MODULE(U8G2, "u8g2", lu8g2, luaopen_u8g2);
 
 #endif /* defined(LUA_USE_MODULES_U8G2) || defined(ESP_PLATFORM) */

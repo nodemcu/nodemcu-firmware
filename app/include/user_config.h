@@ -7,8 +7,8 @@
 // this out and enabling the explicitly size, e.g. FLASH_4M.  Valid sizes are
 // FLASH_512K, FLASH_1M, FLASH_2M, FLASH_4M, FLASH_8M, FLASH_16M.
 
-#define FLASH_AUTOSIZE
-//#define FLASH_4M
+//#define FLASH_AUTOSIZE
+#define FLASH_4M
 
 
 // The firmware now selects a baudrate of 115,200 by default, but the driver
@@ -41,12 +41,12 @@
 
 // The Lua Flash Store (LFS) allows you to store Lua code in Flash memory and
 // the Lua VMS will execute this code directly from flash without needing any
-// RAM overhead.  If you want to enable LFS then set the following define to
-// the size of the store that you need.  This can be any multiple of 4kB up to
-// a maximum 256Kb.
+// RAM overhead.  You can now configure LFS directly in the System Partition
+// Table insted of at compile time. However for backwards compatibility setting
+// LUA_FLASH_STORE defines the default partition size if the NodeMCU partition
+// tool is not used.
 
-//#define LUA_FLASH_STORE 0x10000
-
+//#define LUA_FLASH_STORE                   0x10000
 
 // By default Lua executes the file init.lua at start up.  The following
 // define allows you to replace this with an alternative startup.  Warning:
@@ -71,11 +71,14 @@
 // general, limiting the size of the FS only to what your application needs
 // gives the fastest start-up and imaging times.
 
+// You can now configure SPIFFS size and position directly in the System
+// Partition Table.  However backwards compatibility SPIFFS_MAX_FILESYSTEM_SIZE
+// can be set and this defines the default SPIFFS partition size if the NodeMCU
+// partition tool is not used. The value (~0x0) means the maximum size remaining.
+
 #define BUILD_SPIFFS
-//#define SPIFFS_FIXED_LOCATION        0x100000
-//#define SPIFFS_MAX_FILESYSTEM_SIZE    0x20000
-//#define SPIFFS_SIZE_1M_BOUNDARY
 #define SPIFFS_CACHE 1          // Enable if you use you SPIFFS in R/W mode
+//#define SPIFFS_MAX_FILESYSTEM_SIZE 0x20000
 #define SPIFFS_MAX_OPEN_FILES 4 // maximum number of open files for SPIFFS
 #define FS_OBJ_NAME_LEN 31      // maximum length of a filename
 
@@ -156,6 +159,22 @@
 #define ENDUSER_SETUP_AP_SSID "SetupGadget"
 
 
+// I2C software driver partially supports use of GPIO16 (D0) pin for SCL line.
+// GPIO16 does not support open-drain mode and works in push-pull mode,
+// so clock stretching will not be possible, because circuit in slave device that
+// supposed to drive SCL low during stretching will not be capable to hold SCL low.
+// Also I2C speed will be limited to no more than 400000 Hz (FAST mode).
+// This define is does not have an effect on an old driver (see I2C_MASTER_OLD_VERSION).
+
+//#define I2C_MASTER_GPIO16_ENABLE
+
+// For compatibility reasons you can switch to old version of I2C software driver.
+// It does not support changing speed, have only one bus id = 0, does not support GPIO16
+// and works only in Standard(slow) mode with clock speed around 50kHz.
+
+#define I2C_MASTER_OLD_VERSION
+
+
 // The following sections are only relevent for those developers who are
 // developing modules or core Lua changes and configure how extra diagnostics
 // are enabled in the firmware. These should only be configured if you are
@@ -190,6 +209,24 @@
 // change this if you have tracked the implications through the Firmware sources
 // and understand the these.
 
+#define NODEMCU_EAGLEROM_PARTITION        1
+#define NODEMCU_IROM0TEXT_PARTITION       2
+#define NODEMCU_LFS0_PARTITION            3
+#define NODEMCU_LFS1_PARTITION            4
+#define NODEMCU_TLSCERT_PARTITION         5
+#define NODEMCU_SPIFFS0_PARTITION         6
+#define NODEMCU_SPIFFS1_PARTITION         7
+
+#ifndef LUA_FLASH_STORE
+#  define LUA_FLASH_STORE                 0x0
+#endif
+
+#define SPIFFS_FIXED_LOCATION             0x0
+#ifndef SPIFFS_MAX_FILESYSTEM_SIZE
+#  define SPIFFS_MAX_FILESYSTEM_SIZE      0xFFFFFFFF
+#endif
+//#define SPIFFS_SIZE_1M_BOUNDARY
+
 #define LUA_TASK_PRIO             USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG      2
 #define LUA_OPTIMIZE_DEBUG        2
@@ -207,7 +244,7 @@ extern void luaL_dbgbreak(void);
 #endif
 #endif
 
-#if !defined(LUA_NUMBER_INTEGRAL) && defined (LUA_DWORD_ALIGNED_TVALUES)
+#if !defined(LUA_NUMBER_INTEGRAL) && !defined (LUA_DWORD_ALIGNED_TVALUES)
   #define LUA_PACK_TVALUES
 #else
   #undef LUA_PACK_TVALUES
@@ -217,6 +254,11 @@ extern void luaL_dbgbreak(void);
 #define NODE_DEBUG
 #define COAP_DEBUG
 #endif /* DEVELOP_VERSION */
+
+
+#if !defined(LUA_CROSS_COMPILER) && !defined(dbg_printf)
+extern void dbg_printf(const char *fmt, ...);
+#endif
 
 #ifdef NODE_DEBUG
 #define NODE_DBG dbg_printf
@@ -236,12 +278,7 @@ extern void luaL_dbgbreak(void);
 #define ICACHE_STORE_ATTR __attribute__((aligned(4)))
 #define ICACHE_STRING(x) ICACHE_STRING2(x)
 #define ICACHE_STRING2(x) #x
-#define ICACHE_RAM_ATTR \
-  __attribute__((section(".iram0.text." __FILE__ "." ICACHE_STRING(__LINE__))))
-#define ICACHE_FLASH_RESERVED_ATTR \
-  __attribute__((section(".irom.reserved." __FILE__ "." ICACHE_STRING(__LINE__)),\
-                 used,unused,aligned(INTERNAL_FLASH_SECTOR_SIZE)))
-
+#define ICACHE_RAM_ATTR __attribute__((section(".iram0.text." __FILE__ "." ICACHE_STRING(__LINE__))))
 #ifdef  GPIO_SAFE_NO_INTR_ENABLE
 #define NO_INTR_CODE ICACHE_RAM_ATTR __attribute__ ((noinline))
 #else

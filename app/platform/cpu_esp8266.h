@@ -2,6 +2,9 @@
 #define __CPU_ESP8266_H__
 
 #ifndef NO_CPU_ESP8266_INCLUDE
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include "os_type.h"
 #include "spi_flash.h"
 #include "pin_map.h"
@@ -15,7 +18,13 @@
 #define NUM_PWM               GPIO_PIN_NUM
 #define NUM_ADC               1
 #define NUM_CAN               0
+
+#ifndef I2C_MASTER_OLD_VERSION
+#define NUM_I2C               10
+#else
 #define NUM_I2C               1
+#endif //I2C_MASTER_OLD_VERSION
+
 #define NUM_OW                GPIO_PIN_NUM
 #define NUM_TMR               7
 

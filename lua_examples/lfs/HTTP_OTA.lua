@@ -65,7 +65,7 @@ finalise = function(sck)
   sck:close()
   local s = file.stat(image)
   if (s and size == s.size) then
-    wifi.setmode(wifi.NULLMODE)
+    wifi.setmode(wifi.NULLMODE, false)
     collectgarbage();collectgarbage()
       -- run as separate task to maximise RAM available
     node.task.post(function() node.flashreload(image) end)

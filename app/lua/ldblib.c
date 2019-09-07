@@ -10,17 +10,17 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDIO
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lstring.h"
 #include "lflash.h"
+#include "lrotable.h"
+
 #include "user_modules.h"
-
-
 
 static int db_getregistry (lua_State *L) {
   lua_pushvalue(L, LUA_REGISTRYINDEX);
@@ -28,10 +28,10 @@ static int db_getregistry (lua_State *L) {
 }
 
 static int db_getstrings (lua_State *L) {
-  size_t i,n;
+  size_t i,n=0;
   stringtable *tb;
   GCObject *o;
-#if defined(LUA_FLASH_STORE) && !defined(LUA_CROSS_COMPILER)
+#ifndef LUA_CROSS_COMPILER
   const char *opt = lua_tolstring (L, 1, &n);
   if (n==3 && memcmp(opt, "ROM", 4) == 0) {
     if (G(L)->ROstrt.hash == NULL)
@@ -155,24 +155,24 @@ static int db_getinfo (lua_State *L) {
   if (!lua_getinfo(L1, options, &ar))
     return luaL_argerror(L, arg+2, "invalid option");
   lua_createtable(L, 0, 2);
-  if (c_strchr(options, 'S')) {
+  if (strchr(options, 'S')) {
     settabss(L, "source", ar.source);
     settabss(L, "short_src", ar.short_src);
     settabsi(L, "linedefined", ar.linedefined);
     settabsi(L, "lastlinedefined", ar.lastlinedefined);
     settabss(L, "what", ar.what);
   }
-  if (c_strchr(options, 'l'))
+  if (strchr(options, 'l'))
     settabsi(L, "currentline", ar.currentline);
-  if (c_strchr(options, 'u'))
+  if (strchr(options, 'u'))
     settabsi(L, "nups", ar.nups);
-  if (c_strchr(options, 'n')) {
+  if (strchr(options, 'n')) {
     settabss(L, "name", ar.name);
     settabss(L, "namewhat", ar.namewhat);
   }
-  if (c_strchr(options, 'L'))
+  if (strchr(options, 'L'))
     treatstackoption(L, L1, "activelines");
-  if (c_strchr(options, 'f'))
+  if (strchr(options, 'f'))
     treatstackoption(L, L1, "func");
   return 1;  /* return table */
 }
@@ -261,9 +261,9 @@ static void hookf (lua_State *L, lua_Debug *ar) {
 
 static int makemask (const char *smask, int count) {
   int mask = 0;
-  if (c_strchr(smask, 'c')) mask |= LUA_MASKCALL;
-  if (c_strchr(smask, 'r')) mask |= LUA_MASKRET;
-  if (c_strchr(smask, 'l')) mask |= LUA_MASKLINE;
+  if (strchr(smask, 'c')) mask |= LUA_MASKCALL;
+  if (strchr(smask, 'r')) mask |= LUA_MASKRET;
+  if (strchr(smask, 'l')) mask |= LUA_MASKLINE;
   if (count > 0) mask |= LUA_MASKCOUNT;
   return mask;
 }
@@ -340,19 +340,19 @@ static int db_debug (lua_State *L) {
   for (;;) {
     char buffer[LUA_MAXINPUT];
 #if defined(LUA_USE_STDIO)
-    c_fputs("lua_debug> ", c_stderr);
-    if (c_fgets(buffer, sizeof(buffer), c_stdin) == 0 ||
+    fputs("lua_debug> ", c_stderr);
+    if (fgets(buffer, sizeof(buffer), c_stdin) == 0 ||
 #else
 //    luai_writestringerror("%s", "lua_debug>");
     if (lua_readline(L, buffer, "lua_debug>") == 0 ||
 #endif
-        c_strcmp(buffer, "cont\n") == 0)
+        strcmp(buffer, "cont\n") == 0)
       return 0;
-    if (luaL_loadbuffer(L, buffer, c_strlen(buffer), "=(debug command)") ||
+    if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
         lua_pcall(L, 0, 0, 0)) {
 #if defined(LUA_USE_STDIO)
-      c_fputs(lua_tostring(L, -1), c_stderr);
-      c_fputs("\n", c_stderr);
+      fputs(lua_tostring(L, -1), c_stderr);
+      fputs("\n", c_stderr);
 #else
       luai_writestringerror("%s\n", lua_tostring(L, -1));
 #endif
@@ -417,32 +417,28 @@ static int db_errorfb (lua_State *L) {
   return 1;
 }
 
-#undef MIN_OPT_LEVEL
-#define MIN_OPT_LEVEL 1
-#include "lrodefs.h"
-const LUA_REG_TYPE dblib[] = {
+LROT_PUBLIC_BEGIN(dblib)
 #ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
-  {LSTRKEY("debug"), LFUNCVAL(db_debug)},
-  {LSTRKEY("getfenv"), LFUNCVAL(db_getfenv)},
-  {LSTRKEY("gethook"), LFUNCVAL(db_gethook)},
-  {LSTRKEY("getinfo"), LFUNCVAL(db_getinfo)},
-  {LSTRKEY("getlocal"), LFUNCVAL(db_getlocal)},
+  LROT_FUNCENTRY( debug, db_debug )
+  LROT_FUNCENTRY( getfenv, db_getfenv )
+  LROT_FUNCENTRY( gethook, db_gethook )
+  LROT_FUNCENTRY( getinfo, db_getinfo )
+  LROT_FUNCENTRY( getlocal, db_getlocal )
 #endif
-  {LSTRKEY("getregistry"), LFUNCVAL(db_getregistry)},
-  {LSTRKEY("getstrings"), LFUNCVAL(db_getstrings)},
+  LROT_FUNCENTRY( getregistry, db_getregistry )
+  LROT_FUNCENTRY( getstrings, db_getstrings )
 #ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
-  {LSTRKEY("getmetatable"), LFUNCVAL(db_getmetatable)},
-  {LSTRKEY("getupvalue"), LFUNCVAL(db_getupvalue)},
-  {LSTRKEY("setfenv"), LFUNCVAL(db_setfenv)},
-  {LSTRKEY("sethook"), LFUNCVAL(db_sethook)},
-  {LSTRKEY("setlocal"), LFUNCVAL(db_setlocal)},
-  {LSTRKEY("setmetatable"), LFUNCVAL(db_setmetatable)},
-  {LSTRKEY("setupvalue"), LFUNCVAL(db_setupvalue)},
+  LROT_FUNCENTRY( getmetatable, db_getmetatable )
+  LROT_FUNCENTRY( getupvalue, db_getupvalue )
+  LROT_FUNCENTRY( setfenv, db_setfenv )
+  LROT_FUNCENTRY( sethook, db_sethook )
+  LROT_FUNCENTRY( setlocal, db_setlocal )
+  LROT_FUNCENTRY( setmetatable, db_setmetatable )
+  LROT_FUNCENTRY( setupvalue, db_setupvalue )
 #endif
-  {LSTRKEY("traceback"), LFUNCVAL(db_errorfb)},
-  {LNILKEY, LNILVAL}
-};
+  LROT_FUNCENTRY( traceback, db_errorfb )
+LROT_END(dblib, NULL, 0)
 
 LUALIB_API int luaopen_debug (lua_State *L) {
-  LREGISTER(L, LUA_DBLIBNAME, dblib);
+  return 0;
 }

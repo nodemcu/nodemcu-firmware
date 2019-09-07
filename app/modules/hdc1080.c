@@ -7,9 +7,9 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
-#include "c_math.h"
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
 static const uint32_t hdc1080_i2c_id = 0;
 static const uint8_t hdc1080_i2c_addr = 0x40;
@@ -99,10 +99,10 @@ static int hdc1080_read(lua_State* L) {
     return 2;
 }
 
-static const LUA_REG_TYPE hdc1080_map[] = {
-    { LSTRKEY( "read"  ),        LFUNCVAL( hdc1080_read )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( hdc1080_setup )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(hdc1080)
+  LROT_FUNCENTRY( read, hdc1080_read )
+  LROT_FUNCENTRY( setup, hdc1080_setup )
+LROT_END( hdc1080, NULL, 0 )
 
-NODEMCU_MODULE(HDC1080, "hdc1080", hdc1080_map, NULL);
+
+NODEMCU_MODULE(HDC1080, "hdc1080", hdc1080, NULL);

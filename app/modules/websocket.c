@@ -13,11 +13,11 @@
 #include "platform.h"
 #include "module.h"
 
-#include "c_types.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <stdint.h>
+#include <string.h>
+#include <stddef.h>
 
-#include "websocketclient.h"
+#include "websocket/websocketclient.h"
 
 #define METATABLE_WSCLIENT "websocket.client"
 
@@ -191,14 +191,14 @@ static int websocketclient_connect(lua_State *L) {
 static header_t *realloc_headers(header_t *headers, int new_size) {
   if(headers) {
     for(header_t *header = headers; header->key; header++) {
-      c_free(header->value);
-      c_free(header->key);
+      free(header->value);
+      free(header->key);
     }
-    c_free(headers);
+    free(headers);
   }
   if(!new_size)
     return NULL;
-  return (header_t *)c_malloc(sizeof(header_t) * (new_size + 1));
+  return (header_t *)malloc(sizeof(header_t) * (new_size + 1));
 }
 
 static int websocketclient_config(lua_State *L) {
@@ -225,8 +225,8 @@ static int websocketclient_config(lua_State *L) {
 
       lua_pushnil(L);
       while(lua_next(L, -2)) {
-        header->key = c_strdup(lua_tostring(L, -2));
-        header->value = c_strdup(lua_tostring(L, -1));
+        header->key = strdup(lua_tostring(L, -2));
+        header->value = strdup(lua_tostring(L, -1));
         header++;
         lua_pop(L, 1);
       }
@@ -307,28 +307,26 @@ static int websocketclient_gc(lua_State *L) {
   return 0;
 }
 
-static const LUA_REG_TYPE websocket_map[] =
-{
-  { LSTRKEY("createClient"), LFUNCVAL(websocket_createClient) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(websocket)
+  LROT_FUNCENTRY( createClient, websocket_createClient )
+LROT_END( websocket, NULL, 0 )
 
-static const LUA_REG_TYPE websocketclient_map[] =
-{
-  { LSTRKEY("on"), LFUNCVAL(websocketclient_on) },
-  { LSTRKEY("config"), LFUNCVAL(websocketclient_config) },
-  { LSTRKEY("connect"), LFUNCVAL(websocketclient_connect) },
-  { LSTRKEY("send"), LFUNCVAL(websocketclient_send) },
-  { LSTRKEY("close"), LFUNCVAL(websocketclient_close) },
-  { LSTRKEY("__gc" ), LFUNCVAL(websocketclient_gc) },
-  { LSTRKEY("__index"), LROVAL(websocketclient_map) },
-  { LNILKEY, LNILVAL }
-};
+
+LROT_BEGIN(websocketclient)
+  LROT_FUNCENTRY( on, websocketclient_on )
+  LROT_FUNCENTRY( config, websocketclient_config )
+  LROT_FUNCENTRY( connect, websocketclient_connect )
+  LROT_FUNCENTRY( send, websocketclient_send )
+  LROT_FUNCENTRY( close, websocketclient_close )
+  LROT_FUNCENTRY( __gc, websocketclient_gc )
+  LROT_TABENTRY( __index, websocketclient )
+LROT_END( websocketclient, websocketclient, LROT_MASK_GC_INDEX )
+
 
 int loadWebsocketModule(lua_State *L) {
-  luaL_rometatable(L, METATABLE_WSCLIENT, (void *) websocketclient_map);
+  luaL_rometatable(L, METATABLE_WSCLIENT, LROT_TABLEREF( websocketclient));
 
   return 0;
 }
 
-NODEMCU_MODULE(WEBSOCKET, "websocket", websocket_map, loadWebsocketModule);
+NODEMCU_MODULE(WEBSOCKET, "websocket", websocket, loadWebsocketModule);

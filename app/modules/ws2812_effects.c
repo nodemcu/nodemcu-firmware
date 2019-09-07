@@ -2,9 +2,9 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_math.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 #include "user_interface.h"
 #include "driver/uart.h"
 #include "osapi.h"
@@ -17,8 +17,6 @@
 
 #define DEFAULT_MODE 0
 #define DEFAULT_COLOR 0xFF0000
-
-#define UINT32_MAX 4294967295U
 
 #define SPEED_MIN 0
 #define SPEED_MAX 255
@@ -161,11 +159,11 @@ static int ws2812_effects_init(lua_State *L) {
   // get rid of old state
   if (state != NULL) {
     luaL_unref(L, LUA_REGISTRYINDEX, state->buffer_ref);
-    os_free((void *) state);
+    free((void *) state);
   }
   // Allocate memory and set all to zero
   size_t size = sizeof(ws2812_effects) + buffer->colorsPerLed*sizeof(uint8_t);
-  state = (ws2812_effects *) os_zalloc(size);
+  state = (ws2812_effects *) calloc(1,size);
   // initialize
   state->speed = SPEED_DEFAULT;
   state->mode_delay = DELAY_DEFAULT;
@@ -307,7 +305,7 @@ static int ws2812_effects_mode_blink() {
   else {
     // off
     ws2812_buffer * buffer = state->buffer;
-    c_memset(&buffer->values[0], 0, buffer->size * buffer->colorsPerLed);
+    memset(&buffer->values[0], 0, buffer->size * buffer->colorsPerLed);
   }
   return 0;
 }
@@ -1038,23 +1036,22 @@ static int ws2812_effects_tostring(lua_State* L) {
   return 1;
 }
 
-static const LUA_REG_TYPE ws2812_effects_map[] =
-{
-  { LSTRKEY( "init" ),              LFUNCVAL( ws2812_effects_init )},
-  { LSTRKEY( "set_brightness" ),    LFUNCVAL( ws2812_effects_set_brightness )},
-  { LSTRKEY( "set_color" ),         LFUNCVAL( ws2812_effects_set_color )},
-  { LSTRKEY( "set_speed" ),         LFUNCVAL( ws2812_effects_set_speed )},
-  { LSTRKEY( "set_delay" ),         LFUNCVAL( ws2812_effects_set_delay )},
-  { LSTRKEY( "set_mode" ),          LFUNCVAL( ws2812_effects_set_mode )},
-  { LSTRKEY( "start" ),             LFUNCVAL( ws2812_effects_start )},
-  { LSTRKEY( "stop" ),              LFUNCVAL( ws2812_effects_stop )},
-  { LSTRKEY( "get_delay" ),         LFUNCVAL( ws2812_effects_get_delay )},
-  { LSTRKEY( "get_speed" ),         LFUNCVAL( ws2812_effects_get_speed )},
+LROT_BEGIN(ws2812_effects)
+  LROT_FUNCENTRY( init, ws2812_effects_init )
+  LROT_FUNCENTRY( set_brightness, ws2812_effects_set_brightness )
+  LROT_FUNCENTRY( set_color, ws2812_effects_set_color )
+  LROT_FUNCENTRY( set_speed, ws2812_effects_set_speed )
+  LROT_FUNCENTRY( set_delay, ws2812_effects_set_delay )
+  LROT_FUNCENTRY( set_mode, ws2812_effects_set_mode )
+  LROT_FUNCENTRY( start, ws2812_effects_start )
+  LROT_FUNCENTRY( stop, ws2812_effects_stop )
+  LROT_FUNCENTRY( get_delay, ws2812_effects_get_delay )
+  LROT_FUNCENTRY( get_speed, ws2812_effects_get_speed )
 
-  { LSTRKEY( "__index" ), LROVAL( ws2812_effects_map )},
-  { LSTRKEY( "__tostring" ), LFUNCVAL( ws2812_effects_tostring )},
-  { LNILKEY, LNILVAL}
-};
+  LROT_TABENTRY( __index, ws2812_effects )
+  LROT_FUNCENTRY( __tostring, ws2812_effects_tostring )
+LROT_END( ws2812_effects, ws2812_effects, LROT_MASK_INDEX )
 
 
-NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects_map, NULL);
+
+NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects, NULL);

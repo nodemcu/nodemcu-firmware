@@ -6,13 +6,13 @@
 
 #ifndef LOCAL_LUA
 #include "module.h"
-#include "c_string.h"
-#include "c_math.h"
-#include "c_limits.h"
+#include <string.h>
+#include <math.h>
+#include <limits.h>
 #endif
 
-#include "json_config.h"
-#include "jsonsl.h"
+#include "sjson/json_config.h"
+#include "sjson/jsonsl.h"
 
 #define LUA_SJSONLIBNAME "sjson"
 
@@ -992,74 +992,33 @@ static int sjson_encoder_destructor(lua_State *L) {
   return 0;
 }
 
-#ifdef LOCAL_LUA
-static const luaL_Reg sjson_encoder_map[] = {
-  { "read", sjson_encoder_read },
-  { "__gc", sjson_encoder_destructor },
-  { NULL, NULL }
-};
+LROT_BEGIN(sjson_encoder)
+  LROT_FUNCENTRY( read, sjson_encoder_read )
+  LROT_FUNCENTRY( __gc, sjson_encoder_destructor )
+  LROT_TABENTRY( __index, sjson_encoder )
+LROT_END( sjson_encoder, sjson_encoder, LROT_MASK_GC_INDEX )
 
-static const luaL_Reg sjson_decoder_map[] = {
-  { "write", sjson_decoder_write },
-  { "result", sjson_decoder_result },
-  { "__gc", sjson_decoder_destructor },
-  { NULL, NULL }
-};
 
-static const luaL_Reg sjsonlib[] = {
-  { "decode", sjson_decode },
-  { "decoder", sjson_decoder },
-  { "encode", sjson_encode },
-  { "encoder", sjson_encoder },
-  {NULL, NULL}
-};
-#else
-static const LUA_REG_TYPE sjson_encoder_map[] = {
-  { LSTRKEY( "read" ),                    LFUNCVAL( sjson_encoder_read ) },
-  { LSTRKEY( "__gc" ),                    LFUNCVAL( sjson_encoder_destructor ) },
-  { LSTRKEY( "__index" ),                 LROVAL( sjson_encoder_map ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(sjson_decoder)
+  LROT_FUNCENTRY( write, sjson_decoder_write )
+  LROT_FUNCENTRY( result, sjson_decoder_result )
+  LROT_FUNCENTRY( __gc, sjson_decoder_destructor )
+  LROT_TABENTRY( __index, sjson_decoder )
+LROT_END( sjson_decoder, sjson_decoder, LROT_MASK_GC_INDEX )
 
-static const LUA_REG_TYPE sjson_decoder_map[] = {
-  { LSTRKEY( "write" ),                   LFUNCVAL( sjson_decoder_write ) },
-  { LSTRKEY( "result" ),                  LFUNCVAL( sjson_decoder_result ) },
-  { LSTRKEY( "__gc" ),                    LFUNCVAL( sjson_decoder_destructor ) },
-  { LSTRKEY( "__index" ),                 LROVAL( sjson_decoder_map ) },
-  { LNILKEY, LNILVAL }
-};
 
-static const LUA_REG_TYPE sjson_map[] = {
-  { LSTRKEY( "encode" ),                  LFUNCVAL( sjson_encode ) },
-  { LSTRKEY( "decode" ),                  LFUNCVAL( sjson_decode ) },
-  { LSTRKEY( "encoder" ),                 LFUNCVAL( sjson_encoder ) },
-  { LSTRKEY( "decoder" ),                 LFUNCVAL( sjson_decoder ) },
-  { LSTRKEY( "NULL" ),                    LUDATA( 0 ) },
-  { LNILKEY, LNILVAL }
-};
-#endif
+LROT_BEGIN(sjson)
+  LROT_FUNCENTRY( encode, sjson_encode )
+  LROT_FUNCENTRY( decode, sjson_decode )
+  LROT_FUNCENTRY( encoder, sjson_encoder )
+  LROT_FUNCENTRY( decoder, sjson_decoder )
+  LROT_LUDENTRY( NULL, 0 )
+LROT_END( sjson, NULL, 0 )
 
 LUALIB_API int luaopen_sjson (lua_State *L) {
-#ifdef LOCAL_LUA
-  luaL_register(L, LUA_SJSONLIBNAME, sjsonlib);
-  lua_getglobal(L, LUA_SJSONLIBNAME);
-  lua_pushstring(L, "NULL");
-  lua_pushlightuserdata(L, 0);
-  lua_settable(L, -3);
-  lua_pop(L, 1);
-  luaL_newmetatable(L, "sjson.encoder");
-  luaL_register(L, NULL, sjson_encoder_map);
-  lua_setfield(L, -1, "__index");
-  luaL_newmetatable(L, "sjson.decoder");
-  luaL_register(L, NULL, sjson_decoder_map);
-  lua_setfield(L, -1, "__index");
-#else
-  luaL_rometatable(L, "sjson.decoder", (void *)sjson_decoder_map);
-  luaL_rometatable(L, "sjson.encoder", (void *)sjson_encoder_map);
-#endif
+  luaL_rometatable(L, "sjson.decoder", LROT_TABLEREF(sjson_decoder));
+  luaL_rometatable(L, "sjson.encoder", LROT_TABLEREF(sjson_encoder));
   return 1;
 }
 
-#ifndef LOCAL_LUA
-NODEMCU_MODULE(SJSON, "sjson", sjson_map, luaopen_sjson);
-#endif
+NODEMCU_MODULE(SJSON, "sjson", sjson, luaopen_sjson);

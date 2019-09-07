@@ -10,9 +10,8 @@
 
 #include "lua.h"
 
-//#include C_HEADER_ASSERT
-#include C_HEADER_MATH
-#include C_HEADER_STRING
+#include <math.h>
+#include <string.h>
 #include "lapi.h"
 #include "ldebug.h"
 #include "ldo.h"
@@ -463,7 +462,7 @@ LUA_API void lua_pushstring (lua_State *L, const char *s) {
   if (s == NULL)
     lua_pushnil(L);
   else
-    lua_pushlstring(L, s, c_strlen(s));
+    lua_pushlstring(L, s, strlen(s));
 }
 
 

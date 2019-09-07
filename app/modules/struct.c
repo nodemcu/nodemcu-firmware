@@ -389,13 +389,12 @@ static int b_size (lua_State *L) {
 /* }====================================================== */
 
 
+LROT_BEGIN(thislib)
+  LROT_FUNCENTRY( pack, b_pack )
+  LROT_FUNCENTRY( unpack, b_unpack )
+  LROT_FUNCENTRY( size, b_size )
+LROT_END( thislib, NULL, 0 )
 
-static const LUA_REG_TYPE thislib[] = {
-  {LSTRKEY("pack"), LFUNCVAL(b_pack)},
-  {LSTRKEY("unpack"), LFUNCVAL(b_unpack)},
-  {LSTRKEY("size"), LFUNCVAL(b_size)},
-  {LNILKEY, LNILVAL}
-};
 
 
 NODEMCU_MODULE(STRUCT, "struct", thislib, NULL);

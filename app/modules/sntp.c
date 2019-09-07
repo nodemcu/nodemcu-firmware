@@ -38,7 +38,9 @@
 #include "os_type.h"
 #include "osapi.h"
 #include "lwip/udp.h"
-#include "c_stdlib.h"
+#include <stdlib.h>
+#include "lwip/inet.h"
+#include "lwip/dhcp.h"
 #include "user_modules.h"
 #include "lwip/dns.h"
 #include "task/task.h"
@@ -47,6 +49,8 @@
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
+
+struct netif * eagle_lwip_getif(uint8 index);
 
 #define max(a,b) ((a < b) ? b : a)
 
@@ -180,18 +184,18 @@ static void cleanup (lua_State *L)
   luaL_unref (L, LUA_REGISTRYINDEX, state->sync_cb_ref);
   luaL_unref (L, LUA_REGISTRYINDEX, state->err_cb_ref);
   luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
-  os_free (state);
+  free (state);
   state = 0;
 }
 
 static ip_addr_t* get_free_server() {
-  ip_addr_t* temp = (ip_addr_t *) c_malloc((server_count + 1) * sizeof(ip_addr_t));
+  ip_addr_t* temp = (ip_addr_t *) malloc((server_count + 1) * sizeof(ip_addr_t));
 
   if (server_count > 0) {
     memcpy(temp, serverp, server_count * sizeof(ip_addr_t));
   }
   if (serverp) {
-    c_free(serverp);
+    free(serverp);
   }
   serverp = temp;
 
@@ -623,7 +627,7 @@ static void sntp_dolookups (lua_State *L) {
   // Step through each element of the table, converting it to an address
   // at the end, start the lookups. If we have already looked everything up,
   // then move straight to sending the packets.
-  if (state->list_ref == LUA_NOREF) {
+  if ((state->list_ref == LUA_NOREF) || (state->list_ref == LUA_REFNIL)) {
     sntp_dosend();
     return;
   }
@@ -671,7 +675,7 @@ static void sntp_dolookups (lua_State *L) {
 }
 
 static char *state_init(lua_State *L) {
-  state = (sntp_state_t *)c_malloc (sizeof (sntp_state_t));
+  state = (sntp_state_t *)malloc (sizeof (sntp_state_t));
   if (!state)
     return ("out of memory");
 
@@ -698,9 +702,17 @@ static char *state_init(lua_State *L) {
 
 static char *set_repeat_mode(lua_State *L, bool enable)
 {
+  if (repeat) {
+    os_timer_disarm (&repeat->timer);
+    luaL_unref (L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
+    luaL_unref (L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
+    luaL_unref (L, LUA_REGISTRYINDEX, repeat->list_ref);
+    free(repeat);
+    repeat = NULL;
+  }
+
   if (enable) {
-    set_repeat_mode(L, FALSE);
-    repeat = (sntp_repeat_t *) c_malloc(sizeof(sntp_repeat_t));
+    repeat = (sntp_repeat_t *) malloc(sizeof(sntp_repeat_t));
     if (!repeat) {
       return "no memory";
     }
@@ -716,16 +728,8 @@ static char *set_repeat_mode(lua_State *L, bool enable)
       //The function on_long_timeout returns errors to the developer
       //My guess: Error reporting is a good thing, resume the timer.
     os_timer_arm(&repeat->timer, 1000 * 1000, 1);
-  } else {
-    if (repeat) {
-      os_timer_disarm (&repeat->timer);
-      luaL_unref (L, LUA_REGISTRYINDEX, repeat->sync_cb_ref);
-      luaL_unref (L, LUA_REGISTRYINDEX, repeat->err_cb_ref);
-      luaL_unref (L, LUA_REGISTRYINDEX, repeat->list_ref);
-      c_free(repeat);
-      repeat = NULL;
-    }
   }
+
   return NULL;
 }
 
@@ -787,43 +791,43 @@ static int sntp_sync (lua_State *L)
     if (lua_istable(L, 1)) {
       // Save a reference to the table
       lua_pushvalue(L, 1);
-      luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
-      state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-      sntp_dolookups(L);
-      goto good_ret;
     } else {
       size_t l;
       const char *hostname = luaL_checklstring(L, 1, &l);
       if (l>128 || hostname == NULL)
         sync_err("need <128 hostname");
-      err_t err = dns_gethostbyname(hostname, get_free_server(), sntp_dns_found, state);
-      if (err == ERR_INPROGRESS) {
-        goto good_ret;
-      } else if (err == ERR_ARG)
-        sync_err("bad hostname");
 
-      server_count++;
-    }
-  } else if (server_count == 0) {
-    // default to ntp pool
-    lua_newtable(L);
-    int i;
-    for (i = 0; i < 4; i++) {
-      lua_pushnumber(L, i + 1);
-      char buf[64];
-      c_sprintf(buf, "%d.nodemcu.pool.ntp.org", i);
-      lua_pushstring(L, buf);
+      /* Construct a singleton table containing the one server */
+      lua_newtable(L);
+      lua_pushnumber(L, 1);
+      lua_pushstring(L, hostname);
       lua_settable(L, -3);
     }
-    luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
-    state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    sntp_dolookups(L);
-    goto good_ret;
+  } else if (server_count == 0) {
+    lua_newtable(L);
+    struct netif *iface = (struct netif *)eagle_lwip_getif(0x00);
+    if (iface->dhcp && iface->dhcp->offered_ntp_addr.addr) {
+		ip_addr_t ntp_addr = iface->dhcp->offered_ntp_addr;
+        lua_pushnumber(L, 1);
+        lua_pushstring(L, inet_ntoa(ntp_addr));
+        lua_settable(L, -3);
+    } else {
+      // default to ntp pool
+      int i;
+      for (i = 0; i < 4; i++) {
+        lua_pushnumber(L, i + 1);
+        char buf[64];
+        sprintf(buf, "%d.nodemcu.pool.ntp.org", i);
+        lua_pushstring(L, buf);
+        lua_settable(L, -3);
+      }
+    }
   }
 
-  sntp_dosend ();
+  luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
+  state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  sntp_dolookups(L);
 
-good_ret:
   if (!lua_isnoneornil(L, 4)) {
     set_repeat_mode(L, 1);
   }
@@ -835,7 +839,7 @@ error:
   {
     if (state->pcb)
       udp_remove (state->pcb);
-    c_free (state);
+    free (state);
     state = 0;
   }
   return luaL_error (L, errmsg);
@@ -869,13 +873,13 @@ static int sntp_open(lua_State *L)
 
 
 // Module function map
-static const LUA_REG_TYPE sntp_map[] = {
-  { LSTRKEY("sync"),  LFUNCVAL(sntp_sync)  },
+LROT_BEGIN(sntp)
+  LROT_FUNCENTRY( sync, sntp_sync )
 #ifdef LUA_USE_MODULES_RTCTIME
-  { LSTRKEY("setoffset"),  LFUNCVAL(sntp_setoffset)  },
-  { LSTRKEY("getoffset"),  LFUNCVAL(sntp_getoffset)  },
+  LROT_FUNCENTRY( setoffset, sntp_setoffset )
+  LROT_FUNCENTRY( getoffset, sntp_getoffset )
 #endif
-  { LNILKEY, LNILVAL }
-};
+LROT_END( sntp, NULL, 0 )
 
-NODEMCU_MODULE(SNTP, "sntp", sntp_map, sntp_open);
+
+NODEMCU_MODULE(SNTP, "sntp", sntp, sntp_open);

@@ -6,8 +6,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 
 static const uint32_t hmc5883_i2c_id = 0;
 static const uint8_t hmc5883_i2c_addr = 0x1E;
@@ -89,10 +89,10 @@ static int hmc5883_read(lua_State* L) {
     return 3;
 }
 
-static const LUA_REG_TYPE hmc5883_map[] = {
-    { LSTRKEY( "read" ),         LFUNCVAL( hmc5883_read )},
-    { LSTRKEY( "setup" ),        LFUNCVAL( hmc5883_setup )},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(hmc5883)
+  LROT_FUNCENTRY( read, hmc5883_read )
+  LROT_FUNCENTRY( setup, hmc5883_setup )
+LROT_END( hmc5883, NULL, 0 )
 
-NODEMCU_MODULE(HMC5883L, "hmc5883l", hmc5883_map, NULL);
+
+NODEMCU_MODULE(HMC5883L, "hmc5883l", hmc5883, NULL);

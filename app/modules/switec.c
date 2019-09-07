@@ -16,7 +16,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "task/task.h"
 #include "driver/switec.h"
 
@@ -196,17 +196,17 @@ static int switec_open(lua_State *L)
 
 
 // Module function map
-static const LUA_REG_TYPE switec_map[] = {
-  { LSTRKEY( "setup" ),    LFUNCVAL( lswitec_setup ) },
-  { LSTRKEY( "close" ),    LFUNCVAL( lswitec_close ) },
-  { LSTRKEY( "reset" ),    LFUNCVAL( lswitec_reset ) },
-  { LSTRKEY( "moveto" ),   LFUNCVAL( lswitec_moveto) },
-  { LSTRKEY( "getpos" ),   LFUNCVAL( lswitec_getpos) },
+LROT_BEGIN(switec)
+  LROT_FUNCENTRY( setup, lswitec_setup )
+  LROT_FUNCENTRY( close, lswitec_close )
+  LROT_FUNCENTRY( reset, lswitec_reset )
+  LROT_FUNCENTRY( moveto, lswitec_moveto )
+  LROT_FUNCENTRY( getpos, lswitec_getpos )
 #ifdef SQITEC_DEBUG
-  { LSTRKEY( "dequeue" ),  LFUNCVAL( lswitec_dequeue) },
+  LROT_FUNCENTRY( dequeue, lswitec_dequeue )
 #endif
 
-  { LNILKEY, LNILVAL }
-};
+LROT_END( switec, NULL, 0 )
 
-NODEMCU_MODULE(SWITEC, "switec", switec_map, switec_open);
+
+NODEMCU_MODULE(SWITEC, "switec", switec, switec_open);

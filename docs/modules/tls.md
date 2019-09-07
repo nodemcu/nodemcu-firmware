@@ -20,7 +20,52 @@ most common features supported.  Specifically, it provides:
 - key exchange algorithms: DHE and ECDHE
 - elliptic curves: secp{256,384}r1, secp256k1, bp{256,384}.
 
+!!! warning
+
+	The severe memory constraints of the ESP8266 mean that the `tls` module
+	is by far better suited for communication with custom, purpose-built
+	endpoints with small certificate chains (ideally, even self-signed)
+	than it is with the Internet at large.  By default, our mbedTLS
+	configuration requests TLS fragments of at most 4KiB and is unwilling
+	to process fragmented messages, meaning that the entire ServerHello,
+	which includes the server's certificate chain, must conform to this
+	limit.  We do not believe it useful or easy to be fully compliant with
+	the TLS specification, which requires a 16KiB recieve buffer and,
+	therefore, 32KiB of heap within mbedTLS, even in the steady-state.
+	While it is possible to slightly raise the buffer sizes with custom
+	nodeMCU builds, connecting to endpoints out of your control will remain
+	a precarious position, and so we strongly suggest that TLS connections
+	be made only to endpoints under your control, whose TLS configurations
+	can ensure that their ServerHello messages are small.  A reasonable
+	compromise is to have a "real" computer do TLS proxying for you; the
+	[socat](http://www.dest-unreach.org/socat/) program is one possible
+	mechanism of achieving such a "bent pipe" with TLS on both halves.
+
+!!! warning
+
+	The TLS glue provided by Espressif provides no interface to TLS SNI.
+	As such, NodeMCU TLS should not be expected to function with endpoints
+	requiring the use of SNI, which is a growing fraction of the Internet
+	and includes, for example, Cloudflare sites using their "universal SSL"
+	service and other, similar "virtual" TLS servers.  TLS servers to which
+	you wish NodeMCU to connect should have their own, dedicated IP/port
+	pair.
+
+!!! warning
+
+	The TLS handshake is very heap intensive, requiring between 25 and 30
+	**kilobytes** of heap, even with our reduced buffer sizes.  Some, but
+	not all, of that is made available again once the handshake has
+	completed and the connection is open.  Because of this, we have
+	disabled mbedTLS's support for connection renegotiation.  You may find
+	it necessary to restructure your application so that connections happen
+	early in boot when heap is relatively plentiful, with connection
+	failures inducing reboots.  LFS may also be of utility in freeing up
+	heap space, should you wish to attempt re-establishing connections
+	without rebooting.
+
 !!! tip
+
 	If possible, you will likely be much better served by using the ECDSA
 	signature and key exchange algorithms than by using RSA.  An
 	increasingly large fraction of the Internet understands ECDSA, and most
@@ -31,27 +76,14 @@ most common features supported.  Specifically, it provides:
 	details how to create ECDSA keys and certificates.
 
 !!! tip
-	The complete configuration is stored in [user_mbedtls.h](../../app/include/user_mbedtls.h). This is the file to edit if you build your own firmware and want to change mbed TLS behavior.
 
-!!! warning
-	The TLS glue provided by Espressif provides no interface to TLS SNI.
-	As such, NodeMCU TLS should not be expected to function with endpoints
-	requiring the use of SNI, which is a growing fraction of the Internet
-	and includes, for example, Cloudflare sites using their "universal SSL"
-	service and other, similar "virtual" TLS servers.  TLS servers to which
-	you wish NodeMCU to connect should have their own, dedicated IP/port
-	pair.
+	The complete configuration is stored in
+	[user_mbedtls.h](../../app/include/user_mbedtls.h). This is the file to
+	edit if you build your own firmware and want to change mbed TLS
+	behavior.
 
-!!! warning
-	The TLS handshake is very heap intensive, requiring between 25 and 30
-	**kilobytes** of heap.  Some, but not all, of that is made available
-	again once the handshake has completed and the connection is open.
-	Because of this, we have disabled mbedTLS's support for connection
-	renegotiation.  You may find it necessary to restructure your
-	application so that connections happen early in boot when heap is
-	relatively plentiful, with connection failures inducing reboots.
-
-For a list of features have a look at the [mbed TLS features page](https://tls.mbed.org/core-features).
+	For a list of possible features have a look at the
+	[mbed TLS features page](https://tls.mbed.org/core-features).
 
 This module handles certificate verification when SSL/TLS is in use.
 

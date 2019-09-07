@@ -11,6 +11,7 @@
 
 //#define NODE_DEBUG
 
+#include <stdint.h>
 #include "os_type.h"
 #include "osapi.h"
 #include "sections.h"
@@ -231,18 +232,18 @@ static int somfy_lua_sendcommand(lua_State* L) { // pin, remote, command, rollin
     return 0;
 }
 
-static const LUA_REG_TYPE somfy_map[] = {
-    { LSTRKEY( "UP" ),    LNUMVAL( SOMFY_UP ) },
-    { LSTRKEY( "DOWN" ),    LNUMVAL( SOMFY_DOWN ) },
-    { LSTRKEY( "PROG" ),    LNUMVAL( SOMFY_PROG ) },
-    { LSTRKEY( "STOP" ),    LNUMVAL( SOMFY_STOP ) },
-    { LSTRKEY( "sendcommand" ), LFUNCVAL(somfy_lua_sendcommand)},
-    { LNILKEY, LNILVAL}
-};
+LROT_BEGIN(somfy)
+  LROT_NUMENTRY( UP, SOMFY_UP )
+  LROT_NUMENTRY( DOWN, SOMFY_DOWN )
+  LROT_NUMENTRY( PROG, SOMFY_PROG )
+  LROT_NUMENTRY( STOP, SOMFY_STOP )
+  LROT_FUNCENTRY( sendcommand, somfy_lua_sendcommand )
+LROT_END( somfy, NULL, 0 )
+
 
 int luaopen_somfy( lua_State *L ) {
     done_taskid = task_get_id((task_callback_t) somfy_transmissionDone);
     return 0;
 }
 
-NODEMCU_MODULE(SOMFY, "somfy", somfy_map, luaopen_somfy);
+NODEMCU_MODULE(SOMFY, "somfy", somfy, luaopen_somfy);

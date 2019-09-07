@@ -22,7 +22,7 @@ endif
 #   makefile at its root level - these are then overridden
 #   for a subtree within the makefile rooted therein
 #
-DEFINES += -Dprintf=c_printf
+#DEFINES += -DDEVELOPMENT_TOOLS -DNODE_DEBUG -DSPIFFS_API_DBG=NODE_DBG
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -36,9 +36,5 @@ DEFINES += -Dprintf=c_printf
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../libc
-INCLUDES += -I ../platform
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

@@ -15,8 +15,6 @@ TARGET = eagle
 #FLAVOR = release
 FLAVOR = debug
 
-#EXTRA_CCFLAGS += -u
-
 ifndef PDIR # {
 GEN_IMAGES= eagle.app.v6.out
 GEN_BINS= eagle.app.v6.bin
@@ -42,10 +40,10 @@ SUBDIRS= 					\
 	smart 					\
 	modules 				\
 	spiffs 					\
-	net					\
+	net						\
 	fatfs					\
 	esp-gdbstub				\
-	pm					\
+	pm						\
 	uzlib					\
 	$(OPT_SEL_MKTARGETS)
 
@@ -54,19 +52,19 @@ endif # } PDIR
 APPDIR = .
 LDDIR = ../ld
 
-TARGET_LDFLAGS = 				\
+TARGET_LDFLAGS = 			\
 	-nostdlib 				\
 	-Wl,-EL 				\
-	--longcalls 				\
+	--longcalls 			\
 	--text-section-literals
 
 LD_FILE = $(LDDIR)/nodemcu.ld
 
-COMPONENTS_eagle.app.v6 = 			\
+COMPONENTS_eagle.app.v6 = 		\
 	user/libuser.a 				\
 	crypto/libcrypto.a			\
 	driver/libdriver.a 			\
-	platform/libplatform.a 			\
+	platform/libplatform.a		\
 	task/libtask.a 				\
 	libc/liblibc.a 				\
 	lua/liblua.a 				\
@@ -74,15 +72,14 @@ COMPONENTS_eagle.app.v6 = 			\
 	smart/smart.a 				\
 	spiffs/spiffs.a 			\
 	fatfs/libfatfs.a			\
-	pm/libpm.a				\
-	esp-gdbstub/libgdbstub.a		\
-	net/libnodemcu_net.a			\
-	mbedtls/libmbedtls.a      		\
-	modules/libmodules.a			\
+	pm/libpm.a					\
+	esp-gdbstub/libgdbstub.a	\
+	net/libnodemcu_net.a		\
+	mbedtls/libmbedtls.a    	\
+	modules/libmodules.a		\
 	smart/smart.a 				\
 	uzlib/libuzlib.a 			\
 	$(OPT_SEL_COMPONENTS)
-
 
 # Inspect the modules library and work out which modules need to be linked.
 # For each enabled module, a symbol name of the form XYZ_module_selected is
@@ -90,32 +87,35 @@ COMPONENTS_eagle.app.v6 = 			\
 # only those) modules are pulled in.
 SELECTED_MODULE_SYMS=$(filter %_module_selected %module_selected1,$(shell $(NM) modules/.output/$(TARGET)/$(FLAVOR)/lib/libmodules.a))
 
-LINKFLAGS_eagle.app.v6 = 			\
-	-Wl,--gc-sections 			\
-	-Wl,-Map=mapfile 			\
+LINKFLAGS_eagle.app.v6 = 	\
+	-Wl,--gc-sections 		\
+	-Wl,-Map=mapfile 		\
 	-nostdlib 				\
-	-T$(LD_FILE) 				\
-	-Wl,@../ld/defsym.rom			\
-	-Wl,--no-check-sections 		\
-	-Wl,--wrap=_xtos_set_exception_handler	\
-	-Wl,-static 				\
+	-T$(LD_FILE) 			\
+	-Wl,@../ld/defsym.rom	\
+	-Wl,--no-check-sections	\
+	-Wl,-static 			\
 	$(addprefix -u , $(SELECTED_MODULE_SYMS)) \
-	-Wl,--start-group 			\
+	-Wl,--start-group 		\
 	-lmain 					\
-	-lc 					\
+	$(DEP_LIBS_eagle.app.v6)\
+	-Wl,--end-group 		\
+	-Wl,--start-group 		\
 	-lgcc 					\
 	-lhal 					\
 	-lphy 					\
 	-lpp 					\
 	-lnet80211 				\
+	-lsmartconfig 			\
 	-lwpa 					\
 	-lwpa2					\
-	-lsmartconfig 				\
 	-lcrypto				\
 	-lwps					\
-	$(DEP_LIBS_eagle.app.v6) 		\
-	-Wl,--end-group 			\
-	-lm
+	-lc 					\
+	-lm						\
+	-Wl,--end-group
+#	-Wl,--cref
+#	-Wl,--wrap=_xtos_set_exception_handler
 
 DEPENDS_eagle.app.v6 = 				\
                 $(LD_FILE) 			\
@@ -131,28 +131,15 @@ DEPENDS_eagle.app.v6 = 				\
 
 #UNIVERSAL_TARGET_DEFINES = 			\
 
-# Other potential configuration flags include:
-#	-DTXRX_TXBUF_DEBUG
-#	-DTXRX_RXBUF_DEBUG
-#	-DWLAN_CONFIG_CCX
-CONFIGURATION_DEFINES =	-D__ets__ 		\
-			-DICACHE_FLASH 		\
-			-DLUA_OPTIMIZE_MEMORY=2	\
-			-DMIN_OPT_LEVEL=2	\
-			-DLWIP_OPEN_SRC 	\
-			-DPBUF_RSV_FOR_WLAN 	\
-			-DEBUF_LWIP		\
-			-DUSE_OPTIMIZE_PRINTF	\
-			-DMBEDTLS_USER_CONFIG_FILE=\"user_mbedtls.h\"  \
+CONFIGURATION_DEFINES += -DLWIP_OPEN_SRC
 
-DEFINES += 					\
-	$(UNIVERSAL_TARGET_DEFINES) 		\
+DEFINES += 							\
+	$(UNIVERSAL_TARGET_DEFINES) 	\
 	$(CONFIGURATION_DEFINES)
 
-DDEFINES += 					\
-	$(UNIVERSAL_TARGET_DEFINES) 		\
+DDEFINES += 						\
+	$(UNIVERSAL_TARGET_DEFINES) 	\
 	$(CONFIGURATION_DEFINES)
-
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -165,10 +152,10 @@ DDEFINES += 					\
 #
 # Required for each makefile to inherit from the parent
 #
-
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
+INCLUDES := -I $(PDIR)libc -I $(PDIR)lua -I $(PDIR)platform \
+            $(INCLUDES) -I $(PDIR) -I $(PDIR)include 
 PDIR := ../$(PDIR)
+
 sinclude $(PDIR)Makefile
 
 .PHONY: FORCE

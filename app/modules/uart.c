@@ -4,8 +4,8 @@
 #include "lauxlib.h"
 #include "platform.h"
 
-#include "c_types.h"
-#include "c_string.h"
+#include <stdint.h>
+#include <string.h>
 #include "rom.h"
 
 static int uart_receive_rf = LUA_NOREF;
@@ -67,7 +67,7 @@ static int l_uart_on( lua_State* L )
   } else {
     lua_pushnil(L);
   }
-  if(sl == 4 && c_strcmp(method, "data") == 0){
+  if(sl == 4 && strcmp(method, "data") == 0){
     run_input = true;
     if(uart_receive_rf != LUA_NOREF){
       luaL_unref(L, LUA_REGISTRYINDEX, uart_receive_rf);
@@ -174,19 +174,19 @@ static int l_uart_write( lua_State* L )
 }
 
 // Module function map
-static const LUA_REG_TYPE uart_map[] =  {
-  { LSTRKEY( "setup" ), LFUNCVAL( l_uart_setup ) },
-  { LSTRKEY( "getconfig" ), LFUNCVAL( l_uart_getconfig ) },
-  { LSTRKEY( "write" ), LFUNCVAL( l_uart_write ) },
-  { LSTRKEY( "on" ),    LFUNCVAL( l_uart_on ) },
-  { LSTRKEY( "alt" ),   LFUNCVAL( l_uart_alt ) },
-  { LSTRKEY( "STOPBITS_1" ),   LNUMVAL( PLATFORM_UART_STOPBITS_1 ) },
-  { LSTRKEY( "STOPBITS_1_5" ), LNUMVAL( PLATFORM_UART_STOPBITS_1_5 ) },
-  { LSTRKEY( "STOPBITS_2" ),   LNUMVAL( PLATFORM_UART_STOPBITS_2 ) },
-  { LSTRKEY( "PARITY_NONE" ),  LNUMVAL( PLATFORM_UART_PARITY_NONE ) },
-  { LSTRKEY( "PARITY_EVEN" ),  LNUMVAL( PLATFORM_UART_PARITY_EVEN ) },
-  { LSTRKEY( "PARITY_ODD" ),   LNUMVAL( PLATFORM_UART_PARITY_ODD ) },
-  { LNILKEY, LNILVAL }
-};
+LROT_BEGIN(uart)
+  LROT_FUNCENTRY( setup, l_uart_setup )
+  LROT_FUNCENTRY( getconfig, l_uart_getconfig )
+  LROT_FUNCENTRY( write, l_uart_write )
+  LROT_FUNCENTRY( on, l_uart_on )
+  LROT_FUNCENTRY( alt, l_uart_alt )
+  LROT_NUMENTRY( STOPBITS_1, PLATFORM_UART_STOPBITS_1 )
+  LROT_NUMENTRY( STOPBITS_1_5, PLATFORM_UART_STOPBITS_1_5 )
+  LROT_NUMENTRY( STOPBITS_2, PLATFORM_UART_STOPBITS_2 )
+  LROT_NUMENTRY( PARITY_NONE, PLATFORM_UART_PARITY_NONE )
+  LROT_NUMENTRY( PARITY_EVEN, PLATFORM_UART_PARITY_EVEN )
+  LROT_NUMENTRY( PARITY_ODD, PLATFORM_UART_PARITY_ODD )
+LROT_END( uart, NULL, 0 )
 
-NODEMCU_MODULE(UART, "uart", uart_map, NULL);
+
+NODEMCU_MODULE(UART, "uart", uart, NULL);
