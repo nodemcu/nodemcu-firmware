@@ -20,6 +20,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
+#include "task/task.h"  
 #include "hw_timer.h"
 #include "user_interface.h"
 

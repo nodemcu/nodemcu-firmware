@@ -45,7 +45,7 @@ typedef struct {
 
 static int active_pulser_ref;
 static pulse_t *active_pulser;
-static task_handle_t tasknumber;
+static platform_task_handle_t tasknumber;
 
 static int gpio_pulse_push_state(lua_State *L, pulse_t *pulser) {
   uint32_t now;
@@ -321,7 +321,7 @@ static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
         active_pulser->steps++;
       }
       platform_hw_timer_close(TIMER_OWNER);
-      task_post_low(tasknumber, (task_param_t)0);
+      platform_post_low(tasknumber, 0);
       return;
     }
     active_pulser->steps++;
@@ -341,7 +341,7 @@ static void ICACHE_RAM_ATTR gpio_pulse_timeout(os_param_t p) {
     int16_t stop = active_pulser->stop_pos;
     if (stop == -2 || stop == active_pulser->entry_pos) {
       platform_hw_timer_close(TIMER_OWNER);
-      task_post_low(tasknumber, (task_param_t)0);
+      platform_post_low(tasknumber, 0);
       return;
     }
 
@@ -488,7 +488,7 @@ LROT_END( gpio_pulse, gpio_pulse, LROT_MASK_INDEX )
 int gpio_pulse_init(lua_State *L)
 {
   luaL_rometatable(L, "gpio.pulse", LROT_TABLEREF(pulse));
-  tasknumber = task_get_id(gpio_pulse_task);
+  tasknumber = platform_task_get_id(gpio_pulse_task);
   return 0;
 }
 

@@ -27,10 +27,11 @@ concatenated into a 2nd level FIFO entry of upto 256 bytes, and the 1st level FI
 cleared down to any residue.
 
 ]]
-local node, table, tmr, wifi, uwrite,     tostring =
-      node, table, tmr, wifi, uart.write, tostring
+--luacheck: no unused args
 
-local function telnet_listener(socket) 
+local node, tmr, wifi, uwrite = node, tmr, wifi, uart.write
+
+local function telnet_listener(socket)
   local queueLine = (require "fifosock").wrap(socket)
 
   local function receiveLine(s, line)

@@ -41,6 +41,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "task/task.h"
 
 #include "user_interface.h"
 #include "user_modules.h"

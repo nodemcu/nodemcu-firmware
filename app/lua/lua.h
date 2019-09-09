@@ -273,9 +273,11 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 #define lua_isfunction(L,n)	(lua_type(L, (n)) == LUA_TFUNCTION)
 #define lua_islightfunction(L,n) (lua_type(L, (n)) == LUA_TLIGHTFUNCTION)
+#define lua_isanyfunction(L,n) (lua_isfunction(L,n) || lua_islightfunction(L,n))
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
 #define lua_isrotable(L,n)	(lua_type(L, (n)) == LUA_TROTABLE)
-#define lua_islightuserdata(L,n)	(lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
+#define lua_isanytable(L,n)	(lua_istable(L,n) || lua_isrotable(L,n))
+#define lua_islightuserdata(L,n) (lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
 #define lua_isthread(L,n)	(lua_type(L, (n)) == LUA_TTHREAD)
@@ -375,20 +377,19 @@ struct lua_Debug {
 
 /* }====================================================================== */
 
-typedef struct __lua_load{
-  lua_State *L;
-  int firstline;
-  char *line;
-  int line_position;
-  size_t len;
-  int done;
-  const char *prmt;
-}lua_Load;
-
-int lua_main( int argc, char **argv );
 
 #ifndef LUA_CROSS_COMPILER
-void lua_handle_input (bool force);
+#define LUA_QUEUE_APP   0
+#define LUA_QUEUE_UART  1
+#define LUA_TASK_LOW    0
+#define LUA_TASK_MEDIUM 1
+#define LUA_TASK_HIGH   2
+
+void lua_main (void);
+void lua_input_string (const char *line, int len);
+int luaN_posttask (lua_State* L, int prio);
+int luaN_call (lua_State *L, int narg, int res, int dogc);
+/**DEBUG**/extern void dbg_printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 #endif
 
 /******************************************************************************

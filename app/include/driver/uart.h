@@ -110,7 +110,8 @@ typedef struct {
     UartStopBitsNum   stop_bits;
 } UartConfig;
 
-void uart_init(UartBautRate uart0_br, UartBautRate uart1_br, os_signal_t sig_input, uint8 *flag_input);
+void uart_init(UartBautRate uart0_br, UartBautRate uart1_br);
+void uart_init_task(os_signal_t sig_input, uint8 *flag_input);
 UartConfig uart_get_config(uint8 uart_no);
 void uart0_alt(uint8 on);
 void uart0_sendStr(const char *str);

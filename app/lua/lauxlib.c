@@ -824,10 +824,9 @@ static int errfsfile (lua_State *L, const char *what, int fnameindex) {
 }
 
 
-LUALIB_API int luaL_loadfsfile (lua_State *L, const char *filename) {
+LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
   LoadFSF lf;
-  int status, readstatus;
-  int c;
+  int status, c;
   int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
   lf.extraline = 0;
   if (filename == NULL) {
