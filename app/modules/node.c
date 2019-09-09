@@ -524,6 +524,15 @@ static int node_osprint( lua_State* L )
   return 0;
 }
 
+//
+// Lua: ccount()
+// Returns CCOUNT register
+static int node_ccount( lua_State* L )
+{
+	lua_pushinteger(L, platform_get_ccount_reg());
+	return 1;
+}
+
 int node_random_range(int l, int u) {
   // The range is the number of different values to return
   unsigned int range = u + 1 - l;
@@ -818,6 +827,7 @@ LROT_BEGIN(node)
   LROT_FUNCENTRY( bootreason, node_bootreason )
   LROT_FUNCENTRY( restore, node_restore )
   LROT_FUNCENTRY( random, node_random )
+  LROT_FUNCENTRY( ccount, node_ccount )
 #ifdef LUA_OPTIMIZE_DEBUG
   LROT_FUNCENTRY( stripdebug, node_stripdebug )
 #endif
