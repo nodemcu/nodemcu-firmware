@@ -7,10 +7,12 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "osapi.h"
 #include "lauxlib.h"
 #include "mem.h"
 #include "module.h"
 #include "pin_map.h"
+#include "user_interface.h"
 #include "platform.h"
 #include "hw_timer.h"
 
