@@ -102,9 +102,9 @@ static int rfswitch_send( lua_State *L )
 }
 
 // Module function map
-LROT_BEGIN(rfswitch)
+LROT_BEGIN(rfswitch, NULL, 0)
   LROT_FUNCENTRY( send, rfswitch_send )
-LROT_END( rfswitch, NULL, 0 )
+LROT_END(rfswitch, NULL, 0)
 
 
 NODEMCU_MODULE(RFSWITCH, "rfswitch", rfswitch, NULL);

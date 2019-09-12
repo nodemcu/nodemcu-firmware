@@ -114,7 +114,7 @@ static uint8 *fromHex ( lua_State* L, const uint8 *msg, size_t *len){
      } else if (*p >= 'A' && *p <= 'F') {
        b = *p++ - ('A' - 10);
      } else {
-       luaM_freearray(L, out, *len, uint8);
+       luaN_freearray(L, out, *len);
        luaL_error (L, "Invalid hex string");
      }
      if ((i&1) == 0) {
@@ -137,7 +137,7 @@ static int do_func (lua_State *L, uint8 * (*conv_func)(lua_State *, const uint8 
 
   if (output) {
     lua_pushlstring(L, output, len);
-    luaM_freearray(L, output, len, uint8);
+    luaN_freearray(L, output, len);
   } else {
     lua_pushstring(L, "");
   }
@@ -153,12 +153,12 @@ static int do_func (lua_State *L, uint8 * (*conv_func)(lua_State *, const uint8 
   DECLARE_FUNCTION(toHex);
 
 // Module function map
-LROT_BEGIN(encoder)
+LROT_BEGIN(encoder, NULL, 0)
   LROT_FUNCENTRY( fromBase64, encoder_fromBase64 )
   LROT_FUNCENTRY( toBase64, encoder_toBase64 )
   LROT_FUNCENTRY( fromHex, encoder_fromHex )
   LROT_FUNCENTRY( toHex, encoder_toHex )
-LROT_END( encoder, NULL, 0 )
+LROT_END(encoder, NULL, 0)
 
 
 NODEMCU_MODULE(ENCODER, "encoder", encoder, NULL);

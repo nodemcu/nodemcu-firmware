@@ -235,12 +235,16 @@
 #define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
 
 #ifdef DEVELOPMENT_TOOLS
-#if defined(LUA_CROSS_COMPILER) || !defined(DEVELOPMENT_USE_GDB)
+#ifdef DEVELOPMENT_USE_GDB
+extern void LUA_DEBUG_HOOK (void);
+#define lua_assert(x)    ((x) ? (void) 0 : LUA_DEBUG_HOOK ())
+#else
+#ifdef LUA_CROSS_COMPILER
 extern void luaL_assertfail(const char *file, int line, const char *message);
 #define lua_assert(x)    ((x) ? (void) 0 : luaL_assertfail(__FILE__, __LINE__, #x))
 #else
-extern void luaL_dbgbreak(void);
-#define lua_assert(x)    ((x) ? (void) 0 : luaL_dbgbreak())
+#endif
+#define lua_assert(x)    ((void) (x))
 #endif
 #endif
 

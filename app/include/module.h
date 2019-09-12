@@ -2,7 +2,7 @@
 #define __MODULE_H__
 
 #include "user_modules.h"
-#include "lrotable.h"
+#include "lnodemcu.h"
 
 /* Registering a module within NodeMCU is really easy these days!
  *
@@ -38,23 +38,6 @@
 #define MODULE_PASTE_(x,y) x##y
 #define MODULE_EXPAND_PASTE_(x,y) MODULE_PASTE_(x,y)
 
-#ifdef LUA_CROSS_COMPILER
-#ifdef _MSC_VER
-//on msvc it is necessary to go through more pre-processor hoops to get the
-//section name built; string merging does not happen in the _declspecs.
-//NOTE: linker magic is invoked via the magical '$' character. Caveat editor.
-#define __TOKIFY(s) .rodata1$##s
-#define __TOTOK(s) __TOKIFY(s)
-#define __STRINGIFY(x) #x
-#define __TOSTRING(x) __STRINGIFY(x)
-#define __ROSECNAME(s) __TOSTRING(__TOTOK(s))
-#define LOCK_IN_SECTION(s) __declspec ( allocate( __ROSECNAME(s) ) )
-#else
-#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".rodata1." #s)))
-#endif
-#else
-#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
-#endif
 /* For the ROM table, we name the variable according to ( | denotes concat):
  *   cfgname | _module_selected | LUA_USE_MODULES_##cfgname
  * where the LUA_USE_MODULES_XYZ macro is first expanded to yield either
@@ -67,8 +50,8 @@
  */
 #define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
   const LOCK_IN_SECTION(libs) \
-    luaR_entry MODULE_PASTE_(lua_lib_,cfgname) = { luaname, LRO_FUNCVAL(initfunc) }; \
+    ROTable_entry MODULE_PASTE_(lua_lib_,cfgname) = { luaname, LRO_FUNCVAL(initfunc) }; \
   const LOCK_IN_SECTION(rotable) \
-    luaR_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
-    = {luaname, LRO_ROVAL(map ## _map)}
+    ROTable_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(LUA_USE_MODULES_,cfgname))) \
+    = {luaname, LRO_ROVAL(map)}
 #endif

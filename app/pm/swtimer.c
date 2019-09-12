@@ -532,12 +532,12 @@ int resume_timers_lua(lua_State* L){
   return 0;
 }
 
-LROT_BEGIN(test_swtimer_debug)
+LROT_BEGIN(test_swtimer_debug, NULL, 0)
   LROT_FUNCENTRY( timer_list, print_timer_list )
   LROT_FUNCENTRY( susp_timer_list, print_susp_timer_list )
   LROT_FUNCENTRY( suspend, suspend_timers_lua )
   LROT_FUNCENTRY( resume, resume_timers_lua )
-LROT_END( test_swtimer_debug, NULL, 0 )
+LROT_END(test_swtimer_debug, NULL, 0)
 
 
 NODEMCU_MODULE(SWTMR_DBG, "SWTMR_DBG", test_swtimer_debug, NULL);

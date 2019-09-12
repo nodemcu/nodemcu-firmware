@@ -873,13 +873,13 @@ static int sntp_open(lua_State *L)
 
 
 // Module function map
-LROT_BEGIN(sntp)
+LROT_BEGIN(sntp, NULL, 0)
   LROT_FUNCENTRY( sync, sntp_sync )
 #ifdef LUA_USE_MODULES_RTCTIME
   LROT_FUNCENTRY( setoffset, sntp_setoffset )
   LROT_FUNCENTRY( getoffset, sntp_getoffset )
 #endif
-LROT_END( sntp, NULL, 0 )
+LROT_END(sntp, NULL, 0)
 
 
 NODEMCU_MODULE(SNTP, "sntp", sntp, sntp_open);

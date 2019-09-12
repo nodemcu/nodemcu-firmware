@@ -129,10 +129,10 @@ static int am2320_read(lua_State* L)
     return 2;
 }
 
-LROT_BEGIN(am2320)
+LROT_BEGIN(am2320, NULL, 0)
   LROT_FUNCENTRY( read, am2320_read )
   LROT_FUNCENTRY( setup, am2320_setup )
-LROT_END( am2320, NULL, 0 )
+LROT_END(am2320, NULL, 0)
 
 
 NODEMCU_MODULE(AM2320, "am2320", am2320, NULL);

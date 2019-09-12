@@ -13,6 +13,13 @@
 #include <stdbool.h>
 #include "user_config.h"
 
+#ifdef __XTENSA__
+# define LUA_USE_ESP
+#else
+# define LUA_USE_HOST
+#endif
+
+
 /*
 ** ==================================================================
 ** Search for "@@" to find all configurable definitions.
@@ -267,16 +274,6 @@
 
 
 /*
-@@ LUA_PROMPT is the default prompt used by stand-alone Lua.
-@@ LUA_PROMPT2 is the default continuation prompt used by stand-alone Lua.
-** CHANGE them if you want different prompts. (You can also change the
-** prompts dynamically, assigning to globals _PROMPT/_PROMPT2.)
-*/
-#define LUA_PROMPT		"> "
-#define LUA_PROMPT2		">> "
-
-
-/*
 @@ LUA_PROGNAME is the default name for the stand-alone Lua program.
 ** CHANGE it if your stand-alone interpreter has a different name and
 ** your system is not able to detect that name automatically.
@@ -300,25 +297,6 @@
 ** CHANGE them if you want to improve this functionality (e.g., by using
 ** GNU readline and history facilities).
 */
-#if defined(LUA_USE_STDIO)
-#if defined(LUA_CROSS_COMPILER) && defined(LUA_USE_READLINE)
-#include <stdio.h>
-#include <readline/readline.h>
-#include <readline/history.h>
-#define lua_readline(L,b,p)	((void)L, ((b)=readline(p)) != NULL)
-#define lua_saveline(L,idx) \
-	if (lua_strlen(L,idx) > 0)  /* non-empty line? */ \
-	  add_history(lua_tostring(L, idx));  /* add it to history */
-#define lua_freeline(L,b)	((void)L, free(b))
-#else // #if defined(LUA_CROSS_COMPILER) && defined(LUA_USE_READLINE)
-#define lua_readline(L,b,p)	\
-	((void)L, fputs(p, c_stdout), fflush(c_stdout),  /* show prompt */ \
-	fgets(b, LUA_MAXINPUT, c_stdin) != NULL)  /* get line */
-#define lua_saveline(L,idx)	{ (void)L; (void)idx; }
-#define lua_freeline(L,b)	{ (void)L; (void)b; }
-#endif // #if defined(LUA_USE_READLINE)
-
-#else // #if defined(LUA_USE_STDIO)
 
 #define lua_readline(L,b,p)     (readline4lua(p, b, LUA_MAXINPUT))
 #define lua_saveline(L,idx)     { (void)L; (void)idx; }
@@ -326,48 +304,29 @@
 
 extern int readline4lua(const char *prompt, char *buffer, int length);
 
-#endif // #if defined(LUA_USE_STDIO)
-
 /*
-@@ luai_writestring/luai_writeline define how 'print' prints its results.
+@@ lua_writestring/luai_writeline define how 'print' prints its results.
 ** They are only used in libraries and the stand-alone program. (The #if
 ** avoids including 'stdio.h' everywhere.)
 */
-#if !defined(LUA_USE_STDIO)
-#define luai_writestring(s, l)  puts(s)
-#define luai_writeline()        puts("\n")
-#endif // defined(LUA_USE_STDIO)
+#ifdef LUA_USE_ESP
+#define lua_writestring(s,l)  output_redirect((s),(l))
+#else
+#define lua_writestring(s,l)  fwrite((s), sizeof(char), (l), stdout)
+#endif
+#define luai_writeline()      lua_writestring("\n",1)
 
 /*
-@@ luai_writestringerror defines how to print error messages.
+@@ lua_writestringerror defines how to print error messages.
 ** (A format string with one argument is enough for Lua...)
 */
-#if !defined(LUA_USE_STDIO)
-#define luai_writestringerror(s,p)	dbg_printf((s), (p))
-#endif // defined(LUA_USE_STDIO)
+#ifdef LUA_USE_ESP
+#define lua_writestringerror(s,p)	dbg_printf((s), (p))
+#else
+#define lua_writestringerror(s,p)	fprintf(stderr, (s), (p))
+#endif
 
-
-/* }================================================================== */
-
-
-/*
-@@ LUAI_GCPAUSE defines the default pause between garbage-collector cycles
-@* as a percentage.
-** CHANGE it if you want the GC to run faster or slower (higher values
-** mean larger pauses which mean slower collection.) You can also change
-** this value dynamically.
-*/
-#define LUAI_GCPAUSE	110  /* 110% (wait memory to grow 10% before next gc) */
-
-
-/*
-@@ LUAI_GCMUL defines the default speed of garbage collection relative to
-@* memory allocation as a percentage.
-** CHANGE it if you want to change the granularity of the garbage
-** collection. (Higher values mean coarser collections. 0 represents
-** infinity, where each step performs a full collection.) You can also
-** change this value dynamically.
-*/
+#define LUAI_GCPAUSE   110  /* 110% (wait memory to grow 10% before next gc) */
 #define LUAI_GCMUL	200 /* GC runs 'twice the speed' of memory allocation */
 
 
@@ -897,5 +856,7 @@ union luai_Cast { double l_d; long l_l; };
 #if defined(LUA_USE_POPEN)
 #error "Pipes not supported NodeMCU firmware"
 #endif
+
+#define LUA_DEBUG_HOOK lua_debugbreak
 
 #endif

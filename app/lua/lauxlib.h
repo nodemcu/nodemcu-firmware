@@ -60,11 +60,9 @@ LUALIB_API lua_Integer (luaL_optinteger) (lua_State *L, int nArg,
 LUALIB_API void (luaL_checkstack) (lua_State *L, int sz, const char *msg);
 LUALIB_API void (luaL_checktype) (lua_State *L, int narg, int t);
 LUALIB_API void (luaL_checkany) (lua_State *L, int narg);
-LUALIB_API void (luaL_checkanyfunction) (lua_State *L, int narg);
-LUALIB_API void (luaL_checkanytable) (lua_State *L, int narg);
 
 LUALIB_API int   (luaL_newmetatable) (lua_State *L, const char *tname);
-LUALIB_API int   (luaL_rometatable) (lua_State *L, const char* tname, void *p);
+LUALIB_API int   (luaL_rometatable) (lua_State *L, const char* tname, const ROTable *p);
 LUALIB_API void *(luaL_checkudata) (lua_State *L, int ud, const char *tname);
 
 LUALIB_API void (luaL_where) (lua_State *L, int lvl);
@@ -76,11 +74,8 @@ LUALIB_API int (luaL_checkoption) (lua_State *L, int narg, const char *def,
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
 
-#ifdef LUA_CROSS_COMPILER
 LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
-#else
-LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
-#endif
+
 LUALIB_API int (luaL_loadbuffer) (lua_State *L, const char *buff, size_t sz,
                                   const char *name);
 LUALIB_API int (luaL_loadstring) (lua_State *L, const char *s);
@@ -111,6 +106,8 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 #define luaL_optint(L,n,d)	((int)luaL_optinteger(L, (n), (d)))
 #define luaL_checklong(L,n)	((long)luaL_checkinteger(L, (n)))
 #define luaL_optlong(L,n,d)	((long)luaL_optinteger(L, (n), (d)))
+#define luaL_checktable(L,n)	luaL_checktype(L, (n), LUA_TTABLE);
+#define luaL_checkfunction(L,n)	luaL_checktype(L, (n), LUA_TFUNCTION);
 
 #define luaL_typename(L,i)	lua_typename(L, lua_type(L,(i)))
 
@@ -163,6 +160,11 @@ LUALIB_API void (luaL_pushresult) (luaL_Buffer *B);
 
 /* }====================================================== */
 
+LUALIB_API int luaL_traceback (lua_State *L);
+LUALIB_API int luaL_pcallx (lua_State *L, int narg, int nres);
+LUALIB_API int luaL_posttask( lua_State* L, int prio );
+
+/* }====================================================== */
 
 /* compatibility with ref system */
 

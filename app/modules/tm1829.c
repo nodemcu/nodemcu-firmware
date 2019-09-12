@@ -100,9 +100,9 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
   return 0;
 }
 
-LROT_BEGIN(tm1829)
+LROT_BEGIN(tm1829, NULL, 0)
   LROT_FUNCENTRY( write, tm1829_write )
-LROT_END( tm1829, NULL, 0 )
+LROT_END(tm1829, NULL, 0)
 
 
 int luaopen_tm1829(lua_State *L) {

@@ -15,16 +15,16 @@
 ** effective length of pipe slot i and printing p[i] gives its contents.
 **
 ** The pipe library also supports the automatic scheduling of a reader task. This
-** is declared by including a Lua CB function and an optional prioirty for it to 
+** is declared by including a Lua CB function and an optional prioirty for it to
 ** execute at in the pipe.create() call. The reader task may or may not empty the
 ** FIFO (and there is also nothing to stop the task also writing to the FIFO.  The
-** reader automatically reschedules itself if the pipe contains unread content. 
+** reader automatically reschedules itself if the pipe contains unread content.
 **
-** The reader tasks may be interleaved with other tasks that write to the pipe and 
+** The reader tasks may be interleaved with other tasks that write to the pipe and
 ** others that don't. Any task writing to the pipe will also trigger the posting
 ** of a read task if one is not already pending.  In this way at most only one
 ** pending reader task is pending, and this prevents overrun of the task queueing
-** system. 
+** system.
 **
 ** Implementation Notes:
 **
@@ -33,10 +33,10 @@
 **    function, and this wrapper also uses upvals to store internal pipe state.
 **    The remaining slots are the Userdata buffer chunks.
 **
-** -  This internal state needs to be shared with the pipe_write function, but a 
+** -  This internal state needs to be shared with the pipe_write function, but a
 **    limitation of Lua 5.1 is that C functions cannot share upvals; to avoid this
 **    constraint, this function is also denormalised to act as the pipe_write
-**    function: if Arg1 is the pipe then its a pipe:write() otherwise its a 
+**    function: if Arg1 is the pipe then its a pipe:write() otherwise its a
 **    CB wrapper.
 **
 ** Also note that the pipe module is used by the Lua VM and therefore the create
@@ -50,7 +50,6 @@
 #include "lauxlib.h"
 #include <string.h>
 #include "platform.h"
-#include "lstate.h"
 
 #define INVALID_LEN ((unsigned)-1)
 
@@ -61,7 +60,6 @@ typedef struct buffer {
   char buf[LUAL_BUFFERSIZE];
 } buffer_t;
 
-LROT_TABLE(pipe_meta)
 
 #define AT_TAIL       0x00
 #define AT_HEAD       0x01
@@ -70,6 +68,7 @@ LROT_TABLE(pipe_meta)
 static buffer_t *checkPipeUD (lua_State *L, int ndx);
 static buffer_t *newPipeUD(lua_State *L, int ndx, int n);
 static int pipe_write_aux(lua_State *L);
+LROT_TABLE(pipe_meta);
 
 /* Validation and utility functions */
                                                                   // [-0, +0, v]
@@ -86,15 +85,16 @@ static buffer_t *checkPipeTable (lua_State *L, int tbl, int flags) {
         lua_rawgeti(L, tbl, i);                               /* and fetch UD */
         ud = checkPipeUD(L, -1);
       }
-      lua_settop(L, m);      
+      lua_settop(L, m);
       return ud;                            /* and return ptr to buffer_t rec */
     }
   }
-  luaL_typerror(L, tbl, "pipe table");
+  luaL_argerror(L, tbl, "pipe table");
   return NULL;                               /* NORETURN avoid compiler error */
 }
 
 static buffer_t *checkPipeUD (lua_State *L, int ndx) {            // [-0, +0, v]
+  luaL_checktype(L, ndx, LUA_TUSERDATA);                 /* NORETURN on error */
   buffer_t *ud = lua_touserdata(L, ndx);
   if (ud && lua_getmetatable(L, ndx)) {          /* Get UD and its metatable? */
     lua_pushrotable(L, LROT_TABLEREF(pipe_meta));   /* push correct metatable */
@@ -103,9 +103,6 @@ static buffer_t *checkPipeUD (lua_State *L, int ndx) {            // [-0, +0, v]
       return ud;                            /* and return ptr to buffer_t rec */
     }
   }
-  if (!lua_istable(L,ndx))
-    luaL_typerror(L, ndx, "pipeUD");                        /* NORETURN error */
-  return NULL;                                         /* keep compiler happy */
 }
 
 static buffer_t *newPipeUD(lua_State *L, int ndx, int n) {   // [-0,+0,-]
@@ -155,16 +152,16 @@ static char getsize_delim (lua_State *L, int ndx, int *len) {     // [-0, +0, v]
 #define CB_WRITE_UPDATED  2
 #define CB_QUIESCENT      4
 /*
-** Note that nothing precludes the Lua CB function from itself writing to the 
-** pipe and in this case this routine will call itself recursively. 
+** Note that nothing precludes the Lua CB function from itself writing to the
+** pipe and in this case this routine will call itself recursively.
 **
-** The Lua CB itself takes the pipe object as a parameter and returns an optional 
-** boolean to force or to suppress automatic retasking if needed.  If omitted, 
-** then the default is to repost if the pipe is not empty, otherwise the task 
+** The Lua CB itself takes the pipe object as a parameter and returns an optional
+** boolean to force or to suppress automatic retasking if needed.  If omitted,
+** then the default is to repost if the pipe is not empty, otherwise the task
 ** chain is left to lapse.
 */
 static int pipe_write_and_read_poster (lua_State *L) {
-  int state = lua_tointeger(L, UVstate); 
+  int state = lua_tointeger(L, UVstate);
   if (lua_rawequal(L, 1, UVpipe)) {
     /* arg1 == the pipe, so this was invoked as a pipe_write() */
     if (pipe_write_aux(L) && state && !(state & CB_WRITE_UPDATED)) {
@@ -177,12 +174,12 @@ static int pipe_write_and_read_poster (lua_State *L) {
       lua_replace(L, UVstate);             /* Set CB state write updated flag */
       if (state == CB_QUIESCENT | CB_WRITE_UPDATED) {
         lua_rawgeti(L, 1, 1);                      /* Get CB ref from pipe[1] */
-        luaN_posttask(L, (int) lua_tointeger(L, UVprio));  /* and repost task */
+        luaL_posttask(L, (int) lua_tointeger(L, UVprio));  /* and repost task */
       }
     }
 
   } else if (state != CB_NOT_USED) {
-    /* invoked by the luaN_taskpost() so call the Lua CB */ 
+    /* invoked by the luaN_taskpost() so call the Lua CB */
     int repost;                  /* can take the values CB_WRITE_UPDATED or 0 */
     lua_pushinteger(L, CB_ACTIVE);             /* CB state set to active only */
     lua_replace(L, UVstate);
@@ -192,13 +189,13 @@ static int pipe_write_and_read_poster (lua_State *L) {
    /*
     * On return from the Lua CB, the task is never reposted if the pipe is empty.
     * If it is not empty then the Lua CB return status determines when reposting
-    * occurs: 
+    * occurs:
     *  -  true  = repost
     *  -  false = don't repost
-    *  -  nil  = only repost if there has been a write update.  
+    *  -  nil  = only repost if there has been a write update.
     */
     if (lua_isboolean(L,-1)) {
-      repost = (lua_toboolean(L, -1) == true && 
+      repost = (lua_toboolean(L, -1) == true &&
                 lua_objlen(L, UVpipe) > 1) ? CB_WRITE_UPDATED : 0;
     } else {
       repost = state & CB_WRITE_UPDATED;
@@ -209,7 +206,7 @@ static int pipe_write_and_read_poster (lua_State *L) {
 
     if (repost) {
       lua_rawgeti(L, UVpipe, 1);                   /* Get CB ref from pipe[1] */
-      luaN_posttask(L, (int) lua_tointeger(L, UVprio));    /* and repost task */
+      luaL_posttask(L, (int) lua_tointeger(L, UVprio));    /* and repost task */
     }
   }
   return 0;
@@ -224,7 +221,7 @@ int pipe_create(lua_State *L) {
   lua_settop(L, 2);                                     /* fix stack sze as 2 */
 
   if (!lua_isnil(L, 1)) {
-    luaL_checkanyfunction(L, 1);           /* non-nil arg1 must be a function */
+    luaL_checktype(L, 1, LUA_TFUNCTION);           /* non-nil arg1 must be a function */
     if (lua_isnil(L, 2)) {
       prio = PLATFORM_TASK_PRIORITY_MEDIUM;
     } else {
@@ -237,7 +234,7 @@ int pipe_create(lua_State *L) {
   lua_createtable (L, 1, 0);                             /* create pipe table */
 	lua_pushrotable(L, LROT_TABLEREF(pipe_meta));
 	lua_setmetatable(L, -2);        /* set pipe table's metabtable to pipe_meta */
-  
+
   lua_pushvalue(L, -1);                                   /* UV1: pipe object */
   lua_pushvalue(L, 1);                                    /* UV2: CB function */
   lua_pushinteger(L, prio);                             /* UV3: task priority */
@@ -249,7 +246,7 @@ int pipe_create(lua_State *L) {
 
 // len = #pipeobj[i]
 static int pipe__len (lua_State *L) {
-   if (lua_type(L, 1) == LUA_TTABLE) {
+   if (lua_istable(L, 1)) {
     lua_pushinteger(L, lua_objlen(L, 1));
   } else {
     buffer_t *ud = checkPipeUD(L, 1);
@@ -304,7 +301,7 @@ int pipe_read(lua_State *L) {
       /* shift the pipe array down overwriting T[1] */
       int nUD = lua_objlen(L, 1);
       for (i = 2; i < nUD; i++) {                         /* for i = 2, nUD-1 */
-        lua_rawgeti(L, 1, i+1); lua_rawseti(L, 1, i);        /* T[i] = T[i+1] */  
+        lua_rawgeti(L, 1, i+1); lua_rawseti(L, 1, i);        /* T[i] = T[i+1] */
       }
       lua_pushnil(L); lua_rawseti(L, 1, nUD--);                 /* T[n] = nil */
       if (nUD>1) {
@@ -340,14 +337,14 @@ int pipe_unread(lua_State *L) {
       /* If the current UD is full insert a new UD at T[2] */
       int i, nUD = lua_objlen(L, 1);
       for (i = nUD; i > 0; i--) {                       /* for i = nUD-1,1,-1 */
-        lua_rawgeti(L, 1, i); lua_rawseti(L, 1, i+1);        /* T[i+1] = T[i] */  
+        lua_rawgeti(L, 1, i); lua_rawseti(L, 1, i+1);        /* T[i+1] = T[i] */
       }
       ud = newPipeUD(L, 1, 1);
       used = 0; lrem = LUAL_BUFFERSIZE;
 
     } else if (ud->start < l) {
       /* If the unread can't fit it before the start then shift content to end */
-      memmove(ud->buf + lrem, 
+      memmove(ud->buf + lrem,
               ud->buf + ud->start, used); /* must be memmove not cpy */
       ud->start = lrem; ud->end = LUAL_BUFFERSIZE;
     }
@@ -357,14 +354,14 @@ int pipe_unread(lua_State *L) {
 
     /* If we've got here then the remaining string is strictly longer than the */
     /* remaining buffer space, so top off the buffer before looping around again */
-    l -= lrem;    
+    l -= lrem;
     memcpy(ud->buf, s + l, lrem);
     ud->start = 0;
 
   } while(1);
 
   /* Copy any residual tail to the UD buffer.  Note that this is l>0 and  */
-  ud->start -= l;  
+  ud->start -= l;
   memcpy(ud->buf + ud->start, s, l);
 	return 0;
 }
@@ -430,13 +427,13 @@ static int pipe_reader(lua_State *L) {
   return 1;
 }
 
-LROT_BEGIN(pipe_funcs)
+LROT_BEGIN(pipe_funcs, NULL, 0)
   LROT_FUNCENTRY( __len, pipe__len )
   LROT_FUNCENTRY( __tostring, pipe__tostring )
   LROT_FUNCENTRY( read, pipe_read )
   LROT_FUNCENTRY( reader, pipe_reader )
   LROT_FUNCENTRY( unread, pipe_unread )
-LROT_END( pipe_meta, NULL, LROT_MASK_INDEX )
+LROT_END(pipe_funcs, NULL, 0)
 
 /* Using a index func is needed because the write method is at pipe[1] */
 static int pipe__index(lua_State *L) {
@@ -452,14 +449,14 @@ static int pipe__index(lua_State *L) {
   return 1;
 }
 
-LROT_BEGIN(pipe_meta)
+LROT_BEGIN(pipe_meta, NULL, LROT_MASK_INDEX)
   LROT_FUNCENTRY( __index, pipe__index)
   LROT_FUNCENTRY( __len, pipe__len )
   LROT_FUNCENTRY( __tostring, pipe__tostring )
-LROT_END( pipe_meta, NULL, LROT_MASK_INDEX )
+LROT_END(pipe_meta, NULL, LROT_MASK_INDEX)
 
-LROT_BEGIN(pipe)
+LROT_BEGIN(pipe, NULL, 0)
   LROT_FUNCENTRY( create, pipe_create )
-LROT_END( lb, NULL, 0 )
+LROT_END(pipe, NULL, 0)
 
 NODEMCU_MODULE(PIPE, "pipe", pipe, NULL);

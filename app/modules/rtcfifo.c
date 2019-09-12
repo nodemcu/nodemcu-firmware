@@ -166,7 +166,7 @@ static int rtcfifo_dsleep_until_sample (lua_State *L)
 #endif
 
 // Module function map
-LROT_BEGIN(rtcfifo)
+LROT_BEGIN(rtcfifo, NULL, 0)
   LROT_FUNCENTRY( prepare, rtcfifo_prepare )
   LROT_FUNCENTRY( ready, rtcfifo_ready )
   LROT_FUNCENTRY( put, rtcfifo_put )
@@ -177,7 +177,7 @@ LROT_BEGIN(rtcfifo)
 #ifdef LUA_USE_MODULES_RTCTIME
   LROT_FUNCENTRY( dsleep_until_sample, rtcfifo_dsleep_until_sample )
 #endif
-LROT_END( rtcfifo, NULL, 0 )
+LROT_END(rtcfifo, NULL, 0)
 
 
 NODEMCU_MODULE(RTCFIFO, "rtcfifo", rtcfifo, NULL);

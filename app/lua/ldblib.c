@@ -7,7 +7,6 @@
 
 #define ldblib_c
 #define LUA_LIB
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <stdio.h>
@@ -18,7 +17,7 @@
 #include "lualib.h"
 #include "lstring.h"
 #include "lflash.h"
-#include "lrotable.h"
+#include "lnodemcu.h"
 
 #include "user_modules.h"
 
@@ -144,7 +143,7 @@ static int db_getinfo (lua_State *L) {
       return 1;
     }
   }
-  else if (lua_isfunction(L, arg+1) || lua_islightfunction(L, arg+1)) {
+  else if (lua_isfunction(L, arg+1)) {
     lua_pushfstring(L, ">%s", options);
     options = lua_tostring(L, -1);
     lua_pushvalue(L, arg+1);
@@ -302,7 +301,7 @@ static int db_sethook (lua_State *L) {
   }
   else {
     const char *smask = luaL_checkstring(L, arg+2);
-    luaL_checkanyfunction(L, arg+1);
+    luaL_checkfunction(L, arg+1);
     count = luaL_optint(L, arg+3, 0);
     func = hookf; mask = makemask(smask, count);
   }
@@ -340,10 +339,10 @@ static int db_debug (lua_State *L) {
   for (;;) {
     char buffer[LUA_MAXINPUT];
 #if defined(LUA_USE_STDIO)
-    fputs("lua_debug> ", c_stderr);
-    if (fgets(buffer, sizeof(buffer), c_stdin) == 0 ||
+    fputs("lua_debug> ", stderr);
+    if (fgets(buffer, sizeof(buffer), stdin) == 0 ||
 #else
-//    luai_writestringerror("%s", "lua_debug>");
+//    lua_writestringerror("%s", "lua_debug>");
     if (lua_readline(L, buffer, "lua_debug>") == 0 ||
 #endif
         strcmp(buffer, "cont\n") == 0)
@@ -351,10 +350,10 @@ static int db_debug (lua_State *L) {
     if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
         lua_pcall(L, 0, 0, 0)) {
 #if defined(LUA_USE_STDIO)
-      fputs(lua_tostring(L, -1), c_stderr);
-      fputs("\n", c_stderr);
+      fputs(lua_tostring(L, -1), stderr);
+      fputs("\n", stderr);
 #else
-      luai_writestringerror("%s\n", lua_tostring(L, -1));
+      lua_writestringerror("%s\n", lua_tostring(L, -1));
 #endif
     }
     lua_settop(L, 0);  /* remove eventual returns */
@@ -365,7 +364,7 @@ static int db_debug (lua_State *L) {
 #define LEVELS1	12	/* size of the first part of the stack */
 #define LEVELS2	10	/* size of the second part of the stack */
 
-int debug_errorfb (lua_State *L) {
+static int debug_errorfb (lua_State *L) {
   int level;
   int firstpart = 1;  /* still before eventual `...' */
   int arg;
@@ -417,7 +416,7 @@ int debug_errorfb (lua_State *L) {
   return 1;
 }
 
-LROT_PUBLIC_BEGIN(dblib)
+LROT_BEGIN(dblib, NULL, 0)
 #ifndef LUA_USE_BUILTIN_DEBUG_MINIMAL
   LROT_FUNCENTRY( debug, db_debug )
   LROT_FUNCENTRY( getfenv, db_getfenv )

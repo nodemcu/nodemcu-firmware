@@ -556,27 +556,29 @@ static int coap_client_delete( lua_State* L )
 }
 
 // Module function map
-LROT_BEGIN(coap_server)
+
+LROT_BEGIN(coap_server, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, coap_server_delete )
+  LROT_TABENTRY(  __index, coap_server )
   LROT_FUNCENTRY( listen, coap_server_listen )
   LROT_FUNCENTRY( close, coap_server_close )
   LROT_FUNCENTRY( var, coap_server_var )
   LROT_FUNCENTRY( func, coap_server_func )
-  LROT_FUNCENTRY( __gc, coap_server_delete )
-  LROT_TABENTRY( __index, coap_server )
-LROT_END( coap_server, coap_server, 0 )
+LROT_END(coap_server, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_BEGIN(coap_client)
+
+LROT_BEGIN(coap_client, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, coap_client_gcdelete )
+  LROT_TABENTRY(  __index, coap_client )
   LROT_FUNCENTRY( get, coap_client_get )
   LROT_FUNCENTRY( post, coap_client_post )
   LROT_FUNCENTRY( put, coap_client_put )
   LROT_FUNCENTRY( delete, coap_client_delete )
-  LROT_FUNCENTRY( __gc, coap_client_gcdelete )
-  LROT_TABENTRY( __index, coap_client )
-LROT_END( coap_client, coap_client, 0 )
+LROT_END(coap_client, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_BEGIN(coap)
+LROT_BEGIN(coap, NULL, 0)
   LROT_FUNCENTRY( Server, coap_createServer )
   LROT_FUNCENTRY( Client, coap_createClient )
   LROT_NUMENTRY( CON, COAP_TYPE_CON )
@@ -587,8 +589,7 @@ LROT_BEGIN(coap)
   LROT_NUMENTRY( OCTET_STREAM, COAP_CONTENTTYPE_APPLICATION_OCTET_STREAM )
   LROT_NUMENTRY( EXI, COAP_CONTENTTYPE_APPLICATION_EXI )
   LROT_NUMENTRY( JSON, COAP_CONTENTTYPE_APPLICATION_JSON )
-  LROT_TABENTRY( __metatable, coap )
-LROT_END( coap, coap, 0 )
+LROT_END(coap, NULL, 0)
 
 
 int luaopen_coap( lua_State *L )

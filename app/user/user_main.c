@@ -29,6 +29,7 @@
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
+extern int lua_main (void);
 
 /* Contents of esp_init_data_default.bin */
 extern const uint32_t init_data[], init_data_end[];
@@ -165,7 +166,7 @@ void user_pre_init(void) {
         return;
     }
     os_printf("Invalid system partition table\n");
-    while (1) {};  
+    while (1) {};
 }
 
 /*
@@ -277,7 +278,8 @@ void nodemcu_init(void) {
    NODE_DBG("Task task_lua starting.\n");
    // Call the Lua bootstrap startup directly.  This uses the task interface
    // internally to carry out the main lua libraries initialisation.
-   lua_main();
+   if(lua_main())
+     lua_main();  // If it returns true then LFS restart is needed
 }
 
 #ifdef LUA_USE_MODULES_WIFI

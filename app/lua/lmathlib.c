@@ -7,7 +7,6 @@
 
 #define lmathlib_c
 #define LUA_LIB
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <stdlib.h>
@@ -15,7 +14,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
+#include "lnodemcu.h"
 
 #undef PI
 #define PI (3.14159265358979323846)
@@ -309,7 +308,7 @@ static int math_randomseed (lua_State *L) {
   return 0;
 }
 
-LROT_PUBLIC_BEGIN(math)
+LROT_BEGIN(math, NULL, 0)
 #ifdef LUA_NUMBER_INTEGRAL
   LROT_FUNCENTRY( abs, math_abs )
   LROT_FUNCENTRY( ceil, math_identity )
