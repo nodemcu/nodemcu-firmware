@@ -8,30 +8,41 @@
 
 summary ?= @true
 
-CCFLAGS:= -I.. -I../../include -I../../uzlib
+CCFLAGS:= -I. -I.. -I../../include -I../../uzlib
 LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld -lm -ldl -Wl,-Map=mapfile
 
 CCFLAGS += -Wall
 
-DEFINES += -DLUA_CROSS_COMPILER
-
 TARGET = host
 
-ifeq ($(FLAVOR),debug)
-    CCFLAGS        += -O0 -g
-    TARGET_LDFLAGS += -O0 -g
-    DEFINES        += -DLUA_DEBUG_BUILD
+VERBOSE ?=
+V ?= $(VERBOSE)
+ifeq ("$(V)","1")
+  export summary := @true
+else
+  export summary := @echo
+  # disable echoing of commands, directory names
+  MAKEFLAGS += --silent -w
+endif  # $(V)==1
+
+DEBUG ?=
+ifeq ("$(DEBUG)","1")
+    FLAVOR         =   debug
+    CCFLAGS        += -O0 -ggdb
+    TARGET_LDFLAGS += -O0 -ggdb
+    DEFINES        += -DLUA_CROSS_COMPILER -DLUA_DEBUG_BUILD -DDEVELOPMENT_TOOLS -DDEVELOPMENT_USE_GDB
 else
     FLAVOR         =  release
     CCFLAGS        += -O2
     TARGET_LDFLAGS += -O2
-endif
+    DEFINES        += -DLUA_CROSS_COMPILER
+endif  # DEBUG
 
 LUACSRC := luac.c      lflashimg.c liolib.c    loslib.c    print.c
 LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c \
            ldo.c       ldump.c     lfunc.c     lgc.c       linit.c     llex.c \
            lmathlib.c  lmem.c      loadlib.c   lobject.c   lopcodes.c  lparser.c \
-           lrotable.c  lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
+           lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
            ltm.c       lundump.c   lvm.c       lzio.c
 UZSRC   := uzlib_deflate.c crc32.c
 

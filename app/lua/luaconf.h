@@ -13,6 +13,13 @@
 #include <stdbool.h>
 #include "user_config.h"
 
+#ifdef __XTENSA__
+# define LUA_USE_ESP
+#else
+# define LUA_USE_HOST
+#endif
+
+
 /*
 ** ==================================================================
 ** Search for "@@" to find all configurable definitions.
@@ -329,21 +336,21 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 #endif // #if defined(LUA_USE_STDIO)
 
 /*
-@@ luai_writestring/luai_writeline define how 'print' prints its results.
+@@ lua_writestring/luai_writeline define how 'print' prints its results.
 ** They are only used in libraries and the stand-alone program. (The #if
 ** avoids including 'stdio.h' everywhere.)
 */
 #if !defined(LUA_USE_STDIO)
-#define luai_writestring(s, l)  puts(s)
+#define lua_writestring(s, l)  puts(s)
 #define luai_writeline()        puts("\n")
 #endif // defined(LUA_USE_STDIO)
 
 /*
-@@ luai_writestringerror defines how to print error messages.
+@@ lua_writestringerror defines how to print error messages.
 ** (A format string with one argument is enough for Lua...)
 */
 #if !defined(LUA_USE_STDIO)
-#define luai_writestringerror(s,p)	dbg_printf((s), (p))
+#define lua_writestringerror(s,p)	dbg_printf((s), (p))
 #endif // defined(LUA_USE_STDIO)
 
 

@@ -5,16 +5,15 @@
 */
 
 #define LUAC_CROSS_FILE
+#define luac_c
+#define LUA_CORE
 
-#include "luac_cross.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#define luac_c
-#define LUA_CORE
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -290,8 +289,8 @@ static int pmain(lua_State* L)
  if (!lua_checkstack(L,argc)) fatal("too many input files");
  if (execute)
  {
-  if (luaL_loadfile(L,execute)!=0) fatal(lua_tostring(L,-1));
   luaL_openlibs(L);
+  if (luaL_loadfile(L,execute)!=0) fatal(lua_tostring(L,-1));
   lua_pushstring(L, execute);
   if (lua_pcall(L, 1, 1, 0)) fatal(lua_tostring(L,-1));
   if (!lua_isfunction(L, -1))

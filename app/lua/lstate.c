@@ -7,7 +7,6 @@
 
 #define lstate_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 

@@ -5,7 +5,6 @@
 
 #define lflash_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 #include "lua.h"
 
 #include "lobject.h"
@@ -200,7 +199,6 @@ static void procFirstPass (void);
  * Library function called by node.flashreload(filename).
  */
 LUALIB_API int luaN_reload_reboot (lua_State *L) {
-  // luaL_dbgbreak();
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
 

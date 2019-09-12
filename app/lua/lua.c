@@ -2,7 +2,7 @@
 ** NodeMCU Lua 5.1 main initiator and comand interpreter
 ** See Copyright Notice in lua.h
 **
-** Note this is largely a backport of some new Lua 5.3 version but 
+** Note this is largely a backport of some new Lua 5.3 version but
 ** with API changes for Lua 5.1 compatability
 */
 
@@ -18,10 +18,8 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "legc.h"
 #include "os_type.h"
 
-extern int debug_errorfb (lua_State *L);
 extern int pipe_create(lua_State *L);
 extern int pipe_read(lua_State *L);
 extern int pipe_unread(lua_State *L);
@@ -37,7 +35,7 @@ static int pmain (lua_State *L);
 static int dojob (lua_State *L);
 
 static void l_message (const char *msg) {
-  luai_writestringerror("%s\n", msg);
+  lua_writestringerror("%s\n", msg);
 }
 
 static int report (lua_State *L, int status) {
@@ -60,7 +58,9 @@ static void l_print(lua_State *L, int n) {
 
 static int traceback (lua_State *L) {
   if (lua_isstring(L, 1)) {
-    lua_pushlightfunction(L, &debug_errorfb);
+    lua_getglobal(L,"debug");
+    lua_getfield(L, -1,"traceback");
+    lua_remove(L, -2);
     lua_pushvalue(L, 1);                                /* pass error message */
     lua_pushinteger(L, 2);                /* skip this function and traceback */
     lua_call(L, 2, 1);                                /* call debug.traceback */
@@ -69,12 +69,12 @@ static int traceback (lua_State *L) {
   return 1;
 }
 
-static int docall (lua_State *L, int narg, int clear) {
+static int docall (lua_State *L, int narg, int nres) {
   int status;
   int base = lua_gettop(L) - narg;                          /* function index */
   lua_pushlightfunction(L, &traceback);            /* push traceback function */
   lua_insert(L, base);                         /* put it under chunk and args */
-  status = lua_pcall(L, narg, (clear ? 0 : LUA_MULTRET), base);
+  status = lua_pcall(L, narg, (nres ? 0 : LUA_MULTRET), base);
   lua_remove(L, base);                           /* remove traceback function */
   /* force a complete garbage collection in case of errors */
   if (status != 0) lua_gc(L, LUA_GCCOLLECT, 0);
@@ -82,7 +82,7 @@ static int docall (lua_State *L, int narg, int clear) {
 }
 
 static void print_version (lua_State *L) {
-  lua_pushliteral (L, "\n" NODE_VERSION " build " BUILD_DATE 
+  lua_pushliteral (L, "\n" NODE_VERSION " build " BUILD_DATE
                       " powered by " LUA_RELEASE " on SDK ");
   lua_pushstring (L, SDK_VERSION);
   lua_concat (L, 2);
@@ -230,10 +230,11 @@ static int pmain (lua_State *L) {
   const char *init = LUA_INIT_STRING;
   globalL = L;
 
+//*DEBUG*/luaL_dbgbreak();
   lua_gc(L, LUA_GCSTOP, 0);                  /* stop GC during initialization */
   luaL_openlibs(L);                                         /* open libraries */
   lua_gc(L, LUA_GCRESTART, 0);                 /* restart GC and set EGC mode */
-  legc_set_mode( L, EGC_ALWAYS, 4096 );
+  lua_setegcmode( L, EGC_ALWAYS, 4096 );
   lua_settop(L, 0);
 
   lua_pushliteral(L, "stdin");
@@ -246,12 +247,14 @@ static int pmain (lua_State *L) {
   input_setup(LUA_MAXINPUT, get_prompt(L, 1));
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
   print_version(L);
+//*DEBUG*/luaL_dbgbreak();
 
   /* and last of all, kick off application initialisation */
   if (init[0] == '@')
     dofile(L, init+1);
   else
     dostring(L, init, LUA_INIT);
+//*DEBUG*/luaL_dbgbreak();
   return 0;
 }
 
@@ -269,7 +272,7 @@ void lua_main (void) {
     return;
   }
   lua_pushlightfunction(L, &pmain);   /* Call 'pmain' as a high priority task */
-  luaN_posttask(L, LUA_TASK_HIGH);
+  luaL_posttask(L, LUA_TASK_HIGH);
 }
 
 /*
@@ -296,6 +299,6 @@ void lua_input_string (const char *line, int len) {
   lua_pushlstring(L, line, len);
 
 //const char*b = lua_tostring(L, -1);
-//dbg_printf("Pushing (%u): %s", len, b); 
+//dbg_printf("Pushing (%u): %s", len, b);
   lua_call(L, 2, 0);                                     /* stdin:write(line) */
 }

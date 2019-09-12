@@ -16,7 +16,8 @@
 #define gnext(n)	((n)->i_key.nk.next)
 
 #define key2tval(n)	(&(n)->i_key.tvk)
-
+#define isrotable(t) (gettt(t)==LUA_TROTABLE)
+#define isrwtable(t) (gettt(t)==LUA_TTABLE)
 
 LUAI_FUNC const TValue *luaH_getnum (Table *t, int key);
 LUAI_FUNC const TValue *luaH_getnum_ro (void *t, int key);
@@ -35,6 +36,8 @@ LUAI_FUNC int luaH_next_ro (lua_State *L, void *t, StkId key);
 LUAI_FUNC int luaH_getn (Table *t);
 LUAI_FUNC int luaH_getn_ro (void *t);
 LUAI_FUNC int luaH_isdummy (Node *n);
+
+#define LUA_MAX_ROTABLE_NAME  32
 
 #if defined(LUA_DEBUG)
 LUAI_FUNC Node *luaH_mainposition (const Table *t, const TValue *key);
