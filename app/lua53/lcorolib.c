@@ -16,6 +16,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lnodemcu.h"
 
 
 static lua_State *getco (lua_State *L) {
@@ -147,22 +148,13 @@ static int luaB_corunning (lua_State *L) {
   return 2;
 }
 
-
-static const luaL_Reg co_funcs[] = {
-  {"create", luaB_cocreate},
-  {"resume", luaB_coresume},
-  {"running", luaB_corunning},
-  {"status", luaB_costatus},
-  {"wrap", luaB_cowrap},
-  {"yield", luaB_yield},
-  {"isyieldable", luaB_yieldable},
-  {NULL, NULL}
-};
-
-
-
-LUAMOD_API int luaopen_coroutine (lua_State *L) {
-  luaL_newlib(L, co_funcs);
-  return 1;
-}
+LROT_BEGIN(co_funcs, NULL, 0)
+  LROT_FUNCENTRY( create, luaB_cocreate )
+  LROT_FUNCENTRY( resume, luaB_coresume )
+  LROT_FUNCENTRY( running, luaB_corunning )
+  LROT_FUNCENTRY( status, luaB_costatus )
+  LROT_FUNCENTRY( wrap, luaB_cowrap )
+  LROT_FUNCENTRY( yield, luaB_yield )
+  LROT_FUNCENTRY( isyieldable, luaB_yieldable)
+LROT_END(co_funcs, NULL, 0)
 

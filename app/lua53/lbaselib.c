@@ -19,6 +19,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lnodemcu.h"
 
 
 static int luaB_print (lua_State *L) {
@@ -172,7 +173,7 @@ static int luaB_rawset (lua_State *L) {
 
 static int luaB_collectgarbage (lua_State *L) {
   static const char *const opts[] = {"stop", "restart", "collect",
-    "count", "step", "setpause", "setstepmul",
+    "count", "step", "setpause", "setstepmul", "setmemlimit",
     "isrunning", NULL};
   static const int optsnum[] = {LUA_GCSTOP, LUA_GCRESTART, LUA_GCCOLLECT,
     LUA_GCCOUNT, LUA_GCSTEP, LUA_GCSETPAUSE, LUA_GCSETSTEPMUL,
@@ -449,50 +450,77 @@ static int luaB_tostring (lua_State *L) {
   return 1;
 }
 
-
-static const luaL_Reg base_funcs[] = {
-  {"assert", luaB_assert},
-  {"collectgarbage", luaB_collectgarbage},
-  {"dofile", luaB_dofile},
-  {"error", luaB_error},
-  {"getmetatable", luaB_getmetatable},
-  {"ipairs", luaB_ipairs},
-  {"loadfile", luaB_loadfile},
-  {"load", luaB_load},
-#if defined(LUA_COMPAT_LOADSTRING)
-  {"loadstring", luaB_load},
+#if defined(LUA_COMPAT_UNPACK)
+static int luaB_unpack (lua_State *L) {
+  int n = lua_gettop(L);  /* number of elements to pack */
+  lua_getglobal(L, "table");
+  lua_getfield(L, -1, "pack");
+  lua_insert(L, 1);
+  lua_settop(L, n+1);
+  lua_call(L, n, 1);
+  return 1;
+}
 #endif
-  {"next", luaB_next},
-  {"pairs", luaB_pairs},
-  {"pcall", luaB_pcall},
-  {"print", luaB_print},
-  {"rawequal", luaB_rawequal},
-  {"rawlen", luaB_rawlen},
-  {"rawget", luaB_rawget},
-  {"rawset", luaB_rawset},
-  {"select", luaB_select},
-  {"setmetatable", luaB_setmetatable},
-  {"tonumber", luaB_tonumber},
-  {"tostring", luaB_tostring},
-  {"type", luaB_type},
-  {"xpcall", luaB_xpcall},
-  /* placeholders */
-  {"_G", NULL},
-  {"_VERSION", NULL},
-  {NULL, NULL}
-};
+
+
+
+/*
+** ESP builds use specific linker directives to marshal all the ROTable entries
+** for the library modules including the base library into an entry vector in
+** the PSECT ".lua_rotable" including the base library entries; this is bound
+** into a ROTable in linit.c  which then hooked into the __index metaentry for
+** _G so that base library and ROM tables are directly resolved through _G.
+**
+** The host-based luac.cross builds which must use a standard GNU link or
+** MSVC so this linker-specfic assembly approach can't be used. In this case
+** luaopen_base returns a base_func ROTable so a two cascade resolution. See
+** description in init.c for further details.
+ */
+#ifdef LUA_CROSS_COMPILER
+LROT_BEGIN(base_func, NULL, 0)
+#else
+LROT_ENTRIES_IN_SECTION(base_func, rotable)
+#endif
+  LROT_FUNCENTRY(assert,         luaB_assert)
+  LROT_FUNCENTRY(collectgarbage, luaB_collectgarbage)
+  LROT_FUNCENTRY(dofile,         luaB_dofile)
+  LROT_FUNCENTRY(error,          luaB_error)
+  LROT_FUNCENTRY(getmetatable,   luaB_getmetatable)
+  LROT_FUNCENTRY(ipairs,         luaB_ipairs)
+  LROT_FUNCENTRY(loadfile,       luaB_loadfile)
+  LROT_FUNCENTRY(load,           luaB_load)
+#if defined(LUA_COMPAT_LOADSTRING)
+  LROT_FUNCENTRY(loadstring,     luaB_load)
+#endif
+  LROT_FUNCENTRY(next,           luaB_next)
+  LROT_FUNCENTRY(pairs,          luaB_pairs)
+  LROT_FUNCENTRY(pcall,          luaB_pcall)
+  LROT_FUNCENTRY(print,          luaB_print)
+  LROT_FUNCENTRY(rawequal,       luaB_rawequal)
+  LROT_FUNCENTRY(rawlen,         luaB_rawlen)
+  LROT_FUNCENTRY(rawget,         luaB_rawget)
+  LROT_FUNCENTRY(rawset,         luaB_rawset)
+  LROT_FUNCENTRY(select,         luaB_select)
+  LROT_FUNCENTRY(setmetatable,   luaB_setmetatable)
+  LROT_FUNCENTRY(tonumber,       luaB_tonumber)
+  LROT_FUNCENTRY(tostring,       luaB_tostring)
+  LROT_FUNCENTRY(type,           luaB_type)
+#if defined(LUA_COMPAT_UNPACK)
+  LROT_FUNCENTRY(unpack,         luaB_unpack)
+#endif
+  LROT_FUNCENTRY(xpcall,         luaB_xpcall)
+#ifdef LUA_CROSS_COMPILER
+LROT_END(base_func, NULL, 0)
+#else
+LROT_BREAK(base_func)
+#endif
 
 
 LUAMOD_API int luaopen_base (lua_State *L) {
-  /* open lib into global table */
-  lua_pushglobaltable(L);
-  luaL_setfuncs(L, base_funcs, 0);
-  /* set global _G */
+  lua_pushglobaltable(L);           /* set global _G */
   lua_pushvalue(L, -1);
   lua_setfield(L, -2, "_G");
-  /* set global _VERSION */
-  lua_pushliteral(L, LUA_VERSION);
+  lua_pushliteral(L, LUA_VERSION);  /* set global _VERSION */
   lua_setfield(L, -2, "_VERSION");
-  return 1;
+  return 0;
 }
-

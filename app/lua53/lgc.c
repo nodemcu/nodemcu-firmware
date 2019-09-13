@@ -235,7 +235,7 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
 static void reallymarkobject (global_State *g, GCObject *o) {
  reentry:
   white2gray(o);
-  switch (o->tt) {
+  switch (gettt(o)) {
     case LUA_TSHRSTR: {
       gray2black(o);
       g->GCmemtrav += sizelstring(gco2ts(o)->shrlen);
@@ -478,8 +478,6 @@ static lu_mem traversetable (global_State *g, Table *h) {
 */
 static int traverseproto (global_State *g, Proto *f) {
   int i;
-  if (f->cache && iswhite(f->cache))
-    f->cache = NULL;  /* allow cache to be collected */
   markobjectN(g, f->source);
   for (i = 0; i < f->sizek; i++)  /* mark literals */
     markvalue(g, &f->k[i]);
@@ -492,7 +490,7 @@ static int traverseproto (global_State *g, Proto *f) {
   return sizeof(Proto) + sizeof(Instruction) * f->sizecode +
                          sizeof(Proto *) * f->sizep +
                          sizeof(TValue) * f->sizek +
-                         sizeof(int) * f->sizelineinfo +
+                         sizeof(char) * f->sizelineinfo +
                          sizeof(LocVar) * f->sizelocvars +
                          sizeof(Upvaldesc) * f->sizeupvalues;
 }
@@ -561,7 +559,7 @@ static void propagatemark (global_State *g) {
   GCObject *o = g->gray;
   lua_assert(isgray(o));
   gray2black(o);
-  switch (o->tt) {
+  switch (gettt(o)) {
     case LUA_TTABLE: {
       Table *h = gco2t(o);
       g->gray = h->gclist;  /* remove from 'gray' list */
@@ -695,7 +693,7 @@ static void freeLclosure (lua_State *L, LClosure *cl) {
 
 
 static void freeobj (lua_State *L, GCObject *o) {
-  switch (o->tt) {
+  switch (gettt(o)) {
     case LUA_TPROTO: luaF_freeproto(L, gco2p(o)); break;
     case LUA_TLCL: {
       freeLclosure(L, gco2lcl(o));

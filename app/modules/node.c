@@ -6,7 +6,9 @@
 
 
 #include "platform.h"
+#if LUA_VERSION_NUM == 501
 #include "lflash.h"
+#endif
 #include <stdint.h>
 #include <string.h>
 #include "user_interface.h"

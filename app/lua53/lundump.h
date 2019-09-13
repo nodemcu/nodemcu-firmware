@@ -20,7 +20,7 @@
 
 #define MYINT(s)	(s[0]-'0')
 #define LUAC_VERSION	(MYINT(LUA_VERSION_MAJOR)*16+MYINT(LUA_VERSION_MINOR))
-#define LUAC_FORMAT	0	/* this is the official format */
+#define LUAC_FORMAT	10	            /* this is the NodeMCU format */
 
 /* load one chunk; from lundump.c */
 LUAI_FUNC LClosure* luaU_undump (lua_State* L, ZIO* Z, const char* name);
@@ -28,5 +28,4 @@ LUAI_FUNC LClosure* luaU_undump (lua_State* L, ZIO* Z, const char* name);
 /* dump one chunk; from ldump.c */
 LUAI_FUNC int luaU_dump (lua_State* L, const Proto* f, lua_Writer w,
                          void* data, int strip);
-
 #endif

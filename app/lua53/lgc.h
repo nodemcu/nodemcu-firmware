@@ -84,16 +84,16 @@
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
 
 
-#define iswhite(x)      testbits((x)->marked, WHITEBITS)
-#define isblack(x)      testbit((x)->marked, BLACKBIT)
+#define iswhite(x)      testbits(getmarked(x), WHITEBITS)
+#define isblack(x)      testbit(getmarked(x), BLACKBIT)
 #define isgray(x)  /* neither white nor black */  \
-	(!testbits((x)->marked, WHITEBITS | bitmask(BLACKBIT)))
+	(!testbits(getmarked(x), WHITEBITS | bitmask(BLACKBIT)))
 
-#define tofinalize(x)	testbit((x)->marked, FINALIZEDBIT)
+#define tofinalize(x)	testbit(getmarked(x), FINALIZEDBIT)
 
 #define otherwhite(g)	((g)->currentwhite ^ WHITEBITS)
 #define isdeadm(ow,m)	(!(((m) ^ WHITEBITS) & (ow)))
-#define isdead(g,v)	isdeadm(otherwhite(g), (v)->marked)
+#define isdead(g,v)	isdeadm(otherwhite(g), getmarked(v))
 
 #define changewhite(x)	((x)->marked ^= WHITEBITS)
 #define gray2black(x)	l_setbit((x)->marked, BLACKBIT)

@@ -60,11 +60,36 @@
 
 
 /* Bit mark for collectable types */
+#define LUA_TTBLRAM	(LUA_TTABLE | (0 << 4))   /* RAM based Table */
+#define LUA_TTBLROF	(LUA_TTABLE | (1 << 4))   /* RO Flash based ROTable */
+
+
+/* Bit mark for collectable types */
 #define BIT_ISCOLLECTABLE	(1 << 6)
 
 /* mark a tag as collectable */
 #define ctb(t)			((t) | BIT_ISCOLLECTABLE)
 
+/*
+** Byte field access macro.  On ESP targets this causes the compiler to emit
+** a l32i + extui instruction pair instead of a single l8ui avoiding a call
+** the S/W unaligned exception handler.  This is used to force aligned access
+** to commonly accessed fields in Flash-based record structures.  It is not
+** needed for RAM-only structures.
+**
+** wo is the offset of aligned word in bytes 0,4,8,..
+** bo is the field within the word in bits 0..31
+*/
+#ifdef LUA_USE_ESP
+#define GET_BYTE_FN(name,t,wo,bo) \
+static inline lu_int32 get ## name(const void *o) { \
+  lu_int32 res;  /* extract named field */ \
+  asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
+  return res; }
+#else
+#define GET_BYTE_FN(name,t,wo,bo) \
+static inline lu_byte get ## name(const void *o) { return (cast(const t *,o))->name; }
+#endif
 
 /*
 ** Common type for all collectable objects
@@ -85,8 +110,8 @@ typedef struct GCObject GCObject;
 struct GCObject {
   CommonHeader;
 };
-
-
+GET_BYTE_FN(tt,GCObject,4,0)
+GET_BYTE_FN(marked,GCObject,4,8)
 
 
 /*
@@ -148,7 +173,9 @@ typedef struct lua_TValue {
 #define ttisstring(o)		checktype((o), LUA_TSTRING)
 #define ttisshrstring(o)	checktag((o), ctb(LUA_TSHRSTR))
 #define ttislngstring(o)	checktag((o), ctb(LUA_TLNGSTR))
-#define ttistable(o)		checktag((o), ctb(LUA_TTABLE))
+#define ttistable(o)		checktype((o), LUA_TTABLE)
+#define ttisrwtable(o)		checktag((o), ctb(LUA_TTBLRAM))
+#define ttisrotable(o)		checktag((o), ctb(LUA_TTBLROF))
 #define ttisfunction(o)		checktype(o, LUA_TFUNCTION)
 #define ttisclosure(o)		((rttype(o) & 0x1F) == LUA_TFUNCTION)
 #define ttisCclosure(o)		checktag((o), ctb(LUA_TCCL))
@@ -173,6 +200,8 @@ typedef struct lua_TValue {
 #define clCvalue(o)	check_exp(ttisCclosure(o), gco2ccl(val_(o).gc))
 #define fvalue(o)	check_exp(ttislcf(o), val_(o).f)
 #define hvalue(o)	check_exp(ttistable(o), gco2t(val_(o).gc))
+#define rwhvalue(o)	check_exp(ttisrwtable(o), gco2rot(val_(o).gc))
+#define rohvalue(o)	check_exp(ttisrotable(o), gco2rwt(val_(o).gc))
 #define bvalue(o)	check_exp(ttisboolean(o), val_(o).b)
 #define thvalue(o)	check_exp(ttisthread(o), gco2th(val_(o).gc))
 /* a dead value may get the 'gc' field, but cannot access its contents */
@@ -185,7 +214,7 @@ typedef struct lua_TValue {
 
 
 /* Macros for internal tests */
-#define righttt(obj)		(ttype(obj) == gcvalue(obj)->tt)
+#define righttt(obj)		(ttype(obj) == gettt(gcvalue(obj)))
 
 #define checkliveness(L,obj) \
 	lua_longassert(!iscollectable(obj) || \
@@ -224,7 +253,7 @@ typedef struct lua_TValue {
 
 #define setsvalue(L,obj,x) \
   { TValue *io = (obj); TString *x_ = (x); \
-    val_(io).gc = obj2gco(x_); settt_(io, ctb(x_->tt)); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x))); \
     checkliveness(L,io); }
 
 #define setuvalue(L,obj,x) \
@@ -249,7 +278,7 @@ typedef struct lua_TValue {
 
 #define sethvalue(L,obj,x) \
   { TValue *io = (obj); Table *x_ = (x); \
-    val_(io).gc = obj2gco(x_); settt_(io, ctb(LUA_TTABLE)); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x))); \
     checkliveness(L,io); }
 
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)
@@ -310,6 +339,8 @@ typedef struct TString {
     struct TString *hnext;  /* linked list for hash table */
   } u;
 } TString;
+GET_BYTE_FN(extra,TString,4,16)
+GET_BYTE_FN(shrlen,TString,4,24)
 
 
 /*
@@ -333,7 +364,7 @@ typedef union UTString {
 #define svalue(o)       getstr(tsvalue(o))
 
 /* get string length from 'TString *s' */
-#define tsslen(s)	((s)->tt == LUA_TSHRSTR ? (s)->shrlen : (s)->u.lnglen)
+#define tsslen(s)	(gettt(s) == LUA_TSHRSTR ? getshrlen(s) : (s)->u.lnglen)
 
 /* get string length from 'TValue *o' */
 #define vslen(o)	tsslen(tsvalue(o))
@@ -420,14 +451,16 @@ typedef struct Proto {
   TValue *k;  /* constants used by the function */
   Instruction *code;  /* opcodes */
   struct Proto **p;  /* functions defined inside the function */
-  int *lineinfo;  /* map from opcodes to source lines (debug information) */
+  lu_byte *lineinfo;  /* packedmap from opcodes to source lines (debug inf) */
   LocVar *locvars;  /* information about local variables (debug information) */
   Upvaldesc *upvalues;  /* upvalue information */
-  struct LClosure *cache;  /* last-created closure with this prototype */
   TString  *source;  /* used for debug information */
   GCObject *gclist;
 } Proto;
 
+GET_BYTE_FN(numparams,Proto,4,16)
+GET_BYTE_FN(is_vararg,Proto,4,24)
+GET_BYTE_FN(maxstacksize,Proto,8,0)
 
 
 /*
@@ -469,6 +502,19 @@ typedef union Closure {
 
 
 /*
+** Common Table fields for both table versions (like CommonHeader in
+** macro form, to be included in table structure definitions).
+**
+** Note that the sethvalue() macro works much like the setsvalue()
+** macro and handles the abstracted type. the hvalue(o) macro can be
+** used to access CommonTable fields, but the rwhvalue(o) and
+** rohvalue(o) value variants must be used if accessing variant-specfic
+** fields
+*/
+
+#define CommonTable CommonHeader; \
+                    lu_byte flags; lu_byte lsizenode; struct Table *metatable;
+/*
 ** Tables
 */
 
@@ -493,20 +539,34 @@ typedef struct Node {
   TKey i_key;
 } Node;
 
-
 typedef struct Table {
-  CommonHeader;
-  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */
-  lu_byte lsizenode;  /* log2 of size of 'node' array */
+ /* flags & 1<<p means tagmethod(p) is not present */
+ /* lsizenode = log2 of size of 'node' array */
+  CommonTable;
   unsigned int sizearray;  /* size of 'array' array */
   TValue *array;  /* array part */
   Node *node;
   Node *lastfree;  /* any free position is before this position */
-  struct Table *metatable;
   GCObject *gclist;
 } Table;
 
+GET_BYTE_FN(flags,Table,4,16)
+GET_BYTE_FN(lsizenode,Table,4,24)
 
+
+typedef const struct ROTable_entry {
+  const char *key;
+  const TValue value;
+} ROTable_entry;
+
+typedef struct ROTable {
+ /* next always has the value (GCObject *)((size_t) 1); */
+ /* flags & 1<<p means tagmethod(p) is not present */
+ /* lsizenode is the number of ROTable entries */
+ /* Like TStrings, the ROTable_entry vector follows the ROTable */
+  CommonTable;
+  ROTable_entry *entry;
+} ROTable;
 
 /*
 ** 'module' operation for hashing (size is always a power of 2)
@@ -524,6 +584,11 @@ typedef struct Table {
 */
 #define luaO_nilobject		(&luaO_nilobject_)
 
+/*
+** KeyCache used for resolution of ROTable entries and Cstrings
+*/
+typedef size_t KeyCache;
+typedef KeyCache KeyCacheLine[KEYCACHE_M];
 
 LUAI_DDEC const TValue luaO_nilobject_;
 

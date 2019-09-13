@@ -63,7 +63,7 @@ LUALIB_API int   (luaL_newmetatable) (lua_State *L, const char *tname);
 LUALIB_API void  (luaL_setmetatable) (lua_State *L, const char *tname);
 LUALIB_API void *(luaL_testudata) (lua_State *L, int ud, const char *tname);
 LUALIB_API void *(luaL_checkudata) (lua_State *L, int ud, const char *tname);
-
+LUALIB_API int (luaL_rometatable) (lua_State *L, const char* tname, const ROTable *p);
 LUALIB_API void (luaL_where) (lua_State *L, int lvl);
 LUALIB_API int (luaL_error) (lua_State *L, const char *fmt, ...);
 
@@ -197,7 +197,9 @@ typedef struct luaL_Stream {
 
 /* }====================================================== */
 
+LUALIB_API int (luaL_rometatable) (lua_State *L, const char* tname, const ROTable *t);
 
+/* }====================================================== */
 
 /* compatibility with old module system */
 #if defined(LUA_COMPAT_MODULE)
@@ -220,22 +222,35 @@ LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
 
 /* print a string */
 #if !defined(lua_writestring)
+#ifdef LUA_USE_ESP8266
+#define lua_writestring(s,l)  output_redirect((s),(l))
+#else
 #define lua_writestring(s,l)   fwrite((s), sizeof(char), (l), stdout)
+#endif
 #endif
 
 /* print a newline and flush the output */
 #if !defined(lua_writeline)
+#ifdef LUA_USE_ESP8266
+#define lua_writeline()        lua_writestring("\n", 1)
+#else
 #define lua_writeline()        (lua_writestring("\n", 1), fflush(stdout))
+#endif
 #endif
 
 /* print an error message */
 #if !defined(lua_writestringerror)
-#define lua_writestringerror(s,p) \
-        (fprintf(stderr, (s), (p)), fflush(stderr))
+#ifdef LUA_USE_ESP8266
+#define lua_writestringerror(s,p) do { \
+  char __printf_buf[LUAL_BUFFERSIZE]; \
+  sprintf(__printf_buf, s, p); \
+  lua_writestring(s,strlen(s)); } while(0)
+#else
+#define lua_writestringerror(s,p) (fprintf(stderr, (s), (p)), fflush(stderr))
+#endif
 #endif
 
 /* }================================================================== */
-
 
 /*
 ** {============================================================
@@ -257,7 +272,20 @@ LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
 #endif
 /* }============================================================ */
 
+/*
+** {==================================================================
+** NodeMCU extensions
+** ===================================================================
+*/
 
+#define LUA_TASK_LOW    0
+#define LUA_TASK_MEDIUM 1
+#define LUA_TASK_HIGH   2
+
+LUALIB_API int (luaL_posttask) (lua_State* L, int prio);
+LUALIB_API int (luaL_pcallx) (lua_State *L, int narg, int nres);
+
+/* }============================================================ */
 
 #endif
 

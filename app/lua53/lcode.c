@@ -297,10 +297,8 @@ static int luaK_code (FuncState *fs, Instruction i) {
   luaM_growvector(fs->ls->L, f->code, fs->pc, f->sizecode, Instruction,
                   MAX_INT, "opcodes");
   f->code[fs->pc] = i;
-  /* save corresponding line information */
-  luaM_growvector(fs->ls->L, f->lineinfo, fs->pc, f->sizelineinfo, int,
-                  MAX_INT, "opcodes");
-  f->lineinfo[fs->pc] = fs->ls->lastline;
+ /* Map fs->pc to fs->ls->lastline */
+  luaK_addlineinfo(fs, fs->pc, fs->ls->lastline);
   return fs->pc++;
 }
 
@@ -1006,7 +1004,7 @@ static void codeunexpval (FuncState *fs, OpCode op, expdesc *e, int line) {
   freeexp(fs, e);
   e->u.info = luaK_codeABC(fs, op, 0, r, 0);  /* generate opcode */
   e->k = VRELOCABLE;  /* all those operations are relocatable */
-  luaK_fixline(fs, line);
+  luaK_addlineinfo(fs, fs->pc - 1, line);
 }
 
 
@@ -1026,7 +1024,7 @@ static void codebinexpval (FuncState *fs, OpCode op,
   freeexps(fs, e1, e2);
   e1->u.info = luaK_codeABC(fs, op, 0, rk1, rk2);  /* generate opcode */
   e1->k = VRELOCABLE;  /* all those operations are relocatable */
-  luaK_fixline(fs, line);
+  luaK_addlineinfo(fs, fs->pc -1, line);
 }
 
 
@@ -1172,14 +1170,6 @@ void luaK_posfix (FuncState *fs, BinOpr op,
 
 
 /*
-** Change line information associated with current position.
-*/
-void luaK_fixline (FuncState *fs, int line) {
-  fs->f->lineinfo[fs->pc - 1] = line;
-}
-
-
-/*
 ** Emit a SETLIST instruction.
 ** 'base' is register that keeps table;
 ** 'nelems' is #table plus those to be stored now;
@@ -1187,7 +1177,7 @@ void luaK_fixline (FuncState *fs, int line) {
 ** table (or LUA_MULTRET to add up to stack top).
 */
 void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
-  int c =  (nelems - 1)/LFIELDS_PER_FLUSH + 1;
+  int c =  (nelems - 1) / LFIELDS_PER_FLUSH + 1;
   int b = (tostore == LUA_MULTRET) ? 0 : tostore;
   lua_assert(tostore != 0 && tostore <= LFIELDS_PER_FLUSH);
   if (c <= MAXARG_C)
@@ -1201,3 +1191,109 @@ void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
   fs->freereg = base + 1;  /* free registers with list values */
 }
 
+/*
+** Packed line info support.
+**
+** This encoding scheme is designed to replace the standard int[PC count] vector
+** by a packed byte array which takes just over 1 byte per non-blank Lua line.
+** This packing scheme still allows line information to be recovered but with a
+** storage scheme that is typically an order denser than standard info coding.
+** This comprises a repeat of (optional) line delta (LD) + VM instruction count
+** (IC) for that line starting from a base line number of zero. LDs are optional
+** because a LD of +1 is assumed as default and an LD:1 is always omitted.
+**
+** ICs are stored as a single byte with the high bit set to zero. Sequences
+** longer than 127 instructions are encoded using a multi byte sequence using 0
+** LDs, e.g. IC:127 LD:0 IC:23 for a line generating 150 VM instructions.
+**
+** LDs are have to be signed because the code generator can emit instructions
+** out of line sequence. LD are in little-endian ones-compliment (binary) format
+** 1snnnnnnn [1nnnnnnn]* and are delimited by the following IC. Since -0
+** represents 1 and 1 is always omitted positive values are offset by 2. This
+** means that a single byte is used to encode line deltas in the range -63..65;
+** 2 bytes used to encode line deltas in the range -8191..8193, etc..
+**
+** This approach has no arbitrary limits, in that it can accommodate any LD or IC.
+** In practice, most LDs are omitted and hence each LD IC pair is represented by a
+** single IC byte.  Also note that the code 0x00 is reserved in this scheme, and
+** is used to terminate the vector.
+**
+** Generation of the line info is done serially within the Proto lineinfo array,
+** either adding a line reference for the next instruction or replacing the line
+** reference for the last instruction.  This also simplifies proper CG of lineinfo
+** resources if a compile error is thrown as GC cleanup is of the Proto hierarchy.
+*/
+#define LD_BN            7
+#define LD_MARKER        (1<<LD_BN)
+#define LD_BITS(n,d)     (d & ((1<<(n))-1))
+#define LD_BYTE0(sign,d) (LD_MARKER | (sign<<(LD_BN-1)) | LD_BITS(LD_BN-1,d))
+#define LD_BYTE(d)       (LD_MARKER | LD_BITS(LD_BN,d))
+
+/*
+** Increment the pc count for the specified line.
+*/
+void luaK_addlineinfo (FuncState *fs, int pc, int line) {
+  Proto *f = fs->f;
+  int lastpc = fs->lastpc, lastline = fs->lastline;
+  lu_byte *p = f->lineinfo + fs->sizelineinfo - 1;
+  if (pc == lastpc) {
+    if (line == lastline)  /* same line and pc is a no-op so return */
+      return;
+    /* if the line is different then undo the last addline info. */
+    /* in this case the last byte will always be an IC byte */
+    if (*p > 1) { /* decrement the IC if a multi-instruction line */
+      (*p)--;
+    } else {  /* The last two bytes were LD:N IC:1 */
+      int delta;
+      p--;  /* drop the IC:1 byte */
+      if (*p & LD_MARKER) { /* an LD sequence is present */
+        delta = 0;
+        while (p[-1] & LD_MARKER)
+          delta = (delta << LD_BN) + LD_BITS(7,*p--);
+        delta = LD_BITS(6,*p);
+        delta = (*p-- & (1<<(LD_BN-1))) ? -delta : delta + 2;
+      } else { /* LD sequence missing so default to 1 */
+        delta = 1;
+      }
+      lastline-= delta;
+    }
+    fs->sizelineinfo = p - f->lineinfo + 1;
+    lastpc--;
+  }
+  /* on this path pc follows lastpc and the last lineinfo entry is an IC */
+  lua_assert(pc == lastpc+1 && (line != lastline  || !(*p & LD_MARKER)));
+
+  if (line == lastline && *p < 127) {
+    /* the most frequent case is another instruction for the same line */
+    (*p)++;  /* just bump the last IC */
+  } else {
+    /* we need to write a new (DL),IC:1 so make sure that we have headroom */
+    if (fs->sizelineinfo+4 > f->sizelineinfo) {
+      f->lineinfo = cast(lu_byte *, luaM_growaux_(
+          fs->ls->L, f->lineinfo, &f->sizelineinfo,
+          sizeof(lu_byte), MAX_INT, "line codes"));
+      p = f->lineinfo + fs->sizelineinfo - 1;  /* lineinfo has moved */
+    }
+    if (line == lastline) { /* at max val so emit LD:0 IC:1 */
+      lua_assert(*p == 127);
+      *++p = LD_BYTE0(1,0);
+    } else { /* line break so compute delta and emit LD:n IC:1 */
+      int delta = line - lastline;
+      if (delta != 1) { /* can skip a the default LD:1 */
+        int sign = (delta <= 0) ? 1 : 0;
+        delta = sign ? -delta : delta - 2;
+        *++p = LD_BYTE0(sign,delta);
+        delta >>= LD_BN - 1;
+        while (delta > 0) {
+          *++p = LD_BYTE(delta);
+          delta >>= LD_BN;
+        }
+      }
+    }
+    *++p = 1;
+    lua_assert(f->sizelineinfo >= fs->sizelineinfo);
+    fs->sizelineinfo = p + 1 - f->lineinfo;
+  }
+  fs->lastline = line;
+  fs->lastpc = pc;
+}

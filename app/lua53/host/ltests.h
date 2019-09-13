@@ -30,8 +30,9 @@
 /* turn on assertions */
 #undef NDEBUG
 #include <assert.h>
+#ifndef lua_assert
 #define lua_assert(c)           assert(c)
-
+#endif
 
 /* to avoid warnings, and to make sure value is really unused */
 #define UNUSED(x)       (x=0, (void)(x))
@@ -95,7 +96,7 @@ LUA_API int luaB_opentests (lua_State *L);
 LUA_API void *debug_realloc (void *ud, void *block,
                              size_t osize, size_t nsize);
 
-#if defined(lua_c)
+#if defined(luac_c)
 #define luaL_newstate()		lua_newstate(debug_realloc, &l_memcontrol)
 #define luaL_openlibs(L)  \
   { (luaL_openlibs)(L); \
@@ -122,7 +123,7 @@ LUA_API void *debug_realloc (void *ud, void *block,
 #define LUAI_USER_ALIGNMENT_T   union { char b[sizeof(void*) * 8]; }
 
 
-#define STRCACHE_N	23
+#define STRCACHE_N	16
 #define STRCACHE_M	5
 
 #endif

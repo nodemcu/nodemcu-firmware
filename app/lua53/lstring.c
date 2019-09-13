@@ -24,7 +24,6 @@
 
 #define MEMERRMSG       "not enough memory"
 
-
 /*
 ** Lua will use at most ~(2^LUAI_HASHLIMIT) bytes from a string to
 ** compute its hash
@@ -39,7 +38,7 @@
 */
 int luaS_eqlngstr (TString *a, TString *b) {
   size_t len = a->u.lnglen;
-  lua_assert(a->tt == LUA_TLNGSTR && b->tt == LUA_TLNGSTR);
+  lua_assert(gettt(a) == LUA_TLNGSTR && gettt(b) == LUA_TLNGSTR);
   return (a == b) ||  /* same instance or... */
     ((len == b->u.lnglen) &&  /* equal length and ... */
      (memcmp(getstr(a), getstr(b), len) == 0));  /* equal contents */
@@ -57,7 +56,7 @@ unsigned int luaS_hash (const char *str, size_t l, unsigned int seed) {
 
 unsigned int luaS_hashlongstr (TString *ts) {
   lua_assert(ts->tt == LUA_TLNGSTR);
-  if (ts->extra == 0) {  /* no hash? */
+  if (getextra(ts) == 0) {  /* no hash? */
     ts->hash = luaS_hash(getstr(ts), ts->u.lnglen, ts->hash);
     ts->extra = 1;  /* now it has its hash */
   }
@@ -70,6 +69,7 @@ unsigned int luaS_hashlongstr (TString *ts) {
 */
 void luaS_resize (lua_State *L, int newsize) {
   int i;
+//***FIX*** rentrancy guard during GC
   stringtable *tb = &G(L)->strt;
   if (newsize > tb->size) {  /* grow table if needed */
     luaM_reallocvector(L, tb->hash, tb->size, newsize, TString *);
@@ -96,22 +96,9 @@ void luaS_resize (lua_State *L, int newsize) {
 }
 
 
+#define STRING_ENTRY(e) (cast(KeyCache,((size_t)(e)) & 1));
 /*
-** Clear API string cache. (Entries cannot be empty, so fill them with
-** a non-collectable string.)
-*/
-void luaS_clearcache (global_State *g) {
-  int i, j;
-  for (i = 0; i < STRCACHE_N; i++)
-    for (j = 0; j < STRCACHE_M; j++) {
-    if (iswhite(g->strcache[i][j]))  /* will entry be collected? */
-      g->strcache[i][j] = g->memerrmsg;  /* replace it with something fixed */
-    }
-}
-
-
-/*
-** Initialize the string table and the string cache
+** Initialize the string table and the key cache
 */
 void luaS_init (lua_State *L) {
   global_State *g = G(L);
@@ -120,9 +107,13 @@ void luaS_init (lua_State *L) {
   /* pre-create memory-error message */
   g->memerrmsg = luaS_newliteral(L, MEMERRMSG);
   luaC_fix(L, obj2gco(g->memerrmsg));  /* it should never be collected */
-  for (i = 0; i < STRCACHE_N; i++)  /* fill cache with valid strings */
-    for (j = 0; j < STRCACHE_M; j++)
-      g->strcache[i][j] = g->memerrmsg;
+
+  /* Initialise the global cache to dummy string entries */
+  for (i = 0; i < KEYCACHE_N; i++) {
+    KeyCache *p = g->cache[i];
+    for (j = 0;j < KEYCACHE_M; j++)
+      p[j] = STRING_ENTRY(g->memerrmsg);
+  }
 }
 
 
@@ -171,7 +162,7 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
   TString **list = &g->strt.hash[lmod(h, g->strt.size)];
   lua_assert(str != NULL);  /* otherwise 'memcmp'/'memcpy' are undefined */
   for (ts = *list; ts != NULL; ts = ts->u.hnext) {
-    if (l == ts->shrlen &&
+    if (l == getshrlen(ts) &&
         (memcmp(str, getstr(ts), l * sizeof(char)) == 0)) {
       /* found! */
       if (isdead(g, ts))  /* dead (but not collected yet)? */
@@ -179,6 +170,23 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
       return ts;
     }
   }
+#ifdef LUA_USE_ESP
+  /*
+   * The RAM strt is searched first since RAM access is faster than flash
+   * access.  If a miss, then search the RO string table.
+   */
+  if (g->ROstrt.hash) {
+    for (ts = g->ROstrt.hash[lmod(h, g->ROstrt.size)];
+         ts != NULL;
+         ts = cast(TString *,ts->next)) {
+      if (l == getshrlen(ts) &&
+          memcmp(str, getstr(ts), l * sizeof(char)) == 0) {
+      /* found in ROstrt! */
+        return ts;
+      }
+    }
+  }
+#endif
   if (g->strt.nuse >= g->strt.size && g->strt.size <= MAX_INT/2) {
     luaS_resize(L, g->strt.size * 2);
     list = &g->strt.hash[lmod(h, g->strt.size)];  /* recompute with new size */
@@ -211,27 +219,71 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 
 
 /*
-** Create or reuse a zero-terminated string, first checking in the
-** cache (using the string address as a key). The cache can contain
-** only zero-terminated strings, so it is safe to use 'strcmp' to
-** check hits.
+** Create or reuse a zero-terminated string, If the null terminated
+** length > sizeof (unisigned) then first check the cache (using the
+** string address as a key).  The cache can contain only zero-
+** terminated strings, so it is safe to use 'strcmp' to check hits.
+**
+** Note that TStrings and Tables are always at least word aligned, so
+** the lowbit set is used to tag TString entries
 */
-TString *luaS_new (lua_State *L, const char *str) {
-  unsigned int i = point2uint(str) % STRCACHE_N;  /* hash */
-  int j;
-  TString **p = G(L)->strcache[i];
-  for (j = 0; j < STRCACHE_M; j++) {
-    if (strcmp(str, getstr(p[j])) == 0)  /* hit? */
-      return p[j];  /* that is it */
-  }
-  /* normal route */
-  for (j = STRCACHE_M - 1; j > 0; j--)
-    p[j] = p[j - 1];  /* move out last element */
-  /* new element is first in the list */
-  p[0] = luaS_newlstr(L, str, strlen(str));
-  return p[0];
-}
 
+#define IS_STRING_ENTRY(e) (e & 1)
+#define TSTRING(e) cast(TString *, ((size_t) e) & (~1u))
+
+TString *luaS_new (lua_State *L, const char *str) {
+  unsigned int i;
+  int j;
+  int l = strlen(str);
+  TString *ps;
+  KeyCache *p;
+
+  if (l < sizeof(unsigned) - 1)
+    return luaS_newlstr(L, str, l);
+  i = point2uint(str) % KEYCACHE_N;  /* hash */
+  p = G(L)->cache[i];
+  for (j = 0; j < KEYCACHE_M; j++) {
+    ps = TSTRING(p[j]);
+    /* string cache entries always point to a valid TString */
+    if (IS_STRING_ENTRY(p[j]) &&
+      *(const unsigned *)str == *(const unsigned *) getstr(ps) &&
+      strcmp(str, getstr(ps)) == 0)  /* hit? */
+      return ps;  /* that is it */
+  }
+  /* normal route, move out last element inserting new string at fist slot */
+  for (j = KEYCACHE_M - 1; j > 0; j--) {
+    p[j] = p[j-1];
+  }
+  ps = luaS_newlstr(L, str, l);
+  p[0] = STRING_ENTRY(ps);
+  return ps;
+}
+#if 0
+#define IS_STRING_ENTRY(e) (e & 1)
+#define STRING_ENTRY(e) (cast(KeyCache, e) & 1);
+#define TSTRING(e) cast(TString *, e & (~1u))
+#endif
+
+/*
+** Clear API cache of dirty string entries.
+*/
+void luaS_clearcache (global_State *g) {
+  int i, j, k;
+  TString *ps;
+  for (i = 0; i < KEYCACHE_N; i++) {
+    KeyCache *p = g->cache[i];
+    for (j = 0, k = 0; j < KEYCACHE_M; j++) {
+      ps = TSTRING(p[j]);
+      if (!IS_STRING_ENTRY(p[j]) || !iswhite(cast(GCObject *,ps))) { /* keep entry? */
+        if (k < j)
+          p[k] = p[j];  /* shift down element */
+        k++;
+      }
+    }
+    for (;k < KEYCACHE_M; k++)
+      p[k] = STRING_ENTRY(g->memerrmsg);
+  }
+}
 
 Udata *luaS_newudata (lua_State *L, size_t s) {
   Udata *u;

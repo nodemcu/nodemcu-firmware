@@ -528,6 +528,7 @@ static void codeclosure (LexState *ls, expdesc *v) {
 
 static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   Proto *f;
+  /* Initialise all fields in fs apart from fs->f which is done in the caller */
   fs->prev = ls->fs;  /* linked list of funcstates */
   fs->ls = ls;
   ls->fs = fs;
@@ -545,6 +546,11 @@ static void open_func (LexState *ls, FuncState *fs, BlockCnt *bl) {
   f = fs->f;
   f->source = ls->source;
   f->maxstacksize = 2;  /* registers 0/1 are always valid */
+  f->lineinfo = 0;
+  fs->sizelineinfo = 0;
+  fs->lastline = 0;
+  fs->lastpc = -1;
+
   enterblock(fs, bl, 0);
 }
 
@@ -557,8 +563,12 @@ static void close_func (LexState *ls) {
   leaveblock(fs);
   luaM_reallocvector(L, f->code, f->sizecode, fs->pc, Instruction);
   f->sizecode = fs->pc;
-  luaM_reallocvector(L, f->lineinfo, f->sizelineinfo, fs->pc, int);
-  f->sizelineinfo = fs->pc;
+  luaM_growvector(fs->ls->L, f->lineinfo, fs->sizelineinfo, f->sizelineinfo,
+                  lu_byte, MAX_INT, "line codes");
+  f->lineinfo[fs->sizelineinfo++] = 0;
+  luaM_reallocvector(fs->ls->L, f->lineinfo, f->sizelineinfo, fs->sizelineinfo,
+                    lu_byte);
+  f->sizelineinfo = fs->sizelineinfo;
   luaM_reallocvector(L, f->k, f->sizek, fs->nk, TValue);
   f->sizek = fs->nk;
   luaM_reallocvector(L, f->p, f->sizep, fs->np, Proto *);
@@ -853,7 +863,7 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
     nparams = fs->freereg - (base+1);
   }
   init_exp(f, VCALL, luaK_codeABC(fs, OP_CALL, base, nparams+1, 2));
-  luaK_fixline(fs, line);
+  luaK_addlineinfo(fs, fs->pc - 1, line);
   fs->freereg = base+1;  /* call remove function and arguments and leaves
                             (unless changed) one result */
 }
@@ -1306,11 +1316,11 @@ static void forbody (LexState *ls, int base, int line, int nvars, int isnum) {
     endfor = luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP);
   else {  /* generic for */
     luaK_codeABC(fs, OP_TFORCALL, base, 0, nvars);
-    luaK_fixline(fs, line);
+    luaK_addlineinfo(fs, fs->pc - 1, line);
     endfor = luaK_codeAsBx(fs, OP_TFORLOOP, base + 2, NO_JUMP);
   }
   luaK_patchlist(fs, endfor, prep + 1);
-  luaK_fixline(fs, line);
+  luaK_addlineinfo(fs, fs->pc - 1, line);
 }
 
 
@@ -1481,7 +1491,7 @@ static void funcstat (LexState *ls, int line) {
   ismethod = funcname(ls, &v);
   body(ls, &b, ismethod, line);
   luaK_storevar(ls->fs, &v, &b);
-  luaK_fixline(ls->fs, line);  /* definition "happens" in the first line */
+  luaK_addlineinfo(ls->fs, ls->fs->pc - 1, line);  /* definition "happens" in the first line */
 }
 
 

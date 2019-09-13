@@ -2,7 +2,7 @@
 -- See Copyright Notice in file all.lua
 
 print "testing require"
-
+dofile'allassert.lua'
 assert(require"string" == string)
 assert(require"math" == math)
 assert(require"table" == table)
@@ -11,13 +11,14 @@ assert(require"os" == os)
 assert(require"coroutine" == coroutine)
 
 assert(type(package.path) == "string")
-assert(type(package.cpath) == "string")
+-- assert(type(package.cpath) == "string")
 assert(type(package.loaded) == "table")
 assert(type(package.preload) == "table")
 
 assert(type(package.config) == "string")
 print("package config: "..string.gsub(package.config, "\n", "|"))
 
+--[[TODO: NodeMCU doesn't support dynamic C loading  and has a flat SPIFFS'
 do
   -- create a path with 'max' templates,
   -- each with 1-10 repetitions of '?'
@@ -38,6 +39,7 @@ do
   local s, err = package.searchpath("xuxu", path)
   assert(not s and string.find(err, string.rep('xuxu', max)))
 end
+]]
 
 do
   local oldpath = package.path
@@ -52,6 +54,8 @@ print('+')
 
 -- The next tests for 'require' assume some specific directories and
 -- libraries.
+
+_port = true
 
 if not _port then --[
 

@@ -10,6 +10,7 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 
 
 #include "lua.h"
@@ -34,6 +35,8 @@ typedef long l_mem;
 /* chars used as small naturals (so that 'char' is reserved for characters) */
 typedef unsigned char lu_byte;
 
+/* unsigned 32 bit integers are core the the ESP architectures so we have a type specficially addressing this */
+typedef uint32_t lu_int32;
 
 /* maximum value for size_t */
 #define MAX_SIZET	((size_t)(~(size_t)0))
@@ -79,6 +82,10 @@ typedef union {
 typedef LUAI_UACNUMBER l_uacNumber;
 typedef LUAI_UACINT l_uacInt;
 
+#if defined(DEVELOPMENT_USE_GDB) && !defined(lua_assert)
+extern void (lua_dbgbreak)(void);
+# define lua_assert(c) ((c) ? (void) 0 : lua_dbgbreak())
+#endif
 
 /* internal assertions for in-house debugging */
 #if defined(lua_assert)
@@ -194,9 +201,9 @@ typedef unsigned long Instruction;
 ** sets (better be a prime) and "M" is the size of each set (M == 1
 ** makes a direct cache.)
 */
-#if !defined(STRCACHE_N)
-#define STRCACHE_N		53
-#define STRCACHE_M		2
+#if !defined(KEYCACHE_N)
+#define KEYCACHE_N	    32
+#define KEYCACHE_M		4
 #endif
 
 
@@ -276,6 +283,13 @@ typedef unsigned long Instruction;
 ** ~= floor(a/b)'. That happens when the division has a non-integer
 ** negative result, which is equivalent to the test below.
 */
+#ifdef LUA_USE_ESP8266
+#define luai_nummod(L,a,b,m) do { \
+  if (b==0) luaG_runerror(L,"modulo by zero"); \
+  (m) = (a) - floor((a)/(b))*(b); \
+  if ((m)*(b) < 0) (m) += (b); \
+} while (0)
+#endif
 #if !defined(luai_nummod)
 #define luai_nummod(L,a,b,m)  \
   { (m) = l_mathop(fmod)(a,b); if ((m)*(b) < 0) (m) += (b); }

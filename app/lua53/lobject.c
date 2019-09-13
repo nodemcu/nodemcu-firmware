@@ -63,6 +63,12 @@ int luaO_fb2int (int x) {
 ** Computes ceil(log2(x))
 */
 int luaO_ceillog2 (unsigned int x) {
+#ifdef LUA_USE_ESP
+ /* Use Normalization Shift Amount Unsigned:  0x1=>31 up to 0xffffffff =>0
+  * See Xtensa Instruction Set Architecture (ISA) Refman  P 462 */
+  asm volatile ("nsau %0, %1;" :"=r"(x) : "r"(x));
+  return 32 - x;
+#else
   static const lu_byte log_2[256] = {  /* log_2[i] = ceil(log2(i - 1)) */
     0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
     6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
@@ -77,6 +83,7 @@ int luaO_ceillog2 (unsigned int x) {
   x--;
   while (x >= 256) { l += 8; x >>= 8; }
   return l + log_2[x];
+#endif
 }
 
 

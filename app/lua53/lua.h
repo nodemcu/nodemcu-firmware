@@ -124,7 +124,6 @@ typedef int (*lua_Writer) (lua_State *L, const void *p, size_t sz, void *ud);
 typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 
 
-
 /*
 ** generic extra include file
 */
@@ -132,6 +131,9 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 #include LUA_USER_H
 #endif
 
+#if defined(LUA_ENABLE_TEST) && defined(LUA_USE_HOST)
+#include "ltests.h"
+#endif
 
 /*
 ** RCS ident string
@@ -307,6 +309,7 @@ LUA_API int (lua_isyieldable) (lua_State *L);
 #define LUA_GCSTEP		5
 #define LUA_GCSETPAUSE		6
 #define LUA_GCSETSTEPMUL	7
+#define LUA_GCSETMEMLIMIT 8
 #define LUA_GCISRUNNING		9
 
 LUA_API int (lua_gc) (lua_State *L, int what, int data);
@@ -458,6 +461,48 @@ struct lua_Debug {
 
 /* }====================================================================== */
 
+/* NodeMCU extensions to the standard API */
+
+typedef struct ROTable ROTable;
+typedef const struct ROTable_entry ROTable_entry;
+typedef size_t KeyCache;
+
+LUA_API void  (lua_pushrotable) (lua_State *L, const ROTable *p);
+LUA_API void (lua_createrotable) (lua_State *L, ROTable *t, const ROTable_entry *e, ROTable *mt);
+LUA_API lua_State *(lua_getstate) (void);
+LUA_API KeyCache *(lua_getcache) (int cl);
+LUA_API int (lua_getstrings) (lua_State *L, int opt);
+LUA_API int (lua_freeheap) (void);
+
+LUAI_FUNC void luaN_init (lua_State *L);
+LUAI_FUNC int  luaN_flashSetup (lua_State *L);
+LUAI_FUNC int  luaN_reload_reboot (lua_State *L);
+LUAI_FUNC int  luaN_index (lua_State *L);
+
+#define luaN_freearray(L,a,l) luaM_freearray(L,a,l)
+
+// LUA_MAXINPUT is the maximum length for an input line in the
+#define LUA_MAXINPUT	256
+#define LUAI_MAXINT32	INT_MAX
+
+typedef struct Proto Proto;
+
+#ifdef DEVELOPMENT_USE_GDB
+LUALIB_API void luaL_dbgbreak(void);
+#define ASSERT(s) if (!(s)) {();}
+#else
+#define ASSERT(s)
+#endif
+
+LUAI_FUNC int luaG_stripdebug (lua_State *L, Proto *f, int level, int recv);
+
+
+// from undump.c
+#define LUA_ERR_CC_INTOVERFLOW 101
+#define LUA_ERR_CC_NOTINTEGER 102
+
+
+/* }====================================================================== */
 
 /******************************************************************************
 * Copyright (C) 1994-2018 Lua.org, PUC-Rio.

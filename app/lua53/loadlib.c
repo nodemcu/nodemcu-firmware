@@ -22,7 +22,12 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lnodemcu.h"
 
+#ifndef LUA_USE_HOST
+#include <fcntl.h>
+#include "vfs.h"
+#endif
 
 /*
 ** LUA_IGMARK is a mark to ignore all before it when building the
@@ -54,12 +59,13 @@
 /* separator for open functions in C libraries */
 #define LUA_OFSEP	"_"
 
-
+#ifndef LUA_NODEMCU_NOCLOADERS
 /*
 ** unique key for table in the registry that keeps handles
 ** for all loaded C libraries
 */
 static const int CLIBS = 0;
+#endif
 
 #define LIB_FAIL	"open"
 
@@ -74,6 +80,7 @@ static const int CLIBS = 0;
 /*
 ** unload library 'lib'
 */
+#ifndef LUA_NODEMCU_NOCLOADERS
 static void lsys_unloadlib (void *lib);
 
 /*
@@ -90,10 +97,10 @@ static void *lsys_load (lua_State *L, const char *path, int seeglb);
 ** error string in the stack.
 */
 static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym);
+#endif
 
 
-
-
+#ifndef LUA_NODEMCU_NOCLOADERS
 #if defined(LUA_USE_DLOPEN)	/* { */
 /*
 ** {========================================================================
@@ -248,6 +255,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 
 /* }====================================================== */
 #endif				/* } */
+#endif  /* LUA_NODEMCU_NOCLOADERS */
 
 
 /*
@@ -310,7 +318,7 @@ static void setpath (lua_State *L, const char *fieldname,
 
 /* }================================================================== */
 
-
+#ifndef LUA_NODEMCU_NOCLOADERS
 /*
 ** return registry.CLIBS[path]
 */
@@ -351,13 +359,14 @@ static int gctm (lua_State *L) {
   }
   return 0;
 }
-
+#endif
 
 
 /* error codes for 'lookforfunc' */
 #define ERRLIB		1
 #define ERRFUNC		2
 
+#ifndef LUA_NODEMCU_NOCLOADERS
 /*
 ** Look for a C function named 'sym' in a dynamically loaded library
 ** 'path'.
@@ -403,6 +412,7 @@ static int ll_loadlib (lua_State *L) {
     return 3;  /* return nil, error message, and where */
   }
 }
+#endif
 
 
 
@@ -412,10 +422,19 @@ static int ll_loadlib (lua_State *L) {
 ** =======================================================
 */
 
+#ifdef LUA_USE_ESP8266
+#define file_t int
+#undef fopen
+#undef fclose
+#define fopen(n,m) vfs_open(n,m)
+#define fclose(f) vfs_close(f)
+#else
+#define file_t FILE *
+#endif
 
 static int readable (const char *filename) {
-  FILE *f = fopen(filename, "r");  /* try to open file */
-  if (f == NULL) return 0;  /* open failed */
+  file_t f = fopen(filename, "r");  /* try to open file */
+  if (f) return 0;  /* open failed */
   fclose(f);
   return 1;
 }
@@ -500,7 +519,7 @@ static int searcher_Lua (lua_State *L) {
   return checkload(L, (luaL_loadfile(L, filename) == LUA_OK), filename);
 }
 
-
+#ifndef LUA_NODEMCU_NOCLOADERS
 /*
 ** Try to find a load function for module 'modname' at file 'filename'.
 ** First, change '.' to '_' in 'modname'; then, if 'modname' has
@@ -525,7 +544,6 @@ static int loadfunc (lua_State *L, const char *filename, const char *modname) {
   openfunc = lua_pushfstring(L, LUA_POF"%s", modname);
   return lookforfunc(L, filename, openfunc);
 }
-
 
 static int searcher_C (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
@@ -555,7 +573,7 @@ static int searcher_Croot (lua_State *L) {
   lua_pushstring(L, filename);  /* will be 2nd argument to module */
   return 2;
 }
-
+#endif
 
 static int searcher_preload (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
@@ -601,8 +619,12 @@ static int ll_require (lua_State *L) {
   lua_getfield(L, 2, name);  /* LOADED[name] */
   if (lua_toboolean(L, -1))  /* is it there? */
     return 1;  /* package is already loaded */
+  lua_getglobal(L, "ROM");
+  lua_getfield(L, -1, name);  /* ROM[name] */
+  if (lua_toboolean(L, -1))  /* is it there? */
+    return 1;  /* package is already loaded */
+  lua_pop(L, 3);  /* remove ROM and 2 × 'getfield' results */
   /* else must load package */
-  lua_pop(L, 1);  /* remove 'getfield' result */
   findloader(L, name);
   lua_pushstring(L, name);  /* pass name as argument to module loader */
   lua_insert(L, -2);  /* name is 1st argument (before search data) */
@@ -706,14 +728,16 @@ static int ll_seeall (lua_State *L) {
 
 
 static const luaL_Reg pk_funcs[] = {
+#ifndef LUA_NODEMCU_NOCLOADERS
   {"loadlib", ll_loadlib},
+  {"cpath", NULL},
+#endif
   {"searchpath", ll_searchpath},
 #if defined(LUA_COMPAT_MODULE)
   {"seeall", ll_seeall},
 #endif
   /* placeholders */
   {"preload", NULL},
-  {"cpath", NULL},
   {"path", NULL},
   {"searchers", NULL},
   {"loaded", NULL},
@@ -732,7 +756,11 @@ static const luaL_Reg ll_funcs[] = {
 
 static void createsearcherstable (lua_State *L) {
   static const lua_CFunction searchers[] =
-    {searcher_preload, searcher_Lua, searcher_C, searcher_Croot, NULL};
+    {searcher_preload, searcher_Lua,
+#ifndef LUA_NODEMCU_NOCLOADERS
+     searcher_C, searcher_Croot,
+#endif
+     NULL};
   int i;
   /* create 'searchers' table */
   lua_createtable(L, sizeof(searchers)/sizeof(searchers[0]) - 1, 0);
@@ -749,7 +777,7 @@ static void createsearcherstable (lua_State *L) {
   lua_setfield(L, -2, "searchers");  /* put it in field 'searchers' */
 }
 
-
+#ifndef LUA_NODEMCU_NOCLOADERS
 /*
 ** create table CLIBS to keep track of loaded C libraries,
 ** setting a finalizer to close all libraries when closing state.
@@ -762,15 +790,17 @@ static void createclibstable (lua_State *L) {
   lua_setmetatable(L, -2);
   lua_rawsetp(L, LUA_REGISTRYINDEX, &CLIBS);  /* set CLIBS table in registry */
 }
-
+#endif
 
 LUAMOD_API int luaopen_package (lua_State *L) {
+#ifndef LUA_NODEMCU_NOCLOADERS
   createclibstable(L);
+#endif
   luaL_newlib(L, pk_funcs);  /* create 'package' table */
   createsearcherstable(L);
   /* set paths */
   setpath(L, "path", LUA_PATH_VAR, LUA_PATH_DEFAULT);
-  setpath(L, "cpath", LUA_CPATH_VAR, LUA_CPATH_DEFAULT);
+ // setpath(L, "cpath", LUA_CPATH_VAR, LUA_CPATH_DEFAULT);
   /* store config information */
   lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n"
                      LUA_EXEC_DIR "\n" LUA_IGMARK "\n");

@@ -2,7 +2,7 @@
 -- See Copyright Notice in file all.lua
 
 print('testing scanner')
-
+dofile'allassert.lua'
 local debug = require "debug"
 
 

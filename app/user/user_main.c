@@ -29,6 +29,7 @@
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
+extern void lua_main (void);
 
 /* Contents of esp_init_data_default.bin */
 extern const uint32_t init_data[], init_data_end[];

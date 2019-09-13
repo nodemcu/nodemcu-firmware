@@ -55,6 +55,9 @@ struct lua_longjmp;  /* defined in ldo.c */
 ** Atomic type (relative to signals) to better ensure that 'lua_sethook'
 ** is thread safe
 */
+#ifdef LUA_USE_ESP8266
+# define l_define l_signal_t size_t
+#endif
 #if !defined(l_signalT)
 #include <signal.h>
 #define l_signalT	sig_atomic_t
@@ -162,13 +165,19 @@ typedef struct global_State {
   unsigned int gcfinnum;  /* number of finalizers to call in each GC step */
   int gcpause;  /* size of pause between successive GCs */
   int gcstepmul;  /* GC 'granularity' */
+  l_mem gcmemfreeboard;  /* Free board which triggers EGC */
   lua_CFunction panic;  /* to be called in unprotected errors */
   struct lua_State *mainthread;
   const lua_Number *version;  /* pointer to version number */
   TString *memerrmsg;  /* memory-error message */
   TString *tmname[TM_N];  /* array with tag-method names */
   struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
-  TString *strcache[STRCACHE_N][STRCACHE_M];  /* cache for strings in API */
+#ifdef LUA_USE_ESP
+  stringtable ROstrt;  /* Flash-based hash table for RO strings */
+  Proto *ROpvmain;   /* Flash-based Proto main */
+  int LFSsize;  /* Size of Lua Flash Store */
+#endif
+  KeyCacheLine *cache;  /* cache for strings in API */
 } global_State;
 
 
@@ -214,6 +223,7 @@ union GCUnion {
   struct Udata u;
   union Closure cl;
   struct Table h;
+  struct ROTable roh;
   struct Proto p;
   struct lua_State th;  /* thread */
 };
@@ -223,15 +233,18 @@ union GCUnion {
 
 /* macros to convert a GCObject into a specific value */
 #define gco2ts(o)  \
-	check_exp(novariant((o)->tt) == LUA_TSTRING, &((cast_u(o))->ts))
-#define gco2u(o)  check_exp((o)->tt == LUA_TUSERDATA, &((cast_u(o))->u))
-#define gco2lcl(o)  check_exp((o)->tt == LUA_TLCL, &((cast_u(o))->cl.l))
-#define gco2ccl(o)  check_exp((o)->tt == LUA_TCCL, &((cast_u(o))->cl.c))
+	check_exp(novariant((gettt(o))) == LUA_TSTRING, &((cast_u(o))->ts))
+#define gco2u(o)  check_exp((gettt(o)) == LUA_TUSERDATA, &((cast_u(o))->u))
+#define gco2lcl(o)  check_exp((gettt(o)) == LUA_TLCL, &((cast_u(o))->cl.l))
+#define gco2ccl(o)  check_exp((gettt(o)) == LUA_TCCL, &((cast_u(o))->cl.c))
 #define gco2cl(o)  \
-	check_exp(novariant((o)->tt) == LUA_TFUNCTION, &((cast_u(o))->cl))
-#define gco2t(o)  check_exp((o)->tt == LUA_TTABLE, &((cast_u(o))->h))
-#define gco2p(o)  check_exp((o)->tt == LUA_TPROTO, &((cast_u(o))->p))
-#define gco2th(o)  check_exp((o)->tt == LUA_TTHREAD, &((cast_u(o))->th))
+	check_exp(novariant((gettt(o))) == LUA_TFUNCTION, &((cast_u(o))->cl))
+#define gco2t(o) \
+	check_exp(novariant((gettt(o))) == LUA_TTABLE, &((cast_u(o))->h))
+#define gco2rwt(o)  check_exp((gettt(o)) == LUA_TTBLRAM, &((cast_u(o))->h))
+#define gco2rot(o)  check_exp((gettt(o)) == LUA_TTBLROF, &((cast_u(o))->roh))
+#define gco2p(o)  check_exp((gettt(o)) == LUA_TPROTO, &((cast_u(o))->p))
+#define gco2th(o)  check_exp((gettt(o)) == LUA_TTHREAD, &((cast_u(o))->th))
 
 
 /* macro to convert a Lua object into a GCObject */

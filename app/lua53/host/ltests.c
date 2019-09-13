@@ -85,9 +85,13 @@ typedef union Header {
   struct {
     size_t size;
     int type;
+    union Header *prev;
+    union Header *next;
   } d;
 } Header;
 
+static Header headBlock;
+static Header headBlock = {.d.next = &headBlock, .d.prev = &headBlock};
 
 #if !defined(EXTERNMEMCHECK)
 
@@ -112,6 +116,8 @@ static void freeblock (Memcontrol *mc, Header *block) {
   if (block) {
     size_t size = block->d.size;
     int i;
+    block->d.next->d.prev = block->d.prev;
+    block->d.prev->d.next = block->d.next;
     for (i = 0; i < MARKSIZE; i++)  /* check marks after block */
       lua_assert(*(cast(char *, block + 1) + size + i) == MARK);
     mc->objcount[block->d.type]--;
@@ -165,6 +171,10 @@ void *debug_realloc (void *ud, void *b, size_t oldsize, size_t size) {
       *(cast(char *, newblock + 1) + size + i) = MARK;
     newblock->d.size = size;
     newblock->d.type = type;
+    newblock->d.next = headBlock.d.next;
+    newblock->d.prev = &headBlock;
+    newblock->d.next->d.prev = newblock;
+    headBlock.d.next = newblock;
     mc->total += size;
     if (mc->total > mc->maxmem)
       mc->maxmem = mc->total;
@@ -247,7 +257,6 @@ static void checktable (global_State *g, Table *h) {
 static void checkproto (global_State *g, Proto *f) {
   int i;
   GCObject *fgc = obj2gco(f);
-  checkobjref(g, fgc, f->cache);
   checkobjref(g, fgc, f->source);
   for (i=0; i<f->sizek; i++) {
     if (ttisstring(f->k + i))
@@ -465,7 +474,7 @@ static char *buildop (Proto *p, int pc, char *buff) {
   Instruction i = p->code[pc];
   OpCode o = GET_OPCODE(i);
   const char *name = luaP_opnames[o];
-  int line = getfuncline(p, pc);
+  int line = luaG_getfuncline(NULL, p, pc);
   sprintf(buff, "(%4d) %4d - ", line, pc);
   switch (getOpMode(o)) {
     case iABC:
@@ -850,30 +859,6 @@ static lua_State *getstate (lua_State *L) {
 
 
 static int loadlib (lua_State *L) {
-  static const luaL_Reg libs[] = {
-    {"_G", luaopen_base},
-    {"coroutine", luaopen_coroutine},
-    {"debug", luaopen_debug},
-    {"io", luaopen_io},
-    {"os", luaopen_os},
-    {"math", luaopen_math},
-    {"string", luaopen_string},
-    {"table", luaopen_table},
-    {NULL, NULL}
-  };
-  lua_State *L1 = getstate(L);
-  int i;
-  luaL_requiref(L1, "package", luaopen_package, 0);
-  lua_assert(lua_type(L1, -1) == LUA_TTABLE);
-  /* 'requiref' should not reload module already loaded... */
-  luaL_requiref(L1, "package", NULL, 1);  /* seg. fault if it reloads */
-  /* ...but should return the same module */
-  lua_assert(lua_compare(L1, -1, -2, LUA_OPEQ));
-  luaL_getsubtable(L1, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
-  for (i = 0; libs[i].name; i++) {
-    lua_pushcfunction(L1, libs[i].func);
-    lua_setfield(L1, -2, libs[i].name);
-  }
   return 0;
 }
 

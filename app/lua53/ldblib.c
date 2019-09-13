@@ -18,6 +18,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lnodemcu.h"
 
 
 /*
@@ -43,6 +44,20 @@ static int db_getregistry (lua_State *L) {
   return 1;
 }
 
+
+static int db_getstrings (lua_State *L) {
+  static const char *const opts[] = {"RAM","ROM",NULL};
+  int opt = luaL_checkoption(L, 1, "RAM", opts);
+  int st = lua_getstrings(L, opt);    /* return the relevant strt as an array */
+  if (st) {
+    lua_getglobal(L, "table");
+    lua_getfield(L, -1, "sort");               /* look up table.sort function */
+    lua_replace(L, -2);                               /* dump the table entry */
+    lua_insert(L, -2);               /* swap table/sort and the strings_table */
+    lua_call(L, 1, 0);                           /* table.sort(strings_table) */
+  }
+  return st ? 1 : 0;
+}
 
 static int db_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
@@ -398,7 +413,7 @@ static int db_gethook (lua_State *L) {
   return 3;
 }
 
-
+#ifdef LUA_USE_HOST
 static int db_debug (lua_State *L) {
   for (;;) {
     char buffer[250];
@@ -412,7 +427,7 @@ static int db_debug (lua_State *L) {
     lua_settop(L, 0);  /* remove eventual returns */
   }
 }
-
+#endif
 
 static int db_traceback (lua_State *L) {
   int arg;
@@ -427,30 +442,29 @@ static int db_traceback (lua_State *L) {
   return 1;
 }
 
-
-static const luaL_Reg dblib[] = {
-  {"debug", db_debug},
-  {"getuservalue", db_getuservalue},
-  {"gethook", db_gethook},
-  {"getinfo", db_getinfo},
-  {"getlocal", db_getlocal},
-  {"getregistry", db_getregistry},
-  {"getmetatable", db_getmetatable},
-  {"getupvalue", db_getupvalue},
-  {"upvaluejoin", db_upvaluejoin},
-  {"upvalueid", db_upvalueid},
-  {"setuservalue", db_setuservalue},
-  {"sethook", db_sethook},
-  {"setlocal", db_setlocal},
-  {"setmetatable", db_setmetatable},
-  {"setupvalue", db_setupvalue},
-  {"traceback", db_traceback},
-  {NULL, NULL}
-};
-
+LROT_BEGIN(dblib, NULL, 0)
+#ifdef LUA_USE_HOST
+  LROT_FUNCENTRY( debug, db_debug )
+#endif
+  LROT_FUNCENTRY( getuservalue, db_getuservalue )
+  LROT_FUNCENTRY( gethook, db_gethook )
+  LROT_FUNCENTRY( getinfo, db_getinfo )
+  LROT_FUNCENTRY( getlocal, db_getlocal )
+  LROT_FUNCENTRY( getregistry, db_getregistry )
+  LROT_FUNCENTRY( getstrings, db_getstrings )
+  LROT_FUNCENTRY( getmetatable, db_getmetatable )
+  LROT_FUNCENTRY( getupvalue, db_getupvalue )
+  LROT_FUNCENTRY( upvaluejoin, db_upvaluejoin )
+  LROT_FUNCENTRY( upvalueid, db_upvalueid )
+  LROT_FUNCENTRY( setuservalue, db_setuservalue )
+  LROT_FUNCENTRY( sethook, db_sethook )
+  LROT_FUNCENTRY( setlocal, db_setlocal )
+  LROT_FUNCENTRY( setmetatable, db_setmetatable )
+  LROT_FUNCENTRY( setupvalue, db_setupvalue )
+  LROT_FUNCENTRY( traceback, db_traceback )
+LROT_END(dblib, NULL, 0)
 
 LUAMOD_API int luaopen_debug (lua_State *L) {
-  luaL_newlib(L, dblib);
-  return 1;
+  return 0;
 }
 

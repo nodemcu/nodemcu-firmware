@@ -37,7 +37,6 @@
 /* Active Lua function (given call info) */
 #define ci_func(ci)		(clLvalue((ci)->func))
 
-
 static const char *funcnamefromcode (lua_State *L, CallInfo *ci,
                                     const char **name);
 
@@ -132,7 +131,7 @@ static const char *upvalname (Proto *p, int uv) {
 
 
 static const char *findvararg (CallInfo *ci, int n, StkId *pos) {
-  int nparams = clLvalue(ci->func)->p->numparams;
+  int nparams = getnumparams(clLvalue(ci->func)->p);
   if (n >= cast_int(ci->u.l.base - ci->func) - nparams)
     return NULL;  /* no such vararg */
   else {
@@ -225,22 +224,76 @@ static void funcinfo (lua_Debug *ar, Closure *cl) {
   luaO_chunkid(ar->short_src, ar->source, LUA_IDSIZE);
 }
 
+#define LD_BN            7
+#define LD_MARKER        (1<<LD_BN)
+#define LD_BITS(n,d)     (d & ((1<<(n))-1))
+#define LD_BYTE0(sign,d) (LD_MARKER & (sign<<(LD_BN-1)) & LD_BITS(LD_BN-1,d))
+#define LD_BYTE(delta)   (LD_MARKER & LD_BITS(LD_BN,d))
+
+/*
+** This is O(n) but only accessed frequently in traceexec and the while loop
+** will be executed for roughly half the number of non-blank source lines in
+** the Lua function and these tend to be short. See lcode.c for description
+** of the packing algo. Since the algo is almost identical for collectvalidlines
+** a zero pc is used to denote this variant processing.
+*/
+LUAI_FUNC int luaG_getfuncline (lua_State *L, const Proto *f, int ins_pc) {
+  int line = 0, shift = 0, delta = 0, pc = 0;
+  int sign = -1;  /* <0 denotes unset */
+  int i;
+  unsigned *u = cast(unsigned *, f->lineinfo);
+  /* the union is Flash-friendly to fetch the lineinfo in word-aligned chunks */
+  union { unsigned u; lu_byte c[sizeof(unsigned)]; } buf;
+  lu_byte *p;
+  if (!u)
+    return -1;
+
+  while (pc < f->sizecode) {
+    buf.u = *u++;
+    for (i = 0, p = buf.c; i < sizeof(unsigned); i++, p++) {
+      if (*p & LD_MARKER) {  /* line delta */
+        if (shift == 0) {     /* if shift == 0 then 1st LD byte */
+          sign = (*p & (1<<6)) ? 1 : 0;
+          delta = LD_BITS(6, *p);
+          shift = 6;
+        } else {
+          delta += LD_BITS(7, *p)<<shift;
+          shift += 7;
+        }
+      } else {  /* Instruction count: latch and reset delta */
+        if (*p == 0) /* The packed lineinfo is '\0' terminated */
+          return -1;
+        line += (sign < 0) ? 1 : (sign ? -delta : delta + 2);
+        delta = shift = 0;
+        sign = -1;
+        if (L) {
+          /* if L is set then table at ToS [line] = true */
+          luaH_setint(L, hvalue(L->top-2), line, L->top-1);
+        } else if (pc <= ins_pc && ins_pc < (pc + *p)) {
+          /* if L is NULL and pc in current line range then return the line */
+          return line;
+        }
+        pc += *p;
+      }
+    }
+  }
+  return 0;
+}
+
 
 static void collectvalidlines (lua_State *L, Closure *f) {
   if (noLuaClosure(f)) {
     setnilvalue(L->top);
     api_incr_top(L);
-  }
-  else {
-    int i;
-    TValue v;
-    int *lineinfo = f->l.p->lineinfo;
-    Table *t = luaH_new(L);  /* new table to store active lines */
-    sethvalue(L, L->top, t);  /* push it on stack */
+  } else {
+    sethvalue(L, L->top, luaH_new(L)); /* ToS = new table to store active lines */
     api_incr_top(L);
-    setbvalue(&v, 1);  /* boolean 'true' to be the value of all indices */
-    for (i = 0; i < f->l.p->sizelineinfo; i++)  /* for all lines with code */
-      luaH_setint(L, t, lineinfo[i], &v);  /* table[line] = true */
+    if (f->l.p->lineinfo) {
+      setbvalue(L->top, 1);  /* ToS = boolean 'true' to be the value of all indices */
+      api_incr_top(L);
+      luaG_getfuncline(L, f->l.p, 0); /* call with PC=0 to do table collection */
+      L->top--; /* dump boolean leaving table as ToS */
+    }
   }
 }
 
@@ -279,8 +332,8 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
           ar->nparams = 0;
         }
         else {
-          ar->isvararg = f->l.p->is_vararg;
-          ar->nparams = f->l.p->numparams;
+          ar->isvararg = getis_vararg(f->l.p);
+          ar->nparams = getnumparams(f->l.p);
         }
         break;
       }
@@ -584,7 +637,8 @@ static const char *varinfo (lua_State *L, const TValue *o) {
 
 l_noret luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
   const char *t = luaT_objtypename(L, o);
-  luaG_runerror(L, "attempt to %s a %s value%s", op, t, varinfo(L, o));
+  const char *info = varinfo(L, o);
+  luaG_runerror(L, "attempt to %s a %s value%s", op, t, info);
 }
 
 
@@ -653,6 +707,7 @@ l_noret luaG_runerror (lua_State *L, const char *fmt, ...) {
   CallInfo *ci = L->ci;
   const char *msg;
   va_list argp;
+
   luaC_checkGC(L);  /* error message uses memory */
   va_start(argp, fmt);
   msg = luaO_pushvfstring(L, fmt, argp);  /* format message */

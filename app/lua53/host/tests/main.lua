@@ -3,7 +3,11 @@
 -- See Copyright Notice in file all.lua
 
 -- most (all?) tests here assume a reasonable "Unix-like" shell
-if _port then return end
+_port=true
+if _port then
+  print('SKIPPED')
+  return
+end
 
 -- use only "double quotes" inside shell scripts (better change to
 -- run on Windows)

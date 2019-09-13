@@ -1,8 +1,9 @@
+
 -- $Id: gc.lua,v 1.72 2016/11/07 13:11:28 roberto Exp $
 -- See Copyright Notice in file all.lua
 
 print('testing garbage collection')
-
+dofile'allassert.lua'
 local debug = require"debug"
 
 collectgarbage()
@@ -89,7 +90,6 @@ while contCreate <= limit do
   local a = {}; a = nil
   contCreate = contCreate+1
 end
-
 a = "a"
 
 contCreate = 0
@@ -119,6 +119,7 @@ a:test()
 
 -- collection of functions without locals, globals, etc.
 do local f = function () end end
+
 
 
 print("functions with errors")
@@ -158,7 +159,6 @@ s = nil
 x = nil
 
 assert(_G["while"] == 234)
-
 
 print("steps")
 

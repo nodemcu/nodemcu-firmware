@@ -41,9 +41,13 @@
 ** a macro to help the creation of a unique random seed when a state is
 ** created; the seed is used to randomize hashes.
 */
+#if defined(LUA_USE_ESP8266)
+#define luai_makeseed()	(0u)
+#else
 #if !defined(luai_makeseed)
 #include <time.h>
 #define luai_makeseed()		cast(unsigned int, time(NULL))
+#endif
 #endif
 
 
@@ -239,6 +243,8 @@ static void preinit_thread (lua_State *L, global_State *g) {
 }
 
 
+static lua_State *L0 = NULL;
+
 static void close_state (lua_State *L) {
   global_State *g = G(L);
   luaF_close(L, L->stack);  /* close all upvalues for this thread */
@@ -247,6 +253,10 @@ static void close_state (lua_State *L) {
     luai_userstateclose(L);
   luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
   freestack(L);
+#ifdef LUA_ENABLE_TEST
+  if (L == L0)
+    (*g->frealloc)(g->ud, g->cache, KEYCACHE_N * sizeof(KeyCacheLine), 0);
+#endif
   lua_assert(gettotalbytes(g) == sizeof(LG));
   (*g->frealloc)(g->ud, fromstate(L), sizeof(LG), 0);  /* free main block */
 }
@@ -291,6 +301,13 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
   luaM_free(L, l);
 }
 
+LUA_API lua_State *lua_getstate (void) {
+  return L0;
+}
+
+LUA_API KeyCache *(lua_getcache) (int lineno) {
+  return &G(L0)->cache[lineno][0];
+}
 
 LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   int i;
@@ -328,6 +345,25 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->gcfinnum = 0;
   g->gcpause = LUAI_GCPAUSE;
   g->gcstepmul = LUAI_GCMUL;
+#ifdef LUA_USE_ESP
+  g->ROstrt.size = 0;
+  g->ROstrt.nuse = 0;
+  g->ROstrt.hash = NULL;
+  g->ROpvmain = NULL;
+  g->LFSsize = 0;
+#endif
+#ifdef LUA_ENABLE_TEST
+  if (L0) { /* This is a second state */
+    g->cache=G(L0)->cache;
+  } else {
+#endif
+  L0 = L;
+  g->cache = cast(KeyCacheLine *,
+                 (*f)(ud, NULL, 0, KEYCACHE_N * sizeof(KeyCacheLine)));
+  memset(g->cache, 0, KEYCACHE_N * sizeof(KeyCacheLine));
+#ifdef LUA_ENABLE_TEST
+  }
+#endif
   for (i=0; i < LUA_NUMTAGS; i++) g->mt[i] = NULL;
   if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
     /* memory allocation error: free partial state */

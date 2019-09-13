@@ -17,7 +17,7 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "lundump.h"
-
+#include "lauxlib.h"
 
 typedef struct {
   lua_State *L;
@@ -27,6 +27,17 @@ typedef struct {
   int status;
 } DumpState;
 
+/*
+** For compatability with NodeMCU 5.1 the NodeMCU dump format (V 10)
+** has some minor changes from the standard (V 01) format to ensure that
+** these files are loadable onto the ESP8266 and ESP32 archtectures:
+**
+** 1.  Strings are a maximum of 32767 bytes long.  String lengths < 128
+**     are stored as a single byte, otherwise as a bigendian two byte
+**     size the high bit set.
+** 2.  Integers are in the range -2^31 .. 2^31-1  (sint32_t)
+** 3.  Floats are double IEEE (8 byte) format.
+*/
 
 /*
 ** All high-level dumps go through DumpVector; you can change it to
@@ -65,24 +76,34 @@ static void DumpNumber (lua_Number x, DumpState *D) {
 }
 
 
-static void DumpInteger (lua_Integer x, DumpState *D) {
-  DumpVar(x, D);
+static void DumpInteger (lua_Integer y, DumpState *D) {
+  int x = (int) y;
+  if ((lua_Integer) y != x) {
+    luaL_error(D->L, "Integer value out of range");
+  }
+  DumpVar(y, D);
 }
 
+static void DumpStrlen (size_t l, DumpState *D) {
+  if (l > 32767) {
+    luaL_error(D->L, "Strings constants bust be <32K in length");
+  }
+  if (l < 128)
+    DumpByte(cast(int, l), D);
+  else {
+    DumpByte(cast(int, 0x80 + (l>>8)), D);
+    DumpByte(cast(int, l & 0xFF), D);
+  }
+}
 
 static void DumpString (const TString *s, DumpState *D) {
   if (s == NULL)
     DumpByte(0, D);
   else {
-    size_t size = tsslen(s) + 1;  /* include trailing '\0' */
     const char *str = getstr(s);
-    if (size < 0xFF)
-      DumpByte(cast_int(size), D);
-    else {
-      DumpByte(0xFF, D);
-      DumpVar(size, D);
-    }
-    DumpVector(str, size - 1, D);  /* no need to save '\0' */
+    size_t l = tsslen(s);
+    DumpStrlen(l + 1, D);   /* include trailing '\0' */
+    DumpVector(str, l, D);  /* no need to save '\0' */
   }
 }
 
@@ -170,9 +191,9 @@ static void DumpFunction (const Proto *f, TString *psource, DumpState *D) {
     DumpString(f->source, D);
   DumpInt(f->linedefined, D);
   DumpInt(f->lastlinedefined, D);
-  DumpByte(f->numparams, D);
-  DumpByte(f->is_vararg, D);
-  DumpByte(f->maxstacksize, D);
+  DumpByte(getnumparams(f), D);
+  DumpByte(getis_vararg(f), D);
+  DumpByte(getmaxstacksize(f), D);
   DumpCode(f, D);
   DumpConstants(f, D);
   DumpUpvalues(f, D);

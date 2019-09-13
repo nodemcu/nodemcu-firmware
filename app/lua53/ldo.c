@@ -60,7 +60,7 @@
 	try { a } catch(...) { if ((c)->status == 0) (c)->status = -1; }
 #define luai_jmpbuf		int  /* dummy variable */
 
-#elif defined(LUA_USE_POSIX)				/* }{ */
+#elif defined(LUA_USE_POSIX)		/* }{ */
 
 /* in POSIX, try _longjmp/_setjmp (more efficient) */
 #define LUAI_THROW(L,c)		_longjmp((c)->b, 1)
@@ -127,7 +127,11 @@ l_noret luaD_throw (lua_State *L, int errcode) {
         lua_unlock(L);
         g->panic(L);  /* call panic function (last chance to jump out) */
       }
+#ifdef LUA_USE_ESP8266
+      while(1) {};
+#else
       abort();
+#endif
     }
   }
 }
@@ -292,7 +296,7 @@ static void callhook (lua_State *L, CallInfo *ci) {
 
 static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
   int i;
-  int nfixargs = p->numparams;
+  int nfixargs = getnumparams(p);
   StkId base, fixed;
   /* move fixed parameters to final position */
   fixed = L->top - actual;  /* first fixed argument */
@@ -441,12 +445,12 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
       StkId base;
       Proto *p = clLvalue(func)->p;
       int n = cast_int(L->top - func) - 1;  /* number of real arguments */
-      int fsize = p->maxstacksize;  /* frame size */
+      int fsize = getmaxstacksize(p);  /* frame size */
       checkstackp(L, fsize, func);
-      if (p->is_vararg)
+      if (getis_vararg(p))
         base = adjust_varargs(L, p, n);
       else {  /* non vararg function */
-        for (; n < p->numparams; n++)
+        for (; n < getnumparams(p); n++)
           setnilvalue(L->top++);  /* complete missing arguments */
         base = func + 1;
       }

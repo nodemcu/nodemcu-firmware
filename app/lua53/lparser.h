@@ -123,6 +123,9 @@ typedef struct FuncState {
   lu_byte nactvar;  /* number of active local variables */
   lu_byte nups;  /* number of upvalues */
   lu_byte freereg;  /* first free register */
+  int sizelineinfo;  /* only used during compilation for line info */
+  int lastline;      /* ditto */
+  int lastpc;        /* ditto */
 } FuncState;
 
 

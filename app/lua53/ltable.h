@@ -39,6 +39,10 @@
 #define keyfromval(v) \
   (gkey(cast(Node *, cast(char *, (v)) - offsetof(Node, i_val))))
 
+/* test Table to determine if it is a RW or RO table */
+#define isrotable(t) (gettt(t)==LUA_TTBLROF)
+#define isrwtable(t) (gettt(t)==LUA_TTBLRAM)
+
 
 LUAI_FUNC const TValue *luaH_getint (Table *t, lua_Integer key);
 LUAI_FUNC void luaH_setint (lua_State *L, Table *t, lua_Integer key,

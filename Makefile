@@ -46,7 +46,6 @@ else
   CCFLAGS += -O2
 endif
 
-
 # Handling of V=1/VERBOSE=1 flag
 #
 # if V=1, $(summary) does nothing
@@ -274,7 +273,7 @@ endif # TARGET
 #
 
 ifndef TARGET
-all: toolchain sdk_pruned pre_build buildinfo .subdirs
+all: toolchain sdk_pruned pre_build .subdirs
 else
 all: .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 endif
@@ -411,11 +410,6 @@ else
 pre_build:
 	@-rm -f $(APP_DIR)/modules/server-ca.crt.h
 endif
-
-.PHONY: buildinfo
-
-buildinfo:
-	tools/update_buildinfo.sh
 
 ifdef TARGET
 $(OBJODIR)/%.o: %.c

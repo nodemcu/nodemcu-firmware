@@ -28,6 +28,10 @@
 #define luai_verifycode(L,b,f)  /* empty */
 #endif
 
+/*
+** For compatability with NodeMCU 5.1 the NodeMCU dump format (V 10)
+** has some minor changes from the standard (V 01).  See ldump.c
+*/
 
 typedef struct {
   lua_State *L;
@@ -79,16 +83,22 @@ static lua_Number LoadNumber (LoadState *S) {
 
 
 static lua_Integer LoadInteger (LoadState *S) {
-  lua_Integer x;
+  int x;
   LoadVar(S, x);
-  return x;
+  return cast(lua_Integer, x);
 }
 
+static size_t LoadStrlen (LoadState *S) {
+  lu_byte x, y;
+  LoadVar(S, x);
+  if (x < 128)
+    return cast(size_t, x);
+  LoadVar(S, y);
+  return (cast(size_t, x & 0x7f)<<8) + y;
+}
 
 static TString *LoadString (LoadState *S) {
-  size_t size = LoadByte(S);
-  if (size == 0xFF)
-    LoadVar(S, size);
+  size_t size = LoadStrlen(S);
   if (size == 0)
     return NULL;
   else if (--size <= LUAI_MAXSHORTLEN) {  /* short string? */
@@ -180,7 +190,7 @@ static void LoadUpvalues (LoadState *S, Proto *f) {
 static void LoadDebug (LoadState *S, Proto *f) {
   int i, n;
   n = LoadInt(S);
-  f->lineinfo = luaM_newvector(S->L, n, int);
+  f->lineinfo = luaM_newvector(S->L, n, lu_byte);
   f->sizelineinfo = n;
   LoadVector(S, f->lineinfo, n);
   n = LoadInt(S);

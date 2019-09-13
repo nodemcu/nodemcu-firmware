@@ -19,6 +19,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lnodemcu.h"
 
 #define MAXUNICODE	0x10FFFF
 
@@ -232,25 +233,26 @@ static int iter_codes (lua_State *L) {
 
 
 /* pattern to match a single UTF-8 character */
+
 #define UTF8PATT	"[\0-\x7F\xC2-\xF4][\x80-\xBF]*"
+static int charpattern (lua_State *L) {
+  lua_pushlstring(L, UTF8PATT, sizeof(UTF8PATT)/sizeof(char) - 1);
+  return 1;
+}
 
 
-static const luaL_Reg funcs[] = {
-  {"offset", byteoffset},
-  {"codepoint", codepoint},
-  {"char", utfchar},
-  {"len", utflen},
-  {"codes", iter_codes},
-  /* placeholders */
-  {"charpattern", NULL},
-  {NULL, NULL}
-};
+LROT_BEGIN(utf8, NULL, 0)
+  LROT_FUNCENTRY( offset, byteoffset )
+  LROT_FUNCENTRY( codepoint, codepoint )
+  LROT_FUNCENTRY( char, utfchar )
+  LROT_FUNCENTRY( len, utflen )
+  LROT_FUNCENTRY( codes, iter_codes )
+  /* get function in place of string */
+  LROT_FUNCENTRY( getcharpattern, charpattern )
+LROT_END(utf8, NULL, 0)
 
 
 LUAMOD_API int luaopen_utf8 (lua_State *L) {
-  luaL_newlib(L, funcs);
-  lua_pushlstring(L, UTF8PATT, sizeof(UTF8PATT)/sizeof(char) - 1);
-  lua_setfield(L, -2, "charpattern");
-  return 1;
+  return 0;
 }
 

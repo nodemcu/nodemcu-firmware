@@ -10,12 +10,16 @@
 #include "lprefix.h"
 
 
+#if defined(LUA_USE_HOST) && defined(_MSC_VER)
+#undef errno  	//msvc #defines errno, which interferes with our #include macro
+#else
 #include <errno.h>
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 /*
 ** This file uses only the official API of Lua.
@@ -25,6 +29,14 @@
 #include "lua.h"
 
 #include "lauxlib.h"
+#ifdef LUA_USE_ESP
+#include "platform.h"
+#include "user_interface.h"
+#ifdef LUA_USE_ESP8266
+#include "vfs.h"
+#include <fcntl.h>
+#endif
+#endif
 
 
 /*
@@ -327,6 +339,18 @@ LUALIB_API void *luaL_testudata (lua_State *L, int ud, const char *tname) {
     }
   }
   return NULL;  /* value is not a userdata with a metatable */
+}
+
+
+LUALIB_API int luaL_rometatable (lua_State *L, const char* tname, const ROTable *p) {
+  lua_getfield(L, LUA_REGISTRYINDEX, tname);  /* get registry.name */
+  if (!lua_isnil(L, -1))  /* name already in use? */
+    return 0;  /* leave previous value on top, but return 0 */
+  lua_pop(L, 1);
+  lua_pushrotable(L, p);
+  lua_pushvalue(L, -1);
+  lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
+  return 1;
 }
 
 
@@ -634,10 +658,30 @@ LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
 
 typedef struct LoadF {
   int n;  /* number of pre-read characters */
+#ifdef LUA_CROSS_COMPILER
   FILE *f;  /* file being read */
+#else
+  int f;  /* file being read */
+#endif
   char buff[BUFSIZ];  /* area for reading file */
 } LoadF;
 
+#ifdef LUA_CROSS_COMPILER
+#  define freopen_bin(f,fn) freopen(f,"rb",fn)
+#  define read_buff(b,f) fread(b, 1, sizeof (b), f)
+#else
+#  define strerror(n) ""
+#undef feof
+#  define feof(f)        vfs_eof(f)
+#undef fopen
+#  define fopen(f, m)    vfs_open(f, m)
+#  define freopen_bin(fn,f) ((void) vfs_close(f), vfs_open(fn, "r"))
+#undef getc
+#  define getc(f)        vfs_getc(f)
+#undef ungetc
+#  define ungetc(c,f)    vfs_ungetc(c, f)
+#  define read_buff(b,f) vfs_read(f, b, sizeof (b))
+#endif
 
 static const char *getF (lua_State *L, void *ud, size_t *size) {
   LoadF *lf = (LoadF *)ud;
@@ -651,7 +695,7 @@ static const char *getF (lua_State *L, void *ud, size_t *size) {
        'getF' called 'fread', it might still wait for user input.
        The next check avoids this problem. */
     if (feof(lf->f)) return NULL;
-    *size = fread(lf->buff, 1, sizeof(lf->buff), lf->f);  /* read block */
+    *size = read_buff(lf->buff, lf->f);  /* read block */
   }
   return lf->buff;
 }
@@ -707,31 +751,40 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
   int c;
   int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
   if (filename == NULL) {
+#ifdef LUA_CROSS_COMPILER
     lua_pushliteral(L, "=stdin");
     lf.f = stdin;
+#else
+    return luaL_error(L, "filename is NULL");
+#endif
   }
   else {
     lua_pushfstring(L, "@%s", filename);
     lf.f = fopen(filename, "r");
-    if (lf.f == NULL) return errfile(L, "open", fnameindex);
+    if (!lf.f) return errfile(L, "open", fnameindex);
   }
   if (skipcomment(&lf, &c))  /* read initial portion */
     lf.buff[lf.n++] = '\n';  /* add line to correct line numbers */
   if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
-    lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
-    if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
+    lf.f = freopen_bin(filename, lf.f);  /* reopen in binary mode */
+    if (!lf.f) return errfile(L, "reopen", fnameindex);
     skipcomment(&lf, &c);  /* re-read initial portion */
   }
   if (c != EOF)
     lf.buff[lf.n++] = c;  /* 'c' is the first character of the stream */
   status = lua_load(L, getF, &lf, lua_tostring(L, -1), mode);
+#ifdef LUA_CROSS_COMPILER
   readstatus = ferror(lf.f);
   if (filename) fclose(lf.f);  /* close file (even in case of errors) */
   if (readstatus) {
     lua_settop(L, fnameindex);  /* ignore results from 'lua_load' */
     return errfile(L, "read", fnameindex);
   }
-  lua_remove(L, fnameindex);
+#else
+  (void) readstatus;              /* avoid compile error */
+  if (filename) vfs_close(lf.f);  /* close file (even in case of errors) */
+#endif
+   lua_remove(L, fnameindex);
   return status;
 }
 
@@ -963,27 +1016,33 @@ LUALIB_API int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
 
 
 /*
-** Stripped-down 'require': After checking "loaded" table, calls 'openf'
-** to open a module, registers the result in 'package.loaded' table and,
-** if 'glb' is true, also registers the result in the global table.
+** Stripped-down 'require' used in linit.c and ltests.c.  After checking "loaded" and ROM tables, calls
+** 'openf' to open a module, registers the result in 'package.loaded' table
+** and, if 'glb' is true, also registers the result in the global table.
 ** Leaves resulting module on the top.
 */
 LUALIB_API void luaL_requiref (lua_State *L, const char *modname,
                                lua_CFunction openf, int glb) {
   luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
-  lua_getfield(L, -1, modname);  /* LOADED[modname] */
-  if (!lua_toboolean(L, -1)) {  /* package not already loaded? */
-    lua_pop(L, 1);  /* remove field */
+  lua_getfield(L, -1, modname);                            /* LOADED[modname] */
+  if (!lua_toboolean(L, -1)) {                /* package not in LOADED table? */
+    lua_getglobal(L, "ROM");                             /* try the ROM entry */
+    lua_getfield(L, -1, modname);                                /* ROM[name] */
+    if (lua_toboolean(L, -1))                            /* package is in ROM */
+      glb = 0;                                   /* suppress setting _G entry */
+    lua_pop(L, 3);                /* remove temp pushed fields, except LOADED */
     lua_pushcfunction(L, openf);
-    lua_pushstring(L, modname);  /* argument to open function */
-    lua_call(L, 1, 1);  /* call 'openf' to open module */
-    lua_pushvalue(L, -1);  /* make copy of module (call result) */
-    lua_setfield(L, -3, modname);  /* LOADED[modname] = module */
+    lua_pushstring(L, modname);                  /* argument to open function */
+    lua_call(L, 1, 1);                         /* call 'openf' to open module */
+    if (lua_toboolean(L, -1)) {                    /* if a result is returned */
+      lua_pushvalue(L, -1);              /* make copy of module (call result) */
+      lua_setfield(L, -3, modname);               /* LOADED[modname] = module */
+    }
   }
-  lua_remove(L, -2);  /* remove LOADED table */
+  lua_remove(L, -2);                                   /* remove LOADED table */
   if (glb) {
-    lua_pushvalue(L, -1);  /* copy of module */
-    lua_setglobal(L, modname);  /* _G[modname] = module */
+    lua_pushvalue(L, -1);                                   /* copy of module */
+    lua_setglobal(L, modname);                        /* _G[modname] = module */
   }
 }
 
@@ -1041,3 +1100,89 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)*v);
 }
 
+#ifdef LUA_USE_ESP
+/*
+** Error Reporting Task.  We can't pass a string parameter to the error reporter
+** directly through the task interface the call is wrapped in a C closure with
+** the error string as an Upval and this is posted to call the Lua reporter.
+*/
+static int errhandler_aux (lua_State *L) {
+  lua_getfield(L, LUA_REGISTRYINDEX, "onerror");
+  if (!lua_isfunction(L, -1)) {
+    lua_pop(L, 1);
+    lua_getglobal(L, "print");
+  }
+  lua_pushvalue(L, lua_upvalueindex(1));
+  lua_call(L, 1, 0);  /* Using an error handler would cause an infinite loop! */
+  return 0;
+}
+
+
+/*
+** Error handler for luaL_pcallex()
+*/
+static int errhandler (lua_State *L) {
+   if (lua_type(L, -1) != LUA_TSTRING) {     /* is error object not a string? */
+    if (luaL_callmeta(L, 1, "__tostring") &&     /* does it have a metamethod */
+        lua_type(L, -1) == LUA_TSTRING) {          /* that produces a string? */
+      lua_remove(L, 1);                              /* replace ToS with this */
+    } else {
+      lua_pushfstring(L, "(error object is a %s value)", luaL_typename(L, 1));
+      lua_remove(L, 1);        /* replace ToS with error object is type value */
+    }
+  }
+  luaL_traceback(L, L, lua_tostring(L, 1), 1); /* append a standard traceback */
+  lua_pushcclosure(L, errhandler_aux, 1);         /* report with str as upval */
+  luaL_posttask(L, LUA_TASK_HIGH);
+  return 1;  /* return the traceback */
+}
+
+/*
+** Extended interface to 'lua_pcall', which sets appropriate message and Lua
+** stack trackback.  On error a separate task is posted to report the error.
+*/
+LUALIB_API int luaL_pcallx (lua_State *L, int narg, int nres) {
+  int status;
+  int base = lua_gettop(L) - narg;  /* function index */
+  lua_pushcfunction(L, errhandler);  /* push message handler */
+  lua_insert(L, base);  /* put it under function and args */
+  status = lua_pcall(L, narg, nres, base);
+  lua_remove(L, base);  /* remove message handler from the stack */
+  return status;
+}
+
+
+/*
+** Task callback handler. Uses luaN_call to do a protected call with full traceback
+*/
+static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
+  lua_State* L = lua_getstate();
+  if (prio < 0|| prio > 2)
+    luaL_error(L, "invalid posk task");
+
+/* Pop the CB func from the Reg */
+  lua_rawgeti(L, LUA_REGISTRYINDEX, (int) task_fn_ref);
+  luaL_checktype(L, -1, LUA_TFUNCTION);
+  luaL_unref(L, LUA_REGISTRYINDEX, (int) task_fn_ref);
+  lua_pushinteger(L, prio);
+  luaL_pcallx (L, 1, 0);
+}
+
+/*
+** Schedule a Lua function for task execution
+*/
+LUALIB_API int luaL_posttask( lua_State* L, int prio ) {            // [-1, +0, -]
+  static platform_task_handle_t task_handle = 0;
+  if (!task_handle)
+    task_handle = platform_task_get_id(do_task);
+
+  if (!lua_isfunction(L, -1) || prio < LUA_TASK_LOW|| prio > LUA_TASK_HIGH)
+    luaL_error(L, "invalid posk task");
+  int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  if(!platform_post(prio, task_handle, (platform_task_param_t)task_fn_ref)) {
+    luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
+    luaL_error(L, "Task queue overflow. Task not posted");
+  }
+  return task_fn_ref;
+}
+#endif

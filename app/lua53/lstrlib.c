@@ -23,6 +23,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lnodemcu.h"
 
 
 /*
@@ -824,7 +825,7 @@ static int str_gsub (lua_State *L) {
 ** to nibble boundaries by making what is left after that first digit a
 ** multiple of 4.
 */
-#define L_NBFD		((l_mathlim(MANT_DIG) - 1)%4 + 1)
+#define L_NBFD		((l_mathlim(MANT_DIG) - 1) % 4 + 1)
 
 
 /*
@@ -887,13 +888,11 @@ static int lua_number2strx (lua_State *L, char *buff, int sz,
 
 
 /*
-** Maximum size of each formatted item. This maximum size is produced
-** by format('%.99f', -maxfloat), and is equal to 99 + 3 ('-', '.',
-** and '\0') + number of decimal digits to represent maxfloat (which
-** is maximum exponent + 1). (99+3+1 then rounded to 120 for "extra
-** expenses", such as locale-dependent stuff)
+** Maximum size of each formatted item. Unlike standard Lua which is
+** based on the maximum size is produceD by format('%.99f', -maxfloat),
+** NodeMCU just limits this to 128.
 */
-#define MAX_ITEM        (120 + l_mathlim(MAX_10_EXP))
+#define MAX_ITEM        128
 
 
 /* valid flags in a format specification */
@@ -1538,47 +1537,36 @@ static int str_unpack (lua_State *L) {
 
 /* }====================================================== */
 
-
-static const luaL_Reg strlib[] = {
-  {"byte", str_byte},
-  {"char", str_char},
-  {"dump", str_dump},
-  {"find", str_find},
-  {"format", str_format},
-  {"gmatch", gmatch},
-  {"gsub", str_gsub},
-  {"len", str_len},
-  {"lower", str_lower},
-  {"match", str_match},
-  {"rep", str_rep},
-  {"reverse", str_reverse},
-  {"sub", str_sub},
-  {"upper", str_upper},
-  {"pack", str_pack},
-  {"packsize", str_packsize},
-  {"unpack", str_unpack},
-  {NULL, NULL}
-};
-
-
-static void createmetatable (lua_State *L) {
-  lua_createtable(L, 0, 1);  /* table to be metatable for strings */
-  lua_pushliteral(L, "");  /* dummy string */
-  lua_pushvalue(L, -2);  /* copy table */
-  lua_setmetatable(L, -2);  /* set table as metatable for strings */
-  lua_pop(L, 1);  /* pop dummy string */
-  lua_pushvalue(L, -2);  /* get string library */
-  lua_setfield(L, -2, "__index");  /* metatable.__index = string */
-  lua_pop(L, 1);  /* pop metatable */
-}
+LROT_BEGIN(strlib, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( __index, strlib )
+  LROT_FUNCENTRY( byte, str_byte )
+  LROT_FUNCENTRY( char, str_char )
+  LROT_FUNCENTRY( dump, str_dump )
+  LROT_FUNCENTRY( find, str_find )
+  LROT_FUNCENTRY( format, str_format )
+  LROT_FUNCENTRY( gmatch, gmatch )
+  LROT_FUNCENTRY( gsub, str_gsub )
+  LROT_FUNCENTRY( len, str_len )
+  LROT_FUNCENTRY( lower, str_lower )
+  LROT_FUNCENTRY( match, str_match )
+  LROT_FUNCENTRY( rep, str_rep )
+  LROT_FUNCENTRY( reverse, str_reverse )
+  LROT_FUNCENTRY( sub, str_sub )
+  LROT_FUNCENTRY( upper, str_upper )
+  LROT_FUNCENTRY( pack, str_pack )
+  LROT_FUNCENTRY( packsize, str_packsize )
+  LROT_FUNCENTRY( unpack, str_unpack )
+LROT_END(strlib, NULL, LROT_MASK_INDEX)
 
 
 /*
 ** Open string library
 */
 LUAMOD_API int luaopen_string (lua_State *L) {
-  luaL_newlib(L, strlib);
-  createmetatable(L);
-  return 1;
+  lua_pushliteral(L, "");  /* dummy string */
+  lua_pushrotable(L, LROT_TABLEREF(strlib));
+  lua_setmetatable(L, -2);  /* set table as metatable for strings */
+  lua_pop(L, 1);  /* pop dummy string */
+  return 0;
 }
 

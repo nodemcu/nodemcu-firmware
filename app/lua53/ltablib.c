@@ -18,6 +18,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "lnodemcu.h"
 
 
 /*
@@ -242,6 +243,8 @@ typedef unsigned int IdxT;
 ** of a partition. (If you don't want/need this "randomness", ~0 is a
 ** good choice.)
 */
+#define l_randomizePivot() (~0);
+
 #if !defined(l_randomizePivot)		/* { */
 
 #include <time.h>
@@ -422,29 +425,20 @@ static int sort (lua_State *L) {
 
 /* }====================================================== */
 
-
-static const luaL_Reg tab_funcs[] = {
-  {"concat", tconcat},
+LROT_BEGIN(tab_funcs, NULL, 0)
+  LROT_FUNCENTRY( concat, tconcat )
 #if defined(LUA_COMPAT_MAXN)
-  {"maxn", maxn},
+  LROT_FUNCENTRY( maxn, maxn )
 #endif
-  {"insert", tinsert},
-  {"pack", pack},
-  {"unpack", unpack},
-  {"remove", tremove},
-  {"move", tmove},
-  {"sort", sort},
-  {NULL, NULL}
-};
-
+  LROT_FUNCENTRY( insert, tinsert )
+  LROT_FUNCENTRY( pack, pack )
+  LROT_FUNCENTRY( unpack, unpack)
+  LROT_FUNCENTRY( move, tmove )
+  LROT_FUNCENTRY( remove, tremove )
+  LROT_FUNCENTRY( sort, sort )
+LROT_END(tab_funcs, NULL, 0)
 
 LUAMOD_API int luaopen_table (lua_State *L) {
-  luaL_newlib(L, tab_funcs);
-#if defined(LUA_COMPAT_UNPACK)
-  /* _G.unpack = table.unpack */
-  lua_getfield(L, -1, "unpack");
-  lua_setglobal(L, "unpack");
-#endif
-  return 1;
+  return 0;
 }
 

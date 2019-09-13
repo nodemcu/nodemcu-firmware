@@ -9,7 +9,7 @@ print "testing large tables"
 
 local debug = require"debug" 
 
-local lim = 2^18 + 1000
+local lim = 10000
 local prog = { "local y = {0" }
 for i = 1, lim do prog[#prog + 1] = i  end
 prog[#prog + 1] = "}\n"
@@ -52,8 +52,6 @@ local e, m = xpcall(f, debug.traceback)
 assert(not e and m:find("'__newindex'"))
 
 f, X = nil
-
-coroutine.yield'b'
 
 if 2^32 == 0 then   -- (small integers) {   
 

@@ -466,6 +466,7 @@ else
   assert(a == coroutine.running() and string.find(b, "non%-suspended") and
          c == "ERRRUN" and d == 4)
 
+--[==[TODO:  Test uses dynamic loading
 
   -- using a main thread as a coroutine
   local state = T.newstate()
@@ -498,11 +499,11 @@ else
   assert(T.doremote(state, "return B") == 'BB')
 
   T.closestate(state)
+]==]
 
   print'+'
 
 end
-
 
 -- leaving a pending coroutine open
 _X = coroutine.wrap(function ()

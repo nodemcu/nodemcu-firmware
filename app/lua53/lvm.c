@@ -241,29 +241,19 @@ void luaV_finishset (lua_State *L, const TValue *t, TValue *key,
 /*
 ** Compare two strings 'ls' x 'rs', returning an integer smaller-equal-
 ** -larger than zero if 'ls' is smaller-equal-larger than 'rs'.
-** The code is a little tricky because it allows '\0' in the strings
-** and it uses 'strcoll' (to respect locales) for each segments
-** of the strings.
+** Stripped down version for NodeMCU without locales support
 */
 static int l_strcmp (const TString *ls, const TString *rs) {
   const char *l = getstr(ls);
-  size_t ll = tsslen(ls);
   const char *r = getstr(rs);
-  size_t lr = tsslen(rs);
-  for (;;) {  /* for each segment */
-    int temp = strcoll(l, r);
-    if (temp != 0)  /* not equal? */
-      return temp;  /* done */
-    else {  /* strings are equal up to a '\0' */
-      size_t len = strlen(l);  /* index of first '\0' in both strings */
-      if (len == lr)  /* 'rs' is finished? */
-        return (len == ll) ? 0 : 1;  /* check 'ls' */
-      else if (len == ll)  /* 'ls' is finished? */
-        return -1;  /* 'ls' is smaller than 'rs' ('rs' is not finished) */
-      /* both strings longer than 'len'; go on comparing after the '\0' */
-      len++;
-      l += len; ll -= len; r += len; lr -= len;
-    }
+  if (l == r) {
+    return 0;
+  } else {
+    size_t ll = tsslen(ls);
+    size_t lr = tsslen(rs);
+    size_t lm = ll<lr ? ll : lr;
+    int    s  = memcmp(l, r, lm);
+    return s ? s : (lr == lm ? (ll == lm ? 0 : 1) : -1);
   }
 }
 
@@ -432,7 +422,8 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
         tm = fasttm(L, uvalue(t2)->metatable, TM_EQ);
       break;  /* will try TM */
     }
-    case LUA_TTABLE: {
+    case LUA_TTBLRAM:
+    case LUA_TTBLROF: {
       if (hvalue(t1) == hvalue(t2)) return 1;
       else if (L == NULL) return 0;
       tm = fasttm(L, hvalue(t1)->metatable, TM_EQ);
@@ -454,7 +445,7 @@ int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
 #define tostring(L,o)  \
 	(ttisstring(o) || (cvt2str(o) && (luaO_tostring(L, o), 1)))
 
-#define isemptystr(o)	(ttisshrstring(o) && tsvalue(o)->shrlen == 0)
+#define isemptystr(o)	(ttisshrstring(o) && getshrlen(tsvalue(o)) == 0)
 
 /* copy strings in stack from top - n up to top - 1 to buffer */
 static void copy2buff (StkId top, int n, char *buff) {
@@ -525,7 +516,7 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
       return;
     }
     case LUA_TSHRSTR: {
-      setivalue(ra, tsvalue(rb)->shrlen);
+      setivalue(ra, getshrlen(tsvalue(rb)));
       return;
     }
     case LUA_TLNGSTR: {
@@ -603,27 +594,6 @@ lua_Integer luaV_shiftl (lua_Integer x, lua_Integer y) {
 
 
 /*
-** check whether cached closure in prototype 'p' may be reused, that is,
-** whether there is a cached closure with the same upvalues needed by
-** new closure to be created.
-*/
-static LClosure *getcached (Proto *p, UpVal **encup, StkId base) {
-  LClosure *c = p->cache;
-  if (c != NULL) {  /* is there a cached closure? */
-    int nup = p->sizeupvalues;
-    Upvaldesc *uv = p->upvalues;
-    int i;
-    for (i = 0; i < nup; i++) {  /* check whether it has right upvalues */
-      TValue *v = uv[i].instack ? base + uv[i].idx : encup[uv[i].idx]->v;
-      if (c->upvals[i]->v != v)
-        return NULL;  /* wrong upvalue; cannot reuse closure */
-    }
-  }
-  return c;  /* return cached closure (or NULL if no cached closure) */
-}
-
-
-/*
 ** create a new Lua closure, push it in the stack, and initialize
 ** its upvalues. Note that the closure is not cached if prototype is
 ** already black (which means that 'cache' was already cleared by the
@@ -645,8 +615,6 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
     ncl->upvals[i]->refcount++;
     /* new closure is white, so we do not need a barrier here */
   }
-  if (!isblack(p))  /* cache will not break GC invariant? */
-    p->cache = ncl;  /* save it on cache for reuse */
 }
 
 
@@ -1156,7 +1124,7 @@ void luaV_execute (lua_State *L) {
           StkId nfunc = nci->func;  /* called function */
           StkId ofunc = oci->func;  /* caller function */
           /* last stack slot filled by 'precall' */
-          StkId lim = nci->u.l.base + getproto(nfunc)->numparams;
+          StkId lim = nci->u.l.base + getnumparams(getproto(nfunc));
           int aux;
           /* close all upvalues from previous call */
           if (cl->p->sizep > 0) luaF_close(L, oci->u.l.base);
@@ -1168,7 +1136,7 @@ void luaV_execute (lua_State *L) {
           oci->u.l.savedpc = nci->u.l.savedpc;
           oci->callstatus |= CIST_TAIL;  /* function was tail called */
           ci = L->ci = oci;  /* remove new frame */
-          lua_assert(L->top == oci->u.l.base + getproto(ofunc)->maxstacksize);
+          lua_assert(L->top == oci->u.l.base + getmaxstacksize(getproto(ofunc)));
           goto newframe;  /* restart luaV_execute over new Lua function */
         }
         vmbreak;
@@ -1284,18 +1252,14 @@ void luaV_execute (lua_State *L) {
       }
       vmcase(OP_CLOSURE) {
         Proto *p = cl->p->p[GETARG_Bx(i)];
-        LClosure *ncl = getcached(p, cl->upvals, base);  /* cached closure */
-        if (ncl == NULL)  /* no match? */
-          pushclosure(L, p, cl->upvals, base, ra);  /* create a new one */
-        else
-          setclLvalue(L, ra, ncl);  /* push cashed closure */
+        pushclosure(L, p, cl->upvals, base, ra);  /* create a new Closure */
         checkGC(L, ra + 1);
         vmbreak;
       }
       vmcase(OP_VARARG) {
         int b = GETARG_B(i) - 1;  /* required results */
         int j;
-        int n = cast_int(base - ci->func) - cl->p->numparams - 1;
+        int n = cast_int(base - ci->func) - getnumparams(cl->p) - 1;
         if (n < 0)  /* less arguments than parameters? */
           n = 0;  /* no vararg arguments */
         if (b < 0) {  /* B == 0? */
