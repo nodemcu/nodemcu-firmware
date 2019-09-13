@@ -74,13 +74,13 @@ static int sigma_delta_settarget( lua_State *L )
 
 
 // Module function map
-LROT_BEGIN(sigma_delta)
+LROT_BEGIN(sigma_delta, NULL, 0)
   LROT_FUNCENTRY( setup, sigma_delta_setup )
   LROT_FUNCENTRY( close, sigma_delta_close )
   LROT_FUNCENTRY( setpwmduty, sigma_delta_setpwmduty )
   LROT_FUNCENTRY( setprescale, sigma_delta_setprescale )
   LROT_FUNCENTRY( settarget, sigma_delta_settarget )
-LROT_END( sigma_delta, NULL, 0 )
+LROT_END(sigma_delta, NULL, 0)
 
 
 NODEMCU_MODULE(SIGMA_DELTA, "sigma_delta", sigma_delta, NULL);

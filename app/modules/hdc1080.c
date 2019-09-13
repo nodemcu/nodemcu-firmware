@@ -100,10 +100,10 @@ static int hdc1080_read(lua_State* L) {
     return 2;
 }
 
-LROT_BEGIN(hdc1080)
+LROT_BEGIN(hdc1080, NULL, 0)
   LROT_FUNCENTRY( read, hdc1080_read )
   LROT_FUNCENTRY( setup, hdc1080_setup )
-LROT_END( hdc1080, NULL, 0 )
+LROT_END(hdc1080, NULL, 0)
 
 
 NODEMCU_MODULE(HDC1080, "hdc1080", hdc1080, NULL);

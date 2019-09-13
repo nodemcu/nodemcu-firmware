@@ -102,7 +102,7 @@ static int gpio_pulse_stop(lua_State *L) {
     argno++;
   }
 
-  if (lua_type(L, argno) == LUA_TFUNCTION || lua_type(L, argno) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, argno)) {
     lua_pushvalue(L, argno);
   } else {
     return luaL_error( L, "missing callback" );
@@ -201,7 +201,7 @@ static int gpio_pulse_build(lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
 
   // First figure out how big we need the block to be
-  size_t size = luaL_getn(L, 1);
+  size_t size = lua_objlen(L, 1);
 
   if (size > 100) {
     return luaL_error(L, "table is too large: %d entries is more than 100", size);
@@ -410,7 +410,7 @@ static int gpio_pulse_start(lua_State *L) {
     argno++;
   }
 
-  if (lua_type(L, argno) == LUA_TFUNCTION || lua_type(L, argno) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, argno)) {
     lua_pushvalue(L, argno);
   } else {
     return luaL_error( L, "missing callback" );
@@ -467,22 +467,22 @@ static void gpio_pulse_task(os_param_t param, uint8_t prio)
   }
 }
 
-LROT_BEGIN(pulse)
+
+LROT_BEGIN(pulse, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, gpio_pulse_delete )
+  LROT_TABENTRY(  __index, pulse )
   LROT_FUNCENTRY( getstate, gpio_pulse_getstate )
   LROT_FUNCENTRY( stop, gpio_pulse_stop )
   LROT_FUNCENTRY( cancel, gpio_pulse_cancel )
   LROT_FUNCENTRY( start, gpio_pulse_start )
   LROT_FUNCENTRY( adjust, gpio_pulse_adjust )
   LROT_FUNCENTRY( update, gpio_pulse_update )
-  LROT_FUNCENTRY( __gc, gpio_pulse_delete )
-  LROT_TABENTRY( __index, pulse )
-LROT_END( pulse, pulse, LROT_MASK_GC_INDEX )
+LROT_END(pulse, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_PUBLIC_BEGIN(gpio_pulse)
+LROT_BEGIN(gpio_pulse, NULL, 0)
   LROT_FUNCENTRY( build, gpio_pulse_build )
-  LROT_TABENTRY( __index, gpio_pulse )
-LROT_END( gpio_pulse, gpio_pulse, LROT_MASK_INDEX )
+LROT_END(gpio_pulse, NULL, 0)
 
 
 int gpio_pulse_init(lua_State *L)

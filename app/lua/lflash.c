@@ -88,9 +88,8 @@ void dumpStrt(stringtable *tb, const char *type) {
   for (i=0; i<tb->size; i++)
     for(o = tb->hash[i], j=0; o; (o=o->gch.next), j++ ) {
       TString *ts =cast(TString *, o);
-      NODE_DBG("%5d %5d %08x %08x %5d %1s %s\n",
-               i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len,
-               ts_isreadonly(ts) ? "R" : " ",  getstr(ts));
+      NODE_DBG("%5d %5d %08x %08x %5d %s\n",
+               i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len, getstr(ts));
     }
 }
 

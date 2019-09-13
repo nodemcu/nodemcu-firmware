@@ -66,10 +66,10 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
 }
 
 // Module function map
-LROT_BEGIN(hx711)
+LROT_BEGIN(hx711, NULL, 0)
   LROT_FUNCENTRY( init, hx711_init )
   LROT_FUNCENTRY( read, hx711_read )
-LROT_END( hx711, NULL, 0 )
+LROT_END(hx711, NULL, 0)
 
 
 int luaopen_hx711(lua_State *L) {

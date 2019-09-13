@@ -31,7 +31,7 @@ __attribute__((section(".servercert.flash"))) unsigned char tls_server_cert_area
 __attribute__((section(".clientcert.flash"))) unsigned char tls_client_cert_area[INTERNAL_FLASH_SECTOR_SIZE];
 
 extern int tls_socket_create( lua_State *L );
-LROT_EXTERN(tls_cert);
+extern LROT_TABLE(tls_cert);
 
 typedef struct {
   struct espconn *pesp_conn;
@@ -254,7 +254,7 @@ static int tls_socket_on( lua_State *L ) {
   if (method == NULL)
     return luaL_error( L, "wrong arg type" );
 
-  luaL_checkanyfunction(L, 3);
+  luaL_checktype(L, 3, LUA_TFUNCTION);
   lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 
   if (strcmp(method, "connection") == 0) {
@@ -613,7 +613,10 @@ static int tls_set_debug_threshold(lua_State *L) {
 }
 #endif
 
-LROT_BEGIN(tls_socket)
+
+LROT_BEGIN(tls_socket, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, tls_socket_delete )
+  LROT_TABENTRY(  __index, tls_socket )
   LROT_FUNCENTRY( connect, tls_socket_connect )
   LROT_FUNCENTRY( close, tls_socket_close )
   LROT_FUNCENTRY( on, tls_socket_on )
@@ -621,26 +624,24 @@ LROT_BEGIN(tls_socket)
   LROT_FUNCENTRY( hold, tls_socket_hold )
   LROT_FUNCENTRY( unhold, tls_socket_unhold )
   LROT_FUNCENTRY( getpeer, tls_socket_getpeer )
-  LROT_FUNCENTRY( __gc, tls_socket_delete )
-  LROT_TABENTRY( __index, tls_socket )
-LROT_END( tls_socket, tls_socket, 0 )
+LROT_END(tls_socket, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_PUBLIC_BEGIN(tls_cert)
+
+LROT_BEGIN(tls_cert, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( __index, tls_cert )
   LROT_FUNCENTRY( verify, tls_cert_verify )
   LROT_FUNCENTRY( auth, tls_cert_auth )
-  LROT_TABENTRY( __index, tls_cert )
-LROT_END( tls_cert, tls_cert, 0 )
+LROT_END(tls_cert, NULL, LROT_MASK_INDEX)
 
 
-LROT_BEGIN(tls)
+LROT_BEGIN(tls, NULL, 0)
   LROT_FUNCENTRY( createConnection, tls_socket_create )
 #if defined(MBEDTLS_DEBUG_C)
   LROT_FUNCENTRY( setDebug, tls_set_debug_threshold )
 #endif
   LROT_TABENTRY( cert, tls_cert )
-  LROT_TABENTRY( __metatable, tls )
-LROT_END( tls, tls, 0 )
+LROT_END(tls, NULL, 0)
 
 
 int luaopen_tls( lua_State *L ) {

@@ -15,7 +15,7 @@ void uart_on_data_cb(const char *buf, size_t len){
   lua_State *L = lua_getstate();
   lua_rawgeti(L, LUA_REGISTRYINDEX, uart_receive_rf);
   lua_pushlstring(L, buf, len);
-  luaN_call(L, 1, 0, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 // Lua: uart.on("method", [number/char], function, [run_input])
@@ -45,7 +45,7 @@ static int l_uart_on( lua_State* L )
     }
   }
 
-  if (lua_isanyfunction(L, stack)) {
+  if (lua_isfunction(L, stack)) {
     if (lua_isnumber(L, stack+1) && lua_tointeger(L, stack+1) == 0) {
       run_input = false;
     }
@@ -144,7 +144,7 @@ static int l_uart_write( lua_State* L )
 }
 
 // Module function map
-LROT_BEGIN(uart)
+LROT_BEGIN(uart, NULL, 0)
   LROT_FUNCENTRY( setup, l_uart_setup )
   LROT_FUNCENTRY( getconfig, l_uart_getconfig )
   LROT_FUNCENTRY( write, l_uart_write )
@@ -156,7 +156,7 @@ LROT_BEGIN(uart)
   LROT_NUMENTRY( PARITY_NONE, PLATFORM_UART_PARITY_NONE )
   LROT_NUMENTRY( PARITY_EVEN, PLATFORM_UART_PARITY_EVEN )
   LROT_NUMENTRY( PARITY_ODD, PLATFORM_UART_PARITY_ODD )
-LROT_END( uart, NULL, 0 )
+LROT_END(uart, NULL, 0)
 
 
 NODEMCU_MODULE(UART, "uart", uart, NULL);

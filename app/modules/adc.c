@@ -61,13 +61,13 @@ static int adc_init107( lua_State *L )
 }
 
 // Module function map
-LROT_BEGIN(adc)
+LROT_BEGIN(adc, NULL, 0)
   LROT_FUNCENTRY( read, adc_sample )
   LROT_FUNCENTRY( readvdd33, adc_readvdd33 )
   LROT_FUNCENTRY( force_init_mode, adc_init107 )
   LROT_NUMENTRY( INIT_ADC, 0x00 )
   LROT_NUMENTRY( INIT_VDD33, 0xff )
-LROT_END( adc, NULL, 0 )
+LROT_END(adc, NULL, 0)
 
 
 NODEMCU_MODULE(ADC, "adc", adc, NULL);

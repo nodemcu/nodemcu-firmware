@@ -39,11 +39,11 @@ static int lgdbstub_open(lua_State *L) {
 }
 
 // Module function map
-LROT_BEGIN(gdbstub)
+LROT_BEGIN(gdbstub, NULL, 0)
   LROT_FUNCENTRY( brk, lgdbstub_break )
   LROT_FUNCENTRY( gdboutput, lgdbstub_gdboutput )
   LROT_FUNCENTRY( open, lgdbstub_open )
-LROT_END( gdbstub, NULL, 0 )
+LROT_END(gdbstub, NULL, 0)
 
 
 NODEMCU_MODULE(GDBSTUB, "gdbstub", gdbstub, NULL);
