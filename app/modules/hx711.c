@@ -69,6 +69,13 @@ static int ICACHE_FLASH_ATTR hx711_read(lua_State* L) {
 LROT_BEGIN(hx711, NULL, 0)
   LROT_FUNCENTRY( init, hx711_init )
   LROT_FUNCENTRY( read, hx711_read )
+#ifdef GPIO_INTERRUPT_ENABLE
+  LROT_FUNCENTRY( start,  hx711_start )
+#ifdef HX711_STATUS
+  LROT_FUNCENTRY( status, hx711_status )
+#endif
+  LROT_FUNCENTRY( stop,  hx711_stop )
+#endif
 LROT_END(hx711, NULL, 0)
 
 
