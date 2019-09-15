@@ -38,6 +38,10 @@
 #define min3(a,b, c) min((a), min((b), (c)))
 #define max3(a,b, c) max((a), max((b), (c)))
 
+#define IDX_R 1
+#define IDX_G 0
+#define IDX_B 2
+#define IDX_W 3
 
 
 typedef struct {
@@ -91,9 +95,6 @@ static int ws2812_write(ws2812_buffer* buffer) {
   size_t length1, length2;
   const char *buffer1, *buffer2;
 
-  buffer1 = 0;
-  length1 = 0;
-
   buffer1 = buffer->values;
   length1 = buffer->colorsPerLed*buffer->size;
 
@@ -115,11 +116,11 @@ static int ws2812_set_pixel(int pixel, uint32_t color) {
   uint8_t w = buffer->colorsPerLed  == 4 ? ((color & 0xFF000000) >> 24) : 0;
 
   int offset = pixel * buffer->colorsPerLed;
-  buffer->values[offset] = g;
-  buffer->values[offset+1] = r;
-  buffer->values[offset+2] = b;
+  buffer->values[offset+IDX_R] = r;
+  buffer->values[offset+IDX_G] = g;
+  buffer->values[offset+IDX_B] = b;
   if (buffer->colorsPerLed == 4) {
-    buffer->values[offset+3] = w;
+    buffer->values[offset+IDX_W] = w;
   }
 
   return 0;
@@ -203,10 +204,10 @@ static int ws2812_effects_get_speed(lua_State* L) {
 }
 
 static int ws2812_effects_set_speed(lua_State* L) {
-  uint8_t speed = luaL_checkinteger(L, 1);
+  int speed = luaL_checkinteger(L, 1);
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  luaL_argcheck(L, speed >= 0 && speed <= 255, 1, "should be a 0-255");
-  state->speed = speed;
+  luaL_argcheck(L, speed >= 0 && speed <= 255, 1, "should be 0-255");
+  state->speed = (uint8_t)speed;
   state->mode_delay = 10;
   return 0;
 }
@@ -230,33 +231,33 @@ static int ws2812_effects_set_delay(lua_State* L) {
 
 
 static int ws2812_effects_set_brightness(lua_State* L) {
-  uint8_t brightness = luaL_checkint(L, 1);
+  int brightness = luaL_checkint(L, 1);
   luaL_argcheck(L, state != NULL, 1, LIBRARY_NOT_INITIALIZED_ERROR_MSG);
-  luaL_argcheck(L, brightness >= 0 && brightness < 256, 1, "should be a 0-255");
-  state->brightness = brightness;
+  luaL_argcheck(L, brightness >= BRIGHTNESS_MIN && brightness < BRIGHTNESS_MAX, 1, "should be 0-255");
+  state->brightness = (uint8_t) brightness;
   return 0;
 }
 
 
 
-static int ws2812_effects_fill_buffer(uint32_t color) {
+static void ws2812_effects_fill_buffer(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
 
   ws2812_buffer * buffer = state->buffer;
 
-  uint8_t g = ((color & 0x00FF0000) >> 16);
-  uint8_t r = ((color & 0x0000FF00) >> 8);
-  uint8_t b = (color & 0x000000FF);
-  uint8_t w = buffer->colorsPerLed  == 4 ? ((color & 0xFF000000) >> 24) : 0;
+  uint8_t bright_g = g * state->brightness / BRIGHTNESS_MAX;
+  uint8_t bright_r = r * state->brightness / BRIGHTNESS_MAX;
+  uint8_t bright_b = b * state->brightness / BRIGHTNESS_MAX;
+  uint8_t bright_w = w * state->brightness / BRIGHTNESS_MAX;
 
   // Fill buffer
   int i;
   uint8_t * p = &buffer->values[0];
   for(i = 0; i < buffer->size; i++) {
-    *p++ = g * state->brightness / 255;
-    *p++ = r * state->brightness / 255;
-    *p++ = b * state->brightness / 255;
+    *p++ = bright_g;
+    *p++ = bright_r;
+    *p++ = bright_b;
     if (buffer->colorsPerLed == 4) {
-      *p++ = w * state->brightness / 255;
+      *p++ = bright_w;
     }
   }
 
@@ -279,9 +280,7 @@ static int ws2812_effects_fill_color() {
   uint8_t b = state->color[2];
   uint8_t w = state->color[3];
 
-  uint32_t color = (w << 24) | (g << 16) | (r << 8) | b;
-
-  ws2812_effects_fill_buffer(color);
+  ws2812_effects_fill_buffer(r, g, b, w);
 
   return 0;
 }
@@ -302,7 +301,7 @@ static int ws2812_effects_mode_blink() {
     // on
     ws2812_effects_fill_color();
   }
-  else {
+  else { 
     // off
     ws2812_buffer * buffer = state->buffer;
     memset(&buffer->values[0], 0, buffer->size * buffer->colorsPerLed);
@@ -973,8 +972,8 @@ static int ws2812_effects_set_mode(lua_State* L) {
     break;
     case WS2812_EFFECT_COLOR_WIPE:
     {
-      uint32_t black = 0;
-      ws2812_effects_fill_buffer(black);
+      // fill buffer with black. r,g,b,w = 0
+      ws2812_effects_fill_buffer(0, 0, 0, 0);
       ws2812_effects_mode_color_wipe();
       break;
     }
@@ -982,8 +981,8 @@ static int ws2812_effects_set_mode(lua_State* L) {
     {
       // check if more than 1 dot shall be set
       state->effect_int_param1 = effect_param;
-      uint32_t black = 0;
-      ws2812_effects_fill_buffer(black);
+      // fill buffer with black. r,g,b,w = 0
+      ws2812_effects_fill_buffer(0, 0, 0, 0);
       break;
     }
   }
