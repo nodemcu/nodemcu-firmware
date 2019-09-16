@@ -134,9 +134,10 @@ static int math_fmod (lua_State *L) {
     else
       lua_pushinteger(L, lua_tointeger(L, 1) % d);
   } else {
-    lua_Number m;
-    luai_nummod(L, luaL_checknumber(L, 1), luaL_checknumber(L, 2), m);
-    lua_pushnumber(L, m);
+    lua_Number m, a=luaL_checknumber(L, 1), b=luaL_checknumber(L, 2);
+    if (b==0) luaG_runerror(L,"modulo by zero");
+    m = a/b;
+    lua_pushnumber(L, a - b*(m > 0.0 ? floor(m) : ceil(m)));
   }
   return 1;
 }

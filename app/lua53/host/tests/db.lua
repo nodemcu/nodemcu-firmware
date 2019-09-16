@@ -325,7 +325,7 @@ end
 function g(a,b) return (a+1) + f() end
 
 assert(g(0,0) == 30)
- 
+
 
 debug.sethook(nil);
 assert(debug.gethook() == nil)
@@ -354,7 +354,7 @@ debug.sethook(function (e)
   dostring("XX = 12")  -- test dostring inside hooks
   -- testing errors inside hooks
   assert(not pcall(load("a='joao'+1")))
-  debug.sethook(function (e, l) 
+  debug.sethook(function (e, l)
     assert(debug.getinfo(2, "l").currentline == l)
     local f,m,c = debug.gethook()
     assert(e == "line")
@@ -422,7 +422,7 @@ assert(t.a == 1 and t.b == 2 and t.c == 3)
 assert(debug.setupvalue(foo1, 1, "xuxu") == "b")
 assert(({debug.getupvalue(foo2, 3)})[2] == "xuxu")
 -- upvalues of C functions are allways "called" "" (the empty string)
-assert(debug.getupvalue(string.gmatch("x", "x"), 1) == "")  
+assert(debug.getupvalue(string.gmatch("x", "x"), 1) == "")
 
 
 -- testing count hooks
@@ -531,12 +531,12 @@ assert(debug.traceback(print, 4) == print)
 assert(string.find(debug.traceback("hi", 4), "^hi\n"))
 assert(string.find(debug.traceback("hi"), "^hi\n"))
 assert(not string.find(debug.traceback("hi"), "'debug.traceback'"))
--- assert(string.find(debug.traceback("hi", 0), "'debug.traceback'"))
+assert(string.find(debug.traceback("hi", 0), "'debug.traceback'"))
 assert(string.find(debug.traceback(), "^stack traceback:\n"))
 
 do  -- C-function names in traceback
   local st, msg = (function () return pcall end)()(debug.traceback)
---  assert(st == true and string.find(msg, "pcall"))
+  assert(st == true and string.find(msg, "pcall"))
 end
 
 
@@ -642,7 +642,7 @@ assert(not debug.setlocal(co, 1, 5, 40))
 a, b = coroutine.resume(co, 100)
 assert(a and b == 30)
 
---[==[
+
 -- check traceback of suspended (or dead with error) coroutines
 
 function f(i) if i==0 then error(i) else coroutine.yield(); f(i-1) end end
@@ -657,7 +657,7 @@ while coroutine.status(co) == "suspended" do
 end
 t[1] = "'error'"
 checktraceback(co, t)
-]==]
+
 
 -- test acessing line numbers of a coroutine from a resume inside
 -- a C function (this is a known bug in Lua 5.0)
@@ -824,7 +824,7 @@ assert(f() == 13)
 do   -- tests for 'source' in binary dumps
   local prog = [[
     return function (x)
-      return function (y) 
+      return function (y)
         return x + y
       end
     end
@@ -839,7 +839,7 @@ do   -- tests for 'source' in binary dumps
   local h = g(3)
   assert(h(5) == 8)
   assert(debug.getinfo(f).source == name and   -- all functions have 'source'
-         debug.getinfo(g).source == name and 
+         debug.getinfo(g).source == name and
          debug.getinfo(h).source == name)
   -- again, without debug info
   local c = string.dump(p, true)
@@ -849,7 +849,7 @@ do   -- tests for 'source' in binary dumps
   local h = g(30)
   assert(h(50) == 80)
   assert(debug.getinfo(f).source == '=?' and   -- no function has 'source'
-         debug.getinfo(g).source == '=?' and 
+         debug.getinfo(g).source == '=?' and
          debug.getinfo(h).source == '=?')
 end
 

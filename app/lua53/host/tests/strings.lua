@@ -2,7 +2,7 @@
 -- See Copyright Notice in file all.lua
 
 print('testing strings and string library')
-dofile'allassert.lua'
+
 local maxi, mini = math.maxinteger, math.mininteger
 
 
@@ -212,7 +212,7 @@ assert(string.format("%08X", 0xFFFFFFFF) == "FFFFFFFF")
 assert(string.format("%+08d", 31501) == "+0031501")
 assert(string.format("%+08d", -30927) == "-0030927")
 
-
+--[[NodeMCU: this fails as a result of format size limitations
 do    -- longest number that can be formatted
   local i = 1
   local j = 10000
@@ -223,9 +223,9 @@ do    -- longest number that can be formatted
   assert(10^i < math.huge and 10^j == math.huge)
   local s = string.format('%.99f', -(10^i))
   assert(string.len(s) >= i + 101)
---TODO  assert(tonumber(s) == -(10^i))
+  assert(tonumber(s) == -(10^i)) --
 end
-
+]]
 
 -- testing large numbers for format
 do   -- assume at least 32 bits
@@ -278,7 +278,7 @@ do print("testing 'format %a %A'")
     assert(string.find(string.format("%a", 0/0), "^%-?nan"))
     assert(string.find(string.format("%a", -0.0), "^%-0x0"))
   end
-  
+
   if not pcall(string.format, "%.3a", 0) then
     (Message or print)("\n >>> modifiers for format '%a' not available <<<\n")
   else
@@ -334,6 +334,7 @@ assert(table.concat(a, ",", 2) == "b,c")
 assert(table.concat(a, ",", 3) == "c")
 assert(table.concat(a, ",", 4) == "")
 
+_port = true  -- NodeMCU: to support for locals
 if not _port then
 
   local locales = { "ptb", "pt_BR.iso88591", "ISO-8859-1" }

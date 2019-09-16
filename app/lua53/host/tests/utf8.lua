@@ -17,7 +17,7 @@ local function len (s)
 end
 
 
-local justone = "^" .. utf8.getcharpattern() .. "$"
+local justone = "^" .. utf8.charpattern .. "$"
 
 -- 't' is the list of codepoints of 's'
 local function checksyntax (s, t)
@@ -33,7 +33,7 @@ assert(utf8.offset("alo", -4) == nil)
 
 -- 't' is the list of codepoints of 's'
 local function check (s, t)
-  local l = utf8.len(s) 
+  local l = utf8.len(s)
   assert(#t == l and len(s) == l)
   assert(utf8.char(table.unpack(t)) == s)
 
@@ -52,7 +52,7 @@ local function check (s, t)
     assert(utf8.offset(s, -1, pi1) == pi)
     assert(utf8.offset(s, i - l - 1) == pi)
     assert(pi1 - pi == #utf8.char(utf8.codepoint(s, pi)))
-    for j = pi, pi1 - 1 do 
+    for j = pi, pi1 - 1 do
       assert(utf8.offset(s, 0, j) == pi)
     end
     for j = pi + 1, pi1 - 1 do
@@ -76,12 +76,12 @@ local function check (s, t)
   i = 0
   for p, c in utf8.codes(s) do
     i = i + 1
-    assert(c == t[i] and p == utf8.offset(s, i)) 
+    assert(c == t[i] and p == utf8.offset(s, i))
   end
   assert(i == #t)
 
   i = 0
-  for c in string.gmatch(s, utf8.getcharpattern()) do
+  for c in string.gmatch(s, utf8.charpattern) do
     i = i + 1
     assert(c == utf8.char(t[i]))
   end
@@ -196,7 +196,7 @@ check("𨳊𩶘𦧺𨳒𥄫𤓓\xF4\x8F\xBF\xBF",
 
 
 local i = 0
-for p, c in string.gmatch(x, "()(" .. utf8.getcharpattern() .. ")") do
+for p, c in string.gmatch(x, "()(" .. utf8.charpattern .. ")") do
   i = i + 1
   assert(utf8.offset(x, i) == p)
   assert(utf8.len(x, p) == utf8.len(x) - i + 1)

@@ -7,9 +7,10 @@ end
 
 print "testing large tables"
 
-local debug = require"debug" 
+local debug = require"debug"
 
-local lim = 10000
+-- NodeMCU: limit big size to IoT scales
+local lim = 50000
 local prog = { "local y = {0" }
 for i = 1, lim do prog[#prog + 1] = i  end
 prog[#prog + 1] = "}\n"
@@ -46,14 +47,16 @@ getmetatable(env).__newindex = function () end
 local e, m = pcall(f)
 assert(not e and m:find("global 'X'"))
 
--- errors in metamethods 
+-- errors in metamethods
 getmetatable(env).__newindex = function () error("hi") end
 local e, m = xpcall(f, debug.traceback)
 assert(not e and m:find("'__newindex'"))
 
 f, X = nil
 
-if 2^32 == 0 then   -- (small integers) {   
+coroutine.yield'b'
+
+if 2^32 == 0 then   -- (small integers) {
 
 print "testing string length overflow"
 

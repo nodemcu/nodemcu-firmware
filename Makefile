@@ -46,6 +46,7 @@ else
   CCFLAGS += -O2
 endif
 
+
 # Handling of V=1/VERBOSE=1 flag
 #
 # if V=1, $(summary) does nothing
@@ -108,7 +109,7 @@ ifneq (,$(findstring indows,$(OS)))
   else
     # It is gcc, may be cygwin
     # Can we use -fdata-sections?
-    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
+    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections -fpack-struct=4
     AR = xtensa-lx106-elf-ar
     CC = xtensa-lx106-elf-gcc
     CXX = xtensa-lx106-elf-g++
@@ -273,7 +274,7 @@ endif # TARGET
 #
 
 ifndef TARGET
-all: toolchain sdk_pruned pre_build .subdirs
+all: toolchain sdk_pruned pre_build buildinfo .subdirs
 else
 all: .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 endif
@@ -410,6 +411,11 @@ else
 pre_build:
 	@-rm -f $(APP_DIR)/modules/server-ca.crt.h
 endif
+
+.PHONY: buildinfo
+
+buildinfo:
+	tools/update_buildinfo.sh
 
 ifdef TARGET
 $(OBJODIR)/%.o: %.c

@@ -66,6 +66,7 @@ int luaO_ceillog2 (unsigned int x) {
 #ifdef LUA_USE_ESP
  /* Use Normalization Shift Amount Unsigned:  0x1=>31 up to 0xffffffff =>0
   * See Xtensa Instruction Set Architecture (ISA) Refman  P 462 */
+  x--;
   asm volatile ("nsau %0, %1;" :"=r"(x) : "r"(x));
   return 32 - x;
 #else

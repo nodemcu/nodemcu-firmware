@@ -33,18 +33,15 @@
 ** force aligned access to critical fields in Flash-based structures
 ** wo is the offset of aligned word in bytes 0,4,8,..
 ** bo is the field within the word in bits 0..31
+**
+** Note that this returns a lu_int32 as returning a byte can cause the
+** gcc code generator to emit an extra extui instruction.
 */
 #define GET_BYTE_FN(name,t,wo,bo) \
 static inline lu_int32 get ## name(void *o) { \
   lu_int32 res;  /* extract named field */ \
   asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
   return res; }
-#if 0
-static inline lu_byte get ## name(void *o) { \
-  lu_byte res;  /* extract named field */ \
-  asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
-  return res; }
-#endif
 #else
 #define GET_BYTE_FN(name,t,wo,bo) \
 static inline lu_byte get ## name(void *o) { return ((t *)o)->name; }

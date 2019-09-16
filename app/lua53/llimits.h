@@ -290,6 +290,7 @@ typedef unsigned long Instruction;
   if ((m)*(b) < 0) (m) += (b); \
 } while (0)
 #endif
+
 #if !defined(luai_nummod)
 #define luai_nummod(L,a,b,m)  \
   { (m) = l_mathop(fmod)(a,b); if ((m)*(b) < 0) (m) += (b); }

@@ -151,7 +151,7 @@ end
 
 report"gc.lua"
 local f = assert(loadfile('gc.lua'))
-f()
+f=nil -- NodeMCU removed f()
 
 dofile('db.lua')
 assert(dofile('calls.lua') == deep and deep)
@@ -194,7 +194,7 @@ if #msgs > 0 then
 end
 
 -- no test module should define 'debug'
-assert(debug == nil)
+-- assert(debug == nil)  -- NodeMCU.  debug is always defined in ROM
 
 local debug = require "debug"
 

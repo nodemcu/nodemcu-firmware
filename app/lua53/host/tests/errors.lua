@@ -5,6 +5,13 @@ print("testing errors")
 
 local debug = require"debug"
 
+--[[ NodeMCU: uses getmetatable(_G) so remove this check
+-- avoid problems with 'strict' module (which may generate other error messages)
+local mt = getmetatable(_G) or {}
+local oldmm = mt.__index
+mt.__index = nil
+]]
+
 local function checkerr (msg, f, ...)
   local st, err = pcall(f, ...)
   assert(not st and string.find(err, msg))
@@ -21,10 +28,7 @@ end
 
 local function checkmessage (prog, msg)
   local m = doit(prog)
-  if(not string.find(m, msg, 1, true)) then
-    print (('[[%s]] not in [[%s]]'):format(m,msg))
-    assert(false)
-  end
+  assert(string.find(m, msg, 1, true))
 end
 
 local function checksyntax (prog, extra, token, line)
@@ -133,6 +137,7 @@ checkmessage("return 34 >> {}", "table value")
 checkmessage("a = 24 // 0", "divide by zero")
 checkmessage("a = 1 % 0", "'n%0'")
 
+
 -- passing light userdata instead of full userdata
 _G.D = debug
 checkmessage([[
@@ -158,7 +163,8 @@ end
 -- global functions
 checkmessage("(io.write or print){}", "io.write")
 checkmessage("(collectgarbage or print){}", "collectgarbage")
---[=[TODO errors in functions without debug info
+
+-- errors in functions without debug info
 do
   local f = function (a) return a + 1 end
   f = assert(load(string.dump(f, true)))
@@ -172,8 +178,6 @@ do
   -- symbolic execution should not get lost
   checkerr("^%?:%-1:.*table value", f)
 end
-
-]=]
 
 -- tests for field accesses after RK limit
 local t = {}
@@ -238,8 +242,8 @@ checkmessage("a:sub()", "bad self")
 checkmessage("string.sub('a', {})", "#2")
 checkmessage("('a'):sub{}", "#1")
 
---[[TODO checkmessage("table.sort({1,2,3}, table.sort)", "'table.sort'") ]]
---[[TODO checkmessage("string.gsub('s', 's', setmetatable)", "'setmetatable'") ]]
+checkmessage("table.sort({1,2,3}, table.sort)", "'table.sort'")
+checkmessage("string.gsub('s', 's', setmetatable)", "'setmetatable'")
 
 -- tests for errors in coroutines
 
@@ -384,7 +388,7 @@ if not _soft then
   f(3)
 
   local function loop (x,y,z) return 1 + loop(x, y, z) end
- 
+
   local res, msg = xpcall(loop, function (m)
     assert(string.find(m, "stack overflow"))
     checkerr("error handling", loop)
@@ -417,7 +421,7 @@ do
   -- 'assert' with extra arguments
   res, msg = pcall(assert, false, "X", t)
   assert(not res and msg == "X")
- 
+
   -- 'assert' with no message
   res, msg = pcall(function () assert(false) end)
   local line = string.match(msg, "%w+%.lua:(%d+): assertion failed!$")

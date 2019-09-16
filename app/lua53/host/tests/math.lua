@@ -541,7 +541,7 @@ assert(minint % -1 == 0)
 assert(minint % -2 == 0)
 assert(maxint % -2 == -1)
 
--- non-portable tests because Windows C library cannot compute 
+-- non-portable tests because Windows C library cannot compute
 -- fmod(1, huge) correctly
 if not _port then
   local function anan (x) assert(isNaN(x)) end   -- assert Not a Number

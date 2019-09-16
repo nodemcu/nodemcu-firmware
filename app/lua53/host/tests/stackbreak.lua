@@ -184,7 +184,7 @@ for i = 1, 20 do
   j = (513 * i % 20) + 1
   k = (13 + 257 * i % 20) + 1
   calls = calls + 1
-  local UD = T.newuserdata(2048); debug.setmetatable(UD, {__gc = gcfunc})  
+  local UD = T.newuserdata(2048); debug.setmetatable(UD, {__gc = gcfunc})
   print (('setting a[%u] = nil, a[%u] = %s'):format(j, k, tostring(UD)))
   a[j]=nil; a[k] = UD
 end

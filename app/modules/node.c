@@ -362,7 +362,8 @@ static int node_restore (lua_State *L)
   return 0;
 }
 
-#ifdef LUA_OPTIMIZE_DEBUG
+#if defined(LUA_OPTIMIZE_DEBUG) && LUA_VERSION_NUM == 501
+
 /* node.stripdebug([level[, function]]). 
  * level:    1 don't discard debug
  *           2 discard Local and Upvalue debug info

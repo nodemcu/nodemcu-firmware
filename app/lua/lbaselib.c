@@ -10,6 +10,8 @@
 #define LUA_LIB
 
 #include "lua.h"
+#include "lnodemcu.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -453,7 +455,6 @@ static int luaB_newproxy (lua_State *L) {
   return 1;
 }
 
-#include "lnodemcu.h"
 
 /*
 ** ESP builds use specific linker directives to marshal all the ROTable entries

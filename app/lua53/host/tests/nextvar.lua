@@ -3,7 +3,6 @@
 
 print('testing tables, next, and for')
 
-dofile'allassert.lua'
 local function checkerror (msg, f, ...)
   local s, err = pcall(f, ...)
   assert(not s and string.find(err, msg))
@@ -77,7 +76,7 @@ while a < lim do
   a = math.ceil(a*1.3)
 end
 
- 
+
 local function check (t, na, nh)
   local a, h = T.querytab(t)
   if a ~= na or h ~= nh then
@@ -91,7 +90,7 @@ end
 do
   local s = 0
   for _ in pairs(math) do s = s + 1 end
---TODO  check(math, 0, mp2(s))
+  check(math, 0, s)  -- NodeMCU: ROM tables such as math are exactly sized.
 end
 
 
@@ -101,7 +100,7 @@ local s = 'return {'
 for i=1,lim do
   s = s..i..','
   local s = s
-  for k=0,lim do 
+  for k=0,lim do
     local t = load(s..'}', '')()
     assert(#t == i)
     check(t, fb(i), mp2(k))
@@ -199,34 +198,36 @@ a,b,c = nil
 -- next uses always the same iteraction function
 assert(next{} == next{})
 
-local function find (name)
+-- NodeMCU add optional table to find() and find1() for ROM support
+local function find (name, t)
+  t = t or _G
   local n,v
   while 1 do
-    n,v = next(_G, n)
+    n,v = next(t, n)
     if not n then return nofind end
     assert(v ~= nil)
     if n == name then return v end
   end
 end
 
-local function find1 (name)
-  for n,v in pairs(_G) do
+local function find1 (name, t)
+  t = t or _G
+  for n,v in pairs(t) do
     if n==name then return v end
   end
   return nil  -- not found
 end
 
---[[TODO
-assert(print==find("print") and print == find1("print"))
-assert(_G["print"]==find("print"))
-assert(assert==find1("assert"))
+
+assert(print==find("print",ROM._G) and print == find1("print",ROM._G))
+assert(ROM._G["print"]==find("print",ROM._G))
+assert(assert==find1("assert",ROM._G))
 assert(nofind==find("return"))
 assert(not find1("return"))
 _G["ret" .. "urn"] = nil
 assert(nofind==find("return"))
 _G["xxx"] = 1
 assert(xxx==find("xxx"))
-]]
 -- invalid key to 'next'
 checkerror("invalid key", next, {10,20}, 3)
 
@@ -264,7 +265,7 @@ do   -- clear global table
 end
 
 
--- 
+--
 
 local function checknext (a)
   local b = {}
@@ -288,11 +289,13 @@ for i=0,40 do
   assert(#a == i)
 end
 
--- 'maxn' is now deprecated, but it is easily defined in Lua.  However because
--- table is in ROM we need to create RW wrapper to the ROM table, and we can
--- then modify this. Everything else works fine thank to meta magic.
+-- 'maxn' is now deprecated, but it is easily defined in Lua.
 
-table = setmetatable({}, {__index=table}) --
+--[[ NodeMCU: because table is in ROM we need to create RW wrapper to
+     extend the ROM table, and we can then modify this. Everything else
+     works fine thank to meta magic. ]]
+
+table = setmetatable({}, {__index=table}) -- NodeMCU
 function table.maxn (t)
   local max = 0
   for k in pairs(t) do
@@ -307,7 +310,7 @@ assert(table.maxn{["1000"] = true, [24.5] = 3} == 24.5)
 assert(table.maxn{[1000] = true} == 1000)
 assert(table.maxn{[10] = true, [100*math.pi] = print} == 100*math.pi)
 
--- table = nil -- reset to ROM table
+-- table = nil -- NodeMCU: reset to ROM table
 
 -- int overflow
 a = {}
@@ -467,7 +470,7 @@ else --[
   mt.__newindex = nil
   mt.__len = nil
   local tab2 = {}
-  local u2 = T.newuserdata(0) 
+  local u2 = T.newuserdata(0)
   debug.setmetatable(u2, {__newindex = function (_, k, v) tab2[k] = v end})
   table.move(u, 1, 4, 1, u2)
   assert(#tab2 == 4 and tab2[1] == tab[1] and tab2[4] == tab[4])
@@ -624,7 +627,7 @@ a[3] = 30
 -- testing ipairs with metamethods
 a = {n=10}
 setmetatable(a, { __index = function (t,k)
-                     if k <= t.n then return k * 10 end 
+                     if k <= t.n then return k * 10 end
                   end})
 i = 0
 for k,v in ipairs(a) do

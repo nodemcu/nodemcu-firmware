@@ -463,7 +463,6 @@ static int luaB_unpack (lua_State *L) {
 #endif
 
 
-
 /*
 ** ESP builds use specific linker directives to marshal all the ROTable entries
 ** for the library modules including the base library into an entry vector in
@@ -515,12 +514,14 @@ LROT_END(base_func, NULL, 0)
 LROT_BREAK(base_func)
 #endif
 
-
+extern LROT_TABLE(rotables);
 LUAMOD_API int luaopen_base (lua_State *L) {
   lua_pushglobaltable(L);           /* set global _G */
-  lua_pushvalue(L, -1);
-  lua_setfield(L, -2, "_G");
   lua_pushliteral(L, LUA_VERSION);  /* set global _VERSION */
   lua_setfield(L, -2, "_VERSION");
-  return 0;
+  lua_createtable (L, 0, 1);        /* mt for _G */
+  lua_pushrotable(L, LROT_TABLEREF(rotables));
+  lua_setfield(L, -2, "__index");   /* mt.__index=ROM table */
+  lua_setmetatable(L, -2);
+  return 1;                         /* returns _G */
 }

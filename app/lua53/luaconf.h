@@ -72,6 +72,7 @@
 /*
 ** default configuration for 64-bit Lua ('long long' and 'double')
 */
+#if 0
 #if defined(LUA_32BITS)
 /*
 ** 32-bit integers and 'float'
@@ -82,6 +83,10 @@
 #  define LUA_INT_TYPE	LUA_INT_LONGLONG
 #  define LUA_FLOAT_TYPE	LUA_FLOAT_DOUBLE
 #endif
+#endif
+#  define LUA_INT_TYPE    LUA_INT_INT
+//#  define LUA_FLOAT_TYPE  LUA_FLOAT_FLOAT
+#  define LUA_FLOAT_TYPE  LUA_FLOAT_DOUBLE
 
 /*
 ** Configuration for Paths.

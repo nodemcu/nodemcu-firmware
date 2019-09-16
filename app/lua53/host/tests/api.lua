@@ -857,6 +857,7 @@ assert(t[3] == "line" and t[4] == line + 1)
 assert(t[5] == "line" and t[6] == line + 2)
 assert(t[7] == nil)
 
+
 -------------------------------------------------------------------------
 do   -- testing errors during GC
   local a = {}
@@ -919,6 +920,19 @@ assert(a == nil and b == 2)   -- 2 == run-time error
 -- error: syntax error
 a, b, c = T.doremote(L1, "return a+")
 assert(a == nil and c == 3 and type(b) == "string")   -- 3 == syntax error
+
+T.loadlib(L1)
+a, b, c = T.doremote(L1, [[
+  string = require'string'
+  a = require'_G'; assert(a == _G and require("_G") == a)
+  io = require'io'; assert(type(io.read) == "function")
+  assert(require("io") == io)
+  a = require'table'; assert(type(a.insert) == "function")
+  a = require'debug'; assert(type(a.getlocal) == "function")
+  a = require'math'; assert(type(a.sin) == "function")
+  return string.sub('okinama', 1, 2)
+]])
+assert(a == "ok")
 
 T.closestate(L1);
 
@@ -1030,7 +1044,7 @@ assert(_G.a == "aaax")
 
 
 -- other generic tests
---[[ FAILS
+
 testamem("string creation", function ()
   local a, b = string.gsub("alo alo", "(a)", function (x) return x..'b' end)
   return (a == 'ablo ablo')
@@ -1042,7 +1056,7 @@ testamem("dump/undump", function ()
   a = b and load(b)
   return a and a()
 end)
---]]
+
 local t = os.tmpname()
 testamem("file creation", function ()
   local f = assert(io.open(t, 'w'))

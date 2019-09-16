@@ -108,7 +108,7 @@ print'+'
 if rawget(_G, "querytab") then
   -- testing clearing of dead elements from tables
   collectgarbage("stop")   -- stop GC
-  local a = {[{}] = 4, [3] = 0, alo = 1, 
+  local a = {[{}] = 4, [3] = 0, alo = 1,
              a1234567890123456789012345678901234567890 = 10}
 
   local t = querytab(a)

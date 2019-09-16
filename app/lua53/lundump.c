@@ -88,17 +88,11 @@ static lua_Integer LoadInteger (LoadState *S) {
   return cast(lua_Integer, x);
 }
 
-static size_t LoadStrlen (LoadState *S) {
-  lu_byte x, y;
-  LoadVar(S, x);
-  if (x < 128)
-    return cast(size_t, x);
-  LoadVar(S, y);
-  return (cast(size_t, x & 0x7f)<<8) + y;
-}
 
 static TString *LoadString (LoadState *S) {
-  size_t size = LoadStrlen(S);
+  size_t size = LoadByte(S);
+  if (size == 0xFF)
+    LoadVar(S, size);
   if (size == 0)
     return NULL;
   else if (--size <= LUAI_MAXSHORTLEN) {  /* short string? */
@@ -123,8 +117,18 @@ static void LoadCode (LoadState *S, Proto *f) {
 
 
 static void LoadFunction(LoadState *S, Proto *f, TString *psource);
+/*
+4,1,1,5,1,1,1,1,5,1,1,7
 
-
+0xa4	0x00	0x00	0x00  (164)	
+0x04:0x06:0x5f	0x70  0x6f	0x72	0x74
+0x01:0x01	
+0x04:0x06:0x70	0x72	0x69	0x6e	0x74	
+0x04:0x08:0x53	0x4b	0x49	0x50	0x50	0x45	0x44	
+0x04:0x20:0x74	0x65	0x73	0x74	0x69	0x6e	0x67	0x20	0x73	0x74	0x61	0x6e	0x64	0x2d	0x61	0x6c	0x6f
+0x7fffffffb6f4:	0x6e	0x65	0x20	0x69	0x6e	0x74	0x65	0x72
+0x7fffffffb6fc:	0x70	0x72	0x65	0x74	0x65	0x72	0x04	0x55
+*/
 static void LoadConstants (LoadState *S, Proto *f) {
   int i;
   int n = LoadInt(S);
@@ -135,6 +139,7 @@ static void LoadConstants (LoadState *S, Proto *f) {
   for (i = 0; i < n; i++) {
     TValue *o = &f->k[i];
     int t = LoadByte(S);
+    TString *ts;
     switch (t) {
     case LUA_TNIL:
       setnilvalue(o);
@@ -150,15 +155,14 @@ static void LoadConstants (LoadState *S, Proto *f) {
       break;
     case LUA_TSHRSTR:
     case LUA_TLNGSTR:
-      setsvalue2n(S->L, o, LoadString(S));
+      ts = LoadString(S);
+      setsvalue2n(S->L, o, ts);
       break;
     default:
       lua_assert(0);
     }
   }
 }
-
-
 static void LoadProtos (LoadState *S, Proto *f) {
   int i;
   int n = LoadInt(S);
@@ -171,7 +175,6 @@ static void LoadProtos (LoadState *S, Proto *f) {
     LoadFunction(S, f->p[i], f->source);
   }
 }
-
 
 static void LoadUpvalues (LoadState *S, Proto *f) {
   int i, n;

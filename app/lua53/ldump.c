@@ -84,26 +84,20 @@ static void DumpInteger (lua_Integer y, DumpState *D) {
   DumpVar(y, D);
 }
 
-static void DumpStrlen (size_t l, DumpState *D) {
-  if (l > 32767) {
-    luaL_error(D->L, "Strings constants bust be <32K in length");
-  }
-  if (l < 128)
-    DumpByte(cast(int, l), D);
-  else {
-    DumpByte(cast(int, 0x80 + (l>>8)), D);
-    DumpByte(cast(int, l & 0xFF), D);
-  }
-}
 
 static void DumpString (const TString *s, DumpState *D) {
   if (s == NULL)
     DumpByte(0, D);
   else {
+    size_t size = tsslen(s) + 1;  /* include trailing '\0' */
     const char *str = getstr(s);
-    size_t l = tsslen(s);
-    DumpStrlen(l + 1, D);   /* include trailing '\0' */
-    DumpVector(str, l, D);  /* no need to save '\0' */
+    if (size < 0xFF)
+      DumpByte(cast_int(size), D);
+    else {
+      DumpByte(0xFF, D);
+      DumpVar(size, D);
+    }
+    DumpVector(str, size - 1, D);  /* no need to save '\0' */
   }
 }
 

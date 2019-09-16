@@ -235,10 +235,18 @@ static int iter_codes (lua_State *L) {
 /* pattern to match a single UTF-8 character */
 
 #define UTF8PATT	"[\0-\x7F\xC2-\xF4][\x80-\xBF]*"
-static int charpattern (lua_State *L) {
-  lua_pushlstring(L, UTF8PATT, sizeof(UTF8PATT)/sizeof(char) - 1);
+static int utf8_lookup (lua_State *L) {
+  const char *key = lua_tostring(L,2);
+  if (strcmp(key,"charpattern"))
+    lua_pushnil(L);
+  else
+    lua_pushlstring(L, UTF8PATT, sizeof(UTF8PATT)/sizeof(char) - 1);
   return 1;
 }
+
+LROT_BEGIN(utf8_meta, NULL, LROT_MASK_INDEX)
+  LROT_FUNCENTRY( __index, utf8_lookup )
+LROT_END(utf8_meta, NULL, LROT_MASK_INDEX)
 
 
 LROT_BEGIN(utf8, NULL, 0)
@@ -247,9 +255,7 @@ LROT_BEGIN(utf8, NULL, 0)
   LROT_FUNCENTRY( char, utfchar )
   LROT_FUNCENTRY( len, utflen )
   LROT_FUNCENTRY( codes, iter_codes )
-  /* get function in place of string */
-  LROT_FUNCENTRY( getcharpattern, charpattern )
-LROT_END(utf8, NULL, 0)
+LROT_END(utf8, LROT_TABLEREF(utf8_meta), 0)
 
 
 LUAMOD_API int luaopen_utf8 (lua_State *L) {

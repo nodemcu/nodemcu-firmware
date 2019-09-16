@@ -693,30 +693,44 @@ static int table_query (lua_State *L) {
   const Table *t;
   int i = cast_int(luaL_optinteger(L, 2, -1));
   luaL_checktype(L, 1, LUA_TTABLE);
+
   t = hvalue(obj_at(L, 1));
-  if (i == -1) {
-    lua_pushinteger(L, t->sizearray);
-    lua_pushinteger(L, allocsizenode(t));
-    lua_pushinteger(L, isdummy(t) ? 0 : t->lastfree - t->node);
-  }
-  else if ((unsigned int)i < t->sizearray) {
-    lua_pushinteger(L, i);
-    pushobject(L, &t->array[i]);
-    lua_pushnil(L);
-  }
-  else if ((i -= t->sizearray) < sizenode(t)) {
-    if (!ttisnil(gval(gnode(t, i))) ||
-        ttisnil(gkey(gnode(t, i))) ||
-        ttisnumber(gkey(gnode(t, i)))) {
-      pushobject(L, gkey(gnode(t, i)));
+  if(isrwtable(t)) {
+    if (i == -1) {
+      lua_pushinteger(L, t->sizearray);
+      lua_pushinteger(L, allocsizenode(t));
+      lua_pushinteger(L, isdummy(t) ? 0 : t->lastfree - t->node);
     }
-    else
-      lua_pushliteral(L, "<undef>");
-    pushobject(L, gval(gnode(t, i)));
-    if (gnext(&t->node[i]) != 0)
-      lua_pushinteger(L, gnext(&t->node[i]));
-    else
+    else if ((unsigned int)i < t->sizearray) {
+      lua_pushinteger(L, i);
+      pushobject(L, &t->array[i]);
       lua_pushnil(L);
+    }
+    else if ((i -= t->sizearray) < sizenode(t)) {
+      if (!ttisnil(gval(gnode(t, i))) ||
+          ttisnil(gkey(gnode(t, i))) ||
+          ttisnumber(gkey(gnode(t, i)))) {
+        pushobject(L, gkey(gnode(t, i)));
+      }
+      else
+        lua_pushliteral(L, "<undef>");
+      pushobject(L, gval(gnode(t, i)));
+      if (gnext(&t->node[i]) != 0)
+        lua_pushinteger(L, gnext(&t->node[i]));
+      else
+        lua_pushnil(L);
+    }
+  } else { /* is ROTable */
+    ROTable *rt = cast(ROTable*, t);
+    if (i == -1) {
+      lua_pushinteger(L, 0);
+      lua_pushinteger(L, rt->lsizenode);
+    }
+    else {
+      lua_pushliteral(L, "<undef>");
+      lua_pushnil(L);
+    }
+    lua_pushvalue(L, -1);
   }
   return 3;
 }
@@ -840,7 +854,7 @@ static int num2int (lua_State *L) {
 static int newstate (lua_State *L) {
   void *ud;
   lua_Alloc f = lua_getallocf(L, &ud);
-  lua_State *L1 = lua_newstate(f, ud);
+  lua_State *L1 =     lua_newstate(f, ud);
   if (L1) {
     lua_atpanic(L1, tpanic);
     lua_pushlightuserdata(L, L1);
@@ -859,6 +873,32 @@ static lua_State *getstate (lua_State *L) {
 
 
 static int loadlib (lua_State *L) {
+  static const luaL_Reg libs[] = {
+//    {"_G", luaopen_base},
+    {"io", luaopen_io},
+    {"os", luaopen_os},
+    {"string", luaopen_string},
+//  The following are mapped into _G __index path from ROM
+//  {"coroutine", luaopen_coroutine},
+//  {"debug", luaopen_debug},
+//  {"math", luaopen_math},
+//  {"table", luaopen_table},
+    {NULL, NULL}
+  };
+  lua_State *L1 = getstate(L);
+  int i;
+  luaL_requiref(L1, "package", luaopen_package, 0);
+  lua_assert(lua_type(L1, -1) == LUA_TTABLE);
+  /* 'requiref' should not reload module already loaded... */
+  luaL_requiref(L1, "package", NULL, 1);  /* seg. fault if it reloads */
+  /* ...but should return the same module */
+  lua_assert(lua_compare(L1, -1, -2, LUA_OPEQ));
+  luaL_requiref(L1, "_G", luaopen_base, 1);
+  luaL_getsubtable(L1, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
+  for (i = 0; libs[i].name; i++) {
+    lua_pushcfunction(L1, libs[i].func);
+    lua_setfield(L1, -2, libs[i].name);
+  }
   return 0;
 }
 

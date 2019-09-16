@@ -2,7 +2,7 @@
 -- See Copyright Notice in file all.lua
 
 print "testing require"
-dofile'allassert.lua'
+
 assert(require"string" == string)
 assert(require"math" == math)
 assert(require"table" == table)
@@ -11,14 +11,16 @@ assert(require"os" == os)
 assert(require"coroutine" == coroutine)
 
 assert(type(package.path) == "string")
--- assert(type(package.cpath) == "string")
+--[[NodeMCU doesn't support dynamic C loading
+assert(type(package.cpath) == "string")
+]]
 assert(type(package.loaded) == "table")
 assert(type(package.preload) == "table")
 
 assert(type(package.config) == "string")
 print("package config: "..string.gsub(package.config, "\n", "|"))
 
---[[TODO: NodeMCU doesn't support dynamic C loading  and has a flat SPIFFS'
+--[[TODO: NodeMCU doesn't support dynamic C loading
 do
   -- create a path with 'max' templates,
   -- each with 1-10 repetitions of '?'
@@ -55,8 +57,7 @@ print('+')
 -- The next tests for 'require' assume some specific directories and
 -- libraries.
 
-_port = true
-
+--[=[TODO: NodeMCU doesn't support dynamic loading and rich FS. Might to use a subset here
 if not _port then --[
 
 local dirsep = string.match(package.config, "^([^\n]+)\n")
@@ -309,6 +310,7 @@ end
 print('+')
 
 end  --]
+--]=]
 
 print("testing assignments, logical operators, and constructors")
 

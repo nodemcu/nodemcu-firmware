@@ -22,17 +22,16 @@ assert(not pcall(type))
 
 
 do    -- test error in 'print' too...
-  local tostring = _ENV.tostring
-
-  _ENV.tostring = nil
+-- NodeMCU setting tostring  to nil does work with ROM searchlist use numeric override instead
+  _ENV.tostring = 1
   local st, msg = pcall(print, 1)
-  assert(st == false and string.find(msg, "attempt to call a nil value"))
+  assert(st == false and string.find(msg, "attempt to call a number value"))
 
   _ENV.tostring = function () return {} end
   local st, msg = pcall(print, 1)
   assert(st == false and string.find(msg, "must return a string"))
-  
-  _ENV.tostring = tostring
+
+  _ENV.tostring = nil
 end
 
 
@@ -366,7 +365,7 @@ do
   local header = string.pack("c4BBc6BBBBBj",
     "\27Lua",                -- signature
     5*16 + 3,                -- version 5.3
-    0,                       -- format
+    10,                      -- format
     "\x19\x93\r\n\x1a\n",    -- data
     string.packsize("i"),    -- sizeof(int)
     string.packsize("T"),    -- sizeof(size_t)

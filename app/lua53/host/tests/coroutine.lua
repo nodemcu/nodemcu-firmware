@@ -314,7 +314,7 @@ else
   print "testing yields inside hooks"
 
   local turn
-  
+
   function fact (t, x)
     assert(turn == t)
     if x == 0 then return 1
@@ -417,7 +417,7 @@ else
 
 
   print "testing coroutine API"
-  
+
   -- reusing a thread
   assert(T.testC([[
     newthread      # create thread
@@ -466,7 +466,6 @@ else
   assert(a == coroutine.running() and string.find(b, "non%-suspended") and
          c == "ERRRUN" and d == 4)
 
---[==[TODO:  Test uses dynamic loading
 
   -- using a main thread as a coroutine
   local state = T.newstate()
@@ -499,11 +498,11 @@ else
   assert(T.doremote(state, "return B") == 'BB')
 
   T.closestate(state)
-]==]
 
   print'+'
 
 end
+
 
 -- leaving a pending coroutine open
 _X = coroutine.wrap(function ()
@@ -644,7 +643,7 @@ do   -- a few more tests for comparsion operators
     until res ~= 10
     return res
   end
-  
+
   local function test ()
     local a1 = setmetatable({x=1}, mt1)
     local a2 = setmetatable({x=2}, mt2)
@@ -656,7 +655,7 @@ do   -- a few more tests for comparsion operators
     assert(2 >= a2)
     return true
   end
-  
+
   run(test)
 
 end
@@ -816,11 +815,11 @@ co = coroutine.wrap(function (...) return
           cannot be here!
        ]],
        [[  # 1st continuation
-         yieldk 0 3 
+         yieldk 0 3
          cannot be here!
        ]],
        [[  # 2nd continuation
-         yieldk 0 4 
+         yieldk 0 4
          cannot be here!
        ]],
        [[  # 3th continuation

@@ -3,11 +3,9 @@
 -- See Copyright Notice in file all.lua
 
 -- most (all?) tests here assume a reasonable "Unix-like" shell
+
 _port=true
-if _port then
-  print('SKIPPED')
-  return
-end
+if _port then return end
 
 -- use only "double quotes" inside shell scripts (better change to
 -- run on Windows)
@@ -258,15 +256,15 @@ NoRun("error object is a table value", [[lua %s]], prog)
 
 
 -- chunk broken in many lines
-s = [=[ -- 
-function f ( x ) 
+s = [=[ --
+function f ( x )
   local a = [[
 xuxu
 ]]
   local b = "\
 xuxu\n"
   if x == 11 then return 1 + 12 , 2 + 20 end  --[[ test multiple returns ]]
-  return x + 1 
+  return x + 1
   --\\
 end
 return( f( 100 ) )
@@ -276,10 +274,10 @@ s = string.gsub(s, ' ', '\n\n')   -- change all spaces for newlines
 prepfile(s)
 RUN([[lua -e"_PROMPT='' _PROMPT2=''" -i < %s > %s]], prog, out)
 checkprogout("101\n13\t22\n\n")
-  
+
 prepfile[[#comment in 1st line without \n at the end]]
 RUN('lua %s', prog)
-  
+
 prepfile[[#test line number when file starts with comment line
 debug = require"debug"
 print(debug.getinfo(1).currentline)

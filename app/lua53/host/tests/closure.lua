@@ -3,7 +3,6 @@
 
 print "testing closures"
 
-dofile'allassert.lua'
 local A,B = 0,{g=10}
 function f(x)
   local a = {}
@@ -45,12 +44,12 @@ assert(B.g == 19)
 
 -- testing equality
 a = {}
-for i = 1, 5 do  a[i] = function (x) return x + a + _ENV end end
+for i = 1, 5 do  a[i] = function (x) return x + a + _ENV end  end
 --[[This relies on Proto caching which is not implemented for NodeMCU
 assert(a[3] == a[4] and a[4] == a[5])
 ]]
 
-for i = 1, 5 do  a[i] = function (x) return i + a + _ENV end end
+for i = 1, 5 do  a[i] = function (x) return i + a + _ENV end  end
 assert(a[3] ~= a[4] and a[4] ~= a[5])
 
 local function f()

@@ -80,26 +80,28 @@ static int findfield (lua_State *L, int objidx, int level) {
 
 
 /*
-** Search for a name for a function in all loaded modules
+** Search for a name for a function in all loaded and ROM modules
 */
 static int pushglobalfuncname (lua_State *L, lua_Debug *ar) {
   int top = lua_gettop(L);
   lua_getinfo(L, "f", ar);  /* push function */
   lua_getfield(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
-  if (findfield(L, top + 1, 2)) {
-    const char *name = lua_tostring(L, -1);
-    if (strncmp(name, "_G.", 3) == 0) {  /* name start with '_G.'? */
-      lua_pushstring(L, name + 3);  /* push name without prefix */
-      lua_remove(L, -2);  /* remove original name */
+  if (!findfield(L, top + 1, 2)) {
+    lua_settop(L, top+1);  /* remove global table */
+    lua_getglobal(L, "ROM");
+    if (!findfield(L, top + 1, 2)) {
+      lua_settop(L, top);  /* remove function and global table */
+      return 0;
     }
-    lua_copy(L, -1, top + 1);  /* move name to proper place */
-    lua_pop(L, 2);  /* remove pushed values */
-    return 1;
   }
-  else {
-    lua_settop(L, top);  /* remove function and global table */
-    return 0;
+  const char *name = lua_tostring(L, -1);
+  if (strncmp(name, "_G.", 3) == 0) {  /* name start with '_G.'? */
+    lua_pushstring(L, name + 3);  /* push name without prefix */
+    lua_remove(L, -2);  /* remove original name */
   }
+  lua_copy(L, -1, top + 1);  /* move name to proper place */
+  lua_pop(L, 2);  /* remove pushed values */
+  return 1;
 }
 
 
@@ -1023,18 +1025,24 @@ LUALIB_API int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
 */
 LUALIB_API void luaL_requiref (lua_State *L, const char *modname,
                                lua_CFunction openf, int glb) {
+  int inROM = 0;
   luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
   lua_getfield(L, -1, modname);                            /* LOADED[modname] */
   if (!lua_toboolean(L, -1)) {                /* package not in LOADED table? */
     lua_getglobal(L, "ROM");                             /* try the ROM entry */
-    lua_getfield(L, -1, modname);                                /* ROM[name] */
-    if (lua_toboolean(L, -1))                            /* package is in ROM */
+    if(!lua_isnil(L,-1)) {
+      lua_getfield(L, -1, modname);                              /* ROM[name] */
+      inROM = lua_toboolean(L, -1);
+      lua_pop(L, 3);
+    } else
+      lua_pop(L, 2);
+
+    if (inROM)                                           /* package is in ROM */
       glb = 0;                                   /* suppress setting _G entry */
-    lua_pop(L, 3);                /* remove temp pushed fields, except LOADED */
     lua_pushcfunction(L, openf);
     lua_pushstring(L, modname);                  /* argument to open function */
     lua_call(L, 1, 1);                         /* call 'openf' to open module */
-    if (lua_toboolean(L, -1)) {                    /* if a result is returned */
+    if (lua_toboolean(L, -1) && !inROM) { /* if not in ROM & result is returned */
       lua_pushvalue(L, -1);              /* make copy of module (call result) */
       lua_setfield(L, -3, modname);               /* LOADED[modname] = module */
     }

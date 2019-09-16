@@ -54,9 +54,6 @@
 
 #define setthreshold(g)  (g->GCthreshold = (g->estimate/100) * g->gcpause)
 
-#define isrotable(t) (gettt(t)==LUA_TROTABLE)
-#define isrwtable(t) (gettt(t)==LUA_TTABLE)
-
 
 static void removeentry (Node *n) {
   lua_assert(ttisnil(gval(n)));
@@ -81,7 +78,7 @@ static void reallymarkobject (global_State *g, GCObject *o) {
     case LUA_TUSERDATA: {
       Table *mt = gco2u(o)->metatable;
       gray2black(o);  /* udata are never gray */
-      if (mt && gettt(mt)==LUA_TTABLE) markobject(g, mt);
+      if (mt && isrwtable(mt)) markobject(g, mt);
       markobject(g, gco2u(o)->env);
       return;
     }
@@ -166,7 +163,7 @@ static int traversetable (global_State *g, Table *h) {
   const TValue *mode = luaO_nilobject;
 
   if (h->metatable) {
-    if (isrotable(h->metatable))
+    if (isrwtable(h->metatable))
       markobject(g, h->metatable);
     mode = gfasttm(g, h->metatable, TM_MODE);
   }

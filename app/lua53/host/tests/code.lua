@@ -188,7 +188,7 @@ check(function ()
   b[a], a = c, b
   a, b = c, a
   a = a
-end, 
+end,
   'LOADNIL',
   'MOVE', 'MOVE', 'SETTABLE',
   'MOVE', 'MOVE', 'MOVE', 'SETTABLE',
@@ -221,7 +221,7 @@ check(function (a, b, c, d, e)
              else goto l3
              end
         end
-        ::l1:: ::l2:: ::l3:: ::l4:: 
+        ::l1:: ::l2:: ::l3:: ::l4::
 end, 'EQ', 'JMP', 'EQ', 'JMP', 'EQ', 'JMP', 'EQ', 'JMP', 'JMP', 'RETURN')
 
 checkequal(
