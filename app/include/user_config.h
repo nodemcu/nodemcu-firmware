@@ -134,10 +134,6 @@
 //  Enable creation on the wifi.eventmon.reason table
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
 
-//  Enable use of the WiFi.monitor sub-module
-//#define LUA_USE_MODULES_WIFI_MONITOR
-
-
 // Whilst the DNS client details can be configured through the WiFi API,
 // the defaults can be exposed temporarily during start-up.  The following
 // WIFI_STA options allow you to configure this in the firmware.  If the
