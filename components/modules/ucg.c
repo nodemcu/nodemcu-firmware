@@ -734,12 +734,12 @@ LROT_END(lucg_display, NULL, 0)
 
 LROT_BEGIN(lucg)
 #undef UCG_DISPLAY_TABLE_ENTRY
-#define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) LROT_FUNCENTRY( #binding, l ## binding )
+#define UCG_DISPLAY_TABLE_ENTRY(binding, device, extension) LROT_FUNCENTRY( binding, l ## binding )
   UCG_DISPLAY_TABLE
 
   // Register fonts
 #undef UCG_FONT_TABLE_ENTRY
-#define UCG_FONT_TABLE_ENTRY(font) LROT_LUDENTRY( #font, (void *)(ucg_ ## font) )
+#define UCG_FONT_TABLE_ENTRY(font) LROT_LUDENTRY( font, (void *)(ucg_ ## font) )
   UCG_FONT_TABLE
 
   // Font modes
