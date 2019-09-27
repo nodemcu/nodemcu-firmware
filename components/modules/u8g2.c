@@ -802,7 +802,7 @@ U8G2_DISPLAY_TABLE_SPI
 #undef U8G2_FONT_TABLE_ENTRY
 #undef U8G2_DISPLAY_TABLE_ENTRY
 #define U8G2_DISPLAY_TABLE_ENTRY(function, binding) \
-  LROT_FUNCENTRY( #binding, l ## binding )
+  LROT_FUNCENTRY( binding, l ## binding )
 
 LROT_BEGIN(lu8g2)
   U8G2_DISPLAY_TABLE_I2C
@@ -810,7 +810,7 @@ LROT_BEGIN(lu8g2)
   //
   // Register fonts
 #define U8G2_FONT_TABLE_ENTRY(font) \
-  LROT_LUDENTRY( #font,            (void *)(u8g2_ ## font) )
+  LROT_LUDENTRY( font,            (void *)(u8g2_ ## font) )
   U8G2_FONT_TABLE
   //
   LROT_NUMENTRY( DRAW_UPPER_RIGHT, U8G2_DRAW_UPPER_RIGHT )
