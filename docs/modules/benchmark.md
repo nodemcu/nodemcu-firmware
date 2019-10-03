@@ -56,6 +56,46 @@ benchmark.frc1_autoload_shared(10, false,
 
 Credits to [https://sub.nanona.fi/esp8266/timing-and-ticks.html](https://sub.nanona.fi/esp8266/timing-and-ticks.html) for inspiring some of the tests and setting up the standard for the rest.
 
+## benchmark.ccount()
+
+Get value of CPU CCOUNT register which contains CPU ticks. It supports CPU80 and CPU160.
+
+This allows for calculation of elapsed time with microsecond precision. For example for CPU80 there are 80 ticks/us (80000 ticks/ms).
+
+Note the register is 32-bits and rolls over.
+
+### Syntax
+
+`benchmark.ccount()`
+
+### Returns
+
+The current value of CCOUNT register.
+
+### Example
+
+```lua
+print ("benchmark.ccount() takes ", benchmark.ccount()-benchmark.ccount(), " CPU ticks to execute.")
+```
+
+## benchmark.bench_lua_func()
+
+Benchmark the given lua function.
+
+### Syntax
+
+`benchmark.bench_lua_func(function() end)`
+
+### Returns
+
+The time to execute the function in terms of CPU ticks.
+
+### Example
+
+```lua
+print ("empty lua function takes ", benchmark.bench_lua_func(function()end), " CPU ticks to execute.")
+```
+
 ## benchmark.set_repetitions()
 
 Assign new repetitions value. By default the module uses 2000.

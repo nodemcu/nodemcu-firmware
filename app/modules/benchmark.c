@@ -5,16 +5,16 @@
  * 
  */
 
-#include <stdlib.h>
 #include <stdint.h>
-#include "osapi.h"
+#include <stdlib.h>
+#include "platform.h"
+#include "hw_timer.h"
 #include "lauxlib.h"
 #include "mem.h"
 #include "module.h"
+#include "osapi.h"
 #include "pin_map.h"
 #include "user_interface.h"
-#include "platform.h"
-#include "hw_timer.h"
 
 /* need to prevent compiler optimizations */
 #define __NOINLINE __attribute__((noinline))
@@ -48,6 +48,10 @@ static struct { /* used by timer function */
 } __timerData;
 static uint16_t repetitions;
 static uint16_t maskOnW1TSC;
+static struct { /* used by benchmarking lua functions */
+  int cb;
+  lua_State *L;
+} __luaFunc;
 
 // #####################
 // helpers
@@ -224,6 +228,13 @@ static void ICACHE_RAM_ATTR __timer_interrupt(os_param_t arg) {
       __scheduleNextInterruptIfNeeded();
     }
   }
+}
+
+// lua function benchmarking
+
+static void __run_lua_func() {
+  lua_rawgeti(__luaFunc.L, LUA_REGISTRYINDEX, __luaFunc.cb);
+  lua_call(__luaFunc.L, 0, 0);
 }
 
 // ###########################
@@ -460,6 +471,8 @@ static int lbench_open(lua_State *L) {
   __timerData.individualDelays = NULL;
 }
 
+
+
 static int lbench_print_timer_data(lua_State *L) {
   ets_printf("isManualMode = %d\n", __timerData.isManualMode);
   ets_printf("isTimerExclusive = %d\n", __timerData.isTimerExclusive);
@@ -473,8 +486,27 @@ static int lbench_print_timer_data(lua_State *L) {
   ets_printf("individualDelays = %d\n", __timerData.individualDelays);
 }
 
+static int lbench_ccount(lua_State *L) {
+  lua_pushinteger(L, asm_ccount());
+  return 1;
+}
+
+static int lbench_lua_func(lua_State *L) {
+  // set up the new callback if present
+  lua_pushvalue(L, 1);
+  __luaFunc.cb = luaL_ref(L, LUA_REGISTRYINDEX);
+  __luaFunc.L = L;
+  const double val = (double)__measure(__run_lua_func);
+  luaL_unref(__luaFunc.L, LUA_REGISTRYINDEX, __luaFunc.cb);
+  lua_pushnumber(L, val);
+  // lua_pushnumber(L, (double)__measure(__run_lua_func));
+  return 1;
+}
+
 // Module function map
 LROT_BEGIN(benchmark)
+LROT_FUNCENTRY(ccount, lbench_ccount)
+LROT_FUNCENTRY(bench_lua_func, lbench_lua_func)
 LROT_FUNCENTRY(print_timer_data, lbench_print_timer_data)
 LROT_FUNCENTRY(set_repetitions, lbench_set_repetitions)
 LROT_FUNCENTRY(get_repetitions, lbench_get_repetitions)
