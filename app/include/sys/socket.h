@@ -102,20 +102,10 @@ typedef enum{
 		}\
 	}while(0)
 
-#define lwIP_EVENT_PARSE(s, error)                          \
-  do {                                                         \
-	  mbedtls_parse_internal(s, error);                              \
-  } while (0)
-
-#define lwIP_EVENT_THREAD(s, event, error)	\
-  do {	\
-		mbedtls_parse_thread(s, event, error); \
-  }while(0)
-
 typedef enum{
-	ENTCONN_EVENT_NONE = 0,
+	NETCONN_EVENT_NONE = 0,
 	NETCONN_EVENT_ESTABLISHED = 1,
-	ENTCONN_EVENT_RECV = 2,
+	NETCONN_EVENT_RECV = 2,
 	NETCONN_EVENT_SEND = 3,
 	NETCONN_EVENT_ERROR = 4,
 	NETCONN_EVENT_CLOSE = 5,

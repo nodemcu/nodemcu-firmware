@@ -722,7 +722,7 @@ exit:
 	}
 }
 
-int __attribute__((weak)) mbedtls_parse_internal(int socket, sint8 error)
+int espconn_mbedtls_parse_internal(int socket, sint8 error)
 {
 	int ret = ERR_OK;
 	bool config_flag = false;
@@ -858,7 +858,7 @@ exit:
 	return ret;
 }
 
-int __attribute__((weak)) mbedtls_parse_thread(int socket, int event, int error)
+int espconn_mbedtls_parse_thread(int socket, int event, int error)
 {
 	int ret = ERR_OK;
 	espconn_msg *Threadmsg = NULL;
@@ -870,10 +870,10 @@ int __attribute__((weak)) mbedtls_parse_thread(int socket, int event, int error)
 	if (TLSmsg->quiet) {
 		int	out_msglen = TLSmsg->ssl.out_msglen + 5;
 		if (Threadmsg->pcommon.write_flag)
-			TLSmsg->record.record_len += error;
+			TLSmsg->record_len += error;
 
-		if (TLSmsg->record.record_len == out_msglen) {
-			TLSmsg->record.record_len = 0;
+		if (TLSmsg->record_len == out_msglen) {
+			TLSmsg->record_len = 0;
 			Threadmsg->pcommon.write_flag = false;
 			if (Threadmsg->pcommon.cntr != 0) {
 				espconn_ssl_sent(Threadmsg, Threadmsg->pcommon.ptrbuf, Threadmsg->pcommon.cntr);
@@ -881,11 +881,7 @@ int __attribute__((weak)) mbedtls_parse_thread(int socket, int event, int error)
 				TLSmsg->SentFnFlag = true;
 				ESPCONN_EVENT_SEND(Threadmsg->pespconn);
 			}
-		} else {
-
 		}
-	} else {
-
 	}
 exit:
 	return ret;

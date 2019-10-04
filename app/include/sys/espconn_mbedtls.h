@@ -38,9 +38,6 @@
 #include "mbedtls/ctr_drbg.h"
 typedef struct espconn *pmbedtls_espconn;
 typedef struct espconn mbedtls_espconn;
-typedef struct{
-	int record_len;
-}mbedtls_record;
 
 typedef struct{
 //	mbedtls_entropy_context entropy;
@@ -51,7 +48,7 @@ typedef struct{
 
 typedef struct{
 	bool quiet;
-	mbedtls_record		record;
+	int	record_len;
 	pmbedtls_session	psession;
 	mbedtls_net_context fd;
 	mbedtls_net_context listen_fd;
