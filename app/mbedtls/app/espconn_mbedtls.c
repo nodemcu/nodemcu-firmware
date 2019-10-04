@@ -555,39 +555,36 @@ static bool mbedtls_msg_info_load(mbedtls_msg *msg, mbedtls_auth_info *auth_info
 	int32 offerset = 0;
 	uint8* load_buf = NULL;
 	size_t load_len = 0;
-	file_param *pfile_param = NULL;
-	pfile_param = (file_param *)os_zalloc( sizeof(file_param));
-	if (pfile_param==NULL)
-		return false;
+	file_param file_param;
+
+	bzero(&file_param, sizeof(file_param));
 
 again:
-	espconn_ssl_read_param_from_flash(&pfile_param->file_head, sizeof(file_head), offerset, auth_info);
-	pfile_param->file_offerset = offerset;
-	os_printf("%s %d, type[%s],length[%d]\n", __FILE__, __LINE__, pfile_param->file_head.file_name, pfile_param->file_head.file_length);
-	if (pfile_param->file_head.file_length == 0xFFFF) {
-		os_free(pfile_param);
+	espconn_ssl_read_param_from_flash(&file_param.file_head, sizeof(file_head), offerset, auth_info);
+	file_param.file_offerset = offerset;
+	os_printf("%s %d, type[%s],length[%d]\n", __FILE__, __LINE__, file_param.file_head.file_name, file_param.file_head.file_length);
+	if (file_param.file_head.file_length == 0xFFFF) {
 		return false;
 	} else {
 		/*Optional is load the private key*/
-		if (auth_info->auth_type == ESPCONN_PK && os_memcmp(pfile_param->file_head.file_name, type_name, os_strlen(type_name)) != 0) {
-			offerset += sizeof(file_head) + pfile_param->file_head.file_length;
+		if (auth_info->auth_type == ESPCONN_PK && os_memcmp(&file_param.file_head.file_name, type_name, os_strlen(type_name)) != 0) {
+			offerset += sizeof(file_head) + file_param.file_head.file_length;
 			goto again;
 		}
 		/*Optional is load the cert*/
-		if (auth_info->auth_type == ESPCONN_CERT_OWN && os_memcmp(pfile_param->file_head.file_name, "certificate", os_strlen("certificate")) != 0) {
-			offerset += sizeof(file_head) + pfile_param->file_head.file_length;
+		if (auth_info->auth_type == ESPCONN_CERT_OWN && os_memcmp(file_param.file_head.file_name, "certificate", os_strlen("certificate")) != 0) {
+			offerset += sizeof(file_head) + file_param.file_head.file_length;
 			goto again;
 		}
-		load_buf = (uint8_t *) os_zalloc( pfile_param->file_head.file_length + FILE_OFFSET);
+		load_buf = (uint8_t *) os_zalloc( file_param.file_head.file_length + FILE_OFFSET);
 		if (load_buf == NULL) {
-			os_free(pfile_param);
 			return false;
 		}
-		offerset = sizeof(file_head) + pfile_param->file_offerset;
-		espconn_ssl_read_param_from_flash(load_buf,	pfile_param->file_head.file_length, offerset, auth_info);
+		offerset = sizeof(file_head) + file_param.file_offerset;
+		espconn_ssl_read_param_from_flash(load_buf,	file_param.file_head.file_length, offerset, auth_info);
 	}
 
-	load_len = pfile_param->file_head.file_length;
+	load_len = file_param.file_head.file_length;
 	/*
 	* Determine buffer content. Buffer contains either one DER certificate or
 	* one or more PEM certificates.
@@ -615,7 +612,6 @@ again:
 	}
 exit:
 	os_free(load_buf);
-	os_free(pfile_param);
 	if (ret < 0) {
 		return false;
 	} else {
