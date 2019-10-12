@@ -5,7 +5,7 @@
 #include "driver/uart.h"
 #include <stdio.h>
 #include <string.h>
-
+#include <freertos/semphr.h>
 #include "lua.h"
 
 #include "esp_log.h"
@@ -36,12 +36,13 @@ static const char *UART_TAG = "uart";
 
 uart_status_t uart_status[NUM_UART];
 
+SemaphoreHandle_t sem = NULL;
+
 extern bool uart_on_data_cb(unsigned id, const char *buf, size_t len);
 extern bool uart_on_error_cb(unsigned id, const char *buf, size_t len);
 task_handle_t uart_event_task_id = 0;
 
 void uart_event_task( task_param_t param, task_prio_t prio ) {
-  size_t p;
   uint16_t need_len;
   int16_t end_char;
   char ch;
@@ -50,31 +51,25 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
   uart_event_post_t *post = (uart_event_post_t *)param;
   id = post->id;
   us = & uart_status[id];
+  xSemaphoreGive(sem);
   if(post->type == PLATFORM_UART_EVENT_DATA) {
-    need_len = us->need_len;
-    end_char = us->end_char;
-    
-    for(p = 0; p < post->size; p++) {
-      ch = *(post->data + p);
+    for(size_t p = 0; p < post->size; p++) {
+      ch = post->data[p];
       us->line_buffer[us->line_position] = ch;
       us->line_position++;
 
-      if((end_char == -1 && us->line_position == (need_len == 0? LUA_MAXINPUT : need_len))
-        || (end_char >= 0 && (unsigned char)ch == (unsigned char)end_char)) {
-        // us->line_buffer[us->line_position] = 0;
+      need_len = us->need_len;
+      end_char = us->end_char;
+      size_t max_wanted =
+        (end_char >= 0 && need_len == 0) ? LUA_MAXINPUT : need_len;
+      bool at_end = (us->line_position >= max_wanted);
+      bool end_char_found =
+        (end_char >= 0 && (uint8_t)ch == (uint8_t)end_char);
+      if (at_end || end_char_found) {
         uart_on_data_cb(id, us->line_buffer, us->line_position);
         us->line_position = 0;
       }
-      if(us->line_position + 1 >= LUA_MAXINPUT) {
-        us->line_position = 0;
-      }
     }
-    if(end_char == -1 && need_len == 0 && us->line_position > 0) {
-      // us->line_buffer[us->line_position] = 0;
-      uart_on_data_cb(id, us->line_buffer, us->line_position);
-      us->line_position = 0;
-    }
-    
     free(post->data);
   } else {
     char *err;
@@ -97,20 +92,32 @@ void uart_event_task( task_param_t param, task_prio_t prio ) {
 static void task_uart( void *pvParameters ){
   unsigned id = (unsigned)pvParameters;
   
+  // 4 chosen as a number smaller than the number of nodemcu task slots
+  // available, to make it unlikely we encounter a task_post failing
+  if (sem == NULL)
+    sem = xSemaphoreCreateCounting(4, 4);
+
   uart_event_post_t* post = NULL;
   uart_event_t event;
-  
+
   for(;;) {
     if(xQueueReceive(uart_status[id].queue, (void * )&event, (portTickType)portMAX_DELAY)) {
       switch(event.type) {
-        case UART_DATA:
+        case UART_DATA: {
           post = (uart_event_post_t*)malloc(sizeof(uart_event_post_t));
           if(post == NULL) {
             ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
             // reboot here?
             continue;
           }
-          post->data = malloc(event.size);
+          // Attempt to coalesce received bytes to reduce risk of overrunning
+          // the task event queue.
+          size_t len;
+          if (uart_get_buffered_data_len(id, &len) != ESP_OK)
+            len = event.size;
+          if (len == 0)
+            continue; // we already gobbled all the bytes
+          post->data = malloc(len);
           if(post->data == NULL) {
             ESP_LOGE(UART_TAG, "Can not alloc memory in task_uart()");
             post->id = id;
@@ -118,9 +125,10 @@ static void task_uart( void *pvParameters ){
           } else {
             post->id = id;
             post->type = PLATFORM_UART_EVENT_DATA;
-            post->size = uart_read_bytes(id, (uint8_t *)post->data, event.size, 0);        
+            post->size = uart_read_bytes(id, (uint8_t *)post->data, len, 0);
           }
           break;
+        }
         case UART_BREAK:
           post = (uart_event_post_t*)malloc(sizeof(uart_event_post_t));
           if(post == NULL) {
@@ -130,7 +138,8 @@ static void task_uart( void *pvParameters ){
           }
           post->id = id;
           post->type = PLATFORM_UART_EVENT_BREAK;
-		  break;
+          post->data = NULL;
+          break;
         case UART_FIFO_OVF:
         case UART_BUFFER_FULL:
         case UART_PARITY_ERR:
@@ -143,13 +152,21 @@ static void task_uart( void *pvParameters ){
           }
           post->id = id;
           post->type = PLATFORM_UART_EVENT_RX;
+          post->data = NULL;
           break;
         case UART_PATTERN_DET:
         default:
           ;
       }
-      if(post != NULL) {
-        task_post_medium( uart_event_task_id, (task_param_t)post );
+      if (post != NULL) {
+        xSemaphoreTake(sem, portMAX_DELAY);
+        if (!task_post_medium(uart_event_task_id, (task_param_t)post))
+        {
+          ESP_LOGE(UART_TAG, "Task event overrun in task_uart()");
+          xSemaphoreGive(sem);
+          free(post->data);
+          free(post);
+        }
         post = NULL;
       }
     }
