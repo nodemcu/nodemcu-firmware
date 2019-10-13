@@ -1005,6 +1005,19 @@ uint32_t platform_rcr_read (uint8_t rec_id, void **rec) {
     return ~0;
 }
 
+uint32_t platform_rcr_delete (uint8_t rec_id) {
+  void *rec = NULL;
+  platform_rcr_read (rec_id, &rec);
+  if (rec) {
+    uint32_t *pHdr = cast(uint32_t *,rec)-1;
+    platform_rcr_t hdr = {.hdr = *pHdr};
+    hdr.id = PLATFORM_RCR_DELETED;
+    platform_s_flash_write(&hdr, platform_flash_mapped2phys(cast(uint32_t, pHdr)), WORDSIZE);
+    return 0;
+  }
+  return ~0;
+}
+
 /*
  * Chain down the RCR page and look for an existing record that matches the record
  * ID and the first free record.  If there is enough room, then append the new

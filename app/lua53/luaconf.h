@@ -41,16 +41,17 @@
 #else
 # define LUA_USE_HOST
 # define LUA_CROSS_COMPILER
-#  if !defined(LUA_USE_C89) && defined(_WIN32) && !defined(_WIN32_WCE)
-#    define LUA_USE_WINDOWS  /* enable goodies for regular Windows */
+#endif
+
+#if !defined(LUA_USE_C89) && defined(_WIN32) && !defined(_WIN32_WCE)
+#  define LUA_USE_WINDOWS  /* enable goodies for regular Windows */
 //#    define LUA_USE_C89    /* We only support the VS2013 C or later */
-#  elif __APPLE__
-#    define LUA_USE_MACOSX
-#    define LUA_USE_POSIX
-#  else
-#    define LUA_USE_LINUX
-#    define LUA_USE_POSIX
-#  endif
+#elif defined(__APPLE__)
+#  define LUA_USE_MACOSX
+#  define LUA_USE_POSIX
+#else
+#  define LUA_USE_LINUX
+//#  define LUA_USE_POSIX
 #endif
 
 #define LUA_NODEMCU_NOCLOADERS
@@ -85,8 +86,8 @@
 #endif
 #endif
 #  define LUA_INT_TYPE    LUA_INT_INT
-//#  define LUA_FLOAT_TYPE  LUA_FLOAT_FLOAT
-#  define LUA_FLOAT_TYPE  LUA_FLOAT_DOUBLE
+#  define LUA_FLOAT_TYPE  LUA_FLOAT_FLOAT
+//#  define LUA_FLOAT_TYPE  LUA_FLOAT_DOUBLE
 
 /*
 ** Configuration for Paths.
@@ -121,7 +122,8 @@
 
 /*
 @@ LUAI_FUNC, LUAI_DDEF and LUAI_DDEC are used to mark visibilty when
-** building lua as a shared library.  Not used in NodeMCU
+** building lua as a shared library.  Used to tag private inter-module 
+** Lua internal functions. 
 */
 //#define LUAI_FUNC	__attribute__((visibility("hidden"))) extern
 #define LUAI_FUNC	extern
@@ -135,18 +137,16 @@
 */
 
 //#define LUA_COMPAT_MATHLIB  // retains several deprecated functions in math.
-#define LUA_NODEMCU__COMPAT_MATHLIB  // retains NodeMCU subset of ma
-
 //#define LUA_COMPAT_BITLIB  // bit32 is separately implemented as a NodeMCU lib
 //#define LUA_COMPAT_IPAIRS  // enables __ipairs meta which isn't used in NodeMCU
 
-#define LUA_COMPAT_APIINTCASTS // needed to enable NodeMCU modules to work on
-                               // both Lua 5.1 and Lua 5.3
-
-#define LUA_COMPAT_UNPACK    // needed to support a  global 'unpack'
-
-#define LUA_COMPAT_LOADERS  // keeps 'package.loaders' as a synonym for 'package.searchers'.
-                            // used a lot in our libraries
+#define LUA_NODEMCU_COMPAT_MATHLIB /* retains NodeMCU subset of mathlib */
+#define LUA_COMPAT_APIINTCASTS     /* needed to enable NodeMCU modules to work on */ 
+                                   /* both Lua 5.1 and Lua 5.3 */
+#define LUA_COMPAT_UNPACK          /* needed to support a  global 'unpack' */
+#define LUA_COMPAT_LOADERS         /* keeps 'package.loaders' as a synonym for */
+                                   /* 'package.searchers'. Used in our libraries */
+#define LUA_COMPAT_LOADSTRING      /* keeps loadstring(s) as synonym for load(s) */
 
 #if 0
 #define lua_cpcall(L,f,u)  \     // Not used in our module code
@@ -155,13 +155,10 @@
 	 lua_pcall(L,1,0,0))
 #endif
 
-// #define LUA_COMPAT_LOG10  // math.log10 not used in NodeMCU
+//#define LUA_COMPAT_LOG10   // math.log10 not used in NodeMCU
+//#define LUA_COMPAT_MAXN    // math.maxn not used
 
-#define LUA_COMPAT_LOADSTRING // keeps loadstring(s) as synonym for load(s)
-
-//#define LUA_COMPAT_MAXN  // math.maxn not used.
-
-/* Compatbililty wfor some API calls withdrawn in Lua53 */
+/* Compatbililty for some API calls withdrawn in Lua53 */
 
 #define lua_strlen(L,i)		lua_rawlen(L, (i))
 #define lua_objlen(L,i)		lua_rawlen(L, (i))
@@ -204,6 +201,10 @@
 ** Other NodeMCU configuration.
 ** ===================================================================
 */
+
+#ifdef LUA_USE_ESP
+#define LUAI_USER_ALIGNMENT_T size_t
+#endif
 
 #define LUAI_GCPAUSE	110  /* 110% (wait memory to grow 10% before next gc) */
 
@@ -449,5 +450,10 @@
 #define l_mathop(op)		(lua_Number)op  /* no variant */
 #define lua_str2number(s,p)	((lua_Number)strtod((s), (p)))
 #endif
+
+#undef lua_str2number
+#define lua_str2number(s,p)	((lua_Number)strtod((s), (p)))
+
+#define LUA_DEBUG_HOOK lua_debugbreak
 
 #endif

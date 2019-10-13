@@ -108,11 +108,14 @@ SECTIONS
     * SDK libraries that used in bootup process, interruption handling
     * and other ways where flash cache (iROM) is unavailable:
     */
-    *libmain.a:*(    .literal .literal.* .text .text.*)
-    *libphy.a:*(     .literal .literal.* .text .text.*)
-    *libpp.a:*(      .literal .literal.* .text .text.*)
-    *libgcc.a:*(     .literal .literal.* .text .text.*)
-    *libnet80211.a:*(.literal            .text        )
+    *libmain.a:*(         .literal .literal.* .text .text.*)
+    *libphy.a:*(          .literal .literal.* .text .text.*)
+    *libpp.a:*(           .literal .literal.* .text .text.*)
+    *libgcc.a:_ashrdi3.o( .literal .literal.* .text .text.*)
+    *libgcc.a:_divsf3.o(  .literal .literal.* .text .text.*)
+    *libgcc.a:_fixsfsi.o( .literal .literal.* .text .text.*)
+    *libgcc.a:_modsi3.o(  .literal .literal.* .text .text.*)
+    *libnet80211.a:*(     .literal            .text        )
    /*
     * The following SDK libraries have .literal and .text sections, but are
     * either not used in NodeMCU or are safe to execute out of in iROM: 

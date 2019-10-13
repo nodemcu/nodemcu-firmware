@@ -253,7 +253,7 @@ typedef struct lua_TValue {
 
 #define setsvalue(L,obj,x) \
   { TValue *io = (obj); TString *x_ = (x); \
-    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x))); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x_))); \
     checkliveness(L,io); }
 
 #define setuvalue(L,obj,x) \
@@ -278,7 +278,7 @@ typedef struct lua_TValue {
 
 #define sethvalue(L,obj,x) \
   { TValue *io = (obj); Table *x_ = (x); \
-    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x))); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(gettt(x_))); \
     checkliveness(L,io); }
 
 #define setdeadvalue(obj)	settt_(obj, LUA_TDEADKEY)

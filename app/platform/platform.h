@@ -345,6 +345,7 @@ void* platform_print_deprecation_note( const char *msg, const char *time_frame);
 #define PLATFORM_RCR_PT        0x1
 #define PLATFORM_RCR_PHY_DATA  0x2   
 #define PLATFORM_RCR_REFLASH   0x3
+#define PLATFORM_RCR_FLASHLFS  0x4
 #define PLATFORM_RCR_FREE      0xFF
 typedef union {
     uint32_t hdr;
@@ -352,6 +353,7 @@ typedef union {
 } platform_rcr_t;
 
 uint32_t platform_rcr_read (uint8_t rec_id, void **rec);
+uint32_t platform_rcr_delete (uint8_t rec_id);
 uint32_t platform_rcr_write (uint8_t rec_id, const void *rec, uint8_t size);
 
 #define PLATFORM_TASK_PRIORITY_LOW     0

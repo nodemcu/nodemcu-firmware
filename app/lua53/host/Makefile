@@ -35,7 +35,7 @@ else
     TARGET_LDFLAGS += -O2
 endif  # DEBUG
 
-LUACSRC := luac.c      lflashimg.c liolib.c    loslib.c
+LUACSRC := luac.c      liolib.c    loslib.c
 LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     lcorolib.c  lctype.c \
            ldblib.c    ldebug.c    ldo.c       ldump.c     lfunc.c     lgc.c \
            linit.c     llex.c      lmathlib.c  lmem.c      loadlib.c   lnodemcu.c \
@@ -47,7 +47,7 @@ UZSRC   := uzlib_deflate.c crc32.c
 TEST ?=
 ifeq ("$(TEST)","1")
    DEFINES  += -DLUA_ENABLE_TEST
-   LUASRC   += ltests.c
+   LUACSRC  += ltests.c
 endif  # $(TEST)==1
 
 #

@@ -967,7 +967,7 @@ function testamem (s, f)
   local M = T.totalmem()
   local oldM = M
   local a,b = nil
-  while 1 do
+  while M < 200000 do
     M = M+7   -- increase memory limit in small steps
     T.totalmem(M)
     a, b = pcall(f)
@@ -979,6 +979,7 @@ function testamem (s, f)
       error(b, 0)   -- propagate it
     end
   end
+  if M > 200000 then print ("hit 20K limit") end
   print("\nlimit for " .. s .. ": " .. M-oldM)
   return b
 end

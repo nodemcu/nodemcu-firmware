@@ -5,6 +5,7 @@
 
 #define lua_c
 
+#define LUA_CORE
 #include "lprefix.h"
 
 
@@ -20,6 +21,7 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lgc.h"
+#include "lnodemcu.h"
 
 
 #if !defined(LUA_PROMPT)
@@ -218,7 +220,6 @@ static int dojob (lua_State *L) {
       lua_rawseti(L, LUA_REGISTRYINDEX, MLref);
   } else {
     /* compile finished OK or with hard error */
-//*DEBUG*/ luaL_dbgbreak();
     lua_remove(L, 2);                    /* remove line because now redundant */
     if (MLref!= LUA_NOREF) {            /* also remove multiline if it exists */
       luaL_unref(L, LUA_REGISTRYINDEX, MLref);
@@ -244,7 +245,7 @@ static int dojob (lua_State *L) {
   return 1;                       /* return nil will retask if pipe not empty */
 }
 
-extern void luaL_dbgbreak(void);
+
 /*
 ** Main body of stand-alone interpreter (called as a posted task).
 */
@@ -256,7 +257,8 @@ static int pmain (lua_State *L) {
   lua_gc( L, LUA_GCSETMEMLIMIT, 4096 );
   lua_gc(L, LUA_GCRESTART, 0);                 /* restart GC and set EGC mode */
   lua_settop(L, 0);
-
+  if(luaN_init(L, 2))                    /* Hook for LFS rebuild if requested */
+    return 1;
   lua_pushliteral(L, "stdin");
   lua_getglobal(L, "pipe");
   lua_getfield(L, -1, "create");

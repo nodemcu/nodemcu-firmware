@@ -170,7 +170,6 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
       return ts;
     }
   }
-#ifdef LUA_USE_ESP
   /*
    * The RAM strt is searched first since RAM access is faster than flash
    * access.  If a miss, then search the RO string table.
@@ -178,7 +177,7 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
   if (g->ROstrt.hash) {
     for (ts = g->ROstrt.hash[lmod(h, g->ROstrt.size)];
          ts != NULL;
-         ts = cast(TString *,ts->next)) {
+         ts = ts->u.hnext)     {
       if (l == getshrlen(ts) &&
           memcmp(str, getstr(ts), l * sizeof(char)) == 0) {
       /* found in ROstrt! */
@@ -186,7 +185,6 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
       }
     }
   }
-#endif
   if (g->strt.nuse >= g->strt.size && g->strt.size <= MAX_INT/2) {
     luaS_resize(L, g->strt.size * 2);
     list = &g->strt.hash[lmod(h, g->strt.size)];  /* recompute with new size */

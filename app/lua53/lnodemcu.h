@@ -68,44 +68,48 @@
 /* Maximum length of a rotable name and of a string key*/
 #define LUA_MAX_ROTABLE_NAME 32
 
-#if 0
-#include "lobject.h"
+#ifdef LUA_CORE
+
 #include "lstate.h"
 #include "lzio.h"
 
-#ifdef LUA_NUMBER_INTEGRAL
-# define FLASH_SIG_B1 0x02
-#else
-# define FLASH_SIG_B1 0x00
-#endif
-#define FLASH_FORMAT_VERSION (1 << 8)
+typedef struct FlashHeader LFSHeader;
+
+struct FlashHeader{
+  lu_int32  flash_sig;     /* a standard fingerprint identifying an LFS image */
+  lu_int32  flash_size;    /* Size of LFS image */
+  lu_int32  seed;          /* random number seed used in LFS */
+  lu_int32  timestamp;     /* timestamp of LFS build */
+  lu_int32  nROuse;        /* number of elements in ROstrt */
+  int       nROsize;       /* size of ROstrt */
+  TString **pROhash;       /* address of ROstrt hash */
+  ROTable  *protoROTable;  /* master ROTable for proto lookup */
+  Proto    *protoHead;     /* linked list of Protos in LFS */
+  TString  *shortTShead;   /* linked list of short TStrings in LFS */
+  TString  *longTShead;    /* linked list of long TStrings in LFS */
+};
+
+#define FLASH_FORMAT_VERSION ( 2 << 8)
+#define FLASH_SIG_B1          0x06
+#define FLASH_SIG_B2          0x02
+#define FLASH_SIG_PASS2       0x0F
 #define FLASH_FORMAT_MASK    0xF00
-#ifdef LUA_PACK_TVALUES
-#ifdef LUA_NUMBER_INTEGRAL
-#error "LUA_PACK_TVALUES is only valid for Floating point builds"
-#endif
-# define FLASH_SIG_B2 0x04
-#else
-# define FLASH_SIG_B2 0x00
-#endif
-# define FLASH_SIG_B2_MASK 0x04
+#define FLASH_SIG_B2_MASK     0x04
 #define FLASH_SIG_ABSOLUTE    0x01
 #define FLASH_SIG_IN_PROGRESS 0x08
-#define FLASH_SIG  (0xfafaa050 | FLASH_FORMAT_VERSION |FLASH_SIG_B2 | FLASH_SIG_B1)
+#define FLASH_SIG  (0xfafaa050 | FLASH_FORMAT_VERSION)
 
-typedef lu_int32 FlashAddr;
-typedef struct {
-  lu_int32  flash_sig;      /* a stabdard fingerprint identifying an LFS image */
-  lu_int32  flash_size;     /* Size of LFS image */
-  FlashAddr mainProto;      /* address of main Proto in Proto hierarchy */
-  FlashAddr pROhash;        /* address of ROstrt hash */
-  lu_int32  nROuse;         /* number of elements in ROstrt */
-  int       nROsize;        /* size of ROstrt */
-  lu_int32  fill1;          /* reserved */
-  lu_int32  fill2;          /* reserved */
-} FlashHeader;
+#define FLASH_FORMAT_MASK    0xF00
 
-LUAI_FUNC void luaN_init (lua_State *L);
-LUAI_FUNC int  luaN_flashSetup (lua_State *L);
+LUAI_FUNC int luaN_init (lua_State *L, int hook);
+LUAI_FUNC int luaN_flashSetup (lua_State *L);
+
+LUAI_FUNC int  luaN_reload_reboot (lua_State *L);
+LUAI_FUNC int  luaN_index (lua_State *L);
+
+LUAI_FUNC char *luaN_writeFlash(void *data, const void *rec, size_t n);
+LUAI_FUNC void luaN_flushFlash(void *);
+LUAI_FUNC void luaN_setFlash(void *, unsigned int o);
+
 #endif
 #endif

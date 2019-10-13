@@ -50,6 +50,7 @@ static int db_getstrings (lua_State *L) {
   int opt = luaL_checkoption(L, 1, "RAM", opts);
   int st = lua_getstrings(L, opt);    /* return the relevant strt as an array */
   if (st) {
+    lua_pushvalue(L, -1);                             /* dup the array TValue */
     lua_getglobal(L, "table");
     lua_getfield(L, -1, "sort");               /* look up table.sort function */
     lua_replace(L, -2);                               /* dump the table entry */

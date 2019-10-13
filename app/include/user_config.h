@@ -236,8 +236,8 @@
 
 #ifdef DEVELOPMENT_TOOLS
 #ifdef DEVELOPMENT_USE_GDB
-extern void luaL_dbgbreak(void);
-#define lua_assert(x)    ((x) ? (void) 0 : luaL_dbgbreak())
+extern void LUA_DEBUG_HOOK (void);
+#define lua_assert(x)    ((x) ? (void) 0 : LUA_DEBUG_HOOK ())
 #else
 #ifdef LUA_CROSS_COMPILER
 extern void luaL_assertfail(const char *file, int line, const char *message);

@@ -137,6 +137,9 @@ typedef struct CallInfo {
 /*
 ** 'global state', shared by all threads of this state
 */
+
+typedef struct FlashHeader LFSHeader;
+
 typedef struct global_State {
   lua_Alloc frealloc;  /* function to reallocate memory */
   void *ud;         /* auxiliary data to 'frealloc' */
@@ -172,11 +175,9 @@ typedef struct global_State {
   TString *memerrmsg;  /* memory-error message */
   TString *tmname[TM_N];  /* array with tag-method names */
   struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
-#ifdef LUA_USE_ESP
   stringtable ROstrt;  /* Flash-based hash table for RO strings */
-  Proto *ROpvmain;   /* Flash-based Proto main */
-  int LFSsize;  /* Size of Lua Flash Store */
-#endif
+  TValue LFStable;   /* Flash-based Proto main */
+  LFSHeader *l_LFS;  /* Lua Flash Store header */
   KeyCacheLine *cache;  /* cache for strings in API */
 } global_State;
 

@@ -17,15 +17,24 @@
 
 #define LUAC_INT	0x5678
 #define LUAC_NUM	cast_num(370.5)
+#define LUAC_FUNC_MARKER 0xFE
+#define LUA_TNUMNINT  	(LUA_TNUMBER | (2 << 4))  /* negative integer numbers */
 
 #define MYINT(s)	(s[0]-'0')
 #define LUAC_VERSION	(MYINT(LUA_VERSION_MAJOR)*16+MYINT(LUA_VERSION_MINOR))
-#define LUAC_FORMAT	10	            /* this is the NodeMCU format */
-
+#define LUAC_FORMAT         	10	     /* this is the NodeMCU format */
+#define LUAC_LFS_IMAGE_FORMAT 11
+#define LUA_STRING_SIG       "\x19ss"
+#define LUA_PROTO_SIG        "\x19pr"
+#define LUA_HDR_BYTE         '\x19'
 /* load one chunk; from lundump.c */
 LUAI_FUNC LClosure* luaU_undump (lua_State* L, ZIO* Z, const char* name);
 
 /* dump one chunk; from ldump.c */
 LUAI_FUNC int luaU_dump (lua_State* L, const Proto* f, lua_Writer w,
                          void* data, int strip);
+LUAI_FUNC int luaU_DumpAllProtos(lua_State *L, const Proto *m, lua_Writer w,
+                         void *data, int strip);
+
+LUAI_FUNC int luaU_undumpLFS(lua_State *L, ZIO *Z);
 #endif

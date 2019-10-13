@@ -46,6 +46,7 @@ extern LROT_TABLE(dblib);
 extern LROT_TABLE(co_funcs);
 extern LROT_TABLE(mathlib);
 extern LROT_TABLE(utf8);
+extern LROT_TABLE(LFS);
 
 #define LROT_ROM_ENTRIES \
   LROT_TABENTRY( string, strlib ) \
@@ -54,6 +55,7 @@ extern LROT_TABLE(utf8);
   LROT_TABENTRY( coroutine, co_funcs ) \
   LROT_TABENTRY( math, mathlib ) \
   LROT_TABENTRY( utf8, utf8 ) \
+  LROT_TABENTRY( LFS, LFS ) \
   LROT_TABENTRY( ROM, rotables )
 
 #define LROT_LIB_ENTRIES \

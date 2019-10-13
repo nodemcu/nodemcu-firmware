@@ -474,7 +474,6 @@ LUA_API KeyCache *(lua_getcache) (int cl);
 LUA_API int (lua_getstrings) (lua_State *L, int opt);
 LUA_API int (lua_freeheap) (void);
 
-LUAI_FUNC void luaN_init (lua_State *L);
 LUAI_FUNC int  luaN_flashSetup (lua_State *L);
 LUAI_FUNC int  luaN_reload_reboot (lua_State *L);
 LUAI_FUNC int  luaN_index (lua_State *L);
@@ -488,7 +487,7 @@ LUAI_FUNC int  luaN_index (lua_State *L);
 typedef struct Proto Proto;
 
 #ifdef DEVELOPMENT_USE_GDB
-LUALIB_API void luaL_dbgbreak(void);
+LUALIB_API void lua_debugbreak(void);
 #define ASSERT(s) if (!(s)) {();}
 #else
 #define ASSERT(s)

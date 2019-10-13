@@ -41,10 +41,14 @@
 ** a macro to help the creation of a unique random seed when a state is
 ** created; the seed is used to randomize hashes.
 */
-#if defined(LUA_USE_ESP8266)
-#define luai_makeseed()	(0u)
-#else
 #if !defined(luai_makeseed)
+#if defined(LUA_USE_ESP)
+static inline unsigned int luai_makeseed(void) {
+  unsigned int r;
+  asm volatile("rsr %0, ccount" : "=r"(r));
+  return r;
+}
+#else
 #include <time.h>
 #define luai_makeseed()		cast(unsigned int, time(NULL))
 #endif
@@ -200,6 +204,7 @@ static void init_registry (lua_State *L, global_State *g) {
 }
 
 
+LUAI_FUNC int luaN_init (lua_State *L, int hook);
 /*
 ** open parts of the state that may cause memory-allocation errors.
 ** ('g->version' != NULL flags that the state was completely build)
@@ -209,6 +214,7 @@ static void f_luaopen (lua_State *L, void *ud) {
   UNUSED(ud);
   stack_init(L, L);  /* init stack */
   init_registry(L, g);
+  luaN_init(L, 1);   /* optionally map RO string table */
   luaS_init(L);
   luaT_init(L);
   luaX_init(L);
@@ -253,12 +259,12 @@ static void close_state (lua_State *L) {
     luai_userstateclose(L);
   luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
   freestack(L);
-#ifdef LUA_ENABLE_TEST
-  if (L == L0)
+  if (L == L0) {
     (*g->frealloc)(g->ud, g->cache, KEYCACHE_N * sizeof(KeyCacheLine), 0);
-#endif
+    L0 = NULL;  /* so reopening state initialises properly */
+  }
   lua_assert(gettotalbytes(g) == sizeof(LG));
-  (*g->frealloc)(g->ud, fromstate(L), sizeof(LG), 0);  /* free main block */
+  (*g->frealloc)(g->ud, fromstate(L), sizeof(LG), 0); /* free main block */
 }
 
 
@@ -325,8 +331,8 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->frealloc = f;
   g->ud = ud;
   g->mainthread = L;
-  g->seed = makeseed(L);
-  g->gcrunning = 0;  /* no GC while building state */
+  g->seed = makeseed(L);            /* overwritten by LFS value if LFS loaded */
+  g->gcrunning = 0;                             /* no GC while building state */
   g->GCestimate = 0;
   g->strt.size = g->strt.nuse = 0;
   g->strt.hash = NULL;
@@ -345,13 +351,11 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->gcfinnum = 0;
   g->gcpause = LUAI_GCPAUSE;
   g->gcstepmul = LUAI_GCMUL;
-#ifdef LUA_USE_ESP
   g->ROstrt.size = 0;
   g->ROstrt.nuse = 0;
   g->ROstrt.hash = NULL;
-  g->ROpvmain = NULL;
-  g->LFSsize = 0;
-#endif
+  setnilvalue(&g->LFStable);
+  g->l_LFS = NULL;
 #ifdef LUA_ENABLE_TEST
   if (L0) { /* This is a second state */
     g->cache=G(L0)->cache;

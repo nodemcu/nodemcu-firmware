@@ -905,4 +905,6 @@ union luai_Cast { double l_d; long l_l; };
 #error "Pipes not supported NodeMCU firmware"
 #endif
 
+#define LUA_DEBUG_HOOK luaL_dbgbreak
+
 #endif

@@ -83,8 +83,8 @@ typedef LUAI_UACNUMBER l_uacNumber;
 typedef LUAI_UACINT l_uacInt;
 
 #if defined(DEVELOPMENT_USE_GDB) && !defined(lua_assert)
-extern void (lua_dbgbreak)(void);
-# define lua_assert(c) ((c) ? (void) 0 : lua_dbgbreak())
+extern void (lua_debugbreak)(void);
+# define lua_assert(c) ((c) ? (void) 0 : lua_debugbreak())
 #endif
 
 /* internal assertions for in-house debugging */

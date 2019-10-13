@@ -622,7 +622,7 @@ if not _soft then
   assert(os.remove(file))
   x = nil; y = nil
 end
-
+_port = true  -- NodeMCU
 if not _port then
   local progname
   do  -- get name of running executable

@@ -189,8 +189,11 @@ static int writer (lua_State *L, const void *b, size_t size, void *B) {
 
 static int str_dump (lua_State *L) {
   luaL_Buffer b;
-  int strip = lua_toboolean(L, 2);
+  int strip = lua_tointeger(L, 2);
+  if (lua_isboolean(L, 2) && lua_toboolean(L, 2))
+    strip = 2;
   luaL_checktype(L, 1, LUA_TFUNCTION);
+  luaL_argcheck(L, 3 > (unsigned)(strip), 1, "strip out of range");
   lua_settop(L, 1);
   luaL_buffinit(L,&b);
   if (lua_dump(L, writer, &b, strip) != 0)

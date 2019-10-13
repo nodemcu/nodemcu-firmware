@@ -10,7 +10,8 @@
 
 #include <stdlib.h>
 
-/* test Lua with no compatibility code */
+
+#if 0  /* test Lua with compatibility code */
 #undef LUA_COMPAT_MATHLIB
 #undef LUA_COMPAT_IPAIRS
 #undef LUA_COMPAT_BITLIB
@@ -22,7 +23,7 @@
 #undef LUA_COMPAT_LOADSTRING
 #undef LUA_COMPAT_MAXN
 #undef LUA_COMPAT_MODULE
-
+#endif
 
 #define LUA_DEBUG
 

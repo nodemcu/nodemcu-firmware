@@ -658,36 +658,37 @@ LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
 ** =======================================================
 */
 
-typedef struct LoadF {
-  int n;  /* number of pre-read characters */
 #ifdef LUA_CROSS_COMPILER
-  FILE *f;  /* file being read */
-#else
-  int f;  /* file being read */
-#endif
-  char buff[BUFSIZ];  /* area for reading file */
-} LoadF;
-
-#ifdef LUA_CROSS_COMPILER
+#  define file(f) FILE *f
 #  define freopen_bin(f,fn) freopen(f,"rb",fn)
 #  define read_buff(b,f) fread(b, 1, sizeof (b), f)
-#else
+#else /* map stdio API and macros to vfs */
+#  undef feof
+#  undef fopen
+#  undef getc
+#  undef ungetc
+#  define file(f)   int f
 #  define strerror(n) ""
-#undef feof
 #  define feof(f)        vfs_eof(f)
-#undef fopen
 #  define fopen(f, m)    vfs_open(f, m)
 #  define freopen_bin(fn,f) ((void) vfs_close(f), vfs_open(fn, "r"))
-#undef getc
 #  define getc(f)        vfs_getc(f)
-#undef ungetc
 #  define ungetc(c,f)    vfs_ungetc(c, f)
 #  define read_buff(b,f) vfs_read(f, b, sizeof (b))
 #endif
+#define LAUXLIB_TYPE 0
+typedef struct LoadF {
+  int type;
+  int n;  /* number of pre-read characters */
+  file(f);  /* file being read */
+  char buff[BUFSIZ];  /* area for reading file */
+} LoadF;
 
+#include "llimits.h"
 static const char *getF (lua_State *L, void *ud, size_t *size) {
   LoadF *lf = (LoadF *)ud;
   (void)L;  /* not used */
+  lua_assert(lf->type == LAUXLIB_TYPE);
   if (lf->n > 0) {  /* are there pre-read characters to be read? */
     *size = lf->n;  /* return them (chars already in buffer) */
     lf->n = 0;  /* no more pre-read characters */
@@ -765,6 +766,7 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
     lf.f = fopen(filename, "r");
     if (!lf.f) return errfile(L, "open", fnameindex);
   }
+  lf.type = 0;
   if (skipcomment(&lf, &c))  /* read initial portion */
     lf.buff[lf.n++] = '\n';  /* add line to correct line numbers */
   if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */

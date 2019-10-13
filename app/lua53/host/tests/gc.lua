@@ -180,14 +180,13 @@ local function dosteps (siz)
 end
 
 collectgarbage"stop"
-
+--[[TODO NodeMCU GC configuration non-default
 if not _port then
   -- test the "size" of basic GC steps (whatever they mean...)
   assert(dosteps(0) > 10)
   assert(dosteps(10) < dosteps(2))
 end
 
---[[TODO
 -- collector should do a full collection with so many steps
 assert(dosteps(20000) == 1)
 assert(collectgarbage("step", 20000) == true)

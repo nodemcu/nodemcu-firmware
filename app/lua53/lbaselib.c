@@ -9,7 +9,6 @@
 
 #include "lprefix.h"
 
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -454,11 +453,11 @@ static int luaB_tostring (lua_State *L) {
 static int luaB_unpack (lua_State *L) {
   int n = lua_gettop(L);  /* number of elements to pack */
   lua_getglobal(L, "table");
-  lua_getfield(L, -1, "pack");
+  lua_getfield(L, -1, "unpack");
   lua_insert(L, 1);
-  lua_settop(L, n+1);
-  lua_call(L, n, 1);
-  return 1;
+  lua_pop(L, 1);
+  lua_call(L, n, LUA_MULTRET);
+  return lua_gettop(L);
 }
 #endif
 

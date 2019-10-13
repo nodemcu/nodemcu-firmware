@@ -359,7 +359,7 @@ assert((function () return nil end)(4) == nil)
 assert((function () local a; return a end)(4) == nil)
 assert((function (a) return a end)() == nil)
 
-
+--[==[  NodeMCU code formats are different
 print("testing binary chunks")
 do
   local header = string.pack("c4BBc6BBBBBj",
@@ -395,6 +395,6 @@ do
   end
   assert(assert(load(c))() == 10)
 end
-
+]==]
 print('OK')
 return deep
