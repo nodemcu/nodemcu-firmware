@@ -63,7 +63,7 @@ A new tag is created every time `dev` is merged back to `master`. They are liste
 
 See [https://nodemcu.readthedocs.io/en/master/en/support/](https://nodemcu.readthedocs.io/en/master/en/support/).
 
-# License
+## License
 
 [MIT](https://github.com/nodemcu/nodemcu-firmware/blob/master/LICENSE) © [zeroday](https://github.com/NodeMCU)/[nodemcu.com](http://nodemcu.com/index_en.html)
 
