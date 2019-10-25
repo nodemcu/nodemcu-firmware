@@ -242,7 +242,9 @@ extern void LUA_DEBUG_HOOK (void);
 #ifdef LUA_CROSS_COMPILER
 extern void luaL_assertfail(const char *file, int line, const char *message);
 #define lua_assert(x)    ((x) ? (void) 0 : luaL_assertfail(__FILE__, __LINE__, #x))
+#else
 #endif
+#define lua_assert(x)    ((void) (x))
 #endif
 #endif
 

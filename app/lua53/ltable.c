@@ -716,10 +716,10 @@ int luaH_isdummy (const Table *t) { return isdummy(t); }
 ** addr selects the cache line.  The line's slots are then scanned for a
 ** hit.
 **
-** Unlike the standard hast which uses a prime line count therefore requires
+** Unlike the standard hash which uses a prime line count therefore requires
 ** the use of modulus operation which is expensive on an IoT processor
-** without H/W divide.  This hash is power of 2 based which might not be
-** quite so uniform but can be calcuated without using H/W-based instructions.
+** without H/W divide.  This hash is power of 2 based which might not be quite
+** so uniform but can be calculated without using H/W-based instructions.
 **
 ** If a match is found and the table addresses match, then this entry is
 ** probed first. In practice the hit-rate here is over 99% so the code
@@ -746,7 +746,7 @@ static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos)
     return luaO_nilobject;
 
   l = getshrlen(key);
-  /* scan the ROTable lookaside cache and return if hit found */
+  /* scan the ROTable key cache and return if hit found */
   for (i = 0; i < KEYCACHE_M; i++) {
     int cl_ndx = cl[i] >> NDX_SHFT;
     if ((((size_t)t - cl[i]) & ADDR_MASK) == 0 && cl_ndx < tl &&
@@ -756,34 +756,37 @@ static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos)
       return &e[cl_ndx].value;
     }
   }
-
  /*
-  * A lot of search misses are metavalues, but tables typically only have at
-  * most a couple of them, so these are always put at the front of the table
-  * in ascending order and the metavalue scan short circuits using a straight
-  * strcmp()
+  * In practice most table scans are from a table miss due to the key cache
+  * short-circuiting almost all table hits. ROTable keys can be unsorted
+  * because of legacy compatibility, so the search must use a sequential
+  * equality match. 
+  *
+  * The masked name4 comparison is a safe 4-byte comparison for all supported
+  * NodeMCU hosts and targets; It generate fast efficient access that avoids
+  * unaligned exceptions and costly strcmp() except for a last hit validation.
+  * However, this is ENDIAN SENSITIVE which is validate during initialisation.
+  * 
+  * The majority of search misses are for metavalues (keys starting with __),
+  * so all metavalues if any must be at the front of each entry list.
   */
   lu_int32 name4 = *(lu_int32 *)strkey;
-  if (*(char*)&name4  == '_') {
-    for(i = 0; i < tl; i++) {
-      j = strcmp(e[i].key, strkey);
-      if (j>=0)
-        break;
+  lu_int32 mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
+  lua_assert(*(int*)"abcd" == 0x64636261);
+#define eq4(s)   (((*(lu_int32 *)s ^ name4) & mask4) == 0)
+#define ismeta(s) ((*(lu_int32 *)s & 0xffff) == *(lu_int32 *)"__\0")
+
+  if (ismeta(&name4)) {
+    for(i = 0; i < tl && ismeta(e[i].key); i++) {
+      if (eq4(e[i].key) && !strcmp(e[i].key, strkey)) {
+        j = 0; break;
+      }            
     }
   } else {
- /*
-  * Ordinary (non-meta) keys can be unsorted.  This is for legacy compatiblity,
-  * plus misses are pretty rare in this case.  The masked name4 comparison is
-  * safe 4-byte comparison that nearly always avoids the more costly strcmp()
-  * for an actual hit validation.
-  */
-    lu_int32 mask4 = l > 2 ? (~0u) : (~0u)>>((3-l)*8);
     for(i = 0; i < tl; i++) {
-      if (((*(lu_int32 *)e[i].key ^ name4) & mask4) != 0)
-        continue;
-      j = strcmp(e[i].key, strkey);
-      if (j==0)
-        break;
+      if (eq4(e[i].key) && !strcmp(e[i].key, strkey)) {
+        j = 0; break;
+      }            
     }
   }
   if (j)

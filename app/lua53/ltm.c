@@ -34,21 +34,35 @@ LUAI_DDEF const char *const luaT_typenames_[LUA_TOTALTAGS] = {
 };
 
 
+static const char *const luaT_eventname[] = {  /* ORDER TM */
+  "__index", "__newindex",
+  "__gc", "__mode", "__len", "__eq",
+  "__add", "__sub", "__mul", "__mod", "__pow",
+  "__div", "__idiv",
+  "__band", "__bor", "__bxor", "__shl", "__shr",
+  "__unm", "__bnot", "__lt", "__le",
+  "__concat", "__call"
+};
+
+
 void luaT_init (lua_State *L) {
-  static const char *const luaT_eventname[] = {  /* ORDER TM */
-    "__index", "__newindex",
-    "__gc", "__mode", "__len", "__eq",
-    "__add", "__sub", "__mul", "__mod", "__pow",
-    "__div", "__idiv",
-    "__band", "__bor", "__bxor", "__shl", "__shr",
-    "__unm", "__bnot", "__lt", "__le",
-    "__concat", "__call"
-  };
   int i;
   for (i=0; i<TM_N; i++) {
     G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
     luaC_fix(L, obj2gco(G(L)->tmname[i]));  /* never collect these names */
   }
+}
+
+#define N_EVENTS sizeof(luaT_eventname)/sizeof(*luaT_eventname)
+#define N_TYPES sizeof(luaT_typenames_)/sizeof(*luaT_typenames_)
+
+/* Access method to expose luaT_fixed strings */
+const char *luaT_getstr (unsigned int i) {
+  if (i < N_EVENTS)
+    return luaT_eventname[i];
+  if (i < N_EVENTS + N_TYPES)
+    return luaT_typenames_[i - N_EVENTS];
+  return NULL;
 }
 
 

@@ -823,8 +823,21 @@ static int str_format (lua_State *L) {
   return 1;
 }
 
+static int str_format2 (lua_State *L) {
+  if (lua_type(L, 2) == LUA_TTABLE) {
+    int i,n=lua_rawlen(L,2);
+    lua_settop(L,2);
+    for (i = 1; i <= n; i++)
+      lua_rawgeti(L, 2, i);
+    lua_remove(L, 2);
+  }
+  return str_format(L);
+}
+
+
 LROT_BEGIN(strlib, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY( __index, strlib )
+  LROT_FUNCENTRY( __mod, str_format2 )
   LROT_FUNCENTRY( byte, str_byte )
   LROT_FUNCENTRY( char, str_char )
   LROT_FUNCENTRY( dump, str_dump )

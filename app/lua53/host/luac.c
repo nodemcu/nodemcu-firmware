@@ -9,6 +9,7 @@
 
 #include "lprefix.h"
 
+#include <alloca.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -152,15 +153,16 @@ static int doargs(int argc, char *argv[]) {
   return i;
 }
 
-static TString *corename(lua_State *L, const TString *filename) {
+static const char *corename(lua_State *L, const TString *filename, int *len) {
   const char *fn = getstr(filename) + 1;
   const char *s = strrchr(fn, '/');
   if (!s) s = strrchr(fn, '\\');
   s = s ? s + 1 : fn;
   while ( *s == '.') s++;
   const char *e = strchr(s, '.');
-  int l = e ? e - s : strlen(s);
-  return l ? luaS_newlstr(L, s, l) : luaS_new(L, fn);
+  if (len)
+    *len = e ? e - s : strlen(s);
+  return s;
 }
 
 /*
@@ -203,8 +205,12 @@ static const Proto *combine(lua_State *L, int n, int type) {
       */
       luaM_reallocvector(L, f->k, f->sizek, n+1, TValue);
       f->sizek        = n + 1;
-      for (i = 0; i < n; i++)
-        setsvalue2n(L,f->k+i,corename(L, f->p[i]->source));
+      for (i = 0; i < n; i++) {
+        int len;
+        const char *name = corename(L, f->p[i]->source, &len);
+        TString* sname = luaS_newlstr(L, name, len);
+        setsvalue2n(L, f->k+i, sname);      
+      }
       setivalue(f->k+n, (lua_Integer) time(NULL));
     }
     return f;
@@ -242,9 +248,32 @@ static int dofile (lua_State *L, const char *name) {
   return status;
 }
 
+/*
+** This function is an inintended consequence of constraints in ltable.c 
+** rotable_findentry().  The file list generates a ROTable in LFS and the
+** rule for ROTables is that metavalue entries must be at the head of the
+** ROTableentry list so argv file names with basenames starting with "__" 
+** must be head of the list.  This is a botch. Sorry.
+*/
+static void reorderfiles(lua_State *L, int argc, char **list, char **argv) {
+  int i, j;
+  for (i = 0; i < argc; i++ ) {
+    TString *file = luaS_new(L,argv[i]);
+    if (strcmp("__", corename(L, file, NULL))) {
+      list[i] = argv[i]; /* add to the end of the new list */
+    } else {
+      for (j = 0; j < i; j++)
+        list[j+1] = list[j];
+      list[0] = argv[i];  /* add to the start of the new list */
+    }
+  }
+}
+
+
 static int pmain(lua_State *L) {
   int argc = (int) lua_tointeger(L, 1);
   char **argv = (char **) lua_touserdata(L, 2);
+  char **filelist = alloca(argc * sizeof(char *));
   const Proto *f;
   int i, status;
   if (!lua_checkstack(L, argc + 1))
@@ -261,10 +290,12 @@ static int pmain(lua_State *L) {
   }
   if (argc == 0)
     return 0;
+  reorderfiles(L, argc, filelist, argv);
   for (i = 0; i < argc; i++) {
-    const char *filename = IS("-") ? NULL : argv[i];
+    const char *filename = IS("-") ? NULL : filelist[i];
     if (luaL_loadfile(L, filename) != LUA_OK)
       fatal(lua_tostring(L, -1));
+//TODO: if strip = 2, replace proto->source by basename
   }
   f = combine(L, argc + (execute ? 1 : 0), lookup);
   if (listing) luaU_print(f, listing > 1);

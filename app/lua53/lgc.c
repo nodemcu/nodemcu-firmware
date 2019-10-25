@@ -193,8 +193,9 @@ void luaC_upvalbarrier_ (lua_State *L, UpVal *uv) {
 
 void luaC_fix (lua_State *L, GCObject *o) {
   global_State *g = G(L);
-  if((getmarked(o) & WHITEBITS)==0)
-    return;
+  lu_byte marked = getmarked(o);
+  if((marked & WHITEBITS)==0 || (marked & bitmask(LFSBIT)))
+    return; /* no point in trying to fix an object in LFS */
   lua_assert(g->allgc == o);  /* object must be 1st in 'allgc' list! */
   white2gray(o);  /* they will be gray forever */
   g->allgc = o->next;  /* remove object from 'allgc' list */
@@ -236,6 +237,10 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
 */
 static void reallymarkobject (global_State *g, GCObject *o) {
  reentry:
+  if (isLFSobj(o))
+    return;  
+  /* DEBUG: Catch any attempt to mark an unmarked LFS object */
+  lua_assert((unsigned)(((char *) o)-((char *) g->l_LFS)) > g->LFSsize);
   white2gray(o);
   switch (gettt(o)) {
     case LUA_TSHRSTR: {
@@ -513,7 +518,8 @@ static lu_mem traverseCclosure (global_State *g, CClosure *cl) {
 */
 static lu_mem traverseLclosure (global_State *g, LClosure *cl) {
   int i;
-  markobjectN(g, cl->p);  /* mark its prototype */
+  if (!isLFSobj(cl->p))
+    markobjectN(g, cl->p);  /* mark its prototype */
   for (i = 0; i < cl->nupvalues; i++) {  /* mark its upvalues */
     UpVal *uv = cl->upvals[i];
     if (uv != NULL) {

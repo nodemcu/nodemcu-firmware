@@ -107,9 +107,9 @@ LUAI_FUNC int luaN_flashSetup (lua_State *L);
 LUAI_FUNC int  luaN_reload_reboot (lua_State *L);
 LUAI_FUNC int  luaN_index (lua_State *L);
 
-LUAI_FUNC char *luaN_writeFlash(void *data, const void *rec, size_t n);
-LUAI_FUNC void luaN_flushFlash(void *);
-LUAI_FUNC void luaN_setFlash(void *, unsigned int o);
+LUAI_FUNC char *luaN_writeFlash (void *data, const void *rec, size_t n);
+LUAI_FUNC void luaN_flushFlash (void *);
+LUAI_FUNC void luaN_setFlash (void *, unsigned int o);
 
 #endif
 #endif

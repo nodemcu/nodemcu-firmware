@@ -178,6 +178,7 @@ typedef struct global_State {
   stringtable ROstrt;  /* Flash-based hash table for RO strings */
   TValue LFStable;   /* Flash-based Proto main */
   LFSHeader *l_LFS;  /* Lua Flash Store header */
+  unsigned int LFSsize; /* size of LFS partition */
   KeyCacheLine *cache;  /* cache for strings in API */
 } global_State;
 

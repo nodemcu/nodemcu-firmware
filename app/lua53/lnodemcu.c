@@ -21,9 +21,125 @@
 
 #ifdef LUA_USE_ESP
 #include "platform.h"
+#include "user_interface.h"
 #include "vfs.h"
 #endif
 
+/*
+** This is a mixed bag of NodeMCU additions broken into the following sections:
+**    *  POSIX vs VFS file API abstraction
+**    *  Emulate Platform_XXX() API
+**    *  ESP and HOST lua_debugbreak() test stubs
+**    *  NodeMCU lua.h API extensions
+**    *  NodeMCU LFS Table emulator
+**    *  NodeMCU bootstrap to set up and to reimage LFS resources
+**
+** Just search down for //== or ==// to flip through the sections.
+*/
+
+#define byte_addr(p) cast(char *,p)
+//== Wrap POSIX and VFS file API =============================================//
+#ifdef LUA_USE_ESP
+#  define l_file(f)   int f
+#  define l_open(f)   vfs_open(f, "r")
+#  define l_close(f)  vfs_close(f)
+#  define l_feof(f)   vfs_eof(f)
+#  define l_read(f,b) vfs_read(f, b, sizeof (b))
+#  define l_rewind(f) vfs_lseek(f, 0, VFS_SEEK_SET)
+#else
+#  define l_file(f)   FILE *f
+#  define l_open(n)   fopen(n,"rb")
+#  define l_close(f)  fclose(f)
+#  define l_feof(f)   feof(f)
+#  define l_read(f,b) fread(b, 1, sizeof (b), f)
+#  define l_rewind(f) rewind(f)
+#endif
+
+//== Emulate Platform_XXX() API ==============================================//
+#ifdef LUA_USE_ESP
+
+extern void dbg_printf(const char *fmt, ...);                // DEBUG
+#undef printf
+#define printf(...) dbg_printf(__VA_ARGS__)                  // DEBUG
+
+#define FLASH_PAGE_SIZE INTERNAL_FLASH_SECTOR_SIZE
+/* Erasing the LFS invalidates ESP instruction cache,  so doing a block 64Kb */
+/* read is the simplest way to flush the icache, restoring cache coherency */
+#define flush_icache(F) \
+  UNUSED(memcmp(F->addr, F->addr+(0x8000/sizeof(*F->addr)), 0x8000));
+#define unlockFlashWrite()
+#define lockFlashWrite()
+ 
+#else // LUA_USE_HOST
+
+#include<stdio.h>                                             // DEBUG
+
+
+/*
+** The ESP implementation use a platform_XXX() API to provide a level of 
+** H/W abstraction.  The following functions and macros emulate a subset
+** of this API for the host environment.
+*/
+void *LFSregion = NULL;
+extern char *LFSimageName;
+
+#define PLATFORM_RCR_FLASHLFS  4
+#define LFS_SIZE         0x40000
+#define FLASH_PAGE_SIZE   0x1000
+#define FLASH_BASE       0x90000           /* Some 'Random' but typical value */
+
+#ifdef __unix__       
+/* On POSIX systems we can toggle the "Flash" write attribute */
+#include <sys/mman.h>
+#define aligned_malloc(a,n) posix_memalign(&a, FLASH_PAGE_SIZE, (n))
+#define unlockFlashWrite() mprotect(LFSregion, LFS_SIZE, PROT_READ| PROT_WRITE)
+#define lockFlashWrite() mprotect(LFSregion, LFS_SIZE, PROT_READ) 
+#else
+#define aligned_malloc(a,n) ((a = malloc(n)) == NULL)
+#define unlockFlashWrite()
+#define lockFlashWrite()
+#endif
+
+#define platform_rcr_write(id,rec,l) (128)
+#define platform_flash_phys2mapped(n) \
+    (byte_addr(LFSregion) + (n) - FLASH_BASE)
+#define platform_flash_mapped2phys(n) \
+    ((byte_addr((n)) - byte_addr(LFSregion)) + FLASH_BASE)
+#define platform_flash_get_sector_of_address(n) ((n)>>12)
+#define platform_rcr_delete(id) LFSimageName = NULL
+#define platform_rcr_read(id,s) \
+  (*s = LFSimageName, (LFSimageName) ? strlen(LFSimageName) : ~0);
+
+static lu_int32 platform_flash_get_partition (lu_int32 part_id, lu_int32 *addr){
+  lua_assert(part_id == NODEMCU_LFS0_PARTITION);
+  if (!LFSregion) {
+    lua_assert(!aligned_malloc(LFSregion, LFS_SIZE));
+    memset(LFSregion, ~0, LFS_SIZE);
+    lockFlashWrite();
+  }
+  *addr = FLASH_BASE;                                          
+  return LFS_SIZE;
+}
+
+static void platform_flash_erase_sector(lu_int32 i) {
+/* DEBUG */ lua_assert (i >= 144 && i < 208); 
+  unlockFlashWrite();
+  memset(cast(char *,LFSregion) + i*FLASH_PAGE_SIZE, ~(0), FLASH_PAGE_SIZE);
+  lockFlashWrite();
+}
+
+static void platform_s_flash_write(const void *from, lu_int32 to, lu_int32 len) {  
+  lua_assert(to >= 0x90000 && to + len < 0xb0000);  /* DEBUG */
+  unlockFlashWrite();
+  memcpy(cast(char *,LFSregion) + (to-FLASH_BASE), from, len);
+  lockFlashWrite();
+}
+
+#define flush_icache(F)   /* not needed */
+
+#endif
+
+//== ESP and HOST lua_debugbreak() test stubs ================================//
 
 #ifdef DEVELOPMENT_USE_GDB
 /*
@@ -43,7 +159,7 @@ extern void gdbstub_redirect_output(int);
 LUALIB_API void lua_debugbreak(void) {
 #ifdef LUA_USE_HOST
   /* allows debug backtrace analysis of assert fails */
-  lua_writestring(" lua_debugbreak", sizeof(" lua_debugbreak")-1);
+  lua_writestring(" lua_debugbreak ", sizeof(" lua_debugbreak ")-1);
 #else
   static int repeat_entry = 0;
   if  (repeat_entry == 0) {
@@ -55,7 +171,11 @@ LUALIB_API void lua_debugbreak(void) {
   asm("break 0,0" ::);
 #endif
 }
+#else
+#define lua_debugbreak() (void)(0)
 #endif
+
+//== NodeMCU lua.h API extensions ============================================//
 
 LUA_API int lua_freeheap (void) {
 #ifdef LUA_USE_HOST
@@ -125,259 +245,17 @@ LUA_API void lua_createrotable (lua_State *L, ROTable *t,
   t->entry     = cast(ROTable_entry *, e);
 }
 
+//== NodeMCU LFS Table emulator ==============================================//
 
-/*
-** Functions to set up and reimage LFS resources. This processing uses 2 init
-** hooks during the Lua startup. The first is called early in the Lua state
-** setup to initialize the LFS if present. The second is only used to rebuild
-** the LFS region; this requires the full Lua environment to be in place, so
-** this second hook is immediately before processing LUA_INIT.
-**
-** An application library initiates an LFS rebuild by writing a FLASHLFS
-** message to the Reboot Config Record area (RCR), and then restarting the
-** processor.  This RCR record is read during startup by the 2nd hook. The
-** content is the name of the Lua LFS image file to be loaded. If present then
-** the LFS reload process is initiated instead of LUA_INIT.  This uses lundump
-** functions to load the components directly into the LFS region.
-**
-** FlashState used to share context with the low level lua_load write routines
-** is passed as a ZIO data field.  Note this is only within the phase
-** processing and not across phases.
-*/
+static int lfs_func (lua_State* L);
 
+LROT_BEGIN(LFS_meta, NULL, LROT_MASK_INDEX)
+  LROT_FUNCENTRY( __index, lfs_func)
+LROT_END(LFS_meta, NULL, LROT_MASK_INDEX)
 
+LROT_BEGIN(LFS, LROT_TABLEREF(LFS_meta), 0)
+LROT_END(LFS, LROT_TABLEREF(LFS_meta), 0)
 
-#define getfield(L,t,f) \
-  lua_getglobal(L, #t); \
-  luaL_getmetafield( L, 1, #f );\
-  lua_remove(L, -2);
-
-/*
- * Wrap POSIX and VFS file API to make code common
- */
-#ifdef LUA_USE_ESP
-# define l_file(f)   int f
-# define l_open(f)   vfs_open(f, "r")
-# define l_close(f)  vfs_close(f)
-# define l_feof(f)   vfs_eof(f)
-# define l_read(f,b) vfs_read(f, b, sizeof (b))
-# define l_rewind(f) vfs_lseek(f, 0, VFS_SEEK_SET)
-#else
-# define l_file(f)   FILE *f
-# define l_open(n)   fopen(n,"rb")
-# define l_close(f)  fclose(f)
-# define l_feof(f)   feof(f)
-# define l_read(f,b) fread(b, 1, sizeof (b), f)
-# define l_rewind(f) rewind(f)
-#endif
-
-typedef struct LFSflashState {
-  lua_State  *L;
-  LFSHeader   hdr;
-  l_file(f);
-  const char *LFSfileName;
-  size_t     *addr;
-  lu_int32    oNdx;               /* in size_t units */
-  lu_int32    oChunkNdx;          /* in size_t units */
-  size_t      oBuff[BUFSIZ];
-  lu_byte     inBuff[BUFSIZ];
-  lu_int32    inNdx;              /* in bytes */
-  lu_int32    addrPhys;
-  lu_int32    startSector;
-  lu_int32    size;
-  stringtable ROstrt;
-  GCObject   *pLTShead;
-} LFSflashState;
-
-
-/* This conforms to the ZIO lua_Reader spec, hence the L parameter */
-static const char *readF (lua_State *L, void *ud, size_t *size) {
-  UNUSED(L);
-  LFSflashState *F = cast(LFSflashState *, ud);
-  if (F->inNdx > 0) {
-    *size = F->inNdx;
-    F->inNdx = 0;
-  } else {
-    if (l_feof(F->f)) return NULL;
-    *size = l_read(F->f, F->inBuff) ;  /* read block */
-  }
-  return cast(const char *,F->inBuff);
-}
-
-
-#ifdef LUA_USE_HOST //==========================================================
-/*
-** The luaN_init hooks are designed to allow the NodeMCU firmware to connect
-** the LFS region during startup.  A simple load-and-go LFS capability has
-** been added to luac.cross for testing purposes, so the following platform_XXX
-** stubs emulate the H/W abstraction layer for the ESP SoCs to enable this
-** code to run in a host environment.
-*/
-#define PLATFORM_RCR_FLASHLFS 0
-#define LFS_SIZE 0x20000
-/*static*/ size_t LFSregion[LFS_SIZE/sizeof(size_t)];
-extern char *LFSimageName;
-static lu_int32 platform_rcr_read (uint8_t rec_id, void **rec) {
-  UNUSED(rec_id);
-  *rec = LFSimageName;
-  return (LFSimageName) ? strlen(LFSimageName) : 0;
-}
-static lu_int32 platform_flash_get_partition (lu_int32 part_id, lu_int32 *addr){
-  UNUSED(part_id);
-  *addr = 0x100000;  /* some arbitrary figure */
-  return sizeof(LFSregion);
-}
-#define platform_rcr_write(id,rec,l) (128)
-#define platform_flash_phys2mapped(n) LFSregion
-#define platform_flash_mapped2phys(n) ((n)&0x100000)
-#define platform_flash_get_sector_of_address(n) (n>>12)
-#define platform_rcr_delete(id) LFSimageName = NULL
-#undef NODE_ERR
-#define NODE_ERR(s) fprintf(stderr, s)
-
-static void eraseLFS(LFSflashState *F) {
-  memset(F->addr, ~0, F->size);
-}
-
-LUAI_FUNC void luaN_flushFlash(void *vF) {
-  LFSflashState *F = cast(LFSflashState *, vF);
-  memcpy(F->addr + F->oChunkNdx, F->oBuff, F->oNdx * sizeof(size_t));
-  F->oChunkNdx += F->oNdx;
-  F->oNdx = 0;
-}
-
-#else // LUA_USE_ESP ===========================================================
-
-static void eraseLFS(LFSflashState *F) {
-  int start = F->startSector;
-  int end = F->size / INTERNAL_FLASH_SECTOR_SIZE;
-  int i;
-  for (i = start; i<=start+end; i++)
-    platform_flash_erase_sector(i);
-}
-
-LUAI_FUNC void luaN_flushFlash(LFSflashState *F) {
-  platform_s_flash_write(F->oBuff,
-                         F->addrPhys + F->oChunkNdx*sizeof(size_t),
-                         F->oNdx * sizeof(size_t));
-  F->oChunkNdx += F->oNdx;
-  F->oNdx = 0;
-}
-
-#endif // LUA_USE_ESP/HOST =====================================================
-
-
-LUAI_FUNC char *luaN_writeFlash(void *vF, const void *rec, size_t n) {
-  LFSflashState *F = cast(LFSflashState *, vF);
-  int nw = (n + sizeof(size_t) - 1) / sizeof(size_t);
-  int rem = BUFSIZ - F->oNdx;
-  char *p = cast(char *, F->addr + F->oChunkNdx + F->oNdx);
-
-  if (n==0)
-    return p;
-  while (1) {
-    if (nw > rem) { /* fill the remainder of the oBuff & flush to flash */
-      if (rem)
-        memcpy(F->oBuff+F->oNdx, rec, rem * sizeof(size_t));
-      rec = cast(void *, cast(size_t *, rec) + rem);
-      F->oNdx = BUFSIZ;
-      n  -= rem * sizeof(size_t);
-      nw -= rem;
-      luaN_flushFlash(F);
-    } else {
-      F->oBuff[F->oNdx+nw-1] = 0;
-      memcpy(F->oBuff+F->oNdx, rec, n);
-      F->oNdx += nw;
-      break;
-    }
-  }
-  return p;
-}
-
-
-LUAI_FUNC void  luaN_setFlash(void *F, unsigned int o) {
-  luaN_flushFlash(F);  /* flush the pending write buffer */
-  lua_assert((o & (sizeof(size_t)-1))==0);
-  cast(LFSflashState *,F)->oChunkNdx = o/sizeof(size_t);
-}
-
-
-/*
-** Hook used in Lua Startup to carry out the optional LFS startup processes.
-*/
-LUAI_FUNC int luaN_init (lua_State *L, int hook) {
-  static LFSflashState *F;
-  int n;
-  static LFSHeader *fh;
-  static const char *LFSfileName=NULL;
-  /* Entry 1 is called from lstate.c:f_luaopen() before modules are initialised */
-  if (hook == 1) {
-    F = calloc(sizeof(LFSflashState), 1);
-    n = platform_rcr_read(PLATFORM_RCR_FLASHLFS, cast(void**, &LFSfileName));
-    F->LFSfileName = LFSfileName;
-    F->size = platform_flash_get_partition (NODEMCU_LFS0_PARTITION, &F->addrPhys);
-    if (F->size) {
-      F->addr  = cast(size_t *, platform_flash_phys2mapped(F->addrPhys));
-      F->startSector = (F->addrPhys);
-      fh = cast(LFSHeader *, F->addr);
-      if (n == 0) {
-        /* Set up LFS hooks on normal Entry */
-        if (fh->flash_sig   == FLASH_SIG) {
-          global_State *g = G(L);
-          g->l_LFS       = fh;
-          g->seed        = fh->seed;
-          g->ROstrt.hash = fh->pROhash;
-          g->ROstrt.nuse = fh->nROuse ;
-          g->ROstrt.size = fh->nROsize;
-          sethvalue(L, &g->LFStable, cast(Table *, fh->protoROTable));
-           lua_writestringerror("LFS image %s\n", "loaded");
-        } else {
-          if ((fh->flash_sig != 0 && fh->flash_sig != ~0)) {
-            lua_writestringerror("LFS image %s\n", "corrupted.  Erasing.");
-            eraseLFS(F);
-          }
-        }
-      }
-    }
-    return 0;
-  } else {  /* hook 2 called from protected pmain, so can throw errors. */
-    int status = 0;
-    if (LFSfileName) {                         /* hook == 2 LFS image load */
-      ZIO z;
-      if (!(F->f = l_open(LFSfileName))) {
-        free(F);
-        return luaL_error(L, "cannot open %s", LFSfileName);
-      }
-      luaZ_init(L, &z, readF, F);
-      lua_lock(L);
-      status = luaU_undumpLFS(L, &z);
-      lua_unlock(L);
-      l_close(F->f);
-      free(F);
-      if (status != LUA_OK)
-        lua_error(L);                                        /* rethrow error */
-      platform_rcr_delete(PLATFORM_RCR_FLASHLFS);
-      status = 1;                                     /* return 1 == restart! */
-    } else {                                     /* hook == 2, Normal startup */
-      free(F);
-    }
-    if (fh->flash_sig != FLASH_SIG && fh->flash_sig == ~0){
-      eraseLFS(F);
-      lua_writestringerror("%s\n", "\n*** erasing LFS ***\n");
-    }
-    return status;
-  }
-}
-
-
-// =============================================================================
-LUAI_FUNC int  luaN_reload_reboot (lua_State *L) {
-  return 0;
-}
-
-LUAI_FUNC int  luaN_index (lua_State *L) {
-  return 0;
-}
 
 static int lfs_func (lua_State* L) {           /*T[1] = LFS, T[2] = fieldname */
   const char *name = lua_tostring(L, 2);
@@ -390,13 +268,13 @@ static int lfs_func (lua_State* L) {           /*T[1] = LFS, T[2] = fieldname */
     return 1;
   }
   if (!strcmp(name, "_config")) {
-    lua_Integer ba = cast(lua_Integer, cast(size_t, fh));
+    size_t ba = cast(size_t, fh);
     lua_createtable(L, 0, 3);
-    lua_pushinteger(L, ba);
+    lua_pushinteger(L, cast(lua_Integer, ba));
     lua_setfield(L, -2, "lfs_mapped");
-    lua_pushinteger(L, platform_flash_mapped2phys(ba));
+    lua_pushinteger(L, cast(lua_Integer, platform_flash_mapped2phys(ba)));
     lua_setfield(L, -2, "lfs_base");
-    lua_pushinteger(L, fh->nROsize);
+    lua_pushinteger(L, G(L)->LFSsize);
     lua_setfield(L, -2, "lfs_size");
     return 1;
   } else if (!strcmp(name, "_list")) {
@@ -432,11 +310,245 @@ static int lfs_func (lua_State* L) {           /*T[1] = LFS, T[2] = fieldname */
   return 1;
 }
 
+//== NodeMCU bootstrap to set up and to reimage LFS resources ================//
+/*
+** This processing uses 2 init hooks during the Lua startup. The first is
+** called early in the Lua state setup to initialize the LFS if present. The
+** second is only used to rebuild the LFS region; this requires the Lua
+** environment to be in place, so this second hook is immediately before
+** processing LUA_INIT.
+**
+** An application library initiates an LFS rebuild by writing a FLASHLFS
+** message to the Reboot Config Record area (RCR), and then restarting the
+** processor.  This RCR record is read during startup by the 2nd hook. The
+** content is the name of the Lua LFS image file to be loaded. If present then
+** the LFS reload process is initiated instead of LUA_INIT.  This uses lundump
+** functions to load the components directly into the LFS region.
+**
+** FlashState used to share context with the low level lua_load write routines
+** is passed as a ZIO data field.  Note this is only within the phase
+** processing and not across phases.
+*/
 
-LROT_BEGIN(LFS_meta, NULL, LROT_MASK_INDEX)
-  LROT_FUNCENTRY( __index, lfs_func)
-LROT_END(LFS_meta, NULL, LROT_MASK_INDEX)
 
-LROT_BEGIN(LFS, LROT_TABLEREF(LFS_meta), 0)
-LROT_END(LFS, LROT_TABLEREF(LFS_meta), 0)
+typedef struct LFSflashState {
+  lua_State  *L;
+  LFSHeader   hdr;
+  l_file(f);
+  const char *LFSfileName;
+  size_t     *addr;
+  lu_int32    oNdx;               /* in size_t units */
+  lu_int32    oChunkNdx;          /* in size_t units */
+  size_t     *oBuff;              /* FLASH_PAGE_SIZE bytes */
+  lu_byte    *inBuff;             /* FLASH_PAGE_SIZE bytes */
+  lu_int32    inNdx;              /* in bytes */
+  lu_int32    addrPhys;
+  lu_int32    size;
+  stringtable ROstrt;
+  GCObject   *pLTShead;
+} LFSflashState;
+#define WORDSIZE sizeof(size_t)
+#define WORDS(n) (n + WORDSIZE - 1) / WORDSIZE;
+#define OSIZE (FLASH_PAGE_SIZE/WORDSIZE)
+#define ISIZE (FLASH_PAGE_SIZE)
 
+/* This conforms to the ZIO lua_Reader spec, hence the L parameter */
+static const char *readF (lua_State *L, void *ud, size_t *size) {
+  UNUSED(L);
+  LFSflashState *F = cast(LFSflashState *, ud);
+  if (F->inNdx > 0) {
+    *size = F->inNdx;
+    F->inNdx = 0;
+  } else {
+    if (l_feof(F->f)) return NULL;
+    *size = l_read(F->f, F->inBuff) ;  /* read block */
+  }
+  return cast(const char *,F->inBuff);
+}
+
+static void eraseLFS(LFSflashState *F) {
+  lu_int32 i;
+  lua_writestringerror("\nErasing LFS from flash addr 0x%06x", F->addrPhys);
+  unlockFlashWrite();
+  for (i = 0; i < F->size; i += FLASH_PAGE_SIZE) {
+    lu_int32 s = platform_flash_get_sector_of_address(F->addrPhys + i);
+printf(".");
+    platform_flash_erase_sector(s);
+  }
+  lua_writestringerror(" to 0x%06x\n", F->addrPhys + F->size-1);
+  flush_icache(F);
+  lockFlashWrite();
+}
+
+LUAI_FUNC void  luaN_setFlash(void *F, unsigned int o) {
+  luaN_flushFlash(F);  /* flush the pending write buffer */
+  lua_assert((o & (WORDSIZE-1))==0);
+  cast(LFSflashState *,F)->oChunkNdx = o/WORDSIZE;
+}
+
+LUAI_FUNC void luaN_flushFlash(void *vF) {
+  LFSflashState *F = cast(LFSflashState *, vF);
+  lu_int32 start   = F->addrPhys + F->oChunkNdx*WORDSIZE;
+  lu_int32 size    = F->oNdx * WORDSIZE;
+  lua_assert(start + size < F->addrPhys + F->size); /* is write in bounds? */
+//printf("Flush Buf: %6x (%u)\n", F->oNdx, size);                      //DEBUG
+  platform_s_flash_write(F->oBuff, start, size);
+  F->oChunkNdx += F->oNdx;
+  F->oNdx = 0;
+}
+
+LUAI_FUNC char *luaN_writeFlash(void *vF, const void *rec, size_t n) {
+  LFSflashState *F = cast(LFSflashState *, vF);
+  char *p   = byte_addr(F->addr + F->oChunkNdx + F->oNdx);
+  if (n==0)
+    return p;
+//if (p - (char*)F->addr > 0x7828)  lua_debugbreak();                  //DEBUG
+  
+  while (1) {
+//lu_int32 offset = (lu_int32)(p-(char*)F->addr);
+    int   nw  = WORDS(n);
+    if (F->oNdx + nw > OSIZE) {
+      /* record overflows the buffer so fill buffer, flush and repeat */
+      int rem = OSIZE - F->oNdx;
+      if (rem)
+        memcpy(F->oBuff+F->oNdx, rec, rem * WORDSIZE);
+      rec     = cast(void *, cast(size_t *, rec) + rem);
+      n      -= rem * WORDSIZE;
+      F->oNdx = OSIZE;
+//printf("Flash OP:  %06x %x\n", offset, rem);  //DEBUG
+      luaN_flushFlash(F);
+    } else {
+      /* append remaining record to buffer */
+      F->oBuff[F->oNdx+nw-1] = 0;       /* ensure any trailing odd byte are 0 */
+      memcpy(F->oBuff+F->oNdx, rec, n);
+      F->oNdx += nw;
+//printf("Flash OP:  %06x %x (%u)\n", offset, nw, n);  //DEBUG
+      break;
+    }
+  }
+//int i; for (i=0;i<(rem * WORDSIZE); i++) {printf("%c%02x",i?' ':'.',*((lu_byte*)rec+i));}
+//for (i=0;i<n; i++) printf("%c%02x",i?' ':'.',*((lu_byte*)rec+i));  
+//printf("\n");
+  return p;
+}
+
+
+/*
+** Hook used in Lua Startup to carry out the optional LFS startup processes.
+*/
+LUAI_FUNC int luaN_init (lua_State *L, int hook) {
+  static LFSflashState *F;
+  int n;
+  static LFSHeader *fh;
+  /* Entry 1 is called from lstate.c:f_luaopen() before modules are initialised */
+  if (hook == 1) {
+    size_t Fsize = sizeof(LFSflashState) + OSIZE*WORDSIZE + ISIZE;
+    /* outlining the buffers just makes debugging easier.  Sorry */
+    F = calloc(Fsize, 1);
+    F->oBuff = cast(size_t *, F + 1);
+    F->inBuff = cast(lu_byte *, F->oBuff + OSIZE);
+    n = platform_rcr_read(PLATFORM_RCR_FLASHLFS, cast(void**, &F->LFSfileName));
+    F->size = platform_flash_get_partition (NODEMCU_LFS0_PARTITION, &F->addrPhys);
+    if (F->size) {
+      F->addr  = cast(size_t *, platform_flash_phys2mapped(F->addrPhys));
+      fh = cast(LFSHeader *, F->addr);
+      if (n < 0) {
+        global_State *g = G(L);
+        g->LFSsize     = F->size;
+      /* Set up LFS hooks on normal Entry */
+        if (fh->flash_sig   == FLASH_SIG) {
+          g->l_LFS       = fh;
+          g->seed        = fh->seed;
+          g->ROstrt.hash = fh->pROhash;
+          g->ROstrt.nuse = fh->nROuse ;
+          g->ROstrt.size = fh->nROsize;
+          sethvalue(L, &g->LFStable, cast(Table *, fh->protoROTable));
+           lua_writestringerror("LFS image %s\n", "loaded");
+        } else if ((fh->flash_sig != 0 && fh->flash_sig != ~0)) {
+          lua_writestringerror("LFS image %s\n", "corrupted.");
+          eraseLFS(F);
+        }
+      }
+    } 
+    return 0;
+  } else {  /* hook 2 called from protected pmain, so can throw errors. */
+    int status = 0;
+    if (F->LFSfileName) {                         /* hook == 2 LFS image load */
+      ZIO z;
+     /*
+      * To avoid reboot loops, the load is only attempted once, so we
+      * always deleted the RCR record if we enter this path. Also note
+      * that this load process can throw errors and if so these are
+      * caught by the parent function in lua.c
+      */
+#ifdef DEVELOPMENT_USE_GDB
+/* For GDB builds,  prefixing the filename with ! forces a break in the hook */
+      if (F->LFSfileName[0] == '!') {
+        lua_debugbreak();    
+        F->LFSfileName++;
+      }
+#endif
+      platform_rcr_delete(PLATFORM_RCR_FLASHLFS);
+      if (!(F->f = l_open(F->LFSfileName))) {
+        free(F);
+        return luaL_error(L, "cannot open %s", F->LFSfileName);
+      }
+      eraseLFS(F);
+      luaZ_init(L, &z, readF, F);
+      lua_lock(L);
+      status = luaU_undumpLFS(L, &z);
+      lua_unlock(L);
+      l_close(F->f);
+      free(F);
+      if (status != LUA_OK)
+        lua_error(L);                                        /* rethrow error */
+      status = 1;                                     /* return 1 == restart! */
+    } else {                                     /* hook == 2, Normal startup */
+      free(F);
+    }
+    return status;
+  }
+}
+
+
+// =============================================================================
+#define getfield(L,t,f) \
+  lua_getglobal(L, #t); luaL_getmetafield( L, 1, #f ); lua_remove(L, -2);
+
+LUAI_FUNC int  luaN_reload_reboot (lua_State *L) {
+  int n = 0;
+#ifdef LUA_USE_ESP  
+  size_t l;
+  int off = 0;
+  const char *img = lua_tolstring(L, 1, &l);
+#ifdef DEVELOPMENT_USE_GDB
+  if (*img == '!')   /* For GDB builds, any leading ! is ignored for checking */
+    off = 1;         /* existence. This forces a debug break in the init hook */
+#endif
+  lua_settop(L, 1);
+  lua_getglobal(L, "file");
+  lua_getfield(L, 2, "exists");
+  lua_pushstring(L, img + off);
+  lua_call(L, 1, 1);
+  if (G(L)->LFSsize == 0 || lua_toboolean(L, -1) == 0) {
+    lua_pushstring(L, "No LFS partition allocated");
+    return 1;
+  }
+  n = platform_rcr_write(PLATFORM_RCR_FLASHLFS, img, l+1);/* incl trailing \0 */
+  if (n>0)
+    system_restart();
+#endif
+  lua_pushboolean(L, n>0);
+  return 1;
+}
+
+LUAI_FUNC int  luaN_index (lua_State *L) {
+  lua_settop(L,1);
+  if (lua_isstring(L, 1)){
+    lua_getglobal(L, "LFS");
+    lua_getfield(L, 2, lua_tostring(L,1));
+  } else {
+    lua_pushnil(L);
+  }
+  return 1;
+}

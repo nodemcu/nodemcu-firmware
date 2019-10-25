@@ -13,7 +13,7 @@ extern void output_redirect(const char *str, size_t l);
 #define puts(s)  output_redirect((s), strlen(s))
 
 #define printf(...) do { \
-  unsigned char __printf_buf[BUFSIZ]; \
+  char __printf_buf[BUFSIZ]; \
   sprintf(__printf_buf, __VA_ARGS__); \
   puts(__printf_buf); \
 } while(0)

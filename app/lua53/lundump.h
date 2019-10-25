@@ -11,6 +11,16 @@
 #include "lobject.h"
 #include "lzio.h"
 
+/* These allow a multi=byte flag:1,type:3,data:4 packing in the tt byte */
+#define LUAU_TNIL		    (0<<4)
+#define LUAU_TBOOLEAN		(1<<4)
+#define LUAU_TNUMFLT		(2<<4)
+#define LUAU_TNUMPINT		(3<<4)
+#define LUAU_TNUMNINT		(4<<4)
+#define LUAU_TSTRING		(5<<4)
+#define LUAU_TMASK      (7<<4)
+#define LUAU_DMASK      0x0f
+
 
 /* data to catch conversion errors */
 #define LUAC_DATA	"\x19\x93\r\n\x1a\n"

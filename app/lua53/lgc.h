@@ -79,6 +79,7 @@
 #define WHITE1BIT	1  /* object is white (type 1) */
 #define BLACKBIT	2  /* object is black */
 #define FINALIZEDBIT	3  /* object has been marked for finalization */
+#define LFSBIT   5   /* object is in LFS and is skipped in marking */
 /* bit 7 is currently used by tests (luaL_checkmemory) */
 
 #define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
@@ -100,7 +101,8 @@
 
 #define luaC_white(g)	cast(lu_byte, (g)->currentwhite & WHITEBITS)
 
-
+#define isLFSobj(x)   testbit(getmarked(x), LFSBIT)
+#define setLFSbit(x)  l_setbit((x)->marked, LFSBIT)
 /*
 ** Does one step of collection when debt becomes positive. 'pre'/'pos'
 ** allows some adjustments to be done only when needed. macro

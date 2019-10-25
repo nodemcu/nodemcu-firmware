@@ -222,45 +222,35 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 ** string address as a key).  The cache can contain only zero-
 ** terminated strings, so it is safe to use 'strcmp' to check hits.
 **
-** Note that TStrings and Tables are always at least word aligned, so
-** the lowbit set is used to tag TString entries
+** Note that the cache contains both TStrings and Tables entries but
+** both of these addresses word are always aligned, so the address is
+** a mulitple of size_t.  The lowbit of the address in the cache is 
+** overwritten with a boolean to tag TString entries
 */
 
 #define IS_STRING_ENTRY(e) (e & 1)
 #define TSTRING(e) cast(TString *, ((size_t) e) & (~1u))
 
 TString *luaS_new (lua_State *L, const char *str) {
-  unsigned int i;
+  unsigned int i = point2uint(str) % KEYCACHE_N;  /* hash */
   int j;
-  int l = strlen(str);
   TString *ps;
-  KeyCache *p;
+  KeyCache *p = G(L)->cache[i];
 
-  if (l < sizeof(unsigned) - 1)
-    return luaS_newlstr(L, str, l);
-  i = point2uint(str) % KEYCACHE_N;  /* hash */
-  p = G(L)->cache[i];
   for (j = 0; j < KEYCACHE_M; j++) {
     ps = TSTRING(p[j]);
     /* string cache entries always point to a valid TString */
-    if (IS_STRING_ENTRY(p[j]) &&
-      *(const unsigned *)str == *(const unsigned *) getstr(ps) &&
-      strcmp(str, getstr(ps)) == 0)  /* hit? */
+    if (IS_STRING_ENTRY(p[j]) && strcmp(str, getstr(ps)) == 0)  /* hit? */
       return ps;  /* that is it */
   }
   /* normal route, move out last element inserting new string at fist slot */
   for (j = KEYCACHE_M - 1; j > 0; j--) {
     p[j] = p[j-1];
   }
-  ps = luaS_newlstr(L, str, l);
+  ps = luaS_newlstr(L, str, strlen(str));
   p[0] = STRING_ENTRY(ps);
   return ps;
 }
-#if 0
-#define IS_STRING_ENTRY(e) (e & 1)
-#define STRING_ENTRY(e) (cast(KeyCache, e) & 1);
-#define TSTRING(e) cast(TString *, e & (~1u))
-#endif
 
 /*
 ** Clear API cache of dirty string entries.

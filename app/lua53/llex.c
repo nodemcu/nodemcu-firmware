@@ -74,10 +74,22 @@ void luaX_init (lua_State *L) {
   for (i=0; i<NUM_RESERVED; i++) {
     TString *ts = luaS_new(L, luaX_tokens[i]);
     luaC_fix(L, obj2gco(ts));  /* reserved words are never collected */
-    ts->extra = cast_byte(i+1);  /* reserved word */
+    if (!isLFSobj(ts))         /* if in LFS then this has been done already */
+      ts->extra = cast_byte(i+1);  /* reserved word */
+    else
+      lua_assert(ts->extra == cast_byte(i+1)); /* LFS version should match */
   }
 }
 
+/* Access method to expose luaX_fixed strings */
+const char *luaX_getstr (unsigned int i, int *extra) {
+  if (i == sizeof(luaX_tokens)/sizeof(*luaX_tokens))
+    return NULL;
+  if (extra)
+    *extra = (i<NUM_RESERVED) ? i+1 : 0;
+  return luaX_tokens[i];
+}
+  
 
 const char *luaX_token2str (LexState *ls, int token) {
   if (token < FIRST_RESERVED) {  /* single-byte symbols? */

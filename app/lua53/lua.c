@@ -202,8 +202,6 @@ static int dojob (lua_State *L) {
     lua_remove(L, 2);                               /* and shift down to S[2] */
    } else if (b[0] == '=') {
     /* If firstline and of the format =<expression> */
-
-
     lua_pushfstring(L, "return %s", b+1);
     lua_remove(L, 2);
   }
@@ -249,6 +247,7 @@ static int dojob (lua_State *L) {
 /*
 ** Main body of stand-alone interpreter (called as a posted task).
 */
+extern void system_restart(void);
 static int pmain (lua_State *L) {
   const char *init = LUA_INIT_STRING;
   int status;
@@ -257,8 +256,15 @@ static int pmain (lua_State *L) {
   lua_gc( L, LUA_GCSETMEMLIMIT, 4096 );
   lua_gc(L, LUA_GCRESTART, 0);                 /* restart GC and set EGC mode */
   lua_settop(L, 0);
-  if(luaN_init(L, 2))                    /* Hook for LFS rebuild if requested */
-    return 1;
+  if(luaN_init(L, 2)) {  /* Hook for LFS rebuild if requested */
+   /*
+    * Note restart is the normal path but that hooked load process might 
+    * throw an error which is  reported by the task wrapper. TODO add the
+    * extra cleanup to check that LFS is OK and if not erase.
+    */
+    system_restart();                   
+    return 0; 
+  }
   lua_pushliteral(L, "stdin");
   lua_getglobal(L, "pipe");
   lua_getfield(L, -1, "create");
@@ -271,8 +277,11 @@ static int pmain (lua_State *L) {
   input_setup(LUA_MAXINPUT, get_prompt(L, 1));
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
   print_version(L);
-
-  /* and last of all, kick off application initialisation */
+ /*
+  * And last of all, kick off application initialisation.  Note that if
+  * LUA_INIT_STRING is a file reference and the file system is uninitialised
+  * then attempting the open will trigger a file system format.
+  */
   if (init[0] == '@')
     status = luaL_loadfile(L, init+1);
   else

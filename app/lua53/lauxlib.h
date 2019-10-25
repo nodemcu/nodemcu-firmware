@@ -238,13 +238,11 @@ LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
 #endif
 #endif
 
-/* print an error message */
+/* print an error message. This is a primitive error output */
 #if !defined(lua_writestringerror)
 #ifdef LUA_USE_ESP8266
-#define lua_writestringerror(s,p) do { \
-  char __printf_buf[LUAL_BUFFERSIZE]; \
-  sprintf(__printf_buf, s, p); \
-  lua_writestring(s,strlen(s)); } while(0)
+extern void dbg_printf(const char *fmt, ...);
+#define lua_writestringerror(s,p) dbg_printf((s), (p))
 #else
 #define lua_writestringerror(s,p) (fprintf(stderr, (s), (p)), fflush(stderr))
 #endif

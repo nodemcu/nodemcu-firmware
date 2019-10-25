@@ -354,6 +354,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->ROstrt.size = 0;
   g->ROstrt.nuse = 0;
   g->ROstrt.hash = NULL;
+  g->LFSsize = 0;
   setnilvalue(&g->LFStable);
   g->l_LFS = NULL;
 #ifdef LUA_ENABLE_TEST
