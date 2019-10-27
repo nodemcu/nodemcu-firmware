@@ -62,6 +62,7 @@ pages:
     - 'struct':       'modules/struct.md'
     - 'time':         'modules/time.md'
     - 'tmr':          'modules/tmr.md'
+    - 'touch':        'modules/touch.md'
     - 'u8g2':         'modules/u8g2.md'
     - 'uart':         'modules/uart.md'
     - 'ucg':          'modules/ucg.md'
