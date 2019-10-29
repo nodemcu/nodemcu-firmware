@@ -108,6 +108,10 @@ static const uint8_t owDefaultPower = 0;
 
 static int onewire_rmt_init( uint8_t gpio_num )
 {
+  if(!GPIO_IS_VALID_GPIO(gpio_num)) {
+    return PLATFORM_ERR;
+  }
+
   // acquire an RMT module for TX and RX each
   if ((ow_rmt.tx = platform_rmt_allocate( 1 )) >= 0) {
     if ((ow_rmt.rx = platform_rmt_allocate( 1 )) >= 0) {
@@ -143,6 +147,9 @@ static int onewire_rmt_init( uint8_t gpio_num )
             if (rmt_driver_install( rmt_rx.channel, 512, PLATFORM_RMT_INTR_FLAGS ) == ESP_OK) {
 
               rmt_get_ringbuf_handle( ow_rmt.rx, &ow_rmt.rb );
+#ifdef OW_DEBUG
+      ESP_LOGI("ow", "RMT RX ringbuf handle %p", ow_rmt.rb);
+#endif
 
               // don't set ow_rmt.gpio here
               // -1 forces a full pin set procedure in first call to onewire_rmt_attach_pin()
@@ -178,6 +185,10 @@ static void onewire_flush_rmt_rx_buf( void )
 // check rmt TX&RX channel assignment and eventually attach them to the requested pin
 static int onewire_rmt_attach_pin( uint8_t gpio_num )
 {
+  if(!GPIO_IS_VALID_GPIO(gpio_num)) {
+    return PLATFORM_ERR;
+  }
+
   if (ow_rmt.tx < 0 || ow_rmt.rx < 0)
     return PLATFORM_ERR;
 
