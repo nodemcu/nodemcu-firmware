@@ -17,6 +17,12 @@
 #define SHIFT_LOGICAL  0
 #define SHIFT_CIRCULAR 1
 
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
 
 typedef struct {
   int size;
@@ -26,7 +32,8 @@ typedef struct {
 
 
 void ICACHE_RAM_ATTR ws2812_write_data(const uint8_t *pixels, uint32_t length, const uint8_t *pixels2, uint32_t length2);
-int ws2812_buffer_shift(ws2812_buffer * buffer, int shiftValue, unsigned shift_type, int pos_start, int pos_end);
+int ws2812_buffer_shift(lua_State* L, ws2812_buffer * buffer, int shiftValue, unsigned shift_type, int pos_start, int pos_end);
 int ws2812_buffer_fill(ws2812_buffer * buffer, int * colors);
+void ws2812_buffer_fade(ws2812_buffer * buffer, int fade, unsigned direction);
 
 #endif /* APP_MODULES_WS2812_H_ */
