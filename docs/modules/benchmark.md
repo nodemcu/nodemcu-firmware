@@ -80,7 +80,13 @@ print ("benchmark.ccount() takes ", benchmark.ccount()-benchmark.ccount(), " CPU
 
 ## benchmark.bench_lua_func()
 
-Benchmark the given lua function.
+Benchmark the given lua function. 
+
+Returned value includes lua's function logic + low-level code cost of running a lua function. In order obtian only function's logic time, one would have to offset the value with result for empty function:
+
+```lua
+print ("print AA takes ", benchmark.bench_lua_func(function() print("AA") end)-benchmark.bench_lua_func(function()end), " CPU ticks to execute.")
+```
 
 ### Syntax
 
@@ -93,7 +99,7 @@ The time to execute the function in terms of CPU ticks.
 ### Example
 
 ```lua
-print ("empty lua function takes ", benchmark.bench_lua_func(function()end), " CPU ticks to execute.")
+print ("empty lua function takes ", benchmark.bench_lua_func(function()end)-benchmark.bench_lua_func(function()end), " CPU ticks to execute.")
 ```
 
 ## benchmark.set_repetitions()
