@@ -46,7 +46,7 @@
 // LUA_FLASH_STORE defines the default partition size if the NodeMCU partition
 // tool is not used.
 
-//#define LUA_FLASH_STORE                   0x10000
+#define LUA_FLASH_STORE                   0x20000
 
 // By default Lua executes the file init.lua at start up.  The following
 // define allows you to replace this with an alternative startup.  Warning:
@@ -114,8 +114,8 @@
 // firmware to manage timer rescheduling over sleeps (the CPU clock is
 // suspended so timers get out of sync) then enable the following options
 
-//#define TIMER_SUSPEND_ENABLE
-//#define PMSLEEP_ENABLE
+#define TIMER_SUSPEND_ENABLE
+#define PMSLEEP_ENABLE
 
 
 // The WiFi module optionally offers an enhanced level of WiFi connection

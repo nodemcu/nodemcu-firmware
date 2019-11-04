@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include "mem.h"
 #include "osapi.h"
+#include "vfs.h"
+
 #include "lwip/err.h"
 #include "lwip/ip_addr.h"
 #include "lwip/dns.h"
@@ -19,15 +21,12 @@
 #include "lwip/tcp.h"
 #include "lwip/udp.h"
 
+#include "net.h"
+
 #if defined(CLIENT_SSL_ENABLE) && defined(LUA_USE_MODULES_NET) && defined(LUA_USE_MODULES_TLS)
 #define TLS_MODULE_PRESENT
 #endif
 
-typedef enum net_type {
-  TYPE_TCP_SERVER = 0,
-  TYPE_TCP_CLIENT,
-  TYPE_UDP_SOCKET
-} net_type;
 
 typedef const char net_table_name[14];
 
@@ -43,32 +42,6 @@ static const net_table_name NET_TABLES[] = {
 #define TYPE_TCP TYPE_TCP_CLIENT
 #define TYPE_UDP TYPE_UDP_SOCKET
 
-typedef struct lnet_userdata {
-  enum net_type type;
-  int self_ref;
-  union {
-    struct tcp_pcb *tcp_pcb;
-    struct udp_pcb *udp_pcb;
-    void *pcb;
-  };
-  union {
-    struct {
-      int cb_accept_ref;
-      int timeout;
-    } server;
-    struct {
-      int wait_dns;
-      int cb_dns_ref;
-      int cb_receive_ref;
-      int cb_sent_ref;
-      // Only for TCP:
-      int hold;
-      int cb_connect_ref;
-      int cb_disconnect_ref;
-      int cb_reconnect_ref;
-    } client;
-  };
-} lnet_userdata;
 
 #pragma mark - LWIP errors
 
@@ -107,12 +80,22 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
   ud->self_ref = LUA_NOREF;
   ud->pcb = NULL;
 
+#ifdef LUA_USE_MODULES_HTTPD
+  ud->ht_head = 0;
+  ud->fd = 0;
+  ud->req_left = -1;
+  ud->show_prog = 0;
+  ud->refT = 0;
+  ud->state = 0; // 1=wait for complete postdata
+#endif
+
   switch (type) {
     case TYPE_TCP_CLIENT:
       ud->client.cb_connect_ref = LUA_NOREF;
       ud->client.cb_reconnect_ref = LUA_NOREF;
       ud->client.cb_disconnect_ref = LUA_NOREF;
       ud->client.hold = 0;
+      /* no break */
     case TYPE_UDP_SOCKET:
       ud->client.wait_dns = 0;
       ud->client.cb_dns_ref = LUA_NOREF;
@@ -133,6 +116,27 @@ static void net_err_cb(void *arg, err_t err) {
   if (!ud || ud->type != TYPE_TCP_CLIENT || ud->self_ref == LUA_NOREF) return;
   ud->pcb = NULL; // Will be freed at LWIP level
   lua_State *L = lua_getstate();
+
+#ifdef LUA_USE_MODULES_HTTPD
+  if (ud->state == 1) {
+    if (ud->fd) {
+       vfs_close(ud->fd); // we close the socket in lua
+       ud->fd = 0;
+
+       lua_getglobal(L, "get_filesc"); // (get_filesc)
+       int cnt = luaL_checkinteger(L, -1); // (get_filesc)
+       lua_pop(L, 1); // ()
+       lua_pushinteger(L, --cnt); // (cnt)
+       lua_setglobal(L, "get_filesc"); // ()
+    }
+  }
+
+  if (ud->state == -6) {
+    vfs_close(ud->fd); // we close the socket in lua
+    ud->fd = 0;
+  }
+#endif
+
   int ref;
   if (err != ERR_OK && ud->client.cb_reconnect_ref != LUA_NOREF)
     ref = ud->client.cb_reconnect_ref;
@@ -198,6 +202,9 @@ static void net_dns_cb(const char *name, ip_addr_t *ipaddr, void *arg) {
   }
 }
 
+/*
+ * called by net_tcp_recv_cb
+ */
 static void net_recv_cb(lnet_userdata *ud, struct pbuf *p, ip_addr_t *addr, u16_t port) {
   if (ud->client.cb_receive_ref == LUA_NOREF) {
     pbuf_free(p);
@@ -246,7 +253,19 @@ static err_t net_tcp_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, er
     net_err_cb(arg, err);
     return tcp_close(tpcb);
   }
+#ifdef LUA_USE_MODULES_HTTPD
+    //printf("'ud->service is %i'\n", ud->service);
+	switch ( ud->service ) {
+	case NONE:
+		net_recv_cb(ud, p, 0, 0);
+		break;
+	case HTTP:
+		httpd_recv_cb(ud, p, 0, 0);
+		break;
+	}
+#else
   net_recv_cb(ud, p, 0, 0);
+#endif
   tcp_recved(tpcb, ud->client.hold ? 0 : TCP_WND);
   return ERR_OK;
 }
@@ -256,9 +275,39 @@ static err_t net_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len) {
   if (!ud || !ud->pcb || ud->type != TYPE_TCP_CLIENT || ud->self_ref == LUA_NOREF) return ERR_ABRT;
   if (ud->client.cb_sent_ref == LUA_NOREF) return ERR_OK;
   lua_State *L = lua_getstate();
+#ifdef LUA_USE_MODULES_HTTPD
+	//fixme if cb is not defined this has to be fixed
+	if (ud->fd) {
+		const char *data;
+		size_t datalen = 0;
+		int stack = 0;
+		char *p;
+		err_t err = 0;
+		p = alloca(256);
+		int pkg = 0;
+		sint32_t s = 10;
+
+		while ((err == 0) && (pkg < 1202) && (s > 0)) {
+			s = vfs_read(ud->fd, p, 240);
+			pkg += s;
+			if (s > 0) err = tcp_write(ud->tcp_pcb, p, s, TCP_WRITE_FLAG_COPY);
+		}
+		if (vfs_eof(ud->fd)) {
+			vfs_close(ud->fd); // we close the socket in lua
+			ud->fd = 0;
+			ud->state = 0;
+		}
+	}
+	else {
+		lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
+		lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
+		lua_call(L, 1, 0);
+	}
+#else
   lua_rawgeti(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
   lua_rawgeti(L, LUA_REGISTRYINDEX, ud->self_ref);
   lua_call(L, 1, 0);
+#endif
   return ERR_OK;
 }
 
@@ -281,7 +330,18 @@ static err_t net_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
   nud->tcp_pcb->so_options |= SOF_KEEPALIVE;
   nud->tcp_pcb->keep_idle = ud->server.timeout * 1000;
   nud->tcp_pcb->keep_cnt = 1;
+  nud->service = ud->service;
   tcp_accepted(ud->tcp_pcb);
+
+#ifdef LUA_USE_MODULES_HTTPD
+  int cnt = 0;
+  lua_getglobal(L, "http_reqs"); // nr of http requests since start
+  if (lua_type(L, -1) == 5) // +(http_reqs)
+     cnt = luaL_checkinteger(L, -1);
+  lua_pop(L, 1); // -(http_reqs)
+  lua_pushinteger(L, ++cnt); // +(http_reqs)
+  lua_setglobal(L, "http_reqs"); // -(http_reqs)
+#endif
 
   lua_call(L, 1, 0);
 
@@ -390,6 +450,22 @@ int net_listen( lua_State *L ) {
       return luaL_error(L, "need callback");
     }
   }
+#ifdef LUA_USE_MODULES_HTTPD
+	if (lua_isnumber(L, stack)) {
+		switch (lua_isnumber(L, stack)) {
+		case HTTP:
+			ud->service = HTTP;
+			break;
+		default:
+			ud->service = NONE;
+		}
+#endif
+	}
+	else {
+		ud->service = NONE;
+	}
+	//printf("'ud->service is.. %i'\n", ud->service);
+
   err_t err = ERR_OK;
   switch (ud->type) {
     case TYPE_TCP_SERVER:
@@ -506,6 +582,7 @@ int net_on( lua_State *L ) {
         { refptr = &ud->client.cb_disconnect_ref; break; }
       if (strcmp("reconnection",name)==0)
         { refptr = &ud->client.cb_reconnect_ref; break; }
+          /* no break */
     case TYPE_UDP_SOCKET:
       if (strcmp("dns",name)==0)
         { refptr = &ud->client.cb_dns_ref; break; }
@@ -773,6 +850,12 @@ int net_close( lua_State *L ) {
   if (ud->type == TYPE_TCP_SERVER ||
      (ud->pcb == NULL && ud->client.wait_dns == 0)) {
 //    lua_gc(L, LUA_GCSTOP, 0);
+#ifdef LUA_USE_MODULES_HTTPD
+	if (ud->refT) {
+		luaL_unref(L, LUA_REGISTRYINDEX, ud->refT);
+		ud->refT = 0;
+	}
+#endif
     luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
     ud->self_ref = LUA_NOREF;
 //    lua_gc(L, LUA_GCRESTART, 0);
@@ -811,6 +894,7 @@ int net_delete( lua_State *L ) {
       ud->client.cb_disconnect_ref = LUA_NOREF;
       luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_reconnect_ref);
       ud->client.cb_reconnect_ref = LUA_NOREF;
+      /* no break */
     case TYPE_UDP_SOCKET:
       luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_dns_ref);
       ud->client.cb_dns_ref = LUA_NOREF;
@@ -1008,6 +1092,10 @@ LROT_BEGIN(net_tcpsocket)
   LROT_FUNCENTRY( getpeer, net_getpeer )
   LROT_FUNCENTRY( getaddr, net_getaddr )
   LROT_FUNCENTRY( __gc, net_delete )
+#ifdef LUA_USE_MODULES_HTTPD
+  LROT_FUNCENTRY( send_H,  http_send_H)
+  LROT_FUNCENTRY( procReq, http_processReq)
+#endif
   LROT_TABENTRY( __index, net_tcpsocket )
 LROT_END( net_tcpsocket, net_tcpsocket, 0 )
 
@@ -1044,6 +1132,10 @@ LROT_BEGIN(net)
 #endif
   LROT_NUMENTRY( TCP, TYPE_TCP )
   LROT_NUMENTRY( UDP, TYPE_UDP )
+#ifdef LUA_USE_MODULES_HTTPD
+  LROT_NUMENTRY( RAW,  0)
+  LROT_NUMENTRY( HTTP, 1)
+#endif
   LROT_TABENTRY( __metatable, net )
 LROT_END( net, net, 0 )
 
