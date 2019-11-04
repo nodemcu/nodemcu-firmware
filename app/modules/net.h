@@ -41,11 +41,10 @@ typedef struct {
 			int cb_reconnect_ref;
 		} client;
 	};
-	int service; // service type
+	int service; // service type http or raw
 	int ht_head; // http header completed -> frames received (0 is header)
-	int fd; // fd to write frames to
+	int fd; // fd to write frames to, used for writing received data / files
 	int req_left; // Remaining bytes to recv (http payload)
-	int show_prog; // show degub progress on recv
 	int refT; // reference to the registry
 	int state;
 } lnet_userdata;

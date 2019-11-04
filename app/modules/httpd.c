@@ -364,7 +364,6 @@ static int parse_http_header(lnet_userdata *ud, lua_State *L, struct pbuf *p) {
 					//printf("' could not open..\n");
 
 				ud->req_left = c_len;
-				//ud->show_prog = 1;
 				int wsize = 0;
 
 				if (req_end > req) {
@@ -373,7 +372,6 @@ static int parse_http_header(lnet_userdata *ud, lua_State *L, struct pbuf *p) {
 					ud->req_left = ud->req_left - wsize;
 				}
 
-				if (ud->show_prog == 1) printf("--%i %i written, left:%i \n", ud->ht_head, wsize, ud->req_left);
 
 				if (ud->req_left > 0) { // printf("\'wait for next frm\'\n");
 					ud->state = -6;
@@ -455,7 +453,6 @@ void httpd_recv_cb(lnet_userdata *ud, struct pbuf *p, ip_addr_t *addr, u16_t por
 		int wsize = vfs_write(ud->fd, p->payload, p->len);
 		//fixme catch errors when not able to write
 		ud->req_left = ud->req_left - wsize;
-		if (ud->show_prog == 1) printf("--%i %i written, left:%i \n", ud->ht_head, wsize, ud->req_left);
 
 		//ud->tcp_pcb->flags |= TF_ACK_NOW;
 		tcp_recved(ud->tcp_pcb, TCP_WND);

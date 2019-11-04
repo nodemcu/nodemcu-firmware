@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include "mem.h"
 #include "osapi.h"
-
 #include "lwip/err.h"
 #include "lwip/ip_addr.h"
 #include "lwip/dns.h"
@@ -79,7 +78,6 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
   ud->ht_head = 0;
   ud->fd = 0;
   ud->req_left = -1;
-  ud->show_prog = 0;
   ud->refT = 0;
   ud->state = 0; // 1=wait for complete postdata
 #endif
