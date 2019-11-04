@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include "mem.h"
 #include "osapi.h"
-#include "vfs.h"
 
 #include "lwip/err.h"
 #include "lwip/ip_addr.h"
@@ -20,7 +19,7 @@
 #include "lwip/igmp.h"
 #include "lwip/tcp.h"
 #include "lwip/udp.h"
-
+#include "vfs.h"
 #include "net.h"
 
 #if defined(CLIENT_SSL_ENABLE) && defined(LUA_USE_MODULES_NET) && defined(LUA_USE_MODULES_TLS)
@@ -38,10 +37,6 @@ static const net_table_name NET_TABLES[] = {
 #define NET_TABLE_TCP_SERVER NET_TABLES[0]
 #define NET_TABLE_TCP_CLIENT NET_TABLES[1]
 #define NET_TABLE_UDP_SOCKET NET_TABLES[2]
-
-#define TYPE_TCP TYPE_TCP_CLIENT
-#define TYPE_UDP TYPE_UDP_SOCKET
-
 
 #pragma mark - LWIP errors
 
@@ -276,7 +271,6 @@ static err_t net_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len) {
   if (ud->client.cb_sent_ref == LUA_NOREF) return ERR_OK;
   lua_State *L = lua_getstate();
 #ifdef LUA_USE_MODULES_HTTPD
-	//fixme if cb is not defined this has to be fixed
 	if (ud->fd) {
 		const char *data;
 		size_t datalen = 0;
