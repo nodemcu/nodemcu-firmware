@@ -150,6 +150,9 @@ This is the generic handler for requests. It will process the request, eg: send 
               socket:on("receive", function(socket, Req) 
                     if Req['frm']==1 then 
                        R=Req  
+                       --print("sock:", socket:getpeer())
+                       --print("-- uri="..(R['uri'] or "nil")..", opts="..(R['opts'] or "nil")) 
+                       --for k,v in pairs(R) do print(k..", ", v) end     
                     else
                        socket:procReq(R) -- this will process the request
                     end
@@ -162,16 +165,13 @@ This is the generic handler for requests. It will process the request, eg: send 
 ### Parameter
 - `R` a local pointer/upvalue to a table with the request data, see further up for a description.
 
-
-
-
 ## Testcases 
 All testcases are done with the assumption that they are run on a linux pc with 192.168.1.5 on an nodeMcu with ip 192.168.1.204
 
 ### GET a simple page
 ```lua
-    http['_any_']       ='0x0666' -- special case, matches all uri
-    http['/']           = http['/'] or 'index.html' -- /
+http['_any_']       ='0x0666' -- special case, matches all uri
+http['/']           = http['/'] or 'index.html' -- /
 ```
 ```bash
 curl -v http://192.168.1.204/init.lua
@@ -201,8 +201,8 @@ curl -v http://192.168.1.204/init.lua
 
 ### Run a function and return it's result (GET request)
 ```lua
-    http['heap']        ='0x0111' -- curl -v http://192.168.1.xx/heap
-    http['f_heap']      =function(socket, T) socket:send_H(201,7,0,1,'heap:'..node.heap()) end
+http['heap']        ='0x0111' -- curl -v http://192.168.1.xx/heap
+http['f_heap']      =function(socket, T) socket:send_H(201,7,0,1,'heap:'..node.heap()) end
 ```
 
 ```bash
@@ -229,8 +229,8 @@ heap:34072
 
 ### Run a function **with options** and return it's result (GET request)
 ```lua
-    http['testfunc']    ='0x0111'
-    http['f_testfunc']  =function(socket, T) socket:send_H(201,7,0,1,T['uri']..' opts~'..T['opts']..'~') end
+http['testfunc']    ='0x0111'
+http['f_testfunc']  =function(socket, T) socket:send_H(201,7,0,1,T['uri']..' opts~'..T['opts']..'~') end
 ```
 
 ```bash
@@ -258,7 +258,7 @@ testfunc opts~options=11-03-2019
 ### Run a function **with options** (POST request)
 This will print on the esp console, only a header is sent back
 ```lua
-    http['cmd']         ='0x0111' -- run 'node.input(cmd)' eg: curl -d "print(node.heap())" "http://$ip/cmd"
+http['cmd']         ='0x0111' -- run 'node.input(cmd)' eg: curl -d "print(node.heap())" "http://$ip/cmd"
 ```
 ```bash
 echo "print(node.heap( ))" | curl -v -m 1 -d @- 'http://192.168.1.204/cmd'
