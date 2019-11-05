@@ -9,37 +9,34 @@ This is a simple httpd server. This server is not thought for high troughput nor
 - Uses only 1 or 2 k of your memory, depending mainly on the size of the http{} table.
 - Upload speed is up to 100kByte/s - this depends on the WiFi connetion however
 - Simple read requestes (1 frame / up to 1.5k ) are handled 60ms, 2 frams in 75ms
-- Permission can be set to read / write / exec (note: this works but need improvement)
+- Permission can be set to read / write / exec (note: this works but needs improvement)
 - This server is **not 'secure'**, it's plain html with no tls option
 - Adding http digest authentification works, but leavs the 'man in the middle attack' problem
 
+## Minimal example
+```lua
+-- init.lua
+wifi.sta.config( { ssid='...', pwd='...' } )
+wifi.setmode(wifi.STATION, true)
+
+http={['_any_']='0x0666'} -- special case, matches all uri
+
+srv=net.createServer(net.TCP, 18)
+srv:listen(80, function(s)
+  local R={}
+  s:on("sent", function(s) s:close() end)
+  s:on("receive", function(s, Req) if Req['frm']==1 then R=Req end s:procReq(R) end)
+end, net.HTTP )
+```
+```bash
+# a simple GET and POST
+curl  http://192.168.1.204/init.lua
+curl -H Expect: -v --data-binary @/tmp/500kdummy http://192.168.1.204/up?filen=500kdummy
+```
 ## How it works
 This server expects in the first packet it receives a complete http request header. It parses this header and returns a table with the request to the receive function.
 The on:receive function then has a chance to fullfill the request, or call the procReq() with the request in order to complete it. 
 The reason for this detour through the receive function is mainly to leave a way of intercepting the request befor answering.
-
-## Usage
-
-```lua
-      if srv then srv:close() end
-      srv=net.createServer(net.TCP, 18)
-          srv:listen(80, function(socket)
-              local R={} -- R will survive as upvalue while until the socket is closed
-              socket:on("sent", function(socket) socket:close() end)
-              socket:on("receive", function(socket, Req) 
-                    if Req['frm']==1 then -- the initial frame with the http request
-                       R=Req -- we need the information until we close this socket
-                       --print("sock:", socket:getpeer())
-                       --print("-- uri="..(Req['uri'] or "nil")..", opts="..(Req['opts'] or "nil")) 
-                       --for k,v in pairs(Req) do print(k..", ", v) end        
-                    end
-                 socket:procReq(R) -- this will process the request
-                 end)
-             end,
-             net.HTTP -- by setting this to net.HTTP, each request will be parsed for a http request header
-             ) -- end of listen
-```
-
 
 ## Configuration
 The configuration of the server is done by simply defining a global lua table named 'http{}' with a minimal content of:
@@ -314,7 +311,7 @@ user	0m0.000s
 sys	0m0.005s
 ```
 
-### A bit mor complex example, requesting a udp packet from the esp 
+### A bit more complex example, requesting a udp packet from the esp 
 ```lua
 http['cmd']         ='0x0111' -- run 'node.input(cmd)' eg: curl -d "print(node.heap())" "http://$ip/cmd"
 ```
