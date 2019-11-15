@@ -224,7 +224,7 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
 **
 ** Note that the cache contains both TStrings and Tables entries but
 ** both of these addresses word are always aligned, so the address is
-** a mulitple of size_t.  The lowbit of the address in the cache is 
+** a mulitple of size_t.  The lowbit of the address in the cache is
 ** overwritten with a boolean to tag TString entries
 */
 

@@ -48,7 +48,7 @@ void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
   z->L = L;
   z->reader = reader;
   z->data = data;
-  z->n = z->i = 0;
+  z->n = 0;
   z->p = NULL;
 }
 
@@ -63,7 +63,6 @@ size_t luaZ_read (ZIO *z, void *b, size_t n) {
     if (b)
       memcpy(b, z->p, m);
     z->n -= m;
-    z->i += m;
     z->p += m;
     if (b)
       b = (char *)b + m;

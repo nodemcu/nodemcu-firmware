@@ -7,6 +7,7 @@
 
 #define linit_c
 #define LUA_LIB
+#define LUA_CORE
 
 /*
 ** NodeMCU uses RO segment based static ROTable declarations for library
@@ -61,7 +62,14 @@ extern LROT_TABLE(LFS);
 #define LROT_LIB_ENTRIES \
   LROT_FUNCENTRY( _G, luaopen_base ) \
   LROT_FUNCENTRY( package, luaopen_package ) \
-  LROT_FUNCENTRY( string, luaopen_string )
+  LROT_FUNCENTRY( string, luaopen_string ) \
+  LROT_FUNCENTRY( nodemcu, luaN_init )
+ /*
+  * Note that this nodemcu entry isn't a normal library initialisaiton but
+  * instead is a hook to allow the loading of a new LFS.  This load process
+  * needs base and string to be initialised but not the untrustworthy
+  * modules and so is slotted in here.
+  */
 
 #if defined(LUA_CROSS_COMPILER)
 

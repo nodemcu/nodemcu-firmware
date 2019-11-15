@@ -3,16 +3,11 @@
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
-
 #define lundump_c
 #define LUA_CORE
-
 #include "lprefix.h"
-
-
 #include <string.h>
 #include "lua.h"
-
 #include "ldebug.h"
 #include "ldo.h"
 #include "lfunc.h"
@@ -23,64 +18,70 @@
 #include "lstring.h"
 #include "lundump.h"
 #include "lzio.h"
-
 /*
-** Unlike the standard Lua version of lundump.c, this NodeMCU must be able to
-** store the unloaded Protos into one of two targets:
+** Unlike the standard Lua version of lundump.c, this NodeMCU version must be
+** able to store the dumped Protos into one of two targets:
 **
-** (A)  RAM-based heap in the same way as standard Lua, and where the Proto
-**      data structures can be created by direct addressing, but at the same
-**      any references must honour the Lua GC assumptions, so that all storage
-**      can be collected in the case of a thrown error.
+** (A)  RAM-based heap.  This in the same way as standard Lua, where the
+**      Proto data structures can be created by direct in memory addressing,
+**      with any references complying with Lua GC assumptions, so that all
+**      storage can be collected in the case of a thrown error.
 **
-** (B)  Flash programmable ROM memory that can be written to serially, but can
-**      then be directly addressable through a memory-mapped address window
-**      after processor restart.
+** (B)  Flash programmable ROM memory. This can only be written to serially,
+**      using a write API, it can be subsequently but accessed and directly
+**      addressable through a memory-mapped address window after cache flush.
 **
-** Mode (B) a.k.a LFS (Lua FLash Store) enables running Lua applications on
-** small-memory IoT devices which support programmable flash storage such as
-** the ESP8266 SoC. In the case of this chip, the usable RAM heap is roughly
-** 45Kb, so the ability to store an extra 128Kb, say, of program into LFS can
-** materially increase the size of application that can be executed and leave
-** most of the heap for true R/W application data.
+** Mode (B) also know as LFS (Lua FLash Store) enables running Lua apps
+** on small-memory IoT devices which support programmable flash storage such
+** as the ESP8266 SoC. In the case of this chip, the usable RAM heap is
+** roughly 45Kb, so the ability to store an extra 128Kb, say, of program into
+** LFS can materially increase the size of application that can be executed
+** and leave most of the heap for true R/W application data.
 **
-** The changes to this lundump.c facilitate the addition of LFS mode. Writing
-** to flash uses a record oriented write-once API, and ONCE THE FLASH CACHE
-** HAS BEEN FLUSHED this data can be reread from using the memory-mapped RO
-** Flash window. So in mode B, the resources aren't allocated in RAM but are
-** written to Flash and the corresponding Flash read address is returned; also
-** data can't be immediately read back using these addresses because of cache
-** staleness.
-** 
-** Handling the Proto record with TSndx f->k vector requires an adjustment to
-** the execution sequence to avoid interleaved resource writes in the case of
-** mode (B), but still maintaining GC compliance conformance for mode (A). The
-** no-interleave constraint also complicates the writing of string resources
-** into flash, so the flashing process circumvents this issue by using two
-** passes. The first writes any strings that needed to be loaded into flash to
-** create a LFS-based ROstrt; the CPU is then restarted. All of the required
-** strings can then be resolved against LFS addresses in flash on the 2nd pass.
+** The changes to this source file enable the addition of LFS mode. In mode B,
+** the resources aren't allocated in RAM but are written to Flash using the
+** write API which returns the corresponding Flash read address is returned;
+** also data can't be immediately read back using these addresses because of
+** cache staleness.
 **
-** Note that this module and lundump.c can also be compiled into a host-based
-** luac cross compiler. This cross compiler must use the same integer and float
-** formats (e.g. 32 bit, 32-bit IEEE) as the target. LFS mode can also be used
-** in the host luac.cross to build LFS images and in this case the undump must
-** generate native 32 or 64 bit address references.
+** Handling the Proto record has been reordered to avoid interleaved resource
+** writes in mode (B), with the f->k being cached in RAM and the Proto
+** hierarchies walked bottom-up in a way that still maintains GC compliance
+** conformance for mode (A).  This no-interleave constraint also complicates
+** the writing of TString resources into flash, so the flashing process
+** circumvents this issue for LFS loads by header by taking two passes to dump
+** the hierarchy. The first dumps all strings that needed to load the Protos,
+** with the subsequent Proto loads use an index to any TString references.
+** This enables all strings to be loaded into an LFS-based ROstrt before
+** starting to load the Protos.
+**
+** Note that this module and ldump.c are compiled into both the ESP firmware
+** and a host-based luac cross compiler.  LFS dump is currently only supported
+** in the compiler, but both the LFS and standard loads are supported in both
+** the target (lua.c) and the host (luac.cross -e)environments. Both
+** environments are built with the same integer and float formats (e.g. 32 bit,
+** 32-bit IEEE).
+**
+** Dumps can either be loaded into RAM or LFS depending on the load format. An
+** extra complication is that luac.cross supports two LFS modes, with the
+** first loading into an host process address space and using host 32 or 64
+** bit address references.  The second uses shadow ESP 32 bit addresses to
+** create an absolute binary image for direct provisioning of ESP images.
 */
-
-#define MODE_RAM 0
-#define MODE_LFS 1
-
+#define MODE_RAM      0   /* Loading into RAM */
+#define MODE_LFS      1   /* Loading into a locally executable LFS */
+#define MODE_LFSA     2   /* (Host only) Loading into a shadow ESP image */
 typedef struct {
   lua_State  *L;           /* cache L to drop parameter list */
   ZIO        *Z;           /* ZIO context */
   const char *name;        /* Filename of the LFS image being loaded */
   LFSHeader  *fh;          /* LFS flash header block */
+  void       *startLFS;    /* Start address of LFS region */
   TString   **TS;          /* List of TStrings being used in the image */
   lu_int32    TSlen;       /* Length of the same */
   lu_int32    TSndx;       /* Index into the same */
   lu_int32    TSnFixed;    /* Number of "fixed" TS */
-  char        *buff;        /* Working buffer for assembling a TString */
+  char        *buff;       /* Working buffer for assembling a TString */
   lu_int32    buffLen;     /* Maximum length of TS used in the image */
   TString   **list;        /* TS list used to index the ROstrt */
   lu_int32    listLen;     /* Length of the same */
@@ -90,28 +91,17 @@ typedef struct {
   lu_byte     useStrRefs;  /* Flag if set then TStings are a index into TS */
   lu_byte     mode;        /* Either LFS or RAM */
 } LoadState;
-
-
 static l_noret error(LoadState *S, const char *why) {
   luaO_pushfstring(S->L, "%s: %s precompiled chunk", S->name, why);
   luaD_throw(S->L, LUA_ERRSYNTAX);
 }
-
-
-/*
-** The NewVector and StoreXX functions operate in one of two modes depending
-** the Proto hierary is being store to RAM or to LFS.
-**
-** MODE_RAM: RAM based resources must to allocated, and any addresses refer to
-** real RAM address and Stores move the content into place at these addresses.
-**
-** MODE_LFS: the flash API is used to write the resources serially to LFS, and
-** any addresses are the future flash-mapped addresses that correspond to the
-** mapped in the LFS where the resource will be located after LFS mapping.
-*/
+#define wordptr(p)      cast(lu_int32 *, p)
+#define byteptr(p)      cast(lu_byte *, p)
+#define wordoffset(p,q) (wordptr(p) - wordptr(q))
+#define FHaddr(S,t,f)   cast(t, wordptr(S->startLFS) + (f))
+#define FHoffset(S,o)   wordoffset((o), S->startLFS)
 #define NewVector(S, n, t)  cast(t *,NewVector_(S, n, sizeof(t)))
 #define StoreGetPos(S) luaN_writeFlash((S)->Z->data, NULL, 0)
-
 static void *NewVector_(LoadState *S, int n, size_t s) {
   void *v;
   if (S->mode == MODE_RAM) {
@@ -122,57 +112,91 @@ static void *NewVector_(LoadState *S, int n, size_t s) {
   }
   return v;
 }
-
-
-/* Store and element e of size s at offset i in a vector of size=s elements; */
-#define Store(S, a, i, v)  Store_(S, (a), i, &(v), sizeof(v))
-static void *Store_(LoadState *S, void *a, int ndx, const void *e, size_t s) {
+static void *Store_(LoadState *S, void *a, int ndx, const void *e, size_t s
+#ifdef LUA_USE_HOST
+                    , const char *format
+#endif
+                    ) {
   if (S->mode == MODE_RAM) {
-    char *p = cast(char *, a) + ndx*s;
-    if (p != cast(char *,e))
+    lu_byte *p = byteptr(a) + ndx*s;
+    if (p != byteptr(e))
       memcpy(p, e, s);
     return p;
   }
-  return (S->mode == MODE_LFS) ? luaN_writeFlash(S->Z->data, e, s) : NULL;
+#ifdef LUA_USE_HOST
+  else if (S->mode == MODE_LFSA && format) {             /* do a repack move */
+    void *p = StoreGetPos(S);
+    const char *f = format;
+    int o;
+    for (o = 0; *f; o++, f++ ) {
+      luaN_writeFlash(S->Z->data, wordptr(e)+o, sizeof(lu_int32));
+      if (*f == 'A' || *f == 'W') /* Addr or word followed by alignment fill */
+        o++;
+    }
+    lua_assert(o*sizeof(lu_int32) == s);
+    return p;
+  }
+#endif
+  /* mode == LFS or 32bit  build */
+  return luaN_writeFlash(S->Z->data, e, s);
 }
-
-#define StoreN(S, v, n)  Store_(S, NULL, 0, (v), (n)*sizeof(*(v)));
+#ifdef LUA_USE_HOST
+#include <stdio.h>
+/* These compression maps must match the definitions in lobject.h etc. */
+#  define OFFSET_TSTRING (2*(sizeof(lu_int32)-sizeof(size_t)))
+#  define FMT_TSTRING   "AwwA"
+#  define FMT_TVALUE    "WA"
+#  define FMT_PROTO     "AwwwwwwwwwwAAAAAAAA"
+#  define FMT_UPVALUE   "AW"
+#  define FMT_LOCVAR    "Aww"
+#  define FMT_ROTENTRY  "AWA"
+#  define FMT_ROTABLE   "AWAA"
+#  define StoreR(S,a, i, v, f) Store_(S, (a), i, &(v), sizeof(v), f)
+#  define Store(S, a, i, v)    StoreR(S, (a), i, v, NULL)
+#  define StoreN(S, v, n)      Store_(S, NULL, 0, (v), (n)*sizeof(*(v)), NULL)
+static void *StoreAV (LoadState *S, void *a, int n) {
+  void **av = cast(void**, a);
+  if (S->mode == MODE_LFSA) {
+    void *p = StoreGetPos(S);
+    int i; for (i = 0; i < n; i ++)
+      luaN_writeFlash(S->Z->data, wordptr(av++), sizeof(lu_int32));
+    return p;
+  } else {
+    return Store_(S, NULL, 0, av, n*sizeof(*av), NULL);
+  }
+}
+#else // LUA_USE_ESP
+#  define OFFSET_TSTRING (0)
+#  define Store(S, a, i, v)      Store_(S, (a), i, &(v), sizeof(v))
+#  define StoreN(S, v, n)        Store_(S, NULL, 0, (v), (n)*sizeof(*(v)))
+  #  define StoreR(S, a, i, v, f)  Store(S, a, i, v)
+#  define StoreAV(S, p, n)       StoreN(S, p, n)
+#  define OPT_FMT
+#endif
 #define StoreFlush(S)    luaN_flushFlash((S)->Z->data);
-
 #define LoadVector(S,b,n)	LoadBlock(S,b,(n)*sizeof((b)[0]))
-
 static void LoadBlock (LoadState *S, void *b, size_t size) {
   lu_int32 left = luaZ_read(S->Z, b, size);
   if ( left != 0)
     error(S, "truncated");
 }
-
-
 #define LoadVar(S,x)		LoadVector(S,&x,1)
-
-
 static lu_byte LoadByte (LoadState *S) {
   lu_byte x;
   LoadVar(S, x);
   return x;
 }
-
-
 static lua_Integer LoadInt (LoadState *S) {
   lu_byte b;
   lua_Integer x = 0;
   do { b = LoadByte(S); x = (x<<7) + (b & 0x7f); } while (b & 0x80);
   return x;
 }
-
-
 static lua_Number LoadNumber (LoadState *S) {
   lua_Number x;
   LoadVar(S, x);
   return x;
 }
-
-
 static lua_Integer LoadInteger (LoadState *S, lu_byte tt_data) {
   lu_byte b;
   lua_Integer x = tt_data & LUAU_DMASK;
@@ -181,7 +205,6 @@ static lua_Integer LoadInteger (LoadState *S, lu_byte tt_data) {
   }
   return (tt_data & LUAU_TMASK) == LUAU_TNUMNINT ? -x-1 : x;
 }
-
 static TString *LoadString_ (LoadState *S, int prelen) {
   TString *ts;
   char buff[LUAI_MAXSHORTLEN];
@@ -199,25 +222,20 @@ static TString *LoadString_ (LoadState *S, int prelen) {
   }
   return ts;
 }
-#define LoadString(S) LoadString_(S,-1) 
-#define LoadString2(S,pl) LoadString_(S,(pl)) 
-
+#define LoadString(S) LoadString_(S,-1)
+#define LoadString2(S,pl) LoadString_(S,(pl))
 static void LoadCode (LoadState *S, Proto *f) {
   Instruction *p;
   f->sizecode = LoadInt(S);
   f->code = luaM_newvector(S->L, f->sizecode, Instruction);
   LoadVector(S, f->code, f->sizecode);
-  if (S->mode == MODE_LFS) {
+  if (S->mode != MODE_RAM) {
     p = StoreN(S, f->code, f->sizecode);
     luaM_freearray(S->L, f->code, f->sizecode);
     f->code = p;
   }
 }
-
-
 static void *LoadFunction(LoadState *S, Proto *f, TString *psource);
-
-
 static void LoadConstants (LoadState *S, Proto *f) {
   int i;
   f->sizek = LoadInt(S);
@@ -244,25 +262,29 @@ static void LoadConstants (LoadState *S, Proto *f) {
     case LUAU_TNUMNINT:
       setivalue(&o, LoadInteger(S, tt));
       break;
-    case LUAU_TSTRING:
-      setsvalue2n(S->L, &o, LoadString2(S, tt));
+    case LUAU_TSSTRING:
+      o.value_.gc = cast(GCObject *, LoadString2(S, tt));
+      o.tt_ = ctb(LUA_TSHRSTR);
+      break;
+    case LUAU_TLSTRING:
+      o.value_.gc = cast(GCObject *, LoadString2(S, tt));
+      o.tt_ = ctb(LUA_TLNGSTR);
       break;
     default:
       lua_assert(0);
     }
-    Store(S, f->k, i, o);
+    StoreR(S, f->k, i, o, FMT_TVALUE);
   }
 }
-
 /*
 ** The handling of Protos has support both modes, and in the case of flash
-** mode, this requires some care as any writes to a Proto f must be deferred 
+** mode, this requires some care as any writes to a Proto f must be deferred
 ** until after all of the writes to its sub Protos have been completed; so
 ** the Proto record and its p vector must be retained in RAM until stored to
-** flash. 
+** flash.
 **
-** Recovery of dead resources on error handled by the Lua GC as standard in 
-** the case of RAM loading.  In the case of loading an LFS image into flash, 
+** Recovery of dead resources on error handled by the Lua GC as standard in
+** the case of RAM loading.  In the case of loading an LFS image into flash,
 ** the error recovery could be done through the S->protogc list, but given
 ** that the immediate action is to restart the CPU, there is little point
 ** in adding the extra functionality to recover these dangling resources.
@@ -275,14 +297,11 @@ static void LoadProtos (LoadState *S, Proto *f) {
   memset (p, 0, n * sizeof(*p));
   for (i = 0; i < n; i++)
     p[i] = LoadFunction(S, luaF_newproto(S->L), f->source);
-
-  if (S->mode == MODE_LFS) {
-    f->p = StoreN(S, p, f->sizep);
+  if (S->mode != MODE_RAM) {
+    f->p = StoreAV(S, cast(void **, p), n);
     luaM_freearray(S->L, p, n);
-  } 
+  }
 }
-
-
 static void LoadUpvalues (LoadState *S, Proto *f) {
   int i, nostripnames = LoadByte(S);
   f->sizeupvalues = LoadInt(S);
@@ -291,12 +310,10 @@ static void LoadUpvalues (LoadState *S, Proto *f) {
     for (i = 0; i < f->sizeupvalues ; i++) {
       TString *name = nostripnames ? LoadString(S) : NULL;
       Upvaldesc uv = {name, LoadByte(S), LoadByte(S)};
-      Store(S, f->upvalues, i, uv);
+      StoreR(S, f->upvalues, i, uv, FMT_UPVALUE);
     }
   }
 }
-
-
 static void LoadDebug (LoadState *S, Proto *f) {
   int i;
   f->sizelineinfo = LoadInt(S);
@@ -314,11 +331,9 @@ static void LoadDebug (LoadState *S, Proto *f) {
   f->locvars = NewVector(S, f->sizelocvars, LocVar);
   for (i = 0; i < f->sizelocvars; i++) {
     LocVar lv = {LoadString(S), LoadInt(S), LoadInt(S)};
-    Store(S, f->locvars, i, lv);
+    StoreR(S, f->locvars, i, lv, FMT_LOCVAR);
   }
 }
-
-
 static void *LoadFunction (LoadState *S, Proto *f, TString *psource) {
  /*
   * Main protos have f->source naming the file used to create the hierarchy;
@@ -328,8 +343,7 @@ static void *LoadFunction (LoadState *S, Proto *f, TString *psource) {
   */
   Proto *p;
   global_State *g = G(S->L);
-
-  if (S->mode == MODE_LFS) {
+  if (S->mode != MODE_RAM) {
     lua_assert(g->allgc == obj2gco(f));
     g->allgc = f->next;                    /* remove object from 'allgc' list */
     f->next = S->protogc;         /* push f into the head of the protogc list */
@@ -348,15 +362,16 @@ static void *LoadFunction (LoadState *S, Proto *f, TString *psource) {
   LoadConstants(S, f);
   LoadUpvalues(S, f);
   LoadDebug(S, f);
-  if (S->mode == MODE_LFS) {
+  if (S->mode != MODE_RAM) {
     GCObject *save = f->next;
     if (f->source != NULL) {
       setLFSbit(f);
       /* cache the RAM next and set up the next for the LFS proto chain */
-      f->next = cast(GCObject *, S->fh->protoHead);
-      S->fh->protoHead = p = Store(S, NULL, 0, *f);
+      f->next = FHaddr(S, GCObject *, S->fh->protoHead);
+      p = StoreR(S, NULL, 0, *f, FMT_PROTO);
+      S->fh->protoHead = FHoffset(S, p);
     } else {
-      p = Store(S, NULL, 0, *f);
+      p = StoreR(S, NULL, 0, *f, FMT_PROTO);
     }
     S->protogc = save;  /* pop f from the head of the protogc list */
     luaM_free(S->L, f);  /* and collect the dead resource */
@@ -364,8 +379,6 @@ static void *LoadFunction (LoadState *S, Proto *f, TString *psource) {
   }
   return f;
 }
-
-
 static void checkliteral (LoadState *S, const char *s, const char *msg) {
   char buff[sizeof(LUA_SIGNATURE) + sizeof(LUAC_DATA)]; /* larger than both */
   size_t len = strlen(s);
@@ -373,15 +386,11 @@ static void checkliteral (LoadState *S, const char *s, const char *msg) {
   if (memcmp(s, buff, len) != 0)
     error(S, msg);
 }
-
-
 static void fchecksize (LoadState *S, size_t size, const char *tname) {
   if (LoadByte(S) != size)
     error(S, luaO_pushfstring(S->L, "%s size mismatch in", tname));
 }
 #define checksize(S,t)	fchecksize(S,sizeof(t),#t)
-
-
 static void checkHeader (LoadState *S, int format) {
   checkliteral(S, LUA_SIGNATURE + 1, "not a");  /* 1st char already checked */
   if (LoadByte(S) != LUAC_VERSION)
@@ -392,7 +401,7 @@ static void checkHeader (LoadState *S, int format) {
   checksize(S, int);
  /*
   * The standard Lua VM does a check on the sizeof size_t and endian check on
-  * integer; both are dropped as the former prevents dump files being shared 
+  * integer; both are dropped as the former prevents dump files being shared
   * across 32 and 64 bit machines, and we use multi-byte coding of ints.
   */
   checksize(S, Instruction);
@@ -402,8 +411,6 @@ static void checkHeader (LoadState *S, int format) {
   if (LoadNumber(S) != LUAC_NUM)
     error(S, "float format mismatch in");
 }
-
-
 /*
 ** Load precompiled chunk to support standard LUA_API load functions. The
 ** extra LFS functionality is effectively NO-OPed out on this MODE_RAM path.
@@ -431,7 +438,6 @@ LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name) {
   lua_assert(cl->nupvalues == cl->p->sizeupvalues);
   return cl;
 }
-
 /*============================================================================**
 ** NodeMCU extensions for LFS support and Loading.  Note that this funtionality
 ** is called from a hook in the lua startup within a lua_lock() (as with
@@ -444,7 +450,6 @@ LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name) {
 ** to lgc.c for this one-off process, these Protos are removed from the allgc
 ** list and fixed in a local one, and collected inline.
 **============================================================================*/
-
 /*
 ** Write a TString to the LFS. This parallels the lstring.c algo but writes
 ** directly to the LFS buffer and also append the LFS address in S->TS. Seeding
@@ -455,13 +460,11 @@ static void addTS(LoadState *S, int l, int extra) {
   TString *ts     = cast(TString *, S->buff);
   char *s         = getstr(ts);
   size_t totl     = sizelstring(l);
-
   lua_assert (totl <= S->buffLen);
   s[l] = '\0';
-  /* The collectable and LFS bits must be set; all others inc the whitbits clear */
+  /* The collectable and LFS bits must be set; all others inc the whitebits clear */
   ts->marked = bitmask(LFSBIT) | BIT_ISCOLLECTABLE;
   ts->extra  = extra;
-
   if (l <= LUAI_MAXSHORTLEN) {                              /* short string */
     TString  **p;
     ts->tt = LUA_TSHRSTR;
@@ -469,25 +472,28 @@ static void addTS(LoadState *S, int l, int extra) {
     ts->hash = luaS_hash(s, l, fh->seed);
     p = S->list + lmod(ts->hash, S->listLen);
     ts->u.hnext = *p;
-    ts->next = cast(GCObject *, fh->shortTShead);
-    S->TS[S->TSndx] = fh->shortTShead = *p = StoreN(S, S->buff, totl);
-
+    ts->next = FHaddr(S, GCObject *, fh->shortTShead);
+    S->TS[S->TSndx] = *p = StoreR(S, NULL, 0, *ts, FMT_TSTRING);
+    fh->shortTShead = FHoffset(S, *p);
   } else {                                                   /* long string */
+    TString  *p;
     ts->tt = LUA_TLNGSTR;
     ts->shrlen = 0;
     ts->u.lnglen = l;
     ts->hash = fh->seed;
     luaS_hashlongstr(ts);                     /* sets hash and extra fields */
-    ts->next = cast(GCObject *, fh->longTShead);
-    S->TS[S->TSndx] = fh->longTShead = StoreN(S, S->buff, sizelstring(l));
+    ts->next = FHaddr(S, GCObject *, fh->longTShead);
+    S->TS[S->TSndx] = p = StoreR(S, NULL, 0, *ts, FMT_TSTRING);
+    fh->longTShead = FHoffset(S, p);
   }
+// printf("%04u(%u): %s\n", S->TSndx, l, S->buff + sizeof(union UTString));
+  StoreN(S,S->buff + sizeof(union UTString), l+1);
   S->TSndx++;
 }
-
 /*
 ** The runtime (in ltm.c and llex.c) declares ~100 fixed strings and so these
 ** are moved into LFS to free up an extra ~2Kb RAM.  Extra get token access
-** functions have been added to these modules.  These tokens aren't unique as 
+** functions have been added to these modules.  These tokens aren't unique as
 ** ("nil" and "function" are both tokens and typenames), hardwiring this
 ** duplication debounce as a wrapper around addTS() is the simplest way of
 ** voiding the need for extra lookup resources.
@@ -505,7 +511,6 @@ static void addTSnodup(LoadState *S, const char *s, int extra) {
   memcpy(getstr(cast(TString *, S->buff)), s, l);
   addTS(S, l, extra);
 }
-
 /*
 ** Load TStrings in dump format. ALl TStrings used in an LFS image excepting
 ** any fixed strings are dumped as a unique collated set.  Any strings in the
@@ -517,14 +522,13 @@ static void LoadAllStrings (LoadState *S) {
   lua_State *L = S->L;
   global_State *g = G(L);
   int nb       = sizelstring(LoadInt(S));
-  int ns       = LoadInt(S); 
+  int ns       = LoadInt(S);
   int nl       = LoadInt(S);
   int nstrings = LoadInt(S);
   int n        = ns + nl;
   int nlist    = 1<<luaO_ceillog2(ns);
   int i, extra;
-  const char *p;  
-
+  const char *p;
   /* allocate dynamic resources and save in S for error path collection */
   S->TS      = luaM_newvector(L, n+1, TString *);
   S->TSlen   = n+1;
@@ -533,16 +537,14 @@ static void LoadAllStrings (LoadState *S) {
   S->list    = luaM_newvector(L, nlist, TString *);
   S->listLen = nlist;
   memset (S->list, 0, nlist*sizeof(TString *));
-
   /* add the strings in the image file to LFS */
   for (i = 1; i <= nstrings; i++) {
     int tt = LoadByte(S);
-    lua_assert((tt&LUAU_TMASK)==LUAU_TSTRING);
+    lua_assert((tt&LUAU_TMASK)==LUAU_TSSTRING || (tt&LUAU_TMASK)==LUAU_TLSTRING);
     int l = LoadInteger(S, tt) - 1; /* No NULL entry in list of TSs */
     LoadVector(S, getstr(cast(TString *, S->buff)), l);
     addTS(S, l, 0);
   }
-
   /* add the fixed strings to LFS */
   for (i = 0; (p = luaX_getstr(i, &extra))!=NULL; i++) {
     addTSnodup(S, p, extra);
@@ -554,8 +556,7 @@ static void LoadAllStrings (LoadState *S) {
   }
   /* check that the actual size is the same as the predicted */
   lua_assert(n == S->TSndx-1);
-  
-  S->fh->pROhash = StoreN(S, S->list, nlist);
+  S->fh->oROhash = FHoffset(S, StoreAV(S, S->list, nlist));
   S->fh->nROuse  = ns;
   S->fh->nROsize = nlist;
   StoreFlush(S);
@@ -564,15 +565,12 @@ static void LoadAllStrings (LoadState *S) {
   S->list    = luaM_freearray(L, S->list, nlist);
   S->listLen = 0;
 }
-
-
 static void LoadAllProtos (LoadState *S) {
   lua_State *L = S->L;
   ROTable_entry eol = {NULL, LRO_NILVAL};
   int i, n = LoadInt(S);
   S->pv    = luaM_newvector(L, n, Proto *);
   S->pvLen = n;
-  
   /* Load Protos and store addresses in the Proto vector */
   for (i = 0; i < n; i++) {
     S->pv[i] = LoadFunction(S, luaF_newproto(L), NULL);
@@ -582,25 +580,24 @@ static void LoadAllProtos (LoadState *S) {
   ROTable_entry *entry_list = cast(ROTable_entry *, StoreGetPos(S));
   for (i = 0; i < n; i++) {
     lu_byte tt_data = LoadByte(S);
-    lua_assert((tt_data & LUAU_TMASK) == LUAU_TSTRING);
-    ROTable_entry me = {getstr(LoadString2(S, tt_data)), LRO_LUDATA(S->pv[i])};
-    StoreN(S, &me, 1);
+    TString *Tname = LoadString2(S, tt_data);
+    const char *name = getstr(Tname) + OFFSET_TSTRING;
+    lua_assert((tt_data & LUAU_TMASK) == LUAU_TSSTRING);
+    ROTable_entry me = {name, LRO_LUDATA(S->pv[i])};
+    StoreR(S, NULL, 0, me, FMT_ROTENTRY);
   }
-  StoreN(S, &eol, 1);
+  StoreR(S, NULL, 0, eol, FMT_ROTENTRY);
   /* terminate the ROTable entry list and store the ROTable header */
   ROTable ev = { (GCObject *)1, LUA_TTBLROF, LROT_MARKED,
                  (lu_byte) ~0, n, NULL, entry_list};
-  S->fh->protoROTable = StoreN(S, &ev, 1);
+  S->fh->protoROTable = FHoffset(S, StoreR(S, NULL, 0, ev, FMT_ROTABLE));
   /* last const is timestamp */
   S->fh->timestamp = LoadInteger(S, LoadByte(S));
 }
-
-
 static void undumpLFS(lua_State *L, void *ud) {
   LoadState *S = cast(LoadState *, ud);
   void *F = S->Z->data;
-  char *startLFS = StoreGetPos(S);
-
+  S->startLFS = StoreGetPos(S);
   luaN_setFlash(F, sizeof(LFSHeader));
   S->fh->flash_sig = FLASH_SIG;
   if (LoadByte(S) != LUA_SIGNATURE[0])
@@ -611,25 +608,23 @@ static void undumpLFS(lua_State *L, void *ud) {
   LoadAllStrings (S);
   checkliteral(S, LUA_PROTO_SIG,"no Proto vector");
   LoadAllProtos(S);
-  S->fh->flash_size = cast(char *, StoreGetPos(S)) - startLFS;
+  S->fh->flash_size = byteptr(StoreGetPos(S)) - byteptr(S->startLFS);
   luaN_setFlash(F, 0);
   StoreN(S, S->fh, 1);
   luaN_setFlash(F, 0);
   S->TS = luaM_freearray(L, S->TS, S->TSlen);
 }
-
-
 /*
 ** Load precompiled LFS image.  This is called from a hook in the firmware
 ** startup if LFS reload is required.
 */
-LUAI_FUNC int luaU_undumpLFS(lua_State *L, ZIO *Z) {
+LUAI_FUNC int luaU_undumpLFS(lua_State *L, ZIO *Z, int isabs) {
   LFSHeader fh = {0};
   LoadState S  = {0};
   int status;
   S.L = L;
   S.Z = Z;
-  S.mode = MODE_LFS;
+  S.mode = isabs && sizeof(size_t) != sizeof(lu_int32) ? MODE_LFSA : MODE_LFS;
   S.useStrRefs = 1;
   S.fh = &fh;
   L->nny++;                                 /* do not yield during undump LFS */

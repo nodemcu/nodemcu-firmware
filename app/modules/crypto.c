@@ -50,7 +50,7 @@ static int call_encoder( lua_State* L, const char *function ) {
     luaL_error(L, "%s must have one argument", function);
   }
   lua_getglobal(L, "encoder");
-  luaL_checktable(L, -1);
+  luaL_checktype(L, -1, LUA_TTABLE);
   lua_getfield(L, -1, function);
   lua_insert(L, 1);    //move function below the argument
   lua_pop(L, 1);       //and dump the encoder rotable from stack.

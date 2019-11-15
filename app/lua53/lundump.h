@@ -17,7 +17,8 @@
 #define LUAU_TNUMFLT		(2<<4)
 #define LUAU_TNUMPINT		(3<<4)
 #define LUAU_TNUMNINT		(4<<4)
-#define LUAU_TSTRING		(5<<4)
+#define LUAU_TSSTRING		(5<<4)
+#define LUAU_TLSTRING		(6<<4)
 #define LUAU_TMASK      (7<<4)
 #define LUAU_DMASK      0x0f
 
@@ -46,5 +47,5 @@ LUAI_FUNC int luaU_dump (lua_State* L, const Proto* f, lua_Writer w,
 LUAI_FUNC int luaU_DumpAllProtos(lua_State *L, const Proto *m, lua_Writer w,
                          void *data, int strip);
 
-LUAI_FUNC int luaU_undumpLFS(lua_State *L, ZIO *Z);
+LUAI_FUNC int luaU_undumpLFS(lua_State *L, ZIO *Z, int isabs);
 #endif

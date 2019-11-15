@@ -825,7 +825,7 @@ static int str_format (lua_State *L) {
 
 static int str_format2 (lua_State *L) {
   if (lua_type(L, 2) == LUA_TTABLE) {
-    int i,n=lua_rawlen(L,2);
+    int i,n=lua_objlen(L,2);
     lua_settop(L,2);
     for (i = 1; i <= n; i++)
       lua_rawgeti(L, 2, i);

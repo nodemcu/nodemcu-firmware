@@ -122,8 +122,8 @@
 
 /*
 @@ LUAI_FUNC, LUAI_DDEF and LUAI_DDEC are used to mark visibilty when
-** building lua as a shared library.  Used to tag private inter-module 
-** Lua internal functions. 
+** building lua as a shared library.  Used to tag private inter-module
+** Lua internal functions.
 */
 //#define LUAI_FUNC	__attribute__((visibility("hidden"))) extern
 #define LUAI_FUNC	extern
@@ -141,7 +141,7 @@
 //#define LUA_COMPAT_IPAIRS  // enables __ipairs meta which isn't used in NodeMCU
 
 #define LUA_NODEMCU_COMPAT_MATHLIB /* retains NodeMCU subset of mathlib */
-#define LUA_COMPAT_APIINTCASTS     /* needed to enable NodeMCU modules to work on */ 
+#define LUA_COMPAT_APIINTCASTS     /* needed to enable NodeMCU modules to work on */
                                    /* both Lua 5.1 and Lua 5.3 */
 #define LUA_COMPAT_UNPACK          /* needed to support a  global 'unpack' */
 #define LUA_COMPAT_LOADERS         /* keeps 'package.loaders' as a synonym for */

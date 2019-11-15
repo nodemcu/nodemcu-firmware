@@ -204,7 +204,7 @@ static void init_registry (lua_State *L, global_State *g) {
 }
 
 
-LUAI_FUNC int luaN_init (lua_State *L, int hook);
+LUAI_FUNC int luaN_init (lua_State *L);
 /*
 ** open parts of the state that may cause memory-allocation errors.
 ** ('g->version' != NULL flags that the state was completely build)
@@ -214,7 +214,7 @@ static void f_luaopen (lua_State *L, void *ud) {
   UNUSED(ud);
   stack_init(L, L);  /* init stack */
   init_registry(L, g);
-  luaN_init(L, 1);   /* optionally map RO string table */
+  luaN_init(L);   /* optionally map RO string table */
   luaS_init(L);
   luaT_init(L);
   luaX_init(L);

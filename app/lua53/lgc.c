@@ -238,7 +238,7 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
 static void reallymarkobject (global_State *g, GCObject *o) {
  reentry:
   if (isLFSobj(o))
-    return;  
+    return;
   /* DEBUG: Catch any attempt to mark an unmarked LFS object */
   lua_assert((unsigned)(((char *) o)-((char *) g->l_LFS)) > g->LFSsize);
   white2gray(o);

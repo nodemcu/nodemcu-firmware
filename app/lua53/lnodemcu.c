@@ -38,8 +38,15 @@
 */
 
 #define byte_addr(p) cast(char *,p)
+#define byteptr(p)      cast(lu_byte *, p)
+#define byteoffset(p,q) (byteptr(p) - byteptr(q))
+#define wordptr(p)      cast(lu_int32 *, p)
+#define wordoffset(p,q) (wordptr(p) - wordptr(q))
+
+
 //== Wrap POSIX and VFS file API =============================================//
 #ifdef LUA_USE_ESP
+int luaopen_file(lua_State *L);
 #  define l_file(f)   int f
 #  define l_open(f)   vfs_open(f, "r")
 #  define l_close(f)  vfs_close(f)
@@ -69,31 +76,46 @@ extern void dbg_printf(const char *fmt, ...);                // DEBUG
   UNUSED(memcmp(F->addr, F->addr+(0x8000/sizeof(*F->addr)), 0x8000));
 #define unlockFlashWrite()
 #define lockFlashWrite()
- 
+
 #else // LUA_USE_HOST
 
 #include<stdio.h>                                             // DEBUG
-
-
 /*
-** The ESP implementation use a platform_XXX() API to provide a level of 
+** The ESP implementation use a platform_XXX() API to provide a level of
 ** H/W abstraction.  The following functions and macros emulate a subset
-** of this API for the host environment.
+** of this API for the host environment. LFSregion is the true address in
+** the luac process address space of the mapped LFS region.  All actual
+** erasing and writing is done relative to this address.
+**
+** In normal LFS emulation the LFSaddr is also set to this LFSregion address
+** so that any subsequent execution using LFS refers to the correct memory
+** address.
+**
+** The second LFS mode is used to create absolute LFS images for directly
+** downloading to the ESP or including in a firmware image, and in this case
+** LFSaddr refers to the actual ESP mapped address of the  ESP LFS region.
+** This is a 32-bit address typically in the address range 0x40210000-0x402FFFFF
+** (and with the high 32bits set to 0 in the case of 64-bit execution). Such
+** images are solely intended for ESP execution and any attempt to execute
+** them in a host execution environment will result in an address exception.
 */
-void *LFSregion = NULL;
-extern char *LFSimageName;
-
 #define PLATFORM_RCR_FLASHLFS  4
 #define LFS_SIZE         0x40000
 #define FLASH_PAGE_SIZE   0x1000
 #define FLASH_BASE       0x90000           /* Some 'Random' but typical value */
+#define IROM0_SEG     0x40210000ul
 
-#ifdef __unix__       
+void         *LFSregion = NULL;
+static void  *LFSaddr   = NULL;
+static size_t LFSbase   = FLASH_BASE;
+extern char  *LFSimageName;
+
+#ifdef __unix__
 /* On POSIX systems we can toggle the "Flash" write attribute */
 #include <sys/mman.h>
 #define aligned_malloc(a,n) posix_memalign(&a, FLASH_PAGE_SIZE, (n))
-#define unlockFlashWrite() mprotect(LFSregion, LFS_SIZE, PROT_READ| PROT_WRITE)
-#define lockFlashWrite() mprotect(LFSregion, LFS_SIZE, PROT_READ) 
+#define unlockFlashWrite() mprotect(LFSaddr, LFS_SIZE, PROT_READ| PROT_WRITE)
+#define lockFlashWrite() mprotect(LFSaddr, LFS_SIZE, PROT_READ)
 #else
 #define aligned_malloc(a,n) ((a = malloc(n)) == NULL)
 #define unlockFlashWrite()
@@ -102,36 +124,44 @@ extern char *LFSimageName;
 
 #define platform_rcr_write(id,rec,l) (128)
 #define platform_flash_phys2mapped(n) \
-    (byte_addr(LFSregion) + (n) - FLASH_BASE)
+    (byteptr(LFSaddr) + (n) - LFSbase)
 #define platform_flash_mapped2phys(n) \
-    ((byte_addr((n)) - byte_addr(LFSregion)) + FLASH_BASE)
+    (byteoffset(n, LFSaddr) + LFSbase)
 #define platform_flash_get_sector_of_address(n) ((n)>>12)
 #define platform_rcr_delete(id) LFSimageName = NULL
 #define platform_rcr_read(id,s) \
   (*s = LFSimageName, (LFSimageName) ? strlen(LFSimageName) : ~0);
 
-static lu_int32 platform_flash_get_partition (lu_int32 part_id, lu_int32 *addr){
+void luaN_setabsolute(lu_int32 addr) {
+  LFSaddr = cast(void *, cast(size_t, addr));
+  LFSbase = addr - IROM0_SEG;
+}
+
+static lu_int32 platform_flash_get_partition (lu_int32 part_id, lu_int32 *addr) {
   lua_assert(part_id == NODEMCU_LFS0_PARTITION);
   if (!LFSregion) {
-    lua_assert(!aligned_malloc(LFSregion, LFS_SIZE));
+    aligned_malloc(LFSregion, LFS_SIZE);
     memset(LFSregion, ~0, LFS_SIZE);
     lockFlashWrite();
   }
-  *addr = FLASH_BASE;                                          
+  if(LFSaddr == NULL)
+    LFSaddr = LFSregion;
+  *addr = LFSbase;
   return LFS_SIZE;
 }
 
 static void platform_flash_erase_sector(lu_int32 i) {
-/* DEBUG */ lua_assert (i >= 144 && i < 208); 
+  lua_assert (i >= LFSbase/FLASH_PAGE_SIZE &&
+              i < (LFSbase+LFS_SIZE)/FLASH_PAGE_SIZE);
   unlockFlashWrite();
-  memset(cast(char *,LFSregion) + i*FLASH_PAGE_SIZE, ~(0), FLASH_PAGE_SIZE);
+  memset(byteptr(LFSregion) + (i*FLASH_PAGE_SIZE - LFSbase), ~(0), FLASH_PAGE_SIZE);
   lockFlashWrite();
 }
 
-static void platform_s_flash_write(const void *from, lu_int32 to, lu_int32 len) {  
-  lua_assert(to >= 0x90000 && to + len < 0xb0000);  /* DEBUG */
+static void platform_s_flash_write(const void *from, lu_int32 to, lu_int32 len) {
+  lua_assert(to >= LFSbase && to + len < LFSbase + LFS_SIZE);  /* DEBUG */
   unlockFlashWrite();
-  memcpy(cast(char *,LFSregion) + (to-FLASH_BASE), from, len);
+  memcpy(byteptr(LFSregion) + (to-LFSbase), from, len);
   lockFlashWrite();
 }
 
@@ -336,21 +366,26 @@ typedef struct LFSflashState {
   LFSHeader   hdr;
   l_file(f);
   const char *LFSfileName;
-  size_t     *addr;
+  lu_int32   *addr;
   lu_int32    oNdx;               /* in size_t units */
   lu_int32    oChunkNdx;          /* in size_t units */
-  size_t     *oBuff;              /* FLASH_PAGE_SIZE bytes */
+  lu_int32   *oBuff;              /* FLASH_PAGE_SIZE bytes */
   lu_byte    *inBuff;             /* FLASH_PAGE_SIZE bytes */
   lu_int32    inNdx;              /* in bytes */
   lu_int32    addrPhys;
   lu_int32    size;
+  lu_int32    allocmask;
   stringtable ROstrt;
   GCObject   *pLTShead;
 } LFSflashState;
-#define WORDSIZE sizeof(size_t)
-#define WORDS(n) (n + WORDSIZE - 1) / WORDSIZE;
+#define WORDSIZE sizeof(lu_int32)
 #define OSIZE (FLASH_PAGE_SIZE/WORDSIZE)
 #define ISIZE (FLASH_PAGE_SIZE)
+#ifdef LUA_USE_ESP
+#define ALIGN(F,n) (n + WORDSIZE - 1) / WORDSIZE;
+#else
+#define ALIGN(F,n) ((n + F->allocmask) & ~(F->allocmask)) / WORDSIZE;
+#endif
 
 /* This conforms to the ZIO lua_Reader spec, hence the L parameter */
 static const char *readF (lua_State *L, void *ud, size_t *size) {
@@ -368,14 +403,20 @@ static const char *readF (lua_State *L, void *ud, size_t *size) {
 
 static void eraseLFS(LFSflashState *F) {
   lu_int32 i;
-  lua_writestringerror("\nErasing LFS from flash addr 0x%06x", F->addrPhys);
+  printf("\nErasing LFS from flash addr 0x%06x", F->addrPhys);
   unlockFlashWrite();
   for (i = 0; i < F->size; i += FLASH_PAGE_SIZE) {
+    size_t *f = cast(size_t *, F->addr + i/sizeof(*f));
     lu_int32 s = platform_flash_get_sector_of_address(F->addrPhys + i);
-printf(".");
+    /* it is far faster not erasing if you don't need to */
+#ifdef LUA_USE_ESP
+    if (*f == ~0 && !memcmp(f, f + 1, FLASH_PAGE_SIZE - sizeof(*f)))
+      continue;
+#endif
     platform_flash_erase_sector(s);
+    printf(".");
   }
-  lua_writestringerror(" to 0x%06x\n", F->addrPhys + F->size-1);
+  printf(" to 0x%06x\n", F->addrPhys + F->size-1);
   flush_icache(F);
   lockFlashWrite();
 }
@@ -397,37 +438,33 @@ LUAI_FUNC void luaN_flushFlash(void *vF) {
   F->oNdx = 0;
 }
 
-LUAI_FUNC char *luaN_writeFlash(void *vF, const void *rec, size_t n) {
+LUAI_FUNC void *luaN_writeFlash(void *vF, const void *rec, size_t n) {
   LFSflashState *F = cast(LFSflashState *, vF);
-  char *p   = byte_addr(F->addr + F->oChunkNdx + F->oNdx);
+  lu_byte *p   = byteptr(F->addr + F->oChunkNdx + F->oNdx);
+//int i; printf("writing %4u bytes:", (lu_int32) n); for (i=0;i<n;i++){printf(" %02x", byteptr(rec)[i]);} printf("\n");
   if (n==0)
     return p;
-//if (p - (char*)F->addr > 0x7828)  lua_debugbreak();                  //DEBUG
-  
   while (1) {
-//lu_int32 offset = (lu_int32)(p-(char*)F->addr);
-    int   nw  = WORDS(n);
+    int nw  = ALIGN(F, n);
     if (F->oNdx + nw > OSIZE) {
       /* record overflows the buffer so fill buffer, flush and repeat */
       int rem = OSIZE - F->oNdx;
       if (rem)
         memcpy(F->oBuff+F->oNdx, rec, rem * WORDSIZE);
-      rec     = cast(void *, cast(size_t *, rec) + rem);
+      rec     = cast(void *, cast(lu_int32 *, rec) + rem);
       n      -= rem * WORDSIZE;
       F->oNdx = OSIZE;
-//printf("Flash OP:  %06x %x\n", offset, rem);  //DEBUG
       luaN_flushFlash(F);
     } else {
       /* append remaining record to buffer */
       F->oBuff[F->oNdx+nw-1] = 0;       /* ensure any trailing odd byte are 0 */
       memcpy(F->oBuff+F->oNdx, rec, n);
       F->oNdx += nw;
-//printf("Flash OP:  %06x %x (%u)\n", offset, nw, n);  //DEBUG
       break;
     }
   }
 //int i; for (i=0;i<(rem * WORDSIZE); i++) {printf("%c%02x",i?' ':'.',*((lu_byte*)rec+i));}
-//for (i=0;i<n; i++) printf("%c%02x",i?' ':'.',*((lu_byte*)rec+i));  
+//for (i=0;i<n; i++) printf("%c%02x",i?' ':'.',*((lu_byte*)rec+i));
 //printf("\n");
   return p;
 }
@@ -436,21 +473,24 @@ LUAI_FUNC char *luaN_writeFlash(void *vF, const void *rec, size_t n) {
 /*
 ** Hook used in Lua Startup to carry out the optional LFS startup processes.
 */
-LUAI_FUNC int luaN_init (lua_State *L, int hook) {
-  static LFSflashState *F;
+LUAI_FUNC int luaN_init (lua_State *L) {
+  static LFSflashState *F = NULL;
   int n;
   static LFSHeader *fh;
-  /* Entry 1 is called from lstate.c:f_luaopen() before modules are initialised */
-  if (hook == 1) {
+ /*
+  * The first entry is called from lstate.c:f_luaopen() before modules
+  * are initialised.  This is detected because F is NULL on first entry.
+  */
+  if (F == NULL) {
     size_t Fsize = sizeof(LFSflashState) + OSIZE*WORDSIZE + ISIZE;
     /* outlining the buffers just makes debugging easier.  Sorry */
     F = calloc(Fsize, 1);
-    F->oBuff = cast(size_t *, F + 1);
-    F->inBuff = cast(lu_byte *, F->oBuff + OSIZE);
+    F->oBuff = wordptr(F + 1);
+    F->inBuff = byteptr(F->oBuff + OSIZE);
     n = platform_rcr_read(PLATFORM_RCR_FLASHLFS, cast(void**, &F->LFSfileName));
     F->size = platform_flash_get_partition (NODEMCU_LFS0_PARTITION, &F->addrPhys);
     if (F->size) {
-      F->addr  = cast(size_t *, platform_flash_phys2mapped(F->addrPhys));
+      F->addr  = cast(lu_int32 *, platform_flash_phys2mapped(F->addrPhys));
       fh = cast(LFSHeader *, F->addr);
       if (n < 0) {
         global_State *g = G(L);
@@ -459,17 +499,17 @@ LUAI_FUNC int luaN_init (lua_State *L, int hook) {
         if (fh->flash_sig   == FLASH_SIG) {
           g->l_LFS       = fh;
           g->seed        = fh->seed;
-          g->ROstrt.hash = fh->pROhash;
+          g->ROstrt.hash = cast(TString **, F->addr + fh->oROhash);
           g->ROstrt.nuse = fh->nROuse ;
           g->ROstrt.size = fh->nROsize;
-          sethvalue(L, &g->LFStable, cast(Table *, fh->protoROTable));
+          sethvalue(L, &g->LFStable, cast(Table *, F->addr + fh->protoROTable));
            lua_writestringerror("LFS image %s\n", "loaded");
         } else if ((fh->flash_sig != 0 && fh->flash_sig != ~0)) {
           lua_writestringerror("LFS image %s\n", "corrupted.");
           eraseLFS(F);
         }
       }
-    } 
+    }
     return 0;
   } else {  /* hook 2 called from protected pmain, so can throw errors. */
     int status = 0;
@@ -484,11 +524,14 @@ LUAI_FUNC int luaN_init (lua_State *L, int hook) {
 #ifdef DEVELOPMENT_USE_GDB
 /* For GDB builds,  prefixing the filename with ! forces a break in the hook */
       if (F->LFSfileName[0] == '!') {
-        lua_debugbreak();    
+        lua_debugbreak();
         F->LFSfileName++;
       }
 #endif
       platform_rcr_delete(PLATFORM_RCR_FLASHLFS);
+#ifdef LUA_USE_ESP
+     luaopen_file(L);
+#endif
       if (!(F->f = l_open(F->LFSfileName))) {
         free(F);
         return luaL_error(L, "cannot open %s", F->LFSfileName);
@@ -496,15 +539,23 @@ LUAI_FUNC int luaN_init (lua_State *L, int hook) {
       eraseLFS(F);
       luaZ_init(L, &z, readF, F);
       lua_lock(L);
-      status = luaU_undumpLFS(L, &z);
+#ifdef LUA_USE_HOST
+      F->allocmask = (LFSaddr == LFSregion) ? sizeof(size_t) - 1 :
+                                              sizeof(lu_int32) - 1;
+      status = luaU_undumpLFS(L, &z, LFSaddr != LFSregion);
+#else
+      status = luaU_undumpLFS(L, &z, 0);
+#endif
       lua_unlock(L);
       l_close(F->f);
       free(F);
-      if (status != LUA_OK)
-        lua_error(L);                                        /* rethrow error */
-      status = 1;                                     /* return 1 == restart! */
+      F = NULL;
+      if (status == LUA_OK)
+        lua_pushboolean(L, 1);       /* A true error object signals a restart */
+      lua_error(L);                          /* throw error / restart request */
     } else {                                     /* hook == 2, Normal startup */
       free(F);
+      F = NULL;
     }
     return status;
   }
@@ -517,7 +568,7 @@ LUAI_FUNC int luaN_init (lua_State *L, int hook) {
 
 LUAI_FUNC int  luaN_reload_reboot (lua_State *L) {
   int n = 0;
-#ifdef LUA_USE_ESP  
+#ifdef LUA_USE_ESP
   size_t l;
   int off = 0;
   const char *img = lua_tolstring(L, 1, &l);

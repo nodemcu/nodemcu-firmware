@@ -760,13 +760,13 @@ static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos)
   * In practice most table scans are from a table miss due to the key cache
   * short-circuiting almost all table hits. ROTable keys can be unsorted
   * because of legacy compatibility, so the search must use a sequential
-  * equality match. 
+  * equality match.
   *
   * The masked name4 comparison is a safe 4-byte comparison for all supported
   * NodeMCU hosts and targets; It generate fast efficient access that avoids
   * unaligned exceptions and costly strcmp() except for a last hit validation.
   * However, this is ENDIAN SENSITIVE which is validate during initialisation.
-  * 
+  *
   * The majority of search misses are for metavalues (keys starting with __),
   * so all metavalues if any must be at the front of each entry list.
   */
@@ -780,13 +780,13 @@ static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos)
     for(i = 0; i < tl && ismeta(e[i].key); i++) {
       if (eq4(e[i].key) && !strcmp(e[i].key, strkey)) {
         j = 0; break;
-      }            
+      }
     }
   } else {
     for(i = 0; i < tl; i++) {
       if (eq4(e[i].key) && !strcmp(e[i].key, strkey)) {
         j = 0; break;
-      }            
+      }
     }
   }
   if (j)

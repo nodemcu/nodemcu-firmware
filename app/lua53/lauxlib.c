@@ -1020,10 +1020,10 @@ LUALIB_API int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
 
 
 /*
-** Stripped-down 'require' used in linit.c and ltests.c.  After checking "loaded" and ROM tables, calls
-** 'openf' to open a module, registers the result in 'package.loaded' table
-** and, if 'glb' is true, also registers the result in the global table.
-** Leaves resulting module on the top.
+** Stripped-down 'require' used in linit.c and ltests.c.  After checking
+** "loaded" and ROM tables, calls 'openf' to open a module, registers the
+** result in 'package.loaded' table and, if 'glb' is true, also registers
+** the result in the global table.  Leaves resulting module on the top.
 */
 LUALIB_API void luaL_requiref (lua_State *L, const char *modname,
                                lua_CFunction openf, int glb) {
@@ -1129,14 +1129,16 @@ static int errhandler_aux (lua_State *L) {
 
 
 /*
-** Error handler for luaL_pcallex()
+** Error handler for luaL_pcallx()
 */
 static int errhandler (lua_State *L) {
-   if (lua_type(L, -1) != LUA_TSTRING) {     /* is error object not a string? */
+  if (lua_isnil(L, -1))
+    return 0;
+  if (lua_type(L, -1) != LUA_TSTRING) {     /* is error object not a string? */
     if (luaL_callmeta(L, 1, "__tostring") &&     /* does it have a metamethod */
         lua_type(L, -1) == LUA_TSTRING) {          /* that produces a string? */
       lua_remove(L, 1);                              /* replace ToS with this */
-    } else {
+    } else if (!lua_isnil(L,-1)) {
       lua_pushfstring(L, "(error object is a %s value)", luaL_typename(L, 1));
       lua_remove(L, 1);        /* replace ToS with error object is type value */
     }
@@ -1161,15 +1163,18 @@ LUALIB_API int luaL_pcallx (lua_State *L, int narg, int nres) {
   return status;
 }
 
-
+extern void lua_main(void);
 /*
 ** Task callback handler. Uses luaN_call to do a protected call with full traceback
 */
 static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
   lua_State* L = lua_getstate();
-  if (prio < 0|| prio > 2)
+  if(task_fn_ref == (platform_task_param_t)~0 && prio == LUA_TASK_HIGH) {
+    lua_main();                   /* Undocumented hook for lua_main() restart */
+    return;
+  }
+  if (prio < LUA_TASK_LOW|| prio > LUA_TASK_HIGH)
     luaL_error(L, "invalid posk task");
-
 /* Pop the CB func from the Reg */
   lua_rawgeti(L, LUA_REGISTRYINDEX, (int) task_fn_ref);
   luaL_checktype(L, -1, LUA_TFUNCTION);
@@ -1181,18 +1186,30 @@ static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
 /*
 ** Schedule a Lua function for task execution
 */
-LUALIB_API int luaL_posttask( lua_State* L, int prio ) {            // [-1, +0, -]
+LUALIB_API int luaL_posttask ( lua_State* L, int prio ) {         // [-1, +0, -]
   static platform_task_handle_t task_handle = 0;
   if (!task_handle)
     task_handle = platform_task_get_id(do_task);
-
-  if (!lua_isfunction(L, -1) || prio < LUA_TASK_LOW|| prio > LUA_TASK_HIGH)
-    luaL_error(L, "invalid posk task");
-  int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  if(!platform_post(prio, task_handle, (platform_task_param_t)task_fn_ref)) {
-    luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
-    luaL_error(L, "Task queue overflow. Task not posted");
+  if (L == NULL && prio == LUA_TASK_HIGH+1) { /* Undocumented hook for lua_main */
+    platform_post(LUA_TASK_HIGH, task_handle, (platform_task_param_t)~0);
+    return -1;
   }
-  return task_fn_ref;
+  if (lua_isfunction(L, -1) && prio >= LUA_TASK_LOW && prio <= LUA_TASK_HIGH) {
+    int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    if(!platform_post(prio, task_handle, (platform_task_param_t)task_fn_ref)) {
+      luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
+      luaL_error(L, "Task queue overflow. Task not posted");
+    }
+    return task_fn_ref;
+  } else {
+    return luaL_error(L, "invalid posk task");
+  }
+}
+#else
+/*
+** Task execution isn't supported on HOST builds so returns a -1 status
+*/
+LUALIB_API int luaL_posttask( lua_State* L, int prio ) {            // [-1, +0, -]
+  return -1;
 }
 #endif

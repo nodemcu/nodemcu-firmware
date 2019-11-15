@@ -420,6 +420,7 @@ LUA_API void lua_setegcmode(lua_State *L, int mode, int limit);
 #define dbg_printf printf
 
 #endif
+extern void luaL_dbgbreak(void);
 
 /******************************************************************************
 * Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.

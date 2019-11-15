@@ -44,10 +44,11 @@ static lu_int32 address = 0;		/* output flash image at absolute location */
 static lu_int32 maxSize = 0x40000;	/* maximuum uncompressed image size */
 static int lookup = 0;			/* output lookup-style master combination header */
 static const char *execute;		/* executed a Lua file */
-extern lu_int32 dumpToFlashImage (lua_State* L, const Proto *main, lua_Writer w,
-                                  void* data, int strip,
-                                  lu_int32 address, lu_int32 maxSize);
 char *LFSimageName;
+
+#define IROM0_SEG    0x40200000ul
+#define IROM0_SEGMAX 0x00100000ul
+#define IROM_OFFSET(a) (cast(lu_int32, (a)) - IROM0_SEG)
 
 
 static void fatal(const char *message) {
@@ -75,6 +76,8 @@ static void usage(const char *message) {
     "  -F name  load a flash image file\n"
     "  -a addr  generate an absolute, rather than "
                "position independent flash image file\n"
+    "           (use with -F LFSimage -o absLFSimage to "
+               "convert an image to absolute format)\n"
     "  -i       generate lookup combination master (default with option -f)\n"
     "  -m size  maximum LFS image in bytes\n"
     "  -p       parse only\n"
@@ -90,6 +93,7 @@ static void usage(const char *message) {
 static int doargs(int argc, char *argv[]) {
   int i;
   int version = 0;
+  lu_int32 offset = 0;
   if (argv[0] != NULL && *argv[0] != 0) progname = argv[0];
   for (i = 1; i < argc; i++) {
     if ( *argv[i] != '-') {                       /* end of options; keep it */
@@ -110,14 +114,12 @@ static int doargs(int argc, char *argv[]) {
         usage("\"-F\" needs an LFS image file argument");
     } else if (IS("-f")) {                                /* Flash image file */
       flash = lookup = 1;
-#if 0
     } else if (IS("-a")) {                        /* Absolue flash image file */
       flash = lookup = 1;
       address = strtol(argv[++i], NULL, 0);
       offset = IROM_OFFSET(address);
-      if (offset == 0)
+      if (offset == 0 || offset > IROM0_SEGMAX)
         usage("\"-a\" absolute address must be valid flash address");
-#endif
     } else if (IS("-i")) {                                          /* lookup */
       lookup = 1;
     }  else if (IS("-l")) {                                           /* list */
@@ -142,6 +144,11 @@ static int doargs(int argc, char *argv[]) {
       usage(argv[i]);
     }
   }
+
+  if (offset>0 && (output == NULL || LFSimageName == NULL ||
+                   execute != NULL || i != argc))
+    usage("'-a' also requires '-o' and '-f' options without lua source files");
+
   if (i == argc && (listing || !dumping)) {
     dumping = 0;
     argv[--i] = Output;
@@ -209,7 +216,7 @@ static const Proto *combine(lua_State *L, int n, int type) {
         int len;
         const char *name = corename(L, f->p[i]->source, &len);
         TString* sname = luaS_newlstr(L, name, len);
-        setsvalue2n(L, f->k+i, sname);      
+        setsvalue2n(L, f->k+i, sname);
       }
       setivalue(f->k+n, (lua_Integer) time(NULL));
     }
@@ -249,10 +256,10 @@ static int dofile (lua_State *L, const char *name) {
 }
 
 /*
-** This function is an inintended consequence of constraints in ltable.c 
+** This function is an inintended consequence of constraints in ltable.c
 ** rotable_findentry().  The file list generates a ROTable in LFS and the
 ** rule for ROTables is that metavalue entries must be at the head of the
-** ROTableentry list so argv file names with basenames starting with "__" 
+** ROTableentry list so argv file names with basenames starting with "__"
 ** must be head of the list.  This is a botch. Sorry.
 */
 static void reorderfiles(lua_State *L, int argc, char **list, char **argv) {
@@ -278,12 +285,8 @@ static int pmain(lua_State *L) {
   int i, status;
   if (!lua_checkstack(L, argc + 1))
     fatal("too many input files");
-  if (execute) {
-    luaL_openlibs(L);
-    if (luaN_init(L, 2)) {    /* >0 means restart request */
-      lua_pushboolean(L, 1);  /* A true error object signals a restart */
-      lua_error(L);           /* throw error to request restart */
-    }
+  if (execute || address) {
+    luaL_openlibs(L);  /* the nodemcu open will throw to signal an LFS reload */
     status = dofile(L, execute);
     if (status != LUA_OK)
       return 0;
@@ -327,7 +330,9 @@ int main(int argc, char *argv[]) {
   int i = doargs(argc, argv);
   int j, status;
   argc -= i; argv += i;
-  if (argc <= 0 && execute == 0) usage("no input files given");
+  if (argc <= 0 && execute == 0 && address == 0) usage("no input files given");
+  if (address)
+    luaN_setabsolute(address);
   for (j = 0; j < 2 ; j++) {
     L = luaL_newstate();
     if (L == NULL) fatal("not enough memory for state");
@@ -337,7 +342,16 @@ int main(int argc, char *argv[]) {
     status = lua_pcall(L, 2, 0, 0);
     if (status != LUA_OK) {
       if (lua_isboolean(L,-1) && lua_toboolean(L,-1)) {
-        /*An LFS image has been loaded so simulate a restart */
+        /*An LFS image has been loaded */
+        if (address) { /* write out as absolute image and exit */
+          lu_int32 size = cast(LFSHeader *, LFSregion)->flash_size;
+          FILE *af = fopen(output, "wb");
+          if (af == NULL) cannot("open");
+          if (fwrite(LFSregion, size, 1, af) != 1) cannot("write");
+          fclose(af);
+          exit(0);
+        }
+        /*otherwise simulate a restart */
         lua_close(L);
         continue; /* and loop around once more simulating restart */
       }

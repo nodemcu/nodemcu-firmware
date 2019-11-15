@@ -136,8 +136,8 @@ c = T.newuserdata(0); debug.setmetatable(c, tt); nc = T.udataval(c)
 x = T.newuserdata(4)
 y = T.newuserdata(0)
 
-checkerr("FILE%* expected, got userdata", io.input, a)
-checkerr("FILE%* expected, got userdata", io.input, x)
+-- checkerr("FILE%* expected, got userdata", io.input, a)
+-- checkerr("FILE%* expected, got userdata", io.input, x)
 
 assert(debug.getmetatable(x) == nil and debug.getmetatable(y) == nil)
 

@@ -58,7 +58,9 @@ typedef struct {
 
 static void DumpBlock (const void *b, size_t size, DumpState *D) {
   if (D->status == 0 && size > 0) {
+    lua_unlock(D->L);
     D->status = (*D->writer)(D->L, b, size, D->data);
+    lua_lock(D->L);
   }
 }
 
@@ -72,8 +74,8 @@ static void DumpByte (lu_byte x, DumpState *D) {
 
 /*
 ** Dump (unsigned) int 0..MAXINT using multibyte encoding (MBE). DumpInt
-** is used for context dependent counts and sizes; no type information 
-** is embedded. 
+** is used for context dependent counts and sizes; no type information
+** is embedded.
 */
 static void DumpInt (lua_Integer x, DumpState *D) {
   lu_byte buf[sizeof(lua_Integer) + 2];
@@ -94,7 +96,7 @@ static void DumpNumber (lua_Number x, DumpState *D) {
 
 
 /*
-** DumpIntTT is MBE and embeds a type encoding for string length and integers.  
+** DumpIntTT is MBE and embeds a type encoding for string length and integers.
 ** It also handles negative integers by forcing the type to LUAU_TNUMNINT.
 ** 0TTTNNNN or 1TTTNNNN (1NNNNNNN)* 0NNNNNNN
 */
@@ -119,19 +121,20 @@ static void DumpIntTT (lu_byte tt, lua_Integer y, DumpState *D) {
 ** The table at D->stringIndex is used to lookup this unique index.
 */
 static void DumpString (const TString *s, DumpState *D) {
-  if (s == NULL)
-    DumpByte(LUAU_TSTRING + 0, D);
-  else {
+  if (s == NULL) {
+    DumpByte(LUAU_TSSTRING + 0, D);
+  } else {
+    lu_byte tt = (gettt(s) == LUA_TSHRSTR) ? LUAU_TSSTRING : LUAU_TLSTRING;
     size_t l = tsslen(s);
     const char *str = getstr(s);
 #ifdef LUA_USE_HOST
     if (D->useStrRefs) {
       const TValue *o = luaH_getstr(D->stringIndex, cast(TString *,s));
-      DumpIntTT(LUAU_TSTRING, ivalue(o), D);
+      DumpIntTT(tt, ivalue(o), D);
       return;
     }
 #endif
-    DumpIntTT(LUAU_TSTRING, l + 1, D);   /* include trailing '\0' */
+    DumpIntTT(tt, l + 1, D);   /* include trailing '\0' */
     DumpVector(str, l, D);  /* no need to save '\0' */
   }
 }
@@ -309,16 +312,16 @@ static void addFixedStrings (DumpState *D) {
 
 /*
 ** Dump all LFS strings. If there are 71 fixed and 17 LFS strings, say, in
-** the stringIndex, then these fixed and LFS  strings are numbered 1..71 and 
-** 72..88 respectively; this numbering is swapped to 18..88 and 1..17.  The 
-** fixed strings are fixed and can be omitted from the LFS image. 
+** the stringIndex, then these fixed and LFS  strings are numbered 1..71 and
+** 72..88 respectively; this numbering is swapped to 18..88 and 1..17.  The
+** fixed strings are fixed and can be omitted from the LFS image.
 */
 static void DumpLFSstrings(DumpState *D) {
   lua_State *L = D->L;
   int n = D->sTScnt + D->lTScnt;
   int i, maxlen = 0, nStrings = n - D->nFixed;
   Table *revT = luaH_new(L);
-  
+
   sethvalue(L, L->top++, revT); /* Put on stack to prevent GC */
   luaH_resize(L, revT, n, 0);
   luaC_checkGC(L);
@@ -327,15 +330,15 @@ static void DumpLFSstrings(DumpState *D) {
   api_incr_top(L);
   while (luaH_next(L, D->stringIndex, L->top-2)) {
    /*
-    * Update the value to swap fix and LFS order, then insert (v, k) into 
-    * the reverse index table. Note that luaC_barrier checks not required 
+    * Update the value to swap fix and LFS order, then insert (v, k) into
+    * the reverse index table. Note that luaC_barrier checks not required
     * for overwrites and non-collectable values.
     */
-    int len = tsslen(tsvalue(L->top-2)); 
+    int len = tsslen(tsvalue(L->top-2));
     lua_Integer *i = &L->top[-1].value_.i;
     *i += *i > D->nFixed ? -D->nFixed : nStrings;        /* recalc index and */
     luaH_set(L, D->stringIndex, L->top-2)->value_.i = *i; /* update table value */
-    luaH_setint(L, revT, ivalue(L->top-1), L->top-2); /* Add str to reverse T */    
+    luaH_setint(L, revT, ivalue(L->top-1), L->top-2); /* Add str to reverse T */
     if (len > maxlen) maxlen = len;  /* roll up maximum string size */
   }
   L->top -= 2; /* discard key and value stack slots */
@@ -361,7 +364,7 @@ static void DumpLFSstrings(DumpState *D) {
 static void scanProtoStrings(const Proto *f, DumpState *D) {
   int i;
   addTS(f->source, D);
-  OVER(f->sizek)        if (ttisstring(f->k + i)) 
+  OVER(f->sizek)        if (ttisstring(f->k + i))
                           addTS(tsvalue(f->k + i), D);
   OVER(f->sizeupvalues) addTS(f->upvalues[i].name, D);
   OVER(f->sizelocvars)  addTS(f->locvars[i].varname, D);

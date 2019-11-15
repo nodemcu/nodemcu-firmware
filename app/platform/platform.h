@@ -321,31 +321,32 @@ void* platform_print_deprecation_note( const char *msg, const char *time_frame);
 // *****************************************************************************
 // Reboot config page
 /*
- * The 4K flash page in the linker section .irom0.ptable (offset 0x10000) is used 
+ * The 4K flash page in the linker section .irom0.ptable (offset 0x10000) is used
  * for configuration changes that persist across reboots. This 4k page contains a
  * sequence of records that are written using flash NAND writing rules.  See the
  * header app/spiffs/spiffs_nucleus.h for a discussion of how SPIFFS uses these. A
  * similar technique is used here.
  *
- * Each record is word aligned and the first two bytes of the record are its size 
- * and record type. Type 0xFF means unused and type 0x00 means deleted.  New 
- * records can be added by overwriting the first unused slot.  Records can be 
+ * Each record is word aligned and the first two bytes of the record are its size
+ * and record type. Type 0xFF means unused and type 0x00 means deleted.  New
+ * records can be added by overwriting the first unused slot.  Records can be
  * replaced by adding the new version, then setting the type of the previous version
  * to deleted.  This all works and can be implemented with platform_s_flash_write()
  * upto the 4K limit.
  *
- * If a new record cannot fit into the page then the deleted records are GCed by 
- * copying the active records into a RAM scratch pad, erasing the page and writing 
- * them back.  Yes, this is powerfail unsafe for a few mSec, but this is no worse 
- * than writing to SPIFFS and won't even occur in normal production use.   
+ * If a new record cannot fit into the page then the deleted records are GCed by
+ * copying the active records into a RAM scratch pad, erasing the page and writing
+ * them back.  Yes, this is powerfail unsafe for a few mSec, but this is no worse
+ * than writing to SPIFFS and won't even occur in normal production use.
  */
 #define IROM_PTABLE_ATTR          __attribute__((section(".irom0.ptable")))
 #define PLATFORM_PARTITION(n)  (SYSTEM_PARTITION_CUSTOMER_BEGIN + n)
 #define PLATFORM_RCR_DELETED   0x0
 #define PLATFORM_RCR_PT        0x1
-#define PLATFORM_RCR_PHY_DATA  0x2   
+#define PLATFORM_RCR_PHY_DATA  0x2
 #define PLATFORM_RCR_REFLASH   0x3
 #define PLATFORM_RCR_FLASHLFS  0x4
+#define PLATFORM_RCR_INITSTR   0x5
 #define PLATFORM_RCR_FREE      0xFF
 typedef union {
     uint32_t hdr;
@@ -377,5 +378,5 @@ platform_task_handle_t platform_task_get_id(platform_task_callback_t t);
 
 bool platform_post(uint8 prio, platform_task_handle_t h, platform_task_param_t par);
 #define platform_freeheap() system_get_free_heap_size()
- 
+
 #endif

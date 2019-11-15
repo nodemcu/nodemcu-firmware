@@ -18,7 +18,10 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
+#include "llimits.h"
 #include "os_type.h"
+
+#include "platform.h"
 
 extern int pipe_create(lua_State *L);
 extern int pipe_read(lua_State *L);
@@ -227,8 +230,11 @@ static int dojob (lua_State *L) {
 extern void luaL_dbgbreak(void);
 
 static int pmain (lua_State *L) {
-  const char *init = LUA_INIT_STRING;
+  const char *RCRinit = NULL;
+  uint32_t  n = platform_rcr_read(PLATFORM_RCR_INITSTR, (void**) &RCRinit);
+  const char *init = RCRinit ? RCRinit : LUA_INIT_STRING;
   globalL = L;
+  UNUSED(n);
 
 //*DEBUG*/luaL_dbgbreak();
   lua_gc(L, LUA_GCSTOP, 0);                  /* stop GC during initialization */

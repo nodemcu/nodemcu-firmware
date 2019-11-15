@@ -128,7 +128,7 @@ static void freeblock (Memcontrol *mc, Header *block) {
   }
 }
 
-extern size_t LFSregion[];                             //DEBUG
+extern void *LFSregion;                                        //DEBUG
 void *debug_realloc (void *ud, void *b, size_t oldsize, size_t size) {
   Memcontrol *mc = cast(Memcontrol *, ud);
   Header *block = cast(Header *, b);
@@ -159,7 +159,7 @@ void *debug_realloc (void *ud, void *b, size_t oldsize, size_t size) {
     size_t realsize = sizeof(Header) + size + MARKSIZE;
     if (realsize < size) return NULL;  /* arithmetic overflow! */
     newblock = cast(Header *, malloc(realsize));  /* alloc a new block */
-size_t op = (char *) newblock-(char *)LFSregion;                        //DEBUG
+size_t op = (char *) newblock- (char *) LFSregion;                      //DEBUG
 lua_assert(op>0x20000);                                                 //DEBUG
     if (newblock == NULL) return NULL;  /* really out of memory? */
     if (block) {

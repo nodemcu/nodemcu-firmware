@@ -11,13 +11,15 @@
 /*
 ** NodeMCU uses RO segment based static ROTable declarations for all library
 ** tables, including the index of library tables itself (the ROM table). These
-** tables can be moved from RAM to flash ROM on the ESPs. Also on the ESPs,
-** marshalling of table enties through linker-based PSECTs allows the library
-** initiation tables to be bound during the link process rather than being
-** statically declared here. This significantly simplifies adding new modules
-** and configuring builds with a subset of the total modules available.
+** tables can be moved from RAM to flash ROM on the ESPs.
 **
-** This linker-based approach is not practical for cross compiler builds which
+** On the ESPs targets, we can marshal the table entries through linker-based
+** PSECTs to enable the library initiation tables to be bound during the link
+** process rather than being statically declared here. This simplifies the
+** addition of new modules and configuring builds with a subset of the total
+** modules available.
+**
+** Such a linker-based approach is not practical for cross compiler builds that
 ** must link on a range of platforms, and where we don't have control of PSECT
 ** placement.  However unlike the target builds, the luac.cross builds only
 ** use a small and fixed list of libraries and so in this case all of libraries
@@ -42,53 +44,53 @@ extern LROT_TABLE(dblib);
 extern LROT_TABLE(co_funcs);
 extern LROT_TABLE(math);
 
+#define LROT_ROM_ENTRIES \
+  LROT_TABENTRY( string, strlib ) \
+  LROT_TABENTRY( table, tab_funcs ) \
+  LROT_TABENTRY( debug, dblib) \
+  LROT_TABENTRY( coroutine, co_funcs ) \
+  LROT_TABENTRY( math, math ) \
+  LROT_TABENTRY( ROM, rotables )
+
+#define LROT_LIB_ENTRIES \
+  LROT_FUNCENTRY( _G, luaopen_base ) /* This MUST be called first */ \
+  LROT_FUNCENTRY( package, luaopen_package ) \
+  LROT_FUNCENTRY( string, luaopen_string ) \
+  LROT_FUNCENTRY( debug, luaopen_debug )
+
 #if defined(LUA_CROSS_COMPILER)
+extern LROT_TABLE(base_func);
+LROT_BEGIN(rotables_meta, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( _index, base_func)
+LROT_END(rotables_meta, NULL, LROT_MASK_INDEX)
+
 extern LROT_TABLE(oslib);
 extern LROT_TABLE(iolib);
-extern LROT_TABLE(rotables_meta);
-
 LROT_BEGIN(rotables, LROT_TABLEREF(rotables_meta), 0)
-#else
-
-extern const ROTable_entry lua_libs_base[];
-extern const ROTable_entry lua_rotable_base[];
-static ROTable rotables_ROTable;
-
-LROT_ENTRIES_IN_SECTION(rotables, rotable)
-#endif
-
-  LROT_TABENTRY( string, strlib )
-  LROT_TABENTRY( table, tab_funcs )
-  LROT_TABENTRY( debug, dblib)
-  LROT_TABENTRY( coroutine, co_funcs )
-  LROT_TABENTRY( math, math )
-  LROT_TABENTRY( ROM, rotables )
-#ifdef LUA_CROSS_COMPILER
+  LROT_ROM_ENTRIES
   LROT_TABENTRY( os, oslib )
   LROT_TABENTRY( io, iolib )
 LROT_END(rotables, LROT_TABLEREF(rotables_meta), 0)
 
-LROT_TABLE(base_func);
-LROT_BEGIN(rotables_meta, NULL, LROT_MASK_INDEX)
-  LROT_TABENTRY( __index, base_func)
-LROT_END(rotables_meta, NULL, LROT_MASK_INDEX)
-
 LROT_BEGIN(lua_libs, NULL, 0)
+  LROT_LIB_ENTRIES
+  LROT_FUNCENTRY( io, luaopen_io )
+LROT_END(lua_libs, NULL, 0)
+
 #else
+
+extern const ROTable_entry lua_libs_base[];
+extern const ROTable_entry lua_rotable_base[];
+ROTable rotables_ROTable;
+
+LROT_ENTRIES_IN_SECTION(rotables, rotable)
+  LROT_ROM_ENTRIES
 LROT_BREAK(rotables)
 
 LROT_ENTRIES_IN_SECTION(lua_libs, libs)
-#endif
-
-/* No init required for coroutine, debug, math, table */
-  LROT_FUNCENTRY( package, luaopen_package )
-  LROT_FUNCENTRY( string, luaopen_string )
-  LROT_FUNCENTRY( debug, luaopen_debug )
-#ifdef LUA_CROSS_COMPILER
-  LROT_FUNCENTRY( io, luaopen_io )
-LROT_END(lua_libs, NULL, 0)
-#else
+  LROT_LIB_ENTRIES
 LROT_BREAK(lua_libs)
+
 #endif
 
 
@@ -99,16 +101,6 @@ void luaL_openlibs (lua_State *L) {
   const ROTable_entry *p = lua_libs_base;
   lua_createrotable(L, LROT_TABLEREF(rotables), lua_rotable_base, NULL);
 #endif
-  /* luaopen_base gets up the _G metatable so is called explicitly */
-  luaopen_base(L);
-
-  lua_pushrotable(L, LROT_TABLEREF(rotables));
-  lua_pushvalue(L, -1);
-  lua_setglobal(L, "ROM");
-  lua_setglobal(L, "__index");
-  lua_pushvalue(L, LUA_GLOBALSINDEX);
-  lua_setmetatable(L, LUA_GLOBALSINDEX);
-
   while (p->key) {
     if (ttislightfunction(&p->value) && fvalue(&p->value)) {
       lua_pushlightfunction(L, fvalue(&p->value));

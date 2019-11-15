@@ -218,10 +218,10 @@ local function find1 (name, t)
   return nil  -- not found
 end
 
-
-assert(print==find("print",ROM._G) and print == find1("print",ROM._G))
-assert(ROM._G["print"]==find("print",ROM._G))
-assert(assert==find1("assert",ROM._G))
+local romG = ROM._G or ROM
+assert(print==find("print",romG) and print == find1("print",romG))
+assert(romG["print"]==find("print",romG))
+assert(assert==find1("assert",romG))
 assert(nofind==find("return"))
 assert(not find1("return"))
 _G["ret" .. "urn"] = nil
@@ -238,7 +238,7 @@ checkerror("bad argument", ipairs)
 print('+')
 
 a = {}
-for i=0,10000 do
+for i=0,100 do
   if math.fmod(i,10) ~= 0 then
     a['x'..i] = i
   end
@@ -249,7 +249,7 @@ for i,v in pairs(a) do
   n.n = n.n+1
   assert(i and v and a[i] == v)
 end
-assert(n.n == 9000)
+assert(n.n == 90)
 a = nil
 
 do   -- clear global table

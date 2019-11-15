@@ -21,6 +21,16 @@
 #define CPU80MHZ 80
 #define CPU160MHZ 160
 
+// Lua: startupcommand(string)
+static int node_startupcommand( lua_State* L ) {
+  size_t l, lrcr;
+  const char *cmd = luaL_checklstring(L, 1, &l);
+  lrcr = platform_rcr_write(PLATFORM_RCR_INITSTR, cmd, l+1);
+  lua_pushboolean(L, lrcr == ~0 ? 0 : 1);
+  return 1;
+}
+
+
 // Lua: restart()
 static int node_restart( lua_State* L )
 {
@@ -729,6 +739,7 @@ LROT_BEGIN(node, NULL, 0)
   LROT_TABENTRY( task, node_task )
   LROT_FUNCENTRY( flashreload, luaN_reload_reboot )
   LROT_FUNCENTRY( flashindex, luaN_index )
+  LROT_FUNCENTRY( startupcommand, node_startupcommand )
   LROT_FUNCENTRY( restart, node_restart )
   LROT_FUNCENTRY( dsleep, node_deepsleep )
   LROT_FUNCENTRY( dsleepMax, dsleepMax )

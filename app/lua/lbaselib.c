@@ -647,28 +647,29 @@ static void auxopen (lua_State *L, const char *name,
                      lua_CFunction f, lua_CFunction u) {
   lua_pushcfunction(L, u);
   lua_pushcclosure(L, f, 1);
-  lua_setfield(L, -2, name);
+  lua_setglobal(L, name);
 }
 
-
+extern LROT_TABLE(rotables);
 LUALIB_API int luaopen_base (lua_State *L) {
-  /* set global _G */
-  lua_setglobal(L, "_G");
+  lua_pushvalue(L, LUA_GLOBALSINDEX);
+  lua_settable(L, LUA_GLOBALSINDEX);  /* set global _G */
   lua_pushliteral(L, LUA_VERSION);
   lua_setglobal(L, "_VERSION");  /* set global _VERSION */
   /* `ipairs' and `pairs' need auxliliary functions as upvalues */
-  lua_pushvalue(L, LUA_GLOBALSINDEX);
   auxopen(L, "ipairs", luaB_ipairs, ipairsaux);
   auxopen(L, "pairs", luaB_pairs, luaB_next);
   /* `newproxy' needs a weaktable as upvalue */
   lua_createtable(L, 0, 1);  /* new table `w' */
-  lua_pushvalue(L, -1);  /* `w' will be its own metatable */
-  lua_setmetatable(L, -2);
   lua_pushliteral(L, "kv");
   lua_setfield(L, -2, "__mode");  /* metatable(w).__mode = "kv" */
-  lua_pushcclosure(L, luaB_newproxy, 1);
+  lua_pushvalue(L, -1);  /* `w' will be its own metatable */
+  lua_setmetatable(L, -2);
+  lua_pushcclosure(L, luaB_newproxy, 1);  /* Upval is table w */
   lua_setglobal(L, "newproxy");  /* set global `newproxy' */
-
+  lua_pushrotable(L, LROT_TABLEREF(rotables));
+  lua_setglobal(L, "__index");
+  lua_pushvalue(L, LUA_GLOBALSINDEX);  /* _G is its own metatable */
+  lua_setmetatable(L, LUA_GLOBALSINDEX);
   return 0;
-
 }

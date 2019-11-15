@@ -23,6 +23,8 @@
 #include "lgc.h"
 #include "lnodemcu.h"
 
+#include "platform.h"
+
 
 #if !defined(LUA_PROMPT)
 #define LUA_PROMPT		"> "
@@ -249,22 +251,13 @@ static int dojob (lua_State *L) {
 */
 extern void system_restart(void);
 static int pmain (lua_State *L) {
-  const char *init = LUA_INIT_STRING;
+  const char *init = (char *) lua_touserdata(L, 1);
   int status;
   lua_gc(L, LUA_GCSTOP, 0);                  /* stop GC during initialization */
-  luaL_openlibs(L);                                         /* open libraries */
+  luaL_openlibs(L);    /* the nodemcu open will throw to signal an LFS reload */
   lua_gc( L, LUA_GCSETMEMLIMIT, 4096 );
   lua_gc(L, LUA_GCRESTART, 0);                 /* restart GC and set EGC mode */
   lua_settop(L, 0);
-  if(luaN_init(L, 2)) {  /* Hook for LFS rebuild if requested */
-   /*
-    * Note restart is the normal path but that hooked load process might 
-    * throw an error which is  reported by the task wrapper. TODO add the
-    * extra cleanup to check that LFS is OK and if not erase.
-    */
-    system_restart();                   
-    return 0; 
-  }
   lua_pushliteral(L, "stdin");
   lua_getglobal(L, "pipe");
   lua_getfield(L, -1, "create");
@@ -293,6 +286,25 @@ static int pmain (lua_State *L) {
   return 0;
 }
 
+void lua_main (void);
+static int cpmain (lua_State *L) {
+  const char *RCRinit = NULL;
+  uint32_t n = platform_rcr_read(PLATFORM_RCR_INITSTR, cast(void**, &RCRinit));
+  const char *init = RCRinit ? RCRinit : LUA_INIT_STRING;
+  int status;
+  UNUSED(n);
+  lua_pushcfunction(L, pmain);
+  lua_pushlightuserdata(L, cast(void *,init));
+  status = lua_pcall(L, 1, 1, 0);
+  if (status != LUA_OK && (lua_isboolean(L,-1) && lua_toboolean(L,-1))) {
+   /*
+    * An LFS image has been loaded so close and restart the RTS
+    */
+    luaL_posttask(NULL, LUA_TASK_HIGH+1);  /* NULL/high+1 restarts lua_main() */
+    return 0;
+  }
+  return lua_error(L);           /* rethrow the error for post task to report */
+}
 
 /*
 ** The system initialisation CB nodemcu_init() calls lua_main() to startup the
@@ -302,12 +314,15 @@ static int pmain (lua_State *L) {
 ** LUA_INIT_STRING hook.
 */
 void lua_main (void) {
-  lua_State *L = luaL_newstate();  /* create state */
+  lua_State *L = lua_getstate();
+  if (L)
+    lua_close(L);
+  L = luaL_newstate();  /* create state */
   if (L == NULL) {
     lua_writestringerror( "cannot create state: %s", "not enough memory");
     return;
   }
-  lua_pushcfunction(L, pmain);   /* Call 'pmain' as a high priority task */
+  lua_pushcfunction(L, cpmain); /* Call 'pmain' wrapper as a high priority task */
   luaL_posttask(L, LUA_TASK_HIGH);
 }
 

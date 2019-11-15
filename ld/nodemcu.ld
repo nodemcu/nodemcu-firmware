@@ -248,6 +248,8 @@ SECTIONS
     lua_libs_base = ABSOLUTE(.);
     /* Allow either empty define or defined-to-1 to include the module */
     KEEP(*(.lua_libs))
+    *liblua.a:linit.o(.lua_libs)
+    *(.lua_libs)
     LONG(0) LONG(0) /* Null-terminate the array */
     lua_rotable_base = ABSOLUTE(.);
     KEEP(*(.lua_rotable))

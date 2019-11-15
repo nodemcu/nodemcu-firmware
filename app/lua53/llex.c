@@ -89,7 +89,7 @@ const char *luaX_getstr (unsigned int i, int *extra) {
     *extra = (i<NUM_RESERVED) ? i+1 : 0;
   return luaX_tokens[i];
 }
-  
+
 
 const char *luaX_token2str (LexState *ls, int token) {
   if (token < FIRST_RESERVED) {  /* single-byte symbols? */
