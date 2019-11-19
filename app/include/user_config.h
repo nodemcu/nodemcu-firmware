@@ -134,10 +134,6 @@
 //  Enable creation on the wifi.eventmon.reason table
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
 
-//  Enable use of the WiFi.monitor sub-module
-//#define LUA_USE_MODULES_WIFI_MONITOR
-
-
 // Whilst the DNS client details can be configured through the WiFi API,
 // the defaults can be exposed temporarily during start-up.  The following
 // WIFI_STA options allow you to configure this in the firmware.  If the
@@ -255,17 +251,22 @@ extern void luaL_dbgbreak(void);
 #define COAP_DEBUG
 #endif /* DEVELOP_VERSION */
 
+
+#if !defined(LUA_CROSS_COMPILER) && !defined(dbg_printf)
+extern void dbg_printf(const char *fmt, ...);
+#endif
+
 #ifdef NODE_DEBUG
 #define NODE_DBG dbg_printf
 #else
-#define NODE_DBG
+#define NODE_DBG( ... )
 #endif	/* NODE_DEBUG */
 
 #define NODE_ERROR
 #ifdef NODE_ERROR
 #define NODE_ERR dbg_printf
 #else
-#define NODE_ERR
+#define NODE_ERR( ... )
 #endif	/* NODE_ERROR */
 
 // #define GPIO_SAFE_NO_INTR_ENABLE

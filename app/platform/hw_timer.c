@@ -17,8 +17,8 @@
 * a small numeric value that is known not to clash.
 *******************************************************************************/
 #include "platform.h"
-#include "c_stdio.h"
-#include "c_stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include "ets_sys.h"
 #include "os_type.h"
 #include "osapi.h"
@@ -444,7 +444,7 @@ bool platform_hw_timer_init(os_param_t owner, FRC1_TIMER_SOURCE_TYPE source_type
   timer_user *tu = find_tu_and_remove(owner);
 
   if (!tu) {
-    tu = (timer_user *) c_malloc(sizeof(*tu));
+    tu = (timer_user *) malloc(sizeof(*tu));
     if (!tu) {
       return false;
     }

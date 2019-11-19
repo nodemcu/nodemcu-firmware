@@ -1,8 +1,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_stdlib.h"
-#include "c_string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "user_interface.h"
 
 static inline uint32_t _getCycleCount(void) {
@@ -68,7 +68,7 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
   const char *rgb = luaL_checklstring(L, 2, &length);
 
   // dont modify lua-internal lstring - make a copy instead
-  char *buffer = (char *)c_malloc(length);
+  char *buffer = (char *)malloc(length);
 
   // Ignore incomplete Byte triples at the end of buffer
   length -= length % 3;
@@ -95,7 +95,7 @@ static int ICACHE_FLASH_ATTR tm1829_write(lua_State* L)
 
   os_delay_us(500); // reset time
 
-  c_free(buffer);
+  free(buffer);
 
   return 0;
 }

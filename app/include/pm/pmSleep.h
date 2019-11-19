@@ -1,12 +1,12 @@
 #ifndef __FPM_SLEEP_H__
 #define __FPM_SLEEP_H__
 #include "user_interface.h"
-#include "c_types.h"
+#include <stdint.h>
 #include "lauxlib.h"
 #include "gpio.h"
 #include "platform.h"
 #include "task/task.h"
-#include "c_string.h"
+#include <string.h>
 
 #if defined(DEVELOP_VERSION)
 #define PMSLEEP_DEBUG
@@ -15,7 +15,7 @@
 #if defined(PMSLEEP_DEBUG)
   #define PMSLEEP_DBG(fmt, ...) dbg_printf("\tPMSLEEP(%s):"fmt"\n", __FUNCTION__, ##__VA_ARGS__)
 #else
-  #define PMSLEEP_DBG(...) //c_printf(__VA_ARGS__)
+  #define PMSLEEP_DBG(...) //printf(__VA_ARGS__)
 #endif
 
 #if defined(NODE_ERROR)

@@ -5,13 +5,15 @@
  * Nikolay Fiykov
  */
 
-#include <stdlib.h>
-#include "c_types.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 #include "mem.h"
 #include "pin_map.h"
 #include "platform.h"
 #include "hw_timer.h"
 #include "driver/pwm2.h"
+#include "user_interface.h"
 
 #define PWM2_TMR_MAGIC_80MHZ 16
 #define PWM2_TMR_MAGIC_160MHZ 32

@@ -8,7 +8,7 @@
 #ifndef __PWM2_H__
 #define __PWM2_H__
 
-#include "c_types.h"
+#include <stdint.h>
 #include "pin_map.h"
 
 typedef struct {

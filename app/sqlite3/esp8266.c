@@ -7,10 +7,10 @@
  * http://www.sqlite.org/src/doc/trunk/src/test_vfs.c
 **/
 
-#include <c_stdio.h>
-#include <c_stdlib.h>
-#include <c_string.h>
-#include <c_types.h>
+#include <stdio.h>
+#include <stddef.h>
+#include <string.h>
+#include <stdint.h>
 #include <osapi.h>
 #include <vfs.h>
 #include <time.h>

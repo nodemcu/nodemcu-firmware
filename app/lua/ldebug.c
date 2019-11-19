@@ -10,7 +10,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STRING
+#include <string.h>
 
 #include "lapi.h"
 #include "lcode.h"
@@ -253,7 +253,7 @@ static int stripdebug (lua_State *L, Proto *f, int level) {
   TString* dummy;
   switch (level) {
     case 3:
-      sizepackedlineinfo = c_strlen(cast(char *, f->packedlineinfo))+1;
+      sizepackedlineinfo = strlen(cast(char *, f->packedlineinfo))+1;
       f->packedlineinfo = luaM_freearray(L, f->packedlineinfo, sizepackedlineinfo, unsigned char);
       len += sizepackedlineinfo;
     case 2:
@@ -344,7 +344,7 @@ LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
       plight = fvalue(ci->func);
   }
   status = auxgetinfo(L, what, ar, f, plight, ci);
-  if (c_strchr(what, 'f')) {
+  if (strchr(what, 'f')) {
     if (f != NULL)
       setclvalue(L, L->top, f)
     else if (plight != NULL)
@@ -353,7 +353,7 @@ LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
       setnilvalue(L->top);
     incr_top(L);
   }
-  if (c_strchr(what, 'L'))
+  if (strchr(what, 'L'))
     collectvalidlines(L, f);
   lua_unlock(L);
   return status;

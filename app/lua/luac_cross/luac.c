@@ -7,10 +7,10 @@
 #define LUAC_CROSS_FILE
 
 #include "luac_cross.h"
-#include C_HEADER_ERRNO
-#include C_HEADER_STDIO
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define luac_c

@@ -10,7 +10,7 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDLIB
+#include <stdlib.h>
 
 #include "lcode.h"
 #include "ldebug.h"
@@ -81,7 +81,7 @@ static void fixjump (FuncState *fs, int pc, int dest) {
   Instruction *jmp = &fs->f->code[pc];
   int offset = dest-(pc+1);
   lua_assert(dest != NO_JUMP);
-  if (c_abs(offset) > MAXARG_sBx)
+  if (abs(offset) > MAXARG_sBx)
     luaX_syntaxerror(fs->ls, "control structure too long");
   SETARG_sBx(*jmp, offset);
 }

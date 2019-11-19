@@ -1,6 +1,6 @@
 #include "user_config.h"
-#include "c_stdio.h"
-#include "c_string.h"
+#include <stdio.h>
+#include <string.h>
 #include "coap.h"
 #include "uri.h"
 
@@ -10,12 +10,12 @@ extern const coap_endpoint_t endpoints[];
 #ifdef COAP_DEBUG
 void coap_dumpHeader(coap_header_t *hdr)
 {
-    c_printf("Header:\n");
-    c_printf("  ver  0x%02X\n", hdr->ver);
-    c_printf("  t    0x%02X\n", hdr->ver);
-    c_printf("  tkl  0x%02X\n", hdr->tkl);
-    c_printf("  code 0x%02X\n", hdr->code);
-    c_printf("  id   0x%02X%02X\n", hdr->id[0], hdr->id[1]);
+    printf("Header:\n");
+    printf("  ver  0x%02X\n", hdr->ver);
+    printf("  t    0x%02X\n", hdr->ver);
+    printf("  tkl  0x%02X\n", hdr->tkl);
+    printf("  code 0x%02X\n", hdr->code);
+    printf("  id   0x%02X%02X\n", hdr->id[0], hdr->id[1]);
 }
 
 void coap_dump(const uint8_t *buf, size_t buflen, bool bare)
@@ -23,14 +23,14 @@ void coap_dump(const uint8_t *buf, size_t buflen, bool bare)
     if (bare)
     {
         while(buflen--)
-            c_printf("%02X%s", *buf++, (buflen > 0) ? " " : "");
+            printf("%02X%s", *buf++, (buflen > 0) ? " " : "");
     }
     else
     {
-        c_printf("Dump: ");
+        printf("Dump: ");
         while(buflen--)
-            c_printf("%02X%s", *buf++, (buflen > 0) ? " " : "");
-        c_printf("\n");
+            printf("%02X%s", *buf++, (buflen > 0) ? " " : "");
+        printf("\n");
     }
 }
 #endif
@@ -100,7 +100,7 @@ int coap_buildToken(const coap_buffer_t *tokbuf, const coap_header_t *hdr, uint8
         return COAP_ERR_UNSUPPORTED;
 
     if (hdr->tkl > 0)
-        c_memcpy(p, tokbuf->p, hdr->tkl);
+        memcpy(p, tokbuf->p, hdr->tkl);
 
     // http://tools.ietf.org/html/rfc7252#section-3.1
     // inject options
@@ -260,12 +260,12 @@ int coap_buildOptionHeader(uint32_t optDelta, size_t length, uint8_t *buf, size_
 void coap_dumpOptions(coap_option_t *opts, size_t numopt)
 {
     size_t i;
-    c_printf(" Options:\n");
+    printf(" Options:\n");
     for (i=0;i<numopt;i++)
     {
-        c_printf("  0x%02X [ ", opts[i].num);
+        printf("  0x%02X [ ", opts[i].num);
         coap_dump(opts[i].buf.p, opts[i].buf.len, true);
-        c_printf(" ]\n");
+        printf(" ]\n");
     }
 }
 
@@ -273,9 +273,9 @@ void coap_dumpPacket(coap_packet_t *pkt)
 {
     coap_dumpHeader(&pkt->hdr);
     coap_dumpOptions(pkt->opts, pkt->numopts);
-    c_printf("Payload: ");
+    printf("Payload: ");
     coap_dump(pkt->payload.p, pkt->payload.len, true);
-    c_printf("\n");
+    printf("\n");
 }
 #endif
 
@@ -325,7 +325,7 @@ int coap_buffer_to_string(char *strbuf, size_t strbuflen, const coap_buffer_t *b
 {
     if (buf->len+1 > strbuflen)
         return COAP_ERR_BUFFER_TOO_SMALL;
-    c_memcpy(strbuf, buf->p, buf->len);
+    memcpy(strbuf, buf->p, buf->len);
     strbuf[buf->len] = 0;
     return 0;
 }
@@ -360,7 +360,7 @@ int coap_build(uint8_t *buf, size_t *buflen, const coap_packet_t *pkt)
         p += rc;
         left -= rc;
 
-        c_memcpy(p, pkt->opts[i].buf.p, pkt->opts[i].buf.len);
+        memcpy(p, pkt->opts[i].buf.p, pkt->opts[i].buf.len);
         p += pkt->opts[i].buf.len;
         left -= pkt->opts[i].buf.len;
         running_delta = pkt->opts[i].num;
@@ -373,7 +373,7 @@ int coap_build(uint8_t *buf, size_t *buflen, const coap_packet_t *pkt)
         if (*buflen < 4 + 1 + pkt->payload.len + opts_len)
             return COAP_ERR_BUFFER_TOO_SMALL;
         buf[4 + opts_len] = 0xFF;  // payload marker
-        c_memcpy(buf+5 + opts_len, pkt->payload.p, pkt->payload.len);
+        memcpy(buf+5 + opts_len, pkt->payload.p, pkt->payload.len);
         *buflen = opts_len + 5 + pkt->payload.len;
     }
     else
@@ -471,7 +471,7 @@ int coap_make_request(coap_rw_buffer_t *scratch, coap_packet_t *pkt, coap_msgtyp
 
     /* split arg into Uri-* options */
     // const char *addr = uri->host.s;
-    // if(uri->host.length && (c_strlen(addr) != uri->host.length || c_memcmp(addr, uri->host.s, uri->host.length) != 0)){
+    // if(uri->host.length && (strlen(addr) != uri->host.length || memcmp(addr, uri->host.s, uri->host.length) != 0)){
     if(uri->host.length){
         /* add Uri-Host */
         // addr is destination address
@@ -525,9 +525,9 @@ int coap_handle_req(coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_
                 goto next;
             for (i=0;i<ep->path->count;i++)
             {
-                if (opt[i].buf.len != c_strlen(ep->path->elems[i]))
+                if (opt[i].buf.len != strlen(ep->path->elems[i]))
                     goto next;
-                if (0 != c_memcmp(ep->path->elems[i], opt[i].buf.p, opt[i].buf.len))
+                if (0 != memcmp(ep->path->elems[i], opt[i].buf.p, opt[i].buf.len))
                     goto next;
             }
             // pre-path match!
@@ -551,5 +551,5 @@ void coap_setup(void)
 
 int
 check_token(coap_packet_t *pkt) {
-  return pkt->tok.len == the_token.len && c_memcmp(pkt->tok.p, the_token.p, the_token.len) == 0;
+  return pkt->tok.len == the_token.len && memcmp(pkt->tok.p, the_token.p, the_token.len) == 0;
 }

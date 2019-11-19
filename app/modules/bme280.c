@@ -11,7 +11,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_math.h"
+#include "user_interface.h"
+#include <math.h>
 
 /****************************************************/
 /**\name	registers definition  */

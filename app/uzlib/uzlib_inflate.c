@@ -39,11 +39,7 @@
  */
 
 #include <string.h>
-#ifdef __XTENSA__
-#include "c_stdio.h"
-#else
 #include <stdio.h>
-#endif
 
 #include "uzlib.h"
 

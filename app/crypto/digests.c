@@ -34,7 +34,8 @@
 #include "osapi.h"
 #include "mem.h"
 #include <string.h>
-#include <c_errno.h>
+#include <strings.h>
+#include <errno.h>
 
 #ifdef MD2_ENABLE
 #include "ssl/ssl_crypto.h"

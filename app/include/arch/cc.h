@@ -35,7 +35,7 @@
 #define __ARCH_CC_H__
 
 //#include <string.h>
-#include "c_types.h"
+#include <stdint.h>
 #include "ets_sys.h"
 #include "osapi.h"
 #define EFAULT 14

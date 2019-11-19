@@ -13,11 +13,11 @@
 #include "platform.h"
 #include "module.h"
 
-#include "c_types.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <stdint.h>
+#include <string.h>
+#include <stddef.h>
 
-#include "websocketclient.h"
+#include "websocket/websocketclient.h"
 
 #define METATABLE_WSCLIENT "websocket.client"
 
@@ -191,14 +191,14 @@ static int websocketclient_connect(lua_State *L) {
 static header_t *realloc_headers(header_t *headers, int new_size) {
   if(headers) {
     for(header_t *header = headers; header->key; header++) {
-      c_free(header->value);
-      c_free(header->key);
+      free(header->value);
+      free(header->key);
     }
-    c_free(headers);
+    free(headers);
   }
   if(!new_size)
     return NULL;
-  return (header_t *)c_malloc(sizeof(header_t) * (new_size + 1));
+  return (header_t *)malloc(sizeof(header_t) * (new_size + 1));
 }
 
 static int websocketclient_config(lua_State *L) {
@@ -225,8 +225,8 @@ static int websocketclient_config(lua_State *L) {
 
       lua_pushnil(L);
       while(lua_next(L, -2)) {
-        header->key = c_strdup(lua_tostring(L, -2));
-        header->value = c_strdup(lua_tostring(L, -1));
+        header->key = strdup(lua_tostring(L, -2));
+        header->value = strdup(lua_tostring(L, -1));
         header++;
         lua_pop(L, 1);
       }

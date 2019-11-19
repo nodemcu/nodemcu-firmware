@@ -14,7 +14,8 @@
  *  Created on: Apr 22, 2016
  *      Author: liuhan
  */
-#include "c_types.h"
+#include <stdint.h>
+#include <stddef.h>
 
 #include "ets_sys.h"
 #include "os_type.h"

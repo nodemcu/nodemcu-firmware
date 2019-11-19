@@ -1,4 +1,4 @@
-#include "c_types.h"
+#include <stdint.h>
 #include "mem.h"
 #include "user_interface.h"
 

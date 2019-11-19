@@ -11,6 +11,7 @@
 
 //#define NODE_DEBUG
 
+#include <stdint.h>
 #include "os_type.h"
 #include "osapi.h"
 #include "sections.h"
@@ -19,6 +20,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
+#include "task/task.h"  
 #include "hw_timer.h"
 #include "user_interface.h"
 

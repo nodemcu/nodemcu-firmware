@@ -126,7 +126,7 @@ def load_PT(data, args):
     """
 
     PTrec,recs = unpack_RCR(data)
-    flash_size = fs.args if args.fs is not None else DEFAULT_FLASH_SIZE
+    flash_size = args.fs if args.fs is not None else DEFAULT_FLASH_SIZE
 
     # The partition table format is a set of 3*uint32 fields (type, addr, size),
     # with the optional last slot being an end marker (0,size,0) where size is
@@ -367,7 +367,7 @@ def main():
         # ---------- Write to a temp file and use esptool to write it to flash ---------- #
 
         spiffs_file = arg.sf
-        espargs = base + ['', str(sa), spiffs_file]
+        espargs = base + ['write_flash', str(sa), spiffs_file]
         esptool.main(espargs)
 
     # ---------- Clean up temp directory ---------- #

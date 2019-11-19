@@ -1,5 +1,5 @@
 #include "user_config.h"
-#include "c_types.h"
+#include <stdint.h>
 
 #include "coap.h"
 #include "hash.h"
