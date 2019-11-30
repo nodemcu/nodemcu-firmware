@@ -54,6 +54,7 @@ pages:
     - 'hdc1000': 'lua-modules/hdc1000.md'
     - 'httpserver': 'lua-modules/httpserver.md'
     - 'imap': 'lua-modules/imap.md'
+    - 'liquidcrystal': 'lua-modules/liquidcrystal.md'
     - 'lm92': 'lua-modules/lm92.md'
     - 'mcp23008': 'lua-modules/mcp23008.md'
     - 'redis': 'lua-modules/redis.md'
