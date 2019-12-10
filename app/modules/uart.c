@@ -28,17 +28,13 @@ static int l_uart_on( lua_State* L )
   bool run_input = true;
   luaL_argcheck(L, method && !strcmp(method, "data"), 1, "method not supported");
 
-  if (lua_type( L, stack ) == LUA_TNUMBER)
-  {
+  if (lua_type( L, stack ) == LUA_TNUMBER) {
     data_len = luaL_checkinteger( L, stack );
     luaL_argcheck(L, data_len >= 0 && data_len < LUA_MAXINPUT, stack, "wrong arg range");
     stack++;
-  }
-  else if (lua_isstring(L, stack))
-  {
+  } else if (lua_isstring(L, stack)) {
     const char *end = luaL_checklstring( L, stack, &el );
-    data_len = 0;
-    end_char = (int16_t) end[0];
+    end_char = end[0];
     stack++;
     if(el!=1) {
       return luaL_error( L, "wrong arg range" );
@@ -52,12 +48,15 @@ static int l_uart_on( lua_State* L )
     lua_pushvalue(L, stack);
     luaL_unref(L, LUA_REGISTRYINDEX, uart_receive_rf);
     uart_receive_rf = luaL_ref(L, LUA_REGISTRYINDEX);
-
   } else {
     luaL_unref(L, LUA_REGISTRYINDEX, uart_receive_rf);
     uart_receive_rf = LUA_NOREF;
   }
-  input_setup_receive(uart_on_data_cb, data_len, end_char, run_input);
+
+  if (uart_receive_rf == LUA_NOREF) {
+    input_setup_receive(NULL, 0, 0, 1);
+  } else
+    input_setup_receive(uart_on_data_cb, data_len, end_char, run_input);
   return 0;
 }
 

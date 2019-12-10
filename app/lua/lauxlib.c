@@ -900,13 +900,13 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
  * which will then sync up with the remote GDB client to allow forensics of the error.
  */
 #ifdef LUA_CROSS_COMPILER
-LUALIB_API void luaL_dbgbreak(void) {
-  puts("debug break");  /* allows BT analysis of assert fails */
+LUALIB_API void lua_debugbreak(void) {
+  puts(" lua_debugbreak ");  /* allows BT analysis of assert fails */
 }
 #else
 extern void gdbstub_init(void);
 
-LUALIB_API void luaL_dbgbreak(void) {
+LUALIB_API void lua_debugbreak(void) {
   static int repeat_entry = 0;
   if  (repeat_entry == 0) {
     dbg_printf("Start up the gdb stub if not already started\n");

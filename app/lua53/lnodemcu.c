@@ -140,7 +140,8 @@ void luaN_setabsolute(lu_int32 addr) {
 static lu_int32 platform_flash_get_partition (lu_int32 part_id, lu_int32 *addr) {
   lua_assert(part_id == NODEMCU_LFS0_PARTITION);
   if (!LFSregion) {
-    aligned_malloc(LFSregion, LFS_SIZE);
+    if(aligned_malloc(LFSregion, LFS_SIZE))
+      return 0;
     memset(LFSregion, ~0, LFS_SIZE);
     lockFlashWrite();
   }

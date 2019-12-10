@@ -307,10 +307,6 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
   luaM_free(L, l);
 }
 
-LUA_API lua_State *lua_getstate (void) {
-  return L0;
-}
-
 LUA_API KeyCache *(lua_getcache) (int lineno) {
   return &G(L0)->cache[lineno][0];
 }

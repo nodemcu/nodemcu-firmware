@@ -229,9 +229,6 @@ lua_State *lua_open(void) {
   return lua_crtstate;
 }
 
-lua_State *lua_getstate(void) {
-  return lua_crtstate;
-}
 LUA_API void lua_close (lua_State *L) {
 #ifndef LUA_CROSS_COMPILER
   lua_sethook( L, NULL, 0, 0 );

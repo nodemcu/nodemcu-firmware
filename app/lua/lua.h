@@ -39,7 +39,8 @@
 #define lua_upvalueindex(i)	(LUA_GLOBALSINDEX-(i))
 
 
-/* thread status; 0 is OK */
+/* thread status */
+#define LUA_OK		0
 #define LUA_YIELD	1
 #define LUA_ERRRUN	2
 #define LUA_ERRSYNTAX	3
@@ -176,7 +177,7 @@ LUA_API const char *(lua_pushfstring) (lua_State *L, const char *fmt, ...);
 LUA_API void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n);
 LUA_API void  (lua_pushboolean) (lua_State *L, int b);
 LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
-LUA_API void  (lua_pushlightfunction) (lua_State *L, void *p);
+LUA_API void  (lua_pushlightfunction) (lua_State *L, lua_CFunction f);
 LUA_API int   (lua_pushthread) (lua_State *L);
 
 
@@ -268,7 +269,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
 
-#define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
+#define lua_pushcfunction(L,f)	lua_pushlightfunction(L, (f))
 
 #define lua_strlen(L,i)		lua_objlen(L, (i))
 
@@ -403,7 +404,7 @@ LUA_API void  (lua_createrotable) (lua_State *L, ROTable *t, const ROTable_entry
 
 /**DEBUG**/extern void dbg_printf(const char *fmt, ...)
                        __attribute__ ((format (printf, 1, 2)));
-void lua_main (void);
+int lua_main (void);
 void lua_input_string (const char *line, int len);
 #define luaN_freearray(L,b,l)  luaM_freearray(L,b,l,sizeof(*b));
 
@@ -420,7 +421,7 @@ LUA_API void lua_setegcmode(lua_State *L, int mode, int limit);
 #define dbg_printf printf
 
 #endif
-extern void luaL_dbgbreak(void);
+extern void lua_debugbreak(void);
 
 /******************************************************************************
 * Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.

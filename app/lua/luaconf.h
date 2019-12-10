@@ -274,16 +274,6 @@
 
 
 /*
-@@ LUA_PROMPT is the default prompt used by stand-alone Lua.
-@@ LUA_PROMPT2 is the default continuation prompt used by stand-alone Lua.
-** CHANGE them if you want different prompts. (You can also change the
-** prompts dynamically, assigning to globals _PROMPT/_PROMPT2.)
-*/
-#define LUA_PROMPT		"> "
-#define LUA_PROMPT2		">> "
-
-
-/*
 @@ LUA_PROGNAME is the default name for the stand-alone Lua program.
 ** CHANGE it if your stand-alone interpreter has a different name and
 ** your system is not able to detect that name automatically.
@@ -340,18 +330,22 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 ** They are only used in libraries and the stand-alone program. (The #if
 ** avoids including 'stdio.h' everywhere.)
 */
-#if !defined(LUA_USE_STDIO)
-#define lua_writestring(s, l)  puts(s)
-#define luai_writeline()        puts("\n")
-#endif // defined(LUA_USE_STDIO)
+#ifdef LUA_USE_ESP
+#define lua_writestring(s,l)  output_redirect((s),(l))
+#else
+#define lua_writestring(s,l)  fwrite((s), sizeof(char), (l), stdout)
+#endif
+#define luai_writeline()      lua_writestring("\n",1)
 
 /*
 @@ lua_writestringerror defines how to print error messages.
 ** (A format string with one argument is enough for Lua...)
 */
-#if !defined(LUA_USE_STDIO)
+#ifdef LUA_USE_ESP
 #define lua_writestringerror(s,p)	dbg_printf((s), (p))
-#endif // defined(LUA_USE_STDIO)
+#else
+#define lua_writestringerror(s,p)	fprintf(stderr, (s), (p))
+#endif
 
 
 /* }================================================================== */
@@ -905,6 +899,6 @@ union luai_Cast { double l_d; long l_l; };
 #error "Pipes not supported NodeMCU firmware"
 #endif
 
-#define LUA_DEBUG_HOOK luaL_dbgbreak
+#define LUA_DEBUG_HOOK lua_debugbreak
 
 #endif

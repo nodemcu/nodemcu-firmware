@@ -115,8 +115,8 @@ void input_setprompt (const char *prompt) {
 ** the bool ins.run_input.
 ** -  TRUE:   it clears the UART FIFO up to EOL, doing any callback and sending
 **            the line to Lua.
-** -  FALSE:  it clears the UART FIFO doing callbacks according to the data_len /
-**            end_char break.
+** -  FALSE:  it clears the UART FIFO doing callbacks according to the data_len
+**            or end_char break.
 */
 extern void lua_input_string (const char *line, int len);
 
@@ -180,9 +180,9 @@ static bool input_readline(void) {
     } else {
       while (uart_getc(&ch)) {
         ins.data[ins.line_pos++] = ch;
-        if(  ins.line_pos >= ins.len ||
-            (ins.data_len > 0 && ins.line_pos >= ins.data_len) ||
-             ch == ins.end_char ) {
+        if( ins.line_pos >= ins.len ||
+           (ins.data_len >= 0 && ins.line_pos >= ins.data_len) ||
+           (ins.data_len  < 0 && ch == ins.end_char )) {
           ins.uart_cb(ins.data, ins.line_pos);
           ins.line_pos = 0;
         }

@@ -530,9 +530,9 @@ LUA_API void lua_pushrotable (lua_State *L,  const ROTable *t) {
   lua_unlock(L);
 }
 
-LUA_API void lua_pushlightfunction(lua_State *L, void *p) {
+LUA_API void lua_pushlightfunction(lua_State *L, lua_CFunction f) {
   lua_lock(L);
-  setfvalue(L->top, p);
+  setfvalue(L->top, f);
   api_incr_top(L);
   lua_unlock(L);
 }
