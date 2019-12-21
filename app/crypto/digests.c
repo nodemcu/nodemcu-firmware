@@ -37,10 +37,6 @@
 #include <strings.h>
 #include <errno.h>
 
-#ifdef MD2_ENABLE
-#include "ssl/ssl_crypto.h"
-#endif
-
 #ifdef SHA2_ENABLE
 #include "sha2.h"
 #endif
@@ -60,9 +56,6 @@ typedef char ensure_int_and_size_t_same[(sizeof(int)==sizeof(size_t)) ? 0 : -1];
 
 static const digest_mech_info_t hash_mechs[] ICACHE_RODATA_ATTR =
 {
-#ifdef MD2_ENABLE
-   MECH(MD2, _ , MD2_SIZE,  16),
-#endif
    MECH(MD5,   , MD5_DIGEST_LENGTH,  64)
   ,MECH(SHA1,  , SHA1_DIGEST_LENGTH, 64)
 #ifdef SHA2_ENABLE
