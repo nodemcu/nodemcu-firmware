@@ -519,7 +519,7 @@ static void mbedtls_handshake_succ(mbedtls_ssl_context *ssl)
 	lwIP_ASSERT(ssl);
 	if( ssl->handshake )
     {
-        mbedtls_ssl_handshake_free( ssl->handshake );
+        mbedtls_ssl_handshake_free( ssl );
         mbedtls_ssl_transform_free( ssl->transform_negotiate );
         mbedtls_ssl_session_free( ssl->session_negotiate );
 
