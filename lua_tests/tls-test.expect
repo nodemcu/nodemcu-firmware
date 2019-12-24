@@ -1,0 +1,188 @@
+#!/usr/bin/env expect
+
+# Walk a NodeMCU device through some basic TLS functionality tests.
+#
+# Requires `socat` and `openssl` on the host side; tested only on Linux.
+#
+# Tries to guess the host's IP address using `ip route get`, but this can be
+# overridden with the -ip command line option.
+#
+# A typical invocation looks like:
+#   TCLLIBPATH=./expectnmcu ./tls-test.expect -serial /dev/ttyUSB3 -wifi "$(cat wificmd)"
+#
+# where the file `wificmd` contains something like
+#  wifi.setmode(wifi.STATION); wifi.sta.config({...}); wifi.sta.connect()
+# where the ... is filled in with the local network's configuration.  All on
+# one line, tho', so that the script just gets one prompt back.
+#
+# For debugging the test itself, it may be useful to invoke expect with -d,
+# which will give a great deal of diagnostic information about the expect state
+# machine's internals:
+#   TCLLIBPATH=./expectnmcu expect -d ./tls-test.expect ...
+
+
+package require struct::stack
+package require expectnmcu::core
+
+::struct::stack ulogstack
+proc pushulog { new } {
+  ulogstack push [log_user -info]
+  log_user ${new}
+}
+proc populog { } { log_user [ulogstack pop] }
+
+proc genectls { curve pfx } {
+  exec "openssl" "ecparam" "-genkey" "-name" ${curve} "-out" "${pfx}.key"
+  exec "openssl" "req" "-new" "-sha256" "-subj" "/CN=${curve}" "-key" "${pfx}.key" "-out" "${pfx}.csr"
+  exec "openssl" "req" "-x509" "-sha256" "-days" "365" "-key" "${pfx}.key" "-in" "${pfx}.csr" "-out" "${pfx}.crt"
+}
+
+proc preptls { victim } {
+  ::expectnmcu::core::send_exp_prompt_c ${victim} "function tlsbasic(id,port,host)"
+  ::expectnmcu::core::send_exp_prompt_c ${victim} "  local c = tls.createConnection()"
+  ::expectnmcu::core::send_exp_prompt_c ${victim} "  c:on(\"receive\", function(sck, d) print(\"RECV\",id,d) end)"
+  ::expectnmcu::core::send_exp_prompt_c ${victim} "  c:on(\"connection\", function(sck) print(\"CONN\",id); sck:send(\"GET / HTTP/1.0\\r\\n\\r\\n\") end)"
+  ::expectnmcu::core::send_exp_prompt_c ${victim} "  c:on(\"disconnection\", function(sck) print(\"DISC\",id) end)"
+  ::expectnmcu::core::send_exp_prompt_c ${victim} "  c:connect(port,host)"
+  ::expectnmcu::core::send_exp_prompt_c ${victim} "  return c"
+  ::expectnmcu::core::send_exp_prompt   ${victim} "end"
+}
+
+# Basic connectivity test, including disconnection of localsid.
+proc basicconntest { id localsid victimsid victimconn } {
+  set timeout 15
+  expect {
+    -i ${localsid} -re ".+" {
+      # If socat says anything, it's almost surely an error
+      exit 1
+    }
+    -i ${victimsid} "CONN\t${id}" { }
+  }
+  set timeout 2
+  pushulog 0
+  expect {
+    -i ${localsid} "GET / HTTP/1.0\r\n\r\n" {
+      send -i ${localsid} "abracadabra"
+    }
+  }
+  populog
+  expect {
+    -i ${victimsid} "RECV\t${id}\tabracadabra" {
+      ::expectnmcu::core::send_exp_prompt ${victimsid} "${victimconn}:send(\"test 1 2 3 4\")"
+    }
+  }
+  pushulog 0
+  expect {
+    -i ${localsid} "test 1 2 3 4" {
+      close -i ${localsid}
+    }
+  }
+  populog
+  set timeout 15
+  expect {
+    -i ${victimsid} "DISC\t${id}" { }
+  }
+}
+
+# Generate some TLS certificates for our use, if they don't exist
+set fntls256v1 "test-256v1"
+if { ! [file exists "${fntls256v1}.key" ] } { genectls "prime256v1" ${fntls256v1} }
+set fntls384r1 "test-384r1"
+if { ! [file exists "${fntls384r1}.key" ] } { genectls "secp384r1" ${fntls384r1} }
+
+package require cmdline
+set cmd_parameters {
+  { serial.arg "/dev/ttyUSB0"   "Set the serial interface name" }
+  { wifi.arg   ""               "Command to run to bring up the network" }
+  { ip.arg     ""               "My IP address (will guess if not given)" }
+#  { debug                       "Turn on debugging" }
+}
+set cmd_usage "- A NodeMCU TLS test program"
+if {[catch {array set cmdopts [cmdline::getoptions ::argv $cmd_parameters $cmd_usage]}]} {
+  send_user [cmdline::usage $cmd_parameters $cmd_usage]
+  exit 0
+}
+
+# if { ${cmdopts(debug)} } { exp_internal 1 }
+
+send_user "===> Note: Serial port is ${cmdopts(serial)}; debug is ${cmdopts(debug)} <===\n"
+
+set victim [::expectnmcu::core::connect ${cmdopts(serial)} 115200]
+::expectnmcu::core::reboot ${cmdopts(serial)} 115200
+
+# Wait for the system to boot
+::expectnmcu::core::waitboot ${victim}
+send_user "\n===> Machine has booted <===\n"
+
+# Program a routine for TLS connections
+preptls ${victim}
+
+# Connect the board to the network
+
+if {0 < [string length ${cmdopts(wifi)}]} {
+  ::expectnmcu::core::send_exp_prompt ${victim} ${cmdopts(wifi)}
+}
+
+for {set i 0} {${i} < 10} {incr i} {
+  send -i ${victim} "=wifi.sta.getip()\n"
+  expect {
+    -i ${victim} -re "\n(\[^\n\t]+)\t\[^\t]+\t\[^\t]+\n> " {
+      set victimip ${expect_out(1,string)}
+      send_user "\n===> Victim IP address ${victimip} <===\n"
+      break
+    }
+    -i ${victim} -ex "nil\r\n> " {
+      # must not be connected
+      sleep 1
+    }
+  }
+}
+if {10 == $i} {
+  send_user "\n===> Unable to connect to network; bailing out! <===\n"
+  exit 1
+}
+
+if {0 < [string length ${cmdopts(ip)}]} {
+  set myip ${cmdopts(ip)}
+} else {
+  # Guess our IP address by using the victim's
+  spawn "ip" "route" "get" ${victimip}
+  expect {
+    -re "src (\[^ ]*) " {
+      set myip ${expect_out(1,string)}
+    }
+  }
+  close
+}
+
+::expectnmcu::core::send_exp_prompt ${victim} "tls.setDebug(2)"
+::expectnmcu::core::send_exp_prompt ${victim} "tls.cert.verify(false)"
+
+send_user "\n===> TEST SSL 256v1, no verify <===\n"
+
+spawn -noecho "socat" "STDIO,cfmakeraw" "OPENSSL-LISTEN:12345,verify=0,certificate=${fntls256v1}.crt,key=${fntls256v1}.key,reuseaddr"
+::expectnmcu::core::send_exp_prompt ${victim} "c = tlsbasic(0,12345,\"${myip}\")"
+basicconntest 0 ${spawn_id} ${victim} "c"
+
+send_user "\n===> TEST SSL 384r1, no verify <===\n"
+
+spawn -noecho "socat" "STDIO,cfmakeraw" "OPENSSL-LISTEN:12345,verify=0,certificate=${fntls384r1}.crt,key=${fntls384r1}.key,reuseaddr"
+::expectnmcu::core::send_exp_prompt ${victim} "c = tlsbasic(1,12345,\"${myip}\")"
+basicconntest 1 ${spawn_id} ${victim} "c"
+
+send_user "\n===> TEST SSL 384r1, verify <===\n"
+
+set cert [open "${fntls384r1}.crt"]
+::expectnmcu::core::send_exp_prompt_c ${victim} "tls.cert.verify(\[\["
+while { [gets $cert line] >= 0 } {
+  ::expectnmcu::core::send_exp_prompt_c ${victim} $line
+}
+::expectnmcu::core::send_exp_prompt ${victim} "]])"
+close ${cert}
+::expectnmcu::core::send_exp_prompt ${victim} "tls.cert.verify(true)"
+
+spawn -noecho "socat" "STDIO,cfmakeraw" "OPENSSL-LISTEN:12345,verify=0,certificate=${fntls384r1}.crt,key=${fntls384r1}.key,reuseaddr"
+::expectnmcu::core::send_exp_prompt ${victim} "c = tlsbasic(2,12345,\"${myip}\")"
+basicconntest 2 ${spawn_id} ${victim} "c"
+
+send_user "\n===> TESTS OK <===\n"
