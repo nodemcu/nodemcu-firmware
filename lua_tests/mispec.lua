@@ -137,9 +137,11 @@ M.run = function()
             M.total = M.total + 1
             if M.pre then M.pre() end
             local status, err = pcall(func)
-            if not status then
-                print("\n  ! it failed:", err)
+            if err then
+                print(("\nTAP: not ok %d # %s: %s"):format(M.total, desc, err))
                 M.failed = M.failed + 1
+            else
+                print(("\nTAP: ok %d # %s"):format(M.total, desc))
             end
             if M.post then M.post() end
             M.runNextPending()
@@ -149,6 +151,7 @@ M.run = function()
     it.cleanup = function(_, post) M.post = post end;
     M.itshoulds(it)
 
+    print(("\nTAP: 1..%d"):format(#M.pending))
     print('' .. M.name .. ', it should:')
     M.runNextPending()
 
