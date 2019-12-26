@@ -133,7 +133,7 @@ M.run = function()
     local it = {}
     it.should = function(_, desc, func)
         table.insert(M.pending, function()
-            uart.write(0, '\n  * ' .. desc)
+            print('\n  * ' .. desc)
             M.total = M.total + 1
             if M.pre then M.pre() end
             local status, err = pcall(func)
