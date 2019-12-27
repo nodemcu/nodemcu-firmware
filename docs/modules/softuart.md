@@ -1,7 +1,7 @@
 # SoftUART Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-|2019-02-17 | [pleningerweb](https://github.com/plieningerweb/), [juancgalvez](https://github.com/juancgalvez/), [crasu](https://github.com/crasu/), [galjonsfigur](https://github.com/galjonsfigur/)| [galjonsfigur](https://github.com/galjonsfigur/) | [softuart.c](../../app/modules/softuart.c) |
+|2019-12-27 | [pleningerweb](https://github.com/plieningerweb/), [juancgalvez](https://github.com/juancgalvez/), [crasu](https://github.com/crasu/), [galjonsfigur](https://github.com/galjonsfigur/)| [galjonsfigur](https://github.com/galjonsfigur/) | [softuart.c](../../app/modules/softuart.c) |
 
 The SoftUART module provides access to multiple software-based UART ports.
 
