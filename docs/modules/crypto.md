@@ -10,7 +10,6 @@ The following encryption/decryption algorithms/modes are supported:
 - `"AES-CBC"` for 128-bit AES in CBC mode
 
 The following hash algorithms are supported:
-- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
 - MD5
 - SHA1
 - SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
