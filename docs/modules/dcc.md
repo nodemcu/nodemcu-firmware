@@ -1,7 +1,7 @@
 # DCC module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2019-08-31 | [vsky279](https://github.com/vsky279) | [vsky279](https://github.com/vsky279) | [dcc.c](../../app/modules/dcc.c)|
+| 2019-12-28 | [vsky279](https://github.com/vsky279) | [vsky279](https://github.com/vsky279) | [dcc.c](../../app/modules/dcc.c)|
 
 The dcc module implements decoder of the [National Model Railroad Association](https://www.nmra.org/) (NMRA) Digital Command Control (DCC) decoder - see [DCC wiki](https://dccwiki.com/Introduction_to_DCC) for details.
 
