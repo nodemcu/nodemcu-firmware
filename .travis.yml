@@ -34,8 +34,5 @@ script:
 - echo "checking:"
 - find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 echo
 - find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 $LUACC -p
-<<<<<<< Upstream, based on branch 'dev' of https://github.com/nodemcu/nodemcu-firmware/
-# - if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck.sh || true ; fi
-=======
-- if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck.sh || true ; fi
->>>>>>> 582cda4 Re-enable luacheck in Travis
+- if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck-linux.sh; fi
+- if [ "$OS" = "windows" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck-windows.sh; fi
