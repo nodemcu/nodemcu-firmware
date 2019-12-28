@@ -173,6 +173,32 @@ stds.nodemcu_libs = {
         toHex = empty
       }
     },
+    dcc = {
+      fields = {
+        CV_READ = empty,
+        CV_RESET = empty,
+        CV_VALID = empty,
+        CV_WRITE = empty,
+        DCC_ACCESSORY = empty,
+        DCC_FUNC = empty,
+        DCC_IDLE = empty,
+        DCC_RAW = empty,
+        DCC_RESET = empty,
+        DCC_SERVICEMODE = empty,
+        DCC_SPEED = empty,
+        DCC_SPEED_RAW = empty,
+        DCC_TURNOUT = empty,
+        FLAGS_AUTO_FACTORY_DEFAULT = empty,
+        FLAGS_DCC_ACCESSORY_DECODER = empty,
+        FLAGS_MY_ADDRESS_ONLY = empty,
+        FLAGS_OUTPUT_ADDRESS_MODE = empty,
+        MAN_ID_DIY = empty,
+        MAN_ID_JMRI = empty,
+        MAN_ID_SILICON_RAILWAY = empty,
+        close = empty,
+        setup = empty
+      }
+    },
     dht = {
       fields = {
         ERROR_CHECKSUM = empty,
