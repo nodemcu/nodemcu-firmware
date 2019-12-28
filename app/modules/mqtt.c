@@ -450,8 +450,6 @@ READPACKET:
         mud->connState = MQTT_DATA;
         NODE_DBG("MQTT: Connected\r\n");
         mud->keepalive_sent = 0;
-        luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-        mud->cb_connect_fail_ref = LUA_NOREF;
         if(mud->cb_connect_ref == LUA_NOREF)
           break;
         if(mud->self_ref == LUA_NOREF)
@@ -1436,6 +1434,9 @@ static int mqtt_socket_on( lua_State* L )
 
   if( sl == 7 && strcmp(method, "connect") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
+    mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+  }else if( sl == 7 && strcmp(method, "connfail") == 0){
+    luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else if( sl == 7 && strcmp(method, "offline") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
