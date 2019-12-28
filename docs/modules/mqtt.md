@@ -255,7 +255,8 @@ Publishes a message.
 - `message` the message to publish, (buffer or string)
 - `qos` QoS level
 - `retain` retain flag
-- `function(client)` optional callback fired when PUBACK received.
+- `function(client)` optional callback fired when PUBACK received (for QoS 1
+  or 2) or when message sent (for QoS 0).
 
 #### Notes
 
