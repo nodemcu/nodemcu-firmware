@@ -67,6 +67,7 @@ pages:
     - 'color-utils': 'modules/color-utils.md'
     - 'cron': 'modules/cron.md'
     - 'crypto': 'modules/crypto.md'
+    - 'dcc': 'modules/dcc.md'
     - 'dht': 'modules/dht.md'
     - 'encoder': 'modules/encoder.md'
     - 'enduser setup / captive portal / WiFi manager': 'modules/enduser-setup.md'

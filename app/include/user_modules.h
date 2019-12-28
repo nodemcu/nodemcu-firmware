@@ -21,6 +21,7 @@
 //#define LUA_USE_MODULES_COLOR_UTILS
 //#define LUA_USE_MODULES_CRON
 //#define LUA_USE_MODULES_CRYPTO
+//#define LUA_USE_MODULES_DCC
 #define LUA_USE_MODULES_DHT
 //#define LUA_USE_MODULES_ENCODER
 //#define LUA_USE_MODULES_ENDUSER_SETUP // USE_DNS in dhcpserver.h needs to be enabled for this module to work.
