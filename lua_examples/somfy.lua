@@ -124,15 +124,15 @@ local function downStep(remote, cb, par)
     somfy.sendcommand(pin, config[remote].address, somfy.DOWN, config[remote].rc, 2,  function() wait(300, cb, par) end)
     writeconfig()
 end
--- luacheck: push ignore
-local function upStep(remote, cb, par)
+
+local function upStep(remote, cb, par) -- luacheck: ignore
     par = par or {}
     print("upStep: ".. remote)
     config[remote].rc=config[remote].rc+1
     somfy.sendcommand(pin, config[remote].address, somfy.UP, config[remote].rc, 2, function() wait(300, cb, par) end)
     writeconfig()
 end
--- luacheck: pop
+
 --======================================================================================================--
 gpio.mode(pin, gpio.OUTPUT, gpio.PULLUP)
 

@@ -23,9 +23,8 @@ local function init_i2c_display()
     i2c.setup(0, sda, scl, i2c.SLOW)
     disp = u8g2.ssd1306_i2c_128x64_noname(0, sla)
 end
--- luacheck: push ignore
 -- setup SPI and connect display
-local function init_spi_display()
+local function init_spi_display() -- luacheck: ignore
     -- Hardware SPI CLK  = GPIO14
     -- Hardware SPI MOSI = GPIO13
     -- Hardware SPI MISO = GPIO12 (not used)
@@ -41,7 +40,6 @@ local function init_spi_display()
 
     disp = u8g2.ssd1306_128x64_noname(1, cs, dc, res)
 end
--- luacheck: pop
 
 local function u8g2_prepare()
   disp:setFont(u8g2.font_6x10_tf)

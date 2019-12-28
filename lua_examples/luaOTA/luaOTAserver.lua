@@ -242,14 +242,12 @@ read_file = function(fname)
 end
 
 -- Save contents to the given file
--- luacheck: push ignore
 ----------------------------------
-save_file = function(fname, data)
+save_file = function(fname, data) -- luacheck: ignore
   local file = io.open(fname, "wb")
   file:write(data)
   file:close()
 end
--- luacheck: pop
 --------------------------------------------------------------------------------------
 
 main()  -- now that all functions have been bound to locals, we can start the show :-)
