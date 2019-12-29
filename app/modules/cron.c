@@ -4,12 +4,12 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "user_interface.h"
-#include "c_types.h"
-#include "c_string.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 #include "ets_sys.h"
 #include "time.h"
 #include "rtc/rtctime.h"
-#include "stdlib.h"
 #include "mem.h"
 
 struct cronent_desc {
@@ -176,7 +176,7 @@ static int lcron_reset(lua_State *L) {
     luaL_unref(L, LUA_REGISTRYINDEX, cronent_list[i]);
   }
   cronent_count = 0;
-  os_free(cronent_list);
+  free(cronent_list);
   cronent_list = 0;
   return 0;
 }

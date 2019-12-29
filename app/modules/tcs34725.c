@@ -22,7 +22,8 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_math.h"
+#include "user_interface.h"
+#include <math.h>
 
 // #define TCS34725_ADDRESS					(0x29<<1)
 #define TCS34725_ADDRESS					(0x29)

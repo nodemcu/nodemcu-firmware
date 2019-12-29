@@ -29,12 +29,15 @@ else
 endif
 SDK_REL_DIR      := sdk/esp_iot_sdk_v$(SDK_VER)
 SDK_DIR          := $(TOP_DIR)/$(SDK_REL_DIR)
+APP_DIR          := $(TOP_DIR)/app
 
 ESPTOOL_VER := 2.6
 
-# Ensure that the Espresif SDK is searched before the tool-chain's SDK (if any)
-CCFLAGS:= -I$(TOP_DIR)/sdk-overrides/include -I$(TOP_DIR)/app/include/lwip/app -I$(SDK_DIR)/include
-LDFLAGS:= -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
+# Ensure that the Espresif SDK is search before application paths and also prevent
+# the SDK's c_types.h from being included from anywhere, by predefining its include-guard.
+
+CCFLAGS :=  $(CCFLAGS) -I $(PDIR)sdk-overrides/include -I $(SDK_DIR)/include -D_C_TYPES_H_
+LDFLAGS := -L$(SDK_DIR)/lib -L$(SDK_DIR)/ld $(LDFLAGS)
 
 ifdef DEBUG
   CCFLAGS += -ggdb -O0
@@ -59,18 +62,18 @@ else
 endif  # $(V)==1
 
 ifndef BAUDRATE
-	BAUDRATE=115200
+  BAUDRATE=115200
 endif
 
 #############################################################
 # Select compile
 #
-#  ** HEALTH WARNING ** This section is largely legacy directives left over from 
+#  ** HEALTH WARNING ** This section is largely legacy directives left over from
 #  an Espressif template.  As far as I (TerrryE) know, we've only used the Linux
 #  Path. I have successfully build AMD and Intel (both x86, AMD64) and RPi ARM6
 #  all under Ubuntu.  Our docker container runs on Windows in an Ubuntu VM.
 #  Johny Mattson maintains a prebuild AMD64 xtensa cross-compile gcc v4.8.5
-#  toolchain which is compatible with the non-OS SDK and can be used on any recent 
+#  toolchain which is compatible with the non-OS SDK and can be used on any recent
 #  Ubuntu version including the Docker and Travis build environments.
 #
 #  You have the option to build your own toolchain and specify a TOOLCHAIN_ROOT
@@ -78,7 +81,7 @@ endif
 #  architecture is compatable then you can omit this variable and the make will
 #  download and use this prebuilt toolchain.
 #
-#  If any developers wish to develop, test and support alternative environments 
+#  If any developers wish to develop, test and support alternative environments
 #  then please raise a GitHub issue on this work.
 #
 
@@ -93,39 +96,39 @@ endif
 
 ifneq (,$(findstring indows,$(OS)))
   #------------ BEGIN UNTESTED ------------ We are not under Linux, e.g.under windows.
-	ifeq ($(XTENSA_CORE),lx106)
-		# It is xcc
-		AR = xt-ar
-		CC = xt-xcc
-		CXX = xt-xcc
-		NM = xt-nm
-		CPP = xt-cpp
-		OBJCOPY = xt-objcopy
-		#MAKE = xt-make
-		CCFLAGS += --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
-	else
-		# It is gcc, may be cygwin
-		# Can we use -fdata-sections?
-		CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
-		AR = xtensa-lx106-elf-ar
-		CC = xtensa-lx106-elf-gcc
-		CXX = xtensa-lx106-elf-g++
-		NM = xtensa-lx106-elf-nm
-		CPP = xtensa-lx106-elf-cpp
-		OBJCOPY = xtensa-lx106-elf-objcopy
-	endif
-	FIRMWAREDIR = ..\\bin\\
-	ifndef COMPORT
-		ESPPORT = com1
-	else
-		ESPPORT = $(COMPORT)
-	endif
-    ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+  ifeq ($(XTENSA_CORE),lx106)
+    # It is xcc
+    AR = xt-ar
+    CC = xt-xcc
+    CXX = xt-xcc
+    NM = xt-nm
+    CPP = xt-cpp
+    OBJCOPY = xt-objcopy
+    #MAKE = xt-make
+    CCFLAGS += --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
+  else
+    # It is gcc, may be cygwin
+    # Can we use -fdata-sections?
+    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
+    AR = xtensa-lx106-elf-ar
+    CC = xtensa-lx106-elf-gcc
+    CXX = xtensa-lx106-elf-g++
+    NM = xtensa-lx106-elf-nm
+    CPP = xtensa-lx106-elf-cpp
+    OBJCOPY = xtensa-lx106-elf-objcopy
+  endif
+  FIRMWAREDIR = ..\\bin\\
+  ifndef COMPORT
+    ESPPORT = com1
+  else
+    ESPPORT = $(COMPORT)
+  endif
+  ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
 # ->AMD64
-    endif
-    ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+  endif
+  ifeq ($(PROCESSOR_ARCHITECTURE),x86)
 # ->IA32
-    endif
+  endif
   #---------------- END UNTESTED ---------------- We are under windows.
 else
   # We are under other system, may be Linux. Assume using gcc.
@@ -139,23 +142,23 @@ else
       TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
       GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
       export PATH:=$(PATH):$(TOOLCHAIN_ROOT)/bin
-  	endif
-	endif
-	
-	ifndef COMPORT
-		ESPPORT = /dev/ttyUSB0
-	else
-		ESPPORT = $(COMPORT)
-	endif
+    endif
+  endif
 
-	CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
-	AR      = xtensa-lx106-elf-ar
-	CC      = $(WRAPCC) xtensa-lx106-elf-gcc
-	CXX     = $(WRAPCC) xtensa-lx106-elf-g++
-	NM      = xtensa-lx106-elf-nm
-	CPP     = $(WRAPCC) xtensa-lx106-elf-gcc -E
-	OBJCOPY = xtensa-lx106-elf-objcopy
-	FIRMWAREDIR = ../bin/
+  ifndef COMPORT
+    ESPPORT = /dev/ttyUSB0
+  else
+    ESPPORT = $(COMPORT)
+  endif
+
+  CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
+  AR      = xtensa-lx106-elf-ar
+  CC      = $(WRAPCC) xtensa-lx106-elf-gcc
+  CXX     = $(WRAPCC) xtensa-lx106-elf-g++
+  NM      = xtensa-lx106-elf-nm
+  CPP     = $(WRAPCC) xtensa-lx106-elf-gcc -E
+  OBJCOPY = xtensa-lx106-elf-objcopy
+  FIRMWAREDIR = ../bin/
   WGET = wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused
 endif
 
@@ -219,7 +222,7 @@ CCFLAGS += 			\
 	-fno-inline-functions	\
 	-nostdlib       \
 	-mlongcalls	\
-	-mtext-section-literals
+	-mtext-section-literals \
 #	-Wall
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
@@ -271,7 +274,7 @@ endif # TARGET
 #
 
 ifndef TARGET
-all: toolchain sdk_pruned pre_build .subdirs
+all: toolchain sdk_pruned pre_build buildinfo .subdirs
 else
 all: .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 endif
@@ -368,7 +371,7 @@ flash1m-dout:
 
 flashinternal:
 ifndef PDIR
-	$(MAKE) -C ./app flashinternal
+	$(MAKE) -C $(APP_DIR) flashinternal
 else
 	$(ESPTOOL) --port $(ESPPORT) --baud $(BAUDRATE) write_flash $(FLASHOPTIONS) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
 endif
@@ -393,21 +396,26 @@ spiffs-image-remove:
 
 spiffs-image: bin/0x10000.bin
 	$(MAKE) -C tools
-
+############ Note: this target needs moving into app/modules make ############
 .PHONY: pre_build
 
 ifneq ($(wildcard $(TOP_DIR)/server-ca.crt),)
-pre_build: $(TOP_DIR)/app/modules/server-ca.crt.h
+pre_build: $(APP_DIR)/modules/server-ca.crt.h
 
-$(TOP_DIR)/app/modules/server-ca.crt.h: $(TOP_DIR)/server-ca.crt
+$(APP_DIR)/modules/server-ca.crt.h: $(TOP_DIR)/server-ca.crt
 	$(summary) MKCERT $(patsubst $(TOP_DIR)/%,%,$<)
-	python $(TOP_DIR)/tools/make_server_cert.py $(TOP_DIR)/server-ca.crt > $(TOP_DIR)/app/modules/server-ca.crt.h
+	python $(TOP_DIR)/tools/make_server_cert.py $(TOP_DIR)/server-ca.crt > $(APP_DIR)/modules/server-ca.crt.h
 
 DEFINES += -DHAVE_SSL_SERVER_CRT=\"server-ca.crt.h\"
 else
 pre_build:
-	@-rm -f $(TOP_DIR)/app/modules/server-ca.crt.h
+	@-rm -f $(APP_DIR)/modules/server-ca.crt.h
 endif
+
+.PHONY: buildinfo
+
+buildinfo:
+	tools/update_buildinfo.sh
 
 ifdef TARGET
 $(OBJODIR)/%.o: %.c
@@ -482,6 +490,5 @@ endif # TARGET
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

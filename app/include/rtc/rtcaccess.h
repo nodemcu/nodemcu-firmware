@@ -1,7 +1,7 @@
 #ifndef RTC_ACCESS_H
 #define RTC_ACCESS_H
 
-#include <c_types.h>
+#include <stdint.h>
 
 #define RTC_MMIO_BASE 0x60000700
 #define RTC_USER_MEM_BASE 0x60001200

@@ -250,12 +250,16 @@ Get the current LFS and SPIFFS partition information.
 none
 
 #### Returns
-An array containing entries for `lfs_addr`, `lfs_size`, `spiffs_addr` and `spiffs_size`. The address values are offsets relative to the startof the Flash memory.
+An array containing entries for `lfs_addr`, `lfs_size`, `spiffs_addr` and `spiffs_size`. The address values are offsets relative to the start of the Flash memory.
 
 #### Example
 ```lua
 print("The LFS size is " .. node.getpartitiontable().lfs_size)
 ```
+
+#### See also
+[`node.setpartitiontable()`](#nodesetpartitiontable)
+
 
 ## node.heap()
 
@@ -272,23 +276,51 @@ system heap size left in bytes (number)
 
 ## node.info()
 
-Returns NodeMCU version, chipid, flashid, flash size, flash mode, flash speed, and Lua File Store (LFS) usage statics.
+Returns information about hardware, software version and build configuration.
+
 
 #### Syntax
-`node.info()`
+`node.info([group])`
 
 #### Parameters
-none
+`group` A designator for a group of properties. May be one of `"hw"`, `"sw_version"`, `"build_config"`. It is currently optional; if omitted the legacy structure is returned. However, not providing any value is deprecated.
 
 #### Returns
- - `majorVer` (number)
- - `minorVer` (number)
- - `devVer` (number)
- - `chipid` (number)
- - `flashid` (number)
- - `flashsize` (number)
- - `flashmode` (number)
- - `flashspeed` (number)
+If a `group` is given the return value will be a table containing the following elements:
+
+- for `group` = `"hw"`
+	- `chip_id` (number)
+	- `flash_id` (number)
+	- `flash_size` (number)
+	- `flash_mode` (number) 0 = QIO, 1 = QOUT, 2 = DIO, 15 = DOUT.
+	- `flash_speed` (number)
+- for `group` = `"sw_version"`
+	- `git_branch` (string)
+	- `git_commit_id` (string)
+	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403" 
+	- `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
+	- `node_version_major` (number)
+	- `node_version_minor` (number)
+	- `node_version_revision` (number)
+- for `group` = `"build_config"`
+	- `ssl` (boolean)
+	- `lfs_size` (number) as defined at build time
+	- `modules` (string) comma separated list
+	- `number_type` (string) `integer` or `float`
+
+!!! attention
+
+	Not providing a `group` is deprecated and support for that will be removed in one of the next releases.
+
+- for `group` = `nil`
+	- `majorVer` (number)
+	- `minorVer` (number)
+	- `devVer` (number)
+	- `chipid` (number)
+	- `flashid` (number)
+	- `flashsize` (number)
+	- `flashmode` (number)
+	- `flashspeed` (number)
 
 #### Example
 ```lua
@@ -296,13 +328,20 @@ majorVer, minorVer, devVer, chipid, flashid, flashsize, flashmode, flashspeed = 
 print("NodeMCU "..majorVer.."."..minorVer.."."..devVer)
 ```
 
+```lua
+for k,v in pairs(node.info("build_config")) do
+  print (k,v)
+end
+```
+
+```lua
+print(node.info("sw_version").git_release)
+```
+
+
 ## node.input()
 
-Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, but without the single-line limitation.
-
-!!! attention
-
-    This function only has an effect when invoked from a callback. Using it directly on the console **does not work**.
+Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, but without the single-line limitation.  Note that the Line interpreter only actions complete Lua chunks.  A Lue Lua chunk must comprise one or more complete `'\n'` terminaed lines that form a complete compilation unit.
 
 #### Syntax
 `node.input(str)`
@@ -317,56 +356,29 @@ Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, bu
 ```lua
 sk:on("receive", function(conn, payload) node.input(payload) end)
 ```
+See the `telnet/telnet.lua` in `lua_examples` for a more comprehensive example.
 
 #### See also
 [`node.output()`](#nodeoutput)
 
 ## node.output()
 
-Redirects the Lua interpreter output to a callback function. Optionally also prints it to the serial console.
-
-!!! caution
-
-    Do **not** attempt to `print()` or otherwise induce the Lua interpreter to produce output from within the callback function. Doing so results in infinite recursion, and leads to a watchdog-triggered restart.
+Redirects the Lua interpreter to a `stdout` pipe when a CB function is specified (See  `pipe` module) and resets output to normal otherwise. Optionally also prints to the serial console.
 
 #### Syntax
-`node.output(function(str), serial_debug)`
+`node.output(function(pipe), serial_debug)`
 
 #### Parameters
-  - `output_fn(str)` a function accept every output as str, and can send the output to a socket (or maybe a file).
+  - `output_fn(pipe)` a function accept every output as str, and can send the output to a socket (or maybe a file). Note that this function must conform to the fules for a pipe reader callback.
   - `serial_debug` 1 output also show in serial. 0: no serial output.
 
 #### Returns
 `nil`
 
 #### Example
-```lua
-function tonet(str)
-  sk:send(str)
-end
-node.output(tonet, 1)  -- serial also get the Lua output.
-```
 
-```lua
--- a simple telnet server
-s=net.createServer(net.TCP)
-s:listen(2323,function(c)
-   con_std = c
-   function s_output(str)
-      if(con_std~=nil)
-         then con_std:send(str)
-      end
-   end
-   node.output(s_output, 0)   -- re-direct output to function s_ouput.
-   c:on("receive",function(c,l)
-      node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
-   end)
-   c:on("disconnection",function(c)
-      con_std = nil
-      node.output(nil)        -- un-regist the redirect output function, output goes to serial
-   end)
-end)
-```
+See the `telnet/telnet.lua` in `lua_examples` for a more comprehensive example of its use.
+
 #### See also
 [`node.input()`](#nodeinput)
 
@@ -436,7 +448,7 @@ Sets the current LFS and / or SPIFFS partition information.
 	This function is typically only used once during initial provisioning after first flashing the firmware.  It does some consistency checks to validate the specified parameters, and it then reboots the ESP module to load the new partition table. If the LFS or SPIFFS regions have changed then you will need to reload LFS, reformat the SPIFSS and reload its contents.
 
 #### Parameters
-An array containing one or more of the following enties. The address values are byte offsets relative to the startof the Flash memory. The size values are in bytes. Note that these parameters must be a multiple of 8Kb to align to Flash page boundaries.
+An array containing one or more of the following enties. The address values are byte offsets relative to the start of the Flash memory. The size values are in bytes. Note that these parameters must be a multiple of 8Kb to align to Flash page boundaries.
 -  `lfs_addr`.  The base address of the LFS region.
 -  `lfs_size`.  The size of the LFS region.
 -  `spiffs_addr`. The base address of the SPIFFS region.
@@ -449,6 +461,10 @@ Not applicable.  The ESP module will be rebooted for a valid new set, or a Lua e
 ```lua
 node.setpartitiontable{lfs_size = 0x20000, spiffs_addr = 0x120000, spiffs_size = 0x20000}
 ```
+
+#### See also
+[`node.getpartitiontable()`](#nodegetpartitiontable)
+
 
 
 ## node.sleep()

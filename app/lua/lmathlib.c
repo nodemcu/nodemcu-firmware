@@ -10,8 +10,8 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDLIB
-#include C_HEADER_MATH
+#include <stdlib.h>
+#include <math.h>
 
 #include "lauxlib.h"
 #include "lualib.h"

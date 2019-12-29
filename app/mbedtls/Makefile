@@ -14,7 +14,9 @@
 ifndef PDIR
 UP_EXTRACT_DIR = ..
 GEN_LIBS = libmbedtls.a
-COMPONENTS_libmbedtls = library/liblibrary.a platform/libplatform.a	app/libapp.a
+COMPONENTS_libmbedtls = library/liblibrary.a \
+                        platform/libplatform.a \
+                    	app/libapp.a
 endif
 
 
@@ -26,7 +28,7 @@ endif
 #   for a subtree within the makefile rooted therein
 #
 DEFINES +=
-#CCFLAGS += --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal
+CONFIGURATION_DEFINES += -DMBEDTLS_USER_CONFIG_FILE=\"user_mbedtls.h\"
 
 #############################################################
 # Recursion Magic - Don't touch this!!
@@ -40,8 +42,6 @@ DEFINES +=
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

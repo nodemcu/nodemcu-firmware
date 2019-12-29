@@ -8,11 +8,7 @@
 #ifndef lobject_h
 #define lobject_h
 
-#ifdef LUA_CROSS_COMPILER
 #include <stdarg.h>
-#else
-#include "c_stdarg.h"
-#endif
 
 #include "llimits.h"
 #include "lua.h"
@@ -117,7 +113,7 @@ typedef struct lua_TValue {
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
 #define ttisrotable(o) (ttype(o) == LUA_TROTABLE)
 #define ttislightfunction(o)  (ttype(o) == LUA_TLIGHTFUNCTION)
-
+#define ttisanyfunction(o)  (ttisfunction(o) || ttislightfunction(o))
 
 /* Macros to access values */
 

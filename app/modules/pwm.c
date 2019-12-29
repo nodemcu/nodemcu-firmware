@@ -3,7 +3,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
-#include "c_types.h"
+#include <stdint.h>
 
 // Lua: realfrequency = setup( id, frequency, duty )
 static int lpwm_setup( lua_State* L )

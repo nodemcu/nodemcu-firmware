@@ -38,12 +38,6 @@ DEFINES += -DESP_INIT_DATA_DEFAULT="\"$(SDK_DIR)/bin/esp_init_data_default_v05.b
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../../include/ets
-INCLUDES += -I ../libc
-INCLUDES += -I ../platform
-INCLUDES += -I ../lua
 INCLUDES += -I ../spiffs
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

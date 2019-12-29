@@ -11,14 +11,12 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDIO
-#include C_HEADER_STRING
-#include C_HEADER_STDLIB
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "lauxlib.h"
 #include "lualib.h"
 #include "lrotable.h"
-
-
 
 
 /*
@@ -40,20 +38,11 @@ static int luaB_print (lua_State *L) {
     if (s == NULL)
       return luaL_error(L, LUA_QL("tostring") " must return a string to "
                            LUA_QL("print"));
-#if defined(LUA_USE_STDIO)
-    if (i>1) c_fputs("\t", c_stdout);
-    c_fputs(s, c_stdout);
-#else
-    if (i>1)  luai_writestring("\t", 1);
-    luai_writestring(s, c_strlen(s));
-#endif
+    if (i>1) puts("\t");
+    puts(s);
     lua_pop(L, 1);  /* pop result */
   }
-#if defined(LUA_USE_STDIO)
-  c_fputs("\n", c_stdout);
-#else
-  luai_writeline();
-#endif
+  puts("\n");
   return 0;
 }
 
@@ -72,7 +61,7 @@ static int luaB_tonumber (lua_State *L) {
     char *s2;
     unsigned long n;
     luaL_argcheck(L, 2 <= base && base <= 36, 2, "base out of range");
-    n = c_strtoul(s1, &s2, base);
+    n = strtoul(s1, &s2, base);
     if (s1 != s2) {  /* at least one valid digit? */
       while (isspace((unsigned char)(*s2))) s2++;  /* skip trailing spaces */
       if (*s2 == '\0') {  /* no invalid trailing characters? */
@@ -296,7 +285,7 @@ static int luaB_loadfile (lua_State *L) {
 #ifdef LUA_CROSS_COMPILER
   return load_aux(L, luaL_loadfile(L, fname));
 #else
-  return load_aux(L, luaL_loadfsfile(L, fname));
+  return load_aux(L, luaL_loadfile(L, fname));
 #endif
 }
 
@@ -343,7 +332,7 @@ static int luaB_dofile (lua_State *L) {
 #ifdef LUA_CROSS_COMPILER
   if (luaL_loadfile(L, fname) != 0) lua_error(L);
 #else
-  if (luaL_loadfsfile(L, fname) != 0) lua_error(L);
+  if (luaL_loadfile(L, fname) != 0) lua_error(L);
 #endif
   lua_call(L, 0, LUA_MULTRET);
   return lua_gettop(L) - n;

@@ -53,6 +53,7 @@ struct dhcp
   ip_addr_t offered_ip_addr;
   ip_addr_t offered_sn_mask;
   ip_addr_t offered_gw_addr;
+  ip_addr_t offered_ntp_addr;
 
   u32_t offered_t0_lease; /* lease period (in seconds) */
   u32_t offered_t1_renew; /* recommended renew time (usually 50% of lease period) */
@@ -206,6 +207,9 @@ void dhcp_fine_tmr(void);
 #define DHCP_OPTION_BROADCAST 28
 #define DHCP_OPTION_TCP_TTL 37
 #define DHCP_OPTION_END 255
+
+/* time */
+#define DHCP_OPTION_NTP 42
 
 /**add options for support more router by liuHan**/
 #define DHCP_OPTION_DOMAIN_NAME 15

@@ -1,6 +1,7 @@
 #include "node.h"
 #include "coap_timer.h"
 #include "os_type.h"
+#include "osapi.h"
 #include "pm/swtimer.h"
 
 static os_timer_t coap_timer;

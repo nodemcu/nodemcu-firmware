@@ -3,11 +3,11 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "task/task.h"
-#include "c_string.h"
-#include "c_stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 
-#include "pcm.h"
-#include "pcm_drv.h"
+#include "pcm/pcm.h"
+#include "pcm/pcm_drv.h"
 
 
 #define GET_PUD() pud_t *pud = (pud_t *)luaL_checkudata(L, 1, "pcm.driver"); \
@@ -43,11 +43,11 @@ static int pcm_drv_free( lua_State *L )
   UNREF_CB( cfg->self_ref );
 
   if (cfg->bufs[0].data) {
-    c_free( cfg->bufs[0].data );
+    free( cfg->bufs[0].data );
     cfg->bufs[0].data = NULL;
   }
   if (cfg->bufs[1].data) {
-    c_free( cfg->bufs[1].data );
+    free( cfg->bufs[1].data );
     cfg->bufs[1].data = NULL;
   }
 
@@ -152,19 +152,19 @@ static int pcm_drv_on( lua_State *L )
     is_func = TRUE;
   }
 
-  if ((len == 4) && (c_strcmp( event, "data" ) == 0)) {
+  if ((len == 4) && (strcmp( event, "data" ) == 0)) {
     luaL_unref( L, LUA_REGISTRYINDEX, cfg->cb_data_ref);
     cfg->cb_data_ref = COND_REF( is_func );
-  } else if ((len == 7) && (c_strcmp( event, "drained" ) == 0)) {
+  } else if ((len == 7) && (strcmp( event, "drained" ) == 0)) {
     luaL_unref( L, LUA_REGISTRYINDEX, cfg->cb_drained_ref);
     cfg->cb_drained_ref = COND_REF( is_func );
-  } else if ((len == 6) && (c_strcmp( event, "paused" ) == 0)) {
+  } else if ((len == 6) && (strcmp( event, "paused" ) == 0)) {
     luaL_unref( L, LUA_REGISTRYINDEX, cfg->cb_paused_ref);
     cfg->cb_paused_ref = COND_REF( is_func );
-  } else if ((len == 7) && (c_strcmp( event, "stopped" ) == 0)) {
+  } else if ((len == 7) && (strcmp( event, "stopped" ) == 0)) {
     luaL_unref( L, LUA_REGISTRYINDEX, cfg->cb_stopped_ref);
     cfg->cb_stopped_ref = COND_REF( is_func );
-  } else if ((len == 2) && (c_strcmp( event, "vu" ) == 0)) {
+  } else if ((len == 2) && (strcmp( event, "vu" ) == 0)) {
     luaL_unref( L, LUA_REGISTRYINDEX, cfg->cb_vu_ref);
     cfg->cb_vu_ref = COND_REF( is_func );
 

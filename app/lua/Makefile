@@ -16,7 +16,7 @@ SUBDIRS = luac_cross
 GEN_LIBS = liblua.a
 endif
 
-STD_CFLAGS=-std=gnu11 -Wimplicit
+STD_CFLAGS=-std=gnu11 -Wimplicit -Wall
 
 #############################################################
 # Configuration i.e. compile options etc.
@@ -40,12 +40,6 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ../spiffs
-INCLUDES += -I ../libc
-INCLUDES += -I ../modules
-INCLUDES += -I ../platform
 INCLUDES += -I ../uzlib
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile

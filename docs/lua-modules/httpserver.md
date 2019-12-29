@@ -40,10 +40,11 @@ Callback function has 2 arguments: `req` (request) and `res` (response). The fir
   object.
 - `method`: Request method that was used (e.g.`POST` or `GET`)
 - `url`: Requested URL
-- `onheader`: value to setup handler function for HTTP headers like `content-type`. Handler function has 3 parameters:
+- `onheader`: assign a function to this value which will be called as soon as HTTP headers like `content-type` are available.
+              This handler function has 3 parameters:
 
 	- `self`: `req` object
-	- `name`: Header name
+	- `name`: Header name. Will allways be lowercase.
 	- `value`: Header value
 
 - `ondata`: value to setup handler function HTTP data. Handler function has 3 parameters:

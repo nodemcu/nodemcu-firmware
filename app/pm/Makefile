@@ -38,15 +38,6 @@ STD_CFLAGS=-std=gnu11 -Wimplicit
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
-INCLUDES += -I ./include
-INCLUDES += -I ../include
-INCLUDES += -I ../../include
-INCLUDES += -I ../lua
-INCLUDES += -I ../platform
-INCLUDES += -I ../libc
-
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 

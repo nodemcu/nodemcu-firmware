@@ -14,9 +14,9 @@
 #define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
-#include C_HEADER_FCNTL
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 
 #ifndef LUA_CROSS_COMPILER
 #include "vfs.h"
@@ -103,7 +103,7 @@ static void setprogdir (lua_State *L) {
   char *lb;
   DWORD nsize = sizeof(buff)/sizeof(char);
   DWORD n = GetModuleFileNameA(NULL, buff, nsize);
-  if (n == 0 || n == nsize || (lb = c_strrchr(buff, '\\')) == NULL)
+  if (n == 0 || n == nsize || (lb = strrchr(buff, '\\')) == NULL)
     luaL_error(L, "unable to get ModuleFileName");
   else {
     *lb = '\0';
@@ -333,9 +333,9 @@ static int ll_loadlib (lua_State *L) {
 */
 #ifdef LUA_CROSS_COMPILER
 static int readable (const char *filename) {
-  FILE *f = c_fopen(filename, "r");  /* try to open file */
+  FILE *f = fopen(filename, "r");  /* try to open file */
   if (f == NULL) return 0;  /* open failed */
-  c_fclose(f);
+  fclose(f);
   return 1;
 }
 #else
@@ -351,8 +351,8 @@ static const char * pushnexttemplate (lua_State *L, const char *path) {
   const char *l;
   while (*path == *LUA_PATHSEP) path++;  /* skip separators */
   if (*path == '\0') return NULL;  /* no more templates */
-  l = c_strchr(path, *LUA_PATHSEP);  /* find next separator */
-  if (l == NULL) l = path + c_strlen(path);
+  l = strchr(path, *LUA_PATHSEP);  /* find next separator */
+  if (l == NULL) l = path + strlen(path);
   lua_pushlstring(L, path, l - path);  /* template */
   return l;
 }
@@ -397,7 +397,7 @@ static int loader_Lua (lua_State *L) {
 #ifdef LUA_CROSS_COMPILER
   if (luaL_loadfile(L, filename) != 0)
 #else
-  if (luaL_loadfsfile(L, filename) != 0)
+  if (luaL_loadfile(L, filename) != 0)
 #endif
     loaderror(L, filename);
   return 1;  /* library loaded successfully */
@@ -406,7 +406,7 @@ static int loader_Lua (lua_State *L) {
 
 static const char *mkfuncname (lua_State *L, const char *modname) {
   const char *funcname;
-  const char *mark = c_strchr(modname, *LUA_IGMARK);
+  const char *mark = strchr(modname, *LUA_IGMARK);
   if (mark) modname = mark + 1;
   funcname = luaL_gsub(L, modname, ".", LUA_OFSEP);
   funcname = lua_pushfstring(L, POF"%s", funcname);
@@ -431,7 +431,7 @@ static int loader_Croot (lua_State *L) {
   const char *funcname;
   const char *filename;
   const char *name = luaL_checkstring(L, 1);
-  const char *p = c_strchr(name, '.');
+  const char *p = strchr(name, '.');
   int stat;
   if (p == NULL) return 0;  /* is root */
   lua_pushlstring(L, name, p - name);
@@ -559,7 +559,7 @@ static void modinit (lua_State *L, const char *modname) {
   lua_setfield(L, -2, "_M");  /* module._M = module */
   lua_pushstring(L, modname);
   lua_setfield(L, -2, "_NAME");
-  dot = c_strrchr(modname, '.');  /* look for last dot in module name */
+  dot = strrchr(modname, '.');  /* look for last dot in module name */
   if (dot == NULL) dot = modname;
   else dot++;
   /* set _PACKAGE as package name (full module name minus last part) */

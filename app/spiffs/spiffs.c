@@ -1,4 +1,4 @@
-#include "c_stdio.h"
+#include <stdio.h>
 #include "platform.h"
 #include "spiffs.h"
 
@@ -170,7 +170,7 @@ int myspiffs_format( void )
 // vfs API
 // ***************************************************************************
 
-#include <c_stdlib.h>
+#include <stdlib.h>
 #include "vfs_int.h"
 
 #define MY_LDRV_ID "FLASH"
@@ -281,7 +281,7 @@ static sint32_t myspiffs_vfs_closedir( const struct vfs_dir *dd ) {
   sint32_t res = SPIFFS_closedir( d );
 
   // free descriptor memory
-  c_free( (void *)dd );
+  free( (void *)dd );
 }
 
 static sint32_t myspiffs_vfs_readdir( const struct vfs_dir *dd, struct vfs_stat *buf ) {
@@ -289,11 +289,11 @@ static sint32_t myspiffs_vfs_readdir( const struct vfs_dir *dd, struct vfs_stat 
   struct spiffs_dirent dirent;
 
   if (SPIFFS_readdir( d, &dirent )) {
-    c_memset( buf, 0, sizeof( struct vfs_stat ) );
+    memset( buf, 0, sizeof( struct vfs_stat ) );
 
     // copy entries to  item
     // fill in supported stat entries
-    c_strncpy( buf->name, dirent.name, FS_OBJ_NAME_LEN+1 );
+    strncpy( buf->name, dirent.name, FS_OBJ_NAME_LEN+1 );
     buf->name[FS_OBJ_NAME_LEN] = '\0';
     buf->size = dirent.size;
     return VFS_RES_OK;
@@ -316,7 +316,7 @@ static sint32_t myspiffs_vfs_close( const struct vfs_file *fd ) {
   sint32_t res = SPIFFS_close( &fs, fh );
 
   // free descriptor memory
-  c_free( (void *)fd );
+  free( (void *)fd );
 
   return res;
 }
@@ -392,21 +392,21 @@ static sint32_t myspiffs_vfs_ferrno( const struct vfs_file *fd ) {
 
 
 static int fs_mode2flag(const char *mode){
-  if(c_strlen(mode)==1){
-  	if(c_strcmp(mode,"w")==0)
+  if(strlen(mode)==1){
+  	if(strcmp(mode,"w")==0)
   	  return SPIFFS_WRONLY|SPIFFS_CREAT|SPIFFS_TRUNC;
-  	else if(c_strcmp(mode, "r")==0)
+  	else if(strcmp(mode, "r")==0)
   	  return SPIFFS_RDONLY;
-  	else if(c_strcmp(mode, "a")==0)
+  	else if(strcmp(mode, "a")==0)
   	  return SPIFFS_WRONLY|SPIFFS_CREAT|SPIFFS_APPEND;
   	else
   	  return SPIFFS_RDONLY;
-  } else if (c_strlen(mode)==2){
-  	if(c_strcmp(mode,"r+")==0)
+  } else if (strlen(mode)==2){
+  	if(strcmp(mode,"r+")==0)
   	  return SPIFFS_RDWR;
-  	else if(c_strcmp(mode, "w+")==0)
+  	else if(strcmp(mode, "w+")==0)
   	  return SPIFFS_RDWR|SPIFFS_CREAT|SPIFFS_TRUNC;
-  	else if(c_strcmp(mode, "a+")==0)
+  	else if(strcmp(mode, "a+")==0)
   	  return SPIFFS_RDWR|SPIFFS_CREAT|SPIFFS_APPEND;
   	else
   	  return SPIFFS_RDONLY;
@@ -422,13 +422,13 @@ static vfs_file *myspiffs_vfs_open( const char *name, const char *mode ) {
   struct myvfs_file *fd;
   int flags = fs_mode2flag( mode );
 
-  if (fd = (struct myvfs_file *)c_malloc( sizeof( struct myvfs_file ) )) {
+  if (fd = (struct myvfs_file *)malloc( sizeof( struct myvfs_file ) )) {
     if (0 < (fd->fh = SPIFFS_open( &fs, name, flags, 0 ))) {
       fd->vfs_file.fs_type = VFS_FS_SPIFFS;
       fd->vfs_file.fns     = &myspiffs_file_fns;
       return (vfs_file *)fd;
     } else {
-      c_free( fd );
+      free( fd );
     }
   }
 
@@ -438,13 +438,13 @@ static vfs_file *myspiffs_vfs_open( const char *name, const char *mode ) {
 static vfs_dir *myspiffs_vfs_opendir( const char *name ){
   struct myvfs_dir *dd;
 
-  if (dd = (struct myvfs_dir *)c_malloc( sizeof( struct myvfs_dir ) )) {
+  if (dd = (struct myvfs_dir *)malloc( sizeof( struct myvfs_dir ) )) {
     if (SPIFFS_opendir( &fs, name, &(dd->d) )) {
       dd->vfs_dir.fs_type = VFS_FS_SPIFFS;
       dd->vfs_dir.fns     = &myspiffs_dd_fns;
       return (vfs_dir *)dd;
     } else {
-      c_free( dd );
+      free( dd );
     }
   }
 
@@ -455,10 +455,10 @@ static sint32_t myspiffs_vfs_stat( const char *name, struct vfs_stat *buf ) {
   spiffs_stat stat;
 
   if (0 <= SPIFFS_stat( &fs, name, &stat )) {
-    c_memset( buf, 0, sizeof( struct vfs_stat ) );
+    memset( buf, 0, sizeof( struct vfs_stat ) );
 
     // fill in supported stat entries
-    c_strncpy( buf->name, stat.name, FS_OBJ_NAME_LEN+1 );
+    strncpy( buf->name, stat.name, FS_OBJ_NAME_LEN+1 );
     buf->name[FS_OBJ_NAME_LEN] = '\0';
     buf->size = stat.size;
 
@@ -511,7 +511,7 @@ static void myspiffs_vfs_clearerr( void ) {
 vfs_fs_fns *myspiffs_realm( const char *inname, char **outname, int set_current_drive ) {
   if (inname[0] == '/') {
     // logical drive is specified, check if it's our id
-    if (0 == c_strncmp(inname + 1, MY_LDRV_ID, sizeof(MY_LDRV_ID)-1)) {
+    if (0 == strncmp(inname + 1, MY_LDRV_ID, sizeof(MY_LDRV_ID)-1)) {
       *outname = (char *)(inname + sizeof(MY_LDRV_ID));
       if (*outname[0] == '/') {
         // skip leading /

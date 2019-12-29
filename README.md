@@ -1,4 +1,4 @@
-# **NodeMCU 2.2.1** #
+# NodeMCU 3.0.0
 
 [![Join the chat at https://gitter.im/nodemcu/nodemcu-firmware](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/nodemcu/nodemcu-firmware?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/nodemcu/nodemcu-firmware.svg)](https://travis-ci.org/nodemcu/nodemcu-firmware)
@@ -14,7 +14,7 @@ The firmware was initially developed as is a companion project to the popular ES
 # Summary
 
 - Easy to program wireless node and/or access point
-- Based on Lua 5.1.4 (without `debug` & `os` modules)
+- Based on Lua 5.1.4 but without `debug`, `io`, `os` and (most of the) `math` modules
 - Asynchronous event-driven programming model
 - more than **65 built-in modules**
 - Firmware available with or without floating point support (integer-only uses less memory)
