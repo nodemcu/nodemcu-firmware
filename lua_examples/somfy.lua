@@ -1,17 +1,20 @@
 -- Somfy module example (beside somfy module requires also SJSON module)
--- The rolling code number is stored in the file somfy.cfg. A cached write of the somfy.cfg file is implemented in order to reduce the number of write to the EEPROM memory. Together with the logic of the file module it should allow long lasting operation.
+-- The rolling code number is stored in the file somfy.cfg.
+-- A cached write of the somfy.cfg file is implemented in order to reduce
+-- the number of write to the EEPROM memory. Together with the logic of the
+-- file module it should allow long lasting operation.
 
-config_file = "somfy."
+local config_file = "somfy."
+local config, config_saved
 -- somfy.cfg looks like
 -- {"window1":{"rc":1,"address":123},"window2":{"rc":1,"address":124}}
 
 local tmr_cache = tmr.create()
 local tmr_delay = tmr.create()
 
-pin = 4
-gpio.mode(pin, gpio.OUTPUT, gpio.PULLUP)
+local pin = 4
 
-function deepcopy(orig)
+local function deepcopy(orig)
     local orig_type = type(orig)
     local copy
     if orig_type == 'table' then
@@ -26,8 +29,8 @@ function deepcopy(orig)
     return copy
 end
 
-function readconfig()
-    local cfg, ok, ln
+local function readconfig()
+    local ln
     if file.exists(config_file.."cfg") then
         print("Reading config from "..config_file.."cfg")
         file.open(config_file.."cfg", "r+")
@@ -47,7 +50,7 @@ function readconfig()
     config_saved = deepcopy(config)
 end
 
-function writeconfighard()
+local function writeconfighard()
     print("Saving config")
     file.remove(config_file.."bak")
     file.rename(config_file.."cfg", config_file.."bak")
@@ -63,8 +66,8 @@ function writeconfighard()
     config_saved = deepcopy(config)
 end
 
-function writeconfig()
-    tmr.stop(tmr_cache)
+local function writeconfig()
+    tmr_cache:stop()
     local savenow = false
     local savelater = false
 
@@ -87,12 +90,18 @@ function writeconfig()
     end
     if savelater then
         print("Saving config later")
-        tmr.alarm(tmr_cache, 65000, tmr.ALARM_SINGLE, writeconfighard)
+        tmr_cache:alarm(65000, tmr.ALARM_SINGLE, writeconfighard)
     end
 end
 
 --======================================================================================================--
-function down(remote, cb, par)
+local function wait(ms, cb, par)
+    par = par or {}
+    print("wait: ".. ms)
+    if cb then tmr_delay:alarm(ms, tmr.ALARM_SINGLE, function () cb(unpack(par)) end) end
+end
+
+local function down(remote, cb, par)
     par = par or {}
     print("down: ".. remote)
     config[remote].rc=config[remote].rc+1
@@ -100,7 +109,7 @@ function down(remote, cb, par)
     writeconfig()
 end
 
-function up(remote, cb, par)
+local function up(remote, cb, par)
     par = par or {}
     print("up: ".. remote)
     config[remote].rc=config[remote].rc+1
@@ -108,7 +117,7 @@ function up(remote, cb, par)
     writeconfig()
 end
 
-function downStep(remote, cb, par)
+local function downStep(remote, cb, par)
     par = par or {}
     print("downStep: ".. remote)
     config[remote].rc=config[remote].rc+1
@@ -116,7 +125,7 @@ function downStep(remote, cb, par)
     writeconfig()
 end
 
-function upStep(remote, cb, par)
+local function upStep(remote, cb, par) -- luacheck: ignore
     par = par or {}
     print("upStep: ".. remote)
     config[remote].rc=config[remote].rc+1
@@ -124,14 +133,9 @@ function upStep(remote, cb, par)
     writeconfig()
 end
 
-function wait(ms, cb, par)
-    par = par or {}
-    print("wait: ".. ms)
-    if cb then tmr.alarm(tmr_delay, ms, tmr.ALARM_SINGLE, function () cb(unpack(par)) end) end
-end
-
-
 --======================================================================================================--
+gpio.mode(pin, gpio.OUTPUT, gpio.PULLUP)
+
 if not config then readconfig() end
 if #config == 0 then -- somfy.cfg does not exist
     config = sjson.decode([[{"window1":{"rc":1,"address":123},"window2":{"rc":1,"address":124}}]])
@@ -141,5 +145,11 @@ down('window1',
     wait, {60000,
     up, {'window1',
     wait, {9000,
-    downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1', downStep, {'window1'
+    downStep, {'window1',
+      downStep, {'window1',
+        downStep, {'window1',
+          downStep, {'window1',
+            downStep, {'window1',
+              downStep, {'window1',
+                downStep, {'window1'
 }}}}}}}}}})

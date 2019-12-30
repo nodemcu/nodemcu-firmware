@@ -5,8 +5,8 @@
 -- then enter the following commands interactively through the UART:
 --
 do
-  local _,ma,fa=node.flashindex()
-  for n,v in pairs{LFS_MAPPED=ma, LFS_BASE=fa, SPIFFS_BASE=sa} do
+  local sa, ma, fa = node.flashindex()
+  for n,v in pairs{LFS_MAPPED = ma, LFS_BASE = fa, SPIFFS_BASE = sa} do
     print(('export %s=""0x%x"'):format(n, v))
   end
 end
@@ -60,7 +60,5 @@ local initTimer = tmr.create()
 initTimer:register(1000, tmr.ALARM_SINGLE,
     function()
         local fi=node.flashindex; return pcall(fi and fi'_init')
-    end
-    )
+    end)
 initTimer:start()
-

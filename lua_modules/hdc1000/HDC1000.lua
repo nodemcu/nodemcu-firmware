@@ -40,9 +40,9 @@ local HDC1000_TEMP_HUMI_14BIT = 0x00
 local function read16()
 	i2c.start(id)
 	i2c.address(id, HDC1000_ADDR, i2c.RECEIVER)
-	data_temp = i2c.read(0, 2)
+	local data_temp = i2c.read(0, 2)
 	i2c.stop(id)
-	data = bit.lshift(string.byte(data_temp, 1, 1), 8) + string.byte(data_temp, 2, 2)
+	local data = bit.lshift(string.byte(data_temp, 1, 1), 8) + string.byte(data_temp, 2, 2)
 	return data
 end
 

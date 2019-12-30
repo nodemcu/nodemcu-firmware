@@ -24,7 +24,6 @@ local address = 0
 local function read_reg(reg_addr, len)
 	local ret={}
 	local c
-	local x
 	i2c.start(id)
 	i2c.address(id, address ,i2c.TRANSMITTER)
 	i2c.write(id,reg_addr)
@@ -32,9 +31,9 @@ local function read_reg(reg_addr, len)
 	i2c.start(id)
 	i2c.address(id, address,i2c.RECEIVER)
 	c=i2c.read(id,len)
-	for x=1,len,1 do
-		tc=string.byte(c,x)
-		table.insert(ret,tc)
+	for x = 1, len, 1 do
+		local tc = string.byte(c, x)
+		table.insert(ret, tc)
 	end
 	i2c.stop(id)
 	return ret
@@ -64,7 +63,7 @@ function M.setup(a)
   if (a ~= nil) and (a >= 0x48) and (a <= 0x4b ) then
 		address = a
 		i2c.start(id)
-		res = i2c.address(id, address, i2c.TRANSMITTER) --verify that the address is valid
+		local res = i2c.address(id, address, i2c.TRANSMITTER) --verify that the address is valid
 		i2c.stop(id)
 		if (res == false) then
 			print("device not found")

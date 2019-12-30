@@ -13,26 +13,17 @@
 --      Website: http://AllAboutEE.com
 ---------------------------------------------------------------------------------------------
 
-require ("mcp23008")
+local mcp23008 = require ("mcp23008")
 
 -- ESP-01 GPIO Mapping as per GPIO Table in https://github.com/nodemcu/nodemcu-firmware
-gpio0, gpio2 = 3, 4
-
--- Setup MCP23008
-mcp23008.begin(0x0,gpio2,gpio0,i2c.SLOW)
-
-mcp23008.writeIODIR(0x00) -- make all GPIO pins as outputs
-mcp23008.writeGPIO(0x00) -- make all GIPO pins off/low
+local gpio0, gpio2 = 3, 4
 
 ---
 -- @name count()
 -- @description Reads the value from the GPIO register, increases the read value by 1
 --  and writes it back so the LEDs will display a binary count up to 255 or 0xFF in hex.
 local function count()
-
-    local gpio = 0x00
-
-    gpio = mcp23008.readGPIO()
+    local gpio = mcp23008.readGPIO()
 
     if(gpio<0xff) then
         mcp23008.writeGPIO(gpio+1)
@@ -41,5 +32,15 @@ local function count()
     end
 
 end
--- Run count() every 100ms
-tmr.alarm(0,100,1,count)
+
+do
+  -- Setup MCP23008
+  mcp23008.begin(0x0,gpio2,gpio0,i2c.SLOW)
+
+  mcp23008.writeIODIR(0x00) -- make all GPIO pins as outputs
+  mcp23008.writeGPIO(0x00) -- make all GIPO pins off/low
+
+  -- Run count() every 100ms
+  tmr.create():alarm(100, tmr.ALARM_AUTO, count)
+end
+

@@ -3,23 +3,25 @@
 -- NODEMCU TEAM
 -- LICENCE: http://opensource.org/licenses/MIT
 -- @voborsky, @devsaurus, TerryE  26 Mar 2017
-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 local modname = ...
 
 -- Used modules and functions
-local table, string, ow, tmr, print, type, tostring, pcall, ipairs =
-      table, string, ow, tmr, print, type, tostring, pcall, ipairs
+local type, tostring, pcall, ipairs =
+      type, tostring, pcall, ipairs
 -- Local functions
-local ow_setup, ow_search, ow_select, ow_read, ow_read_bytes, ow_write, ow_crc8, ow_reset, ow_reset_search, ow_skip, ow_depower =
-      ow.setup, ow.search, ow.select, ow.read, ow.read_bytes, ow.write, ow.crc8, ow.reset, ow.reset_search, ow.skip, ow.depower
+local ow_setup, ow_search, ow_select, ow_read, ow_read_bytes, ow_write, ow_crc8,
+        ow_reset, ow_reset_search, ow_skip, ow_depower =
+      ow.setup, ow.search, ow.select, ow.read, ow.read_bytes, ow.write, ow.crc8,
+        ow.reset, ow.reset_search, ow.skip, ow.depower
+
 local node_task_post, node_task_LOW_PRIORITY = node.task.post, node.task.LOW_PRIORITY
 local string_char, string_dump = string.char, string.dump
 local now, tmr_create, tmr_ALARM_SINGLE = tmr.now, tmr.create, tmr.ALARM_SINGLE
 local table_sort, table_concat = table.sort, table.concat
 local math_floor = math.floor
 local file_open = file.open
-
-table, string, tmr, ow = nil, nil, nil, nil
+local conversion
 
 local DS18B20FAMILY   = 0x28
 local DS1920FAMILY    = 0x10  -- and DS18S20 series
@@ -50,8 +52,6 @@ local function to_string(addr, esc)
   end
 end
 
-local conversion
-
 local function readout(self)
   local next = false
   local sens = self.sens
@@ -62,7 +62,7 @@ local function readout(self)
       local addr = s:sub(1,8)
       ow_select(pin, addr)   -- select the  sensor
       ow_write(pin, READ_SCRATCHPAD, MODE)
-      data = ow_read_bytes(pin, 9)
+      local data = ow_read_bytes(pin, 9)
 
       local t=(data:byte(1)+data:byte(2)*256)
       -- t is actually signed so process the sign bit and adjust for fractional bits
@@ -116,7 +116,7 @@ local function readout(self)
   end
 end
 
-conversion = function (self)
+conversion = (function (self)
   local sens = self.sens
   local powered_only = true
   for _, s in ipairs(sens) do powered_only = powered_only and s:byte(9) ~= 1 end
@@ -125,7 +125,7 @@ conversion = function (self)
     ow_reset(pin)
     ow_skip(pin)  -- select the sensor
     ow_write(pin, CONVERT_T, MODE)  -- and start conversion
-    for i, s in ipairs(sens) do status[i] = 1 end
+    for i, _ in ipairs(sens) do status[i] = 1 end
   else
     for i, s in ipairs(sens) do
       if status[i] == 0 then
@@ -140,12 +140,11 @@ conversion = function (self)
     end
   end
   tmr_create():alarm(750, tmr_ALARM_SINGLE, function() return readout(self) end)
-end
+end)
 
 local function _search(self, lcb, lpin, search, save)
   self.temp = {}
   if search then self.sens = {}; status = {} end
-  local temp = self.temp
   local sens = self.sens
   pin = lpin or pin
 
@@ -167,7 +166,7 @@ local function _search(self, lcb, lpin, search, save)
     -- search the first device
     addr = ow_search(pin)
   else
-    for i, s in ipairs(sens) do status[i] = 0 end
+    for i, _ in ipairs(sens) do status[i] = 0 end
   end
   local function cycle()
     debugPrint("cycle")
