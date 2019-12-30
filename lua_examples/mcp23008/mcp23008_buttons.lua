@@ -14,23 +14,17 @@
 --      Website: http://AllAboutEE.com
 ---------------------------------------------------------------------------------------------
 
-require ("mcp23008")
+local mcp23008 = require ("mcp23008")
 
 -- ESP-01 GPIO Mapping as per GPIO Table in https://github.com/nodemcu/nodemcu-firmware
-gpio0, gpio2 = 3, 4
-
--- Setup the MCP23008
-mcp23008.begin(0x0,gpio2,gpio0,i2c.SLOW)
-
-mcp23008.writeIODIR(0xff)
-mcp23008.writeGPPU(0xff)
+local gpio0, gpio2 = 3, 4
 
 ---
 -- @name showButtons
 -- @description Shows the state of each GPIO pin
 -- @return void
 ---------------------------------------------------------
-function showButtons()
+local function showButtons()
 
     local gpio = mcp23008.readGPIO() -- read the GPIO/buttons states
 
@@ -51,7 +45,13 @@ function showButtons()
     print("\r\n")
 end
 
-tmr.alarm(0,2000,1,showButtons) -- run showButtons() every 2 seconds
+do
+  -- Setup the MCP23008
+  mcp23008.begin(0x0,gpio2,gpio0,i2c.SLOW)
 
+  mcp23008.writeIODIR(0xff)
+  mcp23008.writeGPPU(0xff)
 
+  tmr.create():alarm(2000, tmr.ALARM_AUTO, showButtons) -- run showButtons() every 2 seconds
+end
 

@@ -114,6 +114,12 @@ local function printTables(fileName)
     if not findBegin then
       findBegin, _, field = string.find(line, "LROT_TABENTRY%(%s?(%g+),")
     end
+    if not findBegin then
+      findBegin, _, field = string.find(line, "LROT_FUNCENTRY_S%(%s?(%g+),")
+    end
+    if not findBegin then
+      findBegin, _, field = string.find(line, "LROT_FUNCENTRY_F%(%s?(%g+),")
+    end
 
     if findBegin then
      if not  string.find(field, "__") then

@@ -1,5 +1,7 @@
+local disp
+
 -- setup SPI and connect display
-function init_spi_display()
+local function init_spi_display()
    -- Hardware SPI CLK  = GPIO14
    -- Hardware SPI MOSI = GPIO13
    -- Hardware SPI MISO = GPIO12 (not used)
@@ -20,17 +22,17 @@ function init_spi_display()
    disp = ucg.st7735_18x128x160_hw_spi(bus, cs, dc, res)
 end
 
+do
+  init_spi_display()
+
+  disp:begin(ucg.FONT_MODE_TRANSPARENT)
+  disp:clearScreen()
+
+  disp:setFont(ucg.font_ncenR12_tr);
+  disp:setColor(255, 255, 255);
+  disp:setColor(1, 255, 0,0);
 
 
-init_spi_display()
-
-disp:begin(ucg.FONT_MODE_TRANSPARENT)
-disp:clearScreen()
-
-disp:setFont(ucg.font_ncenR12_tr);
-disp:setColor(255, 255, 255);
-disp:setColor(1, 255, 0,0);
-
-
-disp:setPrintPos(0, 25)
-disp:print("Hello World!")
+  disp:setPrintPos(0, 25)
+  disp:print("Hello World!")
+end

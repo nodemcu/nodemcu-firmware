@@ -11,7 +11,7 @@ local vprint = (verbose > 0) and print or function() end
 -- Mock up enough of the nodemcu tmr structure, but pretend that nothing
 -- happens between ticks.  This won't exercise the optimistic corking logic,
 -- but that's probably fine.
---
+-- luacheck: push ignore
 tmr = {}
 tmr.ALARM_SINGLE = 0
 function tmr.create()
@@ -19,6 +19,7 @@ function tmr.create()
   function r:alarm(_i, _t, cb) vprint("TMR") cb() end
   return r
 end
+-- luacheck: pop
 
 --
 -- Mock up enough of the nodemcu net.socket type; have it log all the sends
@@ -28,7 +29,7 @@ local outs = {}
 local fakesock = {
   cb = nil,
   on = function(this, _, cb) this.cb = cb end,
-  send = function(this, s) vprint("SEND", (verbose > 1) and s) table.insert(outs, s) end,
+  send = function(this, s) vprint("SEND", (verbose > 1) and s) table.insert(outs, s) end -- luacheck: no unused
 }
 local function sent() vprint("SENT") fakesock.cb() end
 
@@ -68,25 +69,25 @@ sent() ; fchecke()
 
 -- Hit default FSMALLLIM while building up
 fsendc("abracadabra lots small")
-for i = 1, 32 do fsend("a") end
+for i = 1, 32 do fsend("a") end -- luacheck: no unused
 nocoal()
-for i = 1, 4 do fsend("a") end
+for i = 1, 4 do fsend("a") end -- luacheck: no unused
 sent() ; fcheck(string.rep("a", 32))
 sent() ; fcheck(string.rep("a", 4))
 sent() ; fchecke()
 
 -- Hit string length while building up
 fsendc("abracadabra overlong")
-for i = 1, 10 do fsend(string.rep("a",32)) end
+for i = 1, 10 do fsend(string.rep("a",32)) end -- luacheck: no unused
 sent() ; fcheck(string.rep("a", 320))
 sent() ; fchecke()
 
 -- Hit neither before sending a big string
 fsendc("abracadabra mid long")
-for i = 1, 6 do fsend(string.rep("a",32)) end
+for i = 1, 6 do fsend(string.rep("a",32)) end -- luacheck: no unused
 fsend(string.rep("b", 256))
 nocoal()
-for i = 1, 6 do fsend(string.rep("c",32)) end
+for i = 1, 6 do fsend(string.rep("c",32)) end -- luacheck: no unused
 sent() ; fcheck(string.rep("a", 192) .. string.rep("b", 256))
 sent() ; fcheck(string.rep("c", 192))
 sent() ; fchecke()
@@ -109,33 +110,36 @@ sent() ; fcheck(string.rep("c",512))
 sent() ; fchecke()
 
 -- test a lazy generator
-local ix = 0
-local function gen() vprint("GEN", ix); ix = ix + 1; return ("a" .. ix), ix < 3 and gen end
-fsend(gen)
-fsend("b")
-fcheck("a1")
-sent() ; fcheck("a2")
-sent() ; fcheck("a3")
-sent() ; fcheck("b")
-sent() ; fchecke()
-
+do
+  local ix = 0
+  local function gen() vprint("GEN", ix); ix = ix + 1; return ("a" .. ix), ix < 3 and gen end
+  fsend(gen)
+  fsend("b")
+  fcheck("a1")
+  sent() ; fcheck("a2")
+  sent() ; fcheck("a3")
+  sent() ; fcheck("b")
+  sent() ; fchecke()
+end
 -- test a completion-like callback that does send text
-local ix = 0
-local function gen() vprint("GEN"); ix = 1; return "efgh", nil end
-fsend("abcd"); fsend(gen); fsend("ijkl")
-assert (ix == 0)
-         fcheck("abcd"); assert (ix == 0)
-sent() ; fcheck("efgh"); assert (ix == 1); ix = 0
-sent() ; fcheck("ijkl"); assert (ix == 0)
-sent() ; fchecke()
-
+do
+  local ix = 0
+  local function gen() vprint("GEN"); ix = 1; return "efgh", nil end
+  fsend("abcd"); fsend(gen); fsend("ijkl")
+  assert (ix == 0)
+           fcheck("abcd"); assert (ix == 0)
+  sent() ; fcheck("efgh"); assert (ix == 1); ix = 0
+  sent() ; fcheck("ijkl"); assert (ix == 0)
+  sent() ; fchecke()
+end
 -- and one that doesn't
-local ix = 0
-local function gen() vprint("GEN"); ix = 1; return nil, nil end
-fsend("abcd"); fsend(gen); fsend("ijkl")
-assert (ix == 0)
-         fcheck("abcd"); assert (ix == 0)
-sent() ; fcheck("ijkl"); assert (ix == 1); ix = 0
-sent() ; fchecke()     ; assert (ix == 0)
-
+do
+  local ix = 0
+  local function gen() vprint("GEN"); ix = 1; return nil, nil end
+  fsend("abcd"); fsend(gen); fsend("ijkl")
+  assert (ix == 0)
+           fcheck("abcd"); assert (ix == 0)
+  sent() ; fcheck("ijkl"); assert (ix == 1); ix = 0
+  sent() ; fchecke()     ; assert (ix == 0)
+end
 print("All tests OK")

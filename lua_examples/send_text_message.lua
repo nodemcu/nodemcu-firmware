@@ -29,10 +29,12 @@ local TWILIO_ACCOUNT_SID = "xxxxxx"
 local TWILIO_TOKEN = "xxxxxx"
 
 local HOST = "iot-https-relay.appspot.com" -- visit http://iot-https-relay.appspot.com/ to learn more about this service
-                                           -- Please be sure to understand the security issues of using this relay app and use at your own risk.
+-- Please be sure to understand the security issues of using this relay app and use at your own risk.
 local URI = "/twilio/Messages.json"
 
-function build_post_request(host, uri, data_table)
+local wifiTimer = tmr.create()
+
+local function build_post_request(host, uri, data_table)
 
      local data = ""
 
@@ -40,7 +42,7 @@ function build_post_request(host, uri, data_table)
           data = data .. param.."="..value.."&"
      end
 
-     request = "POST "..uri.." HTTP/1.1\r\n"..
+     local request = "POST "..uri.." HTTP/1.1\r\n"..
      "Host: "..host.."\r\n"..
      "Connection: close\r\n"..
      "Content-Type: application/x-www-form-urlencoded\r\n"..
@@ -53,7 +55,7 @@ function build_post_request(host, uri, data_table)
      return request
 end
 
-local function display(sck,response)
+local function display(socket, response) -- luacheck: no unused
      print(response)
 end
 
@@ -69,7 +71,7 @@ local function send_sms(from,to,body)
       To = to
      }
 
-     socket = net.createConnection(net.TCP,0)
+     local socket = net.createConnection(net.TCP,0)
      socket:on("receive",display)
      socket:connect(80,HOST)
 
@@ -80,13 +82,13 @@ local function send_sms(from,to,body)
      end)
 end
 
-function check_wifi()
+local function check_wifi()
  local ip = wifi.sta.getip()
 
  if(ip==nil) then
    print("Connecting...")
  else
-  tmr.stop(0)
+  wifiTimer.stop()
   print("Connected to AP!")
   print(ip)
      -- send a text message with the text "Hello from your esp8266"
@@ -95,4 +97,4 @@ function check_wifi()
 
 end
 
-tmr.alarm(0,7000,1,check_wifi)
+wifiTimer.alarm(7000, tmr.ALARM_AUTO, check_wifi)

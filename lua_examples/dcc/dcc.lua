@@ -4,7 +4,7 @@ local PIN = 2 -- GPIO4
 
 local addr = 0x12a
 
-CV = {[29]=0, 
+local CV = {[29]=0,
       [1]=bit.band(addr, 0x3f), --CV_ACCESSORY_DECODER_ADDRESS_LSB (6 bits)
       [9]=bit.band(bit.rshift(addr,6), 0x7)  --CV_ACCESSORY_DECODER_ADDRESS_MSB (3 bits)
      }
@@ -37,18 +37,18 @@ end
 
 local function DCC_command(cmd, params)
     if not is_new(cmd, params) then return end
-    if cmd == dcc.DCC_IDLE then 
+    if cmd == dcc.DCC_IDLE then
         return
     elseif cmd == dcc.DCC_TURNOUT then
-        print("Turnout command") 
+        print("Turnout command")
     elseif cmd == dcc.DCC_SPEED then
-        print("Speed command") 
+        print("Speed command")
     elseif cmd == dcc.DCC_FUNC then
-        print("Function command") 
+        print("Function command")
     else
         print("Other command", cmd)
     end
-    
+
     for i,j in pairs(params) do
         print(i, j)
     end
@@ -69,18 +69,21 @@ local function CV_callback(operation, param)
     elseif operation == dcc.CV_VALID then
         oper = "Valid"
         result = 1
-    elseif operation == CV_RESET then
+    elseif operation == dcc.CV_RESET then
         oper = "Reset"
         CV = {}
     end
-    print(("[CV_callback] %s CV %d%s"):format(oper, param.CV, param.Value and "\tValue: "..param.Value or "\tValue: nil"))
+    print(("[CV_callback] %s CV %d%s")
+      :format(oper, param.CV, param.Value and "\tValue: "..param.Value or "\tValue: nil"))
     return result
 end
 
 dcc.setup(PIN,
     DCC_command,
-    dcc.MAN_ID_DIY, 1, 
-    --bit.bor(dcc.FLAGS_AUTO_FACTORY_DEFAULT, dcc.FLAGS_DCC_ACCESSORY_DECODER, dcc.FLAGS_MY_ADDRESS_ONLY),  -- Accessories (turnouts) decoder
-    bit.bor(dcc.FLAGS_AUTO_FACTORY_DEFAULT),  -- Cab (train) decoder
+    dcc.MAN_ID_DIY, 1,
+    -- Accessories (turnouts) decoder:
+    --bit.bor(dcc.FLAGS_AUTO_FACTORY_DEFAULT, dcc.FLAGS_DCC_ACCESSORY_DECODER, dcc.FLAGS_MY_ADDRESS_ONLY),
+    -- Cab (train) decoder
+    bit.bor(dcc.FLAGS_AUTO_FACTORY_DEFAULT),
     0, -- ???
     CV_callback)

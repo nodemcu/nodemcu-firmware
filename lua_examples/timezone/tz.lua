@@ -27,7 +27,7 @@ function M.getzones()
   return result
 end
 
-function load(t)
+local function load(t)
   local z = file.open(thezone .. ".zone", "r")
 
   local hdr = z:read(20)
@@ -35,7 +35,8 @@ function load(t)
 
   if magic == "TZif" then
       local lens = z:read(24)
-      local ttisgmt_count, ttisdstcnt, leapcnt, timecnt, typecnt, charcnt = struct.unpack("> LLLLLL", lens)
+      local ttisgmt_count, ttisdstcnt, leapcnt, timecnt, typecnt, charcnt -- luacheck: no unused
+            = struct.unpack("> LLLLLL", lens)
 
       local times = z:read(4 * timecnt)
       local typeindex = z:read(timecnt)

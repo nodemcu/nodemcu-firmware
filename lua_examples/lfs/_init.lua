@@ -46,7 +46,7 @@ local lfs_t = {
       end
     end,
 
-  __newindex = function(_, name, value)
+  __newindex = function(_, name, value) -- luacheck: no unused
       error("LFS is readonly. Invalid write to LFS." .. name, 2)
     end,
 

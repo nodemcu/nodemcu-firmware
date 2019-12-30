@@ -22,8 +22,6 @@ _G[moduleName] = M
 local USERNAME = ""
 local PASSWORD = ""
 
-local SERVER = ""
-local PORT = ""
 local TAG = ""
 
 local DEBUG = false
@@ -45,10 +43,10 @@ end
 ---
 -- @name display
 -- @description A generic IMAP response processing function.
--- Can disply the IMAP response if DEBUG is set to true.
--- Sets the reponse processed variable to true when the string "complete"
+-- Can display the IMAP response if DEBUG is set to true.
+-- Sets the response processed variable to true when the string "complete"
 -- is found in the IMAP reply/response
-local function display(socket, response)
+local function display(socket, response) -- luacheck: no unused
 
     -- If debuggins is enabled print the IMAP response
     if(DEBUG) then
@@ -67,7 +65,7 @@ end
 ---
 -- @name config
 -- @description Initiates the IMAP settings
-function M.config(username,password,tag,debug)
+function M.config(username, password, tag, debug)
     USERNAME = username
     PASSWORD = password
     TAG = tag
@@ -96,13 +94,13 @@ end
 -- @description Gets the most recent email number from the EXAMINE command.
 -- i.e. if EXAMINE returns "* 4 EXISTS" this means that there are 4 emails,
 -- so the latest/newest will be identified by the number 4
-local function set_most_recent_num(socket,response)
+local function set_most_recent_num(socket, response) -- luacheck: no unused
 
     if(DEBUG) then
         print(response)
     end
 
-    local _, _, num = string.find(response,"([0-9]+) EXISTS(\.)") -- the _ and _ keep the index of the string found
+    local _, _, num = string.find(response,"([0-9]+) EXISTS") -- the _ and _ keep the index of the string found
                                                                   -- but we don't care about that.
 
     if(num~=nil) then
@@ -117,7 +115,7 @@ end
 ---
 -- @name examine
 -- @description IMAP examines the given mailbox/folder. Sends the IMAP EXAMINE command
-function M.examine(socket,mailbox)
+function M.examine(socket, mailbox)
 
     response_processed = false
     socket:send(TAG .. " EXAMINE " .. mailbox .. "\r\n")
@@ -135,7 +133,7 @@ end
 -- @name set_header
 -- @description Records the IMAP header field response in a variable
 -- so that it may be read later
-local function set_header(socket,response)
+local function set_header(socket, response) -- luacheck: no unused
     if(DEBUG) then
         print(response)
     end
@@ -152,7 +150,7 @@ end
 -- @param socket The IMAP socket to use
 -- @param msg_number The email number to read e.g. 1 will read fetch the latest/newest email
 -- @param field A header field such as SUBJECT, FROM, or DATE
-function M.fetch_header(socket,msg_number,field)
+function M.fetch_header(socket, msg_number, field)
     header = "" -- we are getting a new header so clear this variable
     response_processed = false
     socket:send(TAG .. " FETCH " .. msg_number .. " BODY[HEADER.FIELDS (" .. field .. ")]\r\n")
@@ -171,7 +169,7 @@ end
 -- @name set_body
 -- @description Records the IMAP body response in a variable
 -- so that it may be read later
-local function set_body(socket,response)
+local function set_body(_, response)
 
     if(DEBUG) then
         print(response)
@@ -188,7 +186,7 @@ end
 -- @description Sends the IMAP command to fetch a plain text version of the email's body
 -- @param socket The IMAP socket to use
 -- @param msg_number The email number to obtain e.g. 1 will obtain the latest email
-function M.fetch_body_plain_text(socket,msg_number)
+function M.fetch_body_plain_text(socket, msg_number)
     response_processed = false
     body = "" -- clear the body variable since we'll be fetching a  new email
     socket:send(TAG .. " FETCH " .. msg_number .. " BODY[1]\r\n")

@@ -1,11 +1,18 @@
 -- Test sjson and GitHub API
 
 local s = tls.createConnection()
-s:on("connection", function(sck, c)
-  sck:send("GET /repos/nodemcu/nodemcu-firmware/git/trees/master HTTP/1.0\r\nUser-agent: nodemcu/0.1\r\nHost: api.github.com\r\nConnection: close\r\nAccept: application/json\r\n\r\n")
+s:on("connection", function(sck)
+  sck:send(
+[[GET /repos/nodemcu/nodemcu-firmware/git/trees/master HTTP/1.0
+User-agent: nodemcu/0.1
+Host: api.github.com
+Connection: close
+Accept: application/json
+
+]])
 end)
 
-function startswith(String, Start)
+local function startswith(String, Start)
   return string.sub(String, 1, string.len(Start)) == Start
 end
 
@@ -23,13 +30,13 @@ local decoder = sjson.decoder({
     end
   }
 })
-local function handledata(s)
-  decoder:write(s)
+local function handledata(sck)
+  decoder:write(sck)
 end
 
 -- The receive callback is somewhat gnarly as it has to deal with find the end of the header
 -- and having the newline sequence split across packets
-s:on("receive", function(sck, c)
+s:on("receive", function(socket, c) -- luacheck: no unused
   if partial then
     c = partial .. c
     partial = nil
@@ -45,8 +52,8 @@ s:on("receive", function(sck, c)
       handledata(c)
       return
     end
-    local s, e = c:find("\r\n")
-    if s then
+    local str, e = c:find("\r\n")
+    if str then
       -- Throw away line
       c = c:sub(e + 1)
     else

@@ -114,7 +114,7 @@ function M.reloadAlarms ()
   i2c.write(id, 0x0F)
   i2c.write(id, d)
   i2c.stop(id)
-  print('[LOG] Alarm '..almId..' reloaded')
+  print('[LOG] Alarms reloaded')
 end
 
 -- Enable alarmId bit. Let it to be triggered

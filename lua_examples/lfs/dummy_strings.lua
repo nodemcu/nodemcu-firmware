@@ -24,8 +24,10 @@ end
   This will exclude any strings already in the ROM table, so the output is the list
   of putative strings that you should consider adding to LFS ROM table.
 
----------------------------------------------------------------------------------]]
+---------------------------------------------------------------------------------
+]]--
 
+-- luacheck: ignore
 local preload = "?.lc;?.lua", "/\n;\n?\n!\n-", "@init.lua", "_G", "_LOADED",
 "_LOADLIB", "__add", "__call", "__concat", "__div", "__eq", "__gc", "__index",
 "__le", "__len", "__lt", "__mod", "__mode", "__mul", "__newindex", "__pow",

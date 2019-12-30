@@ -1,5 +1,4 @@
---
-local function enum(t,log) for k,v in pairs(t)do log(k,v) end end
+-- luacheck: globals DEBUG
 return {entry = function(msg)
     package.loaded["luaOTA.default"]=nil
     local gc=collectgarbage; gc(); gc()

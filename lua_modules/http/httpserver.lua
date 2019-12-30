@@ -48,7 +48,7 @@ do
       csend("\r\n")
     end
    end
-   local send_header = function(self, name, value)
+   local send_header = function(self, name, value) -- luacheck: ignore
     -- NB: quite a naive implementation
     csend(name)
     csend(": ")
@@ -88,13 +88,13 @@ do
       local req, res
       local buf = ""
       local method, url
-      local ondisconnect = function(conn)
-        conn:on("sent", nil)
+      local ondisconnect = function(connection)
+        connection.on("sent", nil)
         collectgarbage("collect")
       end
       -- header parser
       local cnt_len = 0
-      local onheader = function(conn, k, v)
+      local onheader = function(connection, k, v) -- luacheck: ignore
         -- TODO: look for Content-Type: header
         -- to help parse body
         -- parse content length to know body length
@@ -111,19 +111,19 @@ do
       end
       -- body data handler
       local body_len = 0
-      local ondata = function(conn, chunk)
+      local ondata = function(connection, chunk) -- luacheck: ignore
         -- feed request data to request handler
         if not req or not req.ondata then return end
         req:ondata(chunk)
         -- NB: once length of seen chunks equals Content-Length:
-        --   ondata(conn) is called
+        -- ondata(conn) is called
         body_len = body_len + #chunk
         -- print("-B", #chunk, body_len, cnt_len, node.heap())
         if body_len >= cnt_len then
           req:ondata()
         end
       end
-      local onreceive = function(conn, chunk)
+      local onreceive = function(connection, chunk)
         -- merge chunks in buffer
         if buf then
           buf = buf .. chunk
@@ -139,12 +139,12 @@ do
           buf = buf:sub(e + 2)
           -- method, url?
           if not method then
-            local i
+            local i, _ -- luacheck: ignore
             -- NB: just version 1.1 assumed
             _, i, method, url = line:find("^([A-Z]+) (.-) HTTP/1.1$")
             if method then
               -- make request and response objects
-              req = make_req(conn, method, url)
+              req = make_req(connection, method, url)
               res = make_res(csend, cfini)
             end
             -- spawn request handler
@@ -156,17 +156,17 @@ do
             -- header seems ok?
             if k then
               k = k:lower()
-              onheader(conn, k, v)
+              onheader(connection, k, v)
             end
           -- headers end
           else
             -- NB: we feed the rest of the buffer as starting chunk of body
-            ondata(conn, buf)
+            ondata(connection, buf)
             -- buffer no longer needed
             buf = nil
             -- NB: we explicitly reassign receive handler so that
             --   next received chunks go directly to body handler
-            conn:on("receive", ondata)
+            connection:on("receive", ondata)
             -- parser done
             break
           end

@@ -33,14 +33,14 @@ local function read_data(ADDR, commands, length)
     i2c.start(id)
     i2c.address(id, ADDR,i2c.RECEIVER)
     tmr.delay(200000)
-    c = i2c.read(id, length)
+    local c = i2c.read(id, length)
     i2c.stop(id)
     return c
 end
 local function read_lux()
-    dataT = read_data(GY_30_address, CMD, 2)
+    local dataT = read_data(GY_30_address, CMD, 2)
     --Make it more faster
-    UT = dataT:byte(1) * 256 + dataT:byte(2)
+    local UT = dataT:byte(1) * 256 + dataT:byte(2)
     l = (UT*1000/12)
     return(l)
 end

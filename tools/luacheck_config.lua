@@ -173,6 +173,32 @@ stds.nodemcu_libs = {
         toHex = empty
       }
     },
+    dcc = {
+      fields = {
+        CV_READ = empty,
+        CV_RESET = empty,
+        CV_VALID = empty,
+        CV_WRITE = empty,
+        DCC_ACCESSORY = empty,
+        DCC_FUNC = empty,
+        DCC_IDLE = empty,
+        DCC_RAW = empty,
+        DCC_RESET = empty,
+        DCC_SERVICEMODE = empty,
+        DCC_SPEED = empty,
+        DCC_SPEED_RAW = empty,
+        DCC_TURNOUT = empty,
+        FLAGS_AUTO_FACTORY_DEFAULT = empty,
+        FLAGS_DCC_ACCESSORY_DECODER = empty,
+        FLAGS_MY_ADDRESS_ONLY = empty,
+        FLAGS_OUTPUT_ADDRESS_MODE = empty,
+        MAN_ID_DIY = empty,
+        MAN_ID_JMRI = empty,
+        MAN_ID_SILICON_RAILWAY = empty,
+        close = empty,
+        setup = empty
+      }
+    },
     dht = {
       fields = {
         ERROR_CHECKSUM = empty,
@@ -200,12 +226,17 @@ stds.nodemcu_libs = {
     },
     file = {
       fields = {
+        chdir = empty,
         close = empty,
         exists = empty,
         flush = empty,
+        format = empty,
+        fscfg = empty,
         fsinfo = empty,
         getcontents = empty,
         list = empty,
+        mount = empty,
+        n = empty,
         on = empty,
         open = empty,
         putcontents = empty,
@@ -393,7 +424,10 @@ stds.nodemcu_libs = {
         },
         task = {
           fields = {
-            post = empty
+            post = empty,
+            LOW_PRIORITY = empty,
+            MEDIUM_PRIORITY = empty,
+            HIGH_PRIORITY = empty
           }
         }
       }
@@ -574,6 +608,13 @@ stds.nodemcu_libs = {
         set_mosi = empty,
         setup = empty,
         transaction = empty
+      }
+    },
+    struct = {
+      fields = {
+        pack = empty,
+        size = empty,
+        unpack = empty
       }
     },
     switec = {
@@ -876,7 +917,8 @@ stds.nodemcu_libs = {
     },
     pack = empty,
     unpack  = empty,
-    size = empty
+    size = empty,
+    package = {fields = {seeall = read_write}}
   }
 }
 
