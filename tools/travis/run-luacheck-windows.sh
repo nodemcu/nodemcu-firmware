@@ -4,7 +4,7 @@ set -e
 
 #Download luacheck binary if nessesary
 if ! [ -x "cache/luacheck.exe" ]; then
-    wget -O cache/luacheck.exe https://github.com/mpeterv/luacheck/releases/download/0.23.0/luacheck.exe
+    wget --tries=5 --timeout=10 --waitretry=10 --read-timeout=10 --retry-connrefused -O cache/luacheck.exe https://github.com/mpeterv/luacheck/releases/download/0.23.0/luacheck.exe
 fi
 
 echo "Static analysys of"
