@@ -14,8 +14,8 @@ end
 
 -- Process a provisioning request record
 local function receiveRec(sck, rec)  -- upval: self, buf, crypto
-  -- Note that for 2nd and subsequent responses, we assme that the service has
-  -- "authenticated" itself, so any protocol errors are fatal and lkely to
+  -- Note that for 2nd and subsequent responses, we assume that the service has
+  -- "authenticated" itself, so any protocol errors are fatal and likely to
   -- cause a repeating boot, throw any protocol errors are thrown.
   local cmdlen = (rec:find('\n',1, true) or 0) - 1
   local cmd,hash = rec:sub(1,cmdlen-6), rec:sub(cmdlen-5,cmdlen)
@@ -84,15 +84,15 @@ local function receiveRec(sck, rec)  -- upval: self, buf, crypto
       local dlFile = file.open(cmd.name, "w+")
       if dlFile then
         for i = 1, #buf do
-           dlFile = dlFile and dlFile.write(buf[i])
+           dlFile = dlFile and file.write(buf[i])
         end
-        dlFile.close()
+        file.close()
       end
 
       if dlFile then
         print("Updated ".. cmd.name)
       else
-        dlFile.remove(cmd.name)
+        file.remove(cmd.name)
         resp.s = "write failed"
       end
       buf = {}

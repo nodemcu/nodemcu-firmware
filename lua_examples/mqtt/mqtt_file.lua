@@ -44,8 +44,8 @@ do
       print(node.heap())
   end)
   m:on("message",dispatch )
-  -- Lua: mqtt:connect( host, port, secure, auto_reconnect, function(client) )
-  m:connect("192.168.18.88",1883,0,1)
+  -- Lua: mqtt:connect( host, port, secure, function(client) )
+  m:connect("192.168.18.88",1883,0)
 end
 -- usage:
 -- another client(pc) subscribe to /topic2, will receive the test.lua content.

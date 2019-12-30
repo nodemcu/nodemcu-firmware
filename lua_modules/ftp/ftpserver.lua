@@ -133,9 +133,8 @@ function FTP.createServer(user, pass, dbgFlag)  -- upval: FTP (, debug, tostring
 
         return CNX.send(msg)
       end
-    -- luacheck: push ignore
-    local port,ip = sock:getpeer()
-    -- luacheck: pop
+
+    local port,ip = sock:getpeer() -- luacheck: no unused
     --debug("Connection accepted: (userdata) %s client %s:%u", tostring(sock), ip, port)
     sock:on("receive",       validateUser)
     sock:on("disconnection", CNX.close)
@@ -178,8 +177,8 @@ end -- FTP.close()
 --
 -- Find strings are used do this lookup and minimise long if chains.
 ------------------------------------------------------------------------------
-processCommand = function(cxt, _, data) -- upvals: (, debug, processBareCmds, processSimpleCmds, processDataCmds)
-
+-- upvals: (, debug, processBareCmds, processSimpleCmds, processDataCmds)
+processCommand = function(cxt, socket, data) -- luacheck: no unused
   debug("Command: %s", data)
   data = data:gsub('[\r\n]+$', '') -- chomp trailing CRLF
   local cmd, arg = data:match('([a-zA-Z]+) *(.*)')
@@ -343,7 +342,7 @@ processDataCmds = function(cxt, cmd, arg)  -- upval: FTP (, pairs, file, tostrin
 
     function cxt.getData() -- upval: cmd, fileSize, nameList (, table)
       local list, user = {}, FTP.user
-      for _ = 1,10 do
+      for i = 1,10 do -- luacheck: no unused
         if #nameList == 0 then break end
         local f = table.remove(nameList, 1)
         list[#list+1] = (cmd == "LIST") and
@@ -426,10 +425,10 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
   cxt.dataServer = nil
 
   local function cleardown(skt,type) -- upval: cxt (, debug, tostring, post, pcall)
-    -- luacheck: push ignore
+    -- luacheck: push no unused
     type = type==1 and "disconnection" or "reconnection"
     local which = cxt.setData and "setData" or (cxt.getData and cxt.getData or "neither")
- -- debug("Cleardown entered from %s with %s", type, which)
+    --debug("Cleardown entered from %s with %s", type, which)
     -- luacheck: pop
     if cxt.setData then
       cxt.fileClose()
@@ -448,10 +447,9 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
   local on_hold = false
 
   dataSocket:on("receive", function(skt, rec) --upval: cxt, on_hold (, debug, tstring, post, node, pcall)
-    -- luacheck: push ignore
-    local which = cxt.setData and "setData" or (cxt.getData and cxt.getData or "neither")
-    -- luacheck: pop
- -- debug("Received %u data bytes with %s", #rec, which)
+
+    local which = cxt.setData and "setData" or (cxt.getData and cxt.getData or "neither")-- luacheck: no unused
+    --debug("Received %u data bytes with %s", #rec, which)
 
     if not cxt.setData then return end
 

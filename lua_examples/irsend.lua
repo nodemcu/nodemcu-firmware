@@ -10,7 +10,7 @@
 local M
 do
   -- const
-  -- luacheck: push ignore
+  -- luacheck: push no unused
   local NEC_PULSE_US   = 1000000 / 38000
   local NEC_HDR_MARK   = 9000
   local NEC_HDR_SPACE  = 4500

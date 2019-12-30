@@ -43,7 +43,7 @@ local timer
 local smtp_socket = nil -- will be used as socket to email server
 
 -- The display() function will be used to print the SMTP server's response
-local function display(_, response)
+local function display(sck, response)   -- luacheck: no unused
      print(response)
 end
 

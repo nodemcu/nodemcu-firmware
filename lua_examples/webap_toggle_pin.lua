@@ -6,12 +6,11 @@ local srv = net.createServer(net.TCP)
 srv:listen(80, function(conn)
   conn:on("receive", function(client, request)
     local buf = ""
-    -- luacheck: push ignore
-    local _, _, method, path, vars = string.find(request, "([A-Z]+) (.+)?(.+) HTTP")
+    local _, _, method, path, vars = string.find(request, "([A-Z]+) (.+)?(.+) HTTP")  -- luacheck: no unused
     if (method == nil) then
-      _, _, method, path = string.find(request, "([A-Z]+) (.+) HTTP")
+      _, _, method, path = string.find(request, "([A-Z]+) (.+) HTTP")  -- luacheck: no unused
     end
-    -- luacheck: pop
+
     local _GET = {}
     if (vars ~= nil) then
       for k, v in string.gmatch(vars, "(%w+)=(%w+)&*") do

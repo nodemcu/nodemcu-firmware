@@ -10,8 +10,8 @@ do
   HDC1000.config() -- default values are used if called with no arguments.
 
   print(string.format("Temperature: %.2f °C\nHumidity: %.2f %%", HDC1000.getTemp(), HDC1000.getHumi()))
-  -- luacheck: push ignore
-  HDC1000 = nil
-  package.loaded["HDC1000"]=nil
-  -- luacheck: pop
+
+  -- Don't forget to release it after use
+  HDC1000 = nil  -- luacheck: no unused
+  package.loaded["HDC1000"] = nil
 end

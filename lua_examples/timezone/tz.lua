@@ -35,7 +35,8 @@ local function load(t)
 
   if magic == "TZif" then
       local lens = z:read(24)
-      local ttisgmt_count, ttisdstcnt, leapcnt, timecnt, typecnt, charcnt = struct.unpack("> LLLLLL", lens) -- luacheck: ignore
+      local ttisgmt_count, ttisdstcnt, leapcnt, timecnt, typecnt, charcnt -- luacheck: no unused
+            = struct.unpack("> LLLLLL", lens)
 
       local times = z:read(4 * timecnt)
       local typeindex = z:read(timecnt)

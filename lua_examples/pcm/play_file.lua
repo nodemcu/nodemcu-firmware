@@ -29,7 +29,7 @@ do
   local drv = pcm.new(pcm.SD, 1)
 
   -- fetch data in chunks of FILE_READ_CHUNK (1024) from file
-  drv:on("data", function() return file.read() end)
+  drv:on("data", function(driver) return file.read() end) -- luacheck: no unused
 
   -- get called back when all samples were read from the file
   drv:on("drained", cb_drained)

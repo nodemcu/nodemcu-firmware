@@ -44,7 +44,7 @@ do
      PostData .. "\r\n")
 
     --HTTP响应内容  Print the HTTP response
-    socket:on("receive", function(_, response)
+    socket:on("receive", function(sck, response) -- luacheck: no unused
       print(response)
     end)
   end)

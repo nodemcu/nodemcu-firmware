@@ -17,7 +17,7 @@ _G[moduleName] = M
 local MCP23008_ADDRESS = 0x20
 
 -- Registers' address as defined in the MCP23008's datashseet
--- luacheck: push ignore
+-- luacheck: push no unused
 local MCP23008_IODIR = 0x00
 local MCP23008_IPOL = 0x01
 local MCP23008_GPINTEN = 0x02

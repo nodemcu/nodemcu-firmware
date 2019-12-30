@@ -36,7 +36,7 @@ end
 
 -- The receive callback is somewhat gnarly as it has to deal with find the end of the header
 -- and having the newline sequence split across packets
-s:on("receive", function(_, c)
+s:on("receive", function(socket, c) -- luacheck: no unused
   if partial then
     c = partial .. c
     partial = nil

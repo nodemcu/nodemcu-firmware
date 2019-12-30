@@ -43,7 +43,7 @@ if wifi.sta.getip() == nil then
     end)
 end
 
-sk:dns("api.yeelink.net",function(_,ip)
+sk:dns("api.yeelink.net",function(conn, ip) -- luacheck: no unused
   dns = ip
   print("DNS YEELINK OK... IP: "..dns)
 end)
@@ -114,7 +114,7 @@ function M.update(_datapoint)
 
     end)
 
-    sk:on("receive", function(_, content)
+    sk:on("receive", function(conn, content) -- luacheck: no unused
 
     if debug then
     print("\r\n"..content.."\r\n")

@@ -55,7 +55,7 @@ local function build_post_request(host, uri, data_table)
      return request
 end
 
-local function display(_, response)
+local function display(socket, response) -- luacheck: no unused
      print(response)
 end
 

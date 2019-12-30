@@ -43,10 +43,10 @@ end
 ---
 -- @name display
 -- @description A generic IMAP response processing function.
--- Can disply the IMAP response if DEBUG is set to true.
--- Sets the reponse processed variable to true when the string "complete"
+-- Can display the IMAP response if DEBUG is set to true.
+-- Sets the response processed variable to true when the string "complete"
 -- is found in the IMAP reply/response
-local function display(_, response)
+local function display(socket, response) -- luacheck: no unused
 
     -- If debuggins is enabled print the IMAP response
     if(DEBUG) then
@@ -94,7 +94,7 @@ end
 -- @description Gets the most recent email number from the EXAMINE command.
 -- i.e. if EXAMINE returns "* 4 EXISTS" this means that there are 4 emails,
 -- so the latest/newest will be identified by the number 4
-local function set_most_recent_num(_, response)
+local function set_most_recent_num(socket, response) -- luacheck: no unused
 
     if(DEBUG) then
         print(response)
@@ -133,7 +133,7 @@ end
 -- @name set_header
 -- @description Records the IMAP header field response in a variable
 -- so that it may be read later
-local function set_header(_, response)
+local function set_header(socket, response) -- luacheck: no unused
     if(DEBUG) then
         print(response)
     end

@@ -12,7 +12,7 @@ local config, config_saved
 local tmr_cache = tmr.create()
 local tmr_delay = tmr.create()
 
-local  pin = 4
+local pin = 4
 
 local function deepcopy(orig)
     local orig_type = type(orig)

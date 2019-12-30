@@ -29,7 +29,7 @@ local outs = {}
 local fakesock = {
   cb = nil,
   on = function(this, _, cb) this.cb = cb end,
-  send = function(_, s) vprint("SEND", (verbose > 1) and s) table.insert(outs, s) end,
+  send = function(this, s) vprint("SEND", (verbose > 1) and s) table.insert(outs, s) end -- luacheck: no unused
 }
 local function sent() vprint("SENT") fakesock.cb() end
 
@@ -69,25 +69,25 @@ sent() ; fchecke()
 
 -- Hit default FSMALLLIM while building up
 fsendc("abracadabra lots small")
-for _ = 1, 32 do fsend("a") end
+for i = 1, 32 do fsend("a") end -- luacheck: no unused
 nocoal()
-for _ = 1, 4 do fsend("a") end
+for i = 1, 4 do fsend("a") end -- luacheck: no unused
 sent() ; fcheck(string.rep("a", 32))
 sent() ; fcheck(string.rep("a", 4))
 sent() ; fchecke()
 
 -- Hit string length while building up
 fsendc("abracadabra overlong")
-for _ = 1, 10 do fsend(string.rep("a",32)) end
+for i = 1, 10 do fsend(string.rep("a",32)) end -- luacheck: no unused
 sent() ; fcheck(string.rep("a", 320))
 sent() ; fchecke()
 
 -- Hit neither before sending a big string
 fsendc("abracadabra mid long")
-for _ = 1, 6 do fsend(string.rep("a",32)) end
+for i = 1, 6 do fsend(string.rep("a",32)) end -- luacheck: no unused
 fsend(string.rep("b", 256))
 nocoal()
-for _ = 1, 6 do fsend(string.rep("c",32)) end
+for i = 1, 6 do fsend(string.rep("c",32)) end -- luacheck: no unused
 sent() ; fcheck(string.rep("a", 192) .. string.rep("b", 256))
 sent() ; fcheck(string.rep("c", 192))
 sent() ; fchecke()
