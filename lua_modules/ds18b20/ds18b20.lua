@@ -50,6 +50,8 @@ local function to_string(addr, esc)
   end
 end
 
+local conversion
+
 local function readout(self)
   local next = false
   local sens = self.sens
@@ -114,7 +116,7 @@ local function readout(self)
   end
 end
 
-local function conversion(self)
+conversion = function (self)
   local sens = self.sens
   local powered_only = true
   for _, s in ipairs(sens) do powered_only = powered_only and s:byte(9) ~= 1 end

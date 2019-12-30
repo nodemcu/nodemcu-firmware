@@ -116,7 +116,7 @@ do
         if not req or not req.ondata then return end
         req:ondata(chunk)
         -- NB: once length of seen chunks equals Content-Length:
-        --   onend(conn) is called
+        --   ondata(conn) is called
         body_len = body_len + #chunk
         -- print("-B", #chunk, body_len, cnt_len, node.heap())
         if body_len >= cnt_len then

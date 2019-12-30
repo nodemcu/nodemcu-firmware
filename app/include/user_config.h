@@ -94,7 +94,6 @@
 // are by firmware code, and can be enabled if you need this functionality.
 
 //#define CLIENT_SSL_ENABLE
-//#define MD2_ENABLE
 #define SHA2_ENABLE
 #define SSL_BUFFER_SIZE 4096
 #define SSL_MAX_FRAGMENT_LENGTH_CODE	MBEDTLS_SSL_MAX_FRAG_LEN_4096
@@ -133,10 +132,6 @@
 
 //  Enable creation on the wifi.eventmon.reason table
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
-
-//  Enable use of the WiFi.monitor sub-module
-//#define LUA_USE_MODULES_WIFI_MONITOR
-
 
 // Whilst the DNS client details can be configured through the WiFi API,
 // the defaults can be exposed temporarily during start-up.  The following

@@ -7,6 +7,7 @@
 #include "platform.h"
 #include <stdlib.h>
 #include <string.h>
+#include "task/task.h"
 #include "user_interface.h"
 static uint8_t data_pin;
 static uint8_t clk_pin;
