@@ -69,6 +69,7 @@ local function readout(self)
       -- the DS18B20 family has 4 fractional bits and the DS18S20s, 1 fractional bit
       t = ((t <= 32767) and t or t - 65536) *
           ((addr:byte(1) == DS18B20FAMILY) and 625 or 5000)
+      local crc, b9 = ow_crc8(string.sub(data,1,8)), data:byte(9)
 
       if 1/2 == 0 then
         -- integer version
@@ -83,22 +84,22 @@ local function readout(self)
         local tL=(tA%10000)/1000 + ((tA%1000)/100 >= 5 and 1 or 0)
 
         if tH and (t~=850000) then
-          temp[addr]=(sgn<0 and "-" or "")..tH.."."..tL
-          debugPrint(to_string(addr),(sgn<0 and "-" or "")..tH.."."..tL)
+          debugPrint(to_string(addr),(sgn<0 and "-" or "")..tH.."."..tL, crc, b9)
+          if crc==b9 then temp[addr]=(sgn<0 and "-" or "")..tH.."."..tL end
           status[i] = 2
         end
         -- end integer version
       else
         -- float version
-        if t and (math_floor(t/10000)~=85) then
-          t = t / 10000
+        t = t / 10000
+        if math_floor(t)~=85 then
           if unit == 'F' then
             t = t * 18/10 + 32
           elseif unit == 'K' then
             t = t + 27315/100
           end
-          self.temp[addr]=t
-          debugPrint(to_string(addr), t)
+          debugPrint(to_string(addr), t, crc, b9)
+          if crc==b9 then temp[addr]=t end
           status[i] = 2
         end
         -- end float version
@@ -123,19 +124,22 @@ conversion = (function (self)
   if powered_only then
     debugPrint("starting conversion: all sensors")
     ow_reset(pin)
-    ow_skip(pin)  -- select the sensor
+    ow_skip(pin)  -- skip ROM selection, talk to all sensors
     ow_write(pin, CONVERT_T, MODE)  -- and start conversion
     for i, _ in ipairs(sens) do status[i] = 1 end
   else
+    local started = false
     for i, s in ipairs(sens) do
       if status[i] == 0 then
-        local addr, parasite = s:sub(1,8), s:byte(9)
-        debugPrint("starting conversion:", to_string(addr), parasite == 1 and "parasite" or " ")
+        local addr, parasite = s:sub(1,8), s:byte(9) == 1
+        if parasite and started then break end -- do not start concurrent conversion of powered and parasite
+        debugPrint("starting conversion:", to_string(addr), parasite and "parasite" or "")
         ow_reset(pin)
         ow_select(pin, addr)  -- select the sensor
         ow_write(pin, CONVERT_T, MODE)  -- and start conversion
         status[i] = 1
-        if parasite == 1 then break end -- parasite sensor blocks bus during conversion
+        if parasite then break end -- parasite sensor blocks bus during conversion
+        started = true
       end
     end
   end
@@ -169,7 +173,6 @@ local function _search(self, lcb, lpin, search, save)
     for i, _ in ipairs(sens) do status[i] = 0 end
   end
   local function cycle()
-    debugPrint("cycle")
     if addr then
       local crc=ow_crc8(addr:sub(1,7))
       if (crc==addr:byte(8)) and ((addr:byte(1)==DS1920FAMILY) or (addr:byte(1)==DS18B20FAMILY)) then
@@ -177,8 +180,9 @@ local function _search(self, lcb, lpin, search, save)
         ow_select(pin, addr)
         ow_write(pin, READ_POWERSUPPLY, MODE)
         local parasite = (ow_read(pin)==0 and 1 or 0)
-        sens[#sens+1]= addr..string_char(parasite) -- {addr=addr, parasite=parasite, status=0}
-        debugPrint("contact: ", to_string(addr), parasite == 1 and "parasite" or " ")
+        sens[#sens+1]= addr..string_char(parasite)
+        status[#sens] = 0
+        debugPrint("contact: ", to_string(addr), parasite == 1 and "parasite" or "")
       end
       addr = ow_search(pin)
       node_task_post(node_task_LOW_PRIORITY, cycle)
