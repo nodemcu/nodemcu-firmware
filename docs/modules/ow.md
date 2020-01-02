@@ -145,48 +145,42 @@ Issues a 1-Wire rom select command. Make sure you do the `ow.reset(pin)` first.
 #### Example
 ```lua
 -- 18b20 Example
-pin = 9
+-- 18b20 Example
+pin = 3
 ow.setup(pin)
-count = 0
-repeat
-  count = count + 1
-  addr = ow.reset_search(pin)
-  addr = ow.search(pin)
-  tmr.wdclr()
-until (addr ~= nil) or (count > 100)
+addr = ow.reset_search(pin)
+addr = ow.search(pin)
+
 if addr == nil then
-  print("No more addresses.")
+  print("No device detected.")
 else
   print(addr:byte(1,8))
-  crc = ow.crc8(string.sub(addr,1,7))
+  local crc = ow.crc8(string.sub(addr,1,7))
   if crc == addr:byte(8) then
     if (addr:byte(1) == 0x10) or (addr:byte(1) == 0x28) then
       print("Device is a DS18S20 family device.")
-        repeat
+      tmr.create():alarm(1000, tmr.ALARM_AUTO, function()
           ow.reset(pin)
           ow.select(pin, addr)
-          ow.write(pin, 0x44, 1)
-          tmr.delay(1000000)
-          present = ow.reset(pin)
-          ow.select(pin, addr)
-          ow.write(pin,0xBE,1)
-          print("P="..present)
-          data = nil
-          data = string.char(ow.read(pin))
-          for i = 1, 8 do
-            data = data .. string.char(ow.read(pin))
-          end
-          print(data:byte(1,9))
-          crc = ow.crc8(string.sub(data,1,8))
-          print("CRC="..crc)
-          if crc == data:byte(9) then
-             t = (data:byte(1) + data:byte(2) * 256) * 625
-             t1 = t / 10000
-             t2 = t % 10000
-             print("Temperature="..t1.."."..t2.."Centigrade")
-          end
-          tmr.wdclr()
-        until false
+          ow.write(pin, 0x44, 1) -- convert T command
+          tmr.create():alarm(750, tmr.ALARM_SINGLE, function()
+              ow.reset(pin)
+              ow.select(pin, addr)
+              ow.write(pin,0xBE,1) -- read scratchpad command
+              local data = ow.read_bytes(pin, 9)
+              print(data:byte(1,9))
+              local crc = ow.crc8(string.sub(data,1,8))
+              print("CRC="..crc)
+              if crc == data:byte(9) then
+                 local t = (data:byte(1) + data:byte(2) * 256) * 625
+                 local sgn = t<0 and -1 or 1
+                 local tA = sgn*t
+                 local t1 = math.floor(tA / 10000)
+                 local t2 = tA % 10000
+                 print("Temperature="..(sgn<0 and "-" or "")..t1.."."..t2.." Centigrade")
+              end
+          end)
+      end)
     else
       print("Device family is not recognized.")
     end
