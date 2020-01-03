@@ -16,10 +16,6 @@
 #define MODE_DUAL    1
 
 
-
-
-
-
 // Init UART1 to be able to stream WS2812 data to GPIO2 pin
 // If DUAL mode is selected, init UART0 to stream to TXD0 as well
 // You HAVE to redirect LUA's output somewhere else
@@ -168,15 +164,15 @@ static int ws2812_write(lua_State* L) {
   return 0;
 }
 
-static ptrdiff_t posrelat (ptrdiff_t pos, size_t len) {
+static ptrdiff_t posrelat(ptrdiff_t pos, size_t len) {
   /* relative string position: negative means back from end */
   if (pos < 0) pos += (ptrdiff_t)len + 1;
-  return (pos >= 0) ? pos : 0;
+  return MIN(MAX(pos, 1), len);
 }
 
 static ws2812_buffer *allocate_buffer(lua_State *L, int leds, int colorsPerLed) {
   // Allocate memory
-  size_t size = sizeof(ws2812_buffer) + colorsPerLed*leds*sizeof(uint8_t);
+  size_t size = sizeof(ws2812_buffer) + colorsPerLed*leds;
   ws2812_buffer * buffer = (ws2812_buffer*)lua_newuserdata(L, size);
 
   // Associate its metatable
@@ -245,17 +241,11 @@ static int ws2812_buffer_fill_lua(lua_State* L) {
   return 0;
 }
 
-static int ws2812_buffer_fade(lua_State* L) {
-  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
-  const int fade = luaL_checkinteger(L, 2);
-  unsigned direction = luaL_optinteger( L, 3, FADE_OUT );
-
-  luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
-
+void ws2812_buffer_fade(ws2812_buffer * buffer, int fade, unsigned direction) {
   uint8_t * p = &buffer->values[0];
   int val = 0;
   int i;
-  for(i = 0; i < buffer->size * buffer->colorsPerLed; i++)
+  for (i = 0; i < buffer->size * buffer->colorsPerLed; i++)
   {
     if (direction == FADE_OUT)
     {
@@ -269,77 +259,100 @@ static int ws2812_buffer_fade(lua_State* L) {
       *p++ = val;
     }
   }
+}
 
+static int ws2812_buffer_fade_lua(lua_State* L) {
+  ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
+  const int fade = luaL_checkinteger(L, 2);
+  unsigned direction = luaL_optinteger( L, 3, FADE_OUT );
+
+  luaL_argcheck(L, fade > 0, 2, "fade value should be a strict positive number");
+
+  ws2812_buffer_fade(buffer, fade, direction);
+
+  return 0; 
+}
+
+int ws2812_buffer_shift(lua_State* L, ws2812_buffer * buffer, int shiftValue, unsigned shift_type, int pos_start, int pos_end){
+  
+  ws2812_buffer_shift_prepare* prepare = ws2812_buffer_get_shift_prepare(L, buffer, shiftValue, shift_type, pos_start, pos_end);
+  ws2812_buffer_shift_prepared(prepare);
+  // Free memory
+  luaM_free(L, prepare);
   return 0;
 }
 
-
-int ws2812_buffer_shift(ws2812_buffer * buffer, int shiftValue, unsigned shift_type, int pos_start, int pos_end) {
+ws2812_buffer_shift_prepare* ws2812_buffer_get_shift_prepare(lua_State* L, ws2812_buffer * buffer, int shiftValue, unsigned shift_type, int pos_start, int pos_end){
 
   ptrdiff_t start = posrelat(pos_start, buffer->size);
   ptrdiff_t end = posrelat(pos_end, buffer->size);
-  if (start < 1) start = 1;
-  if (end > (ptrdiff_t)buffer->size) end = (ptrdiff_t)buffer->size;
 
   start--;
   int size = end - start;
   size_t offset = start * buffer->colorsPerLed;
 
-  //luaL_argcheck(L, shiftValue > 0-size && shiftValue < size, 2, "shifting more elements than buffer size");
+  luaL_argcheck(L, shiftValue >= 0-size && shiftValue <= size, 2, "shifting more elements than buffer size");
 
   int shift = shiftValue >= 0 ? shiftValue : -shiftValue;
 
-  // check if we want to shift at all
-  if (shift == 0 || size <= 0)
-  {
-    return 0;
-  }
-
-  uint8_t * tmp_pixels = malloc(buffer->colorsPerLed * sizeof(uint8_t) * shift);
-  int i,j;
   size_t shift_len, remaining_len;
   // calculate length of shift section and remaining section
   shift_len = shift*buffer->colorsPerLed;
   remaining_len = (size-shift)*buffer->colorsPerLed;
 
-  if (shiftValue > 0)
+  ws2812_buffer_shift_prepare* prepare = luaM_malloc(L, sizeof(ws2812_buffer_shift_prepare) + shift_len);
+  prepare->offset = offset;
+  prepare->tmp_pixels = (uint8_t*)(prepare+1);
+  prepare->shiftValue = shiftValue;
+  prepare->shift_len = shift_len;
+  prepare->remaining_len = remaining_len;
+  prepare->shift_type = shift_type;
+  prepare->buffer = buffer;
+
+  return prepare;
+}
+
+void ws2812_buffer_shift_prepared(ws2812_buffer_shift_prepare* prepare) {
+
+  // check if we want to shift at all
+  if (prepare->shift_len == 0 || (prepare->shift_len + prepare->remaining_len) <= 0)
+  {
+    return;
+  }
+
+  if (prepare->shiftValue > 0)
   {
     // Store the values which are moved out of the array (last n pixels)
-    memcpy(tmp_pixels, &buffer->values[offset + (size-shift)*buffer->colorsPerLed], shift_len);
+    memcpy(prepare->tmp_pixels, &prepare->buffer->values[prepare->offset + prepare->remaining_len], prepare->shift_len);
     // Move pixels to end
-    os_memmove(&buffer->values[offset + shift*buffer->colorsPerLed], &buffer->values[offset], remaining_len);
+    os_memmove(&prepare->buffer->values[prepare->offset + prepare->shift_len], &prepare->buffer->values[prepare->offset], prepare->remaining_len);
     // Fill beginning with temp data
-    if (shift_type == SHIFT_LOGICAL)
+    if (prepare->shift_type == SHIFT_LOGICAL)
     {
-      memset(&buffer->values[offset], 0, shift_len);
+      memset(&prepare->buffer->values[prepare->offset], 0, prepare->shift_len);
     }
     else
     {
-      memcpy(&buffer->values[offset], tmp_pixels, shift_len);
+      memcpy(&prepare->buffer->values[prepare->offset], prepare->tmp_pixels, prepare->shift_len);
     }
   }
   else
   {
     // Store the values which are moved out of the array (last n pixels)
-    memcpy(tmp_pixels, &buffer->values[offset], shift_len);
+    memcpy(prepare->tmp_pixels, &prepare->buffer->values[prepare->offset], prepare->shift_len);
     // Move pixels to end
-    os_memmove(&buffer->values[offset], &buffer->values[offset + shift*buffer->colorsPerLed], remaining_len);
+    os_memmove(&prepare->buffer->values[prepare->offset], &prepare->buffer->values[prepare->offset + prepare->shift_len], prepare->remaining_len);
     // Fill beginning with temp data
-    if (shift_type == SHIFT_LOGICAL)
+    if (prepare->shift_type == SHIFT_LOGICAL)
     {
-      memset(&buffer->values[offset + (size-shift)*buffer->colorsPerLed], 0, shift_len);
+      memset(&prepare->buffer->values[prepare->offset + prepare->remaining_len], 0, prepare->shift_len);
     }
     else
     {
-      memcpy(&buffer->values[offset + (size-shift)*buffer->colorsPerLed], tmp_pixels, shift_len);
+      memcpy(&prepare->buffer->values[prepare->offset + prepare->remaining_len], prepare->tmp_pixels, prepare->shift_len);
     }
   }
-  // Free memory
-  free(tmp_pixels);
-
-  return 0;
 }
-
 
 static int ws2812_buffer_shift_lua(lua_State* L) {
 
@@ -351,10 +364,9 @@ static int ws2812_buffer_shift_lua(lua_State* L) {
   const int pos_end = luaL_optinteger(L, 5, -1);
 
 
-  ws2812_buffer_shift(buffer, shiftValue, shift_type, pos_start, pos_end);
+  ws2812_buffer_shift(L, buffer, shiftValue, shift_type, pos_start, pos_end);
   return 0;
 }
-
 
 static int ws2812_buffer_dump(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
@@ -366,8 +378,7 @@ static int ws2812_buffer_dump(lua_State* L) {
 
 static int ws2812_buffer_replace(lua_State* L) {
   ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
-  size_t l = buffer->size;
-  ptrdiff_t start = posrelat(luaL_optinteger(L, 3, 1), l);
+  ptrdiff_t start = posrelat(luaL_optinteger(L, 3, 1), buffer->size);
 
   uint8_t *src;
   size_t srcLen;
@@ -425,8 +436,8 @@ static int ws2812_buffer_mix(lua_State* L) {
       val += (int32_t)(source[src].values[i] * source[src].factor);
     }
 
-	val += 128;	// rounding istead of floor
-    val >>= 8;
+	  val += 128;	// rounding istead of floor
+    val /= 256; // do not use implemetation dependant right shift
 
     if (val < 0) {
       val = 0;
@@ -501,7 +512,7 @@ static int ws2812_buffer_set(lua_State* L) {
     // Overflow check
     if( buffer->colorsPerLed*led + len > buffer->colorsPerLed*buffer->size )
     {
-	return luaL_error(L, "string size will exceed strip length");
+      return luaL_error(L, "string size will exceed strip length");
     }
 
     memcpy(&buffer->values[buffer->colorsPerLed*led], buf, len);
@@ -531,8 +542,6 @@ static int ws2812_buffer_sub(lua_State* L) {
   size_t l = lhs->size;
   ptrdiff_t start = posrelat(luaL_checkinteger(L, 2), l);
   ptrdiff_t end = posrelat(luaL_optinteger(L, 3, -1), l);
-  if (start < 1) start = 1;
-  if (end > (ptrdiff_t)l) end = (ptrdiff_t)l;
   if (start <= end) {
     ws2812_buffer *result = allocate_buffer(L, end - start + 1, lhs->colorsPerLed);
     memcpy(result->values, lhs->values + lhs->colorsPerLed * (start - 1), lhs->colorsPerLed * (end - start + 1));
@@ -591,10 +600,9 @@ static int ws2812_buffer_tostring(lua_State* L) {
   return 1;
 }
 
-
 LROT_BEGIN(ws2812_buffer)
   LROT_FUNCENTRY( dump, ws2812_buffer_dump )
-  LROT_FUNCENTRY( fade, ws2812_buffer_fade )
+  LROT_FUNCENTRY( fade, ws2812_buffer_fade_lua)
   LROT_FUNCENTRY( fill, ws2812_buffer_fill_lua )
   LROT_FUNCENTRY( get, ws2812_buffer_get )
   LROT_FUNCENTRY( replace, ws2812_buffer_replace )
@@ -609,8 +617,6 @@ LROT_BEGIN(ws2812_buffer)
   LROT_FUNCENTRY( __tostring, ws2812_buffer_tostring )
 LROT_END( ws2812_buffer, ws2812_buffer, LROT_MASK_INDEX )
 
-
-
 LROT_BEGIN(ws2812)
   LROT_FUNCENTRY( init, ws2812_init )
   LROT_FUNCENTRY( newBuffer, ws2812_new_buffer )
@@ -622,7 +628,6 @@ LROT_BEGIN(ws2812)
   LROT_NUMENTRY( SHIFT_LOGICAL, SHIFT_LOGICAL )
   LROT_NUMENTRY( SHIFT_CIRCULAR, SHIFT_CIRCULAR )
 LROT_END( ws2812, NULL, 0 )
-
 
 int luaopen_ws2812(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized

@@ -539,7 +539,7 @@ static int loadLFS (lua_State *L) {
   flashSetPosition(0);
 
   if ((res = uzlib_inflate(get_byte, put_byte, recall_byte,
-                    in->len, &crc, &in->inflate_state)) != UZLIB_OK) {
+                    in->len, &crc, &in->inflate_state)) != UZLIB_DONE) {
     const char *err[] = {"Data_error during decompression",
                          "Chksum_error during decompression",
                          "Dictionary error during decompression",

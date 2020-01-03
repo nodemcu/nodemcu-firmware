@@ -157,8 +157,8 @@ end
 
 In reality, the connected function should do something useful!
 
-The two callbacks to `:connect()` alias with the "connect" and "offline"
-callbacks available through `:on()`.
+The first callback to `:connect()` aliases with the "connect" callback available through `:on()` (the last passed callback to either of those are used). 
+The second (failure) callback is however not the same as the "offline" `:on()` callback. The "offline" callback is only called after an already established connection becomes closed. If the `connect()` call fails to establish a connection, the callback passed to `:connect()` is called and nothing else.
 
 Previously, we instructed an application to pass either the *integer* 0 or
 *integer* 1 for `secure`.  Now, this will trigger a deprecation warning; please

@@ -33,6 +33,7 @@
 #if defined(MBEDTLS_SHA1_C)
 
 #include "mbedtls/sha1.h"
+#include "mbedtls/platform_util.h"
 
 #include <string.h>
 
@@ -45,12 +46,12 @@
 #endif /* MBEDTLS_PLATFORM_C */
 #endif /* MBEDTLS_SELF_TEST */
 
-#if !defined(MBEDTLS_SHA1_ALT)
+#define SHA1_VALIDATE_RET(cond)                             \
+    MBEDTLS_INTERNAL_VALIDATE_RET( cond, MBEDTLS_ERR_SHA1_BAD_INPUT_DATA )
 
-/* Implementation that should never be optimized out by the compiler */
-static void mbedtls_zeroize( void *v, size_t n ) {
-    volatile unsigned char *p = (unsigned char*)v; while( n-- ) *p++ = 0;
-}
+#define SHA1_VALIDATE(cond)  MBEDTLS_INTERNAL_VALIDATE( cond )
+
+#if !defined(MBEDTLS_SHA1_ALT)
 
 /*
  * 32-bit integer manipulation macros (big endian)
@@ -77,6 +78,8 @@ static void mbedtls_zeroize( void *v, size_t n ) {
 
 void mbedtls_sha1_init( mbedtls_sha1_context *ctx )
 {
+    SHA1_VALIDATE( ctx != NULL );
+
     memset( ctx, 0, sizeof( mbedtls_sha1_context ) );
 }
 
@@ -85,12 +88,15 @@ void mbedtls_sha1_free( mbedtls_sha1_context *ctx )
     if( ctx == NULL )
         return;
 
-    mbedtls_zeroize( ctx, sizeof( mbedtls_sha1_context ) );
+    mbedtls_platform_zeroize( ctx, sizeof( mbedtls_sha1_context ) );
 }
 
 void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
                          const mbedtls_sha1_context *src )
 {
+    SHA1_VALIDATE( dst != NULL );
+    SHA1_VALIDATE( src != NULL );
+
     *dst = *src;
 }
 
@@ -99,6 +105,8 @@ void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
  */
 int mbedtls_sha1_starts_ret( mbedtls_sha1_context *ctx )
 {
+    SHA1_VALIDATE_RET( ctx != NULL );
+
     ctx->total[0] = 0;
     ctx->total[1] = 0;
 
@@ -124,6 +132,9 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx,
 {
     uint32_t temp, W[16], A, B, C, D, E;
 
+    SHA1_VALIDATE_RET( ctx != NULL );
+    SHA1_VALIDATE_RET( (const unsigned char *)data != NULL );
+
     GET_UINT32_BE( W[ 0], data,  0 );
     GET_UINT32_BE( W[ 1], data,  4 );
     GET_UINT32_BE( W[ 2], data,  8 );
@@ -141,19 +152,21 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx,
     GET_UINT32_BE( W[14], data, 56 );
     GET_UINT32_BE( W[15], data, 60 );
 
-#define S(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
+#define S(x,n) (((x) << (n)) | (((x) & 0xFFFFFFFF) >> (32 - (n))))
 
-#define R(t)                                            \
-(                                                       \
-    temp = W[( t -  3 ) & 0x0F] ^ W[( t - 8 ) & 0x0F] ^ \
-           W[( t - 14 ) & 0x0F] ^ W[  t       & 0x0F],  \
-    ( W[t & 0x0F] = S(temp,1) )                         \
-)
+#define R(t)                                                    \
+    (                                                           \
+        temp = W[( (t) -  3 ) & 0x0F] ^ W[( (t) - 8 ) & 0x0F] ^ \
+               W[( (t) - 14 ) & 0x0F] ^ W[  (t)       & 0x0F],  \
+        ( W[(t) & 0x0F] = S(temp,1) )                           \
+    )
 
-#define P(a,b,c,d,e,x)                                  \
-{                                                       \
-    e += S(a,5) + F(b,c,d) + K + x; b = S(b,30);        \
-}
+#define P(a,b,c,d,e,x)                                          \
+    do                                                          \
+    {                                                           \
+        (e) += S((a),5) + F((b),(c),(d)) + K + (x);             \
+        (b) = S((b),30);                                        \
+    } while( 0 )
 
     A = ctx->state[0];
     B = ctx->state[1];
@@ -161,7 +174,7 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx,
     D = ctx->state[3];
     E = ctx->state[4];
 
-#define F(x,y,z) (z ^ (x & (y ^ z)))
+#define F(x,y,z) ((z) ^ ((x) & ((y) ^ (z))))
 #define K 0x5A827999
 
     P( A, B, C, D, E, W[0]  );
@@ -188,7 +201,7 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx,
 #undef K
 #undef F
 
-#define F(x,y,z) (x ^ y ^ z)
+#define F(x,y,z) ((x) ^ (y) ^ (z))
 #define K 0x6ED9EBA1
 
     P( A, B, C, D, E, R(20) );
@@ -215,7 +228,7 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx,
 #undef K
 #undef F
 
-#define F(x,y,z) ((x & y) | (z & (x | y)))
+#define F(x,y,z) (((x) & (y)) | ((z) & ((x) | (y))))
 #define K 0x8F1BBCDC
 
     P( A, B, C, D, E, R(40) );
@@ -242,7 +255,7 @@ int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx,
 #undef K
 #undef F
 
-#define F(x,y,z) (x ^ y ^ z)
+#define F(x,y,z) ((x) ^ (y) ^ (z))
 #define K 0xCA62C1D6
 
     P( A, B, C, D, E, R(60) );
@@ -297,6 +310,9 @@ int mbedtls_sha1_update_ret( mbedtls_sha1_context *ctx,
     int ret;
     size_t fill;
     uint32_t left;
+
+    SHA1_VALIDATE_RET( ctx != NULL );
+    SHA1_VALIDATE_RET( ilen == 0 || input != NULL );
 
     if( ilen == 0 )
         return( 0 );
@@ -355,6 +371,9 @@ int mbedtls_sha1_finish_ret( mbedtls_sha1_context *ctx,
     int ret;
     uint32_t used;
     uint32_t high, low;
+
+    SHA1_VALIDATE_RET( ctx != NULL );
+    SHA1_VALIDATE_RET( (unsigned char *)output != NULL );
 
     /*
      * Add padding: 0x80 then 0x00 until 8 bytes remain for the length
@@ -423,6 +442,9 @@ int mbedtls_sha1_ret( const unsigned char *input,
 {
     int ret;
     mbedtls_sha1_context ctx;
+
+    SHA1_VALIDATE_RET( ilen == 0 || input != NULL );
+    SHA1_VALIDATE_RET( (unsigned char *)output != NULL );
 
     mbedtls_sha1_init( &ctx );
 
