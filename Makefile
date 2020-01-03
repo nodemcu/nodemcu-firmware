@@ -7,7 +7,7 @@ THIS_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 IDF_PATH=$(THIS_DIR)/sdk/esp32-esp-idf
 
 TOOLCHAIN_VERSION:=20181106.1
-PLATFORM:=linux-x86_64
+PLATFORM:=linux-$(shell uname --machine)
 
 ESP32_BIN:=$(THIS_DIR)/tools/toolchains/esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin
 ESP32_GCC:=$(ESP32_BIN)/xtensa-esp32-elf-gcc
