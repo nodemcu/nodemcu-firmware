@@ -38,7 +38,7 @@ softuart_t * softuart_gpio_instances[SOFTUART_GPIO_COUNT] = {NULL};
 // Array of callback reference to be able to find which callback is used to which rx pin
 static int softuart_rx_cb_ref[SOFTUART_GPIO_COUNT];
 // Task for receiving data
-static task_handle_t uart_recieve_task = NULL;
+static task_handle_t uart_recieve_task = 0;
 // Receiving buffer for callback usage
 static char softuart_rx_buffer[SOFTUART_MAX_RX_BUFF];
 
@@ -388,8 +388,8 @@ static int softuart_gcdelete(lua_State *L)
 // Port function map
 LROT_BEGIN(softuart_port)
 	LROT_FUNCENTRY( on, softuart_on)
-	LROT_TABENTRY( __index, softuart_port)
 	LROT_FUNCENTRY( write, softuart_write)
+	LROT_TABENTRY( __index, softuart_port)
 	LROT_FUNCENTRY( __gc, softuart_gcdelete)
 LROT_END(ads1115, softuart_port, LROT_MASK_GC_INDEX)
 
