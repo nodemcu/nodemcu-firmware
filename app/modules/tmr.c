@@ -142,6 +142,13 @@ static int tmr_now(lua_State* L){
 	return 1;
 }
 
+// Lua: tmr.ccount() , returns CCOUNT register
+static int tmr_ccount( lua_State* L )
+{
+	lua_pushinteger(L, CCOUNT_REG);
+	return 1;
+}
+
 static tmr_t tmr_get( lua_State *L, int stack ) {
 	tmr_t t = (tmr_t)luaL_checkudata(L, stack, "tmr.timer");
 	if (t == NULL)
@@ -392,6 +399,7 @@ LROT_BEGIN(tmr)
   LROT_FUNCENTRY( wdclr, tmr_wdclr )
   LROT_FUNCENTRY( softwd, tmr_softwd )
   LROT_FUNCENTRY( time, tmr_time )
+  LROT_FUNCENTRY( ccount, tmr_ccount )
 #ifdef TIMER_SUSPEND_ENABLE
   LROT_FUNCENTRY( suspend_all, tmr_suspend_all )
   LROT_FUNCENTRY( resume_all, tmr_resume_all )

@@ -145,6 +145,42 @@ none
 #### Returns
 `nil`
 
+## tmr.ccount()
+
+Get value of CPU CCOUNT register which contains CPU ticks. The register is 32-bit and rolls over.
+
+Converting the register's CPU ticks to us is done by dividing it to 80 or 160 (CPU80/CPU160) i.e. `tmr.ccount() / node.getcpufreq()`.
+
+Register arithmetic works without need to account for roll over, unlike `tmr.now()`. Because of same reason when CCOUNT is having its 32nd bit set, it appears in Lua as negative number.
+
+#### Syntax
+`tmr.ccount()`
+
+#### Returns
+The current value of CCOUNT register.
+
+#### Example
+```lua
+function timeIt(fnc, cnt)
+   local function loopIt(f2)
+     local t0 = tmr.ccount()
+     for i=1,cnt do
+       f2()
+     end
+     local t1 = tmr.ccount()
+     return math.ceil((t1-t0)/cnt)
+   end
+   assert(type(fnc) == "function", "function to test missing")
+   cnt = cnt or 1000
+   local emptyTime = loopIt(function()end)
+   local deltaCPUTicks = math.abs(loopIt(fnc) - emptyTime)
+   local deltaUS = math.ceil(deltaCPUTicks/node.getcpufreq())
+   return deltaCPUTicks, deltaUS
+end
+
+print( timeIt(function() tmr.ccount() end) )
+```
+
 ## Timer Object Methods
 
 ### tobj:alarm()
