@@ -1163,10 +1163,3 @@ platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
 bool platform_post (uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
   return system_os_post(prio, handle | prio, par);
 }
-
-/* CCOUNT is 32-bit cpu ticks register counter */
-inline int32_t platform_get_ccount_reg(void) {
-  int32_t r;
-  asm volatile("rsr %0, ccount" : "=r"(r));
-  return r;
-}

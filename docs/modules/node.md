@@ -612,25 +612,6 @@ The random number in the appropriate range. Note that the zero argument form wil
 print ("I rolled a", node.random(6))
 ```
 
-## node.ccount()
-
-Get value of CPU CCOUNT register which contains CPU ticks. It supports CPU80 and CPU160.
-
-This allows for calculation of elapsed time with microsecond precision. For example for CPU80 there are 80 ticks/us (80000 ticks/ms).
-
-Note the register is 32-bits and rolls over.
-
-#### Syntax
-`node.ccount()`
-
-#### Returns
-The current value of CCOUNT register.
-
-#### Example
-```lua
-print ("node.ccount() takes ", node.ccount()-node.ccount(), " CPU ticks to execute.")
-```
-
 # node.egc module
 
 ## node.egc.setmode()
