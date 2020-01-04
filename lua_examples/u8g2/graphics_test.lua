@@ -9,8 +9,13 @@
 --
 -- ***************************************************************************
 
+-- display object
+local disp
+
+local draw_state, loop_tmr = 0, tmr.create()
+
 -- setup I2c and connect display
-function init_i2c_display()
+local function init_i2c_display()
     -- SDA and SCL can be assigned freely to available GPIOs
     local sda = 5 -- GPIO14
     local scl = 6 -- GPIO12
@@ -18,9 +23,8 @@ function init_i2c_display()
     i2c.setup(0, sda, scl, i2c.SLOW)
     disp = u8g2.ssd1306_i2c_128x64_noname(0, sla)
 end
-
 -- setup SPI and connect display
-function init_spi_display()
+local function init_spi_display() -- luacheck: no unused
     -- Hardware SPI CLK  = GPIO14
     -- Hardware SPI MOSI = GPIO13
     -- Hardware SPI MISO = GPIO12 (not used)
@@ -37,8 +41,7 @@ function init_spi_display()
     disp = u8g2.ssd1306_128x64_noname(1, cs, dc, res)
 end
 
-
-function u8g2_prepare()
+local function u8g2_prepare()
   disp:setFont(u8g2.font_6x10_tf)
   disp:setFontRefHeightExtendedText()
   disp:setDrawColor(1)
@@ -47,7 +50,7 @@ function u8g2_prepare()
 end
 
 
-function u8g2_box_frame(a)
+local function u8g2_box_frame(a)
   disp:drawStr( 0, 0, "drawBox")
   disp:drawBox(5,10,20,10)
   disp:drawBox(10+a,15,30,7)
@@ -56,7 +59,7 @@ function u8g2_box_frame(a)
   disp:drawFrame(10+a,15+30,30,7)
 end
 
-function u8g2_disc_circle(a)
+local function u8g2_disc_circle(a)
   disp:drawStr( 0, 0, "drawDisc")
   disp:drawDisc(10,18,9)
   disp:drawDisc(24+a,16,7)
@@ -65,13 +68,13 @@ function u8g2_disc_circle(a)
   disp:drawCircle(24+a,16+30,7)
 end
 
-function u8g2_r_frame(a)
+local function u8g2_r_frame(a)
   disp:drawStr( 0, 0, "drawRFrame/Box")
   disp:drawRFrame(5, 10,40,30, a+1)
   disp:drawRBox(50, 10,25,40, a+1)
 end
 
-function u8g2_string(a)
+local function u8g2_string(a)
   disp:setFontDirection(0)
   disp:drawStr(30+a,31, " 0")
   disp:setFontDirection(1)
@@ -82,7 +85,7 @@ function u8g2_string(a)
   disp:drawStr(30,31-a, " 270")
 end
 
-function u8g2_line(a)
+local function u8g2_line(a)
   disp:drawStr( 0, 0, "drawLine")
   disp:drawLine(7+a, 10, 40, 55)
   disp:drawLine(7+a*2, 10, 60, 55)
@@ -90,7 +93,7 @@ function u8g2_line(a)
   disp:drawLine(7+a*4, 10, 100, 55)
 end
 
-function u8g2_triangle(a)
+local function u8g2_triangle(a)
   local offset = a
   disp:drawStr( 0, 0, "drawTriangle")
   disp:drawTriangle(14,7, 45,30, 10,40)
@@ -99,7 +102,7 @@ function u8g2_triangle(a)
   disp:drawTriangle(10+offset,40+offset, 45+offset,30+offset, 86+offset,53+offset)
 end
 
-function u8g2_ascii_1()
+local function u8g2_ascii_1()
   disp:drawStr( 0, 0, "ASCII page 1")
   for y = 0, 5 do
     for x = 0, 15 do
@@ -108,7 +111,7 @@ function u8g2_ascii_1()
   end
 end
 
-function u8g2_ascii_2()
+local function u8g2_ascii_2()
   disp:drawStr( 0, 0, "ASCII page 2")
   for y = 0, 5 do
     for x = 0, 15 do
@@ -117,7 +120,7 @@ function u8g2_ascii_2()
   end
 end
 
-function u8g2_extra_page(a)
+local function u8g2_extra_page(a)
   disp:drawStr( 0, 0, "Unicode")
   disp:setFont(u8g2.font_unifont_t_symbols)
   disp:setFontPosTop()
@@ -129,9 +132,9 @@ function u8g2_extra_page(a)
   end
 end
 
-cross_width = 24
-cross_height = 24
-cross_bits = string.char(
+local cross_width = 24
+local cross_height = 24
+local cross_bits = string.char(
   0x00, 0x18, 0x00, 0x00, 0x24, 0x00, 0x00, 0x24, 0x00, 0x00, 0x42, 0x00,
   0x00, 0x42, 0x00, 0x00, 0x42, 0x00, 0x00, 0x81, 0x00, 0x00, 0x81, 0x00,
   0xC0, 0x00, 0x03, 0x38, 0x3C, 0x1C, 0x06, 0x42, 0x60, 0x01, 0x42, 0x80,
@@ -139,24 +142,25 @@ cross_bits = string.char(
   0x00, 0x81, 0x00, 0x00, 0x81, 0x00, 0x00, 0x42, 0x00, 0x00, 0x42, 0x00,
   0x00, 0x42, 0x00, 0x00, 0x24, 0x00, 0x00, 0x24, 0x00, 0x00, 0x18, 0x00)
 
-cross_fill_width = 24
-cross_fill_height = 24
-cross_fill_bits = string.char(
+-- luacheck: push no unused
+local cross_fill_width = 24
+local cross_fill_height = 24
+local cross_fill_bits = string.char(
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00, 0x18, 0x64, 0x00, 0x26,
   0x84, 0x00, 0x21, 0x08, 0x81, 0x10, 0x08, 0x42, 0x10, 0x10, 0x3C, 0x08,
   0x20, 0x00, 0x04, 0x40, 0x00, 0x02, 0x80, 0x00, 0x01, 0x80, 0x18, 0x01,
   0x80, 0x18, 0x01, 0x80, 0x00, 0x01, 0x40, 0x00, 0x02, 0x20, 0x00, 0x04,
   0x10, 0x3C, 0x08, 0x08, 0x42, 0x10, 0x08, 0x81, 0x10, 0x84, 0x00, 0x21,
   0x64, 0x00, 0x26, 0x18, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
-
-cross_block_width = 14
-cross_block_height = 14
-cross_block_bits = string.char(
+-- luacheck: pop
+local cross_block_width = 14
+local cross_block_height = 14
+local cross_block_bits = string.char(
   0xFF, 0x3F, 0x01, 0x20, 0x01, 0x20, 0x01, 0x20, 0x01, 0x20, 0x01, 0x20,
   0xC1, 0x20, 0xC1, 0x20, 0x01, 0x20, 0x01, 0x20, 0x01, 0x20, 0x01, 0x20,
   0x01, 0x20, 0xFF, 0x3F)
 
-function u8g2_bitmap_overlay(a)
+local function u8g2_bitmap_overlay(a)
   local frame_size = 28
 
   disp:drawStr(0, 0, "Bitmap overlay")
@@ -177,7 +181,7 @@ function u8g2_bitmap_overlay(a)
   end
 end
 
-function u8g2_bitmap_modes(transparent)
+local function u8g2_bitmap_modes(transparent)
   local frame_size = 24
 
   disp:drawBox(0, frame_size * 0.5, frame_size * 5, frame_size)
@@ -201,7 +205,7 @@ function u8g2_bitmap_modes(transparent)
 end
 
 
-function draw()
+local function draw()
   u8g2_prepare()
 
   local d3 = bit.rshift(draw_state, 3)
@@ -235,7 +239,7 @@ function draw()
 end
 
 
-function loop()
+local function loop()
   -- picture loop
   disp:clearBuffer()
   draw()
@@ -251,13 +255,12 @@ function loop()
   loop_tmr:start()
 end
 
+do
+  loop_tmr:register(100, tmr.ALARM_SEMI, loop)
 
-draw_state = 0
-loop_tmr = tmr.create()
-loop_tmr:register(100, tmr.ALARM_SEMI, loop)
+  init_i2c_display()
+  --init_spi_display()
 
-init_i2c_display()
---init_spi_display()
-
-print("--- Starting Graphics Test ---")
-loop_tmr:start()
+  print("--- Starting Graphics Test ---")
+  loop_tmr:start()
+end

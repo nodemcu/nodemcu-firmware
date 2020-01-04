@@ -1,5 +1,7 @@
+local disp
+
 -- setup SPI and connect display
-function init_spi_display()
+local function init_spi_display()
     -- Hardware SPI CLK  = GPIO14
     -- Hardware SPI MOSI = GPIO13
     -- Hardware SPI MISO = GPIO12 (not used)
@@ -21,7 +23,7 @@ function init_spi_display()
 end
 
 
-function upper_pin(x, y)
+local function upper_pin(x, y)
     local w = 7
     local h = 6
     disp:setColor(0, 212, 212, 212)
@@ -36,7 +38,7 @@ function upper_pin(x, y)
     disp:drawGradientLine(x+w, y, h, 1)
 end
 
-function lower_pin(x, y)
+local function lower_pin(x, y)
     local w = 7
     local h = 5
     disp:setColor(0, 212, 212, 212)
@@ -56,7 +58,7 @@ function lower_pin(x, y)
     disp:drawPixel(x+w, y+h)
 end
 
-function ic_body(x, y)
+local function ic_body(x, y)
     local w = 4*14+4
     local h = 31
     disp:setColor(0, 60, 60, 60)
@@ -77,7 +79,7 @@ function ic_body(x, y)
     disp:drawDisc(x+w-1, y+h/2+1, 7, bit.bor(ucg.DRAW_UPPER_LEFT, ucg.DRAW_LOWER_LEFT))
 end
 
-function draw_ucg_logo()
+local function draw_ucg_logo()
     local a, b
 
     --ucg_Init(ucg, ucg_sdl_dev_cb, ucg_ext_none, (ucg_com_fnptr)0)
@@ -156,12 +158,12 @@ function draw_ucg_logo()
     --disp:drawString(1, 61, 0, "code.google.com/p/ucglib/")
 end
 
+do
+  init_spi_display()
 
-init_spi_display()
+  disp:begin(ucg.FONT_MODE_TRANSPARENT)
+  disp:clearScreen()
 
-disp:begin(ucg.FONT_MODE_TRANSPARENT)
-disp:clearScreen()
-
-
-disp:setRotate180()
-draw_ucg_logo()
+  disp:setRotate180()
+  draw_ucg_logo()
+end
