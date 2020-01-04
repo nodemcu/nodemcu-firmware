@@ -372,4 +372,7 @@ platform_task_handle_t platform_task_get_id(platform_task_callback_t t);
 
 bool platform_post(uint8 prio, platform_task_handle_t h, platform_task_param_t par);
 
+// Get current value of CCOUNt register
+#define CCOUNT_REG ({ int32_t r; asm volatile("rsr %0, ccount" : "=r"(r)); r;})
+
 #endif
