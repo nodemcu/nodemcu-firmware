@@ -122,7 +122,6 @@ enum {
 
 #define ESPCONN_SECURE_MAX_SIZE 8192
 #define ESPCONN_SECURE_DEFAULT_HEAP 0x3800
-#define ESPCONN_SECURE_DEFAULT_SIZE SSL_BUFFER_SIZE
 #define ESPCONN_HANDSHAKE_TIMEOUT 0x3C
 #define ESPCONN_INVALID_TYPE	0xFFFFFFFF
 #define MBEDTLS_SSL_PLAIN_ADD	TCP_MSS
@@ -247,16 +246,6 @@ extern void espconn_ssl_sent(void *arg, uint8 *psent, uint16 length);
 *******************************************************************************/
 
 extern void espconn_ssl_disconnect(espconn_msg *pdis);
-
-/******************************************************************************
- * FunctionName : espconn_secure_get_size
- * Description  : get buffer size for client or server
- * Parameters   : level -- set for client or server
- *				  1: client,2:server,3:client and server
- * Returns      : buffer size for client or server
-*******************************************************************************/
-
-extern sint16 espconn_secure_get_size(uint8 level);
 
 #endif
 
