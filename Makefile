@@ -8,8 +8,9 @@ THIS_MK_FILE:=$(notdir $(lastword $(MAKEFILE_LIST)))
 THIS_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 IDF_PATH=$(THIS_DIR)/sdk/esp32-esp-idf
 
+TOOLCHAIN_RELEASES_BASEURL:=https://github.com/jmattsson/esp-toolchains/releases/
 TOOLCHAIN_VERSION:=20181106.1
-PLATFORM:=linux-x86_64
+PLATFORM:=linux-$(shell uname --machine)
 
 ESP32_BIN:=$(THIS_DIR)/tools/toolchains/esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin
 ESP32_GCC:=$(ESP32_BIN)/xtensa-esp32-elf-gcc
@@ -35,7 +36,7 @@ download_toolchain: $(ESP32_TOOLCHAIN_DL)
 
 $(ESP32_TOOLCHAIN_DL):
 	@mkdir -p $(THIS_DIR)/cache
-	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused https://github.com/jmattsson/esp-toolchains/releases/download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f "$@"; exit 1; }
+	wget --tries=10 --timeout=15 --waitretry=30 --read-timeout=20 --retry-connrefused ${TOOLCHAIN_RELEASES_BASEURL}download/$(PLATFORM)-$(TOOLCHAIN_VERSION)/toolchain-esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz -O $@ || { rm -f -- "$@"; echo "W: Download failed. Please check ${TOOLCHAIN_RELEASES_BASEURL} for an appropriate version. If there is none for $(PLATFORM), you might need to compile it yourself."; exit 1; }
 
 else
 
