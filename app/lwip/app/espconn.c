@@ -33,8 +33,6 @@ espconn_msg *plink_active = NULL;
 espconn_msg *pserver_list = NULL;
 remot_info premot[linkMax];
 
-struct espconn_packet pktinfo[2];
-
 static uint8 espconn_tcp_get_buf_count(espconn_buf *pesp_buf);
 /******************************************************************************
  * FunctionName : espconn_copy_partial
