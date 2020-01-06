@@ -1156,21 +1156,13 @@ static sint8 socket_connect(struct espconn *pesp_conn)
   return espconn_status;
 }
 
-static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg);
-static int dns_reconn_count = 0;
-static ip_addr_t host_ip; // for dns
-
-/* wrapper for using socket_dns_found() as callback function */
-static void socket_dns_foundcb(const char *name, ip_addr_t *ipaddr, void *arg)
-{
-  socket_dns_found(name, ipaddr, arg);
-}
-
 static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
+  lmqtt_userdata *mud = arg;
+
   NODE_DBG("enter socket_dns_found.\n");
   sint8 espconn_status = ESPCONN_OK;
-  struct espconn *pesp_conn = arg;
+  struct espconn *pesp_conn = mud->pesp_conn;
   if(pesp_conn == NULL){
     NODE_DBG("pesp_conn null.\n");
     return -1;
@@ -1178,40 +1170,32 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 
   if(ipaddr == NULL)
   {
-    dns_reconn_count++;
-    if( dns_reconn_count >= 5 ){
-      NODE_DBG( "DNS Fail!\n" );
-      // Note: should delete the pesp_conn or unref self_ref here.
+    mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
 
-      struct espconn *pesp_conn = arg;
-      if(pesp_conn != NULL) {
-          lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
-          if(mud != NULL) {
-            mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
-          }
-      }
-
-      mqtt_socket_disconnected(arg);   // although not connected, but fire disconnect callback to release every thing.
-      return -1;
-    }
-    NODE_DBG( "DNS retry %d!\n", dns_reconn_count );
-    host_ip.addr = 0;
-    return espconn_gethostbyname(pesp_conn, name, &host_ip, socket_dns_foundcb);
+    // although not connected, but fire disconnect callback to release every thing.
+    mqtt_socket_disconnected(arg);
+    return -1;
   }
 
   // ipaddr->addr is a uint32_t ip
   if(ipaddr->addr != 0)
   {
-    dns_reconn_count = 0;
     memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
     NODE_DBG("TCP ip is set: ");
     NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
     NODE_DBG("\n");
     espconn_status = socket_connect(pesp_conn);
   }
+
   NODE_DBG("leave socket_dns_found.\n");
 
   return espconn_status;
+}
+
+/* wrapper for using socket_dns_found() as callback function */
+static void socket_dns_foundcb(const char *name, ip_addr_t *ipaddr, void *arg)
+{
+  socket_dns_found(name, ipaddr, arg);
 }
 
 #include "pm/swtimer.h"
@@ -1227,7 +1211,6 @@ static int mqtt_socket_connect( lua_State* L )
   int stack = 1;
   unsigned secure = 0;
   int top = lua_gettop(L);
-  sint8 espconn_status;
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
   luaL_argcheck(L, mud, stack, "mqtt.socket expected");
@@ -1330,8 +1313,8 @@ static int mqtt_socket_connect( lua_State* L )
   luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
   mud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-  espconn_status = espconn_regist_connectcb(pesp_conn, mqtt_socket_connected);
-  espconn_status |= espconn_regist_reconcb(pesp_conn, mqtt_socket_reconnected);
+  espconn_regist_connectcb(pesp_conn, mqtt_socket_connected);
+  espconn_regist_reconcb(pesp_conn, mqtt_socket_reconnected);
 
   os_timer_disarm(&mud->mqttTimer);
   os_timer_setfn(&mud->mqttTimer, (os_timer_func_t *)mqtt_socket_timer, mud);
@@ -1342,25 +1325,27 @@ static int mqtt_socket_connect( lua_State* L )
 
   if((ipaddr.addr == IPADDR_NONE) && (memcmp(domain,"255.255.255.255",16) != 0))
   {
-    host_ip.addr = 0;
-    dns_reconn_count = 0;
-    if(ESPCONN_OK == espconn_gethostbyname(pesp_conn, domain, &host_ip, socket_dns_foundcb)){
-      espconn_status |= socket_dns_found(domain, &host_ip, pesp_conn);  // ip is returned in host_ip.
+    ip_addr_t host_ip;
+    switch (dns_gethostbyname(domain, &host_ip, socket_dns_foundcb, mud))
+    {
+      case ERR_OK:
+        socket_dns_found(domain, &host_ip, mud);  // ip is returned in host_ip.
+        break;
+      case ERR_INPROGRESS:
+        break;
+      default:
+        // Something has gone wrong; bail out?
+        mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
     }
   }
   else
   {
-    espconn_status |= socket_connect(pesp_conn);
+    socket_connect(pesp_conn);
   }
 
   NODE_DBG("leave mqtt_socket_connect.\n");
 
-  if (espconn_status == ESPCONN_OK) {
-    lua_pushboolean(L, 1);
-  } else {
-    lua_pushboolean(L, 0);
-  }
-  return 1;
+  return 0;
 }
 
 // Lua: mqtt:close()

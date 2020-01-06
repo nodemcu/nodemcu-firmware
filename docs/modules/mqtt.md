@@ -134,11 +134,11 @@ Connects to the broker specified by the given host, port, and secure options.
 
 !!! attention
 
-    Secure (`https`) connections come with quite a few limitations.  Please see
+    Secure (`mqtts`) connections come with quite a few limitations.  Please see
     the warnings in the [tls module](tls.md)'s documentation.
 
 #### Returns
-`true` on success, `false` otherwise
+`nil`; use callbacks to observe the outcome.
 
 #### Notes
 
