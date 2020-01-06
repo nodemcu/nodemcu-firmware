@@ -887,26 +887,3 @@ espconn_port(void)
 
     return port;
 }
-
-/******************************************************************************
- * FunctionName : espconn_gethostbyname
- * Description  : Resolve a hostname (string) into an IP address.
- * Parameters   : pespconn -- espconn to resolve a hostname
- *                hostname -- the hostname that is to be queried
- *                addr -- pointer to a ip_addr_t where to store the address if
- *                        it is already cached in the dns_table (only valid if
- *                        ESPCONN_OK is returned!)
- *                found -- a callback function to be called on success, failure
- *                         or timeout (only if ERR_INPROGRESS is returned!)
- * Returns      : err_t return code
- *                - ESPCONN_OK if hostname is a valid IP address string or the host
- *                  name is already in the local names table.
- *                - ESPCONN_INPROGRESS enqueue a request to be sent to the DNS server
- *                  for resolution if no errors are present.
- *                - ESPCONN_ARG: dns client not initialized or invalid hostname
-*******************************************************************************/
-err_t ICACHE_FLASH_ATTR
-espconn_gethostbyname(struct espconn *pespconn, const char *hostname, ip_addr_t *addr, dns_found_callback found)
-{
-    return dns_gethostbyname(hostname, addr, found, pespconn);
-}
