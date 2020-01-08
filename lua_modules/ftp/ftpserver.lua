@@ -19,8 +19,8 @@
  Note that FTP also exposes a number of really private properties (which
  could be stores in local / upvals) as FTP properties for debug purposes.
 ]]
-local file,net,wifi,node,string,table,tmr,pairs,print,pcall, tostring =
-      file,net,wifi,node,string,table,tmr,pairs,print,pcall, tostring
+local file, net, wifi, node, table, tmr, pairs, print, pcall, tostring =
+      file, net, wifi, node, table, tmr, pairs, print, pcall, tostring
 local post = node.task.post
 local FTP, cnt = {client = {}}, 0
 
@@ -90,18 +90,18 @@ function FTP.createServer(user, pass, dbgFlag)  -- upval: FTP (, debug, tostring
          -- debug("Sending: %s", rec)
             return CNX.cmdSocket:send(rec.."\r\n", cb)
           end, --- send()
-        close    = function(sock) -- upval: client, CNX (,debug, pcall, type)
+        close    = function(socket) -- upval: client, CNX (,debug, pcall, type)
          -- debug("Closing CNX.socket=%s, sock=%s", tostring(CNX.socket), tostring(sock))
             for _,s in ipairs{'cmdSocket', 'dataServer', 'dataSocket'} do
               local sck; sck,CNX[s] = CNX[s], nil
            -- debug("closing CNX.%s=%s", s, tostring(sck))
               if type(sck)=='userdata' then pcall(sck.close, sck) end
             end
-            client[sock] = nil
+            client[socket] = nil
           end -- CNX.close()
         }
 
-      local function validateUser(sock, data) -- upval: CNX, FTP (, debug, processCommand)
+      local function validateUser(socket, data) -- upval: CNX, FTP (, debug, processCommand)
         -- validate the logon and if then switch to processing commands
 
      -- debug("Authorising: %s", data)
@@ -118,8 +118,8 @@ function FTP.createServer(user, pass, dbgFlag)  -- upval: FTP (, debug, tostring
         elseif CNX.validUser and cmd == 'PASS' then
           if arg == FTP.pass then
             CNX.cwd = '/'
-            sock:on("receive", function(sock,data)
-                processCommand(CNX,sock,data)
+            socket:on("receive", function(socketObj, dataObj)
+                processCommand(CNX,socketObj, dataObj)
               end) -- logged on so switch to command mode
             msg = "230 Login successful. Username & password correct; proceed."
           else
@@ -134,8 +134,8 @@ function FTP.createServer(user, pass, dbgFlag)  -- upval: FTP (, debug, tostring
         return CNX.send(msg)
       end
 
-    local port,ip = sock:getpeer()
- -- debug("Connection accepted: (userdata) %s client %s:%u", tostring(sock), ip, port)
+    local port,ip = sock:getpeer() -- luacheck: no unused
+    --debug("Connection accepted: (userdata) %s client %s:%u", tostring(sock), ip, port)
     sock:on("receive",       validateUser)
     sock:on("disconnection", CNX.close)
     FTP.client[sock]=CNX
@@ -177,8 +177,8 @@ end -- FTP.close()
 --
 -- Find strings are used do this lookup and minimise long if chains.
 ------------------------------------------------------------------------------
-processCommand = function(cxt, sock, data) -- upvals: (, debug, processBareCmds, processSimpleCmds, processDataCmds)
-
+-- upvals: (, debug, processBareCmds, processSimpleCmds, processDataCmds)
+processCommand = function(cxt, socket, data) -- luacheck: no unused
   debug("Command: %s", data)
   data = data:gsub('[\r\n]+$', '') -- chomp trailing CRLF
   local cmd, arg = data:match('([a-zA-Z]+) *(.*)')
@@ -331,7 +331,7 @@ processDataCmds = function(cxt, cmd, arg)  -- upval: FTP (, pairs, file, tostrin
       pattern = arg:gsub('*','[^/%%.]*')
     end
 
-    for k,v in pairs(fileSize) do
+    for k, _ in pairs(fileSize) do
       if k:match(pattern) then
         nameList[#nameList+1] = k
       else
@@ -341,8 +341,8 @@ processDataCmds = function(cxt, cmd, arg)  -- upval: FTP (, pairs, file, tostrin
     table.sort(nameList)
 
     function cxt.getData() -- upval: cmd, fileSize, nameList (, table)
-      local list, user, v = {}, FTP.user
-      for i = 1,10 do
+      local list, user = {}, FTP.user
+      for i = 1,10 do -- luacheck: no unused
         if #nameList == 0 then break end
         local f = table.remove(nameList, 1)
         list[#list+1] = (cmd == "LIST") and
@@ -395,9 +395,9 @@ end -- processDataCmds(cmd, arg, send)
 --
 ----------------   Open a new data server and port ---------------------------
 dataServer = function(cxt, n) -- upval: (pcall, net, ftpDataOpen, debug, tostring)
-  local dataServer = cxt.dataServer
-  if dataServer then -- close any existing listener
-    pcall(dataServer.close, dataServer)
+  local dataSrv = cxt.dataServer
+  if dataSrv then -- close any existing listener
+    pcall(dataSrv.close, dataSrv)
   end
   if n then
     -- Open a new listener if needed. Note that this is only used to establish
@@ -425,10 +425,11 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
   cxt.dataServer = nil
 
   local function cleardown(skt,type) -- upval: cxt (, debug, tostring, post, pcall)
+    -- luacheck: push no unused
     type = type==1 and "disconnection" or "reconnection"
     local which = cxt.setData and "setData" or (cxt.getData and cxt.getData or "neither")
- -- debug("Cleardown entered from %s with %s", type, which)
-
+    --debug("Cleardown entered from %s with %s", type, which)
+    -- luacheck: pop
     if cxt.setData then
       cxt.fileClose()
       cxt.setData = nil
@@ -446,8 +447,9 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
   local on_hold = false
 
   dataSocket:on("receive", function(skt, rec) --upval: cxt, on_hold (, debug, tstring, post, node, pcall)
-    local which = cxt.setData and "setData" or (cxt.getData and cxt.getData or "neither")
- -- debug("Received %u data bytes with %s", #rec, which)
+
+    local which = cxt.setData and "setData" or (cxt.getData and cxt.getData or "neither")-- luacheck: no unused
+    --debug("Received %u data bytes with %s", #rec, which)
 
     if not cxt.setData then return end
 
@@ -476,7 +478,8 @@ ftpDataOpen = function(cxt, dataSocket) -- upval: (debug, tostring, post, pcall)
   function cxt.sender(skt) -- upval: cxt (, debug)
     debug ("entering sender")
     if not cxt.getData then return end
-    local rec, skt = cxt.getData(), cxt.dataSocket
+    skt = skt or cxt.dataSocket
+    local rec = cxt.getData()
     if rec and #rec > 0 then
    -- debug("Sending %u data bytes", #rec)
       skt:send(rec)

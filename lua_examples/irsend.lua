@@ -10,6 +10,7 @@
 local M
 do
   -- const
+  -- luacheck: push no unused
   local NEC_PULSE_US   = 1000000 / 38000
   local NEC_HDR_MARK   = 9000
   local NEC_HDR_SPACE  = 4500
@@ -17,6 +18,7 @@ do
   local NEC_ONE_SPACE  = 1600
   local NEC_ZERO_SPACE =  560
   local NEC_RPT_SPACE  = 2250
+  -- luacheck: pop
   -- cache
   local gpio, bit = gpio, bit
   local mode, write = gpio.mode, gpio.write

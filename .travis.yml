@@ -20,6 +20,7 @@ addons:
     packages:
     - python-serial
     - srecord
+    - luarocks
 cache:
   - directories:
     - cache
@@ -33,4 +34,5 @@ script:
 - echo "checking:"
 - find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 echo
 - find lua_modules lua_examples -iname "*.lua" -print0 | xargs -0 $LUACC -p
-# - if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck.sh || true ; fi
+- if [ "$OS" = "linux" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck-linux.sh; fi
+- if [ "$OS" = "windows" ]; then bash "$TRAVIS_BUILD_DIR"/tools/travis/run-luacheck-windows.sh; fi
