@@ -299,9 +299,9 @@ If a `group` is given the return value will be a table containing the following 
 	- `git_commit_id` (string)
 	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403" 
 	- `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
-	- `node_verion_major` (number)
-	- `node_verion_minor` (number)
-	- `node_verion_revision` (number)
+	- `node_version_major` (number)
+	- `node_version_minor` (number)
+	- `node_version_revision` (number)
 - for `group` = `"build_config"`
 	- `ssl` (boolean)
 	- `lfs_size` (number) as defined at build time
@@ -341,11 +341,7 @@ print(node.info("sw_version").git_release)
 
 ## node.input()
 
-Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, but without the single-line limitation.
-
-!!! attention
-
-    This function only has an effect when invoked from a callback. Using it directly on the console **does not work**.
+Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, but without the single-line limitation.  Note that the Line interpreter only actions complete Lua chunks.  A Lue Lua chunk must comprise one or more complete `'\n'` terminaed lines that form a complete compilation unit.
 
 #### Syntax
 `node.input(str)`
@@ -360,56 +356,29 @@ Submits a string to the Lua interpreter. Similar to `pcall(loadstring(str))`, bu
 ```lua
 sk:on("receive", function(conn, payload) node.input(payload) end)
 ```
+See the `telnet/telnet.lua` in `lua_examples` for a more comprehensive example.
 
 #### See also
 [`node.output()`](#nodeoutput)
 
 ## node.output()
 
-Redirects the Lua interpreter output to a callback function. Optionally also prints it to the serial console.
-
-!!! caution
-
-    Do **not** attempt to `print()` or otherwise induce the Lua interpreter to produce output from within the callback function. Doing so results in infinite recursion, and leads to a watchdog-triggered restart.
+Redirects the Lua interpreter to a `stdout` pipe when a CB function is specified (See  `pipe` module) and resets output to normal otherwise. Optionally also prints to the serial console.
 
 #### Syntax
-`node.output(function(str), serial_debug)`
+`node.output(function(pipe), serial_debug)`
 
 #### Parameters
-  - `output_fn(str)` a function accept every output as str, and can send the output to a socket (or maybe a file).
+  - `output_fn(pipe)` a function accept every output as str, and can send the output to a socket (or maybe a file). Note that this function must conform to the fules for a pipe reader callback.
   - `serial_debug` 1 output also show in serial. 0: no serial output.
 
 #### Returns
 `nil`
 
 #### Example
-```lua
-function tonet(str)
-  sk:send(str)
-end
-node.output(tonet, 1)  -- serial also get the Lua output.
-```
 
-```lua
--- a simple telnet server
-s=net.createServer(net.TCP)
-s:listen(2323,function(c)
-   con_std = c
-   function s_output(str)
-      if(con_std~=nil)
-         then con_std:send(str)
-      end
-   end
-   node.output(s_output, 0)   -- re-direct output to function s_ouput.
-   c:on("receive",function(c,l)
-      node.input(l)           -- works like pcall(loadstring(l)) but support multiple separate line
-   end)
-   c:on("disconnection",function(c)
-      con_std = nil
-      node.output(nil)        -- un-regist the redirect output function, output goes to serial
-   end)
-end)
-```
+See the `telnet/telnet.lua` in `lua_examples` for a more comprehensive example of its use.
+
 #### See also
 [`node.input()`](#nodeinput)
 

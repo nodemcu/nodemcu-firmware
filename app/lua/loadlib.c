@@ -397,7 +397,7 @@ static int loader_Lua (lua_State *L) {
 #ifdef LUA_CROSS_COMPILER
   if (luaL_loadfile(L, filename) != 0)
 #else
-  if (luaL_loadfsfile(L, filename) != 0)
+  if (luaL_loadfile(L, filename) != 0)
 #endif
     loaderror(L, filename);
   return 1;  /* library loaded successfully */

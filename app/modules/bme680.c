@@ -9,6 +9,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "user_interface.h"
 #include <math.h>
 
 #include "bme680_defs.h"
@@ -67,7 +68,10 @@ static uint8_t r8u(uint8_t reg) {
 	return ret[0];
 }
 
-/* This part of code is coming from the original bme680.c driver by Bosch.
+// replace 'dev->calib.' with 'bme680_data.'
+// replace 'dev->amb_temp' with 'amb_temp'
+
+/**\mainpage
  * Copyright (C) 2017 - 2018 Bosch Sensortec GmbH
  *
  * Redistribution and use in source and binary forms, with or without
@@ -107,19 +111,12 @@ static uint8_t r8u(uint8_t reg) {
  * other rights of third parties which may result from its use.
  * No license is granted by implication or otherwise under any patent or
  * patent rights of the copyright holder.
+ *
+ * File		bme680.c
+ * @date	19 Jun 2018
+ * @version	3.5.9
+ *
  */
-
-/**static variables */
-/**Look up table for the possible gas range values */
-uint32_t lookupTable1[16] = { UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647),
-        UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2130303777), UINT32_C(2147483647),
-        UINT32_C(2147483647), UINT32_C(2143188679), UINT32_C(2136746228), UINT32_C(2147483647), UINT32_C(2126008810),
-        UINT32_C(2147483647), UINT32_C(2147483647) };
-/**Look up table for the possible gas range values */
-uint32_t lookupTable2[16] = { UINT32_C(4096000000), UINT32_C(2048000000), UINT32_C(1024000000), UINT32_C(512000000),
-        UINT32_C(255744255), UINT32_C(127110228), UINT32_C(64000000), UINT32_C(32258064), UINT32_C(16016016), UINT32_C(
-                8000000), UINT32_C(4000000), UINT32_C(2000000), UINT32_C(1000000), UINT32_C(500000), UINT32_C(250000),
-        UINT32_C(125000) };
 
 static uint8_t calc_heater_res(uint16_t temp)
 {
@@ -131,9 +128,7 @@ static uint8_t calc_heater_res(uint16_t temp)
 	int32_t var5;
 	int32_t heatr_res_x100;
 
-	if (temp < 200) /* Cap temperature */
-		temp = 200;
-	else if (temp > 400)
+	if (temp > 400) /* Cap temperature */
 		temp = 400;
 
 	var1 = (((int32_t) amb_temp * bme680_data.par_gh3) / 1000) * 256;
@@ -172,12 +167,12 @@ static int16_t calc_temperature(uint32_t temp_adc)
 	int64_t var3;
 	int16_t calc_temp;
 
-	var1 = ((int32_t) temp_adc / 8) - ((int32_t) bme680_data.par_t1 * 2);
-	var2 = (var1 * (int32_t) bme680_data.par_t2) / 2048;
-	var3 = ((var1 / 2) * (var1 / 2)) / 4096;
-	var3 = ((var3) * ((int32_t) bme680_data.par_t3 * 16)) / 16384;
+	var1 = ((int32_t) temp_adc >> 3) - ((int32_t) bme680_data.par_t1 << 1);
+	var2 = (var1 * (int32_t) bme680_data.par_t2) >> 11;
+	var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
+	var3 = ((var3) * ((int32_t) bme680_data.par_t3 << 4)) >> 14;
 	bme680_data.t_fine = (int32_t) (var2 + var3);
-	calc_temp = (int16_t) (((bme680_data.t_fine * 5) + 128) / 256);
+	calc_temp = (int16_t) (((bme680_data.t_fine * 5) + 128) >> 8);
 
 	return calc_temp;
 }
@@ -187,27 +182,37 @@ static uint32_t calc_pressure(uint32_t pres_adc)
 	int32_t var1;
 	int32_t var2;
 	int32_t var3;
-	int32_t calc_pres;
+	int32_t pressure_comp;
 
-	var1 = (((int32_t) bme680_data.t_fine) / 2) - 64000;
-	var2 = ((var1 / 4) * (var1 / 4)) / 2048;
-	var2 = ((var2) * (int32_t) bme680_data.par_p6) / 4;
-	var2 = var2 + ((var1 * (int32_t) bme680_data.par_p5) * 2);
-	var2 = (var2 / 4) + ((int32_t) bme680_data.par_p4 * 65536);
-	var1 = ((var1 / 4) * (var1 / 4)) / 8192;
-	var1 = (((var1) * ((int32_t) bme680_data.par_p3 * 32)) / 8) + (((int32_t) bme680_data.par_p2 * var1) / 2);
-	var1 = var1 / 262144;
-	var1 = ((32768 + var1) * (int32_t) bme680_data.par_p1) / 32768;
-	calc_pres = (int32_t) (1048576 - pres_adc);
-	calc_pres = (int32_t) ((calc_pres - (var2 / 4096)) * (3125));
-	calc_pres = ((calc_pres / var1) * 2);
-	var1 = ((int32_t) bme680_data.par_p9 * (int32_t) (((calc_pres / 8) * (calc_pres / 8)) / 8192)) / 4096;
-	var2 = ((int32_t) (calc_pres / 4) * (int32_t) bme680_data.par_p8) / 8192;
-	var3 = ((int32_t) (calc_pres / 256) * (int32_t) (calc_pres / 256) * (int32_t) (calc_pres / 256)
-	        * (int32_t) bme680_data.par_p10) / 131072;
-	calc_pres = (int32_t) (calc_pres) + ((var1 + var2 + var3 + ((int32_t) bme680_data.par_p7 * 128)) / 16);
+	var1 = (((int32_t)bme680_data.t_fine) >> 1) - 64000;
+	var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) *
+		(int32_t)bme680_data.par_p6) >> 2;
+	var2 = var2 + ((var1 * (int32_t)bme680_data.par_p5) << 1);
+	var2 = (var2 >> 2) + ((int32_t)bme680_data.par_p4 << 16);
+	var1 = (((((var1 >> 2) * (var1 >> 2)) >> 13) *
+		((int32_t)bme680_data.par_p3 << 5)) >> 3) +
+		(((int32_t)bme680_data.par_p2 * var1) >> 1);
+	var1 = var1 >> 18;
+	var1 = ((32768 + var1) * (int32_t)bme680_data.par_p1) >> 15;
+	pressure_comp = 1048576 - pres_adc;
+	pressure_comp = (int32_t)((pressure_comp - (var2 >> 12)) * ((uint32_t)3125));
+	if (pressure_comp >= BME680_MAX_OVERFLOW_VAL)
+		pressure_comp = ((pressure_comp / var1) << 1);
+	else
+		pressure_comp = ((pressure_comp << 1) / var1);
+	var1 = ((int32_t)bme680_data.par_p9 * (int32_t)(((pressure_comp >> 3) *
+		(pressure_comp >> 3)) >> 13)) >> 12;
+	var2 = ((int32_t)(pressure_comp >> 2) *
+		(int32_t)bme680_data.par_p8) >> 13;
+	var3 = ((int32_t)(pressure_comp >> 8) * (int32_t)(pressure_comp >> 8) *
+		(int32_t)(pressure_comp >> 8) *
+		(int32_t)bme680_data.par_p10) >> 17;
 
-	return (uint32_t) calc_pres;
+	pressure_comp = (int32_t)(pressure_comp) + ((var1 + var2 + var3 +
+		((int32_t)bme680_data.par_p7 << 7)) >> 4);
+
+	return (uint32_t)pressure_comp;
+
 }
 
 static uint32_t calc_humidity(uint16_t hum_adc)
@@ -221,19 +226,19 @@ static uint32_t calc_humidity(uint16_t hum_adc)
 	int32_t temp_scaled;
 	int32_t calc_hum;
 
-	temp_scaled = (((int32_t) bme680_data.t_fine * 5) + 128) / 256;
+	temp_scaled = (((int32_t) bme680_data.t_fine * 5) + 128) >> 8;
 	var1 = (int32_t) (hum_adc - ((int32_t) ((int32_t) bme680_data.par_h1 * 16)))
-	        - (((temp_scaled * (int32_t) bme680_data.par_h3) / ((int32_t) 100)) / 2);
+		- (((temp_scaled * (int32_t) bme680_data.par_h3) / ((int32_t) 100)) >> 1);
 	var2 = ((int32_t) bme680_data.par_h2
-	        * (((temp_scaled * (int32_t) bme680_data.par_h4) / ((int32_t) 100))
-	                + (((temp_scaled * ((temp_scaled * (int32_t) bme680_data.par_h5) / ((int32_t) 100))) / 64)
-	                        / ((int32_t) 100)) + (int32_t) (1 * 16384))) / 1024;
+		* (((temp_scaled * (int32_t) bme680_data.par_h4) / ((int32_t) 100))
+			+ (((temp_scaled * ((temp_scaled * (int32_t) bme680_data.par_h5) / ((int32_t) 100))) >> 6)
+				/ ((int32_t) 100)) + (int32_t) (1 << 14))) >> 10;
 	var3 = var1 * var2;
-	var4 = (int32_t) bme680_data.par_h6 * 128;
-	var4 = ((var4) + ((temp_scaled * (int32_t) bme680_data.par_h7) / ((int32_t) 100))) / 16;
-	var5 = ((var3 / 16384) * (var3 / 16384)) / 1024;
-	var6 = (var4 * var5) / 2;
-	calc_hum = (((var3 + var6) / 1024) * ((int32_t) 1000)) / 4096;
+	var4 = (int32_t) bme680_data.par_h6 << 7;
+	var4 = ((var4) + ((temp_scaled * (int32_t) bme680_data.par_h7) / ((int32_t) 100))) >> 4;
+	var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
+	var6 = (var4 * var5) >> 1;
+	calc_hum = (((var3 + var6) >> 10) * ((int32_t) 1000)) >> 12;
 
 	if (calc_hum > 100000) /* Cap at 100%rH */
 		calc_hum = 100000;
@@ -243,6 +248,19 @@ static uint32_t calc_humidity(uint16_t hum_adc)
 	return (uint32_t) calc_hum;
 }
 
+
+/**static variables */
+	/**Look up table 1 for the possible gas range values */
+	uint32_t lookupTable1[16] = { UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647),
+		UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2130303777),
+		UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2143188679), UINT32_C(2136746228),
+		UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2147483647) };
+	/**Look up table 2 for the possible gas range values */
+	uint32_t lookupTable2[16] = { UINT32_C(4096000000), UINT32_C(2048000000), UINT32_C(1024000000), UINT32_C(512000000),
+		UINT32_C(255744255), UINT32_C(127110228), UINT32_C(64000000), UINT32_C(32258064), UINT32_C(16016016),
+		UINT32_C(8000000), UINT32_C(4000000), UINT32_C(2000000), UINT32_C(1000000), UINT32_C(500000),
+		UINT32_C(250000), UINT32_C(125000) };
+
 static uint32_t calc_gas_resistance(uint16_t gas_res_adc, uint8_t gas_range)
 {
 	int64_t var1;
@@ -250,13 +268,15 @@ static uint32_t calc_gas_resistance(uint16_t gas_res_adc, uint8_t gas_range)
 	int64_t var3;
 	uint32_t calc_gas_res;
 
-	var1 = (int64_t) ((1340 + (5 * (int64_t) bme680_data.range_sw_err)) * ((int64_t) lookupTable1[gas_range])) / 65536;
-	var2 = (((int64_t) ((int64_t) gas_res_adc * 32768) - (int64_t) (16777216)) + var1);
-	var3 = (((int64_t) lookupTable2[gas_range] * (int64_t) var1) / 512);
-	calc_gas_res = (uint32_t) ((var3 + ((int64_t) var2 / 2)) / (int64_t) var2);
+	var1 = (int64_t) ((1340 + (5 * (int64_t) bme680_data.range_sw_err)) *
+		((int64_t) lookupTable1[gas_range])) >> 16;
+	var2 = (((int64_t) ((int64_t) gas_res_adc << 15) - (int64_t) (16777216)) + var1);
+	var3 = (((int64_t) lookupTable2[gas_range] * (int64_t) var1) >> 9);
+	calc_gas_res = (uint32_t) ((var3 + ((int64_t) var2 >> 1)) / (int64_t) var2);
 
 	return calc_gas_res;
 }
+
 
 uint16_t calc_dur()
 {

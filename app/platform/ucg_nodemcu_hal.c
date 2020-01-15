@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "platform.h"
+#include "user_interface.h"
 
 #define USE_PIN_LIST
 #include "ucg_nodemcu_hal.h"

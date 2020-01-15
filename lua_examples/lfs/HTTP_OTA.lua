@@ -10,7 +10,7 @@ local host, dir, image = ...
 local doRequest, firstRec, subsRec, finalise
 local n, total, size = 0, 0
 
-doRequest = function(sk,hostIP)
+doRequest = function(socket, hostIP) -- luacheck: no unused
   if hostIP then
     local con = net.createConnection(net.TCP,0)
     con:connect(80,hostIP)

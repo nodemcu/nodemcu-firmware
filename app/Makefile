@@ -36,7 +36,6 @@ SUBDIRS= 					\
 	libc 					\
 	lua 					\
 	lwip 					\
-	task 					\
 	smart 					\
 	modules 				\
 	spiffs 					\
@@ -64,8 +63,7 @@ COMPONENTS_eagle.app.v6 = 		\
 	user/libuser.a 				\
 	crypto/libcrypto.a			\
 	driver/libdriver.a 			\
-	platform/libplatform.a		\
-	task/libtask.a 				\
+	platform/libplatform.a 		\
 	libc/liblibc.a 				\
 	lua/liblua.a 				\
 	lwip/liblwip.a 				\

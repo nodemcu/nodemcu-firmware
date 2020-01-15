@@ -35,7 +35,7 @@
 // no performance loss.  However, you can define LUA_DWORD_ALIGNED_TVALUES and
 // this will force 16 byte TValues on FP builds.
 
-//#define LUA_NUMBER_INTEGRAL
+#define LUA_NUMBER_INTEGRAL
 //#define LUA_DWORD_ALIGNED_TVALUES
 
 
@@ -59,7 +59,7 @@
 
 
 // NodeMCU supports two file systems: SPIFFS and FATFS, the first is available
-// on all ESP8266 modules.  The latter requires extra H/W so is less common.
+// on all ESP8266 modules.  The latter requires extra H/W so it is less common.
 // If you use SPIFFS then there are a number of options which impact the
 // RAM overhead and performance of the file system.
 
@@ -87,14 +87,13 @@
 
 // The HTTPS stack requires client SSL to be enabled.  The SSL buffer size is
 // used only for espconn-layer secure connections, and is ignored otherwise.
-// Some HTTPS  applications require a larger buffer size to work.  See
+// Some HTTPS applications require a larger buffer size to work.  See
 // https://github.com/nodemcu/nodemcu-firmware/issues/1457 for details.
 // The SHA2 and MD2 libraries are also optionally used by the crypto functions.
 // The SHA1 and MD5 function are implemented in the ROM BIOS. The MD2 and SHA2
 // are by firmware code, and can be enabled if you need this functionality.
 
 //#define CLIENT_SSL_ENABLE
-//#define MD2_ENABLE
 #define SHA2_ENABLE
 #define SSL_BUFFER_SIZE 4096
 #define SSL_MAX_FRAGMENT_LENGTH_CODE	MBEDTLS_SSL_MAX_FRAG_LEN_4096
@@ -102,8 +101,8 @@
 
 // GPIO_INTERRUPT_ENABLE needs to be defined if your application uses the
 // gpio.trig() or related GPIO interrupt service routine code.  Likewise the
-// GPIO interrupt hook is requited for a few modules such as rotary.  If you
-// don't require this functionality, then commenting out these options out
+// GPIO interrupt hook is required for a few modules such as rotary.  If you
+// don't require this functionality, then commenting out these options
 // will remove any associated runtime overhead.
 
 #define GPIO_INTERRUPT_ENABLE
@@ -133,10 +132,6 @@
 
 //  Enable creation on the wifi.eventmon.reason table
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
-
-//  Enable use of the WiFi.monitor sub-module
-//#define LUA_USE_MODULES_WIFI_MONITOR
-
 
 // Whilst the DNS client details can be configured through the WiFi API,
 // the defaults can be exposed temporarily during start-up.  The following
@@ -175,7 +170,7 @@
 #define I2C_MASTER_OLD_VERSION
 
 
-// The following sections are only relevent for those developers who are
+// The following sections are only relevant for those developers who are
 // developing modules or core Lua changes and configure how extra diagnostics
 // are enabled in the firmware. These should only be configured if you are
 // building your own custom firmware and have full access to the firmware
@@ -263,14 +258,14 @@ extern void dbg_printf(const char *fmt, ...);
 #ifdef NODE_DEBUG
 #define NODE_DBG dbg_printf
 #else
-#define NODE_DBG
+#define NODE_DBG( ... )
 #endif	/* NODE_DEBUG */
 
 #define NODE_ERROR
 #ifdef NODE_ERROR
 #define NODE_ERR dbg_printf
 #else
-#define NODE_ERR
+#define NODE_ERR( ... )
 #endif	/* NODE_ERROR */
 
 // #define GPIO_SAFE_NO_INTR_ENABLE

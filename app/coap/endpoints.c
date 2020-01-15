@@ -162,8 +162,6 @@ end:
     return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_NOT_FOUND, COAP_CONTENTTYPE_NONE);
 }
 
-extern int lua_put_line(const char *s, size_t l);
-
 static const coap_endpoint_path_t path_command = {2, {"v1", "c"}};
 static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scratch, const coap_packet_t *inpkt, coap_packet_t *outpkt, uint8_t id_hi, uint8_t id_lo)
 {
@@ -171,11 +169,11 @@ static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_BAD_REQUEST, COAP_CONTENTTYPE_TEXT_PLAIN);
     if (inpkt->payload.len > 0)
     {
-        char line[LUA_MAXINPUT];
-        if (!coap_buffer_to_string(line, LUA_MAXINPUT, &inpkt->payload) &&
-            lua_put_line(line, strlen(line))) {
-            NODE_DBG("\nResult(if any):\n");
-            system_os_post (LUA_TASK_PRIO, LUA_PROCESS_LINE_SIG, 0);
+        char line[LUA_MAXINPUT+1];
+        if (!coap_buffer_to_string(line, LUA_MAXINPUT, &inpkt->payload)) {
+            int l = strlen(line);
+            line[l] = '\n';
+            lua_input_string(line, l+1);
         }
         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
     }

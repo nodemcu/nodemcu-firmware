@@ -1,6 +1,7 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "platform.h"
+#include "user_interface.h"
 #include <stdlib.h>
 #include <string.h>
 

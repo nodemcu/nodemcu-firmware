@@ -17,7 +17,8 @@
 #define INTERRUPT_TYPE_IS_LEVEL(x)   ((x) >= GPIO_PIN_INTR_LOLEVEL)
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static task_handle_t gpio_task_handle;
+static platform_task_handle_t gpio_task_handle;
+static int task_init_handler(void);
 
 #ifdef GPIO_INTERRUPT_HOOK_ENABLE
 struct gpio_hook_entry {
@@ -55,10 +56,12 @@ static const int uart_bitrates[] = {
     BIT_RATE_3686400
 };
 
-int platform_init()
+int platform_init ()
 {
   // Setup the various forward and reverse mappings for the pins
   get_pin_map();
+
+  (void) task_init_handler();
 
   cmn_platform_init();
   // All done
@@ -83,7 +86,7 @@ uint8_t platform_key_led( uint8_t level){
 /*
  * Set GPIO mode to output. Optionally in RAM helper because interrupts are dsabled
  */
-static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
+static void NO_INTR_CODE set_gpio_no_interrupt(uint8_t pin, uint8_t push_pull) {
   unsigned pnum = pin_num[pin];
   ETS_GPIO_INTR_DISABLE();
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -113,7 +116,7 @@ static void NO_INTR_CODE set_gpio_no_interrupt(uint8 pin, uint8_t push_pull) {
  * Set GPIO mode to interrupt. Optionally RAM helper because interrupts are dsabled
  */
 #ifdef GPIO_INTERRUPT_ENABLE
-static void NO_INTR_CODE set_gpio_interrupt(uint8 pin) {
+static void NO_INTR_CODE set_gpio_interrupt(uint8_t pin) {
   ETS_GPIO_INTR_DISABLE();
   PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
   GPIO_DIS_OUTPUT(pin_num[pin]);
@@ -209,9 +212,9 @@ int platform_gpio_read( unsigned pin )
 
 #ifdef GPIO_INTERRUPT_ENABLE
 static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
-  uint32 j=0;
-  uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-  uint32 now = system_get_time();
+  uint32_t j=0;
+  uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+  uint32_t now = system_get_time();
   UNUSED(dummy);
 
 #ifdef GPIO_INTERRUPT_HOOK_ENABLE
@@ -244,8 +247,8 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
         GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(j));
 
         if (diff == 0 || diff & 0x8000) {
-          uint32 level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
-	  if (!task_post_high (gpio_task_handle, (now << 8) + (i<<1) + level)) {
+          uint32_t level = 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(j));
+	  if (!platform_post_high (gpio_task_handle, (now << 8) + (i<<1) + level)) {
             // If we fail to post, then try on the next interrupt
             pin_counter[i].seen |= 0x8000;
           }
@@ -260,7 +263,7 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
   }
 }
 
-void platform_gpio_init( task_handle_t gpio_task )
+void platform_gpio_init( platform_task_handle_t gpio_task )
 {
   gpio_task_handle = gpio_task;
 
@@ -871,7 +874,7 @@ uint32_t platform_s_flash_write( const void *from, uint32_t toaddr, uint32_t siz
     memcpy(apbuf, from, size);
   }
   system_soft_wdt_feed ();
-  r = flash_write(toaddr, apbuf?(uint32 *)apbuf:(uint32 *)from, size);
+  r = flash_write(toaddr, apbuf?(uint32_t *)apbuf:(uint32_t *)from, size);
   if(apbuf)
     free(apbuf);
   if(SPI_FLASH_RESULT_OK == r)
@@ -899,7 +902,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
   if( ((uint32_t)to) & blkmask )
   {
     uint32_t size2=size-INTERNAL_FLASH_READ_UNIT_SIZE;
-    uint32* to2=(uint32*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
+    uint32_t* to2=(uint32_t*)((((uint32_t)to)&(~blkmask))+INTERNAL_FLASH_READ_UNIT_SIZE);
     r = flash_read(fromaddr, to2, size2);
     if(SPI_FLASH_RESULT_OK == r)
     {
@@ -910,7 +913,7 @@ uint32_t platform_s_flash_read( void *to, uint32_t fromaddr, uint32_t size )
     }
   }
   else
-    r = flash_read(fromaddr, (uint32 *)to, size);
+    r = flash_read(fromaddr, (uint32_t *)to, size);
 
   if(SPI_FLASH_RESULT_OK == r)
     return size;
@@ -1078,4 +1081,85 @@ uint32_t platform_rcr_write (uint8_t rec_id, const void *inrec, uint8_t n) {
 void* platform_print_deprecation_note( const char *msg, const char *time_frame)
 {
   printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
+}
+
+#define TH_MONIKER 0x68680000
+#define TH_MASK    0xFFF80000
+#define TH_UNMASK  (~TH_MASK)
+#define TH_SHIFT   2
+#define TH_ALLOCATION_BRICK 4   // must be a power of 2
+#define TASK_DEFAULT_QUEUE_LEN 8
+#define TASK_PRIORITY_MASK    3
+#define TASK_PRIORITY_COUNT   3
+
+/*
+ * Private struct to hold the 3 event task queues and the dispatch callbacks
+ */
+static struct taskQblock { 
+  os_event_t *task_Q[TASK_PRIORITY_COUNT];
+  platform_task_callback_t *task_func;
+  int task_count;
+  } TQB = {0};
+
+static void platform_task_dispatch (os_event_t *e) {
+  platform_task_handle_t handle = e->sig;
+  if ( (handle & TH_MASK) == TH_MONIKER) {
+    uint16_t entry    = (handle & TH_UNMASK) >> TH_SHIFT;
+    uint8_t  priority = handle & TASK_PRIORITY_MASK;
+    if ( priority <= PLATFORM_TASK_PRIORITY_HIGH &&
+         TQB.task_func && 
+         entry < TQB.task_count ){
+      /* call the registered task handler with the specified parameter and priority */
+      TQB.task_func[entry](e->par, priority);
+      return;
+    }
+  }
+  /* Invalid signals are ignored */
+  NODE_DBG ( "Invalid signal issued: %08x",  handle);
+}
+
+/*
+ * Initialise the task handle callback for a given priority.  
+ */
+static int task_init_handler (void) {
+  int p, qlen = TASK_DEFAULT_QUEUE_LEN;
+  for (p = 0; p < TASK_PRIORITY_COUNT; p++){
+    TQB.task_Q[p] = (os_event_t *) malloc( sizeof(os_event_t)*qlen );
+    if (TQB.task_Q[p]) {
+      os_memset(TQB.task_Q[p], 0, sizeof(os_event_t)*qlen);
+      system_os_task(platform_task_dispatch, p, TQB.task_Q[p], TASK_DEFAULT_QUEUE_LEN);
+    } else {
+      NODE_DBG ( "Malloc failure in platform_task_init_handler" );
+      return PLATFORM_ERR;
+    }
+  }
+}
+
+
+/*
+ * Allocate a task handle in the relevant TCB.task_Q.  Note that these Qs are resized
+ * as needed growing in 4 unit bricks.  No GC is adopted so handles are permanently 
+ * allocated during boot life.  This isn't an issue in practice as only a few handles
+ * are created per priority during application init and the more volitile Lua tasks
+ * are allocated in the Lua registery using the luaX interface which is layered on
+ * this mechanism.
+ */ 
+platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
+  if ( (TQB.task_count & (TH_ALLOCATION_BRICK - 1)) == 0 ) {
+    TQB.task_func = (platform_task_callback_t *) realloc(
+        TQB.task_func,
+        sizeof(platform_task_callback_t) * (TQB.task_count+TH_ALLOCATION_BRICK));
+    if (!TQB.task_func) {
+      NODE_DBG ( "Malloc failure in platform_task_get_id");
+      return 0;
+    } 
+    os_memset (TQB.task_func+TQB.task_count, 0, 
+               sizeof(platform_task_callback_t)*TH_ALLOCATION_BRICK);
+  }
+  TQB.task_func[TQB.task_count++] = t;
+  return TH_MONIKER + ((TQB.task_count-1) << TH_SHIFT);
+}
+
+bool platform_post (uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
+  return system_os_post(prio, handle | prio, par);
 }

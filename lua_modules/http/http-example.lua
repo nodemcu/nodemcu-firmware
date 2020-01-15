@@ -8,7 +8,7 @@ require("httpserver").createServer(80, function(req, res)
   -- analyse method and url
   print("+R", req.method, req.url, node.heap())
   -- setup handler of headers, if any
-  req.onheader = function(self, name, value)
+  req.onheader = function(self, name, value) -- luacheck: ignore
     print("+H", name, value)
     -- E.g. look for "content-type" header,
     --   setup body parser to particular format
@@ -21,7 +21,7 @@ require("httpserver").createServer(80, function(req, res)
     -- end
   end
   -- setup handler of body, if any
-  req.ondata = function(self, chunk)
+  req.ondata = function(self, chunk) -- luacheck: ignore
     print("+B", chunk and #chunk, node.heap())
     if not chunk then
       -- reply

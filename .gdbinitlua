@@ -3,9 +3,9 @@ set pagination off
 set print null-stop
 
 define prTS
-  set $o = &(((TString *)($arg0))->tsv)
+  set $o = &(((TString *)(($arg0).value))->tsv)
   printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
-  printf "String: hash = 0x%08x, len = %u : %s\n", $o->hash, $o->len, (char *)(&$o[1])
+  printf "String: hash = 0x%08x, len = %u : %s\n", $o->hash, $o->len, (char *)($o+1)
 end
 
 define prTnodes
@@ -24,6 +24,18 @@ define prTnodes
     set $i = $i +1
   end
 end
+
+define prTarray
+  set $o = (Table *)($arg0)
+  set $n = $o->sizearray
+  set $i = 0
+  while $i < $n
+    set $nd = ($o->array) + $i
+    prTV $nd
+    set $i = $i +1
+  end
+end
+
 define prTV
   if $arg0
     set $type = ($arg0).tt
@@ -78,6 +90,10 @@ define prTV
     end
     if $type == 9
       # UserData
+      set $o = &($val->gc.u.uv)
+      printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
+      printf "UD = %p Userdata: metatable = ", ($o+1))
+      print ($o)->metatable
     end
     if $type == 10
       # Thread

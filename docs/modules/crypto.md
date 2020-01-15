@@ -10,7 +10,6 @@ The following encryption/decryption algorithms/modes are supported:
 - `"AES-CBC"` for 128-bit AES in CBC mode
 
 The following hash algorithms are supported:
-- MD2 (not available by default, has to be explicitly enabled in `app/include/user_config.h`)
 - MD5
 - SHA1
 - SHA256, SHA384, SHA512 (unless disabled in `app/include/user_config.h`)
@@ -33,7 +32,7 @@ The encrypted data as a binary string. For AES this is always a multiple of 16 b
 
 #### Example
 ```lua
-print(crypto.toHex(crypto.encrypt("AES-ECB", "1234567890abcdef", "Hi, I'm secret!")))
+print(encoder.toHex(crypto.encrypt("AES-ECB", "1234567890abcdef", "Hi, I'm secret!")))
 ```
 
 #### See also
@@ -62,7 +61,7 @@ Note that the decrypted string may contain extra zero-bytes of padding at the en
 ```lua
 key = "1234567890abcdef"
 cipher = crypto.encrypt("AES-ECB", key, "Hi, I'm secret!")
-print(crypto.toHex(cipher))
+print(encoder.toHex(cipher))
 print(crypto.decrypt("AES-ECB", key, cipher))
 ```
 
@@ -82,11 +81,11 @@ Compute a cryptographic hash of a a file.
 - `filename` the path to the file to hash
 
 #### Returns
-A binary string containing the message digest. To obtain the textual version (ASCII hex characters), please use [`crypto.toHex()`](#cryptotohex ).
+A binary string containing the message digest. To obtain the textual version (ASCII hex characters), please use [`encoder.toHex()`](encoder.md#encodertohex ).
 
 #### Example
 ```lua
-print(crypto.toHex(crypto.fhash("sha1","myfile.lua")))
+print(encoder.toHex(crypto.fhash("sha1","myfile.lua")))
 ```
 
 ## crypto.hash()
@@ -101,11 +100,11 @@ Compute a cryptographic hash of a Lua string.
 `str` string to hash contents of
 
 #### Returns
-A binary string containing the message digest. To obtain the textual version (ASCII hex characters), please use [`crypto.toHex()`](#cryptotohex	).
+A binary string containing the message digest. To obtain the textual version (ASCII hex characters), please use [`encoder.toHex()`](encoder.md#encodertohex).
 
 #### Example
 ```lua
-print(crypto.toHex(crypto.hash("sha1","abc")))
+print(encoder.toHex(crypto.hash("sha1","abc")))
 ```
 
 ## crypto.new_hash()
@@ -127,7 +126,7 @@ hashobj = crypto.new_hash("SHA1")
 hashobj:update("FirstString")
 hashobj:update("SecondString")
 digest = hashobj:finalize()
-print(crypto.toHex(digest))
+print(encoder.toHex(digest))
 ```
 
 ## crypto.hmac()
@@ -143,11 +142,11 @@ Compute a [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication
 - `key` key to use for signing, may be a binary string
 
 #### Returns
-A binary string containing the HMAC signature. Use [`crypto.toHex()`](#cryptotohex) to obtain the textual version.
+A binary string containing the HMAC signature. Use [`encoder.toHex()`](encoder.md#encodertohex) to obtain the textual version.
 
 #### Example
 ```lua
-print(crypto.toHex(crypto.hmac("sha1","abc","mysecret")))
+print(encoder.toHex(crypto.hmac("sha1","abc","mysecret")))
 ```
 
 ## crypto.new_hmac()
@@ -170,7 +169,7 @@ hmacobj = crypto.new_hmac("SHA1", "s3kr3t")
 hmacobj:update("FirstString")
 hmacobj:update("SecondString")
 digest = hmacobj:finalize()
-print(crypto.toHex(digest))
+print(encoder.toHex(digest))
 ```
 
 
@@ -186,16 +185,20 @@ Applies an XOR mask to a Lua string. Note that this is not a proper cryptographi
 - `mask` the mask to apply, repeated if shorter than the message
 
 #### Returns
-The masked message, as a binary string. Use [`crypto.toHex()`](#cryptotohex) to get a textual representation of it.
+The masked message, as a binary string. Use [`encoder.toHex()`](encoder.md#encodertohex) to get a textual representation of it.
 
 #### Example
 ```lua
-print(crypto.toHex(crypto.mask("some message to obscure","X0Y7")))
+print(encoder.toHex(crypto.mask("some message to obscure","X0Y7")))
 ```
 
 ## crypto.toBase64()
 
 Provides a Base64 representation of a (binary) Lua string.
+
+!!! warning
+
+	This function is deprecated; please use instead [`encoder.toBase64()`](encoder.md#encodertobase64)
 
 #### Syntax
 `b64 = crypto.toBase64(binary)`
@@ -214,6 +217,10 @@ print(crypto.toBase64(crypto.hash("sha1","abc")))
 ## crypto.toHex()
 
 Provides an ASCII hex representation of a (binary) Lua string. Each byte in the input string is represented as two hex characters in the output.
+
+!!! warning
+
+	This function is deprecated; please use instead [`encoder.toHex()`](encoder.md#encodertohex)
 
 #### Syntax
 `hexstr = crypto.toHex(binary)`

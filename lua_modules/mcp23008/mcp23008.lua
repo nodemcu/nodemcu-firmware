@@ -17,6 +17,7 @@ _G[moduleName] = M
 local MCP23008_ADDRESS = 0x20
 
 -- Registers' address as defined in the MCP23008's datashseet
+-- luacheck: push no unused
 local MCP23008_IODIR = 0x00
 local MCP23008_IPOL = 0x01
 local MCP23008_GPINTEN = 0x02
@@ -28,7 +29,7 @@ local MCP23008_INTF = 0x07
 local MCP23008_INTCAP = 0x08
 local MCP23008_GPIO = 0x09
 local MCP23008_OLAT = 0x0A
-
+-- luacheck: pop
 -- Default value for i2c communication
 local id = 0
 
@@ -75,8 +76,7 @@ local function read(registerAddress)
     i2c.start(id)
     -- Read the data form the register
     i2c.address(id,MCP23008_ADDRESS,i2c.RECEIVER) -- send the MCP's address and read bit
-    local data = 0x00
-    data = i2c.read(id,1) -- we expect only one byte of data
+    local data = i2c.read(id,1) -- we expect only one byte of data
     i2c.stop(id)
 
     return string.byte(data) -- i2c.read returns a string so we convert to it's int value

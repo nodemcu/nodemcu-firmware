@@ -55,7 +55,7 @@ do
       -- FIXME: this suddenly occurs. timeout?
       --print("-FD")
     end)
-    _fd:on("receive", function(fd, s)
+    _fd:on("receive", function(fd, s) --luacheck: no unused
       --print("IN", s)
       -- TODO: subscription to all channels
       -- lookup message pattern to determine channel and payload

@@ -10,7 +10,7 @@
 
 NodeMCU includes the open-source version of [mbed TLS library](https://tls.mbed.org/).
 
-With the NodeMCU default configuration it supports **TLS** 1.1 and 1.2 with
+With the NodeMCU default configuration it supports **TLS** 1.2 with
 most common features supported.  Specifically, it provides:
 
 - ciphers: AES, Camellia

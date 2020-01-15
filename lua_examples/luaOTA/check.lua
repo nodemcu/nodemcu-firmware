@@ -9,14 +9,13 @@
 --------------------------------------------------------------------------------
 
 -- upvals
-local crypto, file, json,  net, node, table, wifi =
-      crypto, file, sjson, net, node, table, wifi
-local error, pcall   = error, pcall
+local crypto, json, node, wifi =
+      crypto, sjson, node, wifi
+local error = error
 local loadfile, gc   = loadfile, collectgarbage
-local concat, unpack = table.concat, unpack or table.unpack
 
 local self = {post = node.task.post, prefix = "luaOTA/", conf = {}}
-
+-- luacheck: globals DEBUG
 self.log     = (DEBUG == true) and print or function() end
 self.modname = ...
 self.timer   = tmr.create()
@@ -27,15 +26,15 @@ end
 --------------------------------------------------------------------------------------
 -- Utility Functions
 
-setmetatable( self, {__index=function(self, func) --upval: loadfile
+setmetatable( self, {__index=function(obj, func) --upval: loadfile
     -- The only __index calls in in LuaOTA are dynamically loaded functions.
     -- The convention is that functions starting with "_" are treated as
     -- call-once / ephemeral; the rest are registered in self
-    func = self.prefix .. func
+    func = obj.prefix .. func
     local f,msg = loadfile( func..".lc")
     if msg then f, msg = loadfile(func..".lua") end
     if msg then error (msg,2) end
-    if func:sub(8,8) ~= "_" then self[func] = f end
+    if func:sub(8,8) ~= "_" then obj[func] = f end
     return f
   end} )
 
