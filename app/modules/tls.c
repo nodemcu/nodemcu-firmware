@@ -579,7 +579,6 @@ static int tls_cert_verify(lua_State *L)
   if (lua_type(L, 1) == LUA_TSTRING) {
     const char *types[2] = { "CERTIFICATE", NULL };
     const char *names[1] = { "certificate" };
-
     const char *error = fill_page_with_pem(L, &tls_server_cert_area[0], flash_offset, types, names);
     if (error) {
       return luaL_error(L, error);

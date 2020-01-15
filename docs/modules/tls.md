@@ -252,16 +252,16 @@ none
 
 ## tls.cert.verify()
 
-Controls the vertificate verification process when the Nodemcu makes a secure connection.
+Controls the certificate verification process when the Nodemcu makes a secure connection.
 
 #### Syntax
 `tls.cert.verify(enable)`
 
-`tls.cert.verify(pemdata)`
+`tls.cert.verify(pemdata[, pemdata])`
 
 #### Parameters
 - `enable` A boolean which indicates whether verification should be enabled or not. The default at boot is `false`.
-- `pemdata` A string containing the CA certificate to use for verification.
+- `pemdata` A string containing the CA certificate to use for verification. There can be several of these.
 
 #### Returns
 `true` if it worked.
@@ -320,6 +320,55 @@ firmware image.
 The alternative approach is easier for development, and that is to supply the PEM data as a string value to `tls.cert.verify`. This
 will store the certificate into the flash chip and turn on verification for that certificate. Subsequent boots of the nodemcu can then
 use `tls.cert.verify(true)` and use the stored certificate.
+
+## tls.cert.auth()
+
+Controls the certificate verification process when the Nodemcu authenticates against the client like when receiving a secure connection.
+
+#### Syntax
+`tls.cert.auth(enable)`
+
+`tls.cert.auth(pemdata[, pemdata])`
+
+#### Parameters
+- `enable` A boolean which indicates whether verification should be enabled or not. The default at boot is `false`.
+- `pemdata` A string containing the CA certificate to use for verification. There can be several of these.
+
+#### Returns
+`true` if it worked.
+
+Can throw a number of errors if invalid data is supplied.
+
+#### Example
+Open an mqtt client.
+```
+tls.cert.auth(true)
+tls.cert.verify(true)
+
+m = mqtt.Client('basicPubSub', 1500, "admin", "admin", 1)
+```
+For further discussion see https://github.com/nodemcu/nodemcu-firmware/issues/2576
+
+Load a certificate into the flash chip and make a request.
+
+```
+tls.cert.auth([[
+-----BEGIN CERTIFICATE-----
+CLIENT CERTIFICATE String (PEM file)
+-----END CERTIFICATE-----
+]])
+```
+
+#### Notes
+The certificate needed for verification is stored in the flash chip. The `tls.cert.auth` call with `true`
+enables verification against the value stored in the flash.
+
+The certificate can not be loaded into the flash chip at initial boot of the firmware.
+It only can be supplied by passing the PEM data as a string value to `tls.cert.auth`. This
+will store the certificate into the flash chip and turn on verification for that certificate. 
+Subsequent boots of the nodemcu can then use `tls.cert.auth(true)` and use the stored certificate.
+
+
 
 # tls.setDebug function
 
