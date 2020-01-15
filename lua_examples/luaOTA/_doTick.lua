@@ -1,5 +1,4 @@
--- luacheck: globals self
-if (self.timer) then self.timer:stop() end--SAFETRIM
+--if (self.timer) then self.timer:stop() end--SAFETRIM
 -- function _doTick(self)
 
   -- Upvals
@@ -33,7 +32,7 @@ if (self.timer) then self.timer:stop() end--SAFETRIM
     -- some resources that are no longer needed and set backstop timer for general
     -- timeout.  This also dereferences the previous doTick cb so it can now be GCed.
     collectgarbage()
-    self.timer:alarm(0, 30000, tmr.ALARM_SINGLE, self.startApp)
+    self.timer:alarm(30000, tmr.ALARM_SINGLE, self.startApp)
     return self:_provision(socket,rec)
   end
 

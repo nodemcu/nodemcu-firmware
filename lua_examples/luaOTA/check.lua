@@ -45,7 +45,7 @@ end
 
 function self.startApp(arg) --upval: gc, self, wifi
   gc();gc()
-  self.timer.unregister()
+  self.timer:unregister()
   self.socket = nil
   if not self.config.leave then wifi.setmode(wifi.NULLMODE,false) end
   local appMod    = self.config.app   or "luaOTA.default"
