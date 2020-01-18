@@ -89,7 +89,7 @@ do
       local buf = ""
       local method, url
       local ondisconnect = function(conn)
-	conn.on("sent", nil)
+        conn:on("sent", nil)
         collectgarbage("collect")
       end
       -- header parser
