@@ -323,8 +323,9 @@ use `tls.cert.verify(true)` and use the stored certificate.
 
 ## tls.cert.auth()
 
-Controls the certificate verification process when the esp authenticates against the other side 
-like when receiving a secure connection or when establishing mutual authentication like in MQTT.
+Controls the certificate proving process when the esp authenticates against the other side 
+like when establishing mutual authentication as in MQTT.  the tls.cert.auth data is used as the 
+TLS client key and certificate when the NodeMCU device is making a connection to a remote TLS server.
 
 #### Syntax
 `tls.cert.auth(enable)`
@@ -332,8 +333,8 @@ like when receiving a secure connection or when establishing mutual authenticati
 `tls.cert.auth(pemdata[, pemdata])`
 
 #### Parameters
-- `enable` A boolean which indicates whether verification should be enabled or not. The default at boot is `false`.
-- `pemdata` A string containing the CA certificate to use for verification. There can be several of these.
+- `enable` A boolean which indicates whether profing should be enabled or not. The default at boot is `false`.
+- `pemdata` A string containing the client certificate to use for profing. There second pemdata is the client private key.
 
 #### Returns
 `true` if it worked.
@@ -350,7 +351,7 @@ m = mqtt.Client('basicPubSub', 1500, "admin", "admin", 1)
 ```
 For further discussion see https://github.com/nodemcu/nodemcu-firmware/issues/2576
 
-Load a certificate into the flash chip and make a request.
+Load a certificate into the flash chip.
 
 ```
 tls.cert.auth([[
@@ -367,12 +368,12 @@ CLIENT PRIVATE KEY String (PEM file)
 ```
 
 #### Notes
-The certificate needed for verification is stored in the flash chip. The `tls.cert.auth` call with `true`
-enables verification against the value stored in the flash.
+The certificate needed for proving is stored in the flash chip. The `tls.cert.auth` call with `true`
+enables proving against the value stored in the flash.
 
-The certificate can not be loaded into the flash chip at initial boot of the firmware.
-It only can be supplied by passing the PEM data as a string value to `tls.cert.auth`. This
-will store the certificate into the flash chip and turn on verification for that certificate. 
+The certificate can not be defined at firmware build time but it can be loaded into the flash chip at initial boot of the firmware.
+It can be supplied by passing the PEM data as a string value to `tls.cert.auth`. This
+will store the certificate into the flash chip and turn on proving with that certificate. 
 Subsequent boots of the esp can then use `tls.cert.auth(true)` and use the stored certificate.
 
 
