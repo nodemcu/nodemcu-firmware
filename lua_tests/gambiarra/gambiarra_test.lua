@@ -57,7 +57,7 @@ metatest('simple assert passes', function()
 end, {'2==2'}, {})
 
 metatest('simple negative assert fails', function()
-  ok(2 == 2, '2==2')
+  nok(2 == 2, '2==2')
 end, {}, {'2==2'})
 
 metatest('simple assert fails', function()
@@ -71,7 +71,7 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:64'}, {'gambiarra_test.lua:65'})
+end, {'gambiarra_test.lua:72'}, {'gambiarra_test.lua:73'})
 
 --
 -- Equality tests

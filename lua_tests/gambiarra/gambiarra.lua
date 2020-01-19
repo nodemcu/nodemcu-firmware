@@ -62,6 +62,13 @@ local function runpending()
   if pendingtests[1] ~= nil then pendingtests[1](runpending) end
 end
 
+local function copyenv(dest, src)
+  dest.eq = src.eq
+  dest.spy = src.spy
+  dest.ok = src.ok
+  dest.nok = src.nok
+end
+
 return function(name, f, async)
   if type(name) == 'function' then
     gambiarrahandler = name
@@ -71,16 +78,11 @@ return function(name, f, async)
 
   local testfn = function(next)
 
-    local prev = {
-      ok = env.ok,
-      spy = env.spy,
-      eq = env.eq
-    }
+    local prev = {}
+    copyenv(prev, env)
 
     local restore = function()
-      env.ok = prev.ok
-      env.spy = prev.spy
-      env.eq = prev.eq
+      copyenv(env, prev)
       gambiarrahandler('end', name)
       table.remove(pendingtests, 1)
       if next then next() end
@@ -113,9 +115,7 @@ return function(name, f, async)
 
     if not async then
       handler('end', name);
-      env.ok = prev.ok;
-      env.spy = prev.spy;
-      env.eq = prev.eq;
+      copyenv(env, prev)
     end
   end
 
