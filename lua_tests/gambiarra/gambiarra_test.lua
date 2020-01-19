@@ -113,7 +113,7 @@ end, {'equal'}, {'not equal'})
 
 metatest('eq functions', function()
 	ok(eq(function(x) return x end, function(x) return x end), 'equal')
-	ok(eq(function(x) return x end, function(y) return y end), 'wrong variable')
+	ok(eq(function(z) return x end, function(z) return y end), 'wrong variable')
 	ok(eq(function(x) return x end, function(x) return x+2 end), 'wrong code')
 end, {'equal'}, {'wrong variable', 'wrong code'})
 
@@ -219,16 +219,16 @@ async_next()
 --
 for i = 1,#expected do
 	if actual[i] == nil then
-		print("[31m✘[0m "..expected[i].name..' (pending)')
+		print("--- FAIL "..expected[i].name..' (pending)')
 	elseif not comparetables(expected[i].pass, actual[i].pass) then
-		print("[31m✘[0m "..expected[i].name..' (passed): ['..
+		print("--- FAIL "..expected[i].name..' (passed): ['..
 			stringify(expected[i].pass)..'] vs ['..
 			stringify(actual[i].pass)..']')
 	elseif not comparetables(expected[i].fail, actual[i].fail) then
-		print("[31m✘[0m "..expected[i].name..' (failed): ['..
+		print("--- FAIL "..expected[i].name..' (failed): ['..
 			stringify(expected[i].fail)..'] vs ['..
 			stringify(actual[i].fail)..']')
 	else
-		print("[32m✔[0m "..expected[i].name)
+		print("+++ Pass "..expected[i].name)
 	end
 end

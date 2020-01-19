@@ -1,10 +1,10 @@
 local function TERMINAL_HANDLER(e, test, msg)
 	if e == 'pass' then
-		print("[32m✔[0m "..test..': '..msg)
+		print(e.." "..test..': '..msg)
 	elseif e == 'fail' then
-		print("[31m✘[0m "..test..': '..msg)
+		print(e.." "..test..': '..msg)
 	elseif e == 'except' then
-		print("[31m✘[0m "..test..': '..msg)
+		print(e.." "..test..': '..msg)
 	end
 end
 
@@ -92,7 +92,10 @@ return function(name, f, async)
 		env.spy = spy
 		env.ok = function(cond, msg)
 			if not msg then
-				msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
+				-- debug.getinfo() does not exist in NodeMCU
+				-- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
+				msg = debug.traceback()
+				msg = msg:match("\n[^\n]*\n\t*([^\n]*): in")
 			end
 			if cond then
 				handler('pass', name, msg)
