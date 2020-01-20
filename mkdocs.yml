@@ -51,6 +51,7 @@ pages:
     - 'mcp23008': 'lua-modules/mcp23008.md'
     - 'redis': 'lua-modules/redis.md'
     - 'yeelink': 'lua-modules/yeelink.md'
+    - 'gossip': 'lua-modules/gossip.md'
 - C Modules:
     - 'adc': 'modules/adc.md'
     - 'ads1115': 'modules/ads1115.md'
