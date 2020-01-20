@@ -4,7 +4,7 @@ local actual = {}
 local expected = {}
 
 -- Set meta test handler
-test(function(e, test, msg)
+test(function(e, test, msg, errormsg)
   if e == 'begin' then
     currentTest = {
       name = test,
@@ -15,10 +15,12 @@ test(function(e, test, msg)
     table.insert(actual, currentTest)
   elseif e == 'pass' then
     table.insert(currentTest.pass, msg)
+    if errormsg then table.insert(currentTest.pass, errormsg) end
   elseif e == 'fail' then
     table.insert(currentTest.fail, msg)
+    if errormsg then table.insert(currentTest.fail, errormsg) end
   elseif e == 'except' then
-    print('*** PANIC ***: ', test, msg)
+    print('*** PANIC ***: ', test, msg, errormsg)
   end
 end)
 
@@ -71,7 +73,7 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:72'}, {'gambiarra_test.lua:73'})
+end, {'gambiarra_test.lua:74'}, {'gambiarra_test.lua:75'})
 
 --
 -- Equality tests
@@ -124,6 +126,11 @@ metatest('eq functions', function()
   ok(eq(function(z) return x end, function(z) return y end), 'wrong variable')
   ok(eq(function(x) return x end, function(x) return x+2 end), 'wrong code')
 end, {'equal'}, {'wrong variable', 'wrong code'})
+
+metatest('eq different types', function()
+  ok(eq({a=1,b=2}, "text"), 'object/string')
+  ok(eq(function(x) return x end, 12), 'function/int')
+end, {}, {"object/string", "type 1 is table, type 2 is string", "function/int", "type 1 is function, type 2 is number"})
 
 --
 -- Spies
@@ -182,6 +189,17 @@ metatest('spy should return a value', function()
   local g = spy()
   ok(g() == nil, 'default spy returns undefined')
 end, {'spy returns a value', 'default spy returns undefined'}, {})
+
+--
+-- fail tests
+--
+metatest('fail should work', function()
+  fail(function() error("my error") end, "my error", "Failed with correct error")
+  fail(function() error("my error") end, "not my error", "Failed with incorrect error")
+  fail(function() end, "my error", "Failed without error")
+end, {'Failed with correct error'}, {'Failed with incorrect error',
+      'expected errormessage "gambiarra_test.lua:199: my error" to contain "not my error"',
+      "Failed without error", 'Expected to fail with Error containing "my error"'})
 
 --
 -- Async tests

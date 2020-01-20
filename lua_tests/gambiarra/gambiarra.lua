@@ -1,16 +1,23 @@
-local function TERMINAL_HANDLER(e, test, msg)
+local function TERMINAL_HANDLER(e, test, msg, errormsg)
+  if errormsg then
+    errormsg = ": "..errormsg
+  else
+    errormsg = ""
+  end
   if e == 'pass' then
-    print(e.." "..test..': '..msg)
+    print("  "..e.." "..test..': '..msg)
   elseif e == 'fail' then
-    print(e.." "..test..': '..msg)
+    print(" ==>  "..e.." "..test..': '..msg..errormsg)
   elseif e == 'except' then
-    print(e.." "..test..': '..msg)
+    print(" ==>  "..e.." "..test..': '..msg..errormsg)
+  else
+    print(e.." "..test)
   end
 end
 
 local function deepeq(a, b)
   -- Different types: false
-  if type(a) ~= type(b) then return false end
+  if type(a) ~= type(b) then return {false, "type 1 is "..type(a)..", type 2 is "..type(b)} end
   -- Functions
   if type(a) == 'function' then
     return string.dump(a) == string.dump(b)
@@ -54,6 +61,43 @@ local function spy(f)
   return s
 end
 
+local function assertok(handler, name, cond, msg)
+  if not msg then
+    -- debug.getinfo() does not exist in NodeMCU
+    -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
+    msg = debug.traceback()
+    msg = msg:match("\n[^\n]*\n[^\n]*\n[^\n]*\n\t*([^\n]*): in")
+  end
+  local errormsg
+
+  if type(cond) == "table" then
+    errormsg = cond[2]
+    cond = cond[1]
+  end
+  if cond then
+    handler('pass', name, msg, errormsg)
+  else
+    handler('fail', name, msg, errormsg)
+  end
+end
+
+local function fail(handler, name, func, expected, msg)
+  local status, err = pcall(func)
+  if status then
+      local messagePart = ""
+      if expected then
+          messagePart = " containing \"" .. expected .. "\""
+      end
+      handler('fail', name, msg, "Expected to fail with Error" .. messagePart)
+      return
+  end
+  if (expected and not string.find(err, expected)) then
+      handler('fail', name, msg, "expected errormessage \"" .. err .. "\" to contain \"" .. expected .. "\"")
+      return
+  end
+  handler('pass', name, msg)
+end
+
 local pendingtests = {}
 local env = _G
 local gambiarrahandler = TERMINAL_HANDLER
@@ -67,6 +111,7 @@ local function copyenv(dest, src)
   dest.spy = src.spy
   dest.ok = src.ok
   dest.nok = src.nok
+  dest.fail = src.fail
 end
 
 return function(name, f, async)
@@ -89,23 +134,15 @@ return function(name, f, async)
     end
 
     local handler = gambiarrahandler
+    local function wrap(f, ...)
+      f(handler, name, ...)
+    end
 
     env.eq = deepeq
     env.spy = spy
-    env.ok = function (cond, msg)
-      if not msg then
-        -- debug.getinfo() does not exist in NodeMCU
-        -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
-        msg = debug.traceback()
-        msg = msg:match("\n[^\n]*\n\t*([^\n]*): in")
-      end
-      if cond then
-        handler('pass', name, msg)
-      else
-        handler('fail', name, msg)
-      end
-    end
+    env.ok = function (cond, msg) wrap(assertok, cond, msg) end
     env.nok = function(cond, msg) env.ok(not cond, msg) end
+    env.fail = function (func, expected, msg) wrap(fail, func, expected, msg) end
 
     handler('begin', name);
     local ok, err = pcall(f, restore)
