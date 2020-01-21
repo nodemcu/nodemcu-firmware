@@ -33,7 +33,7 @@ most common features supported.  Specifically, it provides:
 	the TLS specification, which requires a 16KiB recieve buffer and,
 	therefore, 32KiB of heap within mbedTLS, even in the steady-state.
 	While it is possible to slightly raise the buffer sizes with custom
-	nodeMCU builds, connecting to endpoints out of your control will remain
+	NodeMCU builds, connecting to endpoints out of your control will remain
 	a precarious position, and so we strongly suggest that TLS connections
 	be made only to endpoints under your control, whose TLS configurations
 	can ensure that their ServerHello messages are small.  A reasonable
@@ -157,7 +157,8 @@ none
 
 ## tls.socket:hold()
 
-Throttle data reception by placing a request to block the TCP receive function. This request is not effective immediately, Espressif recommends to call it while reserving 5*1460 bytes of memory.
+Throttle data reception by placing a request to block the TCP receive function.
+This request is not effective immediately, Espressif recommends to call it while reserving 5*1460 bytes of memory.
 
 #### Syntax
 `hold()`
@@ -220,7 +221,10 @@ Sends data to remote peer.
 
 #### Note
 
-Multiple consecutive `send()` calls aren't guaranteed to work (and often don't) as network requests are treated as separate tasks by the SDK. Instead, subscribe to the "sent" event on the socket and send additional data (or close) in that callback. See [#730](https://github.com/nodemcu/nodemcu-firmware/issues/730#issuecomment-154241161) for details.
+Multiple consecutive `send()` calls aren't guaranteed to work (and often don't) as
+network requests are treated as separate tasks by the SDK.
+Instead, subscribe to the "sent" event on the socket and send additional data (or close) in that callback.
+See [#730](https://github.com/nodemcu/nodemcu-firmware/issues/730#issuecomment-154241161) for details.
 
 #### See also
 [`tls.socket:on()`](#tlssocketon)
@@ -252,7 +256,7 @@ none
 
 ## tls.cert.verify()
 
-Controls the certificate verification process when the Nodemcu makes a secure connection.
+Controls the certificate verification process when the NodeMCU makes a secure connection.
 
 #### Syntax
 `tls.cert.verify(enable)`
@@ -323,9 +327,8 @@ use `tls.cert.verify(true)` and use the stored certificate.
 
 ## tls.cert.auth()
 
-Controls the certificate proving process when the esp authenticates against the other side 
-like when establishing mutual authentication as in MQTT.  the tls.cert.auth data is used as the 
-TLS client key and certificate when the NodeMCU device is making a connection to a remote TLS server.
+Controls the client key and certificate used when the ESP creates a TLS connection (for example,
+through `tls.createConnection` or `https` or `mqtt` connections with `secure = true`).
 
 #### Syntax
 `tls.cert.auth(enable)`
@@ -333,8 +336,8 @@ TLS client key and certificate when the NodeMCU device is making a connection to
 `tls.cert.auth(pemdata[, pemdata])`
 
 #### Parameters
-- `enable` A boolean which indicates whether profing should be enabled or not. The default at boot is `false`.
-- `pemdata` A string containing the client certificate to use for profing. There second pemdata is the client private key.
+- `enable` A boolean, specifying whether subsequent TLS connections will present a client certificate. The default at boot is `false`.
+- `pemdata` Two strings, the first containing the PEM-encoded client's certificate and the second containing the PEM-encoded client's private key.
 
 #### Returns
 `true` if it worked.
@@ -368,12 +371,12 @@ CLIENT PRIVATE KEY String (PEM file)
 ```
 
 #### Notes
-The certificate needed for proving is stored in the flash chip. The `tls.cert.auth` call with `true`
-enables proving against the value stored in the flash.
+The certificate needed for proofing is stored in the flash chip. The `tls.cert.auth` call with `true`
+enables proofing against the value stored in the flash.
 
 The certificate can not be defined at firmware build time but it can be loaded into the flash chip at initial boot of the firmware.
 It can be supplied by passing the PEM data as a string value to `tls.cert.auth`. This
-will store the certificate into the flash chip and turn on proving with that certificate. 
+will store the certificate into the flash chip and turn on proofing with that certificate. 
 Subsequent boots of the esp can then use `tls.cert.auth(true)` and use the stored certificate.
 
 
