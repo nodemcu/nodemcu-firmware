@@ -322,13 +322,13 @@ at `server-ca.crt` in the root of the nodemcu-firmware build tree. The build scr
 firmware image.
 
 The alternative approach is easier for development, and that is to supply the PEM data as a string value to `tls.cert.verify`. This
-will store the certificate into the flash chip and turn on verification for that certificate. Subsequent boots of the esp can then
+will store the certificate into the flash chip and turn on verification for that certificate. Subsequent boots of the ESP can then
 use `tls.cert.verify(true)` and use the stored certificate.
 
 ## tls.cert.auth()
 
 Controls the client key and certificate used when the ESP creates a TLS connection (for example,
-through `tls.createConnection` or `https` or `mqtt` connections with `secure = true`).
+through `tls.createConnection` or `https` or `MQTT` connections with `secure = true`).
 
 #### Syntax
 `tls.cert.auth(enable)`
@@ -345,7 +345,7 @@ through `tls.createConnection` or `https` or `mqtt` connections with `secure = t
 Can throw a number of errors if invalid data is supplied.
 
 #### Example
-Open an mqtt client.
+Open an MQTT client.
 ```
 tls.cert.auth(true)
 tls.cert.verify(true)
@@ -377,7 +377,7 @@ enables proofing against the value stored in the flash.
 The certificate can not be defined at firmware build time but it can be loaded into the flash chip at initial boot of the firmware.
 It can be supplied by passing the PEM data as a string value to `tls.cert.auth`. This
 will store the certificate into the flash chip and turn on proofing with that certificate. 
-Subsequent boots of the esp can then use `tls.cert.auth(true)` and use the stored certificate.
+Subsequent boots of the ESP can then use `tls.cert.auth(true)` and use the stored certificate.
 
 
 
