@@ -99,7 +99,7 @@ state.start = function()
 
     gossip.inboundSocket = net.createUDPSocket();
     gossip.inboundSocket:listen(gossip.config.comPort);
-    gossip.inboundSocket:on('receive', network.stateUpdate());
+    gossip.inboundSocket:on('receive', network.stateUpdate);
 
     gossip.started = true;
     gossip.timer = tmr.create();
@@ -148,9 +148,8 @@ network.sendSyn = function()
 end
 
 network.pickRandomNode = function()
-    local randomListPick = {};
     if #gossip.config.seedList > 0 then
-        randomListPick = node.random(1, #gossip.config.seedList);
+        local randomListPick = node.random(1, #gossip.config.seedList);
         utils.debug('Randomly picked: ' .. gossip.config.seedList[randomListPick]);
         return gossip.config.seedList[randomListPick];
     end
@@ -194,27 +193,28 @@ network.receiveAck = function(ackIp, updateData)
     end
 end
 
-network.stateUpdate = function()
-    return function(socket, data, port, ip)
-        if gossip.networkState[ip] ~= nil then
-            gossip.networkState[ip].state = constants.nodeState.UP;
-        end
-        local messageDecoded, updateData = pcall(sjson.decode, data);
-        if not messageDecoded then
-            utils.debug('Invalid JSON received from ' .. ip);
-            return;
-        end
-        local updateType = updateData.type;
-        updateData.type = nil;
-        if updateType == constants.updateType.SYN then
-            network.receiveSyn(ip, updateData);
-        elseif updateType == constants.updateType.ACK then
-            network.receiveAck(ip, updateData);
-        else
-            utils.debug('Invalid data comming from ip ' .. ip ..
-                            '. No type specified.');
-            return;
-        end
+network.stateUpdate = function(socket, data, port, ip)
+    if not socket or not port then
+        return;
+    end
+    if gossip.networkState[ip] ~= nil then
+        gossip.networkState[ip].state = constants.nodeState.UP;
+    end
+    local messageDecoded, updateData = pcall(sjson.decode, data);
+    if not messageDecoded then
+        utils.debug('Invalid JSON received from ' .. ip);
+        return;
+    end
+    local updateType = updateData.type;
+    updateData.type = nil;
+    if updateType == constants.updateType.SYN then
+        network.receiveSyn(ip, updateData);
+    elseif updateType == constants.updateType.ACK then
+        network.receiveAck(ip, updateData);
+    else
+        utils.debug('Invalid data comming from ip ' .. ip ..
+                        '. No type specified.');
+        return;
     end
 end
 
