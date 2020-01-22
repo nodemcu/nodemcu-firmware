@@ -193,10 +193,8 @@ network.receiveAck = function(ackIp, updateData)
     end
 end
 
+-- luacheck: push no unused
 network.stateUpdate = function(socket, data, port, ip)
-    if not socket or not port then
-        return;
-    end
     if gossip.networkState[ip] ~= nil then
         gossip.networkState[ip].state = constants.nodeState.UP;
     end
@@ -217,6 +215,7 @@ network.stateUpdate = function(socket, data, port, ip)
         return;
     end
 end
+-- luacheck: pop
 
 -- Constants
 
