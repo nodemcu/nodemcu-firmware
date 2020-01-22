@@ -5,7 +5,7 @@
 | 2020-01-20 | [alexandruantochi](https://github.com/alexandruantochi) | [alexandruantochi](https://github.com/alexandruantochi) | [gossip.lua](../../lua_modules/gossip/gossip.lua) |
 
 
-This module is based on the gossip protocol and usefull for use cases when multiple controllers are on the same network and they need to know about each other's state or when a single point of failure (such as an entity that queries each controller in particular) is to be avoided. It runs using UDP, thus providing faster communication and less network noise. 
+This module is based on the gossip protocol and usefull for use cases when multiple controllers are on the same network and they need to know about each other's state. It can also be used for spreading information in the network. It runs using UDP, thus providing faster communication and less network noise. 
 
 ## Usage
 ```lua
@@ -24,6 +24,8 @@ gossip.start()
 Each controller will randomly pick an IP from it's seed list. It will send a `SYN` request to that IP and set recieving node's `state` to an intermediary state between `Up` and `Suspect`. The node that recieves the `SYN` request will compute a diff on the received networkState vs own networkState. It will then send that diff as an `ACK` request. If there is no data to send, it will only send an `ACK`. When the `ACK` is received, the sender's state will revert to `Up` and the receiving node will update it's own networkState using the diff (based on the `ACK` reply).
 
 Gossip will establish if the information received from another node has fresher data by first comparing the `revision`, then the `heartbeat` and lastly the `state`. States that are closer to `DOWN` have priority as an offline node does not update it's heartbeat.
+
+Any other parameter can be sent along with the mandatory `revision`, `heartbeat` and `state` thus allowing the user to spread information around the network.
 
 Currently there is no implemented deletion for nodes that are down except for the fact that their status is signaled as `REMOVE`.
 
@@ -119,7 +121,8 @@ Example:
   "192.168.0.53": {
     "state": 3,
     "revision": 25,
-    "heartbeat": 2500
+    "heartbeat": 2500,
+    "extra" : "this is some extra info from node 53"
   },
   "192.168.0.75": {
     "state": 0,
