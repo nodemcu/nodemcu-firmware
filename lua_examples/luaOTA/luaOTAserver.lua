@@ -163,7 +163,7 @@ end
 receive_and_parse = function(esp)
   local line = esp:receive("*l")
   if (not line) then
-    error( "Empty response from ESP, possible cause : file signature failure, check that the secret on ESP and server match", 0)  
+    error( "Empty response from ESP, possible cause: file signature failure", 0)  
     --return nil
   end
   local packed_cmd, sig = line:sub(1,#line-6),line:sub(-6)
