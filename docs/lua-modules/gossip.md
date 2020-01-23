@@ -7,6 +7,17 @@
 
 This module is based on the gossip protocol and usefull for use cases when multiple controllers are on the same network and they need to know about each other's state. It can also be used for spreading information in the network. It runs using UDP, thus providing faster communication and less network noise. 
 
+### Require
+```lua
+gossip = require('gossip')
+```
+
+### Release
+```lua
+gossip.inboundSocket:close()
+gossip = nil
+```
+
 ## Usage
 ```lua
 config = {
