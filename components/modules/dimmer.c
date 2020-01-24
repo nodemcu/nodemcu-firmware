@@ -164,21 +164,6 @@ static int dimmer_mainsFrequency(lua_State* L) {
 }
 
 static void IRAM_ATTR disable_timer() {
-    /*
-    Enable the timer interrupt at the device level. Don't write directly
-    to the INTENABLE register because it may be virtualized.
-    */
-    /*
-#ifdef __XTENSA_CALL0_ABI__
-    asm volatile(
-        "movi    a2, XT_TIMER_INTEN\n")
-        "call0   xt_ints_off")
-#else
-    asm volatile(
-        "movi a6, XT_TIMER_INTEN\n"
-        "call4 xt_ints_off")
-#endif
-*/
     portDISABLE_INTERRUPTS();
     ESP_INTR_DISABLE(XT_TIMER_INTNUM);
     portENABLE_INTERRUPTS();
@@ -190,32 +175,29 @@ static void IRAM_ATTR stuff(void* parms) {
     rtc_wdt_protect_off();
     rtc_wdt_disable();
 
-    /*
-    int level = 0;
-    gpio_set_direction(16, GPIO_MODE_OUTPUT);
-    while (1) {
-        GPIO_OUTPUT_SET(16, level);
-        if (level == 0) {
-            level = 1;
-        } else {
-            level = 0;
-        }
-        delayMicroseconds(1000000);
-    }
-    */
-    uint32_t volatile now;
-    uint32_t volatile elapsed;
+    // max_target determines a timeout waiting to register a zero crossing. It is calculated
+    // as the max number of CPU cycles in half a mains cycle for 50Hz mains (worst case), increased by 10% for margin.
+    uint32_t max_target = esp_clk_cpu_freq() / 50 /*Hz*/ / 2 /*half cycle*/ * 11 / 10 /* increase by 10%*/;
+
+    // target specifies how many CPU cycles to wait before we poll GPIO to search for zero crossing
+    uint32_t target = 0;
+
     while (true) {
         if (disable_loop) {
             disable_loop_ack = true;
             while (!disable_loop)
                 ;
         }
-        // xthal_get_ccount();
-        RSR(CCOUNT, now)
-        elapsed = now - zcTimestamp;
-        if ((elapsed > 600000) && (GPIO_INPUT_GET(zcPin) == 1)) {
+        // now contains the current value of the CPU cycle counter
+        uint32_t volatile now = xthal_get_ccount();
+        // elapsed contains the number of CPU cycles since the last zero crossing
+        uint32_t volatile elapsed = now - zcTimestamp;
+
+        // the following avoids polling GPIO unless we are close to a zero crossing:
+        if ((elapsed > target) && (GPIO_INPUT_GET(zcPin) == 1)) {
             zCount++;
+            // Zero crossing has been detected. Reset dimmers according to their mode
+            // (Leading edge or trailing edge)
             for (int i = 0; i < dimCount; i++) {
                 if (dims[i].level == 0) {
                     GPIO_OUTPUT_SET(dims[i].pin, (1 - dims[i].mode));
@@ -226,14 +208,26 @@ static void IRAM_ATTR stuff(void* parms) {
                 }
             }
             zcTimestamp = now;
-            p = elapsed;
+            // some dimmer modules keep the signal high when there is no mains input
+            // The following sets period to 0, to signal there is no mains input.
+            p = elapsed < 10000 ? 0 : elapsed;
+
+            // Calibrate new target as 90% of the elapsed time.
+            target = 9 * elapsed / 10;
         } else {
+            // Check if it is time to turn on or off any dimmed output:
             for (int i = 0; i < dimCount; i++) {
                 if ((dims[i].switched == false) && (elapsed > dims[i].level)) {
                     GPIO_OUTPUT_SET(dims[i].pin, (1 - dims[i].mode));
                     dims[i].switched = true;
                 }
             }
+        }
+        // if too much time has pased since we detected a zero crossing, set our target to 0 to resync.
+        // This could happen if mains power is cut.
+        if (elapsed > max_target) {
+            target = 0;
+            p = 0;  // mark period as 0 (no mains detected)
         }
     }
 }
@@ -247,7 +241,7 @@ static int dimmer_setup(lua_State* L) {
     zcPin = luaL_checkinteger(L, -1);
 
     check_err(L, gpio_set_direction(zcPin, GPIO_MODE_INPUT));
-    check_err(L, gpio_set_pull_mode(zcPin, GPIO_PULLUP_ONLY));
+    check_err(L, gpio_set_pull_mode(zcPin, GPIO_PULLDOWN_ONLY));
 
     ESP_LOGD(TAG, "Dimmer setup. ZC=%d", zcPin);
     TaskHandle_t handle;
