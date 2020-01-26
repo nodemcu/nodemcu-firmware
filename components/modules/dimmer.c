@@ -64,7 +64,7 @@ StaticTask_t xTaskBuffer;
 static void check_err(lua_State* L, esp_err_t err) {
     switch (err) {
         case ESP_ERR_INVALID_ARG:
-            luaL_error(L, "invalid argument");
+            luaL_error(L, "invalid argument or gpio pin");
         case ESP_ERR_INVALID_STATE:
             luaL_error(L, "internal logic error");
         case ESP_ERR_NO_MEM:
@@ -73,6 +73,12 @@ static void check_err(lua_State* L, esp_err_t err) {
             break;
         default:
             luaL_error(L, "Error code %d", err);
+    }
+}
+
+static void check_setup(lua_State* L) {
+    if (zcPin == -1) {
+        luaL_error(L, "dimmer module not initialized");
     }
 }
 
@@ -128,14 +134,10 @@ static inline esp_err_t IRAM_ATTR msg_set_level() {
     return ESP_ERR_INVALID_ARG;
 }
 
-static void IRAM_ATTR disable_timer() {
+static void IRAM_ATTR cpu1_loop(void* parms) {
     portDISABLE_INTERRUPTS();
     ESP_INTR_DISABLE(XT_TIMER_INTNUM);
     portENABLE_INTERRUPTS();
-}
-
-static void IRAM_ATTR stuff(void* parms) {
-    disable_timer();
     rtc_wdt_protect_off();
     rtc_wdt_disable();
 
@@ -216,6 +218,7 @@ static void awaitAck(lua_State* L) {
 
 // pin
 static int dimmer_add(lua_State* L) {
+    check_setup(L);
     message.pin = luaL_checkint(L, 1);
     message.mode = luaL_optint(L, 2, DIM_MODE_LEADING_EDGE);
     check_err(L, gpio_set_direction(message.pin, GPIO_MODE_OUTPUT));
@@ -228,22 +231,15 @@ static int dimmer_add(lua_State* L) {
 }
 
 static int dimmer_remove(lua_State* L) {
+    check_setup(L);
     message.pin = luaL_checkint(L, 1);
     message.messageType = MT_REMOVE;
     awaitAck(L);
     return 0;
 }
 
-static int dimmer_list_debug(lua_State* L) {
-    ESP_LOGW(TAG, "p=%u, zcount=%d, zcTimestamp=%u, esp_freq=%d", p, zCount, zcTimestamp, esp_clk_cpu_freq());
-
-    for (int i = 0; i < dimCount; i++) {
-        ESP_LOGW(TAG, "pin=%d, mode=%d, level=%u", dims[i].pin, dims[i].mode, dims[i].level);
-    }
-    return 0;
-}
-
 static int dimmer_set_level(lua_State* L) {
+    check_setup(L);
     message.pin = luaL_checkint(L, 1);
     message.level = luaL_checkint(L, 2);
     message.messageType = MT_SETLEVEL;
@@ -261,24 +257,38 @@ static int dimmer_mainsFrequency(lua_State* L) {
     return 1;
 }
 
+static int dimmer_list_debug(lua_State* L) {
+    ESP_LOGW(TAG, "p=%u, zcount=%d, zcTimestamp=%u, esp_freq=%d", p, zCount, zcTimestamp, esp_clk_cpu_freq());
+
+    for (int i = 0; i < dimCount; i++) {
+        ESP_LOGW(TAG, "pin=%d, mode=%d, level=%u", dims[i].pin, dims[i].mode, dims[i].level);
+    }
+    return 0;
+}
+
 static int dimmer_setup(lua_State* L) {
+    if (zcPin != -1) {
+        return 0;
+    }
     zcPin = luaL_checkinteger(L, -1);
 
     check_err(L, gpio_set_direction(zcPin, GPIO_MODE_INPUT));
     check_err(L, gpio_set_pull_mode(zcPin, GPIO_PULLDOWN_ONLY));
 
-    ESP_LOGD(TAG, "Dimmer setup. ZC=%d", zcPin);
     TaskHandle_t handle;
-    xTaskCreatePinnedToCore(
-        stuff,       // Function that implements the task.
-        "stuff",     // Text name for the task.
-        STACK_SIZE,  // Stack size in bytes, not words.
-        (void*)1,    // Parameter passed into the task.
+    BaseType_t result = xTaskCreatePinnedToCore(
+        cpu1_loop,
+        "cpu1 loop",
+        STACK_SIZE,
+        NULL,
         tskIDLE_PRIORITY + 20,
         &handle,
-        //        xStack,        // Array to use as the task's stack.
-        //        &xTaskBuffer,  // Variable to hold the task's data structure.
         1);
+
+    if (result != pdPASS) {
+        luaL_error(L, "Error starting dimmer task in CPU1");
+        zcPin = -1;
+    }
 
     return 0;
 }
@@ -291,10 +301,11 @@ LROT_FUNCENTRY(remove, dimmer_remove)
 LROT_FUNCENTRY(setLevel, dimmer_set_level)
 LROT_FUNCENTRY(list, dimmer_list_debug)
 LROT_FUNCENTRY(mainsFrequency, dimmer_mainsFrequency)
+LROT_NUMENTRY(TRAILING_EDGE, DIM_MODE_TRAILING_EDGE)
+LROT_NUMENTRY(LEADING_EDGE, DIM_MODE_LEADING_EDGE)
 LROT_END(dimmer, NULL, 0)
 
 int luaopen_dimmer(lua_State* L) {
-    //luaL_rometatable(L, DIMMER_METATABLE, (void*)dimmer_metatable_map);  // create metatable for dimmer
     return 0;
 }
 
