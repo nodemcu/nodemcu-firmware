@@ -1,20 +1,15 @@
 // Module for interfacing with an MQTT broker
 #include <string.h>
 #include "driver/gpio.h"
-#include "driver/timer.h"
 #include "esp_clk.h"
-#include "esp_ipc.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/xtensa_timer.h"
 #include "lauxlib.h"
-#include "lmem.h"
 #include "lnodeaux.h"
 #include "module.h"
-#include "platform.h"
 #include "rom/gpio.h"
-#include "soc/cpu.h"
 #include "soc/rtc_wdt.h"
 
 #define TAG "DIMMER"
