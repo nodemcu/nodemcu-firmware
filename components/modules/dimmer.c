@@ -41,7 +41,7 @@ typedef struct {
 
 #define DIM_MODE_LEADING_EDGE 0x0
 #define DIM_MODE_TRAILING_EDGE 0x1
-#define STACK_SIZE 4096
+#define STACK_SIZE 512
 
 // menuconfig changes required in components/ESP32-specific...
 // removed: "Also watch CPU1 tick interrupt"
