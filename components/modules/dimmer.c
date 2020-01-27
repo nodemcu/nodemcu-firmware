@@ -2,7 +2,8 @@
 // This module implements phase-dimming for TRIAC-based mains dimmers.
 // brief description on how TRIAC-based dimming works: https://www.lamps-on-line.com/leading-trailing-edge-led-dimmers
 
-// Example hardware: https://robotdyn.com/ac-light-dimmer-module-1-channel-3-3v-5v-logic-ac-50-60hz-220v-110v.html
+// Schematics for a homemade module: https://hackaday.io/project/165927-a-digital-ac-dimmer-using-arduino/details
+// Example commercial hardware: https://robotdyn.com/ac-light-dimmer-module-1-channel-3-3v-5v-logic-ac-50-60hz-220v-110v.html
 // These modules come with a TRIAC whose gate is driven by a GPIO pin, which is isolated
 // from mains by an optocoupler. These modules also come with a zero-crossing detector,
 // that raises a pin when the AC mains sine wave signal crosses 0V.
@@ -20,6 +21,12 @@
 // * Enable FreeRTOS in both cores by unselecting "Component Config/FreeRTOS/Run FreeRTOS only on first core"
 // * Unselect  "ComponentConfig/ESP32-specific/Also watch CPU1 tick interrupt"
 // * Unselect  "ComponentConfig/ESP32-specific/Watch CPU1 idle task"
+
+// In your program, call dimmer.setup(zc_pin), indicating the pin input where you connected the zero crossing detector.
+// Use dimmer.add(pin, type) to have the module control that pin.
+// Type can be dimmer.LEADING_EDGE (default) or dimmer.TRAILING_EDGE, depending on the type of load/lightbulb.
+// User dimmer.setLevel(pin, value) to set the desired brightness level. Value can be from 0 (off) to 1000 (fully on).
+// Use dimmer.remove(pin) to have the dimmer module stop controlling that pin.
 
 #include <string.h>
 #include "driver/gpio.h"
