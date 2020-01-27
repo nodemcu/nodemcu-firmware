@@ -1,4 +1,26 @@
-// Module for interfacing with an MQTT broker
+// Module for driving TRIAC-based dimmers
+// This module implements phase-dimming for TRIAC-based mains dimmers.
+// brief description on how TRIAC-based dimming works: https://www.lamps-on-line.com/leading-trailing-edge-led-dimmers
+
+// Example hardware: https://robotdyn.com/ac-light-dimmer-module-1-channel-3-3v-5v-logic-ac-50-60hz-220v-110v.html
+// These modules come with a TRIAC whose gate is driven by a GPIO pin, which is isolated
+// from mains by an optocoupler. These modules also come with a zero-crossing detector,
+// that raises a pin when the AC mains sine wave signal crosses 0V.
+
+// Phase dimming is implemented by dedicating CPU1 entirely to this purpose... Phase dimming
+// requires very accurate timing. Configuring timer interrupts in the "busy" CPU0
+// does not cut it, with FreeRTOS scheduler, WiFi and so on demanding their share of the CPU
+// at random times, which would make dimmed lamps flicker.
+
+// Once the dimmer module is started, by means of dimmer.setup(), a busy loop is launched
+// on CPU1 that monitors zero-crossing signals from the dimmer and turns on/off
+// the TRIAC at the appropriate time, with nanosecond precision.
+
+// To use this module, change the following in menuconfig:
+// * Enable FreeRTOS in both cores by unselecting "Component Config/FreeRTOS/Run FreeRTOS only on first core"
+// * Unselect  "ComponentConfig/ESP32-specific/Also watch CPU1 tick interrupt"
+// * Unselect  "ComponentConfig/ESP32-specific/Watch CPU1 idle task"
+
 #include <string.h>
 #include "driver/gpio.h"
 #include "esp_clk.h"
@@ -12,13 +34,17 @@
 #include "rom/gpio.h"
 #include "soc/rtc_wdt.h"
 
+// TAG for debug logging
 #define TAG "DIMMER"
 
+// dim_t defines a dimmer pin configuration
 typedef struct {
-    int pin;
-    int mode;
+    int pin;   // pin to apply phase-dimming to.
+    int mode;  // dimming mode: LEADING_EDGE or TRAILING_EDGE
+    // level indicates the brightness level, computed as the number of
+    // CPU cycles to wait since the last zero crossing until switching the signal on or off.
     uint32_t level;
-    bool switched;
+    bool switched;  //wether this output has already been switched on or off in the current cycle.
 } dim_t;
 
 typedef enum {
@@ -42,10 +68,6 @@ typedef struct {
 #define DIM_MODE_LEADING_EDGE 0x0
 #define DIM_MODE_TRAILING_EDGE 0x1
 #define STACK_SIZE 512
-
-// menuconfig changes required in components/ESP32-specific...
-// removed: "Also watch CPU1 tick interrupt"
-// removed: "Watch CPU1 idle task"
 
 static volatile dimmer_message_t message = {.messageType = MT_IDLE};
 static volatile int zCount = 0;
