@@ -8,10 +8,10 @@
 // from mains by an optocoupler. These modules also come with a zero-crossing detector,
 // that raises a pin when the AC mains sine wave signal crosses 0V.
 
-// Phase dimming is implemented by dedicating CPU1 entirely to this purpose... Phase dimming
+// Phase dimming is implemented in this module by dedicating CPU1 entirely to this purpose... Phase dimming
 // requires very accurate timing. Configuring timer interrupts in the "busy" CPU0
-// does not cut it, with FreeRTOS scheduler, WiFi and so on demanding their share of the CPU
-// at random times, which would make dimmed lamps flicker.
+// does not work properly, with FreeRTOS scheduler, WiFi and so on demanding their share of the CPU
+// at random intervals, which would make dimmed lamps flicker.
 
 // Once the dimmer module is started, by means of dimmer.setup(), a busy loop is launched
 // on CPU1 that monitors zero-crossing signals from the dimmer and turns on/off
@@ -60,26 +60,29 @@ typedef struct dim_t {
     struct dim_t* next;
 } dim_t;
 
+// lua interface running on CPU0 communicates with the busy loop in CPU1 by means
+// of a message structure defined here:
+
+// message_type_t defines the two types of messages:
 typedef enum {
-    MT_IDLE = 0,
-    MT_ADD = 1,
-    MT_REMOVE = 2,
-    MT_SETLEVEL = 3,
+    MT_IDLE = 0,    // indicates no message waiting to be read
+    MT_ADD = 1,     // message contains information for a new pin to be controlled
+    MT_REMOVE = 2,  // message indicates dimmer must stop controlling the given pin
 } message_type_t;
 
 typedef struct {
-    message_type_t message_type;
-    esp_err_t err;
+    message_type_t message_type;  // type of message, as defined above
+    esp_err_t err;                // return value set by the CPU1 busy loop after processing the message
     union {
-        int pin;
-        dim_t* dim;
+        int pin;     // used for MT_REMOVE, the pin to be removed from control
+        dim_t* dim;  // used for MT_ADD; pointer to a dim_t containing info about the pin to be controlled and how
     };
 
 } dimmer_message_t;
 
 #define DIM_MODE_LEADING_EDGE 0x0
 #define DIM_MODE_TRAILING_EDGE 0x1
-#define STACK_SIZE 512
+#define STACK_SIZE 512  // Stack size for the CPU1 FreeRTOS task.
 
 // Every mains cycle, the lamp brightness will gradually get closer to the desired brightness.
 // this avoids damaging power supplies and rushing current through the dimmer module.
@@ -90,17 +93,19 @@ typedef struct {
 // This is a default. The user can define a specific value when calling dimmer.setup()
 #define DEFAULT_TRANSITION_SPEED 100 /* 1-1000 */
 
+// message is a shared variable among CPU0 (lua) and CPU1 (busy control loop)
+// CPU0 fills the structure and CPU1 processes it
 static volatile dimmer_message_t message = {.message_type = MT_IDLE};
-static volatile int zc_count = 0;
-static int zc_pin = -1;
-static uint32_t zc_timestamp = 0;
-static uint32_t mains_period = 0;
-static dim_t* dims_head = NULL;
-static int transition_speed;
-StaticTask_t xTaskBuffer;
+static int zc_pin = -1;            // input pin to watch for zero crossing sync pulses
+static uint32_t zc_timestamp = 0;  // measured in CPU cycles, contains the last time a zero crossing was seen.
+static uint32_t mains_period = 0;  // estimated period of half a mains cycle, measured in CPU cycles.
+static dim_t* dims_head = NULL;    // linked list head to a list of dimmer-controlled pins
+static int transition_speed;       //configured transition speed (1-1000)
+StaticTask_t xTaskBuffer;          // required by FreeRTOS to allocate a static task
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
+// check_err translates a ESP error to a Lua error
 static void check_err(lua_State* L, esp_err_t err) {
     switch (err) {
         case ESP_ERR_INVALID_ARG:
@@ -114,13 +119,16 @@ static void check_err(lua_State* L, esp_err_t err) {
     }
 }
 
+// check_setup ensures dimmer.setup() has been called
 static void check_setup(lua_State* L) {
     if (zc_pin == -1) {
         luaL_error(L, "dimmer module not initialized");
     }
 }
 
-static dim_t* find(int pin) {
+// findPin searches the dimmer-controlled list of pins and returns
+// a pointer to the found structure, or NULL otherwise.
+static dim_t* IRAM_ATTR findPin(int pin) {
     for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
         if (dim->pin == pin) {
             return dim;
@@ -129,22 +137,26 @@ static dim_t* find(int pin) {
     return NULL;
 }
 
+/**** the following code runs in CPU1 only ****/
+
+// msg_add_dimmer processes a add dimmer message, updating the linked list.
 static inline esp_err_t IRAM_ATTR msg_add_dimmer() {
-    dim_t* dim = find(message.dim->pin);
+    dim_t* dim = findPin(message.dim->pin);
     if (dim != NULL)
         return ESP_ERR_INVALID_ARG;
 
     message.dim->next = dims_head;
     dims_head = message.dim;
-    message.dim = NULL;
+    message.dim = NULL;  // mark as NULL to avoid await_ack in CPU0 from freeing this memory
     return ESP_OK;
 }
 
+// msg_remove_dimmer processes a remove dimmer message, updating the linked list
 static inline esp_err_t IRAM_ATTR msg_remove_dimmer() {
     dim_t* previous = NULL;
     for (dim_t* current = dims_head; current != NULL; current = current->next) {
         if (current->pin == message.pin) {
-            message.dim = current;
+            message.dim = current;  // store the to-be-removed dim in the message so await_ack in CPU0 frees it.
             if (previous == NULL) {
                 dims_head = dims_head->next;
             } else {
@@ -158,21 +170,27 @@ static inline esp_err_t IRAM_ATTR msg_remove_dimmer() {
     return ESP_ERR_INVALID_ARG;
 }
 
+// cpu1_loop is the entry point for the dimmer control busy loop
 static void IRAM_ATTR cpu1_loop(void* parms) {
+    // disable FreeRTOS scheduler tick timer for CPU1, since we only want this task running
+    // and don't want the scheduler to get in the way and make our lights flicker
     portDISABLE_INTERRUPTS();
     ESP_INTR_DISABLE(XT_TIMER_INTNUM);
     portENABLE_INTERRUPTS();
+
+    //avoid the whatchdog to reset our chip thinking some task is hanging the CPU
     rtc_wdt_protect_off();
     rtc_wdt_disable();
+
+    // target specifies how many CPU cycles to wait before we poll GPIO to search for zero crossing
+    uint32_t target = 0;
 
     // max_target determines a timeout waiting to register a zero crossing. It is calculated
     // as the max number of CPU cycles in half a mains cycle for 50Hz mains (worst case), increased by 10% for margin.
     uint32_t max_target = esp_clk_cpu_freq() / 50 /*Hz*/ / 2 /*half cycle*/ * 11 / 10 /* increase by 10%*/;
 
-    // target specifies how many CPU cycles to wait before we poll GPIO to search for zero crossing
-    uint32_t target = 0;
-
     while (true) {
+        // check if there is a message waiting to be processed:
         if (message.message_type != MT_IDLE) {
             switch (message.message_type) {
                 case MT_ADD:
@@ -184,17 +202,17 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
                 default:
                     break;
             }
-            message.message_type = MT_IDLE;
+            message.message_type = MT_IDLE;  // this will release CPU0 waiting in await_ack()
         }
 
-        // now contains the current value of the CPU cycle counter
+        // `now` contains the current value of the CPU cycle counter
         uint32_t now = xthal_get_ccount();
-        // elapsed contains the number of CPU cycles since the last zero crossing
+        // `elapsed` contains the number of CPU cycles since the last zero crossing
         uint32_t elapsed = now - zc_timestamp;
 
         // the following avoids polling GPIO unless we are close to a zero crossing:
         if ((elapsed > target) && (GPIO_INPUT_GET(zc_pin) == 1)) {
-            // Zero crossing has been detected.
+            // At this point, zero crossing has been detected.
             // Reset dimmers according to their mode, Leading edge or trailing edge
             for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
                 if (dim->level == 0) {
@@ -210,8 +228,6 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
             // closer to the target brightness level.
             // tempting to combine the below loop into the above one, but we want
             // to make sure pins are reset ASAP.
-            zc_count++;
-            zc_timestamp = now;
             uint32_t levelStep = mains_period * transition_speed / 1000;
 
             for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
@@ -223,9 +239,13 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
                 }
             }
 
+            // `elapsed` now contains the measured duration of the period, so store it.
             // some dimmer modules keep the zc signal high when there is no mains input
-            // The following sets period to 0, to signal there is no mains input.
+            // The following sets period to 0 if it is too small, to signal there is no mains input.
             mains_period = (elapsed < 1000) ? 0 : elapsed;
+
+            // remember when this zero crossing happened:
+            zc_timestamp = now;
 
             // Calibrate new target as 90% of the elapsed time.
             target = 9 * elapsed / 10;
@@ -248,17 +268,27 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
     }
 }
 
+/**** the following code runs in CPU0 only ****/
+
+// await_ack spin locks waiting for CPU1 to mark the message as processed.
 static void await_ack(lua_State* L) {
     while (message.message_type != MT_IDLE)
-        ;
+        ;   // wait until CPU1 sets the message back to MT_IDLE.
+            //should be a few milliseconds
+
     if (message.dim != NULL) {
+        // Free dimmed pin memory in case an item was removed or we were trying to add an already
+        // existing pin.
         luaM_freemem(L, message.dim, sizeof(dim_t));
         message.dim = NULL;
     }
     check_err(L, message.err);
 }
 
-// pin
+// lua: dimmer.add(pin, mode): Adds a pin to the dimmer module.
+// pin: the GPIO pin to control. Will configure the pin as output.
+// mode: (optional) dimming mode, either dimmer.LEADING_EDGE (default) or dimmer.TRAILING_EDGE
+// will throw an error if the pin was already added or an incorrect GPIO pin is provided.
 static int dimmer_add(lua_State* L) {
     check_setup(L);
 
@@ -275,29 +305,37 @@ static int dimmer_add(lua_State* L) {
     dim->target_level = dim->level = (mode == DIM_MODE_LEADING_EDGE) ? mains_period * 2 : 0;
     dim->switched = false;
 
+    // the moment message_type is set, CPU1 will process it, so set this value the last one
     message.message_type = MT_ADD;
     await_ack(L);
 
     return 0;
 }
 
+// lua: dimmer.remove(pin): Removes a pin from the dimmer module's control
+// pin: pin to remove
+// will throw an error if the pin is not currently controlled by the module
 static int dimmer_remove(lua_State* L) {
     check_setup(L);
 
     message.pin = luaL_checkint(L, 1);
 
+    // the moment message_type is set, CPU1 will process it, so set this value the last one
     message.message_type = MT_REMOVE;
     await_ack(L);
     return 0;
 }
 
+// lua: dimmer.setLevel(pin, brightness): changes the brightness level for a dimmed pin
+// pin: pin to configure
+// brightness: per-mille brightness level, 0: off, 1000 fully on.
 static int dimmer_setLevel(lua_State* L) {
     check_setup(L);
 
-    int pin = luaL_checkint(L, 1);         // pin to configure
-    int brightness = luaL_checkint(L, 2);  // brightness level (0-1000)
+    int pin = luaL_checkint(L, 1);
+    int brightness = luaL_checkint(L, 2);
 
-    dim_t* dim = find(pin);
+    dim_t* dim = findPin(pin);
     if (dim == NULL) {
         luaL_error(L, "invalid pin");
         return 0;
@@ -321,6 +359,7 @@ static int dimmer_setLevel(lua_State* L) {
     return 0;
 }
 
+// lua: dimmer.mainsFrequency(): returns the measured mains frequency, in cHz
 static int dimmer_mainsFrequency(lua_State* L) {
     int mainsF = 0;
     if (mains_period > 0) {
@@ -330,30 +369,24 @@ static int dimmer_mainsFrequency(lua_State* L) {
     return 1;
 }
 
-static int dimmer_list_debug(lua_State* L) {
-    ESP_LOGW(TAG, "mains_period=%u, zc_count=%d, zc_timestamp=%u, esp_freq=%d", mains_period, zc_count, zc_timestamp, esp_clk_cpu_freq());
-
-    for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
-        ESP_LOGW(TAG, "pin=%d, mode=%d, level=%u", dim->pin, dim->mode, dim->level);
-    }
-    return 0;
-}
-
-// dimmer.setup(zc_pin, transition_speed)
+// lua: dimmer.setup(zc_pin, transition_speed) : starts the dimmer module
 // zc_pin: input pin connected to the zero-crossing detector
 // transition_speed: 1-1000. Allows controlling the speed at which to change brightness.
 // set to 1000 to disable fading altogether (instant change).
 // defaults to a quick ~100ms fade.
 static int dimmer_setup(lua_State* L) {
     if (zc_pin != -1) {
-        return 0;
+        return 0;  // already setup
     }
+
     zc_pin = luaL_checkint(L, 1);
     transition_speed = luaL_optint(L, 2, DEFAULT_TRANSITION_SPEED);
 
+    // configure the zc pin as output
     check_err(L, gpio_set_direction(zc_pin, GPIO_MODE_INPUT));
     check_err(L, gpio_set_pull_mode(zc_pin, GPIO_PULLDOWN_ONLY));
 
+    // launch the CPU1 busy loop task
     TaskHandle_t handle;
     BaseType_t result = xTaskCreatePinnedToCore(
         cpu1_loop,
@@ -362,7 +395,7 @@ static int dimmer_setup(lua_State* L) {
         NULL,
         tskIDLE_PRIORITY + 20,
         &handle,
-        1);
+        1);  // core 1
 
     if (result != pdPASS) {
         luaL_error(L, "Error starting dimmer task in CPU1");
@@ -378,7 +411,6 @@ LROT_FUNCENTRY(setup, dimmer_setup)
 LROT_FUNCENTRY(add, dimmer_add)
 LROT_FUNCENTRY(remove, dimmer_remove)
 LROT_FUNCENTRY(setLevel, dimmer_setLevel)
-LROT_FUNCENTRY(list, dimmer_list_debug)
 LROT_FUNCENTRY(mainsFrequency, dimmer_mainsFrequency)
 LROT_NUMENTRY(TRAILING_EDGE, DIM_MODE_TRAILING_EDGE)
 LROT_NUMENTRY(LEADING_EDGE, DIM_MODE_LEADING_EDGE)
