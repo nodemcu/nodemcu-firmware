@@ -48,10 +48,14 @@
 typedef struct {
     int pin;   // pin to apply phase-dimming to.
     int mode;  // dimming mode: LEADING_EDGE or TRAILING_EDGE
-    // level indicates the brightness level, computed as the number of
+    // level indicates the current brightness level, computed as the number of
     // CPU cycles to wait since the last zero crossing until switching the signal on or off.
     uint32_t level;
-    bool switched;  //wether this output has already been switched on or off in the current cycle.
+    // targetLevel indicates the desired brightness level, computed in CPU cycles, as above.
+    // every mains cycle, `level` will get closer to `targetLevel`, so brightness changes gradually.
+    // this avoids damaging power supplies and rushing current through the dimmer module.
+    uint32_t targetLevel;
+    bool switched;  //wether this output has already been switched on or off in the current mains cycle.
 } dim_t;
 
 typedef enum {
@@ -66,7 +70,7 @@ typedef struct {
     int pin;
     union {
         int mode;
-        uint32_t level;
+        uint32_t targetLevel;
         esp_err_t err;
     };
 
@@ -76,6 +80,15 @@ typedef struct {
 #define DIM_MODE_TRAILING_EDGE 0x1
 #define STACK_SIZE 512
 
+// Every mains cycle, the lamp brightness will gradually get closer to the desired brightness.
+// this avoids damaging power supplies and rushing current through the dimmer module.
+// DEFAULT_TRANSITION_SPEED controls the default fade speed.
+// It is defined as a per mille (‰) brightness delta per half mains cycle (10ms if 50Hz)
+// for example, if set to 20, a light would go from zero to full brightness in 1000 / 20 * 10ms = 500ms
+// Set to 1000 to disable fading as default.
+// This is a default. The user can define a specific value when calling dimmer.setup()
+#define DEFAULT_TRANSITION_SPEED 100 /* 1-1000 */
+
 static volatile dimmer_message_t message = {.messageType = MT_IDLE};
 static volatile int zCount = 0;
 static int zcPin = -1;
@@ -83,7 +96,10 @@ static volatile uint32_t zcTimestamp = 0;
 static uint32_t p = 0;
 static dim_t* dims = NULL;
 static int dimCount = 0;
+static int transitionSpeed;
 StaticTask_t xTaskBuffer;
+
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 static void check_err(lua_State* L, esp_err_t err) {
     switch (err) {
@@ -117,7 +133,7 @@ static inline esp_err_t IRAM_ATTR msg_add_dimmer() {
         return ESP_ERR_NO_MEM;
     }
     dims[dimCount].pin = message.pin;
-    dims[dimCount].level = (message.mode == DIM_MODE_LEADING_EDGE) ? p * 2 : 0;
+    dims[dimCount].targetLevel = dims[dimCount].level = (message.mode == DIM_MODE_LEADING_EDGE) ? p * 2 : 0;
     dims[dimCount].mode = message.mode;
     dims[dimCount].switched = false;
     dimCount++;
@@ -141,16 +157,16 @@ static inline esp_err_t IRAM_ATTR msg_remove_dimmer() {
 static inline esp_err_t IRAM_ATTR msg_set_level() {
     for (int i = 0; i < dimCount; i++) {
         if (dims[i].pin == message.pin) {
-            int level = message.level;
+            int targetLevel = message.targetLevel;
             if (dims[i].mode == DIM_MODE_LEADING_EDGE) {
-                level = 1000 - level;
+                targetLevel = 1000 - targetLevel;
             }
-            if (level >= 1000) {
-                dims[i].level = p * 2;  // ensure it will never switch.
-            } else if (level <= 0) {
-                dims[i].level = 0;
+            if (targetLevel >= 1000) {
+                dims[i].targetLevel = p * 2;  // ensure it will never switch.
+            } else if (targetLevel <= 0) {
+                dims[i].targetLevel = 0;
             } else {
-                dims[i].level = (uint32_t)((((double)level) / 1000.0) * ((double)p));
+                dims[i].targetLevel = (uint32_t)((((double)targetLevel) / 1000.0) * ((double)p));
             }
             return ESP_OK;
         }
@@ -197,22 +213,34 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
 
         // the following avoids polling GPIO unless we are close to a zero crossing:
         if ((elapsed > target) && (GPIO_INPUT_GET(zcPin) == 1)) {
+            // Zero crossing has been detected.
             zCount++;
-            // Zero crossing has been detected. Reset dimmers according to their mode
-            // (Leading edge or trailing edge)
+            p = (elapsed < 1000) ? 0 : elapsed;
+            uint32_t levelStep = p * transitionSpeed / 1000;
+
             for (int i = 0; i < dimCount; i++) {
-                if (dims[i].level == 0) {
-                    GPIO_OUTPUT_SET(dims[i].pin, (1 - dims[i].mode));
-                    dims[i].switched = true;
+                dim_t* dim = &dims[i];
+                //Reset dimmers according to their mode
+                // (Leading edge or trailing edge)
+                if (dim->level == 0) {
+                    GPIO_OUTPUT_SET(dim->pin, (1 - dim->mode));
+                    dim->switched = true;
                 } else {
-                    GPIO_OUTPUT_SET(dims[i].pin, dims[i].mode);
-                    dims[i].switched = false;
+                    GPIO_OUTPUT_SET(dim->pin, dim->mode);
+                    dim->switched = false;
+                }
+                // For this cycle that starts, adjust the brightness level one step
+                // closer to the target brightness level.
+                int32_t levelDiff = dim->targetLevel - dim->level;
+                if (levelDiff > 0) {
+                    dim->level += MIN(levelStep, levelDiff);
+                } else if (levelDiff < 0) {
+                    dim->level -= MIN(levelStep, -levelDiff);
                 }
             }
             zcTimestamp = now;
             // some dimmer modules keep the signal high when there is no mains input
             // The following sets period to 0, to signal there is no mains input.
-            p = elapsed < 10000 ? 0 : elapsed;
 
             // Calibrate new target as 90% of the elapsed time.
             target = 9 * elapsed / 10;
@@ -265,7 +293,7 @@ static int dimmer_remove(lua_State* L) {
 static int dimmer_set_level(lua_State* L) {
     check_setup(L);
     message.pin = luaL_checkint(L, 1);
-    message.level = luaL_checkint(L, 2);
+    message.targetLevel = luaL_checkint(L, 2);
     message.messageType = MT_SETLEVEL;
     awaitAck(L);
 
@@ -290,11 +318,17 @@ static int dimmer_list_debug(lua_State* L) {
     return 0;
 }
 
+// dimmer.setup(zcPin, transitionSpeed)
+// zcPin: input pin connected to the zero-crossing detector
+// transitionSpeed: 1-1000. Allows controlling the speed at which to change brightness.
+// set to 1000 to disable fading altogether (instant change).
+// defaults to a quick ~100ms fade.
 static int dimmer_setup(lua_State* L) {
     if (zcPin != -1) {
         return 0;
     }
-    zcPin = luaL_checkinteger(L, -1);
+    zcPin = luaL_checkint(L, 1);
+    transitionSpeed = luaL_optint(L, 2, DEFAULT_TRANSITION_SPEED);
 
     check_err(L, gpio_set_direction(zcPin, GPIO_MODE_INPUT));
     check_err(L, gpio_set_pull_mode(zcPin, GPIO_PULLDOWN_ONLY));
