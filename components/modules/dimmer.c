@@ -36,6 +36,7 @@
 #include "freertos/task.h"
 #include "freertos/xtensa_timer.h"
 #include "lauxlib.h"
+#include "lmem.h"
 #include "lnodeaux.h"
 #include "module.h"
 #include "rom/gpio.h"
@@ -45,17 +46,18 @@
 #define TAG "DIMMER"
 
 // dim_t defines a dimmer pin configuration
-typedef struct {
+typedef struct dim_t {
     int pin;   // pin to apply phase-dimming to.
     int mode;  // dimming mode: LEADING_EDGE or TRAILING_EDGE
     // level indicates the current brightness level, computed as the number of
     // CPU cycles to wait since the last zero crossing until switching the signal on or off.
     uint32_t level;
-    // targetLevel indicates the desired brightness level, computed in CPU cycles, as above.
-    // every mains cycle, `level` will get closer to `targetLevel`, so brightness changes gradually.
+    // target_level indicates the desired brightness level, computed in CPU cycles, as above.
+    // every mains cycle, `level` will get closer to `target_level`, so brightness changes gradually.
     // this avoids damaging power supplies and rushing current through the dimmer module.
-    uint32_t targetLevel;
+    uint32_t target_level;
     bool switched;  //wether this output has already been switched on or off in the current mains cycle.
+    struct dim_t* next;
 } dim_t;
 
 typedef enum {
@@ -66,12 +68,11 @@ typedef enum {
 } message_type_t;
 
 typedef struct {
-    message_type_t messageType;
-    int pin;
+    message_type_t message_type;
+    esp_err_t err;
     union {
-        int mode;
-        uint32_t targetLevel;
-        esp_err_t err;
+        int pin;
+        dim_t* dim;
     };
 
 } dimmer_message_t;
@@ -89,14 +90,13 @@ typedef struct {
 // This is a default. The user can define a specific value when calling dimmer.setup()
 #define DEFAULT_TRANSITION_SPEED 100 /* 1-1000 */
 
-static volatile dimmer_message_t message = {.messageType = MT_IDLE};
-static volatile int zCount = 0;
-static int zcPin = -1;
-static volatile uint32_t zcTimestamp = 0;
-static uint32_t p = 0;
-static dim_t* dims = NULL;
-static int dimCount = 0;
-static int transitionSpeed;
+static volatile dimmer_message_t message = {.message_type = MT_IDLE};
+static volatile int zc_count = 0;
+static int zc_pin = -1;
+static uint32_t zc_timestamp = 0;
+static uint32_t mains_period = 0;
+static dim_t* dims_head = NULL;
+static int transition_speed;
 StaticTask_t xTaskBuffer;
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
@@ -107,8 +107,6 @@ static void check_err(lua_State* L, esp_err_t err) {
             luaL_error(L, "invalid argument or gpio pin");
         case ESP_ERR_INVALID_STATE:
             luaL_error(L, "internal logic error");
-        case ESP_ERR_NO_MEM:
-            luaL_error(L, "out of memory");
         case ESP_OK:
             break;
         default:
@@ -117,60 +115,46 @@ static void check_err(lua_State* L, esp_err_t err) {
 }
 
 static void check_setup(lua_State* L) {
-    if (zcPin == -1) {
+    if (zc_pin == -1) {
         luaL_error(L, "dimmer module not initialized");
     }
 }
 
-static inline esp_err_t IRAM_ATTR msg_add_dimmer() {
-    for (int i = 0; i < dimCount; i++) {
-        if (dims[i].pin == message.pin) {
-            return ESP_OK;
+static dim_t* find(int pin) {
+    for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
+        if (dim->pin == pin) {
+            return dim;
         }
     }
-    dims = realloc(dims, (dimCount + 1) * sizeof(dim_t));
-    if (dims == NULL) {
-        return ESP_ERR_NO_MEM;
-    }
-    dims[dimCount].pin = message.pin;
-    dims[dimCount].targetLevel = dims[dimCount].level = (message.mode == DIM_MODE_LEADING_EDGE) ? p * 2 : 0;
-    dims[dimCount].mode = message.mode;
-    dims[dimCount].switched = false;
-    dimCount++;
+    return NULL;
+}
+
+static inline esp_err_t IRAM_ATTR msg_add_dimmer() {
+    dim_t* dim = find(message.dim->pin);
+    if (dim != NULL)
+        return ESP_ERR_INVALID_ARG;
+
+    message.dim->next = dims_head;
+    dims_head = message.dim;
+    message.dim = NULL;
     return ESP_OK;
 }
 
 static inline esp_err_t IRAM_ATTR msg_remove_dimmer() {
-    for (int i = 0; i < dimCount; i++) {
-        if (dims[i].pin == message.pin) {
-            for (int j = i; j < dimCount - 1; j++) {
-                dims[j] = dims[j + 1];
-            }
-            dims = realloc(dims, (dimCount - 1) * sizeof(dim_t));
-            dimCount--;
-            return ESP_OK;
-        }
-    }
-    return ESP_ERR_INVALID_ARG;
-}
-
-static inline esp_err_t IRAM_ATTR msg_set_level() {
-    for (int i = 0; i < dimCount; i++) {
-        if (dims[i].pin == message.pin) {
-            int targetLevel = message.targetLevel;
-            if (dims[i].mode == DIM_MODE_LEADING_EDGE) {
-                targetLevel = 1000 - targetLevel;
-            }
-            if (targetLevel >= 1000) {
-                dims[i].targetLevel = p * 2;  // ensure it will never switch.
-            } else if (targetLevel <= 0) {
-                dims[i].targetLevel = 0;
+    dim_t* previous = NULL;
+    for (dim_t* current = dims_head; current != NULL; current = current->next) {
+        if (current->pin == message.pin) {
+            message.dim = current;
+            if (previous == NULL) {
+                dims_head = dims_head->next;
             } else {
-                dims[i].targetLevel = (uint32_t)((((double)targetLevel) / 1000.0) * ((double)p));
+                previous->next = current->next;
             }
             return ESP_OK;
         }
+        previous = current;
     }
+    message.dim = NULL;
     return ESP_ERR_INVALID_ARG;
 }
 
@@ -189,39 +173,30 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
     uint32_t target = 0;
 
     while (true) {
-        if (message.messageType != MT_IDLE) {
-            switch (message.messageType) {
+        if (message.message_type != MT_IDLE) {
+            switch (message.message_type) {
                 case MT_ADD:
                     message.err = msg_add_dimmer();
                     break;
                 case MT_REMOVE:
                     message.err = msg_remove_dimmer();
                     break;
-                case MT_SETLEVEL:
-                    message.err = msg_set_level();
-                    break;
                 default:
                     break;
             }
-            message.messageType = MT_IDLE;
+            message.message_type = MT_IDLE;
         }
 
         // now contains the current value of the CPU cycle counter
-        uint32_t volatile now = xthal_get_ccount();
+        uint32_t now = xthal_get_ccount();
         // elapsed contains the number of CPU cycles since the last zero crossing
-        uint32_t volatile elapsed = now - zcTimestamp;
+        uint32_t elapsed = now - zc_timestamp;
 
         // the following avoids polling GPIO unless we are close to a zero crossing:
-        if ((elapsed > target) && (GPIO_INPUT_GET(zcPin) == 1)) {
+        if ((elapsed > target) && (GPIO_INPUT_GET(zc_pin) == 1)) {
             // Zero crossing has been detected.
-            zCount++;
-            p = (elapsed < 1000) ? 0 : elapsed;
-            uint32_t levelStep = p * transitionSpeed / 1000;
-
-            for (int i = 0; i < dimCount; i++) {
-                dim_t* dim = &dims[i];
-                //Reset dimmers according to their mode
-                // (Leading edge or trailing edge)
+            // Reset dimmers according to their mode, Leading edge or trailing edge
+            for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
                 if (dim->level == 0) {
                     GPIO_OUTPUT_SET(dim->pin, (1 - dim->mode));
                     dim->switched = true;
@@ -229,27 +204,38 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
                     GPIO_OUTPUT_SET(dim->pin, dim->mode);
                     dim->switched = false;
                 }
-                // For this cycle that starts, adjust the brightness level one step
-                // closer to the target brightness level.
-                int32_t levelDiff = dim->targetLevel - dim->level;
+            }
+
+            // For this cycle that starts, adjust the brightness level one step
+            // closer to the target brightness level.
+            // tempting to combine the below loop into the above one, but we want
+            // to make sure pins are reset ASAP.
+            zc_count++;
+            zc_timestamp = now;
+            uint32_t levelStep = mains_period * transition_speed / 1000;
+
+            for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
+                int32_t levelDiff = dim->target_level - dim->level;
                 if (levelDiff > 0) {
                     dim->level += MIN(levelStep, levelDiff);
                 } else if (levelDiff < 0) {
                     dim->level -= MIN(levelStep, -levelDiff);
                 }
             }
-            zcTimestamp = now;
-            // some dimmer modules keep the signal high when there is no mains input
+
+            // some dimmer modules keep the zc signal high when there is no mains input
             // The following sets period to 0, to signal there is no mains input.
+            mains_period = (elapsed < 1000) ? 0 : elapsed;
 
             // Calibrate new target as 90% of the elapsed time.
             target = 9 * elapsed / 10;
+
         } else {
             // Check if it is time to turn on or off any dimmed output:
-            for (int i = 0; i < dimCount; i++) {
-                if ((dims[i].switched == false) && (elapsed > dims[i].level)) {
-                    GPIO_OUTPUT_SET(dims[i].pin, (1 - dims[i].mode));
-                    dims[i].switched = true;
+            for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
+                if ((dim->switched == false) && (elapsed > dim->level)) {
+                    GPIO_OUTPUT_SET(dim->pin, (1 - dim->mode));
+                    dim->switched = true;
                 }
             }
         }
@@ -257,86 +243,121 @@ static void IRAM_ATTR cpu1_loop(void* parms) {
         // This could happen if mains power is cut.
         if (elapsed > max_target) {
             target = 0;
-            p = 0;  // mark period as 0 (no mains detected)
+            mains_period = 0;  // mark period as 0 (no mains detected)
         }
     }
 }
 
-static void awaitAck(lua_State* L) {
-    while (message.messageType != MT_IDLE)
+static void await_ack(lua_State* L) {
+    while (message.message_type != MT_IDLE)
         ;
+    if (message.dim != NULL) {
+        luaM_freemem(L, message.dim, sizeof(dim_t));
+        message.dim = NULL;
+    }
     check_err(L, message.err);
 }
 
 // pin
 static int dimmer_add(lua_State* L) {
     check_setup(L);
-    message.pin = luaL_checkint(L, 1);
-    message.mode = luaL_optint(L, 2, DIM_MODE_LEADING_EDGE);
-    check_err(L, gpio_set_direction(message.pin, GPIO_MODE_OUTPUT));
-    gpio_set_level(message.pin, 0);
 
-    message.messageType = MT_ADD;
-    awaitAck(L);
+    int pin = luaL_checkint(L, 1);
+    int mode = luaL_optint(L, 2, DIM_MODE_LEADING_EDGE);
+
+    check_err(L, gpio_set_direction(pin, GPIO_MODE_OUTPUT));
+    gpio_set_level(pin, 0);
+
+    dim_t* dim = message.dim = (dim_t*)luaM_malloc(L, sizeof(dim_t));
+    dim->pin = pin;
+    dim->mode = mode;
+    dim->next = NULL;
+    dim->target_level = dim->level = (mode == DIM_MODE_LEADING_EDGE) ? mains_period * 2 : 0;
+    dim->switched = false;
+
+    message.message_type = MT_ADD;
+    await_ack(L);
 
     return 0;
 }
 
 static int dimmer_remove(lua_State* L) {
     check_setup(L);
+
     message.pin = luaL_checkint(L, 1);
-    message.messageType = MT_REMOVE;
-    awaitAck(L);
+
+    message.message_type = MT_REMOVE;
+    await_ack(L);
     return 0;
 }
 
-static int dimmer_set_level(lua_State* L) {
+static int dimmer_setLevel(lua_State* L) {
     check_setup(L);
-    message.pin = luaL_checkint(L, 1);
-    message.targetLevel = luaL_checkint(L, 2);
-    message.messageType = MT_SETLEVEL;
-    awaitAck(L);
+
+    int pin = luaL_checkint(L, 1);         // pin to configure
+    int brightness = luaL_checkint(L, 2);  // brightness level (0-1000)
+
+    dim_t* dim = find(pin);
+    if (dim == NULL) {
+        luaL_error(L, "invalid pin");
+        return 0;
+    }
+
+    // translate brightness level 0-1000 to the number of CPU cycles signal must be on or off
+    // after a mains zero crossing
+    if (dim->mode == DIM_MODE_LEADING_EDGE) {  // invert value for leading edge dimmers
+        brightness = 1000 - brightness;
+    }
+    if (brightness >= 1000) {
+        // put a big value to ensure it will never switch. (keep on at all times)
+        dim->target_level = mains_period << 1;
+    } else if (brightness <= 0) {
+        dim->target_level = 0;
+    } else {
+        // set target level as a per-mille of the total mains period, measured in CPU cycles.
+        dim->target_level = (uint32_t)((((double)brightness) / 1000.0) * ((double)mains_period));
+    }
 
     return 0;
 }
 
 static int dimmer_mainsFrequency(lua_State* L) {
     int mainsF = 0;
-    if (p > 0) {
-        mainsF = (int)((esp_clk_cpu_freq() * 50.0) / p);
+    if (mains_period > 0) {
+        mainsF = (int)((esp_clk_cpu_freq() * 50.0) / mains_period);
     }
     lua_pushinteger(L, mainsF);
     return 1;
 }
 
 static int dimmer_list_debug(lua_State* L) {
-    ESP_LOGW(TAG, "p=%u, zcount=%d, zcTimestamp=%u, esp_freq=%d", p, zCount, zcTimestamp, esp_clk_cpu_freq());
+    ESP_LOGW(TAG, "mains_period=%u, zc_count=%d, zc_timestamp=%u, esp_freq=%d", mains_period, zc_count, zc_timestamp, esp_clk_cpu_freq());
 
-    for (int i = 0; i < dimCount; i++) {
-        ESP_LOGW(TAG, "pin=%d, mode=%d, level=%u", dims[i].pin, dims[i].mode, dims[i].level);
+    for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
+        ESP_LOGW(TAG, "pin=%d, mode=%d, level=%u", dim->pin, dim->mode, dim->level);
     }
     return 0;
 }
 
-// dimmer.setup(zcPin, transitionSpeed)
-// zcPin: input pin connected to the zero-crossing detector
-// transitionSpeed: 1-1000. Allows controlling the speed at which to change brightness.
+// dimmer.setup(zc_pin, transition_speed)
+// zc_pin: input pin connected to the zero-crossing detector
+// transition_speed: 1-1000. Allows controlling the speed at which to change brightness.
 // set to 1000 to disable fading altogether (instant change).
 // defaults to a quick ~100ms fade.
 static int dimmer_setup(lua_State* L) {
-    if (zcPin != -1) {
+    if (zc_pin != -1) {
         return 0;
     }
-    zcPin = luaL_checkint(L, 1);
-    transitionSpeed = luaL_optint(L, 2, DEFAULT_TRANSITION_SPEED);
+    zc_pin = luaL_checkint(L, 1);
+    transition_speed = luaL_optint(L, 2, DEFAULT_TRANSITION_SPEED);
 
-    check_err(L, gpio_set_direction(zcPin, GPIO_MODE_INPUT));
-    check_err(L, gpio_set_pull_mode(zcPin, GPIO_PULLDOWN_ONLY));
+    check_err(L, gpio_set_direction(zc_pin, GPIO_MODE_INPUT));
+    check_err(L, gpio_set_pull_mode(zc_pin, GPIO_PULLDOWN_ONLY));
 
     TaskHandle_t handle;
     BaseType_t result = xTaskCreatePinnedToCore(
         cpu1_loop,
-        "cpu1 loop",
+        "dimmer",
         STACK_SIZE,
         NULL,
         tskIDLE_PRIORITY + 20,
@@ -345,7 +366,7 @@ static int dimmer_setup(lua_State* L) {
 
     if (result != pdPASS) {
         luaL_error(L, "Error starting dimmer task in CPU1");
-        zcPin = -1;
+        zc_pin = -1;
     }
 
     return 0;
@@ -356,7 +377,7 @@ LROT_BEGIN(dimmer)
 LROT_FUNCENTRY(setup, dimmer_setup)
 LROT_FUNCENTRY(add, dimmer_add)
 LROT_FUNCENTRY(remove, dimmer_remove)
-LROT_FUNCENTRY(setLevel, dimmer_set_level)
+LROT_FUNCENTRY(setLevel, dimmer_setLevel)
 LROT_FUNCENTRY(list, dimmer_list_debug)
 LROT_FUNCENTRY(mainsFrequency, dimmer_mainsFrequency)
 LROT_NUMENTRY(TRAILING_EDGE, DIM_MODE_TRAILING_EDGE)
