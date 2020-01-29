@@ -38,6 +38,7 @@ pages:
     - 'can':          'modules/can.md'
     - 'crypto':       'modules/crypto.md'
     - 'dac':          'modules/dac.md'
+    - 'dimmer':       'modules/dimmer.md'
     - 'dht':          'modules/dht.md'
     - 'encoder':      'modules/encoder.md'
     - 'eth':          'modules/eth.md'

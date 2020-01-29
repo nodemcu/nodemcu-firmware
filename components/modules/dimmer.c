@@ -25,7 +25,7 @@
 // In your program, call dimmer.setup(zc_pin), indicating the pin input where you connected the zero crossing detector.
 // Use dimmer.add(pin, type) to have the module control that pin.
 // Type can be dimmer.LEADING_EDGE (default) or dimmer.TRAILING_EDGE, depending on the type of load/lightbulb.
-// User dimmer.setLevel(pin, value) to set the desired brightness level. Value can be from 0 (off) to 1000 (fully on).
+// Use dimmer.setLevel(pin, value) to set the desired brightness level. Value can be from 0 (off) to 1000 (fully on).
 // Use dimmer.remove(pin) to have the dimmer module stop controlling that pin.
 
 #include <string.h>
@@ -126,9 +126,9 @@ static void check_setup(lua_State* L) {
     }
 }
 
-// findPin searches the dimmer-controlled list of pins and returns
+// find_pin searches the dimmer-controlled list of pins and returns
 // a pointer to the found structure, or NULL otherwise.
-static dim_t* IRAM_ATTR findPin(int pin) {
+static dim_t* IRAM_ATTR find_pin(int pin) {
     for (dim_t* dim = dims_head; dim != NULL; dim = dim->next) {
         if (dim->pin == pin) {
             return dim;
@@ -141,7 +141,7 @@ static dim_t* IRAM_ATTR findPin(int pin) {
 
 // msg_add_dimmer processes a add dimmer message, updating the linked list.
 static inline esp_err_t IRAM_ATTR msg_add_dimmer() {
-    dim_t* dim = findPin(message.dim->pin);
+    dim_t* dim = find_pin(message.dim->pin);
     if (dim != NULL)
         return ESP_ERR_INVALID_ARG;
 
@@ -335,7 +335,7 @@ static int dimmer_setLevel(lua_State* L) {
     int pin = luaL_checkint(L, 1);
     int brightness = luaL_checkint(L, 2);
 
-    dim_t* dim = findPin(pin);
+    dim_t* dim = find_pin(pin);
     if (dim == NULL) {
         luaL_error(L, "invalid pin");
         return 0;
