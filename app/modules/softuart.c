@@ -108,13 +108,9 @@ uint32_t ICACHE_RAM_ATTR softuart_intr_handler(uint32_t ret_gpio_status)
 				start_time += s->bit_time;
 			}
 
-			// Wait for stop bit
-			// TODO: Add config for stop bits and parity bits
-			while ((uint32_t)(asm_ccount() - start_time) < s->bit_time);
-
 			// Store byte in buffer
 			// If buffer full, set the overflow flag and return
-			uint8 next = s->buffer.length + 1 % SOFTUART_MAX_RX_BUFF;
+			uint8 next = (s->buffer.length + 1) % SOFTUART_MAX_RX_BUFF;
 			if (next != 0) {
 				s->buffer.receive_buffer[s->buffer.length] = byte; // save new byte
 					s->buffer.length = next;
@@ -128,6 +124,11 @@ uint32_t ICACHE_RAM_ATTR softuart_intr_handler(uint32_t ret_gpio_status)
 				//TODO: use this information somehow?
 				s->buffer.buffer_overflow = 1;
 			}
+
+			// Wait for stop bit
+			// TODO: Add config for stop bits and parity bits
+			while ((uint32_t)(asm_ccount() - start_time) < s->bit_time);
+
 		}
 	}
 	// re-enable all interrupts
