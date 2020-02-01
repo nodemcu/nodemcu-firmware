@@ -163,7 +163,7 @@ static int node_info( lua_State* L )
       int table_index = lua_gettop(L);
       lua_pushboolean(L, BUILDINFO_SSL);
       lua_setfield(L, table_index, "ssl");
-      lua_pushnumber(L, BUILDINFO_LFS);
+      lua_pushnumber(L, BUILDINFO_LFS_SIZE);
       lua_setfield(L, table_index, "lfs_size");
       lua_pushstring(L, BUILDINFO_MODULES);
       lua_setfield(L, table_index, "modules");
