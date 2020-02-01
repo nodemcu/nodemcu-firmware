@@ -525,7 +525,8 @@ static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_m
   return NULL;
 }
 
-// Lua: tls.cert.auth(true / false | PEM data [, PEM data] )
+// Lua: tls.cert.auth(PEM data [, PEM data] )
+// Lua: tls.cert.auth(true / false)
 static int tls_cert_auth(lua_State *L)
 {
   int enable;
@@ -565,7 +566,8 @@ static int tls_cert_auth(lua_State *L)
   return 1;
 }
 
-// Lua: tls.cert.verify(true / false | PEM data [, PEM data] )
+// Lua: tls.cert.verify(PEM data [, PEM data] )
+// Lua: tls.cert.verify(true / false)
 static int tls_cert_verify(lua_State *L)
 {
   int enable;
@@ -579,7 +581,6 @@ static int tls_cert_verify(lua_State *L)
   if (lua_type(L, 1) == LUA_TSTRING) {
     const char *types[2] = { "CERTIFICATE", NULL };
     const char *names[1] = { "certificate" };
-
     const char *error = fill_page_with_pem(L, &tls_server_cert_area[0], flash_offset, types, names);
     if (error) {
       return luaL_error(L, error);
