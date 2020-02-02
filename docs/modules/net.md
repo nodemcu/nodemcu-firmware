@@ -10,58 +10,36 @@ Constants to be used in other functions: `net.TCP`, `net.UDP`
 
 ## net.createConnection()
 
-Creates a client.
+Creates a TCP client.
 
 #### Syntax
-`net.createConnection([type[, secure]])`
-
-#### Parameters
-- `type` `net.TCP` (default) or `net.UDP`
-- `secure` 1 for encrypted, 0 for plain (default)
-
-!!! attention
-    This will change in upcoming releases so that `net.createConnection` will always create an unencrypted TCP connection.
-
-    There's no such thing as a UDP _connection_ because UDP is connection*less*. Thus no connection `type` parameter should be required. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead. To create *secure* connections use [tls.createConnection()](tls.md#tlscreateconnection) instead.
+`net.createConnection()`
 
 #### Returns
 
-- for `net.TCP` - net.socket sub module
-- for `net.UDP` - net.udpsocket sub module
-- for `net.TCP` with `secure` - tls.socket sub module
-
-#### Example
-
-```lua
-net.createConnection(net.TCP, 0)
-```
+- net.socket sub module
 
 #### See also
 [`net.createServer()`](#netcreateserver), [`net.createUDPSocket()`](#netcreateudpsocket), [`tls.createConnection()`](tls.md#tlscreateconnection)
 
 ## net.createServer()
 
-Creates a server.
+Creates a TCP listening socket (a server).
 
 #### Syntax
-`net.createServer([type[, timeout]])`
+`net.createServer(timeout)`
 
 #### Parameters
-- `type` `net.TCP` (default) or `net.UDP`
-- `timeout` for a TCP server timeout is 1~28'800 seconds, 30 sec by default (for an inactive client to be disconnected)
-
-!!! attention
-    The `type` parameter will be removed in upcoming releases so that `net.createServer` will always create a TCP-based server. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead.
+- `timeout`: seconds until disconnecting an inactive client; 1~28'800 seconds, 30 sec by default.
 
 #### Returns
 
-- for `net.TCP` - net.server sub module
-- for `net.UDP` - net.udpsocket sub module
+- net.server sub module
 
 #### Example
 
 ```lua
-net.createServer(net.TCP, 30) -- 30s timeout
+net.createServer(30) -- 30s timeout
 ```
 
 #### See also
