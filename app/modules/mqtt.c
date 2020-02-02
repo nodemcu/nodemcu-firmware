@@ -76,7 +76,7 @@ typedef struct mqtt_state_t
 
 typedef struct lmqtt_userdata
 {
-  struct espconn *pesp_conn;
+  struct espconn pesp_conn;
   int self_ref;
   int cb_connect_ref;
   int cb_connect_fail_ref;
@@ -102,7 +102,7 @@ typedef struct lmqtt_userdata
 // How large MQTT messages to accept by default
 #define DEFAULT_MAX_MESSAGE_LENGTH 1024
 
-static sint8 socket_connect(struct espconn *pesp_conn);
+static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *);
 static void mqtt_socket_reconnected(void *arg, sint8_t err);
 static void mqtt_socket_connected(void *arg);
 static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code);
@@ -119,11 +119,8 @@ static uint16_t mqtt_next_message_id(lmqtt_userdata * mud)
 static void mqtt_socket_disconnected(void *arg)    // tcp only
 {
   NODE_DBG("enter mqtt_socket_disconnected.\n");
-  struct espconn *pesp_conn = arg;
   bool call_back = false;
-  if(pesp_conn == NULL)
-    return;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
+  lmqtt_userdata *mud = arg;
   if(mud == NULL)
     return;
 
@@ -147,14 +144,9 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
   mud->mqtt_state.recv_buffer_size = 0;
   mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
 
-  if(mud->pesp_conn){
-    mud->pesp_conn->reverse = NULL;
-    if(mud->pesp_conn->proto.tcp)
-      free(mud->pesp_conn->proto.tcp);
-    mud->pesp_conn->proto.tcp = NULL;
-    free(mud->pesp_conn);
-    mud->pesp_conn = NULL;
-  }
+  if(mud->pesp_conn.proto.tcp)
+    free(mud->pesp_conn.proto.tcp);
+  mud->pesp_conn.proto.tcp = NULL;
 
   mud->connected = false;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
@@ -167,14 +159,22 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
   NODE_DBG("leave mqtt_socket_disconnected.\n");
 }
 
+static void mqtt_socket_do_disconnect(struct lmqtt_userdata *mud)
+{
+#ifdef CLIENT_SSL_ENABLE
+  if (mud->secure) {
+    espconn_secure_disconnect(&mud->pesp_conn);
+  } else
+#endif
+  {
+    espconn_disconnect(&mud->pesp_conn);
+  }
+}
+
 static void mqtt_socket_reconnected(void *arg, sint8_t err)
 {
   NODE_DBG("enter mqtt_socket_reconnected.\n");
-  // mqtt_socket_disconnected(arg);
-  struct espconn *pesp_conn = arg;
-  if(pesp_conn == NULL)
-    return;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
+  lmqtt_userdata *mud = arg;
   if(mud == NULL)
     return;
 
@@ -182,14 +182,7 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
 
   mud->event_timeout = 0; // no need to count anymore
 
-#ifdef CLIENT_SSL_ENABLE
-  if (mud->secure) {
-    espconn_secure_disconnect(pesp_conn);
-  } else
-#endif
-  {
-    espconn_disconnect(pesp_conn);
-  }
+  mqtt_socket_do_disconnect(mud);
 
   mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
 
@@ -250,14 +243,8 @@ static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code)
   lua_call(L, 2, 0);
 }
 
-static sint8 mqtt_send_if_possible(struct espconn *pesp_conn)
+static sint8 mqtt_send_if_possible(struct lmqtt_userdata *mud)
 {
-  if(pesp_conn == NULL)
-    return ESPCONN_OK;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
-  if(mud == NULL)
-    return ESPCONN_OK;
-
   sint8 espconn_status = ESPCONN_OK;
 
   // This indicates if we have sent something and are waiting for something to
@@ -270,12 +257,12 @@ static sint8 mqtt_send_if_possible(struct espconn *pesp_conn)
 #ifdef CLIENT_SSL_ENABLE
       if( mud->secure )
       {
-        espconn_status = espconn_secure_send( pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
+        espconn_status = espconn_secure_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
       }
       else
 #endif
       {
-        espconn_status = espconn_send( pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
+        espconn_status = espconn_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
       }
       mud->keep_alive_tick = 0;
     }
@@ -296,10 +283,7 @@ static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
   uint8_t *continuation_buffer = NULL;
   uint8_t *temp_pdata = NULL;
 
-  struct espconn *pesp_conn = arg;
-  if(pesp_conn == NULL)
-    return;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
+  lmqtt_userdata *mud = arg;
   if(mud == NULL)
     return;
 
@@ -314,14 +298,7 @@ static void mqtt_socket_received(void *arg, char *pdata, unsigned short len)
       temp_pdata = calloc(1,mud->mqtt_state.recv_buffer_size + len);
       if(temp_pdata == NULL) {
         NODE_DBG("MQTT[buffering-short]: Failed to allocate %u bytes, disconnecting...\n", mud->mqtt_state.recv_buffer_size + len);
-#ifdef CLIENT_SSL_ENABLE
-        if (mud->secure) {
-              espconn_secure_disconnect(pesp_conn);
-            } else
-#endif
-        {
-          espconn_disconnect(pesp_conn);
-        }
+        mqtt_socket_do_disconnect(mud);
         return;
       }
 
@@ -420,19 +397,8 @@ READPACKET:
       if(mqtt_get_type(in_buffer) != MQTT_MSG_TYPE_CONNACK){
         NODE_DBG("MQTT: Invalid packet\r\n");
         mud->connState = MQTT_INIT;
-#ifdef CLIENT_SSL_ENABLE
-        if(mud->secure)
-        {
-          espconn_secure_disconnect(pesp_conn);
-        }
-        else
-#endif
-        {
-          espconn_disconnect(pesp_conn);
-        }
-
+        mqtt_socket_do_disconnect(mud);
         mqtt_connack_fail(mud, MQTT_CONN_FAIL_NOT_A_CONNACK_MSG);
-
         break;
 
       } else if (mqtt_get_connect_ret_code(in_buffer) != MQTT_CONNACK_ACCEPTED) {
@@ -440,19 +406,8 @@ READPACKET:
 
         mud->connState = MQTT_INIT;
 
-#ifdef CLIENT_SSL_ENABLE
-        if(mud->secure)
-        {
-          espconn_secure_disconnect(pesp_conn);
-        }
-        else
-#endif
-        {
-          espconn_disconnect(pesp_conn);
-        }
-
+        mqtt_socket_do_disconnect(mud);
         mqtt_connack_fail(mud, mqtt_get_connect_ret_code(in_buffer));
-
         break;
 
       } else {
@@ -543,14 +498,7 @@ READPACKET:
         mud->mqtt_state.recv_buffer = calloc(1,alloc_size);
         if (mud->mqtt_state.recv_buffer == NULL) {
           NODE_DBG("MQTT: Failed to allocate %u bytes, disconnecting...\n", alloc_size);
-#ifdef CLIENT_SSL_ENABLE
-          if (mud->secure) {
-            espconn_secure_disconnect(pesp_conn);
-          } else
-#endif
-          {
-            espconn_disconnect(pesp_conn);
-          }
+          mqtt_socket_do_disconnect(mud);
           return;
         }
 
@@ -708,7 +656,7 @@ RX_PACKET_FINISHED:
     free(temp_pdata);
   }
 
-  mqtt_send_if_possible(pesp_conn);
+  mqtt_send_if_possible(mud);
   NODE_DBG("leave mqtt_socket_received\n");
   return;
 }
@@ -716,10 +664,7 @@ RX_PACKET_FINISHED:
 static void mqtt_socket_sent(void *arg)
 {
   NODE_DBG("enter mqtt_socket_sent.\n");
-  struct espconn *pesp_conn = arg;
-  if(pesp_conn == NULL)
-    return;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
+  lmqtt_userdata *mud = arg;
   if(mud == NULL)
     return;
   if(!mud->connected)
@@ -756,7 +701,7 @@ static void mqtt_socket_sent(void *arg)
     try_send = 0;
   }
   if (try_send) {
-    mqtt_send_if_possible(mud->pesp_conn);
+    mqtt_send_if_possible(mud);
   }
   NODE_DBG("sent2, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
   NODE_DBG("leave mqtt_socket_sent.\n");
@@ -765,12 +710,10 @@ static void mqtt_socket_sent(void *arg)
 static void mqtt_socket_connected(void *arg)
 {
   NODE_DBG("enter mqtt_socket_connected.\n");
-  struct espconn *pesp_conn = arg;
-  if(pesp_conn == NULL)
-    return;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
+  lmqtt_userdata *mud = arg;
   if(mud == NULL)
     return;
+  struct espconn *pesp_conn = &mud->pesp_conn;
   mud->connected = true;
   espconn_regist_recvcb(pesp_conn, mqtt_socket_received);
   espconn_regist_sentcb(pesp_conn, mqtt_socket_sent);
@@ -809,8 +752,9 @@ void mqtt_socket_timer(void *arg)
 
   if(mud == NULL)
     return;
-  if(mud->pesp_conn == NULL){
-    NODE_DBG("mud->pesp_conn is NULL.\n");
+
+  if(mud->connected == 0){
+    NODE_DBG("MQTT not connected\n");
     os_timer_disarm(&mud->mqttTimer);
     return;
   }
@@ -833,59 +777,31 @@ void mqtt_socket_timer(void *arg)
   if(mud->connState == MQTT_INIT){ // socket connect time out.
     NODE_DBG("Can not connect to broker.\n");
     os_timer_disarm(&mud->mqttTimer);
+    mqtt_socket_do_disconnect(mud);
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
-#ifdef CLIENT_SSL_ENABLE
-    if(mud->secure)
-    {
-      espconn_secure_disconnect(mud->pesp_conn);
-    }
-    else
-#endif
-    {
-      espconn_disconnect(mud->pesp_conn);
-    }
   } else if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT send time out.
     NODE_DBG("sSend MQTT_CONNECT failed.\n");
     mud->connState = MQTT_INIT;
+    mqtt_socket_do_disconnect(mud);
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_TIMEOUT_SENDING);
 
-#ifdef CLIENT_SSL_ENABLE
-    if(mud->secure)
-    {
-      espconn_secure_disconnect(mud->pesp_conn);
-    }
-    else
-#endif
-    {
-      espconn_disconnect(mud->pesp_conn);
-    }
     mud->keep_alive_tick = 0; // not need count anymore
   } else if(mud->connState == MQTT_CONNECT_SENT) { // wait for CONACK time out.
     NODE_DBG("MQTT_CONNECT timeout.\n");
     mud->connState = MQTT_INIT;
-
-#ifdef CLIENT_SSL_ENABLE
-    if(mud->secure)
-    {
-      espconn_secure_disconnect(mud->pesp_conn);
-    }
-    else
-#endif
-    {
-      espconn_disconnect(mud->pesp_conn);
-    }
+    mqtt_socket_do_disconnect(mud);
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_TIMEOUT_RECEIVING);
   } else if(mud->connState == MQTT_DATA){
     msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
     if(pending_msg){
-      mqtt_send_if_possible(mud->pesp_conn);
+      mqtt_send_if_possible(mud);
     } else {
       // no queued event.
       mud->keep_alive_tick ++;
       if(mud->keep_alive_tick > mud->connect_info.keepalive){
         if (mud->keepalive_sent) {
           // Oh dear -- keepalive timer expired and still no ack of previous message
-          mqtt_socket_reconnected(mud->pesp_conn, 0);
+          mqtt_socket_reconnected(&mud->pesp_conn, 0);
         } else {
           uint8_t temp_buffer[MQTT_BUF_SIZE];
           mqtt_message_buffer_t msgb;
@@ -897,7 +813,7 @@ void mqtt_socket_timer(void *arg)
                               0, MQTT_MSG_TYPE_PINGREQ, (int)mqtt_get_qos(temp_msg->data) );
           mud->keepalive_sent = 1;
           mud->keep_alive_tick = 0;     // Need to reset to zero in case flow control stopped.
-          mqtt_send_if_possible(mud->pesp_conn);
+          mqtt_send_if_possible(mud);
         }
       }
     }
@@ -1062,14 +978,10 @@ static int mqtt_delete( lua_State* L )
   mud->connected = false;
 
   // ---- alloc-ed in mqtt_socket_connect()
-  if(mud->pesp_conn){     // for client connected to tcp server, this should set NULL in disconnect cb
-    mud->pesp_conn->reverse = NULL;
-    if(mud->pesp_conn->proto.tcp)
-      free(mud->pesp_conn->proto.tcp);
-    mud->pesp_conn->proto.tcp = NULL;
-    free(mud->pesp_conn);
-    mud->pesp_conn = NULL;    // for socket, it will free this when disconnected
-  }
+  if(mud->pesp_conn.proto.tcp)
+    free(mud->pesp_conn.proto.tcp);
+  mud->pesp_conn.proto.tcp = NULL;
+
   while(mud->mqtt_state.pending_msg_q) {
     msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
   }
@@ -1133,30 +1045,23 @@ static int mqtt_delete( lua_State* L )
   return 0;
 }
 
-static sint8 socket_connect(struct espconn *pesp_conn)
+static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
 {
 
   NODE_DBG("enter socket_connect.\n");
-
   sint8 espconn_status;
-
-  if(pesp_conn == NULL)
-    return ESPCONN_CONN;
-  lmqtt_userdata *mud = (lmqtt_userdata *)pesp_conn->reverse;
-  if(mud == NULL)
-    return ESPCONN_ARG;
 
   mud->event_timeout = MQTT_CONNECT_TIMEOUT;
   mud->connState = MQTT_INIT;
 #ifdef CLIENT_SSL_ENABLE
   if(mud->secure)
   {
-    espconn_status = espconn_secure_connect(pesp_conn);
+    espconn_status = espconn_secure_connect(&mud->pesp_conn);
   }
   else
 #endif
   {
-    espconn_status = espconn_connect(pesp_conn);
+    espconn_status = espconn_connect(&mud->pesp_conn);
   }
 
   os_timer_arm(&mud->mqttTimer, 1000, 1);
@@ -1172,11 +1077,6 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 
   NODE_DBG("enter socket_dns_found.\n");
   sint8 espconn_status = ESPCONN_OK;
-  struct espconn *pesp_conn = mud->pesp_conn;
-  if(pesp_conn == NULL){
-    NODE_DBG("pesp_conn null.\n");
-    return -1;
-  }
 
   if(ipaddr == NULL)
   {
@@ -1190,11 +1090,11 @@ static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
   // ipaddr->addr is a uint32_t ip
   if(ipaddr->addr != 0)
   {
-    memcpy(pesp_conn->proto.tcp->remote_ip, &(ipaddr->addr), 4);
+    memcpy(&mud->pesp_conn.proto.tcp->remote_ip, &(ipaddr->addr), 4);
     NODE_DBG("TCP ip is set: ");
     NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
     NODE_DBG("\n");
-    espconn_status = socket_connect(pesp_conn);
+    espconn_status = mqtt_socket_do_connect(mud);
   }
 
   NODE_DBG("leave socket_dns_found.\n");
@@ -1232,24 +1132,16 @@ static int mqtt_socket_connect( lua_State* L )
     return luaL_error(L, "already connected");
   }
 
-  struct espconn *pesp_conn = mud->pesp_conn;
-  if(!pesp_conn) {
-    pesp_conn = mud->pesp_conn = (struct espconn *)calloc(1,sizeof(struct espconn));
-  } else {
-    espconn_delete(pesp_conn);
-  }
+  struct espconn *pesp_conn = &mud->pesp_conn;
 
-  if(!pesp_conn)
-    return luaL_error(L, "not enough memory");
   if (!pesp_conn->proto.tcp)
     pesp_conn->proto.tcp = (esp_tcp *)calloc(1,sizeof(esp_tcp));
-  if(!pesp_conn->proto.tcp){
-    free(pesp_conn);
-    pesp_conn = mud->pesp_conn = NULL;
+
+  if(!pesp_conn->proto.tcp) {
     return luaL_error(L, "not enough memory");
   }
+
   // reverse is for the callback function
-  pesp_conn->reverse = mud;
   pesp_conn->type = ESPCONN_TCP;
   pesp_conn->state = ESPCONN_NONE;
   mud->connected = false;
@@ -1350,7 +1242,7 @@ static int mqtt_socket_connect( lua_State* L )
   }
   else
   {
-    socket_connect(pesp_conn);
+    mqtt_socket_do_connect(mud);
   }
 
   NODE_DBG("leave mqtt_socket_connect.\n");
@@ -1368,7 +1260,7 @@ static int mqtt_socket_close( lua_State* L )
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
   luaL_argcheck(L, mud, 1, "mqtt.socket expected");
-  if (mud == NULL || mud->pesp_conn == NULL) {
+  if (mud == NULL) {
     lua_pushboolean(L, 0);
     return 1;
   }
@@ -1385,15 +1277,15 @@ static int mqtt_socket_close( lua_State* L )
 
 #ifdef CLIENT_SSL_ENABLE
     if(mud->secure) {
-      espconn_status = espconn_secure_send(mud->pesp_conn, temp_msg->data, temp_msg->length);
-      if(mud->pesp_conn->proto.tcp->remote_port || mud->pesp_conn->proto.tcp->local_port)
-        espconn_status |= espconn_secure_disconnect(mud->pesp_conn);
+      espconn_status = espconn_secure_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
+      if(mud->pesp_conn.proto.tcp->remote_port || mud->pesp_conn.proto.tcp->local_port)
+        espconn_status |= espconn_secure_disconnect(&mud->pesp_conn);
     } else
 #endif
     {
-      espconn_status = espconn_send(mud->pesp_conn, temp_msg->data, temp_msg->length);
-      if(mud->pesp_conn->proto.tcp->remote_port || mud->pesp_conn->proto.tcp->local_port)
-        espconn_status |= espconn_disconnect(mud->pesp_conn);
+      espconn_status = espconn_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
+      if(mud->pesp_conn.proto.tcp->remote_port || mud->pesp_conn.proto.tcp->local_port)
+        espconn_status |= espconn_disconnect(&mud->pesp_conn);
     }
   }
   mud->connected = 0;
@@ -1485,12 +1377,6 @@ static int mqtt_socket_unsubscribe( lua_State* L ) {
     return 1;
   }
 
-  if(mud->pesp_conn == NULL){
-    NODE_DBG("mud->pesp_conn is NULL.\n");
-    lua_pushboolean(L, 0);
-    return 1;
-  }
-
   if(!mud->connected){
     luaL_error( L, "not connected" );
     lua_pushboolean(L, 0);
@@ -1568,7 +1454,7 @@ static int mqtt_socket_unsubscribe( lua_State* L ) {
 
   sint8 espconn_status = ESPCONN_IF;
 
-  espconn_status = mqtt_send_if_possible(mud->pesp_conn);
+  espconn_status = mqtt_send_if_possible(mud);
 
   if(!node || espconn_status != ESPCONN_OK){
     lua_pushboolean(L, 0);
@@ -1596,12 +1482,6 @@ static int mqtt_socket_subscribe( lua_State* L ) {
 
   if(mud==NULL){
     NODE_DBG("userdata is nil.\n");
-    lua_pushboolean(L, 0);
-    return 1;
-  }
-
-  if(mud->pesp_conn == NULL){
-    NODE_DBG("mud->pesp_conn is NULL.\n");
     lua_pushboolean(L, 0);
     return 1;
   }
@@ -1686,7 +1566,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
 
   sint8 espconn_status = ESPCONN_IF;
 
-  espconn_status = mqtt_send_if_possible(mud->pesp_conn);
+  espconn_status = mqtt_send_if_possible(mud);
 
   if(!node || espconn_status != ESPCONN_OK){
     lua_pushboolean(L, 0);
@@ -1702,7 +1582,6 @@ static int mqtt_socket_subscribe( lua_State* L ) {
 static int mqtt_socket_publish( lua_State* L )
 {
   NODE_DBG("enter mqtt_socket_publish.\n");
-  struct espconn *pesp_conn = NULL;
   lmqtt_userdata *mud;
   size_t l;
   uint8_t stack = 1;
@@ -1713,12 +1592,6 @@ static int mqtt_socket_publish( lua_State* L )
   stack++;
   if(mud==NULL){
     NODE_DBG("userdata is nil.\n");
-    lua_pushboolean(L, 0);
-    return 1;
-  }
-
-  if(mud->pesp_conn == NULL){
-    NODE_DBG("mud->pesp_conn is NULL.\n");
     lua_pushboolean(L, 0);
     return 1;
   }
@@ -1763,7 +1636,7 @@ static int mqtt_socket_publish( lua_State* L )
 
   sint8 espconn_status = ESPCONN_OK;
 
-  espconn_status = mqtt_send_if_possible(mud->pesp_conn);
+  espconn_status = mqtt_send_if_possible(mud);
 
   if(!node || espconn_status != ESPCONN_OK){
     lua_pushboolean(L, 0);
