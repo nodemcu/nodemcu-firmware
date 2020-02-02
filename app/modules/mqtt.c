@@ -60,7 +60,6 @@ typedef enum {
 typedef struct mqtt_state_t
 {
   uint16_t port;
-  mqtt_connect_info_t* connect_info;
   msg_queue_t* pending_msg_q;
   uint16_t next_message_id;
 
@@ -781,7 +780,7 @@ static void mqtt_socket_connected(void *arg)
   mqtt_message_buffer_t msgb;
   mqtt_msg_init(&msgb, temp_buffer, MQTT_BUF_SIZE);
 
-  mqtt_message_t* temp_msg = mqtt_msg_connect(&msgb, mud->mqtt_state.connect_info);
+  mqtt_message_t* temp_msg = mqtt_msg_connect(&msgb, &mud->connect_info);
   NODE_DBG("Send MQTT connection infomation, data len: %d, d[0]=%d \r\n", temp_msg->length,  temp_msg->data[0]);
 
   mud->event_timeout = MQTT_SEND_TIMEOUT;
@@ -883,7 +882,7 @@ void mqtt_socket_timer(void *arg)
     } else {
       // no queued event.
       mud->keep_alive_tick ++;
-      if(mud->keep_alive_tick > mud->mqtt_state.connect_info->keepalive){
+      if(mud->keep_alive_tick > mud->connect_info.keepalive){
         if (mud->keepalive_sent) {
           // Oh dear -- keepalive timer expired and still no ack of previous message
           mqtt_socket_reconnected(mud->pesp_conn, 0);
@@ -1037,7 +1036,6 @@ static int mqtt_socket_client( lua_State* L )
 
   mud->mqtt_state.pending_msg_q = NULL;
   mud->mqtt_state.port = 1883;
-  mud->mqtt_state.connect_info = &mud->connect_info;
   mud->mqtt_state.recv_buffer = NULL;
   mud->mqtt_state.recv_buffer_size = 0;
   mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
