@@ -61,7 +61,7 @@ Initializes the dimmer module. This will start a task that continuously monitors
 
 Throws errors if CPU1 task cannot be started or `zc_pin` cannot be configured as input.
 
-It will reset if core 1 CPU is not active or their watchdogs are still enabled. See
+It will reset if core 1 CPU is not active or their watchdogs are still enabled. See "Required SDK `menuconfig` changes" above.
 
 ## dimmer.add()
 
