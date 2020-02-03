@@ -10,31 +10,33 @@ local state = gossipSubmodules._state;
 
 -- test constants and mocks
 
+--luacheck: push allow defined
 tmr = {};
 tmr.time = function() return 200; end
 sjson = {};
 sjson.decode = function(data)
-  print(data);
   return data;
 end
+--luacheck: pop
 
-Ip_1 = '192.168.0.1';
-Ip_2 = '192.168.0.2';
+local Ip_1 = '192.168.0.1';
+local Ip_2 = '192.168.0.2';
 
 -- test runner
 
-Test = {};
+local Test = {};
 
-RunTests = function()
+local RunTests = function()
   local failures = {};
+  print('\nRunning tests...\n');
   for testName, test in pairs(Test) do
     if type(test) == 'function' then
       local result = testName .. ': ';
       local passed, res = pcall(test);
       if passed then
-        result = result .. 'Passed.';
+        result = result .. ' Passed.';
       else
-        result = result .. 'Failed ->';
+        result = result .. ' Failed ->';
         result = '>>>' .. result .. res;
         table.insert(failures, testName);
       end
@@ -45,19 +47,19 @@ RunTests = function()
     print('\n\n');
     print('Failed tests:');
     print('\n');
-    for k, v in pairs(failures) do print(v); end
+    for k  in pairs(failures) do print(failures[k]); end
   end
 end
 
 -- utils
 
-function Test:utils_compare()
+function Test.utils_compare()
   assert(utils.compare(1, 2) == 1);
   assert(utils.compare(2, 1) == -1);
   assert(utils.compare(0, 0) == 0);
 end
 
-function Test:utils_compareNodeData_on_revision()
+function Test.utils_compareNodeData_on_revision()
   local networkData_1 = {
     revision = 1,
     heartbeat = 500,
@@ -74,7 +76,7 @@ function Test:utils_compareNodeData_on_revision()
   assert(utils.compareNodeData(networkData_1, networkData_2) == 0);
 end
 
-function Test:utils_compareNodeData_on_heartbeat()
+function Test.utils_compareNodeData_on_heartbeat()
   local networkData_1 = {
     revision = 1,
     heartbeat = 500,
@@ -91,7 +93,7 @@ function Test:utils_compareNodeData_on_heartbeat()
   assert(utils.compareNodeData(networkData_1, networkData_2) == 0);
 end
 
-function Test:utils_compareNodeData_on_state()
+function Test.utils_compareNodeData_on_state()
   local networkData_1 = {
     revision = 1,
     heartbeat = 500,
@@ -108,7 +110,7 @@ function Test:utils_compareNodeData_on_state()
   assert(utils.compareNodeData(networkData_1, networkData_2) == 0);
 end
 
-function Test:utils_compareNodeData_on_bad_data()
+function Test.utils_compareNodeData_on_bad_data()
   local networkData_1 = {
     revision = 1,
     heartbeat = nil,
@@ -125,7 +127,7 @@ function Test:utils_compareNodeData_on_bad_data()
   assert(utils.compareNodeData(networkData_1, networkData_2) == 0);
 end
 
-function Test:utils_getNetworkStateDiff()
+function Test.utils_getNetworkStateDiff()
   local synData = {}
   gossip.networkState[Ip_1] = {
     revision = 1,
@@ -158,7 +160,7 @@ end
 
 -- state
 
-function Test:state_addData()
+function Test.state_addData()
   local ip = Ip_1;
   gossip.ip = ip;
   gossip.networkState[ip] = {}
@@ -171,7 +173,7 @@ function Test:state_addData()
   gossip.networkState = {}
 end
 
-function Test:state_tickNodeState()
+function Test.state_tickNodeState()
   local ip_1 = Ip_1;
   local ip_2 = Ip_2;
   gossip.networkState[ip_1] = {};
@@ -190,7 +192,7 @@ end
 
 -- network
 
-function Test:network_updateNetworkState_no_callback()
+function Test.network_updateNetworkState_no_callback()
   local updateData = {}
   updateData[Ip_1] = {
     revision = 1,
@@ -211,7 +213,7 @@ function Test:network_updateNetworkState_no_callback()
   gossip.config.seedList = {};
 end
 
-function Test:network_updateNetworkState_with_callback()
+function Test.network_updateNetworkState_with_callback()
   local callbackTriggered = false;
   local function updateCallback() callbackTriggered = true; end
   gossip.updateCallback = updateCallback;
@@ -220,7 +222,7 @@ function Test:network_updateNetworkState_with_callback()
   gossip.updateCallback = nil;
 end
 
-function Test:network_receiveData_when_receive_syn()
+function Test.network_receiveData_when_receive_syn()
   local originalReceiveSyn = network.receiveSyn;
   local receiveSynCalled = false;
   network.receiveSyn = function() receiveSynCalled = true; end
@@ -229,7 +231,7 @@ function Test:network_receiveData_when_receive_syn()
   assert(receiveSynCalled);
 end
 
-function Test:network_receiveData_when_receive_ack()
+function Test.network_receiveData_when_receive_ack()
   local originalReceiveAck = network.receiveAck;
   local receiveAckCalled = false;
   network.receiveAck = function() receiveAckCalled = true; end
