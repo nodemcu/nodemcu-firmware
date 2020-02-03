@@ -22,39 +22,46 @@ utils.getNetworkState = function() return sjson.encode(gossip.networkState); end
 utils.getSeedList = function() return sjson.encode(gossip.config.seedList); end
 
 utils.isNodeDataValid = function(nodeData)
-  return nodeData.revision ~= nil and nodeData.heartbeat ~= nil and
-             nodeData.state ~= nil;
+  return nodeData ~= nil and nodeData.revision ~= nil and nodeData.heartbeat ~= nil and nodeData.state ~= nil;
 end
 
-utils.compareNodeData = function(data0, data1)
-  if not utils.isNodeDataValid(data1) then return 0; end
-  if data0.revision == data1.revision and data0.heartbeat == data1.heartbeat and
-      data0.state == data1.state then return -1; end
-  if data0.revision > data1.revision then return 0; end
-  if data1.revision > data0.revision then return 1; end
-  if data0.heartbeat > data1.heartbeat then return 0; end
-  if data1.heartbeat > data0.heartbeat then return 1; end
-  if data0.state > data1.state then return 0; end
-  if data1.state > data0.state then return 1; end
+utils.compare = function(first, second)
+  if first > second then return -1; end
+  if first < second then return 1; end
   return 0;
 end
 
-utils.getNetworkStateDiff = function(synData)
+utils.compareNodeData = function(first, second)
+  local firstDataValid = utils.isNodeDataValid(first);
+  local secondDataValid = utils.isNodeDataValid(second);
+
+  if firstDataValid and secondDataValid then
+    for index, toCompare in ipairs(constants.comparisonFields) do
+      local comparisonResult = utils.compare(first[toCompare], second[toCompare]);
+      if comparisonResult ~= 0 then return comparisonResult; end
+    end
+  elseif firstDataValid then return -1;
+  elseif secondDataValid then return 1;
+  end
+  return 0;
+end
+
+utils.getUpdateDiffDelta = function(synData)
   local diff = {};
-  local diffUpdateList = '';
+  local update = {};
   for ip, nodeData in pairs(gossip.networkState) do
-    if synData[ip] == nil or utils.compareNodeData(nodeData, synData[ip]) == 0 then
-      diffUpdateList = diffUpdateList .. ip .. ' ';
+    if utils.compareNodeData(nodeData, synData[ip]) == -1 then
       diff[ip] = nodeData;
+    elseif utils.compareNodeData(nodeData, synData[ip]) == 1 then
+      update[ip] = synData[ip];
     end
   end
-  utils.debug('Computed diff: ' .. diffUpdateList);
-  return diff;
+  return update, diff
 end
 
 utils.setConfig = function(userConfig)
   for k, v in pairs(userConfig) do
-    if (gossip.config[k] ~= nil and type(gossip.config[k]) == type(v)) then
+    if gossip.config[k] ~= nil and type(gossip.config[k]) == type(v) then
       gossip.config[k] = v;
       utils.debug('Set value for ' .. k);
     end
@@ -97,7 +104,7 @@ state.start = function()
 
   gossip.inboundSocket = net.createUDPSocket();
   gossip.inboundSocket:listen(gossip.config.comPort);
-  gossip.inboundSocket:on('receive', network.stateUpdate);
+  gossip.inboundSocket:on('receive', network.receiveData);
 
   gossip.started = true;
   gossip.timer = tmr.create();
@@ -106,28 +113,33 @@ state.start = function()
   gossip.timer:start();
 end
 
--- Network
-
-network.addNewNode = function(ip, nodeData)
-  table.insert(gossip.config.seedList, ip);
-  utils.debug('Inserted ' .. ip .. ' into seed list.');
-  gossip.networkState[ip] = nodeData;
-end
-
-network.updateNetworkState = function(synData)
-  local updatedNodes = '';
-  for ip, synNodeData in pairs(synData) do
-    if gossip.networkState[ip] ~= nil then
-      if utils.compareNodeData(gossip.networkState[ip], synNodeData) == 1 then
-        gossip.networkState[ip] = synNodeData;
-        updatedNodes = updatedNodes .. ip .. ' ';
-      end
-    else
-      network.addNewNode(ip, synNodeData);
-      updatedNodes = updatedNodes .. ip .. ' ';
+state.tickNodeState = function(ip)
+  if gossip.networkState[ip] ~= nil then
+    local nodeState = gossip.networkState[ip].state;
+    if nodeState < constants.nodeState.REMOVE then
+      nodeState = nodeState + constants.nodeState.TICK;
+      gossip.networkState[ip].state = nodeState;
     end
   end
-  utils.debug('Updated networkState with nodes: ' .. updatedNodes);
+end
+
+state.addData = function(extraData)
+  gossip.networkState[gossip.ip].heartbeat = tmr.time();
+  gossip.networkState[gossip.ip].data = extraData;
+end
+
+-- Network
+
+network.updateNetworkState = function(updateData)
+  if gossip.updateCallback then
+    gossip.updateCallback(updateData);
+  end
+  for ip, data in pairs(updateData) do
+    if gossip.config.seedList[ip] == nil then
+      table.insert(gossip.config.seedList, ip);
+    end
+    gossip.networkState[ip] = data;
+  end
 end
 
 network.sendSyn = function()
@@ -135,13 +147,7 @@ network.sendSyn = function()
   local randomNode = network.pickRandomNode();
   if randomNode ~= nil then
     network.sendData(randomNode, gossip.networkState, constants.updateType.SYN);
-    if gossip.networkState[randomNode] ~= nil then
-      local nodeState = gossip.networkState[randomNode].state;
-      if nodeState < constants.nodeState.REMOVE then
-        nodeState = nodeState + constants.nodeState.TICK;
-        gossip.networkState[randomNode].state = nodeState;
-      end
-    end
+    state.tickNodeState(randomNode);
   end
 end
 
@@ -162,38 +168,33 @@ network.sendData = function(ip, data, sendType)
   local dataToSend = sjson.encode(data);
   data.type = nil;
   outboundSocket:send(gossip.config.comPort, ip, dataToSend);
-  utils.debug('Sent ' .. sendType .. ' to ' .. ip);
   outboundSocket:close();
 end
 
-network.receiveSyn = function(ip, updateData)
+network.receiveSyn = function(ip, synData)
   utils.debug('Received SYN from ' .. ip);
-  local diff = utils.getNetworkStateDiff(updateData);
-  network.updateNetworkState(updateData);
+  local update, diff = utils.getUpdateDiffDelta(synData);
+  network.updateNetworkState(update);
+  network.sendAck(ip, diff);
+end
+
+network.receiveAck = function(ip, ackData)
+  utils.debug('Received ACK from ' .. ip);
+  local update = utils.getUpdateDiffDelta(ackData);
+  utils.updateNetworkState(update);
+end
+
+network.sendAck = function(ip, diff)
+  local diffIps;
+  for k in pairs(diff) do
+    diffIps = diffIps .. k;
+  end
+  utils.log('Sending ACK to '..ip..' with '..diffIps..' updates.');
   network.sendData(ip, diff, constants.updateType.ACK);
 end
 
-network.receiveAck = function(ackIp, updateData)
-  utils.debug('Received ACK from ' .. ackIp);
-  local dataToUpdate = '';
-  local nodeUpdated = false;
-  for ip, nodeData in pairs(updateData) do
-    if gossip.networkState[ip] == nil then
-      network.addNewNode(ip, nodeData);
-      nodeUpdated = true;
-    elseif utils.compareNodeData(gossip.networkState[ip], updateData[ip]) == 1 then
-      gossip.networkState[ip] = nodeData;
-      nodeUpdated = true;
-    end
-    if nodeUpdated then dataToUpdate = dataToUpdate .. ip .. ' '; end
-  end
-  if #dataToUpdate > 1 then
-    utils.debug('Updated via ACK from peer : ' .. dataToUpdate);
-  end
-end
-
 -- luacheck: push no unused
-network.stateUpdate = function(socket, data, port, ip)
+network.receiveData = function(socket, data, port, ip)
   if gossip.networkState[ip] ~= nil then
     gossip.networkState[ip].state = constants.nodeState.UP;
   end
@@ -209,8 +210,7 @@ network.stateUpdate = function(socket, data, port, ip)
   elseif updateType == constants.updateType.ACK then
     network.receiveAck(ip, updateData);
   else
-    utils.debug('Invalid data comming from ip ' .. ip .. '. No type specified.');
-    return;
+    utils.debug('Invalid data comming from ip ' .. ip .. '. No valid type specified.');
   end
 end
 -- luacheck: pop
@@ -221,7 +221,7 @@ constants.nodeState = {TICK = 1, UP = 0, SUSPECT = 2, DOWN = 3, REMOVE = 4};
 
 constants.defaultConfig = {
   seedList = {},
-  roundInterval = 10000,
+  roundInterval = 15000,
   comPort = 5000,
   debug = false
 };
@@ -231,6 +231,8 @@ constants.initialState = {
   heartbeat = 0,
   state = constants.nodeState.UP
 };
+
+constants.comparisonFields = {'revision', 'heartbeat', 'state'};
 
 constants.updateType = {ACK = 'ACK', SYN = 'SYN'}
 
@@ -246,10 +248,17 @@ gossip = {
   start = state.start,
   setRevManually = state.setRevManually,
   networkState = {},
-  getNetworkState = utils.getNetworkState
+  getNetworkState = utils.getNetworkState,
+  addData = state.addData
 };
 
-if (net == nil or file == nil or tmr == nil or wifi == nil) then
+-- unit tests
+-- change variable to true if you want to expose all methods
+local unit_tests = true;
+
+if unit_tests then
+  return {_gossip = gossip, _constants = constants, _utils = utils, _network = network, _state = state};
+elseif net == nil or file == nil or tmr == nil or wifi == nil then
   error('Gossip requires these modules to work: net, file, tmr, wifi');
 else
   return gossip;
