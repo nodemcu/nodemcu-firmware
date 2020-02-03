@@ -128,11 +128,6 @@ state.tickNodeState = function(ip)
   end
 end
 
-state.addData = function(extraData)
-  gossip.networkState[gossip.ip].heartbeat = tmr.time();
-  gossip.networkState[gossip.ip].data = extraData;
-end
-
 -- Network
 
 network.updateNetworkState = function(updateData)
@@ -219,7 +214,13 @@ end
 
 -- Constants
 
-constants.nodeState = {TICK = 1, UP = 0, SUSPECT = 2, DOWN = 3, REMOVE = 4};
+constants.nodeState = {
+  TICK = 1,
+  UP = 0,
+  SUSPECT = 2,
+  DOWN = 3,
+  REMOVE = 4
+};
 
 constants.defaultConfig = {
   seedList = {},
@@ -234,9 +235,16 @@ constants.initialState = {
   state = constants.nodeState.UP
 };
 
-constants.comparisonFields = {'revision', 'heartbeat', 'state'};
+constants.comparisonFields = {
+  'revision',
+  'heartbeat',
+  'state'
+};
 
-constants.updateType = {ACK = 'ACK', SYN = 'SYN'}
+constants.updateType = {
+  ACK = 'ACK',
+  SYN = 'SYN'
+}
 
 constants.revFileName = 'gossip/rev.dat';
 
@@ -251,22 +259,20 @@ gossip = {
   setRevManually = state.setRevManually,
   networkState = {},
   getNetworkState = utils.getNetworkState,
-  addData = state.addData
 };
 
 -- unit tests
--- change variable to true if you want to expose all methods
-local unit_tests = true;
 
-if unit_tests then
-  return {
-    _gossip = gossip,
-    _constants = constants,
-    _utils = utils,
-    _network = network,
-    _state = state
-  };
-elseif net == nil or file == nil or tmr == nil or wifi == nil then
+-- uncomment this and comment the code below it to run gossip_tests
+  -- return {
+  --   _gossip = gossip,
+  --   _constants = constants,
+  --   _utils = utils,
+  --   _network = network,
+  --   _state = state
+  -- };
+
+if net == nil or file == nil or tmr == nil or wifi == nil then
   error('Gossip requires these modules to work: net, file, tmr, wifi');
 else
   return gossip;
