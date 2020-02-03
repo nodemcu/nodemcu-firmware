@@ -22,7 +22,8 @@ utils.getNetworkState = function() return sjson.encode(gossip.networkState); end
 utils.getSeedList = function() return sjson.encode(gossip.config.seedList); end
 
 utils.isNodeDataValid = function(nodeData)
-  return nodeData ~= nil and nodeData.revision ~= nil and nodeData.heartbeat ~= nil and nodeData.state ~= nil;
+  return nodeData ~= nil and nodeData.revision ~= nil and nodeData.heartbeat ~=
+             nil and nodeData.state ~= nil;
 end
 
 utils.compare = function(first, second)
@@ -36,12 +37,16 @@ utils.compareNodeData = function(first, second)
   local secondDataValid = utils.isNodeDataValid(second);
 
   if firstDataValid and secondDataValid then
-    for index, toCompare in ipairs(constants.comparisonFields) do
-      local comparisonResult = utils.compare(first[toCompare], second[toCompare]);
+    for index in ipairs(constants.comparisonFields) do
+      local comparisonResult = utils.compare(
+                                   first[constants.comparisonFields[index]],
+                                   second[constants.comparisonFields[index]]);
       if comparisonResult ~= 0 then return comparisonResult; end
     end
-  elseif firstDataValid then return -1;
-  elseif secondDataValid then return 1;
+  elseif firstDataValid then
+    return -1;
+  elseif secondDataValid then
+    return 1;
   end
   return 0;
 end
@@ -131,9 +136,7 @@ end
 -- Network
 
 network.updateNetworkState = function(updateData)
-  if gossip.updateCallback then
-    gossip.updateCallback(updateData);
-  end
+  if gossip.updateCallback then gossip.updateCallback(updateData); end
   for ip, data in pairs(updateData) do
     if gossip.config.seedList[ip] == nil then
       table.insert(gossip.config.seedList, ip);
@@ -186,10 +189,8 @@ end
 
 network.sendAck = function(ip, diff)
   local diffIps;
-  for k in pairs(diff) do
-    diffIps = diffIps .. k;
-  end
-  utils.log('Sending ACK to '..ip..' with '..diffIps..' updates.');
+  for k in pairs(diff) do diffIps = diffIps .. k; end
+  utils.log('Sending ACK to ' .. ip .. ' with ' .. diffIps .. ' updates.');
   network.sendData(ip, diff, constants.updateType.ACK);
 end
 
@@ -210,7 +211,8 @@ network.receiveData = function(socket, data, port, ip)
   elseif updateType == constants.updateType.ACK then
     network.receiveAck(ip, updateData);
   else
-    utils.debug('Invalid data comming from ip ' .. ip .. '. No valid type specified.');
+    utils.debug('Invalid data comming from ip ' .. ip ..
+                    '. No valid type specified.');
   end
 end
 -- luacheck: pop
@@ -257,7 +259,13 @@ gossip = {
 local unit_tests = true;
 
 if unit_tests then
-  return {_gossip = gossip, _constants = constants, _utils = utils, _network = network, _state = state};
+  return {
+    _gossip = gossip,
+    _constants = constants,
+    _utils = utils,
+    _network = network,
+    _state = state
+  };
 elseif net == nil or file == nil or tmr == nil or wifi == nil then
   error('Gossip requires these modules to work: net, file, tmr, wifi');
 else
