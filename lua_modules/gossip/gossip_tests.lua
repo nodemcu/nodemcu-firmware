@@ -17,6 +17,9 @@ sjson = {};
 sjson.decode = function(data)
   return data;
 end
+file = io;
+file.exists = io.type;
+file.putcontents = io.type;
 --luacheck: pop
 
 local Ip_1 = '192.168.0.1';
@@ -160,17 +163,12 @@ end
 
 -- state
 
-function Test.state_addData()
-  local ip = Ip_1;
-  gossip.ip = ip;
-  gossip.networkState[ip] = {}
-  gossip.addData({
-    extra = 'this is some extra data',
-    extraMore = 'here is some more'
-  });
-  assert(gossip.networkState[ip].data ~= nil);
-  assert(gossip.networkState[ip].data.extra == 'this is some extra data');
-  gossip.networkState = {}
+function Test.state_setRev()
+    gossip.currentState.revision = -1;
+    state.setRev();
+    assert(gossip.currentState.revision == 0, 'Revision not initialized to 0.');
+    gossip.setRevManually(5);
+    assert(gossip.currentState.revision == 5, 'Revision not manually set.');
 end
 
 function Test.state_tickNodeState()
