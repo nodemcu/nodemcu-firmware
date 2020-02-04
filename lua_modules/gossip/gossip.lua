@@ -139,7 +139,7 @@ end
 network.updateNetworkState = function(updateData)
   if gossip.updateCallback then gossip.updateCallback(updateData); end
   for ip, data in pairs(updateData) do
-    if gossip.config.seedList[ip] then
+    if not gossip.config.seedList[ip] then
       table.insert(gossip.config.seedList, ip);
     end
     gossip.networkState[ip] = data;
@@ -236,7 +236,7 @@ constants.defaultConfig = {
 };
 
 constants.initialState = {
-  revision = 1,
+  revision = 0,
   heartbeat = 0,
   state = constants.nodeState.UP
 };
