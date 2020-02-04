@@ -76,14 +76,12 @@ end
 
 state.setRev = function(revNumber)
   local revision = revNumber or 0;
-
   if not revNumber and file.exists(revFile) then
     revision = file.getcontents(constants.revFileName) + 1;
   end
-
   file.putcontents(constants.revFileName, revision);
-  gossip.currentState.revision = revision;
   utils.debug('Revision set to ' .. gossip.currentState.revision);
+  return revision;
 end
 
 state.setRevManually = function(revNumber)
@@ -105,8 +103,10 @@ state.start = function()
     utils.debug('Node not connected to network. Gossip will not start.');
     return;
   end
-  state.setRev();
-  gossip.networkState[gossip.ip] = gossip.currentState;
+  local localState = gossip.networkState[gossip.ip];
+  localState.revision = state.setRev();
+  localState.heartbeat = tmr.time();
+  localState.state = constants.nodeState.UP;
 
   gossip.inboundSocket = net.createUDPSocket();
   gossip.inboundSocket:listen(gossip.config.comPort);
@@ -235,12 +235,6 @@ constants.defaultConfig = {
   debug = false
 };
 
-constants.initialState = {
-  revision = 0,
-  heartbeat = 0,
-  state = constants.nodeState.UP
-};
-
 constants.comparisonFields = {
   'revision',
   'heartbeat',
@@ -259,7 +253,6 @@ constants.revFileName = 'gossip/rev.dat';
 gossip = {
   started = false,
   config = constants.defaultConfig,
-  currentState = constants.initialState,
   setConfig = utils.setConfig,
   start = state.start,
   setRevManually = state.setRevManually,
