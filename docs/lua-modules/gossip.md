@@ -44,9 +44,9 @@ Currently there is no implemented deletion for nodes that are down except for th
 
 There are multiple modules on the network that measure temperature. We want to know the maximum and minimum temperature at a given time and have every node display it.
 
-The brute force solution would be to query each node in particular and save the `min` and `max` values from a single point, then go back to each node and present them with the computed `min` and `max`.
+The brute force solution would be to query each node from a single point and save the `min` and `max` values, then go back to each node and present them with the computed `min` and `max`. This requires n*2 rounds, where n is the number of nodes. It also opens the algorithm to a single point of failure (the node that is in charge of gathering the data).
 
-Using gossip, one can have the node send it's latest value through the `ACK` data and use the `callbackUpdate` function to compare the values from other nodes to it's own. Based on that, the node will display the values it knows about by gossiping with others. If there are 64 nodes in the network, the data will be transmitted in ~log64 rounds, which is 6.
+Using gossip, one can have the node send it's latest value through `SYN` or `pushGossip()` and use the `callbackUpdate` function to compare the values from other nodes to it's own. Based on that, the node will display the values it knows about by gossiping with others. The data will be transmitted in ~log(n) rounds, where n is the number of nodes.
 
 ## Terms
 
@@ -60,6 +60,7 @@ Using gossip, one can have the node send it's latest value through the `ACK` dat
 
 
 ## setConfig()
+
 #### Syntax
 ```lua
 gossip.setConfig(config)
@@ -122,6 +123,16 @@ gossip.callbackFunction = nil
 
 If declared, this function will get called every time there is a `SYN` with new data.
 
+## pushGossip()
+
+#### Syntax
+
+```lua
+gossip.pushGossip(data, [ip])
+```
+
+Send a `SYN` request outside of the normal gossip round. The IP is optional and if none given, it will pick a random node.
+
 ## setRevManually()
 
 #### Syntax
@@ -130,7 +141,7 @@ If declared, this function will get called every time there is a `SYN` with new 
 gossip.setRevManually(number)
 ```
 
-The only scenario when rev should be set manually is when a new node is added to the network and has the same ip. Having a smaller revision than the previous node with the same ip would make gossip think the data it received is old, thus ignoring it.
+The only scenario when rev should be set manually is when a new node is added to the network and has the same IP. Having a smaller revision than the previous node with the same IP would make gossip think the data it received is old, thus ignoring it.
 
 ## getNetworkState()
 
