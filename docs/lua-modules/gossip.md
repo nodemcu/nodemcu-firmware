@@ -143,6 +143,12 @@ gossip.setRevManually(number)
 
 The only scenario when rev should be set manually is when a new node is added to the network and has the same IP. Having a smaller revision than the previous node with the same IP would make gossip think the data it received is old, thus ignoring it.
 
+```
+!!! note
+
+The revision can only be set before gossip starts.
+```
+
 ## getNetworkState()
 
 #### Syntax
