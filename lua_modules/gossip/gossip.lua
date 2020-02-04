@@ -10,7 +10,7 @@ local state = {};
 
 utils.debug = function(message)
   if gossip.config.debug then
-    if gossip.config.debugOutput ~= nil then
+    if gossip.config.debugOutput then
       gossip.config.debugOutput(message);
     else
       print(message);
@@ -22,8 +22,7 @@ utils.getNetworkState = function() return sjson.encode(gossip.networkState); end
 utils.getSeedList = function() return sjson.encode(gossip.config.seedList); end
 
 utils.isNodeDataValid = function(nodeData)
-  return nodeData ~= nil and nodeData.revision ~= nil and nodeData.heartbeat ~=
-             nil and nodeData.state ~= nil;
+  return (nodeData and nodeData.revision and nodeData.heartbeat and nodeData.state) ~= nil;
 end
 
 utils.compare = function(first, second)
@@ -66,7 +65,7 @@ end
 
 utils.setConfig = function(userConfig)
   for k, v in pairs(userConfig) do
-    if gossip.config[k] ~= nil and type(gossip.config[k]) == type(v) then
+    if gossip.config[k] and type(gossip.config[k]) == type(v) then
       gossip.config[k] = v;
       utils.debug('Set value for ' .. k);
     end
@@ -76,22 +75,24 @@ end
 -- State
 
 state.setRev = function(revNumber)
-  local revision = 0;
-  local revFile = constants.revFileName;
+  local revision = revNumber or 0;
 
-  if revNumber ~= nil then
-    revision = revNumber;
-  elseif file.exists(revFile) then
-    revision = file.getcontents(revFile) + 1;
+  if not revNumber and file.exists(revFile) then
+    revision = file.getcontents(constants.revFileName) + 1;
   end
-  file.putcontents(revFile, revision);
+
+  file.putcontents(constants.revFileName, revision);
   gossip.currentState.revision = revision;
   utils.debug('Revision set to ' .. gossip.currentState.revision);
 end
 
 state.setRevManually = function(revNumber)
+  if revNumber then
   state.setRev(revNumber);
   utils.debug('Revision overriden to ' .. revNumber);
+  else
+    utils.debug('Please provide a revision number.');
+  end
 end
 
 state.start = function()
@@ -100,7 +101,7 @@ state.start = function()
     return;
   end
   gossip.ip = wifi.sta.getip();
-  if gossip.ip == nil then
+  if gossip.ip then
     utils.debug('Node not connected to network. Gossip will not start.');
     return;
   end
@@ -119,7 +120,7 @@ state.start = function()
 end
 
 state.tickNodeState = function(ip)
-  if gossip.networkState[ip] ~= nil then
+  if gossip.networkState[ip] then
     local nodeState = gossip.networkState[ip].state;
     if nodeState < constants.nodeState.REMOVE then
       nodeState = nodeState + constants.nodeState.TICK;
@@ -130,20 +131,25 @@ end
 
 -- Network
 
+network.pushGossip = function(data, ip)
+  gossip.networkState[gossip.ip].data = data;
+  network.sendSyn(ip);
+end
+
 network.updateNetworkState = function(updateData)
   if gossip.updateCallback then gossip.updateCallback(updateData); end
   for ip, data in pairs(updateData) do
-    if gossip.config.seedList[ip] == nil then
+    if gossip.config.seedList[ip] then
       table.insert(gossip.config.seedList, ip);
     end
     gossip.networkState[ip] = data;
   end
 end
 
-network.sendSyn = function()
+network.sendSyn = function(ip)
+  local destination = ip or network.pickRandomNode();
   gossip.networkState[gossip.ip].heartbeat = tmr.time();
-  local randomNode = network.pickRandomNode();
-  if randomNode ~= nil then
+  if destination then
     network.sendData(randomNode, gossip.networkState, constants.updateType.SYN);
     state.tickNodeState(randomNode);
   end
@@ -191,7 +197,7 @@ end
 
 -- luacheck: push no unused
 network.receiveData = function(socket, data, port, ip)
-  if gossip.networkState[ip] ~= nil then
+  if gossip.networkState[ip] then
     gossip.networkState[ip].state = constants.nodeState.UP;
   end
   local messageDecoded, updateData = pcall(sjson.decode, data);
@@ -259,6 +265,7 @@ gossip = {
   setRevManually = state.setRevManually,
   networkState = {},
   getNetworkState = utils.getNetworkState,
+  pushGossip = network.pushGossip
 };
 
 -- unit tests
@@ -272,8 +279,8 @@ gossip = {
   --   _state = state
   -- };
 
-if net == nil or file == nil or tmr == nil or wifi == nil then
-  error('Gossip requires these modules to work: net, file, tmr, wifi');
-else
+if nat and file and tmr and wifi then
   return gossip;
+else
+  error('Gossip requires these modules to work: net, file, tmr, wifi');
 end
