@@ -185,7 +185,7 @@ function Test.utils_getMinus()
     heartbeat = 400,
     state = constants.nodeState.SUSPECT;
   };
-  
+
   --local diff1 = utils.getMinus(data1, data2);
   local diff2 = utils.getMinus(data2, data1);
 
