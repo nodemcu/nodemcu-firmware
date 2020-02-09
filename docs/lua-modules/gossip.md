@@ -129,16 +129,19 @@ If declared, this function will get called every time there is a `SYN` with new 
 
 ```lua
 gossip.pushGossip(data, [ip])
+
+-- remove data
+gossip.networkState[gossip.ip].data = nil
 ```
 
-Send a `SYN` request outside of the normal gossip round. The IP is optional and if none given, it will pick a random node.
+Send a `SYN` request outside of the normal gossip round. The IP is optional and if none given, it will pick a random node. If you want to remove the data form the network you have to manually set it to nil.
 
 ## setRevManually()
 
 #### Syntax
 
 ```lua
-gossip.setRevManually(number)
+gossip.setRevFileValue(number)
 ```
 
 The only scenario when rev should be set manually is when a new node is added to the network and has the same IP. Having a smaller revision than the previous node with the same IP would make gossip think the data it received is old, thus ignoring it.
@@ -146,7 +149,7 @@ The only scenario when rev should be set manually is when a new node is added to
 ```
 !!! note
 
-The revision can only be set before gossip starts.
+The revision file value will only be read when gossip starts and it will be incremented by one.
 ```
 
 ## getNetworkState()
