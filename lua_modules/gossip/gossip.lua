@@ -25,7 +25,6 @@ end
 
 utils.getNetworkState = function() return sjson.encode(gossip.networkState); end
 
-
 utils.isNodeDataValid = function(nodeData)
   return (nodeData and nodeData.revision and nodeData.heartbeat and
              nodeData.state) ~= nil;
@@ -43,7 +42,8 @@ utils.compareNodeData = function(first, second)
   if firstDataValid and secondDataValid then
     for index in ipairs(constants.comparisonFields) do
       local comparisonField = constants.comparisonFields[index];
-      local comparisonResult = utils.compare(first[comparisonField], second[comparisonField]);
+      local comparisonResult = utils.compare(first[comparisonField],
+                                             second[comparisonField]);
       if comparisonResult ~= 0 then return comparisonResult; end
     end
   elseif firstDataValid then
@@ -199,7 +199,7 @@ end
 
 network.sendAck = function(ip, diff)
   local diffIps = '';
-  for k in pairs(diff) do diffIps = diffIps ..' '.. k; end
+  for k in pairs(diff) do diffIps = diffIps .. ' ' .. k; end
   utils.debug('Sending ACK to ' .. ip .. ' with ' .. diffIps .. ' updates.');
   network.sendData(ip, diff, constants.updateType.ACK);
 end
