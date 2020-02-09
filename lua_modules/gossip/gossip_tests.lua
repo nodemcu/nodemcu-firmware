@@ -10,17 +10,17 @@ local state = gossipSubmodules._state;
 
 -- test constants and mocks
 
---luacheck: push allow defined
+local function dummy() return nil; end
+
+-- luacheck: push allow defined
 tmr = {};
 tmr.time = function() return 200; end
 sjson = {};
-sjson.decode = function(data)
-  return data;
-end
+sjson.decode = function(data) return data; end
 file = io;
-file.exists = io.type;
-file.putcontents = io.type;
---luacheck: pop
+file.exists = dummy
+file.putcontents = dummy
+-- luacheck: pop
 
 local Ip_1 = '192.168.0.1';
 local Ip_2 = '192.168.0.2';
@@ -48,13 +48,44 @@ local RunTests = function()
   end
   if (#failures ~= 0) then
     print('\n\n');
-    print('Failed tests:');
+    print('Failed tests (' .. #failures .. '): \n');
+    for k in pairs(failures) do print(failures[k]); end
     print('\n');
-    for k  in pairs(failures) do print(failures[k]); end
   end
 end
 
 -- utils
+
+function Test.utils_contains()
+    local seedList = {};
+    assert(not utils.contains(seedList, Ip_1));
+    table.insert(seedList, Ip_1);
+    assert(utils.contains(seedList, Ip_1));
+    table.insert(seedList, Ip_2);
+    assert(utils.contains(seedList, Ip_1) and utils.contains(seedList, Ip_2));
+end
+
+function Test.utils_setConfig()
+  local config = {
+    seedList = {Ip_1},
+    roundInterval = 1500,
+    comPort = 8000,
+    junk = 'junk'
+  };
+  gossip.config = constants.defaultConfig;
+  utils.setConfig(config);
+
+  assert(#gossip.config.seedList == 1, 'Config failed when adding seedList');
+  assert(gossip.config.seedList[1] == Ip_1,
+         'Config failed to add ip to seedList');
+  assert(gossip.config.roundInterval == 1500,
+         'Config failed to add round interval.');
+  assert(gossip.config.comPort == 8000, 'Config failed to add comPort.');
+  assert(gossip.config.debug == false, 'Debug should be false.');
+  assert(gossip.config.junk == nil, 'Junk data inserted in config.');
+
+  gossip.config = constants.defaultConfig;
+end
 
 function Test.utils_compare()
   assert(utils.compare(1, 2) == 1);
@@ -130,45 +161,46 @@ function Test.utils_compareNodeData_on_bad_data()
   assert(utils.compareNodeData(networkData_1, networkData_2) == 0);
 end
 
-function Test.utils_getNetworkStateDiff()
-  local synData = {}
-  gossip.networkState[Ip_1] = {
+function Test.utils_getMinus()
+  local data1 = {};
+  local data2 = {};
+
+  data1[Ip_1] = {
     revision = 1,
     heartbeat = 500,
     state = constants.nodeState.UP
   };
-  gossip.networkState[Ip_2] = {
-    revision = 1,
-    heartbeat = 500,
-    state = constants.nodeState.UP
-  };
-  synData[Ip_1] = {
+  data1[Ip_2] = {
     revision = 1,
     heartbeat = 400,
     state = constants.nodeState.UP
   };
-  synData[Ip_2] = {
+  data2[Ip_1] = {
     revision = 1,
-    heartbeat = 700,
+    heartbeat = 400,
     state = constants.nodeState.UP
   };
+  data2[Ip_2] = {
+    revision = 1,
+    heartbeat = 400,
+    state = constants.nodeState.SUSPECT;
+  };
+  
+  --local diff1 = utils.getMinus(data1, data2);
+  local diff2 = utils.getMinus(data2, data1);
 
-  local update, diff = utils.getUpdateDiffDelta(synData);
-  gossip.networkState = {};
-
-  assert(update[Ip_2] ~= nil and update[Ip_1] == nil);
-  assert(diff[Ip_1] ~= nil and diff[Ip_2] == nil);
+  --assert(diff1[Ip_1] ~= nil and diff1[Ip_2] == nil);
+  assert(diff2[Ip_1] == nil and diff2[Ip_2] ~= nil);
 
 end
 
 -- state
 
 function Test.state_setRev()
-    gossip.currentState.revision = -1;
-    state.setRev();
-    assert(gossip.currentState.revision == 0, 'Revision not initialized to 0.');
-    gossip.setRevManually(5);
-    assert(gossip.currentState.revision == 5, 'Revision not manually set.');
+  gossip.ip = Ip_1;
+  gossip.networkState[Ip_1] = {};
+  gossip.networkState[Ip_1].revision = -1;
+  assert(state.setRev() == 0, 'Revision not initialized to 0.');
 end
 
 function Test.state_tickNodeState()
@@ -203,12 +235,14 @@ function Test.network_updateNetworkState_no_callback()
     state = constants.nodeState.UP
   };
   network.updateNetworkState(updateData);
+  -- send duplicate data
+  network.updateNetworkState(updateData);
   assert(#gossip.config.seedList == 2);
   assert(gossip.config.seedList[1] == Ip_1);
   assert(gossip.config.seedList[2] == Ip_2);
   assert(gossip.networkState[Ip_1] ~= nil and gossip.networkState[Ip_2] ~= nil);
   gossip.networkState = {};
-  gossip.config.seedList = {};
+  gossip.config = constants.defaultConfig;
 end
 
 function Test.network_updateNetworkState_with_callback()
