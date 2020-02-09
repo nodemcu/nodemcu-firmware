@@ -245,7 +245,9 @@ static int pmain (lua_State *L) {
 
   input_setup(LUA_MAXINPUT, get_prompt(L, 1));
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
+#if !defined(DISABLE_STARTUP_BANNER)
   print_version(L);
+#endif
 
   /* and last of all, kick off application initialisation */
   if (init[0] == '@')
