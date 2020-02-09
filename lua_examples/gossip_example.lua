@@ -27,8 +27,9 @@ local function Startup()
   -- enter at least one ip that will be a start seed
   local startingSeed = '192.168.0.73';
 
+  -- luacheck: push allow defined
   Gossip = require('gossip');
-
+  -- luacheck: pop
   local config = {debug = true, seedList = {}};
 
   if wifi.sta.getip() ~= startingSeed then
