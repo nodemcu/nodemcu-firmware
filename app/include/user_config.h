@@ -22,6 +22,26 @@
 //#define BIT_RATE_AUTOBAUD
 
 
+// At start-up firmware details like:
+//
+// NodeMCU 3.0.1.0
+//         branch:
+//         commit:
+//         release:
+//         release DTS:
+//         SSL: false
+//         build type: integer
+//         LFS: 0x0
+//         modules: file,gpio,net,node,rtctime,sntp,tmr,uart,wifi
+//  build 2020-01-27 17:39 powered by Lua 5.1.4 on SDK 3.0.2(824dc80)
+//
+// will be printed to serial console.  While it's mandatory for bug reports
+// and good for development, it may be unwanted for non-interactive serial
+// devices.
+
+//#define DISABLE_STARTUP_BANNER
+
+
 // Three separate build variants are now supported. The main difference is in the
 // processing of numeric data types.  If LUA_NUMBER_INTEGRAL is defined, then
 // all numeric calculations are done in integer, with divide being an integer
