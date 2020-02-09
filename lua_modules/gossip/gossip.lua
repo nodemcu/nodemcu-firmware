@@ -75,7 +75,7 @@ end
 
 -- State
 
-state.setRev = function(revNumber)
+state.setRev = function()
   local revision = 0;
   if file.exists(constants.revFileName) then
     revision = file.getcontents(constants.revFileName) + 1;
