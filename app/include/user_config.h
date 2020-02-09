@@ -35,7 +35,7 @@
 //         modules: file,gpio,net,node,rtctime,sntp,tmr,uart,wifi
 //  build 2020-01-27 17:39 powered by Lua 5.1.4 on SDK 3.0.2(824dc80)
 //
-// will be printed to serial console.  While it's very helpful for bug reports
+// will be printed to serial console.  While it's mandatory for bug reports
 // and good for development, it may be unwanted for non-interactive serial
 // devices.
 
