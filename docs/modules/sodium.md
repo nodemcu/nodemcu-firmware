@@ -106,3 +106,50 @@ The decrypted plain text of the message. Returns `nil` if the `ciphertext` could
 ```lua
 message = sodium.crypto_box.seal_open(ciphertext, public_key, secret_key)
 ```
+
+# Hashing
+See also [https://download.libsodium.org/doc/hashing/generic_hashing](https://download.libsodium.org/doc/hashing/generic_hashing).
+
+The hash functions are implemented using BLAKE2b, a simple, standardized ([RFC 7693](https://www.rfc-editor.org/rfc/rfc7693.txt)) secure hash function that is as strong as SHA-3 but faster than SHA-1 and MD5.
+
+## sodium.generichash()
+Computes a hash of the given data. The same data will always produce the same hash (providing `key` and `out_len` parameters are the same).
+
+#### Syntax
+`sodium.generichash(data[, key[, out_len]])`
+
+#### Parameters
+- `data` - the data to hash
+- `key` - Optional. A string to use as the key. A key parameter can be used for example to make sure that different applications generate different hashes even if they process the same data. If specified, must be between 16 and 64 bytes.
+- `out_len` - Optional. The length of hash to output, which must be between 16 and 64. If not specified, defaults to 32 bytes (`crypto_generichash_BYTES`).
+
+#### Returns
+The hash of the data, as an unencoded string of `out_len` bytes. Use something like `encoder.toHex(result)` if you need it as ASCII text.
+
+#### Example
+```lua
+hash = sodium.generichash("Some data")
+print("Result:", encoder.toHex(hash))
+```
+
+## sodium.generichash_init()
+Provides a way to calculate a hash in chunks, so that not all the data needs to be in memory at once.
+
+#### Syntax
+`sodium.generichash_init([key[, out_len]])`
+
+#### Parameters
+- `key` - Optional. As per sodium.generichash().
+- `out_len` - Optional. As per sodium.generichash().
+
+#### Returns
+An object with 2 methods, `update(data)` and `final()`. Call `update()` with each data chunk in turn, then call `final()` to fetch the resulting hash. Do not call `update()` again after calling `final()`: to calculate another hash, call `generichash_init()` again to get a new object.
+
+#### Example
+```lua
+hasher = sodium.generichash_init()
+hasher:update(data_chunk_1)
+hasher:update(data_chunk_2)
+hash = hasher:final()
+print("Result:", encoder.toHex(hash))
+```
