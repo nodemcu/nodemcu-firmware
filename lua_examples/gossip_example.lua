@@ -6,7 +6,12 @@ local credentials = {SSID = "SSID", PASS = "PASS"};
 -- this can also be done by changing gossip.networkState[gossip.ip].data = {temperature = 78};
 local function sendAlarmingData()
   Gossip.pushGossip({temperature = 78});
-  print('Pushed alarming data.');
+  print('Pushed alarming data');
+end
+
+local function removeAlarmingData()
+  Gossip.pushGossip(nil);
+  print('Removed alarming data from the network.');
 end
 
 -- callback function for when gossip receives an update
@@ -47,6 +52,7 @@ local function Startup()
   -- send some alarming data timer
   if wifi.sta.getip() == startingSeed then
     tmr.create():alarm(50000, tmr.ALARM_SINGLE, sendAlarmingData);
+    tmr.create():alarm(50000*3, tmr.ALARM_SINGLE, removeAlarmingData);
   end
 end
 
