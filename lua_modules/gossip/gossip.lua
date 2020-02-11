@@ -257,18 +257,17 @@ gossip = {
   pushGossip = network.pushGossip
 };
 
--- unit tests
+-- return
 
--- uncomment this and comment the code below it to run gossip_tests
--- return {
---   _gossip = gossip,
---   _constants = constants,
---   _utils = utils,
---   _network = network,
---   _state = state
--- };
-
-if net and file and tmr and wifi then
+if (... == 'test') then
+  return {
+    _gossip = gossip,
+    _constants = constants,
+    _utils = utils,
+    _network = network,
+    _state = state
+  };
+elseif net and file and tmr and wifi then
   return gossip;
 else
   error('Gossip requires these modules to work: net, file, tmr, wifi');
