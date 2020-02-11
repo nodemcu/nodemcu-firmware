@@ -131,11 +131,15 @@ If declared, this function will get called every time there is a `SYN` with new 
 gossip.pushGossip(data, [ip])
 
 -- remove data
-gossip.networkState[gossip.ip].data = nil
+gossip.pushGossip(nil, [ip])
 ```
 
-Send a `SYN` request outside of the normal gossip round. The IP is optional and if none given, it will pick a random node. If you want to remove the data form the network you have to manually set it to nil.
+Send a `SYN` request outside of the normal gossip round. The IP is optional and if none given, it will pick a random node.
 
+```
+!!! note
+. By calling `pushGossip(nil)` you effectively remove the `data` table from the node's network state and notify other nodes of this.
+```
 ## setRevManually()
 
 #### Syntax
