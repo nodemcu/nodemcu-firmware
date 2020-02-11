@@ -1,6 +1,6 @@
 -- Gossip protocol implementation tests
 -- https://github.com/alexandruantochi/
-local gossipSubmodules = require('gossip');
+local gossipSubmodules = loadfile('gossip.lua')('test');
 
 local gossip = gossipSubmodules._gossip;
 local constants = gossipSubmodules._constants;
@@ -17,7 +17,7 @@ tmr = {};
 tmr.time = function() return 200; end
 sjson = {};
 sjson.decode = function(data) return data; end
-file = io;
+file = {};
 file.exists = dummy
 file.putcontents = dummy
 -- luacheck: pop
