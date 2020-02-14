@@ -583,25 +583,6 @@ extern bool espconn_secure_set_default_certificate(const uint8* certificate, uin
 extern bool espconn_secure_set_default_private_key(const uint8* private_key, uint16 length);
 
 /******************************************************************************
- * FunctionName : espconn_secure_accept
- * Description  : The function given as the listen
- * Parameters   : espconn -- the espconn used to listen the connection
- * Returns      : result
-*******************************************************************************/
-
-extern sint8 espconn_secure_accept(struct espconn *espconn);
-
-/******************************************************************************
- * FunctionName : espconn_secure_accepts
- * Description  : delete the secure server host
- * Parameters   : espconn -- the espconn used to listen the connection
- * Returns      : result
-*******************************************************************************/
-
-extern sint8 espconn_secure_delete(struct espconn *espconn);
-
-
-/******************************************************************************
  * FunctionName : espconn_recv_hold
  * Description  : hold tcp receive
  * Parameters   : espconn -- espconn to hold

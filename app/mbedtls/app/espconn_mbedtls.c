@@ -252,7 +252,6 @@ static pmbedtls_msg mbedtls_msg_new(void)
 		os_bzero(msg, sizeof(mbedtls_msg));
 		msg->psession = mbedtls_session_new();
 		if (msg->psession) {
-			mbedtls_net_init(&msg->listen_fd);
 			mbedtls_net_init(&msg->fd);
 			mbedtls_ssl_init(&msg->ssl);
 			mbedtls_ssl_config_init(&msg->conf);
@@ -325,13 +324,6 @@ static espconn_msg* mbedtls_msg_find(int sock)
 		}
 	}
 
-	for (plist = plink_server; plist != NULL; plist = plist->pnext) {
-		if(plist->pssl != NULL) {
-			msg = plist->pssl;
-			if (msg->listen_fd.fd == sock)
-				return plist;
-		}
-	}
 	return NULL;
 }
 
@@ -346,14 +338,8 @@ static bool mbedtls_handshake_result(const pmbedtls_msg Threadmsg)
 		return false;
 
 	if (Threadmsg->ssl.state == MBEDTLS_SSL_HANDSHAKE_OVER) {
-		int ret = 0;
-		if (Threadmsg->listen_fd.fd == -1)
-			ret = ssl_option.client.cert_ca_sector.flag;
-		else
-			ret = ssl_option.server.cert_ca_sector.flag;
-
-		if (ret == 1) {
-			ret = mbedtls_ssl_get_verify_result(&Threadmsg->ssl);
+		if (ssl_option.client.cert_ca_sector.flag) {
+			int ret = mbedtls_ssl_get_verify_result(&Threadmsg->ssl);
 			if (ret != 0) {
 				char vrfy_buf[512];
 				os_memset(vrfy_buf, 0, sizeof(vrfy_buf)-1);
@@ -381,18 +367,10 @@ static void mbedtls_fail_info(espconn_msg *pinfo, int ret)
 	 */
 	if (ret != MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
 		if (TLSmsg->quiet) {
-			if (pinfo->preverse != NULL) {
-				os_printf("server's data invalid protocol\n");
-			} else {
-				os_printf("client's data invalid protocol\n");
-			}
+			os_printf("client's data invalid protocol\n");
 			mbedtls_ssl_close_notify(&TLSmsg->ssl);
 		} else {
-			if (pinfo->preverse != NULL) {
-				os_printf("server handshake failed!\n");
-			} else {
-				os_printf("client handshake failed!\n");
-			}
+			os_printf("client handshake failed!\n");
 		}
 	}
 
@@ -509,36 +487,16 @@ static bool espconn_ssl_read_param_from_flash(void *param, uint16 len, int32 off
 	}
 
 	uint32 FILE_PARAM_START_SEC = 0x3B;
-	switch (auth_info->auth_level) {
-	case ESPCONN_CLIENT:
-		switch (auth_info->auth_type) {
-		case ESPCONN_CERT_AUTH:
-			FILE_PARAM_START_SEC = ssl_option.client.cert_ca_sector.sector;
-			break;
-		case ESPCONN_CERT_OWN:
-		case ESPCONN_PK:
-			FILE_PARAM_START_SEC = ssl_option.client.cert_req_sector.sector;
-			break;
-		default:
-			return false;
-		}
+	switch (auth_info->auth_type) {
+	case ESPCONN_CERT_AUTH:
+		FILE_PARAM_START_SEC = ssl_option.client.cert_ca_sector.sector;
 		break;
-	case ESPCONN_SERVER:
-		switch (auth_info->auth_type) {
-		case ESPCONN_CERT_AUTH:
-			FILE_PARAM_START_SEC = ssl_option.server.cert_ca_sector.sector;
-			break;
-		case ESPCONN_CERT_OWN:
-		case ESPCONN_PK:
-			FILE_PARAM_START_SEC = ssl_option.server.cert_req_sector.sector;
-			break;
-		default:
-			return false;
-		}
+	case ESPCONN_CERT_OWN:
+	case ESPCONN_PK:
+		FILE_PARAM_START_SEC = ssl_option.client.cert_req_sector.sector;
 		break;
 	default:
 		return false;
-		break;
 	}
 
 	spi_flash_read(FILE_PARAM_START_SEC * 4096 + offset, param, len);
@@ -627,83 +585,37 @@ mbedtls_dbg(void *p, int level, const char *file, int line, const char *str)
 
 static bool mbedtls_msg_config(mbedtls_msg *msg)
 {
-	const char *pers = NULL;
-	uint8 auth_type = 0;
 	bool load_flag = false;
 	int ret = ESPCONN_OK;
 	mbedtls_auth_info auth_info;
 
-	/*end_point mode*/
-	if (msg->listen_fd.fd == -1) {
-		pers = "client";
-		auth_type = MBEDTLS_SSL_IS_CLIENT;
-	} else {
-		pers = "server";
-		auth_type = MBEDTLS_SSL_IS_SERVER;
-	}
-
 	/*Initialize the RNG and the session data*/
-	ret = mbedtls_ctr_drbg_seed(&msg->ctr_drbg, mbedtls_entropy_func, &msg->entropy, (const unsigned char*) pers, os_strlen(pers));
+	ret = mbedtls_ctr_drbg_seed(&msg->ctr_drbg, mbedtls_entropy_func, &msg->entropy, "client", 6);
 	lwIP_REQUIRE_NOERROR(ret, exit);
 
-	if (auth_type == MBEDTLS_SSL_IS_SERVER) {
-		uint32 flash_sector = 0;
-		/*Load the certificate*/
-		unsigned int def_certificate_len = 0;
-		unsigned char *def_certificate = NULL;
-		def_certificate = (unsigned char *)mbedtls_get_default_obj(&flash_sector,ESPCONN_CERT_OWN, &def_certificate_len);
-		lwIP_REQUIRE_ACTION(def_certificate, exit, ret = MBEDTLS_ERR_SSL_ALLOC_FAILED);
-		ret = mbedtls_x509_crt_parse(&msg->psession->clicert, (const unsigned char *)def_certificate, def_certificate_len);
-		if (flash_sector != 0)
-			os_free(def_certificate);
-		lwIP_REQUIRE_NOERROR(ret, exit);
+	/*Load the certificate and private RSA key*/
+	if (ssl_option.client.cert_req_sector.flag) {
+		auth_info.auth_type = ESPCONN_CERT_OWN;
+		load_flag = mbedtls_msg_info_load(msg, &auth_info);
+		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
+		auth_info.auth_type = ESPCONN_PK;
+		load_flag = mbedtls_msg_info_load(msg, &auth_info);
+		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
+	}
 
-		/*Load the private RSA key*/
-		unsigned int def_private_key_len = 0;
-		unsigned char *def_private_key = NULL;
-		def_private_key = (unsigned char *)mbedtls_get_default_obj(&flash_sector,ESPCONN_PK, &def_private_key_len);
-		lwIP_REQUIRE_ACTION(def_private_key, exit, ret = MBEDTLS_ERR_SSL_ALLOC_FAILED);
-		ret = mbedtls_pk_parse_key(&msg->psession->pkey, (const unsigned char *)def_private_key, def_private_key_len, NULL, 0);
-		if (flash_sector != 0)
-			os_free(def_private_key);
-		lwIP_REQUIRE_NOERROR(ret, exit);
-		ret = mbedtls_ssl_conf_own_cert(&msg->conf, &msg->psession->clicert, &msg->psession->pkey);
-		lwIP_REQUIRE_NOERROR(ret, exit);
-
-		/*Load the trusted CA*/
-		if (ssl_option.server.cert_ca_sector.flag) {
-			auth_info.auth_level = ESPCONN_SERVER;
-			auth_info.auth_type = ESPCONN_CERT_AUTH;
-			load_flag = mbedtls_msg_info_load(msg, &auth_info);
-			lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
-		}
-	} else {
-		/*Load the certificate and private RSA key*/
-		if (ssl_option.client.cert_req_sector.flag) {
-			auth_info.auth_level = ESPCONN_CLIENT;
-			auth_info.auth_type = ESPCONN_CERT_OWN;
-			load_flag = mbedtls_msg_info_load(msg, &auth_info);
-			lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
-			auth_info.auth_type = ESPCONN_PK;
-			load_flag = mbedtls_msg_info_load(msg, &auth_info);
-			lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
-		}
-
-		/*Load the trusted CA*/
-		if(ssl_option.client.cert_ca_sector.flag) {
-			auth_info.auth_level = ESPCONN_CLIENT;
-			auth_info.auth_type = ESPCONN_CERT_AUTH;
-			load_flag = mbedtls_msg_info_load(msg, &auth_info);
-			lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
-		}
+	/*Load the trusted CA*/
+	if(ssl_option.client.cert_ca_sector.flag) {
+		auth_info.auth_type = ESPCONN_CERT_AUTH;
+		load_flag = mbedtls_msg_info_load(msg, &auth_info);
+		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
 	}
 
 	/*Setup the stuff*/
-	ret = mbedtls_ssl_config_defaults(&msg->conf, auth_type, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+	ret = mbedtls_ssl_config_defaults(&msg->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
 	lwIP_REQUIRE_NOERROR(ret, exit);
 
 	/*OPTIONAL is not optimal for security, but makes interop easier in this session*/
-	if (auth_type == MBEDTLS_SSL_IS_CLIENT && ssl_option.client.cert_ca_sector.flag == false) {
+	if (ssl_option.client.cert_ca_sector.flag == false) {
 		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_NONE);
 	}
 	mbedtls_ssl_conf_rng(&msg->conf, mbedtls_ctr_drbg_random, &msg->ctr_drbg);
@@ -761,37 +673,7 @@ int espconn_mbedtls_parse_internal(int socket, sint8 error)
 			lwIP_REQUIRE_NOERROR(ret, exit);
 		} else {
 			if (TLSmsg->ssl.state == MBEDTLS_SSL_HELLO_REQUEST) {
-				if (Threadmsg->preverse != NULL) {
-					struct espconn *accept_conn = NULL;
-					struct espconn *espconn = Threadmsg->preverse;
-					struct sockaddr_in name;
-					socklen_t name_len = sizeof(name);
-					remot_info *pinfo = NULL;
-					espconn_get_connection_info(espconn, &pinfo, ESPCONN_SSL);
-					if (espconn->link_cnt == 0x01)
-						return ERR_ISCONN;
-
-					ret = mbedtls_net_accept(&TLSmsg->listen_fd, &TLSmsg->fd, NULL, 0, NULL);
-					lwIP_REQUIRE_NOERROR(ret, exit);
-					accept_conn = mbedtls_espconn_new();
-					lwIP_REQUIRE_ACTION(accept_conn, exit, ret = ERR_MEM);
-					Threadmsg->pespconn = accept_conn;
-					/*get the remote information*/
-					getpeername(TLSmsg->fd.fd, (struct sockaddr*)&name, &name_len);
-					Threadmsg->pcommon.remote_port = htons(name.sin_port);
-					os_memcpy(Threadmsg->pcommon.remote_ip, &name.sin_addr.s_addr, 4);
-
-					espconn->proto.tcp->remote_port = htons(name.sin_port);
-					os_memcpy(espconn->proto.tcp->remote_ip, &name.sin_addr.s_addr, 4);
-
-					espconn_copy_partial(accept_conn, espconn);
-
-					/*insert the node to the active connection list*/
-					espconn_list_creat(&plink_active, Threadmsg);
-					os_printf("server handshake start.\n");
-				} else {
-					os_printf("client handshake start.\n");
-				}
+				os_printf("client handshake start.\n");
 				config_flag = mbedtls_msg_config(TLSmsg);
 				if (config_flag) {
 //					mbedtls_keep_alive(TLSmsg->fd.fd, 1, SSL_KEEP_IDLE, SSL_KEEP_INTVL, SSL_KEEP_CNT);
@@ -821,11 +703,7 @@ int espconn_mbedtls_parse_internal(int socket, sint8 error)
 			/**/
 			TLSmsg->quiet = mbedtls_handshake_result(TLSmsg);
 			if (TLSmsg->quiet) {
-				if (Threadmsg->preverse != NULL) {
-					os_printf("server handshake ok!\n");
-				} else {
-					os_printf("client handshake ok!\n");
-				}
+				os_printf("client handshake ok!\n");
 //				mbedtls_keep_alive(TLSmsg->fd.fd, 0, SSL_KEEP_IDLE, SSL_KEEP_INTVL, SSL_KEEP_CNT);
 				mbedtls_session_free(&TLSmsg->psession);
 				mbedtls_handshake_succ(&TLSmsg->ssl);
@@ -917,14 +795,8 @@ mbedtls_thread(os_event_t *events)
 	if (active_flag) {
 		/*remove the node from the active connection list*/
 		espconn_list_delete(&plink_active, Threadmsg);
-		if (TLSmsg->listen_fd.fd != -1) {
-			mbedtls_msg_server_step(TLSmsg);
-			espconn_copy_partial(Threadmsg->preverse, Threadmsg->pespconn);
-			mbedtls_espconn_free(&Threadmsg->pespconn);
-		} else {
-			mbedtls_msg_free(&TLSmsg);
-			Threadmsg->pssl = NULL;
-		}
+		mbedtls_msg_free(&TLSmsg);
+		Threadmsg->pssl = NULL;
 
 		switch (events->sig) {
 		case NETCONN_EVENT_ERROR:
@@ -985,94 +857,6 @@ exit:
 			os_free(pclient);
 	}
 	return ret;
-}
-
-/******************************************************************************
- * FunctionName : espconn_ssl_server
- * Description  : as
- * Parameters   :
- * Returns      :
-*******************************************************************************/
-sint8  espconn_ssl_server(struct espconn *espconn)
-{
-	int ret = ESPCONN_OK;
-	struct ip_addr ipaddr;
-
-	const char *server_port = NULL;
-	espconn_msg *pserver = NULL;
-	pmbedtls_msg mbedTLSMsg = NULL;
-	if (lwIPThreadFlag == false)
-		mbedtls_threadinit();
-
-	if (plink_server != NULL)
-		return ESPCONN_INPROGRESS;
-
-	lwIP_REQUIRE_ACTION(espconn, exit, ret = ESPCONN_ARG);
-	/*Creates a new server control message*/
-	pserver = (espconn_msg *) os_zalloc( sizeof(espconn_msg));
-	lwIP_REQUIRE_ACTION(espconn, exit, ret = ESPCONN_MEM);
-	mbedTLSMsg = mbedtls_msg_new();
-	lwIP_REQUIRE_ACTION(mbedTLSMsg, exit, ret = ESPCONN_MEM);
-
-	server_port = (const char *)sys_itoa(espconn->proto.tcp->local_port);
-	/*start the connection*/
-	ret = mbedtls_net_bind(&mbedTLSMsg->listen_fd, NULL, server_port, MBEDTLS_NET_PROTO_TCP);
-	lwIP_REQUIRE_NOERROR_ACTION(ret, exit, ret = ESPCONN_MEM);
-	espconn->state = ESPCONN_LISTEN;
-	pserver->pespconn = NULL;
-	pserver->pssl = mbedTLSMsg;
-	pserver->preverse = espconn;
-	pserver->count_opt = MEMP_NUM_TCP_PCB;
-	pserver->pcommon.timeout = 0x0a;
-	espconn->state = ESPCONN_LISTEN;
-	plink_server = pserver;
-exit:
-	if (ret != ESPCONN_OK) {
-		if (mbedTLSMsg != NULL)
-			mbedtls_msg_free(&mbedTLSMsg);
-		if (pserver != NULL)
-			os_free(pserver);
-	}
-	return ret;
-}
-
-/******************************************************************************
- * FunctionName : espconn_ssl_delete
- * Description  : delete the server: delete a listening PCB and free it
- * Parameters   : pdeletecon -- the espconn used to delete a server
- * Returns      : none
-*******************************************************************************/
-sint8  espconn_ssl_delete(struct espconn *pdeletecon)
-{
-	remot_info *pinfo = NULL;
-	espconn_msg *pdelete_msg = NULL;
-	pmbedtls_msg mbedTLSMsg = NULL;
-
-	if (pdeletecon == NULL)
-		return ESPCONN_ARG;
-
-	espconn_get_connection_info(pdeletecon, &pinfo, ESPCONN_SSL);
-	/*make sure all the active connection have been disconnect*/
-	if (pdeletecon->link_cnt != 0)
-		return ESPCONN_INPROGRESS;
-	else {
-		pdelete_msg = plink_server;
-		if (pdelete_msg != NULL && pdelete_msg->preverse == pdeletecon) {
-			mbedTLSMsg = pdelete_msg->pssl;
-			espconn_kill_pcb(pdeletecon->proto.tcp->local_port);
-			mbedtls_net_free(&mbedTLSMsg->listen_fd);
-			mbedtls_msg_free(&mbedTLSMsg);
-			pdelete_msg->pssl = mbedTLSMsg;
-			os_free(pdelete_msg);
-			pdelete_msg = NULL;
-			plink_server = pdelete_msg;
-			mbedtls_parame_free(&def_private_key);
-			mbedtls_parame_free(&def_certificate);
-			return ESPCONN_OK;
-		} else {
-			return ESPCONN_ARG;
-		}
-	}
 }
 
 /******************************************************************************

@@ -41,7 +41,6 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 
 ssl_opt ssl_option = {
 		{NULL, SSL_BUFFER_SIZE, 0, false, 0, false},
-		{NULL, SSL_BUFFER_SIZE, 0, false, 0, false},
 		0
 };
 
@@ -172,15 +171,6 @@ espconn_secure_sent(struct espconn *espconn, uint8 *psent, uint16 length)
 
 sint8 espconn_secure_send(struct espconn *espconn, uint8 *psent, uint16 length) __attribute__((alias("espconn_secure_sent")));
 
-sint8 ICACHE_FLASH_ATTR
-espconn_secure_accept(struct espconn *espconn)
-{
-	if (espconn == NULL || espconn ->type != ESPCONN_TCP)
-		return ESPCONN_ARG;
-
-	return espconn_ssl_server(espconn);
-}
-
 /******************************************************************************
  * FunctionName : espconn_secure_ca_enable
  * Description  : enable the certificate authenticate and set the flash sector
@@ -192,26 +182,16 @@ espconn_secure_accept(struct espconn *espconn)
 *******************************************************************************/
 bool ICACHE_FLASH_ATTR espconn_secure_ca_enable(uint8 level, uint32 flash_sector )
 {
-	if (level >= ESPCONN_MAX || level <= ESPCONN_IDLE || flash_sector <= 0)
+	if (flash_sector <= 0)
 		return false;
 
 	if (level == ESPCONN_CLIENT){
 		ssl_option.client.cert_ca_sector.sector = flash_sector;
 		ssl_option.client.cert_ca_sector.flag = true;
+		return true;
 	}
 
-	if (level == ESPCONN_SERVER){
-		ssl_option.server.cert_ca_sector.sector = flash_sector;
-		ssl_option.server.cert_ca_sector.flag = true;
-	}
-
-	if (level == ESPCONN_BOTH) {
-		ssl_option.client.cert_ca_sector.sector = flash_sector;
-		ssl_option.server.cert_ca_sector.sector = flash_sector;
-		ssl_option.client.cert_ca_sector.flag = true;
-		ssl_option.server.cert_ca_sector.flag = true;
-	}
-	return true;
+	return false;
 }
 
 /******************************************************************************
@@ -223,21 +203,12 @@ bool ICACHE_FLASH_ATTR espconn_secure_ca_enable(uint8 level, uint32 flash_sector
 *******************************************************************************/
 bool ICACHE_FLASH_ATTR espconn_secure_ca_disable(uint8 level)
 {
-	if (level >= ESPCONN_MAX || level <= ESPCONN_IDLE)
-		return false;
-
-	if (level == ESPCONN_CLIENT)
+	if (level == ESPCONN_CLIENT) {
 		ssl_option.client.cert_ca_sector.flag = false;
-
-	if (level == ESPCONN_SERVER)
-		ssl_option.server.cert_ca_sector.flag = false;
-
-	if (level == ESPCONN_BOTH) {
-		ssl_option.client.cert_ca_sector.flag = false;
-		ssl_option.server.cert_ca_sector.flag = false;
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 /******************************************************************************
@@ -251,26 +222,16 @@ bool ICACHE_FLASH_ATTR espconn_secure_ca_disable(uint8 level)
 *******************************************************************************/
 bool ICACHE_FLASH_ATTR espconn_secure_cert_req_enable(uint8 level, uint32 flash_sector )
 {
-	if (level >= ESPCONN_MAX || level <= ESPCONN_IDLE || flash_sector <= 0)
+	if (flash_sector <= 0)
 		return false;
 
 	if (level == ESPCONN_CLIENT){
 		ssl_option.client.cert_req_sector.sector = flash_sector;
 		ssl_option.client.cert_req_sector.flag = true;
+		return true;
 	}
 
-	if (level == ESPCONN_SERVER){
-		ssl_option.server.cert_req_sector.sector = flash_sector;
-		ssl_option.server.cert_req_sector.flag = true;
-	}
-
-	if (level == ESPCONN_BOTH) {
-		ssl_option.client.cert_req_sector.sector = flash_sector;
-		ssl_option.server.cert_req_sector.sector = flash_sector;
-		ssl_option.client.cert_req_sector.flag = true;
-		ssl_option.server.cert_req_sector.flag = true;
-	}
-	return true;
+	return false;
 }
 
 /******************************************************************************
@@ -282,21 +243,12 @@ bool ICACHE_FLASH_ATTR espconn_secure_cert_req_enable(uint8 level, uint32 flash_
 *******************************************************************************/
 bool ICACHE_FLASH_ATTR espconn_secure_cert_req_disable(uint8 level)
 {
-	if (level >= ESPCONN_MAX || level <= ESPCONN_IDLE)
-		return false;
-
-	if (level == ESPCONN_CLIENT)
+	if (level == ESPCONN_CLIENT) {
 		ssl_option.client.cert_req_sector.flag = false;
-
-	if (level == ESPCONN_SERVER)
-		ssl_option.server.cert_req_sector.flag = false;
-
-	if (level == ESPCONN_BOTH) {
-		ssl_option.client.cert_req_sector.flag = false;
-		ssl_option.server.cert_req_sector.flag = false;
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 /******************************************************************************
@@ -329,31 +281,6 @@ bool ICACHE_FLASH_ATTR espconn_secure_set_default_private_key(const uint8* priva
 		return false;
 
 	return mbedtls_load_default_obj(0, ESPCONN_PK, private_key, length);
-}
-
-/******************************************************************************
- * FunctionName : espconn_secure_delete
- * Description  : delete the secure server host
- * Parameters   : espconn -- espconn to set for client or server
- * Returns      : result
-*******************************************************************************/
-sint8 ICACHE_FLASH_ATTR espconn_secure_delete(struct espconn *espconn)
-{
-	sint8 error = ESPCONN_OK;
-	error = espconn_ssl_delete(espconn);
-
-	return error;
-}
-
-bool espconn_secure_obj_load(int obj_type, uint32 flash_sector, uint16 length)
-{
-	if (length > ESPCONN_SECURE_MAX_SIZE || length == 0)
-		return false;
-
-	if (obj_type != ESPCONN_PK && obj_type != ESPCONN_CERT_OWN)
-		return false;
-
-	return mbedtls_load_default_obj(flash_sector, obj_type, NULL, length);
 }
 
 #endif

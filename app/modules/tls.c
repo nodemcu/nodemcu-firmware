@@ -557,9 +557,9 @@ static int tls_cert_auth(lua_State *L)
     if (tls_client_cert_area[0] == 0x00 || tls_client_cert_area[0] == 0xff) {
       return luaL_error( L, "no certificates found" );
     }
-    rc = espconn_secure_cert_req_enable(1, flash_offset / INTERNAL_FLASH_SECTOR_SIZE);
+    rc = espconn_secure_cert_req_enable(ESPCONN_CLIENT, flash_offset / INTERNAL_FLASH_SECTOR_SIZE);
   } else {
-    rc = espconn_secure_cert_req_disable(1);
+    rc = espconn_secure_cert_req_disable(ESPCONN_CLIENT);
   }
 
   lua_pushboolean(L, rc);
@@ -598,9 +598,9 @@ static int tls_cert_verify(lua_State *L)
     if (tls_server_cert_area[0] == 0x00 || tls_server_cert_area[0] == 0xff) {
       return luaL_error( L, "no certificates found" );
     }
-    rc = espconn_secure_ca_enable(1, flash_offset / INTERNAL_FLASH_SECTOR_SIZE);
+    rc = espconn_secure_ca_enable(ESPCONN_CLIENT, flash_offset / INTERNAL_FLASH_SECTOR_SIZE);
   } else {
-    rc = espconn_secure_ca_disable(1);
+    rc = espconn_secure_ca_disable(ESPCONN_CLIENT);
   }
 
   lua_pushboolean(L, rc);

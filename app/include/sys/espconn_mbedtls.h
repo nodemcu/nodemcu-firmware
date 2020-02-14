@@ -51,7 +51,6 @@ typedef struct{
 	int	record_len;
 	pmbedtls_session	psession;
 	mbedtls_net_context fd;
-	mbedtls_net_context listen_fd;
 	mbedtls_ctr_drbg_context ctr_drbg;
 	mbedtls_ssl_context ssl;
 	mbedtls_ssl_config conf;
@@ -71,8 +70,6 @@ typedef enum {
 typedef enum {
 	ESPCONN_IDLE = 0,
 	ESPCONN_CLIENT,
-	ESPCONN_SERVER,
-	ESPCONN_BOTH,
 	ESPCONN_MAX
 }espconn_level;
 
@@ -99,14 +96,12 @@ struct ssl_packet{
 };
 
 typedef struct _ssl_opt {
-	struct ssl_packet server;
 	struct ssl_packet client;
 	uint8 type;
 }ssl_opt;
 
 typedef struct{
 	mbedtls_auth_type auth_type;
-	espconn_level	auth_level;
 }mbedtls_auth_info;
 
 #define SSL_KEEP_INTVL  1
@@ -206,16 +201,6 @@ typedef enum{
  * Returns      : none
 *******************************************************************************/
 bool mbedtls_load_default_obj(uint32 flash_sector, int obj_type, const unsigned char *load_buf, uint16 length);
-
-/******************************************************************************
- * FunctionName : sslserver_start
- * Description  : Initialize the server: set up a listen PCB and bind it to
- *                the defined port
- * Parameters   : espconn -- the espconn used to build client
- * Returns      : none
-*******************************************************************************/
-
-extern sint8 espconn_ssl_server(struct espconn *espconn);
 
 /******************************************************************************
  * FunctionName : espconn_ssl_client
