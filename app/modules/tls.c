@@ -539,6 +539,9 @@ static int tls_cert_auth(lua_State *L)
     lua_pushboolean(L, true);
     return 1;
   }
+  if (lua_type(L, 1) != LUA_TNIL) {
+    platform_print_deprecation_note("tls.cert.auth's old interface", "soon");
+  }
 
   int enable;
 
@@ -590,6 +593,9 @@ static int tls_cert_verify(lua_State *L)
     ssl_client_options.cert_verify_callback = lua_ref(L, 1);
     lua_pushboolean(L, true);
     return 1;
+  }
+  if (lua_type(L, 1) != LUA_TNIL) {
+    platform_print_deprecation_note("tls.cert.verify's old interface", "soon");
   }
 
   int enable;
