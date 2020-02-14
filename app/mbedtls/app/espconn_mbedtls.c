@@ -448,6 +448,34 @@ static bool espconn_ssl_read_param_from_flash(void *param, uint16 len, int32 off
 	return true;
 }
 
+static bool
+espconn_mbedtls_parse(mbedtls_msg *msg, mbedtls_auth_type auth_type, const uint8_t *buf, size_t len)
+{
+	int ret;
+
+	switch (auth_type) {
+	case ESPCONN_CERT_AUTH:
+		ret = mbedtls_x509_crt_parse(&msg->psession->cacert, buf, len);
+		lwIP_REQUIRE_NOERROR(ret, exit);
+		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+		mbedtls_ssl_conf_ca_chain(&msg->conf, &msg->psession->cacert, NULL);
+		break;
+	case ESPCONN_CERT_OWN:
+		ret = mbedtls_x509_crt_parse(&msg->psession->clicert, buf, len);
+		break;
+	case ESPCONN_PK:
+		ret = mbedtls_pk_parse_key(&msg->psession->pkey, buf, len, NULL, 0);
+		lwIP_REQUIRE_NOERROR(ret, exit);
+		ret = mbedtls_ssl_conf_own_cert(&msg->conf, &msg->psession->clicert, &msg->psession->pkey);
+		break;
+	default:
+		return false;
+	}
+
+exit:
+	return (ret >= 0);
+}
+
 static bool mbedtls_msg_info_load(mbedtls_msg *msg, mbedtls_auth_type auth_type)
 {
 	const char* const begin = "-----BEGIN";
@@ -495,23 +523,9 @@ again:
 		load_len += 1;
 		load_buf[load_len - 1] = '\0';
 	}
-	switch (auth_type) {
-	case ESPCONN_CERT_AUTH:
-		/*Optional is not optimal for security*/
-		ret = mbedtls_x509_crt_parse(&msg->psession->cacert, (const uint8*) load_buf,load_len);
-		lwIP_REQUIRE_NOERROR(ret, exit);
-		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
-		mbedtls_ssl_conf_ca_chain(&msg->conf, &msg->psession->cacert, NULL);
-		break;
-	case ESPCONN_CERT_OWN:
-		ret = mbedtls_x509_crt_parse(&msg->psession->clicert, (const uint8*) load_buf,load_len);
-		break;
-	case ESPCONN_PK:
-		ret = mbedtls_pk_parse_key(&msg->psession->pkey, (const uint8*) load_buf,load_len, NULL, 0);
-		lwIP_REQUIRE_NOERROR(ret, exit);
-		ret = mbedtls_ssl_conf_own_cert(&msg->conf, &msg->psession->clicert, &msg->psession->pkey);
-		break;
-	}
+
+	ret = espconn_mbedtls_parse(msg, auth_type, load_buf, load_len) ? 0 : -1;
+
 exit:
 	os_free(load_buf);
 	if (ret < 0) {
