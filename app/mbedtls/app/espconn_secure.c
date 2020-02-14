@@ -39,10 +39,7 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 
 #include "sys/espconn_mbedtls.h"
 
-ssl_opt ssl_option = {
-		{NULL, SSL_BUFFER_SIZE, 0, false, 0, false},
-		0
-};
+struct ssl_options ssl_client_options = {SSL_BUFFER_SIZE, 0, false, 0, false};
 
 /******************************************************************************
  * FunctionName : espconn_encry_connect
@@ -186,8 +183,8 @@ bool ICACHE_FLASH_ATTR espconn_secure_ca_enable(uint8 level, uint32 flash_sector
 		return false;
 
 	if (level == ESPCONN_CLIENT){
-		ssl_option.client.cert_ca_sector.sector = flash_sector;
-		ssl_option.client.cert_ca_sector.flag = true;
+		ssl_client_options.cert_ca_sector.sector = flash_sector;
+		ssl_client_options.cert_ca_sector.flag = true;
 		return true;
 	}
 
@@ -204,7 +201,7 @@ bool ICACHE_FLASH_ATTR espconn_secure_ca_enable(uint8 level, uint32 flash_sector
 bool ICACHE_FLASH_ATTR espconn_secure_ca_disable(uint8 level)
 {
 	if (level == ESPCONN_CLIENT) {
-		ssl_option.client.cert_ca_sector.flag = false;
+		ssl_client_options.cert_ca_sector.flag = false;
 		return true;
 	}
 
@@ -226,8 +223,8 @@ bool ICACHE_FLASH_ATTR espconn_secure_cert_req_enable(uint8 level, uint32 flash_
 		return false;
 
 	if (level == ESPCONN_CLIENT){
-		ssl_option.client.cert_req_sector.sector = flash_sector;
-		ssl_option.client.cert_req_sector.flag = true;
+		ssl_client_options.cert_req_sector.sector = flash_sector;
+		ssl_client_options.cert_req_sector.flag = true;
 		return true;
 	}
 
@@ -244,7 +241,7 @@ bool ICACHE_FLASH_ATTR espconn_secure_cert_req_enable(uint8 level, uint32 flash_
 bool ICACHE_FLASH_ATTR espconn_secure_cert_req_disable(uint8 level)
 {
 	if (level == ESPCONN_CLIENT) {
-		ssl_option.client.cert_req_sector.flag = false;
+		ssl_client_options.cert_req_sector.flag = false;
 		return true;
 	}
 

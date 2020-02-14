@@ -338,7 +338,7 @@ static bool mbedtls_handshake_result(const pmbedtls_msg Threadmsg)
 		return false;
 
 	if (Threadmsg->ssl.state == MBEDTLS_SSL_HANDSHAKE_OVER) {
-		if (ssl_option.client.cert_ca_sector.flag) {
+		if (ssl_client_options.cert_ca_sector.flag) {
 			int ret = mbedtls_ssl_get_verify_result(&Threadmsg->ssl);
 			if (ret != 0) {
 				char vrfy_buf[512];
@@ -489,11 +489,11 @@ static bool espconn_ssl_read_param_from_flash(void *param, uint16 len, int32 off
 	uint32 FILE_PARAM_START_SEC = 0x3B;
 	switch (auth_info->auth_type) {
 	case ESPCONN_CERT_AUTH:
-		FILE_PARAM_START_SEC = ssl_option.client.cert_ca_sector.sector;
+		FILE_PARAM_START_SEC = ssl_client_options.cert_ca_sector.sector;
 		break;
 	case ESPCONN_CERT_OWN:
 	case ESPCONN_PK:
-		FILE_PARAM_START_SEC = ssl_option.client.cert_req_sector.sector;
+		FILE_PARAM_START_SEC = ssl_client_options.cert_req_sector.sector;
 		break;
 	default:
 		return false;
@@ -594,7 +594,7 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 	lwIP_REQUIRE_NOERROR(ret, exit);
 
 	/*Load the certificate and private RSA key*/
-	if (ssl_option.client.cert_req_sector.flag) {
+	if (ssl_client_options.cert_req_sector.flag) {
 		auth_info.auth_type = ESPCONN_CERT_OWN;
 		load_flag = mbedtls_msg_info_load(msg, &auth_info);
 		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
@@ -604,7 +604,7 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 	}
 
 	/*Load the trusted CA*/
-	if(ssl_option.client.cert_ca_sector.flag) {
+	if(ssl_client_options.cert_ca_sector.flag) {
 		auth_info.auth_type = ESPCONN_CERT_AUTH;
 		load_flag = mbedtls_msg_info_load(msg, &auth_info);
 		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
@@ -615,7 +615,7 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 	lwIP_REQUIRE_NOERROR(ret, exit);
 
 	/*OPTIONAL is not optimal for security, but makes interop easier in this session*/
-	if (ssl_option.client.cert_ca_sector.flag == false) {
+	if (ssl_client_options.cert_ca_sector.flag == false) {
 		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_NONE);
 	}
 	mbedtls_ssl_conf_rng(&msg->conf, mbedtls_ctr_drbg_random, &msg->ctr_drbg);

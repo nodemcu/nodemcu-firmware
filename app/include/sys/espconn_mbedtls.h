@@ -88,17 +88,11 @@ typedef struct _ssl_sector{
 	bool flag;
 }ssl_sector;
 
-struct ssl_packet{
-	uint8* pbuffer;
+struct ssl_options {
 	uint16 buffer_size;
 	ssl_sector cert_ca_sector;
 	ssl_sector cert_req_sector;
 };
-
-typedef struct _ssl_opt {
-	struct ssl_packet client;
-	uint8 type;
-}ssl_opt;
 
 typedef struct{
 	mbedtls_auth_type auth_type;
@@ -122,7 +116,7 @@ enum {
 #define MBEDTLS_SSL_PLAIN_ADD	TCP_MSS
 #define FLASH_SECTOR_SIZE		4096
 
-extern ssl_opt ssl_option;
+extern struct ssl_options ssl_client_options;
 
 typedef struct{
 	uint32 parame_sec;
