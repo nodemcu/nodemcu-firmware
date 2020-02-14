@@ -529,6 +529,17 @@ static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_m
 // Lua: tls.cert.auth(true / false)
 static int tls_cert_auth(lua_State *L)
 {
+  if (ssl_client_options.cert_auth_callback != LUA_NOREF) {
+    lua_unref(L, ssl_client_options.cert_auth_callback);
+    ssl_client_options.cert_auth_callback = LUA_NOREF;
+  }
+  if ((lua_type(L, 1) == LUA_TFUNCTION)
+      || (lua_type(L, 1) == LUA_TLIGHTFUNCTION)) {
+    ssl_client_options.cert_auth_callback = lua_ref(L, 1);
+    lua_pushboolean(L, true);
+    return 1;
+  }
+
   int enable;
 
   uint32_t flash_offset = platform_flash_mapped2phys((uint32_t) &tls_client_cert_area[0]);
@@ -570,6 +581,17 @@ static int tls_cert_auth(lua_State *L)
 // Lua: tls.cert.verify(true / false)
 static int tls_cert_verify(lua_State *L)
 {
+  if (ssl_client_options.cert_verify_callback != LUA_NOREF) {
+    lua_unref(L, ssl_client_options.cert_verify_callback);
+    ssl_client_options.cert_verify_callback = LUA_NOREF;
+  }
+  if ((lua_type(L, 1) == LUA_TFUNCTION)
+      || (lua_type(L, 1) == LUA_TLIGHTFUNCTION)) {
+    ssl_client_options.cert_verify_callback = lua_ref(L, 1);
+    lua_pushboolean(L, true);
+    return 1;
+  }
+
   int enable;
 
   uint32_t flash_offset = platform_flash_mapped2phys((uint32_t) &tls_server_cert_area[0]);

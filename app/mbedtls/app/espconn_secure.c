@@ -31,6 +31,8 @@
 #include "ets_sys.h"
 #include "os_type.h"
 
+#include "lauxlib.h"
+
 #ifdef MEMLEAK_DEBUG
 static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #endif
@@ -39,7 +41,7 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 
 #include "sys/espconn_mbedtls.h"
 
-struct ssl_options ssl_client_options = {SSL_BUFFER_SIZE, 0, false, 0, false};
+struct ssl_options ssl_client_options = {SSL_BUFFER_SIZE, 0, false, 0, false, LUA_NOREF, LUA_NOREF};
 
 /******************************************************************************
  * FunctionName : espconn_encry_connect

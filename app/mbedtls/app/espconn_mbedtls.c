@@ -34,6 +34,8 @@
 
 #include "mem.h"
 
+#include "lauxlib.h"
+
 #ifdef MEMLEAK_DEBUG
 static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #endif
@@ -476,6 +478,79 @@ exit:
 	return (ret >= 0);
 }
 
+/*
+ * Three-way return:
+ *   0 for no commitment, -1 to fail the connection, 1 on success
+ */
+static int
+nodemcu_tls_cert_get(mbedtls_msg *msg, mbedtls_auth_type auth_type)
+{
+	int cbref;
+	int cbarg;
+	int loop = 0;
+
+	switch(auth_type) {
+	case ESPCONN_CERT_AUTH:
+		loop = 1;
+		cbarg = 1;
+		cbref = ssl_client_options.cert_verify_callback;
+		break;
+	case ESPCONN_PK:
+		loop = 0;
+		cbarg = 0;
+		cbref = ssl_client_options.cert_auth_callback;
+		break;
+	case ESPCONN_CERT_OWN:
+		loop = 1;
+		cbarg = 1;
+		cbref = ssl_client_options.cert_auth_callback;
+		break;
+	default:
+		return 0;
+	}
+
+	if (cbref == LUA_NOREF)
+		return 0;
+
+	lua_State *L = lua_getstate();
+
+	do {
+		lua_rawgeti(L, LUA_REGISTRYINDEX, cbref);
+		lua_pushinteger(L, cbarg);
+		if (lua_pcall(L, 1, 1, 0) != 0) {
+			/* call failure; fail the connection attempt */
+			lua_pop(L, 1); /* pcall will have pushed an error message */
+			return -1;
+		}
+		if (lua_isnil(L, -1)) {
+			/* nil return; stop iteration */
+			lua_pop(L, 1);
+			break;
+		}
+		size_t resl;
+		const char *res = lua_tolstring(L, -1, &resl);
+		if (res == NULL) {
+			/* conversion failure; fail the connection attempt */
+			lua_pop(L, 1);
+			return -1;
+		}
+		if (!espconn_mbedtls_parse(msg, auth_type, res, resl+1)) {
+			/* parsing failure; fail the connction attempt */
+			lua_pop(L, 1);
+			return -1;
+		}
+
+		/*
+		 * Otherwise, parsing successful; if this is a loopy kind of
+		 * callback, then increment the argument and loop.
+		 */
+		lua_pop(L, 1);
+		cbarg++;
+	} while (loop);
+
+	return 1;
+}
+
 static bool mbedtls_msg_info_load(mbedtls_msg *msg, mbedtls_auth_type auth_type)
 {
 	const char* const begin = "-----BEGIN";
@@ -486,6 +561,14 @@ static bool mbedtls_msg_info_load(mbedtls_msg *msg, mbedtls_auth_type auth_type)
 	uint8* load_buf = NULL;
 	size_t load_len = 0;
 	file_param file_param;
+
+	/* Override with Lua callbacks, if registered */
+	switch(nodemcu_tls_cert_get(msg, auth_type)) {
+	case -1:
+		return false;
+	case 1:
+		return true;
+	}
 
 	bzero(&file_param, sizeof(file_param));
 
@@ -551,7 +634,9 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 	lwIP_REQUIRE_NOERROR(ret, exit);
 
 	/*Load the certificate and private RSA key*/
-	if (ssl_client_options.cert_req_sector.flag) {
+	if (ssl_client_options.cert_req_sector.flag
+       || (ssl_client_options.cert_auth_callback != LUA_NOREF)) {
+
 		load_flag = mbedtls_msg_info_load(msg, ESPCONN_CERT_OWN);
 		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
 		load_flag = mbedtls_msg_info_load(msg, ESPCONN_PK);
@@ -559,7 +644,8 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 	}
 
 	/*Load the trusted CA*/
-	if(ssl_client_options.cert_ca_sector.flag) {
+	if(ssl_client_options.cert_ca_sector.flag
+       || (ssl_client_options.cert_verify_callback != LUA_NOREF)) {
 		load_flag = mbedtls_msg_info_load(msg, ESPCONN_CERT_AUTH);
 		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
 	}

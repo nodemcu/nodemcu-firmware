@@ -91,6 +91,9 @@ struct ssl_options {
 	uint16 buffer_size;
 	ssl_sector cert_ca_sector;
 	ssl_sector cert_req_sector;
+
+	int cert_verify_callback;
+	int cert_auth_callback;
 };
 
 #define SSL_KEEP_INTVL  1
