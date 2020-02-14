@@ -64,7 +64,6 @@ typedef enum {
 	ESPCONN_CERT_OWN,
 	ESPCONN_CERT_AUTH,
 	ESPCONN_PK,
-	ESPCONN_PASSWORD
 }mbedtls_auth_type;
 
 typedef enum {
@@ -93,10 +92,6 @@ struct ssl_options {
 	ssl_sector cert_ca_sector;
 	ssl_sector cert_req_sector;
 };
-
-typedef struct{
-	mbedtls_auth_type auth_type;
-}mbedtls_auth_info;
 
 #define SSL_KEEP_INTVL  1
 #define SSL_KEEP_CNT	5
@@ -186,15 +181,6 @@ typedef enum{
       ESP_LOG("%s %d\n", __FILE__, __LINE__);          \
     }                                                          \
   } while (0)
-
-/******************************************************************************
- * FunctionName : mbedtls_load_default_obj
- * Description  : Initialize the server: set up a listen PCB and bind it to
- *                the defined port
- * Parameters   : espconn -- the espconn used to build client
- * Returns      : none
-*******************************************************************************/
-bool mbedtls_load_default_obj(uint32 flash_sector, int obj_type, const unsigned char *load_buf, uint16 length);
 
 /******************************************************************************
  * FunctionName : espconn_ssl_client

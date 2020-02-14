@@ -248,36 +248,4 @@ bool ICACHE_FLASH_ATTR espconn_secure_cert_req_disable(uint8 level)
 	return false;
 }
 
-/******************************************************************************
- * FunctionName : espconn_secure_set_default_certificate
- * Description  : Load the certificates in memory depending on compile-time
- * 				  and user options.
- * Parameters   : certificate -- Load the certificate
- *				  length -- Load the certificate length
- * Returns      : result true or false
-*******************************************************************************/
-bool ICACHE_FLASH_ATTR espconn_secure_set_default_certificate(const uint8* certificate, uint16 length)
-{
-	if (certificate == NULL || length > ESPCONN_SECURE_MAX_SIZE)
-		return false;
-
-	return mbedtls_load_default_obj(0, ESPCONN_CERT_OWN, certificate, length);
-}
-
-/******************************************************************************
- * FunctionName : espconn_secure_set_default_private_key
- * Description  : Load the key in memory depending on compile-time
- * 				  and user options.
- * Parameters   : private_key -- Load the key
- *				  length -- Load the key length
- * Returns      : result true or false
-*******************************************************************************/
-bool ICACHE_FLASH_ATTR espconn_secure_set_default_private_key(const uint8* private_key, uint16 length)
-{
-	if (private_key == NULL || length > ESPCONN_SECURE_MAX_SIZE)
-		return false;
-
-	return mbedtls_load_default_obj(0, ESPCONN_PK, private_key, length);
-}
-
 #endif

@@ -561,28 +561,6 @@ extern bool espconn_secure_cert_req_enable(uint8 level, uint32 flash_sector );
 extern bool espconn_secure_cert_req_disable(uint8 level);
 
 /******************************************************************************
- * FunctionName : espconn_secure_set_default_certificate
- * Description  : Load the certificates in memory depending on compile-time
- *                               and user options.
- * Parameters   : certificate -- Load the certificate
- *                               length -- Load the certificate length
- * Returns      : result true or false
-*******************************************************************************/
-
-extern bool espconn_secure_set_default_certificate(const uint8* certificate, uint16 length);
-
-/******************************************************************************
- * FunctionName : espconn_secure_set_default_private_key
- * Description  : Load the key in memory depending on compile-time
- *                               and user options.
- * Parameters   : private_key -- Load the key
- *                               length -- Load the key length
- * Returns      : result true or false
-*******************************************************************************/
-
-extern bool espconn_secure_set_default_private_key(const uint8* private_key, uint16 length);
-
-/******************************************************************************
  * FunctionName : espconn_recv_hold
  * Description  : hold tcp receive
  * Parameters   : espconn -- espconn to hold
