@@ -3,7 +3,7 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2019-07-18 | [Terry Ellison](https://github.com/TerryE) | [Terry Ellison](https://github.com/TerryE) | [pipe.c](../../app/modules/pipe.c)|
 
-The pipe module provides RAM-efficient a means of passing character stream of records from one Lua
+The pipe module provides a RAM-efficient means of passing character stream of records from one Lua
 task to another.
 
 ## pipe.create()
@@ -14,7 +14,7 @@ Create a pipe.
 `pobj = pipe.create([CB_function],[task_priority])`
 
 #### Parameters
-- `CB_function` optional reader callback which is called through the `ǹode.task.post()` when the pipe is written to.  If the CB returns a boolean, then the reposting action is forced: it is reposted if true and not if false. If the return is nil or omitted then the deault is to repost if a pipe write has occured since the last call.
+- `CB_function` optional reader callback which is called through the `node.task.post()` when the pipe is written to.  If the CB returns a boolean, then the reposting action is forced: it is reposted if true and not if false. If the return is nil or omitted then the deault is to repost if a pipe write has occured since the last call.
 -  `task_priority` See `ǹode.task.post()`
 
 #### Returns
@@ -24,7 +24,7 @@ A pipe resource.
 
 Read a record from a pipe object.
 
-Note that the recommended method of reading from a pipe is to user a reader function as described below.
+Note that the recommended method of reading from a pipe is to use a reader function as described below.
 
 #### Syntax
 `pobj:read([size/end_char])`
@@ -32,7 +32,7 @@ Note that the recommended method of reading from a pipe is to user a reader func
 #### Parameters
 - `size/end_char`
 	- If numeric then a string of `size` length will be returned from the pipe.
-	- If a string then this is a single character delimiter, followed by an optional "+" flag.  The delimiter is used as an end-of-record to split the character stream into separate records.  If the flag "+" is  specified then the delimiter is also returned at the end of the record, otherwise it is discarded.
+	- If a string then this is a single character delimiter, followed by an optional "+" flag.  The delimiter is used as an end-of-record to split the character stream into separate records.  If the flag "+" is specified then the delimiter is also returned at the end of the record, otherwise it is discarded.
   - If omitted, then this defaults to `"\n+"`
 
 Note that if the last record in the pipe is missing a delimiter or is too short, then it is still returned, emptying the pipe.
@@ -51,13 +51,13 @@ line = pobj:read(50)
 Returns a Lua **iterator** function for a pipe object.  This is as described in the
 [Lua Language: For Statement](http://www.lua.org/manual/5.1/manual.html#2.4.5). \(Note that the
 `state` and `object` variables mentioned in 2.5.4 are optional and default to `nil`, so this
-conforms to to the`for` iterator syntax and works in a for because it maintains the state and `pobj`
+conforms to the`for` iterator syntax and works in a for because it maintains the state and `pobj`
 internally as upvalues.
 
 An emptied pipe takes up minimal RAM resources (an empty Lua array), and just like any other array
-this is reclaimed if all variables referencing it go out of scope or are over-written).  Note
+this is reclaimed if all variables referencing it go out of scope or are over-written.  Note
 that any reader iterators that you have created also refer to the pipe as an upval, so you will
-need to descard these to desope the pipe array.
+need to discard these to descope the pipe array.
 
 #### Syntax
 `myFunc = pobj:reader([size/end_char])`
@@ -98,10 +98,10 @@ end
 
 ## pobj:unread()
 
-Write a string to a head of pipe object.  This can be used to back-out a previous read.
+Write a string to the head of a pipe object.  This can be used to back-out a previous read.
 
 #### Syntax
-`pobj:write(s)`
+`pobj:unread(s)`
 
 #### Parameters
 `s` Any input string.  Note that with all Lua strings, these may contain all character values including "\0".
@@ -113,7 +113,7 @@ Nothing
 
 ```Lua
 a=p:read()
-p:unread() -- restores pipe to state before the read
+p:unread(a) -- restores pipe to state before the read
 ```
 
 ## pobj:write()
