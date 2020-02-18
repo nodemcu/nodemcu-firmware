@@ -39,6 +39,7 @@ pages:
     - Lua Flash Store (LFS): 'lfs.md'
 - Lua Modules:
     - 'bh1750': 'lua-modules/bh1750.md'
+    - 'cohelper': 'lua-modules/cohelper.md'
     - 'ds18b20': 'lua-modules/ds18b20.md'
     - 'ds3231': 'lua-modules/ds3231.md'
     - 'fifo' : 'lua-modules/fifo.md'
@@ -88,6 +89,7 @@ pages:
     - 'ow (1-Wire)': 'modules/ow.md'
     - 'pcm' : 'modules/pcm.md'
     - 'perf': 'modules/perf.md'
+    - 'pipe': 'modules/pipe.md'
     - 'pwm' : 'modules/pwm.md'
     - 'pwm2' : 'modules/pwm2.md'
     - 'rc' : 'modules/rc.md'
