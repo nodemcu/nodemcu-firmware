@@ -13,9 +13,12 @@
 #define SOFTUART_MAX_RX_BUFF 128
 #define SOFTUART_GPIO_COUNT 13
 
+//TODO: Overflow flag as callback function + docs
 typedef struct {
 	char receive_buffer[SOFTUART_MAX_RX_BUFF];
-	uint8_t length;
+	uint8_t buffer_first;
+	uint8_t buffer_last;
+	uint8_t bytes_count;
 	uint8_t buffer_overflow;
 } softuart_buffer_t;
 
@@ -108,26 +111,36 @@ uint32_t ICACHE_RAM_ATTR softuart_intr_handler(uint32_t ret_gpio_status)
 				start_time += s->bit_time;
 			}
 
+			// Store byte in buffer
+			// If buffer full, set the overflow flag and return
+			if (s->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
+				s->buffer.buffer_overflow = 1;
+			} else if (s->buffer.bytes_count < SOFTUART_MAX_RX_BUFF) {
+				s->buffer.receive_buffer[s->buffer.buffer_last] = byte;
+				s->buffer.buffer_last++;
+				s->buffer.bytes_count++;
+
+				// Check for callback conditions
+				if (((s->need_len != 0) && (s->buffer.bytes_count >= s->need_len))  || \
+						((s->need_len == 0) && ((char)byte == s->end_char))) {
+					    // Send the pointer to task handler
+						s->armed = 0;
+						task_post_low(uart_recieve_task, (task_param_t)s);
+				}
+			}
+			// Check for overflow after appending new byte
+			if (s->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
+				s->buffer.buffer_overflow = 1;
+			}
+			// Roll over buffer index if necessary
+			if (s->buffer.buffer_last == SOFTUART_MAX_RX_BUFF) {
+				s->buffer.buffer_last = 0;
+			}
+
 			// Wait for stop bit
 			// TODO: Add config for stop bits and parity bits
 			while ((uint32_t)(asm_ccount() - start_time) < s->bit_time);
 
-			// Store byte in buffer
-			// If buffer full, set the overflow flag and return
-			uint8 next = s->buffer.length + 1 % SOFTUART_MAX_RX_BUFF;
-			if (next != 0) {
-				s->buffer.receive_buffer[s->buffer.length] = byte; // save new byte
-					s->buffer.length = next;
-					// Run callback when buffer is filled with enough data or last char is the triggering one
-					if (((s->need_len != 0) && (s->buffer.length >= s->need_len))  || \
-					((s->need_len == 0) && ((char)byte == s->end_char))) {
-						s->armed = 0;
-						task_post_low(uart_recieve_task, (task_param_t)s); // Send the pointer to task handler
-					}
-			} else {
-				//TODO: use this information somehow?
-				s->buffer.buffer_overflow = 1;
-			}
 		}
 	}
 	// re-enable all interrupts
@@ -163,8 +176,8 @@ static void softuart_init(softuart_t *s)
 {
     NODE_DBG("SoftUART initialize gpio\n");
 
+	// Init tx pin
     if (s->pin_tx != 0xFF){
-    	// Init tx pin
         platform_gpio_mode(s->pin_tx, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_PULLUP);
         platform_gpio_write(s->pin_tx, PLATFORM_GPIO_HIGH);
     }
@@ -235,7 +248,14 @@ static int softuart_setup(lua_State *L)
 	suart->softuart->pin_tx = tx_gpio_id;
 	suart->softuart->need_len = RX_BUFF_SIZE;
 	suart->softuart->armed = 0;
-	//set bit time
+
+	// Set buffer
+	suart->softuart->buffer.buffer_first = 0;
+	suart->softuart->buffer.buffer_last = 0;
+	suart->softuart->buffer.bytes_count = 0;
+	suart->softuart->buffer.buffer_overflow = 0;
+
+	// Set bit time
     suart->softuart->bit_time = system_get_cpu_freq() * 1000000 / baudrate;
 
     // Set metatable
@@ -251,12 +271,21 @@ static void softuart_rx_callback(task_param_t arg)
 	softuart_t *softuart = (softuart_t*)arg; //Receive pointer from ISR
 	lua_State *L = lua_getstate();
 	lua_rawgeti(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[softuart->pin_rx]);
-	// Copy volatile data to static buffer
-	for (int i = 0; i < softuart->buffer.length; i++) {
-		softuart_rx_buffer[i] = softuart->buffer.receive_buffer[i];
+	// Clear overflow flag if needed
+	if(softuart->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
+		softuart->buffer.buffer_overflow = 0;
 	}
-	lua_pushlstring(L, softuart_rx_buffer, softuart->buffer.length);
-	softuart->buffer.length = 0;
+	// Copy volatile data to static buffer
+	uint8_t buffer_lenght = softuart->buffer.bytes_count;
+	for (int i = 0; i < buffer_lenght; i++) {
+		softuart_rx_buffer[i] = softuart->buffer.receive_buffer[softuart->buffer.buffer_first];
+		softuart->buffer.buffer_first++;
+		softuart->buffer.bytes_count--;
+		if (softuart->buffer.buffer_first == SOFTUART_MAX_RX_BUFF) {
+			softuart->buffer.buffer_first = 0;
+		}
+	}
+	lua_pushlstring(L, softuart_rx_buffer, buffer_lenght);
 	softuart->armed = 1;
 	lua_call(L, 1, 0);
 }
