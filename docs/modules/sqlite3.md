@@ -3,6 +3,17 @@
 | :----- | :-------------------- | :---------- | :------ |
 | 2017-06-20 | [Luiz Felipe Silva](https://github.com/luizfeliperj) | [Luiz Felipe Silva](https://github.com/luizfeliperj) | [sqlite3.c](../../app/modules/sqlite3.c)|
 
+!!! attention
+    ###This module is currently not available.
+
+    Even if you enable it in configuration it will not be available.
+        
+    In brief this is due to a lack of proof of usability. The memory constraints on the ESP8266 are just too tight.
+
+    The module is not removed yet as it might be revived to run on the ESP32 after the two branches for ESP8266 and ESP32 have been unified.
+
+    Please see [#2913](https://github.com/nodemcu/nodemcu-firmware/issues/2913) for more information.
+
 This module is based on [LuaSQLite3](http://lua.sqlite.org/index.cgi/index) module developed by Tiago Dionizio and Doug Currie with contributions from Thomas Lauer, Michael Roth, and Wolfgang Oertl.
 
 This module depens on [SQLite3](http://www.sqlite.org/) library developed by Dwayne Richard Hipp.
