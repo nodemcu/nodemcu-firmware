@@ -1275,6 +1275,7 @@ static int mqtt_socket_close( lua_State* L )
     mqtt_message_t* temp_msg = mqtt_msg_disconnect(&msgb);
     NODE_DBG("Send MQTT disconnect infomation, data len: %d, d[0]=%d \r\n", temp_msg->length,  temp_msg->data[0]);
 
+    /* XXX This fails to actually send the disconnect message before hanging up */
 #ifdef CLIENT_SSL_ENABLE
     if(mud->secure) {
       espconn_status = espconn_secure_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
