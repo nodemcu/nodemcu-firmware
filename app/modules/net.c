@@ -1008,12 +1008,12 @@ field_from_ipaddr(lua_State *L, const char * field_name, ip_addr_t* addr) {
   lua_setfield(L, -2, field_name);
 }
 
-static int net_if_info( lua_State* L ) {
+static int net_ifinfo( lua_State* L ) {
   int ifidx = luaL_optint(L, 1, 0);
 
   struct netif * nif = eagle_lwip_getif(ifidx);
   if (nif == NULL) {
-    return luaL_error( L, "unknown network interface index %d", ifidx);
+    return 0;
   }
 
   lua_createtable(L, 0,
@@ -1088,18 +1088,14 @@ LROT_BEGIN(net_dns)
   LROT_FUNCENTRY( resolve, net_dns_static )
 LROT_END( net_dns, net_dns, 0 )
 
-LROT_BEGIN(net_if)
-  LROT_FUNCENTRY( info, net_if_info )
-LROT_END(net_if, net_if, 0)
-
 LROT_BEGIN(net)
   LROT_FUNCENTRY( createServer, net_createServer )
   LROT_FUNCENTRY( createConnection, net_createConnection )
   LROT_FUNCENTRY( createUDPSocket, net_createUDPSocket )
+  LROT_FUNCENTRY( ifinfo, net_ifinfo )
   LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
   LROT_TABENTRY( dns, net_dns )
-  LROT_TABENTRY( if, net_if )
 #ifdef TLS_MODULE_PRESENT
   LROT_TABENTRY( cert, tls_cert )
 #endif
