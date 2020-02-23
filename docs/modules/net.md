@@ -83,6 +83,41 @@ none
 #### See also
 [`net.createConnection()`](#netcreateconnection)
 
+## net.ifinfo()
+
+Return information about a network interface, specified by index.
+
+#### Syntax
+`net.ifinfo(if_index)`
+
+#### Parameters
+- `if_index` the interface index; on ESP8266, `0` is the wifi client (STA) and `1`
+   is the wifi AP.
+
+#### Returns
+`nil` if the given `if_index` does not correspond to an interface.  Otherwise,
+a table containing ...
+
+* `ip`, `netmask`, and `gateway` configured for this interface, as dotted quad strings
+  or `nil` if none is set.
+
+* if DHCP was used to configure the interface, then `dhcp` will be a table containing...
+
+  * `server_ip` -- the DHCP server itself, as a dotted quad
+
+  * `client_ip` -- the IP address suggested for the client; likely, this equals `ip`
+    above, unless the configuration has been overridden.
+
+  * `ntp_server` -- the NTP server suggested by the DHCP server.
+
+DNS servers are not tracked per-interface in LwIP and, as such, are not
+reported here; use [`net.dns:getdnsserver()`](#netdnsgetdnsserver).
+
+#### Example
+
+`print(net.ifinfo(0).dhcp.ntp_server)` will show the NTP server suggested by
+the DHCP server.
+
 ## net.multicastJoin()
 
 Join multicast group.
@@ -617,43 +652,6 @@ Sets the IP of the DNS server used to resolve hostnames. Default: resolver1.open
 
 #### See also
 [`net.dns:getdnsserver()`](#netdnsgetdnsserver)
-
-# net.if Module
-
-## net.if.info()
-
-Return information about a network interface, specified by index.
-
-#### Syntax
-`net.if.info(if_index)`
-
-#### Parameters
-- `if_index` the interface index; on ESP8266, `0` is the wifi client (STA) and `1`
-   is the wifi AP.
-
-#### Returns
-`nil` if the given `if_index` does not correspond to an interface.  Otherwise,
-a table containing ...
-
-* `ip`, `netmask`, and `gateway` configured for this interface, as dotted quad strings
-  or `nil` if none is set.
-
-* if DHCP was used to configure the interface, then `dhcp` will be a table containing...
-
-  * `server_ip` -- the DHCP server itself, as a dotted quad
-
-  * `client_ip` -- the IP address suggested for the client; likely, this equals `ip`
-    above, unless the configuration has been overridden.
-
-  * `ntp_server` -- the NTP server suggested by the DHCP server.
-
-DNS servers are not tracked per-interface in LwIP and, as such, are not
-reported here; use [`net.dns:getdnsserver()`](#netdnsgetdnsserver).
-
-#### Example
-
-`print(net.if.info(0).dhcp.ntp_server)` will show the NTP server suggested by
-the DHCP server.
 
 # net.cert Module
 
