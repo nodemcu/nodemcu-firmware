@@ -381,6 +381,7 @@ stds.nodemcu_libs = {
             setdnsserver = empty
           }
         },
+        ifinfo = empty,
         multicastJoin = empty,
         multicastLeave = empty
       }
