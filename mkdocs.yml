@@ -45,6 +45,7 @@ pages:
     - 'fifo' : 'lua-modules/fifo.md'
     - 'fifosock' : 'lua-modules/fifosock.md'
     - 'ftpserver': 'lua-modules/ftpserver.md'
+    - 'gossip': 'lua-modules/gossip.md'
     - 'hdc1000': 'lua-modules/hdc1000.md'
     - 'httpserver': 'lua-modules/httpserver.md'
     - 'imap': 'lua-modules/imap.md'
