@@ -65,6 +65,7 @@ m = mqtt.Client("clientid", 120, "user", "password")
 m:lwt("/lwt", "offline", 0, 0)
 
 m:on("connect", function(client) print ("connected") end)
+m:on("connfail", function(client, reason) print ("connection failed", reason) end)
 m:on("offline", function(client) print ("offline") end)
 
 -- on publish message receive event
@@ -157,8 +158,16 @@ end
 
 In reality, the connected function should do something useful!
 
-The first callback to `:connect()` aliases with the "connect" callback available through `:on()` (the last passed callback to either of those are used). 
-The second (failure) callback is however not the same as the "offline" `:on()` callback. The "offline" callback is only called after an already established connection becomes closed. If the `connect()` call fails to establish a connection, the callback passed to `:connect()` is called and nothing else.
+The first callback to `:connect()` aliases with the "connect" callback
+available through `:on()` (the last passed callback to either of those are
+used).  However, if `nil` is passed to `:connect()`, any existing callback
+will be preserved, rather than removed.
+
+The second (failure) callback aliases with the "connfail" callback available
+through `:on()`.  (The "offline" callback is only called after an already
+established connection becomes closed. If the `connect()` call fails to
+establish a connection, the callback passed to `:connect()` is called and
+nothing else.)
 
 Previously, we instructed an application to pass either the *integer* 0 or
 *integer* 1 for `secure`.  Now, this will trigger a deprecation warning; please
@@ -213,8 +222,23 @@ Registers a callback function for an event.
 `mqtt:on(event, function(client[, topic[, message]]))`
 
 #### Parameters
-- `event` can be "connect", "suback", "unsuback", "puback", "message", "overflow", or "offline"
-- `function(client[, topic[, message]])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
+- `event` can be "connect", "connfail", "suback", "unsuback", "puback", "message", "overflow", or "offline"
+- callback function.  The first parameter is always the client object itself.
+  Any remaining parameters passed differ by event:
+
+  - If event is "message", the 2nd and 3rd parameters are received topic and
+    message, respectively, as Lua strings.
+
+  - If the event is "overflow", the parameters are as with "message", save
+    that the message string is truncated to the maximum message size.
+
+  - If the event is "connfail", the 2nd parameter will be the connection
+    failure code; see above.
+
+  - Other event types do not provide additional arguments.  This has some
+    unfortunate consequences: the broker-provided subscription maximum QoS
+    information is lost, and the application must, if it expects per-event
+    acknowledgements, manage a queue or queues itself.
 
 #### Returns
 `nil`
@@ -231,7 +255,8 @@ Publishes a message.
 - `message` the message to publish, (buffer or string)
 - `qos` QoS level
 - `retain` retain flag
-- `function(client)` optional callback fired when PUBACK received.
+- `function(client)` optional callback fired when PUBACK received (for QoS 1
+  or 2) or when message sent (for QoS 0).
 
 #### Notes
 
