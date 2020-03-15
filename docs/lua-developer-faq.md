@@ -88,7 +88,7 @@ There are standard libraries to provide access to the various hardware options s
 
 The runtime system runs in interactive-mode. In this mode it first executes any `init.lua` script. It then "listens" to the serial port for input Lua chunks, and executes them once syntactically complete.
 
-There is no batch support, although automated embedded processing is normally achieved by setting up the necessary event triggers in the [`init.lua`](../upload/#initlua) script.
+There is no batch support, although automated embedded processing is normally achieved by setting up the necessary event triggers in the [`init.lua`](upload.md#initlua) script.
 
 The various libraries (`net`, `tmr`, `wifi`, etc.) use the SDK callback mechanism to bind Lua processing to individual events (for example a timer alarm firing). Developers should make full use of these events to keep Lua execution sequences short.
 
