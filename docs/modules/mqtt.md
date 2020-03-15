@@ -82,7 +82,7 @@ m:on("overflow", function(client, topic, data)
 end)
 
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
-m:connect("192.168.11.118", 1883, 0, function(client)
+m:connect("192.168.11.118", 1883, false, function(client)
   print("connected")
   -- Calling subscribe/publish only makes sense once the connection
   -- was successfully established. You can do that either here in the
