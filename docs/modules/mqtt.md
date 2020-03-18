@@ -218,6 +218,8 @@ Registers a callback function for an event.
 
 #### Returns
 `nil`
+##### Note
+  https://github.com/nodemcu/nodemcu-firmware/issues/2109
 
 ## mqtt.client:publish()
 
