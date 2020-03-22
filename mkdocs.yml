@@ -42,6 +42,7 @@ pages:
     - Lua Compact Debug (LCD): 'lcd.md'
     - Lua Flash Store (LFS): 'lfs.md'
 - Lua Modules:
+    - 'Lua modules directory': 'lua-modules/README.md'
     - 'bh1750': 'lua-modules/bh1750.md'
     - 'cohelper': 'lua-modules/cohelper.md'
     - 'ds18b20': 'lua-modules/ds18b20.md'
