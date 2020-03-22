@@ -268,10 +268,11 @@ The easiest approach is to maintain all the Lua files for your project in a sing
 
 For example to run the Telnet and FTP servers from LFS, put the following files in your project directory:
 
-* [lua_examples/lfs/_init.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/_init.lua).  LFS helper routines and functions.
-* [lua_examples/lfs/dummy_strings.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/lfs/dummy_strings.lua).  Moving common strings into LFS.
-* [lua_examples/telnet/telnet.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_examples/telnet/telnet.lua).  A simple **telnet** server.
-* [lua_modules/ftp/ftpserver.lua](https://github.com/nodemcu/nodemcu-firmware/tree/dev/lua_modules/ftp/ftpserver.lua).  A simple **FTP** server.
+* [lua_examples/lfs/_init.lua](../lua_examples/lfs/_init.lua).  LFS helper routines and functions.
+* [lua_examples/lfs/dummy_strings.lua](../lua_examples/lfs/dummy_strings.lua).  Moving common strings into LFS.
+* [lua_examples/telnet/telnet_fifosock.lua](../lua_examples/telnet/telnet_fifosock.lua).  A simple **telnet** server (example 1).
+* [lua_examples/telnet/telnet_pipe.lua](../lua_examples/telnet/telnet_pipe.lua).  A simple **telnet** server (example 2).
+* [lua_modules/ftp/ftpserver.lua](../lua_modules/ftp/ftpserver.lua).  A simple **FTP** server.
 
 You should always include the first two modules, but the remaining files would normally be replaced by your own project files.  Also remember that these are examples and that you are entirely free to modify or to replace them for your own application needs.
 
