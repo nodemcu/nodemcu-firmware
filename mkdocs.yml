@@ -6,6 +6,10 @@ theme:
   name: "readthedocs"
 strict: false #Allows to build and test documentation in local environment where some links are unreachable
 
+# Uncomment the line below to build docs to be used locally; site/index.html
+# will then be the root of a locally-linked documentation tree.
+# use_directory_urls: false
+
 markdown_extensions:
 #http://pythonhosted.org/Markdown/extensions/admonition.html
 - admonition:
