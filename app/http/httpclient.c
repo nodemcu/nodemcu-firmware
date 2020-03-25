@@ -563,21 +563,20 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 	req->redirect_follow_count = redirect_follow_count;
 
 	ip_addr_t	addr;
-	err_t		error = espconn_gethostbyname( (struct espconn *) req,  /* It seems we don't need a real espconn pointer here. */
-						       hostname, &addr, http_dns_callback );
+	err_t		error = dns_gethostbyname( hostname, &addr, http_dns_callback, req );
 
-	if ( error == ESPCONN_INPROGRESS )
+	if ( error == ERR_INPROGRESS )
 	{
 		HTTPCLIENT_DEBUG( "DNS pending" );
 	}
-	else if ( error == ESPCONN_OK )
+	else if ( error == ERR_OK )
 	{
 		/* Already in the local names table (or hostname was an IP address), execute the callback ourselves. */
 		http_dns_callback( hostname, &addr, req );
 	}
 	else
 	{
-		if ( error == ESPCONN_ARG )
+		if ( error == ERR_ARG )
 		{
 			HTTPCLIENT_ERR( "DNS arg error %s", hostname );
 		}else  {

@@ -40,12 +40,11 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 #include "sys/espconn_mbedtls.h"
 
 ssl_opt ssl_option = {
-		{NULL, ESPCONN_SECURE_DEFAULT_SIZE, 0, false, 0, false},
-		{NULL, ESPCONN_SECURE_DEFAULT_SIZE, 0, false, 0, false},
+		{NULL, SSL_BUFFER_SIZE, 0, false, 0, false},
+		{NULL, SSL_BUFFER_SIZE, 0, false, 0, false},
 		0
 };
 
-unsigned int max_content_len = ESPCONN_SECURE_DEFAULT_SIZE;
 /******************************************************************************
  * FunctionName : espconn_encry_connect
  * Description  : The function given as the connect
@@ -95,7 +94,7 @@ espconn_secure_connect(struct espconn *espconn)
 			}
 		}
 	}
-	current_size = espconn_secure_get_size(ESPCONN_CLIENT);
+	current_size = SSL_BUFFER_SIZE;
 	current_size += ESPCONN_SECURE_DEFAULT_HEAP;
 //	ssl_printf("heap_size %d %d\n", system_get_free_heap_size(), current_size);
 	if (system_get_free_heap_size() <= current_size)
@@ -180,43 +179,6 @@ espconn_secure_accept(struct espconn *espconn)
 		return ESPCONN_ARG;
 
 	return espconn_ssl_server(espconn);
-}
-
-/******************************************************************************
- * FunctionName : espconn_secure_set_size
- * Description  : set the buffer size for client or server
- * Parameters   : level -- set for client or server
- * 				  1: client,2:server,3:client and server
- * 				  size -- buffer size
- * Returns      : true or false
-*******************************************************************************/
-bool ICACHE_FLASH_ATTR espconn_secure_set_size(uint8 level, uint16 size)
-{
-	size = (size < 4096) ? 4096 : size;
-
-	if (level >= ESPCONN_MAX || level <= ESPCONN_IDLE)
-		return false;
-
-	if (size > ESPCONN_SECURE_MAX_SIZE || size < ESPCONN_SECURE_DEFAULT_SIZE)
-		return false;
-
-	max_content_len = size;
-	return true;
-}
-
-/******************************************************************************
- * FunctionName : espconn_secure_get_size
- * Description  : get buffer size for client or server
- * Parameters   : level -- set for client or server
- *				  1: client,2:server,3:client and server
- * Returns      : buffer size for client or server
-*******************************************************************************/
-sint16 ICACHE_FLASH_ATTR espconn_secure_get_size(uint8 level)
-{
-	if (level >= ESPCONN_MAX || level <= ESPCONN_IDLE)
-		return ESPCONN_ARG;
-
-	return max_content_len;
 }
 
 /******************************************************************************
