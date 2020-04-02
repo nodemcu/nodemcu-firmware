@@ -30,11 +30,8 @@ __attribute__((section(".servercert.flash"))) unsigned char tls_server_cert_area
 
 __attribute__((section(".clientcert.flash"))) unsigned char tls_client_cert_area[INTERNAL_FLASH_SECTOR_SIZE];
 
-extern int tls_socket_create( lua_State *L );
-LROT_EXTERN(tls_cert);
-
 typedef struct {
-  struct espconn *pesp_conn;
+  struct espconn pesp_conn;
   int self_ref;
   int cb_connect_ref;
   int cb_reconnect_ref;
@@ -47,7 +44,8 @@ typedef struct {
 int tls_socket_create( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud*) lua_newuserdata(L, sizeof(tls_socket_ud));
 
-  ud->pesp_conn = NULL;
+  bzero(&ud->pesp_conn, sizeof(ud->pesp_conn));
+
   ud->self_ref =
   ud->cb_connect_ref =
   ud->cb_reconnect_ref =
@@ -63,7 +61,7 @@ int tls_socket_create( lua_State *L ) {
 }
 
 static void tls_socket_onconnect( struct espconn *pesp_conn ) {
-  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn->reverse;
+  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn;
   if (!ud || ud->self_ref == LUA_NOREF) return;
   if (ud->cb_connect_ref != LUA_NOREF) {
     lua_State *L = lua_getstate();
@@ -74,14 +72,10 @@ static void tls_socket_onconnect( struct espconn *pesp_conn ) {
 }
 
 static void tls_socket_cleanup(tls_socket_ud *ud) {
-  if (ud->pesp_conn) {
-    espconn_secure_disconnect(ud->pesp_conn);
-    if (ud->pesp_conn->proto.tcp) {
-      free(ud->pesp_conn->proto.tcp);
-      ud->pesp_conn->proto.tcp = NULL;
-    }
-    free(ud->pesp_conn);
-    ud->pesp_conn = NULL;
+  if (ud->pesp_conn.proto.tcp) {
+    espconn_secure_disconnect(&ud->pesp_conn);
+    free(ud->pesp_conn.proto.tcp);
+    ud->pesp_conn.proto.tcp = NULL;
   }
   lua_State *L = lua_getstate();
   lua_gc(L, LUA_GCSTOP, 0);
@@ -91,7 +85,7 @@ static void tls_socket_cleanup(tls_socket_ud *ud) {
 }
 
 static void tls_socket_ondisconnect( struct espconn *pesp_conn ) {
-  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn->reverse;
+  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn;
   if (!ud || ud->self_ref == LUA_NOREF) return;
   tls_socket_cleanup(ud);
   if (ud->cb_disconnect_ref != LUA_NOREF) {
@@ -104,7 +98,7 @@ static void tls_socket_ondisconnect( struct espconn *pesp_conn ) {
 }
 
 static void tls_socket_onreconnect( struct espconn *pesp_conn, s8 err ) {
-  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn->reverse;
+  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn;
   if (!ud || ud->self_ref == LUA_NOREF) return;
   if (ud->cb_reconnect_ref != LUA_NOREF) {
     const char* reason = NULL;
@@ -132,7 +126,7 @@ static void tls_socket_onreconnect( struct espconn *pesp_conn, s8 err ) {
 }
 
 static void tls_socket_onrecv( struct espconn *pesp_conn, char *buf, u16 length ) {
-  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn->reverse;
+  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn;
   if (!ud || ud->self_ref == LUA_NOREF) return;
   if (ud->cb_receive_ref != LUA_NOREF) {
     lua_State *L = lua_getstate();
@@ -144,7 +138,7 @@ static void tls_socket_onrecv( struct espconn *pesp_conn, char *buf, u16 length 
 }
 
 static void tls_socket_onsent( struct espconn *pesp_conn ) {
-  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn->reverse;
+  tls_socket_ud *ud = (tls_socket_ud *)pesp_conn;
   if (!ud || ud->self_ref == LUA_NOREF) return;
   if (ud->cb_sent_ref != LUA_NOREF) {
     lua_State *L = lua_getstate();
@@ -178,8 +172,8 @@ static void tls_socket_dns_cb( const char* domain, const ip_addr_t *ip_addr, tls
     ud->self_ref = LUA_NOREF;
     lua_gc(L, LUA_GCRESTART, 0);
   } else {
-    os_memcpy(ud->pesp_conn->proto.tcp->remote_ip, &addr.addr, 4);
-    espconn_secure_connect(ud->pesp_conn);
+    os_memcpy(ud->pesp_conn.proto.tcp->remote_ip, &addr.addr, 4);
+    espconn_secure_connect(&ud->pesp_conn);
   }
 }
 
@@ -191,7 +185,7 @@ static int tls_socket_connect( lua_State *L ) {
   	return 0;
   }
 
-  if (ud->pesp_conn) {
+  if (ud->pesp_conn.proto.tcp) {
     return luaL_error(L, "already connected");
   }
 
@@ -205,25 +199,19 @@ static int tls_socket_connect( lua_State *L ) {
   if (domain == NULL)
     return luaL_error(L, "invalid domain");
 
-  ud->pesp_conn = (struct espconn*)calloc(1,sizeof(struct espconn));
-  if(!ud->pesp_conn)
-    return luaL_error(L, "not enough memory");
-  ud->pesp_conn->proto.udp = NULL;
-  ud->pesp_conn->proto.tcp = (esp_tcp *)calloc(1,sizeof(esp_tcp));
-  if(!ud->pesp_conn->proto.tcp){
-    free(ud->pesp_conn);
-    ud->pesp_conn = NULL;
+  ud->pesp_conn.proto.udp = NULL;
+  ud->pesp_conn.proto.tcp = (esp_tcp *)calloc(1,sizeof(esp_tcp));
+  if(!ud->pesp_conn.proto.tcp){
     return luaL_error(L, "not enough memory");
   }
-  ud->pesp_conn->type = ESPCONN_TCP;
-  ud->pesp_conn->state = ESPCONN_NONE;
-  ud->pesp_conn->reverse = ud;
-  ud->pesp_conn->proto.tcp->remote_port = port;
-  espconn_regist_connectcb(ud->pesp_conn, (espconn_connect_callback)tls_socket_onconnect);
-  espconn_regist_disconcb(ud->pesp_conn, (espconn_connect_callback)tls_socket_ondisconnect);
-  espconn_regist_reconcb(ud->pesp_conn, (espconn_reconnect_callback)tls_socket_onreconnect);
-  espconn_regist_recvcb(ud->pesp_conn, (espconn_recv_callback)tls_socket_onrecv);
-  espconn_regist_sentcb(ud->pesp_conn, (espconn_sent_callback)tls_socket_onsent);
+  ud->pesp_conn.type = ESPCONN_TCP;
+  ud->pesp_conn.state = ESPCONN_NONE;
+  ud->pesp_conn.proto.tcp->remote_port = port;
+  espconn_regist_connectcb(&ud->pesp_conn, (espconn_connect_callback)tls_socket_onconnect);
+  espconn_regist_disconcb(&ud->pesp_conn, (espconn_connect_callback)tls_socket_ondisconnect);
+  espconn_regist_reconcb(&ud->pesp_conn, (espconn_reconnect_callback)tls_socket_onreconnect);
+  espconn_regist_recvcb(&ud->pesp_conn, (espconn_recv_callback)tls_socket_onrecv);
+  espconn_regist_sentcb(&ud->pesp_conn, (espconn_sent_callback)tls_socket_onsent);
 
   if (ud->self_ref == LUA_NOREF) {
     lua_pushvalue(L, 1);  // copy to the top of stack
@@ -289,7 +277,7 @@ static int tls_socket_send( lua_State *L ) {
   	return 0;
   }
 
-  if(ud->pesp_conn == NULL) {
+  if(ud->pesp_conn.proto.tcp == NULL) {
     NODE_DBG("not connected");
     return 0;
   }
@@ -300,7 +288,7 @@ static int tls_socket_send( lua_State *L ) {
     return luaL_error(L, "wrong arg type");
   }
 
-  espconn_secure_send(ud->pesp_conn, (void*)buf, sl);
+  espconn_secure_send(&ud->pesp_conn, (void*)buf, sl);
 
   return 0;
 }
@@ -312,12 +300,12 @@ static int tls_socket_hold( lua_State *L ) {
   	return 0;
   }
 
-  if(ud->pesp_conn == NULL) {
+  if(ud->pesp_conn.proto.tcp == NULL) {
     NODE_DBG("not connected");
     return 0;
   }
 
-  espconn_recv_hold(ud->pesp_conn);
+  espconn_recv_hold(&ud->pesp_conn);
 
   return 0;
 }
@@ -329,12 +317,12 @@ static int tls_socket_unhold( lua_State *L ) {
   	return 0;
   }
 
-  if(ud->pesp_conn == NULL) {
+  if(ud->pesp_conn.proto.tcp == NULL) {
     NODE_DBG("not connected");
     return 0;
   }
 
-  espconn_recv_unhold(ud->pesp_conn);
+  espconn_recv_unhold(&ud->pesp_conn);
 
   return 0;
 }
@@ -347,11 +335,11 @@ static int tls_socket_getpeer( lua_State *L ) {
   	return 0;
   }
 
-  if(ud->pesp_conn && ud->pesp_conn->proto.tcp->remote_port != 0){
+  if(ud->pesp_conn.proto.tcp && ud->pesp_conn.proto.tcp->remote_port != 0){
     char temp[20] = {0};
-    sprintf(temp, IPSTR, IP2STR( &(ud->pesp_conn->proto.tcp->remote_ip) ) );
+    sprintf(temp, IPSTR, IP2STR( &(ud->pesp_conn.proto.tcp->remote_ip) ) );
     lua_pushstring( L, temp );
-    lua_pushinteger( L, ud->pesp_conn->proto.tcp->remote_port );
+    lua_pushinteger( L, ud->pesp_conn.proto.tcp->remote_port );
   } else {
     lua_pushnil( L );
     lua_pushnil( L );
@@ -366,8 +354,8 @@ static int tls_socket_close( lua_State *L ) {
   	return 0;
   }
 
-  if (ud->pesp_conn) {
-    espconn_secure_disconnect(ud->pesp_conn);
+  if (ud->pesp_conn.proto.tcp) {
+    espconn_secure_disconnect(&ud->pesp_conn);
   }
 
   return 0;
@@ -379,14 +367,10 @@ static int tls_socket_delete( lua_State *L ) {
   	NODE_DBG("userdata is nil.\n");
   	return 0;
   }
-  if (ud->pesp_conn) {
-    espconn_secure_disconnect(ud->pesp_conn);
-    if (ud->pesp_conn->proto.tcp) {
-      free(ud->pesp_conn->proto.tcp);
-      ud->pesp_conn->proto.tcp = NULL;
-    }
-    free(ud->pesp_conn);
-    ud->pesp_conn = NULL;
+  if (ud->pesp_conn.proto.tcp) {
+    espconn_secure_disconnect(&ud->pesp_conn);
+    free(ud->pesp_conn.proto.tcp);
+    ud->pesp_conn.proto.tcp = NULL;
   }
 
   luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_connect_ref);
