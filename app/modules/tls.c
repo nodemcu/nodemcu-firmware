@@ -242,30 +242,29 @@ static int tls_socket_on( lua_State *L ) {
   if (method == NULL)
     return luaL_error( L, "wrong arg type" );
 
-  luaL_checkanyfunction(L, 3);
-  lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
+  int *cbp;
 
-  if (strcmp(method, "connection") == 0) {
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_connect_ref);
-    ud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else if (strcmp(method, "disconnection") == 0) {
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_disconnect_ref);
-    ud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else if (strcmp(method, "reconnection") == 0) {
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_reconnect_ref);
-    ud->cb_reconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else if (strcmp(method, "receive") == 0) {
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_receive_ref);
-    ud->cb_receive_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else if (strcmp(method, "sent") == 0) {
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_sent_ref);
-    ud->cb_sent_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else if (strcmp(method, "dns") == 0) {
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_dns_ref);
-    ud->cb_dns_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  } else {
+       if (strcmp(method, "connection"   ) == 0) { cbp = &ud->cb_connect_ref   ; }
+  else if (strcmp(method, "disconnection") == 0) { cbp = &ud->cb_disconnect_ref; }
+  else if (strcmp(method, "reconnection" ) == 0) { cbp = &ud->cb_reconnect_ref ; }
+  else if (strcmp(method, "receive"      ) == 0) { cbp = &ud->cb_receive_ref   ; }
+  else if (strcmp(method, "sent"         ) == 0) { cbp = &ud->cb_sent_ref      ; }
+  else if (strcmp(method, "dns"          ) == 0) { cbp = &ud->cb_dns_ref       ; }
+  else {
     return luaL_error(L, "invalid method");
   }
+
+  if (lua_isanyfunction(L, 3)) {
+    lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
+    luaL_unref(L, LUA_REGISTRYINDEX, *cbp);
+    *cbp = luaL_ref(L, LUA_REGISTRYINDEX);
+  } else if (lua_isnil(L, 3)) {
+    luaL_unref(L, LUA_REGISTRYINDEX, *cbp);
+    *cbp = LUA_NOREF;
+  } else {
+    return luaL_error(L, "invalid callback function");
+  }
+
   return 0;
 }
 
