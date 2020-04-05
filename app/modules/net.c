@@ -142,10 +142,9 @@ static void net_err_cb(void *arg, err_t err) {
     lua_call(L, 2, 0);
   }
   if (ud->client.wait_dns == 0) {
-    lua_gc(L, LUA_GCSTOP, 0);
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+    int selfref = ud->self_ref;
     ud->self_ref = LUA_NOREF;
-    lua_gc(L, LUA_GCRESTART, 0);
+    luaL_unref(L, LUA_REGISTRYINDEX, selfref);
   }
 }
 
@@ -189,10 +188,9 @@ static void net_dns_cb(const char *name, ip_addr_t *ipaddr, void *arg) {
   if (ud->pcb && ud->type == TYPE_TCP_CLIENT && ud->tcp_pcb->state == CLOSED) {
     tcp_connect(ud->tcp_pcb, &addr, ud->tcp_pcb->remote_port, net_connected_cb);
   } else if (!ud->pcb && ud->client.wait_dns == 0) {
-    lua_gc(L, LUA_GCSTOP, 0);
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+    int selfref = ud->self_ref;
     ud->self_ref = LUA_NOREF;
-    lua_gc(L, LUA_GCRESTART, 0);
+    luaL_unref(L, LUA_REGISTRYINDEX, selfref);
   }
 }
 
@@ -742,10 +740,10 @@ int net_close( lua_State *L ) {
   }
   if (ud->type == TYPE_TCP_SERVER ||
      (ud->pcb == NULL && ud->client.wait_dns == 0)) {
-//    lua_gc(L, LUA_GCSTOP, 0);
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+
+    int selfref = ud->self_ref;
     ud->self_ref = LUA_NOREF;
-//    lua_gc(L, LUA_GCRESTART, 0);
+    luaL_unref(L, LUA_REGISTRYINDEX, selfref);
   }
 #if 0
   dbg_print_ud("close exit", ud);
@@ -794,10 +792,10 @@ int net_delete( lua_State *L ) {
       ud->server.cb_accept_ref = LUA_NOREF;
       break;
   }
-//  lua_gc(L, LUA_GCSTOP, 0);
-  luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+
+  int selfref = ud->self_ref;
   ud->self_ref = LUA_NOREF;
-//  lua_gc(L, LUA_GCRESTART, 0);
+  luaL_unref(L, LUA_REGISTRYINDEX, selfref);
 #if 0
   dbg_print_ud("delete end", ud);
 #endif
