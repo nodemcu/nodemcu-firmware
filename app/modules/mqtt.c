@@ -1037,10 +1037,11 @@ static int mqtt_delete( lua_State* L )
   mud->cb_unsuback_ref = LUA_NOREF;
   luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
   mud->cb_puback_ref = LUA_NOREF;
-  lua_gc(L, LUA_GCSTOP, 0);
-  luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+
+  int selfref = mud->self_ref;
   mud->self_ref = LUA_NOREF;
-  lua_gc(L, LUA_GCRESTART, 0);
+  luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+
   NODE_DBG("leave mqtt_delete.\n");
   return 0;
 }
