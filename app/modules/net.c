@@ -857,12 +857,19 @@ static void net_dns_static_cb(const char *name, ip_addr_t *ipaddr, void *callbac
   if (ipaddr != NULL)
     addr = *ipaddr;
   else addr.addr = 0xFFFFFFFF;
-  int cb_ref = ((int*)callback_arg)[0];
-  free(callback_arg);
+  int cb_ref = (int)callback_arg;
   lua_State *L = lua_getstate();
 
+  /*
+   * Move reference from registry to stack before the call could possibly
+   * longjmp us out of here.
+   */
   lua_rawgeti(L, LUA_REGISTRYINDEX, cb_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, cb_ref);
+
+  // XXX I have no idea why the API insists on a `nil` here, but it does.
   lua_pushnil(L);
+
   if (addr.addr != 0xFFFFFFFF) {
     char iptmp[20];
     size_t ipl = sprintf(iptmp, IPSTR, IP2STR(&addr.addr));
@@ -871,8 +878,6 @@ static void net_dns_static_cb(const char *name, ip_addr_t *ipaddr, void *callbac
     lua_pushnil(L);
   }
   lua_call(L, 2, 0);
-
-  luaL_unref(L, LUA_REGISTRYINDEX, cb_ref);
 }
 
 // Lua: net.dns.resolve( domain, function(sk, ip) )
@@ -883,25 +888,25 @@ static int net_dns_static( lua_State* L ) {
     return luaL_error(L, "wrong domain");
   }
 
+  /* Register callback with registry */
   luaL_checkanyfunction(L, 2);
-  lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
+  lua_pushvalue(L, 2);
   int cbref = luaL_ref(L, LUA_REGISTRYINDEX);
-  if (cbref == LUA_NOREF) {
-    return luaL_error(L, "wrong callback");
-  }
-  int *cbref_ptr = calloc(1, sizeof(int));
-  cbref_ptr[0] = cbref;
   ip_addr_t addr;
-  err_t err = dns_gethostbyname(domain, &addr, net_dns_static_cb, cbref_ptr);
+
+  _Static_assert(sizeof(void *) >= sizeof(typeof(cbref)),
+                 "Can't upcast int to ptr");
+
+  err_t err = dns_gethostbyname(domain, &addr, net_dns_static_cb, (void *)cbref);
   if (err == ERR_OK) {
-    net_dns_static_cb(domain, &addr, cbref_ptr);
+    net_dns_static_cb(domain, &addr, (void *)cbref);
     return 0;
   } else if (err == ERR_INPROGRESS) {
     return 0;
   } else {
-    int e = lwip_lua_checkerr(L, err);
-    free(cbref_ptr);
-    return e;
+    /* Bail out!  Unhook callback from registry, first */
+    luaL_unref(L, LUA_REGISTRYINDEX, cbref);
+    return lwip_lua_checkerr(L, err);
   }
   return 0;
 }
