@@ -597,13 +597,8 @@ Resolve a hostname to an IP address. Doesn't require a socket like [`net.socket.
 - `host` hostname to resolve
 - `function(sk, ip)` callback called when the name was resolved. `sk` is always `nil`
 
-There is at most one callback for all `net.dns.resolve()` requests at any time;
-all resolution results are sent to the most recent callback specified at time
-of receipt!  If multiple DNS callbacks are needed, associate them with separate
-sockets using [`net.socket:dns()`](#netsocketdns).
-
 #### Returns
-`nil`
+`nil` but may raise errors for severe network stack issues (e.g., out of DNS query table slots)
 
 #### Example
 ```lua
