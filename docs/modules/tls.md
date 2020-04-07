@@ -263,9 +263,18 @@ Controls the certificate verification process when the NodeMCU makes a secure co
 
 `tls.cert.verify(pemdata[, pemdata])`
 
+`tls.cert.verify(callback)`
+
 #### Parameters
 - `enable` A boolean which indicates whether verification should be enabled or not. The default at boot is `false`.
 - `pemdata` A string containing the CA certificate to use for verification. There can be several of these.
+
+- `callback` A Lua function which returns TLS keys and certificates for use
+  with connections.  The callback should expect one, integer argument; for
+  value k, the callback should return the k-th CA certificate (in either DER or
+  PEM form) it wishes to use to validate the remote endpoint, or `nil` if no
+  such CA certificate exists.  If no certificates are returned, the device will
+  not validate the remote endpoint.
 
 #### Returns
 `true` if it worked.
@@ -325,6 +334,9 @@ The alternative approach is easier for development, and that is to supply the PE
 will store the certificate into the flash chip and turn on verification for that certificate. Subsequent boots of the ESP can then
 use `tls.cert.verify(true)` and use the stored certificate.
 
+The `callback`-based version will override the in-flash information until the callback
+is unregistered *or* one of the other call forms is made.
+
 ## tls.cert.auth()
 
 Controls the client key and certificate used when the ESP creates a TLS connection (for example,
@@ -335,9 +347,16 @@ through `tls.createConnection` or `https` or `MQTT` connections with `secure = t
 
 `tls.cert.auth(pemdata[, pemdata])`
 
+`tls.cert.auth(callback)`
+
 #### Parameters
 - `enable` A boolean, specifying whether subsequent TLS connections will present a client certificate. The default at boot is `false`.
 - `pemdata` Two strings, the first containing the PEM-encoded client's certificate and the second containing the PEM-encoded client's private key.
+
+- `callback` A Lua function which returns TLS keys and certificates for use with connections.
+  The callback should expect one, integer argument; if that is 0, the callback should return
+  the device's private key.  Otherwise, for argument k, the callback should return the k-th
+  certificate (in either DER or PEM form) in the devices' certificate chain.
 
 #### Returns
 `true` if it worked.
@@ -379,7 +398,8 @@ It can be supplied by passing the PEM data as a string value to `tls.cert.auth`.
 will store the certificate into the flash chip and turn on proofing with that certificate. 
 Subsequent boots of the ESP can then use `tls.cert.auth(true)` and use the stored certificate.
 
-
+The `callback`-based version will override the in-flash information until the callback
+is unregistered *or* one of the other call forms is made.
 
 # tls.setDebug function
 

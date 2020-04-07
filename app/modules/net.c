@@ -20,10 +20,6 @@
 #include "lwip/udp.h"
 #include "lwip/dhcp.h"
 
-#if defined(CLIENT_SSL_ENABLE) && defined(LUA_USE_MODULES_NET) && defined(LUA_USE_MODULES_TLS)
-#define TLS_MODULE_PRESENT
-#endif
-
 typedef enum net_type {
   TYPE_TCP_SERVER = 0,
   TYPE_TCP_CLIENT,
@@ -291,10 +287,6 @@ static err_t net_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 #pragma mark - Lua API - create
 
-#ifdef TLS_MODULE_PRESENT
-extern int tls_socket_create( lua_State *L );
-#endif
-
 // Lua: net.createUDPSocket()
 int net_createUDPSocket( lua_State *L ) {
   net_create(L, TYPE_UDP_SOCKET);
@@ -305,14 +297,7 @@ int net_createUDPSocket( lua_State *L ) {
 int net_createServer( lua_State *L ) {
   int type, timeout;
 
-  type = luaL_optlong(L, 1, TYPE_TCP);
-  timeout = luaL_optlong(L, 2, 30);
-
-  if (type == TYPE_UDP) {
-    platform_print_deprecation_note("net.createServer with net.UDP type", "in next version");
-    return net_createUDPSocket( L );
-  }
-  if (type != TYPE_TCP) return luaL_error(L, "invalid type");
+  timeout = luaL_optlong(L, 1, 30);
 
   lnet_userdata *u = net_create(L, TYPE_TCP_SERVER);
   u->server.timeout = timeout;
@@ -321,24 +306,7 @@ int net_createServer( lua_State *L ) {
 
 // Lua: net.createConnection(type, secure)
 int net_createConnection( lua_State *L ) {
-  int type, secure;
 
-  type = luaL_optlong(L, 1, TYPE_TCP);
-  secure = luaL_optlong(L, 2, 0);
-
-  if (type == TYPE_UDP) {
-    platform_print_deprecation_note("net.createConnection with net.UDP type", "in next version");
-    return net_createUDPSocket( L );
-  }
-  if (type != TYPE_TCP) return luaL_error(L, "invalid type");
-  if (secure) {
-    platform_print_deprecation_note("net.createConnection with secure flag", "in next version");
-#ifdef TLS_MODULE_PRESENT
-    return tls_socket_create( L );
-#else
-    return luaL_error(L, "secure connections not enabled");
-#endif
-  }
   net_create(L, TYPE_TCP_CLIENT);
   return 1;
 }
@@ -1039,10 +1007,6 @@ static int net_ifinfo( lua_State* L ) {
 
 #pragma mark - Tables
 
-#ifdef TLS_MODULE_PRESENT
-LROT_EXTERN(tls_cert);
-#endif
-
 // Module function map
 LROT_BEGIN(net_tcpserver)
   LROT_FUNCENTRY( listen, net_listen )
@@ -1096,11 +1060,6 @@ LROT_BEGIN(net)
   LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
   LROT_TABENTRY( dns, net_dns )
-#ifdef TLS_MODULE_PRESENT
-  LROT_TABENTRY( cert, tls_cert )
-#endif
-  LROT_NUMENTRY( TCP, TYPE_TCP )
-  LROT_NUMENTRY( UDP, TYPE_UDP )
   LROT_TABENTRY( __metatable, net )
 LROT_END( net, net, 0 )
 

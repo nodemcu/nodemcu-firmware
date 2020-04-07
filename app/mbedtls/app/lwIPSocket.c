@@ -255,39 +255,6 @@ exit:
     return;
 }
 
-static err_t do_accepted(void *arg, struct tcp_pcb *newpcb, err_t err)
-{
-    lwIP_netconn *newconn = NULL;
-    lwIP_netconn *conn = arg;
-    err = ERR_OK;
-
-    //Avoid two TCP connections coming in simultaneously
-    struct  tcp_pcb *pactive_pcb;
-    int active_pcb_num=0;
-    for(pactive_pcb = tcp_active_pcbs; pactive_pcb != NULL; pactive_pcb = pactive_pcb->next){
-    	if (pactive_pcb->state == ESTABLISHED ||pactive_pcb->state == SYN_RCVD){
-    		active_pcb_num++;
-                if (active_pcb_num > MEMP_NUM_TCP_PCB){
-                    ESP_LOG("%s %d active_pcb_number:%d\n",__FILE__, __LINE__,active_pcb_num);
-                    return ERR_MEM;
-                }
-    	}
-    }
-
-    lwIP_REQUIRE_ACTION(conn, exit, err = ESP_ARG);
-    /* We have to set the callback here even though
-     * the new socket is unknown. conn->socket is marked as -1. */
-    newconn = netconn_alloc(conn->type, newpcb);
-    lwIP_REQUIRE_ACTION(conn, exit, err = ERR_MEM);
-    newconn->tcp = newpcb;
-    setup_tcp(newconn);
-	newconn->state = NETCONN_STATE_ESTABLISHED;
-    conn->acceptmbox = newconn;
-    espconn_mbedtls_parse_internal(find_socket(conn), ERR_OK);
-exit:
-    return err;
-}
-
 sint8 netconn_delete(lwIP_netconn *conn)
 {
     sint8 error = ESP_OK;
@@ -331,44 +298,6 @@ sint8 netconn_connect(lwIP_netconn *conn, ip_addr_t *addr, u16_t port)
 
     setup_tcp(conn);
     error = tcp_connect(conn->tcp, addr, port, do_connected);
-exit:
-    return error;
-}
-
-err_t netconn_accept(lwIP_netconn *conn, lwIP_netconn **new_conn)
-{
-    err_t error = ESP_OK;
-    lwIP_netconn *newconn = NULL;
-    lwIP_REQUIRE_ACTION(conn, exit, error = ESP_ARG);
-    lwIP_REQUIRE_ACTION(new_conn, exit, error = ESP_ARG);
-    *new_conn = NULL;
-    newconn = (lwIP_netconn *)conn->acceptmbox;
-	conn->acceptmbox = NULL;
-    lwIP_REQUIRE_ACTION(newconn, exit, error = ERR_CLSD);
-    *new_conn = newconn;
-exit:
-    return error;
-}
-
-sint8 netconn_listen(lwIP_netconn *conn)
-{
-    sint8 error = ESP_OK;
-    struct tcp_pcb *lpcb = NULL;
-
-    lwIP_REQUIRE_ACTION(conn, exit, error = ESP_ARG);
-    lwIP_REQUIRE_ACTION(conn->tcp, exit, error = ESP_ARG);
-
-    setup_tcp(conn);
-    lpcb = conn->tcp;
-    conn->tcp = tcp_listen(conn->tcp);
-    if (conn->tcp != NULL)
-    {
-        tcp_accept(conn->tcp, do_accepted);
-    }
-    else
-    {
-        conn->tcp = lpcb;
-    }
 exit:
     return error;
 }
@@ -551,56 +480,6 @@ uint32_t lwip_getul(char *str)
     }
 
     return ret;
-}
-
-int lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
-{
-    lwIP_sock *sock = NULL;
-    err_t err = ERR_OK;
-    lwIP_netconn *newconn = NULL;
-    int newsock = -1;
-    sock = get_socket(s);
-    if (!sock)
-    {
-        return -1;
-    }
-
-    /* wait for a new connection */
-    err = netconn_accept(sock->conn, &newconn);
-    lwIP_REQUIRE_NOERROR(err, exit);
-    newsock = alloc_socket(newconn, 0);
-    if (newsock == -1)
-    {
-        goto exit;
-    }
-    newconn->socket = newsock;
-exit:
-    if (newsock == -1)
-    {
-        netconn_delete(newconn);
-    }
-    return newsock;
-}
-
-int lwip_listen(int s, int backlog)
-{
-    lwIP_sock *sock = NULL;
-    err_t err = ERR_OK;
-    sock = get_socket(s);
-    if (!sock)
-    {
-        return -1;
-    }
-    err = netconn_listen(sock->conn);
-    if (err != ERR_OK)
-    {
-        ESP_LOG("lwip_connect(%d) failed, err=%d\n", s, err);
-        return -1;
-    }
-
-    ESP_LOG("lwip_connect(%d) succeeded\n", s);
-
-    return ERR_OK;
 }
 
 int lwip_recvfrom(int s, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
