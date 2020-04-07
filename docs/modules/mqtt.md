@@ -135,11 +135,11 @@ Connects to the broker specified by the given host, port, and secure options.
 
 !!! attention
 
-    Secure (`https`) connections come with quite a few limitations.  Please see
+    Secure (`mqtts`) connections come with quite a few limitations.  Please see
     the warnings in the [tls module](tls.md)'s documentation.
 
 #### Returns
-`true` on success, `false` otherwise
+`nil`; use callbacks to observe the outcome.
 
 #### Notes
 
@@ -191,16 +191,23 @@ use the *boolean* `false` or `true` instead.
 
 ## mqtt.client:lwt()
 
-Setup [Last Will and Testament](http://www.hivemq.com/blog/mqtt-essentials-part-9-last-will-and-testament) (optional). A broker will publish a message with qos = 0, retain = 0, data = "offline" to topic "/lwt" if client does not send keepalive packet.
+Setup [Last Will and Testament](http://www.hivemq.com/blog/mqtt-essentials-part-9-last-will-and-testament).
 
 As the last will is sent to the broker when connecting, `lwt()` must be called BEFORE calling `connect()`.  
 
-The broker will publish a client's last will message once he NOTICES that the connection to the client is broken. The broker will notice this when:
+The broker will publish a client's last will message once it notices that the connection to the client is broken; that occurs when...
   - The client fails to send a keepalive packet for as long as specified in `mqtt.Client()`
-  - The tcp-connection is properly closed (without closing the mqtt-connection before)
-  - The broker tries to send data to the client and fails to do so, because the tcp-connection is not longer open.
+  - The TCP connection is properly closed (without closing the mqtt-connection before)
+  - The broker tries to send data to the client and the TCP connection breaks.
 
 This means if you specified 120 as keepalive timer, just turn off the client device and the broker does not send any data to the client, the last will message will be published 120s after turning off the device.
+
+!!! note
+
+    There is at present a bug in the NodeMCU MQTT library that results in all disconnections
+    appearing as unexpected disconnects -- the MQTT-level disconnection message is not set
+    before the TCP connection is torn down.  As a result, LWT messages will almost always be
+    published.  See https://github.com/nodemcu/nodemcu-firmware/issues/3031
 
 #### Syntax
 `mqtt:lwt(topic, message[, qos[, retain]])`
