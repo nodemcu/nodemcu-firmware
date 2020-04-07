@@ -1208,7 +1208,6 @@ static int mqtt_socket_connect( lua_State* L )
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
     mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    stack++;
   }
 
   lua_pushvalue(L, 1);  // copy userdata to the top of stack
