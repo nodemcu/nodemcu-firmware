@@ -458,17 +458,12 @@ espconn_mbedtls_parse(mbedtls_msg *msg, mbedtls_auth_type auth_type, const uint8
 	switch (auth_type) {
 	case ESPCONN_CERT_AUTH:
 		ret = mbedtls_x509_crt_parse(&msg->psession->cacert, buf, len);
-		lwIP_REQUIRE_NOERROR(ret, exit);
-		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
-		mbedtls_ssl_conf_ca_chain(&msg->conf, &msg->psession->cacert, NULL);
 		break;
 	case ESPCONN_CERT_OWN:
 		ret = mbedtls_x509_crt_parse(&msg->psession->clicert, buf, len);
 		break;
 	case ESPCONN_PK:
 		ret = mbedtls_pk_parse_key(&msg->psession->pkey, buf, len, NULL, 0);
-		lwIP_REQUIRE_NOERROR(ret, exit);
-		ret = mbedtls_ssl_conf_own_cert(&msg->conf, &msg->psession->clicert, &msg->psession->pkey);
 		break;
 	default:
 		return false;
@@ -509,8 +504,9 @@ nodemcu_tls_cert_get(mbedtls_msg *msg, mbedtls_auth_type auth_type)
 		return 0;
 	}
 
-	if (cbref == LUA_NOREF)
+	if (cbref == LUA_NOREF) {
 		return 0;
+	}
 
 	lua_State *L = lua_getstate();
 
@@ -522,8 +518,8 @@ nodemcu_tls_cert_get(mbedtls_msg *msg, mbedtls_auth_type auth_type)
 			lua_pop(L, 1); /* pcall will have pushed an error message */
 			return -1;
 		}
-		if (lua_isnil(L, -1)) {
-			/* nil return; stop iteration */
+		if (lua_isnil(L, -1) || (lua_isboolean(L,-1) && lua_toboolean(L,-1) == false)) {
+			/* nil or false return; stop iteration */
 			lua_pop(L, 1);
 			break;
 		}
@@ -561,14 +557,6 @@ static bool mbedtls_msg_info_load(mbedtls_msg *msg, mbedtls_auth_type auth_type)
 	uint8* load_buf = NULL;
 	size_t load_len = 0;
 	file_param file_param;
-
-	/* Override with Lua callbacks, if registered */
-	switch(nodemcu_tls_cert_get(msg, auth_type)) {
-	case -1:
-		return false;
-	case 1:
-		return true;
-	}
 
 	bzero(&file_param, sizeof(file_param));
 
@@ -629,40 +617,74 @@ static bool mbedtls_msg_config(mbedtls_msg *msg)
 	bool load_flag = false;
 	int ret = ESPCONN_OK;
 
+	/* Load upstream default configs */
+	ret = mbedtls_ssl_config_defaults(&msg->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+	lwIP_REQUIRE_NOERROR(ret, exit);
+
+	ret = mbedtls_ssl_setup(&msg->ssl, &msg->conf);
+	lwIP_REQUIRE_NOERROR(ret, exit);
+
 	/*Initialize the RNG and the session data*/
 	ret = mbedtls_ctr_drbg_seed(&msg->ctr_drbg, mbedtls_entropy_func, &msg->entropy, "client", 6);
 	lwIP_REQUIRE_NOERROR(ret, exit);
 
 	/*Load the certificate and private RSA key*/
-	if (ssl_client_options.cert_req_sector.flag
-       || (ssl_client_options.cert_auth_callback != LUA_NOREF)) {
-
+	ret = 0;
+	if (ssl_client_options.cert_auth_callback != LUA_NOREF) {
+		ret = nodemcu_tls_cert_get(msg, ESPCONN_PK);
+		switch(ret) {
+			case 0: break;
+			case -1: ret = ESPCONN_ABRT; goto exit;
+			case 1: switch(nodemcu_tls_cert_get(msg, ESPCONN_CERT_OWN)) {
+				case -1: ret = ESPCONN_ABRT; goto exit;
+				case 0: break;
+				case 1:
+					ret = mbedtls_ssl_conf_own_cert(&msg->conf, &msg->psession->clicert, &msg->psession->pkey);
+					lwIP_REQUIRE_ACTION(ret == 0, exit, ret = ESPCONN_ABRT);
+			}
+		}
+	}
+	if (ret == 0 && ssl_client_options.cert_req_sector.flag) {
 		load_flag = mbedtls_msg_info_load(msg, ESPCONN_CERT_OWN);
 		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
 		load_flag = mbedtls_msg_info_load(msg, ESPCONN_PK);
 		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
+		ret = mbedtls_ssl_conf_own_cert(&msg->conf, &msg->psession->clicert, &msg->psession->pkey);
+		lwIP_REQUIRE_ACTION(ret == 0, exit, ret = ESPCONN_ABRT);
 	}
+
+	ret = 0;
 
 	/*Load the trusted CA*/
-	if(ssl_client_options.cert_ca_sector.flag
-       || (ssl_client_options.cert_verify_callback != LUA_NOREF)) {
+
+	if (ssl_client_options.cert_verify_callback != LUA_NOREF) {
+		ret = nodemcu_tls_cert_get(msg, ESPCONN_CERT_AUTH);
+	   switch(ret) {
+			case 0: break;
+			case -1: ret = ESPCONN_ABRT; goto exit;
+			case 1:
+				mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+				mbedtls_ssl_conf_ca_chain(&msg->conf, &msg->psession->cacert, NULL);
+				break;
+		}
+	}
+	if(ret == 0 && ssl_client_options.cert_ca_sector.flag) {
 		load_flag = mbedtls_msg_info_load(msg, ESPCONN_CERT_AUTH);
 		lwIP_REQUIRE_ACTION(load_flag, exit, ret = ESPCONN_MEM);
-	}
-
-	/*Setup the stuff*/
-	ret = mbedtls_ssl_config_defaults(&msg->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
-	lwIP_REQUIRE_NOERROR(ret, exit);
-
-	/*OPTIONAL is not optimal for security, but makes interop easier in this session*/
-	if (ssl_client_options.cert_ca_sector.flag == false) {
+		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
+		mbedtls_ssl_conf_ca_chain(&msg->conf, &msg->psession->cacert, NULL);
+	} else if (ret == 0) {
+		/*
+		 * OPTIONAL is not optimal for security, but makes interop easier in this session
+		 * This gets overridden below if appropriate.
+		 */
 		mbedtls_ssl_conf_authmode(&msg->conf, MBEDTLS_SSL_VERIFY_NONE);
 	}
+
+	ret = 0;
+
 	mbedtls_ssl_conf_rng(&msg->conf, mbedtls_ctr_drbg_random, &msg->ctr_drbg);
 	mbedtls_ssl_conf_dbg(&msg->conf, mbedtls_dbg, NULL);
-
-	ret = mbedtls_ssl_setup(&msg->ssl, &msg->conf);
-	lwIP_REQUIRE_NOERROR(ret, exit);
 
 	mbedtls_ssl_set_bio(&msg->ssl, &msg->fd, mbedtls_net_send, mbedtls_net_recv, NULL);
 
