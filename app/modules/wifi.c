@@ -1909,7 +1909,6 @@ LROT_BEGIN(wifi_ap)
   LROT_FUNCENTRY( getconfig, wifi_ap_getconfig_current )
   LROT_FUNCENTRY( getdefaultconfig, wifi_ap_getconfig_default )
   LROT_TABENTRY( dhcp, wifi_ap_dhcp )
-//  LROT_TABENTRY( __metatable, wifi_ap )
 LROT_END( wifi_ap, wifi_ap, 0 )
 
 
@@ -1969,7 +1968,6 @@ LROT_BEGIN(wifi)
   LROT_NUMENTRY( COUNTRY_AUTO, WIFI_COUNTRY_POLICY_AUTO )
   LROT_NUMENTRY( COUNTRY_MANUAL, WIFI_COUNTRY_POLICY_MANUAL )
 
-  LROT_TABENTRY( __metatable, wifi )
 LROT_END( wifi, wifi, 0 )
 
 
