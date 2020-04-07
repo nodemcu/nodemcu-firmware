@@ -1064,7 +1064,6 @@ LROT_BEGIN(net)
   LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
   LROT_TABENTRY( dns, net_dns )
-  LROT_TABENTRY( __metatable, net )
 LROT_END( net, net, 0 )
 
 
