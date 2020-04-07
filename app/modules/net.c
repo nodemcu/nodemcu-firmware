@@ -110,6 +110,7 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
       ud->client.cb_reconnect_ref = LUA_NOREF;
       ud->client.cb_disconnect_ref = LUA_NOREF;
       ud->client.hold = 0;
+      /* FALLTHROUGH */
     case TYPE_UDP_SOCKET:
       ud->client.wait_dns = 0;
       ud->client.cb_dns_ref = LUA_NOREF;
