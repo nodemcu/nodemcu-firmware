@@ -24,15 +24,6 @@
 #define MQTT_MAX_PASS_LEN     64
 #define MQTT_SEND_TIMEOUT     5
 
-  /*
-   * This timeout needs to be long enough for a typical TCP connect()
-   * *and* the TLS handshake, if any.  Most network stacks seem to wait
-   * tens of seconds for connect(), and TLS can take a good deal of time
-   * and several round trips.  Because this matters only rarely, it may
-   * as well be set pretty high.
-   */
-#define MQTT_CONNECT_TIMEOUT  60
-
 typedef enum {
   MQTT_INIT,
   MQTT_CONNECT_SENT,
@@ -741,6 +732,9 @@ static void mqtt_socket_connected(void *arg)
   mud->keep_alive_tick = 0;
 
   mud->connState = MQTT_CONNECT_SENDING;
+
+  os_timer_arm(&mud->mqttTimer, 1000, 1);
+
   NODE_DBG("leave mqtt_socket_connectet, heap = %u.\n", system_get_free_heap_size());
   return;
 }
@@ -774,12 +768,7 @@ void mqtt_socket_timer(void *arg)
     }
   }
 
-  if(mud->connState == MQTT_INIT){ // socket connect time out.
-    NODE_DBG("Can not connect to broker.\n");
-    os_timer_disarm(&mud->mqttTimer);
-    mqtt_socket_do_disconnect(mud);
-    mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
-  } else if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT send time out.
+  if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT send time out.
     NODE_DBG("sSend MQTT_CONNECT failed.\n");
     mud->connState = MQTT_INIT;
     mqtt_socket_do_disconnect(mud);
@@ -1052,7 +1041,6 @@ static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
   NODE_DBG("enter socket_connect.\n");
   sint8 espconn_status;
 
-  mud->event_timeout = MQTT_CONNECT_TIMEOUT;
   mud->connState = MQTT_INIT;
 #ifdef CLIENT_SSL_ENABLE
   if(mud->secure)
@@ -1064,8 +1052,6 @@ static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
   {
     espconn_status = espconn_connect(&mud->pesp_conn);
   }
-
-  os_timer_arm(&mud->mqttTimer, 1000, 1);
 
   NODE_DBG("leave socket_connect\n");
 
