@@ -115,6 +115,10 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
 
   os_timer_disarm(&mud->mqttTimer);
 
+  while (mud->mqtt_state.pending_msg_q) {
+    msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
+  }
+
   lua_State *L = lua_getstate();
 
   if(mud->connected){     // call back only called when socket is from connection to disconnection.
@@ -1259,10 +1263,6 @@ static int mqtt_socket_close( lua_State* L )
   }
   mud->connected = false;
   mud->sending = false;
-
-  while (mud->mqtt_state.pending_msg_q) {
-    msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-  }
 
   NODE_DBG("leave mqtt_socket_close.\n");
 
