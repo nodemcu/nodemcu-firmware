@@ -57,6 +57,7 @@ pages:
     - 'liquidcrystal': 'lua-modules/liquidcrystal.md'
     - 'lm92': 'lua-modules/lm92.md'
     - 'mcp23008': 'lua-modules/mcp23008.md'
+    - 'mcp23017': 'lua-modules/mcp23017.md'
     - 'redis': 'lua-modules/redis.md'
     - 'telnet': 'lua-modules/telnet.md'
     - 'yeelink': 'lua-modules/yeelink.md'
