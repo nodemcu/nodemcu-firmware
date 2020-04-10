@@ -22,7 +22,7 @@
 #define MQTT_MAX_CLIENT_LEN   64
 #define MQTT_MAX_USER_LEN     64
 #define MQTT_MAX_PASS_LEN     64
-#define MQTT_SEND_TIMEOUT     5
+#define MQTT_SEND_TIMEOUT     5 /* seconds */
 
 typedef enum {
   MQTT_INIT,
@@ -78,8 +78,6 @@ typedef struct lmqtt_userdata
   int cb_puback_ref;
   mqtt_state_t  mqtt_state;
   mqtt_connect_info_t connect_info;
-  uint16_t keep_alive_tick;
-  uint32_t event_timeout;
 #ifdef CLIENT_SSL_ENABLE
   uint8_t secure;
 #endif
@@ -170,9 +168,6 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
     return;
 
   os_timer_disarm(&mud->mqttTimer);
-
-  mud->event_timeout = 0; // no need to count anymore
-
   mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
 
   mqtt_socket_disconnected(arg);
@@ -242,7 +237,6 @@ static sint8 mqtt_send_if_possible(struct lmqtt_userdata *mud)
 
   msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
   if (pending_msg) {
-    mud->event_timeout = MQTT_SEND_TIMEOUT;
     NODE_DBG("Sent: %d\n", pending_msg->msg.length);
 #ifdef CLIENT_SSL_ENABLE
     if( mud->secure )
@@ -255,7 +249,9 @@ static sint8 mqtt_send_if_possible(struct lmqtt_userdata *mud)
       espconn_status = espconn_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
     }
     mud->sending = true;
-    mud->keep_alive_tick = 0;
+
+    os_timer_disarm(&mud->mqttTimer);
+    os_timer_arm(&mud->mqttTimer, MQTT_SEND_TIMEOUT * 1000, 0);
   }
 
   NODE_DBG("send_if_poss, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
@@ -383,7 +379,8 @@ READPACKET:
   switch(mud->connState){
     case MQTT_CONNECT_SENDING:
     case MQTT_CONNECT_SENT:
-      mud->event_timeout = 0;
+      os_timer_disarm(&mud->mqttTimer);
+      os_timer_arm(&mud->mqttTimer, mud->connect_info.keepalive * 1000, 0);
 
       if(mqtt_get_type(in_buffer) != MQTT_MSG_TYPE_CONNACK){
         NODE_DBG("MQTT: Invalid packet\r\n");
@@ -660,17 +657,21 @@ static void mqtt_socket_sent(void *arg)
     return;
   if(!mud->connected)
     return;
-  // call mqtt_sent()
-  mud->event_timeout = 0;
-  mud->keep_alive_tick = 0;
+
   mud->sending = false;
+
+  os_timer_disarm(&mud->mqttTimer);
 
   if(mud->connState == MQTT_CONNECT_SENDING){
     mud->connState = MQTT_CONNECT_SENT;
-    mud->event_timeout = MQTT_SEND_TIMEOUT;
+    os_timer_arm(&mud->mqttTimer, MQTT_SEND_TIMEOUT * 1000, 0);
     // MQTT_CONNECT not queued.
     return;
   }
+
+  /* Ready for timeout */
+  os_timer_arm(&mud->mqttTimer, mud->connect_info.keepalive * 1000, 0);
+
   NODE_DBG("sent1, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
   uint8_t try_send = 1;
   // qos = 0, publish and forgot.
@@ -718,7 +719,6 @@ static void mqtt_socket_connected(void *arg)
   mqtt_message_t* temp_msg = mqtt_msg_connect(&msgb, &mud->connect_info);
   NODE_DBG("Send MQTT connection infomation, data len: %d, d[0]=%d \r\n", temp_msg->length,  temp_msg->data[0]);
 
-  mud->event_timeout = MQTT_SEND_TIMEOUT;
   // not queue this message. should send right now. or should enqueue this before head.
 #ifdef CLIENT_SSL_ENABLE
   if(mud->secure)
@@ -731,11 +731,11 @@ static void mqtt_socket_connected(void *arg)
     espconn_send(pesp_conn, temp_msg->data, temp_msg->length);
   }
   mud->sending = true;
-  mud->keep_alive_tick = 0;
+
+  os_timer_disarm(&mud->mqttTimer);
+  os_timer_arm(&mud->mqttTimer, MQTT_SEND_TIMEOUT * 1000, 0);
 
   mud->connState = MQTT_CONNECT_SENDING;
-
-  os_timer_arm(&mud->mqttTimer, 1000, 1);
 
   NODE_DBG("leave mqtt_socket_connectet, heap = %u.\n", system_get_free_heap_size());
   return;
@@ -751,32 +751,16 @@ void mqtt_socket_timer(void *arg)
 
   if(mud->pesp_conn.proto.tcp == NULL){
     NODE_DBG("MQTT not connected\n");
-    os_timer_disarm(&mud->mqttTimer);
     return;
   }
 
   NODE_DBG("timer, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
-  if(mud->event_timeout > 0){
-    NODE_DBG("event_timeout: %d.\n", mud->event_timeout);
-        mud->event_timeout --;
-    if(mud->event_timeout > 0){
-      return;
-    } else {
-      NODE_DBG("event timeout. \n");
-      if(mud->connState == MQTT_DATA)
-        msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-      // should remove the head of the queue and re-send with DUP = 1
-      // Not implemented yet.
-    }
-  }
 
   if(mud->connState == MQTT_CONNECT_SENDING){ // MQTT_CONNECT send time out.
     NODE_DBG("sSend MQTT_CONNECT failed.\n");
     mud->connState = MQTT_INIT;
     mqtt_socket_do_disconnect(mud);
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_TIMEOUT_SENDING);
-
-    mud->keep_alive_tick = 0; // not need count anymore
   } else if(mud->connState == MQTT_CONNECT_SENT) { // wait for CONACK time out.
     NODE_DBG("MQTT_CONNECT timeout.\n");
     mud->connState = MQTT_INIT;
@@ -788,28 +772,23 @@ void mqtt_socket_timer(void *arg)
       mqtt_send_if_possible(mud);
     } else {
       // no queued event.
-      mud->keep_alive_tick ++;
-      if(mud->keep_alive_tick > mud->connect_info.keepalive){
-        if (mud->keepalive_sent) {
-          // Oh dear -- keepalive timer expired and still no ack of previous message
-          mqtt_socket_do_disconnect(mud);
-        } else {
-          uint8_t temp_buffer[MQTT_BUF_SIZE];
-          mqtt_message_buffer_t msgb;
-          mqtt_msg_init(&msgb, temp_buffer, MQTT_BUF_SIZE);
+      if (mud->keepalive_sent) {
+        // Oh dear -- keepalive timer expired and still no ack of previous message
+        mqtt_socket_do_disconnect(mud);
+      } else {
+        uint8_t temp_buffer[MQTT_BUF_SIZE];
+        mqtt_message_buffer_t msgb;
+        mqtt_msg_init(&msgb, temp_buffer, MQTT_BUF_SIZE);
 
-          NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
-          mqtt_message_t* temp_msg = mqtt_msg_pingreq(&msgb);
-          msg_queue_t *node = msg_enqueue( &(mud->mqtt_state.pending_msg_q), temp_msg,
-                              0, MQTT_MSG_TYPE_PINGREQ, (int)mqtt_get_qos(temp_msg->data) );
-          mud->keepalive_sent = 1;
-          mud->keep_alive_tick = 0;     // Need to reset to zero in case flow control stopped.
-          mqtt_send_if_possible(mud);
-        }
+        NODE_DBG("\r\nMQTT: Send keepalive packet\r\n");
+        mqtt_message_t* temp_msg = mqtt_msg_pingreq(&msgb);
+        msg_queue_t *node = msg_enqueue( &(mud->mqtt_state.pending_msg_q), temp_msg,
+                            0, MQTT_MSG_TYPE_PINGREQ, (int)mqtt_get_qos(temp_msg->data) );
+        mud->keepalive_sent = 1;
+        mqtt_send_if_possible(mud);
       }
     }
   }
-  NODE_DBG("keep_alive_tick: %d\n", mud->keep_alive_tick);
   NODE_DBG("leave mqtt_socket_timer.\n");
 }
 
@@ -1441,7 +1420,7 @@ static int mqtt_socket_unsubscribe( lua_State* L ) {
                                    msg_id, MQTT_MSG_TYPE_UNSUBSCRIBE, (int)mqtt_get_qos(temp_msg->data) );
 
   NODE_DBG("topic: %s - id: %d - qos: %d, length: %d\n", topic, node->msg_id, node->publish_qos, node->msg.length);
-  NODE_DBG("msg_size: %d, event_timeout: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)), mud->event_timeout);
+  NODE_DBG("msg_size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
 
   sint8 espconn_status = ESPCONN_IF;
 
@@ -1553,7 +1532,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
                                    msg_id, MQTT_MSG_TYPE_SUBSCRIBE, (int)mqtt_get_qos(temp_msg->data) );
 
   NODE_DBG("topic: %s - id: %d - qos: %d, length: %d\n", topic, node->msg_id, node->publish_qos, node->msg.length);
-  NODE_DBG("msg_size: %d, event_timeout: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)), mud->event_timeout);
+  NODE_DBG("msg_size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
 
   sint8 espconn_status = ESPCONN_IF;
 
