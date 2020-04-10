@@ -105,6 +105,17 @@ static uint16_t mqtt_next_message_id(lmqtt_userdata * mud)
   return mud->mqtt_state.next_message_id;
 }
 
+static void mqtt_socket_cb_lua_noarg(lua_State *L, lmqtt_userdata *mud, int cb)
+{
+  if (cb == LUA_NOREF)
+    return;
+
+  lua_rawgeti(L, LUA_REGISTRYINDEX, cb);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
+  lua_call(L, 1, 0);
+}
+
+
 static void mqtt_socket_disconnected(void *arg)    // tcp only
 {
   NODE_DBG("enter mqtt_socket_disconnected.\n");
@@ -376,7 +387,6 @@ READPACKET:
   mqtt_msg_init(&msgb, temp_buffer, MQTT_BUF_SIZE);
   mqtt_message_t *temp_msg = NULL;
 
-  lua_State *L = lua_getstate();
   switch(mud->connState){
     case MQTT_CONNECT_SENDING:
     case MQTT_CONNECT_SENT:
@@ -403,13 +413,8 @@ READPACKET:
         mud->connState = MQTT_DATA;
         NODE_DBG("MQTT: Connected\r\n");
         mud->keepalive_sent = 0;
-        if(mud->cb_connect_ref == LUA_NOREF)
-          break;
-        if(mud->self_ref == LUA_NOREF)
-          break;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-        lua_call(L, 1, 0);
+
+        mqtt_socket_cb_lua_noarg(lua_getstate(), mud, mud->cb_connect_ref);
         break;
       }
       break;
@@ -515,13 +520,8 @@ READPACKET:
           if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_SUBSCRIBE && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: Subscribe successful\r\n");
             msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-            if (mud->cb_suback_ref == LUA_NOREF)
-              break;
-            if (mud->self_ref == LUA_NOREF)
-              break;
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_suback_ref);
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
-            lua_call(L, 1, 0);
+
+            mqtt_socket_cb_lua_noarg(lua_getstate(), mud, mud->cb_suback_ref);
           }
           break;
         case MQTT_MSG_TYPE_UNSUBACK:
@@ -529,13 +529,7 @@ READPACKET:
             NODE_DBG("MQTT: UnSubscribe successful\r\n");
             msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
 
-            if (mud->cb_unsuback_ref == LUA_NOREF)
-              break;
-            if (mud->self_ref == LUA_NOREF)
-              break;
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref);
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
-            lua_call(L, 1, 0);
+            mqtt_socket_cb_lua_noarg(lua_getstate(), mud, mud->cb_unsuback_ref);
           }
           break;
         case MQTT_MSG_TYPE_PUBLISH:
@@ -558,13 +552,8 @@ READPACKET:
           if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_PUBLISH && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: Publish with QoS = 1 successful\r\n");
             msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-            if(mud->cb_puback_ref == LUA_NOREF)
-              break;
-            if(mud->self_ref == LUA_NOREF)
-              break;
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-            lua_call(L, 1, 0);
+
+            mqtt_socket_cb_lua_noarg(lua_getstate(), mud, mud->cb_puback_ref);
           }
 
           break;
@@ -592,13 +581,8 @@ READPACKET:
           if(pending_msg && pending_msg->msg_type == MQTT_MSG_TYPE_PUBREL && pending_msg->msg_id == msg_id){
             NODE_DBG("MQTT: Publish  with QoS = 2 successful\r\n");
             msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-            if(mud->cb_puback_ref == LUA_NOREF)
-              break;
-            if(mud->self_ref == LUA_NOREF)
-              break;
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-            lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-            lua_call(L, 1, 0);
+
+            mqtt_socket_cb_lua_noarg(lua_getstate(), mud, mud->cb_puback_ref);
           }
           break;
         case MQTT_MSG_TYPE_PINGREQ:
@@ -684,12 +668,7 @@ static void mqtt_socket_sent(void *arg)
       // we should tell the user the message drained from the egress queue
       if (node->publish_qos == 0) {
         msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-        if(mud->cb_puback_ref != LUA_NOREF && mud->self_ref != LUA_NOREF) {
-          lua_State *L = lua_getstate();
-          lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-          lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
-          lua_call(L, 1, 0);
-        }
+        mqtt_socket_cb_lua_noarg(lua_getstate(), mud, mud->cb_puback_ref);
         mqtt_send_if_possible(mud);
       }
       break;
