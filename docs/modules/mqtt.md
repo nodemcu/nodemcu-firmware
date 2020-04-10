@@ -97,8 +97,8 @@ function(client, reason)
   print("Connection failed reason: " .. reason)
 end)
 
-m:close();
--- you can call m:connect again
+m:close()
+-- you can call m:connect again after the offline callback fires
 ```
 
 # MQTT Client
@@ -106,7 +106,11 @@ m:close();
 
 ## mqtt.client:close()
 
-Closes connection to the broker.
+Schedules a clean teardown of the connection.
+
+MQTT requires clients to actively signal a desire to disconnect to the server
+to avoid sending their LWT.  Thus, the Client is not immediately reusable
+after this call, but only after the "offline" callback has fired.
 
 #### Syntax
 `mqtt:close()`
@@ -115,7 +119,7 @@ Closes connection to the broker.
 none
 
 #### Returns
-`true` on success, `false` otherwise
+`nil`
 
 ## mqtt.client:connect()
 

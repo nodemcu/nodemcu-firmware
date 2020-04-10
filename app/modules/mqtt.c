@@ -701,6 +701,10 @@ static void mqtt_socket_sent(void *arg)
       msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
       mqtt_send_if_possible(mud);
       break;
+    case MQTT_MSG_TYPE_DISCONNECT:
+      msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
+      mqtt_socket_do_disconnect(mud);
+      break;
     }
   }
 
@@ -1241,33 +1245,23 @@ static int mqtt_socket_close( lua_State* L )
     mqtt_message_t* temp_msg = mqtt_msg_disconnect(&msgb);
     NODE_DBG("Send MQTT disconnect infomation, data len: %d, d[0]=%d \r\n", temp_msg->length,  temp_msg->data[0]);
 
-    /* XXX This fails to actually send the disconnect message before hanging up */
-#ifdef CLIENT_SSL_ENABLE
-    if(mud->secure) {
-      if(!mud->sending)
-        espconn_status = espconn_secure_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
-      espconn_status |= espconn_secure_disconnect(&mud->pesp_conn);
-    } else
-#endif
-    {
-      if(!mud->sending)
-        espconn_status = espconn_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
-      espconn_status |= espconn_disconnect(&mud->pesp_conn);
-    }
-  } else {
-    espconn_status = ESPCONN_CONN;
+    if (!msg_enqueue(&(mud->mqtt_state.pending_msg_q), temp_msg, 0,
+                     MQTT_MSG_TYPE_DISCONNECT, 0))
+      goto err;
+
+    mqtt_send_if_possible(mud);
   }
-  mud->connected = false;
-  mud->sending = false;
 
   NODE_DBG("leave mqtt_socket_close.\n");
+  return 0;
 
-  if (espconn_status == ESPCONN_OK) {
-    lua_pushboolean(L, 1);
-  } else {
-    lua_pushboolean(L, 0);
-  }
-  return 1;
+err:
+  /* OOM while trying to build the disconnect message.  Fail the connection */
+  mqtt_socket_do_disconnect(mud);
+
+  NODE_DBG("leave mqtt_socket_close on error path\n");
+
+  return 0;
 }
 
 // Lua: mqtt:on( "method", function() )
