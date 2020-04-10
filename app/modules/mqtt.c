@@ -1050,41 +1050,26 @@ static sint8 mqtt_socket_do_connect(struct lmqtt_userdata *mud)
   return espconn_status;
 }
 
-static sint8 socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
+static void socket_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 {
   lmqtt_userdata *mud = arg;
 
-  NODE_DBG("enter socket_dns_found.\n");
-  sint8 espconn_status = ESPCONN_OK;
-
-  if(ipaddr == NULL)
+  if((ipaddr == NULL) || (ipaddr->addr == 0))
   {
+    NODE_DBG("socket_dns_found failure\n");
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
 
     // although not connected, but fire disconnect callback to release every thing.
     mqtt_socket_disconnected(arg);
-    return -1;
+    return;
   }
 
-  // ipaddr->addr is a uint32_t ip
-  if(ipaddr->addr != 0)
-  {
-    memcpy(&mud->pesp_conn.proto.tcp->remote_ip, &(ipaddr->addr), 4);
-    NODE_DBG("TCP ip is set: ");
-    NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
-    NODE_DBG("\n");
-    espconn_status = mqtt_socket_do_connect(mud);
-  }
+  memcpy(&mud->pesp_conn.proto.tcp->remote_ip, &(ipaddr->addr), 4);
+  NODE_DBG("socket_dns_found success: ");
+  NODE_DBG(IPSTR, IP2STR(&(ipaddr->addr)));
+  NODE_DBG("\n");
 
-  NODE_DBG("leave socket_dns_found.\n");
-
-  return espconn_status;
-}
-
-/* wrapper for using socket_dns_found() as callback function */
-static void socket_dns_foundcb(const char *name, ip_addr_t *ipaddr, void *arg)
-{
-  socket_dns_found(name, ipaddr, arg);
+  mqtt_socket_do_connect(mud);
 }
 
 #include "pm/swtimer.h"
@@ -1105,49 +1090,28 @@ static int mqtt_socket_connect( lua_State* L )
   luaL_argcheck(L, mud, stack, "mqtt.socket expected");
   stack++;
 
+  struct espconn *pesp_conn = &mud->pesp_conn;
+
   if(mud->connected){
     return luaL_error(L, "already connected");
   }
 
-  struct espconn *pesp_conn = &mud->pesp_conn;
-
-  if (!pesp_conn->proto.tcp)
-    pesp_conn->proto.tcp = (esp_tcp *)calloc(1,sizeof(esp_tcp));
-
-  if(!pesp_conn->proto.tcp) {
-    return luaL_error(L, "not enough memory");
-  }
-
-  pesp_conn->type = ESPCONN_TCP;
-  pesp_conn->state = ESPCONN_NONE;
   mud->connected = false;
   mud->sending = false;
 
   if( (stack<=top) && lua_isstring(L,stack) )   // deal with the domain string
   {
     domain = luaL_checklstring( L, stack, &il );
-
+    if (!domain)
+      return luaL_error(L, "invalid domain");
     stack++;
-    if (domain == NULL)
-    {
-      domain = "127.0.0.1";
-    }
-    ipaddr.addr = ipaddr_addr(domain);
-    memcpy(pesp_conn->proto.tcp->remote_ip, &ipaddr.addr, 4);
-    NODE_DBG("TCP ip is set: ");
-    NODE_DBG(IPSTR, IP2STR(&ipaddr.addr));
-    NODE_DBG("\n");
   }
 
   if ( (stack<=top) && lua_isnumber(L, stack) )
   {
     port = lua_tointeger(L, stack);
     stack++;
-    NODE_DBG("TCP port is set: %d.\n", port);
   }
-  pesp_conn->proto.tcp->remote_port = port;
-  if (pesp_conn->proto.tcp->local_port == 0)
-    pesp_conn->proto.tcp->local_port = espconn_port();
 
   if ( (stack<=top) && (lua_isnumber(L, stack) || lua_isboolean(L, stack)) )
   {
@@ -1186,9 +1150,23 @@ static int mqtt_socket_connect( lua_State* L )
     mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
-  lua_pushvalue(L, 1);  // copy userdata to the top of stack
+  if (!pesp_conn->proto.tcp)
+    pesp_conn->proto.tcp = (esp_tcp *)calloc(1,sizeof(esp_tcp));
+
+  if(!pesp_conn->proto.tcp) {
+    return luaL_error(L, "not enough memory");
+  }
+
   luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
+  lua_pushvalue(L, 1);  // copy userdata and persist it in the registry
   mud->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  pesp_conn->type = ESPCONN_TCP;
+  pesp_conn->state = ESPCONN_NONE;
+
+  pesp_conn->proto.tcp->remote_port = port;
+  if (pesp_conn->proto.tcp->local_port == 0)
+    pesp_conn->proto.tcp->local_port = espconn_port();
 
   espconn_regist_connectcb(pesp_conn, mqtt_socket_connected);
   espconn_regist_reconcb(pesp_conn, mqtt_socket_reconnected);
@@ -1200,24 +1178,17 @@ static int mqtt_socket_connect( lua_State* L )
     //My guess: If in doubt, resume the timer
   // timer started in socket_connect()
 
-  if((ipaddr.addr == IPADDR_NONE) && (memcmp(domain,"255.255.255.255",16) != 0))
+  ip_addr_t host_ip;
+  switch (dns_gethostbyname(domain, &host_ip, socket_dns_found, mud))
   {
-    ip_addr_t host_ip;
-    switch (dns_gethostbyname(domain, &host_ip, socket_dns_foundcb, mud))
-    {
-      case ERR_OK:
-        socket_dns_found(domain, &host_ip, mud);  // ip is returned in host_ip.
-        break;
-      case ERR_INPROGRESS:
-        break;
-      default:
-        // Something has gone wrong; bail out?
-        mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
-    }
-  }
-  else
-  {
-    mqtt_socket_do_connect(mud);
+    case ERR_OK:
+      socket_dns_found(domain, &host_ip, mud);  // ip is returned in host_ip.
+      break;
+    case ERR_INPROGRESS:
+      break;
+    default:
+      // Something has gone wrong; bail out?
+      mqtt_connack_fail(mud, MQTT_CONN_FAIL_DNS);
   }
 
   NODE_DBG("leave mqtt_socket_connect.\n");
