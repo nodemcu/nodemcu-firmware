@@ -295,5 +295,6 @@ local M = {
     readGPIOB = readGPIOB,
 }
 
-_G[modname or 'mcp23017'] = M
+local moduleName = ...
+_G[moduleName or 'mcp23017'] = M
 return M
