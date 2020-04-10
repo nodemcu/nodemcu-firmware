@@ -64,8 +64,6 @@ m = mqtt.Client("clientid", 120, "user", "password")
 -- to topic "/lwt" if client don't send keepalive packet
 m:lwt("/lwt", "offline", 0, 0)
 
-m:on("connect", function(client) print ("connected") end)
-m:on("connfail", function(client, reason) print ("connection failed", reason) end)
 m:on("offline", function(client) print ("offline") end)
 
 -- on publish message receive event
@@ -96,7 +94,7 @@ m:connect("192.168.11.118", 1883, false, function(client)
   client:publish("/topic", "hello", 0, 0, function(client) print("sent") end)
 end,
 function(client, reason)
-  print("failed reason: " .. reason)
+  print("Connection failed reason: " .. reason)
 end)
 
 m:close();

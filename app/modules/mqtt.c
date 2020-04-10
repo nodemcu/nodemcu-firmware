@@ -26,8 +26,8 @@
 
 typedef enum {
   MQTT_INIT,
-  MQTT_CONNECT_SENT,
   MQTT_CONNECT_SENDING,
+  MQTT_CONNECT_SENT,
   MQTT_DATA
 } tConnState;
 
@@ -108,7 +108,6 @@ static uint16_t mqtt_next_message_id(lmqtt_userdata * mud)
 static void mqtt_socket_disconnected(void *arg)    // tcp only
 {
   NODE_DBG("enter mqtt_socket_disconnected.\n");
-  bool call_back = false;
   lmqtt_userdata *mud = arg;
   if(mud == NULL)
     return;
@@ -117,17 +116,6 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
 
   while (mud->mqtt_state.pending_msg_q) {
     msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-  }
-
-  lua_State *L = lua_getstate();
-
-  if(mud->connected){     // call back only called when socket is from connection to disconnection.
-    mud->connected = false;
-    if((mud->cb_disconnect_ref != LUA_NOREF) && (mud->self_ref != LUA_NOREF)) {
-      lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
-      lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
-      call_back = true;
-    }
   }
 
   if(mud->mqtt_state.recv_buffer) {
@@ -141,13 +129,22 @@ static void mqtt_socket_disconnected(void *arg)    // tcp only
     free(mud->pesp_conn.proto.tcp);
   mud->pesp_conn.proto.tcp = NULL;
 
-  mud->connected = false;
-  luaL_unref(L, LUA_REGISTRYINDEX, mud->self_ref);
-  mud->self_ref = LUA_NOREF; // unref this, and the mqtt.socket userdata will delete it self
+  int selfref = mud->self_ref;
+  mud->self_ref = LUA_NOREF;
 
-  if(call_back){
-    lua_call(L, 1, 0);
+  lua_State *L = lua_getstate();
+
+  if(mud->connected){     // call back only called when socket is from connection to disconnection.
+    mud->connected = false;
+    if((mud->cb_disconnect_ref != LUA_NOREF) && (selfref != LUA_NOREF)) {
+      lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
+      lua_rawgeti(L, LUA_REGISTRYINDEX, selfref);
+      lua_call(L, 1, 0);
+    }
   }
+
+  // unref this, and the mqtt.socket userdata will delete it self
+  luaL_unref(L, LUA_REGISTRYINDEX, selfref);
 
   NODE_DBG("leave mqtt_socket_disconnected.\n");
 }
@@ -200,7 +197,7 @@ static void deliver_publish(lmqtt_userdata * mud, uint8_t* message, uint16_t len
   lua_State *L = lua_getstate();
   if(event_data.topic && (event_data.topic_length > 0)){
     lua_rawgeti(L, LUA_REGISTRYINDEX, cb_ref);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
+    lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
     lua_pushlstring(L, event_data.topic, event_data.topic_length);
   } else {
     NODE_DBG("get wrong packet.\n");
@@ -226,7 +223,7 @@ static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code)
   lua_State *L = lua_getstate();
 
   lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata(client) to callback func in lua
+  lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
   lua_pushinteger(L, reason_code);
   lua_call(L, 2, 0);
 }
@@ -677,29 +674,36 @@ static void mqtt_socket_sent(void *arg)
   os_timer_arm(&mud->mqttTimer, mud->connect_info.keepalive * 1000, 0);
 
   NODE_DBG("sent1, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
-  uint8_t try_send = 1;
-  // qos = 0, publish and forgot.
+
   msg_queue_t *node = msg_peek(&(mud->mqtt_state.pending_msg_q));
-  if(node && node->msg_type == MQTT_MSG_TYPE_PUBLISH && node->publish_qos == 0) {
-    msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-    if(mud->cb_puback_ref != LUA_NOREF && mud->self_ref != LUA_NOREF) {
-      lua_State *L = lua_getstate();
-      lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
-      lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);  // pass the userdata to callback func in lua
-      lua_call(L, 1, 0);
+  if (node) {
+    switch (node->msg_type) {
+    case MQTT_MSG_TYPE_PUBLISH:
+      // qos = 0, publish and forget.  Run the callback now because we
+      // won't get a puback from the server and it's not clear when else
+      // we should tell the user the message drained from the egress queue
+      if (node->publish_qos == 0) {
+        msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
+        if(mud->cb_puback_ref != LUA_NOREF && mud->self_ref != LUA_NOREF) {
+          lua_State *L = lua_getstate();
+          lua_rawgeti(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
+          lua_rawgeti(L, LUA_REGISTRYINDEX, mud->self_ref);
+          lua_call(L, 1, 0);
+        }
+        mqtt_send_if_possible(mud);
+      }
+      break;
+    case MQTT_MSG_TYPE_PUBACK:
+      /* FALLTHROUGH */
+    case MQTT_MSG_TYPE_PUBCOMP:
+      /* FALLTHROUGH */
+    case MQTT_MSG_TYPE_PINGREQ:
+      msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
+      mqtt_send_if_possible(mud);
+      break;
     }
-  } else if(node && node->msg_type == MQTT_MSG_TYPE_PUBACK) {
-    msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-  } else if(node && node->msg_type == MQTT_MSG_TYPE_PUBCOMP) {
-    msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-  } else if(node && node->msg_type == MQTT_MSG_TYPE_PINGREQ) {
-    msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
-  } else {
-    try_send = 0;
   }
-  if (try_send) {
-    mqtt_send_if_possible(mud);
-  }
+
   NODE_DBG("sent2, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
   NODE_DBG("leave mqtt_socket_sent.\n");
 }
@@ -741,7 +745,7 @@ static void mqtt_socket_connected(void *arg)
 
   mud->connState = MQTT_CONNECT_SENDING;
 
-  NODE_DBG("leave mqtt_socket_connectet, heap = %u.\n", system_get_free_heap_size());
+  NODE_DBG("leave mqtt_socket_connected, heap = %u.\n", system_get_free_heap_size());
   return;
 }
 
@@ -1096,8 +1100,6 @@ static int mqtt_socket_connect( lua_State* L )
   mud = (lmqtt_userdata *)luaL_checkudata(L, stack, "mqtt.socket");
   luaL_argcheck(L, mud, stack, "mqtt.socket expected");
   stack++;
-  if(mud == NULL)
-    return 0;
 
   if(mud->connected){
     return luaL_error(L, "already connected");
@@ -1112,7 +1114,6 @@ static int mqtt_socket_connect( lua_State* L )
     return luaL_error(L, "not enough memory");
   }
 
-  // reverse is for the callback function
   pesp_conn->type = ESPCONN_TCP;
   pesp_conn->state = ESPCONN_NONE;
   mud->connected = false;
@@ -1225,15 +1226,10 @@ static int mqtt_socket_connect( lua_State* L )
 static int mqtt_socket_close( lua_State* L )
 {
   NODE_DBG("enter mqtt_socket_close.\n");
-  int i = 0;
   lmqtt_userdata *mud = NULL;
 
   mud = (lmqtt_userdata *)luaL_checkudata(L, 1, "mqtt.socket");
   luaL_argcheck(L, mud, 1, "mqtt.socket expected");
-  if (mud == NULL) {
-    lua_pushboolean(L, 0);
-    return 1;
-  }
 
   sint8 espconn_status = 0;
   if (mud->connected) {
