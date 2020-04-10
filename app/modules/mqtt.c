@@ -50,7 +50,6 @@ typedef enum {
 
 typedef struct mqtt_state_t
 {
-  uint16_t port;
   msg_queue_t* pending_msg_q;
   uint16_t next_message_id;
 
@@ -940,7 +939,6 @@ static int mqtt_socket_client( lua_State* L )
   mud->connect_info.max_message_length = max_message_length;
 
   mud->mqtt_state.pending_msg_q = NULL;
-  mud->mqtt_state.port = 1883;
   mud->mqtt_state.recv_buffer = NULL;
   mud->mqtt_state.recv_buffer_size = 0;
   mud->mqtt_state.recv_buffer_state = MQTT_RECV_NORMAL;
@@ -1158,7 +1156,6 @@ static int mqtt_socket_connect( lua_State* L )
   pesp_conn->proto.tcp->remote_port = port;
   if (pesp_conn->proto.tcp->local_port == 0)
     pesp_conn->proto.tcp->local_port = espconn_port();
-  mud->mqtt_state.port = port;
 
   if ( (stack<=top) && (lua_isnumber(L, stack) || lua_isboolean(L, stack)) )
   {
