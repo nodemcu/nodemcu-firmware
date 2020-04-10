@@ -1262,14 +1262,12 @@ static int mqtt_socket_close( lua_State* L )
 #ifdef CLIENT_SSL_ENABLE
     if(mud->secure) {
       espconn_status = espconn_secure_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
-      if(mud->pesp_conn.proto.tcp->remote_port || mud->pesp_conn.proto.tcp->local_port)
-        espconn_status |= espconn_secure_disconnect(&mud->pesp_conn);
+      espconn_status |= espconn_secure_disconnect(&mud->pesp_conn);
     } else
 #endif
     {
       espconn_status = espconn_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
-      if(mud->pesp_conn.proto.tcp->remote_port || mud->pesp_conn.proto.tcp->local_port)
-        espconn_status |= espconn_disconnect(&mud->pesp_conn);
+      espconn_status |= espconn_disconnect(&mud->pesp_conn);
     }
   }
   mud->connected = false;
