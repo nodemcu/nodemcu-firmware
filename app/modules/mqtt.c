@@ -173,8 +173,6 @@ static void mqtt_socket_reconnected(void *arg, sint8_t err)
 
   mud->event_timeout = 0; // no need to count anymore
 
-  mqtt_socket_do_disconnect(mud);
-
   mqtt_connack_fail(mud, MQTT_CONN_FAIL_SERVER_NOT_FOUND);
 
   mqtt_socket_disconnected(arg);
@@ -794,7 +792,7 @@ void mqtt_socket_timer(void *arg)
       if(mud->keep_alive_tick > mud->connect_info.keepalive){
         if (mud->keepalive_sent) {
           // Oh dear -- keepalive timer expired and still no ack of previous message
-          mqtt_socket_reconnected(&mud->pesp_conn, 0);
+          mqtt_socket_do_disconnect(mud);
         } else {
           uint8_t temp_buffer[MQTT_BUF_SIZE];
           mqtt_message_buffer_t msgb;
