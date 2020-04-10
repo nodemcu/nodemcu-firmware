@@ -85,6 +85,7 @@ typedef struct lmqtt_userdata
 #endif
   bool connected;     // indicate socket connected, not mqtt prot connected.
   bool keepalive_sent;
+  bool sending;  // data sent to network stack, awaiting local acknowledge
   ETSTimer mqttTimer;
   tConnState connState;
 }lmqtt_userdata;
@@ -235,28 +236,30 @@ static void mqtt_connack_fail(lmqtt_userdata * mud, int reason_code)
 
 static sint8 mqtt_send_if_possible(struct lmqtt_userdata *mud)
 {
+  /* Waiting for the local network stack to get back to us?  Can't send. */
+  if (mud->sending)
+    return ESPCONN_OK;
+
   sint8 espconn_status = ESPCONN_OK;
 
-  // This indicates if we have sent something and are waiting for something to
-  // happen
-  if (mud->event_timeout == 0) {
-    msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
-    if (pending_msg) {
-      mud->event_timeout = MQTT_SEND_TIMEOUT;
-      NODE_DBG("Sent: %d\n", pending_msg->msg.length);
+  msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
+  if (pending_msg) {
+    mud->event_timeout = MQTT_SEND_TIMEOUT;
+    NODE_DBG("Sent: %d\n", pending_msg->msg.length);
 #ifdef CLIENT_SSL_ENABLE
-      if( mud->secure )
-      {
-        espconn_status = espconn_secure_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
-      }
-      else
-#endif
-      {
-        espconn_status = espconn_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
-      }
-      mud->keep_alive_tick = 0;
+    if( mud->secure )
+    {
+      espconn_status = espconn_secure_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
     }
+    else
+#endif
+    {
+      espconn_status = espconn_send(&mud->pesp_conn, pending_msg->msg.data, pending_msg->msg.length );
+    }
+    mud->sending = true;
+    mud->keep_alive_tick = 0;
   }
+
   NODE_DBG("send_if_poss, queue size: %d\n", msg_size(&(mud->mqtt_state.pending_msg_q)));
   return espconn_status;
 }
@@ -662,6 +665,7 @@ static void mqtt_socket_sent(void *arg)
   // call mqtt_sent()
   mud->event_timeout = 0;
   mud->keep_alive_tick = 0;
+  mud->sending = false;
 
   if(mud->connState == MQTT_CONNECT_SENDING){
     mud->connState = MQTT_CONNECT_SENT;
@@ -728,6 +732,7 @@ static void mqtt_socket_connected(void *arg)
   {
     espconn_send(pesp_conn, temp_msg->data, temp_msg->length);
   }
+  mud->sending = true;
   mud->keep_alive_tick = 0;
 
   mud->connState = MQTT_CONNECT_SENDING;
@@ -1130,6 +1135,7 @@ static int mqtt_socket_connect( lua_State* L )
   pesp_conn->type = ESPCONN_TCP;
   pesp_conn->state = ESPCONN_NONE;
   mud->connected = false;
+  mud->sending = false;
 
   if( (stack<=top) && lua_isstring(L,stack) )   // deal with the domain string
   {
@@ -1248,7 +1254,7 @@ static int mqtt_socket_close( lua_State* L )
     return 1;
   }
 
-  sint8 espconn_status = ESPCONN_CONN;
+  sint8 espconn_status = 0;
   if (mud->connected) {
     uint8_t temp_buffer[MQTT_BUF_SIZE];
     mqtt_message_buffer_t msgb;
@@ -1261,16 +1267,21 @@ static int mqtt_socket_close( lua_State* L )
     /* XXX This fails to actually send the disconnect message before hanging up */
 #ifdef CLIENT_SSL_ENABLE
     if(mud->secure) {
-      espconn_status = espconn_secure_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
+      if(!mud->sending)
+        espconn_status = espconn_secure_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
       espconn_status |= espconn_secure_disconnect(&mud->pesp_conn);
     } else
 #endif
     {
-      espconn_status = espconn_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
+      if(!mud->sending)
+        espconn_status = espconn_send(&mud->pesp_conn, temp_msg->data, temp_msg->length);
       espconn_status |= espconn_disconnect(&mud->pesp_conn);
     }
+  } else {
+    espconn_status = ESPCONN_CONN;
   }
   mud->connected = false;
+  mud->sending = false;
 
   while (mud->mqtt_state.pending_msg_q) {
     msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
