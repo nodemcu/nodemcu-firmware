@@ -1,4 +1,6 @@
+-- metatable
 local LiquidCrystal = {}
+LiquidCrystal.__index = LiquidCrystal
 
 -- commands
 local LCD_CLEARDISPLAY = 0x01
@@ -38,89 +40,22 @@ local LCD_1LINE = 0x00
 local LCD_5x10DOTS = 0x04
 local LCD_5x8DOTS = 0x00
 
--- defaults
-LiquidCrystal._displayfunction = 0
-LiquidCrystal._displaycontrol = 0
-LiquidCrystal._displaymode = 0
-LiquidCrystal._backlight = false
 
-function LiquidCrystal:init(bus, bus_args, fourbitmode, onelinemode, eightdotsmode, column_width, insert_delay)
-   self._bus_args = bus_args
-   if bus == "I2C" then
-      assert(fourbitmode, "8bit mode not supported")
-      self._backend = require "i2c4bit"
-   elseif bus == "GPIO" then
-      if fourbitmode then
-	 self._backend = require "gpio4bit"
-      else
-	 self._backend = require "gpio8bit"
-      end
-   else
-      error(string.format("%s backend is not implemented", bus))
-   end
+function LiquidCrystal:clear() return self:_command(LCD_CLEARDISPLAY) end
 
-   if fourbitmode then
-      self._displayfunction = bit.bor(self._displayfunction, LCD_4BITMODE)
-   else
-      self._displayfunction = bit.bor(self._displayfunction, LCD_8BITMODE)
-   end
-
-   if onelinemode then
-      self._displayfunction = bit.bor(self._displayfunction, LCD_1LINE)
-   else
-      self._displayfunction = bit.bor(self._displayfunction, LCD_2LINE)
-   end
-
-   if eightdotsmode then
-      self._displayfunction = bit.bor(self._displayfunction, LCD_5x8DOTS)
-   else
-      self._displayfunction = bit.bor(self._displayfunction, LCD_5x10DOTS)
-   end
-
-   self._offsets = {0, 0x40}
-   if column_width ~= nil then
-      self._offsets[3] =  0 + column_width
-      self._offsets[4] =  0x40 + column_width
-   end
-   self._insert_delay = insert_delay
-
-   self._backend.init(self)
-   self._backend.command(self, bit.bor(LCD_FUNCTIONSET, self._displayfunction))
-   self._backend.command(self, bit.bor(LCD_ENTRYMODESET, self._displaymode))
-
-   self:display(true)
-   self:clear()
-end
-
-function LiquidCrystal:clear()
-   self._backend.command(self, LCD_CLEARDISPLAY)
-   if self._insert_delay then
-      tmr.delay(2000)
-   end
-end
-
-function LiquidCrystal:home()
-   self._backend.command(self, LCD_RETURNHOME)
-   if self._insert_delay then
-      tmr.delay(2000)
-   end
-end
+function LiquidCrystal:home() return self:_command(LCD_RETURNHOME) end
 
 function LiquidCrystal:cursorMove(col, row)
-   if row ~= nil then
-      self._backend.command(self, bit.bor(LCD_SETDDRAMADDR, col + self._offsets[row] - 1))
-   else
-      self._backend.command(self, bit.bor(LCD_SETDDRAMADDR, col))
-   end
+   return self:_command(bit.bor(LCD_SETDDRAMADDR, col + (row and (self._offsets[row] - 1) or 0)))
 end
 
 function LiquidCrystal:display(on)
    if on then
       self._displaycontrol = bit.bor(self._displaycontrol, LCD_DISPLAYON)
    else
-         self._displaycontrol = bit.band(self._displaycontrol, bit.bnot(LCD_DISPLAYON))
+      self._displaycontrol = bit.band(self._displaycontrol, bit.bnot(LCD_DISPLAYON))
    end
-   self._backend.command(self, bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
+   return self:_command(bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
 end
 
 function LiquidCrystal:blink(on)
@@ -129,7 +64,7 @@ function LiquidCrystal:blink(on)
    else
       self._displaycontrol = bit.band(self._displaycontrol, bit.bnot(LCD_BLINKON))
    end
-   self._backend.command(self, bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
+   return self:_command(bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
 end
 
 function LiquidCrystal:cursor(on)
@@ -138,33 +73,33 @@ function LiquidCrystal:cursor(on)
    else
       self._displaycontrol = bit.band(self._displaycontrol, bit.bnot(LCD_CURSORON))
    end
-   self._backend.command(self, bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
+   return self:_command(bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
 end
 
 function LiquidCrystal:cursorLeft()
-   self._backend.command(self, bit.bor(LCD_CURSORSHIFT, LCD_CURSORMOVE, LCD_MOVELEFT))
+   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_CURSORMOVE, LCD_MOVELEFT))
 end
 
 function LiquidCrystal:cursorRight()
-   self._backend.command(self, bit.bor(LCD_CURSORSHIFT, LCD_CURSORMOVE, LCD_MOVERIGHT))
+   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_CURSORMOVE, LCD_MOVERIGHT))
 end
 
 function LiquidCrystal:scrollLeft()
-   self._backend.command(self, bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVELEFT))
+   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVELEFT))
 end
 
 function LiquidCrystal:scrollRight()
-   self._backend.command(self, bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVERIGHT))
+   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVERIGHT))
 end
 
 function LiquidCrystal:leftToRight()
    self._displaymode = bit.bor(self._displaymode, LCD_ENTRYLEFT)
-   self._backend.command(self, bit.bor(LCD_ENTRYMODESET, self._displaymode))
+   return self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
 end
 
 function LiquidCrystal:rightToLeft()
    self._displaymode = bit.band(self._displaymode, bit.bnot(LCD_ENTRYLEFT))
-   self._backend.command(self, bit.bor(LCD_ENTRYMODESET, self._displaymode))
+   self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
 end
 
 function LiquidCrystal:autoscroll(on)
@@ -173,41 +108,61 @@ function LiquidCrystal:autoscroll(on)
    else
       self._displaymode = bit.band(self._displaymode, bit.bnot(LCD_ENTRYSHIFTINCREMENT))
    end
-   self._backend.command(self, bit.bor(LCD_ENTRYMODESET, self._displaymode))
+   self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
 end
 
 function LiquidCrystal:write(...)
    for _, x in ipairs({...}) do
       if type(x) == "number" then
-	 self._backend.write(self, x)
+	 self:_write(x)
       end
       if type(x) == "string" then
 	 for i=1,#x do
-	    self._backend.write(self, string.byte(x, i))
-	    if self._insert_delay then
-	       tmr.delay(800)
-	    end
+	    self:_write(string.byte(x, i))
 	 end
-      end
-      if self._insert_delay then
-	 tmr.delay(800)
       end
    end
 end
 
 function LiquidCrystal:customChar(index, bytes)
-   self._backend.command(self, bit.bor(LCD_SETCGRAMADDR, bit.lshift(bit.band(index, 0x7), 3)))
-   for _, b in ipairs(bytes) do
-      self._backend.write(self, b)
-      if self._insert_delay then
-	 tmr.delay(800)
-      end
+   local pos = self:position()
+   self:_command(bit.bor(LCD_SETCGRAMADDR, bit.lshift(bit.band(index, 0x7), 3)))
+   for _, b in ipairs(bytes) do self:_write(b) end
+   self:cursorMove(pos)
+end
+
+return function (backend, onelinemode, eightdotsmode, column_width)
+   local self = {}
+   setmetatable(self, LiquidCrystal)
+
+   -- copy out backend functions, to avoid a long-lived table
+   self._command  = backend.command
+   self.busy      = backend.busy
+   self.position  = backend.position
+   self._write    = backend.write
+   self.readChar  = backend.read
+   self.backlight = backend.backlight
+
+   -- defaults
+   self._displaycontrol = 0
+   self._displaymode = 0
+
+   self._offsets = {0, 0x40}
+   if column_width ~= nil then
+      self._offsets[3] =  0    + column_width
+      self._offsets[4] =  0x40 + column_width
    end
-   self:home()
-end
 
-function LiquidCrystal:backlight(on)
-   self._backend.backlight(self, on)
-end
+   backend.init(self)
+   self:_command(bit.bor(LCD_FUNCTIONSET,
+                         bit.bor(
+                            backend.fourbits and LCD_4BITMODE or LCD_8BITMODE,
+                            onelinemode      and LCD_1LINE or LCD_2LINE,
+                            eightdotsmode    and LCD_5x8DOTS or LCD_5x10DOTS)))
+   self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
 
-return LiquidCrystal
+   self:display(true)
+   self:clear()
+
+   return self
+end
