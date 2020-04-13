@@ -70,35 +70,35 @@ return function(bus_args)
    return {
       fourbits  = true,
       init      = function(screen)
-                     -- init sequence from datasheet
-                     send4bitI2C(0x33, false, false, false)
-                     return send4bitI2C(0x32, false, false, false)
-                  end,
+         -- init sequence from datasheet
+         send4bitI2C(0x33, false, false, false)
+         return send4bitI2C(0x32, false, false, false)
+      end,
       command   = function (screen, cmd)
-                     return send4bitI2C(cmd, false, false, false)
-                  end,
+         return send4bitI2C(cmd, false, false, false)
+      end,
       busy      = function(screen)
-                     local rv = send4bitI2C(0xff, false, true, true)
-                     send4bitI2C(bit.bor(0x80, bit.clear(rv, 7)), false, false, false)
-                     return bit.isset(rv, 7)
-                  end,
+         local rv = send4bitI2C(0xff, false, true, true)
+         send4bitI2C(bit.bor(0x80, bit.clear(rv, 7)), false, false, false)
+         return bit.isset(rv, 7)
+      end,
       position  = function(screen)
-                     local rv = bit.clear(send4bitI2C(0xff, false, true, true), 7)
-                     send4bitI2C(bit.bor(0x80, rv), false, false, false)
-                     return rv
-                  end,
+         local rv = bit.clear(send4bitI2C(0xff, false, true, true), 7)
+         send4bitI2C(bit.bor(0x80, rv), false, false, false)
+         return rv
+      end,
       write     = function(screen, value)
-                    return send4bitI2C(value, true, false, false)
-                  end,
+         return send4bitI2C(value, true, false, false)
+      end,
       read      = function(screen)
-                    return send4bitI2C(0xff, true, true, true)
-                  end,
+         return send4bitI2C(0xff, true, true, true)
+      end,
       backlight = function(screen, on)
-                     backlight = on
-                     local rv = bit.clear(send4bitI2C(0xff, false, true, true), 7)
-                     send4bitI2C(bit.bor(0x80, rv), false, false, false)
-                     return rv
-                  end,
+         backlight = on
+         local rv = bit.clear(send4bitI2C(0xff, false, true, true), 7)
+         send4bitI2C(bit.bor(0x80, rv), false, false, false)
+         return rv
+      end,
    }
 
 end
