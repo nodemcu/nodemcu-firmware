@@ -49,14 +49,13 @@ return function(bus_args)
       return bit.bor(bit.lshift(hi, 4), lo)
    end
 
+   -- init sequence from datasheet
+   send4bitGPIO(0x33, false, false, false)
+   send4bitGPIO(0x32, false, false, false)
+
    -- Return backend object
    return {
       fourbits  = true,
-      init      = function(screen)
-         -- init sequence from datasheet
-         send4bitGPIO(0x33, false, false, false)
-         return send4bitGPIO(0x32, false, false, false)
-      end,
       command   = function (screen, cmd)
          return send4bitGPIO(cmd, false, false, false)
       end,

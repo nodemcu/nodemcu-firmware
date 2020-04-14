@@ -66,14 +66,13 @@ return function(bus_args)
                      bit.lshift(bit.isset(hi, d7) and 1 or 0, 7))
    end
 
+   -- init sequence from datasheet
+   send4bitI2C(0x33, false, false, false)
+   send4bitI2C(0x32, false, false, false)
+
    -- Return backend object
    return {
       fourbits  = true,
-      init      = function(screen)
-         -- init sequence from datasheet
-         send4bitI2C(0x33, false, false, false)
-         return send4bitI2C(0x32, false, false, false)
-      end,
       command   = function (screen, cmd)
          return send4bitI2C(cmd, false, false, false)
       end,

@@ -5,14 +5,14 @@ return function(bus_args)
    local rw = bus_args.rw
    local en = bus_args.en or 1
    local bl = bus_args.backlight
-   local d0 = bus_args.d4 or 2
-   local d1 = bus_args.d4 or 3
-   local d2 = bus_args.d4 or 4
-   local d3 = bus_args.d4 or 5
+   local d0 = bus_args.d0 or 2
+   local d1 = bus_args.d1 or 3
+   local d2 = bus_args.d2 or 4
+   local d3 = bus_args.d3 or 5
    local d4 = bus_args.d4 or 6
    local d5 = bus_args.d5 or 7
    local d6 = bus_args.d6 or 8
-   local d7 = bus_args.d7 or 5
+   local d7 = bus_args.d7 or 9
 
    for _, d in pairs({rs,rw,en,bl}) do
       if d then
@@ -53,11 +53,6 @@ return function(bus_args)
    -- Return backend object
    return {
       fourbits  = false,
-      init      = function(screen)
-         -- init sequence from datasheet
-         send8bitGPIO(0x33, false, false, false)
-         return send8bitGPIO(0x32, false, false, false)
-      end,
       command   = function (screen, cmd)
          return send8bitGPIO(cmd, false, false, false)
       end,

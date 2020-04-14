@@ -153,7 +153,6 @@ return function (backend, onelinemode, eightdotsmode, column_width)
       self._offsets[4] =  0x40 + column_width
    end
 
-   backend.init(self)
    self:_command(bit.bor(LCD_FUNCTIONSET,
                          bit.bor(
                             backend.fourbits and LCD_4BITMODE or LCD_8BITMODE,
