@@ -15,7 +15,7 @@ return function(bus_args)
    local d7 = bus_args.d7 or 7
 
    -- Convenience I2C setup if a pin configuration is given
-   if bus_args.sda ~= nil then
+   if bus_args.sda ~= nil and bus_args.scl ~= nil then
       i2c.setup(busid, bus_args.sda, bus_args.scl, speed)
    end
 
@@ -96,7 +96,7 @@ return function(bus_args)
          backlight = on
          local rv = bit.clear(send4bitI2C(0xff, false, true, true), 7)
          send4bitI2C(bit.bor(0x80, rv), false, false, false)
-         return rv
+         return on
       end,
    }
 

@@ -60,11 +60,11 @@ return function(bus_args)
          return send4bitGPIO(cmd, false, false, false)
       end,
       busy      = function(screen)
-         if rw == nil then return nil end
+         if rw == nil then return false end
          return bit.isset(send4bitGPIO(0xff, false, true, true), 7)
       end,
       position  = function(screen)
-         if rw == nil then return nil end
+         if rw == nil then return 0 end
          return bit.clear(send4bitGPIO(0xff, false, true, true), 7)
       end,
       write     = function(screen, value)

@@ -57,11 +57,11 @@ return function(bus_args)
          return send8bitGPIO(cmd, false, false, false)
       end,
       busy      = function(screen)
-         if rw == nil then return nil end
+         if rw == nil then return false end
          return bit.isset(send8bitGPIO(0xff, false, true, true), 7)
       end,
       position  = function(screen)
-         if rw == nil then return nil end
+         if rw == nil then return 0 end
          return bit.clear(send8bitGPIO(0xff, false, true, true), 7)
       end,
       write     = function(screen, value)

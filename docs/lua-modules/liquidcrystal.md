@@ -1,34 +1,26 @@
 # LiquidCrystal Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2019-12-01 | [Matsievskiy Sergey](https://github.com/seregaxvm) | [Matsievskiy Sergey](https://github.com/seregaxvm) | [liquidcrystal.lua](../../lua_modules/liquidcrystal/liquidcrystal.lua) |
+| 2019-12-01 | [Matsievskiy Sergey](https://github.com/seregaxvm) | [Matsievskiy Sergey](https://github.com/seregaxvm) | [liquidcrystal.lua](../../lua_modules/liquidcrystal/liquidcrystal.lua) [i2c4bit.lua](../../lua_modules/liquidcrystal/i2c4bit.lua) [gpio4bit.lua](../../lua_modules/liquidcrystal/gpio4bit.lua) [gpio8bit.lua](../../lua_modules/liquidcrystal/gpio8bit.lua) |
 
-This Lua module provides access to [Hitachi HD44780](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf) based LCDs. It supports 4 bit and 8 bit GPIO interface, 4 bit [PCF8574](https://www.nxp.com/docs/en/data-sheet/PCF8574_PCF8574A.pdf) based I²C interface. Default pinout matches pinout of [popular I²C interface converter used with LED screens](https://i.ebayimg.com/images/i/281810234335-0-1/s-l1000.jpg). It may be changed in file [i2c4bit.lua](../../lua_modules/liquidcrystal/i2c4bit.lua).
+This Lua module provides access to [Hitachi HD44780](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf) based LCDs. It supports 4 bit and 8 bit GPIO interface, 4 bit [PCF8574](https://www.nxp.com/docs/en/data-sheet/PCF8574_PCF8574A.pdf) based I²C interface.
 
 !!! note
-	This module requires `bit` C module built into firmware. Depending on the interface, `gpio` or `i2c` module is also required. `tmr` is needed if one wishes to enable `insert_delay` option.
+	This module requires `bit` C module built into firmware. Depending on the interface, `gpio` or `i2c` module is also required.
 
 ## Program example
 
 In this example LED screen is connected using I²C GPIO expander.
-Program defines two custom characters and prints text.
+Program defines five custom characters and prints text.
 
 ```lua
-lc = require "liquidcrystal"
-lc:init("I2C", -- select I2C backend
-	{ -- I2C bus settings
-	   address=0x27,
-	   id=0,
-	   sda=1,
-	   scl=2,
-	   speed=i2c.FAST
-	},
-	true, -- four bit interface
-	false, -- two line mode
-	true, -- eight dots font size
-	20, -- screen width
-	true -- add delay
-)
+backend_meta = require "i2c4bit"
+lc_meta = require "liquidcrystal"
+
+-- create display object
+lc = lc_meta(backend_meta{sda=25, scl=26}, true, true, 20)
+backend_meta = nil
+lc_meta = nil
 -- define custom characters
 lc:customChar(0, {0,14,31,31,4,4,5,2})
 lc:customChar(1, {4,6,5,5,4,12,28,8})
@@ -50,13 +42,142 @@ lc:blink(false)
 
 ### Require
 ```lua
-lc = require("liquidcrystal")
+i2c4bit_meta = require("i2c4bit")
+gpio4bit_meta = require("gpio4bit")
+gpio8bit_meta = require("gpio8bit")
+lc_meta = require("liquidcrystal")
 ```
 
 ### Release
 ```lua
-liquidcrystal = nil
+i2c4bit_meta = require("i2c4bit")
+package.loaded["i2c4bit"] = nil
+gpio4bit_meta = require("gpio4bit")
+package.loaded["gpio4bit"] = nil
+gpio8bit_meta = require("gpio8bit")
+package.loaded["gpio8bit"] = nil
+lc_meta = require("liquidcrystal")
 package.loaded["liquidcrystal"] = nil
+```
+
+## Initialization
+
+Liquidcrystal module is initialized using closure, which takes backend object as an argument.
+
+### I²C backend
+
+Loading I²C backend module returns initialization closure.
+It configures I²C backend and returns backend object.
+
+#### Syntax
+`function({[sda=sda_pin] [, scl=scl_pin] [, busid=id] [, busad=address] [, speed = spd] [, rs = rs_pos] [, rw = rw_pos] [, en = en_pos] [, bl = bl_pos] [, d4 = d4_pos] [, d5 = d5_pos] [, d6 = d6_pos] [, d7 = d7_pos]})`
+
+!!! note
+	In most cases only `sda` and `scl` parameters are required
+
+#### Parameters
+- `sda`: I²C data pin. If set to `nil`, I²C bus initialization step via [`i2c.setup`](https://nodemcu.readthedocs.io/en/master/modules/i2c/#i2csetup) will be skipped
+- `scl`: I²C clock pin. If set to `nil`, I²C bus initialization step via [`i2c.setup`](https://nodemcu.readthedocs.io/en/master/modules/i2c/#i2csetup) will be skipped
+- `busid`: I²C bus ID. Defaults to `0`
+- `busad`: chip I²C address. Defaults to `0x27` (default PCF8574 address)
+- `speed`: I²C speed. Defaults to `i2c.SLOW`
+- `rs`: bit position assigned to `RS` pin in I²C word. Defaults to 0
+- `rw`: bit position assigned to `RW` pin in I²C word. Defaults to 1
+- `en`: bit position assigned to `EN` pin in I²C word. Defaults to 2
+- `bl`: bit position assigned to backlight pin in I²C word. Defaults to 3
+- `d4`: bit position assigned to `D4` pin in I²C word. Defaults to 4
+- `d5`: bit position assigned to `D5` pin in I²C word. Defaults to 5
+- `d6`: bit position assigned to `D6` pin in I²C word. Defaults to 6
+- `d7`: bit position assigned to `D7` pin in I²C word. Defaults to 7
+
+#### Returns
+- backend object
+
+#### Example
+```lua
+backend_meta = require "i2c4bit"
+backend = backend_meta{sda=1, scl=2 ,speed=i2c.FAST}
+```
+
+### GPIO 4 bit backend
+
+Loading GPIO 4 bit backend module returns initialization closure.
+It configures GPIO 4 bit backend and returns backend object.
+
+#### Syntax
+`function({[, rs = rs_pos] [, rw = rw_pos] [, en = en_pos] [, bl = bl_pos] [, d4 = d4_pos] [, d5 = d5_pos] [, d6 = d6_pos] [, d7 = d7_pos]})`
+
+#### Parameters
+- `rs`: GPIO pin connected to `RS` pin. Defaults to 0
+- `rw`: GPIO pin connected to `RW` pin. If set to `nil` then `busy`, `position` and `readChar` functions will not be available. Note that `RW` pin must be pulled to the ground if not connected to GPIO
+- `en`: GPIO pin connected to `EN` pin. Defaults to 1
+- `bl`: GPIO pin controlling backlight. It is assumed, that high level turns backlight on, low level turns backlight off. If set to `nil` then backlight function will not be available
+- `d4`: GPIO pin connected to `D4` pin. Defaults to 2
+- `d5`: GPIO pin connected to `D5` pin. Defaults to 3
+- `d6`: GPIO pin connected to `D6` pin. Defaults to 4
+- `d7`: GPIO pin connected to `D7` pin. Defaults to 5
+
+#### Returns
+- backend object
+
+#### Example
+```lua
+backend_meta = require "gpio4bit"
+backend = backend_meta{rs=0, rw=1, en=4, d4=5, d5=6, d6=7, d7=8}
+```
+
+### GPIO 8 bit backend
+
+Loading GPIO 8 bit backend module returns initialization closure.
+It configures GPIO 8 bit backend and returns backend object.
+
+#### Syntax
+`function({[, rs = rs_pos] [, rw = rw_pos] [, en = en_pos] [, bl = bl_pos] [, d0 = d0_pos] [, d1 = d1_pos] [, d2 = d2_pos] [, d3 = d3_pos] [, d4 = d4_pos] [, d5 = d5_pos] [, d6 = d6_pos] [, d7 = d7_pos]})`
+
+#### Parameters
+- `rs`: GPIO pin connected to `RS` pin. Defaults to 0
+- `rw`: GPIO pin connected to `RW` pin. If set to `nil` then `busy`, `position` and `readChar` functions will not be available. Note that `RW` pin must be pulled to the ground if not connected to GPIO
+- `en`: GPIO pin connected to `EN` pin. Defaults to 1
+- `bl`: GPIO pin controlling backlight. It is assumed, that high level turns backlight on, low level turns backlight off. If set to `nil` then backlight function will not be available
+- `d0`: GPIO pin connected to `D0` pin. Defaults to 2
+- `d1`: GPIO pin connected to `D1` pin. Defaults to 3
+- `d2`: GPIO pin connected to `D2` pin. Defaults to 4
+- `d3`: GPIO pin connected to `D3` pin. Defaults to 5
+- `d4`: GPIO pin connected to `D4` pin. Defaults to 6
+- `d5`: GPIO pin connected to `D5` pin. Defaults to 7
+- `d6`: GPIO pin connected to `D6` pin. Defaults to 8
+- `d7`: GPIO pin connected to `D7` pin. Defaults to 9
+
+#### Returns
+- backend object
+
+#### Example
+```lua
+backend_meta = require "gpio8bit"
+backend = backend_meta{rs=15, rw=2, en=5, d0=23, d1=13, d2=33, d3=32, d4=18, d5=19, d6=21, d7=22}
+```
+
+### Liquidcrystal initialization
+
+Loading Liquidcrystal module returns initialization closure.
+It requires backend object and returns LCD object.
+
+#### Syntax
+`function(backend, onelinemode, eightdotsmode, column_width)`
+
+#### Parameters
+- `backend`: backend object
+- `onelinemode`: `true` to use one line mode, `false` to use two line mode
+- `eightdotsmode`: `true` to use 5x8 dot font, `false` to use 5x10 dot font
+- `column_width`: number of characters in column. Used for offset calculations in function `cursorMove`. If set to `nil`, functionality of `cursorMove` will be limited. For most displays column width is `20` characters
+
+#### Returns
+screen object
+
+#### Example
+```lua
+lc_meta = require "liquidcrystal"
+lc = lc_meta(backend, true, true, 20)
 ```
 
 ## liquidcrystal.autoscroll
@@ -66,11 +187,11 @@ Autoscroll text when printing. When turned off, cursor moves and text stays stil
 `liquidcrystal.autoscroll(self, on)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
-- `on`: `true` to turn on, `false` to turn off.
+- `self`: `liquidcrystal` instance
+- `on`: `true` to turn on, `false` to turn off
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
@@ -78,17 +199,17 @@ liquidcrystal:autoscroll(true)
 ```
 
 ## liquidcrystal.backlight
-Control LCDs backlight.
+Control LCDs backlight. When using GPIO backend without `bl` argument specification function does nothing.
 
 #### Syntax
 `liquidcrystal.backlight(self, on)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
-- `on`: `true` to turn on, `false` to turn off.
+- `self`: `liquidcrystal` instance
+- `on`: `true` to turn on, `false` to turn off
 
 #### Returns
-`nil`
+- backlight status
 
 #### Example
 ```lua
@@ -102,15 +223,32 @@ Control cursors blink mode.
 `liquidcrystal.blink(self, on)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
-- `on`: `true` to turn on, `false` to turn off.
+- `self`: `liquidcrystal` instance
+- `on`: `true` to turn on, `false` to turn off
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
 liquidcrystal:blink(true)
+```
+
+## liquidcrystal.busy
+Get busy status of the LCD. When using GPIO backend without `rw` argument specification function does nothing.
+
+#### Syntax
+`liquidcrystal.busy(self)`
+
+#### Parameters
+- `self`: `liquidcrystal` instance
+
+#### Returns
+- `true` if device is busy, `false` if device is ready to receive commands
+
+#### Example
+```lua
+while liquidcrystal:busy() do end
 ```
 
 ## liquidcrystal.clear
@@ -120,32 +258,14 @@ Clear LCD screen.
 `liquidcrystal.clear(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
 liquidcrystal:clear()
-```
-
-## liquidcrystal.cursor
-Control cursors highlight mode.
-
-#### Syntax
-`liquidcrystal.cursor(self, on)`
-
-#### Parameters
-- `self`: `liquidcrystal` instance.
-- `on`: `true` to turn on, `false` to turn off.
-
-#### Returns
-`nil`
-
-#### Example
-```lua
-liquidcrystal:cursor(true)
 ```
 
 ## liquidcrystal.cursorLeft
@@ -155,10 +275,10 @@ Move cursor one character to the left.
 `liquidcrystal.cursorLeft(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
@@ -166,24 +286,45 @@ liquidcrystal:cursorLeft()
 ```
 
 ## liquidcrystal.cursorMove
-Move cursor to position. If `row` not specified, move cursor to address `col`. Note that column and row indexes start with 1. However, when omitting `row` parameter, cursor addresses start with 0.
+Move cursor to position. If `row` not specified, move cursor to address `col`.
+
+!!! note
+	Note that column and row indexes start with 1. However, when omitting `row` parameter, cursor addresses start with 0.
 
 #### Syntax
 `liquidcrystal.cursorMove(self, col, row)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
-- `col`: new cursor position column. If `row` not specified, new cursor position address.
-- `row`: new cursor position row or `nil`.
+- `self`: `liquidcrystal` instance
+- `col`: new cursor position column. If `row` not specified, new cursor position address
+- `row`: new cursor position row or `nil`
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
-liquidcrystal:cursorMove(5,1)
-liquidcrystal:cursorMove(10,4)
+liquidcrystal:cursorMove(5, 1)
+liquidcrystal:cursorMove(10, 4)
 liquidcrystal:cursorMove(21)
+```
+
+## liquidcrystal.cursor
+Control cursors highlight mode.
+
+#### Syntax
+`liquidcrystal.cursor(self, on)`
+
+#### Parameters
+- `self`: `liquidcrystal` instance
+- `on`: `true` to turn on, `false` to turn off
+
+#### Returns
+- sent data
+
+#### Example
+```lua
+liquidcrystal:cursor(true)
 ```
 
 ## liquidcrystal.cursorRight
@@ -193,10 +334,10 @@ Move cursor one character to the right.
 `liquidcrystal.cursorRight(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
@@ -205,8 +346,12 @@ liquidcrystal:cursorRight()
 
 ## liquidcrystal.customChar
 Define new custom char. Up to 8 custom characters with indexes 0 to 7 may be defined. They are accessed via `write` function by index.
-Note that upon redefinition of a custom character all its instances will be updated automatically.
-This function resets cursor position to home.
+
+!!!note
+	Upon redefinition of a custom character all its instances will be updated automatically.
+
+!!!note
+	This function resets cursor position to home if `liquidcrystal.position` function is not available.
 
 !!! note
 	There are web services (like [1](https://omerk.github.io/lcdchargen/) and [2](https://www.quinapalus.com/hd44780udg.html)) that help create custom characters.
@@ -215,9 +360,9 @@ This function resets cursor position to home.
 `liquidcrystal.customChar(self, index, bytes)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
-- `index`: custom char index in range from 0 to 7.
-- `bytes`: array of 8 or 10 bytes that defines new char bitmap line by line.
+- `self`: `liquidcrystal` instance
+- `index`: custom char index in range from 0 to 7
+- `bytes`: array of 8 or 10 bytes that defines new char bitmap line by line
 
 #### Returns
 `nil`
@@ -235,11 +380,11 @@ Turn display on and off. Does not affect display backlight. Does not clear the d
 `liquidcrystal.display(self, on)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
-- `on`: `true` to turn on, `false` to turn off.
+- `self`: `liquidcrystal` instance
+- `on`: `true` to turn on, `false` to turn off
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
@@ -253,88 +398,14 @@ Reset cursor and screen position.
 `liquidcrystal.home(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
 liquidcrystal:home()
-```
-
-## liquidcrystal.init
-Function to setup the NodeMCU communication interface and configure LCD.
-
-#### Syntax
-`liquidcrystal.init(self, bus, bus_args, fourbitmode, onelinemode, eightdotsmode, column_width, insert_delay)`
-
-#### Parameters
-- `self`: `liquidcrystal` instance.
-- `bus`: "GPIO" or "I2C".
-- `bus_args`: interface configuration table.
-  - for 4 bit `GPIO` interface table elements are:
-	- `en`: IO connected to LCDs `EN` pin
-	- `rs`: IO connected to LCDs `RS` pin
-	- `bl`: IO controlling LCDs backlight. Optional
-	- `0`: IO connected to LCDs `D4` pin
-	- `1`: IO connected to LCDs `D5` pin
-	- `2`: IO connected to LCDs `D6` pin
-	- `3`: IO connected to LCDs `D7` pin
-  - for 8 bit `GPIO` interface table elements are:
-	- `en`: IO connected to LCDs `EN` pin
-	- `rs`: IO connected to LCDs `RS` pin
-	- `bl`: IO controlling LCDs backlight. Optional
-	- `0`: IO connected to LCDs `D0` pin
-	- `1`: IO connected to LCDs `D1` pin
-	- `2`: IO connected to LCDs `D2` pin
-	- `3`: IO connected to LCDs `D3` pin
-	- `4`: IO connected to LCDs `D4` pin
-	- `5`: IO connected to LCDs `D5` pin
-	- `6`: IO connected to LCDs `D6` pin
-	- `7`: IO connected to LCDs `D7` pin
-  - for `I2C` interface table elements are:
-	- `address`: 7 bit address of `PCF8574` chip
-	- `id`: `i2c` bus id
-	- `speed`: `i2c` communication speed
-	- `sda`: IO connected to `PCF8574` `SDA` pin. If set to `nil`, I²C bus initialization step via [`i2c.setup`](https://nodemcu.readthedocs.io/en/master/modules/i2c/#i2csetup) will be skipped
-	- `scl`: IO connected to `PCF8574` `SCL` pin
-	- `pinout`: pinout table of the I²C GPIO expander. If set to `nil`, default values will be
-      used (used by most vendors)
-	  - `rs`: `RS` pin bit position (default `0`)
-      - `rw`: `RW` pin bit position (default `1`)
-      - `en`: `EN` pin bit position (default `2`)
-      - `backlight`: backlight controlling pin bit position (default `3`)
-      - `d4`: `D4` pin bit position (default `4`)
-      - `d5`: `D5` pin bit position (default `5`)
-      - `d6`: `D6` pin bit position (default `6`)
-      - `d7`: `D7` pin bit position (default `7`)
-
-- `fourbitmode`: `true` to use 4 bit communication interface, `false` to use 8 bit communication. Set to `false` is you wish to use GPIO interface with 8 data wires. Otherwise set to `true`.
-- `onelinemode`: `true` to use one line mode, `false` to use two line mode.
-- `eightdotsmode`: `true` to use 5x8 dot font, `false` to use 5x10 dot font.
-- `column_width`: number of characters in column. Used for offset calculations in function `cursorMove`. If set to `nil`, functionality of `cursorMove` will be limited.
-- `insert_delay`: `true` to insert appropriate `tmr.delay` for time consuming operations. It is safe to set this to `false` if you don't redraw screen constantly. Set to `true`, if there are some glitches.
-
-!!! note
-	LCDs `RW` pin must be pulled to the ground.
-
-#### Returns
-`nil`
-
-#### Example (4 bit GPIO)
-```lua
-liquidcrystal:init("GPIO", {rs=0,en=1,[0]=2,[1]=3,[2]=4,[3]=5},true, true, false, 20, true)
-```
-
-#### Example (8 bit GPIO)
-```lua
-liquidcrystal:init("GPIO", {rs=0,en=1,[0]=6,[1]=7,[2]=8,[3]=12,[4]=2,[5]=3,[6]=4,[7]=5},false, false, true, nil, true)
-```
-
-#### Example (I2C)
-```lua
-liquidcrystal:init("I2C", {address=0x27,id=0,sda=1,scl=2,speed=i2c.SLOW},true, false, true, 20, true)
 ```
 
 ## liquidcrystal.leftToRight
@@ -344,14 +415,54 @@ Print text left to right (default).
 `liquidcrystal.leftToRight(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
 liquidcrystal:leftToRight()
+```
+
+## liquidcrystal.position
+Get current position of the cursor. Position is 0 indexed. When using GPIO backend without `rw` argument specification function does nothing.
+
+#### Syntax
+`liquidcrystal.position(self)`
+
+#### Parameters
+- `self`: `liquidcrystal` instance
+
+#### Returns
+- 0 indexed position of the cursor
+
+#### Example
+```lua
+local pos = liquidcrystal:position() -- save position
+-- some code
+liquidcrystal:cursorMove(pos) -- restore position
+```
+
+## liquidcrystal.readChar
+Return current character numerical representation.
+When using GPIO backend without `rw` argument specification function does nothing.
+
+#### Syntax
+`liquidcrystal.readChar(self)`
+
+#### Parameters
+- `self`: `liquidcrystal` instance
+
+#### Returns
+- numerical representation of the current character
+
+#### Example
+```lua
+liquidcrystal:home() -- goto home
+local ch = liquidcrystal:readChar() -- read char
+liquidcrystal:cursorMove(1, 2) -- move to the second line
+for i=ch,ch+5 do lc:write(i) end -- print 6 chars starting with ch
 ```
 
 ## liquidcrystal.rightToLeft
@@ -361,10 +472,10 @@ Print text right to left.
 `liquidcrystal.rightToLeft(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
@@ -378,10 +489,10 @@ Move text to the left.
 `liquidcrystal.scrollLeft(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
@@ -395,10 +506,10 @@ Move text to the right.
 `liquidcrystal.scrollRight(self)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
+- `self`: `liquidcrystal` instance
 
 #### Returns
-`nil`
+- sent data
 
 #### Example
 ```lua
@@ -412,8 +523,8 @@ Print text.
 `liquidcrystal.write(self, ...)`
 
 #### Parameters
-- `self`: `liquidcrystal` instance.
-- `...`: strings or char codes. For the list of available characters refer to [HD44780 datasheet](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf#page=17).
+- `self`: `liquidcrystal` instance
+- `...`: strings or char codes. For the list of available characters refer to [HD44780 datasheet](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf#page=17)
 
 #### Returns
 `nil`
@@ -423,4 +534,5 @@ Print text.
 liquidcrystal:write("hello world")
 liquidcrystal:write("hello yourself", "!!!", 243, 244)
 ```
+
 

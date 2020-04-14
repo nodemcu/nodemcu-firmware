@@ -41,21 +41,13 @@ local LCD_5x10DOTS = 0x04
 local LCD_5x8DOTS = 0x00
 
 
-function LiquidCrystal:clear() return self:_command(LCD_CLEARDISPLAY) end
-
-function LiquidCrystal:home() return self:_command(LCD_RETURNHOME) end
-
-function LiquidCrystal:cursorMove(col, row)
-   return self:_command(bit.bor(LCD_SETDDRAMADDR, col + (row and (self._offsets[row] - 1) or 0)))
-end
-
-function LiquidCrystal:display(on)
+function LiquidCrystal:autoscroll(on)
    if on then
-      self._displaycontrol = bit.bor(self._displaycontrol, LCD_DISPLAYON)
+      self._displaymode = bit.bor(self._displaymode, LCD_ENTRYSHIFTINCREMENT)
    else
-      self._displaycontrol = bit.band(self._displaycontrol, bit.bnot(LCD_DISPLAYON))
+      self._displaymode = bit.band(self._displaymode, bit.bnot(LCD_ENTRYSHIFTINCREMENT))
    end
-   return self:_command(bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
+   return self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
 end
 
 function LiquidCrystal:blink(on)
@@ -67,6 +59,16 @@ function LiquidCrystal:blink(on)
    return self:_command(bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
 end
 
+function LiquidCrystal:clear() return self:_command(LCD_CLEARDISPLAY) end
+
+function LiquidCrystal:cursorLeft()
+   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_CURSORMOVE, LCD_MOVELEFT))
+end
+
+function LiquidCrystal:cursorMove(col, row)
+   return self:_command(bit.bor(LCD_SETDDRAMADDR, col + (row and (self._offsets[row] - 1) or 0)))
+end
+
 function LiquidCrystal:cursor(on)
    if on then
       self._displaycontrol = bit.bor(self._displaycontrol, LCD_CURSORON)
@@ -76,21 +78,27 @@ function LiquidCrystal:cursor(on)
    return self:_command(bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
 end
 
-function LiquidCrystal:cursorLeft()
-   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_CURSORMOVE, LCD_MOVELEFT))
-end
-
 function LiquidCrystal:cursorRight()
    return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_CURSORMOVE, LCD_MOVERIGHT))
 end
 
-function LiquidCrystal:scrollLeft()
-   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVELEFT))
+function LiquidCrystal:customChar(index, bytes)
+   local pos = self:position()
+   self:_command(bit.bor(LCD_SETCGRAMADDR, bit.lshift(bit.band(index, 0x7), 3)))
+   for _, b in ipairs(bytes) do self:_write(b) end
+   self:cursorMove(pos)
 end
 
-function LiquidCrystal:scrollRight()
-   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVERIGHT))
+function LiquidCrystal:display(on)
+   if on then
+      self._displaycontrol = bit.bor(self._displaycontrol, LCD_DISPLAYON)
+   else
+      self._displaycontrol = bit.band(self._displaycontrol, bit.bnot(LCD_DISPLAYON))
+   end
+   return self:_command(bit.bor(LCD_DISPLAYCONTROL, self._displaycontrol))
 end
+
+function LiquidCrystal:home() return self:_command(LCD_RETURNHOME) end
 
 function LiquidCrystal:leftToRight()
    self._displaymode = bit.bor(self._displaymode, LCD_ENTRYLEFT)
@@ -102,13 +110,12 @@ function LiquidCrystal:rightToLeft()
    self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
 end
 
-function LiquidCrystal:autoscroll(on)
-   if on then
-      self._displaymode = bit.bor(self._displaymode, LCD_ENTRYSHIFTINCREMENT)
-   else
-      self._displaymode = bit.band(self._displaymode, bit.bnot(LCD_ENTRYSHIFTINCREMENT))
-   end
-   self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
+function LiquidCrystal:scrollLeft()
+   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVELEFT))
+end
+
+function LiquidCrystal:scrollRight()
+   return self:_command(bit.bor(LCD_CURSORSHIFT, LCD_DISPLAYMOVE, LCD_MOVERIGHT))
 end
 
 function LiquidCrystal:write(...)
@@ -124,12 +131,6 @@ function LiquidCrystal:write(...)
    end
 end
 
-function LiquidCrystal:customChar(index, bytes)
-   local pos = self:position()
-   self:_command(bit.bor(LCD_SETCGRAMADDR, bit.lshift(bit.band(index, 0x7), 3)))
-   for _, b in ipairs(bytes) do self:_write(b) end
-   self:cursorMove(pos)
-end
 
 return function (backend, onelinemode, eightdotsmode, column_width)
    local self = {}
