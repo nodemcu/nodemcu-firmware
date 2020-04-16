@@ -1,7 +1,7 @@
 # LiquidCrystal Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2019-12-01 | [Matsievskiy Sergey](https://github.com/seregaxvm) | [Matsievskiy Sergey](https://github.com/seregaxvm) | [liquidcrystal.lua](../../lua_modules/liquidcrystal/liquidcrystal.lua) [i2c4bit.lua](../../lua_modules/liquidcrystal/i2c4bit.lua) [gpio4bit.lua](../../lua_modules/liquidcrystal/gpio4bit.lua) [gpio8bit.lua](../../lua_modules/liquidcrystal/gpio8bit.lua) |
+| 2019-12-01 | [Matsievskiy Sergey](https://github.com/seregaxvm) | [Matsievskiy Sergey](https://github.com/seregaxvm) | [liquidcrystal.lua](../../lua_modules/liquidcrystal/liquidcrystal.lua) [i2c4bit.lua](../../lua_modules/liquidcrystal/lc-i2c4bit.lua) [gpio4bit.lua](../../lua_modules/liquidcrystal/lc-gpio4bit.lua) [gpio8bit.lua](../../lua_modules/liquidcrystal/lc-gpio8bit.lua) |
 
 This Lua module provides access to [Hitachi HD44780](https://www.sparkfun.com/datasheets/LCD/HD44780.pdf) based LCDs. It supports 4 bit and 8 bit GPIO interface, 4 bit [PCF8574](https://www.nxp.com/docs/en/data-sheet/PCF8574_PCF8574A.pdf) based I²C interface.
 
@@ -14,7 +14,7 @@ In this example LED screen is connected using I²C GPIO expander.
 Program defines five custom characters and prints text.
 
 ```lua
-backend_meta = require "i2c4bit"
+backend_meta = require "lc-i2c4bit"
 lc_meta = require "liquidcrystal"
 
 -- create display object
@@ -46,21 +46,17 @@ for _, d in ipairs(lc:readCustom(1)) do print(d) end -- read back note char
 
 ### Require
 ```lua
-i2c4bit_meta = require("i2c4bit")
-gpio4bit_meta = require("gpio4bit")
-gpio8bit_meta = require("gpio8bit")
+i2c4bit_meta = require("lc-i2c4bit")
+gpio4bit_meta = require("lc-gpio4bit")
+gpio8bit_meta = require("lc-gpio8bit")
 lc_meta = require("liquidcrystal")
 ```
 
 ### Release
 ```lua
-i2c4bit_meta = require("i2c4bit")
-package.loaded["i2c4bit"] = nil
-gpio4bit_meta = require("gpio4bit")
-package.loaded["gpio4bit"] = nil
-gpio8bit_meta = require("gpio8bit")
-package.loaded["gpio8bit"] = nil
-lc_meta = require("liquidcrystal")
+package.loaded["lc-i2c4bit"] = nil
+package.loaded["lc-gpio4bit"] = nil
+package.loaded["lc-gpio8bit"] = nil
 package.loaded["liquidcrystal"] = nil
 ```
 
@@ -99,7 +95,7 @@ It configures I²C backend and returns backend object.
 
 #### Example
 ```lua
-backend_meta = require "i2c4bit"
+backend_meta = require "lc-i2c4bit"
 backend = backend_meta{sda=1, scl=2 ,speed=i2c.FAST}
 ```
 
@@ -126,7 +122,7 @@ It configures GPIO 4 bit backend and returns backend object.
 
 #### Example
 ```lua
-backend_meta = require "gpio4bit"
+backend_meta = require "lc-gpio4bit"
 backend = backend_meta{rs=0, rw=1, en=4, d4=5, d5=6, d6=7, d7=8}
 ```
 
@@ -157,7 +153,7 @@ It configures GPIO 8 bit backend and returns backend object.
 
 #### Example
 ```lua
-backend_meta = require "gpio8bit"
+backend_meta = require "lc-gpio8bit"
 backend = backend_meta{rs=15, rw=2, en=5, d0=23, d1=13, d2=33, d3=32, d4=18, d5=19, d6=21, d7=22}
 ```
 
