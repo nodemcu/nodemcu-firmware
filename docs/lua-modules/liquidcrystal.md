@@ -355,7 +355,7 @@ They are numbered from 0 to 7 with half of them being aliases to each other (0 t
 	
 	This function resets cursor position to home if `liquidcrystal.position` function is not available.
 	
-	There are web services ([1](https://omerk.github.io/lcdchargen/), [2](https://www.quinapalus.com/hd44780udg.html)) that help create custom characters.
+	There are web services ([1](https://omerk.github.io/lcdchargen/), [2](https://www.quinapalus.com/hd44780udg.html)) and [desktop applications](https://pypi.org/project/lcdchargen/) that help create custom characters.
 
 #### Syntax
 `liquidcrystal.customChar(self, index, bytes)`
