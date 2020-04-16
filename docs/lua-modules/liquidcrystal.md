@@ -18,7 +18,7 @@ backend_meta = require "i2c4bit"
 lc_meta = require "liquidcrystal"
 
 -- create display object
-lc = lc_meta(backend_meta{sda=25, scl=26}, true, true, 20)
+lc = lc_meta(backend_meta{sda=1, scl=2}, false, true, 20)
 backend_meta = nil
 lc_meta = nil
 -- define custom characters
@@ -38,6 +38,10 @@ lc:cursorMove(1, 3)
 lc:write("Battery level ", 2, 3, 4, 5)
 lc:home()
 lc:blink(false)
+for i=1,20 do print(lc:read()) end -- read back first line
+lc:home()
+for _, d in ipairs(lc:readCustom(0)) do print(d) end -- read back umbrella char
+for _, d in ipairs(lc:readCustom(1)) do print(d) end -- read back note char
 ```
 
 ### Require
@@ -345,16 +349,17 @@ liquidcrystal:cursorRight()
 ```
 
 ## liquidcrystal.customChar
-Define new custom char. Up to 8 custom characters with indexes 0 to 7 may be defined. They are accessed via `write` function by index.
-
-!!!note
-	Upon redefinition of a custom character all its instances will be updated automatically.
-
-!!!note
-	This function resets cursor position to home if `liquidcrystal.position` function is not available.
+Define new custom char. Up to 8 custom characters with indexes 0 to 7 may be defined in eight dot mode.
+They are accessed via `write` function by index.
+In ten dot mode only 4 custom characters may be used.
+They are numbered from 0 to 7 with half of them being aliases to each other (0 to 1, 2 to 3 etc).
 
 !!! note
-	There are web services (like [1](https://omerk.github.io/lcdchargen/) and [2](https://www.quinapalus.com/hd44780udg.html)) that help create custom characters.
+	Upon redefinition of a custom character all its instances will be updated automatically.
+	
+	This function resets cursor position to home if `liquidcrystal.position` function is not available.
+	
+	There are web services ([1](https://omerk.github.io/lcdchargen/), [2](https://www.quinapalus.com/hd44780udg.html)) that help create custom characters.
 
 #### Syntax
 `liquidcrystal.customChar(self, index, bytes)`
@@ -362,7 +367,7 @@ Define new custom char. Up to 8 custom characters with indexes 0 to 7 may be def
 #### Parameters
 - `self`: `liquidcrystal` instance
 - `index`: custom char index in range from 0 to 7
-- `bytes`: array of 8 or 10 bytes that defines new char bitmap line by line
+- `bytes`: array of 8 bytes in eight bit mode or 11 bytes in ten bit mode (eleventh line is a cursor line that can also be used) that defines new char bitmap line by line
 
 #### Returns
 `nil`
@@ -444,12 +449,12 @@ local pos = liquidcrystal:position() -- save position
 liquidcrystal:cursorMove(pos) -- restore position
 ```
 
-## liquidcrystal.readChar
+## liquidcrystal.read
 Return current character numerical representation.
 When using GPIO backend without `rw` argument specification function does nothing.
 
 #### Syntax
-`liquidcrystal.readChar(self)`
+`liquidcrystal.read(self)`
 
 #### Parameters
 - `self`: `liquidcrystal` instance
@@ -460,9 +465,29 @@ When using GPIO backend without `rw` argument specification function does nothin
 #### Example
 ```lua
 liquidcrystal:home() -- goto home
-local ch = liquidcrystal:readChar() -- read char
+local ch = liquidcrystal:read() -- read char
 liquidcrystal:cursorMove(1, 2) -- move to the second line
 for i=ch,ch+5 do lc:write(i) end -- print 6 chars starting with ch
+```
+
+## liquidcrystal.readCustom
+Return custom char byte array.
+When using GPIO backend without `rw` argument specification function returns zeros.
+
+#### Syntax
+`liquidcrystal.readCustom(self, index)`
+
+#### Parameters
+- `self`: `liquidcrystal` instance
+- `index`: custom char index in range from 0 to 7
+
+#### Returns
+- table of size 8 in eight dot mode or 11 in ten dot mode. Each 8 bit number represents a character dot line
+
+#### Example
+```lua
+lc:customChar(0, {0,14,31,31,4,4,5,2}) -- define custom character
+for _, d in ipairs(lc:readCustom(0)) do print(d) end -- read it back
 ```
 
 ## liquidcrystal.rightToLeft

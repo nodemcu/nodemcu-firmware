@@ -1,3 +1,4 @@
+local bit = bit
 -- metatable
 local LiquidCrystal = {}
 LiquidCrystal.__index = LiquidCrystal
@@ -84,8 +85,10 @@ end
 
 function LiquidCrystal:customChar(index, bytes)
    local pos = self:position()
-   self:_command(bit.bor(LCD_SETCGRAMADDR, bit.lshift(bit.band(index, 0x7), 3)))
-   for _, b in ipairs(bytes) do self:_write(b) end
+   self:_command(bit.bor(LCD_SETCGRAMADDR,
+                         bit.lshift(bit.band(self._eightdots and index or bit.clear(index, 0),
+                                             0x7), 3)))
+   for i=1,(self._eightdots and 8 or 11) do self:_write(bytes[i] or 0) end
    self:cursorMove(pos)
 end
 
@@ -103,6 +106,17 @@ function LiquidCrystal:home() return self:_command(LCD_RETURNHOME) end
 function LiquidCrystal:leftToRight()
    self._displaymode = bit.bor(self._displaymode, LCD_ENTRYLEFT)
    return self:_command(bit.bor(LCD_ENTRYMODESET, self._displaymode))
+end
+
+function LiquidCrystal:readCustom(index)
+   local pos = self:position()
+   local data = {}
+   self:_command(bit.bor(LCD_SETCGRAMADDR,
+                         bit.lshift(bit.band(self._eightdots and index or bit.clear(index, 0),
+                                             0x7), 3)))
+   for i=1,(self._eightdots and 8 or 11) do data[i] = self:read() end
+   self:cursorMove(pos)
+   return data
 end
 
 function LiquidCrystal:rightToLeft()
@@ -141,13 +155,14 @@ return function (backend, onelinemode, eightdotsmode, column_width)
    self.busy      = backend.busy
    self.position  = backend.position
    self._write    = backend.write
-   self.readChar  = backend.read
+   self.read      = backend.read
    self.backlight = backend.backlight
 
    -- defaults
    self._displaycontrol = 0
    self._displaymode = 0
 
+   self._eightdots = eightdotsmode
    self._offsets = {0, 0x40}
    if column_width ~= nil then
       self._offsets[3] =  0    + column_width
