@@ -6,6 +6,14 @@
 This module provides a simple way of configuring ESP8266 chips without using a
 serial interface or pre-programming WiFi credentials onto the chip.
 
+!!! attention	"ATTENTION apple users"
+
+	Due to bug [#2931](https://github.com/nodemcu/nodemcu-firmware/issues/2931) on most apple devices the configuration currently does not work.
+	But there is a **workaround**. We supply an alternative html file which uses another method to transfer the login credentials.
+	With this workaround no additional inputs will be possible and no eus_params.lua will be written. The credentials will be stored in the ESP flash.
+
+	Just copy `enduser_setup_apple.html` from [here](../../app/modules/enduser_setup/enduser_setup_apple.html) to the ESP and rename it to `enduser_setup.html`.
+
 After running [`enduser_setup.start()`](#enduser_setupstart), a wireless 
 network named "SetupGadget_XXXXXX" will starting. This prefix can be overridden
 in `user_config.h` by defining `ENDUSER_SETUP_AP_SSID`. Connect to that SSID 
