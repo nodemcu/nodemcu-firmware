@@ -64,8 +64,8 @@ static int bmp085_setup(lua_State* L) {
     return 0;
 }
 
-static uint32_t bmp085_temperature_raw_b5(void) {
-    int16_t t, X1, X2;
+static int32_t bmp085_temperature_raw_b5(void) {
+    int32_t t, X1, X2;
 
     platform_i2c_send_start(bmp085_i2c_id);
     platform_i2c_send_address(bmp085_i2c_id, bmp085_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
@@ -76,7 +76,7 @@ static uint32_t bmp085_temperature_raw_b5(void) {
     // Wait for device to complete sampling
     os_delay_us(4500);
 
-    t = r16(bmp085_i2c_id, 0xF6);
+    t = r16u(bmp085_i2c_id, 0xF6);
     X1 = ((t - bmp085_data.AC6) * bmp085_data.AC5) >> 15;
     X2 = (bmp085_data.MC << 11)/ (X1 + bmp085_data.MD);
 
