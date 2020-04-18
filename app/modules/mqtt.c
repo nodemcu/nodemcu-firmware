@@ -248,7 +248,8 @@ static sint8 mqtt_send_if_possible(struct lmqtt_userdata *mud)
   sint8 espconn_status = ESPCONN_OK;
 
   msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
-  if (pending_msg) {
+  if (pending_msg && !pending_msg->sent) {
+    pending_msg->sent = 1;
     NODE_DBG("Sent: %d\n", pending_msg->msg.length);
 #ifdef CLIENT_SSL_ENABLE
     if( mud->secure )
@@ -758,10 +759,7 @@ void mqtt_socket_timer(void *arg)
     mqtt_socket_do_disconnect(mud);
     mqtt_connack_fail(mud, MQTT_CONN_FAIL_TIMEOUT_RECEIVING);
   } else if(mud->connState == MQTT_DATA){
-    msg_queue_t *pending_msg = msg_peek(&(mud->mqtt_state.pending_msg_q));
-    if(pending_msg){
-      mqtt_send_if_possible(mud);
-    } else {
+    if(!msg_peek(&(mud->mqtt_state.pending_msg_q))) {
       // no queued event.
       if (mud->keepalive_sent) {
         // Oh dear -- keepalive timer expired and still no ack of previous message

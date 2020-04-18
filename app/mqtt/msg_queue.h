@@ -13,6 +13,8 @@ typedef struct msg_queue_t {
   uint16_t msg_id;
   int msg_type;
   int publish_qos;
+
+  bool sent;
 } msg_queue_t;
 
 msg_queue_t * msg_enqueue(msg_queue_t **head, mqtt_message_t *msg, uint16_t msg_id, int msg_type, int publish_qos);
