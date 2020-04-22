@@ -30,6 +30,8 @@ local MCP23017_ADDRESS = 0x20 -- (0x20 to 0x27)
 
 local OUTPUT = false
 local INPUT = true
+local GPA = false
+local GPB = true
 local HIGH = true
 local LOW = false
 
@@ -113,8 +115,8 @@ local function readByte(registerAddr)
 end
 
 -- get IO dir register
-local function getDirRegisterAddr(pin)
-    if pin > 7 then
+local function getDirRegisterAddr(bReg)
+    if bReg == GPB then
         return MCP23017_IODIRB
     else
         return MCP23017_IODIRA
@@ -122,33 +124,35 @@ local function getDirRegisterAddr(pin)
 end
 
 -- get GPIO register address
-local function getGPIORegisterAddr(pin)
-    if pin > 7 then
+local function getGPIORegisterAddr(bReg)
+    if bReg == GPB then
         return MCP23017_GPIOB
     else
         return MCP23017_GPIOA
     end
 end
 
--- convert pin number for A/B register
-local function convertPin(pin)
-    if pin > 15 or pin < 0 then
-        print("The pin must be between 0 and 15")
+-- check pin is in range
+local function checkPinIsInRange(pin)
+    if pin > 7 or pin < 0 then
+        print("The pin must be between 0 and 7")
         return nil
     end
-    return pin % 8
+    return pin
 end
 
 -- setup internal pullup
-local function setInternalPullUp(iByte)
-    writeByte(MCP23017_DEFVALA, iByte)
-    writeByte(MCP23017_DEFVALB, iByte)
+local function setInternalPullUp(bReg, iByte)
+    if bReg == GPB then
+        writeByte(MCP23017_DEFVALB, iByte)
+    else
+        writeByte(MCP23017_DEFVALA, iByte)
+    end
 end
 
 -- set default GPIO mode
-local function setDefaultMode(iByte)
-    writeByte(MCP23017_IODIRA, iByte)
-    writeByte(MCP23017_IODIRB, iByte)
+local function setDefaultMode(bReg, iByte)
+    writeByte(getDirRegisterAddr(bReg), iByte)
 end
 
 local function numberToBool(val)
@@ -159,10 +163,11 @@ local function numberToBool(val)
     end
 end
 
--- reset gpio mode and pullup
+-- reset gpio mode
 local function reset()
-    setDefaultMode(0xFF) -- all to input
-    setInternalPullUp(0x00) -- disable pullup
+    -- all to input
+    setDefaultMode(GPA, 0xFF)
+    setDefaultMode(GPB, 0xFF)
 end
 
 -- setup device
@@ -183,13 +188,13 @@ local function setup(address, sclPin, sdaPin)
 end
 
 -- set mode for a pin
-local function setMode(pin, mode)
+local function setMode(bReg, pin, mode)
     if MCP23017_DEVICE_OK == false then
         return nil
     end
 
-    local inReq = getDirRegisterAddr(pin)
-    local inPin = convertPin(pin)
+    local inReq = getDirRegisterAddr(bReg)
+    local inPin = checkPinIsInRange(pin)
     local response = readByte(inReq)
     local newState
 
@@ -204,13 +209,13 @@ local function setMode(pin, mode)
 end
 
 -- set pin to low or high
-local function setPin(pin, state)
+local function setPin(bReg, pin, state)
     if MCP23017_DEVICE_OK == false then
         return nil
     end
 
-    local inReq = getGPIORegisterAddr(pin)
-    local inPin = convertPin(pin)
+    local inReq = getGPIORegisterAddr(bReg)
+    local inPin = checkPinIsInRange(pin)
     local response = readByte(inReq)
     local newState
 
@@ -225,13 +230,13 @@ local function setPin(pin, state)
 end
 
 -- read pin input
-local function getPinState(pin)
+local function getPinState(bReg, pin)
     if MCP23017_DEVICE_OK == false then
         return nil
     end
 
-    local inReq = getGPIORegisterAddr(pin)
-    local inPin = convertPin(pin)
+    local inReq = getGPIORegisterAddr(bReg)
+    local inPin = checkPinIsInRange(pin)
     local response = readByte(inReq)
     return issetBit(response, inPin)
 end
@@ -250,36 +255,27 @@ local function readFromRegsiter(registerAddr)
     return readByte(registerAddr)
 end
 
-local function writeIODIRA(newByte)
-    return writeToRegsiter(MCP23017_IODIRA, newByte)
+local function writeIODIR(bReg, newByte)
+    return writeToRegsiter(getDirRegisterAddr(bReg), newByte)
 end
 
-local function writeIODIRB(newByte)
-    return writeToRegsiter(MCP23017_IODIRB, newByte)
+local function writeGPIO(bReg, newByte)
+    return writeToRegsiter(getGPIORegisterAddr(bReg), newByte)
 end
 
-local function writeGPIOA(newByte)
-    return writeToRegsiter(MCP23017_GPIOA, newByte)
+local function readGPIO(bReg)
+    return readFromRegsiter(getGPIORegisterAddr(bReg))
 end
 
-local function writeGPIOB(newByte)
-    return writeToRegsiter(MCP23017_GPIOB, newByte)
-end
 
-local function readGPIOA()
-    return readFromRegsiter(MCP23017_GPIOA)
-end
-
-local function readGPIOB()
-    return readFromRegsiter(MCP23017_GPIOB)
-end
-
--- Set module name as parameter of require and return module table
+-- Set module name as parameter of require and rgetGPIORegisterAddreturn module table
 local M = {
-    HIGH = HIGH,
-    LOW = LOW,
     OUTPUT = OUTPUT,
     INPUT = INPUT,
+    GPA = GPA,
+    GPB = GPB,
+    HIGH = HIGH,
+    LOW = LOW,
     checkDevice = checkDevice,
     setup = setup,
     setMode = setMode,
@@ -287,12 +283,9 @@ local M = {
     getPinState = getPinState,
     reset = reset,
     setInternalPullUp = setInternalPullUp,
-    writeIODIRA = writeIODIRA,
-    writeIODIRB = writeIODIRB,
-    writeGPIOA = writeGPIOA,
-    writeGPIOB = writeGPIOB,
-    readGPIOA = readGPIOA,
-    readGPIOB = readGPIOB,
+    writeIODIR = writeIODIR,
+    writeGPIO = writeGPIO,
+    readGPIO = readGPIO,
 }
 
 local moduleName = ...
