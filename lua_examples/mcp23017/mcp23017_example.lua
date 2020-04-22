@@ -42,9 +42,9 @@ mcp23017.setup(address, cSCL, cSDA)
 ]]
 
 -- set pin 7 and 8 to output (GPA7 and GPB0) and GPB1 to input
-mcp23017.setMode(7, mcp23017.OUTPUT)
-mcp23017.setMode(8, mcp23017.OUTPUT)
-mcp23017.setMode(9, mcp23017.INPUT)
+mcp23017.setMode(mcp23017.GPA, 7, mcp23017.OUTPUT)
+mcp23017.setMode(mcp23017.GPB, 0, mcp23017.OUTPUT)
+mcp23017.setMode(mcp23017.GPB, 1, mcp23017.INPUT)
 
 
 
@@ -55,9 +55,9 @@ mcp23017.setMode(9, mcp23017.INPUT)
 ]]
 
 -- set pin 7 to high (GPA7)
-mcp23017.setPin(7, mcp23017.HIGH)
+mcp23017.setPin(mcp23017.GPA, 7, mcp23017.HIGH)
 -- set pin 8 to low (GPB0)
-mcp23017.setPin(8, mcp23017.LOW)
+mcp23017.setPin(mcp23017.GPB, 0, mcp23017.LOW)
 
 
 
@@ -71,21 +71,19 @@ mcp23017.setPin(8, mcp23017.LOW)
 local currentPin = 6
 local currentState = false
 
-mcp23017.setMode(currentPin, mcp23017.OUTPUT)
+mcp23017.setMode(mcp23017.GPA, currentPin, mcp23017.OUTPUT)
 
-if not tmr.create():alarm(1000, tmr.ALARM_AUTO, function()
+tmr.create():alarm(1000, tmr.ALARM_AUTO, function()
     if currentState == true then
         -- print("set to low")
-        mcp23017.setPin(currentPin, mcp23017.LOW)
+        mcp23017.setPin(mcp23017.GPA, currentPin, mcp23017.LOW)
         currentState = false
     else
         -- print("set to high")
-        mcp23017.setPin(currentPin, mcp23017.HIGH)
+        mcp23017.setPin(mcp23017.GPA, currentPin, mcp23017.HIGH)
         currentState = true
     end
-end) then
-    print("Timer can't be created")
-end
+end)
 
 
 
@@ -98,15 +96,12 @@ end
 ]]
 
 -- read input register
-if not tmr.create():alarm(7000, tmr.ALARM_AUTO, function()
-    local a = mcp23017.readGPIOA()
+tmr.create():alarm(7000, tmr.ALARM_AUTO, function()
+    local a = mcp23017.readGPIO(mcp23017.GPA)
     print(" ")
     print("GPIO A input states: " .. a)
 
-    local b = mcp23017.readGPIOB()
+    local b = mcp23017.readGPIO(mcp23017.GPB)
     print("GPIO B input states: " .. b)
     print(" ")
-
-end) then
-    print("Timer can't be created")
-end
+end)
