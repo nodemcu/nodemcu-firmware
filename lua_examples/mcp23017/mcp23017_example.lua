@@ -31,8 +31,11 @@ local cSCL = 1
 -- SDA pin = 2 = D2 / GPIO4 (ESP8266)
 local cSDA = 2
 
--- setup mcp23017
-mcp23017.setup(address, cSCL, cSDA)
+local i2cId = 0
+
+-- setup i2c bus and mcp23017
+i2c.setup(i2cId, cSDA, cSCL, i2c.SLOW)
+mcp23017.setup(address, i2cId)
 
 
 --[[

@@ -67,7 +67,6 @@ local MCP23017_OLATB = 0x15
 
 -- internal
 local MCP23017_id = 0
-local MCP23017_SPEED = i2c.SLOW
 local MCP23017_DEVICE_OK = false
 
 -- check device is available on address
@@ -171,11 +170,15 @@ local function reset()
 end
 
 -- setup device
-local function setup(address, sclPin, sdaPin)
+local function setup(address, i2c_id, sclPin, sdaPin)
 
     MCP23017_ADDRESS = string.format('0x%02X', address)
 
-    i2c.setup(MCP23017_id, sdaPin, sclPin, MCP23017_SPEED)
+    if sclPin ~= nil and sdaPin ~= nil then
+        i2c.setup(i2c_id, sdaPin, sclPin, i2c.SLOW)
+    else
+        MCP23017_id = i2c_id
+    end
 
     if (checkAddress(address) ~= true) or (checkDevice(address) ~= true) then
         MCP23017_DEVICE_OK = false
@@ -256,14 +259,23 @@ local function readFromRegsiter(registerAddr)
 end
 
 local function writeIODIR(bReg, newByte)
+    if MCP23017_DEVICE_OK == false then
+        return nil
+    end
     return writeToRegsiter(getDirRegisterAddr(bReg), newByte)
 end
 
 local function writeGPIO(bReg, newByte)
+    if MCP23017_DEVICE_OK == false then
+        return nil
+    end
     return writeToRegsiter(getGPIORegisterAddr(bReg), newByte)
 end
 
 local function readGPIO(bReg)
+    if MCP23017_DEVICE_OK == false then
+        return nil
+    end
     return readFromRegsiter(getGPIORegisterAddr(bReg))
 end
 
