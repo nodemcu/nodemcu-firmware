@@ -139,7 +139,7 @@ static int lgpio_read (lua_State *L)
 static int lgpio_trig (lua_State *L)
 {
   int gpio = luaL_checkint (L, 1);
-  int intr_type = luaL_checkint (L, 2);
+  int intr_type = luaL_optint (L, 2, GPIO_INTR_DISABLE);
   if (!lua_isnoneornil (L, 3))
     luaL_checkanyfunction (L, 3);
 
@@ -156,7 +156,15 @@ static int lgpio_trig (lua_State *L)
   }
 
   // Set/update interrupt callback
-  if (!lua_isnoneornil (L, 3))
+
+  // For compatibility with esp8266 API, passing in a non-zero intr_type and a
+  // nil callback preserves any existing callback that has been set.
+  if (intr_type == GPIO_INTR_DISABLE)
+  {
+    luaL_unref (L, LUA_REGISTRYINDEX, gpio_cb_refs[gpio]);
+    gpio_cb_refs[gpio] = LUA_NOREF;
+  }
+  else if (!lua_isnoneornil (L, 3))
   {
     luaL_unref (L, LUA_REGISTRYINDEX, gpio_cb_refs[gpio]);
     gpio_cb_refs[gpio] = luaL_ref (L, LUA_REGISTRYINDEX);
@@ -165,7 +173,7 @@ static int lgpio_trig (lua_State *L)
   // Disable interrupt while reconfiguring
   check_err (L, gpio_intr_disable (gpio));
 
-  if (gpio_cb_refs[gpio] == LUA_NOREF)
+  if (intr_type == GPIO_INTR_DISABLE)
   {
     check_err (L, gpio_set_intr_type (gpio, GPIO_INTR_DISABLE));
     check_err (L, gpio_isr_handler_remove (gpio));

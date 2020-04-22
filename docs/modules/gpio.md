@@ -67,17 +67,18 @@ Read digital GPIO pin value.
 Establish or clear a callback function to run on interrupt for a GPIO.
 
 #### Syntax
-`gpio.trig(pin, type [, callback])`
+`gpio.trig(pin [, type [, callback]])`
 
 #### Parameters
 - `pin`, see [GPIO Overview](#gpio-overview)
 - `type` trigger type, one of
+    - `gpio.INTR_DISABLE` or `nil` to disable interrupts on this pin (in which case `callback` is ignored and should be `nil` or omitted)
     - `gpio.INTR_UP` for trigger on rising edge
     - `gpio.INTR_DOWN` for trigger on falling edge
     - `gpio.INTR_UP_DOWN` for trigger on both edges
     - `gpio.INTR_LOW` for trigger on low level
     - `gpio.INTR_HIGH` for trigger on high level
-- `callback` optional function to be called when trigger fires, trigger is disabled when omitted. Parameters are:
+- `callback` optional function to be called when trigger fires. If `nil` or omitted (and `type` is not `gpio.INTR_DISABLE`) then any previously-set callback will continue to be used. Parameters are:
     - `pin`
     - `level`
 
