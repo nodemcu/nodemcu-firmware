@@ -88,14 +88,20 @@ static int file_on(lua_State *L)
   case ON_RTC:
     luaL_unref(L, LUA_REGISTRYINDEX, rtc_cb_ref);
 
-    if (lua_isfunction(L, 2)) {
+    switch(lua_type(L, 2)) {
+    case LUA_TFUNCTION:
       lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
       rtc_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       vfs_register_rtc_cb(file_rtc_cb);
-    } else {
+      break;
+    case LUA_TNIL:
       rtc_cb_ref = LUA_NOREF;
       vfs_register_rtc_cb(NULL);
+      break;
+    default:
+      luaL_error(L, "Callback should be function or nil");
     }
+
     break;
   default:
     break;

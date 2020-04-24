@@ -492,18 +492,23 @@ LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 
 
 LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
-  Closure *cl;
   lua_lock(L);
-  luaC_checkGC(L);
-  api_checknelems(L, n);
-  cl = luaF_newCclosure(L, n, getcurrenv(L));
-  cl->c.f = fn;
-  L->top -= n;
-  while (n--)
-    setobj2n(L, &cl->c.upvalue[n], L->top+n);
-  setclvalue(L, L->top, cl);
-  lua_assert(iswhite(obj2gco(cl)));
-  api_incr_top(L);
+  if (n == 0) {
+    setfvalue(L->top, fn);
+    api_incr_top(L);
+  } else {
+    Closure *cl;
+    luaC_checkGC(L);
+    api_checknelems(L, n);
+    cl = luaF_newCclosure(L, n, getcurrenv(L));
+    cl->c.f = fn;
+    L->top -= n;
+    while (n--)
+      setobj2n(L, &cl->c.upvalue[n], L->top+n);
+    setclvalue(L, L->top, cl);
+    lua_assert(iswhite(obj2gco(cl)));
+    api_incr_top(L);
+  }
   lua_unlock(L);
 }
 
@@ -523,16 +528,10 @@ LUA_API void lua_pushlightuserdata (lua_State *L, void *p) {
   lua_unlock(L);
 }
 
+
 LUA_API void lua_pushrotable (lua_State *L,  const ROTable *t) {
   lua_lock(L);
   sethvalue(L, L->top, cast(ROTable *,t));
-  api_incr_top(L);
-  lua_unlock(L);
-}
-
-LUA_API void lua_pushlightfunction(lua_State *L, lua_CFunction f) {
-  lua_lock(L);
-  setfvalue(L->top, f);
   api_incr_top(L);
   lua_unlock(L);
 }
@@ -1140,5 +1139,12 @@ LUA_API const char *lua_setupvalue (lua_State *L, int funcindex, int n) {
 LUA_API void lua_setegcmode( lua_State *L, int mode, int limit) {
   G(L)->egcmode = mode;
   G(L)->memlimit = limit;
+}
+
+LUA_API void legc_set_mode(lua_State *L, int mode, int limit) {
+   global_State *g = G(L);
+
+   g->egcmode = mode;
+   g->memlimit = limit;
 }
 

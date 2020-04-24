@@ -65,6 +65,7 @@ m = mqtt.Client("clientid", 120, "user", "password")
 m:lwt("/lwt", "offline", 0, 0)
 
 m:on("connect", function(client) print ("connected") end)
+m:on("connfail", function(client, reason) print ("connection failed", reason) end)
 m:on("offline", function(client) print ("offline") end)
 
 -- on publish message receive event
@@ -81,7 +82,7 @@ m:on("overflow", function(client, topic, data)
 end)
 
 -- for TLS: m:connect("192.168.11.118", secure-port, 1)
-m:connect("192.168.11.118", 1883, 0, function(client)
+m:connect("192.168.11.118", 1883, false, function(client)
   print("connected")
   -- Calling subscribe/publish only makes sense once the connection
   -- was successfully established. You can do that either here in the
@@ -134,11 +135,11 @@ Connects to the broker specified by the given host, port, and secure options.
 
 !!! attention
 
-    Secure (`https`) connections come with quite a few limitations.  Please see
+    Secure (`mqtts`) connections come with quite a few limitations.  Please see
     the warnings in the [tls module](tls.md)'s documentation.
 
 #### Returns
-`true` on success, `false` otherwise
+`nil`; use callbacks to observe the outcome.
 
 #### Notes
 
@@ -157,8 +158,16 @@ end
 
 In reality, the connected function should do something useful!
 
-The two callbacks to `:connect()` alias with the "connect" and "offline"
-callbacks available through `:on()`.
+The first callback to `:connect()` aliases with the "connect" callback
+available through `:on()` (the last passed callback to either of those are
+used).  However, if `nil` is passed to `:connect()`, any existing callback
+will be preserved, rather than removed.
+
+The second (failure) callback aliases with the "connfail" callback available
+through `:on()`.  (The "offline" callback is only called after an already
+established connection becomes closed. If the `connect()` call fails to
+establish a connection, the callback passed to `:connect()` is called and
+nothing else.)
 
 Previously, we instructed an application to pass either the *integer* 0 or
 *integer* 1 for `secure`.  Now, this will trigger a deprecation warning; please
@@ -182,16 +191,23 @@ use the *boolean* `false` or `true` instead.
 
 ## mqtt.client:lwt()
 
-Setup [Last Will and Testament](http://www.hivemq.com/blog/mqtt-essentials-part-9-last-will-and-testament) (optional). A broker will publish a message with qos = 0, retain = 0, data = "offline" to topic "/lwt" if client does not send keepalive packet.
+Setup [Last Will and Testament](http://www.hivemq.com/blog/mqtt-essentials-part-9-last-will-and-testament).
 
 As the last will is sent to the broker when connecting, `lwt()` must be called BEFORE calling `connect()`.  
 
-The broker will publish a client's last will message once he NOTICES that the connection to the client is broken. The broker will notice this when:
+The broker will publish a client's last will message once it notices that the connection to the client is broken; that occurs when...
   - The client fails to send a keepalive packet for as long as specified in `mqtt.Client()`
-  - The tcp-connection is properly closed (without closing the mqtt-connection before)
-  - The broker tries to send data to the client and fails to do so, because the tcp-connection is not longer open.
+  - The TCP connection is properly closed (without closing the mqtt-connection before)
+  - The broker tries to send data to the client and the TCP connection breaks.
 
 This means if you specified 120 as keepalive timer, just turn off the client device and the broker does not send any data to the client, the last will message will be published 120s after turning off the device.
+
+!!! note
+
+    There is at present a bug in the NodeMCU MQTT library that results in all disconnections
+    appearing as unexpected disconnects -- the MQTT-level disconnection message is not set
+    before the TCP connection is torn down.  As a result, LWT messages will almost always be
+    published.  See https://github.com/nodemcu/nodemcu-firmware/issues/3031
 
 #### Syntax
 `mqtt:lwt(topic, message[, qos[, retain]])`
@@ -213,8 +229,23 @@ Registers a callback function for an event.
 `mqtt:on(event, function(client[, topic[, message]]))`
 
 #### Parameters
-- `event` can be "connect", "suback", "unsuback", "puback", "message", "overflow", or "offline"
-- `function(client[, topic[, message]])` callback function. The first parameter is the client. If event is "message", the 2nd and 3rd param are received topic and message (strings).
+- `event` can be "connect", "connfail", "suback", "unsuback", "puback", "message", "overflow", or "offline"
+- callback function.  The first parameter is always the client object itself.
+  Any remaining parameters passed differ by event:
+
+  - If event is "message", the 2nd and 3rd parameters are received topic and
+    message, respectively, as Lua strings.
+
+  - If the event is "overflow", the parameters are as with "message", save
+    that the message string is truncated to the maximum message size.
+
+  - If the event is "connfail", the 2nd parameter will be the connection
+    failure code; see above.
+
+  - Other event types do not provide additional arguments.  This has some
+    unfortunate consequences: the broker-provided subscription maximum QoS
+    information is lost, and the application must, if it expects per-event
+    acknowledgements, manage a queue or queues itself.
 
 #### Returns
 `nil`
@@ -231,7 +262,8 @@ Publishes a message.
 - `message` the message to publish, (buffer or string)
 - `qos` QoS level
 - `retain` retain flag
-- `function(client)` optional callback fired when PUBACK received.
+- `function(client)` optional callback fired when PUBACK received (for QoS 1
+  or 2) or when message sent (for QoS 0).
 
 #### Notes
 

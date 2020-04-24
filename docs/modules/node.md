@@ -297,11 +297,11 @@ If a `group` is given the return value will be a table containing the following 
 - for `group` = `"sw_version"`
 	- `git_branch` (string)
 	- `git_commit_id` (string)
-	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403" 
+	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403"
 	- `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
-	- `node_verion_major` (number)
-	- `node_verion_minor` (number)
-	- `node_verion_revision` (number)
+	- `node_version_major` (number)
+	- `node_version_minor` (number)
+	- `node_version_revision` (number)
 - for `group` = `"build_config"`
 	- `ssl` (boolean)
 	- `lfs_size` (number) as defined at build time
@@ -560,7 +560,7 @@ node.startupcommand("@myappstart.lc")  -- Execute the compiled file myappstart.l
 
 ```lua
 -- Execute the LFS routine init() in preference to init.lua
-node.startupcommand("=if LFS.init then LFS.init() else dofile('init.lua') end")  
+node.startupcommand("=if LFS.init then LFS.init() else dofile('init.lua') end")
 ```
 
 

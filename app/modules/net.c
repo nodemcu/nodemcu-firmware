@@ -18,10 +18,7 @@
 #include "lwip/igmp.h"
 #include "lwip/tcp.h"
 #include "lwip/udp.h"
-
-#if defined(CLIENT_SSL_ENABLE) && defined(LUA_USE_MODULES_NET) && defined(LUA_USE_MODULES_TLS)
-#define TLS_MODULE_PRESENT
-#endif
+#include "lwip/dhcp.h"
 
 typedef enum net_type {
   TYPE_TCP_SERVER = 0,
@@ -113,6 +110,7 @@ lnet_userdata *net_create( lua_State *L, enum net_type type ) {
       ud->client.cb_reconnect_ref = LUA_NOREF;
       ud->client.cb_disconnect_ref = LUA_NOREF;
       ud->client.hold = 0;
+      /* FALLTHROUGH */
     case TYPE_UDP_SOCKET:
       ud->client.wait_dns = 0;
       ud->client.cb_dns_ref = LUA_NOREF;
@@ -144,10 +142,9 @@ static void net_err_cb(void *arg, err_t err) {
     lua_call(L, 2, 0);
   }
   if (ud->client.wait_dns == 0) {
-    lua_gc(L, LUA_GCSTOP, 0);
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+    int selfref = ud->self_ref;
     ud->self_ref = LUA_NOREF;
-    lua_gc(L, LUA_GCRESTART, 0);
+    luaL_unref(L, LUA_REGISTRYINDEX, selfref);
   }
 }
 
@@ -191,10 +188,9 @@ static void net_dns_cb(const char *name, ip_addr_t *ipaddr, void *arg) {
   if (ud->pcb && ud->type == TYPE_TCP_CLIENT && ud->tcp_pcb->state == CLOSED) {
     tcp_connect(ud->tcp_pcb, &addr, ud->tcp_pcb->remote_port, net_connected_cb);
   } else if (!ud->pcb && ud->client.wait_dns == 0) {
-    lua_gc(L, LUA_GCSTOP, 0);
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+    int selfref = ud->self_ref;
     ud->self_ref = LUA_NOREF;
-    lua_gc(L, LUA_GCRESTART, 0);
+    luaL_unref(L, LUA_REGISTRYINDEX, selfref);
   }
 }
 
@@ -290,10 +286,6 @@ static err_t net_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
 #pragma mark - Lua API - create
 
-#ifdef TLS_MODULE_PRESENT
-extern int tls_socket_create( lua_State *L );
-#endif
-
 // Lua: net.createUDPSocket()
 int net_createUDPSocket( lua_State *L ) {
   net_create(L, TYPE_UDP_SOCKET);
@@ -304,14 +296,7 @@ int net_createUDPSocket( lua_State *L ) {
 int net_createServer( lua_State *L ) {
   int type, timeout;
 
-  type = luaL_optlong(L, 1, TYPE_TCP);
-  timeout = luaL_optlong(L, 2, 30);
-
-  if (type == TYPE_UDP) {
-    platform_print_deprecation_note("net.createServer with net.UDP type", "in next version");
-    return net_createUDPSocket( L );
-  }
-  if (type != TYPE_TCP) return luaL_error(L, "invalid type");
+  timeout = luaL_optlong(L, 1, 30);
 
   lnet_userdata *u = net_create(L, TYPE_TCP_SERVER);
   u->server.timeout = timeout;
@@ -320,24 +305,7 @@ int net_createServer( lua_State *L ) {
 
 // Lua: net.createConnection(type, secure)
 int net_createConnection( lua_State *L ) {
-  int type, secure;
 
-  type = luaL_optlong(L, 1, TYPE_TCP);
-  secure = luaL_optlong(L, 2, 0);
-
-  if (type == TYPE_UDP) {
-    platform_print_deprecation_note("net.createConnection with net.UDP type", "in next version");
-    return net_createUDPSocket( L );
-  }
-  if (type != TYPE_TCP) return luaL_error(L, "invalid type");
-  if (secure) {
-    platform_print_deprecation_note("net.createConnection with secure flag", "in next version");
-#ifdef TLS_MODULE_PRESENT
-    return tls_socket_create( L );
-#else
-    return luaL_error(L, "secure connections not enabled");
-#endif
-  }
   net_create(L, TYPE_TCP_CLIENT);
   return 1;
 }
@@ -772,10 +740,10 @@ int net_close( lua_State *L ) {
   }
   if (ud->type == TYPE_TCP_SERVER ||
      (ud->pcb == NULL && ud->client.wait_dns == 0)) {
-//    lua_gc(L, LUA_GCSTOP, 0);
-    luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+
+    int selfref = ud->self_ref;
     ud->self_ref = LUA_NOREF;
-//    lua_gc(L, LUA_GCRESTART, 0);
+    luaL_unref(L, LUA_REGISTRYINDEX, selfref);
   }
 #if 0
   dbg_print_ud("close exit", ud);
@@ -824,10 +792,10 @@ int net_delete( lua_State *L ) {
       ud->server.cb_accept_ref = LUA_NOREF;
       break;
   }
-//  lua_gc(L, LUA_GCSTOP, 0);
-  luaL_unref(L, LUA_REGISTRYINDEX, ud->self_ref);
+
+  int selfref = ud->self_ref;
   ud->self_ref = LUA_NOREF;
-//  lua_gc(L, LUA_GCRESTART, 0);
+  luaL_unref(L, LUA_REGISTRYINDEX, selfref);
 #if 0
   dbg_print_ud("delete end", ud);
 #endif
@@ -889,12 +857,19 @@ static void net_dns_static_cb(const char *name, ip_addr_t *ipaddr, void *callbac
   if (ipaddr != NULL)
     addr = *ipaddr;
   else addr.addr = 0xFFFFFFFF;
-  int cb_ref = ((int*)callback_arg)[0];
-  free(callback_arg);
+  int cb_ref = (int)callback_arg;
   lua_State *L = lua_getstate();
 
+  /*
+   * Move reference from registry to stack before the call could possibly
+   * longjmp us out of here.
+   */
   lua_rawgeti(L, LUA_REGISTRYINDEX, cb_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, cb_ref);
+
+  // XXX I have no idea why the API insists on a `nil` here, but it does.
   lua_pushnil(L);
+
   if (addr.addr != 0xFFFFFFFF) {
     char iptmp[20];
     size_t ipl = sprintf(iptmp, IPSTR, IP2STR(&addr.addr));
@@ -903,8 +878,6 @@ static void net_dns_static_cb(const char *name, ip_addr_t *ipaddr, void *callbac
     lua_pushnil(L);
   }
   lua_call(L, 2, 0);
-
-  luaL_unref(L, LUA_REGISTRYINDEX, cb_ref);
 }
 
 // Lua: net.dns.resolve( domain, function(sk, ip) )
@@ -918,22 +891,21 @@ static int net_dns_static( lua_State* L ) {
   luaL_checktype(L, 2, LUA_TFUNCTION);
   lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
   int cbref = luaL_ref(L, LUA_REGISTRYINDEX);
-  if (cbref == LUA_NOREF) {
-    return luaL_error(L, "wrong callback");
-  }
-  int *cbref_ptr = calloc(1, sizeof(int));
-  cbref_ptr[0] = cbref;
   ip_addr_t addr;
-  err_t err = dns_gethostbyname(domain, &addr, net_dns_static_cb, cbref_ptr);
+
+  _Static_assert(sizeof(void *) >= sizeof(typeof(cbref)),
+                 "Can't upcast int to ptr");
+
+  err_t err = dns_gethostbyname(domain, &addr, net_dns_static_cb, (void *)cbref);
   if (err == ERR_OK) {
-    net_dns_static_cb(domain, &addr, cbref_ptr);
+    net_dns_static_cb(domain, &addr, (void *)cbref);
     return 0;
   } else if (err == ERR_INPROGRESS) {
     return 0;
   } else {
-    int e = lwip_lua_checkerr(L, err);
-    free(cbref_ptr);
-    return e;
+    /* Bail out!  Unhook callback from registry, first */
+    luaL_unref(L, LUA_REGISTRYINDEX, cbref);
+    return lwip_lua_checkerr(L, err);
   }
   return 0;
 }
@@ -980,11 +952,63 @@ static int net_getdnsserver( lua_State* L ) {
   return 1;
 }
 
-#pragma mark - Tables
+#pragma mark - netif info
 
-#ifdef TLS_MODULE_PRESENT
-extern LROT_TABLE(tls_cert);
-#endif
+/*
+ * XXX This is internal to Espressif's SDK, but it's called from several places
+ * in the NodeMCU tree.  It would be nicer if there were a LwIP export for this
+ * rather than this not-so-secret symbol.
+ */
+extern struct netif *eagle_lwip_getif(uint8);
+
+static void
+push_ipaddr(lua_State *L, ip_addr_t *addr) {
+  char temp[20];
+  ssize_t ipl = ets_snprintf(temp, sizeof temp, IPSTR, IP2STR(&addr->addr));
+  lua_assert (ipl >= 0 && ipl < 20);
+  lua_pushlstring( L, temp, ipl );
+}
+
+static void
+field_from_ipaddr(lua_State *L, const char * field_name, ip_addr_t* addr) {
+  if ( ip_addr_isany(addr) ) {
+    lua_pushnil(L);
+  } else {
+    push_ipaddr(L, addr);
+  }
+  lua_setfield(L, -2, field_name);
+}
+
+static int net_ifinfo( lua_State* L ) {
+  int ifidx = luaL_optint(L, 1, 0);
+
+  struct netif * nif = eagle_lwip_getif(ifidx);
+  if (nif == NULL) {
+    return 0;
+  }
+
+  lua_createtable(L, 0,
+     4 + (nif->dhcp == NULL ? 0 : 1));
+
+  lua_pushlstring(L, nif->hwaddr, nif->hwaddr_len);
+  lua_setfield(L, -2, "hwaddr");
+
+  field_from_ipaddr(L, "ip"     , &nif->ip_addr);
+  field_from_ipaddr(L, "netmask", &nif->netmask);
+  field_from_ipaddr(L, "gateway", &nif->gw);
+
+  if (nif->dhcp != NULL) {
+    lua_createtable(L, 0, 3);
+    field_from_ipaddr(L, "server_ip" , &nif->dhcp->server_ip_addr  );
+    field_from_ipaddr(L, "client_ip" , &nif->dhcp->offered_ip_addr );
+    field_from_ipaddr(L, "ntp_server", &nif->dhcp->offered_ntp_addr);
+  }
+  lua_setfield(L, -2, "dhcp");
+
+  return 1;
+}
+
+#pragma mark - Tables
 
 // Module function map
 
@@ -1035,10 +1059,15 @@ LROT_BEGIN(net_dns_map, NULL, 0)
 LROT_END(net_dns_map, NULL, 0)
 
 
+#ifdef TLS_MODULE_PRESENT
+extern LROT_TABLE(tls_cert);
+#endif
+
 LROT_BEGIN(net, NULL, 0)
   LROT_FUNCENTRY( createServer, net_createServer )
   LROT_FUNCENTRY( createConnection, net_createConnection )
   LROT_FUNCENTRY( createUDPSocket, net_createUDPSocket )
+  LROT_FUNCENTRY( ifinfo, net_ifinfo )
   LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
   LROT_TABENTRY( dns, net_dns_map )

@@ -47,19 +47,6 @@
  */
 static int net_prepare( void )
 {
-#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-    !defined(EFI32)
-    WSADATA wsaData;
-
-    if( wsa_init_done == 0 )
-    {
-        if( WSAStartup( MAKEWORD(2,0), &wsaData ) != 0 )
-            return( MBEDTLS_ERR_NET_SOCKET_FAILED );
-
-        wsa_init_done = 1;
-    }
-#else
-#endif
     return( 0 );
 }
 
@@ -117,6 +104,7 @@ mbedtls_error:
     return( ret );
 }
 
+#if 0 // NodeMCU does not support being a TLS server
 /*
  * Create a listening socket on bind_ip:port
  */
@@ -168,19 +156,8 @@ int mbedtls_net_bind( mbedtls_net_context *ctx, const char *bind_ip, const char 
         return( ret );
 
 }
+#endif
 
-#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-    !defined(EFI32)
-/*
- * Check if the requested operation would be blocking on a non-blocking socket
- * and thus 'failed' with a negative return value.
- */
-static int net_would_block( const mbedtls_net_context *ctx )
-{
-    ((void) ctx);
-    return( WSAGetLastError() == WSAEWOULDBLOCK );
-}
-#else
 /*
  * Check if the requested operation would be blocking on a non-blocking socket
  * and thus 'failed' with a negative return value.
@@ -189,26 +166,10 @@ static int net_would_block( const mbedtls_net_context *ctx )
  */
 static int net_would_block( const mbedtls_net_context *ctx )
 {
-    /*
-     * Never return 'WOULD BLOCK' on a non-blocking socket
-     */
-//    if( ( fcntl( ctx->fd, F_GETFL, 0) & O_NONBLOCK ) != O_NONBLOCK )
-//        return( 0 );
-
-//    switch( errno )
-//    {
-//#if defined EAGAIN
-//        case EAGAIN:
-//#endif
-//#if defined EWOULDBLOCK && EWOULDBLOCK != EAGAIN
-//        case EWOULDBLOCK:
-//#endif
-//            return( 1 );
-//    }
     return( 0 );
 }
-#endif /* ( _WIN32 || _WIN32_WCE ) && !EFIX64 && !EFI32 */
 
+#if 0 // NodeMCU does not support being a TLS server
 /*
  * Accept a connection from a remote client
  */
@@ -250,50 +211,19 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
 	        return( ret );
     return( 0 );
 }
+#endif
 
 /*
  * Set the socket blocking or non-blocking
  */
 int mbedtls_net_set_block( mbedtls_net_context *ctx )
 {
-#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-    !defined(EFI32)
-    u_long n = 0;
-    return( ioctlsocket( ctx->fd, FIONBIO, &n ) );
-#else
     return( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL, 0 ) & ~O_NONBLOCK ) );
-#endif
 }
 
 int mbedtls_net_set_nonblock( mbedtls_net_context *ctx )
 {
-#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-    !defined(EFI32)
-    u_long n = 1;
-    return( ioctlsocket( ctx->fd, FIONBIO, &n ) );
-#else
     return( fcntl( ctx->fd, F_SETFL, fcntl( ctx->fd, F_GETFL, 0 ) | O_NONBLOCK ) );
-#endif
-}
-
-/*
- * Portable usleep helper
- */
-void mbedtls_net_usleep( unsigned long usec )
-{
-//#if defined(_WIN32)
-//    Sleep( ( usec + 999 ) / 1000 );
-//#else
-//    struct timeval tv;
-//    tv.tv_sec  = usec / 1000000;
-//#if defined(__unix__) || defined(__unix) || \
-//    ( defined(__APPLE__) && defined(__MACH__) )
-//    tv.tv_usec = (suseconds_t) usec % 1000000;
-//#else
-//    tv.tv_usec = usec % 1000000;
-//#endif
-//    select( 0, NULL, NULL, NULL, &tv );
-//#endif
 }
 
 /*
@@ -314,18 +244,6 @@ int mbedtls_net_recv( void *ctx, unsigned char *buf, size_t len )
     {
         if( net_would_block( ctx ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_READ );
-
-//#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-//    !defined(EFI32)
-//        if( WSAGetLastError() == WSAECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//#else
-//        if( errno == EPIPE || errno == ECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//
-//        if( errno == EINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_READ );
-//#endif
 
         return( MBEDTLS_ERR_NET_RECV_FAILED );
     }
@@ -350,32 +268,6 @@ int mbedtls_net_recv_timeout( void *ctx, unsigned char *buf, size_t len,
     if( fd < 0 )
         return( MBEDTLS_ERR_NET_INVALID_CONTEXT );
 
-//    FD_ZERO( &read_fds );
-//    FD_SET( fd, &read_fds );
-//
-//    tv.tv_sec  = timeout / 1000;
-//    tv.tv_usec = ( timeout % 1000 ) * 1000;
-//
-//    ret = select( fd + 1, &read_fds, NULL, NULL, timeout == 0 ? NULL : &tv );
-//
-//    /* Zero fds ready means we timed out */
-//    if( ret == 0 )
-//        return( MBEDTLS_ERR_SSL_TIMEOUT );
-//
-//    if( ret < 0 )
-//    {
-//#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-//    !defined(EFI32)
-//        if( WSAGetLastError() == WSAEINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_READ );
-//#else
-//        if( errno == EINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_READ );
-//#endif
-//
-//        return( MBEDTLS_ERR_NET_RECV_FAILED );
-//    }
-
     /* This call will not block */
     return( mbedtls_net_recv( ctx, buf, len ) );
 }
@@ -398,20 +290,6 @@ int mbedtls_net_send( void *ctx, const unsigned char *buf, size_t len )
     {
         if( net_would_block( ctx ) != 0 )
             return( MBEDTLS_ERR_SSL_WANT_WRITE );
-
-//#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
-//    !defined(EFI32)
-//        if( WSAGetLastError() == WSAECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//#else
-//        if( errno == EPIPE || errno == ECONNRESET )
-//            return( MBEDTLS_ERR_NET_CONN_RESET );
-//
-//        if( errno == EINTR )
-//            return( MBEDTLS_ERR_SSL_WANT_WRITE );
-//#endif
-//
-//        return( MBEDTLS_ERR_NET_SEND_FAILED );
     }
 //    os_printf("mbedtls_net_send write %d\n", ret);
     if (ret == 0)

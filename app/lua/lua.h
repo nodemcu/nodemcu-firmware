@@ -177,7 +177,6 @@ LUA_API const char *(lua_pushfstring) (lua_State *L, const char *fmt, ...);
 LUA_API void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n);
 LUA_API void  (lua_pushboolean) (lua_State *L, int b);
 LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
-LUA_API void  (lua_pushlightfunction) (lua_State *L, lua_CFunction f);
 LUA_API int   (lua_pushthread) (lua_State *L);
 
 
@@ -269,7 +268,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 #define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n)))
 
-#define lua_pushcfunction(L,f)	lua_pushlightfunction(L, (f))
+#define lua_pushcfunction(L,f)	lua_pushcclosure(L, (f), 0)
 
 #define lua_strlen(L,i)		lua_objlen(L, (i))
 
@@ -404,8 +403,6 @@ LUA_API void  (lua_createrotable) (lua_State *L, ROTable *t, const ROTable_entry
 
 /**DEBUG**/extern void dbg_printf(const char *fmt, ...)
                        __attribute__ ((format (printf, 1, 2)));
-int lua_main (void);
-void lua_input_string (const char *line, int len);
 #define luaN_freearray(L,b,l)  luaM_freearray(L,b,l,sizeof(*b));
 
 LUA_API void lua_setegcmode(lua_State *L, int mode, int limit);
@@ -417,6 +414,14 @@ LUA_API void lua_setegcmode(lua_State *L, int mode, int limit);
 
 #endif
 extern void lua_debugbreak(void);
+
+// EGC operations modes
+#define EGC_NOT_ACTIVE        0   // EGC disabled
+#define EGC_ON_ALLOC_FAILURE  1   // run EGC on allocation failure
+#define EGC_ON_MEM_LIMIT      2   // run EGC when an upper memory limit is hit
+#define EGC_ALWAYS            4   // always run EGC before an allocation
+
+void legc_set_mode(lua_State *L, int mode, int limit);
 
 /******************************************************************************
 * Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.

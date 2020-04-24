@@ -17,6 +17,8 @@
 
 ]]
 
+-- luacheck: std max
+
 local socket     = require "socket"
 local lfs        = require "lfs"
 local md5        = require "md5"
@@ -31,7 +33,6 @@ local receive_and_parse -- function(esp)
 local provision         -- function(esp, config, files, inventory, fingerprint)
 local read_file         -- function(fname)
 local save_file         -- function(fname, data)
-local compress_lua      -- function(lua_file)
 local hmac              -- function(data)
 
 -- Function-wide locals (can be upvalues)
@@ -164,6 +165,7 @@ receive_and_parse = function(esp)
   local packed_cmd, sig = line:sub(1,#line-6),line:sub(-6)
 -- print("reply:", packed_cmd, sig)
   local status, cmd = pcall(json.decode, packed_cmd)
+  if not status then error("JSON decode error") end
   if not hmac or hmac(packed_cmd):sub(-6) == sig then
     if cmd and cmd.data == "number" then
       local data = esp:receive(cmd.data)
@@ -183,7 +185,7 @@ provision = function(esp, config, inventory, fingerprint)
     local name, size, mtime, content = f.name, f.size, f.mtime, f.content
     if not cf[name] or cf[name] ~= mtime then
       -- Send the file
-      local func, action, cmd, buf
+      local action, cmd, buf
       if  f.name:sub(-4) == ".lua" then
         assert(load(content, f.name))  -- check that the contents can compile
         if content:find("--SAFETRIM\n",1,true) then
@@ -241,12 +243,11 @@ end
 
 -- Save contents to the given file
 ----------------------------------
-save_file = function(fname, data)
+save_file = function(fname, data) -- luacheck: ignore
   local file = io.open(fname, "wb")
   file:write(data)
   file:close()
 end
-
 --------------------------------------------------------------------------------------
 
 main()  -- now that all functions have been bound to locals, we can start the show :-)

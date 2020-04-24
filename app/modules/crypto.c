@@ -59,9 +59,11 @@ static int call_encoder( lua_State* L, const char *function ) {
 }
 
 static int crypto_base64_encode (lua_State* L) {
+  platform_print_deprecation_note("crypto.toBase64", "in the next version");
   return call_encoder(L, "toBase64");
 }
 static int crypto_hex_encode (lua_State* L) {
+  platform_print_deprecation_note("crypto.toHex", "in the next version");
   return call_encoder(L, "toHex");
 }
 #else
@@ -76,6 +78,8 @@ static int crypto_base64_encode( lua_State* L )
   int len, i;
   const char* msg = luaL_checklstring(L, 1, &len);
   luaL_Buffer out;
+
+  platform_print_deprecation_note("crypto.toBase64", "in the next version");
 
   luaL_buffinit(L, &out);
   for (i = 0; i < len; i += 3) {
@@ -101,6 +105,8 @@ static int crypto_hex_encode( lua_State* L)
   int len, i;
   const char* msg = luaL_checklstring(L, 1, &len);
   luaL_Buffer out;
+
+  platform_print_deprecation_note("crypto.toHex", "in the next version");
 
   luaL_buffinit(L, &out);
   for (i = 0; i < len; i++) {

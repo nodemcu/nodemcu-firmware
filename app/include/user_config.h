@@ -22,6 +22,26 @@
 //#define BIT_RATE_AUTOBAUD
 
 
+// At start-up firmware details like:
+//
+// NodeMCU 3.0.1.0
+//         branch:
+//         commit:
+//         release:
+//         release DTS:
+//         SSL: false
+//         build type: integer
+//         LFS: 0x0
+//         modules: file,gpio,net,node,rtctime,sntp,tmr,uart,wifi
+//  build 2020-01-27 17:39 powered by Lua 5.1.4 on SDK 3.0.2(824dc80)
+//
+// will be printed to serial console.  While it's mandatory for bug reports
+// and good for development, it may be unwanted for non-interactive serial
+// devices.
+
+//#define DISABLE_STARTUP_BANNER
+
+
 // Three separate build variants are now supported. The main difference is in the
 // processing of numeric data types.  If LUA_NUMBER_INTEGRAL is defined, then
 // all numeric calculations are done in integer, with divide being an integer
@@ -59,7 +79,7 @@
 
 
 // NodeMCU supports two file systems: SPIFFS and FATFS, the first is available
-// on all ESP8266 modules.  The latter requires extra H/W so is less common.
+// on all ESP8266 modules.  The latter requires extra H/W so it is less common.
 // If you use SPIFFS then there are a number of options which impact the
 // RAM overhead and performance of the file system.
 
@@ -87,14 +107,13 @@
 
 // The HTTPS stack requires client SSL to be enabled.  The SSL buffer size is
 // used only for espconn-layer secure connections, and is ignored otherwise.
-// Some HTTPS  applications require a larger buffer size to work.  See
+// Some HTTPS applications require a larger buffer size to work.  See
 // https://github.com/nodemcu/nodemcu-firmware/issues/1457 for details.
 // The SHA2 and MD2 libraries are also optionally used by the crypto functions.
 // The SHA1 and MD5 function are implemented in the ROM BIOS. The MD2 and SHA2
 // are by firmware code, and can be enabled if you need this functionality.
 
 //#define CLIENT_SSL_ENABLE
-//#define MD2_ENABLE
 #define SHA2_ENABLE
 #define SSL_BUFFER_SIZE 4096
 #define SSL_MAX_FRAGMENT_LENGTH_CODE	MBEDTLS_SSL_MAX_FRAG_LEN_4096
@@ -102,8 +121,8 @@
 
 // GPIO_INTERRUPT_ENABLE needs to be defined if your application uses the
 // gpio.trig() or related GPIO interrupt service routine code.  Likewise the
-// GPIO interrupt hook is requited for a few modules such as rotary.  If you
-// don't require this functionality, then commenting out these options out
+// GPIO interrupt hook is required for a few modules such as rotary.  If you
+// don't require this functionality, then commenting out these options
 // will remove any associated runtime overhead.
 
 #define GPIO_INTERRUPT_ENABLE
@@ -133,10 +152,6 @@
 
 //  Enable creation on the wifi.eventmon.reason table
 #define WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
-
-//  Enable use of the WiFi.monitor sub-module
-//#define LUA_USE_MODULES_WIFI_MONITOR
-
 
 // Whilst the DNS client details can be configured through the WiFi API,
 // the defaults can be exposed temporarily during start-up.  The following
@@ -175,7 +190,7 @@
 #define I2C_MASTER_OLD_VERSION
 
 
-// The following sections are only relevent for those developers who are
+// The following sections are only relevant for those developers who are
 // developing modules or core Lua changes and configure how extra diagnostics
 // are enabled in the firmware. These should only be configured if you are
 // building your own custom firmware and have full access to the firmware
@@ -233,19 +248,15 @@
 #define READLINE_INTERVAL        80
 #define STRBUF_DEFAULT_INCREMENT  3
 #define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
-
-#ifdef DEVELOPMENT_TOOLS
-#ifdef DEVELOPMENT_USE_GDB
+ 
+#if defined(DEVELOPMENT_TOOLS) && defined(DEVELOPMENT_USE_GDB)
 extern void LUA_DEBUG_HOOK (void);
 #define lua_assert(x)    ((x) ? (void) 0 : LUA_DEBUG_HOOK ())
-#else
-#ifdef LUA_CROSS_COMPILER
+#elif defined(DEVELOPMENT_TOOLS) && defined(LUA_CROSS_COMPILER)
 extern void luaL_assertfail(const char *file, int line, const char *message);
 #define lua_assert(x)    ((x) ? (void) 0 : luaL_assertfail(__FILE__, __LINE__, #x))
 #else
-#endif
 #define lua_assert(x)    ((void) (x))
-#endif
 #endif
 
 #if !defined(LUA_NUMBER_INTEGRAL) && !defined (LUA_DWORD_ALIGNED_TVALUES)

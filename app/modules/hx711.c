@@ -42,8 +42,8 @@ static CONTROL *control;
 
 /*Lua: hx711.init(clk_pin,data_pin)*/
 static int hx711_init(lua_State* L) {
-  clk_pin = luaL_checkinteger(L,1);
-  data_pin = luaL_checkinteger(L,2);
+  clk_pin = luaL_checkint(L,1);
+  data_pin = luaL_checkint(L,2);
   MOD_CHECK_ID( gpio, clk_pin );
   MOD_CHECK_ID( gpio, data_pin );
 

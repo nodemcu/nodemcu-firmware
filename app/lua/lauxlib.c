@@ -430,7 +430,7 @@ LUALIB_API void luaI_openlib (lua_State *L, const char *libname,
     for (i=0; i<nup; i++)  /* copy upvalues to the top */
       lua_pushvalue(L, -nup);
     if (ftype == LUA_USELIGHTFUNCTIONS)
-      lua_pushlightfunction(L, l->func);
+      lua_pushcfunction(L, l->func);
     else
       lua_pushcclosure(L, l->func, nup);
     lua_setfield(L, -(nup+2), l->name);

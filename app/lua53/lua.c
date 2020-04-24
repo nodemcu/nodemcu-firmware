@@ -12,16 +12,11 @@
 #define lua_c
 #define LUA_CORE
 
+#ifndef LUA_VERSION_51  /* LUA_VERSION_NUM == 503 */
+#define LUA_VERSION_53
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
-
-#if LUA_VERSION_NUM == 501
-#define LUA_VERSION_51
-#include "llimits.h"
-#include "os_type.h"
-#else /* LUA_VERSION_NUM == 503 */
-#define LUA_VERSION_53
 #include "lprefix.h"
 #include "lgc.h"
 #include "lnodemcu.h"
@@ -61,7 +56,6 @@ lua_State *globalL = NULL;
 static int pmain (lua_State *L);
 void lua_input_string (const char *line, int len);
 
-
 /*
 ** Prints (calling the Lua 'print' function) to print n values on the stack
 */
@@ -71,7 +65,7 @@ static void l_print (lua_State *L, int n) {
     lua_getglobal(L, "print");
     lua_insert(L, -n-1);
     if (lua_pcall(L, n, 0, 0) != LUA_OK)
-      lua_writestringerror( "error calling 'print' (%s)\n",
+       lua_writestringerror( "error calling 'print' (%s)\n",
                             lua_tostring(L, -1));
   }
 }
@@ -168,6 +162,7 @@ static void l_create_stdin (lua_State *L);
 ** other C API and Lua functions might be executed as tasks between lines in
 ** a multiline, so a standard luaL_ref() registry entry is used instead.
 */
+//// TODO SHOLD this have an boot return false if pipe empty else nil
 static void dojob (lua_State *L) {
   static int MLref = LUA_NOREF;        /* Lua Reg entry for cached multi-line */
   int status;
@@ -193,10 +188,11 @@ static void dojob (lua_State *L) {
   status = luaL_loadbuffer(L, b, l, "=stdin");
   if (incomplete(L, status)) {
     /* Store line back in the Reg mlref sot */
-    if (MLref == LUA_NOREF)
+    if (MLref == LUA_NOREF) {
       MLref = luaL_ref(L, LUA_REGISTRYINDEX);
-    else
+    } else {
       lua_rawseti(L, LUA_REGISTRYINDEX, MLref);
+    }
   } else {
     /* compile finished OK or with hard error */
     lua_remove(L, -2);                   /* remove line because now redundant */
@@ -242,7 +238,10 @@ static int pmain (lua_State *L) {
   l_create_stdin(L);
   input_setup(LUA_MAXINPUT, get_prompt(L, 1));
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
+
+#ifndef DISABLE_STARTUP_BANNER
   print_version(L);
+#endif
  /*
   * And last of all, kick off application initialisation.  Note that if
   * LUA_INIT_STRING is a file reference and the file system is uninitialised
@@ -307,7 +306,7 @@ lua_State *lua_getstate(void) {
 */
 
 void lua_input_string (const char *line, int len) {
-  lua_State *L = lua_getstate();
+  lua_State *L = globalL;
   lua_getfield(L, LUA_REGISTRYINDEX, "stdin");
   lua_rawgeti(L, -1, 1);                  /* get the pipe_write from stdin[1] */
   lua_insert(L, -2);                                  /* stick above the pipe */

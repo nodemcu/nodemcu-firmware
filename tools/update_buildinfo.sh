@@ -22,9 +22,9 @@ cat > $TEMPFILE << EndOfMessage
 #define BUILDINFO_TO_STR(x)	BUILDINFO_STR_HELPER(x)
 
 #ifdef LUA_FLASH_STORE
-#define BUILDINFO_LFS LUA_FLASH_STORE
+#define BUILDINFO_LFS_SIZE LUA_FLASH_STORE
 #else
-#define BUILDINFO_LFS 0
+#define BUILDINFO_LFS_SIZE 0
 #endif
 
 #ifdef CLIENT_SSL_ENABLE
@@ -57,7 +57,7 @@ cat > $TEMPFILE << EndOfMessage
   "\trelease DTS: " BUILDINFO_RELEASE_DTS "\n" \\
   "\tSSL: " BUILDINFO_SSL_STR "\n" \\
   "\tbuild type: " BUILDINFO_BUILD_TYPE "\n" \\
-  "\tLFS: " BUILDINFO_TO_STR(BUILDINFO_LFS) "\n" \\
+  "\tLFS: " BUILDINFO_TO_STR(BUILDINFO_LFS_SIZE) " bytes total capacity\n" \\
   "\tmodules: " BUILDINFO_MODULES "\n"
 
 EndOfMessage

@@ -6,6 +6,10 @@ theme:
   name: "readthedocs"
 strict: false #Allows to build and test documentation in local environment where some links are unreachable
 
+# Uncomment the line below to build docs to be used locally; site/index.html
+# will then be the root of a locally-linked documentation tree.
+# use_directory_urls: false
+
 markdown_extensions:
 #http://pythonhosted.org/Markdown/extensions/admonition.html
 - admonition:
@@ -38,15 +42,19 @@ pages:
     - Lua Compact Debug (LCD): 'lcd.md'
     - Lua Flash Store (LFS): 'lfs.md'
 - Lua Modules:
+    - 'Lua modules directory': 'lua-modules/README.md'
     - 'bh1750': 'lua-modules/bh1750.md'
+    - 'cohelper': 'lua-modules/cohelper.md'
     - 'ds18b20': 'lua-modules/ds18b20.md'
     - 'ds3231': 'lua-modules/ds3231.md'
     - 'fifo' : 'lua-modules/fifo.md'
     - 'fifosock' : 'lua-modules/fifosock.md'
     - 'ftpserver': 'lua-modules/ftpserver.md'
+    - 'gossip': 'lua-modules/gossip.md'
     - 'hdc1000': 'lua-modules/hdc1000.md'
     - 'httpserver': 'lua-modules/httpserver.md'
     - 'imap': 'lua-modules/imap.md'
+    - 'liquidcrystal': 'lua-modules/liquidcrystal.md'
     - 'lm92': 'lua-modules/lm92.md'
     - 'mcp23008': 'lua-modules/mcp23008.md'
     - 'redis': 'lua-modules/redis.md'
@@ -67,6 +75,7 @@ pages:
     - 'color-utils': 'modules/color-utils.md'
     - 'cron': 'modules/cron.md'
     - 'crypto': 'modules/crypto.md'
+    - 'dcc': 'modules/dcc.md'
     - 'dht': 'modules/dht.md'
     - 'encoder': 'modules/encoder.md'
     - 'enduser setup / captive portal / WiFi manager': 'modules/enduser-setup.md'
@@ -87,6 +96,7 @@ pages:
     - 'ow (1-Wire)': 'modules/ow.md'
     - 'pcm' : 'modules/pcm.md'
     - 'perf': 'modules/perf.md'
+    - 'pipe': 'modules/pipe.md'
     - 'pwm' : 'modules/pwm.md'
     - 'pwm2' : 'modules/pwm2.md'
     - 'rc' : 'modules/rc.md'
@@ -99,6 +109,7 @@ pages:
     - 'sigma delta': 'modules/sigma-delta.md'
     - 'sjson': 'modules/sjson.md'
     - 'sntp': 'modules/sntp.md'
+    - 'softuart': 'modules/softuart.md'
     - 'somfy': 'modules/somfy.md'
     - 'spi': 'modules/spi.md'
     - 'sqlite3': 'modules/sqlite3.md'

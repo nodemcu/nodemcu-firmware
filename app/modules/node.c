@@ -120,17 +120,66 @@ static int node_sleep( lua_State* L )
   return luaL_error(L, "node.sleep() is unavailable");
 }
 #endif //PMSLEEP_ENABLE
+
+static void add_int_field( lua_State* L, lua_Integer i, const char *name){
+  lua_pushinteger(L, i);
+  lua_setfield(L, -2, name);
+}
+static void add_string_field( lua_State* L, const char *s, const char *name) {
+  lua_pushstring(L, s);
+  lua_setfield(L, -2, name);
+}
+
 static int node_info( lua_State* L )
 {
-  lua_pushinteger(L, NODE_VERSION_MAJOR);
-  lua_pushinteger(L, NODE_VERSION_MINOR);
-  lua_pushinteger(L, NODE_VERSION_REVISION);
-  lua_pushinteger(L, system_get_chip_id());   // chip id
-  lua_pushinteger(L, spi_flash_get_id());     // flash id
-  lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
-  lua_pushinteger(L, flash_rom_get_mode());
-  lua_pushinteger(L, flash_rom_get_speed());
-  return 8;
+  const char* options[] = {"hw", "sw_version", "build_config", "legacy", NULL};
+  int option = luaL_checkoption (L, 1, options[3], options);
+
+  switch (option) {
+    case 0: { // hw
+      lua_createtable (L, 0, 5);
+      add_int_field(L, system_get_chip_id(),             "chip_id");
+      add_int_field(L, spi_flash_get_id(),               "flash_id");
+      add_int_field(L, flash_rom_get_size_byte() / 1024, "flash_size");
+      add_int_field(L, flash_rom_get_mode(),             "flash_mode");
+      add_int_field(L, flash_rom_get_speed(),            "flash_speed");
+      return 1;
+    }
+    case 1: { // sw_version
+      lua_createtable (L, 0, 7);     
+      add_int_field(L, NODE_VERSION_MAJOR,       "node_version_major");
+      add_int_field(L, NODE_VERSION_MINOR,       "node_version_minor");
+      add_int_field(L, NODE_VERSION_REVISION,    "node_version_revision");
+      add_string_field(L, BUILDINFO_BRANCH,      "git_branch");
+      add_string_field(L, BUILDINFO_COMMIT_ID,   "git_commit_id");
+      add_string_field(L, BUILDINFO_RELEASE,     "git_release");
+      add_string_field(L, BUILDINFO_RELEASE_DTS, "git_commit_dts");
+      return 1;
+    }
+    case 2: { // build_config
+      lua_createtable (L, 0, 4);
+      lua_pushboolean(L, BUILDINFO_SSL);
+      lua_setfield(L, -2, "ssl");
+      lua_pushnumber(L, BUILDINFO_LFS_SIZE);
+      lua_setfield(L, -2, "lfs_size");
+      add_string_field(L, BUILDINFO_MODULES, "modules");
+      add_string_field(L, BUILDINFO_BUILD_TYPE, "number_type");
+      return 1;
+    }
+    default:
+    {
+      platform_print_deprecation_note("node.info() without parameter", "in the next version");
+      lua_pushinteger(L, NODE_VERSION_MAJOR);
+      lua_pushinteger(L, NODE_VERSION_MINOR);
+      lua_pushinteger(L, NODE_VERSION_REVISION);
+      lua_pushinteger(L, system_get_chip_id());   // chip id
+      lua_pushinteger(L, spi_flash_get_id());     // flash id
+      lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
+      lua_pushinteger(L, flash_rom_get_mode());
+      lua_pushinteger(L, flash_rom_get_speed());
+      return 8;
+    }
+  }
 }
 
 // Lua: chipid()

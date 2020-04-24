@@ -103,7 +103,7 @@ void luaL_openlibs (lua_State *L) {
 #endif
   while (p->key) {
     if (ttislightfunction(&p->value) && fvalue(&p->value)) {
-      lua_pushlightfunction(L, fvalue(&p->value));
+      lua_pushcfunction(L, fvalue(&p->value));
       lua_pushstring(L, p->key);
       lua_call(L, 1, 0);  // call luaopen_XXX(libname)
     }
