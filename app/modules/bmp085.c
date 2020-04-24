@@ -64,8 +64,8 @@ static int bmp085_setup(lua_State* L) {
     return 0;
 }
 
-static uint32_t bmp085_temperature_raw_b5(void) {
-    int16_t t, X1, X2;
+static int32_t bmp085_temperature_raw_b5(void) {
+    int32_t t, X1, X2;
 
     platform_i2c_send_start(bmp085_i2c_id);
     platform_i2c_send_address(bmp085_i2c_id, bmp085_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
@@ -76,7 +76,7 @@ static uint32_t bmp085_temperature_raw_b5(void) {
     // Wait for device to complete sampling
     os_delay_us(4500);
 
-    t = r16(bmp085_i2c_id, 0xF6);
+    t = r16u(bmp085_i2c_id, 0xF6);
     X1 = ((t - bmp085_data.AC6) * bmp085_data.AC5) >> 15;
     X2 = (bmp085_data.MC << 11)/ (X1 + bmp085_data.MD);
 
@@ -138,7 +138,8 @@ static int bmp085_lua_pressure_raw(lua_State* L) {
 static int bmp085_lua_pressure(lua_State* L) {
     uint8_t oss = 0;
     int32_t p;
-    int32_t X1, X2, X3, B3, B4, B5, B6, B7;
+    int32_t X1, X2, X3, B3, B5, B6;
+    uint32_t B4, B7;
 
     if (lua_isnumber(L, 1)) {
         oss = luaL_checkinteger(L, 1);
@@ -158,9 +159,13 @@ static int bmp085_lua_pressure(lua_State* L) {
     X1 = ((int32_t)bmp085_data.AC3 * B6) >> 13;
     X2 = ((int32_t)bmp085_data.B1 * ((B6 * B6) >> 12)) >> 16;
     X3 = (X1 + X2 + 2) >> 2;
-    B4 = ((int32_t)bmp085_data.AC4 * (X3 + 32768)) >> 15;
+    B4 = ((uint32_t)bmp085_data.AC4 * (X3 + 32768)) >> 15;
     B7 = (p - B3) * (50000 / (1 << oss));
-    p  = (B7 / B4) << 1;
+    if (B7 < 0x80000000) {
+        p = (B7 * 2) / B4;
+    } else {
+        p = (B7 / B4) * 2;
+    }
     X1 = (p >> 8) * (p >> 8);
     X1 = (X1 * 3038) >> 16;
     X2 = (-7357 * p) >> 16;
