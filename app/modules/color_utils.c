@@ -217,7 +217,7 @@ static int cu_grb2hsv(lua_State *L) {
   const int r = luaL_checkint(L, 2);
   const int b = luaL_checkint(L, 3);
 
-  luaL_argcheck(L, g == r && g == b, 1, "greyscale value cannot be converted to hsv");
+  luaL_argcheck(L, g != r || g != b, 1, "greyscale value cannot be converted to hsv");
 
   uint32_t hsv = grb2hsv(g, r, b);
 
