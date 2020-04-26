@@ -23,7 +23,7 @@ local socket     = require "socket"
 local lfs        = require "lfs"
 local md5        = require "md5"
 local json       = require "cjson"
-require "etc.strict"  --  see http://www.lua.org/extras/5.1/strict.lua
+require "std.strict"  --  see http://www.lua.org/extras/5.1/strict.lua
 
 -- Local functions (implementation see below) ------------------------------------------
 
@@ -162,6 +162,10 @@ end
 ----------------------------------------------------------------------
 receive_and_parse = function(esp)
   local line = esp:receive("*l")
+  if (not line) then
+    error( "Empty response from ESP, possible cause: file signature failure", 0)
+    --return nil
+  end
   local packed_cmd, sig = line:sub(1,#line-6),line:sub(-6)
 -- print("reply:", packed_cmd, sig)
   local status, cmd = pcall(json.decode, packed_cmd)
