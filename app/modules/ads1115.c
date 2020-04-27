@@ -414,7 +414,7 @@ static int ads1115_lua_startread(lua_State *L) {
         return 0;
     }
 
-    luaL_argcheck(L, (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION), 2, "Must be function");
+    luaL_argcheck(L, lua_isfunction(L, 2), 2, "Must be function");
     lua_pushvalue(L, 2);
     ads_ctrl->timer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
@@ -531,7 +531,7 @@ static int ads1115_lua_delete(lua_State *L) {
     return 0;
 }
 
-LROT_BEGIN(ads1115)
+LROT_BEGIN(ads1115, NULL, 0)
   LROT_FUNCENTRY( ads1115, ads1115_lua_register_1115 )
   LROT_FUNCENTRY( ads1015, ads1115_lua_register_1015 )
   LROT_FUNCENTRY( reset, ads1115_lua_reset )
@@ -576,19 +576,19 @@ LROT_BEGIN(ads1115)
   LROT_NUMENTRY( COMP_4CONV, ADS1115_CQUE_4CONV )
   LROT_NUMENTRY( CMODE_TRAD, ADS1115_CMODE_TRAD )
   LROT_NUMENTRY( CMODE_WINDOW, ADS1115_CMODE_WINDOW )
-LROT_END(ads1115, NULL, 0 )
+LROT_END(ads1115, NULL, 0)
 
-LROT_BEGIN(ads1115_instance)
+
+LROT_BEGIN(ads1115_instance, NULL, LROT_MASK_GC_INDEX)
+  LROT_TABENTRY(  __index  , ads1115_instance )
+  LROT_FUNCENTRY( __gc, ads1115_lua_delete )
   LROT_FUNCENTRY( setting, ads1115_lua_setting )
   LROT_FUNCENTRY( startread, ads1115_lua_startread )
   LROT_FUNCENTRY( read, ads1115_lua_read )
 #ifdef ADS1115_INCLUDE_TEST_FUNCTION
   LROT_FUNCENTRY( test_volt_conversion, test_volt_conversion )
 #endif
-  LROT_TABENTRY( __index, ads1115_instance )
-  LROT_FUNCENTRY( __gc, ads1115_lua_delete )
-LROT_END(ads1115_instance, ads1115_instance, LROT_MASK_GC_INDEX )
-
+LROT_END(ads1115_instance, NULL, LROT_MASK_GC_INDEX)
 
 int luaopen_ads1115(lua_State *L) {
     luaL_rometatable(L, metatable_name, LROT_TABLEREF(ads1115_instance));

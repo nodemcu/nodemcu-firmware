@@ -171,9 +171,20 @@ static int handle_post_command(const coap_endpoint_t *ep, coap_rw_buffer_t *scra
     {
         char line[LUA_MAXINPUT+1];
         if (!coap_buffer_to_string(line, LUA_MAXINPUT, &inpkt->payload)) {
+            lua_State *L = lua_getstate();
+            int base = lua_gettop(L), n, status;
             int l = strlen(line);
-            line[l] = '\n';
-            lua_input_string(line, l+1);
+            line[l++] = '\n';
+            /* compile and exec payload; any error or results will be left on the stack and printed */
+            /* TODO: consider returning output as result instead of printing */ 
+            luaL_dostring(L, line);
+            if ((n = lua_gettop(L) - base) > 0)
+            {
+                lua_getglobal(L, "print");
+                lua_insert(L, base);
+                lua_pcall(L, n, 0, 0);
+                lua_settop(L, base);
+            }
         }
         return coap_make_response(scratch, outpkt, NULL, 0, id_hi, id_lo, &inpkt->tok, COAP_RSPCODE_CONTENT, COAP_CONTENTTYPE_TEXT_PLAIN);
     }

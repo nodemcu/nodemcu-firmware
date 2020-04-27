@@ -203,14 +203,14 @@ static int xpt2046_getPositionAvg( lua_State* L ) {
 }
 
 // Module function map
-LROT_BEGIN(xpt2046)
+LROT_BEGIN(xpt2046, NULL, 0)
   LROT_FUNCENTRY( isTouched, xpt2046_isTouched )
   LROT_FUNCENTRY( getRaw, xpt2046_getRaw )
   LROT_FUNCENTRY( getPosition, xpt2046_getPosition )
   LROT_FUNCENTRY( getPositionAvg, xpt2046_getPositionAvg )
   LROT_FUNCENTRY( setCalibration, xpt2046_setCalibration )
   LROT_FUNCENTRY( init, xpt2046_init )
-LROT_END( xpt2046, NULL, 0 )
+LROT_END(xpt2046, NULL, 0)
 
 
 

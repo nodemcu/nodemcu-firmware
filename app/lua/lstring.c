@@ -8,7 +8,6 @@
 
 #define lstring_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <string.h>
@@ -18,8 +17,6 @@
 #include "lstate.h"
 #include "lstring.h"
 
-#define LUAS_READONLY_STRING      1
-#define LUAS_REGULAR_STRING       0
 
 void luaS_resize (lua_State *L, int newsize) {
   stringtable *tb;
@@ -53,39 +50,25 @@ void luaS_resize (lua_State *L, int newsize) {
 }
 
 static TString *newlstr (lua_State *L, const char *str, size_t l,
-                                       unsigned int h, int readonly) {
+                                       unsigned int h) {
   TString *ts;
-  stringtable *tb;
+  stringtable *tb = &G(L)->strt;
   if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     luaM_toobig(L);
-  tb = &G(L)->strt;
   if ((tb->nuse + 1) > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
     luaS_resize(L, tb->size*2);  /* too crowded */
-  ts = cast(TString *, luaM_malloc(L, sizeof(TString) + (readonly ? sizeof(char**) : (l+1)*sizeof(char))));
+  ts = cast(TString *, luaM_malloc(L, sizeof(TString) + (l+1)*sizeof(char)));
   ts->tsv.len = l;
   ts->tsv.hash = h;
   ts->tsv.marked = luaC_white(G(L));
   ts->tsv.tt = LUA_TSTRING;
-  if (!readonly) {
-    memcpy(ts+1, str, l*sizeof(char));
-    ((char *)(ts+1))[l] = '\0';  /* ending 0 */
-  } else {
-    *(char **)(ts+1) = (char *)str;
-    l_setbit((ts)->tsv.marked, READONLYBIT);
-  }
+  memcpy(ts+1, str, l*sizeof(char));
+  ((char *)(ts+1))[l] = '\0';  /* ending 0 */
   h = lmod(h, tb->size);
   ts->tsv.next = tb->hash[h];  /* chain new entry */
   tb->hash[h] = obj2gco(ts);
   tb->nuse++;
   return ts;
-}
-
-static int lua_is_ptr_in_ro_area(const char *p) {
-#ifdef LUA_CROSS_COMPILER
-  return 0;         // TStrings are never in RO in luac.cross
-#else
-  return IN_RODATA_AREA(p);
-#endif
 }
 
 /*
@@ -128,11 +111,7 @@ LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
     }
   }
 #endif
-  /* New additions to the RAM strt are tagged as readonly if the string address
-   * is in the CTEXT segment (target only, not luac.cross) */
-  int readonly = (lua_is_ptr_in_ro_area(str) && l+1 > sizeof(char**) &&
-                  l == strlen(str) ? LUAS_READONLY_STRING : LUAS_REGULAR_STRING);
-  return newlstr(L, str, l, h, readonly);  /* not found */
+  return newlstr(L, str, l, h);  /* not found */
 }
 
 

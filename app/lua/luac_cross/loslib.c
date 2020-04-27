@@ -6,7 +6,6 @@
 
 #define LUAC_CROSS_FILE
 
-#include "luac_cross.h"
 #include <errno.h>
 #include <locale.h>
 #include <stdlib.h>
@@ -20,7 +19,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
+#include "lnodemcu.h"
 
 static int os_pushresult (lua_State *L, int i, const char *filename) {
   int en = errno;  /* calls to Lua API may change this value */
@@ -220,7 +219,7 @@ static int os_exit (lua_State *L) {
   exit(luaL_optint(L, 1, EXIT_SUCCESS));
 }
 
-LROT_PUBLIC_BEGIN(oslib)
+LROT_BEGIN(oslib, NULL, 0)
   LROT_FUNCENTRY( clock, os_clock )
   LROT_FUNCENTRY( date, os_date )
 #if !defined LUA_NUMBER_INTEGRAL

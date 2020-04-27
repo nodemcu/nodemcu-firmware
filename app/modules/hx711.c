@@ -7,7 +7,6 @@
 #include "platform.h"
 #include <stdlib.h>
 #include <string.h>
-#include "task/task.h"
 #include "user_interface.h"
 static uint8_t data_pin;
 static uint8_t clk_pin;
@@ -16,7 +15,7 @@ static uint8_t pin_data_pin;
 static uint8_t pin_clk_pin;
 
 #ifdef GPIO_INTERRUPT_ENABLE
-static task_handle_t tasknumber;
+static platform_task_handle_t tasknumber;
 
 // HX711_STATUS can be defined to enable the hx711.status() function to get debug info
 #undef HX711_STATUS
@@ -115,7 +114,7 @@ static void ICACHE_RAM_ATTR hx711_data_available() {
     control->dropped[control->active] = control->nobuffer;
     control->nobuffer = 0;
     // post task
-    task_post_medium(tasknumber, control->active);
+    platform_post_medium(tasknumber, control->active);
 
     uint8_t next_active = (1 + control->active) % BUFFERS;
 
@@ -184,7 +183,7 @@ static int hx711_start( lua_State* L )
 
   int cb_ref;
 
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
+  if (lua_type(L, 3) == LUA_TFUNCTION) {
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   } else {
@@ -241,7 +240,7 @@ static int hx711_status( lua_State* L )
   return 0;
 }
 
-static void hx711_task(os_param_t param, uint8_t prio)
+static void hx711_task(platform_task_param_t param, uint8_t prio)
 {
   (void) prio;
   if (!control) {
@@ -315,7 +314,7 @@ static int hx711_read(lua_State* L) {
 }
 
 // Module function map
-LROT_BEGIN(hx711)
+LROT_BEGIN(hx711, NULL, 0)
   LROT_FUNCENTRY( init, hx711_init )
   LROT_FUNCENTRY( read, hx711_read )
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -325,12 +324,12 @@ LROT_BEGIN(hx711)
 #endif
   LROT_FUNCENTRY( stop,  hx711_stop )
 #endif
-LROT_END( hx711, NULL, 0 )
+LROT_END(hx711, NULL, 0)
 
 
 int luaopen_hx711(lua_State *L) {
 #ifdef GPIO_INTERRUPT_ENABLE
-  tasknumber = task_get_id(hx711_task);
+  tasknumber = platform_task_get_id(hx711_task);
 #endif
   return 0;
 }

@@ -15,6 +15,13 @@ TARGET = eagle
 #FLAVOR = release
 FLAVOR = debug
 
+# Handle Lua Directory selector
+ifeq ("$(LUA)","53")
+  LUA_DIR := lua53
+else
+  LUA_DIR := lua
+endif
+
 ifndef PDIR # {
 GEN_IMAGES= eagle.app.v6.out
 GEN_BINS= eagle.app.v6.bin
@@ -34,15 +41,15 @@ SUBDIRS= 					\
 	mbedtls 				\
 	platform 				\
 	libc 					\
-	lua 					\
+	$(LUA_DIR)				\
 	lwip 					\
 	smart 					\
 	modules 				\
 	spiffs 					\
-	net						\
+	net					\
 	fatfs					\
 	esp-gdbstub				\
-	pm						\
+	pm					\
 	uzlib					\
 	$(OPT_SEL_MKTARGETS)
 
@@ -65,7 +72,7 @@ COMPONENTS_eagle.app.v6 = 		\
 	driver/libdriver.a 			\
 	platform/libplatform.a 		\
 	libc/liblibc.a 				\
-	lua/liblua.a 				\
+	$(LUA_DIR)/liblua.a 		\
 	lwip/liblwip.a 				\
 	smart/smart.a 				\
 	spiffs/spiffs.a 			\
@@ -150,7 +157,7 @@ DDEFINES += 						\
 #
 # Required for each makefile to inherit from the parent
 #
-INCLUDES := -I $(PDIR)libc -I $(PDIR)lua -I $(PDIR)platform \
+INCLUDES := -I $(PDIR)libc -I $(PDIR)$(LUA_DIR) -I $(PDIR)platform \
             $(INCLUDES) -I $(PDIR) -I $(PDIR)include 
 PDIR := ../$(PDIR)
 

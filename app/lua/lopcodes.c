@@ -6,9 +6,7 @@
 
 #define lopcodes_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
-#include "luac_cross.h"
 #include "lopcodes.h"
 
 /* ORDER OP */

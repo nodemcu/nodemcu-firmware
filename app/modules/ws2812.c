@@ -600,7 +600,10 @@ static int ws2812_buffer_tostring(lua_State* L) {
   return 1;
 }
 
-LROT_BEGIN(ws2812_buffer)
+LROT_BEGIN(ws2812_buffer_map, NULL, LROT_MASK_INDEX)
+  LROT_FUNCENTRY( __concat, ws2812_buffer_concat )
+  LROT_TABENTRY(  __index, ws2812_buffer_map )
+  LROT_FUNCENTRY( __tostring, ws2812_buffer_tostring )
   LROT_FUNCENTRY( dump, ws2812_buffer_dump )
   LROT_FUNCENTRY( fade, ws2812_buffer_fade_lua)
   LROT_FUNCENTRY( fill, ws2812_buffer_fill_lua )
@@ -612,12 +615,9 @@ LROT_BEGIN(ws2812_buffer)
   LROT_FUNCENTRY( shift, ws2812_buffer_shift_lua )
   LROT_FUNCENTRY( size, ws2812_buffer_size )
   LROT_FUNCENTRY( sub, ws2812_buffer_sub )
-  LROT_FUNCENTRY( __concat, ws2812_buffer_concat )
-  LROT_TABENTRY( __index, ws2812_buffer )
-  LROT_FUNCENTRY( __tostring, ws2812_buffer_tostring )
-LROT_END( ws2812_buffer, ws2812_buffer, LROT_MASK_INDEX )
+LROT_END(ws2812_buffer_map, NULL, LROT_MASK_INDEX)
 
-LROT_BEGIN(ws2812)
+LROT_BEGIN(ws2812, NULL, 0)
   LROT_FUNCENTRY( init, ws2812_init )
   LROT_FUNCENTRY( newBuffer, ws2812_new_buffer )
   LROT_FUNCENTRY( write, ws2812_write )
@@ -627,11 +627,11 @@ LROT_BEGIN(ws2812)
   LROT_NUMENTRY( MODE_DUAL, MODE_DUAL )
   LROT_NUMENTRY( SHIFT_LOGICAL, SHIFT_LOGICAL )
   LROT_NUMENTRY( SHIFT_CIRCULAR, SHIFT_CIRCULAR )
-LROT_END( ws2812, NULL, 0 )
+LROT_END(ws2812, NULL, 0)
 
 int luaopen_ws2812(lua_State *L) {
   // TODO: Make sure that the GPIO system is initialized
-  luaL_rometatable(L, "ws2812.buffer", LROT_TABLEREF(ws2812_buffer));
+  luaL_rometatable(L, "ws2812.buffer", LROT_TABLEREF(ws2812_buffer_map));
   return 0;
 }
 

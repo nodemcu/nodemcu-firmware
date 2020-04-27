@@ -175,12 +175,12 @@ static int bmp085_lua_pressure(lua_State* L) {
     return 1;
 }
 
-LROT_BEGIN(bmp085)
+LROT_BEGIN(bmp085, NULL, 0)
   LROT_FUNCENTRY( temperature, bmp085_lua_temperature )
   LROT_FUNCENTRY( pressure, bmp085_lua_pressure )
   LROT_FUNCENTRY( pressure_raw, bmp085_lua_pressure_raw )
   LROT_FUNCENTRY( setup, bmp085_setup )
-LROT_END( bmp085, NULL, 0 )
+LROT_END(bmp085, NULL, 0)
 
 
 NODEMCU_MODULE(BMP085, "bmp085", bmp085, NULL);

@@ -350,7 +350,7 @@ int net_listen( lua_State *L ) {
   if (!ipaddr_aton(domain, &addr))
     return luaL_error(L, "invalid IP address");
   if (ud->type == TYPE_TCP_SERVER) {
-    if (lua_isfunction(L, stack) || lua_islightfunction(L, stack)) {
+    if (lua_isfunction(L, stack)) {
       lua_pushvalue(L, stack++);
       luaL_unref(L, LUA_REGISTRYINDEX, ud->server.cb_accept_ref);
       ud->server.cb_accept_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -421,7 +421,7 @@ int net_connect( lua_State *L ) {
     domain = luaL_checklstring(L, 3, &dl);
   }
   if (lua_gettop(L) > 3) {
-    luaL_argcheck(L, lua_isfunction(L, 4) || lua_islightfunction(L, 4), 4, "not a function");
+    luaL_argcheck(L, lua_isfunction(L, 4), 4, "not a function");
     lua_pushvalue(L, 4);
     luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_connect_ref);
     ud->client.cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -486,7 +486,7 @@ int net_on( lua_State *L ) {
   }
   if (refptr == NULL)
     return luaL_error(L, "invalid callback name");
-  if (lua_isfunction(L, 3) || lua_islightfunction(L, 3)) {
+  if (lua_isfunction(L, 3)) {
     lua_pushvalue(L, 3);
     luaL_unref(L, LUA_REGISTRYINDEX, *refptr);
     *refptr = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -519,7 +519,7 @@ int net_send( lua_State *L ) {
   }
   data = luaL_checklstring(L, stack++, &datalen);
   if (!data || datalen == 0) return luaL_error(L, "no data to send");
-  if (lua_isfunction(L, stack) || lua_islightfunction(L, stack)) {
+  if (lua_isfunction(L, stack)) {
     lua_pushvalue(L, stack++);
     luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_sent_ref);
     ud->client.cb_sent_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -595,7 +595,7 @@ int net_dns( lua_State *L ) {
   const char *domain = luaL_checklstring(L, 2, &dl);
   if (!domain)
     return luaL_error(L, "no domain specified");
-  if (lua_isfunction(L, 3) || lua_islightfunction(L, 3)) {
+  if (lua_isfunction(L, 3)) {
     luaL_unref(L, LUA_REGISTRYINDEX, ud->client.cb_dns_ref);
     lua_pushvalue(L, 3);
     ud->client.cb_dns_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -708,7 +708,7 @@ int net_getaddr( lua_State *L ) {
 static void dbg_print_ud(const char *title, lnet_userdata *ud) {
   int i;
   dbg_printf("%s: Userdata %p:", title, ud);
-  for (i=0; i<(sizeof(*ud)/sizeof(uint32_t)); i++) 
+  for (i=0; i<(sizeof(*ud)/sizeof(uint32_t)); i++)
     dbg_printf( "  0x%08x", ((uint32_t *)ud)[i]);
   dbg_printf("\n");
 #endif
@@ -888,9 +888,8 @@ static int net_dns_static( lua_State* L ) {
     return luaL_error(L, "wrong domain");
   }
 
-  /* Register callback with registry */
-  luaL_checkanyfunction(L, 2);
-  lua_pushvalue(L, 2);
+  luaL_checktype(L, 2, LUA_TFUNCTION);
+  lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
   int cbref = luaL_ref(L, LUA_REGISTRYINDEX);
   ip_addr_t addr;
 
@@ -1012,16 +1011,20 @@ static int net_ifinfo( lua_State* L ) {
 #pragma mark - Tables
 
 // Module function map
-LROT_BEGIN(net_tcpserver)
+
+LROT_BEGIN(net_tcpserver, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, net_delete )
+  LROT_TABENTRY(  __index, net_tcpserver )
   LROT_FUNCENTRY( listen, net_listen )
   LROT_FUNCENTRY( getaddr, net_getaddr )
   LROT_FUNCENTRY( close, net_close )
+LROT_END(net_tcpserver, NULL, LROT_MASK_GC_INDEX)
+
+
+
+LROT_BEGIN(net_tcpsocket, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY( __gc, net_delete )
-  LROT_TABENTRY( __index, net_tcpserver )
-LROT_END( net_tcpserver, net_tcpserver, 0 )
-
-
-LROT_BEGIN(net_tcpsocket)
+  LROT_TABENTRY(  __index, net_tcpsocket )
   LROT_FUNCENTRY( connect, net_connect )
   LROT_FUNCENTRY( close, net_close )
   LROT_FUNCENTRY( on, net_on )
@@ -1032,12 +1035,13 @@ LROT_BEGIN(net_tcpsocket)
   LROT_FUNCENTRY( ttl, net_ttl )
   LROT_FUNCENTRY( getpeer, net_getpeer )
   LROT_FUNCENTRY( getaddr, net_getaddr )
+LROT_END(net_tcpsocket, NULL, LROT_MASK_GC_INDEX)
+
+
+
+LROT_BEGIN(net_udpsocket, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY( __gc, net_delete )
-  LROT_TABENTRY( __index, net_tcpsocket )
-LROT_END( net_tcpsocket, net_tcpsocket, 0 )
-
-
-LROT_BEGIN(net_udpsocket)
+  LROT_TABENTRY(  __index, net_udpsocket )
   LROT_FUNCENTRY( listen, net_listen )
   LROT_FUNCENTRY( close, net_close )
   LROT_FUNCENTRY( on, net_on )
@@ -1045,26 +1049,34 @@ LROT_BEGIN(net_udpsocket)
   LROT_FUNCENTRY( dns, net_dns )
   LROT_FUNCENTRY( ttl, net_ttl )
   LROT_FUNCENTRY( getaddr, net_getaddr )
-  LROT_FUNCENTRY( __gc, net_delete )
-  LROT_TABENTRY( __index, net_udpsocket )
-LROT_END( net_udpsocket, net_udpsocket, 0 )
+LROT_END(net_udpsocket, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_BEGIN(net_dns)
+LROT_BEGIN(net_dns_map, NULL, 0)
   LROT_FUNCENTRY( setdnsserver, net_setdnsserver )
   LROT_FUNCENTRY( getdnsserver, net_getdnsserver )
   LROT_FUNCENTRY( resolve, net_dns_static )
-LROT_END( net_dns, net_dns, 0 )
+LROT_END(net_dns_map, NULL, 0)
 
-LROT_BEGIN(net)
+
+#ifdef TLS_MODULE_PRESENT
+extern LROT_TABLE(tls_cert);
+#endif
+
+LROT_BEGIN(net, NULL, 0)
   LROT_FUNCENTRY( createServer, net_createServer )
   LROT_FUNCENTRY( createConnection, net_createConnection )
   LROT_FUNCENTRY( createUDPSocket, net_createUDPSocket )
   LROT_FUNCENTRY( ifinfo, net_ifinfo )
   LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
-  LROT_TABENTRY( dns, net_dns )
-LROT_END( net, net, 0 )
+  LROT_TABENTRY( dns, net_dns_map )
+#ifdef TLS_MODULE_PRESENT
+  LROT_TABENTRY( cert, tls_cert )
+#endif
+  LROT_NUMENTRY( TCP, TYPE_TCP )
+  LROT_NUMENTRY( UDP, TYPE_UDP )
+LROT_END(net, NULL, 0)
 
 
 int luaopen_net( lua_State *L ) {

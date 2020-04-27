@@ -5,7 +5,6 @@
 
 #define lflash_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 #include "lua.h"
 
 #include "lobject.h"
@@ -89,9 +88,8 @@ void dumpStrt(stringtable *tb, const char *type) {
   for (i=0; i<tb->size; i++)
     for(o = tb->hash[i], j=0; o; (o=o->gch.next), j++ ) {
       TString *ts =cast(TString *, o);
-      NODE_DBG("%5d %5d %08x %08x %5d %1s %s\n",
-               i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len,
-               ts_isreadonly(ts) ? "R" : " ",  getstr(ts));
+      NODE_DBG("%5d %5d %08x %08x %5d %s\n",
+               i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len, getstr(ts));
     }
 }
 
@@ -200,7 +198,6 @@ static void procFirstPass (void);
  * Library function called by node.flashreload(filename).
  */
 LUALIB_API int luaN_reload_reboot (lua_State *L) {
-  // luaL_dbgbreak();
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
 

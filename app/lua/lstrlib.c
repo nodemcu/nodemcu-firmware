@@ -7,7 +7,6 @@
 
 #define lstrlib_c
 #define LUA_LIB
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <stdio.h>
@@ -15,7 +14,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
+#include "lnodemcu.h"
 
 /* macro to `unsign' a character */
 #define uchar(c)        ((unsigned char)(c))
@@ -824,7 +823,21 @@ static int str_format (lua_State *L) {
   return 1;
 }
 
-LROT_PUBLIC_BEGIN(strlib)
+static int str_format2 (lua_State *L) {
+  if (lua_type(L, 2) == LUA_TTABLE) {
+    int i,n=lua_objlen(L,2);
+    lua_settop(L,2);
+    for (i = 1; i <= n; i++)
+      lua_rawgeti(L, 2, i);
+    lua_remove(L, 2);
+  }
+  return str_format(L);
+}
+
+
+LROT_BEGIN(strlib, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( __index, strlib )
+  LROT_FUNCENTRY( __mod, str_format2 )
   LROT_FUNCENTRY( byte, str_byte )
   LROT_FUNCENTRY( char, str_char )
   LROT_FUNCENTRY( dump, str_dump )
@@ -844,8 +857,7 @@ LROT_PUBLIC_BEGIN(strlib)
   LROT_FUNCENTRY( reverse, str_reverse )
   LROT_FUNCENTRY( sub, str_sub )
   LROT_FUNCENTRY( upper, str_upper )
-  LROT_TABENTRY( __index, strlib )
-LROT_END(strlib, NULL, 0)  // OR DO WE NEED LRTO_MASK_INDEX    **TODO** 
+LROT_END(strlib, NULL, LROT_MASK_INDEX)
 
 /*
 ** Open string library

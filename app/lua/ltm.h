@@ -7,10 +7,6 @@
 #ifndef ltm_h
 #define ltm_h
 
-
-#include "lobject.h"
-#include "lrotable.h"
-
 /*
 * WARNING: if you change the order of this enumeration,
 * grep "ORDER TM"
@@ -33,13 +29,16 @@ typedef enum {
   TM_LE,
   TM_CONCAT,
   TM_CALL,
+  TM_METATABLE,
   TM_N		/* number of elements in the enum */
 } TMS;
 
-#define gfasttm(g,et,e) ((et) == NULL ? NULL : \
-  (!luaR_isrotable(et) && ((et)->flags & (1u<<(e)))) ? NULL : luaT_gettm(et, e, (g)->tmname[e]))
+//#include "lobject.h"
 
-#define fasttm(l,et,e) gfasttm(G(l), et, e)
+#define gfasttm(g,et,e) ((et) == NULL ? NULL : \
+  (getflags(et) & (1u<<(e))) ? NULL : luaT_gettm(et, e, (g)->tmname[e]))
+
+#define fasttm(l,et,e)		gfasttm(G(l), et, e)
 
 LUAI_DATA const char *const luaT_typenames[];
 

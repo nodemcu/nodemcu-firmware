@@ -45,7 +45,7 @@ Currently only the "data" event is supported.
 	- if n<255, the callback is called when n chars are received
 	- if one char "c", the callback will be called when "c" is encountered, or max n=255 received
 - `function` callback function, event "data" has a callback like this: `function(data) end`
-- `run_input` 0 or 1. If 0, input from UART will not go into Lua interpreter, can accept binary data. If 1, input from UART will go into Lua interpreter, and run.
+- `run_input` 0 or 1. If 0, input from UART will not go into Lua interpreter, and this can accept binary data. If 1, input from UART is treated as a text stream with the `DEL`, `BS`, `CR` and `LF` characters processed as normal.  Completed lines will be passed to the Lua interpreter for execution. _Note that the interpreter only processes complete lines._
 
 To unregister the callback, provide only the "data" parameter.
 

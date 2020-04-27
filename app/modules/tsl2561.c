@@ -101,7 +101,7 @@ static int ICACHE_FLASH_ATTR tsl2561_lua_getchannels(lua_State* L) {
 }
 
 // Module function map
-LROT_BEGIN(tsl2561)
+LROT_BEGIN(tsl2561, NULL, 0)
   LROT_FUNCENTRY( settiming, tsl2561_lua_settiming )
   LROT_FUNCENTRY( getlux, tsl2561_lua_calclux )
   LROT_FUNCENTRY( getrawchannels, tsl2561_lua_getchannels )
@@ -121,7 +121,7 @@ LROT_BEGIN(tsl2561)
   LROT_NUMENTRY( ADDRESS_GND, TSL2561_ADDRESS_GND )
   LROT_NUMENTRY( ADDRESS_FLOAT, TSL2561_ADDRESS_FLOAT )
   LROT_NUMENTRY( ADDRESS_VDD, TSL2561_ADDRESS_VDD )
-LROT_END( tsl2561, NULL, 0 )
+LROT_END(tsl2561, NULL, 0)
 
 
 NODEMCU_MODULE(TSL2561, "tsl2561", tsl2561, NULL);

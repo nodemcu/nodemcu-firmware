@@ -126,7 +126,7 @@ def load_PT(data, args):
     """
 
     PTrec,recs = unpack_RCR(data)
-    flash_size = args.fs if args.fs is not None else DEFAULT_FLASH_SIZE
+    flash_size = fs.args if args.fs is not None else DEFAULT_FLASH_SIZE
 
     # The partition table format is a set of 3*uint32 fields (type, addr, size),
     # with the optional last slot being an end marker (0,size,0) where size is
@@ -308,7 +308,7 @@ def main():
            raise FatalError("SPIFFS image %s does not exist" % arg.sf)
 
     base = [] if arg.port is None else ['--port',arg.port]
-    if arg.baud is not None: base.extend(['--baud',arg.baud])
+    if arg.baud is not None: base.extend(['--baud',str(arg.baud)])
 
     # ---------- Use esptool to read the PT ---------- #
 
@@ -316,6 +316,7 @@ def main():
     pt_file = tmpdir + '/pt.dmp'
     espargs = base+['--after', 'no_reset', 'read_flash', '--no-progress',
                     str(ROM0_Seg), str(FLASH_PAGESIZE), pt_file]
+                    
     esptool.main(espargs)
 
     with open(pt_file,"rb") as f:

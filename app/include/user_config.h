@@ -248,15 +248,15 @@
 #define READLINE_INTERVAL        80
 #define STRBUF_DEFAULT_INCREMENT  3
 #define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
-
-#ifdef DEVELOPMENT_TOOLS
-#if defined(LUA_CROSS_COMPILER) || !defined(DEVELOPMENT_USE_GDB)
+ 
+#if defined(DEVELOPMENT_TOOLS) && defined(DEVELOPMENT_USE_GDB)
+extern void LUA_DEBUG_HOOK (void);
+#define lua_assert(x)    ((x) ? (void) 0 : LUA_DEBUG_HOOK ())
+#elif defined(DEVELOPMENT_TOOLS) && defined(LUA_CROSS_COMPILER)
 extern void luaL_assertfail(const char *file, int line, const char *message);
 #define lua_assert(x)    ((x) ? (void) 0 : luaL_assertfail(__FILE__, __LINE__, #x))
 #else
-extern void luaL_dbgbreak(void);
-#define lua_assert(x)    ((x) ? (void) 0 : luaL_dbgbreak())
-#endif
+#define lua_assert(x)    ((void) (x))
 #endif
 
 #if !defined(LUA_NUMBER_INTEGRAL) && !defined (LUA_DWORD_ALIGNED_TVALUES)

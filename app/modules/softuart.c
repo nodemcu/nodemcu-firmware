@@ -334,7 +334,7 @@ static int softuart_on(lua_State *L)
 	}
 
 
-	if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION) {
+	if (lua_type(L, stack) == LUA_TFUNCTION) {
 		lua_pushvalue(L, stack); // Copy to top of the stack
 	} else {
 		lua_pushnil(L);
@@ -415,18 +415,17 @@ static int softuart_gcdelete(lua_State *L)
 }
 
 // Port function map
-LROT_BEGIN(softuart_port)
+LROT_BEGIN(softuart_port, NULL, LROT_MASK_GC_INDEX)
+	LROT_FUNCENTRY( __gc, softuart_gcdelete)
+	LROT_TABENTRY( __index, softuart_port)
 	LROT_FUNCENTRY( on, softuart_on)
 	LROT_FUNCENTRY( write, softuart_write)
-	LROT_TABENTRY( __index, softuart_port)
-	LROT_FUNCENTRY( __gc, softuart_gcdelete)
-LROT_END(ads1115, softuart_port, LROT_MASK_GC_INDEX)
+LROT_END(softuart_port, NULL, LROT_MASK_GC_INDEX)
 
 // Module function map
-LROT_BEGIN(softuart)
+LROT_BEGIN(softuart, LROT_TABLEREF(softuart_port), 0)
 	LROT_FUNCENTRY( setup, softuart_setup)
-	LROT_TABENTRY(__metatable, softuart_port)
-LROT_END(softuart, NULL, 0 )
+LROT_END(softuart, LROT_TABLEREF(softuart_port), 0)
 
 static int luaopen_softuart(lua_State *L)
 {
@@ -434,7 +433,7 @@ static int luaopen_softuart(lua_State *L)
 		softuart_rx_cb_ref[i] = LUA_NOREF;
 	}
 	uart_recieve_task = task_get_id((task_callback_t) softuart_rx_callback);
-	luaL_rometatable(L, "softuart.port", (void *)softuart_port_map);
+	luaL_rometatable(L, "softuart.port", LROT_TABLEREF(softuart_port));
 	return 0;
 }
 

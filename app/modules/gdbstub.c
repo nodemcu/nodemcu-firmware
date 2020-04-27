@@ -21,8 +21,20 @@
 #include "user_interface.h"
 #include "../esp-gdbstub/gdbstub.h"
 
-// gdbstub.brk()     just executes a break instruction. Enters gdb
+static int init_done = 0;
+static int lgdbstub_open(lua_State *L);
+
+// gdbstub.brk()  init gdb if nec and execute a break instructiont to entry gdb
 static int lgdbstub_break(lua_State *L) {
+  lgdbstub_open(L);
+  asm("break 0,0" ::);
+  return 0;
+}
+
+// as for break but also redirect output to the debugger.
+static int lgdbstub_pbreak(lua_State *L) {
+  lgdbstub_open(L);
+  gdbstub_redirect_output(1);
   asm("break 0,0" ::);
   return 0;
 }
@@ -34,16 +46,20 @@ static int lgdbstub_gdboutput(lua_State *L) {
 }
 
 static int lgdbstub_open(lua_State *L) {
+  if (init_done)
+    return 0;
   gdbstub_init();
+  init_done = 1;
   return 0;
 }
 
 // Module function map
-LROT_BEGIN(gdbstub)
+LROT_BEGIN(gdbstub, NULL, 0)
   LROT_FUNCENTRY( brk, lgdbstub_break )
+  LROT_FUNCENTRY( pbrk, lgdbstub_pbreak )
   LROT_FUNCENTRY( gdboutput, lgdbstub_gdboutput )
   LROT_FUNCENTRY( open, lgdbstub_open )
-LROT_END( gdbstub, NULL, 0 )
+LROT_END(gdbstub, NULL, 0)
 
 
 NODEMCU_MODULE(GDBSTUB, "gdbstub", gdbstub, NULL);
