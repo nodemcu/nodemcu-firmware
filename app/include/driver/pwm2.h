@@ -1,5 +1,5 @@
 /*
- * Software PWM using soft-interrupt timer1. 
+ * Software PWM using soft-interrupt timer1.
  * Supports higher frequencies compared to Espressif provided one.
  *
  * Nikolay Fiykov

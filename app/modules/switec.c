@@ -33,7 +33,7 @@ static void callback_free(lua_State* L, unsigned int id)
 
 static void callback_set(lua_State* L, unsigned int id, int argNumber)
 {
-  if (lua_type(L, argNumber) == LUA_TFUNCTION || lua_type(L, argNumber) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, argNumber)) {
     lua_pushvalue(L, argNumber);  // copy argument (func) to the top of stack
     callback_free(L, id);
     stopped_callback[id] = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -196,7 +196,7 @@ static int switec_open(lua_State *L)
 
 
 // Module function map
-LROT_BEGIN(switec)
+LROT_BEGIN(switec, NULL, 0)
   LROT_FUNCENTRY( setup, lswitec_setup )
   LROT_FUNCENTRY( close, lswitec_close )
   LROT_FUNCENTRY( reset, lswitec_reset )
@@ -206,7 +206,7 @@ LROT_BEGIN(switec)
   LROT_FUNCENTRY( dequeue, lswitec_dequeue )
 #endif
 
-LROT_END( switec, NULL, 0 )
+LROT_END(switec, NULL, 0)
 
 
 NODEMCU_MODULE(SWITEC, "switec", switec, switec_open);

@@ -108,11 +108,14 @@ SECTIONS
     * SDK libraries that used in bootup process, interruption handling
     * and other ways where flash cache (iROM) is unavailable:
     */
-    *libmain.a:*(    .literal .literal.* .text .text.*)
-    *libphy.a:*(     .literal .literal.* .text .text.*)
-    *libpp.a:*(      .literal .literal.* .text .text.*)
-    *libgcc.a:*(     .literal .literal.* .text .text.*)
-    *libnet80211.a:*(.literal            .text        )
+    *libmain.a:*(         .literal .literal.* .text .text.*)
+    *libphy.a:*(          .literal .literal.* .text .text.*)
+    *libpp.a:*(           .literal .literal.* .text .text.*)
+    *libgcc.a:_ashrdi3.o( .literal .literal.* .text .text.*)
+    *libgcc.a:_divsf3.o(  .literal .literal.* .text .text.*)
+    *libgcc.a:_fixsfsi.o( .literal .literal.* .text .text.*)
+    *libgcc.a:_modsi3.o(  .literal .literal.* .text .text.*)
+    *libnet80211.a:*(     .literal            .text        )
    /*
     * The following SDK libraries have .literal and .text sections, but are
     * either not used in NodeMCU or are safe to execute out of in iROM: 
@@ -241,10 +244,12 @@ SECTIONS
     *(.sdk.version)
 
     /* Link-time arrays containing the defs for the included modules */
-    . = ALIGN(4);
+    . = ALIGN(8);
     lua_libs_base = ABSOLUTE(.);
     /* Allow either empty define or defined-to-1 to include the module */
     KEEP(*(.lua_libs))
+    *liblua.a:linit.o(.lua_libs)
+    *(.lua_libs)
     LONG(0) LONG(0) /* Null-terminate the array */
     lua_rotable_base = ABSOLUTE(.);
     KEEP(*(.lua_rotable))

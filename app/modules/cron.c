@@ -87,7 +87,7 @@ static int lcron_create(lua_State *L) {
   // Check arguments
   char *strdesc = (char*)luaL_checkstring(L, 1);
   void *newlist;
-  luaL_checkanyfunction(L, 2);
+  luaL_checktype(L, 2, LUA_TFUNCTION);
   // Parse description
   struct cronent_desc desc;
   lcron_parsedesc(L, strdesc, &desc);
@@ -140,14 +140,14 @@ static int lcron_schedule(lua_State *L) {
     }
     cronent_list = newlist;
     lua_pushvalue(L, 1);
-    cronent_list[cronent_count++] = lua_ref(L, LUA_REGISTRYINDEX);
+    cronent_list[cronent_count++] = luaL_ref(L, LUA_REGISTRYINDEX);
   }
   return 0;
 }
 
 static int lcron_handler(lua_State *L) {
   cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
-  luaL_checkanyfunction(L, 2);
+  luaL_checktype(L, 2, LUA_TFUNCTION);
   lua_pushvalue(L, 2);
   luaL_unref(L, LUA_REGISTRYINDEX, ud->cb_ref);
   ud->cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -224,19 +224,21 @@ static void cron_handle_tmr() {
   cron_handle_time(tm.tm_mon + 1, tm.tm_mday, tm.tm_wday, tm.tm_hour, tm.tm_min);
 }
 
-LROT_BEGIN(cronent)
+
+
+LROT_BEGIN(cronent, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, lcron_delete )
+  LROT_TABENTRY(  __index, cronent )
   LROT_FUNCENTRY( schedule, lcron_schedule )
   LROT_FUNCENTRY( handler, lcron_handler )
   LROT_FUNCENTRY( unschedule, lcron_unschedule )
-  LROT_FUNCENTRY( __gc, lcron_delete )
-  LROT_TABENTRY( __index, cronent )
-LROT_END( cronent, cronent, LROT_MASK_GC_INDEX )
+LROT_END(cronent, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_BEGIN(cron)
+LROT_BEGIN(cron, NULL, 0)
   LROT_FUNCENTRY( schedule, lcron_create )
   LROT_FUNCENTRY( reset, lcron_reset )
-LROT_END( cron, NULL, 0 )
+LROT_END(cron, NULL, 0)
 
 #include "pm/swtimer.h"
 

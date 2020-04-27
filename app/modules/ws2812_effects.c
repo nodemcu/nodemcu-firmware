@@ -1039,7 +1039,8 @@ static int ws2812_effects_tostring(lua_State* L) {
   return 1;
 }
 
-LROT_BEGIN(ws2812_effects)
+LROT_BEGIN(ws2812_effects_map, NULL, 0)
+  LROT_FUNCENTRY( __tostring, ws2812_effects_tostring )
   LROT_FUNCENTRY( init, ws2812_effects_init )
   LROT_FUNCENTRY( set_brightness, ws2812_effects_set_brightness )
   LROT_FUNCENTRY( set_color, ws2812_effects_set_color )
@@ -1050,11 +1051,8 @@ LROT_BEGIN(ws2812_effects)
   LROT_FUNCENTRY( stop, ws2812_effects_stop )
   LROT_FUNCENTRY( get_delay, ws2812_effects_get_delay )
   LROT_FUNCENTRY( get_speed, ws2812_effects_get_speed )
-
-  LROT_TABENTRY( __index, ws2812_effects )
-  LROT_FUNCENTRY( __tostring, ws2812_effects_tostring )
-LROT_END( ws2812_effects, ws2812_effects, LROT_MASK_INDEX )
+LROT_END(ws2812_effects_map, NULL, 0)
 
 
 
-NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects, NULL);
+NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects_map, NULL);

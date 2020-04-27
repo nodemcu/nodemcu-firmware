@@ -188,16 +188,24 @@ uart0_tx_buffer(uint8 *buf, uint16 len)
  * FunctionName : uart0_sendStr
  * Description  : use uart0 to transfer buffer
  * Parameters   : uint8 *buf - point to send buffer
- *                uint16 len - buffer len
  * Returns      :
 *******************************************************************************/
-void ICACHE_FLASH_ATTR uart0_sendStr(const char *str)
-{
+void ICACHE_FLASH_ATTR uart0_sendStr(const char *str) {
     while(*str)
-    {
-        // uart_tx_one_char(UART0, *str++);
         uart0_putc(*str++);
-    }
+}
+
+/******************************************************************************
+ * FunctionName : uart0_sendStr
+ * Description  : use uart0 to transfer buffer
+ * Parameters   : uint8 *buf - point to send buffer
+ *                size_t len - buffer len
+ * Returns      :
+*******************************************************************************/
+void ICACHE_FLASH_ATTR uart0_sendStrn(const char *str, size_t len) {
+    size_t i;
+    for(i = 0; i < len; i++)
+        uart0_putc(*str++);
 }
 
 /******************************************************************************

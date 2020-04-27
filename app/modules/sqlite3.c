@@ -36,7 +36,6 @@
 
 #define LUA_LIB
 #include "module.h"
-#include "lua.h"
 #include "lauxlib.h"
 
 #if LUA_VERSION_NUM > 501

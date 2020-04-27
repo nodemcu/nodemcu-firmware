@@ -1,3 +1,4 @@
+
 /*
 ** $Id: lobject.c,v 2.22.1.1 2007/12/27 13:02:25 roberto Exp $
 ** Some generic functions over Lua objects
@@ -7,7 +8,6 @@
 
 #define lobject_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <stdio.h>
@@ -88,7 +88,7 @@ int luaO_rawequalObj (const TValue *t1, const TValue *t2) {
     case LUA_TLIGHTUSERDATA:
       return pvalue(t1) == pvalue(t2);
     case LUA_TROTABLE:
-      return rvalue(t1) == rvalue(t2);
+      return hvalue(t1) == hvalue(t2);
     case LUA_TLIGHTFUNCTION:
       return fvalue(t1) == fvalue(t2);
     default:

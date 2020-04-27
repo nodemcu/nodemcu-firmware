@@ -42,7 +42,7 @@ static int ICACHE_FLASH_ATTR wps_start(lua_State* L)
 
   wps_callback_ref = LUA_NOREF;
 
-  if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  if (lua_isfunction(L, 1))
     wps_callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   else
     return luaL_error (L, "Argument not a function");
@@ -53,7 +53,7 @@ static int ICACHE_FLASH_ATTR wps_start(lua_State* L)
 }
 
 // Module function map
-LROT_BEGIN(wps)
+LROT_BEGIN(wps, NULL, 0)
   LROT_FUNCENTRY( disable, wps_disable )
   LROT_FUNCENTRY( enable, wps_enable )
   LROT_FUNCENTRY( start, wps_start )
@@ -62,7 +62,7 @@ LROT_BEGIN(wps)
   LROT_NUMENTRY( TIMEOUT, WPS_CB_ST_TIMEOUT )
   LROT_NUMENTRY( WEP, WPS_CB_ST_WEP )
   LROT_NUMENTRY( SCAN_ERR, 4 )
-LROT_END( wps, NULL, 0 )
+LROT_END(wps, NULL, 0)
 
 
 int luaopen_wps( lua_State *L )

@@ -41,7 +41,7 @@ typedef struct {
   int cb_dns_ref;
 } tls_socket_ud;
 
-int tls_socket_create( lua_State *L ) {
+static int tls_socket_create( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud*) lua_newuserdata(L, sizeof(tls_socket_ud));
 
   bzero(&ud->pesp_conn, sizeof(ud->pesp_conn));
@@ -179,12 +179,6 @@ static void tls_socket_dns_cb( const char* domain, const ip_addr_t *ip_addr, tls
 
 static int tls_socket_connect( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
-
   if (ud->pesp_conn.proto.tcp) {
     return luaL_error(L, "already connected");
   }
@@ -231,17 +225,8 @@ static int tls_socket_connect( lua_State *L ) {
 
 static int tls_socket_on( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
-
   size_t sl;
   const char *method = luaL_checklstring( L, 2, &sl );
-  if (method == NULL)
-    return luaL_error( L, "wrong arg type" );
-
   int *cbp;
 
        if (strcmp(method, "connection"   ) == 0) { cbp = &ud->cb_connect_ref   ; }
@@ -254,7 +239,7 @@ static int tls_socket_on( lua_State *L ) {
     return luaL_error(L, "invalid method");
   }
 
-  if (lua_isanyfunction(L, 3)) {
+  if (lua_isfunction(L, 3)) {
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, *cbp);
     *cbp = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -270,35 +255,20 @@ static int tls_socket_on( lua_State *L ) {
 
 static int tls_socket_send( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
-
+  size_t sl;
+  const char* buf = luaL_checklstring(L, 2, &sl);
   if(ud->pesp_conn.proto.tcp == NULL) {
     NODE_DBG("not connected");
     return 0;
   }
 
-  size_t sl;
-  const char* buf = luaL_checklstring(L, 2, &sl);
-  if (!buf) {
-    return luaL_error(L, "wrong arg type");
-  }
-
   espconn_secure_send(&ud->pesp_conn, (void*)buf, sl);
-
   return 0;
 }
+
 static int tls_socket_hold( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
   luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
-
   if(ud->pesp_conn.proto.tcp == NULL) {
     NODE_DBG("not connected");
     return 0;
@@ -310,12 +280,6 @@ static int tls_socket_hold( lua_State *L ) {
 }
 static int tls_socket_unhold( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
-
   if(ud->pesp_conn.proto.tcp == NULL) {
     NODE_DBG("not connected");
     return 0;
@@ -328,11 +292,6 @@ static int tls_socket_unhold( lua_State *L ) {
 
 static int tls_socket_getpeer( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
 
   if(ud->pesp_conn.proto.tcp && ud->pesp_conn.proto.tcp->remote_port != 0){
     char temp[20] = {0};
@@ -345,27 +304,18 @@ static int tls_socket_getpeer( lua_State *L ) {
   }
   return 2;
 }
+
 static int tls_socket_close( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
-
   if (ud->pesp_conn.proto.tcp) {
     espconn_secure_disconnect(&ud->pesp_conn);
   }
 
   return 0;
 }
+
 static int tls_socket_delete( lua_State *L ) {
   tls_socket_ud *ud = (tls_socket_ud *)luaL_checkudata(L, 1, "tls.socket");
-  luaL_argcheck(L, ud, 1, "TLS socket expected");
-  if(ud==NULL){
-  	NODE_DBG("userdata is nil.\n");
-  	return 0;
-  }
   if (ud->pesp_conn.proto.tcp) {
     espconn_secure_disconnect(&ud->pesp_conn);
     free(ud->pesp_conn.proto.tcp);
@@ -625,7 +575,10 @@ static int tls_set_debug_threshold(lua_State *L) {
 }
 #endif
 
-LROT_BEGIN(tls_socket)
+
+LROT_BEGIN(tls_socket, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, tls_socket_delete )
+  LROT_TABENTRY(  __index, tls_socket )
   LROT_FUNCENTRY( connect, tls_socket_connect )
   LROT_FUNCENTRY( close, tls_socket_close )
   LROT_FUNCENTRY( on, tls_socket_on )
@@ -633,24 +586,23 @@ LROT_BEGIN(tls_socket)
   LROT_FUNCENTRY( hold, tls_socket_hold )
   LROT_FUNCENTRY( unhold, tls_socket_unhold )
   LROT_FUNCENTRY( getpeer, tls_socket_getpeer )
-  LROT_FUNCENTRY( __gc, tls_socket_delete )
-  LROT_TABENTRY( __index, tls_socket )
-LROT_END( tls_socket, tls_socket, 0 )
+LROT_END(tls_socket, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_PUBLIC_BEGIN(tls_cert)
+LROT_BEGIN(tls_cert, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( __index, tls_cert )
   LROT_FUNCENTRY( verify, tls_cert_verify )
   LROT_FUNCENTRY( auth, tls_cert_auth )
-LROT_END( tls_cert, tls_cert, 0 )
+LROT_END(tls_cert, NULL, LROT_MASK_INDEX)
 
 
-LROT_BEGIN(tls)
+LROT_BEGIN(tls, NULL, 0)
   LROT_FUNCENTRY( createConnection, tls_socket_create )
 #if defined(MBEDTLS_DEBUG_C)
   LROT_FUNCENTRY( setDebug, tls_set_debug_threshold )
 #endif
   LROT_TABENTRY( cert, tls_cert )
-LROT_END( tls, tls, 0 )
+LROT_END(tls, NULL, 0)
 
 
 int luaopen_tls( lua_State *L ) {

@@ -228,14 +228,14 @@ static int rtctime_epoch2cal (lua_State *L)
 }
 
 // Module function map
-LROT_BEGIN(rtctime)
+LROT_BEGIN(rtctime, NULL, 0)
   LROT_FUNCENTRY( set, rtctime_set )
   LROT_FUNCENTRY( get, rtctime_get )
   LROT_FUNCENTRY( adjust_delta, rtctime_adjust_delta )
   LROT_FUNCENTRY( dsleep, rtctime_dsleep )
   LROT_FUNCENTRY( dsleep_aligned, rtctime_dsleep_aligned )
   LROT_FUNCENTRY( epoch2cal, rtctime_epoch2cal )
-LROT_END( rtctime, NULL, 0 )
+LROT_END(rtctime, NULL, 0)
 
 
 NODEMCU_MODULE(RTCTIME, "rtctime", rtctime, NULL);

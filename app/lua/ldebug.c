@@ -7,7 +7,6 @@
 
 #define ldebug_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <string.h>
@@ -327,21 +326,21 @@ LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
   lua_lock(L);
   if (*what == '>') {
     StkId func = L->top - 1;
-    luai_apicheck(L, ttisfunction(func) || ttislightfunction(func));
+    luai_apicheck(L, ttisfunction(func));
     what++;  /* skip the '>' */
-    if (ttisfunction(func))
-      f = clvalue(func);
-    else
+    if (ttislightfunction(func))
       plight = fvalue(func);
+    else
+      f = clvalue(func);
     L->top--;  /* pop function */
   }
   else if (ar->i_ci != 0) {  /* no tail call? */
     ci = L->base_ci + ar->i_ci;
-    lua_assert(ttisfunction(ci->func) || ttislightfunction(ci->func));
-    if (ttisfunction(ci->func))
-      f = clvalue(ci->func);
-    else
+    lua_assert(ttisfunction(ci->func));
+    if (ttislightfunction(ci->func))
       plight = fvalue(ci->func);
+    else
+      f = clvalue(ci->func);
   }
   status = auxgetinfo(L, what, ar, f, plight, ci);
   if (strchr(what, 'f')) {
@@ -721,7 +720,7 @@ static void addinfo (lua_State *L, const char *msg) {
 void luaG_errormsg (lua_State *L) {
   if (L->errfunc != 0) {  /* is there an error handling function? */
     StkId errfunc = restorestack(L, L->errfunc);
-    if (!ttisfunction(errfunc) && !ttislightfunction(errfunc)) luaD_throw(L, LUA_ERRERR);
+    if (!ttisfunction(errfunc)) luaD_throw(L, LUA_ERRERR);
     setobjs2s(L, L->top, L->top - 1);  /* move argument */
     setobjs2s(L, L->top - 1, errfunc);  /* push function */
     incr_top(L);

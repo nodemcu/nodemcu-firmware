@@ -1196,7 +1196,7 @@ static int mqtt_socket_connect( lua_State* L )
 #endif
 
   // call back function when a connection is obtained, tcp only
-  if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
+  if ((stack<=top) && (lua_isfunction(L, stack))){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -1205,7 +1205,7 @@ static int mqtt_socket_connect( lua_State* L )
   stack++;
 
   // call back function when a connection fails
-  if ((stack<=top) && (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)){
+  if ((stack<=top) && (lua_isfunction(L, stack))){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
     mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -1323,7 +1323,7 @@ static int mqtt_socket_on( lua_State* L )
   if (method == NULL)
     return luaL_error( L, "wrong arg type" );
 
-  luaL_checkanyfunction(L, 3);
+  luaL_checktype(L, 3, LUA_TFUNCTION);
   lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
 
   if( sl == 7 && strcmp(method, "connect") == 0){
@@ -1441,8 +1441,8 @@ static int mqtt_socket_unsubscribe( lua_State* L ) {
     temp_msg = mqtt_msg_unsubscribe( &msgb, topic, msg_id );
   }
 
-  if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
-    lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
+  if (lua_isfunction(L, stack)) {    // TODO: this will overwrite the previous one.
+    lua_pushvalue( L, stack );          // copy argument (func) to the top of stack
     luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_unsuback_ref );
     mud->cb_unsuback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
   }
@@ -1553,7 +1553,7 @@ static int mqtt_socket_subscribe( lua_State* L ) {
     stack++;
   }
 
-  if( lua_type( L, stack ) == LUA_TFUNCTION || lua_type( L, stack ) == LUA_TLIGHTFUNCTION ) {    // TODO: this will overwrite the previous one.
+  if (lua_isfunction(L, stack)) {    // TODO: this will overwrite the previous one.
     lua_pushvalue( L, stack );  // copy argument (func) to the top of stack
     luaL_unref( L, LUA_REGISTRYINDEX, mud->cb_suback_ref );
     mud->cb_suback_ref = luaL_ref( L, LUA_REGISTRYINDEX );
@@ -1626,7 +1626,7 @@ static int mqtt_socket_publish( lua_State* L )
                        qos, retain,
                        msg_id);
 
-  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION){
+  if (lua_isfunction(L, stack)){
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_puback_ref);
     mud->cb_puback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -1729,7 +1729,10 @@ static int mqtt_socket_lwt( lua_State* L )
 }
 
 // Module function map
-LROT_BEGIN(mqtt_socket)
+
+LROT_BEGIN(mqtt_socket, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, mqtt_delete )
+  LROT_TABENTRY(  __index, mqtt_socket )
   LROT_FUNCENTRY( connect, mqtt_socket_connect )
   LROT_FUNCENTRY( close, mqtt_socket_close )
   LROT_FUNCENTRY( publish, mqtt_socket_publish )
@@ -1737,15 +1740,12 @@ LROT_BEGIN(mqtt_socket)
   LROT_FUNCENTRY( unsubscribe, mqtt_socket_unsubscribe )
   LROT_FUNCENTRY( lwt, mqtt_socket_lwt )
   LROT_FUNCENTRY( on, mqtt_socket_on )
-  LROT_FUNCENTRY( __gc, mqtt_delete )
-  LROT_TABENTRY( __index, mqtt_socket )
-LROT_END( mqtt_socket, mqtt_socket, 0 )
+LROT_END(mqtt_socket, NULL, LROT_MASK_GC_INDEX)
 
 
 
-LROT_BEGIN(mqtt)
+LROT_BEGIN(mqtt, NULL, 0)
   LROT_FUNCENTRY( Client, mqtt_socket_client )
-
   LROT_NUMENTRY( CONN_FAIL_SERVER_NOT_FOUND, MQTT_CONN_FAIL_SERVER_NOT_FOUND )
   LROT_NUMENTRY( CONN_FAIL_NOT_A_CONNACK_MSG, MQTT_CONN_FAIL_NOT_A_CONNACK_MSG )
   LROT_NUMENTRY( CONN_FAIL_DNS, MQTT_CONN_FAIL_DNS )
@@ -1757,8 +1757,7 @@ LROT_BEGIN(mqtt)
   LROT_NUMENTRY( CONNACK_REFUSED_SERVER_UNAVAILABLE, MQTT_CONNACK_REFUSED_SERVER_UNAVAILABLE )
   LROT_NUMENTRY( CONNACK_REFUSED_BAD_USER_OR_PASS, MQTT_CONNACK_REFUSED_BAD_USER_OR_PASS )
   LROT_NUMENTRY( CONNACK_REFUSED_NOT_AUTHORIZED, MQTT_CONNACK_REFUSED_NOT_AUTHORIZED )
-
-LROT_END( mqtt, mqtt, 0 )
+LROT_END(mqtt, NULL, 0)
 
 
 int luaopen_mqtt( lua_State *L )

@@ -83,9 +83,9 @@ static int ICACHE_FLASH_ATTR rc_send(lua_State* L) {
 }
 
 // Module function map
-LROT_BEGIN(rc)
+LROT_BEGIN(rc, NULL, 0)
   LROT_FUNCENTRY( send, rc_send )
-LROT_END( rc, NULL, 0 )
+LROT_END(rc, NULL, 0)
 
 
 int luaopen_rc(lua_State *L) {

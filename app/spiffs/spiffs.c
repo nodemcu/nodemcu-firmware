@@ -90,7 +90,7 @@ static bool myspiffs_set_cfg(spiffs_config *cfg, bool force_create) {
   cfg->log_page_size = LOG_PAGE_SIZE;
   cfg->phys_addr = (pt_start + ALIGN - 1) & ~(ALIGN - 1);
   cfg->phys_size = (pt_end & ~(ALIGN - 1)) - cfg->phys_addr;
-  
+ 
   if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE_SMALL_FS) {
     return FALSE;
   } else if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE_SMALL_FS) {

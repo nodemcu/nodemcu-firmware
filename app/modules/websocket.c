@@ -8,7 +8,6 @@
 // ws:connect('ws://echo.websocket.org')
 
 #include "lmem.h"
-#include "lualib.h"
 #include "lauxlib.h"
 #include "platform.h"
 #include "module.h"
@@ -124,9 +123,7 @@ static int websocketclient_on(lua_State *L) {
   ws_data *data = (ws_data *) ws->reservedData;
 
   int handle = luaL_checkoption(L, 2, NULL, (const char * const[]){ "connection", "receive", "close", NULL });
-  if (lua_type(L, 3) != LUA_TNIL && lua_type(L, 3) != LUA_TFUNCTION && lua_type(L, 3) != LUA_TLIGHTFUNCTION) {
-    return luaL_typerror(L, 3, "function or nil");
-  }
+  luaL_argcheck(L, lua_isnil(L,3) || lua_isfunction(L, 3), 3, "function or nil");
 
   switch (handle) {
     case 0:
@@ -135,7 +132,7 @@ static int websocketclient_on(lua_State *L) {
       luaL_unref(L, LUA_REGISTRYINDEX, data->onConnection);
       data->onConnection = LUA_NOREF;
 
-      if (lua_type(L, 3) != LUA_TNIL) {
+      if (!lua_isnil(L,3)) {
         lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
         data->onConnection = luaL_ref(L, LUA_REGISTRYINDEX);
       }
@@ -146,7 +143,7 @@ static int websocketclient_on(lua_State *L) {
       luaL_unref(L, LUA_REGISTRYINDEX, data->onReceive);
       data->onReceive = LUA_NOREF;
 
-      if (lua_type(L, 3) != LUA_TNIL) {
+      if (!lua_isnil(L,3)) {
         lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
         data->onReceive = luaL_ref(L, LUA_REGISTRYINDEX);
       }
@@ -157,7 +154,7 @@ static int websocketclient_on(lua_State *L) {
       luaL_unref(L, LUA_REGISTRYINDEX, data->onClose);
       data->onClose = LUA_NOREF;
 
-      if (lua_type(L, 3) != LUA_TNIL) {
+      if (!lua_isnil(L,3)) {
         lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
         data->onClose = luaL_ref(L, LUA_REGISTRYINDEX);
       }
@@ -307,20 +304,21 @@ static int websocketclient_gc(lua_State *L) {
   return 0;
 }
 
-LROT_BEGIN(websocket)
+LROT_BEGIN(websocket, NULL, 0)
   LROT_FUNCENTRY( createClient, websocket_createClient )
-LROT_END( websocket, NULL, 0 )
+LROT_END(websocket, NULL, 0)
 
 
-LROT_BEGIN(websocketclient)
+
+LROT_BEGIN(websocketclient, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, websocketclient_gc )
+  LROT_TABENTRY(  __index, websocketclient )
   LROT_FUNCENTRY( on, websocketclient_on )
   LROT_FUNCENTRY( config, websocketclient_config )
   LROT_FUNCENTRY( connect, websocketclient_connect )
   LROT_FUNCENTRY( send, websocketclient_send )
   LROT_FUNCENTRY( close, websocketclient_close )
-  LROT_FUNCENTRY( __gc, websocketclient_gc )
-  LROT_TABENTRY( __index, websocketclient )
-LROT_END( websocketclient, websocketclient, LROT_MASK_GC_INDEX )
+LROT_END(websocketclient, NULL, LROT_MASK_GC_INDEX)
 
 
 int loadWebsocketModule(lua_State *L) {

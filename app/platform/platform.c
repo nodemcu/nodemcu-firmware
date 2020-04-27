@@ -985,7 +985,6 @@ extern uint32_t _irom0_text_start[];
 #define FLASH_SECTOR_WORDS (INTERNAL_FLASH_SECTOR_SIZE/WORDSIZE)
 
 uint32_t platform_rcr_read (uint8_t rec_id, void **rec) {
-//DEBUG os_printf("platform_rcr_read(%d,%08x)\n",rec_id,rec);
     platform_rcr_t *rcr = (platform_rcr_t *) &RCR_WORD(0);
     uint32_t i = 0;
    /*
@@ -1004,6 +1003,19 @@ uint32_t platform_rcr_read (uint8_t rec_id, void **rec) {
         i += 1 + r.len;
     }
     return ~0;
+}
+
+uint32_t platform_rcr_delete (uint8_t rec_id) {
+  void *rec = NULL;
+  platform_rcr_read (rec_id, &rec);
+  if (rec) {
+    uint32_t *pHdr = cast(uint32_t *,rec)-1;
+    platform_rcr_t hdr = {.hdr = *pHdr};
+    hdr.id = PLATFORM_RCR_DELETED;
+    platform_s_flash_write(&hdr, platform_flash_mapped2phys(cast(uint32_t, pHdr)), WORDSIZE);
+    return 0;
+  }
+  return ~0;
 }
 
 /*
@@ -1095,7 +1107,7 @@ void* platform_print_deprecation_note( const char *msg, const char *time_frame)
 /*
  * Private struct to hold the 3 event task queues and the dispatch callbacks
  */
-static struct taskQblock { 
+static struct taskQblock {
   os_event_t *task_Q[TASK_PRIORITY_COUNT];
   platform_task_callback_t *task_func;
   int task_count;
@@ -1107,7 +1119,7 @@ static void platform_task_dispatch (os_event_t *e) {
     uint16_t entry    = (handle & TH_UNMASK) >> TH_SHIFT;
     uint8_t  priority = handle & TASK_PRIORITY_MASK;
     if ( priority <= PLATFORM_TASK_PRIORITY_HIGH &&
-         TQB.task_func && 
+         TQB.task_func &&
          entry < TQB.task_count ){
       /* call the registered task handler with the specified parameter and priority */
       TQB.task_func[entry](e->par, priority);
@@ -1119,7 +1131,7 @@ static void platform_task_dispatch (os_event_t *e) {
 }
 
 /*
- * Initialise the task handle callback for a given priority.  
+ * Initialise the task handle callback for a given priority.
  */
 static int task_init_handler (void) {
   int p, qlen = TASK_DEFAULT_QUEUE_LEN;
@@ -1138,12 +1150,12 @@ static int task_init_handler (void) {
 
 /*
  * Allocate a task handle in the relevant TCB.task_Q.  Note that these Qs are resized
- * as needed growing in 4 unit bricks.  No GC is adopted so handles are permanently 
+ * as needed growing in 4 unit bricks.  No GC is adopted so handles are permanently
  * allocated during boot life.  This isn't an issue in practice as only a few handles
  * are created per priority during application init and the more volitile Lua tasks
  * are allocated in the Lua registery using the luaX interface which is layered on
  * this mechanism.
- */ 
+ */
 platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
   if ( (TQB.task_count & (TH_ALLOCATION_BRICK - 1)) == 0 ) {
     TQB.task_func = (platform_task_callback_t *) realloc(
@@ -1152,8 +1164,8 @@ platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
     if (!TQB.task_func) {
       NODE_DBG ( "Malloc failure in platform_task_get_id");
       return 0;
-    } 
-    os_memset (TQB.task_func+TQB.task_count, 0, 
+    }
+    os_memset (TQB.task_func+TQB.task_count, 0,
                sizeof(platform_task_callback_t)*TH_ALLOCATION_BRICK);
   }
   TQB.task_func[TQB.task_count++] = t;

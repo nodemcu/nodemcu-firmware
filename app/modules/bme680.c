@@ -554,14 +554,14 @@ static int bme680_lua_dewpoint(lua_State* L) {
 	return 1;
 }
 
-LROT_BEGIN(bme680)
+LROT_BEGIN(bme680, NULL, 0)
   LROT_FUNCENTRY( setup, bme680_lua_setup )
   LROT_FUNCENTRY( startreadout, bme680_lua_startreadout )
   LROT_FUNCENTRY( qfe2qnh, bme680_lua_qfe2qnh )
   LROT_FUNCENTRY( altitude, bme680_lua_altitude )
   LROT_FUNCENTRY( dewpoint, bme680_lua_dewpoint )
   LROT_FUNCENTRY( read, bme680_lua_read )
-LROT_END( bme680, NULL, 0 )
+LROT_END(bme680, NULL, 0)
 
 
 NODEMCU_MODULE(BME680, "bme680", bme680, NULL);

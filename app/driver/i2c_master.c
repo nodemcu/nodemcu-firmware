@@ -173,7 +173,7 @@ i2c_master_setDC(uint16 id, uint8 SDA, uint8 SCL)
             while(!(READ_PERI_REG(RTC_GPIO_IN_DATA) & 1)) {}; //read SCL value until SCL goes high
         }else{
             // dummy read operation and empty CPU cycles to maintain equal times for low and high state
-            READ_PERI_REG(RTC_GPIO_IN_DATA) & 1; asm volatile("nop;nop;nop;nop;");
+            (void) (READ_PERI_REG(RTC_GPIO_IN_DATA) & 1); asm volatile("nop;nop;nop;nop;");
         }
     }
     else{

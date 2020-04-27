@@ -1,6 +1,5 @@
 #define LUA_LIB
 
-#include "lua.h"
 #include "lauxlib.h"
 #include "lstring.h"
 
@@ -93,7 +92,7 @@ create_new_element(jsonsl_t jsn,
     case JSONSL_T_LIST:
     case JSONSL_T_OBJECT:
       create_table(data);
-      state->lua_object_ref = lua_ref(data->L, 1);
+      state->lua_object_ref = luaL_ref(data->L, LUA_REGISTRYINDEX);
       state->used_count = 0;
 
       lua_rawgeti(data->L, LUA_REGISTRYINDEX, get_parent_object_ref());
@@ -104,7 +103,7 @@ create_new_element(jsonsl_t jsn,
       } else {
         // object, so
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-        lua_unref(data->L, data->hkey_ref);
+        luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
         data->hkey_ref = LUA_NOREF;
         DBG_PRINTF("Adding hash element\n");
       }
@@ -124,7 +123,7 @@ create_new_element(jsonsl_t jsn,
       if (data->pos_ref != LUA_NOREF) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->metatable);
         lua_getfield(data->L, -1, "checkpath");
-        if (lua_type(data->L, -1) != LUA_TNIL) {
+        if (!lua_isnil(data->L, -1)) {
           // Call with the new table and the path as arguments
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
@@ -217,7 +216,7 @@ static void push_string(JSN_DATA *data, struct jsonsl_state_st *state) {
           continue;
       }
     }
-    luaL_putchar(&b, nc);
+    luaL_addchar(&b, nc);
   }
   luaL_pushresult(&b);
 }
@@ -236,7 +235,7 @@ cleanup_closing_element(jsonsl_t jsn,
  switch (state->type) {
    case JSONSL_T_HKEY:
       push_string(data, state);
-      data->hkey_ref = lua_ref(data->L, 1);
+      data->hkey_ref = luaL_ref(data->L, LUA_REGISTRYINDEX);
       break;
 
    case JSONSL_T_STRING:
@@ -247,7 +246,7 @@ cleanup_closing_element(jsonsl_t jsn,
       } else {
         // object, so
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-        lua_unref(data->L, data->hkey_ref);
+        luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
         data->hkey_ref = LUA_NOREF;
       }
       push_string(data, state);
@@ -278,7 +277,7 @@ cleanup_closing_element(jsonsl_t jsn,
         } else {
           // object, so
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
-          lua_unref(data->L, data->hkey_ref);
+          luaL_unref(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
           data->hkey_ref = LUA_NOREF;
         }
         lua_pushvalue(data->L, -3);
@@ -289,7 +288,7 @@ cleanup_closing_element(jsonsl_t jsn,
       break;
    case JSONSL_T_OBJECT:
    case JSONSL_T_LIST:
-      lua_unref(data->L, state->lua_object_ref);
+      luaL_unref(data->L, LUA_REGISTRYINDEX, state->lua_object_ref);
       state->lua_object_ref = LUA_NOREF;
       if (data->pos_ref != LUA_NOREF) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
@@ -351,7 +350,7 @@ static int sjson_decoder_int(lua_State *L, int argno) {
   data->min_needed = data->min_available = jsn->pos;
 
   lua_pushlightuserdata(L, 0);
-  data->null_ref = lua_ref(L, 1);
+  data->null_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
   // This may throw...
   lua_newtable(L);
@@ -361,17 +360,17 @@ static int sjson_decoder_int(lua_State *L, int argno) {
     luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
     data->null_ref = LUA_NOREF;
     lua_getfield(L, argno, "null");
-    data->null_ref = lua_ref(L, 1);
+    data->null_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
     lua_getfield(L, argno, "metatable");
     lua_pushvalue(L, -1);
-    data->metatable = lua_ref(L, 1);
+    data->metatable = luaL_ref(L, LUA_REGISTRYINDEX);
 
-    if (lua_type(L, -1) != LUA_TNIL) {
+    if (!lua_isnil(L, -1)) {
       lua_getfield(L, -1, "checkpath");
-      if (lua_type(L, -1) != LUA_TNIL) {
+      if (!lua_isnil(L, -1)) {
         lua_newtable(L);
-        data->pos_ref = lua_ref(L, 1);
+        data->pos_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       }
       lua_pop(L, 1);      // Throw away the checkpath value
     }
@@ -477,7 +476,7 @@ static int sjson_decoder_write_int(lua_State *L, int udata_pos, int string_pos) 
     size_t blen;
     data->buffer = luaL_checklstring(L, -1, &blen);
     data->buffer_len = blen;
-    data->buffer_ref = lua_ref(L, 1);
+    data->buffer_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
     jsonsl_feed(data->jsn, str, len);
 
@@ -611,9 +610,9 @@ static void enc_pop_stack(lua_State *L, ENC_DATA *data) {
   }
   ENC_DATA_STATE *state = &data->stack[data->level];
 
-  lua_unref(L, state->lua_object_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, state->lua_object_ref);
   state->lua_object_ref = LUA_NOREF;
-  lua_unref(L, state->lua_key_ref);
+  luaL_unref(L, LUA_REGISTRYINDEX, state->lua_key_ref);
   state->lua_key_ref = LUA_REFNIL;
   data->level--;
 }
@@ -624,7 +623,7 @@ static void enc_push_stack(lua_State *L, ENC_DATA *data, int argno) {
   }
   lua_pushvalue(L, argno);
   ENC_DATA_STATE *state = &data->stack[data->level];
-  state->lua_object_ref = lua_ref(L, 1);
+  state->lua_object_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   state->size = sjson_encoder_get_table_size(L, argno);
   state->offset = 0;         // We haven't started on this one yet
 }
@@ -674,7 +673,7 @@ static int sjson_encoder(lua_State *L) {
     luaL_unref(L, LUA_REGISTRYINDEX, data->null_ref);
     data->null_ref = LUA_NOREF;
     lua_getfield(L, argno, "null");
-    data->null_ref = lua_ref(L, 1);
+    data->null_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
   return 1;
@@ -785,10 +784,7 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
 static int sjson_encoder_next_value_is_table(lua_State *L) {
   int count = 10;
 
-  while ((lua_type(L, -1) == LUA_TFUNCTION
-#ifdef LUA_TLIGHTFUNCTION
-    || lua_type(L, -1) == LUA_TLIGHTFUNCTION
-#endif
+  while ((lua_isfunction(L, -1)
     ) && count-- > 0) {
     // call it and use the return value
     lua_call(L, 0, 1);          // Expecting replacement value
@@ -806,7 +802,7 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
   luaL_buffinit(L, &b);
 
   // Ending condition
-  while (data->level >= 0 && !b.lvl) {
+  while (data->level >= 0 /* && !b.lvl */) {
     ENC_DATA_STATE *state = &data->stack[data->level];
 
     int finished = 0;
@@ -849,11 +845,11 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
       if (lua_next(L, -2)) {
         // save the key
         if (state->offset & 1) {
-          lua_unref(L, state->lua_key_ref);
+          luaL_unref(L, LUA_REGISTRYINDEX, state->lua_key_ref);
           state->lua_key_ref = LUA_NOREF;
           // Duplicate the key
           lua_pushvalue(L, -2);
-          state->lua_key_ref = lua_ref(L, 1);
+          state->lua_key_ref = luaL_ref(L, LUA_REGISTRYINDEX);
         }
 
         if ((state->offset & 1) == 0) {
@@ -895,7 +891,7 @@ static void sjson_encoder_make_next_chunk(lua_State *L, ENC_DATA *data) {
     }
   }
   luaL_pushresult(&b);
-  data->current_str_ref = lua_ref(L, 1);
+  data->current_str_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   data->offset = 0;
 }
 
@@ -923,7 +919,7 @@ static int sjson_encoder_read_int(lua_State *L, ENC_DATA *data, int readsize) {
       readsize -= amnt;
 
       if (data->offset == len) {
-        lua_unref(L, data->current_str_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, data->current_str_ref);
         data->current_str_ref = LUA_NOREF;
       }
     }
@@ -992,32 +988,33 @@ static int sjson_encoder_destructor(lua_State *L) {
   return 0;
 }
 
-LROT_BEGIN(sjson_encoder)
-  LROT_FUNCENTRY( read, sjson_encoder_read )
+
+LROT_BEGIN(sjson_encoder_map, NULL, LROT_MASK_GC_INDEX)
   LROT_FUNCENTRY( __gc, sjson_encoder_destructor )
-  LROT_TABENTRY( __index, sjson_encoder )
-LROT_END( sjson_encoder, sjson_encoder, LROT_MASK_GC_INDEX )
+  LROT_TABENTRY(  __index, sjson_encoder_map )
+  LROT_FUNCENTRY( read, sjson_encoder_read )
+LROT_END(sjson_encoder_map, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_BEGIN(sjson_decoder)
+
+LROT_BEGIN(sjson_decoder_map, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, sjson_decoder_destructor )
+  LROT_TABENTRY(  __index, sjson_decoder_map )
   LROT_FUNCENTRY( write, sjson_decoder_write )
   LROT_FUNCENTRY( result, sjson_decoder_result )
-  LROT_FUNCENTRY( __gc, sjson_decoder_destructor )
-  LROT_TABENTRY( __index, sjson_decoder )
-LROT_END( sjson_decoder, sjson_decoder, LROT_MASK_GC_INDEX )
+LROT_END(sjson_decoder_map, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_BEGIN(sjson)
+LROT_BEGIN(sjson, NULL, 0)
   LROT_FUNCENTRY( encode, sjson_encode )
   LROT_FUNCENTRY( decode, sjson_decode )
   LROT_FUNCENTRY( encoder, sjson_encoder )
   LROT_FUNCENTRY( decoder, sjson_decoder )
-  LROT_LUDENTRY( NULL, 0 )
-LROT_END( sjson, NULL, 0 )
+LROT_END(sjson, NULL, 0)
 
 LUALIB_API int luaopen_sjson (lua_State *L) {
-  luaL_rometatable(L, "sjson.decoder", LROT_TABLEREF(sjson_decoder));
-  luaL_rometatable(L, "sjson.encoder", LROT_TABLEREF(sjson_encoder));
+  luaL_rometatable(L, "sjson.decoder", LROT_TABLEREF(sjson_decoder_map));
+  luaL_rometatable(L, "sjson.encoder", LROT_TABLEREF(sjson_encoder_map));
   return 1;
 }
 

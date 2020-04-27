@@ -15,7 +15,7 @@ void uart_on_data_cb(const char *buf, size_t len){
   lua_State *L = lua_getstate();
   lua_rawgeti(L, LUA_REGISTRYINDEX, uart_receive_rf);
   lua_pushlstring(L, buf, len);
-  luaN_call(L, 1, 0, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 // Lua: uart.on("method", [number/char], function, [run_input])
@@ -28,36 +28,35 @@ static int l_uart_on( lua_State* L )
   bool run_input = true;
   luaL_argcheck(L, method && !strcmp(method, "data"), 1, "method not supported");
 
-  if (lua_type( L, stack ) == LUA_TNUMBER)
-  {
+  if (lua_type( L, stack ) == LUA_TNUMBER) {
     data_len = luaL_checkinteger( L, stack );
     luaL_argcheck(L, data_len >= 0 && data_len < LUA_MAXINPUT, stack, "wrong arg range");
     stack++;
-  }
-  else if (lua_isstring(L, stack))
-  {
+  } else if (lua_isstring(L, stack)) {
     const char *end = luaL_checklstring( L, stack, &el );
-    data_len = 0;
-    end_char = (int16_t) end[0];
+    end_char = end[0];
     stack++;
     if(el!=1) {
       return luaL_error( L, "wrong arg range" );
     }
   }
 
-  if (lua_isanyfunction(L, stack)) {
+  if (lua_isfunction(L, stack)) {
     if (lua_isnumber(L, stack+1) && lua_tointeger(L, stack+1) == 0) {
       run_input = false;
     }
     lua_pushvalue(L, stack);
     luaL_unref(L, LUA_REGISTRYINDEX, uart_receive_rf);
     uart_receive_rf = luaL_ref(L, LUA_REGISTRYINDEX);
-
   } else {
     luaL_unref(L, LUA_REGISTRYINDEX, uart_receive_rf);
     uart_receive_rf = LUA_NOREF;
   }
-  input_setup_receive(uart_on_data_cb, data_len, end_char, run_input);
+
+  if (uart_receive_rf == LUA_NOREF) {
+    input_setup_receive(NULL, 0, 0, 1);
+  } else
+    input_setup_receive(uart_on_data_cb, data_len, end_char, run_input);
   return 0;
 }
 
@@ -144,7 +143,7 @@ static int l_uart_write( lua_State* L )
 }
 
 // Module function map
-LROT_BEGIN(uart)
+LROT_BEGIN(uart, NULL, 0)
   LROT_FUNCENTRY( setup, l_uart_setup )
   LROT_FUNCENTRY( getconfig, l_uart_getconfig )
   LROT_FUNCENTRY( write, l_uart_write )
@@ -156,7 +155,7 @@ LROT_BEGIN(uart)
   LROT_NUMENTRY( PARITY_NONE, PLATFORM_UART_PARITY_NONE )
   LROT_NUMENTRY( PARITY_EVEN, PLATFORM_UART_PARITY_EVEN )
   LROT_NUMENTRY( PARITY_ODD, PLATFORM_UART_PARITY_ODD )
-LROT_END( uart, NULL, 0 )
+LROT_END(uart, NULL, 0)
 
 
 NODEMCU_MODULE(UART, "uart", uart, NULL);
