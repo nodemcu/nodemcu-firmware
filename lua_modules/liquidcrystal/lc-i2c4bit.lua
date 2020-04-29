@@ -73,26 +73,26 @@ return function(bus_args)
    -- Return backend object
    return {
       fourbits  = true,
-      command   = function (screen, cmd)
+      command   = function (_, cmd)
          return send4bitI2C(cmd, false, false, false)
       end,
-      busy      = function(screen)
+      busy      = function(_)
          local rv = send4bitI2C(0xff, false, true, true)
          send4bitI2C(bit.bor(0x80, bit.clear(rv, 7)), false, false, false)
          return bit.isset(rv, 7)
       end,
-      position  = function(screen)
+      position  = function(_)
          local rv = bit.clear(send4bitI2C(0xff, false, true, true), 7)
          send4bitI2C(bit.bor(0x80, rv), false, false, false)
          return rv
       end,
-      write     = function(screen, value)
+      write     = function(_, value)
          return send4bitI2C(value, true, false, false)
       end,
-      read      = function(screen)
+      read      = function(_)
          return send4bitI2C(0xff, true, true, true)
       end,
-      backlight = function(screen, on)
+      backlight = function(_, on)
          backlight = on
          local rv = bit.clear(send4bitI2C(0xff, false, true, true), 7)
          send4bitI2C(bit.bor(0x80, rv), false, false, false)
