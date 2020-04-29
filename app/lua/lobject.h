@@ -380,7 +380,7 @@ typedef union Closure {
 */
 
 #define CommonTable CommonHeader; \
-                    lu_byte flags; lu_byte lsizenode; struct Table *metatable;
+                    lu_byte flags; lu_byte lsizenode; struct Table *metatable
 
 typedef union TKey {
   struct {
