@@ -24,7 +24,7 @@ However, most Lua developers seem to prefer the convenience of our [Cloud Build 
 
 Variable | Option
 ---------|------------
-LFS size | (none, 32, 64, 96 or 128Kb) The default is none. The default is none, in which case LFS is disabled. Selecting a numeric value enables LFS with the LFS region sized at this value.
+LFS size | (none, 32, 64, 96, 128 or 256Kb) The default is none. The default is none, in which case LFS is disabled. Selecting a numeric value enables LFS with the LFS region sized at this value.
 SPIFFS base | If you have a 4Mb flash module then I suggest you choose the 1024Kb option as this will preserve the SPIFFS even if you reflash with a larger firmware image; otherwise leave this at the default 0.
 SPIFFS size | (default or various multiples of 64Kb) Choose the size that you need.  Larger FS require more time to format on first boot.
 
