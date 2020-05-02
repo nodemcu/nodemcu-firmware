@@ -216,7 +216,7 @@ static void nodemcu_gpio_callback_task (task_param_t param, task_prio_t prio)
 {
   (void)prio;
   uint32_t gpio = (uint32_t)param & 0xffu;
-  int level = ((int)param) & 0x100u;
+  int level = (((int)param) & 0x100u) >> 8;
 
   lua_State *L = lua_getstate ();
   if (gpio_cb_refs[gpio] != LUA_NOREF)
