@@ -13,9 +13,9 @@ typedef enum {
   TASK_PRIORITY_COUNT
 } task_prio_t;
 
-typedef uint32_t task_handle_t;
 typedef intptr_t task_param_t;
-
+typedef void (*task_callback_t)(task_param_t param, task_prio_t prio);
+typedef task_callback_t task_handle_t;
 /*
 * Signals are a 32-bit number of the form header:14; count:18. The header
 * is just a fixed fingerprint and the count is allocated serially by the
@@ -27,9 +27,9 @@ bool task_post(task_prio_t priority, task_handle_t handle, task_param_t param);
 #define task_post_medium(handle,param) task_post(TASK_PRIORITY_MEDIUM, handle, param)
 #define task_post_high(handle,param)   task_post(TASK_PRIORITY_HIGH,   handle, param)
 
-typedef void (*task_callback_t)(task_param_t param, task_prio_t prio);
-
-task_handle_t task_get_id(task_callback_t t);
+inline task_handle_t task_get_id(task_callback_t t) {
+    return (task_handle_t)t;
+}
 
 /* Init, must be called before any posting happens */
 void task_init (void);
