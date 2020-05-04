@@ -211,6 +211,12 @@ config LUA_MODULE_SODIUM
   help
       Includes the libsodium crypto module.
 
+config LUA_MODULE_SONAR
+  bool "Sonar module"
+  default "n"
+  help
+      Includes the ultrasound sonar module.
+
 config LUA_MODULE_SPI
   bool "SPI module"
   default "n"
