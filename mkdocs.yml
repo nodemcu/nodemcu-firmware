@@ -87,6 +87,7 @@ pages:
     - 'http': 'modules/http.md'
     - 'hx711' : 'modules/hx711.md'
     - 'i2c' : 'modules/i2c.md'
+    - 'ir' : 'modules/ir.md'
     - 'l3g4200d' : 'modules/l3g4200d.md'
     - 'mcp4725': 'modules/mcp4725.md'
     - 'mdns': 'modules/mdns.md'
