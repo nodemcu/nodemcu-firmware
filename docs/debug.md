@@ -30,7 +30,7 @@ Download `https://github.com/espressif/openocd-esp32/blob/master/contrib/60-open
 
 ## Installing ESP-IDF SDK instance
 
-Follow the ESP32 Getting Started Guide https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html to install an SDK instance in your system. We will use this SDK instance only for the debugging tools, not for building NodeMCU.
+Follow the [ESP32 Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html) to install an SDK instance in your system. We will use this SDK instance only for the debugging tools, not for building NodeMCU.
 
 This will install the openocd version for NodeMCU (`openocd`) and the debugger (`xtensa-esp32-elf-gdb`)
 
