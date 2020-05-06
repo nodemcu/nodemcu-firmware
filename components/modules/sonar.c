@@ -1,6 +1,6 @@
-// Module sonar drives the typical ultrasound based sonars, such as the HC-SR04
-// these sensors are activated by a "trig" pin that must be held high for a few microseconds
-// An ultrasound is emitted and when an echo is received, the sensor sends a pulse as long
+// Module sonar drives the typical ultrasound based sonars, such as the HC-SR04.
+// These sensors are activated by a "trig" pin that must be held high for a few microseconds.
+// Then, an ultrasound is emitted and when an echo is received, the sensor sends a pulse as long
 // as the time it took for the echo to come back. Distance can be then calculated by multiplying
 // the travel time by the speed of sound.
 //
@@ -15,7 +15,7 @@
 // IMPLEMENTATION DETAILS:
 //
 // This module uses the RMT infrared driver hardware present in ESP32 for accurate pulse measurement.
-// Each sonar object takes two RMT channels, one for sending and another for receiving. There are 8 RMT channels
+// Each sonar object takes two RMT channels, one for sending and another for receiving. There are 8 RMT channels,
 // so up to 4 sonars can be driven simultaneously. Code could be optimized to share these channels in the future.
 //
 // When instantiating a new sonar object with sonar.new() a RTOS task is created (ping_task).
@@ -33,16 +33,17 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "lauxlib.h"
+#include "lmem.h"
 #include "lnodeaux.h"
 #include "module.h"
 #include "platform_rmt.h"
 #include "task/task.h"
 
-#define SONAR_METATABLE "sonar.mt"    // name of the metatable to register in Lua for the sonar object
-#define TAG "sonar"                   // log tag
-#define SPEED_OF_SOUND 340            // speed of sound in m/s
-#define DISTANCE_OUT_OF_RANGE 999999  // value that will be returned when the sensor does not get an echo
-#define HCSR04_MAX_TIMEOUT_US 25000   /*!< RMT receiver timeout value(us) */
+#define SONAROBJ_METATABLE "sonar.mt"  // name of the metatable to register in Lua for the sonar object
+#define TAG "sonar"                    // log tag
+#define SPEED_OF_SOUND 340             // speed of sound in m/s
+#define DISTANCE_OUT_OF_RANGE 999999   // value that will be returned when the sensor does not get an echo
+#define HCSR04_MAX_TIMEOUT_US 25000    /*!< RMT receiver timeout value(us) */
 
 // ticks to time conversion constants
 #define RMT_CLK_DIV 100                                  /*!< RMT counter clock divider */
@@ -68,18 +69,14 @@ typedef enum {
 
 // sonar_message_t contains the necessary information to request an action from the ping_task
 typedef struct {
-    sonar_message_type_t message_type;  // action requested, as described in sonar_message_type_t
-    lua_ref_t callback;                 // Lua callback to invoke for SONAR_PING messages to return the measured distance
+    union {
+        sonar_message_type_t message_type;  // action requested, as described in sonar_message_type_t
+        int32_t distance;                   // measured distance
+    };
+    lua_ref_t callback;  // Lua callback to invoke for SONAR_PING messages to return the measured distance
 } sonar_message_t;
 
-// callback_message_t contains the necessary information to dispatch a Lua callback
-typedef struct {
-    int32_t distance;    // measured distance
-    lua_ref_t callback;  // Lua callback to invoke
-} callback_message_t;
-
 // sonar_tx_init initializes RMT hardware to use as a trigger signal transmitter
-
 static esp_err_t sonar_tx_init(rmt_channel_t tx_channel, gpio_num_t gpio) {
     rmt_config_t rmt_tx;
     rmt_tx.channel = tx_channel;
@@ -121,24 +118,26 @@ static esp_err_t sonar_rx_init(rmt_channel_t rx_channel, gpio_num_t gpio) {
 
 task_handle_t dispatch_callback_h;  // contains a NodeMCU task event handler pointing to dispatch_callback below
 
-// dispatch_callback runs in the context of NodeMCU message queue
+// dispatch_callback runs in the context of NodeMCU message queue (see task/task.c)
 // it takes the received message which contains a reference to a Lua callback and
 // invokes it.
 static void dispatch_callback(task_param_t param, task_prio_t prio) {
-    // param is actually a pointer to our callback message, so cast it back.
-    callback_message_t* callback_message_p = (callback_message_t*)param;
-    // make a copy so we can dispose the dynamic memory in which the message came:
-    callback_message_t callback_message = *callback_message_p;
-
-    // free the message memory that was dynamically allocated in ping_task(). We do this now
-    // to make sure we don't leak memory if something below fails.
-    free(callback_message_p);
-
     lua_State* L = lua_getstate();  //returns main Lua state
     if (L == NULL) {
         ESP_LOGE(TAG, "Cannot retrieve main Lua state");
+        abort();
         return;
     }
+
+    // param is actually a pointer to our message, so cast it back.
+    sonar_message_t* sonar_message_p = (sonar_message_t*)param;
+    // make a copy so we can dispose the dynamic memory in which the message came:
+    sonar_message_t callback_message = *sonar_message_p;
+
+    // free the message memory that was dynamically allocated in sonarobj_ping(). We do this now
+    // to make sure we don't leak memory if something below fails.
+    luaM_freemem(L, sonar_message_p, sizeof(sonar_message_t));
+
     // put the callback reference on to the stack
     lua_rawgeti(L, LUA_REGISTRYINDEX, callback_message.callback);
 
@@ -168,11 +167,11 @@ const rmt_item32_t txItem = {
 static void ping_task(void* ctx) {
     // retrieve our userdata object out of the task parameter:
     sonar_context_t* context = (sonar_context_t*)ctx;
-    sonar_message_t msg;        // to receive messages to this task
+    sonar_message_t* msg;       // to receive messages to this task
     RingbufHandle_t rb = NULL;  //buffer to receive echo messages from RMT
     esp_err_t err;
-    //get RMT RX ringbuffer:
 
+    //get RMT RX ringbuffer:
     err = rmt_get_ringbuf_handle(context->rx, &rb);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Cannot get ring buffer handle");
@@ -194,7 +193,7 @@ static void ping_task(void* ctx) {
         }
 
         // if we receive the kill message, exit the loop
-        if (msg.message_type == SONAR_REMOVE) {
+        if (msg->message_type == SONAR_REMOVE) {
             break;  // exit loop to clean up and end task.
         }
         // We received the SONAR_PING message. Send the trigger pulse:
@@ -232,14 +231,15 @@ static void ping_task(void* ctx) {
             distance = DISTANCE_OUT_OF_RANGE;
         }
 
-        // prepare a message for the Lua callback event task:
-        callback_message_t* callback_message_p = (callback_message_t*)malloc(sizeof(callback_message_t));
-        callback_message_p->callback = msg.callback;
-        callback_message_p->distance = distance;
+        // put the response in the message for the Lua callback event task:
+        msg->distance = distance;
         // send the message to the callback event task.
-        // execution now continues at dispatch_callback(), but it will be run in the context of
+        // message flow now continues at dispatch_callback(), but it will be run in the context of
         // NodeMCU's event queue (see task/task.c)
-        task_post(0, dispatch_callback_h, (task_param_t)callback_message_p);
+        if (!task_post(0, dispatch_callback_h, (task_param_t)msg)) {
+            ESP_LOGE(TAG, "Error posting callback message");
+            abort();
+        }
     }
 
     // mark task as deleted
@@ -251,9 +251,9 @@ static void ping_task(void* ctx) {
 
 // Lua: sonarobj:ping(callback)
 // callback: function to invoke with the measured distance
-static int sonar_ping(lua_State* L) {
+static int sonarobj_ping(lua_State* L) {
     // retrieve our context out of the userdata object (first parameter, implicit)
-    sonar_context_t* context = (sonar_context_t*)luaL_checkudata(L, 1, SONAR_METATABLE);
+    sonar_context_t* context = (sonar_context_t*)luaL_checkudata(L, 1, SONAROBJ_METATABLE);
 
     // make sure the passed parameter is a function
     luaL_checkanyfunction(L, 2);
@@ -263,25 +263,34 @@ static int sonar_ping(lua_State* L) {
     lua_ref_t callback = luaL_ref(L, LUA_REGISTRYINDEX);
 
     // prepare a message to send to ping_task
-    sonar_message_t msg = {SONAR_PING, callback};
+    sonar_message_t* msg = luaM_malloc(L, sizeof(sonar_message_t));
+    msg->callback = callback;
+    msg->message_type = SONAR_PING;
 
     // send the message to ping_task
-    xQueueSend(context->queue, &msg, portMAX_DELAY);
+    // Note that from the point of view of the queue, our message is actually a pointer to the real message
+    // This allows us to pass it around efficently.
+    // memory will be freed in dispatch_callback().
+    if (xQueueSend(context->queue, &msg, portMAX_DELAY) != pdTRUE) {
+        luaM_freemem(L, msg, sizeof(sonar_message_t));
+        luaL_error(L, "Failed to send ping message");
+    }
     return 0;
 }
 
-// sonar_delete is invoked by Lua when the sonarobj is garbage collected
-static int sonar_delete(lua_State* L) {
+// sonarobj_delete is invoked by Lua when the sonarobj is garbage collected
+static int sonarobj_delete(lua_State* L) {
     // retrieve a reference to the userdata that will be garbage collected:
-    sonar_context_t* context = (sonar_context_t*)luaL_checkudata(L, 1, SONAR_METATABLE);
+    sonar_context_t* context = (sonar_context_t*)luaL_checkudata(L, 1, SONAROBJ_METATABLE);
 
     // if a task is active, send a message to it to terminate it gracefully
     if (context->taskHandle) {
         // prepare termination message:
-        sonar_message_t msg = {SONAR_REMOVE, LUA_NOREF};
+        sonar_message_t msg = {.message_type = SONAR_REMOVE};
+        sonar_message_t* msg_p = &msg;
 
         // send it to ping_task:
-        xQueueSend(context->queue, &msg, portMAX_DELAY);
+        xQueueSend(context->queue, &msg_p, portMAX_DELAY);
 
         // wait for the task to finish:
         while (context->taskHandle)
@@ -320,11 +329,11 @@ static int sonar_new(lua_State* L) {
     sonar_context_t* context = (sonar_context_t*)lua_newuserdata(L, sizeof(sonar_context_t));
 
     // set everything to 0 so we know what resources were initialized or not in case the this function
-    // partially fails and sonar_delete is invoked prematurely as a result:
+    // partially fails and sonarobj_delete is invoked prematurely as a result:
     memset(context, 0, sizeof(sonar_context_t));
 
     // load the sonarobj metatable definition and push it on the stack
-    luaL_getmetatable(L, SONAR_METATABLE);
+    luaL_getmetatable(L, SONAROBJ_METATABLE);
     lua_setmetatable(L, -2);  // apply this metatable to the userdata object
 
     // allocate RMT channels for this sonar
@@ -348,14 +357,15 @@ static int sonar_new(lua_State* L) {
         luaL_error(L, "Unable to install tx RMT driver");
     }
 
-    // put up a message queue so we can send messages to ping_task
-    context->queue = xQueueCreate(1, sizeof(sonar_message_t));
+    // put up a message queue so we can send messages to ping_task.
+    // From the point of view of the queue, our message is actually a pointer to the real message
+    context->queue = xQueueCreate(1, sizeof(sonar_message_t*));  // queue messages are pointers to sonar_message_t
     if (context->queue == NULL) {
         luaL_error(L, "Error creating ping queue");
     }
 
     // create an RTOS task to handle the ping requests:
-    BaseType_t tcResult = xTaskCreate(ping_task, "sonar", 4000, context, tskIDLE_PRIORITY, &context->taskHandle);
+    BaseType_t tcResult = xTaskCreate(ping_task, "sonar", 2048, context, tskIDLE_PRIORITY, &context->taskHandle);
     if (tcResult != pdPASS) {
         luaL_error(L, "Error creating ping task");
     }
@@ -364,10 +374,10 @@ static int sonar_new(lua_State* L) {
 }
 
 // definition of the sonarobj metatable
-LROT_BEGIN(sonar_metatable)
-LROT_FUNCENTRY(ping, sonar_ping)
-LROT_FUNCENTRY(__gc, sonar_delete)
-LROT_TABENTRY(__index, sonar_metatable)
+LROT_BEGIN(sonarobj_metatable)
+LROT_FUNCENTRY(ping, sonarobj_ping)
+LROT_FUNCENTRY(__gc, sonarobj_delete)
+LROT_TABENTRY(__index, sonarobj_metatable)
 LROT_END(mqtt_metatable, NULL, 0)
 
 // Module function map
@@ -377,7 +387,7 @@ LROT_NUMENTRY(DISTANCE_OUT_OF_RANGE, DISTANCE_OUT_OF_RANGE)
 LROT_END(sonar, NULL, 0)
 
 int luaopen_sonar(lua_State* L) {
-    luaL_rometatable(L, SONAR_METATABLE, (void*)sonar_metatable_map);  // create metatable for sonar
+    luaL_rometatable(L, SONAROBJ_METATABLE, (void*)sonarobj_metatable_map);  // create metatable for sonar
     dispatch_callback_h = task_get_id(dispatch_callback);
     return 0;
 }
