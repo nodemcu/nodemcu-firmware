@@ -1,6 +1,6 @@
 # Configuring JTAG debugging in Linux
 
-Check Espressif's guide: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/jtag-debugging/index.html#introduction
+See Espressif's [JTAG debugging guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/jtag-debugging/index.html#introduction).
 
 ## Required hardware
 
