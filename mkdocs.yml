@@ -25,6 +25,7 @@ pages:
     - Building the firmware: 'build.md'
     - Flashing the firmware: 'flash.md'
     - Uploading code: 'upload.md'
+    - JTAG debugging: 'debug.md'
     - Support: 'support.md'
 - FAQs:
     - Lua Developer FAQ: 'lua-developer-faq.md'
