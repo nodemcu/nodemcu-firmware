@@ -20,6 +20,8 @@
 #include "lwip/udp.h"
 #include "lwip/dhcp.h"
 
+#include "net_ping.h"
+
 typedef enum net_type {
   TYPE_TCP_SERVER = 0,
   TYPE_TCP_CLIENT,
@@ -1070,6 +1072,9 @@ LROT_BEGIN(net, NULL, 0)
   LROT_FUNCENTRY( ifinfo, net_ifinfo )
   LROT_FUNCENTRY( multicastJoin, net_multicastJoin )
   LROT_FUNCENTRY( multicastLeave, net_multicastLeave )
+#ifdef NET_PING_ENABLE
+  LROT_FUNCENTRY( ping, net_ping )
+#endif
   LROT_TABENTRY( dns, net_dns_map )
 #ifdef TLS_MODULE_PRESENT
   LROT_TABENTRY( cert, tls_cert )
