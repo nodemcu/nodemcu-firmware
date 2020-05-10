@@ -32,6 +32,7 @@ pages:
 - Whitepapers:
     - Filesystem on SD card: 'sdcard.md'
 - C Modules:
+    - 'Writing external C modules' 'modules/extmods.md'
     - 'adc':          'modules/adc.md'
     - 'bit':          'modules/bit.md'
     - 'bthci':        'modules/bthci.md'
