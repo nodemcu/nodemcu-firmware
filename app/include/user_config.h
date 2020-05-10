@@ -136,6 +136,9 @@
 //#define TIMER_SUSPEND_ENABLE
 //#define PMSLEEP_ENABLE
 
+// The net module optionally offers net info functionnality. Uncomment the following
+// to enable the functionnality.
+#define NET_PING_ENABLE 
 
 // The WiFi module optionally offers an enhanced level of WiFi connection
 // management, using internal timer callbacks.  Whilst many Lua developers
