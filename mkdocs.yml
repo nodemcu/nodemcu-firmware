@@ -92,7 +92,6 @@ pages:
     - 'mdns': 'modules/mdns.md'
     - 'mqtt': 'modules/mqtt.md'
     - 'net': 'modules/net.md'
-    - 'net_info': 'modules/net_info.md'
     - 'node': 'modules/node.md'
     - 'ow (1-Wire)': 'modules/ow.md'
     - 'pcm' : 'modules/pcm.md'
