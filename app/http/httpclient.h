@@ -53,7 +53,7 @@ static const char log_prefix[] = "HTTP client: ";
  * A successful request corresponds to an HTTP status code of 200 (OK).
  * More info at http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
  */
-typedef void (* http_callback_t)(char * response_body, int http_status, char ** full_response_p);
+typedef void (* http_callback_t)(char * response_body, int http_status, char ** full_response_p, int body_size);
 
 /*
  * Call this function to skip URL parsing if the arguments are already in separate variables.
