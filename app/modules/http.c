@@ -13,7 +13,7 @@
 #include <ctype.h>
 static int http_callback_registry  = LUA_NOREF;
 
-static void http_callback( char * response, int http_status, char ** full_response_p )
+static void http_callback( char * response, int http_status, char ** full_response_p, int body_size )
 {
   const char *full_response = full_response_p ? *full_response_p : NULL;
 
@@ -36,7 +36,7 @@ static void http_callback( char * response, int http_status, char ** full_respon
     lua_pushnumber(L, http_status);
     if ( http_status != HTTP_STATUS_GENERIC_ERROR && response)
     {
-      lua_pushstring(L, response);
+      lua_pushlstring(L, response, (size_t)body_size);
       lua_newtable(L);
 
       const char *p = full_response;
