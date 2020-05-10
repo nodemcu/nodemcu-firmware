@@ -307,6 +307,10 @@ int platform_gpio_register_intr_hook(uint32_t bits, platform_hook_function hook)
       uint32_t old_bits = oh.entry[i].bits;
       *(volatile uint32_t *) &oh.entry[i].bits = bits;
       *(volatile uint32_t *) &oh.all_bits = (oh.all_bits & ~old_bits) | bits;
+      ETS_GPIO_INTR_DISABLE();
+      // This is a structure copy, so interrupts need to be disabled
+      platform_gpio_hook = oh;
+      ETS_GPIO_INTR_ENABLE();
       return 1;
     }
   }
