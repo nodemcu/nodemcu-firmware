@@ -211,6 +211,17 @@ static int lgpio_write (lua_State *L)
 }
 
 
+// Lua: gpio.set_drive(gpio, gpio.DRIVE_x)
+static int lgpio_set_drive (lua_State *L)
+{
+  int gpio = luaL_checkint (L, 1);
+  int strength = luaL_checkint (L, 2);
+  luaL_argcheck (L, strength >= GPIO_DRIVE_CAP_0 && strength < GPIO_DRIVE_CAP_MAX,
+    2, "pad strength must be between gpio.DRIVE_0 and gpio.DRIVE_3");
+  check_err (L, gpio_set_drive_capability(gpio, (gpio_drive_cap_t)strength));
+  return 0;
+}
+
 
 static void nodemcu_gpio_callback_task (task_param_t param, task_prio_t prio)
 {
@@ -245,6 +256,7 @@ LROT_BEGIN(lgpio)
   LROT_FUNCENTRY( trig,         lgpio_trig )
   LROT_FUNCENTRY( wakeup,       lgpio_wakeup )
   LROT_FUNCENTRY( write,        lgpio_write )
+  LROT_FUNCENTRY( set_drive,    lgpio_set_drive )
 
 
   LROT_NUMENTRY ( OUT,          GPIO_MODE_OUTPUT )
@@ -262,6 +274,12 @@ LROT_BEGIN(lgpio)
   LROT_NUMENTRY ( INTR_UP_DOWN, GPIO_INTR_ANYEDGE )
   LROT_NUMENTRY ( INTR_LOW,     GPIO_INTR_LOW_LEVEL )
   LROT_NUMENTRY ( INTR_HIGH,    GPIO_INTR_HIGH_LEVEL )
+
+  LROT_NUMENTRY ( DRIVE_0,      GPIO_DRIVE_CAP_0 )
+  LROT_NUMENTRY ( DRIVE_1,      GPIO_DRIVE_CAP_1 )
+  LROT_NUMENTRY ( DRIVE_2,      GPIO_DRIVE_CAP_2 )
+  LROT_NUMENTRY ( DRIVE_DEFAULT,GPIO_DRIVE_CAP_DEFAULT )
+  LROT_NUMENTRY ( DRIVE_3,      GPIO_DRIVE_CAP_3 )
 LROT_END(lgpio, NULL, 0)
 
 NODEMCU_MODULE(GPIO, "gpio", lgpio, nodemcu_gpio_init);
