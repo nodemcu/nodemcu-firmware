@@ -1,8 +1,8 @@
 #ifndef __MODULE_H__
 #define __MODULE_H__
 
-#include "lrotable.h"
 #include "sdkconfig.h"
+#include "lrotable.h"
 
 /* Registering a module within NodeMCU is really easy these days!
  *
@@ -33,8 +33,8 @@
  */
 
 #define MODULE_EXPAND_(x) x
-#define MODULE_PASTE_(x, y) x##y
-#define MODULE_EXPAND_PASTE_(x, y) MODULE_PASTE_(x, y)
+#define MODULE_PASTE_(x,y) x##y
+#define MODULE_EXPAND_PASTE_(x,y) MODULE_PASTE_(x,y)
 
 #ifdef LUA_CROSS_COMPILER
 #ifdef _MSC_VER
@@ -46,12 +46,12 @@
 #define __STRINGIFY(x) #x
 #define __TOSTRING(x) __STRINGIFY(x)
 #define __ROSECNAME(s) __TOSTRING(__TOTOK(s))
-#define LOCK_IN_SECTION(s) __declspec(allocate(__ROSECNAME(s)))
+#define LOCK_IN_SECTION(s) __declspec ( allocate( __ROSECNAME(s) ) )
 #else
-#define LOCK_IN_SECTION(s) __attribute__((used, unused, section(".rodata1." #s)))
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".rodata1." #s)))
 #endif
 #else
-#define LOCK_IN_SECTION(s) __attribute__((used, unused, section(".lua_" #s)))
+#define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
 #endif
 /* For the ROM table, we name the variable according to ( | denotes concat):
  *   cfgname | _module_selected | CONFIG_LUA_MODULE_##cfgname
@@ -63,24 +63,30 @@
  * letting the build system detect automatically (via nm) which modules need
  * to be linked in.
  */
-#define NODEMCU_MODULE(cfgname, luaname, map, initfunc)                                 \
-    const LOCK_IN_SECTION(libs)                                                         \
-        luaR_entry MODULE_PASTE_(lua_lib_, cfgname) = {luaname, LRO_FUNCVAL(initfunc)}; \
-    const LOCK_IN_SECTION(rotable)                                                      \
-        luaR_entry MODULE_EXPAND_PASTE_(cfgname, MODULE_EXPAND_PASTE_(_module_selected, MODULE_PASTE_(CONFIG_LUA_MODULE_, cfgname))) = {luaname, LRO_ROVAL(map##_map)}
+#define NODEMCU_MODULE(cfgname, luaname, map, initfunc) \
+  const LOCK_IN_SECTION(libs) \
+    luaR_entry MODULE_PASTE_(lua_lib_,cfgname) = { luaname, LRO_FUNCVAL(initfunc) }; \
+  const LOCK_IN_SECTION(rotable) \
+    luaR_entry MODULE_EXPAND_PASTE_(cfgname,MODULE_EXPAND_PASTE_(_module_selected,MODULE_PASTE_(CONFIG_LUA_MODULE_,cfgname))) \
+    = {luaname, LRO_ROVAL(map ## _map)}
 #endif
 
+
+// helper stringing macros
 #define xstr(s) str(s)
 #define str(s) #s
 
+// EXTMODNAME is injected by the generated component.mk
 #ifdef EXTMODNAME
 #define MODNAME xstr(EXTMODNAME)
 #else
 #define MODNAME "module"
 #endif
 
+// use NODEMCU_MODULE_METATABLE() to generate a unique metatable name for your objects:
 #define NODEMCU_MODULE_METATABLE() MODULE_EXPAND_(MODNAME xstr(__COUNTER__))
 
+// NODEMCU_MODULE_STD() defines the entry points for an external module:
 #define NODEMCU_MODULE_STD()                                             \
     static const LOCK_IN_SECTION(libs)                                   \
         luaR_entry lua_lib_module = {MODNAME, LRO_FUNCVAL(module_init)}; \
