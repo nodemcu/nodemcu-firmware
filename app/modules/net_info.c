@@ -5,8 +5,9 @@
 // ***************************************************************************
 
 // #define NODE_DEBUG
-#define LUA_USE_MODULES_NET_INFO
  
+#include "net_info.h"
+
 #include "module.h"
 #include "lauxlib.h"
 
@@ -103,8 +104,8 @@ static void net_info_ping_raw(const char *name, ip_addr_t *ipaddr, ping_t nip) {
     }
 }
 
-// Lua:  net_info.ping(target, [count], responseCB)
-static int net_info_ping(lua_State *L)
+// Lua:  net.ping(domain, [count], callback)
+int net_info_ping(lua_State *L)
 {
     ip_addr_t addr;
 
@@ -118,7 +119,7 @@ static int net_info_ping(lua_State *L)
     ping_t nip = (ping_t) memset(lua_newuserdata(L, sizeof(*nip)), 0, sizeof(*nip));
 
     /* Register C closure with 2 Upvals: (1) Lua CB function; (2) nip Userdata */ 
-    lua_pushcclosure(L, ping_received_sent, 2); // stack has nip UD, responseCB; [-n, +1, m]
+    lua_pushcclosure(L, ping_received_sent, 2); // stack has nip UD, callback; [-n, +1, m]
 
     nip->ping_callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // registers the closure to registry [-1, +0, m]
     nip->ping_opt.count = l_count;
@@ -127,7 +128,7 @@ static int net_info_ping(lua_State *L)
     nip->ping_opt.sent_function = (ping_sent_function) &ping_CB;
     
     NODE_DBG("[net_info_ping] nip = %p, nip->ping_callback_ref = %p\n", nip, nip->ping_callback_ref);
- 
+
     err_t err = dns_gethostbyname(ping_target, &addr, (dns_found_callback) net_info_ping_raw, nip);
     if (err != ERR_OK && err != ERR_INPROGRESS) {
         luaL_unref(L, LUA_REGISTRYINDEX, nip->ping_callback_ref);
@@ -139,9 +140,3 @@ static int net_info_ping(lua_State *L)
     }
     return 0;
 }
-
-LROT_BEGIN(net_info, NULL, 0)
-  LROT_FUNCENTRY( ping, net_info_ping )
-LROT_END( net_info, NULL, 0 )
-
-NODEMCU_MODULE(NET_INFO, "net_info", net_info, NULL);
