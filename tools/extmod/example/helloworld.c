@@ -7,9 +7,9 @@
 
 static const char* HELLOWORLD_METATABLE = NODEMCU_MODULE_METATABLE();
 
-// hello_context_t struct contains information to wrap a esp_mqtt client in lua
+// hello_context_t struct contains information to wrap a "hello world object"
 typedef struct {
-    char* my_name;
+    char* my_name;  // pointer to the greeter's name
 } hello_context_t;
 
 // Lua: helloworldobj:hello(text)
@@ -37,7 +37,7 @@ static int helloworld_new(lua_State* L) {
     luaL_getmetatable(L, HELLOWORLD_METATABLE);
     lua_setmetatable(L, -2);
 
-    return 1;  //one object returned, the mqtt context wrapped in a lua userdata object
+    return 1;  //one object returned, the helloworld context wrapped in a lua userdata object
 }
 
 // object function map:
