@@ -75,6 +75,7 @@ Set the drive strength of a given GPIO pin. The higher the drive strength, the m
     - `gpio.DRIVE_0` weakest drive strength
     - `gpio.DRIVE_1` stronger drive strength
     - `gpio.DRIVE_2` default drive strength
+    - `gpio.DRIVE_DEFAULT` default drive strength (same as `DRIVE_2`)
     - `gpio.DRIVE_3` maximum drive strength
 
 #### Returns
