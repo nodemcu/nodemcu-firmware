@@ -629,23 +629,29 @@ Sets the IP of the DNS server used to resolve hostnames. Default: resolver1.open
 
 ### net.ping()
 
-This is a function to ping a server. A callback function is called when response is or is not received.
+Pings a server. A callback function is called when response is or is not received. Summary statistics can be retrieved via the second callback.
 
-The function is disabled by default to enable this functionnality define `NET_INFO_ENABLE` macro needs to be defined in `user_config.h`.
+The function can be disabled by commenting `NET_PING_ENABLE` macro in `user_config.h` when more compact build is needed.
 
 #### Syntax
-`net.ping(domain, [count], callback)`
+`net.ping(domain, [count], callback_received, [callback_sent])`
 
 #### Parameters
 - `domain` destination domain or IP address
 - `count` number of ping packets to be sent (optional parameter, default value is 4)
-- `callback(bytes, ipaddr, seqno, rtt)` callback function which is invoked when response is received where
+- `callback_received(bytes, ipaddr, seqno, rtt)` callback function which is invoked when response is received where
     - `bytes` number of bytes received from destination server (0 means no response)
-    - `ipaddr` destination serve IP address
+    - `ipaddr` destination server IP address
     - `seqno` ICMP sequence number
     - `rtt` round trip time in ms
-
 If domain name cannot be resolved callback is invoked with `bytes` parameter equal to 0 (i.e. no response) and `nil` values for all other parameters.
+
+- `callback_sent(ipaddr, total_count, timeout_count, total_bytes, total_time)` callback function which is invoked when response is received where
+    - `ipaddrstr` destination server IP address
+    - `total_count` total number of packets sent
+    - `timeout_count` total number of packets lost (not received)
+    - `total_bytes` total number of bytes received from destination server
+    - `total_time` total time to perform ping
   
 #### Returns
 `nil`
@@ -654,6 +660,15 @@ If domain name cannot be resolved callback is invoked with `bytes` parameter equ
 ```lua
 net.ping("www.nodemcu.com", function (b, ip, sq, tm) 
     if ip then print(("%d bytes from %s, icmp_seq=%d time=%dms"):format(b, ip, sq, tm)) else print("Invalid IP address") end 
+  end)
+net.ping("www.nodemcu.com", 10, function (b, ip, sq, tm) 
+    if ip then print(("%d bytes from %s, icmp_seq=%d time=%dms"):format(b, ip, sq, tm)) else print("Invalid IP address") end 
+  end)
+net.ping("www.nodemcu.com", function (b, ip, sq, tm) 
+    if ip then print(("%d bytes from %s, icmp_seq=%d time=%dms"):format(b, ip, sq, tm)) else print("Invalid IP address") end 
+  end,
+  function (ip, tc, toc, tb, tt) 
+    print(("--- %s ping statistics ---\n%d packets transmitted, %d received, %d%% packet loss, time %dms"):format(ip, tc, tc-toc, toc/tc*100, tt)) 
   end)
 ```
 
@@ -672,13 +687,11 @@ gives
 32 bytes from 8.8.8.8, icmp_seq=10 time=9ms
 32 bytes from 8.8.4.4, icmp_seq=11 time=6ms
 32 bytes from 8.8.4.4, icmp_seq=13 time=12ms
-0 bytes from 8.8.8.8, icmp_seq=0 time=0ms
+0 bytes from 8.8.8.8, icmp_seq=0 time=0ms -- no more answers received
 32 bytes from 8.8.4.4, icmp_seq=15 time=16ms
-0 bytes from 8.8.8.8, icmp_seq=0 time=0ms
+0 bytes from 8.8.8.8, icmp_seq=0 time=0ms -- no more answers received
 32 bytes from 8.8.4.4, icmp_seq=16 time=7ms
 ```
-
-
 
 
 # net.cert Module
