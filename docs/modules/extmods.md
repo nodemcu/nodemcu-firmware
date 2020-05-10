@@ -42,6 +42,10 @@ You can now compile the firmware with `make` as usual. The build system will fin
 
 After this is flashed to the device, the module in the example will be available in lua as `helloworld`.
 
+### Updating to the latest code
+
+If your external module entry in `extmods.ini` points to a branch, e.g., `master`, you can update your local version to the latest code anytime by simply running `make extmod-update`.
+
 ### Temporarily disabling an external module
 
 If you want to stop compiling and including a module in the build for any reason, without having to remove the entry from `extmods.ini`, simply add a `disabled=true` entry in the module section and run `make extmod-update`.
@@ -75,7 +79,7 @@ Note that the second one points to a different branch, `dev`. Both modules will 
 To write your own external module do the following:
 
 1. Create an empty repository in your favorite remote, GitHub, BitBucket, GitLab, etc, or fork the helloworld example.
-2. Create an entry in `extmods.ini` as explained above. For modules that you author, it is recommended to use an updateable git URL in SSH format, such as `git@github.com:espore-ide/nodemcu-module-helloworld.git`.
+2. Create an entry in `extmods.ini` as explained above, with the `url=` key pointing to your repository. For modules that you author, it is recommended to use an updateable git URL in SSH format, such as `git@github.com:espore-ide/nodemcu-module-helloworld.git`.
 3. Run `make extmod-update`
 
 You can now change to `components/modules/external/your_module` and begin work. Since that is your own repository, you can work normally, commit, create branches, etc.
