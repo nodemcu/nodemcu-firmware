@@ -87,7 +87,7 @@ Converts a Unix timestamp to calendar format. Neither timezone nor DST correctio
 `rtctime.epoch2cal(timestamp)`
 
 #### Parameters
-`timestamp` seconds since Unix epoch
+`timestamp` seconds since Unix epoch (Mind that unlike Unix timestamp this can not have negative values)
 
 #### Returns
 A table containing the fields:
