@@ -91,10 +91,10 @@ void rtctime_deep_sleep_until_aligned_us (uint32_t align_us, uint32_t min_us)
   rtc_time_deep_sleep_until_aligned (align_us, min_us);
 }
 
-void rtctime_gmtime (const int32 stamp, struct rtc_tm *r)
+void rtctime_gmtime (const uint32 stamp, struct rtc_tm *r)
 {
   int32_t i;
-  int32_t work = stamp % (SPD);
+  uint32_t work = stamp % (SPD);
   r->tm_sec = work % 60; work /= 60;
   r->tm_min = work % 60; r->tm_hour = work / 60;
   work = stamp / (SPD);
@@ -208,8 +208,7 @@ static int rtctime_dsleep_aligned (lua_State *L)
 static int rtctime_epoch2cal (lua_State *L)
 {
   struct rtc_tm date;
-  int32_t stamp = luaL_checkint (L, 1);
-  luaL_argcheck (L, stamp >= 0, 1, "wrong arg range");
+  uint32_t stamp = luaL_checknumber (L, 1);
 
   rtctime_gmtime (stamp, &date);
 
