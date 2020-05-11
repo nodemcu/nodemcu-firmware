@@ -1099,40 +1099,19 @@ void* platform_print_deprecation_note( const char *msg, const char *time_frame)
   printf( "Warning, deprecated API! %s. It will be removed %s. See documentation for details.\n", msg, time_frame );
 }
 
-#define TH_MONIKER 0x68680000
-#define TH_MASK    0xFFF80000
-#define TH_UNMASK  (~TH_MASK)
-#define TH_SHIFT   2
-#define TH_ALLOCATION_BRICK 4   // must be a power of 2
 #define TASK_DEFAULT_QUEUE_LEN 8
-#define TASK_PRIORITY_MASK    3
 #define TASK_PRIORITY_COUNT   3
 
 /*
- * Private struct to hold the 3 event task queues and the dispatch callbacks
+ * Private array to hold the 3 event task queues
  */
-static struct taskQblock {
-  os_event_t *task_Q[TASK_PRIORITY_COUNT];
-  platform_task_callback_t *task_func;
-  int task_count;
-  } TQB = {0};
+static os_event_t *task_Q[TASK_PRIORITY_COUNT];
 
-static void platform_task_dispatch (os_event_t *e) {
-  platform_task_handle_t handle = e->sig;
-  if ( (handle & TH_MASK) == TH_MONIKER) {
-    uint16_t entry    = (handle & TH_UNMASK) >> TH_SHIFT;
-    uint8_t  priority = handle & TASK_PRIORITY_MASK;
-    if ( priority <= PLATFORM_TASK_PRIORITY_HIGH &&
-         TQB.task_func &&
-         entry < TQB.task_count ){
-      /* call the registered task handler with the specified parameter and priority */
-      TQB.task_func[entry](e->par, priority);
-      return;
-    }
-  }
-  /* Invalid signals are ignored */
-  NODE_DBG ( "Invalid signal issued: %08x",  handle);
-}
+static void dispatch_0(os_event_t *e) {((platform_task_callback_t)e->sig)(e->par,(0));}
+static void dispatch_1(os_event_t *e) {((platform_task_callback_t)e->sig)(e->par,(1));}
+static void dispatch_2(os_event_t *e) {((platform_task_callback_t)e->sig)(e->par,(2));}
+
+static const ETSTask dispatcher[]={dispatch_0,dispatch_1,dispatch_2};
 
 /*
  * Initialise the task handle callback for a given priority.
@@ -1140,17 +1119,16 @@ static void platform_task_dispatch (os_event_t *e) {
 static int task_init_handler (void) {
   int p, qlen = TASK_DEFAULT_QUEUE_LEN;
   for (p = 0; p < TASK_PRIORITY_COUNT; p++){
-    TQB.task_Q[p] = (os_event_t *) malloc( sizeof(os_event_t)*qlen );
-    if (TQB.task_Q[p]) {
-      os_memset(TQB.task_Q[p], 0, sizeof(os_event_t)*qlen);
-      system_os_task(platform_task_dispatch, p, TQB.task_Q[p], TASK_DEFAULT_QUEUE_LEN);
+    task_Q[p] = (os_event_t *) malloc( sizeof(os_event_t)*qlen );
+    if (task_Q[p]) {
+      os_memset(task_Q[p], 0, sizeof(os_event_t)*qlen);
+      system_os_task(dispatcher[p], p, task_Q[p], TASK_DEFAULT_QUEUE_LEN);
     } else {
       NODE_DBG ( "Malloc failure in platform_task_init_handler" );
       return PLATFORM_ERR;
     }
   }
 }
-
 
 /*
  * Allocate a task handle in the relevant TCB.task_Q.  Note that these Qs are resized
@@ -1161,21 +1139,9 @@ static int task_init_handler (void) {
  * this mechanism.
  */
 platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
-  if ( (TQB.task_count & (TH_ALLOCATION_BRICK - 1)) == 0 ) {
-    TQB.task_func = (platform_task_callback_t *) realloc(
-        TQB.task_func,
-        sizeof(platform_task_callback_t) * (TQB.task_count+TH_ALLOCATION_BRICK));
-    if (!TQB.task_func) {
-      NODE_DBG ( "Malloc failure in platform_task_get_id");
-      return 0;
-    }
-    os_memset (TQB.task_func+TQB.task_count, 0,
-               sizeof(platform_task_callback_t)*TH_ALLOCATION_BRICK);
-  }
-  TQB.task_func[TQB.task_count++] = t;
-  return TH_MONIKER + ((TQB.task_count-1) << TH_SHIFT);
+  return (platform_task_handle_t)t;
 }
 
 bool platform_post (uint8 prio, platform_task_handle_t handle, platform_task_param_t par) {
-  return system_os_post(prio, handle | prio, par);
+  return system_os_post(prio, handle, par);
 }
