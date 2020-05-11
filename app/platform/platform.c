@@ -1130,14 +1130,7 @@ static int task_init_handler (void) {
   }
 }
 
-/*
- * Allocate a task handle in the relevant TCB.task_Q.  Note that these Qs are resized
- * as needed growing in 4 unit bricks.  No GC is adopted so handles are permanently
- * allocated during boot life.  This isn't an issue in practice as only a few handles
- * are created per priority during application init and the more volitile Lua tasks
- * are allocated in the Lua registery using the luaX interface which is layered on
- * this mechanism.
- */
+//platform_task_get_id returns a task handle given a callback function pointer
 platform_task_handle_t platform_task_get_id (platform_task_callback_t t) {
   return (platform_task_handle_t)t;
 }
