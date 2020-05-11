@@ -92,7 +92,7 @@ Converts a Unix timestamp to calendar format. Neither timezone nor DST correctio
 #### Returns
 A table containing the fields:
 
-- `year` 1970 ~ 2038
+- `year` 1970 ~ 2106
 - `mon` month 1 ~ 12 in current year
 - `day` day 1 ~ 31 in current month
 - `hour`
