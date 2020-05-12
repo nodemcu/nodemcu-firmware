@@ -115,8 +115,10 @@ static int docall (lua_State *L, int narg, int nres) {
 }
 
 static void print_version (lua_State *L) {
+  #ifndef DISABLE_STARTUP_BANNER
   lua_writestringerror( "\n" NODE_VERSION " build " BUILD_DATE
                         " powered by " LUA_RELEASE " on SDK %s\n", SDK_VERSION);
+  #endif
 }
 
 
@@ -239,9 +241,7 @@ static int pmain (lua_State *L) {
   input_setup(LUA_MAXINPUT, get_prompt(L, 1));
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
 
-#ifndef DISABLE_STARTUP_BANNER
   print_version(L);
-#endif
  /*
   * And last of all, kick off application initialisation.  Note that if
   * LUA_INIT_STRING is a file reference and the file system is uninitialised
