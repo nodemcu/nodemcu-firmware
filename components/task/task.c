@@ -15,6 +15,36 @@ typedef struct
   task_param_t par;
 } task_event_t;
 
+#ifdef CONFIG_NODE_DEBUG //keep a list of registered callbacks when debugging
+static task_callback_t* checklist = NULL;
+static uint16_t checklist_count = 0;
+#endif
+
+// DEBUG_callback_is_unknown verifies that a callback has been registered (only active when debugging)
+bool DEBUG_callback_is_unknown(task_callback_t callback) {
+  #ifdef CONFIG_NODE_DEBUG
+    for(int i = 0; i < checklist_count; i++) 
+      if(checklist[i] == callback) {
+        return false;
+        break; 
+      }
+    return true;
+  #else
+    return false;
+  #endif  
+}
+
+// DEBUG_callback_add adds a callback to the checklist (only active when debugging)
+void DEBUG_callback_add(task_callback_t callback) {
+  #ifdef CONFIG_NODE_DEBUG
+    if(DEBUG_callback_is_unknown(callback)){ 
+      checklist = realloc(checklist,(checklist_count + 1) * sizeof(task_callback_t));
+      checklist[checklist_count++] = callback;
+    }
+  #endif
+}
+
+
 /*
  * Private arrays to hold the 3 event task queues and the dispatch callbacks
  */
@@ -23,6 +53,11 @@ static xQueueHandle task_Q[TASK_PRIORITY_COUNT];
 /* Rather than using a QueueSet (which requires queues to be empty when created)
  * we use a binary semaphore to unblock the pump whenever something is posted */
 static xSemaphoreHandle pending;
+
+task_handle_t task_get_id(task_callback_t callback) {
+  DEBUG_callback_add(callback); // add the callback to the checklist (only active when debugging)
+  return (task_handle_t)callback;
+}
 
 bool IRAM_ATTR task_post (task_prio_t priority, task_handle_t handle, task_param_t param)
 {
@@ -37,6 +72,9 @@ bool IRAM_ATTR task_post (task_prio_t priority, task_handle_t handle, task_param
   return res;
 }
 
+bool lua_run(task_prio_t priority, task_param_t param, task_callback_t callback) {
+  return task_post(priority, task_get_id(callback), param);
+}
 
 static bool next_event (task_event_t *ev, task_prio_t *prio)
 {
@@ -54,7 +92,13 @@ static bool next_event (task_event_t *ev, task_prio_t *prio)
 
 
 static void dispatch (task_event_t *e, uint8_t prio) {
-    ((task_callback_t)e->handle)(e->par, prio);
+  task_callback_t callback = (task_callback_t)e->handle;
+  if (DEBUG_callback_is_unknown(callback)){ // check if valid callback (only active when debugging)
+    /* Invalid signals are ignored */
+    printf( "Invalid signal issued: %08x",  (uintptr_t)callback);
+    return;
+  }
+  callback(e->par, prio);
 }
 
 

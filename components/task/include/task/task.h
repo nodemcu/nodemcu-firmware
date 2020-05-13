@@ -27,9 +27,8 @@ bool task_post(task_prio_t priority, task_handle_t handle, task_param_t param);
 #define task_post_medium(handle,param) task_post(TASK_PRIORITY_MEDIUM, handle, param)
 #define task_post_high(handle,param)   task_post(TASK_PRIORITY_HIGH,   handle, param)
 
-inline task_handle_t task_get_id(task_callback_t t) {
-    return (task_handle_t)t;
-}
+task_handle_t task_get_id(task_callback_t t);
+bool lua_run(task_prio_t priority, task_param_t param, task_callback_t callback);
 
 /* Init, must be called before any posting happens */
 void task_init (void);
