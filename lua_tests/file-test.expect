@@ -1,0 +1,66 @@
+#!/usr/bin/env expect
+
+package require expectnmcu::core
+
+package require cmdline
+set cmd_parameters {
+  { serial.arg "/dev/ttyUSB0"   "Set the serial interface name" }
+#  { debug                       "Turn on debugging" }
+}
+set cmd_usage "- A NodeMCU file test program"
+if {[catch {array set cmdopts [cmdline::getoptions ::argv $cmd_parameters $cmd_usage]}]} {
+  send_user [cmdline::usage $cmd_parameters $cmd_usage]
+  exit 0
+}
+
+set victim [::expectnmcu::core::connect ${cmdopts(serial)} 115200]
+::expectnmcu::core::reboot ${cmdopts(serial)} 115200
+::expectnmcu::core::waitboot ${victim}
+
+proc sep  { cmd }     {
+  upvar 1 victim victim
+  ::expectnmcu::core::send_exp_prompt ${victim} ${cmd}
+}
+proc serp { cmd res } {
+  upvar 1 victim victim
+  ::expectnmcu::core::send_exp_res_prompt ${victim} ${cmd} ${res}
+}
+
+# Quiesce the network in an attempt to 
+sep  "wifi.sta.autoconnect(0)"
+
+# Assume we have a filesystem formatted already (which is the default)
+# and interrogate it for logging purposes.
+sep  "=file.fsinfo()"
+
+sep  "file.remove(\"test1\")"
+serp "=file.exists(\"test1\")" "false"
+sep  "file.remove(\"test2\")"
+serp "=file.exists(\"test2\")" "false"
+
+# Test basic model: create, populate, read-back, and delete a file
+sep  "file.open(\"test1\", \"w+\")"
+serp "=file.exists(\"test1\")" "true"
+sep  "file.write(\"abracadabra\")"
+sep  "file.seek(\"set\", 0)"
+serp "=file.read(11)" "abracadabra"
+sep  "file.close()"
+sep  "file.remove(\"test1\")"
+
+# Test object model by doing that again, twice, interleaved
+sep  "f1 = file.open(\"test1\", \"w+\")"
+serp "=file.exists(\"test1\")" "true"
+sep  "f1:write(\"abracadabra\")"
+sep  "f2 = file.open(\"test2\", \"w+\")"
+serp "=file.exists(\"test2\")" "true"
+sep  "f2:write(\"hocus pocus\")"
+sep  "f1:seek(\"set\", 0)"
+sep  "f2:seek(\"set\", 0)"
+serp "=f1:read(11)" "abracadabra"
+serp "=f2:read(11)" "hocus pocus"
+sep  "f1:close()"
+sep  "f2:close()"
+sep  "file.remove(\"test1\")"
+sep  "file.remove(\"test2\")"
+
+send_user "\n===> TESTS OK <===\n"

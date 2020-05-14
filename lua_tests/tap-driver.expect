@@ -1,0 +1,139 @@
+#!/usr/bin/env expect
+
+# Push a file to the device, run it, and watch the tests run
+#
+# A typical invocation looks like:
+#   TCLLIBPATH=./expectnmcu ./tap-driver.expect -serial /dev/ttyUSB3 ./mispec.lua ./mispec_file.lua
+#
+# For debugging the driver itself, it may be useful to invoke expect with -d,
+# which will give a great deal of diagnostic information about the expect state
+# machine's internals:
+#
+#   TCLLIBPATH=./expectnmcu expect -d ./tap-driver.expect ...
+#
+# The -debug option will turn on some additional reporting from this driver program, as well.
+
+
+package require expectnmcu::core
+package require expectnmcu::xfer
+
+package require cmdline
+set cmd_parameters {
+  { serial.arg "/dev/ttyUSB0"   "Set the serial interface name" }
+  { tpfx.arg   "TAP: "          "Set the expected TAP test prefix" }
+  { debug                       "Enable debugging reporting" }
+}
+set cmd_usage "- A NodeMCU Lua-based-test runner"
+if {[catch {array set cmdopts [cmdline::getoptions ::argv $cmd_parameters $cmd_usage]}]} {
+  send_user [cmdline::usage $cmd_parameters $cmd_usage]
+  send_user "\n  Additional arguments should be files be transferred\n"
+  send_user "  The last file transferred will be run with `dofile`\n"
+  exit 0
+}
+
+proc sus { what } { send_user "\n===> ${what} <===\n" }
+proc sui { what } { send_user "\n---> ${what} <---\n" }
+proc sud { what } {
+  upvar 1 cmdopts cmdopts
+  if { ${cmdopts(debug)} } { send_user "\n~~~> ${what} <~~~\n" }
+}
+
+set victim [::expectnmcu::core::connect ${cmdopts(serial)} 115200]
+::expectnmcu::core::reboot ${cmdopts(serial)} 115200
+
+# Wait for the system to boot
+::expectnmcu::core::waitboot ${victim}
+sus "Machine has booted"
+
+foreach arg ${::argv} {
+  ::expectnmcu::xfer::sendfile ${victim} ${arg} [file tail ${arg}]
+}
+
+set tfn [file tail [lindex ${::argv} end ] ]
+sus "Files transferred; running ${tfn}"
+
+send -i ${victim} "dofile(\"${tfn}\")\n"
+expect -i ${victim} -re "dofile\\(\"${tfn}\"\\)\[\r\n\]+" { }
+
+set tpfx ${cmdopts(tpfx)}
+set toeol ".*(?=\n)"
+
+# Wait for the test to start and tell us how many
+# success lines we should expect
+set ntests 5
+set timeout 10
+expect {
+  -i ${victim} -re "${tpfx}1\\.\\.(\\d+)\r?\n" {
+    global ntests
+    set ntests $expect_out(1,string)
+  }
+  -i ${victim} -re "${tpfx}Bail out!${toeol}" {
+    sus "Bail out before start"
+    exit 2
+  }
+  -i ${dev} -re ${::expectnmcu::core::panicre} {
+    sus "Panic!"
+    exit 2
+  }
+  # Consume other outputs and discard as if they were comments
+  # This must come as the last pattern that looks at input
+  -re "(?p).${toeol}" { exp_continue }
+  timeout {
+    send_user "Failure: time out getting started\n"
+    exit 2
+  }
+}
+
+sus "Expecting ${ntests} test results"
+
+set timeout 60
+set exitwith 0
+set failures 0
+for {set this 0} {${this} < ${ntests}} {incr this} {
+  expect {
+    -i ${victim} -re "${tpfx}#${toeol}" {
+      sud "Harness got comment: ${expect_out(buffer)}"
+      exp_continue
+    }
+    -i ${victim} -re "${tpfx}ok (\\d+)\\D${toeol}" {
+      sud "Harness acknowledge OK! ${this} ${expect_out(1,string)}"
+      set tid ${expect_out(1,string)}
+      if { ${tid} != [expr ${this} + 1 ]} {
+        sui "WARNING: Test reporting misaligned at ${this}"
+      }
+    }
+    -i ${victim} -re "${tpfx}not ok (\\d+)\\D${toeol}" {
+      sud "Failure in simulation after ${this} ${expect_out(1,string)}"
+      set tid ${expect_out(1,string)}
+      if { ${tid} != [expr ${this} + 1 ]} {
+        sui "WARNING: Test reporting misaligned at ${this}"
+      }
+      set exitwith [expr max(${exitwith},1)]
+      set failures [expr ${failures} + 1]
+    }
+    -i ${victim} -re "${tpfx}Bail out!${toeol}" {
+      sud "Bail out in simulation after ${this} tests\n"
+      exit 2
+    }
+    -i ${dev} -re ${::expectnmcu::core::panicre} {
+      sus "Panic!"
+      exit 2
+    }
+    # Consume other outputs and discard as if they were comments
+    # This must come as the last pattern that looks at input
+    -re "(?p).${toeol}" { exp_continue }
+    timeout {
+      send_user "Failure: time out\n"
+      exit 2
+    }
+  }
+}
+
+::expectnmcu::core::send_exp_res_prompt ${victim} "print(\"fin\")" "fin"
+
+if { ${exitwith} == 0 } {
+  sus "All tests reported in OK"
+} else {
+  sus "${failures} TEST FAILURES; REVIEW LOGS"
+}
+exit ${exitwith}
