@@ -438,7 +438,7 @@ void wifi_pmSleep_suspend_CB(void)
   {
     lua_State* L = lua_getstate(); // Get main Lua thread pointer
     lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // Push suspend callback onto stack
-    luaL_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
+    luaL_unref(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
     wifi_suspend_cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
     lua_call(L, 0, 0); // Execute suspend callback
   }
