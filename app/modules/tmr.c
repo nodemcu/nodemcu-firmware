@@ -125,17 +125,24 @@ static int tmr_register(lua_State* L) {
 	return 0;
 }
 
-// Lua: t:start()
+// Lua: t:start( [restart] )
 static int tmr_start(lua_State* L){
 	tmr_t *tmr = (tmr_t *) luaL_checkudata(L, 1, "tmr.timer");
-  int idle = tmr->mode & TIMER_IDLE_FLAG;
+	lua_settop(L, 2);
+	luaL_argcheck(L, lua_isboolean(L, 2) || lua_isnil(L, 2), 2, "boolean expected");
+	int restart = lua_isboolean(L, 2) ? lua_toboolean(L, 2) : 0;
 
-  lua_settop(L, 1);  /* ignore any args after the userdata */
+	lua_settop(L, 1);  /* ignore any args after the userdata */
 	if (tmr->self_ref == LUA_NOREF)
 		tmr->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	if(idle) {
-  	tmr->mode &= ~TIMER_IDLE_FLAG;
+	//we return false if the timer is not idle
+	int idle = tmr->mode&TIMER_IDLE_FLAG;
+	if(!(idle || restart)){
+		lua_pushboolean(L, 0);
+	}else{
+		if (!idle) {os_timer_disarm(&tmr->os);}
+		tmr->mode &= ~TIMER_IDLE_FLAG;
 		os_timer_arm(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO);
   }
 	lua_pushboolean(L, !idle); /* false if the timer is not idle */

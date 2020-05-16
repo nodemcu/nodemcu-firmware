@@ -273,13 +273,13 @@ mytimer:start()
 
 ### tobj:start()
 
-Starts or restarts a previously configured timer.
+Starts or restarts a previously configured timer. If the timer is running the timer is restarted only when `restart` parameter is `true`. Otherwise `false` is returned signaling error.
 
 #### Syntax
-`tobj:start()`
+`tobj:start([restart])`
 
 #### Parameters
-None
+- `restart` optional boolean parameter forcing to restart already running timer
 
 #### Returns
 `true` if the timer was started, `false` on error
