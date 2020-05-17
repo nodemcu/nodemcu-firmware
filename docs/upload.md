@@ -116,6 +116,32 @@ wifi.sta.config({ssid=SSID, pwd=PASSWORD})
 
 ```
 
+If you do not want the delay but you have a free pin, you can use that pin, pulling it to ground to abort startup. The following codes exactly that. You can put this code into `init.lua`. If the pin is not pulled to ground, it continues with executing an other lua file called `startup.lua`. Since the function is declared `local`, the memory used by this method will be freed after `init.lua` is executed.
+
+```lua
+local checkAbort = function()
+  local pin = 0 -- GPIO16, D0
+  local pinDescription = 'pin 0 (GPIO16, D0)'
+  gpio.mode(pin, gpio.INPUT)
+  print()
+  if (gpio.read(pin) == 0) then
+    print('Startup aborted (' .. pinDescription .. ' is low).')
+    return
+  else
+    local nextLuaFileName = 'startup.lua'
+    print('Starting up... (pull ' .. pinDescription .. ' to ground to abort startup)')
+    print()
+    if (file.exists(nextLuaFileName)) then
+      node.task.post(function() dofile(nextLuaFileName) end)
+    else
+      print(nextLuaFileName + ' does not exist')
+    end
+  end
+end
+
+checkAbort()
+```
+
 ## Compiling Lua on your PC for Uploading
 
 If you install Lua on your development PC or Laptop, then you can use a standard `lua` environment to develop PC applications and also use the standard `luac` compiler to syntax check _any_ Lua source code. However because of architectural differences between the ESP8266 chipset with its SDK and a standard PC CPU, the system APIs are different and the binary output from the standard PC `luac` cannot be run on the ESP8266.
