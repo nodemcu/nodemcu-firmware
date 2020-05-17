@@ -88,42 +88,41 @@ dofile("hello.lc")
 
 ## node.dsleep()
 
-Enters deep sleep mode, wakes up when timed out.
+Enters deep sleep mode. When the processor wakes back up depends on the supplied `options`. Unlike light sleep, waking from deep sleep restarts the processor, therefore this API never returns. Wake up can be triggered by a time period, or when a GPIO (or GPIOs) change level, or when a touchpad event occurs. If multiple different wakeup sources are specified, the processor will wake when any of them occur. Use [`node.bootreason()`](#nodebootreason) to determine what caused the wakeup.
 
-The maximum sleep time is 4294967295us, ~71 minutes. This is an SDK limitation.
-Firmware from before 05 Jan 2016 have a maximum sleeptime of ~35 minutes.
+Only RTC GPIO pins can be used to trigger wake from deep sleep, and they should be configured as inputs prior to calling this API. On the ESP32, the RTC pins are GPIOs 0, 2, 4, 12-15, 25-27, and 32-39. An error will be raised if any of the specified pins are not RTC-capable. If multiple pins are specified and `level=1` (which is the default), the wakeup will occur if *any* of the pins are high. If `level=0` then the wakeup will only occur if *all* the specified pins are low.
 
-!!! note "Note:"
-
-    This function can only be used in the condition that esp8266 PIN32(RST) and PIN8(XPD_DCDC aka GPIO16) are connected together. Using sleep(0) will set no wake up timer, connect a GPIO to pin RST, the chip will wake up by a falling-edge on pin RST.
+For compatibility, a number parameter `usecs` can be supplied instead of an `options` table, which is equivalent to `node.dsleep({us = usecs})`.
 
 #### Syntax
-`node.dsleep(us, option)`
+`node.dsleep(usecs)` or `node.dsleep(options)`
 
 #### Parameters
- - `us` number (integer) or `nil`, sleep time in micro second. If `us == 0`, it will sleep forever. If `us == nil`, will not set sleep time.
 
- - `option` number (integer) or `nil`. If `nil`, it will use last alive setting as default option.
-	- 0, init data byte 108 is valuable
-	- \> 0, init data byte 108 is valueless
-	- 0, RF_CAL or not after deep-sleep wake up, depends on init data byte 108
-	- 1, RF_CAL after deep-sleep wake up, there will belarge current
-	- 2, no RF_CAL after deep-sleep wake up, there will only be small current
-	- 4, disable RF after deep-sleep wake up, just like modem sleep, there will be the smallest current
+- `options`, a table containing some of:
+    - `secs`, a number of seconds to sleep. This permits longer sleep periods compared to using the `us` parameter.
+    - `us`, a number of microseconds to sleep. If both `secs` and `us` are provided, the values are combined.
+    - `gpio`, a single GPIO number or a list of GPIOs. These pins must all be RTC-capable otherwise an error is raised.
+    - `level`. Whether to trigger when *any* of the GPIOs are high (`level=1`, which is the default if not specified), or when *all* the GPIOs are low (`level=0`).
+    - `isolate`. A list of GPIOs to isolate. Isolating a GPIO disables input, output, pullup, pulldown, and enables hold feature for an RTC IO. Use this function if an RTC IO needs to be disconnected from internal circuits in deep sleep, to minimize leakage current.
+    - `pull`, boolean, whether to keep powering previously-configured internal pullup/pulldown resistors. Default is `false` if not specified.
+    - `touch`, boolean, whether to trigger wakeup from any previously-configured touchpads. Default is `false` if not specified.
+
+If an empty options table is specified, ie no wakeup sources, then the chip will sleep forever with no way to wake it (except for power cycling or triggering the reset pin/button).
 
 #### Returns
-`nil`
+Does not return.
 
 #### Example
 ```lua
---do nothing
-node.dsleep()
---sleep μs
-node.dsleep(1000000)
---set sleep option, then sleep μs
-node.dsleep(1000000, 4)
---set sleep option only
-node.dsleep(nil,4)
+-- sleep 10 seconds then reboot
+node.dsleep({ secs = 10 })
+
+-- sleep until 10 seconds have elapsed or either of GPIO 13 or 15 becomes high
+node.dsleep({ secs = 10, gpio = { 13, 15 } })
+
+-- Sleep forever until GPIO 13 is low, and keep its pullup powered
+node.dsleep({ gpio = 13, level = 0, pull = true })
 ```
 
 ## node.flashid()
