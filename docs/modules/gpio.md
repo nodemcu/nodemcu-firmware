@@ -63,6 +63,30 @@ Read digital GPIO pin value.
 0 = low, 1 = high
 
 
+## gpio.set_drive()
+Set the drive strength of a given GPIO pin. The higher the drive strength, the more current can be sourced/sunk from the pin. The exact maximum depends on the power domain of the pin and how much current other pins in that domain are consuming.
+
+#### Syntax
+`gpio.set_drive(pin, strength)`
+
+#### Parameters
+- `pin`, a valid GPIO pin number.
+- `strength` the drive strength to set, one of
+    - `gpio.DRIVE_0` weakest drive strength
+    - `gpio.DRIVE_1` stronger drive strength
+    - `gpio.DRIVE_2` default drive strength
+    - `gpio.DRIVE_DEFAULT` default drive strength (same as `DRIVE_2`)
+    - `gpio.DRIVE_3` maximum drive strength
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+gpio.set_drive(4, gpio.DRIVE_3)
+```
+
+
 ## gpio.trig()
 Establish or clear a callback function to run on interrupt for a GPIO.
 
