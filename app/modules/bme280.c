@@ -91,7 +91,8 @@
 static const uint32_t bme280_i2c_id = 0;
 
 static uint8_t bme280_i2c_addr = BME280_I2C_ADDRESS1;
-static uint8_t bme280_isbme = 0; // 1 if the chip is BME280, 0 for BMP280
+static uint8_t bme280_isbme_address1 = 0; // 1 if the chip is BME280, 0 for BMP280
+static uint8_t bme280_isbme_address2 = 0; // 1 if the chip is BME280, 0 for BMP280
 static uint8_t bme280_mode = 0; // stores oversampling settings
 static uint8_t bme280_ossh = 0; // stores humidity oversampling settings
 os_timer_t bme280_timer; // timer for forced mode readout
@@ -122,17 +123,45 @@ static BME280_S32_t bme280_t_fine;
 static uint32_t bme280_h = 0;
 static double bme280_hc = 1.0;
 
+static int set_isbme(uint8_t i2c_address, uint8_t isbme) {
+  if (i2c_address == BME280_I2C_ADDRESS1) {
+    bme280_isbme_address1 = isbme;
+  } else if (i2c_address == BME280_I2C_ADDRESS2) {
+    bme280_isbme_address2 = isbme;
+  }
+}
+
+static int get_isbme(uint8_t i2c_address) {
+  if (i2c_address == BME280_I2C_ADDRESS1) {
+    return bme280_isbme_address1;
+  }
+
+  if (i2c_address == BME280_I2C_ADDRESS2) {
+    return bme280_isbme_address2;
+  }
+
+  return 0;
+}
+
+static int get_i2c_address(int use_alternate_adress) {
+  if (use_alternate_adress) {
+    return BME280_I2C_ADDRESS2;
+  }
+
+  return bme280_i2c_addr;
+}
+
 // return 0 if good
-static int r8u_n(uint8_t reg, int n, uint8_t *buf) {
+static int r8u_n(uint8_t i2c_address, uint8_t reg, int n, uint8_t *buf) {
 	int i;
 
 	platform_i2c_send_start(bme280_i2c_id);
-	platform_i2c_send_address(bme280_i2c_id, bme280_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+	platform_i2c_send_address(bme280_i2c_id, i2c_address, PLATFORM_I2C_DIRECTION_TRANSMITTER);
 	platform_i2c_send_byte(bme280_i2c_id, reg);
 //	platform_i2c_send_stop(bme280_i2c_id);	// doco says not needed
 
 	platform_i2c_send_start(bme280_i2c_id);
-	platform_i2c_send_address(bme280_i2c_id, bme280_i2c_addr, PLATFORM_I2C_DIRECTION_RECEIVER);
+	platform_i2c_send_address(bme280_i2c_id, i2c_address, PLATFORM_I2C_DIRECTION_RECEIVER);
 
 	while (n-- > 0)
 		*buf++ = platform_i2c_recv_byte(bme280_i2c_id, n > 0);
@@ -141,17 +170,17 @@ static int r8u_n(uint8_t reg, int n, uint8_t *buf) {
 	return 0;
 }
 
-static uint8_t w8u(uint8_t reg, uint8_t val) {
+static uint8_t w8u(uint8_t i2c_address, uint8_t reg, uint8_t val) {
 	platform_i2c_send_start(bme280_i2c_id);
-	platform_i2c_send_address(bme280_i2c_id, bme280_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+	platform_i2c_send_address(bme280_i2c_id, i2c_address, PLATFORM_I2C_DIRECTION_TRANSMITTER);
 	platform_i2c_send_byte(bme280_i2c_id, reg);
 	platform_i2c_send_byte(bme280_i2c_id, val);
 	platform_i2c_send_stop(bme280_i2c_id);
 }
 
-static uint8_t r8u(uint8_t reg) {
+static uint8_t r8u(uint8_t i2c_address, uint8_t reg) {
 	uint8_t ret[1];
-	r8u_n(reg, 1, ret);
+	r8u_n(i2c_address, reg, 1, ret);
 	return ret[0];
 }
 
@@ -228,7 +257,7 @@ static double bme280_qfe2qnh(int32_t qfe, int32_t h) {
 	return qnh;
 }
 
-static int bme280_lua_setup(lua_State* L) {
+static int bme280_setup(lua_State* L, uint8_t i2c_address) {
 	uint8_t config;
 	uint8_t ack;
 	uint8_t full_init;
@@ -247,38 +276,31 @@ static int bme280_lua_setup(lua_State* L) {
 	full_init = !lua_isnumber(L, 7)?1:lua_tointeger(L, 7); // 7-th parameter: init the chip too
 	NODE_DBG("mode: %x\nhumidity oss: %x\nconfig: %x\n", bme280_mode, bme280_ossh, config);
 
-	bme280_i2c_addr = BME280_I2C_ADDRESS1;
 	platform_i2c_send_start(bme280_i2c_id);
-	ack = platform_i2c_send_address(bme280_i2c_id, bme280_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
+	ack = platform_i2c_send_address(bme280_i2c_id, i2c_address, PLATFORM_I2C_DIRECTION_TRANSMITTER);
 	platform_i2c_send_stop(bme280_i2c_id);
 	if (!ack) {
-		NODE_DBG("No ACK on address: %x\n", bme280_i2c_addr);
-		bme280_i2c_addr = BME280_I2C_ADDRESS2;
-		platform_i2c_send_start(bme280_i2c_id);
-		ack = platform_i2c_send_address(bme280_i2c_id, bme280_i2c_addr, PLATFORM_I2C_DIRECTION_TRANSMITTER);
-		platform_i2c_send_stop(bme280_i2c_id);
-		if (!ack) {
-			NODE_DBG("No ACK on address: %x\n", bme280_i2c_addr);
-			return 0;
-		}
+		NODE_DBG("No ACK on address: %x\n", i2c_address);
+    return 0;
 	}
 
-	uint8_t chipid = r8u(BME280_REGISTER_CHIPID);
+	uint8_t chipid = r8u(i2c_address, BME280_REGISTER_CHIPID);
 	NODE_DBG("chip_id: %x\n", chipid);
-	bme280_isbme = (chipid == 0x60);
+  uint8_t isbme = (chipid == 0x60);
+  set_isbme(i2c_address, isbme);
 
 #define r16uLE_buf(reg)	(uint16_t)((reg[1] << 8) | reg[0])
 #define r16sLE_buf(reg)	 (int16_t)(r16uLE_buf(reg))
 	uint8_t	buf[18], *reg;
 
-	r8u_n(BME280_REGISTER_DIG_T, 6, buf);
+	r8u_n(i2c_address, BME280_REGISTER_DIG_T, 6, buf);
 	reg = buf;
 	bme280_data.dig_T1 = r16uLE_buf(reg); reg+=2;
 	bme280_data.dig_T2 = r16sLE_buf(reg); reg+=2;
 	bme280_data.dig_T3 = r16sLE_buf(reg);
 	//NODE_DBG("dig_T: %d\t%d\t%d\n", bme280_data.dig_T1, bme280_data.dig_T2, bme280_data.dig_T3);
 
-	r8u_n(BME280_REGISTER_DIG_P, 18, buf);
+	r8u_n(i2c_address, BME280_REGISTER_DIG_P, 18, buf);
 	reg = buf;
 	bme280_data.dig_P1 = r16uLE_buf(reg); reg+=2;
 	bme280_data.dig_P2 = r16sLE_buf(reg); reg+=2;
@@ -291,10 +313,10 @@ static int bme280_lua_setup(lua_State* L) {
 	bme280_data.dig_P9 = r16sLE_buf(reg);
 	// NODE_DBG("dig_P: %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", bme280_data.dig_P1, bme280_data.dig_P2, bme280_data.dig_P3, bme280_data.dig_P4, bme280_data.dig_P5, bme280_data.dig_P6, bme280_data.dig_P7, bme280_data.dig_P8, bme280_data.dig_P9);
 
-	if (full_init) w8u(BME280_REGISTER_CONFIG, config);
-	if (bme280_isbme) {
-		bme280_data.dig_H1 = r8u(BME280_REGISTER_DIG_H1);
-		r8u_n(BME280_REGISTER_DIG_H2, 7, buf);
+	if (full_init) w8u(i2c_address, BME280_REGISTER_CONFIG, config);
+	if (isbme) {
+		bme280_data.dig_H1 = r8u(i2c_address, BME280_REGISTER_DIG_H1);
+		r8u_n(i2c_address, BME280_REGISTER_DIG_H2, 7, buf);
 		reg = buf;
 		bme280_data.dig_H2 = r16sLE_buf(reg); reg+=2;
 		bme280_data.dig_H3 = reg[0]; reg++;
@@ -303,16 +325,31 @@ static int bme280_lua_setup(lua_State* L) {
 		bme280_data.dig_H6 = (int8_t)reg[0];
 		// NODE_DBG("dig_H: %d\t%d\t%d\t%d\t%d\t%d\n", bme280_data.dig_H1, bme280_data.dig_H2, bme280_data.dig_H3, bme280_data.dig_H4, bme280_data.dig_H5, bme280_data.dig_H6);
 
-		if (full_init) w8u(BME280_REGISTER_CONTROL_HUM, bme280_ossh);
+		if (full_init) w8u(i2c_address, BME280_REGISTER_CONTROL_HUM, bme280_ossh);
 		lua_pushinteger(L, 2);
 	} else {
 		lua_pushinteger(L, 1);
 	}
 #undef r16uLE_buf
 #undef r16sLE_buf
-	if (full_init) w8u(BME280_REGISTER_CONTROL, bme280_mode);
+	if (full_init) w8u(i2c_address, BME280_REGISTER_CONTROL, bme280_mode);
 
 	return 1;
+}
+
+static int bme280_lua_setup(lua_State* L) {
+	uint8_t setup_result_address_1 = bme280_setup(L, BME280_I2C_ADDRESS1);
+	uint8_t setup_result_address_2 = bme280_setup(L, BME280_I2C_ADDRESS2);
+
+  if (setup_result_address_1) {
+    bme280_i2c_addr = BME280_I2C_ADDRESS1;
+  } else if (setup_result_address_2) {
+    bme280_i2c_addr = BME280_I2C_ADDRESS2;
+  } else {
+    return 0;
+  }
+
+  return 1;
 }
 
 static void bme280_readoutdone (void *arg)
@@ -327,6 +364,7 @@ static void bme280_readoutdone (void *arg)
 
 static int bme280_lua_startreadout(lua_State* L) {
 	uint32_t delay;
+	uint8_t i2c_address = get_i2c_address(lua_toboolean(L, 3));
 
 	if (lua_isnumber(L, 1)) {
 		delay = luaL_checkinteger(L, 1);
@@ -340,8 +378,8 @@ static int bme280_lua_startreadout(lua_State* L) {
 		lua_connected_readout_ref = LUA_NOREF;
 	}
 
-	w8u(BME280_REGISTER_CONTROL_HUM, bme280_ossh);
-	w8u(BME280_REGISTER_CONTROL, (bme280_mode & 0xFC) | BME280_FORCED_MODE);
+	w8u(i2c_address, BME280_REGISTER_CONTROL_HUM, bme280_ossh);
+	w8u(i2c_address, BME280_REGISTER_CONTROL, (bme280_mode & 0xFC) | BME280_FORCED_MODE);
 	NODE_DBG("control old: %x, control: %x, delay: %d\n", bme280_mode, (bme280_mode & 0xFC) | BME280_FORCED_MODE, delay);
 
 	if (lua_connected_readout_ref != LUA_NOREF) {
@@ -360,8 +398,9 @@ static int bme280_lua_read(lua_State* L) {
 	uint8_t buf[8];
 	uint32_t qfe;
 	uint8_t calc_qnh = lua_isnumber(L, 1);
+	uint8_t i2c_address = get_i2c_address(lua_toboolean(L, 2));
 
-	r8u_n(BME280_REGISTER_PRESS, 8, buf);	// registers are P[3], T[3], H[2]
+	r8u_n(i2c_address, BME280_REGISTER_PRESS, 8, buf);   // registers are P[3], T[3], H[2]
 
 	// Must do Temp first since bme280_t_fine is used by the other compensation functions
 	uint32_t adc_T = (uint32_t)(((buf[3] << 16) | (buf[4] << 8) | buf[5]) >> 4);
@@ -379,7 +418,7 @@ static int bme280_lua_read(lua_State* L) {
 	}
 
 	uint32_t adc_H = (uint32_t)((buf[6] << 8) | buf[7]);
-	if (!bme280_isbme || adc_H == 0x8000 || adc_H == 0xffff)
+	if (!get_isbme(i2c_address) || adc_H == 0x8000 || adc_H == 0xffff)
 		lua_pushnil(L);
 	else
 		lua_pushinteger(L, bme280_compensate_H(adc_H));
@@ -395,7 +434,9 @@ static int bme280_lua_read(lua_State* L) {
 
 static int bme280_lua_temp(lua_State* L) {
 	uint8_t buf[3];
-	r8u_n(BME280_REGISTER_TEMP, 3, buf); // registers are P[3], T[3], H[2]
+	uint8_t i2c_address = get_i2c_address(lua_toboolean(L, 1));
+
+	r8u_n(i2c_address, BME280_REGISTER_TEMP, 3, buf); // registers are P[3], T[3], H[2]
 	uint32_t adc_T = (uint32_t)(((buf[0] << 16) | (buf[1] << 8) | buf[2]) >> 4);
 	if (adc_T == 0x80000 || adc_T == 0xfffff)
 		return 0;
@@ -406,7 +447,8 @@ static int bme280_lua_temp(lua_State* L) {
 
 static int bme280_lua_baro(lua_State* L) {
 	uint8_t buf[6];
-	r8u_n(BME280_REGISTER_PRESS, 6, buf); // registers are P[3], T[3], H[2]
+	uint8_t i2c_address = get_i2c_address(lua_toboolean(L, 1));
+	r8u_n(i2c_address, BME280_REGISTER_PRESS, 6, buf); // registers are P[3], T[3], H[2]
 	uint32_t adc_T = (uint32_t)(((buf[3] << 16) | (buf[4] << 8) | buf[5]) >> 4);
 	uint32_t T = bme280_compensate_T(adc_T);
 	uint32_t adc_P = (uint32_t)(((buf[0] << 16) | (buf[1] << 8) | buf[2]) >> 4);
@@ -418,9 +460,11 @@ static int bme280_lua_baro(lua_State* L) {
 }
 
 static int bme280_lua_humi(lua_State* L) {
-	if (!bme280_isbme) return 0;
+	uint8_t i2c_address = get_i2c_address(lua_toboolean(L, 1));
+	if (!get_isbme(i2c_address)) return 0;
+
 	uint8_t buf[5];
-	r8u_n(BME280_REGISTER_TEMP, 5, buf); // registers are P[3], T[3], H[2]
+	r8u_n(i2c_address, BME280_REGISTER_TEMP, 5, buf); // registers are P[3], T[3], H[2]
 
 	uint32_t adc_T = (uint32_t)(((buf[0] << 16) | (buf[1] << 8) | buf[2]) >> 4);
 	uint32_t T = bme280_compensate_T(adc_T);
