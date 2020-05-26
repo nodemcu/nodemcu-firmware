@@ -9,6 +9,12 @@ Note that dual mode is currently not supported for effects.
 
 !!! caution
 
+    This module is deprecated and will be removed in favor of a generic,
+    in-Lua implementation soon.  (Sooner with help!)  Please see
+    https://github.com/nodemcu/nodemcu-firmware/issues/3122 .
+
+!!! caution
+
     This module depends on the [color utils module](color-utils.md). Things **will** fail if that module is missing in the firmware!
 
 #### Example usage
