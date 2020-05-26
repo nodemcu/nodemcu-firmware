@@ -156,6 +156,10 @@ static uint8_t get_random_wheel_index(uint8_t pos)
 * initialized ws2812_effects with the buffer to use
 */
 static int ws2812_effects_init(lua_State *L) {
+
+  platform_print_deprecation_note("ws2812_effects",
+    "soon; please see https://github.com/nodemcu/nodemcu-firmware/issues/3122");
+
   ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   luaL_argcheck(L, buffer != NULL, 1, "no valid buffer provided");
   // get rid of old state
