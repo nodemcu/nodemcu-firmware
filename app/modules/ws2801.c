@@ -5,6 +5,8 @@
 #include <string.h>
 #include "osapi.h"
 
+#include "pixbuf.h"
+
 /**
  * Code is based on https://github.com/CHERTS/esp8266-devkit/blob/master/Espressif/examples/EspLightNode/user/ws2801.c
  * and provides a similar api as the ws2812 module.
@@ -110,13 +112,28 @@ static int ICACHE_FLASH_ATTR ws2801_init_lua(lua_State* L) {
  */
 static int ICACHE_FLASH_ATTR ws2801_writergb(lua_State* L) {
     size_t length;
-    const char *buffer = luaL_checklstring(L, 1, &length);
+    const uint8_t *values;
+
+    switch(lua_type(L,1)) {
+    case LUA_TSTRING:
+      values = (const uint8_t*) luaL_checklstring(L, 1, &length);
+      break;
+    case LUA_TUSERDATA: {
+      pixbuf *buffer = pixbuf_from_lua_arg(L, 1);
+      luaL_argcheck(L, buffer->type == PIXBUF_TYPE_RGB, 1, "Pixbuf not RGB");
+      values = buffer->values;
+      length = pixbuf_size(buffer);
+      break;
+    }
+    default:
+      return luaL_argerror(L, 1, "pixbuf or string expected");
+    }
 
     os_delay_us(10);
 
     ets_intr_lock();
 
-    ws2801_strip(buffer, length);
+    ws2801_strip(values, length);
 
     ets_intr_unlock();
 
