@@ -112,6 +112,15 @@ stds.nodemcu_libs = {
         temp = empty
       }
     },
+    bme280_math = {
+      fields = {
+        altitude = empty,
+        dewpoint = empty,
+        qfe2qnh = empty,
+        read = empty,
+        setup = empty
+      }
+    },
     bme680 = {
       fields = {
         altitude = empty,
