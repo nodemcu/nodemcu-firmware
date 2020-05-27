@@ -236,6 +236,8 @@ static int bme280_lua_setup(lua_State* L) {
 	uint8_t const bit3 = 0b111;
 	uint8_t const bit2 = 0b11;
 
+  platform_print_deprecation_note("bme280", "soon. Use bme280math and bme280 Lua module instead");
+  
 	bme280_mode = (!lua_isnumber(L, 4)?BME280_NORMAL_MODE:(luaL_checkinteger(L, 4)&bit2)) // 4-th parameter: power mode
 		| ((!lua_isnumber(L, 2)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 2)&bit3)) << 2) // 2-nd parameter: pressure oversampling
 		| ((!lua_isnumber(L, 1)?BME280_OVERSAMP_16X:(luaL_checkinteger(L, 1)&bit3)) << 5); // 1-st parameter: temperature oversampling
