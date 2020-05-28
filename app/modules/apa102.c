@@ -5,6 +5,8 @@
 #include "platform.h"
 #include "user_interface.h"
 
+#include "pixbuf.h"
+
 
 #define NOP asm volatile(" nop \n\t")
 
@@ -79,9 +81,26 @@ static int apa102_write(lua_State* L) {
   MOD_CHECK_ID(gpio, clock_pin);
   uint32_t alt_clock_pin = pin_num[clock_pin];
 
-  size_t buf_len;
-  const char *buf = luaL_checklstring(L, 3, &buf_len);
-  uint32_t nbr_frames = buf_len / 4;
+  const char *buf;
+  uint32_t nbr_frames;
+
+  switch(lua_type(L, 3)) {
+  case LUA_TSTRING: {
+    size_t buf_len;
+    buf = luaL_checklstring(L, 3, &buf_len);
+    nbr_frames = buf_len / 4;
+    break;
+   }
+  case LUA_TUSERDATA: {
+    pixbuf *buffer = pixbuf_from_lua_arg(L, 3);
+    luaL_argcheck(L, buffer->type == PIXBUF_TYPE_I5BGR, 3, "Pixbuf not IBGR");
+    buf = (const char *)buffer->values;
+    nbr_frames = buffer->npix;
+    break;
+   }
+  default:
+    return luaL_argerror(L, 3, "String or pixbuf expected");
+  }
 
   if (nbr_frames > 100000) {
     return luaL_error(L, "The supplied buffer is too long, and might cause the callback watchdog to bark.");
