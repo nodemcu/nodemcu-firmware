@@ -335,7 +335,8 @@ static int l_read_stdin (lua_State *L) {
     return 1;                                   /* return false if pipe empty */
   if (b[l-1] != '\n') {
     /* likewise if not CR terminated, then unread and ditto */
-    lua_getfield(L, 1, "unread");
+    lua_insert(L, 1);                   /* insert false return above the pipe */
+    lua_getfield(L, 2, "unread");
     lua_insert(L, 1);                    /* insert pipe.unread above the pipe */
     lua_call(L, 2, 0);                                   /* pobj:unread(line) */
     return 1;                                                 /* return false */
