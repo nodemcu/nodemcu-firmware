@@ -1,0 +1,361 @@
+menu "NodeMCU modules"
+
+menu "Data Structures and Mathematics" # {{{
+
+config NODEMCU_CMODULE_BIT
+  bool "bit Module"
+  default "n"
+  help
+    Provides native functions for bitwise math operations
+
+config NODEMCU_CMODULE_BLOOM
+  bool "Bloom Module"
+  default "n"
+  help
+    Bloom filters are efficient stochastic sets with one-sided error.
+
+config NODEMCU_CMODUlE_COLOR_UTILS
+  bool "color utils Module"
+  default "n"
+  help
+    Functions for performing math in and between different color spaces.
+
+config NODEMCU_CMODULE_CRYPTO
+  bool "crypto Module"
+  default "n"
+  depends on NODEMCU_CMODULE_ENCODER
+  help
+   Functions for low-level cryptography: hashes, MACs, & symmetric ciphering
+
+config NODEMCU_CMODULE_ENCODER
+  bool "encoder Module"
+  default "n"
+  help
+    Base16 and Base64 en-/de-coding
+
+config NODEMCU_CMODULE_PIPE
+  bool "pipe Module"
+  default "n"
+  help
+    An efficient queue of bytes
+
+config NODEMCU_CMODULE_SJSON
+  bool "SJSON module"
+  default "n"
+  help
+    Bindings to the jsonsl library for JSON en-/de-coding
+
+config NODEMCU_CMODULE_STRUCT
+  bool "struct Module"
+  default "n"
+  help
+    Provides a simple packed structure (de)serializer
+
+endmenu # }}}
+menu "Development and Debugging" # {{{
+
+config NODEMCU_CMODULE_GDBSTUB
+  bool "gdbstub Module"
+  default "n"
+  help
+    The gdb stub allows interactive debugging of the NodeMCU firmware from
+    a remote computer using the UART link.
+
+config NODEMCU_CMODULE_PERF
+  bool "perf Module"
+  default "n"
+  help
+    A sampling-based statistical runtime profiler
+
+endmenu # }}}
+menu "ESP8266 Intrinsic Feature Support" # {{{
+
+config NODEMCU_CMODULE_ADC
+  bool "adc Module"
+  default "n"
+  help
+    Provides access to the on-board one-channel ADC
+
+config NODEMCU_CMODULE_CRON
+  bool "cron Module"
+  default "n"
+  help
+    Exposes on-device timers with crontab-style specification for callbacks
+
+config NODEMCU_CMODULE_FILE
+  bool "file Module"
+  default "y"
+  help
+    Exposes on-device FLASH as a filesystem using SPIFFS
+
+config NODEMCU_CMODULE_GPIO
+  bool "gpio Module"
+  default "y"
+  help
+    Provides access to hardware General Purpose I/O pins
+
+config NODEMCU_CMODULE_GPIO_PULSE
+  bool "gpio_pulse Module"
+  default "y"
+  help
+    Generates accurately-timed square waveforms on GPIO pins
+
+config NODEMCU_CMODULE_NODE
+  bool "node Module"
+  default "y"
+  help
+    Exposes information about NodeMCU and the hardware; is also the interface
+    to LFS and for rebooting the module.
+
+config NODEMCU_CMODULE_PCM
+  bool "pcm Module"
+  default "n"
+  help
+    Feeds PCM data to the onboard sigma-delta generator 
+
+config NODEMCU_CMODULE_PWM
+  bool "pwm Module"
+  default "n"
+
+config NODEMCU_CMODULE_PWM2
+  bool "pwm2 Module"
+  default "n"
+
+config NODEMCU_CMODULE_RTCFIFO
+  bool "rtcfifo Module"
+  default "n"
+  help
+    Provides access to the onboard RTC memory through a FIFO interface.
+
+config NODEMCU_CMODULE_RTCMEM
+  bool "rtcmem Module"
+  default "n"
+  help
+    Provides raw access to the onboard RTC memory
+
+config NODEMCU_CMODULE_RTCTIME
+  bool "rtctime Module"
+  default "n"
+  help
+    Advanced time-keeping support using the onboard RTC
+
+config NODEMCU_CMODULE_SIGMA_DELTA
+  bool "sigma_delta Module"
+  default "n"
+
+config NODEMCU_CMODULE_SOFTUART
+  bool "softuart Module"
+  default "n"
+
+config NODEMCU_CMODULE_TMR
+  bool "tmr Module"
+  default "y"
+
+config NODEMCU_CMODULE_UART
+  bool "uart Module"
+  default "y"
+
+config NODEMCU_CMODULE_WIFI
+  bool "wifi Module"
+  default "y"
+  help
+    Provides access to the on-board WiFi chipset
+
+config NODEMCU_CMODULE_WIFI_MONITOR
+  bool "wifi.monitor Module"
+  default "n"
+
+config NODEMCU_CMODULE_WPS
+  bool "wps Module"
+  default "n"
+
+endmenu
+
+menu "Networking"
+
+config NODEMCU_CMODULE_COAP
+  bool "coap Module"
+  default "n"
+  help
+    COnstrained Application Protocol implementation
+
+config NODEMCU_CMODULE_ENDUSER_SETUP
+  bool "enduser_setup Module"
+  default "n"
+  # depends DNS_SERVER
+  help
+    Configure ESP8266 over WiFi rather than a UART link
+
+config NODEMCU_CMODULE_HTTP
+  bool "http Module"
+  default "n"
+  help
+    HyperText Transport Protocol client
+
+config NODEMCU_CMODULE_MDNS
+  bool "mdns Module"
+  default "n"
+  help
+    Multicast DNS responder (i.e., server) module
+
+config NODEMCU_CMODULE_MQTT
+  bool "mqtt Module"
+  default "n"
+  help
+    MQ Telemetry Transport protocol version 3.1.1.
+
+config NODEMCU_CMODULE_NET
+  bool "net Module"
+  default "y"
+
+config NODEMCU_CMODULE_SNTP
+  bool "sntp Module"
+  default "n"
+  help
+    Simple Network Time Protocol implementation
+
+config NODEMCU_CMODULE_TLS
+  bool "tls Module"
+  default "n"
+  help
+    Transport Layer Security client implementation
+
+config NODEMCU_CMODULE_WEBSOCKET
+  bool "websocket Module"
+  default "n"
+
+endmenu # }}}
+menu "Wire Protocol Drivers" # {{{
+
+config NODEMCU_CMODULE_DCC
+  bool "dcc Module"
+  default "n"
+  help
+     National Model Railroad Association (NMRA) Digital Command Control (DCC) decoder
+
+config NODEMCU_CMODULE_I2C
+  bool "i2c Module"
+  default "n"
+  help
+    Inter-Integrated Circuit (I2C, IIC) AKA Two-Wire Interface (TWI) master
+
+config NODEMCU_CMODULE_OW
+  bool "ow Module"
+  default "n"
+  help
+    Dallas Semiconductor / Maxim Integrated Products 1-Wire master
+
+config NODEMCU_CMODULE_RFSWITCH
+  bool "rfswitch Module"
+  default "n"
+  help
+    Generate waveforms for transmission to low-cost 433/315MHz control devices
+
+config NODEMCU_CMODULE_SPI
+  bool "spi Module"
+  default "n"
+  help
+    Serial Peripheral Interface master
+
+endmenu # }}}
+menu "External Device Drivers" # {{{
+
+config NODEMCU_CMODULE_ADS1115
+  bool "ads1115 Module"
+  default "n"
+
+config NODEMCU_CMODULE_ADXL345
+  bool "adxl345 Module"
+  default "n"
+
+config NODEMCU_CMODULE_AM2320
+  bool "am2320 Module"
+  default "n"
+
+config NODEMCU_CMODULE_APA102
+  bool "apa102 Module"
+  default "n"
+
+config NODEMCU_CMODULE_BMP085
+  bool "bmp085 Module"
+  default "n"
+
+config NODEMCU_CMODULE_BME280
+  bool "bme280 Module"
+  default "n"
+
+config NODEMCU_CMODULE_BME680
+  bool "bme680 Module"
+  default "n"
+
+config NODEMCU_CMODULE_DHT
+  bool "dht Module"
+  default "n"
+
+config NODEMCU_CMODULE_HDC1080
+  bool "hdc1080 Module"
+  default "n"
+
+config NODEMCU_CMODULE_HMC5883L
+  bool "hmc5883l Module"
+  default "n"
+
+config NODEMCU_CMODULE_HX711
+  bool "hx711 Module"
+  default "n"
+
+config NODEMCU_CMODULE_L3G4200D
+  bool "l3g4200d Module"
+  default "n"
+
+config NODEMCU_CMODULE_MCP4725
+  bool "mcp4725 Module"
+  default "n"
+
+config NODEMCU_CMODULE_ROTARY
+  bool "rotary Module"
+  default "n"
+
+config NODEMCU_CMODULE_SI7021
+  bool "si7021 Module"
+  default "n"
+
+config NODEMCU_CMODULE_SWITEC
+  bool "switec Module"
+  default "n"
+
+config NODEMCU_CMODULE_TCS34725
+  bool "tcs34725 Module"
+  default "n"
+
+config NODEMCU_CMODULE_TM1829
+  bool "tm1829 Module"
+  default "n"
+
+config NODEMCU_CMODULE_TSL2561
+  bool "tsl2561 Module"
+  default "n"
+
+config NODEMCU_CMODULE_U8G2
+  bool "u8g2 Module"
+  default "n"
+
+config NODEMCU_CMODULE_UCG
+  bool "ucg Module"
+  default "n"
+
+config NODEMCU_CMODULE_WS2801
+  bool "ws2801 Module"
+  default "n"
+
+config NODEMCU_CMODULE_WS2812
+  bool "ws2812 Module"
+  default "n"
+
+config NODEMCU_CMODULE_XPT2046
+  bool "xpt2046 Module"
+  default "n"
+
+endmenu # }}}
+
+endmenu
