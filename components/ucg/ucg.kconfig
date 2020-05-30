@@ -1,63 +1,63 @@
 menu "Displays"
-     depends on LUA_MODULE_UCG
+     depends on NODEMCU_CMODULE_UCG
 
 config UCG_DISPLAY_HX8352C_18X240X400
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "hx8352c_18x240x400_hw_spi"
        default "n"
 
 config UCG_DISPLAY_ILI9163_18X128X128
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "ili9163_18x128x128_hw_spi"
        default "n"
 
 config UCG_DISPLAY_ILI9341_18X240X320
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "ili9341_18x240x320_hw_spi"
        default "y"
 
 config UCG_DISPLAY_ILI9486_18X320X480
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "ili9486_18x320x480_hw_spi"
        default "n"
 
 config UCG_DISPLAY_PCF8833_16X132X132
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "pcf8833_16x132x132_hw_spi"
        default "n"
 
 config UCG_DISPLAY_SEPS225_16X128X128_UNIVISION
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "seps225_16x128x128_uvis_hw_spi"
        default "n"
 
 config UCG_DISPLAY_SSD1351_18X128X128_ILSOFT
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "ssd1351_18x128x128_hw_spi"
        default "n"
 
 config UCG_DISPLAY_SSD1351_18X128X128_FT
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "ssd1351_18x128x128_ft_hw_spi"
        default "n"
 
 config UCG_DISPLAY_SSD1331_18X96X64_UNIVISION
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "ssd1331_18x96x64_uvis_hw_spi"
        default "n"
 
 config UCG_DISPLAY_ST7735_18X128X160
-       depends on LUA_MODULE_SPI
+       depends on NODEMCU_CMODULE_SPI
        bool "st7735_18x128x160_hw_spi"
        default "y"
 
 endmenu
 
 menu "Fonts"
-     depends on LUA_MODULE_UCG
+     depends on NODEMCU_CMODULE_UCG
 
 config UCG_FONT_SELECTION
-       depends on LUA_MODULE_UCG
+       depends on NODEMCU_CMODULE_UCG
        string  "Font list"
        default "font_7x13B_tr,font_helvB08_hr,font_helvB10_hr,font_helvB12_hr,font_helvB18_hr,font_ncenB24_tr,font_ncenR12_tr,font_ncenR14_hr"
        help
