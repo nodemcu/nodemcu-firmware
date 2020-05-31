@@ -161,6 +161,30 @@ config NODEMCU_CMODULE_WIFI
   help
     Provides access to the on-board WiFi chipset
 
+config NODEMCU_CMODULE_WIFI__EVENT
+  bool "Enable WiFi Event callbacks"
+  depends on NODEMCU_CMODULE_WIFI
+  default "y"
+  help
+    Enables wifi.sta.config() event callbacks
+
+config NODEMCU_CMODULE_WIFI__EVENT_DISCONN_REASON
+  bool "Enable wifi.eventmon.reason table"
+  depends on NODEMCU_CMODULE_WIFI
+  default "y"
+
+config NODEMCU_CMODULE_WIFI__SMART
+  bool "Use the Espressif SDK WiFi connection management logic"
+  depends on NODEMCU_CMODULE_WIFI
+  default "n"
+  help
+    The WiFi module optionally offers an enhanced level of WiFi connection
+    management, using internal timer callbacks.  Whilst many Lua developers
+    prefer to implement equivalent features in Lua, others will prefer the
+    Wifi module to do this for them.  Selecting "y" here will enable the
+    wifi.startsmart() and wifi.stopsmart() functions.  See the documentation
+    for further details, as the scope of these changes is not obvious.
+
 config NODEMCU_CMODULE_WIFI_MONITOR
   bool "wifi.monitor Module"
   default "n"
@@ -186,6 +210,14 @@ config NODEMCU_CMODULE_ENDUSER_SETUP
   help
     Configure ESP8266 over WiFi rather than a UART link
 
+config NODEMCU_CMODULE_ENDUSER_SETUP__AP_SSID
+  string "enduser_setup default AP name"
+  depends on NODEMCU_CMODULE_ENDUSER_SETUP
+  default "SetupGadget"
+  help
+    Set the default SSID when this module is running in AP mode as part of
+    enduser setup.
+
 config NODEMCU_CMODULE_HTTP
   bool "http Module"
   default "n"
@@ -206,6 +238,11 @@ config NODEMCU_CMODULE_MQTT
 
 config NODEMCU_CMODULE_NET
   bool "net Module"
+  default "y"
+
+config NODEMCU_CMODULE_NET__PING
+  bool "net.ping support"
+  depends on NODEMCU_CMODULE_NET
   default "y"
 
 config NODEMCU_CMODULE_SNTP
@@ -238,6 +275,27 @@ config NODEMCU_CMODULE_I2C
   default "n"
   help
     Inter-Integrated Circuit (I2C, IIC) AKA Two-Wire Interface (TWI) master
+
+config NODEMCU_CMODULE_I2C__OLD
+  bool "Use the old I2C software driver"
+  default "n"
+  depends on NODEMCU_CMODULE_I2C
+  help
+    For compatibility reasons you can switch to old version of I2C software driver.
+    It does not support changing speed, have only one bus id = 0, does not support GPIO16
+    and works only in Standard(slow) mode with clock speed around 50kHz.
+
+config NODEMCU_CMODULE_I2C__GPIO16
+  bool "Enable the use of GPIO16 with the I2C module"
+  depends on NODEMCU_CMODULE_I2C && !NODEMCU_CMODULE_I2C__OLD
+  default "n"
+  help
+    The new I2C software driver partially supports use of GPIO16 (D0) pin for
+    SCL line.  GPIO16 does not support open-drain mode and works in push-pull
+    mode, so clock stretching will not be possible, because circuit in slave
+    device that supposed to drive SCL low during stretching will not be able
+    to hold SCL low.  Also I2C speed will be limited to no more than 400000
+    Hz (FAST mode).
 
 config NODEMCU_CMODULE_OW
   bool "ow Module"
