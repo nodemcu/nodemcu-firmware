@@ -33,6 +33,10 @@ static int ICACHE_FLASH_ATTR rc_send(lua_State* L) {
   NODE_ERR("Protocol:%d\n",Protocol);
   NODE_ERR("repeat:%d\n",repeat);
   NODE_ERR("send:");
+
+  platform_print_deprecation_note("rc",
+    "in the next release. Use rfswitch module instead.");
+  
   int c,k,nRepeat;
   bits = bits-1;
   for (c = bits; c >= 0; c--)

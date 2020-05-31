@@ -8,6 +8,10 @@ Superseded by **[rfswitch](./rfswitch.md)** module which have same functionality
 
 For more detailed description see [rfswitch module documentation](./rfswitch.md).
 
+!!! caution
+
+    This module is deprecated and will be removed in favor of the **[rfswitch](./rfswitch.md)** module.
+
 ## rc.send()
 Sends series of impulses
 
