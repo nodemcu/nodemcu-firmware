@@ -58,6 +58,7 @@ pages:
     - 'lm92': 'lua-modules/lm92.md'
     - 'mcp23008': 'lua-modules/mcp23008.md'
     - 'redis': 'lua-modules/redis.md'
+    - 'telnet': 'lua-modules/telnet.md'
     - 'yeelink': 'lua-modules/yeelink.md'
 - C Modules:
     - 'adc': 'modules/adc.md'
