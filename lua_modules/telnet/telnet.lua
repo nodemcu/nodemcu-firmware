@@ -1,3 +1,5 @@
+--[[SPLIT MODULE telnet]]
+
 --[[  A telnet server   T. Ellison,  June 2019
 
 This version of the telnet server demonstrates the use of the new stdin and stout
@@ -65,5 +67,4 @@ function M.close(this)
 end
 
 return M
-
-
+--[[SPLIT HERE]]
