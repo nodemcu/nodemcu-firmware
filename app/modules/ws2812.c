@@ -278,7 +278,8 @@ int ws2812_buffer_shift(lua_State* L, ws2812_buffer * buffer, int shiftValue, un
   ws2812_buffer_shift_prepare* prepare = ws2812_buffer_get_shift_prepare(L, buffer, shiftValue, shift_type, pos_start, pos_end);
   ws2812_buffer_shift_prepared(prepare);
   // Free memory
-  luaM_free(L, prepare);
+  luaM_freemem(L, prepare, sizeof(ws2812_buffer_shift_prepare) + prepare->shift_len);
+
   return 0;
 }
 
