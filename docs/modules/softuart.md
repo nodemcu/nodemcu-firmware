@@ -5,14 +5,15 @@
 
 The SoftUART module provides access to multiple software-based UART ports.
 
-ESP8266 has only 1 full hardware UART port that is used to program the chip and communicate with NodeMCU firmware. The second port is transmit-only. More information can be found in [uart module documentation](uart/). This module provides access to more UART ports and can be used to communicate with devices like GSM or GPS modules. The code is based on [esp8266-software-uart](https://github.com/plieningerweb/esp8266-software-uart) and [Arduino-esp8266-Software-UART](https://github.com/juancgalvez/Arduino-esp8266-Software-UART) projects. Currently doesn't support inverted serial data logic or modes other than 8N1. It's important to notice that this is a software implementation of the serial protocol. There could be some interrupts that make the transmition or reception fail due to invalid timing.
+ESP8266 has only 1 full hardware UART port that is used to program the chip and communicate with NodeMCU firmware. The second port is transmit-only. More information can be found in [uart module documentation](uart/). This module provides access to more UART ports and can be used to communicate with devices like GSM or GPS modules. The code is based on [esp8266-software-uart](https://github.com/plieningerweb/esp8266-software-uart) and [Arduino-esp8266-Software-UART](https://github.com/juancgalvez/Arduino-esp8266-Software-UART) projects. Currently doesn't support inverted serial data logic or modes other than 8N1. It's important to notice that this is a software implementation of the serial protocol. There could be some interrupts that make the transmission or reception fail due to invalid timing.
 
 !!! note
-SoftUART cannot be used on D0 pin.
+
+    SoftUART cannot be used on D0 pin.
 
 ## softuart.setup()
 
-Creates new SoftUART instance. Note that rx pin cannot be shared between instances but tx pin can. 
+Creates new SoftUART instance. Note that rx pin cannot be shared between instances but tx pin can.
 
 #### Syntax
 `softuart.setup(baudrate, txPin, rxPin)`
@@ -52,6 +53,7 @@ Sets up the callback function to receive data.
 ```lua
 -- Create new software UART with baudrate of 9600, D2 as Tx pin and D3 as Rx pin
 s = softuart.setup(9600, 2, 3)
+-- Set callback to run when 10 characters show up in the buffer
 s:on("data", 10, function(data)
   print("Lua handler called!")
   print(data)
@@ -75,4 +77,6 @@ Transmits a byte or sequence of them.
 -- Create new software UART with baudrate of 9600, D2 as Tx pin and D3 as Rx pin
 s = softuart.setup(9600, 2, 3)
 s:write("Hello!")
+-- Send character 'a'
+s:write(97)
 ```
