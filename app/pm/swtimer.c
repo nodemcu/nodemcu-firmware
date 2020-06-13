@@ -70,8 +70,11 @@
 #define SWTMR_DBG(...)
 #define CB_LIST_STR "cb"
 #define SUSP_LIST_STR "st"
-#define get_swtmr_registry(L) lua_rawgetp(L, LUA_REGISTRYINDEX, &register_queue)
-#define set_swtmr_registry(L) lua_rawsetp(L, LUA_REGISTRYINDEX, &register_queue)
+#define get_swtmr_registry(L) lua_pushlightuserdata(L, &register_queue); \
+                              lua_rawget(L, LUA_REGISTRYINDEX)
+#define set_swtmr_registry(L) lua_pushlightuserdata(L, &register_queue); \
+                              lua_insert(L, -2); \
+                              lua_rawset(L, LUA_REGISTRYINDEX)
 #endif
 
 
