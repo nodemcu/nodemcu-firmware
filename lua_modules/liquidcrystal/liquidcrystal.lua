@@ -1,4 +1,4 @@
-local bit = bit
+local bit = bit --luacheck: read globals bit
 -- metatable
 local LiquidCrystal = {}
 LiquidCrystal.__index = LiquidCrystal

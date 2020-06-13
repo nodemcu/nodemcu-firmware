@@ -242,7 +242,7 @@ static void wifi_event_monitor_process_event_queue(task_param_t param, uint8 pri
   luaL_unref(L, LUA_REGISTRYINDEX, event_ref); //the userdata containing event info is no longer needed
   event_ref = LUA_NOREF;
 
-  lua_call(L, 1, 0); //execute user's callback and pass Lua table
+  luaL_pcallx(L, 1, 0); //execute user's callback and pass Lua table
   return;
 }
 

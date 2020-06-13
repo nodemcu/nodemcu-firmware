@@ -10,8 +10,9 @@
 
 #include <string.h>
 #include <stddef.h>
-
 #include <stdint.h>
+#include <ctype.h>
+
 #include "mem.h"
 #include "lwip/ip_addr.h"
 #include "espconn.h"
@@ -463,12 +464,11 @@ static const char *fill_page_with_pem(lua_State *L, const unsigned char *flash_m
 static int tls_cert_auth(lua_State *L)
 {
   if (ssl_client_options.cert_auth_callback != LUA_NOREF) {
-    lua_unref(L, ssl_client_options.cert_auth_callback);
+    luaL_unref(L, LUA_REGISTRYINDEX, ssl_client_options.cert_auth_callback);
     ssl_client_options.cert_auth_callback = LUA_NOREF;
   }
-  if ((lua_type(L, 1) == LUA_TFUNCTION)
-      || (lua_type(L, 1) == LUA_TLIGHTFUNCTION)) {
-    ssl_client_options.cert_auth_callback = lua_ref(L, 1);
+  if (lua_type(L, 1) == LUA_TFUNCTION) {
+    ssl_client_options.cert_auth_callback = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_pushboolean(L, true);
     return 1;
   }
@@ -518,12 +518,11 @@ static int tls_cert_auth(lua_State *L)
 static int tls_cert_verify(lua_State *L)
 {
   if (ssl_client_options.cert_verify_callback != LUA_NOREF) {
-    lua_unref(L, ssl_client_options.cert_verify_callback);
+    luaL_unref(L, LUA_REGISTRYINDEX, ssl_client_options.cert_verify_callback);
     ssl_client_options.cert_verify_callback = LUA_NOREF;
   }
-  if ((lua_type(L, 1) == LUA_TFUNCTION)
-      || (lua_type(L, 1) == LUA_TLIGHTFUNCTION)) {
-    ssl_client_options.cert_verify_callback = lua_ref(L, 1);
+  if (lua_type(L, 1) == LUA_TFUNCTION) {
+    ssl_client_options.cert_verify_callback = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_pushboolean(L, true);
     return 1;
   }

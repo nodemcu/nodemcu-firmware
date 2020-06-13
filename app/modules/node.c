@@ -21,6 +21,39 @@
 #define CPU80MHZ 80
 #define CPU160MHZ 160
 
+#define DELAY2SEC 2000
+
+static void restart_callback(void *arg) {
+  UNUSED(arg);
+  system_restart();
+}
+static int default_onerror(lua_State *L) {
+  static os_timer_t restart_timer = {0};
+  /* Use Lua print to print the ToS */
+  lua_settop(L, 1);
+  lua_getglobal(L, "print");
+  lua_insert(L, 1);
+  lua_pcall(L, 1, 0, 0);
+  /* One first time through set automatic restart after 2s delay */
+  if (!restart_timer.timer_func) {
+    os_timer_setfn(&restart_timer, restart_callback, NULL);
+		os_timer_arm(&restart_timer, DELAY2SEC, 0);
+  }
+  return 0;
+}
+
+// Lua: setonerror([function])
+static int node_setonerror( lua_State* L ) {
+  lua_settop(L, 1);
+  if (!lua_isfunction(L, 1)) {
+    lua_pop(L, 1);
+    lua_pushcfunction(L, default_onerror);
+  }  
+  lua_setfield(L, LUA_REGISTRYINDEX, "onerror");
+  return 0;
+}
+
+
 // Lua: startupcommand(string)
 static int node_startupcommand( lua_State* L ) {
   size_t l, lrcr;
@@ -229,12 +262,17 @@ static int node_input( lua_State* L ) {
   lua_rawgeti(L, -1, 1);             /* get the pipe_write func from stdin[1] */
   lua_insert(L, -2);                           /* and move above the pipe ref */
   lua_pushvalue(L, 1);
-  lua_call(L, 2, 0);                                     /* stdin:write(line) */
+  lua_call(L, 2, 0);        /* stdin:write(line); errors are thrown to caller */
   return 0;
 }
 
 static int serial_debug = 1;
 
+/*
+** Output redirector. Note that panics in the output callback cannot be processed
+** using luaL_pcallx() as this would create an infinite error loop, so they are
+** reported direct to the UART.
+*/
 void output_redirect(const char *str, size_t l) {
   lua_State *L = lua_getstate();
   int n = lua_gettop(L);
@@ -247,8 +285,10 @@ void output_redirect(const char *str, size_t l) {
     lua_rawgeti(L, -1, 1);          /* get the pipe_write func from stdout[1] */
     lua_insert(L, -2);                         /* and move above the pipe ref */
     lua_pushlstring(L, str, l);
-    lua_call(L, 2, 0);                               /* Reg.stdout:write(str) */
-
+    if (lua_pcall(L, 2, 0, 0) != LUA_OK) {           /* Reg.stdout:write(str) */
+      lua_writestringerror("error calling stdout:write(%s)\n", lua_tostring(L, -1));
+      system_restart();
+    }
   } else { /* reg.stdout == nil */
     uart0_sendStrn(str, l);
   }
@@ -266,7 +306,7 @@ static int node_output( lua_State* L )
     lua_pushcfunction(L, pipe_create);
     lua_insert(L, 1);
     lua_pushinteger(L, LUA_TASK_MEDIUM);
-    lua_call(L, 2, 1);             /* T[1] = pipe.create(CB, medium_priority) */
+    lua_call(L, 2, 1);      /* Any pipe.create() errors thrown back to caller */
   } else {    // remove the stdout pipe
     lua_pop(L,1);
     lua_pushnil(L);                                             /* T[1] = nil */
@@ -786,8 +826,9 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( heap, node_heap )
   LROT_FUNCENTRY( info, node_info )
   LROT_TABENTRY( task, node_task )
-  LROT_FUNCENTRY( flashreload, luaN_reload_reboot )
-  LROT_FUNCENTRY( flashindex, luaN_index )
+  LROT_FUNCENTRY( flashreload, lua_lfsreload )
+  LROT_FUNCENTRY( flashindex, lua_lfsindex )
+  LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( startupcommand, node_startupcommand )
   LROT_FUNCENTRY( restart, node_restart )
   LROT_FUNCENTRY( dsleep, node_deepsleep )
@@ -831,5 +872,9 @@ LROT_BEGIN(node, NULL, 0)
 //  LROT_FUNCENTRY( dsleepsetoption, node_deepsleep_setoption )
 LROT_END(node, NULL, 0)
 
+int luaopen_node( lua_State *L ) {
+  lua_settop(L, 0);
+  return node_setonerror(L);  /* set default onerror action */
+}
 
-NODEMCU_MODULE(NODE, "node", node, NULL);
+NODEMCU_MODULE(NODE, "node", node, luaopen_node);

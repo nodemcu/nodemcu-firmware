@@ -93,7 +93,7 @@ static bool myspiffs_set_cfg(spiffs_config *cfg, bool force_create) {
  
   if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE_SMALL_FS) {
     return FALSE;
-  } else if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE_SMALL_FS) {
+  } else if (cfg->phys_size < MIN_BLOCKS_FS * LOG_BLOCK_SIZE) {
     cfg->log_block_size = LOG_BLOCK_SIZE_SMALL_FS;
   } else  {
     cfg->log_block_size = LOG_BLOCK_SIZE;

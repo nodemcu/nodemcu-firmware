@@ -22,4 +22,5 @@
 // Reduce the chance of returning disk full
 #define SPIFFS_GC_MAX_RUNS          256
 
+#define SPIFFS_SECURE_ERASE         0
 #endif

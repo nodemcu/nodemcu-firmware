@@ -46,7 +46,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 
   lua_State* L = (lua_State *)arg;
   lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
-  lua_call(L, 0, 0);
+  luaL_pcallx(L, 0, 0);
 
 #else
 
@@ -64,9 +64,8 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 
     lua_pushstring(L, sta_conf->ssid);
     lua_pushstring(L, sta_conf->password);
-    lua_call(L, 2, 0);
-
     unregister_lua_cb(L, &wifi_smart_succeed);
+    luaL_pcallx(L, 2, 0);
   }
 
 #endif // defined( NODE_SMART_OLDSTYLE )
@@ -125,8 +124,8 @@ static void wifi_scan_done(void *arg, STATUS status)
   {
     lua_newtable( L );
   }
-  lua_call(L, 1, 0);
   unregister_lua_cb(L, &wifi_scan_succeed);
+  luaL_pcallx(L, 1, 0);
 }
 
 #ifdef WIFI_SMART_ENABLE
@@ -438,9 +437,9 @@ void wifi_pmSleep_suspend_CB(void)
   {
     lua_State* L = lua_getstate(); // Get main Lua thread pointer
     lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // Push suspend callback onto stack
-    luaL_unref(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
+    luaL_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
     wifi_suspend_cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
-    lua_call(L, 0, 0); // Execute suspend callback
+    luaL_pcallx(L, 0, 0); // Execute suspend callback
   }
   else
   {

@@ -1,5 +1,6 @@
-/* Read-only tables for Lua */
-
+/*
+ * NodeMCU extensions to Lua 5.1 for readonly Flash memory support
+ */
 #ifndef lnodemcu_h
 #define lnodemcu_h
 
@@ -16,7 +17,8 @@
 #define LOCK_IN_SECTION(s) __attribute__((used,unused,section(".lua_" #s)))
 #endif
 
-/* Macros one can use to define rotable entries */
+/* Macros used to declare rotable entries */
+
 #define LRO_FUNCVAL(v)       {{.p = v}, LUA_TLIGHTFUNCTION}
 #define LRO_LUDATA(v)        {{.p = cast(void*,v)}, LUA_TLIGHTUSERDATA}
 #define LRO_NILVAL           {{.p = NULL}, LUA_TNIL}
@@ -25,7 +27,7 @@
 #define LRO_FLOATVAL(v)      LRO_NUMVAL(v)
 #define LRO_ROVAL(v)         {{.gc = cast(GCObject *, &(v ## _ROTable))}, LUA_TROTABLE}
 
-#define LROT_MARKED           0  //<<<<<<<<<<*** TBD *** >>>>>>>>>>>
+#define LROT_MARKED          0 //<<<<<<<<<<  *** TBD *** >>>>>>>>>>>
 
 #define LROT_FUNCENTRY(n,f)  {LRO_STRKEY(#n), LRO_FUNCVAL(f)},
 #define LROT_LUDENTRY(n,x)   {LRO_STRKEY(#n), LRO_LUDATA(x)},
@@ -38,9 +40,9 @@
 #define LROT_ENTRYREF(rt)    (rt ##_entries)
 #define LROT_TABLEREF(rt)    (&rt ##_ROTable)
 #define LROT_BEGIN(rt,mt,f)  LROT_TABLE(rt); \
-  static const ROTable_entry rt ## _entries[] = {
+  static ROTable_entry rt ## _entries[] = {
 #define LROT_ENTRIES_IN_SECTION(rt,s) \
-  static const ROTable_entry LOCK_IN_SECTION(s) rt ## _entries[] = {
+  static ROTable_entry LOCK_IN_SECTION(s) rt ## _entries[] = {
 #define LROT_END(rt,mt,f)    {NULL, LRO_NILVAL} }; \
   const ROTable rt ## _ROTable = { \
     (GCObject *)1, LUA_TROTABLE, LROT_MARKED, \
@@ -64,4 +66,9 @@
 #define LROT_MASK_GC_INDEX   (LROT_MASK_GC | LROT_MASK_INDEX)
 
 /* Maximum length of a rotable name and of a string key*/
+
+#ifdef LUA_CORE
+
 #endif
+#endif
+

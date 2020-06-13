@@ -262,8 +262,8 @@
 #define SPIFFS_FH_OFFS(fs, fh)   ((fh) != 0 ? ((fh) + (fs)->cfg.fh_ix_offset) : 0)
 #define SPIFFS_FH_UNOFFS(fs, fh) ((fh) != 0 ? ((fh) - (fs)->cfg.fh_ix_offset) : 0)
 #else
-#define SPIFFS_FH_OFFS(fs, fh)   (fh)
-#define SPIFFS_FH_UNOFFS(fs, fh) (fh)
+#define SPIFFS_FH_OFFS(fs, fh)   ((spiffs_file)(fh))
+#define SPIFFS_FH_UNOFFS(fs, fh) ((spiffs_file)(fh))
 #endif
 
 
@@ -476,9 +476,6 @@ typedef struct {
 
 
 // object structs
-#ifdef _MSC_VER
-#pragma pack ( push, 1 )
-#endif
 
 // page header, part of each page except object lookup pages
 // NB: this is always aligned when the data page is an object index,
@@ -495,12 +492,7 @@ typedef struct SPIFFS_PACKED {
 // object index header page header
 typedef struct SPIFFS_PACKED
 #if SPIFFS_ALIGNED_OBJECT_INDEX_TABLES
-#ifdef _MSC_VER
-//Note: the following needs to track the sizeof(spiffs_page_ix), which is defined in spiffs_config.h
-                __declspec( align( 2 ) )
-#else
                 __attribute(( aligned(sizeof(spiffs_page_ix)) ))
-#endif
 #endif
 {
   // common page header
@@ -524,10 +516,6 @@ typedef struct SPIFFS_PACKED {
  spiffs_page_header p_hdr;
  u8_t _align[4 - ((sizeof(spiffs_page_header)&3)==0 ? 4 : (sizeof(spiffs_page_header)&3))];
 } spiffs_page_object_ix;
-
-#ifdef _MSC_VER
-#pragma pack ( pop )
-#endif
 
 // callback func for object lookup visitor
 typedef s32_t (*spiffs_visitor_f)(spiffs *fs, spiffs_obj_id id, spiffs_block_ix bix, int ix_entry,

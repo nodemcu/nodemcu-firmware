@@ -383,10 +383,13 @@ struct lua_Debug {
 /* }====================================================================== */
 
 typedef struct ROTable ROTable;
-typedef struct ROTable_entry ROTable_entry;
+typedef const struct ROTable_entry ROTable_entry;
 
-LUA_API void  (lua_pushrotable) (lua_State *L, const ROTable *p);
-LUA_API void  (lua_createrotable) (lua_State *L, ROTable *t, const ROTable_entry *e, ROTable *mt);
+LUA_API void (lua_pushrotable) (lua_State *L, const ROTable *p);
+LUA_API void (lua_createrotable) (lua_State *L, ROTable *t, ROTable_entry *e, ROTable *mt);
+
+LUAI_FUNC int  lua_lfsreload (lua_State *L);
+LUAI_FUNC int  lua_lfsindex (lua_State *L);
 
 #define EGC_NOT_ACTIVE        0   // EGC disabled
 #define EGC_ON_ALLOC_FAILURE  1   // run EGC on allocation failure
@@ -413,7 +416,12 @@ LUA_API void lua_setegcmode(lua_State *L, int mode, int limit);
 #define dbg_printf printf
 
 #endif
-extern void lua_debugbreak(void);
+
+#ifdef DEVELOPMENT_USE_GDB
+LUALIB_API void (lua_debugbreak)(void);
+#else
+#define lua_debugbreak() (void)(0)
+#endif
 
 // EGC operations modes
 #define EGC_NOT_ACTIVE        0   // EGC disabled

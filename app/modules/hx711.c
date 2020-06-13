@@ -258,7 +258,7 @@ static void hx711_task(platform_task_param_t param, uint8_t prio)
 
     control->freed = param;
 
-    lua_call(L, 3, 0);
+    luaL_pcallx(L, 3, 0);
   }
 }
 #endif
