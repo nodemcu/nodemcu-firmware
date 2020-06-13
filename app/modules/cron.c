@@ -135,10 +135,13 @@ static size_t lcron_findindex(lua_State *L, cronent_ud_t *ud) {
 
 static int lcron_schedule(lua_State *L) {
   cronent_ud_t *ud = luaL_checkudata(L, 1, "cron.entry");
-  char *strdesc = (char*)luaL_checkstring(L, 2);
-  struct cronent_desc desc;
-  lcron_parsedesc(L, strdesc, &desc);
-  ud->desc = desc;
+  char *strdesc = (char*)luaL_optstring(L, 2, NULL);
+
+  if (strdesc != NULL) {
+    struct cronent_desc desc;
+    lcron_parsedesc(L, strdesc, &desc);
+    ud->desc = desc;
+  }
 
   size_t i = lcron_findindex(L, ud);
 
