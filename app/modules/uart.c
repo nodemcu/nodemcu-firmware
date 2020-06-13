@@ -142,6 +142,27 @@ static int l_uart_write( lua_State* L )
   return 0;
 }
 
+#define DIR_RX 0
+#define DIR_TX 1
+
+static int l_uart_fifodepth( lua_State* L )
+{
+  int id  = luaL_optinteger( L, 1, 0 );
+  if ((id != 0) && (id != 1))
+    return luaL_argerror(L, 1, "Bad UART id; must be 0 or 1");
+
+  int dir = luaL_optinteger( L, 2, 0 );
+  if ((dir != DIR_RX) && (dir != DIR_TX))
+    return luaL_argerror(L, 2, "Bad direction; must be DIR_RX or DIR_TX");
+
+  int reg = READ_PERI_REG(UART_STATUS(id));
+  int rsh = reg >> ((dir == DIR_RX) ? UART_RXFIFO_CNT_S : UART_TXFIFO_CNT_S);
+  int rm  = rsh &  ((dir == DIR_RX) ? UART_RXFIFO_CNT   : UART_TXFIFO_CNT  );
+
+  lua_pushinteger(L, rm);
+  return 1;
+}
+
 // Module function map
 LROT_BEGIN(uart, NULL, 0)
   LROT_FUNCENTRY( setup, l_uart_setup )
@@ -149,12 +170,17 @@ LROT_BEGIN(uart, NULL, 0)
   LROT_FUNCENTRY( write, l_uart_write )
   LROT_FUNCENTRY( on, l_uart_on )
   LROT_FUNCENTRY( alt, l_uart_alt )
+  LROT_FUNCENTRY( fifodepth, l_uart_fifodepth )
+
   LROT_NUMENTRY( STOPBITS_1, PLATFORM_UART_STOPBITS_1 )
   LROT_NUMENTRY( STOPBITS_1_5, PLATFORM_UART_STOPBITS_1_5 )
   LROT_NUMENTRY( STOPBITS_2, PLATFORM_UART_STOPBITS_2 )
   LROT_NUMENTRY( PARITY_NONE, PLATFORM_UART_PARITY_NONE )
   LROT_NUMENTRY( PARITY_EVEN, PLATFORM_UART_PARITY_EVEN )
   LROT_NUMENTRY( PARITY_ODD, PLATFORM_UART_PARITY_ODD )
+
+  LROT_NUMENTRY( DIR_RX, DIR_RX )
+  LROT_NUMENTRY( DIR_TX, DIR_TX )
 LROT_END(uart, NULL, 0)
 
 
