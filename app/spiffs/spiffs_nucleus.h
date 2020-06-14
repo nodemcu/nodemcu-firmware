@@ -492,7 +492,11 @@ typedef struct SPIFFS_PACKED {
 // object index header page header
 typedef struct SPIFFS_PACKED
 #if SPIFFS_ALIGNED_OBJECT_INDEX_TABLES
-                __attribute(( aligned(sizeof(spiffs_page_ix)) ))
+#ifdef _MSC_VER
+                 __declspec( align( 2 ) ) // must track sizeof(spiffs_page_ix) in spiffs_config.h
+#else
+                 __attribute(( aligned(sizeof(spiffs_page_ix)) ))
+#endif
 #endif
 {
   // common page header
