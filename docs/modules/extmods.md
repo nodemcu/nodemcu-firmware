@@ -1,5 +1,7 @@
 
-# External modules. Plugging your own C modules.
+# External modules. Plugging your own C modules. **BETA**
+
+Note: this feature is still in beta. Configuration files / API may change.
 
 In order to make the most of NodeMCU, you will undoubtedly have to connect your ESP device to many different hardware modules, which will require you to write driver code in C and expose a Lua interface.
 
