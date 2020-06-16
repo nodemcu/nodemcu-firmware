@@ -287,7 +287,7 @@ static void softuart_rx_callback(task_param_t arg)
 	}
 	lua_pushlstring(L, softuart_rx_buffer, buffer_lenght);
 	softuart->armed = 1;
-	lua_call(L, 1, 0);
+	luaL_pcallx(L, 1, 0);
 }
 
 // Arguments: event name, minimum buffer filled to run callback, callback function

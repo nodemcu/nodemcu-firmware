@@ -467,16 +467,15 @@ typedef struct ROTable ROTable;
 typedef const struct ROTable_entry ROTable_entry;
 typedef size_t KeyCache;
 
-LUA_API void  (lua_pushrotable) (lua_State *L, const ROTable *p);
+LUA_API void (lua_pushrotable) (lua_State *L, const ROTable *p);
 LUA_API void (lua_createrotable) (lua_State *L, ROTable *t, const ROTable_entry *e, ROTable *mt);
 LUA_API lua_State *(lua_getstate) (void);
 LUA_API KeyCache *(lua_getcache) (int cl);
 LUA_API int (lua_getstrings) (lua_State *L, int opt);
 LUA_API int (lua_freeheap) (void);
 
-LUAI_FUNC int  luaN_flashSetup (lua_State *L);
-LUAI_FUNC int  luaN_reload_reboot (lua_State *L);
-LUAI_FUNC int  luaN_index (lua_State *L);
+LUAI_FUNC int  lua_lfsreload (lua_State *L);
+LUAI_FUNC int  lua_lfsindex (lua_State *L);
 
 #define luaN_freearray(L,a,l) luaM_freearray(L,a,l)
 
@@ -487,10 +486,11 @@ LUAI_FUNC int  luaN_index (lua_State *L);
 typedef struct Proto Proto;
 
 #ifdef DEVELOPMENT_USE_GDB
-LUALIB_API void lua_debugbreak(void);
-#define ASSERT(s) if (!(s)) {();}
+LUALIB_API void (lua_debugbreak)(void);
+#define ASSERT(s) if (!(s)) {lua_debugbreak();}
 #else
-#define ASSERT(s)
+#define lua_debugbreak() (void)(0)
+#define ASSERT(s) (void)(0)
 #endif
 
 LUAI_FUNC int luaG_stripdebug (lua_State *L, Proto *f, int level, int recv);

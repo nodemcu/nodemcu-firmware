@@ -202,8 +202,6 @@ LUALIB_API void lua_debugbreak(void) {
   asm("break 0,0" ::);
 #endif
 }
-#else
-#define lua_debugbreak() (void)(0)
 #endif
 
 //== NodeMCU lua.h API extensions ============================================//
@@ -567,7 +565,7 @@ LUAI_FUNC int luaN_init (lua_State *L) {
 #define getfield(L,t,f) \
   lua_getglobal(L, #t); luaL_getmetafield( L, 1, #f ); lua_remove(L, -2);
 
-LUAI_FUNC int  luaN_reload_reboot (lua_State *L) {
+LUAI_FUNC int  lua_lfsreload (lua_State *L) {
   int n = 0;
 #ifdef LUA_USE_ESP
   size_t l;
@@ -579,6 +577,10 @@ LUAI_FUNC int  luaN_reload_reboot (lua_State *L) {
 #endif
   lua_settop(L, 1);
   lua_getglobal(L, "file");
+  if (lua_isnil(L, 2)) {
+    lua_pushstring(L, "No file system mounted");
+    return 1;
+  }
   lua_getfield(L, 2, "exists");
   lua_pushstring(L, img + off);
   lua_call(L, 1, 1);
@@ -594,7 +596,7 @@ LUAI_FUNC int  luaN_reload_reboot (lua_State *L) {
   return 1;
 }
 
-LUAI_FUNC int  luaN_index (lua_State *L) {
+LUAI_FUNC int  lua_lfsindex (lua_State *L) {
   lua_settop(L,1);
   if (lua_isstring(L, 1)){
     lua_getglobal(L, "LFS");

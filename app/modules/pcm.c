@@ -27,7 +27,7 @@ static void dispatch_callback( lua_State *L, int self_ref, int cb_ref, int retur
   if (cb_ref != LUA_NOREF) {
     lua_rawgeti( L, LUA_REGISTRYINDEX, cb_ref );
     lua_rawgeti( L, LUA_REGISTRYINDEX, self_ref );
-    lua_call( L, 1, returns );
+    luaL_pcallx( L, 1, returns );
   }
 }
 

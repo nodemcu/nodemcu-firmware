@@ -463,7 +463,7 @@ static void gpio_pulse_task(os_param_t param, uint8_t prio)
     active_pulser_ref = LUA_NOREF;
     luaL_unref(L, LUA_REGISTRYINDEX, pulser_ref);
 
-    lua_call(L, rc, 0);
+    luaL_pcallx(L, rc, 0);
   }
 }
 

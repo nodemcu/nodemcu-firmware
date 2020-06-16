@@ -1,5 +1,5 @@
 /*
- * NodeMCU extensions to Lua for readonly Flash memory support
+ * NodeMCU extensions to Lua 5.3 for readonly Flash memory support
  */
 #ifndef lnodemcu_h
 #define lnodemcu_h
@@ -27,7 +27,7 @@
 #define LRO_FLOATVAL(v)      {{.n = v}, LUA_TNUMFLT}
 #define LRO_ROVAL(v)         {{.gc = cast(GCObject *, &(v ## _ROTable))}, LUA_TTBLROF}
 
-#define LROT_MARKED          0 //<<<<<<<<<<*** TBD *** >>>>>>>>>>>
+#define LROT_MARKED          0 //<<<<<<<<<<  *** TBD *** >>>>>>>>>>>
 
 #define LROT_FUNCENTRY(n,f)  {LRO_STRKEY(#n), LRO_FUNCVAL(f)},
 #define LROT_LUDENTRY(n,x)   {LRO_STRKEY(#n), LRO_LUDATA(x)},
@@ -65,65 +65,18 @@
 #define LROT_MASK_NEWINDEX   LROT_MASK(NEWINDEX)
 #define LROT_MASK_GC_INDEX   (LROT_MASK_GC | LROT_MASK_INDEX)
 
-/* Maximum length of a rotable name and of a string key*/
-#define LUA_MAX_ROTABLE_NAME 32
+
+#define LUA_MAX_ROTABLE_NAME 32  /* Maximum length of a rotable name and of a string key*/
 
 #ifdef LUA_CORE
 
 #include "lstate.h"
 #include "lzio.h"
 
-typedef struct FlashHeader LFSHeader;
-/*
-** The LFSHeader uses offsets rather than pointers to avoid 32 vs 64 bit issues
-** during host compilation.  The offsets are in units of lu_int32's and NOT
-** size_t, though clearly any internal pointers are of the size_t for the
-** executing architectures: 4 or 8 byte.  Likewise recources are size_t aligned
-** so LFS regions built for 64-bit execution will have 4-byte alignment packing
-** between resources.
-*/
-struct FlashHeader{
-  lu_int32 flash_sig;     /* a standard fingerprint identifying an LFS image */
-  lu_int32 flash_size;    /* Size of LFS image in bytes */
-  lu_int32 seed;          /* random number seed used in LFS */
-  lu_int32 timestamp;     /* timestamp of LFS build */
-  lu_int32 nROuse;        /* number of elements in ROstrt */
-  lu_int32 nROsize;       /* size of ROstrt */
-  lu_int32 oROhash;       /* offset of TString ** ROstrt hash */
-  lu_int32 protoROTable;  /* offset of master ROTable for proto lookup */
-  lu_int32 protoHead;     /* offset of linked list of Protos in LFS */
-  lu_int32 shortTShead;   /* offset of linked list of short TStrings in LFS */
-  lu_int32 longTShead;    /* offset of linked list of long TStrings in LFS */
-  lu_int32 reserved;
-};
-
-#ifdef LUA_USE_HOST
-extern void *LFSregion;
-LUAI_FUNC void luaN_setabsolute(lu_int32 addr);
-#endif
-
-#define FLASH_FORMAT_VERSION ( 2 << 8)
-#define FLASH_SIG_B1          0x06
-#define FLASH_SIG_B2          0x02
-#define FLASH_SIG_PASS2       0x0F
-#define FLASH_FORMAT_MASK    0xF00
-#define FLASH_SIG_B2_MASK     0x04
-#define FLASH_SIG_ABSOLUTE    0x01
-#define FLASH_SIG_IN_PROGRESS 0x08
-#define FLASH_SIG  (0xfafaa050 | FLASH_FORMAT_VERSION)
-
-#define FLASH_FORMAT_MASK    0xF00
-
 LUAI_FUNC int luaN_init (lua_State *L);
-LUAI_FUNC int luaN_flashSetup (lua_State *L);
-
-LUAI_FUNC int  luaN_reload_reboot (lua_State *L);
-LUAI_FUNC int  luaN_index (lua_State *L);
-
 LUAI_FUNC void *luaN_writeFlash (void *data, const void *rec, size_t n);
 LUAI_FUNC void luaN_flushFlash (void *);
 LUAI_FUNC void luaN_setFlash (void *, unsigned int o);
-
 
 #endif
 #endif

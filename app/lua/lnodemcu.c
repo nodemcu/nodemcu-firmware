@@ -26,27 +26,31 @@
 ** directly through the task interface the call is wrapped in a C closure with
 ** the error string as an Upval and this is posted to call the Lua reporter.
 */
-static int report_traceback (lua_State *L) {
-// **Temp**  lua_rawgeti(L, LUA_REGISTRYINDEX, G(L)->error_reporter);
-  lua_getglobal(L, "print");
+static int errhandler_aux (lua_State *L) {
+  lua_getfield(L, LUA_REGISTRYINDEX, "onerror");
+  if (!lua_isfunction(L, -1)) {
+    lua_pop(L, 1);
+    lua_getglobal(L, "print");
+  }
   lua_pushvalue(L, lua_upvalueindex(1));
   lua_call(L, 1, 0);  /* Using an error handler would cause an infinite loop! */
   return 0;
 }
 
 /*
-** Catch all error handler for CB calls.  This uses debug.traceback() to
-** generate a full Lua traceback.
+** Error handler for luaL_pcallx(), called from the lua_pcall() with a single 
+** argument -- the thrown error. This plus depth=2 is passed to debug.traceback()
+** to convert into an error message which it handles in a separate posted task.
 */
-LUALIB_API int luaL_traceback (lua_State *L) {
-  if (lua_isstring(L, 1)) {
-    lua_getglobal(L, "debug");
-    lua_getfield(L, -1, "traceback");
-    lua_remove(L, -2);
-    lua_pushvalue(L, 1);                                /* pass error message */
+static int errhandler (lua_State *L) {
+  lua_getglobal(L, "debug");
+  lua_getfield(L, -1, "traceback");
+  if (lua_isfunction(L, -1)) {
+    lua_insert(L, 1);                 /* insert tracback function above error */
+    lua_pop(L, 1);                              /* dump the debug table entry */
     lua_pushinteger(L, 2);                /* skip this function and traceback */
     lua_call(L, 2, 1);      /* call debug.traceback and return it as a string */
-    lua_pushcclosure(L, report_traceback, 1);     /* report with str as upval */
+    lua_pushcclosure(L, errhandler_aux, 1);       /* report with str as upval */
     luaL_posttask(L, LUA_TASK_HIGH);
   }
   return 0;
@@ -60,12 +64,16 @@ LUALIB_API int luaL_traceback (lua_State *L) {
 LUALIB_API int luaL_pcallx (lua_State *L, int narg, int nres) { // [-narg, +0, v]
   int status;
   int base = lua_gettop(L) - narg;
-  lua_pushcfunction(L, luaL_traceback);
+  lua_pushcfunction(L, errhandler);
   lua_insert(L, base);                                      /* put under args */
-  status = lua_pcall(L, narg, (nres < 0 ? LUA_MULTRET : nres), base);
+  status = lua_pcall(L, narg, nres, base);
   lua_remove(L, base);                           /* remove traceback function */
-  if (status && nres >=0)
-    lua_settop(L, base + nres);                 /* balance the stack on error */
+  if (status != LUA_OK && status != LUA_ERRRUN) {  
+    lua_gc(L, LUA_GCCOLLECT, 0);   /* call onerror directly if handler failed */
+    lua_pushliteral(L, "out of memory");
+    lua_pushcclosure(L, errhandler_aux, 1);            /* report EOM as upval */
+    luaL_posttask(L, LUA_TASK_HIGH);
+    }
   return status;
 }
 

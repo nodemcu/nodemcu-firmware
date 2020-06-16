@@ -54,7 +54,8 @@ static int call_encoder( lua_State* L, const char *function ) {
   lua_getfield(L, -1, function);
   lua_insert(L, 1);    //move function below the argument
   lua_pop(L, 1);       //and dump the encoder rotable from stack.
-  lua_call(L,1,1);     // call encoder.xxx(string)
+  lua_call(L,1,1);     // Normal call encoder.xxx(string)
+                       // (errors thrown back to caller)
   return 1;
 }
 

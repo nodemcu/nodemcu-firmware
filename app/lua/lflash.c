@@ -138,7 +138,7 @@ static void flashErase(uint32_t start, uint32_t end){
 }
 
 /* =====================================================================================
- * luaN_init(), luaN_reload_reboot() and luaN_index() are exported via lflash.h.
+ * luaN_init() is exported via lflash.h.
  * The first is the startup hook used in lstate.c and the last two are
  * implementations of the node.flash API calls.
  */
@@ -194,10 +194,12 @@ static int loadLFS (lua_State *L);
 static int loadLFSgc (lua_State *L);
 static void procFirstPass (void);
 
+/* lua_lfsreload() and lua_lfsindex() are exported via lua.h */
+
 /*
  * Library function called by node.flashreload(filename).
  */
-LUALIB_API int luaN_reload_reboot (lua_State *L) {
+LUALIB_API int lua_lfsreload (lua_State *L) {
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
 
@@ -266,7 +268,7 @@ LUALIB_API int luaN_reload_reboot (lua_State *L) {
  *  -  The base address and length of the LFS
  *  -  An array of the module names in the LFS
  */
-LUAI_FUNC int luaN_index (lua_State *L) {
+LUAI_FUNC int lua_lfsindex (lua_State *L) {
   int n = lua_gettop(L);
 
   /* Return nil + the LFS base address if the LFS size > 0 and it isn't loaded */

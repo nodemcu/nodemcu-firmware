@@ -79,6 +79,8 @@ LUALIB_API int (luaL_execresult) (lua_State *L, int stat);
 
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
+#define luaL_unref2(l,t,r) luaL_unref(L, (t), (r)); r = LUA_NOREF
+LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref);
 
 LUALIB_API int (luaL_loadfilex) (lua_State *L, const char *filename,
                                                const char *mode);

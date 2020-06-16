@@ -181,7 +181,7 @@ static void enduser_setup_debug(int line, const char *str)
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_dbg_cb_ref);
     lua_pushfstring(L, "%d: \t%s", line, str);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -196,7 +196,7 @@ static void enduser_setup_error(int line, const char *str, int err)
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->lua_err_cb_ref);
     lua_pushnumber(L, err);
     lua_pushfstring(L, "%d: \t%s", line, str);
-    lua_call (L, 2, 0);
+    luaL_pcallx (L, 2, 0);
   }
 }
 
@@ -209,7 +209,7 @@ static void enduser_setup_connected_callback()
   if (state != NULL && state->lua_connected_cb_ref != LUA_NOREF)
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_connected_cb_ref);
-    lua_call(L, 0, 0);
+    luaL_pcallx(L, 0, 0);
   }
 }
 

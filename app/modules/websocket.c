@@ -41,7 +41,7 @@ static void websocketclient_onConnectionCallback(ws_info *ws) {
   if (data->onConnection != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->onConnection); // load the callback function
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->self_ref);  // pass itself, #1 callback argument
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -61,7 +61,7 @@ static void websocketclient_onReceiveCallback(ws_info *ws, int len, char *messag
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->self_ref);  // pass itself, #1 callback argument
     lua_pushlstring(L, message, len); // #2 callback argument
     lua_pushnumber(L, opCode); // #3 callback argument
-    lua_call(L, 3, 0);
+    luaL_pcallx(L, 3, 0);
   }
 }
 
@@ -80,7 +80,7 @@ static void websocketclient_onCloseCallback(ws_info *ws, int errorCode) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->onClose); // load the callback function
     lua_rawgeti(L, LUA_REGISTRYINDEX, data->self_ref);  // pass itself, #1 callback argument
     lua_pushnumber(L, errorCode); // pass the error code, #2 callback argument
-    lua_call(L, 2, 0);
+    luaL_pcallx(L, 2, 0);
   }
 
   // free self-reference to allow gc (no futher callback will be called until next ws:connect())
@@ -285,7 +285,7 @@ static int websocketclient_gc(lua_State *L) {
       lua_rawgeti(L, LUA_REGISTRYINDEX, data->onClose);
 
       lua_pushnumber(L, -100);
-      lua_call(L, 1, 0);
+      luaL_pcallx(L, 1, 0);
     }
     luaL_unref(L, LUA_REGISTRYINDEX, data->onClose);
   }

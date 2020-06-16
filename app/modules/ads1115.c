@@ -499,7 +499,7 @@ static int ads1115_lua_readoutdone(void * param) {
     luaL_unref(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
     ads_ctrl->timer_ref = LUA_NOREF;
     read_common(ads_ctrl, raw, L);
-    lua_call(L, 4, 0);
+    luaL_pcallx(L, 4, 0);
 }
 
 // Read the conversion register from the ADC device

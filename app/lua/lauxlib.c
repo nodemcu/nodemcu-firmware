@@ -684,6 +684,26 @@ LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
 }
 
 
+LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref) {
+  int reft;
+/*
+ * If the ref is positive and the entry in table t exists then
+ * overwrite the value otherwise fall through to luaL_ref()
+ */   
+  if (ref) {
+    if (*ref >= 0) {
+      t = abs_index(L, t);
+      lua_rawgeti(L, t, *ref);
+      reft = lua_type(L, -1);
+      lua_pop(L, 1);
+      if (reft != LUA_TNIL) {
+        lua_rawseti(L, t, *ref);
+        return;
+      }
+    }
+    *ref = luaL_ref(L, t);
+  }
+}
 
 /*
 ** {======================================================
@@ -899,23 +919,23 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
  * is the option to exit the interactive session and start the Xtensa remote GDB
  * which will then sync up with the remote GDB client to allow forensics of the error.
  */
-#ifdef LUA_CROSS_COMPILER
-LUALIB_API void lua_debugbreak(void) {
-  puts(" lua_debugbreak ");  /* allows BT analysis of assert fails */
-}
-#else
 extern void gdbstub_init(void);
+extern void gdbstub_redirect_output(int);
 
-LUALIB_API void lua_debugbreak(void) {
+LUALIB_API void lua_debugbreak (void) {
+#ifdef LUA_CROSS_COMPILER
+  puts(" lua_debugbreak ");  /* allows gdb BT analysis of assert fails */
+#else
   static int repeat_entry = 0;
   if  (repeat_entry == 0) {
     dbg_printf("Start up the gdb stub if not already started\n");
     gdbstub_init();
+    gdbstub_redirect_output(1);
     repeat_entry = 1;
   }
   asm("break 0,0" ::);
-}
 #endif
+}
 #endif
 
 
