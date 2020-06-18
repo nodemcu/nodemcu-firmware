@@ -144,7 +144,7 @@ static int tmr_start(lua_State* L){
 		if (!idle) {os_timer_disarm(&tmr->os);}
 		tmr->mode &= ~TIMER_IDLE_FLAG;
 		os_timer_arm(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO);
-  }
+	}
 	lua_pushboolean(L, !idle); /* false if the timer is not idle */
 	return 1;
 }
