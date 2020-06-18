@@ -130,7 +130,7 @@ static int tmr_start(lua_State* L){
 	tmr_t *tmr = (tmr_t *) luaL_checkudata(L, 1, "tmr.timer");
 	lua_settop(L, 2);
 	luaL_argcheck(L, lua_isboolean(L, 2) || lua_isnil(L, 2), 2, "boolean expected");
-	int restart = lua_isboolean(L, 2) ? lua_toboolean(L, 2) : 0;
+	int restart = lua_toboolean(L, 2);
 
 	lua_settop(L, 1);  /* ignore any args after the userdata */
 	if (tmr->self_ref == LUA_NOREF)
