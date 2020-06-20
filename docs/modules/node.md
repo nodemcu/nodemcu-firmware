@@ -564,6 +564,70 @@ node.startupcommand("=if LFS.init then LFS.init() else dofile('init.lua') end")
 ```
 
 
+## node.startupcounts()
+
+Query the performance of system startup.
+
+####Syntax
+`node.startupcounts([marker])`
+
+#### Parameters
+
+- `marker` If present, this will add another entry into the startup counts
+
+####  Returns
+An array of tables which indicate how many CPU cycles had been consumed at each step of platform boot.
+
+#### Example
+```lua
+=sjson.encode(node.startupcounts()) 
+```
+
+This might generate the output (formatted for readability):
+
+```
+[
+ {"ccount":3774328,"name":"user_pre_init","line":124},
+ {"ccount":3842297,"name":"user_pre_init","line":180},
+ {"ccount":9849869,"name":"user_init","line":327},
+ {"ccount":10008843,"name":"nodemcu_init","line":293},
+ {"ccount":10295779,"name":"pmain","line":234},
+ {"ccount":11378766,"name":"pmain","line":256},
+ {"ccount":11565912,"name":"pmain","line":260},
+ {"ccount":12158242,"name":"node_startup_counts","line":1},
+ {"ccount":12425790,"name":"myspiffs_mount","line":126},
+ {"ccount":12741862,"name":"myspiffs_mount","line":148},
+ {"ccount":13983567,"name":"pmain","line":265}
+]
+```
+
+The crucial entry is the one for `node_startup_counts` which is when the application had started running. This was on a Wemos D1 Mini with flash running at 80MHz. The startup options were all turned on. Note that the clock speed changes in `user_pre_init` to 160MHz. The total time was (approximately): `3.8 / 80 + (12 - 3.8) / 160 = 98ms`. With startup options of 0, the time is 166ms.
+
+## node.startupoption()
+
+Set flags that control the startup process.
+
+####Syntax
+`node.startupoption([option])`
+
+#### Parameters
+
+- `option` zero or more flags added together
+	- `node.OPTION_NO_BANNER` Suppress the banner printing on startup.
+	- `node.OPTION_160MHZ` Set the CPU frequency to 160MHz early on during boot
+	- `node.OPTION_DELAY_MOUNT` Don't mount the SPIFFS file system until it is needed
+
+If the `option` is not provided, then the current value is returned.
+
+####  Returns
+ 	`option` this is the value that will be in effect at the next boot.
+
+#### Example
+```lua
+node.startupoption(node.OPTION_NO_BANNER)  -- Prevent printing the banner
+```
+
+
 ## node.stripdebug()
 
 Controls the amount of debug information kept during [`node.compile()`](#nodecompile), and allows removal of debug information from already compiled Lua code.

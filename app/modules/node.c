@@ -21,6 +21,8 @@
 #define CPU80MHZ 80
 #define CPU160MHZ 160
 
+platform_startup_counts_t platform_startup_counts;
+
 #define DELAY2SEC 2000
 
 static void restart_callback(void *arg) {
@@ -53,13 +55,31 @@ static int node_setonerror( lua_State* L ) {
   return 0;
 }
 
-
 // Lua: startupcommand(string)
 static int node_startupcommand( lua_State* L ) {
   size_t l, lrcr;
   const char *cmd = luaL_checklstring(L, 1, &l);
   lrcr = platform_rcr_write(PLATFORM_RCR_INITSTR, cmd, l+1);
   lua_pushboolean(L, lrcr == ~0 ? 0 : 1);
+  return 1;
+}
+
+
+// Lua: startupoption([integer])
+static int node_startupoption( lua_State* L ) {
+  size_t l, lrcr;
+  const char *cmd = luaL_checklstring(L, 1, &l);
+  uint32_t option = 0;
+  uint32_t *option_p = &option;
+  if (lua_isnumber(L, 1)) {
+    option = (uint32_t) luaL_checkint(L, 1);
+    platform_rcr_write(PLATFORM_RCR_STARTUP_OPTION, &option, sizeof(option));
+  }
+
+  if (platform_rcr_read(PLATFORM_RCR_STARTUP_OPTION, (void **) &option_p) == sizeof(option)) {
+    option = *option_p;
+  }
+  lua_pushinteger(L, option);
   return 1;
 }
 
@@ -631,6 +651,33 @@ static int node_random (lua_State *L) {
   return 1;
 }
 
+// Just return the startup as an array of tables
+static int node_startup_counts(lua_State *L) {
+  // If the first argument is a number, then add an entry for that line
+  if (lua_isnumber(L, 1)) {
+    int lineno = lua_tointeger(L, 1);
+    STARTUP_ENTRY(lineno);
+  }
+  lua_createtable(L, platform_startup_counts.used, 0);
+  for (int i = 0; i < platform_startup_counts.used; i++) {
+    const platform_count_entry_t *p = &platform_startup_counts.entries[i];
+
+    lua_createtable(L, 0, 3);
+    lua_pushliteral(L, "name");
+    lua_pushstring(L, p->name);
+    lua_settable(L, -3);
+    lua_pushliteral(L, "line");
+    lua_pushinteger(L, p->line);
+    lua_settable(L, -3);
+    lua_pushliteral(L, "ccount");
+    lua_pushinteger(L, p->ccount);
+    lua_settable(L, -3);
+
+    lua_rawseti(L, -2, i + 1);
+  }
+  return 1;
+}
+
 #ifdef DEVELOPMENT_TOOLS
 // Lua: rec = node.readrcr(id)
 static int node_readrcr (lua_State *L) {
@@ -830,6 +877,7 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( flashindex, lua_lfsindex )
   LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( startupcommand, node_startupcommand )
+  LROT_FUNCENTRY( startupoption, node_startupoption )
   LROT_FUNCENTRY( restart, node_restart )
   LROT_FUNCENTRY( dsleep, node_deepsleep )
   LROT_FUNCENTRY( dsleepMax, dsleepMax )
@@ -841,6 +889,9 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( readrcr, node_readrcr )
   LROT_FUNCENTRY( writercr, node_writercr )
 #endif
+#ifdef PLATFORM_STARTUP_COUNT
+  LROT_FUNCENTRY( startupcounts, node_startup_counts )
+#endif
   LROT_FUNCENTRY( chipid, node_chipid )
   LROT_FUNCENTRY( flashid, node_flashid )
   LROT_FUNCENTRY( flashsize, node_flashsize )
@@ -851,6 +902,9 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( compile, node_compile )
   LROT_NUMENTRY( CPU80MHZ, CPU80MHZ )
   LROT_NUMENTRY( CPU160MHZ, CPU160MHZ )
+  LROT_NUMENTRY( OPTION_NO_BANNER, STARTUP_OPTION_NO_BANNER )
+  LROT_NUMENTRY( OPTION_160MHZ, STARTUP_OPTION_160MHZ )
+  LROT_NUMENTRY( OPTION_DELAY_MOUNT, STARTUP_OPTION_DELAY_MOUNT )
   LROT_FUNCENTRY( setcpufreq, node_setcpufreq )
   LROT_FUNCENTRY( getcpufreq, node_getcpufreq )
   LROT_FUNCENTRY( bootreason, node_bootreason )

@@ -121,6 +121,15 @@ extern void _ResetHandler(void);
  * configure the PT, etc during provisioning.
  */
 void user_pre_init(void) {
+    STARTUP_COUNT; 
+    int startup_option = platform_rcr_get_startup_option();
+
+    if (startup_option & STARTUP_OPTION_160MHZ) {
+      REG_SET_BIT(0x3ff00014, BIT(0));
+      ets_update_cpu_frequency(SYS_CPU_160MHZ);
+    }
+    int no_banner = startup_option & STARTUP_OPTION_NO_BANNER;
+
 #ifdef LUA_USE_MODULES_RTCTIME
   // Note: Keep this as close to call_user_start() as possible, since it
   // is where the cpu clock actually gets bumped to 80MHz.
@@ -141,7 +150,9 @@ void user_pre_init(void) {
         os_printf("Flash size (%u) too small to support NodeMCU\n", flash_size);
         return;
     } else {
-        os_printf("system SPI FI size:%u, Flash size: %u\n", fs_size_code, flash_size );
+        if (!no_banner) {
+            os_printf("system SPI FI size:%u, Flash size: %u\n", fs_size_code, flash_size );
+        }
     }
 
     pt = os_malloc_iram(i);  // We will work on and register a copy of the PT in iRAM
@@ -163,6 +174,10 @@ void user_pre_init(void) {
     // Now register the partition and return
 // for (i=0;i<n;i++) os_printf("P%d: %3d %06x %06x\n", i, pt[i].type, pt[i].addr, pt[i].size);
     if( fs_size_code > 1 && system_partition_table_regist(pt, n, fs_size_code)) {
+        if (no_banner) {
+            system_set_os_print(0);
+        }
+        STARTUP_COUNT;
         return;
     }
     os_printf("Invalid system partition table\n");
@@ -275,6 +290,7 @@ uint32 ICACHE_RAM_ATTR user_iram_memory_is_enabled(void) {
 }
 
 void nodemcu_init(void) {
+  STARTUP_COUNT; 
    NODE_DBG("Task task_lua starting.\n");
    // Call the Lua bootstrap startup directly.  This uses the task interface
    // internally to carry out the main lua libraries initialisation.
