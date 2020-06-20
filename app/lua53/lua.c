@@ -109,9 +109,6 @@ static int docall (lua_State *L, int narg) {
 
 #ifndef DISABLE_STARTUP_BANNER
 static void print_version (lua_State *L) {
-  if (platform_rcr_get_startup_option() & STARTUP_OPTION_NO_BANNER) {
-    return;
-  }
   lua_writestringerror( "\n" NODE_VERSION " build " BUILD_DATE
                         " powered by " LUA_RELEASE " on SDK %s\n", SDK_VERSION);
 }
@@ -235,7 +232,9 @@ static int pmain (lua_State *L) {
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
 
 #ifndef DISABLE_STARTUP_BANNER
-  print_version(L);
+  if ((platform_rcr_get_startup_option() & STARTUP_OPTION_NO_BANNER) == 0) {
+    print_version(L);
+  }
 #endif
  /*
   * And last of all, kick off application initialisation.  Note that if

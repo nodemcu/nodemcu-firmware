@@ -613,9 +613,9 @@ Set flags that control the startup process.
 #### Parameters
 
 - `option` zero or more flags added together
-	- `node.OPTION_NO_BANNER` Suppress the banner printing on startup.
-	- `node.OPTION_160MHZ` Set the CPU frequency to 160MHz early on during boot
-	- `node.OPTION_DELAY_MOUNT` Don't mount the SPIFFS file system until it is needed
+	- `node.START_NO_BANNER` Suppress the banner printing on startup.
+	- `node.START_160MHZ` Set the CPU frequency to 160MHz early on during boot
+	- `node.START_DELAY_MOUNT` Don't mount the SPIFFS file system until it is needed
 
 If the `option` is not provided, then the current value is returned.
 
@@ -624,7 +624,7 @@ If the `option` is not provided, then the current value is returned.
 
 #### Example
 ```lua
-node.startupoption(node.OPTION_NO_BANNER)  -- Prevent printing the banner
+node.startupoption(node.START_NO_BANNER)  -- Prevent printing the banner
 ```
 
 

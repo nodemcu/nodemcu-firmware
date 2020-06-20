@@ -401,10 +401,13 @@ typedef struct {
 
 extern platform_startup_counts_t platform_startup_counts;
 
-#define PLATFORM_STARTUP_COUNT_ENTRIES (sizeof(platform_startup_counts.entries) / sizeof(platform_startup_counts.entries[0]))
+#define PLATFORM_STARTUP_COUNT_ENTRIES (sizeof(platform_startup_counts.entries) \
+                                        / sizeof(platform_startup_counts.entries[0]))
 
 #ifdef PLATFORM_STARTUP_COUNT
-#define STARTUP_ENTRY(lineno) do { if (platform_startup_counts.used < PLATFORM_STARTUP_COUNT_ENTRIES) {platform_count_entry_t *p = &platform_startup_counts.entries[platform_startup_counts.used++]; p->name = __func__; p->ccount = CCOUNT_REG; p->line = lineno; }  } while(0)
+#define STARTUP_ENTRY(lineno) do { if (platform_startup_counts.used < PLATFORM_STARTUP_COUNT_ENTRIES) {\
+        platform_count_entry_t *p = &platform_startup_counts.entries[platform_startup_counts.used++]; \
+        p->name = __func__; p->ccount = CCOUNT_REG; p->line = lineno; }  } while(0)
 #else
 #define STARTUP_ENTRY(line)
 #endif
