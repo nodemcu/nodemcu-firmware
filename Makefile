@@ -9,7 +9,7 @@ THIS_DIR:=$(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 IDF_PATH=$(THIS_DIR)/sdk/esp32-esp-idf
 
 TOOLCHAIN_RELEASES_BASEURL:=https://github.com/jmattsson/esp-toolchains/releases/
-TOOLCHAIN_VERSION:=20190731.0
+TOOLCHAIN_VERSION:=20181106.1
 PLATFORM:=linux-$(shell uname --machine)
 
 ESP32_BIN:=$(THIS_DIR)/tools/toolchains/esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin
