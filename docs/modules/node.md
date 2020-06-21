@@ -603,7 +603,8 @@ This might generate the output (formatted for readability):
 ]
 ```
 
-The crucial entry is the one for `node_startup_counts` which is when the application had started running. This was on a Wemos D1 Mini with flash running at 80MHz. The startup options were all turned on. Note that the clock speed changes in `user_pre_init` to 160MHz. The total time was (approximately): `3.8 / 80 + (12 - 3.8) / 160 = 98ms`. With startup options of 0, the time is 166ms.
+The crucial entry is the one for `node_startup_counts` which is when the application had started running. This was on a Wemos D1 Mini with flash running at 80MHz. The startup options were all turned on. 
+Note that the clock speed changes in `user_pre_init` to 160MHz. The total time was (approximately): `3.8 / 80 + (12 - 3.8) / 160 = 98ms`. With startup options of 0, the time is 166ms. These times may be slightly optimistic as the clock is only 52MHz for a time during boot.
 
 ## node.startupoption()
 
