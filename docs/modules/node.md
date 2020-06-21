@@ -567,6 +567,8 @@ node.startupcommand("=if LFS.init then LFS.init() else dofile('init.lua') end")
 ## node.startupcounts()
 
 Query the performance of system startup.
+Note that this is only available if
+the firmware is built with `PLATFORM_STARTUP_COUNT` defined.
 
 ####Syntax
 `node.startupcounts([marker])`
@@ -624,7 +626,7 @@ If the `option` is not provided, then the current value is returned.
 
 #### Example
 ```lua
-node.startupoption(node.START_NO_BANNER)  -- Prevent printing the banner
+node.startupoption(node.START_NO_BANNER + node.START_160MHZ)  -- Prevent printing the banner and run at 160MHz
 ```
 
 

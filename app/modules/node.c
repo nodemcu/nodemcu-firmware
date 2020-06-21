@@ -21,7 +21,9 @@
 #define CPU80MHZ 80
 #define CPU160MHZ 160
 
+#ifdef PLATFORM_STARTUP_COUNT
 platform_startup_counts_t platform_startup_counts;
+#endif
 
 #define DELAY2SEC 2000
 
