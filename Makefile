@@ -137,7 +137,7 @@ else
   UNAME_P := $(shell uname -p)
   ifeq ($(OS),linux)
     ifndef TOOLCHAIN_ROOT
-      TOOLCHAIN_VERSION = 20181106.0
+      TOOLCHAIN_VERSION = 20190731.0
       GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
       TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
       GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
