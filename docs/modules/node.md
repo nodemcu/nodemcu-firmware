@@ -539,7 +539,7 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 
 ## node.startupcommand()
 
-Overrides the default startup action on processor restart, preplacing the executing `init.lua` if it exists.
+Overrides the default startup action on processor restart, preplacing the executing `init.lua` if it exists. This is now deprecated in favor of `node.startup({command="the command"})`.
 
 ####Syntax
 `node.startupcommand(string)`
@@ -606,28 +606,31 @@ This might generate the output (formatted for readability):
 The crucial entry is the one for `node_startup_counts` which is when the application had started running. This was on a Wemos D1 Mini with flash running at 80MHz. The startup options were all turned on. 
 Note that the clock speed changes in `user_pre_init` to 160MHz. The total time was (approximately): `3.8 / 80 + (12 - 3.8) / 160 = 98ms`. With startup options of 0, the time is 166ms. These times may be slightly optimistic as the clock is only 52MHz for a time during boot.
 
-## node.startupoption()
+## node.startup()
 
-Set flags that control the startup process.
+Get/set options that control the startup process. This interface will grow over time.
 
 ####Syntax
-`node.startupoption([option])`
+`node.startup([{table}])`
 
 #### Parameters
 
-- `option` zero or more flags added together
-	- `node.START_NO_BANNER` Suppress the banner printing on startup.
-	- `node.START_160MHZ` Set the CPU frequency to 160MHz early on during boot
-	- `node.START_DELAY_MOUNT` Don't mount the SPIFFS file system until it is needed
+If the argument is omitted, then no change is made to the current set of startup options. If the argument is the empty table `{}` then all options are
+reset to their default values.
 
-If the `option` is not provided, then the current value is returned.
+- `table` one or more options:
+        - banner - set to true or false to indicate whether the startup banner should be displayed or not.
+        - frequency - set to node.CPU80MHZ or node.CPU160MHZ to indicate the initial CPU speed.
+        - delay_mount - set to true or false to indicate whether the SPIFFS filesystem mount is delayed it is first needed or not.
+        - command - set to a string which is the initial command that is run. This is the same string as in the `node.startupcommand`.
 
 ####  Returns
- 	`option` this is the value that will be in effect at the next boot.
+ 	`table` This is the complete set of options in the state that will take effect on the next boot. Note that the `command` key may be missing -- in which
+        case the default value will be used.
 
 #### Example
 ```lua
-node.startupoption(node.START_NO_BANNER + node.START_160MHZ)  -- Prevent printing the banner and run at 160MHz
+node.startup({banner=false, frequency=node.CPU160MHZ})  -- Prevent printing the banner and run at 160MHz
 ```
 
 
