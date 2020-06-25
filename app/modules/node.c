@@ -58,6 +58,7 @@ static int node_setonerror( lua_State* L ) {
 }
 
 // Lua: startupcommand(string)
+// The lua.startup({command="string"}) should be used instead
 static int node_startupcommand( lua_State* L ) {
   size_t l, lrcr;
   const char *cmd = luaL_checklstring(L, 1, &l);
@@ -66,25 +67,91 @@ static int node_startupcommand( lua_State* L ) {
   return 1;
 }
 
+// Lua: startup([table])
+static int node_startup( lua_State* L ) {
+  uint32_t option, *option_p;
 
-// Lua: startupoption([integer])
-static int node_startupoption( lua_State* L ) {
-  size_t l, lrcr;
-  const char *cmd = luaL_checklstring(L, 1, &l);
-  uint32_t option = 0;
-  uint32_t *option_p = &option;
-  if (lua_isnumber(L, 1)) {
-    option = (uint32_t) luaL_checkint(L, 1);
-    platform_rcr_write(PLATFORM_RCR_STARTUP_OPTION, &option, sizeof(option));
-  }
+  option = 0;
 
   if (platform_rcr_read(PLATFORM_RCR_STARTUP_OPTION, (void **) &option_p) == sizeof(option)) {
     option = *option_p;
   }
-  lua_pushinteger(L, option);
+
+  if (lua_gettop(L) > 0) {
+    // Lets hope it is a table
+    luaL_checktype(L, 1, LUA_TTABLE);
+
+    int has_entries = 0;
+    lua_pushnil(L);
+    while (lua_next(L, 1) != 0) {
+      if (lua_isstring(L, -2)) {
+        const char *key = lua_tostring(L, -2);
+        has_entries++;
+
+        if (strcmp(key, "command") == 0) {
+          size_t l, lrcr;
+          const char *cmd = luaL_checklstring(L, -1, &l);
+          lrcr = platform_rcr_write(PLATFORM_RCR_INITSTR, cmd, l+1);
+          if (lrcr == ~0) {
+            return luaL_error( L, "failed to set command" );
+          }
+        }
+
+        if (strcmp(key, "banner") == 0) {
+          int enable = lua_toboolean(L, -1);
+          option = (option & ~STARTUP_OPTION_NO_BANNER) | (enable ? 0 : STARTUP_OPTION_NO_BANNER);
+        }
+
+        if (strcmp(key, "frequency") == 0) {
+          int frequency = lua_tointeger(L, -1);
+          option = (option & ~STARTUP_OPTION_160MHZ) | (frequency == CPU160MHZ ? STARTUP_OPTION_160MHZ : 0);
+        }
+
+        if (strcmp(key, "delay_mount") == 0) {
+          int enable = lua_toboolean(L, -1);
+          option = (option & ~STARTUP_OPTION_DELAY_MOUNT) | (enable ? STARTUP_OPTION_DELAY_MOUNT : 0);
+        }
+      }
+      lua_pop(L, 1);
+    }
+
+    if (has_entries) {
+      platform_rcr_write(PLATFORM_RCR_STARTUP_OPTION, &option, sizeof(option));
+    } else {
+      // This is a special reset everything case
+      platform_rcr_delete(PLATFORM_RCR_STARTUP_OPTION);
+      platform_rcr_delete(PLATFORM_RCR_INITSTR);
+      option = 0;
+    }
+  }
+
+  // Now we construct the return table
+  lua_createtable(L, 0, 4);
+
+  const char *init_string;
+  size_t l;
+
+  l = platform_rcr_read(PLATFORM_RCR_INITSTR, (void **) &init_string);
+  if (l != ~0) {
+    // when reading it back it can be padded with nulls
+    while (l > 0 && init_string[l - 1] == 0) {
+      l--;
+    }
+    lua_pushlstring(L, init_string, l);
+    lua_setfield(L, -2, "command");
+  }
+
+  lua_pushboolean(L, !(option & STARTUP_OPTION_NO_BANNER));
+  lua_setfield(L, -2, "banner");
+
+  lua_pushboolean(L, (option & STARTUP_OPTION_DELAY_MOUNT));
+  lua_setfield(L, -2, "delay_mount");
+
+  lua_pushinteger(L, (option & STARTUP_OPTION_160MHZ) ? CPU160MHZ : CPU80MHZ);
+  lua_setfield(L, -2, "frequency");
+
   return 1;
 }
-
 
 // Lua: restart()
 static int node_restart( lua_State* L )
@@ -879,7 +946,7 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( flashindex, lua_lfsindex )
   LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( startupcommand, node_startupcommand )
-  LROT_FUNCENTRY( startupoption, node_startupoption )
+  LROT_FUNCENTRY( startup, node_startup )
   LROT_FUNCENTRY( restart, node_restart )
   LROT_FUNCENTRY( dsleep, node_deepsleep )
   LROT_FUNCENTRY( dsleepMax, dsleepMax )
@@ -904,9 +971,6 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( compile, node_compile )
   LROT_NUMENTRY( CPU80MHZ, CPU80MHZ )
   LROT_NUMENTRY( CPU160MHZ, CPU160MHZ )
-  LROT_NUMENTRY( START_NO_BANNER, STARTUP_OPTION_NO_BANNER )
-  LROT_NUMENTRY( START_160MHZ, STARTUP_OPTION_160MHZ )
-  LROT_NUMENTRY( START_DELAY_MOUNT, STARTUP_OPTION_DELAY_MOUNT )
   LROT_FUNCENTRY( setcpufreq, node_setcpufreq )
   LROT_FUNCENTRY( getcpufreq, node_getcpufreq )
   LROT_FUNCENTRY( bootreason, node_bootreason )
