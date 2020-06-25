@@ -541,7 +541,7 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 
 Overrides the default startup action on processor restart, preplacing the executing `init.lua` if it exists. This is now deprecated in favor of `node.startup({command="the command"})`.
 
-####Syntax
+#### Syntax
 `node.startupcommand(string)`
 
 #### Parameters
@@ -570,7 +570,7 @@ Query the performance of system startup.
 Note that this is only available if
 the firmware is built with `PLATFORM_STARTUP_COUNT` defined.
 
-####Syntax
+#### Syntax
 `node.startupcounts([marker])`
 
 #### Parameters
@@ -610,7 +610,7 @@ Note that the clock speed changes in `user_pre_init` to 160MHz. The total time w
 
 Get/set options that control the startup process. This interface will grow over time.
 
-####Syntax
+#### Syntax
 `node.startup([{table}])`
 
 #### Parameters
@@ -619,13 +619,13 @@ If the argument is omitted, then no change is made to the current set of startup
 reset to their default values.
 
 - `table` one or more options:
-        - banner - set to true or false to indicate whether the startup banner should be displayed or not.
-        - frequency - set to node.CPU80MHZ or node.CPU160MHZ to indicate the initial CPU speed.
-        - delay_mount - set to true or false to indicate whether the SPIFFS filesystem mount is delayed it is first needed or not.
-        - command - set to a string which is the initial command that is run. This is the same string as in the `node.startupcommand`.
+    - banner - set to true or false to indicate whether the startup banner should be displayed or not.
+    - frequency - set to node.CPU80MHZ or node.CPU160MHZ to indicate the initial CPU speed.
+    - delay_mount - set to true or false to indicate whether the SPIFFS filesystem mount is delayed it is first needed or not.
+    - command - set to a string which is the initial command that is run. This is the same string as in the `node.startupcommand`.
 
 ####  Returns
- 	`table` This is the complete set of options in the state that will take effect on the next boot. Note that the `command` key may be missing -- in which
+`table` This is the complete set of options in the state that will take effect on the next boot. Note that the `command` key may be missing -- in which
         case the default value will be used.
 
 #### Example
