@@ -122,6 +122,11 @@ extern void _ResetHandler(void);
  */
 void user_pre_init(void) {
     STARTUP_COUNT; 
+#ifdef LUA_USE_MODULES_RTCTIME
+  // Note: Keep this as close to call_user_start() as possible, since it
+  // is where the cpu clock actually gets bumped to 80MHz.
+    rtctime_early_startup ();
+#endif
     int startup_option = platform_rcr_get_startup_option();
 
     if (startup_option & STARTUP_OPTION_160MHZ) {
@@ -130,11 +135,6 @@ void user_pre_init(void) {
     }
     int no_banner = startup_option & STARTUP_OPTION_NO_BANNER;
 
-#ifdef LUA_USE_MODULES_RTCTIME
-  // Note: Keep this as close to call_user_start() as possible, since it
-  // is where the cpu clock actually gets bumped to 80MHz.
-    rtctime_early_startup ();
-#endif
     partition_item_t *rcr_pt = NULL, *pt;
     enum flash_size_map fs_size_code = system_get_flash_size_map();
 // Flash size lookup is SIZE_256K*2^N where N is as follows (see SDK/user_interface.h)
