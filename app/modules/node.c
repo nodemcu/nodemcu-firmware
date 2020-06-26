@@ -104,7 +104,7 @@ static int node_startup( lua_State* L ) {
 
         if (strcmp(key, "frequency") == 0) {
           int frequency = lua_tointeger(L, -1);
-          option = (option & ~STARTUP_OPTION_160MHZ) | (frequency == CPU160MHZ ? STARTUP_OPTION_160MHZ : 0);
+          option = (option & ~STARTUP_OPTION_CPU_FREQ_MAX) | (frequency == CPU160MHZ ? STARTUP_OPTION_CPU_FREQ_MAX : 0);
         }
 
         if (strcmp(key, "delay_mount") == 0) {
@@ -147,7 +147,7 @@ static int node_startup( lua_State* L ) {
   lua_pushboolean(L, (option & STARTUP_OPTION_DELAY_MOUNT));
   lua_setfield(L, -2, "delay_mount");
 
-  lua_pushinteger(L, (option & STARTUP_OPTION_160MHZ) ? CPU160MHZ : CPU80MHZ);
+  lua_pushinteger(L, (option & STARTUP_OPTION_CPU_FREQ_MAX) ? CPU160MHZ : CPU80MHZ);
   lua_setfield(L, -2, "frequency");
 
   return 1;

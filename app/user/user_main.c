@@ -129,7 +129,7 @@ void user_pre_init(void) {
 #endif
     int startup_option = platform_rcr_get_startup_option();
 
-    if (startup_option & STARTUP_OPTION_160MHZ) {
+    if (startup_option & STARTUP_OPTION_CPU_FREQ_MAX) {
       REG_SET_BIT(0x3ff00014, BIT(0));
       ets_update_cpu_frequency(SYS_CPU_160MHZ);
     }

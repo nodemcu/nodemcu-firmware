@@ -355,7 +355,7 @@ typedef union {
 } platform_rcr_t;
 
 #define STARTUP_OPTION_NO_BANNER        (1 << 0)
-#define STARTUP_OPTION_160MHZ           (1 << 1)
+#define STARTUP_OPTION_CPU_FREQ_MAX     (1 << 1)
 #define STARTUP_OPTION_DELAY_MOUNT      (1 << 2)
 
 uint32_t platform_rcr_read (uint8_t rec_id, void **rec);
