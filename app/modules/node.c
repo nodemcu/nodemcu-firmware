@@ -732,15 +732,12 @@ static int node_startup_counts(lua_State *L) {
     const platform_count_entry_t *p = &platform_startup_counts.entries[i];
 
     lua_createtable(L, 0, 3);
-    lua_pushliteral(L, "name");
     lua_pushstring(L, p->name);
-    lua_settable(L, -3);
-    lua_pushliteral(L, "line");
+    lua_setfield(L, -2, "name");
     lua_pushinteger(L, p->line);
-    lua_settable(L, -3);
-    lua_pushliteral(L, "ccount");
+    lua_setfield(L, -2, "line");
     lua_pushinteger(L, p->ccount);
-    lua_settable(L, -3);
+    lua_setfield(L, -2, "ccount");
 
     lua_rawseti(L, -2, i + 1);
   }
