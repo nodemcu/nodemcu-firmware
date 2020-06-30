@@ -753,7 +753,7 @@ void mqtt_socket_timer(void *arg)
   if(mud == NULL)
     return;
 
-  if(mud->connected == 0){
+  if(mud->pesp_conn.proto.tcp == NULL){
     NODE_DBG("MQTT not connected\n");
     os_timer_disarm(&mud->mqttTimer);
     return;
@@ -1289,7 +1289,7 @@ static int mqtt_socket_close( lua_State* L )
         espconn_status |= espconn_disconnect(&mud->pesp_conn);
     }
   }
-  mud->connected = 0;
+  mud->connected = false;
 
   while (mud->mqtt_state.pending_msg_q) {
     msg_destroy(msg_dequeue(&(mud->mqtt_state.pending_msg_q)));
