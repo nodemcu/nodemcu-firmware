@@ -327,11 +327,7 @@ static l_mem propagatemark (global_State *g) {
                              sizeof(LocVar) * p->sizelocvars +
                              sizeof(TString *) * p->sizeupvalues +
                              sizeof(Instruction) * p->sizecode +
-#ifdef LUA_OPTIMIZE_DEBUG
                                (p->packedlineinfo ?  strlen(cast(char *, p->packedlineinfo))+1 : 0);
-#else
-                               sizeof(int) * p->sizelineinfo;
-#endif
     }
     default: lua_assert(0); return 0;
   }
@@ -515,7 +511,7 @@ void luaC_freeall (lua_State *L) {
 
 static void markmt (global_State *g) {
   int i;
-  for (i=0; i<NUM_TAGS; i++)
+  for (i=0; i<LUA_NUMTAGS; i++)
     if (g->mt[i] && isrwtable(g->mt[i])) markobject(g, g->mt[i]);
 }
 

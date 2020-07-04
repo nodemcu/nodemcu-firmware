@@ -9,6 +9,9 @@
 #define lauxlib_h
 
 #include "lua.h"
+#ifdef LUA_LIB
+#include "lnodemcu.h"
+#endif
 
 #include <stdio.h>
 
@@ -162,8 +165,16 @@ LUALIB_API void (luaL_pushresult) (luaL_Buffer *B);
 
 /* }====================================================== */
 
-LUALIB_API int luaL_pcallx (lua_State *L, int narg, int nres);
-LUALIB_API int luaL_posttask( lua_State* L, int prio );
+LUALIB_API int  (luaL_pushlfsmodules) (lua_State *L);
+LUALIB_API int  (luaL_pushlfsmodule) (lua_State *L);
+LUALIB_API int  (luaL_pushlfsdts) (lua_State *L);
+
+LUALIB_API void (luaL_lfsreload) (lua_State *L);
+LUALIB_API int  (luaL_pcallx) (lua_State *L, int narg, int nres);
+LUALIB_API int  (luaL_posttask) ( lua_State* L, int prio );
+#define  LUA_TASK_LOW    0
+#define  LUA_TASK_MEDIUM 1
+#define  LUA_TASK_HIGH   2
 
 /* }====================================================== */
 

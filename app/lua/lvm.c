@@ -271,7 +271,7 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
 }
 
 
-static int lessequal (lua_State *L, const TValue *l, const TValue *r) {
+int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
   int res;
   if (ttype(l) != ttype(r))
     return luaG_ordererror(L, l, r);
@@ -570,7 +570,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
       case OP_LEN: {
         const TValue *rb = RB(i);
-        switch (basettype(rb)) {
+        switch (ttnov(rb)) {
           case LUA_TTABLE: {
             setnvalue(ra, cast_num(luaH_getn(hvalue(rb))));
             break;
@@ -620,7 +620,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
       case OP_LE: {
         Protect(
-          if (lessequal(L, RKB(i), RKC(i)) == GETARG_A(i))
+          if (luaV_lessequal(L, RKB(i), RKC(i)) == GETARG_A(i))
             dojump(L, pc, GETARG_sBx(*pc));
         )
         pc++;

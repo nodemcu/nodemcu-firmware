@@ -14,6 +14,9 @@
 
 #include "lua.h"
 
+#ifdef LUA_LIB
+#include "lnodemcu.h"
+#endif
 
 
 /* extra error code for 'luaL_loadfilex' */
@@ -282,8 +285,13 @@ extern void dbg_printf(const char *fmt, ...);
 #define LUA_TASK_MEDIUM 1
 #define LUA_TASK_HIGH   2
 
-LUALIB_API int (luaL_posttask) (lua_State* L, int prio);
-LUALIB_API int (luaL_pcallx) (lua_State *L, int narg, int nres);
+LUALIB_API int  (luaL_pushlfsmodules) (lua_State *L);
+LUALIB_API int  (luaL_pushlfsdts) (lua_State *L);
+LUALIB_API void (luaL_lfsreload) (lua_State *L);
+LUALIB_API int  (luaL_posttask) (lua_State* L, int prio);
+LUALIB_API int  (luaL_pcallx) (lua_State *L, int narg, int nres);
+
+#define luaL_pushlfsmodule(l) lua_pushlfsfunc(L);
 
 /* }============================================================ */
 

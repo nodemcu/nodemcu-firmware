@@ -19,7 +19,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 #define MAXUNICODE	0x10FFFF
 

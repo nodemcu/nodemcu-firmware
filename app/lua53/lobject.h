@@ -584,12 +584,6 @@ typedef struct ROTable {
 */
 #define luaO_nilobject		(&luaO_nilobject_)
 
-/*
-** KeyCache used for resolution of ROTable entries and Cstrings
-*/
-typedef size_t KeyCache;
-typedef KeyCache KeyCacheLine[KEYCACHE_M];
-
 LUAI_DDEC const TValue luaO_nilobject_;
 
 /* size of buffer for 'luaO_utf8esc' function */

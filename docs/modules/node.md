@@ -184,8 +184,8 @@ Returns the function reference for a function in the [LFS (Lua Flash Store)](../
 
 #### Returns
 -  In the case where the LFS in not loaded, `node.flashindex` evaluates to `nil`, followed by the flash mapped base addresss of the LFS, its flash offset, and the size of the LFS.
--  If the LFS is loaded and the function is called with the name of a valid module in the LFS, then the function is returned in the same way the `load()` and the other Lua load functions do.
--  Otherwise an extended info list is returned: the Unix time of the LFS build, the flash and mapped base addresses of the LFS and its current length, and an array of the valid module names in the LFS.
+-  If the LFS is loaded and the `modulename` is a string that is the name of a valid module in the LFS, then the function is returned in the same way the `load()` and the other Lua load functions do; if there isn't a matching module then `nil` is returned.
+-  If the parameter is omitted or `nil`then an extended info list is returned: the Unix time of the LFS build, the flash and mapped base addresses of the LFS and its current length, and an array of the valid module names in the LFS.
 
 #### Example
 

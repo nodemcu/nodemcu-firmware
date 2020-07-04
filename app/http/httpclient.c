@@ -14,12 +14,12 @@
 
 #include "osapi.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"
-#include "limits.h"
 #include "httpclient.h"
-#include "stdlib.h"
 #include "pm/swtimer.h"
 
 #define REDIRECTION_FOLLOW_MAX 20

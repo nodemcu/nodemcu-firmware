@@ -32,6 +32,8 @@ pages:
     - Uploading code: 'upload.md'
     - Compiling code: 'compiling.md'
     - Support: 'support.md'
+- Reference:
+    - NodeMCU Language Refrence Manual: 'nodemcu-lrm.md'
 - FAQs:
     - Lua Developer FAQ: 'lua-developer-faq.md'
     - Extension Developer FAQ: 'extn-developer-faq.md'

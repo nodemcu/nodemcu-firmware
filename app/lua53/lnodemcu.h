@@ -40,12 +40,12 @@
 #define LROT_ENTRYREF(rt)    (rt ##_entries)
 #define LROT_TABLEREF(rt)    (&rt ##_ROTable)
 #define LROT_BEGIN(rt,mt,f)  LROT_TABLE(rt); \
-  static const ROTable_entry rt ## _entries[] = {
+  static ROTable_entry rt ## _entries[] = {
 #define LROT_ENTRIES_IN_SECTION(rt,s) \
-  static const ROTable_entry LOCK_IN_SECTION(s) rt ## _entries[] = {
+  static ROTable_entry LOCK_IN_SECTION(s) rt ## _entries[] = {
 #define LROT_END(rt,mt,f)    {NULL, LRO_NILVAL} }; \
   const ROTable rt ## _ROTable = { \
-    (GCObject *)1,LUA_TTBLROF, LROT_MARKED, \
+    (GCObject *)1, LUA_TTBLROF, LROT_MARKED, \
     cast(lu_byte, ~(f)), (sizeof(rt ## _entries)/sizeof(ROTable_entry)) - 1, \
     cast(Table *, mt), cast(ROTable_entry *, rt ## _entries) };
 #define LROT_BREAK(rt)       };

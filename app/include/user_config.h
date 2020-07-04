@@ -247,7 +247,8 @@
 
 #define LUA_TASK_PRIO             USER_TASK_PRIO_0
 #define LUA_PROCESS_LINE_SIG      2
-#define LUA_OPTIMIZE_DEBUG        2
+// LUAI_OPTIMIZE_DEBUG 0 = Keep all debug; 1 = keep line number info; 2 = remove all debug
+#define LUAI_OPTIMIZE_DEBUG       1
 #define READLINE_INTERVAL        80
 #define STRBUF_DEFAULT_INCREMENT  3
 #define LUA_USE_BUILTIN_DEBUG_MINIMAL // for debug.getregistry() and debug.traceback()
