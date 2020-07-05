@@ -66,7 +66,7 @@ local function assertok(handler, name, cond, msg)
     -- debug.getinfo() does not exist in NodeMCU
     -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
     msg = debug.traceback()
-    msg = msg:match("\n[^\n]*\n[^\n]*\n[^\n]*\n\t*([^\n]*): in")
+    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'")
     msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
   end
   local errormsg
@@ -79,7 +79,7 @@ local function assertok(handler, name, cond, msg)
     handler('pass', name, msg, errormsg)
   else
     handler('fail', name, msg, errormsg)
-    --error('okAbort')
+    error('_*_TestAbort_*_')
   end
 end
 
@@ -91,12 +91,12 @@ local function fail(handler, name, func, expected, msg)
           messagePart = " containing \"" .. expected .. "\""
       end
       handler('fail', name, msg, "Expected to fail with Error" .. messagePart)
-      return
+      error('_*_TestAbort_*_')
   end
   err:match(".-([^\\/]*)$") -- cut off path of filename
   if (expected and not string.find(err, expected)) then
       handler('fail', name, msg, "expected errormessage \"" .. err .. "\" to contain \"" .. expected .. "\"")
-      return
+      error('_*_TestAbort_*_')
   end
   handler('pass', name, msg)
 end
@@ -151,7 +151,7 @@ return function(name, f, async)
     handler('begin', name);
     local ok, err = pcall(f, restore)
     if not ok then
-      if err ~= 'okAbort' then
+      if not err:match('_*_TestAbort_*_') then
         handler('except', name, err)
       end
     end
