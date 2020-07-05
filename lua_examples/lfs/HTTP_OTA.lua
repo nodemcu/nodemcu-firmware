@@ -12,8 +12,7 @@ local n, total, size = 0, 0
 
 doRequest = function(socket, hostIP) -- luacheck: no unused
   if hostIP then
-    local con = net.createConnection(net.TCP,0)
-    con:connect(80,hostIP)
+    local con = tls.createConnection(net.TCP,0)
     -- Note that the current dev version can only accept uncompressed LFS images
     con:on("connection",function(sck)
       local request = table.concat( {
@@ -28,6 +27,7 @@ doRequest = function(socket, hostIP) -- luacheck: no unused
         sck:send(request)
         sck:on("receive",firstRec)
       end)
+    con:connect(80,hostIP)
   end
 end
 

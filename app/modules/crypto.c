@@ -49,14 +49,13 @@ static int call_encoder( lua_State* L, const char *function ) {
   if (lua_gettop(L) != 1) {
     luaL_error(L, "%s must have one argument", function);
   }
-  lua_getfield(L, LUA_GLOBALSINDEX, "encoder");
-  if (!lua_istable(L, -1) && !lua_isrotable(L, -1)) { // also need table just in case encoder has been overloaded
-    luaL_error(L, "Cannot find encoder.%s", function);
-  }
+  lua_getglobal(L, "encoder");
+  luaL_checktype(L, -1, LUA_TTABLE);
   lua_getfield(L, -1, function);
   lua_insert(L, 1);    //move function below the argument
   lua_pop(L, 1);       //and dump the encoder rotable from stack.
-  lua_call(L,1,1);     // call encoder.xxx(string)
+  lua_call(L,1,1);     // Normal call encoder.xxx(string)
+                       // (errors thrown back to caller)
   return 1;
 }
 
@@ -194,7 +193,7 @@ static int crypto_new_hash_hmac (lua_State *L, int what)
     k_opad_len = mi->block_size;
   }
 
-  // create a userdatum with specific metatable.  This comprises the ud header, 
+  // create a userdatum with specific metatable.  This comprises the ud header,
   // the encrypto context block, and an optional HMAC block as a single allocation
   // unit
   udlen = sizeof(digest_user_datum_t) + mi->ctx_size + k_opad_len;
@@ -204,10 +203,10 @@ static int crypto_new_hash_hmac (lua_State *L, int what)
 
   void *ctx = dudat + 1;  // The context block immediately follows the digest_user_datum
   mi->create (ctx);
-  
+
   if (what == WANT_HMAC) {
     // The k_opad block immediately follows the context block
-    k_opad = (char *)ctx + mi->ctx_size; 
+    k_opad = (char *)ctx + mi->ctx_size;
     crypto_hmac_begin (ctx, mi, key, len, k_opad);
   }
 
@@ -372,7 +371,7 @@ static int crypto_encdec (lua_State *L, bool enc)
   int status = mech->run (&op);
 
   lua_pushlstring (L, buf, outlen);  /* discarded on error but what the hell */
-  luaM_freearray(L, buf, outlen, char);
+  luaN_freearray(L, buf, outlen);
 
   return status ? 1 : luaL_error (L, "crypto op failed");
 
@@ -389,16 +388,17 @@ static int lcrypto_decrypt (lua_State *L)
 }
 
 // Hash function map
-LROT_BEGIN(crypto_hash)
+
+LROT_BEGIN(crypto_hash_map, NULL, LROT_MASK_INDEX)
+  LROT_TABENTRY( __index, crypto_hash_map )
   LROT_FUNCENTRY( update, crypto_hash_update )
   LROT_FUNCENTRY( finalize, crypto_hash_finalize )
-  LROT_TABENTRY( __index, crypto_hash )
-LROT_END( crypto_hash, crypto_hash, LROT_MASK_INDEX )
+LROT_END(crypto_hash_map, NULL, LROT_MASK_INDEX)
 
 
 
 // Module function map
-LROT_BEGIN(crypto)
+LROT_BEGIN(crypto, NULL, 0)
   LROT_FUNCENTRY( sha1, crypto_sha1 )
   LROT_FUNCENTRY( toBase64, crypto_base64_encode )
   LROT_FUNCENTRY( toHex, crypto_hex_encode )
@@ -410,12 +410,12 @@ LROT_BEGIN(crypto)
   LROT_FUNCENTRY( new_hmac, crypto_new_hmac )
   LROT_FUNCENTRY( encrypt, lcrypto_encrypt )
   LROT_FUNCENTRY( decrypt, lcrypto_decrypt )
-LROT_END( crypto, NULL, 0 )
+LROT_END(crypto, NULL, 0)
 
 
 int luaopen_crypto ( lua_State *L )
 {
-  luaL_rometatable(L, "crypto.hash", LROT_TABLEREF(crypto_hash));
+  luaL_rometatable(L, "crypto.hash", LROT_TABLEREF(crypto_hash_map));
   return 0;
 }
 

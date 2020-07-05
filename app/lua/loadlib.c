@@ -11,7 +11,6 @@
 
 #define loadlib_c
 #define LUA_LIB
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <stdlib.h>
@@ -24,7 +23,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lrotable.h"
+#include "lnodemcu.h"
 
 /* prefix for open functions in C libraries */
 #define LUA_POF		"luaopen_"
@@ -394,11 +393,7 @@ static int loader_Lua (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   filename = findfile(L, name, "path");
   if (filename == NULL) return 1;  /* library not found in this path */
-#ifdef LUA_CROSS_COMPILER
   if (luaL_loadfile(L, filename) != 0)
-#else
-  if (luaL_loadfile(L, filename) != 0)
-#endif
     loaderror(L, filename);
   return 1;  /* library loaded successfully */
 }
@@ -657,9 +652,9 @@ static const luaL_Reg ll_funcs[] = {
 static const lua_CFunction loaders[] =
   {loader_preload, loader_Lua, loader_C, loader_Croot, NULL};
 
-LROT_PUBLIC_BEGIN(lmt)
-  LROT_FUNCENTRY(__gc,gctm)
-LROT_END(lmt,lmt, LROT_MASK_GC)
+LROT_BEGIN(lmt, NULL, LROT_MASK_GC)
+  LROT_FUNCENTRY( __gc, gctm )
+LROT_END(lmt, NULL, LROT_MASK_GC)
 
 LUALIB_API int luaopen_package (lua_State *L) {
   int i;

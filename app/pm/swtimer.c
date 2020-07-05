@@ -8,33 +8,33 @@
  * The SDK software timer API executes in a task. The priority of this task in relation to the
  * application level tasks is unknown (at time of writing).
  *
- *
  * To determine when a timer's callback should be executed, the respective timer's `timer_expire`
- *  variable is compared to the hardware counter(FRC2), then, if the timer's `timer_expire` is
- *  less than the current FRC2 count, the timer's callback is fired.
+ * variable is compared to the hardware counter(FRC2), then, if the timer's `timer_expire` is
+ * less than the current FRC2 count, the timer's callback is fired.
  *
  * The timers in this list are organized in an ascending order starting with the timer
  * with the lowest timer_expire.
  *
- * When a timer expires that has a timer_period greater than 0, timer_expire is changed to
- * current FRC2 + timer_period, then the timer is inserted back in to the list in the correct position.
+ * When a timer expires that has a timer_period greater than 0, timer_expire is changed to current
+ * FRC2 + timer_period, then the timer is inserted back in to the list in the correct position.
  *
- * when using millisecond(default) timers, FRC2 resolution is 312.5 ticks per millisecond.
+ * When using millisecond(default) timers, FRC2 resolution is 312.5 ticks per millisecond.
  *
  *
  * TIMER SUSPEND API INFO:
  *
- * Timer suspension is achieved by first finding any non-SDK timers by comparing the timer function callback pointer
- * of each timer in "timer_list" to a list of registered timer callback pointers stored in the Lua registry.
- * If a timer with a corresponding registered callback pointer is found, the timer's timer_expire field is is compared
- * to the current FRC2 count and the difference is saved along with the other timer parameters to temporary variables.
- * The timer is then disarmed and the parameters are copied back, the timer pointer is then
- * added to a separate linked list of which the head pointer is stored as a lightuserdata in the lua registry.
+ * Timer suspension is achieved by first finding any non-SDK timers by comparing the timer function
+ * callback pointer of each timer in "timer_list" to a list of registered timer callback pointers
+ * stored in the Lua registry.  If a timer with a corresponding registered callback pointer is found,
+ * the timer's timer_expire field is is compared to the current FRC2 count and the difference is
+ * saved along with the other timer parameters to temporary variables.  The timer is then disarmed
+ * and the parameters are copied back, the timer pointer is then added to a separate linked list of 
+ * which the head pointer is stored as a lightuserdata in the lua registry.
  *
- * Resuming the timers is achieved by first retrieving the lightuserdata holding the suspended timer list head pointer.
- * Then, starting with the beginning of the list the current FRC2 count is added back to the timer's timer_expire, then
- * the timer is manually added back to "timer_list" in an ascending order.
- * Once there are no more suspended timers, the function returns
+ * Resuming the timers is achieved by first retrieving the lightuserdata holding the suspended timer
+ * list head pointer.  Then, starting with the beginning of the list the current FRC2 count is added
+ * back to the timer's timer_expire, then the timer is manually added back to "timer_list" in an
+ * ascending order.  Once there are no more suspended timers, the function returns.
  *
  *
  */
@@ -57,17 +57,24 @@
  #define SWTMR_DEBUG
 #endif
 
-//this section specifies which lua registry to use. LUA_GLOBALSINDEX or LUA_REGISTRYINDEX
+// The SWTMR table is either normally stored in the Lua registry, but at _G.SWTMR_registry_key
+// when in debug.  THe CB and suspend lists have different names depending of debugging mode.
+// Also
 #ifdef SWTMR_DEBUG
 #define SWTMR_DBG(fmt, ...) dbg_printf("\n SWTMR_DBG(%s): "fmt"\n", __FUNCTION__, ##__VA_ARGS__)
-#define L_REGISTRY LUA_GLOBALSINDEX
 #define CB_LIST_STR "timer_cb_ptrs"
 #define SUSP_LIST_STR "suspended_tmr_LL_head"
+#define get_swtmr_registry(L) lua_getglobal(L, "SWTMR_registry_key")
+#define set_swtmr_registry(L) lua_setglobal(L, "SWTMR_registry_key")
 #else
 #define SWTMR_DBG(...)
-#define L_REGISTRY LUA_REGISTRYINDEX
 #define CB_LIST_STR "cb"
 #define SUSP_LIST_STR "st"
+#define get_swtmr_registry(L) lua_pushlightuserdata(L, &register_queue); \
+                              lua_rawget(L, LUA_REGISTRYINDEX)
+#define set_swtmr_registry(L) lua_pushlightuserdata(L, &register_queue); \
+                              lua_insert(L, -2); \
+                              lua_rawset(L, LUA_REGISTRYINDEX)
 #endif
 
 
@@ -92,32 +99,21 @@ static task_handle_t cb_register_task_id = 0; //variable to hold task id for tas
 static void add_to_reg_queue(void* timer_cb_ptr, uint8 suspend_policy);
 static void process_cb_register_queue(task_param_t param, uint8 priority);
 
-
-#ifdef SWTMR_DEBUG
-#define push_swtmr_registry_key(L) lua_pushstring(L, "SWTMR_registry_key")
-#else
-#define push_swtmr_registry_key(L) lua_pushlightuserdata(L, &register_queue);
-#endif
-
 #include <pm/swtimer.h>
 
 void swtmr_suspend_timers(){
   lua_State* L = lua_getstate();
 
   //get swtimer table
-  push_swtmr_registry_key(L);
-  lua_rawget(L, L_REGISTRY);
+  get_swtmr_registry(L);
+  if(!lua_istable(L, -1)) {lua_pop(L, 1); return;}
 
   //get cb_list table
   lua_pushstring(L, CB_LIST_STR);
   lua_rawget(L, -2);
 
-  //check for existence of the swtimer table and the cb_list table, return if not found
-  if(!lua_istable(L, -2) || !lua_istable(L, -1)){
-    // not necessarily an error maybe there are legitimately no timers to suspend
-    lua_pop(L, 2);
-    return;
-  }
+  //check for existence of the cb_list table, return if not found
+  if(!lua_istable(L, -1)) {lua_pop(L, 2); return;}
 
   os_timer_t* suspended_timer_list_head = NULL;
   os_timer_t* suspended_timer_list_tail = NULL;
@@ -168,10 +164,10 @@ void swtmr_suspend_timers(){
   uint32 period_temp = 0;
   void* arg_temp = NULL;
 
-  /* In this section, the SDK's timer_list is traversed to find any timers that have a registered callback pointer.
-   * If a registered callback is found, the timer is suspended by saving the difference
-   * between frc2_count and timer_expire then the timer is disarmed and placed into suspended_timer_list
-   * so it can later be resumed.
+  /* In this section, the SDK's timer_list is traversed to find any timers that have a registered
+   * callback pointer. If a registered callback is found, the timer is suspended by saving the
+   * difference between frc2_count and timer_expire then the timer is disarmed and placed into
+   * suspended_timer_list so it can later be resumed.
    */
   while(timer_ptr != NULL){
     os_timer_t* next_timer = (os_timer_t*)0xffffffff;
@@ -190,7 +186,8 @@ void swtmr_suspend_timers(){
         arg_temp = timer_ptr->timer_arg;
 
         if(timer_ptr->timer_period == 0 && cb_reg_array[i]->suspend_policy == SWTIMER_RESTART){
-          SWTMR_DBG("Warning: suspend_policy(RESTART) is not compatible with single-shot timer(%p), changing suspend_policy to (RESUME)", timer_ptr);
+          SWTMR_DBG("Warning: suspend_policy(RESTART) is not compatible with single-shot timer(%p), "
+                    "changing suspend_policy to (RESUME)", timer_ptr);
           cb_reg_array[i]->suspend_policy = SWTIMER_RESUME;
         }
 
@@ -260,19 +257,15 @@ void swtmr_resume_timers(){
   lua_State* L = lua_getstate();
 
   //get swtimer table
-  push_swtmr_registry_key(L);
-  lua_rawget(L, L_REGISTRY);
+  get_swtmr_registry(L);
+  if(!lua_istable(L, -1)) {lua_pop(L, 1); return;}
 
   //get suspended_timer_list lightuserdata
   lua_pushstring(L, SUSP_LIST_STR);
   lua_rawget(L, -2);
 
-  //check for existence of swtimer table and the suspended_timer_list pointer userdata, return if not found
-  if(!lua_istable(L, -2) || !lua_isuserdata(L, -1)){
-    // not necessarily an error maybe there are legitimately no timers to resume
-    lua_pop(L, 2);
-    return;
-  }
+  //check for existence of the suspended_timer_list pointer userdata, return if not found
+  if(!lua_isuserdata(L, -1)) {lua_pop(L, 2); return;}
 
   os_timer_t* suspended_timer_list_ptr = lua_touserdata(L, -1);
   lua_pop(L, 1); //pop suspended timer list userdata from stack
@@ -339,25 +332,21 @@ void swtmr_resume_timers(){
 void swtmr_cb_register(void* timer_cb_ptr, uint8 suspend_policy){
   lua_State* L = lua_getstate();
   if(!L){
-    //Lua has not started yet, therefore L_REGISTRY is not available.
-    //add timer cb to queue for later processing after Lua has started
+    // If Lua has not started yet, then add timer cb to queue for later processing after Lua has started
     add_to_reg_queue(timer_cb_ptr, suspend_policy);
     return;
   }
   if(timer_cb_ptr){
     size_t cb_list_last_idx = 0;
 
-    push_swtmr_registry_key(L);
-    lua_rawget(L, L_REGISTRY);
+    get_swtmr_registry(L);
 
     if(!lua_istable(L, -1)){
-      //swtmr does not exist, create and add to registry
+      //swtmr does not exist, create and add to registry and leave table as ToS
       lua_pop(L, 1);
-      lua_newtable(L);//push new table for swtmr.timer_cb_list
-      // add swtimer table to L_REGISTRY
-      push_swtmr_registry_key(L);
-      lua_pushvalue(L, -2);
-      lua_rawset(L, L_REGISTRY);
+      lua_newtable(L);
+      lua_pushvalue(L, -1);
+      set_swtmr_registry(L);
     }
 
     lua_pushstring(L, CB_LIST_STR);
@@ -439,41 +428,40 @@ static void process_cb_register_queue(task_param_t param, uint8 priority)
 
 #ifdef SWTMR_DEBUG
 int print_timer_list(lua_State* L){
-   push_swtmr_registry_key(L);
-   lua_rawget(L, L_REGISTRY);
-   lua_pushstring(L, CB_LIST_STR);
-   lua_rawget(L, -2);
-   if(!lua_istable(L, -2) || !lua_istable(L, -1)){
-     lua_pop(L, 2);
-     return 0;
+  get_swtmr_registry(L);
+  if(!lua_istable(L, -1)) {lua_pop(L, 1); return 0;}
+
+  lua_pushstring(L, CB_LIST_STR);
+  lua_rawget(L, -2);
+  if(!lua_istable(L, -1)) {lua_pop(L, 2); return 0;}
+
+  os_timer_t* suspended_timer_list_head = NULL;
+  os_timer_t* suspended_timer_list_tail = NULL;
+  lua_pushstring(L, SUSP_LIST_STR);
+  lua_rawget(L, -3);
+  if(lua_isuserdata(L, -1)){
+   suspended_timer_list_head = suspended_timer_list_tail = lua_touserdata(L, -1);
+   while(suspended_timer_list_tail->timer_next != NULL){
+     suspended_timer_list_tail = suspended_timer_list_tail->timer_next;
    }
-   os_timer_t* suspended_timer_list_head = NULL;
-   os_timer_t* suspended_timer_list_tail = NULL;
-   lua_pushstring(L, SUSP_LIST_STR);
-   lua_rawget(L, -3);
+  }
+  lua_pop(L, 1);
+  size_t registered_cb_qty = lua_objlen(L, -1);
+  cb_registry_item_t** cb_reg_array = calloc(1,sizeof(cb_registry_item_t*)*registered_cb_qty);
+  if(!cb_reg_array){
+   luaL_error(L, "%s: unable to suspend timers, out of memory!", __func__);
+   return 0;
+  }
+  uint8 index = 0;
+  lua_pushnil(L);
+  while(lua_next(L, -2) != 0){
    if(lua_isuserdata(L, -1)){
-     suspended_timer_list_head = suspended_timer_list_tail = lua_touserdata(L, -1);
-     while(suspended_timer_list_tail->timer_next != NULL){
-       suspended_timer_list_tail = suspended_timer_list_tail->timer_next;
-     }
+     cb_reg_array[index] = lua_touserdata(L, -1);
    }
    lua_pop(L, 1);
-   size_t registered_cb_qty = lua_objlen(L, -1);
-   cb_registry_item_t** cb_reg_array = calloc(1,sizeof(cb_registry_item_t*)*registered_cb_qty);
-   if(!cb_reg_array){
-     luaL_error(L, "%s: unable to suspend timers, out of memory!", __func__);
-     return 0;
-   }
-   uint8 index = 0;
-   lua_pushnil(L);
-   while(lua_next(L, -2) != 0){
-     if(lua_isuserdata(L, -1)){
-       cb_reg_array[index] = lua_touserdata(L, -1);
-     }
-     lua_pop(L, 1);
-     index++;
-   }
-   lua_pop(L, 1);
+   index++;
+  }
+  lua_pop(L, 1);
 
 
   os_timer_t* timer_list_ptr = timer_list;
@@ -499,9 +487,7 @@ int print_timer_list(lua_State* L){
 }
 
 int print_susp_timer_list(lua_State* L){
-  push_swtmr_registry_key(L);
-  lua_rawget(L, L_REGISTRY);
-
+  get_swtmr_registry(L);
   if(!lua_istable(L, -1)){
     return luaL_error(L, "swtmr table not found!");
   }
@@ -516,7 +502,9 @@ int print_susp_timer_list(lua_State* L){
   os_timer_t* susp_timer_list_ptr = lua_touserdata(L, -1);
   dbg_printf("\n\tsuspended_timer_list:\n");
   while(susp_timer_list_ptr != NULL){
-    dbg_printf("\tptr:%p\tcb:%p\texpire:%8u\tperiod:%8u\tnext:%p\n",susp_timer_list_ptr, susp_timer_list_ptr->timer_func, susp_timer_list_ptr->timer_expire, susp_timer_list_ptr->timer_period, susp_timer_list_ptr->timer_next);
+    dbg_printf("\tptr:%p\tcb:%p\texpire:%8u\tperiod:%8u\tnext:%p\n",susp_timer_list_ptr, 
+               susp_timer_list_ptr->timer_func, susp_timer_list_ptr->timer_expire, 
+               susp_timer_list_ptr->timer_period, susp_timer_list_ptr->timer_next);
     susp_timer_list_ptr = susp_timer_list_ptr->timer_next;
   }
   return 0;
@@ -532,15 +520,15 @@ int resume_timers_lua(lua_State* L){
   return 0;
 }
 
-LROT_BEGIN(test_swtimer_debug)
+LROT_BEGIN(test_swtimer_debug, NULL, 0)
   LROT_FUNCENTRY( timer_list, print_timer_list )
   LROT_FUNCENTRY( susp_timer_list, print_susp_timer_list )
   LROT_FUNCENTRY( suspend, suspend_timers_lua )
   LROT_FUNCENTRY( resume, resume_timers_lua )
-LROT_END( test_swtimer_debug, NULL, 0 )
+LROT_END(test_swtimer_debug, NULL, 0)
 
 
 NODEMCU_MODULE(SWTMR_DBG, "SWTMR_DBG", test_swtimer_debug, NULL);
 
-#endif
+#endif /* SWTMR_DEBUG */
 

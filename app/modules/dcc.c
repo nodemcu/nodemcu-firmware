@@ -53,13 +53,13 @@ void notifyDccReset(uint8_t hardReset ) {
   lua_State* L = lua_getstate();
   cbInit(L, DCC_RESET);
   cbAddFieldInteger(L, hardReset, "hardReset");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccIdle(void) {
   lua_State* L = lua_getstate();
   cbInit(L, DCC_IDLE);
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccSpeed( uint16_t Addr, DCC_ADDR_TYPE AddrType, uint8_t Speed, DCC_DIRECTION Dir, DCC_SPEED_STEPS SpeedSteps ) {
@@ -70,7 +70,7 @@ void notifyDccSpeed( uint16_t Addr, DCC_ADDR_TYPE AddrType, uint8_t Speed, DCC_D
   cbAddFieldInteger(L, Speed, "Speed");
   cbAddFieldInteger(L, Dir, "Dir");
   cbAddFieldInteger(L, SpeedSteps, "SpeedSteps");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccSpeedRaw( uint16_t Addr, DCC_ADDR_TYPE AddrType, uint8_t Raw) {
@@ -79,7 +79,7 @@ void notifyDccSpeedRaw( uint16_t Addr, DCC_ADDR_TYPE AddrType, uint8_t Raw) {
   cbAddFieldInteger(L, Addr, "Addr");
   cbAddFieldInteger(L, AddrType, "AddrType");
   cbAddFieldInteger(L, Raw, "Raw");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccFunc( uint16_t Addr, DCC_ADDR_TYPE AddrType, FN_GROUP FuncGrp, uint8_t FuncState) {
@@ -89,7 +89,7 @@ void notifyDccFunc( uint16_t Addr, DCC_ADDR_TYPE AddrType, FN_GROUP FuncGrp, uin
   cbAddFieldInteger(L, AddrType, "AddrType");
   cbAddFieldInteger(L, FuncGrp, "FuncGrp");
   cbAddFieldInteger(L, FuncState, "FuncState");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccAccTurnoutBoard( uint16_t BoardAddr, uint8_t OutputPair, uint8_t Direction, uint8_t OutputPower ) {
@@ -99,7 +99,7 @@ void notifyDccAccTurnoutBoard( uint16_t BoardAddr, uint8_t OutputPair, uint8_t D
   cbAddFieldInteger(L, OutputPair, "OutputPair");
   cbAddFieldInteger(L, Direction, "Direction");
   cbAddFieldInteger(L, OutputPower, "OutputPower");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccAccTurnoutOutput( uint16_t Addr, uint8_t Direction, uint8_t OutputPower ) { 
@@ -108,28 +108,28 @@ void notifyDccAccTurnoutOutput( uint16_t Addr, uint8_t Direction, uint8_t Output
   cbAddFieldInteger(L, Addr, "Addr");
   cbAddFieldInteger(L, Direction, "Direction");
   cbAddFieldInteger(L, OutputPower, "OutputPower");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccAccBoardAddrSet( uint16_t BoardAddr) { 
   lua_State* L = lua_getstate();
   cbInit(L, DCC_ACCESSORY);
   cbAddFieldInteger(L, BoardAddr, "BoardAddr");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccAccOutputAddrSet( uint16_t Addr) { 
   lua_State* L = lua_getstate();
   cbInit(L, DCC_ACCESSORY);
   cbAddFieldInteger(L, Addr, "Addr");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccSigOutputState( uint16_t Addr, uint8_t State) { 
   lua_State* L = lua_getstate();
   cbInit(L, DCC_ACCESSORY);
   cbAddFieldInteger(L, State, "State");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyDccMsg( DCC_MSG * Msg ) { 
@@ -142,14 +142,14 @@ void notifyDccMsg( DCC_MSG * Msg ) {
     ets_sprintf(field, "Data%d", i);
     cbAddFieldInteger(L, Msg->Data[i], field);
   }
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 void notifyServiceMode(bool InServiceMode){ 
   lua_State* L = lua_getstate();
   cbInit(L, DCC_SERVICEMODE);
   cbAddFieldInteger(L, InServiceMode, "InServiceMode");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
 }
 
 // CV handling
@@ -163,7 +163,8 @@ uint8_t notifyCVValid( uint16_t CV, uint8_t Writable ) {
   lua_newtable(L);
   cbAddFieldInteger(L, CV, "CV");
   cbAddFieldInteger(L, Writable, "Writable");
-  lua_call(L, 2, 1);
+  if (luaL_pcallx(L, 2, 1) != LUA_OK)
+    return 0;
   uint8 result = lua_tointeger(L, -1);
   lua_pop(L, 1);
   return result;
@@ -177,7 +178,8 @@ uint8_t notifyCVRead( uint16_t CV) {
   lua_pushinteger(L, CV_READ);
   lua_newtable(L);
   cbAddFieldInteger(L, CV, "CV");
-  lua_call(L, 2, 1);
+  if (luaL_pcallx(L, 2, 1) != LUA_OK)
+    return 0;;
   uint8 result = lua_tointeger(L, -1);
   lua_pop(L, 1);
   return result;
@@ -192,7 +194,7 @@ uint8_t notifyCVWrite( uint16_t CV, uint8_t Value) {
   lua_newtable(L);
   cbAddFieldInteger(L, CV, "CV");
   cbAddFieldInteger(L, Value, "Value");
-  lua_call(L, 2, 0);
+  luaL_pcallx(L, 2, 0);
   return Value;
 }
 
@@ -202,7 +204,7 @@ void notifyCVResetFactoryDefault(void) {
     return;
   lua_rawgeti(L, LUA_REGISTRYINDEX, CV_cb);
   lua_pushinteger(L, CV_RESET);
-  lua_call(L, 1, 0);
+  luaL_pcallx(L, 1, 0);
 }
 
 static int dcc_lua_setup(lua_State* L) {
@@ -213,7 +215,7 @@ static int dcc_lua_setup(lua_State* L) {
   uint8_t pin = luaL_checkinteger(L, 1);
   luaL_argcheck(L, platform_gpio_exists(pin) && pin>0, 1, "Invalid interrupt pin");
   
-  if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION)
+  if (lua_type(L, 2) == LUA_TFUNCTION)
   {
     lua_pushvalue(L, 2);
     register_lua_cb(L, &notify_cb);
@@ -228,7 +230,7 @@ static int dcc_lua_setup(lua_State* L) {
   uint8_t Flags = luaL_checkinteger(L, 5);
   uint8_t OpsModeAddressBaseCV = luaL_checkinteger(L, 6);
 
-  if (lua_type(L, 7) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION)
+  if (lua_type(L, 7) == LUA_TFUNCTION)
   {
     lua_pushvalue(L, 7);
     register_lua_cb(L, &CV_cb);
@@ -258,7 +260,7 @@ int luaopen_dcc( lua_State *L ) {
 }
 
 // Module function map
-LROT_BEGIN( dcc )
+LROT_BEGIN(dcc, NULL, 0)
   LROT_FUNCENTRY( setup, dcc_lua_setup )
   LROT_FUNCENTRY( close, dcc_lua_close )
   
@@ -285,6 +287,6 @@ LROT_BEGIN( dcc )
   LROT_NUMENTRY( FLAGS_AUTO_FACTORY_DEFAULT, FLAGS_AUTO_FACTORY_DEFAULT )
   LROT_NUMENTRY( FLAGS_OUTPUT_ADDRESS_MODE, FLAGS_OUTPUT_ADDRESS_MODE )
   LROT_NUMENTRY( FLAGS_DCC_ACCESSORY_DECODER, FLAGS_DCC_ACCESSORY_DECODER )
-LROT_END( dcc, NULL, 0 )
+LROT_END(dcc, NULL, 0)
 
 NODEMCU_MODULE(DCC, "dcc", dcc, luaopen_dcc);

@@ -308,7 +308,7 @@ def main():
            raise FatalError("SPIFFS image %s does not exist" % arg.sf)
 
     base = [] if arg.port is None else ['--port',arg.port]
-    if arg.baud is not None: base.extend(['--baud',arg.baud])
+    if arg.baud is not None: base.extend(['--baud',str(arg.baud)])
 
     # ---------- Use esptool to read the PT ---------- #
 
@@ -316,6 +316,7 @@ def main():
     pt_file = tmpdir + '/pt.dmp'
     espargs = base+['--after', 'no_reset', 'read_flash', '--no-progress',
                     str(ROM0_Seg), str(FLASH_PAGESIZE), pt_file]
+                    
     esptool.main(espargs)
 
     with open(pt_file,"rb") as f:

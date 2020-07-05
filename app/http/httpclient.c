@@ -122,7 +122,7 @@ static int ICACHE_FLASH_ATTR http_chunked_decode( const char * chunked, char * d
 	 *
 	 */
 
-	return(j);
+	return(decode_size);
 }
 
 
@@ -306,6 +306,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 		request_args_t	* req		= (request_args_t *) conn->reverse;
 		int		http_status	= -1;
 		char		* body		= "";
+		int		body_size = 0;
 
 		// Turn off timeout timer
 		os_timer_disarm( &(req->timeout_timer) );
@@ -411,15 +412,17 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 						  body = body + 4;
 					}
 
+					body_size = req->buffer_size - (body - req->buffer);
 					if ( strcasestr( req->buffer, "Transfer-Encoding: chunked" ) )
 					{
-						int	body_size = req->buffer_size - (body - req->buffer);
-						char	chunked_decode_buffer[body_size];
+						char *chunked_decode_buffer = os_malloc(body_size);
 						os_memset( chunked_decode_buffer, 0, body_size );
 						/* Chuncked data */
-						http_chunked_decode( body, chunked_decode_buffer );
+						body_size = http_chunked_decode( body, chunked_decode_buffer );
 						os_memcpy( body, chunked_decode_buffer, body_size );
+						os_free( chunked_decode_buffer );
 					}
+					else --body_size;
 				}
 			}
 		}
@@ -432,7 +435,7 @@ static void ICACHE_FLASH_ATTR http_disconnect_callback( void * arg )
 
 		  http_free_req( req );
 
-                  req_callback( body, http_status, &req_buffer );
+                  req_callback( body, http_status, &req_buffer, body_size );
                   if (req_buffer) {
                     os_free(req_buffer);
                   }
@@ -498,7 +501,7 @@ static void ICACHE_FLASH_ATTR http_dns_callback( const char * hostname, ip_addr_
 		HTTPCLIENT_ERR( "DNS failed for %s", hostname );
 		if ( req->callback_handle != NULL )
 		{
-			req->callback_handle( "", -1, NULL );
+			req->callback_handle( "", -1, NULL, 0 );
 		}
 		http_free_req( req );
 	}
@@ -563,21 +566,20 @@ void ICACHE_FLASH_ATTR http_raw_request( const char * hostname, int port, bool s
 	req->redirect_follow_count = redirect_follow_count;
 
 	ip_addr_t	addr;
-	err_t		error = espconn_gethostbyname( (struct espconn *) req,  /* It seems we don't need a real espconn pointer here. */
-						       hostname, &addr, http_dns_callback );
+	err_t		error = dns_gethostbyname( hostname, &addr, http_dns_callback, req );
 
-	if ( error == ESPCONN_INPROGRESS )
+	if ( error == ERR_INPROGRESS )
 	{
 		HTTPCLIENT_DEBUG( "DNS pending" );
 	}
-	else if ( error == ESPCONN_OK )
+	else if ( error == ERR_OK )
 	{
 		/* Already in the local names table (or hostname was an IP address), execute the callback ourselves. */
 		http_dns_callback( hostname, &addr, req );
 	}
 	else
 	{
-		if ( error == ESPCONN_ARG )
+		if ( error == ERR_ARG )
 		{
 			HTTPCLIENT_ERR( "DNS arg error %s", hostname );
 		}else  {

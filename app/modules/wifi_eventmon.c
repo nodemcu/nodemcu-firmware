@@ -42,7 +42,7 @@ int wifi_event_monitor_register(lua_State* L)
   }
   else
   {
-    if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION) //check if 2nd item on stack is a function
+    if (lua_isfunction(L, 2)) //check if 2nd item on stack is a function
     {
       lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
       register_lua_cb(L, &wifi_event_cb_ref[id]);  //pop function from top of the stack, register it in the LUA_REGISTRY, then assign lua_ref to wifi_event_cb_ref[id]
@@ -242,12 +242,12 @@ static void wifi_event_monitor_process_event_queue(task_param_t param, uint8 pri
   luaL_unref(L, LUA_REGISTRYINDEX, event_ref); //the userdata containing event info is no longer needed
   event_ref = LUA_NOREF;
 
-  lua_call(L, 1, 0); //execute user's callback and pass Lua table
+  luaL_pcallx(L, 1, 0); //execute user's callback and pass Lua table
   return;
 }
 
 #ifdef WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
-LROT_BEGIN(wifi_event_monitor_reason)
+LROT_BEGIN(wifi_event_monitor_reason, NULL, 0)
   LROT_NUMENTRY( UNSPECIFIED, REASON_UNSPECIFIED )
   LROT_NUMENTRY( AUTH_EXPIRE, REASON_AUTH_EXPIRE )
   LROT_NUMENTRY( AUTH_LEAVE, REASON_AUTH_LEAVE )
@@ -276,11 +276,11 @@ LROT_BEGIN(wifi_event_monitor_reason)
   LROT_NUMENTRY( AUTH_FAIL, REASON_AUTH_FAIL )
   LROT_NUMENTRY( ASSOC_FAIL, REASON_ASSOC_FAIL )
   LROT_NUMENTRY( HANDSHAKE_TIMEOUT, REASON_HANDSHAKE_TIMEOUT )
-LROT_END( wifi_event_monitor_reason, NULL, 0 )
+LROT_END(wifi_event_monitor_reason, NULL, 0)
 
 #endif
 
-LROT_PUBLIC_BEGIN(wifi_event_monitor)
+LROT_BEGIN(wifi_event_monitor, NULL, 0)
   LROT_FUNCENTRY( register, wifi_event_monitor_register )
   LROT_FUNCENTRY( unregister, wifi_event_monitor_register )
   LROT_NUMENTRY( STA_CONNECTED, EVENT_STAMODE_CONNECTED )
@@ -296,7 +296,7 @@ LROT_PUBLIC_BEGIN(wifi_event_monitor)
 #ifdef WIFI_EVENT_MONITOR_DISCONNECT_REASON_LIST_ENABLE
   LROT_TABENTRY( reason, wifi_event_monitor_reason )
 #endif
-LROT_END( wifi_event_monitor, NULL, 0 )
+LROT_END(wifi_event_monitor, NULL, 0)
 
 
 void wifi_eventmon_init()

@@ -46,7 +46,7 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 
   lua_State* L = (lua_State *)arg;
   lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_smart_succeed);
-  lua_call(L, 0, 0);
+  luaL_pcallx(L, 0, 0);
 
 #else
 
@@ -64,9 +64,8 @@ static void wifi_smart_succeed_cb(sc_status status, void *pdata){
 
     lua_pushstring(L, sta_conf->ssid);
     lua_pushstring(L, sta_conf->password);
-    lua_call(L, 2, 0);
-
     unregister_lua_cb(L, &wifi_smart_succeed);
+    luaL_pcallx(L, 2, 0);
   }
 
 #endif // defined( NODE_SMART_OLDSTYLE )
@@ -125,8 +124,8 @@ static void wifi_scan_done(void *arg, STATUS status)
   {
     lua_newtable( L );
   }
-  lua_call(L, 1, 0);
   unregister_lua_cb(L, &wifi_scan_succeed);
+  luaL_pcallx(L, 1, 0);
 }
 
 #ifdef WIFI_SMART_ENABLE
@@ -150,8 +149,8 @@ static int wifi_start_smart( lua_State* L )
     channel = 6;
   }
 
-  // luaL_checkanyfunction(L, stack);
-  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)
+  // luaL_checktype(L, stack, LUA_TFUNCTION);
+  if (lua_isfunction(L, stack))
   {
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     if(wifi_smart_succeed != LUA_NOREF)
@@ -184,7 +183,7 @@ static int wifi_start_smart( lua_State* L )
     stack++;
   }
 
-  if (lua_type(L, stack) == LUA_TFUNCTION || lua_type(L, stack) == LUA_TLIGHTFUNCTION)
+  if (lua_isfunction(L, stack))
   {
     lua_pushvalue(L, stack);  // copy argument (func) to the top of stack
     register_lua_cb(L, &wifi_smart_succeed);
@@ -343,10 +342,7 @@ static int wifi_setmode( lua_State* L )
 
   if(!lua_isnoneornil(L, 2))
   {
-    if(!lua_isboolean(L, 2))
-    {
-      luaL_typerror(L, 2, lua_typename(L, LUA_TBOOLEAN));
-    }
+    luaL_checktype (L, 2, LUA_TBOOLEAN);
     save_to_flash=lua_toboolean(L, 2);
   }
 
@@ -441,9 +437,9 @@ void wifi_pmSleep_suspend_CB(void)
   {
     lua_State* L = lua_getstate(); // Get main Lua thread pointer
     lua_rawgeti(L, LUA_REGISTRYINDEX, wifi_suspend_cb_ref); // Push suspend callback onto stack
-    lua_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
+    luaL_unref(L, wifi_suspend_cb_ref); // remove suspend callback from LUA_REGISTRY
     wifi_suspend_cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
-    lua_call(L, 0, 0); // Execute suspend callback
+    luaL_pcallx(L, 0, 0); // Execute suspend callback
   }
   else
   {
@@ -1248,7 +1244,7 @@ static int wifi_station_listap( lua_State* L )
       }
     }
 
-    if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+    if (lua_isfunction(L, 2))
     {
       lua_pushnil(L);
       lua_insert(L, 2);
@@ -1260,7 +1256,7 @@ static int wifi_station_listap( lua_State* L )
     lua_pushnil(L);
     lua_insert(L, 1);
   }
-  else if (lua_type(L, 1) == LUA_TFUNCTION || lua_type(L, 1) == LUA_TLIGHTFUNCTION)
+  else if (lua_isfunction(L, 1))
   {
     lua_pushnil(L);
     lua_insert(L, 1);
@@ -1269,7 +1265,7 @@ static int wifi_station_listap( lua_State* L )
   }
   else if(lua_isnil(L, 1))
   {
-    if (lua_type(L, 2) == LUA_TFUNCTION || lua_type(L, 2) == LUA_TLIGHTFUNCTION)
+    if (lua_isfunction(L, 2))
     {
       lua_pushnil(L);
       lua_insert(L, 2);
@@ -1288,7 +1284,7 @@ static int wifi_station_listap( lua_State* L )
       return luaL_error( L, "wrong arg type" );
   }
   NODE_DBG("Use alternate output format: %d\n", getap_output_format);
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION)
+  if (lua_isfunction(L, 3))
   {
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     register_lua_cb(L, &wifi_scan_succeed);
@@ -1508,10 +1504,7 @@ static int wifi_ap_getconfig_default(lua_State *L)
 // Lua: wifi.ap.config(table)
 static int wifi_ap_config( lua_State* L )
 {
-  if (!lua_istable(L, 1))
-  {
-    return luaL_typerror(L, 1, lua_typename(L, LUA_TTABLE));
-  }
+  luaL_checktype(L, 1,  LUA_TTABLE);
 
   struct softap_config config;
   bool save_to_flash=true;
@@ -1864,7 +1857,7 @@ static int wifi_ap_dhcp_stop( lua_State* L )
 
 
 // Module function map
-LROT_BEGIN(wifi_station)
+LROT_BEGIN(wifi_station, NULL, 0)
   LROT_FUNCENTRY( autoconnect, wifi_station_setauto )
   LROT_FUNCENTRY( changeap, wifi_station_change_ap )
   LROT_FUNCENTRY( clearconfig, wifi_station_clear_config )
@@ -1887,17 +1880,17 @@ LROT_BEGIN(wifi_station)
   LROT_FUNCENTRY( setmac, wifi_station_setmac )
   LROT_FUNCENTRY( sleeptype, wifi_station_sleeptype )
   LROT_FUNCENTRY( status, wifi_station_status )
-LROT_END( wifi_station, wifi_station, 0 )
+LROT_END(wifi_station, NULL, 0)
 
 
-LROT_BEGIN(wifi_ap_dhcp)
+LROT_BEGIN(wifi_ap_dhcp, NULL, 0)
   LROT_FUNCENTRY( config, wifi_ap_dhcp_config )
   LROT_FUNCENTRY( start, wifi_ap_dhcp_start )
   LROT_FUNCENTRY( stop, wifi_ap_dhcp_stop )
-LROT_END( wifi_ap_dhcp, wifi_ap_dhcp, 0 )
+LROT_END(wifi_ap_dhcp, NULL, 0)
 
 
-LROT_BEGIN(wifi_ap)
+LROT_BEGIN(wifi_ap, NULL, 0)
   LROT_FUNCENTRY( config, wifi_ap_config )
   LROT_FUNCENTRY( deauth, wifi_ap_deauth )
   LROT_FUNCENTRY( getip, wifi_ap_getip )
@@ -1909,11 +1902,10 @@ LROT_BEGIN(wifi_ap)
   LROT_FUNCENTRY( getconfig, wifi_ap_getconfig_current )
   LROT_FUNCENTRY( getdefaultconfig, wifi_ap_getconfig_default )
   LROT_TABENTRY( dhcp, wifi_ap_dhcp )
-//  LROT_TABENTRY( __metatable, wifi_ap )
-LROT_END( wifi_ap, wifi_ap, 0 )
+LROT_END(wifi_ap, NULL, 0)
 
 
-LROT_BEGIN(wifi)
+LROT_BEGIN(wifi, NULL, 0)
   LROT_FUNCENTRY( setmode, wifi_setmode )
   LROT_FUNCENTRY( getmode, wifi_getmode )
   LROT_FUNCENTRY( getdefaultmode, wifi_getdefaultmode )
@@ -1968,9 +1960,7 @@ LROT_BEGIN(wifi)
 
   LROT_NUMENTRY( COUNTRY_AUTO, WIFI_COUNTRY_POLICY_AUTO )
   LROT_NUMENTRY( COUNTRY_MANUAL, WIFI_COUNTRY_POLICY_MANUAL )
-
-  LROT_TABENTRY( __metatable, wifi )
-LROT_END( wifi, wifi, 0 )
+LROT_END(wifi, NULL, 0)
 
 
 // Used by user_rf_pre_init(user_main.c)

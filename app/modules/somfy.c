@@ -20,7 +20,7 @@
 #include "lauxlib.h"
 #include "lmem.h"
 #include "platform.h"
-#include "task/task.h"  
+#include "task/task.h"
 #include "hw_timer.h"
 #include "user_interface.h"
 
@@ -92,7 +92,7 @@ static void somfy_transmissionDone (task_param_t arg)
     lua_rawgeti (L, LUA_REGISTRYINDEX, lua_done_ref);
     luaL_unref (L, LUA_REGISTRYINDEX, lua_done_ref);
     lua_done_ref = LUA_NOREF;
-    lua_call (L, 0, 0);
+    luaL_pcallx (L, 0, 0);
 }
 
 static void ICACHE_RAM_ATTR sendCommand(os_param_t p) {
@@ -233,13 +233,13 @@ static int somfy_lua_sendcommand(lua_State* L) { // pin, remote, command, rollin
     return 0;
 }
 
-LROT_BEGIN(somfy)
+LROT_BEGIN(somfy, NULL, 0)
   LROT_NUMENTRY( UP, SOMFY_UP )
   LROT_NUMENTRY( DOWN, SOMFY_DOWN )
   LROT_NUMENTRY( PROG, SOMFY_PROG )
   LROT_NUMENTRY( STOP, SOMFY_STOP )
   LROT_FUNCENTRY( sendcommand, somfy_lua_sendcommand )
-LROT_END( somfy, NULL, 0 )
+LROT_END(somfy, NULL, 0)
 
 
 int luaopen_somfy( lua_State *L ) {

@@ -104,6 +104,7 @@ mbedtls_error:
     return( ret );
 }
 
+#if 0 // NodeMCU does not support being a TLS server
 /*
  * Create a listening socket on bind_ip:port
  */
@@ -155,6 +156,7 @@ int mbedtls_net_bind( mbedtls_net_context *ctx, const char *bind_ip, const char 
         return( ret );
 
 }
+#endif
 
 /*
  * Check if the requested operation would be blocking on a non-blocking socket
@@ -167,6 +169,7 @@ static int net_would_block( const mbedtls_net_context *ctx )
     return( 0 );
 }
 
+#if 0 // NodeMCU does not support being a TLS server
 /*
  * Accept a connection from a remote client
  */
@@ -208,6 +211,7 @@ int mbedtls_net_accept( mbedtls_net_context *bind_ctx,
 	        return( ret );
     return( 0 );
 }
+#endif
 
 /*
  * Set the socket blocking or non-blocking

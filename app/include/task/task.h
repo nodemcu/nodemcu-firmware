@@ -1,14 +1,14 @@
 #ifndef _TASK_H_
 #define _TASK_H_
 /*
-** The task interface is now part of the core platform interface.  
+** The task interface is now part of the core platform interface.
 ** This header is preserved for backwards compatability only.
-*/  
+*/
 #include "platform.h"
 
-#define TASK_PRIORITY_LOW    PLATFORM_TASK_PRIORITY_LOW     
-#define TASK_PRIORITY_MEDIUM PLATFORM_TASK_PRIORITY_MEDIUM  
-#define TASK_PRIORITY_HIGH   PLATFORM_TASK_PRIORITY_HIGH  
+#define TASK_PRIORITY_LOW    PLATFORM_TASK_PRIORITY_LOW
+#define TASK_PRIORITY_MEDIUM PLATFORM_TASK_PRIORITY_MEDIUM
+#define TASK_PRIORITY_HIGH   PLATFORM_TASK_PRIORITY_HIGH
 
 #define task_post(priority,handle,param)  platform_post(priority,handle,param)
 #define task_post_low(handle,param)       platform_post_low(handle,param)

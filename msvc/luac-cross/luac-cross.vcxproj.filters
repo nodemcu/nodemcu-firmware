@@ -105,9 +105,6 @@
     <ClCompile Include="..\..\app\lua\lparser.c">
       <Filter>app\lua</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\app\lua\lrotable.c">
-      <Filter>app\lua</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\app\lua\lstate.c">
       <Filter>app\lua</Filter>
     </ClCompile>
@@ -177,9 +174,6 @@
       <Filter>app\lua</Filter>
     </ClInclude>
     <ClInclude Include="..\..\app\lua\lparser.h">
-      <Filter>app\lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\app\lua\lrodefs.h">
       <Filter>app\lua</Filter>
     </ClInclude>
     <ClInclude Include="..\..\app\lua\lrotable.h">

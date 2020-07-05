@@ -297,7 +297,7 @@ If a `group` is given the return value will be a table containing the following 
 - for `group` = `"sw_version"`
 	- `git_branch` (string)
 	- `git_commit_id` (string)
-	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403" 
+	- `git_release` (string) release name +additional commits e.g. "2.0.0-master_20170202 +403"
 	- `git_commit_dts` (string) commit timestamp in an ordering format. e.g. "201908111200"
 	- `node_version_major` (number)
 	- `node_version_minor` (number)
@@ -419,6 +419,7 @@ node.restore()
 node.restart() -- ensure the restored settings take effect
 ```
 
+
 ## node.setcpufreq()
 
 Change the working CPU Frequency.
@@ -535,6 +536,33 @@ Put NodeMCU in light sleep mode to reduce current consumption.
 - [`wifi.suspend()`](wifi.md#wifisuspend)
 - [`wifi.resume()`](wifi.md#wifiresume)
 - [`node.dsleep()`](#nodedsleep)
+
+## node.startupcommand()
+
+Overrides the default startup action on processor restart, preplacing the executing `init.lua` if it exists.
+
+####Syntax
+`node.startupcommand(string)`
+
+#### Parameters
+
+- `string` prefixed with either
+	- `@`, the remaining string is a filename to be executed.
+	- `=`, the remaining string is Lua chunk to be compiled and executed.
+
+####  Returns
+ 	`status` this is `false` if write to the Reboot Config Record fails.  Note that no attempt is made to	parse or validate the string. If the command is invalid or the file missing then this will be reported on the next restart.
+
+#### Example
+```lua
+node.startupcommand("@myappstart.lc")  -- Execute the compiled file myappstart.lc on startup
+```
+
+```lua
+-- Execute the LFS routine init() in preference to init.lua
+node.startupcommand("=if LFS.init then LFS.init() else dofile('init.lua') end")
+```
+
 
 ## node.stripdebug()
 

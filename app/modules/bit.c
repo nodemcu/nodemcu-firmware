@@ -119,7 +119,7 @@ static int bit_clear( lua_State* L )
   return 1;
 }
 
-LROT_BEGIN(bit)
+LROT_BEGIN(bit, NULL, 0)
   LROT_FUNCENTRY( bnot, bit_bnot )
   LROT_FUNCENTRY( band, bit_band )
   LROT_FUNCENTRY( bor, bit_bor )
@@ -132,7 +132,7 @@ LROT_BEGIN(bit)
   LROT_FUNCENTRY( clear, bit_clear )
   LROT_FUNCENTRY( isset, bit_isset )
   LROT_FUNCENTRY( isclear, bit_isclear )
-LROT_END( bit, NULL, 0 )
+LROT_END(bit, NULL, 0)
 
 
 NODEMCU_MODULE(BIT, "bit", bit, NULL);

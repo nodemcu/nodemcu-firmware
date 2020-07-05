@@ -1,5 +1,2 @@
-#ifndef _SDK_OVERRIDE_ESPCONN_H_
-#define _SDK_OVERRIDE_ESPCONN_H_
-// Pull in the correct lwIP header
+// poor mans link which also works on docker under windows
 #include "../../app/include/lwip/app/espconn.h"
-#endif

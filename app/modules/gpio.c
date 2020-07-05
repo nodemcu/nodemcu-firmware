@@ -77,7 +77,8 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
         then = system_get_time() & 0x7fffffff;
       }
 
-      lua_call(L, 3, 0);
+      if(luaL_pcallx(L, 3, 0) != LUA_OK)
+        return;
     }
 
     if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
@@ -109,7 +110,7 @@ static int lgpio_trig( lua_State* L )
     // keep the old one if no callback
     old_pin_ref = LUA_NOREF;
 
-  } else if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
+  } else if (lua_isfunction(L, 3)) {
     // set up the new callback if present
     lua_pushvalue(L, 3);
     gpio_cb_ref[pin] = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -230,17 +231,14 @@ static void seroutasync_done (task_param_t arg)
 {
   lua_State *L = lua_getstate();
   if (serout.delay_table) {
-    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    luaN_freearray(L, serout.delay_table, serout.tablelen);
     serout.delay_table = NULL;
   }
   if (serout.lua_done_ref != LUA_NOREF) {
     lua_rawgeti (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     serout.lua_done_ref = LUA_NOREF;
-    if (lua_pcall(L, 0, 0, 0)) {
-      // Uncaught Error. Print instead of sudden reset
-      luaL_error(L, "error: %s", lua_tostring(L, -1));
-    }
+    luaL_pcallx(L, 0, 0);
   }
 }
 
@@ -278,7 +276,7 @@ static int lgpio_serout( lua_State* L )
   }
 
   if (serout.delay_table) {
-    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    luaN_freearray(L, serout.delay_table, serout.tablelen);
     serout.delay_table = NULL;
   }
 
@@ -312,7 +310,7 @@ static int lgpio_serout( lua_State* L )
         delayMicroseconds(serout.delay_table[serout.index]);
       }
     } while (serout.repeats--);
-    luaM_freearray(L, serout.delay_table, serout.tablelen, uint32);
+    luaN_freearray(L, serout.delay_table, serout.tablelen);
     serout.delay_table = NULL;
   }
   return 0;
@@ -320,12 +318,12 @@ static int lgpio_serout( lua_State* L )
 #undef DELAY_TABLE_MAX_LEN
 
 #ifdef LUA_USE_MODULES_GPIO_PULSE
-LROT_EXTERN(gpio_pulse);
+extern LROT_TABLE(gpio_pulse);
 extern int gpio_pulse_init(lua_State *);
 #endif
 
 // Module function map
-LROT_BEGIN(gpio)
+LROT_BEGIN(gpio, NULL, 0)
   LROT_FUNCENTRY( mode, lgpio_mode )
   LROT_FUNCENTRY( read, lgpio_read )
   LROT_FUNCENTRY( write, lgpio_write )
@@ -344,7 +342,7 @@ LROT_BEGIN(gpio)
   LROT_NUMENTRY( LOW, LOW )
   LROT_NUMENTRY( FLOAT, FLOAT )
   LROT_NUMENTRY( PULLUP, PULLUP )
-LROT_END( gpio, NULL, 0 )
+LROT_END (gpio, NULL, 0)
 
 
 int luaopen_gpio( lua_State *L ) {

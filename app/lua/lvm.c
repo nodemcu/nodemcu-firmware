@@ -7,7 +7,6 @@
 
 #define lvm_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <stdio.h>
@@ -25,7 +24,6 @@
 #include "ltable.h"
 #include "ltm.h"
 #include "lvm.h"
-#include "lrotable.h"
 
 
 /* limit for table tag-method chains (to avoid loops) */
@@ -134,17 +132,8 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     if (ttistable(t)) {  /* `t' is a table? */
       Table *h = hvalue(t);
       const TValue *res = luaH_get(h, key); /* do a primitive get */
-      if (!ttisnil(res) ||  /* result is no nil? */
+        if (!ttisnil(res) ||  /* result is no nil? */
           (tm = fasttm(L, h->metatable, TM_INDEX)) == NULL) { /* or no TM? */
-        setobj2s(L, val, res);
-        return;
-      }
-      /* else will try the tag method */
-    } else if (ttisrotable(t)) {  /* `t' is a table? */
-      void *h = rvalue(t);
-      const TValue *res = luaH_get_ro(h, key); /* do a primitive get */
-      if (!ttisnil(res) ||  /* result is no nil? */
-          (tm = fasttm(L, (Table*)luaR_getmeta(h), TM_INDEX)) == NULL) { /* or no TM? */
         setobj2s(L, val, res);
         return;
       }
@@ -153,7 +142,7 @@ void luaV_gettable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_INDEX)))
         luaG_typeerror(L, t, "index");
 
-    if (ttisfunction(tm) || ttislightfunction(tm)) {
+    if (ttisfunction(tm)) {
       callTMres(L, val, tm, t, key);
       return;
     }
@@ -193,7 +182,7 @@ void luaV_settable (lua_State *L, const TValue *t, TValue *key, StkId val) {
     else if (ttisnil(tm = luaT_gettmbyobj(L, t, TM_NEWINDEX)))
       luaG_typeerror(L, t, "index");
 
-    if (ttisfunction(tm) || ttislightfunction(tm)) {
+    if (ttisfunction(tm)) {
       L->top--;
       unfixedstack(L);
       callTM(L, tm, t, key, val);
@@ -305,8 +294,6 @@ int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
     case LUA_TNIL: return 1;
     case LUA_TNUMBER: return luai_numeq(nvalue(t1), nvalue(t2));
     case LUA_TBOOLEAN: return bvalue(t1) == bvalue(t2);  /* true must be 1 !! */
-    case LUA_TROTABLE:
-      return rvalue(t1) == rvalue(t2);
     case LUA_TLIGHTUSERDATA:
     case LUA_TLIGHTFUNCTION:
       return pvalue(t1) == pvalue(t2);
@@ -316,6 +303,8 @@ int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
                          TM_EQ);
       break;  /* will try TM */
     }
+    case LUA_TROTABLE:
+      return hvalue(t1) == hvalue(t2);
     case LUA_TTABLE: {
       if (hvalue(t1) == hvalue(t2)) return 1;
       tm = get_compTM(L, hvalue(t1)->metatable, hvalue(t2)->metatable, TM_EQ);
@@ -438,7 +427,6 @@ static void Arith (lua_State *L, StkId ra, const TValue *rb,
         else \
           Protect(Arith(L, ra, rb, rc, tm)); \
       }
-
 
 
 void luaV_execute (lua_State *L, int nexeccalls) {
@@ -582,10 +570,9 @@ void luaV_execute (lua_State *L, int nexeccalls) {
       }
       case OP_LEN: {
         const TValue *rb = RB(i);
-        switch (ttype(rb)) {
-          case LUA_TTABLE:
-          case LUA_TROTABLE: {
-            setnvalue(ra, ttistable(rb) ? cast_num(luaH_getn(hvalue(rb))) : cast_num(luaH_getn_ro(rvalue(rb))));
+        switch (basettype(rb)) {
+          case LUA_TTABLE: {
+            setnvalue(ra, cast_num(luaH_getn(hvalue(rb))));
             break;
           }
           case LUA_TSTRING: {

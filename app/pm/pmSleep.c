@@ -162,7 +162,7 @@ void pmSleep_execute_lua_cb(int* cb_ref){
     lua_rawgeti(L, LUA_REGISTRYINDEX, *cb_ref); // Push resume callback onto the stack
     lua_unref(L, *cb_ref); // Remove resume callback from registry
     *cb_ref = LUA_NOREF; // Update variable since reference is no longer valid
-    lua_call(L, 0, 0); // Execute resume callback
+    luaL_pcallx(L, 0, 0); // Execute resume callback
   }
 
 }

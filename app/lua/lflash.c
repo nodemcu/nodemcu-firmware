@@ -5,7 +5,6 @@
 
 #define lflash_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 #include "lua.h"
 
 #include "lobject.h"
@@ -89,9 +88,8 @@ void dumpStrt(stringtable *tb, const char *type) {
   for (i=0; i<tb->size; i++)
     for(o = tb->hash[i], j=0; o; (o=o->gch.next), j++ ) {
       TString *ts =cast(TString *, o);
-      NODE_DBG("%5d %5d %08x %08x %5d %1s %s\n",
-               i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len,
-               ts_isreadonly(ts) ? "R" : " ",  getstr(ts));
+      NODE_DBG("%5d %5d %08x %08x %5d %s\n",
+               i, j, (size_t) ts, ts->tsv.hash, ts->tsv.len, getstr(ts));
     }
 }
 
@@ -140,7 +138,7 @@ static void flashErase(uint32_t start, uint32_t end){
 }
 
 /* =====================================================================================
- * luaN_init(), luaN_reload_reboot() and luaN_index() are exported via lflash.h.
+ * luaN_init() is exported via lflash.h.
  * The first is the startup hook used in lstate.c and the last two are
  * implementations of the node.flash API calls.
  */
@@ -196,11 +194,12 @@ static int loadLFS (lua_State *L);
 static int loadLFSgc (lua_State *L);
 static void procFirstPass (void);
 
+/* lua_lfsreload() and lua_lfsindex() are exported via lua.h */
+
 /*
  * Library function called by node.flashreload(filename).
  */
-LUALIB_API int luaN_reload_reboot (lua_State *L) {
-  // luaL_dbgbreak();
+LUALIB_API int lua_lfsreload (lua_State *L) {
   const char *fn = lua_tostring(L, 1), *msg = "";
   int status;
 
@@ -269,7 +268,7 @@ LUALIB_API int luaN_reload_reboot (lua_State *L) {
  *  -  The base address and length of the LFS
  *  -  An array of the module names in the LFS
  */
-LUAI_FUNC int luaN_index (lua_State *L) {
+LUAI_FUNC int lua_lfsindex (lua_State *L) {
   int n = lua_gettop(L);
 
   /* Return nil + the LFS base address if the LFS size > 0 and it isn't loaded */

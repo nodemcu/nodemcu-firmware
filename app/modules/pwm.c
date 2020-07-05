@@ -128,7 +128,7 @@ int lpwm_open( lua_State *L ) {
 }
 
 // Module function map
-LROT_BEGIN(pwm)
+LROT_BEGIN(pwm, NULL, 0)
   LROT_FUNCENTRY( setup, lpwm_setup )
   LROT_FUNCENTRY( close, lpwm_close )
   LROT_FUNCENTRY( start, lpwm_start )
@@ -137,7 +137,7 @@ LROT_BEGIN(pwm)
   LROT_FUNCENTRY( getclock, lpwm_getclock )
   LROT_FUNCENTRY( setduty, lpwm_setduty )
   LROT_FUNCENTRY( getduty, lpwm_getduty )
-LROT_END( pwm, NULL, 0 )
+LROT_END(pwm, NULL, 0)
 
 
 NODEMCU_MODULE(PWM, "pwm", pwm, lpwm_open);

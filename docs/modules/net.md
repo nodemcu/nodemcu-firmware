@@ -10,58 +10,36 @@ Constants to be used in other functions: `net.TCP`, `net.UDP`
 
 ## net.createConnection()
 
-Creates a client.
+Creates a TCP client.
 
 #### Syntax
-`net.createConnection([type[, secure]])`
-
-#### Parameters
-- `type` `net.TCP` (default) or `net.UDP`
-- `secure` 1 for encrypted, 0 for plain (default)
-
-!!! attention
-    This will change in upcoming releases so that `net.createConnection` will always create an unencrypted TCP connection.
-
-    There's no such thing as a UDP _connection_ because UDP is connection*less*. Thus no connection `type` parameter should be required. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead. To create *secure* connections use [tls.createConnection()](tls.md#tlscreateconnection) instead.
+`net.createConnection()`
 
 #### Returns
 
-- for `net.TCP` - net.socket sub module
-- for `net.UDP` - net.udpsocket sub module
-- for `net.TCP` with `secure` - tls.socket sub module
-
-#### Example
-
-```lua
-net.createConnection(net.TCP, 0)
-```
+- net.socket sub module
 
 #### See also
 [`net.createServer()`](#netcreateserver), [`net.createUDPSocket()`](#netcreateudpsocket), [`tls.createConnection()`](tls.md#tlscreateconnection)
 
 ## net.createServer()
 
-Creates a server.
+Creates a TCP listening socket (a server).
 
 #### Syntax
-`net.createServer([type[, timeout]])`
+`net.createServer(timeout)`
 
 #### Parameters
-- `type` `net.TCP` (default) or `net.UDP`
-- `timeout` for a TCP server timeout is 1~28'800 seconds, 30 sec by default (for an inactive client to be disconnected)
-
-!!! attention
-    The `type` parameter will be removed in upcoming releases so that `net.createServer` will always create a TCP-based server. For UDP use [net.createUDPSocket()](#netcreateudpsocket) instead.
+- `timeout`: seconds until disconnecting an inactive client; 1~28'800 seconds, 30 sec by default.
 
 #### Returns
 
-- for `net.TCP` - net.server sub module
-- for `net.UDP` - net.udpsocket sub module
+- net.server sub module
 
 #### Example
 
 ```lua
-net.createServer(net.TCP, 30) -- 30s timeout
+net.createServer(30) -- 30s timeout
 ```
 
 #### See also
@@ -619,13 +597,8 @@ Resolve a hostname to an IP address. Doesn't require a socket like [`net.socket.
 - `host` hostname to resolve
 - `function(sk, ip)` callback called when the name was resolved. `sk` is always `nil`
 
-There is at most one callback for all `net.dns.resolve()` requests at any time;
-all resolution results are sent to the most recent callback specified at time
-of receipt!  If multiple DNS callbacks are needed, associate them with separate
-sockets using [`net.socket:dns()`](#netsocketdns).
-
 #### Returns
-`nil`
+`nil` but may raise errors for severe network stack issues (e.g., out of DNS query table slots)
 
 #### Example
 ```lua
@@ -652,6 +625,74 @@ Sets the IP of the DNS server used to resolve hostnames. Default: resolver1.open
 
 #### See also
 [`net.dns:getdnsserver()`](#netdnsgetdnsserver)
+
+
+### net.ping()
+
+Pings a server. A callback function is called when response is or is not received. Summary statistics can be retrieved via the second callback.
+
+The function can be disabled by commenting `NET_PING_ENABLE` macro in `user_config.h` when more compact build is needed.
+
+#### Syntax
+`net.ping(domain, [count], callback_received, [callback_sent])`
+
+#### Parameters
+- `domain` destination domain or IP address
+- `count` number of ping packets to be sent (optional parameter, default value is 4)
+- `callback_received(bytes, ipaddr, seqno, rtt)` callback function which is invoked when response is received where
+    - `bytes` number of bytes received from destination server (0 means no response)
+    - `ipaddr` destination server IP address
+    - `seqno` ICMP sequence number
+    - `rtt` round trip time in ms
+If domain name cannot be resolved callback is invoked with `bytes` parameter equal to 0 (i.e. no response) and `nil` values for all other parameters.
+
+- `callback_sent(ipaddr, total_count, timeout_count, total_bytes, total_time)` callback function which is invoked when response is received where
+    - `ipaddrstr` destination server IP address
+    - `total_count` total number of packets sent
+    - `timeout_count` total number of packets lost (not received)
+    - `total_bytes` total number of bytes received from destination server
+    - `total_time` total time to perform ping
+  
+#### Returns
+`nil`
+
+#### Example
+```lua
+net.ping("www.nodemcu.com", function (b, ip, sq, tm) 
+    if ip then print(("%d bytes from %s, icmp_seq=%d time=%dms"):format(b, ip, sq, tm)) else print("Invalid IP address") end 
+  end)
+net.ping("www.nodemcu.com", 10, function (b, ip, sq, tm) 
+    if ip then print(("%d bytes from %s, icmp_seq=%d time=%dms"):format(b, ip, sq, tm)) else print("Invalid IP address") end 
+  end)
+net.ping("www.nodemcu.com", function (b, ip, sq, tm) 
+    if ip then print(("%d bytes from %s, icmp_seq=%d time=%dms"):format(b, ip, sq, tm)) else print("Invalid IP address") end 
+  end,
+  function (ip, tc, toc, tb, tt) 
+    print(("--- %s ping statistics ---\n%d packets transmitted, %d received, %d%% packet loss, time %dms"):format(ip, tc, tc-toc, toc/tc*100, tt)) 
+  end)
+```
+
+Multiple pings can start in short sequence thought if the new ping overlaps with the previous one the first stops receiving answers, i.e.
+```lua
+function ping_resp(b, ip, sq, tm)
+  print(string.format("%d bytes from %s, icmp_seq=%d time=%dms", b, ip, sq, tm))
+end
+
+net.ping("8.8.8.8", 4, ping_resp)
+tmr.create():alarm(1000, tmr.ALARM_SINGLE, function() net.ping("8.8.4.4", 4, ping_resp) end)
+```
+gives
+```
+32 bytes from 8.8.8.8, icmp_seq=9 time=14ms
+32 bytes from 8.8.8.8, icmp_seq=10 time=9ms
+32 bytes from 8.8.4.4, icmp_seq=11 time=6ms
+32 bytes from 8.8.4.4, icmp_seq=13 time=12ms
+0 bytes from 8.8.8.8, icmp_seq=0 time=0ms -- no more answers received
+32 bytes from 8.8.4.4, icmp_seq=15 time=16ms
+0 bytes from 8.8.8.8, icmp_seq=0 time=0ms -- no more answers received
+32 bytes from 8.8.4.4, icmp_seq=16 time=7ms
+```
+
 
 # net.cert Module
 

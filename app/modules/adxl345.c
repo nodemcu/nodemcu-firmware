@@ -76,10 +76,10 @@ static int adxl345_read(lua_State* L) {
     return 3;
 }
 
-LROT_BEGIN(adxl345)
+LROT_BEGIN(adxl345, NULL, 0)
   LROT_FUNCENTRY( read, adxl345_read )
   LROT_FUNCENTRY( setup, adxl345_setup )
-LROT_END( adxl345, NULL, 0 )
+LROT_END(adxl345, NULL, 0)
 
 
 NODEMCU_MODULE(ADXL345, "adxl345", adxl345, NULL);

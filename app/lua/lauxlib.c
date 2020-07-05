@@ -4,27 +4,21 @@
 ** See Copyright Notice in lua.h
 */
 
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <ctype.h>
-#ifdef __MINGW__
-#include <errno.h>
+#if defined(LUA_CROSS_COMPILER) && defined(_MSC_VER)
+#undef errno  	//msvc #defines errno, which interferes with our #include macro
 #else
-#ifdef _MSC_VER	//msvc #defines errno, which interferes with our #include macro
-#undef errno
-#endif
 #include <errno.h>
 #endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
 #ifndef LUA_CROSS_COMPILER
 #include "vfs.h"
 #include "user_interface.h"
-#else
 #endif
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
 
 /* This file uses only the official API of Lua.
 ** Any function declared here could be written as an application function.
@@ -38,14 +32,13 @@
 #include "ldo.h"
 #include "lobject.h"
 #include "lstate.h"
-#include "legc.h"
 
 #define FREELIST_REF	0	/* free list of references */
 
 
 /* convert a stack index to positive */
-#define abs_index(L, i)		((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
-					lua_gettop(L) + (i) + 1)
+#define abs_index(L, i)	((i) > 0 || (i) <= LUA_REGISTRYINDEX ? (i) : \
+			lua_gettop(L) + (i) + 1)
 
 // Parameters for luaI_openlib
 #define LUA_USECCLOSURES          0
@@ -221,7 +214,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int narg, const char *extramsg) {
 
 LUALIB_API int luaL_typerror (lua_State *L, int narg, const char *tname) {
   const char *msg = lua_pushfstring(L, "%s expected, got %s",
-                                    tname, luaL_typename(L, narg));
+                                    tname, lua_typename(L, narg));
   return luaL_argerror(L, narg, msg);
 }
 
@@ -281,7 +274,7 @@ LUALIB_API int luaL_newmetatable (lua_State *L, const char *tname) {
   return 1;
 }
 
-LUALIB_API int luaL_rometatable (lua_State *L, const char* tname, void *p) {
+LUALIB_API int luaL_rometatable (lua_State *L, const char* tname, const ROTable *p) {
   lua_getfield(L, LUA_REGISTRYINDEX, tname);  /* get registry.name */
   if (!lua_isnil(L, -1))  /* name already in use? */
     return 0;  /* leave previous value on top, but return 0 */
@@ -317,22 +310,6 @@ LUALIB_API void luaL_checkstack (lua_State *L, int space, const char *mes) {
 LUALIB_API void luaL_checktype (lua_State *L, int narg, int t) {
   if (lua_type(L, narg) != t)
     tag_error(L, narg, t);
-}
-
-LUALIB_API void luaL_checkanyfunction (lua_State *L, int narg) {
-  if (lua_type(L, narg) != LUA_TFUNCTION && lua_type(L, narg) != LUA_TLIGHTFUNCTION) {
-    const char *msg = lua_pushfstring(L, "function or lightfunction expected, got %s",
-                                      luaL_typename(L, narg));
-    luaL_argerror(L, narg, msg);
-  }
-}
-
-LUALIB_API void luaL_checkanytable (lua_State *L, int narg) {
-  if (lua_type(L, narg) != LUA_TTABLE && lua_type(L, narg) != LUA_TROTABLE) {
-    const char *msg = lua_pushfstring(L, "table or rotable expected, got %s",
-                                      luaL_typename(L, narg));
-    luaL_argerror(L, narg, msg);
-  }
 }
 
 
@@ -453,7 +430,7 @@ LUALIB_API void luaI_openlib (lua_State *L, const char *libname,
     for (i=0; i<nup; i++)  /* copy upvalues to the top */
       lua_pushvalue(L, -nup);
     if (ftype == LUA_USELIGHTFUNCTIONS)
-      lua_pushlightfunction(L, l->func);
+      lua_pushcfunction(L, l->func);
     else
       lua_pushcclosure(L, l->func, nup);
     lua_setfield(L, -(nup+2), l->name);
@@ -565,7 +542,7 @@ LUALIB_API const char *luaL_findtable (lua_State *L, int idx,
       lua_pushvalue(L, -2);
       lua_settable(L, -4);  /* set new table into field */
     }
-    else if (!lua_istable(L, -1) && !lua_isrotable(L, -1)) {  /* field has a non-table value? */
+    else if (!lua_istable(L, -1)) {  /* field has a non-table value? */
       lua_pop(L, 2);  /* remove table and value */
       return fname;  /* return problematic part of the name */
     }
@@ -707,6 +684,26 @@ LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
 }
 
 
+LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref) {
+  int reft;
+/*
+ * If the ref is positive and the entry in table t exists then
+ * overwrite the value otherwise fall through to luaL_ref()
+ */   
+  if (ref) {
+    if (*ref >= 0) {
+      t = abs_index(L, t);
+      lua_rawgeti(L, t, *ref);
+      reft = lua_type(L, -1);
+      lua_pop(L, 1);
+      if (reft != LUA_TNIL) {
+        lua_rawseti(L, t, *ref);
+        return;
+      }
+    }
+    *ref = luaL_ref(L, t);
+  }
+}
 
 /*
 ** {======================================================
@@ -714,14 +711,32 @@ LUALIB_API void luaL_unref (lua_State *L, int t, int ref) {
 ** =======================================================
 */
 
-#ifdef LUA_CROSS_COMPILER
-
 typedef struct LoadF {
   int extraline;
+#ifdef LUA_CROSS_COMPILER
   FILE *f;
+#else
+  int f;
+#endif
   char buff[LUAL_BUFFERSIZE];
 } LoadF;
 
+#ifdef LUA_CROSS_COMPILER
+#  define freopen_bin(f,fn) freopen(f,"rb",fn)
+#  define read_buff(b,f) fread(b, 1, sizeof (b), f)
+#else
+#  define strerror(n) ""
+#undef feof
+#  define feof(f)        vfs_eof(f)
+#undef fopen
+#  define fopen(f, m)    vfs_open(f, m)
+#  define freopen_bin(fn,f) ((void) vfs_close(f), vfs_open(fn, "r"))
+#undef getc
+#  define getc(f)        vfs_getc(f)
+#undef ungetc
+#  define ungetc(c,f)    vfs_ungetc(c, f)
+#  define read_buff(b,f) vfs_read(f, b, sizeof (b))
+#endif
 
 static const char *getF (lua_State *L, void *ud, size_t *size) {
   LoadF *lf = (LoadF *)ud;
@@ -732,7 +747,7 @@ static const char *getF (lua_State *L, void *ud, size_t *size) {
     return "\n";
   }
   if (feof(lf->f)) return NULL;
-  *size = fread(lf->buff, 1, sizeof(lf->buff), lf->f);
+  *size = read_buff(lf->buff, lf->f);
   return (*size > 0) ? lf->buff : NULL;
 }
 
@@ -752,14 +767,19 @@ LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
   int c;
   int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
   lf.extraline = 0;
+
   if (filename == NULL) {
+#ifdef LUA_CROSS_COMPILER
     lua_pushliteral(L, "=stdin");
-    lf.f = c_stdin;
+    lf.f = stdin;
+#else
+    return luaL_error(L, "filename is NULL");
+#endif
   }
   else {
     lua_pushfstring(L, "@%s", filename);
     lf.f = fopen(filename, "r");
-    if (lf.f == NULL) return errfile(L, "open", fnameindex);
+    if (!lf.f) return errfile(L, "open", fnameindex);
   }
   c = getc(lf.f);
   if (c == '#') {  /* Unix exec. file? */
@@ -768,8 +788,8 @@ LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
     if (c == '\n') c = getc(lf.f);
   }
   if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
-    lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
-    if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
+    lf.f = freopen_bin(filename, lf.f);  /* reopen in binary mode */
+    if (!lf.f) return errfile(L, "reopen", fnameindex);
     /* skip eventual `#!...' */
    while ((c = getc(lf.f)) != EOF && c != LUA_SIGNATURE[0]) {}
 
@@ -777,91 +797,21 @@ LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
   }
   ungetc(c, lf.f);
   status = lua_load(L, getF, &lf, lua_tostring(L, -1));
+#ifdef LUA_CROSS_COMPILER
   readstatus = ferror(lf.f);
   if (filename) fclose(lf.f);  /* close file (even in case of errors) */
   if (readstatus) {
     lua_settop(L, fnameindex);  /* ignore results from `lua_load' */
     return errfile(L, "read", fnameindex);
   }
-  lua_remove(L, fnameindex);
-  return status;
-}
-
 #else
-
-typedef struct LoadFSF {
-  int extraline;
-  int f;
-  char buff[LUAL_BUFFERSIZE];
-} LoadFSF;
-
-
-static const char *getFSF (lua_State *L, void *ud, size_t *size) {
-  LoadFSF *lf = (LoadFSF *)ud;
-  (void)L;
-
-  if (L == NULL && size == NULL) // Direct mode check
-    return NULL;
-
-  if (lf->extraline) {
-    lf->extraline = 0;
-    *size = 1;
-    return "\n";
-  }
-
-  if (vfs_eof(lf->f)) return NULL;
-  *size = vfs_read(lf->f, lf->buff, sizeof(lf->buff));
-
-  return (*size > 0) ? lf->buff : NULL;
-}
-
-
-static int errfsfile (lua_State *L, const char *what, int fnameindex) {
-  const char *filename = lua_tostring(L, fnameindex) + 1;
-  lua_pushfstring(L, "cannot %s %s", what, filename);
-  lua_remove(L, fnameindex);
-  return LUA_ERRFILE;
-}
-
-
-LUALIB_API int luaL_loadfile (lua_State *L, const char *filename) {
-  LoadFSF lf;
-  int status, c;
-  int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
-  lf.extraline = 0;
-  if (filename == NULL) {
-    return luaL_error(L, "filename is NULL");
-  }
-  else {
-    lua_pushfstring(L, "@%s", filename);
-    lf.f = vfs_open(filename, "r");
-    if (!lf.f) return errfsfile(L, "open", fnameindex);
-  }
-  // if(fs_size(lf.f)>LUAL_BUFFERSIZE)
-  //   return luaL_error(L, "file is too big");
-  c = vfs_getc(lf.f);
-  if (c == '#') {  /* Unix exec. file? */
-    lf.extraline = 1;
-    while ((c = vfs_getc(lf.f)) != VFS_EOF && c != '\n') ;  /* skip first line */
-    if (c == '\n') c = vfs_getc(lf.f);
-  }
-  if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
-    vfs_close(lf.f);
-    lf.f = vfs_open(filename, "r");  /* reopen in binary mode */
-    if (!lf.f) return errfsfile(L, "reopen", fnameindex);
-    /* skip eventual `#!...' */
-   while ((c = vfs_getc(lf.f)) != VFS_EOF && c != LUA_SIGNATURE[0]) ;
-    lf.extraline = 0;
-  }
-  vfs_ungetc(c, lf.f);
-  status = lua_load(L, getFSF, &lf, lua_tostring(L, -1));
-
+  (void) readstatus;              /* avoid compile error */
   if (filename) vfs_close(lf.f);  /* close file (even in case of errors) */
+#endif
   lua_remove(L, fnameindex);
   return status;
 }
 
-#endif
 
 typedef struct LoadS {
   const char *s;
@@ -959,7 +909,7 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 #endif
 }
 
-#if defined(DEVELOPMENT_USE_GDB) && !defined(LUA_CROSS_COMPILER)
+#ifdef DEVELOPMENT_USE_GDB
 /*
  *  This is a simple stub used by lua_assert() if DEVELOPMENT_USE_GDB is defined.
  *  Instead of crashing out with an assert error, this hook starts the GDB remote
@@ -970,28 +920,29 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
  * which will then sync up with the remote GDB client to allow forensics of the error.
  */
 extern void gdbstub_init(void);
+extern void gdbstub_redirect_output(int);
 
-LUALIB_API void luaL_dbgbreak(void) {
+LUALIB_API void lua_debugbreak (void) {
+#ifdef LUA_CROSS_COMPILER
+  puts(" lua_debugbreak ");  /* allows gdb BT analysis of assert fails */
+#else
   static int repeat_entry = 0;
   if  (repeat_entry == 0) {
     dbg_printf("Start up the gdb stub if not already started\n");
     gdbstub_init();
+    gdbstub_redirect_output(1);
     repeat_entry = 1;
   }
   asm("break 0,0" ::);
+#endif
 }
 #endif
 
 
 static int panic (lua_State *L) {
   (void)L;  /* to avoid warnings */
-#if defined(LUA_USE_STDIO)
-  fprintf(c_stderr, "PANIC: unprotected error in call to Lua API (%s)\n",
+  lua_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
                    lua_tostring(L, -1));
-#else
-  luai_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
-                   lua_tostring(L, -1));
-#endif
   while (1) {}
   return 0;
 }

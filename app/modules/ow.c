@@ -282,7 +282,7 @@ static int ow_crc16( lua_State *L )
 #endif
 
 // Module function map
-LROT_BEGIN(ow)
+LROT_BEGIN(ow, NULL, 0)
   LROT_FUNCENTRY( setup, ow_setup )
   LROT_FUNCENTRY( reset, ow_reset )
   LROT_FUNCENTRY( skip, ow_skip )
@@ -304,7 +304,7 @@ LROT_BEGIN(ow)
   LROT_FUNCENTRY( crc16, ow_crc16 )
 #endif
 #endif
-LROT_END( ow, NULL, 0 )
+LROT_END(ow, NULL, 0)
 
 
 NODEMCU_MODULE(OW, "ow", ow, NULL);

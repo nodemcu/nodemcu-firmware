@@ -156,6 +156,10 @@ static uint8_t get_random_wheel_index(uint8_t pos)
 * initialized ws2812_effects with the buffer to use
 */
 static int ws2812_effects_init(lua_State *L) {
+
+  platform_print_deprecation_note("ws2812_effects",
+    "soon; please see https://github.com/nodemcu/nodemcu-firmware/issues/3122");
+
   ws2812_buffer * buffer = (ws2812_buffer*)luaL_checkudata(L, 1, "ws2812.buffer");
   luaL_argcheck(L, buffer != NULL, 1, "no valid buffer provided");
   // get rid of old state
@@ -1039,7 +1043,8 @@ static int ws2812_effects_tostring(lua_State* L) {
   return 1;
 }
 
-LROT_BEGIN(ws2812_effects)
+LROT_BEGIN(ws2812_effects_map, NULL, 0)
+  LROT_FUNCENTRY( __tostring, ws2812_effects_tostring )
   LROT_FUNCENTRY( init, ws2812_effects_init )
   LROT_FUNCENTRY( set_brightness, ws2812_effects_set_brightness )
   LROT_FUNCENTRY( set_color, ws2812_effects_set_color )
@@ -1050,11 +1055,8 @@ LROT_BEGIN(ws2812_effects)
   LROT_FUNCENTRY( stop, ws2812_effects_stop )
   LROT_FUNCENTRY( get_delay, ws2812_effects_get_delay )
   LROT_FUNCENTRY( get_speed, ws2812_effects_get_speed )
-
-  LROT_TABENTRY( __index, ws2812_effects )
-  LROT_FUNCENTRY( __tostring, ws2812_effects_tostring )
-LROT_END( ws2812_effects, ws2812_effects, LROT_MASK_INDEX )
+LROT_END(ws2812_effects_map, NULL, 0)
 
 
 
-NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects, NULL);
+NODEMCU_MODULE(WS2812_EFFECTS, "ws2812_effects", ws2812_effects_map, NULL);

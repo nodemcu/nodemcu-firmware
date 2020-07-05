@@ -217,7 +217,7 @@ static int cu_grb2hsv(lua_State *L) {
   const int r = luaL_checkint(L, 2);
   const int b = luaL_checkint(L, 3);
 
-  luaL_argcheck(L, g == r && g == b, 1, "greyscale value cannot be converted to hsv");
+  luaL_argcheck(L, g != r || g != b, 1, "greyscale value cannot be converted to hsv");
 
   uint32_t hsv = grb2hsv(g, r, b);
 
@@ -234,12 +234,12 @@ static int cu_grb2hsv(lua_State *L) {
 }
 
 
-LROT_BEGIN(color_utils)
+LROT_BEGIN(color_utils, NULL, 0)
   LROT_FUNCENTRY( hsv2grb, cu_hsv2grb )
   LROT_FUNCENTRY( hsv2grbw, cu_hsv2grbw )
   LROT_FUNCENTRY( colorWheel, cu_color_wheel )
   LROT_FUNCENTRY( grb2hsv, cu_grb2hsv )
-LROT_END( color_utils, NULL, 0 )
+LROT_END(color_utils, NULL, 0)
 
 
 NODEMCU_MODULE(COLOR_UTILS, "color_utils", color_utils, NULL);

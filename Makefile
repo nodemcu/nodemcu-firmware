@@ -109,7 +109,7 @@ ifneq (,$(findstring indows,$(OS)))
   else
     # It is gcc, may be cygwin
     # Can we use -fdata-sections?
-    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections
+    CCFLAGS += -ffunction-sections -fno-jump-tables -fdata-sections -fpack-struct=4
     AR = xtensa-lx106-elf-ar
     CC = xtensa-lx106-elf-gcc
     CXX = xtensa-lx106-elf-g++
@@ -137,7 +137,7 @@ else
   UNAME_P := $(shell uname -p)
   ifeq ($(OS),linux)
     ifndef TOOLCHAIN_ROOT
-      TOOLCHAIN_VERSION = 20181106.0
+      TOOLCHAIN_VERSION = 20190731.0
       GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
       TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
       GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
