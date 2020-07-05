@@ -20,7 +20,7 @@
 ]]
 
 -- initialize module
-local mcp23017 = require('mcp23017')
+local mcp23017 = require "mcp23017"
 
 -- set the address for MCP23017
 local address = 0x20
@@ -33,9 +33,9 @@ local cSDA = 2
 
 local i2cId = 0
 
--- setup i2c bus and mcp23017
+-- setup i2c bus and create instance for mcp23017 (assigned to mcp)
 i2c.setup(i2cId, cSDA, cSCL, i2c.SLOW)
-mcp23017.setup(address, i2cId)
+local mcp = mcp23017(address, i2cId)
 
 
 --[[
@@ -45,9 +45,9 @@ mcp23017.setup(address, i2cId)
 ]]
 
 -- set pin 7 and 8 to output (GPA7 and GPB0) and GPB1 to input
-mcp23017.setMode(mcp23017.GPA, 7, mcp23017.OUTPUT)
-mcp23017.setMode(mcp23017.GPB, 0, mcp23017.OUTPUT)
-mcp23017.setMode(mcp23017.GPB, 1, mcp23017.INPUT)
+mcp:setMode(mcp.GPA, 7, mcp.OUTPUT)
+mcp:setMode(mcp.GPB, 0, mcp.OUTPUT)
+mcp:setMode(mcp.GPB, 1, mcp.INPUT)
 
 
 
@@ -58,9 +58,9 @@ mcp23017.setMode(mcp23017.GPB, 1, mcp23017.INPUT)
 ]]
 
 -- set pin 7 to high (GPA7)
-mcp23017.setPin(mcp23017.GPA, 7, mcp23017.HIGH)
+mcp:setPin(mcp.GPA, 7, mcp.HIGH)
 -- set pin 8 to low (GPB0)
-mcp23017.setPin(mcp23017.GPB, 0, mcp23017.LOW)
+mcp:setPin(mcp.GPB, 0, mcp.LOW)
 
 
 
@@ -74,16 +74,16 @@ mcp23017.setPin(mcp23017.GPB, 0, mcp23017.LOW)
 local currentPin = 6
 local currentState = false
 
-mcp23017.setMode(mcp23017.GPA, currentPin, mcp23017.OUTPUT)
+mcp:setMode(mcp.GPA, currentPin, mcp.OUTPUT)
 
 tmr.create():alarm(1000, tmr.ALARM_AUTO, function()
     if currentState == true then
         -- print("set to low")
-        mcp23017.setPin(mcp23017.GPA, currentPin, mcp23017.LOW)
+        mcp:setPin(mcp.GPA, currentPin, mcp.LOW)
         currentState = false
     else
         -- print("set to high")
-        mcp23017.setPin(mcp23017.GPA, currentPin, mcp23017.HIGH)
+        mcp:setPin(mcp.GPA, currentPin, mcp.HIGH)
         currentState = true
     end
 end)
@@ -100,11 +100,11 @@ end)
 
 -- read input register
 tmr.create():alarm(7000, tmr.ALARM_AUTO, function()
-    local a = mcp23017.readGPIO(mcp23017.GPA)
+    local a = mcp:readGPIO(mcp.GPA)
     print(" ")
     print("GPIO A input states: " .. a)
 
-    local b = mcp23017.readGPIO(mcp23017.GPB)
+    local b = mcp:readGPIO(mcp.GPB)
     print("GPIO B input states: " .. b)
     print(" ")
 end)
