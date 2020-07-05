@@ -9,7 +9,8 @@ test(function(e, test, msg, errormsg)
     currentTest = {
       name = test,
       pass = {},
-      fail = {}
+      fail = {},
+      except = {}
     }
   elseif e == 'end' then
     table.insert(actual, currentTest)
@@ -20,7 +21,8 @@ test(function(e, test, msg, errormsg)
     table.insert(currentTest.fail, msg)
     if errormsg then table.insert(currentTest.fail, errormsg) end
   elseif e == 'except' then
-    print('*** PANIC ***: ', test, msg, errormsg)
+    table.insert(currentTest.except, msg)
+    if errormsg then table.insert(currentTest.except, errormsg) end
   end
 end)
 
@@ -42,12 +44,13 @@ local function comparetables(t1, t2)
   return true
 end
 
-local function metatest(name, f, expectedPassed, expectedFailed, async)
+local function metatest(name, f, expectedPassed, expectedFailed, expectedExcept, async)
   test(name, f, async)
   table.insert(expected, {
     name = name,
     pass = expectedPassed,
-    fail = expectedFailed
+    fail = expectedFailed,
+    except = expectedExcept or {}
   })
 end
 
@@ -73,7 +76,7 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:74'}, {'gambiarra_test.lua:75'})
+end, {'gambiarra_test.lua:77'}, {'gambiarra_test.lua:78'})
 
 --
 -- Equality tests
@@ -195,11 +198,19 @@ end, {'spy returns a value', 'default spy returns undefined'}, {})
 --
 metatest('fail should work', function()
   fail(function() error("my error") end, "my error", "Failed with correct error")
-  fail(function() error("my error") end, "not my error", "Failed with incorrect error")
+  fail(function() error("my error") end, "different error", "Failed with incorrect error")
   fail(function() end, "my error", "Failed without error")
 end, {'Failed with correct error'}, {'Failed with incorrect error',
-      'expected errormessage "gambiarra_test.lua:199: my error" to contain "not my error"',
+      'expected errormessage "gambiarra_test.lua:201: my error" to contain "different error"',
       "Failed without error", 'Expected to fail with Error containing "my error"'})
+
+--
+-- except tests
+--
+metatest('error should panic', function()
+  error("lua error")
+  ok(true, 'unreachable code')
+end, {}, {}, {'gambiarra_test.lua:211: lua error'})
 
 --
 -- Async tests
@@ -220,12 +231,12 @@ metatest('async test', function(next)
     end)
   end)
   ok(true, 'foo')
-end, {'foo', 'bar', 'baz'}, {}, true)
+end, {'foo', 'bar', 'baz'}, {}, {}, true)
 
 metatest('async test without actually async', function(next)
   ok(true, 'bar')
   next()
-end, {'bar'}, {}, true)
+end, {'bar'}, {}, {}, true)
 
 async_next()
 async_next()
@@ -236,7 +247,20 @@ metatest('another async test after async queue drained', function(next)
     next()
   end)
   ok(true, 'foo')
-end, {'foo', 'bar'}, {}, true)
+end, {'foo', 'bar'}, {}, {}, true)
+
+async_next()
+
+--
+-- except tests async
+--
+metatest('error should panic async', function(next)
+  async(function() 
+   -- error("async Lua error")
+    next()
+  end)
+  ok(true, 'foo')
+end, {'foo'}, {}, {'gambiarra_test.lua:259: async Lua error'}, true)
 
 async_next()
 
@@ -247,13 +271,17 @@ for i = 1,#expected do
   if actual[i] == nil then
     print("--- FAIL "..expected[i].name..' (pending)')
   elseif not comparetables(expected[i].pass, actual[i].pass) then
-    print("--- FAIL "..expected[i].name..' (passed): ['..
+    print("--- FAIL "..expected[i].name..' (passed): expected ['..
       stringify(expected[i].pass)..'] vs ['..
       stringify(actual[i].pass)..']')
   elseif not comparetables(expected[i].fail, actual[i].fail) then
-    print("--- FAIL "..expected[i].name..' (failed): ['..
+    print("--- FAIL "..expected[i].name..' (failed): expected ['..
       stringify(expected[i].fail)..'] vs ['..
       stringify(actual[i].fail)..']')
+  elseif not comparetables(expected[i].except, actual[i].except) then
+    print("--- FAIL "..expected[i].name..' (failed): expected ['..
+      stringify(expected[i].except)..'] vs ['..
+      stringify(actual[i].except)..']')
   else
     print("+++ Pass "..expected[i].name)
   end

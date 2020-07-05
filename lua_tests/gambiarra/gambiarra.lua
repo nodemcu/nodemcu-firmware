@@ -67,6 +67,7 @@ local function assertok(handler, name, cond, msg)
     -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
     msg = debug.traceback()
     msg = msg:match("\n[^\n]*\n[^\n]*\n[^\n]*\n\t*([^\n]*): in")
+    msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
   end
   local errormsg
 
@@ -78,6 +79,7 @@ local function assertok(handler, name, cond, msg)
     handler('pass', name, msg, errormsg)
   else
     handler('fail', name, msg, errormsg)
+    --error('okAbort')
   end
 end
 
@@ -91,6 +93,7 @@ local function fail(handler, name, func, expected, msg)
       handler('fail', name, msg, "Expected to fail with Error" .. messagePart)
       return
   end
+  err:match(".-([^\\/]*)$") -- cut off path of filename
   if (expected and not string.find(err, expected)) then
       handler('fail', name, msg, "expected errormessage \"" .. err .. "\" to contain \"" .. expected .. "\"")
       return
@@ -100,7 +103,7 @@ end
 
 local pendingtests = {}
 local env = _G
-local gambiarrahandler = TERMINAL_HANDLER
+local outputhandler = TERMINAL_HANDLER
 
 local function runpending()
   if pendingtests[1] ~= nil then pendingtests[1](runpending) end
@@ -116,7 +119,7 @@ end
 
 return function(name, f, async)
   if type(name) == 'function' then
-    gambiarrahandler = name
+    outputhandler = name
     env = f or _G
     return
   end
@@ -128,12 +131,13 @@ return function(name, f, async)
 
     local restore = function()
       copyenv(env, prev)
-      gambiarrahandler('end', name)
+      outputhandler('end', name)
       table.remove(pendingtests, 1)
       if next then next() end
     end
 
-    local handler = gambiarrahandler
+    local handler = outputhandler
+    
     local function wrap(f, ...)
       f(handler, name, ...)
     end
@@ -147,7 +151,9 @@ return function(name, f, async)
     handler('begin', name);
     local ok, err = pcall(f, restore)
     if not ok then
-      handler('except', name, err)
+      if err ~= 'okAbort' then
+        handler('except', name, err)
+      end
     end
 
     if not async then
