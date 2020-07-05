@@ -16,6 +16,7 @@
 #include "sdkconfig.h"
 #include "esp_system.h"
 #include "esp_event.h"
+#include "esp_event_loop.h"
 #include "nvs_flash.h"
 #include "flash_api.h"
 
@@ -35,10 +36,11 @@
 static task_handle_t esp_event_task;
 static QueueHandle_t esp_event_queue;
 
-// We provide our own esp_event_send which hooks into the NodeMCU task
-// task framework, and ensures all events are handled in the same context
-// as the LVM, making life as easy as possible for us.
-esp_err_t esp_event_send (system_event_t *event)
+
+// The callback happens in the wrong task context, so we bounce the event
+// into our own queue so they all get handled in the same context as the
+// LVM, making life as easy as possible for us.
+esp_err_t bounce_events(void *ignored_ctx, system_event_t *event)
 {
   if (!event)
     return ESP_ERR_INVALID_ARG;
@@ -68,10 +70,6 @@ static void handle_esp_event (task_param_t param, task_prio_t prio)
   system_event_t evt;
   while (xQueueReceive (esp_event_queue, &evt, 0) == pdPASS)
   {
-    esp_err_t ret = esp_event_process_default (&evt);
-    if (ret != ESP_OK)
-      NODE_ERR("default event handler failed for %d", evt.event_id);
-
     nodemcu_esp_event_reg_t *evregs;
     for (evregs = &esp_event_cb_table; evregs->callback; ++evregs)
     {
@@ -153,6 +151,8 @@ void app_main (void)
   esp_event_task = task_get_id (handle_esp_event);
 
   input_task = task_get_id (handle_input);
+
+  esp_event_loop_init(bounce_events, NULL);
 
   ConsoleSetup_t cfg;
   cfg.bit_rate  = CONFIG_CONSOLE_BIT_RATE;
