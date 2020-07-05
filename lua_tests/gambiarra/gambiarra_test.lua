@@ -3,6 +3,8 @@ local test = require('gambiarra')
 local actual = {}
 local expected = {}
 
+node = {task = {}}
+
 -- Set meta test handler
 test(function(e, test, msg, errormsg)
   if e == 'begin' then
@@ -44,6 +46,22 @@ local function comparetables(t1, t2)
   return true
 end
 
+local queue = {}
+local function async(f) table.insert(queue, f) end
+local post_queue = {}
+node.task.post = function (p, f) table.insert(post_queue, f) end
+local function async_next()
+  local f = table.remove(queue, 1)
+  if f then
+    f() 
+  else 
+    f = table.remove(post_queue, 1)
+    if f then
+      f()
+    end
+  end
+end
+
 local function metatest(name, f, expectedPassed, expectedFailed, expectedExcept, async)
   test(name, f, async)
   table.insert(expected, {
@@ -78,12 +96,12 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:79'}, {'gambiarra_test.lua:80'})
+end, {'gambiarra_test.lua:97'}, {'gambiarra_test.lua:98'})
 
 metatest('nok without a message', function()
   nok(1 == 2)
   nok(1 == 1)
-end, {'gambiarra_test.lua:84'}, {'gambiarra_test.lua:85'})
+end, {'gambiarra_test.lua:102'}, {'gambiarra_test.lua:103'})
 
 --
 -- Equality tests
@@ -214,7 +232,7 @@ metatest('fail with incorrect errormessage', function()
   fail(function() error("my error") end, "different error", "Failed with incorrect error")
   ok(true, 'unreachable code')
 end, {}, {'Failed with incorrect error',
-      'expected errormessage "gambiarra_test.lua:214: my error" to contain "different error"'})
+      'expected errormessage "gambiarra_test.lua:232: my error" to contain "different error"'})
 
 metatest('fail with not failing code', function()
   fail(function() end, "my error", "Failed without error")
@@ -227,18 +245,15 @@ end, {}, {"Failed without error", 'Expected to fail with Error containing "my er
 metatest('error should panic', function()
   error("lua error")
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:228: lua error'})
+end, {}, {}, {'gambiarra_test.lua:246: lua error'})
+
+while #post_queue > 0 do
+  async_next()
+end
 
 --
 -- Async tests
 --
-local queue = {}
-local function async(f) table.insert(queue, f) end
-local function async_next()
-  local f = table.remove(queue, 1)
-  if f then f() end
-end
-
 metatest('async test', function(next)
   async(function() 
     ok(true, 'bar')
@@ -266,8 +281,6 @@ metatest('another async test after async queue drained', function(next)
   ok(true, 'foo')
 end, {'foo', 'bar'}, {}, {}, true)
 
-async_next()
-
 --
 -- except tests async
 --
@@ -277,9 +290,28 @@ metatest('error should panic async', function(next)
     next()
   end)
   ok(true, 'foo')
-end, {'foo'}, {}, {'gambiarra_test.lua:259: async Lua error'}, true)
+end, {'foo'}, {}, {'gambiarra_test.lua:289: async Lua error'}, true)
 
-async_next()
+--
+-- sync after async test
+--
+local marker = 0
+metatest('set marker async', function(next)
+  async(function() 
+    marker = "marked"
+    ok(true, 'async bar')
+    next()
+  end)
+  ok(true, 'foo')
+end, {'foo', 'async bar'}, {}, {}, true)
+
+metatest('check marker async', function()
+  ok(eq(marker, "marked"), "marker check")
+end, {"marker check"}, {})
+
+while #post_queue + #queue > 0 do
+  async_next()
+end
 
 --
 -- Finalize: check test results

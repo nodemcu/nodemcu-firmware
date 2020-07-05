@@ -106,7 +106,11 @@ local env = _G
 local outputhandler = TERMINAL_HANDLER
 
 local function runpending()
-  if pendingtests[1] ~= nil then pendingtests[1](runpending) end
+  if pendingtests[1] ~= nil then 
+    node.task.post(node.task.LOW_PRIORITY, function()
+      pendingtests[1](runpending)
+    end)
+  end
 end
 
 local function copyenv(dest, src)
@@ -149,7 +153,7 @@ return function(name, f, async)
     env.fail = function (func, expected, msg) wrap(fail, func, expected, msg) end
 
     handler('begin', name);
-    local ok, err = pcall(f, restore)
+    local ok, err = pcall(f, async and restore)
     if not ok then
       if not err:match('_*_TestAbort_*_') then
         handler('except', name, err)
@@ -157,17 +161,12 @@ return function(name, f, async)
     end
 
     if not async then
-      handler('end', name);
-      copyenv(env, prev)
+      restore()
     end
   end
 
-  if not async then
-    testfn()
-  else
-    table.insert(pendingtests, testfn)
-    if #pendingtests == 1 then
-      runpending()
-    end
+  table.insert(pendingtests, testfn)
+  if #pendingtests == 1 then
+    runpending()
   end
 end
