@@ -181,7 +181,7 @@ static void enduser_setup_debug(int line, const char *str)
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_dbg_cb_ref);
     lua_pushfstring(L, "%d: \t%s", line, str);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 
@@ -196,7 +196,7 @@ static void enduser_setup_error(int line, const char *str, int err)
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->lua_err_cb_ref);
     lua_pushnumber(L, err);
     lua_pushfstring(L, "%d: \t%s", line, str);
-    lua_call (L, 2, 0);
+    luaL_pcallx (L, 2, 0);
   }
 }
 
@@ -209,7 +209,7 @@ static void enduser_setup_connected_callback()
   if (state != NULL && state->lua_connected_cb_ref != LUA_NOREF)
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->lua_connected_cb_ref);
-    lua_call(L, 0, 0);
+    luaL_pcallx(L, 0, 0);
   }
 }
 
@@ -646,7 +646,7 @@ static void do_station_cfg (task_param_t param, uint8_t prio)
 
 /**
  * Count the number of occurences of a character in a string
- * 
+ *
  * return the number of times the character was encountered in the string
  */
 static int count_char_occurence(const char *input, const char char_to_count) {
@@ -667,7 +667,7 @@ struct keypairs_t {
 
 static void enduser_setup_free_keypairs(struct keypairs_t *kp) {
     if (kp == NULL) return;
-  
+
     if (kp->keypairs != NULL) {
         for (int i = 0; i < kp->keypairs_nb * 2; i++) {
       free(kp->keypairs[i]);
@@ -692,7 +692,7 @@ static struct keypairs_t * enduser_setup_alloc_keypairs(int kp_number ){
 static struct keypairs_t *enduser_setup_get_keypairs_from_form(char *form_body, int form_length) {
   int keypair_nb = count_char_occurence(form_body, '&') + 1;
   int equal_nb = count_char_occurence(form_body, '=');
-  
+
   if (keypair_nb == 1 && equal_nb == 0) {
     ENDUSER_SETUP_DEBUG("No keypair in form body");
     return NULL;
@@ -707,7 +707,7 @@ static struct keypairs_t *enduser_setup_get_keypairs_from_form(char *form_body, 
   os_bzero(body_copy, form_length+1);
   os_memcpy(body_copy, form_body, form_length);
   char *tok = strtok(body_copy, "=");
-  
+
   char last_tok = '=';
   while (tok) {
     size_t len = strlen(tok);
@@ -750,7 +750,7 @@ static int enduser_setup_write_file_with_extra_configuration_data(char *form_bod
 
   // We will save the form data into a file in the LUA format: KEY="VALUE", so that configuration data is available for load in the lua code.
   // As input, we have a string as such: "key1=value1&key2=value2&key3=value%203" (urlencoded), the number of '&' tells us how many keypairs there are (the count + 1)
- 
+
   struct keypairs_t *kp = enduser_setup_get_keypairs_from_form(form_body, form_length);
   if (kp == NULL || kp->keypairs_nb == 0) {
     ENDUSER_SETUP_DEBUG("enduser: No extra configuration.");
@@ -778,13 +778,13 @@ static int enduser_setup_write_file_with_extra_configuration_data(char *form_bod
   for( idx = 0; idx < kp->keypairs_nb*2; idx=idx+2){
     char* to_write = kp->keypairs[idx];
     size_t length = strlen(to_write);
-    
+
     vfs_write(p_file, "p.", 2);
 
     vfs_write(p_file, to_write, length);
 
     vfs_write(p_file, "=\"", 2);
-    
+
     to_write = kp->keypairs[idx+1];
     length = strlen(to_write);
     vfs_write(p_file, to_write, length);
@@ -1969,11 +1969,11 @@ static int enduser_setup_stop(lua_State* L)
 }
 
 
-LROT_BEGIN(enduser_setup)
+LROT_BEGIN(enduser_setup, NULL, 0)
   LROT_FUNCENTRY( manual, enduser_setup_manual )
   LROT_FUNCENTRY( start, enduser_setup_start )
   LROT_FUNCENTRY( stop, enduser_setup_stop )
-LROT_END( enduser_setup, NULL, 0 )
+LROT_END(enduser_setup, NULL, 0)
 
 
 NODEMCU_MODULE(ENDUSER_SETUP, "enduser_setup", enduser_setup, NULL);

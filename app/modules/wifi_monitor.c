@@ -2,7 +2,6 @@
 
 #include "module.h"
 #include "lauxlib.h"
-#include "lapi.h"
 #include "platform.h"
 
 #include <string.h>
@@ -276,7 +275,7 @@ typedef struct {
   uint8 buf[];
 } packet_t;
 
-LROT_TABLE(packet_function)
+LROT_TABLE(packet_function);
 
 static void wifi_rx_cb(uint8 *buf, uint16 len) {
   if (len != sizeof(struct sniffer_buf2)) {
@@ -322,7 +321,7 @@ static void monitor_task(os_param_t param, uint8_t prio)
 
     free(input);
 
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   } else {
     free(input);
   }
@@ -713,7 +712,7 @@ static int wifi_monitor_start(lua_State *L) {
     mon_value = 0x00;
     mon_mask = 0x0C;
   }
-  if (lua_type(L, argno) == LUA_TFUNCTION || lua_type(L, argno) == LUA_TLIGHTFUNCTION)
+  if (lua_isfunction(L, argno))
   {
     lua_pushvalue(L, argno);  // copy argument (func) to the top of stack
     recv_cb = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -757,27 +756,27 @@ static int wifi_monitor_stop(lua_State *L) {
   return 0;
 }
 
-LROT_BEGIN(packet_function)
+LROT_BEGIN(packet_function, NULL, 0)
   LROT_FUNCENTRY( radio_byte, packet_radio_byte )
   LROT_FUNCENTRY( frame_byte, packet_frame_byte )
   LROT_FUNCENTRY( radio_sub, packet_radio_sub )
   LROT_FUNCENTRY( frame_sub, packet_frame_sub )
   LROT_FUNCENTRY( radio_subhex, packet_radio_subhex )
   LROT_FUNCENTRY( frame_subhex, packet_frame_subhex )
-LROT_END( packet_function, packet_function, LROT_MASK_INDEX )
+LROT_END(packet_function, NULL, 0)
 
 
-LROT_BEGIN(packet)
+LROT_BEGIN(packet, NULL, LROT_MASK_INDEX)
   LROT_FUNCENTRY( __index, packet_map_lookup )
-LROT_END( packet, packet, LROT_MASK_INDEX )
+LROT_END(packet, NULL, LROT_MASK_INDEX)
 
 
 // Module function map
-LROT_PUBLIC_BEGIN(wifi_monitor)
+LROT_BEGIN(wifi_monitor, NULL, 0)
   LROT_FUNCENTRY( start, wifi_monitor_start )
   LROT_FUNCENTRY( stop, wifi_monitor_stop )
   LROT_FUNCENTRY( channel, wifi_monitor_channel )
-LROT_END( wifi_monitor, NULL, 0 )
+LROT_END(wifi_monitor, NULL, 0)
 
 
 int wifi_monitor_init(lua_State *L)

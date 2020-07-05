@@ -211,7 +211,7 @@ static void handle_error (lua_State *L, ntp_err_t err, const char *msg)
     lua_pushinteger (L, err);
     lua_pushstring (L, msg);
     cleanup (L);
-    lua_call (L, 2, 0);
+    luaL_pcallx (L, 2, 0);
   }
   else
     cleanup (L);
@@ -319,7 +319,7 @@ static void sntp_handle_result(lua_State *L) {
 
   if (have_cb)
   {
-    lua_call (L, 4, 0);
+    luaL_pcallx (L, 4, 0);
   }
 }
 
@@ -873,13 +873,13 @@ static int sntp_open(lua_State *L)
 
 
 // Module function map
-LROT_BEGIN(sntp)
+LROT_BEGIN(sntp, NULL, 0)
   LROT_FUNCENTRY( sync, sntp_sync )
 #ifdef LUA_USE_MODULES_RTCTIME
   LROT_FUNCENTRY( setoffset, sntp_setoffset )
   LROT_FUNCENTRY( getoffset, sntp_getoffset )
 #endif
-LROT_END( sntp, NULL, 0 )
+LROT_END(sntp, NULL, 0)
 
 
 NODEMCU_MODULE(SNTP, "sntp", sntp, sntp_open);

@@ -6,7 +6,6 @@
 
 #define LUAC_CROSS_FILE
 
-#include "luac_cross.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -28,15 +28,18 @@
 #define LUA_TUPVAL	(LAST_TAG+2)
 #define LUA_TDEADKEY	(LAST_TAG+3)
 
-#ifdef __XTENSA__
+#ifdef LUA_USE_ESP
 /*
 ** force aligned access to critical fields in Flash-based structures
 ** wo is the offset of aligned word in bytes 0,4,8,..
 ** bo is the field within the word in bits 0..31
+**
+** Note that this returns a lu_int32 as returning a byte can cause the
+** gcc code generator to emit an extra extui instruction.
 */
 #define GET_BYTE_FN(name,t,wo,bo) \
-static inline lu_byte get ## name(void *o) { \
-  lu_byte res;  /* extract named field */ \
+static inline lu_int32 get ## name(void *o) { \
+  lu_int32 res;  /* extract named field */ \
   asm ("l32i  %0, %1, " #wo "; extui %0, %0, " #bo ", 8;" : "=r"(res) : "r"(o) : );\
   return res; }
 #else
@@ -91,43 +94,47 @@ typedef union {
 #define TValuefields	Value value; int tt
 #define LUA_TVALUE_NIL {NULL}, LUA_TNIL
 
-#if defined(LUA_PACK_TVALUES) && !defined(LUA_CROSS_COMPILER)
-#pragma pack(4)
+#ifdef LUA_USE_ESP
+#  pragma pack(4)
 #endif
+
 typedef struct lua_TValue {
   TValuefields;
 } TValue;
-#if defined(LUA_PACK_TVALUES) && !defined(LUA_CROSS_COMPILER)
-#pragma pack()
+
+#ifdef LUA_USE_ESP
+#  pragma pack()
 #endif
 
 /* Macros to test type */
-#define ttisnil(o)	(ttype(o) == LUA_TNIL)
-#define ttisnumber(o)	(ttype(o) == LUA_TNUMBER)
-#define ttisstring(o)	(ttype(o) == LUA_TSTRING)
-#define ttistable(o)	(ttype(o) == LUA_TTABLE)
-#define ttisfunction(o)	(ttype(o) == LUA_TFUNCTION)
-#define ttisboolean(o)	(ttype(o) == LUA_TBOOLEAN)
-#define ttisuserdata(o)	(ttype(o) == LUA_TUSERDATA)
-#define ttisthread(o)	(ttype(o) == LUA_TTHREAD)
+
+#define ttisnil(o)		(ttype(o) == LUA_TNIL)
+#define ttisnumber(o)		(ttype(o) == LUA_TNUMBER)
+#define ttisstring(o)		(ttype(o) == LUA_TSTRING)
+#define ttistable(o)		(basettype(o) == LUA_TTABLE)
+#define ttisrwtable(o)		(type(o) == LUA_TTABLE)
+#define ttisrotable(o)		(ttype(o) & LUA_TISROTABLE)
+#define ttisboolean(o)		(ttype(o) == LUA_TBOOLEAN)
+#define ttisuserdata(o)		(ttype(o) == LUA_TUSERDATA)
+#define ttisthread(o)		(ttype(o) == LUA_TTHREAD)
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
-#define ttisrotable(o) (ttype(o) == LUA_TROTABLE)
-#define ttislightfunction(o)  (ttype(o) == LUA_TLIGHTFUNCTION)
-#define ttisanyfunction(o)  (ttisfunction(o) || ttislightfunction(o))
+#define ttislightfunction(o)	(ttype(o) == LUA_TLIGHTFUNCTION)
+#define ttisclfunction(o)	(ttype(o) == LUA_TFUNCTION)
+#define ttisfunction(o)		(basettype(o) == LUA_TFUNCTION)
 
 /* Macros to access values */
 
 #define ttype(o)	((void) (o)->value, (o)->tt)
+#define basettype(o)	((void) (o)->value, ((o)->tt & LUA_TMASK))
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
-#define rvalue(o)	check_exp(ttisrotable(o), (o)->value.p)
-#define fvalue(o) check_exp(ttislightfunction(o), (o)->value.p)
+#define fvalue(o)	check_exp(ttislightfunction(o), (o)->value.p)
 #define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
 #define rawtsvalue(o)	check_exp(ttisstring(o), &(o)->value.gc->ts)
 #define tsvalue(o)	(&rawtsvalue(o)->tsv)
 #define rawuvalue(o)	check_exp(ttisuserdata(o), &(o)->value.gc->u)
 #define uvalue(o)	(&rawuvalue(o)->uv)
-#define clvalue(o)	check_exp(ttisfunction(o), &(o)->value.gc->cl)
+#define clvalue(o)	check_exp(ttisclfunction(o), &(o)->value.gc->cl)
 #define hvalue(o)	check_exp(ttistable(o), &(o)->value.gc->h)
 #define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
 #define thvalue(o)	check_exp(ttisthread(o), &(o)->value.gc->th)
@@ -153,9 +160,6 @@ typedef struct lua_TValue {
 
 #define setpvalue(obj,x) \
   { void *i_x = (x); TValue *i_o=(obj); i_o->value.p=i_x; i_o->tt=LUA_TLIGHTUSERDATA; }
-
-#define setrvalue(obj,x) \
-  { void *i_x = (x); TValue *i_o=(obj); i_o->value.p=i_x; i_o->tt=LUA_TROTABLE; }
 
 #define setfvalue(obj,x) \
   { void *i_x = (x); TValue *i_o=(obj); i_o->value.p=i_x; i_o->tt=LUA_TLIGHTFUNCTION; }
@@ -190,7 +194,7 @@ typedef struct lua_TValue {
 #define sethvalue(L,obj,x) \
   { GCObject *i_x = cast(GCObject *, (x)); \
     TValue *i_o=(obj); \
-    i_o->value.gc=i_x; i_o->tt=LUA_TTABLE; \
+    i_o->value.gc=i_x; i_o->tt=gettt(x); \
     checkliveness(G(L),i_o); }
 
 #define setptvalue(L,obj,x) \
@@ -225,7 +229,7 @@ typedef struct lua_TValue {
 
 #define setttype(obj, stt) ((void) (obj)->value, (obj)->tt = (stt))
 
-#define iscollectable(o)	(ttype(o) >= LUA_TSTRING)
+#define iscollectable(o)	(ttype(o) >= LUA_TSTRING && ttype(o) <= LUA_TMASK)
 
 
 typedef TValue *StkId;  /* index to stack elements */
@@ -243,17 +247,8 @@ typedef union TString {
   } tsv;
 } TString;
 
-#ifdef LUA_CROSS_COMPILER
-#define isreadonly(o) (0)
-#else
-#define isreadonly(o) ((o).marked & READONLYMASK)
-#endif
-#define ts_isreadonly(ts) isreadonly((ts)->tsv)
-#define getstr(ts) (ts_isreadonly(ts) ? \
-                     cast(const char *, *(const char**)((ts) + 1)) : \
-                     cast(const char *, (ts) + 1))
+#define getstr(ts)  cast(const char *, (ts) + 1)
 #define svalue(o)   getstr(rawtsvalue(o))
-
 
 
 typedef union Udata {
@@ -266,7 +261,12 @@ typedef union Udata {
   } uv;
 } Udata;
 
-
+#ifdef LUA_CROSS_COMPILER
+#define isreadonly(o) (0)
+#else
+#define isreadonly(o) (getmarked(o) & READONLYMASK)
+#endif
+#define islfs(o) (getmarked(o) & LFSMASK)
 
 
 /*
@@ -301,7 +301,6 @@ typedef struct Proto {
   lu_byte is_vararg;
   lu_byte maxstacksize;
 } Proto;
-#define proto_isreadonly(p) isreadonly(*(p))
 
 
 /* masks for new-style vararg */
@@ -371,6 +370,18 @@ typedef union Closure {
 ** Tables
 */
 
+/*
+** Common Table fields for both table versions (like CommonHeader in
+** macro form, to be included in table structure definitions).
+**
+** Note that the sethvalue() macro works much like the setsvalue()
+** macro and handles the abstracted type. the hvalue(o) macro can be
+** used to access CommonTable fields and rw Table fields
+*/
+
+#define CommonTable CommonHeader; \
+                    lu_byte flags; lu_byte lsizenode; struct Table *metatable
+
 typedef union TKey {
   struct {
     TValuefields;
@@ -388,10 +399,7 @@ typedef struct Node {
 
 
 typedef struct Table {
-  CommonHeader;
-  lu_byte flags;  /* 1<<p means tagmethod(p) is not present */
-  lu_byte lsizenode;  /* log2 of size of `node' array */
-  struct Table *metatable;
+  CommonTable;
   TValue *array;  /* array part */
   Node *node;
   Node *lastfree;  /* any free position is before this position */
@@ -399,7 +407,23 @@ typedef struct Table {
   int sizearray;  /* size of `array' array */
 } Table;
 
-typedef const struct luaR_entry ROTable;
+GET_BYTE_FN(flags,Table,4,16)
+GET_BYTE_FN(lsizenode,Table,4,24)
+
+typedef const struct ROTable_entry {
+  const char *key;
+  const TValue value;
+} ROTable_entry;
+
+
+typedef struct ROTable {
+ /* next always has the value (GCObject *)((size_t) 1); */
+ /* flags & 1<<p means tagmethod(p) is not present */
+ /* lsizenode is unused */
+ /* Like TStrings, the ROTable_entry vector follows the ROTable */
+  CommonTable;
+  ROTable_entry *entry;
+} ROTable;
 
 /*
 ** `module' operation for hashing (size is always a power of 2)

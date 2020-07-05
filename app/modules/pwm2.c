@@ -1,5 +1,5 @@
 /*
- * Software PWM using soft-interrupt timer1. 
+ * Software PWM using soft-interrupt timer1.
  * Supports higher frequencies compared to Espressif provided one.
  *
  * Nikolay Fiykov
@@ -127,7 +127,7 @@ static int lpwm2_start(lua_State *L) {
 }
 
 // Module function map
-LROT_BEGIN(pwm2)
+LROT_BEGIN(pwm2, NULL, 0)
 LROT_FUNCENTRY(setup_pin_hz, lpwm2_setup_pin_hz)
 LROT_FUNCENTRY(setup_pin_sec, lpwm2_setup_pin_sec)
 LROT_FUNCENTRY(release_pin, lpwm2_release_pin)

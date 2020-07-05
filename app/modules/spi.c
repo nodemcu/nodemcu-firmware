@@ -319,7 +319,7 @@ static int spi_set_clock_div( lua_State *L )
 
 
 // Module function map
-LROT_BEGIN(spi)
+LROT_BEGIN(spi, NULL, 0)
   LROT_FUNCENTRY( setup, spi_setup )
   LROT_FUNCENTRY( send, spi_send_recv )
   LROT_FUNCENTRY( recv, spi_recv )
@@ -336,7 +336,7 @@ LROT_BEGIN(spi)
   LROT_NUMENTRY( DATABITS_8, 8 )
   LROT_NUMENTRY( HALFDUPLEX, SPI_HALFDUPLEX )
   LROT_NUMENTRY( FULLDUPLEX, SPI_FULLDUPLEX )
-LROT_END( spi, NULL, 0 )
+LROT_END(spi, NULL, 0)
 
 
 NODEMCU_MODULE(SPI, "spi", spi, NULL);

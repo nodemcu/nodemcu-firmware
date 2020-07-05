@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include "mem.h"
 
-/**DEBUG**/extern void dbg_printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-
 static void input_handler(platform_task_param_t flag, uint8 priority);
 
 static struct input_state {
@@ -63,7 +61,7 @@ static bool uart_getc(char *c){
 ** The ins.data check detects up the first task call which used to initialise
 ** everything.
 */
-int lua_main (void);
+extern int lua_main (void);
 static bool input_readline(void);
 
 static void input_handler(platform_task_param_t flag, uint8 priority) {
@@ -79,7 +77,7 @@ static void input_handler(platform_task_param_t flag, uint8 priority) {
 /*
 ** The input state (ins) is private, so input_setup() exposes the necessary
 ** access to public properties and is called in user_init() before the Lua
-** enviroment is initialised.  The second routine input_setup_receive() is 
+** enviroment is initialised.  The second routine input_setup_receive() is
 ** called in lua.c after the Lua environment is available to bind the Lua
 ** input handler.  Any UART input before this receive setup is ignored.
 */
@@ -112,15 +110,15 @@ void input_setprompt (const char *prompt) {
 }
 
 /*
-** input_readline() is called from the input_handler() event routine which is 
+** input_readline() is called from the input_handler() event routine which is
 ** posted by the UART Rx ISR posts. This works in one of two modes depending on
 ** the bool ins.run_input.
 ** -  TRUE:   it clears the UART FIFO up to EOL, doing any callback and sending
 **            the line to Lua.
-** -  FALSE:  it clears the UART FIFO doing callbacks according to the data_len /
-**            end_char break.
+** -  FALSE:  it clears the UART FIFO doing callbacks according to the data_len
+**            or end_char break.
 */
-void lua_input_string (const char *line, int len);
+extern void lua_input_string (const char *line, int len);
 
 static bool input_readline(void) {
   char ch = NUL;
@@ -182,9 +180,9 @@ static bool input_readline(void) {
     } else {
       while (uart_getc(&ch)) {
         ins.data[ins.line_pos++] = ch;
-        if(  ins.line_pos >= ins.len ||
-            (ins.data_len > 0 && ins.line_pos >= ins.data_len) ||
-             ch == ins.end_char ) {
+        if( ins.line_pos >= ins.len ||
+           (ins.data_len >= 0 && ins.line_pos >= ins.data_len) ||
+           (ins.data_len  < 0 && ch == ins.end_char )) {
           ins.uart_cb(ins.data, ins.line_pos);
           ins.line_pos = 0;
         }

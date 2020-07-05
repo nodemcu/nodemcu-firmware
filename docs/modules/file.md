@@ -222,7 +222,7 @@ Trigger events are:
 
 #### Parameters
 - `event` string
-- `function()` callback function. Unregisters the callback if `function()` is omitted.
+- `function()` callback function. Unregisters the callback if `function()` is omitted or `nil`.
 
 #### Returns
 `nil`

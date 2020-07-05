@@ -115,6 +115,7 @@ void uart_init_task(os_signal_t sig_input, uint8 *flag_input);
 UartConfig uart_get_config(uint8 uart_no);
 void uart0_alt(uint8 on);
 void uart0_sendStr(const char *str);
+void uart0_sendStrn(const char *str, size_t len);
 void uart0_putc(const char c);
 void uart0_tx_buffer(uint8 *buf, uint16 len);
 void uart_setup(uint8 uart_no);

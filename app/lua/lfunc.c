@@ -6,7 +6,6 @@
 
 #define lfunc_c
 #define LUA_CORE
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 #include <string.h>
@@ -146,16 +145,14 @@ void luaF_freeproto (lua_State *L, Proto *f) {
   luaM_freearray(L, f->k, f->sizek, TValue);
   luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
   luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
-  if (!proto_isreadonly(f)) {
-    luaM_freearray(L, f->code, f->sizecode, Instruction);
+  luaM_freearray(L, f->code, f->sizecode, Instruction);
 #ifdef LUA_OPTIMIZE_DEBUG
-    if (f->packedlineinfo) {
-      luaM_freearray(L, f->packedlineinfo, strlen(cast(char *, f->packedlineinfo))+1, unsigned char);
-    }
-#else
-    luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
-#endif
+  if (f->packedlineinfo) {
+    luaM_freearray(L, f->packedlineinfo, strlen(cast(char *, f->packedlineinfo))+1, unsigned char);
   }
+#else
+  luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
+#endif
   luaM_free(L, f);
 }
 

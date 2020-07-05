@@ -99,14 +99,14 @@ static int dht_lapi_readxx( lua_State *L )
 // }
 
 // Module function map
-LROT_BEGIN(dht)
+LROT_BEGIN(dht, NULL, 0)
   LROT_FUNCENTRY( read, dht_lapi_read )
   LROT_FUNCENTRY( read11, dht_lapi_read11 )
   LROT_FUNCENTRY( readxx, dht_lapi_readxx )
   LROT_NUMENTRY( OK, DHTLIB_OK )
   LROT_NUMENTRY( ERROR_CHECKSUM, DHTLIB_ERROR_CHECKSUM )
   LROT_NUMENTRY( ERROR_TIMEOUT, DHTLIB_ERROR_TIMEOUT )
-LROT_END( dht, NULL, 0 )
+LROT_END(dht, NULL, 0)
 
 
 NODEMCU_MODULE(DHT, "dht", dht, NULL);

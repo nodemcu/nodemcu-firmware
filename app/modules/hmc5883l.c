@@ -89,10 +89,10 @@ static int hmc5883_read(lua_State* L) {
     return 3;
 }
 
-LROT_BEGIN(hmc5883)
+LROT_BEGIN(hmc5883, NULL, 0)
   LROT_FUNCENTRY( read, hmc5883_read )
   LROT_FUNCENTRY( setup, hmc5883_setup )
-LROT_END( hmc5883, NULL, 0 )
+LROT_END(hmc5883, NULL, 0)
 
 
 NODEMCU_MODULE(HMC5883L, "hmc5883l", hmc5883, NULL);

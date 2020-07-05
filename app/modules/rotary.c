@@ -80,7 +80,7 @@ static void callback_free(lua_State* L, unsigned int id, int mask)
 
 static int callback_setOne(lua_State* L, int *cb_ptr, int arg_number)
 {
-  if (lua_type(L, arg_number) == LUA_TFUNCTION || lua_type(L, arg_number) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, arg_number)) {
     lua_pushvalue(L, arg_number);  // copy argument (func) to the top of stack
     callback_free_one(L, cb_ptr);
     *cb_ptr = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -114,7 +114,7 @@ static void callback_callOne(lua_State* L, int cb, int mask, int arg, uint32_t t
     lua_pushinteger(L, arg);
     lua_pushinteger(L, time);
 
-    lua_call(L, 3, 0);
+    luaL_pcallx(L, 3, 0);
   }
 }
 
@@ -396,7 +396,7 @@ static int rotary_open(lua_State *L)
 }
 
 // Module function map
-LROT_BEGIN(rotary)
+LROT_BEGIN(rotary, NULL, 0)
   LROT_FUNCENTRY( setup, lrotary_setup )
   LROT_FUNCENTRY( close, lrotary_close )
   LROT_FUNCENTRY( on, lrotary_on )
@@ -409,7 +409,7 @@ LROT_BEGIN(rotary)
   LROT_NUMENTRY( DBLCLICK, MASK(DBLCLICK) )
   LROT_NUMENTRY( ALL, ROTARY_ALL )
 
-LROT_END( rotary, NULL, 0 )
+LROT_END(rotary, NULL, 0)
 
 
 NODEMCU_MODULE(ROTARY, "rotary", rotary, rotary_open);

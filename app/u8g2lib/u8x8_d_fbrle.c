@@ -86,7 +86,7 @@ static uint8_t u8x8_d_fbrle(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
         lua_State *L = lua_getstate();
         lua_rawgeti( L, LUA_REGISTRYINDEX, ext_u8g2->overlay.rfb_cb_ref );
         lua_pushnil( L );
-        lua_call( L, 1, 0 );
+        luaL_pcallx( L, 1, 0 );
       }
       // and note ongoing framebuffer update
       ext_u8g2->overlay.fb_update_ongoing = 1;
@@ -143,7 +143,7 @@ static uint8_t u8x8_d_fbrle(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *ar
 
           lua_rawgeti( L, LUA_REGISTRYINDEX, ext_u8g2->overlay.rfb_cb_ref );
           lua_pushlstring( L, (const char *)fbrle_line, fbrle_line_size );
-          lua_call( L, 1, 0 );
+          luaL_pcallx( L, 1, 0 );
         }
       }
 

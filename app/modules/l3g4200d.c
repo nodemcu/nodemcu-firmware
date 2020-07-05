@@ -79,10 +79,10 @@ static int l3g4200d_read(lua_State* L) {
     return 3;
 }
 
-LROT_BEGIN(l3g4200d)
+LROT_BEGIN(l3g4200d, NULL, 0)
   LROT_FUNCENTRY( read, l3g4200d_read )
   LROT_FUNCENTRY( setup, l3g4200d_setup )
-LROT_END( l3g4200d, NULL, 0 )
+LROT_END(l3g4200d, NULL, 0)
 
 
 NODEMCU_MODULE(L3G4200D, "l3g4200d", l3g4200d, NULL);

@@ -30,7 +30,6 @@ static const char mem_debug_file[] ICACHE_RODATA_ATTR = __FILE__;
 
 extern espconn_msg *plink_active;
 extern espconn_msg *pserver_list;
-extern struct espconn_packet pktinfo[2];
 extern struct tcp_pcb ** const tcp_pcb_lists[];
 
 os_event_t espconn_TaskQueue[espconn_TaskQueueLen];
@@ -288,8 +287,6 @@ espconn_tcp_reconnect(void *arg)
 			os_free(perr_back);
 			perr_back = NULL;
 		}
-		os_bzero(&pktinfo[1], sizeof(struct espconn_packet));
-		os_memcpy(&pktinfo[1], (void*)&precon_cb->pcommon.packet_info, sizeof(struct espconn_packet));
 
 		if (espconn && espconn->proto.tcp && espconn->proto.tcp->reconnect_callback != NULL) {
 			espconn->proto.tcp->reconnect_callback(espconn, re_err);
@@ -382,8 +379,6 @@ espconn_tcp_disconnect_successful(void *arg)
 			os_free(pdis_back);
 			pdis_back = NULL;
 		}
-		os_bzero(&pktinfo[0], sizeof(struct espconn_packet));
-		os_memcpy(&pktinfo[0], (void*)&pdiscon_cb->pcommon.packet_info, sizeof(struct espconn_packet));
 
 		if (espconn->proto.tcp && espconn->proto.tcp->disconnect_callback != NULL) {
 			espconn->proto.tcp->disconnect_callback(espconn);

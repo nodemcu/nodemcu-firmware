@@ -60,7 +60,8 @@ static sint32_t file_rtc_cb( vfs_time *tm )
     lua_State *L = lua_getstate();
 
     lua_rawgeti( L, LUA_REGISTRYINDEX, rtc_cb_ref );
-    lua_call( L, 0, 1 );
+    if (luaL_pcallx( L, 0, 1 ) != LUA_OK)
+      return res;
 
     if (lua_type( L, lua_gettop( L ) ) == LUA_TTABLE) {
       table2tm( L, tm );
@@ -88,15 +89,20 @@ static int file_on(lua_State *L)
   case ON_RTC:
     luaL_unref(L, LUA_REGISTRYINDEX, rtc_cb_ref);
 
-    if ((lua_type(L, 2) == LUA_TFUNCTION) ||
-        (lua_type(L, 2) == LUA_TLIGHTFUNCTION)) {
+    switch(lua_type(L, 2)) {
+    case LUA_TFUNCTION:
       lua_pushvalue(L, 2);  // copy argument (func) to the top of stack
       rtc_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
       vfs_register_rtc_cb(file_rtc_cb);
-    } else {
+      break;
+    case LUA_TNIL:
       rtc_cb_ref = LUA_NOREF;
       vfs_register_rtc_cb(NULL);
+      break;
+    default:
+      luaL_error(L, "Callback should be function or nil");
     }
+
     break;
   default:
     break;
@@ -645,7 +651,9 @@ static int file_vol_umount( lua_State *L )
 }
 
 
-LROT_BEGIN(file_obj)
+LROT_BEGIN(file_obj, NULL, LROT_MASK_GC_INDEX)
+  LROT_FUNCENTRY( __gc, file_obj_free )
+  LROT_TABENTRY(  __index, file_obj )
   LROT_FUNCENTRY( close, file_close )
   LROT_FUNCENTRY( read, file_read )
   LROT_FUNCENTRY( readline, file_readline )
@@ -653,32 +661,16 @@ LROT_BEGIN(file_obj)
   LROT_FUNCENTRY( writeline, file_writeline )
   LROT_FUNCENTRY( seek, file_seek )
   LROT_FUNCENTRY( flush, file_flush )
-  LROT_FUNCENTRY( __gc, file_obj_free )
-  LROT_TABENTRY( __index, file_obj )
-LROT_END( file_obj, file_obj, LROT_MASK_GC_INDEX )
+LROT_END(file_obj, NULL, LROT_MASK_GC_INDEX)
 
 
-LROT_BEGIN(file_vol)
-  LROT_FUNCENTRY( umount, file_vol_umount )
-  //  LROT_FUNCENTRY( getfree, file_vol_getfree )
-  //  LROT_FUNCENTRY( getlabel, file_vol_getlabel )
-  //  LROT_FUNCENTRY( __gc, file_vol_free )
+LROT_BEGIN(file_vol, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY( __index, file_vol )
-LROT_END( file_vol, file_vol, LROT_MASK_GC_INDEX )
-
-#ifdef BUILD_SPIFFS
-#define LROT_FUNCENTRY_S(n,f) LROT_FUNCENTRY(n,f)
-#else
-#define LROT_FUNCENTRY_S(n,f) 
-#endif
-#ifdef BUILD_FATFS
-#define LROT_FUNCENTRY_F(n,f) LROT_FUNCENTRY(n,f)
-#else
-#define LROT_FUNCENTRY_F(n,f) 
-#endif
+  LROT_FUNCENTRY( umount, file_vol_umount )
+LROT_END(file_vol, NULL, LROT_MASK_INDEX)
 
 // Module function map
-LROT_BEGIN(file)
+LROT_BEGIN(file, NULL, 0)
   LROT_FUNCENTRY( list, file_list )
   LROT_FUNCENTRY( open, file_open )
   LROT_FUNCENTRY( close, file_close )
@@ -686,8 +678,10 @@ LROT_BEGIN(file)
   LROT_FUNCENTRY( writeline, file_writeline )
   LROT_FUNCENTRY( read, file_read )
   LROT_FUNCENTRY( readline, file_readline )
-  LROT_FUNCENTRY_S( format, file_format )
-  LROT_FUNCENTRY_S( fscfg, file_fscfg )
+#ifdef BUILD_SPIFFS
+  LROT_FUNCENTRY( format, file_format )
+  LROT_FUNCENTRY( fscfg, file_fscfg )
+#endif
   LROT_FUNCENTRY( remove, file_remove )
   LROT_FUNCENTRY( seek, file_seek )
   LROT_FUNCENTRY( flush, file_flush )
@@ -698,9 +692,11 @@ LROT_BEGIN(file)
   LROT_FUNCENTRY( fsinfo, file_fsinfo )
   LROT_FUNCENTRY( on, file_on )
   LROT_FUNCENTRY( stat, file_stat )
-  LROT_FUNCENTRY_F( mount, file_mount )
-  LROT_FUNCENTRY_F( chdir, file_chdir )
-LROT_END( file, NULL, 0 )
+#ifdef BUILD_FATFS
+  LROT_FUNCENTRY( mount, file_mount )
+  LROT_FUNCENTRY( chdir, file_chdir )
+#endif
+LROT_END(file, NULL, 0)
 
 
 int luaopen_file( lua_State *L ) {

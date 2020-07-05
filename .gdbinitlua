@@ -50,32 +50,25 @@ define prTV
        printf "Boolean: %u\n", $val.n
     end
     if $type == 2
-       # ROTable
-       printf "ROTable: %p\n", $val.p
-    end
-    if $type == 3
-        # Light Function
-       printf "Light Func: %p\n", $val.p
-    end
-    if $type == 4
        # Light User Data
        printf "Light Udata: %p\n", $val.p
     end
-    if $type == 5
+    if $type == 3
        # Number
        printf "Number: %u\n", $val.n
     end
-    if $type == 6
-      prTS $arg0
+    if $type == 4
+       # String
+       printf "String: %s\n", (char *)($val.p)+16
     end
-    if $type == 7
+    if $type == 5
       # Table
       set $o = &($val->gc.h)
       printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
       printf "Nodes: %4i  %p\n", 2<<($o->lsizenode), $o->node
       printf "Arry:  %4i  %p\n", $o->sizearray, $o->array
     end
-    if $type == 8
+    if $type == 6
       # Function
       set $o = &($val->gc.cl.c)
       printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
@@ -88,15 +81,23 @@ define prTV
           $o->nupvalues, $o->gclist, $o->env, $o->f
       end
     end
-    if $type == 9
+    if $type == 7
       # UserData
       set $o = &($val->gc.u.uv)
       printf "Common header: next = %p, marked = 0x%01x\n", $o->next, $o->marked
       printf "UD = %p Userdata: metatable = ", ($o+1))
       print ($o)->metatable
     end
-    if $type == 10
+    if $type == 8
       # Thread
+    end
+   if $type == 21
+       # ROTable
+       printf "ROTable: %p\n", $val.p
+    end
+    if $type == 38
+        # Light Function
+       printf "Light Func: %p\n", $val.p
     end
   end
 end

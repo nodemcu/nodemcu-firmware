@@ -1,24 +1,16 @@
 // Module for interfacing with system
 #include "module.h"
 #include "lauxlib.h"
-
-#include "ldebug.h"
-#include "ldo.h"
-#include "lfunc.h"
-#include "lmem.h"
-#include "lobject.h"
 #include "lstate.h"
-#include "legc.h"
+#include "lmem.h"
 
-#include "lopcodes.h"
-#include "lstring.h"
-#include "lundump.h"
 
 #include "platform.h"
+#if LUA_VERSION_NUM == 501
 #include "lflash.h"
+#endif
 #include <stdint.h>
 #include <string.h>
-#include "driver/uart.h"
 #include "user_interface.h"
 #include "flash_api.h"
 #include "vfs.h"
@@ -28,6 +20,49 @@
 
 #define CPU80MHZ 80
 #define CPU160MHZ 160
+
+#define DELAY2SEC 2000
+
+static void restart_callback(void *arg) {
+  UNUSED(arg);
+  system_restart();
+}
+static int default_onerror(lua_State *L) {
+  static os_timer_t restart_timer = {0};
+  /* Use Lua print to print the ToS */
+  lua_settop(L, 1);
+  lua_getglobal(L, "print");
+  lua_insert(L, 1);
+  lua_pcall(L, 1, 0, 0);
+  /* One first time through set automatic restart after 2s delay */
+  if (!restart_timer.timer_func) {
+    os_timer_setfn(&restart_timer, restart_callback, NULL);
+		os_timer_arm(&restart_timer, DELAY2SEC, 0);
+  }
+  return 0;
+}
+
+// Lua: setonerror([function])
+static int node_setonerror( lua_State* L ) {
+  lua_settop(L, 1);
+  if (!lua_isfunction(L, 1)) {
+    lua_pop(L, 1);
+    lua_pushcfunction(L, default_onerror);
+  }  
+  lua_setfield(L, LUA_REGISTRYINDEX, "onerror");
+  return 0;
+}
+
+
+// Lua: startupcommand(string)
+static int node_startupcommand( lua_State* L ) {
+  size_t l, lrcr;
+  const char *cmd = luaL_checklstring(L, 1, &l);
+  lrcr = platform_rcr_write(PLATFORM_RCR_INITSTR, cmd, l+1);
+  lua_pushboolean(L, lrcr == ~0 ? 0 : 1);
+  return 1;
+}
+
 
 // Lua: restart()
 static int node_restart( lua_State* L )
@@ -118,6 +153,16 @@ static int node_sleep( lua_State* L )
   return luaL_error(L, "node.sleep() is unavailable");
 }
 #endif //PMSLEEP_ENABLE
+
+static void add_int_field( lua_State* L, lua_Integer i, const char *name){
+  lua_pushinteger(L, i);
+  lua_setfield(L, -2, name);
+}
+static void add_string_field( lua_State* L, const char *s, const char *name) {
+  lua_pushstring(L, s);
+  lua_setfield(L, -2, name);
+}
+
 static int node_info( lua_State* L )
 {
   const char* options[] = {"hw", "sw_version", "build_config", "legacy", NULL};
@@ -126,49 +171,32 @@ static int node_info( lua_State* L )
   switch (option) {
     case 0: { // hw
       lua_createtable (L, 0, 5);
-      int table_index = lua_gettop(L);
-      lua_pushinteger(L, system_get_chip_id());   // chip id
-      lua_setfield(L, table_index, "chip_id");
-      lua_pushinteger(L, spi_flash_get_id());     // flash id
-      lua_setfield(L, table_index, "flash_id");
-      lua_pushinteger(L, flash_rom_get_size_byte() / 1024);  // flash size in KB
-      lua_setfield(L, table_index, "flash_size");
-      lua_pushinteger(L, flash_rom_get_mode());
-      lua_setfield(L, table_index, "flash_mode");
-      lua_pushinteger(L, flash_rom_get_speed());
-      lua_setfield(L, table_index, "flash_speed");
+      add_int_field(L, system_get_chip_id(),             "chip_id");
+      add_int_field(L, spi_flash_get_id(),               "flash_id");
+      add_int_field(L, flash_rom_get_size_byte() / 1024, "flash_size");
+      add_int_field(L, flash_rom_get_mode(),             "flash_mode");
+      add_int_field(L, flash_rom_get_speed(),            "flash_speed");
       return 1;
     }
     case 1: { // sw_version
-      lua_createtable (L, 0, 7);
-      int table_index = lua_gettop(L);
-      lua_pushinteger(L, NODE_VERSION_MAJOR);
-      lua_setfield(L, table_index, "node_version_major");
-      lua_pushinteger(L, NODE_VERSION_MINOR);
-      lua_setfield(L, table_index, "node_version_minor");
-      lua_pushinteger(L, NODE_VERSION_REVISION);
-      lua_setfield(L, table_index, "node_version_revision");
-      lua_pushstring(L, BUILDINFO_BRANCH);
-      lua_setfield(L, table_index, "git_branch");
-      lua_pushstring(L, BUILDINFO_COMMIT_ID);
-      lua_setfield(L, table_index, "git_commit_id");
-      lua_pushstring(L, BUILDINFO_RELEASE);
-      lua_setfield(L, table_index, "git_release");
-      lua_pushstring(L, BUILDINFO_RELEASE_DTS);
-      lua_setfield(L, table_index, "git_commit_dts");
+      lua_createtable (L, 0, 7);     
+      add_int_field(L, NODE_VERSION_MAJOR,       "node_version_major");
+      add_int_field(L, NODE_VERSION_MINOR,       "node_version_minor");
+      add_int_field(L, NODE_VERSION_REVISION,    "node_version_revision");
+      add_string_field(L, BUILDINFO_BRANCH,      "git_branch");
+      add_string_field(L, BUILDINFO_COMMIT_ID,   "git_commit_id");
+      add_string_field(L, BUILDINFO_RELEASE,     "git_release");
+      add_string_field(L, BUILDINFO_RELEASE_DTS, "git_commit_dts");
       return 1;
     }
     case 2: { // build_config
       lua_createtable (L, 0, 4);
-      int table_index = lua_gettop(L);
       lua_pushboolean(L, BUILDINFO_SSL);
-      lua_setfield(L, table_index, "ssl");
+      lua_setfield(L, -2, "ssl");
       lua_pushnumber(L, BUILDINFO_LFS_SIZE);
-      lua_setfield(L, table_index, "lfs_size");
-      lua_pushstring(L, BUILDINFO_MODULES);
-      lua_setfield(L, table_index, "modules");
-      lua_pushstring(L, BUILDINFO_BUILD_TYPE);
-      lua_setfield(L, table_index, "number_type");
+      lua_setfield(L, -2, "lfs_size");
+      add_string_field(L, BUILDINFO_MODULES, "modules");
+      add_string_field(L, BUILDINFO_BUILD_TYPE, "number_type");
       return 1;
     }
     default:
@@ -232,30 +260,37 @@ static int node_input( lua_State* L ) {
   luaL_checkstring(L, 1);
   lua_getfield(L, LUA_REGISTRYINDEX, "stdin");
   lua_rawgeti(L, -1, 1);             /* get the pipe_write func from stdin[1] */
-  lua_insert(L, -2);                           /* and move above the pipe ref */ 
+  lua_insert(L, -2);                           /* and move above the pipe ref */
   lua_pushvalue(L, 1);
-  lua_call(L, 2, 0);                                     /* stdin:write(line) */
+  lua_call(L, 2, 0);        /* stdin:write(line); errors are thrown to caller */
   return 0;
 }
 
 static int serial_debug = 1;
 
-void output_redirect(const char *str) {
+/*
+** Output redirector. Note that panics in the output callback cannot be processed
+** using luaL_pcallx() as this would create an infinite error loop, so they are
+** reported direct to the UART.
+*/
+void output_redirect(const char *str, size_t l) {
   lua_State *L = lua_getstate();
   int n = lua_gettop(L);
   lua_pushliteral(L, "stdout");
   lua_rawget(L, LUA_REGISTRYINDEX);                       /* fetch reg.stdout */
   if (lua_istable(L, -1)) { /* reg.stdout is pipe */
     if (serial_debug) {
-      uart0_sendStr(str);
+      uart0_sendStrn(str, l);
     }
     lua_rawgeti(L, -1, 1);          /* get the pipe_write func from stdout[1] */
-    lua_insert(L, -2);                         /* and move above the pipe ref */ 
-    lua_pushstring(L, str);
-    lua_call(L, 2, 0);                               /* Reg.stdout:write(str) */
-
+    lua_insert(L, -2);                         /* and move above the pipe ref */
+    lua_pushlstring(L, str, l);
+    if (lua_pcall(L, 2, 0, 0) != LUA_OK) {           /* Reg.stdout:write(str) */
+      lua_writestringerror("error calling stdout:write(%s)\n", lua_tostring(L, -1));
+      system_restart();
+    }
   } else { /* reg.stdout == nil */
-    uart0_sendStr(str);
+    uart0_sendStrn(str, l);
   }
   lua_settop(L, n);         /* Make sure all code paths leave stack unchanged */
 }
@@ -267,18 +302,18 @@ static int node_output( lua_State* L )
 {
   serial_debug = (lua_isnumber(L, 2) && lua_tointeger(L, 2) == 0) ? 0 : 1;
   lua_settop(L, 1);
-  if (lua_isanyfunction(L, 1)) {
-    lua_pushlightfunction(L, &pipe_create);
-    lua_insert(L, 1); 
+  if (lua_isfunction(L, 1)) {
+    lua_pushcfunction(L, pipe_create);
+    lua_insert(L, 1);
     lua_pushinteger(L, LUA_TASK_MEDIUM);
-    lua_call(L, 2, 1);             /* T[1] = pipe.create(CB, medium_priority) */
+    lua_call(L, 2, 1);      /* Any pipe.create() errors thrown back to caller */
   } else {    // remove the stdout pipe
     lua_pop(L,1);
     lua_pushnil(L);                                             /* T[1] = nil */
     serial_debug = 1;
   }
   lua_pushliteral(L, "stdout");
-  lua_insert(L, 1); 
+  lua_insert(L, 1);
   lua_rawset(L, LUA_REGISTRYINDEX);               /* Reg.stdout = nil or pipe */
   return 0;
 }
@@ -297,7 +332,12 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
   return 0;
 }
 
-#define toproto(L,i) (clvalue(L->top+(i))->l.p)
+#if LUA_VERSION_NUM == 501
+#undef lua_dump
+#define lua_dump lua_dumpEx
+#define getproto(o)	(clvalue(o)->l.p)
+#endif
+
 // Lua: compile(filename) -- compile lua file into lua bytecode, and save to .lc
 static int node_compile( lua_State* L )
 {
@@ -325,7 +365,6 @@ static int node_compile( lua_State* L )
     return luaL_error(L, lua_tostring(L, -1));
   }
 
-  f = toproto(L, -1);
 
   int stripping = 1;      /* strip debug information? */
 
@@ -336,9 +375,7 @@ static int node_compile( lua_State* L )
     return luaL_error(L, "cannot open/write to file");
   }
 
-  lua_lock(L);
-  int result = luaU_dump(L, f, writer, &file_fd, stripping);
-  lua_unlock(L);
+  int result = lua_dump(L, writer, &file_fd, stripping);
 
   if (vfs_flush(file_fd) != VFS_RES_OK) {
     // overwrite Lua error, like writer() does in case of a file io error
@@ -371,9 +408,9 @@ static int node_task_post( lua_State* L )
     luaL_argcheck(L, priority <= TASK_PRIORITY_HIGH, 1, "invalid  priority");
     n++;
   }
-  luaL_checkanyfunction(L, n);
+  luaL_checktype(L, n, LUA_TFUNCTION);
   lua_settop(L, n);
-  (void) luaN_posttask(L, priority);
+  (void) luaL_posttask(L, priority);
   return 0;
 }
 
@@ -424,7 +461,8 @@ static int node_restore (lua_State *L)
   return 0;
 }
 
-#ifdef LUA_OPTIMIZE_DEBUG
+#if defined(LUA_OPTIMIZE_DEBUG) && LUA_VERSION_NUM == 501
+
 /* node.stripdebug([level[, function]]). 
  * level:    1 don't discard debug
  *           2 discard Local and Upvalue debug info
@@ -434,10 +472,11 @@ static int node_restore (lua_State *L)
  * If function is omitted, this is the default setting for future compiles
  * The function returns an estimated integer count of the bytes stripped.
  */
+LUA_API int luaG_stripdebug (lua_State *L, Proto *f, int level, int recv);
 static int node_stripdebug (lua_State *L) {
-  int level;
 
-  if (L->top == L->base) {
+  int n = lua_gettop(L);
+  if (n == 0) {
     lua_pushlightuserdata(L, &luaG_stripdebug );
     lua_gettable(L, LUA_REGISTRYINDEX);
     if (lua_isnil(L, -1)) {
@@ -447,25 +486,23 @@ static int node_stripdebug (lua_State *L) {
     return 1;
   }
 
-  level = luaL_checkint(L, 1);
-  if ((level <= 0) || (level > 3)) luaL_argerror(L, 1, "must in range 1-3");
+  int level = luaL_checkint(L, 1);
+  luaL_argcheck(L, level > 0 && level < 4, 1, "must in range 1-3");
 
-  if (L->top == L->base + 1) {
+  if (n == 1) {
     /* Store the default level in the registry if no function parameter */
     lua_pushlightuserdata(L, &luaG_stripdebug);
     lua_pushinteger(L, level);
     lua_settable(L, LUA_REGISTRYINDEX);
-    lua_settop(L,0);
     return 0;
   }
 
   if (level == 1) {
-    lua_settop(L,0);
     lua_pushinteger(L, 0);
     return 1;
   }
 
-  if (!lua_isfunction(L, 2)) {
+  if (lua_isnumber(L, 2)) {
     int scope = luaL_checkint(L, 2);
     if (scope > 0) {
       /* if the function parameter is a +ve integer then climb to find function */
@@ -477,16 +514,15 @@ static int node_stripdebug (lua_State *L) {
     }
   }
 
-  if(!lua_isfunction(L, 2) || lua_iscfunction(L, -1)) luaL_argerror(L, 2, "must be a Lua Function");
-  // lua_lock(L);
-  Proto *f = clvalue(L->base + 1)->l.p;
-  // lua_unlock(L);
-  lua_settop(L,0);
+  luaL_argcheck(L, lua_isfunction(L, 2), 2, "must be a Lua Function");
+  Proto *f = getproto(L->ci->func + 1);
   lua_pushinteger(L, luaG_stripdebug(L, f, level, 1));
   return 1;
 }
 #endif
 
+
+#if LUA_VERSION_NUM == 501
 // Lua: node.egc.setmode( mode, [param])
 // where the mode is one of the node.egc constants  NOT_ACTIVE , ON_ALLOC_FAILURE,
 // ON_MEM_LIMIT, ALWAYS.  In the case of ON_MEM_LIMIT an integer parameter is reqired
@@ -498,10 +534,9 @@ static int node_egc_setmode(lua_State* L) {
   luaL_argcheck(L, mode <= (EGC_ON_ALLOC_FAILURE | EGC_ON_MEM_LIMIT | EGC_ALWAYS), 1, "invalid mode");
   luaL_argcheck(L, !(mode & EGC_ON_MEM_LIMIT) || limit!=0, 1, "limit must be non-zero");
 
-  legc_set_mode( L, mode, limit );
+  lua_setegcmode( L, mode, limit );
   return 0;
 }
-
 // totalallocated, estimatedused = node.egc.meminfo()
 static int node_egc_meminfo(lua_State *L) {
   global_State *g = G(L);
@@ -509,7 +544,7 @@ static int node_egc_meminfo(lua_State *L) {
   lua_pushinteger(L, g->estimate);
   return 2;
 }
-
+#endif
 //
 // Lua: osprint(true/false)
 // Allows you to turn on the native Espressif SDK printing
@@ -618,12 +653,12 @@ static int node_writercr (lua_State *L) {
 
 typedef enum pt_t { lfs_addr=0, lfs_size, spiffs_addr, spiffs_size, max_pt} pt_t;
 
-LROT_BEGIN(pt)
+LROT_BEGIN(pt_map, NULL, 0)
   LROT_NUMENTRY( lfs_addr, lfs_addr )
   LROT_NUMENTRY( lfs_size, lfs_size )
   LROT_NUMENTRY( spiffs_addr, spiffs_addr )
   LROT_NUMENTRY( spiffs_size, spiffs_size )
-LROT_END( pt, NULL, 0 )
+LROT_END(pt_map, NULL, 0)
 
 
 // Lua: ptinfo = node.getpartitiontable()
@@ -634,7 +669,7 @@ static int node_getpartitiontable (lua_State *L) {
 
   lua_settop(L, 0);
   lua_createtable (L, 0, max_pt);                   /* at index 1 */
-  lua_pushrotable(L, (void*)pt_map);                /* at index 2 */
+  lua_pushrotable(L, LROT_TABLEREF(pt_map));        /* at index 2 */
   lua_pushnil(L);                                   /* first key at index 3 */
   while (lua_next(L, 2) != 0) {                     /* key at index 3, and v at index 4 */
     lua_pushvalue(L, 3);                            /* dup key to index 5 */
@@ -676,8 +711,8 @@ static int node_setpartitiontable (lua_State *L) {
   luaL_argcheck(L, lua_istable(L, 1), 1, "must be table");
   lua_settop(L, 1);
   /* convert input table into 4 option array */
-  lua_pushrotable(L, (void*)pt_map);  /* at index 2 */
-  lua_pushnil(L);                   /* first key at index 3 */
+  lua_pushrotable(L, LROT_TABLEREF(pt_map));       /* at index 2 */
+  lua_pushnil(L);                                  /* first key at index 3 */
   while (lua_next(L, 1) != 0) {
     /* 'key' (at index 3) and 'value' (at index 4) */
     luaL_argcheck(L, lua_isstring(L, 3) && lua_isnumber(L, 4), 1, "invalid partition setting");
@@ -769,29 +804,32 @@ static int node_setpartitiontable (lua_State *L) {
 
 
 // Module function map
-
-LROT_BEGIN(node_egc)
+#if LUA_VERSION_NUM == 501
+LROT_BEGIN(node_egc, NULL, 0)
   LROT_FUNCENTRY( meminfo, node_egc_meminfo )
   LROT_FUNCENTRY( setmode, node_egc_setmode )
   LROT_NUMENTRY( NOT_ACTIVE, EGC_NOT_ACTIVE )
   LROT_NUMENTRY( ON_ALLOC_FAILURE, EGC_ON_ALLOC_FAILURE )
   LROT_NUMENTRY( ON_MEM_LIMIT, EGC_ON_MEM_LIMIT )
   LROT_NUMENTRY( ALWAYS, EGC_ALWAYS )
-LROT_END( node_egc, NULL, 0 )
+LROT_END(node_egc, NULL, 0)
+#endif
 
-LROT_BEGIN(node_task)
+LROT_BEGIN(node_task, NULL, 0)
   LROT_FUNCENTRY( post, node_task_post )
   LROT_NUMENTRY( LOW_PRIORITY, TASK_PRIORITY_LOW )
   LROT_NUMENTRY( MEDIUM_PRIORITY, TASK_PRIORITY_MEDIUM )
   LROT_NUMENTRY( HIGH_PRIORITY, TASK_PRIORITY_HIGH )
-LROT_END( node_task, NULL, 0 )
+LROT_END(node_task, NULL, 0)
 
-LROT_BEGIN(node)
+LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( heap, node_heap )
   LROT_FUNCENTRY( info, node_info )
   LROT_TABENTRY( task, node_task )
-  LROT_FUNCENTRY( flashreload, luaN_reload_reboot )
-  LROT_FUNCENTRY( flashindex, luaN_index )
+  LROT_FUNCENTRY( flashreload, lua_lfsreload )
+  LROT_FUNCENTRY( flashindex, lua_lfsindex )
+  LROT_FUNCENTRY( setonerror, node_setonerror )
+  LROT_FUNCENTRY( startupcommand, node_startupcommand )
   LROT_FUNCENTRY( restart, node_restart )
   LROT_FUNCENTRY( dsleep, node_deepsleep )
   LROT_FUNCENTRY( dsleepMax, dsleepMax )
@@ -818,10 +856,12 @@ LROT_BEGIN(node)
   LROT_FUNCENTRY( bootreason, node_bootreason )
   LROT_FUNCENTRY( restore, node_restore )
   LROT_FUNCENTRY( random, node_random )
-#ifdef LUA_OPTIMIZE_DEBUG
+#if LUA_VERSION_NUM == 501 && defined(LUA_OPTIMIZE_DEBUG)
   LROT_FUNCENTRY( stripdebug, node_stripdebug )
 #endif
+#if LUA_VERSION_NUM == 501
   LROT_TABENTRY( egc, node_egc )
+#endif
 #ifdef DEVELOPMENT_TOOLS
   LROT_FUNCENTRY( osprint, node_osprint )
 #endif
@@ -830,7 +870,11 @@ LROT_BEGIN(node)
 
 // Combined to dsleep(us, option)
 //  LROT_FUNCENTRY( dsleepsetoption, node_deepsleep_setoption )
-LROT_END( node, NULL, 0 )
+LROT_END(node, NULL, 0)
 
+int luaopen_node( lua_State *L ) {
+  lua_settop(L, 0);
+  return node_setonerror(L);  /* set default onerror action */
+}
 
-NODEMCU_MODULE(NODE, "node", node, NULL);
+NODEMCU_MODULE(NODE, "node", node, luaopen_node);

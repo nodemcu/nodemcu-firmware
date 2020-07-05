@@ -8,9 +8,6 @@
 
 #ifndef lua_h
 #define lua_h
-#ifdef LUAC_CROSS_FILE
-#include "luac_cross.h"
-#endif
 #include <stdint.h>
 #include "stdarg.h"
 #include "stddef.h"
@@ -42,7 +39,8 @@
 #define lua_upvalueindex(i)	(LUA_GLOBALSINDEX-(i))
 
 
-/* thread status; 0 is OK */
+/* thread status */
+#define LUA_OK		0
 #define LUA_YIELD	1
 #define LUA_ERRRUN	2
 #define LUA_ERRSYNTAX	3
@@ -73,18 +71,22 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 ** basic types
 */
 #define LUA_TNONE		(-1)
-
 #define LUA_TNIL		0
 #define LUA_TBOOLEAN		1
-#define LUA_TROTABLE  2
-#define LUA_TLIGHTFUNCTION  3
-#define LUA_TLIGHTUSERDATA	4
-#define LUA_TNUMBER		5
-#define LUA_TSTRING		6
-#define LUA_TTABLE		7
-#define LUA_TFUNCTION		8
-#define LUA_TUSERDATA		9
-#define LUA_TTHREAD		10
+#define LUA_TLIGHTUSERDATA	2
+#define LUA_TNUMBER		3
+#define LUA_TSTRING		4
+#define LUA_TTABLE		5
+#define LUA_TFUNCTION		6
+#define LUA_TUSERDATA		7
+#define LUA_TTHREAD		8
+
+#define LUA_TISROTABLE		(1<<4)
+#define LUA_TISLIGHTFUNC	(1<<5)
+#define LUA_TMASK               15
+
+#define LUA_TROTABLE		(LUA_TTABLE + LUA_TISROTABLE)
+#define LUA_TLIGHTFUNCTION	(LUA_TFUNCTION + LUA_TISLIGHTFUNC)
 
 /* minimum Lua stack available to a C function */
 #define LUA_MINSTACK	20
@@ -143,6 +145,7 @@ LUA_API int             (lua_isstring) (lua_State *L, int idx);
 LUA_API int             (lua_iscfunction) (lua_State *L, int idx);
 LUA_API int             (lua_isuserdata) (lua_State *L, int idx);
 LUA_API int             (lua_type) (lua_State *L, int idx);
+LUA_API int             (lua_fulltype) (lua_State *L, int idx);
 LUA_API const char     *(lua_typename) (lua_State *L, int tp);
 
 LUA_API int            (lua_equal) (lua_State *L, int idx1, int idx2);
@@ -174,8 +177,6 @@ LUA_API const char *(lua_pushfstring) (lua_State *L, const char *fmt, ...);
 LUA_API void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n);
 LUA_API void  (lua_pushboolean) (lua_State *L, int b);
 LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p);
-LUA_API void  (lua_pushlightfunction) (lua_State *L, void *p);
-LUA_API void  (lua_pushrotable) (lua_State *L, void *p);
 LUA_API int   (lua_pushthread) (lua_State *L);
 
 
@@ -212,7 +213,7 @@ LUA_API int   (lua_cpcall) (lua_State *L, lua_CFunction func, void *ud);
 LUA_API int   (lua_load) (lua_State *L, lua_Reader reader, void *dt,
                                         const char *chunkname);
 
-LUA_API int (lua_dump) (lua_State *L, lua_Writer writer, void *data);
+LUA_API int (lua_dumpEx) (lua_State *L, lua_Writer writer, void *data, int stripping);
 
 
 /*
@@ -272,11 +273,9 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 #define lua_strlen(L,i)		lua_objlen(L, (i))
 
 #define lua_isfunction(L,n)	(lua_type(L, (n)) == LUA_TFUNCTION)
-#define lua_islightfunction(L,n) (lua_type(L, (n)) == LUA_TLIGHTFUNCTION)
-#define lua_isanyfunction(L,n) (lua_isfunction(L,n) || lua_islightfunction(L,n))
+#define lua_islightfunction(L,n) (lua_fulltype(L, (n)) == LUA_TLIGHTFUNCTION)
 #define lua_istable(L,n)	(lua_type(L, (n)) == LUA_TTABLE)
-#define lua_isrotable(L,n)	(lua_type(L, (n)) == LUA_TROTABLE)
-#define lua_isanytable(L,n)	(lua_istable(L,n) || lua_isrotable(L,n))
+#define lua_isrotable(L,n)	(lua_fulltype(L, (n)) == LUA_TROTABLE)
 #define lua_islightuserdata(L,n) (lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
 #define lua_isnil(L,n)		(lua_type(L, (n)) == LUA_TNIL)
 #define lua_isboolean(L,n)	(lua_type(L, (n)) == LUA_TBOOLEAN)
@@ -292,14 +291,20 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 #define lua_tostring(L,i)	lua_tolstring(L, (i), NULL)
 
+#define lua_dump(L,w,d)		lua_dumpEx(L,w,d,0)
 
+/* error codes from cross-compiler returned by lua_dumpEx */
+/* target integer is too small to hold a value */
+#define LUA_ERR_CC_INTOVERFLOW 101
+
+/* target lua_Number is integral but a constant is non-integer */
+#define LUA_ERR_CC_NOTINTEGER 102
 
 /*
 ** compatibility macros and functions
 */
 
 // BogdanM: modified for eLua interrupt support
-//#define lua_open()	luaL_newstate()
 lua_State* lua_open(void);
 lua_State* lua_getstate(void);
 
@@ -377,20 +382,54 @@ struct lua_Debug {
 
 /* }====================================================================== */
 
+typedef struct ROTable ROTable;
+typedef const struct ROTable_entry ROTable_entry;
 
-#ifndef LUA_CROSS_COMPILER
+LUA_API void (lua_pushrotable) (lua_State *L, const ROTable *p);
+LUA_API void (lua_createrotable) (lua_State *L, ROTable *t, ROTable_entry *e, ROTable *mt);
+
+LUAI_FUNC int  lua_lfsreload (lua_State *L);
+LUAI_FUNC int  lua_lfsindex (lua_State *L);
+
+#define EGC_NOT_ACTIVE        0   // EGC disabled
+#define EGC_ON_ALLOC_FAILURE  1   // run EGC on allocation failure
+#define EGC_ON_MEM_LIMIT      2   // run EGC when an upper memory limit is hit
+#define EGC_ALWAYS            4   // always run EGC before an allocation
+
+#ifdef LUA_USE_ESP
+
 #define LUA_QUEUE_APP   0
 #define LUA_QUEUE_UART  1
 #define LUA_TASK_LOW    0
 #define LUA_TASK_MEDIUM 1
 #define LUA_TASK_HIGH   2
 
-void lua_main (void);
-void lua_input_string (const char *line, int len);
-int luaN_posttask (lua_State* L, int prio);
-int luaN_call (lua_State *L, int narg, int res, int dogc);
-/**DEBUG**/extern void dbg_printf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+/**DEBUG**/extern void dbg_printf(const char *fmt, ...)
+                       __attribute__ ((format (printf, 1, 2)));
+#define luaN_freearray(L,b,l)  luaM_freearray(L,b,l,sizeof(*b));
+
+LUA_API void lua_setegcmode(lua_State *L, int mode, int limit);
+
+#else
+
+#define ICACHE_RODATA_ATTR
+#define dbg_printf printf
+
 #endif
+
+#ifdef DEVELOPMENT_USE_GDB
+LUALIB_API void (lua_debugbreak)(void);
+#else
+#define lua_debugbreak() (void)(0)
+#endif
+
+// EGC operations modes
+#define EGC_NOT_ACTIVE        0   // EGC disabled
+#define EGC_ON_ALLOC_FAILURE  1   // run EGC on allocation failure
+#define EGC_ON_MEM_LIMIT      2   // run EGC when an upper memory limit is hit
+#define EGC_ALWAYS            4   // always run EGC before an allocation
+
+void legc_set_mode(lua_State *L, int mode, int limit);
 
 /******************************************************************************
 * Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.

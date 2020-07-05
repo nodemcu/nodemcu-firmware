@@ -10,10 +10,10 @@
 #include "platform.h"
 #include "cpu_esp8266.h"
 #include "http/httpclient.h"
-
+#include <ctype.h>
 static int http_callback_registry  = LUA_NOREF;
 
-static void http_callback( char * response, int http_status, char ** full_response_p )
+static void http_callback( char * response, int http_status, char ** full_response_p, int body_size )
 {
   const char *full_response = full_response_p ? *full_response_p : NULL;
 
@@ -36,7 +36,7 @@ static void http_callback( char * response, int http_status, char ** full_respon
     lua_pushnumber(L, http_status);
     if ( http_status != HTTP_STATUS_GENERIC_ERROR && response)
     {
-      lua_pushstring(L, response);
+      lua_pushlstring(L, response, (size_t)body_size);
       lua_newtable(L);
 
       const char *p = full_response;
@@ -100,7 +100,7 @@ static void http_callback( char * response, int http_status, char ** full_respon
     luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = LUA_NOREF;
 
-    lua_call(L, 3, 0); // With 3 arguments and 0 result
+    luaL_pcallx(L, 3, 0); // With 3 arguments and 0 result
   }
 }
 
@@ -128,7 +128,7 @@ static int http_lapi_request( lua_State *L )
     body = luaL_checklstring(L, 4, &length);
   }
 
-  if (lua_type(L, 5) == LUA_TFUNCTION || lua_type(L, 5) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, 5)) {
     lua_pushvalue(L, 5);  // copy argument (func) to the top of stack
     luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
     http_callback_registry = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -161,7 +161,7 @@ static int http_lapi_post( lua_State *L )
     body = luaL_checklstring(L, 3, &length);
   }
 
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, 4)) {
     lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
@@ -195,7 +195,7 @@ static int http_lapi_put( lua_State *L )
     body = luaL_checklstring(L, 3, &length);
   }
 
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, 4)) {
     lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
@@ -229,7 +229,7 @@ static int http_lapi_delete( lua_State *L )
     body = luaL_checklstring(L, 3, &length);
   }
 
-  if (lua_type(L, 4) == LUA_TFUNCTION || lua_type(L, 4) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, 4)) {
     lua_pushvalue(L, 4);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
@@ -258,7 +258,7 @@ static int http_lapi_get( lua_State *L )
     headers = luaL_checklstring(L, 2, &length);
   }
 
-  if (lua_type(L, 3) == LUA_TFUNCTION || lua_type(L, 3) == LUA_TLIGHTFUNCTION) {
+  if (lua_isfunction(L, 3)) {
     lua_pushvalue(L, 3);  // copy argument (func) to the top of stack
     if (http_callback_registry != LUA_NOREF)
       luaL_unref(L, LUA_REGISTRYINDEX, http_callback_registry);
@@ -270,7 +270,7 @@ static int http_lapi_get( lua_State *L )
 }
 
 // Module function map
-LROT_BEGIN(http)
+LROT_BEGIN(http, NULL, 0)
   LROT_FUNCENTRY( request, http_lapi_request )
   LROT_FUNCENTRY( post, http_lapi_post )
   LROT_FUNCENTRY( put, http_lapi_put )
@@ -280,7 +280,7 @@ LROT_BEGIN(http)
   LROT_NUMENTRY( OK, 0 )
   LROT_NUMENTRY( ERROR, HTTP_STATUS_GENERIC_ERROR )
 
-LROT_END( http, NULL, 0 )
+LROT_END(http, NULL, 0)
 
 
 NODEMCU_MODULE(HTTP, "http", http, NULL);
