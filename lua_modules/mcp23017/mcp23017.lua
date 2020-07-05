@@ -24,16 +24,14 @@ local issetBit = bit.isset
 local setBit = bit.set
 local clearBit = bit.clear
 
-local MCP23017_ADDRESS = 0x20 -- (0x20 to 0x27)
+-- MCP23017_ADDRESS = 0x20 -- (0x20 to 0x27)
 -- MCP23017_SDA = 2 -- D2/GPIO 4
 -- MCP23017_SCL = 1 -- D1/GPIO 5
 
-local OUTPUT = false
-local INPUT = true
-local GPA = false
-local GPB = true
-local HIGH = true
-local LOW = false
+
+-- metatable
+local mcp23017 = {}
+mcp23017.__index = mcp23017
 
 -- registers (not used registers are commented out)
 local MCP23017_IODIRA = 0x00
@@ -65,24 +63,20 @@ local MCP23017_OLATA = 0x14
 local MCP23017_OLATB = 0x15
 ]]
 
--- internal
-local MCP23017_id = 0
-local MCP23017_DEVICE_OK = false
-
 -- check device is available on address
-local function checkDevice(address)
-    i2c.start(MCP23017_id)
-    local response = i2c.address(MCP23017_id, address, i2c.TRANSMITTER)
-    i2c.stop(MCP23017_id)
+function mcp23017:checkDevice()
+    i2c.start(self.i2cId)
+    local response = i2c.address(self.i2cId, self.address, i2c.TRANSMITTER)
+    i2c.stop(self.i2cId)
     if response ~= true then
-        print("MCP23017 device on " .. string.format('0x%02X', address) .. " not found")
+        print("MCP23017 device on " .. string.format('0x%02X', self.address) .. " not found")
     end
     return response
 end
 
 -- check device address (0x20 to 0x27)
-local function checkAddress(address)
-    local addr = tonumber(address)
+function mcp23017:checkAddress()
+    local addr = tonumber(self.address)
     if (addr > 31 and addr < 40) then
         return true
     else
@@ -92,30 +86,30 @@ local function checkAddress(address)
 end
 
 -- write byte
-local function writeByte(registerAddr, val)
-    i2c.start(MCP23017_id)
-    i2c.address(MCP23017_id, MCP23017_ADDRESS, i2c.TRANSMITTER)
-    i2c.write(MCP23017_id, registerAddr)
-    i2c.write(MCP23017_id, val)
-    i2c.stop(MCP23017_id)
+function mcp23017:writeByte(registerAddr, val)
+    i2c.start(self.i2cId)
+    i2c.address(self.i2cId, self.address, i2c.TRANSMITTER)
+    i2c.write(self.i2cId, registerAddr)
+    i2c.write(self.i2cId, val)
+    i2c.stop(self.i2cId)
 end
 
 -- read byte
-local function readByte(registerAddr)
-    i2c.start(MCP23017_id)
-    i2c.address(MCP23017_id, MCP23017_ADDRESS, i2c.TRANSMITTER)
-    i2c.write(MCP23017_id, registerAddr)
-    i2c.stop(MCP23017_id)
-    i2c.start(MCP23017_id)
-    i2c.address(MCP23017_id, MCP23017_ADDRESS, i2c.RECEIVER)
-    local data = i2c.read(MCP23017_id, 1)
-    i2c.stop(MCP23017_id)
+function mcp23017:readByte(registerAddr)
+    i2c.start(self.i2cId)
+    i2c.address(self.i2cId, self.address, i2c.TRANSMITTER)
+    i2c.write(self.i2cId, registerAddr)
+    i2c.stop(self.i2cId)
+    i2c.start(self.i2cId)
+    i2c.address(self.i2cId, self.address, i2c.RECEIVER)
+    local data = i2c.read(self.i2cId, 1)
+    i2c.stop(self.i2cId)
     return string.byte(data)
 end
 
 -- get IO dir register
-local function getDirRegisterAddr(bReg)
-    if bReg == GPB then
+function mcp23017:getDirRegisterAddr(bReg)
+    if bReg == self.GPB then
         return MCP23017_IODIRB
     else
         return MCP23017_IODIRA
@@ -123,8 +117,8 @@ local function getDirRegisterAddr(bReg)
 end
 
 -- get GPIO register address
-local function getGPIORegisterAddr(bReg)
-    if bReg == GPB then
+function mcp23017:getGPIORegisterAddr(bReg)
+    if bReg == self.GPB then
         return MCP23017_GPIOB
     else
         return MCP23017_GPIOA
@@ -132,7 +126,7 @@ local function getGPIORegisterAddr(bReg)
 end
 
 -- check pin is in range
-local function checkPinIsInRange(pin)
+function mcp23017:checkPinIsInRange(pin)
     if pin > 7 or pin < 0 then
         print("The pin must be between 0 and 7")
         return nil
@@ -141,20 +135,20 @@ local function checkPinIsInRange(pin)
 end
 
 -- setup internal pullup
-local function setInternalPullUp(bReg, iByte)
-    if bReg == GPB then
-        writeByte(MCP23017_DEFVALB, iByte)
+function mcp23017:setInternalPullUp(bReg, iByte)
+    if bReg == self.GPB then
+        self:writeByte(MCP23017_DEFVALB, iByte)
     else
-        writeByte(MCP23017_DEFVALA, iByte)
+        self:writeByte(MCP23017_DEFVALA, iByte)
     end
 end
 
 -- set default GPIO mode
-local function setDefaultMode(bReg, iByte)
-    writeByte(getDirRegisterAddr(bReg), iByte)
+function mcp23017:setDefaultMode(bReg, iByte)
+    self:writeByte(self:getDirRegisterAddr(bReg), iByte)
 end
 
-local function numberToBool(val)
+function mcp23017:numberToBool(val)
     if val == 1 or val == true or val == '1' then
         return true
     else
@@ -163,143 +157,133 @@ local function numberToBool(val)
 end
 
 -- reset gpio mode
-local function reset()
+function mcp23017:reset()
     -- all to input
-    setDefaultMode(GPA, 0xFF)
-    setDefaultMode(GPB, 0xFF)
+    self:setDefaultMode(self.GPA, 0xFF)
+    self:setDefaultMode(self.GPB, 0xFF)
 end
 
 -- setup device
-local function setup(address, i2c_id, sclPin, sdaPin)
+function mcp23017:setup(address, i2cId)
 
-    MCP23017_ADDRESS = string.format('0x%02X', address)
-
-    if sclPin ~= nil and sdaPin ~= nil then
-        i2c.setup(i2c_id, sdaPin, sclPin, i2c.SLOW)
-    else
-        MCP23017_id = i2c_id
-    end
-
-    if (checkAddress(address) ~= true) or (checkDevice(address) ~= true) then
-        MCP23017_DEVICE_OK = false
+    self.address = string.format('0x%02X', address)
+    self.i2cId = i2cId
+    if (self:checkAddress() ~= true) or (self:checkDevice() ~= true) then
+        self.deviceOk = false
         return 0
     else
-        MCP23017_DEVICE_OK = true
-        reset()
+        self.deviceOk = true
+        self:reset()
         return 1
     end
 end
 
 -- set mode for a pin
-local function setMode(bReg, pin, mode)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:setMode(bReg, pin, mode)
+    if self.deviceOk == false then
         return nil
     end
 
-    local inReq = getDirRegisterAddr(bReg)
-    local inPin = checkPinIsInRange(pin)
-    local response = readByte(inReq)
+    local inReq = self:getDirRegisterAddr(bReg)
+    local inPin = self:checkPinIsInRange(pin)
+    local response = self:readByte(inReq)
     local newState
 
-    if numberToBool(mode) == OUTPUT then
+    if self:numberToBool(mode) == self.OUTPUT then
         newState = clearBit(response, inPin)
     else
         newState = setBit(response, inPin)
     end
 
-    writeByte(inReq, newState)
+    self:writeByte(inReq, newState)
     return true
 end
 
 -- set pin to low or high
-local function setPin(bReg, pin, state)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:setPin(bReg, pin, state)
+    if self.deviceOk == false then
         return nil
     end
 
-    local inReq = getGPIORegisterAddr(bReg)
-    local inPin = checkPinIsInRange(pin)
-    local response = readByte(inReq)
+    local inReq = self:getGPIORegisterAddr(bReg)
+    local inPin = self:checkPinIsInRange(pin)
+    local response = self:readByte(inReq)
     local newState
 
-    if numberToBool(state) == HIGH then
+    if self:numberToBool(state) == self.HIGH then
         newState = setBit(response, inPin)
     else
         newState = clearBit(response, inPin)
     end
 
-    writeByte(inReq, newState)
+    self:writeByte(inReq, newState)
     return true
 end
 
 -- read pin input
-local function getPinState(bReg, pin)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:getPinState(bReg, pin)
+    if self.deviceOk == false then
         return nil
     end
 
-    local inReq = getGPIORegisterAddr(bReg)
-    local inPin = checkPinIsInRange(pin)
-    local response = readByte(inReq)
+    local inReq = self:getGPIORegisterAddr(bReg)
+    local inPin = self:checkPinIsInRange(pin)
+    local response = self:readByte(inReq)
     return issetBit(response, inPin)
 end
 
-local function writeToRegsiter(registerAddr, newByte)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:writeToRegister(registerAddr, newByte)
+    if self.deviceOk == false then
         return nil
     end
-    return writeByte(registerAddr, newByte)
+    return self:writeByte(registerAddr, newByte)
 end
 
-local function readFromRegsiter(registerAddr)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:readFromRegister(registerAddr)
+    if self.deviceOk == false then
         return nil
     end
-    return readByte(registerAddr)
+    return self:readByte(registerAddr)
 end
 
-local function writeIODIR(bReg, newByte)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:writeIODIR(bReg, newByte)
+    if self.deviceOk == false then
         return nil
     end
-    return writeToRegsiter(getDirRegisterAddr(bReg), newByte)
+    return self:writeToRegister(self:getDirRegisterAddr(bReg), newByte)
 end
 
-local function writeGPIO(bReg, newByte)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:writeGPIO(bReg, newByte)
+    if self.deviceOk == false then
         return nil
     end
-    return writeToRegsiter(getGPIORegisterAddr(bReg), newByte)
+    return self:writeToRegister(self:getGPIORegisterAddr(bReg), newByte)
 end
 
-local function readGPIO(bReg)
-    if MCP23017_DEVICE_OK == false then
+function mcp23017:readGPIO(bReg)
+    if self.deviceOk == false then
         return nil
     end
-    return readFromRegsiter(getGPIORegisterAddr(bReg))
+    return self:readFromRegister(self:getGPIORegisterAddr(bReg))
+end
+
+return function(address, i2cId)
+    local self = {}
+    setmetatable(self, mcp23017)
+
+    -- defaults
+    self.deviceOK = false
+    self.i2cId = 0
+    self.address = nil
+    self.OUTPUT = false
+    self.INPUT = true
+    self.GPA = false
+    self.GPB = true
+    self.HIGH = true
+    self.LOW = false
+
+    self:setup(address, i2cId)
+    return self
 end
 
 
--- Set module name as parameter of require and rgetGPIORegisterAddreturn module table
-local M = {
-    OUTPUT = OUTPUT,
-    INPUT = INPUT,
-    GPA = GPA,
-    GPB = GPB,
-    HIGH = HIGH,
-    LOW = LOW,
-    checkDevice = checkDevice,
-    setup = setup,
-    setMode = setMode,
-    setPin = setPin,
-    getPinState = getPinState,
-    reset = reset,
-    setInternalPullUp = setInternalPullUp,
-    writeIODIR = writeIODIR,
-    writeGPIO = writeGPIO,
-    readGPIO = readGPIO,
-}
-
-local moduleName = ...
-_G[moduleName or 'mcp23017'] = M
-return M
