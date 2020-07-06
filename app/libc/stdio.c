@@ -642,6 +642,9 @@ vsprintf (char *d, const char *s, va_list ap)
 //static void dtoa (char *, double, int, int, int);
 void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec);
                     dbl = va_arg(ap, double);
+                    if (!haddot) {
+                      trunc = 6;
+                    }
                     dtoa(d, dbl, *s, width, trunc);
                     trunc = 0;
                 }
@@ -763,9 +766,7 @@ void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec)
         return;
     }
 
-    if (prec == 0)
-        prec = 6;
-    else if (prec > MAX_FRACT)
+    if (prec > MAX_FRACT)
         prec = MAX_FRACT;
 
     /* leave room for sign at start of buffer */
