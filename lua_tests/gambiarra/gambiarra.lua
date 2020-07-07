@@ -86,17 +86,17 @@ end
 local function fail(handler, name, func, expected, msg)
   local status, err = pcall(func)
   if status then
-      local messagePart = ""
-      if expected then
-          messagePart = " containing \"" .. expected .. "\""
-      end
-      handler('fail', name, msg, "Expected to fail with Error" .. messagePart)
-      error('_*_TestAbort_*_')
+    local messagePart = ""
+    if expected then
+        messagePart = " containing \"" .. expected .. "\""
+    end
+    handler('fail', name, msg, "Expected to fail with Error" .. messagePart)
+    error('_*_TestAbort_*_')
   end
-  err:match(".-([^\\/]*)$") -- cut off path of filename
   if (expected and not string.find(err, expected)) then
-      handler('fail', name, msg, "expected errormessage \"" .. err .. "\" to contain \"" .. expected .. "\"")
-      error('_*_TestAbort_*_')
+    err = err:match(".-([^\\/]*)$") -- cut off path of filename
+    handler('fail', name, msg, "expected errormessage \"" .. err .. "\" to contain \"" .. expected .. "\"")
+    error('_*_TestAbort_*_')
   end
   handler('pass', name, msg)
 end
@@ -155,6 +155,7 @@ return function(name, f, async)
     handler('begin', name);
     local ok, err = pcall(f, async and restore)
     if not ok then
+      err = err:match(".-([^\\/]*)$") -- cut off path of filename
       if not err:match('_*_TestAbort_*_') then
         handler('except', name, err)
       end

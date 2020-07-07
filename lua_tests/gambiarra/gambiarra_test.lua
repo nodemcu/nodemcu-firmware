@@ -1,32 +1,27 @@
 local test = require('gambiarra')
 
-local actual = {}
 local expected = {}
+local failed, passed = 0,0
 
-node = {task = {}}
+local orig_node = node
 
--- Set meta test handler
-test(function(e, test, msg, errormsg)
-  if e == 'begin' then
-    currentTest = {
-      name = test,
-      pass = {},
-      fail = {},
-      except = {}
-    }
-  elseif e == 'end' then
-    table.insert(actual, currentTest)
-  elseif e == 'pass' then
-    table.insert(currentTest.pass, msg)
-    if errormsg then table.insert(currentTest.pass, errormsg) end
-  elseif e == 'fail' then
-    table.insert(currentTest.fail, msg)
-    if errormsg then table.insert(currentTest.fail, errormsg) end
-  elseif e == 'except' then
-    table.insert(currentTest.except, msg)
-    if errormsg then table.insert(currentTest.except, errormsg) end
-  end
-end)
+-- implement pseudo task handling for on host testing
+local post_queue = {}
+local drain_post_queue = function() end
+if not node then 
+  node = {task = {}}
+  node.task.post = function (p, f)
+      table.insert(post_queue, f)
+    end
+  drain_post_queue = function()
+      while #post_queue > 0 do
+        local f = table.remove(post_queue, 1)
+        if f then
+          f()
+        end
+      end
+    end
+end
 
 -- Helper function to print arrays
 local function stringify(t)
@@ -46,24 +41,72 @@ local function comparetables(t1, t2)
   return true
 end
 
-local queue = {}
-local function async(f) table.insert(queue, f) end
-local post_queue = {}
-node.task.post = function (p, f) table.insert(post_queue, f) end
+-- Set meta test handler
+test(function(e, test, msg, errormsg)
+  if e == 'begin' then
+    currentTest = {
+      name = test,
+      pass = {},
+      fail = {},
+      except = {}
+    }
+  elseif e == 'end' then
+    if not comparetables(expected[1].pass, currentTest.pass) then
+      print("--- FAIL "..expected[1].name..' (passed): expected ['..
+        stringify(expected[1].pass)..'] vs ['..
+        stringify(currentTest.pass)..']')
+      failed = failed + 1
+    elseif not comparetables(expected[1].fail, currentTest.fail) then
+      print("--- FAIL "..expected[1].name..' (failed): expected ['..
+        stringify(expected[1].fail)..'] vs ['..
+        stringify(currentTest.fail)..']')
+      failed = failed + 1
+    elseif not comparetables(expected[1].except, currentTest.except) then
+      print("--- FAIL "..expected[1].name..' (failed): expected ['..
+        stringify(expected[1].except)..'] vs ['..
+        stringify(currentTest.except)..']')
+      failed = failed + 1
+    else
+      print("+++ Pass "..expected[1].name)
+      passed = passed + 1
+    end
+    table.remove(expected, 1)
+  elseif e == 'pass' then
+    table.insert(currentTest.pass, msg)
+    if errormsg then table.insert(currentTest.pass, errormsg) end
+  elseif e == 'fail' then
+    table.insert(currentTest.fail, msg)
+    if errormsg then table.insert(currentTest.fail, errormsg) end
+  elseif e == 'except' then
+    table.insert(currentTest.except, msg)
+    if errormsg then table.insert(currentTest.except, errormsg) end
+  end
+end)
+
+local async_queue = {}
+local function async(f) table.insert(async_queue, f) end
 local function async_next()
-  local f = table.remove(queue, 1)
+  local f = table.remove(async_queue, 1)
   if f then
     f() 
-  else 
-    f = table.remove(post_queue, 1)
-    if f then
-      f()
-    end
+  end
+end
+
+local function drain_async_queue()
+  while #async_queue > 0 do
+    async_next()
   end
 end
 
 local function metatest(name, f, expectedPassed, expectedFailed, expectedExcept, async)
-  test(name, f, async)
+  local ff = f
+  if async then
+    ff = function(...)
+      f(...)
+      drain_async_queue()
+    end
+  end
+  test(name, ff, async)
   table.insert(expected, {
     name = name,
     pass = expectedPassed,
@@ -96,12 +139,12 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:97'}, {'gambiarra_test.lua:98'})
+end, {'gambiarra_test.lua:140'}, {'gambiarra_test.lua:141'})
 
 metatest('nok without a message', function()
   nok(1 == 2)
   nok(1 == 1)
-end, {'gambiarra_test.lua:102'}, {'gambiarra_test.lua:103'})
+end, {'gambiarra_test.lua:145'}, {'gambiarra_test.lua:146'})
 
 --
 -- Equality tests
@@ -232,12 +275,12 @@ metatest('fail with incorrect errormessage', function()
   fail(function() error("my error") end, "different error", "Failed with incorrect error")
   ok(true, 'unreachable code')
 end, {}, {'Failed with incorrect error',
-      'expected errormessage "gambiarra_test.lua:232: my error" to contain "different error"'})
+      'expected errormessage "gambiarra_test.lua:275: my error" to contain "different error"'})
 
 metatest('fail with not failing code', function()
-  fail(function() end, "my error", "Failed without error")
+  fail(function() end, "my error", "did not fail")
   ok(true, 'unreachable code')
-end, {}, {"Failed without error", 'Expected to fail with Error containing "my error"'})
+end, {}, {"did not fail", 'Expected to fail with Error containing "my error"'})
 
 --
 -- except tests
@@ -245,11 +288,9 @@ end, {}, {"Failed without error", 'Expected to fail with Error containing "my er
 metatest('error should panic', function()
   error("lua error")
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:246: lua error'})
+end, {}, {}, {'gambiarra_test.lua:289: lua error'})
 
-while #post_queue > 0 do
-  async_next()
-end
+drain_post_queue()
 
 --
 -- Async tests
@@ -270,8 +311,7 @@ metatest('async test without actually async', function(next)
   next()
 end, {'bar'}, {}, {}, true)
 
-async_next()
-async_next()
+drain_post_queue()
 
 metatest('another async test after async queue drained', function(next)
   async(function() 
@@ -290,7 +330,7 @@ metatest('error should panic async', function(next)
     next()
   end)
   ok(true, 'foo')
-end, {'foo'}, {}, {'gambiarra_test.lua:289: async Lua error'}, true)
+end, {'foo'}, {}, {'gambiarra_test.lua:329: async Lua error'}, true)
 
 --
 -- sync after async test
@@ -309,37 +349,16 @@ metatest('check marker async', function()
   ok(eq(marker, "marked"), "marker check")
 end, {"marker check"}, {})
 
-while #post_queue + #queue > 0 do
-  async_next()
-end
-
 --
 -- Finalize: check test results
 --
-local failed, passed = 0,0
-for i = 1,#expected do
-  if actual[i] == nil then
+metatest("finishing up pending tests", function()
+  for i = 1,#expected -1 do
     print("--- FAIL "..expected[i].name..' (pending)')
     failed = failed + 1
-  elseif not comparetables(expected[i].pass, actual[i].pass) then
-    print("--- FAIL "..expected[i].name..' (passed): expected ['..
-      stringify(expected[i].pass)..'] vs ['..
-      stringify(actual[i].pass)..']')
-    failed = failed + 1
-  elseif not comparetables(expected[i].fail, actual[i].fail) then
-    print("--- FAIL "..expected[i].name..' (failed): expected ['..
-      stringify(expected[i].fail)..'] vs ['..
-      stringify(actual[i].fail)..']')
-    failed = failed + 1
-  elseif not comparetables(expected[i].except, actual[i].except) then
-    print("--- FAIL "..expected[i].name..' (failed): expected ['..
-      stringify(expected[i].except)..'] vs ['..
-      stringify(actual[i].except)..']')
-    failed = failed + 1
-  else
-    print("+++ Pass "..expected[i].name)
-    passed = passed + 1
   end
-end
+  print("failed: "..failed, "passed: "..passed)
+  node = orig_node
+end, {}, {})
 
-print("failed: "..failed, "passed: "..passed)
+drain_post_queue()
