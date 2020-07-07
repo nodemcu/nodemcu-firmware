@@ -1,25 +1,5 @@
 local test = require('gambiarra')
 
--- set the output handler
-local function TERMINAL_HANDLER(e, test, msg, errormsg)
-  if errormsg then
-    errormsg = ": "..errormsg
-  else
-    errormsg = ""
-  end
-  if e == 'pass' then
-    print("  "..e.." "..test..': '..msg)
-  elseif e == 'fail' then
-    print(" ==>  "..e.." "..test..': '..msg..errormsg)
-  elseif e == 'except' then
-    print(" ==>  "..e.." "..test..': '..msg..errormsg)
-  else
-    print(e.." "..test)
-  end
-end
--- set the output handler
--- test(TERMINAL_HANDLER)
-
 local function cleanup() 
     file.remove("testfile")
     file.remove("testfile2")
@@ -37,7 +17,7 @@ end
 
 test('exist', function()
   cleanup()
-  ok(not file.exists("non existing file"), "non existing file")
+  nok(file.exists("non existing file"), "non existing file")
 
   file.putcontents("testfile", "testcontents")
   ok(file.exists("testfile"), "existing file")
@@ -65,7 +45,7 @@ test('getcontents', function()
   local testcontent = "some content \0 and more"
   file.putcontents("testfile", testcontent)
   local content = file.getcontents("testfile")
-  ok(testcontent, content)
+  ok(eq(testcontent, content),"contents")
 end)
 
 test('getcontents non existent file', function()
@@ -82,7 +62,7 @@ test('getcontents more than 1K', function()
   end
   f:close()
   content = file.getcontents("testfile")
-  eq(#content, 1700, "partial read")
+  ok(eq(#content, 1700), "long contents")
 end)
 
 test('list', function()
@@ -184,11 +164,10 @@ test('stat existing file', function()
   file.putcontents("testfile", "testfile")
 
   local stat = file.stat("testfile")
-  
-  nok(stat == nil, "stat existing")
+  ok(stat != nil, "stat existing")
   ok(eq(stat.size, 8), "size")
   ok(eq(stat.name, "testfile"), "name")
-  nok(stat.time == nil, "no time")
+  ok(stat.time, "no time")
   ok(eq(stat.time.year, 1970), "year")
   ok(eq(stat.time.mon, 01), "mon")
   ok(eq(stat.time.day, 01), "day")
