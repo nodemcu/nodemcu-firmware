@@ -61,7 +61,7 @@ extern LROT_TABLE(math);
 #if defined(LUA_CROSS_COMPILER)
 extern LROT_TABLE(base_func);
 LROT_BEGIN(rotables_meta, NULL, LROT_MASK_INDEX)
-  LROT_TABENTRY( _index, base_func)
+  LROT_TABENTRY( __index, base_func)
 LROT_END(rotables_meta, NULL, LROT_MASK_INDEX)
 
 extern LROT_TABLE(oslib);

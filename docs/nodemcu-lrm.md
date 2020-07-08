@@ -7,12 +7,14 @@ NodeMCU firmware is an IoT project ("the Project") which implements a Lua-based 
 -  The [Lua 5.1 Reference Manual]( https://www.lua.org/manual/5.1/) and
 -  The [Lua 5.3 Reference Manual]( https://www.lua.org/manual/5.3/) (**LRM**)
 
-Developers using the NodeMCU environment should familiarise themselves with the 5.3 LRM.  The Project provides a wide range of standard library modules written in both C and Lua to support many ESP hardware modules and chips, and these are documented in separation sections in our [online documentation](https://nodemcu.readthedocs.io/).
+Developers using the NodeMCU environment should familiarise themselves with the 5.3 LRM.
+
+The Project provides a wide range of standard library modules written in both C and Lua to support many ESP hardware modules and chips, and these are documented in separation sections in our [online documentation](https://nodemcu.readthedocs.io/).
 
 This reference supplements LRM content and module documentation by focusing on the differences between NodeMCU Lua and standard Lua 5.3 in use.
 
-One goal in introducing Lua 5.3 support was to ensure the continuity of our existing C modules by ensuring that they can be successfully compiled and executed into both the Lua 5.1 and 5.3 environments.  This goal was achieved by combination of:
--  enabling relevant compatibility options for standard Lua libraries
+One of our goals in introducing Lua 5.3 support was to maintain the continuity of our existing C modules by ensuring that they can be successfully compiled and executed in both the Lua 5.1 and 5.3 environments.  This goal was achieved by combination of:
+-  enabling relevant compatibility options for standard Lua libraries;
 -  regressing some Lua 5.3 API enhancements back into our Lua 5.1 implementation, and 
 -  making some small changes to the module source to ensure that incompatible API use is avoided.
 
@@ -36,11 +38,11 @@ These are implemented as per the LRM.  Note that the Lua 5.1 and Lua 5.3 languag
 
 ### Garbage Collection
 
--  All LFS functions, any string constants used in these functions, and any ROTables are stored in static code space.  These are ignored by the Lua Garbage collector (LGC).  The LGC only scans RAM-based resources and recovers unused ones.  The NodeMCU LGC has slightly modified configuration settings that increase its aggressiveness as heap usage approaches RAM capacity.
+All LFS functions, any string constants used in these functions, and any ROTables are stored in static code space.  These are ignored by the Lua Garbage collector (LGC).  The LGC only scans RAM-based resources and recovers unused ones.  The NodeMCU LGC has slightly modified configuration settings that increase its aggressiveness as heap usage approaches RAM capacity.
 
 ### Coroutines
 
--  The firmware includes a full coroutine implementation, but note that there are some slight differences between the standard Lua 5.1 and Lua 5.3 implementations.
+The firmware includes a full coroutine implementation, but note that there are some slight differences between the standard Lua 5.1 and Lua 5.3 implementations.
 
 ## Lua Language
 
@@ -54,9 +56,11 @@ The NodeNCU runtime offers a full implementation of the Lua language as defined 
 
 [LRM §4.6](https://www.lua.org/manual/5.3/manual.html#4.6) describes how errors are handled within the runtime. 
 
-The normal practice within the runtime and C modules is to throw any detected errors -- that is to unroll the call stack until the error is acquired by a routine that has declared an error handler.  Such an environment can be established by  [lua_pcall](https://www.lua.org/manual/5.3/manual.html#lua_pcall) and related API functions within C and by the Lua function [pcall](https://www.lua.org/manual/5.3/manual.html#pdf-pcall); this is known as a _protected environment_.  Errors which occur outside any protected environment are not caught by the Lua application and by default trigger a "panic". By default NodeMCU captures the error traceback and posts a new SDK task to print the error before restarting the processor.  However a `node` library call is available to override this default action.  For example developers might wish to print the error without restarting the processor) so that the circumstances which triggered the error can be investigated.
+The normal practice within the runtime and C modules is to throw any detected errors -- that is to unroll the call stack until the error is acquired by a routine that has declared an error handler.  Such an environment can be established by  [lua_pcall](https://www.lua.org/manual/5.3/manual.html#lua_pcall) and related API functions within C and by the Lua function [pcall](https://www.lua.org/manual/5.3/manual.html#pdf-pcall); this is known as a _protected environment_.  Errors which occur outside any protected environment are not caught by the Lua application and by default trigger a "panic". By default NodeMCU captures the error traceback and posts a new SDK task to print the error before restarting the processor.
 
-The NodeMCU runtime implements a non-blocking threaded model that is similar to that of `node.js`, and hence most Lua execution is initiated from C event-triggered callback (CB) routines.  NodeMCU allow full error diagnostics to be recovered from CB unprotected errors by including an additional auxiliary library function that prints a full traceback before triggering processor restart.
+The NodeMCU runtime implements a non-blocking threaded model that is similar to that of `node.js`, and hence most Lua execution is initiated from event-triggered callback (CB) routines within C library modules.  NodeMCU enables full recovery of error diagnostics from otherwise unprotected Lua execution by adding an additional auxiliary library function [`luaL_pcallx`](#luaL_pcallx).  All event-driven Lua callbacks within our library modules use `luaL_pcallx` instead of `lua_call`.  This has the same behaviour if no uncaught error occurs.  However, in the case of an error that would have previously resulted in a panic, a new SDK task is posted with the error traceback as an upvalue to process this error information.  
+
+The default action is to  print a full traceback and then trigger processor restart, that is a similar outcome as before but with recovery of the full error traceback.  However the `node.onerror()` library function is available to override this default action; for example developers might wish to print the error without restarting the processor, so that the circumstances which triggered the error can be investigated.
 
 ### Additional API Functions and Types
 
@@ -76,7 +80,7 @@ Create a RAM based `ROTable` pointing to the `ROTable_entry` vector `e`, and met
 
 `  void (lua_debugbreak)(void);`
 
-`lua_debugbreak()` and `ASSERT(condtion)` are available for for development debugging.  If `DEVELOPMENT_USE_GDB` is defined then these will trigger a debugger break and evaluate a conditional assert prologue on the same.  If not, then these are effectively ignored and generate no executable code.
+`lua_debugbreak()` and `ASSERT(condtion)` are available for development debugging.  If `DEVELOPMENT_USE_GDB` is defined then these will respectively trigger a debugger break and evaluate a conditional assert prologue on the same.  If not, then these are effectively ignored and generate no executable code.
 
 #### lua_dump
 
@@ -89,11 +93,11 @@ Dumps function at the top of the stack function as a binary chunk as per LRM.  H
     - 1, discard Local and Upvalue debug info; keep line number info
     - 2, discard Local, Upvalue and line number debug info
 
-The internal NodeMCU `Proto` encoding of debug line number information is typically 15× more compact than in standard Lua; the intermediate `strip=1` argument allows the removal of must of the debug information whilst retaining the ability to produce a proper line number traceback on error. 
+The internal NodeMCU `Proto` encoding of debug line number information is typically 15× more compact than in standard Lua; the intermediate `strip=1` argument allows the removal of most of the debug information whilst retaining the ability to produce a proper line number traceback on error. 
 
 #### lua_freeheap
 
-` int (lua_freeheap) (void);`         [-0, +0, –]
+` int lua_freeheap (void);`         [-0, +0, –]
 
 returns the amount of free heap available to the Lua memory allocator.
 
@@ -136,13 +140,13 @@ This function has two modes.  A value is popped off the stack.
 -  If this value is `nil`, then the default strip level is set to this if `level` in the range 0 to 2, otherwise the current default level is returned.
 -  If this is a Lua function (in RAM rather than in LFS), then the prototype hierarchy within the function is stripped of debug information to the specified level.
 
-### lua_writestring
+#### lua_writestring
 
 `  void lua_writestring(const char *s, size_t l); /* macro */`
 
 Writes a string `s` of length `l` to `stdout`.  Note that any output redirection will be applied to the string.
  
-### lua_writestringerror
+#### lua_writestringerror
 
 `  void lua_writestringerror(const char *s, void *p).  /* macro */`
 
@@ -178,7 +182,7 @@ Calls a function in protected mode and providing a full traceback on error.
 
 Both `nargs` and `nresults` have the same meaning as in [lua_call](https://www.lua.org/manual/5.3/manual.html#lua_call). If there are no errors during the call, then `luaL_pcallx` behaves exactly like `lua_call`. However, if there is any error, `lua_pcallx` has already established an traceback error handler for the call that catches the error. It cleans up the stack and returns the negative error code.
 
-Any caught error is posted to a separate NodeMCU task which reports the error.  The error reporter is defined in the registry entry "`onerror`".  The default action is to print the error and then set a 1 sec one-shot timer to restart the CPU.  (One second is enough time to allow the error to be sent over the network if redirection to a telnet session is in place.)  If the `onerror` entry is set to `print` for example, then the error is simply printed without restarting the CPU.
+Any caught error is posted to a separate NodeMCU task which which calls the error reporter as defined in the registry entry `onerror` with the traceback text as its argument.  The default action is to print the error and then set a 1 sec one-shot timer to restart the CPU.  (One second is enough time to allow the error to be sent over the network if redirection to a telnet session is in place.)  If the `onerror` entry is set to `print` for example, then the error is simply printed without restarting the CPU.
 
 Note that the Lua runtime does not call the error handler if the error is an out-of memory one, so in this case the out-of-memory error is posted to the error reporter without a traceback.
 
@@ -237,14 +241,14 @@ This macro executes `luaL_unref(L, t, r)` and then assigns `r = LUA_NOREF`.
 
 ### Declaring modules and ROTables in NodeMCU
 
-All NodeMCU C library modules should include the standard header "`module.h`".  This internally includes `lnodemcu.h` and these together provide the macros to enable declaration of NodeMCU modules and ROTables within them.  All ROtable support macros are wither prefixed by `LRO_` (Lua Read Only) or in the case of table entries `LROT_`. 
+All NodeMCU C library modules should include the standard header "`module.h`".  This internally includes `lnodemcu.h` and these together provide the macros to enable declaration of NodeMCU modules and ROTables within them.  All ROtable support macros are either prefixed by `LRO_` (Lua Read Only) or in the case of table entries `LROT_`. 
 
 #### NODEMCU_MODULE
 
 ` NODEMCU_MODULE(sectionname, libraryname, map, initfunc)`
 
 This macro enables the module to be statically declared and linked in the `ROM` ROTable.  The global environment's metafield `__index=ROM` hence any entries in the ROM table are resolved as read-only entries in the global environment.
--  `sectionname`. This is the linker section for the module and by convention this is the uppercased library name (e.g. `FILE`).  Behind the scenes `_module_selected` is appended to this section name if corresponding "use module" macro (e.g. `LUA_USE_MODULES_FILE`) is defined in the configuration.  Only the modules sections `*_module_selected` are linked into the firmware image ad those not selected are ignored.
+-  `sectionname`. This is the linker section for the module and by convention this is the uppercased library name (e.g. `FILE`).  Behind the scenes `_module_selected` is appended to this section name if corresponding "use module" macro (e.g. `LUA_USE_MODULES_FILE`) is defined in the configuration.  Only the modules sections `*_module_selected` are linked into the firmware image and those not selected are ignored.
  -  `libraryname`.  This is the name of the module (e.g. `FILE`) and is the key for the entry in the `ROM` ROTable.
 -  `map`.  This is the ROTable defining the functions and constants for the module, and this is the corresponding value for the entry in the `ROM` ROTable.
 -  `initfunc`.  If this is not NULL, it should be a valid C function and is call during Lua initialisation to carry out one-time initialisation of the module.
@@ -282,7 +286,7 @@ LROT_END(utf8, LROT_TABLEREF(utf8_meta), 0)
 
 ### Standard Libraries
 
--  Basic Lua functions, coroutine support, Lua module support, string and table manipulation are as per the standard Lua implementation.  However, note that there are some breaking changes in the standard Lua string implementation as discussed in the LRM, e.g. the `\z` end-of-line separator; no string functions show a CString be behaviour (`"\0"` is no longer a special character).
+-  Basic Lua functions, coroutine support, Lua module support, string and table manipulation are as per the standard Lua implementation.  However, note that there are some breaking changes in the standard Lua string implementation as discussed in the LRM, e.g. the `\z` end-of-line separator; no string functions exhibit a CString behaviour (that is treat `"\0"` as a special character).
 -  The modulus operator is implemented for string data types so `str % var` is a synonym for `string.format(str, var)` and `str % tbl` is a synonym for `string.format(str, table.unpack(tbl))`.  This python-like formatting functionality is a very common extension to the string library, but is awkward to implement with `string` being a `ROTable`.
 -  The `string.dump()` `strip` parameter can take integer values 1,2,3 (the [`lua_stripdebug`](#lua_stripdebug) strip parameter + 1).  `false` is synonymous to `1`, `true` to `3` and omitted takes the default strip level.
 -  The `string` library does not offer locale support. 
