@@ -34,6 +34,7 @@ pages:
     - Filesystem on SD card: 'sdcard.md'
 - C Modules:
     - 'adc':          'modules/adc.md'
+    - 'am2320':       'modules/am2320.md'
     - 'bit':          'modules/bit.md'
     - 'bthci':        'modules/bthci.md'
     - 'can':          'modules/can.md'
