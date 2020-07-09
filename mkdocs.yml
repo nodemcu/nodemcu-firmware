@@ -123,6 +123,7 @@ pages:
     - 'uart': 'modules/uart.md'
     - 'ucg': 'modules/ucg.md'
     - 'websocket': 'modules/websocket.md'
+    - 'wiegand': 'modules/wiegand.md'
     - 'wifi': 'modules/wifi.md'
     - 'wifi.monitor': 'modules/wifi_monitor.md'
     - 'wps': 'modules/wps.md'

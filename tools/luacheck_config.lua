@@ -717,6 +717,11 @@ stds.nodemcu_libs = {
         createClient = empty
       }
     },
+    wiegand = {
+      fields = {
+        create = empty
+      }
+    },
     wifi = {
       fields = {
         COUNTRY_AUTO = empty,
