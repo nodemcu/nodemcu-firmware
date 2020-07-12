@@ -40,13 +40,12 @@
 #define HIGH    1
 #endif /* ifndef HIGH */
 
-#define COMBINE_HIGH_AND_LOW_BYTE(byte_high, byte_low)  (((byte_high) << 8) | (byte_low))
-
 static double dht_humidity;
 static double dht_temperature;
 
 static uint8_t dht_bytes[5];  // buffer to receive data
 static int dht_readSensor(uint8_t pin, uint8_t wakeupDelay);
+static int16_t getValue(uint8_t high_byte, uint8_t low_byte);
 
 /////////////////////////////////////////////////////
 //
@@ -119,12 +118,8 @@ int dht_read_universal(uint8_t pin)
     // Assume it is not DHT11
     // CONVERT AND STORE
     DHT_DEBUG("DHTxx method\n");
-    dht_humidity = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[0], dht_bytes[1]) * 0.1;
-    dht_temperature = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[2] & 0x7F, dht_bytes[3]) * 0.1;
-    if (dht_bytes[2] & 0x80)  // negative dht_temperature
-    {
-        dht_temperature = -dht_temperature;
-    }
+    dht_humidity = (double)getValue(dht_bytes[0], dht_bytes[1]) * 0.1;
+    dht_temperature = (double)getValue(dht_bytes[2], dht_bytes[3]) * 0.1;
 
     // TEST CHECKSUM
     uint8_t sum = dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3];
@@ -179,12 +174,8 @@ int dht_read(uint8_t pin)
     }
 
     // CONVERT AND STORE
-    dht_humidity = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[0], dht_bytes[1]) * 0.1;
-    dht_temperature = (double)COMBINE_HIGH_AND_LOW_BYTE(dht_bytes[2] & 0x7F, dht_bytes[3]) * 0.1;
-    if (dht_bytes[2] & 0x80)  // negative dht_temperature
-    {
-        dht_temperature = -dht_temperature;
-    }
+    dht_humidity = (double)getValue(dht_bytes[0], dht_bytes[1]) * 0.1;
+    dht_temperature = (double)getValue(dht_bytes[2], dht_bytes[3]) * 0.1;
 
     // TEST CHECKSUM
     uint8_t sum = dht_bytes[0] + dht_bytes[1] + dht_bytes[2] + dht_bytes[3];
@@ -314,6 +305,13 @@ int dht_readSensor(uint8_t pin, uint8_t wakeupDelay)
 
     return DHTLIB_OK;
 }
+
+// Assembles the high and low byte in a signed 16bit value
+static int16_t getValue(uint8_t high_byte, uint8_t low_byte)
+{
+    return ((high_byte << 8) | low_byte);
+}
+
 //
 // END OF FILE
 //
