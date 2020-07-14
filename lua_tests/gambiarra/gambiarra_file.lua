@@ -164,7 +164,7 @@ test('stat existing file', function()
   file.putcontents("testfile", "testfile")
 
   local stat = file.stat("testfile")
-  ok(stat != nil, "stat existing")
+  ok(stat ~= nil, "stat existing")
   ok(eq(stat.size, 8), "size")
   ok(eq(stat.name, "testfile"), "name")
   ok(stat.time, "no time")

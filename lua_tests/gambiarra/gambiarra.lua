@@ -159,6 +159,9 @@ return function(name, f, async)
       if not err:match('_*_TestAbort_*_') then
         handler('except', name, err)
       end
+      if async then
+        restore()
+      end
     end
 
     if not async then

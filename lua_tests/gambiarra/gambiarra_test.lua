@@ -311,6 +311,10 @@ metatest('async test without actually async', function(next)
   next()
 end, {'bar'}, {}, {}, true)
 
+metatest('async fail in main', function(next)
+  ok(false, "async fail")
+end, {}, {'async fail'}, {}, true)
+
 drain_post_queue()
 
 metatest('another async test after async queue drained', function(next)
@@ -324,13 +328,17 @@ end, {'foo', 'bar'}, {}, {}, true)
 --
 -- except tests async
 --
-metatest('error should panic async', function(next)
+metatest('async except in main', function(next)
+  error("async except")
+end, {}, {}, {'gambiarra_test.lua:332: async except'}, true)
+
+metatest('async except in callback', function(next)
   async(function() 
    -- error("async Lua error")
     next()
   end)
   ok(true, 'foo')
-end, {'foo'}, {}, {'gambiarra_test.lua:329: async Lua error'}, true)
+end, {'foo'}, {}, {'gambiarra_test.lua:337: async Lua error'}, true)
 
 --
 -- sync after async test
