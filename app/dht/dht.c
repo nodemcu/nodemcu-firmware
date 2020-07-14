@@ -313,15 +313,17 @@ int dht_readSensor(uint8_t pin, uint8_t wakeupDelay)
 static double getValue(dht_Signal s)
 {
     uint8_t high=0, low=0;
+
+    // the '8' variants leave the low byte set to 0
     switch(s){
-        case Humidity8:
-            low = dht_bytes[1];
         case Humidity:
+            low = dht_bytes[1];
+        case Humidity8:
             high = dht_bytes[0];
             break;
-        case Temperature8:
-            low = dht_bytes[3];
         case Temperature:
+            low = dht_bytes[3];
+        case Temperature8:
             high = dht_bytes[2];
             break;
     }
