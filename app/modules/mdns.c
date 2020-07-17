@@ -44,7 +44,7 @@ static int mdns_register(lua_State *L)
       const char *key = luaL_checkstring(L, -2);
 
       if (strcmp(key, "port") == 0) {
-	info.service_port = luaL_checknumber(L, -1);
+	info.service_port = luaL_checkinteger(L, -1);
       } else if (strcmp(key, "service") == 0) {
 	info.service_name = luaL_checkstring(L, -1);
       } else if (strcmp(key, "description") == 0) {
