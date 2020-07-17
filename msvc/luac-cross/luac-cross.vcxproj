@@ -193,6 +193,7 @@
     <ClCompile Include="..\..\app\lua\llex.c" />
     <ClCompile Include="..\..\app\lua\lmathlib.c" />
     <ClCompile Include="..\..\app\lua\lmem.c" />
+    <ClCompile Include="..\..\app\lua\lnodemcu.c" />
     <ClCompile Include="..\..\app\lua\loadlib.c" />
     <ClCompile Include="..\..\app\lua\lobject.c" />
     <ClCompile Include="..\..\app\lua\lopcodes.c" />
