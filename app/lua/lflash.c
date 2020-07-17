@@ -265,7 +265,8 @@ LUA_API void lua_getlfsconfig (lua_State *L, int *config) {
   config[0] = (int) flashAddr;                   /* LFS region mapped address */
   config[1] = flashAddrPhys;                 /* LFS region base flash address */
   config[2] = G(L)->LFSsize;                        /* LFS region actual size */
-  config[3] = cast(FlashHeader *, flashAddr)->flash_size;  /* LFS region used */
+  config[3] = (G(L)->ROstrt.hash) ? cast(FlashHeader *, flashAddr)->flash_size : 0;
+                                                           /* LFS region used */
   config[4] = 0;                                       /* Not used in Lua 5.1 */
 }
 

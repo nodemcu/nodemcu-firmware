@@ -75,48 +75,15 @@ Formatting a file system on a large flash device (e.g. the 16MB parts) can take 
 
 ## SDK Init Data
 
-!!! note
+NodeMCU versions are compiled against specific versions of the Espressif SDK. The SDK reserves space in flash that is used to store calibration and other data. Espressif refers to this area as "System Param" and it occupies four 4&nbsp;Kb sectors of flash. A fifth 4&nbsp;Kb sector is also reserved for RF calibration.
+-  With SDK version 2.x builds, these 5 sectors are located in the last pages at in the Flash memory.
+-  With SDK version 3.x builds, these 5 sectors are located in the otherwise unused pages at Flash offset 0x0B000-0x0FFFF, between the `bin/0x00000.bin` segment at 0x00000 and the `bin/0x10000.bin` to 0x10000.
 
-    Normally, NodeMCU will take care of writing the SDK init data when needed. Most users can ignore this section.
-
-NodeMCU versions are compiled against specific versions of the Espressif SDK. The SDK reserves space in flash that is used to store calibration and other data. This data changes between SDK versions, and if it is invalid or not present, the firmware may not boot correctly. Symptoms include messages like `rf_cal[0] !=0x05,is 0xFF`, or endless reboot loops and/or fast blinking module LEDs.
-
-!!! tip
-
-    If you are seeing one or several of the above symptoms, ensure that your chip is fully erased before flashing, for example:
-
-    `esptool.py --port <serial-port-of-ESP8266> erase_flash`
-
-    Also verify that you are using an up-to-date NodeMCU release, as some early releases of NodeMCU 1.5.4.1 did not write the SDK init data to a freshly erased chip.
-
-Espressif refers to this area as "System Param" and it resides in the last four 4&nbsp;kB sectors of flash. Since SDK 1.5.4.1 a fifth sector is reserved for RF calibration (and its placement is controlled by NodeMCU) as described by this [patch notice](http://bbs.espressif.com/viewtopic.php?f=46&t=2407). At minimum, Espressif states that the 4th sector from the end needs to be flashed with "init data", and the 2nd sector from the end should be blank.
-
-The default init data is provided as part of the SDK in the file `esp_init_data_default.bin`. NodeMCU will automatically flash this file to the right place on first boot if the sector appears to be empty.
-
-If you need to customize init data then first download the [Espressif SDK 2.2.0](https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.2.0.zip) and extract `esp_init_data_default.bin`. Then flash that file just like you'd flash the firmware. The correct address for the init data depends on the capacity of the flash chip.
-
-- `0x7c000` for 512 kB, modules like most ESP-01, -03, -07 etc.
-- `0xfc000` for 1 MB, modules like ESP8285, PSF-A85, some ESP-01, -03 etc.
-- `0x1fc000` for 2 MB
-- `0x3fc000` for 4 MB, modules like ESP-12E, NodeMCU devkit 1.0, WeMos D1 mini
-- `0x7fc000` for 8 MB
-- `0xffc000` for 16 MB, modules like WeMos D1 mini pro
-
-See "4.1 Non-FOTA Flash Map" and "6.3 RF Initialization Configuration" of the [ESP8266 Getting Started Guide](https://www.espressif.com/sites/default/files/documentation/2a-esp8266-sdk_getting_started_guide_en.pdf) for details on init data addresses and customization.
+If this data gets corrupted or you are upgrading major SDK versions, then the firmware may not boot correctly. Symptoms include messages like `rf_cal[0] !=0x05,is 0xFF`, or endless reboot loops and/or fast blinking module LEDs.  If you are seeing one or several of the above symptoms, ensure that your chip is fully erased before flashing, for example by using `esptool.py`.  The SDK version 3.x firmware builds detect if the RF calibration sector has been erased or corrupted, and will automatically initialise it with the correct content before restarting the processor. This works for all SDK supported flash sizes.
 
 ## Determine flash size
 
-To determine the capacity of the flash chip *before* a firmware is installed you can run
+The easiest way to determine the flash capacity is to load the firmware and then `print(node.info'hw'.flash_size)` which reports the flash size in Kb.  Alternatively, if you want to determine the capacity of the flash chip _before_ a firmware is installed then you can run the following command.  This will return a 2 hex digit **Manufacturer** ID and a 4 digit **Device** ID and the detected flash size.
 
 `esptool.py --port <serial-port> flash_id`
-
-It will return a manufacturer ID and a chip ID like so:
-
-```
-Connecting...
-Manufacturer: e0
-Device: 4016
-```
-The chip ID can then be looked up in [https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h](https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h). This leads to a manufacturer name and a chip model name/number e.g. `AMIC_A25LQ032`. That information can then be fed into your favorite search engine to find chip descriptions and data sheets.
-
-By convention the last two or three digits in the module name denote the capacity in megabits. So, `A25LQ032` in the example above is a 32Mb(=4MB) module.
+The chip ID can then be looked up in [https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h](https://review.coreboot.org/cgit/flashrom.git/tree/flashchips.h).

@@ -34,16 +34,17 @@ pages:
     - Support: 'support.md'
 - Reference:
     - NodeMCU Language Reference Manual: 'nodemcu-lrm.md'
-    - NodeMCU Writing C modules: 'nodemcu-pil.md'
+    - Programming in NodeMCU: 'nodemcu-pil.md'
 - FAQs:
     - Lua Developer FAQ: 'lua-developer-faq.md'
     - Extension Developer FAQ: 'extn-developer-faq.md'
     - Hardware FAQ: 'hardware-faq.md'
 - Whitepapers:
+    - Lua 5.3 Support: 'lua53.md'
+    - Lua Flash Store (LFS): 'lfs.md'
+    - Lua Compact Debug (LCD): 'lcd.md'
     - Filesystem on SD card: 'sdcard.md'
     - Internal filesystem: 'spiffs.md'
-    - Lua Compact Debug (LCD): 'lcd.md'
-    - Lua Flash Store (LFS): 'lfs.md'
 - Lua Modules:
     - 'Lua modules directory': 'lua-modules/README.md'
     - 'bh1750': 'lua-modules/bh1750.md'

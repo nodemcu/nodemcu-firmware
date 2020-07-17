@@ -492,7 +492,7 @@ typedef struct Proto Proto;
 
 #ifdef DEVELOPMENT_USE_GDB
 LUALIB_API void (lua_debugbreak)(void);
-#define ASSERT(s) if (!(s)) {lua_debugbreak();}
+#define ASSERT(s)  ((s) ? (void)0 : lua_debugbreak())
 #else
 #define lua_debugbreak() (void)(0)
 #define ASSERT(s) (void)(0)

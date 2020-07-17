@@ -128,7 +128,7 @@ LUALIB_API int luaL_posttask( lua_State* L, int prio ) {
  */
 LUALIB_API int luaL_pushlfsmodule (lua_State *L) {
   if (lua_pushlfsindex(L) == LUA_TNIL) {
-    lua_remove(L,-2);  /* dump the name to balalnce the stack */
+    lua_remove(L,-2);  /* dump the name to balance the stack */
     return 0;          /* return nil if LFS not loaded */
   }
   lua_insert(L, -2);

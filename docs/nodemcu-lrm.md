@@ -1,21 +1,21 @@
-# NodeMCU Lua Reference
+# NodeMCU Reference Manual
 
 ## Introduction
 
-NodeMCU firmware is an IoT project ("the Project") which implements a Lua-based runtime for SoC modules based on the Espressif ESP8266 and ESP32 architectures.  This reference specifically addresses how the NodeMCU Lua implementation relates to standard Lua as described in the two versions of the Lua language that we currently support:
+NodeMCU firmware is an IoT project ("the Project") which implements a Lua-based runtime for SoC modules based on the Espressif ESP8266 and ESP32 architectures.  This NodeMCU Reference Manual (**NRM**) specifically addresses how the NodeMCU Lua implementation relates to standard Lua as described in the two versions of the Lua language that we currently support:
 
--  The [Lua 5.1 Reference Manual]( https://www.lua.org/manual/5.1/) and
--  The [Lua 5.3 Reference Manual]( https://www.lua.org/manual/5.3/) (**LRM**)
+-  The [Lua 5.1 Reference Manual](https://www.lua.org/manual/5.1/) and
+-  The [Lua 5.3 Reference Manual](https://www.lua.org/manual/5.3/) (**LRM**)
 
 Developers using the NodeMCU environment should familiarise themselves with the 5.3 LRM.
 
-The Project provides a wide range of standard library modules written in both C and Lua to support many ESP hardware modules and chips, and these are documented in separation sections in our [online documentation](https://nodemcu.readthedocs.io/).
+The Project provides a wide range of standard library modules written in both C and Lua to support many ESP hardware modules and chips, and these are documented in separate sections in our [online documentation](index.md).
 
-This reference supplements LRM content and module documentation by focusing on the differences between NodeMCU Lua and standard Lua 5.3 in use.
+The NRM supplements LRM content and module documentation by focusing on a complete description of the _differences_ between NodeMCU Lua and standard Lua 5.3 in use. It adopts the same structure and style as the LRM.  As NodeMCU provides a full implementation of the Lua language there is little content herein relating to Lua itself.  However, what NodeMCU does is to offer a number of enhancements that enable resources to be allocated in constant program memory &mdash; resources in standard Lua that are allocated in RAM; where this does impact is in the coding of C library modules and the APIs used to do this.  Hence the bulk of the differences relate to these APIs.
 
-One of our goals in introducing Lua 5.3 support was to maintain the continuity of our existing C modules by ensuring that they can be successfully compiled and executed in both the Lua 5.1 and 5.3 environments.  This goal was achieved by combination of:
+One of our goals in introducing Lua 5.3 support was to maintain the continuity of our existing C modules by ensuring that they can be successfully compiled and executed in both the Lua 5.1 and 5.3 environments.  This goal was achieved by a combination of:
 -  enabling relevant compatibility options for standard Lua libraries;
--  regressing some Lua 5.3 API enhancements back into our Lua 5.1 implementation, and 
+-  back porting some Lua 5.3 API enhancements back into our Lua 5.1 implementation, and 
 -  making some small changes to the module source to ensure that incompatible API use is avoided.
 
 Further details are given in the [Lua compatibility](#lua-compatibility) section below.  Notwithstanding this, the Project has now deprecated Lua 5.1 and will soon be moving this version into frozen support.
@@ -28,8 +28,8 @@ The NodeNCU runtime offers a full implementation of the [LRM §2](https://www.lu
 
 ### Values and Types
 
--  The firmware is compiled to use 32-bit integers and single-precision (32-bit) floats.  Address pointers are also 32-bit, and this allows all Lua variables to be encoded in RAM as an 8-byte "`TValue`" (compared to the 12-byte `Tvalue` used in Lua 5.1
--  C modules can statically declare read-only tables known as a "`ROTable`".  There are some limitations to the types for ROTable keys and value, in order to ensure that these are consistent with static declaration.  ROTables are stored in code space (in flash memory on the ESPs), and hence do not take up RAM resources.  However these are still represented by the Lua type _table_ and a Lua application can treat them during execution the same as any other read-only table.  Any attempt to write to a `ROTable` or to set its metatable will throw an error.
+-  The firmware is compiled to use 32-bit integers and single-precision (32-bit) floats.  Address pointers are also 32-bit, and this allows all Lua variables to be encoded in RAM as an 8-byte "`TValue`" (compared to the 12-byte `TValue` used in Lua 5.1).
+-  C modules can statically declare read-only variant of the `Table` structure type known as a "`ROTable`".  There are some limitations to the types for ROTable keys and value, in order to ensure that these are consistent with static declaration.  ROTables are stored in code space (in flash memory on the ESPs), and hence do not take up RAM resources.  However these are still represented by the Lua type _table_ and a Lua application can treat them during execution the same as any other read-only table.  Any attempt to write to a `ROTable` or to set its metatable will throw an error.
 -  NodeMCU also introduces a concept known as **Lua Flash Store (LFS)**.  This enables Lua code (and any string constants used in this code) to be compiled and stored in code space, and hence without using RAM resources.  Such LFS functions are still represented by the type _function_ and can be executed just like any other Lua function.
 
 ### Environments and the Global Environment
@@ -42,7 +42,7 @@ All LFS functions, any string constants used in these functions, and any ROTable
 
 ### Coroutines
 
-The firmware includes a full coroutine implementation, but note that there are some slight differences between the standard Lua 5.1 and Lua 5.3 implementations.
+The firmware includes the full coroutine implementation, but note that there are some slight differences between the standard Lua 5.1 and Lua 5.3 C API implementations. (See [Feature breaks](#feature-breaks) below.)
 
 ## Lua Language
 
@@ -58,7 +58,7 @@ The NodeNCU runtime offers a full implementation of the Lua language as defined 
 
 The normal practice within the runtime and C modules is to throw any detected errors -- that is to unroll the call stack until the error is acquired by a routine that has declared an error handler.  Such an environment can be established by  [lua_pcall](https://www.lua.org/manual/5.3/manual.html#lua_pcall) and related API functions within C and by the Lua function [pcall](https://www.lua.org/manual/5.3/manual.html#pdf-pcall); this is known as a _protected environment_.  Errors which occur outside any protected environment are not caught by the Lua application and by default trigger a "panic". By default NodeMCU captures the error traceback and posts a new SDK task to print the error before restarting the processor.
 
-The NodeMCU runtime implements a non-blocking threaded model that is similar to that of `node.js`, and hence most Lua execution is initiated from event-triggered callback (CB) routines within C library modules.  NodeMCU enables full recovery of error diagnostics from otherwise unprotected Lua execution by adding an additional auxiliary library function [`luaL_pcallx`](#luaL_pcallx).  All event-driven Lua callbacks within our library modules use `luaL_pcallx` instead of `lua_call`.  This has the same behaviour if no uncaught error occurs.  However, in the case of an error that would have previously resulted in a panic, a new SDK task is posted with the error traceback as an upvalue to process this error information.  
+The NodeMCU runtime implements a non-blocking threaded model that is similar to that of `node.js`, and hence most Lua execution is initiated from event-triggered callback (CB) routines within C library modules.  NodeMCU enables full recovery of error diagnostics from otherwise unprotected Lua execution by adding an additional auxiliary library function [`luaL_pcallx`](#luaL_pcallx).  All event-driven Lua callbacks within our library modules use `luaL_pcallx` instead of `lua_call`.  This has the same behaviour if no uncaught error occurs.  However, in the case of an error that would have previously resulted in a panic, a new SDK task is posted with the error traceback as an upvalue to process this error information.
 
 The default action is to  print a full traceback and then trigger processor restart, that is a similar outcome as before but with recovery of the full error traceback.  However the `node.onerror()` library function is available to override this default action; for example developers might wish to print the error without restarting the processor, so that the circumstances which triggered the error can be investigated.
 
@@ -80,18 +80,18 @@ Create a RAM based `ROTable` pointing to the `ROTable_entry` vector `e`, and met
 
 `  void (lua_debugbreak)(void);`
 
-`lua_debugbreak()` and `ASSERT(condtion)` are available for development debugging.  If `DEVELOPMENT_USE_GDB` is defined then these will respectively trigger a debugger break and evaluate a conditional assert prologue on the same.  If not, then these are effectively ignored and generate no executable code.
+`lua_debugbreak()` and `ASSERT(condition)` are available for development debugging.  If `DEVELOPMENT_USE_GDB` is defined then these will respectively trigger a debugger break and evaluate a conditional assert prologue on the same.  If not, then these are effectively ignored and generate no executable code.
 
 #### lua_dump
 
 ` int lua_dump (lua_State *L, lua_Writer writer, void *data, int strip);`         [-0, +0, –]
 
-Dumps function at the top of the stack function as a binary chunk as per LRM.  However the last argument is now an integer is in the range -1..2, rather a boolean as per standard Lua:
-- `strip`
-    - -1, use the current default strip level (which can be set by [`lua_striptdebug`](#lua_striptdebug))
-    - 0, keep all debug info
-    - 1, discard Local and Upvalue debug info; keep line number info
-    - 2, discard Local, Upvalue and line number debug info
+Dumps function at the top of the stack function as a binary chunk as per LRM.  However the last argument `strip` is now an integer is in the range -1..2, rather a boolean as per standard Lua:
+
+-  -1, use the current default strip level (which can be set by [`lua_stripdebug`](#lua_stripdebug))
+-  0, keep all debug info
+-  1, discard Local and Upvalue debug info; keep line number info
+-  2, discard Local, Upvalue and line number debug info
 
 The internal NodeMCU `Proto` encoding of debug line number information is typically 15× more compact than in standard Lua; the intermediate `strip=1` argument allows the removal of most of the debug information whilst retaining the ability to produce a proper line number traceback on error. 
 
@@ -126,19 +126,12 @@ returns the main thread `lua_State` record.  Used in CBs to initialise `L` for s
 
 Pushes a ROTable onto the stack.
 
-#### lua_pushstringsarray
-`  int lua_pushstringsarray (lua_State *L, int opt);`         [-0, +1, m]
-
-Pushes an array onto the stack containing all strings in the specified strings table. If `opt` = 0 then the RAM table is used, else if `opt` = 1 and LFS is loaded then the LFS  table is used, else `nil` is pushed onto the stack.
-
-Returns a status boolean 1 = table pushed. 
-
 #### lua_stripdebug
 `  int lua_stripdebug (lua_State *L, int level);`         [-1, +0, e]
 
-This function has two modes.  A value is popped off the stack.  
--  If this value is `nil`, then the default strip level is set to this if `level` in the range 0 to 2, otherwise the current default level is returned.
--  If this is a Lua function (in RAM rather than in LFS), then the prototype hierarchy within the function is stripped of debug information to the specified level.
+This function has two modes.  A value is popped off the stack.
+-  If this value is `nil`, then the default strip level is set to given `level` if this is in the range 0 to 2. Returns the current default level.
+-  If this value is a Lua function (in RAM rather than in LFS), then the prototype hierarchy within the function is stripped of debug information to the specified level. Returns an _approximate_ estimate of the heap freed (this can be a lot higher if some strings can be garbage collected).
 
 #### lua_writestring
 
@@ -150,17 +143,16 @@ Writes a string `s` of length `l` to `stdout`.  Note that any output redirection
 
 `  void lua_writestringerror(const char *s, void *p).  /* macro */`
 
-Writes an error with Cstring format specifier `s` and parameter `p` to `stderr`.  Note on the ESP devices this error will always be sent to `UART0`; output redirection will not be applied.
+Writes an error with CString format specifier `s` and parameter `p` to `stderr`.  Note on the ESP devices this error will always be sent to `UART0`; output redirection will not be applied.
 
 ### The Debug Interface
 
-#### lua_getstrings
+#### lua_pushstringsarray
+`  int lua_pushstringsarray (lua_State *L, int opt);`         [-0, +1, m]
 
-`  int lua_getstrings (lua_State *L, int opt);`         [-0, +1, m]
+Pushes an array onto the stack containing all strings in the specified strings table. If `opt` = 0 then the RAM table is used, else if `opt` = 1 and LFS is loaded then the LFS  table is used, else `nil` is pushed onto the stack.
 
-If the ROM string table is selected and no LFS is present then `nil` is pushed onto the stack.  Otherwise the specified string table is scanned to build a list of strings in it. The resulting table is pushed onto the stack.
--  `opt` evaluated as a boolean; if `true` then the ROM string table is listed, else the RAM string table
--  returns the number of strings in returned table.
+Returns a status boolean; true if a table has been pushed.
 
 ### Auxiliary Library Functions and Types 
 
@@ -247,9 +239,9 @@ All NodeMCU C library modules should include the standard header "`module.h`".  
 
 ` NODEMCU_MODULE(sectionname, libraryname, map, initfunc)`
 
-This macro enables the module to be statically declared and linked in the `ROM` ROTable.  The global environment's metafield `__index=ROM` hence any entries in the ROM table are resolved as read-only entries in the global environment.
+This macro enables the module to be statically declared and linked in the `ROM` ROTable.  The global environment's metafield `__index` is set to the ROTable `ROM` hence any entries in the ROM table are resolved as read-only entries in the global environment.
 -  `sectionname`. This is the linker section for the module and by convention this is the uppercased library name (e.g. `FILE`).  Behind the scenes `_module_selected` is appended to this section name if corresponding "use module" macro (e.g. `LUA_USE_MODULES_FILE`) is defined in the configuration.  Only the modules sections `*_module_selected` are linked into the firmware image and those not selected are ignored.
- -  `libraryname`.  This is the name of the module (e.g. `FILE`) and is the key for the entry in the `ROM` ROTable.
+-  `libraryname`.  This is the name of the module (e.g. `file`) and is the key for the entry in the `ROM` ROTable.
 -  `map`.  This is the ROTable defining the functions and constants for the module, and this is the corresponding value for the entry in the `ROM` ROTable.
 -  `initfunc`.  If this is not NULL, it should be a valid C function and is call during Lua initialisation to carry out one-time initialisation of the module.
 
@@ -260,7 +252,7 @@ This macro enables the module to be statically declared and linked in the `ROM` 
 These macros start and end a ROTable definition.  The three parameters must be the same in both declarations.
 -  `rt`.  ROTable name.
 -  `mt`.  ROTable's metatable.  This should be of the form `LROT_TABLEREF(tablename)` if the metatable is used and `NULL` otherwise.
--  `flags`. The Lua VM table access routines use a `flags` field to short-circuit where the access needs to honour metamethods during access.  In the case of a static ROTable this flag bit mask must be declared statically during compile rather than cached dynamically at runtime.  Hence if the table is a metatable and it includes the metamethods `__index`, `__newindex`, `__gc`, `__mode`, `__len` or `__eq`, then the mask field should or-in the corresponding mask for example if `__index` is used then the flags should include `LROT_MASK_INDEX`.  Note than index and GC are a very common combination, so `LROT_MASK_GC_INDEX` is also defined to be `(LROT_MASK_GC | LROT_MASK_INDEX)`.
+-  `flags`. The Lua VM table access routines use a `flags` field to short-circuit where the access needs to honour metamethods during access.  In the case of a static ROTable this flag bit mask must be declared statically during compile rather than cached dynamically at runtime.  Hence if the table is a metatable and it includes the metamethods `__index`, `__newindex`, `__gc`, `__mode`, `__len` or `__eq`, then the mask field should or-in the corresponding mask for example if `__index` is used then the flags should include `LROT_MASK_INDEX`.  Note that index and GC are a very common combination, so `LROT_MASK_GC_INDEX` is also defined to be `(LROT_MASK_GC | LROT_MASK_INDEX)`.
 
 #### LROT_xxxx_ENTRY
 
@@ -275,7 +267,7 @@ LROT_BEGIN(utf8_meta, NULL, LROT_MASK_INDEX)
   LROT_FUNCENTRY( __index, utf8_lookup )
 LROT_END(utf8_meta, NULL, LROT_MASK_INDEX)
 
-LROT_BEGIN(utf8, NULL, 0)
+LROT_BEGIN(utf8, LROT_TABLEREF(utf8_meta, 0)
   LROT_FUNCENTRY( offset, byteoffset )
   LROT_FUNCENTRY( codepoint, codepoint )
   LROT_FUNCENTRY( char, utfchar )
@@ -283,6 +275,8 @@ LROT_BEGIN(utf8, NULL, 0)
   LROT_FUNCENTRY( codes, iter_codes )
 LROT_END(utf8, LROT_TABLEREF(utf8_meta), 0)
 ```
+
+Any reference to `utf8.charpattern` will call the `__index` method function (`utf8_lookup()`); this returns the UTF8 character pattern if the name equals `"charpattern"` and `nil` otherwise.  Hence `utf8` works as standard even though ROTables don't natively support a string value type.
 
 ### Standard Libraries
 
@@ -293,8 +287,9 @@ LROT_END(utf8, LROT_TABLEREF(utf8_meta), 0)
 -  The 5.3 `math` library is expanded compared to the 5.1 one, and specifically:
     - Included: ` abs`, ` acos`, ` asin`, ` atan`, ` ceil`, ` cos`, ` deg`, ` exp`, ` tointeger`, ` floor`, ` fmod`, ` ult`, ` log`, ` max`, ` min`, ` modf`, ` rad`, ` random`, ` randomseed`, ` sin`, ` sqrt`, ` tan` and ` type`
     -  Not implemented: ` atan2`, ` cosh`, ` sinh`, ` tanh`, ` pow`, ` frexp`, ` ldexp` and ` log10`
- -  Input, output OS Facilities (the `io` and `os` libraries) are implement for firmware builds because of the minimal OS supported offered by the embedded run-time.  The separately documented `file` and `node` libraries provide functionally similar analogues.  The host execution environment implemented by `luac.cross` does support the `io` and `os` libraries.
--  The full `debug` library is implemented less the `debug.debug()` function.  `debug.getstrings(type)`where type is one of `'ROM'`, or `'RAM'` (the default) returns a sorted array of the strings returned from the [`lua_getstrings`](#lua_getstrings) function.
+ -  Input, output OS Facilities (the `io` and `os` libraries) are not implement for firmware builds because of the minimal OS supported offered by the embedded run-time.  The separately documented `file` and `node` libraries provide functionally similar analogues.  The host execution environment implemented by `luac.cross` does support the `io` and `os` libraries.
+-  The full `debug` library is implemented less the `debug.debug()` function.
+    -  An extra function `debug.getstrings(type)` has been added; `type` is one of `'ROM'`, or `'RAM'` (the default). Returns a sorted array of the strings returned from the [`lua_getstrings`](#lua_getstrings) function.
 
 ## Lua compatibility
 
@@ -319,7 +314,7 @@ The following Compatibility modes are enabled:
 
 -  Table access routines in Lua 5.3 are now type `int` rather than `void` and return the type of the value pushed onto the stack.  The 5.1 routines `lua_getfield`, `lua_getglobal`, `lua_geti`, `lua_gettable`, `lua_rawget`, `lua_rawgeti`, `lua_rawgetp` and `luaL_getmetatable` have been updated to mirror this behaviour and return the type of the value pushed onto the stack.
 -  There is a general numeric comparison API function `lua_compare()` with macros for `lua_equal()` and `lua_lessthan()` whereas 5.1 only support the `==` and `<` tests through separate API calls.  5.1 has been update to mirror the 5.3. implementation.
--  Lua 5.3 includes a `lua_absindex(L, idx)` which converts ToS relative (e.g. `-1`) indices to stack base relative and hence independent of further push/pop operations.  This makes using down-stack indexes a lot simpler. 5.1 has been update to mirror this 5.3 function.
+-  Lua 5.3 includes a `lua_absindex(L, idx)` which converts ToS relative (e.g. `-1`) indices to stack base relative and hence independent of further push/pop operations.  This makes using down-stack indexes a lot simpler. 5.1 has been updated to mirror this 5.3 function.
  
 ### Feature breaks
 
@@ -331,5 +326,5 @@ The following Compatibility modes are enabled:
 
 -  The environment support has changed from Lua 5.1 to 5.3.  We suggest that modules either avoid using these API calls or accept that the source will require version variants.
 
-  -  The corountine yield / resume API support has changed in Lua 5.3 to support yield and resume across C function calls.  We suggest that modules either avoid using these API calls or accept that the source will require version variants. 
+  -  The coroutine yield / resume API support has changed in Lua 5.3 to support yield and resume across C function calls.  We suggest that modules either avoid using these API calls or accept that the source will require version variants. 
 

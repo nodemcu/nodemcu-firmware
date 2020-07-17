@@ -637,7 +637,7 @@ static int node_writercr (lua_State *L) {
 }
 #endif
 
-// Lua: n = node.lfsreload(lfsimage)
+// Lua: n = node.LFS.reload(lfsimage)
 static int node_lfsreload (lua_State *L) {
   lua_settop(L, 1);
   luaL_lfsreload(L);
@@ -645,32 +645,37 @@ static int node_lfsreload (lua_State *L) {
 }
 
 // Lua: n = node.flashindex(module)
+// Lua: n = node.LFS.get(module)
 static int node_lfsindex (lua_State *L) {
   lua_settop(L, 1);
   luaL_pushlfsmodule(L);
   return 1;
 }
 
+// Lua: n = node.LFS.list([option])
+// Note that option is ignored in this release
+static int node_lfslist (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_pushlfsmodules(L);
+  if (lua_istable(L, -1) && lua_getglobal(L, "table") == LUA_TTABLE) {
+    lua_getfield(L, -1, "sort");
+    lua_remove(L, -2);       /* remove table table */
+    lua_pushvalue(L, -2);    /* dup array of modules ref to ToS */
+    lua_call(L, 1, 0);
+  }
+  return 1;
+}
 
 //== node.LFS Table emulator ==============================================//
 
 static int node_lfs_func (lua_State* L) {      /*T[1] = LFS, T[2] = fieldname */
   lua_remove(L, 1);
+  lua_settop(L, 1);
   const char *name = lua_tostring(L, 1);
   if (!name) {
     lua_pushnil(L);
   } else if (!strcmp(name, "config")) {
     get_lfs_config(L);
-  } else if (!strcmp(name, "get")) {
-    lua_pushcfunction(L, &node_lfsindex);
-  } else if (!strcmp(name, "list")) {
-    luaL_pushlfsmodules(L);
-    if (lua_istable(L, -1) && lua_getglobal(L, "table") == LUA_TTABLE) {
-      lua_getfield(L, -1, "sort");
-      lua_remove(L, -2);       /* remove table table */
-      lua_pushvalue(L, -2);    /* dup array of modules ref to ToS */
-      lua_call(L, 1, 0);
-    }
   } else if (!strcmp(name, "time")) {
     luaL_pushlfsdts(L);
   } else {
@@ -684,6 +689,9 @@ LROT_BEGIN(node_lfs_meta, NULL, LROT_MASK_INDEX)
 LROT_END(node_lfs_meta, NULL, LROT_MASK_INDEX)
 
 LROT_BEGIN(node_lfs, LROT_TABLEREF(node_lfs_meta), 0)
+  LROT_FUNCENTRY( list, node_lfslist)
+  LROT_FUNCENTRY( get, node_lfsindex)
+  LROT_FUNCENTRY( reload, node_lfsreload )
 LROT_END(node_lfs, LROT_TABLEREF(node_lfs_meta), 0)
 
 
@@ -863,8 +871,6 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( info, node_info )
   LROT_TABENTRY( task, node_task )
   LROT_FUNCENTRY( flashindex, node_lfsindex )
-  LROT_FUNCENTRY( LFSindex, node_lfsindex )
-  LROT_FUNCENTRY( LFSreload, node_lfsreload )
   LROT_TABENTRY( LFS, node_lfs )
   LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( startupcommand, node_startupcommand )

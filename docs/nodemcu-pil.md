@@ -1,10 +1,12 @@
+# Programming in NodeMCU
+
 The standard Lua runtime offers support for both Lua modules that can define multiple Lua functions and properties in an encapsulating table as described in the [Lua 5.3 Reference Manual](https://www.lua.org/manual/5.3/) \("**LRM**") and specifically in [LRM Section 6.3](https://www.lua.org/manual/5.3/manual.html#6.3).  Lua also provides a C API to allow developers to implement modules in compiled C.
 
-NodeMCU developers are also able to develop and incorporate their own C modules into their own firmware build using this standard API, although we encourage developers to download the standard [Lua Reference Manual](https://www.lua.org/manual/) and also buy of copy of Roberto Ierusalimschy's Programming in Lua edition 3 or 4 \("**PiL**").  The NodeMCU implementation extends standard Lua as documented in the [NodeMCU Lua Reference](../nodemcu-lrm) \("**NLR**").
+NodeMCU developers are also able to develop and incorporate their own C modules into their own firmware build using this standard API, although we encourage developers to download the standard [Lua Reference Manual](https://www.lua.org/manual/) and also buy of copy of Roberto Ierusalimschy's Programming in Lua edition 4 \("**PiL**").  The NodeMCU implementation extends standard Lua as documented in the [NodeMCU Reference Manual](nodemcu-lrm.md) \("**NRM**").
 
-Those developers who wish to develop or to modify existing C modules should have access to the LRM, PiL and NLR and familiarise themselves with these references.  These are the primary references; and this document does not repeat this content, but rather provide some NodeMCU-specific information to supplement PiL.
+Those developers who wish to develop or to modify existing C modules should have access to the LRM, PiL and NRM and familiarise themselves with these references.  These are the primary references; and this document does not repeat this content, but rather provide some NodeMCU-specific information to supplement it.
 
-From a perspective of developing C modules, there is very little difference from that of developing modules in standard Lua.  All of the standard Lua library modules (`bit`, `coroutine`, `debug`, `math`, `string`, `table`, `utf8`) use the C API for Lua and the NodeMCU versions have been updated to use NRM extensions. so their source code is available for browsing and using as style template (see the corresponding `lXXXlib.c` file in GitHub [NodeMCU lua53](https://github.com/nodemcu/nodemcu-firmware/tree/release/app/lua53) folder).
+From a perspective of developing C modules, there is very little difference from that of developing modules in standard Lua.  All of the standard Lua library modules (`bit`, `coroutine`, `debug`, `math`, `string`, `table`, `utf8`) use the C API for Lua and the NodeMCU versions have been updated to use NRM extensions. so their source code is available for browsing and using as style template (see the corresponding `lXXXlib.c` file in GitHub [NodeMCU lua53](../app/lua53) folder).
 
 The main functional change is that NodeMCU supports a read-only subclass of the `Table` type, known as a **`ROTable`**, which can be statically declared within the module source using static `const` declarations.  There are also limitations on the valid types for ROTable keys and value in order to ensure that these are consistent with static declaration; and hence ROTables are stored in code space (and therefore in flash memory on the IoT device). Hence unlike standard Lua tables, ROTables do not take up RAM resources. 
 
@@ -20,7 +22,7 @@ Note that the standard `make` will include any modules found in the `app/modules
 
 This macro + linker approach renders the need for `luaL_reg` declarations and use of `luaL_openlib()` unnecessary, and these are not permitted in project-adopted `app/modules` files.
 
-Hence a NodeMCU C library module typically have a standard layout:
+Hence a NodeMCU C library module typically has a standard layout that parallels that of the standard Lua library modules and uses the same C API to access the Lua runtime:
 
 -  A `#ìnclude` block to resolve access to external resources.  All modules will include entries for `"module.h"`, and `"lauxlib.h"`.  They should _not_ reference any other `lXXX.h` includes from the Lua source directory as these are private to the Lua runtime. These may be followed by C standard runtime includes, external application libraries and any SDK resource headers needed.  Note that whilst we recommend using the C standard runtime API for `<stdlib.h>` etc., the SDK only implements a poorly documented subset of this API, so be aware that you might get linker errors and in which case you might need to recode some calls if you are using non-implemented functions.
 
@@ -37,4 +39,4 @@ Hence a NodeMCU C library module typically have a standard layout:
     - `luaL_reref()` replaces an existing registry reference in place (or creates a new one if needed).  Less code and faster execution than a `luaL_unref()` plus `luaL_ref()` construct.
     - `luaL_unref2()` does the unref and set the static int hook to `LUA_NOREF`.
 
-Rather than include simple examples of module templates, we suggest that you review the modules in our GitHub repository, such as the [`utf8`](https://github.com/nodemcu/nodemcu-firmware/tree/release/app/lua53/lutf8lib.c) library.  Note that whilst all of the existing modules in `app/modules` folder compile and work, we plan to do a clean up of the core modules to ensure that they conform to best practice.
+Rather than include simple examples of module templates, we suggest that you review the modules in our GitHub repository, such as the [`utf8`](../app/lua53/lutf8lib.c) library.  Note that whilst all of the existing modules in `app/modules` folder compile and work, we plan to do a clean up of the core modules to ensure that they conform to best practice.

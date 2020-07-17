@@ -411,7 +411,7 @@ LUA_API int  (lua_pushlfsindex) (lua_State *L);
 
 /**DEBUG**/extern void dbg_printf(const char *fmt, ...)
                        __attribute__ ((format (printf, 1, 2)));
-#define luaN_freearray(L,b,l)  luaM_freearray(L,b,l,sizeof(*b));
+#define luaN_freearray(L,b,l)  luaM_freearray(L,b,l,sizeof(*b))
 
 LUA_API void (lua_setegcmode) (lua_State *L, int mode, int limit);
 LUA_API void (lua_getegcinfo) (lua_State *L, int *totals);

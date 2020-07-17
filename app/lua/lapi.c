@@ -1218,7 +1218,7 @@ LUA_API void lua_setegcmode ( lua_State *L, int mode, int limit) {
 }
 
 LUA_API void lua_getegcinfo (lua_State *L, int *totals) {
-  if (!totals) {
+  if (totals) {
     totals[0] = G(L)->totalbytes;
     totals[1] = G(L)->estimate;
   }

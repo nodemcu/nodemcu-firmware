@@ -76,7 +76,7 @@ LUALIB_API int (luaL_checkoption) (lua_State *L, int narg, const char *def,
 
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
-#define luaL_unref2(l,t,r) luaL_unref(L, (t), (r)); r = LUA_NOREF
+#define luaL_unref2(l,t,r) do {luaL_unref(L, (t), (r)); r = LUA_NOREF;} while (0)
 LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref);
 
 LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
@@ -111,8 +111,8 @@ LUALIB_API void luaL_assertfail(const char *file, int line, const char *message)
 #define luaL_optint(L,n,d)	((int)luaL_optinteger(L, (n), (d)))
 #define luaL_checklong(L,n)	((long)luaL_checkinteger(L, (n)))
 #define luaL_optlong(L,n,d)	((long)luaL_optinteger(L, (n), (d)))
-#define luaL_checktable(L,n)	luaL_checktype(L, (n), LUA_TTABLE);
-#define luaL_checkfunction(L,n)	luaL_checktype(L, (n), LUA_TFUNCTION);
+#define luaL_checktable(L,n)	luaL_checktype(L, (n), LUA_TTABLE)
+#define luaL_checkfunction(L,n)	luaL_checktype(L, (n), LUA_TFUNCTION)
 
 #define luaL_typename(L,i)	lua_typename(L, lua_type(L,(i)))
 
