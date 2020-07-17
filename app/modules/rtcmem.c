@@ -6,10 +6,10 @@
 
 static int rtcmem_read32 (lua_State *L)
 {
-  int idx = luaL_checknumber (L, 1);
+  int idx = luaL_checkinteger (L, 1);
   int n = 1;
   if (lua_isnumber (L, 2))
-    n = lua_tonumber (L, 2);
+    n = lua_tointeger (L, 2);
 
   if (!lua_checkstack (L, n))
     return 0;
@@ -27,14 +27,14 @@ static int rtcmem_read32 (lua_State *L)
 
 static int rtcmem_write32 (lua_State *L)
 {
-  int idx = luaL_checknumber (L, 1);
+  int idx = luaL_checkinteger (L, 1);
   int n = lua_gettop (L) - 1;
   luaL_argcheck (
     L, idx + n <= RTC_USER_MEM_NUM_DWORDS, 1, "RTC mem would overrun");
   int src = 2;
   while (n-- > 0)
   {
-    rtc_mem_write (idx++, lua_tonumber (L, src++));
+    rtc_mem_write (idx++, lua_tointeger (L, src++));
   }
   return 0;
 }
