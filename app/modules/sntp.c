@@ -272,16 +272,16 @@ static void sntp_handle_result(lua_State *L) {
   {
     lua_rawgeti(L, LUA_REGISTRYINDEX, state->sync_cb_ref);
 #ifdef LUA_USE_MODULES_RTCTIME
-    lua_pushnumber(L, tv.tv_sec);
-    lua_pushnumber(L, tv.tv_usec);
+    lua_pushinteger(L, tv.tv_sec);
+    lua_pushinteger(L, tv.tv_usec);
     lua_pushstring(L, ipaddr_ntoa (&state->best.server));
     lua_newtable(L);
     int d40 = state->best.delta >> 40;
     if (d40 != 0 && d40 != -1) {
-      lua_pushnumber(L, state->best.delta >> 32);
+      lua_pushinteger(L, state->best.delta >> 32);
       lua_setfield(L, -2, "offset_s");
     } else {
-      lua_pushnumber(L, (state->best.delta * MICROSECONDS) >> 32);
+      lua_pushinteger(L, (state->best.delta * MICROSECONDS) >> 32);
       lua_setfield(L, -2, "offset_us");
     }
 #else
@@ -292,26 +292,26 @@ static void sntp_handle_result(lua_State *L) {
       tv_usec -= 1000000;
       tv_sec++;
     }
-    lua_pushnumber(L, tv_sec);
-    lua_pushnumber(L, tv_usec);
+    lua_pushinteger(L, tv_sec);
+    lua_pushinteger(L, tv_usec);
     lua_pushstring(L, ipaddr_ntoa (&state->best.server));
     lua_newtable(L);
 #endif
     if (state->best.delay_frac > 0) {
-      lua_pushnumber(L, FRAC16_TO_US(state->best.delay_frac));
+      lua_pushinteger(L, FRAC16_TO_US(state->best.delay_frac));
       lua_setfield(L, -2, "delay_us");
     }
-    lua_pushnumber(L, FRAC16_TO_US(state->best.root_delay));
+    lua_pushinteger(L, FRAC16_TO_US(state->best.root_delay));
     lua_setfield(L, -2, "root_delay_us");
-    lua_pushnumber(L, FRAC16_TO_US(state->best.root_dispersion));
+    lua_pushinteger(L, FRAC16_TO_US(state->best.root_dispersion));
     lua_setfield(L, -2, "root_dispersion_us");
-    lua_pushnumber(L, FRAC16_TO_US(state->best.root_maxerr + state->best.delay_frac / 2));
+    lua_pushinteger(L, FRAC16_TO_US(state->best.root_maxerr + state->best.delay_frac / 2));
     lua_setfield(L, -2, "root_maxerr_us");
-    lua_pushnumber(L, state->best.stratum);
+    lua_pushinteger(L, state->best.stratum);
     lua_setfield(L, -2, "stratum");
-    lua_pushnumber(L, state->best.LI);
+    lua_pushinteger(L, state->best.LI);
     lua_setfield(L, -2, "leap");
-    lua_pushnumber(L, pending_LI);
+    lua_pushinteger(L, pending_LI);
     lua_setfield(L, -2, "pending_leap");
   }
 
@@ -617,7 +617,7 @@ static int sntp_setoffset(lua_State *L)
 static int sntp_getoffset(lua_State *L)
 {
   update_offset();
-  lua_pushnumber(L, the_offset);
+  lua_pushinteger(L, the_offset);
 
   return 1;
 }
@@ -799,7 +799,7 @@ static int sntp_sync (lua_State *L)
 
       /* Construct a singleton table containing the one server */
       lua_newtable(L);
-      lua_pushnumber(L, 1);
+      lua_pushinteger(L, 1);
       lua_pushstring(L, hostname);
       lua_settable(L, -3);
     }
@@ -808,14 +808,14 @@ static int sntp_sync (lua_State *L)
     struct netif *iface = (struct netif *)eagle_lwip_getif(0x00);
     if (iface->dhcp && iface->dhcp->offered_ntp_addr.addr) {
 		ip_addr_t ntp_addr = iface->dhcp->offered_ntp_addr;
-        lua_pushnumber(L, 1);
+        lua_pushinteger(L, 1);
         lua_pushstring(L, inet_ntoa(ntp_addr));
         lua_settable(L, -3);
     } else {
       // default to ntp pool
       int i;
       for (i = 0; i < 4; i++) {
-        lua_pushnumber(L, i + 1);
+        lua_pushinteger(L, i + 1);
         char buf[64];
         sprintf(buf, "%d.nodemcu.pool.ntp.org", i);
         lua_pushstring(L, buf);
