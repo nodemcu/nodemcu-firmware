@@ -267,29 +267,29 @@ static int b_pack (lua_State *L) {
 }
 
 
-static double getinteger (const char *buff, int endian,
+static int64_t getinteger (const char *buff, int endian,
                         int issigned, int size) {
-  Uinttype l = 0;
+  uint64_t l = 0;
   int i;
   if (endian == BIG) {
     for (i = 0; i < size; i++) {
       l <<= 8;
-      l |= (Uinttype)(unsigned char)buff[i];
+      l |= (unsigned char)buff[i];
     }
   }
   else {
     for (i = size - 1; i >= 0; i--) {
       l <<= 8;
-      l |= (Uinttype)(unsigned char)buff[i];
+      l |= (unsigned char)buff[i];
     }
   }
   if (!issigned)
-    return (double)l;
+    return (int64_t)l;
   else {  /* signed format */
-    Uinttype mask = (Uinttype)(~((Uinttype)0)) << (size*8 - 1);
+    uint64_t mask = (uint64_t)(~((uint64_t)0)) << (size*8 - 1);
     if (l & mask)  /* negative value? */
       l |= mask;  /* signal extension */
-    return (double)(Inttype)l;
+    return (int64_t)l;
   }
 }
 
@@ -312,8 +312,8 @@ static int b_unpack (lua_State *L) {
       case 'b': case 'B': case 'h': case 'H':
       case 'l': case 'L': case 'T': case 'i':  case 'I': {  /* integer types */
         int issigned = islower(opt);
-        double res = getinteger(data+pos, h.endian, issigned, size);
-        if (res >= (int32_t) 0x80000000 && res <= (int32_t) 0x7fffffff) {
+        int64_t res = getinteger(data+pos, h.endian, issigned, size);
+        if (res >= INT_MIN && res <= INT_MAX) {
           lua_pushinteger(L, res);
         } else {
           lua_pushnumber(L, res);
