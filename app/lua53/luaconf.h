@@ -92,6 +92,10 @@
 #  define LUA_FLOAT_TYPE  LUA_FLOAT_FLOAT
 #endif
 //#  define LUA_FLOAT_TYPE  LUA_FLOAT_DOUBLE
+//
+#ifdef LUA_NUMBER_INTEGRAL
+#error LUA_NUMBER_INTEGRAL is not supported in LUA5.3 builds
+#endif
 
 /*
 ** Configuration for Paths.

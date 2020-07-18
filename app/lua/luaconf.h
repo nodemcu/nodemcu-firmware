@@ -181,6 +181,10 @@
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #endif // #if !defined LUA_NUMBER_INTEGRAL
 
+#ifdef LUA_NUMBER_DOUBLE
+#error All LUA 5.1 builds use doubles. Do not specify this option.
+#endif
+
 /*
 @@ LUA_API is a mark for all core API functions.
 @@ LUALIB_API is a mark for all standard library functions.
