@@ -139,7 +139,7 @@ typedef union Value {
 #endif
 
 typedef struct lua_TValue {
-    TValuefields;
+  TValuefields;
 } TValue;
 
 #ifdef LUA_USE_ESP
