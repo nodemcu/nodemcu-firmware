@@ -61,7 +61,8 @@ just the `luac.cross` image.  You must first ensure that the following option in
 `app/include/user_config.h` is matched to your target configuration:
 
 ```c
-//#define LUA_NUMBER_INTEGRAL       // uncomment if you want an integer build
+//#define LUA_NUMBER_INTEGRAL       // uncomment if you want an integer build (LUA5.1)
+//#define LUA_NUMBER_DOUBLE         // uncomment if you want a double build (LUA5.3)
 ```
 
 Note that the use of LFS and the LFS region size is now configured through the partition table.
