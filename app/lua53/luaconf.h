@@ -86,7 +86,11 @@
 #endif
 #endif
 #  define LUA_INT_TYPE    LUA_INT_INT
+#ifdef LUA_NUMBER_DOUBLE
+#  define LUA_FLOAT_TYPE  LUA_FLOAT_DOUBLE
+#else
 #  define LUA_FLOAT_TYPE  LUA_FLOAT_FLOAT
+#endif
 //#  define LUA_FLOAT_TYPE  LUA_FLOAT_DOUBLE
 
 /*
