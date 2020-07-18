@@ -98,7 +98,7 @@ create_new_element(jsonsl_t jsn,
       lua_rawgeti(data->L, LUA_REGISTRYINDEX, get_parent_object_ref());
       if (data->hkey_ref == LUA_NOREF) {
         // list, so append
-        lua_pushnumber(data->L, get_parent_object_used_count_pre_inc());
+        lua_pushinteger(data->L, get_parent_object_used_count_pre_inc());
         DBG_PRINTF("Adding array element\n");
       } else {
         // object, so
@@ -109,7 +109,7 @@ create_new_element(jsonsl_t jsn,
       }
       if (data->pos_ref != LUA_NOREF && state->level > 1) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
-        lua_pushnumber(data->L, state->level - 1);
+        lua_pushinteger(data->L, state->level - 1);
         lua_pushvalue(data->L, -3);     // get the key
         lua_settable(data->L, -3);
         lua_pop(data->L, 1);
@@ -153,10 +153,41 @@ create_new_element(jsonsl_t jsn,
 }
 
 static void push_number(JSN_DATA *data, struct jsonsl_state_st *state) {
-  lua_pushlstring(data->L, get_state_buffer(data, state), state->pos_cur - state->pos_begin);
-  LUA_NUMBER r = lua_tonumber(data->L, -1);
+  const char *start = get_state_buffer(data, state);
+  const char *end = start + state->pos_cur - state->pos_begin;
+  lua_pushlstring(data->L, start, end - start);
+  // See if there is any chance that this is an integer
+#if LUA_VERSION_NUM >= 503
+  char notint = 0;
+  for (const char *p = start; p < end; p++) {
+    if (*p != '-' && *p != '+' && (*p < '0' || *p > '9')) {
+      // can't be an integer
+      notint = 1;
+      break;
+    }
+  }
+  int isnum;
+  if (!notint) {
+    lua_Integer result = lua_tointegerx(data->L, -1, &isnum);
+    if (isnum) {
+      lua_pop(data->L, 1);
+      lua_pushinteger(data->L, result);
+      return;
+    }
+  }
+
+  lua_Number result = lua_tonumberx(data->L, -1, &isnum);
+  if (isnum) {
+    lua_pop(data->L, 1);
+    lua_pushnumber(data->L, result);
+  } else {
+    luaL_error(data->L, "Invalid number");
+  }
+#else
+  lua_Number result = lua_tonumber(data->L, -1);
   lua_pop(data->L, 1);
-  lua_pushnumber(data->L, r);
+  lua_pushnumber(data->L, result);
+#endif
 }
 
 static int fromhex(char c) {
@@ -242,7 +273,7 @@ cleanup_closing_element(jsonsl_t jsn,
       lua_rawgeti(data->L, LUA_REGISTRYINDEX, get_parent_object_ref());
       if (data->hkey_ref == LUA_NOREF) {
         // list, so append
-        lua_pushnumber(data->L, get_parent_object_used_count_pre_inc());
+        lua_pushinteger(data->L, get_parent_object_used_count_pre_inc());
       } else {
         // object, so
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
@@ -273,7 +304,7 @@ cleanup_closing_element(jsonsl_t jsn,
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, get_parent_object_ref());
         if (data->hkey_ref == LUA_NOREF) {
           // list, so append
-          lua_pushnumber(data->L, get_parent_object_used_count_pre_inc());
+          lua_pushinteger(data->L, get_parent_object_used_count_pre_inc());
         } else {
           // object, so
           lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->hkey_ref);
@@ -292,7 +323,7 @@ cleanup_closing_element(jsonsl_t jsn,
       state->lua_object_ref = LUA_NOREF;
       if (data->pos_ref != LUA_NOREF) {
         lua_rawgeti(data->L, LUA_REGISTRYINDEX, data->pos_ref);
-        lua_pushnumber(data->L, state->level);
+        lua_pushinteger(data->L, state->level);
         lua_pushnil(data->L);
         lua_settable(data->L, -3);
         lua_pop(data->L, 1);
