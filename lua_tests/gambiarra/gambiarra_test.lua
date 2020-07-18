@@ -5,6 +5,8 @@ local failed, passed = 0,0
 
 local orig_node = node
 
+local cbWrap = function(cb) return cb end
+
 -- implement pseudo task handling for on host testing
 local post_queue = {}
 local drain_post_queue = function() end
@@ -20,6 +22,23 @@ if not node then
           f()
         end
       end
+    end
+
+  local errorfunc
+  node.setonerror = function(fn) errorfunc = fn end
+  cbWrap = function(cb)
+      return function(...)
+          local ok, p1,p2,p3,p4 = pcall(cb, ...)
+          if not ok then
+            if errorfunc then
+              errorfunc(p1)
+            else
+              print(p1, "::::::::::::: reboot :::::::::::::")
+            end
+          else
+            return p1,p2,p3,p4
+          end
+        end
     end
 end
 
@@ -84,7 +103,7 @@ test(function(e, test, msg, errormsg)
 end)
 
 local async_queue = {}
-local function async(f) table.insert(async_queue, f) end
+local function async(f) table.insert(async_queue, cbWrap(f)) end
 local function async_next()
   local f = table.remove(async_queue, 1)
   if f then
@@ -139,12 +158,12 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:140'}, {'gambiarra_test.lua:141'})
+end, {'gambiarra_test.lua:159'}, {'gambiarra_test.lua:160'})
 
 metatest('nok without a message', function()
   nok(1 == 2)
   nok(1 == 1)
-end, {'gambiarra_test.lua:145'}, {'gambiarra_test.lua:146'})
+end, {'gambiarra_test.lua:164'}, {'gambiarra_test.lua:165'})
 
 --
 -- Equality tests
@@ -275,7 +294,7 @@ metatest('fail with incorrect errormessage', function()
   fail(function() error("my error") end, "different error", "Failed with incorrect error")
   ok(true, 'unreachable code')
 end, {}, {'Failed with incorrect error',
-      'expected errormessage "gambiarra_test.lua:275: my error" to contain "different error"'})
+      'expected errormessage "gambiarra_test.lua:294: my error" to contain "different error"'})
 
 metatest('fail with not failing code', function()
   fail(function() end, "my error", "did not fail")
@@ -288,7 +307,7 @@ end, {}, {"did not fail", 'Expected to fail with Error containing "my error"'})
 metatest('error should panic', function()
   error("lua error")
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:289: lua error'})
+end, {}, {}, {'gambiarra_test.lua:308: lua error'})
 
 drain_post_queue()
 
@@ -330,15 +349,23 @@ end, {'foo', 'bar'}, {}, {}, true)
 --
 metatest('async except in main', function(next)
   error("async except")
-end, {}, {}, {'gambiarra_test.lua:332: async except'}, true)
+end, {}, {}, {'gambiarra_test.lua:351: async except'}, true)
 
-metatest('async except in callback', function(next)
+metatest('async fail in callback', function(next)
   async(function() 
-   -- error("async Lua error")
+    ok(false, "async fail")
     next()
   end)
   ok(true, 'foo')
-end, {'foo'}, {}, {'gambiarra_test.lua:337: async Lua error'}, true)
+end, {'foo'}, {'async fail'}, {}, true)
+
+metatest('async except in callback', function(next)
+  async(function() 
+    error("async Lua error")
+    next()
+  end)
+  ok(true, 'foo')
+end, {'foo'}, {}, {'gambiarra_test.lua:364: async Lua error'}, true)
 
 --
 -- sync after async test

@@ -106,7 +106,7 @@ local env = _G
 local outputhandler = TERMINAL_HANDLER
 
 local function runpending()
-  if pendingtests[1] ~= nil then 
+  if pendingtests[1] ~= nil then
     node.task.post(node.task.LOW_PRIORITY, function()
       pendingtests[1](runpending)
     end)
@@ -134,6 +134,7 @@ return function(name, f, async)
     copyenv(prev, env)
 
     local restore = function()
+      if node then node.setonerror() end
       copyenv(env, prev)
       outputhandler('end', name)
       table.remove(pendingtests, 1)
@@ -146,6 +147,14 @@ return function(name, f, async)
       f(handler, name, ...)
     end
 
+    local function cbError(err)
+      err = err:match(".-([^\\/]*)$") -- cut off path of filename
+      if not err:match('_*_TestAbort_*_') then
+        handler('except', name, err)
+      end
+      restore()
+    end
+
     env.eq = deepeq
     env.spy = spy
     env.ok = function (cond, msg) wrap(assertok, cond, msg) end
@@ -153,6 +162,7 @@ return function(name, f, async)
     env.fail = function (func, expected, msg) wrap(fail, func, expected, msg) end
 
     handler('begin', name);
+    node.setonerror(cbError)
     local ok, err = pcall(f, async and restore)
     if not ok then
       err = err:match(".-([^\\/]*)$") -- cut off path of filename
