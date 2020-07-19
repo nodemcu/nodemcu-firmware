@@ -38,7 +38,7 @@ cat > $TEMPFILE << EndOfMessage
 #ifdef LUA_NUMBER_INTEGRAL
 #define BUILDINFO_BUILD_TYPE "integer"
 #else
-#ifdef LUA_NUMBER_DOUBLE
+#ifdef LUA_NUMBER_64BITS
 #define BUILDINFO_BUILD_TYPE "double"
 #else
 #define BUILDINFO_BUILD_TYPE "float"

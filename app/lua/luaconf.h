@@ -181,8 +181,8 @@
   #endif // #if !defined LUA_INTEGRAL_LONGLONG
 #endif // #if !defined LUA_NUMBER_INTEGRAL
 
-#ifdef LUA_NUMBER_DOUBLE
-#error All Lua 5.1 builds use doubles. Do not specify this option.
+#ifdef LUA_NUMBER_64BITS
+#error Lua 5.1 does not support 64 bit inetegers.
 #endif
 
 /*
