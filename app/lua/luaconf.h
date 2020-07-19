@@ -182,7 +182,7 @@
 #endif // #if !defined LUA_NUMBER_INTEGRAL
 
 #ifdef LUA_NUMBER_DOUBLE
-#error All LUA 5.1 builds use doubles. Do not specify this option.
+#error All Lua 5.1 builds use doubles. Do not specify this option.
 #endif
 
 /*
