@@ -58,6 +58,9 @@ extern "C" {
  * \{
  */
 
+void *pvPortCalloc(unsigned int count, unsigned int size, const char*, unsigned);
+void vPortFree (void *p, const char *, unsigned);
+
 #if !defined(MBEDTLS_PLATFORM_NO_STD_FUNCTIONS)
 #include <stdio.h>
 #include <stdlib.h>

@@ -63,6 +63,9 @@ typedef enum{
 	NETCONN_STATE_SUMNUM
 }netconn_state;
 
+extern int __attribute__((weak)) espconn_mbedtls_parse_internal(int socket, sint8 error);
+extern int __attribute__((weak)) espconn_mbedtls_parse_thread(int socket, int event, int error);
+
 #if (!defined(lwIP_unlikely))
 #define lwIP_unlikely(Expression)	!!(Expression)
 #endif
@@ -329,5 +332,9 @@ uint32_t lwip_getul(char *str);
 #define write(a,b,c)          lwip_write(a,b,c)
 #define close(s)              lwip_close(s)
 #define getul(s)			  lwip_getul(s)
+
+extern int system_overclock(void);
+extern int system_restoreclock(void);
+extern char *sys_itoa(int n);
 
 #endif /* ESPCONN_SOCKT_H_ */
