@@ -313,7 +313,7 @@ static int b_unpack (lua_State *L) {
       case 'l': case 'L': case 'T': case 'i':  case 'I': {  /* integer types */
         int issigned = islower(opt);
         int64_t res = getinteger(data+pos, h.endian, issigned, size);
-        if (res >= INT_MIN && res <= INT_MAX) {
+        if (res >= LUA_MININTEGER && res <= LUA_MAXINTEGER) {
           lua_pushinteger(L, res);
         } else {
           lua_pushnumber(L, res);
