@@ -14,6 +14,13 @@
 #define SOFTUART_GPIO_COUNT 13
 
 //TODO: Overflow flag as callback function + docs
+
+// Additional buffer with just 2 frames to be able to copy from one and write to another
+typedef struct {
+	char isr_receive_buffer[2];
+	uint8_t active_frame;
+} softuart_isr_buffer_t;
+
 typedef struct {
 	char receive_buffer[SOFTUART_MAX_RX_BUFF];
 	uint8_t buffer_first;
@@ -23,13 +30,14 @@ typedef struct {
 } softuart_buffer_t;
 
 typedef struct {
-	uint8_t pin_rx;
-	uint8_t pin_tx;
-	volatile softuart_buffer_t buffer;
+	volatile softuart_isr_buffer_t isr_buffer;
 	uint16_t bit_time;
 	uint16_t need_len; // Buffer length needed to run callback function
 	char end_char; // Used to run callback if last char in buffer will be the same
+	softuart_buffer_t buffer;
 	uint8_t armed;
+	uint8_t pin_rx;
+	uint8_t pin_tx;
 } softuart_t;
 
 // Array of pointers to SoftUART instances
@@ -75,8 +83,7 @@ static uint32_t ICACHE_RAM_ATTR softuart_intr_handler(uint32_t ret_gpio_status)
 		ret_gpio_status &= ~(1 << pin_num[s->pin_rx]);
 		if (softuart_rx_cb_ref[pin_num_inv[gpio_bit]] == LUA_NOREF) continue;
 		if (!s->armed) continue;
-		// There is an armed SoftUART rx instance on that pin
-		// Start listening to transmission
+		// Read frame and save it to buffer
 		// TODO: inverted
 		if (! (GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[s->pin_rx])))) {
 			//pin is low - therefore we have a start bit
@@ -97,46 +104,29 @@ static uint32_t ICACHE_RAM_ATTR softuart_intr_handler(uint32_t ret_gpio_status)
 				while ((uint32_t)(asm_ccount() - start_time) < s->bit_time);
 				//shift d to the right
 				byte >>= 1;
-
 				// Read bit
 				if(GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[s->pin_rx]))) {
-					// If high, set msb of 8bit to 1
+					// If high, set MSB of byte to 1
 					byte |= 0x80;
 				}
 				// Recalculate start time for next bit
 				start_time += s->bit_time;
 			}
 
-			// Store byte in buffer
-			// If buffer full, set the overflow flag and return
-			if (s->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
-				s->buffer.buffer_overflow = 1;
-			} else if (s->buffer.bytes_count < SOFTUART_MAX_RX_BUFF) {
-				s->buffer.receive_buffer[s->buffer.buffer_last] = byte;
-				s->buffer.buffer_last++;
-				s->buffer.bytes_count++;
-
-				// Check for callback conditions
-				if (((s->need_len != 0) && (s->buffer.bytes_count >= s->need_len))  || \
-						((s->need_len == 0) && ((char)byte == s->end_char))) {
-					    // Send the pointer to task handler
-						s->armed = 0;
-						task_post_low(uart_recieve_task, (task_param_t)s);
-				}
+			// Save byte to correct buffer slot
+			if (s->isr_buffer.active_frame == 0) {
+				s->isr_buffer.isr_receive_buffer[0] = byte;
+				s->isr_buffer.active_frame = 1;
+			} else {
+				s->isr_buffer.isr_receive_buffer[1] = byte;
+				s->isr_buffer.active_frame = 0;
 			}
-			// Check for overflow after appending new byte
-			if (s->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
-				s->buffer.buffer_overflow = 1;
-			}
-			// Roll over buffer index if necessary
-			if (s->buffer.buffer_last == SOFTUART_MAX_RX_BUFF) {
-				s->buffer.buffer_last = 0;
-			}
-
-			// Wait for stop bit
-			// TODO: Add config for stop bits and parity bits
+			// Send the data
+			task_post_medium(uart_recieve_task, (task_param_t)s);
+			// wait for stop bit
 			while ((uint32_t)(asm_ccount() - start_time) < s->bit_time);
-
+			// Break the loop after reading of the frame
+			break;
 		}
 	}
 	// re-enable all interrupts
@@ -173,13 +163,13 @@ static int softuart_init(softuart_t *s)
 {
 
 	// Init tx pin
-    if (s->pin_tx != 0xFF){
+    if (s->pin_tx != 0xFF) {
         platform_gpio_mode(s->pin_tx, PLATFORM_GPIO_OUTPUT, PLATFORM_GPIO_PULLUP);
         platform_gpio_write(s->pin_tx, PLATFORM_GPIO_HIGH);
     }
 
     // Init rx pin
-    if (s->pin_rx != 0xFF){
+    if (s->pin_rx != 0xFF) {
 		platform_gpio_mode(s->pin_rx, PLATFORM_GPIO_INT, PLATFORM_GPIO_PULLUP);
 		// Enable interrupt for pin on falling edge
 		platform_gpio_intr_init(s->pin_rx, GPIO_PIN_INTR_NEGEDGE);
@@ -236,6 +226,10 @@ static int softuart_setup(lua_State *L)
 	softuart->need_len = RX_BUFF_SIZE;
 	softuart->armed = 0;
 
+	// Set ISR buffer
+	softuart->isr_buffer.isr_receive_buffer[0] = 0;
+	softuart->isr_buffer.isr_receive_buffer[1] = 0;
+	softuart->isr_buffer.active_frame = 0;
 	// Set buffer
 	softuart->buffer.buffer_first = 0;
 	softuart->buffer.buffer_last = 0;
@@ -243,7 +237,7 @@ static int softuart_setup(lua_State *L)
 	softuart->buffer.buffer_overflow = 0;
 
 	// Set bit time
-    softuart->bit_time = system_get_cpu_freq() * 1000000 / baudrate;
+    softuart->bit_time = (system_get_cpu_freq() * 1000000 ) / baudrate;
 
     // Set metatable
 	luaL_getmetatable(L, "softuart.port");
@@ -256,18 +250,19 @@ static int softuart_setup(lua_State *L)
 	return 1;
 }
 
-static void softuart_rx_callback(task_param_t arg)
+static void softuart_rx_callback(softuart_t* softuart)
 {
-	softuart_t *softuart = (softuart_t*)arg; //Receive pointer from ISR
+	softuart->armed = 0;
 	lua_State *L = lua_getstate();
 	lua_rawgeti(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[softuart->pin_rx]);
+
 	// Clear overflow flag if needed
 	if(softuart->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
 		softuart->buffer.buffer_overflow = 0;
 	}
-	// Copy volatile data to static buffer
-	uint8_t buffer_lenght = softuart->buffer.bytes_count;
-	for (int i = 0; i < buffer_lenght; i++) {
+	// Copy data to static buffer
+	uint8_t buffer_length = softuart->buffer.bytes_count;
+	for (int i = 0; i < buffer_length; i++) {
 		softuart_rx_buffer[i] = softuart->buffer.receive_buffer[softuart->buffer.buffer_first];
 		softuart->buffer.buffer_first++;
 		softuart->buffer.bytes_count--;
@@ -275,9 +270,42 @@ static void softuart_rx_callback(task_param_t arg)
 			softuart->buffer.buffer_first = 0;
 		}
 	}
-	lua_pushlstring(L, softuart_rx_buffer, buffer_lenght);
+	lua_pushlstring(L, softuart_rx_buffer, buffer_length);
 	softuart->armed = 1;
 	luaL_pcallx(L, 1, 0);
+}
+
+static void softuart_rx_isr_callback(task_param_t arg) {
+	//Receive pointer from ISR
+	softuart_t *s = (softuart_t*)arg;
+	// Disarm while reading buffer
+	s->armed = 0;
+	char byte = (s->isr_buffer.active_frame == 0) ?
+			s->isr_buffer.isr_receive_buffer[0] : s->isr_buffer.isr_receive_buffer[1];
+	s->armed = 1;
+	// If buffer full, set the overflow flag and return
+	if (s->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
+		s->buffer.buffer_overflow = 1;
+	} else if (s->buffer.bytes_count < SOFTUART_MAX_RX_BUFF) {
+		s->buffer.receive_buffer[s->buffer.buffer_last] = byte;
+		s->buffer.buffer_last++;
+		s->buffer.bytes_count++;
+
+		// Check for overflow after appending new byte
+		if (s->buffer.bytes_count == SOFTUART_MAX_RX_BUFF) {
+			s->buffer.buffer_overflow = 1;
+		}
+		// Roll over buffer index if necessary
+		if (s->buffer.buffer_last == SOFTUART_MAX_RX_BUFF) {
+			s->buffer.buffer_last = 0;
+		}
+
+		// Check for callback conditions
+		if (((s->need_len != 0) && (s->buffer.bytes_count >= s->need_len))  || \
+				((s->need_len == 0) && ((char)byte == s->end_char))) {
+					softuart_rx_callback(s);
+		}
+	}
 }
 
 // Arguments: event name, minimum buffer filled to run callback, callback function
@@ -351,6 +379,8 @@ static int softuart_gcdelete(lua_State *L)
 	softuart_gpio_instances[softuart->pin_rx] = NULL;
 	luaL_unref(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[softuart->pin_rx]);
 	softuart_rx_cb_ref[softuart->pin_rx] = LUA_NOREF;
+	// Try to unregister the interrupt hook
+	platform_gpio_register_intr_hook(0, softuart_intr_handler);
 	return 0;
 }
 
@@ -372,7 +402,7 @@ static int luaopen_softuart(lua_State *L)
 	for(int i = 0; i < SOFTUART_GPIO_COUNT; i++) {
 		softuart_rx_cb_ref[i] = LUA_NOREF;
 	}
-	uart_recieve_task = task_get_id((task_callback_t) softuart_rx_callback);
+	uart_recieve_task = task_get_id((task_callback_t) softuart_rx_isr_callback);
 	luaL_rometatable(L, "softuart.port", LROT_TABLEREF(softuart_port));
 	return 0;
 }
