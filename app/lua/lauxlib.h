@@ -73,6 +73,8 @@ LUALIB_API int (luaL_checkoption) (lua_State *L, int narg, const char *def,
 
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
+#define luaL_unref2(l,t,r) luaL_unref(L, (t), (r)); r = LUA_NOREF
+LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref);
 
 LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
 
@@ -160,7 +162,6 @@ LUALIB_API void (luaL_pushresult) (luaL_Buffer *B);
 
 /* }====================================================== */
 
-LUALIB_API int luaL_traceback (lua_State *L);
 LUALIB_API int luaL_pcallx (lua_State *L, int narg, int nres);
 LUALIB_API int luaL_posttask( lua_State* L, int prio );
 

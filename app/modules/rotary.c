@@ -114,7 +114,7 @@ static void callback_callOne(lua_State* L, int cb, int mask, int arg, uint32_t t
     lua_pushinteger(L, arg);
     lua_pushinteger(L, time);
 
-    lua_call(L, 3, 0);
+    luaL_pcallx(L, 3, 0);
   }
 }
 

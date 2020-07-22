@@ -77,7 +77,8 @@ static void gpio_intr_callback_task (task_param_t param, uint8 priority)
         then = system_get_time() & 0x7fffffff;
       }
 
-      lua_call(L, 3, 0);
+      if(luaL_pcallx(L, 3, 0) != LUA_OK)
+        return;
     }
 
     if (INTERRUPT_TYPE_IS_LEVEL(pin_int_type[pin])) {
@@ -237,10 +238,7 @@ static void seroutasync_done (task_param_t arg)
     lua_rawgeti (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     luaL_unref (L, LUA_REGISTRYINDEX, serout.lua_done_ref);
     serout.lua_done_ref = LUA_NOREF;
-    if (lua_pcall(L, 0, 0, 0)) {
-      // Uncaught Error. Print instead of sudden reset
-      luaL_error(L, "error: %s", lua_tostring(L, -1));
-    }
+    luaL_pcallx(L, 0, 0);
   }
 }
 

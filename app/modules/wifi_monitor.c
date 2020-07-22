@@ -321,7 +321,7 @@ static void monitor_task(os_param_t param, uint8_t prio)
 
     free(input);
 
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   } else {
     free(input);
   }

@@ -200,7 +200,7 @@ static void cron_handle_time(uint8_t mon, uint8_t dom, uint8_t dow, uint8_t hour
     if ((ent->desc.min  & desc.min ) == 0) continue;
     lua_rawgeti(L, LUA_REGISTRYINDEX, ent->cb_ref);
     lua_rawgeti(L, LUA_REGISTRYINDEX, cronent_list[i]);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 

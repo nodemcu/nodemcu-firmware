@@ -188,7 +188,7 @@ uint8_t tcs34725EnableDone()
 	lua_rawgeti(L, LUA_REGISTRYINDEX, cb_tcs_en); // Get the callback to call
 	luaL_unref(L, LUA_REGISTRYINDEX, cb_tcs_en); // Unregister the callback to avoid leak
 	cb_tcs_en = LUA_NOREF;
-	lua_call(L, 0, 0);
+	luaL_pcallx(L, 0, 0);
 
 	return 0;
 }

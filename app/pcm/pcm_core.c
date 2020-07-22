@@ -18,13 +18,14 @@
 
 #include "pcm.h"
 
-static void dispatch_callback( lua_State *L, int self_ref, int cb_ref, int returns )
+static int dispatch_callback( lua_State *L, int self_ref, int cb_ref, int returns )
 {
   if (cb_ref != LUA_NOREF) {
     lua_rawgeti( L, LUA_REGISTRYINDEX, cb_ref );
     lua_rawgeti( L, LUA_REGISTRYINDEX, self_ref );
-    lua_call( L, 1, returns );
+    return luaL_pcallx( L, 1, returns );
   }
+  return LUA_OK;
 }
 
 void pcm_data_vu( task_param_t param, uint8 prio )
@@ -36,7 +37,7 @@ void pcm_data_vu( task_param_t param, uint8 prio )
     lua_rawgeti( L, LUA_REGISTRYINDEX, cfg->cb_vu_ref );
     lua_rawgeti( L, LUA_REGISTRYINDEX, cfg->self_ref );
     lua_pushnumber( L, (LUA_NUMBER)(cfg->vu_peak) );
-    lua_call( L, 2, 0 );
+    luaL_pcallx( L, 2, 0 );
   }
 }
 
@@ -52,7 +53,8 @@ void pcm_data_play( task_param_t param, uint8 prio )
   // retrieve new data from callback
   if ((cfg->isr_throttled >= 0) &&
       (cfg->cb_data_ref != LUA_NOREF)) {
-    dispatch_callback( L, cfg->self_ref, cfg->cb_data_ref, 1 );
+    if(dispatch_callback( L, cfg->self_ref, cfg->cb_data_ref, 1 ) != LUA_OK)
+      return;
     need_pop = TRUE;
 
     if (lua_type( L, -1 ) == LUA_TSTRING) {

@@ -185,7 +185,7 @@ static int pipe_write_and_read_poster (lua_State *L) {
     lua_replace(L, UVstate);
     lua_pushvalue(L, UVfunc);                              /* Lua CB function */
     lua_pushvalue(L, UVpipe);                                   /* pipe table */
-    lua_call(L, 1, 1);
+    lua_call(L, 1, 1);                    /* Errors are thrown back to caller */
    /*
     * On return from the Lua CB, the task is never reposted if the pipe is empty.
     * If it is not empty then the Lua CB return status determines when reposting

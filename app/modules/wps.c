@@ -30,7 +30,7 @@ LOCAL void ICACHE_FLASH_ATTR user_wps_status_cb(int status)
   if (wps_callback_ref != LUA_NOREF) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, wps_callback_ref);
     lua_pushinteger(L, status);
-    lua_call(L, 1, 0);
+    luaL_pcallx(L, 1, 0);
   }
 }
 

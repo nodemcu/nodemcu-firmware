@@ -47,7 +47,7 @@ static void callback_execute(lua_State* L, unsigned int id)
     lua_rawgeti(L, LUA_REGISTRYINDEX, callback);
     callback_free(L, id);
 
-    lua_call(L, 0, 0);
+    luaL_pcallx(L, 0, 0);
   }
 }
 

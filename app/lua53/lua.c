@@ -64,9 +64,10 @@ static void l_print (lua_State *L, int n) {
     luaL_checkstack(L, LUA_MINSTACK, "too many results to print");
     lua_getglobal(L, "print");
     lua_insert(L, -n-1);
-    if (lua_pcall(L, n, 0, 0) != LUA_OK)
-       lua_writestringerror( "error calling 'print' (%s)\n",
-                            lua_tostring(L, -1));
+    if (lua_pcall(L, n, 0, 0) != LUA_OK) {
+      lua_writestringerror("error calling 'print' (%s)\n", lua_tostring(L, -1));
+      lua_settop(L, -n-1);
+    }
   }
 }
 
@@ -75,52 +76,43 @@ static void l_print (lua_State *L, int n) {
 ** Message handler is used with all chunks calls. Returns the traceback on ToS
 */
 static int msghandler (lua_State *L) {
-  const char *msg = lua_tostring(L, 1);
-  if (msg == NULL) {                         /* is error object not a string? */
-    if (luaL_callmeta(L, 1, "__tostring") &&     /* does it have a metamethod */
-        lua_type(L, -1) == LUA_TSTRING)            /* that produces a string? */
-      return 1;                                        /* that is the message */
-    msg = lua_pushfstring(L, "(error object is a %s value)",
-                               luaL_typename(L, 1));
-    lua_remove(L, -2);                 /* otherwise swap with printable error */
+  lua_getglobal(L, "debug");
+  lua_getfield(L, -1, "traceback");
+  if (lua_isfunction(L, -1)) {
+    lua_insert(L, 1);                 /* insert tracback function above error */
+    lua_pop(L, 1);                              /* dump the debug table entry */
+    lua_pushinteger(L, 2);                /* skip this function and traceback */
+    lua_call(L, 2, 1);      /* call debug.traceback and return it as a string */
   }
-#ifdef LUA_VERSION_51
-  lua_getglobal(L,"debug");
-  lua_getfield(L, -1,"traceback");
-  lua_insert(L, 1);                                     /* pass error message */
-  lua_pop(L, 1);
-  lua_pushinteger(L, 2);                  /* skip this function and traceback */
-  lua_call(L, 2, 1);                                  /* call debug.traceback */
-#else /* LUA_VERSION_53 */
-  luaL_traceback(L, L, msg, 1);                /* append a standard traceback */
-#endif
   return 1;  /* return the traceback */
 }
 
 
 /*
-** Interface to 'lua_pcall', which sets appropriate message function
-** and error handler. Used to run all chunks.
+** Interface to 'lua_pcall', which sets appropriate message function and error 
+** handler. Used to run all chunks.  Results or error traceback left on stack.
+** This function is interactive so unlike lua_pcallx(), the error is sent direct
+** to the print function and erroring does not trigger an on error restart. 
 */
-static int docall (lua_State *L, int narg, int nres) {
+static int docall (lua_State *L, int narg) {
   int status;
   int base = lua_gettop(L) - narg;                          /* function index */
   lua_pushcfunction(L, msghandler);                   /* push message handler */
   lua_insert(L, base);                         /* put it under chunk and args */
-  status = lua_pcall(L, narg, (nres ? 0 : LUA_MULTRET), base);
+  status = lua_pcall(L, narg, LUA_MULTRET, base);
   lua_remove(L, base);               /* remove message handler from the stack */
   /* force a complete garbage collection in case of errors */
   if (status != 0) lua_gc(L, LUA_GCCOLLECT, 0);
   return status;
 }
 
+
+#ifndef DISABLE_STARTUP_BANNER
 static void print_version (lua_State *L) {
-  #ifndef DISABLE_STARTUP_BANNER
   lua_writestringerror( "\n" NODE_VERSION " build " BUILD_DATE
                         " powered by " LUA_RELEASE " on SDK %s\n", SDK_VERSION);
-  #endif
 }
-
+#endif
 
 /*
 ** Returns the string to be used as a prompt by the interpreter.
@@ -164,7 +156,6 @@ static void l_create_stdin (lua_State *L);
 ** other C API and Lua functions might be executed as tasks between lines in
 ** a multiline, so a standard luaL_ref() registry entry is used instead.
 */
-//// TODO SHOLD this have an boot return false if pipe empty else nil
 static void dojob (lua_State *L) {
   static int MLref = LUA_NOREF;        /* Lua Reg entry for cached multi-line */
   int status;
@@ -204,21 +195,18 @@ static void dojob (lua_State *L) {
     }
     /* Execute the compiled chunk of successful */
     if (status == 0)
-      status = docall(L, 0, 0);
+      status = docall(L, 0);
     /* print any returned results or error message */
-    if (status && !lua_isnil(L, -1))
-      lua_writestringerror("Lua error: %s\n", lua_tostring(L, -1));
-    if (status == 0 && lua_gettop(L) - 1)
-      l_print(L, lua_gettop(L) - 1);
-
-    lua_settop(L, 2);
-    if (status != 0) lua_gc(L, LUA_GCCOLLECT, 0);
+    if (status && !lua_isnil(L, -1)) {
+      lua_pushliteral(L, "Lua error: ");
+      lua_insert(L , -2);
+    }
+    l_print(L, lua_gettop(L) - 1);        /* print error or results one stack */
   }
 
   prompt = get_prompt(L, MLref!= LUA_NOREF ? 0 : 1);
   input_setprompt(prompt);
   lua_writestring(prompt,strlen(prompt));
-  lua_pushnil(L);
 }
 
 
@@ -241,7 +229,9 @@ static int pmain (lua_State *L) {
   input_setup(LUA_MAXINPUT, get_prompt(L, 1));
   lua_input_string(" \n", 2);               /* queue CR to issue first prompt */
 
+#ifndef DISABLE_STARTUP_BANNER
   print_version(L);
+#endif
  /*
   * And last of all, kick off application initialisation.  Note that if
   * LUA_INIT_STRING is a file reference and the file system is uninitialised
@@ -252,7 +242,7 @@ static int pmain (lua_State *L) {
            luaL_loadfile(L, init+1) :
            luaL_loadbuffer(L, init, strlen(init), "=INIT");
   if (status == LUA_OK)
-    status = docall(L, 0, 0);
+    status = docall(L, 0);
   if (status != LUA_OK)
     l_print (L, 1);
   return 0;
@@ -274,7 +264,7 @@ int lua_main (void) {
   }
   globalL = L;
   lua_pushcfunction(L, pmain);
-  if (docall(L, 0, 0) != LUA_OK) {
+  if (docall(L, 0) != LUA_OK) {
     if (strstr(lua_tostring(L, -1),"!LFSrestart!")) {
       lua_close(L);
       return 1;                         /* non-zero return to flag LFS reload */
@@ -337,7 +327,7 @@ static int l_read_stdin (lua_State *L) {
     /* likewise if not CR terminated, then unread and ditto */
     lua_insert(L, 1);                   /* insert false return above the pipe */
     lua_getfield(L, 2, "unread");
-    lua_insert(L, 1);                    /* insert pipe.unread above the pipe */
+    lua_insert(L, 2);                    /* insert pipe.unread above the pipe */
     lua_call(L, 2, 0);                                   /* pobj:unread(line) */
     return 1;                                                 /* return false */
   }

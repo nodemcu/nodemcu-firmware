@@ -60,7 +60,8 @@ static sint32_t file_rtc_cb( vfs_time *tm )
     lua_State *L = lua_getstate();
 
     lua_rawgeti( L, LUA_REGISTRYINDEX, rtc_cb_ref );
-    lua_call( L, 0, 1 );
+    if (luaL_pcallx( L, 0, 1 ) != LUA_OK)
+      return res;
 
     if (lua_type( L, lua_gettop( L ) ) == LUA_TTABLE) {
       table2tm( L, tm );

@@ -410,7 +410,7 @@ typedef struct Table {
 GET_BYTE_FN(flags,Table,4,16)
 GET_BYTE_FN(lsizenode,Table,4,24)
 
-typedef struct ROTable_entry {
+typedef const struct ROTable_entry {
   const char *key;
   const TValue value;
 } ROTable_entry;

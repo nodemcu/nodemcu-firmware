@@ -251,10 +251,7 @@ static int ads1115_lua_register(lua_State *L, uint8_t chip_id) {
     if (config_read != ADS1115_DEFAULT_CONFIG_REG) {
         return luaL_error(L, "unexpected config value (%p) please reset device before calling this function", config_read);
     }
-    ads_ctrl_ud_t *ads_ctrl = (ads_ctrl_ud_t *)lua_newuserdata(L, sizeof(ads_ctrl_ud_t));
-    if (NULL == ads_ctrl) {
-        return luaL_error(L, "ads1115 malloc: out of memory");
-    }
+    ads_ctrl_ud_t *ads_ctrl = lua_newuserdata(L, sizeof(ads_ctrl_ud_t));
     luaL_getmetatable(L, metatable_name);
     lua_setmetatable(L, -2);
     ads_ctrl->chip_id = chip_id;
@@ -499,7 +496,7 @@ static int ads1115_lua_readoutdone(void * param) {
     luaL_unref(L, LUA_REGISTRYINDEX, ads_ctrl->timer_ref);
     ads_ctrl->timer_ref = LUA_NOREF;
     read_common(ads_ctrl, raw, L);
-    lua_call(L, 4, 0);
+    luaL_pcallx(L, 4, 0);
 }
 
 // Read the conversion register from the ADC device

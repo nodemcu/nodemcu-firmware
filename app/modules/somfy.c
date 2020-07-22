@@ -92,7 +92,7 @@ static void somfy_transmissionDone (task_param_t arg)
     lua_rawgeti (L, LUA_REGISTRYINDEX, lua_done_ref);
     luaL_unref (L, LUA_REGISTRYINDEX, lua_done_ref);
     lua_done_ref = LUA_NOREF;
-    lua_call (L, 0, 0);
+    luaL_pcallx (L, 0, 0);
 }
 
 static void ICACHE_RAM_ATTR sendCommand(os_param_t p) {

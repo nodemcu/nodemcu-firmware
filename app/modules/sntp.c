@@ -211,7 +211,7 @@ static void handle_error (lua_State *L, ntp_err_t err, const char *msg)
     lua_pushinteger (L, err);
     lua_pushstring (L, msg);
     cleanup (L);
-    lua_call (L, 2, 0);
+    luaL_pcallx (L, 2, 0);
   }
   else
     cleanup (L);
@@ -319,7 +319,7 @@ static void sntp_handle_result(lua_State *L) {
 
   if (have_cb)
   {
-    lua_call (L, 4, 0);
+    luaL_pcallx (L, 4, 0);
   }
 }
 
