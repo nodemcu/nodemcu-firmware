@@ -376,11 +376,17 @@ static int softuart_gcdelete(lua_State *L)
 	NODE_DBG("SoftUART GC called\n");
 	softuart_t *softuart = NULL;
 	softuart = (softuart_t*) luaL_checkudata(L, 1, "softuart.port");
+	uint8_t last_instance = 1;
+	for(uint8_t instance = 0; instance < SOFTUART_GPIO_COUNT; instance++)
+		if (softuart_gpio_instances[instance] != NULL && instance != softuart->pin_rx)
+			last_instance = 0;
+
 	softuart_gpio_instances[softuart->pin_rx] = NULL;
 	luaL_unref(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[softuart->pin_rx]);
 	softuart_rx_cb_ref[softuart->pin_rx] = LUA_NOREF;
-	// Try to unregister the interrupt hook
-	platform_gpio_register_intr_hook(0, softuart_intr_handler);
+	// Try to unregister the interrupt hook if this was last or the only instance
+	if (last_instance)
+		platform_gpio_register_intr_hook(0, softuart_intr_handler);
 	return 0;
 }
 
