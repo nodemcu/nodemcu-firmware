@@ -1,6 +1,17 @@
 #ifndef APP_MODULES_COLOR_UTILS_H_
 #define APP_MODULES_COLOR_UTILS_H_
 
+#include "module.h"
+#include "lauxlib.h"
+#include "lmem.h"
+//#include "platform.h"
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+//#include "user_interface.h"
+//#include "osapi.h"
+
+
 #include "lnodemcu.h"
 
 /**
