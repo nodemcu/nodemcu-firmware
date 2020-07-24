@@ -4,12 +4,12 @@
 #include "module.h"
 #include "lauxlib.h"
 #include "lmem.h"
-#include "platform.h"
+//#include "platform.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "user_interface.h"
-#include "osapi.h"
+//#include "user_interface.h"
+//#include "osapi.h"
 
 /**
 * Convert hsv to grb

@@ -59,22 +59,51 @@ extern LROT_TABLE(math);
   LROT_FUNCENTRY( debug, luaopen_debug )
 
 #if defined(LUA_CROSS_COMPILER)
-extern LROT_TABLE(base_func);
+
+#define LUAC_MODULE(map) \
+  LUALIB_API LROT_TABLE(map);
+
+#define LUAC_MODULE_INIT(map, initfunc) \
+  LUAC_MODULE(map);\
+  LUALIB_API int initfunc(lua_State *L);
+
+#ifndef __MINGW32__
+LUAC_MODULE(thislib) // module struct
+LUAC_MODULE(bit)
+LUAC_MODULE(color_utils)
+LUAC_MODULE_INIT(sjson, luaopen_sjson)
+#endif
+
+LUAC_MODULE(base_func);
 LROT_BEGIN(rotables_meta, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY( __index, base_func)
 LROT_END(rotables_meta, NULL, LROT_MASK_INDEX)
 
-extern LROT_TABLE(oslib);
-extern LROT_TABLE(iolib);
+LUAC_MODULE(oslib);
+LUAC_MODULE(iolib);
 LROT_BEGIN(rotables, LROT_TABLEREF(rotables_meta), 0)
   LROT_ROM_ENTRIES
   LROT_TABENTRY( os, oslib )
   LROT_TABENTRY( io, iolib )
+#ifndef __MINGW32__
+  // modules
+  LROT_TABENTRY( struct, thislib )
+  LROT_TABENTRY(bit, bit)
+  LROT_TABENTRY(color_utils, color_utils)
+  LROT_TABENTRY(sjson, sjson)
+#endif
 LROT_END(rotables, LROT_TABLEREF(rotables_meta), 0)
 
 LROT_BEGIN(lua_libs, NULL, 0)
   LROT_LIB_ENTRIES
   LROT_FUNCENTRY( io, luaopen_io )
+#ifndef __MINGW32__
+  // modules
+  LROT_FUNCENTRY(struct, NULL)
+  LROT_FUNCENTRY(bit, NULL)
+  LROT_FUNCENTRY(color_utils, NULL)
+  LROT_FUNCENTRY(sjson, luaopen_sjson)
+#endif
 LROT_END(lua_libs, NULL, 0)
 
 #else

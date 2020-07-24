@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
@@ -27,6 +23,12 @@
     </Filter>
     <Filter Include="app\include">
       <UniqueIdentifier>{439d70e8-0091-42d2-919f-7e710de3867c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\modules">
+      <UniqueIdentifier>{3b52796e-cc0c-458d-bb40-d416bb18d49d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="app\sjson">
+      <UniqueIdentifier>{fcd87750-9084-4308-bb91-bd4d44d29a90}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -132,6 +134,21 @@
     <ClCompile Include="..\..\app\lua\lzio.c">
       <Filter>app\lua</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\app\modules\struct.c">
+      <Filter>app\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\modules\bit.c">
+      <Filter>app\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\modules\color_utils.c">
+      <Filter>app\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\modules\sjson.c">
+      <Filter>app\modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\app\sjson\jsonsl.c">
+      <Filter>app\sjson</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\app\lua\lnodemcu.c">
       <Filter>app\lua</Filter>
     </ClCompile>
@@ -229,6 +246,15 @@
     </ClInclude>
     <ClInclude Include="..\..\app\include\user_modules.h">
       <Filter>app\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\sjson\json_config.h">
+      <Filter>app\sjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\sjson\jsonsl.h">
+      <Filter>app\sjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\app\sjson\memcompat.h">
+      <Filter>app\sjson</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

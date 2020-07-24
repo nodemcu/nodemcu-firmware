@@ -741,8 +741,9 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
       if (strcmp(value, "-inf") == 0 || strcmp(value, "nan") == 0 || strcmp(value, "inf") == 0) {
         luaL_addstring(&b, "null");   // According to ECMA-262 section 24.5.2 Note 4
       } else {
-        luaL_addstring(&b, value);
+        luaL_addlstring(&b, value);
       }
+      lua_pop(L, 1);
       break;
     }
 
