@@ -234,7 +234,7 @@ static int softuart_setup(lua_State *L)
 	softuart = (softuart_t*)lua_newuserdata(L, sizeof(softuart_t));
 	softuart->pin_rx = rx_gpio_id;
 	softuart->pin_tx = tx_gpio_id;
-	softuart->need_len = RX_BUFF_SIZE;
+	softuart->need_len = SOFTUART_MAX_RX_BUFF;
 	softuart->armed = 0;
 
 	// Set buffer
@@ -291,34 +291,29 @@ static int softuart_on(lua_State *L)
 
 	softuart_t *softuart = (softuart_t*)luaL_checkudata(L, 1, "softuart.port");
 	const char *method = luaL_checklstring(L, 2, &name_len);
+	luaL_argcheck(L, lua_isfunction(L, 4), -1, "No callback function specified");
+	luaL_argcheck(L, (name_len == 4 && strcmp(method, "data") == 0), 2, "Method not supported");
+    luaL_argcheck(L, softuart->pin_rx != 0xFF, 1, "Rx pin was not declared");
 
 	if (lua_isnumber(L, 3)) {
 		luaL_argcheck(L, luaL_checkinteger(L, 3) < SOFTUART_MAX_RX_BUFF,
 				2, "Argument bigger than SoftUART buffer");
 		softuart->end_char = 0;
 		softuart->need_len = (uint16_t) luaL_checkinteger(L, 3);
-		softuart->armed = 1;
 	} else if (lua_isstring(L, 3)) {
 		const char *end = luaL_checklstring(L , 3,  &arg_len);
 		luaL_argcheck(L, arg_len == 1, 3, "Wrong end char length");
 		softuart->end_char = end[0];
 		softuart->need_len = 0;
-		softuart->armed = 1;
 	} else {
 		return luaL_error(L, "Wrong argument type");
 	}
 
-	luaL_argcheck(L, lua_isfunction(L, 4), -1, "No callback function specified");
-	luaL_argcheck(L, (name_len == 4 && strcmp(method, "data") == 0), 2, "Method not supported");
-    luaL_argcheck(L, softuart->pin_rx != 0xFF, 1, "Rx pin was not declared");
     lua_settop(L, 4); // Move to the top of the stack
-    if (softuart_rx_cb_ref[softuart->pin_rx] != LUA_NOREF) {
-    	// Remove old callback and add new one
-    	luaL_unref(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[softuart->pin_rx]);
-    }
-    // Register callback
-    softuart_rx_cb_ref[softuart->pin_rx] = luaL_ref(L, LUA_REGISTRYINDEX);
-
+    // Register callback or reregister new one
+    luaL_reref(L, LUA_REGISTRYINDEX, &softuart_rx_cb_ref[softuart->pin_rx]);
+    // Arm the instance
+	softuart->armed = 1;
     return 0;
 }
 
@@ -357,8 +352,7 @@ static int softuart_gcdelete(lua_State *L)
 			last_instance = 0;
 
 	softuart_gpio_instances[softuart->pin_rx] = NULL;
-	luaL_unref(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[softuart->pin_rx]);
-	softuart_rx_cb_ref[softuart->pin_rx] = LUA_NOREF;
+	luaL_unref2(L, LUA_REGISTRYINDEX, softuart_rx_cb_ref[softuart->pin_rx]);
 	// Try to unregister the interrupt hook if this was last or the only instance
 	if (last_instance)
 		platform_gpio_register_intr_hook(0, softuart_intr_handler);
