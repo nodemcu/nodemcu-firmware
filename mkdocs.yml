@@ -32,6 +32,7 @@ pages:
     - Extension Developer FAQ: 'extn-developer-faq.md'
 - Whitepapers:
     - Filesystem on SD card: 'sdcard.md'
+    - Writing external C modules: 'modules/extmods.md'
 - C Modules:
     - 'adc':          'modules/adc.md'
     - 'bit':          'modules/bit.md'

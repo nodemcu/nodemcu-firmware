@@ -12,6 +12,9 @@ TOOLCHAIN_RELEASES_BASEURL:=https://github.com/jmattsson/esp-toolchains/releases
 TOOLCHAIN_VERSION:=20181106.1
 PLATFORM:=linux-$(shell uname --machine)
 
+## Directory to place external modules:
+export EXTRA_COMPONENT_DIRS:=$(THIS_DIR)/components/modules/external
+
 ESP32_BIN:=$(THIS_DIR)/tools/toolchains/esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION)/bin
 ESP32_GCC:=$(ESP32_BIN)/xtensa-esp32-elf-gcc
 ESP32_TOOLCHAIN_DL:=$(THIS_DIR)/cache/toolchain-esp32-$(PLATFORM)-$(TOOLCHAIN_VERSION).tar.xz
@@ -61,3 +64,9 @@ include $(IDF_PATH)/make/project.mk
 CC:=$(CC) $(BASIC_TYPES) -D__ESP32__ $(MORE_CFLAGS)
 
 endif
+
+extmod-update:
+	@tools/extmod/extmod.sh update
+
+extmod-clean:
+	@tools/extmod/extmod.sh clean

@@ -8,6 +8,7 @@ build/
 app/
 components/*/.output/
 tools/toolchains
+extmods.ini
 
 #ignore Eclipse project files
 .cproject
