@@ -1,4 +1,4 @@
-local test = require('gambiarra')
+local N = require('gambiarra')
 
 local expected = {}
 local failed, passed = 0,0
@@ -61,7 +61,7 @@ local function comparetables(t1, t2)
 end
 
 -- Set meta test handler
-test(function(e, test, msg, errormsg)
+N.report(function(e, test, msg, errormsg)
   if e == 'begin' then
     currentTest = {
       name = test,
@@ -124,8 +124,10 @@ local function metatest(name, f, expectedPassed, expectedFailed, expectedExcept,
       f(...)
       drain_async_queue()
     end
+    N.testasync(name, ff)
+  else
+    N.test(name, ff)
   end
-  test(name, ff, async)
   table.insert(expected, {
     name = name,
     pass = expectedPassed,
@@ -158,12 +160,12 @@ end, {'1~=2'}, {})
 metatest('ok without a message', function()
   ok(1 == 1)
   ok(1 == 2)
-end, {'gambiarra_test.lua:159'}, {'gambiarra_test.lua:160'})
+end, {'gambiarra_test.lua:161'}, {'gambiarra_test.lua:162'})
 
 metatest('nok without a message', function()
   nok(1 == 2)
   nok(1 == 1)
-end, {'gambiarra_test.lua:164'}, {'gambiarra_test.lua:165'})
+end, {'gambiarra_test.lua:166'}, {'gambiarra_test.lua:167'})
 
 --
 -- Equality tests
@@ -294,12 +296,33 @@ metatest('fail with incorrect errormessage', function()
   fail(function() error("my error") end, "different error", "Failed with incorrect error")
   ok(true, 'unreachable code')
 end, {}, {'Failed with incorrect error',
-      'expected errormessage "gambiarra_test.lua:294: my error" to contain "different error"'})
+      'expected errormessage "gambiarra_test.lua:296: my error" to contain "different error"'})
+
+metatest('fail with incorrect errormessage default message', function()
+  fail(function() error("my error") end, "different error")
+  ok(true, 'unreachable code')
+end, {}, {'gambiarra_test.lua:302',
+      'expected errormessage "gambiarra_test.lua:302: my error" to contain "different error"'})
 
 metatest('fail with not failing code', function()
   fail(function() end, "my error", "did not fail")
   ok(true, 'unreachable code')
 end, {}, {"did not fail", 'Expected to fail with Error containing "my error"'})
+
+metatest('fail with failing code', function()
+  fail(function() error("my error") end, nil, "Failed as expected")
+  ok(true, 'reachable code')
+end, {'Failed as expected', 'reachable code'}, {})
+
+metatest('fail with not failing code', function()
+  fail(function() end, nil , "did not fail")
+  ok(true, 'unreachable code')
+end, {}, {"did not fail", 'Expected to fail with Error'})
+
+metatest('fail with not failing code default message', function()
+  fail(function() end)
+  ok(true, 'unreachable code')
+end, {}, {"gambiarra_test.lua:323", 'Expected to fail with Error'})
 
 --
 -- except tests
@@ -307,7 +330,20 @@ end, {}, {"did not fail", 'Expected to fail with Error containing "my error"'})
 metatest('error should panic', function()
   error("lua error")
   ok(true, 'unreachable code')
-end, {}, {}, {'gambiarra_test.lua:308: lua error'})
+end, {}, {}, {'gambiarra_test.lua:331: lua error'})
+
+--
+-- called function except
+--
+
+local function subfunc()
+  error("lua error")
+end
+
+metatest('subroutine error should panic', function()
+  subfunc()
+  ok(true, 'unreachable code')
+end, {}, {}, {'gambiarra_test.lua:340: lua error'})
 
 drain_post_queue()
 
@@ -349,7 +385,8 @@ end, {'foo', 'bar'}, {}, {}, true)
 --
 metatest('async except in main', function(next)
   error("async except")
-end, {}, {}, {'gambiarra_test.lua:351: async except'}, true)
+  ok(true, 'foo')
+end, {}, {}, {'gambiarra_test.lua:387: async except'}, true)
 
 metatest('async fail in callback', function(next)
   async(function() 
@@ -365,7 +402,7 @@ metatest('async except in callback', function(next)
     next()
   end)
   ok(true, 'foo')
-end, {'foo'}, {}, {'gambiarra_test.lua:364: async Lua error'}, true)
+end, {'foo'}, {}, {'gambiarra_test.lua:401: async Lua error'}, true)
 
 --
 -- sync after async test

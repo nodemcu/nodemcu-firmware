@@ -84,6 +84,13 @@ local function assertok(handler, name, cond, msg)
 end
 
 local function fail(handler, name, func, expected, msg)
+  if not msg then
+    -- debug.getinfo() does not exist in NodeMCU
+    -- msg = debug.getinfo(2, 'S').short_src..":"..debug.getinfo(2, 'l').currentline
+    msg = debug.traceback()
+    msg = msg:match(".*\n\t*([^\n]*): in.-\n\t*.*in function 'pcall'")
+    msg = msg:match(".-([^\\/]*)$") -- cut off path of filename
+  end
   local status, err = pcall(func)
   if status then
     local messagePart = ""
@@ -121,13 +128,7 @@ local function copyenv(dest, src)
   dest.fail = src.fail
 end
 
-return function(name, f, async)
-  if type(name) == 'function' then
-    outputhandler = name
-    env = f or _G
-    return
-  end
-
+local function testimpl(name, f, async)
   local testfn = function(next)
 
     local prev = {}
@@ -161,7 +162,7 @@ return function(name, f, async)
     env.nok = function(cond, msg) env.ok(not cond, msg) end
     env.fail = function (func, expected, msg) wrap(fail, func, expected, msg) end
 
-    handler('begin', name);
+    handler('begin', name)
     node.setonerror(cbError)
     local ok, err = pcall(f, async and restore)
     if not ok then
@@ -184,3 +185,20 @@ return function(name, f, async)
     runpending()
   end
 end
+
+local function test(name, f)
+  testimpl(name, f)
+end
+
+local function testasync(name, f)
+  testimpl(name, f, true)
+end
+
+local function report(f, envP)
+  if type(f) == 'function' then
+    outputhandler = f
+    env = envP or _G
+  end
+end
+
+return {test = test, testasync = testasync, report = report}
