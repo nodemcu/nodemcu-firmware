@@ -139,8 +139,10 @@ It is highly recommended that the timestamp is obtained via NTP (see [SNTP modul
 
 Values very close to the epoch are not supported. This is a side effect of keeping the memory requirements as low as possible. Considering that it's no longer 1970, this is not considered a problem.
 
+You specify the seconds parameter with the optional microseconds (defaults to 0). Setting the rate is independant.
+
 #### Syntax
-`rtctime.set(seconds, microseconds, [rate])`
+`rtctime.set([seconds], [microseconds], [rate])`
 
 #### Parameters
 - `seconds` the seconds part, counted from the Unix epoch
