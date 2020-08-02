@@ -139,7 +139,8 @@ It is highly recommended that the timestamp is obtained via NTP (see [SNTP modul
 
 Values very close to the epoch are not supported. This is a side effect of keeping the memory requirements as low as possible. Considering that it's no longer 1970, this is not considered a problem.
 
-You specify the seconds parameter with the optional microseconds (defaults to 0). Setting the rate is independant.
+Times are specified across two arguments, seconds and microseconds. If microseconds are not specified, the default is 0 (i.e., time is exactly at the boundary between two seconds).
+In addition to the time, a third argument specifies the local clock's drift rate estimate, as documented in `rtctime.get()`. If this argument is not given or is `nil`, the current rate estimate will not be altered, and the rate estimate may be set without changing the time by leaving the seconds and microseconds arguments `nil`. The rate is not (unfortunately) a fixed parameter for a particular nodemcu board. It varies with (at least) the temperature and the age of the board.
 
 #### Syntax
 `rtctime.set([seconds], [microseconds], [rate])`
