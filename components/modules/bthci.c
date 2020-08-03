@@ -42,6 +42,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <esp_log.h>
+#define TAG "bthci"
+
 #define BD_ADDR_LEN 6
 typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 
@@ -331,8 +334,26 @@ static int lbthci_init (lua_State *L)
     cmd_q[i].cb_ref = LUA_NOREF;
 
   esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-  esp_bt_controller_init (&bt_cfg);
-  esp_bt_controller_enable (ESP_BT_MODE_BTDM);
+
+  esp_err_t ret;
+  if ((ret = esp_bt_controller_init(&bt_cfg)) != ESP_OK) {
+    ESP_LOGE(TAG, "%s initialize controller failed: %s\n", __func__, esp_err_to_name(ret));
+    return -1;
+  }
+
+#ifdef CONFIG_BTDM_CONTROLLER_MODE_BTDM
+  esp_bt_mode_t mode = ESP_BT_MODE_BTDM;
+#elif defined CONFIG_BTDM_CONTROLLER_MODE_BLE_ONLY
+  esp_bt_mode_t mode = ESP_BT_MODE_BLE;
+#else
+  ESP_LOGE(TAG, "%s configuration mismatch. Select BLE Only or BTDM mode from menuconfig", __func__);
+  return -1;
+#endif
+
+  if ((ret = esp_bt_controller_enable(mode)) != ESP_OK) {
+    ESP_LOGE(TAG, "%s enable controller failed: %s\n", __func__, esp_err_to_name(ret));
+    return -1;
+  }
 
   esp_vhci_host_register_callback (&bthci_callbacks);
 
