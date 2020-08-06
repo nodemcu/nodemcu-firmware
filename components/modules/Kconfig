@@ -92,6 +92,12 @@ config LUA_MODULE_DHT
   help
       Includes the dht module.
 
+config LUA_MODULE_DIMMER
+  bool "Dimmer controller module"
+  default "n"
+  help
+      Includes the dimmer controller module.
+
 config LUA_MODULE_ENCODER
   bool "Encoder module"
   default "n"
