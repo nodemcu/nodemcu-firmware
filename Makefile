@@ -141,6 +141,7 @@ else
       GCCTOOLCHAIN      = linux-x86_64-$(TOOLCHAIN_VERSION)
       TOOLCHAIN_ROOT    = $(TOP_DIR)/tools/toolchains/esp8266-$(GCCTOOLCHAIN)
       GITHUB_TOOLCHAIN  = https://github.com/jmattsson/esp-toolchains
+      GITHUB_ESPRESSIF_SDK = yes
       export PATH:=$(PATH):$(TOOLCHAIN_ROOT)/bin
     endif
   endif
