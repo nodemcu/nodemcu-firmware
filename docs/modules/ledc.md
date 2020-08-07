@@ -15,7 +15,7 @@ Configures a PIN to be controlled by the LEDC system.
 
 #### Syntax
 ```lua
-ledc.setup({
+myChannel = ledc.newChannel({
   gpio=x,
   bits=ledc.TIMER_10_BIT || ledc.TIMER_11_BIT || ledc.TIMER_12_BIT || ledc.TIMER_13_BIT || ledc.TIMER_14_BIT || ledc.TIMER_15_BIT,
   mode=ledc.HIGH_SPEED || ledc.LOW_SPEED,
@@ -53,7 +53,7 @@ List of configuration tables:
 
 #### Example
 ```lua
-ledc.setup({
+myChannel = ledc.newChannel({
   gpio=19,
   bits=ledc.TIMER_13_BIT,
   mode=ledc.HIGH_SPEED,

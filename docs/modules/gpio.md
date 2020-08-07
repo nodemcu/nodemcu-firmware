@@ -63,21 +63,46 @@ Read digital GPIO pin value.
 0 = low, 1 = high
 
 
+## gpio.set_drive()
+Set the drive strength of a given GPIO pin. The higher the drive strength, the more current can be sourced/sunk from the pin. The exact maximum depends on the power domain of the pin and how much current other pins in that domain are consuming.
+
+#### Syntax
+`gpio.set_drive(pin, strength)`
+
+#### Parameters
+- `pin`, a valid GPIO pin number.
+- `strength` the drive strength to set, one of
+    - `gpio.DRIVE_0` weakest drive strength
+    - `gpio.DRIVE_1` stronger drive strength
+    - `gpio.DRIVE_2` default drive strength
+    - `gpio.DRIVE_DEFAULT` default drive strength (same as `DRIVE_2`)
+    - `gpio.DRIVE_3` maximum drive strength
+
+#### Returns
+`nil`
+
+#### Example
+```lua
+gpio.set_drive(4, gpio.DRIVE_3)
+```
+
+
 ## gpio.trig()
 Establish or clear a callback function to run on interrupt for a GPIO.
 
 #### Syntax
-`gpio.trig(pin, type [, callback])`
+`gpio.trig(pin [, type [, callback]])`
 
 #### Parameters
 - `pin`, see [GPIO Overview](#gpio-overview)
 - `type` trigger type, one of
+    - `gpio.INTR_DISABLE` or `nil` to disable interrupts on this pin (in which case `callback` is ignored and should be `nil` or omitted)
     - `gpio.INTR_UP` for trigger on rising edge
     - `gpio.INTR_DOWN` for trigger on falling edge
     - `gpio.INTR_UP_DOWN` for trigger on both edges
     - `gpio.INTR_LOW` for trigger on low level
     - `gpio.INTR_HIGH` for trigger on high level
-- `callback` optional function to be called when trigger fires, trigger is disabled when omitted. Parameters are:
+- `callback` optional function to be called when trigger fires. If `nil` or omitted (and `type` is not `gpio.INTR_DISABLE`) then any previously-set callback will continue to be used. Parameters are:
     - `pin`
     - `level`
 

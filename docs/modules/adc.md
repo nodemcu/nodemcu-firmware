@@ -1,7 +1,7 @@
 # ADC Module
 | Since  | Origin / Contributor  | Maintainer  | Source  |
 | :----- | :-------------------- | :---------- | :------ |
-| 2017-04-22 | | | [adc.c](../../components/modules/bthci.c)|
+| 2017-04-22 | [zelll](https://github.com/zelll) | [zelll](https://github.com/zelll) | [adc.c](../../components/modules/adc.c)|
 
 The ADC module provides access to the in-built ADC1.
 

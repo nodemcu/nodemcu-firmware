@@ -445,7 +445,7 @@ function can be used.
 - `cfg` table to hold configuration:
     - `ssid` SSID chars 1-32
     - `pwd` password chars 8-64
-    - `auth` authentication method, one of `wifi.OPEN`, `wifi.WPA_PSK`, `wifi.WPA2_PSK` (default), `wifi.WPA_WPA2_PSK`
+    - `auth` authentication method, one of `wifi.AUTH_OPEN`, `wifi.AUTH_WPA_PSK`, `wifi.AUTH_WPA2_PSK` (default), `wifi.AUTH_WPA_WPA2_PSK`
     - `channel` channel number 1-14 default = 11
     - `hidden` false = not hidden, true = hidden, default = false
     - `max` maximum number of connections 1-4 default=4

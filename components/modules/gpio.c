@@ -139,7 +139,7 @@ static int lgpio_read (lua_State *L)
 static int lgpio_trig (lua_State *L)
 {
   int gpio = luaL_checkint (L, 1);
-  int intr_type = luaL_checkint (L, 2);
+  int intr_type = luaL_optint (L, 2, GPIO_INTR_DISABLE);
   if (!lua_isnoneornil (L, 3))
     luaL_checkanyfunction (L, 3);
 
@@ -156,7 +156,15 @@ static int lgpio_trig (lua_State *L)
   }
 
   // Set/update interrupt callback
-  if (!lua_isnoneornil (L, 3))
+
+  // For compatibility with esp8266 API, passing in a non-zero intr_type and a
+  // nil callback preserves any existing callback that has been set.
+  if (intr_type == GPIO_INTR_DISABLE)
+  {
+    luaL_unref (L, LUA_REGISTRYINDEX, gpio_cb_refs[gpio]);
+    gpio_cb_refs[gpio] = LUA_NOREF;
+  }
+  else if (!lua_isnoneornil (L, 3))
   {
     luaL_unref (L, LUA_REGISTRYINDEX, gpio_cb_refs[gpio]);
     gpio_cb_refs[gpio] = luaL_ref (L, LUA_REGISTRYINDEX);
@@ -165,7 +173,7 @@ static int lgpio_trig (lua_State *L)
   // Disable interrupt while reconfiguring
   check_err (L, gpio_intr_disable (gpio));
 
-  if (gpio_cb_refs[gpio] == LUA_NOREF)
+  if (intr_type == GPIO_INTR_DISABLE)
   {
     check_err (L, gpio_set_intr_type (gpio, GPIO_INTR_DISABLE));
     check_err (L, gpio_isr_handler_remove (gpio));
@@ -203,12 +211,23 @@ static int lgpio_write (lua_State *L)
 }
 
 
+// Lua: gpio.set_drive(gpio, gpio.DRIVE_x)
+static int lgpio_set_drive (lua_State *L)
+{
+  int gpio = luaL_checkint (L, 1);
+  int strength = luaL_checkint (L, 2);
+  luaL_argcheck (L, strength >= GPIO_DRIVE_CAP_0 && strength < GPIO_DRIVE_CAP_MAX,
+    2, "pad strength must be between gpio.DRIVE_0 and gpio.DRIVE_3");
+  check_err (L, gpio_set_drive_capability(gpio, (gpio_drive_cap_t)strength));
+  return 0;
+}
+
 
 static void nodemcu_gpio_callback_task (task_param_t param, task_prio_t prio)
 {
   (void)prio;
   uint32_t gpio = (uint32_t)param & 0xffu;
-  int level = ((int)param) & 0x100u;
+  int level = (((int)param) & 0x100u) >> 8;
 
   lua_State *L = lua_getstate ();
   if (gpio_cb_refs[gpio] != LUA_NOREF)
@@ -237,6 +256,7 @@ LROT_BEGIN(lgpio)
   LROT_FUNCENTRY( trig,         lgpio_trig )
   LROT_FUNCENTRY( wakeup,       lgpio_wakeup )
   LROT_FUNCENTRY( write,        lgpio_write )
+  LROT_FUNCENTRY( set_drive,    lgpio_set_drive )
 
 
   LROT_NUMENTRY ( OUT,          GPIO_MODE_OUTPUT )
@@ -254,6 +274,12 @@ LROT_BEGIN(lgpio)
   LROT_NUMENTRY ( INTR_UP_DOWN, GPIO_INTR_ANYEDGE )
   LROT_NUMENTRY ( INTR_LOW,     GPIO_INTR_LOW_LEVEL )
   LROT_NUMENTRY ( INTR_HIGH,    GPIO_INTR_HIGH_LEVEL )
+
+  LROT_NUMENTRY ( DRIVE_0,      GPIO_DRIVE_CAP_0 )
+  LROT_NUMENTRY ( DRIVE_1,      GPIO_DRIVE_CAP_1 )
+  LROT_NUMENTRY ( DRIVE_2,      GPIO_DRIVE_CAP_2 )
+  LROT_NUMENTRY ( DRIVE_DEFAULT,GPIO_DRIVE_CAP_DEFAULT )
+  LROT_NUMENTRY ( DRIVE_3,      GPIO_DRIVE_CAP_3 )
 LROT_END(lgpio, NULL, 0)
 
 NODEMCU_MODULE(GPIO, "gpio", lgpio, nodemcu_gpio_init);

@@ -978,13 +978,13 @@ static int net_getdnsserver( lua_State* L ) {
   // ip_addr_t ipaddr;
   // dns_getserver(numdns,&ipaddr);
   // Bug fix by @md5crypt https://github.com/nodemcu/nodemcu-firmware/pull/500
-  ip_addr_t ipaddr = dns_getserver(numdns);
+  const ip_addr_t *ipaddr = dns_getserver(numdns);
 
-  if ( ip_addr_isany(&ipaddr) ) {
+  if ( ip_addr_isany(ipaddr) ) {
     lua_pushnil( L );
   } else {
     char temp[IP_STR_SZ];
-    ipstr (temp, &ipaddr);
+    ipstr (temp, ipaddr);
     lua_pushstring( L, temp );
   }
 

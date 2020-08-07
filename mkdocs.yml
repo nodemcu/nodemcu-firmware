@@ -25,12 +25,14 @@ pages:
     - Building the firmware: 'build.md'
     - Flashing the firmware: 'flash.md'
     - Uploading code: 'upload.md'
+    - JTAG debugging: 'debug.md'
     - Support: 'support.md'
 - FAQs:
     - Lua Developer FAQ: 'lua-developer-faq.md'
     - Extension Developer FAQ: 'extn-developer-faq.md'
 - Whitepapers:
     - Filesystem on SD card: 'sdcard.md'
+    - Writing external C modules: 'modules/extmods.md'
 - C Modules:
     - 'adc':          'modules/adc.md'
     - 'bit':          'modules/bit.md'
