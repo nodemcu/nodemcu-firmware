@@ -65,8 +65,7 @@ end
 
 -- check device address (0x20 to 0x27)
 local function checkAddress(self)
-    local addr = tonumber(self.address)
-    if (addr > 31 and addr < 40) then
+    if (self.address > 31 and self.address < 40) then
         return true
     else
         print("MCP23017 address is out of range")
@@ -147,7 +146,7 @@ end
 -- setup device
 function mcp23017:setup(address, i2cId)
 
-    self.address = string.format('0x%02X', address)
+    self.address = address
     self.i2cId = i2cId
     if (checkAddress(self) ~= true) or (checkDevice(self) ~= true) then
         self.deviceOk = false
@@ -228,23 +227,14 @@ local function readFromRegister(self, registerAddr)
 end
 
 function mcp23017:writeIODIR(bReg, newByte)
-    if self.deviceOk == false then
-        return nil
-    end
     return writeToRegister(self, getDirRegisterAddr(self, bReg), newByte)
 end
 
 function mcp23017:writeGPIO(bReg, newByte)
-    if self.deviceOk == false then
-        return nil
-    end
     return writeToRegister(self, getGPIORegisterAddr(self, bReg), newByte)
 end
 
 function mcp23017:readGPIO(bReg)
-    if self.deviceOk == false then
-        return nil
-    end
     return readFromRegister(self, getGPIORegisterAddr(self, bReg))
 end
 
