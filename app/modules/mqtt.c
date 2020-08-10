@@ -1329,9 +1329,9 @@ static int mqtt_socket_on( lua_State* L )
   if( sl == 7 && strcmp(method, "connect") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_ref);
     mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-  }else if( sl == 7 && strcmp(method, "connfail") == 0){
+  }else if( sl == 8 && strcmp(method, "connfail") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_connect_fail_ref);
-    mud->cb_connect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    mud->cb_connect_fail_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }else if( sl == 7 && strcmp(method, "offline") == 0){
     luaL_unref(L, LUA_REGISTRYINDEX, mud->cb_disconnect_ref);
     mud->cb_disconnect_ref = luaL_ref(L, LUA_REGISTRYINDEX);
