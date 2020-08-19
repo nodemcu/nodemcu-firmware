@@ -5,8 +5,10 @@
     Up to 8 devices (128 channels) are possible by the configurable address (A0 - A2 Pins).
 
     Due to the 16 channels, 2 bytes are required for switching outputs or reading input signals. These are A and B.
-    A single pin can be set or a whole byte. The numbering of the individual pins starts at 0 and ends with 15.
-    The numbers up to 7 are on register GPIO A and from 8 to 15 on GPIO B.
+    A single pin can be set or a whole byte.
+
+    The numbering of the individual pins starts at 0 and ends with 7.
+    The numbers are for each register GPIO A and GPIO B.
 
 	The module requires `i2c` and `bit` C module built into firmware.
 

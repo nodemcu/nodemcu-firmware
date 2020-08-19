@@ -61,10 +61,17 @@ end)
 -- read input register
 tmr.create():alarm(7000, tmr.ALARM_AUTO, function()
     local a = mcp:readGPIO(mcp.GPA)
-    print(" ")
-    print("GPIO A input states: " .. a)
+    if a ~= nil then
+        print("GPIO A input states: " .. a)
+    else
+        print("GPIO A unreadable, check device")
+    end
 
     local b = mcp:readGPIO(mcp.GPB)
-    print("GPIO B input states: " .. b)
+    if b ~=nil then
+        print("GPIO B input states: " .. b)
+    else
+        print("GPIO B unreadable, check device")
+    end
     print(" ")
 end)
