@@ -23,6 +23,12 @@
 
 #define DELAY2SEC 2000
 
+#if LUA_MAXINTEGER > MAX_INT
+typedef uint64_t unsigned_lua_Integer;
+#else
+typedef uint32_t unsigned_lua_Integer;
+#endif
+
 static void restart_callback(void *arg) {
   UNUSED(arg);
   system_restart();
@@ -559,16 +565,24 @@ static int node_osprint( lua_State* L )
   return 0;
 }
 
-int node_random_range(int l, int u) {
+static unsigned_lua_Integer random_value() {
+  if (sizeof(lua_Integer) == 4) {
+    return os_random();
+  } else {
+    return (((lua_Integer) os_random()) << 32) + (uint32_t) os_random();
+  }
+}
+
+lua_Integer node_random_range(lua_Integer l, lua_Integer u) {
   // The range is the number of different values to return
-  unsigned int range = u + 1 - l;
+  unsigned_lua_Integer range = u + 1 - l;
 
   // If this is very large then use simpler code
-  if (range >= 0x7fffffff) {
-    unsigned int v;
+  if (range >= LUA_MAXINTEGER) {
+    uint64_t v;
 
     // This cannot loop more than half the time
-    while ((v = os_random()) >= range) {
+    while ((v = random_value()) >= range) {
     }
 
     // Now v is in the range [0, range)
@@ -580,19 +594,19 @@ int node_random_range(int l, int u) {
     return l;
   }
 
-  // Another easy case -- uniform 32-bit
+  // Another easy case -- uniform 32/64-bit
   if (range == 0) {
-    return os_random();
+    return random_value();
   }
 
   // Now we have to figure out what a large multiple of range is
-  // that just fits into 32 bits.
+  // that just fits into 32/64 bits.
   // The limit will be less than 1 << 32 by some amount (not much)
-  uint32_t limit = ((0x80000000 / ((range + 1) >> 1)) - 1) * range;
+  unsigned_lua_Integer limit = (((1 + (unsigned_lua_Integer) LUA_MAXINTEGER) / ((range + 1) >> 1)) - 1) * range;
 
-  uint32_t v;
+  unsigned_lua_Integer v;
 
-  while ((v = os_random()) >= limit) {
+  while ((v = random_value()) >= limit) {
   }
 
   // Now v is uniformly distributed in [0, limit) and limit is a multiple of range
@@ -601,15 +615,15 @@ int node_random_range(int l, int u) {
 }
 
 static int node_random (lua_State *L) {
-  int u;
-  int l;
+  lua_Integer u;
+  lua_Integer l;
 
   switch (lua_gettop(L)) {  /* check number of arguments */
     case 0: {  /* no arguments */
 #ifdef LUA_NUMBER_INTEGRAL
       lua_pushnumber(L, 0);  /* Number between 0 and 1 - always 0 with ints */
 #else
-      lua_pushnumber(L, (lua_Number)os_random() / (lua_Number)(1LL << 32));
+      lua_pushnumber(L, ((double)random_value() / 16 / (1LL << (8 * sizeof(lua_Integer) - 4))));
 #endif
       return 1;
     }
@@ -627,7 +641,7 @@ static int node_random (lua_State *L) {
       return luaL_error(L, "wrong number of arguments");
   }
   luaL_argcheck(L, l<=u, 2, "interval is empty");
-  lua_pushnumber(L, node_random_range(l, u));  /* int between `l' and `u' */
+  lua_pushinteger(L, node_random_range(l, u));  /* int between `l' and `u' */
   return 1;
 }
 
