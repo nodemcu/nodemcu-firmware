@@ -58,7 +58,7 @@ static uint32_t ICACHE_RAM_ATTR wiegand_intr(uint32_t ret_gpio_status)
       continue;
     }
 
-  	++w->bit_count;
+    ++w->bit_count;
     w->current_card <<= 1;
     if (i == pin_num[w->pinD1])
       w->current_card |= 1;
@@ -115,7 +115,7 @@ static void lwiegand_timer_done(void *param)
 {
   lua_State *L = lua_getstate();
 
-  volatile wiegand_t w = (wiegand_t) param;
+  wiegand_t w = (wiegand_t) param;
 
   os_timer_disarm(&w->timer);
 
