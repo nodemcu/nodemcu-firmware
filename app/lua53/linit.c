@@ -73,7 +73,7 @@ extern LROT_TABLE(utf8);
 
 /* _G __index -> rotables __index -> base_func */
 extern LROT_TABLE(rotables_meta);
-LROT_TABLE(base_func);
+extern LROT_TABLE(base_func);
 
 LROT_BEGIN(rotables_meta, NULL, LROT_MASK_INDEX)
   LROT_TABENTRY( __index, base_func)

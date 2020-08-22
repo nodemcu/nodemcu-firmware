@@ -614,8 +614,10 @@ LUALIB_API void luaL_lfsreload (lua_State *L) {
     return;
   }
   n = platform_rcr_write(PLATFORM_RCR_FLASHLFS, img, l+1);/* incl trailing \0 */
-  if (n>0)
+  if (n>0) {
     system_restart();
+    luaL_error(L, "system restarting");
+  }
 #endif
 }
 
