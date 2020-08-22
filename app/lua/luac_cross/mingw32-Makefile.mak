@@ -36,8 +36,8 @@ LUACSRC := luac.c      lflashimg.c liolib.c    loslib.c    print.c
 LUASRC  := lapi.c      lauxlib.c   lbaselib.c  lcode.c     ldblib.c    ldebug.c \
            ldo.c       ldump.c     lfunc.c     lgc.c       linit.c     llex.c \
            lmathlib.c  lmem.c      loadlib.c   lobject.c   lopcodes.c  lparser.c \
-           lrotable.c  lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
-           ltm.c       lundump.c   lvm.c       lzio.c
+           lstate.c    lstring.c   lstrlib.c   ltable.c    ltablib.c \
+           ltm.c       lundump.c   lvm.c       lzio.c      lnodemcu.c
 UZSRC   := uzlib_deflate.c crc32.c
 #
 # This relies on the files being unique on the vpath

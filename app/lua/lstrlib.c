@@ -14,7 +14,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 /* macro to `unsign' a character */
 #define uchar(c)        ((unsigned char)(c))
@@ -141,15 +140,23 @@ static int writer (lua_State *L, const void* b, size_t size, void* B) {
 
 static int str_dump (lua_State *L) {
   luaL_Buffer b;
+  int strip, tstrip = lua_type(L, 2);
+  if (tstrip == LUA_TBOOLEAN) {
+    strip = lua_toboolean(L, 2) ? 2 : 0;
+  } else if (tstrip == LUA_TNONE || tstrip == LUA_TNIL) {
+    strip = -1;  /* This tells lua_dump to use the global strip default */
+  } else { 
+    strip = lua_tointeger(L, 2);
+    luaL_argcheck(L, (unsigned)(strip) < 3, 2, "strip out of range");
+  }
   luaL_checktype(L, 1, LUA_TFUNCTION);
   lua_settop(L, 1);
   luaL_buffinit(L,&b);
-  if (lua_dump(L, writer, &b) != 0)
-    luaL_error(L, "unable to dump given function");
+  if (lua_dump(L, writer, &b, strip) != 0)
+    return luaL_error(L, "unable to dump given function");
   luaL_pushresult(&b);
   return 1;
 }
-
 
 
 /*

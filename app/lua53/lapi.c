@@ -1031,12 +1031,38 @@ LUA_API int lua_dump (lua_State *L, lua_Writer writer, void *data, int strip) {
   lua_lock(L);
   api_checknelems(L, 1);
   o = L->top - 1;
+  if (strip == -1)
+    strip = G(L)->stripdefault;
   if (isLfunction(o))
     status = luaU_dump(L, getproto(o), writer, data, strip);
   else
     status = 1;
   lua_unlock(L);
   return status;
+}
+
+
+LUA_API int lua_stripdebug (lua_State *L, int stripping){
+  TValue *o = L->top - 1; 
+  Proto *p = NULL;
+  int res = -1;
+  lua_lock(L);
+  api_checknelems(L, 1);
+  if (isLfunction(o)) {
+    p = getproto(o);
+    if (p && !isLFSobj(p) && (unsigned) stripping < 3 ) {
+    // found a valid proto to strip
+      res = luaU_stripdebug(L, p, stripping, 1);
+    }
+  } else if (ttisnil(L->top - 1)) {
+    // get or set the default strip level
+    if ((unsigned) stripping < 3)
+      G(L)->stripdefault = stripping;
+    res = G(L)->stripdefault;
+  }
+  L->top--;
+  lua_unlock(L);
+  return res;
 }
 
 

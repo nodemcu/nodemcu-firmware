@@ -780,8 +780,6 @@ void luaK_posfix (FuncState *fs, BinOpr op, expdesc *e1, expdesc *e2) {
 }
 
 
-#ifdef LUA_OPTIMIZE_DEBUG
-
 /*
  * Attempted to write to last (null terminator) byte of lineinfo, so need
  * to grow the lineinfo vector and extend the fill bytes
@@ -828,10 +826,8 @@ static void generateInfoDeltaLine(FuncState *fs, int line) {
   fs->lastlineOffset = p - fs->f->packedlineinfo - 1;
 #undef addDLbyte
 }
-#endif
 
 void luaK_fixline (FuncState *fs, int line) {
-#ifdef LUA_OPTIMIZE_DEBUG
   /* The fixup line can be the same as existing one and in this case there's nothing to do */
   if (line != fs->lastline) {
     /* first remove the current line reference */
@@ -862,9 +858,6 @@ void luaK_fixline (FuncState *fs, int line) {
     /* Then add the new line reference */
     generateInfoDeltaLine(fs, line);
   }
-#else
-   fs->f->lineinfo[fs->pc - 1] = line;
-#endif
 }
 
 
@@ -876,7 +869,6 @@ static int luaK_code (FuncState *fs, Instruction i, int line) {
                   MAX_INT, "code size overflow");
   f->code[fs->pc] = i;
   /* save corresponding line information */
-#ifdef LUA_OPTIMIZE_DEBUG
   /* note that frst time fs->lastline==0 through, so the else branch is taken */
   if (fs->pc == fs->lineinfoLastPC+1) {
     if (line == fs->lastline && f->packedlineinfo[fs->lastlineOffset] < INFO_MAX_LINECNT) {
@@ -890,11 +882,6 @@ static int luaK_code (FuncState *fs, Instruction i, int line) {
     luaK_fixline(fs,line);
   }
   fs->lineinfoLastPC = fs->pc;
-#else
-  luaM_growvector(fs->L, f->lineinfo, fs->pc, f->sizelineinfo, int,
-                  MAX_INT, "code size overflow");
-  f->lineinfo[fs->pc] = line;
-#endif
   return fs->pc++;
 }
 

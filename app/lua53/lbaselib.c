@@ -18,7 +18,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 
 static int luaB_print (lua_State *L) {

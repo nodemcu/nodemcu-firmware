@@ -739,7 +739,7 @@ static const TValue* rotable_findentry(ROTable *t, TString *key, unsigned *ppos)
   const int tl = getlsizenode(t);
   const char *strkey = getstr(key);
   const int hash = HASH(t, key);
-  KeyCache *cl = lua_getcache(hash);
+  KeyCache *cl = luaE_getcache(hash);
   int i, j = 1, l;
 
   if (!e || gettt(key) != LUA_TSHRSTR)

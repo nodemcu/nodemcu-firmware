@@ -1,7 +1,6 @@
 #define LUA_LIB
 
 #include "lauxlib.h"
-#include "lstring.h"
 
 #ifndef LOCAL_LUA
 #include "module.h"
