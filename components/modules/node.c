@@ -1,5 +1,6 @@
 #include "module.h"
 #include "lauxlib.h"
+#include "common.h"
 #include "legc.h"
 #include "lundump.h"
 #include "platform.h"
@@ -7,6 +8,8 @@
 #include "vfs.h"
 #include "esp_system.h"
 #include "esp_log.h"
+#include "esp_sleep.h"
+#include "driver/rtc_io.h"
 #include "soc/efuse_reg.h"
 #include "ldebug.h"
 #include "esp_vfs.h"
@@ -46,11 +49,103 @@ static int node_restart (lua_State *L)
 }
 
 
-// Lua: node.dsleep (microseconds)
+// Lua: node.dsleep (microseconds|{opts})
 static int node_dsleep (lua_State *L)
 {
-  uint64_t us = luaL_optinteger (L, 1, 0);
-  esp_deep_sleep (us);
+  lua_settop(L, 1);
+  bool enable_timer_wakeup = false;
+  int64_t usecs = 0;
+  int type = lua_type(L, 1);
+  if (type == LUA_TNUMBER) {
+    enable_timer_wakeup = true;
+    usecs = lua_tointeger(L, 1);
+  } else if (type == LUA_TTABLE) {
+    // time options: us, secs
+    lua_getfield(L, 1, "us");
+    lua_getfield(L, 1, "secs");
+    enable_timer_wakeup = !lua_isnil(L, 2) || !lua_isnil(L, 3);
+    lua_pop(L, 2);
+    if (enable_timer_wakeup) {
+      usecs = opt_checkint(L, "us", 0);
+      usecs += (int64_t)opt_checkint(L, "secs", 0) * 1000000;
+    }
+
+    // GPIO wakeup options: gpio = num|{num, num, ...}
+    uint64_t pin_mask = 0;
+    lua_getfield(L, -1, "gpio");
+    type = lua_type(L, -1);
+    if (type == LUA_TNUMBER) {
+      pin_mask |= 1ULL << lua_tointeger(L, -1);
+    } else if (type == LUA_TTABLE) {
+      for (int i = 1; ; i++) {
+        lua_rawgeti(L, -1, i);
+        int pin = lua_tointeger(L, -1);
+        lua_pop(L, 1);
+        if (!pin) {
+          break;
+        }
+        pin_mask |= 1ULL << pin;
+      }
+    }
+    lua_pop(L, 1); // gpio
+
+    // Check pin validity here to get better error messages
+    for (int pin = 0; pin < GPIO_PIN_COUNT; pin++) {
+      if (pin_mask & (1ULL << pin)) {
+        if (!rtc_gpio_is_valid_gpio(pin)) {
+          return luaL_error(L, "Pin %d is not an RTC GPIO and cannot be used for wakeup", pin);
+        }
+      }
+    }
+
+    int level = opt_checkint_range(L, "level", 1, 0, 1);
+    bool pull = opt_checkbool(L, "pull", false);
+    bool touch = opt_checkbool(L, "touch", false);
+
+    if (opt_get(L, "isolate", LUA_TTABLE)) {
+      for (int i = 1; ; i++) {
+        lua_rawgeti(L, -1, i);
+        if (lua_isnil(L, -1)) {
+          lua_pop(L, 1);
+          break;
+        }
+        int pin = lua_tointeger(L, -1);
+        lua_pop(L, 1);
+        int err = rtc_gpio_isolate(pin);
+        if (err) {
+          return luaL_error(L, "Error %d returned from rtc_gpio_isolate(%d)", err, pin);
+        }
+      }
+      lua_pop(L, 1); // isolate table
+    }
+
+    if (pull) {
+        // Keeping the peripheral domain powered keeps the pullups/downs working
+        esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    }
+
+    if (pin_mask) {
+      esp_sleep_ext1_wakeup_mode_t mode = (level == 1) ?
+        ESP_EXT1_WAKEUP_ANY_HIGH : ESP_EXT1_WAKEUP_ALL_LOW;
+      int err = esp_sleep_enable_ext1_wakeup(pin_mask, mode);
+      if (err) {
+        return luaL_error(L, "Error %d returned from esp_sleep_enable_ext1_wakeup", err);
+      }
+    }
+
+    if (touch) {
+      esp_sleep_enable_touchpad_wakeup();
+    }
+
+  } else {
+    luaL_argerror(L, 1, "Expected integer or table");
+  }
+
+  if (enable_timer_wakeup) {
+    esp_sleep_enable_timer_wakeup(usecs);
+  }
+  esp_deep_sleep_start();
+  // Note, above call does not actually return
   return 0;
 }
 
