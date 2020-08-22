@@ -54,6 +54,12 @@ config LUA_MODULE_ADC
       Includes the adc module. This module provides access to the
       adc1 hardware.
 
+config LUA_MODULE_AM2320
+  bool "AM2320 module"
+  default "n"
+  help
+      Support for AM2320 temp/humidity sensor
+
 config LUA_MODULE_BIT
   bool "Bit module"
   default "n"
