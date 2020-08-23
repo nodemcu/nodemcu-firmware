@@ -155,30 +155,10 @@ static void push_number(JSN_DATA *data, struct jsonsl_state_st *state) {
   const char *start = get_state_buffer(data, state);
   const char *end = start + state->pos_cur - state->pos_begin;
   lua_pushlstring(data->L, start, end - start);
-  // See if there is any chance that this is an integer
 #if LUA_VERSION_NUM >= 503
-  char notint = 0;
-  for (const char *p = start; p < end; p++) {
-    if (*p != '-' && *p != '+' && (*p < '0' || *p > '9')) {
-      // can't be an integer
-      notint = 1;
-      break;
-    }
-  }
-  int isnum;
-  if (!notint) {
-    lua_Integer result = lua_tointegerx(data->L, -1, &isnum);
-    if (isnum) {
-      lua_pop(data->L, 1);
-      lua_pushinteger(data->L, result);
-      return;
-    }
-  }
-
-  lua_Number result = lua_tonumberx(data->L, -1, &isnum);
-  if (isnum) {
+  int sz = lua_stringtonumber(L, lua_tostring(L, -1));
+  if (sz) {
     lua_pop(data->L, 1);
-    lua_pushnumber(data->L, result);
   } else {
     luaL_error(data->L, "Invalid number");
   }
