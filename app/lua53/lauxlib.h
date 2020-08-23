@@ -14,6 +14,9 @@
 
 #include "lua.h"
 
+#ifdef LUA_LIB
+#include "lnodemcu.h"
+#endif
 
 
 /* extra error code for 'luaL_loadfilex' */
@@ -79,7 +82,7 @@ LUALIB_API int (luaL_execresult) (lua_State *L, int stat);
 
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
-#define luaL_unref2(l,t,r) luaL_unref(L, (t), (r)); r = LUA_NOREF
+#define luaL_unref2(l,t,r) do {luaL_unref(L, (t), (r)); r = LUA_NOREF;} while (0)
 LUALIB_API void (luaL_reref) (lua_State *L, int t, int *ref);
 
 LUALIB_API int (luaL_loadfilex) (lua_State *L, const char *filename,
@@ -282,8 +285,13 @@ extern void dbg_printf(const char *fmt, ...);
 #define LUA_TASK_MEDIUM 1
 #define LUA_TASK_HIGH   2
 
-LUALIB_API int (luaL_posttask) (lua_State* L, int prio);
-LUALIB_API int (luaL_pcallx) (lua_State *L, int narg, int nres);
+LUALIB_API int  (luaL_pushlfsmodules) (lua_State *L);
+LUALIB_API int  (luaL_pushlfsdts) (lua_State *L);
+LUALIB_API void (luaL_lfsreload) (lua_State *L);
+LUALIB_API int  (luaL_posttask) (lua_State* L, int prio);
+LUALIB_API int  (luaL_pcallx) (lua_State *L, int narg, int nres);
+
+#define luaL_pushlfsmodule(l) lua_pushlfsfunc(L)
 
 /* }============================================================ */
 

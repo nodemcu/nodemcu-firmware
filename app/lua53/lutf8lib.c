@@ -19,7 +19,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 #define MAXUNICODE	0x10FFFF
 
@@ -249,7 +248,7 @@ LROT_BEGIN(utf8_meta, NULL, LROT_MASK_INDEX)
 LROT_END(utf8_meta, NULL, LROT_MASK_INDEX)
 
 
-LROT_BEGIN(utf8, NULL, 0)
+LROT_BEGIN(utf8, LROT_TABLEREF(utf8_meta), 0)
   LROT_FUNCENTRY( offset, byteoffset )
   LROT_FUNCENTRY( codepoint, codepoint )
   LROT_FUNCENTRY( char, utfchar )

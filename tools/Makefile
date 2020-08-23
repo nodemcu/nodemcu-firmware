@@ -7,7 +7,7 @@ LUASOURCE ?= ../local/lua
 FLASHSIZE ?= 4mb 32mb 8mb
 FLASH_SW = -S
 SUBDIRS =
-APP_DIR = ../app 
+APP_DIR = ../app
 OBJDUMP = $(or $(shell which objdump),xtensa-lx106-elf-objdump)
 
 #############################################################

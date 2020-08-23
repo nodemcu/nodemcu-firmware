@@ -1133,6 +1133,13 @@ static l_mem getdebt (global_State *g) {
 /*
 ** performs a basic GC step when collector is running
 */
+#ifdef LUA_USE_ESP8266 /*DEBUG*/
+extern void dbg_printf(const char *fmt, ...);
+#define CCOUNT_REG ({ int32_t r; asm volatile("rsr %0, ccount" : "=r"(r)); r;})
+#else                  /*DEBUG*/   
+#define dbg_printf(...)
+#define CCOUNT_REG 0
+#endif                 /*DEBUG*/
 void luaC_step (lua_State *L) {
   global_State *g = G(L);
   l_mem debt = getdebt(g);  /* GC deficit (be paid now) */
@@ -1141,15 +1148,19 @@ void luaC_step (lua_State *L) {
     return;
   }
   do {  /* repeat until pause or enough "credit" (negative debt) */
+/*DEBUG  int32_t start = CCOUNT_REG; */
     lu_mem work = singlestep(L);  /* perform one single step */
     debt -= work;
+/*DEBUG  dbg_printf("singlestep - %d, %d, %u \n", debt, lua_freeheap(), CCOUNT_REG-start); */
   } while (debt > -GCSTEPSIZE && g->gcstate != GCSpause);
   if (g->gcstate == GCSpause)
     setpause(g);  /* pause until next cycle */
   else {
+/*DEBUG  int32_t start = CCOUNT_REG; */
     debt = (debt / g->gcstepmul) * STEPMULADJ;  /* convert 'work units' to Kb */
     luaE_setdebt(g, debt);
     runafewfinalizers(L);
+/*DEBUG  dbg_printf("new debt - %d, %d, %u \n", debt, lua_freeheap(), CCOUNT_REG-start); */
   }
 }
 

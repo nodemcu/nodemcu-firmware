@@ -22,7 +22,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 #ifndef LUA_USE_HOST
 #include <fcntl.h>

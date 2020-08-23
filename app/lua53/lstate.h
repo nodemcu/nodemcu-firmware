@@ -133,6 +133,11 @@ typedef struct CallInfo {
 #define setoah(st,v)	((st) = ((st) & ~CIST_OAH) | (v))
 #define getoah(st)	((st) & CIST_OAH)
 
+/*
+** KeyCache used for resolution of ROTable entries and Cstrings
+*/
+typedef size_t KeyCache;
+typedef KeyCache KeyCacheLine[KEYCACHE_M];
 
 /*
 ** 'global state', shared by all threads of this state
@@ -168,6 +173,7 @@ typedef struct global_State {
   unsigned int gcfinnum;  /* number of finalizers to call in each GC step */
   int gcpause;  /* size of pause between successive GCs */
   int gcstepmul;  /* GC 'granularity' */
+  int stripdefault;  /* default stripping level for compilation */
   l_mem gcmemfreeboard;  /* Free board which triggers EGC */
   lua_CFunction panic;  /* to be called in unprotected errors */
   struct lua_State *mainthread;
@@ -229,8 +235,6 @@ union GCUnion {
   struct Proto p;
   struct lua_State th;  /* thread */
 };
-
-
 #define cast_u(o)	cast(union GCUnion *, (o))
 
 /* macros to convert a GCObject into a specific value */
@@ -262,7 +266,6 @@ LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);
 LUAI_FUNC CallInfo *luaE_extendCI (lua_State *L);
 LUAI_FUNC void luaE_freeCI (lua_State *L);
 LUAI_FUNC void luaE_shrinkCI (lua_State *L);
-
+LUAI_FUNC KeyCache *luaE_getcache (int cl);
 
 #endif
-

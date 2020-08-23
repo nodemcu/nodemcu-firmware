@@ -57,6 +57,11 @@ void rtctime_late_startup (void)
   rtc_time_switch_system ();
 }
 
+int rtctime_get_rate (void)
+{
+  return rtc_time_get_rate();
+}
+
 void rtctime_adjust_rate (int rate)
 {
   rtc_time_set_rate (rate);
@@ -131,13 +136,15 @@ static int rtctime_set (lua_State *L)
   if (!rtc_time_check_magic ())
     rtc_time_prepare ();
 
-  uint32_t sec = luaL_checkinteger (L, 1);
-  uint32_t usec = 0;
-  if (lua_isnumber (L, 2))
-    usec = lua_tointeger (L, 2);
+  if (lua_isnumber(L, 1)) {
+    uint32_t sec = luaL_checkinteger (L, 1);
+    uint32_t usec = 0;
+    if (lua_isnumber (L, 2))
+      usec = lua_tointeger (L, 2);
 
-  struct rtc_timeval tv = { sec, usec };
-  rtctime_settimeofday (&tv);
+    struct rtc_timeval tv = { sec, usec };
+    rtctime_settimeofday (&tv);
+  }
 
   if (lua_isnumber(L, 3))
     rtc_time_set_rate(lua_tointeger(L, 3));
