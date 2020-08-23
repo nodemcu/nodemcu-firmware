@@ -1,4 +1,6 @@
 .gdb_history
+app/lua/.std
+app/lua53/.std
 sdk/
 cache/
 .ccache/

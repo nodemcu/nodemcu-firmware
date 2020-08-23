@@ -5,7 +5,6 @@
 
 #include "lua.h"
 #include "lauxlib.h"
-#include "lualib.h"
 
 #include "os_type.h"
 #include "user_interface.h"

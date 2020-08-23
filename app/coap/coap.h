@@ -7,7 +7,6 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
-#include "lualib.h"
 #include "lauxlib.h"
 
 #define MAXOPT 16

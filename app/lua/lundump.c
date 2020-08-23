@@ -223,18 +223,12 @@ static void LoadDebug(LoadState* S, Proto* f)
  n=LoadInt(S);
  Align4(S);
 
-#ifdef LUA_OPTIMIZE_DEBUG
  if(n) {
    f->packedlineinfo=luaM_newvector(S->L,n,unsigned char);
    LoadBlock(S,f->packedlineinfo,n);
  } else {
    f->packedlineinfo=NULL;
  }
-#else
- f->lineinfo=luaM_newvector(S->L,n,int);
- LoadVector(S,f->lineinfo,n,sizeof(int));
- f->sizelineinfo=n;
- #endif
  n=LoadInt(S);
  f->locvars=luaM_newvector(S->L,n,LocVar);
  f->sizelocvars=n;

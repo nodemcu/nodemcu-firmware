@@ -26,7 +26,6 @@
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"
-#include "limits.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>

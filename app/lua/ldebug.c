@@ -182,8 +182,7 @@ static void info_tailcall (lua_Debug *ar) {
 #  define INFO_DELTA_7BITS 0x7F
 #  define INFO_MAX_LINECNT  126
 
-     Table *t = luaH_new(L, 0, 0);
-#ifdef LUA_OPTIMIZE_DEBUG
+    Table *t = luaH_new(L, 0, 0);
     int line = 0;
     unsigned char *p = f->l.p->packedlineinfo;
     if (p) {
@@ -203,18 +202,11 @@ static void info_tailcall (lua_Debug *ar) {
        setbvalue(luaH_setnum(L, t, line), 1);
       }
     }
-#else
-     int *lineinfo = f->l.p->lineinfo;
-     int i;
-     for (i=0; i<f->l.p->sizelineinfo; i++)
-       setbvalue(luaH_setnum(L, t, lineinfo[i]), 1);
-#endif
-     sethvalue(L, L->top, t);
+    sethvalue(L, L->top, t);
    }
    incr_top(L);
  }
 
-#ifdef LUA_OPTIMIZE_DEBUG
 /*
  * This may seem expensive but this is only accessed frequently in traceexec
  * and the while loop will be executed roughly half the number of non-blank
@@ -249,18 +241,17 @@ int luaG_getline (const Proto *f, int pc) {
 
 static int stripdebug (lua_State *L, Proto *f, int level) {
   int len = 0, sizepackedlineinfo;
-  TString* dummy;
   switch (level) {
-    case 3:
-      sizepackedlineinfo = strlen(cast(char *, f->packedlineinfo))+1;
-      f->packedlineinfo = luaM_freearray(L, f->packedlineinfo, sizepackedlineinfo, unsigned char);
-      len += sizepackedlineinfo;
     case 2:
-      len += f->sizelocvars * (sizeof(struct LocVar) + sizeof(dummy->tsv) + sizeof(struct LocVar *));
+      if (f->packedlineinfo) {
+        sizepackedlineinfo = strlen(cast(char *, f->packedlineinfo))+1;
+        f->packedlineinfo = luaM_freearray(L, f->packedlineinfo, sizepackedlineinfo, unsigned char);
+        len += sizepackedlineinfo;
+      }
+    case 1:
       f->locvars = luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
       f->upvalues = luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
-      len += f->sizelocvars * (sizeof(struct LocVar) + sizeof(dummy->tsv) + sizeof(struct LocVar *)) +
-             f->sizeupvalues * (sizeof(dummy->tsv) + sizeof(TString *));
+      len += f->sizelocvars*sizeof(struct LocVar) + f->sizeupvalues*sizeof(TString *);
       f->sizelocvars = 0;
       f->sizeupvalues = 0;
   }
@@ -276,7 +267,6 @@ LUA_API int luaG_stripdebug (lua_State *L, Proto *f, int level, int recv){
   len += stripdebug (L, f, level);
   return len;
 }
-#endif
 
 
 static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
@@ -379,9 +369,6 @@ static int precheck (const Proto *pt) {
   check(!(pt->is_vararg & VARARG_NEEDSARG) ||
               (pt->is_vararg & VARARG_HASARG));
   check(pt->sizeupvalues <= pt->nups);
-#ifndef LUA_OPTIMIZE_DEBUG
-  check(pt->sizelineinfo == pt->sizecode || pt->sizelineinfo == 0);
-#endif
   check(pt->sizecode > 0 && GET_OPCODE(pt->code[pt->sizecode-1]) == OP_RETURN);
   return 1;
 }
@@ -668,7 +655,7 @@ static int isinstack (CallInfo *ci, const TValue *o) {
 
 void luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
   const char *name = NULL;
-  const char *t = luaT_typenames[basettype(o)];
+  const char *t = luaT_typenames[ttnov(o)];
   const char *kind = (isinstack(L->ci, o)) ?
                          getobjname(L, L->ci, cast_int(o - L->base), &name) :
                          NULL;
@@ -696,8 +683,8 @@ void luaG_aritherror (lua_State *L, const TValue *p1, const TValue *p2) {
 
 
 int luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2) {
-  const char *t1 = luaT_typenames[basettype(p1)];
-  const char *t2 = luaT_typenames[basettype(p2)];
+  const char *t1 = luaT_typenames[ttnov(p1)];
+  const char *t2 = luaT_typenames[ttnov(p2)];
   if (t1[2] == t2[2])
     luaG_runerror(L, "attempt to compare two %s values", t1);
   else

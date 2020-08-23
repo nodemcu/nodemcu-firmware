@@ -18,7 +18,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 
 /*
@@ -48,16 +47,15 @@ static int db_getregistry (lua_State *L) {
 static int db_getstrings (lua_State *L) {
   static const char *const opts[] = {"RAM","ROM",NULL};
   int opt = luaL_checkoption(L, 1, "RAM", opts);
-  int st = lua_getstrings(L, opt);    /* return the relevant strt as an array */
-  if (st) {
-    lua_pushvalue(L, -1);                             /* dup the array TValue */
-    lua_getglobal(L, "table");
-    lua_getfield(L, -1, "sort");               /* look up table.sort function */
-    lua_replace(L, -2);                               /* dump the table entry */
-    lua_insert(L, -2);               /* swap table/sort and the strings_table */
-    lua_call(L, 1, 0);                           /* table.sort(strings_table) */
+  if (lua_pushstringsarray(L, opt)) {
+    if(lua_getglobal(L, "table") == LUA_TTABLE) {
+      lua_getfield(L, -1, "sort");             /* look up table.sort function */
+      lua_pushvalue(L, -3);                   /* dup the strings_table to ToS */
+      lua_call(L, 1, 0);                         /* table.sort(strings_table) */
+      lua_pop(L, 1);                                  /* dump the table entry */
+    }
   }
-  return st ? 1 : 0;
+  return 1;
 }
 
 static int db_getmetatable (lua_State *L) {
