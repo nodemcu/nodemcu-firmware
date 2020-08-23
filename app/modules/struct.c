@@ -60,6 +60,14 @@ typedef unsigned STRUCT_INT Uinttype;
 #define MAXINTSIZE	32
 #endif
 
+#ifndef LUA_MININTEGER
+#define LUA_MININTEGER INT_MIN
+#endif
+
+#ifndef LUA_MAXINTEGER
+#define LUA_MAXINTEGER INT_MAX
+#endif
+
 /* is 'x' a power of 2? */
 #define isp2(x)		((x) > 0 && ((x) & ((x) - 1)) == 0)
 
@@ -170,7 +178,7 @@ static void controloptions (lua_State *L, int opt, const char **fmt,
 
 static void putinteger (lua_State *L, luaL_Buffer *b, int arg, int endian,
                         int size) {
-  lua_Number n = luaL_checknumber(L, arg);
+  int32_t n = luaL_checkinteger(L, arg);
   Uinttype value;
   char buff[MAXINTSIZE];
   if (n < 0)
@@ -267,29 +275,29 @@ static int b_pack (lua_State *L) {
 }
 
 
-static lua_Number getinteger (const char *buff, int endian,
+static int64_t getinteger (const char *buff, int endian,
                         int issigned, int size) {
-  Uinttype l = 0;
+  uint64_t l = 0;
   int i;
   if (endian == BIG) {
     for (i = 0; i < size; i++) {
       l <<= 8;
-      l |= (Uinttype)(unsigned char)buff[i];
+      l |= (unsigned char)buff[i];
     }
   }
   else {
     for (i = size - 1; i >= 0; i--) {
       l <<= 8;
-      l |= (Uinttype)(unsigned char)buff[i];
+      l |= (unsigned char)buff[i];
     }
   }
   if (!issigned)
-    return (lua_Number)l;
+    return (int64_t)l;
   else {  /* signed format */
-    Uinttype mask = (Uinttype)(~((Uinttype)0)) << (size*8 - 1);
+    uint64_t mask = (uint64_t)(~((uint64_t)0)) << (size*8 - 1);
     if (l & mask)  /* negative value? */
       l |= mask;  /* signal extension */
-    return (lua_Number)(Inttype)l;
+    return (int64_t)l;
   }
 }
 
@@ -312,8 +320,12 @@ static int b_unpack (lua_State *L) {
       case 'b': case 'B': case 'h': case 'H':
       case 'l': case 'L': case 'T': case 'i':  case 'I': {  /* integer types */
         int issigned = islower(opt);
-        lua_Number res = getinteger(data+pos, h.endian, issigned, size);
-        lua_pushnumber(L, res);
+        int64_t res = getinteger(data+pos, h.endian, issigned, size);
+        if (res >= LUA_MININTEGER && res <= LUA_MAXINTEGER) {
+          lua_pushinteger(L, res);
+        } else {
+          lua_pushnumber(L, res);
+        }
         break;
       }
       case 'x': {
@@ -339,7 +351,7 @@ static int b_unpack (lua_State *L) {
         if (size == 0) {
           if (!lua_isnumber(L, -1))
             luaL_error(L, "format `c0' needs a previous size");
-          size = lua_tonumber(L, -1);
+          size = lua_tointeger(L, -1);
           lua_pop(L, 1);
           luaL_argcheck(L, pos+size <= ld, 2, "data string too short");
         }
