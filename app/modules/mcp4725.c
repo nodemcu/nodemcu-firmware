@@ -30,7 +30,7 @@ static uint8 get_address(lua_State* L, uint8 i2c_address){
   {
     if( lua_isnumber(L, -1) )
     {
-      temp_var = lua_tonumber(L, -1);
+      temp_var = lua_tointeger(L, -1);
       if(temp_var < 2){
         temp_var = MCP4725_I2C_ADDR_A2_MASK & (temp_var << 2);
         addr_temp|=temp_var;
@@ -50,7 +50,7 @@ static uint8 get_address(lua_State* L, uint8 i2c_address){
   {
     if( lua_isnumber(L, -1) )
     {
-      temp_var = lua_tonumber(L, -1);
+      temp_var = lua_tointeger(L, -1);
       if(temp_var < 2){
         temp_var = MCP4725_I2C_ADDR_A1_MASK & (temp_var << 1);
         addr_temp|=temp_var;
@@ -70,7 +70,7 @@ static uint8 get_address(lua_State* L, uint8 i2c_address){
   {
     if( lua_isnumber(L, -1) )
     {
-      temp_var = lua_tonumber(L, -1);
+      temp_var = lua_tointeger(L, -1);
       if(temp_var<2){
         temp_var = MCP4725_I2C_ADDR_A0_MASK & (temp_var);
         addr_temp|=temp_var;
@@ -103,7 +103,7 @@ static int mcp4725_write(lua_State* L){
     {
       if( lua_isnumber(L, -1) )
       {
-        temp_var = lua_tonumber(L, -1);
+        temp_var = lua_tointeger(L, -1);
         if(temp_var >= 0 && temp_var<=4095){
           dac_value = temp_var<<4;
         }
@@ -149,7 +149,7 @@ static int mcp4725_write(lua_State* L){
     {
       if( lua_isnumber(L, -1) )
       {
-        temp_var = lua_tonumber(L, -1);
+        temp_var = lua_tointeger(L, -1);
         if(temp_var >= 0 && temp_var <= 3){
           cmd_byte |= temp_var << 1;
         }
@@ -193,12 +193,12 @@ static int mcp4725_read(lua_State* L){
   }
   platform_i2c_send_stop(mcp4725_i2c_id);
 
-  lua_pushnumber(L, (recieve_buffer[0] & 0x06)>>1);
-  lua_pushnumber(L, (recieve_buffer[1] << 4) | (recieve_buffer[2] >> 4));
-  lua_pushnumber(L, (recieve_buffer[3] & 0x60) >> 5);
-  lua_pushnumber(L, ((recieve_buffer[3] & 0xf) << 8) | recieve_buffer[4]);
-  lua_pushnumber(L, (recieve_buffer[0] & 0x80) >> 7);
-  lua_pushnumber(L, (recieve_buffer[0] & 0x40) >> 6);
+  lua_pushinteger(L, (recieve_buffer[0] & 0x06)>>1);
+  lua_pushinteger(L, (recieve_buffer[1] << 4) | (recieve_buffer[2] >> 4));
+  lua_pushinteger(L, (recieve_buffer[3] & 0x60) >> 5);
+  lua_pushinteger(L, ((recieve_buffer[3] & 0xf) << 8) | recieve_buffer[4]);
+  lua_pushinteger(L, (recieve_buffer[0] & 0x80) >> 7);
+  lua_pushinteger(L, (recieve_buffer[0] & 0x40) >> 6);
 
   return 6;
 }

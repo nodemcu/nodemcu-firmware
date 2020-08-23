@@ -98,7 +98,7 @@ If an invalid `eventtype` is supplied, then an error will be thrown.
 Gets the current position and press status of the switch
 
 #### Syntax
-`pos, press, queue = rotary.getpos(channel)`
+`pos, press = rotary.getpos(channel)`
 
 #### Parameters
 - `channel` The rotary module supports three switches. The channel is either 0, 1 or 2.
@@ -106,7 +106,6 @@ Gets the current position and press status of the switch
 #### Returns
 - `pos` The current position of the switch.
 - `press` A boolean indicating if the switch is currently pressed.
-- `queue` The number of undelivered callbacks (normally 0).
 
 #### Example
 

@@ -7,12 +7,10 @@
 static int rtcmem_read32 (lua_State *L)
 {
   int idx = luaL_checkinteger (L, 1);
-  int n = 1;
-  if (lua_isnumber (L, 2))
-    n = lua_tointeger (L, 2);
-
-  if (!lua_checkstack (L, n))
-    return 0;
+  int n = (lua_gettop(L) < 2) ? 1 : lua_tointeger (L, 2);
+  if (n == 0 || !lua_checkstack (L, n)) {
+        return 0;
+  }
 
   int ret  = 0;
   while (n > 0 && idx >= 0 && idx < RTC_USER_MEM_NUM_DWORDS)
@@ -34,7 +32,7 @@ static int rtcmem_write32 (lua_State *L)
   int src = 2;
   while (n-- > 0)
   {
-    rtc_mem_write (idx++, lua_tointeger (L, src++));
+    rtc_mem_write (idx++, (uint32_t) lua_tointeger (L, src++));
   }
   return 0;
 }
