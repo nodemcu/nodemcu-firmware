@@ -156,7 +156,7 @@ static void push_number(JSN_DATA *data, struct jsonsl_state_st *state) {
   const char *end = start + state->pos_cur - state->pos_begin;
   lua_pushlstring(data->L, start, end - start);
 #if LUA_VERSION_NUM >= 503
-  int sz = lua_stringtonumber(L, lua_tostring(L, -1));
+  int sz = lua_stringtonumber(data->L, lua_tostring(data->L, -1));
   if (sz) {
     lua_pop(data->L, 1);
   } else {

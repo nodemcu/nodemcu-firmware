@@ -60,6 +60,14 @@ typedef unsigned STRUCT_INT Uinttype;
 #define MAXINTSIZE	32
 #endif
 
+#ifndef LUA_MININTEGER
+#define LUA_MININTEGER INT_MIN
+#endif
+
+#ifndef LUA_MAXINTEGER
+#define LUA_MAXINTEGER INT_MAX
+#endif
+
 /* is 'x' a power of 2? */
 #define isp2(x)		((x) > 0 && ((x) & ((x) - 1)) == 0)
 
