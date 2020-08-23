@@ -29,10 +29,10 @@ This is a non-exhaustive list, obviously, but some key points are:
   - **`user_modules.h` is also gone**. Module selection is now done
     via Kconfig. Rather than adding a #define to `user_modules.h`,
     add an option in `components/modules/Kconfig` of the form
-    `LUA_MODULE_XYZ`, and the existing `NODEMCU_MODULE()` macros
+    `NODEMCU_CMODULE_XYZ`, and the existing `NODEMCU_MODULE()` macros
     will take care of the rest. Example Kconfig entry:
     ```
-    config LUA_MODULE_XYZ
+    config NODEMCU_CMODULE_XYZ
       bool "Xyz module"
       default "y"
       help

@@ -19,7 +19,7 @@
 #include "sdkconfig.h"
 #endif
 
-#ifndef CONFIG_LUA_MODULE_U8G2
+#ifndef CONFIG_NODEMCU_CMODULE_U8G2
 // ignore unused functions if u8g2 module will be skipped anyhow
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif

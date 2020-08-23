@@ -137,7 +137,7 @@ config LUA_EMBEDDED_FLASH_STORE
 config BUILD_FATFS
   bool "Support for FAT filesystems"
   default "n"
-  select LUA_MODULE_SDMMC
+  select NODEMCU_CMODULE_SDMMC
   help
       Include support for accessing FAT filesystems on SD cards.
 

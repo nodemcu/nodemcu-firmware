@@ -32,7 +32,7 @@
  */
 
 #include "sdkconfig.h"
-#ifdef CONFIG_LUA_MODULE_BTHCI
+#ifdef CONFIG_NODEMCU_CMODULE_BTHCI
 
 #include "module.h"
 #include "lauxlib.h"

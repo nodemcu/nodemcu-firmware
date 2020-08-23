@@ -19,7 +19,7 @@
 #include "sdkconfig.h"
 #endif
 
-#ifndef CONFIG_LUA_MODULE_UCG
+#ifndef CONFIG_NODEMCU_CMODULE_UCG
 // ignore unused functions if ucg module will be skipped anyhow
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
