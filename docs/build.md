@@ -3,9 +3,7 @@ There are essentially three ways to build your NodeMCU firmware: cloud build ser
 ## Tools
 
 ### Cloud Build Service
-<del>NodeMCU "application developers" just need a ready-made firmware. There's a [cloud build service](http://nodemcu-build.com/) with a nice UI and configuration options for them.</del>
-
-Not available yet.
+NodeMCU "application developers" just need a ready-made firmware. There's a [cloud build service](https://nodemcu-build.com/) with a nice UI and configuration options for them.
 
 ### Docker Image
 Occasional NodeMCU firmware hackers don't need full control over the complete tool chain. They might not want to setup a Linux VM with the build environment. Docker to the rescue. Give [Docker NodeMCU build](https://hub.docker.com/r/marcelstoer/nodemcu-build/) a try.
