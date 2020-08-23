@@ -48,6 +48,7 @@ LUAI_FUNC int luaU_DumpAllProtos(lua_State *L, const Proto *m, lua_Writer w,
                          void *data, int strip);
 
 LUAI_FUNC int luaU_undumpLFS(lua_State *L, ZIO *Z, int isabs);
+LUAI_FUNC int luaU_stripdebug (lua_State *L, Proto *f, int level, int recv);
 
 typedef struct FlashHeader LFSHeader;
 /*

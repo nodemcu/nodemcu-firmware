@@ -1,14 +1,9 @@
 // Module for interfacing with system
 #include "module.h"
 #include "lauxlib.h"
-#include "lstate.h"
 #include "lmem.h"
 
-
 #include "platform.h"
-#if LUA_VERSION_NUM == 501
-#include "lflash.h"
-#endif
 #include <stdint.h>
 #include <string.h>
 #include "user_interface.h"
@@ -163,14 +158,27 @@ static void add_string_field( lua_State* L, const char *s, const char *name) {
   lua_setfield(L, -2, name);
 }
 
-static int node_info( lua_State* L )
-{
-  const char* options[] = {"hw", "sw_version", "build_config", "legacy", NULL};
-  int option = luaL_checkoption (L, 1, options[3], options);
+static void get_lfs_config ( lua_State* L ){
+    int config[5];
+    lua_getlfsconfig(L, config);
+    lua_createtable(L, 0, 4);
+    add_int_field(L, config[0], "lfs_mapped");
+    add_int_field(L, config[1], "lfs_base");
+    add_int_field(L, config[2], "lfs_size");
+    add_int_field(L, config[3], "lfs_used");
+}
+
+static int node_info( lua_State* L ){
+  const char* options[] = {"lfs", "hw", "sw_version", "build_config", "legacy", NULL};
+  int option = luaL_checkoption (L, 1, options[4], options);
 
   switch (option) {
-    case 0: { // hw
-      lua_createtable (L, 0, 5);
+    case 0: { // lfs
+      get_lfs_config(L);
+      return 1;
+    }
+    case 1: { // hw
+      lua_createtable(L, 0, 5);
       add_int_field(L, system_get_chip_id(),             "chip_id");
       add_int_field(L, spi_flash_get_id(),               "flash_id");
       add_int_field(L, flash_rom_get_size_byte() / 1024, "flash_size");
@@ -178,8 +186,8 @@ static int node_info( lua_State* L )
       add_int_field(L, flash_rom_get_speed(),            "flash_speed");
       return 1;
     }
-    case 1: { // sw_version
-      lua_createtable (L, 0, 7);     
+    case 2: { // sw_version
+      lua_createtable(L, 0, 7);     
       add_int_field(L, NODE_VERSION_MAJOR,       "node_version_major");
       add_int_field(L, NODE_VERSION_MINOR,       "node_version_minor");
       add_int_field(L, NODE_VERSION_REVISION,    "node_version_revision");
@@ -189,8 +197,8 @@ static int node_info( lua_State* L )
       add_string_field(L, BUILDINFO_RELEASE_DTS, "git_commit_dts");
       return 1;
     }
-    case 2: { // build_config
-      lua_createtable (L, 0, 4);
+    case 3: { // build_config
+      lua_createtable(L, 0, 4);
       lua_pushboolean(L, BUILDINFO_SSL);
       lua_setfield(L, -2, "ssl");
       lua_pushnumber(L, BUILDINFO_LFS_SIZE);
@@ -199,8 +207,7 @@ static int node_info( lua_State* L )
       add_string_field(L, BUILDINFO_BUILD_TYPE, "number_type");
       return 1;
     }
-    default:
-    {
+    default: { // legacy
       platform_print_deprecation_note("node.info() without parameter", "in the next version");
       lua_pushinteger(L, NODE_VERSION_MAJOR);
       lua_pushinteger(L, NODE_VERSION_MINOR);
@@ -333,8 +340,6 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 }
 
 #if LUA_VERSION_NUM == 501
-#undef lua_dump
-#define lua_dump lua_dumpEx
 #define getproto(o)	(clvalue(o)->l.p)
 #endif
 
@@ -461,8 +466,6 @@ static int node_restore (lua_State *L)
   return 0;
 }
 
-#if defined(LUA_OPTIMIZE_DEBUG) && LUA_VERSION_NUM == 501
-
 /* node.stripdebug([level[, function]]). 
  * level:    1 don't discard debug
  *           2 discard Local and Upvalue debug info
@@ -472,54 +475,36 @@ static int node_restore (lua_State *L)
  * If function is omitted, this is the default setting for future compiles
  * The function returns an estimated integer count of the bytes stripped.
  */
-LUA_API int luaG_stripdebug (lua_State *L, Proto *f, int level, int recv);
 static int node_stripdebug (lua_State *L) {
 
   int n = lua_gettop(L);
-  if (n == 0) {
-    lua_pushlightuserdata(L, &luaG_stripdebug );
-    lua_gettable(L, LUA_REGISTRYINDEX);
-    if (lua_isnil(L, -1)) {
-      lua_pop(L, 1);
-      lua_pushinteger(L, LUA_OPTIMIZE_DEBUG);
-    }
-    return 1;
-  }
+  int strip = 0;
 
-  int level = luaL_checkint(L, 1);
-  luaL_argcheck(L, level > 0 && level < 4, 1, "must in range 1-3");
-
-  if (n == 1) {
-    /* Store the default level in the registry if no function parameter */
-    lua_pushlightuserdata(L, &luaG_stripdebug);
-    lua_pushinteger(L, level);
-    lua_settable(L, LUA_REGISTRYINDEX);
-    return 0;
-  }
-
-  if (level == 1) {
-    lua_pushinteger(L, 0);
-    return 1;
-  }
+  lua_settop(L, 2);
+  if (!lua_isnil(L, 1)) {
+    strip = lua_tointeger(L, 1);
+    luaL_argcheck(L, strip > 0 && strip < 4, 1, "Invalid strip level");
+  } 
 
   if (lua_isnumber(L, 2)) {
-    int scope = luaL_checkint(L, 2);
-    if (scope > 0) {
-      /* if the function parameter is a +ve integer then climb to find function */
+    /* Use debug interface to replace stack level by corresponding function */
+    int scope = luaL_checkinteger(L, 2);
+    if (scope > 0) { 
       lua_Debug ar;
-      lua_pop(L, 1); /* pop level as getinfo will replace it by the function */
+      lua_pop(L, 1);
       if (lua_getstack(L, scope, &ar)) {
-        lua_getinfo(L, "f", &ar);
+        lua_getinfo(L, "f", &ar);  /* put function at [2] (ToS) */
       }
     }
   }
+ 
+  int isfunc = lua_isfunction(L, 2);
+  luaL_argcheck(L, n < 2 || isfunc, 2, "not a valid function");
 
-  luaL_argcheck(L, lua_isfunction(L, 2), 2, "must be a Lua Function");
-  Proto *f = getproto(L->ci->func + 1);
-  lua_pushinteger(L, luaG_stripdebug(L, f, level, 1));
+  /* return result of lua_stripdebug, adding 1 if this is get/set level) */ 
+  lua_pushinteger(L, lua_stripdebug(L, strip - 1) + (isfunc ? 0 : 1));
   return 1;
 }
-#endif
 
 
 #if LUA_VERSION_NUM == 501
@@ -539,9 +524,10 @@ static int node_egc_setmode(lua_State* L) {
 }
 // totalallocated, estimatedused = node.egc.meminfo()
 static int node_egc_meminfo(lua_State *L) {
-  global_State *g = G(L);
-  lua_pushinteger(L, g->totalbytes);
-  lua_pushinteger(L, g->estimate);
+  int totals[2];
+  lua_getegcinfo(L, totals);
+  lua_pushinteger(L, totals[0]);
+  lua_pushinteger(L, totals[1]);
   return 2;
 }
 #endif
@@ -650,6 +636,64 @@ static int node_writercr (lua_State *L) {
   return 1;
 }
 #endif
+
+// Lua: n = node.LFS.reload(lfsimage)
+static int node_lfsreload (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_lfsreload(L);
+  return 1;
+}
+
+// Lua: n = node.flashindex(module)
+// Lua: n = node.LFS.get(module)
+static int node_lfsindex (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_pushlfsmodule(L);
+  return 1;
+}
+
+// Lua: n = node.LFS.list([option])
+// Note that option is ignored in this release
+static int node_lfslist (lua_State *L) {
+  lua_settop(L, 1);
+  luaL_pushlfsmodules(L);
+  if (lua_istable(L, -1) && lua_getglobal(L, "table") == LUA_TTABLE) {
+    lua_getfield(L, -1, "sort");
+    lua_remove(L, -2);       /* remove table table */
+    lua_pushvalue(L, -2);    /* dup array of modules ref to ToS */
+    lua_call(L, 1, 0);
+  }
+  return 1;
+}
+
+//== node.LFS Table emulator ==============================================//
+
+static int node_lfs_func (lua_State* L) {      /*T[1] = LFS, T[2] = fieldname */
+  lua_remove(L, 1);
+  lua_settop(L, 1);
+  const char *name = lua_tostring(L, 1);
+  if (!name) {
+    lua_pushnil(L);
+  } else if (!strcmp(name, "config")) {
+    get_lfs_config(L);
+  } else if (!strcmp(name, "time")) {
+    luaL_pushlfsdts(L);
+  } else {
+    luaL_pushlfsmodule(L);
+  }
+  return 1;
+}
+
+LROT_BEGIN(node_lfs_meta, NULL, LROT_MASK_INDEX)
+  LROT_FUNCENTRY( __index, node_lfs_func)
+LROT_END(node_lfs_meta, NULL, LROT_MASK_INDEX)
+
+LROT_BEGIN(node_lfs, LROT_TABLEREF(node_lfs_meta), 0)
+  LROT_FUNCENTRY( list, node_lfslist)
+  LROT_FUNCENTRY( get, node_lfsindex)
+  LROT_FUNCENTRY( reload, node_lfsreload )
+LROT_END(node_lfs, LROT_TABLEREF(node_lfs_meta), 0)
+
 
 typedef enum pt_t { lfs_addr=0, lfs_size, spiffs_addr, spiffs_size, max_pt} pt_t;
 
@@ -826,8 +870,8 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( heap, node_heap )
   LROT_FUNCENTRY( info, node_info )
   LROT_TABENTRY( task, node_task )
-  LROT_FUNCENTRY( flashreload, lua_lfsreload )
-  LROT_FUNCENTRY( flashindex, lua_lfsindex )
+  LROT_FUNCENTRY( flashindex, node_lfsindex )
+  LROT_TABENTRY( LFS, node_lfs )
   LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( startupcommand, node_startupcommand )
   LROT_FUNCENTRY( restart, node_restart )
@@ -856,9 +900,7 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( bootreason, node_bootreason )
   LROT_FUNCENTRY( restore, node_restore )
   LROT_FUNCENTRY( random, node_random )
-#if LUA_VERSION_NUM == 501 && defined(LUA_OPTIMIZE_DEBUG)
   LROT_FUNCENTRY( stripdebug, node_stripdebug )
-#endif
 #if LUA_VERSION_NUM == 501
   LROT_TABENTRY( egc, node_egc )
 #endif

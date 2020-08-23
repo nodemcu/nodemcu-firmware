@@ -17,6 +17,7 @@
 #include "lauxlib.h"
 #include "llex.h"
 #include "lgc.h"
+#include "lmem.h"
 #include "lobject.h"
 #include "lstate.h"
 #include "lstring.h"
@@ -263,6 +264,36 @@ int luaU_dump (lua_State *L, const Proto *f, lua_Writer w, void *data,
   return D.status;
 }
 
+static int stripdebug (lua_State *L, Proto *f, int level) {
+  int i, len = 0;
+  switch (level) {
+    case 2:
+      if (f->lineinfo) {
+        f->lineinfo = luaM_freearray(L, f->lineinfo, f->sizelineinfo);
+        len += f->sizelineinfo;
+      }
+    case 1:
+      for (i=0; i<f->sizeupvalues; i++)
+        f->upvalues[i].name = NULL;
+      f->locvars = luaM_freearray(L, f->locvars, f->sizelocvars);
+      len += f->sizelocvars * sizeof(LocVar);
+      f->sizelocvars = 0;
+  }
+  return len;
+}
+
+/* This is a recursive function so it's stack size has been kept to a minimum! */
+int luaU_stripdebug (lua_State *L, Proto *f, int level, int recv){
+  int len = 0, i;
+  if (recv != 0 && f->sizep != 0) {
+    for(i=0;i<f->sizep;i++) len += luaU_stripdebug(L, f->p[i], level, recv);
+  }
+  len += stripdebug (L, f, level);
+  return len;
+}
+
+
+
 /*============================================================================**
 **
 ** NodeMCU extensions for LFS support and dumping.  Note that to keep lua_lock
@@ -279,6 +310,8 @@ int luaU_dump (lua_State *L, const Proto *f, lua_Writer w, void *data,
 */
 static void addTS (TString *ts, DumpState *D) {
   lua_State *L = D->L;
+  if (!ts)
+    return;
   if (ttisnil(luaH_getstr(D->stringIndex, ts))) {
     TValue k, v, *slot;
     gettt(ts)<=LUA_TSHRSTR ? D->sTScnt++ : D->lTScnt++;

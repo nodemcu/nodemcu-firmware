@@ -307,7 +307,7 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
   luaM_free(L, l);
 }
 
-LUA_API KeyCache *(lua_getcache) (int lineno) {
+LUAI_FUNC KeyCache *luaE_getcache (int lineno) {
   return &G(L0)->cache[lineno][0];
 }
 
@@ -347,6 +347,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   g->gcfinnum = 0;
   g->gcpause = LUAI_GCPAUSE;
   g->gcstepmul = LUAI_GCMUL;
+  g->stripdefault = LUAI_OPTIMIZE_DEBUG;
   g->ROstrt.size = 0;
   g->ROstrt.nuse = 0;
   g->ROstrt.hash = NULL;

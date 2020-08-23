@@ -148,7 +148,7 @@ static uint8_t using_offset;
 static uint8_t the_offset;
 static uint8_t pending_LI;
 static int32_t next_midnight;
-static uint64_t pll_increment;
+static int32_t pll_increment;
 
 #define PLL_A   (1 << (32 - 11))
 #define PLL_B   (1 << (32 - 11 - 2))
@@ -257,12 +257,12 @@ static void sntp_handle_result(lua_State *L) {
   }
   if (state->is_on_timeout && state->best.delta > SUS_TO_FRAC(-200000) && state->best.delta < SUS_TO_FRAC(200000)) {
     // Adjust rate
-    // f is frequency -- f should be 1 << 32 for nominal
-    sntp_dbg("delta=%d, increment=%d, ", (int32_t) state->best.delta, (int32_t) pll_increment);
-    int64_t f = ((state->best.delta * PLL_A) >> 32) + pll_increment;
+    // f is frequency -- f should be 1 << 32 for nominal -- but we store it as an offset
+    sntp_dbg("delta=%d, increment=%d, ", (int32_t) state->best.delta, pll_increment);
+    int f = ((state->best.delta * PLL_A) >> 32) + pll_increment;
     pll_increment += (state->best.delta * PLL_B) >> 32;
-    sntp_dbg("f=%d, increment=%d\n", (int32_t) f, (int32_t) pll_increment);
-    rtctime_adjust_rate((int32_t) f);
+    sntp_dbg("f=%d, increment=%d\n", f, pll_increment);
+    rtctime_adjust_rate(f);
   } else {
     rtctime_settimeofday (&tv);
   }
@@ -823,6 +823,10 @@ static int sntp_sync (lua_State *L)
       }
     }
   }
+
+#ifdef LUA_USE_MODULES_RTCTIME
+  pll_increment = rtctime_get_rate();
+#endif
 
   luaL_unref (L, LUA_REGISTRYINDEX, state->list_ref);
   state->list_ref = luaL_ref(L, LUA_REGISTRYINDEX);

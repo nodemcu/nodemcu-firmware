@@ -17,7 +17,7 @@
 /* tags for values visible from Lua */
 #define LAST_TAG	LUA_TTHREAD
 
-#define NUM_TAGS	(LAST_TAG+1)
+#define LUA_NUMTAGS	(LAST_TAG+1)
 
 #define READONLYMASK    (1<<7)      /* denormalised bitmask for READONLYBIT and */
 #define LFSMASK         (1<<6)      /* LFSBIT to avoid include proliferation */
@@ -111,7 +111,7 @@ typedef struct lua_TValue {
 #define ttisnil(o)		(ttype(o) == LUA_TNIL)
 #define ttisnumber(o)		(ttype(o) == LUA_TNUMBER)
 #define ttisstring(o)		(ttype(o) == LUA_TSTRING)
-#define ttistable(o)		(basettype(o) == LUA_TTABLE)
+#define ttistable(o)		(ttnov(o) == LUA_TTABLE)
 #define ttisrwtable(o)		(type(o) == LUA_TTABLE)
 #define ttisrotable(o)		(ttype(o) & LUA_TISROTABLE)
 #define ttisboolean(o)		(ttype(o) == LUA_TBOOLEAN)
@@ -120,12 +120,12 @@ typedef struct lua_TValue {
 #define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
 #define ttislightfunction(o)	(ttype(o) == LUA_TLIGHTFUNCTION)
 #define ttisclfunction(o)	(ttype(o) == LUA_TFUNCTION)
-#define ttisfunction(o)		(basettype(o) == LUA_TFUNCTION)
+#define ttisfunction(o)		(ttnov(o) == LUA_TFUNCTION)
 
 /* Macros to access values */
 
 #define ttype(o)	((void) (o)->value, (o)->tt)
-#define basettype(o)	((void) (o)->value, ((o)->tt & LUA_TMASK))
+#define ttnov(o)	((void) (o)->value, ((o)->tt & LUA_TMASK))
 #define gcvalue(o)	check_exp(iscollectable(o), (o)->value.gc)
 #define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
 #define fvalue(o)	check_exp(ttislightfunction(o), (o)->value.p)
@@ -277,20 +277,13 @@ typedef struct Proto {
   TValue *k;  /* constants used by the function */
   Instruction *code;
   struct Proto **p;  /* functions defined inside the function */
-#ifdef LUA_OPTIMIZE_DEBUG
   unsigned char *packedlineinfo;
-#else
-  int *lineinfo;  /* map from opcodes to source lines */
-#endif
   struct LocVar *locvars;  /* information about local variables */
   TString **upvalues;  /* upvalue names */
   TString  *source;
   int sizeupvalues;
   int sizek;  /* size of `k' */
   int sizecode;
-#ifndef LUA_OPTIMIZE_DEBUG
-  int sizelineinfo;
-#endif
   int sizep;  /* size of `p' */
   int sizelocvars;
   int linedefined;

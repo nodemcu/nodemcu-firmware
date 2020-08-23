@@ -30,21 +30,21 @@
 **    *  POSIX vs VFS file API abstraction
 **    *  Emulate Platform_XXX() API
 **    *  ESP and HOST lua_debugbreak() test stubs
-**    *  NodeMCU lua.h API extensions
-**    *  NodeMCU LFS Table emulator
+**    *  NodeMCU lua.h LUA_API extensions
+**    *  NodeMCU lauxlib.h LUALIB_API extensions
 **    *  NodeMCU bootstrap to set up and to reimage LFS resources
 **
 ** Just search down for //== or ==// to flip through the sections.
 */
 
-#define byte_addr(p) cast(char *,p)
+#define byte_addr(p)    cast(char *,p)
 #define byteptr(p)      cast(lu_byte *, p)
-#define byteoffset(p,q) (byteptr(p) - byteptr(q))
+#define byteoffset(p,q) ((int) cast(ptrdiff_t, (byteptr(p) - byteptr(q))))
 #define wordptr(p)      cast(lu_int32 *, p)
 #define wordoffset(p,q) (wordptr(p) - wordptr(q))
 
 
-//== Wrap POSIX and VFS file API =============================================//
+//====================== Wrap POSIX and VFS file API =========================//
 #ifdef LUA_USE_ESP
 int luaopen_file(lua_State *L);
 #  define l_file(f)   int f
@@ -62,7 +62,6 @@ int luaopen_file(lua_State *L);
 #  define l_rewind(f) rewind(f)
 #endif
 
-//== Emulate Platform_XXX() API ==============================================//
 #ifdef LUA_USE_ESP
 
 extern void dbg_printf(const char *fmt, ...);                // DEBUG
@@ -78,6 +77,8 @@ extern void dbg_printf(const char *fmt, ...);                // DEBUG
 #define lockFlashWrite()
 
 #else // LUA_USE_HOST
+
+//==== Emulate Platform_XXX() API within host luac.cross -e environement =====//
 
 #include<stdio.h>                                             // DEBUG
 /*
@@ -124,9 +125,9 @@ extern char  *LFSimageName;
 
 #define platform_rcr_write(id,rec,l) (128)
 #define platform_flash_phys2mapped(n) \
-    (byteptr(LFSaddr) + (n) - LFSbase)
+    ((ptrdiff_t)(((size_t)LFSaddr) - LFSbase) + (n))
 #define platform_flash_mapped2phys(n) \
-    (byteoffset(n, LFSaddr) + LFSbase)
+    ((size_t)(n) - ((size_t)LFSaddr) + LFSbase)
 #define platform_flash_get_sector_of_address(n) ((n)>>12)
 #define platform_rcr_delete(id) LFSimageName = NULL
 #define platform_rcr_read(id,s) \
@@ -170,7 +171,7 @@ static void platform_s_flash_write(const void *from, lu_int32 to, lu_int32 len) 
 
 #endif
 
-//== ESP and HOST lua_debugbreak() test stubs ================================//
+//============= ESP and HOST lua_debugbreak() test stubs =====================//
 
 #ifdef DEVELOPMENT_USE_GDB
 /*
@@ -204,7 +205,7 @@ LUALIB_API void lua_debugbreak(void) {
 }
 #endif
 
-//== NodeMCU lua.h API extensions ============================================//
+//===================== NodeMCU lua.h API extensions =========================//
 
 LUA_API int lua_freeheap (void) {
 #ifdef LUA_USE_HOST
@@ -214,34 +215,39 @@ LUA_API int lua_freeheap (void) {
 #endif
 }
 
-LUA_API int lua_getstrings(lua_State *L, int opt) {
-  stringtable *tb = NULL;
-  Table *t;
-  int i, j, n = 0;
-
-  if (n == 0)
-    tb = &G(L)->strt;
-#ifdef LUA_USE_ESP
-  else if (n == 1 && G(L)->ROstrt.hash)
-    tb = &G(L)->ROstrt;
-#endif
-  if (tb == NULL)
-   return 0;
-
+LUA_API int lua_pushstringsarray(lua_State *L, int opt) {
+  stringtable *strt = NULL;
+  int i, j = 1;
+ 
   lua_lock(L);
-  t = luaH_new(L);
+  if (opt == 0)
+    strt = &G(L)->strt;
+#ifdef LUA_USE_ESP
+  else if (opt == 1 && G(L)->ROstrt.hash)
+    strt = &G(L)->ROstrt;
+#endif
+  if (strt == NULL) {
+    setnilvalue(L->top);
+    api_incr_top(L);
+    lua_unlock(L);
+    return 0;
+  }
+
+  Table *t = luaH_new(L);
   sethvalue(L, L->top, t);
   api_incr_top(L);
-  luaH_resize(L, t, tb->nuse, 0);
+  luaH_resize(L, t, strt->nuse, 0);
   luaC_checkGC(L);
   lua_unlock(L);
 
-  for (i = 0, j = 1; i < tb->size; i++) {
-    TString *o;
-    for(o = tb->hash[i]; o; o = o->u.hnext) {
+  /* loop around all strt hash entries */
+  for (i = 0, j = 1; i < strt->size; i++) {
+    TString *e;
+    /* loop around all TStings in this entry's chain */
+    for(e = strt->hash[i]; e; e = e->u.hnext) {
       TValue s;
-      setsvalue(L, &s, o);
-      luaH_setint(L, hvalue(L->top-1), j++, &s);  /* table[n] = true */
+      setsvalue(L, &s, e);
+      luaH_setint(L, hvalue(L->top-1), j++, &s);
     }
   }
   return 1;
@@ -274,72 +280,91 @@ LUA_API void lua_createrotable (lua_State *L, ROTable *t,
   t->entry     = cast(ROTable_entry *, e);
 }
 
-//== NodeMCU LFS Table emulator ==============================================//
-
-static int lfs_func (lua_State* L);
-
-LROT_BEGIN(LFS_meta, NULL, LROT_MASK_INDEX)
-  LROT_FUNCENTRY( __index, lfs_func)
-LROT_END(LFS_meta, NULL, LROT_MASK_INDEX)
-
-LROT_BEGIN(LFS, LROT_TABLEREF(LFS_meta), 0)
-LROT_END(LFS, LROT_TABLEREF(LFS_meta), 0)
-
-
-static int lfs_func (lua_State* L) {           /*T[1] = LFS, T[2] = fieldname */
-  const char *name = lua_tostring(L, 2);
-  LFSHeader *fh = G(L)->l_LFS;
-  Proto *f;
-  LClosure *cl;
-  lua_settop(L,2);
-  if (!fh) {                                  /* return nil if LFS not loaded */
-    lua_pushnil(L);
-    return 1;
+LUA_API void lua_getlfsconfig (lua_State *L, int *config) {
+  global_State *g = G(L);
+  LFSHeader *l = g->l_LFS;  
+  if (!config)
+    return;
+  config[0] = (int) (size_t) l;                  /* LFS region mapped address */
+  config[1] = platform_flash_mapped2phys(config[0]);    /* ditto phys address */
+  config[2] = g->LFSsize;                           /* LFS region actual size */
+  if (g->ROstrt.hash) {
+    config[3] = l->flash_size;                             /* LFS region used */
+    config[4] = l->timestamp;                         /* LFS region timestamp */
+  } else { 
+    config[3] = config[4] = 0;
   }
-  if (!strcmp(name, "_config")) {
-    size_t ba = cast(size_t, fh);
-    lua_createtable(L, 0, 3);
-    lua_pushinteger(L, cast(lua_Integer, ba));
-    lua_setfield(L, -2, "lfs_mapped");
-    lua_pushinteger(L, cast(lua_Integer, platform_flash_mapped2phys(ba)));
-    lua_setfield(L, -2, "lfs_base");
-    lua_pushinteger(L, G(L)->LFSsize);
-    lua_setfield(L, -2, "lfs_size");
-    return 1;
-  } else if (!strcmp(name, "_list")) {
-    int i = 1;
-    setobjs2s(L, L->top-2, &G(L)->LFStable);  /* overwrite T[1] with LSFtable */
-    lua_newtable(L);                                /* new list table at T[3] */
-    lua_pushnil(L);                                 /* first key (nil) at T4] */
-    while (lua_next(L, 1) != 0) {         /* loop over LSFtable k,v at T[4:5] */
-      lua_pop(L, 1);                                            /* dump value */
-      lua_pushvalue(L, -1);                                        /* dup key */
-      lua_rawseti(L, 3, i++);                                 /* table[i]=key */
+}
+
+LUA_API int  (lua_pushlfsindex) (lua_State *L) {
+  lua_lock(L);
+  setobj2n(L, L->top, &G(L)->LFStable);
+  api_incr_top(L);
+  lua_unlock(L);
+  return  ttnov(L->top-1);
+}
+
+/*
+ * In Lua 5.3 luac.cross generates a top level Proto for each source file with 
+ * one upvalue that must be the set to the _ENV variable when its closure is
+ * created, and as such this parallels some ldo.c processing.
+ */
+LUA_API int  (lua_pushlfsfunc) (lua_State *L) {
+  lua_lock(L);
+  const TValue *t = &G(L)->LFStable;
+  if (ttisstring(L->top-1) && ttistable(t)) {
+    const TValue *v = luaH_getstr (hvalue(t), tsvalue(L->top-1));
+    if (ttislightuserdata(v)) {
+      Proto *f = pvalue(v);   /* The pvalue is a Proto * for the Lua function */
+      LClosure *cl = luaF_newLclosure(L, f->sizeupvalues);
+      setclLvalue(L, L->top-1, cl);
+      luaF_initupvals(L, cl);
+      cl->p = f;
+      if (cl->nupvalues >= 1) {                   /* does it have an upvalue? */
+        UpVal *uv1 = cl->upvals[0];
+        TValue *val = uv1->v;
+        /* set 1st upvalue as global env table from registry */
+        setobj(L, val, luaH_getint(hvalue(&G(L)->l_registry), LUA_RIDX_GLOBALS));
+        luaC_upvalbarrier(L, uv1);
+      }
+      return 1;
     }
-    return 1;
-  } else if (!strcmp(name, "_time")) {
-    lua_pushinteger(L, fh->timestamp);
-    return 1;
   }
-  setobjs2s(L, L->top-2, &G(L)->LFStable);    /* overwrite T[1] with LSFtable */
-  if (lua_rawget(L,1) != LUA_TNIL) {                    /* get LFStable[name] */
-    lua_pushglobaltable(L);
-    f = cast(Proto *, lua_topointer(L,-2));
-    lua_lock(L);
-    cl = luaF_newLclosure(L, f->sizeupvalues);
-    setclLvalue(L, L->top-2, cl);       /* overwrite f addr slot with closure */
-    cl->p = f;                                                /* bind f to it */
-    if (cl->nupvalues >= 1) {           /* does it have at least one upvalue? */
-      luaF_initupvals(L, cl );                            /* initialise upvals */
-      setobj(L, cl->upvals[0]->v, L->top-1);             /* set UV[1] to _ENV */
-    }
-    lua_unlock(L);
-    lua_pop(L,1);                          /* pop _ENV leaving closure at ToS */
+  setnilvalue(L->top-1);
+  lua_unlock(L);
+  return 0;
+}
+
+
+//================ NodeMCU lauxlib.h LUALIB_API extensions ===================//
+
+/*
+ * Return an array of functions in LFS
+ */
+LUALIB_API int  (luaL_pushlfsmodules) (lua_State *L) {
+  int i = 1;
+  if (lua_pushlfsindex(L) == LUA_TNIL)
+    return 0;                                 /* return nil if LFS not loaded */
+  lua_newtable(L);      /* create dest table and move above LFS index ROTable */
+  lua_insert(L, -2);
+  lua_pushnil(L);
+  while (lua_next(L, -2) != 0) {
+    lua_pop(L, 1);                       /* dump the value (ptr to the Proto) */
+    lua_pushvalue(L, -1);                            /* dup key (module name) */
+    lua_rawseti(L, -4, i++);
   }
+  lua_pop(L, 1);                                /* dump the LFS index ROTable */
   return 1;
 }
 
-//== NodeMCU bootstrap to set up and to reimage LFS resources ================//
+LUALIB_API int  (luaL_pushlfsdts) (lua_State *L) {
+  int config[5];
+  lua_getlfsconfig(L, config);
+  lua_pushinteger(L, config[4]);
+  return 1;
+}
+
+//======== NodeMCU bootstrap to set up and to reimage LFS resources ==========//
 /*
 ** This processing uses 2 init hooks during the Lua startup. The first is
 ** called early in the Lua state setup to initialize the LFS if present. The
@@ -494,9 +519,9 @@ LUAI_FUNC int luaN_init (lua_State *L) {
       if (n < 0) {
         global_State *g = G(L);
         g->LFSsize     = F->size;
+        g->l_LFS       = fh;
       /* Set up LFS hooks on normal Entry */
         if (fh->flash_sig   == FLASH_SIG) {
-          g->l_LFS       = fh;
           g->seed        = fh->seed;
           g->ROstrt.hash = cast(TString **, F->addr + fh->oROhash);
           g->ROstrt.nuse = fh->nROuse ;
@@ -565,9 +590,9 @@ LUAI_FUNC int luaN_init (lua_State *L) {
 #define getfield(L,t,f) \
   lua_getglobal(L, #t); luaL_getmetafield( L, 1, #f ); lua_remove(L, -2);
 
-LUAI_FUNC int  lua_lfsreload (lua_State *L) {
-  int n = 0;
+LUALIB_API void luaL_lfsreload (lua_State *L) {
 #ifdef LUA_USE_ESP
+  int n = 0;
   size_t l;
   int off = 0;
   const char *img = lua_tolstring(L, 1, &l);
@@ -579,30 +604,72 @@ LUAI_FUNC int  lua_lfsreload (lua_State *L) {
   lua_getglobal(L, "file");
   if (lua_isnil(L, 2)) {
     lua_pushstring(L, "No file system mounted");
-    return 1;
+    return;
   }
   lua_getfield(L, 2, "exists");
   lua_pushstring(L, img + off);
   lua_call(L, 1, 1);
   if (G(L)->LFSsize == 0 || lua_toboolean(L, -1) == 0) {
     lua_pushstring(L, "No LFS partition allocated");
-    return 1;
+    return;
   }
   n = platform_rcr_write(PLATFORM_RCR_FLASHLFS, img, l+1);/* incl trailing \0 */
-  if (n>0)
+  if (n>0) {
     system_restart();
+    luaL_error(L, "system restarting");
+  }
 #endif
-  lua_pushboolean(L, n>0);
-  return 1;
 }
 
-LUAI_FUNC int  lua_lfsindex (lua_State *L) {
-  lua_settop(L,1);
-  if (lua_isstring(L, 1)){
-    lua_getglobal(L, "LFS");
-    lua_getfield(L, 2, lua_tostring(L,1));
-  } else {
-    lua_pushnil(L);
+
+#ifdef LUA_USE_ESP
+extern void lua_main(void);
+/*
+** Task callback handler. Uses luaN_call to do a protected call with full traceback
+*/
+static void do_task (platform_task_param_t task_fn_ref, uint8_t prio) {
+  lua_State* L = lua_getstate();
+  if(task_fn_ref == (platform_task_param_t)~0 && prio == LUA_TASK_HIGH) {
+    lua_main();                   /* Undocumented hook for lua_main() restart */
+    return;
   }
-  return 1;
+  if (prio < LUA_TASK_LOW|| prio > LUA_TASK_HIGH)
+    luaL_error(L, "invalid posk task");
+/* Pop the CB func from the Reg */
+  lua_rawgeti(L, LUA_REGISTRYINDEX, (int) task_fn_ref);
+  luaL_checktype(L, -1, LUA_TFUNCTION);
+  luaL_unref(L, LUA_REGISTRYINDEX, (int) task_fn_ref);
+  lua_pushinteger(L, prio);
+  luaL_pcallx(L, 1, 0);
 }
+
+/*
+** Schedule a Lua function for task execution
+*/
+LUALIB_API int luaL_posttask ( lua_State* L, int prio ) {         // [-1, +0, -]
+  static platform_task_handle_t task_handle = 0;
+  if (!task_handle)
+    task_handle = platform_task_get_id(do_task);
+  if (L == NULL && prio == LUA_TASK_HIGH+1) { /* Undocumented hook for lua_main */
+    platform_post(LUA_TASK_HIGH, task_handle, (platform_task_param_t)~0);
+    return -1;
+  }
+  if (lua_isfunction(L, -1) && prio >= LUA_TASK_LOW && prio <= LUA_TASK_HIGH) {
+    int task_fn_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    if(!platform_post(prio, task_handle, (platform_task_param_t)task_fn_ref)) {
+      luaL_unref(L, LUA_REGISTRYINDEX, task_fn_ref);
+      luaL_error(L, "Task queue overflow. Task not posted");
+    }
+    return task_fn_ref;
+  } else {
+    return luaL_error(L, "invalid posk task");
+  }
+}
+#else
+/*
+** Task execution isn't supported on HOST builds so returns a -1 status
+*/
+LUALIB_API int luaL_posttask( lua_State* L, int prio ) {            // [-1, +0, -]
+  return -1;
+}
+#endif

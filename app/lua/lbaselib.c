@@ -10,7 +10,6 @@
 #define LUA_LIB
 
 #include "lua.h"
-#include "lnodemcu.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -23,7 +23,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 /* prefix for open functions in C libraries */
 #define LUA_POF		"luaopen_"
@@ -474,7 +473,7 @@ static int ll_require (lua_State *L) {
   }
   /* Is this a readonly table? */
   lua_getfield(L, LUA_GLOBALSINDEX, name);
-  if(lua_isrotable(L,-1)) {
+  if(lua_istable(L,-1)) {
     return 1;
   } else {
     lua_pop(L, 1);
@@ -567,7 +566,7 @@ static int ll_module (lua_State *L) {
   const char *modname = luaL_checkstring(L, 1);
   /* Is this a readonly table? */
   lua_getfield(L, LUA_GLOBALSINDEX, modname);
-  if(lua_isrotable(L,-1)) {
+  if(lua_istable(L,-1)) {
     return 0;
   } else {
     lua_pop(L, 1);

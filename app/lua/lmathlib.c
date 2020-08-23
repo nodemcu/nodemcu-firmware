@@ -14,7 +14,6 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
 
 #undef PI
 #define PI (3.14159265358979323846)

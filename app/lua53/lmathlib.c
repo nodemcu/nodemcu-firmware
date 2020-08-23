@@ -17,8 +17,7 @@
 
 #include "lauxlib.h"
 #include "lualib.h"
-#include "lnodemcu.h"
-#include "ldebug.h"
+
 #undef PI
 #define PI	(l_mathop(3.141592653589793238462643383279502884))
 
@@ -135,7 +134,7 @@ static int math_fmod (lua_State *L) {
       lua_pushinteger(L, lua_tointeger(L, 1) % d);
   } else {
     lua_Number m, a=luaL_checknumber(L, 1), b=luaL_checknumber(L, 2);
-    if (b==0) luaG_runerror(L,"modulo by zero");
+    if (b==0) luaL_error(L,"modulo by zero");
     m = a/b;
     lua_pushnumber(L, a - b*(m > 0.0 ? floor(m) : ceil(m)));
   }

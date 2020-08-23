@@ -186,10 +186,8 @@ static void scanProtoStrings(lua_State *L, const Proto* f) {
   if (f->source)
     addTS(L, f->source);
 
-#ifdef LUA_OPTIMIZE_DEBUG
   if (f->packedlineinfo)
     addTS(L, luaS_new(L, cast(const char *, f->packedlineinfo)));
-#endif
 
   for (i = 0; i < f->sizek; i++) {
     if (ttisstring(f->k + i))
@@ -355,11 +353,7 @@ static void *flashCopy(lua_State* L, int n, const char *fmt, void *src) {
 }
 
 /* The debug optimised version has a different Proto layout */
-#ifdef LUA_OPTIMIZE_DEBUG
 #define PROTO_COPY_MASK  "AHAAAAAASIIIIIIIAI"
-#else
-#define PROTO_COPY_MASK  "AHAAAAAASIIIIIIIIAI"
-#endif
 
 /*
  * Do the actual prototype copy.
@@ -383,14 +377,10 @@ static void *functionToFlash(lua_State* L, const Proto* orig) {
   f.k = cast(TValue *, flashCopy(L, f.sizek, "V", f.k));
   f.code = cast(Instruction *, flashCopy(L, f.sizecode, "I", f.code));
 
-#ifdef LUA_OPTIMIZE_DEBUG
   if (f.packedlineinfo) {
     TString *ts=luaS_new(L, cast(const char *,f.packedlineinfo));
     f.packedlineinfo = cast(unsigned char *, resolveTString(L, ts)) + sizeof (FlashTS);
   }
-#else
-  f.lineinfo = cast(int *, flashCopy(L, f.sizelineinfo, "I", f.lineinfo));
-#endif
   f.locvars = cast(struct LocVar *, flashCopy(L, f.sizelocvars, "SII", f.locvars));
   f.upvalues = cast(TString **, flashCopy(L, f.sizeupvalues, "S", f.upvalues));
   return cast(void *, flashCopy(L, 1, PROTO_COPY_MASK, &f));

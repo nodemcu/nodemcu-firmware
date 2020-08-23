@@ -23,9 +23,9 @@
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lparser.h"
-#include "lstate.h"
 #include "lstring.h"
 #include "ltable.h"
+#include "lundump.h"
 
 
 
@@ -1633,6 +1633,13 @@ static void mainfunc (LexState *ls, FuncState *fs) {
 }
 
 
+static void compile_stripdebug(lua_State *L, Proto *f) {
+  int level =  G(L)->stripdefault;
+  if (level > 0)
+    luaU_stripdebug(L, f, level, 1);
+}
+
+
 LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
                        Dyndata *dyd, const char *name, int firstchar) {
   LexState lexstate;
@@ -1654,6 +1661,7 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   lua_assert(!funcstate.prev && funcstate.nups == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
   lua_assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);
+  compile_stripdebug(L, funcstate.f);
   L->top--;  /* remove scanner's table */
   return cl;  /* closure is on the stack, too */
 }

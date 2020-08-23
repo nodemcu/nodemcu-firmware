@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "llimits.h"
+#include <stdint.h>
 #include "gpio.h"
 #include "user_interface.h"
 #include "driver/gpio16.h"
@@ -215,7 +215,7 @@ static void ICACHE_RAM_ATTR platform_gpio_intr_dispatcher (void *dummy){
   uint32_t j=0;
   uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   uint32_t now = system_get_time();
-  UNUSED(dummy);
+  (void)(dummy);
 
 #ifdef GPIO_INTERRUPT_HOOK_ENABLE
   if (gpio_status & platform_gpio_hook->all_bits) {
@@ -986,13 +986,13 @@ uint32_t platform_rcr_read (uint8_t rec_id, void **rec) {
 }
 
 uint32_t platform_rcr_delete (uint8_t rec_id) {
-  void *rec = NULL;
-  platform_rcr_read (rec_id, &rec);
+  uint32_t *rec = NULL;
+  platform_rcr_read(rec_id, (void**)&rec);
   if (rec) {
-    uint32_t *pHdr = cast(uint32_t *,rec)-1;
+    uint32_t *pHdr = rec - 1;  /* the header is the word proceeding the rec */ 
     platform_rcr_t hdr = {.hdr = *pHdr};
     hdr.id = PLATFORM_RCR_DELETED;
-    platform_s_flash_write(&hdr, platform_flash_mapped2phys(cast(uint32_t, pHdr)), WORDSIZE);
+    platform_s_flash_write(&hdr, platform_flash_mapped2phys((uint32_t) pHdr), WORDSIZE);
     return 0;
   }
   return ~0;
