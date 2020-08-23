@@ -18,10 +18,16 @@
 
 #define DELAY2SEC 2000
 
+#ifndef LUA_MAXINTEGER
+#define LUA_MAXINTEGER INT_MAX
+#endif
+
+#ifndef LUA_UNSIGNED
 #if LUA_MAXINTEGER > MAX_INT
-typedef uint64_t unsigned_lua_Integer;
+typedef uint64_t LUA_UNSIGNED;
 #else
-typedef uint32_t unsigned_lua_Integer;
+typedef uint32_t LUA_UNSIGNED;
+#endif
 #endif
 
 static void restart_callback(void *arg) {
@@ -551,17 +557,18 @@ static int node_osprint( lua_State* L )
   return 0;
 }
 
-static unsigned_lua_Integer random_value() {
-  if (sizeof(lua_Integer) == 4) {
+static LUA_UNSIGNED random_value() {
+  // Hopefully the compiler is smart enought to spot the constant IF check
+  if (sizeof(LUA_UNSIGNED) == 4) {
     return os_random();
   } else {
-    return (((lua_Integer) os_random()) << 32) + (uint32_t) os_random();
+    return (((uint64_t) os_random()) << 32) + (uint32_t) os_random();
   }
 }
 
 lua_Integer node_random_range(lua_Integer l, lua_Integer u) {
   // The range is the number of different values to return
-  unsigned_lua_Integer range = u + 1 - l;
+  LUA_UNSIGNED range = u + 1 - l;
 
   // If this is very large then use simpler code
   if (range >= LUA_MAXINTEGER) {
@@ -588,9 +595,9 @@ lua_Integer node_random_range(lua_Integer l, lua_Integer u) {
   // Now we have to figure out what a large multiple of range is
   // that just fits into 32/64 bits.
   // The limit will be less than 1 << 32 by some amount (not much)
-  unsigned_lua_Integer limit = (((1 + (unsigned_lua_Integer) LUA_MAXINTEGER) / ((range + 1) >> 1)) - 1) * range;
+  LUA_UNSIGNED limit = (((1 + (LUA_UNSIGNED) LUA_MAXINTEGER) / ((range + 1) >> 1)) - 1) * range;
 
-  unsigned_lua_Integer v;
+  LUA_UNSIGNED v;
 
   while ((v = random_value()) >= limit) {
   }
@@ -609,7 +616,7 @@ static int node_random (lua_State *L) {
 #ifdef LUA_NUMBER_INTEGRAL
       lua_pushnumber(L, 0);  /* Number between 0 and 1 - always 0 with ints */
 #else
-      lua_pushnumber(L, ((double)random_value() / 16 / (1LL << (8 * sizeof(lua_Integer) - 4))));
+      lua_pushnumber(L, ((double)random_value() / 16 / (1LL << (8 * sizeof(LUA_UNSIGNED) - 4))));
 #endif
       return 1;
     }
