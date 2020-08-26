@@ -156,10 +156,12 @@ static void push_number(JSN_DATA *data, struct jsonsl_state_st *state) {
 #if LUA_VERSION_NUM == 501
   lua_pushnumber(data->L, lua_tonumber(data->L, -1));
 #else
-  lua_stringtonumber(data->L, lua_tostring(data->L, -1));
+  if (!lua_stringtonumber(data->L, lua_tostring(data->L, -1))) {
+    // In this case stringtonumber does not push a value
+    luaL_error(data->L, "Invalid number");
+  }
 #endif
   lua_remove(data->L, -2);
-
 }
 
 static int fromhex(char c) {
@@ -723,7 +725,11 @@ static void encode_lua_object(lua_State *L, ENC_DATA *data, int argno, const cha
       char value[len + 1];
       strcpy(value, str);
       lua_pop(L, 1);
-      luaL_addstring(&b, value);
+      if (strcmp(value, "-Infinity") == 0 || strcmp(value, "NaN") == 0 || strcmp(value, "Infinity") == 0) {
+        luaL_addstring(&b, "null");   // According to ECMA-262 section 24.5.2 Note 4
+      } else {
+        luaL_addstring(&b, value);
+      }
       break;
     }
 
