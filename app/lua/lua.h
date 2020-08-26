@@ -105,12 +105,12 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 
 /* type of numbers in Lua */
 typedef LUA_NUMBER lua_Number;
+typedef LUA_FLOAT lua_Float;
 
 
 /* type for integer functions */
 typedef LUA_INTEGER lua_Integer;
-
-
+typedef LUAI_UINT32 lua_Unsigned;
 
 /*
 ** state manipulation
@@ -296,6 +296,9 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 
 #define lua_equal(L,idx1,idx2)		lua_compare(L,(idx1),(idx2),LUA_OPEQ)
 #define lua_lessthan(L,idx1,idx2)	lua_compare(L,(idx1),(idx2),LUA_OPLT)
+
+#define lua_pushunsigned(L,n)	lua_pushinteger(L, (lua_Integer)(n))
+#define lua_tounsigned(L,i)	((lua_Unsigned)lua_tointeger(L,i))
 
 /* error codes from cross-compiler returned by lua_dump */
 /* target integer is too small to hold a value */

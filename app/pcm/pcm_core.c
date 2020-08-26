@@ -36,7 +36,7 @@ void pcm_data_vu( task_param_t param, uint8 prio )
   if (cfg->cb_vu_ref != LUA_NOREF) {
     lua_rawgeti( L, LUA_REGISTRYINDEX, cfg->cb_vu_ref );
     lua_rawgeti( L, LUA_REGISTRYINDEX, cfg->self_ref );
-    lua_pushnumber( L, (LUA_NUMBER)(cfg->vu_peak) );
+    lua_pushinteger( L, cfg->vu_peak );
     luaL_pcallx( L, 2, 0 );
   }
 }

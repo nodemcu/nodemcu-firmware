@@ -546,6 +546,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 #define LUA_NUMBER_DOUBLE
 #define LUA_NUMBER	double
 #endif
+#define LUA_FLOAT	double
 
 /*
 @@ LUAI_UACNUMBER is the result of an 'usual argument conversion'

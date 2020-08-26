@@ -194,7 +194,7 @@ static void enduser_setup_error(int line, const char *str, int err)
   if (state != NULL && state->lua_err_cb_ref != LUA_NOREF)
   {
     lua_rawgeti (L, LUA_REGISTRYINDEX, state->lua_err_cb_ref);
-    lua_pushnumber(L, err);
+    lua_pushinteger(L, err);
     lua_pushfstring(L, "%d: \t%s", line, str);
     luaL_pcallx (L, 2, 0);
   }

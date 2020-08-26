@@ -350,9 +350,8 @@ void swtmr_cb_register(void* timer_cb_ptr, uint8 suspend_policy){
     }
 
     lua_pushstring(L, CB_LIST_STR);
-    lua_rawget(L, -2);
 
-    if(lua_istable(L, -1)){
+    if(lua_rawget(L, -2) == LUA_TTABLE){
       //cb_list exists, get length of list
       cb_list_last_idx = lua_objlen(L, -1);
     }
@@ -366,7 +365,7 @@ void swtmr_cb_register(void* timer_cb_ptr, uint8 suspend_policy){
     }
 
     //append new timer cb ptr to table
-    lua_pushnumber(L, cb_list_last_idx+1);
+    lua_pushinteger(L, (lua_Integer) (cb_list_last_idx+1));
     cb_registry_item_t* reg_item = lua_newuserdata(L, sizeof(cb_registry_item_t));
     reg_item->tmr_cb_ptr = timer_cb_ptr;
     reg_item->suspend_policy = suspend_policy;
