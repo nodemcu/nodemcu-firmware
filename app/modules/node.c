@@ -622,12 +622,12 @@ static int node_random (lua_State *L) {
     }
     case 1: {  /* only upper limit */
       l = 1;
-      u = luaL_checkint(L, 1);
+      u = luaL_checkinteger(L, 1);
       break;
     }
     case 2: {  /* lower and upper limits */
-      l = luaL_checkint(L, 1);
-      u = luaL_checkint(L, 2);
+      l = luaL_checkinteger(L, 1);
+      u = luaL_checkinteger(L, 2);
       break;
     }
     default:
