@@ -84,7 +84,8 @@ static int node_deepsleep( lua_State* L )
   // Set deleep option, skip if nil
   if ( lua_isnumber(L, 2) )
   {
-    luaL_argcheck(L, 2, (option = lua_tounsigned(L, 2)) <= 4, "wrong option value" );
+    option = lua_tounsigned(L, 2);
+    luaL_argcheck(L, 2, option <= 4, "wrong option value" );
     system_deep_sleep_set_option( option );
   }
   bool instant = (lua_isnumber(L, 3) && luaL_checkinteger(L, 3)) ? true: false;
