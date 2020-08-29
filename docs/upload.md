@@ -120,7 +120,7 @@ wifi.sta.config({ssid=SSID, pwd=PASSWORD})
 
 If you install Lua on your development PC or Laptop, then you can use a standard `lua` environment to develop PC applications and also use the standard `luac` compiler to syntax check _any_ Lua source code. However because of architectural differences between the ESP8266 chipset with its SDK and a standard PC CPU, the system APIs are different and the binary output from the standard PC `luac` cannot be run on the ESP8266.
 
-To address this issue,  the standard NodeMCU make now generates a host executable `lua.cross` (or `lua.cross.int` for integer builds) as well as the firmware binary itself.  Compiling source on one platform for use on another is known as _cross-compilation_ and this `luac.cross` compiler allows you to compile Lua source files on your PC for downloading onto ESP8266 in a binary format.
+To address this issue,  the standard NodeMCU make now generates a host executable `luac.cross` (or `luac.cross.int` for integer builds) as well as the firmware binary itself.  Compiling source on one platform for use on another is known as _cross-compilation_ and this `luac.cross` compiler allows you to compile Lua source files on your PC for downloading onto ESP8266 in a binary format.
 
 The firmware also includes API calls to allow Lua sources to be compiled on ESP, but this mode of compilation is limited by the RAM heap available. Host cross compilation bypasses this ESP compile limit entirely and allows you to use larger modules within your code.  In the case of LFS compiles,  this code is stored in flash memory on the ESP, and so has no RAM overhead; the only limit is the size of the allocated LFS region.
 
