@@ -15,20 +15,25 @@ int platform_dht_exists( unsigned id )
   return ((id < NUM_DHT) && (id > 0));
 }
 
+static void aux_read( lua_State *L )
+{
+  double temp = dht_getTemperature();
+  double humi = dht_getHumidity();
+  int tempdec = (int)((temp - (int)temp) * 1000);
+  int humidec = (int)((humi - (int)humi) * 1000);
+  lua_pushnumber( L, (lua_Float) temp ); 
+  lua_pushnumber( L, (lua_Float) humi ); 
+  lua_pushinteger( L, tempdec );
+  lua_pushinteger( L, humidec );
+}
+
 // Lua: status, temp, humi, tempdec, humidec = dht.read( id )
 static int dht_lapi_read( lua_State *L )
 {
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( dht, id );
   lua_pushinteger( L, dht_read_universal(id) );
-  double temp = dht_getTemperature();
-  double humi = dht_getHumidity();
-  int tempdec = (int)((temp - (int)temp) * 1000);
-  int humidec = (int)((humi - (int)humi) * 1000);
-  lua_pushnumber( L, temp );
-  lua_pushnumber( L, humi );
-  lua_pushnumber( L, tempdec );
-  lua_pushnumber( L, humidec );
+  aux_read( L );
   return 5;
 }
 
@@ -38,14 +43,7 @@ static int dht_lapi_read11( lua_State *L )
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( dht, id );
   lua_pushinteger( L, dht_read11(id) );
-  double temp = dht_getTemperature();
-  double humi = dht_getHumidity();
-  int tempdec = (int)((temp - (int)temp) * 1000);
-  int humidec = (int)((humi - (int)humi) * 1000);
-  lua_pushnumber( L, temp );
-  lua_pushnumber( L, humi );
-  lua_pushnumber( L, tempdec );
-  lua_pushnumber( L, humidec );
+  aux_read( L );
   return 5;
 }
 
@@ -55,14 +53,7 @@ static int dht_lapi_readxx( lua_State *L )
   unsigned id = luaL_checkinteger( L, 1 );
   MOD_CHECK_ID( dht, id );
   lua_pushinteger( L, dht_read(id) );
-  double temp = dht_getTemperature();
-  double humi = dht_getHumidity();
-  int tempdec = (int)((temp - (int)temp) * 1000);
-  int humidec = (int)((humi - (int)humi) * 1000);
-  lua_pushnumber( L, temp );
-  lua_pushnumber( L, humi );
-  lua_pushnumber( L, tempdec );
-  lua_pushnumber( L, humidec );
+  aux_read( L );
   return 5;
 }
 

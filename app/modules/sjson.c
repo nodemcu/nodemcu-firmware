@@ -152,21 +152,16 @@ create_new_element(jsonsl_t jsn,
 }
 
 static void push_number(JSN_DATA *data, struct jsonsl_state_st *state) {
-  const char *start = get_state_buffer(data, state);
-  const char *end = start + state->pos_cur - state->pos_begin;
-  lua_pushlstring(data->L, start, end - start);
-#if LUA_VERSION_NUM >= 503
-  int sz = lua_stringtonumber(data->L, lua_tostring(data->L, -1));
-  if (sz) {
-    lua_pop(data->L, 1);
-  } else {
+  lua_pushlstring(data->L, get_state_buffer(data, state), state->pos_cur - state->pos_begin);
+#if LUA_VERSION_NUM == 501
+  lua_pushnumber(data->L, lua_tonumber(data->L, -1));
+#else
+  if (!lua_stringtonumber(data->L, lua_tostring(data->L, -1))) {
+    // In this case stringtonumber does not push a value
     luaL_error(data->L, "Invalid number");
   }
-#else
-  lua_Number result = lua_tonumber(data->L, -1);
-  lua_pop(data->L, 1);
-  lua_pushnumber(data->L, result);
 #endif
+  lua_remove(data->L, -2);
 }
 
 static int fromhex(char c) {

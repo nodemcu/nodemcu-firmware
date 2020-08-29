@@ -152,8 +152,8 @@ static int lswitec_getpos( lua_State* L )
   if (switec_getpos( id, &pos, &dir, &target )) {
     return luaL_error( L, "Unable to get position." );
   }
-  lua_pushnumber(L, pos);
-  lua_pushnumber(L, dir);
+  lua_pushinteger(L, pos);
+  lua_pushinteger(L, dir);
   return 2;
 }
 

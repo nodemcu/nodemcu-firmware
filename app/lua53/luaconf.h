@@ -302,7 +302,7 @@
 #error "numeric float type not defined"
 
 #endif					/* } */
-
+#define LUA_FLOAT	LUA_NUMBER
 
 
 /*

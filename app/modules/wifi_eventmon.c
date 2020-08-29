@@ -35,7 +35,7 @@ void wifi_event_monitor_register_hook(int (*fn)(System_Event_t*)) {
 // wifi.eventmon.register()
 int wifi_event_monitor_register(lua_State* L)
 {
-  uint8 id = (uint8)luaL_checknumber(L, 1);
+  uint8 id = (uint8)luaL_checkinteger(L, 1);
   if ( id > EVENT_MAX ) //Check if user is trying to register a callback for a valid event.
   {
     return luaL_error( L, "valid wifi events:0-%d", EVENT_MAX );
@@ -87,8 +87,8 @@ static void wifi_event_monitor_handle_event_cb(System_Event_t *evt)
     size_t queue_len = lua_objlen(L, -1);
 
     //add event to queue
-    lua_pushnumber(L, queue_len+1);
-    lua_pushnumber(L, evt_ud_ref);
+    lua_pushinteger(L, queue_len+1);
+    lua_pushinteger(L, evt_ud_ref);
     lua_rawset(L, -3);
 
     if(queue_len == 0){ //if queue was empty, post task
@@ -109,7 +109,7 @@ static void wifi_event_monitor_process_event_queue(task_param_t param, uint8 pri
   lua_rawgeti(L, LUA_REGISTRYINDEX, event_queue_ref);
   int index = 1;
   lua_rawgeti(L, 1, index);
-  sint32 event_ref = lua_tonumber(L, -1);
+  sint32 event_ref = lua_tointeger(L, -1);
   lua_pop(L, 1);
 
   //remove event reference from queue

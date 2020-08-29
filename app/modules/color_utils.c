@@ -159,9 +159,9 @@ static int cu_hsv2grb(lua_State *L) {
   uint32_t tmp_color = hsv2grb(hue, sat, val);
 
   // return
-  lua_pushnumber(L, (tmp_color & 0x00FF0000) >> 16);
-  lua_pushnumber(L, (tmp_color & 0x0000FF00) >> 8);
-  lua_pushnumber(L, (tmp_color & 0x000000FF));
+  lua_pushunsigned(L, (tmp_color & 0x00FF0000) >> 16);
+  lua_pushunsigned(L, (tmp_color & 0x0000FF00) >> 8);
+  lua_pushunsigned(L, (tmp_color & 0x000000FF));
 
   return 3;
 }
@@ -181,10 +181,10 @@ static int cu_hsv2grbw(lua_State *L) {
   uint32_t tmp_color = hsv2grbw(hue, sat, val);
 
   // return g, r, b, w
-  lua_pushnumber(L, (tmp_color & 0xFF000000) >> 24);
-  lua_pushnumber(L, (tmp_color & 0x00FF0000) >> 16);
-  lua_pushnumber(L, (tmp_color & 0x0000FF00) >> 8);
-  lua_pushnumber(L, (tmp_color & 0x000000FF));
+  lua_pushunsigned(L, (tmp_color & 0xFF000000) >> 24);
+  lua_pushunsigned(L, (tmp_color & 0x00FF0000) >> 16);
+  lua_pushunsigned(L, (tmp_color & 0x0000FF00) >> 8);
+  lua_pushunsigned(L, (tmp_color & 0x000000FF));
 
   return 4;
 }
@@ -203,9 +203,9 @@ static int cu_color_wheel(lua_State *L) {
   uint8_t b = (color & 0x000000FF) >>  0;
 
   // return
-  lua_pushnumber(L, g);
-  lua_pushnumber(L, r);
-  lua_pushnumber(L, b);
+  lua_pushunsigned(L, g);
+  lua_pushunsigned(L, r);
+  lua_pushunsigned(L, b);
 
   return 3;
 }
@@ -226,9 +226,9 @@ static int cu_grb2hsv(lua_State *L) {
   uint8_t v = (hsv & 0x000000FF) >>  0;
 
   // return
-  lua_pushnumber(L, h);
-  lua_pushnumber(L, s);
-  lua_pushnumber(L, v);
+  lua_pushunsigned(L, h);
+  lua_pushunsigned(L, s);
+  lua_pushunsigned(L, v);
 
   return 3;
 }
