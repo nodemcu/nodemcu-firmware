@@ -26,6 +26,8 @@
 #include "espconn.h"
 #include "sections.h"
 
+#define SYSTEM_RESERVED_FLASH   (20 * 1024)
+
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
@@ -205,6 +207,7 @@ static void phy_data_setup (partition_item_t *pt, uint32_t n) {
  */
 static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flash_size) {
     int i, j, last = 0, newn = n;
+    uint32_t flash_available = flash_size - SYSTEM_RESERVED_FLASH;
     /*
     * Scan down the PT adjusting and 0 entries to sensible defaults.  Also delete any
     * zero-sized partitions (as the SDK barfs on these).
@@ -234,14 +237,14 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
             if (p->size == ~0x0 && p->addr == 0) {
                 // This allocate all the remaining flash to SPIFFS
                 p->addr = last;
-                p->size = flash_size - last;
+                p->size = flash_available - last;
             } else if (p->size == ~0x0) {
-                p->size = flash_size - p->addr;
-           }  else if (p->addr == 0) {
+                p->size = flash_available - p->addr;
+            } else if (p->addr == 0) {
                 // if the is addr not specified then start SPIFFS at 1Mb
                 // boundary if the size will fit otherwise make it consecutive
                 // to the previous partition.
-                p->addr = (p->size <= flash_size - 0x100000) ? 0x100000 : last;
+                p->addr = (p->size <= flash_available - 0x100000) ? 0x100000 : last;
             }
         }
 
@@ -253,7 +256,7 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
             if (p->addr & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
                 p->size & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
                 p->addr < last ||
-                p->addr + p->size > flash_size) {
+                p->addr + p->size > flash_available) {
                 os_printf("Partition %u invalid alignment\n", i);
                 while(1) {/*system_soft_wdt_feed ();*/}
             }
