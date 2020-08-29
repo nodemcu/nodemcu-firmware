@@ -2,7 +2,7 @@
 
 set -e
 
-echo "Running PR build (all modules, SSL enabled, debug enabled)"
+echo "Running PR build: all modules plus SSL, debug, FATFS, new I2C driver, pmSleep and SmartConfig all enabled"
 (
 cd "$TRAVIS_BUILD_DIR"/app/include || exit
 # uncomment disabled modules e.g. '//#define LUA_USE_MODULES_UCG' -> '#define LUA_USE_MODULES_UCG'
@@ -31,10 +31,10 @@ sed -i 's@//#define WIFI_SMART_ENABLE@#define WIFI_SMART_ENABLE@' user_config.h
 cat user_config.h
 
 cd "$TRAVIS_BUILD_DIR"/ld || exit
- # increase irom0_0_seg size for all modules build
- sed -E -i.bak 's@(.*irom0_0_seg *:.*len *=) *[^,]*(.*)@\1 0x200000\2@' nodemcu.ld
- sed -E -i.bak 's@(.*iram1_0_seg *:.*len *=) *[^,]*(.*)@\1 0x100000\2@' nodemcu.ld
- cat nodemcu.ld
+# increase irom0_0_seg size for all modules build
+sed -E -i.bak 's@(.*irom0_0_seg *:.*len *=) *[^,]*(.*)@\1 0x200000\2@' nodemcu.ld
+sed -E -i.bak 's@(.*iram1_0_seg *:.*len *=) *[^,]*(.*)@\1 0x100000\2@' nodemcu.ld
+cat nodemcu.ld
 
 # change to "root" directory no matter where the script was started from
 cd "$TRAVIS_BUILD_DIR" || exit
