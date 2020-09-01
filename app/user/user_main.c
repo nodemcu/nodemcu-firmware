@@ -26,8 +26,6 @@
 #include "espconn.h"
 #include "sections.h"
 
-#define SYSTEM_RESERVED_FLASH   (20 * 1024)
-
 #ifdef LUA_USE_MODULES_RTCTIME
 #include "rtc/rtctime.h"
 #endif
@@ -42,8 +40,8 @@ __asm__(
   "init_data_end:\n"
 );
 extern const char _irom0_text_start[], _irom0_text_end[], _flash_used_end[];
-#define IROM0_SIZE (_irom0_text_end - _irom0_text_start)
 
+#define IROM0_SIZE (_irom0_text_end - _irom0_text_start)
 
 #define PRE_INIT_TEXT_ATTR        __attribute__((section(".p3.pre_init")))
 #define IROM_PTABLE_ATTR          __attribute__((section(".irom0.ptable")))
@@ -62,9 +60,14 @@ extern const char _irom0_text_start[], _irom0_text_end[], _flash_used_end[];
 #define NODEMCU_PARTITION_LFS       PLATFORM_PARTITION(NODEMCU_LFS0_PARTITION)
 #define NODEMCU_PARTITION_SPIFFS    PLATFORM_PARTITION(NODEMCU_SPIFFS0_PARTITION)
 
+#define RF_CAL_SIZE            0x1000
+#define PHY_DATA_SIZE          0x1000
+#define SYSTEM_PARAMETER_SIZE  0x3000
+
 #define MAX_PARTITIONS 20
 #define WORDSIZE       sizeof(uint32_t)
 #define PTABLE_SIZE    7   /** THIS MUST BE MATCHED TO NO OF PT ENTRIES BELOW **/
+
 struct defaultpt {
   platform_rcr_t hdr;
   partition_item_t pt[PTABLE_SIZE+1]; // the +! is for the endmarker
@@ -80,12 +83,12 @@ static const struct defaultpt rompt IROM_PTABLE_ATTR USED_ATTR  = {
           .id  = PLATFORM_RCR_PT},
   .pt  = {
     { NODEMCU_PARTITION_EAGLEROM,         0x00000,     0x0B000},
-    { SYSTEM_PARTITION_RF_CAL,            0x0B000,      0x1000},
-    { SYSTEM_PARTITION_PHY_DATA,          0x0C000,      0x1000},
-    { SYSTEM_PARTITION_SYSTEM_PARAMETER,  0x0D000,      0x3000},
-    { NODEMCU_PARTITION_IROM0TEXT,        0x10000,      0x0000},
-    { NODEMCU_PARTITION_LFS,              0x0,          LUA_FLASH_STORE},
-    { NODEMCU_PARTITION_SPIFFS,           0x0,          SPIFFS_MAX_FILESYSTEM_SIZE},
+    { SYSTEM_PARTITION_RF_CAL,            0x0D000,     RF_CAL_SIZE},
+    { SYSTEM_PARTITION_PHY_DATA,          0x0F000,     PHY_DATA_SIZE},
+    { NODEMCU_PARTITION_IROM0TEXT,        0x10000,     0x0000},
+    { NODEMCU_PARTITION_LFS,              0x0,         LUA_FLASH_STORE},
+    { NODEMCU_PARTITION_SPIFFS,           0x0,         SPIFFS_MAX_FILESYSTEM_SIZE},
+    { SYSTEM_PARTITION_SYSTEM_PARAMETER,  0x0,         SYSTEM_PARAMETER_SIZE},
     {0,(uint32_t) &_irom0_text_end,0}
   }
 };
@@ -163,7 +166,6 @@ void user_pre_init(void) {
     }
 
     // Now register the partition and return
-// for (i=0;i<n;i++) os_printf("P%d: %3d %06x %06x\n", i, pt[i].type, pt[i].addr, pt[i].size);
     if( fs_size_code > 1 && system_partition_table_regist(pt, n, fs_size_code)) {
         return;
     }
@@ -207,7 +209,6 @@ static void phy_data_setup (partition_item_t *pt, uint32_t n) {
  */
 static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flash_size) {
     int i, j, last = 0, newn = n;
-    uint32_t flash_available = flash_size - SYSTEM_RESERVED_FLASH;
     /*
     * Scan down the PT adjusting and 0 entries to sensible defaults.  Also delete any
     * zero-sized partitions (as the SDK barfs on these).
@@ -233,36 +234,50 @@ static uint32_t first_time_setup(partition_item_t *pt, uint32_t n, uint32_t flas
                 p->addr = last;
             break;
 
+         /*
+          * Set up the SPIFFS partition based on some sensible defaults:
+          *    size == 0 mean no SPIFFS partition.
+          *    size == ~0 means use all of the available flash for SPIFFS (resp the addr if set).
+          *    if size > 0 then float the default boundary to 1M if the SPIFFS will fit.
+          */
           case NODEMCU_PARTITION_SPIFFS:
-            if (p->size == ~0x0 && p->addr == 0) {
-                // This allocate all the remaining flash to SPIFFS
-                p->addr = last;
-                p->size = flash_available - last;
-            } else if (p->size == ~0x0) {
-                p->size = flash_available - p->addr;
-            } else if (p->addr == 0) {
-                // if the is addr not specified then start SPIFFS at 1Mb
-                // boundary if the size will fit otherwise make it consecutive
-                // to the previous partition.
-                p->addr = (p->size <= flash_available - 0x100000) ? 0x100000 : last;
+            if (p->size == ~0x0) {         /* Maximum SPIFFS partition */               
+                if (p->addr == 0)
+                    p->addr = last;
+                p->size = flash_size - SYSTEM_PARAMETER_SIZE - last;
+            } else if (p->size > 0x0) {    /* Explicit SPIFFS size */
+                if (p->addr < last)   // SPIFFS can't overlap the previous region; 
+                    p->addr = 0; 
+                if (p->addr == 0)
+                    p->addr = (p->size <= flash_size - SYSTEM_PARAMETER_SIZE - 0x100000) ? 
+                              0x100000 : last;
             }
+            /* else p->size == 0              No SPIFFS partition */
+            break;
+
+          case SYSTEM_PARTITION_SYSTEM_PARAMETER:
+            p->addr = flash_size - SYSTEM_PARAMETER_SIZE;
+            p->size = SYSTEM_PARAMETER_SIZE;
         }
 
         if (p->size == 0) {
             // Delete 0-sized partitions as the SDK barfs on these
             newn--;
         } else {
-            // Do consistency tests on the partition
+           /*
+            * Do consistency tests on the partition.  The address and size must 
+            * be flash sector aligned.  Partitions can't overlap, and the last
+            * patition must fit within the flash size.
+            */
             if (p->addr & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
                 p->size & (INTERNAL_FLASH_SECTOR_SIZE - 1) ||
                 p->addr < last ||
-                p->addr + p->size > flash_available) {
+                p->addr + p->size > flash_size) {
                 os_printf("Partition %u invalid alignment\n", i);
                 while(1) {/*system_soft_wdt_feed ();*/}
             }
             if (j < i)   // shift the partition down if we have any deleted slots
                 pt[j] = *p;
-//os_printf("Partition %d: %04x %06x %06x\n", j, p->type, p->addr, p->size);
             j++;
             last = p->addr + p->size;
         }
