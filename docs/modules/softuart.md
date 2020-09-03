@@ -3,8 +3,12 @@
 | :----- | :-------------------- | :---------- | :------ |
 |2019-12-27 | [pleningerweb](https://github.com/plieningerweb/), [juancgalvez](https://github.com/juancgalvez/), [crasu](https://github.com/crasu/), [galjonsfigur](https://github.com/galjonsfigur/)| [galjonsfigur](https://github.com/galjonsfigur/) | [softuart.c](../../app/modules/softuart.c) |
 
-The SoftUART module provides access to multiple software-based UART ports.
+The SoftUART module offers bit-banged serial ports over GPIO pins.
 
+!!! warning
+
+    Software implementation of serial port can be unreliable and some reception errors are to be expected.
+    
 ESP8266 has only 1 full hardware UART port that is used to program the chip and communicate with NodeMCU firmware. The second port is transmit-only. More information can be found in [uart module documentation](uart/). This module provides access to more UART ports and can be used to communicate with devices like GSM or GPS modules. The code is based on [esp8266-software-uart](https://github.com/plieningerweb/esp8266-software-uart) and [Arduino-esp8266-Software-UART](https://github.com/juancgalvez/Arduino-esp8266-Software-UART) projects. Currently doesn't support inverted serial data logic or modes other than 8N1. It's important to notice that this is a software implementation of the serial protocol. There could be some interrupts that make the transmission or reception fail due to invalid timing.
 
 !!! note
