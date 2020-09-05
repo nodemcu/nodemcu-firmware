@@ -132,26 +132,29 @@ static int tmr_start(lua_State* L){
 	luaL_argcheck(L, lua_isboolean(L, 2) || lua_isnil(L, 2), 2, "boolean expected");
 	int restart = lua_toboolean(L, 2);
 
-	lua_settop(L, 1);  /* ignore any args after the userdata */
+	lua_settop(L, 1);  /* we need to have userdata on top of the stack */
 	if (tmr->self_ref == LUA_NOREF)
 		tmr->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
 
-	//we return false if the timer is not idle
+	//we return false if the timer is not idle and is not to be restarted
 	int idle = tmr->mode&TIMER_IDLE_FLAG;
 	if(!(idle || restart)){
-		lua_pushboolean(L, 0);
+		lua_pushboolean(L, false);
 	}else{
 		if (!idle) {os_timer_disarm(&tmr->os);}
 		tmr->mode &= ~TIMER_IDLE_FLAG;
 		os_timer_arm(&tmr->os, tmr->interval, tmr->mode==TIMER_MODE_AUTO);
+		lua_pushboolean(L, true);
 	}
-	lua_pushboolean(L, !idle); /* false if the timer is not idle */
 	return 1;
 }
 
 // Lua: t:alarm( interval, repeat, function )
 static int tmr_alarm(lua_State* L){
 	tmr_register(L);
+	/* remove tmr.alarm's other then the 1st UD parameters from Lua stack. 
+	tmr.start expects UD and optional restart parameter. */
+	lua_settop(L, 1);
 	return tmr_start(L);
 }
 
