@@ -143,7 +143,7 @@ typedef KeyCache KeyCacheLine[KEYCACHE_M];
 ** 'global state', shared by all threads of this state
 */
 
-typedef struct FlashHeader LFSHeader;
+typedef struct LFSHeader LFSHeader;
 
 typedef struct global_State {
   lua_Alloc frealloc;  /* function to reallocate memory */

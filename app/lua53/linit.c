@@ -7,7 +7,6 @@
 
 #define linit_c
 #define LUA_LIB
-#define LUA_CORE
 
 /*
 ** NodeMCU uses RO segment based static ROTable declarations for library
@@ -38,7 +37,6 @@
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
-#include "lstate.h"
 #include "lnodemcu.h"
 
 extern LROT_TABLE(strlib);

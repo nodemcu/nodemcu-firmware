@@ -68,15 +68,17 @@
 
 #define LUA_MAX_ROTABLE_NAME 32  /* Maximum length of a rotable name and of a string key*/
 
-#ifdef LUA_CORE
+#if defined(LUA_CORE) || defined(LUA_LIB)
 
 #include "lstate.h"
 #include "lzio.h"
 
 LUAI_FUNC int luaN_init (lua_State *L);
-LUAI_FUNC void *luaN_writeFlash (void *data, const void *rec, size_t n);
-LUAI_FUNC void luaN_flushFlash (void *);
-LUAI_FUNC void luaN_setFlash (void *, unsigned int o);
+
+#ifdef LUA_USE_HOST
+extern void *LFSregion;
+LUAI_FUNC void luaN_setabsolute(lu_int32 addr);
+#endif
 
 #endif
 #endif

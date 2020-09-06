@@ -1000,6 +1000,17 @@ LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc,
   return status;
 }
 
+static void aux_load(lua_State *L, LClosure *f) {
+  if (f->nupvalues >= 1) {  /* does it have an upvalue? */
+    /* get global table from registry */
+    Table *reg = hvalue(&G(L)->l_registry);
+    const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
+    /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
+    setobj(L, f->upvals[0]->v, gt);
+    luaC_upvalbarrier(L, f->upvals[0]);
+  }
+}
+
 
 LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
                       const char *chunkname, const char *mode) {
@@ -1010,14 +1021,13 @@ LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
   luaZ_init(L, &z, reader, data);
   status = luaD_protectedparser(L, &z, chunkname, mode);
   if (status == LUA_OK) {  /* no errors? */
-    LClosure *f = clLvalue(L->top - 1);  /* get newly created function */
-    if (f->nupvalues >= 1) {  /* does it have an upvalue? */
-      /* get global table from registry */
-      Table *reg = hvalue(&G(L)->l_registry);
-      const TValue *gt = luaH_getint(reg, LUA_RIDX_GLOBALS);
-      /* set global table as 1st upvalue of 'f' (may be LUA_ENV) */
-      setobj(L, f->upvals[0]->v, gt);
-      luaC_upvalbarrier(L, f->upvals[0]);
+    if (ttisLclosure(L->top - 1)) {
+      aux_load(L, clLvalue(L->top - 1));  /* add _ENV to newly created function */
+    } else if (ttisrwtable(L->top - 1)) {
+      TValue kv[2];
+      setnilvalue(kv);
+      while (luaH_next(L, hvalue(L->top - 1), kv))
+        aux_load(L, clLvalue(kv+1));  /* add _ENV to newly created functions */
     }
   }
   lua_unlock(L);
@@ -1028,15 +1038,28 @@ LUA_API int lua_load (lua_State *L, lua_Reader reader, void *data,
 LUA_API int lua_dump (lua_State *L, lua_Writer writer, void *data, int strip) {
   int status;
   TValue *o;
+
   lua_lock(L);
   api_checknelems(L, 1);
   o = L->top - 1;
   if (strip == -1)
     strip = G(L)->stripdefault;
-  if (isLfunction(o))
-    status = luaU_dump(L, getproto(o), writer, data, strip);
-  else
+  if (ttisrwtable(o)) {
+    status = luaU_dump(L, hvalue(o), writer, data, strip);
+  } else if (isLfunction(o)) {
+    /* Add table with single funtion entry to stack */
+    Table *t = luaH_new(L);
+    sethvalue(L, L->top, t);  /* Add to stack to prevent GC */
+    api_incr_top(L);
+    luaH_resize(L, t, 1, 0);
+    luaH_setint(L, t, 1, L->top - 2);
+    luaC_barrierback(L, t, L->top - 2);
+    status = luaU_dump(L, t, writer, data, strip);
+    L->top--;    /* Drop able and ceck GC */
+    luaC_checkGC(L);
+  } else {
     status = 1;
+  }
   lua_unlock(L);
   return status;
 }
