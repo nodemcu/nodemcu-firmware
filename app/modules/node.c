@@ -41,6 +41,11 @@ static int default_onerror(lua_State *L) {
   return 0;
 }
 
+LUAI_FUNC int lua_lfsreload_deprecated (lua_State *L) {
+  platform_print_deprecation_note("node.flashreload", "soon. Use node.LFS interface instead");
+  return node_lfsreload (L);
+}
+
 // Lua: setonerror([function])
 static int node_setonerror( lua_State* L ) {
   lua_settop(L, 1);
@@ -872,8 +877,8 @@ LROT_BEGIN(node, NULL, 0)
   LROT_FUNCENTRY( heap, node_heap )
   LROT_FUNCENTRY( info, node_info )
   LROT_TABENTRY( task, node_task )
+  LROT_FUNCENTRY( flashreload, lua_lfsreload_deprecated )
   LROT_FUNCENTRY( flashindex, node_lfsindex )
-  LROT_FUNCENTRY( flashreload, node_lfsreload )
   LROT_TABENTRY( LFS, node_lfs )
   LROT_FUNCENTRY( setonerror, node_setonerror )
   LROT_FUNCENTRY( startupcommand, node_startupcommand )
