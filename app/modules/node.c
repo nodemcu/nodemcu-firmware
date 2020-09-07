@@ -41,11 +41,6 @@ static int default_onerror(lua_State *L) {
   return 0;
 }
 
-LUAI_FUNC int lua_lfsreload_deprecated (lua_State *L) {
-  platform_print_deprecation_note("node.flashreload", "soon. Use node.LFS interface instead");
-  return node_lfsreload (L);
-}
-
 // Lua: setonerror([function])
 static int node_setonerror( lua_State* L ) {
   lua_settop(L, 1);
@@ -655,6 +650,12 @@ static int node_lfsreload (lua_State *L) {
   lua_settop(L, 1);
   luaL_lfsreload(L);
   return 1;
+}
+
+// Lua: n = node.flashreload(lfsimage)
+static int lua_lfsreload_deprecated (lua_State *L) {
+  platform_print_deprecation_note("node.flashreload", "soon. Use node.LFS interface instead");
+  return node_lfsreload (L);
 }
 
 // Lua: n = node.flashindex(module)
