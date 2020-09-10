@@ -105,11 +105,25 @@ static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n
 /* Externally defined: static const char enduser_setup_html_default[] = ... */
 #include "enduser_setup/enduser_setup.html.gz.def.h"
 
+#define SCAN_LISTENER_MAGIC  1
+#define HTTP_REQUEST_BUFFER_MAGIC  2
+
+typedef struct {
+  int magic;
+} tcp_arg_t;
+
 typedef struct scan_listener
 {
+  int magic; 
   struct tcp_pcb *conn;
   struct scan_listener *next;
 } scan_listener_t;
+
+typedef struct {
+  int magic;
+  size_t length;
+  char data[0];
+} http_request_buffer_t;
 
 typedef struct
 {
@@ -1333,26 +1347,83 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     return ERR_ABRT;
   }
 
+  tcp_arg_t *l = arg; 
+
   if (!p) /* remote side closed, close our end too */
   {
     ENDUSER_SETUP_DEBUG("connection closed");
-    scan_listener_t *l = arg; /* if it's waiting for scan, we have a ptr here */
-    if (l)
-      remove_scan_listener (l);
+    if (l) {
+      if (l->magic == SCAN_LISTENER_MAGIC) {
+        remove_scan_listener ((scan_listener_t *)l);
+      } else if (l->magic == HTTP_REQUEST_BUFFER_MAGIC) {
+        free(l);
+      }
+    }
 
     deferred_close (http_client);
     return ERR_OK;
   }
 
-  char *data = calloc (1, p->tot_len + 1);
-  if (!data)
-    return ERR_MEM;
+  http_request_buffer_t *hrb;
+  if (!l) {
+    hrb = calloc(1, sizeof(*hrb));
+    if (!hrb) {
+      ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    }
+    hrb->magic = HTTP_REQUEST_BUFFER_MAGIC;
+    tcp_arg(http_client, hrb);
+  } else if (l->magic == HTTP_REQUEST_BUFFER_MAGIC) {
+    hrb = (http_request_buffer_t *) l;
+  } else {
+    ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+  }
 
-  unsigned data_len = pbuf_copy_partial (p, data, p->tot_len, 0);
+  // Append the new data
+  size_t newlen = hrb->length + p->tot_len;
+  hrb = realloc(hrb, sizeof(*hrb) + newlen + 1);
+  tcp_arg(http_client, hrb);
+  if (!hrb) {
+    ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+  }
+
+  pbuf_copy_partial(p, hrb->data + hrb->length, p->tot_len, 0);
+  hrb->data[newlen] = 0;
+  hrb->length = newlen;
+
   tcp_recved (http_client, p->tot_len);
   pbuf_free (p);
 
+  // see if we have the whole request.
+  // Rely on the fact that the header shoyld not contain a null character
+  const char *end_of_header = strstr(hrb->data, "\r\n\r\n");
+  if (end_of_header == 0) {
+    return ERR_OK;
+  }
+
+  end_of_header += 4;
+
+  // We have the entire header, now see if there is any content
+  for (const char *hdr = hrb->data; hdr && hdr < end_of_header; hdr = strchr(hdr, '\n')) {
+    hdr += 1; // Skip the \n
+    if (strncasecmp(hdr, "Content-length", 14) == 0) {
+      // There is a content-length header
+      const char *field = hdr + 14;
+      while (*field != '\n' && *field != ':') {
+        field++;
+      }
+      if (*field == ':') {
+        size_t extra = strtol(field + 1, 0, 10);
+        if (extra + end_of_header - hrb->data > hrb->length) {
+          return ERR_OK;
+        }
+      }
+    }
+  }
+
   err_t ret = ERR_OK;
+
+  char *data = hrb->data;
+  size_t data_len = hrb->length;
 
 #if ENDUSER_SETUP_DEBUG_SHOW_HTTP_REQUEST
   ENDUSER_SETUP_DEBUG(data);
@@ -1376,27 +1447,29 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
       /* Don't do an AP Scan while station is trying to connect to Wi-Fi */
       if (state->connecting == 0)
       {
-        scan_listener_t *l = malloc (sizeof (scan_listener_t));
-        if (!l)
+        scan_listener_t *sl = malloc (sizeof (scan_listener_t));
+        if (!sl)
         {
           ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
         }
 
+        sl->magic = SCAN_LISTENER_MAGIC;
+
         bool already = (state->scan_listeners != NULL);
 
-        tcp_arg (http_client, l);
+        tcp_arg (http_client, sl);
         /* TODO: check if also need a tcp_err() cb, or if recv() is enough */
-        l->conn = http_client;
-        l->next = state->scan_listeners;
-        state->scan_listeners = l;
+        sl->conn = http_client;
+        sl->next = state->scan_listeners;
+        state->scan_listeners = sl;
 
         if (!already)
         {
           if (!wifi_station_scan(NULL, on_scan_done))
           {
             enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
-            deferred_close (l->conn);
-            l->conn = 0;
+            deferred_close (sl->conn);
+            sl->conn = 0;
             free_scan_listeners();
           }
         }
@@ -1459,7 +1532,8 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   deferred_close (http_client);
 
 free_out:
-  free (data);
+  free (hrb);
+  tcp_arg(http_client, 0);
   return ret;
 }
 
@@ -1476,6 +1550,7 @@ static err_t enduser_setup_http_connectcb(void *arg, struct tcp_pcb *pcb, err_t 
   }
 
   tcp_accepted (state->http_pcb);
+  tcp_arg(pcb, 0);              // Initialize to known value
   tcp_recv (pcb, enduser_setup_http_recvcb);
   tcp_nagle_disable (pcb);
   return ERR_OK;

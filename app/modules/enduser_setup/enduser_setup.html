@@ -274,8 +274,13 @@
 					return b.rssi - a.rssi;
 				});
 				var ops = '<option>Select a Network...</option>';
+                                var seen = {};
 				for (var i = 0; i < list.length; ++i) {
-					ops += '<option>' + list[i].ssid + '</option>';
+                                        var ssid = list[i].ssid;
+                                        if (!seen[ssid]) {
+                                            seen[ssid] = 1;
+					    ops += '<option>' + ssid.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;") + '</option>';
+                                        }
 				}
 				ap.innerHTML = ops;
 				ab.disabled = false;
