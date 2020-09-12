@@ -1278,7 +1278,7 @@ static void on_scan_done (void *arg, STATUS status)
     const size_t hdr_sz = sizeof (header_fmt) +1 -1; /* +expand %4d, -\0 */
 
     /* To be able to safely escape a pathological SSID, we need 2*32 bytes */
-    const size_t max_entry_sz = 27 + 2*32 + 6; /* {"ssid":"","rssi":,"chan":} */
+    const size_t max_entry_sz = 35 + 2*32 + 9; /* {"ssid":"","rssi":,"chan":,"auth":} */
     const size_t alloc_sz = hdr_sz + num_nets * max_entry_sz + 3;
     char *http = calloc (1, alloc_sz);
     if (!http)
@@ -1313,6 +1313,12 @@ static void on_scan_done (void *arg, STATUS status)
       p += sizeof (entry_chan) -1;
 
       p += sprintf (p, "%d", wn->channel);
+
+      const char entry_auth[] = ",\"auth\":";
+      strcpy (p, entry_auth);
+      p += sizeof (entry_auth) -1;
+
+      p += sprintf (p, "%d", wn->authmode);
 
       *p++ = '}';
     }
