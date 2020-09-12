@@ -95,9 +95,9 @@ static const char http_header_204[] = "HTTP/1.1 204 No Content\r\nContent-Length
 static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_302_trying[] = "HTTP/1.1 302 Moved\r\nLocation: /?trying=true\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_400[] = "HTTP/1.1 400 Bad request\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:10\r\nConnection:close\r\n\r\nNot found\n";
 static const char http_header_405[] = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Length:6\r\nConnection:close\r\n\r\nError\n";
 
 static const char http_header_content_len_fmt[] = "Content-length:%5d\r\n\r\n";
 static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n";
@@ -1481,13 +1481,12 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     }
     else if (strncmp(data + 4, "/status.json", 12) == 0)
     {
-    enduser_setup_serve_status_as_json(http_client);
+      enduser_setup_serve_status_as_json(http_client);
     }
     else if (strncmp(data + 4, "/status", 7) == 0)
     {
       enduser_setup_serve_status(http_client);
     }
-
     else if (strncmp(data + 4, "/update?", 8) == 0)
     {
       switch (enduser_setup_http_handle_credentials(data, data_len))
@@ -1503,15 +1502,10 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
           break;
       }
     }
-    else if (strncmp(data + 4, "/generate_204", 13) == 0)
-    {
-      /* Convince Android devices that they have internet access to avoid pesky dialogues. */
-      enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));
-    }
     else
     {
-      ENDUSER_SETUP_DEBUG("serving 404");
-      enduser_setup_http_serve_header(http_client, http_header_404, LITLEN(http_header_404));
+      // All other URLs redirect to / -- this triggers captive portal.
+      enduser_setup_http_serve_header(http_client, http_header_302, LITLEN(http_header_302));
     }
   }
   else if (strncmp(data, "OPTIONS ", 8) == 0)
