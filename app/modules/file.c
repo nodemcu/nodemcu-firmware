@@ -442,6 +442,9 @@ static int file_g_read( lua_State* L, int n, int16_t end_char, int fd )
     int nread   = vfs_read(fd, p, nwanted);
 
     if (nread == VFS_RES_ERR || nread == 0) {
+      if (j > 0) {
+        break;
+      }
       lua_pushnil(L);
       return 1;
     }
