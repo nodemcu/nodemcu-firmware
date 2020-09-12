@@ -1368,22 +1368,24 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   if (!l) {
     hrb = calloc(1, sizeof(*hrb));
     if (!hrb) {
-      ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+      goto general_fail;
     }
     hrb->magic = HTTP_REQUEST_BUFFER_MAGIC;
     tcp_arg(http_client, hrb);
   } else if (l->magic == HTTP_REQUEST_BUFFER_MAGIC) {
     hrb = (http_request_buffer_t *) l;
   } else {
-    ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    goto general_fail;
   }
 
   // Append the new data
   size_t newlen = hrb->length + p->tot_len;
+  void *old_hrb = hrb;
   hrb = realloc(hrb, sizeof(*hrb) + newlen + 1);
   tcp_arg(http_client, hrb);
   if (!hrb) {
-    ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+    free(old_hrb);
+    goto general_fail;
   }
 
   pbuf_copy_partial(p, hrb->data + hrb->length, p->tot_len, 0);
@@ -1394,7 +1396,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   pbuf_free (p);
 
   // see if we have the whole request.
-  // Rely on the fact that the header shoyld not contain a null character
+  // Rely on the fact that the header should not contain a null character
   const char *end_of_header = strstr(hrb->data, "\r\n\r\n");
   if (end_of_header == 0) {
     return ERR_OK;
@@ -1402,20 +1404,16 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
 
   end_of_header += 4;
 
-  // We have the entire header, now see if there is any content
+  // We have the entire header, now see if there is any content. If we don't find the
+  // content-length header, then there is no content and we can process immediately.
   for (const char *hdr = hrb->data; hdr && hdr < end_of_header; hdr = strchr(hdr, '\n')) {
     hdr += 1; // Skip the \n
-    if (strncasecmp(hdr, "Content-length", 14) == 0) {
+    if (strncasecmp(hdr, "Content-length:", 15) == 0) {
       // There is a content-length header
-      const char *field = hdr + 14;
-      while (*field != '\n' && *field != ':') {
-        field++;
-      }
-      if (*field == ':') {
-        size_t extra = strtol(field + 1, 0, 10);
-        if (extra + end_of_header - hrb->data > hrb->length) {
-          return ERR_OK;
-        }
+      const char *field = hdr + 15;
+      size_t extra = strtol(field + 1, 0, 10);
+      if (extra + (end_of_header - hrb->data) > hrb->length) {
+        return ERR_OK;
       }
     }
   }
@@ -1435,7 +1433,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     {
       if (enduser_setup_http_serve_html(http_client) != 0)
       {
-        ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+        goto general_fail;
       }
       else
       {
@@ -1535,6 +1533,9 @@ free_out:
   free (hrb);
   tcp_arg(http_client, 0);
   return ret;
+
+general_fail:
+  ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
 }
 
 
