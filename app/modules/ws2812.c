@@ -8,6 +8,7 @@
 #include "user_interface.h"
 #include "driver/uart.h"
 #include "osapi.h"
+#include "cpu_esp8266_irq.h"
 
 #include "pixbuf.h"
 
@@ -51,12 +52,18 @@ static int ws2812_init(lua_State* L) {
   return 0;
 }
 
-// Stream data using UART1 routed to GPIO2
-// ws2812.init() should be called first
-//
-// NODE_DEBUG should not be activated because it also uses UART1
-void ICACHE_RAM_ATTR ws2812_write_data(const uint8_t *pixels, uint32_t length, const uint8_t *pixels2, uint32_t length2) {
+static bool
+ws2812_can_write(int uart)
+{
+  // If something to send for first buffer and enough room
+  // in FIFO buffer (we wants to write 4 bytes, so less than
+  // 124 in the buffer)
+  return (((READ_PERI_REG(UART_STATUS(uart)) >> UART_TXFIFO_CNT_S) & UART_TXFIFO_CNT) <= 124);
+}
 
+static void
+ws2812_write_byte(int uart, uint8_t value)
+{
   // Data are sent LSB first, with a start bit at 0, an end bit at 1 and all inverted
   // 0b00110111 => 110111 => [0]111011[1] => 10001000 => 00
   // 0b00000111 => 000111 => [0]111000[1] => 10001110 => 01
@@ -66,31 +73,37 @@ void ICACHE_RAM_ATTR ws2812_write_data(const uint8_t *pixels, uint32_t length, c
   // But declared in ".data" section to avoid read penalty from FLASH
   static const __attribute__((section(".data._uartData"))) uint8_t _uartData[4] = { 0b00110111, 0b00000111, 0b00110100, 0b00000100 };
 
+  WRITE_PERI_REG(UART_FIFO(uart), _uartData[(value >> 6) & 3]);
+  WRITE_PERI_REG(UART_FIFO(uart), _uartData[(value >> 4) & 3]);
+  WRITE_PERI_REG(UART_FIFO(uart), _uartData[(value >> 2) & 3]);
+  WRITE_PERI_REG(UART_FIFO(uart), _uartData[(value >> 0) & 3]);
+}
+
+// Stream data using UART1 routed to GPIO2
+// ws2812.init() should be called first
+//
+// NODE_DEBUG should not be activated because it also uses UART1
+void ICACHE_RAM_ATTR ws2812_write_data(const uint8_t *pixels, uint32_t length, const uint8_t *pixels2, uint32_t length2) {
   const uint8_t *end  = pixels + length;
   const uint8_t *end2 = pixels2 + length2;
 
-  do {
-    // If something to send for first buffer and enough room
-    // in FIFO buffer (we wants to write 4 bytes, so less than
-    // 124 in the buffer)
-    if (pixels < end && (((READ_PERI_REG(UART_STATUS(1)) >> UART_TXFIFO_CNT_S) & UART_TXFIFO_CNT) <= 124)) {
-      uint8_t value = *pixels++;
+  /* Fill the UART fifos with IRQs disabled */
+  uint32_t irq_state = esp8266_defer_irqs();
+  while ((pixels < end) && ws2812_can_write(1)) {
+    ws2812_write_byte(1, *pixels++);
+  }
+  while ((pixels2 < end2) && ws2812_can_write(0)) {
+    ws2812_write_byte(0, *pixels2++);
+  }
+  esp8266_restore_irqs(irq_state);
 
-      // Fill the buffer
-      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 6) & 3]);
-      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 4) & 3]);
-      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 2) & 3]);
-      WRITE_PERI_REG(UART_FIFO(1), _uartData[(value >> 0) & 3]);
+  do {
+    if (pixels < end && ws2812_can_write(1)) {
+      ws2812_write_byte(1, *pixels++);
     }
     // Same for the second buffer
-    if (pixels2 < end2 && (((READ_PERI_REG(UART_STATUS(0)) >> UART_TXFIFO_CNT_S) & UART_TXFIFO_CNT) <= 124)) {
-      uint8_t value = *pixels2++;
-
-      // Fill the buffer
-      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 6) & 3]);
-      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 4) & 3]);
-      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 2) & 3]);
-      WRITE_PERI_REG(UART_FIFO(0), _uartData[(value >> 0) & 3]);
+    if (pixels2 < end2 && ws2812_can_write(0)) {
+      ws2812_write_byte(0, *pixels2++);
     }
   } while(pixels < end || pixels2 < end2); // Until there is still something to send
 }
