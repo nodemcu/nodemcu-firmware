@@ -131,6 +131,7 @@ typedef struct
   struct tcp_pcb *http_pcb;
   char *http_payload_data;
   uint32_t http_payload_len;
+  char *ap_ssid;
   os_timer_t check_station_timer;
   os_timer_t shutdown_timer;
   int lua_connected_cb_ref;
@@ -1634,15 +1635,20 @@ static void enduser_setup_ap_start(void)
   #define ENDUSER_SETUP_AP_SSID "SetupGadget"
 #endif
 
-  char ssid[] = ENDUSER_SETUP_AP_SSID;
-  int ssid_name_len = strlen(ssid);
-  memcpy(&(cnf.ssid), ssid, ssid_name_len);
+  if (state->ap_ssid) {
+    strncpy(cnf.ssid, state->ap_ssid, sizeof(cnf.ssid));
+    cnf.ssid_len = strlen(cnf.ssid);
+  } else {
+    char ssid[] = ENDUSER_SETUP_AP_SSID;
+    int ssid_name_len = strlen(ssid);
+    memcpy(&(cnf.ssid), ssid, ssid_name_len);
 
-  uint8_t mac[6];
-  wifi_get_macaddr(SOFTAP_IF, mac);
-  cnf.ssid[ssid_name_len] = '_';
-  sprintf(cnf.ssid + ssid_name_len + 1, "%02X%02X%02X", mac[3], mac[4], mac[5]);
-  cnf.ssid_len = ssid_name_len + 7;
+    uint8_t mac[6];
+    wifi_get_macaddr(SOFTAP_IF, mac);
+    cnf.ssid[ssid_name_len] = '_';
+    sprintf(cnf.ssid + ssid_name_len + 1, "%02X%02X%02X", mac[3], mac[4], mac[5]);
+    cnf.ssid_len = ssid_name_len + 7;
+  }
   cnf.channel = state == NULL? 1 : state->softAPchannel;
   cnf.authmode = AUTH_OPEN;
   cnf.ssid_hidden = 0;
@@ -1820,6 +1826,8 @@ static void enduser_setup_free(void)
 
   free_scan_listeners ();
 
+  free(state->ap_ssid);
+
   free(state);
   state = NULL;
 }
@@ -1924,21 +1932,33 @@ static int enduser_setup_init(lua_State *L)
     }
   }
 
-  if (!lua_isnoneornil(L, 1))
+  int argno = 1;
+
+  if (lua_isstring(L, argno)) {
+    /* Get the SSID */
+    state->ap_ssid = strdup(lua_tostring(L, argno));
+    argno++;
+  }
+
+  if (!lua_isnoneornil(L, argno))
   {
-    lua_pushvalue(L, 1);
+    lua_pushvalue(L, argno);
     state->lua_connected_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
-  if (!lua_isnoneornil(L, 2))
+  argno++;
+
+  if (!lua_isnoneornil(L, argno))
   {
-    lua_pushvalue (L, 2);
+    lua_pushvalue (L, argno);
     state->lua_err_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
   }
 
-  if (!lua_isnoneornil(L, 3))
+  argno++;
+
+  if (!lua_isnoneornil(L, argno))
   {
-    lua_pushvalue (L, 3);
+    lua_pushvalue (L, argno);
     state->lua_dbg_cb_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     ENDUSER_SETUP_DEBUG("enduser_setup_init: Debug callback has been set");
   }
