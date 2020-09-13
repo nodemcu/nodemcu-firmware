@@ -160,7 +160,7 @@
 						<select id=aplist name=aplist></select>
 					</div>
 					<input id=ssid name=wifi_ssid type=text autocorrect=off autocapitalize=none placeholder='Wi-Fi Name' />
-					<input name=wifi_password type=password autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
+					<input id=wifi_password name=wifi_password type=password autocorrect=off autocapitalize=none autocomplete=off placeholder=Password />
 					<!-- You can add inputs here and have them pop up in your lua code through the file eus_params.lua -->
 					<input type="submit" value="Save"/>
 				</form>
@@ -262,46 +262,51 @@
 			xhr.send();
 		}
 		function gotAp(s, json) {
-			var list;
-			if (s === 200 && json != null) {
-				if (typeof json === 'string' && json.length > 0) {
-					list = JSON.parse(json);
-				} else if (typeof json === 'object') {
-					list = json;
-				}
+                  var list;
+                  if (s === 200 && json != null) {
+                    if (typeof json === 'string' && json.length > 0) {
+                      list = JSON.parse(json);
+                    } else if (typeof json === 'object') {
+                      list = json;
+                    }
 
-				list.sort(function (a, b) {
-					return b.rssi - a.rssi;
-				});
-				var ops = '<option>Select a Network...</option>';
-                                var seen = {};
-				for (var i = 0; i < list.length; ++i) {
-                                        var ssid = list[i].ssid;
-                                        if (!seen[ssid]) {
-                                            seen[ssid] = 1;
-					    ops += '<option>' + ssid.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;") + '</option>';
-                                        }
-				}
-				ap.innerHTML = ops;
-				ab.disabled = false;
-				togAp(null, true);
-				ab.onclick = togAp;
-			} else {
-				ab.innerText = 'No networks found (' + s + ')';
-				ra = to(refrAp, 5);
-			}
+                    list.sort(function (a, b) {
+                      return b.rssi - a.rssi;
+                    });
+                    var ops = '<option>Select a Network...</option>';
+                    var seen = {};
+                    for (var i = 0; i < list.length; ++i) {
+                      var ssid = list[i].ssid;
+                      if (!seen[ssid]) {
+                          seen[ssid] = 1;
+                          ops += '<option data-auth=' + list[i].auth + '>' + 
+                            ssid.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;") + '</option>';
+                      }
+                    }
+                    ap.innerHTML = ops;
+                    ab.disabled = false;
+                    togAp(null, true);
+                    ab.onclick = togAp;
+                  } else {
+                    ab.innerText = 'No networks found (' + s + ')';
+                    ra = to(refrAp, 5);
+                  }
 		}
 		function togAp(ev, force) {
 			if (!force || ap.style.display == 'block') {
-				hide('#dropdown');
-				show('#ssid');
-				ab.innerText = 'Scan for Networks';
-				ab.onclick = refrAp;
+                          hide('#dropdown');
+                          show('#ssid');
+                          ab.innerText = 'Scan for Networks';
+                          ab.onclick = refrAp;
 			} else {
-				show('#dropdown');
-				hide('#ssid');
-				ab.innerText = 'Manual Entry';
+                          show('#dropdown');
+                          hide('#ssid');
+                          ab.innerText = 'Manual Entry';
 			}
+                        let pw = $('#wifi_password');
+                        pw.placeholder = "Password";
+                        pw.disabled = false;
+                        pw.required = true;
 		}
 		function refrAp() {
 			ab.innerText = 'Searching for networks...';
@@ -315,7 +320,17 @@
 			ab.innerText = 'Scan for Networks';
 			ab.onclick = refrAp;
 			$('#aplist').onchange = function () {
-				$('#ssid').value = $('#aplist').value;
+                          $('#ssid').value = $('#aplist').value;
+                          let pw = $('#wifi_password');
+                          if ($('#aplist').selectedOptions[0].dataset.auth > 0) {
+                            pw.placeholder = "Password";
+                            pw.disabled = false;
+                            pw.required = true;
+                          } else {
+                            pw.placeholder = "Open -- no password";
+                            pw.disabled = true;
+                            pw.required = false;
+                          }
 			};
 			$('#bk2').onclick = function () {
 				cur('#f1')
