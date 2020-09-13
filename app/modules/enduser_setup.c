@@ -1502,10 +1502,15 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
           break;
       }
     }
+    else if (strncmp(data + 4, "/generate_204", 13) == 0)
+    {
+      /* Convince Android devices that they have internet access to avoid pesky dialogues. */
+      enduser_setup_http_serve_header(http_client, http_header_204, LITLEN(http_header_204));
+    }
     else
     {
-      // All other URLs redirect to / -- this triggers captive portal.
-      enduser_setup_http_serve_header(http_client, http_header_302, LITLEN(http_header_302));
+      ENDUSER_SETUP_DEBUG("serving 404");
+      enduser_setup_http_serve_header(http_client, http_header_404, LITLEN(http_header_404));
     }
   }
   else if (strncmp(data, "OPTIONS ", 8) == 0)
