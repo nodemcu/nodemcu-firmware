@@ -1498,6 +1498,8 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   char *data = hrb->data;
   size_t data_len = hrb->length;
 
+  tcp_arg(http_client, 0);    // Forget the data pointer.
+
 #if ENDUSER_SETUP_DEBUG_SHOW_HTTP_REQUEST
   ENDUSER_SETUP_DEBUG(data);
 #endif
@@ -1605,7 +1607,6 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
 
 free_out:
   free (hrb);
-  tcp_arg(http_client, 0);
   return ret;
 
 general_fail:
