@@ -92,7 +92,7 @@ static const char http_html_gz_filename[] = "enduser_setup.html.gz";
 static const char http_html_filename[] = "enduser_setup.html";
 static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nConnection:close\r\nContent-Type:text/html; charset=utf-8\r\n"; /* Note single \r\n here! */
 static const char http_header_204[] = "HTTP/1.1 204 No Content\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: http://nodemcu.portal/\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_302_trying[] = "HTTP/1.1 302 Moved\r\nLocation: /?trying=true\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_400[] = "HTTP/1.1 400 Bad request\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:10\r\nConnection:close\r\n\r\nNot found\n";
