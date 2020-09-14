@@ -932,6 +932,8 @@ static err_t streamout_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
   {
     tcp_sent (pcb, 0);
     deferred_close (pcb);
+    free(state->http_payload_data);
+    state->http_payload_data = NULL;
   }
   else
     tcp_arg (pcb, (void *)offs);
@@ -1124,9 +1126,9 @@ static void enduser_setup_handle_OPTIONS (struct tcp_pcb *http_client, char *dat
 
   int type = 0;
 
-  if (strncmp(data, "GET ", 4) == 0)
+  if (strncmp(data, "OPTIONS ", 8) == 0)
   {
-    if (strncmp(data + 4, "/aplist", 7) == 0 || strncmp(data + 4, "/setwifi?", 9) == 0 || strncmp(data + 4, "/status.json", 12) == 0)
+    if (strncmp(data + 8, "/aplist", 7) == 0 || strncmp(data + 8, "/setwifi?", 9) == 0 || strncmp(data + 8, "/status.json", 12) == 0)
     {
       enduser_setup_http_serve_header (http_client, json, strlen(json));
       return;
@@ -1154,7 +1156,7 @@ static void enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, s
       {
         case 0: {
           // all went fine, extract all the form data into a file
-            enduser_setup_write_file_with_extra_configuration_data(body, bodylength);
+          enduser_setup_write_file_with_extra_configuration_data(body, bodylength);
           // redirect user to the base page with the trying flag
           enduser_setup_http_serve_header(http_client, http_header_302_trying, LITLEN(http_header_302_trying));
           break;
