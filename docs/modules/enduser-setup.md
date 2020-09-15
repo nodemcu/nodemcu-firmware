@@ -134,7 +134,7 @@ Starts the captive portal.
 `enduser_setup.start([AP_SSID,] [onConnected()], [onError(err_num, string)], [onDebug(string)])`
 
 #### Parameters
- - `AP_SSID` the (optional) SSID to use for the AP. This defaults to the ENDUSER_SETUP_AP_SSID plus the device id.
+ - `AP_SSID` the (optional) SSID to use for the AP. This defaults to `SetupGadget_<device id>`.
  - `onConnected()` callback will be fired when an IP-address has been obtained, just before the enduser_setup module will terminate itself
  - `onError()` callback will be fired if an error is encountered. `err_num` is a number describing the error, and `string` contains a description of the error.
  - `onDebug()` callback is disabled by default (controlled by `#define ENDUSER_SETUP_DEBUG_ENABLE` in `enduser_setup.c`). It is intended to be used to find internal issues in the module. `string` contains a description of what is going on.

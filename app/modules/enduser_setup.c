@@ -1590,7 +1590,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     }
     else
     {
-      // All other URLs redirect to / -- this triggers captive portal.
+      // All other URLs redirect to http://nodemcu.portal/ -- this triggers captive portal.
       enduser_setup_http_serve_header(http_client, http_header_302, LITLEN(http_header_302));
     }
   }
