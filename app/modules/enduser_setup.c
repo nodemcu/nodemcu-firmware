@@ -90,14 +90,14 @@ static const char dns_body[]   = { 0x00, 0x01, 0x00, 0x01,
 
 static const char http_html_gz_filename[] = "enduser_setup.html.gz";
 static const char http_html_filename[] = "enduser_setup.html";
-static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nConnection:close\r\nContent-Type:text/html\r\n"; /* Note single \r\n here! */
+static const char http_header_200[] = "HTTP/1.1 200 OK\r\nCache-control:no-cache\r\nConnection:close\r\nContent-Type:text/html; charset=utf-8\r\n"; /* Note single \r\n here! */
 static const char http_header_204[] = "HTTP/1.1 204 No Content\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_302[] = "HTTP/1.1 302 Moved\r\nLocation: /\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_302_trying[] = "HTTP/1.1 302 Moved\r\nLocation: /?trying=true\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
 static const char http_header_400[] = "HTTP/1.1 400 Bad request\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_404[] = "HTTP/1.1 404 Not found\r\nContent-Length:10\r\nConnection:close\r\n\r\nNot found\n";
 static const char http_header_405[] = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
-static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Length:0\r\nConnection:close\r\n\r\n";
+static const char http_header_500[] = "HTTP/1.1 500 Internal Error\r\nContent-Length:6\r\nConnection:close\r\n\r\nError\n";
 
 static const char http_header_content_len_fmt[] = "Content-length:%5d\r\n\r\n";
 static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n";
@@ -105,11 +105,29 @@ static const char http_html_gzip_contentencoding[] = "Content-Encoding: gzip\r\n
 /* Externally defined: static const char enduser_setup_html_default[] = ... */
 #include "enduser_setup/enduser_setup.html.gz.def.h"
 
+// The tcp_arg can be either a pointer to the scan_listener_t or http_request_buffer_t.
+// The enum defines which one it is.
+typedef enum {
+  SCAN_LISTENER_STRUCT_TYPE = 1,
+  HTTP_REQUEST_BUFFER_STRUCT_TYPE = 2
+} struct_type_t;
+
+typedef struct {
+  struct_type_t struct_type;
+} tcp_arg_t;
+
 typedef struct scan_listener
 {
+  struct_type_t struct_type;
   struct tcp_pcb *conn;
   struct scan_listener *next;
 } scan_listener_t;
+
+typedef struct {
+  struct_type_t struct_type;
+  size_t length;
+  char data[0];
+} http_request_buffer_t;
 
 typedef struct
 {
@@ -398,8 +416,8 @@ static err_t close_once_sent (void *arg, struct tcp_pcb *pcb, u16_t len)
 
 /**
  * Get length of param value
- * 
- * This is being called with a fragment of the parameters passed in the 
+ *
+ * This is being called with a fragment of the parameters passed in the
  * URL for GET requests or part of the body of a POST request.
  * The string will look like one of these
  * "SecretPassword HTTP/1.1"
@@ -1124,14 +1142,13 @@ static void enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, s
     if (strncmp(data + 5, "/setwifi ", 9) == 0) // User clicked the submit button
     {
       char* body=strstr(data, "\r\n\r\n");
-      char *content_length_str = strstr(data, "Content-Length: ");
-      if( body == NULL || content_length_str == NULL)
+      if( body == NULL)
       {
         enduser_setup_http_serve_header(http_client, http_header_400, LITLEN(http_header_400));
         return;
       }
-      int bodylength = atoi(content_length_str + 16);
       body += 4; // length of the double CRLF found above
+      int bodylength = (data + data_len) - body;
       switch (enduser_setup_http_handle_credentials(body, bodylength))
       {
         case 0: {
@@ -1148,6 +1165,8 @@ static void enduser_setup_handle_POST(struct tcp_pcb *http_client, char* data, s
           ENDUSER_SETUP_ERROR_VOID("http_recvcb failed. Failed to handle wifi credentials.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
           break;
       }
+    } else {
+      enduser_setup_http_serve_header(http_client, http_header_404, LITLEN(http_header_404));
     }
 }
 
@@ -1333,26 +1352,153 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     return ERR_ABRT;
   }
 
+  tcp_arg_t *tcp_arg_ptr = arg;
+
   if (!p) /* remote side closed, close our end too */
   {
     ENDUSER_SETUP_DEBUG("connection closed");
-    scan_listener_t *l = arg; /* if it's waiting for scan, we have a ptr here */
-    if (l)
-      remove_scan_listener (l);
+    if (tcp_arg_ptr) {
+      if (tcp_arg_ptr->struct_type == SCAN_LISTENER_STRUCT_TYPE) {
+        remove_scan_listener ((scan_listener_t *)tcp_arg_ptr);
+      } else if (tcp_arg_ptr->struct_type == HTTP_REQUEST_BUFFER_STRUCT_TYPE) {
+        free(tcp_arg_ptr);
+      }
+    }
 
     deferred_close (http_client);
     return ERR_OK;
   }
 
-  char *data = calloc (1, p->tot_len + 1);
-  if (!data)
-    return ERR_MEM;
+  http_request_buffer_t *hrb;
+  if (!tcp_arg_ptr) {
+    hrb = calloc(1, sizeof(*hrb));
+    if (!hrb) {
+      goto general_fail;
+    }
+    hrb->struct_type = HTTP_REQUEST_BUFFER_STRUCT_TYPE;
+    tcp_arg(http_client, hrb);
+  } else if (tcp_arg_ptr->struct_type == HTTP_REQUEST_BUFFER_STRUCT_TYPE) {
+    hrb = (http_request_buffer_t *) tcp_arg_ptr;
+  } else {
+    goto general_fail;
+  }
 
-  unsigned data_len = pbuf_copy_partial (p, data, p->tot_len, 0);
+  // Append the new data
+  size_t newlen = hrb->length + p->tot_len;
+  void *old_hrb = hrb;
+  hrb = realloc(hrb, sizeof(*hrb) + newlen + 1);
+  tcp_arg(http_client, hrb);
+  if (!hrb) {
+    free(old_hrb);
+    goto general_fail;
+  }
+
+  pbuf_copy_partial(p, hrb->data + hrb->length, p->tot_len, 0);
+  hrb->data[newlen] = 0;
+  hrb->length = newlen;
+
   tcp_recved (http_client, p->tot_len);
   pbuf_free (p);
 
+  // see if we have the whole request.
+  // Rely on the fact that the header should not contain a null character
+  char *end_of_header = strstr(hrb->data, "\r\n\r\n");
+  if (end_of_header == 0) {
+    return ERR_OK;
+  }
+
+  end_of_header += 4;
+
+  // We have the entire header, now see if there is any content. If we don't find the
+  // content-length header, then there is no content and we can process immediately.
+  // The content-length header can also be missing if the browser is using chunked
+  // encoding.
+
+  bool is_chunked = FALSE;
+  for (const char *hdr = hrb->data; hdr && hdr < end_of_header; hdr = strchr(hdr, '\n')) {
+    hdr += 1; // Skip the \n
+    if (strncasecmp(hdr, "transfer-encoding:", 18) == 0) {
+      const char *field = hdr + 18;
+
+      while (*field != '\n') {
+        if (memcmp(field, "chunked", 7) == 0) {
+          is_chunked = TRUE;
+          break;
+        }
+        field++;
+      }
+    }
+    if (strncasecmp(hdr, "Content-length:", 15) == 0) {
+      // There is a content-length header
+      const char *field = hdr + 15;
+      size_t extra = strtol(field + 1, 0, 10);
+      if (extra + (end_of_header - hrb->data) > hrb->length) {
+        return ERR_OK;
+      }
+    }
+  }
+
+  if (is_chunked) {
+    // More complex to determine if the whole body has arrived
+    // Format is one or more chunks each preceded by their length (in hex)
+    // A zero length chunk ends the body
+    const char *ptr = end_of_header;
+    bool seen_end = FALSE;
+
+    while (ptr < hrb->data + hrb->length && ptr > hrb->data) {
+      size_t chunk_len = strtol(ptr, 0, 16);
+      // Skip to end of chunk length (note that there can be parameters after the length)
+      ptr = strchr(ptr, '\n');
+      if (!ptr) {
+        // Don't have the entire chunk header
+        return ERR_OK;
+      }
+      ptr++;
+      ptr += chunk_len;
+      if (chunk_len == 0) {
+        seen_end = TRUE;
+        break;
+      }
+      if (ptr + 2 > hrb->data + hrb->length) {
+        // We don't have the CRLF yet
+        return ERR_OK;
+      }
+      if (memcmp(ptr, "\r\n", 2)) {
+        // Bail out here -- something bad happened
+        goto general_fail;
+      }
+      ptr += 2;
+    }
+    if (!seen_end) {
+      // Still waiting for the end chunk
+      return ERR_OK;
+    }
+
+    // Now rewrite the buffer to eliminate all the chunk headers
+    const char *src = end_of_header;
+    char *dst = end_of_header;
+
+    while (src < hrb->data + hrb->length && src > hrb->data) {
+      size_t chunk_len = strtol(src, 0, 16);
+      src = strchr(src, '\n');
+      src++;
+      if (chunk_len == 0) {
+        break;
+      }
+      memmove(dst, src, chunk_len);
+      dst += chunk_len;
+      src += chunk_len + 2;
+    }
+    *dst = '\0';    // Move the null termination down
+    hrb->length = dst - hrb->data;  // Adjust the length down
+  }
+
   err_t ret = ERR_OK;
+
+  char *data = hrb->data;
+  size_t data_len = hrb->length;
+
+  tcp_arg(http_client, 0);    // Forget the data pointer.
 
 #if ENDUSER_SETUP_DEBUG_SHOW_HTTP_REQUEST
   ENDUSER_SETUP_DEBUG(data);
@@ -1364,7 +1510,7 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     {
       if (enduser_setup_http_serve_html(http_client) != 0)
       {
-        ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
+        goto general_fail;
       }
       else
       {
@@ -1376,27 +1522,29 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
       /* Don't do an AP Scan while station is trying to connect to Wi-Fi */
       if (state->connecting == 0)
       {
-        scan_listener_t *l = malloc (sizeof (scan_listener_t));
-        if (!l)
+        scan_listener_t *sl = malloc (sizeof (scan_listener_t));
+        if (!sl)
         {
           ENDUSER_SETUP_ERROR("out of memory", ENDUSER_SETUP_ERR_OUT_OF_MEMORY, ENDUSER_SETUP_ERR_NONFATAL);
         }
 
+        sl->struct_type = SCAN_LISTENER_STRUCT_TYPE;
+
         bool already = (state->scan_listeners != NULL);
 
-        tcp_arg (http_client, l);
+        tcp_arg (http_client, sl);
         /* TODO: check if also need a tcp_err() cb, or if recv() is enough */
-        l->conn = http_client;
-        l->next = state->scan_listeners;
-        state->scan_listeners = l;
+        sl->conn = http_client;
+        sl->next = state->scan_listeners;
+        state->scan_listeners = sl;
 
         if (!already)
         {
           if (!wifi_station_scan(NULL, on_scan_done))
           {
             enduser_setup_http_serve_header(http_client, http_header_500, LITLEN(http_header_500));
-            deferred_close (l->conn);
-            l->conn = 0;
+            deferred_close (sl->conn);
+            sl->conn = 0;
             free_scan_listeners();
           }
         }
@@ -1410,13 +1558,12 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
     }
     else if (strncmp(data + 4, "/status.json", 12) == 0)
     {
-    enduser_setup_serve_status_as_json(http_client);
+      enduser_setup_serve_status_as_json(http_client);
     }
     else if (strncmp(data + 4, "/status", 7) == 0)
     {
       enduser_setup_serve_status(http_client);
     }
-
     else if (strncmp(data + 4, "/update?", 8) == 0)
     {
       switch (enduser_setup_http_handle_credentials(data, data_len))
@@ -1459,8 +1606,11 @@ static err_t enduser_setup_http_recvcb(void *arg, struct tcp_pcb *http_client, s
   deferred_close (http_client);
 
 free_out:
-  free (data);
+  free (hrb);
   return ret;
+
+general_fail:
+  ENDUSER_SETUP_ERROR("http_recvcb failed. Unable to send HTML.", ENDUSER_SETUP_ERR_UNKOWN_ERROR, ENDUSER_SETUP_ERR_NONFATAL);
 }
 
 
@@ -1476,6 +1626,7 @@ static err_t enduser_setup_http_connectcb(void *arg, struct tcp_pcb *pcb, err_t 
   }
 
   tcp_accepted (state->http_pcb);
+  tcp_arg(pcb, 0);              // Initialize to known value
   tcp_recv (pcb, enduser_setup_http_recvcb);
   tcp_nagle_disable (pcb);
   return ERR_OK;
