@@ -7,9 +7,11 @@ This module provides a simple way of configuring ESP8266 chips without using a
 serial interface or pre-programming WiFi credentials onto the chip.
 
 After running [`enduser_setup.start()`](#enduser_setupstart), a wireless 
-network named "SetupGadget_XXXXXX" will starting. This prefix can be overridden
-in `user_config.h` by defining `ENDUSER_SETUP_AP_SSID`. Connect to that SSID 
-and then navigate to the root of any website or to 192.168.4.1. 
+network named "NodeMCU_XXXXXX" will start. This prefix can be overridden
+in `user_config.h` by defining `ENDUSER_SETUP_AP_SSID` or by supplying the whole SSID to the
+`enduser_setup.start` method. Connect to that SSID and captive portal detection on the client
+should automatically open the configuration dialog. If not, then
+navigate to the root of any website or to 192.168.4.1. 
 `http://example.com/` will work, but do not use `.local` domains because it 
 will fail on iOS. A web page similar to the one depicted below will load, 
 allowing the end user to provide their Wi-Fi credentials.
@@ -76,7 +78,6 @@ print("Wifi device_name: " .. p.device_name)
 |----|------|-----------|
 |/|GET|Returns HTML for the web page. Will return the contents of `enduser_setup.html` if it exists on the filesystem, otherwise will return a page embedded into the firmware image.|
 |/aplist|GET|Forces the ESP8266 to perform a site survey across all channels, reporting access points that it can find. Return payload is a JSON array: `[{"ssid":"foobar","rssi":-36,"chan":3}]`|
-|/generate_204|GET|Returns a HTTP 204 status (expected by certain Android clients during Wi-Fi connectivity checks)|
 |/status|GET|Returns plaintext status description, used by the web page|
 |/status.json|GET|Returns a JSON payload containing the ESP8266's chip id in hexadecimal format and the status code: 0=Idle, 1=Connecting, 2=Wrong Password, 3=Network not Found, 4=Failed, 5=Success|
 |/setwifi|POST|HTML form post for setting the WiFi credentials. Expects HTTP content type `application/x-www-form-urlencoded`. Supports sending and storing additinal configuration parameters (as input fields). Returns the same payload as `/status.json` instead of redirecting to `/`. See also: `/update`.|
@@ -130,9 +131,10 @@ Starts the captive portal.
 *Note: Calling start() while EUS is already running is an error, and will result in stop() to be invoked to shut down EUS.*
 
 #### Syntax
-`enduser_setup.start([onConnected()], [onError(err_num, string)], [onDebug(string)])`
+`enduser_setup.start([AP_SSID,] [onConnected()], [onError(err_num, string)], [onDebug(string)])`
 
 #### Parameters
+ - `AP_SSID` the (optional) SSID to use for the AP. This defaults to `NodeMCU_<device id>`.
  - `onConnected()` callback will be fired when an IP-address has been obtained, just before the enduser_setup module will terminate itself
  - `onError()` callback will be fired if an error is encountered. `err_num` is a number describing the error, and `string` contains a description of the error.
  - `onDebug()` callback is disabled by default (controlled by `#define ENDUSER_SETUP_DEBUG_ENABLE` in `enduser_setup.c`). It is intended to be used to find internal issues in the module. `string` contains a description of what is going on.

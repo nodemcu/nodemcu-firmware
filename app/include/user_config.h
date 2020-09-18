@@ -174,7 +174,7 @@
 // If you use the enduser_setup module, then you can also set the default
 // SSID when this module is running in AP mode.
 
-#define ENDUSER_SETUP_AP_SSID "SetupGadget"
+#define ENDUSER_SETUP_AP_SSID "NodeMCU"
 
 
 // I2C software driver partially supports use of GPIO16 (D0) pin for SCL line.
