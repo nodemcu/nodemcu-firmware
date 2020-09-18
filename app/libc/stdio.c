@@ -28,6 +28,9 @@ int vsprintf (char *d, const char *s, va_list ap)
 #define ENDIAN_PDP  3412
 #define ENDIAN ENDIAN_LITTLE
 
+#define FLAG_PLUS 1
+#define FLAG_SPACE 2
+
 /* $Id: strichr.c,v 1.1.1.1 2006/08/23 17:03:06 pefo Exp $ */
 
 /*
@@ -361,7 +364,7 @@ llatob(u_quad_t *vp, char *p, int base)
  *      converts value to ascii, result in dst
  */
 char *
-btoa(char *dst, u_int value, int base, int plussgn)
+btoa(char *dst, u_int value, int base, int flag)
 {
     char buf[34], digit;
     int i, j, rem, neg;
@@ -394,8 +397,10 @@ btoa(char *dst, u_int value, int base, int plussgn)
     buf[i] = 0;
     if (neg)
         strcat (buf, "-");
-    else if (plussgn)
+    else if (flag==FLAG_PLUS)
         strcat (buf, "+");
+    else if (flag==FLAG_SPACE)
+        strcat (buf, " ");
 
     /* reverse the string */
     for (i = 0, j = strlen (buf) - 1; j >= 0; i++, j--)
@@ -409,7 +414,7 @@ btoa(char *dst, u_int value, int base, int plussgn)
  *      converts value to ascii, result in dst
  */
 char *
-llbtoa(char *dst, u_quad_t value, int base, int plussgn)
+llbtoa(char *dst, u_quad_t value, int base, int flag)
 {
     char buf[66], digit;
     int i, j, rem, neg;
@@ -442,8 +447,10 @@ llbtoa(char *dst, u_quad_t value, int base, int plussgn)
     buf[i] = 0;
     if (neg)
         strcat (buf, "-");
-    else if (plussgn)
+    else if (flag==FLAG_PLUS)
         strcat (buf, "+");
+    else if (flag==FLAG_SPACE)
+        strcat (buf, " ");
 
     /* reverse the string */
     for (i = 0, j = strlen (buf) - 1; j >= 0; i++, j--)
@@ -530,7 +537,7 @@ vsprintf (char *d, const char *s, va_list ap)
     const char *t;
     char *p, *dst, tmp[40];
     unsigned int n;
-    int fmt, trunc, haddot, width, base, longlong, plussgn;
+    int fmt, trunc, haddot, width, base, longlong, flag;
 #ifdef FLOATINGPT
     double dbl;
 
@@ -544,14 +551,16 @@ vsprintf (char *d, const char *s, va_list ap)
         if (*s == '%') {
             s++;
             fmt = FMT_RJUST;
-            width = trunc = haddot = longlong = plussgn = 0;
+            width = trunc = haddot = longlong = flag = 0;
             for (; *s; s++) {
                 if (strchr("bcdefgilopPrRsuxX%", *s))
                     break;
                 else if (*s == '-')
                     fmt = FMT_LJUST;
                 else if (*s == '+')
-                    plussgn = 1;
+                    flag = FLAG_PLUS;
+                else if (*s == ' ')
+                    flag = FLAG_SPACE;
                 else if (*s == '0')
                     fmt = FMT_RJUST0;
                 else if (*s == '~')
@@ -636,9 +645,9 @@ vsprintf (char *d, const char *s, va_list ap)
                         base = 2;
                     if (longlong)
                         llbtoa(d, va_arg (ap, quad_t),
-                            base, plussgn);
+                            base, flag);
                     else
-                        btoa(d, va_arg (ap, int), base, plussgn);
+                        btoa(d, va_arg (ap, int), base, flag);
 
                     if (*s == 'X')
                         strtoupper(d);
@@ -646,12 +655,12 @@ vsprintf (char *d, const char *s, va_list ap)
 #ifdef FLOATINGPT
                 else if (strchr ("eEfgG", *s)) {
 //static void dtoa (char *, double, int, int, int, int);
-void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec, int plussgn);
+void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec, int flag);
                     dbl = va_arg(ap, double);
                     if (!haddot) {
                       trunc = 6;
                     }
-                    dtoa(d, dbl, *s, width, trunc, plussgn);
+                    dtoa(d, dbl, *s, width, trunc, flag);
                     trunc = 0;
                 }
 #endif
@@ -724,7 +733,7 @@ extern double modf(double, double *);
 #define _isNan(arg) ((arg) != (arg))
 
 static int cvt (rtype arg, int prec, char *signp, int fmtch,
-        char *startp, char *endp, int plussgn);
+        char *startp, char *endp, int flag);
 static char *c_round (double fract, int *exp, char *start, char *end,
             char ch, char *signp);
 static char *exponent(char *p, int exp, int fmtch);
@@ -756,7 +765,7 @@ static int _finite(rtype d)
 }
 
 
-void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec, int plussgn)
+void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec, int flag)
 {
     char    buf[MAX_FCONVERSION+1], *cp;
     char    sign;
@@ -786,7 +795,7 @@ void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec, int plussgn)
      * no significant digits will be shown.
      */
     *cp = '\0';
-    size = cvt (arg, prec, &sign, fmtch, cp, buf + sizeof(buf), plussgn);
+    size = cvt (arg, prec, &sign, fmtch, cp, buf + sizeof(buf), flag);
     if (*cp == '\0')
         cp++;
 
@@ -799,7 +808,7 @@ void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec, int plussgn)
 
 
 static int
-cvt(rtype number, int prec, char *signp, int fmtch, char *startp, char *endp, int plussgn)
+cvt(rtype number, int prec, char *signp, int fmtch, char *startp, char *endp, int flag)
 {
     register char *p, *t;
     register double fract;
@@ -810,8 +819,10 @@ cvt(rtype number, int prec, char *signp, int fmtch, char *startp, char *endp, in
     if (number < 0) {
         number = -number;
         *signp = '-';
-    } else if (plussgn) {
+    } else if (flag==FLAG_PLUS) {
         *signp = '+';
+    } else if (flag==FLAG_SPACE) {
+        *signp = ' ';
     } else
         *signp = 0;
 
@@ -1014,16 +1025,6 @@ c_round(double fract, int *exp, char *start, char *end, char ch, char *signp)
                 }
                 break;
             }
-        }
-    /* ``"%.3f", (double)-0.0004'' gives you a negative 0. */
-    else if (*signp == '-' || *signp == '+')
-        for (;; --end) {
-            if (*end == '.')
-                --end;
-            if (*end != '0')
-                break;
-            if (end == start)
-                *signp = 0;
         }
     return (start);
 }
