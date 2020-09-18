@@ -1710,7 +1710,7 @@ static void enduser_setup_ap_start(void)
   memset(&(cnf), 0, sizeof(struct softap_config));
 
 #ifndef ENDUSER_SETUP_AP_SSID
-  #define ENDUSER_SETUP_AP_SSID "SetupGadget"
+  #define ENDUSER_SETUP_AP_SSID "NodeMCU"
 #endif
 
   if (state->ap_ssid) {
