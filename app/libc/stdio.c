@@ -1,4 +1,6 @@
+#include "user_config.h"
 #include <stdio.h>
+#include <math.h>
 
 #if defined( LUA_NUMBER_INTEGRAL )
 
@@ -660,7 +662,29 @@ void dtoa (char *dbuf, rtype arg, int fmtch, int width, int prec, int flag);
                     if (!haddot) {
                       trunc = 6;
                     }
+                    
+#ifdef SPRINTF_ROUNDING_MODE_DOUBLEROUNDING
+                    /* 
+                    If the number is float converted to double (& 0x1fffffff is 0) and
+                    the number rounded to 7 decimals (standard formatting when float is printed) differs from the original 7 decimals  and
+                    less than 7 decimals are to be displayed then the number is increased by the least significant bit.
+                    It solves the situation when 5 is represented as 4.999 in float which causes rounding to seem intuitively incorrect
+                    (e.g. 3.1415 (stored as 3.141499996185302734375) formatted to %.3f).
+                    */
+                    union {
+                        double    m_double;
+                        uint64_t m_long;
+                    } dbl_u;
+                    dbl_u.m_double=dbl;
+                    if (dbl<0) {dbl*=-1;}
+                    while (dbl && dbl<1) {dbl *=10;}
+                    if (!(dbl_u.m_long & 0x1fffffff) && trunc <=6 && (int)(dbl*1e7)!=(int)round(dbl*1e7)) {
+                      dbl_u.m_long += 1 << 29; // least significant bit of float is 30th bit of double
+                    }
+                    dtoa(d, dbl_u.m_double, *s, width, trunc, flag);
+#else
                     dtoa(d, dbl, *s, width, trunc, flag);
+#endif
                     trunc = 0;
                 }
 #endif

@@ -220,6 +220,20 @@
 //#define DEVELOPMENT_BREAK_ON_STARTUP_PIN 1
 //#define DEVELOP_VERSION
 
+// By default NodeMCU Lua number is built with single-precision (32-bit) floats.
+// Some numbers do not have enough precise representation which could lead
+// to suprising results when rounding is used. E.g. 3.1415 rounded to 3 decimal
+// point digits rounds to 3.141 (="%.3f"%3.1415). This is due to the fact that
+// 3.1415 is stored as 3.141499996185303 and so rounded 3.141.
+// Enabling the setting implements a Double rounding method that makes the
+// number to be rounded to more intuitive result ("%.3f"%3.1415 prints 3.142).
+// The algorithm is as follows: if the number rounded to 7 dps does not correspond
+// to its representation (here 3.1414999 vs 3.1415000) then the number is
+// increased by the smallest increment (here to 3.141500235) which results in 
+// "correct" rounding to lower than 7 decimal places.
+
+//#define SPRINTF_ROUNDING_MODE_DOUBLEROUNDING
+
 
 // *** Heareafter, there be demons ***
 
